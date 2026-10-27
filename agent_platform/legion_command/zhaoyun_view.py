@@ -18,6 +18,7 @@
 
 失败关闭：单个数据源读不到 → 对应字段为空 + note，不影响其余；整体异常由 serve 返回 500。
 """
+
 from __future__ import annotations
 
 import datetime as dt
@@ -58,8 +59,11 @@ def _read_json(path: Path) -> Optional[dict]:
 
 def _mtime_iso(path: Path) -> str:
     try:
-        return dt.datetime.fromtimestamp(path.stat().st_mtime).astimezone() \
+        return (
+            dt.datetime.fromtimestamp(path.stat().st_mtime)
+            .astimezone()
             .isoformat(timespec="seconds")
+        )
     except OSError:
         return ""
 
@@ -67,30 +71,47 @@ def _mtime_iso(path: Path) -> str:
 def _capabilities(profile: Path) -> dict:
     data = _read_json(profile / "skills" / "CAPABILITIES.json") or {}
     caps = data.get("capabilities") or []
-    rows = [{"name": str(c.get("name")), "what": str(c.get("what") or ""),
-             "boundary": str(c.get("boundary") or ""),
-             "status": str(c.get("status") or "unknown")}
-            for c in caps if isinstance(c, dict)]
-    return {"total": int(data.get("total") or len(rows)),
-            "ready": int(data.get("ready") or sum(1 for r in rows if r["status"] == "ready")),
-            "pending_key": int(data.get("pending_key") or 0),
-            "items": rows}
+    rows = [
+        {
+            "name": str(c.get("name")),
+            "what": str(c.get("what") or ""),
+            "boundary": str(c.get("boundary") or ""),
+            "status": str(c.get("status") or "unknown"),
+        }
+        for c in caps
+        if isinstance(c, dict)
+    ]
+    return {
+        "total": int(data.get("total") or len(rows)),
+        "ready": int(
+            data.get("ready") or sum(1 for r in rows if r["status"] == "ready")
+        ),
+        "pending_key": int(data.get("pending_key") or 0),
+        "items": rows,
+    }
 
 
 def _experience(experience_root: Optional[Path]) -> dict:
     """经验库摘要 + 全量条目（只读、不含 lesson 正文）。"""
     try:
         from engine import experience_store as S
+
         summary = S.public_summary(root=experience_root, recent=_ALL_ENTRIES_LIMIT)
     except Exception as exc:  # noqa: BLE001 —— 只读视图 fail-soft
-        return {"ok": False, "error": "%s: %s" % (type(exc).__name__, str(exc)[:160]),
-                "entries_total": 0, "verified_total": 0, "recent": [], "all": []}
+        return {
+            "ok": False,
+            "error": "%s: %s" % (type(exc).__name__, str(exc)[:160]),
+            "entries_total": 0,
+            "verified_total": 0,
+            "recent": [],
+            "all": [],
+        }
     rows = list(summary.get("recent") or [])
     return {
         "ok": True,
         **summary,
-        "recent": rows[:_RECENT_KEEP],   # 兼容字段：最近 5 条
-        "all": rows,                     # 全量条目（摘要字段，无 lesson 正文）
+        "recent": rows[:_RECENT_KEEP],  # 兼容字段：最近 5 条
+        "all": rows,  # 全量条目（摘要字段，无 lesson 正文）
     }
 
 
@@ -100,10 +121,12 @@ def _load_gov_ai():
     单独成函数便于测试注入 import 失败：健康不可用时页面必须 fail-soft，不得 500。
     """
     import sys
+
     tools = str(_TOOLS_DIR)
     if tools not in sys.path:
         sys.path.insert(0, tools)
     import gov_ai  # noqa: WPS433 —— 惰性导入，避免拖慢/拖死 serve 启动
+
     return gov_ai
 
 
@@ -112,18 +135,23 @@ def _gov_ai_health(platform: Path, now: float) -> dict:
     try:
         G = _load_gov_ai()
         status = G.health_status(
-            root=Path(platform) / "data" / "governance_ai", now=now)
+            root=Path(platform) / "data" / "governance_ai", now=now
+        )
         level = str(status.get("level") or "yellow")
         if level not in ("green", "yellow", "red"):
             level = "yellow"
-        return {"level": level,
-                "detail": str(status.get("detail") or "")[:300],
-                "last_success": status.get("last_success"),
-                "age_hours": status.get("age_hours"),
-                "consecutive_failures": status.get("consecutive_failures", 0)}
+        return {
+            "level": level,
+            "detail": str(status.get("detail") or "")[:300],
+            "last_success": status.get("last_success"),
+            "age_hours": status.get("age_hours"),
+            "consecutive_failures": status.get("consecutive_failures", 0),
+        }
     except Exception as exc:  # noqa: BLE001 —— 健康数据源坏掉不得拖垮整页
-        return {"level": "yellow",
-                "detail": "不可用: %s: %s" % (type(exc).__name__, str(exc)[:160])}
+        return {
+            "level": "yellow",
+            "detail": "不可用: %s: %s" % (type(exc).__name__, str(exc)[:160]),
+        }
 
 
 def _experience_health(exp: dict) -> dict:
@@ -132,26 +160,35 @@ def _experience_health(exp: dict) -> dict:
     空库=red；全部 verified=green；有条目但存在未验签=yellow。
     """
     if not exp.get("ok"):
-        return {"level": "yellow",
-                "detail": "经验库不可用: %s" % str(exp.get("error") or "")[:200]}
+        return {
+            "level": "yellow",
+            "detail": "经验库不可用: %s" % str(exp.get("error") or "")[:200],
+        }
     total = int(exp.get("entries_total") or 0)
     verified = int(exp.get("verified_total") or 0)
     supervision = int(
-        ((exp.get("domains") or {}).get("supervision") or {}).get("entries") or 0)
+        ((exp.get("domains") or {}).get("supervision") or {}).get("entries") or 0
+    )
     if total == 0:
         return {"level": "red", "detail": "经验库为空：签字链尚未入库任何判例"}
     if verified >= total:
-        return {"level": "green",
-                "detail": "经验库 %d 条全部 verified；最近签字 %s；supervision=%d"
-                          % (total, exp.get("latest_signed_at") or "?", supervision)}
-    return {"level": "yellow",
-            "detail": "经验库 %d 条中 verified %d（存在未验签）" % (total, verified)}
+        return {
+            "level": "green",
+            "detail": "经验库 %d 条全部 verified；最近签字 %s；supervision=%d"
+            % (total, exp.get("latest_signed_at") or "?", supervision),
+        }
+    return {
+        "level": "yellow",
+        "detail": "经验库 %d 条中 verified %d（存在未验签）" % (total, verified),
+    }
 
 
 def _governance_health(platform: Path, exp: dict, now: float) -> dict:
     """治理健康摘要：AI 建议（gov_ai 真源）+ 经验库（健康卡同口径）。"""
-    return {"ai_advice": _gov_ai_health(platform, now),
-            "experience_library": _experience_health(exp)}
+    return {
+        "ai_advice": _gov_ai_health(platform, now),
+        "experience_library": _experience_health(exp),
+    }
 
 
 def _archived_path(path: Path, base: Path) -> bool:
@@ -171,9 +208,11 @@ def _has_signature(payload: Path) -> bool:
 
     item_id 取自 payload 文件名去掉 `.payload.json` 后缀。
     """
-    item_id = payload.name[:-len(_PAYLOAD_SUFFIX)]
-    for cand in (payload.parent / (item_id + ".signature.json"),
-                 payload.parent / (payload.name + ".signature.json")):
+    item_id = payload.name[: -len(_PAYLOAD_SUFFIX)]
+    for cand in (
+        payload.parent / (item_id + ".signature.json"),
+        payload.parent / (payload.name + ".signature.json"),
+    ):
         try:
             if cand.is_file():
                 return True
@@ -189,16 +228,24 @@ def _pending_signatures(root: Optional[Path]) -> dict:
     归档目录（任一上级目录名以 `_` 开头）不催签，只记 `archived_pending` 供审计。
     """
     base = Path(root) if root is not None else DEFAULT_SIGN_REQUESTS_ROOT
-    out = {"ok": True, "root": str(base), "count": 0, "items": [],
-           "scanned": 0, "signed": 0, "archived_pending": 0}
+    out = {
+        "ok": True,
+        "root": str(base),
+        "count": 0,
+        "items": [],
+        "scanned": 0,
+        "signed": 0,
+        "archived_pending": 0,
+    }
     try:
         if not base.is_dir():
             out.update(ok=False, note="签名请求目录不存在: %s" % base)
             return out
         payloads = sorted(base.rglob("*" + _PAYLOAD_SUFFIX))
     except OSError as exc:
-        out.update(ok=False,
-                   note="扫描失败: %s: %s" % (type(exc).__name__, str(exc)[:120]))
+        out.update(
+            ok=False, note="扫描失败: %s: %s" % (type(exc).__name__, str(exc)[:120])
+        )
         return out
     for payload in payloads:
         if not payload.name.startswith("EXP-"):
@@ -212,10 +259,12 @@ def _pending_signatures(root: Optional[Path]) -> dict:
         if signed:
             out["signed"] += 1
             continue
-        out["items"].append({
-            "item_id": payload.name[:-len(_PAYLOAD_SUFFIX)],
-            "payload_path": str(payload),
-        })
+        out["items"].append(
+            {
+                "item_id": payload.name[: -len(_PAYLOAD_SUFFIX)],
+                "payload_path": str(payload),
+            }
+        )
     out["count"] = len(out["items"])
     return out
 
@@ -225,23 +274,36 @@ def _latest_advice(platform: Path, now: float) -> dict:
     actions = ("anomaly_digest", "priority_advice", "case_draft")
     out: dict = {}
     for action in actions:
-        cands = sorted(root.glob("*/%s.json" % action),
-                       key=lambda p: p.stat().st_mtime, reverse=True)
+        cands = sorted(
+            root.glob("*/%s.json" % action),
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
+        )
         if not cands:
             out[action] = {"exists": False, "items": []}
             continue
         path = cands[0]
         data = _read_json(path) or {}
-        items = [{"id": it.get("id"), "title": str(it.get("title") or it.get("cue") or "")[:60],
-                  "confidence": it.get("confidence"), "evidence": (it.get("evidence") or [])[:3]}
-                 for it in (data.get("items") or []) if isinstance(it, dict)]
+        items = [
+            {
+                "id": it.get("id"),
+                "title": str(it.get("title") or it.get("cue") or "")[:60],
+                "confidence": it.get("confidence"),
+                "evidence": (it.get("evidence") or [])[:3],
+            }
+            for it in (data.get("items") or [])
+            if isinstance(it, dict)
+        ]
         out[action] = {
-            "exists": True, "status": data.get("status"),
+            "exists": True,
+            "status": data.get("status"),
             "generated_at": data.get("generated_at"),
             "input_digest": str(data.get("input_digest") or "")[:12],
-            "model": data.get("model"), "items": items,
+            "model": data.get("model"),
+            "items": items,
             "validator": data.get("validator") or {},
-            "path": str(path), "updated_at": _mtime_iso(path),
+            "path": str(path),
+            "updated_at": _mtime_iso(path),
         }
     return out
 
@@ -262,6 +324,7 @@ def _pid_alive(pid) -> bool:
     if os.name == "nt":
         try:
             import ctypes
+
             PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
             STILL_ACTIVE = 259
             kernel32 = ctypes.windll.kernel32
@@ -277,7 +340,7 @@ def _pid_alive(pid) -> bool:
         except Exception:  # noqa: BLE001 —— 探活失败按"未知/不在"处理，不阻塞视图
             return False
     try:
-        os.kill(pid, 0)          # POSIX：0 = 仅检查存在，不投递信号
+        os.kill(pid, 0)  # POSIX：0 = 仅检查存在，不投递信号
         return True
     except OSError:
         return False
@@ -291,18 +354,23 @@ def _clock(platform: Path) -> dict:
     anchors = None
     try:
         import sys
+
         ops = str(platform.parent / "ops")
         if ops not in sys.path:
             sys.path.insert(0, ops)
         import governance_clock as GC  # noqa: WPS433
+
         anchors = list(GC.parse_anchors(GC.DEFAULT_ANCHORS))
     except Exception:  # noqa: BLE001
         anchors = None
-    return {"pid": pid, "alive": alive,
-            "started_at": (lock or {}).get("started_at"),
-            "last_tick": state.get("last_tick_iso"),
-            "fired_today": [k for k in (state.get("fired") or {}) if k],
-            "anchors": anchors}
+    return {
+        "pid": pid,
+        "alive": alive,
+        "started_at": (lock or {}).get("started_at"),
+        "last_tick": state.get("last_tick_iso"),
+        "fired_today": [k for k in (state.get("fired") or {}) if k],
+        "anchors": anchors,
+    }
 
 
 def _keepalive() -> dict:
@@ -311,21 +379,29 @@ def _keepalive() -> dict:
         lines = log.read_text(encoding="utf-8", errors="replace").strip().splitlines()
     except OSError:
         return {"available": False, "last": ""}
-    return {"available": True, "last": (lines[-1] if lines else "")[:200],
-            "lines": len(lines)}
+    return {
+        "available": True,
+        "last": (lines[-1] if lines else "")[:200],
+        "lines": len(lines),
+    }
 
 
-def build_view(platform: Path, profile: Optional[Path] = None,
-               experience_root: Optional[Path] = None,
-               now: Optional[float] = None,
-               sign_requests_root: Optional[Path] = None) -> dict:
+def build_view(
+    platform: Path,
+    profile: Optional[Path] = None,
+    experience_root: Optional[Path] = None,
+    now: Optional[float] = None,
+    sign_requests_root: Optional[Path] = None,
+) -> dict:
     """构建赵云页只读视图。
 
     可测试注入：platform / profile / experience_root / sign_requests_root
     （默认仍是真实路径）；now 用于确定性判级（测试传固定时刻）。
     """
     platform = Path(platform)
-    profile = Path(profile) if profile else Path.home() / ".hermes" / "profiles" / "zhaoyun"
+    profile = (
+        Path(profile) if profile else Path.home() / ".hermes" / "profiles" / "zhaoyun"
+    )
     now_ts = float(now if now is not None else time.time())
     caps = _capabilities(profile)
     exp = _experience(experience_root)
@@ -336,8 +412,9 @@ def build_view(platform: Path, profile: Optional[Path] = None,
     pending = _pending_signatures(sign_requests_root)
     return {
         "ok": True,
-        "generated_at": dt.datetime.fromtimestamp(now_ts).astimezone()
-                        .isoformat(timespec="seconds"),
+        "generated_at": dt.datetime.fromtimestamp(now_ts)
+        .astimezone()
+        .isoformat(timespec="seconds"),
         "identity": IDENTITY,
         "capabilities": caps,
         "experience": exp,

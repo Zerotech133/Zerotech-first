@@ -1,4 +1,5 @@
 """quality_gate 测试（WO-SEAT-REAL-B2D）。"""
+
 from __future__ import annotations
 
 import importlib.util
@@ -20,12 +21,19 @@ class _P:
 
 
 def test_run_checks_all_ok(monkeypatch):
-    monkeypatch.setattr(QG, "_run",
-                        lambda argv, timeout=QG.TIMEOUT, env=None: {"ok": True, "rc": 0})
+    monkeypatch.setattr(
+        QG, "_run", lambda argv, timeout=QG.TIMEOUT, env=None: {"ok": True, "rc": 0}
+    )
     res = QG.run_checks()
     assert res["ok"] is True and set(res["checks"]) == {
-        "compileall", "ports", "secrets", "names", "capabilities", "evals",
-        "tests"}
+        "compileall",
+        "ports",
+        "secrets",
+        "names",
+        "capabilities",
+        "evals",
+        "tests",
+    }
 
 
 def test_run_checks_one_fail(monkeypatch):
@@ -42,7 +50,9 @@ def test_run_checks_one_fail(monkeypatch):
 
 
 def test_main_emits_per_seat_and_records(tmp_path, monkeypatch):
-    monkeypatch.setattr(QG, "run_checks", lambda: {"ok": True, "checks": {}, "generated_at": "x"})
+    monkeypatch.setattr(
+        QG, "run_checks", lambda: {"ok": True, "checks": {}, "generated_at": "x"}
+    )
     calls = []
     monkeypatch.setattr(QG, "emit_audit", lambda s, r: calls.append(s) or {"ok": True})
     monkeypatch.delenv(QG.KILL_ENV, raising=False)
@@ -62,6 +72,7 @@ def test_kill_switch(tmp_path, monkeypatch):
 def test_run_timeout(monkeypatch):
     def boom(*a, **k):
         raise subprocess.TimeoutExpired(cmd="x", timeout=1)
+
     monkeypatch.setattr(QG.subprocess, "run", boom)
     out = QG._run(["x"])
     assert out["ok"] is False and out["error"] == "timeout"
@@ -69,11 +80,20 @@ def test_run_timeout(monkeypatch):
 
 def test_env_with_git_adds_git_path():
     import os
+
     env = QG._env_with_git()
-    git_dirs = [d for d in (r"C:\Program Files\Git\cmd", r"C:\Program Files\Git\bin",
-                            r"C:\Program Files (x86)\Git\cmd") if os.path.isdir(d)]
+    git_dirs = [
+        d
+        for d in (
+            r"C:\Program Files\Git\cmd",
+            r"C:\Program Files\Git\bin",
+            r"C:\Program Files (x86)\Git\cmd",
+        )
+        if os.path.isdir(d)
+    ]
     if not git_dirs:
         import pytest
+
         pytest.skip("本机无 Git 安装目录")
     assert any(d in env["PATH"] for d in git_dirs)
 

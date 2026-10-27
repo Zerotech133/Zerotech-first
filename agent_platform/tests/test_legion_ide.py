@@ -4,6 +4,7 @@
 目录穿越拒绝、POST /ollama/api/chat 门户不可达时 503 fail-soft。
 用 tmp 仓 + 端口 0 起真实 HTTP 服务，不碰真实门户/8734。
 """
+
 from __future__ import annotations
 
 import json
@@ -24,17 +25,23 @@ def _fixture(tmp_path: Path) -> Path:
     repo = tmp_path / "repo"
     portal = repo / "portal"
     portal.mkdir(parents=True, exist_ok=True)
-    (portal / "ide.html").write_text("<!doctype html><title>Agent IDE</title>",
-                                     encoding="utf-8")
+    (portal / "ide.html").write_text(
+        "<!doctype html><title>Agent IDE</title>", encoding="utf-8"
+    )
     (portal / "agent_ide_bundle.json").write_text(
-        json.dumps({"generated": "2026-10-26", "agents": []}), encoding="utf-8")
+        json.dumps({"generated": "2026-10-26", "agents": []}), encoding="utf-8"
+    )
     return repo
 
 
-def _serve(repo: Path, portal_url: str = "http://127.0.0.1:59999",
-           bundle_path: Path | None = None):
-    httpd = L.create_server("127.0.0.1", 0, repo=repo, portal_url=portal_url,
-                            bundle_path=bundle_path)
+def _serve(
+    repo: Path,
+    portal_url: str = "http://127.0.0.1:59999",
+    bundle_path: Path | None = None,
+):
+    httpd = L.create_server(
+        "127.0.0.1", 0, repo=repo, portal_url=portal_url, bundle_path=bundle_path
+    )
     t = threading.Thread(target=httpd.serve_forever, daemon=True)
     t.start()
     return httpd, t
@@ -49,9 +56,9 @@ def _get(url: str):
 
 
 def _post(url: str, data: bytes):
-    req = urllib.request.Request(url, data=data,
-                                 headers={"Content-Type": "application/json"},
-                                 method="POST")
+    req = urllib.request.Request(
+        url, data=data, headers={"Content-Type": "application/json"}, method="POST"
+    )
     try:
         with urllib.request.urlopen(req, timeout=5) as r:
             return r.status, r.read()
@@ -71,7 +78,8 @@ def test_health_reports_resources(tmp_path):
         assert data["bundle"]["exists"] is True
         assert data["portal_proxy"]["reachable"] is False
     finally:
-        httpd.shutdown(); httpd.server_close()
+        httpd.shutdown()
+        httpd.server_close()
 
 
 def test_serves_ide_and_bundle(tmp_path):
@@ -86,7 +94,8 @@ def test_serves_ide_and_bundle(tmp_path):
         assert status == 200 and "application/json" in ctype
         assert json.loads(body)["generated"] == "2026-10-26"
     finally:
-        httpd.shutdown(); httpd.server_close()
+        httpd.shutdown()
+        httpd.server_close()
 
 
 def test_unknown_path_and_traversal_rejected(tmp_path):
@@ -99,20 +108,24 @@ def test_unknown_path_and_traversal_rejected(tmp_path):
             assert status == 404, path
             assert json.loads(body)["error"] == "not_found"
     finally:
-        httpd.shutdown(); httpd.server_close()
+        httpd.shutdown()
+        httpd.server_close()
 
 
 def test_chat_proxy_unavailable_is_fail_soft(tmp_path):
     repo = _fixture(tmp_path)
     httpd, _ = _serve(repo, portal_url="http://127.0.0.1:59999")
     try:
-        status, body = _post("http://127.0.0.1:%d/ollama/api/chat" % httpd.server_port,
-                             b'{"model":"x","messages":[]}')
+        status, body = _post(
+            "http://127.0.0.1:%d/ollama/api/chat" % httpd.server_port,
+            b'{"model":"x","messages":[]}',
+        )
         assert status == 503
         data = json.loads(body)
         assert data["error"] == "portal_proxy_unavailable"
     finally:
-        httpd.shutdown(); httpd.server_close()
+        httpd.shutdown()
+        httpd.server_close()
 
 
 def test_missing_resources_503(tmp_path):
@@ -125,7 +138,8 @@ def test_missing_resources_503(tmp_path):
         status, _c, body = _get(base + "/agent_ide_bundle.json")
         assert status == 503 and json.loads(body)["error"] == "bundle_missing"
     finally:
-        httpd.shutdown(); httpd.server_close()
+        httpd.shutdown()
+        httpd.server_close()
 
 
 def test_port_registered_and_launcher_present():
@@ -142,8 +156,9 @@ def test_bundle_override_served(tmp_path):
     repo = _fixture(tmp_path)
     custom = tmp_path / "deploy" / "agent_ide_bundle.json"
     custom.parent.mkdir(parents=True, exist_ok=True)
-    custom.write_text(json.dumps({"generated": "DEPLOY-2026-10-26", "agents": []}),
-                      encoding="utf-8")
+    custom.write_text(
+        json.dumps({"generated": "DEPLOY-2026-10-26", "agents": []}), encoding="utf-8"
+    )
     httpd, _t = _serve(repo, bundle_path=custom)
     try:
         base = "http://127.0.0.1:%d" % httpd.server_port
@@ -153,14 +168,18 @@ def test_bundle_override_served(tmp_path):
         status, _c, body = _get(base + "/api/health")
         assert json.loads(body)["bundle_source"] == str(custom)
     finally:
-        httpd.shutdown(); httpd.server_close()
+        httpd.shutdown()
+        httpd.server_close()
 
 
 def test_ops_scripts_present():
     ops = _PLATFORM.parent / "ops"
     for name, tokens in (
         ("keepalive_legion_ide.ps1", ("8103", "start_legion_ide", "OK legion-ide")),
-        ("rebake_ide_bundle.ps1", ("build_agent_ide_bundle", "agent_ide_bundle.json", "checkout")),
+        (
+            "rebake_ide_bundle.ps1",
+            ("build_agent_ide_bundle", "agent_ide_bundle.json", "checkout"),
+        ),
         ("install_git_hooks.ps1", ("post-merge", "rebake_ide_bundle")),
         ("create_legion_ide_shortcut.ps1", ("WScript.Shell", "-Action app", "8103")),
     ):

@@ -17,18 +17,23 @@ PYTHON = sys.executable
 def run_tool(args):
     return subprocess.run(
         [PYTHON, str(TOOL)] + args,
-        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
     )
 
 
 def make_reject_md(day_dir: Path, submit_id: str, stage: str, reasons) -> Path:
     """按 adapters/codex_bridge.py::write_reject 的真实档案结构构造 md 档。"""
-    lines = ["# bridge 拒绝档：%s" % submit_id,
-             "",
-             "- **阶段**：%s" % stage,
-             "- **时间**：2026-10-18 12:00:00",
-             "- **命中规则**：",
-             ""]
+    lines = [
+        "# bridge 拒绝档：%s" % submit_id,
+        "",
+        "- **阶段**：%s" % stage,
+        "- **时间**：2026-10-18 12:00:00",
+        "- **命中规则**：",
+        "",
+    ]
     lines += ["%d. %s" % (i + 1, r) for i, r in enumerate(reasons)]
     path = day_dir / ("%s.md" % submit_id)
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -36,6 +41,7 @@ def make_reject_md(day_dir: Path, submit_id: str, stage: str, reasons) -> Path:
 
 
 # ---- 摘要表 ----
+
 
 def test_summary_fields_complete(tmp_path):
     root = tmp_path / "rejects"
@@ -76,6 +82,7 @@ def test_summary_truncates_long_reason(tmp_path):
 
 # ---- --show ----
 
+
 def test_show_prints_full_md(tmp_path):
     root = tmp_path / "rejects"
     day = root / "20261018"
@@ -110,12 +117,12 @@ def test_show_rejects_dir_without_md(tmp_path):
 
 
 def test_show_and_stats_mutually_exclusive(tmp_path):
-    proc = run_tool(["--show", "x", "--stats",
-                     "--rejects-root", str(tmp_path)])
+    proc = run_tool(["--show", "x", "--stats", "--rejects-root", str(tmp_path)])
     assert proc.returncode == 2
 
 
 # ---- --stats ----
+
 
 def test_stats_counts_by_stage(tmp_path):
     root = tmp_path / "rejects"
@@ -139,6 +146,7 @@ def test_stats_counts_by_stage(tmp_path):
 
 # ---- 空目录 / 缺目录中性 ----
 
+
 def test_empty_dir_neutral(tmp_path):
     root = tmp_path / "rejects"
     root.mkdir()
@@ -155,6 +163,7 @@ def test_missing_dir_neutral(tmp_path):
 
 # ---- 旧版扁平布局兼容 ----
 
+
 def test_legacy_flat_layout(tmp_path):
     root = tmp_path / "rejects"
     root.mkdir()
@@ -162,7 +171,8 @@ def test_legacy_flat_layout(tmp_path):
     (root / "old-1.md").write_text(
         "# bridge 拒绝档：old-1\n\n- **阶段**：静态校验\n"
         "- **命中规则**：\n\n1. 禁用函数 import os\n",
-        encoding="utf-8")
+        encoding="utf-8",
+    )
     # 根下直接是 <submit_id>/ 目录
     (root / "old-2").mkdir()
 
@@ -182,17 +192,19 @@ def test_legacy_flat_layout(tmp_path):
 
 # ---- md 内容变体容错 ----
 
+
 def test_md_content_variants(tmp_path):
     root = tmp_path / "rejects"
     day = root / "20261018"
     day.mkdir(parents=True)
     # 缺「阶段」行 + 缺「命中规则」行
-    (day / "v1.md").write_text("# bridge 拒绝档：v1\n\n只有一行自由文本\n",
-                               encoding="utf-8")
+    (day / "v1.md").write_text(
+        "# bridge 拒绝档：v1\n\n只有一行自由文本\n", encoding="utf-8"
+    )
     # 阶段行存在但命中规则为空
     (day / "v2.md").write_text(
-        "# bridge 拒绝档：v2\n\n- **阶段**：限频\n- **命中规则**：\n",
-        encoding="utf-8")
+        "# bridge 拒绝档：v2\n\n- **阶段**：限频\n- **命中规则**：\n", encoding="utf-8"
+    )
 
     proc = run_tool(["--rejects-root", str(root)])
     assert proc.returncode == 0
@@ -211,6 +223,5 @@ def test_date_dirs_sorted_ascending(tmp_path):
         make_reject_md(day, "s-" + d, "限频", ["r"])
     proc = run_tool(["--rejects-root", str(root)])
     assert proc.returncode == 0
-    dates = [l.split()[0] for l in proc.stdout.splitlines()
-             if l.startswith("2026")]
+    dates = [l.split()[0] for l in proc.stdout.splitlines() if l.startswith("2026")]
     assert dates == ["20261016", "20261017", "20261018"]

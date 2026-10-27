@@ -32,9 +32,15 @@ BASKET = ("600519", "000858", "601318", "300750", "600036")
 
 
 def _row(sym, dt=MONDAY, **kw):
-    row = {"date": dt, "symbol": sym, "status": "done",
-           "schema_version": "m5.v1", "parse_ok": True, "degraded": False,
-           "run_id": "abcdef123456"}
+    row = {
+        "date": dt,
+        "symbol": sym,
+        "status": "done",
+        "schema_version": "m5.v1",
+        "parse_ok": True,
+        "degraded": False,
+        "run_id": "abcdef123456",
+    }
     for f in gv.DK_FIELDS:
         row[f] = "x"
     row.update(kw)
@@ -56,11 +62,13 @@ def _reset():
 
 
 def _fails(store=None):
-    return [n for n, v, _ in (store if store is not None else gv.RESULTS)
-            if v == gv.FAIL]
+    return [
+        n for n, v, _ in (store if store is not None else gv.RESULTS) if v == gv.FAIL
+    ]
 
 
 # ------------------------------------------------------------ 首跑两态
+
 
 def test_first_run_pending_non_monday_is_neutral():
     """非周一且首跑未发生 → PENDING 中性（PASS），不拉低退出码。"""
@@ -83,6 +91,7 @@ def test_first_run_detected_when_latest_exceeds_v0():
 
 
 # ------------------------------------------------------------ 篮子判据
+
 
 def test_full_basket_five_symbols_passes():
     _reset()
@@ -115,15 +124,19 @@ def test_failed_rows_do_not_count_as_done():
     names = [n for n, v, _ in gv.RESULTS if v == gv.FAIL]
     assert names, "4 done + 1 failed 必须 FAIL"
     details = [d for n, v, d in gv.RESULTS if "done 行数" in n][0]
-    assert "非 done 1 票" in details, "FAIL 文案须点明有非 done 票，否则会被误读成没跑完"
+    assert "非 done 1 票" in details, (
+        "FAIL 文案须点明有非 done 票，否则会被误读成没跑完"
+    )
 
 
 # ------------------------------------------------------------ 字段三层
 
+
 def test_schema_version_missing_fails():
     _reset()
-    gv.judge_ledger(_basket(4) + [_row(BASKET[4], schema_version="v0")],
-                    MONDAY, is_monday=True)
+    gv.judge_ledger(
+        _basket(4) + [_row(BASKET[4], schema_version="v0")], MONDAY, is_monday=True
+    )
     assert any("schema_version" in n for n in _fails())
 
 
@@ -138,19 +151,26 @@ def test_dk_field_missing_fails():
 def test_degraded_linkage_violation_fails():
     """parse_ok=False 但 degraded 不为 True → 刀 1 扩义被破坏。"""
     _reset()
-    gv.judge_ledger(_basket(4) + [_row(BASKET[4], parse_ok=False, degraded=False)],
-                    MONDAY, is_monday=True)
+    gv.judge_ledger(
+        _basket(4) + [_row(BASKET[4], parse_ok=False, degraded=False)],
+        MONDAY,
+        is_monday=True,
+    )
     assert any("degraded" in n for n in _fails())
 
 
 def test_degraded_linkage_ok_when_consistent():
     _reset()
-    gv.judge_ledger(_basket(4) + [_row(BASKET[4], parse_ok=False, degraded=True)],
-                    MONDAY, is_monday=True)
+    gv.judge_ledger(
+        _basket(4) + [_row(BASKET[4], parse_ok=False, degraded=True)],
+        MONDAY,
+        is_monday=True,
+    )
     assert _fails() == []
 
 
 # ------------------------------------------------------------ 项数口径
+
 
 def test_core_count_before_first_run_is_seven():
     """首跑未发生：首跑(1) + replay(1) + perf(2) + 任务(3) = 7。
@@ -190,6 +210,7 @@ def test_extra_items_do_not_affect_core_count():
 
 # ------------------------------------------------------------ 交叉核对
 
+
 def test_cross_check_matches_when_same_numbers(tmp_path):
     _reset()
     gv.judge_ledger(_v0_rows(), "2026-10-18", is_monday=False)
@@ -198,8 +219,9 @@ def test_cross_check_matches_when_same_numbers(tmp_path):
     for n in gv.TASK_NAMES:
         gv.check(n, gv.PASS)
     log = tmp_path / "mc.log"
-    log.write_text("=" * 56 + "\n结论: 7/7 PASS——观察点门全过\nEXIT=0 日志=x\n",
-                   encoding="utf-8")
+    log.write_text(
+        "=" * 56 + "\n结论: 7/7 PASS——观察点门全过\nEXIT=0 日志=x\n", encoding="utf-8"
+    )
     gv.cross_check(log)
     assert not [n for n, v, _ in gv.EXTRA if v == gv.FAIL], "7 vs 7 应判一致"
 
@@ -235,11 +257,13 @@ def test_cross_check_skip_tasks_uses_reduced_base(tmp_path):
     gv.check("replay", gv.PASS)
     assert len(gv.RESULTS) == 4, "任务三项跳过后的核心项数是 4"
     log = tmp_path / "mc.log"
-    log.write_text("=" * 56 + "\n结论: 7/7 PASS——观察点门全过\nEXIT=0 日志=x\n",
-                   encoding="utf-8")
+    log.write_text(
+        "=" * 56 + "\n结论: 7/7 PASS——观察点门全过\nEXIT=0 日志=x\n", encoding="utf-8"
+    )
     gv.cross_check(log, skipped=len(gv.TASK_NAMES))
-    assert not [n for n, v, _ in gv.EXTRA if v == gv.FAIL], \
+    assert not [n for n, v, _ in gv.EXTRA if v == gv.FAIL], (
         "7/7 扣掉跳过的 3 项 = 4/4，应与本工具一致，不得假 FAIL"
+    )
     detail = [d for n, v, d in gv.EXTRA if "交叉核对" in n][0]
     assert "本工具=4/4" in detail and "比 4/4" in detail
 
@@ -249,16 +273,23 @@ def test_cross_check_real_mismatch_still_fails_with_skipped_base(tmp_path):
     巡检报 7/7 扣掉 3 项是 4/4 → 通过数对不上，仍必须判 FAIL。"""
     _reset()
     gv.judge_ledger(_v0_rows(), "2026-10-18", is_monday=False)
-    gv.judge_perf([{"perf_key": "a", "run_id": "abcdef123456"},
-                   {"perf_key": "a", "run_id": "abcdef123456"}], 0)
+    gv.judge_perf(
+        [
+            {"perf_key": "a", "run_id": "abcdef123456"},
+            {"perf_key": "a", "run_id": "abcdef123456"},
+        ],
+        0,
+    )
     gv.check("replay", gv.PASS)
     assert len([n for n, v, _ in gv.RESULTS if v == gv.FAIL]) == 1
     log = tmp_path / "mc.log"
-    log.write_text("=" * 56 + "\n结论: 7/7 PASS——观察点门全过\nEXIT=0 日志=x\n",
-                   encoding="utf-8")
+    log.write_text(
+        "=" * 56 + "\n结论: 7/7 PASS——观察点门全过\nEXIT=0 日志=x\n", encoding="utf-8"
+    )
     gv.cross_check(log, skipped=len(gv.TASK_NAMES))
-    assert [n for n, v, _ in gv.EXTRA if v == gv.FAIL], \
+    assert [n for n, v, _ in gv.EXTRA if v == gv.FAIL], (
         "本工具 3/4 vs 巡检扣减后 4/4，必须报不一致"
+    )
 
 
 def test_cross_check_checkpoint_fail_not_masked_by_skipped_base(tmp_path):
@@ -271,11 +302,13 @@ def test_cross_check_checkpoint_fail_not_masked_by_skipped_base(tmp_path):
     log = tmp_path / "mc.log"
     log.write_text("=" * 56 + "\n结论: 6/7 PASS（FAIL: x）\nEXIT=1\n", encoding="utf-8")
     gv.cross_check(log, skipped=len(gv.TASK_NAMES))
-    assert [n for n, v, _ in gv.EXTRA if v == gv.FAIL], \
+    assert [n for n, v, _ in gv.EXTRA if v == gv.FAIL], (
         "巡检侧少一项通过，不得因为扣减跳过项而被掩盖"
+    )
 
 
 # ------------------------------------------------------------ load_jsonl
+
 
 def test_load_jsonl_counts_bad_lines(tmp_path):
     p = tmp_path / "a.jsonl"
@@ -290,6 +323,7 @@ def test_load_jsonl_missing_file_is_empty(tmp_path):
 
 
 # ------------------------------------------------------------ 早跑误判防护
+
 
 def test_early_run_warning_on_monday_with_partial_basket(capsys):
     """周一只有 3 票时，工具会判 FAIL——必须显式提示「这可能只是还没跑完」。
@@ -312,10 +346,15 @@ def test_early_run_warning_silent_on_non_monday(capsys):
 
 # ------------------------------------------------------------ CLI + 只读红线
 
+
 def _run_cli(*args):
     return subprocess.run(
         [sys.executable, str(SCRIPT), *args],
-        capture_output=True, text=True, encoding="utf-8", timeout=120)
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        timeout=120,
+    )
 
 
 def _write_isolated_base(tmp_path, rows):
@@ -323,20 +362,30 @@ def _write_isolated_base(tmp_path, rows):
     (base / "data" / "shadow").mkdir(parents=True)
     (base / "data" / "shadow" / "shadow_ledger.jsonl").write_text(
         "\n".join(json.dumps(r, ensure_ascii=False) for r in rows) + "\n",
-        encoding="utf-8")
+        encoding="utf-8",
+    )
     (base / "data" / "perf_ledger.jsonl").write_text(
         json.dumps({"perf_key": "k1", "run_id": "abcdef123456"}) + "\n",
-        encoding="utf-8")
+        encoding="utf-8",
+    )
     return base
 
 
 def _valid_links(tmp_path):
     """命中 _row() 的 run_id，使 replay 判 PASS。"""
-    link = {"schema_version": "m4p1.v1", "link_id": "0123456789abcdef",
-            "chain": {"shadow": {"run_id": "abcdef123456",
-                                 "symbol": "600519",
-                                 "trade_date": MONDAY}},
-            "source": "test", "declared_at": ""}
+    link = {
+        "schema_version": "m4p1.v1",
+        "link_id": "0123456789abcdef",
+        "chain": {
+            "shadow": {
+                "run_id": "abcdef123456",
+                "symbol": "600519",
+                "trade_date": MONDAY,
+            }
+        },
+        "source": "test",
+        "declared_at": "",
+    }
     p = tmp_path / "links.jsonl"
     p.write_text(json.dumps(link, ensure_ascii=False) + "\n", encoding="utf-8")
     return p
@@ -356,8 +405,16 @@ def test_cli_reports_four_core_items_when_tasks_skipped(tmp_path):
     base = _write_isolated_base(tmp_path, _v0_rows())
     links = tmp_path / "links.jsonl"
     links.write_text("", encoding="utf-8")
-    r = _run_cli("--base", str(base), "--date", "2026-10-18",
-                 "--skip-tasks", "--no-cross-check", "--trace-links", str(links))
+    r = _run_cli(
+        "--base",
+        str(base),
+        "--date",
+        "2026-10-18",
+        "--skip-tasks",
+        "--no-cross-check",
+        "--trace-links",
+        str(links),
+    )
     assert "核心判据 4 项" in r.stdout, r.stdout
     assert "退出码" in r.stdout
     # 空 trace_links 下 replay 必然 NOT_FOUND → 这条必须判 FAIL，不允许放过
@@ -370,15 +427,31 @@ def test_cli_exit_zero_when_all_pass(tmp_path):
     """全过（含 replay 命中）→ 退出码 0。合法 trace link 构造自
     trace_link.py 的 SEG_REQUIRED['shadow'] 锚点字段，命中 run_id 即 verdict=OK。"""
     base = _write_isolated_base(tmp_path, _basket())
-    link = {"schema_version": "m4p1.v1", "link_id": "0123456789abcdef",
-            "chain": {"shadow": {"run_id": "abcdef123456",
-                                 "symbol": "600519",
-                                 "trade_date": MONDAY}},
-            "source": "test", "declared_at": ""}
+    link = {
+        "schema_version": "m4p1.v1",
+        "link_id": "0123456789abcdef",
+        "chain": {
+            "shadow": {
+                "run_id": "abcdef123456",
+                "symbol": "600519",
+                "trade_date": MONDAY,
+            }
+        },
+        "source": "test",
+        "declared_at": "",
+    }
     links = tmp_path / "links.jsonl"
     links.write_text(json.dumps(link, ensure_ascii=False) + "\n", encoding="utf-8")
-    r = _run_cli("--base", str(base), "--date", MONDAY,
-                 "--skip-tasks", "--no-cross-check", "--trace-links", str(links))
+    r = _run_cli(
+        "--base",
+        str(base),
+        "--date",
+        MONDAY,
+        "--skip-tasks",
+        "--no-cross-check",
+        "--trace-links",
+        str(links),
+    )
     assert "退出码 0" in r.stdout, r.stdout
     assert r.returncode == 0, r.stdout
 
@@ -389,8 +462,16 @@ def test_cli_missing_data_is_exit_one_not_two(tmp_path):
     「2=无法判定」无代码路径，2026-10-18 U 路裁决改 docstring 对齐代码。"""
     base = tmp_path / "ap"
     (base / "data" / "shadow").mkdir(parents=True)  # 只建目录，不落账本
-    r = _run_cli("--base", str(base), "--date", "2026-10-18",
-                 "--skip-tasks", "--no-cross-check", "--trace-links", "")
+    r = _run_cli(
+        "--base",
+        str(base),
+        "--date",
+        "2026-10-18",
+        "--skip-tasks",
+        "--no-cross-check",
+        "--trace-links",
+        "",
+    )
     assert r.returncode == 1, r.stdout
     assert "退出码 1" in r.stdout, r.stdout
 
@@ -403,17 +484,28 @@ def test_cli_is_read_only(tmp_path):
     payload = "\n".join(json.dumps(r, ensure_ascii=False) for r in _basket()) + "\n"
     led.write_text(payload, encoding="utf-8")
     perf = base / "data" / "perf_ledger.jsonl"
-    perf.write_text(json.dumps({"perf_key": "k1", "run_id": "abcdef123456"}) + "\n",
-                    encoding="utf-8")
+    perf.write_text(
+        json.dumps({"perf_key": "k1", "run_id": "abcdef123456"}) + "\n",
+        encoding="utf-8",
+    )
     before = {p: (p.stat().st_mtime_ns, p.read_bytes()) for p in (led, perf)}
     links = tmp_path / "links.jsonl"
     links.write_text("", encoding="utf-8")
-    _run_cli("--base", str(base), "--date", MONDAY,
-             "--skip-tasks", "--no-cross-check", "--trace-links", str(links))
+    _run_cli(
+        "--base",
+        str(base),
+        "--date",
+        MONDAY,
+        "--skip-tasks",
+        "--no-cross-check",
+        "--trace-links",
+        str(links),
+    )
     after = {p: (p.stat().st_mtime_ns, p.read_bytes()) for p in (led, perf)}
     assert before == after, "复核工具不得写账本（改 mtime 也不行）"
-    assert sorted(x.name for x in (base / "data" / "shadow").iterdir()) == \
-        ["shadow_ledger.jsonl"], "不得新增任何文件"
+    assert sorted(x.name for x in (base / "data" / "shadow").iterdir()) == [
+        "shadow_ledger.jsonl"
+    ], "不得新增任何文件"
 
 
 def test_cli_skip_tasks_cross_check_exit_zero(tmp_path):
@@ -422,8 +514,17 @@ def test_cli_skip_tasks_cross_check_exit_zero(tmp_path):
     → 交叉核对 PASS、退出码 0。修前这条是假 FAIL + 退出码 1。"""
     base = _write_isolated_base(tmp_path, _v0_rows())
     log = _mc_log(tmp_path, "结论: 7/7 PASS——观察点门全过\nEXIT=0 日志=x\n")
-    r = _run_cli("--base", str(base), "--date", "2026-10-18", "--skip-tasks",
-                 "--log", str(log), "--trace-links", str(_valid_links(tmp_path)))
+    r = _run_cli(
+        "--base",
+        str(base),
+        "--date",
+        "2026-10-18",
+        "--skip-tasks",
+        "--log",
+        str(log),
+        "--trace-links",
+        str(_valid_links(tmp_path)),
+    )
     assert "核心判据 4 项" in r.stdout, r.stdout
     assert "[PASS+] 与巡检日志交叉核对" in r.stdout, r.stdout
     assert "本工具=4/4" in r.stdout, r.stdout
@@ -436,8 +537,17 @@ def test_cli_skip_tasks_real_mismatch_exit_one(tmp_path):
     仍判交叉核对 FAIL、退出码 1。"""
     base = _write_isolated_base(tmp_path, _v0_rows())
     log = _mc_log(tmp_path, "结论: 6/7 PASS（FAIL: x）\nEXIT=1\n")
-    r = _run_cli("--base", str(base), "--date", "2026-10-18", "--skip-tasks",
-                 "--log", str(log), "--trace-links", str(_valid_links(tmp_path)))
+    r = _run_cli(
+        "--base",
+        str(base),
+        "--date",
+        "2026-10-18",
+        "--skip-tasks",
+        "--log",
+        str(log),
+        "--trace-links",
+        str(_valid_links(tmp_path)),
+    )
     assert "[FAIL+] 与巡检日志交叉核对" in r.stdout, r.stdout
     assert "两份判据不一致" in r.stdout
     assert r.returncode == 1, r.stdout

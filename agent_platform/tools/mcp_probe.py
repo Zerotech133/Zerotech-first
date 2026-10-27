@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """MCP 探测/调用 CLI：python agent_platform/tools/mcp_probe.py --json|--selftest|--call ..."""
+
 from __future__ import annotations
 
 import argparse
@@ -26,11 +27,11 @@ def main(argv=None) -> int:
         try:
             payload = json.loads(args.args)
         except ValueError:
-            print(json.dumps({"ok": False, "error": "bad_args_json"},
-                             ensure_ascii=False))
+            print(
+                json.dumps({"ok": False, "error": "bad_args_json"}, ensure_ascii=False)
+            )
             return 2
-        rep = registry.call(args.call[0], args.call[1], payload,
-                            timeout=args.timeout)
+        rep = registry.call(args.call[0], args.call[1], payload, timeout=args.timeout)
         print(json.dumps(rep, ensure_ascii=False, indent=1))
         return 0 if rep.get("ok") else 1
     if args.selftest:

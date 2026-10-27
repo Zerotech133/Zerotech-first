@@ -11,6 +11,7 @@
 红线：不启动生产网关（不写真实 store）、不接消费者、不发真实消息；--run 单次运行 ≤120s。
 证据：%OSLEG_PROBE_ROOT%（默认 %LOCALAPPDATA%\\aios\\osleg_probe，非 Windows 回落 %TEMP%）下 run-<stamp>/evidence.json。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -28,7 +29,11 @@ from urllib import request as urlrequest
 
 REPO = Path(__file__).resolve().parents[2]
 PLATFORM = REPO / "agent_platform"
-_DEFAULT_WORK = Path(os.environ.get("LOCALAPPDATA") or tempfile.gettempdir()) / "aios" / "osleg_probe"
+_DEFAULT_WORK = (
+    Path(os.environ.get("LOCALAPPDATA") or tempfile.gettempdir())
+    / "aios"
+    / "osleg_probe"
+)
 WORK = Path(os.environ.get("OSLEG_PROBE_ROOT") or _DEFAULT_WORK)
 
 # 通道②（契约 CH2 定义）端点 vs 现役 gateway/serve.py 实际端点：
@@ -50,14 +55,20 @@ def _sha_listing(root: Path) -> dict:
         for p in sorted(x for x in root.rglob("*") if x.is_file()):
             data = p.read_bytes()
             total += len(data)
-            files.append([str(p.relative_to(root)), len(data),
-                          hashlib.sha256(data).hexdigest()[:16]])
+            files.append(
+                [
+                    str(p.relative_to(root)),
+                    len(data),
+                    hashlib.sha256(data).hexdigest()[:16],
+                ]
+            )
     return {
         "exists": root.exists(),
         "count": len(files),
         "bytes": total,
         "digest": hashlib.sha256(
-            json.dumps(files, ensure_ascii=False).encode("utf-8")).hexdigest()[:16],
+            json.dumps(files, ensure_ascii=False).encode("utf-8")
+        ).hexdigest()[:16],
     }
 
 
@@ -88,18 +99,24 @@ def _work_dir_writable() -> bool:
 
 def dry_run() -> dict:
     checks = [
-        {"name": "endpoint_translation_nonempty",
-         "ok": bool(ENDPOINT_TRANSLATION),
-         "detail": "%d 条通道②→gateway 对照" % len(ENDPOINT_TRANSLATION)},
-        {"name": "platform_dir_exists", "ok": PLATFORM.is_dir(),
-         "detail": str(PLATFORM)},
-        {"name": "work_dir_writable", "ok": _work_dir_writable(),
-         "detail": str(WORK)},
-        {"name": "port_8795_free", "ok": not port_in_use("127.0.0.1", 8795),
-         "detail": "127.0.0.1:8795"},
+        {
+            "name": "endpoint_translation_nonempty",
+            "ok": bool(ENDPOINT_TRANSLATION),
+            "detail": "%d 条通道②→gateway 对照" % len(ENDPOINT_TRANSLATION),
+        },
+        {
+            "name": "platform_dir_exists",
+            "ok": PLATFORM.is_dir(),
+            "detail": str(PLATFORM),
+        },
+        {"name": "work_dir_writable", "ok": _work_dir_writable(), "detail": str(WORK)},
+        {
+            "name": "port_8795_free",
+            "ok": not port_in_use("127.0.0.1", 8795),
+            "detail": "127.0.0.1:8795",
+        },
     ]
-    return {"mode": "dry-run", "ok": all(c["ok"] for c in checks),
-            "checks": checks}
+    return {"mode": "dry-run", "ok": all(c["ok"] for c in checks), "checks": checks}
 
 
 def _http_json(method: str, url: str, body=None, timeout: int = 10):
@@ -142,41 +159,71 @@ def run_probe(port: int = 8795) -> dict:
     thread.start()
     base = "http://127.0.0.1:%d" % port
     result = {
-        "mode": "run", "port": port, "store": str(store),
+        "mode": "run",
+        "port": port,
+        "store": str(store),
         "endpoint_translation": [list(row) for row in ENDPOINT_TRANSLATION],
-        "started_at": stamp, "steps": [], "ok": False,
+        "started_at": stamp,
+        "steps": [],
+        "ok": False,
     }
     try:
         idem = "osleg-probe-%s" % stamp
-        payload = {"q": "[probe] osleg 8795 isolation acceptance",
-                   "report_id": "QR-PROBE-1", "trace_id": "tr-probe-1"}
-        st1, b1 = _http_json("POST", base + "/inbox/submit",
-                             {"kind": "question", "payload": payload,
-                              "source": "osleg_probe",
-                              "idempotency_key": idem})
-        result["steps"].append({"step": "submit_1", "http": st1,
-                                "ok": bool(isinstance(b1, dict) and b1.get("ok")),
-                                "body": b1})
+        payload = {
+            "q": "[probe] osleg 8795 isolation acceptance",
+            "report_id": "QR-PROBE-1",
+            "trace_id": "tr-probe-1",
+        }
+        st1, b1 = _http_json(
+            "POST",
+            base + "/inbox/submit",
+            {
+                "kind": "question",
+                "payload": payload,
+                "source": "osleg_probe",
+                "idempotency_key": idem,
+            },
+        )
+        result["steps"].append(
+            {
+                "step": "submit_1",
+                "http": st1,
+                "ok": bool(isinstance(b1, dict) and b1.get("ok")),
+                "body": b1,
+            }
+        )
         assert st1 == 200 and isinstance(b1, dict) and b1.get("ok"), b1
         msg_id = str((b1.get("data") or {}).get("id") or "")
         assert msg_id.startswith("lg-"), msg_id
 
-        st2, b2 = _http_json("POST", base + "/inbox/submit",
-                             {"kind": "question", "payload": payload,
-                              "source": "osleg_probe",
-                              "idempotency_key": idem})
+        st2, b2 = _http_json(
+            "POST",
+            base + "/inbox/submit",
+            {
+                "kind": "question",
+                "payload": payload,
+                "source": "osleg_probe",
+                "idempotency_key": idem,
+            },
+        )
         replay_id = str((b2.get("data") or {}).get("id") or "")
-        result["steps"].append({"step": "submit_replay", "http": st2,
-                                "replayed": bool((b2.get("data") or {}).get("replayed")),
-                                "same_id": replay_id == msg_id,
-                                "body": b2})
+        result["steps"].append(
+            {
+                "step": "submit_replay",
+                "http": st2,
+                "replayed": bool((b2.get("data") or {}).get("replayed")),
+                "same_id": replay_id == msg_id,
+                "body": b2,
+            }
+        )
         assert st2 == 200 and replay_id == msg_id, b2
         assert (b2.get("data") or {}).get("replayed") is True, b2
 
         st3, b3 = _http_json("GET", base + "/inbox/receipt/" + msg_id)
         state = str((b3.get("data") or {}).get("state") or "")
-        result["steps"].append({"step": "receipt", "http": st3,
-                                "state": state, "body": b3})
+        result["steps"].append(
+            {"step": "receipt", "http": st3, "state": state, "body": b3}
+        )
         assert st3 == 200 and state == "inbox", b3
         result["msg_id"] = msg_id
         result["ok"] = True
@@ -193,19 +240,26 @@ def run_probe(port: int = 8795) -> dict:
         result["real_store_before"] = real_before
         result["real_store_after"] = real_after
         result["real_store_unchanged"] = real_before == real_after
-        result["ok"] = bool(result.get("ok")) and result["port_closed"] \
+        result["ok"] = (
+            bool(result.get("ok"))
+            and result["port_closed"]
             and result["real_store_unchanged"]
+        )
         evidence = run_dir / "evidence.json"
-        evidence.write_text(json.dumps(result, ensure_ascii=False, indent=1),
-                            encoding="utf-8")
+        evidence.write_text(
+            json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8"
+        )
         result["evidence"] = str(evidence)
     return result
 
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="OSLINK-W4 8795 军团网关隔离验收探针")
-    ap.add_argument("--run", action="store_true",
-                    help="窗口内启动隔离 8795 实例（≤120s；需老田批准）")
+    ap.add_argument(
+        "--run",
+        action="store_true",
+        help="窗口内启动隔离 8795 实例（≤120s；需老田批准）",
+    )
     args = ap.parse_args(argv)
     if args.run:
         out = run_probe()

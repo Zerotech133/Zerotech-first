@@ -26,6 +26,7 @@ sleep 注入零等待；builtins.open 打桩经 monkeypatch 自动还原。
 账本 append 调用点（篮子循环内）与 last_run.log 调用点共用同一 helper，
 其 FATAL 接线由用例 6 同构覆盖（账本点直跑需真 LLM/行情，不在单测面）。
 """
+
 import builtins
 import io
 import sys
@@ -81,6 +82,7 @@ def log_file(tmp_path):
 
 # ---------------------------------------------------------------- 无锁零差异
 
+
 def test_no_lock_first_attempt_succeeds_zero_behavior_change(log_file):
     """契约 1：无锁时首次即成功——返回真文件句柄、追加语义保持、零 sleep
     （与裸 open(path, "a", encoding="utf-8") 行为零差异）。"""
@@ -102,6 +104,7 @@ def test_constants_contract():
 
 
 # ---------------------------------------------------------------- 瞬时锁恢复
+
 
 def test_transient_lock_recovers_with_bounded_backoff(monkeypatch, log_file):
     """契约 3：前 2 次 PermissionError 后成功——共 3 次尝试、退避精确
@@ -128,6 +131,7 @@ def test_permission_error_is_retried_as_oserror_subclass(monkeypatch, log_file):
 
 
 # ---------------------------------------------------------------- 耗尽 fail-visible
+
 
 def test_exhausted_raises_log_open_error_with_diagnostics(monkeypatch, log_file):
     """契约 4：重试耗尽抛 _LogOpenError（OSError 子类）；尝试=5、退避全额
@@ -159,6 +163,7 @@ def test_non_oserror_propagates_immediately_no_retry(monkeypatch, log_file):
 
 # ---------------------------------------------------------------- 主链 fail-visible
 
+
 def test_main_fatal_exit_3_when_log_open_exhausted(monkeypatch, tmp_path):
     """契约 6（WO-LEGION-S18-01 对齐 WO-TF-02 现契约）：**账本**（LEDGER）追加
     打开重试耗尽 → main() 返回 3（非零=计划任务历史可见，经 shadow_automation.ps1
@@ -181,16 +186,20 @@ def test_main_fatal_exit_3_when_log_open_exhausted(monkeypatch, tmp_path):
     monkeypatch.setattr(run_shadow, "REHEARSAL", True)  # 隔离阀：不碰真仓 data/
     monkeypatch.setattr(run_shadow, "_redirect_run_log", lambda: None)  # 外层占用=降级
     # S18 隔离桩：重型组件全部钉死（决策走 parse_decision 真实解析，其余确定性）
-    monkeypatch.setattr(run_shadow, "make_context",
-                        lambda s: {"symbol": s, "name": "桩标的"})
+    monkeypatch.setattr(
+        run_shadow, "make_context", lambda s: {"symbol": s, "name": "桩标的"}
+    )
 
     class _StubInterpreter:
         def __init__(self, *a, **k):
             pass
 
         def run(self, symbol, data_ctx=None):
-            return {"decision": '{"recommendation": "hold", "confidence": 0.5}',
-                    "run_id": "stub-run", "status": "done"}
+            return {
+                "decision": '{"recommendation": "hold", "confidence": 0.5}',
+                "run_id": "stub-run",
+                "status": "done",
+            }
 
     monkeypatch.setattr(run_shadow, "Interpreter", _StubInterpreter)
     monkeypatch.setattr(run_shadow, "OllamaLLM", lambda *a, **k: object())
@@ -207,5 +216,9 @@ def test_main_fatal_exit_3_when_log_open_exhausted(monkeypatch, tmp_path):
     rc = run_shadow.main()
     assert rc == 3
     out = "".join(err_buf.buf)
-    assert "[FATAL]" in out and "影子账本" in out and "未落账" in out \
+    assert (
+        "[FATAL]" in out
+        and "影子账本" in out
+        and "未落账" in out
         and "本次运行中止" in out
+    )

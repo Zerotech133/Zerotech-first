@@ -23,6 +23,7 @@
 本脚本除 --self-test 阳性对照（tempfile 即用即弃）外只读：只 grep 只反查，
 零账本写。零依赖：仅标准库。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -52,6 +53,7 @@ NUM_RE = re.compile(r"\d+")
 
 # ---------------------------------------------------------------- 解析面
 
+
 def parse_report(text: str) -> dict:
     """拆 header + 段列表。段 = '## ' 标题行起，到下一个 '## ' 前。"""
     lines = text.splitlines()
@@ -71,8 +73,9 @@ def parse_report(text: str) -> dict:
 
 def section_anchor(sec: dict) -> tuple[str | None, list[str], str | None]:
     """段 -> (锚行, 路径列表, 段三态)。无锚行时首元素为 None。"""
-    anchor_line = next((ln for ln in sec["lines"][1:] if ANCHOR_LINE_RE.match(ln)),
-                       None)
+    anchor_line = next(
+        (ln for ln in sec["lines"][1:] if ANCHOR_LINE_RE.match(ln)), None
+    )
     if anchor_line is None:
         return None, [], None
     m = STATE_RE.search(anchor_line)
@@ -87,7 +90,7 @@ def collect_anchor_texts(paths: list[str], base: Path) -> tuple[list[str], list[
     texts: list[str] = []
     bad: list[str] = []
     for p in paths:
-        if "本报告" in p:      # 报告内自引用锚（如月报①段），无外部账本可反查
+        if "本报告" in p:  # 报告内自引用锚（如月报①段），无外部账本可反查
             bad.append(p)
             continue
         f = Path(p)
@@ -122,20 +125,29 @@ def extract_numbers(lines: list[str]) -> list[str]:
 
 # ---------------------------------------------------------------- 三查
 
+
 def check_report(report_path: Path, base: Path, sample: int = 10) -> dict:
     text = report_path.read_text(encoding="utf-8", errors="replace")
     rep = parse_report(text)
-    result = {"file": str(report_path), "checks": {}, "violations": [],
-              "inconclusive": [], "state": "OK", "exit": 0}
+    result = {
+        "file": str(report_path),
+        "checks": {},
+        "violations": [],
+        "inconclusive": [],
+        "state": "OK",
+        "exit": 0,
+    }
 
     if not rep["header"] or not REPORT_STATE_RE.search(rep["header"]):
         result["violations"].append("查1：头部缺「报告级三态:」声明")
     if "三态释义" not in rep["header"]:
-        result["violations"].append("查1：头部缺三态释义固定句（INCONCLUSIVE/DEGRADED 释义）")
+        result["violations"].append(
+            "查1：头部缺三态释义固定句（INCONCLUSIVE/DEGRADED 释义）"
+        )
 
     n_sec = len(rep["sections"])
     n_anchored = 0
-    sampled: list[tuple[str, str, str]] = []   # (数字, 段态, 段标题)
+    sampled: list[tuple[str, str, str]] = []  # (数字, 段态, 段标题)
     skipped_sections = 0
     sec_states: list[str] = []
 
@@ -170,7 +182,8 @@ def check_report(report_path: Path, base: Path, sample: int = 10) -> dict:
                 if texts and core and core in joined:
                     continue
                 result["violations"].append(
-                    f"查2：禁创作语汇命中且非账本转抄 -> {title} :: {ln.strip()[:80]}")
+                    f"查2：禁创作语汇命中且非账本转抄 -> {title} :: {ln.strip()[:80]}"
+                )
 
         # 查3 候选数字（锚不可解析的段跳过）
         if texts:
@@ -201,7 +214,9 @@ def check_report(report_path: Path, base: Path, sample: int = 10) -> dict:
             result["checks"]["复算比对项"] = str(rc["checked"])
             has_fail = has_fail or bool(rc["violations"])
             if rc["checked"] == 0 and not rc["violations"]:
-                result["inconclusive"].append("查3：复算比对项为 0（空集=假绿，判例 6）")
+                result["inconclusive"].append(
+                    "查3：复算比对项为 0（空集=假绿，判例 6）"
+                )
     else:
         # 查3 通用回退：锚源子串反查抽样（适用于无生成器钩子的报告/夹具）。
         _substring_sampling(rep, base, sample, result)
@@ -225,7 +240,10 @@ def check_report(report_path: Path, base: Path, sample: int = 10) -> dict:
 def _run_recheck(schema_version: str, text: str, base: Path) -> dict | None:
     """按 schema 版本动态加载生成器 recheck 钩子。失败返回 None（如实 INCONCLUSIVE）。"""
     import importlib.util
-    mod_name = {"weekly.v1": "weekly_report", "monthly.v1": "monthly_report"}[schema_version]
+
+    mod_name = {"weekly.v1": "weekly_report", "monthly.v1": "monthly_report"}[
+        schema_version
+    ]
     mod_path = Path(__file__).resolve().parent / f"{mod_name}.py"
     if not mod_path.is_file():
         return None
@@ -284,7 +302,8 @@ def _substring_sampling(rep: dict, base: Path, sample: int, result: dict) -> Non
             texts_cache[title], _ = collect_anchor_texts(paths, base)
         if not any(nstr in t for t in texts_cache[title]):
             result["violations"].append(
-                f"查3：数字反查未命中 -> {title} :: {nstr}（锚源账本中不存在该数字）")
+                f"查3：数字反查未命中 -> {title} :: {nstr}（锚源账本中不存在该数字）"
+            )
 
 
 # ---------------------------------------------------------------- 阳性对照
@@ -320,7 +339,8 @@ def self_test(base: Path) -> int:
     with tempfile.TemporaryDirectory() as td:
         tmp = Path(td)
         (tmp / "ledger.txt").write_text(
-            "部门A产出 7 件——账本原文行\n合计 42 件，其中有效 13 件\n", encoding="utf-8")
+            "部门A产出 7 件——账本原文行\n合计 42 件，其中有效 13 件\n", encoding="utf-8"
+        )
         good = tmp / "good.md"
         bad = tmp / "bad.md"
         good.write_text(_GOOD_REPORT.format(base=tmp.as_posix()), encoding="utf-8")
@@ -345,22 +365,29 @@ def self_test(base: Path) -> int:
                 print(f"  - {v}")
             return 1
         if not (miss_anchor and miss_lang and miss_num):
-            print(f"[self-test] 阳性对照部分失灵：缺锚={miss_anchor} 编文={miss_lang} "
-                  f"数字反查={miss_num}")
+            print(
+                f"[self-test] 阳性对照部分失灵：缺锚={miss_anchor} 编文={miss_lang} "
+                f"数字反查={miss_num}"
+            )
             return 1
-        print("[self-test] 阳性对照 PASS：好夹具 exit=0；坏夹具 exit=1 且三查各咬出违例"
-              "（缺锚段/编文语汇/凭空数字）")
+        print(
+            "[self-test] 阳性对照 PASS：好夹具 exit=0；坏夹具 exit=1 且三查各咬出违例"
+            "（缺锚段/编文语汇/凭空数字）"
+        )
         return 0
 
 
 # ---------------------------------------------------------------- CLI
+
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="报告防假绿三查（只读，三态化）")
     ap.add_argument("report", nargs="?", help="报告产物路径（md）")
     ap.add_argument("--base", help="锚相对路径基准（缺省=仓根）")
     ap.add_argument("--sample", type=int, default=10, help="查3 抽样数（默认 10）")
-    ap.add_argument("--self-test", action="store_true", help="阳性对照（tempfile 即用即弃）")
+    ap.add_argument(
+        "--self-test", action="store_true", help="阳性对照（tempfile 即用即弃）"
+    )
     args = ap.parse_args(argv)
 
     if args.self_test:

@@ -19,12 +19,16 @@ _PLATFORM = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_PLATFORM))
 
 from gateway import inbox_gateway, llm_gateway  # noqa: E402
-from gateway.envelope import (EnvelopeError, make_envelope,  # noqa: E402
-                              validate_envelope)
+from gateway.envelope import (
+    EnvelopeError,
+    make_envelope,  # noqa: E402
+    validate_envelope,
+)
 from gateway.serve import build_server  # noqa: E402
 
 
 # ---------------------------------------------------------------- 信封
+
 
 def test_envelope_ok_shape():
     env = make_envelope(kind="llm_chat", ok=True, data={"text": "hi"})
@@ -41,8 +45,7 @@ def test_envelope_reject_missing_key():
 
 
 def test_envelope_reject_ok_with_error():
-    env = make_envelope(kind="x", ok=True,
-                        error={"code": "c", "message": "m"})
+    env = make_envelope(kind="x", ok=True, error={"code": "c", "message": "m"})
     with pytest.raises(EnvelopeError):
         validate_envelope(env)
 
@@ -65,13 +68,14 @@ def test_envelope_reject_bad_version_and_latency():
 
 # ---------------------------------------------------------------- LLM 门面
 
+
 def test_llm_chat_mock_roundtrip(monkeypatch):
     class StubLLM:
         def chat(self, system, user, model=None):
             return "ok", "normal"
+
     monkeypatch.setattr(llm_gateway, "make_llm", lambda binding: StubLLM())
-    env = llm_gateway.chat(binding="ollama/qwen3.5:9b",
-                           system="s", user="回声")
+    env = llm_gateway.chat(binding="ollama/qwen3.5:9b", system="s", user="回声")
     validate_envelope(env)
     assert env["ok"] is True
     assert env["data"]["text"] == "ok"
@@ -83,6 +87,7 @@ def test_llm_chat_degraded_passthrough(monkeypatch):
     class DegradedLLM:
         def chat(self, system, user, model=None):
             return "fallback text", "degraded"
+
     monkeypatch.setattr(llm_gateway, "make_llm", lambda binding: DegradedLLM())
     env = llm_gateway.chat(binding="glm/glm-5.3", system="", user="u")
     validate_envelope(env)
@@ -92,10 +97,15 @@ def test_llm_chat_degraded_passthrough(monkeypatch):
 
 def test_llm_chat_openclaw_metadata_passthrough(monkeypatch):
     """OpenClaw 载体元信息（carrier/relay/mode/agent）随信封透传，供 /llm/chat 核验。"""
+
     class OpenClawStub:
-        last_meta = {"mode": "openclaw", "agent": "zhuge",
-                     "carrier": "deepseek/deepseek-chat", "relay": True,
-                     "requested_model": "gpt-6.0"}
+        last_meta = {
+            "mode": "openclaw",
+            "agent": "zhuge",
+            "carrier": "deepseek/deepseek-chat",
+            "relay": True,
+            "requested_model": "gpt-6.0",
+        }
 
         def chat(self, system, user, model=None):
             return "真身/中转答案", "normal"
@@ -123,8 +133,10 @@ def test_llm_chat_no_meta_keeps_legacy_data(monkeypatch):
 
 def test_llm_chat_error_no_throw(monkeypatch):
     from engine.llm import LLMError
+
     def boom(binding):
         raise RuntimeError("构造坏")
+
     monkeypatch.setattr(llm_gateway, "make_llm", boom)
     env = llm_gateway.chat(binding="nova/not-a-port")
     validate_envelope(env)
@@ -134,6 +146,7 @@ def test_llm_chat_error_no_throw(monkeypatch):
     class DeadLLM:
         def chat(self, system, user, model=None):
             raise LLMError("重试耗尽")
+
     monkeypatch.setattr(llm_gateway, "make_llm", lambda binding: DeadLLM())
     env2 = llm_gateway.chat(binding="ollama/qwen3.5:9b", system="", user="x")
     validate_envelope(env2)
@@ -142,10 +155,12 @@ def test_llm_chat_error_no_throw(monkeypatch):
 
 def test_llm_chat_default_binding_used(monkeypatch):
     seen = {}
+
     class Spy:
         def chat(self, system, user, model=None):
             seen["model"] = model
             return "t", "normal"
+
     monkeypatch.setattr(llm_gateway, "make_llm", lambda binding: Spy())
     llm_gateway.chat(system="", user="u")
     # 默认档是 ollama/*：必须把**剥掉前缀后的真模型名**传下去（本地才有这个模型）。
@@ -163,15 +178,23 @@ def test_llm_chat_glm_does_not_repass_prefixed_model(monkeypatch):
     在构造时吃下模型，不得把整串 binding 当 model 传下去。
     """
     seen = {}
+
     class Spy:
         def __init__(self, binding):
             self.binding = binding
+
         def chat(self, system, user, model=None):
             seen[self.binding] = model
             return "t", "normal"
+
     monkeypatch.setattr(llm_gateway, "make_llm", lambda binding: Spy(binding))
-    for b in ("glm/glm-5.3", "glm/glm-5.3-flash", "nova/8080",
-              "openai/gpt-6.0", "openai-direct/gpt-6.0"):
+    for b in (
+        "glm/glm-5.3",
+        "glm/glm-5.3-flash",
+        "nova/8080",
+        "openai/gpt-6.0",
+        "openai-direct/gpt-6.0",
+    ):
         env = llm_gateway.chat(binding=b, system="", user="u")
         assert env["ok"] is True
         assert seen[b] is None, "%s 不应把整串 binding 当 model 传入（实测会 400）" % b
@@ -185,10 +208,13 @@ def test_gateway_prefix_owns_model_includes_openai_family():
 def test_llm_chat_openai_delegates_openclaw(monkeypatch):
     """B05 集成：门面 openai/ → engine OpenClawLLM → OpenClaw 载体 run（同一轨道）"""
     from engine import openclaw_cli as oc_mod
-    monkeypatch.setattr(oc_mod, "run",
-                        lambda agent, prompt, model=None, timeout=None: ("好", None))
-    monkeypatch.setattr(oc_mod, "agent_primary_model",
-                        lambda agent=None: "deepseek/deepseek-chat")
+
+    monkeypatch.setattr(
+        oc_mod, "run", lambda agent, prompt, model=None, timeout=None: ("好", None)
+    )
+    monkeypatch.setattr(
+        oc_mod, "agent_primary_model", lambda agent=None: "deepseek/deepseek-chat"
+    )
     env = llm_gateway.chat(binding="openai/gpt-6.0", system="你是军师", user="给个结论")
     validate_envelope(env)
     assert env["ok"] is True
@@ -208,16 +234,19 @@ def test_llm_chat_openai_direct_key_missing_is_envelope_error(monkeypatch):
 def test_llm_chat_unknown_prefix_passes_verbatim(monkeypatch):
     """未知前缀（如 huihui_ai/xxx 这类真名带斜杠的本地模型）必须原样传，不许截断。"""
     seen = {}
+
     class Spy:
         def chat(self, system, user, model=None):
             seen["model"] = model
             return "t", "normal"
+
     monkeypatch.setattr(llm_gateway, "make_llm", lambda binding: Spy())
     llm_gateway.chat(binding="huihui_ai/qwen3-abliterated:9b", system="", user="u")
     assert seen["model"] == "huihui_ai/qwen3-abliterated:9b"
 
 
 # ---------------------------------------------------------------- 投递门面
+
 
 @pytest.fixture()
 def store(tmp_path):
@@ -227,8 +256,9 @@ def store(tmp_path):
 
 
 def test_submit_and_receipt_roundtrip(store):
-    env = inbox_gateway.submit("question", {"q": "今天该干嘛"},
-                               source="feishu", idempotency_key="fs-001")
+    env = inbox_gateway.submit(
+        "question", {"q": "今天该干嘛"}, source="feishu", idempotency_key="fs-001"
+    )
     validate_envelope(env)
     assert env["ok"] is True
     msg_id = env["data"]["id"]
@@ -277,11 +307,13 @@ def test_receipt_not_found(store):
 
 # ---------------------------------------------------------------- HTTP 端点
 
+
 @pytest.fixture()
 def server(store, monkeypatch):
     class StubLLM:
         def chat(self, system, user, model=None):
             return "pong", "normal"
+
     monkeypatch.setattr(llm_gateway, "make_llm", lambda binding: StubLLM())
     srv = build_server(port=0)  # 随机空闲端口
     th = threading.Thread(target=srv.serve_forever, daemon=True)
@@ -293,8 +325,11 @@ def server(store, monkeypatch):
 
 def _post(base, path, obj):
     req = urllib.request.Request(
-        base + path, data=json.dumps(obj).encode("utf-8"),
-        headers={"Content-Type": "application/json"}, method="POST")
+        base + path,
+        data=json.dumps(obj).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
     with urllib.request.urlopen(req, timeout=10) as resp:
         return json.loads(resp.read().decode("utf-8"))
 
@@ -316,8 +351,11 @@ def test_http_llm_chat(server):
 
 
 def test_http_inbox_flow(server):
-    env = _post(server, "/inbox/submit",
-                {"kind": "question", "payload": {"q": 1}, "source": "feishu"})
+    env = _post(
+        server,
+        "/inbox/submit",
+        {"kind": "question", "payload": {"q": 1}, "source": "feishu"},
+    )
     validate_envelope(env)
     msg_id = env["data"]["id"]
     rec = _get(server, "/inbox/receipt/%s" % msg_id)
@@ -330,13 +368,13 @@ def test_http_404_and_400(server):
         urllib.request.urlopen(server + "/nope", timeout=10)
         raised = False
     except urllib.error.HTTPError as e:
-        raised = (e.code == 404)
+        raised = e.code == 404
     assert raised
     try:
         urllib.request.urlopen(
-            server + "/llm/chat",
-            data=b"\xff\xfe not json", timeout=10)
+            server + "/llm/chat", data=b"\xff\xfe not json", timeout=10
+        )
         raised = False
     except urllib.error.HTTPError as e:
-        raised = (e.code == 400)
+        raised = e.code == 400
     assert raised

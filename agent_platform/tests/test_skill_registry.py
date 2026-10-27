@@ -1,4 +1,5 @@
 """技能注册表测试（WO-SKILLS-REGISTRY）。"""
+
 from __future__ import annotations
 
 import importlib.util
@@ -50,14 +51,33 @@ def test_verify_unknown_and_traversal():
 
 def test_build_is_idempotent_with_tmp_caps(tmp_path, monkeypatch):
     caps = tmp_path / "CAPABILITIES.json"
-    caps.write_text(json.dumps({
-        "generated_at": "2026-10-27T06:00:00+08:00", "total": 2, "ready": 2,
-        "capabilities": [
-            {"name": "cap-a", "what": "A", "how": "python x.py", "boundary": "只读",
-             "status": "ready"},
-            {"name": "cap-b", "what": "B", "how": "手工", "boundary": "只读",
-             "status": "ready"},
-        ]}, ensure_ascii=False), encoding="utf-8")
+    caps.write_text(
+        json.dumps(
+            {
+                "generated_at": "2026-10-27T06:00:00+08:00",
+                "total": 2,
+                "ready": 2,
+                "capabilities": [
+                    {
+                        "name": "cap-a",
+                        "what": "A",
+                        "how": "python x.py",
+                        "boundary": "只读",
+                        "status": "ready",
+                    },
+                    {
+                        "name": "cap-b",
+                        "what": "B",
+                        "how": "手工",
+                        "boundary": "只读",
+                        "status": "ready",
+                    },
+                ],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
     monkeypatch.setattr(BS, "SKILLS", tmp_path / "skills")
     one = BS.build(caps)
     two = BS.build(caps)
@@ -76,9 +96,17 @@ def test_audit_uses_registry_for_real_profile():
 def test_audit_fallback_for_tmp_profile(tmp_path):
     prof = tmp_path / "profile"
     (prof / "skills").mkdir(parents=True)
-    (prof / "skills" / "CAPABILITIES.json").write_text(json.dumps({
-        "generated_at": "2020-01-01T00:00:00+08:00", "total": 0, "ready": 0,
-        "capabilities": []}), encoding="utf-8")
+    (prof / "skills" / "CAPABILITIES.json").write_text(
+        json.dumps(
+            {
+                "generated_at": "2020-01-01T00:00:00+08:00",
+                "total": 0,
+                "ready": 0,
+                "capabilities": [],
+            }
+        ),
+        encoding="utf-8",
+    )
     rep = CA.check(prof)
     assert rep.get("source") != "skills_registry"
     assert rep["stale"] is True

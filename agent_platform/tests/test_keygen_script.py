@@ -7,6 +7,7 @@
 本测试不生成 principal 密钥、不触碰 _vault：只把脚本内嵌代码抽出来，在
 tmp_path 用**测试口令**生成一次性密钥对，验证 (a) 代码可执行 (b) PEM/hex 合法。
 """
+
 from __future__ import annotations
 
 import os
@@ -50,10 +51,21 @@ def test_embedded_code_generates_valid_ed25519_keypair(tmp_path):
     priv = tmp_path / "principal_private.pem"
     pub = tmp_path / "principal_pub.hex"
     env = dict(os.environ)
-    env.update({"DSH_KEY_OUT_PRIV": str(priv), "DSH_KEY_OUT_PUB": str(pub),
-                "DSH_KEY_PASSPHRASE": _TEST_PP, "PYTHONUTF8": "1"})
-    proc = subprocess.run([sys.executable, "-c", code], env=env,
-                          capture_output=True, text=True, timeout=120)
+    env.update(
+        {
+            "DSH_KEY_OUT_PRIV": str(priv),
+            "DSH_KEY_OUT_PUB": str(pub),
+            "DSH_KEY_PASSPHRASE": _TEST_PP,
+            "PYTHONUTF8": "1",
+        }
+    )
+    proc = subprocess.run(
+        [sys.executable, "-c", code],
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
     assert proc.returncode == 0, proc.stderr[-800:]
     assert "fingerprint_sha256=" in proc.stdout
     hex_text = pub.read_text(encoding="ascii").strip()
@@ -61,9 +73,15 @@ def test_embedded_code_generates_valid_ed25519_keypair(tmp_path):
 
     from cryptography.hazmat.primitives import serialization
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-    key = serialization.load_pem_private_key(priv.read_bytes(), password=_TEST_PP.encode())
+
+    key = serialization.load_pem_private_key(
+        priv.read_bytes(), password=_TEST_PP.encode()
+    )
     assert isinstance(key, Ed25519PrivateKey)
     # 公钥 hex 必须与私钥派生的公钥一致（防写错文件）
-    derived = key.public_key().public_bytes(
-        serialization.Encoding.Raw, serialization.PublicFormat.Raw).hex()
+    derived = (
+        key.public_key()
+        .public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)
+        .hex()
+    )
     assert derived == hex_text

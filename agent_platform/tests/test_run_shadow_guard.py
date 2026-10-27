@@ -14,6 +14,7 @@
 纪律：全部 tmp 隔离（本测试组不落任何 agent_platform/data/ 文件）；
 死循环用例用小 timeout（0.5~1s），不拖测试节奏。
 """
+
 import sys
 import time
 from pathlib import Path
@@ -34,8 +35,12 @@ class _OkAgent(StrategyAgent):
     stance = "neutral"
 
     def propose(self, context):
-        return Verdict(strategy_id=self.strategy_id, symbol=context["symbol"],
-                       recommendation="hold", confidence=0.5)
+        return Verdict(
+            strategy_id=self.strategy_id,
+            symbol=context["symbol"],
+            recommendation="hold",
+            confidence=0.5,
+        )
 
 
 class _DeadloopAgent(StrategyAgent):
@@ -75,12 +80,17 @@ class _SleepAgent(StrategyAgent):
 
     def propose(self, context):
         time.sleep(self.seconds)
-        return Verdict(strategy_id=self.strategy_id, symbol=context["symbol"],
-                       recommendation="buy", confidence=0.8)
+        return Verdict(
+            strategy_id=self.strategy_id,
+            symbol=context["symbol"],
+            recommendation="buy",
+            confidence=0.8,
+        )
 
 
 def _registry(*agents):
     from strategy_registry import StrategyRegistry
+
     r = StrategyRegistry()
     for a in agents:
         r.register(a)
@@ -91,6 +101,7 @@ _CTX = {"symbol": "600519", "closes": [100.0, 101.0, 102.0]}
 
 
 # ---------------------------------------------------------------- 正常透传
+
 
 def test_normal_strategy_verdict_passthrough():
     """契约 1：正常策略经超时包裹后 Verdict 原样透传（字段逐一相等）。"""
@@ -106,12 +117,17 @@ def test_passthrough_matches_direct_run():
     reg = _registry(_OkAgent())
     v = run_shadow._propose_with_timeout(reg, "guard_ok", _CTX, timeout_s=5.0)
     direct = reg.run("guard_ok", _CTX)
-    assert (v.strategy_id, v.symbol, v.recommendation, v.confidence, v.stance) == \
-           (direct.strategy_id, direct.symbol, direct.recommendation,
-            direct.confidence, direct.stance)
+    assert (v.strategy_id, v.symbol, v.recommendation, v.confidence, v.stance) == (
+        direct.strategy_id,
+        direct.symbol,
+        direct.recommendation,
+        direct.confidence,
+        direct.stance,
+    )
 
 
 # ---------------------------------------------------------------- 死循环超时
+
 
 def test_deadloop_times_out_returns_none_no_raise():
     """契约 2：死循环策略超时返回 None，不抛异常（fail-open）。"""
@@ -126,13 +142,16 @@ def test_deadloop_times_out_returns_none_no_raise():
 def test_deadloop_does_not_drag_others():
     """契约 5 前置：同一 registry 里死循环 + 正常策略，包裹逐策略调用互不影响。"""
     reg = _registry(_DeadloopAgent(), _OkAgent())
-    v_dead = run_shadow._propose_with_timeout(reg, "guard_deadloop", _CTX, timeout_s=0.5)
+    v_dead = run_shadow._propose_with_timeout(
+        reg, "guard_deadloop", _CTX, timeout_s=0.5
+    )
     v_ok = run_shadow._propose_with_timeout(reg, "guard_ok", _CTX, timeout_s=0.5)
     assert v_dead is None
     assert v_ok is not None and v_ok.strategy_id == "guard_ok"
 
 
 # ---------------------------------------------------------------- 异常 fail-open
+
 
 def test_exception_strategy_fail_open_returns_none():
     """契约 3：策略抛 StrategyError → 单策略 fail-open，返回 None 不上抛。"""
@@ -152,6 +171,7 @@ def test_exception_fail_open_matches_done_branch_degradation_style():
 
 
 # ---------------------------------------------------------------- 可配置性
+
 
 def test_timeout_s_param_configurable():
     """契约 4a：传参通道——慢策略在参数 timeout 内/外的两种结果。"""
@@ -178,6 +198,7 @@ def test_default_timeout_constant_value():
 
 # ---------------------------------------------------------------- done 分支接线 smoke
 
+
 def test_collect_verdicts_deadloop_not_dragging_rest():
     """契约 5：done 分支接线 smoke——死循环插件 + 正常插件共存，包裹收集
     后正常策略仍产出（死循环被剔除，顺序保持 list_ids 序）。"""
@@ -203,8 +224,10 @@ def test_collect_verdicts_none_does_not_reach_record(monkeypatch, tmp_path):
     用死循环策略验证：收集结果只含健康策略，record_verdicts（root 指向 tmp
     隔离根）正常落账 recorded=1——即 done 分支现有落账链路在包裹后不变形。"""
     from strategy_registry import record_verdicts
+
     reg = _registry(_DeadloopAgent(), _OkAgent())
     vs = run_shadow._collect_verdicts(reg, _CTX, timeout_s=0.5)
-    rep = record_verdicts(vs, root=tmp_path, trade_date="2026-10-18",
-                          run_id="guard-test")
+    rep = record_verdicts(
+        vs, root=tmp_path, trade_date="2026-10-18", run_id="guard-test"
+    )
     assert rep["recorded"] == 1 and rep["replayed"] == 0

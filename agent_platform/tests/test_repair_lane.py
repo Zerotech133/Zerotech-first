@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """修复车道测试（WO-GUANYU-LANE）。"""
+
 from __future__ import annotations
 
 import importlib.util
@@ -8,7 +9,8 @@ from pathlib import Path
 
 _WT = Path(__file__).resolve().parents[2]
 _spec = importlib.util.spec_from_file_location(
-    "lane", str(_WT / "agent_platform" / "repair" / "lane.py"))
+    "lane", str(_WT / "agent_platform" / "repair" / "lane.py")
+)
 L = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(L)
 
@@ -16,10 +18,19 @@ _spec.loader.exec_module(L)
 def test_triage_from_incidents(tmp_path, monkeypatch):
     inc = tmp_path / "inc"
     inc.mkdir()
-    (inc / "INC-1.json").write_text(json.dumps({
-        "id": "INC-1", "source_event": {"kind": "guard_fail",
-                                        "task": "WO-FIX-1", "detail": "agent_platform/tests/test_x.py 失败"}}),
-        encoding="utf-8")
+    (inc / "INC-1.json").write_text(
+        json.dumps(
+            {
+                "id": "INC-1",
+                "source_event": {
+                    "kind": "guard_fail",
+                    "task": "WO-FIX-1",
+                    "detail": "agent_platform/tests/test_x.py 失败",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
     monkeypatch.setattr(L, "INCIDENTS", inc)
     monkeypatch.setattr(L, "DATA", tmp_path / "repair")
     monkeypatch.setattr(L, "LANE", tmp_path / "repair" / "lane.json")

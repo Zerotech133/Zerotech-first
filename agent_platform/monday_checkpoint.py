@@ -16,6 +16,7 @@
 退出码：0=全部 PASS，1=存在 FAIL（供计划任务/人工判别）。
 红线：零账本写副作用——唯一落盘是巡检日志本身，演示/巡检永不落真仓（M5 红线 2）。
 """
+
 import atexit
 import json
 import subprocess
@@ -34,7 +35,7 @@ PERF = BASE / "data" / "perf_ledger.jsonl"
 LOG = BASE / "data" / "shadow" / "monday_checkpoint.log"
 BASKET_N = 5  # 茅台/五粮液/平安/宁德/招行（run_shadow.BASKET）
 LAST_V0_DAY = "2026-10-14"  # 存量 v0 行末日：最新交易日未超过它=首跑未发生
-WAIT_SECONDS = 90            # 首跑未完成时的重试间隔
+WAIT_SECONDS = 90  # 首跑未完成时的重试间隔
 # 180 分钟：17:25 起可等到 ~20:25。依据是**实测分布**而非乐观基线：
 #   · 空载（2026-10-17 venv py3.13）：5 票 27m55s = 5.6 分钟/票；
 #   · 竞争态（2026-10-18 03:29 生产 py311，同时有 22GB 大模型占显存 →
@@ -51,10 +52,16 @@ WAIT_SECONDS = 90            # 首跑未完成时的重试间隔
 #
 # 代价可控：任务 IgnoreNew + PT72H，后面没有依赖它的任务；等待期间每 90 秒
 # 打印一次进度，人看日志能区分「在推进」与「没动静」。正常路径首轮即 break。
-MAX_WAIT_ROUNDS = 120        # 180 分钟
+MAX_WAIT_ROUNDS = 120  # 180 分钟
 
-DK_FIELDS = ("dk_signal", "dk_regime", "dk_profile",
-             "dk_blocked", "dk_reason", "dk_error")
+DK_FIELDS = (
+    "dk_signal",
+    "dk_regime",
+    "dk_profile",
+    "dk_blocked",
+    "dk_reason",
+    "dk_error",
+)
 
 RESULTS = []
 _LOG_HANDLE = None
@@ -68,8 +75,11 @@ def _ran_today(last):
     按纯 ISO 前缀比对恒 False → ran_today 恒 False → 门 4 对「当日已跑但
     LastTaskResult 异常」的任务 fail-open 放行。现归一化后精确比对年月日。
     """
-    day = last.strip().replace("T", " ").split(" ")[0].replace("/", "-") \
-        if last.strip() else ""
+    day = (
+        last.strip().replace("T", " ").split(" ")[0].replace("/", "-")
+        if last.strip()
+        else ""
+    )
     try:
         y, m, d = (int(p) for p in day.split("-"))
     except ValueError:
@@ -88,8 +98,10 @@ def _today_counts(rows, latest):
     if not latest:
         return 0, 0
     todays = [r for r in rows if r.get("date") == latest]
-    return (sum(1 for r in todays if r.get("status") == "done"),
-            sum(1 for r in todays if r.get("status") == "failed"))
+    return (
+        sum(1 for r in todays if r.get("status") == "done"),
+        sum(1 for r in todays if r.get("status") == "failed"),
+    )
 
 
 def _basket_complete(todays):
@@ -101,8 +113,9 @@ def _basket_complete(todays):
     与真正的失败无法区分。
     标的集合校验则比 `==` 更严：4 个标的 + 1 条重复（共 5 行）旧实现会 PASS。
     """
-    return (len(todays) >= BASKET_N
-            and len({r.get("symbol") for r in todays}) == BASKET_N)
+    return (
+        len(todays) >= BASKET_N and len({r.get("symbol") for r in todays}) == BASKET_N
+    )
 
 
 def _needs_wait(rows, latest, is_monday):
@@ -207,14 +220,19 @@ def _tasks_schema_observe():
         sys.path.insert(0, tools)
     try:
         from validate_json import check_tasks_doc
+
         obj = json.loads(path.read_text(encoding="utf-8"))
     except Exception as exc:  # noqa: BLE001  观察项永不阻断巡检
-        print("[observe] tasks.json schema：不可读/不可校验（%s）——观察项，"
-              "不计入退出码" % str(exc)[:100])
+        print(
+            "[observe] tasks.json schema：不可读/不可校验（%s）——观察项，"
+            "不计入退出码" % str(exc)[:100]
+        )
         return
     errors, warns = check_tasks_doc(obj)
-    print("[observe] tasks.json schema：%d 工单 / ERROR %d / WARN %d"
-          "——观察项，不计入退出码" % (len(obj), len(errors), len(warns)))
+    print(
+        "[observe] tasks.json schema：%d 工单 / ERROR %d / WARN %d"
+        "——观察项，不计入退出码" % (len(obj), len(errors), len(warns))
+    )
     for item in (["ERROR: " + e for e in errors] + ["WARN: " + w for w in warns])[:8]:
         print("          · %s" % item)
 
@@ -241,16 +259,22 @@ def _strategy_runs_observe(path=None):
     p = Path(path) if path is not None else STRATEGY_RUNS
     try:
         if not p.exists():
-            print("[observe] strategy_runs：文件不存在（PENDING 中性——"
-                  "周一 17:10 首跑后应存在）——观察项，不计入退出码")
+            print(
+                "[observe] strategy_runs：文件不存在（PENDING 中性——"
+                "周一 17:10 首跑后应存在）——观察项，不计入退出码"
+            )
             return
         rows = load_jsonl(p)  # 坏行在 load_jsonl 内已打印计数并跳过
         anchored = sum(1 for r in rows if r.get("run_id"))
-        print("[observe] strategy_runs：%d 行 / 带 run_id %d 行"
-              "——观察项，不计入退出码" % (len(rows), anchored))
+        print(
+            "[observe] strategy_runs：%d 行 / 带 run_id %d 行"
+            "——观察项，不计入退出码" % (len(rows), anchored)
+        )
     except Exception as exc:  # noqa: BLE001  观察项不阻断巡检，但异常必须可见
-        print("[observe] strategy_runs：不可读（%s）——观察项，不计入退出码"
-              % str(exc)[:100])
+        print(
+            "[observe] strategy_runs：不可读（%s）——观察项，不计入退出码"
+            % str(exc)[:100]
+        )
 
 
 def _codex_regs_observe(path=None):
@@ -258,23 +282,31 @@ def _codex_regs_observe(path=None):
     p = Path(path) if path is not None else CODEX_REGS
     try:
         if not p.exists():
-            print("[observe] codex_registrations：文件不存在（PENDING 中性）"
-                  "——观察项，不计入退出码")
+            print(
+                "[observe] codex_registrations：文件不存在（PENDING 中性）"
+                "——观察项，不计入退出码"
+            )
             return
         rows = load_jsonl(p)
         sids = [str(r.get("strategy_id")) for r in rows if r.get("strategy_id")]
-        print("[observe] codex_registrations：%d 行 / strategy_id: %s"
-              "——观察项，不计入退出码"
-              % (len(rows), ", ".join(sids) if sids else "（无 strategy_id 字段）"))
+        print(
+            "[observe] codex_registrations：%d 行 / strategy_id: %s"
+            "——观察项，不计入退出码"
+            % (len(rows), ", ".join(sids) if sids else "（无 strategy_id 字段）")
+        )
     except Exception as exc:  # noqa: BLE001
-        print("[observe] codex_registrations：不可读（%s）——观察项，不计入退出码"
-              % str(exc)[:100])
+        print(
+            "[observe] codex_registrations：不可读（%s）——观察项，不计入退出码"
+            % str(exc)[:100]
+        )
 
 
 def check(name, ok, detail=""):
     RESULTS.append((name, bool(ok), detail))
-    print("[%s] %s%s" % ("PASS" if ok else "FAIL", name,
-                         (" —— " + detail) if detail else ""))
+    print(
+        "[%s] %s%s"
+        % ("PASS" if ok else "FAIL", name, (" —— " + detail) if detail else "")
+    )
 
 
 def load_jsonl(p):
@@ -294,16 +326,19 @@ def load_jsonl(p):
         # 观察面是最后一道网（判例：手编辑绕过一切写侧校验）——账本半行
         # （append 中断/手编辑损坏）静默跳过会让「账本损坏」对巡检失明，
         # 门 1 行数判读被静默稀释。显式告警，证据留在巡检日志。
-        print("[observe] %s 有 %d 行损坏（半行/手编辑），已跳过不计入判读"
-              % (p.name, bad))
+        print(
+            "[observe] %s 有 %d 行损坏（半行/手编辑），已跳过不计入判读" % (p.name, bad)
+        )
     return rows
 
 
 def main():
     _tee_log()
     print("=" * 56)
-    print("M5 刀4 周一观察点护航巡检 %s %s" % (
-        date.today(), datetime.now().strftime("%H:%M:%S")))
+    print(
+        "M5 刀4 周一观察点护航巡检 %s %s"
+        % (date.today(), datetime.now().strftime("%H:%M:%S"))
+    )
     print("=" * 56)
 
     # ---- 门 1：影子首跑行契约 ----
@@ -329,33 +364,51 @@ def main():
                 break  # 非周一，或首跑已完成/整批已落地
             done_n, failed_n = _today_counts(rows, latest)
             if pending_wait >= MAX_WAIT_ROUNDS:
-                print("[wait] 已达等待上限 %d 轮（%.0f 分钟），按现状判定"
-                      "（当日 done %d / failed %d）"
-                      % (MAX_WAIT_ROUNDS, MAX_WAIT_ROUNDS * WAIT_SECONDS / 60.0,
-                         done_n, failed_n))
+                print(
+                    "[wait] 已达等待上限 %d 轮（%.0f 分钟），按现状判定"
+                    "（当日 done %d / failed %d）"
+                    % (
+                        MAX_WAIT_ROUNDS,
+                        MAX_WAIT_ROUNDS * WAIT_SECONDS / 60.0,
+                        done_n,
+                        failed_n,
+                    )
+                )
                 break
             pending_wait += 1
-            print("[wait] 首跑未完成（%s，第 %d/%d 次重试前等 %ds——首跑实测"
-                  "空载 28 分钟 / 竞争态 69 分钟，17:25 巡检必撞上未完成）"
-                  % ("尚未落账" if latest is None or latest <= LAST_V0_DAY
-                     else "当日 done %d / failed %d（共 %d 票）"
-                          % (done_n, failed_n, BASKET_N),
-                     pending_wait, MAX_WAIT_ROUNDS, WAIT_SECONDS))
+            print(
+                "[wait] 首跑未完成（%s，第 %d/%d 次重试前等 %ds——首跑实测"
+                "空载 28 分钟 / 竞争态 69 分钟，17:25 巡检必撞上未完成）"
+                % (
+                    "尚未落账"
+                    if latest is None or latest <= LAST_V0_DAY
+                    else "当日 done %d / failed %d（共 %d 票）"
+                    % (done_n, failed_n, BASKET_N),
+                    pending_wait,
+                    MAX_WAIT_ROUNDS,
+                    WAIT_SECONDS,
+                )
+            )
             _flush_log()
             time.sleep(WAIT_SECONDS)
             rows = load_jsonl(LEDGER)
         if latest is None or latest <= LAST_V0_DAY:
-            check("影子首跑已发生（最新交易日 > %s）" % LAST_V0_DAY,
-                  not is_monday,
-                  ("最新=%s，周一首跑未发生/未落账——观察点门未兑现！"
-                   if is_monday else
-                   "最新=%s，首跑未发生（PENDING 中性，周一 17:10 后验收）")
-                  % latest)
+            check(
+                "影子首跑已发生（最新交易日 > %s）" % LAST_V0_DAY,
+                not is_monday,
+                (
+                    "最新=%s，周一首跑未发生/未落账——观察点门未兑现！"
+                    if is_monday
+                    else "最新=%s，首跑未发生（PENDING 中性，周一 17:10 后验收）"
+                )
+                % latest,
+            )
             # 首跑未发生时字段三项无从验收，显式跳过
             print("[SKIP] schema_version/dk/degraded 三项（待首跑后验收）")
         else:
-            todays = [r for r in rows if r.get("date") == latest
-                      and r.get("status") == "done"]
+            todays = [
+                r for r in rows if r.get("date") == latest and r.get("status") == "done"
+            ]
             # 断言上界必须与等待条件同源：等待在「整批已落地（done+failed
             # >= BASKET_N）」即停（_needs_wait 返回 False），所以断言不能写
             # `== BASKET_N`——账本多出重复行（run_shadow 双跑）时会「等到 6 行
@@ -364,46 +417,61 @@ def main():
             # 又比原来的 == 更严——4 个标的 + 1 条重复（共 5 行）旧码会 PASS。
             syms = {r.get("symbol") for r in todays}
             _dn, _fn = _today_counts(rows, latest)
-            check("最新交易日 %s done 行数=%d（预期 %d）"
-                  % (latest, len(todays), BASKET_N),
-                  _basket_complete(todays),
-                  "不同标的 %d 个；当日 failed %d 票；账本总行数 %d"
-                  "（v0 存量 + 新行）%s"
-                  % (len(syms), _fn, len(rows),
-                     "；行数>篮子数=疑似重复写入，须查 run_shadow 是否双跑"
-                     if len(todays) > BASKET_N else
-                     ("；有 failed 票=P0，见 last_run.log 与飞书告警"
-                      if _fn else "")))
-            m5_rows = [r for r in todays
-                       if r.get("schema_version") == "m5.v1"]
-            check("首跑行全带 schema_version=m5.v1",
-                  len(m5_rows) == len(todays) and bool(todays),
-                  "%d/%d" % (len(m5_rows), len(todays)))
-            no_dk = [r["symbol"] for r in todays
-                     if any(f not in r for f in DK_FIELDS)]
-            check("首跑行全带 dk_* 六字段", not no_dk,
-                  "缺失行: %s" % no_dk if no_dk else "六字段键齐备")
-            bad_deg = [r["symbol"] for r in todays
-                       if r.get("parse_ok") is False
-                       and r.get("degraded") is not True]
-            check("degraded 联动（parse_ok=false 行 degraded 必 True）",
-                  not bad_deg,
-                  "违例: %s" % bad_deg if bad_deg else "刀1 扩义生效")
+            check(
+                "最新交易日 %s done 行数=%d（预期 %d）"
+                % (latest, len(todays), BASKET_N),
+                _basket_complete(todays),
+                "不同标的 %d 个；当日 failed %d 票；账本总行数 %d"
+                "（v0 存量 + 新行）%s"
+                % (
+                    len(syms),
+                    _fn,
+                    len(rows),
+                    "；行数>篮子数=疑似重复写入，须查 run_shadow 是否双跑"
+                    if len(todays) > BASKET_N
+                    else (
+                        "；有 failed 票=P0，见 last_run.log 与飞书告警" if _fn else ""
+                    ),
+                ),
+            )
+            m5_rows = [r for r in todays if r.get("schema_version") == "m5.v1"]
+            check(
+                "首跑行全带 schema_version=m5.v1",
+                len(m5_rows) == len(todays) and bool(todays),
+                "%d/%d" % (len(m5_rows), len(todays)),
+            )
+            no_dk = [r["symbol"] for r in todays if any(f not in r for f in DK_FIELDS)]
+            check(
+                "首跑行全带 dk_* 六字段",
+                not no_dk,
+                "缺失行: %s" % no_dk if no_dk else "六字段键齐备",
+            )
+            bad_deg = [
+                r["symbol"]
+                for r in todays
+                if r.get("parse_ok") is False and r.get("degraded") is not True
+            ]
+            check(
+                "degraded 联动（parse_ok=false 行 degraded 必 True）",
+                not bad_deg,
+                "违例: %s" % bad_deg if bad_deg else "刀1 扩义生效",
+            )
 
     # ---- 门 2：trace 锚点回放 ----
     run_ids = [r.get("run_id") for r in rows if r.get("run_id")]
     if run_ids:
         from adapters.trace_link import LinkStore, replay_trace
+
         target = run_ids[-1]
         try:
             rep = replay_trace(LinkStore(), target)
             n_hit = len(rep.get("matches", []))
-            check("replay_trace 锚点回放（%s）" % target,
-                  rep.get("verdict", "").lower() in ("ok", "partial")
-                  and n_hit > 0,
-                  "verdict=%s 命中=%d 缺环=%s" % (
-                      rep.get("verdict"), n_hit,
-                      rep.get("missing") or "无"))
+            check(
+                "replay_trace 锚点回放（%s）" % target,
+                rep.get("verdict", "").lower() in ("ok", "partial") and n_hit > 0,
+                "verdict=%s 命中=%d 缺环=%s"
+                % (rep.get("verdict"), n_hit, rep.get("missing") or "无"),
+            )
         except Exception as exc:  # noqa: BLE001
             check("replay_trace 锚点回放", False, str(exc)[:120])
     else:
@@ -412,38 +480,54 @@ def main():
     # ---- 门 3：perf 账本幂等完好 + 无演示污染 ----
     perf = load_jsonl(PERF)
     keys = [r.get("perf_key") for r in perf if r.get("perf_key")]
-    check("perf_ledger 行数>0 且 perf_key 唯一",
-          len(perf) > 0 and len(keys) == len(set(keys)),
-          "%d 行 / %d 键" % (len(perf), len(set(keys))))
+    check(
+        "perf_ledger 行数>0 且 perf_key 唯一",
+        len(perf) > 0 and len(keys) == len(set(keys)),
+        "%d 行 / %d 键" % (len(perf), len(set(keys))),
+    )
     import re
+
     hex12 = re.compile(r"^[0-9a-f]{12}$")
-    fake = [r.get("run_id", "?") for r in perf
-            if not hex12.match(r.get("run_id", ""))]
-    check("perf_ledger 无演示污染（run_id 全 12 位 hex）", not fake,
-          "构造行: %s" % fake if fake else "真仓形态纯净")
+    fake = [r.get("run_id", "?") for r in perf if not hex12.match(r.get("run_id", ""))]
+    check(
+        "perf_ledger 无演示污染（run_id 全 12 位 hex）",
+        not fake,
+        "构造行: %s" % fake if fake else "真仓形态纯净",
+    )
 
     # ---- 门 4：三计划任务当日执行状态 ----
     try:
-        ps = ("Get-ScheduledTask AgentShadowDaily,AgentChiefPush,"
-              "AgentShadowEvalWeekly | ForEach-Object { "
-              "$i = $_ | Get-ScheduledTaskInfo; "
-              "'{0}|{1}|{2}|{3}' -f $_.TaskName, $_.State, "
-              "$i.LastRunTime, $i.LastTaskResult }")
+        ps = (
+            "Get-ScheduledTask AgentShadowDaily,AgentChiefPush,"
+            "AgentShadowEvalWeekly | ForEach-Object { "
+            "$i = $_ | Get-ScheduledTaskInfo; "
+            "'{0}|{1}|{2}|{3}' -f $_.TaskName, $_.State, "
+            "$i.LastRunTime, $i.LastTaskResult }"
+        )
         out = subprocess.run(
             ["powershell", "-NoProfile", "-Command", ps],
-            capture_output=True, text=True, timeout=30).stdout.strip()
+            capture_output=True,
+            text=True,
+            timeout=30,
+        ).stdout.strip()
         for line in out.splitlines():
             parts = line.split("|")
             if len(parts) != 4:
                 continue
             name, state, last, code = parts
             ran_today = _ran_today(last)
-            check("任务 %s" % name,
-                  state in ("Ready", "Running", "Queued") and
-                  (code in ("0", "267009", "267011") or not ran_today),
-                  "state=%s last=%s result=%s%s" % (
-                      state, last[:16], code,
-                      "" if ran_today else "（今日未到/未跑，仅查健康）"))
+            check(
+                "任务 %s" % name,
+                state in ("Ready", "Running", "Queued")
+                and (code in ("0", "267009", "267011") or not ran_today),
+                "state=%s last=%s result=%s%s"
+                % (
+                    state,
+                    last[:16],
+                    code,
+                    "" if ran_today else "（今日未到/未跑，仅查健康）",
+                ),
+            )
     except Exception as exc:  # noqa: BLE001
         check("计划任务状态查询", False, str(exc)[:120])
 
@@ -457,9 +541,14 @@ def main():
     # ---- 汇总 ----
     fails = [n for n, ok, _ in RESULTS if not ok]
     print("-" * 56)
-    print("结论: %d/%d PASS%s" % (
-        len(RESULTS) - len(fails), len(RESULTS),
-        "（FAIL: %s）" % ", ".join(fails) if fails else "——观察点门全过"))
+    print(
+        "结论: %d/%d PASS%s"
+        % (
+            len(RESULTS) - len(fails),
+            len(RESULTS),
+            "（FAIL: %s）" % ", ".join(fails) if fails else "——观察点门全过",
+        )
+    )
     print("EXIT=%d 日志=%s" % (1 if fails else 0, LOG))
     sys.stdout.flush()
     return 1 if fails else 0

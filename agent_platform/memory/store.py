@@ -10,6 +10,7 @@
   · 评测：golden 查询集 → hit@1/hit@3/MRR，结果落 data/memory/eval_latest.json；
   · 删除/隔离仍走审批（本模块只做 prune **建议**，dry_run 默认 True）。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -44,21 +45,30 @@ def connect(db: Path | None = None) -> sqlite3.Connection:
         last_used_at TEXT, use_count INTEGER DEFAULT 0, ttl_days INTEGER DEFAULT 365)""")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_layer ON memories(layer)")
     try:
-        conn.execute("CREATE VIRTUAL TABLE IF NOT EXISTS memories_fts "
-                     "USING fts5(id UNINDEXED, cue, content)")
+        conn.execute(
+            "CREATE VIRTUAL TABLE IF NOT EXISTS memories_fts "
+            "USING fts5(id UNINDEXED, cue, content)"
+        )
     except sqlite3.OperationalError:
         pass
     conn.commit()
     return conn
 
 
-def add(layer: str, cue: str, content: str, source: str = "",
-        confidence: float = 0.8, tags: list | None = None,
-        ttl_days: int = 365, mid: str | None = None,
-        db: Path | None = None) -> dict:
+def add(
+    layer: str,
+    cue: str,
+    content: str,
+    source: str = "",
+    confidence: float = 0.8,
+    tags: list | None = None,
+    ttl_days: int = 365,
+    mid: str | None = None,
+    db: Path | None = None,
+) -> dict:
     if layer not in LAYERS:
         return {"ok": False, "error": "bad_layer", "allowed": list(LAYERS)}
-    mid = str(mid or ("%s:%s" % (layer, abs(hash(cue + content)) % 10 ** 10)))
+    mid = str(mid or ("%s:%s" % (layer, abs(hash(cue + content)) % 10**10)))
     conn = connect(db)
     try:
         conn.execute(
@@ -66,12 +76,24 @@ def add(layer: str, cue: str, content: str, source: str = "",
             "created_at,ttl_days) VALUES(?,?,?,?,?,?,?,?,?) "
             "ON CONFLICT(id) DO UPDATE SET cue=excluded.cue,content=excluded.content,"
             "confidence=excluded.confidence,tags=excluded.tags",
-            (mid, layer, cue, content, source, float(confidence),
-             ",".join(tags or []), _now(), int(ttl_days)))
+            (
+                mid,
+                layer,
+                cue,
+                content,
+                source,
+                float(confidence),
+                ",".join(tags or []),
+                _now(),
+                int(ttl_days),
+            ),
+        )
         try:
             conn.execute("DELETE FROM memories_fts WHERE id=?", (mid,))
-            conn.execute("INSERT INTO memories_fts(id,cue,content) VALUES(?,?,?)",
-                         (mid, cue, content))
+            conn.execute(
+                "INSERT INTO memories_fts(id,cue,content) VALUES(?,?,?)",
+                (mid, cue, content),
+            )
         except sqlite3.OperationalError:
             pass
         conn.commit()
@@ -84,7 +106,7 @@ def _bigrams(text: str) -> set:
     t = re.sub(r"\s+", "", str(text or "").lower())
     if len(t) < 2:
         return {t} if t else set()
-    return {t[i:i + 2] for i in range(len(t) - 1)}
+    return {t[i : i + 2] for i in range(len(t) - 1)}
 
 
 def _similarity(a: str, b: str) -> float:
@@ -101,15 +123,16 @@ def _fts_ids(conn, query: str) -> set:
             return set()
         expr = " OR ".join('"%s"' % t.replace('"', "") for t in tokens[:8])
         rows = conn.execute(
-            "SELECT id FROM memories_fts WHERE memories_fts MATCH ? LIMIT 50",
-            (expr,)).fetchall()
+            "SELECT id FROM memories_fts WHERE memories_fts MATCH ? LIMIT 50", (expr,)
+        ).fetchall()
         return {r["id"] for r in rows}
     except sqlite3.OperationalError:
         return set()
 
 
-def search(query: str, layer: str | None = None, limit: int = 5,
-           db: Path | None = None) -> dict:
+def search(
+    query: str, layer: str | None = None, limit: int = 5, db: Path | None = None
+) -> dict:
     limit = max(1, min(int(limit or 5), 20))
     conn = connect(db)
     try:
@@ -127,20 +150,42 @@ def search(query: str, layer: str | None = None, limit: int = 5,
     for r in rows:
         hay = r["cue"] + " " + r["content"]
         sim = max(_similarity(query, r["cue"]), _similarity(query, hay))
-        coverage = (sum(1 for t in q_tokens if t in hay) / len(q_tokens)) if q_tokens else 0.0
+        coverage = (
+            (sum(1 for t in q_tokens if t in hay) / len(q_tokens)) if q_tokens else 0.0
+        )
         sub = 0.15 if (query and query in hay) else 0.0
-        score = 0.35 * sim + 0.30 * coverage + 0.10 * sub + \
-            0.15 * float(r.get("confidence") or 0) + (0.10 if r["id"] in fts else 0.0)
+        score = (
+            0.35 * sim
+            + 0.30 * coverage
+            + 0.10 * sub
+            + 0.15 * float(r.get("confidence") or 0)
+            + (0.10 if r["id"] in fts else 0.0)
+        )
         if score <= 0:
             continue
-        scored.append({"id": r["id"], "layer": r["layer"], "cue": r["cue"],
-                       "content": str(r["content"])[:300], "source": r["source"],
-                       "confidence": r["confidence"], "score": round(score, 4),
-                       "fts_hit": r["id"] in fts})
+        scored.append(
+            {
+                "id": r["id"],
+                "layer": r["layer"],
+                "cue": r["cue"],
+                "content": str(r["content"])[:300],
+                "source": r["source"],
+                "confidence": r["confidence"],
+                "score": round(score, 4),
+                "fts_hit": r["id"] in fts,
+            }
+        )
     scored.sort(key=lambda x: (-x["score"], x["id"]))
     out = scored[:limit]
-    return {"ok": True, "query": query, "layer": layer, "count": len(out),
-            "used_fts": bool(fts), "total_candidates": len(rows), "items": out}
+    return {
+        "ok": True,
+        "query": query,
+        "layer": layer,
+        "count": len(out),
+        "used_fts": bool(fts),
+        "total_candidates": len(rows),
+        "items": out,
+    }
 
 
 def stats(db: Path | None = None) -> dict:
@@ -158,9 +203,15 @@ def stats(db: Path | None = None) -> dict:
         ev = json.loads(EVAL_OUT.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         pass
-    return {"ok": True, "db": str(DB if db is None else db), "total": total,
-            "layers": counts, "latest_created_at": latest, "eval": ev,
-            "note": "删除/隔离须走审批（本模块只出 prune 建议）"}
+    return {
+        "ok": True,
+        "db": str(DB if db is None else db),
+        "total": total,
+        "layers": counts,
+        "latest_created_at": latest,
+        "eval": ev,
+        "note": "删除/隔离须走审批（本模块只出 prune 建议）",
+    }
 
 
 def prune(dry_run: bool = True, db: Path | None = None) -> dict:
@@ -175,11 +226,17 @@ def prune(dry_run: bool = True, db: Path | None = None) -> dict:
             except (ValueError, TypeError):
                 t = now
             expired = (now - t) / 86400 > int(r["ttl_days"] or 365)
-            stale_low = (float(r["confidence"] or 0) < 0.3
-                         and int(r["use_count"] or 0) == 0)
+            stale_low = (
+                float(r["confidence"] or 0) < 0.3 and int(r["use_count"] or 0) == 0
+            )
             if expired or stale_low:
-                items.append({"id": r["id"], "layer": r["layer"],
-                              "reason": "ttl_expired" if expired else "stale_low_confidence"})
+                items.append(
+                    {
+                        "id": r["id"],
+                        "layer": r["layer"],
+                        "reason": "ttl_expired" if expired else "stale_low_confidence",
+                    }
+                )
         if not dry_run:
             for it in items:
                 conn.execute("DELETE FROM memories WHERE id=?", (it["id"],))
@@ -188,8 +245,12 @@ def prune(dry_run: bool = True, db: Path | None = None) -> dict:
                 except sqlite3.OperationalError:
                     pass
             conn.commit()
-        return {"ok": True, "dry_run": bool(dry_run), "count": len(items),
-                "items": items[:50]}
+        return {
+            "ok": True,
+            "dry_run": bool(dry_run),
+            "count": len(items),
+            "items": items[:50],
+        }
     finally:
         conn.close()
 
@@ -211,9 +272,15 @@ def ingest_experience(profile: Path | None = None) -> dict:
         eid = str(e.get("entry_id") or "")
         if not eid:
             continue
-        add("semantic", str(e.get("cue") or eid), str(e.get("lesson") or e.get("cue") or ""),
-            source="experience:%s" % eid, confidence=float(e.get("confidence") or 0.8),
-            tags=["supervision", str(e.get("domain") or "")], mid="semantic:%s" % eid)
+        add(
+            "semantic",
+            str(e.get("cue") or eid),
+            str(e.get("lesson") or e.get("cue") or ""),
+            source="experience:%s" % eid,
+            confidence=float(e.get("confidence") or 0.8),
+            tags=["supervision", str(e.get("domain") or "")],
+            mid="semantic:%s" % eid,
+        )
         added += 1
     return {"ok": True, "added": added, "source": str(p)}
 
@@ -228,12 +295,23 @@ def ingest_requests(platform: Path | None = None) -> dict:
             except (OSError, ValueError):
                 continue
             rid = str(r.get("id") or f.stem)
-            add("episodic", "%s %s" % (r.get("kind"), r.get("reason") or ""),
-                json.dumps({"status": r.get("status"), "kind": r.get("kind"),
-                            "reason": r.get("reason"), "payload": r.get("payload")},
-                           ensure_ascii=False),
-                source="request:%s" % rid, confidence=0.9,
-                tags=["approval", str(r.get("kind") or "")], mid="episodic:%s" % rid)
+            add(
+                "episodic",
+                "%s %s" % (r.get("kind"), r.get("reason") or ""),
+                json.dumps(
+                    {
+                        "status": r.get("status"),
+                        "kind": r.get("kind"),
+                        "reason": r.get("reason"),
+                        "payload": r.get("payload"),
+                    },
+                    ensure_ascii=False,
+                ),
+                source="request:%s" % rid,
+                confidence=0.9,
+                tags=["approval", str(r.get("kind") or "")],
+                mid="episodic:%s" % rid,
+            )
             added += 1
     return {"ok": True, "added": added}
 
@@ -250,9 +328,15 @@ def ingest_skills(platform: Path | None = None) -> dict:
         name = str(s.get("name") or "")
         if not name:
             continue
-        add("procedural", "技能 %s：%s" % (name, s.get("status") or ""),
-            s.get("verify_cmd") or "", source="skill:%s" % name,
-            confidence=0.9, tags=["skill", name], mid="procedural:%s" % name)
+        add(
+            "procedural",
+            "技能 %s：%s" % (name, s.get("status") or ""),
+            s.get("verify_cmd") or "",
+            source="skill:%s" % name,
+            confidence=0.9,
+            tags=["skill", name],
+            mid="procedural:%s" % name,
+        )
         added += 1
     return {"ok": True, "added": added}
 
@@ -261,8 +345,7 @@ def ingest_all(platform: Path | None = None, profile: Path | None = None) -> dic
     a = ingest_experience(profile)
     b = ingest_requests(platform)
     c = ingest_skills(platform)
-    return {"ok": True, "experience": a, "requests": b, "skills": c,
-            "stats": stats()}
+    return {"ok": True, "experience": a, "requests": b, "skills": c, "stats": stats()}
 
 
 # ── 检索评测 ───────────────────────────────────────────────────────────────
@@ -290,16 +373,28 @@ def run_eval(queries_path: Path | None = None, db: Path | None = None) -> dict:
         if rank and rank <= 3:
             hit3 += 1
         rr += (1.0 / rank) if rank else 0.0
-        results.append({"query": query, "rank": rank,
-                        "top": [{"id": it["id"], "cue": it["cue"],
-                                 "score": it["score"]} for it in rep["items"]]})
+        results.append(
+            {
+                "query": query,
+                "rank": rank,
+                "top": [
+                    {"id": it["id"], "cue": it["cue"], "score": it["score"]}
+                    for it in rep["items"]
+                ],
+            }
+        )
     total = len(results)
-    rep = {"ok": True, "generated_at": _now(), "total": total,
-           "hit@1": hit1, "hit@3": hit3,
-           "hit1_rate": round(hit1 / total, 3) if total else 0.0,
-           "hit3_rate": round(hit3 / total, 3) if total else 0.0,
-           "mrr": round(rr / total, 3) if total else 0.0,
-           "results": results}
+    rep = {
+        "ok": True,
+        "generated_at": _now(),
+        "total": total,
+        "hit@1": hit1,
+        "hit@3": hit3,
+        "hit1_rate": round(hit1 / total, 3) if total else 0.0,
+        "hit3_rate": round(hit3 / total, 3) if total else 0.0,
+        "mrr": round(rr / total, 3) if total else 0.0,
+        "results": results,
+    }
     EVAL_OUT.parent.mkdir(parents=True, exist_ok=True)
     EVAL_OUT.write_text(json.dumps(rep, ensure_ascii=False, indent=1), encoding="utf-8")
     return rep

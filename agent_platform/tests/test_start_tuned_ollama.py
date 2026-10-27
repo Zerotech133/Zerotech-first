@@ -29,7 +29,7 @@ TUNED_FULL = {
     "OLLAMA_FLASH_ATTENTION": "1",
     "OLLAMA_KV_CACHE_TYPE": "q8_0",
     "OLLAMA_IGPU_ENABLE": "1",
-    "OLLAMA_VULKAN": "1",      # 2026-10-24 第 7 项：缺它则 iGPU 不生效
+    "OLLAMA_VULKAN": "1",  # 2026-10-24 第 7 项：缺它则 iGPU 不生效
     "OLLAMA_CONTEXT_LENGTH": "16384",
     "OLLAMA_KEEP_ALIVE": "30m0s",
     "OLLAMA_NUM_PARALLEL": "1",  # qwen35 不支持并行请求，10-24 起定版 1
@@ -49,11 +49,14 @@ DEFAULT_CFG = {
 def _cfg_line(ts: str, cfg: dict) -> str:
     """按 ollama 真实日志格式拼一条 server config 行。"""
     env = " ".join("%s:%s" % (k, v) for k, v in cfg.items())
-    return ('time=%s level=INFO source=routes.go:2439 msg="server config" '
-            'env="map[%s]"' % (ts, env))
+    return (
+        'time=%s level=INFO source=routes.go:2439 msg="server config" '
+        'env="map[%s]"' % (ts, env)
+    )
 
 
 # ---------------------------------------------------------------- 参数达标判定
+
 
 def test_tuned_full_has_no_deviation():
     assert sto.tuned_deviations(TUNED_FULL) == []
@@ -93,6 +96,7 @@ def test_keep_alive_not_critical():
 
 # ---------------------------------------------------------------- 日志选取
 
+
 def test_parse_ts():
     line = "time=2026-10-18T17:17:11.012+08:00 level=INFO msg=x"
     assert sto._parse_ts(line) == "2026-10-18T17:17:11.012+08:00"
@@ -102,11 +106,13 @@ def test_parse_ts():
 def test_server_config_picks_newest_by_timestamp(tmp_path, monkeypatch):
     """旧 App 行（17:12 默认值）与新 tuned 行（17:17）并存时，必须取新的。"""
     stale = tmp_path / "server.log"
-    stale.write_text(_cfg_line("2026-10-18T17:12:15.061+08:00", DEFAULT_CFG) + "\n",
-                     encoding="utf-8")
+    stale.write_text(
+        _cfg_line("2026-10-18T17:12:15.061+08:00", DEFAULT_CFG) + "\n", encoding="utf-8"
+    )
     fresh = tmp_path / "tuned.log"
-    fresh.write_text(_cfg_line("2026-10-18T17:17:11.012+08:00", TUNED_FULL) + "\n",
-                     encoding="utf-8")
+    fresh.write_text(
+        _cfg_line("2026-10-18T17:17:11.012+08:00", TUNED_FULL) + "\n", encoding="utf-8"
+    )
     monkeypatch.setattr(sto, "CONFIG_LOG_CANDIDATES", [stale, fresh])
 
     cfg, src, ts = sto.server_config()
@@ -123,8 +129,10 @@ def test_server_config_finds_head_of_big_log(tmp_path, monkeypatch):
     """
     big = tmp_path / "tuned.log"
     body = [_cfg_line("2026-10-18T17:17:11.012+08:00", TUNED_FULL)]
-    body += ["time=2026-10-18T17:20:00.000+08:00 level=INFO msg=request id=%d" % i
-             for i in range(12000)]  # 远超 8000 行的截取阈值
+    body += [
+        "time=2026-10-18T17:20:00.000+08:00 level=INFO msg=request id=%d" % i
+        for i in range(12000)
+    ]  # 远超 8000 行的截取阈值
     big.write_text("\n".join(body) + "\n", encoding="utf-8")
     monkeypatch.setattr(sto, "CONFIG_LOG_CANDIDATES", [big])
 
@@ -138,6 +146,7 @@ def test_server_config_empty_when_no_log(tmp_path, monkeypatch):
 
 
 # ---------------------------------------------------------------- 闸门不许恒 0
+
 
 def test_status_returns_nonzero_when_port_closed(monkeypatch, capsys):
     """端口不通必须返回 1——这是「校验器不许恒真」的核心断言。"""
@@ -182,8 +191,9 @@ def test_live_ctx_wins_over_stale_log_line(monkeypatch, tmp_path, capsys):
     旧行，对着一台 ctx=65536 的正常服务报了 NOT_TUNED。
     """
     stale = tmp_path / "server.log"
-    stale.write_text(_cfg_line("2026-10-18T17:12:15.061+08:00", DEFAULT_CFG) + "\n",
-                     encoding="utf-8")
+    stale.write_text(
+        _cfg_line("2026-10-18T17:12:15.061+08:00", DEFAULT_CFG) + "\n", encoding="utf-8"
+    )
     monkeypatch.setattr(sto, "CONFIG_LOG_CANDIDATES", [stale])
     monkeypatch.setattr(sto, "port_open", lambda *a, **k: True)
     monkeypatch.setattr(sto, "ollama_procs", lambda: ["ollama.exe"])

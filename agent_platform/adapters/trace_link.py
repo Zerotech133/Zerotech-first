@@ -14,6 +14,7 @@
   - 只读消费：影子账本/ai_operator store/execution 事件均 mode=ro 或
     逐行读，零写副作用（M3 ro 观测面判例）。
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -39,6 +40,7 @@ SEG_REQUIRED = {
 
 
 # ---------------------------------------------------------------- 环锚点纯函数
+
 
 def link_key(segment: str, ref: Dict) -> str:
     """环锚点规范化键：`<segment>:<排序后必填键值 joined>`。
@@ -85,6 +87,7 @@ def validate_chain(chain: Dict[str, Dict]) -> List[str]:
 
 # ---------------------------------------------------------------- 存储（append-only）
 
+
 class LinkStore:
     """trace_links.jsonl 追加账本。同链幂等跳过；同键异链拒绝。"""
 
@@ -102,11 +105,11 @@ class LinkStore:
 
     def _append(self, row: dict) -> None:
         with self.path.open("a", encoding="utf-8") as fh:
-            fh.write(json.dumps(row, ensure_ascii=False,
-                                separators=(",", ":")) + "\n")
+            fh.write(json.dumps(row, ensure_ascii=False, separators=(",", ":")) + "\n")
 
-    def record(self, chain: Dict[str, Dict], source: str = "",
-               declared_at: str = "") -> Dict:
+    def record(
+        self, chain: Dict[str, Dict], source: str = "", declared_at: str = ""
+    ) -> Dict:
         """显式声明一条环间关联。返回 {status, link_id, findings}。
 
         status: recorded（新登记）/ replayed（同链重放零副作用）/
@@ -129,7 +132,8 @@ class LinkStore:
             if existing.get("chain") != row["chain"]:
                 raise ValueError(
                     "trace link 冲突：link_id=%s 已存在但链内容不一致 "
-                    "(M0 契约：同键异值拒绝)" % lid)
+                    "(M0 契约：同键异值拒绝)" % lid
+                )
             return {"status": "replayed", "link_id": lid, "findings": []}
         self._index[lid] = row
         self._append(row)
@@ -151,6 +155,7 @@ class LinkStore:
 
 # ---------------------------------------------------------------- 只读收集器
 
+
 def collect_shadow_anchors(ledger: Optional[Path] = None) -> List[Dict]:
     """影子账本只读提取环锚点：done 行 → {run_id, symbol, trade_date}。
 
@@ -171,17 +176,20 @@ def collect_shadow_anchors(ledger: Optional[Path] = None) -> List[Dict]:
             continue
         if row.get("status") != "done" or not row.get("run_id"):
             continue
-        anchors.append({
-            "run_id": str(row["run_id"]),
-            "symbol": str(row.get("symbol", "")),
-            "trade_date": str(row.get("date", "")),
-            "score": row.get("score"),
-            "parse_ok": row.get("parse_ok"),
-        })
+        anchors.append(
+            {
+                "run_id": str(row["run_id"]),
+                "symbol": str(row.get("symbol", "")),
+                "trade_date": str(row.get("date", "")),
+                "score": row.get("score"),
+                "parse_ok": row.get("parse_ok"),
+            }
+        )
     return anchors
 
 
 # ---------------------------------------------------------------- 回放
+
 
 def replay_trace(store: LinkStore, target: str) -> Dict:
     """按环锚点值回放：target 命中任一环节的必填锚点值即整链时间线。
@@ -201,23 +209,30 @@ def replay_trace(store: LinkStore, target: str) -> Dict:
                 break
         if hit:
             missing = [s for s in SEG_ORDER if s not in row["chain"]]
-            matches.append({
-                "link_id": row["link_id"],
-                "chain": row["chain"],
-                "missing_segments": missing,
-                "source": row.get("source", ""),
-                "declared_at": row.get("declared_at", ""),
-            })
+            matches.append(
+                {
+                    "link_id": row["link_id"],
+                    "chain": row["chain"],
+                    "missing_segments": missing,
+                    "source": row.get("source", ""),
+                    "declared_at": row.get("declared_at", ""),
+                }
+            )
     if not matches:
-        return {"verdict": "NOT_FOUND", "matches": [],
-                "findings": ["无链命中锚点值: %s" % target]}
+        return {
+            "verdict": "NOT_FOUND",
+            "matches": [],
+            "findings": ["无链命中锚点值: %s" % target],
+        }
     return {"verdict": "OK", "matches": matches, "findings": []}
 
 
 # ---------------------------------------------------------------- CLI
 
+
 def _cli(argv: List[str]) -> int:
     import argparse
+
     ap = argparse.ArgumentParser(description="trace_link 映射层 CLI")
     ap.add_argument("cmd", choices=["stats", "ls", "replay"])
     ap.add_argument("target", nargs="?", help="replay 的锚点值")
@@ -230,7 +245,9 @@ def _cli(argv: List[str]) -> int:
         for row in store.all():
             chain_desc = " -> ".join(
                 "%s(%s)" % (seg, link_key(seg, row["chain"][seg]).split(":", 1)[1])
-                for seg in SEG_ORDER if seg in row["chain"])
+                for seg in SEG_ORDER
+                if seg in row["chain"]
+            )
             print(row["link_id"], "|", chain_desc)
         return 0
     if args.cmd == "replay":

@@ -6,6 +6,7 @@ CLI:
   python agent_platform/tools/skill_registry.py --verify-all    # 跑全部 verify
   python agent_platform/tools/skill_registry.py --verify NAME   # 单个
 """
+
 from __future__ import annotations
 
 import argparse
@@ -34,22 +35,37 @@ def _read_json(path: Path):
 def load_registry() -> dict:
     reg = _read_json(REGISTRY) or {}
     if not reg.get("skills"):
-        return {"schema": "zhaoyun_skills/v1", "total": 0, "skills": [],
-                "error": "registry_missing"}
+        return {
+            "schema": "zhaoyun_skills/v1",
+            "total": 0,
+            "skills": [],
+            "error": "registry_missing",
+        }
     return reg
 
 
 def state() -> dict:
-    return _read_json(STATE) or {"schema": "zhaoyun_skill_verify/v1",
-                                 "updated_at": "", "items": {}}
+    return _read_json(STATE) or {
+        "schema": "zhaoyun_skill_verify/v1",
+        "updated_at": "",
+        "items": {},
+    }
 
 
 def _save_state(items: dict) -> None:
     STATE.parent.mkdir(parents=True, exist_ok=True)
-    STATE.write_text(json.dumps({"schema": "zhaoyun_skill_verify/v1",
-                                 "updated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
-                                 "items": items}, ensure_ascii=False, indent=1),
-                     encoding="utf-8")
+    STATE.write_text(
+        json.dumps(
+            {
+                "schema": "zhaoyun_skill_verify/v1",
+                "updated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+                "items": items,
+            },
+            ensure_ascii=False,
+            indent=1,
+        ),
+        encoding="utf-8",
+    )
 
 
 def get_skill(name: str) -> dict | None:
@@ -73,9 +89,19 @@ def _verify_script(name: str) -> Path:
 
 
 def _clean_env() -> dict:
-    env = {k: v for k, v in os.environ.items()
-           if k.upper() not in ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY",
-                                "HTTP_PROXY", "HTTPS_PROXY")}
+    env = {
+        k: v
+        for k, v in os.environ.items()
+        if k.upper()
+        not in (
+            "HTTP_PROXY",
+            "HTTPS_PROXY",
+            "ALL_PROXY",
+            "NO_PROXY",
+            "HTTP_PROXY",
+            "HTTPS_PROXY",
+        )
+    }
     env["PYTHONIOENCODING"] = "utf-8"
     env["PYTHONDONTWRITEBYTECODE"] = "1"
     env["ZHAOYUN_VERIFY"] = "1"
@@ -86,18 +112,27 @@ def verify(name: str, timeout: int = TIMEOUT) -> dict:
     t0 = time.time()
     try:
         script = _verify_script(name)
-        r = subprocess.run([sys.executable, str(script)], cwd=str(REPO),
-                           capture_output=True, text=True, timeout=timeout,
-                           env=_clean_env())
+        r = subprocess.run(
+            [sys.executable, str(script)],
+            cwd=str(REPO),
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            env=_clean_env(),
+        )
         ok = r.returncode == 0
         detail = ((r.stderr or r.stdout or "").strip().splitlines() or [""])[-1][:300]
     except subprocess.TimeoutExpired:
         ok, detail = False, "timeout after %ss" % timeout
     except (OSError, ValueError) as e:
         ok, detail = False, "%s: %s" % (type(e).__name__, str(e)[:160])
-    rec = {"name": name, "ok": bool(ok), "detail": detail,
-           "elapsed_ms": int((time.time() - t0) * 1000),
-           "verified_at": time.strftime("%Y-%m-%dT%H:%M:%S%z")}
+    rec = {
+        "name": name,
+        "ok": bool(ok),
+        "detail": detail,
+        "elapsed_ms": int((time.time() - t0) * 1000),
+        "verified_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+    }
     items = state().get("items") or {}
     items[name] = rec
     _save_state(items)
@@ -107,11 +142,13 @@ def verify(name: str, timeout: int = TIMEOUT) -> dict:
 def verify_all(timeout: int = TIMEOUT) -> dict:
     reg = load_registry()
     results = [verify(s["name"], timeout) for s in reg.get("skills") or []]
-    return {"ok": all(r["ok"] for r in results),
-            "total": len(results),
-            "failed": [r["name"] for r in results if not r["ok"]],
-            "results": results,
-            "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z")}
+    return {
+        "ok": all(r["ok"] for r in results),
+        "total": len(results),
+        "failed": [r["name"] for r in results if not r["ok"]],
+        "results": results,
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+    }
 
 
 def list_skills(with_state: bool = True) -> dict:
@@ -122,10 +159,14 @@ def list_skills(with_state: bool = True) -> dict:
         item = dict(s)
         item["last_verified"] = st.get(s["name"])
         items.append(item)
-    return {"ok": bool(reg.get("skills")), "schema": reg.get("schema"),
-            "total": len(items), "skills": items,
-            "manual_count": sum(1 for s in items if s.get("manual")),
-            "state_updated_at": state().get("updated_at")}
+    return {
+        "ok": bool(reg.get("skills")),
+        "schema": reg.get("schema"),
+        "total": len(items),
+        "skills": items,
+        "manual_count": sum(1 for s in items if s.get("manual")),
+        "state_updated_at": state().get("updated_at"),
+    }
 
 
 def main(argv=None) -> int:

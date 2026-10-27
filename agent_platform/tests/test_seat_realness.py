@@ -2,6 +2,7 @@
 
 五维：授权/工具/触发/审计/回滚；用 tmp 仓夹具，不依赖真实组织与计划任务。
 """
+
 from __future__ import annotations
 
 import importlib.util
@@ -23,27 +24,66 @@ def _write(path: Path, text: str):
 
 def make_root(tmp_path, *, tool_file=True, prompt=True, rollback=True, events=True):
     root = tmp_path / "repo"
-    _write(root / "agent_platform/registry/org.json", json.dumps({
-        "departments": [{
-            "dept": "x", "name": "X部", "cn_title": "测试府", "agents": ["T1"],
-            "agent_profiles": {"T1": {"agent_id": "T1", "role_profile": "demo_role",
-                                      "tools": ["demo_probe"], "grade": "E1"}},
-        }]
-    }, ensure_ascii=False))
+    _write(
+        root / "agent_platform/registry/org.json",
+        json.dumps(
+            {
+                "departments": [
+                    {
+                        "dept": "x",
+                        "name": "X部",
+                        "cn_title": "测试府",
+                        "agents": ["T1"],
+                        "agent_profiles": {
+                            "T1": {
+                                "agent_id": "T1",
+                                "role_profile": "demo_role",
+                                "tools": ["demo_probe"],
+                                "grade": "E1",
+                            }
+                        },
+                    }
+                ]
+            },
+            ensure_ascii=False,
+        ),
+    )
     _write(root / "agent_platform/hr/T1/resume.yaml", "agent_id: T1\ncn_name: 测试\n")
-    body = "# T1 · 测试岗（demo_role）\n\n## 回滚\n设置 `DEMO_PROBE=off` 即停。\n" if rollback else "# T1 · 测试岗（demo_role）\n"
+    body = (
+        "# T1 · 测试岗（demo_role）\n\n## 回滚\n设置 `DEMO_PROBE=off` 即停。\n"
+        if rollback
+        else "# T1 · 测试岗（demo_role）\n"
+    )
     _write(root / "agent_platform/prompts/demo_role.md", body)
-    _write(root / "portal/agent_ide_bundle.json", json.dumps({
-        "agents": {"T1": {"role_profile": "demo_role", "tools": ["demo_probe"],
-                          "prompt_file": "agent_platform/prompts/demo_role.md",
-                          "entry_source": "org_profiles"}}
-    }, ensure_ascii=False))
+    _write(
+        root / "portal/agent_ide_bundle.json",
+        json.dumps(
+            {
+                "agents": {
+                    "T1": {
+                        "role_profile": "demo_role",
+                        "tools": ["demo_probe"],
+                        "prompt_file": "agent_platform/prompts/demo_role.md",
+                        "entry_source": "org_profiles",
+                    }
+                }
+            },
+            ensure_ascii=False,
+        ),
+    )
     if tool_file:
         _write(root / "agent_platform/tools/demo_probe.py", "# demo tool\n")
     if events:
-        rec = {"day": time.strftime("%Y-%m-%d"), "kind": "patrol_verdict",
-               "agent": "T1", "detail": "demo"}
-        _write(root / "portal/data/dev_events.jsonl", json.dumps(rec, ensure_ascii=False) + "\n")
+        rec = {
+            "day": time.strftime("%Y-%m-%d"),
+            "kind": "patrol_verdict",
+            "agent": "T1",
+            "detail": "demo",
+        }
+        _write(
+            root / "portal/data/dev_events.jsonl",
+            json.dumps(rec, ensure_ascii=False) + "\n",
+        )
     return root
 
 
@@ -109,7 +149,8 @@ def test_engine_tool_recognized(monkeypatch, tmp_path):
     root = make_root(tmp_path, tool_file=False)
     (root / "agent_platform/engine").mkdir(parents=True, exist_ok=True)
     (root / "agent_platform/engine/tools.py").write_text(
-        "def demo_engine_tool(code):\n    return code\n", encoding="utf-8")
+        "def demo_engine_tool(code):\n    return code\n", encoding="utf-8"
+    )
     org_path = root / "agent_platform/registry/org.json"
     data = json.loads(org_path.read_text(encoding="utf-8"))
     data["departments"][0]["agent_profiles"]["T1"]["tools"] = ["demo_engine_tool"]

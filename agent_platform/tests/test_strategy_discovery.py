@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """显式策略清单驱动发现测试。"""
+
 import json
 import sys
 from pathlib import Path

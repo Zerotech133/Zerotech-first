@@ -58,10 +58,14 @@ def _ensure_columns(conn: sqlite3.Connection) -> None:
     """向后兼容加列（既有库不含 trace_id/content_hash → ALTER）。"""
     cols = {r[1] for r in conn.execute("PRAGMA table_info(approvals)")}
     if "trace_id" not in cols:
-        conn.execute("ALTER TABLE approvals ADD COLUMN trace_id TEXT NOT NULL DEFAULT ''")
+        conn.execute(
+            "ALTER TABLE approvals ADD COLUMN trace_id TEXT NOT NULL DEFAULT ''"
+        )
         conn.commit()
     if "content_hash" not in cols:
-        conn.execute("ALTER TABLE approvals ADD COLUMN content_hash TEXT NOT NULL DEFAULT ''")
+        conn.execute(
+            "ALTER TABLE approvals ADD COLUMN content_hash TEXT NOT NULL DEFAULT ''"
+        )
         conn.commit()
 
 
@@ -99,7 +103,7 @@ class ApprovalStore:
         if approval.decision not in ("approved", "rejected"):
             raise ValueError("decision 只能是 approved / rejected")
         # 裸 BEGIN IMMEDIATE 前置拿写锁 + 显式 commit/rollback
-        #（与 M0 idempotency.claim 同款事务纪律；勿改 with-上下文写法，
+        # （与 M0 idempotency.claim 同款事务纪律；勿改 with-上下文写法，
         #  Windows 多连接下会触发 WAL readonly 异常——2026-10-17 实测定案）
         self._conn.execute("BEGIN IMMEDIATE")
         try:
@@ -109,40 +113,60 @@ class ApprovalStore:
                 " decision, decided_by, reason, decided_at,"
                 " schema_version, created_at, trace_id, content_hash)"
                 " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-                (approval.approval_id, approval.idempotency_key,
-                 approval.target_type, approval.target_id,
-                 approval.from_status, approval.to_status,
-                 approval.decision, approval.decided_by,
-                 approval.reason,
-                 approval.decided_at or _now_iso(),
-                 approval.schema_version, _now_iso(),
-                 approval.trace_id or "", approval.content_hash or ""))
+                (
+                    approval.approval_id,
+                    approval.idempotency_key,
+                    approval.target_type,
+                    approval.target_id,
+                    approval.from_status,
+                    approval.to_status,
+                    approval.decision,
+                    approval.decided_by,
+                    approval.reason,
+                    approval.decided_at or _now_iso(),
+                    approval.schema_version,
+                    _now_iso(),
+                    approval.trace_id or "",
+                    approval.content_hash or "",
+                ),
+            )
             self._conn.commit()
             return approval, False
         except sqlite3.IntegrityError:
             self._conn.rollback()
             row = self._conn.execute(
                 "SELECT * FROM approvals WHERE idempotency_key=?",
-                (approval.idempotency_key,)).fetchone()
+                (approval.idempotency_key,),
+            ).fetchone()
             existing = self._row_to_approval(row)
             # M0 契约：同键异参拒绝（粘性冲突语义与 IdempotencyStore 对齐）
             mismatch = {
                 f: (getattr(existing, f), getattr(approval, f))
-                for f in ("target_type", "target_id", "from_status",
-                          "to_status", "decision")
+                for f in (
+                    "target_type",
+                    "target_id",
+                    "from_status",
+                    "to_status",
+                    "decision",
+                )
                 if getattr(existing, f) != getattr(approval, f)
             }
             # M3-P3：content_hash 绑定冲突——同键凭据已绑 H1，本次声明
             # H2 → 批 A 发 B 检测点（store 层统一防住，域层快路径另校验）
-            if (approval.content_hash and existing.content_hash
-                    and approval.content_hash != existing.content_hash):
-                mismatch["content_hash"] = (existing.content_hash,
-                                            approval.content_hash)
+            if (
+                approval.content_hash
+                and existing.content_hash
+                and approval.content_hash != existing.content_hash
+            ):
+                mismatch["content_hash"] = (
+                    existing.content_hash,
+                    approval.content_hash,
+                )
             if mismatch:
                 raise ValueError(
                     "幂等键冲突（同键异参）：%s 既有 %r，本次 %r"
-                    % (approval.idempotency_key, mismatch,
-                       approval.decided_by))
+                    % (approval.idempotency_key, mismatch, approval.decided_by)
+                )
             return existing, True
         except Exception:
             self._conn.rollback()
@@ -150,8 +174,8 @@ class ApprovalStore:
 
     def get(self, approval_id: str) -> Optional[Approval]:
         row = self._conn.execute(
-            "SELECT * FROM approvals WHERE approval_id=?",
-            (approval_id,)).fetchone()
+            "SELECT * FROM approvals WHERE approval_id=?", (approval_id,)
+        ).fetchone()
         return self._row_to_approval(row) if row else None
 
     def list(self, target_type: str = None, target_id: str = None) -> List[Approval]:
@@ -167,18 +191,25 @@ class ApprovalStore:
             sql += " WHERE " + " AND ".join(cond)
         # rowid 兜底保证同秒记录的 append 顺序（审批账本按发生序回放）
         sql += " ORDER BY created_at, rowid"
-        return [self._row_to_approval(r) for r in
-                self._conn.execute(sql, args).fetchall()]
+        return [
+            self._row_to_approval(r) for r in self._conn.execute(sql, args).fetchall()
+        ]
 
     def stats(self) -> dict:
         row = self._conn.execute(
-            "SELECT COUNT(*) AS n, COUNT(DISTINCT target_id) AS targets"
-            " FROM approvals").fetchone()
-        by_decision = {r["decision"]: r["n"] for r in self._conn.execute(
-            "SELECT decision, COUNT(*) AS n FROM approvals"
-            " GROUP BY decision").fetchall()}
-        return {"count": row["n"], "distinct_targets": row["targets"],
-                "by_decision": by_decision}
+            "SELECT COUNT(*) AS n, COUNT(DISTINCT target_id) AS targets FROM approvals"
+        ).fetchone()
+        by_decision = {
+            r["decision"]: r["n"]
+            for r in self._conn.execute(
+                "SELECT decision, COUNT(*) AS n FROM approvals GROUP BY decision"
+            ).fetchall()
+        }
+        return {
+            "count": row["n"],
+            "distinct_targets": row["targets"],
+            "by_decision": by_decision,
+        }
 
     def close(self):
         self._conn.close()
@@ -206,8 +237,12 @@ class ApprovalStore:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="统一审批注册表 CLI")
-    ap.add_argument("--db", default=str(Path(__file__).resolve().parents[1]
-                                        / "data" / "approvals" / "approvals.db"))
+    ap.add_argument(
+        "--db",
+        default=str(
+            Path(__file__).resolve().parents[1] / "data" / "approvals" / "approvals.db"
+        ),
+    )
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("stats")
     p_list = sub.add_parser("ls")
@@ -229,4 +264,5 @@ def main(argv=None) -> int:
 
 if __name__ == "__main__":
     import sys
+
     sys.exit(main())

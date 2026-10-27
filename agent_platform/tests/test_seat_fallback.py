@@ -31,12 +31,15 @@ from legion_command import serve as srv  # noqa: E402
 
 # ---------------------------------------------------------------- 夹具/工具
 
+
 def _write_org(root: Path, departments: list) -> Path:
     """写迷你 org.json（只含 departments），返回文件路径。"""
     (root / "registry").mkdir(parents=True, exist_ok=True)
     p = root / "registry" / "org.json"
-    p.write_text(json.dumps({"departments": departments}, ensure_ascii=False, indent=2),
-                 encoding="utf-8")
+    p.write_text(
+        json.dumps({"departments": departments}, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
     return p
 
 
@@ -45,58 +48,115 @@ def _ok_env(text="答复", status="normal", binding=None):
     data = {"text": text, "status": status}
     if binding:
         data["binding_resolved"] = binding
-    return make_envelope(kind="llm_chat", ok=True,
-                         degraded=(status == "degraded"), data=data)
+    return make_envelope(
+        kind="llm_chat", ok=True, degraded=(status == "degraded"), data=data
+    )
 
 
 def _fail_env(message="HTTP 429 限额"):
-    return make_envelope(kind="llm_chat", ok=False,
-                         error={"code": "llm_error", "message": message})
+    return make_envelope(
+        kind="llm_chat", ok=False, error={"code": "llm_error", "message": message}
+    )
 
 
 # ---------------------------------------------------------------- fallbacks_index
 
+
 def test_fallbacks_index_reads_ordered_chain(tmp_path):
     """正常 list：顺序即优先级，必须原样保序返回。"""
-    _write_org(tmp_path, [{"dept": "dev", "agent_profiles": [
-        {"agent_id": "DEV1", "llm_binding": "glm/glm-5.3",
-         "llm_fallback": ["deepseek/deepseek-flash", "ollama/qwen3.5:9b"]},
-    ]}])
+    _write_org(
+        tmp_path,
+        [
+            {
+                "dept": "dev",
+                "agent_profiles": [
+                    {
+                        "agent_id": "DEV1",
+                        "llm_binding": "glm/glm-5.3",
+                        "llm_fallback": [
+                            "deepseek/deepseek-flash",
+                            "ollama/qwen3.5:9b",
+                        ],
+                    },
+                ],
+            }
+        ],
+    )
     assert P.fallbacks_index(tmp_path)["DEV1"] == [
-        "deepseek/deepseek-flash", "ollama/qwen3.5:9b"]
+        "deepseek/deepseek-flash",
+        "ollama/qwen3.5:9b",
+    ]
 
 
 def test_fallbacks_index_defaults_to_empty_list(tmp_path):
     """有档案但没配 llm_fallback → 空 list（空链 ≠ 无档案）；缺 org.json → 空索引。"""
-    _write_org(tmp_path, [{"dept": "ops", "agent_profiles": [
-        {"agent_id": "OPS0", "llm_binding": "ollama/qwen3.5:9b"},
-    ]}])
+    _write_org(
+        tmp_path,
+        [
+            {
+                "dept": "ops",
+                "agent_profiles": [
+                    {"agent_id": "OPS0", "llm_binding": "ollama/qwen3.5:9b"},
+                ],
+            }
+        ],
+    )
     assert P.fallbacks_index(tmp_path) == {"OPS0": []}
     assert P.fallbacks_index(tmp_path / "nowhere") == {}
 
 
 def test_fallbacks_index_filters_and_dedupes(tmp_path):
     """非串/空串一律过滤；去重保序（同一 binding 只留首次出现）。"""
-    _write_org(tmp_path, [{"dept": "dev", "agent_profiles": [
-        {"agent_id": "DEV2", "llm_fallback": [
-            "deepseek/deepseek-flash", "", "   ",
-            None, 42, {"model": "ollama/qwen3.5:9b"}, ["ollama/qwen3.5:9b"],
-            "  deepseek/deepseek-flash  ", "ollama/qwen3.5:9b",
-        ]},
-    ]}])
+    _write_org(
+        tmp_path,
+        [
+            {
+                "dept": "dev",
+                "agent_profiles": [
+                    {
+                        "agent_id": "DEV2",
+                        "llm_fallback": [
+                            "deepseek/deepseek-flash",
+                            "",
+                            "   ",
+                            None,
+                            42,
+                            {"model": "ollama/qwen3.5:9b"},
+                            ["ollama/qwen3.5:9b"],
+                            "  deepseek/deepseek-flash  ",
+                            "ollama/qwen3.5:9b",
+                        ],
+                    },
+                ],
+            }
+        ],
+    )
     assert P.fallbacks_index(tmp_path)["DEV2"] == [
-        "deepseek/deepseek-flash", "ollama/qwen3.5:9b"]
+        "deepseek/deepseek-flash",
+        "ollama/qwen3.5:9b",
+    ]
 
 
 def test_fallbacks_index_first_occurrence_wins(tmp_path):
     """同 key 先到先得（与 profile_index 同策略）：后出现的档案不得改写降级顺序。"""
-    _write_org(tmp_path, [
-        {"dept": "d1", "agent_profiles": [
-            {"agent_id": "X1", "llm_fallback": ["deepseek/deepseek-flash"]}]},
-        {"dept": "d2", "agent_profiles": [
-            {"agent_id": "X1", "llm_fallback": ["ollama/qwen3.5:9b"]},
-            {"agent_id": "X2", "llm_fallback": "ollama/qwen3.5:9b"}]},
-    ])
+    _write_org(
+        tmp_path,
+        [
+            {
+                "dept": "d1",
+                "agent_profiles": [
+                    {"agent_id": "X1", "llm_fallback": ["deepseek/deepseek-flash"]}
+                ],
+            },
+            {
+                "dept": "d2",
+                "agent_profiles": [
+                    {"agent_id": "X1", "llm_fallback": ["ollama/qwen3.5:9b"]},
+                    {"agent_id": "X2", "llm_fallback": "ollama/qwen3.5:9b"},
+                ],
+            },
+        ],
+    )
     idx = P.fallbacks_index(tmp_path)
     assert idx["X1"] == ["deepseek/deepseek-flash"]
     # 单串写法容错成单元素链（真源标准是 list，容忍历史手写）
@@ -105,8 +165,17 @@ def test_fallbacks_index_first_occurrence_wins(tmp_path):
 
 def test_fallbacks_index_readonly(tmp_path):
     """只读：跑一遍不得改动真源字节。"""
-    p = _write_org(tmp_path, [{"dept": "d", "agent_profiles": [
-        {"agent_id": "X1", "llm_fallback": ["deepseek/deepseek-flash"]}]}])
+    p = _write_org(
+        tmp_path,
+        [
+            {
+                "dept": "d",
+                "agent_profiles": [
+                    {"agent_id": "X1", "llm_fallback": ["deepseek/deepseek-flash"]}
+                ],
+            }
+        ],
+    )
     before = p.read_bytes()
     P.fallbacks_index(tmp_path)
     assert p.read_bytes() == before
@@ -121,11 +190,13 @@ def test_real_org_e3_chain_available():
     for aid, chain in chained.items():
         binding = (prof.get(aid) or {}).get("llm_binding") or ""
         assert chain[0] != binding, "%s 降级链首项与主绑相同（链无效）" % aid
-    assert any(c[0].startswith("deepseek/") for c in chained.values()), \
+    assert any(c[0].startswith("deepseek/") for c in chained.values()), (
         "研发部 E3 席的降级链首项应为 deepseek/deepseek-flash"
+    )
 
 
 # ---------------------------------------------------------------- DeepSeek 通道
+
 
 def test_make_llm_routes_deepseek():
     """deepseek/ → DeepSeekLLM（不是 OllamaLLM 兜底）；构造期零网络零 key 读取。"""
@@ -148,15 +219,31 @@ class _StubClient:
         self.raises = raises
         self.calls = []
 
-    def chat_full(self, messages, model=None, temperature=0.2,
-                  max_tokens=800, response_format=None):
-        self.calls.append({"messages": list(messages), "model": model,
-                           "temperature": temperature, "max_tokens": max_tokens,
-                           "response_format": response_format})
+    def chat_full(
+        self,
+        messages,
+        model=None,
+        temperature=0.2,
+        max_tokens=800,
+        response_format=None,
+    ):
+        self.calls.append(
+            {
+                "messages": list(messages),
+                "model": model,
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+                "response_format": response_format,
+            }
+        )
         if self.raises is not None:
             raise self.raises
-        return {"content": self.content, "usage": {"total_tokens": 7},
-                "model": model, "finish_reason": self.finish}
+        return {
+            "content": self.content,
+            "usage": {"total_tokens": 7},
+            "model": model,
+            "finish_reason": self.finish,
+        }
 
 
 def test_deepseek_llm_chat_contract():
@@ -211,6 +298,7 @@ def test_deepseek_llm_missing_key_raises_llm_error(monkeypatch):
 
 # ---------------------------------------------------------------- 门面前缀口径
 
+
 def test_prefix_owns_model_includes_deepseek():
     assert "deepseek" in llm_gateway._PREFIX_OWNS_MODEL
 
@@ -232,11 +320,16 @@ def test_gateway_deepseek_does_not_repass_binding(monkeypatch):
 
 # ---------------------------------------------------------------- _seat_chat 四分支
 
+
 def test_seat_chat_primary_ok_untouched():
     """主绑成功：不标降级、不多调一次、不碰 data（旧行为不变）。"""
     env, attempts = srv._seat_chat(
-        lambda **kw: _ok_env("直答"), "glm/glm-5.3",
-        ["deepseek/deepseek-flash"], "s", "u")
+        lambda **kw: _ok_env("直答"),
+        "glm/glm-5.3",
+        ["deepseek/deepseek-flash"],
+        "s",
+        "u",
+    )
     assert attempts == ["glm/glm-5.3"]
     assert env["degraded"] is False and "fallback_from" not in env
 
@@ -295,8 +388,9 @@ def test_seat_chat_all_fallbacks_fail_returns_primary_error():
 
     def chat_fn(binding=None, system="", user=""):
         calls.append(binding)
-        return _fail_env("glm 主绑错误" if binding == "glm/glm-5.3"
-                         else "%s 也失败" % binding)
+        return _fail_env(
+            "glm 主绑错误" if binding == "glm/glm-5.3" else "%s 也失败" % binding
+        )
 
     env, attempts = srv._seat_chat(chat_fn, "glm/glm-5.3", chain, "s", "u")
     assert calls == ["glm/glm-5.3", "deepseek/deepseek-flash", "ollama/qwen3.5:9b"]
@@ -333,8 +427,14 @@ def test_seat_chat_custom_default_fallback():
         calls.append(binding)
         return _fail_env() if binding.startswith("glm/") else _ok_env(binding=binding)
 
-    env, _ = srv._seat_chat(chat_fn, "glm/glm-5.3", None, "s", "u",
-                            default_fallback="ollama/qwen3.6:35b-a3b")
+    env, _ = srv._seat_chat(
+        chat_fn,
+        "glm/glm-5.3",
+        None,
+        "s",
+        "u",
+        default_fallback="ollama/qwen3.6:35b-a3b",
+    )
     assert calls[-1] == "ollama/qwen3.6:35b-a3b"
     assert env["fallback_chain"] == ["ollama/qwen3.6:35b-a3b"]
 
@@ -347,8 +447,9 @@ def test_seat_chat_non_glm_failure_no_fake_degrade():
         calls.append(binding)
         return _fail_env("本地重试耗尽")
 
-    env, attempts = srv._seat_chat(chat_fn, "ollama/qwen3.5:9b",
-                                   ["deepseek/deepseek-flash"], "s", "u")
+    env, attempts = srv._seat_chat(
+        chat_fn, "ollama/qwen3.5:9b", ["deepseek/deepseek-flash"], "s", "u"
+    )
     assert calls == ["ollama/qwen3.5:9b"]
     assert attempts == ["ollama/qwen3.5:9b"]
     assert env["ok"] is False and env["error"]["message"] == "本地重试耗尽"
@@ -357,24 +458,56 @@ def test_seat_chat_non_glm_failure_no_fake_degrade():
 
 # ---------------------------------------------------------------- 缓存/接线
 
+
 def test_resolve_fallbacks_cache_and_invalidation(tmp_path):
     """与 resolve_binding 同一 stamp：返回副本、改档后失效、无档返回 []。"""
-    _write_org(tmp_path, [{"dept": "dev", "agent_profiles": [
-        {"agent_id": "Z9", "llm_binding": "glm/glm-5.3",
-         "llm_fallback": ["deepseek/deepseek-flash"]}]}])
+    _write_org(
+        tmp_path,
+        [
+            {
+                "dept": "dev",
+                "agent_profiles": [
+                    {
+                        "agent_id": "Z9",
+                        "llm_binding": "glm/glm-5.3",
+                        "llm_fallback": ["deepseek/deepseek-flash"],
+                    }
+                ],
+            }
+        ],
+    )
     srv._BINDING_CACHE.update(mtime=None, map={})
     assert srv.resolve_fallbacks("Z9", platform_dir=tmp_path) == [
-        "deepseek/deepseek-flash"]
+        "deepseek/deepseek-flash"
+    ]
     # 副本语义：调用方就地改不污染缓存
     srv.resolve_fallbacks("Z9", platform_dir=tmp_path).append("x")
     assert srv.resolve_fallbacks("Z9", platform_dir=tmp_path) == [
-        "deepseek/deepseek-flash"]
+        "deepseek/deepseek-flash"
+    ]
     # 改档后指纹失效（内容长度变化确保 size 指纹变化）
-    _write_org(tmp_path, [{"dept": "dev", "agent_profiles": [
-        {"agent_id": "Z9", "llm_binding": "glm/glm-5.3",
-         "llm_fallback": ["ollama/qwen3.5:9b", "deepseek/deepseek-v4-pro"]}]}])
+    _write_org(
+        tmp_path,
+        [
+            {
+                "dept": "dev",
+                "agent_profiles": [
+                    {
+                        "agent_id": "Z9",
+                        "llm_binding": "glm/glm-5.3",
+                        "llm_fallback": [
+                            "ollama/qwen3.5:9b",
+                            "deepseek/deepseek-v4-pro",
+                        ],
+                    }
+                ],
+            }
+        ],
+    )
     assert srv.resolve_fallbacks("Z9", platform_dir=tmp_path) == [
-        "ollama/qwen3.5:9b", "deepseek/deepseek-v4-pro"]
+        "ollama/qwen3.5:9b",
+        "deepseek/deepseek-v4-pro",
+    ]
     assert srv.resolve_fallbacks("NOPE", platform_dir=tmp_path) == []
 
 
@@ -389,10 +522,12 @@ def server():
 
 
 def _post(base, path, obj):
-    req = urllib.request.Request(base + path,
-                                 data=json.dumps(obj).encode("utf-8"),
-                                 headers={"Content-Type": "application/json"},
-                                 method="POST")
+    req = urllib.request.Request(
+        base + path,
+        data=json.dumps(obj).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
     with urllib.request.urlopen(req, timeout=10) as r:
         return json.loads(r.read().decode("utf-8"))
 
@@ -410,9 +545,14 @@ def test_http_chat_walks_seat_chain(server, monkeypatch):
         return _ok_env("本地 9b 答复", binding=binding)
 
     monkeypatch.setattr(llm_gateway, "chat", fake_chat)
-    monkeypatch.setattr(srv, "resolve_fallbacks",
-                        lambda agent, platform_dir=None:
-                        ["deepseek/deepseek-flash", "ollama/qwen3.5:9b"])
+    monkeypatch.setattr(
+        srv,
+        "resolve_fallbacks",
+        lambda agent, platform_dir=None: [
+            "deepseek/deepseek-flash",
+            "ollama/qwen3.5:9b",
+        ],
+    )
     env = _post(server, "/api/chat", {"agent": "A0", "system": "s", "user": "u"})
     assert calls == ["glm/glm-5.3", "deepseek/deepseek-flash"]
     assert env["ok"] is True and env["degraded"] is True

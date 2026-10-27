@@ -83,10 +83,11 @@ class ArtifactStore:
         if read_only:
             if not self.db_path.exists():
                 raise FileNotFoundError(
-                    "artifact db 不存在：%s（只读模式不建库）" % self.db_path)
+                    "artifact db 不存在：%s（只读模式不建库）" % self.db_path
+                )
             self._conn = sqlite3.connect(
-                "file:%s?mode=ro" % self.db_path.as_posix(), uri=True,
-                timeout=30)
+                "file:%s?mode=ro" % self.db_path.as_posix(), uri=True, timeout=30
+            )
             self._conn.row_factory = sqlite3.Row
             return
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -113,8 +114,7 @@ class ArtifactStore:
         """
         chash = art.effective_hash()
         if not chash:
-            raise ValueError(
-                "artifact 缺内容指纹：content_hash/fact_hash 至少其一非空")
+            raise ValueError("artifact 缺内容指纹：content_hash/fact_hash 至少其一非空")
         self._conn.execute("BEGIN IMMEDIATE")
         try:
             self._conn.execute(
@@ -123,27 +123,42 @@ class ArtifactStore:
                 " workitem_id, source_system, source_ref, produced_by,"
                 " missing, registered_at, payload, trace_id,"
                 " schema_version) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-                (art.artifact_id, art.kind, art.path, chash, art.fact_hash,
-                 art.revision, art.supersedes, art.workitem_id,
-                 art.source_system, art.source_ref, art.produced_by,
-                 1 if art.missing else 0, _now_iso(),
-                 # payload 列为扩展槽（Artifact 契约暂无此字段，恒写 '{}'；
-                # 未来扩展只加列不动契约，读侧不映射不丢真源信息）
-                 "{}", art.trace_id, art.schema_version))
+                (
+                    art.artifact_id,
+                    art.kind,
+                    art.path,
+                    chash,
+                    art.fact_hash,
+                    art.revision,
+                    art.supersedes,
+                    art.workitem_id,
+                    art.source_system,
+                    art.source_ref,
+                    art.produced_by,
+                    1 if art.missing else 0,
+                    _now_iso(),
+                    # payload 列为扩展槽（Artifact 契约暂无此字段，恒写 '{}'；
+                    # 未来扩展只加列不动契约，读侧不映射不丢真源信息）
+                    "{}",
+                    art.trace_id,
+                    art.schema_version,
+                ),
+            )
             self._conn.commit()
             return art, False
         except sqlite3.IntegrityError:
             self._conn.rollback()
             row = self._conn.execute(
-                "SELECT * FROM artifacts WHERE content_hash=?",
-                (chash,)).fetchone()
+                "SELECT * FROM artifacts WHERE content_hash=?", (chash,)
+            ).fetchone()
             return self._row_to_artifact(row), True
         except Exception:
             self._conn.rollback()
             raise
 
-    def supersede(self, old_artifact_id: str, new_art: Artifact,
-                  produced_by: str = "") -> Tuple[Artifact, bool]:
+    def supersede(
+        self, old_artifact_id: str, new_art: Artifact, produced_by: str = ""
+    ) -> Tuple[Artifact, bool]:
         """以新内容替代旧产物：新 revision = 旧 + 1，supersedes 指旧。
 
         旧条目 append-only 保留（可回滚=沿链回溯），本方法不删不改
@@ -153,7 +168,8 @@ class ArtifactStore:
         old = self.get(old_artifact_id)
         if old is None:
             raise ValueError(
-                "supersede 目标不存在：%s（无源 ID 不伪造）" % old_artifact_id)
+                "supersede 目标不存在：%s（无源 ID 不伪造）" % old_artifact_id
+            )
         old_rev = int(old.revision.lstrip("r") or "1")
         new_art.supersedes = old_artifact_id
         new_art.revision = "r%d" % (old_rev + 1)
@@ -170,22 +186,25 @@ class ArtifactStore:
     # ------------------------------------------------------------------
     def get(self, artifact_id: str) -> Optional[Artifact]:
         row = self._conn.execute(
-            "SELECT * FROM artifacts WHERE artifact_id=?",
-            (artifact_id,)).fetchone()
+            "SELECT * FROM artifacts WHERE artifact_id=?", (artifact_id,)
+        ).fetchone()
         return self._row_to_artifact(row) if row else None
 
     def by_hash(self, content_hash: str) -> Optional[Artifact]:
         row = self._conn.execute(
-            "SELECT * FROM artifacts WHERE content_hash=?",
-            (content_hash,)).fetchone()
+            "SELECT * FROM artifacts WHERE content_hash=?", (content_hash,)
+        ).fetchone()
         return self._row_to_artifact(row) if row else None
 
-    def list(self, source_system: Optional[str] = None,
-             limit: int = 500) -> List[Artifact]:
-        sql = ("SELECT * FROM artifacts"
-               + (" WHERE source_system=?" if source_system else "")
-               + " ORDER BY registered_at, rowid LIMIT ?")
-        args = ([source_system, limit] if source_system else [limit])
+    def list(
+        self, source_system: Optional[str] = None, limit: int = 500
+    ) -> List[Artifact]:
+        sql = (
+            "SELECT * FROM artifacts"
+            + (" WHERE source_system=?" if source_system else "")
+            + " ORDER BY registered_at, rowid LIMIT ?"
+        )
+        args = [source_system, limit] if source_system else [limit]
         rows = self._conn.execute(sql, args).fetchall()
         return [self._row_to_artifact(r) for r in rows]
 
@@ -202,21 +221,30 @@ class ArtifactStore:
         return chain
 
     def stats(self) -> Dict:
-        total = self._conn.execute(
-            "SELECT COUNT(*) FROM artifacts").fetchone()[0]
-        by_source = {r["source_system"] or "(unspecified)": r["n"]
-                     for r in self._conn.execute(
-                         "SELECT source_system, COUNT(*) AS n"
-                         " FROM artifacts GROUP BY source_system"
-                         " ORDER BY source_system")}
-        by_kind = {r["kind"]: r["n"] for r in self._conn.execute(
-            "SELECT kind, COUNT(*) AS n FROM artifacts"
-            " GROUP BY kind ORDER BY kind")}
+        total = self._conn.execute("SELECT COUNT(*) FROM artifacts").fetchone()[0]
+        by_source = {
+            r["source_system"] or "(unspecified)": r["n"]
+            for r in self._conn.execute(
+                "SELECT source_system, COUNT(*) AS n"
+                " FROM artifacts GROUP BY source_system"
+                " ORDER BY source_system"
+            )
+        }
+        by_kind = {
+            r["kind"]: r["n"]
+            for r in self._conn.execute(
+                "SELECT kind, COUNT(*) AS n FROM artifacts GROUP BY kind ORDER BY kind"
+            )
+        }
         superseded = self._conn.execute(
             "SELECT COUNT(*) FROM artifacts WHERE supersedes!=''"
         ).fetchone()[0]
-        return {"total": total, "by_source": by_source, "by_kind": by_kind,
-                "superseded_count": superseded}
+        return {
+            "total": total,
+            "by_source": by_source,
+            "by_kind": by_kind,
+            "superseded_count": superseded,
+        }
 
     def close(self) -> None:
         self._conn.close()
@@ -257,8 +285,7 @@ def main(argv=None) -> int:
 
     db = _ENGINE_DIR.parent / "data" / "artifacts" / "artifacts.db"
     if not db.exists():
-        print(json.dumps({"ledger_exists": False, "total": 0},
-                         ensure_ascii=False))
+        print(json.dumps({"ledger_exists": False, "total": 0}, ensure_ascii=False))
         return 0
     store = ArtifactStore(db)
     try:
@@ -266,14 +293,28 @@ def main(argv=None) -> int:
             print(json.dumps(store.stats(), ensure_ascii=False, indent=1))
         elif args.cmd == "chain":
             for a in store.chain(args.artifact_id):
-                print("%s r=%s prev=%s hash=%s %s" % (
-                    a.artifact_id[:12], a.revision, a.supersedes[:12] or "-",
-                    a.effective_hash()[:12], a.path))
+                print(
+                    "%s r=%s prev=%s hash=%s %s"
+                    % (
+                        a.artifact_id[:12],
+                        a.revision,
+                        a.supersedes[:12] or "-",
+                        a.effective_hash()[:12],
+                        a.path,
+                    )
+                )
         else:
             for a in store.list(source_system=args.source, limit=args.limit):
-                print("%s | %s | %s | %s | %s" % (
-                    a.revision, a.kind, a.source_ref or a.workitem_id,
-                    a.path[:40], a.effective_hash()[:12]))
+                print(
+                    "%s | %s | %s | %s | %s"
+                    % (
+                        a.revision,
+                        a.kind,
+                        a.source_ref or a.workitem_id,
+                        a.path[:40],
+                        a.effective_hash()[:12],
+                    )
+                )
     finally:
         store.close()
     return 0

@@ -21,14 +21,17 @@ from engine import experiment_card as E  # noqa: E402
 
 
 def _card(**kw):
-    base = dict(hypothesis="候选判据是否优于基线",
-                candidate_diff={"criteria/rg.md": "样本外验证条款"},
-                verifier=["样本外达标", "回滚预案"])
+    base = dict(
+        hypothesis="候选判据是否优于基线",
+        candidate_diff={"criteria/rg.md": "样本外验证条款"},
+        verifier=["样本外达标", "回滚预案"],
+    )
     base.update(kw)
     return E.create_card(**base)
 
 
 # ---------------------------------------------------------------- 建卡与结构
+
 
 def test_create_three_arms():
     card = _card(adversary_diff={"criteria/rg.md": "反向改动"})
@@ -51,6 +54,7 @@ def test_create_requires_candidate():
 
 # ---------------------------------------------------------------- Z5 前置（防穿越进不了实验）
 
+
 def test_candidate_diff_with_future_column_blocked():
     with pytest.raises(E.CardError) as ei:
         _card(candidate_diff={"forward_return": "加一列未来收益"})
@@ -69,14 +73,21 @@ def test_clean_diff_passes():
 
 # ---------------------------------------------------------------- 对比与结案
 
+
 def test_compare_marks_better_by_direction():
     card = _card()
-    E.record_metrics(card, "baseline", {"misblock_rate_lower_better": 0.18, "oos_return": 0.004})
-    E.record_metrics(card, "candidate", {"misblock_rate_lower_better": 0.11, "oos_return": 0.009})
+    E.record_metrics(
+        card, "baseline", {"misblock_rate_lower_better": 0.18, "oos_return": 0.004}
+    )
+    E.record_metrics(
+        card, "candidate", {"misblock_rate_lower_better": 0.11, "oos_return": 0.009}
+    )
     t = E.compare(card)
     assert t["candidate_better"] is True
     assert t["arms"]["candidate"]["misblock_rate_lower_better"]["better"] is True
-    assert t["arms"]["candidate"]["oos_return"]["delta_vs_baseline"] == pytest.approx(0.005)
+    assert t["arms"]["candidate"]["oos_return"]["delta_vs_baseline"] == pytest.approx(
+        0.005
+    )
 
 
 def test_compare_requires_baseline_metrics():
@@ -124,6 +135,7 @@ def test_reject_also_records_candidate():
 
 
 # ---------------------------------------------------------------- 表格与落盘
+
 
 def test_markdown_table_contains_arms():
     card = _card(adversary_diff={"criteria/rg.md": "反向"})

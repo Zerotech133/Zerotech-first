@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """策略显式 JSON 配置清单测试。"""
+
 import json
 import sys
 from pathlib import Path
@@ -34,8 +35,10 @@ BASE_MANIFEST = {
 
 def _write_config(tmp_path, *manifests, name=CONFIG_FILENAME):
     path = tmp_path / name
-    path.write_text(json.dumps({"strategies": list(manifests)}, ensure_ascii=False),
-                    encoding="utf-8")
+    path.write_text(
+        json.dumps({"strategies": list(manifests)}, ensure_ascii=False),
+        encoding="utf-8",
+    )
     return path
 
 
@@ -157,7 +160,9 @@ def test_run_authorization_binds_identity_budget_modes_and_safe_permissions(tmp_
     assert registry.authorization("trend_v1").as_dict() == authorization.as_dict()
     assert authorization.permissions == frozenset({"propose", "read_context"})
     assert authorization.resource_budget["max_context_bytes"] == 1024
-    assert authorization.allowed_modes == frozenset({"BACKTEST", "REPLAY", "SHADOW", "SIM_MARKET"})
+    assert authorization.allowed_modes == frozenset(
+        {"BACKTEST", "REPLAY", "SHADOW", "SIM_MARKET"}
+    )
 
 
 def test_run_authorization_rejects_registry_version_drift(tmp_path):

@@ -3,6 +3,7 @@
 覆盖：7 条 payload 的 id/fingerprint/canonical 口径、CLI 落盘、
 离线签名器 round-trip（签→验）、人类确认门、--apply 缺签名拒绝。
 """
+
 from __future__ import annotations
 
 import json
@@ -41,18 +42,28 @@ def test_payloads_are_7_with_canonical_hex():
     payloads = G.build_payloads(now=1761430000.0, nonce_prefix="t")
     assert len(payloads) == 7
     assert [p["item_id"] for p in payloads] == [
-        "EXP-SUPERVISION-%03d" % i for i in range(1, 8)]
+        "EXP-SUPERVISION-%03d" % i for i in range(1, 8)
+    ]
     first = payloads[0]
     canonical = SG.canonical_payload(
-        kind=first["kind"], item_id=first["item_id"],
-        fingerprint=first["fingerprint"], action=first["action"],
-        ts=first["ts"], nonce=first["nonce"])
+        kind=first["kind"],
+        item_id=first["item_id"],
+        fingerprint=first["fingerprint"],
+        action=first["action"],
+        ts=first["ts"],
+        nonce=first["nonce"],
+    )
     assert canonical.hex() == first["canonical_payload_hex"]
     # fingerprint 必须与 Z4 入库口径一致
-    expect_fp = SG.fingerprint_of({
-        "domain": "supervision", "cue": first["cue"],
-        "lesson": first["lesson"], "evidence": first["evidence"],
-        "confidence": first["confidence"]})
+    expect_fp = SG.fingerprint_of(
+        {
+            "domain": "supervision",
+            "cue": first["cue"],
+            "lesson": first["lesson"],
+            "evidence": first["evidence"],
+            "confidence": first["confidence"],
+        }
+    )
     assert first["fingerprint"] == expect_fp
 
 
@@ -72,51 +83,102 @@ def test_sign_verify_roundtrip(tmp_path):
 
     priv = Ed25519PrivateKey.generate()
     pem = priv.private_bytes(
-        serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8,
-        serialization.NoEncryption())
+        serialization.Encoding.PEM,
+        serialization.PrivateFormat.PKCS8,
+        serialization.NoEncryption(),
+    )
     key_file = tmp_path / "k.pem"
     key_file.write_bytes(pem)
 
-    payload = {"kind": "experience_write", "item_id": "EXP-SUPERVISION-001",
-               "fingerprint": "a" * 64, "action": "write",
-               "ts": time.time(), "nonce": "nonce-1"}
+    payload = {
+        "kind": "experience_write",
+        "item_id": "EXP-SUPERVISION-001",
+        "fingerprint": "a" * 64,
+        "action": "write",
+        "ts": time.time(),
+        "nonce": "nonce-1",
+    }
     payload_file = tmp_path / "p.json"
     payload_file.write_text(json.dumps(payload), encoding="utf-8")
     sig_file = tmp_path / "sig.json"
 
-    rc = SA.main(["--kind", "experience_write",
-                  "--payload-file", str(payload_file),
-                  "--private-key", str(key_file),
-                  "--passphrase-env", "NO_SUCH_ENV",
-                  "--out", str(sig_file), "--i-am-human"])
+    rc = SA.main(
+        [
+            "--kind",
+            "experience_write",
+            "--payload-file",
+            str(payload_file),
+            "--private-key",
+            str(key_file),
+            "--passphrase-env",
+            "NO_SUCH_ENV",
+            "--out",
+            str(sig_file),
+            "--i-am-human",
+        ]
+    )
     assert rc == 0
     sig = json.loads(sig_file.read_text(encoding="utf-8"))
-    pub_hex = priv.public_key().public_bytes(
-        serialization.Encoding.Raw, serialization.PublicFormat.Raw).hex()
+    pub_hex = (
+        priv.public_key()
+        .public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)
+        .hex()
+    )
     ok, reason = SG.Verifier(pub_hex).verify(
-        kind=payload["kind"], item_id=payload["item_id"],
-        fingerprint=payload["fingerprint"], action=payload["action"],
-        ts=sig["ts"], nonce=sig["nonce"], sig_hex=sig["sig"], now=time.time())
+        kind=payload["kind"],
+        item_id=payload["item_id"],
+        fingerprint=payload["fingerprint"],
+        action=payload["action"],
+        ts=sig["ts"],
+        nonce=sig["nonce"],
+        sig_hex=sig["sig"],
+        now=time.time(),
+    )
     assert ok and reason == "ok"
 
 
 def test_sign_refuses_without_human_flag(tmp_path):
     payload_file = tmp_path / "p.json"
-    payload_file.write_text(json.dumps({
-        "kind": "experience_write", "item_id": "X", "fingerprint": "f",
-        "action": "write", "ts": time.time(), "nonce": "n"}), encoding="utf-8")
+    payload_file.write_text(
+        json.dumps(
+            {
+                "kind": "experience_write",
+                "item_id": "X",
+                "fingerprint": "f",
+                "action": "write",
+                "ts": time.time(),
+                "nonce": "n",
+            }
+        ),
+        encoding="utf-8",
+    )
     key_file = tmp_path / "k.pem"
     key_file.write_text("not-a-key", encoding="utf-8")
-    rc = SA.main(["--kind", "experience_write",
-                  "--payload-file", str(payload_file),
-                  "--private-key", str(key_file),
-                  "--out", str(tmp_path / "s.json")])
+    rc = SA.main(
+        [
+            "--kind",
+            "experience_write",
+            "--payload-file",
+            str(payload_file),
+            "--private-key",
+            str(key_file),
+            "--out",
+            str(tmp_path / "s.json"),
+        ]
+    )
     assert rc == 2
 
 
 def test_apply_requires_signature_dir(tmp_path):
-    rc = G.main(["--out", str(tmp_path / "out"), "--apply",
-                 "--experience-root", str(tmp_path / "lib")])
+    rc = G.main(
+        [
+            "--out",
+            str(tmp_path / "out"),
+            "--apply",
+            "--experience-root",
+            str(tmp_path / "lib"),
+        ]
+    )
     assert rc == 2
 
 
@@ -125,8 +187,11 @@ def test_apply_rejects_non_empty_supervision(tmp_path, monkeypatch):
     root = tmp_path / "lib"
     # 伪造一条 supervision 已有条目：写 _index.jsonl 即可（_check_empty 只读索引）
     root.mkdir(parents=True)
-    (root / "_index.jsonl").write_text(json.dumps({
-        "entry_id": "EXP-SUPERVISION-001", "domain": "supervision",
-        "cue": "x"}), encoding="utf-8")
+    (root / "_index.jsonl").write_text(
+        json.dumps(
+            {"entry_id": "EXP-SUPERVISION-001", "domain": "supervision", "cue": "x"}
+        ),
+        encoding="utf-8",
+    )
     with pytest.raises(ValueError):
         G.apply_payloads(payloads, tmp_path / "sig", root, require_empty=True)

@@ -22,10 +22,21 @@ from engine import lookahead_guard as G  # noqa: E402
 
 # ---------------------------------------------------------------- 未来列拦截（Z5 原判据）
 
-@pytest.mark.parametrize("col", [
-    "forward_return", "next_close", "label", "label_name", "target_y",
-    "ret_fwd_5d", "pct_chg_next", "close_t+1", "high_next",
-])
+
+@pytest.mark.parametrize(
+    "col",
+    [
+        "forward_return",
+        "next_close",
+        "label",
+        "label_name",
+        "target_y",
+        "ret_fwd_5d",
+        "pct_chg_next",
+        "close_t+1",
+        "high_next",
+    ],
+)
 def test_future_columns_blocked(col):
     with pytest.raises(G.LeakageDetected) as ei:
         G.assert_clean(columns=["code", "close", col])
@@ -42,6 +53,7 @@ def test_similar_but_clean_columns_not_false_positive():
 
 
 # ---------------------------------------------------------------- 裁决键/验证集标记
+
 
 def test_grader_keys_blocked_in_payload():
     with pytest.raises(G.LeakageDetected) as ei:
@@ -66,30 +78,38 @@ def test_depth_limit_prevents_runaway():
 
 # ---------------------------------------------------------------- 泄露路径
 
-@pytest.mark.parametrize("path", [
-    "C:/data/.grader/rules.py",
-    "/tmp/answers.csv",
-    "/opt/ground_truth.json",
-    "/data/holdout/20261020.parquet",
-    "/data/labels.csv",
-    "D:\\work\\future\\rows.csv",
-])
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "C:/data/.grader/rules.py",
+        "/tmp/answers.csv",
+        "/opt/ground_truth.json",
+        "/data/holdout/20261020.parquet",
+        "/data/labels.csv",
+        "D:\\work\\future\\rows.csv",
+    ],
+)
 def test_leak_paths_blocked(path):
     with pytest.raises(G.LeakageDetected) as ei:
         G.assert_clean(paths=[path])
     assert any(f.category == "leak_path" for f in ei.value.findings)
 
 
-@pytest.mark.parametrize("path", [
-    "/data/daily_20261020.csv",
-    "C:/项目/data/xueqiu/posts.jsonl",
-    "/opt/model/futureless_report.md",
-])
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/data/daily_20261020.csv",
+        "C:/项目/data/xueqiu/posts.jsonl",
+        "/opt/model/futureless_report.md",
+    ],
+)
 def test_normal_paths_pass(path):
     G.assert_clean(paths=[path])
 
 
 # ---------------------------------------------------------------- 契约
+
 
 def test_error_carries_stage_and_findings():
     with pytest.raises(G.LeakageDetected) as ei:

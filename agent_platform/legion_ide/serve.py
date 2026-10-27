@@ -15,6 +15,7 @@
       路径白名单（agent_platform/ops/docs/tools/portal）、禁 .git/_vault/密钥后缀；
       命令白名单 + 超时 + 输出上限 + 环境净化；动作落 dev_events（code_action/observation）。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -54,8 +55,11 @@ def _resource(path: Path) -> dict:
         st = path.stat()
     except OSError:
         return {"exists": False, "bytes": 0, "mtime": None}
-    return {"exists": True, "bytes": st.st_size,
-            "mtime": time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(st.st_mtime))}
+    return {
+        "exists": True,
+        "bytes": st.st_size,
+        "mtime": time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(st.st_mtime)),
+    }
 
 
 def resolve_bundle(repo: Path, bundle: str | None = None) -> Path:
@@ -66,14 +70,22 @@ def resolve_bundle(repo: Path, bundle: str | None = None) -> Path:
     return Path(repo) / "portal" / "agent_ide_bundle.json"
 
 
-def build_health(repo: Path, portal_url: str, port: int,
-                 bundle_path: Path | None = None) -> dict:
+def build_health(
+    repo: Path, portal_url: str, port: int, bundle_path: Path | None = None
+) -> dict:
     repo = Path(repo)
     ide = repo / "portal" / "ide.html"
-    bundle = Path(bundle_path) if bundle_path else (repo / "portal" / "agent_ide_bundle.json")
+    bundle = (
+        Path(bundle_path)
+        if bundle_path
+        else (repo / "portal" / "agent_ide_bundle.json")
+    )
     return {
-        "ok": True, "service": "legion-ide", "version": VERSION,
-        "pid": os.getpid(), "bind": "%s:%s" % (DEFAULT_HOST, port),
+        "ok": True,
+        "service": "legion-ide",
+        "version": VERSION,
+        "pid": os.getpid(),
+        "bind": "%s:%s" % (DEFAULT_HOST, port),
         "ide_html": _resource(ide),
         "bundle": _resource(bundle),
         "bundle_source": str(bundle),
@@ -106,24 +118,37 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
         def log_message(self, fmt, *args):
             pass
 
-        def _send(self, status: int, body: bytes, ctype: str,
-                  extra_headers: list | None = None) -> None:
+        def _send(
+            self,
+            status: int,
+            body: bytes,
+            ctype: str,
+            extra_headers: list | None = None,
+        ) -> None:
             self.send_response(status)
             self.send_header("Content-Type", ctype)
             self.send_header("Content-Length", str(len(body)))
             self.send_header("Cache-Control", "no-store")
             self.send_header("X-Content-Type-Options", "nosniff")
-            for k, v in (extra_headers or []):
+            for k, v in extra_headers or []:
                 self.send_header(k, v)
             self.end_headers()
             self.wfile.write(body)
 
-        def _json(self, status: int, obj: dict, extra_headers: list | None = None) -> None:
-            self._send(status, json.dumps(obj, ensure_ascii=False).encode("utf-8"),
-                       _JSON_CT, extra_headers)
+        def _json(
+            self, status: int, obj: dict, extra_headers: list | None = None
+        ) -> None:
+            self._send(
+                status,
+                json.dumps(obj, ensure_ascii=False).encode("utf-8"),
+                _JSON_CT,
+                extra_headers,
+            )
 
         def _html(self, body: bytes) -> None:
-            cookie = "ide_session=%s; HttpOnly; SameSite=Strict; Path=/" % G.session_token()
+            cookie = (
+                "ide_session=%s; HttpOnly; SameSite=Strict; Path=/" % G.session_token()
+            )
             self._send(200, body, _HTML_CT, [("Set-Cookie", cookie)])
 
         def _body_json(self):
@@ -144,7 +169,9 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
             return G.check_access(dict(self.headers))
 
         def _owner_or_err(self, data: dict):
-            owner = str(data.get("owner") or self.headers.get("X-IDE-Owner") or "").strip()
+            owner = str(
+                data.get("owner") or self.headers.get("X-IDE-Owner") or ""
+            ).strip()
             if not owner:
                 return None, G.err("owner_required", "缺少 owner 标识")
             return owner, None
@@ -171,14 +198,24 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                     return self._json(503, {"ok": False, "error": "rw_page_missing"})
                 return self._html(page.read_bytes())
             if path == "/agent_ide_bundle.json":
-                bundle = Path(bundle_path) if bundle_path else (repo / "portal" / "agent_ide_bundle.json")
+                bundle = (
+                    Path(bundle_path)
+                    if bundle_path
+                    else (repo / "portal" / "agent_ide_bundle.json")
+                )
                 if not bundle.is_file():
                     return self._json(503, {"ok": False, "error": "bundle_missing"})
                 return self._send(200, bundle.read_bytes(), _JSON_CT)
             if path == "/api/health":
-                return self._json(200, build_health(repo, portal_url,
-                                                    self.server.server_port,
-                                                    Path(bundle_path) if bundle_path else None))
+                return self._json(
+                    200,
+                    build_health(
+                        repo,
+                        portal_url,
+                        self.server.server_port,
+                        Path(bundle_path) if bundle_path else None,
+                    ),
+                )
             if path == "/favicon.ico":
                 return self._send(204, b"", "image/x-icon")
             if path == "/api/ide/scope":
@@ -200,10 +237,13 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                 if tools not in sys.path:
                     sys.path.insert(0, tools)
                 import events as E  # noqa: WPS433
+
                 rows = E.read(limit=300)
             except Exception:  # noqa: BLE001
                 return []
-            out = [r for r in rows if r.get("kind") in ("code_action", "code_observation")]
+            out = [
+                r for r in rows if r.get("kind") in ("code_action", "code_observation")
+            ]
             if task:
                 out = [r for r in out if r.get("task") == task]
             return out[-100:]
@@ -218,15 +258,25 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
             return wt, None
 
         def _reject_code(self, error: dict) -> int:
-            return 403 if error.get("error") in ("rw_disabled", "no_session", "bad_origin") else 400
+            return (
+                403
+                if error.get("error") in ("rw_disabled", "no_session", "bad_origin")
+                else 400
+            )
 
         def do_POST(self):
             path = urlparse(self.path).path
             if path == "/ollama/api/chat":
                 return self._proxy_chat()
-            if path not in ("/api/ide/read", "/api/ide/write", "/api/ide/exec",
-                            "/api/ide/lock"):
-                return self._json(404, {"ok": False, "error": "not_found", "path": path})
+            if path not in (
+                "/api/ide/read",
+                "/api/ide/write",
+                "/api/ide/exec",
+                "/api/ide/lock",
+            ):
+                return self._json(
+                    404, {"ok": False, "error": "not_found", "path": path}
+                )
             data, error = self._body_json()
             if error:
                 return self._json(400, error)
@@ -235,31 +285,56 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                 return self._json(self._reject_code(error), error)
             if path == "/api/ide/read":
                 res = W.read_file(wt, data.get("path"))
-                G.audit(repo, "code_action", data.get("task"), "IDE",
-                        "read %s -> %s" % (data.get("path"), "ok" if res.get("ok") else res.get("error")))
+                G.audit(
+                    repo,
+                    "code_action",
+                    data.get("task"),
+                    "IDE",
+                    "read %s -> %s"
+                    % (data.get("path"), "ok" if res.get("ok") else res.get("error")),
+                )
                 return self._json(200 if res.get("ok") else 400, res)
             owner, error = self._owner_or_err(data)
             if error:
                 return self._json(400, error)
             if path == "/api/ide/lock":
                 res = G.acquire_lock(wt, owner)
-                G.audit(repo, "code_action", data.get("task"), owner,
-                        "lock -> %s" % ("ok" if res.get("ok") else res.get("error")))
+                G.audit(
+                    repo,
+                    "code_action",
+                    data.get("task"),
+                    owner,
+                    "lock -> %s" % ("ok" if res.get("ok") else res.get("error")),
+                )
                 return self._json(200 if res.get("ok") else 409, res)
             locked = self._lock_required(wt, owner)
             if locked:
                 return self._json(409, locked)
             if path == "/api/ide/write":
                 res = W.write_file(wt, data.get("path"), data.get("content", ""))
-                G.audit(repo, "code_action", data.get("task"), owner,
-                        "write %s -> %s" % (data.get("path"), "ok" if res.get("ok") else res.get("error")))
+                G.audit(
+                    repo,
+                    "code_action",
+                    data.get("task"),
+                    owner,
+                    "write %s -> %s"
+                    % (data.get("path"), "ok" if res.get("ok") else res.get("error")),
+                )
                 return self._json(200 if res.get("ok") else 400, res)
-            res = X.run(wt, data.get("command"), int(data.get("timeout") or X.DEFAULT_TIMEOUT))
+            res = X.run(
+                wt, data.get("command"), int(data.get("timeout") or X.DEFAULT_TIMEOUT)
+            )
             run_id = uuid.uuid4().hex[:12]
             if res.get("ok"):
                 _EXEC_RESULTS[run_id] = {"ts": time.time(), **res}
-            G.audit(repo, "code_observation", data.get("task"), owner,
-                    "exec %r exit=%s" % (str(data.get("command"))[:160], res.get("exit_code")))
+            G.audit(
+                repo,
+                "code_observation",
+                data.get("task"),
+                owner,
+                "exec %r exit=%s"
+                % (str(data.get("command"))[:160], res.get("exit_code")),
+            )
             return self._json(200 if res.get("ok") else 400, {**res, "run_id": run_id})
 
         def do_DELETE(self):
@@ -290,25 +365,38 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                 return self._json(413, {"ok": False, "error": "bad_content_length"})
             body = self.rfile.read(length)
             ctype = self.headers.get("Content-Type") or _JSON_CT
-            req = urllib.request.Request(portal_url.rstrip("/") + "/ollama/api/chat",
-                                         data=body, headers={"Content-Type": ctype},
-                                         method="POST")
+            req = urllib.request.Request(
+                portal_url.rstrip("/") + "/ollama/api/chat",
+                data=body,
+                headers={"Content-Type": ctype},
+                method="POST",
+            )
             try:
                 with urllib.request.urlopen(req, timeout=180) as r:
                     return self._send(r.status, r.read(), _JSON_CT)
             except urllib.error.HTTPError as exc:
                 return self._send(exc.code, exc.read(), _JSON_CT)
             except (urllib.error.URLError, OSError) as exc:
-                return self._json(503, {"ok": False, "error": "portal_proxy_unavailable",
-                                        "portal": portal_url,
-                                        "detail": "%s: %s" % (type(exc).__name__, str(exc)[:160])})
+                return self._json(
+                    503,
+                    {
+                        "ok": False,
+                        "error": "portal_proxy_unavailable",
+                        "portal": portal_url,
+                        "detail": "%s: %s" % (type(exc).__name__, str(exc)[:160]),
+                    },
+                )
 
     return Handler
 
 
-def create_server(host: str = DEFAULT_HOST, port: int = DEFAULT_PORT,
-                  repo: Path | None = None, portal_url: str = DEFAULT_PORTAL,
-                  bundle_path: Path | None = None) -> ThreadingHTTPServer:
+def create_server(
+    host: str = DEFAULT_HOST,
+    port: int = DEFAULT_PORT,
+    repo: Path | None = None,
+    portal_url: str = DEFAULT_PORTAL,
+    bundle_path: Path | None = None,
+) -> ThreadingHTTPServer:
     handler = make_handler(Path(repo) if repo else REPO, portal_url, bundle_path)
     return ThreadingHTTPServer((host, int(port)), handler)
 
@@ -321,8 +409,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--portal", default=DEFAULT_PORTAL)
     ap.add_argument("--bundle", default="")
     ap.add_argument("--health", action="store_true")
-    ap.add_argument("--rw", action="store_true",
-                    help="开启受控写/执行（等价 IDE_RW=on；默认只读）")
+    ap.add_argument(
+        "--rw", action="store_true", help="开启受控写/执行（等价 IDE_RW=on；默认只读）"
+    )
     ap.add_argument("-v", "--verbose", action="store_true")
     args = ap.parse_args(argv)
     if args.rw:
@@ -331,13 +420,20 @@ def main(argv: list[str] | None = None) -> int:
     repo = Path(args.repo)
     bundle = resolve_bundle(repo, args.bundle or None)
     if args.health:
-        print(json.dumps(build_health(repo, args.portal, args.port, bundle),
-                         ensure_ascii=False))
+        print(
+            json.dumps(
+                build_health(repo, args.portal, args.port, bundle), ensure_ascii=False
+            )
+        )
         return 0
-    httpd = create_server(args.host, args.port, repo=repo,
-                          portal_url=args.portal, bundle_path=bundle)
-    print("[legion-ide] listening http://%s:%s/  rw=%s  bundle=%s"
-          % (args.host, httpd.server_port, G.rw_enabled(), bundle), flush=True)
+    httpd = create_server(
+        args.host, args.port, repo=repo, portal_url=args.portal, bundle_path=bundle
+    )
+    print(
+        "[legion-ide] listening http://%s:%s/  rw=%s  bundle=%s"
+        % (args.host, httpd.server_port, G.rw_enabled(), bundle),
+        flush=True,
+    )
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:

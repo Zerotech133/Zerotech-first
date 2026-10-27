@@ -4,6 +4,7 @@
 覆盖：StrategyAgent 插件接口 / Verdict 出口校验（枚举白名单+越界拒绝）/
 StrategyRegistry 注册幂等（同键异值=漂移拒绝）/ run 出口统一把守。
 """
+
 import sys
 from pathlib import Path
 
@@ -13,14 +14,24 @@ PLATFORM = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PLATFORM / "engine"))
 
 from strategy_registry import (  # noqa: E402
-    RECOMMENDATIONS, STANCES, StrategyAgent, StrategyError,
-    StrategyRegistry, Verdict)
+    RECOMMENDATIONS,
+    STANCES,
+    StrategyAgent,
+    StrategyError,
+    StrategyRegistry,
+    Verdict,
+)
 from strategy_config import RunAuthorization  # noqa: E402
 
 
 def _v(**kw):
-    base = dict(strategy_id="s1", symbol="600519", recommendation="hold",
-                confidence=0.6, stance="bull")
+    base = dict(
+        strategy_id="s1",
+        symbol="600519",
+        recommendation="hold",
+        confidence=0.6,
+        stance="bull",
+    )
     base.update(kw)
     return Verdict(**base)
 
@@ -36,6 +47,7 @@ class _Fixed(StrategyAgent):
 
 
 # ---------------------------------------------------------------- Verdict
+
 
 def test_verdict_valid_passes():
     assert _v().validate() is not None
@@ -66,6 +78,7 @@ def test_symbol_required():
 
 
 # ---------------------------------------------------------------- Registry
+
 
 def test_register_and_get():
     reg = StrategyRegistry()
@@ -104,6 +117,7 @@ def test_list_ids_and_stance_filter():
 
 
 # ---------------------------------------------------------------- run 出口
+
 
 def test_run_validates_output():
     reg = StrategyRegistry()
@@ -178,8 +192,11 @@ def test_registry_rejects_unsafe_authorization_permissions():
             version="1.0.0",
             mode="SHADOW",
             context_bytes=1,
-            resource_budget={"timeout_s": 1, "max_concurrency": 1,
-                             "max_context_bytes": 10},
+            resource_budget={
+                "timeout_s": 1,
+                "max_concurrency": 1,
+                "max_context_bytes": 10,
+            },
             allowed_modes=frozenset({"SHADOW"}),
             permissions=frozenset({"propose", "order"}),
             allowed_data=("bars",),

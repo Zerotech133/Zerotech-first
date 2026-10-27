@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """SIM_MARKET 独立只读策略适配器测试。"""
+
 import inspect
 import json
 import sys
@@ -16,7 +17,12 @@ from adapters.sim_market_readonly import (  # noqa: E402
     SimMarketReadOnlyError,
     run_sim_market_readonly,
 )
-from contracts.sim_market import PortfolioView, RiskView, SimMarketBar, SimMarketSnapshot  # noqa: E402
+from contracts.sim_market import (
+    PortfolioView,
+    RiskView,
+    SimMarketBar,
+    SimMarketSnapshot,
+)  # noqa: E402
 from strategy_config import load_config  # noqa: E402
 from strategy_registry import StrategyAgent, StrategyRegistry, Verdict  # noqa: E402
 
@@ -56,18 +62,29 @@ def _snapshot(**overrides):
 
 def _config(tmp_path, mode="SIM_MARKET", allowed_data=None):
     path = tmp_path / "strategy_config.json"
-    path.write_text(json.dumps({"strategies": [{
-        "strategy_id": "sim_v1",
-        "version": "1.0.0",
-        "allowed_data": ["bars"] if allowed_data is None else allowed_data,
-        "resource_budget": {
-            "timeout_s": 1,
-            "max_concurrency": 1,
-            "max_context_bytes": 10000,
-        },
-        "allowed_modes": [mode],
-        "permissions": ["propose", "read_context"],
-    }]}), encoding="utf-8")
+    path.write_text(
+        json.dumps(
+            {
+                "strategies": [
+                    {
+                        "strategy_id": "sim_v1",
+                        "version": "1.0.0",
+                        "allowed_data": ["bars"]
+                        if allowed_data is None
+                        else allowed_data,
+                        "resource_budget": {
+                            "timeout_s": 1,
+                            "max_concurrency": 1,
+                            "max_context_bytes": 10000,
+                        },
+                        "allowed_modes": [mode],
+                        "permissions": ["propose", "read_context"],
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
     return load_config(path)
 
 
@@ -97,7 +114,8 @@ def _registry():
 
 def test_runs_only_closed_visible_bars_through_config_and_registry(tmp_path):
     result = run_sim_market_readonly(
-        "sim_v1", _snapshot(), _config(tmp_path), _registry(), now=NOW)
+        "sim_v1", _snapshot(), _config(tmp_path), _registry(), now=NOW
+    )
 
     assert isinstance(result["verdict"], Verdict)
     assert result["verdict"].recommendation == "hold"
@@ -121,7 +139,8 @@ def test_runs_only_closed_visible_bars_through_config_and_registry(tmp_path):
 def test_rejects_unclosed_or_not_visible_snapshot_data(tmp_path, snapshot):
     with pytest.raises(SimMarketReadOnlyError, match="closed|可见|visible"):
         run_sim_market_readonly(
-            "sim_v1", snapshot, _config(tmp_path), _registry(), now=NOW)
+            "sim_v1", snapshot, _config(tmp_path), _registry(), now=NOW
+        )
 
 
 def test_rejects_future_as_of_and_naive_as_of(tmp_path):
@@ -156,36 +175,60 @@ def test_rejects_any_bar_without_explicit_visibility_time(tmp_path):
     ):
         with pytest.raises(SimMarketReadOnlyError, match="visible_at"):
             run_sim_market_readonly(
-                "sim_v1", snapshot, _config(tmp_path), _registry(), now=NOW)
+                "sim_v1", snapshot, _config(tmp_path), _registry(), now=NOW
+            )
 
 
-@pytest.mark.parametrize("view_name,view_type", [("portfolio", PortfolioView), ("risk", RiskView)])
+@pytest.mark.parametrize(
+    "view_name,view_type", [("portfolio", PortfolioView), ("risk", RiskView)]
+)
 def test_rejects_view_without_visibility_evidence(tmp_path, view_name, view_type):
     view = view_type(as_of=AS_OF)
     assert view_type.from_dict(view.to_dict()).visible_at is None
     with pytest.raises(SimMarketReadOnlyError, match="%s.visible_at" % view_name):
         run_sim_market_readonly(
-            "sim_v1", _snapshot(**{view_name: view}), _config(tmp_path), _registry(), now=NOW)
+            "sim_v1",
+            _snapshot(**{view_name: view}),
+            _config(tmp_path),
+            _registry(),
+            now=NOW,
+        )
 
 
-@pytest.mark.parametrize("view_name,view_type", [("portfolio", PortfolioView), ("risk", RiskView)])
-def test_accepts_view_visible_after_its_as_of_and_by_snapshot_as_of(tmp_path, view_name, view_type):
+@pytest.mark.parametrize(
+    "view_name,view_type", [("portfolio", PortfolioView), ("risk", RiskView)]
+)
+def test_accepts_view_visible_after_its_as_of_and_by_snapshot_as_of(
+    tmp_path, view_name, view_type
+):
     view = view_type(as_of="2026-10-18T09:00:00+00:00", visible_at=AS_OF)
     result = run_sim_market_readonly(
-        "sim_v1", _snapshot(**{view_name: view}), _config(tmp_path), _registry(), now=NOW)
+        "sim_v1",
+        _snapshot(**{view_name: view}),
+        _config(tmp_path),
+        _registry(),
+        now=NOW,
+    )
     assert result["verdict"].recommendation == "hold"
 
 
 def test_config_must_allow_sim_market_before_registry_run(tmp_path):
     with pytest.raises(SimMarketReadOnlyError, match="配置校验"):
         run_sim_market_readonly(
-            "sim_v1", _snapshot(), _config(tmp_path, mode="SHADOW"), _registry(), now=NOW)
+            "sim_v1",
+            _snapshot(),
+            _config(tmp_path, mode="SHADOW"),
+            _registry(),
+            now=NOW,
+        )
 
 
 def test_view_visibility_is_checked_even_when_not_in_allowed_data(tmp_path):
     snapshot = _snapshot(risk=RiskView(as_of=AS_OF))
     with pytest.raises(SimMarketReadOnlyError, match="risk.visible_at"):
-        run_sim_market_readonly("sim_v1", snapshot, _config(tmp_path), _registry(), now=NOW)
+        run_sim_market_readonly(
+            "sim_v1", snapshot, _config(tmp_path), _registry(), now=NOW
+        )
 
 
 def test_allowed_view_is_readonly_and_visibility_evidence_is_preserved(tmp_path):
@@ -207,12 +250,17 @@ def test_allowed_view_is_readonly_and_visibility_evidence_is_preserved(tmp_path)
     registry = StrategyRegistry()
     registry.register(ViewAgent())
     snapshot = _snapshot(
-        portfolio=PortfolioView(as_of=AS_OF, visible_at=AS_OF, positions={"000001.SZ": {"quantity": 100}}),
+        portfolio=PortfolioView(
+            as_of=AS_OF, visible_at=AS_OF, positions={"000001.SZ": {"quantity": 100}}
+        ),
         risk=RiskView(as_of=AS_OF, visible_at=AS_OF, metrics={"var": 50}),
     )
     result = run_sim_market_readonly(
-        "sim_v1", snapshot, _config(tmp_path, allowed_data=["bars", "portfolio", "risk"]),
-        registry, now=NOW,
+        "sim_v1",
+        snapshot,
+        _config(tmp_path, allowed_data=["bars", "portfolio", "risk"]),
+        registry,
+        now=NOW,
     )
     assert result["verdict"].recommendation == "hold"
 
@@ -224,18 +272,23 @@ def test_config_registry_version_binding_is_preserved(tmp_path):
     registry = StrategyRegistry()
     registry.register(WrongVersion())
     with pytest.raises(SimMarketReadOnlyError, match="配置校验/Registry 绑定失败"):
-        run_sim_market_readonly("sim_v1", _snapshot(), _config(tmp_path), registry, now=NOW)
+        run_sim_market_readonly(
+            "sim_v1", _snapshot(), _config(tmp_path), registry, now=NOW
+        )
 
 
 def test_signature_has_no_execution_credentials_or_ledger_inputs():
     names = set(inspect.signature(run_sim_market_readonly).parameters)
-    assert not names & {"executor", "credentials", "credential", "ledger", "ledger_path"}
+    assert not names & {
+        "executor",
+        "credentials",
+        "credential",
+        "ledger",
+        "ledger_path",
+    }
     with pytest.raises(TypeError):
-        run_sim_market_readonly(
-            "sim_v1", _snapshot(), None, None, executor=object())
+        run_sim_market_readonly("sim_v1", _snapshot(), None, None, executor=object())
     with pytest.raises(TypeError):
-        run_sim_market_readonly(
-            "sim_v1", _snapshot(), None, None, credentials={})
+        run_sim_market_readonly("sim_v1", _snapshot(), None, None, credentials={})
     with pytest.raises(TypeError):
-        run_sim_market_readonly(
-            "sim_v1", _snapshot(), None, None, ledger_path="x")
+        run_sim_market_readonly("sim_v1", _snapshot(), None, None, ledger_path="x")

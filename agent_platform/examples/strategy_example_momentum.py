@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """只读动量 StrategyAgent 示例。"""
+
 from strategy_registry import StrategyAgent, Verdict
 
 

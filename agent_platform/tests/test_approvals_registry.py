@@ -41,8 +41,9 @@ def _load(name: str, rel: str):
     return module
 
 
-reg = _load("approvals_registry_under_test",
-            "agent_platform/adapters/approvals_registry.py")
+reg = _load(
+    "approvals_registry_under_test", "agent_platform/adapters/approvals_registry.py"
+)
 
 
 def _make_fixture(root: Path, rows=None) -> Path:
@@ -53,27 +54,79 @@ def _make_fixture(root: Path, rows=None) -> Path:
     con.execute(DDL)
     if rows is None:
         rows = [
-            ("a1", "gzh:d1:reviewed", "workitem", "gzh:d1", "draft", "reviewed",
-             "approved", "reviewer-a", "审查通过", "2026-10-17T04:53:34+00:00", 1, None, ""),
-            ("a2", "gzh:d1:draft", "workitem", "gzh:d1", "reviewed", "draft",
-             "approved", "reviewer-a", "打回原态", "2026-10-17T04:54:02+00:00", 1, None, ""),
-            ("a3", "academy:c1:running", "workitem", "academy:c1", "planned", "running",
-             "approved", "admin", "开课", "2026-10-16T08:00:00+00:00", 1, None, ""),
-            ("a4", "gzh:d2:published", "workitem", "gzh:d2", "reviewed", "published",
-             "rejected", "admin", "内容未达标", "2026-10-17T02:00:00+00:00", 1, None, "tr-x1"),
+            (
+                "a1",
+                "gzh:d1:reviewed",
+                "workitem",
+                "gzh:d1",
+                "draft",
+                "reviewed",
+                "approved",
+                "reviewer-a",
+                "审查通过",
+                "2026-10-17T04:53:34+00:00",
+                1,
+                None,
+                "",
+            ),
+            (
+                "a2",
+                "gzh:d1:draft",
+                "workitem",
+                "gzh:d1",
+                "reviewed",
+                "draft",
+                "approved",
+                "reviewer-a",
+                "打回原态",
+                "2026-10-17T04:54:02+00:00",
+                1,
+                None,
+                "",
+            ),
+            (
+                "a3",
+                "academy:c1:running",
+                "workitem",
+                "academy:c1",
+                "planned",
+                "running",
+                "approved",
+                "admin",
+                "开课",
+                "2026-10-16T08:00:00+00:00",
+                1,
+                None,
+                "",
+            ),
+            (
+                "a4",
+                "gzh:d2:published",
+                "workitem",
+                "gzh:d2",
+                "reviewed",
+                "published",
+                "rejected",
+                "admin",
+                "内容未达标",
+                "2026-10-17T02:00:00+00:00",
+                1,
+                None,
+                "tr-x1",
+            ),
         ]
     con.executemany(
         "INSERT INTO approvals (approval_id, idempotency_key, target_type, target_id,"
         " from_status, to_status, decision, decided_by, reason, decided_at,"
         " schema_version, created_at, trace_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
-        rows)
+        rows,
+    )
     con.commit()
     con.close()
     return db
 
 
 class ApprovalsRegistryTests(unittest.TestCase):
-
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
         self.root = Path(self._tmp.name)
@@ -85,10 +138,19 @@ class ApprovalsRegistryTests(unittest.TestCase):
     def test_desc_and_fields(self):
         r = reg.build_registry(self.root, limit=100)
         self.assertEqual(r["total"], 4)
-        self.assertEqual([x["approval_id"] for x in r["records"]],
-                         ["a2", "a1", "a4", "a3"])  # decided_at desc
-        for field in ("approval_id", "idempotency_key", "from_status",
-                      "to_status", "decision", "decided_by", "reason", "trace_id"):
+        self.assertEqual(
+            [x["approval_id"] for x in r["records"]], ["a2", "a1", "a4", "a3"]
+        )  # decided_at desc
+        for field in (
+            "approval_id",
+            "idempotency_key",
+            "from_status",
+            "to_status",
+            "decision",
+            "decided_by",
+            "reason",
+            "trace_id",
+        ):
             self.assertIn(field, r["records"][0])
 
     def test_filter_target_id(self):
@@ -108,8 +170,9 @@ class ApprovalsRegistryTests(unittest.TestCase):
 
     def test_asc_order(self):
         r = reg.build_registry(self.root, order="asc", limit=100)
-        self.assertEqual([x["approval_id"] for x in r["records"]],
-                         ["a3", "a4", "a1", "a2"])
+        self.assertEqual(
+            [x["approval_id"] for x in r["records"]], ["a3", "a4", "a1", "a2"]
+        )
 
     def test_invalid_params(self):
         for kwargs in ({"order": "sideways"}, {"limit": 0}, {"limit": 99999}):
@@ -129,8 +192,10 @@ class ApprovalsRegistryTests(unittest.TestCase):
         after = {p: p.stat().st_mtime for p in self.root.rglob("*") if p.is_file()}
         self.assertEqual(before, after)
 
-    @unittest.skipUnless((ROOT / "agent_platform" / "data" / "approvals"
-                          / "approvals.db").exists(), "真实账本不存在时跳过")
+    @unittest.skipUnless(
+        (ROOT / "agent_platform" / "data" / "approvals" / "approvals.db").exists(),
+        "真实账本不存在时跳过",
+    )
     def test_real_repo_smoke(self):
         r = reg.build_registry(ROOT, limit=10)
         self.assertGreater(r["total"], 0)
@@ -141,11 +206,20 @@ class ApprovalsRegistryTests(unittest.TestCase):
         # devtask_l2: —— tools/devtask.py:528 的 L2 豁免凭据（target_type=
         # devtask_l2_exemption）。实现新增了该域而白名单没跟上，测试会把
         # 「新登记的合法凭据」误报成未知域（2026-10-22 实测红）。
-        prefixes = ("gzh:", "academy:", "invest:", "dev:", "devtask:", "devtask_l2:",
-                    "pitch:", "personal:")
-        self.assertTrue(sample["idempotency_key"].startswith(prefixes),
-                        "最新凭据无已知域前缀: %r"
-                        % sample["idempotency_key"])
+        prefixes = (
+            "gzh:",
+            "academy:",
+            "invest:",
+            "dev:",
+            "devtask:",
+            "devtask_l2:",
+            "pitch:",
+            "personal:",
+        )
+        self.assertTrue(
+            sample["idempotency_key"].startswith(prefixes),
+            "最新凭据无已知域前缀: %r" % sample["idempotency_key"],
+        )
 
 
 if __name__ == "__main__":

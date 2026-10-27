@@ -32,8 +32,17 @@ from pathlib import Path
 RULES_VERSION = "1.0"
 _TICKET_RE = re.compile(r"^(WO-|K-|LEGION-|WOLEGION-)", re.I)
 DUTY_MIN_LEN = 10
-BINDING_ALLOW = frozenset({"ollama/qwen3.5:9b", "ollama/qwen3.6:35b-a3b", "glm/glm-5.3",
-                           "glm/glm-5.3-flash", "glm/glm-4.6", "openai/gpt-6.0", "none"})
+BINDING_ALLOW = frozenset(
+    {
+        "ollama/qwen3.5:9b",
+        "ollama/qwen3.6:35b-a3b",
+        "glm/glm-5.3",
+        "glm/glm-5.3-flash",
+        "glm/glm-4.6",
+        "openai/gpt-6.0",
+        "none",
+    }
+)
 
 
 class MigrateError(ValueError):
@@ -62,7 +71,9 @@ def _find_source(root: Path, aid: str, source: str) -> tuple:
         org = json.loads(_org_path(root).read_text(encoding="utf-8"))
         c = org.get("chief") or {}
         if str(c.get("agent_id") or "") != aid:
-            raise MigrateError("chief 块里的席位是 %r，不是 %r" % (c.get("agent_id"), aid))
+            raise MigrateError(
+                "chief 块里的席位是 %r，不是 %r" % (c.get("agent_id"), aid)
+            )
         return dict(c), "org.json 顶层 chief", None
     if source.startswith("team:"):
         rel = source.split(":", 1)[1]
@@ -82,8 +93,10 @@ def _to_profile(raw: dict, *, binding: str, charter: str, grade: str) -> dict:
     if not duty:
         duty = (charter or "").strip()
     if len(duty) < DUTY_MIN_LEN:
-        raise MigrateError("职责（charter_detail/duty）不足 %d 字且未用 --charter 显式给出："
-                           "编制红线不允许工具自造职责" % DUTY_MIN_LEN)
+        raise MigrateError(
+            "职责（charter_detail/duty）不足 %d 字且未用 --charter 显式给出："
+            "编制红线不允许工具自造职责" % DUTY_MIN_LEN
+        )
     prof = {
         "agent_id": str(raw.get("agent_id")),
         "role_profile": str(raw.get("role_profile") or ""),
@@ -102,42 +115,65 @@ def _to_profile(raw: dict, *, binding: str, charter: str, grade: str) -> dict:
     return prof
 
 
-def build_migrate_plan(root: Path, *, agent_id: str, dept: str, source: str,
-                       binding: str = "", charter: str = "", grade: str = "",
-                       ticket: str = "", signed_by: str = "") -> dict:
+def build_migrate_plan(
+    root: Path,
+    *,
+    agent_id: str,
+    dept: str,
+    source: str,
+    binding: str = "",
+    charter: str = "",
+    grade: str = "",
+    ticket: str = "",
+    signed_by: str = "",
+) -> dict:
     aid = (agent_id or "").strip()
     org_p = _org_path(root)
     try:
         org = json.loads(org_p.read_text(encoding="utf-8"))
     except (ValueError, OSError) as e:
         raise MigrateError("org.json 不可解析：%s" % e)
-    target = next((d for d in org.get("departments") or [] if d.get("dept") == dept), None)
+    target = next(
+        (d for d in org.get("departments") or [] if d.get("dept") == dept), None
+    )
     if target is None:
         raise MigrateError("未知部门 %r" % dept)
     if any(str(p.get("agent_id")) == aid for p in (target.get("agent_profiles") or [])):
-        raise MigrateError("%s 在 %s 已有档案，迁移会覆盖既有职责——工具拒绝合并"
-                           % (aid, dept))
+        raise MigrateError(
+            "%s 在 %s 已有档案，迁移会覆盖既有职责——工具拒绝合并" % (aid, dept)
+        )
     raw, where, rel = _find_source(root, aid, source)
     if binding and binding not in BINDING_ALLOW:
         raise MigrateError("llm_binding 不在词表：%r" % binding)
     prof = _to_profile(raw, binding=binding, charter=charter, grade=grade)
     if not prof["llm_binding"]:
-        raise MigrateError("%s 原档案未声明 llm_binding，请用 --binding 显式给出"
-                           "（不知道绑什么就填 none，不要留给默认档替它假定能力）" % aid)
+        raise MigrateError(
+            "%s 原档案未声明 llm_binding，请用 --binding 显式给出"
+            "（不知道绑什么就填 none，不要留给默认档替它假定能力）" % aid
+        )
     if not (ticket or "").strip() or not _TICKET_RE.match(ticket.strip()):
         raise MigrateError("工单号必填且须 WO-/K-/LEGION- 前缀（--ticket）")
     if not (signed_by or "").strip():
         raise MigrateError("缺少放行人（--signed-by）")
 
     add_to_agents = aid not in [str(a) for a in (target.get("agents") or [])]
-    return {"rules_version": RULES_VERSION, "mode": "migrate_profile",
-            "agent_id": aid, "dept": dept, "dept_name": target.get("name"),
-            "from_source": where, "profile": prof,
-            "add_to_agents": add_to_agents,
-            "ticket": ticket.strip(), "signed_by": signed_by.strip(),
-            "writes": ["registry/org.json（%s 档案 + 名单%s）"
-                       % (dept, "+1" if add_to_agents else "不变")],
-            "note": "dry-run 迁移计划：未写入任何字节"}
+    return {
+        "rules_version": RULES_VERSION,
+        "mode": "migrate_profile",
+        "agent_id": aid,
+        "dept": dept,
+        "dept_name": target.get("name"),
+        "from_source": where,
+        "profile": prof,
+        "add_to_agents": add_to_agents,
+        "ticket": ticket.strip(),
+        "signed_by": signed_by.strip(),
+        "writes": [
+            "registry/org.json（%s 档案 + 名单%s）"
+            % (dept, "+1" if add_to_agents else "不变")
+        ],
+        "note": "dry-run 迁移计划：未写入任何字节",
+    }
 
 
 def apply_migrate_plan(root: Path, plan: dict, *, signed_by: str) -> dict:
@@ -162,10 +198,11 @@ def apply_migrate_plan(root: Path, plan: dict, *, signed_by: str) -> dict:
     if plan.get("add_to_agents"):
         target["agents"] = (target.get("agents") or []) + [aid]
     # 原位置打标记（不删：chief 块仍被 monthly_report/snapshot 直接读）
-    mark = {"_superseded_by": "departments.%s.agent_profiles" % dept,
-            "_superseded_note": "S43 已迁入部门档案表（工单 %s / 放行人 %s）；"
-                                "此副本仅为兼容既有读取方，勿在此维护"
-                                % (plan["ticket"], plan["signed_by"])}
+    mark = {
+        "_superseded_by": "departments.%s.agent_profiles" % dept,
+        "_superseded_note": "S43 已迁入部门档案表（工单 %s / 放行人 %s）；"
+        "此副本仅为兼容既有读取方，勿在此维护" % (plan["ticket"], plan["signed_by"]),
+    }
     if plan["from_source"] == "org.json 顶层 chief":
         org["chief"] = dict(org.get("chief") or {}, **mark)
     else:
@@ -189,10 +226,16 @@ def apply_migrate_plan(root: Path, plan: dict, *, signed_by: str) -> dict:
         if src_backup is not None:
             shutil.copy2(src_backup, root / plan["from_source"])
         raise
-    return {"rules_version": RULES_VERSION, "ok": True, "mode": "migrate_profile",
-            "agent_id": aid, "dept": dept, "from_source": plan["from_source"],
-            "backup": str(backup),
-            "note": "档案已迁入部门档案表并自检通过；原位置保留并标记 _superseded_by"}
+    return {
+        "rules_version": RULES_VERSION,
+        "ok": True,
+        "mode": "migrate_profile",
+        "agent_id": aid,
+        "dept": dept,
+        "from_source": plan["from_source"],
+        "backup": str(backup),
+        "note": "档案已迁入部门档案表并自检通过；原位置保留并标记 _superseded_by",
+    }
 
 
 def _selfcheck(root: Path, before: dict, dept: str, aid: str, plan: dict) -> None:
@@ -202,29 +245,40 @@ def _selfcheck(root: Path, before: dict, dept: str, aid: str, plan: dict) -> Non
     if list(b.keys()) != list(a.keys()):
         raise MigrateError("自检失败：部门清单变化")
     ad = a.get(dept)
-    got = next((p for p in (ad.get("agent_profiles") or [])
-                if str(p.get("agent_id")) == aid), None)
+    got = next(
+        (p for p in (ad.get("agent_profiles") or []) if str(p.get("agent_id")) == aid),
+        None,
+    )
     if got is None:
         raise MigrateError("自检失败：%s 档案未落到 %s" % (aid, dept))
-    if json.dumps(got, sort_keys=True, ensure_ascii=False) != \
-       json.dumps(plan["profile"], sort_keys=True, ensure_ascii=False):
+    if json.dumps(got, sort_keys=True, ensure_ascii=False) != json.dumps(
+        plan["profile"], sort_keys=True, ensure_ascii=False
+    ):
         raise MigrateError("自检失败：落盘档案与计划不一致")
-    if plan.get("add_to_agents") and aid not in [str(x) for x in (ad.get("agents") or [])]:
+    if plan.get("add_to_agents") and aid not in [
+        str(x) for x in (ad.get("agents") or [])
+    ]:
         raise MigrateError("自检失败：%s 未加入 %s 名单" % (aid, dept))
     # 其他部门一字未动
     for name in b:
         if name == dept:
             continue
-        if json.dumps(b[name], sort_keys=True, ensure_ascii=False) != \
-           json.dumps(a.get(name), sort_keys=True, ensure_ascii=False):
+        if json.dumps(b[name], sort_keys=True, ensure_ascii=False) != json.dumps(
+            a.get(name), sort_keys=True, ensure_ascii=False
+        ):
             raise MigrateError("自检失败：非目标部门 %r 被改动" % name)
     # 本部门其他档案与名单（除新增项）未动
-    others_b = [p for p in (b[dept].get("agent_profiles") or [])
-                if str(p.get("agent_id")) != aid]
-    others_a = [p for p in (ad.get("agent_profiles") or [])
-                if str(p.get("agent_id")) != aid]
-    if json.dumps(others_b, sort_keys=True, ensure_ascii=False) != \
-       json.dumps(others_a, sort_keys=True, ensure_ascii=False):
+    others_b = [
+        p
+        for p in (b[dept].get("agent_profiles") or [])
+        if str(p.get("agent_id")) != aid
+    ]
+    others_a = [
+        p for p in (ad.get("agent_profiles") or []) if str(p.get("agent_id")) != aid
+    ]
+    if json.dumps(others_b, sort_keys=True, ensure_ascii=False) != json.dumps(
+        others_a, sort_keys=True, ensure_ascii=False
+    ):
         raise MigrateError("自检失败：同部门其他档案被改动")
     agents_b = [str(x) for x in (b[dept].get("agents") or [])]
     agents_now = [str(x) for x in (ad.get("agents") or [])]
@@ -241,7 +295,9 @@ def main(argv=None) -> int:
     ap.add_argument("--root", default=str(Path(__file__).resolve().parents[1]))
     ap.add_argument("--id", dest="agent_id")
     ap.add_argument("--dept")
-    ap.add_argument("--source", required=False, help="chief 或 team:registry/team_x.json")
+    ap.add_argument(
+        "--source", required=False, help="chief 或 team:registry/team_x.json"
+    )
     ap.add_argument("--binding", default="", help="覆盖绑定；原档案无绑定时必须给")
     ap.add_argument("--charter", default="", help="职责；原档案无 duty 时必须给")
     ap.add_argument("--grade", default="")
@@ -254,17 +310,31 @@ def main(argv=None) -> int:
         if not (args.agent_id and args.dept and args.source):
             print("需要 --id --dept --source", file=sys.stderr)
             return 2
-        plan = build_migrate_plan(root, agent_id=args.agent_id, dept=args.dept,
-                                  source=args.source, binding=args.binding,
-                                  charter=args.charter, grade=args.grade,
-                                  ticket=args.ticket, signed_by=args.signed_by)
+        plan = build_migrate_plan(
+            root,
+            agent_id=args.agent_id,
+            dept=args.dept,
+            source=args.source,
+            binding=args.binding,
+            charter=args.charter,
+            grade=args.grade,
+            ticket=args.ticket,
+            signed_by=args.signed_by,
+        )
         if not args.apply:
             print(json.dumps(plan, ensure_ascii=False, indent=1))
-            print("\n【dry-run】以上为迁移计划，未写入任何字节。确认无误加 --apply。",
-                  file=sys.stderr)
+            print(
+                "\n【dry-run】以上为迁移计划，未写入任何字节。确认无误加 --apply。",
+                file=sys.stderr,
+            )
             return 0
-        print(json.dumps(apply_migrate_plan(root, plan, signed_by=args.signed_by),
-                         ensure_ascii=False, indent=1))
+        print(
+            json.dumps(
+                apply_migrate_plan(root, plan, signed_by=args.signed_by),
+                ensure_ascii=False,
+                indent=1,
+            )
+        )
         return 0
     except MigrateError as e:
         print("迁移校验失败：%s" % e, file=sys.stderr)

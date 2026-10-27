@@ -64,19 +64,26 @@ def load_experiment_cards(exp_dir: Path, limit: int = 20) -> list[dict]:
     cards = []
     for created_at, _mtime, d in loaded[-limit:]:
         verdict = d.get("verdict") if isinstance(d.get("verdict"), dict) else {}
-        sig = verdict.get("signature") if isinstance(verdict.get("signature"), dict) else {}
-        cards.append({
-            "card_id": d.get("card_id"),
-            "hypothesis": str(d.get("hypothesis", ""))[:60],
-            "status": d.get("status"),
-            "arms": list((d.get("arms") or {}).keys()),
-            "created_at": d.get("created_at") or created_at,
-            "kind": d.get("kind") or "experiment",
-            "decision_required": bool(d.get("decision_required", False)),
-            "window_summary": d.get("window_summary") or {},
-            "signature_verified": sig.get("verified"),
-        })
+        sig = (
+            verdict.get("signature")
+            if isinstance(verdict.get("signature"), dict)
+            else {}
+        )
+        cards.append(
+            {
+                "card_id": d.get("card_id"),
+                "hypothesis": str(d.get("hypothesis", ""))[:60],
+                "status": d.get("status"),
+                "arms": list((d.get("arms") or {}).keys()),
+                "created_at": d.get("created_at") or created_at,
+                "kind": d.get("kind") or "experiment",
+                "decision_required": bool(d.get("decision_required", False)),
+                "window_summary": d.get("window_summary") or {},
+                "signature_verified": sig.get("verified"),
+            }
+        )
     return cards
+
 
 # 参会席位 → 模型绑定（10-51 异族裁决 + org.json 主事实源；未列出席位默认本地 9b）
 AGENT_BINDING = {
@@ -143,8 +150,14 @@ def resolve_fallbacks(agent: str, platform_dir: Path | None = None) -> list[str]
     return list(cache["fallbacks"].get(agent) or [])
 
 
-def _seat_chat(chat_fn, binding: str, fallbacks, system: str, user: str,
-               default_fallback: str = _DEFAULT_FALLBACK) -> tuple[dict, list[str]]:
+def _seat_chat(
+    chat_fn,
+    binding: str,
+    fallbacks,
+    system: str,
+    user: str,
+    default_fallback: str = _DEFAULT_FALLBACK,
+) -> tuple[dict, list[str]]:
     """会议/指挥台单席位对话：主绑失败时按**席位级降级链**依次尝试。
 
     纯函数（chat_fn 注入、不读全局、不写缓存），便于离线验收与复用；返回
@@ -194,6 +207,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def _send_json(self, obj, status=200):
         import json
+
         body = json.dumps(obj, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
@@ -217,6 +231,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         import re
+
         path = urlparse(self.path).path
         if path == "/" or path == "/index.html":
             self._send_file(_STATIC / "index.html", "text/html; charset=utf-8")
@@ -246,10 +261,17 @@ class Handler(BaseHTTPRequestHandler):
             # 半份卡会被前端当成全量渲染，比报错更危险。
             try:
                 from legion_command.intent import build_cards
+
                 self._send_json(build_cards(_PLATFORM))
-            except Exception as e:                       # noqa: BLE001
-                self._send_json({"ok": False, "error": "intent_failed",
-                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            except Exception as e:  # noqa: BLE001
+                self._send_json(
+                    {
+                        "ok": False,
+                        "error": "intent_failed",
+                        "detail": "%s: %s" % (type(e).__name__, str(e)[:200]),
+                    },
+                    500,
+                )
             return
         if path == "/api/evolution":
             self._send_json(self._evolution())
@@ -265,7 +287,7 @@ class Handler(BaseHTTPRequestHandler):
             elif res.get("error") == "meeting_not_found":
                 self._send_json(res, 404)
             else:
-                self._send_json(res, 400)      # 非法 id / 不可读一律 4xx，不拿 200 装成功
+                self._send_json(res, 400)  # 非法 id / 不可读一律 4xx，不拿 200 装成功
             return
         if path.startswith("/api/meeting/"):
             # 形如 /api/meeting/../x 一律拒绝，不回显原始串（避免反射注入面）
@@ -276,43 +298,76 @@ class Handler(BaseHTTPRequestHandler):
             # 不写任何真源；缺口清单不是档案，charter_detail 须田丰归口、老田裁定。
             try:
                 from engine.org_audit import audit
+
                 self._send_json(audit(_PLATFORM))
             except FileNotFoundError as e:
-                self._send_json({"ok": False, "error": "org_missing", "detail": str(e)[:200]}, 500)
-            except Exception as e:                       # noqa: BLE001
-                self._send_json({"ok": False, "error": "audit_failed",
-                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+                self._send_json(
+                    {"ok": False, "error": "org_missing", "detail": str(e)[:200]}, 500
+                )
+            except Exception as e:  # noqa: BLE001
+                self._send_json(
+                    {
+                        "ok": False,
+                        "error": "audit_failed",
+                        "detail": "%s: %s" % (type(e).__name__, str(e)[:200]),
+                    },
+                    500,
+                )
             return
         if path == "/api/zhaoyun":
             # 赵云 · 治理席只读视图（身份/能力卡/判例库/AI建议/时钟/保活/签字链）
             try:
                 from legion_command.zhaoyun_view import build_view
+
                 self._send_json(build_view(_PLATFORM))
-            except Exception as e:                       # noqa: BLE001
-                self._send_json({"ok": False, "error": "zhaoyun_view_failed",
-                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            except Exception as e:  # noqa: BLE001
+                self._send_json(
+                    {
+                        "ok": False,
+                        "error": "zhaoyun_view_failed",
+                        "detail": "%s: %s" % (type(e).__name__, str(e)[:200]),
+                    },
+                    500,
+                )
             return
         if path == "/v1/models":
-            self._send_json({"object": "list", "data": [
-                {"id": "gpt-6-sol", "object": "model", "owned_by": "relay"},
-                {"id": "glm-5.3", "object": "model", "owned_by": "zhipu"},
-                {"id": "deepseek-chat", "object": "model", "owned_by": "deepseek"},
-                {"id": "qwen3.5:9b", "object": "model", "owned_by": "local"},
-            ]})
+            self._send_json(
+                {
+                    "object": "list",
+                    "data": [
+                        {"id": "gpt-6-sol", "object": "model", "owned_by": "relay"},
+                        {"id": "glm-5.3", "object": "model", "owned_by": "zhipu"},
+                        {
+                            "id": "deepseek-chat",
+                            "object": "model",
+                            "owned_by": "deepseek",
+                        },
+                        {"id": "qwen3.5:9b", "object": "model", "owned_by": "local"},
+                    ],
+                }
+            )
             return
         if path == "/api/keys/state":
             try:
                 from legion_command import keypool
+
                 self._send_json(keypool.state())
-            except Exception as e:                       # noqa: BLE001
-                self._send_json({"ok": False, "error": "keypool_state_failed",
-                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            except Exception as e:  # noqa: BLE001
+                self._send_json(
+                    {
+                        "ok": False,
+                        "error": "keypool_state_failed",
+                        "detail": "%s: %s" % (type(e).__name__, str(e)[:200]),
+                    },
+                    500,
+                )
             return
         if path.startswith("/api/zhaoyun/"):
             # WO-ZHAOYUN-DRILL：治理席"下钻"数据（能力详证/任务偏差/记忆/模型/请求）
             try:
                 from legion_command import zhaoyun_drill as zd
-                sub = path[len("/api/zhaoyun/"):]
+
+                sub = path[len("/api/zhaoyun/") :]
                 if sub == "tasks":
                     self._send_json(zd.tasks_view(_PLATFORM))
                 elif sub == "memory":
@@ -326,29 +381,37 @@ class Handler(BaseHTTPRequestHandler):
                 elif sub == "skills":
                     sys.path.insert(0, str(_PLATFORM / "tools"))
                     from skill_registry import list_skills
+
                     self._send_json(list_skills())
                 elif sub == "selfaudit":
                     from legion_command import zhaoyun_cap2 as c2
+
                     self._send_json(c2.selfaudit(_PLATFORM))
                 elif sub == "routing":
                     from legion_command import zhaoyun_cap2 as c2
+
                     self._send_json(c2.routing(_PLATFORM))
                 elif sub == "interventions":
                     from legion_command import zhaoyun_cap2 as c2
+
                     self._send_json(c2.interventions(_PLATFORM))
                 elif sub == "memory/curation":
                     from legion_command import zhaoyun_cap2 as c2
+
                     self._send_json(c2.memory_curation())
                 elif sub == "overrides":
                     from legion_command import zhaoyun_cap2 as c2
+
                     self._send_json(c2.overrides(_PLATFORM))
                 elif sub == "traces":
                     sys.path.insert(0, str(_PLATFORM))
                     from observability import trace as tr
+
                     self._send_json(tr.list_traces(50))
                 elif re.fullmatch(r"trace/[0-9a-f]{8,64}", sub):
                     sys.path.insert(0, str(_PLATFORM))
                     from observability import trace as tr
+
                     self._send_json(tr.get_trace(sub.split("/", 1)[1]))
                 elif sub == "evals":
                     latest = _PLATFORM / "evals" / "reports" / "latest.json"
@@ -359,70 +422,100 @@ class Handler(BaseHTTPRequestHandler):
                 elif sub == "mcp":
                     sys.path.insert(0, str(_PLATFORM))
                     from mcp import registry as mreg
+
                     self._send_json(mreg.summary())
                 elif sub == "memory/v2":
                     sys.path.insert(0, str(_PLATFORM))
                     from memory import store as ms
+
                     self._send_json(ms.stats())
                 elif sub == "sandbox":
                     sys.path.insert(0, str(_PLATFORM))
                     from sandbox import runner as sbr
+
                     self._send_json(sbr.recent())
                 elif sub == "outbox":
                     sys.path.insert(0, str(_PLATFORM))
                     from notify import outbox as ob
+
                     self._send_json(ob.recent())
                 elif sub == "research":
                     sys.path.insert(0, str(_PLATFORM))
                     from research import web as rw
+
                     self._send_json(rw.recent_citations())
                 elif sub == "repair":
                     sys.path.insert(0, str(_PLATFORM))
                     from repair import lane as rl
+
                     self._send_json(rl.recent())
                 elif sub == "evals/judge":
                     sys.path.insert(0, str(_PLATFORM / "evals"))
                     from judge import latest  # noqa: WPS433
+
                     self._send_json(latest())
                 elif re.fullmatch(r"cap/[A-Za-z0-9_-]{1,64}", sub):
                     cap = sub.split("/", 1)[1]
                     rep = zd.capabilities_detail(_PLATFORM)
-                    row = next((x for x in (rep.get("items") or [])
-                                if x.get("name") == cap), None)
+                    row = next(
+                        (x for x in (rep.get("items") or []) if x.get("name") == cap),
+                        None,
+                    )
                     if row is None:
-                        self._send_json({"ok": False, "error": "cap_not_found",
-                                         "cap": cap}, 404)
+                        self._send_json(
+                            {"ok": False, "error": "cap_not_found", "cap": cap}, 404
+                        )
                     else:
                         # drill-evidence：记录一次真实"下钻使用"+最近使用
                         try:
                             from legion_command import zhaoyun_cap2 as c2
+
                             usage = c2.last_used(_PLATFORM, cap)
                             c2.log_usage(_PLATFORM, cap, "page")
-                        except Exception:            # noqa: BLE001
+                        except Exception:  # noqa: BLE001
                             usage = {"ok": False}
                         try:
                             from observability import trace as tr
-                            tr.record(tr.trace_id(), "cap.drill", "tool",
-                                      attrs={"zhaoyun.capability": cap,
-                                             "zhaoyun.source": "page"})
-                        except Exception:            # noqa: BLE001
+
+                            tr.record(
+                                tr.trace_id(),
+                                "cap.drill",
+                                "tool",
+                                attrs={
+                                    "zhaoyun.capability": cap,
+                                    "zhaoyun.source": "page",
+                                },
+                            )
+                        except Exception:  # noqa: BLE001
                             pass
-                        self._send_json({"ok": True, "capability": row,
-                                         "usage": usage})
+                        self._send_json({"ok": True, "capability": row, "usage": usage})
                 else:
                     self._send_json({"ok": False, "error": "not_found: %s" % path}, 404)
-            except Exception as e:                       # noqa: BLE001
-                self._send_json({"ok": False, "error": "zhaoyun_drill_failed",
-                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            except Exception as e:  # noqa: BLE001
+                self._send_json(
+                    {
+                        "ok": False,
+                        "error": "zhaoyun_drill_failed",
+                        "detail": "%s: %s" % (type(e).__name__, str(e)[:200]),
+                    },
+                    500,
+                )
             return
         if path == "/api/tianfeng":
             # 田丰 · 产品/研发席只读视图（角色/授权/能力/运行态/链接）
             try:
                 from legion_command.tianfeng_view import build_view
+
                 self._send_json(build_view(_PLATFORM))
-            except Exception as e:                       # noqa: BLE001
-                self._send_json({"ok": False, "error": "tianfeng_view_failed",
-                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            except Exception as e:  # noqa: BLE001
+                self._send_json(
+                    {
+                        "ok": False,
+                        "error": "tianfeng_view_failed",
+                        "detail": "%s: %s" % (type(e).__name__, str(e)[:200]),
+                    },
+                    500,
+                )
             return
         if path == "/api/health":
             self._send_json({"ok": True, "service": "legion-command", "version": "1.0"})
@@ -443,9 +536,17 @@ class Handler(BaseHTTPRequestHandler):
                 try:
                     d = json.loads(p.read_text(encoding="utf-8"))
                 except (ValueError, OSError):
-                    rows.append({"id": p.stem, "ts": "", "broken": True,
-                                 "count": 0, "participants": [], "src_stats": {},
-                                 "source_verification": "unverified"})
+                    rows.append(
+                        {
+                            "id": p.stem,
+                            "ts": "",
+                            "broken": True,
+                            "count": 0,
+                            "participants": [],
+                            "src_stats": {},
+                            "source_verification": "unverified",
+                        }
+                    )
                     continue
                 ms = d.get("minutes") or []
                 stats = {"live": 0, "degraded": 0, "script": 0, "host": 0}
@@ -453,15 +554,24 @@ class Handler(BaseHTTPRequestHandler):
                     k = str(m.get("src", ""))
                     if k in stats:
                         stats[k] += 1
-                rows.append({"id": p.stem, "ts": d.get("ts", ""),
-                             "count": len(ms),
-                             "participants": d.get("participants") or [],
-                             "src_stats": stats,
-                             "source_verification": "unverified",
-                             "broken": False})
-        return {"ok": True, "schema_version": "1.0", "meetings": rows,
-                "total": len(rows),
-                "note": "只读清单；src_stats 统计客户端来源声明（含旧纪要），不是经服务端验证的真模型次数"}
+                rows.append(
+                    {
+                        "id": p.stem,
+                        "ts": d.get("ts", ""),
+                        "count": len(ms),
+                        "participants": d.get("participants") or [],
+                        "src_stats": stats,
+                        "source_verification": "unverified",
+                        "broken": False,
+                    }
+                )
+        return {
+            "ok": True,
+            "schema_version": "1.0",
+            "meetings": rows,
+            "total": len(rows),
+            "note": "只读清单；src_stats 统计客户端来源声明（含旧纪要），不是经服务端验证的真模型次数",
+        }
 
     @staticmethod
     def _meeting_get(mid: str):
@@ -477,16 +587,25 @@ class Handler(BaseHTTPRequestHandler):
         try:
             doc = json.loads(target.read_text(encoding="utf-8"))
         except (ValueError, OSError) as e:
-            return {"ok": False, "error": "meeting_unreadable: %s" % type(e).__name__,
-                    "id": mid}
+            return {
+                "ok": False,
+                "error": "meeting_unreadable: %s" % type(e).__name__,
+                "id": mid,
+            }
         doc["source_verification"] = "unverified"
-        return {"ok": True, "schema_version": "1.0", "id": mid, "meeting": doc,
-                "note": "只读回看；src 为客户端声明，未凭服务端真实模型回执验证（含历史纪要）"}
+        return {
+            "ok": True,
+            "schema_version": "1.0",
+            "id": mid,
+            "meeting": doc,
+            "note": "只读回看；src 为客户端声明，未凭服务端真实模型回执验证（含历史纪要）",
+        }
 
     @staticmethod
     def _evolution():
         """进化层只读视图：实验卡清单 + 经验库五域统计（不读不写经验正文）。"""
         import json as _json
+
         exp_dir = _PLATFORM / "data" / "experiments"
         cards = load_experiment_cards(exp_dir)
         lib = Path.home() / ".hermes" / "profiles" / "zhaoyun" / "experience"
@@ -506,48 +625,88 @@ class Handler(BaseHTTPRequestHandler):
                 "has_dir": (lib / d).exists(),
                 "readonly": d == "riskguard",
             }
-        recent = sorted(index_rows, key=lambda r: str(r.get("written_at") or ""),
-                        reverse=True)[:5]
-        return {"ok": True, "experiments": cards, "experience_domains": domains,
-                "entries_total": len(index_rows),
-                "experience_verified_total": sum(1 for r in index_rows if r.get("verified")),
-                "experience_recent": [{
-                    k: r.get(k) for k in ("entry_id", "domain", "confidence",
-                                          "signed_by", "written_at", "verified")}
-                    for r in recent],
-                "note": "只读视图；经验入库须签字（Z4）；风控域只读"}
+        recent = sorted(
+            index_rows, key=lambda r: str(r.get("written_at") or ""), reverse=True
+        )[:5]
+        return {
+            "ok": True,
+            "experiments": cards,
+            "experience_domains": domains,
+            "entries_total": len(index_rows),
+            "experience_verified_total": sum(
+                1 for r in index_rows if r.get("verified")
+            ),
+            "experience_recent": [
+                {
+                    k: r.get(k)
+                    for k in (
+                        "entry_id",
+                        "domain",
+                        "confidence",
+                        "signed_by",
+                        "written_at",
+                        "verified",
+                    )
+                }
+                for r in recent
+            ],
+            "note": "只读视图；经验入库须签字（Z4）；风控域只读",
+        }
 
     def do_POST(self):
         import json
+
         path = urlparse(self.path).path
         if path == "/v1/chat/completions":
             try:
                 length = int(self.headers.get("Content-Length") or 0)
                 if length <= 0 or length > 1024 * 1024:
-                    self._send_json({"error": {"message": "bad_request",
-                                               "type": "invalid_request_error"}}, 400)
+                    self._send_json(
+                        {
+                            "error": {
+                                "message": "bad_request",
+                                "type": "invalid_request_error",
+                            }
+                        },
+                        400,
+                    )
                     return
                 req = json.loads(self.rfile.read(length).decode("utf-8"))
             except (ValueError, UnicodeDecodeError):
-                self._send_json({"error": {"message": "bad_json",
-                                           "type": "invalid_request_error"}}, 400)
+                self._send_json(
+                    {"error": {"message": "bad_json", "type": "invalid_request_error"}},
+                    400,
+                )
                 return
             if not isinstance(req, dict):
-                self._send_json({"error": {"message": "bad_body",
-                                           "type": "invalid_request_error"}}, 400)
+                self._send_json(
+                    {"error": {"message": "bad_body", "type": "invalid_request_error"}},
+                    400,
+                )
                 return
             stream = bool(req.get("stream"))
             messages = req.get("messages") or []
             try:
                 from legion_command import keypool
+
                 res = keypool.auto_chat(messages)
-            except Exception as e:                       # noqa: BLE001
-                res = {"ok": False, "error": "gateway_failed",
-                       "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}
+            except Exception as e:  # noqa: BLE001
+                res = {
+                    "ok": False,
+                    "error": "gateway_failed",
+                    "detail": "%s: %s" % (type(e).__name__, str(e)[:200]),
+                }
             if not res.get("ok"):
-                self._send_json({"error": {"message": res.get("detail") or res.get("error"),
-                                           "type": "upstream_error"},
-                                 "x_attempts": res.get("attempts", [])}, 502)
+                self._send_json(
+                    {
+                        "error": {
+                            "message": res.get("detail") or res.get("error"),
+                            "type": "upstream_error",
+                        },
+                        "x_attempts": res.get("attempts", []),
+                    },
+                    502,
+                )
                 return
             channel = res.get("channel", "")
             reply = str(res.get("reply", ""))
@@ -563,43 +722,68 @@ class Handler(BaseHTTPRequestHandler):
                 created = int(time.time())
 
                 def _chunk(delta, finish=None):
-                    payload = {"id": cid, "object": "chat.completion.chunk",
-                               "created": created, "model": model,
-                               "x_channel": channel,
-                               "choices": [{"index": 0, "delta": delta,
-                                            "finish_reason": finish}]}
-                    self.wfile.write(("data: " + json.dumps(payload, ensure_ascii=False) + "\n\n").encode("utf-8"))
+                    payload = {
+                        "id": cid,
+                        "object": "chat.completion.chunk",
+                        "created": created,
+                        "model": model,
+                        "x_channel": channel,
+                        "choices": [
+                            {"index": 0, "delta": delta, "finish_reason": finish}
+                        ],
+                    }
+                    self.wfile.write(
+                        (
+                            "data: " + json.dumps(payload, ensure_ascii=False) + "\n\n"
+                        ).encode("utf-8")
+                    )
                     self.wfile.flush()
 
                 try:
                     _chunk({"role": "assistant", "content": ""})
                     for i in range(0, len(reply), 32):
-                        _chunk({"content": reply[i:i + 32]})
+                        _chunk({"content": reply[i : i + 32]})
                     _chunk({}, "stop")
                     self.wfile.write(b"data: [DONE]\n\n")
                     self.wfile.flush()
                 except (BrokenPipeError, ConnectionResetError):
                     pass
                 return
-            self._send_json({
-                "id": "chatcmpl-dsh-%s" % int(time.time() * 1000),
-                "object": "chat.completion",
-                "created": int(time.time()),
-                "model": model,
-                "choices": [{"index": 0, "message": {"role": "assistant",
-                                                     "content": reply},
-                             "finish_reason": "stop"}],
-                "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
-                "x_channel": channel,
-                "x_attempts": res.get("attempts", []),
-            })
+            self._send_json(
+                {
+                    "id": "chatcmpl-dsh-%s" % int(time.time() * 1000),
+                    "object": "chat.completion",
+                    "created": int(time.time()),
+                    "model": model,
+                    "choices": [
+                        {
+                            "index": 0,
+                            "message": {"role": "assistant", "content": reply},
+                            "finish_reason": "stop",
+                        }
+                    ],
+                    "usage": {
+                        "prompt_tokens": 0,
+                        "completion_tokens": 0,
+                        "total_tokens": 0,
+                    },
+                    "x_channel": channel,
+                    "x_attempts": res.get("attempts", []),
+                }
+            )
             return
         if path == "/api/keys/auto_chat":
             try:
                 length = int(self.headers.get("Content-Length") or 0)
                 if length <= 0 or length > 128 * 1024:
-                    self._send_json({"ok": False, "error": "bad_request",
-                                     "reason": "content_length_out_of_range"}, 400)
+                    self._send_json(
+                        {
+                            "ok": False,
+                            "error": "bad_request",
+                            "reason": "content_length_out_of_range",
+                        },
+                        400,
+                    )
                     return
                 req = json.loads(self.rfile.read(length).decode("utf-8"))
             except (ValueError, UnicodeDecodeError):
@@ -607,18 +791,28 @@ class Handler(BaseHTTPRequestHandler):
                 return
             try:
                 from legion_command import keypool
+
                 res = keypool.auto_chat((req or {}).get("messages") or [])
-            except Exception as e:                       # noqa: BLE001
-                res = {"ok": False, "error": "auto_chat_failed",
-                       "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}
+            except Exception as e:  # noqa: BLE001
+                res = {
+                    "ok": False,
+                    "error": "auto_chat_failed",
+                    "detail": "%s: %s" % (type(e).__name__, str(e)[:200]),
+                }
             self._send_json(res, 200 if res.get("ok") else 400)
             return
         if path == "/api/keys/action":
             try:
                 length = int(self.headers.get("Content-Length") or 0)
                 if length <= 0 or length > 64 * 1024:
-                    self._send_json({"ok": False, "error": "bad_request",
-                                     "reason": "content_length_out_of_range"}, 400)
+                    self._send_json(
+                        {
+                            "ok": False,
+                            "error": "bad_request",
+                            "reason": "content_length_out_of_range",
+                        },
+                        400,
+                    )
                     return
                 req = json.loads(self.rfile.read(length).decode("utf-8"))
             except (ValueError, UnicodeDecodeError):
@@ -626,10 +820,14 @@ class Handler(BaseHTTPRequestHandler):
                 return
             try:
                 from legion_command import keypool
+
                 res = keypool.action(req if isinstance(req, dict) else {})
-            except Exception as e:                       # noqa: BLE001
-                res = {"ok": False, "error": "keypool_action_failed",
-                       "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}
+            except Exception as e:  # noqa: BLE001
+                res = {
+                    "ok": False,
+                    "error": "keypool_action_failed",
+                    "detail": "%s: %s" % (type(e).__name__, str(e)[:200]),
+                }
             self._send_json(res, 200 if res.get("ok") else 400)
             return
         if path == "/api/zhaoyun/approve":
@@ -637,8 +835,14 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 length = int(self.headers.get("Content-Length") or 0)
                 if length <= 0 or length > 64 * 1024:
-                    self._send_json({"ok": False, "error": "bad_request",
-                                     "reason": "content_length_out_of_range"}, 400)
+                    self._send_json(
+                        {
+                            "ok": False,
+                            "error": "bad_request",
+                            "reason": "content_length_out_of_range",
+                        },
+                        400,
+                    )
                     return
                 req = json.loads(self.rfile.read(length).decode("utf-8"))
             except (ValueError, UnicodeDecodeError):
@@ -646,21 +850,37 @@ class Handler(BaseHTTPRequestHandler):
                 return
             try:
                 from legion_command import zhaoyun_cap2 as c2
-                res = c2.approve(_PLATFORM, str(req.get("id") or ""),
-                                 str(req.get("decision") or ""),
-                                 str(req.get("signer") or ""),
-                                 str(req.get("note") or ""))
-            except Exception as e:                       # noqa: BLE001
-                res = {"ok": False, "error": "approve_failed",
-                       "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}
+
+                res = c2.approve(
+                    _PLATFORM,
+                    str(req.get("id") or ""),
+                    str(req.get("decision") or ""),
+                    str(req.get("signer") or ""),
+                    str(req.get("note") or ""),
+                )
+            except Exception as e:  # noqa: BLE001
+                res = {
+                    "ok": False,
+                    "error": "approve_failed",
+                    "detail": "%s: %s" % (type(e).__name__, str(e)[:200]),
+                }
             try:
                 from observability import trace as tr
-                tr.record(tr.trace_id(), "approval", "approval", attrs={
-                    "zhaoyun.approval_id": str(req.get("id") or ""),
-                    "zhaoyun.decision": str(req.get("decision") or ""),
-                    "zhaoyun.result": "ok" if res.get("ok") else "error",
-                    "zhaoyun.applied": bool((res.get("request") or {}).get("applied"))})
-            except Exception:                            # noqa: BLE001
+
+                tr.record(
+                    tr.trace_id(),
+                    "approval",
+                    "approval",
+                    attrs={
+                        "zhaoyun.approval_id": str(req.get("id") or ""),
+                        "zhaoyun.decision": str(req.get("decision") or ""),
+                        "zhaoyun.result": "ok" if res.get("ok") else "error",
+                        "zhaoyun.applied": bool(
+                            (res.get("request") or {}).get("applied")
+                        ),
+                    },
+                )
+            except Exception:  # noqa: BLE001
                 pass
             self._send_json(res, 200 if res.get("ok") else 400)
             return
@@ -669,20 +889,28 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 sys.path.insert(0, str(_PLATFORM))
                 from evals import run_evals as ev  # noqa: WPS433
+
                 res = ev.build_report(smoke=True)
-            except Exception as e:                       # noqa: BLE001
-                res = {"ok": False, "error": "evals_run_failed",
-                       "detail": "%s: %s" % (type(e).__name__, str(e)[:160])}
+            except Exception as e:  # noqa: BLE001
+                res = {
+                    "ok": False,
+                    "error": "evals_run_failed",
+                    "detail": "%s: %s" % (type(e).__name__, str(e)[:160]),
+                }
             self._send_json(res, 200 if res.get("ok") else 500)
             return
         if path == "/api/zhaoyun/mcp/probe":
             try:
                 sys.path.insert(0, str(_PLATFORM))
                 from mcp import registry as mreg  # noqa: WPS433
+
                 res = mreg.summary(force=True)
-            except Exception as e:                       # noqa: BLE001
-                res = {"ok": False, "error": "mcp_probe_failed",
-                       "detail": "%s: %s" % (type(e).__name__, str(e)[:160])}
+            except Exception as e:  # noqa: BLE001
+                res = {
+                    "ok": False,
+                    "error": "mcp_probe_failed",
+                    "detail": "%s: %s" % (type(e).__name__, str(e)[:160]),
+                }
             self._send_json(res, 200 if res.get("ok") else 500)
             return
         if path == "/api/zhaoyun/mcp/call":
@@ -698,12 +926,18 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 sys.path.insert(0, str(_PLATFORM))
                 from mcp import registry as mreg  # noqa: WPS433
-                res = mreg.call(str(req.get("server") or ""),
-                                str(req.get("tool") or ""),
-                                req.get("args") or {})
-            except Exception as e:                       # noqa: BLE001
-                res = {"ok": False, "error": "mcp_call_failed",
-                       "detail": "%s: %s" % (type(e).__name__, str(e)[:160])}
+
+                res = mreg.call(
+                    str(req.get("server") or ""),
+                    str(req.get("tool") or ""),
+                    req.get("args") or {},
+                )
+            except Exception as e:  # noqa: BLE001
+                res = {
+                    "ok": False,
+                    "error": "mcp_call_failed",
+                    "detail": "%s: %s" % (type(e).__name__, str(e)[:160]),
+                }
             self._send_json(res, 200 if res.get("ok") else 400)
             return
         if path == "/api/zhaoyun/memory/search":
@@ -719,33 +953,47 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 sys.path.insert(0, str(_PLATFORM))
                 from memory import store as ms  # noqa: WPS433
-                res = ms.search(str(req.get("q") or ""),
-                                layer=str(req.get("layer") or "") or None,
-                                limit=int(req.get("limit") or 5))
-            except Exception as e:                       # noqa: BLE001
-                res = {"ok": False, "error": "memory_search_failed",
-                       "detail": "%s: %s" % (type(e).__name__, str(e)[:160])}
+
+                res = ms.search(
+                    str(req.get("q") or ""),
+                    layer=str(req.get("layer") or "") or None,
+                    limit=int(req.get("limit") or 5),
+                )
+            except Exception as e:  # noqa: BLE001
+                res = {
+                    "ok": False,
+                    "error": "memory_search_failed",
+                    "detail": "%s: %s" % (type(e).__name__, str(e)[:160]),
+                }
             self._send_json(res, 200 if res.get("ok") else 400)
             return
         if path == "/api/zhaoyun/memory/ingest":
             try:
                 sys.path.insert(0, str(_PLATFORM))
                 from memory import store as ms  # noqa: WPS433
+
                 res = ms.ingest_all()
                 res["eval"] = ms.run_eval()
-            except Exception as e:                       # noqa: BLE001
-                res = {"ok": False, "error": "memory_ingest_failed",
-                       "detail": "%s: %s" % (type(e).__name__, str(e)[:160])}
+            except Exception as e:  # noqa: BLE001
+                res = {
+                    "ok": False,
+                    "error": "memory_ingest_failed",
+                    "detail": "%s: %s" % (type(e).__name__, str(e)[:160]),
+                }
             self._send_json(res, 200 if res.get("ok") else 500)
             return
         if path == "/api/zhaoyun/memory/eval":
             try:
                 sys.path.insert(0, str(_PLATFORM))
                 from memory import store as ms  # noqa: WPS433
+
                 res = ms.run_eval()
-            except Exception as e:                       # noqa: BLE001
-                res = {"ok": False, "error": "memory_eval_failed",
-                       "detail": "%s: %s" % (type(e).__name__, str(e)[:160])}
+            except Exception as e:  # noqa: BLE001
+                res = {
+                    "ok": False,
+                    "error": "memory_eval_failed",
+                    "detail": "%s: %s" % (type(e).__name__, str(e)[:160]),
+                }
             self._send_json(res, 200 if res.get("ok") else 500)
             return
         if path == "/api/zhaoyun/sandbox/verify":
@@ -761,11 +1009,16 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 sys.path.insert(0, str(_PLATFORM))
                 from sandbox import runner as sbr  # noqa: WPS433
-                res = sbr.verify_skill(str(req.get("skill") or ""),
-                                       timeout=int(req.get("timeout") or 120))
-            except Exception as e:                       # noqa: BLE001
-                res = {"ok": False, "error": "sandbox_failed",
-                       "detail": "%s: %s" % (type(e).__name__, str(e)[:160])}
+
+                res = sbr.verify_skill(
+                    str(req.get("skill") or ""), timeout=int(req.get("timeout") or 120)
+                )
+            except Exception as e:  # noqa: BLE001
+                res = {
+                    "ok": False,
+                    "error": "sandbox_failed",
+                    "detail": "%s: %s" % (type(e).__name__, str(e)[:160]),
+                }
             self._send_json(res, 200 if res.get("ok") else 400)
             return
         if path == "/api/zhaoyun/outbox":
@@ -781,34 +1034,52 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 sys.path.insert(0, str(_PLATFORM))
                 from notify import outbox as ob  # noqa: WPS433
-                res = ob.enqueue(str(req.get("title") or "赵云通知"),
-                                 str(req.get("body") or ""),
-                                 kind=str(req.get("kind") or "notify"))
-            except Exception as e:                       # noqa: BLE001
-                res = {"ok": False, "error": "outbox_failed",
-                       "detail": "%s: %s" % (type(e).__name__, str(e)[:160])}
+
+                res = ob.enqueue(
+                    str(req.get("title") or "赵云通知"),
+                    str(req.get("body") or ""),
+                    kind=str(req.get("kind") or "notify"),
+                )
+            except Exception as e:  # noqa: BLE001
+                res = {
+                    "ok": False,
+                    "error": "outbox_failed",
+                    "detail": "%s: %s" % (type(e).__name__, str(e)[:160]),
+                }
             self._send_json(res, 200 if res.get("ok") else 400)
             return
         if path == "/api/zhaoyun/outbox/send":
             try:
                 length = int(self.headers.get("Content-Length") or 0)
-                req = json.loads(self.rfile.read(length).decode("utf-8")) if length else {}
+                req = (
+                    json.loads(self.rfile.read(length).decode("utf-8"))
+                    if length
+                    else {}
+                )
             except (ValueError, UnicodeDecodeError):
                 self._send_json({"ok": False, "error": "bad_request"}, 400)
                 return
             try:
                 sys.path.insert(0, str(_PLATFORM))
                 from notify import outbox as ob  # noqa: WPS433
+
                 res = ob.send(str(req.get("id") or ""))
-            except Exception as e:                       # noqa: BLE001
-                res = {"ok": False, "error": "outbox_send_failed",
-                       "detail": "%s: %s" % (type(e).__name__, str(e)[:160])}
+            except Exception as e:  # noqa: BLE001
+                res = {
+                    "ok": False,
+                    "error": "outbox_send_failed",
+                    "detail": "%s: %s" % (type(e).__name__, str(e)[:160]),
+                }
             self._send_json(res, 200)
             return
         if path == "/api/zhaoyun/approval-card":
             try:
                 length = int(self.headers.get("Content-Length") or 0)
-                req = json.loads(self.rfile.read(length).decode("utf-8")) if length else {}
+                req = (
+                    json.loads(self.rfile.read(length).decode("utf-8"))
+                    if length
+                    else {}
+                )
             except (ValueError, UnicodeDecodeError):
                 self._send_json({"ok": False, "error": "bad_request"}, 400)
                 return
@@ -818,12 +1089,20 @@ class Handler(BaseHTTPRequestHandler):
                 request = json.loads(p.read_text(encoding="utf-8-sig"))
                 sys.path.insert(0, str(_PLATFORM))
                 from notify import outbox as ob  # noqa: WPS433
+
                 res = ob.enqueue_approval_card(request)
             except (OSError, ValueError):
-                res = {"ok": False, "error": "request_not_found", "id": rid if "rid" in dir() else ""}
-            except Exception as e:                       # noqa: BLE001
-                res = {"ok": False, "error": "approval_card_failed",
-                       "detail": "%s: %s" % (type(e).__name__, str(e)[:160])}
+                res = {
+                    "ok": False,
+                    "error": "request_not_found",
+                    "id": rid if "rid" in dir() else "",
+                }
+            except Exception as e:  # noqa: BLE001
+                res = {
+                    "ok": False,
+                    "error": "approval_card_failed",
+                    "detail": "%s: %s" % (type(e).__name__, str(e)[:160]),
+                }
             self._send_json(res, 200 if res.get("ok") else 400)
             return
         if path == "/api/zhaoyun/research/fetch":
@@ -839,37 +1118,52 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 sys.path.insert(0, str(_PLATFORM))
                 from research import web as rw  # noqa: WPS433
-                res = rw.fetch(str(req.get("url") or ""),
-                               force=bool(req.get("force")))
-            except Exception as e:                       # noqa: BLE001
-                res = {"ok": False, "error": "research_fetch_failed",
-                       "detail": "%s: %s" % (type(e).__name__, str(e)[:160])}
+
+                res = rw.fetch(str(req.get("url") or ""), force=bool(req.get("force")))
+            except Exception as e:  # noqa: BLE001
+                res = {
+                    "ok": False,
+                    "error": "research_fetch_failed",
+                    "detail": "%s: %s" % (type(e).__name__, str(e)[:160]),
+                }
             self._send_json(res, 200 if res.get("ok") else 400)
             return
         if path == "/api/zhaoyun/repair/triage":
             try:
                 sys.path.insert(0, str(_PLATFORM))
                 from repair import lane as rl  # noqa: WPS433
+
                 res = rl.triage()
-            except Exception as e:                       # noqa: BLE001
-                res = {"ok": False, "error": "repair_triage_failed",
-                       "detail": "%s: %s" % (type(e).__name__, str(e)[:160])}
+            except Exception as e:  # noqa: BLE001
+                res = {
+                    "ok": False,
+                    "error": "repair_triage_failed",
+                    "detail": "%s: %s" % (type(e).__name__, str(e)[:160]),
+                }
             self._send_json(res, 200 if res.get("ok") else 500)
             return
         if path == "/api/zhaoyun/repair/run":
             try:
                 length = int(self.headers.get("Content-Length") or 0)
-                req = json.loads(self.rfile.read(length).decode("utf-8")) if length else {}
+                req = (
+                    json.loads(self.rfile.read(length).decode("utf-8"))
+                    if length
+                    else {}
+                )
             except (ValueError, UnicodeDecodeError):
                 self._send_json({"ok": False, "error": "bad_request"}, 400)
                 return
             try:
                 sys.path.insert(0, str(_PLATFORM))
                 from repair import lane as rl  # noqa: WPS433
+
                 res = rl.run_batch(str(req.get("batch_id") or ""))
-            except Exception as e:                       # noqa: BLE001
-                res = {"ok": False, "error": "repair_run_failed",
-                       "detail": "%s: %s" % (type(e).__name__, str(e)[:160])}
+            except Exception as e:  # noqa: BLE001
+                res = {
+                    "ok": False,
+                    "error": "repair_run_failed",
+                    "detail": "%s: %s" % (type(e).__name__, str(e)[:160]),
+                }
             self._send_json(res, 200 if res.get("ok") else 400)
             return
         if path == "/api/zhaoyun/request":
@@ -877,8 +1171,14 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 length = int(self.headers.get("Content-Length") or 0)
                 if length <= 0 or length > 64 * 1024:
-                    self._send_json({"ok": False, "error": "bad_request",
-                                     "reason": "content_length_out_of_range"}, 400)
+                    self._send_json(
+                        {
+                            "ok": False,
+                            "error": "bad_request",
+                            "reason": "content_length_out_of_range",
+                        },
+                        400,
+                    )
                     return
                 req = json.loads(self.rfile.read(length).decode("utf-8"))
             except (ValueError, UnicodeDecodeError):
@@ -886,13 +1186,20 @@ class Handler(BaseHTTPRequestHandler):
                 return
             try:
                 from legion_command import zhaoyun_drill as zd
-                res = zd.write_request(_PLATFORM, str(req.get("kind") or ""),
-                                       req.get("payload") or {},
-                                       str(req.get("reason") or ""),
-                                       requested_by="老田（页面提交）")
-            except Exception as e:                       # noqa: BLE001
-                res = {"ok": False, "error": "request_failed",
-                       "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}
+
+                res = zd.write_request(
+                    _PLATFORM,
+                    str(req.get("kind") or ""),
+                    req.get("payload") or {},
+                    str(req.get("reason") or ""),
+                    requested_by="老田（页面提交）",
+                )
+            except Exception as e:  # noqa: BLE001
+                res = {
+                    "ok": False,
+                    "error": "request_failed",
+                    "detail": "%s: %s" % (type(e).__name__, str(e)[:200]),
+                }
             self._send_json(res, 200 if res.get("ok") else 400)
             return
         if path == "/api/chat":
@@ -901,8 +1208,14 @@ class Handler(BaseHTTPRequestHandler):
                 # 2026-10-26 A2-B04：兄弟端点都有上限，本端点此前缺失。
                 # 负值/超 64KB 一律 400（防 read(-1) 悬挂与无界内存/参数超长）。
                 if length <= 0 or length > 64 * 1024:
-                    self._send_json({"ok": False, "error": "bad_request",
-                                     "reason": "content_length_out_of_range"}, 400)
+                    self._send_json(
+                        {
+                            "ok": False,
+                            "error": "bad_request",
+                            "reason": "content_length_out_of_range",
+                        },
+                        400,
+                    )
                     return
                 req = json.loads(self.rfile.read(length).decode("utf-8"))
             except (ValueError, UnicodeDecodeError):
@@ -916,13 +1229,24 @@ class Handler(BaseHTTPRequestHandler):
             if binding == "none":
                 # 规则执行体：编制上就没给它 LLM。不能兜底成 9b，
                 # 那会让一个「判例手册驱动的巡检哨」凭空开口说话。
-                self._send_json({"schema_version": "1.0", "ok": False,
-                                 "kind": "llm_chat", "data": {},
-                                 "error": {"code": "no_llm_capability",
-                                           "message": "%s 为规则执行体（编制绑定 none），无 LLM 发言能力" % agent},
-                                 "degraded": False, "latency_ms": 0,
-                                 "ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
-                                 "agent": agent, "binding": binding})
+                self._send_json(
+                    {
+                        "schema_version": "1.0",
+                        "ok": False,
+                        "kind": "llm_chat",
+                        "data": {},
+                        "error": {
+                            "code": "no_llm_capability",
+                            "message": "%s 为规则执行体（编制绑定 none），无 LLM 发言能力"
+                            % agent,
+                        },
+                        "degraded": False,
+                        "latency_ms": 0,
+                        "ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+                        "agent": agent,
+                        "binding": binding,
+                    }
+                )
                 return
             if binding.startswith("openai/"):
                 # 2026-10-26 WG-8796OC：会议厅 AI1 的「真通道」改走 OpenClaw
@@ -931,49 +1255,85 @@ class Handler(BaseHTTPRequestHandler):
                 # carrier/relay/mode，不再一律 channel_not_ready（那会连中转也拒掉）。
                 t0 = time.time()
                 if agent != "AI1":
-                    self._send_json({"schema_version": "1.0", "ok": False,
-                                     "kind": "llm_chat", "data": {},
-                                     "error": {"code": "channel_not_ready",
-                                               "message": "%s 的 openai 绑定暂无 OpenClaw 载体映射" % agent},
-                                     "degraded": False, "latency_ms": 0,
-                                     "ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
-                                     "agent": agent, "binding": binding})
+                    self._send_json(
+                        {
+                            "schema_version": "1.0",
+                            "ok": False,
+                            "kind": "llm_chat",
+                            "data": {},
+                            "error": {
+                                "code": "channel_not_ready",
+                                "message": "%s 的 openai 绑定暂无 OpenClaw 载体映射"
+                                % agent,
+                            },
+                            "degraded": False,
+                            "latency_ms": 0,
+                            "ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+                            "agent": agent,
+                            "binding": binding,
+                        }
+                    )
                     return
-                prompt = " ".join((str(req.get("system", "")) + " "
-                                   + str(req.get("user", ""))).split())[:16000]
+                prompt = " ".join(
+                    (
+                        str(req.get("system", "")) + " " + str(req.get("user", ""))
+                    ).split()
+                )[:16000]
                 text, oc_err = oc_run("zhuge", prompt)
                 carrier = agent_primary_model("zhuge") or "agent-config"
                 relay = is_relay(carrier)
                 if text:
-                    self._send_json({"schema_version": "1.0", "ok": True,
-                                     "kind": "llm_chat",
-                                     "data": {"binding_resolved": "openclaw/agent-config",
-                                              "carrier": carrier,
-                                              "relay": relay,
-                                              "mode": "openclaw_cloud" if relay else "openclaw_gpt",
-                                              "text": text, "status": "normal"},
-                                     "degraded": False,
-                                     "latency_ms": int((time.time() - t0) * 1000),
-                                     "ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
-                                     "agent": agent, "binding": "openclaw/agent-config"})
+                    self._send_json(
+                        {
+                            "schema_version": "1.0",
+                            "ok": True,
+                            "kind": "llm_chat",
+                            "data": {
+                                "binding_resolved": "openclaw/agent-config",
+                                "carrier": carrier,
+                                "relay": relay,
+                                "mode": "openclaw_cloud" if relay else "openclaw_gpt",
+                                "text": text,
+                                "status": "normal",
+                            },
+                            "degraded": False,
+                            "latency_ms": int((time.time() - t0) * 1000),
+                            "ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+                            "agent": agent,
+                            "binding": "openclaw/agent-config",
+                        }
+                    )
                 else:
-                    self._send_json({"schema_version": "1.0", "ok": False,
-                                     "kind": "llm_chat", "data": {},
-                                     "error": {"code": "channel_not_ready",
-                                               "message": "OpenClaw 载体不可用：%s" % (oc_err or "unknown")},
-                                     "degraded": False,
-                                     "latency_ms": int((time.time() - t0) * 1000),
-                                     "ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
-                                     "agent": agent, "binding": binding})
+                    self._send_json(
+                        {
+                            "schema_version": "1.0",
+                            "ok": False,
+                            "kind": "llm_chat",
+                            "data": {},
+                            "error": {
+                                "code": "channel_not_ready",
+                                "message": "OpenClaw 载体不可用：%s"
+                                % (oc_err or "unknown"),
+                            },
+                            "degraded": False,
+                            "latency_ms": int((time.time() - t0) * 1000),
+                            "ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+                            "agent": agent,
+                            "binding": binding,
+                        }
+                    )
                 return
             # 席位级 fallback 链（WO-LEGION-DEVEXEC2-20261027）：glm 主绑失败时不再
             # 硬编码降 9b，而是按 org.json 的 llm_fallback 依次尝试（缺链→平台默认 9b）。
             # 非 glm 失败原样透传（不伪造降级）；判读席位语义仍在 engine 层不变，
             # 此处仅会议通道可用性兜底，并诚实标注 degraded/fallback_from/chain。
             env, _attempts = _seat_chat(
-                llm_gateway.chat, binding, resolve_fallbacks(agent),
+                llm_gateway.chat,
+                binding,
+                resolve_fallbacks(agent),
                 str(req.get("system", ""))[:4000],
-                str(req.get("user", ""))[:8000])
+                str(req.get("user", ""))[:8000],
+            )
             env["agent"] = agent
             env["binding"] = env.get("data", {}).get("binding_resolved", binding)
             self._send_json(env)
@@ -997,24 +1357,39 @@ class Handler(BaseHTTPRequestHandler):
             for m in raw[:200]:
                 if not isinstance(m, dict):
                     continue
-                rows.append({"by": str(m.get("id", ""))[:24],
-                             "src": str(m.get("src", ""))[:12],
-                             "source_verification": "unverified",
-                             "text": str(m.get("text", ""))[:2000]})
+                rows.append(
+                    {
+                        "by": str(m.get("id", ""))[:24],
+                        "src": str(m.get("src", ""))[:12],
+                        "source_verification": "unverified",
+                        "text": str(m.get("text", ""))[:2000],
+                    }
+                )
             stamp = time.strftime("%Y%m%d-%H%M%S")
             out_dir = MEETINGS_DIR
-            doc = {"schema_version": "1.0", "ts": time.strftime("%Y-%m-%dT%H:%M:%S"),
-                   "participants": [str(p)[:24] for p in (req.get("participants") or [])][:30],
-                   "orders": req.get("orders") if isinstance(req.get("orders"), list) else [],
-                   "model_stats": req.get("model_stats") if isinstance(req.get("model_stats"), dict) else {},
-                   "minutes": rows,
-                   "source_verification": "unverified",
-                   "note": "指挥台作战会议室会终纪要；src=live/degraded/script 仅为客户端来源声明；须有服务端真实模型回执才能验证，当前均未验证"}
+            doc = {
+                "schema_version": "1.0",
+                "ts": time.strftime("%Y-%m-%dT%H:%M:%S"),
+                "participants": [str(p)[:24] for p in (req.get("participants") or [])][
+                    :30
+                ],
+                "orders": req.get("orders")
+                if isinstance(req.get("orders"), list)
+                else [],
+                "model_stats": req.get("model_stats")
+                if isinstance(req.get("model_stats"), dict)
+                else {},
+                "minutes": rows,
+                "source_verification": "unverified",
+                "note": "指挥台作战会议室会终纪要；src=live/degraded/script 仅为客户端来源声明；须有服务端真实模型回执才能验证，当前均未验证",
+            }
             target = out_dir / ("warroom-%s.json" % stamp)
             tmp = target.with_suffix(".json.tmp")
             try:
                 out_dir.mkdir(parents=True, exist_ok=True)
-                tmp.write_text(json.dumps(doc, ensure_ascii=False, indent=1), encoding="utf-8")
+                tmp.write_text(
+                    json.dumps(doc, ensure_ascii=False, indent=1), encoding="utf-8"
+                )
                 tmp.replace(target)
             except OSError:
                 self._send_json({"ok": False, "error": "minutes_save_failed"}, 500)
@@ -1023,8 +1398,7 @@ class Handler(BaseHTTPRequestHandler):
                 rel = str(target.relative_to(_PLATFORM))
             except ValueError:
                 rel = str(target)
-            self._send_json({"ok": True, "saved": rel,
-                             "count": len(rows)})
+            self._send_json({"ok": True, "saved": rel, "count": len(rows)})
             return
         if path == "/api/org/preview-enroll":
             # 编制预览（只读）：调 engine.org_enroll.build_plan 校验并返回计划，
@@ -1040,6 +1414,7 @@ class Handler(BaseHTTPRequestHandler):
                 return
             try:
                 from engine.org_enroll import build_plan
+
                 plan = build_plan(
                     _PLATFORM,
                     dept=str(req.get("dept", "")),
@@ -1050,15 +1425,28 @@ class Handler(BaseHTTPRequestHandler):
                     binding=str(req.get("binding", "")),
                     grade=str(req.get("grade", "E2")),
                     ticket=str(req.get("ticket", "")),
-                    signed_by=str(req.get("signed_by", "")))
-            except Exception as e:                       # noqa: BLE001
+                    signed_by=str(req.get("signed_by", "")),
+                )
+            except Exception as e:  # noqa: BLE001
                 code = getattr(e, "__class__", type(e)).__name__
-                self._send_json({"ok": False, "error": "enroll_invalid",
-                                 "detail": str(e)[:400], "kind": code}, 400)
+                self._send_json(
+                    {
+                        "ok": False,
+                        "error": "enroll_invalid",
+                        "detail": str(e)[:400],
+                        "kind": code,
+                    },
+                    400,
+                )
                 return
-            self._send_json({"ok": True, "plan": plan,
-                             "note": "仅预览：未写入任何字节。真入编须命令行 "
-                                     "--apply 并由老田签字（组织真源不经 HTTP 落地）"})
+            self._send_json(
+                {
+                    "ok": True,
+                    "plan": plan,
+                    "note": "仅预览：未写入任何字节。真入编须命令行 "
+                    "--apply 并由老田签字（组织真源不经 HTTP 落地）",
+                }
+            )
             return
         if path != "/api/dispatch":
             self._send_json({"ok": False, "error": "not_found"}, 404)
@@ -1103,12 +1491,17 @@ def main(argv=None):
             srv = build_server(args.host, args.port)
             break
         except OSError as exc:
-            print("[legion-command] bind %s:%d failed (attempt %d/3): %s"
-                  % (args.host, args.port, attempt, exc), file=sys.stderr)
+            print(
+                "[legion-command] bind %s:%d failed (attempt %d/3): %s"
+                % (args.host, args.port, attempt, exc),
+                file=sys.stderr,
+            )
             time.sleep(2)
     if srv is None:
-        print("[legion-command] giving up: port %d unavailable" % args.port,
-              file=sys.stderr)
+        print(
+            "[legion-command] giving up: port %d unavailable" % args.port,
+            file=sys.stderr,
+        )
         return 3
     print("legion-command serving on %s:%d" % (args.host, args.port), flush=True)
     try:

@@ -4,6 +4,7 @@
 纪律：全部用例用 tmp_path 构造假账本，绝不写 agent_platform/data/；
 被测模块红线=零写面，幂等用例断言调用前后文件字节不变。
 """
+
 import json
 import sys
 from pathlib import Path
@@ -13,7 +14,10 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from adapters.strategy_replay import (  # noqa: E402
-    _cli, aggregate, load_shadow_index)
+    _cli,
+    aggregate,
+    load_shadow_index,
+)
 
 SLEDGER_REL = Path("strategy") / "strategy_runs.jsonl"
 HLEDGER_REL = Path("shadow") / "shadow_ledger.jsonl"
@@ -21,29 +25,51 @@ HLEDGER_REL = Path("shadow") / "shadow_ledger.jsonl"
 
 # ---------------------------------------------------------------- 构造工具
 
-def _verdict_row(run_id="r1", sid="trend_sma20", symbol="600519.SH",
-                 rec="buy", trade_date="2026-10-16",
-                 recorded_at="2026-10-17T09:00:00", **kw):
+
+def _verdict_row(
+    run_id="r1",
+    sid="trend_sma20",
+    symbol="600519.SH",
+    rec="buy",
+    trade_date="2026-10-16",
+    recorded_at="2026-10-17T09:00:00",
+    **kw,
+):
     row = {
         "verdict_key": "k_%s_%s_%s" % (sid, symbol, trade_date),
-        "strategy_id": sid, "symbol": symbol, "recommendation": rec,
-        "confidence": 0.8, "stance": "bull", "score": 12.5,
-        "rationale": "sma20 上穿", "trace_id": "", "run_id": run_id,
-        "trade_date": trade_date, "recorded_at": recorded_at,
+        "strategy_id": sid,
+        "symbol": symbol,
+        "recommendation": rec,
+        "confidence": 0.8,
+        "stance": "bull",
+        "score": 12.5,
+        "rationale": "sma20 上穿",
+        "trace_id": "",
+        "run_id": run_id,
+        "trade_date": trade_date,
+        "recorded_at": recorded_at,
     }
     row.update(kw)
     return json.dumps(row, ensure_ascii=False)
 
 
-def _shadow_row(run_id="r1", symbol="600519.SH", date="2026-10-16",
-                **kw):
+def _shadow_row(run_id="r1", symbol="600519.SH", date="2026-10-16", **kw):
     row = {
-        "date": date, "ts": 1790000000.0, "symbol": symbol,
-        "name": "贵州茅台", "status": "done", "run_id": run_id,
-        "price_at_decision": 1500.0, "recommendation": "buy",
-        "confidence": 0.7, "score": 10.0, "target_range": None,
-        "parse_ok": True, "degraded": False,
-        "schema_version": "m5.v1", "latency_s": 30.0,
+        "date": date,
+        "ts": 1790000000.0,
+        "symbol": symbol,
+        "name": "贵州茅台",
+        "status": "done",
+        "run_id": run_id,
+        "price_at_decision": 1500.0,
+        "recommendation": "buy",
+        "confidence": 0.7,
+        "score": 10.0,
+        "target_range": None,
+        "parse_ok": True,
+        "degraded": False,
+        "schema_version": "m5.v1",
+        "latency_s": 30.0,
     }
     row.update(kw)
     return json.dumps(row, ensure_ascii=False)
@@ -55,16 +81,15 @@ def _build_root(tmp_path, strategy_lines=(), shadow_lines=()):
     h = tmp_path / HLEDGER_REL
     if strategy_lines is not None:
         s.parent.mkdir(parents=True, exist_ok=True)
-        s.write_text("".join(l + "\n" for l in strategy_lines),
-                     encoding="utf-8")
+        s.write_text("".join(l + "\n" for l in strategy_lines), encoding="utf-8")
     if shadow_lines is not None:
         h.parent.mkdir(parents=True, exist_ok=True)
-        h.write_text("".join(l + "\n" for l in shadow_lines),
-                     encoding="utf-8")
+        h.write_text("".join(l + "\n" for l in shadow_lines), encoding="utf-8")
     return tmp_path
 
 
 # ---------------------------------------------------------------- 用例
+
 
 def test_correct_join(tmp_path):
     """判决行 run_id 命中影子 m5.v1 行：joined/hit_rate/分布全对。"""
@@ -122,9 +147,9 @@ def test_both_ledgers_missing_fail_visible(tmp_path):
 
 def test_one_ledger_missing_partial_view(tmp_path):
     """仅缺影子账本：判决仍聚合，join 侧空索引（命中率恒 0）。"""
-    root = _build_root(tmp_path,
-                       strategy_lines=[_verdict_row(run_id="r1")],
-                       shadow_lines=None)
+    root = _build_root(
+        tmp_path, strategy_lines=[_verdict_row(run_id="r1")], shadow_lines=None
+    )
     view = aggregate(root)
     assert view["missing"] == ["shadow"]
     assert view["totals"]["verdicts"] == 1
@@ -162,8 +187,10 @@ def test_idempotent_readonly_bytes_unchanged(tmp_path):
     """幂等只读断言：aggregate 前后两账本字节完全不变。"""
     root = _build_root(
         tmp_path,
-        strategy_lines=[_verdict_row(run_id="r1"), _verdict_row(run_id="r2",
-                                                                sid="momentum20")],
+        strategy_lines=[
+            _verdict_row(run_id="r1"),
+            _verdict_row(run_id="r2", sid="momentum20"),
+        ],
         shadow_lines=[_shadow_row(run_id="r1")],
     )
     s_path = root / SLEDGER_REL
@@ -208,18 +235,32 @@ def test_latest_verdict_per_symbol(tmp_path):
     root = _build_root(
         tmp_path,
         strategy_lines=[
-            _verdict_row(run_id="r1", rec="buy",
-                         trade_date="2026-10-15",
-                         recorded_at="2026-10-16T09:00:00"),
-            _verdict_row(run_id="r2", rec="sell",
-                         trade_date="2026-10-16",
-                         recorded_at="2026-10-17T09:00:00"),
-            _verdict_row(run_id="r3", rec="hold", sid="momentum20",
-                         trade_date="2026-10-16",
-                         recorded_at="2026-10-17T08:00:00"),
-            _verdict_row(run_id="r4", rec="strong_sell", sid="momentum20",
-                         trade_date="2026-10-16",
-                         recorded_at="2026-10-17T10:00:00"),
+            _verdict_row(
+                run_id="r1",
+                rec="buy",
+                trade_date="2026-10-15",
+                recorded_at="2026-10-16T09:00:00",
+            ),
+            _verdict_row(
+                run_id="r2",
+                rec="sell",
+                trade_date="2026-10-16",
+                recorded_at="2026-10-17T09:00:00",
+            ),
+            _verdict_row(
+                run_id="r3",
+                rec="hold",
+                sid="momentum20",
+                trade_date="2026-10-16",
+                recorded_at="2026-10-17T08:00:00",
+            ),
+            _verdict_row(
+                run_id="r4",
+                rec="strong_sell",
+                sid="momentum20",
+                trade_date="2026-10-16",
+                recorded_at="2026-10-17T10:00:00",
+            ),
         ],
     )
     view = aggregate(root)
@@ -248,9 +289,10 @@ def test_enum_outliers_land_in_other_bucket(tmp_path):
 
 def test_verdict_rows_without_strategy_id_counted(tmp_path):
     """无主判决（strategy_id 空）：不入策略桶，但 no_strategy_id 显式计数。"""
-    root = _build_root(tmp_path,
-                       strategy_lines=[_verdict_row(sid="", run_id="r1"),
-                                       _verdict_row(run_id="r2")])
+    root = _build_root(
+        tmp_path,
+        strategy_lines=[_verdict_row(sid="", run_id="r1"), _verdict_row(run_id="r2")],
+    )
     view = aggregate(root)
     assert view["totals"]["no_strategy_id"] == 1
     assert view["totals"]["verdicts"] == 1

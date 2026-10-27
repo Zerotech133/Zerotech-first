@@ -4,6 +4,7 @@
 覆盖：record_verdicts 幂等/安全阀（root 缺失拒写）/坏行容忍读侧；
 evidence_collect 第十一证据源 strategy（真仓零副作用 tmp 隔离）。
 """
+
 import importlib.util
 import json
 import sys
@@ -16,8 +17,13 @@ sys.path.insert(0, str(ROOT / "agent_platform"))
 sys.path.insert(0, str(ROOT / "agent_platform" / "engine"))
 
 from strategy_registry import (  # noqa: E402
-    StrategyError, Verdict, _ledger_path, load_verdicts,
-    record_verdicts, verdict_key)
+    StrategyError,
+    Verdict,
+    _ledger_path,
+    load_verdicts,
+    record_verdicts,
+    verdict_key,
+)
 
 
 def _load(name, rel):
@@ -31,11 +37,22 @@ def _load(name, rel):
 evc = _load("evc_s", "agent_platform/adapters/evidence_collect.py")
 
 
-def _v(strategy_id="s1", symbol="600519", trade_date="2026-10-18",
-       recommendation="hold", confidence=0.6):
-    return Verdict(strategy_id=strategy_id, symbol=symbol,
-                   recommendation=recommendation, confidence=confidence,
-                   stance="bull", score=0.1, rationale="r")
+def _v(
+    strategy_id="s1",
+    symbol="600519",
+    trade_date="2026-10-18",
+    recommendation="hold",
+    confidence=0.6,
+):
+    return Verdict(
+        strategy_id=strategy_id,
+        symbol=symbol,
+        recommendation=recommendation,
+        confidence=confidence,
+        stance="bull",
+        score=0.1,
+        rationale="r",
+    )
 
 
 def _run(tmp, verdicts, **kw):
@@ -96,16 +113,25 @@ class StrategyEvidenceTests(unittest.TestCase):
             p = root / "agent_platform" / "data" / "strategy"
             p.mkdir(parents=True)
             (p / "strategy_runs.jsonl").write_text(
-                json.dumps({"verdict_key": "abc123def4567890",
-                            "strategy_id": "shadow_trend", "symbol": "600519",
-                            "recommendation": "buy", "stance": "bull",
-                            "run_id": "r1", "trade_date": "2026-10-18"},
-                           ensure_ascii=False) + "\n", encoding="utf-8")
+                json.dumps(
+                    {
+                        "verdict_key": "abc123def4567890",
+                        "strategy_id": "shadow_trend",
+                        "symbol": "600519",
+                        "recommendation": "buy",
+                        "stance": "bull",
+                        "run_id": "r1",
+                        "trade_date": "2026-10-18",
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
             evs, findings = evc._collect_strategy(root)
             self.assertEqual(len(evs), 1)
             self.assertEqual(evs[0].payload["domain"], "strategy")
-            self.assertEqual(evs[0].payload["kind"],
-                             "strategy_verdict_fingerprint")
+            self.assertEqual(evs[0].payload["kind"], "strategy_verdict_fingerprint")
             self.assertIn("shadow_trend", evs[0].statement)
             self.assertEqual(findings, [])
 

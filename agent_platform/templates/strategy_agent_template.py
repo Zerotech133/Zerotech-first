@@ -4,6 +4,7 @@
 复制本文件到插件目录后，只需修改类元数据和 propose() 中的占位判断；
 插件只返回 Verdict，不持有交易执行、账户或账本写入能力。
 """
+
 from strategy_registry import StrategyAgent, Verdict
 
 

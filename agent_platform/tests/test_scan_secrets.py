@@ -20,7 +20,11 @@ PYTHON = sys.executable
 def run_scan(args, cwd=None):
     return subprocess.run(
         [PYTHON, str(SCANNER)] + args,
-        capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=cwd,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        cwd=cwd,
     )
 
 
@@ -90,7 +94,8 @@ def test_sk_key_sep_same_span_counted_once(tmpdir_factory_):
 
 def test_clean_file_no_false_positive(tmpdir_factory_):
     f = make_file(
-        tmpdir_factory_, "clean.py",
+        tmpdir_factory_,
+        "clean.py",
         "import os\n"
         "x = settings.glm_api_key\n"  # 变量传递，非明文赋值
         "api_key = os.environ.get('LLM_API_KEY')\n"  # 环境变量读取，无内联值

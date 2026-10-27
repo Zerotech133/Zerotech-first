@@ -46,33 +46,45 @@ class DeadLetterTests(unittest.TestCase):
         self.tmp.cleanup()
 
     def test_stale_claim_dead_lettered_and_new_attempt(self):
-        first = self.store.claim("shadow", "daily_decision", "D1",
-                                 payload={"date": "2026-10-17", "symbol": "600519"})
+        first = self.store.claim(
+            "shadow",
+            "daily_decision",
+            "D1",
+            payload={"date": "2026-10-17", "symbol": "600519"},
+        )
         self.assertEqual(first["outcome"], "claimed")
         time.sleep(0.02)  # 让 updated_at 产生可测时差
-        again = self.store.claim("shadow", "daily_decision", "D1",
-                                 payload={"date": "2026-10-17", "symbol": "600519"},
-                                 stale_seconds=0.01)
+        again = self.store.claim(
+            "shadow",
+            "daily_decision",
+            "D1",
+            payload={"date": "2026-10-17", "symbol": "600519"},
+            stale_seconds=0.01,
+        )
         self.assertEqual(again["outcome"], "claimed")
         self.assertEqual(again["attempt"], 2)
         self.assertEqual(again["dead_lettered"], first["attempt_id"])
         rec = self.store.get("shadow", "daily_decision", "D1")
         self.assertEqual(rec["attempts"][0]["status"], "failed")
-        self.assertTrue(rec["attempts"][0]["error"].startswith("dead-letter: stale lease"))
+        self.assertTrue(
+            rec["attempts"][0]["error"].startswith("dead-letter: stale lease")
+        )
         self.assertEqual(rec["attempts"][1]["status"], "claimed")
         self.assertEqual(self.store.stats()["dead_letters"], 1)
 
     def test_fresh_claim_not_dead_lettered(self):
         self.store.claim("shadow", "daily_decision", "D2", payload={"x": 1})
-        again = self.store.claim("shadow", "daily_decision", "D2",
-                                 payload={"x": 1}, stale_seconds=3600)
+        again = self.store.claim(
+            "shadow", "daily_decision", "D2", payload={"x": 1}, stale_seconds=3600
+        )
         self.assertEqual(again["outcome"], "in_progress")
 
     def test_manual_recovery_via_fail(self):
         """人工恢复：执行中 attempt 被运维 fail 标记 → 允许重试。"""
         att = self.store.claim("paper", "ingest_order", "M1", payload={"q": 1})
-        manual = self.store.complete(att["attempt_id"], ok=False,
-                                     error="manual: operator recovery")
+        manual = self.store.complete(
+            att["attempt_id"], ok=False, error="manual: operator recovery"
+        )
         self.assertTrue(manual["ok"])
         retry = self.store.claim("paper", "ingest_order", "M1", payload={"q": 1})
         self.assertEqual(retry["outcome"], "claimed")
@@ -81,24 +93,37 @@ class DeadLetterTests(unittest.TestCase):
     def test_bridge_crash_window_recovery(self):
         """崩溃窗口（bridge 语义）：claim 后进程死亡 → 死信重试 → 完成 → 幂等命中。"""
         # 第一次：claim 后"进程崩溃"（不 complete）
-        self.store.claim("paper_bridge", "ingest_order", "pick-600337-2026-10-17",
-                         payload={"code": "600337", "qty": 200})
+        self.store.claim(
+            "paper_bridge",
+            "ingest_order",
+            "pick-600337-2026-10-17",
+            payload={"code": "600337", "qty": 200},
+        )
         time.sleep(0.02)
         # 第二次运行：死信 → 新 attempt
-        second = self.store.claim("paper_bridge", "ingest_order",
-                                  "pick-600337-2026-10-17",
-                                  payload={"code": "600337", "qty": 200},
-                                  stale_seconds=0.01)
+        second = self.store.claim(
+            "paper_bridge",
+            "ingest_order",
+            "pick-600337-2026-10-17",
+            payload={"code": "600337", "qty": 200},
+            stale_seconds=0.01,
+        )
         self.assertEqual(second["outcome"], "claimed")
         self.assertEqual(second["attempt"], 2)
         # 第二次正常完成
-        self.assertTrue(self.store.complete(
-            second["attempt_id"], ok=True, result_ref="pick-600337-2026-10-17")["ok"])
+        self.assertTrue(
+            self.store.complete(
+                second["attempt_id"], ok=True, result_ref="pick-600337-2026-10-17"
+            )["ok"]
+        )
         # 第三次运行：幂等命中，不再下单
-        third = self.store.claim("paper_bridge", "ingest_order",
-                                 "pick-600337-2026-10-17",
-                                 payload={"code": "600337", "qty": 200},
-                                 stale_seconds=0.01)
+        third = self.store.claim(
+            "paper_bridge",
+            "ingest_order",
+            "pick-600337-2026-10-17",
+            payload={"code": "600337", "qty": 200},
+            stale_seconds=0.01,
+        )
         self.assertEqual(third["outcome"], "completed")
         self.assertEqual(third["result_ref"], "pick-600337-2026-10-17")
 
@@ -132,8 +157,9 @@ class DualTrackHookTests(unittest.TestCase):
             self.assertIn("error", claim)
             self.assertIsNotNone(hook.last_error)
             # complete 同样 fail-open
-            self.assertEqual(hook.complete("whatever", ok=True)["outcome"],
-                             "unavailable")
+            self.assertEqual(
+                hook.complete("whatever", ok=True)["outcome"], "unavailable"
+            )
         finally:
             hook.close()
 
@@ -151,8 +177,9 @@ class DualTrackHookTests(unittest.TestCase):
         try:
             c1 = hook.claim("ingest_order", "K1", {"code": "600337"})
             self.assertEqual(c1["outcome"], "claimed")
-            self.assertTrue(hook.complete(c1["attempt_id"], ok=True,
-                                          result_ref="ref-1")["ok"])
+            self.assertTrue(
+                hook.complete(c1["attempt_id"], ok=True, result_ref="ref-1")["ok"]
+            )
             c2 = hook.claim("ingest_order", "K1", {"code": "600337"})
             self.assertEqual(c2["outcome"], "completed")
             self.assertEqual(c2["result_ref"], "ref-1")
@@ -194,8 +221,12 @@ class PaperBridgeDualTrackTests(unittest.TestCase):
             "summary": {"asof": "20261017"},
             "per_code": {
                 "600337": {
-                    "tier": "T1", "date": "20261017", "name": "美克",
-                    "fact_hash": "fh-1", "decision_id": "dc-1", "strategies": ["s1"],
+                    "tier": "T1",
+                    "date": "20261017",
+                    "name": "美克",
+                    "fact_hash": "fh-1",
+                    "decision_id": "dc-1",
+                    "strategies": ["s1"],
                 }
             },
         }
@@ -223,8 +254,7 @@ class PaperBridgeDualTrackTests(unittest.TestCase):
             rec = store.get("paper_bridge", "ingest_order", "pick-600337-20261017")
             self.assertTrue(rec["exists"])
             self.assertEqual(rec["attempts"][-1]["status"], "completed")
-            self.assertEqual(rec["attempts"][-1]["result_ref"],
-                             "pick-600337-20261017")
+            self.assertEqual(rec["attempts"][-1]["result_ref"], "pick-600337-20261017")
         finally:
             store.close()
 
@@ -244,8 +274,11 @@ class PaperBridgeDualTrackTests(unittest.TestCase):
             "summary": {"asof": "20261017"},
             "per_code": {
                 "600337": {
-                    "tier": "T1", "date": "20261017", "name": "美克",
-                    "fact_hash": "fh-1", "decision_id": "dc-1",
+                    "tier": "T1",
+                    "date": "20261017",
+                    "name": "美克",
+                    "fact_hash": "fh-1",
+                    "decision_id": "dc-1",
                 }
             },
         }
@@ -262,12 +295,24 @@ class PaperBridgeDualTrackTests(unittest.TestCase):
         # 预置同键不同 payload 的冲突记录（qty 不同 → payload_hash 不一致）
         store = IdempotencyStore(self.tmp_path / "idy2.db")
         try:
-            store.claim("paper_bridge", "ingest_order", "pick-600337-20261017",
-                        payload={"date": "20261017", "code": "600337",
-                                 "qty": 999, "fact_hash": "fh-1",
-                                 "decision_id": "dc-1"})
-            store.complete(_last_attempt(store, "paper_bridge", "ingest_order",
-                                         "pick-600337-20261017"), ok=True)
+            store.claim(
+                "paper_bridge",
+                "ingest_order",
+                "pick-600337-20261017",
+                payload={
+                    "date": "20261017",
+                    "code": "600337",
+                    "qty": 999,
+                    "fact_hash": "fh-1",
+                    "decision_id": "dc-1",
+                },
+            )
+            store.complete(
+                _last_attempt(
+                    store, "paper_bridge", "ingest_order", "pick-600337-20261017"
+                ),
+                ok=True,
+            )
         finally:
             store.close()
 

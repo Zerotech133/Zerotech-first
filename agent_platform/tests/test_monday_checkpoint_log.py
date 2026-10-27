@@ -9,6 +9,7 @@ Arguments 里的 `1> log 2>&1` 不会被任何 shell 解释，只会变成脚本
 
 本测试锁死"跑一次必自落一条日志"这一契约，防止该缺陷以任何形式复发。
 """
+
 import sys
 import tempfile
 import unittest
@@ -69,9 +70,9 @@ class MondayCheckpointLogTests(unittest.TestCase):
     def test_default_log_path_contract(self):
         # 生产路径契约：计划任务/文档/脚本三处指同一个文件
         self.assertTrue(
-            self._old_log.as_posix().endswith(
-                "data/shadow/monday_checkpoint.log"),
-            self._old_log.as_posix())
+            self._old_log.as_posix().endswith("data/shadow/monday_checkpoint.log"),
+            self._old_log.as_posix(),
+        )
 
     def test_log_failure_does_not_break_patrol(self):
         # 日志不可写（父路径是普通文件）时巡检不得中断

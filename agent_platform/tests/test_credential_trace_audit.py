@@ -8,6 +8,7 @@
 - credential_without_entry：真源有标记但账本无凭据；
 - source_unreadable：真源 JSON 损坏如实报告。
 """
+
 from __future__ import annotations
 
 import importlib.util
@@ -28,37 +29,45 @@ def _load(name: str, rel: str):
     return module
 
 
-ida = _load("idempotency_audit_under_test",
-            "agent_platform/adapters/idempotency_audit.py")
+ida = _load(
+    "idempotency_audit_under_test", "agent_platform/adapters/idempotency_audit.py"
+)
 apv = _load("approvals_under_test_ct", "agent_platform/engine/approvals.py")
 
 
 def _seed(root: Path, gzh=None, invest=None, devtask=None):
     (root / "gzh" / "drafts").mkdir(parents=True, exist_ok=True)
     (root / "gzh" / "drafts" / "index.json").write_text(
-        json.dumps(gzh or [], ensure_ascii=False, indent=1), encoding="utf-8")
-    (root / "agent_platform" / "data" / "invest").mkdir(
-        parents=True, exist_ok=True)
-    (root / "agent_platform" / "data" / "invest" / "runs_index.json"
-     ).write_text(json.dumps(invest or [], ensure_ascii=False, indent=1),
-                  encoding="utf-8")
+        json.dumps(gzh or [], ensure_ascii=False, indent=1), encoding="utf-8"
+    )
+    (root / "agent_platform" / "data" / "invest").mkdir(parents=True, exist_ok=True)
+    (root / "agent_platform" / "data" / "invest" / "runs_index.json").write_text(
+        json.dumps(invest or [], ensure_ascii=False, indent=1), encoding="utf-8"
+    )
     (root / ".worktrees").mkdir(parents=True, exist_ok=True)
     (root / ".worktrees" / "tasks.json").write_text(
-        json.dumps(devtask or {}, ensure_ascii=False, indent=1),
-        encoding="utf-8")
+        json.dumps(devtask or {}, ensure_ascii=False, indent=1), encoding="utf-8"
+    )
 
 
 def _credential(root: Path, target_id: str, to_status: str, key: str):
-    db = (root / "agent_platform" / "data" / "approvals" / "approvals.db")
+    db = root / "agent_platform" / "data" / "approvals" / "approvals.db"
     db.parent.mkdir(parents=True, exist_ok=True)
     store = apv.ApprovalStore(db)
     try:
-        store.record(apv.Approval(
-            target_type="workitem", target_id=target_id,
-            from_status="draft", to_status=to_status,
-            decision="approved", decided_by="测试", reason="",
-            decided_at="2026-10-17T12:00:00+08:00",
-            idempotency_key=key))
+        store.record(
+            apv.Approval(
+                target_type="workitem",
+                target_id=target_id,
+                from_status="draft",
+                to_status=to_status,
+                decision="approved",
+                decided_by="测试",
+                reason="",
+                decided_at="2026-10-17T12:00:00+08:00",
+                idempotency_key=key,
+            )
+        )
     finally:
         store.close()
 
@@ -75,20 +84,32 @@ class CredentialTraceTests(unittest.TestCase):
         return ida._audit_credential_trace(self.root)
 
     def test_all_aligned_pass(self):
-        _seed(self.root,
-              gzh=[{"id": "d1", "status": "reviewed",
-                    "last_wiring_key": "gzh:d1:draft>reviewed"}],
-              invest=[{"run_id": "r1", "status": "reviewed",
-                       "last_wiring_key": "invest:r1:drafted>reviewed"}],
-              devtask={"K-T1": {"status": "done",
-                                "last_wiring_key":
-                                    "devtask:K-T1:review>done"}})
-        _credential(self.root, "gzh:d1", "reviewed",
-                    "gzh:d1:draft>reviewed")
-        _credential(self.root, "invest:r1", "reviewed",
-                    "invest:r1:drafted>reviewed")
-        _credential(self.root, "devtask:K-T1", "done",
-                    "devtask:K-T1:review>done")
+        _seed(
+            self.root,
+            gzh=[
+                {
+                    "id": "d1",
+                    "status": "reviewed",
+                    "last_wiring_key": "gzh:d1:draft>reviewed",
+                }
+            ],
+            invest=[
+                {
+                    "run_id": "r1",
+                    "status": "reviewed",
+                    "last_wiring_key": "invest:r1:drafted>reviewed",
+                }
+            ],
+            devtask={
+                "K-T1": {
+                    "status": "done",
+                    "last_wiring_key": "devtask:K-T1:review>done",
+                }
+            },
+        )
+        _credential(self.root, "gzh:d1", "reviewed", "gzh:d1:draft>reviewed")
+        _credential(self.root, "invest:r1", "reviewed", "invest:r1:drafted>reviewed")
+        _credential(self.root, "devtask:K-T1", "done", "devtask:K-T1:review>done")
         tr = self._trace()
         self.assertEqual(tr["status"], "ok")
         self.assertEqual(tr["checks"], 3)
@@ -97,32 +118,49 @@ class CredentialTraceTests(unittest.TestCase):
 
     def test_trace_key_missing(self):
         """真源引用账本不存在的键 → FAIL。"""
-        _seed(self.root,
-              gzh=[{"id": "d1", "status": "reviewed",
-                    "last_wiring_key": "gzh:d1:draft>reviewed"}])
+        _seed(
+            self.root,
+            gzh=[
+                {
+                    "id": "d1",
+                    "status": "reviewed",
+                    "last_wiring_key": "gzh:d1:draft>reviewed",
+                }
+            ],
+        )
         tr = self._trace()
         self.assertEqual(tr["status"], "violations_found")
-        self.assertTrue(any(v["kind"] == "trace_key_missing"
-                            for v in tr["violations"]))
+        self.assertTrue(any(v["kind"] == "trace_key_missing" for v in tr["violations"]))
 
     def test_credential_ahead_warn(self):
         """账本最新凭据未被消费且状态错位 → WARN（崩溃窗口/外部改动）。"""
-        _seed(self.root,
-              gzh=[{"id": "d1", "status": "draft",
-                    "last_wiring_key": "gzh:d1:draft>draft"}])
-        _credential(self.root, "gzh:d1", "draft",
-                    "gzh:d1:draft>draft")      # 被消费的旧凭据（rowid 靠前）
-        _credential(self.root, "gzh:d1", "reviewed",
-                    "gzh:d1:draft>reviewed")   # 凭据领先真源（rowid 靠后=最新）
+        _seed(
+            self.root,
+            gzh=[
+                {"id": "d1", "status": "draft", "last_wiring_key": "gzh:d1:draft>draft"}
+            ],
+        )
+        _credential(
+            self.root, "gzh:d1", "draft", "gzh:d1:draft>draft"
+        )  # 被消费的旧凭据（rowid 靠前）
+        _credential(
+            self.root, "gzh:d1", "reviewed", "gzh:d1:draft>reviewed"
+        )  # 凭据领先真源（rowid 靠后=最新）
         tr = self._trace()
-        self.assertTrue(any(w["kind"] == "credential_ahead"
-                            for w in tr["warnings"]))
+        self.assertTrue(any(w["kind"] == "credential_ahead" for w in tr["warnings"]))
 
     def test_credential_without_entry(self):
         """真源有消费标记但账本无该 target 任何凭据 → FAIL。"""
-        _seed(self.root,
-              invest=[{"run_id": "r1", "status": "reviewed",
-                       "last_wiring_key": "invest:r1:drafted>reviewed"}])
+        _seed(
+            self.root,
+            invest=[
+                {
+                    "run_id": "r1",
+                    "status": "reviewed",
+                    "last_wiring_key": "invest:r1:drafted>reviewed",
+                }
+            ],
+        )
         tr = self._trace()
         self.assertEqual(tr["status"], "violations_found")
         kinds = [v["kind"] for v in tr["violations"]]
@@ -136,8 +174,7 @@ class CredentialTraceTests(unittest.TestCase):
         p.write_text("{broken json", encoding="utf-8")
         tr = self._trace()
         self.assertEqual(tr["status"], "source_error")
-        self.assertTrue(any(v["kind"] == "source_unreadable"
-                            for v in tr["violations"]))
+        self.assertTrue(any(v["kind"] == "source_unreadable" for v in tr["violations"]))
 
     def test_build_report_integrates_trace(self):
         _seed(self.root, devtask={"K-T1": {"status": "done"}})

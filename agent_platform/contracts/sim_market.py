@@ -35,7 +35,9 @@ def _parse_time(value: str, field_name: str) -> datetime:
     return parsed
 
 
-def _validate_number(value: Any, field_name: str, *, non_negative: bool = False) -> float:
+def _validate_number(
+    value: Any, field_name: str, *, non_negative: bool = False
+) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise TypeError("%s 必须是数字" % field_name)
     number = float(value)
@@ -64,7 +66,9 @@ def _freeze(value: Any, path: str = "value") -> Any:
             frozen[key] = _freeze(item, "%s.%s" % (path, key))
         return MappingProxyType(frozen)
     if isinstance(value, (list, tuple)):
-        return tuple(_freeze(item, "%s[%d]" % (path, index)) for index, item in enumerate(value))
+        return tuple(
+            _freeze(item, "%s[%d]" % (path, index)) for index, item in enumerate(value)
+        )
     raise TypeError("%s 含有不可 JSON 序列化的值" % path)
 
 
@@ -85,7 +89,9 @@ def _validate_mode(mode: str) -> None:
 
 def _validate_adjustment(adjustment: str) -> None:
     if not isinstance(adjustment, str) or adjustment not in _ALLOWED_ADJUSTMENTS:
-        raise ValueError("adjustment 必须是 %s 之一" % ", ".join(sorted(_ALLOWED_ADJUSTMENTS)))
+        raise ValueError(
+            "adjustment 必须是 %s 之一" % ", ".join(sorted(_ALLOWED_ADJUSTMENTS))
+        )
 
 
 def _validate_bool(value: Any, field_name: str) -> None:
@@ -100,7 +106,9 @@ class _ImmutableDTO:
         return {item.name: _thaw(getattr(self, item.name)) for item in fields(self)}
 
     def to_json(self) -> str:
-        return json.dumps(self.to_dict(), ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        return json.dumps(
+            self.to_dict(), ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        )
 
     @classmethod
     def from_dict(cls, payload: Mapping[str, Any]):
@@ -176,7 +184,10 @@ class PortfolioView(_ImmutableDTO):
 
     def __post_init__(self) -> None:
         as_of = _parse_time(self.as_of, "as_of")
-        if self.visible_at is not None and _parse_time(self.visible_at, "visible_at") < as_of:
+        if (
+            self.visible_at is not None
+            and _parse_time(self.visible_at, "visible_at") < as_of
+        ):
             raise ValueError("visible_at 不能早于 as_of")
         cash = _validate_number(self.cash, "cash")
         equity = _validate_number(self.equity, "equity")
@@ -204,9 +215,14 @@ class RiskView(_ImmutableDTO):
 
     def __post_init__(self) -> None:
         as_of = _parse_time(self.as_of, "as_of")
-        if self.visible_at is not None and _parse_time(self.visible_at, "visible_at") < as_of:
+        if (
+            self.visible_at is not None
+            and _parse_time(self.visible_at, "visible_at") < as_of
+        ):
             raise ValueError("visible_at 不能早于 as_of")
-        gross = _validate_number(self.gross_exposure, "gross_exposure", non_negative=True)
+        gross = _validate_number(
+            self.gross_exposure, "gross_exposure", non_negative=True
+        )
         net = _validate_number(self.net_exposure, "net_exposure")
         drawdown = _validate_number(self.drawdown, "drawdown", non_negative=True)
         leverage = _validate_number(self.leverage, "leverage", non_negative=True)
@@ -247,7 +263,10 @@ class SimMarketSnapshot(_ImmutableDTO):
             item if isinstance(item, SimMarketBar) else SimMarketBar.from_dict(item)
             for item in values.get("bars", [])
         ]
-        for field_name, field_type in (("portfolio", PortfolioView), ("risk", RiskView)):
+        for field_name, field_type in (
+            ("portfolio", PortfolioView),
+            ("risk", RiskView),
+        ):
             item = values.get(field_name)
             if item is not None and not isinstance(item, field_type):
                 values[field_name] = field_type.from_dict(item)
@@ -265,7 +284,10 @@ class SimMarketSnapshot(_ImmutableDTO):
             bar_time = _parse_time(bar.timestamp, "bar.timestamp")
             if bar_time > as_of:
                 raise ValueError("bar.timestamp 不能晚于 snapshot.as_of")
-            if bar.visible_at is not None and _parse_time(bar.visible_at, "bar.visible_at") > as_of:
+            if (
+                bar.visible_at is not None
+                and _parse_time(bar.visible_at, "bar.visible_at") > as_of
+            ):
                 raise ValueError("bar.visible_at 不能晚于 snapshot.as_of")
             if bar.adjustment != self.adjustment:
                 raise ValueError("snapshot adjustment 必须与所有 bars 一致")
@@ -278,10 +300,14 @@ class SimMarketSnapshot(_ImmutableDTO):
             if view is not None:
                 if _parse_time(view.as_of, "%s.as_of" % view_name) > as_of:
                     raise ValueError("%s.as_of 不能晚于 snapshot.as_of" % view_name)
-                if view.visible_at is not None and _parse_time(
-                    view.visible_at, "%s.visible_at" % view_name
-                ) > as_of:
-                    raise ValueError("%s.visible_at 不能晚于 snapshot.as_of" % view_name)
+                if (
+                    view.visible_at is not None
+                    and _parse_time(view.visible_at, "%s.visible_at" % view_name)
+                    > as_of
+                ):
+                    raise ValueError(
+                        "%s.visible_at 不能晚于 snapshot.as_of" % view_name
+                    )
         _validate_bool(self.visible, "visible")
         _validate_bool(self.closed, "closed")
         _validate_adjustment(self.adjustment)
@@ -289,4 +315,11 @@ class SimMarketSnapshot(_ImmutableDTO):
         object.__setattr__(self, "bars", tuple(normalized_bars))
 
 
-__all__ = ["MODE", "SIM_MARKET", "SimMarketBar", "PortfolioView", "RiskView", "SimMarketSnapshot"]
+__all__ = [
+    "MODE",
+    "SIM_MARKET",
+    "SimMarketBar",
+    "PortfolioView",
+    "RiskView",
+    "SimMarketSnapshot",
+]

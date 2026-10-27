@@ -4,6 +4,7 @@
 本模块不修改 StrategyRegistry，只把 registry 的 experimental/active 状态
 映射到 SHADOW/ACTIVE，并以 append-only JSONL 记录已经通过的晋级事件。
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -70,8 +71,13 @@ def promotion_ledger_path(root) -> Path:
 
 
 def _canonical_json(value) -> str:
-    return json.dumps(value, ensure_ascii=False, sort_keys=True,
-                      separators=(",", ":"), allow_nan=False)
+    return json.dumps(
+        value,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    )
 
 
 def _as_non_negative_number(value, field: str):
@@ -107,8 +113,9 @@ def _normalise_metrics(metrics) -> dict:
     return result
 
 
-def _normalise_thresholds(thresholds, min_sample_size, min_win_rate,
-                          max_drawdown) -> dict:
+def _normalise_thresholds(
+    thresholds, min_sample_size, min_win_rate, max_drawdown
+) -> dict:
     result = dict(thresholds or {})
     aliases = {
         "sample_size": "min_sample_size",
@@ -126,15 +133,18 @@ def _normalise_thresholds(thresholds, min_sample_size, min_win_rate,
         result["max_drawdown"] = max_drawdown
     if "min_sample_size" in result:
         result["min_sample_size"] = _as_non_negative_number(
-            result["min_sample_size"], "min_sample_size")
+            result["min_sample_size"], "min_sample_size"
+        )
     if "min_win_rate" in result:
         result["min_win_rate"] = _as_non_negative_number(
-            result["min_win_rate"], "min_win_rate")
+            result["min_win_rate"], "min_win_rate"
+        )
         if result["min_win_rate"] > 1:
             raise StrategyPromotionError("min_win_rate 必须在 [0, 1] 内")
     if "max_drawdown" in result:
         result["max_drawdown"] = _as_non_negative_number(
-            result["max_drawdown"], "max_drawdown")
+            result["max_drawdown"], "max_drawdown"
+        )
         if result["max_drawdown"] > 1:
             raise StrategyPromotionError("max_drawdown 必须在 [0, 1] 内")
     return result
@@ -154,8 +164,18 @@ def _normalise_refs(evidence_refs) -> list:
     return refs
 
 
-def _rejected(event_id, strategy_id, version, from_state, to_state,
-              metrics, evidence_refs, actor, reason, timestamp) -> dict:
+def _rejected(
+    event_id,
+    strategy_id,
+    version,
+    from_state,
+    to_state,
+    metrics,
+    evidence_refs,
+    actor,
+    reason,
+    timestamp,
+) -> dict:
     return {
         "status": "rejected",
         "accepted": False,
@@ -201,10 +221,22 @@ class StrategyPromotionGate:
 
     @staticmethod
     def _identity(event: Mapping[str, Any]) -> dict:
-        return {key: event.get(key) for key in (
-            "event_id", "strategy_id", "version", "from_state", "to_state",
-            "metrics", "evaluation_metrics", "thresholds", "evidence_refs",
-            "actor", "reason")}
+        return {
+            key: event.get(key)
+            for key in (
+                "event_id",
+                "strategy_id",
+                "version",
+                "from_state",
+                "to_state",
+                "metrics",
+                "evaluation_metrics",
+                "thresholds",
+                "evidence_refs",
+                "actor",
+                "reason",
+            )
+        }
 
     def _replay_if_present(self, event_id, candidate) -> dict | None:
         if not event_id:
@@ -228,54 +260,130 @@ class StrategyPromotionGate:
                     "event": event,
                 }
             return _rejected(
-                event_id, candidate.get("strategy_id", ""),
-                candidate.get("version", ""), candidate.get("from_state", ""),
-                candidate.get("to_state", ""), candidate.get("metrics", {}),
-                candidate.get("evidence_refs", []), candidate.get("actor", ""),
-                "event_id 已存在但事件内容不同，拒绝覆盖", candidate.get("timestamp"),
+                event_id,
+                candidate.get("strategy_id", ""),
+                candidate.get("version", ""),
+                candidate.get("from_state", ""),
+                candidate.get("to_state", ""),
+                candidate.get("metrics", {}),
+                candidate.get("evidence_refs", []),
+                candidate.get("actor", ""),
+                "event_id 已存在但事件内容不同，拒绝覆盖",
+                candidate.get("timestamp"),
             )
         return None
 
-    def promote(self, strategy_id, version, from_state, to_state, metrics=None,
-                evidence_refs=None, actor="", reason="", timestamp=None,
-                event_id=None, thresholds=None, min_sample_size=None,
-                min_win_rate=None, max_drawdown=None) -> dict:
+    def promote(
+        self,
+        strategy_id,
+        version,
+        from_state,
+        to_state,
+        metrics=None,
+        evidence_refs=None,
+        actor="",
+        reason="",
+        timestamp=None,
+        event_id=None,
+        thresholds=None,
+        min_sample_size=None,
+        min_win_rate=None,
+        max_drawdown=None,
+    ) -> dict:
         """尝试晋级，返回 accepted/rejected/replayed 结果，不静默吞掉拒绝。"""
         timestamp = timestamp or utc_now_iso()
         metrics_out = dict(metrics) if isinstance(metrics, Mapping) else metrics
-        refs_out = list(evidence_refs) if evidence_refs is not None and not isinstance(
-            evidence_refs, (str, bytes)) else evidence_refs
+        refs_out = (
+            list(evidence_refs)
+            if evidence_refs is not None and not isinstance(evidence_refs, (str, bytes))
+            else evidence_refs
+        )
         if not isinstance(event_id, str) or not event_id.strip():
-            return _rejected(event_id, strategy_id, version, from_state, to_state,
-                             metrics_out, refs_out or [], actor,
-                             "event_id 必须显式提供", timestamp)
+            return _rejected(
+                event_id,
+                strategy_id,
+                version,
+                from_state,
+                to_state,
+                metrics_out,
+                refs_out or [],
+                actor,
+                "event_id 必须显式提供",
+                timestamp,
+            )
         if not isinstance(strategy_id, str) or not strategy_id.strip():
-            return _rejected(event_id, strategy_id, version, from_state, to_state,
-                             metrics_out, refs_out or [], actor,
-                             "strategy_id 必须是非空字符串", timestamp)
+            return _rejected(
+                event_id,
+                strategy_id,
+                version,
+                from_state,
+                to_state,
+                metrics_out,
+                refs_out or [],
+                actor,
+                "strategy_id 必须是非空字符串",
+                timestamp,
+            )
         if not isinstance(version, str) or not version.strip():
-            return _rejected(event_id, strategy_id, version, from_state, to_state,
-                             metrics_out, refs_out or [], actor,
-                             "version 必须是非空字符串", timestamp)
+            return _rejected(
+                event_id,
+                strategy_id,
+                version,
+                from_state,
+                to_state,
+                metrics_out,
+                refs_out or [],
+                actor,
+                "version 必须是非空字符串",
+                timestamp,
+            )
         if not isinstance(actor, str) or not actor.strip():
-            return _rejected(event_id, strategy_id, version, from_state, to_state,
-                             metrics_out, refs_out or [], actor,
-                             "actor 必须是非空字符串", timestamp)
+            return _rejected(
+                event_id,
+                strategy_id,
+                version,
+                from_state,
+                to_state,
+                metrics_out,
+                refs_out or [],
+                actor,
+                "actor 必须是非空字符串",
+                timestamp,
+            )
         if not isinstance(reason, str) or not reason.strip():
-            return _rejected(event_id, strategy_id, version, from_state, to_state,
-                             metrics_out, refs_out or [], actor,
-                             "reason 必须是非空字符串", timestamp)
+            return _rejected(
+                event_id,
+                strategy_id,
+                version,
+                from_state,
+                to_state,
+                metrics_out,
+                refs_out or [],
+                actor,
+                "reason 必须是非空字符串",
+                timestamp,
+            )
         try:
             source = map_registry_state(from_state)
             target = map_registry_state(to_state)
             metrics_out = _normalise_metrics(metrics)
             refs_out = _normalise_refs(evidence_refs)
             thresholds_out = _normalise_thresholds(
-                thresholds, min_sample_size, min_win_rate, max_drawdown)
+                thresholds, min_sample_size, min_win_rate, max_drawdown
+            )
         except StrategyPromotionError as exc:
-            return _rejected(event_id, strategy_id, version, from_state, to_state,
-                             metrics_out or {}, refs_out or [], actor, str(exc),
-                             timestamp)
+            return _rejected(
+                event_id,
+                strategy_id,
+                version,
+                from_state,
+                to_state,
+                metrics_out or {},
+                refs_out or [],
+                actor,
+                str(exc),
+                timestamp,
+            )
 
         candidate = {
             "event_id": event_id,
@@ -297,30 +405,66 @@ class StrategyPromotionGate:
             return replay
 
         if target not in LEGAL_TRANSITIONS.get(source, frozenset()):
-            return _rejected(event_id, strategy_id, version, source, target,
-                             metrics_out, refs_out, actor,
-                             "非法生命周期迁移: %s -> %s" % (source, target),
-                             timestamp)
+            return _rejected(
+                event_id,
+                strategy_id,
+                version,
+                source,
+                target,
+                metrics_out,
+                refs_out,
+                actor,
+                "非法生命周期迁移: %s -> %s" % (source, target),
+                timestamp,
+            )
         if target == "ACTIVE":
-            missing_metrics = [field for field in _REQUIRED_ACTIVE_METRICS
-                               if field not in metrics_out]
-            missing_thresholds = [field for field in (
-                "min_sample_size", "min_win_rate", "max_drawdown")
-                if field not in thresholds_out]
+            missing_metrics = [
+                field for field in _REQUIRED_ACTIVE_METRICS if field not in metrics_out
+            ]
+            missing_thresholds = [
+                field
+                for field in ("min_sample_size", "min_win_rate", "max_drawdown")
+                if field not in thresholds_out
+            ]
             if refs_out == []:
-                return _rejected(event_id, strategy_id, version, source, target,
-                                 metrics_out, refs_out, actor,
-                                 "进入 ACTIVE 必须提供 evidence_refs", timestamp)
+                return _rejected(
+                    event_id,
+                    strategy_id,
+                    version,
+                    source,
+                    target,
+                    metrics_out,
+                    refs_out,
+                    actor,
+                    "进入 ACTIVE 必须提供 evidence_refs",
+                    timestamp,
+                )
             if missing_metrics:
-                return _rejected(event_id, strategy_id, version, source, target,
-                                 metrics_out, refs_out, actor,
-                                 "进入 ACTIVE 缺少评估指标: %s" % ",".join(missing_metrics),
-                                 timestamp)
+                return _rejected(
+                    event_id,
+                    strategy_id,
+                    version,
+                    source,
+                    target,
+                    metrics_out,
+                    refs_out,
+                    actor,
+                    "进入 ACTIVE 缺少评估指标: %s" % ",".join(missing_metrics),
+                    timestamp,
+                )
             if missing_thresholds:
-                return _rejected(event_id, strategy_id, version, source, target,
-                                 metrics_out, refs_out, actor,
-                                 "进入 ACTIVE 缺少调用方阈值: %s" % ",".join(missing_thresholds),
-                                 timestamp)
+                return _rejected(
+                    event_id,
+                    strategy_id,
+                    version,
+                    source,
+                    target,
+                    metrics_out,
+                    refs_out,
+                    actor,
+                    "进入 ACTIVE 缺少调用方阈值: %s" % ",".join(missing_thresholds),
+                    timestamp,
+                )
             failures = []
             if metrics_out["sample_size"] < thresholds_out["min_sample_size"]:
                 failures.append("sample_size 未达到阈值")
@@ -329,9 +473,18 @@ class StrategyPromotionGate:
             if metrics_out["max_drawdown"] > thresholds_out["max_drawdown"]:
                 failures.append("max_drawdown 超过阈值")
             if failures:
-                return _rejected(event_id, strategy_id, version, source, target,
-                                 metrics_out, refs_out, actor,
-                                 "ACTIVE 门禁拒绝: %s" % "; ".join(failures), timestamp)
+                return _rejected(
+                    event_id,
+                    strategy_id,
+                    version,
+                    source,
+                    target,
+                    metrics_out,
+                    refs_out,
+                    actor,
+                    "ACTIVE 门禁拒绝: %s" % "; ".join(failures),
+                    timestamp,
+                )
 
         self.ledger_path.parent.mkdir(parents=True, exist_ok=True)
         with self.ledger_path.open("a", encoding="utf-8") as ledger:

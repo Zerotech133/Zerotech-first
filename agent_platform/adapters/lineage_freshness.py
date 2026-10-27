@@ -24,6 +24,7 @@ per-table cadence 元数据落 agent_platform/data/lineage_cadence.json，
 
 纪律：mode=ro 零写副作用（M3 ro 观测面判例）；本模块不连库不联网。
 """
+
 from __future__ import annotations
 
 import json
@@ -34,9 +35,9 @@ from typing import Dict, List, Optional
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CADENCE_FILE = REPO_ROOT / "agent_platform" / "data" / "lineage_cadence.json"
 
-DEFAULT_CADENCE = 1     # 交易日：日频数据隔 1 个交易日就该更新
-DEFAULT_GRACE = 1       # 宽限交易日：watch 档宽
-_MAX_SCAN_DAYS = 400    # 逐日扫描上限（防时钟漂移死循环）
+DEFAULT_CADENCE = 1  # 交易日：日频数据隔 1 个交易日就该更新
+DEFAULT_GRACE = 1  # 宽限交易日：watch 档宽
+_MAX_SCAN_DAYS = 400  # 逐日扫描上限（防时钟漂移死循环）
 
 FRESHNESS_LEVELS = ("fresh", "watch", "stale", "broken", "unknown")
 
@@ -89,8 +90,9 @@ def _parse_day(value) -> Optional[date]:
         return None
 
 
-def trade_days_between(last_day: date, now_day: date,
-                       holidays: Optional[List[str]] = None) -> int:
+def trade_days_between(
+    last_day: date, now_day: date, holidays: Optional[List[str]] = None
+) -> int:
     """自 last_day 次日起到 now_day 的交易日数（周末+holidays 非交易日）。
 
     last_day >= now_day（未来戳/当天产出）→ 0。
@@ -108,9 +110,9 @@ def trade_days_between(last_day: date, now_day: date,
 
 
 # ---------------------------------------------------------------- 评估
-def assess(rows: List[Dict], cfg: Dict = None,
-           now: Optional[date] = None,
-           today_str: str = "") -> List[Dict]:
+def assess(
+    rows: List[Dict], cfg: Dict = None, now: Optional[date] = None, today_str: str = ""
+) -> List[Dict]:
     """逐行附 freshness（返回新列表，不改入参——ro 判例）。
 
     行契约：output_table / status / started_at（缺 urn 跳过不评）。
@@ -129,12 +131,12 @@ def assess(rows: List[Dict], cfg: Dict = None,
             out.append(item)
             continue
         if status != "ok":
-            item["freshness"] = "broken"     # 断链亮牌域，不重复判
+            item["freshness"] = "broken"  # 断链亮牌域，不重复判
             out.append(item)
             continue
         last_day = _parse_day(row.get("started_at") or row.get("ended_at"))
         if last_day is None:
-            item["freshness"] = "unknown"    # fail-visible 不吞
+            item["freshness"] = "unknown"  # fail-visible 不吞
             out.append(item)
             continue
         rule = _rule_for(cfg, urn)
@@ -152,27 +154,29 @@ def assess(rows: List[Dict], cfg: Dict = None,
 
 def summarize(assessed: List[Dict]) -> Dict:
     """汇总：stale/watch 清单（urn+age）+ fresh 计数，供三消费方直接用。"""
-    stale = [{"table": r.get("output_table", ""),
-              "age_trade_days": r.get("age_trade_days")}
-             for r in assessed if r.get("freshness") == "stale"]
-    watch = [{"table": r.get("output_table", ""),
-              "age_trade_days": r.get("age_trade_days")}
-             for r in assessed if r.get("freshness") == "watch"]
+    stale = [
+        {"table": r.get("output_table", ""), "age_trade_days": r.get("age_trade_days")}
+        for r in assessed
+        if r.get("freshness") == "stale"
+    ]
+    watch = [
+        {"table": r.get("output_table", ""), "age_trade_days": r.get("age_trade_days")}
+        for r in assessed
+        if r.get("freshness") == "watch"
+    ]
     return {
         "stale": stale,
         "watch": watch,
-        "fresh_count": sum(1 for r in assessed
-                           if r.get("freshness") == "fresh"),
-        "broken_count": sum(1 for r in assessed
-                            if r.get("freshness") == "broken"),
-        "unknown_count": sum(1 for r in assessed
-                             if r.get("freshness") == "unknown"),
+        "fresh_count": sum(1 for r in assessed if r.get("freshness") == "fresh"),
+        "broken_count": sum(1 for r in assessed if r.get("freshness") == "broken"),
+        "unknown_count": sum(1 for r in assessed if r.get("freshness") == "unknown"),
         "total": len(assessed),
     }
 
 
-def assess_breaks_payload(payload: Dict, cfg: Dict = None,
-                          now: Optional[date] = None) -> Dict:
+def assess_breaks_payload(
+    payload: Dict, cfg: Dict = None, now: Optional[date] = None
+) -> Dict:
     """对 /api/kg/lineage view=breaks 的 data 载荷做新鲜度增强。
 
     返回 {"assessed": [...], "summary": {...}}；载荷无 all_latest → 空。

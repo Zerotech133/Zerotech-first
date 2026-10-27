@@ -7,6 +7,7 @@ dk_snapshot 真数据链路（构造趋势上行 K 线→regime/信号落账）/
 enrich_row 增量兼容（旧行零破坏、None 与 error 两路）/ kline 行转换
 （amount 近似）/ REC_SCORE 口径并存断言。
 """
+
 import sys
 import unittest
 from pathlib import Path
@@ -17,7 +18,11 @@ BASE = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BASE))
 
 from engine.regime_roster import (  # noqa: E402
-    DK_FIELDS, bars_to_df, dk_snapshot, enrich_row, select_profile,
+    DK_FIELDS,
+    bars_to_df,
+    dk_snapshot,
+    enrich_row,
+    select_profile,
 )
 from engine.quant_double_knife import PROFILE_CONFIG  # noqa: E402
 
@@ -34,8 +39,7 @@ def _trend_up_df(n=80, start=10.0, drift=0.004):
         v = 1e6 * (1 + i * 0.01)
         rows.append(("d%03d" % i, o, h, l, c, v * c))
         price = c
-    df = pd.DataFrame(rows, columns=["date", "open", "high", "low",
-                                     "close", "amount"])
+    df = pd.DataFrame(rows, columns=["date", "open", "high", "low", "close", "amount"])
     return df.set_index("date")
 
 
@@ -73,24 +77,32 @@ class SnapshotTests(unittest.TestCase):
 
     def test_empty_and_missing_columns_fail_open(self):
         import pandas as pd
+
         r = dk_snapshot(None)
         self.assertIn("dk_error", r)
         r2 = dk_snapshot(pd.DataFrame({"close": [1, 2]}))
         self.assertIn("dk_error", r2)
-        r3 = dk_snapshot(pd.DataFrame())      # 空表
+        r3 = dk_snapshot(pd.DataFrame())  # 空表
         self.assertIn("dk_error", r3)
 
     def test_bad_data_fail_open(self):
         import pandas as pd
-        df = pd.DataFrame({"open": [None] * 10, "high": [None] * 10,
-                           "low": [None] * 10, "close": [None] * 10,
-                           "amount": [None] * 10})
+
+        df = pd.DataFrame(
+            {
+                "open": [None] * 10,
+                "high": [None] * 10,
+                "low": [None] * 10,
+                "close": [None] * 10,
+                "amount": [None] * 10,
+            }
+        )
         r = dk_snapshot(df)
         self.assertIn("dk_error", r)
 
     def test_blocked_regime_no_signal_call(self):
         # trend_down：不跑 quant_double_knife，signal=False + blocked=True
-        df = _trend_up_df(drift=-0.006, start=50.0)   # 构造下行
+        df = _trend_up_df(drift=-0.006, start=50.0)  # 构造下行
         snap = dk_snapshot(df)
         if snap.get("regime_label") == "trend_down":
             self.assertTrue(snap["blocked"])
@@ -115,7 +127,7 @@ class EnrichRowTests(unittest.TestCase):
         out = enrich_row(dict(row), None)
         for f in DK_FIELDS:
             self.assertIsNone(out[f])
-        self.assertEqual(out["score"], 2)      # 旧行零破坏
+        self.assertEqual(out["score"], 2)  # 旧行零破坏
 
     def test_error_snapshot_keeps_main_fields(self):
         row = {"score": 1, "recommendation": "BUY"}
@@ -135,11 +147,12 @@ class EnrichRowTests(unittest.TestCase):
 
 class BarsToDfTests(unittest.TestCase):
     def test_kline_row_conversion(self):
-        bars = [["2026-10-14", 10.0, 10.5, 10.8, 9.9, 12345.0],
-                ["2026-10-15", 10.5, 10.9, 11.0, 10.4, 15000.0]]
+        bars = [
+            ["2026-10-14", 10.0, 10.5, 10.8, 9.9, 12345.0],
+            ["2026-10-15", 10.5, 10.9, 11.0, 10.4, 15000.0],
+        ]
         df = bars_to_df(bars)
-        self.assertEqual(list(df.columns),
-                         ["open", "high", "low", "close", "amount"])
+        self.assertEqual(list(df.columns), ["open", "high", "low", "close", "amount"])
         self.assertEqual(df.iloc[-1]["amount"], 15000.0 * 10.9)
 
     def test_short_row_vol_default(self):

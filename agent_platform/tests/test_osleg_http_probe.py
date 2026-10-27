@@ -4,6 +4,7 @@
 对应工单：K-QUANT-20261026-OSLEG-8795PREP。
 探针的 --run 模式属批准窗口动作，单测只覆盖纯函数与 fail-closed 前置检查。
 """
+
 from __future__ import annotations
 
 import socket
@@ -62,8 +63,12 @@ def test_dry_run_does_not_bind_8795():
     assert out["mode"] == "dry-run"
     assert isinstance(out["checks"], list) and out["checks"]
     names = {c["name"] for c in out["checks"]}
-    assert {"endpoint_translation_nonempty", "platform_dir_exists",
-            "work_dir_writable", "port_8795_free"} <= names
+    assert {
+        "endpoint_translation_nonempty",
+        "platform_dir_exists",
+        "work_dir_writable",
+        "port_8795_free",
+    } <= names
     # dry-run 只做自检，不监听端口：无论 8795 原本是否被占用，
     # dry-run 前后端口状态必须一致（本机已有 gateway 占用时应视为一致）。
     before = P.port_in_use("127.0.0.1", 8795)

@@ -4,6 +4,7 @@
 本模块只读取显式指定的 JSON 文件，不发现、不修改注册表，也不接交易执行。
 清单中的每个策略必须绑定 strategy_id/version，并声明数据、资源、模式和权限。
 """
+
 from dataclasses import dataclass
 import json
 import math
@@ -92,8 +93,9 @@ class RunAuthorization:
     allowed_data: tuple
 
     def __post_init__(self):
-        object.__setattr__(self, "resource_budget", MappingProxyType(
-            dict(self.resource_budget)))
+        object.__setattr__(
+            self, "resource_budget", MappingProxyType(dict(self.resource_budget))
+        )
         object.__setattr__(self, "allowed_modes", frozenset(self.allowed_modes))
         object.__setattr__(self, "permissions", frozenset(self.permissions))
         object.__setattr__(self, "allowed_data", tuple(self.allowed_data))
@@ -103,22 +105,28 @@ class RunAuthorization:
                 "运行授权 allowed_modes 含非法模式 %s" % sorted(invalid_modes)
             )
         if set(self.resource_budget) != _RESOURCE_FIELDS:
-            raise StrategyConfigError(
-                "运行授权 resource_budget 字段不完整或含未知字段"
-            )
+            raise StrategyConfigError("运行授权 resource_budget 字段不完整或含未知字段")
         timeout_s = self.resource_budget["timeout_s"]
         max_concurrency = self.resource_budget["max_concurrency"]
         max_context_bytes = self.resource_budget["max_context_bytes"]
-        if (isinstance(timeout_s, bool) or not isinstance(timeout_s, (int, float))
-                or not math.isfinite(timeout_s) or timeout_s <= 0):
+        if (
+            isinstance(timeout_s, bool)
+            or not isinstance(timeout_s, (int, float))
+            or not math.isfinite(timeout_s)
+            or timeout_s <= 0
+        ):
             raise StrategyConfigError("运行授权 timeout_s 必须为有限正数")
-        if (isinstance(max_concurrency, bool)
-                or not isinstance(max_concurrency, int)
-                or max_concurrency <= 0):
+        if (
+            isinstance(max_concurrency, bool)
+            or not isinstance(max_concurrency, int)
+            or max_concurrency <= 0
+        ):
             raise StrategyConfigError("运行授权 max_concurrency 必须为正整数")
-        if (isinstance(max_context_bytes, bool)
-                or not isinstance(max_context_bytes, int)
-                or max_context_bytes <= 0):
+        if (
+            isinstance(max_context_bytes, bool)
+            or not isinstance(max_context_bytes, int)
+            or max_context_bytes <= 0
+        ):
             raise StrategyConfigError("运行授权 max_context_bytes 必须为正整数")
         if self.permissions != ALLOWED_PERMISSIONS:
             forbidden = self.permissions & FORBIDDEN_PERMISSIONS
@@ -223,8 +231,11 @@ def _validate_mode(mode):
 
 
 def _validate_context_bytes(context_bytes):
-    if (isinstance(context_bytes, bool) or not isinstance(context_bytes, int)
-            or context_bytes < 0):
+    if (
+        isinstance(context_bytes, bool)
+        or not isinstance(context_bytes, int)
+        or context_bytes < 0
+    ):
         raise StrategyConfigError("context_bytes 必须为非负整数")
 
 
@@ -268,28 +279,39 @@ def _manifest(raw, index, source_path):
         _error(path, "resource_budget 存在未声明字段 %s" % sorted(unknown_budget))
 
     timeout_s = budget["timeout_s"]
-    if (isinstance(timeout_s, bool) or not isinstance(timeout_s, (int, float))
-            or not math.isfinite(timeout_s) or timeout_s <= 0):
+    if (
+        isinstance(timeout_s, bool)
+        or not isinstance(timeout_s, (int, float))
+        or not math.isfinite(timeout_s)
+        or timeout_s <= 0
+    ):
         _error(path, "resource_budget.timeout_s 必须为有限正数")
     max_concurrency = budget["max_concurrency"]
-    if (isinstance(max_concurrency, bool) or not isinstance(max_concurrency, int)
-            or max_concurrency <= 0):
+    if (
+        isinstance(max_concurrency, bool)
+        or not isinstance(max_concurrency, int)
+        or max_concurrency <= 0
+    ):
         _error(path, "resource_budget.max_concurrency 必须为正整数")
     max_context_bytes = budget["max_context_bytes"]
-    if (isinstance(max_context_bytes, bool)
-            or not isinstance(max_context_bytes, int)
-            or max_context_bytes <= 0):
+    if (
+        isinstance(max_context_bytes, bool)
+        or not isinstance(max_context_bytes, int)
+        or max_context_bytes <= 0
+    ):
         _error(path, "resource_budget.max_context_bytes 必须为正整数")
 
     return StrategyManifest(
         strategy_id=strategy_id,
         version=version,
         allowed_data=allowed_data,
-        resource_budget=MappingProxyType({
-            "timeout_s": timeout_s,
-            "max_concurrency": max_concurrency,
-            "max_context_bytes": max_context_bytes,
-        }),
+        resource_budget=MappingProxyType(
+            {
+                "timeout_s": timeout_s,
+                "max_concurrency": max_concurrency,
+                "max_context_bytes": max_context_bytes,
+            }
+        ),
         allowed_modes=frozenset(allowed_modes),
         permissions=frozenset(permissions),
     )

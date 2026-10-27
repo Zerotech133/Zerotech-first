@@ -20,9 +20,9 @@ _AGENT_PLATFORM = Path(__file__).resolve().parents[1]
 if str(_AGENT_PLATFORM) not in sys.path:
     sys.path.insert(0, str(_AGENT_PLATFORM))
 
-from adapters import replay_query as rq          # noqa: E402
-from engine import evidence as ev_mod            # noqa: E402
-from contracts import Evidence                   # noqa: E402
+from adapters import replay_query as rq  # noqa: E402
+from engine import evidence as ev_mod  # noqa: E402
+from contracts import Evidence  # noqa: E402
 
 
 class ReplayQueryReadOnlyTests(unittest.TestCase):
@@ -46,6 +46,7 @@ class ReplayQueryReadOnlyTests(unittest.TestCase):
     def test_load_approvals_reads_real_db(self):
         """库在 → mode=ro 直连能读且字段映射正确。"""
         import sqlite3
+
         db = self.tmp / "approvals.db"
         conn = sqlite3.connect(db)
         conn.executescript(
@@ -59,7 +60,8 @@ class ReplayQueryReadOnlyTests(unittest.TestCase):
             " target_type, target_id, from_status, to_status, decision,"
             " decided_by, reason, decided_at, created_at) VALUES"
             " ('a1','k1','workitem','gzh:d1','draft','reviewed','approved',"
-            "'老田','ok','2026-10-17T10:00:00+08:00','2026-10-17T10:00:00Z');")
+            "'老田','ok','2026-10-17T10:00:00+08:00','2026-10-17T10:00:00Z');"
+        )
         conn.commit()
         conn.close()
         rq._APPROVALS_DB = db
@@ -85,18 +87,22 @@ class EvidenceReadOnlyTests(unittest.TestCase):
         """库在 → 只读连接可读，零 DDL（无写事务）。"""
         db = self.tmp / "evidence.db"
         w = ev_mod.EvidenceStore(db)
-        w.record(Evidence(source="s", source_ref="r1", statement="st1",
-                          payload={"domain": "d", "kind": "k"}))
+        w.record(
+            Evidence(
+                source="s",
+                source_ref="r1",
+                statement="st1",
+                payload={"domain": "d", "kind": "k"},
+            )
+        )
         w.close()
         ro = ev_mod.EvidenceStore(db, read_only=True)
-        n = ro._conn.execute(
-            "SELECT COUNT(*) FROM evidence").fetchone()[0]
+        n = ro._conn.execute("SELECT COUNT(*) FROM evidence").fetchone()[0]
         ro.close()
         self.assertEqual(n, 1)
         # 只读连接再开一次仍可读（WAL 附属文件重建不影响数据）
         ro2 = ev_mod.EvidenceStore(db, read_only=True)
-        n2 = ro2._conn.execute(
-            "SELECT COUNT(*) FROM evidence").fetchone()[0]
+        n2 = ro2._conn.execute("SELECT COUNT(*) FROM evidence").fetchone()[0]
         ro2.close()
         self.assertEqual(n2, 1)
 

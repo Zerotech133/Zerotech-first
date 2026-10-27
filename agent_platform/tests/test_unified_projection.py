@@ -22,8 +22,9 @@ def _load(name: str, rel: str):
     return module
 
 
-up = _load("unified_projection_under_test",
-           "agent_platform/adapters/unified_projection.py")
+up = _load(
+    "unified_projection_under_test", "agent_platform/adapters/unified_projection.py"
+)
 
 
 class UnifiedProjectionTests(unittest.TestCase):
@@ -40,10 +41,17 @@ class UnifiedProjectionTests(unittest.TestCase):
         # 域 wiring 缺源显式报错，不拖垮整体
         self.assertEqual(rep["gzh"]["status"], "error")
         self.assertEqual(rep["academy"]["status"], "error")
-        self.assertTrue(rep["findings"])                 # fail-visible
+        self.assertTrue(rep["findings"])  # fail-visible
         # 结构完整：六节齐全
-        for key in ("tasks", "events", "projects", "academy", "gzh",
-                    "approvals", "summary"):
+        for key in (
+            "tasks",
+            "events",
+            "projects",
+            "academy",
+            "gzh",
+            "approvals",
+            "summary",
+        ):
             self.assertIn(key, rep)
 
     def test_summary_shape(self):
@@ -63,14 +71,21 @@ class UnifiedProjectionTests(unittest.TestCase):
         self.assertGreaterEqual(rep["academy"]["workitem_count"], 0)
         self.assertIsInstance(rep["approvals"], dict)
 
-
-
     def test_ten_domains_wired(self):
         """M2-P3 扩容：intel 入投影，十域清单 + verdict 齐全。"""
         rep = up.build_unified_report(ROOT)
-        for dom in ("gzh", "academy", "invest", "dev", "pitch",
-                    "personal", "devtask", "knowledge", "skill",
-                    "intel"):
+        for dom in (
+            "gzh",
+            "academy",
+            "invest",
+            "dev",
+            "pitch",
+            "personal",
+            "devtask",
+            "knowledge",
+            "skill",
+            "intel",
+        ):
             self.assertIn(dom, rep["summary"]["domains_wired"])
             self.assertIn(dom, rep["summary"]["domain_verdicts"])
         # knowledge/skill/intel 节结构与只读纪律
@@ -85,7 +100,6 @@ class UnifiedProjectionTests(unittest.TestCase):
         self.assertEqual(it.get("verdict"), "PASS")
         self.assertEqual(it.get("bypass_count"), 0)
         self.assertEqual(it.get("cross_check"), [])
-
 
     def test_real_repo_knowledge_skill_smoke(self):
         """真实仓库：knowledge/skill 两节可投影且无绕门。"""

@@ -4,6 +4,7 @@
 测试只在 tmp_path 中复制并改写现有插件模板、manifest 和 config，不改动公共源码、
 既有测试或真实数据目录；所有运行均经过独立 SHADOW 验证入口。
 """
+
 import importlib
 import json
 import sys
@@ -29,16 +30,25 @@ CONTEXT = {
 }
 
 
-def _copy_plugin_template(plugin_root, module_name, class_name, strategy_id,
-                          recommendation, confidence, stance):
+def _copy_plugin_template(
+    plugin_root,
+    module_name,
+    class_name,
+    strategy_id,
+    recommendation,
+    confidence,
+    stance,
+):
     """复制现有 agent 模板，替换最小插件身份和建议。"""
     source = (TEMPLATES / "strategy_agent_template.py").read_text(encoding="utf-8")
     source = source.replace("MyStrategyAgent", class_name)
-    source = source.replace('strategy_id = "my_strategy_v1"',
-                            'strategy_id = "%s"' % strategy_id)
+    source = source.replace(
+        'strategy_id = "my_strategy_v1"', 'strategy_id = "%s"' % strategy_id
+    )
     source = source.replace('stance = "neutral"', 'stance = "%s"' % stance)
-    source = source.replace('recommendation="hold"',
-                            'recommendation="%s"' % recommendation)
+    source = source.replace(
+        'recommendation="hold"', 'recommendation="%s"' % recommendation
+    )
     source = source.replace("confidence=0.0", "confidence=%s" % confidence)
     source = source.replace('stance="neutral"', 'stance="%s"' % stance)
     (plugin_root / (module_name + ".py")).write_text(source, encoding="utf-8")
@@ -59,11 +69,13 @@ def _write_bundle(tmp_path, plugins):
     configs = []
     for plugin in plugins:
         _copy_plugin_template(plugin_root, **plugin)
-        entries.append({
-            "module": plugin["module_name"],
-            "class": plugin["class_name"],
-            "strategy_id": plugin["strategy_id"],
-        })
+        entries.append(
+            {
+                "module": plugin["module_name"],
+                "class": plugin["class_name"],
+                "strategy_id": plugin["strategy_id"],
+            }
+        )
         item = dict(config_template["strategies"][0])
         item["strategy_id"] = plugin["strategy_id"]
         item["version"] = "1.0.0"
@@ -112,7 +124,10 @@ def test_success_plugin_is_discovered_configured_and_shadow_validated(tmp_path):
 
     config = load_config(config_path)
     authorization = validate_for_run(
-        config, "acceptance_success_v1", "SHADOW", len(json.dumps(CONTEXT, ensure_ascii=False).encode("utf-8"))
+        config,
+        "acceptance_success_v1",
+        "SHADOW",
+        len(json.dumps(CONTEXT, ensure_ascii=False).encode("utf-8")),
     )
     assert authorization.mode == "SHADOW"
     assert authorization.permissions == frozenset({"propose", "read_context"})
@@ -134,7 +149,9 @@ def test_success_plugin_is_discovered_configured_and_shadow_validated(tmp_path):
     assert not list((tmp_path / "isolated-root").rglob("*.jsonl"))
 
 
-def test_conflicting_buy_sell_plugins_are_discovered_and_blocked_by_arbitration(tmp_path):
+def test_conflicting_buy_sell_plugins_are_discovered_and_blocked_by_arbitration(
+    tmp_path,
+):
     plugins = [
         _plugin(
             "acceptance_conflict_buy_plugin_v1",
@@ -193,9 +210,7 @@ def test_copied_plugin_config_rejects_execution_permission_and_wrong_mode(tmp_pa
     payload = json.loads(config_path.read_text(encoding="utf-8"))
     payload["strategies"][0]["permissions"] = ["propose", "order"]
     invalid_config = tmp_path / "invalid_strategy_config.json"
-    invalid_config.write_text(
-        json.dumps(payload, ensure_ascii=False), encoding="utf-8"
-    )
+    invalid_config.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
     with pytest.raises(StrategyConfigError, match="禁止|未授权"):
         load_config(invalid_config)
 

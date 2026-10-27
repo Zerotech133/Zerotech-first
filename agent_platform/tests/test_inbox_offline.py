@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """WO-FS-157: all effects isolated to system-temp synthetic tickets."""
+
 import hashlib
 import json
 import sys
@@ -14,11 +15,23 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from gateway.inbox_offline import ContractError, OfflineInbox  # noqa: E402
 
 
-def _evidence(box, stamp, *, ticket="lg-synthetic1",
-              content="合成情报：无真实行情数据；状态待核", **updates):
-    doc = {"ticket": ticket, "source_at": stamp, "verification": "verified", "authority": "intel",
-           "scope": "synthetic", "content": content,
-           "content_sha256": hashlib.sha256(content.encode("utf-8")).hexdigest()}
+def _evidence(
+    box,
+    stamp,
+    *,
+    ticket="lg-synthetic1",
+    content="合成情报：无真实行情数据；状态待核",
+    **updates,
+):
+    doc = {
+        "ticket": ticket,
+        "source_at": stamp,
+        "verification": "verified",
+        "authority": "intel",
+        "scope": "synthetic",
+        "content": content,
+        "content_sha256": hashlib.sha256(content.encode("utf-8")).hexdigest(),
+    }
     doc.update(updates)
     path = box.evidence / "intel_id.json"
     path.write_text(json.dumps(doc, ensure_ascii=False), encoding="utf-8")
@@ -33,8 +46,13 @@ def setup(tmp_path_factory):
         (root / "inbox").mkdir()
         (root / "evidence").mkdir()
         ticket = "lg-synthetic1"
-        record = {"id": ticket, "state": "inbox", "source": "feishu_comm",
-                  "kind": "task_request", "payload": {"intent": "stock_consult"}}
+        record = {
+            "id": ticket,
+            "state": "inbox",
+            "source": "feishu_comm",
+            "kind": "task_request",
+            "payload": {"intent": "stock_consult"},
+        }
         src = root / "inbox" / (ticket + ".json")
         src.write_text(json.dumps(record), encoding="utf-8")
         original = src.read_bytes()
@@ -68,33 +86,82 @@ def test_roundtrip_evidence_and_idempotency(setup):
     stamp = datetime.now(timezone.utc).isoformat()
     _evidence(box, stamp)
     with pytest.raises(ContractError, match="independent"):
-        box.answer(ticket, "D1", "answer1", text="待核", source_ref="intel_id.json",
-                   source_at=stamp, reviewer="D1", review_status="approved")
+        box.answer(
+            ticket,
+            "D1",
+            "answer1",
+            text="待核",
+            source_ref="intel_id.json",
+            source_at=stamp,
+            reviewer="D1",
+            review_status="approved",
+        )
     with pytest.raises(ContractError):
-        box.answer(ticket, "D1", "answer1", text="待核", source_ref="",
-                   source_at=stamp, reviewer="QA1", review_status="approved")
-    answered = box.answer(ticket, "D1", "answer1", text="来源不足，待核",
-                          source_ref="intel_id.json", source_at=stamp,
-                          reviewer="QA1", review_status="approved")
+        box.answer(
+            ticket,
+            "D1",
+            "answer1",
+            text="待核",
+            source_ref="",
+            source_at=stamp,
+            reviewer="QA1",
+            review_status="approved",
+        )
+    answered = box.answer(
+        ticket,
+        "D1",
+        "answer1",
+        text="来源不足，待核",
+        source_ref="intel_id.json",
+        source_at=stamp,
+        reviewer="QA1",
+        review_status="approved",
+    )
     assert answered["state"] == "answered" and answered["reviewer"] == "QA1"
-    assert answered["evidence_sha256"] == hashlib.sha256(
-        (box.evidence / "intel_id.json").read_bytes()).hexdigest()
-    assert box.answer(ticket, "D1", "answer1", text="来源不足，待核",
-                      source_ref="intel_id.json", source_at=stamp,
-                      reviewer="QA1", review_status="approved") == answered
+    assert (
+        answered["evidence_sha256"]
+        == hashlib.sha256((box.evidence / "intel_id.json").read_bytes()).hexdigest()
+    )
+    assert (
+        box.answer(
+            ticket,
+            "D1",
+            "answer1",
+            text="来源不足，待核",
+            source_ref="intel_id.json",
+            source_at=stamp,
+            reviewer="QA1",
+            review_status="approved",
+        )
+        == answered
+    )
     with pytest.raises(ContractError, match="conflicting answer replay"):
-        box.answer(ticket, "D1", "answer1", text="私自换结论",
-                   source_ref="intel_id.json", source_at=stamp,
-                   reviewer="QA1", review_status="approved")
+        box.answer(
+            ticket,
+            "D1",
+            "answer1",
+            text="私自换结论",
+            source_ref="intel_id.json",
+            source_at=stamp,
+            reviewer="QA1",
+            review_status="approved",
+        )
     with pytest.raises(ContractError, match="message_id"):
         box.record_delivery(ticket, "send1", accepted=True)
-    failed = box.record_delivery(ticket, "send1", accepted=False, why="stub network down")
+    failed = box.record_delivery(
+        ticket, "send1", accepted=False, why="stub network down"
+    )
     assert failed["state"] == "answered" and failed["delivery"] == "failed"
-    accepted = box.record_delivery(ticket, "send2", accepted=True,
-                                   message_id="om_stub", why="api accepted")
+    accepted = box.record_delivery(
+        ticket, "send2", accepted=True, message_id="om_stub", why="api accepted"
+    )
     assert accepted["delivery"] == "accepted" and accepted["message_id"] == "om_stub"
-    assert box.record_delivery(ticket, "send2", accepted=True,
-                               message_id="om_stub", why="api accepted") == accepted
+    assert (
+        box.record_delivery(
+            ticket, "send2", accepted=True, message_id="om_stub", why="api accepted"
+        )
+        == accepted
+    )
     with pytest.raises(ContractError, match="conflicting delivery replay"):
         box.record_delivery(ticket, "send2", accepted=False, why="contradiction")
     with pytest.raises(ContractError, match="already accepted"):
@@ -105,11 +172,13 @@ def test_roundtrip_evidence_and_idempotency(setup):
 
 def test_concurrent_claim_only_one_owner(setup):
     box, ticket, _, _ = setup
+
     def call(actor):
         try:
             return box.claim(ticket, actor, "claim-" + actor)
         except ContractError as exc:
             return str(exc)
+
     with ThreadPoolExecutor(max_workers=2) as pool:
         values = list(pool.map(call, ("A0", "D1")))
     assert sum(isinstance(v, dict) for v in values) == 1
@@ -123,16 +192,38 @@ def test_bad_record_and_missing_evidence_fail_closed(setup):
         box.claim(ticket, None, "k1")
     box.claim(ticket, "D1", "k1")
     with pytest.raises(ContractError, match="source_at"):
-        box.answer(ticket, "D1", "a1", text="待核", source_ref="intel_id.json",
-                   source_at="2026-10-21", reviewer="QA1", review_status="approved")
+        box.answer(
+            ticket,
+            "D1",
+            "a1",
+            text="待核",
+            source_ref="intel_id.json",
+            source_at="2026-10-21",
+            reviewer="QA1",
+            review_status="approved",
+        )
     with pytest.raises(ContractError, match="approval"):
-        box.answer(ticket, "D1", "a1", text="待核", source_ref="intel_id.json",
-                   source_at=datetime.now(timezone.utc).isoformat(),
-                   reviewer="QA1", review_status="pending")
+        box.answer(
+            ticket,
+            "D1",
+            "a1",
+            text="待核",
+            source_ref="intel_id.json",
+            source_at=datetime.now(timezone.utc).isoformat(),
+            reviewer="QA1",
+            review_status="pending",
+        )
     with pytest.raises(ContractError, match="evidence"):
-        box.answer(ticket, "D1", "a1", text="待核", source_ref="intel_id.json",
-                   source_at=datetime.now(timezone.utc).isoformat(),
-                   reviewer="QA1", review_status="approved")
+        box.answer(
+            ticket,
+            "D1",
+            "a1",
+            text="待核",
+            source_ref="intel_id.json",
+            source_at=datetime.now(timezone.utc).isoformat(),
+            reviewer="QA1",
+            review_status="approved",
+        )
     assert box.inspect(ticket)["state"] == "claimed"
     with pytest.raises(ContractError):
         box.record_delivery(ticket, "send1", accepted=False, why="offline")
@@ -143,11 +234,17 @@ def test_bad_record_and_missing_evidence_fail_closed(setup):
 
 def test_unverified_tampered_and_stale_evidence_rejected(setup):
     from datetime import timedelta
+
     box, ticket, _, _ = setup
     box.claim(ticket, "D1", "claim1")
     stamp = datetime.now(timezone.utc).isoformat()
-    kw = {"text": "无数据，仅待核", "source_ref": "intel_id.json",
-          "source_at": stamp, "reviewer": "QA1", "review_status": "approved"}
+    kw = {
+        "text": "无数据，仅待核",
+        "source_ref": "intel_id.json",
+        "source_at": stamp,
+        "reviewer": "QA1",
+        "review_status": "approved",
+    }
     path = _evidence(box, stamp, verification="pending")
     with pytest.raises(ContractError, match="not verified"):
         box.answer(ticket, "D1", "a1", **kw)
@@ -176,15 +273,29 @@ def test_unverified_tampered_and_stale_evidence_rejected(setup):
 def test_verified_evidence_cannot_be_reused_for_second_ticket(setup):
     box, ticket, _, _ = setup
     second = "lg-synthetic2"
-    (box.root / "inbox" / (second + ".json")).write_text(json.dumps({
-        "id": second, "state": "inbox", "source": "feishu_comm",
-        "kind": "task_request", "payload": {"intent": "stock_consult"}}), encoding="utf-8")
+    (box.root / "inbox" / (second + ".json")).write_text(
+        json.dumps(
+            {
+                "id": second,
+                "state": "inbox",
+                "source": "feishu_comm",
+                "kind": "task_request",
+                "payload": {"intent": "stock_consult"},
+            }
+        ),
+        encoding="utf-8",
+    )
     box.claim(ticket, "D1", "claim1")
     box.claim(second, "D1", "claim2")
     stamp = datetime.now(timezone.utc).isoformat()
     _evidence(box, stamp, ticket=ticket)
-    kw = {"text": "仅待核", "source_ref": "intel_id.json", "source_at": stamp,
-          "reviewer": "QA1", "review_status": "approved"}
+    kw = {
+        "text": "仅待核",
+        "source_ref": "intel_id.json",
+        "source_at": stamp,
+        "reviewer": "QA1",
+        "review_status": "approved",
+    }
     first = box.answer(ticket, "D1", "answer1", **kw)
     assert first["state"] == "answered" and first["ticket"] == ticket
     with pytest.raises(ContractError, match="not verified"):
@@ -197,8 +308,13 @@ def test_receipt_tampering_and_evidence_change_fail_visible(setup):
     box.claim(ticket, "D1", "claim1")
     stamp = datetime.now(timezone.utc).isoformat()
     path = _evidence(box, stamp)
-    kw = {"text": "仅待核", "source_ref": "intel_id.json", "source_at": stamp,
-          "reviewer": "QA1", "review_status": "approved"}
+    kw = {
+        "text": "仅待核",
+        "source_ref": "intel_id.json",
+        "source_at": stamp,
+        "reviewer": "QA1",
+        "review_status": "approved",
+    }
     box.answer(ticket, "D1", "a1", **kw)
     # 同一操作键不允许换掉已经审过的证据文件内容。
     _evidence(box, stamp, content="另一份合成来源")

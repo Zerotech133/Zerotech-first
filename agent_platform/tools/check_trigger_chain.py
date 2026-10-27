@@ -76,6 +76,7 @@ AgentMondayCheckpoint → 17:35 AgentChiefPush。tools/check_observation_point.p
     python tools/check_trigger_chain.py --repo-root <agent_platform 根>
     python tools/check_trigger_chain.py --repo-root <agent_platform 根> --print-config
 """
+
 from __future__ import annotations
 
 import argparse
@@ -104,15 +105,24 @@ SYSTEM_TASKS_DIR = Path(r"C:\Windows\System32\Tasks")
 
 # 三个任务的期望形态（锚点/触发时间取证自 2026-10-18 实测 XML）
 TASK_SPECS = (
-    {"name": "AgentShadowDaily", "hhmm": "17:10",
-     "anchors": ("shadow_automation.ps1", "-Mode run"),
-     "log": "last_run.log"},
-    {"name": "AgentMondayCheckpoint", "hhmm": "17:25",
-     "anchors": ("monday_checkpoint.py",),
-     "log": "monday_checkpoint.log"},
-    {"name": "AgentChiefPush", "hhmm": "17:35",
-     "anchors": ("shadow_automation.ps1", "-Mode push"),
-     "log": "chief_last_run.log"},
+    {
+        "name": "AgentShadowDaily",
+        "hhmm": "17:10",
+        "anchors": ("shadow_automation.ps1", "-Mode run"),
+        "log": "last_run.log",
+    },
+    {
+        "name": "AgentMondayCheckpoint",
+        "hhmm": "17:25",
+        "anchors": ("monday_checkpoint.py",),
+        "log": "monday_checkpoint.log",
+    },
+    {
+        "name": "AgentChiefPush",
+        "hhmm": "17:35",
+        "anchors": ("shadow_automation.ps1", "-Mode push"),
+        "log": "chief_last_run.log",
+    },
 )
 
 # 日志目录（相对 agent_platform 根；shadow_automation.ps1:24/42 重定向目标）
@@ -133,6 +143,7 @@ def _first_existing(root: Path, *rels):
             return cand
     return None
 
+
 # daemon：本链硬依赖 = Ollama LLM 服务（run_shadow.py:341；门3检查项 7）
 OLLAMA_HOST = "127.0.0.1"
 OLLAMA_PORT = 11434
@@ -143,21 +154,34 @@ OLLAMA_TIMEOUT_S = 2.0
 # 见 _watchdog_trace）；--print-config 可核对实际取值。
 AW_STACK_LOG = Path(r"C:\项目\zhice-os-v2-windows-20260920\code\logs\aw-stack.log")
 PROCESS_PROBE_CMD = (
-    "powershell", "-NoProfile", "-Command",
+    "powershell",
+    "-NoProfile",
+    "-Command",
     "(Get-CimInstance Win32_Process -Filter \"Name='python.exe'\").CommandLine",
 )
 PROCESS_PROBE_TIMEOUT_S = 15.0
-DAEMON_PROCESS_PATTERNS = ("agent_platform.cli watch-daemon", "agent_platform.cli ack-serve")
+DAEMON_PROCESS_PATTERNS = (
+    "agent_platform.cli watch-daemon",
+    "agent_platform.cli ack-serve",
+)
 
 WARN, PASS, FAIL = "WARN", "PASS", "FAIL"
 
-_DAY_CN = {"Monday": "一", "Tuesday": "二", "Wednesday": "三",
-           "Thursday": "四", "Friday": "五", "Saturday": "六", "Sunday": "日"}
+_DAY_CN = {
+    "Monday": "一",
+    "Tuesday": "二",
+    "Wednesday": "三",
+    "Thursday": "四",
+    "Friday": "五",
+    "Saturday": "六",
+    "Sunday": "日",
+}
 
 
 # ---------------------------------------------------------------------------
 # 通用小件
 # ---------------------------------------------------------------------------
+
 
 def _read_text_safe(path: Path, encoding: str = "utf-16") -> Optional[str]:
     """只读全文；不存在/不可读返回 None（fail-visible 由判据层决定状态）。"""
@@ -186,6 +210,7 @@ def aggregate(statuses) -> int:
 # 检查 a：任务注册面（任务 XML 直读解析）
 # ---------------------------------------------------------------------------
 
+
 def _local_tag(tag: str) -> str:
     return tag.rsplit("}", 1)[-1]
 
@@ -196,8 +221,14 @@ def parse_task_xml(text: str) -> dict:
     解析失败抛 ValueError（调用方转 WARN）。
     """
     root = ET.fromstring(text)
-    info = {"startboundary": None, "hhmm": None, "days": [],
-            "command": None, "arguments": "", "enabled_false": False}
+    info = {
+        "startboundary": None,
+        "hhmm": None,
+        "days": [],
+        "command": None,
+        "arguments": "",
+        "enabled_false": False,
+    }
     for el in root.iter():
         tag = _local_tag(el.tag)
         if tag == "StartBoundary" and info["startboundary"] is None and el.text:
@@ -206,7 +237,9 @@ def parse_task_xml(text: str) -> dict:
             if m:
                 info["hhmm"] = m.group(1)
         elif tag == "DaysOfWeek":
-            info["days"] = [_local_tag(c.tag) for c in el if _local_tag(c.tag) in _DAY_CN]
+            info["days"] = [
+                _local_tag(c.tag) for c in el if _local_tag(c.tag) in _DAY_CN
+            ]
         elif tag == "Command" and info["command"] is None and el.text:
             info["command"] = el.text.strip()
         elif tag == "Arguments" and el.text:
@@ -221,26 +254,42 @@ def _check_one_task(tasks_dir: Path, spec: dict) -> Tuple[str, str]:
     text = _read_text_safe(path, encoding="utf-16")
     if text is None:
         # 不武断 FAIL：任务名可能不同，输出实际探测过的名字 + 处置指引
-        return WARN, ("%s：读不到任务 XML（已探测 %s）→ 核对任务名"
-                      "（--print-config 列期望名）；确未注册→SOP 异常矩阵 #4，"
-                      "重注册须老田拍板" % (spec["name"], path))
+        return WARN, (
+            "%s：读不到任务 XML（已探测 %s）→ 核对任务名"
+            "（--print-config 列期望名）；确未注册→SOP 异常矩阵 #4，"
+            "重注册须老田拍板" % (spec["name"], path)
+        )
     try:
         info = parse_task_xml(text)
     except Exception as exc:  # noqa: BLE001
-        return WARN, ("%s：XML 解析失败（%s）→ 人工核对 %s"
-                      "（任务计划程序 GUI 或 Get-ScheduledTask，异常矩阵 #4）"
-                      % (spec["name"], str(exc)[:60], path))
+        return WARN, (
+            "%s：XML 解析失败（%s）→ 人工核对 %s"
+            "（任务计划程序 GUI 或 Get-ScheduledTask，异常矩阵 #4）"
+            % (spec["name"], str(exc)[:60], path)
+        )
     if not info["hhmm"] or not info["command"]:
-        return WARN, ("%s：XML 可读但缺触发时间或 Command（形态未知）"
-                      "→ 人工核对任务实际形态（SOP 异常矩阵 #4）" % spec["name"])
+        return WARN, (
+            "%s：XML 可读但缺触发时间或 Command（形态未知）"
+            "→ 人工核对任务实际形态（SOP 异常矩阵 #4）" % spec["name"]
+        )
     cmdline = info["command"] + " " + info["arguments"]
     missing = [a for a in spec["anchors"] if a not in cmdline]
     if missing:
-        return FAIL, ("%s：命令行锚点缺失 %s（实测 Command=%s Arguments=%s）"
-                      % (spec["name"], missing, _clip(info["command"], 60),
-                         _clip(info["arguments"], 80)))
+        return FAIL, (
+            "%s：命令行锚点缺失 %s（实测 Command=%s Arguments=%s）"
+            % (
+                spec["name"],
+                missing,
+                _clip(info["command"], 60),
+                _clip(info["arguments"], 80),
+            )
+        )
     if info["hhmm"] != spec["hhmm"]:
-        return FAIL, "%s：触发时间 %s ≠ 期望 %s" % (spec["name"], info["hhmm"], spec["hhmm"])
+        return FAIL, "%s：触发时间 %s ≠ 期望 %s" % (
+            spec["name"],
+            info["hhmm"],
+            spec["hhmm"],
+        )
     if "Monday" not in info["days"]:
         return FAIL, "%s：触发日无周一（%s）——周一链必断" % (spec["name"], info["days"])
     if info["enabled_false"]:
@@ -264,6 +313,7 @@ def check_a_tasks(tasks_dir: Optional[Path] = None) -> Tuple[str, str]:
 # ---------------------------------------------------------------------------
 # 检查 b：上次运行结果（三日志各自成功标记）
 # ---------------------------------------------------------------------------
+
 
 def _judge_shadow_log(text: str) -> Tuple[str, str]:
     """last_run.log：收尾行 `shadow day <日期> done: {...}`，done 计数 ≥1 = PASS。
@@ -309,7 +359,7 @@ def _judge_shadow_log(text: str) -> Tuple[str, str]:
     close_re = re.compile(r"^shadow day (\d{4}-\d{2}-\d{2}) done:")
     start_re = re.compile(r"^===== shadow run start (\d{4}-\d{2}-\d{2}) ")
 
-    dated = []   # (date, idx, line)：全部带日期的收尾行
+    dated = []  # (date, idx, line)：全部带日期的收尾行
     starts = []  # 跑动头行的 (date, idx)
     for idx, line in enumerate(text.splitlines()):
         m = close_re.match(line)
@@ -332,8 +382,10 @@ def _judge_shadow_log(text: str) -> Tuple[str, str]:
         legacy = [l for l in text.splitlines() if l.startswith("shadow day ")]
         if not legacy:
             if last_today_start is not None:
-                return FAIL, ("last_run.log 无 shadow day 收尾行——今日 %s 的跑"
-                              "已开始却未收尾（跑崩在中途）" % TODAY)
+                return FAIL, (
+                    "last_run.log 无 shadow day 收尾行——今日 %s 的跑"
+                    "已开始却未收尾（跑崩在中途）" % TODAY
+                )
             return FAIL, "last_run.log 无 shadow day 收尾行（跑过但未正常收尾）"
         chosen_date, chosen_idx, chosen_line = "", -1, legacy[-1]
 
@@ -352,15 +404,21 @@ def _judge_shadow_log(text: str) -> Tuple[str, str]:
     #        ⇒ WARN 带「→」处置指引，不误报成失败。
     if chosen_date == TODAY:
         if last_today_start is not None and chosen_idx < last_today_start:
-            return FAIL, ("今日 %s 最后一次影子跑（头行之后）无收尾行——跑崩在中途"
-                          "（今日更早那次成功不得冒充今日最后一次跑的结果）" % TODAY)
+            return FAIL, (
+                "今日 %s 最后一次影子跑（头行之后）无收尾行——跑崩在中途"
+                "（今日更早那次成功不得冒充今日最后一次跑的结果）" % TODAY
+            )
     elif chosen_date and chosen_date < TODAY:
         if last_today_start is not None:
-            return FAIL, ("最近一次影子跑为 %s，但今日 %s 的跑已开始却无收尾行"
-                          "（历史成功不得冒充今日通过）" % (chosen_date, TODAY))
-        return WARN, ("最近一次影子跑为 %s，今日 %s 尚无跑动痕迹"
-                      "（今日未跑；历史成功不等于今日通过）→ 17:10 跑后复查该日志"
-                      % (chosen_date, TODAY))
+            return FAIL, (
+                "最近一次影子跑为 %s，但今日 %s 的跑已开始却无收尾行"
+                "（历史成功不得冒充今日通过）" % (chosen_date, TODAY)
+            )
+        return WARN, (
+            "最近一次影子跑为 %s，今日 %s 尚无跑动痕迹"
+            "（今日未跑；历史成功不等于今日通过）→ 17:10 跑后复查该日志"
+            % (chosen_date, TODAY)
+        )
 
     # 3) 按 done 计数判（沿用既有语义）：done ≥1 = PASS，零 done = FAIL。
     tail = chosen_line.split("done:", 1)[-1] if "done:" in chosen_line else ""
@@ -403,7 +461,7 @@ def _split_checkpoint_blocks(text: str) -> list:
 
 def _checkpoint_block_ts(head: str) -> str:
     """块头行 → 运行时间戳（剥前缀，证据行用）。"""
-    return head[len(_CHECKPOINT_RUN_HEAD):].strip() or head
+    return head[len(_CHECKPOINT_RUN_HEAD) :].strip() or head
 
 
 def _checkpoint_block_verdict(block: dict):
@@ -463,27 +521,37 @@ def _judge_checkpoint_log(text: str) -> Tuple[str, str]:
         head = _checkpoint_block_ts(last_blk["head"])
         if st == PASS:
             return PASS, "末块 %s：%s" % (head, ev)
-        return FAIL, ("末块 %s：%s——真实 checkpoint 失败（观察点门未过），"
-                      "按结论明细处置" % (head, ev))
+        return FAIL, (
+            "末块 %s：%s——真实 checkpoint 失败（观察点门未过），"
+            "按结论明细处置" % (head, ev)
+        )
     # 末块未收尾：[wait] 设计内等待/中断残留 → 不判 FAIL（预期性误报修复）
-    wait_n = sum(1 for l in last_blk["lines"]
-                 if l.strip().startswith(_CHECKPOINT_WAIT_PREFIX))
-    tail = ("末块 %s 未收尾（无结论/EXIT 行；[wait] 行 ×%d = 设计内 90s 等待循环"
-            "或预演/手跑中断残留，非真实失败）"
-            % (_checkpoint_block_ts(last_blk["head"]), wait_n))
+    wait_n = sum(
+        1 for l in last_blk["lines"] if l.strip().startswith(_CHECKPOINT_WAIT_PREFIX)
+    )
+    tail = (
+        "末块 %s 未收尾（无结论/EXIT 行；[wait] 行 ×%d = 设计内 90s 等待循环"
+        "或预演/手跑中断残留，非真实失败）"
+        % (_checkpoint_block_ts(last_blk["head"]), wait_n)
+    )
     for blk in reversed(blocks[:-1]):
         pst, pev = _checkpoint_block_verdict(blk)
         if pst is None:
             continue  # 更早的未收尾块：跳过，找最近完整块
         head = _checkpoint_block_ts(blk["head"])
         if pst == FAIL:
-            return FAIL, ("%s；但最近完整块 %s 为真实失败且未被更新的完整块"
-                          "取代：%s" % (tail, head, pev))
-        return WARN, ("%s；最近完整块 %s：%s → 周一 17:25 首跑后复查末块结论行，"
-                      "届时末块无 EXIT=0（或 EXIT=1）→ SOP 异常矩阵 #2"
-                      % (tail, head, pev))
-    return WARN, ("%s；且无历史完整块可判读 → 周一 17:25 首跑后复查该日志，"
-                  "届时末块仍无 EXIT=0 → SOP 异常矩阵 #2" % tail)
+            return FAIL, (
+                "%s；但最近完整块 %s 为真实失败且未被更新的完整块"
+                "取代：%s" % (tail, head, pev)
+            )
+        return WARN, (
+            "%s；最近完整块 %s：%s → 周一 17:25 首跑后复查末块结论行，"
+            "届时末块无 EXIT=0（或 EXIT=1）→ SOP 异常矩阵 #2" % (tail, head, pev)
+        )
+    return WARN, (
+        "%s；且无历史完整块可判读 → 周一 17:25 首跑后复查该日志，"
+        "届时末块仍无 EXIT=0 → SOP 异常矩阵 #2" % tail
+    )
 
 
 def _judge_chief_log(text: str) -> Tuple[str, str]:
@@ -501,9 +569,9 @@ _LOG_JUDGES = {
 
 
 def check_b_last_runs(repo_root: Path) -> Tuple[str, str]:
-    log_dir = _first_existing(repo_root,
-                              (_AP_DIR,) + SHADOW_LOG_DIR_REL,
-                              SHADOW_LOG_DIR_REL) or Path(repo_root).joinpath(*SHADOW_LOG_DIR_REL)
+    log_dir = _first_existing(
+        repo_root, (_AP_DIR,) + SHADOW_LOG_DIR_REL, SHADOW_LOG_DIR_REL
+    ) or Path(repo_root).joinpath(*SHADOW_LOG_DIR_REL)
     results = []
     for spec in TASK_SPECS:
         log_name = spec["log"]
@@ -511,10 +579,15 @@ def check_b_last_runs(repo_root: Path) -> Tuple[str, str]:
         text = _read_text_safe(path, encoding="utf-8")
         if text is None:
             # 首跑（周 17:10/17:35 调度）前缺失是确定预期形态，显式 WARN + 复查指引
-            results.append((WARN, "%s：%s 不存在（LastTaskResult=267011 从未跑过，"
-                                  "首跑 %s 前缺失属预期）→ 周一 %s 首跑后复查该日志，"
-                                  "届时缺失/无标记→SOP 异常矩阵对应项"
-                                  % (spec["name"], path, spec["hhmm"], spec["hhmm"])))
+            results.append(
+                (
+                    WARN,
+                    "%s：%s 不存在（LastTaskResult=267011 从未跑过，"
+                    "首跑 %s 前缺失属预期）→ 周一 %s 首跑后复查该日志，"
+                    "届时缺失/无标记→SOP 异常矩阵对应项"
+                    % (spec["name"], path, spec["hhmm"], spec["hhmm"]),
+                )
+            )
             continue
         st, ev = _LOG_JUDGES[log_name](text)
         results.append((st, "%s[%s] %s" % (spec["name"], st, ev)))
@@ -531,6 +604,7 @@ def check_b_last_runs(repo_root: Path) -> Tuple[str, str]:
 # 检查 c：daemon 存活（Ollama 决定性 + watch-daemon 留痕信息性）
 # ---------------------------------------------------------------------------
 
+
 def _default_connect(host: str, port: int) -> None:
     sock = socket.create_connection((host, port), timeout=OLLAMA_TIMEOUT_S)
     sock.close()
@@ -539,10 +613,14 @@ def _default_connect(host: str, port: int) -> None:
 def _default_process_probe() -> Optional[List[str]]:
     """按 start_agent_platform.ps1:27-30 同款进程特征探测；失败返回 None。"""
     try:
-        proc = subprocess.run(PROCESS_PROBE_CMD, capture_output=True,
-                              timeout=PROCESS_PROBE_TIMEOUT_S)
-        return [l.strip() for l in proc.stdout.decode("utf-8", "replace").splitlines()
-                if l.strip()]
+        proc = subprocess.run(
+            PROCESS_PROBE_CMD, capture_output=True, timeout=PROCESS_PROBE_TIMEOUT_S
+        )
+        return [
+            l.strip()
+            for l in proc.stdout.decode("utf-8", "replace").splitlines()
+            if l.strip()
+        ]
     except Exception:  # noqa: BLE001
         return None
 
@@ -552,9 +630,14 @@ def _watchdog_trace(process_probe, aw_stack_log: Optional[Path]) -> str:
     try:
         lines = process_probe() if process_probe else None
         if lines:
-            hits = [l for l in lines
-                    if any(p in l.replace("\\", " ").replace('"', " ")
-                           for p in DAEMON_PROCESS_PATTERNS)]
+            hits = [
+                l
+                for l in lines
+                if any(
+                    p in l.replace("\\", " ").replace('"', " ")
+                    for p in DAEMON_PROCESS_PATTERNS
+                )
+            ]
             if hits:
                 return "watch-daemon/ack-serve 进程特征在跑（%d 个）" % len(hits)
         if aw_stack_log is not None:
@@ -569,23 +652,38 @@ def _watchdog_trace(process_probe, aw_stack_log: Optional[Path]) -> str:
     return "watch-daemon 留痕不可探"
 
 
-def check_c_daemon(connect_fn=None, process_probe=None,
-                   aw_stack_log: Optional[Path] = None) -> Tuple[str, str]:
+def check_c_daemon(
+    connect_fn=None, process_probe=None, aw_stack_log: Optional[Path] = None
+) -> Tuple[str, str]:
     cf = connect_fn if connect_fn is not None else _default_connect
     try:
         cf(OLLAMA_HOST, OLLAMA_PORT)
-        status, ev = PASS, "Ollama %s:%d 可连（run_shadow LLM 硬依赖，run_shadow.py:341）" % (
-            OLLAMA_HOST, OLLAMA_PORT)
+        status, ev = (
+            PASS,
+            "Ollama %s:%d 可连（run_shadow LLM 硬依赖，run_shadow.py:341）"
+            % (OLLAMA_HOST, OLLAMA_PORT),
+        )
     except ConnectionRefusedError:
-        status, ev = FAIL, ("Ollama %s:%d 无监听（拒绝连接）——17:10 run_shadow 必挂，"
-                            "先拉起 Ollama 服务" % (OLLAMA_HOST, OLLAMA_PORT))
+        status, ev = (
+            FAIL,
+            (
+                "Ollama %s:%d 无监听（拒绝连接）——17:10 run_shadow 必挂，"
+                "先拉起 Ollama 服务" % (OLLAMA_HOST, OLLAMA_PORT)
+            ),
+        )
     except Exception as exc:  # noqa: BLE001
-        status, ev = WARN, ("Ollama %s:%d 探测异常（%s，非拒绝连接——拒绝=明确 FAIL）"
-                            "→ 手动复核 curl -s --max-time 3 "
-                            "http://127.0.0.1:11434/api/ps，17:10 前必须确认可连"
-                            "（SOP 异常矩阵 #3）" % (OLLAMA_HOST, OLLAMA_PORT, str(exc)[:80]))
-    trace = _watchdog_trace(process_probe,
-                            Path(aw_stack_log) if aw_stack_log else AW_STACK_LOG)
+        status, ev = (
+            WARN,
+            (
+                "Ollama %s:%d 探测异常（%s，非拒绝连接——拒绝=明确 FAIL）"
+                "→ 手动复核 curl -s --max-time 3 "
+                "http://127.0.0.1:11434/api/ps，17:10 前必须确认可连"
+                "（SOP 异常矩阵 #3）" % (OLLAMA_HOST, OLLAMA_PORT, str(exc)[:80])
+            ),
+        )
+    trace = _watchdog_trace(
+        process_probe, Path(aw_stack_log) if aw_stack_log else AW_STACK_LOG
+    )
     return status, "%s；%s" % (ev, trace)
 
 
@@ -593,17 +691,24 @@ def check_c_daemon(connect_fn=None, process_probe=None,
 # 检查 d：幂等根就绪（真仓 data/ 存在且可读，只读不 mkdir）
 # ---------------------------------------------------------------------------
 
+
 def check_d_data_root(repo_root: Path) -> Tuple[str, str]:
-    data = _first_existing(Path(repo_root), (_AP_DIR, "data"), ("data",)) \
-        or (Path(repo_root) / "data")
+    data = _first_existing(Path(repo_root), (_AP_DIR, "data"), ("data",)) or (
+        Path(repo_root) / "data"
+    )
     if not data.exists():
-        return FAIL, "真仓数据根不存在：%s（17:10 run 无处落账，run_shadow.py:64）" % data
+        return (
+            FAIL,
+            "真仓数据根不存在：%s（17:10 run 无处落账，run_shadow.py:64）" % data,
+        )
     try:
         entries = os.listdir(data)
     except Exception as exc:  # noqa: BLE001
-        return WARN, ("数据根不可读（%s：%s）→ 检查目录权限/被占用；不排除则 "
-                      "17:10 run 无处落账（run_shadow.py:64），报 lead 定夺"
-                      % (data, str(exc)[:80]))
+        return WARN, (
+            "数据根不可读（%s：%s）→ 检查目录权限/被占用；不排除则 "
+            "17:10 run 无处落账（run_shadow.py:64），报 lead 定夺"
+            % (data, str(exc)[:80])
+        )
     parts = ["数据根可读（%d 项）" % len(entries)]
     shadow = data / "shadow"
     if shadow.is_dir():
@@ -641,8 +746,8 @@ def check_e_code_importable(repo_root: Path) -> Tuple[str, str]:
     不降级为 WARN —— 这类问题到 17:10 就是硬失败，没有「到点复查」的余地。
     """
     root = Path(repo_root).resolve()  # 必须 resolve：下面 subprocess 传 cwd=str(root)，
-                                      # 若 root 为相对路径，子进程会把它与 cwd 二次拼接
-                                      # （agent_platform/agent_platform/x.py）导致假 FAIL。
+    # 若 root 为相对路径，子进程会把它与 cwd 二次拼接
+    # （agent_platform/agent_platform/x.py）导致假 FAIL。
     py = sys.executable
     parts = []
     fails = []
@@ -655,10 +760,15 @@ def check_e_code_importable(repo_root: Path) -> Tuple[str, str]:
             continue
         proc = subprocess.run(
             [py, "-X", "utf8", "-m", "py_compile", str(src)],
-            capture_output=True, timeout=CODE_IMPORT_TIMEOUT_S, cwd=str(root))
+            capture_output=True,
+            timeout=CODE_IMPORT_TIMEOUT_S,
+            cwd=str(root),
+        )
         if proc.returncode != 0:
-            fails.append("%s 语法编译失败：%s" % (
-                name, proc.stderr.decode("utf-8", errors="replace")[-160:].strip()))
+            fails.append(
+                "%s 语法编译失败：%s"
+                % (name, proc.stderr.decode("utf-8", errors="replace")[-160:].strip())
+            )
         else:
             parts.append("%s 语法通过" % name)
 
@@ -673,16 +783,24 @@ def check_e_code_importable(repo_root: Path) -> Tuple[str, str]:
             probe_stmt = ("import sys; sys.path.insert(0, %r); " % _cwd) + stmt
             proc = subprocess.run(
                 [py, "-X", "utf8", "-c", probe_stmt],
-                capture_output=True, timeout=CODE_IMPORT_TIMEOUT_S, cwd=_cwd)
+                capture_output=True,
+                timeout=CODE_IMPORT_TIMEOUT_S,
+                cwd=_cwd,
+            )
             if proc.returncode != 0:
-                fails.append("%s 顶层导入失败（17:10 首跑直接 ImportError）：%s" % (
-                    name,
-                    proc.stderr.decode("utf-8", errors="replace")[-300:].strip()))
+                fails.append(
+                    "%s 顶层导入失败（17:10 首跑直接 ImportError）：%s"
+                    % (
+                        name,
+                        proc.stderr.decode("utf-8", errors="replace")[-300:].strip(),
+                    )
+                )
             else:
                 parts.append("%s 顶层导入通过（__main__ 守卫下零副作用）" % name)
         except subprocess.TimeoutExpired:
-            fails.append("%s 顶层导入超时 %ds（疑模块级阻塞）" %
-                         (name, CODE_IMPORT_TIMEOUT_S))
+            fails.append(
+                "%s 顶层导入超时 %ds（疑模块级阻塞）" % (name, CODE_IMPORT_TIMEOUT_S)
+            )
         except Exception as exc:  # noqa: BLE001  fail-visible
             fails.append("%s 导入探测自身异常：%r" % (name, exc))
 
@@ -704,8 +822,9 @@ CHECKS = (
 )
 
 
-def run_checks(repo_root, tasks_dir=None, connect_fn=None,
-               process_probe=None, aw_stack_log=None) -> dict:
+def run_checks(
+    repo_root, tasks_dir=None, connect_fn=None, process_probe=None, aw_stack_log=None
+) -> dict:
     """前置自检主入口（只读）。注入参数供测试用（不读真系统）。"""
     root = Path(repo_root)
     st, ev = check_a_tasks(tasks_dir)
@@ -717,11 +836,14 @@ def run_checks(repo_root, tasks_dir=None, connect_fn=None,
             st, ev = fn(root)
         items.append({"name": name, "status": st, "evidence": ev})
     statuses = [it["status"] for it in items]
-    return {"root": str(root), "items": items,
-            "pass": sum(1 for s in statuses if s == PASS),
-            "warn": sum(1 for s in statuses if s == WARN),
-            "fail": sum(1 for s in statuses if s == FAIL),
-            "exit_code": aggregate(statuses)}
+    return {
+        "root": str(root),
+        "items": items,
+        "pass": sum(1 for s in statuses if s == PASS),
+        "warn": sum(1 for s in statuses if s == WARN),
+        "fail": sum(1 for s in statuses if s == FAIL),
+        "exit_code": aggregate(statuses),
+    }
 
 
 def print_config() -> None:
@@ -730,13 +852,19 @@ def print_config() -> None:
     print("=" * 62)
     print("SYSTEM_TASKS_DIR = %s" % SYSTEM_TASKS_DIR)
     for spec in TASK_SPECS:
-        print("任务 %-22s 期望触发 %s  锚点 %s  结果日志 %s" % (
-            spec["name"], spec["hhmm"], " + ".join(spec["anchors"]), spec["log"]))
+        print(
+            "任务 %-22s 期望触发 %s  锚点 %s  结果日志 %s"
+            % (spec["name"], spec["hhmm"], " + ".join(spec["anchors"]), spec["log"])
+        )
     print("日志目录 = <repo-root>/%s" % "/".join(SHADOW_LOG_DIR_REL))
-    print("成功标记：last_run.log=shadow day 行 done≥1；"
-          "monday_checkpoint.log=末个 run 块 EXIT=0（[wait] 残留/进行中块未收尾"
-          "=WARN 不计 FAIL）；chief_last_run.log=SEND_OK")
-    print("Ollama = %s:%d（timeout %.0fs）" % (OLLAMA_HOST, OLLAMA_PORT, OLLAMA_TIMEOUT_S))
+    print(
+        "成功标记：last_run.log=shadow day 行 done≥1；"
+        "monday_checkpoint.log=末个 run 块 EXIT=0（[wait] 残留/进行中块未收尾"
+        "=WARN 不计 FAIL）；chief_last_run.log=SEND_OK"
+    )
+    print(
+        "Ollama = %s:%d（timeout %.0fs）" % (OLLAMA_HOST, OLLAMA_PORT, OLLAMA_TIMEOUT_S)
+    )
     print("watch-daemon 留痕 = %s" % AW_STACK_LOG)
     print("进程探测 = %s" % " ".join(PROCESS_PROBE_CMD))
 
@@ -748,19 +876,28 @@ def _print_report(rep: dict) -> None:
     for it in rep["items"]:
         print("  [%s] %s —— %s" % (it["status"], it["name"], it["evidence"]))
     print("汇总: PASS %d / WARN %d / FAIL %d" % (rep["pass"], rep["warn"], rep["fail"]))
-    verdict = {0: "无 FAIL 且有 PASS——链路就绪，可放行（WARN 项按其指引到点复查；退出码 0）",
-               1: "全 WARN 无正向 PASS——探测面不可达，人工核对 --print-config（退出码 1）",
-               2: "存在 FAIL——17:10 前先查清（退出码 2）"}[rep["exit_code"]]
+    verdict = {
+        0: "无 FAIL 且有 PASS——链路就绪，可放行（WARN 项按其指引到点复查；退出码 0）",
+        1: "全 WARN 无正向 PASS——探测面不可达，人工核对 --print-config（退出码 1）",
+        2: "存在 FAIL——17:10 前先查清（退出码 2）",
+    }[rep["exit_code"]]
     print("结论: %s" % verdict)
 
 
 def main(argv: Optional[List[str]] = None) -> int:
     ap = argparse.ArgumentParser(
-        description="周一外部触发链前置自检（只读，零写面，fail-visible）")
-    ap.add_argument("--repo-root", required=True,
-                    help="agent_platform 根（显式必填——显式 root 纪律）")
-    ap.add_argument("--print-config", action="store_true",
-                    help="只打印任务名/日志路径等配置常量后退出，不做检查")
+        description="周一外部触发链前置自检（只读，零写面，fail-visible）"
+    )
+    ap.add_argument(
+        "--repo-root",
+        required=True,
+        help="agent_platform 根（显式必填——显式 root 纪律）",
+    )
+    ap.add_argument(
+        "--print-config",
+        action="store_true",
+        help="只打印任务名/日志路径等配置常量后退出，不做检查",
+    )
     args = ap.parse_args(argv)
     if args.print_config:
         print_config()

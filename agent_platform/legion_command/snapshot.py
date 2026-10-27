@@ -16,7 +16,7 @@ _PLATFORM = Path(__file__).resolve().parents[1]
 if str(_PLATFORM) not in sys.path:
     sys.path.insert(0, str(_PLATFORM))
 
-SCHEMA_VERSION = "1.2"   # S34: agents 增 has_profile/lead_profiled/seats_*
+SCHEMA_VERSION = "1.2"  # S34: agents 增 has_profile/lead_profiled/seats_*
 
 # 在途工单归属规则（版本化）：tasks.json 的 owner 多为 unknown-agent，
 # 按 key 前缀 / 描述关键词把任务归到部门与席位，让沙盘能显示"谁在干什么"。
@@ -74,8 +74,9 @@ def _project_dept_map(root: Path) -> dict:
     return out
 
 
-def _map_task(key: str, desc: str, project: str = "",
-              project_dept: dict | None = None) -> tuple:
+def _map_task(
+    key: str, desc: str, project: str = "", project_dept: dict | None = None
+) -> tuple:
     """返回 (dept_id, agent_id) 或 ("", "")。命中即停（顺序即优先级）。
 
     规则未命中时按任务登记的 project 查项目注册表 dept（有据可依，不猜前缀）。
@@ -119,14 +120,18 @@ def build_snapshot(platform_dir: Path | None = None) -> dict:
     root = Path(platform_dir) if platform_dir else _PLATFORM
     org = _load_json(root / "registry" / "org.json")
     if not isinstance(org, dict):
-        return {"schema_version": SCHEMA_VERSION, "ok": False,
-                "error": "org.json missing or corrupt"}
+        return {
+            "schema_version": SCHEMA_VERSION,
+            "ok": False,
+            "error": "org.json missing or corrupt",
+        }
 
     lead_cache: dict[str, str] = {}
     # 统一取档口径（S42）：档案可能在部门表 / 顶层 chief / team_*.json。
     # 指挥台若只认部门表，邓芝（DENGZHI1，档案在 team_comm.json）会被画成"无档"虚线——
     # 展示层显示的和真源里的事实相反，比不显示更糟。
     from engine.org_profiles import matrix_assignments, profile_index
+
     all_prof = profile_index(root)
     matrix_by_dept = matrix_assignments(org)
     departments = []
@@ -146,10 +151,12 @@ def build_snapshot(platform_dir: Path | None = None) -> dict:
                 prof_by_id[aid] = p
         for _aid, _m in (matrix_by_dept.get(did, {}) or {}).items():
             if _aid not in prof_by_id:
-                prof_by_id[_aid] = {"agent_id": _aid,
-                                    "role_profile": _m.get("role_profile", ""),
-                                    "llm_binding": _m.get("llm_binding", ""),
-                                    "_matrix": True}
+                prof_by_id[_aid] = {
+                    "agent_id": _aid,
+                    "role_profile": _m.get("role_profile", ""),
+                    "llm_binding": _m.get("llm_binding", ""),
+                    "_matrix": True,
+                }
         listed = [str(x) for x in (d.get("agents") or [])]
         ordered = listed + [a for a in prof_by_id if a not in listed]
         agents = []
@@ -158,31 +165,42 @@ def build_snapshot(platform_dir: Path | None = None) -> dict:
                 continue
             p = prof_by_id.get(aid)
             ext = all_prof.get(aid) or {}
-            agents.append({
-                "id": aid,
-                # 名字优先级：hr 名册 > 档案自带 name（team_comm.json 写着「邓芝」，
-                # 但 DENGZHI1 没有 hr 目录；只认 hr 就会在指挥台上显示成 id）。
-                "cn": (_cn_name(aid) or ext.get("cn_name") or aid),
-                "binding": (p.get("llm_binding") if p else "") or ext.get("llm_binding", ""),
-                "role": (p.get("role_profile") or "") if p else "",
-                "has_profile": (p is not None) or bool(ext),
-                # 档案不在部门表时如实标出来源，前端可据此提示「档案登记在别处」
-                "profile_source": ("matrix" if (p is not None and p.get("_matrix"))
-                                   else "dept" if p is not None
-                                   else (ext.get("source_detail") or "")),
-            })
-        departments.append({
-            "id": did,
-            "name": d.get("name") or did,
-            "cn_title": d.get("cn_title") or "",
-            "lead": lead_cache.get(lead_id, "") if lead_id else "",
-            "lead_id": lead_id,
-            "lead_profiled": (lead_id in prof_by_id or lead_id in all_prof) if lead_id else False,
-            "status": d.get("status") or "",
-            "agents": agents,
-            "seats_listed": len(listed),
-            "seats_profiled": len(prof_by_id),
-        })
+            agents.append(
+                {
+                    "id": aid,
+                    # 名字优先级：hr 名册 > 档案自带 name（team_comm.json 写着「邓芝」，
+                    # 但 DENGZHI1 没有 hr 目录；只认 hr 就会在指挥台上显示成 id）。
+                    "cn": (_cn_name(aid) or ext.get("cn_name") or aid),
+                    "binding": (p.get("llm_binding") if p else "")
+                    or ext.get("llm_binding", ""),
+                    "role": (p.get("role_profile") or "") if p else "",
+                    "has_profile": (p is not None) or bool(ext),
+                    # 档案不在部门表时如实标出来源，前端可据此提示「档案登记在别处」
+                    "profile_source": (
+                        "matrix"
+                        if (p is not None and p.get("_matrix"))
+                        else "dept"
+                        if p is not None
+                        else (ext.get("source_detail") or "")
+                    ),
+                }
+            )
+        departments.append(
+            {
+                "id": did,
+                "name": d.get("name") or did,
+                "cn_title": d.get("cn_title") or "",
+                "lead": lead_cache.get(lead_id, "") if lead_id else "",
+                "lead_id": lead_id,
+                "lead_profiled": (lead_id in prof_by_id or lead_id in all_prof)
+                if lead_id
+                else False,
+                "status": d.get("status") or "",
+                "agents": agents,
+                "seats_listed": len(listed),
+                "seats_profiled": len(prof_by_id),
+            }
+        )
 
     tasks = _load_json(root.parent / ".worktrees" / "tasks.json")
     project_dept = _project_dept_map(root)
@@ -190,13 +208,18 @@ def build_snapshot(platform_dir: Path | None = None) -> dict:
     if isinstance(tasks, dict):
         for k, v in tasks.items():
             if isinstance(v, dict) and v.get("status") == "doing":
-                dept, agent = _map_task(k, v.get("desc", ""),
-                                        v.get("project") or "", project_dept)
-                doing.append({"key": k,
-                              "desc": str(v.get("desc", ""))[:80],
-                              "owner": v.get("owner", ""),
-                              "dept": dept,
-                              "agent": agent})
+                dept, agent = _map_task(
+                    k, v.get("desc", ""), v.get("project") or "", project_dept
+                )
+                doing.append(
+                    {
+                        "key": k,
+                        "desc": str(v.get("desc", ""))[:80],
+                        "owner": v.get("owner", ""),
+                        "dept": dept,
+                        "agent": agent,
+                    }
+                )
 
     by_dept: dict = {}
     by_agent: dict = {}
@@ -214,9 +237,13 @@ def build_snapshot(platform_dir: Path | None = None) -> dict:
     if isinstance(schedules, list):
         for r in schedules:
             if r.get("enabled"):
-                sched.append({"id": r.get("id") or r.get("name"),
-                              "spec": r.get("cron") or r.get("spec"),
-                              "desc": str(r.get("desc", ""))[:60]})
+                sched.append(
+                    {
+                        "id": r.get("id") or r.get("name"),
+                        "spec": r.get("cron") or r.get("spec"),
+                        "desc": str(r.get("desc", ""))[:60],
+                    }
+                )
 
     total_agents = sum(len(x["agents"]) for x in departments)
     return {
@@ -234,10 +261,12 @@ def build_snapshot(platform_dir: Path | None = None) -> dict:
             "binding": (org.get("chief") or {}).get("llm_binding", ""),
         },
         "departments": departments,
-        "activity": {"doing": doing,
-                     "by_dept": by_dept,
-                     "by_agent": by_agent,
-                     "unmapped": unmapped,
-                     "rules_version": ACTIVITY_RULES_VERSION},
+        "activity": {
+            "doing": doing,
+            "by_dept": by_dept,
+            "by_agent": by_agent,
+            "unmapped": unmapped,
+            "rules_version": ACTIVITY_RULES_VERSION,
+        },
         "schedules": sched,
     }

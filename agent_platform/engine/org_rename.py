@@ -90,7 +90,10 @@ def _roster(root: Path) -> dict:
         org = {}
     for d in org.get("departments") or []:
         for p in d.get("agent_profiles") or []:
-            add((p.get("persona") or {}).get("name") or p.get("cn_name"), p.get("agent_id"))
+            add(
+                (p.get("persona") or {}).get("name") or p.get("cn_name"),
+                p.get("agent_id"),
+            )
     chief = org.get("chief") or {}
     if isinstance(chief, dict):
         add(chief.get("name"), chief.get("agent_id"))
@@ -116,9 +119,16 @@ def _known_ids(root: Path) -> set:
     return ids
 
 
-def build_rename_plan(root: Path, *, agent_id: str, new_cn: str,
-                      ticket: str = "", signed_by: str = "", reason: str = "",
-                      also_team: bool = False) -> dict:
+def build_rename_plan(
+    root: Path,
+    *,
+    agent_id: str,
+    new_cn: str,
+    ticket: str = "",
+    signed_by: str = "",
+    reason: str = "",
+    also_team: bool = False,
+) -> dict:
     """计划。`cur` 为空时是**授名**（原本三处都没有人名），不是改名。
 
     `also_team`：团队文件里那个 name 若确实是人名（只是写错了/是旧名），
@@ -138,8 +148,10 @@ def build_rename_plan(root: Path, *, agent_id: str, new_cn: str,
     if cn and roster.get(cn):
         others = [x for x in roster[cn] if x != aid]
         if others:
-            raise RenameError("中文名 %r 已被 %s 占用（重名消歧不能造出新重名）"
-                              % (cn, ", ".join(others)))
+            raise RenameError(
+                "中文名 %r 已被 %s 占用（重名消歧不能造出新重名）"
+                % (cn, ", ".join(others))
+            )
     if cn == cur:
         raise RenameError("%s 的中文名已是 %r，无需改名" % (aid, cn))
     if not (ticket or "").strip() or not _TICKET_RE.match(ticket.strip()):
@@ -150,8 +162,14 @@ def build_rename_plan(root: Path, *, agent_id: str, new_cn: str,
     targets = []
     hr_f = root / "hr" / aid / "resume.yaml"
     if hr_f.exists():
-        targets.append({"file": str(hr_f.relative_to(root)), "where": "hr.resume.cn_name",
-                        "from": _read_cn_from_resume(hr_f), "to": cn})
+        targets.append(
+            {
+                "file": str(hr_f.relative_to(root)),
+                "where": "hr.resume.cn_name",
+                "from": _read_cn_from_resume(hr_f),
+                "to": cn,
+            }
+        )
     org_p = _registry(root) / "org.json"
     try:
         org_txt = org_p.read_text(encoding="utf-8")
@@ -164,18 +182,33 @@ def build_rename_plan(root: Path, *, agent_id: str, new_cn: str,
                 continue
             pn = (p.get("persona") or {}).get("name")
             if pn:
-                targets.append({"file": "registry/org.json",
-                                "where": "dept:%s.persona.name" % d.get("dept"),
-                                "from": pn, "to": cn})
+                targets.append(
+                    {
+                        "file": "registry/org.json",
+                        "where": "dept:%s.persona.name" % d.get("dept"),
+                        "from": pn,
+                        "to": cn,
+                    }
+                )
             if p.get("cn_name"):
-                targets.append({"file": "registry/org.json",
-                                "where": "dept:%s.cn_name" % d.get("dept"),
-                                "from": p.get("cn_name"), "to": cn})
+                targets.append(
+                    {
+                        "file": "registry/org.json",
+                        "where": "dept:%s.cn_name" % d.get("dept"),
+                        "from": p.get("cn_name"),
+                        "to": cn,
+                    }
+                )
             if not pn and not p.get("cn_name"):
                 # 授名：档案里一个字都没有，需要**新增** cn_name，否则名字写不进去
-                targets.append({"file": "registry/org.json",
-                                "where": "dept:%s.cn_name(新增)" % d.get("dept"),
-                                "from": "", "to": cn})
+                targets.append(
+                    {
+                        "file": "registry/org.json",
+                        "where": "dept:%s.cn_name(新增)" % d.get("dept"),
+                        "from": "",
+                        "to": cn,
+                    }
+                )
     reg = _registry(root)
     if reg.exists():
         for f in sorted(reg.glob("team_*.json")):
@@ -191,18 +224,31 @@ def build_rename_plan(root: Path, *, agent_id: str, new_cn: str,
                 if str(a.get("agent_id")) != aid or not nm:
                     continue
                 if (cur and nm == cur) or (also_team and not cur):
-                    targets.append({"file": "registry/%s" % f.name,
-                                    "where": "agents[].name", "from": nm, "to": cn})
+                    targets.append(
+                        {
+                            "file": "registry/%s" % f.name,
+                            "where": "agents[].name",
+                            "from": nm,
+                            "to": cn,
+                        }
+                    )
     if not targets:
         raise RenameError("%s 在 hr/org/team 三处都没有中文名记录，无从改名" % aid)
 
-    return {"rules_version": RULES_VERSION, "mode": "rename_cn", "agent_id": aid,
-            "from_cn": cur, "to_cn": cn,
-            "action": "clear" if not cn else ("rename" if cur else "name"),
-            "also_team": bool(also_team),
-            "targets": targets, "ticket": ticket.strip(), "signed_by": signed_by.strip(),
-            "reason": (reason or "").strip(),
-            "note": "dry-run 改名计划：未写入任何字节"}
+    return {
+        "rules_version": RULES_VERSION,
+        "mode": "rename_cn",
+        "agent_id": aid,
+        "from_cn": cur,
+        "to_cn": cn,
+        "action": "clear" if not cn else ("rename" if cur else "name"),
+        "also_team": bool(also_team),
+        "targets": targets,
+        "ticket": ticket.strip(),
+        "signed_by": signed_by.strip(),
+        "reason": (reason or "").strip(),
+        "note": "dry-run 改名计划：未写入任何字节",
+    }
 
 
 def _apply_org(root: Path, aid: str, new_cn: str) -> None:
@@ -227,8 +273,9 @@ def _apply_org(root: Path, aid: str, new_cn: str) -> None:
     tmp.replace(p)
 
 
-def _apply_team(root: Path, aid: str, new_cn: str, old_cn: str = "",
-                force: bool = False) -> None:
+def _apply_team(
+    root: Path, aid: str, new_cn: str, old_cn: str = "", force: bool = False
+) -> None:
     for f in sorted(_registry(root).glob("team_*.json")):
         try:
             t = json.loads(f.read_text(encoding="utf-8"))
@@ -246,7 +293,9 @@ def _apply_team(root: Path, aid: str, new_cn: str, old_cn: str = "",
                 hit = True
         if hit:
             tmp = f.with_suffix(".json.tmp")
-            tmp.write_text(json.dumps(t, ensure_ascii=False, indent=2), encoding="utf-8")
+            tmp.write_text(
+                json.dumps(t, ensure_ascii=False, indent=2), encoding="utf-8"
+            )
             tmp.replace(f)
 
 
@@ -274,11 +323,12 @@ def _apply_hr(root: Path, aid: str, new_cn: str) -> None:
 
 def apply_rename_plan(root: Path, plan: dict, *, signed_by: str) -> dict:
     if (signed_by or "").strip() != plan.get("signed_by"):
-        raise RenameError("放行人与计划不一致：plan=%r apply=%r"
-                          % (plan.get("signed_by"), signed_by))
+        raise RenameError(
+            "放行人与计划不一致：plan=%r apply=%r" % (plan.get("signed_by"), signed_by)
+        )
     aid, new_cn = plan["agent_id"], plan["to_cn"]
 
-    roster_before = _roster(root)                    # 改名前的名册快照
+    roster_before = _roster(root)  # 改名前的名册快照
     bdir = _registry(root) / "backups"
     # 显式映射 rel → 备份路径。**不能靠文件名前缀去猜**：两个同前缀文件会串档，
     # 回滚时可能把 A 的备份写进 B。
@@ -295,17 +345,25 @@ def apply_rename_plan(root: Path, plan: dict, *, signed_by: str) -> dict:
     try:
         _apply_hr(root, aid, new_cn)
         _apply_org(root, aid, new_cn)
-        _apply_team(root, aid, new_cn, plan["from_cn"], force=bool(plan.get("also_team")))
+        _apply_team(
+            root, aid, new_cn, plan["from_cn"], force=bool(plan.get("also_team"))
+        )
         _selfcheck(root, aid, new_cn, roster_before)
     except RenameError:
         for rel, bak in backups.items():
             shutil.copy2(bak, root / rel)
         raise
 
-    return {"rules_version": RULES_VERSION, "ok": True, "mode": "rename_cn",
-            "agent_id": aid, "from_cn": plan["from_cn"], "to_cn": new_cn,
-            "backups": sorted(backups.values()),
-            "note": "中文名已同步 hr/org/team 三处并自检通过；回滚见 backups"}
+    return {
+        "rules_version": RULES_VERSION,
+        "ok": True,
+        "mode": "rename_cn",
+        "agent_id": aid,
+        "from_cn": plan["from_cn"],
+        "to_cn": new_cn,
+        "backups": sorted(backups.values()),
+        "note": "中文名已同步 hr/org/team 三处并自检通过；回滚见 backups",
+    }
 
 
 def _selfcheck(root: Path, aid: str, new_cn: str, roster_before: dict) -> None:
@@ -322,7 +380,9 @@ def _selfcheck(root: Path, aid: str, new_cn: str, roster_before: dict) -> None:
     got = names_of(roster_after, aid)
     if new_cn:
         if got != {new_cn}:
-            raise RenameError("自检失败：%s 的中文名未变为 %r（当前 %r）" % (aid, new_cn, sorted(got)))
+            raise RenameError(
+                "自检失败：%s 的中文名未变为 %r（当前 %r）" % (aid, new_cn, sorted(got))
+            )
     elif got:
         raise RenameError("自检失败：%s 应已去名，实际仍为 %r" % (aid, sorted(got)))
     # 其他席位一个名字都不许动
@@ -330,20 +390,32 @@ def _selfcheck(root: Path, aid: str, new_cn: str, roster_before: dict) -> None:
         if other == aid:
             continue
         if names_of(roster_after, other) != names_of(roster_before, other):
-            raise RenameError("自检失败：非目标席位 %s 的名字被改动（%r → %r）"
-                              % (other, sorted(names_of(roster_before, other)),
-                                 sorted(names_of(roster_after, other))))
+            raise RenameError(
+                "自检失败：非目标席位 %s 的名字被改动（%r → %r）"
+                % (
+                    other,
+                    sorted(names_of(roster_before, other)),
+                    sorted(names_of(roster_after, other)),
+                )
+            )
 
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="中文名迁移（默认 dry-run）")
     ap.add_argument("--root", default=str(Path(__file__).resolve().parents[1]))
     ap.add_argument("--id", dest="agent_id", required=False)
-    ap.add_argument("--name", dest="new_cn", default="",
-                    help="新中文名；留空表示去名（纯工程组件不占人名）")
+    ap.add_argument(
+        "--name",
+        dest="new_cn",
+        default="",
+        help="新中文名；留空表示去名（纯工程组件不占人名）",
+    )
     ap.add_argument("--clear", action="store_true", help="显式去名（等同 --name 空）")
-    ap.add_argument("--also-team", action="store_true",
-                    help="授名时同时覆盖 team 文件里的 name（该 name 确是人名、只是写错或旧名时用）")
+    ap.add_argument(
+        "--also-team",
+        action="store_true",
+        help="授名时同时覆盖 team 文件里的 name（该 name 确是人名、只是写错或旧名时用）",
+    )
     ap.add_argument("--ticket", default="")
     ap.add_argument("--signed-by", default="")
     ap.add_argument("--reason", default="")
@@ -355,23 +427,40 @@ def main(argv=None) -> int:
         if args.roster:
             roster = _roster(root)
             dups = {k: v for k, v in roster.items() if len(v) > 1}
-            print(json.dumps({"names": len(roster), "duplicates": dups},
-                             ensure_ascii=False, indent=1))
+            print(
+                json.dumps(
+                    {"names": len(roster), "duplicates": dups},
+                    ensure_ascii=False,
+                    indent=1,
+                )
+            )
             return 0
         if not args.agent_id:
             print("缺少 --id", file=sys.stderr)
             return 2
-        plan = build_rename_plan(root, agent_id=args.agent_id,
-                                 new_cn="" if args.clear else args.new_cn,
-                                 ticket=args.ticket, signed_by=args.signed_by,
-                                 reason=args.reason, also_team=args.also_team)
+        plan = build_rename_plan(
+            root,
+            agent_id=args.agent_id,
+            new_cn="" if args.clear else args.new_cn,
+            ticket=args.ticket,
+            signed_by=args.signed_by,
+            reason=args.reason,
+            also_team=args.also_team,
+        )
         if not args.apply:
             print(json.dumps(plan, ensure_ascii=False, indent=1))
-            print("\n【dry-run】以上为改名计划，未写入任何字节。确认无误加 --apply 执行。",
-                  file=sys.stderr)
+            print(
+                "\n【dry-run】以上为改名计划，未写入任何字节。确认无误加 --apply 执行。",
+                file=sys.stderr,
+            )
             return 0
-        print(json.dumps(apply_rename_plan(root, plan, signed_by=args.signed_by),
-                         ensure_ascii=False, indent=1))
+        print(
+            json.dumps(
+                apply_rename_plan(root, plan, signed_by=args.signed_by),
+                ensure_ascii=False,
+                indent=1,
+            )
+        )
         return 0
     except RenameError as e:
         print("改名校验失败：%s" % e, file=sys.stderr)

@@ -24,51 +24,62 @@ SPEC.loader.exec_module(bf)
 NOW = time.mktime(time.strptime("2026-10-20 17:55:00", "%Y-%m-%d %H:%M:%S"))
 OLD = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(NOW - 4 * 86400))
 
-SKEL_DEV = "\n".join([
-    "# 研发部 晨会 2026-10-20（主持：ARCH1）",
-    "**与会**：DEV7、DEV8、ARCH1",
-    "## 一、昨日完成（读复盘卡）",
-    "- DEV7（DEV7）：✅ 有任务｜attr_granted",
-    "- DEV8（DEV8）：❌ 今日无任务｜—",
-    "- ARCH1（ARCH1）：✅ 有任务｜dept_daily_report",
-    "## 二、今日任务（排程+派单）",
-    "- （无排程/在途单——部长现场派单或成员领单）",
-    "## 三、阻塞求助（超期/依赖）",
-    "- 无阻塞",
-    "## 四、决议与教训（会后人填/提炼器自动回填）",
-    "- decisions:（待填）",
-    "- lessons:（待填——须可证伪可复用，部务会拍板后入知识环）",
-]) + "\n"
+SKEL_DEV = (
+    "\n".join(
+        [
+            "# 研发部 晨会 2026-10-20（主持：ARCH1）",
+            "**与会**：DEV7、DEV8、ARCH1",
+            "## 一、昨日完成（读复盘卡）",
+            "- DEV7（DEV7）：✅ 有任务｜attr_granted",
+            "- DEV8（DEV8）：❌ 今日无任务｜—",
+            "- ARCH1（ARCH1）：✅ 有任务｜dept_daily_report",
+            "## 二、今日任务（排程+派单）",
+            "- （无排程/在途单——部长现场派单或成员领单）",
+            "## 三、阻塞求助（超期/依赖）",
+            "- 无阻塞",
+            "## 四、决议与教训（会后人填/提炼器自动回填）",
+            "- decisions:（待填）",
+            "- lessons:（待填——须可证伪可复用，部务会拍板后入知识环）",
+        ]
+    )
+    + "\n"
+)
 
-SKEL_ACADEMY = (SKEL_DEV
-                .replace("研发部", "研究院")
-                .replace("2026-10-20_dev_晨会", "2026-10-20_academy_晨会")
-                .replace("## 四、决议与教训", "## 五、决议与教训"))
+SKEL_ACADEMY = (
+    SKEL_DEV.replace("研发部", "研究院")
+    .replace("2026-10-20_dev_晨会", "2026-10-20_academy_晨会")
+    .replace("## 四、决议与教训", "## 五、决议与教训")
+)
 
 
 def _tmp():
     return tempfile.TemporaryDirectory()
 
 
-def make_fixture(root: Path, tasks: dict, cards: dict, summary=None, corps="",
-                 skeletons=None) -> Path:
+def make_fixture(
+    root: Path, tasks: dict, cards: dict, summary=None, corps="", skeletons=None
+) -> Path:
     meet = root / "agent_platform" / "data" / "meetings"
     rev = root / "agent_platform" / "data" / "daily_review" / "2026-10-20"
     (root / ".worktrees").mkdir(parents=True)
     meet.mkdir(parents=True)
     rev.mkdir(parents=True)
     (root / ".worktrees" / "tasks.json").write_text(
-        json.dumps(tasks, ensure_ascii=False), encoding="utf-8")
+        json.dumps(tasks, ensure_ascii=False), encoding="utf-8"
+    )
     if summary is not None:
-        (rev / "_summary.json").write_text(json.dumps(summary, ensure_ascii=False),
-                                           encoding="utf-8")
+        (rev / "_summary.json").write_text(
+            json.dumps(summary, ensure_ascii=False), encoding="utf-8"
+        )
     for aid, text in cards.items():
         (rev / ("%s.md" % aid)).write_text(text, encoding="utf-8")
     if corps:
         (rev / "_corps_daily.md").write_text(corps, encoding="utf-8")
     for name, text in (skeletons or {}).items():
         (meet / name).write_text(text, encoding="utf-8")
-    return meet / next(iter(skeletons)) if skeletons else meet / "2026-10-20_dev_晨会.md"
+    return (
+        meet / next(iter(skeletons)) if skeletons else meet / "2026-10-20_dev_晨会.md"
+    )
 
 
 def draft_text(path: Path) -> str:
@@ -100,13 +111,25 @@ def test_ok_dept_with_warn_and_card():
         path = make_fixture(
             root,
             tasks={
-                "K-TEST-001": {"status": "done", "created": "2026-10-19"},  # 军团级空壳 WARN
-                "K-TEST-002": {"status": "doing", "created": OLD,
-                               "desc": "某任务 [DEV7]"},  # 部门级超期
+                "K-TEST-001": {
+                    "status": "done",
+                    "created": "2026-10-19",
+                },  # 军团级空壳 WARN
+                "K-TEST-002": {
+                    "status": "doing",
+                    "created": OLD,
+                    "desc": "某任务 [DEV7]",
+                },  # 部门级超期
             },
-            cards={"DEV7": "# DEV7 每日复盘 2026-10-20\n\n**③ 我的进化**：固化重复动作为工具。\n"},
-            summary={"day": "2026-10-20", "n": 1, "no_task": [],
-                     "depts": {"dev": {"n": 1, "no_task": []}}},
+            cards={
+                "DEV7": "# DEV7 每日复盘 2026-10-20\n\n**③ 我的进化**：固化重复动作为工具。\n"
+            },
+            summary={
+                "day": "2026-10-20",
+                "n": 1,
+                "no_task": [],
+                "depts": {"dev": {"n": 1, "no_task": []}},
+            },
             skeletons={"2026-10-20_dev_晨会.md": SKEL_DEV},
         )
         rep = bf.run("2026-10-20", root=root, now=NOW)
@@ -136,9 +159,15 @@ def test_inconclusive_zero_material():
     with _tmp() as root:
         root = Path(root)
         path = make_fixture(
-            root, tasks={}, cards={},
-            summary={"day": "2026-10-20", "n": 0, "no_task": [],
-                     "depts": {"dev": {"n": 0, "no_task": []}}},
+            root,
+            tasks={},
+            cards={},
+            summary={
+                "day": "2026-10-20",
+                "n": 0,
+                "no_task": [],
+                "depts": {"dev": {"n": 0, "no_task": []}},
+            },
             skeletons={"2026-10-20_dev_晨会.md": SKEL_DEV},
         )
         rep = bf.run("2026-10-20", root=root, now=NOW, write=True)
@@ -156,8 +185,12 @@ def test_degraded_summary_count_mismatch():
             root,
             tasks={},
             cards={"DEV7": "# DEV7 每日复盘\n\n**③ 我的进化**：x。\n"},
-            summary={"day": "2026-10-20", "n": 5, "no_task": [],
-                     "depts": {"dev": {"n": 1, "no_task": []}}},
+            summary={
+                "day": "2026-10-20",
+                "n": 5,
+                "no_task": [],
+                "depts": {"dev": {"n": 1, "no_task": []}},
+            },
             skeletons={"2026-10-20_dev_晨会.md": SKEL_DEV},
         )
         rep = bf.run("2026-10-20", root=root, now=NOW, write=True)
@@ -190,7 +223,9 @@ def test_idempotent_skip_after_backfill():
     with _tmp() as root:
         root = Path(root)
         path = make_fixture(
-            root, tasks={}, cards={},
+            root,
+            tasks={},
+            cards={},
             summary={"day": "2026-10-20", "n": 0, "no_task": [], "depts": {}},
             skeletons={"2026-10-20_dev_晨会.md": SKEL_DEV},
         )
@@ -206,9 +241,15 @@ def test_academy_fifth_section_located_by_title():
     with _tmp() as root:
         root = Path(root)
         path = make_fixture(
-            root, tasks={}, cards={},
-            summary={"day": "2026-10-20", "n": 0, "no_task": [],
-                     "depts": {"academy": {"n": 0, "no_task": []}}},
+            root,
+            tasks={},
+            cards={},
+            summary={
+                "day": "2026-10-20",
+                "n": 0,
+                "no_task": [],
+                "depts": {"academy": {"n": 0, "no_task": []}},
+            },
             skeletons={"2026-10-20_academy_晨会.md": SKEL_ACADEMY},
         )
         rep = bf.run("2026-10-20", root=root, now=NOW, write=True)
@@ -224,9 +265,15 @@ def test_banned_word_positive_control_rejected():
         path = make_fixture(
             root,
             tasks={},
-            cards={"DEV7": "# DEV7 每日复盘 2026-10-20\n\n**③ 我的进化**：%s。\n" % bad},
-            summary={"day": "2026-10-20", "n": 1, "no_task": [],
-                     "depts": {"dev": {"n": 1, "no_task": []}}},
+            cards={
+                "DEV7": "# DEV7 每日复盘 2026-10-20\n\n**③ 我的进化**：%s。\n" % bad
+            },
+            summary={
+                "day": "2026-10-20",
+                "n": 1,
+                "no_task": [],
+                "depts": {"dev": {"n": 1, "no_task": []}},
+            },
             skeletons={"2026-10-20_dev_晨会.md": SKEL_DEV},
         )
         bf.run("2026-10-20", root=root, now=NOW, write=True)
@@ -245,8 +292,12 @@ def test_lessons_candidate_from_card_and_corps():
             root,
             tasks={},
             cards={"DEV7": "# DEV7 每日复盘\n\n**③ 我的进化**：" + "长" * 60 + "。\n"},
-            summary={"day": "2026-10-20", "n": 2, "no_task": ["DEV8"],
-                     "depts": {"dev": {"n": 2, "no_task": ["DEV8"]}}},
+            summary={
+                "day": "2026-10-20",
+                "n": 2,
+                "no_task": ["DEV8"],
+                "depts": {"dev": {"n": 2, "no_task": ["DEV8"]}},
+            },
             corps="## dev（ARCH1）\ndev日报：催办 DEV8明日领单。\n",
             skeletons={"2026-10-20_dev_晨会.md": SKEL_DEV},
         )
@@ -265,7 +316,9 @@ def test_zero_auto_finalize_boundary():
     with _tmp() as root:
         root = Path(root)
         path = make_fixture(
-            root, tasks={}, cards={},
+            root,
+            tasks={},
+            cards={},
             summary={"day": "2026-10-20", "n": 0, "no_task": [], "depts": {}},
             skeletons={"2026-10-20_dev_晨会.md": SKEL_DEV},
         )

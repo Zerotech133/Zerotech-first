@@ -28,7 +28,13 @@ def test_schema_six_lines():
     assert p["counts"]["seats"] == len(p["cards"]) > 0
     for c in p["cards"]:
         assert [k for k in c if k.startswith("L")] == [
-            "L1_role", "L2_doing", "L3_model", "L4_capability", "L5_boundary", "L6_gaps"]
+            "L1_role",
+            "L2_doing",
+            "L3_model",
+            "L4_capability",
+            "L5_boundary",
+            "L6_gaps",
+        ]
 
 
 def test_doing_excludes_review():
@@ -47,7 +53,9 @@ def test_unknown_prefix_is_unmapped_not_guessed():
     assert (dept, miss) == ("", True)
     p = C.build_cards(PLATFORM)
     assert all(x["dept"] == "" for x in p["doing"] if x["unmapped"])
-    assert sorted(p["unmapped"]) == sorted(x["key"] for x in p["doing"] if x["unmapped"])
+    assert sorted(p["unmapped"]) == sorted(
+        x["key"] for x in p["doing"] if x["unmapped"]
+    )
 
 
 def test_unclaimed_is_explicit():
@@ -71,14 +79,24 @@ def test_capability_three_states_never_merged():
 
 def test_ledger_can_flip_verified(tmp_path):
     lp = tmp_path / "ledger.json"
-    lp.write_text(json.dumps({"schema": "legion.capability.ledger/v1",
-                              "entries": {"A0": {"verified": True}}}), encoding="utf-8")
+    lp.write_text(
+        json.dumps(
+            {
+                "schema": "legion.capability.ledger/v1",
+                "entries": {"A0": {"verified": True}},
+            }
+        ),
+        encoding="utf-8",
+    )
     p = C.build_cards(PLATFORM, ledger_path=lp)
     a0 = [c for c in p["cards"] if c["seat"]["id"] == "A0"][0]
     assert a0["L4_capability"]["verified"] is True
     assert p["counts"]["ledger_missing"] is False
-    assert all(c["L4_capability"]["verified"] is False
-               for c in p["cards"] if c["seat"]["id"] != "A0")
+    assert all(
+        c["L4_capability"]["verified"] is False
+        for c in p["cards"]
+        if c["seat"]["id"] != "A0"
+    )
 
 
 def test_model_tier_gate():
@@ -93,12 +111,17 @@ def test_model_tier_gate():
 def test_report_chain_marks_unsigned_lead():
     p = C.build_cards(PLATFORM)
     org = json.loads(ORG.read_text(encoding="utf-8"))
-    signed = {d["dept"] for d in org["departments"]
-              if isinstance(d.get("lead_appointed"), dict) and d["lead_appointed"]}
+    signed = {
+        d["dept"]
+        for d in org["departments"]
+        if isinstance(d.get("lead_appointed"), dict) and d["lead_appointed"]
+    }
     for c in p["cards"]:
         rt = c["L5_boundary"]["report_to"]
         assert rt["chain"][-1] == "human"
-        assert rt["quality"] == ("ok" if c["seat"]["home"] in signed else "broken_at_lead")
+        assert rt["quality"] == (
+            "ok" if c["seat"]["home"] in signed else "broken_at_lead"
+        )
 
 
 def test_draft_is_never_dispatch(tmp_path):

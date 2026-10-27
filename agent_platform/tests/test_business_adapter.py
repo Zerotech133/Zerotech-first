@@ -36,64 +36,128 @@ class BusinessAdapterTests(unittest.TestCase):
     def test_missing_sources_reported_read_only(self):
         report = ba.build_business_report(self.root)
         self.assertTrue(report["read_only"])
-        self.assertEqual(report["projects"]["source_status"]["registry.projects"],
-                         "missing_source")
-        self.assertEqual(report["projects"]["source_status"]["portal.projects_registry"],
-                         "missing_source")
+        self.assertEqual(
+            report["projects"]["source_status"]["registry.projects"], "missing_source"
+        )
+        self.assertEqual(
+            report["projects"]["source_status"]["portal.projects_registry"],
+            "missing_source",
+        )
         self.assertEqual(report["academy"]["status"], "missing_source")
         self.assertEqual(report["gzh"]["status"], "missing_source")
 
     def test_project_dual_source_zero_overlap(self):
-        self._write("agent_platform/registry/projects.json", {
-            "projects": [{"project_id": "quant", "name": "量化双刀",
-                          "dept": "dev", "k_prefix": "K-STOCK",
-                          "members": ["DEV1"], "charter": "c", "status": "active"}]})
-        self._write("portal/projects_registry.json", {
-            "version": 1, "projects": [
-                {"id": "proj_data", "name": "数据底层治理", "dept_label": "B",
-                 "phase": "dev", "progress": 65, "lead": "DATA1", "summary": "s",
-                 "members": [{"id": "DATA1", "grade": "E2", "role": "r"}],
-                 "tasks": [{"t": "a", "owner": "DATA1", "st": "done"},
-                           {"t": "b", "owner": "DATA1", "st": "doing"}]}]})
+        self._write(
+            "agent_platform/registry/projects.json",
+            {
+                "projects": [
+                    {
+                        "project_id": "quant",
+                        "name": "量化双刀",
+                        "dept": "dev",
+                        "k_prefix": "K-STOCK",
+                        "members": ["DEV1"],
+                        "charter": "c",
+                        "status": "active",
+                    }
+                ]
+            },
+        )
+        self._write(
+            "portal/projects_registry.json",
+            {
+                "version": 1,
+                "projects": [
+                    {
+                        "id": "proj_data",
+                        "name": "数据底层治理",
+                        "dept_label": "B",
+                        "phase": "dev",
+                        "progress": 65,
+                        "lead": "DATA1",
+                        "summary": "s",
+                        "members": [{"id": "DATA1", "grade": "E2", "role": "r"}],
+                        "tasks": [
+                            {"t": "a", "owner": "DATA1", "st": "done"},
+                            {"t": "b", "owner": "DATA1", "st": "doing"},
+                        ],
+                    }
+                ],
+            },
+        )
         report = ba.build_business_report(self.root)
         proj = report["projects"]
         self.assertEqual(proj["registry_count"], 1)
         self.assertEqual(proj["portal_count"], 1)
         self.assertEqual(proj["matched_ids"], [])
         # portal 记录保留 phase 原样与子任务统计
-        portal_rec = next(r for r in proj["records"]
-                          if r["source"] == "portal.projects_registry")
+        portal_rec = next(
+            r for r in proj["records"] if r["source"] == "portal.projects_registry"
+        )
         self.assertEqual(portal_rec["status"], "dev")
-        self.assertEqual(portal_rec["subtask_status"], {"todo": 0, "doing": 1, "done": 1})
+        self.assertEqual(
+            portal_rec["subtask_status"], {"todo": 0, "doing": 1, "done": 1}
+        )
 
     def test_project_matched_ids_reported_not_merged(self):
-        self._write("agent_platform/registry/projects.json", {
-            "projects": [{"project_id": "quant", "name": "q", "status": "active"}]})
-        self._write("portal/projects_registry.json", {
-            "projects": [{"id": "quant", "name": "q-ui", "phase": "test"}]})
+        self._write(
+            "agent_platform/registry/projects.json",
+            {"projects": [{"project_id": "quant", "name": "q", "status": "active"}]},
+        )
+        self._write(
+            "portal/projects_registry.json",
+            {"projects": [{"id": "quant", "name": "q-ui", "phase": "test"}]},
+        )
         report = ba.build_business_report(self.root)
         proj = report["projects"]
         self.assertEqual(proj["matched_ids"], ["quant"])
         # 两源记录都保留，不合并成一条
-        self.assertEqual(len([r for r in proj["records"] if r["project_id"] == "quant"]), 2)
+        self.assertEqual(
+            len([r for r in proj["records"] if r["project_id"] == "quant"]), 2
+        )
 
     def test_academy_stage_preserved_not_remapped(self):
-        self._write("agent_platform/data/academy/research_topics.json", [
-            {"topic_id": "AC-1", "title": "T", "owner": "STRAT1",
-             "direction": "strategy_lab", "status": "intake",
-             "history": [{"x": 1}, {"x": 2}]}])
+        self._write(
+            "agent_platform/data/academy/research_topics.json",
+            [
+                {
+                    "topic_id": "AC-1",
+                    "title": "T",
+                    "owner": "STRAT1",
+                    "direction": "strategy_lab",
+                    "status": "intake",
+                    "history": [{"x": 1}, {"x": 2}],
+                }
+            ],
+        )
         report = ba.build_business_report(self.root)
         rec = report["academy"]["records"][0]
-        self.assertEqual(rec["stage"], "intake")          # 阶段机原样
+        self.assertEqual(rec["stage"], "intake")  # 阶段机原样
         self.assertEqual(rec["stage_index"], 0)
         self.assertEqual(rec["history_len"], 2)
 
     def test_gzh_md_existence_checked(self):
-        self._write("gzh/drafts/index.json", [
-            {"id": "d1", "date": "2026-10-17", "title": "A", "col": "c",
-             "status": "draft", "md": "a.md"},
-            {"id": "d2", "date": "2026-10-17", "title": "B", "col": "c",
-             "status": "published", "md": "missing.md"}])
+        self._write(
+            "gzh/drafts/index.json",
+            [
+                {
+                    "id": "d1",
+                    "date": "2026-10-17",
+                    "title": "A",
+                    "col": "c",
+                    "status": "draft",
+                    "md": "a.md",
+                },
+                {
+                    "id": "d2",
+                    "date": "2026-10-17",
+                    "title": "B",
+                    "col": "c",
+                    "status": "published",
+                    "md": "missing.md",
+                },
+            ],
+        )
         (self.root / "gzh" / "drafts" / "a.md").write_text("x", encoding="utf-8")
         report = ba.build_business_report(self.root)
         gzh = report["gzh"]
@@ -106,7 +170,8 @@ class BusinessAdapterTests(unittest.TestCase):
     def test_corrupt_json_reported_not_crash(self):
         (self.root / "gzh" / "drafts").mkdir(parents=True)
         (self.root / "gzh" / "drafts" / "index.json").write_text(
-            "{not json", encoding="utf-8")
+            "{not json", encoding="utf-8"
+        )
         report = ba.build_business_report(self.root)
         self.assertEqual(report["gzh"]["status"], "error")
 

@@ -42,9 +42,7 @@ def _audit_paper_db(db_path: Path) -> dict:
         con = sqlite3.connect("file:%s?mode=ro" % db_path.as_posix(), uri=True)
         con.row_factory = sqlite3.Row
         try:
-            rows = con.execute(
-                "SELECT ref, account_id FROM orders"
-            ).fetchall()
+            rows = con.execute("SELECT ref, account_id FROM orders").fetchall()
         finally:
             con.close()
     except sqlite3.Error as exc:
@@ -175,12 +173,10 @@ def _audit_credential_trace(root: Path) -> dict:
     }
 
     def _viol(kind, target, detail):
-        out["violations"].append(
-            {"kind": kind, "target": target, "detail": detail})
+        out["violations"].append({"kind": kind, "target": target, "detail": detail})
 
     def _warn(kind, target, detail):
-        out["warnings"].append(
-            {"kind": kind, "target": target, "detail": detail})
+        out["warnings"].append({"kind": kind, "target": target, "detail": detail})
 
     db = root / "agent_platform" / "data" / "approvals" / "approvals.db"
     by_target = {}
@@ -193,23 +189,29 @@ def _audit_credential_trace(root: Path) -> dict:
         try:
             rows = conn.execute(
                 "SELECT target_id, idempotency_key, to_status, created_at,"
-                " rowid FROM approvals ORDER BY rowid").fetchall()
+                " rowid FROM approvals ORDER BY rowid"
+            ).fetchall()
         finally:
             conn.close()
         for tid, key, to_st, cat, rid in rows:
             by_target.setdefault(tid, []).append(
-                {"key": key, "to_status": to_st, "created_at": cat,
-                 "rowid": rid})
+                {"key": key, "to_status": to_st, "created_at": cat, "rowid": rid}
+            )
 
     # --- 真源快照（单次读取，写并发下解析失败如实报告） ---
-    snapshots = []   # (domain, target_id, status, last_wiring_key)
+    snapshots = []  # (domain, target_id, status, last_wiring_key)
     gzh_path = root / "gzh" / "drafts" / "index.json"
     if gzh_path.exists():
         try:
             for it in json.loads(gzh_path.read_text(encoding="utf-8")):
-                snapshots.append(("gzh", "gzh:%s" % it.get("id"),
-                                  it.get("status"),
-                                  it.get("last_wiring_key")))
+                snapshots.append(
+                    (
+                        "gzh",
+                        "gzh:%s" % it.get("id"),
+                        it.get("status"),
+                        it.get("last_wiring_key"),
+                    )
+                )
         except (json.JSONDecodeError, OSError) as exc:
             out["status"] = "source_error"
             _viol("source_unreadable", str(gzh_path), str(exc)[:120])
@@ -217,20 +219,29 @@ def _audit_credential_trace(root: Path) -> dict:
     if inv_path.exists():
         try:
             for e in json.loads(inv_path.read_text(encoding="utf-8")):
-                snapshots.append(("invest", "invest:%s" % e.get("run_id"),
-                                  e.get("status"),
-                                  e.get("last_wiring_key")))
+                snapshots.append(
+                    (
+                        "invest",
+                        "invest:%s" % e.get("run_id"),
+                        e.get("status"),
+                        e.get("last_wiring_key"),
+                    )
+                )
         except (json.JSONDecodeError, OSError) as exc:
             out["status"] = "source_error"
             _viol("source_unreadable", str(inv_path), str(exc)[:120])
     dt_path = root / ".worktrees" / "tasks.json"
     if dt_path.exists():
         try:
-            for tid, t in json.loads(
-                    dt_path.read_text(encoding="utf-8")).items():
-                snapshots.append(("devtask", "devtask:%s" % tid,
-                                  t.get("status"),
-                                  t.get("last_wiring_key")))
+            for tid, t in json.loads(dt_path.read_text(encoding="utf-8")).items():
+                snapshots.append(
+                    (
+                        "devtask",
+                        "devtask:%s" % tid,
+                        t.get("status"),
+                        t.get("last_wiring_key"),
+                    )
+                )
         except (json.JSONDecodeError, OSError) as exc:
             out["status"] = "source_error"
             _viol("source_unreadable", str(dt_path), str(exc)[:120])
@@ -241,26 +252,36 @@ def _audit_credential_trace(root: Path) -> dict:
         if last_key:
             hit = any(c["key"] == last_key for c in (creds or []))
             if not hit:
-                _viol("trace_key_missing", target,
-                      "真源 last_wiring_key=%s 在账本中不存在" % last_key)
+                _viol(
+                    "trace_key_missing",
+                    target,
+                    "真源 last_wiring_key=%s 在账本中不存在" % last_key,
+                )
         if not creds:
             # 无凭据：仅当真源声明过消费痕迹才算异常（存量条目可无凭据）
             if last_key:
-                _viol("credential_without_entry", target,
-                      "真源声明 last_wiring_key 但账本无该 target 任何凭据")
+                _viol(
+                    "credential_without_entry",
+                    target,
+                    "真源声明 last_wiring_key 但账本无该 target 任何凭据",
+                )
             continue
         latest = creds[-1]
         if last_key and latest["key"] != last_key:
             # 最新凭据与消费标记不一致：看状态是否对齐
             if latest["to_status"] != status:
-                _warn("credential_ahead", target,
-                      "账本最新凭据 %s(to=%s) 未被真源消费(last=%s,"
-                      "status=%s)——崩溃窗口或外部改动" %
-                      (latest["key"], latest["to_status"], last_key, status))
+                _warn(
+                    "credential_ahead",
+                    target,
+                    "账本最新凭据 %s(to=%s) 未被真源消费(last=%s,"
+                    "status=%s)——崩溃窗口或外部改动"
+                    % (latest["key"], latest["to_status"], last_key, status),
+                )
 
     if out["violations"]:
-        out["status"] = ("source_error" if out["status"] == "source_error"
-                         else "violations_found")
+        out["status"] = (
+            "source_error" if out["status"] == "source_error" else "violations_found"
+        )
     elif out["status"] == "missing_source":
         # 账本缺失但真源也无消费声明 = 双侧一致（空对空），不判异常；
         # missing_source 保留为声明性字段供上层知晓数据覆盖面
@@ -274,12 +295,13 @@ def _audit_credential_trace(root: Path) -> dict:
         out["trace_style_domains"] = "not_applicable"
     else:
         import importlib
+
         for dname in ("academy", "pitch", "dev", "skill", "intel"):
             try:
                 import inspect
+
                 mod = importlib.import_module("domains.%s_wiring" % dname)
-                if "root" in inspect.signature(
-                        mod.audit_report).parameters:
+                if "root" in inspect.signature(mod.audit_report).parameters:
                     rep = mod.audit_report(root)
                 else:
                     rep = mod.audit_report()
@@ -289,20 +311,28 @@ def _audit_credential_trace(root: Path) -> dict:
                     "cross_violations": len(cross),
                 }
                 for v in cross:
-                    bucket = (out["violations"]
-                              if v.get("severity", "FAIL") == "FAIL"
-                              else out["warnings"])
-                    bucket.append({
-                        "kind": v.get("kind", "cross_check_violation"),
-                        "target": v.get("target_id"),
-                        "detail": "[%s] %s" % (dname, v.get("detail", "")),
-                    })
-                if (any(v.get("severity", "FAIL") == "FAIL" for v in cross)
-                        and out["status"] == "ok"):
+                    bucket = (
+                        out["violations"]
+                        if v.get("severity", "FAIL") == "FAIL"
+                        else out["warnings"]
+                    )
+                    bucket.append(
+                        {
+                            "kind": v.get("kind", "cross_check_violation"),
+                            "target": v.get("target_id"),
+                            "detail": "[%s] %s" % (dname, v.get("detail", "")),
+                        }
+                    )
+                if (
+                    any(v.get("severity", "FAIL") == "FAIL" for v in cross)
+                    and out["status"] == "ok"
+                ):
                     out["status"] = "violations_found"
-            except Exception as exc:   # 域缺失/接口变化如实声明，不吞
+            except Exception as exc:  # 域缺失/接口变化如实声明，不吞
                 out["trace_style_domains"][dname] = {
-                    "status": "unavailable", "error": str(exc)[:120]}
+                    "status": "unavailable",
+                    "error": str(exc)[:120],
+                }
     return out
 
 
@@ -335,12 +365,10 @@ def _audit_credential_trace(root: Path) -> dict:
     }
 
     def _viol(kind, target, detail):
-        out["violations"].append(
-            {"kind": kind, "target": target, "detail": detail})
+        out["violations"].append({"kind": kind, "target": target, "detail": detail})
 
     def _warn(kind, target, detail):
-        out["warnings"].append(
-            {"kind": kind, "target": target, "detail": detail})
+        out["warnings"].append({"kind": kind, "target": target, "detail": detail})
 
     db = root / "agent_platform" / "data" / "approvals" / "approvals.db"
     by_target = {}
@@ -353,23 +381,29 @@ def _audit_credential_trace(root: Path) -> dict:
         try:
             rows = conn.execute(
                 "SELECT target_id, idempotency_key, to_status, created_at,"
-                " rowid FROM approvals ORDER BY rowid").fetchall()
+                " rowid FROM approvals ORDER BY rowid"
+            ).fetchall()
         finally:
             conn.close()
         for tid, key, to_st, cat, rid in rows:
             by_target.setdefault(tid, []).append(
-                {"key": key, "to_status": to_st, "created_at": cat,
-                 "rowid": rid})
+                {"key": key, "to_status": to_st, "created_at": cat, "rowid": rid}
+            )
 
     # --- 真源快照（单次读取，写并发下解析失败如实报告） ---
-    snapshots = []   # (domain, target_id, status, last_wiring_key)
+    snapshots = []  # (domain, target_id, status, last_wiring_key)
     gzh_path = root / "gzh" / "drafts" / "index.json"
     if gzh_path.exists():
         try:
             for it in json.loads(gzh_path.read_text(encoding="utf-8")):
-                snapshots.append(("gzh", "gzh:%s" % it.get("id"),
-                                  it.get("status"),
-                                  it.get("last_wiring_key")))
+                snapshots.append(
+                    (
+                        "gzh",
+                        "gzh:%s" % it.get("id"),
+                        it.get("status"),
+                        it.get("last_wiring_key"),
+                    )
+                )
         except (json.JSONDecodeError, OSError) as exc:
             out["status"] = "source_error"
             _viol("source_unreadable", str(gzh_path), str(exc)[:120])
@@ -377,20 +411,29 @@ def _audit_credential_trace(root: Path) -> dict:
     if inv_path.exists():
         try:
             for e in json.loads(inv_path.read_text(encoding="utf-8")):
-                snapshots.append(("invest", "invest:%s" % e.get("run_id"),
-                                  e.get("status"),
-                                  e.get("last_wiring_key")))
+                snapshots.append(
+                    (
+                        "invest",
+                        "invest:%s" % e.get("run_id"),
+                        e.get("status"),
+                        e.get("last_wiring_key"),
+                    )
+                )
         except (json.JSONDecodeError, OSError) as exc:
             out["status"] = "source_error"
             _viol("source_unreadable", str(inv_path), str(exc)[:120])
     dt_path = root / ".worktrees" / "tasks.json"
     if dt_path.exists():
         try:
-            for tid, t in json.loads(
-                    dt_path.read_text(encoding="utf-8")).items():
-                snapshots.append(("devtask", "devtask:%s" % tid,
-                                  t.get("status"),
-                                  t.get("last_wiring_key")))
+            for tid, t in json.loads(dt_path.read_text(encoding="utf-8")).items():
+                snapshots.append(
+                    (
+                        "devtask",
+                        "devtask:%s" % tid,
+                        t.get("status"),
+                        t.get("last_wiring_key"),
+                    )
+                )
         except (json.JSONDecodeError, OSError) as exc:
             out["status"] = "source_error"
             _viol("source_unreadable", str(dt_path), str(exc)[:120])
@@ -401,26 +444,36 @@ def _audit_credential_trace(root: Path) -> dict:
         if last_key:
             hit = any(c["key"] == last_key for c in (creds or []))
             if not hit:
-                _viol("trace_key_missing", target,
-                      "真源 last_wiring_key=%s 在账本中不存在" % last_key)
+                _viol(
+                    "trace_key_missing",
+                    target,
+                    "真源 last_wiring_key=%s 在账本中不存在" % last_key,
+                )
         if not creds:
             # 无凭据：仅当真源声明过消费痕迹才算异常（存量条目可无凭据）
             if last_key:
-                _viol("credential_without_entry", target,
-                      "真源声明 last_wiring_key 但账本无该 target 任何凭据")
+                _viol(
+                    "credential_without_entry",
+                    target,
+                    "真源声明 last_wiring_key 但账本无该 target 任何凭据",
+                )
             continue
         latest = creds[-1]
         if last_key and latest["key"] != last_key:
             # 最新凭据与消费标记不一致：看状态是否对齐
             if latest["to_status"] != status:
-                _warn("credential_ahead", target,
-                      "账本最新凭据 %s(to=%s) 未被真源消费(last=%s,"
-                      "status=%s)——崩溃窗口或外部改动" %
-                      (latest["key"], latest["to_status"], last_key, status))
+                _warn(
+                    "credential_ahead",
+                    target,
+                    "账本最新凭据 %s(to=%s) 未被真源消费(last=%s,"
+                    "status=%s)——崩溃窗口或外部改动"
+                    % (latest["key"], latest["to_status"], last_key, status),
+                )
 
     if out["violations"]:
-        out["status"] = ("source_error" if out["status"] == "source_error"
-                         else "violations_found")
+        out["status"] = (
+            "source_error" if out["status"] == "source_error" else "violations_found"
+        )
     elif out["status"] == "missing_source":
         # 账本缺失但真源也无消费声明 = 双侧一致（空对空），不判异常；
         # missing_source 保留为声明性字段供上层知晓数据覆盖面
@@ -434,12 +487,13 @@ def _audit_credential_trace(root: Path) -> dict:
         out["trace_style_domains"] = "not_applicable"
     else:
         import importlib
+
         for dname in ("academy", "pitch", "dev", "skill", "intel"):
             try:
                 import inspect
+
                 mod = importlib.import_module("domains.%s_wiring" % dname)
-                if "root" in inspect.signature(
-                        mod.audit_report).parameters:
+                if "root" in inspect.signature(mod.audit_report).parameters:
                     rep = mod.audit_report(root)
                 else:
                     rep = mod.audit_report()
@@ -449,20 +503,28 @@ def _audit_credential_trace(root: Path) -> dict:
                     "cross_violations": len(cross),
                 }
                 for v in cross:
-                    bucket = (out["violations"]
-                              if v.get("severity", "FAIL") == "FAIL"
-                              else out["warnings"])
-                    bucket.append({
-                        "kind": v.get("kind", "cross_check_violation"),
-                        "target": v.get("target_id"),
-                        "detail": "[%s] %s" % (dname, v.get("detail", "")),
-                    })
-                if (any(v.get("severity", "FAIL") == "FAIL" for v in cross)
-                        and out["status"] == "ok"):
+                    bucket = (
+                        out["violations"]
+                        if v.get("severity", "FAIL") == "FAIL"
+                        else out["warnings"]
+                    )
+                    bucket.append(
+                        {
+                            "kind": v.get("kind", "cross_check_violation"),
+                            "target": v.get("target_id"),
+                            "detail": "[%s] %s" % (dname, v.get("detail", "")),
+                        }
+                    )
+                if (
+                    any(v.get("severity", "FAIL") == "FAIL" for v in cross)
+                    and out["status"] == "ok"
+                ):
                     out["status"] = "violations_found"
-            except Exception as exc:   # 域缺失/接口变化如实声明，不吞
+            except Exception as exc:  # 域缺失/接口变化如实声明，不吞
                 out["trace_style_domains"][dname] = {
-                    "status": "unavailable", "error": str(exc)[:120]}
+                    "status": "unavailable",
+                    "error": str(exc)[:120],
+                }
     return out
 
 
@@ -474,7 +536,9 @@ def build_report(root: Path, paper_db: Path | None = None) -> dict:
     shadow = _audit_shadow_ledger(ledger_path)
     blockers = []
     if paper["status"] == "ok" and paper.get("duplicate_ref_count"):
-        blockers.append("paper_db has duplicate refs (must migrate via mapping, not reuse)")
+        blockers.append(
+            "paper_db has duplicate refs (must migrate via mapping, not reuse)"
+        )
     if paper["status"] == "ok" and paper.get("empty_ref_count"):
         blockers.append(
             "paper_db has empty-ref orders (manual orders; cannot be used as idempotency key)"
@@ -483,8 +547,8 @@ def build_report(root: Path, paper_db: Path | None = None) -> dict:
         blockers.append(
             "shadow ledger has duplicate date+symbol done rows (concurrency risk confirmed)"
         )
-    # T3 摘牌（2026-10-17）：parse_ok=false 的 done 不再阻塞，语义=done_degraded，
-    # 仅计数（parse_fail_done_count）供评估观测；见 docs/audit T3 产品决策。
+        # T3 摘牌（2026-10-17）：parse_ok=false 的 done 不再阻塞，语义=done_degraded，
+        # 仅计数（parse_fail_done_count）供评估观测；见 docs/audit T3 产品决策。
         blockers.append(
             "shadow ledger has duplicate date+symbol done rows (concurrency risk confirmed)"
         )
@@ -493,14 +557,18 @@ def build_report(root: Path, paper_db: Path | None = None) -> dict:
     trace = _audit_credential_trace(root)
     if trace["status"] == "violations_found":
         blockers.append(
-            "credential trace cross-check failed: %d violation(s)" %
-            len(trace["violations"]))
+            "credential trace cross-check failed: %d violation(s)"
+            % len(trace["violations"])
+        )
     return {
         "schema_version": SCHEMA_VERSION,
         "read_only": READ_ONLY,
         "root": str(root),
-        "sources": {"paper_db": paper, "shadow_ledger": shadow,
-                    "credential_trace": trace},
+        "sources": {
+            "paper_db": paper,
+            "shadow_ledger": shadow,
+            "credential_trace": trace,
+        },
         "blockers": blockers,
     }
 

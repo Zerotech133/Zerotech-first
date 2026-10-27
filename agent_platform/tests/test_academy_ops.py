@@ -5,6 +5,7 @@
 事件层新 kind 已登记（research_intake/research_review/research_report）。
 全部用例走 --no-emit，避免污染真实 dev_events。
 """
+
 import json
 import subprocess
 import sys
@@ -47,29 +48,55 @@ def _mkroot(tmp_path: Path) -> Path:
         },
     ]
     (academy / "research_topics.json").write_text(
-        json.dumps(topics, ensure_ascii=False, indent=1), encoding="utf-8")
+        json.dumps(topics, ensure_ascii=False, indent=1), encoding="utf-8"
+    )
     (academy / "backtests.jsonl").write_text(
-        json.dumps({"topic_id": "AC-TEST-1", "status": "queued",
-                    "strategy": "LCS-1", "symbol": "600337",
-                    "data_version": "待DATA1冻结", "sample_in": "待登记",
-                    "sample_out": "待登记", "cost_model": "待登记",
-                    "go_no_go": "pending"}, ensure_ascii=False) + "\n",
-        encoding="utf-8")
+        json.dumps(
+            {
+                "topic_id": "AC-TEST-1",
+                "status": "queued",
+                "strategy": "LCS-1",
+                "symbol": "600337",
+                "data_version": "待DATA1冻结",
+                "sample_in": "待登记",
+                "sample_out": "待登记",
+                "cost_model": "待登记",
+                "go_no_go": "pending",
+            },
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     return tmp_path
 
 
 def _run(root: Path, action: str, *extra: str) -> subprocess.CompletedProcess:
     return subprocess.run(
-        [sys.executable, "-X", "utf8", str(TOOL), action,
-         "--root", str(root), "--no-emit", *extra],
-        capture_output=True, text=True, encoding="utf-8", errors="replace",
-        timeout=120)
+        [
+            sys.executable,
+            "-X",
+            "utf8",
+            str(TOOL),
+            action,
+            "--root",
+            str(root),
+            "--no-emit",
+            *extra,
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=120,
+    )
 
 
 def test_events_kinds_registered():
     sys.path.insert(0, str(REPO / "tools"))
     try:
         import events  # noqa: WPS433
+
         assert NEW_KINDS.issubset(set(events.KINDS))
     finally:
         if str(REPO / "tools") in sys.path:
@@ -100,7 +127,9 @@ def test_review_lists_pending(tmp_path):
     root = _mkroot(tmp_path)
     proc = _run(root, "review")
     assert proc.returncode == 0, proc.stderr
-    files = list((root / "agent_platform" / "data" / "academy" / "reviews").glob("*_review.md"))
+    files = list(
+        (root / "agent_platform" / "data" / "academy" / "reviews").glob("*_review.md")
+    )
     assert len(files) == 1
     text = files[0].read_text(encoding="utf-8")
     assert "AC-TEST-2" in text
@@ -116,7 +145,9 @@ def test_weekly_contains_freeze_progress(tmp_path):
     root = _mkroot(tmp_path)
     proc = _run(root, "weekly")
     assert proc.returncode == 0, proc.stderr
-    files = list((root / "agent_platform" / "data" / "academy" / "reports").glob("*_weekly.md"))
+    files = list(
+        (root / "agent_platform" / "data" / "academy" / "reports").glob("*_weekly.md")
+    )
     assert len(files) == 1
     text = files[0].read_text(encoding="utf-8")
     assert "数据冻结" in text
@@ -127,7 +158,9 @@ def test_weekly_contains_kpi(tmp_path):
     root = _mkroot(tmp_path)
     proc = _run(root, "weekly")
     assert proc.returncode == 0, proc.stderr
-    files = list((root / "agent_platform" / "data" / "academy" / "reports").glob("*_weekly.md"))
+    files = list(
+        (root / "agent_platform" / "data" / "academy" / "reports").glob("*_weekly.md")
+    )
     assert len(files) == 1
     text = files[0].read_text(encoding="utf-8")
     assert "KPI 对照" in text

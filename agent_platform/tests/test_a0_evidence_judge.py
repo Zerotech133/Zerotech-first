@@ -1,5 +1,6 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """a0_evidence_judge 单测（K-QUANT-20261026-A0EVJ）。"""
+
 import importlib.util
 import json
 import sys
@@ -22,16 +23,29 @@ M = _load()
 PACKET = {
     "schema": "seat_evidence_packet/v1",
     "generated_at": "2026-10-26T17:55:00+0800",
-    "sources": [{"path": "C:/x/STATUS.md", "sha256": "abc123def456", "exists": True},
-                {"path": "C:/x/tasks.json", "sha256": "fff000", "exists": True}],
-    "tickets": {"total": 512,
-                "counts": {"doing": 23, "review": 2, "done": 429},
-                "doing_review": [
-                    {"tid": "WO-LEGION-X", "status": "doing", "desc": "示例单", "owner": "dev"},
-                ]},
-    "experience": {"total": 13, "entries": [
-        {"id": "EXP-SUPERVISION-011", "cue": "模型空白输入", "lesson": "须带证据",
-         "evidence": "Z4 卡 11", "confidence": "0.75"}]},
+    "sources": [
+        {"path": "C:/x/STATUS.md", "sha256": "abc123def456", "exists": True},
+        {"path": "C:/x/tasks.json", "sha256": "fff000", "exists": True},
+    ],
+    "tickets": {
+        "total": 512,
+        "counts": {"doing": 23, "review": 2, "done": 429},
+        "doing_review": [
+            {"tid": "WO-LEGION-X", "status": "doing", "desc": "示例单", "owner": "dev"},
+        ],
+    },
+    "experience": {
+        "total": 13,
+        "entries": [
+            {
+                "id": "EXP-SUPERVISION-011",
+                "cue": "模型空白输入",
+                "lesson": "须带证据",
+                "evidence": "Z4 卡 11",
+                "confidence": "0.75",
+            }
+        ],
+    },
     "health": {"tail": ["- 健康卡 20绿/11黄/2红", "- 末行"]},
 }
 
@@ -83,4 +97,3 @@ def test_live_failure_not_fake_success(tmp_path):
     assert res["ok"] is False
     assert "429" in (res["error"] or "")
     assert Path(res["out_md"]).is_file()
-

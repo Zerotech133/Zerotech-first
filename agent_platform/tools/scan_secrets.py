@@ -28,7 +28,10 @@ GIT_STATUS_TIMEOUT_S = 30  # git status 挂起保护（锁文件/网络盘），
 # 各模式：类别名 -> 正则。注意：本文件源码自身必须零命中（见自扫描测试），
 # 因此所有正则字面量中的元字符序列不会被自己的模式匹配。
 PATTERN_GROUP = [
-    ("KEYWORD_ASSIGN", r"(?i)(api[_-]?key|secret|token|password|passwd|credential)\s*[=:]\s*[\"'][^\"']{8,}"),
+    (
+        "KEYWORD_ASSIGN",
+        r"(?i)(api[_-]?key|secret|token|password|passwd|credential)\s*[=:]\s*[\"'][^\"']{8,}",
+    ),
     # 左边界 (?<![A-Za-z-])：排除紧跟在字母或连字符之后的 sk-（如 Windows 计划
     # 任务名 "FooTask-sk-S-1-5-..."、"...Task-sk-12800{GUID}" 的跨词误报）。
     # 行首/引号/等号/空格等前置的真 key 不受影响；SK_KEY_SEP 目标形态 sk-xxx-yyy
@@ -78,7 +81,9 @@ def scan_file(path: str, patterns):
     text = data.decode("utf-8", errors="replace")
     hits = []
     for lineno, line in enumerate(text.splitlines(), start=1):
-        seen_spans = set()  # 同一 span 只计一次：SK_KEY 与 SK_KEY_SEP 会重叠命中同一形态
+        seen_spans = (
+            set()
+        )  # 同一 span 只计一次：SK_KEY 与 SK_KEY_SEP 会重叠命中同一形态
         for name, exp in patterns:
             for m in exp.finditer(line):
                 if (m.start(), m.end()) in seen_spans:
@@ -100,7 +105,9 @@ def git_repo_root(cwd: str):
         # 不用 `git -C`：CentOS7 自带 git 1.8.3.1 不支持该选项（服务器 verify/运行时踩过）。
         proc = subprocess.run(
             ["git", "rev-parse", "--show-toplevel"],
-            capture_output=True, text=True, cwd=cwd,
+            capture_output=True,
+            text=True,
+            cwd=cwd,
         )
     except OSError:
         return None
@@ -119,14 +126,17 @@ def git_status_files(repo_root: str):
     try:
         # 同上：cwd= 替代 `git -C`，兼容 CentOS7 git 1.8.3.1。
         proc = subprocess.run(
-            ["git", "status", "--porcelain", "-z",
-             "--untracked-files=all"],
-            capture_output=True, timeout=GIT_STATUS_TIMEOUT_S, cwd=repo_root,
+            ["git", "status", "--porcelain", "-z", "--untracked-files=all"],
+            capture_output=True,
+            timeout=GIT_STATUS_TIMEOUT_S,
+            cwd=repo_root,
         )
     except subprocess.TimeoutExpired:
         # git 挂起（锁文件/网络盘）时不再无限等：与 returncode!=0 同路径失败
-        print("[错误] git status 超时（%ds），无法取得扫描清单。"
-              % GIT_STATUS_TIMEOUT_S, file=sys.stderr)
+        print(
+            "[错误] git status 超时（%ds），无法取得扫描清单。" % GIT_STATUS_TIMEOUT_S,
+            file=sys.stderr,
+        )
         return None
     if proc.returncode != 0:
         return None
@@ -187,15 +197,19 @@ def main(argv=None) -> int:
         description="防泄漏只读凭据扫描器（绝不修改被扫描文件）"
     )
     parser.add_argument(
-        "--paths", nargs="*", default=None,
+        "--paths",
+        nargs="*",
+        default=None,
         help="要扫描的文件或目录（可多个）；缺省时等价于 --git-status",
     )
     parser.add_argument(
-        "--git-status", action="store_true",
+        "--git-status",
+        action="store_true",
         help="从 git status --porcelain 取 untracked+modified 清单（默认行为）",
     )
     parser.add_argument(
-        "--strict", action="store_true",
+        "--strict",
+        action="store_true",
         help="命中即以退出码 1 结束（供 pre-commit 等门禁场景）",
     )
     args = parser.parse_args(argv)
@@ -221,14 +235,20 @@ def main(argv=None) -> int:
         for lineno, cat, frag in file_hits:
             hits.append((path, lineno, cat, frag))
 
-    shown = hits if args.paths else [
-        (os.path.relpath(p, git_repo_root(cwd) or cwd).replace("\\", "/"), ln, c, f)
-        for (p, ln, c, f) in hits
-    ]
+    shown = (
+        hits
+        if args.paths
+        else [
+            (os.path.relpath(p, git_repo_root(cwd) or cwd).replace("\\", "/"), ln, c, f)
+            for (p, ln, c, f) in hits
+        ]
+    )
     for path, lineno, cat, frag in shown:
         print(f"{path}:{lineno} | {cat} | {frag}")
-    print(f"[汇总] 扫描 {scanned} 个文件，命中 {len(hits)} 处；跳过 {len(skipped)} 个"
-          f"（二进制/超 1MB/不可读）。")
+    print(
+        f"[汇总] 扫描 {scanned} 个文件，命中 {len(hits)} 处；跳过 {len(skipped)} 个"
+        f"（二进制/超 1MB/不可读）。"
+    )
     for path, reason in skipped:
         print(f"[跳过] {reason}: {path}")
 

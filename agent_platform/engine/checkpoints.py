@@ -7,6 +7,7 @@
 K-ORG-090/G4：工单线（devtask）checkpoint 扩展——task_checkpoints 表 +
 save_task_node / get_task_states / task_trace 三接口，服务工单链续跑。
 """
+
 import json
 import sqlite3
 import threading
@@ -63,17 +64,43 @@ class Checkpointer:
         with self._lock:
             self.conn.execute(
                 "INSERT OR REPLACE INTO checkpoints VALUES(?,?,?,?,?)",
-                (run_id, node_key, agent_id, json.dumps(state, ensure_ascii=False), time.time()),
+                (
+                    run_id,
+                    node_key,
+                    agent_id,
+                    json.dumps(state, ensure_ascii=False),
+                    time.time(),
+                ),
             )
             self.conn.commit()
 
-    def trace(self, run_id, node_key, agent_id, phase, round_=None,
-              output="", similarity_=None, status="normal", latency_ms=None):
+    def trace(
+        self,
+        run_id,
+        node_key,
+        agent_id,
+        phase,
+        round_=None,
+        output="",
+        similarity_=None,
+        status="normal",
+        latency_ms=None,
+    ):
         with self._lock:
             self.conn.execute(
                 "INSERT INTO traces VALUES(?,?,?,?,?,?,?,?,?,?)",
-                (run_id, node_key, agent_id, phase, round_, output[:2000],
-                 similarity_, status, latency_ms, time.time()),
+                (
+                    run_id,
+                    node_key,
+                    agent_id,
+                    phase,
+                    round_,
+                    output[:2000],
+                    similarity_,
+                    status,
+                    latency_ms,
+                    time.time(),
+                ),
             )
             self.conn.commit()
 
@@ -91,8 +118,13 @@ class Checkpointer:
         with self._lock:
             self.conn.execute(
                 "INSERT OR REPLACE INTO task_checkpoints VALUES(?,?,?,?,?)",
-                (task_id, node_key, agent_id,
-                 json.dumps(state, ensure_ascii=False), time.time()),
+                (
+                    task_id,
+                    node_key,
+                    agent_id,
+                    json.dumps(state, ensure_ascii=False),
+                    time.time(),
+                ),
             )
             self.conn.commit()
 

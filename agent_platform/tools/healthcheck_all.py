@@ -43,6 +43,7 @@ verify_strategy_ledger / list_rejects / scan_secrets），现场要跑多条命�
     python tools/healthcheck_all.py --only check_trigger_chain check_observation_point
     python tools/healthcheck_all.py --repo-root <agent_platform根> --data-root <agent_platform/data>
 """
+
 from __future__ import annotations
 
 import argparse
@@ -61,20 +62,29 @@ DEFAULT_TIMEOUT_S = 120.0
 
 # 每工具退出码语义映射（code_map 未覆盖的退出码 → FAIL）
 TOOL_SPECS = (
-    {"name": "check_trigger_chain", "script": "check_trigger_chain.py",
-     "code_map": {0: PASS, 1: NEUTRAL, 2: FAIL}},
-    {"name": "check_observation_point", "script": "check_observation_point.py",
-     "code_map": {0: PASS, 1: NEUTRAL, 2: FAIL}},
-    {"name": "verify_strategy_ledger", "script": "verify_strategy_ledger.py",
-     "code_map": {0: PASS, 1: FAIL, 2: FAIL}},
-    {"name": "list_rejects", "script": "list_rejects.py",
-     "code_map": {0: NEUTRAL}},
-    {"name": "scan_secrets", "script": "scan_secrets.py",
-     "code_map": {0: NEUTRAL}},
+    {
+        "name": "check_trigger_chain",
+        "script": "check_trigger_chain.py",
+        "code_map": {0: PASS, 1: NEUTRAL, 2: FAIL},
+    },
+    {
+        "name": "check_observation_point",
+        "script": "check_observation_point.py",
+        "code_map": {0: PASS, 1: NEUTRAL, 2: FAIL},
+    },
+    {
+        "name": "verify_strategy_ledger",
+        "script": "verify_strategy_ledger.py",
+        "code_map": {0: PASS, 1: FAIL, 2: FAIL},
+    },
+    {"name": "list_rejects", "script": "list_rejects.py", "code_map": {0: NEUTRAL}},
+    {"name": "scan_secrets", "script": "scan_secrets.py", "code_map": {0: NEUTRAL}},
 )
 
 
-def build_cmd(spec: dict, tools_dir: Path, repo_root: Path, data_root: Path) -> List[str]:
+def build_cmd(
+    spec: dict, tools_dir: Path, repo_root: Path, data_root: Path
+) -> List[str]:
     """按索引卡 CLI 最短形式拼子命令（显式参数纪律，不依赖子工具默认值）。"""
     name = spec["name"]
     if name == "check_trigger_chain":
@@ -106,9 +116,15 @@ def run_tool(cmd: List[str], cwd: str, timeout_s: float) -> subprocess.Completed
     env = dict(os.environ)
     env["PYTHONIOENCODING"] = "utf-8"
     return subprocess.run(
-        cmd, cwd=cwd, timeout=timeout_s, env=env,
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-        text=True, encoding="utf-8", errors="replace",
+        cmd,
+        cwd=cwd,
+        timeout=timeout_s,
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
     )
 
 
@@ -117,17 +133,31 @@ def run_one(spec: dict, cmd: List[str], cwd: str, timeout_s: float) -> dict:
     try:
         proc = run_tool(cmd, cwd, timeout_s)
     except subprocess.TimeoutExpired as exc:
-        return {"name": spec["name"], "verdict": FAIL, "exit_code": None,
-                "stdout": _as_text(exc.stdout),
-                "stderr_tail": "超时（>%gs）" % timeout_s + _tail(_as_text(exc.stderr))}
+        return {
+            "name": spec["name"],
+            "verdict": FAIL,
+            "exit_code": None,
+            "stdout": _as_text(exc.stdout),
+            "stderr_tail": "超时（>%gs）" % timeout_s + _tail(_as_text(exc.stderr)),
+        }
     except OSError as exc:
-        return {"name": spec["name"], "verdict": FAIL, "exit_code": None,
-                "stdout": "", "stderr_tail": "启动失败：%s" % str(exc)[:STDERR_TAIL_CHARS]}
+        return {
+            "name": spec["name"],
+            "verdict": FAIL,
+            "exit_code": None,
+            "stdout": "",
+            "stderr_tail": "启动失败：%s" % str(exc)[:STDERR_TAIL_CHARS],
+        }
     rc = proc.returncode
     verdict = spec["code_map"].get(rc, FAIL)
     stderr_tail = _tail(proc.stderr) if verdict == FAIL else ""
-    return {"name": spec["name"], "verdict": verdict, "exit_code": rc,
-            "stdout": proc.stdout, "stderr_tail": stderr_tail}
+    return {
+        "name": spec["name"],
+        "verdict": verdict,
+        "exit_code": rc,
+        "stdout": proc.stdout,
+        "stderr_tail": stderr_tail,
+    }
 
 
 def aggregate(results: List[dict]) -> int:
@@ -149,34 +179,51 @@ def _print_summary(results: List[dict]) -> None:
     n_pass = sum(1 for r in results if r["verdict"] == PASS)
     n_neutral = sum(1 for r in results if r["verdict"] == NEUTRAL)
     n_fail = sum(1 for r in results if r["verdict"] == FAIL)
-    print("汇总: PASS %d / 中性 %d / FAIL %d —— 共 %d 项" % (
-        n_pass, n_neutral, n_fail, len(results)))
-    verdict = {0: "无 FAIL 且有 PASS——可放行（总退出码 0）",
-               1: "全中性——首跑前/浏览面形态，非失败（总退出码 1）",
-               2: "存在 FAIL——先查清（总退出码 2）"}[aggregate(results)]
+    print(
+        "汇总: PASS %d / 中性 %d / FAIL %d —— 共 %d 项"
+        % (n_pass, n_neutral, n_fail, len(results))
+    )
+    verdict = {
+        0: "无 FAIL 且有 PASS——可放行（总退出码 0）",
+        1: "全中性——首跑前/浏览面形态，非失败（总退出码 1）",
+        2: "存在 FAIL——先查清（总退出码 2）",
+    }[aggregate(results)]
     print("结论: %s" % verdict)
 
 
 def main(argv: Optional[List[str]] = None) -> int:
     ap = argparse.ArgumentParser(
-        description="一键聚合体检：顺序调 5 个只读工具出总表（纯聚合零写面）")
-    ap.add_argument("--repo-root", default=None,
-                    help="agent_platform 根（缺省=本文件上级目录）")
-    ap.add_argument("--data-root", default=None,
-                    help="数据根（缺省=<repo-root>/data）")
-    ap.add_argument("--only", nargs="+", metavar="工具名",
-                    choices=[s["name"] for s in TOOL_SPECS],
-                    help="只跑指定子集（按 T-30min 时序过滤）")
-    ap.add_argument("--quiet", action="store_true",
-                    help="只出总表，不透传各工具 stdout")
-    ap.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT_S,
-                    help="单工具超时秒数（默认 %g，超时按 FAIL 计）" % DEFAULT_TIMEOUT_S)
+        description="一键聚合体检：顺序调 5 个只读工具出总表（纯聚合零写面）"
+    )
+    ap.add_argument(
+        "--repo-root", default=None, help="agent_platform 根（缺省=本文件上级目录）"
+    )
+    ap.add_argument("--data-root", default=None, help="数据根（缺省=<repo-root>/data）")
+    ap.add_argument(
+        "--only",
+        nargs="+",
+        metavar="工具名",
+        choices=[s["name"] for s in TOOL_SPECS],
+        help="只跑指定子集（按 T-30min 时序过滤）",
+    )
+    ap.add_argument(
+        "--quiet", action="store_true", help="只出总表，不透传各工具 stdout"
+    )
+    ap.add_argument(
+        "--timeout",
+        type=float,
+        default=DEFAULT_TIMEOUT_S,
+        help="单工具超时秒数（默认 %g，超时按 FAIL 计）" % DEFAULT_TIMEOUT_S,
+    )
     args = ap.parse_args(argv)
 
     repo_root = Path(args.repo_root).resolve() if args.repo_root else DEFAULT_REPO_ROOT
     data_root = Path(args.data_root).resolve() if args.data_root else repo_root / "data"
-    selected = TOOL_SPECS if not args.only else [
-        s for s in TOOL_SPECS if s["name"] in set(args.only)]
+    selected = (
+        TOOL_SPECS
+        if not args.only
+        else [s for s in TOOL_SPECS if s["name"] in set(args.only)]
+    )
 
     results = []
     for spec in selected:
@@ -184,11 +231,14 @@ def main(argv: Optional[List[str]] = None) -> int:
         res = run_one(spec, cmd, cwd=str(repo_root), timeout_s=args.timeout)
         results.append(res)
         if not args.quiet and res["stdout"]:
-            sys.stdout.write(res["stdout"] if res["stdout"].endswith("\n")
-                             else res["stdout"] + "\n")
+            sys.stdout.write(
+                res["stdout"] if res["stdout"].endswith("\n") else res["stdout"] + "\n"
+            )
         if res["verdict"] == FAIL and res["stderr_tail"]:
-            print("[%s] stderr 尾部：%s" % (res["name"], res["stderr_tail"]),
-                  file=sys.stderr)
+            print(
+                "[%s] stderr 尾部：%s" % (res["name"], res["stderr_tail"]),
+                file=sys.stderr,
+            )
 
     _print_summary(results)
     return aggregate(results)

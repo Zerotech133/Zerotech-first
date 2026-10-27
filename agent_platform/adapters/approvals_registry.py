@@ -27,9 +27,19 @@ MAX_LIMIT = 1000
 _SORTABLE = ("decided_at", "created_at", "rowid")
 
 _CREDENTIAL_FIELDS = (
-    "approval_id", "idempotency_key", "target_type", "target_id",
-    "from_status", "to_status", "decision", "decided_by", "reason",
-    "decided_at", "schema_version", "created_at", "trace_id",
+    "approval_id",
+    "idempotency_key",
+    "target_type",
+    "target_id",
+    "from_status",
+    "to_status",
+    "decision",
+    "decided_by",
+    "reason",
+    "decided_at",
+    "schema_version",
+    "created_at",
+    "trace_id",
 )
 
 
@@ -43,10 +53,15 @@ def _ro_connect(path: Path) -> sqlite3.Connection:
     return con
 
 
-def build_registry(root: str | Path, *, target_type: str | None = None,
-                   target_id: str | None = None, decided_by: str | None = None,
-                   limit: int = DEFAULT_LIMIT,
-                   order: str = "desc") -> dict[str, Any]:
+def build_registry(
+    root: str | Path,
+    *,
+    target_type: str | None = None,
+    target_id: str | None = None,
+    decided_by: str | None = None,
+    limit: int = DEFAULT_LIMIT,
+    order: str = "desc",
+) -> dict[str, Any]:
     root = Path(root).resolve()
     if order not in ("asc", "desc"):
         raise ValueError(f"order 须为 asc/desc，收到 {order!r}")
@@ -74,16 +89,19 @@ def build_registry(root: str | Path, *, target_type: str | None = None,
     last_seen: str | None = None
 
     if missing_db:
-        errors.append({"kind": "missing_source", "source": "approvals.db",
-                       "path": str(db)})
+        errors.append(
+            {"kind": "missing_source", "source": "approvals.db", "path": str(db)}
+        )
     else:
         con = None
         try:
             con = _ro_connect(db)
             where = " AND ".join(f"{k} = ?" for k in filters)
-            sql = ("SELECT rowid AS _rowid, * FROM approvals"
-                   + (f" WHERE {where}" if where else "")
-                   + f" ORDER BY decided_at {'DESC' if order == 'desc' else 'ASC'}, rowid {'DESC' if order == 'desc' else 'ASC'}")
+            sql = (
+                "SELECT rowid AS _rowid, * FROM approvals"
+                + (f" WHERE {where}" if where else "")
+                + f" ORDER BY decided_at {'DESC' if order == 'desc' else 'ASC'}, rowid {'DESC' if order == 'desc' else 'ASC'}"
+            )
             rows = con.execute(sql, tuple(filters.values())).fetchall()
             for row in rows:
                 item = {k: row[k] for k in row.keys() if k != "_rowid"}
@@ -101,8 +119,9 @@ def build_registry(root: str | Path, *, target_type: str | None = None,
                     if last_seen is None or str(when) > last_seen:
                         last_seen = str(when)
         except sqlite3.Error as exc:
-            errors.append({"kind": "read_error", "source": "approvals.db",
-                           "detail": str(exc)})
+            errors.append(
+                {"kind": "read_error", "source": "approvals.db", "detail": str(exc)}
+            )
         finally:
             if con is not None:
                 con.close()
@@ -111,7 +130,9 @@ def build_registry(root: str | Path, *, target_type: str | None = None,
     page = records[:limit]
     return {
         "registry_version": REGISTRY_VERSION,
-        "generated_at": __import__("datetime").datetime.now().isoformat(timespec="seconds"),
+        "generated_at": __import__("datetime")
+        .datetime.now()
+        .isoformat(timespec="seconds"),
         "root": str(root),
         "read_only": True,
         "query": {"filters": filters, "limit": limit, "order": order},
@@ -142,11 +163,19 @@ def main(argv=None) -> int:
     args = ap.parse_args(argv)
     try:
         registry = build_registry(
-            args.root, target_type=args.target_type, target_id=args.target_id,
-            decided_by=args.decided_by, limit=args.limit, order=args.order)
+            args.root,
+            target_type=args.target_type,
+            target_id=args.target_id,
+            decided_by=args.decided_by,
+            limit=args.limit,
+            order=args.order,
+        )
     except ValueError as exc:
-        print(json.dumps({"error": "invalid_query", "message": str(exc)},
-                         ensure_ascii=False))
+        print(
+            json.dumps(
+                {"error": "invalid_query", "message": str(exc)}, ensure_ascii=False
+            )
+        )
         return 2
     rendered = json.dumps(registry, ensure_ascii=False, indent=2)
     if args.output:

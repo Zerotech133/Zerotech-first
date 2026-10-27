@@ -11,6 +11,7 @@
    「被 num_predict 截断」与「模型没守格式」两类故障在证据上无法区分
    （排障时只能靠外部探针反推）。截断必须显式降级，不得当正常样本。
 """
+
 import io
 import json
 import sys
@@ -25,14 +26,23 @@ sys.path.insert(0, str(PLATFORM / "engine"))
 import interpreter as interp_mod  # noqa: E402
 import llm as llm_mod  # noqa: E402
 
-D1_NODE = {"agent_id": "D1", "node_key": "d1_decision",
-           "role_profile": "d1_decision", "analysis_type": "final_decision"}
-T1_NODE = {"agent_id": "T1", "node_key": "t1_market",
-           "role_profile": "t1_bull", "analysis_type": "market_technical"}
+D1_NODE = {
+    "agent_id": "D1",
+    "node_key": "d1_decision",
+    "role_profile": "d1_decision",
+    "analysis_type": "final_decision",
+}
+T1_NODE = {
+    "agent_id": "T1",
+    "node_key": "t1_market",
+    "role_profile": "t1_bull",
+    "analysis_type": "market_technical",
+}
 CTX = {"stock": "600519", "data": {"final_decision": "上游攻防结论摘要"}}
 
 
 # ---------------------------------------------------------------- 契约 1
+
 
 def test_decision_node_asks_for_json_only():
     u = interp_mod.Interpreter._build_user(None, D1_NODE, CTX)
@@ -48,6 +58,7 @@ def test_non_decision_node_keeps_brief_tail():
 
 
 # ---------------------------------------------------------------- 契约 2
+
 
 class _FakeResp:
     def __init__(self, payload):
@@ -69,22 +80,27 @@ class _FakeOpener:
 
 
 def _patch_ollama(monkeypatch, payload):
-    monkeypatch.setattr(llm_mod.urllib.request, "build_opener",
-                        lambda *a, **k: _FakeOpener(payload))
+    monkeypatch.setattr(
+        llm_mod.urllib.request, "build_opener", lambda *a, **k: _FakeOpener(payload)
+    )
 
 
 def test_truncated_generation_is_degraded(monkeypatch):
     """done_reason=length（被 num_predict 截断）→ status=degraded，且元信息留存。"""
-    _patch_ollama(monkeypatch, {"message": {"content": "半截"},
-                                "done_reason": "length", "eval_count": 400})
+    _patch_ollama(
+        monkeypatch,
+        {"message": {"content": "半截"}, "done_reason": "length", "eval_count": 400},
+    )
     text, status = llm_mod.OllamaLLM().chat("s", "u")
     assert text == "半截"
     assert status == "degraded"
 
 
 def test_normal_generation_records_done_reason(monkeypatch):
-    _patch_ollama(monkeypatch, {"message": {"content": "完整"},
-                                "done_reason": "stop", "eval_count": 85})
+    _patch_ollama(
+        monkeypatch,
+        {"message": {"content": "完整"}, "done_reason": "stop", "eval_count": 85},
+    )
     llm = llm_mod.OllamaLLM()
     text, status = llm.chat("s", "u")
     assert (text, status) == ("完整", "normal")

@@ -7,6 +7,7 @@
   2. 阚泽 = LUSU1 · 通信与客户服务部（信驿司）主官，LUSU1 为历史 ID；
   3. 旧《鲁肃通信与客户服务部编制方案 v1》已加 STATUS superseded。
 """
+
 from __future__ import annotations
 
 import json

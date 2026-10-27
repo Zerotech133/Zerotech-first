@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """沙箱验证测试（WO-SANDBOX-VERIFY）。"""
+
 from __future__ import annotations
 
 import importlib.util
@@ -8,7 +9,8 @@ from pathlib import Path
 
 _WT = Path(__file__).resolve().parents[2]
 _spec = importlib.util.spec_from_file_location(
-    "sandbox_runner", str(_WT / "agent_platform" / "sandbox" / "runner.py"))
+    "sandbox_runner", str(_WT / "agent_platform" / "sandbox" / "runner.py")
+)
 SR = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(SR)
 
@@ -38,10 +40,15 @@ def test_bad_name_and_missing_script():
 
 def test_env_secrets_stripped_and_cwd_isolated(tmp_path, monkeypatch):
     _tmp_env(tmp_path, monkeypatch)
-    _mk_skill(tmp_path, "env-skill", (
-        "import json, os, pathlib\n"
-        "print(json.dumps({'has_key': 'DEEPSEEK_API_KEY' in os.environ,"
-        " 'cwd': os.getcwd()}))\n"))
+    _mk_skill(
+        tmp_path,
+        "env-skill",
+        (
+            "import json, os, pathlib\n"
+            "print(json.dumps({'has_key': 'DEEPSEEK_API_KEY' in os.environ,"
+            " 'cwd': os.getcwd()}))\n"
+        ),
+    )
     monkeypatch.setenv("DEEPSEEK_API_KEY", "should-not-leak")
     rep = SR.verify_skill("env-skill")
     assert rep["ok"] is True

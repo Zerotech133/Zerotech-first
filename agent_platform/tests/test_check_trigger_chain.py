@@ -17,6 +17,7 @@ tmp_path 构造假任务 XML / 假日志（不读真系统），覆盖：
      EXIT≠0 仍 FAIL（fail-visible），残留块不掩盖未处置失败，无 run 头
      旧格式回退旧末行口径。
 """
+
 import shutil
 import sys
 import tempfile
@@ -45,8 +46,13 @@ PY_ARGS = r"-X utf8 C:\aios\agent_platform\monday_checkpoint.py"
 LOG_DAY = "2026-10-16"
 
 
-def make_task_xml(hhmm="17:10", days=("Monday", "Tuesday", "Wednesday", "Thursday", "Friday"),
-                  command=PS_CMD, arguments=PS_ARGS_RUN, enabled=True):
+def make_task_xml(
+    hhmm="17:10",
+    days=("Monday", "Tuesday", "Wednesday", "Thursday", "Friday"),
+    command=PS_CMD,
+    arguments=PS_ARGS_RUN,
+    enabled=True,
+):
     days_xml = "".join("<%s />" % d for d in days)
     en = "true" if enabled else "false"
     return (
@@ -69,8 +75,9 @@ def make_task_xml(hhmm="17:10", days=("Monday", "Tuesday", "Wednesday", "Thursda
 
 TASK_BODIES = {
     "AgentShadowDaily": make_task_xml(),
-    "AgentMondayCheckpoint": make_task_xml(hhmm="17:25", days=("Monday",),
-                                           command=PY_CMD, arguments=PY_ARGS),
+    "AgentMondayCheckpoint": make_task_xml(
+        hhmm="17:25", days=("Monday",), command=PY_CMD, arguments=PY_ARGS
+    ),
     "AgentChiefPush": make_task_xml(hhmm="17:35", arguments=PS_ARGS_PUSH),
 }
 
@@ -102,7 +109,7 @@ class TriggerChainBase(unittest.TestCase):
         defaults = {
             "last_run.log": "a\nshadow day 2026-10-16 done: {'done': 5}\n",
             "monday_checkpoint.log": "x\n结论: 7/7 PASS——观察点门全过\n"
-                                     "EXIT=0 日志=C:\\aios\\agent_platform\\data\\shadow\\monday_checkpoint.log\n",
+            "EXIT=0 日志=C:\\aios\\agent_platform\\data\\shadow\\monday_checkpoint.log\n",
             "chief_last_run.log": "[A0] 日报已生成\nSEND_OK ou_xxx\n",
         }
         for name, text in (logs if logs is not None else defaults).items():
@@ -117,7 +124,8 @@ class TriggerChainBase(unittest.TestCase):
             if not stub_path.exists():
                 stub_path.write_text(
                     "# test stub —— e_code_importable 夹具占位（空模块可导入）\n",
-                    encoding="utf-8")
+                    encoding="utf-8",
+                )
         return self.root
 
     @staticmethod
@@ -131,13 +139,19 @@ class TriggerChainBase(unittest.TestCase):
 
 class TestAllPass(TriggerChainBase):
     def test_green_run_exit_zero(self):
-        rep = ctc.run_checks(self.make_repo(), tasks_dir=self.make_tasks_dir(),
-                             connect_fn=self.ok_connect, process_probe=self.ok_probe,
-                             aw_stack_log=self.root / "nonexistent_aw.log")
+        rep = ctc.run_checks(
+            self.make_repo(),
+            tasks_dir=self.make_tasks_dir(),
+            connect_fn=self.ok_connect,
+            process_probe=self.ok_probe,
+            aw_stack_log=self.root / "nonexistent_aw.log",
+        )
         self.assertEqual(rep["exit_code"], 0)
         self.assertEqual(rep["fail"], 0)
-        self.assertEqual([it["status"] for it in rep["items"]],
-                         ["PASS", "PASS", "PASS", "PASS", "PASS"])  # e_code_importable 见夹具桩件
+        self.assertEqual(
+            [it["status"] for it in rep["items"]],
+            ["PASS", "PASS", "PASS", "PASS", "PASS"],
+        )  # e_code_importable 见夹具桩件
         a = rep["items"][0]["evidence"]
         self.assertIn("AgentShadowDaily 17:10", a)
         self.assertIn("AgentMondayCheckpoint 17:25 周一", a)
@@ -160,9 +174,13 @@ class TestLastRunLogs(TriggerChainBase):
             "monday_checkpoint.log": "EXIT=0 日志=x\n",
             "chief_last_run.log": None,  # 从未跑过（267011）
         }
-        rep = ctc.run_checks(self.make_repo(logs), tasks_dir=self.make_tasks_dir(),
-                             connect_fn=self.ok_connect, process_probe=lambda: None,
-                             aw_stack_log=self.root / "no.log")
+        rep = ctc.run_checks(
+            self.make_repo(logs),
+            tasks_dir=self.make_tasks_dir(),
+            connect_fn=self.ok_connect,
+            process_probe=lambda: None,
+            aw_stack_log=self.root / "no.log",
+        )
         b = rep["items"][1]
         self.assertEqual(b["status"], "WARN")
         self.assertIn("chief_last_run.log 不存在", b["evidence"])
@@ -177,9 +195,13 @@ class TestLastRunLogs(TriggerChainBase):
             "monday_checkpoint.log": "EXIT=0 日志=x\n",
             "chief_last_run.log": "SEND_OK\n",
         }
-        rep = ctc.run_checks(self.make_repo(logs), tasks_dir=self.make_tasks_dir(),
-                             connect_fn=self.ok_connect, process_probe=lambda: None,
-                             aw_stack_log=self.root / "no.log")
+        rep = ctc.run_checks(
+            self.make_repo(logs),
+            tasks_dir=self.make_tasks_dir(),
+            connect_fn=self.ok_connect,
+            process_probe=lambda: None,
+            aw_stack_log=self.root / "no.log",
+        )
         b = rep["items"][1]
         self.assertEqual(b["status"], "WARN")
         self.assertIn("首跑 17:10 前缺失属预期", b["evidence"])
@@ -190,9 +212,13 @@ class TestLastRunLogs(TriggerChainBase):
             "monday_checkpoint.log": "EXIT=0 日志=x\n",
             "chief_last_run.log": "[A0] 日报已生成\n",  # 日报生成≠推送成功
         }
-        rep = ctc.run_checks(self.make_repo(logs), tasks_dir=self.make_tasks_dir(),
-                             connect_fn=self.ok_connect, process_probe=lambda: None,
-                             aw_stack_log=self.root / "no.log")
+        rep = ctc.run_checks(
+            self.make_repo(logs),
+            tasks_dir=self.make_tasks_dir(),
+            connect_fn=self.ok_connect,
+            process_probe=lambda: None,
+            aw_stack_log=self.root / "no.log",
+        )
         self.assertEqual(rep["items"][1]["status"], "FAIL")
         self.assertIn("无 SEND_OK", rep["items"][1]["evidence"])
         self.assertEqual(rep["exit_code"], 2)
@@ -203,9 +229,13 @@ class TestLastRunLogs(TriggerChainBase):
             "monday_checkpoint.log": "EXIT=0 日志=x\n",
             "chief_last_run.log": "SEND_OK\n",
         }
-        rep = ctc.run_checks(self.make_repo(logs), tasks_dir=self.make_tasks_dir(),
-                             connect_fn=self.ok_connect, process_probe=lambda: None,
-                             aw_stack_log=self.root / "no.log")
+        rep = ctc.run_checks(
+            self.make_repo(logs),
+            tasks_dir=self.make_tasks_dir(),
+            connect_fn=self.ok_connect,
+            process_probe=lambda: None,
+            aw_stack_log=self.root / "no.log",
+        )
         self.assertEqual(rep["items"][1]["status"], "FAIL")
         self.assertIn("零 done", rep["items"][1]["evidence"])
 
@@ -216,9 +246,13 @@ class TestLastRunLogs(TriggerChainBase):
             "monday_checkpoint.log": "EXIT=0 日志=x\n结论: 有 FAIL——先查清\n",
             "chief_last_run.log": "SEND_OK\n",
         }
-        rep = ctc.run_checks(self.make_repo(logs), tasks_dir=self.make_tasks_dir(),
-                             connect_fn=self.ok_connect, process_probe=lambda: None,
-                             aw_stack_log=self.root / "no.log")
+        rep = ctc.run_checks(
+            self.make_repo(logs),
+            tasks_dir=self.make_tasks_dir(),
+            connect_fn=self.ok_connect,
+            process_probe=lambda: None,
+            aw_stack_log=self.root / "no.log",
+        )
         self.assertEqual(rep["items"][1]["status"], "FAIL")
         self.assertIn("末行无 EXIT=0", rep["items"][1]["evidence"])
 
@@ -229,9 +263,13 @@ class TestLastRunLogs(TriggerChainBase):
             "monday_checkpoint.log": "EXIT=0 日志=x\nxxx\n",
             "chief_last_run.log": "SEND_OK\n",
         }
-        rep = ctc.run_checks(self.make_repo(logs), tasks_dir=self.make_tasks_dir(),
-                             connect_fn=self.ok_connect, process_probe=lambda: None,
-                             aw_stack_log=self.root / "no.log")
+        rep = ctc.run_checks(
+            self.make_repo(logs),
+            tasks_dir=self.make_tasks_dir(),
+            connect_fn=self.ok_connect,
+            process_probe=lambda: None,
+            aw_stack_log=self.root / "no.log",
+        )
         self.assertEqual(rep["items"][1]["status"], "FAIL")
 
 
@@ -239,9 +277,13 @@ class TestTaskRegistration(TriggerChainBase):
     def test_missing_task_xml_is_warn_with_probed_name_and_guidance(self):
         bodies = dict(TASK_BODIES)
         del bodies["AgentChiefPush"]
-        rep = ctc.run_checks(self.make_repo(), tasks_dir=self.make_tasks_dir(bodies),
-                             connect_fn=self.ok_connect, process_probe=lambda: None,
-                             aw_stack_log=self.root / "no.log")
+        rep = ctc.run_checks(
+            self.make_repo(),
+            tasks_dir=self.make_tasks_dir(bodies),
+            connect_fn=self.ok_connect,
+            process_probe=lambda: None,
+            aw_stack_log=self.root / "no.log",
+        )
         a = rep["items"][0]
         self.assertEqual(a["status"], "WARN")
         self.assertIn("AgentChiefPush", a["evidence"])
@@ -251,52 +293,80 @@ class TestTaskRegistration(TriggerChainBase):
         self.assertEqual(rep["exit_code"], 0)  # WARN 不拉 FAIL
 
     def test_anchor_mismatch_is_fail(self):
-        bodies = {"AgentShadowDaily": make_task_xml(arguments="-Mode eval"),  # 锚点错
-                  "AgentMondayCheckpoint": TASK_BODIES["AgentMondayCheckpoint"],
-                  "AgentChiefPush": TASK_BODIES["AgentChiefPush"]}
-        rep = ctc.run_checks(self.make_repo(), tasks_dir=self.make_tasks_dir(bodies),
-                             connect_fn=self.ok_connect, process_probe=lambda: None,
-                             aw_stack_log=self.root / "no.log")
+        bodies = {
+            "AgentShadowDaily": make_task_xml(arguments="-Mode eval"),  # 锚点错
+            "AgentMondayCheckpoint": TASK_BODIES["AgentMondayCheckpoint"],
+            "AgentChiefPush": TASK_BODIES["AgentChiefPush"],
+        }
+        rep = ctc.run_checks(
+            self.make_repo(),
+            tasks_dir=self.make_tasks_dir(bodies),
+            connect_fn=self.ok_connect,
+            process_probe=lambda: None,
+            aw_stack_log=self.root / "no.log",
+        )
         self.assertEqual(rep["items"][0]["status"], "FAIL")
         self.assertIn("锚点缺失", rep["items"][0]["evidence"])
         self.assertEqual(rep["exit_code"], 2)
 
     def test_time_drift_is_fail(self):
-        bodies = {"AgentShadowDaily": make_task_xml(hhmm="09:00"),
-                  "AgentMondayCheckpoint": TASK_BODIES["AgentMondayCheckpoint"],
-                  "AgentChiefPush": TASK_BODIES["AgentChiefPush"]}
-        rep = ctc.run_checks(self.make_repo(), tasks_dir=self.make_tasks_dir(bodies),
-                             connect_fn=self.ok_connect, process_probe=lambda: None,
-                             aw_stack_log=self.root / "no.log")
+        bodies = {
+            "AgentShadowDaily": make_task_xml(hhmm="09:00"),
+            "AgentMondayCheckpoint": TASK_BODIES["AgentMondayCheckpoint"],
+            "AgentChiefPush": TASK_BODIES["AgentChiefPush"],
+        }
+        rep = ctc.run_checks(
+            self.make_repo(),
+            tasks_dir=self.make_tasks_dir(bodies),
+            connect_fn=self.ok_connect,
+            process_probe=lambda: None,
+            aw_stack_log=self.root / "no.log",
+        )
         self.assertEqual(rep["items"][0]["status"], "FAIL")
         self.assertIn("触发时间 09:00 ≠ 期望 17:10", rep["items"][0]["evidence"])
 
     def test_no_monday_is_fail(self):
-        bodies = {"AgentShadowDaily": make_task_xml(days=("Tuesday", "Wednesday")),
-                  "AgentMondayCheckpoint": TASK_BODIES["AgentMondayCheckpoint"],
-                  "AgentChiefPush": TASK_BODIES["AgentChiefPush"]}
-        rep = ctc.run_checks(self.make_repo(), tasks_dir=self.make_tasks_dir(bodies),
-                             connect_fn=self.ok_connect, process_probe=lambda: None,
-                             aw_stack_log=self.root / "no.log")
+        bodies = {
+            "AgentShadowDaily": make_task_xml(days=("Tuesday", "Wednesday")),
+            "AgentMondayCheckpoint": TASK_BODIES["AgentMondayCheckpoint"],
+            "AgentChiefPush": TASK_BODIES["AgentChiefPush"],
+        }
+        rep = ctc.run_checks(
+            self.make_repo(),
+            tasks_dir=self.make_tasks_dir(bodies),
+            connect_fn=self.ok_connect,
+            process_probe=lambda: None,
+            aw_stack_log=self.root / "no.log",
+        )
         self.assertEqual(rep["items"][0]["status"], "FAIL")
         self.assertIn("无周一", rep["items"][0]["evidence"])
 
     def test_disabled_task_is_fail(self):
-        bodies = {"AgentShadowDaily": make_task_xml(enabled=False),
-                  "AgentMondayCheckpoint": TASK_BODIES["AgentMondayCheckpoint"],
-                  "AgentChiefPush": TASK_BODIES["AgentChiefPush"]}
-        rep = ctc.run_checks(self.make_repo(), tasks_dir=self.make_tasks_dir(bodies),
-                             connect_fn=self.ok_connect, process_probe=lambda: None,
-                             aw_stack_log=self.root / "no.log")
+        bodies = {
+            "AgentShadowDaily": make_task_xml(enabled=False),
+            "AgentMondayCheckpoint": TASK_BODIES["AgentMondayCheckpoint"],
+            "AgentChiefPush": TASK_BODIES["AgentChiefPush"],
+        }
+        rep = ctc.run_checks(
+            self.make_repo(),
+            tasks_dir=self.make_tasks_dir(bodies),
+            connect_fn=self.ok_connect,
+            process_probe=lambda: None,
+            aw_stack_log=self.root / "no.log",
+        )
         self.assertEqual(rep["items"][0]["status"], "FAIL")
         self.assertIn("禁用", rep["items"][0]["evidence"])
 
     def test_malformed_xml_is_warn_with_guidance(self):
         tdir = self.make_tasks_dir()
         (tdir / "AgentShadowDaily").write_text("<not-xml", encoding="utf-16")
-        rep = ctc.run_checks(self.make_repo(), tasks_dir=tdir,
-                             connect_fn=self.ok_connect, process_probe=lambda: None,
-                             aw_stack_log=self.root / "no.log")
+        rep = ctc.run_checks(
+            self.make_repo(),
+            tasks_dir=tdir,
+            connect_fn=self.ok_connect,
+            process_probe=lambda: None,
+            aw_stack_log=self.root / "no.log",
+        )
         self.assertEqual(rep["items"][0]["status"], "WARN")
         self.assertIn("XML 解析失败", rep["items"][0]["evidence"])
         self.assertIn("→", rep["items"][0]["evidence"])
@@ -306,28 +376,41 @@ class TestDaemon(TriggerChainBase):
     def test_ollama_refused_is_fail(self):
         def refused(host, port):
             raise ConnectionRefusedError()
-        rep = ctc.run_checks(self.make_repo(), tasks_dir=self.make_tasks_dir(),
-                             connect_fn=refused, process_probe=lambda: None,
-                             aw_stack_log=self.root / "no.log")
+
+        rep = ctc.run_checks(
+            self.make_repo(),
+            tasks_dir=self.make_tasks_dir(),
+            connect_fn=refused,
+            process_probe=lambda: None,
+            aw_stack_log=self.root / "no.log",
+        )
         self.assertEqual(rep["items"][2]["status"], "FAIL")
         self.assertIn("无监听", rep["items"][2]["evidence"])
 
     def test_ollama_other_error_is_warn_with_guidance(self):
         def boom(host, port):
             raise OSError("sandbox denied")
-        rep = ctc.run_checks(self.make_repo(), tasks_dir=self.make_tasks_dir(),
-                             connect_fn=boom, process_probe=lambda: None,
-                             aw_stack_log=self.root / "no.log")
+
+        rep = ctc.run_checks(
+            self.make_repo(),
+            tasks_dir=self.make_tasks_dir(),
+            connect_fn=boom,
+            process_probe=lambda: None,
+            aw_stack_log=self.root / "no.log",
+        )
         self.assertEqual(rep["items"][2]["status"], "WARN")
         self.assertIn("探测异常", rep["items"][2]["evidence"])
         self.assertIn("curl", rep["items"][2]["evidence"])  # 手动复核指引
 
     def test_watchdog_stack_log_trace_visible(self):
         aw = self.root / "aw-stack.log"
-        aw.write_text("[2026-10-18 10:00:00] pulled up: watch-daemon,ack-serve\n",
-                      encoding="utf-8")
-        _, ev = ctc.check_c_daemon(connect_fn=self.ok_connect,
-                                   process_probe=lambda: None, aw_stack_log=aw)
+        aw.write_text(
+            "[2026-10-18 10:00:00] pulled up: watch-daemon,ack-serve\n",
+            encoding="utf-8",
+        )
+        _, ev = ctc.check_c_daemon(
+            connect_fn=self.ok_connect, process_probe=lambda: None, aw_stack_log=aw
+        )
         self.assertIn("拉起留痕", ev)
 
 
@@ -340,9 +423,13 @@ class TestDataRoot(TriggerChainBase):
         self.assertIn("不存在", ev)
 
     def test_present_data_root_pass(self):
-        rep = ctc.run_checks(self.make_repo(), tasks_dir=self.make_tasks_dir(),
-                             connect_fn=self.ok_connect, process_probe=lambda: None,
-                             aw_stack_log=self.root / "no.log")
+        rep = ctc.run_checks(
+            self.make_repo(),
+            tasks_dir=self.make_tasks_dir(),
+            connect_fn=self.ok_connect,
+            process_probe=lambda: None,
+            aw_stack_log=self.root / "no.log",
+        )
         self.assertEqual(rep["items"][3]["status"], "PASS")
 
 
@@ -359,11 +446,13 @@ class TestExitMatrix(TriggerChainBase):
         self.assertEqual(ctc.aggregate(statuses), 1)
 
     def test_fail_run_exit_two(self):
-        rep = ctc.run_checks(self.make_repo(), tasks_dir=self.make_tasks_dir(),
-                             connect_fn=lambda h, p: (_ for _ in ()).throw(
-                                 ConnectionRefusedError()),
-                             process_probe=lambda: None,
-                             aw_stack_log=self.root / "no.log")
+        rep = ctc.run_checks(
+            self.make_repo(),
+            tasks_dir=self.make_tasks_dir(),
+            connect_fn=lambda h, p: (_ for _ in ()).throw(ConnectionRefusedError()),
+            process_probe=lambda: None,
+            aw_stack_log=self.root / "no.log",
+        )
         self.assertEqual(rep["exit_code"], 2)
 
 
@@ -371,6 +460,7 @@ class TestCli(TriggerChainBase):
     def test_print_config(self):
         import io
         from contextlib import redirect_stdout
+
         buf = io.StringIO()
         with redirect_stdout(buf):
             code = ctc.main(["--repo-root", str(self.root), "--print-config"])
@@ -381,11 +471,14 @@ class TestCli(TriggerChainBase):
         self.assertIn("chief_last_run.log", out)
         self.assertIn("11434", out)
 
-    @unittest.skipUnless(sys.platform.startswith("win"),
-                         "断言依赖 Windows 计划任务/日志真实路径；Linux 服务器 verify 环境不适用")
+    @unittest.skipUnless(
+        sys.platform.startswith("win"),
+        "断言依赖 Windows 计划任务/日志真实路径；Linux 服务器 verify 环境不适用",
+    )
     def test_main_report_and_exit_code(self):
         import io
         from contextlib import redirect_stdout
+
         rep_root = self.make_repo()
         buf = io.StringIO()
         with redirect_stdout(buf):
@@ -429,6 +522,7 @@ class TestWarnClosure(TriggerChainBase):
     def test_no_vague_unknown_in_statuses_and_report(self):
         import io
         from contextlib import redirect_stdout
+
         # 混合场景：任务 XML 缺失 + chief 日志缺失 → a/b 双 WARN
         bodies = dict(TASK_BODIES)
         del bodies["AgentChiefPush"]
@@ -437,9 +531,13 @@ class TestWarnClosure(TriggerChainBase):
             "monday_checkpoint.log": "EXIT=0 日志=x\n",
             "chief_last_run.log": None,
         }
-        rep = ctc.run_checks(self.make_repo(logs), tasks_dir=self.make_tasks_dir(bodies),
-                             connect_fn=self.ok_connect, process_probe=lambda: None,
-                             aw_stack_log=self.root / "no.log")
+        rep = ctc.run_checks(
+            self.make_repo(logs),
+            tasks_dir=self.make_tasks_dir(bodies),
+            connect_fn=self.ok_connect,
+            process_probe=lambda: None,
+            aw_stack_log=self.root / "no.log",
+        )
         self.assertEqual(rep["warn"], 2)
         buf = io.StringIO()
         with redirect_stdout(buf):
@@ -465,14 +563,19 @@ class TestCheckpointLogWaitResidual(TriggerChainBase):
 
     @staticmethod
     def _blk(ts, body):
-        return ("=" * 56 + "\nM5 刀4 周一观察点护航巡检 %s\n" % ts + "=" * 56
-                + "\n" + body)
+        return (
+            "=" * 56 + "\nM5 刀4 周一观察点护航巡检 %s\n" % ts + "=" * 56 + "\n" + body
+        )
 
     WAIT = "[wait] 首跑未完成（尚未落账，第 1/120 次重试前等 90s）\n"
-    OK_BODY = ("结论: 7/7 PASS——观察点门全过\n"
-               "EXIT=0 日志=C:\\aios\\agent_platform\\data\\shadow\\monday_checkpoint.log\n")
-    FAIL_BODY = ("结论: 4/7 PASS（FAIL: 影子首跑已发生（最新交易日 > 2026-10-14））\n"
-                 "EXIT=1 日志=x\n")
+    OK_BODY = (
+        "结论: 7/7 PASS——观察点门全过\n"
+        "EXIT=0 日志=C:\\aios\\agent_platform\\data\\shadow\\monday_checkpoint.log\n"
+    )
+    FAIL_BODY = (
+        "结论: 4/7 PASS（FAIL: 影子首跑已发生（最新交易日 > 2026-10-14））\n"
+        "EXIT=1 日志=x\n"
+    )
 
     def _run_b(self, checkpoint_text):
         """只让 monday_checkpoint.log 变化（其余两日志恒 PASS），返回 run_checks 报告。"""
@@ -481,15 +584,21 @@ class TestCheckpointLogWaitResidual(TriggerChainBase):
             "monday_checkpoint.log": checkpoint_text,
             "chief_last_run.log": "SEND_OK\n",
         }
-        return ctc.run_checks(self.make_repo(logs), tasks_dir=self.make_tasks_dir(),
-                              connect_fn=self.ok_connect, process_probe=lambda: None,
-                              aw_stack_log=self.root / "no.log")
+        return ctc.run_checks(
+            self.make_repo(logs),
+            tasks_dir=self.make_tasks_dir(),
+            connect_fn=self.ok_connect,
+            process_probe=lambda: None,
+            aw_stack_log=self.root / "no.log",
+        )
 
     def test_wait_residual_block_is_warn_not_fail(self):
         """10-19 16:40 实况复刻：旧块 EXIT=0 + 末块 [wait] 残留（04:11 预演/
         手跑中断，无收尾行）→ WARN 不计 FAIL；不告警、不阻塞放行（exit 0）。"""
-        rep = self._run_b(self._blk("2026-10-18 05:55:58", self.OK_BODY)
-                          + self._blk("2026-10-19 04:11:43", self.WAIT + self.WAIT))
+        rep = self._run_b(
+            self._blk("2026-10-18 05:55:58", self.OK_BODY)
+            + self._blk("2026-10-19 04:11:43", self.WAIT + self.WAIT)
+        )
         b = rep["items"][1]
         self.assertEqual(b["status"], "WARN")
         self.assertIn("[wait] 行 ×2", b["evidence"])
@@ -501,8 +610,10 @@ class TestCheckpointLogWaitResidual(TriggerChainBase):
     def test_live_wait_loop_in_progress_is_warn_not_fail(self):
         """实时等待循环（17:25 块 [wait] ×36 进行中、未收尾）→ WARN：
         设计内形态（SOP 手册：[wait] 行=在推进属正常），不误报 FAIL。"""
-        rep = self._run_b(self._blk("2026-10-18 05:55:58", self.OK_BODY)
-                          + self._blk("2026-10-19 17:25:00", self.WAIT * 36))
+        rep = self._run_b(
+            self._blk("2026-10-18 05:55:58", self.OK_BODY)
+            + self._blk("2026-10-19 17:25:00", self.WAIT * 36)
+        )
         b = rep["items"][1]
         self.assertEqual(b["status"], "WARN")
         self.assertIn("[wait] 行 ×36", b["evidence"])
@@ -510,9 +621,10 @@ class TestCheckpointLogWaitResidual(TriggerChainBase):
     def test_concluded_exit1_block_is_real_fail(self):
         """末块收尾 EXIT=1（等满上限后观察点门未过）→ 真实 FAIL，带结论
         明细；exit 2（触发链预检告警面照旧响）。"""
-        rep = self._run_b(self._blk("2026-10-18 05:55:58", self.OK_BODY)
-                          + self._blk("2026-10-19 17:25:00",
-                                      self.WAIT * 3 + self.FAIL_BODY))
+        rep = self._run_b(
+            self._blk("2026-10-18 05:55:58", self.OK_BODY)
+            + self._blk("2026-10-19 17:25:00", self.WAIT * 3 + self.FAIL_BODY)
+        )
         b = rep["items"][1]
         self.assertEqual(b["status"], "FAIL")
         self.assertIn("真实 checkpoint 失败", b["evidence"])
@@ -522,17 +634,19 @@ class TestCheckpointLogWaitResidual(TriggerChainBase):
     def test_residual_block_does_not_mask_unresolved_fail(self):
         """残留块不得掩盖未处置失败：最近完整块 EXIT=1 + 末块 [wait] 残留
         → 仍 FAIL（fail-visible：失败未被更新的完整块取代）。"""
-        rep = self._run_b(self._blk("2026-10-19 17:25:00",
-                                    self.WAIT * 3 + self.FAIL_BODY)
-                          + self._blk("2026-10-19 18:00:00", self.WAIT + self.WAIT))
+        rep = self._run_b(
+            self._blk("2026-10-19 17:25:00", self.WAIT * 3 + self.FAIL_BODY)
+            + self._blk("2026-10-19 18:00:00", self.WAIT + self.WAIT)
+        )
         b = rep["items"][1]
         self.assertEqual(b["status"], "FAIL")
         self.assertIn("未被更新的完整块取代", b["evidence"])
 
     def test_concluded_exit0_block_is_pass(self):
         """末块收尾 EXIT=0（[wait] 后首跑落账、门全过）→ PASS。"""
-        rep = self._run_b(self._blk("2026-10-19 17:25:00",
-                                    self.WAIT * 3 + self.OK_BODY))
+        rep = self._run_b(
+            self._blk("2026-10-19 17:25:00", self.WAIT * 3 + self.OK_BODY)
+        )
         self.assertEqual(rep["items"][1]["status"], "PASS")
 
     def test_empty_log_still_fail(self):
@@ -593,9 +707,11 @@ class TestShadowLogDateGate(TriggerChainBase):
     def test_c1_today_crashed_with_history_success_is_not_pass(self):
         """判据1：历史有成功行（D-1）+ 今日有头行但无收尾行 ⇒ 不得判 PASS
         （改前会读到历史那条判 PASS = 假绿）。"""
-        text = (self._close(self.DAY_YEST)
-                + self._start(self.DAY_TODAY)
-                + "[strategy] xxx\n")
+        text = (
+            self._close(self.DAY_YEST)
+            + self._start(self.DAY_TODAY)
+            + "[strategy] xxx\n"
+        )
         status, msg = self._judge(text)
         self.assertNotEqual(status, ctc.PASS)
         self.assertEqual(status, ctc.FAIL)
@@ -604,9 +720,11 @@ class TestShadowLogDateGate(TriggerChainBase):
 
     def test_c2_today_success_is_pass_with_today_date(self):
         """判据2：含今日收尾行 done≥1 ⇒ PASS 且说明含今日日期。"""
-        text = (self._close(self.DAY_YEST)
-                + self._start(self.DAY_TODAY)
-                + self._close(self.DAY_TODAY, done=3))
+        text = (
+            self._close(self.DAY_YEST)
+            + self._start(self.DAY_TODAY)
+            + self._close(self.DAY_TODAY, done=3)
+        )
         status, msg = self._judge(text)
         self.assertEqual(status, ctc.PASS)
         self.assertIn(self.DAY_TODAY, msg)
@@ -621,10 +739,12 @@ class TestShadowLogDateGate(TriggerChainBase):
     def test_c4_multiday_today_success_in_middle_is_pass(self):
         """判据4（本次修复核心）：多日累积，今日成功行**不在最后一条**
         ⇒ 仍按**日期**取到今日那条并判 PASS（不能只取「最后一条」）。"""
-        text = (self._close("2026-10-13")
-                + self._start(self.DAY_TODAY)
-                + self._close(self.DAY_TODAY, done=3)
-                + self._close("2026-10-14"))  # 今日行之后还有别的日期行
+        text = (
+            self._close("2026-10-13")
+            + self._start(self.DAY_TODAY)
+            + self._close(self.DAY_TODAY, done=3)
+            + self._close("2026-10-14")
+        )  # 今日行之后还有别的日期行
         status, msg = self._judge(text)
         self.assertEqual(status, ctc.PASS)
         self.assertIn(self.DAY_TODAY, msg)
@@ -642,10 +762,12 @@ class TestShadowLogDateGate(TriggerChainBase):
         早跑成功收尾、晚跑崩溃（只有头行无收尾行）⇒ 判 FAIL。
         改前按「日期最大」取到早跑那条成功行 ⇒ 假绿。生产上同日可多次跑
         （17:10 定时跑 + 手工补跑 + 演练跑），非构造场景。"""
-        text = (self._start(self.DAY_TODAY, "03:47:59")
-                + self._close(self.DAY_TODAY, done=5)
-                + self._start(self.DAY_TODAY, "17:10:00")
-                + "[strategy] xxx\n")
+        text = (
+            self._start(self.DAY_TODAY, "03:47:59")
+            + self._close(self.DAY_TODAY, done=5)
+            + self._start(self.DAY_TODAY, "17:10:00")
+            + "[strategy] xxx\n"
+        )
         status, msg = self._judge(text)
         self.assertEqual(status, ctc.FAIL)
         self.assertIn(self.DAY_TODAY, msg)
@@ -654,10 +776,12 @@ class TestShadowLogDateGate(TriggerChainBase):
     def test_same_day_early_crash_then_late_success_is_pass(self):
         """补充场景反向：同日早跑崩溃、晚跑成功 ⇒ 判 PASS（取今日**最后
         一次跑**的真实结果，不被早跑的崩溃拖累）。"""
-        text = (self._start(self.DAY_TODAY, "03:47:59")
-                + "[strategy] xxx\n"
-                + self._start(self.DAY_TODAY, "17:10:00")
-                + self._close(self.DAY_TODAY, done=5))
+        text = (
+            self._start(self.DAY_TODAY, "03:47:59")
+            + "[strategy] xxx\n"
+            + self._start(self.DAY_TODAY, "17:10:00")
+            + self._close(self.DAY_TODAY, done=5)
+        )
         status, msg = self._judge(text)
         self.assertEqual(status, ctc.PASS)
         self.assertIn(self.DAY_TODAY, msg)

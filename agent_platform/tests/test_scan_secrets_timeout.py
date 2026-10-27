@@ -7,6 +7,7 @@
      标准错误留一行含超时秒数的诊断。
 不改动任何既有测试断言。
 """
+
 from __future__ import annotations
 
 import subprocess
@@ -26,7 +27,8 @@ def test_git_status_files_passes_timeout(monkeypatch):
         seen["cmd"] = cmd
         seen["kwargs"] = kwargs
         return subprocess.CompletedProcess(
-            cmd, 0, stdout=b"?? a.py\0 M b.py\0", stderr=b"")
+            cmd, 0, stdout=b"?? a.py\0 M b.py\0", stderr=b""
+        )
 
     monkeypatch.setattr(scan_secrets.subprocess, "run", fake_run)
     assert scan_secrets.git_status_files("R") == ["a.py", "b.py"]
@@ -35,6 +37,7 @@ def test_git_status_files_passes_timeout(monkeypatch):
 
 def test_git_status_files_timeout_returns_none(monkeypatch, capsys):
     """超时路径：返回 None（既有失败语义），stderr 含秒数。"""
+
     def fake_run(cmd, **kwargs):
         raise subprocess.TimeoutExpired(cmd, kwargs.get("timeout"))
 
@@ -47,6 +50,7 @@ def test_git_status_files_timeout_returns_none(monkeypatch, capsys):
 
 def test_main_timeout_maps_to_exit_2(monkeypatch, capsys):
     """端到端：超时 → 「git status 执行失败」→ main 退出码 2（语义不变）。"""
+
     def fake_run(cmd, **kwargs):
         if "--show-toplevel" in cmd:
             return subprocess.CompletedProcess(cmd, 0, stdout="R\n", stderr="")

@@ -14,6 +14,7 @@
 
 纪律：全部 tmp 隔离；慢桩用小 timeout（0.3s 级），不拖测试节奏。
 """
+
 import importlib
 import json
 import sys
@@ -36,8 +37,12 @@ class _FastAgent(StrategyAgent):
     stance = "neutral"
 
     def propose(self, context):
-        return Verdict(strategy_id=self.strategy_id, symbol=context["symbol"],
-                       recommendation="hold", confidence=0.5)
+        return Verdict(
+            strategy_id=self.strategy_id,
+            symbol=context["symbol"],
+            recommendation="hold",
+            confidence=0.5,
+        )
 
 
 class _SleepStub(StrategyAgent):
@@ -54,8 +59,12 @@ class _SleepStub(StrategyAgent):
 
     def propose(self, context):
         time.sleep(self.seconds)
-        return Verdict(strategy_id=self.strategy_id, symbol=context["symbol"],
-                       recommendation="buy", confidence=0.8)
+        return Verdict(
+            strategy_id=self.strategy_id,
+            symbol=context["symbol"],
+            recommendation="buy",
+            confidence=0.8,
+        )
 
 
 class _BoomAgent(StrategyAgent):
@@ -70,6 +79,7 @@ class _BoomAgent(StrategyAgent):
 
 def _registry(*agents):
     from strategy_registry import StrategyRegistry
+
     r = StrategyRegistry()
     for a in agents:
         r.register(a)
@@ -80,6 +90,7 @@ _CTX = {"symbol": "600519", "closes": [100.0, 101.0, 102.0]}
 
 
 # ------------------------------------------------- 超时触发与落账记录
+
 
 def test_sleep_stub_timeout_yields_skipped_timeout_record():
     """sleep 桩超时：verdict 被剔除，产出 SKIPPED_TIMEOUT 记录且 reason 非空。"""
@@ -103,6 +114,7 @@ def test_slow_stub_within_timeout_still_records_verdict():
 
 # ------------------------------------------------- 主链继续
 
+
 def test_main_chain_continues_after_timeout():
     """主链继续：混合 registry 中慢策略超时被跳过，快策略 Verdict 照常收集。"""
     reg = _registry(_SleepStub(1.5), _FastAgent())
@@ -125,12 +137,14 @@ def test_error_strategy_recorded_as_skipped_error():
 
 # ------------------------------------------------- 落账面（影子账本行）
 
+
 def test_skip_records_survive_ledger_roundtrip(tmp_path):
     """落账面：skip 记录挂影子账本行 strategy_skipped，JSONL 写读无损。"""
     reg = _registry(_SleepStub(1.5), _FastAgent())
     _vs, skips = run_shadow._collect_verdicts_with_skips(reg, _CTX, timeout_s=0.3)
-    row = run_shadow.build_ledger_row("2026-10-19", "600519", "贵州茅台",
-                                      "run-test", 100.0, {}, True, {}, 1.0)
+    row = run_shadow.build_ledger_row(
+        "2026-10-19", "600519", "贵州茅台", "run-test", 100.0, {}, True, {}, 1.0
+    )
     row["strategy_skipped"] = skips  # 与 main done 分支接线同形
     ledger = tmp_path / "shadow_ledger.jsonl"
     ledger.write_text(json.dumps(row, ensure_ascii=False) + "\n", encoding="utf-8")
@@ -144,12 +158,14 @@ def test_skip_records_survive_ledger_roundtrip(tmp_path):
 
 def test_row_without_skips_has_no_strategy_skipped_key():
     """schema 兼容：无 skip 时账本行不带 strategy_skipped 键（附加可选字段）。"""
-    row = run_shadow.build_ledger_row("2026-10-19", "600519", "贵州茅台",
-                                      "run-test", 100.0, {}, True, {}, 1.0)
+    row = run_shadow.build_ledger_row(
+        "2026-10-19", "600519", "贵州茅台", "run-test", 100.0, {}, True, {}, 1.0
+    )
     assert "strategy_skipped" not in row
 
 
 # ------------------------------------------------- env 通道
+
 
 def test_env_channel_overrides_default(monkeypatch):
     """env 通道：SHADOW_PROPOSE_TIMEOUT_S=120 导入期解析生效（120s 建议档）。"""
@@ -177,6 +193,7 @@ def test_env_channel_feeds_no_arg_collect():
 
     monkeypatch 模块常量模拟 env 解析结果（None 哨兵语义，调用期解析）。"""
     import unittest.mock as mock
+
     reg = _registry(_SleepStub(1.5))
     with mock.patch.object(run_shadow, "PROPOSE_TIMEOUT_S", 0.2):
         vs, skips = run_shadow._collect_verdicts_with_skips(reg, _CTX)

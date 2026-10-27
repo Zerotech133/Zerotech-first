@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """MCP HTTP + DOCX 表格测试（WO-MCP-HTTP-DOCX）。"""
+
 from __future__ import annotations
 
 import importlib.util
@@ -35,14 +36,26 @@ class _Handler(BaseHTTPRequestHandler):
         req = json.loads(self.rfile.read(length).decode("utf-8"))
         method = req.get("method")
         if method == "initialize":
-            res = {"protocolVersion": "2025-06-18", "capabilities": {"tools": {}},
-                   "serverInfo": {"name": "mock", "version": "1"}}
+            res = {
+                "protocolVersion": "2025-06-18",
+                "capabilities": {"tools": {}},
+                "serverInfo": {"name": "mock", "version": "1"},
+            }
         elif method == "tools/list":
-            res = {"tools": [{"name": "ping_tool", "description": "ping",
-                              "inputSchema": {"type": "object"}}]}
+            res = {
+                "tools": [
+                    {
+                        "name": "ping_tool",
+                        "description": "ping",
+                        "inputSchema": {"type": "object"},
+                    }
+                ]
+            }
         elif method == "tools/call":
-            res = {"content": [{"type": "text",
-                                "text": json.dumps({"pong": True})}], "isError": False}
+            res = {
+                "content": [{"type": "text", "text": json.dumps({"pong": True})}],
+                "isError": False,
+            }
         else:
             res = {}
         body = [{"jsonrpc": "2.0", "id": req.get("id"), "result": res}]
@@ -78,9 +91,17 @@ def test_registry_http_transport(tmp_path, monkeypatch):
     port = srv.server_address[1]
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     try:
-        cfg = {"servers": {"http-mock": {
-            "transport": "http", "url": "http://127.0.0.1:%d/mcp" % port,
-            "risk": "read-only", "allow_tools": ["ping_tool"], "timeout": 5}}}
+        cfg = {
+            "servers": {
+                "http-mock": {
+                    "transport": "http",
+                    "url": "http://127.0.0.1:%d/mcp" % port,
+                    "risk": "read-only",
+                    "allow_tools": ["ping_tool"],
+                    "timeout": 5,
+                }
+            }
+        }
         p = tmp_path / "servers.json"
         p.write_text(json.dumps(cfg), encoding="utf-8")
         monkeypatch.setattr(REG, "CONFIG", p)
@@ -95,9 +116,16 @@ def test_registry_http_transport(tmp_path, monkeypatch):
 
 
 def test_registry_disabled_http(tmp_path, monkeypatch):
-    cfg = {"servers": {"disabled": {"transport": "http",
-                                    "url": "https://api.example.com/mcp",
-                                    "enabled": False, "risk": "read-only"}}}
+    cfg = {
+        "servers": {
+            "disabled": {
+                "transport": "http",
+                "url": "https://api.example.com/mcp",
+                "enabled": False,
+                "risk": "read-only",
+            }
+        }
+    }
     p = tmp_path / "servers.json"
     p.write_text(json.dumps(cfg), encoding="utf-8")
     monkeypatch.setattr(REG, "CONFIG", p)

@@ -13,14 +13,15 @@
 提交：2026-10-18 老田拍板试点（submit_id=20261018_sma20_rsi14），
 Codex 侧零凭据、纯标准库（statistics 白名单内）。
 """
+
 from statistics import fmean
 from strategy_registry import StrategyAgent, Verdict
 
-SMA_WIN = 20            # SMA 窗口（日）
-RSI_WIN = 14            # RSI 差分窗口
-TREND_BAND = 0.005      # SMA 偏离带 ±0.5%
-RSI_OVERBOUGHT = 70.0   # 超买
-RSI_OVERSOLD = 30.0     # 超卖
+SMA_WIN = 20  # SMA 窗口（日）
+RSI_WIN = 14  # RSI 差分窗口
+TREND_BAND = 0.005  # SMA 偏离带 ±0.5%
+RSI_OVERBOUGHT = 70.0  # 超买
+RSI_OVERSOLD = 30.0  # 超卖
 MIN_BARS = SMA_WIN + 1  # 样本门槛 21
 
 
@@ -41,40 +42,51 @@ def _rsi(closes, n=RSI_WIN):
 
 class CodexSma20Rsi14Agent(StrategyAgent):
     """SMA20 趋势过滤 + RSI14 反转确认（见模块 docstring 阈值来源）。"""
+
     strategy_id = "codex_sma20_rsi14"
     stance = "neutral"
 
     def propose(self, context):
-        closes = [float(x) for x in (context.get("closes") or [])
-                  if x is not None]
+        closes = [float(x) for x in (context.get("closes") or []) if x is not None]
         symbol = context.get("symbol", "")
         if len(closes) < MIN_BARS:
-            return Verdict(strategy_id=self.strategy_id, symbol=symbol,
-                           recommendation="hold", confidence=0.0,
-                           stance="neutral", score=0.0,
-                           rationale="样本不足（<%d 日）" % MIN_BARS)
+            return Verdict(
+                strategy_id=self.strategy_id,
+                symbol=symbol,
+                recommendation="hold",
+                confidence=0.0,
+                stance="neutral",
+                score=0.0,
+                rationale="样本不足（<%d 日）" % MIN_BARS,
+            )
         price = closes[-1]
         sma = fmean(closes[-SMA_WIN:])
         dev = (price - sma) / sma if sma > 1e-12 else 0.0
-        rsi = _rsi(closes[-(RSI_WIN + 1):])
+        rsi = _rsi(closes[-(RSI_WIN + 1) :])
 
         if dev > TREND_BAND:
-            if rsi >= RSI_OVERBOUGHT:   # 顺势但超买 → 反向确认卖出
+            if rsi >= RSI_OVERBOUGHT:  # 顺势但超买 → 反向确认卖出
                 rec, conf, st = "sell", 0.55, "bear"
                 why = "price 高于 SMA20 %.2f%% 且 RSI=%.1f 超买" % (dev * 100, rsi)
-            else:                        # 顺势未极端 → 顺趋势买入
+            else:  # 顺势未极端 → 顺趋势买入
                 rec, conf, st = "buy", min(0.5 + dev, 0.9), "bull"
                 why = "price 高于 SMA20 %.2f%%，RSI=%.1f 未极端" % (dev * 100, rsi)
         elif dev < -TREND_BAND:
-            if rsi <= RSI_OVERSOLD:      # 逆势但超卖 → 反转买入
+            if rsi <= RSI_OVERSOLD:  # 逆势但超卖 → 反转买入
                 rec, conf, st = "buy", 0.55, "bull"
                 why = "price 低于 SMA20 %.2f%% 且 RSI=%.1f 超卖" % (dev * 100, rsi)
-            else:                        # 逆势未极端 → 顺趋势卖出
+            else:  # 逆势未极端 → 顺趋势卖出
                 rec, conf, st = "sell", min(0.5 - dev, 0.9), "bear"
                 why = "price 低于 SMA20 %.2f%%，RSI=%.1f 未极端" % (dev * 100, rsi)
         else:
             rec, conf, st = "hold", 0.4, "neutral"
             why = "SMA 带内（±%.1f%%），RSI=%.1f" % (TREND_BAND * 100, rsi)
-        return Verdict(strategy_id=self.strategy_id, symbol=symbol,
-                       recommendation=rec, confidence=round(conf, 4),
-                       stance=st, score=round(rsi / 100, 4), rationale=why)
+        return Verdict(
+            strategy_id=self.strategy_id,
+            symbol=symbol,
+            recommendation=rec,
+            confidence=round(conf, 4),
+            stance=st,
+            score=round(rsi / 100, 4),
+            rationale=why,
+        )

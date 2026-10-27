@@ -34,8 +34,8 @@ _AGENT_PLATFORM = Path(__file__).resolve().parents[1]
 if str(_AGENT_PLATFORM) not in sys.path:
     sys.path.insert(0, str(_AGENT_PLATFORM))
 
-from contracts.objects import Approval            # noqa: E402
-from engine.approvals import ApprovalStore        # noqa: E402
+from contracts.objects import Approval  # noqa: E402
+from engine.approvals import ApprovalStore  # noqa: E402
 
 SCHED_FILE = _AGENT_PLATFORM / "data" / "schedules.json"
 
@@ -73,8 +73,7 @@ def save_schedules(rows: List[dict], root=None) -> None:
     f = _sched_file(root)
     f.parent.mkdir(parents=True, exist_ok=True)
     tmp = f.with_suffix(".json.tmp")
-    tmp.write_text(json.dumps(rows, ensure_ascii=False, indent=2),
-                   encoding="utf-8")
+    tmp.write_text(json.dumps(rows, ensure_ascii=False, indent=2), encoding="utf-8")
     tmp.replace(f)  # 原子替换，防半写
 
 
@@ -87,30 +86,30 @@ def find_schedule(sid: str) -> Optional[dict]:
 
 def _append_history(item: dict, action: str, by: str, note: str) -> None:
     hist = item.setdefault("history", [])
-    hist.append({"at": _now_cn(), "action": action, "by": by,
-                 "note": note})
+    hist.append({"at": _now_cn(), "action": action, "by": by, "note": note})
 
 
 def projection() -> dict:
     """只读投影：条目 + 每条是否有 delete 凭据。"""
     items = []
     for r in load_schedules():
-        items.append({
-            "id": r.get("id", ""),
-            "agent": r.get("agent", ""),
-            "desc": r.get("desc", ""),
-            "cron": r.get("cron", ""),
-            "weekdays_only": bool(r.get("weekdays_only", True)),
-            "enabled": bool(r.get("enabled", False)),
-            "worker": bool(r.get("worker", False)),
-            "created": r.get("created", ""),
-            "history_len": len(r.get("history", [])),
-        })
+        items.append(
+            {
+                "id": r.get("id", ""),
+                "agent": r.get("agent", ""),
+                "desc": r.get("desc", ""),
+                "cron": r.get("cron", ""),
+                "weekdays_only": bool(r.get("weekdays_only", True)),
+                "enabled": bool(r.get("enabled", False)),
+                "worker": bool(r.get("worker", False)),
+                "created": r.get("created", ""),
+                "history_len": len(r.get("history", [])),
+            }
+        )
     return {"domain": "personal", "count": len(items), "schedules": items}
 
 
-def set_enabled(sid: str, enabled: bool, by: str, note: str = ""
-                ) -> dict:
+def set_enabled(sid: str, enabled: bool, by: str, note: str = "") -> dict:
     """pause/resume：enabled 翻转（正常工作流，无需凭据）。"""
     if not by:
         raise PersonalWiringError("操作人 by 必填（可追溯）")
@@ -120,7 +119,8 @@ def set_enabled(sid: str, enabled: bool, by: str, note: str = ""
         raise PersonalWiringError("schedule %s 不存在" % sid)
     if bool(item.get("enabled", False)) == enabled:
         raise PersonalWiringError(
-            "schedule %s 已处于 enabled=%s，无变化" % (sid, enabled))
+            "schedule %s 已处于 enabled=%s，无变化" % (sid, enabled)
+        )
     action = "pause" if not enabled else "resume"
     item["enabled"] = enabled
     _append_history(item, action, by, note or action)
@@ -128,8 +128,9 @@ def set_enabled(sid: str, enabled: bool, by: str, note: str = ""
     return item
 
 
-def delete_schedule(sid: str, by: str, reason: str = "",
-                    store: ApprovalStore = None) -> Tuple[dict, bool]:
+def delete_schedule(
+    sid: str, by: str, reason: str = "", store: ApprovalStore = None
+) -> Tuple[dict, bool]:
     """删除排程（不可逆 → 必须 Approval 凭据）。
 
     返回 (deleted_item, replayed)。
@@ -156,24 +157,25 @@ def delete_schedule(sid: str, by: str, reason: str = "",
                 store.close()
         if probe:
             return probe[-1].__dict__, True
-        raise PersonalWiringError("schedule %s 不存在（无凭据，不伪造）"
-                                  % sid)
+        raise PersonalWiringError("schedule %s 不存在（无凭据，不伪造）" % sid)
 
     own_store = store is None
     store = store or ApprovalStore(_db_path())
     try:
         key = "sched:%s:delete" % sid
-        approval, replayed = store.record(Approval(
-            target_type="schedule",
-            target_id="sched:%s" % sid,
-            from_status="enabled" if item.get("enabled") else "disabled",
-            to_status="deleted",
-            decision="approved",
-            decided_by=by,
-            reason=reason,
-            decided_at=time.strftime("%Y-%m-%dT%H:%M:%S+08:00"),
-            idempotency_key=key,
-        ))
+        approval, replayed = store.record(
+            Approval(
+                target_type="schedule",
+                target_id="sched:%s" % sid,
+                from_status="enabled" if item.get("enabled") else "disabled",
+                to_status="deleted",
+                decision="approved",
+                decided_by=by,
+                reason=reason,
+                decided_at=time.strftime("%Y-%m-%dT%H:%M:%S+08:00"),
+                idempotency_key=key,
+            )
+        )
         if replayed:
             # 崩溃窗口 catch-up：凭据在而条目还在 → 补执行
             rows = [r for r in rows if r.get("id") != sid]
@@ -207,13 +209,15 @@ def audit_report() -> dict:
     for c in creds:
         sid = c.target_id.split(":", 1)[-1]
         executed = sid not in present
-        checks.append({
-            "approval_id": c.approval_id,
-            "target_id": c.target_id,
-            "decided_by": c.decided_by,
-            "decided_at": c.decided_at,
-            "state": "executed" if executed else "pending_execution",
-        })
+        checks.append(
+            {
+                "approval_id": c.approval_id,
+                "target_id": c.target_id,
+                "decided_by": c.decided_by,
+                "decided_at": c.decided_at,
+                "state": "executed" if executed else "pending_execution",
+            }
+        )
     violations = []  # 本域侧无消失快照，检测不到越门删除（见 docstring 局限）
     return {
         "domain": "personal",
@@ -230,12 +234,18 @@ def main(argv=None) -> int:
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("list")
     sub.add_parser("report")
-    p_set = sub.add_parser("pause"); p_set.add_argument("sid")
-    p_set.add_argument("--by", required=True); p_set.add_argument("--note", default="")
-    p_res = sub.add_parser("resume"); p_res.add_argument("sid")
-    p_res.add_argument("--by", required=True); p_res.add_argument("--note", default="")
-    p_del = sub.add_parser("delete"); p_del.add_argument("sid")
-    p_del.add_argument("--by", required=True); p_del.add_argument("--reason", default="")
+    p_set = sub.add_parser("pause")
+    p_set.add_argument("sid")
+    p_set.add_argument("--by", required=True)
+    p_set.add_argument("--note", default="")
+    p_res = sub.add_parser("resume")
+    p_res.add_argument("sid")
+    p_res.add_argument("--by", required=True)
+    p_res.add_argument("--note", default="")
+    p_del = sub.add_parser("delete")
+    p_del.add_argument("sid")
+    p_del.add_argument("--by", required=True)
+    p_del.add_argument("--reason", default="")
     args = ap.parse_args(argv)
 
     if args.cmd == "list":
@@ -243,15 +253,28 @@ def main(argv=None) -> int:
     elif args.cmd == "report":
         print(json.dumps(audit_report(), ensure_ascii=False, indent=2))
     elif args.cmd == "pause":
-        print(json.dumps(set_enabled(args.sid, False, args.by, args.note),
-                         ensure_ascii=False, indent=2))
+        print(
+            json.dumps(
+                set_enabled(args.sid, False, args.by, args.note),
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
     elif args.cmd == "resume":
-        print(json.dumps(set_enabled(args.sid, True, args.by, args.note),
-                         ensure_ascii=False, indent=2))
+        print(
+            json.dumps(
+                set_enabled(args.sid, True, args.by, args.note),
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
     elif args.cmd == "delete":
         deleted, replayed = delete_schedule(args.sid, args.by, args.reason)
-        print(json.dumps({"deleted": deleted, "replayed": replayed},
-                         ensure_ascii=False, indent=2))
+        print(
+            json.dumps(
+                {"deleted": deleted, "replayed": replayed}, ensure_ascii=False, indent=2
+            )
+        )
     return 0
 
 

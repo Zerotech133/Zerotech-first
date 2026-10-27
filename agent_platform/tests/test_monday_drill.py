@@ -12,6 +12,7 @@
 
 刻意不触发任何计划任务、不写数据根——本文件只断言「什么都没发生」。
 """
+
 import json
 import os
 import subprocess
@@ -146,7 +147,12 @@ def test_no_args_uses_now():
 
 def test_read_only_no_side_effects():
     before = snapshot(DATA)
-    for args in (("--list",), ("--json",), ("--at", "17:20"), ("--json", "--at", "17:25")):
+    for args in (
+        ("--list",),
+        ("--json",),
+        ("--at", "17:20"),
+        ("--json", "--at", "17:25"),
+    ):
         r = run_cli(*args)
         assert r.returncode == 0, r.stderr
     after = snapshot(DATA)
@@ -158,15 +164,22 @@ def test_source_has_no_exec_or_write_path():
     assert "READ_ONLY = True" in src
     assert "ReadOnlyViolation" in src
     # 无任何进程执行/写盘入口（注释里出现这些词不算，只看 import 行与调用点）
-    imports = [ln.strip() for ln in src.splitlines()
-               if ln.strip().startswith(("import ", "from "))]
+    imports = [
+        ln.strip()
+        for ln in src.splitlines()
+        if ln.strip().startswith(("import ", "from "))
+    ]
     assert not any("subprocess" in ln for ln in imports)
-    assert not any(ln.split()[1].split(".")[0] in ("os", "shutil", "pathlib") for ln in imports)
+    assert not any(
+        ln.split()[1].split(".")[0] in ("os", "shutil", "pathlib") for ln in imports
+    )
     for call in ("os.system(", "os.popen(", "os.exec", ".mkdir(", "makedirs(", "open("):
         assert call not in src, "源码出现潜在写盘/执行调用：%s" % call
     # 唯一的潜在执行入口只有 def 一行（无任何调用点）
     assert src.count("def run_command(") == 1
-    assert src.count("run_command(") - src.count("def run_command(") <= 2  # 仅 docstring 引用
+    assert (
+        src.count("run_command(") - src.count("def run_command(") <= 2
+    )  # 仅 docstring 引用
 
 
 def test_run_command_always_refuses():
@@ -175,8 +188,11 @@ def test_run_command_always_refuses():
     import monday_drill as md
 
     assert md.READ_ONLY is True
-    for cmd in ("schtasks /run /tn AgentShadowDaily",
-                "python run_shadow.py", "$PY tools/check_observation_point.py --data-root data"):
+    for cmd in (
+        "schtasks /run /tn AgentShadowDaily",
+        "python run_shadow.py",
+        "$PY tools/check_observation_point.py --data-root data",
+    ):
         try:
             md.run_command(cmd)
         except md.ReadOnlyViolation:

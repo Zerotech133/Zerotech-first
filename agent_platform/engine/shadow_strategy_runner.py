@@ -5,6 +5,7 @@
 串成一个只读验证链。默认只返回内存结果，不写策略账本、不写交易账本、
 不调用任何交易执行接口。
 """
+
 from dataclasses import asdict, is_dataclass
 import json
 from pathlib import Path
@@ -68,7 +69,8 @@ def _bind_config(registry, config, mode, context_bytes):
         try:
             config.validate_agent(agent)
             authorizations[strategy_id] = config.bind_for_run(
-                registry, strategy_id, mode, context_bytes)
+                registry, strategy_id, mode, context_bytes
+            )
         except StrategyConfigError as exc:
             raise ShadowValidationError(
                 "strategy_id=%s 配置不匹配：%s" % (strategy_id, exc)

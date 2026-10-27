@@ -25,6 +25,7 @@ payload 规范化口径（签名方须逐字节一致）：
   生成的一次性字符串（本模块不做重放缓存；重放防护由签名有效期 + 调用方单据号
   承担，见 approval_gate 的 nonce 账本先例）。
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -51,8 +52,9 @@ class SignatureRequired(RuntimeError):
     """严格模式下无可用签名/无公钥 —— 拒绝继续。"""
 
 
-def canonical_payload(*, kind: str, item_id: str, fingerprint: str,
-                      action: str, ts: float, nonce: str) -> bytes:
+def canonical_payload(
+    *, kind: str, item_id: str, fingerprint: str, action: str, ts: float, nonce: str
+) -> bytes:
     """生成待签名 payload 的规范字节串（签名/验签双方唯一口径）。"""
     payload = {
         "scheme": SIG_SCHEME,
@@ -63,14 +65,16 @@ def canonical_payload(*, kind: str, item_id: str, fingerprint: str,
         "ts": round(float(ts), 6),
         "nonce": str(nonce),
     }
-    return json.dumps(payload, ensure_ascii=False, sort_keys=True,
-                      separators=(",", ":")).encode("utf-8")
+    return json.dumps(
+        payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
 
 
 def fingerprint_of(obj: Any) -> str:
     """内容指纹：sha256(规范 JSON)。用于把签名绑定到具体卡片/经验内容。"""
-    raw = json.dumps(obj, ensure_ascii=False, sort_keys=True,
-                     separators=(",", ":")).encode("utf-8")
+    raw = json.dumps(
+        obj, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
     return hashlib.sha256(raw).hexdigest()
 
 
@@ -86,17 +90,28 @@ class Verifier:
             raise SignatureError("公钥不是合法 hex: %s" % exc) from exc
         try:
             from cryptography.hazmat.primitives.asymmetric.ed25519 import (
-                Ed25519PublicKey)
+                Ed25519PublicKey,
+            )
+
             self._key = Ed25519PublicKey.from_public_bytes(public_bytes)
         except ImportError as exc:  # pragma: no cover - 环境缺 cryptography
             raise SignatureError("缺少 cryptography 依赖，无法验签") from exc
         except Exception as exc:  # 公钥长度/格式非法
             raise SignatureError("公钥非法: %s" % exc) from exc
 
-    def verify(self, *, kind: str, item_id: str, fingerprint: str,
-               action: str, ts: float, nonce: str, sig_hex: str,
-               max_age_s: float = DEFAULT_MAX_AGE_S,
-               now: Optional[float] = None) -> Tuple[bool, str]:
+    def verify(
+        self,
+        *,
+        kind: str,
+        item_id: str,
+        fingerprint: str,
+        action: str,
+        ts: float,
+        nonce: str,
+        sig_hex: str,
+        max_age_s: float = DEFAULT_MAX_AGE_S,
+        now: Optional[float] = None,
+    ) -> Tuple[bool, str]:
         """验签并校验时效。返回 (ok, reason)；异常输入不抛，返回 False+原因。"""
         if not sig_hex:
             return False, "empty signature"
@@ -109,15 +124,22 @@ class Verifier:
         except (TypeError, ValueError):
             return False, "bad ts"
         import time
+
         now_f = float(now) if now is not None else time.time()
         age = abs(now_f - ts_f)
         if age > float(max_age_s):
             return False, "signature expired (age=%.0fs > %.0fs)" % (age, max_age_s)
-        payload = canonical_payload(kind=kind, item_id=item_id,
-                                    fingerprint=fingerprint, action=action,
-                                    ts=ts_f, nonce=nonce)
+        payload = canonical_payload(
+            kind=kind,
+            item_id=item_id,
+            fingerprint=fingerprint,
+            action=action,
+            ts=ts_f,
+            nonce=nonce,
+        )
         try:
             from cryptography.exceptions import InvalidSignature
+
             self._key.verify(sig, payload)
         except InvalidSignature:
             return False, "signature invalid"
@@ -149,12 +171,24 @@ def verifier_from_env() -> Optional[Verifier]:
 
 
 def strict_enabled() -> bool:
-    return (os.environ.get(ENV_STRICT) or "").strip().lower() in ("1", "true", "yes", "on")
+    return (os.environ.get(ENV_STRICT) or "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    )
 
 
-def check(*, kind: str, item_id: str, fingerprint: str, action: str,
-          signed_by: str, signature: Optional[dict] = None,
-          now: Optional[float] = None) -> dict:
+def check(
+    *,
+    kind: str,
+    item_id: str,
+    fingerprint: str,
+    action: str,
+    signed_by: str,
+    signature: Optional[dict] = None,
+    now: Optional[float] = None,
+) -> dict:
     """统一验签入口。
 
     Returns:
@@ -169,29 +203,44 @@ def check(*, kind: str, item_id: str, fingerprint: str, action: str,
     if not sig:
         if strict_enabled():
             raise SignatureRequired(
-                "签名校验已开启（%s=1）：缺少 signature，拒绝继续" % ENV_STRICT)
-        return {"signed_by": who, "verified": False,
-                "reason": "legacy mode: no signature provided "
-                          "(EVOLVE_SIGNATURE_STRICT not enabled)"}
+                "签名校验已开启（%s=1）：缺少 signature，拒绝继续" % ENV_STRICT
+            )
+        return {
+            "signed_by": who,
+            "verified": False,
+            "reason": "legacy mode: no signature provided "
+            "(EVOLVE_SIGNATURE_STRICT not enabled)",
+        }
 
     if not isinstance(sig, dict):
         raise SignatureError("signature 必须是对象（scheme/sig/ts/nonce）")
     if sig.get("scheme") != SIG_SCHEME:
-        raise SignatureError("unsupported scheme: %r（期望 %s）"
-                             % (sig.get("scheme"), SIG_SCHEME))
+        raise SignatureError(
+            "unsupported scheme: %r（期望 %s）" % (sig.get("scheme"), SIG_SCHEME)
+        )
     verifier = verifier_from_env()
     if verifier is None:
         if strict_enabled():
             raise SignatureRequired(
                 "签名校验已开启但未配置公钥（%s / %s）"
-                % (ENV_PUBKEY_HEX, ENV_PUBKEY_FILE))
-        return {"signed_by": who, "verified": False,
-                "reason": "signature present but verifier not configured "
-                          "(EVOLVE_PRINCIPAL_PUBKEY_HEX/FILE unset)"}
+                % (ENV_PUBKEY_HEX, ENV_PUBKEY_FILE)
+            )
+        return {
+            "signed_by": who,
+            "verified": False,
+            "reason": "signature present but verifier not configured "
+            "(EVOLVE_PRINCIPAL_PUBKEY_HEX/FILE unset)",
+        }
     ok, reason = verifier.verify(
-        kind=kind, item_id=item_id, fingerprint=fingerprint, action=action,
-        ts=sig.get("ts"), nonce=sig.get("nonce", ""),
-        sig_hex=sig.get("sig", ""), now=now)
+        kind=kind,
+        item_id=item_id,
+        fingerprint=fingerprint,
+        action=action,
+        ts=sig.get("ts"),
+        nonce=sig.get("nonce", ""),
+        sig_hex=sig.get("sig", ""),
+        now=now,
+    )
     if not ok:
         raise SignatureError("签名校验失败：%s" % reason)
     return {"signed_by": who, "verified": True, "reason": reason}

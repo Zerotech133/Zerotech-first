@@ -14,6 +14,7 @@ agent_platform/docs/audit/2026-10-18_军团M4M5规划稿.md 头部拍板段）�
 退出码：0=全绿可开单；1=任一件红（顺延）；2=前置未到时点（中性，
 17:35 前空跑验证用，不算红）。
 """
+
 import os
 import re
 import subprocess
@@ -55,16 +56,24 @@ def judge_last_run():
         if ts.startswith(TODAY + " 17:"):
             if re.search(r"shadow day %s done:" % TODAY, body):
                 n = re.search(r"'done': (\d+)", body)
-                add("1) last_run.log（ShadowDaily 首跑）", "GREEN",
-                    "块 %s，done=%s" % (ts.strip(), n.group(1) if n else "?"))
+                add(
+                    "1) last_run.log（ShadowDaily 首跑）",
+                    "GREEN",
+                    "块 %s，done=%s" % (ts.strip(), n.group(1) if n else "?"),
+                )
             else:
-                add("1) last_run.log（ShadowDaily 首跑）", "RED",
-                    "今日块 %s 无 shadow day 汇总行（疑似半途中断）" % ts.strip())
+                add(
+                    "1) last_run.log（ShadowDaily 首跑）",
+                    "RED",
+                    "今日块 %s 无 shadow day 汇总行（疑似半途中断）" % ts.strip(),
+                )
             return
-    add("1) last_run.log（ShadowDaily 首跑）",
+    add(
+        "1) last_run.log（ShadowDaily 首跑）",
         "PENDING" if _now().hour < 17 else "RED",
-        "无今日 17: 首跑块" + ("" if _now().hour < 17
-                              else "（已过 17:10 仍缺失→SOP 异常矩阵）"))
+        "无今日 17: 首跑块"
+        + ("" if _now().hour < 17 else "（已过 17:10 仍缺失→SOP 异常矩阵）"),
+    )
 
 
 def judge_checkpoint():
@@ -78,19 +87,27 @@ def judge_checkpoint():
         # 真实轮结构：标题行与结论/EXIT 被等号行切成相邻块——窗口=本块+下一块
         window = seg + (chunks[idx + 1] if idx + 1 < len(chunks) else "")
         if "EXIT=0" in window and "结论:" in window and "PASS" in window:
-            add("2) monday_checkpoint.log（17:25 自然轮）", "GREEN",
-                "结论行=%s" % next(l.strip() for l in window.splitlines()
-                                   if "结论:" in l))
+            add(
+                "2) monday_checkpoint.log（17:25 自然轮）",
+                "GREEN",
+                "结论行=%s"
+                % next(l.strip() for l in window.splitlines() if "结论:" in l),
+            )
         else:
             bad = [l.strip() for l in window.splitlines() if "[FAIL]" in l]
-            add("2) monday_checkpoint.log（17:25 自然轮）", "RED",
-                "存在自然轮但未全过 EXIT=0；FAIL 行=%s" % (bad[:3] or "见日志"))
+            add(
+                "2) monday_checkpoint.log（17:25 自然轮）",
+                "RED",
+                "存在自然轮但未全过 EXIT=0；FAIL 行=%s" % (bad[:3] or "见日志"),
+            )
         return
-    add("2) monday_checkpoint.log（17:25 自然轮）",
+    add(
+        "2) monday_checkpoint.log（17:25 自然轮）",
         "PENDING" if _now().hour < 17 else "RED",
         "无今日 17: 自然轮块（今晨 04:11 护航巡检为手动轮，不作数）"
-        if _now().hour < 17 else
-        "已过 17:25 仍无自然轮块→SOP 异常矩阵")
+        if _now().hour < 17
+        else "已过 17:25 仍无自然轮块→SOP 异常矩阵",
+    )
 
 
 def judge_chief():
@@ -98,25 +115,40 @@ def judge_chief():
     内容 SEND_OK/SEND_FAIL 辅判。"""
     p = os.path.join(SHADOW, "chief_last_run.log")
     if not os.path.exists(p):
-        add("3) chief_last_run.log（ChiefPush 首跑）",
+        add(
+            "3) chief_last_run.log（ChiefPush 首跑）",
             "PENDING" if _now().hour < 17 else "RED",
-            "文件不存在" + ("" if _now().hour < 17
-                            else "（已过 17:35 仍缺失→SOP 异常矩阵）"))
+            "文件不存在"
+            + ("" if _now().hour < 17 else "（已过 17:35 仍缺失→SOP 异常矩阵）"),
+        )
         return
     mt = datetime.fromtimestamp(os.path.getmtime(p))
     txt = read(p)
     if mt.date().isoformat() != TODAY or mt.hour < 17:
-        add("3) chief_last_run.log（ChiefPush 首跑）",
+        add(
+            "3) chief_last_run.log（ChiefPush 首跑）",
             "PENDING" if _now().hour < 17 else "RED",
-            "mtime=%s 非今日 17:35 轮" % mt)
+            "mtime=%s 非今日 17:35 轮" % mt,
+        )
         return
     if "SEND_FAIL" in txt:
-        add("3) chief_last_run.log（ChiefPush 首跑）", "RED",
-            "mtime=%s 含 SEND_FAIL（飞书推送失败）" % mt)
+        add(
+            "3) chief_last_run.log（ChiefPush 首跑）",
+            "RED",
+            "mtime=%s 含 SEND_FAIL（飞书推送失败）" % mt,
+        )
         return
-    add("3) chief_last_run.log（ChiefPush 首跑）", "GREEN",
-        "mtime=%s%s" % (mt, "，含 SEND_OK" if "SEND_OK" in txt
-                        else "（无 SEND_FAIL 标记，push 输出格式首跑样本待归档）"))
+    add(
+        "3) chief_last_run.log（ChiefPush 首跑）",
+        "GREEN",
+        "mtime=%s%s"
+        % (
+            mt,
+            "，含 SEND_OK"
+            if "SEND_OK" in txt
+            else "（无 SEND_FAIL 标记，push 输出格式首跑样本待归档）",
+        ),
+    )
 
 
 def judge_gate3():
@@ -125,31 +157,45 @@ def judge_gate3():
     2026-10-19 审计修复（P2-4）：gate3 超时不得静默——显式落 PENDING/RED。"""
     try:
         r = subprocess.run(
-            [sys.executable, "-X", "utf8",
-             os.path.join(ROOT, "tools", "gate3_verdict.py")],
-            capture_output=True, text=True, encoding="utf-8", timeout=300)
+            [
+                sys.executable,
+                "-X",
+                "utf8",
+                os.path.join(ROOT, "tools", "gate3_verdict.py"),
+            ],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=300,
+        )
     except subprocess.TimeoutExpired:
-        add("4) 门3状态（gate3_verdict）",
+        add(
+            "4) 门3状态（gate3_verdict）",
             "PENDING" if _now().hour < 17 else "RED",
-            "gate3 超时 300s 无结论——17 点后属真异常，按 SOP 异常矩阵处理")
+            "gate3 超时 300s 无结论——17 点后属真异常，按 SOP 异常矩阵处理",
+        )
         return
     tail = [l for l in (r.stdout or "").splitlines() if l.strip()][-3:]
     if r.returncode == 0:
-        add("4) 门3状态（gate3_verdict）", "GREEN",
-            " | ".join(tail)[:160])
+        add("4) 门3状态（gate3_verdict）", "GREEN", " | ".join(tail)[:160])
     elif _now().hour < 17:
         # 首跑数据未产生时 gate3 按日历判「首跑已发生」实检必 FAIL
         # （与 checkpoint 的 PENDING 中性口径不同）——17:35 前属预期非红。
-        add("4) 门3状态（gate3_verdict）", "PENDING",
-            "exit=1 首跑未发生期实检不通过（预期形态），待首跑后重判")
+        add(
+            "4) 门3状态（gate3_verdict）",
+            "PENDING",
+            "exit=1 首跑未发生期实检不通过（预期形态），待首跑后重判",
+        )
     else:
-        add("4) 门3状态（gate3_verdict）", "RED",
-            "exit=%d | %s" % (r.returncode, " | ".join(tail)[:160]))
+        add(
+            "4) 门3状态（gate3_verdict）",
+            "RED",
+            "exit=%d | %s" % (r.returncode, " | ".join(tail)[:160]),
+        )
 
 
 def main():
-    print("===== 周一观察点复查 %s %s ====="
-          % (TODAY, _now().strftime("%H:%M:%S")))
+    print("===== 周一观察点复查 %s %s =====" % (TODAY, _now().strftime("%H:%M:%S")))
     judge_last_run()
     judge_checkpoint()
     judge_chief()
@@ -161,11 +207,14 @@ def main():
         print("结论: 前置未到时点（17:35 前空跑）——%d 件待首跑，非异常" % len(pend))
         return 2
     if reds:
-        print("结论: %d 件红 → 按既有 SOP 异常矩阵处置并通报，M4/M5 施工顺延"
-              % len(reds))
+        print(
+            "结论: %d 件红 → 按既有 SOP 异常矩阵处置并通报，M4/M5 施工顺延" % len(reds)
+        )
         return 1
-    print("结论: 三件首跑日志全过且门3状态绿 → 可开军团 M4 施工单"
-          "（拍板口径 2026-10-18_军团M4M5规划稿.md 头部拍板段），M5 可并行")
+    print(
+        "结论: 三件首跑日志全过且门3状态绿 → 可开军团 M4 施工单"
+        "（拍板口径 2026-10-18_军团M4M5规划稿.md 头部拍板段），M5 可并行"
+    )
     return 0
 
 

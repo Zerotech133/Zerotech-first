@@ -12,6 +12,7 @@
   4. 日报/A0 点评文件存在性
   5. 三判据快照（子进程复用 eval_shadow.py）
 """
+
 import argparse
 import json
 import subprocess
@@ -38,9 +39,14 @@ EXPECTED = [
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--date", default=(datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d"),
-                    help="核对目标日（默认昨天）")
-    ap.add_argument("--push", action="store_true", help="简报推飞书（晨检 automation 用）")
+    ap.add_argument(
+        "--date",
+        default=(datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d"),
+        help="核对目标日（默认昨天）",
+    )
+    ap.add_argument(
+        "--push", action="store_true", help="简报推飞书（晨检 automation 用）"
+    )
     args = ap.parse_args()
     d = args.date
 
@@ -61,11 +67,21 @@ def main():
     done = [r for r in rows if r.get("status") == "done"]
     failed = [r for r in rows if r.get("status") == "failed"]
     deg = [r for r in done if r.get("degraded")]
-    print("\n[1] 影子账本（%s）：%d done / %d failed / %d 降级" % (d, len(done), len(failed), len(deg)))
+    print(
+        "\n[1] 影子账本（%s）：%d done / %d failed / %d 降级"
+        % (d, len(done), len(failed), len(deg))
+    )
     for r in done:
-        print("    %s %s %s conf=%s run=%s" % (
-            r["symbol"], r.get("recommendation", "?"), r.get("name", ""),
-            r.get("confidence"), r.get("run_id", "")))
+        print(
+            "    %s %s %s conf=%s run=%s"
+            % (
+                r["symbol"],
+                r.get("recommendation", "?"),
+                r.get("name", ""),
+                r.get("confidence"),
+                r.get("run_id", ""),
+            )
+        )
     for r in failed:
         print("    [FAILED] %s：%s" % (r["symbol"], r.get("error", "?")[:90]))
     if not rows:
@@ -85,7 +101,9 @@ def main():
     if ALERT.exists():
         try:
             st = json.loads(ALERT.read_text(encoding="utf-8"))
-            print("    最近推送：date=%s pushed=%s" % (st.get("date"), st.get("pushed")))
+            print(
+                "    最近推送：date=%s pushed=%s" % (st.get("date"), st.get("pushed"))
+            )
         except json.JSONDecodeError:
             print("    （状态文件损坏，需人工检查）")
     else:
@@ -96,49 +114,88 @@ def main():
     try:
         sys.path.insert(0, str(BASE / "engine"))
         from tasks import TaskStore  # noqa: E402
+
         all_t = TaskStore(BASE / "data" / "org" / "tasks").ls()
         by_status = {}
         for t in all_t:
             by_status[t["status"]] = by_status.get(t["status"], 0) + 1
-        print("    合计 %d 单：%s" % (len(all_t),
-              " / ".join("%s=%d" % (k, v) for k, v in sorted(by_status.items())) or "空"))
+        print(
+            "    合计 %d 单：%s"
+            % (
+                len(all_t),
+                " / ".join("%s=%d" % (k, v) for k, v in sorted(by_status.items()))
+                or "空",
+            )
+        )
         for t in all_t:
             if t["status"] == "blocked":
-                print("    **[blocked]** %s %s：%s" % (t["task_id"], t["title"][:30],
-                                                      (t.get("closure_note") or "")[:60]))
+                print(
+                    "    **[blocked]** %s %s：%s"
+                    % (
+                        t["task_id"],
+                        t["title"][:30],
+                        (t.get("closure_note") or "")[:60],
+                    )
+                )
     except Exception as e:  # noqa: BLE001
         print("    [warn] 任务单读取失败：%s" % e)
 
     # 4. 日报/点评文件
     print("\n[4] 产出文件：")
-    for f, label in ((SHADOW / ("daily_report_%s.md" % d), "日报"),
-                     (SHADOW / ("a0_review_%s.md" % d), "A0 点评")):
-        print("    %s：%s" % (label, "存在（%s）" % datetime.fromtimestamp(
-            f.stat().st_mtime).strftime("%H:%M") if f.exists() else "缺失"))
+    for f, label in (
+        (SHADOW / ("daily_report_%s.md" % d), "日报"),
+        (SHADOW / ("a0_review_%s.md" % d), "A0 点评"),
+    ):
+        print(
+            "    %s：%s"
+            % (
+                label,
+                "存在（%s）"
+                % datetime.fromtimestamp(f.stat().st_mtime).strftime("%H:%M")
+                if f.exists()
+                else "缺失",
+            )
+        )
 
     # 4.5 automation 产物 mtime 断言（K-STOCK-088 P0-3：automation「ACTIVE」≠「当日触发」，
     #     09:10 cowbridge 曾漏跑靠 V6-5 产物时间戳实锤——此处机器化，漏跑当日即知）
     print("\n[4.5] automation 产物断言（mtime 须≥目标日）：")
     stale = []
     for path, label in (
-            (BASE.parent / "Hermes" / "cowbridge" / "shadow" / "to-cowagent"
-             / ("daily-%s.sample.md" % d), "09:10 cowbridge 交换"),
-            (SHADOW / ("daily_report_%s.md" % d), "17:10 影子日报"),
-            (BASE.parent / "quant_backtest" / "reports" / "rps_latest.json",
-             "RPS 日更"),
+        (
+            BASE.parent
+            / "Hermes"
+            / "cowbridge"
+            / "shadow"
+            / "to-cowagent"
+            / ("daily-%s.sample.md" % d),
+            "09:10 cowbridge 交换",
+        ),
+        (SHADOW / ("daily_report_%s.md" % d), "17:10 影子日报"),
+        (BASE.parent / "quant_backtest" / "reports" / "rps_latest.json", "RPS 日更"),
     ):
         if not path.exists():
             print("    ❌ %s：%s 缺失" % (label, path.name))
             stale.append(label)
-        elif datetime.fromtimestamp(path.stat().st_mtime).strftime(
-                "%Y-%m-%d") < d:
-            print("    ❌ %s：停更于 %s（疑似漏跑）" % (
-                label, datetime.fromtimestamp(
-                    path.stat().st_mtime).strftime("%m-%d %H:%M")))
+        elif datetime.fromtimestamp(path.stat().st_mtime).strftime("%Y-%m-%d") < d:
+            print(
+                "    ❌ %s：停更于 %s（疑似漏跑）"
+                % (
+                    label,
+                    datetime.fromtimestamp(path.stat().st_mtime).strftime(
+                        "%m-%d %H:%M"
+                    ),
+                )
+            )
             stale.append(label)
         else:
-            print("    ✅ %s（%s）" % (label, datetime.fromtimestamp(
-                path.stat().st_mtime).strftime("%H:%M")))
+            print(
+                "    ✅ %s（%s）"
+                % (
+                    label,
+                    datetime.fromtimestamp(path.stat().st_mtime).strftime("%H:%M"),
+                )
+            )
     if stale:
         print("    **[警示]** %d 项产物断言未过：%s" % (len(stale), "、".join(stale)))
 
@@ -147,11 +204,15 @@ def main():
     print("\n[4.6] lark-cli 解耦副本（bin/lark-cli.exe）：")
     _cli = BASE.parent / "bin" / "lark-cli.exe"
     if _cli.exists():
-        print("    ✅ 存在（%.1f MB，晨检口径只验存在性）"
-              % (_cli.stat().st_size / 1048576))
+        print(
+            "    ✅ 存在（%.1f MB，晨检口径只验存在性）"
+            % (_cli.stat().st_size / 1048576)
+        )
     else:
-        print("    ❌ 缺失——B 线回退插件目录，产线断链风险（10-13 巡检判例），"
-              "从插件 bin 拷贝回 bin/ 即恢复")
+        print(
+            "    ❌ 缺失——B 线回退插件目录，产线断链风险（10-13 巡检判例），"
+            "从插件 bin 拷贝回 bin/ 即恢复"
+        )
         stale.append("lark-cli 解耦副本缺失")
 
     # 5. 三判据快照（复用 eval_shadow CLI，联网取现价；审计修正 K-STOCK-021：
@@ -161,38 +222,64 @@ def main():
     try:
         r = subprocess.run(
             [sys.executable, str(BASE / "eval_shadow.py"), "--min-days", "1"],
-            capture_output=True, text=True, encoding="utf-8", timeout=120)
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=120,
+        )
         for ln in (r.stdout or "").splitlines():
             print("    " + ln)
         if r.returncode != 0:
-            print("    [warn] eval_shadow 非零退出 %s：%s" % (r.returncode, (r.stderr or "")[:120]))
+            print(
+                "    [warn] eval_shadow 非零退出 %s：%s"
+                % (r.returncode, (r.stderr or "")[:120])
+            )
     except Exception as e:  # noqa: BLE001
         print("    [warn] 三判据快照失败（不影响后续项）：%s" % e)
 
     # --push：压缩简报推飞书（影子期晨检 automation，K-STOCK-016）
     if args.push:
         eval_out = (r.stdout or "") if r is not None else ""
-        j_lines = [ln.strip() for ln in eval_out.splitlines()
-                   if ln.strip().startswith(("[J1", "[J2", "[J3", "影子评估结论"))]
-        brief = ["**影子晨检简报 %s**" % d,
-                 "账本：%d done / %d failed / %d 降级" % (len(done), len(failed), len(deg))]
+        j_lines = [
+            ln.strip()
+            for ln in eval_out.splitlines()
+            if ln.strip().startswith(("[J1", "[J2", "[J3", "影子评估结论"))
+        ]
+        brief = [
+            "**影子晨检简报 %s**" % d,
+            "账本：%d done / %d failed / %d 降级" % (len(done), len(failed), len(deg)),
+        ]
         for rr in done:
-            brief.append("- %s %s conf=%s" % (rr["symbol"], rr.get("recommendation", "?"),
-                                              rr.get("confidence", "?")))
+            brief.append(
+                "- %s %s conf=%s"
+                % (
+                    rr["symbol"],
+                    rr.get("recommendation", "?"),
+                    rr.get("confidence", "?"),
+                )
+            )
         for rr in failed:
-            brief.append("- **[FAILED]** %s：%s" % (rr["symbol"], rr.get("error", "?")[:80]))
+            brief.append(
+                "- **[FAILED]** %s：%s" % (rr["symbol"], rr.get("error", "?")[:80])
+            )
         if not rows:
             brief.append("- **[警示]** 该日无入账行（若为交易日需排查影子 automation）")
         if stale:
-            brief.append("- **[产物断言未过]** %s（漏跑当日补跑，勿拖到验收日）"
-                         % "、".join(stale))
+            brief.append(
+                "- **[产物断言未过]** %s（漏跑当日补跑，勿拖到验收日）"
+                % "、".join(stale)
+            )
         brief += ["- " + x for x in j_lines]
         try:
             tmp = SHADOW / "_morning_brief_tmp.md"
             tmp.write_text("\n".join(brief), encoding="utf-8")
             pr = subprocess.run(
                 [sys.executable, str(PUSH_SCRIPT), str(tmp)],
-                capture_output=True, text=True, encoding="utf-8", timeout=60)
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                timeout=60,
+            )
             out = (pr.stdout or pr.stderr or "").strip()
             print("\n[push] 晨检简报：%s" % (out.splitlines()[-1] if out else "无输出"))
             tmp.unlink(missing_ok=True)

@@ -9,6 +9,7 @@
   5. 决策字段缺失行 [skip] 可见（带日期）
 入口范式：test_all()（P0 判例：顶层 sys.exit 会炸 pytest 收集）。
 """
+
 import contextlib
 import io
 import json
@@ -27,7 +28,8 @@ def _reset(tmp, ledger_rows, kline_stub, quote_stub):
     fp = Path(tmp) / "shadow_ledger.jsonl"
     fp.write_text(
         "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in ledger_rows),
-        encoding="utf-8")
+        encoding="utf-8",
+    )
     eval_shadow.LEDGER = fp
     eval_shadow.DB = Path(tmp) / "no_such_checkpoints.db"
     eval_shadow.kline_daily = kline_stub
@@ -45,15 +47,24 @@ def test_spearman():
 
 def test_posterior_row():
     eval_shadow.quote_snapshot = lambda s: {"price": 105.0}  # 兜底分支打桩，不触网
-    bars = [["2026-10-08", 0, "100"], ["2026-10-09", 0, "105"],
-            ["2026-10-12", 0, "110"]]
-    ret, hz, base, exit_px = eval_shadow.posterior_row(bars, "2026-10-08", 99.0, "600519")
+    bars = [
+        ["2026-10-08", 0, "100"],
+        ["2026-10-09", 0, "105"],
+        ["2026-10-12", 0, "110"],
+    ]
+    ret, hz, base, exit_px = eval_shadow.posterior_row(
+        bars, "2026-10-08", 99.0, "600519"
+    )
     assert abs(ret - 10.0) < 1e-9 and hz == 2 and base == 100.0 and exit_px == 110.0
     # 零持有期：决策日=最新 bar
-    ret, hz, base, exit_px = eval_shadow.posterior_row(bars, "2026-10-12", 99.0, "600519")
+    ret, hz, base, exit_px = eval_shadow.posterior_row(
+        bars, "2026-10-12", 99.0, "600519"
+    )
     assert ret == "pending" and hz == 0
     # 决策日不在 K 线：账本价作基准、快照作出场
-    ret, hz, base, exit_px = eval_shadow.posterior_row(bars, "2026-10-05", 100.0, "600519")
+    ret, hz, base, exit_px = eval_shadow.posterior_row(
+        bars, "2026-10-05", 100.0, "600519"
+    )
     assert abs(ret - 5.0) < 1e-9 and hz is None and base == 100.0 and exit_px == 105.0
     print("ok 2 posterior_row 三分支")
 
@@ -62,27 +73,56 @@ def test_main_per_row_sampling():
     tmp = tempfile.mkdtemp(prefix="evalshadow_t3_")
 
     def kline(sym, n=40):
-        return {"600519": [["2026-10-08", 0, "100"], ["2026-10-09", 0, "105"],
-                           ["2026-10-12", 0, "110"]],
-                "000858": [["2026-10-08", 0, "200"], ["2026-10-09", 0, "190"],
-                           ["2026-10-12", 0, "180"]]}[sym]
+        return {
+            "600519": [
+                ["2026-10-08", 0, "100"],
+                ["2026-10-09", 0, "105"],
+                ["2026-10-12", 0, "110"],
+            ],
+            "000858": [
+                ["2026-10-08", 0, "200"],
+                ["2026-10-09", 0, "190"],
+                ["2026-10-12", 0, "180"],
+            ],
+        }[sym]
 
     def quote(sym):
         return {"price": 1.0}
 
     rows = []
-    for d, sym, sc, px in [("2026-10-08", "600519", 5, 100.0),
-                           ("2026-10-08", "000858", 1, 200.0),
-                           ("2026-10-09", "600519", 3, 105.0),
-                           ("2026-10-09", "000858", 2, 190.0)]:
-        rows.append({"date": d, "symbol": sym, "name": sym, "status": "done",
-                     "score": sc, "confidence": 0.7, "price_at_decision": px,
-                     "recommendation": "BUY", "run_id": "r_%s_%s" % (d, sym)})
+    for d, sym, sc, px in [
+        ("2026-10-08", "600519", 5, 100.0),
+        ("2026-10-08", "000858", 1, 200.0),
+        ("2026-10-09", "600519", 3, 105.0),
+        ("2026-10-09", "000858", 2, 190.0),
+    ]:
+        rows.append(
+            {
+                "date": d,
+                "symbol": sym,
+                "name": sym,
+                "status": "done",
+                "score": sc,
+                "confidence": 0.7,
+                "price_at_decision": px,
+                "recommendation": "BUY",
+                "run_id": "r_%s_%s" % (d, sym),
+            }
+        )
     # 最新日追加一行（决策日=最新 bar → pending）
-    rows.append({"date": "2026-10-12", "symbol": "600519", "name": "600519",
-                 "status": "done", "score": 4, "confidence": 0.6,
-                 "price_at_decision": 110.0, "recommendation": "HOLD",
-                 "run_id": "r_pending"})
+    rows.append(
+        {
+            "date": "2026-10-12",
+            "symbol": "600519",
+            "name": "600519",
+            "status": "done",
+            "score": 4,
+            "confidence": 0.6,
+            "price_at_decision": 110.0,
+            "recommendation": "HOLD",
+            "run_id": "r_pending",
+        }
+    )
     _reset(tmp, rows, kline, quote)
     buf = io.StringIO()
     argv_bak = sys.argv
@@ -105,12 +145,25 @@ def test_zero_ret_warning():
     tmp = tempfile.mkdtemp(prefix="evalshadow_t4_")
 
     def kline(sym, n=40):
-        return [["2026-10-08", 0, "100"], ["2026-10-09", 0, "100"],
-                ["2026-10-12", 0, "100"]]
+        return [
+            ["2026-10-08", 0, "100"],
+            ["2026-10-09", 0, "100"],
+            ["2026-10-12", 0, "100"],
+        ]
 
-    rows = [{"date": "2026-10-08", "symbol": "600519", "name": "x", "status": "done",
-             "score": 5, "confidence": 0.7, "price_at_decision": 100.0,
-             "recommendation": "BUY", "run_id": "r1"}]
+    rows = [
+        {
+            "date": "2026-10-08",
+            "symbol": "600519",
+            "name": "x",
+            "status": "done",
+            "score": 5,
+            "confidence": 0.7,
+            "price_at_decision": 100.0,
+            "recommendation": "BUY",
+            "run_id": "r1",
+        }
+    ]
     _reset(tmp, rows, kline, lambda s: {"price": 100.0})
     buf = io.StringIO()
     argv_bak = sys.argv
@@ -132,9 +185,19 @@ def test_skip_visible():
     def kline(sym, n=40):
         return [["2026-10-08", 0, "100"], ["2026-10-12", 0, "110"]]
 
-    rows = [{"date": "2026-10-08", "symbol": "300750", "name": "x", "status": "done",
-             "score": None, "confidence": None, "price_at_decision": 286.75,
-             "recommendation": "HOLD", "run_id": "r1"}]
+    rows = [
+        {
+            "date": "2026-10-08",
+            "symbol": "300750",
+            "name": "x",
+            "status": "done",
+            "score": None,
+            "confidence": None,
+            "price_at_decision": 286.75,
+            "recommendation": "HOLD",
+            "run_id": "r1",
+        }
+    ]
     _reset(tmp, rows, kline, lambda s: {"price": 110.0})
     buf = io.StringIO()
     argv_bak = sys.argv

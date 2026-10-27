@@ -67,11 +67,16 @@ class Entry:
 
     def as_dict(self) -> dict:
         return {
-            "entry_id": self.entry_id, "domain": self.domain, "cue": self.cue,
-            "lesson": self.lesson, "evidence": self.evidence,
-            "confidence": self.confidence, "signed_by": self.signed_by,
+            "entry_id": self.entry_id,
+            "domain": self.domain,
+            "cue": self.cue,
+            "lesson": self.lesson,
+            "evidence": self.evidence,
+            "confidence": self.confidence,
+            "signed_by": self.signed_by,
             "written_at": self.written_at,
-            "verified": self.verified, "signature_reason": self.signature_reason,
+            "verified": self.verified,
+            "signature_reason": self.signature_reason,
         }
 
 
@@ -109,7 +114,9 @@ def _next_id(root: Path, domain: str) -> str:
 
 
 def _check_evidence_paths(evidence: str) -> None:
-    paths = re.findall(r"[A-Za-z]:[\\/][^\s，。;；]+|/[^\s，。;；]+", str(evidence or ""))
+    paths = re.findall(
+        r"[A-Za-z]:[\\/][^\s，。;；]+|/[^\s，。;；]+", str(evidence or "")
+    )
     if not paths:
         return
     try:
@@ -118,10 +125,17 @@ def _check_evidence_paths(evidence: str) -> None:
         raise StoreError("evidence rejected by lookahead guard: %s" % exc) from exc
 
 
-def write_entry(domain: str, cue: str, lesson: str, evidence: str,
-                confidence: float, signed_by: str,
-                root: Path | None = None, signature: dict | None = None,
-                now: float | None = None) -> Entry:
+def write_entry(
+    domain: str,
+    cue: str,
+    lesson: str,
+    evidence: str,
+    confidence: float,
+    signed_by: str,
+    root: Path | None = None,
+    signature: dict | None = None,
+    now: float | None = None,
+) -> Entry:
     """写入一条四字段经验。返回 Entry；不合规抛 StoreError/SignatureRequired。
 
     P0-3（渐进签名）：`signature` 为可选 Ed25519 签名对象（payload 口径见
@@ -151,19 +165,32 @@ def write_entry(domain: str, cue: str, lesson: str, evidence: str,
     key = _norm(cue)
     for row in existing:
         if row.get("domain") == domain and _norm(row.get("cue", "")) == key:
-            raise StoreError("duplicate cue in domain %s (去重键命中): %s" % (domain, row.get("entry_id")))
+            raise StoreError(
+                "duplicate cue in domain %s (去重键命中): %s"
+                % (domain, row.get("entry_id"))
+            )
 
     entry_id = _next_id(base, domain)
     # GOVAI-3 修复：签字口径必须与 sign_approval.py KINDS / evolve_sign_payloads.py
     # 的 KIND 一致（均为 experience_write）。此前误用 experience_entry，导致
     # 真实签字（experience_write）在入库验签时 kind 不匹配 → SignatureError。
     auth = signature_guard.check(
-        kind="experience_write", item_id=entry_id,
-        fingerprint=signature_guard.fingerprint_of({
-            "domain": domain, "cue": str(cue).strip(),
-            "lesson": str(lesson).strip(), "evidence": str(evidence).strip(),
-            "confidence": conf}),
-        action="write", signed_by=signed_by, signature=signature, now=now)
+        kind="experience_write",
+        item_id=entry_id,
+        fingerprint=signature_guard.fingerprint_of(
+            {
+                "domain": domain,
+                "cue": str(cue).strip(),
+                "lesson": str(lesson).strip(),
+                "evidence": str(evidence).strip(),
+                "confidence": conf,
+            }
+        ),
+        action="write",
+        signed_by=signed_by,
+        signature=signature,
+        now=now,
+    )
 
     entry = Entry(
         entry_id=entry_id,
@@ -185,28 +212,42 @@ def write_entry(domain: str, cue: str, lesson: str, evidence: str,
     if not exp.exists():
         exp.write_text("# EXPERIENCE — %s\n" % domain, encoding="utf-8")
     if not idx.exists():
-        idx.write_text("# INDEX — %s\n\n| 编号 | cue | confidence | 日期 |\n|---|---|---|---|\n" % domain,
-                       encoding="utf-8")
+        idx.write_text(
+            "# INDEX — %s\n\n| 编号 | cue | confidence | 日期 |\n|---|---|---|---|\n"
+            % domain,
+            encoding="utf-8",
+        )
 
     with exp.open("a", encoding="utf-8") as f:
-        f.write("\n## %s\n- **cue**: %s\n- **lesson**: %s\n- **evidence**: %s\n"
-                "- **confidence**: %s\n- **采纳**: %s 签字于 %s\n"
-                "- **验签**: %s（%s）\n" % (
-                    entry.entry_id, entry.cue, entry.lesson, entry.evidence,
-                    entry.confidence, entry.signed_by, entry.written_at,
-                    "verified" if entry.verified else "unverified",
-                    entry.signature_reason))
+        f.write(
+            "\n## %s\n- **cue**: %s\n- **lesson**: %s\n- **evidence**: %s\n"
+            "- **confidence**: %s\n- **采纳**: %s 签字于 %s\n"
+            "- **验签**: %s（%s）\n"
+            % (
+                entry.entry_id,
+                entry.cue,
+                entry.lesson,
+                entry.evidence,
+                entry.confidence,
+                entry.signed_by,
+                entry.written_at,
+                "verified" if entry.verified else "unverified",
+                entry.signature_reason,
+            )
+        )
     with idx.open("a", encoding="utf-8") as f:
-        f.write("| %s | %s | %s | %s |\n" % (
-            entry.entry_id, entry.cue[:40], entry.confidence,
-            entry.written_at[:10]))
+        f.write(
+            "| %s | %s | %s | %s |\n"
+            % (entry.entry_id, entry.cue[:40], entry.confidence, entry.written_at[:10])
+        )
     with _index_path(base).open("a", encoding="utf-8") as f:
         f.write(json.dumps(entry.as_dict(), ensure_ascii=False) + "\n")
     return entry
 
 
-def search(query: str, domain: str | None = None, root: Path | None = None,
-           limit: int = 10) -> list:
+def search(
+    query: str, domain: str | None = None, root: Path | None = None, limit: int = 10
+) -> list:
     """检索经验（本地索引版）：CJK 子串 + 词命中数排序，confidence 加权。
 
     验收判据：一条经验可被下个同类任务检索到。
@@ -214,7 +255,9 @@ def search(query: str, domain: str | None = None, root: Path | None = None,
     if domain is not None and domain not in DOMAINS:
         raise StoreError("unknown domain: %s" % domain)
     # 先按空白/标点切词，再逐个归一（不能先 norm：会把空格吃掉使多词退化为长 token）
-    raw_tokens = [t for t in re.split(r"[\s,，。;；、]+", str(query or "")) if t.strip()]
+    raw_tokens = [
+        t for t in re.split(r"[\s,，。;；、]+", str(query or "")) if t.strip()
+    ]
     tokens = [_norm(t) for t in raw_tokens if _norm(t)]
     if not tokens:
         return []
@@ -222,12 +265,17 @@ def search(query: str, domain: str | None = None, root: Path | None = None,
     for row in _load_index(_root(root)):
         if domain and row.get("domain") != domain:
             continue
-        blob = _norm(row.get("cue", "")) + _norm(row.get("lesson", "")) + _norm(row.get("evidence", ""))
+        blob = (
+            _norm(row.get("cue", ""))
+            + _norm(row.get("lesson", ""))
+            + _norm(row.get("evidence", ""))
+        )
         score = sum(1 for t in tokens if t and t in blob)
         if score == 0:
             continue
-        hits.append({"score": round(score + float(row.get("confidence", 0)) * 0.01, 4),
-                     **row})
+        hits.append(
+            {"score": round(score + float(row.get("confidence", 0)) * 0.01, 4), **row}
+        )
     hits.sort(key=lambda r: -r["score"])
     return hits[:limit]
 
@@ -240,8 +288,10 @@ def public_summary(root: Path | None = None, recent: int = 5) -> dict:
     """
     base = _root(root)
     rows = _load_index(base)
-    domains = {d: {"entries": 0, "verified": 0, "readonly": d in READONLY_DOMAINS}
-               for d in DOMAINS}
+    domains = {
+        d: {"entries": 0, "verified": 0, "readonly": d in READONLY_DOMAINS}
+        for d in DOMAINS
+    }
     for row in rows:
         d = str(row.get("domain") or "")
         if d in domains:
@@ -249,16 +299,26 @@ def public_summary(root: Path | None = None, recent: int = 5) -> dict:
             if row.get("verified"):
                 domains[d]["verified"] += 1
     ordered = sorted(rows, key=lambda r: str(r.get("written_at") or ""), reverse=True)
-    latest = [{
-        "entry_id": r.get("entry_id"), "domain": r.get("domain"),
-        "cue": str(r.get("cue") or "")[:80], "confidence": r.get("confidence"),
-        "signed_by": r.get("signed_by"), "written_at": r.get("written_at"),
-        "verified": bool(r.get("verified")),
-    } for r in ordered[:max(0, int(recent))]]
+    latest = [
+        {
+            "entry_id": r.get("entry_id"),
+            "domain": r.get("domain"),
+            "cue": str(r.get("cue") or "")[:80],
+            "confidence": r.get("confidence"),
+            "signed_by": r.get("signed_by"),
+            "written_at": r.get("written_at"),
+            "verified": bool(r.get("verified")),
+        }
+        for r in ordered[: max(0, int(recent))]
+    ]
     verified_total = sum(1 for r in rows if r.get("verified"))
-    return {"entries_total": len(rows), "verified_total": verified_total,
-            "domains": domains, "recent": latest,
-            "latest_signed_at": latest[0]["written_at"] if latest else None}
+    return {
+        "entries_total": len(rows),
+        "verified_total": verified_total,
+        "domains": domains,
+        "recent": latest,
+        "latest_signed_at": latest[0]["written_at"] if latest else None,
+    }
 
 
 def _demo(tmp: Path) -> int:
@@ -282,5 +342,6 @@ def _demo(tmp: Path) -> int:
 
 if __name__ == "__main__":
     import tempfile
+
     with tempfile.TemporaryDirectory() as td:
         raise SystemExit(_demo(Path(td)))

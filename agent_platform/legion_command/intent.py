@@ -97,11 +97,18 @@ def check_model_for(task_class: str, binding: str) -> dict:
     got_name, got = model_tier(binding)
     ok = got >= need
     return {
-        "ok": ok, "task_class": task_class, "need": name, "need_desc": desc,
-        "got": got_name, "binding": binding or "none",
-        "why": ("满足最低档（%s ≥ %s）" % (got_name, name)) if ok else
-               ("模型档不足：该类活最低要 %s（%s），该席是 %s —— 应改派或升级模型"
-                % (name, desc, got_name)),
+        "ok": ok,
+        "task_class": task_class,
+        "need": name,
+        "need_desc": desc,
+        "got": got_name,
+        "binding": binding or "none",
+        "why": ("满足最低档（%s ≥ %s）" % (got_name, name))
+        if ok
+        else (
+            "模型档不足：该类活最低要 %s（%s），该席是 %s —— 应改派或升级模型"
+            % (name, desc, got_name)
+        ),
     }
 
 
@@ -145,11 +152,13 @@ def _dedup_chain(raw: list) -> list:
     return out
 
 
-def build_cards(platform_dir: pathlib.Path | None = None,
-                ledger_path: pathlib.Path | None = None) -> dict:
+def build_cards(
+    platform_dir: pathlib.Path | None = None, ledger_path: pathlib.Path | None = None
+) -> dict:
     """一次算好所有席位的意图卡 + 任务归属 + 口径声明。"""
     root = pathlib.Path(platform_dir) if platform_dir else PLATFORM
     import sys
+
     if str(root) not in sys.path:
         sys.path.insert(0, str(root))
     from legion_command.snapshot import build_snapshot
@@ -159,7 +168,9 @@ def build_cards(platform_dir: pathlib.Path | None = None,
     tasks = _load(root.parent / ".worktrees" / "tasks.json", {}) or {}
     ledger = load_ledger(ledger_path)
     # 员工编号台账（engine/emp_numbering.py 发号）：只读挂载，缺失就是没发号
-    emp_map = (_load(root / "data" / "emp_ledger.json", {}) or {}).get("employees") or {}
+    emp_map = (_load(root / "data" / "emp_ledger.json", {}) or {}).get(
+        "employees"
+    ) or {}
 
     # ---- 部门：主官与正式任命 ----
     org_depts = {d.get("dept"): d for d in (org.get("departments") or [])}
@@ -203,8 +214,15 @@ def build_cards(platform_dir: pathlib.Path | None = None,
         elif st in DOING_STATUS:
             counts["doing"] += 1
             dept, rule, miss = classify_key(k)
-            doing_list.append({"key": k, "dept": dept, "rule": rule, "unmapped": miss,
-                               "owner": (v or {}).get("owner") or ""})
+            doing_list.append(
+                {
+                    "key": k,
+                    "dept": dept,
+                    "rule": rule,
+                    "unmapped": miss,
+                    "owner": (v or {}).get("owner") or "",
+                }
+            )
             if miss:
                 unmapped.append(k)
             own = str((v or {}).get("owner") or "")
@@ -217,13 +235,18 @@ def build_cards(platform_dir: pathlib.Path | None = None,
 
     # 已完成任务按 owner 计数：只作“有产出证据”的粗略代理，**不是能力验收**
     done_by_owner = collections.Counter(
-        str((v or {}).get("owner") or "") for v in tasks.values()
-        if (v or {}).get("status") == "done")
+        str((v or {}).get("owner") or "")
+        for v in tasks.values()
+        if (v or {}).get("status") == "done"
+    )
     done_by_owner.pop("", None)
     done_by_owner.pop("unknown-agent", None)
 
-    agent_rows = [(d.get("id"), a) for d in (snap.get("departments") or [])
-                  for a in (d.get("agents") or [])]
+    agent_rows = [
+        (d.get("id"), a)
+        for d in (snap.get("departments") or [])
+        for a in (d.get("agents") or [])
+    ]
     cards, seen = [], set()
     for snap_dept, a in agent_rows:
         aid = a.get("id")
@@ -254,81 +277,170 @@ def build_cards(platform_dir: pathlib.Path | None = None,
 
         gaps = []
         if not charter:
-            gaps.append({"code": "NO_CHARTER", "t": "职责未登记", "lv": "high",
-                         "requires": ["tianfeng", "laotian"],
-                         "solve": "田丰归口起草职责，老田裁定后走 org_enroll 补档"})
+            gaps.append(
+                {
+                    "code": "NO_CHARTER",
+                    "t": "职责未登记",
+                    "lv": "high",
+                    "requires": ["tianfeng", "laotian"],
+                    "solve": "田丰归口起草职责，老田裁定后走 org_enroll 补档",
+                }
+            )
         if not specs:
-            gaps.append({"code": "NO_SPECIALTY", "t": "专长/经历未登记", "lv": "mid",
-                         "requires": ["tianfeng"], "solve": "补 attributes.specialties"})
+            gaps.append(
+                {
+                    "code": "NO_SPECIALTY",
+                    "t": "专长/经历未登记",
+                    "lv": "mid",
+                    "requires": ["tianfeng"],
+                    "solve": "补 attributes.specialties",
+                }
+            )
         if not tools:
-            gaps.append({"code": "NO_TOOLS", "t": "工具未登记", "lv": "mid",
-                         "requires": ["tianfeng"], "solve": "补 tools（登记后仍需实测才算可用）"})
+            gaps.append(
+                {
+                    "code": "NO_TOOLS",
+                    "t": "工具未登记",
+                    "lv": "mid",
+                    "requires": ["tianfeng"],
+                    "solve": "补 tools（登记后仍需实测才算可用）",
+                }
+            )
         if not g_read:
-            gaps.append({"code": "NO_GRANT", "t": "数据授权未登记", "lv": "mid",
-                         "requires": ["tianfeng", "risk", "laotian"],
-                         "solve": "按最小权限补 memory_grants，风控核实"})
+            gaps.append(
+                {
+                    "code": "NO_GRANT",
+                    "t": "数据授权未登记",
+                    "lv": "mid",
+                    "requires": ["tianfeng", "risk", "laotian"],
+                    "solve": "按最小权限补 memory_grants，风控核实",
+                }
+            )
         if trank == 0:
-            gaps.append({"code": "NO_MODEL", "t": "无可用模型", "lv": "high",
-                         "requires": ["tianfeng", "laotian"],
-                         "solve": "补配模型，或明确“该岗不需要模型、纯脚本执行”"})
+            gaps.append(
+                {
+                    "code": "NO_MODEL",
+                    "t": "无可用模型",
+                    "lv": "high",
+                    "requires": ["tianfeng", "laotian"],
+                    "solve": "补配模型，或明确“该岗不需要模型、纯脚本执行”",
+                }
+            )
         if not signed:
-            gaps.append({"code": "LEAD_UNSIGNED", "t": "主官缺正式任命（链断在真源）", "lv": "high",
-                         "requires": ["tianfeng", "laotian"],
-                         "solve": "补 lead_appointed 签批记录（补丁包已备，等工单号）"})
+            gaps.append(
+                {
+                    "code": "LEAD_UNSIGNED",
+                    "t": "主官缺正式任命（链断在真源）",
+                    "lv": "high",
+                    "requires": ["tianfeng", "laotian"],
+                    "solve": "补 lead_appointed 签批记录（补丁包已备，等工单号）",
+                }
+            )
         if a.get("has_profile") is False:
-            gaps.append({"code": "NO_PROFILE", "t": "有名无档", "lv": "high",
-                         "requires": ["tianfeng", "laotian"], "solve": "先 --backfill 建档再任命"})
+            gaps.append(
+                {
+                    "code": "NO_PROFILE",
+                    "t": "有名无档",
+                    "lv": "high",
+                    "requires": ["tianfeng", "laotian"],
+                    "solve": "先 --backfill 建档再任命",
+                }
+            )
         if not verified:
-            gaps.append({"code": "NOT_VERIFIED", "t": "能力未验收（无台账）", "lv": "mid",
-                         "requires": ["tianfeng"],
-                         "solve": "跑一次真实任务并记入 capability_ledger，才算 verified"})
+            gaps.append(
+                {
+                    "code": "NOT_VERIFIED",
+                    "t": "能力未验收（无台账）",
+                    "lv": "mid",
+                    "requires": ["tianfeng"],
+                    "solve": "跑一次真实任务并记入 capability_ledger，才算 verified",
+                }
+            )
 
-        cards.append({
-            "schema": SCHEMA,
-            "seat": {"id": aid, "cn": a.get("cn") or p.get("cn_name") or "",
-                     "home": dep, "depts": sorted(depts_of.get(aid) or []),
-                     "grade": p.get("grade") or "",
-                     "has_profile": a.get("has_profile") is not False,
-                     # 员工编号（emp_numbering 发号，只读挂载；空串=尚未发号）
-                     "emp_no": (emp_map.get(aid) or {}).get("emp_no") or "",
-                     "enroll_no": (emp_map.get(aid) or {}).get("enroll_no") or ""},
-            "L1_role": {"text": charter, "declared": bool(charter),
-                        "role_key": p.get("role_profile") or p.get("role") or ""},
-            "L2_doing": {
-                "items": my_doing, "count": len(my_doing),
-                "chain": {"dept": dep, "lead": led or None, "seat": aid,
-                          "lead_signed": signed},
-                "unclaimed_in_dept": len(unclaimed.get(dep) or []),
-                "note": "" if my_doing else "无在办 ≠ 停工：只是没派活给它",
-            },
-            "L3_model": {
-                "binding": binding or "none", "tier": tname, "rank": trank,
-                "kind": ("local" if binding.startswith("ollama/") else
-                         ("none" if not binding or binding == "none" else "cloud")),
-                "fits": [tc for tc, (_, need, _d) in TASK_CLASS_MIN.items() if trank >= need],
-                "cannot": [tc for tc, (_, need, _d) in TASK_CLASS_MIN.items() if trank < need],
-            },
-            "L4_capability": {
-                "declared": declared,
-                "evidence": {"has": ev_n > 0, "n": ev_n,
-                             "note": ("%d 个已完成任务记录" % ev_n) if ev_n else "无完成记录"},
-                "verified": verified,
-                "ledger_missing": ledger.get("missing", False),
-                "specialties": specs, "tools": tools,
-            },
-            "L5_boundary": {
-                "read": g_read, "write": g_write,
-                "report_to": {
-                    # 链语义：本人 → 主官（若本人就是主官则跳过）→ A0（若已是 A0 则跳过）→ human。
-                    # 不去重会让主官自己显示成 "D1 → D1 → A0 → human"、A0 显示成 "A0 → A0 → A0 → human"，
-                    # 看起来像链条有环，实际是自己指向自己。这里按相邻去重收敛。
-                    "chain": _dedup_chain([aid, led or "UNSIGNED_LEAD", "A0", "human"]),
-                    "quality": ("ok" if signed else "broken_at_lead"),
-                    "note": "" if signed else "本部门主官未正式任命，链条在真源处断开",
+        cards.append(
+            {
+                "schema": SCHEMA,
+                "seat": {
+                    "id": aid,
+                    "cn": a.get("cn") or p.get("cn_name") or "",
+                    "home": dep,
+                    "depts": sorted(depts_of.get(aid) or []),
+                    "grade": p.get("grade") or "",
+                    "has_profile": a.get("has_profile") is not False,
+                    # 员工编号（emp_numbering 发号，只读挂载；空串=尚未发号）
+                    "emp_no": (emp_map.get(aid) or {}).get("emp_no") or "",
+                    "enroll_no": (emp_map.get(aid) or {}).get("enroll_no") or "",
                 },
-            },
-            "L6_gaps": gaps,
-        })
+                "L1_role": {
+                    "text": charter,
+                    "declared": bool(charter),
+                    "role_key": p.get("role_profile") or p.get("role") or "",
+                },
+                "L2_doing": {
+                    "items": my_doing,
+                    "count": len(my_doing),
+                    "chain": {
+                        "dept": dep,
+                        "lead": led or None,
+                        "seat": aid,
+                        "lead_signed": signed,
+                    },
+                    "unclaimed_in_dept": len(unclaimed.get(dep) or []),
+                    "note": "" if my_doing else "无在办 ≠ 停工：只是没派活给它",
+                },
+                "L3_model": {
+                    "binding": binding or "none",
+                    "tier": tname,
+                    "rank": trank,
+                    "kind": (
+                        "local"
+                        if binding.startswith("ollama/")
+                        else ("none" if not binding or binding == "none" else "cloud")
+                    ),
+                    "fits": [
+                        tc
+                        for tc, (_, need, _d) in TASK_CLASS_MIN.items()
+                        if trank >= need
+                    ],
+                    "cannot": [
+                        tc
+                        for tc, (_, need, _d) in TASK_CLASS_MIN.items()
+                        if trank < need
+                    ],
+                },
+                "L4_capability": {
+                    "declared": declared,
+                    "evidence": {
+                        "has": ev_n > 0,
+                        "n": ev_n,
+                        "note": ("%d 个已完成任务记录" % ev_n)
+                        if ev_n
+                        else "无完成记录",
+                    },
+                    "verified": verified,
+                    "ledger_missing": ledger.get("missing", False),
+                    "specialties": specs,
+                    "tools": tools,
+                },
+                "L5_boundary": {
+                    "read": g_read,
+                    "write": g_write,
+                    "report_to": {
+                        # 链语义：本人 → 主官（若本人就是主官则跳过）→ A0（若已是 A0 则跳过）→ human。
+                        # 不去重会让主官自己显示成 "D1 → D1 → A0 → human"、A0 显示成 "A0 → A0 → A0 → human"，
+                        # 看起来像链条有环，实际是自己指向自己。这里按相邻去重收敛。
+                        "chain": _dedup_chain(
+                            [aid, led or "UNSIGNED_LEAD", "A0", "human"]
+                        ),
+                        "quality": ("ok" if signed else "broken_at_lead"),
+                        "note": ""
+                        if signed
+                        else "本部门主官未正式任命，链条在真源处断开",
+                    },
+                },
+                "L6_gaps": gaps,
+            }
+        )
 
     cards.sort(key=lambda c: (c["seat"]["home"], c["seat"]["id"]))
 
@@ -342,9 +454,13 @@ def build_cards(platform_dir: pathlib.Path | None = None,
                 "note": "在途只算 doing；review 单列，不计入在途（消灭 19/18 之争）",
             },
             "prefix_map_version": PREFIX_MAP_VERSION,
-            "prefix_map": {k: {"dept": v[0], "note": v[1]} for k, v in PREFIX_MAP.items()},
-            "task_class_min_model": {k: {"tier": v[0], "rank": v[1], "desc": v[2]}
-                                     for k, v in TASK_CLASS_MIN.items()},
+            "prefix_map": {
+                k: {"dept": v[0], "note": v[1]} for k, v in PREFIX_MAP.items()
+            },
+            "task_class_min_model": {
+                k: {"tier": v[0], "rank": v[1], "desc": v[2]}
+                for k, v in TASK_CLASS_MIN.items()
+            },
             "shell_policy": {
                 "primary": "H5 + 服务端识别",
                 "mini_program": "暂不做（web-view 拿不到麦克风；个人主体不支持 web-view）",
@@ -352,11 +468,16 @@ def build_cards(platform_dir: pathlib.Path | None = None,
             },
         },
         "counts": {
-            "seats": len(cards), "entries": len(agent_rows),
-            "doing": counts["doing"], "review": counts["review"],
-            "done": counts["done"], "aborted": counts["aborted"], "other": counts["other"],
+            "seats": len(cards),
+            "entries": len(agent_rows),
+            "doing": counts["doing"],
+            "review": counts["review"],
+            "done": counts["done"],
+            "aborted": counts["aborted"],
+            "other": counts["other"],
             "doing_incl_review": counts["doing"] + counts["review"],
-            "unmapped": len(unmapped), "unclaimed_keys": sum(len(v) for v in unclaimed.values()),
+            "unmapped": len(unmapped),
+            "unclaimed_keys": sum(len(v) for v in unclaimed.values()),
             "lead_signed": sum(1 for v in lead_signed.values() if v),
             "lead_total": len(lead_signed),
             "verified": sum(1 for c in cards if c["L4_capability"]["verified"]),
@@ -378,10 +499,18 @@ def make_drafts(cards_payload: dict, out_dir) -> dict:
     for c in cards_payload["cards"]:
         for g in c["L6_gaps"]:
             key = (c["seat"]["home"], g["code"])
-            groups.setdefault(key, {"dept": c["seat"]["home"], "code": g["code"],
-                                    "t": GAP_TITLE.get(g["code"], g["t"]),
-                                    "lv": g["lv"], "requires": g["requires"],
-                                    "solve": g["solve"], "seats": []})
+            groups.setdefault(
+                key,
+                {
+                    "dept": c["seat"]["home"],
+                    "code": g["code"],
+                    "t": GAP_TITLE.get(g["code"], g["t"]),
+                    "lv": g["lv"],
+                    "requires": g["requires"],
+                    "solve": g["solve"],
+                    "seats": [],
+                },
+            )
             groups[key]["seats"].append(c["seat"]["id"])
 
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -389,18 +518,30 @@ def make_drafts(cards_payload: dict, out_dir) -> dict:
     for (dep, code), v in sorted(groups.items()):
         v["seats"] = sorted(set(v["seats"]))
         draft = {
-            "schema": DRAFT_SCHEMA, "status": "DRAFT_UNSIGNED",
-            "id": "DRAFT-%s-%s" % (dep.upper(), code), "kind": code, "dept": dep,
+            "schema": DRAFT_SCHEMA,
+            "status": "DRAFT_UNSIGNED",
+            "id": "DRAFT-%s-%s" % (dep.upper(), code),
+            "kind": code,
+            "dept": dep,
             "title": "[草稿] %s：%s（%d 席）" % (dep, v["t"], len(v["seats"])),
-            "seats": v["seats"], "level": v["lv"], "requires": v["requires"],
-            "solve": v["solve"], "writes": [],
+            "seats": v["seats"],
+            "level": v["lv"],
+            "requires": v["requires"],
+            "solve": v["solve"],
+            "writes": [],
             "note": "草稿不构成工单、不含派工动作；需田丰出号、老田裁定后方可转正式单",
             "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
         }
         (out_dir / (draft["id"] + ".json")).write_text(
-            json.dumps(draft, ensure_ascii=False, indent=2), encoding="utf-8")
+            json.dumps(draft, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
         drafts.append(draft)
-    return {"dir": str(out_dir), "count": len(drafts),
-            "by_kind": {k: sum(1 for d in drafts if d["kind"] == k)
-                        for k in sorted({d["kind"] for d in drafts})},
-            "drafts": drafts}
+    return {
+        "dir": str(out_dir),
+        "count": len(drafts),
+        "by_kind": {
+            k: sum(1 for d in drafts if d["kind"] == k)
+            for k in sorted({d["kind"] for d in drafts})
+        },
+        "drafts": drafts,
+    }

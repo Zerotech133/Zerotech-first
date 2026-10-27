@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """独立 SHADOW 验证入口契约测试。"""
+
 import json
 import sys
 from pathlib import Path
@@ -75,16 +76,12 @@ def _write_inputs(tmp_path, entries, config_ids=None):
         item = dict(BASE_CONFIG)
         item["strategy_id"] = strategy_id
         manifests.append(item)
-    config_path.write_text(
-        json.dumps({"strategies": manifests}), encoding="utf-8"
-    )
+    config_path.write_text(json.dumps({"strategies": manifests}), encoding="utf-8")
     return manifest_path, config_path
 
 
 def test_shadow_validation_success_is_in_memory(tmp_path):
-    manifest, config = _write_inputs(
-        tmp_path, [_entry("_BuyAgent", "shadow_buy")]
-    )
+    manifest, config = _write_inputs(tmp_path, [_entry("_BuyAgent", "shadow_buy")])
     result = run_shadow_validation(
         manifest,
         config,
@@ -101,7 +98,8 @@ def test_shadow_validation_success_is_in_memory(tmp_path):
     assert result["strategy_results"][0]["status"] == "success"
     assert result["arbitration"]["consensus"] == "buy"
     assert result["authorizations"]["shadow_buy"]["permissions"] == [
-        "propose", "read_context"
+        "propose",
+        "read_context",
     ]
     assert result["authorizations"]["shadow_buy"]["allowed_modes"] == ["SHADOW"]
     assert not list(tmp_path.rglob("*.jsonl"))
@@ -139,9 +137,7 @@ def test_conflicting_results_are_blocked_by_default(tmp_path):
 
 
 def test_shadow_entry_has_no_execution_authority(tmp_path):
-    manifest, config = _write_inputs(
-        tmp_path, [_entry("_BuyAgent", "shadow_buy")]
-    )
+    manifest, config = _write_inputs(tmp_path, [_entry("_BuyAgent", "shadow_buy")])
     result = run_shadow_validation(
         manifest, config, tmp_path / "root", {"symbol": "600519"}, "SHADOW"
     )
@@ -153,9 +149,7 @@ def test_shadow_entry_has_no_execution_authority(tmp_path):
 
 
 def test_evidence_requires_explicit_root_and_is_append_only(tmp_path):
-    manifest, config = _write_inputs(
-        tmp_path, [_entry("_BuyAgent", "shadow_buy")]
-    )
+    manifest, config = _write_inputs(tmp_path, [_entry("_BuyAgent", "shadow_buy")])
     evidence = tmp_path / "root" / "evidence.jsonl"
     first = run_shadow_validation(
         manifest,
@@ -179,4 +173,5 @@ def test_evidence_requires_explicit_root_and_is_append_only(tmp_path):
     assert len(evidence.read_text(encoding="utf-8").splitlines()) == 2
     with pytest.raises(ShadowValidationError, match="显式提供 root"):
         from shadow_strategy_runner import _append_evidence
+
         _append_evidence(evidence, None, {})

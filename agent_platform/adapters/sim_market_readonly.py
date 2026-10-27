@@ -4,6 +4,7 @@
 本模块只把已关闭、截至 ``as_of`` 可见的模拟市场快照送入策略注册表，
 不接执行器、凭据或账本路径，也不写任何文件。
 """
+
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -33,9 +34,7 @@ def _parse_aware_time(value: Any, field_name: str) -> datetime:
     try:
         parsed = datetime.fromisoformat(text)
     except ValueError as exc:
-        raise SimMarketReadOnlyError(
-            "%s 不是有效的 ISO8601 时间" % field_name
-        ) from exc
+        raise SimMarketReadOnlyError("%s 不是有效的 ISO8601 时间" % field_name) from exc
     if parsed.tzinfo is None or parsed.utcoffset() is None:
         raise SimMarketReadOnlyError("%s 必须包含合法时区" % field_name)
     return parsed
@@ -71,7 +70,11 @@ def validate_snapshot(snapshot: SimMarketSnapshot, now: datetime | None = None) 
 
     as_of = _parse_aware_time(snapshot.as_of, "snapshot.as_of")
     current = datetime.now(timezone.utc) if now is None else now
-    if not isinstance(current, datetime) or current.tzinfo is None or current.utcoffset() is None:
+    if (
+        not isinstance(current, datetime)
+        or current.tzinfo is None
+        or current.utcoffset() is None
+    ):
         raise SimMarketReadOnlyError("now 必须包含合法时区")
     if as_of > current:
         raise SimMarketReadOnlyError("snapshot.as_of 不可晚于当前时间")
@@ -87,7 +90,9 @@ def validate_snapshot(snapshot: SimMarketSnapshot, now: datetime | None = None) 
             raise SimMarketReadOnlyError("bars[%d] 必须截至 as_of 可见" % index)
         bar_time = _parse_aware_time(bar.timestamp, "bars[%d].timestamp" % index)
         if bar_time > as_of:
-            raise SimMarketReadOnlyError("bars[%d].timestamp 晚于 snapshot.as_of" % index)
+            raise SimMarketReadOnlyError(
+                "bars[%d].timestamp 晚于 snapshot.as_of" % index
+            )
         visible_at = _parse_aware_time(bar.visible_at, "bars[%d].visible_at" % index)
         if visible_at > as_of:
             raise SimMarketReadOnlyError("bars[%d] 在 as_of 时尚不可见" % index)
@@ -100,7 +105,9 @@ def validate_snapshot(snapshot: SimMarketSnapshot, now: datetime | None = None) 
             raise SimMarketReadOnlyError("%s.as_of 晚于 snapshot.as_of" % view_name)
         visible_at = _parse_aware_time(view.visible_at, "%s.visible_at" % view_name)
         if visible_at < view_as_of:
-            raise SimMarketReadOnlyError("%s.visible_at 不能早于 %s.as_of" % (view_name, view_name))
+            raise SimMarketReadOnlyError(
+                "%s.visible_at 不能早于 %s.as_of" % (view_name, view_name)
+            )
         if visible_at > as_of:
             raise SimMarketReadOnlyError("%s 在 snapshot.as_of 时尚不可见" % view_name)
 
@@ -120,16 +127,20 @@ def run_sim_market_readonly(
     validate_snapshot(snapshot, now=now)
     full_context = snapshot.to_dict()
     # 先用完整快照计算上限，绑定后再按 allowed_data 构造最小上下文。
-    context_bytes = len(json.dumps(
-        full_context, ensure_ascii=False, sort_keys=True,
-        separators=(",", ":"),
-    ).encode("utf-8"))
+    context_bytes = len(
+        json.dumps(
+            full_context,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    )
     try:
-        authorization = config.bind_for_run(
-            registry, strategy_id, MODE, context_bytes
-        )
+        authorization = config.bind_for_run(registry, strategy_id, MODE, context_bytes)
     except Exception as exc:
-        raise SimMarketReadOnlyError("SIM_MARKET 配置校验/Registry 绑定失败：%s" % exc) from exc
+        raise SimMarketReadOnlyError(
+            "SIM_MARKET 配置校验/Registry 绑定失败：%s" % exc
+        ) from exc
 
     allowed_data = set(authorization.allowed_data)
     full_context = snapshot.to_dict()
@@ -154,10 +165,12 @@ def run_sim_market_readonly(
         "adjustment": snapshot.adjustment,
         "authorization": authorization.as_dict(),
     }
-    return MappingProxyType({
-        "verdict": verdict,
-        "metadata": _readonly(metadata),
-    })
+    return MappingProxyType(
+        {
+            "verdict": verdict,
+            "metadata": _readonly(metadata),
+        }
+    )
 
 
 __all__ = [

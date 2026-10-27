@@ -3,6 +3,7 @@
 覆盖：HR 名字真源读取、org profile 合并、中文岗位解析、bundle 产物契约
 （名字/岗位/专长/部门称谓）、ide.html 渲染契约。
 """
+
 from __future__ import annotations
 
 import json
@@ -33,9 +34,18 @@ def test_org_profiles_merge_cn_name():
 
 
 def test_role_cn_from_prompt_forms():
-    assert B._role_cn_from_prompt("# ARCH1 · 架构师（solution_architect）\n", "x") == "架构师"
-    assert B._role_cn_from_prompt("你是 DEV1，研发部的代码工程师（…）", "x") == "代码工程师"
-    assert B._role_cn_from_prompt("你是 TR1，交易部执行岗（v2 人设）", "x") == "交易部执行岗"
+    assert (
+        B._role_cn_from_prompt("# ARCH1 · 架构师（solution_architect）\n", "x")
+        == "架构师"
+    )
+    assert (
+        B._role_cn_from_prompt("你是 DEV1，研发部的代码工程师（…）", "x")
+        == "代码工程师"
+    )
+    assert (
+        B._role_cn_from_prompt("你是 TR1，交易部执行岗（v2 人设）", "x")
+        == "交易部执行岗"
+    )
     assert B._role_cn_from_prompt("", "fallback") == "fallback"
 
 
@@ -87,8 +97,9 @@ def test_bundle_names_and_capabilities_contract():
     assert bundle["stats"]["name_collisions"] == {}
 
     # P3：R2 编制口径对齐（会议厅人格=保守风控哨）
-    meeting = (Path(_ROOT) / "agent_platform" / "legion_command" / "static"
-               / "meeting.html").read_text(encoding="utf-8")
+    meeting = (
+        Path(_ROOT) / "agent_platform" / "legion_command" / "static" / "meeting.html"
+    ).read_text(encoding="utf-8")
     assert "保守风控哨" in meeting and "进化官" not in meeting
 
     depts = {d["id"]: d for d in bundle["departments"]}
@@ -109,4 +120,3 @@ def test_ide_capability_search_contract():
     assert "(a.capabilities||[]).join" in html
     assert "能力专长" in html
     assert "a.cn_name" in html
-

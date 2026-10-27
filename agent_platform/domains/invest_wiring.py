@@ -59,8 +59,8 @@ LEGAL_TRANSITIONS: Dict[str, List[str]] = {
     "adopted": [],
 }
 TERMINAL_STATUSES = {"adopted"}
-AUDIT_GATED_STATUSES = {"reviewed", "adopted"}   # 这些状态必须有凭据
-DECISION_NODE = "d1_decision"                    # D1 最终决策 checkpoint 节点
+AUDIT_GATED_STATUSES = {"reviewed", "adopted"}  # 这些状态必须有凭据
+DECISION_NODE = "d1_decision"  # D1 最终决策 checkpoint 节点
 
 
 class InvestWiringError(Exception):
@@ -81,14 +81,15 @@ def _checkpoints_path(root: Path) -> Path:
 def load_index(root: Path) -> List[dict]:
     path = _index_path(root)
     if not path.exists():
-        return []                       # 尚无登记：空审批态（合法初态）
+        return []  # 尚无登记：空审批态（合法初态）
     try:
         raw = json.loads(path.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, UnicodeDecodeError, OSError) as exc:
         raise InvestWiringError("runs_index.json 解析失败: %s" % exc)
     if not isinstance(raw, list):
-        raise InvestWiringError("runs_index.json 顶层必须是数组，实际 %s"
-                                % type(raw).__name__)
+        raise InvestWiringError(
+            "runs_index.json 顶层必须是数组，实际 %s" % type(raw).__name__
+        )
     return [r for r in raw if isinstance(r, dict)]
 
 
@@ -106,8 +107,7 @@ def find_entry(root: Path, run_id: str) -> dict:
     for r in load_index(root):
         if r.get("run_id") == run_id:
             return r
-    raise InvestWiringError("run_id=%s 未登记（先 register，无源 ID 不伪造）"
-                            % run_id)
+    raise InvestWiringError("run_id=%s 未登记（先 register，无源 ID 不伪造）" % run_id)
 
 
 # ----------------------------------------------------------------------
@@ -133,27 +133,33 @@ def fetch_run(root: Path, run_id: str) -> dict:
     conn = _readonly_conn(_checkpoints_path(root))
     try:
         row = conn.execute(
-            "SELECT stock, started_at, finished_at, status FROM runs"
-            " WHERE run_id=?", (run_id,)).fetchone()
+            "SELECT stock, started_at, finished_at, status FROM runs WHERE run_id=?",
+            (run_id,),
+        ).fetchone()
         if not row:
             raise InvestWiringError(
-                "run_id=%s 在 checkpoints.db 无源（无源 ID 不伪造）" % run_id)
+                "run_id=%s 在 checkpoints.db 无源（无源 ID 不伪造）" % run_id
+            )
         stock, started_at, finished_at, status = row
         if status != "done":
             raise InvestWiringError(
-                "run_id=%s 执行状态=%s（仅 done 可登记）" % (run_id, status))
+                "run_id=%s 执行状态=%s（仅 done 可登记）" % (run_id, status)
+            )
         srow = conn.execute(
-            "SELECT state_json FROM checkpoints"
-            " WHERE run_id=? AND node_key=?", (run_id, DECISION_NODE)).fetchone()
+            "SELECT state_json FROM checkpoints WHERE run_id=? AND node_key=?",
+            (run_id, DECISION_NODE),
+        ).fetchone()
         if not srow:
             raise InvestWiringError(
                 "run_id=%s 无 %s 决策快照，拒绝登记（无源不伪造）"
-                % (run_id, DECISION_NODE))
+                % (run_id, DECISION_NODE)
+            )
         decision = (json.loads(srow[0]) or {}).get("output", "")
         if not decision:
             raise InvestWiringError(
                 "run_id=%s 的 %s 决策快照 output 为空，拒绝登记"
-                % (run_id, DECISION_NODE))
+                % (run_id, DECISION_NODE)
+            )
         return {
             "run_id": run_id,
             "stock": stock or "",
@@ -173,8 +179,9 @@ def current_decision_hash(root: Path, run_id: str) -> str:
     conn = _readonly_conn(_checkpoints_path(root))
     try:
         srow = conn.execute(
-            "SELECT state_json FROM checkpoints"
-            " WHERE run_id=? AND node_key=?", (run_id, DECISION_NODE)).fetchone()
+            "SELECT state_json FROM checkpoints WHERE run_id=? AND node_key=?",
+            (run_id, DECISION_NODE),
+        ).fetchone()
         if not srow:
             return ""
         decision = (json.loads(srow[0]) or {}).get("output", "")
@@ -192,7 +199,7 @@ def register_run(root: Path, run_id: str) -> Tuple[dict, bool]:
     返回 (entry, replayed)。幂等：已登记 run_id 原样返回（replayed=True），
     且重放时校验决策指纹一致——漂移显式报错（run 被重跑覆盖的信号）。
     """
-    run = fetch_run(root, run_id)           # 无源/未完成/无决策在这里拒绝
+    run = fetch_run(root, run_id)  # 无源/未完成/无决策在这里拒绝
     root = Path(root)
     entries = load_index(root)
     for e in entries:
@@ -200,7 +207,8 @@ def register_run(root: Path, run_id: str) -> Tuple[dict, bool]:
             if e.get("decision_hash") != run["decision_hash"]:
                 raise InvestWiringError(
                     "run %s 已登记但决策指纹漂移（登记后 D1 决策被改动/重跑"
-                    "覆盖），先跑 report 审计" % run_id)
+                    "覆盖），先跑 report 审计" % run_id
+                )
             return e, True
     entry = {
         "run_id": run_id,
@@ -228,27 +236,31 @@ def project_workitems(root: Path) -> Tuple[List[WorkItem], List[Artifact]]:
     for e in load_index(root):
         run_id = e.get("run_id", "")
         wi = WorkItem(
-            workitem_id="invest:%s" % run_id,      # 从真源 ID 确定性派生
+            workitem_id="invest:%s" % run_id,  # 从真源 ID 确定性派生
             domain=DOMAIN,
             source=SOURCE,
             source_ref=run_id,
             title="选股决策 %s" % e.get("stock", ""),
-            status=e.get("status", ""),            # 域内原生状态，原样保留
+            status=e.get("status", ""),  # 域内原生状态，原样保留
             owner="D1",
-            payload={"stock": e.get("stock", ""),
-                     "decision_hash": e.get("decision_hash", ""),
-                     "decision_chars": e.get("decision_chars", 0),
-                     "run_finished_at": e.get("run_finished_at", "")},
+            payload={
+                "stock": e.get("stock", ""),
+                "decision_hash": e.get("decision_hash", ""),
+                "decision_chars": e.get("decision_chars", 0),
+                "run_finished_at": e.get("run_finished_at", ""),
+            },
         )
         items.append(wi)
-        artifacts.append(Artifact(
-            artifact_id="invest-art:%s" % run_id,
-            workitem_id=wi.workitem_id,
-            kind="decision",
-            path="agent_platform/data/checkpoints.db#%s" % DECISION_NODE,
-            fact_hash=e.get("decision_hash", ""),
-            missing=not current_decision_hash(root, run_id),
-        ))
+        artifacts.append(
+            Artifact(
+                artifact_id="invest-art:%s" % run_id,
+                workitem_id=wi.workitem_id,
+                kind="decision",
+                path="agent_platform/data/checkpoints.db#%s" % DECISION_NODE,
+                fact_hash=e.get("decision_hash", ""),
+                missing=not current_decision_hash(root, run_id),
+            )
+        )
     return items, artifacts
 
 
@@ -259,9 +271,14 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
-def approve_transition(root: Path, run_id: str, to_status: str, by: str,
-                       reason: str = "", store: ApprovalStore = None
-                       ) -> Tuple[Approval, dict, bool]:
+def approve_transition(
+    root: Path,
+    run_id: str,
+    to_status: str,
+    by: str,
+    reason: str = "",
+    store: ApprovalStore = None,
+) -> Tuple[Approval, dict, bool]:
     """批准并执行一次受控状态转移。
 
     返回 (approval, entry_after, replayed)。语义与 GZH 同款：
@@ -277,15 +294,15 @@ def approve_transition(root: Path, run_id: str, to_status: str, by: str,
     from_status = entry.get("status", "")
 
     own_store = store is None
-    store = store or ApprovalStore(_AGENT_PLATFORM / "data" / "approvals"
-                                   / "approvals.db")
+    store = store or ApprovalStore(
+        _AGENT_PLATFORM / "data" / "approvals" / "approvals.db"
+    )
     try:
         tid = "invest:%s" % run_id
 
         def _own() -> List[Approval]:
             # list 按 created_at,rowid 排序 = 审批账本发生序（append-only）
-            return [a for a in store.list(target_type="workitem")
-                    if a.target_id == tid]
+            return [a for a in store.list(target_type="workitem") if a.target_id == tid]
 
         def _find(to: str) -> Optional[Approval]:
             hits = [a for a in _own() if a.to_status == to]
@@ -298,16 +315,16 @@ def approve_transition(root: Path, run_id: str, to_status: str, by: str,
                 return hit, entry, True
             raise InvestWiringError(
                 "run %s 状态已为 %s 但账本无凭据：疑似绕过审批门修改真源，"
-                "拒绝重复批准（先跑 report 审计）" % (run_id, from_status))
+                "拒绝重复批准（先跑 report 审计）" % (run_id, from_status)
+            )
 
         if from_status in TERMINAL_STATUSES:
-            raise InvestWiringError(
-                "run %s 已终态 adopted，禁止再转移" % run_id)
+            raise InvestWiringError("run %s 已终态 adopted，禁止再转移" % run_id)
         if to_status not in LEGAL_TRANSITIONS.get(from_status, []):
             raise InvestWiringError(
                 "非法转移 %s→%s（合法：%s）；跳级违反研究/复核/采纳分离"
-                % (from_status, to_status,
-                   LEGAL_TRANSITIONS.get(from_status, [])))
+                % (from_status, to_status, LEGAL_TRANSITIONS.get(from_status, []))
+            )
 
         own = _own()
         # catch-up / 轮次化判定（last_wiring_key 消费标记，devtask 判例）：
@@ -316,33 +333,32 @@ def approve_transition(root: Path, run_id: str, to_status: str, by: str,
         # - 最新凭据已消费但真源又回到 from（同转移反复：如二次打回）
         #   → 新轮次批准，落 #r{n+1} 新凭据留痕。
         base = "invest:%s:%s>%s" % (run_id, from_status, to_status)
-        prior_same = [a for a in own
-                      if a.from_status == from_status
-                      and a.to_status == to_status]
-        if (prior_same
-                and own[-1].idempotency_key == prior_same[-1].idempotency_key):
+        prior_same = [
+            a for a in own if a.from_status == from_status and a.to_status == to_status
+        ]
+        if prior_same and own[-1].idempotency_key == prior_same[-1].idempotency_key:
             last = own[-1]
             if entry.get("last_wiring_key") != last.idempotency_key:
-                _apply_status(root, run_id, to_status,
-                              last.idempotency_key)
-                return last, find_entry(root, run_id), True     # catch-up
+                _apply_status(root, run_id, to_status, last.idempotency_key)
+                return last, find_entry(root, run_id), True  # catch-up
 
         # 轮次化幂等键：打回后重批（如 reviewed→drafted→reviewed）是
         # 新的一轮批准，必须留新凭据（第二轮 decided_by/reason 可追溯），
         # 不得重放第一轮凭据——同轮重放仍由既有凭据幂等兜底。
-        key = (base if not prior_same
-               else "%s#r%d" % (base, len(prior_same) + 1))
-        approval, replayed = store.record(Approval(
-            target_type="workitem",
-            target_id=tid,
-            from_status=from_status,
-            to_status=to_status,
-            decision="approved",
-            decided_by=by,
-            reason=reason,
-            decided_at=_now_iso(),
-            idempotency_key=key,
-        ))
+        key = base if not prior_same else "%s#r%d" % (base, len(prior_same) + 1)
+        approval, replayed = store.record(
+            Approval(
+                target_type="workitem",
+                target_id=tid,
+                from_status=from_status,
+                to_status=to_status,
+                decision="approved",
+                decided_by=by,
+                reason=reason,
+                decided_at=_now_iso(),
+                idempotency_key=key,
+            )
+        )
         if not replayed:
             _apply_status(root, run_id, to_status, key)
             return approval, find_entry(root, run_id), False
@@ -357,8 +373,9 @@ def approve_transition(root: Path, run_id: str, to_status: str, by: str,
             store.close()
 
 
-def _apply_status(root: Path, run_id: str, to_status: str,
-                  wiring_key: str = "") -> None:
+def _apply_status(
+    root: Path, run_id: str, to_status: str, wiring_key: str = ""
+) -> None:
     """唯一授权写路径：更新 index 中该 run 的 status/ts（原子写）。
 
     last_wiring_key 记录已消费的凭据键（catch-up 判据，devtask 判例回灌）。
@@ -387,8 +404,9 @@ def audit_report(root: Path, store: ApprovalStore = None) -> dict:
     """
     root = Path(root)
     own_store = store is None
-    store = store or ApprovalStore(_AGENT_PLATFORM / "data" / "approvals"
-                                   / "approvals.db")
+    store = store or ApprovalStore(
+        _AGENT_PLATFORM / "data" / "approvals" / "approvals.db"
+    )
     try:
         entries = load_index(root)
         approvals = store.list(target_type="workitem")
@@ -399,28 +417,40 @@ def audit_report(root: Path, store: ApprovalStore = None) -> dict:
             status = e.get("status", "")
             live_hash = current_decision_hash(root, run_id)
             if not live_hash:
-                violations.append({
-                    "run_id": run_id, "status": status,
-                    "finding": "执行底账无 %s 决策快照（run 被删/损坏？）"
-                               % DECISION_NODE,
-                })
-                missing_art.append("agent_platform/data/checkpoints.db#%s:%s"
-                                   % (DECISION_NODE, run_id))
+                violations.append(
+                    {
+                        "run_id": run_id,
+                        "status": status,
+                        "finding": "执行底账无 %s 决策快照（run 被删/损坏？）"
+                        % DECISION_NODE,
+                    }
+                )
+                missing_art.append(
+                    "agent_platform/data/checkpoints.db#%s:%s" % (DECISION_NODE, run_id)
+                )
                 continue
             if e.get("decision_hash") != live_hash:
-                violations.append({
-                    "run_id": run_id, "status": status,
-                    "finding": "决策指纹漂移：登记后 D1 决策被改动/重跑覆盖",
-                })
+                violations.append(
+                    {
+                        "run_id": run_id,
+                        "status": status,
+                        "finding": "决策指纹漂移：登记后 D1 决策被改动/重跑覆盖",
+                    }
+                )
             if status in AUDIT_GATED_STATUSES:
-                hit = [a for a in approvals
-                       if a.target_id == "invest:%s" % run_id
-                       and a.to_status == status]
+                hit = [
+                    a
+                    for a in approvals
+                    if a.target_id == "invest:%s" % run_id and a.to_status == status
+                ]
                 if not hit:
-                    violations.append({
-                        "run_id": run_id, "status": status,
-                        "finding": "状态=%s 但审批账本无对应凭据" % status,
-                    })
+                    violations.append(
+                        {
+                            "run_id": run_id,
+                            "status": status,
+                            "finding": "状态=%s 但审批账本无对应凭据" % status,
+                        }
+                    )
         # 交叉校验：凭据轮次 vs 消费标记（invest=latest_only 标记域）
         traces = {}
         for e in entries:
@@ -428,14 +458,16 @@ def audit_report(root: Path, store: ApprovalStore = None) -> dict:
             traces["invest:%s" % rid] = {
                 "statuses": [],
                 "consumed_keys": {e.get("last_wiring_key")}
-                if e.get("last_wiring_key") else set(),
+                if e.get("last_wiring_key")
+                else set(),
             }
         cross_v = cross_check(
-            "invest", [a for a in approvals
-                       if a.target_id.startswith("invest:")], traces,
-            {"invest:%s" % e.get("run_id", ""): e.get("status", "")
-             for e in entries},
-            latest_only=True)
+            "invest",
+            [a for a in approvals if a.target_id.startswith("invest:")],
+            traces,
+            {"invest:%s" % e.get("run_id", ""): e.get("status", "") for e in entries},
+            latest_only=True,
+        )
         return {
             "schema_version": SCHEMA_VERSION,
             "domain": DOMAIN,
@@ -446,8 +478,8 @@ def audit_report(root: Path, store: ApprovalStore = None) -> dict:
             "cross_check": cross_v,
             "missing_artifacts": missing_art,
             "verdict": verdict_for(
-                ([{"severity": "FAIL"}]
-                 if violations or missing_art else []) + cross_v),
+                ([{"severity": "FAIL"}] if violations or missing_art else []) + cross_v
+            ),
         }
     finally:
         if own_store:
@@ -468,9 +500,16 @@ def _by_status(entries: List[dict]) -> Dict[str, int]:
 # （run_shadow.py），advisory/legacy 是观察名单只读不新增，真实通道不存在。
 ALLOWED_PAPER_ENVIRONMENTS = {"paper"}
 # ai_operator TRACE_FIELDS 四元组 + 业务必填（无源字段不伪造）
-PAPER_EVENT_REQUIRED = ("trace_id", "decision_id", "fact_hash",
-                        "idempotency_key", "code", "action", "as_of",
-                        "environment")
+PAPER_EVENT_REQUIRED = (
+    "trace_id",
+    "decision_id",
+    "fact_hash",
+    "idempotency_key",
+    "code",
+    "action",
+    "as_of",
+    "environment",
+)
 
 
 def _paper_events_path(root: Path) -> Path:
@@ -502,11 +541,13 @@ def find_paper_event(root: Path, trace_id: str) -> dict:
         if e.get("trace_id") == trace_id:
             return e
     raise InvestWiringError(
-        "trace_id=%s 无 paper 事件（无源 ID 不伪造，先 record）" % trace_id)
+        "trace_id=%s 无 paper 事件（无源 ID 不伪造，先 record）" % trace_id
+    )
 
 
-def record_paper_event(root: Path, event: dict, link_store=None
-                       ) -> Tuple[dict, bool, List[str]]:
+def record_paper_event(
+    root: Path, event: dict, link_store=None
+) -> Tuple[dict, bool, List[str]]:
     """一条 ai_operator 决策事件入账（幂等键=trace_id）。
 
     返回 (entry, replayed, findings)。findings 非阻断（链失败留痕，
@@ -522,13 +563,14 @@ def record_paper_event(root: Path, event: dict, link_store=None
     if env not in ALLOWED_PAPER_ENVIRONMENTS:
         raise InvestWiringError(
             "environment=%r 不在白名单 %s（M4 红线：只收 paper 模拟事件）"
-            % (env, sorted(ALLOWED_PAPER_ENVIRONMENTS)))
+            % (env, sorted(ALLOWED_PAPER_ENVIRONMENTS))
+        )
     if event.get("execution_allowed") is not False:
         raise InvestWiringError(
             "execution_allowed 必须显式 False（paper 事件禁止携带真实"
-            "下单许可；缺字段同样拒绝）")
-    missing = [f for f in PAPER_EVENT_REQUIRED
-               if not str(event.get(f) or "").strip()]
+            "下单许可；缺字段同样拒绝）"
+        )
+    missing = [f for f in PAPER_EVENT_REQUIRED if not str(event.get(f) or "").strip()]
     if missing:
         raise InvestWiringError("事件缺必填字段: %s（无源字段不伪造）" % missing)
 
@@ -538,14 +580,16 @@ def record_paper_event(root: Path, event: dict, link_store=None
     for e in events:
         if e.get("trace_id") == trace_id:
             # 重放校验：fact_hash/decision_id 漂移 = 事件被改写
-            if (e.get("fact_hash") != event.get("fact_hash")
-                    or e.get("decision_id") != event.get("decision_id")):
+            if e.get("fact_hash") != event.get("fact_hash") or e.get(
+                "decision_id"
+            ) != event.get("decision_id"):
                 raise InvestWiringError(
                     "paper 事件 %s 已入账但 fact_hash/decision_id 漂移"
-                    "（同 trace_id 异内容，拒绝覆盖）" % trace_id)
+                    "（同 trace_id 异内容，拒绝覆盖）" % trace_id
+                )
             return e, True, []
 
-    entry = {k: event[k] for k in event}    # 浅拷贝原样留痕
+    entry = {k: event[k] for k in event}  # 浅拷贝原样留痕
     entry["recorded_at"] = _now_iso()
     events.append(entry)
     path = _paper_events_path(root)
@@ -562,19 +606,23 @@ def record_paper_event(root: Path, event: dict, link_store=None
         chain = {"paper": {"trace_id": trace_id}}
         sr = str(event.get("shadow_run_id") or "").strip()
         if sr:
-            chain["shadow"] = {"run_id": sr,
-                               "symbol": str(event.get("code", "")),
-                               "trade_date": str(event.get("as_of", ""))[:10]}
+            chain["shadow"] = {
+                "run_id": sr,
+                "symbol": str(event.get("code", "")),
+                "trade_date": str(event.get("as_of", ""))[:10],
+            }
         try:
-            link_store.record(chain, source="m4p2-paper",
-                              declared_at=entry["recorded_at"])
+            link_store.record(
+                chain, source="m4p2-paper", declared_at=entry["recorded_at"]
+            )
         except ValueError as exc:
             findings.append("trace 链挂接失败（事件已入账）: %s" % exc)
     return entry, False, findings
 
 
-def propose_real_transition(root: Path, trace_id: str, by: str,
-                            reason: str = "") -> dict:
+def propose_real_transition(
+    root: Path, trace_id: str, by: str, reason: str = ""
+) -> dict:
     """「建议转移为真实决策」注册口——M4 红线：**只注册不批准**。
 
     落事件账本内留痕（proposed_real），不写 Approval 凭据（凭据语义=
@@ -588,20 +636,25 @@ def propose_real_transition(root: Path, trace_id: str, by: str,
     for e in events:
         if e.get("trace_id") == trace_id:
             if e.get("proposed_real"):
-                return e                      # 幂等：已提议原样返回
-            e["proposed_real"] = {"by": by, "reason": reason,
-                                  "at": _now_iso(),
-                                  "note": "M4 红线：仅注册，批准流程未开放"}
+                return e  # 幂等：已提议原样返回
+            e["proposed_real"] = {
+                "by": by,
+                "reason": reason,
+                "at": _now_iso(),
+                "note": "M4 红线：仅注册，批准流程未开放",
+            }
             path = _paper_events_path(root)
             tmp = str(path) + ".tmp"
             with open(tmp, "w", encoding="utf-8") as f:
                 for r in events:
-                    f.write(json.dumps(r, ensure_ascii=False,
-                                       separators=(",", ":")) + "\n")
+                    f.write(
+                        json.dumps(r, ensure_ascii=False, separators=(",", ":")) + "\n"
+                    )
             os.replace(tmp, path)
             return e
     raise InvestWiringError(
-        "trace_id=%s 无 paper 事件（无源 ID 不伪造，先 record）" % trace_id)
+        "trace_id=%s 无 paper 事件（无源 ID 不伪造，先 record）" % trace_id
+    )
 
 
 # ----------------------------------------------------------------------
@@ -619,8 +672,7 @@ def main(argv=None) -> int:
     p_rg.add_argument("run_id")
     p_ap = sub.add_parser("approve", parents=[common])
     p_ap.add_argument("run_id")
-    p_ap.add_argument("to_status",
-                      choices=["reviewed", "adopted", "drafted"])
+    p_ap.add_argument("to_status", choices=["reviewed", "adopted", "drafted"])
     p_ap.add_argument("--by", required=True)
     p_ap.add_argument("--reason", default="")
     sub.add_parser("paper-events", parents=[common])
@@ -635,43 +687,71 @@ def main(argv=None) -> int:
     if args.cmd == "list":
         items, artifacts = project_workitems(root)
         for wi, art in zip(items, artifacts):
-            print("%-24s %-9s %-22s hash=%s%s" % (
-                wi.workitem_id, wi.status, wi.title[:22],
-                art.fact_hash[:12] if art.fact_hash else "-",
-                " [决策缺失]" if art.missing else ""))
+            print(
+                "%-24s %-9s %-22s hash=%s%s"
+                % (
+                    wi.workitem_id,
+                    wi.status,
+                    wi.title[:22],
+                    art.fact_hash[:12] if art.fact_hash else "-",
+                    " [决策缺失]" if art.missing else "",
+                )
+            )
         return 0
     if args.cmd == "report":
         print(json.dumps(audit_report(root), ensure_ascii=False, indent=2))
         return 0
     if args.cmd == "register":
         entry, replayed = register_run(root, args.run_id)
-        print("[invest_wiring] %s %s：stock=%s drafted（决策指纹 %s）" % (
-            args.run_id, "已登记（重放）" if replayed else "登记",
-            entry.get("stock"), entry.get("decision_hash", "")[:12]))
+        print(
+            "[invest_wiring] %s %s：stock=%s drafted（决策指纹 %s）"
+            % (
+                args.run_id,
+                "已登记（重放）" if replayed else "登记",
+                entry.get("stock"),
+                entry.get("decision_hash", "")[:12],
+            )
+        )
         return 0
     if args.cmd == "approve":
         approval, entry, replayed = approve_transition(
-            root, args.run_id, args.to_status, args.by, args.reason)
-        print("[invest_wiring] %s %s：%s→%s%s" % (
-            args.run_id, "重放" if replayed else "批准",
-            approval.from_status, approval.to_status,
-            "" if not replayed else "（凭据 %s 已存在，真源未重复变更）"
-            % approval.approval_id[:12]))
+            root, args.run_id, args.to_status, args.by, args.reason
+        )
+        print(
+            "[invest_wiring] %s %s：%s→%s%s"
+            % (
+                args.run_id,
+                "重放" if replayed else "批准",
+                approval.from_status,
+                approval.to_status,
+                ""
+                if not replayed
+                else "（凭据 %s 已存在，真源未重复变更）" % approval.approval_id[:12],
+            )
+        )
         return 0
     if args.cmd == "paper-events":
         evs = load_paper_events(root)
         for e in evs:
             pr = e.get("proposed_real")
-            print("%s %-14s %-9s as_of=%s%s" % (
-                e.get("trace_id", ""), e.get("action", ""),
-                e.get("code", ""), e.get("as_of", ""),
-                " [已提议真实转移]" if pr else ""))
+            print(
+                "%s %-14s %-9s as_of=%s%s"
+                % (
+                    e.get("trace_id", ""),
+                    e.get("action", ""),
+                    e.get("code", ""),
+                    e.get("as_of", ""),
+                    " [已提议真实转移]" if pr else "",
+                )
+            )
         print("共 %d 条 paper 事件" % len(evs))
         return 0
     if args.cmd == "propose-real":
         e = propose_real_transition(root, args.trace_id, args.by, args.reason)
-        print("[invest_wiring] %s 建议已注册（M4 红线：仅注册，"
-              "批准流程未开放）" % args.trace_id)
+        print(
+            "[invest_wiring] %s 建议已注册（M4 红线：仅注册，"
+            "批准流程未开放）" % args.trace_id
+        )
         return 0
     return 1
 

@@ -3,6 +3,7 @@
 覆盖：探测成功/失败、状态与历史落盘、kill switch、事件写入失败静默、
 退出码契约。全部本地 stub，不依赖 8787。
 """
+
 from __future__ import annotations
 
 import importlib.util
@@ -54,7 +55,8 @@ def test_probe_success_records_status_and_history(tmp_path, monkeypatch):
         assert len(hist) == 1 and json.loads(hist[0])["ok"] is True
         assert calls == []
     finally:
-        httpd.shutdown(); httpd.server_close()
+        httpd.shutdown()
+        httpd.server_close()
 
 
 def test_probe_failure_returns_not_ok():
@@ -78,22 +80,37 @@ def test_main_ok_exit_code_and_kill_switch(tmp_path, monkeypatch):
         assert rc2 == 0
         assert not (other / "status.json").exists()
     finally:
-        httpd.shutdown(); httpd.server_close()
+        httpd.shutdown()
+        httpd.server_close()
 
 
 def test_main_failure_exit_code(tmp_path, monkeypatch):
     monkeypatch.delenv(P.KILL_ENV, raising=False)
     monkeypatch.setattr(P, "emit_audit", lambda r: {"ok": True})
-    rc = P.main(["--base", "http://127.0.0.1:59999", "--timeout", "1",
-                 "--status-dir", str(tmp_path), "--quiet"])
+    rc = P.main(
+        [
+            "--base",
+            "http://127.0.0.1:59999",
+            "--timeout",
+            "1",
+            "--status-dir",
+            str(tmp_path),
+            "--quiet",
+        ]
+    )
     assert rc == 1
-    assert json.loads((tmp_path / "status.json").read_text(encoding="utf-8"))["ok"] is False
+    assert (
+        json.loads((tmp_path / "status.json").read_text(encoding="utf-8"))["ok"]
+        is False
+    )
 
 
 def test_history_trim(tmp_path):
     hist = tmp_path / "history.jsonl"
-    hist.write_text("\n".join(['{"i":%d}' % i for i in range(P.MAX_HISTORY + 5)]) + "\n",
-                    encoding="utf-8")
+    hist.write_text(
+        "\n".join(['{"i":%d}' % i for i in range(P.MAX_HISTORY + 5)]) + "\n",
+        encoding="utf-8",
+    )
     P.record({"ok": True, "schema": "x"}, tmp_path)
     lines = hist.read_text(encoding="utf-8").splitlines()
     assert len(lines) == P.MAX_HISTORY
@@ -104,6 +121,12 @@ def test_emit_audit_fail_soft(monkeypatch, tmp_path):
     # 全量套件下 tools/events 可能已被其它用例导入（sys.modules 缓存），仅把 REPO 指到不存在
     # 路径不保证 import 失败；用 None 占位强制 ImportError，验证「事件层不可用→静默降级」与顺序无关。
     monkeypatch.setitem(sys.modules, "events", None)
-    out = P.emit_audit({"checks": {"health": {"status": 200, "elapsed_ms": 1},
-                                   "root": {"status": 200, "elapsed_ms": 1}}})
+    out = P.emit_audit(
+        {
+            "checks": {
+                "health": {"status": 200, "elapsed_ms": 1},
+                "root": {"status": 200, "elapsed_ms": 1},
+            }
+        }
+    )
     assert out.get("ok") is False

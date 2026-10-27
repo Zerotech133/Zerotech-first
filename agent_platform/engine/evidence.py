@@ -62,14 +62,23 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def fact_hash(domain: str, kind: str, source: str, source_ref: str,
-              statement: str) -> str:
+def fact_hash(
+    domain: str, kind: str, source: str, source_ref: str, statement: str
+) -> str:
     """事实指纹：canonical JSON sha256（M0 幂等账本同款，禁 NaN）。"""
     canonical = json.dumps(
-        {"domain": domain, "kind": kind, "source": source,
-         "source_ref": source_ref, "statement": statement},
-        ensure_ascii=False, sort_keys=True, separators=(",", ":"),
-        allow_nan=False)
+        {
+            "domain": domain,
+            "kind": kind,
+            "source": source,
+            "source_ref": source_ref,
+            "statement": statement,
+        },
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    )
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
@@ -86,10 +95,11 @@ class EvidenceStore:
         if read_only:
             if not self.db_path.exists():
                 raise FileNotFoundError(
-                    "evidence db 不存在：%s（只读模式不建库）" % self.db_path)
+                    "evidence db 不存在：%s（只读模式不建库）" % self.db_path
+                )
             self._conn = sqlite3.connect(
-                "file:%s?mode=ro" % self.db_path.as_posix(), uri=True,
-                timeout=30)
+                "file:%s?mode=ro" % self.db_path.as_posix(), uri=True, timeout=30
+            )
             self._conn.row_factory = sqlite3.Row
             return
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -109,8 +119,12 @@ class EvidenceStore:
     def record(self, ev: Evidence) -> Tuple[Evidence, bool]:
         """登记一条证据；同 fact_hash 幂等重放（replayed=True）。"""
         fh = ev.payload.get("fact_hash") or fact_hash(
-            ev.payload.get("domain", ""), ev.payload.get("kind", ""),
-            ev.source, ev.source_ref, ev.statement)
+            ev.payload.get("domain", ""),
+            ev.payload.get("kind", ""),
+            ev.source,
+            ev.source_ref,
+            ev.statement,
+        )
         self._conn.execute("BEGIN IMMEDIATE")
         try:
             self._conn.execute(
@@ -118,42 +132,66 @@ class EvidenceStore:
                 " source_ref, statement, fact_hash, observed_at,"
                 " recorded_at, payload, trace_id, schema_version)"
                 " VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
-                (ev.evidence_id, ev.payload.get("domain", ""),
-                 ev.payload.get("kind", ""), ev.source, ev.source_ref,
-                 ev.statement, fh, ev.observed_at, _now_iso(),
-                 json.dumps({k: v for k, v in ev.payload.items()
-                             if k not in ("fact_hash", "domain", "kind")},
-                            ensure_ascii=False, sort_keys=True),
-                 ev.trace_id, ev.schema_version))
+                (
+                    ev.evidence_id,
+                    ev.payload.get("domain", ""),
+                    ev.payload.get("kind", ""),
+                    ev.source,
+                    ev.source_ref,
+                    ev.statement,
+                    fh,
+                    ev.observed_at,
+                    _now_iso(),
+                    json.dumps(
+                        {
+                            k: v
+                            for k, v in ev.payload.items()
+                            if k not in ("fact_hash", "domain", "kind")
+                        },
+                        ensure_ascii=False,
+                        sort_keys=True,
+                    ),
+                    ev.trace_id,
+                    ev.schema_version,
+                ),
+            )
             self._conn.commit()
             return ev, False
         except sqlite3.IntegrityError:
             self._conn.rollback()
             row = self._conn.execute(
-                "SELECT * FROM evidence WHERE fact_hash=?", (fh,)).fetchone()
+                "SELECT * FROM evidence WHERE fact_hash=?", (fh,)
+            ).fetchone()
             return self._row_to_evidence(row), True
         except Exception:
             self._conn.rollback()
             raise
 
-    def list(self, domain: Optional[str] = None,
-             limit: int = 500) -> List[Evidence]:
-        sql = ("SELECT * FROM evidence"
-               + (" WHERE domain=?" if domain else "")
-               + " ORDER BY recorded_at, rowid LIMIT ?")
-        args = ([domain, limit] if domain else [limit])
+    def list(self, domain: Optional[str] = None, limit: int = 500) -> List[Evidence]:
+        sql = (
+            "SELECT * FROM evidence"
+            + (" WHERE domain=?" if domain else "")
+            + " ORDER BY recorded_at, rowid LIMIT ?"
+        )
+        args = [domain, limit] if domain else [limit]
         rows = self._conn.execute(sql, args).fetchall()
         return [self._row_to_evidence(r) for r in rows]
 
     def stats(self) -> Dict:
-        total = self._conn.execute(
-            "SELECT COUNT(*) FROM evidence").fetchone()[0]
-        by_domain = {r["domain"]: r["n"] for r in self._conn.execute(
-            "SELECT domain, COUNT(*) AS n FROM evidence"
-            " GROUP BY domain ORDER BY domain")}
-        by_kind = {r["kind"]: r["n"] for r in self._conn.execute(
-            "SELECT kind, COUNT(*) AS n FROM evidence"
-            " GROUP BY kind ORDER BY kind")}
+        total = self._conn.execute("SELECT COUNT(*) FROM evidence").fetchone()[0]
+        by_domain = {
+            r["domain"]: r["n"]
+            for r in self._conn.execute(
+                "SELECT domain, COUNT(*) AS n FROM evidence"
+                " GROUP BY domain ORDER BY domain"
+            )
+        }
+        by_kind = {
+            r["kind"]: r["n"]
+            for r in self._conn.execute(
+                "SELECT kind, COUNT(*) AS n FROM evidence GROUP BY kind ORDER BY kind"
+            )
+        }
         return {"total": total, "by_domain": by_domain, "by_kind": by_kind}
 
     def close(self) -> None:
@@ -163,8 +201,13 @@ class EvidenceStore:
     @staticmethod
     def _row_to_evidence(row) -> Evidence:
         payload = json.loads(row["payload"] or "{}")
-        payload.update({"domain": row["domain"], "kind": row["kind"],
-                        "fact_hash": row["fact_hash"]})
+        payload.update(
+            {
+                "domain": row["domain"],
+                "kind": row["kind"],
+                "fact_hash": row["fact_hash"],
+            }
+        )
         return Evidence(
             evidence_id=row["evidence_id"],
             source=row["source"],
@@ -188,8 +231,7 @@ def main(argv=None) -> int:
 
     db = _ENGINE_DIR.parent / "data" / "evidence" / "evidence.db"
     if not db.exists():
-        print(json.dumps({"ledger_exists": False, "total": 0},
-                         ensure_ascii=False))
+        print(json.dumps({"ledger_exists": False, "total": 0}, ensure_ascii=False))
         return 0
     store = EvidenceStore(db)
     try:
@@ -197,10 +239,16 @@ def main(argv=None) -> int:
             print(json.dumps(store.stats(), ensure_ascii=False, indent=1))
         else:
             for ev in store.list(domain=args.domain, limit=args.limit):
-                print("%s | %s | %s | %s | %s" % (
-                    ev.payload.get("domain", ""), ev.payload.get("kind", ""),
-                    ev.source_ref, ev.statement[:60],
-                    ev.payload.get("fact_hash", "")[:12]))
+                print(
+                    "%s | %s | %s | %s | %s"
+                    % (
+                        ev.payload.get("domain", ""),
+                        ev.payload.get("kind", ""),
+                        ev.source_ref,
+                        ev.statement[:60],
+                        ev.payload.get("fact_hash", "")[:12],
+                    )
+                )
     finally:
         store.close()
     return 0

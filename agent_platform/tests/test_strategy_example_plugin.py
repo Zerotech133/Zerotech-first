@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """strategy_example_momentum 示例插件验收测试。"""
+
 import json
 import subprocess
 import sys
@@ -82,7 +83,12 @@ def test_shadow_result_has_no_execution_capability(tmp_path):
 
 def test_example_files_compile_and_json_is_valid():
     subprocess.run(
-        [sys.executable, "-m", "py_compile", str(EXAMPLES / "strategy_example_momentum.py")],
+        [
+            sys.executable,
+            "-m",
+            "py_compile",
+            str(EXAMPLES / "strategy_example_momentum.py"),
+        ],
         check=True,
     )
     for path in (MANIFEST, CONFIG):

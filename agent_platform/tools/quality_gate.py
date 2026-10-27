@@ -16,6 +16,7 @@
 退出码：0 全过；1 有检查失败；2 自身错误。
 用法：python agent_platform/tools/quality_gate.py --quiet
 """
+
 from __future__ import annotations
 
 import argparse
@@ -44,8 +45,11 @@ def _env_with_git(env=None) -> dict:
     """S4U/服务上下文 PATH 可能不含 Git → 为子进程补 Git 目录（scan_secrets 要 git status）。"""
     out = dict(os.environ if env is None else env)
     path = out.get("PATH", "")
-    for cand in (r"C:\Program Files\Git\cmd", r"C:\Program Files\Git\bin",
-                 r"C:\Program Files (x86)\Git\cmd"):
+    for cand in (
+        r"C:\Program Files\Git\cmd",
+        r"C:\Program Files\Git\bin",
+        r"C:\Program Files (x86)\Git\cmd",
+    ):
         if os.path.isdir(cand) and cand not in path:
             path = cand + os.pathsep + path
     out["PATH"] = path
@@ -55,15 +59,30 @@ def _env_with_git(env=None) -> dict:
 def _run(argv: list, timeout: int = TIMEOUT, env=None) -> dict:
     t0 = time.time()
     try:
-        proc = subprocess.run(argv, cwd=str(REPO), capture_output=True, text=True,
-                              encoding="utf-8", errors="replace", timeout=timeout,
-                              env=env)
+        proc = subprocess.run(
+            argv,
+            cwd=str(REPO),
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=timeout,
+            env=env,
+        )
         tail = ((proc.stdout or "") + (proc.stderr or "")).strip()[-500:]
-        return {"ok": proc.returncode == 0, "rc": proc.returncode,
-                "elapsed_ms": int((time.time() - t0) * 1000), "tail": tail}
+        return {
+            "ok": proc.returncode == 0,
+            "rc": proc.returncode,
+            "elapsed_ms": int((time.time() - t0) * 1000),
+            "tail": tail,
+        }
     except subprocess.TimeoutExpired:
-        return {"ok": False, "rc": None, "error": "timeout",
-                "elapsed_ms": int((time.time() - t0) * 1000)}
+        return {
+            "ok": False,
+            "rc": None,
+            "error": "timeout",
+            "elapsed_ms": int((time.time() - t0) * 1000),
+        }
     except OSError as exc:
         return {"ok": False, "rc": None, "error": type(exc).__name__}
 
@@ -95,31 +114,46 @@ def run_checks(py: str = sys.executable) -> dict:
         "compileall": _run([py, "-m", "compileall", "-q", "agent_platform", "tools"]),
         "ports": _run([py, "tools/check_ports.py"]),
         # 不依赖 git（S4U 任务上下文取不到 git 清单）：显式扫描受控目录
-        "secrets": _run([py, "agent_platform/tools/scan_secrets.py",
-                         "--paths", "agent_platform", "tools", "ops", "docs"]),
+        "secrets": _run(
+            [
+                py,
+                "agent_platform/tools/scan_secrets.py",
+                "--paths",
+                "agent_platform",
+                "tools",
+                "ops",
+                "docs",
+            ]
+        ),
         # P3 名称唯一性 CI：编制内一名一席；治理/虚拟席必须带席位限定
         "names": _run([py, "tools/check_name_uniqueness.py", "--json"]),
         # P1 能力自检：CAPABILITIES 与真实工具/新鲜度核对（漂移即失败）
-        "capabilities": _run([py, "agent_platform/tools/capability_self_audit.py",
-                              "--json"]),
+        "capabilities": _run(
+            [py, "agent_platform/tools/capability_self_audit.py", "--json"]
+        ),
         # P1 评估飞轮：行为目录 smoke 子集（快速，失败即阻断）
         "evals": _run([py, "agent_platform/evals/run_evals.py", "--smoke", "--json"]),
         # P0 测试基线：核心套件（排除 live-state 组：activity/glm/monday/真仓只读）
-        "tests": _run([py, "-m", "pytest", "-q", "-p", "no:cacheprovider",
-                       "-o", "addopts="] + _TEST_BASELINE,
-                      timeout=240),
+        "tests": _run(
+            [py, "-m", "pytest", "-q", "-p", "no:cacheprovider", "-o", "addopts="]
+            + _TEST_BASELINE,
+            timeout=240,
+        ),
     }
-    return {"schema": "quality_gate/v1",
-            "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
-            "ok": all(c.get("ok") for c in checks.values()),
-            "checks": checks}
+    return {
+        "schema": "quality_gate/v1",
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+        "ok": all(c.get("ok") for c in checks.values()),
+        "checks": checks,
+    }
 
 
 def record(result: dict, seats, status_root=None) -> dict:
     root = Path(status_root) if status_root else (PLATFORM / "data" / "quality_gate")
     root.mkdir(parents=True, exist_ok=True)
     (root / "status.json").write_text(
-        json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8")
+        json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8"
+    )
     hist = root / "history.jsonl"
     with open(hist, "a", encoding="utf-8") as f:
         f.write(json.dumps(result, ensure_ascii=False) + "\n")
@@ -131,7 +165,8 @@ def record(result: dict, seats, status_root=None) -> dict:
         d.mkdir(parents=True, exist_ok=True)
         (d / "status.json").write_text(
             json.dumps({"seat": seat, **result}, ensure_ascii=False, indent=1),
-            encoding="utf-8")
+            encoding="utf-8",
+        )
     return {"root": str(root), "seats": list(seats)}
 
 
@@ -141,12 +176,16 @@ def emit_audit(seat: str, result: dict) -> dict:
         if tools not in sys.path:
             sys.path.insert(0, tools)
         import events  # noqa: WPS433
+
         bad = [k for k, v in result.get("checks", {}).items() if not v.get("ok")]
         detail = "quality_gate ok=%s checks=%s%s" % (
-            result.get("ok"), len(result.get("checks") or {}),
-            (" failed=" + ",".join(bad)) if bad else "")
-        return events.emit(kind="patrol_verdict", task=seat, agent=seat,
-                           detail=detail[:300])
+            result.get("ok"),
+            len(result.get("checks") or {}),
+            (" failed=" + ",".join(bad)) if bad else "",
+        )
+        return events.emit(
+            kind="patrol_verdict", task=seat, agent=seat, detail=detail[:300]
+        )
     except Exception as exc:  # noqa: BLE001
         return {"ok": False, "error": type(exc).__name__}
 
@@ -161,24 +200,35 @@ def main(argv=None) -> int:
     seats = tuple(s.strip().upper() for s in args.seats.split(",") if s.strip())
     if kill_switch_on():
         if not args.quiet:
-            print(json.dumps({"ok": False, "skipped": "kill_switch"}, ensure_ascii=False))
+            print(
+                json.dumps({"ok": False, "skipped": "kill_switch"}, ensure_ascii=False)
+            )
         return 0
     try:
         result = run_checks()
         record(result, seats, args.status_dir or None)
         audits = {s: emit_audit(s, result) for s in seats}
     except Exception as exc:  # noqa: BLE001
-        print(json.dumps({"ok": False, "error": type(exc).__name__,
-                          "detail": str(exc)[:200]}, ensure_ascii=False))
+        print(
+            json.dumps(
+                {"ok": False, "error": type(exc).__name__, "detail": str(exc)[:200]},
+                ensure_ascii=False,
+            )
+        )
         return 2
     if not args.quiet:
         if args.json:
-            print(json.dumps({"result": result, "audits": audits},
-                             ensure_ascii=False, indent=1))
+            print(
+                json.dumps(
+                    {"result": result, "audits": audits}, ensure_ascii=False, indent=1
+                )
+            )
         else:
             for k, v in result["checks"].items():
-                print("%-12s ok=%s rc=%s %sms" % (k, v.get("ok"), v.get("rc"),
-                                                  v.get("elapsed_ms")))
+                print(
+                    "%-12s ok=%s rc=%s %sms"
+                    % (k, v.get("ok"), v.get("rc"), v.get("elapsed_ms"))
+                )
     return 0 if result["ok"] else 1
 
 

@@ -4,6 +4,7 @@
 恶意样本集固化为回归测试（设计稿 §5.4 判例：校验器若静默放过一次，
 漏洞即成通道契约）。测试全程 tmp 隔离，绝不写 agent_platform/bridge_inbox。
 """
+
 import sys
 import time
 from pathlib import Path
@@ -16,13 +17,25 @@ for p in ("adapters", "engine"):
         sys.path.insert(0, str(AP / p))
 
 from codex_bridge import (  # noqa: E402
-    IMPORT_ALLOWLIST, load_registered, process_submission,
-    register_from_source, validate_source, write_reject)
+    IMPORT_ALLOWLIST,
+    load_registered,
+    process_submission,
+    register_from_source,
+    validate_source,
+    write_reject,
+)
 from strategy_registry import (  # noqa: E402
-    StrategyError, StrategyRegistry)
+    StrategyError,
+    StrategyRegistry,
+)
 
-PILOT = (AP / "bridge_inbox" / "processed" / "20261018_sma20_rsi14"
-         / "strategy_20261018_sma20_rsi14.py").read_text(encoding="utf-8")
+PILOT = (
+    AP
+    / "bridge_inbox"
+    / "processed"
+    / "20261018_sma20_rsi14"
+    / "strategy_20261018_sma20_rsi14.py"
+).read_text(encoding="utf-8")
 
 GOOD = '''# -*- coding: utf-8 -*-
 """测试插件：均值差一档。"""
@@ -54,63 +67,74 @@ class CodexGoodAgent(StrategyAgent):
 
 # ---- M1：静态校验 ----
 
+
 def test_pilot_and_good_plugin_pass():
     assert validate_source(PILOT) == []
     assert validate_source(GOOD) == []
 
 
 def test_reject_subprocess_import():
-    bad = GOOD.replace("from statistics import fmean",
-                       "import subprocess")
+    bad = GOOD.replace("from statistics import fmean", "import subprocess")
     reasons = validate_source(bad)
     assert any("subprocess" in r for r in reasons)
 
 
 def test_reject_importlib():
-    bad = GOOD.replace("from statistics import fmean",
-                       "import importlib")
+    bad = GOOD.replace("from statistics import fmean", "import importlib")
     assert any("importlib" in r for r in validate_source(bad))
 
 
 def test_reject_eval_call():
-    bad = GOOD.replace("rec = \"buy\"", "rec = eval(\"'buy'\") && False or \"buy\"") \
-        if False else GOOD.replace(
-        '        rec = "buy" if ch > TH',
-        '        rec = eval("chr(98)+chr(117)+chr(121)") if ch > TH')
+    bad = (
+        GOOD.replace('rec = "buy"', 'rec = eval("\'buy\'") && False or "buy"')
+        if False
+        else GOOD.replace(
+            '        rec = "buy" if ch > TH',
+            '        rec = eval("chr(98)+chr(117)+chr(121)") if ch > TH',
+        )
+    )
     assert any("eval" in r for r in validate_source(bad))
 
 
 def test_reject_open_write():
-    bad = GOOD.replace('        prev = fmean(closes[:-1])',
-                       '        open("/tmp/x.txt", "w").write("leak")\n'
-                       '        prev = fmean(closes[:-1])')
+    bad = GOOD.replace(
+        "        prev = fmean(closes[:-1])",
+        '        open("/tmp/x.txt", "w").write("leak")\n'
+        "        prev = fmean(closes[:-1])",
+    )
     reasons = validate_source(bad)
     assert any("open" in r for r in reasons)
 
 
 def test_reject_credential_assignment():
-    bad = GOOD.replace('TH = 0.01', 'api_key = "sk-123"')
+    bad = GOOD.replace("TH = 0.01", 'api_key = "sk-123"')
     assert any("凭据" in r for r in validate_source(bad))
 
 
 def test_reject_double_subclass():
-    bad = GOOD + "\n\n" + GOOD.replace("codex_good", "codex_good2") \
-        .replace("class CodexGoodAgent", "class CodexSecondAgent")
+    bad = (
+        GOOD
+        + "\n\n"
+        + GOOD.replace("codex_good", "codex_good2").replace(
+            "class CodexGoodAgent", "class CodexSecondAgent"
+        )
+    )
     reasons = validate_source(bad)
     assert any("恰好定义一个" in r for r in reasons)
 
 
 def test_reject_init_defined():
-    bad = GOOD.replace('    def propose(self, context):',
-                       '    def __init__(self):\n'
-                       '        self.state = {}\n\n'
-                       '    def propose(self, context):')
+    bad = GOOD.replace(
+        "    def propose(self, context):",
+        "    def __init__(self):\n"
+        "        self.state = {}\n\n"
+        "    def propose(self, context):",
+    )
     assert any("__init__" in r for r in validate_source(bad))
 
 
 def test_reject_missing_codex_prefix():
-    bad = GOOD.replace('strategy_id = "codex_good"',
-                       'strategy_id = "shadow_evil"')
+    bad = GOOD.replace('strategy_id = "codex_good"', 'strategy_id = "shadow_evil"')
     assert any("codex_" in r for r in validate_source(bad))
 
 
@@ -120,8 +144,9 @@ def test_reject_bad_stance():
 
 
 def test_reject_no_propose():
-    bad = GOOD.replace("    def propose(self, context):",
-                       "    def propose_x(self, context):")
+    bad = GOOD.replace(
+        "    def propose(self, context):", "    def propose_x(self, context):"
+    )
     assert any("propose" in r for r in validate_source(bad))
 
 
@@ -136,12 +161,22 @@ def test_reject_syntax_error():
 
 def test_allowlist_is_pure_computation_plus_host():
     assert "strategy_registry" in IMPORT_ALLOWLIST
-    for banned in ("os", "sys", "socket", "subprocess", "requests",
-                   "urllib", "ctypes", "shutil", "pathlib"):
+    for banned in (
+        "os",
+        "sys",
+        "socket",
+        "subprocess",
+        "requests",
+        "urllib",
+        "ctypes",
+        "shutil",
+        "pathlib",
+    ):
         assert banned not in IMPORT_ALLOWLIST
 
 
 # ---- M1：注册与漂移拒绝 ----
+
 
 def _fresh_registry():
     return StrategyRegistry()
@@ -164,11 +199,13 @@ def test_register_refuses_unvalidated_source():
 
 def test_pilot_registers_and_produces_verdict():
     from strategy_registry import Verdict
+
     reg = _fresh_registry()
     agent = register_from_source(PILOT, reg)
     assert agent.strategy_id == "codex_sma20_rsi14"
-    v = agent.propose({"symbol": "600519",
-                       "closes": [10.0 + 0.01 * i for i in range(21)]})
+    v = agent.propose(
+        {"symbol": "600519", "closes": [10.0 + 0.01 * i for i in range(21)]}
+    )
     assert isinstance(v, Verdict) and v.strategy_id == "codex_sma20_rsi14"
     v.validate()
     # 顺势未极端：匀速上涨 RSI=100 超买 → 反向 sell
@@ -179,6 +216,7 @@ def test_pilot_registers_and_produces_verdict():
 
 
 # ---- fail-visible 落档 + 管线 ----
+
 
 def test_write_reject_creates_readable_doc(tmp_path):
     path = write_reject(tmp_path, "sub-1", "静态校验", ["规则A", "规则B"])
@@ -192,8 +230,7 @@ def test_process_submission_reject_moves_to_rejects(tmp_path):
     ok, reasons = process_submission(tmp_path, "s-bad", bad, reg)
     assert not ok and reasons
     # rejects 按日归档（§5 风险 6）：md 档落日期子目录
-    assert (tmp_path / "rejects" / time.strftime("%Y%m%d")
-            / "s-bad.md").exists()
+    assert (tmp_path / "rejects" / time.strftime("%Y%m%d") / "s-bad.md").exists()
     assert not (tmp_path / "inbox" / "s-bad").exists()
     assert reg.list_ids() == []
 
@@ -202,8 +239,7 @@ def test_process_submission_accept_moves_to_processed(tmp_path):
     reg = _fresh_registry()
     ok, reasons = process_submission(tmp_path, "s-ok", GOOD, reg)
     assert ok and not reasons
-    assert (tmp_path / "processed" / "s-ok" /
-            "strategy_s-ok.py").exists()
+    assert (tmp_path / "processed" / "s-ok" / "strategy_s-ok.py").exists()
     assert "codex_good" in reg.list_ids()
 
 
@@ -234,14 +270,14 @@ def test_load_registered_idempotent(tmp_path):
 
 
 def test_load_registered_no_dir_is_noop(tmp_path):
-    loaded, skipped = load_registered(_fresh_registry(),
-                                      bridge_dir=tmp_path / "nope")
+    loaded, skipped = load_registered(_fresh_registry(), bridge_dir=tmp_path / "nope")
     assert (loaded, skipped) == (0, 0)
 
 
 def test_pilot_real_inbox_registers_into_default_registry():
     """M2 端到端：试点提交物注册进 default registry（真实 inbox 文件）。"""
     from shadow_strategies import build_default_registry
+
     reg = build_default_registry()
     loaded, _ = load_registered(reg)
     assert loaded >= 1
@@ -268,38 +304,41 @@ class CodexLoopAgent(StrategyAgent):
 '''
 
 CRASH = GOOD.replace(
-    '        prev = fmean(closes[:-1])',
+    "        prev = fmean(closes[:-1])",
     '        raise ZeroDivisionError("对抗样本：运行时崩")\n'
-    '        prev = fmean(closes[:-1])')
+    "        prev = fmean(closes[:-1])",
+)
 
 NONVERDICT = GOOD.replace(
-    '        return Verdict(strategy_id=self.strategy_id, symbol=symbol,\n'
-    '                       recommendation=rec,',
-    '        return None  # 对抗样本：非 Verdict 返回\n'
-    '        return Verdict(strategy_id=self.strategy_id, symbol=symbol,\n'
-    '                       recommendation=rec,')
+    "        return Verdict(strategy_id=self.strategy_id, symbol=symbol,\n"
+    "                       recommendation=rec,",
+    "        return None  # 对抗样本：非 Verdict 返回\n"
+    "        return Verdict(strategy_id=self.strategy_id, symbol=symbol,\n"
+    "                       recommendation=rec,",
+)
 
 BADSTANCE = GOOD.replace(
     'recommendation=rec, confidence=0.5, stance="neutral",',
-    'recommendation=rec, confidence=0.5, stance="yolo",')
+    'recommendation=rec, confidence=0.5, stance="yolo",',
+)
 
 
 def test_sandbox_trial_pilot_ok():
     from codex_bridge import sandbox_trial
+
     r = sandbox_trial(PILOT)
     assert r["ok"] is True and r["killed"] is False and r["reason"] == ""
     assert r["elapsed_ms"] > 0
     v = r["verdict"]
     assert v["strategy_id"] == "codex_sma20_rsi14"
-    assert v["recommendation"] in ("strong_buy", "buy", "hold",
-                                   "sell", "strong_sell")
-    assert 0.0 <= v["confidence"] <= 1.0 and v["stance"] in ("bull", "bear",
-                                                             "neutral")
+    assert v["recommendation"] in ("strong_buy", "buy", "hold", "sell", "strong_sell")
+    assert 0.0 <= v["confidence"] <= 1.0 and v["stance"] in ("bull", "bear", "neutral")
 
 
 def test_loop_passes_static_gate_but_killed_by_sandbox():
     """M3 核心判据②：静态过关的运行时对抗样本在沙箱门被击杀。"""
     from codex_bridge import sandbox_trial
+
     assert validate_source(LOOP) == []  # 静态门放行（无任何可静态命中的违规）
     r = sandbox_trial(LOOP, timeout_s=3.0)
     assert r["ok"] is False and r["killed"] is True
@@ -308,6 +347,7 @@ def test_loop_passes_static_gate_but_killed_by_sandbox():
 
 def test_sandbox_rejects_runtime_crash():
     from codex_bridge import sandbox_trial
+
     r = sandbox_trial(CRASH)
     assert r["ok"] is False and r["killed"] is False
     assert "ZeroDivisionError" in r["reason"]
@@ -315,6 +355,7 @@ def test_sandbox_rejects_runtime_crash():
 
 def test_sandbox_rejects_non_verdict_return():
     from codex_bridge import sandbox_trial
+
     r = sandbox_trial(NONVERDICT)
     assert r["ok"] is False
     assert "非 Verdict" in r["reason"]
@@ -322,6 +363,7 @@ def test_sandbox_rejects_non_verdict_return():
 
 def test_sandbox_rejects_bad_stance():
     from codex_bridge import sandbox_trial
+
     r = sandbox_trial(BADSTANCE)
     assert r["ok"] is False
     assert "stance" in r["reason"]
@@ -330,30 +372,37 @@ def test_sandbox_rejects_bad_stance():
 def test_host_side_verdict_dict_recheck():
     """宿主侧出口再验：runner 输出与契约脱钩的第二道网。"""
     from codex_bridge import _verdict_dict_issues
-    good = {"strategy_id": "codex_x", "symbol": "S", "recommendation":
-            "hold", "confidence": 0.5, "stance": "neutral"}
+
+    good = {
+        "strategy_id": "codex_x",
+        "symbol": "S",
+        "recommendation": "hold",
+        "confidence": 0.5,
+        "stance": "neutral",
+    }
     assert _verdict_dict_issues(good) == []
-    assert any("前缀" in i for i in _verdict_dict_issues(
-        {**good, "strategy_id": "evil_x"}))
-    assert any("五档" in i for i in _verdict_dict_issues(
-        {**good, "recommendation": "yolo"}))
-    assert any("越界" in i for i in _verdict_dict_issues(
-        {**good, "confidence": 1.5}))
-    assert any("非数值" in i for i in _verdict_dict_issues(
-        {**good, "confidence": "0.5; drop table"}))
-    assert any("三档" in i for i in _verdict_dict_issues(
-        {**good, "stance": "yolo"}))
-    assert any("symbol" in i for i in _verdict_dict_issues(
-        {**good, "symbol": ""}))
+    assert any(
+        "前缀" in i for i in _verdict_dict_issues({**good, "strategy_id": "evil_x"})
+    )
+    assert any(
+        "五档" in i for i in _verdict_dict_issues({**good, "recommendation": "yolo"})
+    )
+    assert any("越界" in i for i in _verdict_dict_issues({**good, "confidence": 1.5}))
+    assert any(
+        "非数值" in i
+        for i in _verdict_dict_issues({**good, "confidence": "0.5; drop table"})
+    )
+    assert any("三档" in i for i in _verdict_dict_issues({**good, "stance": "yolo"}))
+    assert any("symbol" in i for i in _verdict_dict_issues({**good, "symbol": ""}))
 
 
 def test_process_submission_sandbox_rejects_runtime_crash(tmp_path):
     """M3 管线：试跑拒绝 → 拒档 stage=沙箱试跑 + inbox 移 rejects。"""
-    ok, reasons = process_submission(tmp_path, "s-crash", CRASH,
-                                     _fresh_registry())
+    ok, reasons = process_submission(tmp_path, "s-crash", CRASH, _fresh_registry())
     assert ok is False and reasons and "ZeroDivisionError" in reasons[0]
-    rj = (tmp_path / "rejects" / time.strftime("%Y%m%d")
-          / "s-crash.md").read_text(encoding="utf-8")
+    rj = (tmp_path / "rejects" / time.strftime("%Y%m%d") / "s-crash.md").read_text(
+        encoding="utf-8"
+    )
     assert "沙箱试跑" in rj and "ZeroDivisionError" in rj
     assert not (tmp_path / "inbox" / "s-crash").exists()
     assert not (tmp_path / "processed" / "s-crash").exists()
@@ -362,13 +411,19 @@ def test_process_submission_sandbox_rejects_runtime_crash(tmp_path):
 def test_registration_row_records_sandbox_ms(tmp_path):
     """M3 判据③：单次试跑耗时基线随注册事件入档。"""
     data_root = tmp_path / "dataroot"
-    ok, _ = process_submission(tmp_path, "s-ms", GOOD, _fresh_registry(),
-                               data_root=data_root)
+    ok, _ = process_submission(
+        tmp_path, "s-ms", GOOD, _fresh_registry(), data_root=data_root
+    )
     assert ok is True
     import json as _json
-    rows = [ _json.loads(l) for l in
-             (data_root / "data" / "codex_bridge" / "registrations.jsonl")
-             .read_text(encoding="utf-8").splitlines() if l.strip() ]
+
+    rows = [
+        _json.loads(l)
+        for l in (data_root / "data" / "codex_bridge" / "registrations.jsonl")
+        .read_text(encoding="utf-8")
+        .splitlines()
+        if l.strip()
+    ]
     assert len(rows) == 1 and rows[0]["submit_id"] == "s-ms"
     assert isinstance(rows[0]["sandbox_ms"], int) and rows[0]["sandbox_ms"] > 0
 
@@ -380,8 +435,10 @@ def test_load_registered_skips_sandbox_trial(tmp_path, monkeypatch):
     reg2 = _fresh_registry()
 
     import codex_bridge
+
     def _boom(*a, **k):
         raise AssertionError("load_registered 不得触发沙箱试跑")
+
     monkeypatch.setattr(codex_bridge, "sandbox_trial", _boom)
     loaded, skipped = load_registered(reg2, bridge_dir=tmp_path)
     assert loaded == 1 and skipped == 0
@@ -389,6 +446,7 @@ def test_load_registered_skips_sandbox_trial(tmp_path, monkeypatch):
 
 
 # ---- 提交纪律：按日限频 + rejects 按日归档（设计稿 §5 风险 6） ----
+
 
 def _variant(sid):
     """不同 strategy_id 的合规提交物（多提交受理测试防漂移冲突）。"""
@@ -398,13 +456,19 @@ def _variant(sid):
 def test_daily_limit_rejects_and_archives(tmp_path):
     """限频触发：拒绝受理 + fail-visible 落档 stage=限频，inbox 不动。"""
     data_root = tmp_path / "dataroot"
-    ok, _ = process_submission(tmp_path, "s-1", GOOD, _fresh_registry(),
-                               data_root=data_root, daily_limit=1)
+    ok, _ = process_submission(
+        tmp_path, "s-1", GOOD, _fresh_registry(), data_root=data_root, daily_limit=1
+    )
     assert ok is True
     today = time.strftime("%Y%m%d")
-    ok2, reasons2 = process_submission(tmp_path, "s-2", _variant("codex_two"),
-                                       _fresh_registry(),
-                                       data_root=data_root, daily_limit=1)
+    ok2, reasons2 = process_submission(
+        tmp_path,
+        "s-2",
+        _variant("codex_two"),
+        _fresh_registry(),
+        data_root=data_root,
+        daily_limit=1,
+    )
     assert ok2 is False and any("限频" in r for r in reasons2)
     md = tmp_path / "rejects" / today / "s-2.md"
     assert md.exists() and "限频" in md.read_text(encoding="utf-8")
@@ -417,24 +481,32 @@ def test_daily_limit_boundary_exact_nth_accepted(tmp_path):
     """临界值：恰好第 N 个仍受理，第 N+1 个被拒。"""
     data_root = tmp_path / "dataroot"
     for i in (1, 2):
-        ok, _ = process_submission(tmp_path, "s-b%d" % i,
-                                   _variant("codex_b%d" % i),
-                                   _fresh_registry(), data_root=data_root,
-                                   daily_limit=2)
+        ok, _ = process_submission(
+            tmp_path,
+            "s-b%d" % i,
+            _variant("codex_b%d" % i),
+            _fresh_registry(),
+            data_root=data_root,
+            daily_limit=2,
+        )
         assert ok is True
-    ok3, reasons3 = process_submission(tmp_path, "s-b3",
-                                       _variant("codex_b3"),
-                                       _fresh_registry(),
-                                       data_root=data_root, daily_limit=2)
+    ok3, reasons3 = process_submission(
+        tmp_path,
+        "s-b3",
+        _variant("codex_b3"),
+        _fresh_registry(),
+        data_root=data_root,
+        daily_limit=2,
+    )
     assert ok3 is False and any("限频" in r for r in reasons3)
 
 
 def test_default_no_daily_limit_unlimited(tmp_path):
     """默认 daily_limit=None=不限频，向后兼容（现有调用方零变化）。"""
     for i in (1, 2, 3):
-        ok, _ = process_submission(tmp_path, "s-u%d" % i,
-                                   _variant("codex_u%d" % i),
-                                   _fresh_registry())
+        ok, _ = process_submission(
+            tmp_path, "s-u%d" % i, _variant("codex_u%d" % i), _fresh_registry()
+        )
         assert ok is True
         assert (tmp_path / "processed" / ("s-u%d" % i)).exists()
 
@@ -454,20 +526,27 @@ def test_daily_limit_counts_rejects_plus_registrations(tmp_path):
     data_root = tmp_path / "dataroot"
     reg = _fresh_registry()
     bad = GOOD.replace("from statistics import fmean", "import os")
-    ok, _ = process_submission(tmp_path, "s-r1", bad, reg,
-                               data_root=data_root, daily_limit=2)
+    ok, _ = process_submission(
+        tmp_path, "s-r1", bad, reg, data_root=data_root, daily_limit=2
+    )
     assert ok is False  # reject 计 1
-    ok2, _ = process_submission(tmp_path, "s-r2", _variant("codex_r2"), reg,
-                                data_root=data_root, daily_limit=2)
+    ok2, _ = process_submission(
+        tmp_path, "s-r2", _variant("codex_r2"), reg, data_root=data_root, daily_limit=2
+    )
     assert ok2 is True  # registration 计 1，合计 2
-    ok3, reasons3 = process_submission(tmp_path, "s-r3",
-                                       _variant("codex_r3"),
-                                       _fresh_registry(),
-                                       data_root=data_root, daily_limit=2)
+    ok3, reasons3 = process_submission(
+        tmp_path,
+        "s-r3",
+        _variant("codex_r3"),
+        _fresh_registry(),
+        data_root=data_root,
+        daily_limit=2,
+    )
     assert ok3 is False and any("限频" in r for r in reasons3)  # 合计 2 ≥ 2
 
 
 # ---- 旧单文件形态兼容读（aba47e39 前 rejects/<submit_id>.md 顶层散档） ----
+
 
 def test_daily_limit_legacy_flat_reject_counted(tmp_path):
     """旧形态兼容读：顶层 rejects/<submit_id>.md（mtime=今日）计入
@@ -476,10 +555,14 @@ def test_daily_limit_legacy_flat_reject_counted(tmp_path):
     legacy = tmp_path / "rejects" / "legacy-sub.md"
     legacy.parent.mkdir(parents=True)
     legacy.write_text("# 旧形态拒绝档（aba47e39 前落法）\n", encoding="utf-8")
-    ok, reasons = process_submission(tmp_path, "s-legacy",
-                                     _variant("codex_legacy"),
-                                     _fresh_registry(),
-                                     data_root=data_root, daily_limit=1)
+    ok, reasons = process_submission(
+        tmp_path,
+        "s-legacy",
+        _variant("codex_legacy"),
+        _fresh_registry(),
+        data_root=data_root,
+        daily_limit=1,
+    )
     assert ok is False and any("限频" in r for r in reasons)
     md = tmp_path / "rejects" / time.strftime("%Y%m%d") / "s-legacy.md"
     assert md.exists() and "限频" in md.read_text(encoding="utf-8")
@@ -490,14 +573,20 @@ def test_daily_limit_legacy_flat_reject_counted(tmp_path):
 def test_daily_limit_legacy_flat_stale_not_counted(tmp_path):
     """旧形态跨日失效：mtime 非今日的顶层旧档不永久占用限频额度。"""
     import os as _os
+
     data_root = tmp_path / "dataroot"
     legacy = tmp_path / "rejects" / "stale-sub.md"
     legacy.parent.mkdir(parents=True)
     legacy.write_text("# 昨日旧档\n", encoding="utf-8")
     stale = time.time() - 86400 * 2
     _os.utime(str(legacy), (stale, stale))
-    ok, _ = process_submission(tmp_path, "s-stale", _variant("codex_stale"),
-                               _fresh_registry(), data_root=data_root,
-                               daily_limit=1)
+    ok, _ = process_submission(
+        tmp_path,
+        "s-stale",
+        _variant("codex_stale"),
+        _fresh_registry(),
+        data_root=data_root,
+        daily_limit=1,
+    )
     assert ok is True  # 跨日旧档不计入，额度正常
     assert (tmp_path / "processed" / "s-stale").exists()

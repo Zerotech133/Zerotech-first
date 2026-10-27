@@ -18,6 +18,7 @@
     python agent_platform/tools/migrate_org_matrix.py --dry-run    # 只打印计划
 只写 registry/org.json（apply 时先备份 .bak-matrix-<ts>），不碰其他真源。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -41,7 +42,9 @@ def _profiles(d: dict) -> list:
 
 
 def _is_project(d: dict) -> bool:
-    return bool(d.get("type") == "project" or str(d.get("dept") or "").startswith("proj_"))
+    return bool(
+        d.get("type") == "project" or str(d.get("dept") or "").startswith("proj_")
+    )
 
 
 def _set_profiles(d: dict, profs: list) -> None:
@@ -71,17 +74,26 @@ def plan(org: dict) -> dict:
             if not aid:
                 continue
             if aid not in func:
-                conflicts.append({"dept": dept, "agent": aid,
-                                  "reason": "职能部无权威档案，无法合并"})
+                conflicts.append(
+                    {"dept": dept, "agent": aid, "reason": "职能部无权威档案，无法合并"}
+                )
                 continue
-            moves.append({"dept": dept, "agent": aid,
-                          "functional_dept": func[aid][0],
-                          "profile": copy.deepcopy(p)})
+            moves.append(
+                {
+                    "dept": dept,
+                    "agent": aid,
+                    "functional_dept": func[aid][0],
+                    "profile": copy.deepcopy(p),
+                }
+            )
     before = sum(len(_profiles(d)) for d in org.get("departments") or [])
-    return {"moves": moves, "conflicts": conflicts,
-            "before_profiles": before,
-            "after_profiles": before - len(moves),
-            "project_depts": [str(d.get("dept")) for d in projects]}
+    return {
+        "moves": moves,
+        "conflicts": conflicts,
+        "before_profiles": before,
+        "after_profiles": before - len(moves),
+        "project_depts": [str(d.get("dept")) for d in projects],
+    }
 
 
 def _old_view(org: dict) -> dict:
@@ -90,7 +102,8 @@ def _old_view(org: dict) -> dict:
     for d in org.get("departments") or []:
         for p in _profiles(d):
             out[(str(d.get("dept")), str(p.get("agent_id")))] = {
-                k: v for k, v in p.items() if k != "matrix_assignments"}
+                k: v for k, v in p.items() if k != "matrix_assignments"
+            }
     return out
 
 
@@ -114,7 +127,9 @@ def migrate(org: dict) -> dict:
     """原地迁移（幂等）：项目部 profile 并入职能部主档 matrix_assignments 后清空。"""
     p = plan(org)
     if p["conflicts"]:
-        raise ValueError("存在无法合并的档案：%s" % json.dumps(p["conflicts"], ensure_ascii=False))
+        raise ValueError(
+            "存在无法合并的档案：%s" % json.dumps(p["conflicts"], ensure_ascii=False)
+        )
     by_dept = {str(d.get("dept")): d for d in org.get("departments") or []}
     for mv in p["moves"]:
         func_dept = by_dept[mv["functional_dept"]]
@@ -142,22 +157,37 @@ def check(org: dict) -> dict:
     """只读双写校验：迁移前视图 == 迁移后视图（逐字段）；有冲突则 ok=False。"""
     p = plan(org)
     if p["conflicts"]:
-        return {"ok": False, "error": "conflicts", "plan": p,
-                "old_entries": sum(len(_profiles(d)) for d in org.get("departments") or []),
-                "new_entries": 0, "missing": [], "diff": [],
-                "after_profiles": p["before_profiles"]}
+        return {
+            "ok": False,
+            "error": "conflicts",
+            "plan": p,
+            "old_entries": sum(len(_profiles(d)) for d in org.get("departments") or []),
+            "new_entries": 0,
+            "missing": [],
+            "diff": [],
+            "after_profiles": p["before_profiles"],
+        }
     after = migrate(copy.deepcopy(org))
     old, new = _old_view(org), _new_view(after)
     missing = [k for k in old if k not in new]
     diff = [k for k in old if k in new and old[k] != new[k]]
-    return {"ok": not missing and not diff, "old_entries": len(old),
-            "new_entries": len(new), "missing": missing, "diff": diff[:10],
-            "plan": p, "after_profiles": sum(
-                len(_profiles(d)) for d in after.get("departments") or [])}
+    return {
+        "ok": not missing and not diff,
+        "old_entries": len(old),
+        "new_entries": len(new),
+        "missing": missing,
+        "diff": diff[:10],
+        "plan": p,
+        "after_profiles": sum(
+            len(_profiles(d)) for d in after.get("departments") or []
+        ),
+    }
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description="org 矩阵迁移（P2）：一席一档 + matrix_assignments")
+    ap = argparse.ArgumentParser(
+        description="org 矩阵迁移（P2）：一席一档 + matrix_assignments"
+    )
     ap.add_argument("--root", default=str(ROOT))
     ap.add_argument("--check", action="store_true", help="只读：计划 + 双写校验")
     ap.add_argument("--apply", action="store_true", help="备份后写入 org.json")
@@ -173,18 +203,34 @@ def main(argv=None) -> int:
         out = rep
     else:  # --apply
         if not rep["ok"]:
-            print(json.dumps({"ok": False, "error": "双写校验未过，拒绝写入",
-                              "diff": rep["diff"], "missing": rep["missing"]},
-                             ensure_ascii=False))
+            print(
+                json.dumps(
+                    {
+                        "ok": False,
+                        "error": "双写校验未过，拒绝写入",
+                        "diff": rep["diff"],
+                        "missing": rep["missing"],
+                    },
+                    ensure_ascii=False,
+                )
+            )
             return 1
         after = migrate(copy.deepcopy(org))
         org_path = root / ORG_REL
-        bak = org_path.with_name("org.json.bak-matrix-%s" % time.strftime("%Y%m%d-%H%M%S"))
+        bak = org_path.with_name(
+            "org.json.bak-matrix-%s" % time.strftime("%Y%m%d-%H%M%S")
+        )
         bak.write_text(org_path.read_text(encoding="utf-8"), encoding="utf-8")
-        org_path.write_text(json.dumps(after, ensure_ascii=False, indent=1) + "\n",
-                            encoding="utf-8")
-        out = {"ok": True, "backup": str(bak), "before_profiles": rep["plan"]["before_profiles"],
-               "after_profiles": rep["after_profiles"], "moves": len(rep["plan"]["moves"])}
+        org_path.write_text(
+            json.dumps(after, ensure_ascii=False, indent=1) + "\n", encoding="utf-8"
+        )
+        out = {
+            "ok": True,
+            "backup": str(bak),
+            "before_profiles": rep["plan"]["before_profiles"],
+            "after_profiles": rep["after_profiles"],
+            "moves": len(rep["plan"]["moves"]),
+        }
     if args.json or not args.dry_run:
         print(json.dumps(out, ensure_ascii=False, indent=1))
     else:

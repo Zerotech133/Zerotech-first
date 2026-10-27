@@ -2,6 +2,7 @@
 """双刀移植自测（K-STOCK-018 补全）：信号模块八重过滤合成验证 + 入场确认模块
 纯合成数据，不触碰任何影子链路/真实任务单。运行：venv python（需 numpy/pandas）
 """
+
 import sys
 from pathlib import Path
 
@@ -52,23 +53,48 @@ df = make_daily()
 out = quant_double_knife(df, profile="strict")
 
 ok("输出 21 诊断列", out.shape == (len(df), 21))
-ok("末两日为十字星", bool(out["cross_star"].iloc[-2]) and bool(out["cross_star"].iloc[-1]))
+ok(
+    "末两日为十字星",
+    bool(out["cross_star"].iloc[-2]) and bool(out["cross_star"].iloc[-1]),
+)
 ok("末两日构成双刀(cross_star_2d)", bool(out["cross_star_2d"].iloc[-1]))
 ok("合成序列触发信号", int(out["double_knife_signal"].sum()) >= 1)
-ok("信号日全部八重条件成立", bool(
-    out.loc[out["double_knife_signal"], ["range_ok", "price_ok", "amount_ok",
-                                          "ma_stack_ok", "ma_distance_ok",
-                                          "macd_ok", "regime_ok"]].all().all()))
+ok(
+    "信号日全部八重条件成立",
+    bool(
+        out.loc[
+            out["double_knife_signal"],
+            [
+                "range_ok",
+                "price_ok",
+                "amount_ok",
+                "ma_stack_ok",
+                "ma_distance_ok",
+                "macd_ok",
+                "regime_ok",
+            ],
+        ]
+        .all()
+        .all()
+    ),
+)
 ok("profile 列回写", (out["double_knife_profile"] == "strict").all())
 
 # trend_down 一票否决：把末两日 amount 反向砸出负面资金平衡难做, 直接验证 blocked_regimes 逻辑
 regime_blocked = ~out["regime_label"].isin(PROFILE_CONFIG["strict"]["blocked_regimes"])
-ok("blocked_regimes 集合正确(trend_down)", PROFILE_CONFIG["strict"]["blocked_regimes"] == {"trend_down"})
+ok(
+    "blocked_regimes 集合正确(trend_down)",
+    PROFILE_CONFIG["strict"]["blocked_regimes"] == {"trend_down"},
+)
 ok("regime_ok 与 label 一致", bool((out["regime_ok"] == regime_blocked).all()))
 
 # relaxed 口径差异
 out_r = quant_double_knife(df, profile="relaxed")
-ok("relaxed 阈值更宽", PROFILE_CONFIG["relaxed"]["amount_20d_threshold"] < PROFILE_CONFIG["strict"]["amount_20d_threshold"])
+ok(
+    "relaxed 阈值更宽",
+    PROFILE_CONFIG["relaxed"]["amount_20d_threshold"]
+    < PROFILE_CONFIG["strict"]["amount_20d_threshold"],
+)
 ok("双 profile 独立运行", out_r.shape == out.shape)
 
 # 异常路径
@@ -97,12 +123,26 @@ hi[-1] = px[-1] * 1.001
 vol = np.full(m, 1000.0)
 vol[-1] = 2000.0
 midx = pd.date_range("2026-01-01 09:30", periods=m, freq="5min")
-minute_df = pd.DataFrame({"open": op, "high": hi, "low": lo, "close": px, "volume": vol}, index=midx)
+minute_df = pd.DataFrame(
+    {"open": op, "high": hi, "low": lo, "close": px, "volume": vol}, index=midx
+)
 
 res = confirm_double_knife_entry(minute_df)
-ok("返回 dict 含 9 键", set(res) == {"entry_confirmed", "confirm_interval", "passes", "min_passes",
-                                     "breakout_strength", "volume_ratio", "vwap_distance",
-                                     "open_relative_strength", "note"})
+ok(
+    "返回 dict 含 9 键",
+    set(res)
+    == {
+        "entry_confirmed",
+        "confirm_interval",
+        "passes",
+        "min_passes",
+        "breakout_strength",
+        "volume_ratio",
+        "vwap_distance",
+        "open_relative_strength",
+        "note",
+    },
+)
 ok("放量突破场景 confirmed", res["entry_confirmed"] is True)
 ok("passes >= min_passes", res["passes"] >= res["min_passes"])
 ok("note=confirmed", res["note"] == "confirmed")
@@ -118,7 +158,10 @@ ok("低量量比 < 阈值", res2["volume_ratio"] < 0.9)
 ok("其余三条件仍过, passes=3", res2["passes"] == 3)
 # 已知语义(移植原样): note 仅在未确认时列 blockers, confirmed=True 时丢失部分未过条件信息
 # -> 改进点挂 T-008 接线时处理, 移植保持零改动
-ok("confirmed 时 note=confirmed(移植原样语义)", res2["note"] == "confirmed" and res2["entry_confirmed"] is True)
+ok(
+    "confirmed 时 note=confirmed(移植原样语义)",
+    res2["note"] == "confirmed" and res2["entry_confirmed"] is True,
+)
 ok("低量量比 < 阈值", res2["volume_ratio"] < 0.9)
 
 try:

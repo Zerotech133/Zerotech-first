@@ -15,6 +15,7 @@
   python -X utf8 agent_platform/a0_evidence_judge.py --live         # 真调 GLM
   python -X utf8 agent_platform/a0_evidence_judge.py --live --model ollama/qwen3.5:9b
 """
+
 from __future__ import annotations
 
 import argparse
@@ -48,8 +49,10 @@ def _load_persona() -> str:
             return PERSONA.read_text(encoding="utf-8")
         except OSError:
             pass
-    return ("你是数字军团 A0 参谋长。基于给定证据包输出判读：一句话结论、关键证据"
-            "（来源+时间戳）、风险与未覆盖、下一步动作与负责项；不得编造；末尾标'草稿·待老田签'。")
+    return (
+        "你是数字军团 A0 参谋长。基于给定证据包输出判读：一句话结论、关键证据"
+        "（来源+时间戳）、风险与未覆盖、下一步动作与负责项；不得编造；末尾标'草稿·待老田签'。"
+    )
 
 
 def build_prompt(packet: dict, max_chars: int = 12000) -> str:
@@ -63,20 +66,39 @@ def build_prompt(packet: dict, max_chars: int = 12000) -> str:
     health = packet.get("health")
     health = health if isinstance(health, dict) else {}
     lines = [
-        "【证据包】schema=%s generated_at=%s" % (packet.get("schema"), packet.get("generated_at")),
-        "【来源】" + "; ".join(
-            "%s(sha256=%s,exists=%s)" % (s.get("path"), (s.get("sha256") or "")[:12], s.get("exists"))
-            for s in sources if isinstance(s, dict)),
-        "【工单】总数=%s 状态=%s" % (tk.get("total"), json.dumps(tk.get("counts") or {}, ensure_ascii=False)),
+        "【证据包】schema=%s generated_at=%s"
+        % (packet.get("schema"), packet.get("generated_at")),
+        "【来源】"
+        + "; ".join(
+            "%s(sha256=%s,exists=%s)"
+            % (s.get("path"), (s.get("sha256") or "")[:12], s.get("exists"))
+            for s in sources
+            if isinstance(s, dict)
+        ),
+        "【工单】总数=%s 状态=%s"
+        % (tk.get("total"), json.dumps(tk.get("counts") or {}, ensure_ascii=False)),
     ]
     for r in (tk.get("doing_review") or [])[:10]:
-        lines.append("- %s [%s] %s（owner=%s）" % (r.get("tid"), r.get("status"),
-                                                  (r.get("desc") or "")[:160], r.get("owner")))
+        lines.append(
+            "- %s [%s] %s（owner=%s）"
+            % (
+                r.get("tid"),
+                r.get("status"),
+                (r.get("desc") or "")[:160],
+                r.get("owner"),
+            )
+        )
     lines.append("【经验】total=%s" % exp.get("total"))
     for e in (exp.get("entries") or [])[-6:]:
-        lines.append("- %s confidence=%s cue=%s evidence=%s" % (
-            e.get("id"), e.get("confidence"), (e.get("cue") or "")[:100],
-            (e.get("evidence") or "")[:100]))
+        lines.append(
+            "- %s confidence=%s cue=%s evidence=%s"
+            % (
+                e.get("id"),
+                e.get("confidence"),
+                (e.get("cue") or "")[:100],
+                (e.get("evidence") or "")[:100],
+            )
+        )
     tail = health.get("tail") or []
     if tail:
         lines += ["【健康卡原文尾段】"] + [str(x) for x in tail[-30:]]
@@ -84,18 +106,36 @@ def build_prompt(packet: dict, max_chars: int = 12000) -> str:
     return text[:max_chars]
 
 
-def judge(packet: dict, model: str = DEFAULT_MODEL, live: bool = False,
-          out_dir: Path | None = None, llm=None, max_chars: int = 12000) -> dict:
+def judge(
+    packet: dict,
+    model: str = DEFAULT_MODEL,
+    live: bool = False,
+    out_dir: Path | None = None,
+    llm=None,
+    max_chars: int = 12000,
+) -> dict:
     """dry-run 或真调模型；返回结果 dict（ok/model/elapsed/prompt_len/text/out）。"""
     if not isinstance(packet, dict):
-        return {"schema": "a0_evidence_judgment/v1", "ok": False,
-                "error": "packet_not_dict", "text": "", "prompt_len": 0}
+        return {
+            "schema": "a0_evidence_judgment/v1",
+            "ok": False,
+            "error": "packet_not_dict",
+            "text": "",
+            "prompt_len": 0,
+        }
     prompt = build_prompt(packet, max_chars=max_chars)
-    res = {"schema": "a0_evidence_judgment/v1",
-           "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
-           "packet_generated_at": packet.get("generated_at"),
-           "model": model, "live": bool(live), "prompt_len": len(prompt),
-           "boundaries": BOUNDARIES, "ok": False, "text": "", "error": None}
+    res = {
+        "schema": "a0_evidence_judgment/v1",
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+        "packet_generated_at": packet.get("generated_at"),
+        "model": model,
+        "live": bool(live),
+        "prompt_len": len(prompt),
+        "boundaries": BOUNDARIES,
+        "ok": False,
+        "text": "",
+        "error": None,
+    }
     if not live:
         res["ok"] = True
         res["dry_run"] = True
@@ -106,28 +146,47 @@ def judge(packet: dict, model: str = DEFAULT_MODEL, live: bool = False,
         if llm is None:
             sys.path.insert(0, str(BASE / "engine"))
             from llm import make_llm  # noqa: E402
+
             llm = make_llm(model)
         text, status = llm.chat(_load_persona(), prompt)
-        degraded = (status == "degraded")
-        res.update({"ok": not degraded, "degraded": degraded,
-                    "text": str(text or ""), "status": status,
-                    "error": "llm_degraded" if degraded else None,
-                    "elapsed_s": round(time.time() - t0, 1)})
+        degraded = status == "degraded"
+        res.update(
+            {
+                "ok": not degraded,
+                "degraded": degraded,
+                "text": str(text or ""),
+                "status": status,
+                "error": "llm_degraded" if degraded else None,
+                "elapsed_s": round(time.time() - t0, 1),
+            }
+        )
     except Exception as exc:  # noqa: BLE001
-        res.update({"ok": False, "error": "%s: %s" % (type(exc).__name__, exc),
-                    "elapsed_s": round(time.time() - t0, 1)})
+        res.update(
+            {
+                "ok": False,
+                "error": "%s: %s" % (type(exc).__name__, exc),
+                "elapsed_s": round(time.time() - t0, 1),
+            }
+        )
     out = Path(out_dir) if out_dir else DEFAULT_OUT
     out.mkdir(parents=True, exist_ok=True)
     ts = time.strftime("%Y%m%d-%H%M%S")
     jp = out / ("a0_evidence_judgment_%s.json" % ts)
     mp = out / ("a0_evidence_judgment_%s.md" % ts)
     jp.write_text(json.dumps(res, ensure_ascii=False, indent=1), encoding="utf-8")
-    md = ["# A0 证据包判读（%s）" % res["generated_at"], "",
-          "- 证据包生成时间：%s" % res.get("packet_generated_at"),
-          "- 模型：`%s`；live=%s；ok=%s；耗时=%ss" % (model, live, res["ok"], res.get("elapsed_s")),
-          "", "## 判读草稿（待老田签，未写入任何系统）", "",
-          res.get("text") or ("（未产出：%s）" % res.get("error")), "",
-          "> 边界：" + " / ".join(BOUNDARIES)]
+    md = [
+        "# A0 证据包判读（%s）" % res["generated_at"],
+        "",
+        "- 证据包生成时间：%s" % res.get("packet_generated_at"),
+        "- 模型：`%s`；live=%s；ok=%s；耗时=%ss"
+        % (model, live, res["ok"], res.get("elapsed_s")),
+        "",
+        "## 判读草稿（待老田签，未写入任何系统）",
+        "",
+        res.get("text") or ("（未产出：%s）" % res.get("error")),
+        "",
+        "> 边界：" + " / ".join(BOUNDARIES),
+    ]
     mp.write_text("\n".join(md), encoding="utf-8")
     res["out_json"], res["out_md"] = str(jp), str(mp)
     return res
@@ -135,7 +194,9 @@ def judge(packet: dict, model: str = DEFAULT_MODEL, live: bool = False,
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="A0 证据包判读（默认 dry-run）")
-    ap.add_argument("--packet", default=None, help="证据包 JSON；默认取 work/seat_brief 最新")
+    ap.add_argument(
+        "--packet", default=None, help="证据包 JSON；默认取 work/seat_brief 最新"
+    )
     ap.add_argument("--model", default=DEFAULT_MODEL)
     ap.add_argument("--live", action="store_true", help="真调模型（默认 dry-run）")
     ap.add_argument("--out-dir", default=str(DEFAULT_OUT))
@@ -143,25 +204,56 @@ def main(argv=None) -> int:
     args = ap.parse_args(argv)
     pkt_path = Path(args.packet) if args.packet else latest_packet()
     if not pkt_path or not pkt_path.is_file():
-        print(json.dumps({"ok": False, "error": "evidence_packet_not_found"}, ensure_ascii=False))
+        print(
+            json.dumps(
+                {"ok": False, "error": "evidence_packet_not_found"}, ensure_ascii=False
+            )
+        )
         return 2
     try:
         packet = json.loads(pkt_path.read_text(encoding="utf-8"))
     except ValueError as exc:
-        print(json.dumps({"ok": False, "error": "packet_invalid_json: %s" % exc},
-                         ensure_ascii=True))
+        print(
+            json.dumps(
+                {"ok": False, "error": "packet_invalid_json: %s" % exc},
+                ensure_ascii=True,
+            )
+        )
         return 2
     if not isinstance(packet, dict):
         print(json.dumps({"ok": False, "error": "packet_not_dict"}, ensure_ascii=True))
         return 2
-    res = judge(packet, model=args.model, live=args.live,
-                out_dir=Path(args.out_dir), max_chars=args.max_chars)
+    res = judge(
+        packet,
+        model=args.model,
+        live=args.live,
+        out_dir=Path(args.out_dir),
+        max_chars=args.max_chars,
+    )
     res["packet"] = str(pkt_path)
-    print(json.dumps({k: res.get(k) for k in
-                      ("ok", "dry_run", "model", "packet", "prompt_len",
-                       "elapsed_s", "error", "degraded", "text", "prompt_head",
-                       "out_json", "out_md")},
-                     ensure_ascii=True, indent=1))
+    print(
+        json.dumps(
+            {
+                k: res.get(k)
+                for k in (
+                    "ok",
+                    "dry_run",
+                    "model",
+                    "packet",
+                    "prompt_len",
+                    "elapsed_s",
+                    "error",
+                    "degraded",
+                    "text",
+                    "prompt_head",
+                    "out_json",
+                    "out_md",
+                )
+            },
+            ensure_ascii=True,
+            indent=1,
+        )
+    )
     return 0 if res.get("ok") else 1
 
 

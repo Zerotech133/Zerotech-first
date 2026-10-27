@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """独立多策略并行调度器测试。"""
+
 import sys
 import threading
 import time
@@ -44,19 +45,24 @@ def test_all_strategies_succeed_with_uniform_results():
     registry = _registry(_Agent("s1"), _Agent("s2"), _Agent("s3"))
 
     results = run_strategies(
-        registry, ["s1", "s2", "s3"], {"symbol": "600519"},
-        timeout_s=0.2, max_workers=3,
+        registry,
+        ["s1", "s2", "s3"],
+        {"symbol": "600519"},
+        timeout_s=0.2,
+        max_workers=3,
     )
 
     assert [result["strategy_id"] for result in results] == ["s1", "s2", "s3"]
     assert all(result["status"] == "success" for result in results)
     assert all(result["elapsed_ms"] >= 0 for result in results)
-    assert all(result["verdict"].strategy_id == result["strategy_id"]
-               for result in results)
+    assert all(
+        result["verdict"].strategy_id == result["strategy_id"] for result in results
+    )
     assert all(result["error"] is None for result in results)
-    assert all(set(result) == {
-        "strategy_id", "status", "elapsed_ms", "verdict", "error"
-    } for result in results)
+    assert all(
+        set(result) == {"strategy_id", "status", "elapsed_ms", "verdict", "error"}
+        for result in results
+    )
 
 
 def test_one_exception_does_not_block_other_strategies():
@@ -66,8 +72,11 @@ def test_one_exception_does_not_block_other_strategies():
     registry = _registry(_Agent("bad", fail), _Agent("good"))
 
     results = run_strategies(
-        registry, ["bad", "good"], {"symbol": "600519"},
-        timeout_s=0.2, max_workers=2,
+        registry,
+        ["bad", "good"],
+        {"symbol": "600519"},
+        timeout_s=0.2,
+        max_workers=2,
     )
 
     assert results[0]["status"] == "error"
@@ -84,7 +93,8 @@ def test_per_strategy_timeout_does_not_block_other_strategies():
     registry = _registry(_Agent("slow", slow), _Agent("fast"))
     started = time.perf_counter()
     results = MultiStrategyScheduler(registry, max_workers=2).run(
-        ["slow", "fast"], {"symbol": "600519"},
+        ["slow", "fast"],
+        {"symbol": "600519"},
         strategy_timeouts={"slow": 0.01, "fast": 0.2},
     )
 
@@ -101,8 +111,12 @@ def test_overall_timeout_marks_remaining_strategies_timeout():
 
     registry = _registry(_Agent("s1", slow), _Agent("s2", slow))
     results = run_strategies(
-        registry, ["s1", "s2"], {"symbol": "600519"},
-        timeout_s=1.0, overall_timeout_s=0.01, max_workers=2,
+        registry,
+        ["s1", "s2"],
+        {"symbol": "600519"},
+        timeout_s=1.0,
+        overall_timeout_s=0.01,
+        max_workers=2,
     )
 
     assert [result["status"] for result in results] == ["timeout", "timeout"]
@@ -117,19 +131,28 @@ def test_lifecycle_rejection_and_deprecated_replay_only():
     )
 
     rejected = run_strategies(
-        registry, ["experimental", "active", "deprecated"],
-        {"symbol": "600519"}, allowed_lifecycle=("active",),
-        timeout_s=0.2, max_workers=3,
+        registry,
+        ["experimental", "active", "deprecated"],
+        {"symbol": "600519"},
+        allowed_lifecycle=("active",),
+        timeout_s=0.2,
+        max_workers=3,
     )
     assert [result["status"] for result in rejected] == [
-        "rejected", "success", "rejected"
+        "rejected",
+        "success",
+        "rejected",
     ]
     assert "experimental" in rejected[0]["error"]
     assert "deprecated" in rejected[2]["error"]
 
     replayed = run_strategies(
-        registry, ["deprecated"], {"symbol": "600519"},
-        timeout_s=0.2, replay=True, max_workers=1,
+        registry,
+        ["deprecated"],
+        {"symbol": "600519"},
+        timeout_s=0.2,
+        replay=True,
+        max_workers=1,
     )
     assert replayed[0]["status"] == "success"
 
@@ -162,8 +185,11 @@ def test_max_workers_limits_active_strategy_count():
     registry = _registry(*agents)
 
     results = run_strategies(
-        registry, [agent.strategy_id for agent in agents],
-        {"symbol": "600519"}, timeout_s=0.5, max_workers=2,
+        registry,
+        [agent.strategy_id for agent in agents],
+        {"symbol": "600519"},
+        timeout_s=0.5,
+        max_workers=2,
     )
 
     assert all(result["status"] == "success" for result in results)

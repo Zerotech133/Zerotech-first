@@ -1,4 +1,5 @@
 """org 矩阵迁移测试（WO-ORG-MATRIX P2）：双写校验、幂等、冲突拒绝。"""
+
 from __future__ import annotations
 
 import importlib.util
@@ -13,18 +14,45 @@ _spec.loader.exec_module(M)
 
 
 def _org():
-    return {"departments": [
-        {"dept": "dev", "name": "研发部", "agents": ["DEV1"],
-         "agent_profiles": [{"agent_id": "DEV1", "role_profile": "code_engineer",
-                             "llm_binding": "local/9b", "tools": ["events"]}]},
-        {"dept": "proj_backtest", "name": "回测开发部", "type": "project",
-         "agents": ["DEV1"],
-         "agent_profiles": [{"agent_id": "DEV1", "role_profile": "backtest_dev",
-                             "analysis_type": "backtest", "llm_binding": "local/35b",
-                             "tools": ["run_backtest"], "grade_note": "项目侧"}]},
-        {"dept": "quality", "name": "质量部", "agents": ["QA1"],
-         "agent_profiles": [{"agent_id": "QA1", "role_profile": "qa_engineer"}]},
-    ]}
+    return {
+        "departments": [
+            {
+                "dept": "dev",
+                "name": "研发部",
+                "agents": ["DEV1"],
+                "agent_profiles": [
+                    {
+                        "agent_id": "DEV1",
+                        "role_profile": "code_engineer",
+                        "llm_binding": "local/9b",
+                        "tools": ["events"],
+                    }
+                ],
+            },
+            {
+                "dept": "proj_backtest",
+                "name": "回测开发部",
+                "type": "project",
+                "agents": ["DEV1"],
+                "agent_profiles": [
+                    {
+                        "agent_id": "DEV1",
+                        "role_profile": "backtest_dev",
+                        "analysis_type": "backtest",
+                        "llm_binding": "local/35b",
+                        "tools": ["run_backtest"],
+                        "grade_note": "项目侧",
+                    }
+                ],
+            },
+            {
+                "dept": "quality",
+                "name": "质量部",
+                "agents": ["QA1"],
+                "agent_profiles": [{"agent_id": "QA1", "role_profile": "qa_engineer"}],
+            },
+        ]
+    }
 
 
 def test_plan_counts_and_moves():
@@ -72,7 +100,9 @@ def test_conflict_rejected():
 def test_cli_check_and_apply(tmp_path):
     root = tmp_path
     (root / "agent_platform" / "registry").mkdir(parents=True)
-    (root / M.ORG_REL).write_text(json.dumps(_org(), ensure_ascii=False), encoding="utf-8")
+    (root / M.ORG_REL).write_text(
+        json.dumps(_org(), ensure_ascii=False), encoding="utf-8"
+    )
     assert M.main(["--root", str(root), "--check", "--json"]) == 0
     assert M.main(["--root", str(root), "--apply"]) == 0
     saved = json.loads((root / M.ORG_REL).read_text(encoding="utf-8"))

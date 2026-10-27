@@ -43,7 +43,7 @@ USAGE_JSONL = ROOT / "portal" / "data" / "llm_usage.jsonl"
 TOOL_AUDIT_JSONL = _AGENT_PLATFORM / "data" / "llm_tool_audit.jsonl"
 ORG_JSON = _AGENT_PLATFORM / "registry" / "org.json"
 
-_ANTHROPIC_CREDIT_PER_CALL = 4.5   # K-ORG-038 判例取中（估算）
+_ANTHROPIC_CREDIT_PER_CALL = 4.5  # K-ORG-038 判例取中（估算）
 _TID_RE = re.compile(r"K-[\w-]+")
 
 
@@ -80,8 +80,7 @@ def _read_jsonl(path: Path) -> List[Dict]:
     if not path.exists():
         return []
     out = []
-    for line in path.read_text(encoding="utf-8", errors="replace")\
-            .splitlines():
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
         line = line.strip()
         if not line:
             continue
@@ -100,11 +99,10 @@ def _in_window(ts: str, since: Optional[datetime]) -> bool:
     try:
         return datetime.strptime(ts, "%Y-%m-%d %H:%M:%S") >= since
     except (ValueError, TypeError):
-        return True          # 坏时间戳保留（宁多勿丢）
+        return True  # 坏时间戳保留（宁多勿丢）
 
 
-def build_usage_report(root: Optional[Path] = None,
-                       days: Optional[int] = None) -> Dict:
+def build_usage_report(root: Optional[Path] = None, days: Optional[int] = None) -> Dict:
     """统一使用账本报告（全只读，fail-open 单源缺失）。"""
     paths = _resolve(root)
     since = None
@@ -112,22 +110,27 @@ def build_usage_report(root: Optional[Path] = None,
         since = datetime.now() - timedelta(days=days)
 
     amap = agent_dept_map(root)
-    usage = [r for r in _read_jsonl(paths["usage"])
-             if _in_window(r.get("ts", ""), since)]
-    audit = [r for r in _read_jsonl(paths["audit"])
-             if _in_window(r.get("ts", ""), since)]
+    usage = [
+        r for r in _read_jsonl(paths["usage"]) if _in_window(r.get("ts", ""), since)
+    ]
+    audit = [
+        r for r in _read_jsonl(paths["audit"]) if _in_window(r.get("ts", ""), since)
+    ]
 
     findings = []
-    for name, p in (("llm_usage", paths["usage"]),
-                    ("llm_tool_audit", paths["audit"]),
-                    ("org", paths["org"])):
+    for name, p in (
+        ("llm_usage", paths["usage"]),
+        ("llm_tool_audit", paths["audit"]),
+        ("org", paths["org"]),
+    ):
         if not p.exists():
             findings.append("%s 缺失：%s（该源计 0，不伪造）" % (name, p.name))
     if not amap:
         findings.append("org.json 无 departments 映射，by_domain 全落 unmapped")
 
-    by_domain = defaultdict(lambda: {"calls": 0, "in_tok": 0, "out_tok": 0,
-                                     "elapsed": 0.0, "chars": 0})
+    by_domain = defaultdict(
+        lambda: {"calls": 0, "in_tok": 0, "out_tok": 0, "elapsed": 0.0, "chars": 0}
+    )
     by_agent = defaultdict(lambda: {"calls": 0, "in_tok": 0, "out_tok": 0})
     by_channel = defaultdict(lambda: {"calls": 0, "in_tok": 0, "out_tok": 0})
     unmapped_agents = defaultdict(int)
@@ -166,19 +169,21 @@ def build_usage_report(root: Optional[Path] = None,
         "api_calls": len(audit),
         "api_fail": sum(1 for r in audit if r.get("ok") is False),
     }
-    credits = by_channel.get("anthropic", {}).get("calls", 0) \
-        * _ANTHROPIC_CREDIT_PER_CALL
+    credits = (
+        by_channel.get("anthropic", {}).get("calls", 0) * _ANTHROPIC_CREDIT_PER_CALL
+    )
     verdict = "PASS" if not findings else "WARN"
     return {
         "verdict": verdict,
-        "window_days": days or 0,          # 0=全量
+        "window_days": days or 0,  # 0=全量
         "totals": totals,
         "credits_estimate": round(credits, 1),
         "by_domain": {k: dict(v) for k, v in sorted(by_domain.items())},
         "by_agent": {k: dict(v) for k, v in sorted(by_agent.items())},
         "by_channel": {k: dict(v) for k, v in sorted(by_channel.items())},
-        "by_ticket_top10": dict(sorted(by_ticket.items(),
-                                       key=lambda kv: -kv[1]["in_tok"])[:10]),
+        "by_ticket_top10": dict(
+            sorted(by_ticket.items(), key=lambda kv: -kv[1]["in_tok"])[:10]
+        ),
         "unmapped_agents": dict(unmapped_agents),
         "findings": findings,
         "read_only": True,
@@ -192,8 +197,9 @@ def main(argv=None) -> int:
     p_r.add_argument("--root", default=".")
     p_r.add_argument("--days", type=int, default=0)
     args = ap.parse_args(argv)
-    rep = build_usage_report(Path(args.root) if args.root != "." else None,
-                             days=args.days or None)
+    rep = build_usage_report(
+        Path(args.root) if args.root != "." else None, days=args.days or None
+    )
     print(json.dumps(rep, ensure_ascii=False, indent=1))
     return 0
 

@@ -13,6 +13,7 @@ Codex bridge / Hermes gateway 后续走 adapters/ 对接，不重造幂等账本
 - 红线继承：策略只产建议（Verdict），execution_allowed 恒 False——
   下单归 K-STOCK execution 线，本域不持有任何凭据。
 """
+
 from copy import deepcopy
 from dataclasses import dataclass, field
 import hashlib
@@ -36,27 +37,31 @@ class StrategyError(Exception):
 @dataclass
 class Verdict:
     """单策略对单标的的一次立场产出（建议权，无执行权）。"""
+
     strategy_id: str
     symbol: str
-    recommendation: str          # 五档枚举，对齐影子账本口径
-    confidence: float            # [0,1]
-    stance: str = "neutral"      # bull/bear/neutral，对齐控辩审
+    recommendation: str  # 五档枚举，对齐影子账本口径
+    confidence: float  # [0,1]
+    stance: str = "neutral"  # bull/bear/neutral，对齐控辩审
     score: float = 0.0
     rationale: str = ""
-    trace_id: str = ""           # 关联影子/链路锚点（回放用，可空）
+    trace_id: str = ""  # 关联影子/链路锚点（回放用，可空）
     extras: dict = field(default_factory=dict)
 
     def validate(self):
         if self.recommendation not in RECOMMENDATIONS:
-            raise StrategyError("%s recommendation=%s 不在五档枚举 %s"
-                                % (self.strategy_id, self.recommendation,
-                                   RECOMMENDATIONS))
+            raise StrategyError(
+                "%s recommendation=%s 不在五档枚举 %s"
+                % (self.strategy_id, self.recommendation, RECOMMENDATIONS)
+            )
         if not (CONFIDENCE_MIN <= self.confidence <= CONFIDENCE_MAX):
-            raise StrategyError("%s confidence=%s 越界 [0,1]"
-                                % (self.strategy_id, self.confidence))
+            raise StrategyError(
+                "%s confidence=%s 越界 [0,1]" % (self.strategy_id, self.confidence)
+            )
         if self.stance not in STANCES:
-            raise StrategyError("%s stance=%s 不在 %s"
-                                % (self.strategy_id, self.stance, STANCES))
+            raise StrategyError(
+                "%s stance=%s 不在 %s" % (self.strategy_id, self.stance, STANCES)
+            )
         if not self.symbol:
             raise StrategyError("%s symbol 缺失" % self.strategy_id)
         return self
@@ -69,7 +74,7 @@ class StrategyAgent:
     （K线/舆情/基本面快照），策略内部不得写任何域账本（红线）。
     """
 
-    strategy_id = ""             # 全局唯一，注册时校验
+    strategy_id = ""  # 全局唯一，注册时校验
     version = DEFAULT_STRATEGY_VERSION
     family = DEFAULT_STRATEGY_FAMILY
     capability_manifest = ()
@@ -99,12 +104,16 @@ class StrategyRegistry:
             raise StrategyError("%s family 缺失或非法" % sid)
         if not isinstance(capabilities, (tuple, list, set, frozenset)):
             raise StrategyError("%s capability_manifest 必须为字符串序列" % sid)
-        if any(not isinstance(capability, str) or not capability.strip()
-               for capability in capabilities):
+        if any(
+            not isinstance(capability, str) or not capability.strip()
+            for capability in capabilities
+        ):
             raise StrategyError("%s capability_manifest 含非法能力项" % sid)
         if lifecycle_state not in LIFECYCLE_STATES:
-            raise StrategyError("%s lifecycle_state=%s 不在 %s"
-                                % (sid, lifecycle_state, LIFECYCLE_STATES))
+            raise StrategyError(
+                "%s lifecycle_state=%s 不在 %s"
+                % (sid, lifecycle_state, LIFECYCLE_STATES)
+            )
 
     @staticmethod
     def _manifest(agent):
@@ -177,8 +186,9 @@ class StrategyRegistry:
     def list_manifests(self, lifecycle_state=None):
         """按 strategy_id 排序返回元数据快照，可按生命周期过滤。"""
         if lifecycle_state is not None and lifecycle_state not in LIFECYCLE_STATES:
-            raise StrategyError("lifecycle_state=%s 不在 %s"
-                                % (lifecycle_state, LIFECYCLE_STATES))
+            raise StrategyError(
+                "lifecycle_state=%s 不在 %s" % (lifecycle_state, LIFECYCLE_STATES)
+            )
         manifests = [self.metadata(sid) for sid in sorted(self._strategies)]
         if lifecycle_state is None:
             return manifests
@@ -188,11 +198,13 @@ class StrategyRegistry:
         """执行单策略并强制产出校验（白名单在出口统一把守，旁路判例）。"""
         v = self.get(sid).propose(context)
         if not isinstance(v, Verdict):
-            raise StrategyError("%s propose 返回 %r，非 Verdict"
-                                % (sid, type(v).__name__))
+            raise StrategyError(
+                "%s propose 返回 %r，非 Verdict" % (sid, type(v).__name__)
+            )
         if v.strategy_id != sid:
-            raise StrategyError("%s propose 产出 strategy_id=%r 与注册 ID 不符"
-                                % (sid, v.strategy_id))
+            raise StrategyError(
+                "%s propose 产出 strategy_id=%r 与注册 ID 不符" % (sid, v.strategy_id)
+            )
         return v.validate()
 
 
@@ -239,13 +251,20 @@ def record_verdicts(verdicts, root, trade_date, run_id=""):
             if k in seen:
                 replayed += 1
                 continue
-            row = {"verdict_key": k, "strategy_id": v.strategy_id,
-                   "symbol": v.symbol, "recommendation": v.recommendation,
-                   "confidence": round(float(v.confidence), 4),
-                   "stance": v.stance, "score": v.score,
-                   "rationale": v.rationale[:200], "trace_id": v.trace_id,
-                   "run_id": run_id, "trade_date": trade_date,
-                   "recorded_at": time.strftime("%Y-%m-%dT%H:%M:%S")}
+            row = {
+                "verdict_key": k,
+                "strategy_id": v.strategy_id,
+                "symbol": v.symbol,
+                "recommendation": v.recommendation,
+                "confidence": round(float(v.confidence), 4),
+                "stance": v.stance,
+                "score": v.score,
+                "rationale": v.rationale[:200],
+                "trace_id": v.trace_id,
+                "run_id": run_id,
+                "trade_date": trade_date,
+                "recorded_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+            }
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
             seen.add(k)
             recorded += 1

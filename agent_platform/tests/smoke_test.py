@@ -9,6 +9,7 @@
   5. D1 输出含 recommendation 字段
   6. 记忆文件生成 + RBAC 越权拒绝（N1 写 dept/invest/decision 必须 PermissionDenied）
 """
+
 import json
 import shutil
 import sys
@@ -49,18 +50,28 @@ def main():
         check("全链路完成", result["run_id"] and result["decision"])
 
         states = cp.get_run_states(result["run_id"])
-        expect_nodes = {"t1_market", "t2_market", "n1_news", "f1_fundamental", "d1_decision"}
-        check("checkpoint 5 节点全落库", expect_nodes <= set(states),
-              "got=%s" % sorted(states))
+        expect_nodes = {
+            "t1_market",
+            "t2_market",
+            "n1_news",
+            "f1_fundamental",
+            "d1_decision",
+        }
+        check(
+            "checkpoint 5 节点全落库",
+            expect_nodes <= set(states),
+            "got=%s" % sorted(states),
+        )
 
         traces = cp.conn.execute(
             "SELECT COUNT(*) FROM traces WHERE run_id=? AND phase='debate_rebuttal'",
-            (result["run_id"],)).fetchone()[0]
+            (result["run_id"],),
+        ).fetchone()[0]
         check("辩论轮次≤2（每轮2条trace）", traces <= 4, "rebuttal_traces=%d" % traces)
 
         d1 = result["statements"].get("d1_decision", "")
         try:
-            j = json.loads(d1[d1.index("{"): d1.rindex("}") + 1])
+            j = json.loads(d1[d1.index("{") : d1.rindex("}") + 1])
             has_rec = "recommendation" in j
         except Exception:  # noqa: BLE001
             has_rec = False
@@ -88,8 +99,11 @@ def main():
 
         # 断点续跑：同 run_id 重跑 → 全部 resumed 且决策一致（checkpoint 不重算）
         r2 = interp.run("600519", run_id=result["run_id"])
-        check("断点续跑全 resumed", set(r2["status"].values()) == {"resumed"},
-              "status=%s" % r2["status"])
+        check(
+            "断点续跑全 resumed",
+            set(r2["status"].values()) == {"resumed"},
+            "status=%s" % r2["status"],
+        )
         check("续跑决策一致", r2["decision"] == result["decision"])
     finally:
         shutil.rmtree(tmp, ignore_errors=True)

@@ -18,6 +18,7 @@
     python task_exit_audit.py --scan --json     # 额外打印摘要 JSON
     python task_exit_audit.py --summary-only    # 只读已有账本出摘要
 """
+
 from __future__ import annotations
 
 import argparse
@@ -71,19 +72,47 @@ RUNNING_EXIT = 267009
 # 0x41306 = 267014：任务被强制终止（超时/手动结束/关机打断），不计服务失败
 TERMINATED_EXIT = 267014
 # 窗口对比（window_diff）里也按同一口径排除：非失败码不参与"新增/持续失败"差集。
-NON_FAILURE_RC = frozenset({0, 267011, UPSTREAM_UNTRUSTED_EXIT,
-                            LAUNCHER_REFUSED_EXIT, CANCELLED_EXIT,
-                             RUNNING_EXIT, TERMINATED_EXIT})
+NON_FAILURE_RC = frozenset(
+    {
+        0,
+        267011,
+        UPSTREAM_UNTRUSTED_EXIT,
+        LAUNCHER_REFUSED_EXIT,
+        CANCELLED_EXIT,
+        RUNNING_EXIT,
+        TERMINATED_EXIT,
+    }
+)
 
-KNOWN_SCHED_FAMILIES = ("Legion", "Agent", "Quant", "Alert", "Xueqiu", "Hermes",
-                        "KgChain", "Space", "KG-", "Ollama", "CnOpenData", "Daily",
-                        # 2026-10-22 补：这两个任务当天都被 ExecutionTimeLimit 杀掉
-                        # （Event ID 329 实证），却因前缀不在名单而从未入账。
-                        "AI工作站门户", "Notice")
+KNOWN_SCHED_FAMILIES = (
+    "Legion",
+    "Agent",
+    "Quant",
+    "Alert",
+    "Xueqiu",
+    "Hermes",
+    "KgChain",
+    "Space",
+    "KG-",
+    "Ollama",
+    "CnOpenData",
+    "Daily",
+    # 2026-10-22 补：这两个任务当天都被 ExecutionTimeLimit 杀掉
+    # （Event ID 329 实证），却因前缀不在名单而从未入账。
+    "AI工作站门户",
+    "Notice",
+)
 
 # 落盘到 portal/data（与 result_evidence 同域）：nginx 静态直服 /data/task_exit_audit/*，
 # OS 首页零后端依赖可消费（D5 地基状态灯数据源）；不走 8091（避免 SYSTEM 进程重启滞后）。
-DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "portal", "data", "task_exit_audit")
+DATA_DIR = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    "..",
+    "..",
+    "portal",
+    "data",
+    "task_exit_audit",
+)
 LEDGER_NAME = "task_exit_ledger.jsonl"
 SUMMARY_NAME = "task_exit_summary.json"
 
@@ -137,7 +166,9 @@ def query_tasks_via_powershell() -> list[dict[str, Any]]:
     # 命令内已强制 [Console]::OutputEncoding=UTF8，这里再以 errors=replace 兜底防个别环境回退。
     proc = subprocess.run(
         ["powershell", "-NoProfile", "-NonInteractive", "-Command", ps],
-        capture_output=True, timeout=120, check=False,
+        capture_output=True,
+        timeout=120,
+        check=False,
     )
     if proc.returncode != 0:
         err = proc.stderr.decode("gbk", errors="replace")
@@ -155,8 +186,11 @@ def scan(audit_family_only: bool = True) -> dict[str, Any]:
     """扫描一次并落账本与摘要。返回摘要。"""
     tasks = query_tasks_via_powershell()
     if audit_family_only:
-        tasks = [t for t in tasks
-                 if any(str(t.get("name", "")).startswith(f) for f in KNOWN_SCHED_FAMILIES)]
+        tasks = [
+            t
+            for t in tasks
+            if any(str(t.get("name", "")).startswith(f) for f in KNOWN_SCHED_FAMILIES)
+        ]
 
     ledger_path = os.path.join(DATA_DIR, LEDGER_NAME)
     summary_path = os.path.join(DATA_DIR, SUMMARY_NAME)
@@ -208,7 +242,9 @@ def scan(audit_family_only: bool = True) -> dict[str, Any]:
 
     summary = {
         "generated_at": _now_iso(),
-        "scope": f"军团系计划任务（前缀 {', '.join(KNOWN_SCHED_FAMILIES)}）" if audit_family_only else "全部计划任务",
+        "scope": f"军团系计划任务（前缀 {', '.join(KNOWN_SCHED_FAMILIES)}）"
+        if audit_family_only
+        else "全部计划任务",
         "total_scanned": len(tasks),
         "ok": ok_count,
         "failed": len(failures),
@@ -220,47 +256,73 @@ def scan(audit_family_only: bool = True) -> dict[str, Any]:
         "disabled": disabled_count,
         "never_run": never_run,
         "failures": [
-            {"name": f["name"], "last_result": f["last_result"],
-             "exit_semantics": f["exit_semantics"], "last_run": f["last_run"],
-             "next_run": f["next_run"]}
+            {
+                "name": f["name"],
+                "last_result": f["last_result"],
+                "exit_semantics": f["exit_semantics"],
+                "last_run": f["last_run"],
+                "next_run": f["next_run"],
+            }
             for f in failures
         ],
         "upstream": [
-            {"name": f["name"], "last_result": f["last_result"],
-             "exit_semantics": f["exit_semantics"], "last_run": f["last_run"]}
+            {
+                "name": f["name"],
+                "last_result": f["last_result"],
+                "exit_semantics": f["exit_semantics"],
+                "last_run": f["last_run"],
+            }
             for f in upstream_hold
         ],
         "launcher_refused_tasks": [
-            {"name": f["name"], "last_result": f["last_result"],
-             "exit_semantics": f["exit_semantics"], "last_run": f["last_run"]}
+            {
+                "name": f["name"],
+                "last_result": f["last_result"],
+                "exit_semantics": f["exit_semantics"],
+                "last_run": f["last_run"],
+            }
             for f in launcher_refused
         ],
         "cancelled_tasks": [
-            {"name": f["name"], "last_result": f["last_result"],
-             "exit_semantics": f["exit_semantics"], "last_run": f["last_run"]}
+            {
+                "name": f["name"],
+                "last_result": f["last_result"],
+                "exit_semantics": f["exit_semantics"],
+                "last_run": f["last_run"],
+            }
             for f in cancelled
         ],
         "running_tasks": [
-            {"name": f["name"], "last_result": f["last_result"],
-             "exit_semantics": f["exit_semantics"], "last_run": f["last_run"]}
+            {
+                "name": f["name"],
+                "last_result": f["last_result"],
+                "exit_semantics": f["exit_semantics"],
+                "last_run": f["last_run"],
+            }
             for f in running
         ],
         "terminated_tasks": [
-            {"name": f["name"], "last_result": f["last_result"],
-             "exit_semantics": f["exit_semantics"], "last_run": f["last_run"]}
+            {
+                "name": f["name"],
+                "last_result": f["last_result"],
+                "exit_semantics": f["exit_semantics"],
+                "last_run": f["last_run"],
+            }
             for f in terminated
         ],
         "note": "LastTaskResult=0 只证明正常退出不证明有产出；产出核对仍需人工或产物探针。"
-                "Disabled 任务未计失败（它没失败，只是没开）。"
-                "exit 3 = 脚本主动拒跑（上游证据不足），不计失败、单列 upstream；"
-                "它的处置方向在数据管线，不在脚本本身。"
-                "0x800710E0 = 启动器已在运行/启动请求被拒（IgnoreNew），单列 launcher_refused；"
-                "0xC000013A = 任务被取消/强杀，单列 cancelled——两者均非服务失败、不计 failed。"
-                "0x41001 = 上一轮实例仍在运行（IgnoreNew 并发保护），单列 running；"
-                "0x41306 = 任务被强制终止（超时/手动结束/关机打断），单列 terminated——"
-                "两者同样不计 failed（2026-10-25 实测：8 个 failed 里有 3 个属于这两类误计）。"
-                "账本 append-only 可回放。",
-        "ledger": os.path.relpath(ledger_path, os.path.join(DATA_DIR, "..", "..", "..")),
+        "Disabled 任务未计失败（它没失败，只是没开）。"
+        "exit 3 = 脚本主动拒跑（上游证据不足），不计失败、单列 upstream；"
+        "它的处置方向在数据管线，不在脚本本身。"
+        "0x800710E0 = 启动器已在运行/启动请求被拒（IgnoreNew），单列 launcher_refused；"
+        "0xC000013A = 任务被取消/强杀，单列 cancelled——两者均非服务失败、不计 failed。"
+        "0x41001 = 上一轮实例仍在运行（IgnoreNew 并发保护），单列 running；"
+        "0x41306 = 任务被强制终止（超时/手动结束/关机打断），单列 terminated——"
+        "两者同样不计 failed（2026-10-25 实测：8 个 failed 里有 3 个属于这两类误计）。"
+        "账本 append-only 可回放。",
+        "ledger": os.path.relpath(
+            ledger_path, os.path.join(DATA_DIR, "..", "..", "..")
+        ),
     }
     _atomic_write_json(summary_path, summary)
     return summary
@@ -316,9 +378,11 @@ def window_diff(hours: float = 24.0) -> dict[str, Any]:
             name = str(rec.get("name", ""))
             last[name] = int(rec.get("last_result", -1))
             state[name] = str(rec.get("state", ""))
-        return {n for n, code in last.items()
-                if state.get(n, "").lower() != "disabled"
-                and code not in NON_FAILURE_RC}
+        return {
+            n
+            for n, code in last.items()
+            if state.get(n, "").lower() != "disabled" and code not in NON_FAILURE_RC
+        }
 
     dt.datetime.now().astimezone()
     in_window = [(ts, r) for ts, r in scans if ts > cutoff]
@@ -345,28 +409,48 @@ def window_diff(hours: float = 24.0) -> dict[str, Any]:
 
 def _print_scan_result(result: dict) -> None:
     """打印一次扫描摘要（扁平结构）。"""
-    print(f"扫描 {result['total_scanned']} 任务：正常 {result['ok']} / 失败 {result['failed']} / "
-          f"上游拒跑 {result.get('upstream_hold', 0)} / 启动器已在跑 {result.get('launcher_refused', 0)} / "
-          f"被取消 {result.get('cancelled', 0)} / 跑批中 {result.get('running', 0)} / 被终止 {result.get('terminated', 0)} / "
-          f"禁用 {result['disabled']} / 未跑 {result['never_run']}（旧摘要无新字段时按 0 显示）")
+    print(
+        f"扫描 {result['total_scanned']} 任务：正常 {result['ok']} / 失败 {result['failed']} / "
+        f"上游拒跑 {result.get('upstream_hold', 0)} / 启动器已在跑 {result.get('launcher_refused', 0)} / "
+        f"被取消 {result.get('cancelled', 0)} / 跑批中 {result.get('running', 0)} / 被终止 {result.get('terminated', 0)} / "
+        f"禁用 {result['disabled']} / 未跑 {result['never_run']}（旧摘要无新字段时按 0 显示）"
+    )
     for f in result["failures"]:
-        print(f"  [FAIL] {f['name']} exit={f['last_result']} ({f['exit_semantics']}) last={f['last_run']}")
+        print(
+            f"  [FAIL] {f['name']} exit={f['last_result']} ({f['exit_semantics']}) last={f['last_run']}"
+        )
     for f in result.get("launcher_refused_tasks", []):
-        print(f"  [RUNNING] {f['name']} exit={f['last_result']} ({f['exit_semantics']}) last={f['last_run']}")
+        print(
+            f"  [RUNNING] {f['name']} exit={f['last_result']} ({f['exit_semantics']}) last={f['last_run']}"
+        )
     for f in result.get("cancelled_tasks", []):
-        print(f"  [CANCELLED] {f['name']} exit={f['last_result']} ({f['exit_semantics']}) last={f['last_run']}")
+        print(
+            f"  [CANCELLED] {f['name']} exit={f['last_result']} ({f['exit_semantics']}) last={f['last_run']}"
+        )
     for f in result.get("running_tasks", []):
-        print(f"  [RUNNING] {f['name']} exit={f['last_result']} ({f['exit_semantics']}) last={f['last_run']}")
+        print(
+            f"  [RUNNING] {f['name']} exit={f['last_result']} ({f['exit_semantics']}) last={f['last_run']}"
+        )
     for f in result.get("terminated_tasks", []):
-        print(f"  [TERMINATED] {f['name']} exit={f['last_result']} ({f['exit_semantics']}) last={f['last_run']}")
+        print(
+            f"  [TERMINATED] {f['name']} exit={f['last_result']} ({f['exit_semantics']}) last={f['last_run']}"
+        )
 
 
 def _print_window_result(result: dict) -> None:
     """打印一次窗口对比（扁平结构）。"""
-    print(f"窗口 {result['window_hours']}h 对比（{result['compared']['prior_scan_at']} → {result['compared']['latest_scan_at']}）")
-    print(f"  新增失败 {len(result['new_failures'])}：{'、'.join(result['new_failures']) or '无'}")
-    print(f"  持续失败 {len(result['persisting_failures'])}：{'、'.join(result['persisting_failures']) or '无'}")
-    print(f"  窗口内修复 {len(result['fixed_in_window'])}：{'、'.join(result['fixed_in_window']) or '无'}")
+    print(
+        f"窗口 {result['window_hours']}h 对比（{result['compared']['prior_scan_at']} → {result['compared']['latest_scan_at']}）"
+    )
+    print(
+        f"  新增失败 {len(result['new_failures'])}：{'、'.join(result['new_failures']) or '无'}"
+    )
+    print(
+        f"  持续失败 {len(result['persisting_failures'])}：{'、'.join(result['persisting_failures']) or '无'}"
+    )
+    print(
+        f"  窗口内修复 {len(result['fixed_in_window'])}：{'、'.join(result['fixed_in_window']) or '无'}"
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -378,12 +462,24 @@ def main(argv: list[str] | None = None) -> int:
     再跑窗口对比并以 `{"scan": …, "window": …}` 输出（--json 同构）。
     单参数行为与旧版逐字节一致（扁平输出，不破坏既有消费者）。
     """
-    ap = argparse.ArgumentParser(description="计划任务退出码告警闭环（只读扫描+账本+摘要）")
+    ap = argparse.ArgumentParser(
+        description="计划任务退出码告警闭环（只读扫描+账本+摘要）"
+    )
     ap.add_argument("--scan", action="store_true", help="执行扫描并落账本与摘要")
     ap.add_argument("--summary-only", action="store_true", help="只读已有摘要")
-    ap.add_argument("--window", type=float, metavar="HOURS", nargs="?", const=24.0,
-                    help="窗口对比：新增/持续/已修复失败（默认 24h，可传小时数）")
-    ap.add_argument("--all-families", action="store_true", help="扫描全部计划任务（默认仅军团系前缀）")
+    ap.add_argument(
+        "--window",
+        type=float,
+        metavar="HOURS",
+        nargs="?",
+        const=24.0,
+        help="窗口对比：新增/持续/已修复失败（默认 24h，可传小时数）",
+    )
+    ap.add_argument(
+        "--all-families",
+        action="store_true",
+        help="扫描全部计划任务（默认仅军团系前缀）",
+    )
     ap.add_argument("--json", action="store_true", help="打印摘要 JSON")
     args = ap.parse_args(argv)
 
@@ -395,8 +491,10 @@ def main(argv: list[str] | None = None) -> int:
         if args.scan:
             scan_result = scan(audit_family_only=not args.all_families)
             if args.window is not None:
-                result: dict = {"scan": scan_result,
-                                "window": window_diff(hours=args.window)}
+                result: dict = {
+                    "scan": scan_result,
+                    "window": window_diff(hours=args.window),
+                }
             else:
                 result = scan_result
         elif args.window is not None:

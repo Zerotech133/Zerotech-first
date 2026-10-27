@@ -49,8 +49,7 @@ DEFAULT_BINDING = "ollama/qwen3.5:9b"
 #   "deepseek/<模型>"      → DeepSeekLLM(model="<模型>")（席位级降级链目标；
 #                            2026-10-27 起 org llm_fallback 的 deepseek 项由它承接）
 # 因此 chat 时不能再把整串 binding 当 model 传回去。
-_PREFIX_OWNS_MODEL = frozenset({"glm", "nova", "openai", "openai-direct",
-                                "deepseek"})
+_PREFIX_OWNS_MODEL = frozenset({"glm", "nova", "openai", "openai-direct", "deepseek"})
 
 
 @timed
@@ -71,9 +70,11 @@ def chat(binding=None, system="", user=""):
     try:
         llm = make_llm(binding)
     except Exception as exc:  # 构造失败（如 nova 端口非法）也归一为信封
-        return make_envelope(kind=KIND, ok=False,
-                             error={"code": "llm_error",
-                                    "message": "make_llm failed: %s" % exc})
+        return make_envelope(
+            kind=KIND,
+            ok=False,
+            error={"code": "llm_error", "message": "make_llm failed: %s" % exc},
+        )
     prefix, sep, rest = binding.partition("/")
     try:
         if prefix in _PREFIX_OWNS_MODEL and sep and rest:
@@ -83,8 +84,9 @@ def chat(binding=None, system="", user=""):
         else:
             text, status = llm.chat(system, user, model=binding)
     except LLMError as exc:
-        return make_envelope(kind=KIND, ok=False,
-                             error={"code": "llm_error", "message": str(exc)})
+        return make_envelope(
+            kind=KIND, ok=False, error={"code": "llm_error", "message": str(exc)}
+        )
     data = {"binding_resolved": binding, "text": text, "status": status}
     # 2026-10-27 /llm/chat 接诸葛亮验证：OpenClawLLM 暴露 last_meta（载体/中转信息），
     # 透传给本地网关调用方，便于核验「中转替代（relay=true）/ 真身」而不必猜配置。
@@ -93,5 +95,4 @@ def chat(binding=None, system="", user=""):
         for key in ("mode", "agent", "carrier", "relay", "requested_model"):
             if key in meta:
                 data[key] = meta[key]
-    return make_envelope(kind=KIND, ok=True, degraded=(status == "degraded"),
-                         data=data)
+    return make_envelope(kind=KIND, ok=True, degraded=(status == "degraded"), data=data)

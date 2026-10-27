@@ -5,6 +5,7 @@
 验收门：默认无 --root 跑 persist/含写侧命令=拒写退出码 2；
 带 tmp root 正常；真仓账本零写副作用。
 """
+
 import sys
 import tempfile
 import unittest
@@ -35,11 +36,9 @@ class DemoGuardTests(unittest.TestCase):
 
     def test_rejected_call_leaves_real_ledger_untouched(self):
         # 拒写调用前后真仓账本零副作用
-        before = [(r["perf_key"], r["declared_at"])
-                  for r in PL.load_perf_rows()]
+        before = [(r["perf_key"], r["declared_at"]) for r in PL.load_perf_rows()]
         PL.main(["stats"])  # 无 root，拒写路径
-        after = [(r["perf_key"], r["declared_at"])
-                 for r in PL.load_perf_rows()]
+        after = [(r["perf_key"], r["declared_at"]) for r in PL.load_perf_rows()]
         self.assertEqual(before, after)
 
 
@@ -50,24 +49,40 @@ class EvalShadowGuardTests(unittest.TestCase):
     def test_argparse_default_deny(self):
         # --persist-root 缺省空串 = main 侧拒写分支前提（subprocess 验 --help）
         import subprocess
+
         r = subprocess.run(
             [sys.executable, str(AP / "eval_shadow.py"), "--help"],
-            capture_output=True, text=True, encoding="utf-8", timeout=30)
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=30,
+        )
         self.assertIn("--persist-root", r.stdout)
 
     def test_persist_eval_rows_with_tmp_root(self):
         # 显式 tmp root：正常落账（perf_ledger + trace_links 链挂接）
         import eval_shadow as ES
+
         root = Path(tempfile.mkdtemp(prefix="m5p2es_"))
         row = {
-            "date": "2026-10-16", "symbol": "600519", "run_id": "run-es-1",
-            "score": 3.2, "confidence": 0.7, "ret_pct": 1.25, "horizon": 3,
-            "base": 1500.0, "exit": 1518.75, "recommendation": "buy",
-            "stance": "坚守", "dk_regime": "rotation", "dk_profile": "relaxed",
+            "date": "2026-10-16",
+            "symbol": "600519",
+            "run_id": "run-es-1",
+            "score": 3.2,
+            "confidence": 0.7,
+            "ret_pct": 1.25,
+            "horizon": 3,
+            "base": 1500.0,
+            "exit": 1518.75,
+            "recommendation": "buy",
+            "stance": "坚守",
+            "dk_regime": "rotation",
+            "dk_profile": "relaxed",
             "dk_blocked": False,
         }
         import io
         from contextlib import redirect_stdout
+
         buf = io.StringIO()
         with redirect_stdout(buf):
             rep, drafted, df = ES.persist_eval_rows([row], root)
@@ -81,6 +96,7 @@ class EvalShadowGuardTests(unittest.TestCase):
     def test_persist_eval_rows_rejects_empty_root(self):
         # 防呆：persist_eval_rows 本体不接受空 root（拒写判定在 main，双保险）
         import eval_shadow as ES
+
         with self.assertRaises(Exception):
             ES.persist_eval_rows([], None)
 

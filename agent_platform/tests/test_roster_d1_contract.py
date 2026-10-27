@@ -13,6 +13,7 @@ node dict）；本文件补**集成面**：真仓 roster 实际加载后的契�
 
 零 LLM：只做 roster 加载 + _build_user 纯函数断言，秒级。
 """
+
 import json
 import re
 import sys
@@ -31,8 +32,7 @@ CTX = {"stock": "600519", "data": {"final_decision": "上游攻防结论摘要"}
 
 def _final_nodes():
     team = Team(REGISTRY)  # 拓扑校验失败（重复 key/层级倒挂）也在此暴露
-    return team, [a for a in team.agents
-                  if a.get("analysis_type") == "final_decision"]
+    return team, [a for a in team.agents if a.get("analysis_type") == "final_decision"]
 
 
 def test_registry_loads_and_topology_valid():

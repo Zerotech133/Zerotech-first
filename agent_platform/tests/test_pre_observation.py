@@ -12,6 +12,7 @@
 红线：本文件所有 root 一律 tmp_path 隔离，绝不指向真仓 data/；
 绝不跑计划任务、绝不改任何既有文件。
 """
+
 import importlib.util
 import json
 import os
@@ -19,7 +20,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-AP = Path(__file__).resolve().parent.parent          # .../agent_platform
+AP = Path(__file__).resolve().parent.parent  # .../agent_platform
 TOOL = AP / "tools" / "pre_observation.py"
 
 
@@ -106,7 +107,9 @@ def test_normalize_rc_observation_pending_is_not_fail():
 def test_aggregate_pending_maps_to_zero():
     mod = load_module()
     assert mod.aggregate([mod.PENDING, mod.PASS, mod.SKIPPED]) == (
-        mod.PASS_WITH_PENDING, 0)
+        mod.PASS_WITH_PENDING,
+        0,
+    )
     assert mod.aggregate([mod.PENDING, mod.PENDING]) == (mod.PASS_WITH_PENDING, 0)
     assert mod.aggregate([mod.PASS, mod.FAIL]) == (mod.FAIL, 1)
     assert mod.aggregate([mod.FAIL, mod.ERROR]) == (mod.ERROR, 2)
@@ -137,8 +140,7 @@ def test_json_dry_run_has_three_steps(tmp_path):
     assert rep["tool"] == "pre_observation"
     assert rep["dry_run"] is True
     assert rep["exit_code"] == 0
-    assert [s["key"] for s in rep["steps"]] == [
-        "collect", "observation", "verify"]
+    assert [s["key"] for s in rep["steps"]] == ["collect", "observation", "verify"]
     for s in rep["steps"]:
         assert s["status"] == "PLANNED"
         assert s["cmd"]
@@ -173,14 +175,20 @@ def test_repo_root_without_data_returns_2(tmp_path):
 def test_real_run_writes_evidence_only_under_tmp(tmp_path):
     repo = make_repo(tmp_path)
     real_db = AP / "data" / "evidence" / "evidence.db"
-    before = (real_db.stat().st_mtime_ns, real_db.stat().st_size) \
-        if real_db.exists() else None
+    before = (
+        (real_db.stat().st_mtime_ns, real_db.stat().st_size)
+        if real_db.exists()
+        else None
+    )
 
     r = run_cli(repo, "--json")
     assert r.returncode == 0, (r.returncode, r.stderr, r.stdout)
 
     tmp_db = repo / "agent_platform" / "data" / "evidence" / "evidence.db"
     assert tmp_db.exists(), "证据仓应落在注入的 tmp 数据根"
-    after = (real_db.stat().st_mtime_ns, real_db.stat().st_size) \
-        if real_db.exists() else None
+    after = (
+        (real_db.stat().st_mtime_ns, real_db.stat().st_size)
+        if real_db.exists()
+        else None
+    )
     assert after == before, "真仓证据仓不得被测试触碰"

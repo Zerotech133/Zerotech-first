@@ -12,6 +12,7 @@
   5. 空账本中性 PASS（空=中性非通过，对齐周末 PENDING 口径）；
   6. CLI 显式 root 纪律：无 --data-root 拒绝运行（退出码 2）。
 """
+
 import io
 import json
 import sys
@@ -39,10 +40,16 @@ def _verdict_row(sid, symbol, run_id, trade_date=DAY, **over):
     """按 strategy_registry.record_verdicts 落账 schema 构造判决行。"""
     row = {
         "verdict_key": verdict_key(sid, symbol, trade_date),
-        "strategy_id": sid, "symbol": symbol,
-        "recommendation": "buy", "confidence": 0.7, "stance": "bull",
-        "score": 1.2, "rationale": "ma20 上方", "trace_id": "trc-" + sid,
-        "run_id": run_id, "trade_date": trade_date,
+        "strategy_id": sid,
+        "symbol": symbol,
+        "recommendation": "buy",
+        "confidence": 0.7,
+        "stance": "bull",
+        "score": 1.2,
+        "rationale": "ma20 上方",
+        "trace_id": "trc-" + sid,
+        "run_id": run_id,
+        "trade_date": trade_date,
         "recorded_at": "2026-10-19T17:30:00",
     }
     row.update(over)
@@ -51,17 +58,28 @@ def _verdict_row(sid, symbol, run_id, trade_date=DAY, **over):
 
 def _shadow_row(symbol, run_id, trade_date=DAY):
     """按 run_shadow.build_ledger_row m5.v1 口径构造影子 done 行（最小键集）。"""
-    return {"date": trade_date, "ts": 1.0, "symbol": symbol, "name": symbol,
-            "status": "done", "schema_version": "m5.v1", "parse_ok": True,
-            "recommendation": "buy", "confidence": 0.8, "score": 1.0,
-            "degraded": False, "run_id": run_id}
+    return {
+        "date": trade_date,
+        "ts": 1.0,
+        "symbol": symbol,
+        "name": symbol,
+        "status": "done",
+        "schema_version": "m5.v1",
+        "parse_ok": True,
+        "recommendation": "buy",
+        "confidence": 0.8,
+        "score": 1.0,
+        "degraded": False,
+        "run_id": run_id,
+    }
 
 
 def _write_jsonl(path, rows):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows),
-        encoding="utf-8")
+        encoding="utf-8",
+    )
 
 
 def _evidence_row(vkey, run_id, trade_date=DAY):
@@ -70,10 +88,14 @@ def _evidence_row(vkey, run_id, trade_date=DAY):
         source="strategy.runs",
         source_ref="strategy:%s" % vkey,
         statement="strategy=s_sma20 symbol=600510 rec=buy stance=bull "
-                  "run_id=%s" % run_id,
-        payload={"domain": "strategy",
-                 "kind": "strategy_verdict_fingerprint",
-                 "idempotency_key": vkey, "trade_date": trade_date})
+        "run_id=%s" % run_id,
+        payload={
+            "domain": "strategy",
+            "kind": "strategy_verdict_fingerprint",
+            "idempotency_key": vkey,
+            "trade_date": trade_date,
+        },
+    )
 
 
 class _Base(unittest.TestCase):
@@ -84,11 +106,9 @@ class _Base(unittest.TestCase):
         self._buf = io.StringIO()
 
     def build_ledger(self, verdict_rows, shadow_rows=None, shadow_missing=False):
-        _write_jsonl(self.root / "strategy" / "strategy_runs.jsonl",
-                     verdict_rows)
+        _write_jsonl(self.root / "strategy" / "strategy_runs.jsonl", verdict_rows)
         if not shadow_missing and shadow_rows is not None:
-            _write_jsonl(self.root / "shadow" / "shadow_ledger.jsonl",
-                         shadow_rows)
+            _write_jsonl(self.root / "shadow" / "shadow_ledger.jsonl", shadow_rows)
 
     def build_evidence(self, pairs):
         """构造证据仓（evidence.db）：pairs = [(verdict_key, run_id), ...]。"""
@@ -115,9 +135,14 @@ class AllPassTests(_Base):
             _verdict_row("s_sma20", "600510", RUN_A),
             _verdict_row("s_dual_ma", "600511", RUN_B),
         ]
-        self.build_ledger(rows, [_shadow_row("600510", RUN_A),
-                                 _shadow_row("600511", RUN_B),
-                                 _shadow_row("600512", RUN_C)])
+        self.build_ledger(
+            rows,
+            [
+                _shadow_row("600510", RUN_A),
+                _shadow_row("600511", RUN_B),
+                _shadow_row("600512", RUN_C),
+            ],
+        )
         self.build_evidence([(r["verdict_key"], r["run_id"]) for r in rows])
         rep = vsl.verify(self.root)
         self.assertTrue(rep["ok"])
@@ -136,8 +161,11 @@ class AllPassTests(_Base):
         sp = self.root / "strategy" / "strategy_runs.jsonl"
         hp = self.root / "shadow" / "shadow_ledger.jsonl"
         ep = self.root / "evidence" / "evidence.db"
-        s_before, h_before, e_before = (sp.read_bytes(), hp.read_bytes(),
-                                        ep.read_bytes())
+        s_before, h_before, e_before = (
+            sp.read_bytes(),
+            hp.read_bytes(),
+            ep.read_bytes(),
+        )
         vsl.verify(self.root)
         self.assertEqual(sp.read_bytes(), s_before)
         self.assertEqual(hp.read_bytes(), h_before)
@@ -148,10 +176,12 @@ class KeyTamperTests(_Base):
     def test_tampered_verdict_key_detected(self):
         """对账项①：verdict_key 手编辑篡改必检出。"""
         good = _verdict_row("s_sma20", "600510", RUN_A)
-        bad = _verdict_row("s_dual_ma", "600511", RUN_B,
-                           verdict_key="0" * 16)  # 合法形态的错误键
-        self.build_ledger([good, bad], [_shadow_row("600510", RUN_A),
-                                        _shadow_row("600511", RUN_B)])
+        bad = _verdict_row(
+            "s_dual_ma", "600511", RUN_B, verdict_key="0" * 16
+        )  # 合法形态的错误键
+        self.build_ledger(
+            [good, bad], [_shadow_row("600510", RUN_A), _shadow_row("600511", RUN_B)]
+        )
         rep = vsl.verify(self.root)
         self.assertFalse(rep["ok"])
         c1 = rep["checks"][0]
@@ -222,9 +252,9 @@ class EvidenceCoverageTests(_Base):
         """账本 run 的 verdict_key 无对应证据实体（未收编/漂移）→ FAIL。"""
         row_a = _verdict_row("s_sma20", "600510", RUN_A)
         row_b = _verdict_row("s_dual_ma", "600511", RUN_B)
-        self.build_ledger([row_a, row_b],
-                          [_shadow_row("600510", RUN_A),
-                           _shadow_row("600511", RUN_B)])
+        self.build_ledger(
+            [row_a, row_b], [_shadow_row("600510", RUN_A), _shadow_row("600511", RUN_B)]
+        )
         # 证据仓只收编了 RUN_A 的判决，RUN_B 无证据实体
         self.build_evidence([(row_a["verdict_key"], RUN_A)])
         rep = vsl.verify(self.root)

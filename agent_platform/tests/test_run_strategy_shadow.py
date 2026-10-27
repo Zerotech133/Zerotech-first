@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """strategy_drill_cli CLI 契约测试（原名 run_strategy_shadow.py，拍板 02 更名去混淆）。"""
+
 import json
 from pathlib import Path
 import subprocess
@@ -27,13 +28,17 @@ BASE_CONFIG = {
 def _write_inputs(tmp_path):
     manifest = tmp_path / "manifest.json"
     manifest.write_text(
-        json.dumps({
-            "strategies": [{
-                "module": "shadow_strategies",
-                "class": "TrendFollowAgent",
-                "strategy_id": "shadow_trend",
-            }]
-        }),
+        json.dumps(
+            {
+                "strategies": [
+                    {
+                        "module": "shadow_strategies",
+                        "class": "TrendFollowAgent",
+                        "strategy_id": "shadow_trend",
+                    }
+                ]
+            }
+        ),
         encoding="utf-8",
     )
     config = tmp_path / "config.json"
@@ -49,10 +54,14 @@ def _run(tmp_path, *extra):
         [
             sys.executable,
             str(CLI),
-            "--manifest", str(manifest),
-            "--config", str(config),
-            "--root", str(tmp_path / "root"),
-            "--context-json", '{"symbol":"600519","bars":[100,101]}',
+            "--manifest",
+            str(manifest),
+            "--config",
+            str(config),
+            "--root",
+            str(tmp_path / "root"),
+            "--context-json",
+            '{"symbol":"600519","bars":[100,101]}',
             *extra,
         ],
         capture_output=True,
@@ -79,9 +88,12 @@ def test_cli_missing_required_argument_fails_readably(tmp_path):
         [
             sys.executable,
             str(CLI),
-            "--manifest", str(manifest),
-            "--config", str(config),
-            "--root", str(tmp_path / "root"),
+            "--manifest",
+            str(manifest),
+            "--config",
+            str(config),
+            "--root",
+            str(tmp_path / "root"),
         ],
         capture_output=True,
         text=True,
@@ -98,11 +110,16 @@ def test_cli_rejects_live_without_running_validation(tmp_path):
         [
             sys.executable,
             str(CLI),
-            "--manifest", str(manifest),
-            "--config", str(config),
-            "--root", str(tmp_path / "root"),
-            "--context-json", '{"symbol":"600519","bars":[100,101]}',
-            "--trade-mode", "LIVE",
+            "--manifest",
+            str(manifest),
+            "--config",
+            str(config),
+            "--root",
+            str(tmp_path / "root"),
+            "--context-json",
+            '{"symbol":"600519","bars":[100,101]}',
+            "--trade-mode",
+            "LIVE",
         ],
         capture_output=True,
         text=True,

@@ -22,8 +22,7 @@ class DevWiringTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
-        self.dw = _load("dev_wiring",
-                        "agent_platform/domains/dev_wiring.py")
+        self.dw = _load("dev_wiring", "agent_platform/domains/dev_wiring.py")
         self.dw.TASKS_BASE = Path(self.tmp.name) / "org" / "tasks"
         self.db = Path(self.tmp.name) / "approvals.db"
         self.dw._db_path = lambda: self.db
@@ -34,8 +33,7 @@ class DevWiringTests(unittest.TestCase):
 
     def _mk(self, task_id="K-DEV-1", status="doing"):
         """直接经引擎开单并推到 doing（A0 全权）。返回 task_id。"""
-        tid = self.dw.open_task("dev", "测试单", "内容", severity="P1",
-                                opened_by="A0")
+        tid = self.dw.open_task("dev", "测试单", "内容", severity="P1", opened_by="A0")
         if status != "open":
             self.dw._store().move(tid, "assigned", "A0")
             if status != "assigned":
@@ -66,38 +64,33 @@ class DevWiringTests(unittest.TestCase):
 
     def test_close_done_full_flow(self):
         tid = self._mk()
-        task, replayed = self.dw.close_done(tid, by="A0",
-                                            closure_note="验收通过",
-                                            store=self.store)
+        task, replayed = self.dw.close_done(
+            tid, by="A0", closure_note="验收通过", store=self.store
+        )
         self.assertFalse(replayed)
         self.assertEqual(task["status"], "done")
         self.assertEqual(task["closure_note"], "验收通过")
         creds = self.store.list()
-        self.assertEqual(creds[0].idempotency_key,
-                         "dev:%s:done" % tid)
+        self.assertEqual(creds[0].idempotency_key, "dev:%s:done" % tid)
         self.assertEqual(creds[0].reason, "验收通过")
 
     def test_close_done_requires_note(self):
         tid = self._mk()
         with self.assertRaises(self.dw.DevWiringError):
-            self.dw.close_done(tid, by="A0", closure_note="  ",
-                               store=self.store)
+            self.dw.close_done(tid, by="A0", closure_note="  ", store=self.store)
         with self.assertRaises(self.dw.DevWiringError):
-            self.dw.close_done(tid, by="", closure_note="x",
-                               store=self.store)
+            self.dw.close_done(tid, by="", closure_note="x", store=self.store)
 
     def test_close_done_unknown_task(self):
         with self.assertRaises(self.dw.DevWiringError):
-            self.dw.close_done("K-DEV-404", by="A0",
-                               closure_note="x", store=self.store)
+            self.dw.close_done("K-DEV-404", by="A0", closure_note="x", store=self.store)
 
     def test_close_done_idempotent_replay(self):
         tid = self._mk()
-        self.dw.close_done(tid, by="A0", closure_note="验收通过",
-                           store=self.store)
-        task, replayed = self.dw.close_done(tid, by="A0",
-                                            closure_note="验收通过",
-                                            store=self.store)
+        self.dw.close_done(tid, by="A0", closure_note="验收通过", store=self.store)
+        task, replayed = self.dw.close_done(
+            tid, by="A0", closure_note="验收通过", store=self.store
+        )
         self.assertTrue(replayed)
         self.assertEqual(task["status"], "done")
         # 凭据仍只有一条（幂等键唯一）
@@ -108,15 +101,22 @@ class DevWiringTests(unittest.TestCase):
         tid = self._mk()
         # 模拟：直接落凭据（等价于上次执行在 move 前崩溃）
         from contracts.objects import Approval
-        self.store.record(Approval(
-            target_type="task", target_id="dev:%s" % tid,
-            from_status="doing", to_status="done",
-            decided_by="A0", reason="验收通过",
-            decided_at="2026-10-17T14:00:00+08:00",
-            idempotency_key="dev:%s:done" % tid))
-        task, replayed = self.dw.close_done(tid, by="A0",
-                                            closure_note="验收通过",
-                                            store=self.store)
+
+        self.store.record(
+            Approval(
+                target_type="task",
+                target_id="dev:%s" % tid,
+                from_status="doing",
+                to_status="done",
+                decided_by="A0",
+                reason="验收通过",
+                decided_at="2026-10-17T14:00:00+08:00",
+                idempotency_key="dev:%s:done" % tid,
+            )
+        )
+        task, replayed = self.dw.close_done(
+            tid, by="A0", closure_note="验收通过", store=self.store
+        )
         self.assertTrue(replayed)
         self.assertEqual(task["status"], "done")
 
@@ -125,8 +125,7 @@ class DevWiringTests(unittest.TestCase):
         tid = self._mk()
         self.dw._store().move(tid, "done", "A0", note="绕门关闭")
         with self.assertRaises(self.dw.DevWiringError):
-            self.dw.close_done(tid, by="A0", closure_note="x",
-                               store=self.store)
+            self.dw.close_done(tid, by="A0", closure_note="x", store=self.store)
 
     # ---- projection / audit ----
 
@@ -135,16 +134,14 @@ class DevWiringTests(unittest.TestCase):
         rep = self.dw.projection()
         self.assertEqual(rep["count"], 1)
         self.assertFalse(rep["tasks"][0]["has_done_credential"])
-        self.dw.close_done(tid, by="A0", closure_note="ok",
-                           store=self.store)
+        self.dw.close_done(tid, by="A0", closure_note="ok", store=self.store)
         rep = self.dw.projection()
         self.assertTrue(rep["tasks"][0]["has_done_credential"])
 
     def test_audit_pass_and_bypass_detection(self):
         # 场景 A：受门关闭 → PASS
         tid = self._mk()
-        self.dw.close_done(tid, by="A0", closure_note="ok",
-                           store=self.store)
+        self.dw.close_done(tid, by="A0", closure_note="ok", store=self.store)
         rep = self.dw.audit_report()
         self.assertEqual(rep["verdict"], "PASS")
         self.assertEqual(rep["credentials"][0]["state"], "consistent")
@@ -153,30 +150,42 @@ class DevWiringTests(unittest.TestCase):
         self.dw._store().move(tid2, "done", "A0", note="绕门")
         rep = self.dw.audit_report()
         self.assertEqual(rep["verdict"], "FAIL")
-        self.assertIn("bypass_done",
-                      [v["kind"] for v in rep["violations"]])
-
+        self.assertIn("bypass_done", [v["kind"] for v in rep["violations"]])
 
     def test_audit_grandfathered_legacy_done(self):
         """存量收编：接线日前关闭的 done 任务不算 bypass_done。"""
         import json as _json
+
         f = self.dw.TASKS_BASE / "tasks_202610.jsonl"
         f.parent.mkdir(parents=True, exist_ok=True)
         legacy = {
-            "task_id": "T-20261001-001", "opened_by": "system",
-            "assigned_dept": "dev", "assigned_agent": None,
-            "title": "历史单", "body": "", "severity": "P2",
-            "status": "done", "created_at": "2026-10-01T09:00:00",
-            "due": None, "closure_note": "存量",
+            "task_id": "T-20261001-001",
+            "opened_by": "system",
+            "assigned_dept": "dev",
+            "assigned_agent": None,
+            "title": "历史单",
+            "body": "",
+            "severity": "P2",
+            "status": "done",
+            "created_at": "2026-10-01T09:00:00",
+            "due": None,
+            "closure_note": "存量",
             "history": [
-                {"at": "2026-10-01T09:00:00", "by": "A0",
-                 "action": "open", "note": None},
-                {"at": "2026-10-01T10:00:00", "by": "A0",
-                 "action": "done", "note": "存量关闭"},
+                {
+                    "at": "2026-10-01T09:00:00",
+                    "by": "A0",
+                    "action": "open",
+                    "note": None,
+                },
+                {
+                    "at": "2026-10-01T10:00:00",
+                    "by": "A0",
+                    "action": "done",
+                    "note": "存量关闭",
+                },
             ],
         }
-        f.write_text(_json.dumps(legacy, ensure_ascii=False) + "\n",
-                     encoding="utf-8")
+        f.write_text(_json.dumps(legacy, ensure_ascii=False) + "\n", encoding="utf-8")
         rep = self.dw.audit_report()
         self.assertEqual(rep["verdict"], "PASS")
         self.assertEqual(rep["violations"], [])
@@ -184,23 +193,37 @@ class DevWiringTests(unittest.TestCase):
     def test_audit_bypass_after_wiring_date(self):
         """接线日后绕门 done（引擎直关）→ FAIL。"""
         import json as _json
+
         f = self.dw.TASKS_BASE / "tasks_202610.jsonl"
         f.parent.mkdir(parents=True, exist_ok=True)
         fresh = {
-            "task_id": "T-20261017-001", "opened_by": "system",
-            "assigned_dept": "dev", "assigned_agent": None,
-            "title": "新单", "body": "", "severity": "P2",
-            "status": "done", "created_at": "2026-10-17T14:00:00",
-            "due": None, "closure_note": "绕门",
+            "task_id": "T-20261017-001",
+            "opened_by": "system",
+            "assigned_dept": "dev",
+            "assigned_agent": None,
+            "title": "新单",
+            "body": "",
+            "severity": "P2",
+            "status": "done",
+            "created_at": "2026-10-17T14:00:00",
+            "due": None,
+            "closure_note": "绕门",
             "history": [
-                {"at": "2026-10-17T14:00:00", "by": "A0",
-                 "action": "open", "note": None},
-                {"at": "2026-10-17T14:05:00", "by": "A0",
-                 "action": "done", "note": "绕门关闭"},
+                {
+                    "at": "2026-10-17T14:00:00",
+                    "by": "A0",
+                    "action": "open",
+                    "note": None,
+                },
+                {
+                    "at": "2026-10-17T14:05:00",
+                    "by": "A0",
+                    "action": "done",
+                    "note": "绕门关闭",
+                },
             ],
         }
-        f.write_text(_json.dumps(fresh, ensure_ascii=False) + "\n",
-                     encoding="utf-8")
+        f.write_text(_json.dumps(fresh, ensure_ascii=False) + "\n", encoding="utf-8")
         rep = self.dw.audit_report()
         self.assertEqual(rep["verdict"], "FAIL")
         self.assertEqual(rep["violations"][0]["kind"], "bypass_done")
@@ -217,14 +240,13 @@ class DevGateCongruenceTests(unittest.TestCase):
         dw._db_path = lambda: db
         store = dw.ApprovalStore(db)
         self.addCleanup(store.close)
-        tid = dw.open_task("dev", "阻塞单", "内容", severity="P1",
-                           opened_by="A0")
+        tid = dw.open_task("dev", "阻塞单", "内容", severity="P1", opened_by="A0")
         dw._store().move(tid, "assigned", "A0")
         dw._store().move(tid, "doing", "A0")
         dw._store().move(tid, "blocked", "A0", note="等依赖")
         with self.assertRaises(dw.DevWiringError):
             dw.close_done(tid, "A0", "强行验收", store=store)
-        self.assertEqual(len(store.list()), 0)     # 零凭据写入（防死凭据）
+        self.assertEqual(len(store.list()), 0)  # 零凭据写入（防死凭据）
 
 
 if __name__ == "__main__":

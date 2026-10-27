@@ -46,25 +46,27 @@ from pathlib import Path
 SCHEMA_VERSION = "1.0"
 RULES_VERSION = "1.0"
 
-BINDING_ALLOW = frozenset({
-    "ollama/qwen3.5:9b",
-    "ollama/qwen3.6:35b-a3b",
-    "glm/glm-5.3",
-    "glm/glm-5.3-flash",      # E1 调度/受理岗轻快档（INTEL0 履历即为该档）
-    "glm/glm-4.6",
-    "openai/gpt-6.0",
-    "none",                  # 规则执行体：无 LLM 依赖（如 BEACON1 巡检哨）。
-                             # 给这类席位硬填 9b 等于虚构能力，必须允许显式声明「无」。
-})
+BINDING_ALLOW = frozenset(
+    {
+        "ollama/qwen3.5:9b",
+        "ollama/qwen3.6:35b-a3b",
+        "glm/glm-5.3",
+        "glm/glm-5.3-flash",  # E1 调度/受理岗轻快档（INTEL0 履历即为该档）
+        "glm/glm-4.6",
+        "openai/gpt-6.0",
+        "none",  # 规则执行体：无 LLM 依赖（如 BEACON1 巡检哨）。
+        # 给这类席位硬填 9b 等于虚构能力，必须允许显式声明「无」。
+    }
+)
 GRADE_ALLOW = frozenset({"E1", "E2", "E3"})
 _ID_RE = re.compile(r"^[A-Z][A-Z0-9]{1,15}$")
 _TICKET_RE = re.compile(r"^(WO-|K-|LEGION-|WOLEGION-)", re.I)
 DUTY_MIN_LEN = 10
 
 
-try:                                     # 包内导入
+try:  # 包内导入
     from engine.org_profiles import profile_index
-except ImportError:                      # 直接 `python engine/org_enroll.py` 运行
+except ImportError:  # 直接 `python engine/org_enroll.py` 运行
     from org_profiles import profile_index
 
 
@@ -109,8 +111,13 @@ def _find_dept(org: dict, dept: str) -> dict:
     for d in org.get("departments") or []:
         if d.get("dept") == dept:
             return d
-    raise EnrollError("unknown dept: %s（可选 %s）"
-                      % (dept, ", ".join(sorted(str(x.get("dept")) for x in org.get("departments") or []))))
+    raise EnrollError(
+        "unknown dept: %s（可选 %s）"
+        % (
+            dept,
+            ", ".join(sorted(str(x.get("dept")) for x in org.get("departments") or [])),
+        )
+    )
 
 
 def _cn_index(root: Path, org: dict) -> dict:
@@ -174,17 +181,31 @@ def _agent_id_index(org: dict, root: Path) -> dict:
     return idx
 
 
-def build_plan(root: Path, *, dept: str, agent_id: str, cn_name: str,
-               role_profile: str, duty: str, binding: str, grade: str = "E2",
-               ticket: str = "", signed_by: str = "",
-               analysis_type: str = "", tools: list | None = None) -> dict:
+def build_plan(
+    root: Path,
+    *,
+    dept: str,
+    agent_id: str,
+    cn_name: str,
+    role_profile: str,
+    duty: str,
+    binding: str,
+    grade: str = "E2",
+    ticket: str = "",
+    signed_by: str = "",
+    analysis_type: str = "",
+    tools: list | None = None,
+) -> dict:
     """只读校验并产出变更计划。**不写任何字节**，可安全用于界面预览。"""
     org = load_org(root)
     target = _find_dept(org, dept)
 
     aid = (agent_id or "").strip()
     if not _ID_RE.match(aid):
-        raise EnrollError("agent_id 非法：%r（须大写字母开头、2~16 位大写字母或数字，如 DEV9）" % agent_id)
+        raise EnrollError(
+            "agent_id 非法：%r（须大写字母开头、2~16 位大写字母或数字，如 DEV9）"
+            % agent_id
+        )
 
     id_idx = _agent_id_index(org, root)
     if aid in id_idx:
@@ -192,27 +213,38 @@ def build_plan(root: Path, *, dept: str, agent_id: str, cn_name: str,
 
     cn = (cn_name or "").strip()
     if not cn:
-        raise EnrollError("cn_name 不可为空（军团席位必须有中文名，账号无名的历史教训）")
+        raise EnrollError(
+            "cn_name 不可为空（军团席位必须有中文名，账号无名的历史教训）"
+        )
     cn_idx = _cn_index(root, org)
     if cn in cn_idx:
-        raise EnrollError("中文名重名：%s 已被 %s 使用。历史上已有 4 对重名造成账面混淆，"
-                          "新入编一律阻断——请换一个不冲突的名字。"
-                          % (cn, "、".join(cn_idx[cn])))
+        raise EnrollError(
+            "中文名重名：%s 已被 %s 使用。历史上已有 4 对重名造成账面混淆，"
+            "新入编一律阻断——请换一个不冲突的名字。" % (cn, "、".join(cn_idx[cn]))
+        )
 
     role = (role_profile or "").strip()
     if not role:
-        raise EnrollError("role_profile 不可为空（这是「这个 Agent 到底干嘛」的答案，不能留白）")
+        raise EnrollError(
+            "role_profile 不可为空（这是「这个 Agent 到底干嘛」的答案，不能留白）"
+        )
 
     duty_s = (duty or "").strip()
     if len(duty_s) < DUTY_MIN_LEN:
-        raise EnrollError("duty 至少 %d 字：必须写清职责边界，否则新席位无法被指挥（当前 %d 字）"
-                          % (DUTY_MIN_LEN, len(duty_s)))
+        raise EnrollError(
+            "duty 至少 %d 字：必须写清职责边界，否则新席位无法被指挥（当前 %d 字）"
+            % (DUTY_MIN_LEN, len(duty_s))
+        )
 
     if binding not in BINDING_ALLOW:
-        raise EnrollError("llm_binding 不在词表：%r（可选 %s）"
-                          % (binding, ", ".join(sorted(BINDING_ALLOW))))
+        raise EnrollError(
+            "llm_binding 不在词表：%r（可选 %s）"
+            % (binding, ", ".join(sorted(BINDING_ALLOW)))
+        )
     if grade not in GRADE_ALLOW:
-        raise EnrollError("grade 不在词表：%r（可选 %s）" % (grade, ", ".join(sorted(GRADE_ALLOW))))
+        raise EnrollError(
+            "grade 不在词表：%r（可选 %s）" % (grade, ", ".join(sorted(GRADE_ALLOW)))
+        )
 
     if not (ticket or "").strip():
         raise EnrollError("缺少工单号：无单不写码（--ticket，形如 WO-ORG-210）")
@@ -228,7 +260,7 @@ def build_plan(root: Path, *, dept: str, agent_id: str, cn_name: str,
         "charter_detail": duty_s,
         "llm_binding": binding,
         "binding_note": "由 org_enroll 按工单 %s 入编（放行人：%s）"
-                        % (ticket.strip(), signed_by.strip()),
+        % (ticket.strip(), signed_by.strip()),
         "tools": list(tools or []),
         "tools_note": "入编初始为空，按工单另行授予",
         "memory_grants": [],
@@ -246,16 +278,28 @@ def build_plan(root: Path, *, dept: str, agent_id: str, cn_name: str,
         "hr_dir": str(_hr_dir(root) / aid),
         "ticket": ticket.strip(),
         "signed_by": signed_by.strip(),
-        "writes": ["registry/org.json（追加 agent_profiles + agents）",
-                   "hr/%s/resume.yaml（新建骨架，不覆盖）" % aid],
+        "writes": [
+            "registry/org.json（追加 agent_profiles + agents）",
+            "hr/%s/resume.yaml（新建骨架，不覆盖）" % aid,
+        ],
         "note": "dry-run 计划：以下变更尚未写入任何字节",
     }
 
 
-def build_backfill_plan(root: Path, *, dept: str, agent_id: str, role_profile: str,
-                        duty: str, binding: str, grade: str = "E2",
-                        ticket: str = "", signed_by: str = "",
-                        analysis_type: str = "", tools: list | None = None) -> dict:
+def build_backfill_plan(
+    root: Path,
+    *,
+    dept: str,
+    agent_id: str,
+    role_profile: str,
+    duty: str,
+    binding: str,
+    grade: str = "E2",
+    ticket: str = "",
+    signed_by: str = "",
+    analysis_type: str = "",
+    tools: list | None = None,
+) -> dict:
     """补档计划：给**已列入部门 agents 名单、但没有 agent_profiles 档案**的席位补档案。
 
     为什么不走 build_plan：build_plan 是「新增席位」，会因 id 已在名单而拒绝。
@@ -277,22 +321,34 @@ def build_backfill_plan(root: Path, *, dept: str, agent_id: str, role_profile: s
     if aid not in listed:
         raise EnrollError(
             "补档要求 %s 已在 %s 的 agents 名单中（当前名单：%s）。"
-            "新席位请改用建计划（不加 --backfill）。" % (aid or "?", dept, ", ".join(listed)))
+            "新席位请改用建计划（不加 --backfill）。"
+            % (aid or "?", dept, ", ".join(listed))
+        )
     if aid in prof_ids:
-        raise EnrollError("%s 在 %s 已有档案，本工具不改既有档案（避免覆盖他人成果）" % (aid, dept))
+        raise EnrollError(
+            "%s 在 %s 已有档案，本工具不改既有档案（避免覆盖他人成果）" % (aid, dept)
+        )
 
     role = (role_profile or "").strip()
     if not role:
-        raise EnrollError("role_profile 不可为空（这是「这个 Agent 到底干嘛」的答案，不能留白）")
+        raise EnrollError(
+            "role_profile 不可为空（这是「这个 Agent 到底干嘛」的答案，不能留白）"
+        )
     duty_s = (duty or "").strip()
     if len(duty_s) < DUTY_MIN_LEN:
-        raise EnrollError("duty 至少 %d 字：必须写清职责边界，否则该席位无法被指挥（当前 %d 字）"
-                          % (DUTY_MIN_LEN, len(duty_s)))
+        raise EnrollError(
+            "duty 至少 %d 字：必须写清职责边界，否则该席位无法被指挥（当前 %d 字）"
+            % (DUTY_MIN_LEN, len(duty_s))
+        )
     if binding not in BINDING_ALLOW:
-        raise EnrollError("llm_binding 不在词表：%r（可选 %s）"
-                          % (binding, ", ".join(sorted(BINDING_ALLOW))))
+        raise EnrollError(
+            "llm_binding 不在词表：%r（可选 %s）"
+            % (binding, ", ".join(sorted(BINDING_ALLOW)))
+        )
     if grade not in GRADE_ALLOW:
-        raise EnrollError("grade 不在词表：%r（可选 %s）" % (grade, ", ".join(sorted(GRADE_ALLOW))))
+        raise EnrollError(
+            "grade 不在词表：%r（可选 %s）" % (grade, ", ".join(sorted(GRADE_ALLOW)))
+        )
     if not (ticket or "").strip() or not _TICKET_RE.match(ticket.strip()):
         raise EnrollError("工单号必填且须 WO-/K-/LEGION- 前缀（--ticket）")
     if not (signed_by or "").strip():
@@ -305,7 +361,7 @@ def build_backfill_plan(root: Path, *, dept: str, agent_id: str, role_profile: s
         "charter_detail": duty_s,
         "llm_binding": binding,
         "binding_note": "由 org_enroll 补档（工单 %s / 放行人 %s）"
-                        % (ticket.strip(), signed_by.strip()),
+        % (ticket.strip(), signed_by.strip()),
         "tools": list(tools or []),
         "tools_note": "补档初始为空，按工单另行授予",
         "memory_grants": [],
@@ -362,30 +418,36 @@ def _selfcheck_backfill(root: Path, before: dict, dept: str, aid: str) -> None:
     prof_ids = [p.get("agent_id") for p in (a[dept].get("agent_profiles") or [])]
     if aid not in prof_ids:
         raise EnrollError("自检失败：%s 的档案未落到 %s" % (aid, dept))
-    n0 = sum(len(d.get("agent_profiles") or []) for d in before.get("departments") or [])
+    n0 = sum(
+        len(d.get("agent_profiles") or []) for d in before.get("departments") or []
+    )
     n1 = sum(len(d.get("agent_profiles") or []) for d in after.get("departments") or [])
     if n1 != n0 + 1:
         raise EnrollError("自检失败：档案总数 %d → %d（期望 +1）" % (n0, n1))
     for k, d0 in b.items():
         if k == dept:
             continue
-        if json.dumps(d0, sort_keys=True, ensure_ascii=False) != \
-           json.dumps(a.get(k), sort_keys=True, ensure_ascii=False):
+        if json.dumps(d0, sort_keys=True, ensure_ascii=False) != json.dumps(
+            a.get(k), sort_keys=True, ensure_ascii=False
+        ):
             raise EnrollError("自检失败：非目标部门 %r 被意外改动" % k)
 
 
 def apply_backfill_plan(root: Path, plan: dict, *, signed_by: str) -> dict:
     """执行补档：备份 → 原子写（只追加 profile）→ 自检；失败自动回滚。"""
     if (signed_by or "").strip() != plan.get("signed_by"):
-        raise EnrollError("放行人与计划不一致：plan=%r apply=%r"
-                          % (plan.get("signed_by"), signed_by))
+        raise EnrollError(
+            "放行人与计划不一致：plan=%r apply=%r" % (plan.get("signed_by"), signed_by)
+        )
     dept = plan["dept"]
     aid = plan["agent"]["agent_id"]
 
     before = load_org(root)
     target = _find_dept(before, dept)
     if aid not in [str(x) for x in (target.get("agents") or [])]:
-        raise EnrollError("执行前复核失败：%s 不在 %s 名单——真源在计划后被改动" % (aid, dept))
+        raise EnrollError(
+            "执行前复核失败：%s 不在 %s 名单——真源在计划后被改动" % (aid, dept)
+        )
     if aid in [str(p.get("agent_id")) for p in (target.get("agent_profiles") or [])]:
         raise EnrollError("执行前复核失败：%s 已有档案" % aid)
 
@@ -407,14 +469,31 @@ def apply_backfill_plan(root: Path, plan: dict, *, signed_by: str) -> dict:
         shutil.copy2(backup, _org_path(root))
         raise
 
-    return {"schema_version": SCHEMA_VERSION, "ok": True, "mode": "backfill",
-            "dept": dept, "agent_id": aid, "backup": str(backup),
-            "note": "补档已落 org.json 并自检通过（名单未变）；回滚用 --rollback %s" % backup}
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "ok": True,
+        "mode": "backfill",
+        "dept": dept,
+        "agent_id": aid,
+        "backup": str(backup),
+        "note": "补档已落 org.json 并自检通过（名单未变）；回滚用 --rollback %s"
+        % backup,
+    }
 
 
-def build_rebind_plan(root: Path, *, dept: str, agent_id: str, binding: str = "",
-                      ticket: str = "", signed_by: str = "", reason: str = "",
-                      grade: str = "", duty: str = "", role_profile: str = "") -> dict:
+def build_rebind_plan(
+    root: Path,
+    *,
+    dept: str,
+    agent_id: str,
+    binding: str = "",
+    ticket: str = "",
+    signed_by: str = "",
+    reason: str = "",
+    grade: str = "",
+    duty: str = "",
+    role_profile: str = "",
+) -> dict:
     """改档计划：只改已有档案的 `llm_binding`（不动职责、不动名单）。
 
     为什么需要：S38 实测发现编制里写的 `glm/glm-5.3-flash` 实际调用返回 HTTP 400
@@ -427,18 +506,26 @@ def build_rebind_plan(root: Path, *, dept: str, agent_id: str, binding: str = ""
     profs = target.get("agent_profiles") or []
     cur = next((p for p in profs if str(p.get("agent_id")) == aid), None)
     if cur is None:
-        raise EnrollError("%s 在 %s 尚无档案，改档无从谈起：请先用 --backfill 补档" % (aid or "?", dept))
+        raise EnrollError(
+            "%s 在 %s 尚无档案，改档无从谈起：请先用 --backfill 补档"
+            % (aid or "?", dept)
+        )
     changes: dict[str, str] = {}
     if binding:
         if binding not in BINDING_ALLOW:
-            raise EnrollError("llm_binding 不在词表：%r（可选 %s）"
-                              % (binding, ", ".join(sorted(BINDING_ALLOW))))
+            raise EnrollError(
+                "llm_binding 不在词表：%r（可选 %s）"
+                % (binding, ", ".join(sorted(BINDING_ALLOW)))
+            )
         old_b = str(cur.get("llm_binding") or "")
         if old_b != binding:
             changes["llm_binding"] = binding
     if grade:
         if grade not in GRADE_ALLOW:
-            raise EnrollError("grade 不在词表：%r（可选 %s）" % (grade, ", ".join(sorted(GRADE_ALLOW))))
+            raise EnrollError(
+                "grade 不在词表：%r（可选 %s）"
+                % (grade, ", ".join(sorted(GRADE_ALLOW)))
+            )
         if str(cur.get("grade") or "") != grade:
             changes["grade"] = grade
     if duty:
@@ -482,20 +569,29 @@ def build_rebind_plan(root: Path, *, dept: str, agent_id: str, binding: str = ""
 def apply_rebind_plan(root: Path, plan: dict, *, signed_by: str) -> dict:
     """执行改档：备份 → 只改两字段 → 自检（其余一字未动）→ 失败回滚。"""
     if (signed_by or "").strip() != plan.get("signed_by"):
-        raise EnrollError("放行人与计划不一致：plan=%r apply=%r"
-                          % (plan.get("signed_by"), signed_by))
+        raise EnrollError(
+            "放行人与计划不一致：plan=%r apply=%r" % (plan.get("signed_by"), signed_by)
+        )
     dept = plan["dept"]
     aid = plan["agent_id"]
 
     before = load_org(root)
     target = _find_dept(before, dept)
-    cur = next((p for p in (target.get("agent_profiles") or [])
-                if str(p.get("agent_id")) == aid), None)
+    cur = next(
+        (
+            p
+            for p in (target.get("agent_profiles") or [])
+            if str(p.get("agent_id")) == aid
+        ),
+        None,
+    )
     if cur is None:
         raise EnrollError("执行前复核失败：%s 无档案" % aid)
     if str(cur.get("llm_binding") or "") != plan["from_binding"]:
-        raise EnrollError("执行前复核失败：%s 当前绑定已变（%r → %r），请重新生成计划"
-                          % (aid, plan["from_binding"], cur.get("llm_binding")))
+        raise EnrollError(
+            "执行前复核失败：%s 当前绑定已变（%r → %r），请重新生成计划"
+            % (aid, plan["from_binding"], cur.get("llm_binding"))
+        )
 
     bdir = root / "registry" / "backups"
     bdir.mkdir(parents=True, exist_ok=True)
@@ -510,7 +606,9 @@ def apply_rebind_plan(root: Path, plan: dict, *, signed_by: str) -> dict:
         prof[k] = v
     note = "改档 %s（工单 %s / 放行人 %s）" % (
         "、".join("%s→%s" % (k, str(v)[:40]) for k, v in changes.items()),
-        plan["ticket"], plan["signed_by"])
+        plan["ticket"],
+        plan["signed_by"],
+    )
     if plan.get("reason"):
         note += "：%s" % plan["reason"]
     prev_note = str(prof.get("binding_note") or "")
@@ -526,30 +624,53 @@ def apply_rebind_plan(root: Path, plan: dict, *, signed_by: str) -> dict:
         shutil.copy2(backup, _org_path(root))
         raise
 
-    return {"schema_version": SCHEMA_VERSION, "ok": True, "mode": "rebind",
-            "dept": dept, "agent_id": aid,
-            "from_binding": plan["from_binding"], "to_binding": plan["to_binding"],
-            "backup": str(backup),
-            "note": "改档已落 org.json 并自检通过；回滚用 --rollback %s" % backup}
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "ok": True,
+        "mode": "rebind",
+        "dept": dept,
+        "agent_id": aid,
+        "from_binding": plan["from_binding"],
+        "to_binding": plan["to_binding"],
+        "backup": str(backup),
+        "note": "改档已落 org.json 并自检通过；回滚用 --rollback %s" % backup,
+    }
 
 
-def _selfcheck_rebind(root: Path, before: dict, dept: str, aid: str, new_binding: str,
-                      plan: dict | None = None) -> None:
+def _selfcheck_rebind(
+    root: Path,
+    before: dict,
+    dept: str,
+    aid: str,
+    new_binding: str,
+    plan: dict | None = None,
+) -> None:
     """改档自检：目标 profile 两字段已改、其字段与其他一切未动。"""
     after = load_org(root)
     b = {d.get("dept"): d for d in before.get("departments") or []}
     a = {d.get("dept"): d for d in after.get("departments") or []}
     if list(b.keys()) != list(a.keys()):
         raise EnrollError("自检失败：部门清单变化")
-    pb = next(p for p in (b[dept].get("agent_profiles") or [])
-              if str(p.get("agent_id")) == aid)
-    pa = next((p for p in (a[dept].get("agent_profiles") or [])
-               if str(p.get("agent_id")) == aid), None)
+    pb = next(
+        p
+        for p in (b[dept].get("agent_profiles") or [])
+        if str(p.get("agent_id")) == aid
+    )
+    pa = next(
+        (
+            p
+            for p in (a[dept].get("agent_profiles") or [])
+            if str(p.get("agent_id")) == aid
+        ),
+        None,
+    )
     if pa is None:
         raise EnrollError("自检失败：%s 档案丢失" % aid)
     if pa.get("llm_binding") != new_binding:
         raise EnrollError("自检失败：%s 绑定未改为 %r" % (aid, new_binding))
-    allowed = set((_plan_changes_keys := set((plan.get("changes") or {}).keys()))) | {"binding_note"}
+    allowed = set((_plan_changes_keys := set((plan.get("changes") or {}).keys()))) | {
+        "binding_note"
+    }
     if pa.get("llm_binding") != plan["to_binding"] and "llm_binding" in allowed:
         raise EnrollError("自检失败：%s 绑定未改为 %r" % (aid, plan["to_binding"]))
     for k, v in pb.items():
@@ -561,24 +682,39 @@ def _selfcheck_rebind(root: Path, before: dict, dept: str, aid: str, new_binding
     for name in b:
         if name == dept:
             continue
-        if json.dumps(b[name], sort_keys=True, ensure_ascii=False) != \
-           json.dumps(a.get(name), sort_keys=True, ensure_ascii=False):
+        if json.dumps(b[name], sort_keys=True, ensure_ascii=False) != json.dumps(
+            a.get(name), sort_keys=True, ensure_ascii=False
+        ):
             raise EnrollError("自检失败：非目标部门 %r 被改动" % name)
-    others_b = [p for p in (b[dept].get("agent_profiles") or [])
-                if str(p.get("agent_id")) != aid]
-    others_a = [p for p in (a[dept].get("agent_profiles") or [])
-                if str(p.get("agent_id")) != aid]
-    if json.dumps(others_b, sort_keys=True, ensure_ascii=False) != \
-       json.dumps(others_a, sort_keys=True, ensure_ascii=False):
+    others_b = [
+        p
+        for p in (b[dept].get("agent_profiles") or [])
+        if str(p.get("agent_id")) != aid
+    ]
+    others_a = [
+        p
+        for p in (a[dept].get("agent_profiles") or [])
+        if str(p.get("agent_id")) != aid
+    ]
+    if json.dumps(others_b, sort_keys=True, ensure_ascii=False) != json.dumps(
+        others_a, sort_keys=True, ensure_ascii=False
+    ):
         raise EnrollError("自检失败：同部门其他席位被改动")
 
 
 LEAD_NOTE_MIN_LEN = 10
 
 
-def build_set_lead_plan(root: Path, *, dept: str, lead: str, ticket: str = "",
-                        signed_by: str = "", cross_note: str = "",
-                        lead_duty: str = "") -> dict:
+def build_set_lead_plan(
+    root: Path,
+    *,
+    dept: str,
+    lead: str,
+    ticket: str = "",
+    signed_by: str = "",
+    cross_note: str = "",
+    lead_duty: str = "",
+) -> dict:
     """主官任命计划：只改部门 `lead`（可连带 `lead_duty`），不动名单、不动档案。
 
     存在理由：org_audit 把「主官空悬 lead=None」「主官无档案」列为 P1（该营无签字人），
@@ -599,7 +735,9 @@ def build_set_lead_plan(root: Path, *, dept: str, lead: str, ticket: str = "",
     if not lid:
         raise EnrollError("主官不可为空（--lead）")
     if not _ID_RE.match(lid):
-        raise EnrollError("主官 id 格式非法：%r（须大写字母开头、2-16 位大写字母数字）" % lid)
+        raise EnrollError(
+            "主官 id 格式非法：%r（须大写字母开头、2-16 位大写字母数字）" % lid
+        )
 
     idx = _agent_id_index(org, root)
     where = idx.get(lid)
@@ -611,7 +749,8 @@ def build_set_lead_plan(root: Path, *, dept: str, lead: str, ticket: str = "",
     if lid not in profiled:
         raise EnrollError(
             "%s 尚无档案（当前仅见于 %s）。任命后该营会从「主官空悬」变成「主官无档」，"
-            "签字人依旧不成立 —— 请先用 --backfill 补档再任命" % (lid, where))
+            "签字人依旧不成立 —— 请先用 --backfill 补档再任命" % (lid, where)
+        )
 
     members = [str(a) for a in (target.get("agents") or [])]
     cross = lid not in members
@@ -621,26 +760,35 @@ def build_set_lead_plan(root: Path, *, dept: str, lead: str, ticket: str = "",
             raise EnrollError(
                 "%s 不在 %s 的名单内（属跨部门兼任），须用 --cross-note 显式说明兼任范围"
                 "（≥%d 字）：本条说明会写入部门 lead_appointed，"
-                "否则指挥链在真源里是断的" % (lid, dept, LEAD_NOTE_MIN_LEN))
+                "否则指挥链在真源里是断的" % (lid, dept, LEAD_NOTE_MIN_LEN)
+            )
 
     old_lead = str(target.get("lead") or "")
     duty = (lead_duty or "").strip()
     if duty and len(duty) < DUTY_MIN_LEN:
-        raise EnrollError("lead_duty 至少 %d 字（当前 %d 字）" % (DUTY_MIN_LEN, len(duty)))
+        raise EnrollError(
+            "lead_duty 至少 %d 字（当前 %d 字）" % (DUTY_MIN_LEN, len(duty))
+        )
     old_duty = str(target.get("lead_duty") or "")
     # 补登记兼任：主官没变、但真源里没有 lead_appointed 留痕（A0/A0A 就是这种历史状态——
     # lead 早就填了，兼任说明一个字没有，审计只能报「指挥链跨部门」）。
     # 这不改指挥关系，只补事实凭证，所以允许在「主官不变」时执行一次；已有留痕则幂等拒绝。
     ap_cur = target.get("lead_appointed") or {}
-    already_noted = bool(ap_cur.get("cross_note")) and str(ap_cur.get("to") or "") == lid
+    already_noted = (
+        bool(ap_cur.get("cross_note")) and str(ap_cur.get("to") or "") == lid
+    )
     announce = bool(cross and note_txt and not already_noted)
     if old_lead == lid and (not duty or duty == old_duty) and not announce:
-        raise EnrollError("%s 的主官已是 %s%s，无需任命"
-                          % (dept, lid, "（兼任说明已登记）" if already_noted else ""))
+        raise EnrollError(
+            "%s 的主官已是 %s%s，无需任命"
+            % (dept, lid, "（兼任说明已登记）" if already_noted else "")
+        )
     if not (ticket or "").strip() or not _TICKET_RE.match(ticket.strip()):
         raise EnrollError("工单号必填且须 WO-/K-/LEGION- 前缀（--ticket）")
     if not (signed_by or "").strip():
-        raise EnrollError("缺少放行人：任命主官改组织真源，须老田显式签字（--signed-by）")
+        raise EnrollError(
+            "缺少放行人：任命主官改组织真源，须老田显式签字（--signed-by）"
+        )
 
     return {
         "schema_version": SCHEMA_VERSION,
@@ -658,8 +806,10 @@ def build_set_lead_plan(root: Path, *, dept: str, lead: str, ticket: str = "",
         "lead_duty": duty,
         "ticket": ticket.strip(),
         "signed_by": signed_by.strip(),
-        "writes": ["registry/org.json（仅 %s 的 lead%s 与 lead_appointed）"
-                   % (dept, "、lead_duty" if duty else "")],
+        "writes": [
+            "registry/org.json（仅 %s 的 lead%s 与 lead_appointed）"
+            % (dept, "、lead_duty" if duty else "")
+        ],
         "note": "dry-run 任命计划：未写入任何字节",
     }
 
@@ -667,15 +817,18 @@ def build_set_lead_plan(root: Path, *, dept: str, lead: str, ticket: str = "",
 def apply_set_lead_plan(root: Path, plan: dict, *, signed_by: str) -> dict:
     """执行任命：复核 → 备份 → 只改 lead/lead_duty + 留痕 → 自检 → 失败回滚。"""
     if (signed_by or "").strip() != plan.get("signed_by"):
-        raise EnrollError("放行人与计划不一致：plan=%r apply=%r"
-                          % (plan.get("signed_by"), signed_by))
+        raise EnrollError(
+            "放行人与计划不一致：plan=%r apply=%r" % (plan.get("signed_by"), signed_by)
+        )
     dept = plan["dept"]
     before = load_org(root)
     target = _find_dept(before, dept)
     cur_lead = str(target.get("lead") or "")
     if cur_lead != plan["from_lead"]:
-        raise EnrollError("执行前复核失败：%s 当前主官已变（%r → %r），请重新生成计划"
-                          % (dept, plan["from_lead"], cur_lead))
+        raise EnrollError(
+            "执行前复核失败：%s 当前主官已变（%r → %r），请重新生成计划"
+            % (dept, plan["from_lead"], cur_lead)
+        )
 
     bdir = root / "registry" / "backups"
     bdir.mkdir(parents=True, exist_ok=True)
@@ -706,11 +859,18 @@ def apply_set_lead_plan(root: Path, plan: dict, *, signed_by: str) -> dict:
         shutil.copy2(backup, _org_path(root))
         raise
 
-    return {"schema_version": SCHEMA_VERSION, "ok": True, "mode": "set_lead",
-            "dept": dept, "from_lead": plan["from_lead"], "to_lead": plan["to_lead"],
-            "cross_dept": bool(plan.get("cross_dept")), "backup": str(backup),
-            "note": "任命已落 org.json 并自检通过（名单与档案未动）；回滚用 --rollback %s"
-                    % backup}
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "ok": True,
+        "mode": "set_lead",
+        "dept": dept,
+        "from_lead": plan["from_lead"],
+        "to_lead": plan["to_lead"],
+        "cross_dept": bool(plan.get("cross_dept")),
+        "backup": str(backup),
+        "note": "任命已落 org.json 并自检通过（名单与档案未动）；回滚用 --rollback %s"
+        % backup,
+    }
 
 
 def _selfcheck_set_lead(root: Path, before: dict, dept: str, plan: dict) -> None:
@@ -737,14 +897,16 @@ def _selfcheck_set_lead(root: Path, before: dict, dept: str, plan: dict) -> None
     def strip(d):
         return {k: v for k, v in (d or {}).items() if k not in allowed}
 
-    if json.dumps(strip(b[dept]), sort_keys=True, ensure_ascii=False) != \
-       json.dumps(strip(ad), sort_keys=True, ensure_ascii=False):
+    if json.dumps(strip(b[dept]), sort_keys=True, ensure_ascii=False) != json.dumps(
+        strip(ad), sort_keys=True, ensure_ascii=False
+    ):
         raise EnrollError("自检失败：本部门除主官字段外被改动（名单或档案被动）")
     for name in b:
         if name == dept:
             continue
-        if json.dumps(b[name], sort_keys=True, ensure_ascii=False) != \
-           json.dumps(a.get(name), sort_keys=True, ensure_ascii=False):
+        if json.dumps(b[name], sort_keys=True, ensure_ascii=False) != json.dumps(
+            a.get(name), sort_keys=True, ensure_ascii=False
+        ):
             raise EnrollError("自检失败：非目标部门 %r 被改动" % name)
 
 
@@ -758,8 +920,9 @@ def probe_binding(binding: str, *, timeout_s: int = 40) -> dict:
     """
     out = {"binding": binding, "ok": False, "kind": "", "latency_ms": 0, "error": ""}
     if binding == "none":
-        out.update(ok=True, kind="rule_only",
-                   error="规则执行体，无 LLM 依赖（无需连通性）")
+        out.update(
+            ok=True, kind="rule_only", error="规则执行体，无 LLM 依赖（无需连通性）"
+        )
         return out
     t0 = time.time()
     try:
@@ -767,16 +930,24 @@ def probe_binding(binding: str, *, timeout_s: int = 40) -> dict:
         if str(plat) not in sys.path:
             sys.path.insert(0, str(plat))
         from gateway import llm_gateway
-        env = llm_gateway.chat(binding=binding, system="连通性冒烟，只回一个词：OK",
-                              user="OK")
+
+        env = llm_gateway.chat(
+            binding=binding, system="连通性冒烟，只回一个词：OK", user="OK"
+        )
         out["latency_ms"] = int((time.time() - t0) * 1000)
         if env.get("ok"):
-            out.update(ok=True, kind="llm",
-                       text=str((env.get("data") or {}).get("text", ""))[:40])
+            out.update(
+                ok=True,
+                kind="llm",
+                text=str((env.get("data") or {}).get("text", ""))[:40],
+            )
         else:
             err = env.get("error") or {}
-            out["error"] = "%s: %s" % (err.get("code", "?"), str(err.get("message", ""))[:160])
-    except Exception as e:                                  # noqa: BLE001
+            out["error"] = "%s: %s" % (
+                err.get("code", "?"),
+                str(err.get("message", ""))[:160],
+            )
+    except Exception as e:  # noqa: BLE001
         out["latency_ms"] = int((time.time() - t0) * 1000)
         out["error"] = "%s: %s" % (type(e).__name__, str(e)[:160])
     return out
@@ -788,18 +959,28 @@ def _selfcheck(root: Path, before: dict, dept: str, aid: str) -> None:
     deps_after = {d.get("dept"): d for d in after.get("departments") or []}
     deps_before = {d.get("dept"): d for d in before.get("departments") or []}
 
-    ids_after = [p.get("agent_id") for p in (deps_after.get(dept, {}).get("agent_profiles") or [])]
+    ids_after = [
+        p.get("agent_id")
+        for p in (deps_after.get(dept, {}).get("agent_profiles") or [])
+    ]
     if aid not in ids_after:
         raise EnrollError("自检失败：%s 未出现在 %s 部门" % (aid, dept))
-    n_before = sum(len(d.get("agent_profiles") or []) for d in before.get("departments") or [])
-    n_after = sum(len(d.get("agent_profiles") or []) for d in after.get("departments") or [])
+    n_before = sum(
+        len(d.get("agent_profiles") or []) for d in before.get("departments") or []
+    )
+    n_after = sum(
+        len(d.get("agent_profiles") or []) for d in after.get("departments") or []
+    )
     if n_after != n_before + 1:
-        raise EnrollError("自检失败：agent 总数 %d → %d（期望 +1）" % (n_before, n_after))
+        raise EnrollError(
+            "自检失败：agent 总数 %d → %d（期望 +1）" % (n_before, n_after)
+        )
     for name, d0 in deps_before.items():
         if name == dept:
             continue
-        if json.dumps(d0, sort_keys=True, ensure_ascii=False) != \
-           json.dumps(deps_after.get(name), sort_keys=True, ensure_ascii=False):
+        if json.dumps(d0, sort_keys=True, ensure_ascii=False) != json.dumps(
+            deps_after.get(name), sort_keys=True, ensure_ascii=False
+        ):
             raise EnrollError("自检失败：非目标部门 %r 被意外改动" % name)
     if list(deps_before.keys()) != list(deps_after.keys()):
         raise EnrollError("自检失败：部门清单或顺序变化")
@@ -808,8 +989,10 @@ def _selfcheck(root: Path, before: dict, dept: str, aid: str) -> None:
 def apply_plan(root: Path, plan: dict, *, signed_by: str) -> dict:
     """执行入编。先备份，再原子写，写后自检；自检失败自动回滚。"""
     if (signed_by or "").strip() != plan.get("signed_by"):
-        raise EnrollError("放行人与计划不一致：plan=%r apply=%r（重新 build_plan 后勿改签字人）"
-                          % (plan.get("signed_by"), signed_by))
+        raise EnrollError(
+            "放行人与计划不一致：plan=%r apply=%r（重新 build_plan 后勿改签字人）"
+            % (plan.get("signed_by"), signed_by)
+        )
 
     dept = plan["dept"]
     aid = plan["agent"]["agent_id"]
@@ -818,8 +1001,10 @@ def apply_plan(root: Path, plan: dict, *, signed_by: str) -> dict:
     before = load_org(root)
     id_idx = _agent_id_index(before, root)
     if aid in id_idx:
-        raise EnrollError("执行前复核失败：%s 已被占用（%s）——真源在计划生成后被改动，"
-                          "请重新生成计划" % (aid, id_idx[aid]))
+        raise EnrollError(
+            "执行前复核失败：%s 已被占用（%s）——真源在计划生成后被改动，"
+            "请重新生成计划" % (aid, id_idx[aid])
+        )
 
     # 1) 备份
     bdir = root / "registry" / "backups"
@@ -853,12 +1038,17 @@ def apply_plan(root: Path, plan: dict, *, signed_by: str) -> dict:
     #    但会在返回里如实报出，交人工补）
     hr_created = _write_hr_skeleton(hr_path, plan)
 
-    return {"schema_version": SCHEMA_VERSION, "ok": True, "dept": dept,
-            "agent_id": aid, "backup": str(backup),
-            "hr_resume": str(hr_path) if hr_created else None,
-            "hr_written": hr_created,
-            "rolled_back": False,
-            "note": "入编已落 org.json 并自检通过；回滚用 --rollback %s" % backup}
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "ok": True,
+        "dept": dept,
+        "agent_id": aid,
+        "backup": str(backup),
+        "hr_resume": str(hr_path) if hr_created else None,
+        "hr_written": hr_created,
+        "rolled_back": False,
+        "note": "入编已落 org.json 并自检通过；回滚用 --rollback %s" % backup,
+    }
 
 
 def _write_hr_skeleton(path: Path, plan: dict) -> bool:
@@ -882,10 +1072,18 @@ experience:
     kpi: 入编初始，尚无考核记录
 skills: []
 self_statement: （入编骨架——待本人与田丰补充）
-""".format(aid=a["agent_id"], cn=plan.get("cn_name", ""), tk=plan["ticket"],
-           sg=plan["signed_by"], ts=time.strftime("%Y-%m-%d %H:%M"),
-           bind=a["llm_binding"], day=time.strftime("%Y-%m-%d"),
-           ym=time.strftime("%Y-%m"), dept=plan["dept"], role=a["role_profile"])
+""".format(
+        aid=a["agent_id"],
+        cn=plan.get("cn_name", ""),
+        tk=plan["ticket"],
+        sg=plan["signed_by"],
+        ts=time.strftime("%Y-%m-%d %H:%M"),
+        bind=a["llm_binding"],
+        day=time.strftime("%Y-%m-%d"),
+        ym=time.strftime("%Y-%m"),
+        dept=plan["dept"],
+        role=a["role_profile"],
+    )
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(body, encoding="utf-8")
@@ -907,8 +1105,12 @@ def rollback(root: Path, backup: str, *, signed_by: str) -> dict:
     except (ValueError, OSError) as e:
         raise EnrollError("备份不可解析，拒绝覆盖真源：%s" % e)
     shutil.copy2(b, _org_path(root))
-    return {"ok": True, "restored_from": str(b), "signed_by": signed_by.strip(),
-            "note": "已用备份还原 org.json；hr 档案不会自动删除（避免误删履历）"}
+    return {
+        "ok": True,
+        "restored_from": str(b),
+        "signed_by": signed_by.strip(),
+        "note": "已用备份还原 org.json；hr 档案不会自动删除（避免误删履历）",
+    }
 
 
 def main(argv=None) -> int:
@@ -920,24 +1122,45 @@ def main(argv=None) -> int:
     ap.add_argument("--role")
     ap.add_argument("--duty")
     ap.add_argument("--binding", default="ollama/qwen3.5:9b")
-    ap.add_argument("--grade", default="", help="档级 E1/E2/E3（新建/补档默认 E2；改档不传则不改）")
+    ap.add_argument(
+        "--grade", default="", help="档级 E1/E2/E3（新建/补档默认 E2；改档不传则不改）"
+    )
     ap.add_argument("--analysis-type", default="")
     ap.add_argument("--ticket", default="")
     ap.add_argument("--signed-by", default="")
     ap.add_argument("--apply", action="store_true", help="真写入（默认只打印计划）")
-    ap.add_argument("--rebind", action="store_true",
-                    help="改档模式：只改已有档案的 llm_binding（不动职责与名单）")
-    ap.add_argument("--probe", metavar="BINDING",
-                    help="连通性冒烟：实测该 binding 能否调通（只读，不写任何真源）")
+    ap.add_argument(
+        "--rebind",
+        action="store_true",
+        help="改档模式：只改已有档案的 llm_binding（不动职责与名单）",
+    )
+    ap.add_argument(
+        "--probe",
+        metavar="BINDING",
+        help="连通性冒烟：实测该 binding 能否调通（只读，不写任何真源）",
+    )
     ap.add_argument("--reason", default="", help="改档原因，写入 binding_note")
-    ap.add_argument("--backfill", action="store_true",
-                    help="补档模式：给已在名单但无档案的席位补档案（不动 agents 名单）")
-    ap.add_argument("--set-lead", action="store_true",
-                    help="主官任命模式：只改部门 lead（可带 lead_duty），不动名单与档案")
-    ap.add_argument("--lead", default="", help="任命模式：新主官 agent_id（须已有档案）")
-    ap.add_argument("--lead-duty", default="", help="任命模式：主官职责（≥10 字；不传则不动）")
-    ap.add_argument("--cross-note", default="",
-                    help="任命模式：跨部门兼任说明（≥10 字，写入部门 lead_appointed）")
+    ap.add_argument(
+        "--backfill",
+        action="store_true",
+        help="补档模式：给已在名单但无档案的席位补档案（不动 agents 名单）",
+    )
+    ap.add_argument(
+        "--set-lead",
+        action="store_true",
+        help="主官任命模式：只改部门 lead（可带 lead_duty），不动名单与档案",
+    )
+    ap.add_argument(
+        "--lead", default="", help="任命模式：新主官 agent_id（须已有档案）"
+    )
+    ap.add_argument(
+        "--lead-duty", default="", help="任命模式：主官职责（≥10 字；不传则不动）"
+    )
+    ap.add_argument(
+        "--cross-note",
+        default="",
+        help="任命模式：跨部门兼任说明（≥10 字，写入部门 lead_appointed）",
+    )
     ap.add_argument("--rollback", help="用指定备份还原 org.json")
     args = ap.parse_args(argv)
 
@@ -948,8 +1171,13 @@ def main(argv=None) -> int:
             print(json.dumps(res, ensure_ascii=False, indent=1))
             return 0 if res["ok"] else 1
         if args.rollback:
-            print(json.dumps(rollback(root, args.rollback, signed_by=args.signed_by),
-                             ensure_ascii=False, indent=1))
+            print(
+                json.dumps(
+                    rollback(root, args.rollback, signed_by=args.signed_by),
+                    ensure_ascii=False,
+                    indent=1,
+                )
+            )
             return 0
         if args.set_lead:
             need = ("dept", "lead")
@@ -961,53 +1189,91 @@ def main(argv=None) -> int:
             need = ("dept", "agent_id", "cn_name", "role", "duty")
         missing = [k for k in need if not getattr(args, k)]
         if missing:
-            print("缺少必填参数：%s" % ", ".join("--" + m for m in missing), file=sys.stderr)
+            print(
+                "缺少必填参数：%s" % ", ".join("--" + m for m in missing),
+                file=sys.stderr,
+            )
             return 2
         if args.set_lead:
-            plan = build_set_lead_plan(root, dept=args.dept, lead=args.lead,
-                                       ticket=args.ticket, signed_by=args.signed_by,
-                                       cross_note=args.cross_note,
-                                       lead_duty=args.lead_duty)
+            plan = build_set_lead_plan(
+                root,
+                dept=args.dept,
+                lead=args.lead,
+                ticket=args.ticket,
+                signed_by=args.signed_by,
+                cross_note=args.cross_note,
+                lead_duty=args.lead_duty,
+            )
             if not args.apply:
                 print(json.dumps(plan, ensure_ascii=False, indent=1))
-                print("\n【dry-run】以上为任命计划，未写入任何字节。确认无误加 --apply 执行。",
-                      file=sys.stderr)
+                print(
+                    "\n【dry-run】以上为任命计划，未写入任何字节。确认无误加 --apply 执行。",
+                    file=sys.stderr,
+                )
                 return 0
             res = apply_set_lead_plan(root, plan, signed_by=args.signed_by)
             print(json.dumps(res, ensure_ascii=False, indent=1))
             return 0
         if args.rebind:
-            plan = build_rebind_plan(root, dept=args.dept, agent_id=args.agent_id,
-                                     binding=args.binding or "", ticket=args.ticket,
-                                     signed_by=args.signed_by, reason=args.reason,
-                                     grade=args.grade or "", duty=args.duty or "",
-                                     role_profile=args.role or "")
+            plan = build_rebind_plan(
+                root,
+                dept=args.dept,
+                agent_id=args.agent_id,
+                binding=args.binding or "",
+                ticket=args.ticket,
+                signed_by=args.signed_by,
+                reason=args.reason,
+                grade=args.grade or "",
+                duty=args.duty or "",
+                role_profile=args.role or "",
+            )
             if not args.apply:
                 print(json.dumps(plan, ensure_ascii=False, indent=1))
-                print("\n【dry-run】以上为改档计划，未写入任何字节。确认无误加 --apply 执行。",
-                      file=sys.stderr)
+                print(
+                    "\n【dry-run】以上为改档计划，未写入任何字节。确认无误加 --apply 执行。",
+                    file=sys.stderr,
+                )
                 return 0
             res = apply_rebind_plan(root, plan, signed_by=args.signed_by)
             print(json.dumps(res, ensure_ascii=False, indent=1))
             return 0
         if args.backfill:
-            plan = build_backfill_plan(root, dept=args.dept, agent_id=args.agent_id,
-                                       role_profile=args.role, duty=args.duty,
-                                       binding=args.binding, grade=args.grade or "E2",
-                                       ticket=args.ticket, signed_by=args.signed_by,
-                                       analysis_type=args.analysis_type)
+            plan = build_backfill_plan(
+                root,
+                dept=args.dept,
+                agent_id=args.agent_id,
+                role_profile=args.role,
+                duty=args.duty,
+                binding=args.binding,
+                grade=args.grade or "E2",
+                ticket=args.ticket,
+                signed_by=args.signed_by,
+                analysis_type=args.analysis_type,
+            )
         else:
-            plan = build_plan(root, dept=args.dept, agent_id=args.agent_id, cn_name=args.cn_name,
-                              role_profile=args.role, duty=args.duty, binding=args.binding,
-                              grade=args.grade, ticket=args.ticket, signed_by=args.signed_by,
-                              analysis_type=args.analysis_type)
+            plan = build_plan(
+                root,
+                dept=args.dept,
+                agent_id=args.agent_id,
+                cn_name=args.cn_name,
+                role_profile=args.role,
+                duty=args.duty,
+                binding=args.binding,
+                grade=args.grade,
+                ticket=args.ticket,
+                signed_by=args.signed_by,
+                analysis_type=args.analysis_type,
+            )
         if not args.apply:
             print(json.dumps(plan, ensure_ascii=False, indent=1))
-            print("\n【dry-run】以上为计划，未写入任何字节。确认无误加 --apply 执行。",
-                  file=sys.stderr)
+            print(
+                "\n【dry-run】以上为计划，未写入任何字节。确认无误加 --apply 执行。",
+                file=sys.stderr,
+            )
             return 0
         res = (apply_backfill_plan if args.backfill else apply_plan)(
-            root, plan, signed_by=args.signed_by)
+            root, plan, signed_by=args.signed_by
+        )
         print(json.dumps(res, ensure_ascii=False, indent=1))
         return 0
     except EnrollError as e:

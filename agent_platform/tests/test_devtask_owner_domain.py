@@ -83,8 +83,9 @@ def org_fixture(tmp_root, monkeypatch):
     **monkeypatch 替换模块级路径常量**（``devtask.ORG_JSON``），不写真实
     ``agent_platform/registry/org.json``。
     """
-    real = json.loads((ROOT / "agent_platform" / "registry" / "org.json")
-                      .read_text(encoding="utf-8"))
+    real = json.loads(
+        (ROOT / "agent_platform" / "registry" / "org.json").read_text(encoding="utf-8")
+    )
     fx = tmp_root / "org.json"
     fx.write_text(json.dumps(real, ensure_ascii=False), encoding="utf-8")
     monkeypatch.setattr(devtask, "ORG_JSON", str(fx))
@@ -95,13 +96,21 @@ def org_fixture(tmp_root, monkeypatch):
 def domain_fixture(tmp_root, monkeypatch):
     """把 devtask 的 owner_domain.json 路径常量指向临时夹具副本。"""
     fx = tmp_root / "owner_domain.json"
-    fx.write_text(json.dumps({
-        "version": 1,
-        "note": "测试夹具",
-        "external_tools": {"status": "pending_ruling",
-                           "observed": ["unknown-agent", "Codex", "Trae"]},
-        "unowned_tag": "[UNOWNED]",
-    }, ensure_ascii=False), encoding="utf-8")
+    fx.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "note": "测试夹具",
+                "external_tools": {
+                    "status": "pending_ruling",
+                    "observed": ["unknown-agent", "Codex", "Trae"],
+                },
+                "unowned_tag": "[UNOWNED]",
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
     monkeypatch.setattr(devtask, "OWNER_DOMAIN", str(fx))
     return fx
 
@@ -127,9 +136,11 @@ def ledger(tmp_root, monkeypatch):
 def events(monkeypatch):
     """捕获 ``_emit`` 事件（kind, task, detail），用于断言留痕。"""
     captured = []
-    monkeypatch.setattr(devtask, "_emit",
-                        lambda kind, task, detail="": captured.append(
-                            (kind, task, detail)))
+    monkeypatch.setattr(
+        devtask,
+        "_emit",
+        lambda kind, task, detail="": captured.append((kind, task, detail)),
+    )
     return captured
 
 
@@ -142,6 +153,7 @@ def agent_name(monkeypatch):
             monkeypatch.delenv("AGENT_NAME", raising=False)
         else:
             monkeypatch.setenv("AGENT_NAME", value)
+
     return _set
 
 
@@ -161,23 +173,32 @@ class TestLegalOwnerUnchanged:
     """合法 owner 的行为必须与落账校验引入前**完全一致**。"""
 
     @pytest.mark.parametrize("owner", ["DEV1", "QA1", "ARCH1", "A0"])
-    def test_合法成员不打标签且无降级留痕(self, org_fixture, domain_fixture,
-                                     ledger, events, agent_name, owner):
-        task, detail = _new(agent_name, ledger, events,
-                            "K-LEGAL", "合法归属单", owner)
+    def test_合法成员不打标签且无降级留痕(
+        self, org_fixture, domain_fixture, ledger, events, agent_name, owner
+    ):
+        task, detail = _new(agent_name, ledger, events, "K-LEGAL", "合法归属单", owner)
         assert "[UNOWNED]" not in task["desc"]
         assert "owner_degraded" not in detail
         assert task["owner"] == owner
 
-    def test_合法路径字段与现状一致(self, org_fixture, domain_fixture,
-                              ledger, events, agent_name):
+    def test_合法路径字段与现状一致(
+        self, org_fixture, domain_fixture, ledger, events, agent_name
+    ):
         """字段集与 WO-TF-03 之前完全相同（不多不少）。"""
         task, _ = _new(agent_name, ledger, events, "K-FIELDS", "字段核对单", "DEV1")
         assert set(task.keys()) == {
-            "desc", "branch", "worktree", "status", "created", "project", "owner"}
+            "desc",
+            "branch",
+            "worktree",
+            "status",
+            "created",
+            "project",
+            "owner",
+        }
 
-    def test_合法路径仍发正常task_start事件(self, org_fixture, domain_fixture,
-                                     ledger, events, agent_name):
+    def test_合法路径仍发正常task_start事件(
+        self, org_fixture, domain_fixture, ledger, events, agent_name
+    ):
         _new(agent_name, ledger, events, "K-EVT", "事件核对单", "DEV1")
         assert len(events) == 1
         kind, task_id, detail = events[0]
@@ -192,12 +213,20 @@ class TestLegalOwnerUnchanged:
 class TestIllegalOwnerDegraded:
     """非法 owner → 降级打标签 + 留痕，**且不拒写**。"""
 
-    @pytest.mark.parametrize("owner", ["Codex·主控", "TraeCode", "unknown-agent",
-                                       "trae-main", "ST1 席位（缠论分析师）"])
-    def test_非法owner建单成功且打标签(self, org_fixture, domain_fixture,
-                                ledger, events, agent_name, owner):
-        task, detail = _new(agent_name, ledger, events,
-                            "K-BAD", "非法归属单", owner)
+    @pytest.mark.parametrize(
+        "owner",
+        [
+            "Codex·主控",
+            "TraeCode",
+            "unknown-agent",
+            "trae-main",
+            "ST1 席位（缠论分析师）",
+        ],
+    )
+    def test_非法owner建单成功且打标签(
+        self, org_fixture, domain_fixture, ledger, events, agent_name, owner
+    ):
+        task, detail = _new(agent_name, ledger, events, "K-BAD", "非法归属单", owner)
         # 不拒写：工单确实落账了
         assert task["status"] == "doing"
         assert "[UNOWNED]" in task["desc"]
@@ -206,31 +235,36 @@ class TestIllegalOwnerDegraded:
         # owner 原值保留，不被静默改写
         assert task["owner"] == owner
 
-    def test_空owner判非法并降级(self, org_fixture, domain_fixture,
-                            ledger, events, agent_name):
+    def test_空owner判非法并降级(
+        self, org_fixture, domain_fixture, ledger, events, agent_name
+    ):
         """owner 为空（AGENT_NAME 未设）同样判非法。"""
         task, detail = _new(agent_name, ledger, events, "K-EMPTY", "空owner单", None)
         assert "[UNOWNED]" in task["desc"]
         assert "owner_degraded=1" in detail
         assert task["owner"] == "unknown-agent"
 
-    def test_降级只打一次_预含标签不重复追加(self, org_fixture, domain_fixture,
-                                    ledger, events, agent_name):
+    def test_降级只打一次_预含标签不重复追加(
+        self, org_fixture, domain_fixture, ledger, events, agent_name
+    ):
         """desc 已含 [UNOWNED] 时不得重复追加。"""
-        task, detail = _new(agent_name, ledger, events,
-                            "K-DUP", "预标注单 [UNOWNED]", "TraeCode")
+        task, detail = _new(
+            agent_name, ledger, events, "K-DUP", "预标注单 [UNOWNED]", "TraeCode"
+        )
         assert task["desc"].count("[UNOWNED]") == 1
         # 仍属降级路径 → 仍须留痕
         assert "owner_degraded=1" in detail
 
-    def test_降级标签追加在desc末尾且可读(self, org_fixture, domain_fixture,
-                                  ledger, events, agent_name):
+    def test_降级标签追加在desc末尾且可读(
+        self, org_fixture, domain_fixture, ledger, events, agent_name
+    ):
         """降级标签以空格前置追加，原描述不被破坏。"""
         task, _ = _new(agent_name, ledger, events, "K-READ", "原始描述文本", "TraeCode")
         assert task["desc"] == "原始描述文本 [UNOWNED]"
 
-    def test_降级留痕含owner与域规模(self, org_fixture, domain_fixture,
-                              ledger, events, agent_name):
+    def test_降级留痕含owner与域规模(
+        self, org_fixture, domain_fixture, ledger, events, agent_name
+    ):
         """留痕须带owner 原值与合法域规模，便于事后核对。"""
         _, detail = _new(agent_name, ledger, events, "K-DT", "留痕核对单", "TraeCode")
         assert "owner_degraded=1" in detail
@@ -248,15 +282,15 @@ class TestDomainDynamic:
         expect = _expect_domain_size(org_fixture)
         assert len(devtask._owner_domain_members()) == expect
 
-    def test_新增成员与部长立即合法_零代码改动(self, org_fixture, monkeypatch,
-                                  tmp_root):
+    def test_新增成员与部长立即合法_零代码改动(
+        self, org_fixture, monkeypatch, tmp_root
+    ):
         """夹具 org.json 加一个部门（1 成员 + 1 部长）→ 两者立即合法。"""
         org = json.loads(org_fixture.read_text(encoding="utf-8"))
-        org["departments"].append({
-            "dept": "probe_dept", "lead": "PROBELEAD1",
-            "agents": ["PROBEAGENT1"]})
-        org_fixture.write_text(json.dumps(org, ensure_ascii=False),
-                               encoding="utf-8")
+        org["departments"].append(
+            {"dept": "probe_dept", "lead": "PROBELEAD1", "agents": ["PROBEAGENT1"]}
+        )
+        org_fixture.write_text(json.dumps(org, ensure_ascii=False), encoding="utf-8")
         assert len(devtask._owner_domain_members()) == _expect_domain_size(org_fixture)
         assert devtask._owner_check("PROBEAGENT1")[0] is True
         assert devtask._owner_check("PROBELEAD1")[0] is True
@@ -285,11 +319,14 @@ class TestDomainDynamic:
         生效（去掉它 A0 仍在）。故此处只断言规模与成员合法性，chief 分支的
         有效性由 ``TestDomainUnavailable`` 的零成员场景覆盖。
         """
-        monkeypatch.setattr(devtask, "ORG_JSON",
-                            str(ROOT / "agent_platform" / "registry" / "org.json"))
+        monkeypatch.setattr(
+            devtask, "ORG_JSON", str(ROOT / "agent_platform" / "registry" / "org.json")
+        )
         members = devtask._owner_domain_members()
         assert members is not None, "真实 org.json 必须可判定（不得返回 None）"
-        expect = _expect_domain_size(str(ROOT / "agent_platform" / "registry" / "org.json"))
+        expect = _expect_domain_size(
+            str(ROOT / "agent_platform" / "registry" / "org.json")
+        )
         assert len(members) == expect
         # D5-C：合法域规模 = org 成员数 + profile 席位（治理席不占编但占合法域）
         profile = devtask._profile_seat_members()
@@ -311,32 +348,49 @@ class TestExternalToolsStatus:
 
     def _domain(self, tmp_root, monkeypatch, status):
         fx = tmp_root / ("owner_domain_%s.json" % status)
-        fx.write_text(json.dumps({
-            "version": 1,
-            "external_tools": {"status": status,
-                               "observed": ["Codex·主控", "TraeCode"]},
-            "unowned_tag": "[UNOWNED]",
-        }, ensure_ascii=False), encoding="utf-8")
+        fx.write_text(
+            json.dumps(
+                {
+                    "version": 1,
+                    "external_tools": {
+                        "status": status,
+                        "observed": ["Codex·主控", "TraeCode"],
+                    },
+                    "unowned_tag": "[UNOWNED]",
+                },
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
         monkeypatch.setattr(devtask, "OWNER_DOMAIN", str(fx))
         return fx
 
-    def test_status_legal时代理代号才算合法(self, tmp_root, monkeypatch,
-                                    org_fixture):
+    def test_status_legal时代理代号才算合法(self, tmp_root, monkeypatch, org_fixture):
         self._domain(tmp_root, monkeypatch, "legal")
         assert devtask._owner_check("Codex·主控")[0] is True
         assert devtask._owner_check("TraeCode")[0] is True
 
-    def test_status_pending_ruling时判非法(self, tmp_root, monkeypatch,
-                                    org_fixture):
+    def test_status_pending_ruling时判非法(self, tmp_root, monkeypatch, org_fixture):
         self._domain(tmp_root, monkeypatch, "pending_ruling")
         assert devtask._owner_check("Codex·主控")[0] is False
         assert devtask._owner_check("TraeCode")[0] is False
 
-    @pytest.mark.parametrize("status", ["approved", "legal_pending", "ok",
-                                        "yes", "", "granted", "allow",
-                                        "accept", "true", "enabled"])
-    def test_其他字面量一律判非法(self, tmp_root, monkeypatch, org_fixture,
-                          status):
+    @pytest.mark.parametrize(
+        "status",
+        [
+            "approved",
+            "legal_pending",
+            "ok",
+            "yes",
+            "",
+            "granted",
+            "allow",
+            "accept",
+            "true",
+            "enabled",
+        ],
+    )
+    def test_其他字面量一律判非法(self, tmp_root, monkeypatch, org_fixture, status):
         """除 ``legal`` 外的任何字面量都**不得**被当作已批准。
 
         这条锁死的正是静默失效点：工单未明文规定「批准后该写什么字面量」，
@@ -347,8 +401,9 @@ class TestExternalToolsStatus:
         assert devtask._owner_check("TraeCode")[0] is False
 
     @pytest.mark.parametrize("status", ["legal", "LEGAL", "Legal", " legal "])
-    def test_legal的大小写与空白归一化后仍算合法(self, tmp_root, monkeypatch,
-                                    org_fixture, status):
+    def test_legal的大小写与空白归一化后仍算合法(
+        self, tmp_root, monkeypatch, org_fixture, status
+    ):
         """实现按 ``.strip().lower() == "legal"`` 判定，故大小写/空白变体
         同样算已批准 —— 这是刻意的容错，不是漏判。
 
@@ -361,8 +416,11 @@ class TestExternalToolsStatus:
 
     def test_真实登记表当前为pending_ruling(self, org_fixture):
         """仓内真实登记表当前是 pending_ruling —— 外部代号一律不合法。"""
-        real = json.loads((ROOT / "agent_platform" / "registry"
-                           / "owner_domain.json").read_text(encoding="utf-8"))
+        real = json.loads(
+            (ROOT / "agent_platform" / "registry" / "owner_domain.json").read_text(
+                encoding="utf-8"
+            )
+        )
         assert real["external_tools"]["status"] == "pending_ruling"
         assert devtask._owner_check("Codex·主控")[0] is False
 
@@ -383,42 +441,54 @@ class TestDomainUnavailable:
       * ``None``  —— **域不可判定** → 不判非法、不打标签，仅留痕
     """
 
-    def test_org文件缺失时不误标(self, tmp_root, monkeypatch, ledger, events,
-                          agent_name):
+    def test_org文件缺失时不误标(
+        self, tmp_root, monkeypatch, ledger, events, agent_name
+    ):
         monkeypatch.setattr(devtask, "ORG_JSON", str(tmp_root / "nope.json"))
-        task, detail = _new(agent_name, ledger, events,
-                            "K-NOORG", "域不可判定单", "DEV1")
-        assert task["status"] == "doing"          # 不拒写
-        assert "[UNOWNED]" not in task["desc"]    # 不误标
+        task, detail = _new(
+            agent_name, ledger, events, "K-NOORG", "域不可判定单", "DEV1"
+        )
+        assert task["status"] == "doing"  # 不拒写
+        assert "[UNOWNED]" not in task["desc"]  # 不误标
         assert "owner_domain_unavailable=1" in detail
-        assert "owner_degraded=1" not in detail   # 不是非法降级
+        assert "owner_degraded=1" not in detail  # 不是非法降级
 
-    def test_org坏JSON时不误标(self, tmp_root, monkeypatch, ledger, events,
-                        agent_name):
+    def test_org坏JSON时不误标(self, tmp_root, monkeypatch, ledger, events, agent_name):
         bad = tmp_root / "bad.json"
         bad.write_text("{ not json", encoding="utf-8")
         monkeypatch.setattr(devtask, "ORG_JSON", str(bad))
-        task, detail = _new(agent_name, ledger, events,
-                            "K-BADORG", "域坏JSON单", "DEV1")
+        task, detail = _new(
+            agent_name, ledger, events, "K-BADORG", "域坏JSON单", "DEV1"
+        )
         assert "[UNOWNED]" not in task["desc"]
         assert "owner_domain_unavailable=1" in detail
 
-    def test_org无departments时不误标(self, tmp_root, monkeypatch, ledger,
-                              events, agent_name):
+    def test_org无departments时不误标(
+        self, tmp_root, monkeypatch, ledger, events, agent_name
+    ):
         nodep = tmp_root / "nodep.json"
-        nodep.write_text(json.dumps({"chief": {"agent_id": "A0"}}),
-                         encoding="utf-8")
+        nodep.write_text(json.dumps({"chief": {"agent_id": "A0"}}), encoding="utf-8")
         monkeypatch.setattr(devtask, "ORG_JSON", str(nodep))
-        task, detail = _new(agent_name, ledger, events,
-                            "K-NODEP", "域无departments单", "DEV1")
+        task, detail = _new(
+            agent_name, ledger, events, "K-NODEP", "域无departments单", "DEV1"
+        )
         assert "[UNOWNED]" not in task["desc"]
         assert "owner_domain_unavailable=1" in detail
 
-    @pytest.mark.parametrize("scenario", ["missing", "bad_json", "no_departments",
-                                          "empty_departments", "dept_no_members",
-                                          "dept_no_members_no_chief"])
-    def test_不可判定时owner_check返回None三态(self, tmp_root, monkeypatch,
-                                     org_fixture, scenario):
+    @pytest.mark.parametrize(
+        "scenario",
+        [
+            "missing",
+            "bad_json",
+            "no_departments",
+            "empty_departments",
+            "dept_no_members",
+            "dept_no_members_no_chief",
+        ],
+    )
+    def test_不可判定时owner_check返回None三态(
+        self, tmp_root, monkeypatch, org_fixture, scenario
+    ):
         """``_owner_check`` 必须以 ``None`` 表达「不可判定」，
         而不是 False（False 会被调用方当成非法 → 误标）。
 
@@ -430,47 +500,55 @@ class TestDomainUnavailable:
         与「缺 ``departments`` 键」是同一观测特征，必须同判不可判定。
         """
         if scenario == "missing":
-            monkeypatch.setattr(devtask, "ORG_JSON",
-                                str(tmp_root / "nope.json"))
+            monkeypatch.setattr(devtask, "ORG_JSON", str(tmp_root / "nope.json"))
         elif scenario == "bad_json":
             bad = tmp_root / "bad.json"
             bad.write_text("{ not json", encoding="utf-8")
             monkeypatch.setattr(devtask, "ORG_JSON", str(bad))
         elif scenario == "no_departments":
             nodep = tmp_root / "nodep.json"
-            nodep.write_text(json.dumps({"chief": {"agent_id": "A0"}}),
-                             encoding="utf-8")
+            nodep.write_text(
+                json.dumps({"chief": {"agent_id": "A0"}}), encoding="utf-8"
+            )
             monkeypatch.setattr(devtask, "ORG_JSON", str(nodep))
         elif scenario == "empty_departments":
             # 最简形态：departments=[] + chief 常量在 —— 改前会落 {'A0'}
             # 并被判非法 → 全量误标；现应判不可判定。
             empty = tmp_root / "empty_deps.json"
-            empty.write_text(json.dumps({"chief": {"agent_id": "A0"},
-                                         "departments": []}),
-                             encoding="utf-8")
+            empty.write_text(
+                json.dumps({"chief": {"agent_id": "A0"}, "departments": []}),
+                encoding="utf-8",
+            )
             monkeypatch.setattr(devtask, "ORG_JSON", str(empty))
         elif scenario == "dept_no_members":
             # 部门存在但 agents/lead 全空 + chief 在 —— 与上一条同观测特征
             nomem = tmp_root / "no_members.json"
-            nomem.write_text(json.dumps(
-                {"chief": {"agent_id": "A0"},
-                 "departments": [{"dept": "d1", "lead": "", "agents": []}]}),
-                encoding="utf-8")
+            nomem.write_text(
+                json.dumps(
+                    {
+                        "chief": {"agent_id": "A0"},
+                        "departments": [{"dept": "d1", "lead": "", "agents": []}],
+                    }
+                ),
+                encoding="utf-8",
+            )
             monkeypatch.setattr(devtask, "ORG_JSON", str(nomem))
         else:
             # 部门层零成员 + 连 chief 都没有
             nomem2 = tmp_root / "no_members_no_chief.json"
-            nomem2.write_text(json.dumps(
-                {"departments": [{"dept": "d1", "lead": "", "agents": []}]}),
-                encoding="utf-8")
+            nomem2.write_text(
+                json.dumps({"departments": [{"dept": "d1", "lead": "", "agents": []}]}),
+                encoding="utf-8",
+            )
             monkeypatch.setattr(devtask, "ORG_JSON", str(nomem2))
         owner_ok, _domain, size = devtask._owner_check("DEV1")
         assert owner_ok is None
         assert size == 0
 
     @pytest.mark.parametrize("scenario", ["empty_departments", "dept_no_members"])
-    def test_部门层零成员时不误标(self, tmp_root, monkeypatch, ledger, events,
-                           agent_name, scenario):
+    def test_部门层零成员时不误标(
+        self, tmp_root, monkeypatch, ledger, events, agent_name, scenario
+    ):
         """部门层零成员（``departments=[]`` 或各部 agents/lead 全空）→
         **不判非法、不打标签**，仅留痕 ``owner_domain_unavailable=1``。
 
@@ -479,39 +557,46 @@ class TestDomainUnavailable:
         """
         if scenario == "empty_departments":
             empty = tmp_root / "empty_deps.json"
-            empty.write_text(json.dumps({"chief": {"agent_id": "A0"},
-                                         "departments": []}),
-                             encoding="utf-8")
+            empty.write_text(
+                json.dumps({"chief": {"agent_id": "A0"}, "departments": []}),
+                encoding="utf-8",
+            )
             monkeypatch.setattr(devtask, "ORG_JSON", str(empty))
         else:
             nomem = tmp_root / "no_members.json"
-            nomem.write_text(json.dumps(
-                {"chief": {"agent_id": "A0"},
-                 "departments": [{"dept": "d1", "lead": "", "agents": []}]}),
-                encoding="utf-8")
+            nomem.write_text(
+                json.dumps(
+                    {
+                        "chief": {"agent_id": "A0"},
+                        "departments": [{"dept": "d1", "lead": "", "agents": []}],
+                    }
+                ),
+                encoding="utf-8",
+            )
             monkeypatch.setattr(devtask, "ORG_JSON", str(nomem))
-        task, detail = _new(agent_name, ledger, events,
-                            "K-EMPTYDEPT", "部门层零成员单", "DEV1")
-        assert task["status"] == "doing"          # 不拒写
-        assert "[UNOWNED]" not in task["desc"]    # 不误标
+        task, detail = _new(
+            agent_name, ledger, events, "K-EMPTYDEPT", "部门层零成员单", "DEV1"
+        )
+        assert task["status"] == "doing"  # 不拒写
+        assert "[UNOWNED]" not in task["desc"]  # 不误标
         assert "owner_domain_unavailable=1" in detail
-        assert "owner_degraded=1" not in detail   # 不是非法降级
+        assert "owner_degraded=1" not in detail  # 不是非法降级
 
-    def test_域不可判定时建单仍不抛异常(self, tmp_root, monkeypatch, ledger,
-                              events, agent_name):
+    def test_域不可判定时建单仍不抛异常(
+        self, tmp_root, monkeypatch, ledger, events, agent_name
+    ):
         """**建单本身绝不能因取值域问题崩掉**（老田裁定①：不拒写）。"""
         monkeypatch.setattr(devtask, "ORG_JSON", str(tmp_root / "nope.json"))
-        task, _ = _new(agent_name, ledger, events,
-                       "K-NOCRASH", "不崩单", "DEV1")
+        task, _ = _new(agent_name, ledger, events, "K-NOCRASH", "不崩单", "DEV1")
         assert task["status"] == "doing"
         assert task["owner"] == "DEV1"
 
-    def test_域不可判定时owner原样落账不被改写(self, tmp_root, monkeypatch,
-                                    ledger, events, agent_name):
+    def test_域不可判定时owner原样落账不被改写(
+        self, tmp_root, monkeypatch, ledger, events, agent_name
+    ):
         """不可判定时 owner 仍按原值落账 —— 不得因无法判定而清空或改写。"""
         monkeypatch.setattr(devtask, "ORG_JSON", str(tmp_root / "nope.json"))
-        task, _ = _new(agent_name, ledger, events,
-                       "K-KEEP", "保留owner单", "TraeCode")
+        task, _ = _new(agent_name, ledger, events, "K-KEEP", "保留owner单", "TraeCode")
         assert task["owner"] == "TraeCode"
 
 
@@ -527,20 +612,26 @@ class TestProfileSeats:
 
     def _domain(self, tmp_root, monkeypatch, seats):
         fx = tmp_root / "owner_domain_profile.json"
-        fx.write_text(json.dumps({
-            "version": 1,
-            "note": "D5-C 测试夹具",
-            "external_tools": {"status": "pending_ruling", "observed": []},
-            "profile_seats": {"seats": seats},
-            "unowned_tag": "[UNOWNED]",
-        }, ensure_ascii=False), encoding="utf-8")
+        fx.write_text(
+            json.dumps(
+                {
+                    "version": 1,
+                    "note": "D5-C 测试夹具",
+                    "external_tools": {"status": "pending_ruling", "observed": []},
+                    "profile_seats": {"seats": seats},
+                    "unowned_tag": "[UNOWNED]",
+                },
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
         monkeypatch.setattr(devtask, "OWNER_DOMAIN", str(fx))
         return fx
 
     def test_profile席位合法且不影响org口径(self, org_fixture, tmp_root, monkeypatch):
         self._domain(tmp_root, monkeypatch, ["ZHAOYUN"])
         assert devtask._owner_check("ZHAOYUN")[0] is True
-        assert devtask._owner_check("R2")[0] is True      # org 风控席仍合法
+        assert devtask._owner_check("R2")[0] is True  # org 风控席仍合法
         assert devtask._owner_check("NOT_A_SEAT")[0] is False
         # 纯 org 成员池口径不被污染（仍是 org 派生结果）
         assert "ZHAOYUN" not in (devtask._owner_domain_members() or set())
@@ -567,8 +658,10 @@ class TestProfileSeats:
     def test_真实登记表治理席已合法(self):
         """回归护栏：真实 owner_domain.json 已登记 ZHAOYUN 且判定合法（只读）。"""
         real_domain = json.loads(
-            (ROOT / "agent_platform" / "registry" / "owner_domain.json")
-            .read_text(encoding="utf-8"))
+            (ROOT / "agent_platform" / "registry" / "owner_domain.json").read_text(
+                encoding="utf-8"
+            )
+        )
         seats = (real_domain.get("profile_seats") or {}).get("seats") or []
         assert "ZHAOYUN" in [str(s).strip().upper() for s in seats]
         assert devtask._owner_check("ZHAOYUN")[0] is True

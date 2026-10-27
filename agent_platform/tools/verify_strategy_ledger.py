@@ -44,6 +44,7 @@ mode=ro 只读直连）提取 payload.idempotency_key 是更小的耦合面。
 （M5 只读观测面判例平移）。空账本（文件缺失或零好行）= 中性非通过，
 对齐周末 PENDING 口径，退出码仍为 0。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -126,8 +127,8 @@ def _load_evidence_keys(root: Path) -> Tuple[Optional[Set[str]], bool]:
         return None, True
     try:
         raw = con.execute(
-            "SELECT payload FROM evidence WHERE source=?",
-            (STRATEGY_EVIDENCE_SOURCE,)).fetchall()
+            "SELECT payload FROM evidence WHERE source=?", (STRATEGY_EVIDENCE_SOURCE,)
+        ).fetchall()
     except sqlite3.Error:
         return None, True
     finally:
@@ -146,12 +147,15 @@ def _load_evidence_keys(root: Path) -> Tuple[Optional[Set[str]], bool]:
 
 # ---------------------------------------------------------------- 对账项
 
+
 def check_key_integrity(rows: List[dict], bad_lines: int) -> Tuple[bool, List[str]]:
     """对账项①：verdict_key 重算一致。返回 (ok, 差异清单)。"""
     diffs: List[str] = []
     if bad_lines:
-        diffs.append("strategy_runs 有 %d 行损坏（JSON 解析失败/非对象）——"
-                     "手编辑/写坏必须先查清" % bad_lines)
+        diffs.append(
+            "strategy_runs 有 %d 行损坏（JSON 解析失败/非对象）——"
+            "手编辑/写坏必须先查清" % bad_lines
+        )
     for i, row in enumerate(rows, 1):
         missing = [f for f in KEY_FIELDS if not str(row.get(f, "")).strip()]
         if missing:
@@ -160,40 +164,55 @@ def check_key_integrity(rows: List[dict], bad_lines: int) -> Tuple[bool, List[st
         expect = verdict_key(row["strategy_id"], row["symbol"], row["trade_date"])
         actual = str(row.get("verdict_key", ""))
         if actual != expect:
-            diffs.append("第 %d 行 verdict_key=%r 与重算值 %r 不符"
-                         "（strategy_id=%s symbol=%s trade_date=%s）"
-                         % (i, actual, expect, row["strategy_id"],
-                            row["symbol"], row["trade_date"]))
+            diffs.append(
+                "第 %d 行 verdict_key=%r 与重算值 %r 不符"
+                "（strategy_id=%s symbol=%s trade_date=%s）"
+                % (
+                    i,
+                    actual,
+                    expect,
+                    row["strategy_id"],
+                    row["symbol"],
+                    row["trade_date"],
+                )
+            )
     return not diffs, diffs
 
 
-def check_run_id_link(rows: List[dict], shadow_index: Dict[str, dict],
-                      shadow_exists: bool) -> Tuple[bool, List[str], List[str]]:
+def check_run_id_link(
+    rows: List[dict], shadow_index: Dict[str, dict], shadow_exists: bool
+) -> Tuple[bool, List[str], List[str]]:
     """对账项②：判决 run_id 与影子 m5.v1 行双向可查。返回 (ok, 差异, 反向提示)。"""
     diffs: List[str] = []
     notes: List[str] = []
     if not shadow_exists:
-        diffs.append("影子账本不存在（%s），%d 条判决行无锚点可查"
-                     % ("/".join(SHADOW_LEDGER_REL), len(rows)))
+        diffs.append(
+            "影子账本不存在（%s），%d 条判决行无锚点可查"
+            % ("/".join(SHADOW_LEDGER_REL), len(rows))
+        )
         return False, diffs, notes
     for i, row in enumerate(rows, 1):
         rid = str(row.get("run_id", "")).strip()
         if not rid:
-            diffs.append("第 %d 行 run_id 为空（无回放锚点；run_shadow 落账应恒带）"
-                         % i)
+            diffs.append(
+                "第 %d 行 run_id 为空（无回放锚点；run_shadow 落账应恒带）" % i
+            )
         elif rid not in shadow_index:
             diffs.append("第 %d 行 run_id=%s 未命中影子账本 m5.v1 行" % (i, rid))
     referenced = {str(r.get("run_id", "")).strip() for r in rows}
     orphan = [rid for rid in shadow_index if rid not in referenced]
     if orphan:
-        notes.append("影子 m5.v1 有 %d 个 run_id 无判决行引用（合法：bars 缺失时 "
-                     "strategy 域 fail-open 跳过，不产判决）：%s"
-                     % (len(orphan), ", ".join(sorted(orphan)[:4])))
+        notes.append(
+            "影子 m5.v1 有 %d 个 run_id 无判决行引用（合法：bars 缺失时 "
+            "strategy 域 fail-open 跳过，不产判决）：%s"
+            % (len(orphan), ", ".join(sorted(orphan)[:4]))
+        )
     return not diffs, diffs, notes
 
 
-def check_evidence_coverage(rows: List[dict], ev_keys: Optional[Set[str]],
-                            ev_db_exists: bool) -> Tuple[bool, List[str]]:
+def check_evidence_coverage(
+    rows: List[dict], ev_keys: Optional[Set[str]], ev_db_exists: bool
+) -> Tuple[bool, List[str]]:
     """对账项③：证据仓实体键集合覆盖全部 verdict_key。
 
     键集合来自证据仓实体（_load_evidence_keys：evidence.db，
@@ -205,25 +224,34 @@ def check_evidence_coverage(rows: List[dict], ev_keys: Optional[Set[str]],
     """
     diffs: List[str] = []
     if not ev_db_exists:
-        diffs.append("证据仓不存在（%s），%d 条判决行无证据实体可对账"
-                     % ("/".join(EVIDENCE_DB_REL), len(rows)))
+        diffs.append(
+            "证据仓不存在（%s），%d 条判决行无证据实体可对账"
+            % ("/".join(EVIDENCE_DB_REL), len(rows))
+        )
         return False, diffs
     if ev_keys is None:
-        diffs.append("证据仓存在但 strategy.runs 证据键集不可提取"
-                     "（表缺失/查询失败）——fail-visible 先查清")
+        diffs.append(
+            "证据仓存在但 strategy.runs 证据键集不可提取"
+            "（表缺失/查询失败）——fail-visible 先查清"
+        )
         return False, diffs
     for i, row in enumerate(rows, 1):
         k = str(row.get("verdict_key", ""))
         if not k:
-            diffs.append("第 %d 行 verdict_key 空/缺失——证据行 idempotency_key "
-                         "将坍缩为空串，覆盖缺口" % i)
+            diffs.append(
+                "第 %d 行 verdict_key 空/缺失——证据行 idempotency_key "
+                "将坍缩为空串，覆盖缺口" % i
+            )
         elif k not in ev_keys:
-            diffs.append("第 %d 行 verdict_key=%s 未被证据仓 strategy.runs "
-                         "实体覆盖（无对应证据行）" % (i, k))
+            diffs.append(
+                "第 %d 行 verdict_key=%s 未被证据仓 strategy.runs "
+                "实体覆盖（无对应证据行）" % (i, k)
+            )
     return not diffs, diffs
 
 
 # ---------------------------------------------------------------- 汇总
+
 
 def verify(data_root) -> dict:
     """三方对账主入口（只读）。返回 JSON 可序列化报告。"""
@@ -246,8 +274,10 @@ def verify(data_root) -> dict:
         ok2, d2, notes = True, [], []
         ok3, d3 = True, []
         if bad_lines:
-            notes.append("账本零好行但有 %d 行坏行（首跑前残留，中性不计 FAIL，"
-                         "仍建议查清）" % bad_lines)
+            notes.append(
+                "账本零好行但有 %d 行坏行（首跑前残留，中性不计 FAIL，"
+                "仍建议查清）" % bad_lines
+            )
     else:
         ok2, d2, notes = check_run_id_link(rows, shadow_index, shadow_exists)
         ok3, d3 = check_evidence_coverage(rows, ev_keys, ev_db_exists)
@@ -274,15 +304,23 @@ def _print_report(rep: dict) -> None:
     print("strategy 三方对账 %s" % rep["root"])
     print("=" * 62)
     if rep["neutral"]:
-        print("  [中性] strategy_runs.jsonl 不存在或零好行——空=中性非通过"
-              "（对齐周末 PENDING 口径），三项对账待首跑后实检")
+        print(
+            "  [中性] strategy_runs.jsonl 不存在或零好行——空=中性非通过"
+            "（对齐周末 PENDING 口径），三项对账待首跑后实检"
+        )
         for n in rep["notes"]:
             print("  [提示] %s" % n)
         print("结论: 空账本中性（退出码 0）")
         return
-    print("  判决行 %d（坏行 %d）/ 去重 verdict_key %d / 证据仓键 %s" % (
-        rep["rows"], rep["bad_lines"], rep["verdict_keys"],
-        "不可读" if rep["evidence_keys"] is None else rep["evidence_keys"]))
+    print(
+        "  判决行 %d（坏行 %d）/ 去重 verdict_key %d / 证据仓键 %s"
+        % (
+            rep["rows"],
+            rep["bad_lines"],
+            rep["verdict_keys"],
+            "不可读" if rep["evidence_keys"] is None else rep["evidence_keys"],
+        )
+    )
     for c in rep["checks"]:
         print("  [%s] %s" % ("PASS" if c["ok"] else "FAIL", c["item"]))
         for d in c["diffs"]:
@@ -294,10 +332,14 @@ def _print_report(rep: dict) -> None:
 
 def main(argv: Optional[List[str]] = None) -> int:
     ap = argparse.ArgumentParser(
-        description="strategy_runs × 影子账本 × 证据收编 三方对账（只读，零写面）")
-    ap.add_argument("--data-root", required=True,
-                    help="数据根（=agent_platform/data，对齐 run_shadow "
-                         "DATA_ROOT 语义；显式必填，无 root 拒绝运行）")
+        description="strategy_runs × 影子账本 × 证据收编 三方对账（只读，零写面）"
+    )
+    ap.add_argument(
+        "--data-root",
+        required=True,
+        help="数据根（=agent_platform/data，对齐 run_shadow "
+        "DATA_ROOT 语义；显式必填，无 root 拒绝运行）",
+    )
     args = ap.parse_args(argv)
     rep = verify(args.data_root)
     _print_report(rep)

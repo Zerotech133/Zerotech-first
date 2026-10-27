@@ -42,8 +42,7 @@ def _load_module(name: str, rel: str):
     """按相对 agent_platform 路径加载模块（importlib 独立加载安全）。"""
     if name in sys.modules:
         return sys.modules[name]
-    spec = importlib.util.spec_from_file_location(
-        name, _AGENT_PLATFORM / rel)
+    spec = importlib.util.spec_from_file_location(name, _AGENT_PLATFORM / rel)
     module = importlib.util.module_from_spec(spec)
     sys.modules[name] = module  # dataclass 字符串注解解析需要
     spec.loader.exec_module(module)
@@ -60,181 +59,233 @@ def _safe(section_fn, section_name: str, findings: List[str]):
     try:
         return section_fn()
     except Exception as exc:  # noqa: BLE001
-        findings.append("[%s] 投影失败: %s: %s"
-                        % (section_name, type(exc).__name__, exc))
-        return {"status": "error", "error": "%s: %s"
-                % (type(exc).__name__, exc)}
+        findings.append(
+            "[%s] 投影失败: %s: %s" % (section_name, type(exc).__name__, exc)
+        )
+        return {"status": "error", "error": "%s: %s" % (type(exc).__name__, exc)}
 
 
 def build_unified_report(root: Path = REPO_ROOT) -> Dict[str, Any]:
     root = Path(root)
     findings: List[str] = []
 
-    task_adapter = _load_module("up_task_adapter",
-                                "adapters/task_adapter.py")
-    event_adapter = _load_module("up_event_adapter",
-                                 "adapters/event_adapter.py")
-    business_adapter = _load_module("up_business_adapter",
-                                    "adapters/business_adapter.py")
+    task_adapter = _load_module("up_task_adapter", "adapters/task_adapter.py")
+    event_adapter = _load_module("up_event_adapter", "adapters/event_adapter.py")
+    business_adapter = _load_module(
+        "up_business_adapter", "adapters/business_adapter.py"
+    )
     gzh_wiring = _load_module("up_gzh_wiring", "domains/gzh_wiring.py")
-    academy_wiring = _load_module("up_academy_wiring",
-                                  "domains/academy_wiring.py")
-    invest_wiring = _load_module("up_invest_wiring",
-                                 "domains/invest_wiring.py")
+    academy_wiring = _load_module("up_academy_wiring", "domains/academy_wiring.py")
+    invest_wiring = _load_module("up_invest_wiring", "domains/invest_wiring.py")
     dev_wiring = _load_module("up_dev_wiring", "domains/dev_wiring.py")
     pitch_wiring = _load_module("up_pitch_wiring", "domains/pitch_wiring.py")
-    personal_wiring = _load_module("up_personal_wiring",
-                                   "domains/personal_wiring.py")
-    devtask_wiring = _load_module("up_devtask_wiring",
-                                  "domains/devtask_wiring.py")
-    knowledge_wiring = _load_module("up_knowledge_wiring",
-                                    "domains/knowledge_wiring.py")
-    skill_wiring = _load_module("up_skill_wiring",
-                                "domains/skill_wiring.py")
-    intel_wiring = _load_module("up_intel_wiring",
-                                "domains/intel_wiring.py")
+    personal_wiring = _load_module("up_personal_wiring", "domains/personal_wiring.py")
+    devtask_wiring = _load_module("up_devtask_wiring", "domains/devtask_wiring.py")
+    knowledge_wiring = _load_module(
+        "up_knowledge_wiring", "domains/knowledge_wiring.py"
+    )
+    skill_wiring = _load_module("up_skill_wiring", "domains/skill_wiring.py")
+    intel_wiring = _load_module("up_intel_wiring", "domains/intel_wiring.py")
     approvals_mod = _load_module("up_approvals", "engine/approvals.py")
 
     # ── tasks / events：M0 只读适配器摘要 ──
     def _tasks():
         rep = task_adapter.build_report(root)
-        slim = _slim(rep, ["adapter_version", "read_only", "sources",
-                           "snapshot_freshness", "coverage", "conflicts",
-                           "source_errors"])
-        slim["record_count"] = len(rep.get("records", [])
-                                   ) if isinstance(rep, dict) else 0
+        slim = _slim(
+            rep,
+            [
+                "adapter_version",
+                "read_only",
+                "sources",
+                "snapshot_freshness",
+                "coverage",
+                "conflicts",
+                "source_errors",
+            ],
+        )
+        slim["record_count"] = (
+            len(rep.get("records", [])) if isinstance(rep, dict) else 0
+        )
         return slim
+
     tasks = _safe(_tasks, "tasks", findings)
 
     def _events():
         rep = event_adapter.build_report(root)
-        slim = _slim(rep, ["adapter_version", "schema_version", "read_only",
-                           "canonical_valid", "canonical_errors", "counts",
-                           "freshness", "v1_compatibility", "source_errors"])
-        slim["record_count"] = len(rep.get("records", [])
-                                   ) if isinstance(rep, dict) else 0
+        slim = _slim(
+            rep,
+            [
+                "adapter_version",
+                "schema_version",
+                "read_only",
+                "canonical_valid",
+                "canonical_errors",
+                "counts",
+                "freshness",
+                "v1_compatibility",
+                "source_errors",
+            ],
+        )
+        slim["record_count"] = (
+            len(rep.get("records", [])) if isinstance(rep, dict) else 0
+        )
         return slim
+
     events = _safe(_events, "events", findings)
 
     # ── projects：项目双源比对 ──
     def _projects():
         proj = business_adapter.project_projection(root)
-        return {"source_status": proj.get("source_status"),
-                "registry_count": proj.get("registry_count"),
-                "portal_count": proj.get("portal_count"),
-                "matched_ids": proj.get("matched_ids"),
-                "canonical_candidate": proj.get("canonical_candidate"),
-                "findings": proj.get("findings")}
+        return {
+            "source_status": proj.get("source_status"),
+            "registry_count": proj.get("registry_count"),
+            "portal_count": proj.get("portal_count"),
+            "matched_ids": proj.get("matched_ids"),
+            "canonical_candidate": proj.get("canonical_candidate"),
+            "findings": proj.get("findings"),
+        }
+
     projects = _safe(_projects, "projects", findings)
 
     # ── academy / gzh：M1 接线域投影 + 越门审计 ──
     def _academy():
         items = academy_wiring.project_workitems(root)
         audit = academy_wiring.audit_report(root)
-        return {"workitem_count": len(items),
-                "by_status": audit.get("by_status"),
-                "violations": audit.get("violations"),
-                "verdict": audit.get("verdict"),
-                "items": [wi.to_dict() for wi in items]}
+        return {
+            "workitem_count": len(items),
+            "by_status": audit.get("by_status"),
+            "violations": audit.get("violations"),
+            "verdict": audit.get("verdict"),
+            "items": [wi.to_dict() for wi in items],
+        }
+
     academy = _safe(_academy, "academy", findings)
 
     def _gzh():
         items, artifacts = gzh_wiring.project_workitems(root)
         audit = gzh_wiring.audit_report(root)
-        return {"workitem_count": len(items),
-                "by_status": audit.get("by_status"),
-                "missing_artifacts": audit.get("missing_artifacts"),
-                "violations": audit.get("violations"),
-                "verdict": audit.get("verdict"),
-                "items": [wi.to_dict() for wi in items]}
+        return {
+            "workitem_count": len(items),
+            "by_status": audit.get("by_status"),
+            "missing_artifacts": audit.get("missing_artifacts"),
+            "violations": audit.get("violations"),
+            "verdict": audit.get("verdict"),
+            "items": [wi.to_dict() for wi in items],
+        }
+
     gzh = _safe(_gzh, "gzh", findings)
 
     def _invest():
         items, artifacts = invest_wiring.project_workitems(root)
         audit = invest_wiring.audit_report(root)
-        return {"workitem_count": len(items),
-                "by_status": audit.get("by_status"),
-                "missing_artifacts": audit.get("missing_artifacts"),
-                "violations": audit.get("violations"),
-                "verdict": audit.get("verdict"),
-                "items": [wi.to_dict() for wi in items]}
+        return {
+            "workitem_count": len(items),
+            "by_status": audit.get("by_status"),
+            "missing_artifacts": audit.get("missing_artifacts"),
+            "violations": audit.get("violations"),
+            "verdict": audit.get("verdict"),
+            "items": [wi.to_dict() for wi in items],
+        }
+
     invest = _safe(_invest, "invest", findings)
 
     # ── dev / pitch / personal / devtask：M1 阶段二接线域投影 + 越门审计 ──
     def _dev():
         proj = dev_wiring.projection()
         audit = dev_wiring.audit_report()
-        return {"workitem_count": proj.get("count"),
-                "violations": audit.get("violations"),
-                "verdict": audit.get("verdict"),
-                "items": proj.get("tasks", [])}
+        return {
+            "workitem_count": proj.get("count"),
+            "violations": audit.get("violations"),
+            "verdict": audit.get("verdict"),
+            "items": proj.get("tasks", []),
+        }
+
     dev = _safe(_dev, "dev", findings)
 
     def _pitch():
         proj = pitch_wiring.projection()
         audit = pitch_wiring.audit_report()
-        return {"workitem_count": proj.get("count"),
-                "violations": audit.get("violations"),
-                "verdict": audit.get("verdict"),
-                "items": proj.get("decks", [])}
+        return {
+            "workitem_count": proj.get("count"),
+            "violations": audit.get("violations"),
+            "verdict": audit.get("verdict"),
+            "items": proj.get("decks", []),
+        }
+
     pitch = _safe(_pitch, "pitch", findings)
 
     def _personal():
         proj = personal_wiring.projection()
         audit = personal_wiring.audit_report()
-        return {"workitem_count": proj.get("count"),
-                "violations": audit.get("violations"),
-                "verdict": audit.get("verdict"),
-                "items": proj.get("schedules", [])}
+        return {
+            "workitem_count": proj.get("count"),
+            "violations": audit.get("violations"),
+            "verdict": audit.get("verdict"),
+            "items": proj.get("schedules", []),
+        }
+
     personal = _safe(_personal, "personal", findings)
 
     def _devtask():
         items, artifacts = devtask_wiring.project_workitems(root)
         audit = devtask_wiring.audit_report(root)
-        return {"workitem_count": len(items),
-                "by_status": audit.get("by_status"),
-                "missing_worktrees": audit.get("missing_worktrees"),
-                "violations": audit.get("violations"),
-                "verdict": audit.get("verdict"),
-                "items": [wi.to_dict() for wi in items]}
+        return {
+            "workitem_count": len(items),
+            "by_status": audit.get("by_status"),
+            "missing_worktrees": audit.get("missing_worktrees"),
+            "violations": audit.get("violations"),
+            "verdict": audit.get("verdict"),
+            "items": [wi.to_dict() for wi in items],
+        }
+
     devtask = _safe(_devtask, "devtask", findings)
 
     # ── knowledge / skill：M2 记忆与技能目录域（审计 verdict 驱动）──
     def _knowledge():
         audit = knowledge_wiring.audit_report(root)
-        return {"verdict": audit.get("verdict"),
-                "pending_total": audit.get("pending_total"),
-                "memory_total": audit.get("memory_total"),
-                "bypass_count": audit.get("bypass_count"),
-                "credentials": audit.get("credentials"),
-                "findings": audit.get("findings")}
+        return {
+            "verdict": audit.get("verdict"),
+            "pending_total": audit.get("pending_total"),
+            "memory_total": audit.get("memory_total"),
+            "bypass_count": audit.get("bypass_count"),
+            "credentials": audit.get("credentials"),
+            "findings": audit.get("findings"),
+        }
+
     knowledge = _safe(_knowledge, "knowledge", findings)
 
     def _skill():
         audit = skill_wiring.audit_report(root)
-        return {"verdict": audit.get("verdict"),
-                "skill_total": audit.get("skill_total"),
-                "by_status": audit.get("by_status"),
-                "findings": audit.get("findings"),
-                "cross_check": audit.get("cross_check")}
+        return {
+            "verdict": audit.get("verdict"),
+            "skill_total": audit.get("skill_total"),
+            "by_status": audit.get("by_status"),
+            "findings": audit.get("findings"),
+            "cross_check": audit.get("cross_check"),
+        }
+
     skill = _safe(_skill, "skill", findings)
 
     # ── intel：M2-P3 情报裁决域（血缘断链 → 情报决策，审计 verdict 驱动）──
     def _intel():
         audit = intel_wiring.audit_report(root)
-        return {"verdict": audit.get("verdict"),
-                "verdicts_total": audit.get("verdicts_total"),
-                "memory_total": audit.get("memory_total"),
-                "bypass_count": audit.get("bypass_count"),
-                "credentials": audit.get("credentials"),
-                "findings": audit.get("findings"),
-                "cross_check": audit.get("cross_check")}
+        return {
+            "verdict": audit.get("verdict"),
+            "verdicts_total": audit.get("verdicts_total"),
+            "memory_total": audit.get("memory_total"),
+            "bypass_count": audit.get("bypass_count"),
+            "credentials": audit.get("credentials"),
+            "findings": audit.get("findings"),
+            "cross_check": audit.get("cross_check"),
+        }
+
     intel = _safe(_intel, "intel", findings)
 
     # ── approvals：统一审批注册表 ──
     def _approvals():
         store = approvals_mod.ApprovalStore(
-            _AGENT_PLATFORM / "data" / "approvals" / "approvals.db")
+            _AGENT_PLATFORM / "data" / "approvals" / "approvals.db"
+        )
         try:
             stats = store.stats()
             rows = store.list(target_type="workitem")
@@ -247,20 +298,30 @@ def build_unified_report(root: Path = REPO_ROOT) -> Dict[str, Any]:
             return stats
         finally:
             store.close()
+
     approvals = _safe(_approvals, "approvals", findings)
 
     # ── 汇总 ──
-    verdicts = {name: sect.get("verdict")
-                for name, sect in (("academy", academy), ("gzh", gzh),
-                                   ("invest", invest), ("dev", dev),
-                                   ("pitch", pitch), ("personal", personal),
-                                   ("devtask", devtask),
-                                   ("knowledge", knowledge),
-                                   ("skill", skill), ("intel", intel))
-                if isinstance(sect, dict)}
+    verdicts = {
+        name: sect.get("verdict")
+        for name, sect in (
+            ("academy", academy),
+            ("gzh", gzh),
+            ("invest", invest),
+            ("dev", dev),
+            ("pitch", pitch),
+            ("personal", personal),
+            ("devtask", devtask),
+            ("knowledge", knowledge),
+            ("skill", skill),
+            ("intel", intel),
+        )
+        if isinstance(sect, dict)
+    }
     if findings:
-        findings.insert(0, "统一投影存在 %d 条显式异常（fail-visible，"
-                           "未拖垮整体）" % len(findings))
+        findings.insert(
+            0, "统一投影存在 %d 条显式异常（fail-visible，未拖垮整体）" % len(findings)
+        )
     # 顶层 verdict：域 verdict 全 PASS 且无 findings 才 PASS；
     # 有 FAIL 或源缺失 → FAIL；仅 WARN/异常条目 → ATTENTION（审计补齐）
     dv = list(verdicts.values())
@@ -275,17 +336,26 @@ def build_unified_report(root: Path = REPO_ROOT) -> Dict[str, Any]:
     return {
         "schema_version": SCHEMA_VERSION,
         "read_only": READ_ONLY,
-        "generated_at": datetime.now(timezone.utc)
-                                  .isoformat(timespec="seconds"),
+        "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "root": str(root),
         "verdict": top,
         "summary": {
-            "domains_wired": ["gzh", "academy", "invest", "dev", "pitch",
-                              "personal", "devtask", "knowledge", "skill",
-                              "intel"],
+            "domains_wired": [
+                "gzh",
+                "academy",
+                "invest",
+                "dev",
+                "pitch",
+                "personal",
+                "devtask",
+                "knowledge",
+                "skill",
+                "intel",
+            ],
             "domain_verdicts": verdicts,
             "approval_total": (approvals or {}).get("count", 0)
-            if isinstance(approvals, dict) else 0,
+            if isinstance(approvals, dict)
+            else 0,
         },
         "tasks": tasks,
         "events": events,

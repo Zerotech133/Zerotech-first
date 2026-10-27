@@ -6,6 +6,7 @@
     python task.py ls [--dept dev] [--status open]
     python task.py move <task_id> <new_status> --by dept/dev/DEV1 [--note "..."]
 """
+
 import argparse
 import sys
 from pathlib import Path
@@ -43,15 +44,33 @@ def main():
     args = ap.parse_args()
     try:
         if args.cmd == "open":
-            tid = STORE.open(args.to_dept, args.title, args.body, args.severity,
-                             opened_by=args.by, due=args.due, p0=args.p0)
+            tid = STORE.open(
+                args.to_dept,
+                args.title,
+                args.body,
+                args.severity,
+                opened_by=args.by,
+                due=args.due,
+                p0=args.p0,
+            )
             print("[task] 已开单 %s → %s（%s）" % (tid, args.to_dept, args.severity))
         elif args.cmd == "ls":
             rows = STORE.ls(dept=args.dept, status=args.status)
-            print("%-16s %-4s %-8s %-8s %s" % ("task_id", "sev", "dept", "status", "title"))
+            print(
+                "%-16s %-4s %-8s %-8s %s"
+                % ("task_id", "sev", "dept", "status", "title")
+            )
             for t in rows:
-                print("%-16s %-4s %-8s %-8s %s" % (
-                    t["task_id"], t["severity"], t["assigned_dept"], t["status"], t["title"][:36]))
+                print(
+                    "%-16s %-4s %-8s %-8s %s"
+                    % (
+                        t["task_id"],
+                        t["severity"],
+                        t["assigned_dept"],
+                        t["status"],
+                        t["title"][:36],
+                    )
+                )
             print("共 %d 单" % len(rows))
         elif args.cmd == "move":
             t = STORE.move(args.task_id, args.new_status, by=args.by, note=args.note)

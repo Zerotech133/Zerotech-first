@@ -26,8 +26,7 @@ def _load(name: str, rel: str):
 
 rq = _load("replay_query_under_test", "agent_platform/adapters/replay_query.py")
 apv = _load("replay_approvals_under_test", "agent_platform/engine/approvals.py")
-objects = _load("replay_objects_under_test",
-                "agent_platform/contracts/objects.py")
+objects = _load("replay_objects_under_test", "agent_platform/contracts/objects.py")
 
 
 class ReplayQueryTests(unittest.TestCase):
@@ -48,28 +47,50 @@ class ReplayQueryTests(unittest.TestCase):
         self.tmp.cleanup()
 
     def _mk_approval(self, key, target, frm, to, trace=""):
-        ap, _ = self.store.record(objects.Approval(
-            target_type="workitem", target_id=target,
-            from_status=frm, to_status=to, decided_by="laotian",
-            reason="测试凭据", idempotency_key=key, trace_id=trace))
+        ap, _ = self.store.record(
+            objects.Approval(
+                target_type="workitem",
+                target_id=target,
+                from_status=frm,
+                to_status=to,
+                decided_by="laotian",
+                reason="测试凭据",
+                idempotency_key=key,
+                trace_id=trace,
+            )
+        )
         return ap
 
     def _mk_gzh_fixture(self, status="reviewed"):
         d = self.root / "gzh" / "drafts"
         d.mkdir(parents=True, exist_ok=True)
         (d / "a.md").write_text("# t", encoding="utf-8")
-        (d / "index.json").write_text(json.dumps(
-            [{"id": "d1", "date": "2026-10-17", "title": "测试篇",
-              "col": "c", "status": status, "md": "a.md",
-              "ts": "10-17 09:00"}], ensure_ascii=False), encoding="utf-8")
+        (d / "index.json").write_text(
+            json.dumps(
+                [
+                    {
+                        "id": "d1",
+                        "date": "2026-10-17",
+                        "title": "测试篇",
+                        "col": "c",
+                        "status": status,
+                        "md": "a.md",
+                        "ts": "10-17 09:00",
+                    }
+                ],
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
 
     def test_requires_query_param(self):
         with self.assertRaises(ValueError):
             rq.replay(self.root)
 
     def test_replay_by_target_hits_approvals_and_state(self):
-        self._mk_approval("gzh:d1:draft>reviewed", "gzh:d1", "draft",
-                          "reviewed", trace="TR-1")
+        self._mk_approval(
+            "gzh:d1:draft>reviewed", "gzh:d1", "draft", "reviewed", trace="TR-1"
+        )
         self._mk_gzh_fixture(status="reviewed")
         rep = rq.replay(self.root, target_id="gzh:d1")
         self.assertEqual(rep["verdict"], "OK")
@@ -83,24 +104,26 @@ class ReplayQueryTests(unittest.TestCase):
         self.assertFalse(rep["current_state"]["artifact_missing"])
 
     def test_replay_by_idempotency_key(self):
-        self._mk_approval("gzh:d1:reviewed>published", "gzh:d1",
-                          "reviewed", "published")
+        self._mk_approval(
+            "gzh:d1:reviewed>published", "gzh:d1", "reviewed", "published"
+        )
         rep = rq.replay(self.root, idempotency_key="gzh:d1:reviewed>published")
         self.assertEqual(rep["verdict"], "OK")
         self.assertEqual(len(rep["timeline"]), 1)
-        self.assertEqual(rep["timeline"][0]["idempotency_key"],
-                         "gzh:d1:reviewed>published")
+        self.assertEqual(
+            rep["timeline"][0]["idempotency_key"], "gzh:d1:reviewed>published"
+        )
 
     def test_replay_by_trace(self):
-        self._mk_approval("gzh:d1:draft>reviewed", "gzh:d1", "draft",
-                          "reviewed", trace="TR-9")
+        self._mk_approval(
+            "gzh:d1:draft>reviewed", "gzh:d1", "draft", "reviewed", trace="TR-9"
+        )
         rep = rq.replay(self.root, trace_id="TR-9")
         self.assertEqual(rep["verdict"], "OK")
         self.assertEqual(len(rep["timeline"]), 1)
 
     def test_zero_hit_is_empty_not_error(self):
-        self._mk_approval("gzh:d1:draft>reviewed", "gzh:d1", "draft",
-                          "reviewed")
+        self._mk_approval("gzh:d1:draft>reviewed", "gzh:d1", "draft", "reviewed")
         rep = rq.replay(self.root, trace_id="TR-NOTHING")
         self.assertEqual(rep["verdict"], "EMPTY")
         self.assertEqual(rep["sources"].get("approvals"), "ok")
@@ -108,13 +131,16 @@ class ReplayQueryTests(unittest.TestCase):
 
     def test_idem_db_missing_is_not_error(self):
         rep = rq.replay(self.root, idempotency_key="gzh:x:draft>reviewed")
-        self.assertEqual(rep["sources"].get("idempotency"),
-                         "missing_source（双轨起点，账本未建库）")
+        self.assertEqual(
+            rep["sources"].get("idempotency"), "missing_source（双轨起点，账本未建库）"
+        )
         self.assertNotIn("error", rep["sources"].values())
 
     def test_timeline_sorted_by_ts(self):
-        rows = [{"ts": "2026-10-17T05:00:00", "source": "approvals"},
-                {"ts": "2026-10-17T04:00:00", "source": "events:x"}]
+        rows = [
+            {"ts": "2026-10-17T05:00:00", "source": "approvals"},
+            {"ts": "2026-10-17T04:00:00", "source": "events:x"},
+        ]
         out = sorted(rows, key=rq._sort_key)
         self.assertEqual(out[0]["ts"], "2026-10-17T04:00:00")
 

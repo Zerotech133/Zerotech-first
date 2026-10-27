@@ -74,8 +74,7 @@ def load_index(root: Path) -> List[dict]:
     except (json.JSONDecodeError, UnicodeDecodeError, OSError) as exc:
         raise GzhWiringError("index.json 解析失败: %s" % exc)
     if not isinstance(raw, list):
-        raise GzhWiringError("index.json 顶层必须是数组，实际 %s"
-                             % type(raw).__name__)
+        raise GzhWiringError("index.json 顶层必须是数组，实际 %s" % type(raw).__name__)
     return [d for d in raw if isinstance(d, dict)]
 
 
@@ -110,27 +109,32 @@ def project_workitems(root: Path) -> Tuple[List[WorkItem], List[Artifact]]:
         md_path = drafts_dir / md_name if md_name else None
         exists = bool(md_path) and md_path.exists()
         wi = WorkItem(
-            workitem_id="gzh:%s" % draft_id,          # 从领域真源 ID 确定性派生
+            workitem_id="gzh:%s" % draft_id,  # 从领域真源 ID 确定性派生
             domain=DOMAIN,
             source=SOURCE,
             source_ref=draft_id,
             title=d.get("title", ""),
-            status=d.get("status", ""),               # 域内原生状态，原样保留
+            status=d.get("status", ""),  # 域内原生状态，原样保留
             owner="COMM1",
-            payload={"col": d.get("col", ""), "date": d.get("date", ""),
-                     "ts": d.get("ts", "")},
+            payload={
+                "col": d.get("col", ""),
+                "date": d.get("date", ""),
+                "ts": d.get("ts", ""),
+            },
         )
         items.append(wi)
         if md_name:
             content = md_path.read_bytes() if exists else b""
-            artifacts.append(Artifact(
-                artifact_id="gzh-art:%s" % draft_id,
-                workitem_id=wi.workitem_id,
-                kind="md",
-                path="gzh/drafts/%s" % md_name,
-                fact_hash=fact_hash_of(content) if exists else "",
-                missing=not exists,
-            ))
+            artifacts.append(
+                Artifact(
+                    artifact_id="gzh-art:%s" % draft_id,
+                    workitem_id=wi.workitem_id,
+                    kind="md",
+                    path="gzh/drafts/%s" % md_name,
+                    fact_hash=fact_hash_of(content) if exists else "",
+                    missing=not exists,
+                )
+            )
     return items, artifacts
 
 
@@ -141,9 +145,9 @@ def _artifacts_db(root: Path) -> Path:
     return Path(root) / "agent_platform" / "data" / "artifacts" / "artifacts.db"
 
 
-def register_review_artifact(root: Path, draft_id: str,
-                             artifact_store: ArtifactStore = None
-                             ) -> Tuple[Optional[Artifact], bool]:
+def register_review_artifact(
+    root: Path, draft_id: str, artifact_store: ArtifactStore = None
+) -> Tuple[Optional[Artifact], bool]:
     """把草稿 md 登记为统一 Artifact（幂等，同 hash 去重）。
 
     判例「登记不设门」：登记是事实记录，不做任何状态校验、不落
@@ -166,15 +170,17 @@ def register_review_artifact(root: Path, draft_id: str,
     own_store = artifact_store is None
     store = artifact_store or ArtifactStore(_artifacts_db(root))
     try:
-        return store.record(Artifact(
-            kind="md",
-            path="gzh/drafts/%s" % md_name,
-            fact_hash=chash,
-            content_hash=chash,
-            source_system="gzh.drafts",
-            source_ref=draft_id,
-            produced_by="COMM1",
-        ))
+        return store.record(
+            Artifact(
+                kind="md",
+                path="gzh/drafts/%s" % md_name,
+                fact_hash=chash,
+                content_hash=chash,
+                source_system="gzh.drafts",
+                source_ref=draft_id,
+                produced_by="COMM1",
+            )
+        )
     finally:
         if own_store:
             store.close()
@@ -203,10 +209,15 @@ def _md_content_hash(root: Path, draft_id: str) -> str:
     return fact_hash_of(md_path.read_bytes())
 
 
-def approve_transition(root: Path, draft_id: str, to_status: str, by: str,
-                       reason: str = "", store: ApprovalStore = None,
-                       artifact_store: ArtifactStore = None
-                       ) -> Tuple[Approval, dict, bool]:
+def approve_transition(
+    root: Path,
+    draft_id: str,
+    to_status: str,
+    by: str,
+    reason: str = "",
+    store: ApprovalStore = None,
+    artifact_store: ArtifactStore = None,
+) -> Tuple[Approval, dict, bool]:
     """批准并执行一次受控状态转移。
 
     返回 (approval, draft_after, replayed)。
@@ -225,13 +236,17 @@ def approve_transition(root: Path, draft_id: str, to_status: str, by: str,
     from_status = draft.get("status", "")
 
     own_store = store is None
-    store = store or ApprovalStore(_AGENT_PLATFORM / "data" / "approvals"
-                                   / "approvals.db")
+    store = store or ApprovalStore(
+        _AGENT_PLATFORM / "data" / "approvals" / "approvals.db"
+    )
     try:
+
         def _find(to: str):
-            hits = [a for a in store.list(target_type="workitem")
-                    if a.target_id == "gzh:%s" % draft_id
-                    and a.to_status == to]
+            hits = [
+                a
+                for a in store.list(target_type="workitem")
+                if a.target_id == "gzh:%s" % draft_id and a.to_status == to
+            ]
             return hits[-1] if hits else None  # 最新凭据（打回重批取新一轮）
 
         # 幂等快路径：目标已达成且有凭据 → 稳定 no-op
@@ -248,65 +263,69 @@ def approve_transition(root: Path, draft_id: str, to_status: str, by: str,
                             "批 A 发 B 拒绝：凭据 %s 绑定 content_hash=%s…，"
                             "当前真源=%s…（内容已变更，原审批失效）——"
                             "打回 draft 修改后重新走门"
-                            % (hit.approval_id[:12], hit.content_hash[:12],
-                               cur[:12]))
+                            % (hit.approval_id[:12], hit.content_hash[:12], cur[:12])
+                        )
                 return hit, draft, True
             raise GzhWiringError(
                 "draft %s 状态已为 %s 但账本无凭据：疑似绕过审批门修改真源，"
-                "拒绝重复批准（先跑 report 审计）" % (draft_id, from_status))
+                "拒绝重复批准（先跑 report 审计）" % (draft_id, from_status)
+            )
 
         if from_status in TERMINAL_STATUSES:
             raise GzhWiringError("draft %s 已终态 published，禁止再转移" % draft_id)
         if to_status not in LEGAL_TRANSITIONS.get(from_status, []):
             raise GzhWiringError(
                 "非法转移 %s→%s（合法：%s）；跳级违反生成/审查/批准/发布分离"
-                % (from_status, to_status,
-                   LEGAL_TRANSITIONS.get(from_status, [])))
+                % (from_status, to_status, LEGAL_TRANSITIONS.get(from_status, []))
+            )
 
-        own = [a for a in store.list(target_type="workitem")
-               if a.target_id == "gzh:%s" % draft_id]
+        own = [
+            a
+            for a in store.list(target_type="workitem")
+            if a.target_id == "gzh:%s" % draft_id
+        ]
         # catch-up / 轮次化判定（last_wiring_key 消费标记，devtask 判例，
         # 与 invest/devtask 统一；academy 用 history 痕迹系其域内有轨迹）：
         # - 最新凭据恰是本转移且真源未消费它（last_wiring_key 不等于该键）
         #   → 崩溃窗口 catch-up：补齐真源写入，重放返回，不新增轮次凭据；
         # - 最新凭据已消费但真源又回到 from（同转移反复：如二次打回）
         #   → 新轮次批准，落 #r{n+1} 新凭据留痕。
-        prior_same = [a for a in own
-                      if a.from_status == from_status
-                      and a.to_status == to_status]
-        if (prior_same
-                and own[-1].idempotency_key == prior_same[-1].idempotency_key):
+        prior_same = [
+            a for a in own if a.from_status == from_status and a.to_status == to_status
+        ]
+        if prior_same and own[-1].idempotency_key == prior_same[-1].idempotency_key:
             last = own[-1]
             if draft.get("last_wiring_key") != last.idempotency_key:
-                _apply_status(root, draft_id, to_status,
-                              last.idempotency_key)
-                if to_status == "reviewed":       # M3-P2 catch-up 补登记
+                _apply_status(root, draft_id, to_status, last.idempotency_key)
+                if to_status == "reviewed":  # M3-P2 catch-up 补登记
                     register_review_artifact(root, draft_id, artifact_store)
-                return last, find_draft(root, draft_id), True   # catch-up
+                return last, find_draft(root, draft_id), True  # catch-up
 
         # 轮次化幂等键：打回后重批（draft→reviewed→draft→reviewed）是
         # 新的一轮批准，必须留新凭据（第二轮 decided_by/reason 可追溯），
         # 不得重放第一轮凭据——同轮重放仍由既有凭据幂等兜底。
         base = "gzh:%s:%s>%s" % (draft_id, from_status, to_status)
-        key = (base if not prior_same
-               else "%s#r%d" % (base, len(prior_same) + 1))
-        approval, replayed = store.record(Approval(
-            target_type="workitem",
-            target_id="gzh:%s" % draft_id,
-            from_status=from_status,
-            to_status=to_status,
-            decision="approved",
-            decided_by=by,
-            reason=reason,
-            decided_at=_now_iso(),
-            idempotency_key=key,
-            content_hash=(_md_content_hash(root, draft_id)
-                          if to_status == "published" else ""),  # M3-P3
-        ))
+        key = base if not prior_same else "%s#r%d" % (base, len(prior_same) + 1)
+        approval, replayed = store.record(
+            Approval(
+                target_type="workitem",
+                target_id="gzh:%s" % draft_id,
+                from_status=from_status,
+                to_status=to_status,
+                decision="approved",
+                decided_by=by,
+                reason=reason,
+                decided_at=_now_iso(),
+                idempotency_key=key,
+                content_hash=(
+                    _md_content_hash(root, draft_id) if to_status == "published" else ""
+                ),  # M3-P3
+            )
+        )
         if not replayed:
             # 首次批准：落凭据成功后走唯一授权写路径
             _apply_status(root, draft_id, to_status, key)
-            if to_status == "reviewed":           # M3-P2 自动登记产物
+            if to_status == "reviewed":  # M3-P2 自动登记产物
                 register_review_artifact(root, draft_id, artifact_store)
             return approval, find_draft(root, draft_id), False
         # 防御分支：轮次化后 key 理论全新；并发窗口同 key 抢先落库时
@@ -320,8 +339,9 @@ def approve_transition(root: Path, draft_id: str, to_status: str, by: str,
             store.close()
 
 
-def _apply_status(root: Path, draft_id: str, to_status: str,
-                  wiring_key: str = "") -> None:
+def _apply_status(
+    root: Path, draft_id: str, to_status: str, wiring_key: str = ""
+) -> None:
     """唯一授权写路径：更新 index 中该草稿的 status/ts（原子写）。
 
     last_wiring_key 记录已消费的凭据键（catch-up 判据，devtask 判例回灌）。
@@ -347,8 +367,9 @@ def audit_report(root: Path, store: ApprovalStore = None) -> dict:
     """
     root = Path(root)
     own_store = store is None
-    store = store or ApprovalStore(_AGENT_PLATFORM / "data" / "approvals"
-                                   / "approvals.db")
+    store = store or ApprovalStore(
+        _AGENT_PLATFORM / "data" / "approvals" / "approvals.db"
+    )
     try:
         items, artifacts = project_workitems(root)
         approvals = store.list(target_type="workitem")
@@ -356,16 +377,19 @@ def audit_report(root: Path, store: ApprovalStore = None) -> dict:
         for wi in items:
             if wi.status in ("reviewed", "published"):
                 # 该状态必须存在一次 →status 的批准凭据，否则有人绕过审批门
-                hit = [a for a in approvals
-                       if a.target_id == wi.workitem_id
-                       and a.to_status == wi.status]
+                hit = [
+                    a
+                    for a in approvals
+                    if a.target_id == wi.workitem_id and a.to_status == wi.status
+                ]
                 if not hit:
-                        violations.append({
+                    violations.append(
+                        {
                             "draft_id": wi.source_ref,
                             "status": wi.status,
-                            "finding": "状态=%s 但审批账本无对应凭据"
-                                       % wi.status,
-                        })
+                            "finding": "状态=%s 但审批账本无对应凭据" % wi.status,
+                        }
+                    )
         missing_art = [a.path for a in artifacts if a.missing]
         # 交叉校验：凭据轮次 vs 消费标记（gzh=latest_only 标记域：
         # last_wiring_key 只存最新已消费键，旧轮次不可回溯故跳过）
@@ -375,14 +399,17 @@ def audit_report(root: Path, store: ApprovalStore = None) -> dict:
             traces["gzh:%s" % iid] = {
                 "statuses": [],
                 "consumed_keys": {it.get("last_wiring_key")}
-                if it.get("last_wiring_key") else set(),
+                if it.get("last_wiring_key")
+                else set(),
             }
-        gzh_creds = [a for a in approvals
-                     if a.target_id.startswith("gzh:")]
-        cross_v = cross_check("gzh", gzh_creds, traces,
-                              {"gzh:%s" % iid: it.get("status", "")
-                               for iid, it in raw_items.items()},
-                              latest_only=True)
+        gzh_creds = [a for a in approvals if a.target_id.startswith("gzh:")]
+        cross_v = cross_check(
+            "gzh",
+            gzh_creds,
+            traces,
+            {"gzh:%s" % iid: it.get("status", "") for iid, it in raw_items.items()},
+            latest_only=True,
+        )
         return {
             "schema_version": SCHEMA_VERSION,
             "domain": DOMAIN,
@@ -393,8 +420,8 @@ def audit_report(root: Path, store: ApprovalStore = None) -> dict:
             "cross_check": cross_v,
             "missing_artifacts": missing_art,
             "verdict": verdict_for(
-                ([{"severity": "FAIL"}]
-                 if violations or missing_art else []) + cross_v),
+                ([{"severity": "FAIL"}] if violations or missing_art else []) + cross_v
+            ),
         }
     finally:
         if own_store:
@@ -431,22 +458,36 @@ def main(argv=None) -> int:
     if args.cmd == "list":
         items, artifacts = project_workitems(root)
         for wi, art in zip(items, artifacts):
-            print("%-28s %-10s %-12s hash=%s%s" % (
-                wi.workitem_id, wi.status, wi.title[:20],
-                art.fact_hash[:12] if art.fact_hash else "-",
-                " [正文缺失]" if art.missing else ""))
+            print(
+                "%-28s %-10s %-12s hash=%s%s"
+                % (
+                    wi.workitem_id,
+                    wi.status,
+                    wi.title[:20],
+                    art.fact_hash[:12] if art.fact_hash else "-",
+                    " [正文缺失]" if art.missing else "",
+                )
+            )
         return 0
     if args.cmd == "report":
         print(json.dumps(audit_report(root), ensure_ascii=False, indent=2))
         return 0
     if args.cmd == "approve":
         approval, after, replayed = approve_transition(
-            root, args.draft_id, args.to_status, args.by, args.reason)
-        print("[gzh_wiring] %s %s：%s→%s%s" % (
-            args.draft_id, "重放" if replayed else "批准",
-            approval.from_status, approval.to_status,
-            "" if not replayed else "（凭据 %s 已存在，真源未重复变更）"
-            % approval.approval_id[:12]))
+            root, args.draft_id, args.to_status, args.by, args.reason
+        )
+        print(
+            "[gzh_wiring] %s %s：%s→%s%s"
+            % (
+                args.draft_id,
+                "重放" if replayed else "批准",
+                approval.from_status,
+                approval.to_status,
+                ""
+                if not replayed
+                else "（凭据 %s 已存在，真源未重复变更）" % approval.approval_id[:12],
+            )
+        )
         return 0
     return 1
 

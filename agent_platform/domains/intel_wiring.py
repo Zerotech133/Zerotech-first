@@ -44,22 +44,28 @@ _AGENT_PLATFORM = _DOMAINS_DIR.parent
 if str(_AGENT_PLATFORM) not in sys.path:
     sys.path.insert(0, str(_AGENT_PLATFORM))
 
-from contracts.objects import Approval        # noqa: E402
-from engine.approvals import ApprovalStore    # noqa: E402
-from engine.memory import MemoryStore         # noqa: E402
+from contracts.objects import Approval  # noqa: E402
+from engine.approvals import ApprovalStore  # noqa: E402
+from engine.memory import MemoryStore  # noqa: E402
 from adapters.credential_trace import cross_check, verdict_for  # noqa: E402
 
 POOL_FILE = _AGENT_PLATFORM / "data" / "intel_verdicts.jsonl"
 MEMORY_BASE = _AGENT_PLATFORM / "data" / "memory"
 APPROVALS_DB = _AGENT_PLATFORM / "data" / "approvals" / "approvals.db"
 
-GNS_INTEL = "share/intel"          # 生产情报裁决 gns（跨域可读段）
+GNS_INTEL = "share/intel"  # 生产情报裁决 gns（跨域可读段）
 
 _KNOWN_DECISIONS = {"degrade", "withdraw", "watch"}
 _KNOWN_BREAKS = {"stale", "broken", "lost", "missing"}
 
-_REQUIRED_FIELDS = ("verdict_id", "table_urn", "job_run_id",
-                    "break_kind", "decision", "rationale")
+_REQUIRED_FIELDS = (
+    "verdict_id",
+    "table_urn",
+    "job_run_id",
+    "break_kind",
+    "decision",
+    "rationale",
+)
 
 
 class IntelWiringError(Exception):
@@ -77,8 +83,7 @@ _POOL_PATH_NAME = ("data", "intel_verdicts.jsonl")
 
 
 def pool_path(root: Path = None) -> Path:
-    return (Path(root) if root else _AGENT_PLATFORM).joinpath(
-        *_POOL_PATH_NAME)
+    return (Path(root) if root else _AGENT_PLATFORM).joinpath(*_POOL_PATH_NAME)
 
 
 def hash_entry(entry: Dict) -> str:
@@ -89,10 +94,14 @@ def hash_entry(entry: Dict) -> str:
     - 语义：draft 落池盖章 → adopt/reject 凭据绑定 → audit 复核现池行。
       池行 adopt 后被改写 = 凭据指纹对不上 = 裁决门旁路，audit 亮红。
     """
-    body = {k: v for k, v in entry.items()
-            if k != "content_hash" and not str(k).startswith("_")}
-    payload = json.dumps(body, ensure_ascii=False, sort_keys=True,
-                         separators=(",", ":"))
+    body = {
+        k: v
+        for k, v in entry.items()
+        if k != "content_hash" and not str(k).startswith("_")
+    }
+    payload = json.dumps(
+        body, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    )
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
 
 
@@ -109,8 +118,7 @@ def load_pool(root: Path = None) -> List[Dict]:
         try:
             entry = json.loads(line)
         except json.JSONDecodeError:
-            out.append({"_line": i + 1, "_error": "json_invalid",
-                        "_raw": line[:80]})
+            out.append({"_line": i + 1, "_error": "json_invalid", "_raw": line[:80]})
             continue
         entry["_line"] = i + 1
         out.append(entry)
@@ -129,24 +137,23 @@ def draft(root: Path, entry: Dict, by: str) -> Dict:
         if not entry.get(f):
             raise IntelWiringError("必填字段缺失：%s" % f)
     if entry["decision"] not in _KNOWN_DECISIONS:
-        raise IntelWiringError("decision=%s 不在白名单 %s"
-                               % (entry["decision"],
-                                  sorted(_KNOWN_DECISIONS)))
+        raise IntelWiringError(
+            "decision=%s 不在白名单 %s" % (entry["decision"], sorted(_KNOWN_DECISIONS))
+        )
     if entry["break_kind"] not in _KNOWN_BREAKS:
-        raise IntelWiringError("break_kind=%s 不在白名单 %s"
-                               % (entry["break_kind"],
-                                  sorted(_KNOWN_BREAKS)))
-    existing = {e.get("verdict_id") for e in load_pool(root)
-                if "_error" not in e}
+        raise IntelWiringError(
+            "break_kind=%s 不在白名单 %s" % (entry["break_kind"], sorted(_KNOWN_BREAKS))
+        )
+    existing = {e.get("verdict_id") for e in load_pool(root) if "_error" not in e}
     if entry["verdict_id"] in existing:
-        raise IntelWiringError("verdict_id 已存在（修订走 #r{n+1} 新条目）"
-                               "：%s" % entry["verdict_id"])
+        raise IntelWiringError(
+            "verdict_id 已存在（修订走 #r{n+1} 新条目）：%s" % entry["verdict_id"]
+        )
     rec = dict(entry)
     rec["drafted_by"] = by
     rec.setdefault("impact", [])
-    rec["content_hash"] = hash_entry(rec)   # 落池盖章（P1-B 裁决门指纹）
-    p = (Path(root) if root else _AGENT_PLATFORM) / "data" / \
-        "intel_verdicts.jsonl"
+    rec["content_hash"] = hash_entry(rec)  # 落池盖章（P1-B 裁决门指纹）
+    p = (Path(root) if root else _AGENT_PLATFORM) / "data" / "intel_verdicts.jsonl"
     p.parent.mkdir(parents=True, exist_ok=True)
     with p.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(rec, ensure_ascii=False, sort_keys=True) + "\n")
@@ -161,19 +168,31 @@ def _intel_has(store: MemoryStore, vid: str) -> bool:
 
 
 def _write_memory(root: Path, entry: Dict, approval: Approval) -> Dict:
-    ms = MemoryStore((Path(root) if root else _AGENT_PLATFORM)
-                     / "data" / "memory", enforce=False)
-    payload = {k: entry.get(k) for k in
-               ("verdict_id", "table_urn", "job_run_id", "break_kind",
-                "decision", "impact", "rationale", "ts")}
+    ms = MemoryStore(
+        (Path(root) if root else _AGENT_PLATFORM) / "data" / "memory", enforce=False
+    )
+    payload = {
+        k: entry.get(k)
+        for k in (
+            "verdict_id",
+            "table_urn",
+            "job_run_id",
+            "break_kind",
+            "decision",
+            "impact",
+            "rationale",
+            "ts",
+        )
+    }
     payload["approval_id"] = approval.approval_id
     payload["adopted_by"] = approval.decided_by
     return ms.write("wiring", GNS_INTEL, payload)
 
 
 def _pool_entry(pool: List[Dict], vid: str) -> Optional[Dict]:
-    return next((e for e in pool
-                 if "_error" not in e and e.get("verdict_id") == vid), None)
+    return next(
+        (e for e in pool if "_error" not in e and e.get("verdict_id") == vid), None
+    )
 
 
 # ----------------------------------------------------------------------
@@ -192,44 +211,58 @@ def _job_run_key(row: Dict) -> str:
     每次断链作业一个新裁决（修订轮次语义自然成立：新作业=新 jkey=新
     verdict_id；同作业重跑 auto_draft 幂等跳过，不产生 #r2 噪音）。
     """
-    basis = "|".join(str(row.get(k, "")) for k in
-                     ("output_table", "job", "step", "started_at"))
+    basis = "|".join(
+        str(row.get(k, "")) for k in ("output_table", "job", "step", "started_at")
+    )
     return hashlib.sha1(basis.encode("utf-8")).hexdigest()[:8]
 
 
-def _draft_for_break(root: Path, row: Dict, downstream: List[str],
-                     by: str) -> Dict:
+def _draft_for_break(root: Path, row: Dict, downstream: List[str], by: str) -> Dict:
     """由单条断链行构造并落池一条裁决（纯函数，可测）。"""
     urn = row.get("output_table", "")
     jkey = _job_run_key(row)
     status = str(row.get("status", ""))
-    kind = ("lost" if status == "lost" else
-            "broken" if status in ("fail", "error") else "stale")
+    kind = (
+        "lost"
+        if status == "lost"
+        else "broken"
+        if status in ("fail", "error")
+        else "stale"
+    )
     decision = "watch" if kind == "stale" else "degrade"
     vid = verdict_id_for(urn, jkey)
-    return draft(root, {
-        "verdict_id": vid,
-        "table_urn": urn,
-        "job_run_id": jkey,
-        "break_kind": kind,
-        "decision": decision,
-        "impact": list(downstream)[:5],
-        "rationale": "自动起草：最近一次作业 %s/%s 状态 %s（%s），"
-                     "下游在册产物 %d 项" % (row.get("job", "?"),
-                                            row.get("step", "?"),
-                                            status or "?",
-                                            row.get("started_at", "?"),
-                                            len(downstream)),
-        "job": row.get("job", ""),
-        "step": row.get("step", ""),
-        "started_at": row.get("started_at", ""),
-    }, by=by)
+    return draft(
+        root,
+        {
+            "verdict_id": vid,
+            "table_urn": urn,
+            "job_run_id": jkey,
+            "break_kind": kind,
+            "decision": decision,
+            "impact": list(downstream)[:5],
+            "rationale": "自动起草：最近一次作业 %s/%s 状态 %s（%s），"
+            "下游在册产物 %d 项"
+            % (
+                row.get("job", "?"),
+                row.get("step", "?"),
+                status or "?",
+                row.get("started_at", "?"),
+                len(downstream),
+            ),
+            "job": row.get("job", ""),
+            "step": row.get("step", ""),
+            "started_at": row.get("started_at", ""),
+        },
+        by=by,
+    )
 
 
-def auto_draft_from_lineage(root: Path = None,
-                            api_base: str = "http://127.0.0.1:8091",
-                            by: str = "agent-hermes",
-                            timeout: float = 15.0) -> Dict:
+def auto_draft_from_lineage(
+    root: Path = None,
+    api_base: str = "http://127.0.0.1:8091",
+    by: str = "agent-hermes",
+    timeout: float = 15.0,
+) -> Dict:
     """断链 → 裁决池自动起草（编排任务/Hermes 可直调）。
 
     - 数据源：8091 /api/kg/lineage?view=breaks（fail-visible：网络/接口
@@ -242,25 +275,34 @@ def auto_draft_from_lineage(root: Path = None,
     """
     root = Path(root) if root else _AGENT_PLATFORM
     try:
-        rep = _fetch_json("%s/api/kg/lineage?view=breaks" % api_base,
-                          timeout=timeout)
+        rep = _fetch_json("%s/api/kg/lineage?view=breaks" % api_base, timeout=timeout)
     except Exception as exc:  # noqa: BLE001
-        return {"ok": False, "drafted": [], "skipped": 0,
-                "error": "lineage API 不可达: %s" % exc}
+        return {
+            "ok": False,
+            "drafted": [],
+            "skipped": 0,
+            "error": "lineage API 不可达: %s" % exc,
+        }
     if not isinstance(rep, dict) or "data" not in rep:
-        return {"ok": False, "drafted": [], "skipped": 0,
-                "error": "lineage API 返回异常: %s"
-                         % json.dumps(rep, ensure_ascii=False)[:200]}
+        return {
+            "ok": False,
+            "drafted": [],
+            "skipped": 0,
+            "error": "lineage API 返回异常: %s"
+            % json.dumps(rep, ensure_ascii=False)[:200],
+        }
     body = rep.get("data", {})
     broken = list(body.get("broken", []))
     # P1-A：新鲜度 stale 的 ok 行（沉默断链）也进裁决池（fail-open：
     # API 未附 freshness 字段时行为与旧版完全一致）
-    stale_ok = [r for r in body.get("all_latest", [])
-                if r.get("freshness") == "stale" and r.get("status") == "ok"]
+    stale_ok = [
+        r
+        for r in body.get("all_latest", [])
+        if r.get("freshness") == "stale" and r.get("status") == "ok"
+    ]
     broken_total = len(broken)
     stale_total = len(stale_ok)
-    existing = {e.get("verdict_id") for e in load_pool(root)
-                if "_error" not in e}
+    existing = {e.get("verdict_id") for e in load_pool(root) if "_error" not in e}
     drafted, skipped, errors = [], 0, []
     for row in broken + stale_ok:
         urn = row.get("output_table", "")
@@ -269,26 +311,38 @@ def auto_draft_from_lineage(root: Path = None,
             skipped += 1
             continue
         try:
-            down = _fetch_json("%s/api/kg/lineage?view=upstream&table=%s"
-                               % (api_base, urllib.parse.quote(urn)),
-                               timeout=timeout)
-            impact = sorted({r.get("output_table", "")
-                             for r in down.get("data", [])
-                             if r.get("output_table")})
+            down = _fetch_json(
+                "%s/api/kg/lineage?view=upstream&table=%s"
+                % (api_base, urllib.parse.quote(urn)),
+                timeout=timeout,
+            )
+            impact = sorted(
+                {
+                    r.get("output_table", "")
+                    for r in down.get("data", [])
+                    if r.get("output_table")
+                }
+            )
             rec = _draft_for_break(root, row, impact, by=by)
             drafted.append(rec)
             existing.add(rec["verdict_id"])
         except Exception as exc:  # noqa: BLE001
             errors.append("%s: %s" % (urn or "?", exc))
-    out = {"ok": not errors, "drafted": drafted, "skipped": skipped,
-           "broken_total": broken_total, "stale_total": stale_total}
+    out = {
+        "ok": not errors,
+        "drafted": drafted,
+        "skipped": skipped,
+        "broken_total": broken_total,
+        "stale_total": stale_total,
+    }
     if errors:
         out["errors"] = errors
     return out
 
 
-def adopt(root: Path, vid: str, by: str, reason: str = "",
-          store: ApprovalStore = None) -> Tuple[Approval, Dict, bool]:
+def adopt(
+    root: Path, vid: str, by: str, reason: str = "", store: ApprovalStore = None
+) -> Tuple[Approval, Dict, bool]:
     """批准生效一条裁决 → 生产记录 share/intel。
 
     返回 (approval, memory_record, replayed)。
@@ -308,25 +362,32 @@ def adopt(root: Path, vid: str, by: str, reason: str = "",
     try:
         # P1-B：凭据绑定内容指纹（旧条目无 hash 则补算现值，等价锚定）
         entry_hash = entry.get("content_hash") or hash_entry(entry)
-        approval, replayed = store.record(Approval(
-            target_type="workitem",
-            target_id="intel:%s" % vid,
-            from_status="pending", to_status="adopted",
-            decision="approved", decided_by=by, reason=reason,
-            content_hash=entry_hash,
-            idempotency_key="intel:%s:adopt" % vid))
+        approval, replayed = store.record(
+            Approval(
+                target_type="workitem",
+                target_id="intel:%s" % vid,
+                from_status="pending",
+                to_status="adopted",
+                decision="approved",
+                decided_by=by,
+                reason=reason,
+                content_hash=entry_hash,
+                idempotency_key="intel:%s:adopt" % vid,
+            )
+        )
         ms = MemoryStore(root / "data" / "memory", enforce=False)
         if _intel_has(ms, vid):
-            return approval, {}, True          # 全量重放
-        rec = _write_memory(root, entry, approval)   # 首次 / catch-up
+            return approval, {}, True  # 全量重放
+        rec = _write_memory(root, entry, approval)  # 首次 / catch-up
         return approval, rec, False
     finally:
         if own:
             store.close()
 
 
-def reject(root: Path, vid: str, by: str, reason: str = "",
-           store: ApprovalStore = None) -> Tuple[Approval, bool]:
+def reject(
+    root: Path, vid: str, by: str, reason: str = "", store: ApprovalStore = None
+) -> Tuple[Approval, bool]:
     """否决裁决：记凭据不写生产记录（append-only 否决历史）。"""
     if not by:
         raise IntelWiringError("否决人 by 必填")
@@ -338,13 +399,19 @@ def reject(root: Path, vid: str, by: str, reason: str = "",
     store = store or ApprovalStore(APPROVALS_DB)
     try:
         entry_hash = entry.get("content_hash") or hash_entry(entry)
-        approval, replayed = store.record(Approval(
-            target_type="workitem",
-            target_id="intel:%s" % vid,
-            from_status="pending", to_status="rejected",
-            decision="rejected", decided_by=by, reason=reason,
-            content_hash=entry_hash,
-            idempotency_key="intel:%s:reject" % vid))
+        approval, replayed = store.record(
+            Approval(
+                target_type="workitem",
+                target_id="intel:%s" % vid,
+                from_status="pending",
+                to_status="rejected",
+                decision="rejected",
+                decided_by=by,
+                reason=reason,
+                content_hash=entry_hash,
+                idempotency_key="intel:%s:reject" % vid,
+            )
+        )
         return approval, replayed
     finally:
         if own:
@@ -358,8 +425,7 @@ def audit_report(root: Path = None) -> Dict:
     pool = load_pool(root)
     store = ApprovalStore(root / "data" / "approvals" / "approvals.db")
     try:
-        creds = [c for c in store.list()
-                 if c.target_id.startswith("intel:")]
+        creds = [c for c in store.list() if c.target_id.startswith("intel:")]
     finally:
         store.close()
     cred_keys = {c.idempotency_key for c in creds}
@@ -377,12 +443,12 @@ def audit_report(root: Path = None) -> Dict:
             findings.append("pool 行 %d JSON 损坏" % e["_line"])
             continue
         vid = e.get("verdict_id", "")
-        cred_adopt = next((c for c in creds
-                           if c.idempotency_key == "intel:%s:adopt" % vid),
-                          None)
-        cred_reject = next((c for c in creds
-                            if c.idempotency_key == "intel:%s:reject" % vid),
-                           None)
+        cred_adopt = next(
+            (c for c in creds if c.idempotency_key == "intel:%s:adopt" % vid), None
+        )
+        cred_reject = next(
+            (c for c in creds if c.idempotency_key == "intel:%s:reject" % vid), None
+        )
         # P1-B 裁决门旁路检测：凭据绑定指纹 vs 现池行重算指纹。
         # 池行 adopt/reject 后被改写 = 凭据锚的是 A 实际是 B = 亮红。
         if (cred_adopt or cred_reject) is not None:
@@ -393,20 +459,25 @@ def audit_report(root: Path = None) -> Dict:
                     findings.append(
                         "pool_tampered: %s 池行指纹 %s 与凭据 %s 不一致"
                         "（adopt/reject 后池行被改写，裁决门旁路）"
-                        % (vid, now_hash, cred.content_hash))
+                        % (vid, now_hash, cred.content_hash)
+                    )
         if "intel:%s:adopt" % vid in cred_keys:
             ok = _intel_has(ms, vid)
-            states.append({"line": e["_line"], "verdict_id": vid,
-                           "state": "adopted" if ok else
-                           "pending_execution"})
+            states.append(
+                {
+                    "line": e["_line"],
+                    "verdict_id": vid,
+                    "state": "adopted" if ok else "pending_execution",
+                }
+            )
             if not ok:
                 findings.append("凭据在而生产记录缺（崩溃窗口）：%s" % vid)
         elif "intel:%s:reject" % vid in cred_keys:
-            states.append({"line": e["_line"], "verdict_id": vid,
-                           "state": "rejected"})
+            states.append({"line": e["_line"], "verdict_id": vid, "state": "rejected"})
         else:
-            states.append({"line": e["_line"], "verdict_id": vid,
-                           "state": "pending_review"})
+            states.append(
+                {"line": e["_line"], "verdict_id": vid, "state": "pending_review"}
+            )
 
     # ② 红线：生产记录中出现无凭据的裁决 = 绕门
     n_bypass = 0
@@ -416,22 +487,22 @@ def audit_report(root: Path = None) -> Dict:
         adopted_vids.append(vid)
         if "intel:%s:adopt" % vid not in cred_keys:
             n_bypass += 1
-            findings.append("bypass_adopt: share/intel 无凭据条目"
-                            " verdict_id=%s" % (vid or "<missing>"))
+            findings.append(
+                "bypass_adopt: share/intel 无凭据条目"
+                " verdict_id=%s" % (vid or "<missing>")
+            )
 
     # ③ 交叉校验（trace 域语义：生产记录即痕迹，adopted 凭据逐张对账）
     traces: Dict[str, Dict] = {}
     for vid in adopted_vids:
-        t = traces.setdefault("intel:%s" % vid, {"statuses": [],
-                                                 "consumed_keys": set()})
+        t = traces.setdefault(
+            "intel:%s" % vid, {"statuses": [], "consumed_keys": set()}
+        )
         t["statuses"].append("adopted")
-    cross_v = cross_check(
-        "intel", creds, traces,
-        {tid: "adopted" for tid in traces})
+    cross_v = cross_check("intel", creds, traces, {tid: "adopted" for tid in traces})
 
     gate_fail = bool(findings) or n_bypass > 0
-    verdict = verdict_for(
-        ([{"severity": "FAIL"}] if gate_fail else []) + cross_v)
+    verdict = verdict_for(([{"severity": "FAIL"}] if gate_fail else []) + cross_v)
     return {
         "verdict": verdict,
         "verdicts_total": len(pool),
@@ -453,10 +524,8 @@ def main(argv=None) -> int:
     p_d.add_argument("--verdict-id", required=True)
     p_d.add_argument("--table", required=True, help="表 URN")
     p_d.add_argument("--job-run", required=True)
-    p_d.add_argument("--break-kind", required=True,
-                     choices=sorted(_KNOWN_BREAKS))
-    p_d.add_argument("--decision", required=True,
-                     choices=sorted(_KNOWN_DECISIONS))
+    p_d.add_argument("--break-kind", required=True, choices=sorted(_KNOWN_BREAKS))
+    p_d.add_argument("--decision", required=True, choices=sorted(_KNOWN_DECISIONS))
     p_d.add_argument("--impact", default="", help="逗号分隔下游清单")
     p_d.add_argument("--rationale", required=True)
     p_d.add_argument("--by", required=True)
@@ -479,30 +548,50 @@ def main(argv=None) -> int:
         for e in load_pool():
             print(json.dumps(e, ensure_ascii=False))
     elif args.cmd == "auto-draft":
-        print(json.dumps(auto_draft_from_lineage(
-            _AGENT_PLATFORM, api_base=args.api_base, by=args.by),
-            ensure_ascii=False, indent=1))
+        print(
+            json.dumps(
+                auto_draft_from_lineage(
+                    _AGENT_PLATFORM, api_base=args.api_base, by=args.by
+                ),
+                ensure_ascii=False,
+                indent=1,
+            )
+        )
     elif args.cmd == "report":
         print(json.dumps(audit_report(), ensure_ascii=False, indent=1))
     elif args.cmd == "draft":
-        rec = draft(_AGENT_PLATFORM, {
-            "verdict_id": args.verdict_id, "table_urn": args.table,
-            "job_run_id": args.job_run, "break_kind": args.break_kind,
-            "decision": args.decision,
-            "impact": [x for x in args.impact.split(",") if x],
-            "rationale": args.rationale}, args.by)
+        rec = draft(
+            _AGENT_PLATFORM,
+            {
+                "verdict_id": args.verdict_id,
+                "table_urn": args.table,
+                "job_run_id": args.job_run,
+                "break_kind": args.break_kind,
+                "decision": args.decision,
+                "impact": [x for x in args.impact.split(",") if x],
+                "rationale": args.rationale,
+            },
+            args.by,
+        )
         print(json.dumps(rec, ensure_ascii=False))
     elif args.cmd == "adopt":
-        ap_, rec, replayed = adopt(_AGENT_PLATFORM, args.verdict_id,
-                                   args.by, args.reason)
-        print(json.dumps({"approval_id": ap_.approval_id,
-                          "replayed": replayed, "memory": rec},
-                         ensure_ascii=False))
+        ap_, rec, replayed = adopt(
+            _AGENT_PLATFORM, args.verdict_id, args.by, args.reason
+        )
+        print(
+            json.dumps(
+                {"approval_id": ap_.approval_id, "replayed": replayed, "memory": rec},
+                ensure_ascii=False,
+            )
+        )
     else:
-        ap_, replayed = reject(_AGENT_PLATFORM, args.verdict_id,
-                               args.by, args.reason)
-        print(json.dumps({"approval_id": ap_.approval_id,
-                          "replayed": replayed}, ensure_ascii=False))
+        ap_, replayed = reject(_AGENT_PLATFORM, args.verdict_id, args.by, args.reason)
+        print(
+            json.dumps(
+                {"approval_id": ap_.approval_id, "replayed": replayed},
+                ensure_ascii=False,
+            )
+        )
     return 0
 
 

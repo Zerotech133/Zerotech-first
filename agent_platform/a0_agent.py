@@ -20,6 +20,7 @@
       data/shadow/a0_compare_<date>_<target>.json（成对判读，含质量自检结果）
 纪律：不挂 automation（上线时机待老田拍板）；影子期间点评不含操作建议（人设铁律）。
 """
+
 import argparse
 import json
 import os
@@ -49,6 +50,7 @@ def _glm_key():
     try:
         import json as _json
         from pathlib import Path as _P
+
         p = _P(__file__).resolve().parent.parent / "portal" / "audit_ai_config.json"
         if p.exists():
             zk = _json.loads(p.read_text(encoding="utf-8")).get("zhipu_key", "")
@@ -70,35 +72,45 @@ def glm_chat(persona, user, model="glm/glm-5.3", timeout=240):
     返回 (text, "ok") 与 OllamaLLM().chat 同构。"""
     import urllib.error
     import urllib.request
+
     key = _glm_key()
     if not key:
-        raise LLMError("智谱 key 未配置（audit_ai_config.json zhipu_key / GLM_API_KEY 均空；"
-                       "不降档静默——席位模型是判读有效性的组成部分）")
+        raise LLMError(
+            "智谱 key 未配置（audit_ai_config.json zhipu_key / GLM_API_KEY 均空；"
+            "不降档静默——席位模型是判读有效性的组成部分）"
+        )
     payload = {
         "model": model.split("/", 1)[1] if "/" in model else model,
         "max_tokens": 16384,
-        "messages": [{"role": "system", "content": persona},
-                     {"role": "user", "content": user}],
+        "messages": [
+            {"role": "system", "content": persona},
+            {"role": "user", "content": user},
+        ],
         "stream": False,
     }
     req = urllib.request.Request(
         "https://open.bigmodel.cn/api/coding/paas/v4/chat/completions",
         data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json",
-                 "Authorization": "Bearer " + key})
+        headers={"Content-Type": "application/json", "Authorization": "Bearer " + key},
+    )
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             d = json.load(resp)
-    except (urllib.error.HTTPError, urllib.error.URLError, OSError,
-            json.JSONDecodeError) as e:  # K-ORG-137：429/404/超时/非JSON一律转
+    except (
+        urllib.error.HTTPError,
+        urllib.error.URLError,
+        OSError,
+        json.JSONDecodeError,
+    ) as e:  # K-ORG-137：429/404/超时/非JSON一律转
         # LLMError——此前裸抛 urllib 异常，main() 的 except LLMError 捕不到，
         # 降档提示（sys.exit(2)）失效、直接裸 traceback
         raise LLMError("glm 通道调用失败：%s" % e) from e
     out = ((d.get("choices") or [{}])[0].get("message") or {}).get("content") or ""
     out = out.strip()
     if not out:
-        raise LLMError("glm 空回（思考型吞 content? finish=%s）"
-                       % d.get("finish_reason"))
+        raise LLMError(
+            "glm 空回（思考型吞 content? finish=%s）" % d.get("finish_reason")
+        )
     return out, "ok"
 
 
@@ -128,6 +140,7 @@ def route_chat(persona, user, model, metadata=None):
         model = model.split("/", 1)[1]
     return OllamaLLM().chat(persona, user, model=model)
 
+
 MOCK_REVIEW = (
     "- **[链路]**（mock）五票全 done 零降级，链路健康。\n"
     "- **[风险]**（mock）全篮子 HOLD，J2 主判据依赖备用排序，影子后校准 D1。\n"
@@ -140,10 +153,16 @@ MOCK_COMPARE = {
     "winner": "candidate",
     "confidence": "medium",
     "reasons": [
-        {"side": "candidate", "point": "（mock）候选产出补齐了契约要求的数据来源",
-         "evidence": "（mock）候选侧出现来源字段，冠军侧未见"},
-        {"side": "champion", "point": "（mock）冠军产出推理链更完整",
-         "evidence": "（mock）冠军侧含两步推理，候选侧一步"},
+        {
+            "side": "candidate",
+            "point": "（mock）候选产出补齐了契约要求的数据来源",
+            "evidence": "（mock）候选侧出现来源字段，冠军侧未见",
+        },
+        {
+            "side": "champion",
+            "point": "（mock）冠军产出推理链更完整",
+            "evidence": "（mock）冠军侧含两步推理，候选侧一步",
+        },
     ],
     "missing": "",
 }
@@ -165,11 +184,32 @@ BLACKLIST_WORDS = ("买入", "卖出", "加仓", "清仓", "止损位")
 
 # K-ORG-133：链路/脚本缺陷类判读须含 [P0|P1|P2] 定级（K-ORG-127 promoted 输出契约）
 # K-ORG-134：词表扩展——补 K-ORG-127 补证档/任务单缺陷表述（未闭环/未执行/阻断/报错/崩溃/出错/降级）
-DEFECT_KEYWORDS = ("读取失败", "字段缺失", "超时", "失败", "异常",
-                   "无响应", "未修复", "不可见", "损坏", "卡死",
-                   "未闭环", "未执行", "阻断", "报错", "崩溃", "出错", "降级")
-DEFECT_EXEMPT = ("已修复", "已闭环", "已处理", "修复闭环",
-                 "零降级")  # 闭环结论非待办缺陷；零降级为正面陈述（日报惯用「五票全 done 零降级」）
+DEFECT_KEYWORDS = (
+    "读取失败",
+    "字段缺失",
+    "超时",
+    "失败",
+    "异常",
+    "无响应",
+    "未修复",
+    "不可见",
+    "损坏",
+    "卡死",
+    "未闭环",
+    "未执行",
+    "阻断",
+    "报错",
+    "崩溃",
+    "出错",
+    "降级",
+)
+DEFECT_EXEMPT = (
+    "已修复",
+    "已闭环",
+    "已处理",
+    "修复闭环",
+    "零降级",
+)  # 闭环结论非待办缺陷；零降级为正面陈述（日报惯用「五票全 done 零降级」）
 SEV_PAT = re.compile(r"\[P[012]\]")
 
 
@@ -237,6 +277,7 @@ def parse_json_block(text):
 
     返回 (obj, err)：成功 err 为 None；失败 obj 为 None、err 为一句原因。"""
     import re as _re
+
     try:
         return json.loads(text.strip()), None
     except json.JSONDecodeError:
@@ -260,6 +301,7 @@ def compare_quality_check(verdict, cand_text, champ_text, ev_text=""):
     ④ tie 时 missing 必填非空；非 tie 时 missing 应为空
     """
     import re as _re
+
     reasons = []
     if not isinstance(verdict, dict):
         return False, ["裁决须为 JSON 对象"]
@@ -279,17 +321,30 @@ def compare_quality_check(verdict, cand_text, champ_text, ev_text=""):
             if r.get("side") not in ("candidate", "champion", "both"):
                 reasons.append("理由%d side 非法:%r" % (i + 1, r.get("side")))
             point, evidence = r.get("point"), r.get("evidence")
-            if not isinstance(point, str) or not point.strip() or not isinstance(evidence, str) or not evidence.strip():
+            if (
+                not isinstance(point, str)
+                or not point.strip()
+                or not isinstance(evidence, str)
+                or not evidence.strip()
+            ):
                 reasons.append("理由%d point/evidence 为空或非文本" % (i + 1))
             # ③ 数字可追溯（evidence 无数字则视为文字引用，放行）
-            for n in set(_re.findall(r"\d+(?:\.\d+)?", (evidence if isinstance(evidence, str) else "") + (point if isinstance(point, str) else ""))):
+            for n in set(
+                _re.findall(
+                    r"\d+(?:\.\d+)?",
+                    (evidence if isinstance(evidence, str) else "")
+                    + (point if isinstance(point, str) else ""),
+                )
+            ):
                 if n not in src_nums:
                     reasons.append("理由%d 引用数字%s在两份产出中不存在" % (i + 1, n))
     # ② 黑名单（判读理由层同样不许出现操作建议）
     for r in rs if isinstance(rs, list) else []:
         if not isinstance(r, dict):
             continue
-        blob = "".join(v for v in (r.get("point"), r.get("evidence")) if isinstance(v, str))
+        blob = "".join(
+            v for v in (r.get("point"), r.get("evidence")) if isinstance(v, str)
+        )
         for w in BLACKLIST_WORDS:
             if w in blob:
                 reasons.append("理由含黑名单词:%s" % w)
@@ -309,13 +364,33 @@ def main():
     ap = argparse.ArgumentParser(description="A0 总管判读")
     ap.add_argument("--date", default=datetime.now().strftime("%Y-%m-%d"))
     ap.add_argument("--live", action="store_true", help="真调 Ollama（默认 mock）")
-    ap.add_argument("--model", default=None, help="覆盖模型（默认 org.json chief binding）")
-    ap.add_argument("--candidate", default=None, help="候选工作流产出的文件路径（成对判读模式）")
-    ap.add_argument("--champion", default=None, help="冠军工作流产出的文件路径（成对判读模式）")
-    ap.add_argument("--target", default="wf", help="成对判读的工作流标识（用于输出文件名）")
-    ap.add_argument("--persona", default=None, help="覆盖人设文件（K-ORG-127 影子对比：候选跑，输出加 _cand 后缀防覆盖冠军档）")
-    ap.add_argument("--with-prev", action="store_true", help="附昨日点评档入上下文（K-ORG-127 候选hop：首条[回看]段的依据）")
-    ap.add_argument("--evidence", default=None, help="执行反馈补证档路径（K-ORG-127 重判：附入判读上下文补齐 missing 证据）")
+    ap.add_argument(
+        "--model", default=None, help="覆盖模型（默认 org.json chief binding）"
+    )
+    ap.add_argument(
+        "--candidate", default=None, help="候选工作流产出的文件路径（成对判读模式）"
+    )
+    ap.add_argument(
+        "--champion", default=None, help="冠军工作流产出的文件路径（成对判读模式）"
+    )
+    ap.add_argument(
+        "--target", default="wf", help="成对判读的工作流标识（用于输出文件名）"
+    )
+    ap.add_argument(
+        "--persona",
+        default=None,
+        help="覆盖人设文件（K-ORG-127 影子对比：候选跑，输出加 _cand 后缀防覆盖冠军档）",
+    )
+    ap.add_argument(
+        "--with-prev",
+        action="store_true",
+        help="附昨日点评档入上下文（K-ORG-127 候选hop：首条[回看]段的依据）",
+    )
+    ap.add_argument(
+        "--evidence",
+        default=None,
+        help="执行反馈补证档路径（K-ORG-127 重判：附入判读上下文补齐 missing 证据）",
+    )
     args = ap.parse_args()
 
     if args.candidate or args.champion:
@@ -327,13 +402,20 @@ def main():
         sys.exit(1)
     daily = report.read_text(encoding="utf-8")
     t0 = time.time()  # K-STOCK-120 判据④：推理耗时起点（含读输入后全过程）
-    persona = (Path(args.persona) if args.persona else PERSONA).read_text(encoding="utf-8")
+    persona = (Path(args.persona) if args.persona else PERSONA).read_text(
+        encoding="utf-8"
+    )
     user = "以下是今日投研部日报，请给出判读：\n\n" + daily
     if args.with_prev:  # K-ORG-127 候选 hop：回看段需要昨日点评档作输入
-        prev_date = (datetime.strptime(args.date, "%Y-%m-%d") - timedelta(days=1)).strftime("%Y-%m-%d")
+        prev_date = (
+            datetime.strptime(args.date, "%Y-%m-%d") - timedelta(days=1)
+        ).strftime("%Y-%m-%d")
         prev = BASE / "data" / "shadow" / ("a0_review_%s.md" % prev_date)
         if prev.exists():
-            user += "\n\n以下是昨日点评档（首条[回看]请核对昨日「明日关注」是否在今日日报中闭环）：\n\n" + prev.read_text(encoding="utf-8")
+            user += (
+                "\n\n以下是昨日点评档（首条[回看]请核对昨日「明日关注」是否在今日日报中闭环）：\n\n"
+                + prev.read_text(encoding="utf-8")
+            )
             print("[A0] 已附昨日点评档：%s" % prev.name)
         else:
             print("[A0] 无昨日点评档（%s），[回看]段按人设跳过" % prev.name)
@@ -341,7 +423,9 @@ def main():
     if args.live:
         model = args.model or chief_model()
         try:
-            review, status = route_chat(persona, user, model=model)  # K-ORG-130：glm/* 走智谱通道
+            review, status = route_chat(
+                persona, user, model=model
+            )  # K-ORG-130：glm/* 走智谱通道
         except LLMError as e:
             print("[A0] LLM 失败：%s（可用 --model qwen3.5:9b 降档重试）" % e)
             sys.exit(2)
@@ -350,7 +434,9 @@ def main():
         review = MOCK_REVIEW
         print("[A0] mock 模式（结构验证）")
 
-    suffix = "_cand" if args.persona else ""  # 候选跑不覆盖冠军档（成对判读要引用冠军原产出）
+    suffix = (
+        "_cand" if args.persona else ""
+    )  # 候选跑不覆盖冠军档（成对判读要引用冠军原产出）
     out = BASE / "data" / "shadow" / ("a0_review_%s%s.md" % (args.date, suffix))
     elapsed = time.time() - t0  # K-STOCK-120 判据④：推理耗时（仅记录，不自检）
     print("[A0] 推理耗时 %.1fs" % elapsed)
@@ -389,7 +475,9 @@ def run_compare(args):
         "【候选工作流产出】\n" + cand + "\n\n【冠军工作流产出】\n" + champ
     )
     ev_text = ""
-    if args.evidence:  # K-ORG-127 重判：补证档附入（中立事实，供判读补齐此前 missing 的执行反馈）
+    if (
+        args.evidence
+    ):  # K-ORG-127 重判：补证档附入（中立事实，供判读补齐此前 missing 的执行反馈）
         ev_p = Path(args.evidence)
         if not ev_p.exists():
             print("[A0·判读] 补证档不存在：%s" % ev_p)
@@ -401,9 +489,13 @@ def run_compare(args):
         model = args.model or chief_model()
         route_meta = {}
         verdict, err, raw = None, None, ""
-        for attempt in range(1, 4):  # K-ORG-127：小模型严格JSON不稳，解析失败重发至多3次（不放松契约）
+        for attempt in range(
+            1, 4
+        ):  # K-ORG-127：小模型严格JSON不稳，解析失败重发至多3次（不放松契约）
             try:
-                raw, status = route_chat(persona, user, model=model, metadata=route_meta)
+                raw, status = route_chat(
+                    persona, user, model=model, metadata=route_meta
+                )
             except LLMError as e:
                 print("[A0·判读] LLM 失败：%s（可用 --model qwen3.5:9b 降档重试）" % e)
                 sys.exit(2)
@@ -417,7 +509,12 @@ def run_compare(args):
             print("[A0·判读] 3 次仍未得合法 JSON；末次原文前200字：%s" % raw[:200])
             sys.exit(3)
     else:
-        verdict, model, status, route_meta = dict(MOCK_COMPARE), "mock", "mock", {"actual": "mock"}
+        verdict, model, status, route_meta = (
+            dict(MOCK_COMPARE),
+            "mock",
+            "mock",
+            {"actual": "mock"},
+        )
         print("[A0·判读] mock 模式（结构验证）")
 
     actual = route_meta.get("actual", model)
@@ -425,9 +522,14 @@ def run_compare(args):
     elapsed = time.time() - t0
     ok, reasons = compare_quality_check(verdict, cand, champ, ev_text)
     accepted = ok and not degraded and status in ("normal", "ok")
-    print("[A0·判读] 推理耗时 %.1fs · 质量自检：%s" % (elapsed, "PASS" if ok else "FAIL（%s）" % ";".join(reasons)))
+    print(
+        "[A0·判读] 推理耗时 %.1fs · 质量自检：%s"
+        % (elapsed, "PASS" if ok else "FAIL（%s）" % ";".join(reasons))
+    )
 
-    out = BASE / "data" / "shadow" / ("a0_compare_%s_%s.json" % (args.date, args.target))
+    out = (
+        BASE / "data" / "shadow" / ("a0_compare_%s_%s.json" % (args.date, args.target))
+    )
     out.write_text(
         json.dumps(
             {
@@ -453,10 +555,14 @@ def run_compare(args):
         encoding="utf-8",
     )
     print("[A0·判读] 判读已生成：%s" % out)
-    print("winner=%s confidence=%s accepted=%s" % (
-        verdict.get("winner") if isinstance(verdict, dict) else None,
-        verdict.get("confidence") if isinstance(verdict, dict) else None,
-        accepted))
+    print(
+        "winner=%s confidence=%s accepted=%s"
+        % (
+            verdict.get("winner") if isinstance(verdict, dict) else None,
+            verdict.get("confidence") if isinstance(verdict, dict) else None,
+            accepted,
+        )
+    )
 
 
 if __name__ == "__main__":

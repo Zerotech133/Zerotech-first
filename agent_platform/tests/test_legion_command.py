@@ -37,6 +37,7 @@ def store(tmp_path, monkeypatch):
 
 # ---------------------------------------------------------------- 快照聚合
 
+
 def test_snapshot_real_org(tmp_path):
     data = snap.build_snapshot()
     assert data["ok"] is True
@@ -64,6 +65,7 @@ def test_snapshot_readonly(tmp_path):
 
 # ---------------------------------------------------------------- HTTP 端点
 
+
 @pytest.fixture()
 def server(store):
     srv = build_server(port=0)
@@ -80,10 +82,12 @@ def _get(base, path):
 
 
 def _post(base, path, obj):
-    req = urllib.request.Request(base + path,
-                                 data=json.dumps(obj).encode("utf-8"),
-                                 headers={"Content-Type": "application/json"},
-                                 method="POST")
+    req = urllib.request.Request(
+        base + path,
+        data=json.dumps(obj).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
     with urllib.request.urlopen(req, timeout=10) as r:
         return json.loads(r.read().decode("utf-8"))
 
@@ -115,9 +119,16 @@ def test_http_static_whitelist_blocks_traversal(server):
 
 
 def test_http_dispatch_via_gateway_inbox(server, store):
-    env = _post(server, "/api/dispatch",
-                {"type": "work", "title": "Z5 对照实验",
-                 "attendees": ["A0", "R2"], "note": "会终指令测试"})
+    env = _post(
+        server,
+        "/api/dispatch",
+        {
+            "type": "work",
+            "title": "Z5 对照实验",
+            "attendees": ["A0", "R2"],
+            "note": "会终指令测试",
+        },
+    )
     assert env["ok"] is True
     env["data"]["id"]
     files = list((store / "inbox").glob("*.json"))
@@ -149,6 +160,7 @@ def test_http_dispatch_bad_type(server, store):
 
 # ---------------------------------------------------------------- 会议室真模型通道
 
+
 def test_http_chat_live_ok(server, monkeypatch):
     from gateway import llm_gateway
 
@@ -161,12 +173,18 @@ def test_http_chat_live_ok(server, monkeypatch):
     def fake_chat(binding=None, system="", user=""):
         captured["binding"] = binding
         captured["user"] = user
-        return llm_gateway.make_envelope(kind="llm_chat", ok=True,
-                                         data={"text": "结论：先修心跳。", "status": "normal"})
+        return llm_gateway.make_envelope(
+            kind="llm_chat",
+            ok=True,
+            data={"text": "结论：先修心跳。", "status": "normal"},
+        )
 
     monkeypatch.setattr(llm_gateway, "chat", fake_chat)
-    env = _post(server, "/api/chat",
-                {"agent": "A0", "system": "你是田丰", "user": "今日优先级？"})
+    env = _post(
+        server,
+        "/api/chat",
+        {"agent": "A0", "system": "你是田丰", "user": "今日优先级？"},
+    )
     assert env["ok"] is True
     assert env["agent"] == "A0"
     assert env["binding"] == "glm/glm-5.3"
@@ -178,8 +196,12 @@ def test_http_chat_degraded_and_failure_passthrough(server, monkeypatch):
     from gateway import llm_gateway
 
     def degraded(binding=None, system="", user=""):
-        return llm_gateway.make_envelope(kind="llm_chat", ok=True, degraded=True,
-                                         data={"text": "本地兜底", "status": "degraded"})
+        return llm_gateway.make_envelope(
+            kind="llm_chat",
+            ok=True,
+            degraded=True,
+            data={"text": "本地兜底", "status": "degraded"},
+        )
 
     monkeypatch.setattr(llm_gateway, "chat", degraded)
     env = _post(server, "/api/chat", {"agent": "R2", "system": "s", "user": "u"})
@@ -187,8 +209,11 @@ def test_http_chat_degraded_and_failure_passthrough(server, monkeypatch):
     assert env["binding"] == "ollama/qwen3.5:9b"
 
     def dead(binding=None, system="", user=""):
-        return llm_gateway.make_envelope(kind="llm_chat", ok=False,
-                                         error={"code": "llm_error", "message": "key missing"})
+        return llm_gateway.make_envelope(
+            kind="llm_chat",
+            ok=False,
+            error={"code": "llm_error", "message": "key missing"},
+        )
 
     monkeypatch.setattr(llm_gateway, "chat", dead)
     env2 = _post(server, "/api/chat", {"agent": "R2", "system": "s", "user": "u"})
@@ -206,12 +231,14 @@ def test_http_chat_bad_agent(server):
 
 def test_http_chat_unknown_agent_default_binding(server, monkeypatch):
     from gateway import llm_gateway
+
     seen = {}
 
     def fake(binding=None, system="", user=""):
         seen["b"] = binding
-        return llm_gateway.make_envelope(kind="llm_chat", ok=True,
-                                         data={"text": "t", "status": "normal"})
+        return llm_gateway.make_envelope(
+            kind="llm_chat", ok=True, data={"text": "t", "status": "normal"}
+        )
 
     monkeypatch.setattr(llm_gateway, "chat", fake)
     env = _post(server, "/api/chat", {"agent": "DEV7", "system": "", "user": "u"})
@@ -223,23 +250,35 @@ def test_http_chat_glm_quota_fallback_to_local(server, monkeypatch):
     """glm 限额/故障 → 会议通道显式降级本地 9b（degraded + fallback 原因，不静默）。"""
     from gateway import llm_gateway
     from legion_command import serve as srv_mod
+
     # live-state 隔离：固定 A0 主绑 glm、降级链本地 9b（不读并发改动的 org）
-    monkeypatch.setattr(srv_mod, "resolve_binding",
-                        lambda agent, platform_dir=None: "glm/glm-5.3")
-    monkeypatch.setattr(srv_mod, "resolve_fallbacks",
-                        lambda agent, platform_dir=None: ["ollama/qwen3.5:9b"])
+    monkeypatch.setattr(
+        srv_mod, "resolve_binding", lambda agent, platform_dir=None: "glm/glm-5.3"
+    )
+    monkeypatch.setattr(
+        srv_mod,
+        "resolve_fallbacks",
+        lambda agent, platform_dir=None: ["ollama/qwen3.5:9b"],
+    )
     calls = []
 
     def fake(binding=None, system="", user=""):
         calls.append(binding)
         if binding.startswith("glm/"):
-            return llm_gateway.make_envelope(kind="llm_chat", ok=False,
-                                             error={"code": "llm_error",
-                                                    "message": "HTTP 429 限额"})
-        return llm_gateway.make_envelope(kind="llm_chat", ok=True,
-                                         data={"text": "本地兜底答复",
-                                               "status": "normal",
-                                               "binding_resolved": binding})
+            return llm_gateway.make_envelope(
+                kind="llm_chat",
+                ok=False,
+                error={"code": "llm_error", "message": "HTTP 429 限额"},
+            )
+        return llm_gateway.make_envelope(
+            kind="llm_chat",
+            ok=True,
+            data={
+                "text": "本地兜底答复",
+                "status": "normal",
+                "binding_resolved": binding,
+            },
+        )
 
     monkeypatch.setattr(llm_gateway, "chat", fake)
     env = _post(server, "/api/chat", {"agent": "A0", "system": "s", "user": "u"})
@@ -256,8 +295,11 @@ def test_http_chat_local_failure_no_fallback(server, monkeypatch):
     from gateway import llm_gateway
 
     def fake(binding=None, system="", user=""):
-        return llm_gateway.make_envelope(kind="llm_chat", ok=False,
-                                         error={"code": "llm_error", "message": "重试耗尽"})
+        return llm_gateway.make_envelope(
+            kind="llm_chat",
+            ok=False,
+            error={"code": "llm_error", "message": "重试耗尽"},
+        )
 
     monkeypatch.setattr(llm_gateway, "chat", fake)
     env = _post(server, "/api/chat", {"agent": "R2", "system": "s", "user": "u"})
@@ -269,6 +311,7 @@ def test_http_chat_openai_via_openclaw_relay(server, monkeypatch):
     """AI1 → OpenClaw agent-config 载体（GPT6 网络不可达时 deepseek 中转），
     诚实返回 carrier/relay/mode，且不走 llm_gateway（避免误报未接）。"""
     import legion_command.serve as srv_mod
+
     calls = []
 
     def fake_chat(binding=None, system="", user=""):
@@ -276,10 +319,12 @@ def test_http_chat_openai_via_openclaw_relay(server, monkeypatch):
         raise AssertionError("AI1 不应再走 llm_gateway")
 
     monkeypatch.setattr(srv_mod.llm_gateway, "chat", fake_chat)
-    monkeypatch.setattr(srv_mod, "oc_run",
-                        lambda agent, prompt: ("军师答：先修心跳。", None))
-    monkeypatch.setattr(srv_mod, "agent_primary_model",
-                        lambda agent=None: "deepseek/deepseek-chat")
+    monkeypatch.setattr(
+        srv_mod, "oc_run", lambda agent, prompt: ("军师答：先修心跳。", None)
+    )
+    monkeypatch.setattr(
+        srv_mod, "agent_primary_model", lambda agent=None: "deepseek/deepseek-chat"
+    )
     monkeypatch.setattr(srv_mod, "is_relay", lambda m: True)
     env = _post(server, "/api/chat", {"agent": "AI1", "system": "s", "user": "u"})
     assert env["ok"] is True
@@ -294,6 +339,7 @@ def test_http_chat_openai_via_openclaw_relay(server, monkeypatch):
 def test_http_chat_openai_openclaw_unavailable(server, monkeypatch):
     """OpenClaw 载体失败 → 明确 channel_not_ready（含原因），不静默兜底。"""
     import legion_command.serve as srv_mod
+
     monkeypatch.setattr(srv_mod, "oc_run", lambda agent, prompt: (None, "timeout"))
     env = _post(server, "/api/chat", {"agent": "AI1", "system": "s", "user": "u"})
     assert env["ok"] is False
@@ -304,30 +350,67 @@ def test_http_chat_openai_openclaw_unavailable(server, monkeypatch):
 # ---------------------------------------------------------------- 在途归属映射（S29）
 
 _FIXTURE_TASKS = {
-    "legion-1021093009": {"status": "doing", "desc": "盘前 weak 池三线扫描",
-                          "owner": "D1", "project": "general"},
-    "K-INTEL-20261018-RO": {"status": "doing", "desc": "情报盘点",
-                            "owner": "INTEL0", "project": "general"},
-    "K-ORG-180": {"status": "doing", "desc": "组织调整",
-                  "owner": "A0", "project": "general"},
-    "K-QUANT-123": {"status": "doing", "desc": "量化专项",
-                    "owner": "unknown-agent", "project": "general"},
-    "CM-20261027-A": {"status": "doing", "desc": "参谋长交办",
-                      "owner": "INTEL0", "project": "general"},
-    "OS-CLOSE-1": {"status": "doing", "desc": "运行体收口",
-                   "owner": "OPS1", "project": "general"},
-    "WO-LEGION-1": {"status": "doing", "desc": "军团研发",
-                    "owner": "unknown-agent", "project": "general"},
-    "WO-GUANYU-1": {"status": "doing", "desc": "代码审计",
-                    "owner": "unknown-agent", "project": "general"},
-    "WO-NEW-20261027": {"status": "doing", "desc": "任意新研发单",
-                        "owner": "unknown-agent", "project": "general"},
+    "legion-1021093009": {
+        "status": "doing",
+        "desc": "盘前 weak 池三线扫描",
+        "owner": "D1",
+        "project": "general",
+    },
+    "K-INTEL-20261018-RO": {
+        "status": "doing",
+        "desc": "情报盘点",
+        "owner": "INTEL0",
+        "project": "general",
+    },
+    "K-ORG-180": {
+        "status": "doing",
+        "desc": "组织调整",
+        "owner": "A0",
+        "project": "general",
+    },
+    "K-QUANT-123": {
+        "status": "doing",
+        "desc": "量化专项",
+        "owner": "unknown-agent",
+        "project": "general",
+    },
+    "CM-20261027-A": {
+        "status": "doing",
+        "desc": "参谋长交办",
+        "owner": "INTEL0",
+        "project": "general",
+    },
+    "OS-CLOSE-1": {
+        "status": "doing",
+        "desc": "运行体收口",
+        "owner": "OPS1",
+        "project": "general",
+    },
+    "WO-LEGION-1": {
+        "status": "doing",
+        "desc": "军团研发",
+        "owner": "unknown-agent",
+        "project": "general",
+    },
+    "WO-GUANYU-1": {
+        "status": "doing",
+        "desc": "代码审计",
+        "owner": "unknown-agent",
+        "project": "general",
+    },
+    "WO-NEW-20261027": {
+        "status": "doing",
+        "desc": "任意新研发单",
+        "owner": "unknown-agent",
+        "project": "general",
+    },
 }
 
 
 def _with_fixture_tasks(monkeypatch):
     """只替换 tasks.json 的读取，org/schedules 仍走真实源（稳定）。"""
     import legion_command.snapshot as snap_mod
+
     orig = snap_mod._load_json
 
     def fake(path):
@@ -363,6 +446,7 @@ def test_activity_maps_known_prefixes(monkeypatch):
 
 def test_activity_mapping_does_not_touch_tasks_json():
     from pathlib import Path as _P
+
     p = _P(__file__).resolve().parents[2] / ".worktrees" / "tasks.json"
     before = p.read_bytes() if p.exists() else None
     build_snapshot()
@@ -372,6 +456,7 @@ def test_activity_mapping_does_not_touch_tasks_json():
 
 def test_map_task_rules():
     from legion_command.snapshot import _map_task
+
     assert _map_task("legion-1021093009", "盘前 weak 池三线扫描") == ("invest", "D1")
     assert _map_task("x", "每日复盘三问汇总") == ("ops", "A0A")
     assert _map_task("K-INTEL-20261018-RO", "") == ("intel", "")
@@ -384,10 +469,12 @@ def test_map_task_rules():
 
 # ------------------------------------------------- 会终纪要落盘（S31）
 
+
 @pytest.fixture()
 def meeting_server(store, tmp_path, monkeypatch):
     """纪要端点定向到 tmp，绝不写真实 data/meetings。"""
     from legion_command import serve as srv_mod
+
     mdir = tmp_path / "warroom"
     monkeypatch.setattr(srv_mod, "MEETINGS_DIR", mdir)
     srv = build_server(port=0)
@@ -400,15 +487,20 @@ def meeting_server(store, tmp_path, monkeypatch):
 
 def test_minutes_saved_with_source_tags(meeting_server):
     base, mdir = meeting_server
-    env = _post(base, "/api/meeting/minutes", {
-        "participants": ["A0", "D1", "R3"],
-        "orders": [{"title": "心跳修复", "state": "已下发"}],
-        "model_stats": {"ok": 2, "fail": 1},
-        "minutes": [
-            {"id": "HOST", "text": "今日盘面怎么看？", "src": "host"},
-            {"id": "D1", "text": "选股面：需查证池源后再报。", "src": "live"},
-            {"id": "R3", "text": "演示台词内容", "src": "script"},
-        ]})
+    env = _post(
+        base,
+        "/api/meeting/minutes",
+        {
+            "participants": ["A0", "D1", "R3"],
+            "orders": [{"title": "心跳修复", "state": "已下发"}],
+            "model_stats": {"ok": 2, "fail": 1},
+            "minutes": [
+                {"id": "HOST", "text": "今日盘面怎么看？", "src": "host"},
+                {"id": "D1", "text": "选股面：需查证池源后再报。", "src": "live"},
+                {"id": "R3", "text": "演示台词内容", "src": "script"},
+            ],
+        },
+    )
     assert env["ok"] is True and env["count"] == 3
     files = list(mdir.glob("warroom-*.json"))
     assert len(files) == 1
@@ -426,10 +518,21 @@ def test_minutes_saved_with_source_tags(meeting_server):
 
 def test_minutes_forged_live_stays_unverified(meeting_server):
     base, mdir = meeting_server
-    env = _post(base, "/api/meeting/minutes", {
-        "minutes": [{"id": "A0", "text": "客户端自行声称是真模型", "src": "live",
-                     "source_verification": "verified"}],
-        "model_stats": {"ok": 999, "verified": True}})
+    env = _post(
+        base,
+        "/api/meeting/minutes",
+        {
+            "minutes": [
+                {
+                    "id": "A0",
+                    "text": "客户端自行声称是真模型",
+                    "src": "live",
+                    "source_verification": "verified",
+                }
+            ],
+            "model_stats": {"ok": 999, "verified": True},
+        },
+    )
     assert env["ok"] is True
     doc = json.loads(next(mdir.glob("warroom-*.json")).read_text(encoding="utf-8"))
     assert doc["model_stats"] == {"ok": 999, "verified": True}  # 旧字段原样兼容
@@ -443,12 +546,16 @@ def test_minutes_forged_live_stays_unverified(meeting_server):
 
 def test_minutes_save_failure_reports_error(meeting_server, monkeypatch):
     from legion_command import serve as srv_mod
+
     base, mdir = meeting_server
     blocked = mdir.parent / "blocked"
     blocked.write_text("not a directory", encoding="utf-8")
     monkeypatch.setattr(srv_mod, "MEETINGS_DIR", blocked)
-    status, env = _post_err(base, "/api/meeting/minutes",
-                            {"minutes": [{"id": "HOST", "src": "host", "text": "test"}]})
+    status, env = _post_err(
+        base,
+        "/api/meeting/minutes",
+        {"minutes": [{"id": "HOST", "src": "host", "text": "test"}]},
+    )
     assert status == 500 and env == {"ok": False, "error": "minutes_save_failed"}
     assert blocked.read_text(encoding="utf-8") == "not a directory"
 
@@ -473,15 +580,21 @@ def test_minutes_truncates_oversize(meeting_server):
     assert env["ok"] is True and env["count"] == 200
     doc = json.loads(next(mdir.glob("warroom-*.json")).read_text(encoding="utf-8"))
     assert len(doc["minutes"]) == 200
-    assert len(doc["minutes"][0]["text"]) == 2000   # 单条截断上限
+    assert len(doc["minutes"][0]["text"]) == 2000  # 单条截断上限
 
 
 def test_minutes_filename_is_server_generated(meeting_server):
     """不信任客户端路径：传 filename/path 字段一律忽略，落盘只在 MEETINGS_DIR 内。"""
     base, mdir = meeting_server
-    env = _post(base, "/api/meeting/minutes", {
-        "filename": "../../evil.json", "path": "C:/Windows/evil.json",
-        "minutes": [{"id": "A0", "text": "ok", "src": "live"}]})
+    env = _post(
+        base,
+        "/api/meeting/minutes",
+        {
+            "filename": "../../evil.json",
+            "path": "C:/Windows/evil.json",
+            "minutes": [{"id": "A0", "text": "ok", "src": "live"}],
+        },
+    )
     assert env["ok"] is True
     # 跨平台取文件名（Linux 服务器上路径分隔符是 "/"，不能 split("\\")）
     assert Path(env["saved"]).name.startswith("warroom-")
@@ -492,9 +605,15 @@ def test_minutes_filename_is_server_generated(meeting_server):
 def test_minutes_bad_length_rejected(meeting_server):
     """超 512KB 请求体直接 400（不当内存炸弹）。"""
     base, mdir = meeting_server
-    big = json.dumps({"minutes": [{"id": "A0", "text": "y" * 600000, "src": "live"}]}).encode()
-    req = urllib.request.Request(base + "/api/meeting/minutes", data=big,
-                                 headers={"Content-Type": "application/json"}, method="POST")
+    big = json.dumps(
+        {"minutes": [{"id": "A0", "text": "y" * 600000, "src": "live"}]}
+    ).encode()
+    req = urllib.request.Request(
+        base + "/api/meeting/minutes",
+        data=big,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
     try:
         urllib.request.urlopen(req, timeout=10)
         raised = False
@@ -504,13 +623,17 @@ def test_minutes_bad_length_rejected(meeting_server):
     assert not list(mdir.glob("*.json")) if mdir.exists() else True
 
 
-@pytest.mark.skipif(shutil.which("node") is None,
-                    reason="用例以 Node 虚拟 DOM 跑前端脚本；服务器 verify 环境无 node，跳过")
+@pytest.mark.skipif(
+    shutil.which("node") is None,
+    reason="用例以 Node 虚拟 DOM 跑前端脚本；服务器 verify 环境无 node，跳过",
+)
 def test_meeting_browser_flow_isolated():
     """Node 虚拟 DOM 与假 fetch：验证 HOST XSS、会终成功/失败都不误派单。"""
-    html = (_PLATFORM / "legion_command" / "static" / "meeting.html").read_text(encoding="utf-8")
+    html = (_PLATFORM / "legion_command" / "static" / "meeting.html").read_text(
+        encoding="utf-8"
+    )
     js = "\n".join(re.findall(r"<script>(.*?)</script>", html, re.S))
-    harness = r'''
+    harness = r"""
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
 let html = '', pending = [], posts = [], response, mutation = [];
@@ -572,23 +695,32 @@ response = () => Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: t
   assert.equal(button.disabled, false);
   assert.equal(posts.every(p => p.path === '/api/meeting/minutes'), true);
 })().catch(e => { console.error(e); process.exitCode = 1; });
-'''
+"""
     import os
+
     env = dict(os.environ, MEETING_JS=js)
-    result = subprocess.run(["node", "-e", harness], capture_output=True, text=True,
-                            env=env, timeout=10)
+    result = subprocess.run(
+        ["node", "-e", harness], capture_output=True, text=True, env=env, timeout=10
+    )
     assert result.returncode == 0, result.stderr
 
 
 # ------------------------------------------------- 会议纪要回看（S32）
 
+
 def _seed_meeting(base, participants, texts):
     rows = [{"id": "HOST", "text": texts[0], "src": "host"}]
     for aid, t, src in texts[1]:
         rows.append({"id": aid, "text": t, "src": src})
-    return _post(base, "/api/meeting/minutes",
-                 {"participants": participants, "minutes": rows,
-                  "model_stats": {"ok": 1, "fail": 0}})
+    return _post(
+        base,
+        "/api/meeting/minutes",
+        {
+            "participants": participants,
+            "minutes": rows,
+            "model_stats": {"ok": 1, "fail": 0},
+        },
+    )
 
 
 def test_meeting_list_empty_dir(meeting_server):
@@ -601,7 +733,9 @@ def test_meeting_list_empty_dir(meeting_server):
 
 def test_meeting_list_after_save(meeting_server):
     base, mdir = meeting_server
-    _seed_meeting(base, ["A0", "D1"], ["今日盘面怎么看？", [("D1", "需查证池源", "live")]])
+    _seed_meeting(
+        base, ["A0", "D1"], ["今日盘面怎么看？", [("D1", "需查证池源", "live")]]
+    )
     env = json.loads(_get(base, "/api/meeting/list")[1].decode("utf-8"))
     assert env["total"] == 1
     m = env["meetings"][0]
@@ -616,7 +750,7 @@ def test_meeting_list_after_save(meeting_server):
 def test_meeting_list_sorted_desc(meeting_server):
     base, mdir = meeting_server
     _seed_meeting(base, ["A0"], ["第一场", [("D1", "a", "live")]])
-    time.sleep(1.1)                      # 时间戳秒级精度，保证 id 不同
+    time.sleep(1.1)  # 时间戳秒级精度，保证 id 不同
     _seed_meeting(base, ["R3"], ["第二场", [("R3", "b", "script")]])
     env = json.loads(_get(base, "/api/meeting/list")[1].decode("utf-8"))
     assert env["total"] == 2
@@ -636,8 +770,12 @@ def test_meeting_list_ignores_broken_file(meeting_server):
 
 def test_meeting_get_roundtrip(meeting_server):
     base, mdir = meeting_server
-    _seed_meeting(base, ["A0", "R3"], ["调不调仓？", [("R3", "缺乏回撤数据，无法判断", "live")]])
-    mid = json.loads(_get(base, "/api/meeting/list")[1].decode("utf-8"))["meetings"][0]["id"]
+    _seed_meeting(
+        base, ["A0", "R3"], ["调不调仓？", [("R3", "缺乏回撤数据，无法判断", "live")]]
+    )
+    mid = json.loads(_get(base, "/api/meeting/list")[1].decode("utf-8"))["meetings"][0][
+        "id"
+    ]
     st, body = _get(base, "/api/meeting/" + mid)
     env = json.loads(body.decode("utf-8"))
     assert st == 200 and env["ok"] is True
@@ -659,9 +797,11 @@ def test_meeting_get_unknown_is_404(meeting_server):
 
 def test_meeting_get_bad_id_is_400(meeting_server):
     base, mdir = meeting_server
-    for bad in ("/api/meeting/warroom-2026-1-1",
-                "/api/meeting/org.json",
-                "/api/meeting/..%2f..%2fregistry%2forg.json"):
+    for bad in (
+        "/api/meeting/warroom-2026-1-1",
+        "/api/meeting/org.json",
+        "/api/meeting/..%2f..%2fregistry%2forg.json",
+    ):
         try:
             _get(base, bad)
             raised = False
@@ -673,6 +813,7 @@ def test_meeting_get_bad_id_is_400(meeting_server):
 def test_meeting_traversal_blocked_two_layers(meeting_server):
     """双保险：路由正则 + relative_to 各自都能拦；直调底层仍拒（证明第二道独立成立）。"""
     from legion_command import serve as srv_mod
+
     base, mdir = meeting_server
     secret = mdir.parent / "secret.json"
     secret.parent.mkdir(parents=True, exist_ok=True)
@@ -703,10 +844,15 @@ def test_minutes_page_served(meeting_server):
 
 # ------------------------------------------------- 编制预览端点（S33）
 
+
 def _post_err(base, path, obj):
     """POST 并返回 (status, body_dict) —— 4xx 不抛，便于断言错误码与错误体。"""
-    req = urllib.request.Request(base + path, data=json.dumps(obj).encode("utf-8"),
-                                 headers={"Content-Type": "application/json"}, method="POST")
+    req = urllib.request.Request(
+        base + path,
+        data=json.dumps(obj).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
     try:
         with urllib.request.urlopen(req, timeout=10) as r:
             return r.status, json.loads(r.read().decode("utf-8"))
@@ -716,13 +862,23 @@ def _post_err(base, path, obj):
 
 def _org_sha():
     import hashlib
-    return hashlib.sha256((_PLATFORM / "registry" / "org.json").read_bytes()).hexdigest()
+
+    return hashlib.sha256(
+        (_PLATFORM / "registry" / "org.json").read_bytes()
+    ).hexdigest()
 
 
-_ORG_PRE = dict(dept="dev", agent_id="DEV9", cn_name="蒋琬", role_profile="日志工程师",
-                duty="负责全链路运行日志治理与异常归因，维护日志规范与轮转策略",
-                binding="ollama/qwen3.5:9b", grade="E2",
-                ticket="WO-ORG-PREVIEW", signed_by="（预览·待老田签字）")
+_ORG_PRE = dict(
+    dept="dev",
+    agent_id="DEV9",
+    cn_name="蒋琬",
+    role_profile="日志工程师",
+    duty="负责全链路运行日志治理与异常归因，维护日志规范与轮转策略",
+    binding="ollama/qwen3.5:9b",
+    grade="E2",
+    ticket="WO-ORG-PREVIEW",
+    signed_by="（预览·待老田签字）",
+)
 
 
 def test_preview_enroll_ok_and_no_write(server):
@@ -739,14 +895,18 @@ def test_preview_enroll_ok_and_no_write(server):
 
 def test_preview_enroll_duplicate_name_rejected(server):
     before = _org_sha()
-    st, env = _post_err(server, "/api/org/preview-enroll", dict(_ORG_PRE, cn_name="田丰"))
+    st, env = _post_err(
+        server, "/api/org/preview-enroll", dict(_ORG_PRE, cn_name="田丰")
+    )
     assert st == 400 and env["ok"] is False and env["error"] == "enroll_invalid"
     assert "重名" in env["detail"]
     assert _org_sha() == before
 
 
 def test_preview_enroll_bad_binding_rejected(server):
-    st, env = _post_err(server, "/api/org/preview-enroll", dict(_ORG_PRE, binding="gpt-9/x"))
+    st, env = _post_err(
+        server, "/api/org/preview-enroll", dict(_ORG_PRE, binding="gpt-9/x")
+    )
     assert st == 400 and "词表" in env["detail"]
 
 
@@ -756,7 +916,9 @@ def test_preview_enroll_short_duty_rejected(server):
 
 
 def test_preview_enroll_unknown_dept_rejected(server):
-    st, env = _post_err(server, "/api/org/preview-enroll", dict(_ORG_PRE, dept="nowhere"))
+    st, env = _post_err(
+        server, "/api/org/preview-enroll", dict(_ORG_PRE, dept="nowhere")
+    )
     assert st == 400 and "unknown dept" in env["detail"]
 
 
@@ -768,17 +930,22 @@ def test_preview_enroll_bad_body(server):
 
 # ------------------------------------------------- 绑定查真源 + 规则执行体（S38）
 
+
 def test_resolve_binding_prefers_org_truth():
     """org.json 是真源：编制造出的绑定必须压过本文件的硬编码表。"""
     from legion_command import serve as srv_mod
+
     srv_mod._BINDING_CACHE.update(mtime=None, map={})
     assert srv_mod.resolve_binding("BEACON1") == "none", "BEACON1 编制绑定 none"
     assert srv_mod.resolve_binding("KGMAP1") == "ollama/qwen3.5:9b"
     # INTEL0 的绑定会随改档演进（S39 曾由 glm-5.3-flash 改为 9b），不写死具体值，
     # 改为与 org.json 真源动态比对——写死就会在每次改档后集体转红（今日第三次踩）。
     _org = json.loads((_PLATFORM / "registry" / "org.json").read_text(encoding="utf-8"))
-    _truth = {p.get("agent_id"): str(p.get("llm_binding") or "")
-              for d in _org["departments"] for p in (d.get("agent_profiles") or [])}
+    _truth = {
+        p.get("agent_id"): str(p.get("llm_binding") or "")
+        for d in _org["departments"]
+        for p in (d.get("agent_profiles") or [])
+    }
     assert srv_mod.resolve_binding("INTEL0") == _truth["INTEL0"]
     # org 无档者回退硬编码表，再回退默认
     assert srv_mod.resolve_binding("AI1") == "openai/gpt-6.0"
@@ -789,11 +956,19 @@ def test_chat_rule_only_seat_rejected_without_llm_call(server, monkeypatch):
     """规则执行体必须拒答，且**一次 LLM 都不许调**（否则就是硬绑 9b 的老毛病）。"""
     from gateway import llm_gateway
     from legion_command import serve as srv_mod
+
     srv_mod._BINDING_CACHE.update(mtime=None, map={})
     calls = []
-    monkeypatch.setattr(llm_gateway, "chat",
-                        lambda **k: calls.append(k) or llm_gateway.make_envelope(
-                            kind="llm_chat", ok=True, data={"text": "不该出现"}))
+    monkeypatch.setattr(
+        llm_gateway,
+        "chat",
+        lambda **k: (
+            calls.append(k)
+            or llm_gateway.make_envelope(
+                kind="llm_chat", ok=True, data={"text": "不该出现"}
+            )
+        ),
+    )
     env = _post(server, "/api/chat", {"agent": "BEACON1", "system": "s", "user": "u"})
     assert env["ok"] is False
     assert env["error"]["code"] == "no_llm_capability"
@@ -806,11 +981,15 @@ def test_chat_normal_seat_still_works(server, monkeypatch):
     """改动不能误伤：普通席位仍走 LLM。"""
     from gateway import llm_gateway
     from legion_command import serve as srv_mod
+
     srv_mod._BINDING_CACHE.update(mtime=None, map={})
-    monkeypatch.setattr(llm_gateway, "chat",
-                        lambda **k: llm_gateway.make_envelope(
-                            kind="llm_chat", ok=True,
-                            data={"text": "真回复", "status": "normal"}))
+    monkeypatch.setattr(
+        llm_gateway,
+        "chat",
+        lambda **k: llm_gateway.make_envelope(
+            kind="llm_chat", ok=True, data={"text": "真回复", "status": "normal"}
+        ),
+    )
     env = _post(server, "/api/chat", {"agent": "KGMAP1", "system": "s", "user": "u"})
     assert env["ok"] is True and env["data"]["text"] == "真回复"
     assert env["binding"] == "ollama/qwen3.5:9b"
@@ -819,10 +998,20 @@ def test_chat_normal_seat_still_works(server, monkeypatch):
 def test_binding_cache_refreshes_on_org_change(tmp_path):
     """org.json 改动后缓存须失效——否则补档/改档后会议层仍按旧绑定说话。"""
     from legion_command import serve as srv_mod
+
     r = tmp_path / "plat"
     (r / "registry").mkdir(parents=True)
-    org = {"departments": [{"dept": "x", "agents": ["Z1"],
-                            "agent_profiles": [{"agent_id": "Z1", "llm_binding": "ollama/qwen3.5:9b"}]}]}
+    org = {
+        "departments": [
+            {
+                "dept": "x",
+                "agents": ["Z1"],
+                "agent_profiles": [
+                    {"agent_id": "Z1", "llm_binding": "ollama/qwen3.5:9b"}
+                ],
+            }
+        ]
+    }
     p = r / "registry" / "org.json"
     p.write_text(json.dumps(org, ensure_ascii=False), encoding="utf-8")
     srv_mod._BINDING_CACHE.update(mtime=None, map={})
@@ -831,12 +1020,16 @@ def test_binding_cache_refreshes_on_org_change(tmp_path):
     org["departments"][0]["agent_profiles"][0]["llm_binding"] = "none"
     p.write_text(json.dumps(org, ensure_ascii=False), encoding="utf-8")
     import os
+
     st = p.stat()
     os.utime(p, (st.st_atime, st.st_mtime + 10))
-    assert srv_mod.resolve_binding("Z1", platform_dir=r) == "none", "org 改动后缓存未失效"
+    assert srv_mod.resolve_binding("Z1", platform_dir=r) == "none", (
+        "org 改动后缓存未失效"
+    )
 
 
 # ---------------------------------------------------------------- A2-B04 入参上限
+
 
 def test_http_chat_rejects_oversized_body(server):
     """/api/chat 请求体 >64KB 必须 400，不得原样塞进子进程参数。"""

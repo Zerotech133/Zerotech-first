@@ -24,6 +24,7 @@ upstream_inbox.py L8-21，实现从简——方案B 无 agent 身份，凭内容
   python intel_inbox.py --inbox <dir> --processed <dir> --ledger <file>
 退出码：0=全部受理/重复无拒绝；1=存在拒绝条目（调度侧可见）。
 """
+
 import argparse
 import hashlib
 import json
@@ -37,16 +38,16 @@ DEFAULT_PROCESSED = os.path.join(HERE, "processed")
 DEFAULT_LEDGER = os.path.join(HERE, "intel_inbox_ledger.jsonl")
 NAME_PREFIX = "manchong_brief_"
 META_SUFFIX = ".meta.json"
-SOURCE_SUFFIXES = (".md", ".json")          # 需成对的原始双格式
+SOURCE_SUFFIXES = (".md", ".json")  # 需成对的原始双格式
 ACCEPT = "accept"
 DUPLICATE = "duplicate"
 REJECT = "reject"
 
 # 拒绝原因（fail-visible，全量枚举便于调度侧判别）
-R_MISSING_PAIR = "missing_pair"        # md/json 未成对
-R_META_MISSING = "meta_missing"        # <同名>.meta.json 缺失
-R_HASH_MISMATCH = "hash_mismatch"      # meta sha256 与实际内容不符
-R_META_INVALID = "meta_invalid"        # meta 结构不合法（缺字段/非 json）
+R_MISSING_PAIR = "missing_pair"  # md/json 未成对
+R_META_MISSING = "meta_missing"  # <同名>.meta.json 缺失
+R_HASH_MISMATCH = "hash_mismatch"  # meta sha256 与实际内容不符
+R_META_INVALID = "meta_invalid"  # meta 结构不合法（缺字段/非 json）
 
 
 def utc_stamp():
@@ -82,11 +83,11 @@ def scan_inbox(inbox_dir):
         if not os.path.isfile(path) or not name.startswith(NAME_PREFIX):
             continue
         if name.endswith(META_SUFFIX):
-            stem, role = name[:-len(META_SUFFIX)], "meta"
+            stem, role = name[: -len(META_SUFFIX)], "meta"
         elif name.endswith(".md"):
-            stem, role = name[:-len(".md")], "md"
+            stem, role = name[: -len(".md")], "md"
         elif name.endswith(".json"):
-            stem, role = name[:-len(".json")], "json"
+            stem, role = name[: -len(".json")], "json"
         else:
             continue
         groups.setdefault(stem, {})[role] = name
@@ -128,8 +129,7 @@ def _reject(outcome, reason, detail):
     return outcome
 
 
-def accept_one(stem, files, inbox_dir, processed_dir, ledger_path,
-               ledger_index):
+def accept_one(stem, files, inbox_dir, processed_dir, ledger_path, ledger_index):
     """受理一个 stem：校验 → 出回执 → 入账 → 移文件。返回结果 dict。
 
     校验失败走拒绝路径（reject.json + 移入 processed/rejected/ +
@@ -143,18 +143,19 @@ def accept_one(stem, files, inbox_dir, processed_dir, ledger_path,
 
     def move_all(dst_dir):
         for name in present:
-            os.replace(os.path.join(inbox_dir, name),
-                       os.path.join(dst_dir, name))
+            os.replace(os.path.join(inbox_dir, name), os.path.join(dst_dir, name))
 
     # ① 成对校验：md + json 必须齐
     if "md" not in files or "json" not in files:
-        _reject(outcome, R_MISSING_PAIR,
-                "md/json 未成对：present=%s" % (present,))
+        _reject(outcome, R_MISSING_PAIR, "md/json 未成对：present=%s" % (present,))
         return outcome
     # ② meta 存在性
     if "meta" not in files:
-        _reject(outcome, R_META_MISSING,
-                "缺 %s.meta.json（满宠侧 --outbox 应附投递清单）" % stem)
+        _reject(
+            outcome,
+            R_META_MISSING,
+            "缺 %s.meta.json（满宠侧 --outbox 应附投递清单）" % stem,
+        )
         return outcome
     # ③ meta 结构校验
     meta_path = os.path.join(inbox_dir, files["meta"])
@@ -170,12 +171,14 @@ def accept_one(stem, files, inbox_dir, processed_dir, ledger_path,
     # ④ 哈希校验：meta 记载 vs 实际内容
     md_path = os.path.join(inbox_dir, files["md"])
     json_path = os.path.join(inbox_dir, files["json"])
-    actual = {files["md"]: sha256_file(md_path),
-              files["json"]: sha256_file(json_path)}
+    actual = {files["md"]: sha256_file(md_path), files["json"]: sha256_file(json_path)}
     for name, digest in actual.items():
         if sha_map.get(name) != digest:
-            _reject(outcome, R_HASH_MISMATCH,
-                    "%s 实际 sha256=%s 与 meta 记载不符" % (name, digest))
+            _reject(
+                outcome,
+                R_HASH_MISMATCH,
+                "%s 实际 sha256=%s 与 meta 记载不符" % (name, digest),
+            )
             return outcome
 
     # ⑤ 幂等判定（键=两文件内容哈希）
@@ -186,8 +189,7 @@ def accept_one(stem, files, inbox_dir, processed_dir, ledger_path,
         "stem": stem,
         "received_utc": now,
         "duplicate": duplicate,
-        "sha256": {"md": actual[files["md"]],
-                   "json": actual[files["json"]]},
+        "sha256": {"md": actual[files["md"]], "json": actual[files["json"]]},
         "files": [files["md"], files["json"]],
     }
     if duplicate:
@@ -196,23 +198,26 @@ def accept_one(stem, files, inbox_dir, processed_dir, ledger_path,
     # 原文件（md/json/meta）移入 processed/
     move_all(processed_dir)
     # 入账：accept 记全账；duplicate 只记重复事件不重复入账
-    append_ledger(ledger_path, {
-        "ts": now,
-        "kind": DUPLICATE if duplicate else ACCEPT,
-        "stem": stem,
-        "md_sha256": actual[files["md"]],
-        "json_sha256": actual[files["json"]],
-        "files": [files["md"], files["json"]],
-    })
+    append_ledger(
+        ledger_path,
+        {
+            "ts": now,
+            "kind": DUPLICATE if duplicate else ACCEPT,
+            "stem": stem,
+            "md_sha256": actual[files["md"]],
+            "json_sha256": actual[files["json"]],
+            "files": [files["md"], files["json"]],
+        },
+    )
     if not duplicate:
         ledger_index[key] = stem
-    outcome.update({"kind": DUPLICATE if duplicate else ACCEPT,
-                    "ack": ack})
+    outcome.update({"kind": DUPLICATE if duplicate else ACCEPT, "ack": ack})
     return outcome
 
 
-def process_inbox(inbox_dir=DEFAULT_INBOX, processed_dir=DEFAULT_PROCESSED,
-                  ledger_path=DEFAULT_LEDGER):
+def process_inbox(
+    inbox_dir=DEFAULT_INBOX, processed_dir=DEFAULT_PROCESSED, ledger_path=DEFAULT_LEDGER
+):
     """扫描并处理 inbox/ 全部投递，返回 (results, ledger_warnings)。"""
     os.makedirs(inbox_dir, exist_ok=True)
     os.makedirs(processed_dir, exist_ok=True)
@@ -220,8 +225,9 @@ def process_inbox(inbox_dir=DEFAULT_INBOX, processed_dir=DEFAULT_PROCESSED,
     ledger_index, warnings = load_ledger_index(ledger_path)
     results = []
     for stem, files in sorted(scan_inbox(inbox_dir).items()):
-        outcome = accept_one(stem, files, inbox_dir, processed_dir,
-                             ledger_path, ledger_index)
+        outcome = accept_one(
+            stem, files, inbox_dir, processed_dir, ledger_path, ledger_index
+        )
         if outcome["kind"] == REJECT:
             rejected_dir = os.path.join(processed_dir, "rejected")
             reject_doc = {
@@ -233,41 +239,43 @@ def process_inbox(inbox_dir=DEFAULT_INBOX, processed_dir=DEFAULT_PROCESSED,
                 "files": outcome["files"],
             }
             _atomic_write_json(
-                os.path.join(rejected_dir, stem + ".reject.json"),
-                reject_doc)
+                os.path.join(rejected_dir, stem + ".reject.json"), reject_doc
+            )
             for name in outcome["files"]:
-                os.replace(os.path.join(inbox_dir, name),
-                           os.path.join(rejected_dir, name))
-            append_ledger(ledger_path, {
-                "ts": outcome["at"],
-                "kind": REJECT,
-                "stem": outcome["stem"],
-                "reason": outcome["reason"],
-                "detail": outcome["detail"],
-                "files": outcome["files"],
-            })
+                os.replace(
+                    os.path.join(inbox_dir, name), os.path.join(rejected_dir, name)
+                )
+            append_ledger(
+                ledger_path,
+                {
+                    "ts": outcome["at"],
+                    "kind": REJECT,
+                    "stem": outcome["stem"],
+                    "reason": outcome["reason"],
+                    "detail": outcome["detail"],
+                    "files": outcome["files"],
+                },
+            )
         results.append(outcome)
     return results, warnings
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(
-        description="满宠每日情报收件箱受理席（方案B 文件收件箱）")
+        description="满宠每日情报收件箱受理席（方案B 文件收件箱）"
+    )
     parser.add_argument("--inbox", default=DEFAULT_INBOX)
     parser.add_argument("--processed", default=DEFAULT_PROCESSED)
     parser.add_argument("--ledger", default=DEFAULT_LEDGER)
     args = parser.parse_args(argv)
-    results, warnings = process_inbox(args.inbox, args.processed,
-                                      args.ledger)
+    results, warnings = process_inbox(args.inbox, args.processed, args.ledger)
     accepted = sum(1 for r in results if r["kind"] == ACCEPT)
     dup = sum(1 for r in results if r["kind"] == DUPLICATE)
     rej = sum(1 for r in results if r["kind"] == REJECT)
-    print("intel_inbox: accept=%d duplicate=%d reject=%d"
-          % (accepted, dup, rej))
+    print("intel_inbox: accept=%d duplicate=%d reject=%d" % (accepted, dup, rej))
     for r in results:
         if r["kind"] == REJECT:
-            print("REJECT %s: %s (%s)" % (r["stem"], r["reason"],
-                                          r["detail"]))
+            print("REJECT %s: %s (%s)" % (r["stem"], r["reason"], r["detail"]))
     for w in warnings:
         print("LEDGER-WARNING: %s" % w)
     return 1 if rej else 0

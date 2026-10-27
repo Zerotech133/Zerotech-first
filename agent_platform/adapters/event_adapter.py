@@ -4,6 +4,7 @@
 读取 portal.db/events、llm_tool_audit.jsonl 与 push_flow.jsonl，生成内部
 canonical v2 事件。适配器绝不初始化、写入或修改任何事实源。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -19,9 +20,21 @@ from typing import Any, Iterable
 ADAPTER_VERSION = "m0-event-readonly-v2"
 SCHEMA_VERSION = "2.0"
 REQUIRED_FIELDS = (
-    "source", "source_id", "event_id", "ts", "kind", "actor", "object_id",
-    "object_type", "trace_id", "causation_id", "idempotency_key", "payload",
-    "provenance", "event_hash", "raw",
+    "source",
+    "source_id",
+    "event_id",
+    "ts",
+    "kind",
+    "actor",
+    "object_id",
+    "object_type",
+    "trace_id",
+    "causation_id",
+    "idempotency_key",
+    "payload",
+    "provenance",
+    "event_hash",
+    "raw",
 )
 
 
@@ -139,43 +152,107 @@ def _payload(item: dict[str, Any], consumed: set[str], source: str) -> dict[str,
     return payload
 
 
-def _envelope(adapter_source: str, item: dict[str, Any], line_no: int, path: Path) -> dict[str, Any]:
+def _envelope(
+    adapter_source: str, item: dict[str, Any], line_no: int, path: Path
+) -> dict[str, Any]:
     if adapter_source == "portal_db.events":
         event_source = _first(item, "source") or adapter_source
-        kind_value = _first(item, "kind", "event", "event_type", "eventType", "type", "action")
-        actor_value = _first(item, "actor", "actor_id", "actorId", "user", "agent", "caller")
+        kind_value = _first(
+            item, "kind", "event", "event_type", "eventType", "type", "action"
+        )
+        actor_value = _first(
+            item, "actor", "actor_id", "actorId", "user", "agent", "caller"
+        )
     elif adapter_source == "llm_tool_audit":
         event_source = "llm_tool_audit/heartbeat"
         kind_value = _first(item, "action", "kind", "event", "event_type", "type")
         actor_value = _first(item, "caller", "actor", "actor_id", "agent", "user")
     else:
         event_source = "push_flow"
-        kind_value = _first(item, "kind", "event", "event_type", "eventType", "type", "action")
-        actor_value = _first(item, "actor", "actor_id", "actorId", "user", "agent", "caller")
+        kind_value = _first(
+            item, "kind", "event", "event_type", "eventType", "type", "action"
+        )
+        actor_value = _first(
+            item, "actor", "actor_id", "actorId", "user", "agent", "caller"
+        )
 
     source_id_value = _first(item, "source_id", "sourceId", "id")
     event_id_value = _first(item, "event_id", "eventId", "id")
     source_id = str(source_id_value) if source_id_value is not None else None
     event_id = str(event_id_value) if event_id_value is not None else None
-    time_value = _first(item, "ts", "timestamp", "occurred_at", "occurredAt", "created_at", "createdAt", "time", "available_at")
+    time_value = _first(
+        item,
+        "ts",
+        "timestamp",
+        "occurred_at",
+        "occurredAt",
+        "created_at",
+        "createdAt",
+        "time",
+        "available_at",
+    )
     ts = _parse_ts(time_value)
     timezone_missing, timezone_invalid = _time_flags(time_value)
     kind = str(kind_value) if kind_value is not None else "unknown"
     actor = str(actor_value) if actor_value is not None else None
-    object_id = _first(item, "object_id", "objectId", "entity_id", "entityId", "task_id", "order_id")
+    object_id = _first(
+        item, "object_id", "objectId", "entity_id", "entityId", "task_id", "order_id"
+    )
     object_type = _first(item, "object_type", "objectType", "entity_type", "entityType")
     trace_id = _first(item, "trace_id", "traceId", "correlation_id", "correlationId")
-    causation_id = _first(item, "causation_id", "causationId", "parent_event_id", "parentEventId")
+    causation_id = _first(
+        item, "causation_id", "causationId", "parent_event_id", "parentEventId"
+    )
     idempotency = _first(item, "idempotency_key", "idempotencyKey", "dedupe_key")
     consumed = {
-        "source_id", "sourceId", "id", "event_id", "eventId", "ts", "timestamp",
-        "occurred_at", "occurredAt", "created_at", "createdAt", "time", "available_at",
-        "kind", "event", "event_type", "eventType", "type", "action", "actor",
-        "actor_id", "actorId", "user", "agent", "caller", "object_id", "objectId",
-        "entity_id", "entityId", "task_id", "order_id", "object_type", "objectType",
-        "entity_type", "entityType", "trace_id", "traceId", "correlation_id",
-        "correlationId", "causation_id", "causationId", "parent_event_id",
-        "parentEventId", "idempotency_key", "idempotencyKey", "dedupe_key", "payload", "source",
+        "source_id",
+        "sourceId",
+        "id",
+        "event_id",
+        "eventId",
+        "ts",
+        "timestamp",
+        "occurred_at",
+        "occurredAt",
+        "created_at",
+        "createdAt",
+        "time",
+        "available_at",
+        "kind",
+        "event",
+        "event_type",
+        "eventType",
+        "type",
+        "action",
+        "actor",
+        "actor_id",
+        "actorId",
+        "user",
+        "agent",
+        "caller",
+        "object_id",
+        "objectId",
+        "entity_id",
+        "entityId",
+        "task_id",
+        "order_id",
+        "object_type",
+        "objectType",
+        "entity_type",
+        "entityType",
+        "trace_id",
+        "traceId",
+        "correlation_id",
+        "correlationId",
+        "causation_id",
+        "causationId",
+        "parent_event_id",
+        "parentEventId",
+        "idempotency_key",
+        "idempotencyKey",
+        "dedupe_key",
+        "payload",
+        "source",
     }
     raw = _json_value(item)
     payload = _payload(item, consumed, adapter_source)
@@ -205,47 +282,140 @@ def _envelope(adapter_source: str, item: dict[str, Any], line_no: int, path: Pat
         "provenance": provenance,
         "raw": raw,
     }
-    hash_body = {key: value for key, value in envelope.items() if key not in {"event_hash", "raw"}}
-    canonical = json.dumps(hash_body, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
+    hash_body = {
+        key: value
+        for key, value in envelope.items()
+        if key not in {"event_hash", "raw"}
+    }
+    canonical = json.dumps(
+        hash_body,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    )
     envelope["event_hash"] = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
     return envelope
 
 
 def _missing_meta(source: str, path: Path) -> dict[str, Any]:
-    return {"source": source, "path": str(path), "exists": False, "record_count": 0, "freshness": _freshness(path)}
+    return {
+        "source": source,
+        "path": str(path),
+        "exists": False,
+        "record_count": 0,
+        "freshness": _freshness(path),
+    }
 
 
-def _read_jsonl(path: Path, source: str) -> tuple[list[dict[str, Any]], dict[str, Any], list[dict[str, Any]]]:
+def _read_jsonl(
+    path: Path, source: str
+) -> tuple[list[dict[str, Any]], dict[str, Any], list[dict[str, Any]]]:
     errors: list[dict[str, Any]] = []
     if not path.exists():
-        return [], _missing_meta(source, path), [{"kind": "missing_source", "source": source, "path": str(path)}]
+        return (
+            [],
+            _missing_meta(source, path),
+            [{"kind": "missing_source", "source": source, "path": str(path)}],
+        )
     try:
         text = path.read_text(encoding="utf-8")
     except UnicodeDecodeError as exc:
-        return [], {"source": source, "path": str(path), "exists": True, "record_count": 0, "freshness": _freshness(path)}, [{"kind": "decode_error", "source": source, "path": str(path), "detail": str(exc)}]
+        return (
+            [],
+            {
+                "source": source,
+                "path": str(path),
+                "exists": True,
+                "record_count": 0,
+                "freshness": _freshness(path),
+            },
+            [
+                {
+                    "kind": "decode_error",
+                    "source": source,
+                    "path": str(path),
+                    "detail": str(exc),
+                }
+            ],
+        )
     except OSError as exc:
-        return [], {"source": source, "path": str(path), "exists": True, "record_count": 0, "freshness": _freshness(path)}, [{"kind": "read_error", "source": source, "path": str(path), "detail": str(exc)}]
+        return (
+            [],
+            {
+                "source": source,
+                "path": str(path),
+                "exists": True,
+                "record_count": 0,
+                "freshness": _freshness(path),
+            },
+            [
+                {
+                    "kind": "read_error",
+                    "source": source,
+                    "path": str(path),
+                    "detail": str(exc),
+                }
+            ],
+        )
     records: list[dict[str, Any]] = []
     for line_no, line in enumerate(text.splitlines(), 1):
         if not line.strip():
             continue
         try:
-            item = json.loads(line, parse_constant=lambda value: (_ for _ in ()).throw(ValueError(f"不允许 JSON 常量 {value}")))
+            item = json.loads(
+                line,
+                parse_constant=lambda value: (_ for _ in ()).throw(
+                    ValueError(f"不允许 JSON 常量 {value}")
+                ),
+            )
             if not isinstance(item, dict):
                 raise ValueError("record must be an object")
             records.append(_envelope(source, item, line_no, path))
         except _PayloadError as exc:
-            errors.append({"kind": "payload_parse_error", "source": source, "path": str(path), "line": line_no, "detail": str(exc)})
+            errors.append(
+                {
+                    "kind": "payload_parse_error",
+                    "source": source,
+                    "path": str(path),
+                    "line": line_no,
+                    "detail": str(exc),
+                }
+            )
         except (json.JSONDecodeError, ValueError, TypeError) as exc:
-            errors.append({"kind": "invalid_record", "source": source, "path": str(path), "line": line_no, "detail": str(exc)})
-    return records, {"source": source, "path": str(path), "exists": True, "record_count": len(records), "freshness": _freshness(path)}, errors
+            errors.append(
+                {
+                    "kind": "invalid_record",
+                    "source": source,
+                    "path": str(path),
+                    "line": line_no,
+                    "detail": str(exc),
+                }
+            )
+    return (
+        records,
+        {
+            "source": source,
+            "path": str(path),
+            "exists": True,
+            "record_count": len(records),
+            "freshness": _freshness(path),
+        },
+        errors,
+    )
 
 
-def _read_portal(root: Path) -> tuple[list[dict[str, Any]], dict[str, Any], list[dict[str, Any]]]:
+def _read_portal(
+    root: Path,
+) -> tuple[list[dict[str, Any]], dict[str, Any], list[dict[str, Any]]]:
     path = root / "portal" / "data" / "portal.db"
     source = "portal_db.events"
     if not path.exists():
-        return [], _missing_meta(source, path), [{"kind": "missing_source", "source": source, "path": str(path)}]
+        return (
+            [],
+            _missing_meta(source, path),
+            [{"kind": "missing_source", "source": source, "path": str(path)}],
+        )
     records: list[dict[str, Any]] = []
     errors: list[dict[str, Any]] = []
     con = None
@@ -257,15 +427,48 @@ def _read_portal(root: Path) -> tuple[list[dict[str, Any]], dict[str, Any], list
             try:
                 records.append(_envelope(source, dict(row), row_no, path))
             except _PayloadError as exc:
-                errors.append({"kind": "payload_parse_error", "source": source, "path": str(path), "line": row_no, "detail": str(exc)})
+                errors.append(
+                    {
+                        "kind": "payload_parse_error",
+                        "source": source,
+                        "path": str(path),
+                        "line": row_no,
+                        "detail": str(exc),
+                    }
+                )
             except (ValueError, TypeError) as exc:
-                errors.append({"kind": "invalid_record", "source": source, "path": str(path), "line": row_no, "detail": str(exc)})
+                errors.append(
+                    {
+                        "kind": "invalid_record",
+                        "source": source,
+                        "path": str(path),
+                        "line": row_no,
+                        "detail": str(exc),
+                    }
+                )
     except (sqlite3.Error, OSError, ValueError, TypeError) as exc:
-        errors.append({"kind": "read_error", "source": source, "path": str(path), "detail": str(exc)})
+        errors.append(
+            {
+                "kind": "read_error",
+                "source": source,
+                "path": str(path),
+                "detail": str(exc),
+            }
+        )
     finally:
         if con is not None:
             con.close()
-    return records, {"source": source, "path": str(path), "exists": True, "record_count": len(records), "freshness": _freshness(path)}, errors
+    return (
+        records,
+        {
+            "source": source,
+            "path": str(path),
+            "exists": True,
+            "record_count": len(records),
+            "freshness": _freshness(path),
+        },
+        errors,
+    )
 
 
 def build_report(root: str | Path) -> dict[str, Any]:
@@ -275,25 +478,39 @@ def build_report(root: str | Path) -> dict[str, Any]:
     errors: list[dict[str, Any]] = []
     for reader in (
         lambda: _read_portal(root),
-        lambda: _read_jsonl(root / "agent_platform" / "data" / "llm_tool_audit.jsonl", "llm_tool_audit"),
+        lambda: _read_jsonl(
+            root / "agent_platform" / "data" / "llm_tool_audit.jsonl", "llm_tool_audit"
+        ),
         lambda: _read_jsonl(root / "portal" / "work" / "push_flow.jsonl", "push_flow"),
     ):
         records, meta, source_errors = reader()
         all_records.extend(records)
         sources[meta["source"]] = meta
         errors.extend(source_errors)
-    counts: dict[str, int] = {name: meta["record_count"] for name, meta in sources.items()}
+    counts: dict[str, int] = {
+        name: meta["record_count"] for name, meta in sources.items()
+    }
     counts["total"] = len(all_records)
     canonical_errors: list[dict[str, Any]] = []
     for index, event in enumerate(all_records):
         missing = [field for field in REQUIRED_FIELDS if field not in event]
         if missing:
-            canonical_errors.append({"index": index, "kind": "missing_fields", "fields": missing})
+            canonical_errors.append(
+                {"index": index, "kind": "missing_fields", "fields": missing}
+            )
             continue
         try:
-            json.dumps(event, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
+            json.dumps(
+                event,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+                allow_nan=False,
+            )
         except (TypeError, ValueError) as exc:
-            canonical_errors.append({"index": index, "kind": "non_canonical_json", "detail": str(exc)})
+            canonical_errors.append(
+                {"index": index, "kind": "non_canonical_json", "detail": str(exc)}
+            )
     canonical_valid = not canonical_errors
     return {
         "adapter_version": ADAPTER_VERSION,
@@ -312,8 +529,20 @@ def build_report(root: str | Path) -> dict[str, Any]:
         "canonical_errors": canonical_errors,
         "v1_compatibility": {
             "status": "partial" if all_records else "false",
-            "reasons": ["内部事件为 schema_version=2，不能直接冒充 ai_operator v1 顶层事件", "v2 扩展字段仅保留在 payload/provenance/metadata 内"],
-            "allowed_top_level": ["schema_version", "kind", "environment", "source", "source_id", "occurred_at", "available_at", "payload"],
+            "reasons": [
+                "内部事件为 schema_version=2，不能直接冒充 ai_operator v1 顶层事件",
+                "v2 扩展字段仅保留在 payload/provenance/metadata 内",
+            ],
+            "allowed_top_level": [
+                "schema_version",
+                "kind",
+                "environment",
+                "source",
+                "source_id",
+                "occurred_at",
+                "available_at",
+                "payload",
+            ],
         },
     }
 
@@ -322,7 +551,10 @@ def write_report(root: str | Path, output: str | Path) -> dict[str, Any]:
     report = build_report(root)
     target = Path(output)
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False) + "\n", encoding="utf-8")
+    target.write_text(
+        json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False) + "\n",
+        encoding="utf-8",
+    )
     return report
 
 
@@ -333,7 +565,16 @@ def main(argv: Iterable[str] | None = None) -> int:
     args = parser.parse_args(list(argv) if argv is not None else None)
     if args.output:
         report = write_report(args.root, args.output)
-        print(json.dumps({"output": str(Path(args.output).resolve()), "counts": report["counts"], "source_errors": len(report["source_errors"])}, ensure_ascii=False))
+        print(
+            json.dumps(
+                {
+                    "output": str(Path(args.output).resolve()),
+                    "counts": report["counts"],
+                    "source_errors": len(report["source_errors"]),
+                },
+                ensure_ascii=False,
+            )
+        )
     else:
         print(json.dumps(build_report(args.root), ensure_ascii=False, indent=2))
     return 0

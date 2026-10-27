@@ -1,4 +1,5 @@
 """Trace 存储测试（WO-TRACE-OTEL）。"""
+
 from __future__ import annotations
 
 import importlib.util
@@ -7,7 +8,8 @@ from pathlib import Path
 
 _WT = Path(__file__).resolve().parents[2]
 _spec = importlib.util.spec_from_file_location(
-    "trace", str(_WT / "agent_platform" / "observability" / "trace.py"))
+    "trace", str(_WT / "agent_platform" / "observability" / "trace.py")
+)
 TR = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(TR)
 
@@ -23,8 +25,9 @@ def test_record_list_get(tmp_path, monkeypatch):
     tid = TR.trace_id()
     r1 = TR.record(tid, "cap.drill", "tool", attrs={"zhaoyun.capability": "x"})
     assert r1["ok"]
-    with TR.span("approval", "approval", attrs={"zhaoyun.decision": "approve"},
-                 trace=tid) as sp:
+    with TR.span(
+        "approval", "approval", attrs={"zhaoyun.decision": "approve"}, trace=tid
+    ) as sp:
         sp.set("zhaoyun.applied", True)
     lst = TR.list_traces()
     assert lst["ok"] and any(i["trace_id"] == tid for i in lst["items"])
@@ -36,9 +39,11 @@ def test_record_list_get(tmp_path, monkeypatch):
 
 def test_cost_estimate(tmp_path, monkeypatch):
     _db(tmp_path, monkeypatch)
-    attrs = {"gen_ai.request.model": "deepseek/deepseek-flash",
-             "gen_ai.usage.input_tokens": 1000000,
-             "gen_ai.usage.output_tokens": 0}
+    attrs = {
+        "gen_ai.request.model": "deepseek/deepseek-flash",
+        "gen_ai.usage.input_tokens": 1000000,
+        "gen_ai.usage.output_tokens": 0,
+    }
     assert TR.estimate_cost(attrs) == 0.5
     assert TR.estimate_cost({}) == 0.0
 
@@ -53,8 +58,9 @@ def test_kill_switch(tmp_path, monkeypatch):
 def test_retention(tmp_path, monkeypatch):
     db = _db(tmp_path, monkeypatch)
     old = TR.trace_id()
-    TR.record(old, "old", "tool", start=time.time() - 40 * 86400,
-              end=time.time() - 40 * 86400)
+    TR.record(
+        old, "old", "tool", start=time.time() - 40 * 86400, end=time.time() - 40 * 86400
+    )
     TR.record(TR.trace_id(), "new", "tool")
     rep = TR.retention(days=30, db=db)
     assert rep["ok"] and rep["deleted_old"] >= 1

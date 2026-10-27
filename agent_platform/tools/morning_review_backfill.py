@@ -50,6 +50,7 @@ CLI：
 零依赖：仅标准库（check_tasks_doc 复用仓内 tools/validate_json.py 纯函数，
 施工单明示可直接复用）。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -64,11 +65,14 @@ from pathlib import Path
 SCHEMA_VERSION = "meeting_backfill.v1"
 TRI_ORDER = {"OK": 0, "INCONCLUSIVE": 1, "DEGRADED": 2}
 LESSON_MARKER = "（候选，部务会拍板后入知识环）"
-BLACKLIST_RE = re.compile(r"建议|预计|据悉|约|或因|可能因")  # check_report_isolation L34 同款
+BLACKLIST_RE = re.compile(
+    r"建议|预计|据悉|约|或因|可能因"
+)  # check_report_isolation L34 同款
 Q3_QUOTE_MAX = 44  # legion_meeting L107 同款截断口径
 OVERDUE_SECS = 72 * 3600  # legion_meeting L127-136 同源判据
 OBSERVE_HEADER_RE = re.compile(
-    r"^M5 刀4 周一观察点护航巡检 (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})", re.M)
+    r"^M5 刀4 周一观察点护航巡检 (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})", re.M
+)
 SECTION4_TITLE = "决议与教训"  # academy 实为第五段，按标题定位防段号漂移
 MEMBER_RE = re.compile(r"^-\s+.*?（([A-Z0-9_]+)）：")
 AGENT_TAG_RE = re.compile(r"\[([A-Z0-9_]+)\]")
@@ -89,6 +93,7 @@ def worst(*states: str) -> str:
 
 # ---------------------------------------------------------------- 三源采集（只读）
 
+
 def load_tasks(root: Path) -> tuple[dict | None, list, list]:
     """tasks.json + check_tasks_doc 纯函数复算（施工单授权的唯一复算点）。
     返回 (doc, errors, warns)；doc=None=真源缺失/损坏（如实缺据，不编文）。"""
@@ -103,6 +108,7 @@ def load_tasks(root: Path) -> tuple[dict | None, list, list]:
         return None, [], []
     sys.path.insert(0, str(root / "tools"))
     from validate_json import check_tasks_doc  # 纯函数：无 IO 无 print
+
     errors, warns = check_tasks_doc(doc)
     return doc, errors, warns
 
@@ -140,7 +146,9 @@ def load_observe_lines(root: Path, day: date) -> list[str]:
         end = marks[i + 1][0] if i + 1 < len(marks) else len(text)
         body = text[pos:end]
         if ts[:10] == day.isoformat() and "EXIT=" in body:
-            return [ln.strip() for ln in body.splitlines() if ln.startswith("[observe]")]
+            return [
+                ln.strip() for ln in body.splitlines() if ln.startswith("[observe]")
+            ]
     return []
 
 
@@ -151,6 +159,7 @@ def error_unit_ids(doc: dict | None) -> set:
     if not isinstance(doc, dict):
         return set()
     from validate_json import check_tasks_doc
+
     bad: set = set()
     for tid, t in doc.items():
         if not isinstance(t, dict) or check_tasks_doc({tid: t})[0]:
@@ -170,7 +179,7 @@ def overdue_tasks(doc: dict, anchor_ts: float) -> list[tuple[str, str]]:
         ts = None
         for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%Y-%m-%d"):
             try:
-                ts = time.mktime(time.strptime(c[:19 if "%H" in fmt else 10], fmt))
+                ts = time.mktime(time.strptime(c[: 19 if "%H" in fmt else 10], fmt))
                 break
             except ValueError:
                 continue
@@ -180,6 +189,7 @@ def overdue_tasks(doc: dict, anchor_ts: float) -> list[tuple[str, str]]:
 
 
 # ---------------------------------------------------------------- 骨架解析
+
 
 def find_section(text: str, title: str) -> tuple[int, int]:
     """按标题定位段（返回 (段头行号, 段结束行号)），academy 五段同适。"""
@@ -228,9 +238,15 @@ def card_q3(base: Path, agent: str) -> str | None:
 
 # ---------------------------------------------------------------- 草稿构建
 
+
 def _classify_warns(warns: list) -> dict[str, list[str]]:
     """WARN 按判据类型分组（validate_json 判据原文的机械子串归类）。"""
-    kinds: dict[str, list[str]] = {"空壳": [], "created": [], "merged": [], "ID形态": []}
+    kinds: dict[str, list[str]] = {
+        "空壳": [],
+        "created": [],
+        "merged": [],
+        "ID形态": [],
+    }
     for w in warns:
         tid = w.split(" ", 1)[0]
         if "空壳完工单" in w:
@@ -244,32 +260,52 @@ def _classify_warns(warns: list) -> dict[str, list[str]]:
     return kinds
 
 
-def build_draft(text: str, fname: str, day: str, daily: dict | None,
-                doc: dict | None, errors: list, warns: list,
-                overdue: list, observe: list, anchor: str) -> tuple[str, str]:
+def build_draft(
+    text: str,
+    fname: str,
+    day: str,
+    daily: dict | None,
+    doc: dict | None,
+    errors: list,
+    warns: list,
+    overdue: list,
+    observe: list,
+    anchor: str,
+) -> tuple[str, str]:
     """构建第④段替换块。返回 (state, block)。只投影，不创作。"""
     members = section_members(text)
-    dept_no_task = list(daily["depts"].get(_dept_of(fname), {}).get("no_task", [])) if daily else []
+    dept_no_task = (
+        list(daily["depts"].get(_dept_of(fname), {}).get("no_task", []))
+        if daily
+        else []
+    )
     members_set = set(members)
 
     # 铁律（施工单开放问题 3）：ERROR 单不出素材面（decisions/lessons 均排除，
     # 出处锚 meta 仍如实上报账本原始 ERROR/WARN 计数）
     error_ids = error_unit_ids(doc)
-    material_warns = [w for w in warns
-                      if w.split(" ", 1)[0].strip("'\"") not in error_ids]
+    material_warns = [
+        w for w in warns if w.split(" ", 1)[0].strip("'\"") not in error_ids
+    ]
 
     # WARN/超期按 [AGENT] 归属；无标记=军团级（转抄进全部当日草稿）
     dept_warns, corps_warns = [], []
     for w in material_warns:
         tid = w.split(" ", 1)[0].strip("'\"")
-        tags = AGENT_TAG_RE.findall(str(doc.get(tid, {}).get("desc", ""))) if doc else []
+        tags = (
+            AGENT_TAG_RE.findall(str(doc.get(tid, {}).get("desc", ""))) if doc else []
+        )
         (dept_warns if any(a in members_set for a in tags) else corps_warns).append(w)
     dept_overdue, corps_overdue = [], []
     for tid, c in overdue:
         if tid in error_ids:
             continue
-        tags = AGENT_TAG_RE.findall(str(doc.get(tid, {}).get("desc", ""))) if doc else []
-        (dept_overdue if any(a in members_set for a in tags) else corps_overdue).append((tid, c))
+        tags = (
+            AGENT_TAG_RE.findall(str(doc.get(tid, {}).get("desc", ""))) if doc else []
+        )
+        (dept_overdue if any(a in members_set for a in tags) else corps_overdue).append(
+            (tid, c)
+        )
 
     # 勾稽（③段「无阻塞」vs 超期单，双向不一致=DEGRADED 双列）
     s3, e3 = find_section(text, "阻塞求助")
@@ -277,7 +313,9 @@ def build_draft(text: str, fname: str, day: str, daily: dict | None,
     skeleton_no_block = any(ln.strip() == "- 无阻塞" for ln in sec3)
     skeleton_blocked = any("⚠️" in ln for ln in sec3)
     all_overdue = dept_overdue + corps_overdue
-    conflict = (skeleton_no_block and all_overdue) or (skeleton_blocked and not all_overdue)
+    conflict = (skeleton_no_block and all_overdue) or (
+        skeleton_blocked and not all_overdue
+    )
 
     state = "OK"
     notes = ["三源齐备且勾稽一致"]
@@ -289,8 +327,11 @@ def build_draft(text: str, fname: str, day: str, daily: dict | None,
         notes.append("tasks.json 不可读，如实缺据")
     if conflict:
         state = "DEGRADED"
-        note = ("第③段「无阻塞」与 tasks.json 超期单 %d>0 冲突" if skeleton_no_block and all_overdue
-                else "第③段列有超期阻塞而 tasks.json 当次实算超期单为 0")
+        note = (
+            "第③段「无阻塞」与 tasks.json 超期单 %d>0 冲突"
+            if skeleton_no_block and all_overdue
+            else "第③段列有超期阻塞而 tasks.json 当次实算超期单为 0"
+        )
         notes.append(note + "——双列原文数据不取一舍一")
 
     L: list[str] = []
@@ -301,19 +342,28 @@ def build_draft(text: str, fname: str, day: str, daily: dict | None,
         tag = "" if w in dept_warns else "（军团级：desc 无 [AGENT] 归属标记）"
         dec_items.append(f"  - {w}——待确认{tag}（出处：.worktrees/tasks.json WARN）")
     for tid, c in dept_overdue + corps_overdue:
-        dec_items.append(f"  - {tid} doing 超 72h（created={c}）待确认"
-                         f"（出处：.worktrees/tasks.json，超期判据同 legion_meeting 72h）")
+        dec_items.append(
+            f"  - {tid} doing 超 72h（created={c}）待确认"
+            f"（出处：.worktrees/tasks.json，超期判据同 legion_meeting 72h）"
+        )
     for ln in observe:
-        dec_items.append(f"  - {ln}（出处：agent_platform/data/shadow/monday_checkpoint.log {day} observe 行）")
+        dec_items.append(
+            f"  - {ln}（出处：agent_platform/data/shadow/monday_checkpoint.log {day} observe 行）"
+        )
     if not dec_items:
         dec_items.append("  - 当日无账本素材，非缺勤（INCONCLUSIVE）")
         state = worst(state, "INCONCLUSIVE")
         notes.append("当日零 decisions 素材，如实缺据")
     if conflict:
-        sec3_q = "；".join(ln.strip() for ln in sec3 if ln.strip().startswith("-")) or "（③段空）"
+        sec3_q = (
+            "；".join(ln.strip() for ln in sec3 if ln.strip().startswith("-"))
+            or "（③段空）"
+        )
         od_q = "、".join(tid for tid, _ in all_overdue) or "0 单"
-        dec_items.append(f"  - 冲突双列：骨架③「{sec3_q}」 vs tasks.json 超期单 {od_q}"
-                         f"（出处：agent_platform/data/meetings/{fname} ③段 + .worktrees/tasks.json）")
+        dec_items.append(
+            f"  - 冲突双列：骨架③「{sec3_q}」 vs tasks.json 超期单 {od_q}"
+            f"（出处：agent_platform/data/meetings/{fname} ③段 + .worktrees/tasks.json）"
+        )
     L.extend(dec_items)
 
     # lessons：候选教训句，行尾固定标记；素材仅限四问卡③缩引/no_task 事实/WARN 模式归纳
@@ -323,30 +373,42 @@ def build_draft(text: str, fname: str, day: str, daily: dict | None,
         for a in members:
             q3 = card_q3(daily["base"], a)
             if q3:
-                les_items.append(f"  - {a} 复盘卡③「{q3}」{LESSON_MARKER}"
-                                 f"（源：agent_platform/data/daily_review/{day}/{a}.md ③）")
+                les_items.append(
+                    f"  - {a} 复盘卡③「{q3}」{LESSON_MARKER}"
+                    f"（源：agent_platform/data/daily_review/{day}/{a}.md ③）"
+                )
         if dept_no_task:
-            les_items.append(f"  - {_dept_of(fname)} 当日无任务 {len(dept_no_task)} 人："
-                             f"{'、'.join(dept_no_task)}{LESSON_MARKER}"
-                             f"（源：agent_platform/data/daily_review/{day}/_summary.json "
-                             f"depts.{_dept_of(fname)}.no_task）")
+            les_items.append(
+                f"  - {_dept_of(fname)} 当日无任务 {len(dept_no_task)} 人："
+                f"{'、'.join(dept_no_task)}{LESSON_MARKER}"
+                f"（源：agent_platform/data/daily_review/{day}/_summary.json "
+                f"depts.{_dept_of(fname)}.no_task）"
+            )
     kinds = _classify_warns(material_warns)
     if kinds["空壳"]:
-        les_items.append(f"  - 空壳完工单当日 {len(kinds['空壳'])} 单（{'、'.join(kinds['空壳'])}）"
-                         f"——validate_json 判据原文「需人工确认非洗白」{LESSON_MARKER}"
-                         f"（源：.worktrees/tasks.json WARN 空壳 {len(kinds['空壳'])} 单）")
+        les_items.append(
+            f"  - 空壳完工单当日 {len(kinds['空壳'])} 单（{'、'.join(kinds['空壳'])}）"
+            f"——validate_json 判据原文「需人工确认非洗白」{LESSON_MARKER}"
+            f"（源：.worktrees/tasks.json WARN 空壳 {len(kinds['空壳'])} 单）"
+        )
     if kinds["created"]:
-        les_items.append(f"  - created 手写近似时间不可排序当日 {len(kinds['created'])} 单"
-                         f"（{'、'.join(kinds['created'])}）——validate_json 判据原文「状态机不依赖但不可排序」"
-                         f"{LESSON_MARKER}（源：.worktrees/tasks.json WARN created {len(kinds['created'])} 单）")
+        les_items.append(
+            f"  - created 手写近似时间不可排序当日 {len(kinds['created'])} 单"
+            f"（{'、'.join(kinds['created'])}）——validate_json 判据原文「状态机不依赖但不可排序」"
+            f"{LESSON_MARKER}（源：.worktrees/tasks.json WARN created {len(kinds['created'])} 单）"
+        )
     if kinds["merged"]:
-        les_items.append(f"  - merged 字段不可识别当日 {len(kinds['merged'])} 单（{'、'.join(kinds['merged'])}）"
-                         f"——validate_json 判据原文「须以 YYYY-MM-DD 开头」{LESSON_MARKER}"
-                         f"（源：.worktrees/tasks.json WARN merged {len(kinds['merged'])} 单）")
+        les_items.append(
+            f"  - merged 字段不可识别当日 {len(kinds['merged'])} 单（{'、'.join(kinds['merged'])}）"
+            f"——validate_json 判据原文「须以 YYYY-MM-DD 开头」{LESSON_MARKER}"
+            f"（源：.worktrees/tasks.json WARN merged {len(kinds['merged'])} 单）"
+        )
     if kinds["ID形态"]:
-        les_items.append(f"  - 工单 ID 形态可疑当日 {len(kinds['ID形态'])} 单（{'、'.join(kinds['ID形态'])}）"
-                         f"——validate_json 判据原文「疑似 CLI 参数被当工单 ID」{LESSON_MARKER}"
-                         f"（源：.worktrees/tasks.json WARN ID形态 {len(kinds['ID形态'])} 单）")
+        les_items.append(
+            f"  - 工单 ID 形态可疑当日 {len(kinds['ID形态'])} 单（{'、'.join(kinds['ID形态'])}）"
+            f"——validate_json 判据原文「疑似 CLI 参数被当工单 ID」{LESSON_MARKER}"
+            f"（源：.worktrees/tasks.json WARN ID形态 {len(kinds['ID形态'])} 单）"
+        )
     if not les_items:
         les_items.append(f"  - 当日无账本素材，非缺勤{LESSON_MARKER}（INCONCLUSIVE）")
         state = worst(state, "INCONCLUSIVE")
@@ -354,14 +416,18 @@ def build_draft(text: str, fname: str, day: str, daily: dict | None,
     L.extend(les_items)
 
     if doc is not None:
-        meta = (f"tasks.json（.worktrees/tasks.json，{anchor} 实算，"
-                f"{len(doc)} 单/ERROR {len(errors)}/WARN {len(warns)}，"
-                "ERROR 单按施工单开放问题3不入素材面）")
+        meta = (
+            f"tasks.json（.worktrees/tasks.json，{anchor} 实算，"
+            f"{len(doc)} 单/ERROR {len(errors)}/WARN {len(warns)}，"
+            "ERROR 单按施工单开放问题3不入素材面）"
+        )
     else:
         meta = "tasks.json（.worktrees/tasks.json，真源缺失）"
     L.append(f"- 草稿三态：{state}（{'; '.join(notes)}；素材时点={anchor}）")
-    L.append(f"- 出处锚：{meta}｜复盘卡链：agent_platform/data/daily_review/{day}/"
-             f"｜骨架：agent_platform/data/meetings/{fname}")
+    L.append(
+        f"- 出处锚：{meta}｜复盘卡链：agent_platform/data/daily_review/{day}/"
+        f"｜骨架：agent_platform/data/meetings/{fname}"
+    )
     return state, "\n".join(L) + f"｜schema: {SCHEMA_VERSION}"
 
 
@@ -370,9 +436,17 @@ def _dept_of(fname: str) -> str:
     return m.group(1) if m else fname
 
 
-def backfill_file(path: Path, day: str, daily: dict | None, doc: dict | None,
-                  errors: list, warns: list, overdue: list, observe: list,
-                  anchor: str) -> tuple[str, str]:
+def backfill_file(
+    path: Path,
+    day: str,
+    daily: dict | None,
+    doc: dict | None,
+    errors: list,
+    warns: list,
+    overdue: list,
+    observe: list,
+    anchor: str,
+) -> tuple[str, str]:
     """对单份纪要回填第④段。返回 (state, 新全文)。占位不在=已回填/已人填，原样返回。"""
     text = path.read_text(encoding="utf-8", errors="replace")
     lines = text.splitlines()
@@ -381,13 +455,16 @@ def backfill_file(path: Path, day: str, daily: dict | None, doc: dict | None,
         return "SKIP", text
     seg = lines[s:e]
     try:
-        i_dec = next(i for i, ln in enumerate(seg) if ln.startswith("- decisions:（待填）"))
+        i_dec = next(
+            i for i, ln in enumerate(seg) if ln.startswith("- decisions:（待填）")
+        )
         i_les = next(i for i, ln in enumerate(seg) if ln.startswith("- lessons:（待填"))
     except StopIteration:
         return "SKIP", text  # 已回填或已人填：幂等跳过，不覆盖（回滚面=git revert）
-    state, block = build_draft(text, path.name, day, daily, doc, errors, warns,
-                               overdue, observe, anchor)
-    new_seg = seg[:i_dec] + block.splitlines() + seg[i_les + 1:]
+    state, block = build_draft(
+        text, path.name, day, daily, doc, errors, warns, overdue, observe, anchor
+    )
+    new_seg = seg[:i_dec] + block.splitlines() + seg[i_les + 1 :]
     new_text = "\n".join(lines[:s] + new_seg + lines[e:])
     if text.endswith("\n"):
         new_text += "\n"
@@ -396,10 +473,17 @@ def backfill_file(path: Path, day: str, daily: dict | None, doc: dict | None,
 
 # ---------------------------------------------------------------- CLI
 
+
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description="晨会纪要第④段回填器（账本投影，零自动定稿）")
-    ap.add_argument("--date", help="离线补跑日期（YYYY-MM-DD）；缺省=今日（daily 17:55 挂载口径）")
-    ap.add_argument("--out-dir", help="草稿预览目录（整文副本，meetings 零写）；缺省=回填纪要本体")
+    ap = argparse.ArgumentParser(
+        description="晨会纪要第④段回填器（账本投影，零自动定稿）"
+    )
+    ap.add_argument(
+        "--date", help="离线补跑日期（YYYY-MM-DD）；缺省=今日（daily 17:55 挂载口径）"
+    )
+    ap.add_argument(
+        "--out-dir", help="草稿预览目录（整文副本，meetings 零写）；缺省=回填纪要本体"
+    )
     args = ap.parse_args(argv)
 
     if os.environ.get("LEGION_MEETING_BACKFILL_OFF") == "1":
@@ -427,8 +511,13 @@ def main(argv: list[str] | None = None) -> int:
 
     daily = load_daily(ap, day_s)
     doc, errors, warns = load_tasks(root)
-    overdue = overdue_tasks(doc, time.mktime(time.strptime(f"{day_s} 17:55:00",
-                                                           "%Y-%m-%d %H:%M:%S"))) if doc else []
+    overdue = (
+        overdue_tasks(
+            doc, time.mktime(time.strptime(f"{day_s} 17:55:00", "%Y-%m-%d %H:%M:%S"))
+        )
+        if doc
+        else []
+    )
     observe = load_observe_lines(root, day_d)
 
     out_dir = Path(args.out_dir) if args.out_dir else None
@@ -436,14 +525,17 @@ def main(argv: list[str] | None = None) -> int:
         out_dir.mkdir(parents=True, exist_ok=True)
     tally: dict[str, int] = {}
     for p in files:
-        state, new_text = backfill_file(p, day_s, daily, doc, errors, warns,
-                                        overdue, observe, anchor)
+        state, new_text = backfill_file(
+            p, day_s, daily, doc, errors, warns, overdue, observe, anchor
+        )
         if state == "SKIP":
             print(f"[skip] {p.name} 第④段占位不在（已回填或已人填），幂等跳过")
             continue
         if out_dir:
             (out_dir / p.name).write_text(new_text, encoding="utf-8")
-            print(f"[draft] {p.name} -> {out_dir / p.name}（态 {state}，meetings 零写）")
+            print(
+                f"[draft] {p.name} -> {out_dir / p.name}（态 {state}，meetings 零写）"
+            )
         else:
             p.write_text(new_text, encoding="utf-8")
             print(f"[ok] {p.name} 第④段已回填（态 {state}）")
