@@ -300,6 +300,68 @@ def _ui_audit_gate(branch, worktree=""):
     except Exception as exc:  # noqa: BLE001 —— 审计异常不得反噬合并
         return True, "审计异常（不阻断）：%s" % str(exc)[:120]
 
+
+def _syntax_gate(branch, worktree=""):
+    """语法门（阻断）：改动文件的 SyntaxError/SyntaxWarning；--repo 指向分支工作树。"""
+    base = worktree or REPO
+    script = os.path.join(REPO, "tools", "check_syntax.py")
+    if not os.path.isfile(script):
+        return True, "跳过（工具未安装）"
+    r = subprocess.run([sys.executable, script, "--repo", base, "--json", "--fail-on-warning"],
+                       capture_output=True, text=True, encoding="utf-8", errors="replace",
+                       env=GUARD_ENV, timeout=300)
+    try:
+        d = json.loads(r.stdout or "{}")
+        detail = "扫描 %d / 错误 %d / 告警 %d" % (
+            d.get("scanned", 0), d.get("error_count", 0), d.get("warning_count", 0))
+        if r.returncode == 0:
+            return True, detail
+        extra = ""
+        for x in (d.get("errors") or [])[:2]:
+            extra += " %s:%s" % (x.get("file"), str(x.get("err"))[:60])
+        for x in (d.get("warnings") or [])[:2]:
+            extra += " WARN:%s:%s" % (x.get("file"), str(x.get("warn"))[:60])
+        return False, detail + extra
+    except Exception:  # noqa: BLE001
+        return r.returncode == 0, (r.stdout or r.stderr or "").strip()[:160]
+
+
+def _metadata_gate(branch, worktree=""):
+    """元数据一致性门（阻断）：catalog × registry × lifecycle × store。"""
+    script = os.path.join(REPO, "tools", "datawarehouse", "metadata_consistency.py")
+    if not os.path.isfile(script):
+        return True, "跳过（工具未安装）"
+    r = subprocess.run([sys.executable, script, "--json"], capture_output=True, text=True,
+                       encoding="utf-8", errors="replace", env=GUARD_ENV, timeout=120)
+    try:
+        d = json.loads(r.stdout or "{}")
+        detail = "catalog v%s / %d 表 / registry %d 物理" % (
+            d.get("catalog_version"), d.get("tables", 0), d.get("physical_count", 0))
+        if r.returncode == 0:
+            return True, detail
+        return False, detail + "；" + ";".join((d.get("issues") or [])[:3])
+    except Exception:  # noqa: BLE001
+        return r.returncode == 0, (r.stdout or r.stderr or "").strip()[:160]
+
+
+def _import_boundary_gate(branch, worktree=""):
+    """导入边界门（阻断）：业务模块 import 必须仍在单测白名单内（osleg logging 类回归）。"""
+    base = worktree or REPO
+    script = os.path.join(REPO, "tools", "check_import_boundaries.py")
+    if not os.path.isfile(script):
+        return True, "跳过（工具未安装）"
+    r = subprocess.run([sys.executable, script, "--repo", base, "--json"],
+                       capture_output=True, text=True, encoding="utf-8", errors="replace",
+                       env=GUARD_ENV, timeout=120)
+    try:
+        d = json.loads(r.stdout or "{}")
+        checked = len(d.get("checked") or [])
+        if r.returncode == 0:
+            return True, "检查 %d 条边界" % checked
+        return False, ";".join((d.get("issues") or [])[:3])
+    except Exception:  # noqa: BLE001
+        return r.returncode == 0, (r.stdout or r.stderr or "").strip()[:160]
+
 GATES = [("Mixin方法集", [sys.executable,
                           os.path.join(REPO, "tools", "_mixin_integrity.py"),
                           "--check"]),
@@ -312,7 +374,10 @@ GATES = [("Mixin方法集", [sys.executable,
          # 必须走 strict，否则非 strict 恒 rc=0 = 假门（审计 B-02）。strict 语义
          # 已拆：只拦「未登记监听/端口冲突」，在册服务离线不判负（check_ports.py）。
          ("UI/UX审计", _ui_audit_gate),
-         ("明文凭据", _secret_scan_gate)]
+         ("明文凭据", _secret_scan_gate),
+         ("语法门", _syntax_gate),
+         ("元数据一致性", _metadata_gate),
+         ("导入边界", _import_boundary_gate)]
 
 
 def _security_warn_gate(branch, worktree=""):

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""知识图谱 Phase 2-A ETL：人物实体抽取 + SERVES_AS 关系建图。
+r"""知识图谱 Phase 2-A ETL：人物实体抽取 + SERVES_AS 关系建图。
 
 数据流：
   stock_company (6294 行) → Person 节点（去重 by name）
@@ -147,7 +147,7 @@ MANAGER_PROPS = ("gender", "edu", "birthday", "national")
 
 
 def build_managers(dryrun=False):
-    """stk_managers → Person 属性补全 + SERVES_AS 全量任期边。
+    r"""stk_managers → Person 属性补全 + SERVES_AS 全量任期边。
 
     与 stock_company 三角色快照边共存（source/role 区分）：
       · stock_company 边：role=chairman/manager/secretary，
