@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-28 04:54",
+ "generated": "2026-10-28 04:57",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 34,
+  "workorders_doing": 33,
   "workorders_review": 3
  },
  "workorders": [
@@ -336,15 +336,6 @@
    "branch": "task/WO-LS12-DOCS-20261027",
    "created": "2026-10-27 23:54:52",
    "project": "general"
-  },
-  {
-   "id": "WO-AUDIT-20261028-FIX",
-   "desc": "2026-10-28 代码审计修复：① seat_realness --help argparse % 崩溃；② memory add 同内容重复写入产生多余版本/历史（ingest 幂等）；③ data_lineage 目录全量哈希过慢（改有界指纹）；④ tools/zhuge_challenge_model 顶层 engine 导入致 pytest tools 收集失败（惰性导入）；⑤ ruff 清理新工具未用导入/变量；测试。",
-   "status": "doing",
-   "owner": "ARCH1",
-   "branch": "task/WO-AUDIT-20261028-FIX",
-   "created": "2026-10-28 04:27:33",
-   "project": "quant"
   }
  ],
  "coder_traces": [
@@ -3164,11 +3155,6 @@
     {
      "id": "WO-LS02-CONTRACT-20261027",
      "desc": "LS-02 架构与数据契约/ADR（父单 WO-LEGION-SCREEN-20261027）：页面架构+API schema+只读边界冻结",
-     "status": "doing"
-    },
-    {
-     "id": "WO-AUDIT-20261028-FIX",
-     "desc": "2026-10-28 代码审计修复：① seat_realness --help argparse % 崩溃；② memory add 同内容重复写入产生多余版本/历史（ingest 幂等）；③ data_lineage 目录全量哈希过慢（改有界指纹）；④ tools/zhuge_challenge_model 顶层 engine 导入致 pytest tools 收集失败（惰性导入）；⑤ ruff 清理新工具未用导入/变量；测试。",
      "status": "doing"
     }
    ]
