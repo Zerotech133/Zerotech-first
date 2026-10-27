@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-27 23:21",
+ "generated": "2026-10-27 23:23",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 21,
+  "workorders_doing": 20,
   "workorders_review": 3
  },
  "workorders": [
@@ -219,15 +219,6 @@
    "branch": "task/WO-LEGION-DEEPSHELL-20261027",
    "created": "2026-10-27 21:48:36",
    "project": "general"
-  },
-  {
-   "id": "WO-O6P1-VIEW-20261027",
-   "desc": "O6 P1 只读派生：tools/run_contract_view.py 从 traces.sqlite 派生 Run/Event JSONL（不改写入/不改 trace 表）+ 单测 + ADR-014 确认记录",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-O6P1-VIEW-20261027",
-   "created": "2026-10-27 23:21:38",
-   "project": "portal"
   }
  ],
  "coder_traces": [
