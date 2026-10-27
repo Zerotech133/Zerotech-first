@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>研发部周报（自动生成） · 零界</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<style>
+  * { box-sizing: border-box; }
+  html { background: var(--bg-page); }
+  body {
+    margin: 0;
+    background: var(--bg-page);
+    color: var(--text);
+    font-family: var(--font-ui);
+    font-size: var(--fs-m);
+    line-height: 1.75;
+  }
+  main {
+    max-width: var(--page-w);
+    margin: 0 auto;
+    padding: var(--sp-5) var(--sp-5) 64px;
+  }
+  .source {
+    margin: 0 0 var(--sp-5);
+    padding: var(--sp-3) var(--sp-4);
+    border: 1px solid var(--border-weak);
+    border-radius: var(--r-m);
+    background: var(--bg-surface);
+    color: var(--text-dim);
+    font-size: var(--fs-s);
+  }
+  .source code { padding: 0; border: 0; background: transparent; }
+  h1 {
+    margin: 0 0 var(--sp-4);
+    font-size: var(--fs-xl);
+    line-height: 1.4;
+    letter-spacing: .02em;
+  }
+  h2 {
+    margin: var(--sp-5) 0 var(--sp-3);
+    padding-bottom: var(--sp-2);
+    border-bottom: 1px solid var(--border);
+    font-size: var(--fs-l);
+  }
+  h3 {
+    margin: var(--sp-4) 0 var(--sp-2);
+    font-size: var(--fs-m);
+  }
+  p { margin: var(--sp-3) 0; }
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code {
+    padding: 1px 5px;
+    border: 1px solid var(--border-weak);
+    border-radius: var(--r-s);
+    background: var(--bg-raised);
+    font-size: .92em;
+  }
+  ul { margin: var(--sp-3) 0; padding-left: var(--sp-5); }
+  li { margin: var(--sp-1) 0; }
+  blockquote {
+    margin: var(--sp-4) 0;
+    padding: var(--sp-2) var(--sp-4);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 var(--r-s) var(--r-s) 0;
+    background: var(--bg-surface);
+    color: var(--text-dim);
+  }
+  blockquote p { margin: 0; }
+  .table-wrap { margin: var(--sp-4) 0; overflow-x: auto; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid var(--border);
+    background: var(--bg-surface);
+    font-size: var(--fs-s);
+  }
+  th, td {
+    padding: var(--sp-2) var(--sp-3);
+    border: 1px solid var(--border);
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background: var(--bg-raised);
+    color: var(--text-dim);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  tbody tr:hover td { background: var(--bg-raised); }
+  @media (max-width: 720px) {
+    main { padding: var(--sp-4) var(--sp-3) 40px; }
+    th, td { padding: var(--sp-1) var(--sp-2); }
+  }
+</style>
+<script src="/static/nav.js" defer></script>
+</head>
+<body>
+<main>
+<div class="source">来源：<code>agent_platform/data/dev/weekly_report.md</code> · 渲染器：<code>tools/weekly_report_html.py</code></div>
+<article>
+<h1>研发部周报（自动生成）</h1>
+<ul>
+<li>as-of：2026-10-27T10:59:27（窗口 7 天，切点 2026-10-20）</li>
+<li>数据源：<code>.worktrees/tasks.json</code>、<code>portal/data/dev_events.jsonl</code>、dev 路由/门配置</li>
+<li>生成器：<code>tools/dev_weekly_report.py</code>（只读，除本文件外不写盘）</li>
+</ul>
+<h2>一、八项指标</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>指标</th>
+<th style="text-align:right">当前值</th>
+<th style="text-align:right">D+14 目标</th>
+<th>判读</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>E3 触发率（ARCH1/DEV1/DEV5/OPS1）</td>
+<td style="text-align:right">ARCH1:1/1/DEV1:1/1/DEV5:1/1/OPS1:1/2</td>
+<td style="text-align:right">4/4</td>
+<td>达标</td>
+</tr>
+<tr>
+<td>归属率（全组织新单，近 7 天）</td>
+<td style="text-align:right">73.3%（合法域）</td>
+<td style="text-align:right">≥85%</td>
+<td>未达标</td>
+</tr>
+<tr>
+<td>研发采集份额（近 7 天）</td>
+<td style="text-align:right">1.40%（6/430）</td>
+<td style="text-align:right">观察（≥5 单/周）</td>
+<td>达标</td>
+</tr>
+<tr>
+<td>研发周吞吐</td>
+<td style="text-align:right">6 单/周</td>
+<td style="text-align:right">≥8</td>
+<td>未达标</td>
+</tr>
+<tr>
+<td>dev 前置时间 p50/p90</td>
+<td style="text-align:right">0.9 / 4254.4 分钟（n=6）</td>
+<td style="text-align:right">出基线</td>
+<td>基线</td>
+</tr>
+<tr>
+<td>验证覆盖（dev 单带验收命令）</td>
+<td style="text-align:right">5/6</td>
+<td style="text-align:right">≥90%</td>
+<td>未达标</td>
+</tr>
+<tr>
+<td>review 等待 p90</td>
+<td style="text-align:right">N/A（无字段）</td>
+<td style="text-align:right">≤4h（人工）</td>
+<td>待接线</td>
+</tr>
+<tr>
+<td>返工率 / 逃逸缺陷</td>
+<td style="text-align:right">N/A（无字段）</td>
+<td style="text-align:right">人工登记</td>
+<td>待接线</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2>二、口径与边界</h2>
+<ul>
+<li>归属率＝owner ∈ 合法域（org 成员 ∪ profile_seats：ZHAOYUN/DSH-Lead/VERIFY1）。</li>
+<li>采集份额＝dev 11 席承接单/全部新单，<strong>观察指标不设硬目标</strong>（当前偏低说明业务未流入研发部）。</li>
+<li>前置时间＝created→merged（仅 done 且有 merged）；样本 &lt;5 时不作判据。</li>
+<li>周报初版（v1）：review/返工/逃逸无 devtask 字段，先标 N/A，人工登记后再入表。</li>
+</ul>
+<h2>三、数据点</h2>
+<ul>
+<li>全量工单：712；近 7 天新单：430；dev 席近 7 天：6 单；dev 门 phase=warn；路由名单 11 席。</li>
+<li>全量归属率：0.4846；近 7 天归属率：0.7326。</li>
+</ul>
+<blockquote><p>本文件由生成器覆盖写；如需人工批注请另建 <code>weekly_report_notes.md</code>。</p></blockquote>
+</article>
+</main>
+</body>
+</html>
