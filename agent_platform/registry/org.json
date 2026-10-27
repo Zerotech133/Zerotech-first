@@ -949,7 +949,58 @@
        "migrated_from": "proj_next"
       }
      ],
-     "tools_note": "2026-10-27 A0 L1 批：新增 codebase_intel/sandbox_verify/eval_harness/trace_log（A0 田丰批准；实现 tools/<name>.py；原 devtask/events 保留）"
+     "tools_note": "2026-10-27 A0 L1 批：新增 codebase_intel/sandbox_verify/eval_harness/trace_log（A0 田丰批准；实现 tools/<name>.py；原 devtask/events 保留）",
+     "authority_scope": {
+      "level": "L1_dev_max",
+      "charter_version": "dev-authority-v1",
+      "approved_by": "老田",
+      "approved_at": "2026-10-27",
+      "domains": [
+       "architecture",
+       "tech_selection",
+       "adr",
+       "dispatch",
+       "tech_acceptance",
+       "dev_incident_command",
+       "tooling_within_matrix",
+       "model_within_tier",
+       "dev_budget_monthly",
+       "group_lead_nomination"
+      ],
+      "excludes": [
+       "production",
+       "customer",
+       "money",
+       "host_ops",
+       "credentials",
+       "headcount",
+       "compensation",
+       "model_key_quota",
+       "external_comms"
+      ],
+      "delegation": {
+       "DEV1": [
+        "G1_dispatch",
+        "G1_review"
+       ],
+       "DEV5": [
+        "G2_dispatch",
+        "G2_review"
+       ]
+      },
+      "dual_sign": [
+       "repo_bulk_delete",
+       "gate_security_downgrade",
+       "external_tool_registration",
+       "major_architecture_migration"
+      ],
+      "evidence": [
+       "adr_or_decision_record",
+       "review_verdict",
+       "weekly_report"
+      ],
+      "revocation": "触发 charter red_lines 任一条 -> L0_only，A0 24h 复核，老田决定恢复"
+     }
     },
     {
      "agent_id": "OPS1",
@@ -1056,7 +1107,7 @@
     }
    ],
    "source": "K-ORG-015 实例化；K-ORG-017/018 扩编；K-ORG-020 职级梯队（后端三档/前端双档）",
-   "lead_duty": "部门指挥：目标拆解/派工/验收/升级/组内调配；每日汇总报 A0（自动化）；超期 24h 催办（K-ORG-122）；每周部门周报（触发/吞吐/归属/review/返工/审计六指标）",
+   "lead_duty": "研发域最高技术决策人（L1_dev_max）：部门指挥：目标拆解/派工/验收/升级/组内调配；每日汇总报 A0（自动化）；超期 24h 催办（K-ORG-122）；每周部门周报（触发/吞吐/归属/review/返工/审计六指标）",
    "deputy": "DEV1",
    "delivery_coordinator": "A0A",
    "groups": [

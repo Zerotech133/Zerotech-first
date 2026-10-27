@@ -1,0 +1,54 @@
+{
+ "version": "dev-authority-v1",
+ "approved_by": "老田",
+ "approved_at": "2026-10-27",
+ "level": "L1_dev_max",
+ "subject": "ARCH1",
+ "deputy": "DEV1",
+ "approval": {
+  "mode": "warn",
+  "approver": "ARCH1",
+  "alternates": [
+   "DEV1"
+  ]
+ },
+ "red_lines": [
+  "owner_legal_rate_7d<0.85*3days",
+  "e3_trigger<4/4",
+  "arch1_command_actions<3/week*2weeks",
+  "any_L2_violation",
+  "merge_gate_bypass>=1",
+  "self_review_self_approve>=1",
+  "security_incident>=1",
+  "dev_budget_over_100pct",
+  "decision_record_sample_pass<0.90"
+ ],
+ "phases": [
+  {
+   "id": "P0",
+   "name": "立宪",
+   "window": "2026-10-27~2026-10-30"
+  },
+  {
+   "id": "P1",
+   "name": "L1 授予(A试运行)",
+   "window": "2026-10-28~2026-11-10"
+  },
+  {
+   "id": "P2",
+   "name": "L1+ 扩权",
+   "window": "2026-11-10~2026-11-26"
+  },
+  {
+   "id": "P3",
+   "name": "最高权限确认",
+   "window": "2026-11-26~2026-12-08"
+  },
+  {
+   "id": "P4",
+   "name": "常设/季度复核",
+   "window": "2026-12-08+"
+  }
+ ],
+ "note": "warn=合并缺署名仅告警；到期(2026-10-30 或 P1 启动)后可切 block（需老田批）。"
+}
