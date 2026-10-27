@@ -50,7 +50,8 @@
 - [ADR-005 Agent 可观测（OTel GenAI 语义约定）](docs/adr/ADR-005-agent-observability-otel-genai.md)；
 - ADR-006 worktree/devtask 隔离；ADR-007 工具矩阵单源；ADR-008 席位契约；
 - ADR-009 端口注册/127.0.0.1；ADR-010 凭据 vault/token env；ADR-011 数据根与 work 退役；
-- ADR-012 L2 五要素；ADR-013 单机范围与文档纪律。
+- ADR-012 L2 五要素；ADR-013 单机范围与文档纪律；
+- [ADR-014 Agent 运行契约 v1（run/event/conversation，Proposed）](docs/adr/ADR-014-agent-run-contract.md)。
 
 ## 六、变更规则
 
