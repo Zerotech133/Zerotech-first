@@ -9,7 +9,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:14p
 h1{font-size:17px;font-weight:500}.sub{color:#8FA8C0;font-size:11.5px}
 button{border:.5px solid #1E3A5F;background:#0F2440;color:#4FD1A5;font-size:12px;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:inherit}
 button:hover{filter:brightness(1.15)}button.warn{color:#EF9F27}button.bad{color:#E24B4A}
-main{padding:18px 22px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+main{padding:18px 22px;display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:14px}
 @media(max-width:1100px){main{grid-template-columns:1fr}}
 .card{background:#0A1626;border:.5px solid #1E3A5F;border-radius:12px;padding:14px}
 .card h2{font-size:14px;font-weight:500;margin-bottom:4px}
@@ -48,19 +48,6 @@ td{padding:5px 4px;border-bottom:.5px dashed #16304F;vertical-align:top}
 <div id="relay-status" class="muted" style="margin-top:8px">加载中…</div>
 </section>
 <main id="main"></main>
-<section class="log" id="extra-section" style="margin:0 22px 20px">
-<h2>其他 AI / 部门负责人 Key</h2>
-<div class="muted" style="margin-bottom:8px">主力席位之外的 AI（关羽/部门负责人等）在这里单独配 Key；不配则走平台中转站。</div>
-<div class="add">
-  <select id="extra-seat"></select>
-  <input id="extra-url" placeholder="URL（OpenAI 兼容）">
-  <input id="extra-model" placeholder="模型（如 qwen-plus / deepseek-chat）">
-  <input id="extra-key" type="password" placeholder="粘贴 Key（加密存储）">
-  <input id="extra-label" placeholder="标签（留空自动）">
-  <button id="extra-save">保存到该 AI</button>
-</div>
-<div id="extra-status" class="muted" style="margin-top:8px">加载中…</div>
-</section>
 <section class="log" id="cred-section" style="margin:0 22px 20px">
 <h2>统一凭据（JEV / 数据接口 / 飞书）<span class="muted" style="font-size:11px">只读目录 · 真源 _vault（age 加密）· 不显示密钥</span></h2>
 <div id="cred-list"></div>
@@ -89,7 +76,7 @@ async function load(){
     $('banner').style.display='none';
     const main=$('main');main.replaceChildren();
     for(const [sid,s] of Object.entries(v.seats)){
-      if(sid==='relay'||s.extra) continue;
+      if(sid==='relay') continue;
       const c=el('div','card');
       c.appendChild(el('h2','',s.cn+' · '+s.provider));
       const meta=el('div','meta','绑定 '+s.binding+' ｜ active '+((s.active_key_id)||'—')+' ｜ ');
@@ -117,25 +104,26 @@ async function load(){
       const lab=el('input');lab.placeholder='标签（如 主Key/备1）';
       const pri=el('input');pri.type='number';pri.placeholder='优先级 1-5';pri.value=keys.length+1;
       let burl=null,bmodel=null;
-      if(sid==='relay'){
+      if(s.extra){
+        const fk=(keys||[])[0]||{};
         const preset=document.createElement('select');
-        preset.innerHTML='<option value="tokenegate">tokenegate · gpt-6-sol</option>'
-          +'<option value="dashscope-plus">百炼 DashScope · qwen-plus</option>'
+        preset.innerHTML='<option value="dashscope-plus">百炼 DashScope · qwen-plus</option>'
           +'<option value="dashscope-max">百炼 DashScope · qwen3-max</option>'
+          +'<option value="deepseek">DeepSeek · deepseek-chat</option>'
           +'<option value="custom">自定义</option>';
-        burl=el('input');burl.placeholder='中转站 URL（如 https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions）';burl.value='https://tokenegate.com/v1/chat/completions';
-        bmodel=el('input');bmodel.placeholder='模型（如 qwen-plus）';bmodel.value='gpt-6-sol';
+        burl=el('input');burl.placeholder='OpenAI 兼容 URL';burl.value=fk.base_url||'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
+        bmodel=el('input');bmodel.placeholder='模型';bmodel.value=fk.model||'qwen-plus';
         const applyPreset=()=>{
           const v=preset.value;
           if(v==='dashscope-plus'){burl.value='https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';bmodel.value='qwen-plus'}
           else if(v==='dashscope-max'){burl.value='https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';bmodel.value='qwen3-max'}
-          else if(v==='tokenegate'){burl.value='https://tokenegate.com/v1/chat/completions';bmodel.value='gpt-6-sol'}
+          else if(v==='deepseek'){burl.value='https://api.deepseek.com/v1/chat/completions';bmodel.value='deepseek-chat'}
         };
         preset.onchange=applyPreset;
         add.append(preset,burl,bmodel);
       }
       const b=el('button','','添加 Key');
-      b.onclick=async()=>{if(!inp.value.trim()){alert('请粘贴 Key');return}const body={action:'add',seat:sid,secret:inp.value.trim(),label:lab.value.trim(),priority:Number(pri.value)||keys.length+1};if(sid==='relay'){body.base_url=(burl.value||'').trim();body.model=(bmodel.value||'').trim()}await act(body)};
+      b.onclick=async()=>{if(!inp.value.trim()){alert('请粘贴 Key');return}const body={action:'add',seat:sid,secret:inp.value.trim(),label:lab.value.trim(),priority:Number(pri.value)||keys.length+1};if(s.extra){body.base_url=(burl.value||'').trim();body.model=(bmodel.value||'').trim()}await act(body)};
       add.append(inp,lab,pri,b);c.appendChild(add);
       const auto=el('button',s.auto_switch?'warn':'','自动切换: '+(s.auto_switch?'ON':'OFF'));
       auto.onclick=()=>act({action:'autoswitch_toggle',seat:sid,enabled:!s.auto_switch});c.appendChild(auto);
@@ -227,33 +215,6 @@ async function saveRelay(){
 document.getElementById('relay-save').onclick=saveRelay;
 loadRelay(); setInterval(loadRelay,30000);
 
-
-async function loadExtras(){
-  try{
-    const r=await fetch('/api/keys/state',{cache:'no-store'}); const v=await r.json();
-    const extras=Object.entries(v.seats||{}).filter(([sid,s])=>s.extra);
-    const sel=document.getElementById('extra-seat'); const cur=sel.value;
-    sel.innerHTML=extras.map(([sid,s])=>'<option value="'+sid+'">'+(s.cn||sid)+' · '+sid+'</option>').join('');
-    if(cur) sel.value=cur;
-    const box=document.getElementById('extra-status');
-    if(!extras.length){box.textContent='暂无扩展席位';return}
-    const rows=extras.filter(([sid,s])=>(s.keys||[]).length).map(([sid,s])=>(s.cn||sid)+'：'+s.keys.map(k=>k.masked+'['+k.status+']').join(','));
-    box.textContent=rows.length?('已配：'+rows.join(' ｜ ')):'扩展席位均未配 Key';
-  }catch(e){document.getElementById('extra-status').textContent='读取失败：'+e.message}
-}
-async function saveExtra(){
-  const seat=document.getElementById('extra-seat').value;
-  const url=document.getElementById('extra-url').value.trim();
-  const model=document.getElementById('extra-model').value.trim();
-  const key=document.getElementById('extra-key').value.trim();
-  const label=document.getElementById('extra-label').value.trim()||('seat/'+seat);
-  if(!seat||!url||!model||!key){alert('AI / URL / 模型 / Key 都要填');return}
-  const r=await fetch('/api/keys/action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'add',seat,secret:key,label,base_url:url,model})});
-  const v=await r.json(); if(!v.ok){alert('保存失败：'+(v.error||'unknown'));return}
-  document.getElementById('extra-key').value=''; alert('已保存（只回显掩码）'); loadExtras(); load();
-}
-document.getElementById('extra-save').onclick=saveExtra;
-loadExtras(); setInterval(loadExtras,30000);
 
 load();setInterval(load,30000);
 setInterval(loadVK,30000);
