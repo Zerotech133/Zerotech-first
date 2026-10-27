@@ -130,6 +130,10 @@ def build_index(root: Path | None = None, out: Path | None = None,
              "avg_len": (total_len / len(chunks)) if chunks else 0,
              "df": df, "chunks": chunks, "dirs": list(dirs),
              "postings": postings, "lens": lens}
+    # 2026-10-27 索引瘦身：postings/lens 已持久化，chunks.tokens 不再写盘（可大幅降低加载延迟）
+    for chunk in chunks:
+        chunk.pop("tokens", None)
+    index["tokens_omitted"] = True
     out_path = Path(out) if out else (_root() / INDEX_REL)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(index, ensure_ascii=False), encoding="utf-8")
