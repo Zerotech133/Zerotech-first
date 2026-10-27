@@ -16,6 +16,7 @@ import re
 import sys
 from collections import Counter
 from datetime import datetime, timedelta
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 GUBA_DIR = os.path.join(HERE, "data", "guba")
@@ -155,8 +156,8 @@ def _apply_lexicon(force=False):
         if isinstance(d.get("word_alias"), dict):
             WORD_ALIAS = dict(d["word_alias"])
         _LEX_MTIME = m
-    except (OSError, ValueError):
-        pass
+    except (OSError, ValueError) as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/guba_sentiment.py", exc)
 
 
 _apply_lexicon(force=True)
@@ -309,8 +310,8 @@ def guba_summary(tc, days=30, top_n=40, word=None):
                     "matched": bool(hit),
                 }
             )
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/guba_sentiment.py", exc)
     bb_bull = sum(1 for r in posts if r.get("bb") == 1)
     bb_bear = sum(1 for r in posts if r.get("bb") == -1)
     return {

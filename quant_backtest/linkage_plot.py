@@ -26,6 +26,7 @@ import matplotlib.pyplot as plt
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import linkage as LK
+import logging
 
 plt.rcParams["font.sans-serif"] = ["Microsoft YaHei", "SimHei"]
 plt.rcParams["axes.unicode_minus"] = False
@@ -183,8 +184,8 @@ def plot_one(r, out_png, sig=None):
 
         if sig5_hidden():
             disp = [s for s in disp if str(s.get("tag")) != "5"]
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/linkage_plot.py", exc)
     sidecar = {
         "code": r["code"],
         "name": r.get("name"),
@@ -258,8 +259,8 @@ def gen_all(
                 name=r.get("name"),
                 source="linkage_plot",
             )
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/linkage_plot.py", exc)
     return out
 
 

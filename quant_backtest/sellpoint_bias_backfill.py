@@ -22,6 +22,7 @@ from datetime import datetime, timedelta
 
 sys.stdout.reconfigure(encoding="utf-8")
 import tushare as ts
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(HERE, "data")
@@ -51,8 +52,8 @@ def _get_token():
                         return v
                 except OSError:
                     continue
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/sellpoint_bias_backfill.py", exc)
     return None
 
 
@@ -68,8 +69,8 @@ def load_jsonl(path):
                 if line:
                     try:
                         rows.append(json.loads(line))
-                    except Exception:
-                        pass
+                    except Exception as exc:
+                        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/sellpoint_bias_backfill.py", exc)
     return rows
 
 

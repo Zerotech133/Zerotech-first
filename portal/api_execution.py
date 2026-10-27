@@ -28,6 +28,7 @@ import threading
 import time
 from datetime import datetime
 from pathlib import Path
+import logging
 
 # ── 常量与模块级状态 ──────────────────────────────────────────────────────
 
@@ -388,8 +389,8 @@ def _log_state(cfg):
         try:
             if lp.is_file():
                 log_mtime = _fmt_mtime(lp.stat().st_mtime)
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_execution.py", exc)
     fs = cfg.get("fail_scan") or {}
     fs_log = fs.get("log")
     pattern = fs.get("pattern")
@@ -404,8 +405,8 @@ def _log_state(cfg):
                               errors="replace") as f:
                         tail = f.readlines()[-500:]
                     fail_scan_hit = any(pattern in ln for ln in tail)
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_execution.py", exc)
     return log_mtime, fail_scan_hit
 
 

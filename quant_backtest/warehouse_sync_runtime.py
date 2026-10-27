@@ -17,6 +17,7 @@ import pandas as pd
 from warehouse_commit import commit_table, count_changes, publication_guard
 from warehouse_runs import COUNT_FIELDS, RunBusy, RunStore, TERMINAL
 from warehouse_update import build_plan, metadata_digest, plan_digest
+import logging
 
 
 ADAPTERS = {
@@ -158,8 +159,8 @@ def probe_process(pid, created_at):
         if handle and kernel:
             try:
                 kernel.CloseHandle(handle)
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/warehouse_sync_runtime.py", exc)
 
 
 class Heartbeat:
@@ -886,8 +887,8 @@ def run_frozen_plan(
         # 无法登记终态时保留活锁，由真实进程身份恢复；绝不再发请求或写数据。
         try:
             store.finish(run_id, "failed", exit_code=1, now=clock())
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/warehouse_sync_runtime.py", exc)
         return dict(run_id=run_id, status="failed", exit_code=1)
     finally:
         heartbeat.close()

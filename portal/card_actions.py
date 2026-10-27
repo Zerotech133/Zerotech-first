@@ -23,6 +23,7 @@ import json
 import os
 import sys
 import threading
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 WORK = os.path.join(HERE, "work")
@@ -220,8 +221,8 @@ def recent_events(limit=30):
     for ln in lines[-limit:]:
         try:
             out.append(json.loads(ln))
-        except ValueError:
-            pass
+        except ValueError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/card_actions.py", exc)
     out.reverse()
     return out
 
@@ -239,8 +240,8 @@ def today_counts():
                     continue
                 if r.get("date") == today:
                     cnt[r.get("action", "?")] = cnt.get(r.get("action", "?"), 0) + 1
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/card_actions.py", exc)
     return cnt
 
 

@@ -32,6 +32,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import weak_track_summary as wts  # noqa: E402  (parse_cases 唯一解析器)
 import weak_track_watch as ww  # noqa: E402  (_task_map 复用)
+import logging
 
 REP = os.path.join(os.path.dirname(HERE), "reports")
 CASES = os.path.join(REP, "weak_cases")
@@ -62,8 +63,8 @@ def _ncase_line(cases_dir, md):
         for ln in reversed(txt.splitlines()):
             if ln.startswith("🔄"):
                 return ln
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/weak_track_audit.py", exc)
     return ""
 
 
@@ -136,8 +137,8 @@ def build_audit(f):
                 if not l.lstrip().startswith("#")
             )
             return text.format(**f).rstrip("\n")
-        except (KeyError, IndexError, ValueError):
-            pass
+        except (KeyError, IndexError, ValueError) as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/weak_track_audit.py", exc)
     return (
         "🧾 [WEAK AUDIT] 结案质量审计（§13）\n"
         "已结案 {n} 例｜异常 {n_bad} 例｜{ts}\n"

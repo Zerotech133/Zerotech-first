@@ -15,6 +15,7 @@ import re
 import sys
 import time
 import requests
+import logging
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 DOCS = os.path.join(BASE, "data", "k266_docs")
@@ -237,8 +238,8 @@ def load_done():
                         done.add(rec["doc_id"])
                     else:
                         err_cnt[rec["doc_id"]] = err_cnt.get(rec["doc_id"], 0) + 1
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/k266_m3_structure.py", exc)
     # 钉子户防御：ERR≥3（如超长条目独占 GPU 也判不完）视为放弃，防每轮
     # 空转 600s 看门狗超时（2026-10-08 i11 三连败实测）
     for did, n in err_cnt.items():
@@ -424,8 +425,8 @@ def parse_json_array(raw):
                 obj = json.loads(obj_src)
                 if isinstance(obj, dict):
                     arr.append(obj)
-            except ValueError:
-                pass
+            except ValueError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/k266_m3_structure.py", exc)
     out = {}
     for obj in arr:
         if not isinstance(obj, dict):

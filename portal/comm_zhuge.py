@@ -38,6 +38,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+import logging
 
 DEFAULT_TIMEOUT = 30
 DEFAULT_MAX_CHARS = 600
@@ -160,8 +161,8 @@ def _sanitize_citations(text, sources):
         if mod is not None:
             try:
                 out = mod.ensure_citations(out, sources)
-            except Exception:  # noqa: BLE001
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "portal/comm_zhuge.py", exc)
     return out
 
 
@@ -355,8 +356,8 @@ def _openclaw_prompt(question, grounding=None):
         if mod is not None:
             try:
                 return mod.grounded_prompt(q, grounding, soul=soul)
-            except Exception:  # noqa: BLE001
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "portal/comm_zhuge.py", exc)
     return (
         soul
         + " 用户咨询："

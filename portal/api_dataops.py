@@ -17,6 +17,7 @@ import re
 import socket
 import sqlite3
 import time
+import logging
 
 QB = r"C:/项目/老田的AI助手/quant_backtest"
 DATA = os.path.join(QB, "data")
@@ -108,10 +109,10 @@ def _daily_intake(errors, days=14):
                             ts = json.loads(line).get("ts")
                             if isinstance(ts, str) and ts >= dates[0]:
                                 gcnt[ts[:10]] = gcnt.get(ts[:10], 0) + 1
-                        except Exception:
-                            pass
-            except OSError:
-                pass
+                        except Exception as exc:
+                            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_dataops.py", exc)
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_dataops.py", exc)
         if gcnt:
             per_source["股吧帖"] = gcnt
     except Exception as e:

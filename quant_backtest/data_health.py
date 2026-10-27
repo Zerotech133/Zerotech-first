@@ -23,6 +23,7 @@ from datetime import datetime
 from pathlib import Path
 
 from valuation_field_reconcile import join_daily_basic_from_dir, valuation_field_coverage
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(HERE, "data")
@@ -414,11 +415,11 @@ def _scan_tdx_info_db(path):
                 out.append({"asset": cn[tbl], "table": tbl, "rows": n or 0,
                             "latest": str(latest)[:10] if latest else None,
                             "path": path, 'latest_kind': 'business_date', 'size_mb': None})
-            except sqlite3.OperationalError:
-                pass
+            except sqlite3.OperationalError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/data_health.py", exc)
         db.close()
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/data_health.py", exc)
     if out:
         # 共享数据库按物理路径计一次。
         out[0]['size_mb'] = round(os.path.getsize(path) / 1024**2, 3)

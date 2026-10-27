@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 import re
 import time
+import logging
 
 try:  # Windows
     import msvcrt
@@ -209,8 +210,8 @@ def inspect_ledger(path: str | os.PathLike) -> dict:
                         )
                     ):
                         continue
-                except ValueError:
-                    pass
+                except ValueError as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/strategy_layer/r0_receipt_replay_guard.py", exc)
                 corrupt_line = index
                 break
         except (OSError, ValueError, UnicodeError):
@@ -253,8 +254,8 @@ def repair_ledger(path: str | os.PathLike, *, confirm: bool = False) -> dict:
                             good_end = offset + line_len
                             offset += line_len
                             continue
-                    except (ValueError, UnicodeError):
-                        pass
+                    except (ValueError, UnicodeError) as exc:
+                        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/strategy_layer/r0_receipt_replay_guard.py", exc)
                     corrupt = True
                     break
                 if not corrupt:

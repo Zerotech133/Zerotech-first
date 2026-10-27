@@ -19,6 +19,7 @@ import os
 import subprocess
 import sys
 from datetime import datetime, timedelta
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 NEWS_DIR = os.path.abspath(os.path.join(HERE, "..", "news_collector"))
@@ -79,13 +80,13 @@ def alert(task, code, log=""):
                     txt = txt.encode("gbk", errors="replace").decode(
                         "utf-8", errors="replace"
                     )
-                except UnicodeDecodeError:
-                    pass
+                except UnicodeDecodeError as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/alert_fail.py", exc)
             tail = txt.splitlines()[-5:]
             if tail:
                 msg += "\n--- log tail ---\n" + "\n".join(tail).rstrip()
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/alert_fail.py", exc)
     n = recent_power_loss()
     if n:
         msg = (

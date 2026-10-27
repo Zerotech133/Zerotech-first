@@ -40,6 +40,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 import xueqiu_common as X
+import logging
 
 
 class ManifestSaveError(RuntimeError):
@@ -107,8 +108,8 @@ def init_ball(mf: X.XqManifest) -> dict:
     try:
         from xq_cookie_patch import patch_pysnowball_cookies
         patch_pysnowball_cookies()
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/xueqiu_sync.py", exc)
     # P1-4：token 池（config/xq_tokens.json）优先；未启用/全冷却降级
     # 三级链（L1 .env.local → L2 浏览器 → L3 空），零配置行为不变。
     pool = None
@@ -876,8 +877,8 @@ def main(argv: list[str] | None = None) -> int:
         pname = apply_proxy_env()
         if pname:
             print("[main] 出口代理: %s" % pname)
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/xueqiu_sync.py", exc)
     # P2-9 单任务容错：init_ball 意外异常（token 池坏文件序列化、
     # env 写入失败等理论外路径）不得拖垮 main——全批 degraded 退出
     # rc=0（与 probe 失败同语义），manifest 必落盘。

@@ -44,6 +44,7 @@ if _QB_ROOT not in sys.path:
 from strategy_layer.onboarding.classic_adapter import (  # noqa: E402
     ClassicStrategyAdapter,
 )
+import logging
 
 # 统计口径常量（对齐 council_shadow.py）
 NS = (5, 20)  # 前向收益窗口
@@ -142,8 +143,8 @@ def _load_keys(path: str) -> set:
                         keys.add(k)
                 except json.JSONDecodeError:
                     continue
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/strategy_layer/onboarding/shadow_collect.py", exc)
     return keys
 
 
@@ -317,8 +318,8 @@ def compute_shadow_stats(
 def main(argv: Optional[List[str]] = None) -> int:
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/strategy_layer/onboarding/shadow_collect.py", exc)
     ap = argparse.ArgumentParser(description="S4 影子期每日采集与统计")
     ap.add_argument("--strategy", help="策略名（strategies.REGISTRY 键）")
     ap.add_argument("--symbol", default=None, help="标的，逗号分隔（采集模式必填）")

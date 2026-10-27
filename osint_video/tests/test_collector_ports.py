@@ -12,6 +12,7 @@ from collectors.ports import (
     SessionStatus,
     TextChannel,
 )
+import logging
 
 
 class Adapter:
@@ -138,13 +139,13 @@ def test_credential_query_and_private_host_are_rejected() -> None:
     try:
         CreatorResolveRequest("https://example.invalid/post/1?token=secret")
         raise AssertionError("credential query should be rejected")
-    except ValueError:
-        pass
+    except ValueError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "osint_video/tests/test_collector_ports.py", exc)
     try:
         SafeCollector(Adapter()).fetch_video("https://127.0.0.1/post/1")
         raise AssertionError("private host should be rejected")
-    except ValueError:
-        pass
+    except ValueError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "osint_video/tests/test_collector_ports.py", exc)
 
 
 def test_session_health_gate_blocks_non_authenticated_states() -> None:

@@ -27,6 +27,7 @@ import subprocess
 import sys
 import tempfile
 from datetime import datetime
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -120,8 +121,8 @@ def _theme_block(theme, res, err):
             lines.append("  📖 " + dgx)
         elif dg.get("note"):
             lines.append("  📖 " + dg["note"])
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/kg_resonance_notify.py", exc)
     return "\n".join(lines)
 
 
@@ -132,8 +133,8 @@ def main():
         if st.get("date") == _today_dashed():
             print("already handled today: %s" % st.get("status"))
             return
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/kg_resonance_notify.py", exc)
 
     sys.path.insert(0, HERE)
     blocks, errs = [], 0

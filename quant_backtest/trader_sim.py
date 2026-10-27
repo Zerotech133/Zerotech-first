@@ -30,6 +30,7 @@
 import json
 import os
 import time
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPORTS = os.path.join(HERE, "reports")
@@ -280,8 +281,8 @@ def _recs(fp=PROPOSALS):
                     continue
                 if r.get("code"):
                     out["%s|%s" % (r.get("sid"), r.get("code"))] = r
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/trader_sim.py", exc)
     return out
 
 
@@ -770,8 +771,8 @@ if __name__ == "__main__":
         import sys
 
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/trader_sim.py", exc)
     ap = argparse.ArgumentParser(description="K68 三操盘手模拟锦标赛")
     ap.add_argument("--rebuild", action="store_true", help="从立案留痕全量重放")
     ap.add_argument(

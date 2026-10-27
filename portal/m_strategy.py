@@ -16,6 +16,7 @@ import os
 import subprocess
 import sys
 import time
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 WORK = os.path.join(HERE, "work")
@@ -56,8 +57,8 @@ def _rows(path):
                     out.append(json.loads(line))
                 except ValueError:
                     continue
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/m_strategy.py", exc)
     return out
 
 
@@ -202,8 +203,8 @@ def _links_block():
                         STATE_CN.get(str(o.get("status")), str(o.get("status") or "")),
                     )
                 )
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/m_strategy.py", exc)
     if not lines:
         return {
             "type": "md",
