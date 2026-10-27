@@ -28,17 +28,28 @@ def _main_repo() -> Path:
 
 def main() -> int:
     repo = _main_repo()
+    # 部署态=主仓；开发态=worktree（未合并前技能/文档只在 worktree）→ 两处都认
+    candidates = [repo, HERE.parents[3]]
+
+    def _find(rel: str):
+        for base in candidates:
+            p = base / rel
+            if p.is_file():
+                return p
+        return candidates[0] / rel
+
     required = {
-        "acceptance_tool": repo / "tools" / "huangzhong_accept.py",
-        "baseline_tool": repo / "tools" / "test_baseline.py",
-        "quality_gate": repo / "agent_platform" / "tools" / "quality_gate.py",
-        "redteam_tool": repo / "tools" / "zhuge_redteam.py",
-        "skill_doc": repo / "agent_platform" / "skills" / "huangzhong" / "SKILL.md",
-        "charter": repo / "docs" / "plans" / "2026-10-28_黄忠验收守门官_charter_v1.md",
-        "skills_doc": repo / "docs" / "plans" / "2026-10-28_黄忠技能清单与共享资能_v1.md",
+        "acceptance_tool": "tools/huangzhong_accept.py",
+        "baseline_tool": "tools/test_baseline.py",
+        "quality_gate": "agent_platform/tools/quality_gate.py",
+        "redteam_tool": "tools/zhuge_redteam.py",
+        "skill_doc": "agent_platform/skills/huangzhong/SKILL.md",
+        "charter": "docs/plans/2026-10-28_黄忠验收守门官_charter_v1.md",
+        "skills_doc": "docs/plans/2026-10-28_黄忠技能清单与共享资能_v1.md",
     }
     checks = {}
-    for name, path in required.items():
+    for name, rel in required.items():
+        path = _find(rel)
         checks[name] = {"ok": path.is_file(), "path": str(path)}
     warnings = []
     baseline = repo / "agent_platform" / "data" / "test_baseline" / "latest.json"
