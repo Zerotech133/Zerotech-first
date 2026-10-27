@@ -9,7 +9,7 @@
   "prompt_ok": 61,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 17,
+  "workorders_doing": 16,
   "workorders_review": 3
  },
  "workorders": [
@@ -165,15 +165,6 @@
    "branch": "task/WO-TRACE-COST-20261027",
    "created": "2026-10-27 15:34:18",
    "project": "quant"
-  },
-  {
-   "id": "WO-GUANYU-SCANFIX5-20261027",
-   "desc": "扫描器函数调用误报修复 [UNOWNED]",
-   "status": "doing",
-   "owner": "unknown-agent",
-   "branch": "task/WO-GUANYU-SCANFIX5-20261027",
-   "created": "2026-10-27 15:37:47",
-   "project": "general"
   },
   {
    "id": "WO-O2-QUALITY-20261027",
