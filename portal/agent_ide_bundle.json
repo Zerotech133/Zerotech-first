@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 34,
+  "workorders_doing": 33,
   "workorders_review": 4
  },
  "workorders": [
@@ -345,15 +345,6 @@
    "branch": "task/WO-TESTPATHS-ADJUST-20261028",
    "created": "2026-10-28 05:24:43",
    "project": "general"
-  },
-  {
-   "id": "K-QUANT-20261028-ALIYUNKEY",
-   "desc": "阿里云 AccessKey ID/Secret 入库：DPAPI 加密两个凭据；credential_registry 增加 cloud 分类条目；验证目录 status ok；不回显明文",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-QUANT-20261028-ALIYUNKEY",
-   "created": "2026-10-28 07:17:53",
-   "project": "quant"
   }
  ],
  "coder_traces": [
