@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """模拟仓深色工作台与双版本 UI 规范的契约。"""
 from pathlib import Path
 
@@ -9,9 +9,10 @@ CSS = ROOT / "portal" / "static" / "paper_workbench.css"
 
 def test_paper_uses_os_dark_tokens():
     s = PAGE.read_text(encoding="utf-8")
-    for token in ("#090f1c", "#111e31", "#15243a", "#eef5ff", "#a7b8cc", "#30445d", "#6bd7e5"):
+    for token in ("var(--os-bg)", "var(--os-paper)", "var(--os-ink)", "var(--os-muted)", "var(--os-line)", "var(--os-blue)"):
         assert token in s
     assert 'id="os-paper-theme"' in s
+    assert "var(--pw-bg)" in CSS.read_text(encoding="utf-8")
 
 
 def test_paper_v2_shell_and_stylesheet():

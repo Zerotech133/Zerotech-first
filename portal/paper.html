@@ -1,20 +1,21 @@
 <!DOCTYPE html>
+
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>模拟仓平台 · K-STOCK</title>
-<link rel="stylesheet" href="/static/tokens.css">
-<link rel="icon" href="data:,">
+<link href="/static/tokens.css" rel="stylesheet"/>
+<link href="data:," rel="icon"/>
 <style id="os-paper-theme">
 /* 双版本 UI 规范：/paper 属深色专业工作台（非浅色驾驶舱）。
    仅做令牌桥接与可访问性增强，不改交易逻辑。 */
 :root{
-  --bg-page:#090f1c; --bg-surface:#111e31; --bg-raised:#15243a;
-  --text:#eef5ff; --text-dim:#a7b8cc; --border:#30445d; --border-weak:#24364a;
-  --link:#6bd7e5;
+  --bg-page:var(--os-bg); --bg-surface:var(--os-paper); --bg-raised:var(--os-card-grad);
+  --text:var(--os-ink); --text-dim:var(--os-muted); --border:var(--os-line); --border-weak:var(--os-top-bd);
+  --link:var(--os-blue);
 }
-body{background:radial-gradient(ellipse at 78% -12%,#15314c 0%,transparent 46%),var(--bg-page);}
+body{background:radial-gradient(ellipse at 78% -12%,var(--os-glow) 0%,transparent 46%),var(--bg-page);}
 :focus-visible{outline:2px solid var(--link);outline-offset:2px;}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;}}
 </style>
@@ -26,7 +27,7 @@ body{background:radial-gradient(ellipse at 78% -12%,#15314c 0%,transparent 46%),
   /* ── 头部（与 picks/index 同骨架）── */
   header{display:flex; align-items:center; justify-content:space-between; padding:20px 26px 12px; max-width:var(--page-w); margin:0 auto; flex-wrap:wrap; gap:12px;}
   .brand{display:flex; align-items:center; gap:12px;}
-  .logo{width:38px; height:38px; border-radius:10px; background:linear-gradient(135deg,var(--blu-600),var(--pur-500)); display:grid; place-items:center; font-size:19px; font-weight:800; color:#fff;}
+  .logo{width:38px; height:38px; border-radius:10px; background:linear-gradient(135deg,var(--blu-600),var(--pur-500)); display:grid; place-items:center; font-size:19px; font-weight:800; color:var(--os-white);}
   .brand h1{font-size:17px; font-weight:700;}
   .brand small{color:var(--text-dim); font-size:10.5px; letter-spacing:3px; display:block; margin-top:2px;}
   .kpis{display:flex; gap:22px; flex-wrap:wrap; justify-content:flex-end;}
@@ -82,7 +83,7 @@ body{background:radial-gradient(ellipse at 78% -12%,#15314c 0%,transparent 46%),
   .duty-msg{font-size:12.5px;line-height:1.65;padding:8px 12px;border-radius:10px;margin-bottom:6px;white-space:pre-wrap;max-width:92%}
   .trigger-switch{display:flex; gap:0; margin-top:10px; border:1px solid var(--border); border-radius:8px; overflow:hidden; font-size:12px;}
   .trigger-opt{flex:1; text-align:center; padding:6px 0; color:var(--text-dim); background:var(--bg-surface);}
-  .trigger-opt.on{background:var(--accent); color:#fff; font-weight:700;}
+  .trigger-opt.on{background:var(--accent); color:var(--os-white); font-weight:700;}
   .trigger-opt.dis{opacity:.5;}
   .exec-panel{border:1px solid var(--border); border-radius:10px; padding:16px; min-height:380px;}
   .exec-title{font-size:16px; font-weight:700; margin-bottom:4px;}
@@ -101,7 +102,7 @@ body{background:radial-gradient(ellipse at 78% -12%,#15314c 0%,transparent 46%),
   .b-man{background:rgba(139,148,158,.18); color:var(--text-dim);}
   .b-stop{background:rgba(248,81,73,.15); color:var(--red-500);}
   .b-agent{background:rgba(163,113,247,.15); color:var(--pur-500);}
-  .btn{border:none; border-radius:8px; padding:10px 22px; font-size:14px; font-weight:700; cursor:pointer; transition:opacity .15s; color:#fff;}
+  .btn{border:none; border-radius:8px; padding:10px 22px; font-size:14px; font-weight:700; cursor:pointer; transition:opacity .15s; color:var(--os-white);}
   .btn-primary{background:var(--accent);}
   .btn-orange{background:var(--org-400); color:var(--gray-0);}
   .btn-gray{background:var(--gray-3); color:var(--text);}
@@ -119,8 +120,8 @@ body{background:radial-gradient(ellipse at 78% -12%,#15314c 0%,transparent 46%),
   .field .hint{font-size:11px; color:var(--text-dim); margin-top:3px;}
   .seg{display:flex; border:1px solid var(--border); border-radius:8px; overflow:hidden;}
   .seg button{flex:1; border:none; padding:9px 0; background:var(--bg-surface); font-size:14px; cursor:pointer; font-weight:700; color:var(--text-dim);}
-  .seg button.on-buy{background:var(--color-up); color:#fff;}
-  .seg button.on-sell{background:var(--color-dn); color:#fff;}
+  .seg button.on-buy{background:var(--color-up); color:var(--os-white);}
+  .seg button.on-sell{background:var(--color-dn); color:var(--os-white);}
   .side-box{border:1px solid var(--border); border-radius:10px; padding:14px; margin-bottom:14px;}
   .side-box h3{font-size:13px; margin-bottom:10px; display:flex; align-items:center; gap:6px;}
   .mini-table{width:100%; border-collapse:collapse; font-size:12px;}
@@ -149,347 +150,334 @@ body{background:radial-gradient(ellipse at 78% -12%,#15314c 0%,transparent 46%),
   .dot{display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:5px; vertical-align:-1px;}
   .toast{position:fixed; bottom:30px; left:50%; transform:translateX(-50%) translateY(80px); background:var(--gray-3); border:1px solid var(--border); color:var(--text); padding:12px 24px; border-radius:10px; font-size:14px; opacity:0; transition:all .3s; z-index:99; box-shadow:0 8px 24px rgba(0,0,0,.45); max-width:80vw;}
   .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
-  .spin{display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,.4); border-top-color:#fff; border-radius:50%; animation:r .7s linear infinite; vertical-align:-2px; margin-right:6px;}
+  .spin{display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,.4); border-top-color:var(--os-white); border-radius:50%; animation:r .7s linear infinite; vertical-align:-2px; margin-right:6px;}
   @keyframes r{to{transform:rotate(360deg);}}
 </style>
-<link rel="stylesheet" href="/static/paper_workbench.css">
-<script src="/static/nav.js" defer></script></head>
+<link href="/static/paper_workbench.css" rel="stylesheet"/><style id="paper-cleanup-utilities">
+/* paper_cleanup_utilities（静态展示样式收口；动态业务样式仍在 JS 内） */
+.pw-link{color:var(--pw-cyan)!important}
+.pw-dim{color:var(--pw-muted)!important}
+.pw-11{font-size:11px!important}
+.pw-12{font-size:12px!important}
+.pw-125{font-size:12.5px!important}
+.pw-13{font-size:13px!important}
+.pw-14{font-size:14px!important}
+.pw-strong{font-weight:700!important}
+.pw-normal{font-weight:400!important}
+</style>
+<script defer="" src="/static/nav.js"></script></head>
 <body class="paper-v2">
-
 <header class="pw-hero">
-  <div class="pw-brand-block">
-    <div class="pw-brand">
-      <div class="logo">仓</div>
-      <div>
-        <div class="pw-eyebrow">PAPER · 模拟交易工作台</div>
-        <h1>模拟仓 <span>K-STOCK PAPER · v0.9</span></h1>
-      </div>
-    </div>
-    <p class="pw-lead">先听值班经理接待，再选策略、组团队、跑回测，满意才上岗；纸面研究，不构成投资建议。</p>
-    <div class="pw-tags">
-      <span class="pw-tag live">纸面环境</span>
-      <span class="pw-tag">只读行情</span>
-      <span class="pw-tag">本地写操作</span>
-      <span class="pw-tag">账本快照</span>
-    </div>
-  </div>
-  <div class="kpis" id="kpis" role="status" aria-live="polite"><div class="kpi"><div class="k">加载中…</div></div></div>
+<div class="pw-brand-block">
+<div class="pw-brand">
+<div class="logo">仓</div>
+<div>
+<div class="pw-eyebrow">PAPER · 模拟交易工作台</div>
+<h1>模拟仓 <span>K-STOCK PAPER · v0.9</span></h1>
+</div>
+</div>
+<p class="pw-lead">先听值班经理接待，再选策略、组团队、跑回测，满意才上岗；纸面研究，不构成投资建议。</p>
+<div class="pw-tags">
+<span class="pw-tag live">纸面环境</span>
+<span class="pw-tag">只读行情</span>
+<span class="pw-tag">本地写操作</span>
+<span class="pw-tag">账本快照</span>
+</div>
+</div>
+<div aria-live="polite" class="kpis" id="kpis" role="status"><div class="kpi"><div class="k">加载中…</div></div></div>
 </header>
-<nav class="topnav" aria-label="模拟仓快捷导航">
-  <a class="pill" href="/">← 返回首页</a>
-  <a class="pill" href="/zero_proto.html">🧭 AI 驾驶舱</a>
-  <span class="pw-sep" aria-hidden="true"></span>
-  <a class="pill on" href="/paper.html" aria-current="page">🧾 模拟仓工作台</a>
+<nav aria-label="模拟仓快捷导航" class="topnav">
+<a class="pill" href="/">← 返回首页</a>
+<a class="pill" href="/zero_proto.html">🧭 AI 驾驶舱</a>
+<span aria-hidden="true" class="pw-sep"></span>
+<a aria-current="page" class="pill on" href="/paper.html">🧾 模拟仓工作台</a>
 </nav>
 <div class="pw-context">
-  <div class="pw-crumb">零界 <span>/</span> 模拟仓 <span>/</span> <b>工作台</b></div>
-  <div class="pw-context-meta"><span class="pw-dot"></span> 纸面研究 <span>·</span> 数据来自模拟账本与行情快照</div>
+<div class="pw-crumb">零界 <span>/</span> 模拟仓 <span>/</span> <b>工作台</b></div>
+<div class="pw-context-meta"><span class="pw-dot"></span> 纸面研究 <span>·</span> 数据来自模拟账本与行情快照</div>
 </div>
-
 <div class="wrap" role="main">
-
-  <div class="tabs" role="tablist" aria-label="模拟仓工作区">
-    <div class="tab active" data-tab="desk">接待大厅</div>
-    <div class="tab" data-tab="strategy">策略中心</div>
-    <div class="tab" data-tab="agent">交易员市场</div>
-    <div class="tab" data-tab="pos">持仓 <span class="n" id="n-pos">0</span></div>
-    <div class="tab" data-tab="hist">历史</div>
-  </div>
-
-  <!-- ============ 交易台 ============ -->
-  <div class="tabpanel active" id="tab-desk">
-    <!-- K-STOCK-350 客户动线重排（老田 10-14 凌晨拍板：第一版面=值班经理接待，从客户进门视角整理。
+<div aria-label="模拟仓工作区" class="tabs" role="tablist">
+<div class="tab active" data-tab="desk">接待大厅</div>
+<div class="tab" data-tab="strategy">策略中心</div>
+<div class="tab" data-tab="agent">交易员市场</div>
+<div class="tab" data-tab="pos">持仓 <span class="n" id="n-pos">0</span></div>
+<div class="tab" data-tab="hist">历史</div>
+</div>
+<!-- ============ 交易台 ============ -->
+<div class="tabpanel active" id="tab-desk">
+<!-- K-STOCK-350 客户动线重排（老田 10-14 凌晨拍板：第一版面=值班经理接待，从客户进门视角整理。
          正确方向=K-STOCK-212 口径五步：接待 → 服务选择 → 组团队（交易员市场）→ 上岗 → 持仓/历史。
          第一屏接待全宽主卡；服务选择两栏；客户日常四件事独立成区；内部机制收折叠） -->
-    <div style="border:2px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:16px;background:linear-gradient(135deg,rgba(88,166,255,.07),transparent 60%)">
-      <div class="col-title" style="margin-bottom:8px;font-size:14px">🧑‍💼 值班经理接待</div>
-      <!-- K-STOCK-194 值班经理接待前置为首屏（老田 10-12 拍板）：第一眼=接待，不是内部看板 -->
-      <div class="side-box" id="ob-box" style="display:none;margin-bottom:10px;border:none;background:transparent;padding:0">
-        <div id="obw-dots" style="display:flex;gap:5px;margin-bottom:8px"></div>
-        <div id="obw-line" style="font-size:12px;color:var(--text-dim);margin-bottom:8px;line-height:1.6"></div>
-        <div id="obw-body" style="font-size:12px"></div>
-        <div style="display:flex;gap:6px;margin-top:8px">
-          <button class="btn" id="obw-prev" onclick="obwPrev()" style="display:none">上一步</button>
-          <button class="btn btn-primary" id="obw-next" onclick="obwNext()">下一步</button>
-        </div>
-        <div id="obw-end" style="display:none;margin-top:6px;font-size:12px"><a href="/market-strategy">去策略市场直接建仓 →</a></div>
-      </div>
-      <div style="font-size:12px;color:var(--text-dim);border-top:1px dashed var(--border);padding-top:8px">您的进门路线：<b>① 这里听经理接待</b> → ② <a href="#" onclick="gotoTab('strategy');return false" style="color:var(--link)">策略中心选策略</a>（免费值班已含 / 订阅策略随订随退） → ③ <a href="#" onclick="document.querySelector('[data-tab=agent]').click();return false" style="color:var(--link)">交易员市场组团队</a>（选经理配操盘手 → 跑组合回测验证） → ④ 满意才上岗 → 上岗后的<b>持仓</b>与<b>历史</b>在上方页签随时看。</div>
-      <!-- K-STOCK-364 盘前简报：值班经理主动服务（9:15 出件快照·复用当日上下文·零模型调用；渲染失败静默不拖垮接待卡） -->
-      <div id="duty-brief" style="display:none;margin-top:10px;border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:var(--bg-surface)">
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <b style="font-size:13px">📋 今日盘前简报</b>
-          <span id="duty-brief-badge" style="font-size:11px;padding:2px 8px;border-radius:10px;background:rgba(88,166,255,.15);color:var(--text)"></span>
-          <span id="duty-brief-time" style="font-size:11px;color:var(--text-dim)"></span>
-        </div>
-        <div id="duty-brief-headline" style="font-size:12.5px;margin-top:6px;font-weight:600"></div>
-        <ul id="duty-brief-rows" style="margin:6px 0 0;padding-left:18px;font-size:12px;color:var(--text-dim);line-height:1.7"></ul>
-      </div>
-      <!-- K-STOCK-352 AI 值班经理 · 有问必答（接待即服务：客户进门就能问，后端复用 8091 模型回退链） -->
-      <div style="border-top:1px dashed var(--border);margin-top:10px;padding-top:10px">
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <b style="font-size:13px">🤖 AI 值班经理 · 有问必答</b>
-          <span class="ai-chip" onclick="askDuty('这里都有哪些服务？各自怎么收费？')">这里都有哪些服务？</span>
-          <span class="ai-chip" onclick="askDuty('你们都有什么策略？各自适合什么样的人？')">都有什么策略？</span>
-          <span class="ai-chip" onclick="askDuty('我是新手，想开始第一步做什么？')">新手怎么开始？</span>
-          <span class="ai-chip" onclick="askDuty('现在几点了？今天我该注意什么？')">今天注意什么？</span>
-        </div>
-        <div id="duty-msgs" style="display:none;margin-top:8px"></div>
-        <div style="display:flex;gap:6px;margin-top:8px">
-          <input id="duty-input" placeholder="问值班经理，比如：新手先订哪个策略？" style="flex:1;font-size:12.5px;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg-page);color:var(--text)" onkeydown="if(event.key==='Enter')askDuty()">
-          <button class="btn btn-primary" id="duty-send" onclick="askDuty()">问一句</button>
-        </div>
-      </div>
-    </div>
-    <!-- K-STOCK-350 今天的事（客户日常：您的钱今天怎么样。从原右栏 9 盒中拆出客户关心的五件，全宽双栏） -->
-    <div class="col-title" style="margin-top:18px">📅 今天的事 <span style="font-weight:400;color:var(--text-dim);font-size:11px">（您的钱今天怎么样：计划 · 风控 · 成交）</span></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 14px">
-      <div>
-        <!-- K-STOCK-163 今日交易计划审批单（先审查再出计划：批准 Top-N + 驳回归类，纯增量，失败静默） -->
-        <div class="col-title" style="display:flex;align-items:center;justify-content:space-between;gap:6px">今日交易计划（经理审批单）<select id="plan-pf-select" style="font-size:11px;max-width:132px" title="K-STOCK-169u：切换组合查看对应审批单"></select></div>
-        <div class="side-box"><div id="plan-body"><div class="empty">读取中…</div></div></div>
-        <div class="col-title">止损哨兵</div>
-        <div class="side-box"><div id="stops-body"><div class="empty">读取中…</div></div></div>
-        <div class="col-title">今日挂单（pending · 全量清单已折叠）</div>
-        <details><summary style="cursor:pointer;font-size:11.5px;color:var(--text-dim);margin-bottom:6px">展开全量挂单清单（审批单之外的原始 pending）</summary>
-        <div class="side-box" style="margin-top:6px"><div id="pend-body"><div class="empty">读取中…</div></div></div></details>
-      </div>
-      <div>
-        <div class="col-title">我的组合总览（多组合）</div>
-        <div class="side-box"><div id="pf-multi-body" style="display:none"><div class="empty">读取中…</div></div></div>
-        <div class="col-title">最近成交</div>
-        <div class="side-box"><div id="recent-body"><div class="empty">读取中…</div></div></div>
-      </div>
-    </div>
-
-    <!-- K-STOCK-350 投研机制（后台在为您工作，默认折叠——客户进门不必看内部齿轮） -->
-    <details style="margin-top:16px;border:1px solid var(--border);border-radius:10px;padding:10px 14px;background:var(--bg-surface)">
-      <summary style="cursor:pointer;font-size:13px;font-weight:700">⚙️ 投研机制（后台在为您工作 · 点开细看）</summary>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 14px;margin-top:10px">
-        <div>
-          <div class="col-title">选票通道（pick_bridge）</div>
-          <div class="side-box"><div id="pick-body"><div class="empty">读取中…</div></div></div>
-          <div class="col-title">评判 Agent（judge）</div>
-          <div class="side-box"><div id="judge-body"><div class="empty">读取中…</div></div></div>
-        </div>
-        <div>
-          <div class="col-title">今日复盘会（三 Agent）</div>
-          <div class="side-box"><div id="meet-body"><div class="empty">读取中…</div></div></div>
-          <div class="col-title">策略源建议（strategist · 影子）</div>
-          <div class="side-box"><div id="strat-body"><div class="empty">读取中…</div></div></div>
-        </div>
-      </div>
-    </details>
-  </div>
-
-  <!-- ============ 策略中心（K-STOCK-351 老田拍板：接待不选策略——研究员/经理/操盘手三类策略统一后置到策略管理中心） ============ -->
-  <div class="tabpanel" id="tab-strategy">
-    <div class="toolbar" style="flex-direction:column;align-items:flex-start;gap:6px">
-      <span style="font-size:15px;font-weight:700">🧭 策略管理中心（先选策略，再去交易员市场组团队）</span>
-      <span style="font-size:12px;color:var(--text-dim)">下方<b>策略卡墙</b>=全部可选策略（量化 12 策略 + AI 值班/手动下单两条常驻通道，策略市场上新自动出现）——<b>点任意卡即选中，执行台跟着出操作面板</b>：已接入的直接执行，未接入的给接入指引。另有：🧑‍💼 经理配策略 → <a href="#" onclick="gotoTab('agent');return false" style="color:var(--link)">交易员市场 · 经理阵营</a>；🧑‍✈️ 操盘手纪律 → <a href="#" onclick="gotoTab('agent');return false" style="color:var(--link)">交易员市场 · 操盘手</a>。订阅入口在 <a href="/market-strategy" style="color:var(--link)">策略市场</a>。</span>
-    </div>
-    <!-- K-STOCK-355 老田拍板：12 策略卡墙直接可选可执行，删除独立通道卡（双刀/青萍并入卡墙）。
+<div style="border:2px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:16px;background:linear-gradient(135deg,rgba(88,166,255,.07),transparent 60%)">
+<div class="col-title" style="margin-bottom:8px;font-size:14px">🧑‍💼 值班经理接待</div>
+<!-- K-STOCK-194 值班经理接待前置为首屏（老田 10-12 拍板）：第一眼=接待，不是内部看板 -->
+<div class="side-box" id="ob-box" style="display:none;margin-bottom:10px;border:none;background:transparent;padding:0">
+<div id="obw-dots" style="display:flex;gap:5px;margin-bottom:8px"></div>
+<div id="obw-line" style="font-size:12px;color:var(--text-dim);margin-bottom:8px;line-height:1.6"></div>
+<div class="pw-12" id="obw-body"></div>
+<div style="display:flex;gap:6px;margin-top:8px">
+<button class="btn" id="obw-prev" onclick="obwPrev()" style="display:none">上一步</button>
+<button class="btn btn-primary" id="obw-next" onclick="obwNext()">下一步</button>
+</div>
+<div id="obw-end" style="display:none;margin-top:6px;font-size:12px"><a href="/market-strategy">去策略市场直接建仓 →</a></div>
+</div>
+<div style="font-size:12px;color:var(--text-dim);border-top:1px dashed var(--border);padding-top:8px">您的进门路线：<b>① 这里听经理接待</b> → ② <a class="pw-link" href="#" onclick="gotoTab('strategy');return false">策略中心选策略</a>（免费值班已含 / 订阅策略随订随退） → ③ <a class="pw-link" href="#" onclick="document.querySelector('[data-tab=agent]').click();return false">交易员市场组团队</a>（选经理配操盘手 → 跑组合回测验证） → ④ 满意才上岗 → 上岗后的<b>持仓</b>与<b>历史</b>在上方页签随时看。</div>
+<!-- K-STOCK-364 盘前简报：值班经理主动服务（9:15 出件快照·复用当日上下文·零模型调用；渲染失败静默不拖垮接待卡） -->
+<div id="duty-brief" style="display:none;margin-top:10px;border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:var(--bg-surface)">
+<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+<b class="pw-13">📋 今日盘前简报</b>
+<span id="duty-brief-badge" style="font-size:11px;padding:2px 8px;border-radius:10px;background:rgba(88,166,255,.15);color:var(--text)"></span>
+<span class="pw-dim pw-11" id="duty-brief-time"></span>
+</div>
+<div id="duty-brief-headline" style="font-size:12.5px;margin-top:6px;font-weight:600"></div>
+<ul id="duty-brief-rows" style="margin:6px 0 0;padding-left:18px;font-size:12px;color:var(--text-dim);line-height:1.7"></ul>
+</div>
+<!-- K-STOCK-352 AI 值班经理 · 有问必答（接待即服务：客户进门就能问，后端复用 8091 模型回退链） -->
+<div style="border-top:1px dashed var(--border);margin-top:10px;padding-top:10px">
+<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+<b class="pw-13">🤖 AI 值班经理 · 有问必答</b>
+<span class="ai-chip" onclick="askDuty('这里都有哪些服务？各自怎么收费？')">这里都有哪些服务？</span>
+<span class="ai-chip" onclick="askDuty('你们都有什么策略？各自适合什么样的人？')">都有什么策略？</span>
+<span class="ai-chip" onclick="askDuty('我是新手，想开始第一步做什么？')">新手怎么开始？</span>
+<span class="ai-chip" onclick="askDuty('现在几点了？今天我该注意什么？')">今天注意什么？</span>
+</div>
+<div id="duty-msgs" style="display:none;margin-top:8px"></div>
+<div style="display:flex;gap:6px;margin-top:8px">
+<input id="duty-input" onkeydown="if(event.key==='Enter')askDuty()" placeholder="问值班经理，比如：新手先订哪个策略？" style="flex:1;font-size:12.5px;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg-page);color:var(--text)"/>
+<button class="btn btn-primary" id="duty-send" onclick="askDuty()">问一句</button>
+</div>
+</div>
+</div>
+<!-- K-STOCK-350 今天的事（客户日常：您的钱今天怎么样。从原右栏 9 盒中拆出客户关心的五件，全宽双栏） -->
+<div class="col-title" style="margin-top:18px">📅 今天的事 <span class="pw-dim pw-11 pw-normal">（您的钱今天怎么样：计划 · 风控 · 成交）</span></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 14px">
+<div>
+<!-- K-STOCK-163 今日交易计划审批单（先审查再出计划：批准 Top-N + 驳回归类，纯增量，失败静默） -->
+<div class="col-title" style="display:flex;align-items:center;justify-content:space-between;gap:6px">今日交易计划（经理审批单）<select id="plan-pf-select" style="font-size:11px;max-width:132px" title="K-STOCK-169u：切换组合查看对应审批单"></select></div>
+<div class="side-box"><div id="plan-body"><div class="empty">读取中…</div></div></div>
+<div class="col-title">止损哨兵</div>
+<div class="side-box"><div id="stops-body"><div class="empty">读取中…</div></div></div>
+<div class="col-title">今日挂单（pending · 全量清单已折叠）</div>
+<details><summary style="cursor:pointer;font-size:11.5px;color:var(--text-dim);margin-bottom:6px">展开全量挂单清单（审批单之外的原始 pending）</summary>
+<div class="side-box" style="margin-top:6px"><div id="pend-body"><div class="empty">读取中…</div></div></div></details>
+</div>
+<div>
+<div class="col-title">我的组合总览（多组合）</div>
+<div class="side-box"><div id="pf-multi-body" style="display:none"><div class="empty">读取中…</div></div></div>
+<div class="col-title">最近成交</div>
+<div class="side-box"><div id="recent-body"><div class="empty">读取中…</div></div></div>
+</div>
+</div>
+<!-- K-STOCK-350 投研机制（后台在为您工作，默认折叠——客户进门不必看内部齿轮） -->
+<details style="margin-top:16px;border:1px solid var(--border);border-radius:10px;padding:10px 14px;background:var(--bg-surface)">
+<summary style="cursor:pointer;font-size:13px;font-weight:700">⚙️ 投研机制（后台在为您工作 · 点开细看）</summary>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 14px;margin-top:10px">
+<div>
+<div class="col-title">选票通道（pick_bridge）</div>
+<div class="side-box"><div id="pick-body"><div class="empty">读取中…</div></div></div>
+<div class="col-title">评判 Agent（judge）</div>
+<div class="side-box"><div id="judge-body"><div class="empty">读取中…</div></div></div>
+</div>
+<div>
+<div class="col-title">今日复盘会（三 Agent）</div>
+<div class="side-box"><div id="meet-body"><div class="empty">读取中…</div></div></div>
+<div class="col-title">策略源建议（strategist · 影子）</div>
+<div class="side-box"><div id="strat-body"><div class="empty">读取中…</div></div></div>
+</div>
+</div>
+</details>
+</div>
+<!-- ============ 策略中心（K-STOCK-351 老田拍板：接待不选策略——研究员/经理/操盘手三类策略统一后置到策略管理中心） ============ -->
+<div class="tabpanel" id="tab-strategy">
+<div class="toolbar" style="flex-direction:column;align-items:flex-start;gap:6px">
+<span style="font-size:15px;font-weight:700">🧭 策略管理中心（先选策略，再去交易员市场组团队）</span>
+<span class="pw-dim pw-12">下方<b>策略卡墙</b>=全部可选策略（量化 12 策略 + AI 值班/手动下单两条常驻通道，策略市场上新自动出现）——<b>点任意卡即选中，执行台跟着出操作面板</b>：已接入的直接执行，未接入的给接入指引。另有：🧑‍💼 经理配策略 → <a class="pw-link" href="#" onclick="gotoTab('agent');return false">交易员市场 · 经理阵营</a>；🧑‍✈️ 操盘手纪律 → <a class="pw-link" href="#" onclick="gotoTab('agent');return false">交易员市场 · 操盘手</a>。订阅入口在 <a class="pw-link" href="/market-strategy">策略市场</a>。</span>
+</div>
+<!-- K-STOCK-355 老田拍板：12 策略卡墙直接可选可执行，删除独立通道卡（双刀/青萍并入卡墙）。
          strategies.json 单一数据源 + ai_team/manual 两条常驻通道置顶；点任意卡→执行台联动 -->
-    <div class="col-title">📡 策略卡墙（点任意卡选择 → 下方执行台出操作面板）</div>
-    <div id="strat12-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px"><div class="empty">读取中…</div></div>
-
-        <div class="flow-note" style="margin-top:10px">💡 您选的每个策略，下单都走同一套流程：自动风控 → 模拟撮合 → 账本记账——<b>任何来源都动不了您的账本，只能提交订单</b>。写操作仅限本机浏览器（局域网只读）。</div>
-
-      <div class="col-title" style="margin-top:14px">⚡ 执行台（选中策略后这里出操作面板）</div>
-      <div>
-
-        <div class="exec-panel" id="exec-ai_team">
-          <div class="exec-title">🤖 AI 值班 · 每日跑批</div>
-          <div class="exec-sub">触发：每日 07:05 automation 自动执行 ｜ 手动补跑走 CLI 通道（大模型推理不在页面触发）</div>
-          <div class="stat-row" id="ai-stats"><div class="stat-box"><div class="k">状态</div><div class="v">读取中</div></div></div>
-          <div class="btn-row">
-            <button class="btn btn-gray" onclick="toast('AI 补跑：python k_stock/paper/cli.py exec --newest（或等 07:05 automation）')">▶ 补跑走 CLI 通道</button>
-          </div>
-          <div class="flow-note">决策产物（poc_*.json）→ exec 落 pending → 次日开盘撮合。补跑幂等（ref 防重）。</div>
-        </div>
-
-        <div class="exec-panel" id="exec-double_knife" style="display:none">
-          <div class="exec-title">⚔️ 量子双刀 · 今日信号</div>
-          <div class="exec-sub">触发：可自动（盘后扫描落单）可手动（点按钮执行）｜ 执行 = 信号转 pending，次日开盘撮合</div>
-          <div id="qd-body"><div class="empty">读取中…</div></div>
-          <div class="btn-row">
-            <button class="btn btn-orange" id="qd-run" onclick="runQD()">⚡ 执行今日信号</button>
-            <span style="font-size:12px;color:var(--text-dim)">当日幂等：账本已有落单自动拒绝</span>
-          </div>
-        </div>
-
-        <div class="exec-panel" id="exec-qingping" style="display:none">
-          <div class="exec-title">🍃 青萍之末 · 已上架</div>
-          <div class="exec-sub">v0.2b：只移植信号逻辑产 picks，不引入第二套交易语义</div>
-          <div class="flow-note">订阅与建仓入口：<a href="/market-strategy">策略市场 → 青萍之末（qpzm）</a>。信号产物进同一条 picks 协议：风控 → 撮合 → 账本。</div>
-        </div>
-
-        <div class="exec-panel" id="exec-manual" style="display:none">
-          <div class="exec-title">✋ 手动下单</div>
-          <div class="exec-sub">按湖内最近收盘价即时成交 · 可选止损价（收盘触发，次日开盘清仓）</div>
-          <div class="form-grid">
-            <div class="field"><label>股票代码</label><input id="f-code" placeholder="如 600519.SH"><div class="hint">6 位代码 + .SH / .SZ / .BJ</div></div>
-            <div class="field"><label>方向</label>
-              <div class="seg" id="f-side">
-                <button class="on-buy" onclick="pickSide(this,'BUY')">买入</button>
-                <button onclick="pickSide(this,'SELL')">卖出</button>
-              </div>
-            </div>
-            <div class="field"><label>数量（股）</label><input id="f-qty" type="number" step="100" placeholder="100 的整数倍；卖出留空=全部可卖"></div>
-            <div class="field"><label>止损价（可选）</label><input id="f-stop" type="number" step="0.01" placeholder="留空=不设止损"></div>
-          </div>
-          <div class="btn-row">
-            <button class="btn btn-primary" id="f-submit" onclick="submitOrder()">提交订单</button>
-            <span style="font-size:12px;color:var(--text-dim)">提交前会弹确认；风控（单票 20%）不通过会被引擎拒绝</span>
-          </div>
-        </div>
-
-        <div class="exec-panel" id="exec-generic" style="display:none">
-          <div class="exec-title" id="generic-name">策略</div>
-          <div class="exec-sub" id="generic-status"></div>
-          <div class="flow-note"><span id="generic-tagline"></span><br>该策略<b>尚未接入模拟账本执行</b>。两条路：① <a id="generic-href" href="/market-strategy" style="color:var(--link)">策略市场 · 订阅/详情</a>——订阅后由值班经理接入通道即可直接执行；② 先在下方「说一句话」或<a href="#" onclick="gotoTab('agent');return false" style="color:var(--link)">交易员市场 · 组合回测</a>验证策略成色。</div>
-        </div>
-
-        <div class="exec-panel" id="exec-mystrat" style="display:none">
-          <div class="exec-title" id="mystrat-name">🧩 我的策略</div>
-          <div class="exec-sub">您保存的回测口径 · 可直接微调参数后保存，或点重跑验证（结果出现在下方「说一句话」区）</div>
-          <div id="mystrat-chips" style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0"></div>
-          <div class="btn-row">
-            <button class="btn btn-primary" onclick="myRunBtn()">⚡ 重跑回测</button>
-            <button class="btn btn-primary" onclick="mySaveEdit()">💾 保存修改</button>
-            <button class="btn btn-gray" onclick="cmpStart()">⚖️ 对比</button>
-            <button class="btn btn-gray" onclick="myExport()">📤 导出</button>
-            <button class="btn btn-gray" onclick="myShare()">🔗 复制分享</button>
-            <button class="btn btn-gray" onclick="myDelBtn()">🗑 删除</button>
-          </div>
-        </div>
-      </div>
-
-    <!-- K-STOCK-352 自然语言自建策略（/api/bt2_nl 解析 + /api/bt2_run 执行 · 解析与执行分离，299 口径） -->
-    <div class="col-title" style="margin-top:18px">🗣️ 说一句话，生成一个策略 <span style="font-weight:400;color:var(--text-dim);font-size:11px">（自然语言回测 · 测试版：先解析成参数给您核对，再提交回测中心实跑）</span></div>
-    <div class="side-box">
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
-        <span class="ai-chip" onclick="nlFill('最近一年全市场只看三买，持仓10只，高位闸门，评分80分以上')">三买·一年·高位闸门·评分80</span>
-        <span class="ai-chip" onclick="nlFill('量子双刀最近三个月全市场，单票仓位8%">双刀·三个月</span>
-        <span class="ai-chip" onclick="nlFill('今年以来的缠论等机会回测，持仓5只')">缠论·今年·5 只</span>
-      </div>
-      <div style="display:flex;gap:6px;align-items:flex-start">
-        <textarea id="nl-text" rows="2" placeholder="例：最近一年全市场只看三买，持仓10只，评分80分以上，高位闸门" style="flex:1;font-size:12.5px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg-page);color:var(--text);resize:vertical"></textarea>
-        <button class="btn" id="nl-parse" onclick="nlParse()">🔍 解析成参数</button>
-      </div>
-      <div id="nl-out" style="display:none;margin-top:10px"></div>
-    </div>
-
-    <!-- K-STOCK-354 橱窗已并入上方策略卡墙（355 老田拍板：一张卡墙直接联动执行台） -->
-  </div>
-
-  <!-- ============ 持仓 ============ -->
-  <div class="tabpanel" id="tab-pos">
-    <div class="toolbar"><span style="font-size:12px;color:var(--text-dim)">按策略徽标分组 · 快照时点数据（滞后至最近一次 mark 属预期）</span></div>
-    <div id="pos-body"><div class="empty">读取中…</div></div>
-  </div>
-
-  <!-- ============ 历史 ============ -->
-  <div class="tabpanel" id="tab-hist">
-    <div class="toolbar">
-      <label style="font-size:13px;font-weight:700">选择日期：</label>
-      <select id="hist-day" onchange="loadHistory()"></select>
-      <span style="font-size:12px;color:var(--text-dim)">日期来自权益快照（equity_marks）</span>
-    </div>
-    <div id="nav-curve"></div>
-    <div id="us-block"></div>
-    <div id="hist-body"><div class="empty">读取中…</div></div>
-  </div>
-
-  <!-- ============ 交易员市场 ============ -->
-  <div class="tabpanel" id="tab-agent">
-    <div class="toolbar" style="flex-direction:column;align-items:flex-start;gap:6px">
-      <span style="font-size:15px;font-weight:700">🏪 投研市场（在这里选择你的团队）</span>
-      <span style="font-size:12px;color:var(--text-dim)">市场分两个板块：<b>策略市场</b>（<a href="/market-strategy" style="color:var(--link)">/market-strategy</a>，已知策略=「买什么」的信号源）与<b>投研市场</b>（本页）。组队动线：<b>选投研经理</b>（按市况配策略）→ <b>选操盘手</b>（保守/激进，买卖方式各异）→ <b>跑组合回测</b>（历史数据验证这个组合）→ 满意才<b>上岗</b>（记录上岗时间）→ 上岗后产生<b>实仓</b> → 实仓后积累<b>战绩</b>。角色全部卡片化，灵活组合、混合模式。</span>
-    </div>
-    <!-- K-STOCK-221 信息架构重做（老田 10-12 23:20 拍板：市场双板块/角色卡片化/组合回测驱动选择/上岗-实仓-战绩生命周期。
+<div class="col-title">📡 策略卡墙（点任意卡选择 → 下方执行台出操作面板）</div>
+<div id="strat12-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px"><div class="empty">读取中…</div></div>
+<div class="flow-note" style="margin-top:10px">💡 您选的每个策略，下单都走同一套流程：自动风控 → 模拟撮合 → 账本记账——<b>任何来源都动不了您的账本，只能提交订单</b>。写操作仅限本机浏览器（局域网只读）。</div>
+<div class="col-title" style="margin-top:14px">⚡ 执行台（选中策略后这里出操作面板）</div>
+<div>
+<div class="exec-panel" id="exec-ai_team">
+<div class="exec-title">🤖 AI 值班 · 每日跑批</div>
+<div class="exec-sub">触发：每日 07:05 automation 自动执行 ｜ 手动补跑走 CLI 通道（大模型推理不在页面触发）</div>
+<div class="stat-row" id="ai-stats"><div class="stat-box"><div class="k">状态</div><div class="v">读取中</div></div></div>
+<div class="btn-row">
+<button class="btn btn-gray" onclick="toast('AI 补跑：python k_stock/paper/cli.py exec --newest（或等 07:05 automation）')">▶ 补跑走 CLI 通道</button>
+</div>
+<div class="flow-note">决策产物（poc_*.json）→ exec 落 pending → 次日开盘撮合。补跑幂等（ref 防重）。</div>
+</div>
+<div class="exec-panel" id="exec-double_knife" style="display:none">
+<div class="exec-title">⚔️ 量子双刀 · 今日信号</div>
+<div class="exec-sub">触发：可自动（盘后扫描落单）可手动（点按钮执行）｜ 执行 = 信号转 pending，次日开盘撮合</div>
+<div id="qd-body"><div class="empty">读取中…</div></div>
+<div class="btn-row">
+<button class="btn btn-orange" id="qd-run" onclick="runQD()">⚡ 执行今日信号</button>
+<span class="pw-dim pw-12">当日幂等：账本已有落单自动拒绝</span>
+</div>
+</div>
+<div class="exec-panel" id="exec-qingping" style="display:none">
+<div class="exec-title">🍃 青萍之末 · 已上架</div>
+<div class="exec-sub">v0.2b：只移植信号逻辑产 picks，不引入第二套交易语义</div>
+<div class="flow-note">订阅与建仓入口：<a href="/market-strategy">策略市场 → 青萍之末（qpzm）</a>。信号产物进同一条 picks 协议：风控 → 撮合 → 账本。</div>
+</div>
+<div class="exec-panel" id="exec-manual" style="display:none">
+<div class="exec-title">✋ 手动下单</div>
+<div class="exec-sub">按湖内最近收盘价即时成交 · 可选止损价（收盘触发，次日开盘清仓）</div>
+<div class="form-grid">
+<div class="field"><label>股票代码</label><input id="f-code" placeholder="如 600519.SH"/><div class="hint">6 位代码 + .SH / .SZ / .BJ</div></div>
+<div class="field"><label>方向</label>
+<div class="seg" id="f-side">
+<button class="on-buy" onclick="pickSide(this,'BUY')">买入</button>
+<button onclick="pickSide(this,'SELL')">卖出</button>
+</div>
+</div>
+<div class="field"><label>数量（股）</label><input id="f-qty" placeholder="100 的整数倍；卖出留空=全部可卖" step="100" type="number"/></div>
+<div class="field"><label>止损价（可选）</label><input id="f-stop" placeholder="留空=不设止损" step="0.01" type="number"/></div>
+</div>
+<div class="btn-row">
+<button class="btn btn-primary" id="f-submit" onclick="submitOrder()">提交订单</button>
+<span class="pw-dim pw-12">提交前会弹确认；风控（单票 20%）不通过会被引擎拒绝</span>
+</div>
+</div>
+<div class="exec-panel" id="exec-generic" style="display:none">
+<div class="exec-title" id="generic-name">策略</div>
+<div class="exec-sub" id="generic-status"></div>
+<div class="flow-note"><span id="generic-tagline"></span><br/>该策略<b>尚未接入模拟账本执行</b>。两条路：① <a class="pw-link" href="/market-strategy" id="generic-href">策略市场 · 订阅/详情</a>——订阅后由值班经理接入通道即可直接执行；② 先在下方「说一句话」或<a class="pw-link" href="#" onclick="gotoTab('agent');return false">交易员市场 · 组合回测</a>验证策略成色。</div>
+</div>
+<div class="exec-panel" id="exec-mystrat" style="display:none">
+<div class="exec-title" id="mystrat-name">🧩 我的策略</div>
+<div class="exec-sub">您保存的回测口径 · 可直接微调参数后保存，或点重跑验证（结果出现在下方「说一句话」区）</div>
+<div id="mystrat-chips" style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0"></div>
+<div class="btn-row">
+<button class="btn btn-primary" onclick="myRunBtn()">⚡ 重跑回测</button>
+<button class="btn btn-primary" onclick="mySaveEdit()">💾 保存修改</button>
+<button class="btn btn-gray" onclick="cmpStart()">⚖️ 对比</button>
+<button class="btn btn-gray" onclick="myExport()">📤 导出</button>
+<button class="btn btn-gray" onclick="myShare()">🔗 复制分享</button>
+<button class="btn btn-gray" onclick="myDelBtn()">🗑 删除</button>
+</div>
+</div>
+</div>
+<!-- K-STOCK-352 自然语言自建策略（/api/bt2_nl 解析 + /api/bt2_run 执行 · 解析与执行分离，299 口径） -->
+<div class="col-title" style="margin-top:18px">🗣️ 说一句话，生成一个策略 <span class="pw-dim pw-11 pw-normal">（自然语言回测 · 测试版：先解析成参数给您核对，再提交回测中心实跑）</span></div>
+<div class="side-box">
+<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+<span class="ai-chip" onclick="nlFill('最近一年全市场只看三买，持仓10只，高位闸门，评分80分以上')">三买·一年·高位闸门·评分80</span>
+<span class="ai-chip" onclick="nlFill('量子双刀最近三个月全市场，单票仓位8%">双刀·三个月</span>
+<span class="ai-chip" onclick="nlFill('今年以来的缠论等机会回测，持仓5只')">缠论·今年·5 只</span>
+</div>
+<div style="display:flex;gap:6px;align-items:flex-start">
+<textarea id="nl-text" placeholder="例：最近一年全市场只看三买，持仓10只，评分80分以上，高位闸门" rows="2" style="flex:1;font-size:12.5px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg-page);color:var(--text);resize:vertical"></textarea>
+<button class="btn" id="nl-parse" onclick="nlParse()">🔍 解析成参数</button>
+</div>
+<div id="nl-out" style="display:none;margin-top:10px"></div>
+</div>
+<!-- K-STOCK-354 橱窗已并入上方策略卡墙（355 老田拍板：一张卡墙直接联动执行台） -->
+</div>
+<!-- ============ 持仓 ============ -->
+<div class="tabpanel" id="tab-pos">
+<div class="toolbar"><span class="pw-dim pw-12">按策略徽标分组 · 快照时点数据（滞后至最近一次 mark 属预期）</span></div>
+<div id="pos-body"><div class="empty">读取中…</div></div>
+</div>
+<!-- ============ 历史 ============ -->
+<div class="tabpanel" id="tab-hist">
+<div class="toolbar">
+<label style="font-size:13px;font-weight:700">选择日期：</label>
+<select id="hist-day" onchange="loadHistory()"></select>
+<span class="pw-dim pw-12">日期来自权益快照（equity_marks）</span>
+</div>
+<div id="nav-curve"></div>
+<div id="us-block"></div>
+<div id="hist-body"><div class="empty">读取中…</div></div>
+</div>
+<!-- ============ 交易员市场 ============ -->
+<div class="tabpanel" id="tab-agent">
+<div class="toolbar" style="flex-direction:column;align-items:flex-start;gap:6px">
+<span style="font-size:15px;font-weight:700">🏪 投研市场（在这里选择你的团队）</span>
+<span class="pw-dim pw-12">市场分两个板块：<b>策略市场</b>（<a class="pw-link" href="/market-strategy">/market-strategy</a>，已知策略=「买什么」的信号源）与<b>投研市场</b>（本页）。组队动线：<b>选投研经理</b>（按市况配策略）→ <b>选操盘手</b>（保守/激进，买卖方式各异）→ <b>跑组合回测</b>（历史数据验证这个组合）→ 满意才<b>上岗</b>（记录上岗时间）→ 上岗后产生<b>实仓</b> → 实仓后积累<b>战绩</b>。角色全部卡片化，灵活组合、混合模式。</span>
+</div>
+<!-- K-STOCK-221 信息架构重做（老田 10-12 23:20 拍板：市场双板块/角色卡片化/组合回测驱动选择/上岗-实仓-战绩生命周期。
          217 的战绩总览表按「不是一上去就能看得到回撤」口径摘除——回测是选择组合后的动作，不是进市场的展牌） -->
-    <div id="manager-wrap" style="border:1px solid var(--border);border-radius:10px;padding:10px 14px;background:var(--bg-surface)">
-      <!-- K-STOCK-227 组织架构顶点（老田 10-12 23:32 拍板：投资总监默认在岗全程参与，不是被挑选的卡片） -->
-      <div style="border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:8px;background:linear-gradient(90deg,rgba(255,255,255,.03),transparent)">
-        <span style="font-size:13.5px;font-weight:700">🏛️ 投资总监</span>
-        <span class="st live" style="margin-left:6px">默认在岗 · 全程参与</span>
-        <span style="font-size:12px;color:var(--text-dim);margin-left:8px">组织架构顶点：定方向、配策略、督导操盘手、主持盘前盘后复盘。总监常设不参与挑选——您在总监之下选经理、点操盘手，组队灵活组合。</span>
-      </div>
-      <div class="toolbar" style="margin:0 0 4px"><span style="font-size:14px;font-weight:700">① 经理阵营（总监之下，按市况配策略）</span>
-        <span style="font-size:12px;color:var(--text-dim)">经理职责：按市况优选/切换策略、执行总监决策、督导操盘手。聘请价 = 档案基价 × 模型系数（按月）。</span></div>
-      <div class="agent-grid" id="manager-grid"><div class="empty">读取中…</div></div>
-    </div>
-    <div style="margin-top:10px;border:1px solid var(--border);border-radius:10px;padding:10px 14px;background:var(--bg-surface)">
-      <div class="toolbar" style="margin:0 0 4px"><span style="font-size:14px;font-weight:700">② 选择操盘手（保守 / 均衡 / 激进，买卖方式各异）</span>
-        <span style="font-size:12px;color:var(--text-dim)">已上岗者标注上岗时间；上岗后才有实仓，实仓后才有战绩（账本真实快照，逐日留痕）。卡片徽标＝经验档位（T1 实习生 → T5 首席）。</span></div>
-      <div class="agent-grid" id="agent-grid"><div class="empty">读取中…</div></div>
-    </div>
-    <div id="combo-bt-wrap" style="margin-top:10px;border:1px solid var(--border);border-radius:10px;padding:12px 14px;background:var(--bg-surface)">
-      <div class="toolbar" style="margin:0 0 4px"><span style="font-size:14px;font-weight:700">③ 组合回测（选好了？接入回测中心引擎实跑历史数据）</span></div>
-      <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">总监默认带队（可另配经理）+ <b>选股分析师</b>（选什么股的信号源）+ 您选的操盘手（怎么买卖）组成组合，<b>由回测中心引擎（backtest v2·与 /bt2view 同引擎）实时实跑</b>历史行情——看的是<b>回测收益与回撤</b>（候选期验证），不是上岗后的战绩。当前引擎支持 <b>缠论三类买卖点</b> / <b>量子双刀</b> 信号源，其余接入中。满意 → 迎宾向导完成雇佣上岗。</div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <label style="font-size:12px">带队 <select id="cbt-manager" style="padding:3px 6px"><option value="director_apex" selected>🏛️ 投资总监（默认在岗）</option></select></label>
-        <label style="font-size:12px">操盘手 <select id="cbt-trader" style="padding:3px 6px"><option value="">选择操盘手…</option></select></label>
-        <label style="font-size:12px">起始日 <input type="date" id="cbt-start" value="2025-01-01" style="padding:2px 4px"></label>
-        <label style="font-size:12px">时长 <select id="cbt-len" style="padding:3px 6px"><option value="1m">跑1个月</option><option value="3m" selected>跑3个月</option><option value="6m">跑半年</option><option value="1y">跑1年</option></select></label>
-        <button class="btn" id="cbt-run" onclick="runComboBacktest()">▶ 跑组合回测</button>
-      </div>
-      <!-- K-STOCK-229 选股分析师（老田 10-12 23:45 拍板：组队动线补上信号源一环，可选 X 个） -->
-      <div style="margin-top:8px;font-size:12px">📡 选股分析师（信号源 · 可多选，来自策略市场）：
+<div id="manager-wrap" style="border:1px solid var(--border);border-radius:10px;padding:10px 14px;background:var(--bg-surface)">
+<!-- K-STOCK-227 组织架构顶点（老田 10-12 23:32 拍板：投资总监默认在岗全程参与，不是被挑选的卡片） -->
+<div style="border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:8px;background:linear-gradient(90deg,rgba(255,255,255,.03),transparent)">
+<span style="font-size:13.5px;font-weight:700">🏛️ 投资总监</span>
+<span class="st live" style="margin-left:6px">默认在岗 · 全程参与</span>
+<span style="font-size:12px;color:var(--text-dim);margin-left:8px">组织架构顶点：定方向、配策略、督导操盘手、主持盘前盘后复盘。总监常设不参与挑选——您在总监之下选经理、点操盘手，组队灵活组合。</span>
+</div>
+<div class="toolbar" style="margin:0 0 4px"><span class="pw-14 pw-strong">① 经理阵营（总监之下，按市况配策略）</span>
+<span class="pw-dim pw-12">经理职责：按市况优选/切换策略、执行总监决策、督导操盘手。聘请价 = 档案基价 × 模型系数（按月）。</span></div>
+<div class="agent-grid" id="manager-grid"><div class="empty">读取中…</div></div>
+</div>
+<div style="margin-top:10px;border:1px solid var(--border);border-radius:10px;padding:10px 14px;background:var(--bg-surface)">
+<div class="toolbar" style="margin:0 0 4px"><span class="pw-14 pw-strong">② 选择操盘手（保守 / 均衡 / 激进，买卖方式各异）</span>
+<span class="pw-dim pw-12">已上岗者标注上岗时间；上岗后才有实仓，实仓后才有战绩（账本真实快照，逐日留痕）。卡片徽标＝经验档位（T1 实习生 → T5 首席）。</span></div>
+<div class="agent-grid" id="agent-grid"><div class="empty">读取中…</div></div>
+</div>
+<div id="combo-bt-wrap" style="margin-top:10px;border:1px solid var(--border);border-radius:10px;padding:12px 14px;background:var(--bg-surface)">
+<div class="toolbar" style="margin:0 0 4px"><span class="pw-14 pw-strong">③ 组合回测（选好了？接入回测中心引擎实跑历史数据）</span></div>
+<div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">总监默认带队（可另配经理）+ <b>选股分析师</b>（选什么股的信号源）+ 您选的操盘手（怎么买卖）组成组合，<b>由回测中心引擎（backtest v2·与 /bt2view 同引擎）实时实跑</b>历史行情——看的是<b>回测收益与回撤</b>（候选期验证），不是上岗后的战绩。当前引擎支持 <b>缠论三类买卖点</b> / <b>量子双刀</b> 信号源，其余接入中。满意 → 迎宾向导完成雇佣上岗。</div>
+<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+<label class="pw-12">带队 <select id="cbt-manager" style="padding:3px 6px"><option selected="" value="director_apex">🏛️ 投资总监（默认在岗）</option></select></label>
+<label class="pw-12">操盘手 <select id="cbt-trader" style="padding:3px 6px"><option value="">选择操盘手…</option></select></label>
+<label class="pw-12">起始日 <input id="cbt-start" style="padding:2px 4px" type="date" value="2025-01-01"/></label>
+<label class="pw-12">时长 <select id="cbt-len" style="padding:3px 6px"><option value="1m">跑1个月</option><option selected="" value="3m">跑3个月</option><option value="6m">跑半年</option><option value="1y">跑1年</option></select></label>
+<button class="btn" id="cbt-run" onclick="runComboBacktest()">▶ 跑组合回测</button>
+</div>
+<!-- K-STOCK-229 选股分析师（老田 10-12 23:45 拍板：组队动线补上信号源一环，可选 X 个） -->
+<div style="margin-top:8px;font-size:12px">📡 选股分析师（信号源 · 可多选，来自策略市场）：
         <span id="cbt-analysts" style="display:inline-flex;flex-wrap:wrap;gap:6px;vertical-align:middle"><span style="color:var(--text-dim)">读取中…</span></span>
-      </div>
-      <div style="font-size:11.5px;color:var(--text-dim);margin-top:6px">⏱ <b>point-in-time 口径（不泄露答案）</b>：从起始日起逐日推进，每天<b>只使用当天当时已知</b>的行情与信号做决策——绝不使用未来数据。涨跌停可成交检查（lc）与历史 ST 回溯（hist_st）默认开启，与回测中心口径一致。</div>
-      <div id="cbt-result" style="margin-top:10px;font-size:12.5px;color:var(--text-dim)">尚未发起。提交后由回测中心引擎实跑（全市场样本域·仅三买入池），完成后此处展示该组合的回测收益/回撤/盈亏比，并可跳转回测中心下钻逐日账本。</div>
-    </div>
-    <!-- K-STOCK-223 价目区收编：T1-T5 五大卡长图砍掉，压一行说明+折叠速览表（档位信息已随操盘手卡片徽标走） -->
-    <div id="pricing-wrap" style="margin-top:10px;border:1px solid var(--border);border-radius:10px;padding:10px 14px;background:var(--bg-surface)">
-      <div style="font-size:12.5px;line-height:1.6"><b>💎 经验等级＝风控松紧档位</b>（不是资历头衔）：模型档位 × 纪律参数（止损距离 / 日单上限 / 仓位上限 / judge 评审门槛）× 月费，<b>T1 实习生 → T5 首席</b>。每位操盘手卡片上的徽标即其档位，各档纪律与价目收进下面折叠，不再铺长图。</div>
-      <details style="margin-top:6px">
-        <summary style="cursor:pointer;font-size:12px;color:var(--link)">展开：T1–T5 各档纪律参数与月费（速览表）</summary>
-        <div style="overflow-x:auto;margin-top:8px">
-          <table class="sig-table" id="pricing-table">
-            <thead><tr style="color:var(--text-dim)"><th style="text-align:left">等级</th><th>经验</th><th>月费</th><th>引擎</th><th>止损距离</th><th>日单上限</th><th>仓位上限</th><th style="text-align:left">专属纪律</th></tr></thead>
-            <tbody><tr><td colspan="8" class="empty">读取中…</td></tr></tbody>
-          </table>
-        </div>
-      </details>
-    </div>
-  </div>
-
-  <footer class="pw-footer">
-  <div class="pw-footer-left"><span class="pw-dot" aria-hidden="true"></span><span>模拟仓 · 纸面研究，不构成投资建议</span></div>
-  <div>数据源：模拟账本 / 行情快照 · <a href="#" onclick="loadStatus();return false">↻ 刷新数据</a></div>
+</div>
+<div style="font-size:11.5px;color:var(--text-dim);margin-top:6px">⏱ <b>point-in-time 口径（不泄露答案）</b>：从起始日起逐日推进，每天<b>只使用当天当时已知</b>的行情与信号做决策——绝不使用未来数据。涨跌停可成交检查（lc）与历史 ST 回溯（hist_st）默认开启，与回测中心口径一致。</div>
+<div id="cbt-result" style="margin-top:10px;font-size:12.5px;color:var(--text-dim)">尚未发起。提交后由回测中心引擎实跑（全市场样本域·仅三买入池），完成后此处展示该组合的回测收益/回撤/盈亏比，并可跳转回测中心下钻逐日账本。</div>
+</div>
+<!-- K-STOCK-223 价目区收编：T1-T5 五大卡长图砍掉，压一行说明+折叠速览表（档位信息已随操盘手卡片徽标走） -->
+<div id="pricing-wrap" style="margin-top:10px;border:1px solid var(--border);border-radius:10px;padding:10px 14px;background:var(--bg-surface)">
+<div style="font-size:12.5px;line-height:1.6"><b>💎 经验等级＝风控松紧档位</b>（不是资历头衔）：模型档位 × 纪律参数（止损距离 / 日单上限 / 仓位上限 / judge 评审门槛）× 月费，<b>T1 实习生 → T5 首席</b>。每位操盘手卡片上的徽标即其档位，各档纪律与价目收进下面折叠，不再铺长图。</div>
+<details style="margin-top:6px">
+<summary style="cursor:pointer;font-size:12px;color:var(--link)">展开：T1–T5 各档纪律参数与月费（速览表）</summary>
+<div style="overflow-x:auto;margin-top:8px">
+<table class="sig-table" id="pricing-table">
+<thead><tr style="color:var(--text-dim)"><th style="text-align:left">等级</th><th>经验</th><th>月费</th><th>引擎</th><th>止损距离</th><th>日单上限</th><th>仓位上限</th><th style="text-align:left">专属纪律</th></tr></thead>
+<tbody><tr><td class="empty" colspan="8">读取中…</td></tr></tbody>
+</table>
+</div>
+</details>
+</div>
+</div>
+<footer class="pw-footer">
+<div class="pw-footer-left"><span aria-hidden="true" class="pw-dot"></span><span>模拟仓 · 纸面研究，不构成投资建议</span></div>
+<div>数据源：模拟账本 / 行情快照 · <a href="#" onclick="loadStatus();return false">↻ 刷新数据</a></div>
 </footer>
 <div class="legend">
-    <span style="margin-left:auto">涨=红 · 跌=绿（A股口径）· <a href="#" onclick="loadStatus();return false" style="color:var(--link)">↻ 刷新</a></span>
-  </div>
+<span style="margin-left:auto">涨=红 · 跌=绿（A股口径）· <a class="pw-link" href="#" onclick="loadStatus();return false">↻ 刷新</a></span>
 </div>
-
+</div>
 <!-- K-STOCK-194 公司运行看板（老田 10-12 拍板：自主页内容下沉至此——页底折叠区，绝不占首屏） -->
-<div class="col-title" style="margin-top:18px">公司运行看板 <span style="font-weight:400;color:var(--text-dim);font-size:11px">（账本 / 今日自动化 / 裁决窗 / 组织 · 默认折叠，非交易功能）</span></div>
+<div class="col-title" style="margin-top:18px">公司运行看板 <span class="pw-dim pw-11 pw-normal">（账本 / 今日自动化 / 裁决窗 / 组织 · 默认折叠，非交易功能）</span></div>
 <details style="margin-bottom:24px">
-  <summary style="cursor:pointer;font-size:12px;color:var(--text-dim)">展开公司级运行看板</summary>
-  <div id="corp-cards" style="margin-top:10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px"></div>
-  <div style="margin-top:16px;font-size:11.5px;color:var(--text-dim);font-weight:700">架构链路（内部口径 · 多策略来源 · 手动/自动触发 · 多 Agent 交易员（v0.3 预留））</div>
-  <div class="pipeline">
-    <div class="pipe-node clickable" data-drill="desk-strat" title="下钻：策略来源卡片区"><div class="t">① 策略源（可选）</div><div class="d">AI值班 / 双刀 / 青萍 / 手动 / Agent</div></div>
-    <div class="pipe-arrow">→</div>
-    <div class="pipe-node clickable" data-drill="desk-run" title="下钻：最新产物一览"><div class="t">② picks JSON</div><div class="d">同构信号协议</div></div>
-    <div class="pipe-arrow">→</div>
-    <div class="pipe-node pipe-core clickable" data-drill="desk-pend" title="下钻：今日挂单"><div class="t">③ 统一执行链</div><div class="d">风控 → T+1 → _settle_fill 唯一写入口</div></div>
-    <div class="pipe-arrow">→</div>
-    <div class="pipe-node clickable" data-drill="pos" title="下钻：持仓页"><div class="t">④ 账本 + 持仓</div><div class="d">strategy 全程标记</div></div>
-    <div class="pipe-arrow">→</div>
-    <div class="pipe-node clickable" data-drill="desk-stops" title="下钻：止损哨兵"><div class="t">⑤ 止损哨兵</div><div class="d">收盘触发 → 次日开盘撮合</div></div>
-  </div>
-  <div style="margin-top:16px;font-size:11.5px;color:var(--text-dim);font-weight:700">交易员机制（内部口径）</div>
-  <div class="flow-note" style="margin-top:6px">机制：交易员的「擅长」= 一组执行参数档案（<b>仓位系数 / 止损距离 / 触发方式 / 单票上限</b>）+ 独立 account_id 子账本（schema 已预留）。策略市场 × 交易员市场<b>正交组合</b>，同一条 picks 协议对接——新增交易员零引擎改动。</div>
-
+<summary style="cursor:pointer;font-size:12px;color:var(--text-dim)">展开公司级运行看板</summary>
+<div id="corp-cards" style="margin-top:10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px"></div>
+<div style="margin-top:16px;font-size:11.5px;color:var(--text-dim);font-weight:700">架构链路（内部口径 · 多策略来源 · 手动/自动触发 · 多 Agent 交易员（v0.3 预留））</div>
+<div class="pipeline">
+<div class="pipe-node clickable" data-drill="desk-strat" title="下钻：策略来源卡片区"><div class="t">① 策略源（可选）</div><div class="d">AI值班 / 双刀 / 青萍 / 手动 / Agent</div></div>
+<div class="pipe-arrow">→</div>
+<div class="pipe-node clickable" data-drill="desk-run" title="下钻：最新产物一览"><div class="t">② picks JSON</div><div class="d">同构信号协议</div></div>
+<div class="pipe-arrow">→</div>
+<div class="pipe-node pipe-core clickable" data-drill="desk-pend" title="下钻：今日挂单"><div class="t">③ 统一执行链</div><div class="d">风控 → T+1 → _settle_fill 唯一写入口</div></div>
+<div class="pipe-arrow">→</div>
+<div class="pipe-node clickable" data-drill="pos" title="下钻：持仓页"><div class="t">④ 账本 + 持仓</div><div class="d">strategy 全程标记</div></div>
+<div class="pipe-arrow">→</div>
+<div class="pipe-node clickable" data-drill="desk-stops" title="下钻：止损哨兵"><div class="t">⑤ 止损哨兵</div><div class="d">收盘触发 → 次日开盘撮合</div></div>
+</div>
+<div style="margin-top:16px;font-size:11.5px;color:var(--text-dim);font-weight:700">交易员机制（内部口径）</div>
+<div class="flow-note" style="margin-top:6px">机制：交易员的「擅长」= 一组执行参数档案（<b>仓位系数 / 止损距离 / 触发方式 / 单票上限</b>）+ 独立 account_id 子账本（schema 已预留）。策略市场 × 交易员市场<b>正交组合</b>，同一条 picks 协议对接——新增交易员零引擎改动。</div>
 </details>
-
 <div class="toast" id="toast"></div>
-
 <script>
 const $=id=>document.getElementById(id);
 const S={status:null,side:'BUY',cur:'ai_team'};
@@ -608,7 +596,7 @@ function renderAll(j){
 
 // ===== K-STOCK-163 今日交易计划审批单（/api/plan_review 只读投影，失败静默） =====
 // K-STOCK-169u：多组合切换——下拉选项来自 /api/portfolio_status.portfolios，切换即 fetch /api/plan_review?pf_id=<选中>；默认 pf_001 向后兼容
-const PLAN_RC_COLOR={'信心不足':'var(--text-dim)','行业集中':'#e3b341','风险敞口':'var(--color-dn)','流动性':'var(--pur-500,#a371f7)'};
+const PLAN_RC_COLOR={'信心不足':'var(--text-dim)','行业集中':'var(--pw-amber)','风险敞口':'var(--color-dn)','流动性':'var(--pur-500)'};
 function renderPlanReview(r,pf){
   const el=$('plan-body');
   if(!r){el.innerHTML='<div class="empty">今日审批单尚未生成（09:05 经理盘前会后将产出）'+(pf?`（组合 ${esc(pf)}）`:'')+'</div>';return;}
@@ -620,7 +608,7 @@ function renderPlanReview(r,pf){
     `<tr><td><a href="/kg/stock/${esc(x.stock)}">${esc(x.stock)}</a></td>`+
     `<td style="font-size:11.5px;color:${PLAN_RC_COLOR[x.reason_code]||'var(--text-dim)'}">${esc(x.reason_code||'-')}</td></tr>`).join('');
   const prov=r.provider?` · ${esc(r.provider)}`:'';
-  const deg=(!r.parsed)?`<details style="margin-top:4px"><summary style="cursor:pointer;font-size:11px;color:#e3b341">⚠ 审查输出未按 JSON 解析（原文留痕）</summary><div style="font-size:11.5px;color:var(--text-dim);white-space:pre-wrap;margin-top:4px">${esc(r.body||'').slice(0,600)}</div></details>`:'';
+  const deg=(!r.parsed)?`<details style="margin-top:4px"><summary style="cursor:pointer;font-size:11px;color:var(--pw-amber)">⚠ 审查输出未按 JSON 解析（原文留痕）</summary><div style="font-size:11.5px;color:var(--text-dim);white-space:pre-wrap;margin-top:4px">${esc(r.body||'').slice(0,600)}</div></details>`:'';
   el.innerHTML=
     (r.summary?`<div style="font-size:12.5px;margin-bottom:8px">📋 ${esc(r.summary)}</div>`:'')+
     (ap?`<table class="mini-table"><tr style="color:var(--text-dim)"><td>批准买入</td><td>理由</td><td>建议仓位</td></tr>${ap}</table>`
@@ -660,7 +648,7 @@ function renderPick(pk){
   const el=$('pick-body');
   if(!pk||!pk.ok){el.innerHTML='<div class="empty">选票通道未接入（10-16 实弹）</div>';return;}
   const pend=(pk.pending_orders||[]).map(p=>
-    `<div>🎯 ${esc(p.side)} <a href="/kg/stock/${esc(p.stock)}">${esc(p.stock)}</a> ×${p.qty} → ${esc(p.plan_date)} 开盘${p.warn?` <span style="color:var(--color-dn,#f85149);font-size:11px">⚠ ${esc(p.warn)}</span>`:''}</div>`).join('');
+    `<div>🎯 ${esc(p.side)} <a href="/kg/stock/${esc(p.stock)}">${esc(p.stock)}</a> ×${p.qty} → ${esc(p.plan_date)} 开盘${p.warn?` <span style="color:var(--color-dn,var(--pw-red));font-size:11px">⚠ ${esc(p.warn)}</span>`:''}</div>`).join('');
   const done=(pk.recent_orders||[]).filter(r=>r.status==='filled').slice(0,5).map(r=>
     `<div>✅ ${esc(r.stock)} ${fmt(r.qty)} @${r.filled_price?fmt(r.filled_price):'-'}（${esc(r.fill_date)}）</div>`).join('');
   const m=pk.marks&&pk.marks.length?pk.marks[pk.marks.length-1]:null;
@@ -673,7 +661,7 @@ function renderMeeting(m){
   if(!m||!m.ok){el.innerHTML='<div class="empty">暂无复盘会（每日 routine 尾自动召开）</div>';return;}
   const mgr=m.manager||{}, dis=m.disagreements||[], items=m.action_items||[];
   const narr=m.minutes_narrative?`<div style="font-size:11.5px;margin-bottom:6px">🗣 ${esc(m.minutes_narrative).slice(0,180)}</div>`:'';
-  const dd=dis.length?`<div style="font-size:11.5px;color:#e3b341;margin-bottom:6px">⚖ 分歧 ${dis.length}：${esc(dis[0].on)}…</div>`:'';
+  const dd=dis.length?`<div style="font-size:11.5px;color:var(--pw-amber);margin-bottom:6px">⚖ 分歧 ${dis.length}：${esc(dis[0].on)}…</div>`:'';
   const ai=items.length?`<div style="font-size:11.5px;color:var(--text-dim)">待办：${esc(items[0]).slice(0,60)}${items.length>1?` 等 ${items.length} 项`:''}</div>`:'';
   el.innerHTML=`<div style="font-weight:700;margin-bottom:6px">${esc(m.date)} · ${mgr.score??'-'} 分 ${mgr.grade??''}</div>${narr}${dd}${ai}
     <div style="font-size:10.5px;color:var(--text-dim);margin-top:6px">纪要已推飞书 · 点按钮可查持仓线位</div>`;
@@ -700,7 +688,7 @@ function renderPortfoliosMulti(ps){
         <div style="font-size:12.5px">权益合计 <b>${eqTotal}</b> · 待成交 <b>${pendCnt}</b> 笔 · 持仓 <b>${posCnt}</b> 只</div>
         <div style="margin-top:4px">${chips}</div>
         ${eqDate}
-        <div style="font-size:10px;color:var(--link,#4493f8);margin-top:2px">点击展开/收起明细</div>
+        <div style="font-size:10px;color:var(--link);margin-top:2px">点击展开/收起明细</div>
       </div>
       <div id="pf-multi-detail-${i}" style="display:none;margin-top:6px;border-top:1px dashed var(--border);padding-top:6px">
         ${traders}
@@ -719,7 +707,7 @@ function renderJudge(jd){
   const el=$('judge-body');
   if(!jd||!jd.ok||!(jd.reviews||[]).length){
     el.innerHTML='<div class="empty">暂无评审（每日 routine 尾自动生成）</div>';return;}
-  const gc=s=>s>=90?'var(--color-up)':s>=75?'#e3b341':'var(--color-dn)';
+  const gc=s=>s>=90?'var(--color-up)':s>=75?'var(--pw-amber)':'var(--color-dn)';
   el.innerHTML=jd.reviews.map(r=>{
     const f=(r.findings||[]).filter(x=>x.severity!=='info').slice(0,3).map(x=>
       `<div style="font-size:11.5px;color:var(--text-dim)">· [${esc(x.rule)}] ${esc(x.msg)}</div>`).join('');
@@ -732,7 +720,7 @@ function renderStrat(st){
   const el=$('strat-body');
   if(!st||!st.ok||!(st.sources||[]).length){
     el.innerHTML='<div class="empty">暂无影子建议（每日 automation 4e 产出）</div>';return;}
-  const gc=s=>s>=85?'var(--color-up)':s>=70?'#e3b341':'var(--color-dn)';
+  const gc=s=>s>=85?'var(--color-up)':s>=70?'var(--pw-amber)':'var(--color-dn)';
   const head=`<div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">快照 ${st.generated_at||'-'} · 影子模式仅建议，不产生调度效果</div>`;
   el.innerHTML=head+st.sources.map(s=>
     `<div style="margin-bottom:6px"><div style="font-weight:700">${esc(s.name)} · <span style="color:${gc(s.score)}">${s.score} ${esc(s.grade)}</span></div>
@@ -784,7 +772,7 @@ function renderUs(us){
       `<tr><td><a href="/kg/stock/${esc(p.stock)}">${esc(p.stock)}</a></td><td>${p.qty}</td><td>${fmt(p.avg_cost)}</td><td>${fmt(p.last)}</td>`+
       `<td class="${cls(p.pnl)}">${fmt(p.pnl)}</td><td>${(p.strategy||'')}</td></tr>`).join('');
     const pend=a.pending_orders.map(o=>
-      `<div>⏳ ${o.side} <a href="/kg/stock/${o.stock}">${o.stock}</a> ×${o.qty} → ${o.plan_date} 开盘（${o.conf?('conf '+o.conf):''}）${o.warn?` <span style="color:var(--color-dn,#f85149);font-size:11px">⚠ ${o.warn}</span>`:''}</div>`).join('');
+      `<div>⏳ ${o.side} <a href="/kg/stock/${o.stock}">${o.stock}</a> ×${o.qty} → ${o.plan_date} 开盘（${o.conf?('conf '+o.conf):''}）${o.warn?` <span style="color:var(--color-dn,var(--pw-red));font-size:11px">⚠ ${o.warn}</span>`:''}</div>`).join('');
     const stp=a.stops.map(s=>{
       const d=s.distance_pct==null?'-':`<span class="${cls(s.distance_pct)}">${pct(s.distance_pct)}</span>`;
       return `<div>🛡️ <a href="/kg/stock/${s.stock}">${s.stock}</a> 止损 ${s.stop_price} · 现价 ${s.last==null?'-':fmt(s.last)} · ${d}</div>`;}).join('');
@@ -844,7 +832,7 @@ function renderPend(ps){
   $('pend-body').innerHTML=ps.length?
     '<table class="mini-table">'+ps.map(p=>
       `<tr><td><span class="badge b-${(p.strategy||'manual').slice(0,2)==='ai'?'ai':(p.strategy==='double_knife'?'dk':(p.strategy==='stop_loss'?'stop':'man'))}">${STRAT_NAMES[p.strategy]||p.strategy}</span></td>`+
-      `<td><b>${p.side==='BUY'?'买':'卖'}</b> <a href="/kg/stock/${esc(p.stock)}">${esc(p.stock)}</a>${p.warn?` <span style="color:var(--color-dn,#f85149);font-size:11px">⚠ ${esc(p.warn)}</span>`:''}</td><td>${fmt(p.qty)}</td><td class="dist">${esc(p.plan_date)} 开盘</td></tr>`).join('')+'</table>'
+      `<td><b>${p.side==='BUY'?'买':'卖'}</b> <a href="/kg/stock/${esc(p.stock)}">${esc(p.stock)}</a>${p.warn?` <span style="color:var(--color-dn,var(--pw-red));font-size:11px">⚠ ${esc(p.warn)}</span>`:''}</td><td>${fmt(p.qty)}</td><td class="dist">${esc(p.plan_date)} 开盘</td></tr>`).join('')+'</table>'
     :'<div class="empty">无挂单</div>';
 }
 function renderRecent(rs){
@@ -1019,7 +1007,7 @@ function _cbtBarHtml(){
   return '<div id="cbt-progress" style="margin-top:10px">'
     +'<div style="display:flex;align-items:center;gap:8px">'
     +'<div style="flex:1;height:8px;border:1px solid var(--border);border-radius:999px;overflow:hidden;background:var(--bg)">'
-    +'<div id="cbt-bar" style="height:100%;width:2%;background:linear-gradient(90deg,#2f81f7,#3fb950);transition:width .5s"></div></div>'
+    +'<div id="cbt-bar" style="height:100%;width:2%;background:linear-gradient(90deg,var(--pw-cyan),var(--pw-green));transition:width .5s"></div></div>'
     +'<span id="cbt-pct" style="font-size:11.5px;color:var(--text-dim);min-width:150px;text-align:right">提交中…</span></div>'
     +'<div id="cbt-stages" style="margin-top:4px;font-size:11.5px;color:var(--text-dim)">① 已提交 → ② 排队 → ③ 引擎跑批 → ④ 结果回填</div></div>';
 }
@@ -1062,7 +1050,7 @@ async function pollCbt(){
     }
   }else{ // dead
     _cbtStopPoll();
-    bar.style.width='100%'; bar.style.background='#f85149';
+    bar.style.width='100%'; bar.style.background='var(--pw-red)';
     pct.textContent='失败';
     stg.innerHTML='❌ 引擎回报失败'+(j.error?('：'+esc(j.error)):'')+'——可重新发起';
   }
@@ -1329,7 +1317,7 @@ const OBW_LINE={1:'您好，欢迎来到 K-STOCK 投研交易所，我是值班�
 function obwDots(){
   return Array.from({length:6},(_,i)=>
     '<span style="width:8px;height:8px;border-radius:50%;display:inline-block;'
-    +(i+1<=OBW.step?'background:#4a9eff':'background:#3a3f4b')
+    +(i+1<=OBW.step?'background:var(--pw-cyan)':'background:var(--pw-line)')
     +'"></span>').join('');
 }
 function obwSummary(){
@@ -1378,7 +1366,7 @@ function obwRender(){
       '<label style="display:block;margin-bottom:3px"><input type="radio" name="obw-pre" value="'+v+'"'
       +((OBW.pre?'yes':'no')===v?' checked':'')+'> '+t+'</label>').join('');
   }else{
-    b.innerHTML='<div style="border:1px solid var(--line,#3a3f4b);border-radius:6px;padding:8px;line-height:1.8">'+obwSummary()+'</div>';
+    b.innerHTML='<div style="border:1px solid var(--line,var(--pw-line));border-radius:6px;padding:8px;line-height:1.8">'+obwSummary()+'</div>';
   }
   $('obw-prev').style.display=OBW.step>1?'':'none';
   $('obw-next').textContent=OBW.step===6?'确认提交':'下一步';
@@ -1494,7 +1482,7 @@ async function loadStrategy12(){
     STRAT_META={
       ai_team:{name:'AI 值班',icon:'🤖',tagline:'每日 07:05 跑批 · 5 票辩论 · 单票 ≤20% · strategy=ai_team',statusLabel:'已接入',href:''},
       manual:{name:'手动下单',icon:'✋',tagline:'人自主决策 · 支持指定止损价 · strategy=manual',statusLabel:'已接入',href:''}};
-    const stMap={live:['🟢 产线','#3fb950'],shadow:['🟡 影子验证','var(--color-warn)'],tool:['⚙️ 支撑工具','var(--text-dim)']};
+    const stMap={live:['🟢 产线','var(--pw-green)'],shadow:['🟡 影子验证','var(--color-warn)'],tool:['⚙️ 支撑工具','var(--text-dim)']};
     j.strategies.forEach(s=>{STRAT_META[s.id]={name:s.name||s.id,icon:'📡',tagline:s.tagline||'',statusLabel:(stMap[s.status]||[s.status||'?'])[0],href:s.href||''};});
     const hasPanel=sid=>['ai_team','manual','double_knife','qpzm'].includes(sid);
     const stCls=s=>s==='live'?'st live':'st';
@@ -1643,7 +1631,7 @@ function cmpBar(){
   let b=$('cmp-bar');
   if(!b){
     b=document.createElement('div'); b.id='cmp-bar';
-    b.style.cssText='position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:99;background:var(--bg-panel,#1a1f2a);border:1px solid var(--border);border-radius:10px;padding:10px 14px;display:flex;gap:10px;align-items:center;box-shadow:0 6px 24px rgba(0,0,0,.35);font-size:12.5px';
+    b.style.cssText='position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:99;background:var(--bg-panel,var(--pw-surface));border:1px solid var(--border);border-radius:10px;padding:10px 14px;display:flex;gap:10px;align-items:center;box-shadow:0 6px 24px rgba(0,0,0,.35);font-size:12.5px';
     document.body.appendChild(b);
   }
   b.innerHTML='<b>⚖️ 对比 ('+_cmpSel.length+' 条)</b>'
@@ -1931,7 +1919,7 @@ $('ob-box').addEventListener('change',e=>{
 
 loadStatus();
 </script>
-<script src="/static/cainiao.js" defer></script>
-<script src="/static/dataops_link.js" data-entity="tg:策略扫描" defer></script>
+<script defer="" src="/static/cainiao.js"></script>
+<script data-entity="tg:策略扫描" defer="" src="/static/dataops_link.js"></script>
 </body>
 </html>
