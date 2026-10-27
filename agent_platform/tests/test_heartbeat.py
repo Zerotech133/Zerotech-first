@@ -41,12 +41,19 @@ def _snapshot(root):
     root = Path(root)
     if not root.exists():
         return {}
+    # P0 测试卫生：不再逐字节读真仓（855 文件/20MB，27 个用例 ×2 次 → teardown
+    # 卡死在 dict diff）。改为 (size, mtime_ns) 元数据快照：仍能发现新增/删除/
+    # 修改，但 I/O 从 GB 级降到毫秒级；DB 侧车仍只断言路径集合（异步刷写）。
     out = {}
     for p in sorted(root.rglob("*")):
         if p.is_file():
             volatile = (p.name.endswith(".db") or p.name.endswith("-wal")
                         or p.name.endswith("-shm"))
-            out[str(p)] = None if volatile else p.read_bytes()
+            if volatile:
+                out[str(p)] = None
+            else:
+                st = p.stat()
+                out[str(p)] = (st.st_size, st.st_mtime_ns)
     return out
 
 
