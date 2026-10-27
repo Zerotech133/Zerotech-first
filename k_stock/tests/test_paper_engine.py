@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """模拟仓引擎测试网 v0.1（FakeMarket 注入，不碰 pandas / 不碰真实行情湖）。
 
 覆盖：建账/重置、手动即时成交与费率、整手与价格区间、T+1 冻结、
@@ -15,10 +15,30 @@ from pathlib import Path
 import pytest
 
 PAPER_DIR = Path(__file__).resolve().parent.parent / "paper"
-sys.path.insert(0, str(PAPER_DIR))
+sys.path.insert(0, str(PAPER_DIR))  # engine.py 内部有惰性 import 兄弟模块（decision_snapshot 等）
 
-from engine import PaperEngine, Reject  # noqa: E402
-from market import FakeMarket  # noqa: E402
+
+def _load_paper_module(mod_name: str, filename: str):
+    """按文件路径加载 k_stock/paper 下模块，避免与 agent_platform.engine 同名冲突。
+
+    判例（2026-10-27 GY-01）：仓库根收集时 agent_platform 已注册 ``engine`` 包，
+    ``from engine import PaperEngine`` 会命中 agent_platform/engine 而 ImportError；
+    这里用唯一模块名按文件加载，不污染全局 sys.modules 的 ``engine`` 名称。
+    """
+    import importlib.util as _iu
+
+    spec = _iu.spec_from_file_location(mod_name, str(PAPER_DIR / filename))
+    assert spec and spec.loader, "无法加载 %s" % filename
+    mod = _iu.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+_engine_mod = _load_paper_module("kstock_paper_engine", "engine.py")
+_market_mod = _load_paper_module("kstock_paper_market", "market.py")
+PaperEngine = _engine_mod.PaperEngine
+Reject = _engine_mod.Reject
+FakeMarket = _market_mod.FakeMarket
 
 
 def _bar(
