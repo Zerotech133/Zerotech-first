@@ -16,6 +16,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from chart_hypothesis import load_kline, operators, primary_hypothesis
+import logging
 
 ROOT = Path(__file__).resolve().parent.parent   # 主仓根
 sys.path.insert(0, str(ROOT.parent / 'zerobound-kg'))  # kg_schema
@@ -158,8 +159,8 @@ def profile(code: str) -> dict:
     try:
         from legion_pulse import heartbeat
         heartbeat("XSEC_PROFILE", "profile", f"{code} 漏斗报告 {out['funnel'].get('verdict','')}")
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/xsec_profile.py", exc)
     return out
 
 

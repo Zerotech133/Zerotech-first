@@ -141,7 +141,7 @@ class OfflineRegressionTests(unittest.TestCase):
 if __name__ == "__main__":
     unittest.main()
 
-class OfflineRegressionTests(unittest.TestCase):
+class OfflineRegressionV2Tests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.root = Path(self.tmp.name)

@@ -204,8 +204,8 @@ def plan(name: str, doc: str, use_llm: bool = True,
             if active.get("enabled"):
                 result = planner_rules.apply_rules(result, active)
                 result["planner_rules_source"] = "accepted-signed"
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/legion_command/mission_planner.py", exc)
     errs = validate_plan(result)
     result["valid"] = not errs
     result["errors"] = errs

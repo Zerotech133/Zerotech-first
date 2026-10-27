@@ -35,6 +35,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import common  # noqa: E402
+import logging
 
 # ---- 常量：v2 自动补登口径 -------------------------------------------------
 TZ_CN = timezone(timedelta(hours=8))
@@ -233,8 +234,8 @@ def atomic_write(payload: dict) -> None:
         if tmp.exists():
             try:
                 tmp.unlink()
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "tools/datawarehouse/registry_rebuild.py", exc)
 
 
 def verify_written(expect: dict) -> dict:

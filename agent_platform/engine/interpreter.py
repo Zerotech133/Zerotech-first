@@ -169,8 +169,8 @@ class Interpreter:
                 },
                 run_id=str(run_id),
             )
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/engine/interpreter.py", exc)
 
     # ---------- 主流程 ----------
     def run(self, stock, run_id=None, data_ctx=None):

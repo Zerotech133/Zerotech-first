@@ -21,6 +21,7 @@ import urllib.parse
 import urllib.request
 from datetime import datetime, timezone, timedelta
 from html.parser import HTMLParser
+import logging
 
 USER_AGENT = "ZhugeCapability/0.1 (+read-only research; local)"
 MAX_BYTES = 400_000
@@ -108,8 +109,8 @@ def url_is_safe(url: str) -> tuple[bool, str]:
     try:
         if ipaddress.ip_address(host).is_private or ipaddress.ip_address(host).is_loopback:
             return False, "private_ip_denied"
-    except ValueError:
-        pass  # 非 IP 字面量，下面解析
+    except ValueError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/zhuge_evidence.py", exc)
     if host.lower() in ("localhost",) or host.lower().endswith((".local", ".internal")):
         return False, "local_host_denied"
     try:

@@ -16,6 +16,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+import logging
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent
@@ -226,8 +227,8 @@ def _call_llm(ctx: dict) -> dict:
 def _restore(wt: Path, files: list) -> None:
     try:
         _run(["git", "restore", "--", *files], wt, 60)
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/legion_command/mission_worker.py", exc)
 
 
 def _syntax_check(wt: Path, files: list) -> str:
@@ -242,8 +243,8 @@ def _syntax_check(wt: Path, files: list) -> str:
                 r = _run(["node", "--check", str(p)], wt, 60)
                 if r.returncode != 0:
                     return "node_check_failed:" + rel + ":" + (r.stderr or "")[-300:]
-            except FileNotFoundError:
-                pass
+            except FileNotFoundError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/legion_command/mission_worker.py", exc)
     return ""
 
 
