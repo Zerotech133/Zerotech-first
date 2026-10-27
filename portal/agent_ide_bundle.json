@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 20,
+  "workorders_doing": 19,
   "workorders_review": 3
  },
  "workorders": [
@@ -210,15 +210,6 @@
    "branch": "task/WO-GUANYU-B8-20261027",
    "created": "2026-10-27 21:42:33",
    "project": "general"
-  },
-  {
-   "id": "WO-SANDBOX-EVAL-20261027",
-   "desc": "P0⑧ 收口2（L1）：① ARCH1 评测黄金集纳入沙箱能力（benchmark --dry-run 10 条 + devtask sandbox dry-run），seat_realness --with-eval 6/6；② devtask sandbox 增加 --memory/--cpus/--pids-limit 透传默认值；测试。不改生产。",
-   "status": "doing",
-   "owner": "ARCH1",
-   "branch": "task/WO-SANDBOX-EVAL-20261027",
-   "created": "2026-10-27 21:44:19",
-   "project": "quant"
   }
  ],
  "coder_traces": [
@@ -2994,14 +2985,7 @@
    ],
    "experience": "30 年系统架构经验：从单体到微服务的演进治理、跨部门方案定稿与技术选型终审；ADR 架构决策记录制度化（tools/adr.py 登记·docs/adr 版本化入 git）的推动者。",
    "dept_name": "研发部",
-   "dept_cn_title": "将作监",
-   "tasks": [
-    {
-     "id": "WO-SANDBOX-EVAL-20261027",
-     "desc": "P0⑧ 收口2（L1）：① ARCH1 评测黄金集纳入沙箱能力（benchmark --dry-run 10 条 + devtask sandbox dry-run），seat_realness --with-eval 6/6；② devtask sandbox 增加 --memory/--cpus/--pids-limit 透传默认值；测试。不改生产。",
-     "status": "doing"
-    }
-   ]
+   "dept_cn_title": "将作监"
   },
   "OPS1": {
    "id": "OPS1",
