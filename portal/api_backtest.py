@@ -4937,6 +4937,34 @@ class Handler:  # Mixin 壳：经基座多继承并入
                 % (e(s.get("badge", "")), st[1], st[0], e(s["name"]),
                    e(s.get("tagline", "")), st[1], e(s.get("status_note", "")),
                    mets, "".join(links), task))
+        cards_by = {}
+        for _s, _c in zip(items, cards):
+            cards_by.setdefault(_s.get("status"), []).append(_c)
+        _group_meta = [
+            ("live", "✅ 实盘 · 在产", True),
+            ("shadow", "🟡 影子验证 · 只标注不拦截", False),
+            ("tool", "⚙️ 支撑工具", False),
+            ("paused", "⏸ 暂停", False),
+        ]
+        groups_html = ""
+        for _key, _title, _open in _group_meta:
+            _cards = "".join(cards_by.get(_key, []))
+            if not _cards:
+                continue
+            _count = len(cards_by.get(_key, []))
+            _head = ("<div class='strat-group-head'><h3>%s</h3>"
+                     "<span>%d 条</span></div>" % (_title, _count))
+            if _open:
+                groups_html += ("<section class='strat-group' data-status='%s'>%s"
+                                "<div class='dw-grid'>%s</div></section>"
+                                % (_key, _head, _cards))
+            else:
+                groups_html += ("<details class='strat-group' data-status='%s'>"
+                                "<summary>%s<span class='strat-open'>展开</span></summary>"
+                                "<div class='dw-grid'>%s</div></details>"
+                                % (_key, _head, _cards))
+        if not groups_html:
+            groups_html = "<div class='empty'>暂无策略资产</div>"
         nav = pill_nav("strategies")
         # K87 锦标赛交叉表：策略来源 × 六本账累计贡献（sids 汇总，
         # 数据 reports/trader_sim_eval.json；列序与 trader_sim.BOOKS 同步）
@@ -5027,13 +5055,9 @@ class Handler:  # Mixin 壳：经基座多继承并入
             "<div style='color:var(--text-dim);font-size:12px;margin:4px 0 16px'>"
             "策略资产记分卡 · 状态与生命周期以注册表为准；"
             "每条策略都是一条产品线。</div>"
-            "<div style='display:grid;gap:14px;grid-template-columns:"
-            "repeat(auto-fill,minmax(320px,1fr))'>%s</div>"
-            "<div style='background:var(--bg-surface);border:1px solid "
-            "var(--border);border-radius:12px;padding:16px 18px;"
-            "margin-top:22px'>"
-            "<div style='font-size:14px;font-weight:700;margin-bottom:8px'>"
-            "➕ 上新一条策略（三步，注册即上架）</div>"
+            "%s"
+            "<details class='strat-sop'><summary>➕ 上新一条策略（三步，注册即上架）</summary>"
+            "<div class='strat-sop-body'>"
             "<div style='font-size:12.5px;line-height:2;color:var(--text-dim)'>"
             "① <b style='color:var(--text)'>portal/strategies.json</b> 加一条："
             "id/名称/一句话价值/状态（live·shadow·tool·paused）/入口/记分卡要点"
@@ -5042,13 +5066,13 @@ class Handler:  # Mixin 壳：经基座多继承并入
             "<br>③ 计划任务上线（照 deploy_weak_*.ps1 模板）→ 进 "
             "<a href='/sys-health' style='color:var(--link)'>系统自检</a>守护"
             "<br><span style='color:var(--text-dim)'>状态约定：影子=只标注不"
-            "</div></div>"
+            "</div></details>"
             "<footer class='dw-footer'><div class='dw-footer-left'>"
             "<span class='dw-dot'></span><span>策略资产中心 · 注册表驱动 · 只读研究</span></div>"
             "<div>门户 8734 · <a href='/strategies'>↻ 刷新</a></div></footer>"
             "</body></html>"
             % (e(d["ts"]), len(items), n_shadow, n_live, len(items), n_live,
-               n_shadow, n_tool, band, "".join(cards))
+               n_shadow, n_tool, band, groups_html)
             + tourney_html)
         self._html(body)
     def _sa_page(self, q=""):
