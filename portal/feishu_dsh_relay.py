@@ -27,13 +27,14 @@ DSH_CLI = os.environ.get("DSH_CLI") or (
     r"C:\Users\t\AppData\Local\Programs\DeepSeek Harness"
     r"\resources\app.asar\dsh\node_modules\@deepseek-ai"
     r"\dsh-desktop-host\lib\cli.js")
+DSH_REMOTE_DIR = os.environ.get("DSH_REMOTE_DIR") or r"C:\项目\dsh_runtime"
 PATCH = os.environ.get("DSH_HEADLESS_PATCH") or (
-    r"C:\项目\work\_dsh_remote\headless-account.patch.yml")
+    os.path.join(DSH_REMOTE_DIR, "headless-account.patch.yml"))
 CWD = os.environ.get("DSH_RELAY_CWD") or r"C:\项目"
 TIMEOUT = int(os.environ.get("DSH_RELAY_TIMEOUT") or "240")
 MAX_OUT = 1800
 SESS_FILE = os.environ.get("DSH_RELAY_SESSIONS") or (
-    r"C:\项目\work\_dsh_remote\conv_sessions.json")
+    os.path.join(DSH_REMOTE_DIR, "conv_sessions.json"))
 SESSION_TTL_SEC = int(os.environ.get("DSH_RELAY_SESSION_TTL") or str(3 * 86400))
 OWNERS_FILE = os.environ.get("DSH_OWNER_FILE") or (
     r"C:\项目\老田的AI助手\portal\work\feishu_secrets\owners.json")

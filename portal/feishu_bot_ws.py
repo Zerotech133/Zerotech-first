@@ -570,11 +570,12 @@ def _machine_entry_text():
     """远程入口链接：读 dsh web 表层的带 token URL（每次重启 token 会变）。
     供「机器」指令使用——手机飞书里拿到链接后在浏览器打开即可操作本机。
     容错：入口日志可能被 web 进程独占/BOM/UTF-16，读不到就退回 current_url.txt。"""
+    remote_dir = os.environ.get("DSH_REMOTE_DIR") or r"C:\项目\dsh_runtime"
     candidates = [
         os.environ.get("DSH_REMOTE_URL_FILE") or "",
-        r"C:\项目\work\_dsh_remote\current_url.txt",
+        os.path.join(remote_dir, "current_url.txt"),
         os.environ.get("DSH_REMOTE_LOG") or "",
-        r"C:\项目\work\_dsh_remote\dsh_web.log",
+        os.path.join(remote_dir, "dsh_web.log"),
     ]
     for path in candidates:
         if not path or not os.path.exists(path):

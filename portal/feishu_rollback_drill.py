@@ -28,8 +28,8 @@ WORK = os.path.join(HERE, "work")
 SECRETS = os.path.join(WORK, "feishu_secrets")
 CANONICAL = os.path.join(SECRETS, "canonical.json")
 LOGS = os.path.join(HERE, "logs")
-BACKUP_GLOB = os.path.join(os.path.dirname(ROOT), "work", "_dsh_remote",
-                           "feishu_bot_ws.py.bak.*")
+DSH_REMOTE_DIR = os.environ.get("DSH_REMOTE_DIR") or r"C:\项目\dsh_runtime"
+BACKUP_GLOB = os.path.join(DSH_REMOTE_DIR, "feishu_bot_ws.py.bak.*")
 TASKS = ("DSHBotWatchdog", "DSHExecBot")
 
 
@@ -122,7 +122,7 @@ def rollback_plan():
          "cmd": 'Rename-Item "C:\\aios\\portal\\work\\feishu_secrets\\canonical.json" '
                 'canonical.json.rollback'},
         {"step": 4, "action": "还原 bot 代码（如需）",
-         "cmd": 'Copy-Item "C:\\项目\\work\\_dsh_remote\\feishu_bot_ws.py.bak.<ts>" '
+         "cmd": 'Copy-Item "C:\\项目\\dsh_runtime\\feishu_bot_ws.py.bak.<ts>" '
                 '"C:\\aios\\portal\\feishu_bot_ws.py" -Force'},
         {"step": 5, "action": "重启看护循环（拉起旧 bot）",
          "cmd": 'powershell -NoProfile -File "C:\\aios\\portal\\start_bot_watchdog_once.ps1"'},
