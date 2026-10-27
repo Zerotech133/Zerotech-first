@@ -953,7 +953,8 @@ setInterval(load, 60000);
 document.addEventListener('DOMContentLoaded', function () {
   var main = document.querySelector('main');
   if (!main) return;
-  var secs = Array.prototype.slice.call(main.querySelectorAll(':scope > section'));
+  // 2026-10-27：把 .grid 内的（角色与边界/运行状态）也纳入折叠，默认全收起
+  var secs = Array.prototype.slice.call(main.querySelectorAll(':scope > section, :scope > .grid > section'));
   var bar = document.createElement('div');
   bar.id = 'fold-bar'; bar.className = 'row';
   var allFold = document.createElement('button'); allFold.textContent = '全部收起';
