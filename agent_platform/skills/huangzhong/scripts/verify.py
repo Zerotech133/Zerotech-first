@@ -23,13 +23,18 @@ def _main_repo() -> Path:
             return common.parent
     except Exception:  # noqa: BLE001
         pass
-    return HERE.parents[3]
+    return next((q for q in HERE.parents
+                 if (q / 'agent_platform').is_dir() and (q / 'tools').is_dir()),
+                HERE.parents[-1])
 
 
 def main() -> int:
     repo = _main_repo()
     # 部署态=主仓；开发态=worktree（未合并前技能/文档只在 worktree）→ 两处都认
-    candidates = [repo, HERE.parents[3]]
+    dev_root = next((q for q in HERE.parents
+                     if (q / 'agent_platform').is_dir() and (q / 'tools').is_dir()),
+                    HERE.parents[-1])
+    candidates = [repo, dev_root]
 
     def _find(rel: str):
         for base in candidates:
