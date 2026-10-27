@@ -164,6 +164,7 @@ async function createVK(){
   if(!v.ok){alert('失败：'+v.error);return}
   document.getElementById('vk-token').textContent='新 Key（只显示一次）：'+v.item.token;
   loadVK();
+}
 async function loadCreds(){
   try{
     const r=await fetch('/api/credentials',{cache:'no-store'}); const v=await r.json();
@@ -175,8 +176,6 @@ async function loadCreds(){
   }catch(e){document.getElementById('cred-list').innerHTML='<div class="muted">加载失败：'+e.message+'</div>'}
 }
 loadCreds(); setInterval(loadCreds,60000);
-
-}
 async function disableVK(id){
   if(!confirm('禁用虚拟 Key '+id+'？'))return;
   const r=await fetch('/api/router/vk',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'disable',id})});
