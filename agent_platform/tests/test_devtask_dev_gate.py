@@ -593,3 +593,30 @@ class TestBackwardCompat:
         assert t["desc"] == "顺序单"
         assert t["dept"] == "dev"
         assert t["acceptance_cmd"] == "pytest -q"
+
+
+# ----------------------------------------------------------------------
+# DEVTOOL_AGENT 归因强制（WO-LEGION-P0WRAP-20261027）
+# ----------------------------------------------------------------------
+class TestDevtoolAgentAttribution:
+    """owner 取值链 AGENT_NAME > DEVTOOL_AGENT > unknown；两者皆缺留 attribution_missing=1。"""
+
+    def test_AGENT_NAME优先(self, sandbox, monkeypatch):
+        monkeypatch.setenv("AGENT_NAME", "DEV1")
+        monkeypatch.setenv("DEVTOOL_AGENT", "DEV2")
+        assert devtask.cmd_new("WO-ATTR-PRI", "归因优先单") == 0
+        assert _task(sandbox, "WO-ATTR-PRI")["owner"] == "DEV1"
+
+    def test_AGENT_NAME缺省回落DEVTOOL_AGENT(self, sandbox, monkeypatch):
+        monkeypatch.delenv("AGENT_NAME", raising=False)
+        monkeypatch.setenv("DEVTOOL_AGENT", "DEV2")
+        assert devtask.cmd_new("WO-ATTR-FALL", "归因回落单") == 0
+        assert _task(sandbox, "WO-ATTR-FALL")["owner"] == "DEV2"
+
+    def test_两者皆缺标记attribution_missing(self, sandbox, monkeypatch):
+        monkeypatch.delenv("AGENT_NAME", raising=False)
+        monkeypatch.delenv("DEVTOOL_AGENT", raising=False)
+        assert devtask.cmd_new("WO-ATTR-MISS", "无归因单") == 0
+        assert _task(sandbox, "WO-ATTR-MISS")["owner"] == "unknown-agent"
+        detail = sandbox["events"][-1][2]
+        assert detail.startswith("attribution_missing=1")

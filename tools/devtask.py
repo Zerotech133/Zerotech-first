@@ -752,7 +752,13 @@ def cmd_new(tid, *desc):
     # 2026-10-27 WO-LEGION-DEVEXEC-20261027：owner 预判与研发试点门**前置到
     # `git worktree add` 之前** —— block 模式拒收时不落空 worktree（旧顺序为建完
     # worktree 才发现 owner 非法，拒收会留一个空 worktree 需人工清）。
-    owner = os.environ.get("AGENT_NAME", "unknown-agent")
+    # 2026-10-27 WO-LEGION-P0WRAP：DEVTOOL_AGENT 归因强制 —— owner 取值链
+    # AGENT_NAME > DEVTOOL_AGENT > unknown-agent（AGENTS §1「领单必设」三环境变量）；
+    # 两者皆缺时事件 detail 带 attribution_missing=1（可统计、可追责，不静默）。
+    _agent_name = os.environ.get("AGENT_NAME")
+    _devtool_agent = os.environ.get("DEVTOOL_AGENT")
+    attribution_missing = not (_agent_name or _devtool_agent)
+    owner = _agent_name or _devtool_agent or "unknown-agent"
     owner_ok, domain, domain_size = _owner_check(owner)
     if owner_ok is False:
         tag = domain["unowned_tag"]
@@ -813,6 +819,8 @@ def cmd_new(tid, *desc):
     else:
         detail = ("owner_degraded=1 owner=%s domain_size=%d · %s（owner=%s·project=%s）"
                   % (owner, domain_size, desc, owner, project))
+    if attribution_missing:
+        detail = "attribution_missing=1 · " + detail
     if gate_applies:
         # 研发试点单：detail 前缀标 [dev-gate]（截断后仍可检出）；warn 告警摘要前置，
         # 保证大 desc 截断也不会把试点门告警吃掉。
