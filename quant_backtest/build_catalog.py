@@ -1407,7 +1407,9 @@ def build(data_root=None, out_path=None):
     except (OSError, ValueError) as exc:
         logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/build_catalog.py", exc)
     intel = _register_intel_tables()
-    tables.update(intel)
+    # 真数据优先：主扫描已产出的条目（xq_status/xq_hot_post 等有 sqlite 实表）
+    # 不被 intel 占位注册覆盖（2026-10-28 manifest 收尾）。
+    tables.update({k: v for k, v in intel.items() if k not in tables})
     tables.update(EXTERNAL_TABLES)  # 章程 §3：外部库表（PG 等）并入目录
     # 生命周期覆盖：planned/deprecated 写入 catalog，供 registry/freshness 消费
     _lc = _lifecycle_module()
