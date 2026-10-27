@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 22,
+  "workorders_doing": 21,
   "workorders_review": 3
  },
  "workorders": [
@@ -227,15 +227,6 @@
    "owner": "DSH-Lead",
    "branch": "task/K-MISSION-002505-T1",
    "created": "2026-10-27 23:26:11",
-   "project": "portal"
-  },
-  {
-   "id": "WO-O6P2A-TRACE-20261027",
-   "desc": "O6 P2a：trace.py 增量 schema（run_id 列）+ contextvars run_scope/current_run_id + record/span 写入 run_id + 迁移幂等 + 单测；不改调用方",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-O6P2A-TRACE-20261027",
-   "created": "2026-10-27 23:45:33",
    "project": "portal"
   }
  ],
