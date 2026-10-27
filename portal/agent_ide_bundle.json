@@ -9,7 +9,7 @@
   "prompt_ok": 61,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 13,
+  "workorders_doing": 12,
   "workorders_review": 2
  },
  "workorders": [
@@ -137,15 +137,6 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-REDTEAM-JUDGE-20261027",
    "created": "2026-10-27 15:02:40",
-   "project": "general"
-  },
-  {
-   "id": "WO-A-STAGE-BOARD-20261027",
-   "desc": "A 阶段准备包②：组级看板生成器 tools/a_phase_group_board.py——只读 org.dev.groups + .worktrees/tasks.json，按 G1/G2 汇总组内工单（总数/近7天/在制/完成/前置时间/验收覆盖/成员负载），输出 docs/dev/group_board.html（tokens.css+nav.js 三件套）与 --json；--check 校验产物；路由例外=跨部门治理。",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-A-STAGE-BOARD-20261027",
-   "created": "2026-10-27 15:07:24",
    "project": "general"
   }
  ],
