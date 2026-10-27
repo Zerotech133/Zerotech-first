@@ -15,6 +15,7 @@
 
 退出码：0 探活成功；1 探活失败/degraded；2 自身错误。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -44,18 +45,27 @@ def _http(url: str, timeout: float) -> dict:
     try:
         with urllib.request.urlopen(url, timeout=timeout) as r:
             body = r.read(65536)
-            return {"ok": 200 <= r.status < 400, "status": r.status,
-                    "elapsed_ms": int((time.time() - t0) * 1000),
-                    "bytes": len(body),
-                    "body_head": body[:200].decode("utf-8", "replace")}
+            return {
+                "ok": 200 <= r.status < 400,
+                "status": r.status,
+                "elapsed_ms": int((time.time() - t0) * 1000),
+                "bytes": len(body),
+                "body_head": body[:200].decode("utf-8", "replace"),
+            }
     except urllib.error.HTTPError as exc:
-        return {"ok": False, "status": exc.code,
-                "elapsed_ms": int((time.time() - t0) * 1000),
-                "error": "http_%d" % exc.code}
+        return {
+            "ok": False,
+            "status": exc.code,
+            "elapsed_ms": int((time.time() - t0) * 1000),
+            "error": "http_%d" % exc.code,
+        }
     except Exception as exc:  # noqa: BLE001 —— 探活失败必须返回结构化结果，不抛
-        return {"ok": False, "status": None,
-                "elapsed_ms": int((time.time() - t0) * 1000),
-                "error": type(exc).__name__}
+        return {
+            "ok": False,
+            "status": None,
+            "elapsed_ms": int((time.time() - t0) * 1000),
+            "error": type(exc).__name__,
+        }
 
 
 def probe(base: str = DEFAULT_BASE, timeout: float = 5.0) -> dict:
@@ -64,8 +74,10 @@ def probe(base: str = DEFAULT_BASE, timeout: float = 5.0) -> dict:
         "schema": "hermes_ui_probe/v1",
         "ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
         "base": base,
-        "checks": {"health": _http(base + "/health", timeout),
-                   "root": _http(base + "/", timeout)},
+        "checks": {
+            "health": _http(base + "/health", timeout),
+            "root": _http(base + "/", timeout),
+        },
     }
 
 
@@ -79,7 +91,8 @@ def record(result: dict, root=None) -> Path:
     if len(lines) > MAX_HISTORY:
         hist.write_text("\n".join(lines[-MAX_HISTORY:]) + "\n", encoding="utf-8")
     (data / "status.json").write_text(
-        json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8")
+        json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8"
+    )
     return data
 
 
@@ -90,12 +103,18 @@ def emit_audit(result: dict) -> dict:
         if tools not in sys.path:
             sys.path.insert(0, tools)
         import events  # noqa: WPS433
+
         h = result["checks"]["health"]
         r = result["checks"]["root"]
         detail = "HERMES_UI probe health=%s(%sms) root=%s(%sms)" % (
-            h.get("status"), h.get("elapsed_ms"), r.get("status"), r.get("elapsed_ms"))
-        return events.emit(kind="patrol_verdict", task="HERMES_UI",
-                           agent="HERMES_UI", detail=detail)
+            h.get("status"),
+            h.get("elapsed_ms"),
+            r.get("status"),
+            r.get("elapsed_ms"),
+        )
+        return events.emit(
+            kind="patrol_verdict", task="HERMES_UI", agent="HERMES_UI", detail=detail
+        )
     except Exception as exc:  # noqa: BLE001
         return {"ok": False, "error": type(exc).__name__}
 
@@ -111,14 +130,21 @@ def main(argv=None) -> int:
     ap.add_argument("--timeout", type=float, default=5.0)
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--quiet", action="store_true")
-    ap.add_argument("--status-dir", default="",
-                    help="状态输出目录（默认 agent_platform/data/hermes_ui）")
+    ap.add_argument(
+        "--status-dir",
+        default="",
+        help="状态输出目录（默认 agent_platform/data/hermes_ui）",
+    )
     args = ap.parse_args(argv)
 
     if kill_switch_on():
         if not args.quiet:
-            print(json.dumps({"ok": False, "skipped": "kill_switch",
-                              "env": KILL_ENV}, ensure_ascii=False))
+            print(
+                json.dumps(
+                    {"ok": False, "skipped": "kill_switch", "env": KILL_ENV},
+                    ensure_ascii=False,
+                )
+            )
         return 0
     try:
         result = probe(args.base, args.timeout)
@@ -126,18 +152,27 @@ def main(argv=None) -> int:
         record(result, args.status_dir or None)
         audit = emit_audit(result)
     except Exception as exc:  # noqa: BLE001
-        print(json.dumps({"ok": False, "error": type(exc).__name__,
-                          "detail": str(exc)[:200]}, ensure_ascii=False))
+        print(
+            json.dumps(
+                {"ok": False, "error": type(exc).__name__, "detail": str(exc)[:200]},
+                ensure_ascii=False,
+            )
+        )
         return 2
 
     if not args.quiet:
         if args.json:
-            print(json.dumps({"result": result, "audit": audit},
-                             ensure_ascii=False, indent=1))
+            print(
+                json.dumps(
+                    {"result": result, "audit": audit}, ensure_ascii=False, indent=1
+                )
+            )
         else:
             h = result["checks"]["health"]
-            print("HERMES_UI probe ok=%s health=%s elapsed=%sms base=%s"
-                  % (result["ok"], h.get("status"), h.get("elapsed_ms"), result["base"]))
+            print(
+                "HERMES_UI probe ok=%s health=%s elapsed=%sms base=%s"
+                % (result["ok"], h.get("status"), h.get("elapsed_ms"), result["base"])
+            )
     return 0 if result["ok"] else 1
 
 

@@ -40,6 +40,7 @@ check_observation_point 只读观测面判例）。fail-visible：任何读取�
 
     python tools/diff_baseline.py --baseline-dir <dir> --data-root <agent_platform/data>
 """
+
 from __future__ import annotations
 
 import argparse
@@ -55,24 +56,39 @@ DISPLAY_TRUNC = 80
 # jsonl 行身份键优先级（先取证自真账本 schema）：
 #   shadow_ledger.run_id / strategy verdict_key / trace_links.link_id /
 #   perf_ledger.perf_key / registrations.submit_id / strategy_id
-KEY_CANDIDATES = ("run_id", "verdict_key", "link_id", "perf_key",
-                  "submit_id", "strategy_id")
+KEY_CANDIDATES = (
+    "run_id",
+    "verdict_key",
+    "link_id",
+    "perf_key",
+    "submit_id",
+    "strategy_id",
+)
 # 身份键之外附带的时序字段（只取第一个命中的，辅助人工判读）
-TIME_CANDIDATES = ("ts", "date", "declared_at", "registered_at",
-                   "recorded_at")
+TIME_CANDIDATES = ("ts", "date", "declared_at", "registered_at", "recorded_at")
 
 # (账本名, 源相对路径(相对 data_root), 基线文件名, 类型)
 LEDGER_PAIRS = (
-    ("shadow_ledger", ("shadow", "shadow_ledger.jsonl"),
-     "shadow_ledger.jsonl.baseline", "jsonl"),
-    ("trace_links", ("trace", "trace_links.jsonl"),
-     "trace_links.jsonl.baseline", "jsonl"),
-    ("perf_ledger", ("perf_ledger.jsonl",),
-     "perf_ledger.jsonl.baseline", "jsonl"),
-    ("registrations", ("codex_bridge", "registrations.jsonl"),
-     "registrations.jsonl.baseline", "jsonl"),
-    ("checkpoints_db", ("checkpoints.db",),
-     "checkpoints.db.baseline", "binary"),
+    (
+        "shadow_ledger",
+        ("shadow", "shadow_ledger.jsonl"),
+        "shadow_ledger.jsonl.baseline",
+        "jsonl",
+    ),
+    (
+        "trace_links",
+        ("trace", "trace_links.jsonl"),
+        "trace_links.jsonl.baseline",
+        "jsonl",
+    ),
+    ("perf_ledger", ("perf_ledger.jsonl",), "perf_ledger.jsonl.baseline", "jsonl"),
+    (
+        "registrations",
+        ("codex_bridge", "registrations.jsonl"),
+        "registrations.jsonl.baseline",
+        "jsonl",
+    ),
+    ("checkpoints_db", ("checkpoints.db",), "checkpoints.db.baseline", "binary"),
 )
 
 MISSING_LINES, GREW, IDENTICAL = "MISSING_LINES", "GREW", "IDENTICAL"
@@ -150,10 +166,21 @@ def _ordered_delta(lines: List[str], delta: Counter) -> List[str]:
 
 def _diff_jsonl_pair(name: str, old_path: Path, new_path: Path) -> dict:
     """单个 jsonl 账本对：源(new) vs 基线(old)，multiset 逐行对比。"""
-    item = {"name": name, "kind": "jsonl", "added": [], "missing": [],
-            "bad_old": 0, "bad_new": 0, "old_sha": None, "new_sha": None,
-            "sha_equal": None, "old_lines": None, "new_lines": None,
-            "status": None, "evidence": ""}
+    item = {
+        "name": name,
+        "kind": "jsonl",
+        "added": [],
+        "missing": [],
+        "bad_old": 0,
+        "bad_new": 0,
+        "old_sha": None,
+        "new_sha": None,
+        "sha_equal": None,
+        "old_lines": None,
+        "new_lines": None,
+        "status": None,
+        "evidence": "",
+    }
     old_exists = old_path.is_file()
     new_exists = new_path.is_file()
     if not old_exists or not new_exists:
@@ -193,21 +220,35 @@ def _diff_jsonl_pair(name: str, old_path: Path, new_path: Path) -> dict:
         item["status"] = GREW
     else:
         item["status"] = IDENTICAL
-    item["evidence"] = (
-        "行数 %d→%d，新增 %d，缺失 %d，sha256 %s"
-        % (item["old_lines"], item["new_lines"], len(item["added"]),
-           len(item["missing"]),
-           "一致" if item["sha_equal"] else "不一致"))
+    item["evidence"] = "行数 %d→%d，新增 %d，缺失 %d，sha256 %s" % (
+        item["old_lines"],
+        item["new_lines"],
+        len(item["added"]),
+        len(item["missing"]),
+        "一致" if item["sha_equal"] else "不一致",
+    )
     return item
 
 
 def _diff_binary_pair(name: str, old_path: Path, new_path: Path) -> dict:
     """二进制（sqlite）账本对：仅 sha256 + 大小指纹级对比，不做行级。"""
-    item = {"name": name, "kind": "binary", "added": [], "missing": [],
-            "bad_old": None, "bad_new": None, "old_sha": None,
-            "new_sha": None, "sha_equal": None, "old_lines": None,
-            "new_lines": None, "old_size": None, "new_size": None,
-            "status": None, "evidence": ""}
+    item = {
+        "name": name,
+        "kind": "binary",
+        "added": [],
+        "missing": [],
+        "bad_old": None,
+        "bad_new": None,
+        "old_sha": None,
+        "new_sha": None,
+        "sha_equal": None,
+        "old_lines": None,
+        "new_lines": None,
+        "old_size": None,
+        "new_size": None,
+        "status": None,
+        "evidence": "",
+    }
     old_exists = old_path.is_file()
     new_exists = new_path.is_file()
     if not old_exists or not new_exists:
@@ -234,11 +275,13 @@ def _diff_binary_pair(name: str, old_path: Path, new_path: Path) -> dict:
         sha_txt = "一致"
     else:
         item["status"] = FINGERPRINT_DIFF
-        sha_txt = ("不一致（指纹差异不影响退出码，sqlite 合法变更与篡改"
-                   "不可区分，供人工判读）")
+        sha_txt = (
+            "不一致（指纹差异不影响退出码，sqlite 合法变更与篡改不可区分，供人工判读）"
+        )
     item["evidence"] = (
         "二进制指纹级对比（sqlite 不做行级，如实声明）：大小 %d→%d 字节，"
-        "sha256 %s" % (old_size, new_size, sha_txt))
+        "sha256 %s" % (old_size, new_size, sha_txt)
+    )
     return item
 
 
@@ -261,16 +304,20 @@ def run_diff(baseline_dir, data_root) -> dict:
         exit_code = 1
     else:
         exit_code = 0
-    return {"baseline_dir": str(base), "data_root": str(root),
-            "items": items,
-            "identical": sum(1 for it in items if it["status"] == IDENTICAL),
-            "grew": sum(1 for it in items if it["status"] == GREW),
-            "fingerprint_match": sum(1 for it in items
-                                     if it["status"] == FINGERPRINT_MATCH),
-            "fingerprint_diff": sum(1 for it in items
-                                    if it["status"] == FINGERPRINT_DIFF),
-            "missing_lines": n_missing_lines, "neutral": n_neutral,
-            "exit_code": exit_code}
+    return {
+        "baseline_dir": str(base),
+        "data_root": str(root),
+        "items": items,
+        "identical": sum(1 for it in items if it["status"] == IDENTICAL),
+        "grew": sum(1 for it in items if it["status"] == GREW),
+        "fingerprint_match": sum(
+            1 for it in items if it["status"] == FINGERPRINT_MATCH
+        ),
+        "fingerprint_diff": sum(1 for it in items if it["status"] == FINGERPRINT_DIFF),
+        "missing_lines": n_missing_lines,
+        "neutral": n_neutral,
+        "exit_code": exit_code,
+    }
 
 
 def _red(s: str) -> str:
@@ -290,18 +337,32 @@ def _print_report(rep: dict) -> None:
         for ln in it["added"]:
             print("      [新增] %s" % _identify(ln))
         for ln in it["missing"]:
-            print("      %s" % _red("[缺失] %s（append-only 账本缺失=篡改/回滚嫌疑）"
-                                    % _identify(ln)))
-    print("汇总: 一致 %d / 正常增长 %d / 缺失行 %d / 中性(文件缺失或不可读) %d"
-          % (rep["identical"] + rep["fingerprint_match"], rep["grew"],
-             rep["missing_lines"], rep["neutral"]))
+            print(
+                "      %s"
+                % _red(
+                    "[缺失] %s（append-only 账本缺失=篡改/回滚嫌疑）" % _identify(ln)
+                )
+            )
+    print(
+        "汇总: 一致 %d / 正常增长 %d / 缺失行 %d / 中性(文件缺失或不可读) %d"
+        % (
+            rep["identical"] + rep["fingerprint_match"],
+            rep["grew"],
+            rep["missing_lines"],
+            rep["neutral"],
+        )
+    )
     if rep["fingerprint_diff"]:
-        print("附注: checkpoints.db 指纹差异 %d 个（二进制仅指纹级，"
-              "不影响退出码，供人工判读）" % rep["fingerprint_diff"])
-    verdict = {0: "无缺失行——完全一致或仅正常增长（退出码 0）",
-               1: "对比不完整——文件缺失/不可读，中性如实标注（退出码 1）",
-               2: "存在缺失行——append-only 账本被篡改/回滚嫌疑，"
-                  "最高级别告警，先查清（退出码 2）"}[rep["exit_code"]]
+        print(
+            "附注: checkpoints.db 指纹差异 %d 个（二进制仅指纹级，"
+            "不影响退出码，供人工判读）" % rep["fingerprint_diff"]
+        )
+    verdict = {
+        0: "无缺失行——完全一致或仅正常增长（退出码 0）",
+        1: "对比不完整——文件缺失/不可读，中性如实标注（退出码 1）",
+        2: "存在缺失行——append-only 账本被篡改/回滚嫌疑，"
+        "最高级别告警，先查清（退出码 2）",
+    }[rep["exit_code"]]
     print("结论: %s" % verdict)
 
 
@@ -309,20 +370,28 @@ def _auto_paths():
     """按仓内布局自动定位：agent_platform/data 与仓外基线目录。"""
     agent_platform = Path(__file__).resolve().parent.parent
     data_root = agent_platform / "data"
-    baseline_dir = (agent_platform.parents[1] / "backups"
-                    / "2026-10-18_observation_baseline")
+    baseline_dir = (
+        agent_platform.parents[1] / "backups" / "2026-10-18_observation_baseline"
+    )
     return baseline_dir, data_root
 
 
 def main(argv: Optional[List[str]] = None) -> int:
     ap = argparse.ArgumentParser(
         description="账本基线对比（只读，零写面，fail-visible）——"
-                    "观察点 FAIL 后取证第一步")
-    ap.add_argument("--baseline-dir", default=None,
-                    help="基线目录（含 *.baseline 副本；缺省自动定位 "
-                         "C:/项目/backups/2026-10-18_observation_baseline）")
-    ap.add_argument("--data-root", default=None,
-                    help="数据根（=agent_platform/data；缺省自动定位仓内）")
+        "观察点 FAIL 后取证第一步"
+    )
+    ap.add_argument(
+        "--baseline-dir",
+        default=None,
+        help="基线目录（含 *.baseline 副本；缺省自动定位 "
+        "C:/项目/backups/2026-10-18_observation_baseline）",
+    )
+    ap.add_argument(
+        "--data-root",
+        default=None,
+        help="数据根（=agent_platform/data；缺省自动定位仓内）",
+    )
     args = ap.parse_args(argv)
     baseline_dir = args.baseline_dir
     data_root = args.data_root
@@ -332,12 +401,16 @@ def main(argv: Optional[List[str]] = None) -> int:
         data_root = data_root or str(auto_d)
     # root 纪律：目录不存在时显式报错退出，不让全部 FILE_MISSING 掩盖传参失误
     if not Path(baseline_dir).is_dir():
-        print("[error] 基线目录不存在：%s（请显式传 --baseline-dir）"
-              % baseline_dir, file=sys.stderr)
+        print(
+            "[error] 基线目录不存在：%s（请显式传 --baseline-dir）" % baseline_dir,
+            file=sys.stderr,
+        )
         return 1
     if not Path(data_root).is_dir():
-        print("[error] 数据根不存在：%s（请显式传 --data-root）"
-              % data_root, file=sys.stderr)
+        print(
+            "[error] 数据根不存在：%s（请显式传 --data-root）" % data_root,
+            file=sys.stderr,
+        )
         return 1
     rep = run_diff(baseline_dir, data_root)
     _print_report(rep)

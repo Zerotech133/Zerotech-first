@@ -75,9 +75,16 @@ from pathlib import Path
 
 HOST = "127.0.0.1"
 PORT = 11434
-EXE = Path(os.environ.get("LOCALAPPDATA", r"C:\Users\t\AppData\Local")) / "Programs" / "Ollama" / "ollama.exe"
+EXE = (
+    Path(os.environ.get("LOCALAPPDATA", r"C:\Users\t\AppData\Local"))
+    / "Programs"
+    / "Ollama"
+    / "ollama.exe"
+)
 # 日志按定时任务产物统一约定落 automation_runs/<任务名>/（不随脚本位置漂移）
-LOG_DIR = Path(os.environ.get("OLLAMA_GUARD_LOG_DIR", r"C:\aios\automation_runs\ollama_guard"))
+LOG_DIR = Path(
+    os.environ.get("OLLAMA_GUARD_LOG_DIR", r"C:\aios\automation_runs\ollama_guard")
+)
 SERVE_LOG = LOG_DIR / "serve_tuned.log"
 GUARD_LOG = LOG_DIR / "guard.log"
 
@@ -102,12 +109,12 @@ TUNED_ENV = {
     # `ollama ps` 的 PROCESSOR 列是唯一能看穿它的判据。
     # 2026-10-18 的勘误文档已把它列为 watchdog 额外设置的第 7 项，本启动器此前漏了。
     "OLLAMA_VULKAN": "1",
-    "OLLAMA_CONTEXT_LENGTH": "16384",   # 2026-10-24 全仓收口（原 65536），与 watchdog 同值
+    "OLLAMA_CONTEXT_LENGTH": "16384",  # 2026-10-24 全仓收口（原 65536），与 watchdog 同值
     # 2026-10-24 收口：本启动器此前缺 MAX_LOADED_MODELS / DEBUG，且 KEEP_ALIVE 与
     # 看门狗不一致（2h vs 30m）——同一个服务换个入口拉起就是另一套参数，
     # 重启一次丢两项（当天实际丢了 MAX_LOADED_MODELS=3 与 DEBUG=1）。现全部对齐看门狗。
-    "OLLAMA_MAX_LOADED_MODELS": "3",     # 35b + 9b + 轻量层三班（10-18 架构调优）
-    "OLLAMA_KEEP_ALIVE": "30m",          # 与 watchdog 同值（原 2h，不合理地长）
+    "OLLAMA_MAX_LOADED_MODELS": "3",  # 35b + 9b + 轻量层三班（10-18 架构调优）
+    "OLLAMA_KEEP_ALIVE": "30m",  # 与 watchdog 同值（原 2h，不合理地长）
     # 2026-10-24 并行度 2 → 1：qwen35 架构明确不支持并行请求（服务日志 423 条
     # "model architecture does not currently support parallel requests"）。
     # 并行度 2 等于把 KV 槽翻倍、只占内存不提升吞吐，还会诱发 runner 重建。
@@ -126,7 +133,7 @@ TUNED_CRITICAL = (
     "OLLAMA_FLASH_ATTENTION",
     "OLLAMA_NUM_PARALLEL",
     "OLLAMA_IGPU_ENABLE",
-    "OLLAMA_VULKAN",      # 缺它则 iGPU 不生效（见上）
+    "OLLAMA_VULKAN",  # 缺它则 iGPU 不生效（见上）
 )
 # ctx 达标线：默认 4096；tuned 历史 65536，2026-10-24 全仓收口后为 16384。
 # 取 16384 与 TUNED_ENV 同值：低于它即判 NOT_TUNED（旧值 32768 会让新配置误报）
@@ -191,7 +198,7 @@ def server_config():
                 marker = key + ":"
                 pos = ln.find(marker)
                 if pos >= 0:
-                    rest = ln[pos + len(marker):]
+                    rest = ln[pos + len(marker) :]
                     cfg[key] = rest.split(" ")[0].split("]")[0]
             if not cfg:
                 continue
@@ -248,9 +255,14 @@ def ollama_procs() -> list[str]:
     try:
         r = subprocess.run(
             ["tasklist", "/FI", "IMAGENAME eq ollama.exe", "/FO", "CSV", "/NH"],
-            capture_output=True, text=True, errors="replace", timeout=20,
+            capture_output=True,
+            text=True,
+            errors="replace",
+            timeout=20,
         )
-        return [ln for ln in (r.stdout or "").splitlines() if "ollama.exe" in ln.lower()]
+        return [
+            ln for ln in (r.stdout or "").splitlines() if "ollama.exe" in ln.lower()
+        ]
     except Exception:
         return []
 
@@ -267,8 +279,11 @@ def start() -> bool:
     fh = SERVE_LOG.open("ab")
     flags = DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
     proc = subprocess.Popen(
-        [str(EXE), "serve"], env=env,
-        stdout=fh, stderr=subprocess.STDOUT, creationflags=flags,
+        [str(EXE), "serve"],
+        env=env,
+        stdout=fh,
+        stderr=subprocess.STDOUT,
+        creationflags=flags,
     )
     log("STARTED pid=%s (tuned env 已注入)" % proc.pid)
 
@@ -302,22 +317,31 @@ def main(argv=None) -> int:
         if ps:
             # 取已加载模型里**最大**的 ctx：客户端可按请求下发小 num_ctx（如分类链 2048），
             # 单个模型的小 ctx 不能证明服务端配置低
-            ctxs = [m.get("context_length") for m in ps
-                    if isinstance(m.get("context_length"), int)]
+            ctxs = [
+                m.get("context_length")
+                for m in ps
+                if isinstance(m.get("context_length"), int)
+            ]
             if ctxs:
                 ps_ctx = max(ctxs)
 
         if cfg:
             log("STATUS source=%s ts=%s" % (src.name if src else "?", ts or "?"))
             if src is not None and src.name == "server.log":
-                log("WARN server.log 由桌面 App 写入，可能残留旧实例 config 行"
-                    "（以 tuned.log 或 /api/ps 为准）")
+                log(
+                    "WARN server.log 由桌面 App 写入，可能残留旧实例 config 行"
+                    "（以 tuned.log 或 /api/ps 为准）"
+                )
             log("STATUS config=" + json.dumps(cfg, ensure_ascii=False))
         else:
-            log("STATUS 候选日志中未找到 server config 行（候选: %s）"
-                % ", ".join(p.name for p in CONFIG_LOG_CANDIDATES))
+            log(
+                "STATUS 候选日志中未找到 server config 行（候选: %s）"
+                % ", ".join(p.name for p in CONFIG_LOG_CANDIDATES)
+            )
         if ps_ctx is not None:
-            log("STATUS api_ps: 已加载 %d 个模型，最大 ctx=%d" % (len(ps or []), ps_ctx))
+            log(
+                "STATUS api_ps: 已加载 %d 个模型，最大 ctx=%d" % (len(ps or []), ps_ctx)
+            )
         elif running and ps is None:
             log("STATUS api_ps 不可用（禁代理后仍失败）→ 真实 ctx 无法判定")
 
@@ -334,23 +358,36 @@ def main(argv=None) -> int:
                 if cfg:
                     bad = tuned_deviations(cfg)
                     if bad:
-                        log("WARN 日志行与实测冲突：%s；但 /api/ps ctx=%d 证明服务已 tuned，"
-                            "该日志行应为旧实例残留，忽略" % ("; ".join(bad), ps_ctx))
-                log("VERDICT TUNED（实测 /api/ps 最大 ctx=%d ≥ %d）" % (ps_ctx, CTX_OK_FLOOR))
+                        log(
+                            "WARN 日志行与实测冲突：%s；但 /api/ps ctx=%d 证明服务已 tuned，"
+                            "该日志行应为旧实例残留，忽略" % ("; ".join(bad), ps_ctx)
+                        )
+                log(
+                    "VERDICT TUNED（实测 /api/ps 最大 ctx=%d ≥ %d）"
+                    % (ps_ctx, CTX_OK_FLOOR)
+                )
                 return 0
-            log("VERDICT NOT_TUNED（实测 /api/ps 最大 ctx=%d < %d，疑为默认 4096）"
-                "→ 建议 --restart" % (ps_ctx, CTX_OK_FLOOR))
+            log(
+                "VERDICT NOT_TUNED（实测 /api/ps 最大 ctx=%d < %d，疑为默认 4096）"
+                "→ 建议 --restart" % (ps_ctx, CTX_OK_FLOOR)
+            )
             return 1
 
         # /api/ps 取不到（无模型加载或探针失败）→ 退回日志行判定
         if cfg:
             bad = tuned_deviations(cfg)
             if bad:
-                log("VERDICT NOT_TUNED（仅据日志行）→ " + "; ".join(bad) + "（建议 --restart）")
+                log(
+                    "VERDICT NOT_TUNED（仅据日志行）→ "
+                    + "; ".join(bad)
+                    + "（建议 --restart）"
+                )
                 return 1
             log("VERDICT TUNED（仅据日志行 %s，/api/ps 未取到 ctx）" % (ts or "?"))
             return 0
-        log("VERDICT UNKNOWN（无 config 行且无 /api/ps ctx）→ 建议 --restart 或查服务日志")
+        log(
+            "VERDICT UNKNOWN（无 config 行且无 /api/ps ctx）→ 建议 --restart 或查服务日志"
+        )
         return 2
 
     if running and not args.restart:
@@ -358,20 +395,28 @@ def main(argv=None) -> int:
         cfg, _, _ = server_config()
         bad = tuned_deviations(cfg) if cfg else []
         if bad:
-            log("WARN 当前实例关键参数不达标：%s；需要 tuned 请 --restart" % "; ".join(bad))
+            log(
+                "WARN 当前实例关键参数不达标：%s；需要 tuned 请 --restart"
+                % "; ".join(bad)
+            )
         return 0
 
     if args.restart or not running:
         if procs:
             log("KILL 现有 ollama.exe（%d 个）" % len(procs))
-            subprocess.run(["taskkill", "/F", "/IM", "ollama.exe"],
-                           capture_output=True, timeout=30)
+            subprocess.run(
+                ["taskkill", "/F", "/IM", "ollama.exe"], capture_output=True, timeout=30
+            )
             time.sleep(4)  # 给端口释放与 TIME_WAIT 收敛
 
     ok = start()
     if ok:
         cfg, src, _ = server_config()
-        log("DONE config=" + json.dumps(cfg, ensure_ascii=False) if cfg else "DONE（无 config 行）")
+        log(
+            "DONE config=" + json.dumps(cfg, ensure_ascii=False)
+            if cfg
+            else "DONE（无 config 行）"
+        )
         return 0
     return 1
 

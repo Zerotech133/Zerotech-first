@@ -41,7 +41,7 @@ class ReviewError(ValueError):
 @dataclass
 class Candidate:
     anon_id: str
-    origin: str            # 匿名期仅内部持有，绝不进 rationale
+    origin: str  # 匿名期仅内部持有，绝不进 rationale
     metrics: dict = field(default_factory=dict)
     diff_keys: list = field(default_factory=list)
 
@@ -49,10 +49,10 @@ class Candidate:
 @dataclass
 class ReviewResult:
     card_id: str
-    scores: dict           # anon_id -> score
-    ranking: list          # anon_id 有序（优→劣）
-    winner: str            # 匿名 ID
-    rationale: dict        # anon_id -> 文字（匿名期不含 origin）
+    scores: dict  # anon_id -> score
+    ranking: list  # anon_id 有序（优→劣）
+    winner: str  # 匿名 ID
+    rationale: dict  # anon_id -> 文字（匿名期不含 origin）
     judge: str
     _reveal_map: dict = field(default_factory=dict)
     revealed: bool = False
@@ -63,9 +63,14 @@ def build_pool(card) -> list[Candidate]:
     for arm_name in REVIEWABLE_ARMS:
         arm = card.arms.get(arm_name)
         if arm and arm.metrics:
-            pool.append(Candidate(anon_id="", origin=arm_name,
-                                  metrics=dict(arm.metrics),
-                                  diff_keys=sorted(arm.diff.keys())))
+            pool.append(
+                Candidate(
+                    anon_id="",
+                    origin=arm_name,
+                    metrics=dict(arm.metrics),
+                    diff_keys=sorted(arm.diff.keys()),
+                )
+            )
     if not pool:
         raise ReviewError("no reviewable arm with metrics (先 record_metrics)")
     return pool
@@ -74,7 +79,9 @@ def build_pool(card) -> list[Candidate]:
 def assign_anon_ids(pool: list[Candidate], salt: str) -> list[Candidate]:
     """确定性匿名编号：sha256(salt+origin+index) 前 6 位，大写；不含 origin 片段。"""
     for i, c in enumerate(pool):
-        raw = hashlib.sha256(("%s|%s|%d" % (salt, c.origin, i)).encode("utf-8")).hexdigest()
+        raw = hashlib.sha256(
+            ("%s|%s|%d" % (salt, c.origin, i)).encode("utf-8")
+        ).hexdigest()
         c.anon_id = "C-" + raw[:6].upper()
     ids = [c.anon_id for c in pool]
     if len(set(ids)) != len(ids):
@@ -151,17 +158,25 @@ def reveal(result: ReviewResult) -> dict:
 
 def report_markdown(card, result: ReviewResult) -> str:
     """横评报告：匿名期显示匿名 ID；已解盲则附来源。"""
-    lines = ["## 匿名横评 %s" % result.card_id,
-             "评审者：%s ｜ 匿名编号：%d 个" % (result.judge, len(result.scores)),
-             "",
-             "| 名次 | 编号 | 得分 | 理由 |",
-             "|---|---|---|---|"]
+    lines = [
+        "## 匿名横评 %s" % result.card_id,
+        "评审者：%s ｜ 匿名编号：%d 个" % (result.judge, len(result.scores)),
+        "",
+        "| 名次 | 编号 | 得分 | 理由 |",
+        "|---|---|---|---|",
+    ]
     for i, anon in enumerate(result.ranking, 1):
-        lines.append("| %d | %s | %s | %s |" % (i, anon, result.scores[anon], result.rationale[anon]))
+        lines.append(
+            "| %d | %s | %s | %s |"
+            % (i, anon, result.scores[anon], result.rationale[anon])
+        )
     lines.append("")
     lines.append("**胜出（建议）**：%s" % result.winner)
     if result.revealed:
-        lines.append("**已解盲**：%s" % "；".join("%s→%s" % (k, v) for k, v in result._reveal_map.items()))
+        lines.append(
+            "**已解盲**：%s"
+            % "；".join("%s→%s" % (k, v) for k, v in result._reveal_map.items())
+        )
     else:
         lines.append("**未解盲**（决定后由签字人显式解盲）")
     lines.append("")
@@ -190,9 +205,15 @@ def _demo() -> int:
         adversary_diff={"criteria/riskguard.md": "维持原判据+注释"},
         verifier=["样本外达标", "回滚预案在位", "误拦率不升"],
     )
-    E.record_metrics(card, "baseline", {"misblock_rate_lower_better": 0.18, "oos_return": 0.004})
-    E.record_metrics(card, "candidate", {"misblock_rate_lower_better": 0.11, "oos_return": 0.009})
-    E.record_metrics(card, "adversary", {"misblock_rate_lower_better": 0.17, "oos_return": 0.005})
+    E.record_metrics(
+        card, "baseline", {"misblock_rate_lower_better": 0.18, "oos_return": 0.004}
+    )
+    E.record_metrics(
+        card, "candidate", {"misblock_rate_lower_better": 0.11, "oos_return": 0.009}
+    )
+    E.record_metrics(
+        card, "adversary", {"misblock_rate_lower_better": 0.17, "oos_return": 0.005}
+    )
     r = review(card)
     print(report_markdown(card, r))
     apply_to_card(card, r)

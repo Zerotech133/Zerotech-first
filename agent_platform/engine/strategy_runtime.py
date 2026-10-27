@@ -10,6 +10,7 @@ docstring 裁决同源）：裸 daemon Thread + 结果盒，不用 ThreadPoolExe
 其 worker 线程 3.9+ 为非 daemon 且解释器退出时会 join 全部 worker，死循环
 策略会把整个进程挂在 exit 上，与隔离门目标自相矛盾。
 """
+
 from collections.abc import Mapping
 from types import MappingProxyType
 import threading
@@ -35,8 +36,7 @@ def _readonly(value, memo):
             raise StrategyError("context 不支持循环引用")
         memo[marker] = True
         result = {
-            _readonly(key, memo): _readonly(item, memo)
-            for key, item in value.items()
+            _readonly(key, memo): _readonly(item, memo) for key, item in value.items()
         }
         del memo[marker]
         return MappingProxyType(result)
@@ -71,8 +71,9 @@ def _result(strategy_id, status, started, verdict=None, error=None):
     }
 
 
-def run_strategy(registry, strategy_id, context, timeout_s=None,
-                 allow_deprecated=False):
+def run_strategy(
+    registry, strategy_id, context, timeout_s=None, allow_deprecated=False
+):
     """通过隔离门运行一次策略。
 
     ``allow_deprecated`` 是回放调用方必须显式传入的开关，仅放行 deprecated；
@@ -92,7 +93,7 @@ def run_strategy(registry, strategy_id, context, timeout_s=None,
                 "rejected",
                 started,
                 error="strategy_id=%s lifecycle_state=%s 拒绝运行"
-                      % (strategy_id, lifecycle_state),
+                % (strategy_id, lifecycle_state),
             )
 
     try:
@@ -110,9 +111,9 @@ def run_strategy(registry, strategy_id, context, timeout_s=None,
         except BaseException as e:  # noqa: BLE001  单策略异常 fail-visible，见 docstring
             box["error"] = e
 
-    t = threading.Thread(target=_work,
-                         name="strategy-runtime-%s" % strategy_id,
-                         daemon=True)
+    t = threading.Thread(
+        target=_work, name="strategy-runtime-%s" % strategy_id, daemon=True
+    )
     t.start()
     t.join(timeout_s)
     if t.is_alive():
@@ -121,7 +122,7 @@ def run_strategy(registry, strategy_id, context, timeout_s=None,
             "timeout",
             started,
             error="strategy_id=%s 执行超时（%.3fs；后台线程无法强杀）"
-                  % (strategy_id, timeout_s),
+            % (strategy_id, timeout_s),
         )
     if "error" in box:
         return _result(strategy_id, "error", started, error=str(box["error"]))
@@ -135,8 +136,7 @@ class StrategyRuntime:
         self.registry = registry
         self.timeout_s = timeout_s
 
-    def run(self, strategy_id, context, allow_deprecated=False,
-            timeout_s=None):
+    def run(self, strategy_id, context, allow_deprecated=False, timeout_s=None):
         return run_strategy(
             self.registry,
             strategy_id,

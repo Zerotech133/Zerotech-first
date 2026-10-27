@@ -12,6 +12,7 @@
     python -m pytest tests/test_llm_routing.py -v          # 离线层
     python tests/test_llm_routing.py --live                # live 层
 """
+
 import json
 import sys
 from pathlib import Path
@@ -27,6 +28,7 @@ from engine import openclaw_cli as oc_mod  # noqa: E402  B05：OpenClaw 载体�
 
 
 # ---------------------------------------------------------------- 离线层
+
 
 def test_profile_exact():
     p = llm_mod.resolve_profile("qwen3.6:35b-a3b")
@@ -62,8 +64,9 @@ def test_make_llm_routes_ollama():
     assert isinstance(llm_mod.make_llm("ollama/qwen3.5:9b"), llm_mod.OllamaLLM)
     # glm/ 路由见 test_make_llm_routes_glm_cloud；此处验证文档承诺的兜底行为：
     # 真名带斜杠的本地模型（如 huihui_ai/…）与裸模型名 → OllamaLLM 直连本地
-    assert isinstance(llm_mod.make_llm("huihui_ai/Qwen3.8-abliterated:latest"),
-                      llm_mod.OllamaLLM)
+    assert isinstance(
+        llm_mod.make_llm("huihui_ai/Qwen3.8-abliterated:latest"), llm_mod.OllamaLLM
+    )
     assert isinstance(llm_mod.make_llm("qwen3.5:9b"), llm_mod.OllamaLLM)
 
 
@@ -102,8 +105,9 @@ def test_openclaw_delegation_success(monkeypatch):
         return "好", None
 
     monkeypatch.setattr(oc_mod, "run", fake_run)
-    monkeypatch.setattr(oc_mod, "agent_primary_model",
-                        lambda agent=None: "deepseek/deepseek-chat")
+    monkeypatch.setattr(
+        oc_mod, "agent_primary_model", lambda agent=None: "deepseek/deepseek-chat"
+    )
     llm = llm_mod.make_llm("openai/gpt-6.0")
     text, status = llm.chat("你是军师", "给个结论")
     assert (text, status) == ("好", "normal")
@@ -120,6 +124,7 @@ def test_openclaw_delegation_success(monkeypatch):
 
 def test_openclaw_delegation_failure_raises(monkeypatch):
     """载体失败/超时 → LLMError，不静默降档本地 9b（异族席纪律）"""
+
     def fake_run(agent, prompt, model=None, timeout=None):
         return None, "timeout"
 
@@ -136,8 +141,8 @@ def test_openclaw_empty_output_raises(monkeypatch):
     """空回（None/""/cli 的 empty_output 形态）一律 LLMError"""
     for ret in ((None, "empty_output"), ("", None), (None, None)):
         monkeypatch.setattr(
-            oc_mod, "run",
-            lambda agent, prompt, model=None, timeout=None, _r=ret: _r)
+            oc_mod, "run", lambda agent, prompt, model=None, timeout=None, _r=ret: _r
+        )
         monkeypatch.setattr(oc_mod, "agent_primary_model", lambda agent=None: "")
         with pytest.raises(llm_mod.LLMError):
             llm_mod.make_llm("openai/gpt-6.0").chat("s", "u")
@@ -196,11 +201,14 @@ def test_openai_direct_chat_parses_response(monkeypatch):
             return False
 
         def read(self):
-            return json.dumps({
-                "choices": [{"message": {"content": "ok"},
-                             "finish_reason": "stop"}],
-                "usage": {"total_tokens": 3},
-            }).encode("utf-8")
+            return json.dumps(
+                {
+                    "choices": [
+                        {"message": {"content": "ok"}, "finish_reason": "stop"}
+                    ],
+                    "usage": {"total_tokens": 3},
+                }
+            ).encode("utf-8")
 
     class FakeOpener:
         def open(self, req, timeout=None):
@@ -209,8 +217,9 @@ def test_openai_direct_chat_parses_response(monkeypatch):
             captured["timeout"] = timeout
             return FakeResp()
 
-    monkeypatch.setattr(llm_mod.urllib.request, "build_opener",
-                        lambda handler=None: FakeOpener())
+    monkeypatch.setattr(
+        llm_mod.urllib.request, "build_opener", lambda handler=None: FakeOpener()
+    )
     text, status = llm_mod.OpenAILLM(api_key="test-key").chat("s", "u")
     assert text == "ok" and status == "normal"
     assert captured["body"]["model"] == "gpt-6.0"
@@ -314,10 +323,13 @@ def test_chat_body_uses_profile(monkeypatch):
             return False
 
         def read(self):
-            return json.dumps({
-                "message": {"content": "ok"},
-                "done_reason": "stop", "eval_count": 10,
-            }).encode("utf-8")
+            return json.dumps(
+                {
+                    "message": {"content": "ok"},
+                    "done_reason": "stop",
+                    "eval_count": 10,
+                }
+            ).encode("utf-8")
 
     def fake_open(req, timeout=None):
         captured["body"] = json.loads(req.data.decode("utf-8"))
@@ -325,14 +337,16 @@ def test_chat_body_uses_profile(monkeypatch):
         return FakeResp()
 
     import urllib.request
+
     orig = urllib.request.build_opener
 
     class FakeOpener:
         def open(self, req, timeout=None):
             return fake_open(req, timeout)
 
-    monkeypatch.setattr(urllib.request, "build_opener",
-                        lambda handler=None: FakeOpener())
+    monkeypatch.setattr(
+        urllib.request, "build_opener", lambda handler=None: FakeOpener()
+    )
 
     llm = llm_mod.OllamaLLM()
     llm.chat("s", "u", model="qwen3.6:35b-a3b")
@@ -361,8 +375,9 @@ def test_chat_respects_caller_timeout_cap(monkeypatch):
             return False
 
         def read(self):
-            return json.dumps({"message": {"content": "ok"},
-                               "done_reason": "stop"}).encode("utf-8")
+            return json.dumps(
+                {"message": {"content": "ok"}, "done_reason": "stop"}
+            ).encode("utf-8")
 
     class FakeOpener:
         def open(self, req, timeout=None):
@@ -370,8 +385,10 @@ def test_chat_respects_caller_timeout_cap(monkeypatch):
             return FakeResp()
 
     import urllib.request
-    monkeypatch.setattr(urllib.request, "build_opener",
-                        lambda handler=None: FakeOpener())
+
+    monkeypatch.setattr(
+        urllib.request, "build_opener", lambda handler=None: FakeOpener()
+    )
 
     llm_mod.OllamaLLM(timeout=12).chat("s", "u", model="qwen3.5:9b")
     assert captured["timeout"] == 12, "12s 预算必须被尊重"
@@ -384,11 +401,13 @@ def test_chat_respects_caller_timeout_cap(monkeypatch):
 
 # ---------------------------------------------------------------- live 层
 
+
 def _live():
     print("== live 1/3: ollama qwen3.5:9b 快判读 ==")
     llm = llm_mod.OllamaLLM()
-    text, status = llm.chat("你是测试员，只回复一个词：正常", "测试",
-                            model="qwen3.5:9b")
+    text, status = llm.chat(
+        "你是测试员，只回复一个词：正常", "测试", model="qwen3.5:9b"
+    )
     print("   status=%s meta=%s text=%r" % (status, llm.last_meta, text[:60]))
     assert status == "normal" and text.strip()
 
@@ -404,14 +423,16 @@ def _live():
     llm2 = llm_mod.OllamaLLM()
     text2, status2 = llm2.chat(
         "你是 A0 参谋长。用 3 段、每段 2-3 句点评：本地模型自动路由对 AI 组织的意义。",
-        "开始点评", model="qwen3.6:35b-a3b")
+        "开始点评",
+        model="qwen3.6:35b-a3b",
+    )
     print("   status=%s meta=%s text=%r" % (status2, llm2.last_meta, text2[:120]))
     assert status2 == "normal" and len(text2) > 100, "35b 应产出长文且未被截断"
 
     print("== live 3/3: nova 1238 结构化 ==")
     try:
         nv = llm_mod.make_llm("nova/1238")
-        text3, status3 = nv.chat("只回复 JSON: {\"ok\": true}", "测试")
+        text3, status3 = nv.chat('只回复 JSON: {"ok": true}', "测试")
         print("   status=%s meta=%s text=%r" % (status3, nv.last_meta, text3[:60]))
     except llm_mod.LLMError as e:
         print("   SKIP（NovaMax 1238 未运行，watchdog 会按需拉起）: %s" % e)

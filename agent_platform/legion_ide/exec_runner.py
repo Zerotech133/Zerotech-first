@@ -12,6 +12,7 @@
 
 拒绝：shell 元字符（; & | > < ` $( %）、任意未列命令、worktree 外路径。
 """
+
 from __future__ import annotations
 
 import os
@@ -36,8 +37,17 @@ def _clean_env(worktree: Path) -> dict:
     for k, v in os.environ.items():
         if any(tok in k.upper() for tok in ENV_DENY):
             continue
-        if k.upper() in ("PATH", "SYSTEMROOT", "WINDIR", "TEMP", "TMP",
-                         "PYTHONUTF8", "PYTHONIOENCODING", "USERPROFILE", "HOME"):
+        if k.upper() in (
+            "PATH",
+            "SYSTEMROOT",
+            "WINDIR",
+            "TEMP",
+            "TMP",
+            "PYTHONUTF8",
+            "PYTHONIOENCODING",
+            "USERPROFILE",
+            "HOME",
+        ):
             env[k] = v
     env.setdefault("PYTHONUTF8", "1")
     env.setdefault("PYTHONIOENCODING", "utf-8")
@@ -75,10 +85,12 @@ def _validate_tokens(worktree: Path, tokens: list[str]) -> dict:
                 if a in ("--stat", "--name-only"):
                     i += 1
                 elif a == "--":
-                    paths = rest[i + 1:]
+                    paths = rest[i + 1 :]
                     break
                 else:
-                    return _err("denied", "git diff 仅允许 --stat/--name-only/-- <path>")
+                    return _err(
+                        "denied", "git diff 仅允许 --stat/--name-only/-- <path>"
+                    )
             if any(not _inside(wt, p) for p in paths):
                 return _err("denied", "git diff 路径越出 worktree")
             return {"ok": True, "argv": ["git", "-C", str(wt), "diff", *rest]}
@@ -87,13 +99,18 @@ def _validate_tokens(worktree: Path, tokens: list[str]) -> dict:
             if rest:
                 if len(rest) == 2 and rest[0] == "-n" and rest[1].isdigit():
                     args = ["--oneline", "-n", rest[1]]
-                elif len(rest) == 1 and rest[0].startswith("-") and rest[0][1:].isdigit():
+                elif (
+                    len(rest) == 1 and rest[0].startswith("-") and rest[0][1:].isdigit()
+                ):
                     args = ["--oneline", rest[0]]
                 else:
                     return _err("denied", "git log 仅允许 --oneline [-n N| -N]")
             return {"ok": True, "argv": ["git", "-C", str(wt), "log", *args]}
         if sub == "branch" and rest == ["--show-current"]:
-            return {"ok": True, "argv": ["git", "-C", str(wt), "branch", "--show-current"]}
+            return {
+                "ok": True,
+                "argv": ["git", "-C", str(wt), "branch", "--show-current"],
+            }
         return _err("denied", "git 子命令不在白名单：%s" % sub)
 
     if prog in ("python", "py") or prog.endswith("python.exe"):
@@ -119,7 +136,9 @@ def _validate_tokens(worktree: Path, tokens: list[str]) -> dict:
             if not _inside(wt, target) or not (wt / target).is_file():
                 return _err("denied", "py_compile 目标须为 worktree 内文件")
             return {"ok": True, "argv": [exe, "-m", "py_compile", target]}
-        return _err("denied", "python 命令不在白名单（-m pytest / -m py_compile / --version）")
+        return _err(
+            "denied", "python 命令不在白名单（-m pytest / -m py_compile / --version）"
+        )
 
     return _err("denied", "命令不在白名单：%s" % tokens[0])
 
@@ -144,9 +163,16 @@ def run(worktree: Path, command: str, timeout: int = DEFAULT_TIMEOUT) -> dict:
     argv = check["argv"]
     t0 = time.time()
     try:
-        proc = subprocess.run(argv, cwd=str(worktree), capture_output=True, text=True,
-                              encoding="utf-8", errors="replace",
-                              timeout=max(1, int(timeout)), env=_clean_env(Path(worktree)))
+        proc = subprocess.run(
+            argv,
+            cwd=str(worktree),
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=max(1, int(timeout)),
+            env=_clean_env(Path(worktree)),
+        )
     except subprocess.TimeoutExpired:
         return _err("timeout", "命令超时（>%ss）：%s" % (timeout, command))
     except FileNotFoundError:
@@ -155,8 +181,11 @@ def run(worktree: Path, command: str, timeout: int = DEFAULT_TIMEOUT) -> dict:
         return _err("exec_failed", "执行失败：%s" % type(exc).__name__)
     out = (proc.stdout or "") + (proc.stderr or "")
     truncated = len(out) > MAX_OUTPUT
-    return {"ok": True, "exit_code": proc.returncode,
-            "output": out[:MAX_OUTPUT],
-            "truncated": truncated,
-            "duration_ms": int((time.time() - t0) * 1000),
-            "command": command}
+    return {
+        "ok": True,
+        "exit_code": proc.returncode,
+        "output": out[:MAX_OUTPUT],
+        "truncated": truncated,
+        "duration_ms": int((time.time() - t0) * 1000),
+        "command": command,
+    }

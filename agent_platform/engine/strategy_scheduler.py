@@ -5,6 +5,7 @@
 Aggregator。每个策略通过 strategy_runtime 的隔离门运行，单策略异常或
 超时只影响自身结果。
 """
+
 from concurrent.futures import ThreadPoolExecutor, wait
 from collections.abc import Mapping
 import time
@@ -67,9 +68,15 @@ def _run_one(registry, strategy_id, context, timeout_s, replay):
 class MultiStrategyScheduler:
     """可复用的多策略并行调度器。"""
 
-    def __init__(self, registry, max_workers=None, timeout_s=None,
-                 overall_timeout_s=None, allowed_lifecycle=None,
-                 replay=False):
+    def __init__(
+        self,
+        registry,
+        max_workers=None,
+        timeout_s=None,
+        overall_timeout_s=None,
+        allowed_lifecycle=None,
+        replay=False,
+    ):
         self.registry = registry
         self.max_workers = max_workers
         self.timeout_s = timeout_s
@@ -83,19 +90,31 @@ class MultiStrategyScheduler:
 
     def _allowed_states(self, allowed_lifecycle, replay):
         explicit = allowed_lifecycle is not None or self.allowed_lifecycle is not None
-        configured = (self.allowed_lifecycle if allowed_lifecycle is None
-                      else allowed_lifecycle)
-        states = set(_validate_allowed_lifecycle(
-            _DEFAULT_ALLOWED_LIFECYCLE if configured is None else configured))
+        configured = (
+            self.allowed_lifecycle if allowed_lifecycle is None else allowed_lifecycle
+        )
+        states = set(
+            _validate_allowed_lifecycle(
+                _DEFAULT_ALLOWED_LIFECYCLE if configured is None else configured
+            )
+        )
         if _REPLAY_LIFECYCLE in states and not replay:
             states.remove(_REPLAY_LIFECYCLE)
         if replay and not explicit:
             states.add(_REPLAY_LIFECYCLE)
         return states
 
-    def run(self, strategy_ids, context, timeout_s=None,
-            overall_timeout_s=None, max_workers=None,
-            allowed_lifecycle=None, replay=None, strategy_timeouts=None):
+    def run(
+        self,
+        strategy_ids,
+        context,
+        timeout_s=None,
+        overall_timeout_s=None,
+        max_workers=None,
+        allowed_lifecycle=None,
+        replay=None,
+        strategy_timeouts=None,
+    ):
         """并行运行 strategy_ids，返回按输入顺序排列的统一结果列表。
 
         ``timeout_s`` 是单策略默认超时；``strategy_timeouts`` 可按 strategy_id
@@ -130,8 +149,7 @@ class MultiStrategyScheduler:
             try:
                 agent = self.registry.get(strategy_id)
             except Exception as exc:
-                results[index] = _result(
-                    strategy_id, "error", started, error=str(exc))
+                results[index] = _result(strategy_id, "error", started, error=str(exc))
                 continue
             lifecycle_state = getattr(agent, "lifecycle_state", None)
             if lifecycle_state not in allowed_states:
@@ -140,7 +158,7 @@ class MultiStrategyScheduler:
                     "rejected",
                     started,
                     error="strategy_id=%s lifecycle_state=%s 拒绝调度"
-                          % (strategy_id, lifecycle_state),
+                    % (strategy_id, lifecycle_state),
                 )
                 continue
             pending.append((index, strategy_id))
@@ -174,7 +192,8 @@ class MultiStrategyScheduler:
                     results[index] = future.result()
                 except Exception as exc:
                     results[index] = _result(
-                        strategy_id, "error", started, error=str(exc))
+                        strategy_id, "error", started, error=str(exc)
+                    )
             for future in not_done:
                 index, strategy_id = futures[future]
                 future.cancel()
@@ -189,10 +208,17 @@ class MultiStrategyScheduler:
         return results
 
 
-def run_strategies(registry, strategy_ids, context, timeout_s=None,
-                   overall_timeout_s=None, max_workers=None,
-                   allowed_lifecycle=None, replay=False,
-                   strategy_timeouts=None):
+def run_strategies(
+    registry,
+    strategy_ids,
+    context,
+    timeout_s=None,
+    overall_timeout_s=None,
+    max_workers=None,
+    allowed_lifecycle=None,
+    replay=False,
+    strategy_timeouts=None,
+):
     """函数式调度入口。"""
     return MultiStrategyScheduler(
         registry,

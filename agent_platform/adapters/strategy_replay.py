@@ -22,6 +22,7 @@
     不参与 join；
   - 同 run_id 多条影子行时首见为准（append-only 账本，后写视为重放）。
 """
+
 from __future__ import annotations
 
 import json
@@ -42,6 +43,7 @@ STANCES = ("bull", "bear", "neutral")
 
 
 # ---------------------------------------------------------------- 只读行读取
+
 
 def _read_jsonl(path: Path) -> Tuple[List[dict], int]:
     """逐行读 jsonl，返回 (行列表, 坏行数)。坏行=JSON 解析失败或非对象行。"""
@@ -85,6 +87,7 @@ def load_shadow_index(root) -> Tuple[Dict[str, dict], int]:
 
 
 # ---------------------------------------------------------------- 聚合
+
 
 def _new_dist(enums) -> Dict[str, int]:
     """枚举分布计数器：枚举值预置 0，枚举外值落 other（fail-visible）。"""
@@ -133,8 +136,13 @@ def aggregate(root=None) -> dict:
         missing.append("shadow")
         hints.append("影子账本不存在（join 侧空索引，命中率恒 0）: %s" % h_path)
 
-    totals = {"verdicts": 0, "with_run_id": 0, "joined": 0,
-              "no_anchor": 0, "no_strategy_id": 0}
+    totals = {
+        "verdicts": 0,
+        "with_run_id": 0,
+        "joined": 0,
+        "no_anchor": 0,
+        "no_strategy_id": 0,
+    }
     per: Dict[str, dict] = {}
 
     for row in verdict_rows:
@@ -142,12 +150,17 @@ def aggregate(root=None) -> dict:
         if not sid:
             totals["no_strategy_id"] += 1
             continue
-        st = per.setdefault(sid, {
-            "total": 0, "with_run_id": 0, "joined": 0,
-            "recommendations": _new_dist(RECOMMENDATIONS),
-            "stances": _new_dist(STANCES),
-            "latest_by_symbol": {},
-        })
+        st = per.setdefault(
+            sid,
+            {
+                "total": 0,
+                "with_run_id": 0,
+                "joined": 0,
+                "recommendations": _new_dist(RECOMMENDATIONS),
+                "stances": _new_dist(STANCES),
+                "latest_by_symbol": {},
+            },
+        )
         st["total"] += 1
         totals["verdicts"] += 1
         _bump(st["recommendations"], row.get("recommendation"))
@@ -165,9 +178,11 @@ def aggregate(root=None) -> dict:
 
         sym = str(row.get("symbol", "")).strip()
         if sym:
-            order_key = (str(row.get("trade_date", "")),
-                         str(row.get("recorded_at", "")),
-                         str(row.get("verdict_key", "")))
+            order_key = (
+                str(row.get("trade_date", "")),
+                str(row.get("recorded_at", "")),
+                str(row.get("verdict_key", "")),
+            )
             cur = st["latest_by_symbol"].get(sym)
             if cur is None or order_key >= cur["_order"]:
                 st["latest_by_symbol"][sym] = {
@@ -191,15 +206,21 @@ def aggregate(root=None) -> dict:
             "total": st["total"],
             "with_run_id": st["with_run_id"],
             "joined": st["joined"],
-            "hit_rate": (round(st["joined"] / st["with_run_id"], 4)
-                         if st["with_run_id"] else None),
+            "hit_rate": (
+                round(st["joined"] / st["with_run_id"], 4)
+                if st["with_run_id"]
+                else None
+            ),
             "recommendations": st["recommendations"],
             "stances": st["stances"],
             "latest_by_symbol": latest,
         }
 
-    totals["hit_rate"] = (round(totals["joined"] / totals["with_run_id"], 4)
-                          if totals["with_run_id"] else None)
+    totals["hit_rate"] = (
+        round(totals["joined"] / totals["with_run_id"], 4)
+        if totals["with_run_id"]
+        else None
+    )
     return {
         "root": str(root),
         "missing": missing,
@@ -212,6 +233,7 @@ def aggregate(root=None) -> dict:
 
 # ---------------------------------------------------------------- CLI
 
+
 def _print_table(view: dict) -> None:
     """极简表格输出（无三方依赖）。"""
     print("root=%s" % view["root"])
@@ -222,25 +244,44 @@ def _print_table(view: dict) -> None:
     print("%-24s %6s %8s %7s %9s" % ("strategy", "total", "anchor", "join", "hit_rate"))
     for sid in sorted(view["strategies"]):
         st = view["strategies"][sid]
-        print("%-24s %6d %8d %7d %9s"
-              % (sid[:24], st["total"], st["with_run_id"], st["joined"],
-                 "n/a" if st["hit_rate"] is None else "%.1f%%" % (st["hit_rate"] * 100)))
+        print(
+            "%-24s %6d %8d %7d %9s"
+            % (
+                sid[:24],
+                st["total"],
+                st["with_run_id"],
+                st["joined"],
+                "n/a" if st["hit_rate"] is None else "%.1f%%" % (st["hit_rate"] * 100),
+            )
+        )
     t = view["totals"]
-    print("TOTAL verdicts=%d with_run_id=%d joined=%d no_anchor=%d "
-          "no_strategy_id=%d hit_rate=%s"
-          % (t["verdicts"], t["with_run_id"], t["joined"], t["no_anchor"],
-             t["no_strategy_id"],
-             "n/a" if t["hit_rate"] is None else "%.1f%%" % (t["hit_rate"] * 100)))
+    print(
+        "TOTAL verdicts=%d with_run_id=%d joined=%d no_anchor=%d "
+        "no_strategy_id=%d hit_rate=%s"
+        % (
+            t["verdicts"],
+            t["with_run_id"],
+            t["joined"],
+            t["no_anchor"],
+            t["no_strategy_id"],
+            "n/a" if t["hit_rate"] is None else "%.1f%%" % (t["hit_rate"] * 100),
+        )
+    )
 
 
 def _cli(argv: Optional[List[str]] = None) -> int:
     import argparse
-    ap = argparse.ArgumentParser(
-        description="strategy 回放聚合视图（只读，零写面）")
-    ap.add_argument("--root", default="",
-                    help="数据根（默认 agent_platform/data 真仓，只读）")
-    ap.add_argument("--format", choices=["json", "table"], default="json",
-                    help="输出格式：json（默认）或 table")
+
+    ap = argparse.ArgumentParser(description="strategy 回放聚合视图（只读，零写面）")
+    ap.add_argument(
+        "--root", default="", help="数据根（默认 agent_platform/data 真仓，只读）"
+    )
+    ap.add_argument(
+        "--format",
+        choices=["json", "table"],
+        default="json",
+        help="输出格式：json（默认）或 table",
+    )
     args = ap.parse_args(argv)
     view = aggregate(args.root or None)
     if args.format == "table":

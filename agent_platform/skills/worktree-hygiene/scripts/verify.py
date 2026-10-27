@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """verify: worktree-hygiene（只读；由 build_skills.py 生成，勿手改）"""
+
 import json
 import os
 import subprocess
@@ -8,12 +9,16 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve()
 
+
 def _main_repo():
     # 在 worktree 里运行时，verify 应针对主仓（部署态），而不是临时 worktree
     try:
-        r = subprocess.run(["git", "-C", str(HERE.parent), "rev-parse",
-                            "--git-common-dir"], capture_output=True, text=True,
-                           timeout=30)
+        r = subprocess.run(
+            ["git", "-C", str(HERE.parent), "rev-parse", "--git-common-dir"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
         if r.returncode == 0 and r.stdout.strip():
             common = Path(r.stdout.strip())
             if not common.is_absolute():
@@ -26,8 +31,10 @@ def _main_repo():
         p = p.parent
     return p
 
+
 REPO = _main_repo()
 PROJECT = REPO.parent
+
 
 def resolve(p):
     p = str(p)
@@ -37,10 +44,12 @@ def resolve(p):
         return PROJECT / p
     return REPO / p
 
+
 def check_file(checks, name, path):
     p = resolve(path)
     checks.append({"check": "exists:" + name, "ok": p.exists(), "detail": str(p)})
     return p.exists()
+
 
 def check_compile(checks, name, path):
     p = resolve(path)
@@ -52,25 +61,35 @@ def check_compile(checks, name, path):
         checks.append({"check": "compile:" + name, "ok": True, "detail": ""})
         return True
     except Exception as e:  # noqa: BLE001
-        checks.append({"check": "compile:" + name, "ok": False, "detail": repr(e)[:160]})
+        checks.append(
+            {"check": "compile:" + name, "ok": False, "detail": repr(e)[:160]}
+        )
         return False
+
 
 def check_dir(checks, name, path):
     p = resolve(path)
     checks.append({"check": "dir:" + name, "ok": p.is_dir(), "detail": str(p)})
     return p.is_dir()
 
+
 def check_run(checks, name, argv):
     argv = [sys.executable if a == "python" else a for a in argv]
     try:
         r = subprocess.run(argv, capture_output=True, text=True, timeout=90)
         ok = r.returncode == 0
-        checks.append({"check": "run:" + name, "ok": ok,
-                       "detail": ((r.stderr or r.stdout or "")[:120])})
+        checks.append(
+            {
+                "check": "run:" + name,
+                "ok": ok,
+                "detail": ((r.stderr or r.stdout or "")[:120]),
+            }
+        )
         return ok
     except Exception as e:  # noqa: BLE001
         checks.append({"check": "run:" + name, "ok": False, "detail": repr(e)[:120]})
         return False
+
 
 def check_key(checks, name, path):
     p = resolve(path)
@@ -78,13 +97,20 @@ def check_key(checks, name, path):
     checks.append({"check": "key:" + name, "ok": ok, "detail": str(p)})
     return ok
 
+
 def main():
     checks = []
     ok = True
-    ok = check_dir(checks, '.worktrees', '.worktrees') and ok
-    ok = check_run(checks, 'git worktree list', ['git', 'worktree', 'list']) and ok
-    print(json.dumps({"ok": ok, "skill": "worktree-hygiene", "checks": checks}, ensure_ascii=False))
+    ok = check_dir(checks, ".worktrees", ".worktrees") and ok
+    ok = check_run(checks, "git worktree list", ["git", "worktree", "list"]) and ok
+    print(
+        json.dumps(
+            {"ok": ok, "skill": "worktree-hygiene", "checks": checks},
+            ensure_ascii=False,
+        )
+    )
     return 0 if ok else 1
+
 
 if __name__ == "__main__":
     raise SystemExit(main())

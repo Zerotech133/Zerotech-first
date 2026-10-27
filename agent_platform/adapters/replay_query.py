@@ -73,8 +73,8 @@ class _Modules:
     def get(cls, name: str, rel: str):
         if name not in cls._cache:
             import importlib.util
-            spec = importlib.util.spec_from_file_location(
-                name, _AGENT_PLATFORM / rel)
+
+            spec = importlib.util.spec_from_file_location(name, _AGENT_PLATFORM / rel)
             module = importlib.util.module_from_spec(spec)
             sys.modules[name] = module
             spec.loader.exec_module(module)
@@ -93,17 +93,18 @@ def _load_events(root: Path) -> List[dict]:
     for rec in rep.get("records", []) or []:
         if not isinstance(rec, dict):
             continue
-        out.append({
-            "ts": rec.get("ts", ""),
-            "source": "events:%s" % rec.get("source", ""),
-            "kind": rec.get("kind", ""),
-            "summary": "%s actor=%s object=%s" % (
-                rec.get("kind", ""), rec.get("actor", ""),
-                rec.get("object_id", "")),
-            "ref": rec.get("event_id", ""),
-            "trace_id": rec.get("trace_id", ""),
-            "idempotency_key": rec.get("idempotency_key", ""),
-        })
+        out.append(
+            {
+                "ts": rec.get("ts", ""),
+                "source": "events:%s" % rec.get("source", ""),
+                "kind": rec.get("kind", ""),
+                "summary": "%s actor=%s object=%s"
+                % (rec.get("kind", ""), rec.get("actor", ""), rec.get("object_id", "")),
+                "ref": rec.get("event_id", ""),
+                "trace_id": rec.get("trace_id", ""),
+                "idempotency_key": rec.get("idempotency_key", ""),
+            }
+        )
     return out
 
 
@@ -111,29 +112,35 @@ def _load_idem_rows() -> List[dict]:
     """幂等账本记录；库未建（双轨起点）→ 空列表 + missing 标记由调用方处理。"""
     if not _IDEM_DB.exists():
         return []
-    con = sqlite3.connect(
-        "file:%s?mode=ro" % _IDEM_DB.as_posix(), uri=True)
+    con = sqlite3.connect("file:%s?mode=ro" % _IDEM_DB.as_posix(), uri=True)
     con.row_factory = sqlite3.Row
     try:
         rows = con.execute(
             "SELECT record_id, workspace_id, scope, operation, idempotency_key,"
             " status, source_system, source_ref, trace_id, created_at, updated_at"
-            " FROM idempotency_records ORDER BY created_at, rowid").fetchall()
+            " FROM idempotency_records ORDER BY created_at, rowid"
+        ).fetchall()
         out = []
         for r in rows:
             keys = r.keys()
-            out.append({
-                "ts": r["created_at"],
-                "source": "idempotency",
-                "kind": "idem:%s" % r["status"],
-                "summary": "%s/%s key=%s src=%s:%s" % (
-                    r["scope"], r["operation"], r["idempotency_key"],
-                    r["source_system"] if "source_system" in keys else "",
-                    r["source_ref"]),
-                "ref": r["record_id"],
-                "trace_id": r["trace_id"] if "trace_id" in keys else "",
-                "idempotency_key": r["idempotency_key"],
-            })
+            out.append(
+                {
+                    "ts": r["created_at"],
+                    "source": "idempotency",
+                    "kind": "idem:%s" % r["status"],
+                    "summary": "%s/%s key=%s src=%s:%s"
+                    % (
+                        r["scope"],
+                        r["operation"],
+                        r["idempotency_key"],
+                        r["source_system"] if "source_system" in keys else "",
+                        r["source_ref"],
+                    ),
+                    "ref": r["record_id"],
+                    "trace_id": r["trace_id"] if "trace_id" in keys else "",
+                    "idempotency_key": r["idempotency_key"],
+                }
+            )
         return out
     finally:
         con.close()
@@ -148,28 +155,35 @@ def _load_approvals() -> List[dict]:
     """
     if not _APPROVALS_DB.exists():
         return []
-    con = sqlite3.connect(
-        "file:%s?mode=ro" % _APPROVALS_DB.as_posix(), uri=True)
+    con = sqlite3.connect("file:%s?mode=ro" % _APPROVALS_DB.as_posix(), uri=True)
     con.row_factory = sqlite3.Row
     try:
         rows = con.execute(
             "SELECT approval_id, idempotency_key, target_id, from_status,"
             " to_status, decided_by, reason, decided_at, trace_id"
             " FROM approvals WHERE target_type='workitem'"
-            " ORDER BY created_at, rowid").fetchall()
-        return [{
-            "ts": r["decided_at"],
-            "source": "approvals",
-            "kind": "approval:%s" % r["to_status"],
-            "summary": "%s %s→%s by=%s%s" % (
-                r["target_id"], r["from_status"], r["to_status"],
-                r["decided_by"],
-                (" reason=%s" % r["reason"]) if r["reason"] else ""),
-            "ref": r["approval_id"],
-            "trace_id": r["trace_id"] or "",
-            "idempotency_key": r["idempotency_key"],
-            "target_id": r["target_id"],
-        } for r in rows]
+            " ORDER BY created_at, rowid"
+        ).fetchall()
+        return [
+            {
+                "ts": r["decided_at"],
+                "source": "approvals",
+                "kind": "approval:%s" % r["to_status"],
+                "summary": "%s %s→%s by=%s%s"
+                % (
+                    r["target_id"],
+                    r["from_status"],
+                    r["to_status"],
+                    r["decided_by"],
+                    (" reason=%s" % r["reason"]) if r["reason"] else "",
+                ),
+                "ref": r["approval_id"],
+                "trace_id": r["trace_id"] or "",
+                "idempotency_key": r["idempotency_key"],
+                "target_id": r["target_id"],
+            }
+            for r in rows
+        ]
     finally:
         con.close()
 
@@ -228,7 +242,8 @@ def _load_artifacts(root: Path = None) -> List[dict]:
             "SELECT artifact_id, kind, path, content_hash, fact_hash,"
             " revision, supersedes, workitem_id, source_system, source_ref,"
             " produced_by, trace_id, registered_at FROM artifacts"
-            " ORDER BY registered_at, rowid").fetchall()
+            " ORDER BY registered_at, rowid"
+        ).fetchall()
         out = []
         for r in rows:
             cands: List[str] = []
@@ -238,34 +253,40 @@ def _load_artifacts(root: Path = None) -> List[dict]:
             if r["workitem_id"]:
                 cands.append(r["workitem_id"])
             cands = [c for c in dict.fromkeys(cands) if c]
-            out.append({
-                "ts": r["registered_at"],
-                "source": "artifacts",
-                "kind": "artifact:%s" % (r["kind"] or "unknown"),
-                "summary": "%s rev=%s hash=%s… by=%s%s" % (
-                    r["path"] or r["artifact_id"][:16], r["revision"],
-                    (r["content_hash"] or r["fact_hash"] or "")[:12],
-                    r["produced_by"],
-                    (" supersedes=%s" % r["supersedes"][:16])
-                    if r["supersedes"] else ""),
-                "ref": r["artifact_id"],
-                "trace_id": r["trace_id"] or "",
-                "idempotency_key": r["content_hash"] or r["fact_hash"],
-                "target_id": cands[0] if cands else "",
-                "target_aliases": cands,
-            })
+            out.append(
+                {
+                    "ts": r["registered_at"],
+                    "source": "artifacts",
+                    "kind": "artifact:%s" % (r["kind"] or "unknown"),
+                    "summary": "%s rev=%s hash=%s… by=%s%s"
+                    % (
+                        r["path"] or r["artifact_id"][:16],
+                        r["revision"],
+                        (r["content_hash"] or r["fact_hash"] or "")[:12],
+                        r["produced_by"],
+                        (" supersedes=%s" % r["supersedes"][:16])
+                        if r["supersedes"]
+                        else "",
+                    ),
+                    "ref": r["artifact_id"],
+                    "trace_id": r["trace_id"] or "",
+                    "idempotency_key": r["content_hash"] or r["fact_hash"],
+                    "target_id": cands[0] if cands else "",
+                    "target_aliases": cands,
+                }
+            )
         return out
     finally:
         con.close()
 
 
-def _artifact_chain_of(artifact_ids: List[str],
-                       root: Path = None) -> List[dict]:
+def _artifact_chain_of(artifact_ids: List[str], root: Path = None) -> List[dict]:
     """命中的 artifact 沿 supersede 链完整回放（read_only store）。"""
     db = _artifacts_db(root)
     if not db.exists() or not artifact_ids:
         return []
     from engine.artifacts import ArtifactStore
+
     store = ArtifactStore(db, read_only=True)
     seen: Dict[str, dict] = {}
     try:
@@ -275,9 +296,9 @@ def _artifact_chain_of(artifact_ids: List[str],
                     continue
                 seen[art.artifact_id] = {
                     "artifact_id": art.artifact_id,
-                    "kind": art.kind, "path": art.path,
-                    "content_hash": (art.content_hash
-                                     or art.fact_hash or "")[:16],
+                    "kind": art.kind,
+                    "path": art.path,
+                    "content_hash": (art.content_hash or art.fact_hash or "")[:16],
                     "revision": art.revision,
                     "produced_by": art.produced_by,
                     "supersedes": art.supersedes,
@@ -287,6 +308,8 @@ def _artifact_chain_of(artifact_ids: List[str],
         return seen.values() and list(seen.values())  # chain() 已旧→新有序
     finally:
         store.close()
+
+
 def _domain_current_state(root: Path, target_id: str) -> Optional[dict]:
     """target 命中域前缀时，附域内现状快照（只读投影）。"""
     prefix, _, ref = target_id.partition(":")
@@ -295,18 +318,25 @@ def _domain_current_state(root: Path, target_id: str) -> Optional[dict]:
         items, artifacts = gw.project_workitems(root)
         for wi, art in zip(items, artifacts):
             if wi.workitem_id == target_id:
-                return {"domain": "gzh", "status": wi.status,
-                        "title": wi.title, "artifact_hash": art.fact_hash,
-                        "artifact_missing": art.missing}
+                return {
+                    "domain": "gzh",
+                    "status": wi.status,
+                    "title": wi.title,
+                    "artifact_hash": art.fact_hash,
+                    "artifact_missing": art.missing,
+                }
         return None
     if prefix == "academy":
         aw = _Modules.get("rq_academy_wiring", "domains/academy_wiring.py")
         for wi in aw.project_workitems(root):
             if wi.workitem_id == target_id:
-                return {"domain": "academy", "status": wi.status,
-                        "title": wi.title,
-                        "stage_index": wi.payload.get("stage_index"),
-                        "history_len": wi.payload.get("history_len")}
+                return {
+                    "domain": "academy",
+                    "status": wi.status,
+                    "title": wi.title,
+                    "stage_index": wi.payload.get("stage_index"),
+                    "history_len": wi.payload.get("history_len"),
+                }
         return None
     return None
 
@@ -319,8 +349,12 @@ def _sort_key(entry: dict):
     return (str(entry.get("ts") or ""), str(entry.get("source") or ""))
 
 
-def replay(root: Path = REPO_ROOT, trace_id: str = "",
-           idempotency_key: str = "", target_id: str = "") -> dict:
+def replay(
+    root: Path = REPO_ROOT,
+    trace_id: str = "",
+    idempotency_key: str = "",
+    target_id: str = "",
+) -> dict:
     root = Path(root)
     if not (trace_id or idempotency_key or target_id):
         raise ValueError("trace_id / idempotency_key / target_id 至少给一个")
@@ -331,14 +365,16 @@ def replay(root: Path = REPO_ROOT, trace_id: str = "",
     def _collect(loader, name):
         try:
             rows = loader()
-            sources[name] = ("missing_source（双轨起点，账本未建库）"
-                             if name == "idempotency" and not rows
-                             and not _IDEM_DB.exists()
-                             else "ok" if rows else "empty")
+            sources[name] = (
+                "missing_source（双轨起点，账本未建库）"
+                if name == "idempotency" and not rows and not _IDEM_DB.exists()
+                else "ok"
+                if rows
+                else "empty"
+            )
             return rows
         except Exception as exc:  # noqa: BLE001
-            findings.append("[%s] 读取失败: %s: %s"
-                            % (name, type(exc).__name__, exc))
+            findings.append("[%s] 读取失败: %s: %s" % (name, type(exc).__name__, exc))
             sources[name] = "error"
             return []
 
@@ -355,10 +391,13 @@ def replay(root: Path = REPO_ROOT, trace_id: str = "",
         if idempotency_key and row.get("idempotency_key") == idempotency_key:
             return True
         if target_id and (
-                row.get("target_id") == target_id
-                or target_id in (row.get("target_aliases") or [])
-                or (row.get("source", "").startswith("events:")
-                    and target_id in str(row.get("summary", "")))):
+            row.get("target_id") == target_id
+            or target_id in (row.get("target_aliases") or [])
+            or (
+                row.get("source", "").startswith("events:")
+                and target_id in str(row.get("summary", ""))
+            )
+        ):
             return True
         return False
 
@@ -370,20 +409,19 @@ def replay(root: Path = REPO_ROOT, trace_id: str = "",
         try:
             current_state = _domain_current_state(root, target_id)
         except Exception as exc:  # noqa: BLE001
-            findings.append("[domain_state] %s 投影失败: %s"
-                            % (target_id, exc))
+            findings.append("[domain_state] %s 投影失败: %s" % (target_id, exc))
 
     # M3-P4b：target 命中的产物沿 supersede 链完整回放
     artifact_chain: List[dict] = []
     if target_id:
-        hit_aids = [r["ref"] for r in timeline
-                    if r.get("source") == "artifacts"]
+        hit_aids = [r["ref"] for r in timeline if r.get("source") == "artifacts"]
         if hit_aids:
             try:
                 artifact_chain = _artifact_chain_of(hit_aids, root)
             except Exception as exc:  # noqa: BLE001
-                findings.append("[artifacts] 链回放失败: %s: %s"
-                                % (type(exc).__name__, exc))
+                findings.append(
+                    "[artifacts] 链回放失败: %s: %s" % (type(exc).__name__, exc)
+                )
 
     # verdict：查询成功且有轨迹 → OK；各源可用但零命中 → EMPTY；
     # 有源 error → DEGRADED（仍返回已取到的部分）
@@ -397,8 +435,11 @@ def replay(root: Path = REPO_ROOT, trace_id: str = "",
     return {
         "schema_version": SCHEMA_VERSION,
         "read_only": READ_ONLY,
-        "query": {"trace_id": trace_id, "idempotency_key": idempotency_key,
-                  "target_id": target_id},
+        "query": {
+            "trace_id": trace_id,
+            "idempotency_key": idempotency_key,
+            "target_id": target_id,
+        },
         "sources": sources,
         "timeline": timeline,
         "current_state": current_state,
@@ -415,8 +456,12 @@ def main(argv=None) -> int:
     ap.add_argument("--idem", dest="idempotency_key", default="")
     ap.add_argument("--target", default="")
     args = ap.parse_args(argv)
-    report = replay(Path(args.root), trace_id=args.trace,
-                    idempotency_key=args.idempotency_key, target_id=args.target)
+    report = replay(
+        Path(args.root),
+        trace_id=args.trace,
+        idempotency_key=args.idempotency_key,
+        target_id=args.target,
+    )
     print(json.dumps(report, ensure_ascii=False, indent=2))
     return 0
 

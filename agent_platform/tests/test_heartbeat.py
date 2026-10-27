@@ -6,6 +6,7 @@
 SHADOW_DATA_ROOT 隔离根继承、真仓 data/ 字节不变断言。
 本测试绝不写 agent_platform/data/（全部落在 tempfile 隔离根）。
 """
+
 import contextlib
 import importlib.util
 import io
@@ -47,8 +48,11 @@ def _snapshot(root):
     out = {}
     for p in sorted(root.rglob("*")):
         if p.is_file():
-            volatile = (p.name.endswith(".db") or p.name.endswith("-wal")
-                        or p.name.endswith("-shm"))
+            volatile = (
+                p.name.endswith(".db")
+                or p.name.endswith("-wal")
+                or p.name.endswith("-shm")
+            )
             if volatile:
                 out[str(p)] = None
             else:
@@ -57,10 +61,15 @@ def _snapshot(root):
     return out
 
 
-def _sample(source="paper_engine", alive=True, detail="ok",
-            checked_at="2026-10-18T07:05"):
-    return {"source": source, "alive": alive, "detail": detail,
-            "checked_at": checked_at}
+def _sample(
+    source="paper_engine", alive=True, detail="ok", checked_at="2026-10-18T07:05"
+):
+    return {
+        "source": source,
+        "alive": alive,
+        "detail": detail,
+        "checked_at": checked_at,
+    }
 
 
 def _probe_semantics(probe_result):
@@ -76,10 +85,13 @@ class _RealRepoSafe(unittest.TestCase):
         self._snap = _snapshot(DATA)
 
     def tearDown(self):
-        self.assertFalse((DATA / "heartbeat").exists(),
-                         "真仓 agent_platform/data/heartbeat 被测试创建！")
-        self.assertEqual(_snapshot(DATA), self._snap,
-                         "真仓 agent_platform/data/ 被测试污染！")
+        self.assertFalse(
+            (DATA / "heartbeat").exists(),
+            "真仓 agent_platform/data/heartbeat 被测试创建！",
+        )
+        self.assertEqual(
+            _snapshot(DATA), self._snap, "真仓 agent_platform/data/ 被测试污染！"
+        )
 
 
 class NullProbeTests(_RealRepoSafe):
@@ -100,7 +112,9 @@ class NullProbeTests(_RealRepoSafe):
             self.assertEqual(rep["recorded"], 1)
             rows = json.loads(
                 (Path(td) / "heartbeat" / "heartbeat.jsonl")
-                .read_text(encoding="utf-8").splitlines()[0])
+                .read_text(encoding="utf-8")
+                .splitlines()[0]
+            )
             self.assertEqual(rows["schema_version"], "hb.v1")
             self.assertEqual(rows["source"], "null")
             self.assertFalse(rows["alive"])
@@ -115,8 +129,9 @@ class FileProbeTests(_RealRepoSafe):
 
     def test_file_probe_reads_valid_state(self):
         with tempfile.TemporaryDirectory() as td:
-            p = self._write_state(td, json.dumps(
-                {"alive": True, "detail": "engine up"}))
+            p = self._write_state(
+                td, json.dumps({"alive": True, "detail": "engine up"})
+            )
             r = hb.FileProbe(p).probe()
             self.assertTrue(r["alive"])
             self.assertEqual(r["detail"], "engine up")
@@ -124,8 +139,9 @@ class FileProbeTests(_RealRepoSafe):
 
     def test_file_probe_uses_state_checked_at(self):
         with tempfile.TemporaryDirectory() as td:
-            p = self._write_state(td, json.dumps(
-                {"alive": False, "checked_at": "2026-10-18T06:59"}))
+            p = self._write_state(
+                td, json.dumps({"alive": False, "checked_at": "2026-10-18T06:59"})
+            )
             r = hb.FileProbe(p).probe()
             self.assertEqual(r["checked_at"], "2026-10-18T06:59")
 
@@ -164,8 +180,7 @@ class IdempotencyTests(_RealRepoSafe):
         self.assertEqual(k1, k2)
         self.assertEqual(len(k1), 16)
         self.assertNotEqual(k1, hb.heartbeat_key("null", "2026-10-18T07:05"))
-        self.assertNotEqual(k1, hb.heartbeat_key("paper_engine",
-                                                 "2026-10-18T07:06"))
+        self.assertNotEqual(k1, hb.heartbeat_key("paper_engine", "2026-10-18T07:06"))
 
     def test_same_minute_replay_not_duplicated(self):
         # 同分钟同源二次采集 → 同键跳过（replayed），账本仍 1 行
@@ -175,19 +190,16 @@ class IdempotencyTests(_RealRepoSafe):
             self.assertEqual((rep1["recorded"], rep1["replayed"]), (1, 0))
             self.assertEqual((rep2["recorded"], rep2["replayed"]), (0, 1))
             p = Path(td) / "heartbeat" / "heartbeat.jsonl"
-            self.assertEqual(len(p.read_text(encoding="utf-8")
-                                 .splitlines()), 1)
+            self.assertEqual(len(p.read_text(encoding="utf-8").splitlines()), 1)
 
     def test_cross_minute_recordable_again(self):
         # 幂等键含分钟维度：跨分钟必须可再入账
         with tempfile.TemporaryDirectory() as td:
             hb.record_heartbeat(_sample(checked_at="2026-10-18T07:05"), td)
-            rep = hb.record_heartbeat(_sample(checked_at="2026-10-18T07:06"),
-                                      td)
+            rep = hb.record_heartbeat(_sample(checked_at="2026-10-18T07:06"), td)
             self.assertEqual(rep["recorded"], 1)
             p = Path(td) / "heartbeat" / "heartbeat.jsonl"
-            self.assertEqual(len(p.read_text(encoding="utf-8")
-                                 .splitlines()), 2)
+            self.assertEqual(len(p.read_text(encoding="utf-8").splitlines()), 2)
 
     def test_same_minute_different_source_both_recorded(self):
         with tempfile.TemporaryDirectory() as td:
@@ -195,8 +207,7 @@ class IdempotencyTests(_RealRepoSafe):
             rep = hb.record_heartbeat(_sample(source="bridge"), td)
             self.assertEqual(rep["recorded"], 1)
             p = Path(td) / "heartbeat" / "heartbeat.jsonl"
-            self.assertEqual(len(p.read_text(encoding="utf-8")
-                                 .splitlines()), 2)
+            self.assertEqual(len(p.read_text(encoding="utf-8").splitlines()), 2)
 
     def test_existing_bad_lines_tolerated_on_key_scan(self):
         # 读侧坏行容忍（对齐 record_verdicts）：坏行不影响幂等判定
@@ -231,21 +242,26 @@ class SafetyValveTests(_RealRepoSafe):
             self.assertFalse((Path(td) / "heartbeat").exists())
 
     def test_bad_checked_at_rejected(self):
-        for bad in ("2026-10-18 07:05", "2026-10-18T07:05:00",
-                    "2026-13-18T07:05", 20261018):
+        for bad in (
+            "2026-10-18 07:05",
+            "2026-10-18T07:05:00",
+            "2026-13-18T07:05",
+            20261018,
+        ):
             with tempfile.TemporaryDirectory() as td:
                 with self.assertRaises(hb.HeartbeatError):
                     hb.record_heartbeat(_sample(checked_at=bad), td)
                 self.assertFalse((Path(td) / "heartbeat").exists())
 
     def test_resolve_root_explicit_wins_over_env(self):
-        with tempfile.TemporaryDirectory() as td_env, \
-                tempfile.TemporaryDirectory() as td_explicit:
+        with (
+            tempfile.TemporaryDirectory() as td_env,
+            tempfile.TemporaryDirectory() as td_explicit,
+        ):
             old = os.environ.get("SHADOW_DATA_ROOT")
             os.environ["SHADOW_DATA_ROOT"] = td_env
             try:
-                self.assertEqual(hb.resolve_root(td_explicit),
-                                 Path(td_explicit))
+                self.assertEqual(hb.resolve_root(td_explicit), Path(td_explicit))
                 self.assertEqual(hb.resolve_root(None), Path(td_env))
             finally:
                 if old is None:
@@ -271,8 +287,7 @@ class IsolationRootTests(_RealRepoSafe):
             try:
                 rep = hb.collect_and_record(hb.NullProbe())
                 self.assertEqual(rep["recorded"], 1)
-                self.assertTrue(
-                    (Path(td) / "heartbeat" / "heartbeat.jsonl").exists())
+                self.assertTrue((Path(td) / "heartbeat" / "heartbeat.jsonl").exists())
             finally:
                 if old is None:
                     os.environ.pop("SHADOW_DATA_ROOT", None)
@@ -305,17 +320,25 @@ class CliTests(_RealRepoSafe):
     def test_cli_file_probe_persist_to_tmp_root(self):
         with tempfile.TemporaryDirectory() as td:
             state = Path(td) / "state.json"
-            state.write_text(json.dumps({"alive": True, "detail": "up"}),
-                             encoding="utf-8")
+            state.write_text(
+                json.dumps({"alive": True, "detail": "up"}), encoding="utf-8"
+            )
             out = io.StringIO()
             with contextlib.redirect_stdout(out):
-                rc = hb.main(["--probe", "file", "--state-file", str(state),
-                              "--persist-root", td])
+                rc = hb.main(
+                    [
+                        "--probe",
+                        "file",
+                        "--state-file",
+                        str(state),
+                        "--persist-root",
+                        td,
+                    ]
+                )
             self.assertEqual(rc, 0)
             rep = json.loads(out.getvalue().strip().splitlines()[-1])
             self.assertEqual(rep["recorded"], 1)
-            self.assertTrue(
-                (Path(td) / "heartbeat" / "heartbeat.jsonl").exists())
+            self.assertTrue((Path(td) / "heartbeat" / "heartbeat.jsonl").exists())
 
     def test_cli_bad_state_file_exit_2(self):
         with tempfile.TemporaryDirectory() as td:
@@ -323,8 +346,7 @@ class CliTests(_RealRepoSafe):
             state.write_text("{broken", encoding="utf-8")
             err = io.StringIO()
             with contextlib.redirect_stderr(err):
-                rc = hb.main(["--probe", "file", "--state-file",
-                              str(state)])
+                rc = hb.main(["--probe", "file", "--state-file", str(state)])
             self.assertEqual(rc, 2)
             self.assertIn("FATAL", err.getvalue())
 

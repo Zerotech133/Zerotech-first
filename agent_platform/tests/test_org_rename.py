@@ -26,22 +26,41 @@ def root(tmp_path):
     (tmp_path / "hr" / "A1").mkdir(parents=True)
     (tmp_path / "hr" / "B1").mkdir(parents=True)
     (tmp_path / "hr" / "A1" / "resume.yaml").write_text(
-        "agent_id: A1\nname: 某岗位\ncn_name: 甲某\n", encoding="utf-8")
+        "agent_id: A1\nname: 某岗位\ncn_name: 甲某\n", encoding="utf-8"
+    )
     (tmp_path / "hr" / "B1" / "resume.yaml").write_text(
-        "agent_id: B1\ncn_name: 乙某\n", encoding="utf-8")
-    org = {"departments": [{
-        "dept": "d1", "name": "测试营", "lead": "A1",
-        "agents": ["A1", "B1"],
-        "agent_profiles": [
-            {"agent_id": "A1", "persona": {"name": "甲某"}, "llm_binding": "none",
-             "charter_detail": "测试职责不少于十个字"},
-            {"agent_id": "B1", "llm_binding": "none", "charter_detail": "另一段职责描述文字"},
-        ]}]}
+        "agent_id: B1\ncn_name: 乙某\n", encoding="utf-8"
+    )
+    org = {
+        "departments": [
+            {
+                "dept": "d1",
+                "name": "测试营",
+                "lead": "A1",
+                "agents": ["A1", "B1"],
+                "agent_profiles": [
+                    {
+                        "agent_id": "A1",
+                        "persona": {"name": "甲某"},
+                        "llm_binding": "none",
+                        "charter_detail": "测试职责不少于十个字",
+                    },
+                    {
+                        "agent_id": "B1",
+                        "llm_binding": "none",
+                        "charter_detail": "另一段职责描述文字",
+                    },
+                ],
+            }
+        ]
+    }
     (tmp_path / "registry" / "org.json").write_text(
-        json.dumps(org, ensure_ascii=False, indent=2), encoding="utf-8")
+        json.dumps(org, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     team = {"agents": [{"agent_id": "A1", "name": "甲某", "llm_binding": "none"}]}
     (tmp_path / "registry" / "team_d1.json").write_text(
-        json.dumps(team, ensure_ascii=False, indent=2), encoding="utf-8")
+        json.dumps(team, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     return tmp_path
 
 
@@ -50,10 +69,14 @@ def _roster(root):
 
 
 def test_rename_syncs_three_places(root):
-    plan = R.build_rename_plan(root, agent_id="A1", new_cn="丙某",
-                               ticket="WO-LEGION-S43", signed_by="老田")
+    plan = R.build_rename_plan(
+        root, agent_id="A1", new_cn="丙某", ticket="WO-LEGION-S43", signed_by="老田"
+    )
     assert {t["where"] for t in plan["targets"]} == {
-        "hr.resume.cn_name", "dept:d1.persona.name", "agents[].name"}
+        "hr.resume.cn_name",
+        "dept:d1.persona.name",
+        "agents[].name",
+    }
     res = R.apply_rename_plan(root, plan, signed_by="老田")
     assert res["ok"] is True and len(res["backups"]) == 3
     assert _roster(root)["丙某"] == ["A1"]
@@ -62,34 +85,47 @@ def test_rename_syncs_three_places(root):
     # org.json 其他字段未变
     prof = json.loads((root / "registry" / "org.json").read_text(encoding="utf-8"))
     a1 = prof["departments"][0]["agent_profiles"][0]
-    assert a1["llm_binding"] == "none" and a1["charter_detail"] == "测试职责不少于十个字"
+    assert (
+        a1["llm_binding"] == "none" and a1["charter_detail"] == "测试职责不少于十个字"
+    )
 
 
 def test_rename_rejects_name_taken_by_other(root):
     with pytest.raises(R.RenameError) as ei:
-        R.build_rename_plan(root, agent_id="A1", new_cn="乙某",
-                            ticket="WO-LEGION-S43", signed_by="老田")
+        R.build_rename_plan(
+            root, agent_id="A1", new_cn="乙某", ticket="WO-LEGION-S43", signed_by="老田"
+        )
     assert "已被" in str(ei.value)
 
 
 def test_rename_rejects_same_name_and_missing_creds(root):
     with pytest.raises(R.RenameError):
-        R.build_rename_plan(root, agent_id="A1", new_cn="甲某",
-                            ticket="WO-LEGION-S43", signed_by="老田")
+        R.build_rename_plan(
+            root, agent_id="A1", new_cn="甲某", ticket="WO-LEGION-S43", signed_by="老田"
+        )
     with pytest.raises(R.RenameError):
-        R.build_rename_plan(root, agent_id="A1", new_cn="丙某", ticket="", signed_by="老田")
+        R.build_rename_plan(
+            root, agent_id="A1", new_cn="丙某", ticket="", signed_by="老田"
+        )
     with pytest.raises(R.RenameError):
-        R.build_rename_plan(root, agent_id="A1", new_cn="丙某",
-                            ticket="WO-LEGION-S43", signed_by="")
+        R.build_rename_plan(
+            root, agent_id="A1", new_cn="丙某", ticket="WO-LEGION-S43", signed_by=""
+        )
     with pytest.raises(R.RenameError):
-        R.build_rename_plan(root, agent_id="NOPE", new_cn="丙某",
-                            ticket="WO-LEGION-S43", signed_by="老田")
+        R.build_rename_plan(
+            root,
+            agent_id="NOPE",
+            new_cn="丙某",
+            ticket="WO-LEGION-S43",
+            signed_by="老田",
+        )
 
 
 def test_clear_name_is_legal(root):
     """纯工程组件不占人名：去名后名册里不再有它，且不是"改成空字符串的人名"。"""
-    plan = R.build_rename_plan(root, agent_id="A1", new_cn="",
-                               ticket="WO-LEGION-S43", signed_by="老田")
+    plan = R.build_rename_plan(
+        root, agent_id="A1", new_cn="", ticket="WO-LEGION-S43", signed_by="老田"
+    )
     assert plan["action"] == "clear"
     R.apply_rename_plan(root, plan, signed_by="老田")
     roster = _roster(root)
@@ -99,15 +135,17 @@ def test_clear_name_is_legal(root):
 
 def test_rename_no_write_in_dry_run(root):
     before = {p: p.read_bytes() for p in root.rglob("*") if p.is_file()}
-    R.build_rename_plan(root, agent_id="A1", new_cn="丙某",
-                        ticket="WO-LEGION-S43", signed_by="老田")
+    R.build_rename_plan(
+        root, agent_id="A1", new_cn="丙某", ticket="WO-LEGION-S43", signed_by="老田"
+    )
     after = {p: p.read_bytes() for p in root.rglob("*") if p.is_file()}
     assert before == after
 
 
 def test_rename_rolls_back_when_selfcheck_fails(root, monkeypatch):
-    plan = R.build_rename_plan(root, agent_id="A1", new_cn="丙某",
-                               ticket="WO-LEGION-S43", signed_by="老田")
+    plan = R.build_rename_plan(
+        root, agent_id="A1", new_cn="丙某", ticket="WO-LEGION-S43", signed_by="老田"
+    )
     before = {p: p.read_bytes() for p in root.rglob("*") if p.is_file() and p.is_file()}
     src_before = {k: v for k, v in before.items() if "backups" not in str(k)}
 
@@ -118,8 +156,11 @@ def test_rename_rolls_back_when_selfcheck_fails(root, monkeypatch):
     with pytest.raises(R.RenameError):
         R.apply_rename_plan(root, plan, signed_by="老田")
     monkeypatch.undo()
-    src_after = {p: p.read_bytes() for p in root.rglob("*")
-                 if p.is_file() and "backups" not in str(p)}
+    src_after = {
+        p: p.read_bytes()
+        for p in root.rglob("*")
+        if p.is_file() and "backups" not in str(p)
+    }
     assert src_after == src_before, "自检失败必须整体回滚（hr/org/team 三处都要还原）"
 
 
@@ -128,11 +169,16 @@ def test_roster_detects_duplicates_by_construction(tmp_path):
     消歧一完成该断言就红，而它红的原因是"问题被修好了"（2026-10-21 反复踩到）。"""
     (tmp_path / "hr" / "X1").mkdir(parents=True)
     (tmp_path / "hr" / "X2").mkdir(parents=True)
-    (tmp_path / "hr" / "X1" / "resume.yaml").write_text("cn_name: 同名\n", encoding="utf-8")
-    (tmp_path / "hr" / "X2" / "resume.yaml").write_text("cn_name: 同名\n", encoding="utf-8")
+    (tmp_path / "hr" / "X1" / "resume.yaml").write_text(
+        "cn_name: 同名\n", encoding="utf-8"
+    )
+    (tmp_path / "hr" / "X2" / "resume.yaml").write_text(
+        "cn_name: 同名\n", encoding="utf-8"
+    )
     (tmp_path / "registry").mkdir()
     (tmp_path / "registry" / "org.json").write_text(
-        json.dumps({"departments": []}, ensure_ascii=False), encoding="utf-8")
+        json.dumps({"departments": []}, ensure_ascii=False), encoding="utf-8"
+    )
     dups = {k: v for k, v in R._roster(tmp_path).items() if len(v) > 1}
     assert dups == {"同名": ["X1", "X2"]}
 
@@ -146,12 +192,19 @@ def test_name_seat_that_has_no_name_anywhere(root):
     org = json.loads((root / "registry" / "org.json").read_text(encoding="utf-8"))
     org["departments"][0]["agents"].append("X9")
     org["departments"][0]["agent_profiles"].append(
-        {"agent_id": "X9", "llm_binding": "none", "charter_detail": "无名席位职责描述文字"})
+        {
+            "agent_id": "X9",
+            "llm_binding": "none",
+            "charter_detail": "无名席位职责描述文字",
+        }
+    )
     (root / "registry" / "org.json").write_text(
-        json.dumps(org, ensure_ascii=False, indent=2), encoding="utf-8")
+        json.dumps(org, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
 
-    plan = R.build_rename_plan(root, agent_id="X9", new_cn="某名",
-                               ticket="WO-LEGION-S45", signed_by="老田")
+    plan = R.build_rename_plan(
+        root, agent_id="X9", new_cn="某名", ticket="WO-LEGION-S45", signed_by="老田"
+    )
     assert plan["action"] == "name" and plan["from_cn"] == ""
     assert any("新增" in t["where"] for t in plan["targets"])
     R.apply_rename_plan(root, plan, signed_by="老田")
@@ -163,17 +216,33 @@ def test_also_team_required_to_touch_team_name_when_naming(root):
     org = json.loads((root / "registry" / "org.json").read_text(encoding="utf-8"))
     org["departments"][0]["agents"].append("X9")
     org["departments"][0]["agent_profiles"].append(
-        {"agent_id": "X9", "llm_binding": "none", "charter_detail": "无名席位职责描述文字"})
+        {
+            "agent_id": "X9",
+            "llm_binding": "none",
+            "charter_detail": "无名席位职责描述文字",
+        }
+    )
     (root / "registry" / "org.json").write_text(
-        json.dumps(org, ensure_ascii=False, indent=2), encoding="utf-8")
+        json.dumps(org, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     team = json.loads((root / "registry" / "team_d1.json").read_text(encoding="utf-8"))
     team["agents"].append({"agent_id": "X9", "name": "疑似旧名", "llm_binding": "none"})
     (root / "registry" / "team_d1.json").write_text(
-        json.dumps(team, ensure_ascii=False, indent=2), encoding="utf-8")
+        json.dumps(team, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
 
-    p1 = R.build_rename_plan(root, agent_id="X9", new_cn="某名",
-                             ticket="WO-LEGION-S45", signed_by="老田")
-    assert not any("team_d1" in t["file"] for t in p1["targets"]), "默认不该动 team.name"
-    p2 = R.build_rename_plan(root, agent_id="X9", new_cn="某名", also_team=True,
-                             ticket="WO-LEGION-S45", signed_by="老田")
+    p1 = R.build_rename_plan(
+        root, agent_id="X9", new_cn="某名", ticket="WO-LEGION-S45", signed_by="老田"
+    )
+    assert not any("team_d1" in t["file"] for t in p1["targets"]), (
+        "默认不该动 team.name"
+    )
+    p2 = R.build_rename_plan(
+        root,
+        agent_id="X9",
+        new_cn="某名",
+        also_team=True,
+        ticket="WO-LEGION-S45",
+        signed_by="老田",
+    )
     assert any("team_d1" in t["file"] for t in p2["targets"])

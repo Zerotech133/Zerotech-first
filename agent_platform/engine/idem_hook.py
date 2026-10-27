@@ -38,12 +38,11 @@ def _load_store_class():
 class DualTrackHook:
     """双轨幂等写入口。所有方法都不抛异常。"""
 
-    def __init__(self, scope: str, db_path=None, stale_seconds: float = 3600.0,
-                 enabled=None):
+    def __init__(
+        self, scope: str, db_path=None, stale_seconds: float = 3600.0, enabled=None
+    ):
         self.scope = scope
-        self.db_path = Path(
-            db_path or os.environ.get("IDEMPOTENCY_DB") or DEFAULT_DB
-        )
+        self.db_path = Path(db_path or os.environ.get("IDEMPOTENCY_DB") or DEFAULT_DB)
         self.stale_seconds = stale_seconds
         if enabled is None:
             self.enabled = os.environ.get("IDEMPOTENCY_DISABLED") != "1"
@@ -68,14 +67,18 @@ class DualTrackHook:
             return {"outcome": "disabled"}
         try:
             return self._store_or_none().claim(
-                self.scope, operation, key,
-                payload=payload, stale_seconds=self.stale_seconds,
+                self.scope,
+                operation,
+                key,
+                payload=payload,
+                stale_seconds=self.stale_seconds,
             )
         except Exception as exc:  # noqa: BLE001  fail-open 纪律
             return self._fail_open(exc)
 
-    def complete(self, attempt_id: str, ok: bool, result_ref: str = "",
-                 error: str = ""):
+    def complete(
+        self, attempt_id: str, ok: bool, result_ref: str = "", error: str = ""
+    ):
         """回写终态。attempt_id 为空（unavailable/disabled 场景）直接忽略。"""
         if not self.enabled or not attempt_id:
             return None

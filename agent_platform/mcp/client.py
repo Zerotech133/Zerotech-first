@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """MCP stdio 客户端（零依赖）：初始化握手 / tools/list / tools/call / 超时。"""
+
 from __future__ import annotations
 
 import json
@@ -15,8 +16,13 @@ class MCPError(RuntimeError):
 
 
 class MCPClient:
-    def __init__(self, argv: list, cwd: str | None = None, timeout: float = 20.0,
-                 env: dict | None = None):
+    def __init__(
+        self,
+        argv: list,
+        cwd: str | None = None,
+        timeout: float = 20.0,
+        env: dict | None = None,
+    ):
         self.argv = [str(a) for a in argv]
         self.cwd = cwd
         self.timeout = float(timeout)
@@ -32,17 +38,27 @@ class MCPClient:
         if self.proc is not None:
             return self
         self.proc = subprocess.Popen(
-            self.argv, cwd=self.cwd, stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            text=True, encoding="utf-8", errors="replace", bufsize=1,
-            env=self.env)
+            self.argv,
+            cwd=self.cwd,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            bufsize=1,
+            env=self.env,
+        )
         self._reader = threading.Thread(target=self._read_loop, daemon=True)
         self._reader.start()
-        self._request("initialize", {
-            "protocolVersion": "2025-06-18",
-            "capabilities": {},
-            "clientInfo": {"name": "zhaoyun-mcp-client", "version": "1.0.0"},
-        })
+        self._request(
+            "initialize",
+            {
+                "protocolVersion": "2025-06-18",
+                "capabilities": {},
+                "clientInfo": {"name": "zhaoyun-mcp-client", "version": "1.0.0"},
+            },
+        )
         self._notify("notifications/initialized", {})
         return self
 
@@ -68,8 +84,7 @@ class MCPClient:
     def _request(self, method: str, params: dict) -> dict:
         self._next_id += 1
         rid = self._next_id
-        self._write({"jsonrpc": "2.0", "id": rid, "method": method,
-                     "params": params})
+        self._write({"jsonrpc": "2.0", "id": rid, "method": method, "params": params})
         deadline = time.time() + self.timeout
         while True:
             remain = deadline - time.time()
@@ -95,8 +110,7 @@ class MCPClient:
         return (self._request("tools/list", {}) or {}).get("tools") or []
 
     def call_tool(self, name: str, arguments: dict | None = None) -> dict:
-        res = self._request("tools/call", {"name": name,
-                                           "arguments": arguments or {}})
+        res = self._request("tools/call", {"name": name, "arguments": arguments or {}})
         content = res.get("content") or []
         text = ""
         if content and isinstance(content[0], dict):
@@ -105,8 +119,12 @@ class MCPClient:
             payload = json.loads(text) if text else {}
         except ValueError:
             payload = {"raw": text}
-        return {"ok": not res.get("isError"), "isError": bool(res.get("isError")),
-                "payload": payload, "result": res}
+        return {
+            "ok": not res.get("isError"),
+            "isError": bool(res.get("isError")),
+            "payload": payload,
+            "result": res,
+        }
 
     def _stderr(self) -> str:
         try:
@@ -140,6 +158,7 @@ class MCPClient:
 
 def _env_with_pythonpath(extra_paths: list) -> dict:
     import os
+
     env = dict(os.environ)
     parts = [str(p) for p in extra_paths] + [env.get("PYTHONPATH", "")]
     env["PYTHONPATH"] = ";".join([p for p in parts if p])

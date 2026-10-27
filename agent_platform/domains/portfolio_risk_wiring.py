@@ -5,6 +5,7 @@
 quant_backtest/portfolio.py，不写交易账本，也不调用任何执行接口。授权请求
 默认拒绝，SHADOW 永远没有执行权。
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -50,8 +51,13 @@ def _finite_non_negative(value: Any, field_name: str) -> float:
 
 def _canonical(value: Any) -> str:
     try:
-        return json.dumps(value, ensure_ascii=False, sort_keys=True,
-                          separators=(",", ":"), allow_nan=False)
+        return json.dumps(
+            value,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        )
     except (TypeError, ValueError) as exc:
         raise PortfolioRiskWiringError("审计字段必须可规范化为 JSON") from exc
 
@@ -81,13 +87,16 @@ class PortfolioBudgetDTO:
         _non_empty(self.currency, "currency")
         for name in ("max_gross_exposure", "max_single_position"):
             _finite_non_negative(getattr(self, name), name)
-        if (isinstance(self.max_positions, bool)
-                or not isinstance(self.max_positions, int)
-                or self.max_positions < 0):
+        if (
+            isinstance(self.max_positions, bool)
+            or not isinstance(self.max_positions, int)
+            or self.max_positions < 0
+        ):
             raise PortfolioRiskWiringError("max_positions 必须是非负整数")
         if self.max_single_position > self.max_gross_exposure:
             raise PortfolioRiskWiringError(
-                "max_single_position 不能超过 max_gross_exposure")
+                "max_single_position 不能超过 max_gross_exposure"
+            )
 
     def to_dict(self) -> dict:
         return {
@@ -115,8 +124,9 @@ class RiskConstraintDTO:
                 _finite_non_negative(value, name)
         if self.max_correlation is not None and self.max_correlation > 1:
             raise PortfolioRiskWiringError("max_correlation 必须在 [0, 1] 内")
-        if any(not isinstance(ref, str) or not ref.strip()
-               for ref in self.constraint_refs):
+        if any(
+            not isinstance(ref, str) or not ref.strip() for ref in self.constraint_refs
+        ):
             raise PortfolioRiskWiringError("constraint_refs 只能包含非空字符串")
 
     def to_dict(self) -> dict:
@@ -164,13 +174,15 @@ class PortfolioRiskAuthorizationRequest:
             raise PortfolioRiskWiringError("SHADOW 模式禁止 execution_allowed=True")
         if not self.execution_allowed and self.decision == ALLOW:
             raise PortfolioRiskWiringError(
-                "decision=ALLOW 必须显式具备执行权；默认边界不提供执行权")
+                "decision=ALLOW 必须显式具备执行权；默认边界不提供执行权"
+            )
         _non_empty(self.reason, "reason")
         _non_empty(self.requested_by, "requested_by")
         _non_empty(self.created_at, "created_at")
         _non_empty(self.audit_hash, "audit_hash")
-        if any(not isinstance(ref, str) or not ref.strip()
-               for ref in self.evidence_refs):
+        if any(
+            not isinstance(ref, str) or not ref.strip() for ref in self.evidence_refs
+        ):
             raise PortfolioRiskWiringError("evidence_refs 只能包含非空字符串")
 
     def to_dict(self) -> dict:
@@ -203,10 +215,12 @@ def _source_snapshot(arbitration: Mapping[str, Any]) -> dict:
     if arbitration["consensus"] not in (None, "buy", "sell", "hold"):
         raise PortfolioRiskWiringError("arbitration.consensus 非法")
     ids = arbitration["participating_strategy_ids"]
-    if (not isinstance(ids, (list, tuple))
-            or any(not isinstance(item, str) or not item.strip() for item in ids)):
+    if not isinstance(ids, (list, tuple)) or any(
+        not isinstance(item, str) or not item.strip() for item in ids
+    ):
         raise PortfolioRiskWiringError(
-            "arbitration.participating_strategy_ids 必须是非空字符串序列")
+            "arbitration.participating_strategy_ids 必须是非空字符串序列"
+        )
     return json.loads(_canonical(dict(arbitration)))
 
 
@@ -226,11 +240,20 @@ def build_authorization_request(
     if mode not in ALLOWED_MODES:
         raise PortfolioRiskWiringError("不支持的 mode=%s" % mode)
     source = _source_snapshot(arbitration)
-    request_id = _non_empty(request_id, "request_id") if request_id else hashlib.sha256(
-        _canonical({"source": source, "mode": mode,
+    request_id = (
+        _non_empty(request_id, "request_id")
+        if request_id
+        else hashlib.sha256(
+            _canonical(
+                {
+                    "source": source,
+                    "mode": mode,
                     "portfolio_budget": portfolio_budget.to_dict(),
-                    "risk_constraints": risk_constraints.to_dict()}).encode("utf-8")
-    ).hexdigest()[:24]
+                    "risk_constraints": risk_constraints.to_dict(),
+                }
+            ).encode("utf-8")
+        ).hexdigest()[:24]
+    )
     refs = tuple(evidence_refs)
     if any(not isinstance(ref, str) or not ref.strip() for ref in refs):
         raise PortfolioRiskWiringError("evidence_refs 只能包含非空字符串")
@@ -243,9 +266,15 @@ def build_authorization_request(
     if not source["participating_strategy_ids"]:
         reasons.append("没有参与仲裁的策略")
     decision = DENY if reasons else REVIEW
-    reason = "; ".join(reasons) if reasons else (
-        "策略共识仅形成待人工复核授权请求；SHADOW 模式无执行权"
-        if mode == SHADOW_MODE else "策略共识仅形成待人工复核授权请求")
+    reason = (
+        "; ".join(reasons)
+        if reasons
+        else (
+            "策略共识仅形成待人工复核授权请求；SHADOW 模式无执行权"
+            if mode == SHADOW_MODE
+            else "策略共识仅形成待人工复核授权请求"
+        )
+    )
     payload = {
         "request_id": request_id,
         "mode": mode,
@@ -280,7 +309,9 @@ def build_authorization_request(
 def validate_authorization_request(request: PortfolioRiskAuthorizationRequest) -> bool:
     """fail-closed 校验：审计指纹、SHADOW 权限与决策一致性必须同时成立。"""
     if not isinstance(request, PortfolioRiskAuthorizationRequest):
-        raise PortfolioRiskWiringError("request 必须是 PortfolioRiskAuthorizationRequest")
+        raise PortfolioRiskWiringError(
+            "request 必须是 PortfolioRiskAuthorizationRequest"
+        )
     payload = request.to_dict()
     audit_hash = payload.pop("audit_hash")
     if _audit_hash(payload) != audit_hash:
@@ -295,8 +326,15 @@ def validate_authorization_request(request: PortfolioRiskAuthorizationRequest) -
 
 
 __all__ = [
-    "ALLOW", "DENY", "REVIEW", "SHADOW_MODE", "PAPER_MODE",
-    "PortfolioBudgetDTO", "RiskConstraintDTO",
-    "PortfolioRiskAuthorizationRequest", "PortfolioRiskWiringError",
-    "build_authorization_request", "validate_authorization_request",
+    "ALLOW",
+    "DENY",
+    "REVIEW",
+    "SHADOW_MODE",
+    "PAPER_MODE",
+    "PortfolioBudgetDTO",
+    "RiskConstraintDTO",
+    "PortfolioRiskAuthorizationRequest",
+    "PortfolioRiskWiringError",
+    "build_authorization_request",
+    "validate_authorization_request",
 ]

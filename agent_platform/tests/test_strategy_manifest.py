@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """StrategyAgent 最小插件元数据契约测试。"""
+
 import sys
 from pathlib import Path
 
@@ -9,7 +10,10 @@ PLATFORM = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PLATFORM / "engine"))
 
 from strategy_registry import (  # noqa: E402
-    LIFECYCLE_STATES, StrategyAgent, StrategyError, StrategyRegistry,
+    LIFECYCLE_STATES,
+    StrategyAgent,
+    StrategyError,
+    StrategyRegistry,
 )
 
 
@@ -34,11 +38,15 @@ class _ManifestAgent(StrategyAgent):
 
 
 def _agent(**attrs):
-    return type("_ConfiguredAgent", (StrategyAgent,), {
-        "strategy_id": "configured_agent",
-        "stance": "neutral",
-        **attrs,
-    })()
+    return type(
+        "_ConfiguredAgent",
+        (StrategyAgent,),
+        {
+            "strategy_id": "configured_agent",
+            "stance": "neutral",
+            **attrs,
+        },
+    )()
 
 
 def test_legacy_agent_receives_compatible_defaults():
@@ -77,18 +85,22 @@ def test_metadata_is_a_snapshot():
     manifest["capability_manifest"].append("mutated")
 
     assert registry.metadata("manifest_agent")["capability_manifest"] == [
-        "market_data", "technical_analysis"
+        "market_data",
+        "technical_analysis",
     ]
 
 
-@pytest.mark.parametrize("field,value", [
-    ("version", ""),
-    ("version", 1),
-    ("family", ""),
-    ("family", 1),
-    ("capability_manifest", "market_data"),
-    ("capability_manifest", ("",)),
-])
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("version", ""),
+        ("version", 1),
+        ("family", ""),
+        ("family", 1),
+        ("capability_manifest", "market_data"),
+        ("capability_manifest", ("",)),
+    ],
+)
 def test_register_rejects_invalid_manifest_fields(field, value):
     with pytest.raises(StrategyError, match=field):
         StrategyRegistry().register(_agent(**{field: value}))
@@ -105,9 +117,7 @@ def test_register_and_query_reject_invalid_lifecycle_state():
 
 
 def test_lifecycle_states_are_explicit_and_usable():
-    assert set(LIFECYCLE_STATES) == {
-        "experimental", "active", "deprecated", "retired"
-    }
+    assert set(LIFECYCLE_STATES) == {"experimental", "active", "deprecated", "retired"}
     for state in LIFECYCLE_STATES:
         agent = _agent(strategy_id="agent_" + state, lifecycle_state=state)
         registry = StrategyRegistry()

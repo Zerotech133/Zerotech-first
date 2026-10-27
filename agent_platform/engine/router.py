@@ -18,6 +18,7 @@
   标签为 openclaw，不再显示直连云端 OpenAI。与 glm 家族隔离；
   本表 EXOTIC_ASSIGNMENTS 优先于注册绑定/关键词/等级/上云白名单。
 """
+
 import json
 import time
 import urllib.request
@@ -27,7 +28,10 @@ import urllib.request
 CLOUD_MODELS = {
     "glm-5.3": {"tier": "heavy", "note": "思考型重档：判读/裁决/研究/走形检查"},
     "glm-5.3-flash": {"tier": "light", "note": "轻量快档：调度/分发/归集初筛"},
-    "gpt-6.0": {"tier": "exotic", "note": "异族旗舰：诸葛亮反向质询（OpenClaw 载体，10-21 裁决）"},
+    "gpt-6.0": {
+        "tier": "exotic",
+        "note": "异族旗舰：诸葛亮反向质询（OpenClaw 载体，10-21 裁决）",
+    },
 }
 
 SPECIAL_ROUTES = {
@@ -55,15 +59,50 @@ TASK_RULES = [
     (("视觉", "图片", "图像", "截图", "看图", "image", "vision"), "nova/1234"),
     (("结构化", "json质检", "质检打分", "判分", "评分卡"), "nova/1238"),
     # —— 云端重档：要强推理的活 ——
-    (("判读", "裁决", "复盘", "裁定", "走形", "渗透", "压测",
-      "方法论", "研究", "尽调", "审计", "深挖", "归因", "战略"), "glm/glm-5.3"),
+    (
+        (
+            "判读",
+            "裁决",
+            "复盘",
+            "裁定",
+            "走形",
+            "渗透",
+            "压测",
+            "方法论",
+            "研究",
+            "尽调",
+            "审计",
+            "深挖",
+            "归因",
+            "战略",
+        ),
+        "glm/glm-5.3",
+    ),
     # —— 云端轻档：调度类 ——
-    (("调度", "分发", "归集", "汇总", "初筛", "跟踪", "台账", "晨会"), "glm/glm-5.3-flash"),
+    (
+        ("调度", "分发", "归集", "汇总", "初筛", "跟踪", "台账", "晨会"),
+        "glm/glm-5.3-flash",
+    ),
     # —— 本地重岗：训练/蒸馏/长生成 ——
     (("蒸馏", "训练", "微调", "sft", "数据集", "teacher"), "ollama/qwen3.6:35b-a3b"),
     # —— 本地主力：数据岗 ——
-    (("治理", "抓取", "爬取", "清洗", "入库", "流转", "分配", "备份",
-      "指标", "行情", "数据", "落库"), "ollama/qwen3.5:9b"),
+    (
+        (
+            "治理",
+            "抓取",
+            "爬取",
+            "清洗",
+            "入库",
+            "流转",
+            "分配",
+            "备份",
+            "指标",
+            "行情",
+            "数据",
+            "落库",
+        ),
+        "ollama/qwen3.5:9b",
+    ),
     # —— 嵌入 ——
     (("嵌入", "向量", "检索", "相似", "embedding"), "ollama/bge-m3"),
 ]
@@ -77,6 +116,7 @@ GRADE_PREFERENCE = {
 
 
 # ---------------------------------------------------------------- 熔断器
+
 
 class ChannelHealth:
     """云端通道熔断：连续失败 N 次后冷却期内直接判不可用（不再打云端）"""
@@ -116,6 +156,7 @@ def local_loaded_models(host="http://127.0.0.1:11434", timeout=3):
 
 # ---------------------------------------------------------------- 核心决策
 
+
 def _keyword_route(task):
     """关键词规则打分：返回 (binding, 命中词) 或 (None, None)"""
     t = (task or "").lower()
@@ -142,8 +183,10 @@ def route(task, agent_id=None, grade=None, task_type=None, respect_binding=None)
     #    依据 2026-10-21 10:51 老田异族编制裁决；2026-10-26 B 案落码；
     #    2026-10-27 B05：该 binding 在 engine 侧委托 OpenClaw agent-config 载体（单轨）。
     if agent_id in EXOTIC_ASSIGNMENTS:
-        signals.append("异族编制裁决[%s→%s]（2026-10-21）"
-                       % (agent_id, EXOTIC_ASSIGNMENTS[agent_id]))
+        signals.append(
+            "异族编制裁决[%s→%s]（2026-10-21）"
+            % (agent_id, EXOTIC_ASSIGNMENTS[agent_id])
+        )
         return _pack(EXOTIC_ASSIGNMENTS[agent_id], signals)
     if respect_binding and respect_binding not in ("auto", ""):
         signals.append("尊重注册绑定(%s)" % respect_binding)
@@ -180,31 +223,50 @@ def _pack(binding, signals):
     # 2026-10-27 B05：`openai/` 已是 OpenClaw agent-config 载体（非直连），provider 标
     # openclaw；直连旧通道只在 engine 层保留 `openai-direct/` 前缀（router 不产出该绑定，
     # 此处映射仅兜底展示，避免再把中转载体标成 cloud-openai）。
-    provider = {"glm": "cloud-zhipu", "nova": "special-novamax",
-                "ollama": "local-ollama",
-                "openai": "openclaw",
-                "openai-direct": "cloud-openai-direct"}.get(prefix, prefix)
-    return {"binding": binding, "provider": provider,
-            "reason": "；".join(signals), "signals": signals}
+    provider = {
+        "glm": "cloud-zhipu",
+        "nova": "special-novamax",
+        "ollama": "local-ollama",
+        "openai": "openclaw",
+        "openai-direct": "cloud-openai-direct",
+    }.get(prefix, prefix)
+    return {
+        "binding": binding,
+        "provider": provider,
+        "reason": "；".join(signals),
+        "signals": signals,
+    }
 
 
 # ---------------------------------------------------------------- 全军团自动适配
 
 # 上云白名单：判读/研究/对抗型岗位（10-18 分工定案：要强推理的才吃云端）
 CLOUD_HEAVY_ROLES = {
-    "chief_of_staff",            # A0 田丰
+    "chief_of_staff",  # A0 田丰
     "ai_methodology_researcher",  # AI1 诸葛亮
-    "security_lead",             # SEC2 方案走形/渗透
-    "opt1_workflow_optimizer",   # OPT1
-    "academy_director",          # ACAD1 研究院院长
+    "security_lead",  # SEC2 方案走形/渗透
+    "opt1_workflow_optimizer",  # OPT1
+    "academy_director",  # ACAD1 研究院院长
 }
 
 # 本地工匠保护名单：即使标了 E3 也不上云（工程/数据/执行=本地纪律）
 LOCAL_CRAFT_ROLES = {
-    "code_engineer", "frontend_engineer", "ui_designer", "devops_engineer",
-    "qa_engineer", "data_engineer", "tech_writer", "product_manager",
-    "strategy_engineer", "backtest_engineer", "trade_executor",
-    "t1_bull", "t2_bear", "n1_sentiment", "f1_fundamental", "d1_decision",
+    "code_engineer",
+    "frontend_engineer",
+    "ui_designer",
+    "devops_engineer",
+    "qa_engineer",
+    "data_engineer",
+    "tech_writer",
+    "product_manager",
+    "strategy_engineer",
+    "backtest_engineer",
+    "trade_executor",
+    "t1_bull",
+    "t2_bear",
+    "n1_sentiment",
+    "f1_fundamental",
+    "d1_decision",
 }
 
 
@@ -250,9 +312,19 @@ def auto_assign(roster, apply=False, write_fn=None):
             new = "ollama/qwen3.5:9b"
         changed = old != new
         if apply and changed and write_fn:
-            write_fn(a["agent_id"], new,
-                     "auto_assign 10-18：按分工定案自动适配（原 %s）" % (old or "无"))
-        out.append({"agent_id": a["agent_id"], "role": a.get("role_profile"),
-                    "grade": a.get("grade"), "old": old, "new": new,
-                    "changed": changed})
+            write_fn(
+                a["agent_id"],
+                new,
+                "auto_assign 10-18：按分工定案自动适配（原 %s）" % (old or "无"),
+            )
+        out.append(
+            {
+                "agent_id": a["agent_id"],
+                "role": a.get("role_profile"),
+                "grade": a.get("grade"),
+                "old": old,
+                "new": new,
+                "changed": changed,
+            }
+        )
     return out

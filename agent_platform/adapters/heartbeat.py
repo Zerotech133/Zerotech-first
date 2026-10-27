@@ -18,6 +18,7 @@
   - CLI 无 --persist-root 时只打印不落账（dry-run，退出码 0）；
   - 策略只产建议零凭据：本模块零凭据、零网络、零真实探针。
 """
+
 import hashlib
 import json
 import os
@@ -45,8 +46,9 @@ def now_minute(ts=None):
 def validate_checked_at(v):
     """checked_at 必须是合法的分钟粒度 ISO 时间戳。"""
     if not isinstance(v, str) or not _MINUTE_RE.match(v):
-        raise HeartbeatError("checked_at=%r 非分钟粒度 ISO 形态 "
-                             "(YYYY-MM-DDTHH:MM)" % (v,))
+        raise HeartbeatError(
+            "checked_at=%r 非分钟粒度 ISO 形态 (YYYY-MM-DDTHH:MM)" % (v,)
+        )
     try:
         time.strptime(v, "%Y-%m-%dT%H:%M")
     except ValueError:
@@ -68,8 +70,12 @@ def validate_sample(sample):
     if not isinstance(detail, str):
         raise HeartbeatError("detail 必须是字符串")
     checked_at = validate_checked_at(sample.get("checked_at"))
-    return {"source": source.strip(), "alive": alive,
-            "detail": detail[:200], "checked_at": checked_at}
+    return {
+        "source": source.strip(),
+        "alive": alive,
+        "detail": detail[:200],
+        "checked_at": checked_at,
+    }
 
 
 def heartbeat_key(source, checked_at):
@@ -112,20 +118,24 @@ def record_heartbeat(sample, root):
                 except json.JSONDecodeError:
                     continue
     if k in seen:
-        return {"recorded": 0, "replayed": 1, "path": str(p),
-                "heartbeat_key": k}
-    row = {"schema_version": SCHEMA_VERSION, "heartbeat_key": k,
-           "source": src["source"], "alive": src["alive"],
-           "detail": src["detail"], "checked_at": src["checked_at"],
-           "recorded_at": time.strftime("%Y-%m-%dT%H:%M:%S")}
+        return {"recorded": 0, "replayed": 1, "path": str(p), "heartbeat_key": k}
+    row = {
+        "schema_version": SCHEMA_VERSION,
+        "heartbeat_key": k,
+        "source": src["source"],
+        "alive": src["alive"],
+        "detail": src["detail"],
+        "checked_at": src["checked_at"],
+        "recorded_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+    }
     p.parent.mkdir(parents=True, exist_ok=True)
     with open(p, "a", encoding="utf-8") as f:
         f.write(json.dumps(row, ensure_ascii=False) + "\n")
-    return {"recorded": 1, "replayed": 0, "path": str(p),
-            "heartbeat_key": k}
+    return {"recorded": 1, "replayed": 0, "path": str(p), "heartbeat_key": k}
 
 
 # ---------------------------------------------------------------- 探针抽象
+
 
 class HeartbeatProbe:
     """探针协议：子类实现 probe() 返回 {source, alive, detail, checked_at}。
@@ -143,8 +153,12 @@ class NullProbe(HeartbeatProbe):
     source = "null"
 
     def probe(self):
-        return {"source": self.source, "alive": False,
-                "detail": "not_configured", "checked_at": now_minute()}
+        return {
+            "source": self.source,
+            "alive": False,
+            "detail": "not_configured",
+            "checked_at": now_minute(),
+        }
 
 
 class FileProbe(HeartbeatProbe):
@@ -177,8 +191,12 @@ class FileProbe(HeartbeatProbe):
         if not isinstance(detail, str):
             raise HeartbeatError("状态文件 detail 必须是字符串")
         checked_at = j.get("checked_at") or now_minute()
-        return {"source": self.source, "alive": j["alive"],
-                "detail": detail, "checked_at": checked_at}
+        return {
+            "source": self.source,
+            "alive": j["alive"],
+            "detail": detail,
+            "checked_at": checked_at,
+        }
 
 
 def collect_and_record(probe, root=None):
@@ -190,21 +208,30 @@ def collect_and_record(probe, root=None):
 
 # ---------------------------------------------------------------- CLI
 
+
 def main(argv=None):
     """CLI：--probe null|file --state-file ... --persist-root ...
     无 --persist-root 时打印心跳 JSON 但不落账（退出码 0，stderr 提示 dry-run）；
     契约/安全阀失败退出码 2（fail-visible）。"""
     import argparse
     import sys
+
     ap = argparse.ArgumentParser(
         description="Paper 引擎心跳采集（Paperclip 心跳对接；红线："
-                    "无显式 root 不落账，演示永不落真仓）")
-    ap.add_argument("--probe", choices=("null", "file"), default="null",
-                    help="探针类型：null=未接线；file=读状态文件")
-    ap.add_argument("--state-file", default=None,
-                    help="file 探针的状态文件路径（JSON）")
-    ap.add_argument("--persist-root", default=None,
-                    help="数据根；缺省=dry-run 只打印不落账")
+        "无显式 root 不落账，演示永不落真仓）"
+    )
+    ap.add_argument(
+        "--probe",
+        choices=("null", "file"),
+        default="null",
+        help="探针类型：null=未接线；file=读状态文件",
+    )
+    ap.add_argument(
+        "--state-file", default=None, help="file 探针的状态文件路径（JSON）"
+    )
+    ap.add_argument(
+        "--persist-root", default=None, help="数据根；缺省=dry-run 只打印不落账"
+    )
     args = ap.parse_args(argv)
 
     if args.probe == "file":
@@ -222,9 +249,10 @@ def main(argv=None):
         return 2
 
     if not args.persist_root:
-        out = {"schema_version": SCHEMA_VERSION,
-               "heartbeat_key": heartbeat_key(sample["source"],
-                                              sample["checked_at"])}
+        out = {
+            "schema_version": SCHEMA_VERSION,
+            "heartbeat_key": heartbeat_key(sample["source"], sample["checked_at"]),
+        }
         out.update(sample)
         print(json.dumps(out, ensure_ascii=False))
         print("[dry-run] 无 --persist-root，心跳未落账", file=sys.stderr)

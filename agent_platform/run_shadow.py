@@ -14,6 +14,7 @@
     （或 SHADOW_REHEARSAL=1）时数据根若仍解析为真仓 data/ → **拒绝执行 exit 2**，
     且禁用飞书推送。用于周一前对 run 路径做零污染预演。
 """
+
 import json
 import os
 import subprocess
@@ -34,7 +35,13 @@ from tools import make_context, quote_snapshot, kline_daily  # noqa: E402
 from regime_roster import dk_snapshot, enrich_row, bars_to_df  # noqa: E402  M4-P3 双刀阵容
 from strategy_runtime import run_strategy as _rt_run_strategy  # noqa: E402  拍板01 唯一口径
 
-BASKET = ["600519", "000858", "601318", "300750", "600036"]  # 茅台/五粮液/平安/宁德/招行
+BASKET = [
+    "600519",
+    "000858",
+    "601318",
+    "300750",
+    "600036",
+]  # 茅台/五粮液/平安/宁德/招行
 
 
 def _cli_opt(flag, argv=None):
@@ -65,8 +72,16 @@ LEDGER = DATA_ROOT / "shadow" / "shadow_ledger.jsonl"
 # K-ORG-129 / T-20261008-003（B8：全篮子 HOLD 使 J2 失效）：score 基数表——
 # 枚举档 × confidence 连续落账（见 parse_decision），HOLD=0 中性锚不动；
 # WATCH 新档 -0.5：L4 存疑观察＝弱负证据，低于 HOLD、高于 SELL，不再与 HOLD 同分
-REC_SCORE = {"STRONG_BUY": 2.0, "BUY": 1.0, "HOLD": 0.0, "WATCH": -0.5,
-             "SELL": -1.0, "STRONG_SELL": -2.0}
+REC_SCORE = {
+    "STRONG_BUY": 2.0,
+    "BUY": 1.0,
+    "HOLD": 0.0,
+    "WATCH": -0.5,
+    "SELL": -1.0,
+    "STRONG_SELL": -2.0,
+}
+
+
 # 运行期单策略产出超时（§5.2 过渡缓解）：M3 受理沙箱挡不住运行期死循环数据，
 # 17:10 首跑挂死风险兜底——超时/异常单策略 fail-open 跳过，其余照常落账。
 # 时长三通道（任务 #112）：传参 timeout_s > 环境变量 SHADOW_PROPOSE_TIMEOUT_S
@@ -97,8 +112,6 @@ def _data_root():
     return Path(LEDGER).resolve().parent.parent
 
 
-
-
 def push_failed_alert(failed_rows, today, parse_fail_rows=None):
     """篮子跑完有 failed 时立即推飞书简讯；同日只推一次（节流）。任何异常不中断主流程。
     K-STOCK-338：parse_fail_rows（done 但决策解析失败）并入同条告警——failed 是 P0、
@@ -107,12 +120,18 @@ def push_failed_alert(failed_rows, today, parse_fail_rows=None):
         return
     if REHEARSAL:
         # 预演阀：飞书推送是**真实外部副作用**，预演一律不发（只报本地统计）
-        print("[alert] 预演模式：跳过飞书推送（failed=%d parse_fail=%d）"
-              % (len(failed_rows), len(parse_fail_rows or [])))
+        print(
+            "[alert] 预演模式：跳过飞书推送（failed=%d parse_fail=%d）"
+            % (len(failed_rows), len(parse_fail_rows or []))
+        )
         return
     try:
         alert_state = _data_root() / "shadow" / "p0_alert_state.json"
-        st = json.loads(alert_state.read_text(encoding="utf-8")) if alert_state.exists() else {}
+        st = (
+            json.loads(alert_state.read_text(encoding="utf-8"))
+            if alert_state.exists()
+            else {}
+        )
         if st.get("date") == today and st.get("pushed"):
             print("[alert] 今日 failed 告警已推过（节流），跳过")
             return
@@ -120,22 +139,35 @@ def push_failed_alert(failed_rows, today, parse_fail_rows=None):
         for r in failed_rows:
             lines.append("- %s：%s" % (r["symbol"], r.get("error", "?")[:100]))
         if parse_fail_rows:
-            lines.append("**[P1] %d 笔 done 但 D1 决策解析失败（评估样本缺失·不阻塞）**"
-                         % len(parse_fail_rows))
+            lines.append(
+                "**[P1] %d 笔 done 但 D1 决策解析失败（评估样本缺失·不阻塞）**"
+                % len(parse_fail_rows)
+            )
             for r in parse_fail_rows:
-                lines.append("- %s：latency %.0fs" % (r["symbol"], r.get("latency_s", 0)))
+                lines.append(
+                    "- %s：latency %.0fs" % (r["symbol"], r.get("latency_s", 0))
+                )
         tmp = _data_root() / "shadow" / "_p0_alert_tmp.md"
         tmp.write_text("\n".join(lines), encoding="utf-8")
         r = subprocess.run(
             [sys.executable, str(PUSH_SCRIPT), str(tmp)],
-            capture_output=True, text=True, encoding="utf-8", timeout=60)
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=60,
+        )
         out = (r.stdout or r.stderr or "").strip()
         ok = r.returncode == 0 and "SEND_OK" in out
-        print("[alert] failed 即时告警推送：%s" % (out.splitlines()[-1] if out else "无输出"))
+        print(
+            "[alert] failed 即时告警推送：%s"
+            % (out.splitlines()[-1] if out else "无输出")
+        )
         tmp.unlink(missing_ok=True)
         if ok:
             alert_state = _data_root() / "shadow" / "p0_alert_state.json"
-            alert_state.write_text(json.dumps({"date": today, "pushed": True}), encoding="utf-8")
+            alert_state.write_text(
+                json.dumps({"date": today, "pushed": True}), encoding="utf-8"
+            )
     except Exception as e:  # noqa: BLE001
         print("[alert] 告警推送异常（不中断主流程）：%s" % e)
 
@@ -162,7 +194,7 @@ def _balanced_objects(text):
                     break
             j += 1
         if depth == 0:  # 配平才收录；未配平（截断输出）跳过
-            objs.append(text[i:j + 1])
+            objs.append(text[i : j + 1])
         i = j + 1
     return objs
 
@@ -217,11 +249,17 @@ def _propose_with_timeout(registry, strategy_id, context, timeout_s=None):
     if status == "success":
         return r.get("verdict")
     if status == "timeout":
-        print("[strategy] %s propose 超时（>%.1fs），fail-open 跳过"
-              % (strategy_id, timeout_s), file=sys.stderr)
+        print(
+            "[strategy] %s propose 超时（>%.1fs），fail-open 跳过"
+            % (strategy_id, timeout_s),
+            file=sys.stderr,
+        )
     else:  # error / rejected：隔离门 error 字段含 strategy_id 前缀诊断
-        print("[strategy] %s propose 异常 fail-open 跳过：%s"
-              % (strategy_id, str(r.get("error"))[:120]), file=sys.stderr)
+        print(
+            "[strategy] %s propose 异常 fail-open 跳过：%s"
+            % (strategy_id, str(r.get("error"))[:120]),
+            file=sys.stderr,
+        )
     return None
 
 
@@ -235,8 +273,11 @@ def _skip_record(strategy_id, result):
         st = "SKIPPED_TIMEOUT"
     else:  # error / rejected
         st = "SKIPPED_ERROR"
-    return {"strategy_id": strategy_id, "status": st,
-            "reason": str(result.get("error") or status)[:200]}
+    return {
+        "strategy_id": strategy_id,
+        "status": st,
+        "reason": str(result.get("error") or status)[:200],
+    }
 
 
 def _collect_verdicts_with_skips(registry, context, timeout_s=None):
@@ -258,14 +299,22 @@ def _collect_verdicts_with_skips(registry, context, timeout_s=None):
             continue
         skips.append(_skip_record(sid, r))
         if r["status"] == "timeout":
-            print("[strategy] %s propose 超时（>%.1fs），fail-open 跳过"
-                  % (sid, timeout_s), file=sys.stderr)
+            print(
+                "[strategy] %s propose 超时（>%.1fs），fail-open 跳过"
+                % (sid, timeout_s),
+                file=sys.stderr,
+            )
         else:  # error / rejected：隔离门 error 字段含 strategy_id 前缀诊断
-            print("[strategy] %s propose 异常 fail-open 跳过：%s"
-                  % (sid, str(r.get("error"))[:120]), file=sys.stderr)
+            print(
+                "[strategy] %s propose 异常 fail-open 跳过：%s"
+                % (sid, str(r.get("error"))[:120]),
+                file=sys.stderr,
+            )
     if skips:
-        print("[warn] strategy 域跳过 %d 个策略（超时/异常 fail-open，影子主链不受影响）"
-              % len(skips))
+        print(
+            "[warn] strategy 域跳过 %d 个策略（超时/异常 fail-open，影子主链不受影响）"
+            % len(skips)
+        )
     return vs, skips
 
 
@@ -276,8 +325,18 @@ def _collect_verdicts(registry, context, timeout_s=None):
     return vs
 
 
-def build_ledger_row(today, symbol, name, run_id, price_at_decision, dec,
-                     parse_ok, source_status, latency_s, ts=None):
+def build_ledger_row(
+    today,
+    symbol,
+    name,
+    run_id,
+    price_at_decision,
+    dec,
+    parse_ok,
+    source_status,
+    latency_s,
+    ts=None,
+):
     """落账行构造（M5 刀 1：影子账本 schema 收口）。
 
     - schema_version="m5.v1" 起新行携带；存量 20 行无标记=v0 冻结不重写
@@ -291,12 +350,17 @@ def build_ledger_row(today, symbol, name, run_id, price_at_decision, dec,
         ts = time.time()
     src_bad = any(v != "normal" for v in (source_status or {}).values())
     return {
-        "date": today, "ts": ts, "symbol": symbol,
-        "name": name, "status": "done",
-        "run_id": run_id, "price_at_decision": price_at_decision,
+        "date": today,
+        "ts": ts,
+        "symbol": symbol,
+        "name": name,
+        "status": "done",
+        "run_id": run_id,
+        "price_at_decision": price_at_decision,
         "recommendation": dec.get("recommendation"),
         "confidence": dec.get("confidence"),
-        "score": dec.get("score"), "target_range": dec.get("target_price_range"),
+        "score": dec.get("score"),
+        "target_range": dec.get("target_price_range"),
         "parse_ok": bool(parse_ok),
         "degraded": (not parse_ok) or src_bad,
         "schema_version": "m5.v1",
@@ -310,7 +374,11 @@ def already_done(today, symbol):
     for line in LEDGER.read_text(encoding="utf-8").splitlines():
         try:
             r = json.loads(line)
-            if r.get("date") == today and r.get("symbol") == symbol and r.get("status") == "done":
+            if (
+                r.get("date") == today
+                and r.get("symbol") == symbol
+                and r.get("status") == "done"
+            ):
                 return True
         except json.JSONDecodeError:
             continue
@@ -324,16 +392,17 @@ def open_failed_task(failed_rows, today, store=None):
         return None
     try:
         from tasks import TaskStore  # noqa: E402  engine path 已在顶部注入
+
         ts = store or TaskStore(_data_root() / "org" / "tasks")
         title = "影子运行 failed 处置（%s）" % today
         dup = [t for t in ts.ls(dept="dev") if t["title"] == title]
         if dup:
             print("[task] 当日 failed 开单已存在（%s），跳过" % dup[0]["task_id"])
             return dup[0]["task_id"]
-        body = "\n".join("- %s：%s" % (r["symbol"], r.get("error", "?")[:120])
-                         for r in failed_rows)
-        tid = ts.open("dev", title, body, "P0",
-                      opened_by="system/monitor", p0=True)
+        body = "\n".join(
+            "- %s：%s" % (r["symbol"], r.get("error", "?")[:120]) for r in failed_rows
+        )
+        tid = ts.open("dev", title, body, "P0", opened_by="system/monitor", p0=True)
         print("[task] failed 自动开单：%s（P0 直入 doing，待研发部处置）" % tid)
         return tid
     except Exception as e:  # noqa: BLE001
@@ -350,8 +419,10 @@ def _assert_not_real_root(data_root):
     if not REHEARSAL:
         return True
     if Path(data_root).resolve() == (BASE / "data").resolve():
-        print("[FATAL] 预演模式拒绝写真实数据根 %s —— "
-              "请设 SHADOW_DATA_ROOT 或 --root <隔离目录>" % data_root)
+        print(
+            "[FATAL] 预演模式拒绝写真实数据根 %s —— "
+            "请设 SHADOW_DATA_ROOT 或 --root <隔离目录>" % data_root
+        )
         return False
     return True
 
@@ -404,12 +475,16 @@ def _open_log_append(path, max_attempts=None, backoff=None, sleep=None):
             if i + 1 >= attempts:
                 break
             delay = waits[i] if i < len(waits) else (waits[-1] if waits else 0.0)
-            print("[log] %s 打开被占（errno=%s），%.1fs 后重试 %d/%d"
-                  % (path, getattr(e, "errno", None), delay, i + 2, attempts),
-                  file=sys.stderr)
+            print(
+                "[log] %s 打开被占（errno=%s），%.1fs 后重试 %d/%d"
+                % (path, getattr(e, "errno", None), delay, i + 2, attempts),
+                file=sys.stderr,
+            )
             nap(delay)
-    raise _LogOpenError("%s 追加打开重试 %d 次仍失败（末次 %r）——疑似瞬时独占锁"
-                        "未释放，fail-visible 中止" % (path, attempts, last_err))
+    raise _LogOpenError(
+        "%s 追加打开重试 %d 次仍失败（末次 %r）——疑似瞬时独占锁"
+        "未释放，fail-visible 中止" % (path, attempts, last_err)
+    )
 
 
 def _redirect_run_log():
@@ -441,8 +516,10 @@ def main():
             sys.stderr = log_f
         print("===== shadow run start %s =====" % datetime.now())
     if REHEARSAL:
-        print("[rehearsal] 隔离模式 data_root=%s（真仓 data/ 零写入；飞书推送已禁）"
-              % data_root)
+        print(
+            "[rehearsal] 隔离模式 data_root=%s（真仓 data/ 零写入；飞书推送已禁）"
+            % data_root
+        )
     today = datetime.now().strftime("%Y-%m-%d")
     team = Team(BASE / "registry" / "team_invest.json")
     grants = {a["agent_id"]: a["memory_grants"] for a in team.agents}
@@ -457,48 +534,75 @@ def main():
     # M0 P4 双轨幂等：date+symbol+done JSONL 仍是权威；并行写统一账本
     # （scope=shadow_daily，死信窗 1h——单票耗时分钟级，超 1h 视为进程已死）。
     hook = DualTrackHook(
-        "shadow_daily", stale_seconds=3600,
+        "shadow_daily",
+        stale_seconds=3600,
         # 真仓保持原行为（None→默认库/IDEMPOTENCY_DB）；隔离时才改指本根
-        db_path=(None if data_root == (BASE / "data").resolve()
-                 else data_root / "idempotency" / "idempotency.db"))
+        db_path=(
+            None
+            if data_root == (BASE / "data").resolve()
+            else data_root / "idempotency" / "idempotency.db"
+        ),
+    )
     for symbol in BASKET:
         if already_done(today, symbol):
             print("[skip] %s 今日已入账" % symbol)
             continue
-        claim = hook.claim("daily_decision", "%s|%s" % (today, symbol),
-                           {"date": today, "symbol": symbol, "strategy": "basket_v2"})
+        claim = hook.claim(
+            "daily_decision",
+            "%s|%s" % (today, symbol),
+            {"date": today, "symbol": symbol, "strategy": "basket_v2"},
+        )
         attempt_id = claim.get("attempt_id", "")
         if claim["outcome"] == "completed":
-            print("[skip] %s 幂等账本已完成（result_ref=%s）"
-                  % (symbol, claim.get("result_ref", "")))
+            print(
+                "[skip] %s 幂等账本已完成（result_ref=%s）"
+                % (symbol, claim.get("result_ref", ""))
+            )
             continue
         if claim["outcome"] == "in_progress":
             print("[skip] %s 幂等账本执行中（另一进程在跑）" % symbol)
             continue
         if claim["outcome"] == "conflict":
-            print("[warn] %s 幂等账本冲突（跳过）：%s"
-                  % (symbol, claim.get("conflict_reason", "?")))
+            print(
+                "[warn] %s 幂等账本冲突（跳过）：%s"
+                % (symbol, claim.get("conflict_reason", "?"))
+            )
             continue
         if claim["outcome"] == "unavailable":
-            print("[idem] 账本不可用（fail-open 继续旧链）：%s"
-                  % claim.get("error", "?"))
+            print(
+                "[idem] 账本不可用（fail-open 继续旧链）：%s" % claim.get("error", "?")
+            )
         row = None
-        for attempt in (1, 2):  # 脚本内重试一次（Ollama 偶发超时；幂等不受影响，done 才跳过）
+        for attempt in (
+            1,
+            2,
+        ):  # 脚本内重试一次（Ollama 偶发超时；幂等不受影响，done 才跳过）
             try:
                 data_ctx = make_context(symbol)
                 t0 = time.time()
                 result = interp.run(symbol, data_ctx=data_ctx)
                 dec = parse_decision(result["decision"])
-                parse_ok = dec is not None  # K-STOCK-338：解析失败显式记录，不再静默吞成 {}
+                parse_ok = (
+                    dec is not None
+                )  # K-STOCK-338：解析失败显式记录，不再静默吞成 {}
                 dec = dec or {}
                 price = quote_snapshot(symbol)["price"]
                 row = build_ledger_row(
-                    today, symbol, data_ctx.get("name", ""), result["run_id"],
-                    price, dec, parse_ok, result["status"],
-                    round(time.time() - t0, 1))  # M5 刀 1：schema_version+degraded 扩义
+                    today,
+                    symbol,
+                    data_ctx.get("name", ""),
+                    result["run_id"],
+                    price,
+                    dec,
+                    parse_ok,
+                    result["status"],
+                    round(time.time() - t0, 1),
+                )  # M5 刀 1：schema_version+degraded 扩义
                 if not parse_ok:
-                    print("[warn] %s D1 决策解析失败（输出无 recommendation JSON·已入账 parse_ok=false）"
-                          % symbol)
+                    print(
+                        "[warn] %s D1 决策解析失败（输出无 recommendation JSON·已入账 parse_ok=false）"
+                        % symbol
+                    )
                 # M4-P3 双刀阵容观测（fail-open：dk 异常不影响影子主链）
                 bars = None
                 try:
@@ -513,42 +617,63 @@ def main():
                     try:
                         from shadow_strategies import build_default_registry
                         from strategy_registry import record_verdicts
+
                         reg = build_default_registry()
                         # 军团 Codex bridge 装配（2026-10-18 拍板 M2）：
                         # processed/ 已注册插件并入影子 run，fail-open
                         try:
                             sys.path.insert(0, str(BASE / "adapters"))
                             from codex_bridge import load_registered
+
                             _n, _s = load_registered(reg)
                             if _n or _s:
-                                print("[strategy] codex 桥接插件 +%d (skip %d)"
-                                      % (_n, _s))
+                                print(
+                                    "[strategy] codex 桥接插件 +%d (skip %d)" % (_n, _s)
+                                )
                         except Exception as _ce:  # noqa: BLE001
-                            print("[warn] codex 桥接装载跳过（首批三策略不受影响）：%s"
-                                  % str(_ce)[:120])
-                        sctx = {"symbol": symbol,
-                                "closes": [float(b[2]) for b in bars
-                                           if len(b) > 2 and b[2] is not None]}
+                            print(
+                                "[warn] codex 桥接装载跳过（首批三策略不受影响）：%s"
+                                % str(_ce)[:120]
+                            )
+                        sctx = {
+                            "symbol": symbol,
+                            "closes": [
+                                float(b[2])
+                                for b in bars
+                                if len(b) > 2 and b[2] is not None
+                            ],
+                        }
                         # §5.2 过渡缓解：逐策略超时包裹（超时/异常 fail-open
                         # 跳过该策略，不拖垮其余；落账 schema/verdict_key 不变）
                         vs, skipped_recs = _collect_verdicts_with_skips(reg, sctx)
-                        srep = record_verdicts(vs, root=DATA_ROOT,
-                                               trade_date=today,
-                                               run_id=result["run_id"])
-                        print("[strategy] %s 产出 %d 条 recorded=%d replayed=%d"
-                              % (symbol, len(vs), srep["recorded"],
-                                 srep["replayed"]))
+                        srep = record_verdicts(
+                            vs,
+                            root=DATA_ROOT,
+                            trade_date=today,
+                            run_id=result["run_id"],
+                        )
+                        print(
+                            "[strategy] %s 产出 %d 条 recorded=%d replayed=%d"
+                            % (symbol, len(vs), srep["recorded"], srep["replayed"])
+                        )
                         # 任务 #112：超时/异常跳过的策略落账进影子行（带 reason）；
                         # 无 skip 时不加键（m5.v1 超集兼容，附加可选字段）
                         if skipped_recs:
                             row["strategy_skipped"] = skipped_recs
                     except Exception as _se:  # noqa: BLE001
-                        print("[warn] strategy 域降级（影子主链不受影响）：%s"
-                              % str(_se)[:120])
+                        print(
+                            "[warn] strategy 域降级（影子主链不受影响）：%s"
+                            % str(_se)[:120]
+                        )
                 break
             except Exception as e:  # noqa: BLE001  无人干预要求：失败入账不中断
-                row = {"date": today, "ts": time.time(), "symbol": symbol,
-                       "status": "failed", "error": str(e)[:200]}
+                row = {
+                    "date": today,
+                    "ts": time.time(),
+                    "symbol": symbol,
+                    "status": "failed",
+                    "error": str(e)[:200],
+                }
                 if attempt == 1:
                     print("[retry] %s 首次失败，3s 后重试：%s" % (symbol, str(e)[:100]))
                     time.sleep(3)
@@ -561,26 +686,44 @@ def main():
             # fail-visible：本票未落账、整轮中止。已入账票不受影响（逐票
             # append+close）；双轨幂等该 attempt 不回写 completed，死信窗
             # （1h）后下次触发可重跑本票，done 票按幂等跳过。
-            print("[FATAL] 影子账本打开失败，%s 未落账，本次运行中止：%s"
-                  "——已入账票保留；剩余标的由下一触发窗（工作日 17:10）自动补齐"
-                  % (symbol, e), file=sys.stderr)
+            print(
+                "[FATAL] 影子账本打开失败，%s 未落账，本次运行中止：%s"
+                "——已入账票保留；剩余标的由下一触发窗（工作日 17:10）自动补齐"
+                % (symbol, e),
+                file=sys.stderr,
+            )
             return 3
         if attempt_id:  # 双轨回写：done→completed；failed→允许下次死信后重试
-            hook.complete(attempt_id, ok=(row["status"] == "done"),
-                          result_ref=str(row.get("run_id", "")),
-                          error=str(row.get("error", ""))[:200])
-        print("[%s] %s %s %s" % (row["status"], symbol, row.get("recommendation", ""),
-                                 row.get("run_id", row.get("error", ""))))
+            hook.complete(
+                attempt_id,
+                ok=(row["status"] == "done"),
+                result_ref=str(row.get("run_id", "")),
+                error=str(row.get("error", ""))[:200],
+            )
+        print(
+            "[%s] %s %s %s"
+            % (
+                row["status"],
+                symbol,
+                row.get("recommendation", ""),
+                row.get("run_id", row.get("error", "")),
+            )
+        )
         summary.append(row["status"])
         if row["status"] == "failed":
             failed_rows.append(row)
         elif row.get("parse_ok") is False:
             parse_fail_rows.append(row)
 
-    print("shadow day %s done: %s" % (today, dict((s, summary.count(s)) for s in set(summary))))
+    print(
+        "shadow day %s done: %s"
+        % (today, dict((s, summary.count(s)) for s in set(summary)))
+    )
     if parse_fail_rows:
-        print("parse_fail: %d（%s）" % (len(parse_fail_rows),
-                                        ",".join(r["symbol"] for r in parse_fail_rows)))
+        print(
+            "parse_fail: %d（%s）"
+            % (len(parse_fail_rows), ",".join(r["symbol"] for r in parse_fail_rows))
+        )
     push_failed_alert(failed_rows, today, parse_fail_rows)
     open_failed_task(failed_rows, today)
 

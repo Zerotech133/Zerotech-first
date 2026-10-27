@@ -5,6 +5,7 @@
 残缺锚点拒绝 / 影子账本只读收集（done 过滤+坏行容忍）/ 环缺失显式
 missing / 空账本 NOT_FOUND / tmp 隔离（不触真仓）。
 """
+
 import json
 import sys
 import unittest
@@ -14,13 +15,21 @@ BASE = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BASE))
 
 from adapters.trace_link import (  # noqa: E402
-    LinkStore, SEG_REQUIRED, collect_shadow_anchors, link_id_of,
-    link_key, replay_trace, validate_chain,
+    LinkStore,
+    SEG_REQUIRED,
+    collect_shadow_anchors,
+    link_id_of,
+    link_key,
+    replay_trace,
+    validate_chain,
 )
 
 FULL_CHAIN = {
-    "shadow": {"run_id": "76cf6d30358f", "symbol": "300750",
-               "trade_date": "2026-10-14"},
+    "shadow": {
+        "run_id": "76cf6d30358f",
+        "symbol": "300750",
+        "trade_date": "2026-10-14",
+    },
     "paper": {"trace_id": "tr-abc123"},
     "execution": {"order_id": "ord-001"},
     "perf": {"perf_key": "300750|2026-10-14|tr-abc123"},
@@ -29,8 +38,9 @@ FULL_CHAIN = {
 
 class LinkKeyTests(unittest.TestCase):
     def test_link_key_normalization(self):
-        k = link_key("shadow", {"run_id": " a ", "symbol": "300750",
-                                "trade_date": "2026-10-14"})
+        k = link_key(
+            "shadow", {"run_id": " a ", "symbol": "300750", "trade_date": "2026-10-14"}
+        )
         self.assertEqual(k, "shadow:a|300750|2026-10-14")
 
     def test_link_key_missing_field_rejected(self):
@@ -45,25 +55,34 @@ class LinkKeyTests(unittest.TestCase):
         self.assertEqual(len(fs), 2)  # 未知环节 + 缺锚点
 
     def test_link_id_deterministic_and_order_insensitive(self):
-        chain = {k: FULL_CHAIN[k] for k in
-                 ("perf", "execution", "paper", "shadow")}
+        chain = {k: FULL_CHAIN[k] for k in ("perf", "execution", "paper", "shadow")}
         self.assertEqual(link_id_of(FULL_CHAIN), link_id_of(chain))
 
 
 class StoreTests(unittest.TestCase):
     def setUp(self):
         import tempfile
+
         self.tmp = Path(tempfile.mkdtemp(prefix="trace_link_t_"))
         self.store = LinkStore(self.tmp / "links.jsonl")
 
     def test_record_and_replay(self):
-        r1 = self.store.record(FULL_CHAIN, source="t", declared_at="2026-10-17T19:20:00")
+        r1 = self.store.record(
+            FULL_CHAIN, source="t", declared_at="2026-10-17T19:20:00"
+        )
         self.assertEqual(r1["status"], "recorded")
         r2 = self.store.record(FULL_CHAIN, source="t")
         self.assertEqual(r2["status"], "replayed")  # 幂等重放零副作用
         # 重放不追加行
-        self.assertEqual(len(self.tmp.joinpath("links.jsonl").read_text(
-            encoding="utf-8").strip().splitlines()), 1)
+        self.assertEqual(
+            len(
+                self.tmp.joinpath("links.jsonl")
+                .read_text(encoding="utf-8")
+                .strip()
+                .splitlines()
+            ),
+            1,
+        )
 
     def test_same_key_different_chain_rejected(self):
         self.store.record(FULL_CHAIN)
@@ -85,8 +104,9 @@ class StoreTests(unittest.TestCase):
             self.store.record({})  # 空链
 
     def test_partial_chain_and_missing_segments(self):
-        self.store.record({"shadow": FULL_CHAIN["shadow"],
-                           "paper": FULL_CHAIN["paper"]})
+        self.store.record(
+            {"shadow": FULL_CHAIN["shadow"], "paper": FULL_CHAIN["paper"]}
+        )
         r = replay_trace(self.store, "tr-abc123")
         self.assertEqual(r["verdict"], "OK")
         m = r["matches"][0]
@@ -107,23 +127,42 @@ class StoreTests(unittest.TestCase):
 class ShadowCollectTests(unittest.TestCase):
     def setUp(self):
         import tempfile
+
         self.tmp = Path(tempfile.mkdtemp(prefix="trace_link_sc_"))
 
     def _write(self, rows):
         p = self.tmp / "shadow_ledger.jsonl"
-        p.write_text("\n".join(json.dumps(r, ensure_ascii=False) for r in rows),
-                     encoding="utf-8")
+        p.write_text(
+            "\n".join(json.dumps(r, ensure_ascii=False) for r in rows), encoding="utf-8"
+        )
         return p
 
     def test_done_filter_and_fields(self):
-        p = self._write([
-            {"date": "2026-10-14", "status": "done", "run_id": "r1",
-             "symbol": "300750", "score": 1, "parse_ok": True},
-            {"date": "2026-10-14", "status": "failed", "run_id": "r2",
-             "symbol": "600519", "error": "x"},
-            {"date": "2026-10-14", "status": "done", "run_id": None,
-             "symbol": "601318"},
-        ])
+        p = self._write(
+            [
+                {
+                    "date": "2026-10-14",
+                    "status": "done",
+                    "run_id": "r1",
+                    "symbol": "300750",
+                    "score": 1,
+                    "parse_ok": True,
+                },
+                {
+                    "date": "2026-10-14",
+                    "status": "failed",
+                    "run_id": "r2",
+                    "symbol": "600519",
+                    "error": "x",
+                },
+                {
+                    "date": "2026-10-14",
+                    "status": "done",
+                    "run_id": None,
+                    "symbol": "601318",
+                },
+            ]
+        )
         anchors = collect_shadow_anchors(p)
         self.assertEqual(len(anchors), 1)
         self.assertEqual(anchors[0]["run_id"], "r1")
@@ -131,8 +170,11 @@ class ShadowCollectTests(unittest.TestCase):
 
     def test_bad_lines_tolerated(self):
         p = self.tmp / "shadow_ledger.jsonl"
-        p.write_text('{"status":"done","run_id":"r9","symbol":"x","date":"d"}\n'
-                     "NOT JSON AT ALL\n", encoding="utf-8")
+        p.write_text(
+            '{"status":"done","run_id":"r9","symbol":"x","date":"d"}\n'
+            "NOT JSON AT ALL\n",
+            encoding="utf-8",
+        )
         self.assertEqual(len(collect_shadow_anchors(p)), 1)
 
     def test_missing_ledger_empty(self):

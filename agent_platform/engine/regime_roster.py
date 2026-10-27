@@ -13,6 +13,7 @@
   - REC_SCORE（影子打分）与 dk_signal 是两套独立口径——本层只桥接
     记录不互相改写（score 桥接判例：并存留痕，不做强约束）。
 """
+
 from __future__ import annotations
 
 import sys
@@ -28,11 +29,17 @@ REGIME_ROSTER: Dict[str, Dict] = {
     "trend_up": {"profile": "strict", "blocked": False},
     "range": {"profile": "strict", "blocked": False},
     "rotation": {"profile": "relaxed", "blocked": False},
-    "trend_down": {"profile": "strict", "blocked": True,
-                   "reason": "trend_down 双阵容拦截（blocked_regimes）"},
+    "trend_down": {
+        "profile": "strict",
+        "blocked": True,
+        "reason": "trend_down 双阵容拦截（blocked_regimes）",
+    },
 }
-UNKNOWN_REGIME = {"profile": "strict", "blocked": False,
-                  "reason": "未知 Regime 回落 strict（保守默认）"}
+UNKNOWN_REGIME = {
+    "profile": "strict",
+    "blocked": False,
+    "reason": "未知 Regime 回落 strict（保守默认）",
+}
 
 
 def select_profile(regime_label: Optional[str]) -> Dict:
@@ -41,8 +48,7 @@ def select_profile(regime_label: Optional[str]) -> Dict:
         return dict(UNKNOWN_REGIME)
     entry = REGIME_ROSTER.get(str(regime_label))
     if entry is None:
-        return dict(UNKNOWN_REGIME, reason="未知 Regime %r 回落 strict"
-                    % regime_label)
+        return dict(UNKNOWN_REGIME, reason="未知 Regime %r 回落 strict" % regime_label)
     return dict(entry)
 
 
@@ -70,15 +76,17 @@ def dk_snapshot(daily_df, profile: Optional[str] = None) -> Optional[Dict]:
             return {"dk_error": "日 K 缺列: %s" % sorted(missing)}
 
         regime_row = _compute_regime(
-            daily_df["close"], daily_df["high"], daily_df["low"],
-            daily_df["amount"]).iloc[-1]
+            daily_df["close"], daily_df["high"], daily_df["low"], daily_df["amount"]
+        ).iloc[-1]
         regime_label = str(regime_row["regime_label"])
         roster = select_profile(regime_label)
         used_profile = profile or roster["profile"]
         blocked = bool(roster.get("blocked"))
         if profile is not None and roster.get("blocked"):
             reason = "%s（caller override=%s，仍拦截）" % (
-                roster.get("reason", ""), profile)
+                roster.get("reason", ""),
+                profile,
+            )
         elif profile is not None:
             reason = "caller override=%s" % profile
         else:
@@ -92,9 +100,9 @@ def dk_snapshot(daily_df, profile: Optional[str] = None) -> Optional[Dict]:
             "regime_label": regime_label,
             "regime_tsi": round(float(regime_row["regime_tsi"]), 4),
             "regime_volume_balance": round(
-                float(regime_row["regime_volume_balance"]), 4),
-            "regime_sentiment": round(
-                float(regime_row["regime_sentiment"]), 4),
+                float(regime_row["regime_volume_balance"]), 4
+            ),
+            "regime_sentiment": round(float(regime_row["regime_sentiment"]), 4),
             "profile": used_profile,
             "blocked": blocked,
             "dk_signal": signal,
@@ -113,18 +121,23 @@ def bars_to_df(bars) -> "object":
     由 dk_snapshot 外层 fail-open 统一兜底。
     """
     import pandas as pd
+
     rows = []
     for b in bars:
         date, o, c, h, l, v = b[0], b[1], b[2], b[3], b[4], b[5] if len(b) > 5 else 0
-        rows.append((date, float(o), float(h), float(l), float(c),
-                     float(v) * float(c)))
-    df = pd.DataFrame(rows, columns=["date", "open", "high", "low",
-                                     "close", "amount"])
+        rows.append((date, float(o), float(h), float(l), float(c), float(v) * float(c)))
+    df = pd.DataFrame(rows, columns=["date", "open", "high", "low", "close", "amount"])
     return df.set_index("date")
 
 
-DK_FIELDS = ("dk_signal", "dk_regime", "dk_profile",
-             "dk_blocked", "dk_reason", "dk_error")
+DK_FIELDS = (
+    "dk_signal",
+    "dk_regime",
+    "dk_profile",
+    "dk_blocked",
+    "dk_reason",
+    "dk_error",
+)
 
 
 def enrich_row(row: Dict, snapshot: Optional[Dict]) -> Dict:
@@ -140,12 +153,14 @@ def enrich_row(row: Dict, snapshot: Optional[Dict]) -> Dict:
         row.update({f: None for f in DK_FIELDS if f != "dk_error"})
         row["dk_error"] = str(snapshot["dk_error"])[:120]
         return row
-    row.update({
-        "dk_signal": bool(snapshot["dk_signal"]),
-        "dk_regime": snapshot["regime_label"],
-        "dk_profile": snapshot["profile"],
-        "dk_blocked": bool(snapshot["blocked"]),
-        "dk_reason": (snapshot.get("reason") or "")[:120] or None,
-        "dk_error": None,
-    })
+    row.update(
+        {
+            "dk_signal": bool(snapshot["dk_signal"]),
+            "dk_regime": snapshot["regime_label"],
+            "dk_profile": snapshot["profile"],
+            "dk_blocked": bool(snapshot["blocked"]),
+            "dk_reason": (snapshot.get("reason") or "")[:120] or None,
+            "dk_error": None,
+        }
+    )
     return row

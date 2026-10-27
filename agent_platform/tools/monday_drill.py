@@ -48,6 +48,7 @@ READ_ONLY 为模块级常量；任何潜在执行入口先 _assert_read_only() �
 本文件为纯打印器，未运行任何被列出的工具（编制时只读源码 argparse 段与
 docstring，并只读两个计划任务 XML 核对形状）。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -120,21 +121,31 @@ TIMELINE: List[Dict[str, Any]] = [
             "触发链前置自检：check_trigger_chain（本段主项）",
         ],
         "commands": [
-            _cmd("$PY tools/check_trigger_chain.py --repo-root .",
-                 "0（或仅 ChiefPush 首跑前无日志一项 WARN）",
-                 "汇总: PASS N / WARN N / FAIL 0 → 结论: 无 FAIL 且有 PASS——链路就绪"),
-            _cmd("$PY tools/check_observation_point.py --data-root data",
-                 "1",
-                 "汇总: PASS 0 / PENDING 5 / FAIL 0 → 结论: 全 PENDING——中性"),
-            _cmd("curl -s --max-time 3 http://127.0.0.1:11434/api/ps",
-                 "0",
-                 '含 "models" 字段的 JSON；连接拒绝 = daemon 未起'),
-            _cmd("ls /c/Windows/System32/Tasks/ | grep Agent",
-                 "0",
-                 "四个任务名齐在（本 shell 可能权限拒绝，改用直读 XML 或 -f 单文件探测）"),
-            _cmd('ls "C:/项目/backups/2026-10-18_observation_baseline/"',
-                 "0",
-                 "5 个 .baseline + MANIFEST.md 共 6 件"),
+            _cmd(
+                "$PY tools/check_trigger_chain.py --repo-root .",
+                "0（或仅 ChiefPush 首跑前无日志一项 WARN）",
+                "汇总: PASS N / WARN N / FAIL 0 → 结论: 无 FAIL 且有 PASS——链路就绪",
+            ),
+            _cmd(
+                "$PY tools/check_observation_point.py --data-root data",
+                "1",
+                "汇总: PASS 0 / PENDING 5 / FAIL 0 → 结论: 全 PENDING——中性",
+            ),
+            _cmd(
+                "curl -s --max-time 3 http://127.0.0.1:11434/api/ps",
+                "0",
+                '含 "models" 字段的 JSON；连接拒绝 = daemon 未起',
+            ),
+            _cmd(
+                "ls /c/Windows/System32/Tasks/ | grep Agent",
+                "0",
+                "四个任务名齐在（本 shell 可能权限拒绝，改用直读 XML 或 -f 单文件探测）",
+            ),
+            _cmd(
+                'ls "C:/项目/backups/2026-10-18_observation_baseline/"',
+                "0",
+                "5 个 .baseline + MANIFEST.md 共 6 件",
+            ),
         ],
         "expect_text": [
             "结论: 无 FAIL 且有 PASS——链路就绪，可放行（退出码 0）",
@@ -154,22 +165,28 @@ TIMELINE: List[Dict[str, Any]] = [
         "label": "AgentShadowDaily 自动触发（观察段）",
         "mode": "自动（计划任务）",
         "forbidden": "不要手动跑 AgentShadowDaily——无交易日判断，手动重跑会污染账本；"
-                     "90s 重试等待属设计内。",
+        "90s 重试等待属设计内。",
         "look": [
             "data/shadow/last_run.log 出现 [strategy] 装配行与每票产出行",
             "data/strategy/strategy_runs.jsonl 首跑后 20 行（5 票 × 4 策略），"
             "每行带 run_id（12 位 hex）与 verdict_key",
         ],
         "commands": [
-            _cmd("tail -n 40 data/shadow/last_run.log",
-                 "0（只读查看，非判据）",
-                 "[strategy] codex 桥接插件 +1 (skip 0)"),
-            _cmd("tail -n 20 data/shadow/last_run.log",
-                 "0（只读查看，非判据）",
-                 "[strategy] <sym> 产出 4 条 recorded=4 replayed=0（5 票共 20 条）"),
-            _cmd("wc -l data/strategy/strategy_runs.jsonl",
-                 "0（只读查看，非判据）",
-                 "20 data/strategy/strategy_runs.jsonl"),
+            _cmd(
+                "tail -n 40 data/shadow/last_run.log",
+                "0（只读查看，非判据）",
+                "[strategy] codex 桥接插件 +1 (skip 0)",
+            ),
+            _cmd(
+                "tail -n 20 data/shadow/last_run.log",
+                "0（只读查看，非判据）",
+                "[strategy] <sym> 产出 4 条 recorded=4 replayed=0（5 票共 20 条）",
+            ),
+            _cmd(
+                "wc -l data/strategy/strategy_runs.jsonl",
+                "0（只读查看，非判据）",
+                "20 data/strategy/strategy_runs.jsonl",
+            ),
         ],
         "expect_text": [
             "[strategy] codex 桥接插件 +1 (skip 0)",
@@ -195,23 +212,33 @@ TIMELINE: List[Dict[str, Any]] = [
             "随后人工跑一键巡检 check_observation_point（五项判据 a-e）",
         ],
         "commands": [
-            _cmd("$PY tools/check_observation_point.py --data-root data",
-                 "0=无 FAIL 且有 PASS（可放行/门 3 PASS）｜1=全 PENDING（中性）｜2=存在 FAIL（先查清）",
-                 "汇总: PASS N / PENDING N / FAIL N → 结论: 无 FAIL 且有 PASS——可放行"),
-            _cmd("grep -c \"\\[observe\\]\" data/shadow/monday_checkpoint.log",
-                 "0（只读查看，非判据）",
-                 "[observe] strategy_runs：20 行 / 带 run_id 20 行 与 "
-                 "[observe] codex_registrations：1 行 / strategy_id: codex_sma20_rsi14"),
-            _cmd("$PY tools/verify_strategy_ledger.py --data-root data"
-                 "   # 仅当巡检退出码 2（存在 FAIL）才跑",
-                 "0=全 PASS（含空账本中性）｜1=存在 FAIL｜2=参数缺失",
-                 "[PASS] ①verdict_key 重算一致 → 结论: 全部 PASS"),
-            _cmd("$PY tools/gate3_verdict.py   # cwd=C:/项目/老田的AI助手（在上级仓 tools/）",
-                 "0=全过｜1=存在 FAIL（有效语义仅 0/1，无退出码 2）",
-                 "复核结论: 11/11 全过（首跑前为 7 项口径）"),
-            _cmd("$PY adapters/strategy_replay.py --format table   # 可选，只读",
-                 "0=视图产出｜2=两侧账本均缺",
-                 "表格视图；只落了 strategy_runs 单侧时 hit_rate 显示 n/a 属正常"),
+            _cmd(
+                "$PY tools/check_observation_point.py --data-root data",
+                "0=无 FAIL 且有 PASS（可放行/门 3 PASS）｜1=全 PENDING（中性）｜2=存在 FAIL（先查清）",
+                "汇总: PASS N / PENDING N / FAIL N → 结论: 无 FAIL 且有 PASS——可放行",
+            ),
+            _cmd(
+                'grep -c "\\[observe\\]" data/shadow/monday_checkpoint.log',
+                "0（只读查看，非判据）",
+                "[observe] strategy_runs：20 行 / 带 run_id 20 行 与 "
+                "[observe] codex_registrations：1 行 / strategy_id: codex_sma20_rsi14",
+            ),
+            _cmd(
+                "$PY tools/verify_strategy_ledger.py --data-root data"
+                "   # 仅当巡检退出码 2（存在 FAIL）才跑",
+                "0=全 PASS（含空账本中性）｜1=存在 FAIL｜2=参数缺失",
+                "[PASS] ①verdict_key 重算一致 → 结论: 全部 PASS",
+            ),
+            _cmd(
+                "$PY tools/gate3_verdict.py   # cwd=C:/项目/老田的AI助手（在上级仓 tools/）",
+                "0=全过｜1=存在 FAIL（有效语义仅 0/1，无退出码 2）",
+                "复核结论: 11/11 全过（首跑前为 7 项口径）",
+            ),
+            _cmd(
+                "$PY adapters/strategy_replay.py --format table   # 可选，只读",
+                "0=视图产出｜2=两侧账本均缺",
+                "表格视图；只落了 strategy_runs 单侧时 hit_rate 显示 n/a 属正常",
+            ),
         ],
         "expect_text": [
             "[observe] strategy_runs：20 行 / 带 run_id 20 行",
@@ -219,7 +246,7 @@ TIMELINE: List[Dict[str, Any]] = [
             "结论: 无 FAIL 且有 PASS——可放行（退出码 0）",
         ],
         "troubleshoot": "SOP §五 #1（判决行无 run_id / observe 段缺一 / verdict_key 三方 diffs）→ "
-                        "verify_strategy_ledger 定位，再与基线逐行 diff（回滚须报 lead）",
+        "verify_strategy_ledger 定位，再与基线逐行 diff（回滚须报 lead）",
         "notes": [
             "门 3 PASS = 两个 [observe] 段都亮 + 巡检退出码 0。",
             "退出码 1 全 PENDING 是中性，不是通过：看 [wait] 行确认在推进，等待，勿重跑。",
@@ -238,16 +265,20 @@ TIMELINE: List[Dict[str, Any]] = [
             "（该日志是唯一记录 SEND_OK/SEND_FAIL 的面，shadow_automation.ps1:39-43）",
         ],
         "commands": [
-            _cmd("tail -n 40 data/shadow/chief_last_run.log",
-                 "0（只读查看，非判据）",
-                 "含 SEND_OK（含 SEND_FAIL 或无标记 = 推送失败）"),
-            _cmd("grep -c SEND_OK data/shadow/chief_last_run.log",
-                 "0=命中 1 次（grep 无命中返回 1，属异常信号）",
-                 "1"),
+            _cmd(
+                "tail -n 40 data/shadow/chief_last_run.log",
+                "0（只读查看，非判据）",
+                "含 SEND_OK（含 SEND_FAIL 或无标记 = 推送失败）",
+            ),
+            _cmd(
+                "grep -c SEND_OK data/shadow/chief_last_run.log",
+                "0=命中 1 次（grep 无命中返回 1，属异常信号）",
+                "1",
+            ),
         ],
         "expect_text": ["SEND_OK"],
         "troubleshoot": "SOP §五 #5（凭证/网络/a0_chief 推送链）→ 读日志全文报 lead；"
-                        "不影响门 3 判读（推送与观察点是两条独立成败线）",
+        "不影响门 3 判读（推送与观察点是两条独立成败线）",
         "notes": ["本段无需任何工具，只看日志标记。"],
     },
     {
@@ -263,16 +294,22 @@ TIMELINE: List[Dict[str, Any]] = [
             "gate3_verdict 第二意见复核，与巡检交叉核对",
         ],
         "commands": [
-            _cmd("$PY tools/gate3_verdict.py   # cwd=C:/项目/老田的AI助手",
-                 "0=全过（或全 PENDING 中性）｜1=存在 FAIL",
-                 "复核结论: 11/11 全过"),
-            _cmd("$PY tools/gate3_verdict.py --date 2026-10-19   # 复核任意日",
-                 "0=全过｜1=存在 FAIL",
-                 "[PASS] 影子首跑已发生（最新交易日 > 2026-10-14）  — 最新=2026-10-19"),
+            _cmd(
+                "$PY tools/gate3_verdict.py   # cwd=C:/项目/老田的AI助手",
+                "0=全过（或全 PENDING 中性）｜1=存在 FAIL",
+                "复核结论: 11/11 全过",
+            ),
+            _cmd(
+                "$PY tools/gate3_verdict.py --date 2026-10-19   # 复核任意日",
+                "0=全过｜1=存在 FAIL",
+                "[PASS] 影子首跑已发生（最新交易日 > 2026-10-14）  — 最新=2026-10-19",
+            ),
         ],
         "expect_text": ["复核结论: 11/11 全过", "影子首跑已发生"],
         "troubleshoot": "SOP §五 #1（账本类 FAIL 先跑 verify_strategy_ledger 定位再 diff 基线）",
-        "notes": ["周评估任务不在 16:50 check_trigger_chain 的三任务注册面内，需单独核对。"],
+        "notes": [
+            "周评估任务不在 16:50 check_trigger_chain 的三任务注册面内，需单独核对。"
+        ],
     },
 ]
 
@@ -342,8 +379,11 @@ def build_payload(mode: str, at: Optional[str], now: datetime) -> Dict[str, Any]
     payload["current"] = cur
     payload["next"] = nxt
     payload["current_range"] = _range_text(cur, minute)
-    payload["anchor"] = {"now": fmt_minute(minute), "previous": cur["at"] if cur else None,
-                         "next": nxt[0]["at"] if nxt else None}
+    payload["anchor"] = {
+        "now": fmt_minute(minute),
+        "previous": cur["at"] if cur else None,
+        "next": nxt[0]["at"] if nxt else None,
+    }
     return payload
 
 
@@ -363,14 +403,19 @@ def _print_header(mode: str, at: Optional[str], now: datetime) -> None:
     print("周一观察点 dry-run 演练器 v%s（只读：只打印命令，绝不代跑）" % TOOL_VERSION)
     print("$PY  = %s" % PY)
     print("工作目录 = %s" % AP)
-    print("本机时间 = %s   模式 = %s" % (now.strftime("%Y-%m-%d %H:%M:%S"),
-                                      "完整时间轴(--list)" if mode == "list"
-                                      else "模拟时刻(--at %s)" % at))
+    print(
+        "本机时间 = %s   模式 = %s"
+        % (
+            now.strftime("%Y-%m-%d %H:%M:%S"),
+            "完整时间轴(--list)" if mode == "list" else "模拟时刻(--at %s)" % at,
+        )
+    )
     print("=" * 72)
 
 
-def _print_node(entry: Dict[str, Any], idx: Optional[int] = None,
-                heading: str = "现在该做什么") -> None:
+def _print_node(
+    entry: Dict[str, Any], idx: Optional[int] = None, heading: str = "现在该做什么"
+) -> None:
     num = ("%d. " % idx) if idx else ""
     print("")
     print("【%s】%s%s  %s" % (heading, num, entry["at"], entry["label"]))
@@ -402,8 +447,10 @@ def render_list(now: datetime) -> None:
         _print_node(entry, entry["order"], heading="节点")
     print("")
     print("-" * 72)
-    print("红线：①不手动跑 AgentShadowDaily ②PENDING ≠ 通过 "
-          "③不修他人在途件 ④演示永不落真仓")
+    print(
+        "红线：①不手动跑 AgentShadowDaily ②PENDING ≠ 通过 "
+        "③不修他人在途件 ④演示永不落真仓"
+    )
     print("-" * 72)
 
 
@@ -414,8 +461,10 @@ def render_at(at: str, now: datetime) -> None:
     _print_header("at", at, now)
     print("定位：%s" % _range_text(cur, minute))
     if cur is None:
-        print("【现在该做什么】还没到 16:50——先确认本手册/工具链就位，"
-              "16:50 起按节点逐项预演（本次 dry-run 不触发任何任务）。")
+        print(
+            "【现在该做什么】还没到 16:50——先确认本手册/工具链就位，"
+            "16:50 起按节点逐项预演（本次 dry-run 不触发任何任务）。"
+        )
     else:
         _print_node(cur, None, heading="现在该做什么")
     if nxt:
@@ -438,8 +487,10 @@ def render_at(at: str, now: datetime) -> None:
         print("  %d) %s" % (i, s))
     print("")
     print("-" * 72)
-    print("提示：本演练器不执行任何命令；上面命令请自行复制到终端。"
-          "退出码 0（轴外时刻同样返回 0）。")
+    print(
+        "提示：本演练器不执行任何命令；上面命令请自行复制到终端。"
+        "退出码 0（轴外时刻同样返回 0）。"
+    )
 
 
 def _short_name(entry: Dict[str, Any]) -> str:
@@ -468,15 +519,26 @@ def main(argv: Optional[List[str]] = None) -> int:
     ap = argparse.ArgumentParser(
         prog="monday_drill",
         description="周一观察点 SOP 只读 dry-run 演练器：只打印时间轴与命令文本，"
-                    "绝不执行任何命令/计划任务，绝不写盘。",
+        "绝不执行任何命令/计划任务，绝不写盘。",
     )
-    ap.add_argument("--at", metavar="HH:MM", type=_at_type,
-                    help="模拟某时刻（00:00-23:59），打印现在该做什么与接下来三步；"
-                         "缺省=当前时间")
-    ap.add_argument("--list", action="store_true", dest="list_all",
-                    help="打印完整时间轴（五个锚点全字段）")
-    ap.add_argument("--json", action="store_true", dest="as_json",
-                    help="机读输出（含 timeline 列表）")
+    ap.add_argument(
+        "--at",
+        metavar="HH:MM",
+        type=_at_type,
+        help="模拟某时刻（00:00-23:59），打印现在该做什么与接下来三步；缺省=当前时间",
+    )
+    ap.add_argument(
+        "--list",
+        action="store_true",
+        dest="list_all",
+        help="打印完整时间轴（五个锚点全字段）",
+    )
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        dest="as_json",
+        help="机读输出（含 timeline 列表）",
+    )
     args = ap.parse_args(argv)
 
     now = datetime.now()
@@ -493,10 +555,13 @@ def main(argv: Optional[List[str]] = None) -> int:
                 for e in next_nodes(minute)
             ]
             payload["next_steps_text"] += EXTRA_NEXT[
-                : max(0, 3 - len(payload["next_steps_text"]))]
+                : max(0, 3 - len(payload["next_steps_text"]))
+            ]
             payload["now_doing"] = (
-                "%s %s" % (cur["at"], _short_name(cur)) if cur
-                else "尚未进入观察窗（首个节点 16:50）")
+                "%s %s" % (cur["at"], _short_name(cur))
+                if cur
+                else "尚未进入观察窗（首个节点 16:50）"
+            )
         print(json.dumps(payload, ensure_ascii=False, indent=2))
         return 0
 

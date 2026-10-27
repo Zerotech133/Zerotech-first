@@ -30,14 +30,14 @@ SCHEMA_VERSION = "1.0"
 DEADLETTER_PREFIX = "dead-letter: stale lease"
 
 # attempt 状态
-ST_CLAIMED = "claimed"      # 已认领，执行中
+ST_CLAIMED = "claimed"  # 已认领，执行中
 ST_COMPLETED = "completed"  # 有最终结果，不重试
-ST_FAILED = "failed"        # 失败，允许新 attempt
+ST_FAILED = "failed"  # 失败，允许新 attempt
 
 # claim outcome
-OUT_CLAIMED = "claimed"          # 新建 attempt，调用方应执行
-OUT_COMPLETED = "completed"      # 命中既有结果，勿重复执行
-OUT_CONFLICT = "conflict"        # 同键不同 payload，拒绝
+OUT_CLAIMED = "claimed"  # 新建 attempt，调用方应执行
+OUT_COMPLETED = "completed"  # 命中既有结果，勿重复执行
+OUT_CONFLICT = "conflict"  # 同键不同 payload，拒绝
 OUT_IN_PROGRESS = "in_progress"  # 既有 attempt 执行中，稳定跳过
 
 # record 状态（由 attempt 派生 + conflict 粘性标志）
@@ -77,7 +77,9 @@ def canonical_payload_hash(payload) -> str:
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()
 
 
-def _record_id(workspace_id: str, scope: str, operation: str, idempotency_key: str) -> str:
+def _record_id(
+    workspace_id: str, scope: str, operation: str, idempotency_key: str
+) -> str:
     raw = "\x1f".join([workspace_id, scope, operation, idempotency_key])
     return "IR-" + hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
 
@@ -194,9 +196,20 @@ class IdempotencyStore:
                     "  trace_id, conflict_reason, created_at, updated_at)"
                     " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                     (
-                        rid, self.workspace_id, scope, operation, idempotency_key,
-                        account_id, ph, REC_ACTIVE, source_system, source_ref,
-                        trace_id, "", now, now,
+                        rid,
+                        self.workspace_id,
+                        scope,
+                        operation,
+                        idempotency_key,
+                        account_id,
+                        ph,
+                        REC_ACTIVE,
+                        source_system,
+                        source_ref,
+                        trace_id,
+                        "",
+                        now,
+                        now,
                     ),
                 )
                 if cur.rowcount != 1:
@@ -282,7 +295,9 @@ class IdempotencyStore:
                     and _age_seconds(last["updated_at"], now) > stale_seconds
                 ):
                     dead_reason = "%s >%ss (attempt %d, %s)" % (
-                        DEADLETTER_PREFIX, stale_seconds, last["attempt"],
+                        DEADLETTER_PREFIX,
+                        stale_seconds,
+                        last["attempt"],
                         last["attempt_id"],
                     )
                     self.con.execute(
@@ -350,7 +365,8 @@ class IdempotencyStore:
             return {
                 "outcome": OUT_CONFLICT,
                 "record_id": rid,
-                "conflict_reason": "last attempt status not retryable: %s" % last["status"],
+                "conflict_reason": "last attempt status not retryable: %s"
+                % last["status"],
             }
         except sqlite3.IntegrityError:
             # 并发竞争：另一进程先建了记录/attempt。回滚后重读并给出稳定结果。
@@ -402,8 +418,9 @@ class IdempotencyStore:
             "note": "last attempt status=%s, treat as skip" % last["status"],
         }
 
-    def complete(self, attempt_id: str, result_ref: str = "", ok: bool = True,
-                 error: str = "") -> dict:
+    def complete(
+        self, attempt_id: str, result_ref: str = "", ok: bool = True, error: str = ""
+    ) -> dict:
         """回写 attempt 终态。仅允许 claimed -> completed/failed，不覆盖终态。"""
         now = utc_now_iso()
         self.con.execute("BEGIN IMMEDIATE")
@@ -420,7 +437,7 @@ class IdempotencyStore:
                 return {
                     "ok": False,
                     "error": "attempt already terminal (%s), refuse overwrite"
-                             % row["status"],
+                    % row["status"],
                 }
             new_status = ST_COMPLETED if ok else ST_FAILED
             self.con.execute(
@@ -519,12 +536,21 @@ def main(argv=None) -> int:
         if args.cmd == "stats":
             print(json.dumps(store.stats(), ensure_ascii=False, indent=2))
         elif args.cmd == "get":
-            print(json.dumps(store.get(args.scope, args.operation, args.key),
-                             ensure_ascii=False, indent=2))
+            print(
+                json.dumps(
+                    store.get(args.scope, args.operation, args.key),
+                    ensure_ascii=False,
+                    indent=2,
+                )
+            )
         elif args.cmd == "fail":
-            print(json.dumps(store.complete(args.attempt_id, ok=False,
-                                            error=args.reason),
-                             ensure_ascii=False, indent=2))
+            print(
+                json.dumps(
+                    store.complete(args.attempt_id, ok=False, error=args.reason),
+                    ensure_ascii=False,
+                    indent=2,
+                )
+            )
     finally:
         store.close()
     return 0

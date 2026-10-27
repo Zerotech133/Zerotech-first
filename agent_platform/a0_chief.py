@@ -5,6 +5,7 @@
 输出：data/shadow/daily_report_YYYY-MM-DD.md（四段格式对齐 K-ORG-001 §4 日报契约）
 严重度：failed → P0（立即推送：17:35 automation 带 --push / run_shadow 失败即时告警 K-STOCK-013）；degraded → P1；仅集中度观察 → P2 进日报。
 """
+
 import json
 import subprocess
 import sys
@@ -26,10 +27,18 @@ def push_to_feishu(md_path):
     try:
         r = subprocess.run(
             [PYTHON, str(PUSH_SCRIPT), str(md_path)],
-            capture_output=True, text=True, encoding="utf-8", timeout=60)
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=60,
+        )
         out = (r.stdout or r.stderr or "").strip()
         ok = r.returncode == 0 and "SEND_OK" in out
-        print("[A0] 飞书推送：%s" % out.splitlines()[-1] if out else "[A0] 飞书推送：无输出")
+        print(
+            "[A0] 飞书推送：%s" % out.splitlines()[-1]
+            if out
+            else "[A0] 飞书推送：无输出"
+        )
         return ok, out
     except Exception as e:  # noqa: BLE001
         print("[A0] 飞书推送异常：%s" % e)
@@ -67,10 +76,12 @@ def shadow_progress():
 def debate_stats(run_id):
     try:
         import sqlite3
+
         conn = sqlite3.connect(str(DB), check_same_thread=False)
         cur = conn.execute(
             "SELECT COUNT(*), AVG(similarity) FROM traces WHERE run_id=? AND phase='debate_rebuttal'",
-            (run_id,))
+            (run_id,),
+        )
         n, avg_sim = cur.fetchone()
         conn.close()
         return n or 0, avg_sim
@@ -78,8 +89,7 @@ def debate_stats(run_id):
         # K-STOCK-393（20261015 告警补盲）：勿静默返假 0——DB 损坏/
         # 锁死时 0 与"真 0 轮"不可分，报告失真。stderr WARN 显形，
         # 返回形状不变（消费方元组解包兼容）。
-        print("[WARN] debate_stats query failed: %s" % str(exc)[:120],
-              file=sys.stderr)
+        print("[WARN] debate_stats query failed: %s" % str(exc)[:120], file=sys.stderr)
         return 0, None
 
 
@@ -87,19 +97,23 @@ def debate_health(run_id):
     """单票辩论健康三指标（K-ORG-005 倒戈观测，Day0 基线报告定性）：T1/T2 final 立场 + 末轮相似度。"""
     import re
     import sqlite3
+
     out = {"t1": "?", "t2": "?", "sim_last": None}
     try:
         conn = sqlite3.connect(str(DB), check_same_thread=False)
         for agent, key in (("T1", "t1"), ("T2", "t2")):
             row = conn.execute(
                 "SELECT output FROM traces WHERE run_id=? AND agent_id=? AND phase='debate_final'",
-                (run_id, agent)).fetchone()
+                (run_id, agent),
+            ).fetchone()
             if row:
                 m = re.search(r"看多|看空", (row[0] or "")[:40])
                 out[key] = m.group(0) if m else "?"
         row = conn.execute(
             "SELECT similarity FROM traces WHERE run_id=? AND phase='debate_rebuttal' "
-            "AND similarity IS NOT NULL ORDER BY ts DESC LIMIT 1", (run_id,)).fetchone()
+            "AND similarity IS NOT NULL ORDER BY ts DESC LIMIT 1",
+            (run_id,),
+        ).fetchone()
         if row:
             out["sim_last"] = row[0]
         conn.close()
@@ -123,10 +137,14 @@ def build(today):
     confs = [r.get("confidence") or 0 for r in done]
     lines = []
     if day_n <= SHADOW_DAYS:
-        lines.append("# 投研部日报 %s（影子第 %d/%d 交易日）" % (today, day_n, SHADOW_DAYS))
+        lines.append(
+            "# 投研部日报 %s（影子第 %d/%d 交易日）" % (today, day_n, SHADOW_DAYS)
+        )
     else:
-        lines.append("# 投研部日报 %s（影子续观察 第%d日·基线%d日已满）"
-                     % (today, day_n, SHADOW_DAYS))
+        lines.append(
+            "# 投研部日报 %s（影子续观察 第%d日·基线%d日已满）"
+            % (today, day_n, SHADOW_DAYS)
+        )
     lines.append("")
     lines.append("## 一、今日产出")
     lines.append("")
@@ -134,15 +152,28 @@ def build(today):
     lines.append("|---|---|---|---|---|---|")
     for r in done:
         st = "降级" if r.get("degraded") else "正常"
-        lines.append("| %s %s | %s | %s | %s | %s | `%s` |" % (
-            r["symbol"], r.get("name", ""), r.get("recommendation", "?"),
-            r.get("confidence", "?"), r.get("price_at_decision", "?"), st, r.get("run_id", "")))
+        lines.append(
+            "| %s %s | %s | %s | %s | %s | `%s` |"
+            % (
+                r["symbol"],
+                r.get("name", ""),
+                r.get("recommendation", "?"),
+                r.get("confidence", "?"),
+                r.get("price_at_decision", "?"),
+                st,
+                r.get("run_id", ""),
+            )
+        )
     if not done:
         lines.append("| - | 今日无完成决策 | - | - | - | - |")
     lines.append("")
-    lines.append("决策分布：%s；平均置信度 %.2f" % (
-        "、".join("%s×%d" % (k, recs.count(k)) for k in set(recs)) or "无",
-        sum(confs) / len(confs) if confs else 0))
+    lines.append(
+        "决策分布：%s；平均置信度 %.2f"
+        % (
+            "、".join("%s×%d" % (k, recs.count(k)) for k in set(recs)) or "无",
+            sum(confs) / len(confs) if confs else 0,
+        )
+    )
     lines.append("")
     lines.append("## 二、异常与风险")
     lines.append("")
@@ -151,16 +182,20 @@ def build(today):
         for r in failed:
             lines.append("- %s：%s" % (r["symbol"], r.get("error", "?")[:120]))
     if p1:
-        lines.append("**[P1] %d 笔链路降级**：%s" % (
-            p1, "、".join(r["symbol"] for r in degraded)))
+        lines.append(
+            "**[P1] %d 笔链路降级**：%s"
+            % (p1, "、".join(r["symbol"] for r in degraded))
+        )
     if not p0 and not p1:
         lines.append("今日无异常（0×P0，0×P1）——链路健康，降级率 0%。")
     lines.append("")
     lines.append("## 三、观察项（A0 判读）")
     lines.append("")
     if rec_set == {"HOLD"} and len(recs) >= 3:
-        lines.append("- **[P2] 决策集中度**：全篮子 HOLD——D1 保守度待影子结束后校准（影子期间冻结不改），"
-                     "秩相关判据将依赖 confidence 备用排序。")
+        lines.append(
+            "- **[P2] 决策集中度**：全篮子 HOLD——D1 保守度待影子结束后校准（影子期间冻结不改），"
+            "秩相关判据将依赖 confidence 备用排序。"
+        )
     if done:
         rounds_list, sims = [], []
         defected, sim_warn = [], []
@@ -177,45 +212,75 @@ def build(today):
             if h["sim_last"] is not None and h["sim_last"] >= 0.7:
                 sim_warn.append("%s(%.2f)" % (r["symbol"], h["sim_last"]))
         if rounds_list:
-            lines.append("- 辩论轮次（rebuttal 轮数/票）：%s；平均末轮相似度 %s" % (
-                "、".join(str(n // 2) for n in rounds_list),
-                ("%.2f" % (sum(sims) / len(sims))) if sims else "无"))
+            lines.append(
+                "- 辩论轮次（rebuttal 轮数/票）：%s；平均末轮相似度 %s"
+                % (
+                    "、".join(str(n // 2) for n in rounds_list),
+                    ("%.2f" % (sum(sims) / len(sims))) if sims else "无",
+                )
+            )
         if defected:
-            lines.append("- **[P2] 立场漂移（倒戈）**：%s——角色放弃本方立场，辩论质量受损"
-                         "（Day0 基线已定性该模式，prompt 校准影子期满后执行）。" % "、".join(defected))
+            lines.append(
+                "- **[P2] 立场漂移（倒戈）**：%s——角色放弃本方立场，辩论质量受损"
+                "（Day0 基线已定性该模式，prompt 校准影子期满后执行）。"
+                % "、".join(defected)
+            )
         if sim_warn:
-            lines.append("- **[P2] 相似度警戒**：%s——末轮 sim≥0.7 逼近 0.8 收敛阈值，"
-                         "存在立场塌缩被误判为共识的风险。" % "、".join(sim_warn))
+            lines.append(
+                "- **[P2] 相似度警戒**：%s——末轮 sim≥0.7 逼近 0.8 收敛阈值，"
+                "存在立场塌缩被误判为共识的风险。" % "、".join(sim_warn)
+            )
     lines.append("")
     lines.append("## 四、明日计划")
     lines.append("")
     remain = SHADOW_DAYS - day_n
     if remain > 0:
-        lines.append("- 影子继续：明日 17:10 自动运行（剩 %d 个交易日），决策链路冻结不改；" % remain)
+        lines.append(
+            "- 影子继续：明日 17:10 自动运行（剩 %d 个交易日），决策链路冻结不改；"
+            % remain
+        )
     else:
-        lines.append("- 影子基线已满（%d 交易日）：三判据已 PASS（2026-10-17 eval_shadow："
-                     "J1 无人干预/J2 秩相关/J3 lineage），续影子攒 J2 显著性"
-                     "（K-ORG-129 连续化 score 新样本）；转产/收口拍板待老田。" % SHADOW_DAYS)
-    lines.append("- A0 日报通道：飞书已通（17:35 automation 定时 --push；P0 强制即时推）；A0 点评骨架 a0_agent.py 已立（automation 接入待拍板）。")
+        lines.append(
+            "- 影子基线已满（%d 交易日）：三判据已 PASS（2026-10-17 eval_shadow："
+            "J1 无人干预/J2 秩相关/J3 lineage），续影子攒 J2 显著性"
+            "（K-ORG-129 连续化 score 新样本）；转产/收口拍板待老田。" % SHADOW_DAYS
+        )
+    lines.append(
+        "- A0 日报通道：飞书已通（17:35 automation 定时 --push；P0 强制即时推）；A0 点评骨架 a0_agent.py 已立（automation 接入待拍板）。"
+    )
     lines.append("")
     lines.append("## 五、任务单看板（未闭环）")
     lines.append("")
     try:
         from tasks import TaskStore  # noqa: E402  engine/tasks.py（K-ORG-011）
-        open_tasks = [t for t in TaskStore(BASE / "data" / "org" / "tasks").ls()
-                      if t["status"] not in ("done", "cancelled", "rejected")]
+
+        open_tasks = [
+            t
+            for t in TaskStore(BASE / "data" / "org" / "tasks").ls()
+            if t["status"] not in ("done", "cancelled", "rejected")
+        ]
         if open_tasks:
             for t in open_tasks:
-                lines.append("- [%s] `%s` %s（→%s · %s）" % (
-                    t.get("severity", "?"), t["task_id"], t.get("title", "")[:42],
-                    t.get("assigned_dept", "?"), t["status"]))
+                lines.append(
+                    "- [%s] `%s` %s（→%s · %s）"
+                    % (
+                        t.get("severity", "?"),
+                        t["task_id"],
+                        t.get("title", "")[:42],
+                        t.get("assigned_dept", "?"),
+                        t["status"],
+                    )
+                )
         else:
             lines.append("无未闭环任务单。")
     except Exception as e:  # noqa: BLE001
         lines.append("- [warn] 任务单读取失败：%s" % e)
     lines.append("")
     lines.append("---")
-    lines.append("*A0 总管聚合 · 数据源 shadow_ledger.jsonl + checkpoints.db（只读）· %s*" % datetime.now().strftime("%H:%M"))
+    lines.append(
+        "*A0 总管聚合 · 数据源 shadow_ledger.jsonl + checkpoints.db（只读）· %s*"
+        % datetime.now().strftime("%H:%M")
+    )
     return "\n".join(lines), p0
 
 
@@ -228,8 +293,11 @@ def main():
         # 裸 traceback——显式检查并打印用法退出非零
         idx = sys.argv.index("--ledger")
         if idx + 1 >= len(sys.argv):
-            print("用法：a0_chief.py [--push] [--ledger <path>]"
-                  "（--ledger 需要账本路径参数）", file=sys.stderr)
+            print(
+                "用法：a0_chief.py [--push] [--ledger <path>]"
+                "（--ledger 需要账本路径参数）",
+                file=sys.stderr,
+            )
             return 2
         LEDGER = Path(sys.argv[idx + 1])
         rehearsal = True

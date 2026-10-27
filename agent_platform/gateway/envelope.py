@@ -34,8 +34,7 @@ class EnvelopeError(ValueError):
     """信封不合规（供调用方与测试断言）。"""
 
 
-def make_envelope(*, kind, ok, data=None, error=None, degraded=False,
-                  latency_ms=0):
+def make_envelope(*, kind, ok, data=None, error=None, degraded=False, latency_ms=0):
     """构造标准信封。ok 与 error/data 的自洽性由 validate 兜底。"""
     return {
         "schema_version": SCHEMA_VERSION,
@@ -75,11 +74,13 @@ def validate_envelope(env) -> None:
 
 def timed(fn):
     """门面方法计时装饰器：自动注入 latency_ms（毫秒）。"""
+
     def wrapper(*args, **kwargs):
         t0 = time.monotonic()
         env = fn(*args, **kwargs)
         env["latency_ms"] = int((time.monotonic() - t0) * 1000)
         return env
+
     wrapper.__name__ = fn.__name__
     wrapper.__doc__ = fn.__doc__
     return wrapper

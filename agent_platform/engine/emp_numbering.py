@@ -33,11 +33,11 @@ SCHEMA = "legion.emp.ledger/v1"
 RULES_VERSION = "1.0"
 
 EMP_WIDTH = 6
-EMP_MAX = 10 ** EMP_WIDTH - 1          # 999999
+EMP_MAX = 10**EMP_WIDTH - 1  # 999999
 DATE_LEN = 8
 SEQ_WIDTH = 2
-SEQ_PER_DEPT_MAX = 10 ** SEQ_WIDTH - 1  # 99（两位位宽决定的物理上限）
-DAILY_CAP_GLOBAL = 100                  # 全军团每天不超过 100 个号
+SEQ_PER_DEPT_MAX = 10**SEQ_WIDTH - 1  # 99（两位位宽决定的物理上限）
+DAILY_CAP_GLOBAL = 100  # 全军团每天不超过 100 个号
 
 # 部门字：与 org.json departments[].dept 一一对应，单字唯一
 DEPT_CHAR = {
@@ -67,7 +67,9 @@ ENROLL_RE = re.compile(r"^(\d{8})-([\u4e00-\u9fa5])-(\d{%d})$" % SEQ_WIDTH)
 
 # 票号格式（老田 2026-10-23 22:53 定）：前缀-年月日-部门字-第几号
 # 例：LEGION-20261023-参-01 / WO-20261023-情-03 / K-20261023-量-08
-TICKET_RE = re.compile(r"^(WO|K|LEGION)-(\d{8})-([\u4e00-\u9fa5])-(\d{%d})$" % SEQ_WIDTH)
+TICKET_RE = re.compile(
+    r"^(WO|K|LEGION)-(\d{8})-([\u4e00-\u9fa5])-(\d{%d})$" % SEQ_WIDTH
+)
 TICKET_PREFIXES = ("WO", "K", "LEGION")
 
 
@@ -75,7 +77,9 @@ def make_ticket(prefix: str, date: str, dept: str, seq: int) -> str:
     """按 前缀-年月日-部门字-序号 生成票号。"""
     p = str(prefix or "").strip().upper()
     if p not in TICKET_PREFIXES:
-        raise NumberingError("BAD_TICKET_PREFIX", "票号前缀须为 WO / K / LEGION：%r" % prefix)
+        raise NumberingError(
+            "BAD_TICKET_PREFIX", "票号前缀须为 WO / K / LEGION：%r" % prefix
+        )
     ch = dept_char(dept)
     if not re.match(r"^\d{8}$", str(date or "")):
         raise NumberingError("BAD_DATE", "日期须为 YYYYMMDD：%r" % date)
@@ -89,7 +93,9 @@ def parse_ticket(ticket: str) -> dict:
     if not m:
         raise NumberingError(
             "BAD_TICKET",
-            "票号格式应为 前缀-YYYYMMDD-部门字-序号（如 LEGION-20261023-参-01）：%r" % (ticket,))
+            "票号格式应为 前缀-YYYYMMDD-部门字-序号（如 LEGION-20261023-参-01）：%r"
+            % (ticket,),
+        )
     pre, date, ch, seq = m.group(1), m.group(2), m.group(3), int(m.group(4))
     if ch not in CHAR_DEPT:
         raise NumberingError("UNKNOWN_CHAR", "票号里的部门字 %r 不在表中" % ch)
@@ -106,7 +112,9 @@ class NumberingError(Exception):
 def dept_char(dept: str) -> str:
     ch = DEPT_CHAR.get(str(dept or ""))
     if not ch:
-        raise NumberingError("UNKNOWN_DEPT", "未知部门 %r，未在部门字表中登记" % (dept,))
+        raise NumberingError(
+            "UNKNOWN_DEPT", "未知部门 %r，未在部门字表中登记" % (dept,)
+        )
     return ch
 
 
@@ -123,8 +131,8 @@ def validate_enroll_no(no: str) -> dict:
     m = ENROLL_RE.match(str(no or "").strip())
     if not m:
         raise NumberingError(
-            "BAD_ENROLL_NO",
-            "编制号格式应为 YYYYMMDD-部门字-%02d：%r" % (SEQ_WIDTH, no))
+            "BAD_ENROLL_NO", "编制号格式应为 YYYYMMDD-部门字-%02d：%r" % (SEQ_WIDTH, no)
+        )
     date, ch, seq = m.group(1), m.group(2), int(m.group(3))
     if ch not in CHAR_DEPT:
         raise NumberingError("UNKNOWN_CHAR", "部门字 %r 不在表中" % ch)
@@ -134,8 +142,14 @@ def validate_enroll_no(no: str) -> dict:
 
 
 def empty_ledger() -> dict:
-    return {"schema": SCHEMA, "rules_version": RULES_VERSION,
-            "next_emp": 1, "daily": {}, "employees": {}, "retired": {}}
+    return {
+        "schema": SCHEMA,
+        "rules_version": RULES_VERSION,
+        "next_emp": 1,
+        "daily": {},
+        "employees": {},
+        "retired": {},
+    }
 
 
 def load_ledger(path) -> dict:
@@ -147,7 +161,9 @@ def load_ledger(path) -> dict:
     except Exception as e:  # noqa: BLE001
         raise NumberingError("LEDGER_UNREADABLE", "编号台账无法解析：%s" % str(e)[:120])
     if d.get("schema") != SCHEMA:
-        raise NumberingError("SCHEMA_MISMATCH", "台账 schema 不符：%r" % d.get("schema"))
+        raise NumberingError(
+            "SCHEMA_MISMATCH", "台账 schema 不符：%r" % d.get("schema")
+        )
     for k in ("next_emp", "daily", "employees"):
         d.setdefault(k, empty_ledger()[k])
     d.setdefault("retired", {})
@@ -165,28 +181,52 @@ def peek(ledger: dict, seat_id: str, dept: str, date: str | None = None) -> dict
         raise NumberingError("BAD_DATE", "日期须为 YYYYMMDD：%r" % d)
     ch = dept_char(dept)
     if seat_id in ledger["employees"]:
-        raise NumberingError("ALREADY_NUMBERED",
-                             "%s 已有编号 %s，不重复发放" % (seat_id, ledger["employees"][seat_id]["emp_no"]))
+        raise NumberingError(
+            "ALREADY_NUMBERED",
+            "%s 已有编号 %s，不重复发放"
+            % (seat_id, ledger["employees"][seat_id]["emp_no"]),
+        )
     nxt = int(ledger.get("next_emp") or 1)
     if nxt > EMP_MAX:
         raise NumberingError("EMP_EXHAUSTED", "6 位工号已用尽（上限 %d）" % EMP_MAX)
     day = (ledger.get("daily") or {}).get(d) or {"total": 0, "depts": {}}
     if int(day.get("total") or 0) >= DAILY_CAP_GLOBAL:
-        raise NumberingError("DAILY_CAP", "当日已发 %d 个号，达到全军团日上限 %d"
-                             % (day.get("total"), DAILY_CAP_GLOBAL))
+        raise NumberingError(
+            "DAILY_CAP",
+            "当日已发 %d 个号，达到全军团日上限 %d"
+            % (day.get("total"), DAILY_CAP_GLOBAL),
+        )
     used = int((day.get("depts") or {}).get(ch) or 0)
     if used >= SEQ_PER_DEPT_MAX:
-        raise NumberingError("DEPT_DAY_CAP", "%s 部门当日已发 %d 号，两位序号位宽上限 %d"
-                             % (dept, used, SEQ_PER_DEPT_MAX))
+        raise NumberingError(
+            "DEPT_DAY_CAP",
+            "%s 部门当日已发 %d 号，两位序号位宽上限 %d"
+            % (dept, used, SEQ_PER_DEPT_MAX),
+        )
     emp = "%0*d" % (EMP_WIDTH, nxt)
     enroll = "%s-%s-%0*d" % (d, ch, SEQ_WIDTH, used + 1)
-    return {"seat": seat_id, "dept": dept, "emp_no": emp, "enroll_no": enroll,
-            "date": d, "dept_char": ch, "seq": used + 1,
-            "daily_total_after": int(day.get("total") or 0) + 1}
+    return {
+        "seat": seat_id,
+        "dept": dept,
+        "emp_no": emp,
+        "enroll_no": enroll,
+        "date": d,
+        "dept_char": ch,
+        "seq": used + 1,
+        "daily_total_after": int(day.get("total") or 0) + 1,
+    }
 
 
-def assign(ledger: dict, seat_id: str, dept: str, *, ticket: str, signed_by: str,
-           date: str | None = None, batch: str = "") -> dict:
+def assign(
+    ledger: dict,
+    seat_id: str,
+    dept: str,
+    *,
+    ticket: str,
+    signed_by: str,
+    date: str | None = None,
+    batch: str = "",
+) -> dict:
     """正式发号：校验票号格式与对应关系、放行人，再落台账。
 
     注意（重要）：票号格式是「前缀-年月日-部门字-序号」，与编制号同构，
@@ -203,22 +243,40 @@ def assign(ledger: dict, seat_id: str, dept: str, *, ticket: str, signed_by: str
         raise NumberingError(
             "TICKET_MISMATCH",
             "票号与本次编号不对应：票 %s-%s-%s-%02d ｜ 号 %s-%s-%02d（防止张冠李戴）"
-            % (tk["prefix"], tk["date"], tk["char"], tk["seq"],
-               p["date"], p["dept_char"], p["seq"]))
+            % (
+                tk["prefix"],
+                tk["date"],
+                tk["char"],
+                tk["seq"],
+                p["date"],
+                p["dept_char"],
+                p["seq"],
+            ),
+        )
 
     emp_i = int(p["emp_no"])
     ledger["next_emp"] = emp_i + 1
     day = ledger["daily"].setdefault(p["date"], {"total": 0, "depts": {}})
     day["total"] = int(day.get("total") or 0) + 1
-    day["depts"][p["dept_char"]] = int((day.get("depts") or {}).get(p["dept_char"]) or 0) + 1
-    rec = {"emp_no": p["emp_no"], "enroll_no": p["enroll_no"], "dept": dept,
-           "at": time.strftime("%Y-%m-%dT%H:%M:%S"), "ticket": str(ticket).strip(),
-           "signed_by": str(signed_by).strip(), "batch": str(batch or "").strip()}
+    day["depts"][p["dept_char"]] = (
+        int((day.get("depts") or {}).get(p["dept_char"]) or 0) + 1
+    )
+    rec = {
+        "emp_no": p["emp_no"],
+        "enroll_no": p["enroll_no"],
+        "dept": dept,
+        "at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "ticket": str(ticket).strip(),
+        "signed_by": str(signed_by).strip(),
+        "batch": str(batch or "").strip(),
+    }
     ledger["employees"][seat_id] = rec
     return rec
 
 
-def retire(ledger: dict, seat_id: str, *, ticket: str, signed_by: str, reason: str = "") -> dict:
+def retire(
+    ledger: dict, seat_id: str, *, ticket: str, signed_by: str, reason: str = ""
+) -> dict:
     """注销：工号进 retired 归档，**不回收、不复用**。
 
     票号只校验格式（注销单不针对某个"当日第几号"，故不要求与编号对应），
@@ -230,9 +288,14 @@ def retire(ledger: dict, seat_id: str, *, ticket: str, signed_by: str, reason: s
     if seat_id not in ledger["employees"]:
         raise NumberingError("NOT_NUMBERED", "%s 尚未发号" % seat_id)
     rec = ledger["employees"].pop(seat_id)
-    rec.update({"retired_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
-                "retire_ticket": str(ticket).strip(), "retire_by": str(signed_by).strip(),
-                "reason": reason[:120]})
+    rec.update(
+        {
+            "retired_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+            "retire_ticket": str(ticket).strip(),
+            "retire_by": str(signed_by).strip(),
+            "reason": reason[:120],
+        }
+    )
     ledger["retired"][seat_id] = rec
     return rec
 
@@ -251,8 +314,11 @@ def rehire(ledger: dict, seat_id: str, *, ticket: str, signed_by: str) -> dict:
     old = (ledger.get("retired") or {}).pop(seat_id, None)
     if not old:
         raise NumberingError("NOT_RETIRED", "%s 不在注销档案里，无号可复" % seat_id)
-    rec = {k: v for k, v in old.items()
-           if k not in ("retired_at", "retire_ticket", "retire_by", "reason")}
+    rec = {
+        k: v
+        for k, v in old.items()
+        if k not in ("retired_at", "retire_ticket", "retire_by", "reason")
+    }
     rec["rehired_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
     rec["rehire_ticket"] = str(ticket).strip()
     rec["rehire_by"] = str(signed_by).strip()
@@ -263,8 +329,12 @@ def rehire(ledger: dict, seat_id: str, *, ticket: str, signed_by: str) -> dict:
 def summary(ledger: dict, date: str | None = None) -> dict:
     d = date or _today()
     day = (ledger.get("daily") or {}).get(d) or {"total": 0, "depts": {}}
-    return {"date": d, "issued_today": int(day.get("total") or 0),
-            "daily_cap": DAILY_CAP_GLOBAL, "by_dept": dict(day.get("depts") or {}),
-            "next_emp": "%0*d" % (EMP_WIDTH, int(ledger.get("next_emp") or 1)),
-            "active": len(ledger.get("employees") or {}),
-            "retired": len(ledger.get("retired") or {})}
+    return {
+        "date": d,
+        "issued_today": int(day.get("total") or 0),
+        "daily_cap": DAILY_CAP_GLOBAL,
+        "by_dept": dict(day.get("depts") or {}),
+        "next_emp": "%0*d" % (EMP_WIDTH, int(ledger.get("next_emp") or 1)),
+        "active": len(ledger.get("employees") or {}),
+        "retired": len(ledger.get("retired") or {}),
+    }

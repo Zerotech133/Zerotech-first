@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """组合预算与风险授权边界测试。"""
+
 import importlib.util
 import json
 from pathlib import Path
@@ -9,9 +10,12 @@ import pytest
 
 PLATFORM = Path(__file__).resolve().parents[1]
 MODULE_PATH = PLATFORM / "domains" / "portfolio_risk_wiring.py"
-spec = importlib.util.spec_from_file_location("portfolio_risk_wiring_under_test", MODULE_PATH)
+spec = importlib.util.spec_from_file_location(
+    "portfolio_risk_wiring_under_test", MODULE_PATH
+)
 prw = importlib.util.module_from_spec(spec)
 import sys
+
 sys.modules[spec.name] = prw
 spec.loader.exec_module(prw)
 
@@ -45,7 +49,9 @@ def _arbitration(**overrides):
 
 def test_shadow_consensus_is_review_only_and_never_executable():
     request = prw.build_authorization_request(
-        _arbitration(), BUDGET, CONSTRAINTS,
+        _arbitration(),
+        BUDGET,
+        CONSTRAINTS,
         mode=prw.SHADOW_MODE,
         evidence_refs=("eval:001",),
         trace_id="trace-001",
@@ -61,7 +67,8 @@ def test_shadow_consensus_is_review_only_and_never_executable():
 
 def test_blocked_arbitration_defaults_to_deny():
     request = prw.build_authorization_request(
-        _arbitration(blocked=True, consensus=None), BUDGET, CONSTRAINTS)
+        _arbitration(blocked=True, consensus=None), BUDGET, CONSTRAINTS
+    )
 
     assert request.decision == prw.DENY
     assert request.execution_allowed is False
@@ -72,7 +79,8 @@ def test_blocked_arbitration_defaults_to_deny():
 def test_missing_arbitration_fields_fail_closed():
     with pytest.raises(prw.PortfolioRiskWiringError, match="缺少字段"):
         prw.build_authorization_request(
-            {"blocked": False, "consensus": "buy"}, BUDGET, CONSTRAINTS)
+            {"blocked": False, "consensus": "buy"}, BUDGET, CONSTRAINTS
+        )
 
 
 def test_invalid_budget_is_rejected():
@@ -86,8 +94,8 @@ def test_invalid_budget_is_rejected():
 
 def test_tampered_audit_dto_is_rejected():
     request = prw.build_authorization_request(
-        _arbitration(), BUDGET, CONSTRAINTS,
-        created_at="2026-10-18T00:00:00+00:00")
+        _arbitration(), BUDGET, CONSTRAINTS, created_at="2026-10-18T00:00:00+00:00"
+    )
     payload = request.to_dict()
     payload["reason"] = "被篡改"
     tampered = prw.PortfolioRiskAuthorizationRequest(
@@ -127,14 +135,15 @@ def test_boundary_rejects_allow_without_execution_and_allow_is_not_produced():
         )
 
     request = prw.build_authorization_request(
-        _arbitration(), BUDGET, CONSTRAINTS, mode=prw.PAPER_MODE)
+        _arbitration(), BUDGET, CONSTRAINTS, mode=prw.PAPER_MODE
+    )
     assert request.decision == prw.REVIEW
     assert request.execution_allowed is False
 
 
 def test_dto_is_json_serializable_without_execution_fields_hidden():
     request = prw.build_authorization_request(
-        _arbitration(), BUDGET, CONSTRAINTS,
-        created_at="2026-10-18T00:00:00+00:00")
+        _arbitration(), BUDGET, CONSTRAINTS, created_at="2026-10-18T00:00:00+00:00"
+    )
     encoded = json.dumps(request.to_dict(), ensure_ascii=False, sort_keys=True)
     assert json.loads(encoded)["execution_allowed"] is False

@@ -33,6 +33,7 @@ CLI：
 本脚本零账本写：sqlite 只读连接（mode=ro）、git log 只读、目录只读；
 唯一落盘 = --out 指定的报告产物。零依赖（标准库）。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -47,8 +48,9 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 
 SCHEMA_VERSION = "monthly.v1"
-TRI_EXPLAIN = ("三态释义：INCONCLUSIVE=如实缺据，见缺件清单；"
-               "DEGRADED=账实不符，见双列数据。")
+TRI_EXPLAIN = (
+    "三态释义：INCONCLUSIVE=如实缺据，见缺件清单；DEGRADED=账实不符，见双列数据。"
+)
 TRI_ORDER = {"OK": 0, "INCONCLUSIVE": 1, "DEGRADED": 2}
 MONTH_RE = re.compile(r"^\d{4}-\d{2}$")
 
@@ -83,6 +85,7 @@ def month_window(month: str | None, today: date | None = None) -> str:
 
 # ---------------------------------------------------------------- ①/② 成本勾稽
 
+
 def paperclip_db_path(root: Path) -> Path:
     env = os.environ.get("PAPERCLIP_DB_PATH")
     if env:
@@ -101,7 +104,8 @@ def ledger_month_rows(conn: sqlite3.Connection, month: str) -> list[dict]:
     rows = conn.execute(
         "SELECT l.id, l.account_id, l.delta_cents, l.reason, l.wo_id, "
         "l.balance_after, l.created_at FROM budget_ledger l "
-        "ORDER BY l.account_id, l.id").fetchall()
+        "ORDER BY l.account_id, l.id"
+    ).fetchall()
     return [dict(r) for r in rows if str(r["created_at"])[:7] == month]
 
 
@@ -111,13 +115,20 @@ def verify_balance_chain(rows: list[dict]) -> list[dict]:
     prev: dict[int, int] = {}
     for r in rows:
         acct = r["account_id"]
-        expected_delta = (r["balance_after"] - prev[acct]) if acct in prev else r["balance_after"]
+        expected_delta = (
+            (r["balance_after"] - prev[acct]) if acct in prev else r["balance_after"]
+        )
         if expected_delta != r["delta_cents"]:
-            fails.append({"ledger_id": r["id"], "account_id": acct,
-                          "balance_after": r["balance_after"],
-                          "prev_balance_after": prev.get(acct),
-                          "delta_cents": r["delta_cents"],
-                          "expect_delta": expected_delta})
+            fails.append(
+                {
+                    "ledger_id": r["id"],
+                    "account_id": acct,
+                    "balance_after": r["balance_after"],
+                    "prev_balance_after": prev.get(acct),
+                    "delta_cents": r["delta_cents"],
+                    "expect_delta": expected_delta,
+                }
+            )
         prev[acct] = r["balance_after"]
     return fails
 
@@ -137,8 +148,18 @@ def verify_wo_identities(rows: list[dict]) -> list[dict]:
     wo: dict[str, dict] = {}
     for r in rows:
         wid = r["wo_id"] or "(无工单号)"
-        d = wo.setdefault(wid, {"pre": 0, "meter": 0, "extra": 0, "refund": 0,
-                                "abort": 0, "rows": 0, "sign_bad": []})
+        d = wo.setdefault(
+            wid,
+            {
+                "pre": 0,
+                "meter": 0,
+                "extra": 0,
+                "refund": 0,
+                "abort": 0,
+                "rows": 0,
+                "sign_bad": [],
+            },
+        )
         reason = str(r["reason"])
         delta = r["delta_cents"]
         d["rows"] += 1
@@ -170,26 +191,41 @@ def verify_wo_identities(rows: list[dict]) -> list[dict]:
             problems.append("settle-extra 与 settle-refund 并存（恒等式歧义）")
         if d["abort"] > 0:
             if d["pre"] != d["abort"]:
-                problems.append(f"rejected 恒等式不成立：D1 预扣 {d['pre']} != |D3b 全退| {d['abort']}")
+                problems.append(
+                    f"rejected 恒等式不成立：D1 预扣 {d['pre']} != |D3b 全退| {d['abort']}"
+                )
             if d["meter"] or d["extra"] or d["refund"]:
                 problems.append("abort 单含 meter/settle 行（与 D3b 全退口径冲突）")
         else:
             if d["refund"] > d["pre"] + d["meter"] + d["extra"]:
-                problems.append(f"settle-refund {d['refund']} 超过已扣 {d['pre'] + d['meter'] + d['extra']}")
+                problems.append(
+                    f"settle-refund {d['refund']} 超过已扣 {d['pre'] + d['meter'] + d['extra']}"
+                )
             if net < 0:
                 problems.append(f"净成本为负：{net}")
-        out.append({"wo_id": wid, "pre": d["pre"], "meter": d["meter"],
-                    "extra": d["extra"], "refund": d["refund"], "abort": d["abort"],
-                    "net": net, "verdict": "FAIL" if problems else "PASS",
-                    "problems": problems})
+        out.append(
+            {
+                "wo_id": wid,
+                "pre": d["pre"],
+                "meter": d["meter"],
+                "extra": d["extra"],
+                "refund": d["refund"],
+                "abort": d["abort"],
+                "net": net,
+                "verdict": "FAIL" if problems else "PASS",
+                "problems": problems,
+            }
+        )
     return out
 
 
 def verify_audit_chain(conn: sqlite3.Connection) -> dict:
     """审计哈希链本地复算（/audit/verify 只读同构旁证）。"""
     GENESIS = "0" * 64
-    rows = conn.execute("SELECT seq, ts, actor, event_type, wo_id, payload, "
-                        "prev_hash, hash FROM audit_event ORDER BY seq").fetchall()
+    rows = conn.execute(
+        "SELECT seq, ts, actor, event_type, wo_id, payload, "
+        "prev_hash, hash FROM audit_event ORDER BY seq"
+    ).fetchall()
     prev = GENESIS
     bad = 0
     for r in rows:
@@ -201,30 +237,40 @@ def verify_audit_chain(conn: sqlite3.Connection) -> dict:
         if h != r["hash"]:
             bad += 1
         prev = r["hash"]
-    return {"rows": len(rows), "bad": bad,
-            "verdict": "PASS" if (bad == 0 and rows) else
-                       ("INCONCLUSIVE" if not rows else "FAIL")}
+    return {
+        "rows": len(rows),
+        "bad": bad,
+        "verdict": "PASS"
+        if (bad == 0 and rows)
+        else ("INCONCLUSIVE" if not rows else "FAIL"),
+    }
 
 
 def cost_section(root: Path, month: str) -> tuple[str, str]:
     """返回 (段文本, 段三态)。"""
     dbf = paperclip_db_path(root)
     if not dbf.is_file():
-        txt = (f"## ②成本勾稽表\n> 锚: digital-legion/paperclip/paperclip.db | 态: INCONCLUSIVE"
-               f"（账本缺失：{dbf} 不存在，PAPERCLIP_DB_PATH 未指向实存库）\n"
-               f"- {month} 月无 budget_ledger 可勾稽——零流水月/账本缺失，如实 INCONCLUSIVE，"
-               f"不报 OK（判例 6：空集通过=假绿），不编文\n")
+        txt = (
+            f"## ②成本勾稽表\n> 锚: digital-legion/paperclip/paperclip.db | 态: INCONCLUSIVE"
+            f"（账本缺失：{dbf} 不存在，PAPERCLIP_DB_PATH 未指向实存库）\n"
+            f"- {month} 月无 budget_ledger 可勾稽——零流水月/账本缺失，如实 INCONCLUSIVE，"
+            f"不报 OK（判例 6：空集通过=假绿），不编文\n"
+        )
         return txt, "INCONCLUSIVE"
     try:
         conn = _open_ro(dbf)
     except sqlite3.Error as e:
-        return (f"## ②成本勾稽表\n> 锚: {dbf} | 态: INCONCLUSIVE（账本不可读：{e}）\n",
-                "INCONCLUSIVE")
+        return (
+            f"## ②成本勾稽表\n> 锚: {dbf} | 态: INCONCLUSIVE（账本不可读：{e}）\n",
+            "INCONCLUSIVE",
+        )
     try:
         rows = ledger_month_rows(conn, month)
         if not rows:
-            return (f"## ②成本勾稽表\n> 锚: {dbf} | 态: INCONCLUSIVE（零流水月："
-                    f"{month} 无账本行——空集不构成 PASS 证据）\n"), "INCONCLUSIVE"
+            return (
+                f"## ②成本勾稽表\n> 锚: {dbf} | 态: INCONCLUSIVE（零流水月："
+                f"{month} 无账本行——空集不构成 PASS 证据）\n"
+            ), "INCONCLUSIVE"
         chain_fails = verify_balance_chain(rows)
         wo_rows = verify_wo_identities(rows)
         audit = verify_audit_chain(conn)
@@ -241,31 +287,42 @@ def cost_section(root: Path, month: str) -> tuple[str, str]:
             state = worst(state, "DEGRADED")
             notes.append(f"审计链 {audit['verdict']}（bad={audit['bad']}）")
         note_s = "；".join(notes) if notes else "恒等式与余额链全过"
-        L = [f"## ②成本勾稽表\n> 锚: {dbf} | 态: {state}（{note_s}；"
-             f"结算月归段=账本行 created_at 前缀 {month}）"]
-        L.append(f"- 账本行：{len(rows)} 行；工单：{len(wo_rows)} 张；"
-                 f"扣减点口径=pre-hold/meter/settle-extra/settle-refund/abort-refund"
-                 f"（paperclip/app.py D1/D2/D3a/D3b）")
-        L.append(f"- 审计哈希链旁证（本地复算 prev_hash 咬合+sha256）：{audit['verdict']}"
-                 f"（{audit['rows']} 行 / bad={audit['bad']}）")
+        L = [
+            f"## ②成本勾稽表\n> 锚: {dbf} | 态: {state}（{note_s}；"
+            f"结算月归段=账本行 created_at 前缀 {month}）"
+        ]
+        L.append(
+            f"- 账本行：{len(rows)} 行；工单：{len(wo_rows)} 张；"
+            f"扣减点口径=pre-hold/meter/settle-extra/settle-refund/abort-refund"
+            f"（paperclip/app.py D1/D2/D3a/D3b）"
+        )
+        L.append(
+            f"- 审计哈希链旁证（本地复算 prev_hash 咬合+sha256）：{audit['verdict']}"
+            f"（{audit['rows']} 行 / bad={audit['bad']}）"
+        )
         for w in wo_rows:
             verdict = w["verdict"]
-            line = (f"- {w['wo_id']}：D1={w['pre']} D2={w['meter']} "
-                    f"extra={w['extra']} refund={w['refund']} abort={w['abort']} "
-                    f"净额={w['net']} -> {verdict}")
+            line = (
+                f"- {w['wo_id']}：D1={w['pre']} D2={w['meter']} "
+                f"extra={w['extra']} refund={w['refund']} abort={w['abort']} "
+                f"净额={w['net']} -> {verdict}"
+            )
             if w["problems"]:
                 line += "；问题：" + "；".join(w["problems"])
             L.append(line + f"（出处：budget_ledger reason=wo:{w['wo_id']}:*）")
         for f_ in chain_fails:
-            L.append(f"- 余额链 FAIL：ledger_id={f_['ledger_id']} account={f_['account_id']} "
-                     f"balance_after={f_['balance_after']} 前行={f_['prev_balance_after']} "
-                     f"delta={f_['delta_cents']} 期望={f_['expect_delta']}")
+            L.append(
+                f"- 余额链 FAIL：ledger_id={f_['ledger_id']} account={f_['account_id']} "
+                f"balance_after={f_['balance_after']} 前行={f_['prev_balance_after']} "
+                f"delta={f_['delta_cents']} 期望={f_['expect_delta']}"
+            )
         return "\n".join(L) + "\n", state
     finally:
         conn.close()
 
 
 # ---------------------------------------------------------------- ③ 施工盘点
+
 
 def build_inventory_section(root: Path, month: str) -> tuple[str, str]:
     """git log --since 当月1日 -- docs/legion/ 全列原文转抄。"""
@@ -274,27 +331,45 @@ def build_inventory_section(root: Path, month: str) -> tuple[str, str]:
     nxt = date(y + (m == 12), (m % 12) + 1, 1).isoformat()
     try:
         p = subprocess.run(
-            ["git", "log", f"--since={since}",
-             f"--until={nxt}", "--oneline", "--", "docs/legion/"],
-            capture_output=True, text=True, encoding="utf-8", errors="replace",
-            timeout=60, cwd=str(root))
+            [
+                "git",
+                "log",
+                f"--since={since}",
+                f"--until={nxt}",
+                "--oneline",
+                "--",
+                "docs/legion/",
+            ],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=60,
+            cwd=str(root),
+        )
         lines = [ln for ln in p.stdout.splitlines() if ln.strip()]
     except (OSError, subprocess.TimeoutExpired) as e:
-        return (f"## ③当月施工盘点\n> 锚: docs/legion/ | 态: INCONCLUSIVE"
-                f"（git 不可用：{e}）\n"), "INCONCLUSIVE"
+        return (
+            f"## ③当月施工盘点\n> 锚: docs/legion/ | 态: INCONCLUSIVE"
+            f"（git 不可用：{e}）\n"
+        ), "INCONCLUSIVE"
     if not lines:
-        return (f"## ③当月施工盘点\n> 锚: docs/legion/ | 态: INCONCLUSIVE"
-                f"（当月零入库——空集不报 OK；取证命令 git log --since={since}）\n"
-                ), "INCONCLUSIVE"
-    L = [f"## ③当月施工盘点\n> 锚: docs/legion/ | 态: OK"
-         f"（{len(lines)} 条原文转抄，零增删改写；取证命令 git log --since={since} "
-         f"--until={nxt} --oneline -- docs/legion/）"]
+        return (
+            f"## ③当月施工盘点\n> 锚: docs/legion/ | 态: INCONCLUSIVE"
+            f"（当月零入库——空集不报 OK；取证命令 git log --since={since}）\n"
+        ), "INCONCLUSIVE"
+    L = [
+        f"## ③当月施工盘点\n> 锚: docs/legion/ | 态: OK"
+        f"（{len(lines)} 条原文转抄，零增删改写；取证命令 git log --since={since} "
+        f"--until={nxt} --oneline -- docs/legion/）"
+    ]
     for ln in lines:
         L.append(f"- {ln}")
     return "\n".join(L) + "\n", "OK"
 
 
 # ---------------------------------------------------------------- ④ 编制对账
+
 
 def build_org_section(root: Path) -> tuple[str, str]:
     """root=仓根。org/hr 事实源在 agent_platform/ 下。
@@ -303,13 +378,17 @@ def build_org_section(root: Path) -> tuple[str, str]:
     org_f = root / "agent_platform" / "registry" / "org.json"
     hr_d = root / "agent_platform" / "hr"
     if not org_f.is_file() or not hr_d.is_dir():
-        return ("## ④编制差集表\n> 锚: agent_platform/registry/org.json ; agent_platform/hr/ | "
-                "态: INCONCLUSIVE（事实源缺失）\n"), "INCONCLUSIVE"
+        return (
+            "## ④编制差集表\n> 锚: agent_platform/registry/org.json ; agent_platform/hr/ | "
+            "态: INCONCLUSIVE（事实源缺失）\n"
+        ), "INCONCLUSIVE"
     try:
         j = json.loads(org_f.read_text(encoding="utf-8"))
     except ValueError as e:
-        return (f"## ④编制差集表\n> 锚: agent_platform/registry/org.json ; agent_platform/hr/ | "
-                f"态: INCONCLUSIVE（org.json 不可解析：{e}——不编文）\n"), "INCONCLUSIVE"
+        return (
+            f"## ④编制差集表\n> 锚: agent_platform/registry/org.json ; agent_platform/hr/ | "
+            f"态: INCONCLUSIVE（org.json 不可解析：{e}——不编文）\n"
+        ), "INCONCLUSIVE"
     org: set[str] = set()
     for dep in j.get("departments", []):
         for a in dep.get("agents", []):
@@ -318,18 +397,27 @@ def build_org_section(root: Path) -> tuple[str, str]:
     if isinstance(chief, dict) and chief.get("agent_id"):
         org.add(str(chief["agent_id"]))
     hr = {p.name for p in hr_d.iterdir() if p.is_dir()}
-    org_no_hr = sorted(org - hr)   # 登记缺 profile
-    hr_no_org = sorted(hr - org)   # 幽灵目录
-    L = ["## ④编制差集表\n> 锚: agent_platform/registry/org.json ; agent_platform/hr/ | "
-         "态: OK（双向 diff 投影，口径=HR 盘点单 541b1690；差集如实列示，处置归过会）"]
-    L.append(f"- org.json 在编引用：{len(org)} 个；hr/ 实存目录：{len(hr)} 个"
-             f"（出处：org.json departments[].agents+chief.agent_id、hr/ dir 列表）")
-    L.append(f"- org 有 hr 无（登记缺 profile）：{('、'.join(org_no_hr)) if org_no_hr else '（空）'}")
-    L.append(f"- hr 有 org 无（幽灵目录）：{('、'.join(hr_no_org)) if hr_no_org else '（空）'}")
+    org_no_hr = sorted(org - hr)  # 登记缺 profile
+    hr_no_org = sorted(hr - org)  # 幽灵目录
+    L = [
+        "## ④编制差集表\n> 锚: agent_platform/registry/org.json ; agent_platform/hr/ | "
+        "态: OK（双向 diff 投影，口径=HR 盘点单 541b1690；差集如实列示，处置归过会）"
+    ]
+    L.append(
+        f"- org.json 在编引用：{len(org)} 个；hr/ 实存目录：{len(hr)} 个"
+        f"（出处：org.json departments[].agents+chief.agent_id、hr/ dir 列表）"
+    )
+    L.append(
+        f"- org 有 hr 无（登记缺 profile）：{('、'.join(org_no_hr)) if org_no_hr else '（空）'}"
+    )
+    L.append(
+        f"- hr 有 org 无（幽灵目录）：{('、'.join(hr_no_org)) if hr_no_org else '（空）'}"
+    )
     return "\n".join(L) + "\n", "OK"
 
 
 # ---------------------------------------------------------------- 数字反查钩子
+
 
 def recheck(text: str, base: Path) -> dict:
     """W38 查3 复算钩子（check_report_isolation 调用）：对月报全部派生数字
@@ -350,8 +438,11 @@ def recheck(text: str, base: Path) -> dict:
     notes: list[str] = []
     m = re.search(r"# 军团月报 (\d{4}-\d{2})", text)
     if not m:
-        return {"violations": ["查3：报告头缺月份标题，无法复算"], "checked": 0,
-                "notes": notes}
+        return {
+            "violations": ["查3：报告头缺月份标题，无法复算"],
+            "checked": 0,
+            "notes": notes,
+        }
     month = m.group(1)
 
     # ②成本勾稽
@@ -379,13 +470,17 @@ def recheck(text: str, base: Path) -> dict:
                     wo_rows = verify_wo_identities(rows)
                     audit = verify_audit_chain(conn)
                     for w in wo_rows:
-                        exp = (f"- {w['wo_id']}：D1={w['pre']} D2={w['meter']} "
-                               f"extra={w['extra']} refund={w['refund']} "
-                               f"abort={w['abort']} 净额={w['net']} -> {w['verdict']}")
+                        exp = (
+                            f"- {w['wo_id']}：D1={w['pre']} D2={w['meter']} "
+                            f"extra={w['extra']} refund={w['refund']} "
+                            f"abort={w['abort']} 净额={w['net']} -> {w['verdict']}"
+                        )
                         if exp in s2:
                             checked += 1
                         else:
-                            violations.append(f"查3-②：逐单恒等式行不符 -> {w['wo_id']}")
+                            violations.append(
+                                f"查3-②：逐单恒等式行不符 -> {w['wo_id']}"
+                            )
                     exp_audit = f"审计哈希链旁证（本地复算 prev_hash 咬合+sha256）：{audit['verdict']}"
                     if exp_audit in s2:
                         checked += 1
@@ -404,10 +499,22 @@ def recheck(text: str, base: Path) -> dict:
     nxt = date(y + (mo == 12), (mo % 12) + 1, 1).isoformat()
     try:
         p = subprocess.run(
-            ["git", "log", f"--since={since}", f"--until={nxt}",
-             "--oneline", "--", "docs/legion/"],
-            capture_output=True, text=True, encoding="utf-8", errors="replace",
-            timeout=60, cwd=str(base))
+            [
+                "git",
+                "log",
+                f"--since={since}",
+                f"--until={nxt}",
+                "--oneline",
+                "--",
+                "docs/legion/",
+            ],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=60,
+            cwd=str(base),
+        )
         glines = [ln for ln in p.stdout.splitlines() if ln.strip()]
     except (OSError, subprocess.TimeoutExpired):
         glines = None
@@ -438,10 +545,12 @@ def recheck(text: str, base: Path) -> dict:
             checked += 1
         else:
             violations.append(f"查3-④：编制计数不符 -> {exp_cnt}")
-        for label, diff in (("org 有 hr 无", sorted(org - hr)),
-                            ("hr 有 org 无", sorted(hr - org))):
+        for label, diff in (
+            ("org 有 hr 无", sorted(org - hr)),
+            ("hr 有 org 无", sorted(hr - org)),
+        ):
             exp_l = f"- {label}（{'登记缺 profile' if 'org 有' in label else '幽灵目录'}）："
-            exp_l += ("、" .join(diff)) if diff else "（空）"
+            exp_l += ("、".join(diff)) if diff else "（空）"
             if exp_l in s4:
                 checked += 1
             else:
@@ -451,8 +560,11 @@ def recheck(text: str, base: Path) -> dict:
 
     # ①月概览（状态行与②③④锚行一致性）
     s1 = sec_of("## ①")
-    for tag, prefix in (("成本勾稽段", "## ②"), ("施工盘点段", "## ③"),
-                        ("编制对账段", "## ④")):
+    for tag, prefix in (
+        ("成本勾稽段", "## ②"),
+        ("施工盘点段", "## ③"),
+        ("编制对账段", "## ④"),
+    ):
         sec = next((s for s in rep["sections"] if s["title"].startswith(prefix)), None)
         if sec is None:
             continue
@@ -467,20 +579,25 @@ def recheck(text: str, base: Path) -> dict:
 
 # ---------------------------------------------------------------- 主装配
 
+
 def build_report(root: Path, month: str) -> str:
     cost_txt, cost_state = cost_section(root, month)
     inv_txt, inv_state = build_inventory_section(root, month)
     org_txt, org_state = build_org_section(root)
 
     hdr = worst(cost_state, inv_state, org_state)
-    L = [f"# 军团月报 {month}",
-         f"> report_schema_version: {SCHEMA_VERSION} | 报告级三态: {hdr} | "
-         f"生成时刻: {datetime.now().isoformat(sep=' ', timespec='seconds')}",
-         f"> {TRI_EXPLAIN}", ""]
+    L = [
+        f"# 军团月报 {month}",
+        f"> report_schema_version: {SCHEMA_VERSION} | 报告级三态: {hdr} | "
+        f"生成时刻: {datetime.now().isoformat(sep=' ', timespec='seconds')}",
+        f"> {TRI_EXPLAIN}",
+        "",
+    ]
     # ① 月概览（三段各一行，出处即下列各段锚）
     n_inv = len(re.findall(r"^- ", inv_txt, flags=re.M))
-    L.append(f"## ①月概览\n> 锚: 本报告②③④段 | 态: {hdr}（三段计数汇总，"
-             f"出处即下列各段锚）")
+    L.append(
+        f"## ①月概览\n> 锚: 本报告②③④段 | 态: {hdr}（三段计数汇总，出处即下列各段锚）"
+    )
     L.append(f"- 成本勾稽段：{cost_state}（逐单明细见②段锚行与行项）")
     L.append(f"- 施工盘点段：{inv_state}（git log 条目 {n_inv} 条，原文见③段）")
     L.append(f"- 编制对账段：{org_state}")
@@ -491,18 +608,29 @@ def build_report(root: Path, month: str) -> str:
     L.append(f"## ⑤三态声明与缺件清单\n> 锚: 本报告各段 | 态: {hdr}")
     L.append(f"> {TRI_EXPLAIN}")
     if hdr != "OK":
-        L.append(f"- 非全绿声明：报告级 {hdr}，各段三态见逐段锚行；缺件清单以各段锚行括注为准")
+        L.append(
+            f"- 非全绿声明：报告级 {hdr}，各段三态见逐段锚行；缺件清单以各段锚行括注为准"
+        )
     return "\n".join(L).rstrip() + "\n"
 
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="军团月报生成器（账本投影，只读）")
-    ap.add_argument("--month", help="结算月 YYYY-MM（账本行 created_at 归月）；"
-                                    "缺省=月一日自动投影最近完整自然月，非月一日自跳过")
-    ap.add_argument("--out", help="产物路径；缺省 agent_platform/data/reports/monthly_<月>.md")
+    ap.add_argument(
+        "--month",
+        help="结算月 YYYY-MM（账本行 created_at 归月）；"
+        "缺省=月一日自动投影最近完整自然月，非月一日自跳过",
+    )
+    ap.add_argument(
+        "--out", help="产物路径；缺省 agent_platform/data/reports/monthly_<月>.md"
+    )
     args = ap.parse_args(argv)
     month = month_window(args.month)
-    out = Path(args.out) if args.out else ap_root() / "data" / "reports" / f"monthly_{month}.md"
+    out = (
+        Path(args.out)
+        if args.out
+        else ap_root() / "data" / "reports" / f"monthly_{month}.md"
+    )
     text = build_report(repo_root(), month)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(text, encoding="utf-8")

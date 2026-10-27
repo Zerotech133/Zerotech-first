@@ -9,6 +9,7 @@
 验收门：①缺省行为与常量完全一致（零行为变化）；②tmp root 落盘隔离
 （save→load 往返 + 不触真仓）；③原子替换语义保持。
 """
+
 import sys
 from pathlib import Path
 
@@ -59,4 +60,5 @@ def test_sched_missing_file_returns_empty(tmp_path):
 
 if __name__ == "__main__":
     import pytest
+
     sys.exit(pytest.main([__file__, "-q"]))

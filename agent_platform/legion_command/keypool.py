@@ -8,6 +8,7 @@
 - 失败且 auto_switch=on → 自动切到下一个候选（按 priority），日志留痕；
 - 本模块是页面/池 MVP，不直接改各席位 LLM 调用链（下一期接读取路径）。
 """
+
 from __future__ import annotations
 
 import base64
@@ -27,8 +28,16 @@ FERNET_KEY = DATA_DIR / "fernet.key"
 
 SEATS = {
     "tianfeng": {"cn": "田丰", "provider": "zhipu", "binding": "glm/glm-5.3"},
-    "zhaoyun": {"cn": "赵云", "provider": "deepseek", "binding": "deepseek/deepseek-chat"},
-    "zhuge": {"cn": "诸葛亮", "provider": "deepseek", "binding": "openclaw/deepseek-chat"},
+    "zhaoyun": {
+        "cn": "赵云",
+        "provider": "deepseek",
+        "binding": "deepseek/deepseek-chat",
+    },
+    "zhuge": {
+        "cn": "诸葛亮",
+        "provider": "deepseek",
+        "binding": "openclaw/deepseek-chat",
+    },
     "relay": {"cn": "中转站", "provider": "custom", "binding": "openai-compatible"},
 }
 PROVIDER_URL = {
@@ -36,21 +45,36 @@ PROVIDER_URL = {
     "deepseek": "https://api.deepseek.com/chat/completions",
 }
 PROVIDER_MODEL = {"zhipu": "glm-4.6-flash", "deepseek": "deepseek-chat"}
-POLICY = {"max_attempts": 2, "cooldown_sec": 600, "retry_interval_sec": 60,
-          "on_all_failed": "page_banner_log_only"}
+POLICY = {
+    "max_attempts": 2,
+    "cooldown_sec": 600,
+    "retry_interval_sec": 60,
+    "on_all_failed": "page_banner_log_only",
+}
 
 
 def _default() -> dict:
-    return {"schema": "seat_keypool/v1", "seats": {
-        k: {"provider": v["provider"], "binding": v["binding"],
-            "auto_switch": True, "active_key_id": None}
-        for k, v in SEATS.items()},
-        "keys": [], "policy": dict(POLICY), "log": []}
+    return {
+        "schema": "seat_keypool/v1",
+        "seats": {
+            k: {
+                "provider": v["provider"],
+                "binding": v["binding"],
+                "auto_switch": True,
+                "active_key_id": None,
+            }
+            for k, v in SEATS.items()
+        },
+        "keys": [],
+        "policy": dict(POLICY),
+        "log": [],
+    }
 
 
 def _fernet():
     try:
         from cryptography.fernet import Fernet
+
         DATA_DIR.mkdir(parents=True, exist_ok=True)
         if not FERNET_KEY.exists():
             FERNET_KEY.write_bytes(Fernet.generate_key())
@@ -113,8 +137,16 @@ def _now() -> str:
 
 
 def _log(d: dict, seat: str, frm: str, to: str, reason: str, result: str) -> None:
-    d.setdefault("log", []).append({"at": _now(), "seat": seat, "from": frm,
-                                    "to": to, "reason": reason, "result": result})
+    d.setdefault("log", []).append(
+        {
+            "at": _now(),
+            "seat": seat,
+            "from": frm,
+            "to": to,
+            "reason": reason,
+            "result": result,
+        }
+    )
     d["log"] = d["log"][-200:]
 
 
@@ -125,17 +157,29 @@ def _key(d: dict, key_id: str):
     return None
 
 
-def _provider_test(provider: str, secret: str, timeout: int = 15,
-                   base_url: str = "", model: str = "") -> dict:
+def _provider_test(
+    provider: str, secret: str, timeout: int = 15, base_url: str = "", model: str = ""
+) -> dict:
     url = base_url or PROVIDER_URL.get(provider)
     if not url:
         return {"status": "unknown", "detail": "provider_not_supported"}
-    body = json.dumps({"model": model or PROVIDER_MODEL.get(provider, ""),
-                       "messages": [{"role": "user", "content": "ping"}],
-                       "max_tokens": 1, "stream": False}).encode()
-    req = urllib.request.Request(url, data=body, method="POST",
-                                 headers={"Content-Type": "application/json",
-                                          "Authorization": "Bearer " + secret})
+    body = json.dumps(
+        {
+            "model": model or PROVIDER_MODEL.get(provider, ""),
+            "messages": [{"role": "user", "content": "ping"}],
+            "max_tokens": 1,
+            "stream": False,
+        }
+    ).encode()
+    req = urllib.request.Request(
+        url,
+        data=body,
+        method="POST",
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + secret,
+        },
+    )
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             r.read(200)
@@ -154,17 +198,24 @@ def _provider_test(provider: str, secret: str, timeout: int = 15,
             return {"status": "degraded", "http": code, "detail": msg[:200]}
         return {"status": "degraded", "http": code, "detail": msg[:200]}
     except Exception as e:  # noqa: BLE001
-        return {"status": "degraded", "http": None,
-                "detail": "%s: %s" % (type(e).__name__, str(e)[:160])}
+        return {
+            "status": "degraded",
+            "http": None,
+            "detail": "%s: %s" % (type(e).__name__, str(e)[:160]),
+        }
 
 
 def auto_switch(d: dict, seat: str, reason: str) -> dict:
     s = d.setdefault("seats", {}).setdefault(seat, {})
     old = s.get("active_key_id")
-    cands = [k for k in d.get("keys", [])
-             if k.get("seat") == seat and k.get("enabled", True)
-             and k.get("status") in ("healthy", "pending")
-             and k.get("id") != old]
+    cands = [
+        k
+        for k in d.get("keys", [])
+        if k.get("seat") == seat
+        and k.get("enabled", True)
+        and k.get("status") in ("healthy", "pending")
+        and k.get("id") != old
+    ]
     cands.sort(key=lambda k: (int(k.get("priority") or 99), k.get("id")))
     if not cands:
         s["active_key_id"] = None
@@ -180,28 +231,43 @@ def auto_switch(d: dict, seat: str, reason: str) -> dict:
 
 def state() -> dict:
     d = _load()
-    out = {"schema": "seat_keypool_state/v1", "generated_at": _now(),
-           "seats": {}, "policy": d.get("policy") or POLICY,
-           "log": d.get("log", [])[-40:][::-1], "ok": True}
+    out = {
+        "schema": "seat_keypool_state/v1",
+        "generated_at": _now(),
+        "seats": {},
+        "policy": d.get("policy") or POLICY,
+        "log": d.get("log", [])[-40:][::-1],
+        "ok": True,
+    }
     for sid, meta in SEATS.items():
         s = d.get("seats", {}).get(sid, {})
         keys = []
         for k in d.get("keys", []):
             if k.get("seat") != sid:
                 continue
-            keys.append({"id": k.get("id"), "label": k.get("label"),
-                         "masked": k.get("mask") or "***",
-                         "priority": k.get("priority"), "status": k.get("status", "pending"),
-                         "base_url": k.get("base_url") or "", "model": k.get("model") or "",
-                         "enabled": k.get("enabled", True),
-                         "last_checked": k.get("last_checked"),
-                         "last_error": k.get("last_error")})
-        out["seats"][sid] = {"cn": meta["cn"], "provider": meta["provider"],
-                             "binding": meta["binding"],
-                             "auto_switch": bool(s.get("auto_switch", True)),
-                             "active_key_id": s.get("active_key_id"),
-                             "degraded": bool(s.get("degraded")),
-                             "keys": keys}
+            keys.append(
+                {
+                    "id": k.get("id"),
+                    "label": k.get("label"),
+                    "masked": k.get("mask") or "***",
+                    "priority": k.get("priority"),
+                    "status": k.get("status", "pending"),
+                    "base_url": k.get("base_url") or "",
+                    "model": k.get("model") or "",
+                    "enabled": k.get("enabled", True),
+                    "last_checked": k.get("last_checked"),
+                    "last_error": k.get("last_error"),
+                }
+            )
+        out["seats"][sid] = {
+            "cn": meta["cn"],
+            "provider": meta["provider"],
+            "binding": meta["binding"],
+            "auto_switch": bool(s.get("auto_switch", True)),
+            "active_key_id": s.get("active_key_id"),
+            "degraded": bool(s.get("degraded")),
+            "keys": keys,
+        }
     return out
 
 
@@ -224,15 +290,27 @@ def action(req: dict) -> dict:
         if len(d["keys"]) >= 40:
             return {"ok": False, "error": "too_many_keys"}
         kid = "k-" + uuid.uuid4().hex[:8]
-        d["keys"].append({"id": kid, "seat": seat,
-                          "label": str(req.get("label") or ("Key %d" % (len(d["keys"]) + 1)))[:40],
-                          "secret_enc": _encrypt(raw),
-                          "mask": _mask(raw),
-                          "priority": int(req.get("priority") or (len([x for x in d["keys"] if x.get("seat") == seat]) + 1)),
-                          "base_url": str(req.get("base_url") or "")[:300],
-                          "model": str(req.get("model") or "")[:80],
-                          "status": "pending", "enabled": True,
-                          "last_checked": None, "last_error": None})
+        d["keys"].append(
+            {
+                "id": kid,
+                "seat": seat,
+                "label": str(req.get("label") or ("Key %d" % (len(d["keys"]) + 1)))[
+                    :40
+                ],
+                "secret_enc": _encrypt(raw),
+                "mask": _mask(raw),
+                "priority": int(
+                    req.get("priority")
+                    or (len([x for x in d["keys"] if x.get("seat") == seat]) + 1)
+                ),
+                "base_url": str(req.get("base_url") or "")[:300],
+                "model": str(req.get("model") or "")[:80],
+                "status": "pending",
+                "enabled": True,
+                "last_checked": None,
+                "last_error": None,
+            }
+        )
         if not s.get("active_key_id"):
             s["active_key_id"] = kid
         _log(d, seat, "-", kid, "manual_add", "added")
@@ -281,12 +359,20 @@ def action(req: dict) -> dict:
             secret = _decrypt(k.get("secret_enc") or "")
         except Exception as e:  # noqa: BLE001
             return {"ok": False, "error": "decrypt_failed", "detail": str(e)[:120]}
-        r = _provider_test(SEATS[seat]["provider"], secret,
-                           base_url=str(k.get("base_url") or ""), model=str(k.get("model") or ""))
+        r = _provider_test(
+            SEATS[seat]["provider"],
+            secret,
+            base_url=str(k.get("base_url") or ""),
+            model=str(k.get("model") or ""),
+        )
         k["status"] = r["status"]
         k["last_checked"] = _now()
         k["last_error"] = r.get("detail") if r["status"] != "healthy" else None
-        if r["status"] != "healthy" and bool(s.get("auto_switch", True)) and s.get("active_key_id") == kid:
+        if (
+            r["status"] != "healthy"
+            and bool(s.get("auto_switch", True))
+            and s.get("active_key_id") == kid
+        ):
             auto_switch(d, seat, "test_" + r["status"])
         _log(d, seat, kid, "-", "test_" + r["status"], r["status"])
         _save(d)
@@ -296,13 +382,26 @@ def action(req: dict) -> dict:
         kid = s.get("active_key_id")
         k = _key(d, kid) if kid else None
         if k:
-            k["status"] = "quota" if code in ("429", "quota_exhausted") else (
-                "invalid" if code in ("401", "403") else "degraded")
+            k["status"] = (
+                "quota"
+                if code in ("429", "quota_exhausted")
+                else ("invalid" if code in ("401", "403") else "degraded")
+            )
             k["last_checked"] = _now()
             k["last_error"] = "runtime_error:%s" % code
-        res = auto_switch(d, seat, "runtime_" + code) if bool(s.get("auto_switch", True)) else {"ok": False}
-        _log(d, seat, kid or "-", res.get("active_key_id", "-"), "runtime_error_" + code,
-             "switched" if res.get("ok") else "degraded")
+        res = (
+            auto_switch(d, seat, "runtime_" + code)
+            if bool(s.get("auto_switch", True))
+            else {"ok": False}
+        )
+        _log(
+            d,
+            seat,
+            kid or "-",
+            res.get("active_key_id", "-"),
+            "runtime_error_" + code,
+            "switched" if res.get("ok") else "degraded",
+        )
         _save(d)
         return {"ok": True, "switch": res, "state": state()}
     return {"ok": False, "error": "unknown_action"}
@@ -325,20 +424,40 @@ def _active_secret(d: dict, seat: str):
         return k, None
 
 
-def _provider_chat(provider: str, secret: str, messages: list, timeout: int = 45,
-                   base_url: str = "", model: str = "") -> dict:
+def _provider_chat(
+    provider: str,
+    secret: str,
+    messages: list,
+    timeout: int = 45,
+    base_url: str = "",
+    model: str = "",
+) -> dict:
     url = base_url or PROVIDER_URL.get(provider)
     if not url:
         return {"ok": False, "error": "provider_not_supported"}
-    body = json.dumps({"model": model or PROVIDER_MODEL.get(provider, ""), "messages": messages,
-                       "max_tokens": 800, "stream": False}).encode()
-    req = urllib.request.Request(url, data=body, method="POST",
-                                 headers={"Content-Type": "application/json",
-                                          "Authorization": "Bearer " + secret})
+    body = json.dumps(
+        {
+            "model": model or PROVIDER_MODEL.get(provider, ""),
+            "messages": messages,
+            "max_tokens": 800,
+            "stream": False,
+        }
+    ).encode()
+    req = urllib.request.Request(
+        url,
+        data=body,
+        method="POST",
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + secret,
+        },
+    )
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             data = json.loads(r.read().decode("utf-8", "replace"))
-            reply = ((data.get("choices") or [{}])[0].get("message") or {}).get("content") or ""
+            reply = ((data.get("choices") or [{}])[0].get("message") or {}).get(
+                "content"
+            ) or ""
             return {"ok": True, "reply": reply}
     except urllib.error.HTTPError as e:
         try:
@@ -347,28 +466,48 @@ def _provider_chat(provider: str, secret: str, messages: list, timeout: int = 45
             msg = ""
         return {"ok": False, "code": str(e.code), "error": msg[:200]}
     except Exception as e:  # noqa: BLE001
-        return {"ok": False, "code": "error", "error": "%s: %s" % (type(e).__name__, str(e)[:160])}
+        return {
+            "ok": False,
+            "code": "error",
+            "error": "%s: %s" % (type(e).__name__, str(e)[:160]),
+        }
 
 
 def _local_openai_chat(messages: list, timeout: int = 60) -> str:
-    body = json.dumps({"model": "qwen3.5:9b", "messages": messages,
-                       "max_tokens": 800, "stream": False}).encode()
-    req = urllib.request.Request("http://127.0.0.1:11434/v1/chat/completions",
-                                 data=body, method="POST",
-                                 headers={"Content-Type": "application/json"})
+    body = json.dumps(
+        {
+            "model": "qwen3.5:9b",
+            "messages": messages,
+            "max_tokens": 800,
+            "stream": False,
+        }
+    ).encode()
+    req = urllib.request.Request(
+        "http://127.0.0.1:11434/v1/chat/completions",
+        data=body,
+        method="POST",
+        headers={"Content-Type": "application/json"},
+    )
     with urllib.request.urlopen(req, timeout=timeout) as r:
         data = json.loads(r.read().decode("utf-8", "replace"))
-        return ((data.get("choices") or [{}])[0].get("message") or {}).get("content") or ""
+        return ((data.get("choices") or [{}])[0].get("message") or {}).get(
+            "content"
+        ) or ""
 
 
 def _local_native_chat(messages: list, timeout: int = 90) -> str:
     # 思考型模型（qwen3.5:9b）会在 reasoning 里吃满 token 导致 content 为空；
     # 原生 /api/chat + think=false 可关闭思考，直接拿最终回答。
-    body = json.dumps({"model": "qwen3.5:9b", "messages": messages,
-                       "stream": False, "think": False}, ensure_ascii=False).encode()
-    req = urllib.request.Request("http://127.0.0.1:11434/api/chat",
-                                 data=body, method="POST",
-                                 headers={"Content-Type": "application/json"})
+    body = json.dumps(
+        {"model": "qwen3.5:9b", "messages": messages, "stream": False, "think": False},
+        ensure_ascii=False,
+    ).encode()
+    req = urllib.request.Request(
+        "http://127.0.0.1:11434/api/chat",
+        data=body,
+        method="POST",
+        headers={"Content-Type": "application/json"},
+    )
     with urllib.request.urlopen(req, timeout=timeout) as r:
         data = json.loads(r.read().decode("utf-8", "replace"))
         return (data.get("message") or {}).get("content") or ""
@@ -396,39 +535,90 @@ def auto_chat(messages: list) -> dict:
     """一个对话框，自动适配：田丰GLM Key → 赵云/诸葛亮 DeepSeek Key → 本地9B。"""
     if not isinstance(messages, list) or not messages:
         return {"ok": False, "error": "empty_messages"}
-    messages = [m for m in messages if isinstance(m, dict) and m.get("role") and m.get("content")]
+    messages = [
+        m
+        for m in messages
+        if isinstance(m, dict) and m.get("role") and m.get("content")
+    ]
     messages = messages[-20:]
     d = _load()
     attempts = []
     for seat in ("relay", "tianfeng", "zhaoyun", "zhuge"):
         k, secret = _active_secret(d, seat)
         if not k:
-            attempts.append({"seat": seat, "channel": SEATS[seat]["provider"], "result": "no_active_key"})
+            attempts.append(
+                {
+                    "seat": seat,
+                    "channel": SEATS[seat]["provider"],
+                    "result": "no_active_key",
+                }
+            )
             continue
         if secret is None:
-            attempts.append({"seat": seat, "channel": SEATS[seat]["provider"], "result": "decrypt_failed"})
+            attempts.append(
+                {
+                    "seat": seat,
+                    "channel": SEATS[seat]["provider"],
+                    "result": "decrypt_failed",
+                }
+            )
             continue
-        r = _provider_chat(SEATS[seat]["provider"], secret, messages,
-                           base_url=str(k.get("base_url") or ""), model=str(k.get("model") or ""))
+        r = _provider_chat(
+            SEATS[seat]["provider"],
+            secret,
+            messages,
+            base_url=str(k.get("base_url") or ""),
+            model=str(k.get("model") or ""),
+        )
         if r.get("ok"):
             _log(d, seat, k.get("id"), k.get("id"), "auto_chat", "used")
             _save(d)
-            return {"ok": True, "reply": r.get("reply", ""),
-                    "channel": ("relay/custom" if SEATS[seat]["provider"] == "custom" else SEATS[seat]["provider"]),
-                    "seat": seat,
-                    "attempts": attempts + [{"seat": seat, "channel": SEATS[seat]["provider"], "result": "ok"}]}
+            return {
+                "ok": True,
+                "reply": r.get("reply", ""),
+                "channel": (
+                    "relay/custom"
+                    if SEATS[seat]["provider"] == "custom"
+                    else SEATS[seat]["provider"]
+                ),
+                "seat": seat,
+                "attempts": attempts
+                + [{"seat": seat, "channel": SEATS[seat]["provider"], "result": "ok"}],
+            }
         code = str(r.get("code") or "")
-        k["status"] = "quota" if code in ("429", "402") else ("invalid" if code in ("401", "403") else "degraded")
+        k["status"] = (
+            "quota"
+            if code in ("429", "402")
+            else ("invalid" if code in ("401", "403") else "degraded")
+        )
         k["last_error"] = r.get("error")
         k["last_checked"] = _now()
         sw = auto_switch(d, seat, "auto_chat_" + code)
-        attempts.append({"seat": seat,
-                         "channel": ("relay/custom" if SEATS[seat]["provider"] == "custom" else SEATS[seat]["provider"]),
-                         "result": "fail:" + code, "switched": sw.get("ok", False)})
+        attempts.append(
+            {
+                "seat": seat,
+                "channel": (
+                    "relay/custom"
+                    if SEATS[seat]["provider"] == "custom"
+                    else SEATS[seat]["provider"]
+                ),
+                "result": "fail:" + code,
+                "switched": sw.get("ok", False),
+            }
+        )
         _save(d)
     lr = _local_chat(messages)
     if lr.get("ok"):
-        return {"ok": True, "reply": lr.get("reply", ""), "channel": "local-qwen3.5:9b",
-                "seat": "local", "attempts": attempts + [{"channel": "local-qwen3.5:9b", "result": "ok"}]}
-    return {"ok": False, "error": "all_channels_failed",
-            "detail": lr.get("error"), "attempts": attempts}
+        return {
+            "ok": True,
+            "reply": lr.get("reply", ""),
+            "channel": "local-qwen3.5:9b",
+            "seat": "local",
+            "attempts": attempts + [{"channel": "local-qwen3.5:9b", "result": "ok"}],
+        }
+    return {
+        "ok": False,
+        "error": "all_channels_failed",
+        "detail": lr.get("error"),
+        "attempts": attempts,
+    }

@@ -9,6 +9,7 @@
 正交纪律：本引擎只管「执行拓扑」；org 汇报/记忆权限由 org 注册表与 memory grants 管（K-ORG-001）。
 记忆写入执行 RBAC 三道闸之运行时校验（memory.MemoryStore.enforce=True）。
 """
+
 import json
 import time
 import uuid
@@ -46,6 +47,7 @@ def converge_state(a_text, b_text):
       按轮次上限收场并标记 collapsed；Day0 判例：601318 末轮 0.78 距阈值 0.02，
       倒戈致立场塌缩险被误判为共识提前终止"""
     import re as _re
+
     sim = similarity(a_text, b_text)
 
     def _stance(t):
@@ -71,6 +73,7 @@ class Team:
         if p.suffix == ".yaml":
             try:
                 import yaml
+
                 data = yaml.safe_load(p.read_text(encoding="utf-8"))
             except ImportError:
                 raise TopologyError("PyYAML 未安装，请用 JSON 注册表")
@@ -92,14 +95,20 @@ class Team:
                 if pk not in self.by_node:
                     raise TopologyError("%s 父节点 %s 不存在" % (a["node_key"], pk))
                 if self.by_node[pk]["level"] >= a["level"]:
-                    raise TopologyError("%s → %s 层级倒挂（可能成环）" % (pk, a["node_key"]))
+                    raise TopologyError(
+                        "%s → %s 层级倒挂（可能成环）" % (pk, a["node_key"])
+                    )
             if a.get("is_debate_node"):
                 partner_key = a.get("debate_partner_key")
                 if not partner_key or partner_key not in self.by_node:
-                    raise TopologyError("%s 辩论对手 %s 不存在" % (a["node_key"], partner_key))
+                    raise TopologyError(
+                        "%s 辩论对手 %s 不存在" % (a["node_key"], partner_key)
+                    )
                 partner = self.by_node[partner_key]
                 if partner.get("debate_partner_key") != a["node_key"]:
-                    raise TopologyError("%s 与 %s 未互指为辩论对手" % (a["node_key"], partner_key))
+                    raise TopologyError(
+                        "%s 与 %s 未互指为辩论对手" % (a["node_key"], partner_key)
+                    )
                 # 控辩审契约（V2 思路 2 / K-ORG-166）：辩论对必须立场互补。
                 # role 显式字段优先，缺省从 role_profile 后缀（_bull/_bear）推断；
                 # 双方都无法定性时跳过（最小测试团队向后兼容），能定性且相同=配置错误。
@@ -108,13 +117,17 @@ class Team:
                 if ra and rb and ra == rb:
                     raise TopologyError(
                         "%s(%s) 与 %s(%s) 立场相同——控辩审辩论对必须 bull/bear 互补"
-                        % (a["node_key"], ra, partner_key, rb))
+                        % (a["node_key"], ra, partner_key, rb)
+                    )
 
     def prompt(self, agent):
         """人设外置（对齐菜鸟 ai_chat_role 配置化模式）：prompts/{role_profile}.md"""
         pp = sys_dir.parent / "prompts" / (agent["role_profile"] + ".md")
-        return pp.read_text(encoding="utf-8") if pp.exists() else "你是%s（%s）。" % (
-            agent["agent_id"], agent["analysis_type"])
+        return (
+            pp.read_text(encoding="utf-8")
+            if pp.exists()
+            else "你是%s（%s）。" % (agent["agent_id"], agent["analysis_type"])
+        )
 
 
 class Interpreter:
@@ -135,7 +148,9 @@ class Interpreter:
 
         try:
             for level in sorted(layers):
-                states = self.cp.get_run_states(run_id)  # 断点续跑：查已 checkpoint 节点
+                states = self.cp.get_run_states(
+                    run_id
+                )  # 断点续跑：查已 checkpoint 节点
                 nodes = layers[level]
                 done_pairs = set()
                 jobs = []
@@ -156,13 +171,18 @@ class Interpreter:
                         jobs.append(("debate", n, self.team.by_node[pk]))
                     else:
                         if n["node_key"] in states:
-                            ctx["statements"][n["node_key"]] = states[n["node_key"]].get("output", "")
+                            ctx["statements"][n["node_key"]] = states[
+                                n["node_key"]
+                            ].get("output", "")
                             ctx["status"][n["node_key"]] = "resumed"
                             continue
                         jobs.append(("single", n, None))
 
                 with ThreadPoolExecutor(max_workers=max(len(jobs), 1)) as ex:
-                    futures = [ex.submit(self._dispatch, kind, a, b, ctx, run_id) for kind, a, b in jobs]
+                    futures = [
+                        ex.submit(self._dispatch, kind, a, b, ctx, run_id)
+                        for kind, a, b in jobs
+                    ]
                     for fut in futures:
                         for node_key, text, status in fut.result():
                             ctx["statements"][node_key] = text
@@ -171,8 +191,12 @@ class Interpreter:
             self.cp.finish_run(run_id, status="failed")
             raise
 
-        final_key = max(layers[max(layers)], key=lambda n: 0)["node_key"] if layers else None
-        decision = ctx["statements"].get("d1_decision") or ctx["statements"].get(final_key, "")
+        final_key = (
+            max(layers[max(layers)], key=lambda n: 0)["node_key"] if layers else None
+        )
+        decision = ctx["statements"].get("d1_decision") or ctx["statements"].get(
+            final_key, ""
+        )
         self.cp.finish_run(run_id, status="done")
         return {
             "run_id": run_id,
@@ -211,7 +235,10 @@ class Interpreter:
         # 只写散文，parse_decision 拿不到 JSON（K-STOCK-338 偶发 parse_ok=false 的
         # 根因之一：10-17 隔离预演 600519 复现 123 字散文无 JSON）。决策节点单独收口。
         if node.get("analysis_type") == "final_decision":
-            return base + "\n请严格只输出一个 JSON 对象，不要任何解释文字、不要代码块围栏。"
+            return (
+                base
+                + "\n请严格只输出一个 JSON 对象，不要任何解释文字、不要代码块围栏。"
+            )
         return base + "\n请基于以上数据给出简要分析结论（3 句以内，引用具体数据）。"
 
     # ---------- 单节点 ----------
@@ -221,8 +248,15 @@ class Interpreter:
             text, status = self._chat(node, self._build_user(node, ctx))
         except Exception as e:  # noqa: BLE001
             text, status = "[降级] LLM 不可用（%s），按中性规则处理" % e, "degraded"
-        self._record(node, ctx, run_id, phase="single", output=text, status=status,
-                     latency_ms=(time.time() - t0) * 1000)
+        self._record(
+            node,
+            ctx,
+            run_id,
+            phase="single",
+            output=text,
+            status=status,
+            latency_ms=(time.time() - t0) * 1000,
+        )
         return node["node_key"], text, status
 
     # ---------- 辩论对（对齐菜鸟 bull/bear：轮次上限 + 相似度收敛） ----------
@@ -237,10 +271,24 @@ class Interpreter:
             b_text, st_b = self._chat(nb, self._build_user(nb, ctx))
         except Exception as e:  # noqa: BLE001
             b_text, st_b = "[降级] 空头 LLM 不可用：%s" % e, "degraded"
-        self.cp.trace(run_id, na["node_key"], na["agent_id"], "debate_open", round_=0,
-                      output=a_text, status=st_a)
-        self.cp.trace(run_id, nb["node_key"], nb["agent_id"], "debate_open", round_=0,
-                      output=b_text, status=st_b)
+        self.cp.trace(
+            run_id,
+            na["node_key"],
+            na["agent_id"],
+            "debate_open",
+            round_=0,
+            output=a_text,
+            status=st_a,
+        )
+        self.cp.trace(
+            run_id,
+            nb["node_key"],
+            nb["agent_id"],
+            "debate_open",
+            round_=0,
+            output=b_text,
+            status=st_b,
+        )
 
         rounds = int(na.get("max_debate_rounds") or 2)
         sim, converged, collapsed = converge_state(a_text, b_text)
@@ -256,44 +304,115 @@ class Interpreter:
             except Exception as e:  # noqa: BLE001
                 b_reb, st_b = "[降级] %s" % e, "degraded"
             sim, converged, collapsed = converge_state(a_reb, b_reb)
-            self.cp.trace(run_id, na["node_key"], na["agent_id"], "debate_rebuttal", round_=r,
-                          output=a_reb, similarity_=sim, status=st_a)
-            self.cp.trace(run_id, nb["node_key"], nb["agent_id"], "debate_rebuttal", round_=r,
-                          output=b_reb, similarity_=sim, status=st_b)
+            self.cp.trace(
+                run_id,
+                na["node_key"],
+                na["agent_id"],
+                "debate_rebuttal",
+                round_=r,
+                output=a_reb,
+                similarity_=sim,
+                status=st_a,
+            )
+            self.cp.trace(
+                run_id,
+                nb["node_key"],
+                nb["agent_id"],
+                "debate_rebuttal",
+                round_=r,
+                output=b_reb,
+                similarity_=sim,
+                status=st_b,
+            )
             a_text, b_text = a_reb, b_reb
 
-        verdict = ("提前收敛" if converged
-                   else "立场塌缩collapsed（表述趋同但立场同向/缺失，非共识）" if collapsed
-                   else "达轮次上限")
+        verdict = (
+            "提前收敛"
+            if converged
+            else "立场塌缩collapsed（表述趋同但立场同向/缺失，非共识）"
+            if collapsed
+            else "达轮次上限"
+        )
         # 控辩审契约：结论携带显式角色（显式 role 字段优先，缺省从 role_profile 推断）
         ra = na.get("role") or _infer_role(na.get("role_profile", "")) or "bull?"
         rb = nb.get("role") or _infer_role(nb.get("role_profile", "")) or "bear?"
         merged = (
             "多空辩论结论（%s轮，末轮相似度%.2f，%s）：多头[%s·%s]：%s ‖ 空头[%s·%s]：%s"
-            % (r, sim, verdict,
-               ra, na["agent_id"], a_text, rb, nb["agent_id"], b_text)
+            % (r, sim, verdict, ra, na["agent_id"], a_text, rb, nb["agent_id"], b_text)
         )
         # 各自记忆：私有 decision + 团队 observation（RBAC 校验在 MemoryStore 内）
         for node, text, st in ((na, a_text, st_a), (nb, b_text, st_b)):
-            self._record(node, ctx, run_id, phase="debate_final", output=text, status=st,
-                         similarity_=sim, latency_ms=(time.time() - t0) * 1000)
+            self._record(
+                node,
+                ctx,
+                run_id,
+                phase="debate_final",
+                output=text,
+                status=st,
+                similarity_=sim,
+                latency_ms=(time.time() - t0) * 1000,
+            )
         # 辩论对共享同一份合并结论，供 D1 汇总（parent 引用两节点）；collapsed 供 D1/评估者识别假收敛
-        payload = {"merged": merged, "rounds": r, "sim": sim, "collapsed": collapsed,
-                   "roles": [ra, rb]}
+        payload = {
+            "merged": merged,
+            "rounds": r,
+            "sim": sim,
+            "collapsed": collapsed,
+            "roles": [ra, rb],
+        }
         self.cp.save_node(run_id, na["node_key"], na["agent_id"], payload)
         self.cp.save_node(run_id, nb["node_key"], nb["agent_id"], payload)
         return [(na["node_key"], merged, st_a), (nb["node_key"], merged, st_b)]
 
     # ---------- 落库 ----------
-    def _record(self, node, ctx, run_id, phase, output, status, similarity_=None, latency_ms=None):
-        self.cp.save_node(run_id, node["node_key"], node["agent_id"], {"output": output, "status": status})
-        self.cp.trace(run_id, node["node_key"], node["agent_id"], phase,
-                      output=output, similarity_=similarity_, status=status, latency_ms=latency_ms)
+    def _record(
+        self,
+        node,
+        ctx,
+        run_id,
+        phase,
+        output,
+        status,
+        similarity_=None,
+        latency_ms=None,
+    ):
+        self.cp.save_node(
+            run_id,
+            node["node_key"],
+            node["agent_id"],
+            {"output": output, "status": status},
+        )
+        self.cp.trace(
+            run_id,
+            node["node_key"],
+            node["agent_id"],
+            phase,
+            output=output,
+            similarity_=similarity_,
+            status=status,
+            latency_ms=latency_ms,
+        )
         try:
-            self.memory.write(node["agent_id"], "agent/%s/decision" % node["agent_id"],
-                              {"stock": ctx["stock"], "phase": phase, "output": output, "status": status})
+            self.memory.write(
+                node["agent_id"],
+                "agent/%s/decision" % node["agent_id"],
+                {
+                    "stock": ctx["stock"],
+                    "phase": phase,
+                    "output": output,
+                    "status": status,
+                },
+            )
             if node.get("is_debate_node"):
-                self.memory.write(node["agent_id"], "dept/%s/observation" % self.team.dept,
-                                  {"stock": ctx["stock"], "round": phase, "output": output, "status": status})
+                self.memory.write(
+                    node["agent_id"],
+                    "dept/%s/observation" % self.team.dept,
+                    {
+                        "stock": ctx["stock"],
+                        "round": phase,
+                        "output": output,
+                        "status": status,
+                    },
+                )
         except Exception:  # noqa: BLE001  RBAC 拒绝不阻断主流程（但 smoke 会单测它）
             pass

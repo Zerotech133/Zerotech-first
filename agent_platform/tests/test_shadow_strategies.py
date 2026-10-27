@@ -4,6 +4,7 @@
 覆盖：三插件方向性行为（趋势/动量/回归）、样本不足降级 hold、
 Registry 装配、产出全部过 Verdict 白名单、零 pandas 依赖。
 """
+
 import sys
 from pathlib import Path
 
@@ -12,8 +13,11 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "agent_platform" / "engine"))
 
 from shadow_strategies import (  # noqa: E402
-    MeanReversionAgent, MomentumAgent, TrendFollowAgent,
-    build_default_registry)
+    MeanReversionAgent,
+    MomentumAgent,
+    TrendFollowAgent,
+    build_default_registry,
+)
 from strategy_registry import Verdict  # noqa: E402
 
 
@@ -39,6 +43,7 @@ def _ctx(closes, symbol="600519"):
 
 # ---------------------------------------------------------------- TrendFollow
 
+
 def test_trend_uptrend_buys():
     v = TrendFollowAgent().propose(_ctx(_uptrend()))
     assert v.recommendation == "buy" and v.stance == "bull"
@@ -62,6 +67,7 @@ def test_trend_insufficient_sample_degrades_hold():
 
 # ---------------------------------------------------------------- Momentum
 
+
 def test_momentum_strong_up():
     # 20 日 +10% → strong_buy
     v = MomentumAgent().propose(_ctx(_uptrend(n=21, start=100.0, step=0.5)))
@@ -79,6 +85,7 @@ def test_momentum_flat_holds():
 
 
 # ---------------------------------------------------------------- MeanReversion
+
 
 def test_meanrev_spike_sells():
     # 平稳 25 天后单日暴涨 30% → z 超阈值 → 超买回归 sell
@@ -100,10 +107,10 @@ def test_meanrev_flat_holds():
 
 # ---------------------------------------------------------------- 装配与契约
 
+
 def test_registry_has_three_strategies():
     reg = build_default_registry()
-    assert reg.list_ids() == ["shadow_meanrev", "shadow_momentum",
-                              "shadow_trend"]
+    assert reg.list_ids() == ["shadow_meanrev", "shadow_momentum", "shadow_trend"]
 
 
 def test_all_outputs_pass_verdict_whitelist():
@@ -117,8 +124,11 @@ def test_all_outputs_pass_verdict_whitelist():
 def test_determinism():
     a = TrendFollowAgent().propose(_ctx(_uptrend()))
     b = TrendFollowAgent().propose(_ctx(_uptrend()))
-    assert (a.recommendation, a.confidence, a.score) == \
-           (b.recommendation, b.confidence, b.score)
+    assert (a.recommendation, a.confidence, a.score) == (
+        b.recommendation,
+        b.confidence,
+        b.score,
+    )
 
 
 def test_symbol_carried_into_verdict():

@@ -23,6 +23,7 @@ AcademyWeeklyReport）：
 
 退出码：0 = 正常产出（含空登记）；2 = 自身错误（真源缺失/坏 JSON/参数非法）。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -33,12 +34,20 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve()
-ROOT_DEFAULT = HERE.parents[2]          # agent_platform/tools/academy_ops.py -> repo root
+ROOT_DEFAULT = HERE.parents[2]  # agent_platform/tools/academy_ops.py -> repo root
 ACADEMY_REL = Path("agent_platform") / "data" / "academy"
 EVENTS_REL = Path("portal") / "data" / "dev_events.jsonl"
 NEW_KINDS = ("research_intake", "research_review", "research_report")
-STAGES = ("intake", "hypothesis", "evidence", "validation", "review",
-          "joint_review", "decision", "closed")
+STAGES = (
+    "intake",
+    "hypothesis",
+    "evidence",
+    "validation",
+    "review",
+    "joint_review",
+    "decision",
+    "closed",
+)
 REVIEW_STAGES = ("validation", "review", "joint_review")
 
 # 研究语言八字段（与 org.json academy.research_language.mandatory_fields 对齐）
@@ -108,8 +117,8 @@ def _emit(root: Path, kind: str, detail: str, no_emit: bool = False) -> dict:
     try:
         sys.path.insert(0, str(root / "tools"))
         import events  # noqa: WPS433  (平台事件层，纯标准库)
-        return events.emit(kind=kind, task="ACAD1", agent="ACAD1",
-                           detail=detail[:300])
+
+        return events.emit(kind=kind, task="ACAD1", agent="ACAD1", detail=detail[:300])
     except Exception as exc:  # noqa: BLE001 事件层永不阻塞
         return {"ok": False, "error": "%s: %s" % (type(exc).__name__, str(exc)[:100])}
 
@@ -136,7 +145,11 @@ def _missing_fields(topic: dict) -> list[str]:
     out = []
     for key, label in EIGHT_FIELDS:
         val = topic.get(key)
-        if isinstance(val, str) and val.strip() and val.strip() not in ("待验证", "待登记"):
+        if (
+            isinstance(val, str)
+            and val.strip()
+            and val.strip() not in ("待验证", "待登记")
+        ):
             continue
         out.append(label)
     return out
@@ -163,12 +176,15 @@ def _fmt_ts() -> str:
 def build_intake(root: Path) -> tuple[str, dict]:
     topics = _topics(root)
     counts = _topic_counts(topics)
-    lines = ["# 研究院立项简报 %s" % _today(), "",
-             "> 生成：agent_platform/tools/academy_ops.py intake ｜ 真源：research_topics.json（只读）",
-             "> 阶段机：intake→hypothesis→evidence→validation→review→joint_review→decision→closed（推进走 domains/academy_wiring.py）",
-             "",
-             "## 一、在册概况",
-             "- 课题总数：**%d**" % len(topics)]
+    lines = [
+        "# 研究院立项简报 %s" % _today(),
+        "",
+        "> 生成：agent_platform/tools/academy_ops.py intake ｜ 真源：research_topics.json（只读）",
+        "> 阶段机：intake→hypothesis→evidence→validation→review→joint_review→decision→closed（推进走 domains/academy_wiring.py）",
+        "",
+        "## 一、在册概况",
+        "- 课题总数：**%d**" % len(topics),
+    ]
     for stage in STAGES:
         if counts.get(stage):
             lines.append("- %s：%d" % (stage, counts[stage]))
@@ -177,20 +193,36 @@ def build_intake(root: Path) -> tuple[str, dict]:
     lines += ["", "## 二、立项候选（intake/hypothesis）"]
     candidates = [t for t in topics if str(t.get("status")) in ("intake", "hypothesis")]
     if not candidates:
-        lines.append("- （暂无——可通过投研/数据/研发/产品/市场/法务/田丰提交需求，或用 academy_wiring 登记）")
+        lines.append(
+            "- （暂无——可通过投研/数据/研发/产品/市场/法务/田丰提交需求，或用 academy_wiring 登记）"
+        )
     for t in candidates:
         miss = _missing_fields(t)
-        lines.append("- **%s** %s ｜ 方向=%s ｜ owner=%s ｜ 缺项=%s"
-                     % (t.get("topic_id", "?"), t.get("title", "?"),
-                        t.get("direction", "?"), t.get("owner", "?"),
-                        ("、".join(miss) if miss else "无（八字段齐）")))
-    lines += ["", "## 三、今日建议动作",
-              "1. 对每个立项候选补齐八字段（问题/对象/假设/证据口径/验证方法/结论等级/行动建议/风险边界）；",
-              "2. 数据口径冻结由 DATA1 登记（data_version / sample_in / sample_out）；",
-              "3. 推进阶段只可通过 academy_wiring.py move（±1 步），→decision/→closed 需审批凭据。"]
-    summary = {"action": "intake", "date": _today(), "topics": len(topics),
-               "counts": counts, "queued_backtests": len(queued),
-               "candidates": [t.get("topic_id") for t in candidates]}
+        lines.append(
+            "- **%s** %s ｜ 方向=%s ｜ owner=%s ｜ 缺项=%s"
+            % (
+                t.get("topic_id", "?"),
+                t.get("title", "?"),
+                t.get("direction", "?"),
+                t.get("owner", "?"),
+                ("、".join(miss) if miss else "无（八字段齐）"),
+            )
+        )
+    lines += [
+        "",
+        "## 三、今日建议动作",
+        "1. 对每个立项候选补齐八字段（问题/对象/假设/证据口径/验证方法/结论等级/行动建议/风险边界）；",
+        "2. 数据口径冻结由 DATA1 登记（data_version / sample_in / sample_out）；",
+        "3. 推进阶段只可通过 academy_wiring.py move（±1 步），→decision/→closed 需审批凭据。",
+    ]
+    summary = {
+        "action": "intake",
+        "date": _today(),
+        "topics": len(topics),
+        "counts": counts,
+        "queued_backtests": len(queued),
+        "candidates": [t.get("topic_id") for t in candidates],
+    }
     return "\n".join(lines) + "\n", summary
 
 
@@ -198,56 +230,84 @@ def build_review(root: Path) -> tuple[str, dict]:
     topics = _topics(root)
     counts = _topic_counts(topics)
     pending = [t for t in topics if str(t.get("status")) in REVIEW_STAGES]
-    lines = ["# 研究院评审清单 %s" % _today(), "",
-             "> 生成：agent_platform/tools/academy_ops.py review ｜ 只读真源 ｜ 评审结论须经评审后由院长/田丰签批",
-             "",
-             "## 一、待评审课题（validation/review/joint_review）"]
+    lines = [
+        "# 研究院评审清单 %s" % _today(),
+        "",
+        "> 生成：agent_platform/tools/academy_ops.py review ｜ 只读真源 ｜ 评审结论须经评审后由院长/田丰签批",
+        "",
+        "## 一、待评审课题（validation/review/joint_review）",
+    ]
     if not pending:
         lines.append("- （暂无——先把候选推进到 validation 或 review，再提交评审）")
     for t in pending:
         miss = _missing_fields(t)
-        lines += ["", "### %s %s" % (t.get("topic_id", "?"), t.get("title", "?")),
-                  "- 阶段：%s ｜ 方向：%s ｜ owner：%s ｜ sponsor：%s"
-                  % (t.get("status"), t.get("direction"), t.get("owner"), t.get("sponsor")),
-                  "- 八字段缺项：%s" % ("、".join(miss) if miss else "无"),
-                  "- 结论：%s ｜ 决策：%s（待评审记录）"
-                  % (t.get("conclusion") or "待验证", t.get("decision") or "待签")]
+        lines += [
+            "",
+            "### %s %s" % (t.get("topic_id", "?"), t.get("title", "?")),
+            "- 阶段：%s ｜ 方向：%s ｜ owner：%s ｜ sponsor：%s"
+            % (t.get("status"), t.get("direction"), t.get("owner"), t.get("sponsor")),
+            "- 八字段缺项：%s" % ("、".join(miss) if miss else "无"),
+            "- 结论：%s ｜ 决策：%s（待评审记录）"
+            % (t.get("conclusion") or "待验证", t.get("decision") or "待签"),
+        ]
     lines += ["", "## 二、数据冻结跟踪（DATA1 登记 → BACK1 方可开跑）"]
     bts = _backtests(root)
     if not bts:
         lines.append("- （空——暂无回测登记，无需冻结项）")
     else:
-        lines += ["| 课题 | 策略/标的 | 状态 | data_version | sample_in | sample_out | cost_model | go_no_go |",
-                  "|---|---|---|---|---|---|---|---|"]
+        lines += [
+            "| 课题 | 策略/标的 | 状态 | data_version | sample_in | sample_out | cost_model | go_no_go |",
+            "|---|---|---|---|---|---|---|---|",
+        ]
         for b in bts:
             miss = _freeze_missing(b)
-            lines.append("| %s | %s/%s | %s | %s | %s | %s | %s | %s |"
-                         % (b.get("topic_id", "?"), b.get("strategy", "?"),
-                            b.get("symbol", "?"), b.get("status", "?"),
-                            b.get("data_version") or "（空）",
-                            b.get("sample_in") or "（空）",
-                            b.get("sample_out") or "（空）",
-                            b.get("cost_model") or "（空）",
-                            b.get("go_no_go", "?")))
+            lines.append(
+                "| %s | %s/%s | %s | %s | %s | %s | %s | %s |"
+                % (
+                    b.get("topic_id", "?"),
+                    b.get("strategy", "?"),
+                    b.get("symbol", "?"),
+                    b.get("status", "?"),
+                    b.get("data_version") or "（空）",
+                    b.get("sample_in") or "（空）",
+                    b.get("sample_out") or "（空）",
+                    b.get("cost_model") or "（空）",
+                    b.get("go_no_go", "?"),
+                )
+            )
         frozen = [b for b in bts if not _freeze_missing(b)]
         lines.append("")
-        lines.append("- 冻结进度：**%d/%d 已冻结**；命中 `待*`/空值即未冻结（当前未冻结清单见上表）。"
-                     % (len(frozen), len(bts)))
-        lines.append("- 关闭判据：`data_version`/`sample_in`/`sample_out`/`cost_model` 四字段全部登记且可追溯，"
-                     "DATA1 出冻结回执后，BACK1 才能执行回测并登记 `status`/`go_no_go`。")
-    lines += ["", "## 三、评审检查表（逐项必须给证据）",
-              "- [ ] 数据冻结：data_version / sample_in / sample_out 已登记且可追溯；",
-              "- [ ] 可复现：同一输入重跑结果一致（附命令/产物）；",
-              "- [ ] 可证伪：假设与否定条件写明，证据分级（事实/佐证/证伪/存疑/未知）；",
-              "- [ ] Go/No-Go 依据：无数据冻结与验收证据时不得输出 Go 或产品化结论；",
-              "- [ ] 跨部门联评：投研/数据/研发/产品/市场/法务意见与责任人；",
-              "- [ ] 行动建议：补证/No-Go/入库/试点/产品化/终止，禁止悬空。"]
-    summary = {"action": "review", "date": _today(), "topics": len(topics),
-               "counts": counts, "pending": [t.get("topic_id") for t in pending],
-               "backtests": len(bts),
-               "freeze": {"total": len(bts),
-                          "frozen": len([b for b in bts if not _freeze_missing(b)]),
-                          "unfrozen": [b.get("topic_id") for b in bts if _freeze_missing(b)]}}
+        lines.append(
+            "- 冻结进度：**%d/%d 已冻结**；命中 `待*`/空值即未冻结（当前未冻结清单见上表）。"
+            % (len(frozen), len(bts))
+        )
+        lines.append(
+            "- 关闭判据：`data_version`/`sample_in`/`sample_out`/`cost_model` 四字段全部登记且可追溯，"
+            "DATA1 出冻结回执后，BACK1 才能执行回测并登记 `status`/`go_no_go`。"
+        )
+    lines += [
+        "",
+        "## 三、评审检查表（逐项必须给证据）",
+        "- [ ] 数据冻结：data_version / sample_in / sample_out 已登记且可追溯；",
+        "- [ ] 可复现：同一输入重跑结果一致（附命令/产物）；",
+        "- [ ] 可证伪：假设与否定条件写明，证据分级（事实/佐证/证伪/存疑/未知）；",
+        "- [ ] Go/No-Go 依据：无数据冻结与验收证据时不得输出 Go 或产品化结论；",
+        "- [ ] 跨部门联评：投研/数据/研发/产品/市场/法务意见与责任人；",
+        "- [ ] 行动建议：补证/No-Go/入库/试点/产品化/终止，禁止悬空。",
+    ]
+    summary = {
+        "action": "review",
+        "date": _today(),
+        "topics": len(topics),
+        "counts": counts,
+        "pending": [t.get("topic_id") for t in pending],
+        "backtests": len(bts),
+        "freeze": {
+            "total": len(bts),
+            "frozen": len([b for b in bts if not _freeze_missing(b)]),
+            "unfrozen": [b.get("topic_id") for b in bts if _freeze_missing(b)],
+        },
+    }
     return "\n".join(lines) + "\n", summary
 
 
@@ -279,41 +339,59 @@ def build_weekly(root: Path) -> tuple[str, dict]:
         upd = str(t.get("updated") or "")[:10]
         if upd and upd >= start.isoformat():
             updated.append(t)
-    lines = ["# 研究院周报 %s（%s ~ %s）" % (week, start.isoformat(), today.isoformat()), "",
-             "> 生成：agent_platform/tools/academy_ops.py weekly ｜ 报 A0 田丰 ｜ 数据源：研究登记簿/回测登记/事件层（只读）",
-             "",
-             "## 一、本周产出",
-             "- 课题在册：**%d**（本周登记/更新：%d）" % (len(topics), len(updated)),
-             "- 阶段分布：" + " ｜ ".join("%s=%d" % (s, counts[s]) for s in STAGES if counts.get(s)),
-             "- 回测登记：%d（queued=%d）"
-             % (len(bts), len([b for b in bts if str(b.get("status")) == "queued"])),
-             "- 数据冻结：**%d/%d 已冻结**（未冻结=%s）"
-             % (len([b for b in bts if not _freeze_missing(b)]), len(bts),
-                "、".join(b.get("topic_id", "?") for b in bts if _freeze_missing(b)) or "无"),
-             "- 研究事件（本周）：%s ｜ ACAD1 事件：%d"
-             % (json.dumps(stats["by_kind"], ensure_ascii=False) if stats["by_kind"] else "无",
-                stats["acad1_events"]),
-             "",
-             "## 二、KPI 对照（org.json academy.kpi）",
-             "| KPI | 目标 | 本周实际 | 状态 |",
-             "|---|---|---|---|",
-             "| 可复现研究课题 | 每周 ≥1 | 本周新增/更新 %d 条（仅登记，需回测证据才算完成） | %s |"
-             % (len(updated), "达标" if len(updated) >= 1 else "未达标"),
-             "| 方法论/判例沉淀 | 每周 ≥2 | 未度量（尚无方法论账本，P1 建） | 未接线 |",
-             "| 结论入库 | 结论须经评审 | 待评审 %d 条 | 进行中 |"
-             % len([t for t in topics if str(t.get("status")) in REVIEW_STAGES]),
-             "",
-             "## 三、下周动作",
-             "1. 推动本周登记课题补齐数据冻结与回测证据（责任：DATA1/BACK1）；",
-             "2. 周三评审会前完成待评审课题的八字段与证据检查表（责任：ACAD1）；",
-             "3. 未排程席位补领任务（STRAT1/COMM1/INTEL1/AI1/PROD1），周报下周统计履职率。",
-             "",
-             "## 四、口径说明",
-             "- 本报告为**只读登记统计**，不替代评审记录与 Go/No-Go 结论；",
-             "- 数据未冻结/回测未执行时，不得输出 Go 或产品化结论。"]
-    summary = {"action": "weekly", "week": week, "topics": len(topics),
-               "updated": len(updated), "backtests": len(bts),
-               "events": stats["by_kind"], "acad1_events": stats["acad1_events"]}
+    lines = [
+        "# 研究院周报 %s（%s ~ %s）" % (week, start.isoformat(), today.isoformat()),
+        "",
+        "> 生成：agent_platform/tools/academy_ops.py weekly ｜ 报 A0 田丰 ｜ 数据源：研究登记簿/回测登记/事件层（只读）",
+        "",
+        "## 一、本周产出",
+        "- 课题在册：**%d**（本周登记/更新：%d）" % (len(topics), len(updated)),
+        "- 阶段分布："
+        + " ｜ ".join("%s=%d" % (s, counts[s]) for s in STAGES if counts.get(s)),
+        "- 回测登记：%d（queued=%d）"
+        % (len(bts), len([b for b in bts if str(b.get("status")) == "queued"])),
+        "- 数据冻结：**%d/%d 已冻结**（未冻结=%s）"
+        % (
+            len([b for b in bts if not _freeze_missing(b)]),
+            len(bts),
+            "、".join(b.get("topic_id", "?") for b in bts if _freeze_missing(b))
+            or "无",
+        ),
+        "- 研究事件（本周）：%s ｜ ACAD1 事件：%d"
+        % (
+            json.dumps(stats["by_kind"], ensure_ascii=False)
+            if stats["by_kind"]
+            else "无",
+            stats["acad1_events"],
+        ),
+        "",
+        "## 二、KPI 对照（org.json academy.kpi）",
+        "| KPI | 目标 | 本周实际 | 状态 |",
+        "|---|---|---|---|",
+        "| 可复现研究课题 | 每周 ≥1 | 本周新增/更新 %d 条（仅登记，需回测证据才算完成） | %s |"
+        % (len(updated), "达标" if len(updated) >= 1 else "未达标"),
+        "| 方法论/判例沉淀 | 每周 ≥2 | 未度量（尚无方法论账本，P1 建） | 未接线 |",
+        "| 结论入库 | 结论须经评审 | 待评审 %d 条 | 进行中 |"
+        % len([t for t in topics if str(t.get("status")) in REVIEW_STAGES]),
+        "",
+        "## 三、下周动作",
+        "1. 推动本周登记课题补齐数据冻结与回测证据（责任：DATA1/BACK1）；",
+        "2. 周三评审会前完成待评审课题的八字段与证据检查表（责任：ACAD1）；",
+        "3. 未排程席位补领任务（STRAT1/COMM1/INTEL1/AI1/PROD1），周报下周统计履职率。",
+        "",
+        "## 四、口径说明",
+        "- 本报告为**只读登记统计**，不替代评审记录与 Go/No-Go 结论；",
+        "- 数据未冻结/回测未执行时，不得输出 Go 或产品化结论。",
+    ]
+    summary = {
+        "action": "weekly",
+        "week": week,
+        "topics": len(topics),
+        "updated": len(updated),
+        "backtests": len(bts),
+        "events": stats["by_kind"],
+        "acad1_events": stats["acad1_events"],
+    }
     return "\n".join(lines) + "\n", summary
 
 
@@ -325,11 +403,19 @@ def _out_path(root: Path, action: str, day: str | None = None) -> Path:
     return root / ACADEMY_REL / "reports" / ("%s_weekly.md" % _iso_week())
 
 
-def run(action: str, root: Path, dry_run: bool = False, no_emit: bool = False,
-        json_out: bool = False) -> dict:
+def run(
+    action: str,
+    root: Path,
+    dry_run: bool = False,
+    no_emit: bool = False,
+    json_out: bool = False,
+) -> dict:
     builders = {"intake": build_intake, "review": build_review, "weekly": build_weekly}
-    kinds = {"intake": "research_intake", "review": "research_review",
-             "weekly": "research_report"}
+    kinds = {
+        "intake": "research_intake",
+        "review": "research_review",
+        "weekly": "research_report",
+    }
     text, summary = builders[action](root)
     out = _out_path(root, action)
     emit = {"ok": False, "skipped": True}
@@ -337,22 +423,45 @@ def run(action: str, root: Path, dry_run: bool = False, no_emit: bool = False,
     if not dry_run:
         _write_atomic(out, text)
         written = str(out.relative_to(root)).replace("\\", "/")
-        emit = _emit(root, kinds[action],
-                     "%s %s topics=%s" % (kinds[action], summary.get("date") or summary.get("week"),
-                                          summary.get("topics", "?")),
-                     no_emit=no_emit)
-    result = {"action": action, "dry_run": bool(dry_run), "written": written,
-              "out": str(out.relative_to(root)).replace("\\", "/"),
-              "summary": summary, "emit": emit}
+        emit = _emit(
+            root,
+            kinds[action],
+            "%s %s topics=%s"
+            % (
+                kinds[action],
+                summary.get("date") or summary.get("week"),
+                summary.get("topics", "?"),
+            ),
+            no_emit=no_emit,
+        )
+    result = {
+        "action": action,
+        "dry_run": bool(dry_run),
+        "written": written,
+        "out": str(out.relative_to(root)).replace("\\", "/"),
+        "summary": summary,
+        "emit": emit,
+    }
     if json_out:
         print(json.dumps(result, ensure_ascii=False, indent=1))
     elif dry_run:
-        print(json.dumps({"dry_run": True, "action": action,
-                          "out": result["out"], "summary": summary},
-                         ensure_ascii=False, indent=1))
+        print(
+            json.dumps(
+                {
+                    "dry_run": True,
+                    "action": action,
+                    "out": result["out"],
+                    "summary": summary,
+                },
+                ensure_ascii=False,
+                indent=1,
+            )
+        )
     else:
-        print("[academy_ops] %s -> %s ｜ topics=%s ｜ emit=%s"
-              % (action, written, summary.get("topics"), emit.get("ok")))
+        print(
+            "[academy_ops] %s -> %s ｜ topics=%s ｜ emit=%s"
+            % (action, written, summary.get("topics"), emit.get("ok"))
+        )
     return result
 
 
@@ -366,18 +475,35 @@ def main(argv=None) -> int:
     args = ap.parse_args(argv)
     root = Path(args.root).resolve()
     if not (root / ACADEMY_REL / "research_topics.json").is_file():
-        print(json.dumps({"ok": False, "error": "research_topics.json missing",
-                          "root": str(root)}, ensure_ascii=False))
+        print(
+            json.dumps(
+                {
+                    "ok": False,
+                    "error": "research_topics.json missing",
+                    "root": str(root),
+                },
+                ensure_ascii=False,
+            )
+        )
         return 2
     try:
-        run(args.action, root, dry_run=args.dry_run, no_emit=args.no_emit,
-            json_out=args.json)
+        run(
+            args.action,
+            root,
+            dry_run=args.dry_run,
+            no_emit=args.no_emit,
+            json_out=args.json,
+        )
     except SystemExit as exc:  # _read_json 抛出的真源错误
         print(json.dumps({"ok": False, "error": str(exc)}, ensure_ascii=False))
         return 2
     except Exception as exc:  # noqa: BLE001 兜底：退出码 2，便于计划任务判读
-        print(json.dumps({"ok": False, "error": "%s: %s"
-                          % (type(exc).__name__, str(exc)[:160])}, ensure_ascii=False))
+        print(
+            json.dumps(
+                {"ok": False, "error": "%s: %s" % (type(exc).__name__, str(exc)[:160])},
+                ensure_ascii=False,
+            )
+        )
         return 2
     return 0
 

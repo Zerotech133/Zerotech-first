@@ -12,6 +12,7 @@
     不做写入、不联网；任务型探针用只读查询替代；
   · 生成 registry.json 作为索引（进 git，可评审）；运行态验证结果落 data/skills_verify.json。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -22,8 +23,9 @@ from pathlib import Path
 PLATFORM = Path(__file__).resolve().parents[1]
 REPO = PLATFORM.parent
 SKILLS = PLATFORM / "skills"
-DEFAULT_CAPS = (Path.home() / ".hermes" / "profiles" / "zhaoyun" / "skills"
-                / "CAPABILITIES.json")
+DEFAULT_CAPS = (
+    Path.home() / ".hermes" / "profiles" / "zhaoyun" / "skills" / "CAPABILITIES.json"
+)
 
 SPECS = {
     "task-exit-audit": {
@@ -66,8 +68,7 @@ SPECS = {
         "note": "只产建议/证据，verify 检查议会材料目录存在",
     },
     "harness-runner": {
-        "exists": ["ops/governance_clock.py",
-                   "agent_platform/legion_command/serve.py"],
+        "exists": ["ops/governance_clock.py", "agent_platform/legion_command/serve.py"],
         "note": "执行体=DSH 会话；verify 检查调度器与命令台存在",
     },
     "llm-deepseek": {
@@ -186,14 +187,20 @@ def _body(spec: dict) -> str:
     for p in spec.get("dirs") or []:
         out.append("    ok = check_dir(checks, %r, %r) and ok" % (p, p))
     for argv in spec.get("run") or []:
-        out.append("    ok = check_run(checks, %r, %r) and ok" % (" ".join(argv), list(argv)))
+        out.append(
+            "    ok = check_run(checks, %r, %r) and ok" % (" ".join(argv), list(argv))
+        )
     for p in spec.get("key_check") or []:
         out.append("    ok = check_key(checks, %r, %r) and ok" % (p, p))
     note = spec.get("note")
     if note:
-        out.append("    checks.append({'check': 'note', 'ok': True, 'detail': %r})" % note)
+        out.append(
+            "    checks.append({'check': 'note', 'ok': True, 'detail': %r})" % note
+        )
     if not out:
-        out.append("    checks.append({'check': 'manual', 'ok': True, 'detail': '人工核验能力'})")
+        out.append(
+            "    checks.append({'check': 'manual', 'ok': True, 'detail': '人工核验能力'})"
+        )
     return "\n".join(out)
 
 
@@ -205,30 +212,47 @@ def _frontmatter(cap: dict) -> str:
         "legacy_capability": cap["name"],
         "verify": "scripts/verify.py",
     }
-    lines = [
-        "---",
-        "name: %s" % cap["name"],
-        "description: %s" % json.dumps(str(cap.get("what") or "")[:1000], ensure_ascii=False),
-        "license: internal",
-        "compatibility: Windows, Python 3.12, local-only, no-network-verify",
-        "metadata:",
-    ] + ["  %s: %s" % (k, json.dumps(v, ensure_ascii=False)) for k, v in meta.items()] + [
-        "allowed-tools: [read-file, run-python]",
-        "---",
-        "",
-    ]
+    lines = (
+        [
+            "---",
+            "name: %s" % cap["name"],
+            "description: %s"
+            % json.dumps(str(cap.get("what") or "")[:1000], ensure_ascii=False),
+            "license: internal",
+            "compatibility: Windows, Python 3.12, local-only, no-network-verify",
+            "metadata:",
+        ]
+        + ["  %s: %s" % (k, json.dumps(v, ensure_ascii=False)) for k, v in meta.items()]
+        + [
+            "allowed-tools: [read-file, run-python]",
+            "---",
+            "",
+        ]
+    )
     return "\n".join(lines)
 
 
 def _skill_md(cap: dict, spec: dict) -> str:
     parts = [
         _frontmatter(cap),
-        "# %s" % cap["name"], "",
-        "## 是什么", str(cap.get("what") or ""), "",
-        "## 怎么跑", "```", str(cap.get("how") or ""), "```", "",
-        "## 边界", str(cap.get("boundary") or ""), "",
-        "## 验证", "```",
-        "python agent_platform/skills/%s/scripts/verify.py" % cap["name"], "```", "",
+        "# %s" % cap["name"],
+        "",
+        "## 是什么",
+        str(cap.get("what") or ""),
+        "",
+        "## 怎么跑",
+        "```",
+        str(cap.get("how") or ""),
+        "```",
+        "",
+        "## 边界",
+        str(cap.get("boundary") or ""),
+        "",
+        "## 验证",
+        "```",
+        "python agent_platform/skills/%s/scripts/verify.py" % cap["name"],
+        "```",
+        "",
     ]
     if spec.get("note"):
         parts += ["## 备注", spec["note"], ""]
@@ -248,25 +272,37 @@ def build(caps_path: Path = DEFAULT_CAPS) -> dict:
         (d / "references").mkdir(exist_ok=True)
         (d / "SKILL.md").write_text(_skill_md(cap, spec), encoding="utf-8")
         (d / "scripts" / "verify.py").write_text(
-            VERIFY_TEMPLATE.format(name=name, body=_body(spec)), encoding="utf-8")
+            VERIFY_TEMPLATE.format(name=name, body=_body(spec)), encoding="utf-8"
+        )
         (d / "references" / "README.md").write_text(
             "# %s 参考材料\n\n- 能力卡源：`~/.hermes/profiles/zhaoyun/skills/CAPABILITIES.json`\n"
             "- 状态：%s\n- 边界：%s\n" % (name, cap.get("status"), cap.get("boundary")),
-            encoding="utf-8")
-        index.append({
-            "name": name,
-            "path": "agent_platform/skills/%s/SKILL.md" % name,
-            "version": "1.0.0",
-            "status": str(cap.get("status") or "unknown"),
-            "risk": "read-only",
-            "owner": "ZHAOYUN",
-            "allowed_tools": ["read-file", "run-python"],
-            "verify_cmd": "python agent_platform/skills/%s/scripts/verify.py" % name,
-            "legacy_capability": name,
-            "manual": bool(spec.get("note") and not (spec.get("exists") or spec.get("run")
-                                                      or spec.get("dirs") or spec.get("compile")
-                                                      or spec.get("key_check"))),
-        })
+            encoding="utf-8",
+        )
+        index.append(
+            {
+                "name": name,
+                "path": "agent_platform/skills/%s/SKILL.md" % name,
+                "version": "1.0.0",
+                "status": str(cap.get("status") or "unknown"),
+                "risk": "read-only",
+                "owner": "ZHAOYUN",
+                "allowed_tools": ["read-file", "run-python"],
+                "verify_cmd": "python agent_platform/skills/%s/scripts/verify.py"
+                % name,
+                "legacy_capability": name,
+                "manual": bool(
+                    spec.get("note")
+                    and not (
+                        spec.get("exists")
+                        or spec.get("run")
+                        or spec.get("dirs")
+                        or spec.get("compile")
+                        or spec.get("key_check")
+                    )
+                ),
+            }
+        )
     registry = {
         "schema": "zhaoyun_skills/v1",
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
@@ -276,7 +312,8 @@ def build(caps_path: Path = DEFAULT_CAPS) -> dict:
         "note": "Agent Skills 规范：name/description/allowed-tools/scripts；verify 只读",
     }
     (SKILLS / "registry.json").write_text(
-        json.dumps(registry, ensure_ascii=False, indent=1), encoding="utf-8")
+        json.dumps(registry, ensure_ascii=False, indent=1), encoding="utf-8"
+    )
     return registry
 
 
@@ -289,10 +326,21 @@ def main(argv=None) -> int:
         reg = json.loads((SKILLS / "registry.json").read_text(encoding="utf-8"))
         caps = json.loads(Path(args.caps).read_text(encoding="utf-8-sig"))
         want = len([c for c in caps.get("capabilities") or [] if c.get("name")])
-        missing = [s["name"] for s in reg.get("skills") or []
-                   if not (SKILLS / s["name"] / "SKILL.md").exists()]
-        ok = reg.get("total") == want and len(reg.get("skills") or []) == want and not missing
-        print(json.dumps({"ok": ok, "total": want, "missing": missing}, ensure_ascii=False))
+        missing = [
+            s["name"]
+            for s in reg.get("skills") or []
+            if not (SKILLS / s["name"] / "SKILL.md").exists()
+        ]
+        ok = (
+            reg.get("total") == want
+            and len(reg.get("skills") or []) == want
+            and not missing
+        )
+        print(
+            json.dumps(
+                {"ok": ok, "total": want, "missing": missing}, ensure_ascii=False
+            )
+        )
         return 0 if ok else 1
     reg = build(Path(args.caps))
     print("生成 %d 个技能 → %s" % (reg["total"], SKILLS))

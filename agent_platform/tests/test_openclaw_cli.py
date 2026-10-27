@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """OpenClaw CLI 桥单测（2026-10-26 WO-LEGION-ZHUGE-8796OC）：解析/配置/参数，零网络。"""
+
 import json
 import sys
 from pathlib import Path
@@ -17,8 +18,9 @@ def test_parse_outputs_list_text():
 
 
 def test_parse_error_json():
-    raw = json.dumps({"ok": False, "error": {"type": "cli_error",
-                                             "message": "Request timed out."}})
+    raw = json.dumps(
+        {"ok": False, "error": {"type": "cli_error", "message": "Request timed out."}}
+    )
     text, err = oc.parse_stdout(raw, "", 1)
     assert text is None and "cli_error" in err and "timed out" in err
 
@@ -30,8 +32,7 @@ def test_parse_non_json_human_output():
 
 def test_parse_result_outputs_nested():
     """A2-B09：与 portal/comm_zhuge 对齐，兼容 outputs 嵌在 result 下。"""
-    raw = json.dumps({"ok": True, "result": {
-        "outputs": [{"text": "嵌套答案"}]}})
+    raw = json.dumps({"ok": True, "result": {"outputs": [{"text": "嵌套答案"}]}})
     text, err = oc.parse_stdout(raw, "", 0)
     assert text == "嵌套答案" and err is None
 
@@ -39,9 +40,19 @@ def test_parse_result_outputs_nested():
 def test_agent_primary_model_reads_config(monkeypatch, tmp_path):
     oc_dir = tmp_path / ".openclaw"
     oc_dir.mkdir()
-    (oc_dir / "openclaw.json").write_text(json.dumps({
-        "agents": {"entries": {"zhuge": {"model": {"primary": "deepseek/deepseek-chat"}}}}},
-        ensure_ascii=False), encoding="utf-8")
+    (oc_dir / "openclaw.json").write_text(
+        json.dumps(
+            {
+                "agents": {
+                    "entries": {
+                        "zhuge": {"model": {"primary": "deepseek/deepseek-chat"}}
+                    }
+                }
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
     # Windows 下 Path.home() 读 USERPROFILE，Linux 下读 HOME（server verify 以 root 跑）——两边都钉到 tmp。
     monkeypatch.setenv("USERPROFILE", str(tmp_path))
     monkeypatch.setenv("HOME", str(tmp_path))
@@ -57,7 +68,9 @@ def test_is_relay():
 
 def test_run_builds_local_infer_args(monkeypatch):
     monkeypatch.setattr(oc, "bin_path", lambda: "/fake/openclaw")
-    monkeypatch.setattr(oc, "config_path", lambda: Path("/fake/.openclaw/openclaw.json"))
+    monkeypatch.setattr(
+        oc, "config_path", lambda: Path("/fake/.openclaw/openclaw.json")
+    )
     captured = {}
 
     class _R:

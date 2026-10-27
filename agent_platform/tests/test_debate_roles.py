@@ -8,6 +8,7 @@
 - 双方都无法定性时跳过校验（最小测试团队向后兼容，不溯及既有构造）；
 - 终审节点 D1 role=evaluator（审方独立于控辩双方，契约层数据化）。
 """
+
 import json
 import sys
 from pathlib import Path
@@ -23,26 +24,43 @@ from interpreter import Team, TopologyError, _infer_role  # noqa: E402
 REAL_REGISTRY = PLATFORM / "registry" / "team_invest.json"
 
 
-def _pair_team(role_a=None, role_b=None, profile_a="t1_bull", profile_b="t2_bear",
-               tmp_path=None, name="pair.json"):
+def _pair_team(
+    role_a=None,
+    role_b=None,
+    profile_a="t1_bull",
+    profile_b="t2_bear",
+    tmp_path=None,
+    name="pair.json",
+):
     """构造仅含一个辩论对的最小拓扑（无父节点/无下游，聚焦角色校验）。"""
-    a = {"agent_id": "TA", "node_key": "na", "role_profile": profile_a,
-         "analysis_type": "market_technical", "parent_node_keys": [],
-         "level": 1, "is_debate_node": True, "debate_partner_key": "nb",
-         "max_debate_rounds": 2}
-    b = dict(a, agent_id="TB", node_key="nb", role_profile=profile_b,
-             debate_partner_key="na")
+    a = {
+        "agent_id": "TA",
+        "node_key": "na",
+        "role_profile": profile_a,
+        "analysis_type": "market_technical",
+        "parent_node_keys": [],
+        "level": 1,
+        "is_debate_node": True,
+        "debate_partner_key": "nb",
+        "max_debate_rounds": 2,
+    }
+    b = dict(
+        a, agent_id="TB", node_key="nb", role_profile=profile_b, debate_partner_key="na"
+    )
     if role_a is not None:
         a["role"] = role_a
     if role_b is not None:
         b["role"] = role_b
     p = tmp_path / name
-    p.write_text(json.dumps({"team": "t", "dept": "d", "agents": [a, b]},
-                            ensure_ascii=False), encoding="utf-8")
+    p.write_text(
+        json.dumps({"team": "t", "dept": "d", "agents": [a, b]}, ensure_ascii=False),
+        encoding="utf-8",
+    )
     return p
 
 
 # ---------------------------------------------------------------- 真仓契约
+
 
 def test_real_registry_roles_present():
     """真仓 alpha 团队：T1=bull / T2=bear / D1=evaluator 三角色契约齐备。"""
@@ -61,6 +79,7 @@ def test_real_registry_team_validates():
 
 
 # ---------------------------------------------------------------- 互补校验
+
 
 def test_same_explicit_role_pair_rejected(tmp_path):
     """显式 role 同角色辩论对（bull vs bull）→ TopologyError。"""
@@ -93,11 +112,15 @@ def test_explicit_role_overrides_inference(tmp_path):
 
 def test_explicit_complementary_overrides(tmp_path):
     """显式角色互补但 profile 同后缀（都是 _bull）→ 显式字段救场，通过。"""
-    Team(_pair_team("bull", "bear", profile_a="x_bull", profile_b="y_bull",
-                    tmp_path=tmp_path))
+    Team(
+        _pair_team(
+            "bull", "bear", profile_a="x_bull", profile_b="y_bull", tmp_path=tmp_path
+        )
+    )
 
 
 # ---------------------------------------------------------------- 推断函数
+
 
 def test_infer_role_suffix_and_prefix():
     assert _infer_role("t1_bull") == "bull"

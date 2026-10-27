@@ -34,7 +34,9 @@ def _load(name: str, rel: str):
 
 
 idy = _load("idempotency_under_test", "agent_platform/engine/idempotency.py")
-audit = _load("idempotency_audit_under_test", "agent_platform/adapters/idempotency_audit.py")
+audit = _load(
+    "idempotency_audit_under_test", "agent_platform/adapters/idempotency_audit.py"
+)
 
 IdempotencyStore = idy.IdempotencyStore
 
@@ -141,7 +143,9 @@ class IdempotencyAuditTests(unittest.TestCase):
             report = audit.build_report(root)
             self.assertTrue(report["read_only"])
             self.assertEqual(report["sources"]["paper_db"]["status"], "missing_source")
-            self.assertEqual(report["sources"]["shadow_ledger"]["status"], "missing_source")
+            self.assertEqual(
+                report["sources"]["shadow_ledger"]["status"], "missing_source"
+            )
             self.assertFalse((root / "k_stock" / "data" / "paper.db").exists())
             self.assertEqual(report["blockers"], [])
 
@@ -175,9 +179,24 @@ class IdempotencyAuditTests(unittest.TestCase):
             ledger = root / "agent_platform" / "data" / "shadow" / "shadow_ledger.jsonl"
             ledger.parent.mkdir(parents=True)
             rows = [
-                {"date": "2026-10-17", "symbol": "600337", "status": "done", "parse_ok": True},
-                {"date": "2026-10-17", "symbol": "600337", "status": "done", "parse_ok": True},
-                {"date": "2026-10-17", "symbol": "000001", "status": "done", "parse_ok": False},
+                {
+                    "date": "2026-10-17",
+                    "symbol": "600337",
+                    "status": "done",
+                    "parse_ok": True,
+                },
+                {
+                    "date": "2026-10-17",
+                    "symbol": "600337",
+                    "status": "done",
+                    "parse_ok": True,
+                },
+                {
+                    "date": "2026-10-17",
+                    "symbol": "000001",
+                    "status": "done",
+                    "parse_ok": False,
+                },
                 {"date": "2026-10-17", "symbol": "000002", "status": "failed"},
                 "not-json",
             ]

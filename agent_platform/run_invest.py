@@ -6,6 +6,7 @@
     python run_invest.py --stock 600519 --live     # 真调 Ollama（qwen3.5:9b）
     python run_invest.py --stock 600519 --live --model qwen3.5:4b
 """
+
 import argparse
 import sys
 from pathlib import Path
@@ -23,7 +24,9 @@ def main():
     ap = argparse.ArgumentParser(description="投研部 alpha 团队选股执行")
     ap.add_argument("--stock", required=True, help="标的代码，如 600519")
     ap.add_argument("--live", action="store_true", help="真调 Ollama（默认 Mock 冒烟）")
-    ap.add_argument("--model", default=None, help="覆盖注册表 llm_binding（如 qwen3.5:4b）")
+    ap.add_argument(
+        "--model", default=None, help="覆盖注册表 llm_binding（如 qwen3.5:4b）"
+    )
     ap.add_argument("--registry", default=str(BASE / "registry" / "team_invest.json"))
     ap.add_argument("--data", default=str(BASE / "data"))
     args = ap.parse_args()
@@ -34,7 +37,9 @@ def main():
     if args.model and args.live:
         for a in team.agents:
             a["llm_binding"] = "ollama/" + args.model
-    memory = MemoryStore(Path(args.data) / "memory", grants_by_agent=grants, enforce=True)
+    memory = MemoryStore(
+        Path(args.data) / "memory", grants_by_agent=grants, enforce=True
+    )
     cp = Checkpointer(Path(args.data) / "checkpoints.db")
 
     data_ctx = None
@@ -42,6 +47,7 @@ def main():
         try:
             sys.path.insert(0, str(BASE / "engine"))
             from tools import make_context
+
             data_ctx = make_context(args.stock)
             print("[data] 数据上下文就绪：%s" % data_ctx.get("name", args.stock))
         except Exception as e:  # noqa: BLE001

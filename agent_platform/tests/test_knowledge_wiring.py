@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[2]
 def _load(name: str, rel: str):
     spec = importlib.util.spec_from_file_location(name, ROOT / rel)
     module = importlib.util.module_from_spec(spec)
-    sys.modules[name] = module          # dataclass 字符串注解判例
+    sys.modules[name] = module  # dataclass 字符串注解判例
     spec.loader.exec_module(module)
     return module
 
@@ -25,7 +25,7 @@ sys.path.insert(0, str(ROOT / "agent_platform"))
 
 kw = _load("kw", "agent_platform/domains/knowledge_wiring.py")
 from engine.approvals import ApprovalStore  # noqa: E402
-from engine.memory import MemoryStore       # noqa: E402
+from engine.memory import MemoryStore  # noqa: E402
 
 
 class KnowledgeWiringTests(unittest.TestCase):
@@ -40,9 +40,13 @@ class KnowledgeWiringTests(unittest.TestCase):
         kw.MEMORY_BASE = self.root / "data" / "memory"
         kw.APPROVALS_DB = self.root / "data" / "approvals" / "approvals.db"
         kw.PENDING_FILE.parent.mkdir(parents=True)
-        self.entry = {"kind": "lesson", "dept": "invest",
-                      "content": "回测滑点必须按流动性分层设置",
-                      "src": "晨会.md", "ts": "2026-10-17"}
+        self.entry = {
+            "kind": "lesson",
+            "dept": "invest",
+            "content": "回测滑点必须按流动性分层设置",
+            "src": "晨会.md",
+            "ts": "2026-10-17",
+        }
         self._append_pending(self.entry)
         self.store = ApprovalStore(kw.APPROVALS_DB)
 
@@ -70,20 +74,18 @@ class KnowledgeWiringTests(unittest.TestCase):
 
     def test_promote_writes_memory_with_credential(self):
         h = kw.candidate_hash(self.entry)
-        apv, rec, replayed = kw.promote(self.root, h, by="laotian",
-                                        store=self.store)
+        apv, rec, replayed = kw.promote(self.root, h, by="laotian", store=self.store)
         self.assertFalse(replayed)
         self.assertIn("candidate_hash", json.dumps(rec, ensure_ascii=False))
-        self.assertEqual(self._mem_count(), 1)      # 生产记忆 1 条
+        self.assertEqual(self._mem_count(), 1)  # 生产记忆 1 条
 
     def test_promote_idempotent_replay(self):
         h = kw.candidate_hash(self.entry)
         kw.promote(self.root, h, by="laotian", store=self.store)
-        apv, rec, replayed = kw.promote(self.root, h, by="laotian",
-                                        store=self.store)
+        apv, rec, replayed = kw.promote(self.root, h, by="laotian", store=self.store)
         self.assertTrue(replayed)
         self.assertEqual(rec, {})
-        self.assertEqual(self._mem_count(), 1)      # 零副作用
+        self.assertEqual(self._mem_count(), 1)  # 零副作用
 
     def test_catchup_missing_memory(self):
         """凭据在而记忆缺（崩溃窗口）→ 重提补写。"""
@@ -91,15 +93,13 @@ class KnowledgeWiringTests(unittest.TestCase):
         kw.promote(self.root, h, by="laotian", store=self.store)
         # 模拟记忆丢失：重建空 memory 目录
         shutil.rmtree(kw.MEMORY_BASE)
-        apv, rec, replayed = kw.promote(self.root, h, by="laotian",
-                                        store=self.store)
+        apv, rec, replayed = kw.promote(self.root, h, by="laotian", store=self.store)
         self.assertFalse(replayed)
-        self.assertEqual(self._mem_count(), 1)      # catch-up 补写
+        self.assertEqual(self._mem_count(), 1)  # catch-up 补写
 
     def test_promote_unknown_hash_rejected(self):
         with self.assertRaises(kw.KnowledgeWiringError):
-            kw.promote(self.root, "nonexistent", by="laotian",
-                       store=self.store)
+            kw.promote(self.root, "nonexistent", by="laotian", store=self.store)
 
     def test_promote_kind_whitelist(self):
         bad = {"kind": "gossip", "dept": "x", "content": "八卦"}
@@ -111,8 +111,9 @@ class KnowledgeWiringTests(unittest.TestCase):
 
     def test_reject_no_memory_write(self):
         h = kw.candidate_hash(self.entry)
-        apv, replayed = kw.reject(self.root, h, by="laotian", reason="不可证伪",
-                                  store=self.store)
+        apv, replayed = kw.reject(
+            self.root, h, by="laotian", reason="不可证伪", store=self.store
+        )
         self.assertEqual(self._mem_count(), 0)
         rep = kw.audit_report(self.root)
         states = [s["state"] for s in rep["states"]]
@@ -121,8 +122,11 @@ class KnowledgeWiringTests(unittest.TestCase):
     def test_audit_bypass_detection(self):
         """红线：直写生产记忆无凭据 → audit FAIL。"""
         ms = MemoryStore(kw.MEMORY_BASE, enforce=False)
-        ms.write("rogue-agent", kw.GNS_KNOWLEDGE,
-                 {"content": "绕门知识", "candidate_hash": "fake123"})
+        ms.write(
+            "rogue-agent",
+            kw.GNS_KNOWLEDGE,
+            {"content": "绕门知识", "candidate_hash": "fake123"},
+        )
         rep = kw.audit_report(self.root)
         self.assertEqual(rep["verdict"], "FAIL")
         self.assertEqual(rep["bypass_count"], 1)

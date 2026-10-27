@@ -31,6 +31,7 @@ stage=限频/静态校验/沙箱试跑），归档路径按日组织：
 红线：**零写面**。不创建目录、不移动文件、不写任何内容——连 mkdir
 都不做（scan_secrets / verify_strategy_ledger 只读观测面判例平移）。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -41,8 +42,7 @@ from pathlib import Path
 # = adapter 上两级 / bridge_inbox / rejects；write_reject 三处调用（:476/486/493）
 # 全部传它。默认根必须对齐该实现，否则不带 --rejects-root 时看不到真拒档
 # （2026-10-18 L 路工单作者指南取证发现的默认根错位，lead 修正）。
-DEFAULT_REJECTS_ROOT = (Path(__file__).resolve().parents[1]
-                        / "bridge_inbox" / "rejects")
+DEFAULT_REJECTS_ROOT = Path(__file__).resolve().parents[1] / "bridge_inbox" / "rejects"
 REASON_MAX_CHARS = 60  # 摘要表拒绝原因截断长度
 STAGE_UNKNOWN = "未知"
 DATE_NEVER = "(扁平)"  # 旧版无日期层归档的日期列占位
@@ -95,8 +95,9 @@ def collect_records(root: Path):
         if entry.is_dir():
             if not (len(entry.name) == 8 and entry.name.isdigit()):
                 # 旧版扁平：<submit_id>/ 直接在根下
-                records.append((DATE_NEVER, entry.name, STAGE_UNKNOWN,
-                                "(无 md 档，仅目录)", None))
+                records.append(
+                    (DATE_NEVER, entry.name, STAGE_UNKNOWN, "(无 md 档，仅目录)", None)
+                )
                 continue
             for sub in sorted(entry.iterdir(), key=lambda p: p.name):
                 if sub.is_file() and sub.suffix == ".md":
@@ -105,8 +106,15 @@ def collect_records(root: Path):
                 elif sub.is_dir() and (entry / (sub.name + ".md")).is_file():
                     continue  # md + 目录同框：以 md 档为准，一条记录
                 else:
-                    records.append((entry.name, sub.name, STAGE_UNKNOWN,
-                                    "(无 md 档，仅目录)", None))
+                    records.append(
+                        (
+                            entry.name,
+                            sub.name,
+                            STAGE_UNKNOWN,
+                            "(无 md 档，仅目录)",
+                            None,
+                        )
+                    )
         elif entry.suffix == ".md":
             # 旧版扁平：<submit_id>.md 直接在根下
             stage, reason = parse_reject_md(entry)
@@ -153,16 +161,20 @@ def main(argv=None) -> int:
         description="codex_bridge 拒档只读浏览工具（绝不写任何内容）"
     )
     parser.add_argument(
-        "--rejects-root", default=None,
+        "--rejects-root",
+        default=None,
         help="rejects 归档根目录；缺省自动定位 bridge_inbox/rejects"
-             "（d42a4483 起常量已改，本文案同步）",
+        "（d42a4483 起常量已改，本文案同步）",
     )
     parser.add_argument(
-        "--show", default=None, metavar="SUBMIT_ID",
+        "--show",
+        default=None,
+        metavar="SUBMIT_ID",
         help="打印该 submit_id 的完整 md 档内容（只读展示）",
     )
     parser.add_argument(
-        "--stats", action="store_true",
+        "--stats",
+        action="store_true",
         help="按 stage 汇总拒档计数",
     )
     args = parser.parse_args(argv)
@@ -185,8 +197,9 @@ def main(argv=None) -> int:
                         dir_hit = cand_dir
                         break
             if dir_hit is not None:
-                print("(submit_id=%s 只有落档目录、无 md 档：%s)"
-                      % (args.show, dir_hit))
+                print(
+                    "(submit_id=%s 只有落档目录、无 md 档：%s)" % (args.show, dir_hit)
+                )
             else:
                 print("无拒档：未找到 submit_id=%s 的拒档记录。" % args.show)
             return 0
@@ -205,8 +218,10 @@ def main(argv=None) -> int:
             print("  %-8s %d" % (stage, count))
         return 0
 
-    print("日期        submit_id          stage      拒绝原因首行（截 %d 字符）"
-          % REASON_MAX_CHARS)
+    print(
+        "日期        submit_id          stage      拒绝原因首行（截 %d 字符）"
+        % REASON_MAX_CHARS
+    )
     for line in format_summary(records):
         print(line)
     print("[汇总] 共 %d 条拒档记录。" % len(records))

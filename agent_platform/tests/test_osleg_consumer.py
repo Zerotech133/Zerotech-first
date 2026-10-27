@@ -9,6 +9,7 @@
 
 真 ``agent_platform/bridge_inbox`` 在测试前后做文件数/字节快照对比，确保零变化。
 """
+
 from __future__ import annotations
 
 import ast
@@ -44,8 +45,7 @@ def _submit(source="synthetic", kind="task_request", payload=None, idem=None):
     }
     if payload:
         body.update(payload)
-    env = inbox_gateway.submit(kind, body, source=source,
-                               idempotency_key=idem)
+    env = inbox_gateway.submit(kind, body, source=source, idempotency_key=idem)
     assert env["ok"] is True, env
     return env["data"]["id"]
 
@@ -59,9 +59,11 @@ def _snapshot(root) -> dict:
     for path in sorted(x for x in root.rglob("*") if x.is_file()):
         data = path.read_bytes()
         files[str(path.relative_to(root))] = hashlib.sha256(data).hexdigest()
-    return {"files": files, "count": len(files),
-            "bytes": sum(p.stat().st_size for p in root.rglob("*")
-                         if p.is_file())}
+    return {
+        "files": files,
+        "count": len(files),
+        "bytes": sum(p.stat().st_size for p in root.rglob("*") if p.is_file()),
+    }
 
 
 def _write_json(path: Path, record) -> None:
@@ -94,14 +96,15 @@ def _historical_record(source="synthetic") -> dict:
 # ---------------------------------------------------------------- 1. dry-run
 def test_scan_classifies_three_ways_and_dry_run_writes_nothing(store):
     eligible_a = _submit(source="synthetic", idem="dry-a")
-    eligible_b = _submit(source="e2e", kind="question",
-                         payload={"intent": "ask", "code": "000001"},
-                         idem="dry-b")
+    eligible_b = _submit(
+        source="e2e",
+        kind="question",
+        payload={"intent": "ask", "code": "000001"},
+        idem="dry-b",
+    )
     _submit(source="feishu_comm", idem="dry-real")
-    _write_json(store / "inbox" / ("%s.json" % HISTORICAL_ID),
-                _historical_record())
-    (store / "inbox" / "lg-broken1.json").write_text("{not json",
-                                                     encoding="utf-8")
+    _write_json(store / "inbox" / ("%s.json" % HISTORICAL_ID), _historical_record())
+    (store / "inbox" / "lg-broken1.json").write_text("{not json", encoding="utf-8")
 
     before = _snapshot(store)
     plan = osleg_consumer.scan(store)
@@ -109,10 +112,15 @@ def test_scan_classifies_three_ways_and_dry_run_writes_nothing(store):
 
     assert plan["mode"] == "dry-run" and plan["read_only"] is True
     assert plan["ok"] is True
-    assert plan["counts"] == {"eligible": 2, "protected": 2,
-                              "malformed": 1, "already_done": 0}
-    assert sorted(item["msg_id"] for item in plan["eligible"]) == \
-        sorted([eligible_a, eligible_b])
+    assert plan["counts"] == {
+        "eligible": 2,
+        "protected": 2,
+        "malformed": 1,
+        "already_done": 0,
+    }
+    assert sorted(item["msg_id"] for item in plan["eligible"]) == sorted(
+        [eligible_a, eligible_b]
+    )
     reasons = {item["reason"] for item in plan["protected"]}
     assert reasons == {"historical_real_order", "source_not_whitelisted"}
     assert plan["malformed"][0]["reason"] == "bad_json"
@@ -161,7 +169,11 @@ def test_run_consumes_eligible_once_with_ledger_and_synthetic_delivery(store):
     entry = _ledger(store)["entries"][msg_id]
     assert entry["status"] == "done"
     assert [step["step"] for step in entry["steps"]] == [
-        "claimed", "answer_prepared", "answered", "delivered"]
+        "claimed",
+        "answer_prepared",
+        "answered",
+        "delivered",
+    ]
     assert entry["answer_ref"] == record["answer_ref"]
     assert entry["delivered_ref"] == record["delivered_ref"]
     assert entry["done_at"]
@@ -247,13 +259,16 @@ def test_non_whitelisted_source_is_skipped_and_untouched(store):
 def test_unregistered_kind_is_skipped(store):
     msg_id = "lg-kindnotallowed1"
     path = store / "inbox" / ("%s.json" % msg_id)
-    _write_json(path, {
-        "id": msg_id,
-        "kind": "stock_consult_result",  # W4 业务 kind，未映射到 gateway 词表
-        "source": "synthetic",
-        "payload": {"report_id": "QR-1", "trace_id": "tr-1"},
-        "state": "inbox",
-    })
+    _write_json(
+        path,
+        {
+            "id": msg_id,
+            "kind": "stock_consult_result",  # W4 业务 kind，未映射到 gateway 词表
+            "source": "synthetic",
+            "payload": {"report_id": "QR-1", "trace_id": "tr-1"},
+            "state": "inbox",
+        },
+    )
     raw = path.read_bytes()
 
     out = osleg_consumer.run_once(store)
@@ -272,23 +287,28 @@ def test_malformed_records_are_isolated_without_crash(store):
     bad_json = inbox / "lg-broken1.json"
     bad_json.write_text("{not json", encoding="utf-8")
     missing_id = inbox / "lg-noid1.json"
-    _write_json(missing_id, {"kind": "task_request", "source": "synthetic",
-                             "payload": {}})
+    _write_json(
+        missing_id, {"kind": "task_request", "source": "synthetic", "payload": {}}
+    )
     mismatched = inbox / "lg-mismatch1.json"
-    _write_json(mismatched, {
-        "id": "lg-other1", "kind": "task_request", "source": "synthetic",
-        "payload": {"report_id": "QR-1", "trace_id": "tr-1"},
-        "state": "inbox"})
+    _write_json(
+        mismatched,
+        {
+            "id": "lg-other1",
+            "kind": "task_request",
+            "source": "synthetic",
+            "payload": {"report_id": "QR-1", "trace_id": "tr-1"},
+            "state": "inbox",
+        },
+    )
 
-    before = {p.name: p.read_bytes() for p in (bad_json, missing_id,
-                                               mismatched)}
+    before = {p.name: p.read_bytes() for p in (bad_json, missing_id, mismatched)}
     out = osleg_consumer.run_once(store)
 
     assert out["ok"] is True  # 坏 JSON 隔离不崩，其余单仍被消费
     assert [item["msg_id"] for item in out["consumed"]] == [good]
     reasons = {item["reason"] for item in out["malformed"]}
-    assert reasons == {"bad_json", "missing_fields:id",
-                       "id_filename_mismatch"}
+    assert reasons == {"bad_json", "missing_fields:id", "id_filename_mismatch"}
     for path in (bad_json, missing_id, mismatched):
         assert path.read_bytes() == before[path.name]  # 不移动/不改写
         assert not (store / "processed" / path.name).exists()
@@ -296,8 +316,7 @@ def test_malformed_records_are_isolated_without_crash(store):
 
 
 # ---------------------------------------------------------------- 5. 失败与恢复
-def test_consume_failure_keeps_message_pending_and_retry_succeeds(store,
-                                                                 monkeypatch):
+def test_consume_failure_keeps_message_pending_and_retry_succeeds(store, monkeypatch):
     msg_id = _submit(idem="retry")
     real_consume = inbox_gateway.consume
     calls = {"n": 0}
@@ -305,8 +324,10 @@ def test_consume_failure_keeps_message_pending_and_retry_succeeds(store,
     def flaky_consume(*args, **kwargs):
         calls["n"] += 1
         if calls["n"] == 1:
-            return {"ok": False, "error": {"code": "stub_consume_fail",
-                                           "message": "injected"}}
+            return {
+                "ok": False,
+                "error": {"code": "stub_consume_fail", "message": "injected"},
+            }
         return real_consume(*args, **kwargs)
 
     monkeypatch.setattr(inbox_gateway, "consume", flaky_consume)
@@ -381,11 +402,11 @@ def test_scan_requires_explicit_existing_isolated_store_root(tmp_path):
 # ---------------------------------------------------------------- 7. CLI
 def test_cli_run_with_limit_consumes_one_per_run(store, capsys):
     _submit(idem="cli-limit-a")
-    _submit(source="e2e", kind="question", payload={"intent": "ask"},
-            idem="cli-limit-b")
+    _submit(
+        source="e2e", kind="question", payload={"intent": "ask"}, idem="cli-limit-b"
+    )
 
-    rc = osleg_consumer.main(["--store-root", str(store), "--run",
-                              "--limit", "1"])
+    rc = osleg_consumer.main(["--store-root", str(store), "--run", "--limit", "1"])
     out = json.loads(capsys.readouterr().out)
     assert rc == 0
     assert out["mode"] == "run" and out["ok"] is True
@@ -407,8 +428,7 @@ def test_cli_run_with_limit_consumes_one_per_run(store, capsys):
 
 
 def test_cli_refuses_real_store_with_error_json(capsys):
-    rc = osleg_consumer.main(["--store-root", str(osleg_consumer.REAL_STORE),
-                              "--run"])
+    rc = osleg_consumer.main(["--store-root", str(osleg_consumer.REAL_STORE), "--run"])
     out = json.loads(capsys.readouterr().out)
     assert rc == 1
     assert out["ok"] is False and "隔离红线" in out["error"]
@@ -425,13 +445,43 @@ def test_source_imports_no_network_or_heavy_dependencies():
         elif isinstance(node, ast.ImportFrom):
             if node.level == 0 and node.module:
                 roots.add(node.module.split(".")[0])
-    forbidden = {"socket", "urllib", "http", "requests", "httpx", "aiohttp",
-                 "ssl", "subprocess", "feishu", "lark_oapi", "larksuite",
-                 "quant_backtest", "portal", "engine"}
+    forbidden = {
+        "socket",
+        "urllib",
+        "http",
+        "requests",
+        "httpx",
+        "aiohttp",
+        "ssl",
+        "subprocess",
+        "feishu",
+        "lark_oapi",
+        "larksuite",
+        "quant_backtest",
+        "portal",
+        "engine",
+    }
     assert roots & forbidden == set()
-    assert roots <= {"argparse", "hashlib", "json", "os", "re", "sys",
-                     "uuid", "datetime", "pathlib", "gateway", "__future__"}
+    assert roots <= {
+        "argparse",
+        "hashlib",
+        "json",
+        "os",
+        "re",
+        "sys",
+        "uuid",
+        "datetime",
+        "pathlib",
+        "gateway",
+        "__future__",
+    }
     # 不启服务/不真投递：源码里不出现监听或发送栈调用
-    for token in ("serve_forever", "build_server", "urlopen", "requests.",
-                  "larksuite", "open_id"):
+    for token in (
+        "serve_forever",
+        "build_server",
+        "urlopen",
+        "requests.",
+        "larksuite",
+        "open_id",
+    ):
         assert token not in source

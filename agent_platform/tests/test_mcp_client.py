@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """MCP 客户端/服务端/注册表测试（WO-MCP-CLIENT）。"""
+
 from __future__ import annotations
 
 import importlib.util
@@ -24,23 +25,35 @@ def _load(name, path):
 
 
 def test_dispatch_protocol():
-    tools = {"echo": {"description": "echo", "inputSchema": {},
-                      "handler": lambda text="": {"echo": text}}}
+    tools = {
+        "echo": {
+            "description": "echo",
+            "inputSchema": {},
+            "handler": lambda text="": {"echo": text},
+        }
+    }
     init = dispatch({"id": 1, "method": "initialize", "params": {}}, tools, "t")
     assert init["result"]["serverInfo"]["name"] == "t"
     listed = dispatch({"id": 2, "method": "tools/list"}, tools, "t")
     assert listed["result"]["tools"][0]["name"] == "echo"
-    called = dispatch({"id": 3, "method": "tools/call",
-                       "params": {"name": "echo", "arguments": {"text": "hi"}}},
-                      tools, "t")
+    called = dispatch(
+        {
+            "id": 3,
+            "method": "tools/call",
+            "params": {"name": "echo", "arguments": {"text": "hi"}},
+        },
+        tools,
+        "t",
+    )
     text = json.loads(called["result"]["content"][0]["text"])
     assert text["echo"] == "hi"
     assert dispatch({"id": 4, "method": "nope"}, tools, "t")["error"]["code"] == -32601
 
 
 def _client(script: str, *args, timeout=20) -> MCPClient:
-    return MCPClient([sys.executable, str(_WT / script), *args],
-                     cwd=str(_WT), timeout=timeout)
+    return MCPClient(
+        [sys.executable, str(_WT / script), *args], cwd=str(_WT), timeout=timeout
+    )
 
 
 def test_filesystem_server_read_and_traversal(tmp_path):
@@ -84,11 +97,14 @@ def test_registry_probe_and_allowlist(tmp_path, monkeypatch):
     (tmp_path / "x.txt").write_text("xy", encoding="utf-8")
     cfg = {
         "servers": {
-            "fs": {"script": "tools/mcp_ro_filesystem.py",
-                   "args": ["--root", str(tmp_path)],
-                   "risk": "read-only",
-                   "allow_tools": ["list_dir", "read_file"]},
-        }}
+            "fs": {
+                "script": "tools/mcp_ro_filesystem.py",
+                "args": ["--root", str(tmp_path)],
+                "risk": "read-only",
+                "allow_tools": ["list_dir", "read_file"],
+            },
+        }
+    }
     cfg_path = tmp_path / "servers.json"
     cfg_path.write_text(json.dumps(cfg), encoding="utf-8")
     monkeypatch.setattr(registry, "CONFIG", cfg_path)

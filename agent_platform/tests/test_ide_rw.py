@@ -3,6 +3,7 @@
 覆盖：开关/作用域/路径白名单/工单锁/受控编辑/命令白名单/超时/审计/HTTP 集成
 （cookie + Origin + 锁 + 越权拒绝）。全部隔离 tmp 仓库，不碰真实 worktree。
 """
+
 from __future__ import annotations
 
 import json
@@ -31,18 +32,21 @@ def make_repo(tmp_path, status="doing"):
     wt = repo / ".worktrees" / "T-BOOT"
     (wt / "agent_platform" / "pkg").mkdir(parents=True)
     (wt / "agent_platform" / "pkg" / "a.py").write_text(
-        "x = 1\n", encoding="utf-8", newline="\n")
+        "x = 1\n", encoding="utf-8", newline="\n"
+    )
     (repo / ".worktrees").mkdir(parents=True, exist_ok=True)
     tasks = {"T-BOOT": {"status": status, "branch": "task/T-BOOT"}}
     (repo / ".worktrees" / "tasks.json").write_text(
-        json.dumps(tasks, ensure_ascii=False), encoding="utf-8")
+        json.dumps(tasks, ensure_ascii=False), encoding="utf-8"
+    )
     return repo, wt
 
 
 def _serve(repo, monkeypatch, rw=True):
     monkeypatch.setenv(G.RW_ENV, "1" if rw else "0")
-    httpd = S.create_server("127.0.0.1", 0, repo=repo,
-                            portal_url="http://127.0.0.1:59999")
+    httpd = S.create_server(
+        "127.0.0.1", 0, repo=repo, portal_url="http://127.0.0.1:59999"
+    )
     t = threading.Thread(target=httpd.serve_forever, daemon=True)
     t.start()
     return httpd, "http://127.0.0.1:%d" % httpd.server_port
@@ -71,6 +75,7 @@ def _hdr(base):
 
 
 # ---------------------------------------------------------------- 开关 / 作用域
+
 
 def test_rw_enabled_default_off(monkeypatch):
     monkeypatch.delenv(G.RW_ENV, raising=False)
@@ -108,8 +113,11 @@ def test_list_scope_only_active(tmp_path):
     repo, _ = make_repo(tmp_path)
     (repo / ".worktrees" / "T-DONE").mkdir()
     (repo / ".worktrees" / "T-REV").mkdir()
-    tasks = {"T-BOOT": {"status": "doing"}, "T-DONE": {"status": "done"},
-             "T-REV": {"status": "review"}}
+    tasks = {
+        "T-BOOT": {"status": "doing"},
+        "T-DONE": {"status": "done"},
+        "T-REV": {"status": "review"},
+    }
     (repo / ".worktrees" / "tasks.json").write_text(json.dumps(tasks), encoding="utf-8")
     items = {i["task"] for i in G.list_scope(repo)}
     assert items == {"T-BOOT", "T-REV"}
@@ -117,21 +125,25 @@ def test_list_scope_only_active(tmp_path):
 
 # ---------------------------------------------------------------- 路径白名单
 
+
 def test_safe_path_allows_controlled(tmp_path):
     _repo, wt = make_repo(tmp_path)
     path, error = G.safe_path(wt, "agent_platform/pkg/a.py")
     assert error is None and path.is_file()
 
 
-@pytest.mark.parametrize("rel,code", [
-    ("../escape.py", "escape"),
-    ("agent_platform/../../x.py", "escape"),
-    ("C:/Windows/win.ini", "bad_path"),
-    (".git/config", "scope_denied"),
-    ("_vault/secrets/x.txt", "scope_denied"),
-    ("quant_backtest/data/x.py", "scope_denied"),
-    ("agent_platform/pkg/key.pem", "blocked_type"),
-])
+@pytest.mark.parametrize(
+    "rel,code",
+    [
+        ("../escape.py", "escape"),
+        ("agent_platform/../../x.py", "escape"),
+        ("C:/Windows/win.ini", "bad_path"),
+        (".git/config", "scope_denied"),
+        ("_vault/secrets/x.txt", "scope_denied"),
+        ("quant_backtest/data/x.py", "scope_denied"),
+        ("agent_platform/pkg/key.pem", "blocked_type"),
+    ],
+)
 def test_safe_path_denies(tmp_path, rel, code):
     _repo, wt = make_repo(tmp_path)
     _p, error = G.safe_path(wt, rel)
@@ -139,6 +151,7 @@ def test_safe_path_denies(tmp_path, rel, code):
 
 
 # ---------------------------------------------------------------- 编辑
+
 
 def test_reader_reads_utf8(tmp_path):
     _repo, wt = make_repo(tmp_path)
@@ -150,7 +163,9 @@ def test_writer_writes_atomic(tmp_path):
     _repo, wt = make_repo(tmp_path)
     res = W.write_file(wt, "agent_platform/pkg/new.py", "print('hi')\n")
     assert res["ok"] and res["created"] is True
-    assert (wt / "agent_platform" / "pkg" / "new.py").read_text(encoding="utf-8") == "print('hi')\n"
+    assert (wt / "agent_platform" / "pkg" / "new.py").read_text(
+        encoding="utf-8"
+    ) == "print('hi')\n"
 
 
 def test_writer_oversize_denied(tmp_path, monkeypatch):
@@ -162,12 +177,13 @@ def test_writer_oversize_denied(tmp_path, monkeypatch):
 
 # ---------------------------------------------------------------- 工单锁
 
+
 def test_lock_acquire_conflict_release(tmp_path):
     _repo, wt = make_repo(tmp_path)
     assert G.acquire_lock(wt, "owner-a")["ok"] is True
     conflict = G.acquire_lock(wt, "owner-b")
     assert conflict["ok"] is False and conflict["error"] == "locked"
-    assert G.acquire_lock(wt, "owner-a")["ok"] is True   # 同 owner 续期
+    assert G.acquire_lock(wt, "owner-a")["ok"] is True  # 同 owner 续期
     assert G.release_lock(wt, "owner-b")["ok"] is False
     assert G.release_lock(wt, "owner-a")["released"] is True
     assert G.lock_info(wt)["locked"] is False
@@ -175,13 +191,16 @@ def test_lock_acquire_conflict_release(tmp_path):
 
 def test_lock_stale_reclaim(tmp_path):
     _repo, wt = make_repo(tmp_path)
-    (wt / ".ide.lock").write_text(json.dumps(
-        {"owner": "old", "ts": time.time() - G.LOCK_TTL_S - 10}), encoding="utf-8")
+    (wt / ".ide.lock").write_text(
+        json.dumps({"owner": "old", "ts": time.time() - G.LOCK_TTL_S - 10}),
+        encoding="utf-8",
+    )
     assert G.lock_info(wt)["locked"] is False
     assert G.acquire_lock(wt, "new")["ok"] is True
 
 
 # ---------------------------------------------------------------- 执行白名单
+
 
 def test_exec_allow_git_status(tmp_path):
     _repo, wt = make_repo(tmp_path)
@@ -189,10 +208,18 @@ def test_exec_allow_git_status(tmp_path):
     assert res["ok"] and "status" in res["argv"]
 
 
-@pytest.mark.parametrize("cmd", [
-    "dir", "git push", "git status; dir", "rm -rf /", "python -c print(1)",
-    "powershell Get-Process", "git log --format=%H",
-])
+@pytest.mark.parametrize(
+    "cmd",
+    [
+        "dir",
+        "git push",
+        "git status; dir",
+        "rm -rf /",
+        "python -c print(1)",
+        "powershell Get-Process",
+        "git log --format=%H",
+    ],
+)
 def test_exec_denied_commands(tmp_path, cmd):
     _repo, wt = make_repo(tmp_path)
     res = X.validate(wt, cmd)
@@ -212,10 +239,12 @@ def test_exec_pytest_path_outside_denied(tmp_path):
 
 def test_exec_run_ok(monkeypatch, tmp_path):
     _repo, wt = make_repo(tmp_path)
+
     class P:
         returncode = 0
         stdout = "ok\n"
         stderr = ""
+
     monkeypatch.setattr(X.subprocess, "run", lambda *a, **k: P())
     res = X.run(wt, "git status")
     assert res["ok"] and res["exit_code"] == 0 and "ok" in res["output"]
@@ -223,14 +252,17 @@ def test_exec_run_ok(monkeypatch, tmp_path):
 
 def test_exec_timeout(monkeypatch, tmp_path):
     _repo, wt = make_repo(tmp_path)
+
     def boom(*a, **k):
         raise subprocess.TimeoutExpired(cmd="git", timeout=1)
+
     monkeypatch.setattr(X.subprocess, "run", boom)
     res = X.run(wt, "git status", timeout=1)
     assert res["ok"] is False and res["error"] == "timeout"
 
 
 # ---------------------------------------------------------------- 审计
+
 
 def test_audit_fallback_writes_jsonl(tmp_path, monkeypatch):
     repo, _wt = make_repo(tmp_path)
@@ -245,6 +277,7 @@ def test_audit_fallback_writes_jsonl(tmp_path, monkeypatch):
 
 # ---------------------------------------------------------------- HTTP 集成
 
+
 def test_http_scope_403_when_off(tmp_path, monkeypatch):
     repo, _wt = make_repo(tmp_path)
     httpd, base = _serve(repo, monkeypatch, rw=False)
@@ -252,7 +285,8 @@ def test_http_scope_403_when_off(tmp_path, monkeypatch):
         status, _h, body = _req(base, "GET", "/api/ide/scope")
         assert status == 403 and json.loads(body)["error"] == "rw_disabled"
     finally:
-        httpd.shutdown(); httpd.server_close()
+        httpd.shutdown()
+        httpd.server_close()
 
 
 def test_http_rw_page_sets_cookie(tmp_path, monkeypatch):
@@ -263,7 +297,8 @@ def test_http_rw_page_sets_cookie(tmp_path, monkeypatch):
         assert status == 200 and "ide_session=" in headers.get("Set-Cookie", "")
         assert b"/api/ide/write" in body
     finally:
-        httpd.shutdown(); httpd.server_close()
+        httpd.shutdown()
+        httpd.server_close()
 
 
 def test_http_scope_ok_with_cookie(tmp_path, monkeypatch):
@@ -274,32 +309,44 @@ def test_http_scope_ok_with_cookie(tmp_path, monkeypatch):
         data = json.loads(body)
         assert status == 200 and data["ok"] and data["items"][0]["task"] == "T-BOOT"
     finally:
-        httpd.shutdown(); httpd.server_close()
+        httpd.shutdown()
+        httpd.server_close()
 
 
 def test_http_no_cookie_denied(tmp_path, monkeypatch):
     repo, _wt = make_repo(tmp_path)
     httpd, base = _serve(repo, monkeypatch)
     try:
-        status, _h, body = _req(base, "POST", "/api/ide/read",
-                                body={"task": "T-BOOT", "path": "agent_platform/pkg/a.py"},
-                                headers={"Origin": base})
+        status, _h, body = _req(
+            base,
+            "POST",
+            "/api/ide/read",
+            body={"task": "T-BOOT", "path": "agent_platform/pkg/a.py"},
+            headers={"Origin": base},
+        )
         assert status == 403 and json.loads(body)["error"] == "no_session"
     finally:
-        httpd.shutdown(); httpd.server_close()
+        httpd.shutdown()
+        httpd.server_close()
 
 
 def test_http_write_requires_lock(tmp_path, monkeypatch):
     repo, _wt = make_repo(tmp_path)
     httpd, base = _serve(repo, monkeypatch)
     try:
-        payload = {"task": "T-BOOT", "owner": "o1",
-                   "path": "agent_platform/pkg/a.py", "content": "x = 2\n"}
-        status, _h, body = _req(base, "POST", "/api/ide/write", body=payload,
-                                headers=_hdr(base))
+        payload = {
+            "task": "T-BOOT",
+            "owner": "o1",
+            "path": "agent_platform/pkg/a.py",
+            "content": "x = 2\n",
+        }
+        status, _h, body = _req(
+            base, "POST", "/api/ide/write", body=payload, headers=_hdr(base)
+        )
         assert status == 409 and json.loads(body)["error"] == "lock_required"
     finally:
-        httpd.shutdown(); httpd.server_close()
+        httpd.shutdown()
+        httpd.server_close()
 
 
 def test_http_lock_then_write_ok(tmp_path, monkeypatch):
@@ -307,16 +354,28 @@ def test_http_lock_then_write_ok(tmp_path, monkeypatch):
     httpd, base = _serve(repo, monkeypatch)
     try:
         h = _hdr(base)
-        status, _h, _b = _req(base, "POST", "/api/ide/lock",
-                              body={"task": "T-BOOT", "owner": "o1"}, headers=h)
+        status, _h, _b = _req(
+            base,
+            "POST",
+            "/api/ide/lock",
+            body={"task": "T-BOOT", "owner": "o1"},
+            headers=h,
+        )
         assert status == 200
-        payload = {"task": "T-BOOT", "owner": "o1",
-                   "path": "agent_platform/pkg/a.py", "content": "x = 3\n"}
+        payload = {
+            "task": "T-BOOT",
+            "owner": "o1",
+            "path": "agent_platform/pkg/a.py",
+            "content": "x = 3\n",
+        }
         status, _h, body = _req(base, "POST", "/api/ide/write", body=payload, headers=h)
         assert status == 200 and json.loads(body)["ok"] is True
-        assert (wt / "agent_platform" / "pkg" / "a.py").read_text(encoding="utf-8") == "x = 3\n"
+        assert (wt / "agent_platform" / "pkg" / "a.py").read_text(
+            encoding="utf-8"
+        ) == "x = 3\n"
     finally:
-        httpd.shutdown(); httpd.server_close()
+        httpd.shutdown()
+        httpd.server_close()
 
 
 def test_http_exec_denied_by_whitelist(tmp_path, monkeypatch):
@@ -324,13 +383,24 @@ def test_http_exec_denied_by_whitelist(tmp_path, monkeypatch):
     httpd, base = _serve(repo, monkeypatch)
     try:
         h = _hdr(base)
-        _req(base, "POST", "/api/ide/lock", body={"task": "T-BOOT", "owner": "o1"}, headers=h)
-        status, _h, body = _req(base, "POST", "/api/ide/exec",
-                                body={"task": "T-BOOT", "owner": "o1", "command": "dir"},
-                                headers=h)
+        _req(
+            base,
+            "POST",
+            "/api/ide/lock",
+            body={"task": "T-BOOT", "owner": "o1"},
+            headers=h,
+        )
+        status, _h, body = _req(
+            base,
+            "POST",
+            "/api/ide/exec",
+            body={"task": "T-BOOT", "owner": "o1", "command": "dir"},
+            headers=h,
+        )
         assert status == 400 and json.loads(body)["error"] == "denied"
     finally:
-        httpd.shutdown(); httpd.server_close()
+        httpd.shutdown()
+        httpd.server_close()
 
 
 def test_http_audit_reads_events(tmp_path, monkeypatch):
@@ -338,25 +408,48 @@ def test_http_audit_reads_events(tmp_path, monkeypatch):
     httpd, base = _serve(repo, monkeypatch)
     try:
         h = _hdr(base)
-        _req(base, "POST", "/api/ide/lock", body={"task": "T-BOOT", "owner": "o1"}, headers=h)
-        _req(base, "POST", "/api/ide/read",
-             body={"task": "T-BOOT", "path": "agent_platform/pkg/a.py"}, headers=h)
+        _req(
+            base,
+            "POST",
+            "/api/ide/lock",
+            body={"task": "T-BOOT", "owner": "o1"},
+            headers=h,
+        )
+        _req(
+            base,
+            "POST",
+            "/api/ide/read",
+            body={"task": "T-BOOT", "path": "agent_platform/pkg/a.py"},
+            headers=h,
+        )
         status, _h, body = _req(base, "GET", "/api/ide/audit?task=T-BOOT", headers=h)
         data = json.loads(body)
         assert status == 200 and data["ok"]
-        assert any("read agent_platform/pkg/a.py" in (e.get("detail") or "")
-                   for e in data["events"]) or data["events"] == []
+        assert (
+            any(
+                "read agent_platform/pkg/a.py" in (e.get("detail") or "")
+                for e in data["events"]
+            )
+            or data["events"] == []
+        )
     finally:
-        httpd.shutdown(); httpd.server_close()
+        httpd.shutdown()
+        httpd.server_close()
 
 
 # ---------------------------------------------------------------- 静态页/启动器
 
+
 def test_rw_page_contract():
     page = Path(__file__).resolve().parents[1] / "legion_ide" / "static" / "ide_rw.html"
     text = page.read_text(encoding="utf-8")
-    for marker in ("/api/ide/scope", "/api/ide/write", "/api/ide/exec",
-                   "/api/ide/lock", "textContent"):
+    for marker in (
+        "/api/ide/scope",
+        "/api/ide/write",
+        "/api/ide/exec",
+        "/api/ide/lock",
+        "textContent",
+    ):
         assert marker in text
 
 

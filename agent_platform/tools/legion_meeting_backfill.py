@@ -49,15 +49,21 @@ REJECT_MARK = "[拒载]"
 OVERDUE_SECONDS = 72 * 3600
 
 SECTION_TITLE_RE = re.compile(r"^## .*决议与教训.*$")
-DRAFT_LINE_RE = re.compile(r"^- decisions:（草稿 (OK|INCONCLUSIVE|DEGRADED)），待部务会确认")
+DRAFT_LINE_RE = re.compile(
+    r"^- decisions:（草稿 (OK|INCONCLUSIVE|DEGRADED)），待部务会确认"
+)
 PLACEHOLDER_DECISIONS = "- decisions:（待填）"
 PLACEHOLDER_LESSONS_PREFIX = "- lessons:（待填"
 MEMBER_LINE_RE = re.compile(r"^- .+?（([A-Za-z][A-Za-z0-9_]{1,15})）：")
 AGENT_TAG_RE = re.compile(r"\[([A-Za-z][A-Za-z0-9_]{1,15})\]")
 CARD_Q_RE = re.compile(r"^[*＊]*\s*③")
 
-_CREATED_FORMATS = ("%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S",
-                    "%Y-%m-%d %H:%M", "%Y-%m-%d")
+_CREATED_FORMATS = (
+    "%Y-%m-%d %H:%M:%S",
+    "%Y-%m-%dT%H:%M:%S",
+    "%Y-%m-%d %H:%M",
+    "%Y-%m-%d",
+)
 
 
 def _parse_created(value):
@@ -98,7 +104,9 @@ def find_overdue(tasks: dict, now: float) -> list:
 
 
 def _task_blob(t: dict) -> str:
-    return " ".join(str(t.get(k, "")) for k in ("desc", "title", "note", "plan", "owner"))
+    return " ".join(
+        str(t.get(k, "")) for k in ("desc", "title", "note", "plan", "owner")
+    )
 
 
 def attribute_dept(t: dict, members: set):
@@ -135,9 +143,13 @@ def parse_skeleton(text: str) -> dict:
                 placeholder = True
             elif DRAFT_LINE_RE.match(ln):
                 backfilled = True
-    return {"members": members, "no_block": no_block,
-            "section_idx": section_idx, "placeholder": placeholder,
-            "backfilled": backfilled}
+    return {
+        "members": members,
+        "no_block": no_block,
+        "section_idx": section_idx,
+        "placeholder": placeholder,
+        "backfilled": backfilled,
+    }
 
 
 def parse_cards(review_dir: Path, members: list) -> dict:
@@ -183,7 +195,10 @@ def _entry(content: str, anchor: str) -> str:
     """decisions 条目组装：禁语汇机审 → 命中拒载（拒载行不复述命中词、保锚）。"""
     if _banned_hit(content):
         return "  - %s 条目文案命中禁创作语汇清单，不载入草稿，请查账本原文%s%s）" % (
-            REJECT_MARK, ANCHOR_MARK, anchor)
+            REJECT_MARK,
+            ANCHOR_MARK,
+            anchor,
+        )
     return "  - %s%s%s）" % (content, ANCHOR_MARK, anchor)
 
 
@@ -192,7 +207,11 @@ def _lesson(content: str, anchor: str) -> str:
     grep 机审 100% 命中）；禁语汇命中同样拒载。"""
     if _banned_hit(content):
         return "  - %s 条目文案命中禁创作语汇清单，不载入草稿，请查账本原文%s%s）%s" % (
-            REJECT_MARK, ANCHOR_MARK, anchor, CANDIDATE_MARK)
+            REJECT_MARK,
+            ANCHOR_MARK,
+            anchor,
+            CANDIDATE_MARK,
+        )
     return "  - %s%s%s）%s" % (content, ANCHOR_MARK, anchor, CANDIDATE_MARK)
 
 
@@ -201,13 +220,28 @@ def _clamp44(text: str) -> str:
     return text[:44]
 
 
-def build_section(dept: str, meet_file: str, skel: dict, tasks: dict,
-                  warns: list, overdue: list, summary, review_dir: Path,
-                  cards: dict, corps: dict, review_rel: str,
-                  tasks_rel: str, now_ts: str):
+def build_section(
+    dept: str,
+    meet_file: str,
+    skel: dict,
+    tasks: dict,
+    warns: list,
+    overdue: list,
+    summary,
+    review_dir: Path,
+    cards: dict,
+    corps: dict,
+    review_rel: str,
+    tasks_rel: str,
+    now_ts: str,
+):
     """生成第④段替换块。返回 (state, lines)。"""
     members = set(skel["members"])
-    no_task = set(summary.get("depts", {}).get(dept, {}).get("no_task", [])) if summary else set()
+    no_task = (
+        set(summary.get("depts", {}).get(dept, {}).get("no_task", []))
+        if summary
+        else set()
+    )
     duties = [m for m in skel["members"] if m not in no_task]
 
     warn_rows = []
@@ -216,8 +250,9 @@ def build_section(dept: str, meet_file: str, skel: dict, tasks: dict,
         t = tasks.get(tid)
         tag = attribute_dept(t, members) if isinstance(t, dict) else None
         warn_rows.append((tid, w, tag))
-    overdue_rows = [(tid, created, attribute_dept(t, members))
-                    for tid, t, created in overdue]
+    overdue_rows = [
+        (tid, created, attribute_dept(t, members)) for tid, t, created in overdue
+    ]
 
     dept_warns = [r for r in warn_rows if r[2]]
     dept_overdue = [r for r in overdue_rows if r[2]]
@@ -225,47 +260,78 @@ def build_section(dept: str, meet_file: str, skel: dict, tasks: dict,
     conflicts = []
     # 勾稽①：骨架§三「无阻塞」 vs 部门级超期 doing —— 冲突即 DEGRADED，双列原文
     if skel["no_block"] and dept_overdue:
-        det = "；".join("%s（created=%s，[%s]）" % (tid, created, tag)
-                       for tid, created, tag in dept_overdue)
-        conflicts.append(_entry(
-            "[DEGRADED 勾稽冲突] 骨架§三原文「- 无阻塞」 vs tasks.json 部门级超期 doing：%s"
-            "——双列原文数据不取一舍一，待部务会裁决" % det,
-            "%s §三｜%s" % (meet_file, tasks_rel)))
+        det = "；".join(
+            "%s（created=%s，[%s]）" % (tid, created, tag)
+            for tid, created, tag in dept_overdue
+        )
+        conflicts.append(
+            _entry(
+                "[DEGRADED 勾稽冲突] 骨架§三原文「- 无阻塞」 vs tasks.json 部门级超期 doing：%s"
+                "——双列原文数据不取一舍一，待部务会裁决" % det,
+                "%s §三｜%s" % (meet_file, tasks_rel),
+            )
+        )
     # 勾稽②：_summary.json n vs 个人卡文件数（分母口径：个人卡数，2467cfeb）
-    card_cnt = len([p for p in review_dir.glob("*.md") if not p.name.startswith("_")]) \
-        if summary is not None else None
+    card_cnt = (
+        len([p for p in review_dir.glob("*.md") if not p.name.startswith("_")])
+        if summary is not None
+        else None
+    )
     if summary is not None and card_cnt is not None and summary.get("n") != card_cnt:
-        conflicts.append(_entry(
-            "[DEGRADED 勾稽冲突] _summary.json n=%s vs 个人卡文件数 %d"
-            "——双列原文数据不取一舍一，待部务会裁决" % (summary.get("n"), card_cnt),
-            "%s/_summary.json｜%s/ 个人卡" % (review_rel, review_rel)))
+        conflicts.append(
+            _entry(
+                "[DEGRADED 勾稽冲突] _summary.json n=%s vs 个人卡文件数 %d"
+                "——双列原文数据不取一舍一，待部务会裁决" % (summary.get("n"), card_cnt),
+                "%s/_summary.json｜%s/ 个人卡" % (review_rel, review_rel),
+            )
+        )
 
     d_lines = []
     for tid, w, tag in dept_warns:
-        d_lines.append(_entry("%s 待确认（部门级，[%s]）" % (w, tag), "%s WARN" % tasks_rel))
+        d_lines.append(
+            _entry("%s 待确认（部门级，[%s]）" % (w, tag), "%s WARN" % tasks_rel)
+        )
     for tid, w, tag in [r for r in warn_rows if not r[2]]:
-        d_lines.append(_entry("%s 待确认（军团级，未归属部门）" % w, "%s WARN" % tasks_rel))
+        d_lines.append(
+            _entry("%s 待确认（军团级，未归属部门）" % w, "%s WARN" % tasks_rel)
+        )
     for tid, created, tag in dept_overdue:
-        d_lines.append(_entry("%s doing 超72h（created=%s，[%s]）待确认" % (tid, created, tag),
-                              tasks_rel))
+        d_lines.append(
+            _entry(
+                "%s doing 超72h（created=%s，[%s]）待确认" % (tid, created, tag),
+                tasks_rel,
+            )
+        )
 
     l_lines = []
     for aid in duties:
         q3 = cards.get(aid)
         if q3:
-            l_lines.append(_lesson("四问卡③[%s]：%s" % (aid, _clamp44(q3)),
-                                   "%s/%s.md ③" % (review_rel, aid)))
+            l_lines.append(
+                _lesson(
+                    "四问卡③[%s]：%s" % (aid, _clamp44(q3)),
+                    "%s/%s.md ③" % (review_rel, aid),
+                )
+            )
     urge = corps.get(dept, [])
     if no_task:
         names = "、".join(sorted(no_task))
         if urge:
-            l_lines.append(_lesson("%s 当日 no_task %d 人（%s）——催办 %s 明日领单"
-                                   % (dept, len(no_task), names, "、".join(urge)),
-                                   "%s/_summary.json no_task｜%s/_corps_daily.md 催办名单"
-                                   % (review_rel, review_rel)))
+            l_lines.append(
+                _lesson(
+                    "%s 当日 no_task %d 人（%s）——催办 %s 明日领单"
+                    % (dept, len(no_task), names, "、".join(urge)),
+                    "%s/_summary.json no_task｜%s/_corps_daily.md 催办名单"
+                    % (review_rel, review_rel),
+                )
+            )
         else:
-            l_lines.append(_lesson("%s 当日 no_task %d 人（%s）" % (dept, len(no_task), names),
-                                   "%s/_summary.json no_task" % review_rel))
+            l_lines.append(
+                _lesson(
+                    "%s 当日 no_task %d 人（%s）" % (dept, len(no_task), names),
+                    "%s/_summary.json no_task" % review_rel,
+                )
+            )
     # WARN 模式归纳：只按 WARN 文案分组计数纯转抄（去掉逐单变量部分），不加判语
     groups = {}
     for tid, w, tag in warn_rows:
@@ -274,13 +340,21 @@ def build_section(dept: str, meet_file: str, skel: dict, tasks: dict,
         body = re.sub(r"created=\S+", "created=<值>", body)
         groups.setdefault(body, []).append(tid)
     for body, tids in sorted(groups.items()):
-        l_lines.append(_lesson("账本 WARN 模式：「%s」×%d（%s）" % (body, len(tids), "、".join(tids)),
-                               "%s WARN×%d" % (tasks_rel, len(tids))))
+        l_lines.append(
+            _lesson(
+                "账本 WARN 模式：「%s」×%d（%s）" % (body, len(tids), "、".join(tids)),
+                "%s WARN×%d" % (tasks_rel, len(tids)),
+            )
+        )
 
     zero_material = not (dept_warns or dept_overdue or l_lines)
     if zero_material:
-        d_lines.append(_entry("当日无账本素材（INCONCLUSIVE），非缺勤",
-                              "%s depts.%s" % (review_rel, dept)))
+        d_lines.append(
+            _entry(
+                "当日无账本素材（INCONCLUSIVE），非缺勤",
+                "%s depts.%s" % (review_rel, dept),
+            )
+        )
     if summary is None:
         d_lines.append(_entry("当日 _summary.json 缺失，复盘卡链缺据", review_rel))
 
@@ -297,21 +371,36 @@ def build_section(dept: str, meet_file: str, skel: dict, tasks: dict,
     lines.extend(conflicts)
     lines.append("- lessons:（草稿候选，待部务会拍板后入知识环）")
     lines.extend(l_lines)
-    lines.append("- 素材时点：%s（回填器当次实算）｜出处锚：%s｜复盘卡链（%s）｜骨架（%s）"
-                 % (now_ts, tasks_rel, review_rel, meet_file))
+    lines.append(
+        "- 素材时点：%s（回填器当次实算）｜出处锚：%s｜复盘卡链（%s）｜骨架（%s）"
+        % (now_ts, tasks_rel, review_rel, meet_file)
+    )
     return state, lines
 
 
-def backfill_meeting(path: Path, tasks: dict, warns: list, overdue: list,
-                     review_dir: Path, summary, corps: dict,
-                     now_ts: str, write: bool) -> dict:
+def backfill_meeting(
+    path: Path,
+    tasks: dict,
+    warns: list,
+    overdue: list,
+    review_dir: Path,
+    summary,
+    corps: dict,
+    now_ts: str,
+    write: bool,
+) -> dict:
     text = path.read_text(encoding="utf-8")
     skel = parse_skeleton(text)
     dept = path.stem.split("_", 1)[1].rsplit("_", 1)[0]
     if skel["backfilled"]:
         return {"dept": dept, "disposition": "已回填", "state": "-", "written": False}
     if not skel["placeholder"] or skel["section_idx"] is None:
-        return {"dept": dept, "disposition": "无占位（跳过）", "state": "-", "written": False}
+        return {
+            "dept": dept,
+            "disposition": "无占位（跳过）",
+            "state": "-",
+            "written": False,
+        }
     lines = text.splitlines()
     start = None
     end = None
@@ -324,22 +413,43 @@ def backfill_meeting(path: Path, tasks: dict, warns: list, overdue: list,
         elif ln.startswith("- ") and start is not None:
             break
     if start is None:
-        return {"dept": dept, "disposition": "无占位（跳过）", "state": "-", "written": False}
+        return {
+            "dept": dept,
+            "disposition": "无占位（跳过）",
+            "state": "-",
+            "written": False,
+        }
     date = path.name.split("_", 1)[0]
     meet_rel = "data/meetings/%s" % path.name
     review_rel = "data/daily_review/%s" % date
     tasks_rel = ".worktrees/tasks.json"
     cards = parse_cards(review_dir, skel["members"])
-    state, block = build_section(dept, meet_rel, skel, tasks, warns, overdue,
-                                 summary, review_dir, cards, corps,
-                                 review_rel, tasks_rel, now_ts)
-    new_lines = lines[:start] + block + lines[end + 1:]
+    state, block = build_section(
+        dept,
+        meet_rel,
+        skel,
+        tasks,
+        warns,
+        overdue,
+        summary,
+        review_dir,
+        cards,
+        corps,
+        review_rel,
+        tasks_rel,
+        now_ts,
+    )
+    new_lines = lines[:start] + block + lines[end + 1 :]
     written = False
     if write:
         path.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
         written = True
-    return {"dept": dept, "disposition": "已回填" if write else "待填→草稿已生成（dry-run）",
-            "state": state, "written": written}
+    return {
+        "dept": dept,
+        "disposition": "已回填" if write else "待填→草稿已生成（dry-run）",
+        "state": state,
+        "written": written,
+    }
 
 
 def run(date=None, *, root=None, now=None, write: bool = False) -> dict:
@@ -360,9 +470,15 @@ def run(date=None, *, root=None, now=None, write: bool = False) -> dict:
     if err:
         return {"date": date, "disposition": "失源", "detail": err, "files": {}}
     if not review_dir.exists():
-        return {"date": date, "disposition": "失源",
-                "detail": "复盘卡链目录缺失：%s" % review_dir, "files": {}}
-    _errors, warns = check_tasks_doc(tasks)  # ERROR 单不出 decisions（施工单开放问题3：ERROR 走数据质量线）
+        return {
+            "date": date,
+            "disposition": "失源",
+            "detail": "复盘卡链目录缺失：%s" % review_dir,
+            "files": {},
+        }
+    _errors, warns = check_tasks_doc(
+        tasks
+    )  # ERROR 单不出 decisions（施工单开放问题3：ERROR 走数据质量线）
     overdue = find_overdue(tasks, now)
     summary_path = review_dir / "_summary.json"
     summary = None
@@ -377,12 +493,17 @@ def run(date=None, *, root=None, now=None, write: bool = False) -> dict:
     report = {"date": date, "disposition": "OK", "files": {}}
     for path in sorted(meet_dir.glob("%s_*_晨会.md" % date)):
         try:
-            res = backfill_meeting(path, tasks, warns, overdue, review_dir,
-                                   summary, corps, now_ts, write)
+            res = backfill_meeting(
+                path, tasks, warns, overdue, review_dir, summary, corps, now_ts, write
+            )
         except Exception as exc:  # closed on failure：单文件失败降级保留占位
-            res = {"dept": path.name, "disposition": "失源",
-                   "detail": "回填异常（骨架保留待填原状）：%s" % exc,
-                   "state": "-", "written": False}
+            res = {
+                "dept": path.name,
+                "disposition": "失源",
+                "detail": "回填异常（骨架保留待填原状）：%s" % exc,
+                "state": "-",
+                "written": False,
+            }
         report["files"][path.name] = res
     return report
 
@@ -390,6 +511,7 @@ def run(date=None, *, root=None, now=None, write: bool = False) -> dict:
 def _self_test() -> int:
     """阳性对照自检（判例 6：空集≠通过，三态化 + 阳性对照）。零真实数据触碰。"""
     import tempfile
+
     ok = True
 
     def check(name, cond):
@@ -403,9 +525,15 @@ def _self_test() -> int:
         old = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now - 4 * 86400))
         tasks = {
             "K-TEST-001": {"status": "done", "created": "2026-10-19"},  # 空壳 WARN
-            "K-TEST-002": {"status": "doing", "created": old,
-                           "desc": "超期单 [DEV7]"},  # 部门级超期 → 与§三「无阻塞」冲突
-            "K-TEST-003": {"status": "done", "created": "20:1x"},  # created 不可解析 WARN
+            "K-TEST-002": {
+                "status": "doing",
+                "created": old,
+                "desc": "超期单 [DEV7]",
+            },  # 部门级超期 → 与§三「无阻塞」冲突
+            "K-TEST-003": {
+                "status": "done",
+                "created": "20:1x",
+            },  # created 不可解析 WARN
         }
         meet = root / "agent_platform" / "data" / "meetings"
         rev = root / "agent_platform" / "data" / "daily_review" / "2026-10-20"
@@ -413,56 +541,88 @@ def _self_test() -> int:
         rev.mkdir(parents=True)
         wt = root / ".worktrees"
         wt.mkdir(parents=True)
-        (wt / "tasks.json").write_text(json.dumps(tasks, ensure_ascii=False), encoding="utf-8")
-        (rev / "_summary.json").write_text(json.dumps(
-            {"day": "2026-10-20", "n": 2, "no_task": [],
-             "depts": {"dev": {"n": 2, "no_task": []}}}, ensure_ascii=False),
-            encoding="utf-8")
+        (wt / "tasks.json").write_text(
+            json.dumps(tasks, ensure_ascii=False), encoding="utf-8"
+        )
+        (rev / "_summary.json").write_text(
+            json.dumps(
+                {
+                    "day": "2026-10-20",
+                    "n": 2,
+                    "no_task": [],
+                    "depts": {"dev": {"n": 2, "no_task": []}},
+                },
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
         (rev / "DEV7.md").write_text(
             "# DEV7 每日复盘 2026-10-20\n\n**③ 我的进化**：把重复动作固化为工具。\n",
-            encoding="utf-8")
+            encoding="utf-8",
+        )
         # 禁语汇阳性对照卡：③ 注入清单内语汇 → 该条目须被拒载（字面量经清单索引拼装，正文零出现）
         bad = "下阶段" + BANNED_PHRASES[1] + "一倍"
         (rev / "DEV8.md").write_text(
-            "# DEV8 每日复盘 2026-10-20\n\n**③ 我的进化**：%s。\n" % bad, encoding="utf-8")
-        (rev / "_corps_daily.md").write_text("## dev（ARCH1）\ndev日报：催办 DEV1明日领单。\n",
-                                             encoding="utf-8")
-        skel_text = "\n".join([
-            "# 研发部 晨会 2026-10-20",
-            "## 一、昨日完成（读复盘卡）",
-            "- DEV7（DEV7）：✅ 有任务｜x",
-            "- DEV8（DEV8）：✅ 有任务｜x",
-            "## 三、阻塞求助（超期/依赖）",
-            "- 无阻塞",
-            "## 四、决议与教训（会后人填/提炼器自动回填）",
-            "- decisions:（待填）",
-            "- lessons:（待填——须可证伪可复用，部务会拍板后入知识环）",
-        ]) + "\n"
+            "# DEV8 每日复盘 2026-10-20\n\n**③ 我的进化**：%s。\n" % bad,
+            encoding="utf-8",
+        )
+        (rev / "_corps_daily.md").write_text(
+            "## dev（ARCH1）\ndev日报：催办 DEV1明日领单。\n", encoding="utf-8"
+        )
+        skel_text = (
+            "\n".join(
+                [
+                    "# 研发部 晨会 2026-10-20",
+                    "## 一、昨日完成（读复盘卡）",
+                    "- DEV7（DEV7）：✅ 有任务｜x",
+                    "- DEV8（DEV8）：✅ 有任务｜x",
+                    "## 三、阻塞求助（超期/依赖）",
+                    "- 无阻塞",
+                    "## 四、决议与教训（会后人填/提炼器自动回填）",
+                    "- decisions:（待填）",
+                    "- lessons:（待填——须可证伪可复用，部务会拍板后入知识环）",
+                ]
+            )
+            + "\n"
+        )
         (meet / "2026-10-20_dev_晨会.md").write_text(skel_text, encoding="utf-8")
 
         rep = run("2026-10-20", root=root, now=now, write=False)
         f = rep["files"]["2026-10-20_dev_晨会.md"]
         check("超期冲突判 DEGRADED", f["state"] == "DEGRADED")
         check("dry-run 零写入", not f["written"])
-        check("dry-run 骨架占位原状保留", "（待填）" in
-              (meet / "2026-10-20_dev_晨会.md").read_text(encoding="utf-8"))
+        check(
+            "dry-run 骨架占位原状保留",
+            "（待填）" in (meet / "2026-10-20_dev_晨会.md").read_text(encoding="utf-8"),
+        )
 
         rep2 = run("2026-10-20", root=root, now=now, write=True)
         text = (meet / "2026-10-20_dev_晨会.md").read_text(encoding="utf-8")
         check("真写入后占位已替换", "（待填）" not in text)
         check("草稿三态头行在案", "草稿 DEGRADED），待部务会确认" in text)
         entries = [ln for ln in text.splitlines() if ln.startswith("  - ")]
-        check("出处锚覆盖率 100%", bool(entries) and all(ANCHOR_MARK in ln for ln in entries))
+        check(
+            "出处锚覆盖率 100%",
+            bool(entries) and all(ANCHOR_MARK in ln for ln in entries),
+        )
         lidx = text.splitlines().index("- lessons:（草稿候选，待部务会拍板后入知识环）")
-        lessons = [ln for i, ln in enumerate(text.splitlines())
-                   if i > lidx and ln.startswith("  - ")]
-        check("lessons 行尾候选标记 100%",
-              bool(lessons) and all(ln.endswith(CANDIDATE_MARK) for ln in lessons))
+        lessons = [
+            ln
+            for i, ln in enumerate(text.splitlines())
+            if i > lidx and ln.startswith("  - ")
+        ]
+        check(
+            "lessons 行尾候选标记 100%",
+            bool(lessons) and all(ln.endswith(CANDIDATE_MARK) for ln in lessons),
+        )
         check("禁语汇阳性对照已拒载", any(REJECT_MARK in ln for ln in lessons))
-        check("草稿全文禁语汇 grep 零命中",
-              not [w for w in BANNED_PHRASES if w in text])
-        check("幂等：二次跑判已回填",
-              rep2["files"]["2026-10-20_dev_晨会.md"]["disposition"] == "已回填")
+        check(
+            "草稿全文禁语汇 grep 零命中", not [w for w in BANNED_PHRASES if w in text]
+        )
+        check(
+            "幂等：二次跑判已回填",
+            rep2["files"]["2026-10-20_dev_晨会.md"]["disposition"] == "已回填",
+        )
 
         # 失源对照：tasks.json 缺失 → 不动骨架
         root2 = Path(td) / "r2"
@@ -471,27 +631,39 @@ def _self_test() -> int:
         (m2 / "2026-10-20_dev_晨会.md").write_text(skel_text, encoding="utf-8")
         rep3 = run("2026-10-20", root=root2, now=now)
         check("tasks.json 缺失判失源", rep3["disposition"] == "失源")
-        check("失源不动骨架", "（待填）" in
-              (m2 / "2026-10-20_dev_晨会.md").read_text(encoding="utf-8"))
+        check(
+            "失源不动骨架",
+            "（待填）" in (m2 / "2026-10-20_dev_晨会.md").read_text(encoding="utf-8"),
+        )
 
         # INCONCLUSIVE 对照：源齐但零部门级素材
         (root2 / ".worktrees").mkdir()
         (root2 / ".worktrees" / "tasks.json").write_text("{}", encoding="utf-8")
-        (root2 / "agent_platform" / "data" / "daily_review" / "2026-10-20").mkdir(parents=True)
+        (root2 / "agent_platform" / "data" / "daily_review" / "2026-10-20").mkdir(
+            parents=True
+        )
         rep4 = run("2026-10-20", root=root2, now=now)
-        check("零素材判 INCONCLUSIVE",
-              rep4["files"]["2026-10-20_dev_晨会.md"]["state"] == "INCONCLUSIVE")
+        check(
+            "零素材判 INCONCLUSIVE",
+            rep4["files"]["2026-10-20_dev_晨会.md"]["state"] == "INCONCLUSIVE",
+        )
 
     print("self-test %s" % ("PASS" if ok else "FAIL"))
     return 0 if ok else 1
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description="W42 晨会纪要第④段回填器（方案B；草稿=账本投影，零自动定稿）")
+    ap = argparse.ArgumentParser(
+        description="W42 晨会纪要第④段回填器（方案B；草稿=账本投影，零自动定稿）"
+    )
     ap.add_argument("--date", help="回填日期 YYYY-MM-DD（缺省当天）")
     ap.add_argument("--root", help="仓库根目录（缺省按脚本位置推断）")
-    ap.add_argument("--write", action="store_true", help="真写入（缺省 dry-run 零写入）")
-    ap.add_argument("--self-test", action="store_true", help="阳性对照自检（离线夹具，零真实数据）")
+    ap.add_argument(
+        "--write", action="store_true", help="真写入（缺省 dry-run 零写入）"
+    )
+    ap.add_argument(
+        "--self-test", action="store_true", help="阳性对照自检（离线夹具，零真实数据）"
+    )
     args = ap.parse_args(argv)
     if args.self_test:
         return _self_test()

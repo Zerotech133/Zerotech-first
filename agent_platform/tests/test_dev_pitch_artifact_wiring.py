@@ -41,11 +41,12 @@ class DevArtifactWiringTests(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
         self.tasks_base = self.root / "tasks"
-        self.apv = ApprovalStore(self.root / "approvals.db")   # keeper 判例
+        self.apv = ApprovalStore(self.root / "approvals.db")  # keeper 判例
         self.art = ArtifactStore(self.root / "artifacts.db")
         ts = TaskStore(self.tasks_base)
-        self.task_id = ts.open("dev", "演示任务", "body", severity="P2",
-                               opened_by="A0")   # 返回 task_id 字符串
+        self.task_id = ts.open(
+            "dev", "演示任务", "body", severity="P2", opened_by="A0"
+        )  # 返回 task_id 字符串
         ts.move(self.task_id, "assigned", "A0")
         ts.move(self.task_id, "doing", "A0")
 
@@ -55,37 +56,57 @@ class DevArtifactWiringTests(unittest.TestCase):
 
     def test_done_registers_closure_artifact(self):
         note = "验收通过：E2E 全绿"
-        task, replayed = dw.close_done(self.task_id, "dept/dev/laotian", note,
-                                       store=self.apv,
-                                       tasks_base=self.tasks_base,
-                                       artifact_store=self.art)
+        task, replayed = dw.close_done(
+            self.task_id,
+            "dept/dev/laotian",
+            note,
+            store=self.apv,
+            tasks_base=self.tasks_base,
+            artifact_store=self.art,
+        )
         self.assertFalse(replayed)
         self.assertEqual(task["status"], "done")
         arts = self.art.list()
         self.assertEqual(len(arts), 1)
         art = arts[0]
         from contracts.objects import fact_hash_of
-        self.assertEqual(art.effective_hash(),
-                         fact_hash_of(note.encode("utf-8")))
+
+        self.assertEqual(art.effective_hash(), fact_hash_of(note.encode("utf-8")))
         self.assertEqual(art.kind, "closure_note")
         self.assertEqual(art.source_system, "dev.tasks")
         self.assertEqual(art.source_ref, self.task_id)
         self.assertEqual(art.produced_by, "dept/dev/laotian")
 
     def test_done_replay_no_duplicate(self):
-        dw.close_done(self.task_id, "dept/dev/laotian", "note-v1", store=self.apv,
-                      tasks_base=self.tasks_base, artifact_store=self.art)
-        task, replayed = dw.close_done(self.task_id, "dept/dev/laotian", "note-v1",
-                                       store=self.apv,
-                                       tasks_base=self.tasks_base,
-                                       artifact_store=self.art)
+        dw.close_done(
+            self.task_id,
+            "dept/dev/laotian",
+            "note-v1",
+            store=self.apv,
+            tasks_base=self.tasks_base,
+            artifact_store=self.art,
+        )
+        task, replayed = dw.close_done(
+            self.task_id,
+            "dept/dev/laotian",
+            "note-v1",
+            store=self.apv,
+            tasks_base=self.tasks_base,
+            artifact_store=self.art,
+        )
         self.assertTrue(replayed)
         self.assertEqual(len(self.art.list()), 1)
 
     def test_taskstore_untouched_shape(self):
         # TaskStore 零改动判例：账本仍由 TaskStore 独占写入（append-only）
-        dw.close_done(self.task_id, "dept/dev/laotian", "n", store=self.apv,
-                      tasks_base=self.tasks_base, artifact_store=self.art)
+        dw.close_done(
+            self.task_id,
+            "dept/dev/laotian",
+            "n",
+            store=self.apv,
+            tasks_base=self.tasks_base,
+            artifact_store=self.art,
+        )
         files = list(self.tasks_base.glob("*.jsonl"))
         self.assertTrue(files)
 
@@ -98,7 +119,7 @@ class PitchArtifactWiringTests(unittest.TestCase):
         self.deck_file = self.root / "decks.json"
         self.deck_file.write_text("[]", encoding="utf-8")
         self._orig = pw.DECKS_FILE
-        pw.DECKS_FILE = self.deck_file          # 模块级变量即注入点
+        pw.DECKS_FILE = self.deck_file  # 模块级变量即注入点
         self.deck_path = self.root / "demo-deck.pptx"
         self.deck_path.write_bytes(b"PK\x03\x04 fake pptx content v1")
         self.art = ArtifactStore(self.root / "artifacts.db")
@@ -116,9 +137,11 @@ class PitchArtifactWiringTests(unittest.TestCase):
         arts = self.art.list()
         self.assertEqual(len(arts), 1)
         from contracts.objects import fact_hash_of
+
         art = arts[0]
-        self.assertEqual(art.effective_hash(),
-                         fact_hash_of(self.deck_path.read_bytes()))
+        self.assertEqual(
+            art.effective_hash(), fact_hash_of(self.deck_path.read_bytes())
+        )
         self.assertEqual(art.kind, "pptx")
         self.assertEqual(art.source_system, "pitch.decks")
         self.assertEqual(art.source_ref, "deck-1")
@@ -128,24 +151,26 @@ class PitchArtifactWiringTests(unittest.TestCase):
         pw.set_claims("deck-1", [{"text": "目标客户 3 家", "kind": "fact"}])
         pw.move_stage("deck-1", "fact_check", "COMM1")
         pw.move_stage("deck-1", "reviewed", "COMM1")
-        pw.approve_transition("deck-1", "approved", "老田", store=self.apv,
-                              artifact_store=self.art)
-        deck, replayed = pw.approve_transition("deck-1", "delivered", "老田",
-                                               store=self.apv,
-                                               artifact_store=self.art)
+        pw.approve_transition(
+            "deck-1", "approved", "老田", store=self.apv, artifact_store=self.art
+        )
+        deck, replayed = pw.approve_transition(
+            "deck-1", "delivered", "老田", store=self.apv, artifact_store=self.art
+        )
         self.assertFalse(replayed)
         self.assertEqual(deck["status"], "delivered")
-        self.assertEqual(len(self.art.list()), 1)   # drafted+delivered 同内容=去重
+        self.assertEqual(len(self.art.list()), 1)  # drafted+delivered 同内容=去重
         # delivered 终态冻结：重复批准=终态拒绝（非重放），产物零重复
         with self.assertRaises(pw.PitchWiringError):
-            pw.approve_transition("deck-1", "delivered", "老田",
-                                  store=self.apv, artifact_store=self.art)
+            pw.approve_transition(
+                "deck-1", "delivered", "老田", store=self.apv, artifact_store=self.art
+            )
         self.assertEqual(len(self.art.list()), 1)
 
     def test_no_artifact_file_skips_registration(self):
         pw.add_deck("deck-2", "无产物 deck")
         pw.move_stage("deck-2", "drafted", "COMM1", artifact_store=self.art)
-        self.assertEqual(len(self.art.list()), 0)   # 不伪造
+        self.assertEqual(len(self.art.list()), 0)  # 不伪造
 
     def test_empty_ledger_fail_visible(self):
         # 绿地域空集：无 deck 时 register 显式报错（不静默）

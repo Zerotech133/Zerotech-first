@@ -75,14 +75,18 @@ def test_round_trip_preserves_snapshot_shape():
     snapshot = SimMarketSnapshot(
         as_of=TS,
         bars=(make_bar(),),
-        portfolio=PortfolioView(as_of=TS, visible_at=TS, positions={"000001.SZ": {"quantity": 100}}),
+        portfolio=PortfolioView(
+            as_of=TS, visible_at=TS, positions={"000001.SZ": {"quantity": 100}}
+        ),
         risk=RiskView(as_of=TS, visible_at=TS, metrics={"var": 50}),
         adjustment="qfq",
     )
     restored = SimMarketSnapshot.from_dict(snapshot.to_dict())
 
     assert restored.to_dict() == snapshot.to_dict()
-    assert SimMarketSnapshot.from_json(snapshot.to_json()).to_dict() == snapshot.to_dict()
+    assert (
+        SimMarketSnapshot.from_json(snapshot.to_json()).to_dict() == snapshot.to_dict()
+    )
     assert isinstance(restored.bars[0], SimMarketBar)
     assert isinstance(restored.portfolio, PortfolioView)
     assert isinstance(restored.risk, RiskView)
@@ -131,7 +135,12 @@ def test_price_time_and_snapshot_consistency_validation():
     with pytest.raises(ValueError, match="snapshot.as_of"):
         SimMarketSnapshot(
             as_of=TS,
-            bars=(make_bar(timestamp="2026-10-18T09:31:00+00:00", visible_at="2026-10-18T09:31:00+00:00"),),
+            bars=(
+                make_bar(
+                    timestamp="2026-10-18T09:31:00+00:00",
+                    visible_at="2026-10-18T09:31:00+00:00",
+                ),
+            ),
             adjustment="qfq",
         )
     with pytest.raises(ValueError, match="adjustment"):
@@ -146,7 +155,9 @@ def test_view_visibility_time_must_follow_its_as_of(view_type):
         view_type(as_of=TS, visible_at="2026-10-18T09:30:00")
 
 
-@pytest.mark.parametrize("view_name,view_type", [("portfolio", PortfolioView), ("risk", RiskView)])
+@pytest.mark.parametrize(
+    "view_name,view_type", [("portfolio", PortfolioView), ("risk", RiskView)]
+)
 def test_snapshot_rejects_view_not_visible_by_as_of(view_name, view_type):
     view = view_type(as_of=TS, visible_at="2026-10-18T09:31:00+00:00")
     with pytest.raises(ValueError, match="%s.visible_at 不能晚于" % view_name):
@@ -175,4 +186,7 @@ def test_from_dict_ignores_unknown_fields_but_requires_valid_nested_dtos():
 
     portfolio_payload = PortfolioView(as_of=TS).to_dict()
     portfolio_payload["unknown"] = True
-    assert PortfolioView.from_dict(portfolio_payload).to_dict() == PortfolioView(as_of=TS).to_dict()
+    assert (
+        PortfolioView.from_dict(portfolio_payload).to_dict()
+        == PortfolioView(as_of=TS).to_dict()
+    )

@@ -25,27 +25,30 @@ from legion_command.serve import build_server, load_experiment_cards  # noqa: E4
 
 
 def _run(tmp, signed="", **kw):
-    base = dict(hypothesis="判据改样本外口径是否更优",
-                candidate_diff={"criteria/rg.md": "样本外条款"},
-                adversary_diff={"criteria/rg.md": "维持原判据"},
-                baseline_metrics={"misblock_lower_better": 0.18, "oos_return": 0.004},
-                candidate_metrics={"misblock_lower_better": 0.11, "oos_return": 0.009},
-                adversary_metrics={"misblock_lower_better": 0.17, "oos_return": 0.005},
-                signed_by=signed,
-                reason="误拦率 -7pp",
-                experience_root=tmp)
+    base = dict(
+        hypothesis="判据改样本外口径是否更优",
+        candidate_diff={"criteria/rg.md": "样本外条款"},
+        adversary_diff={"criteria/rg.md": "维持原判据"},
+        baseline_metrics={"misblock_lower_better": 0.18, "oos_return": 0.004},
+        candidate_metrics={"misblock_lower_better": 0.11, "oos_return": 0.009},
+        adversary_metrics={"misblock_lower_better": 0.17, "oos_return": 0.005},
+        signed_by=signed,
+        reason="误拦率 -7pp",
+        experience_root=tmp,
+    )
     base.update(kw)
     return P.run(**base)
 
 
 # ---------------------------------------------------------------- 链路
 
+
 def test_unsigned_stops_at_signature_gate(tmp_path):
     res = _run(tmp_path)
     assert res.decision_required is True
     assert res.entry is None
     assert "签字门" in res.note
-    assert S.search("误拦率", root=tmp_path) == []      # 零入库
+    assert S.search("误拦率", root=tmp_path) == []  # 零入库
 
 
 def test_signed_writes_entry_and_searchable(tmp_path):
@@ -76,8 +79,12 @@ def test_riskguard_domain_rejected_at_write(tmp_path):
 
 def test_adopt_requires_evidence(tmp_path):
     """候选更差时签字也不得采纳（应写成 rejected，仍入库但 lesson 为否决）。"""
-    res = _run(tmp_path, signed="laotian",
-               baseline_metrics={"x": 2}, candidate_metrics={"x": 1})
+    res = _run(
+        tmp_path,
+        signed="laotian",
+        baseline_metrics={"x": 2},
+        candidate_metrics={"x": 1},
+    )
     assert res.card.status == "rejected"
     assert res.entry is not None
     assert res.entry.lesson.startswith("否决")
@@ -98,6 +105,7 @@ def test_report_contains_all_sections(tmp_path):
 
 # ---------------------------------------------------------------- 指挥台只读端点
 
+
 @pytest.fixture()
 def server():
     srv = build_server(port=0)
@@ -113,7 +121,12 @@ def test_api_evolution_shape(server):
         data = json.loads(r.read().decode("utf-8"))
     assert data["ok"] is True
     assert set(data["experience_domains"]) == {
-        "stock_screen", "execution", "tooling", "riskguard", "supervision"}
+        "stock_screen",
+        "execution",
+        "tooling",
+        "riskguard",
+        "supervision",
+    }
     assert data["experience_domains"]["riskguard"]["readonly"] is True
     assert isinstance(data["experiments"], list)
 
@@ -122,23 +135,30 @@ def test_api_evolution_readonly_no_body_leak(server):
     with urllib.request.urlopen(server + "/api/evolution", timeout=10) as r:
         raw = r.read().decode("utf-8")
     data = json.loads(raw)
-    assert "lesson" not in json.dumps(data)   # 不暴露经验正文
+    assert "lesson" not in json.dumps(data)  # 不暴露经验正文
     assert "cue" not in json.dumps(data)
 
 
 def test_load_cards_ignores_dot_state_file(tmp_path):
     """CLOCKFIX：data/experiments 下的 .closeout_state.json 不得渲染成空卡。"""
     (tmp_path / ".closeout_state.json").write_text(
-        json.dumps({"last_digest": "x"}), encoding="utf-8")
-    (tmp_path / "EX-1.json").write_text(json.dumps({
-        "card_id": "EX-1",
-        "created_at": "2026-10-26T09:00:00+0800",
-        "kind": "observation",
-        "decision_required": True,
-        "window_summary": {"new_failures": 0},
-        "hypothesis": "h", "status": "probing",
-        "arms": {"baseline": {}, "candidate": {}},
-    }), encoding="utf-8")
+        json.dumps({"last_digest": "x"}), encoding="utf-8"
+    )
+    (tmp_path / "EX-1.json").write_text(
+        json.dumps(
+            {
+                "card_id": "EX-1",
+                "created_at": "2026-10-26T09:00:00+0800",
+                "kind": "observation",
+                "decision_required": True,
+                "window_summary": {"new_failures": 0},
+                "hypothesis": "h",
+                "status": "probing",
+                "arms": {"baseline": {}, "candidate": {}},
+            }
+        ),
+        encoding="utf-8",
+    )
     (tmp_path / "broken.json").write_text("{bad", encoding="utf-8")
     cards = load_experiment_cards(tmp_path)
     assert len(cards) == 1

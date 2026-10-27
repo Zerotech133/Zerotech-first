@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """M4-P4 绩效账本测试：幂等/冲突拒绝/缺锚点跳过/链挂接/分组聚合/
 intel 自动起草阈值与幂等。全部 tmp 仓隔离（真仓零写副作用判例）。"""
+
 import json
 import sys
 import tempfile
@@ -16,10 +17,19 @@ from engine import perf_ledger as pl  # noqa: E402
 
 def _row(**kw):
     base = {
-        "date": "2026-10-16", "symbol": "600519", "run_id": "run-1",
-        "score": 3.2, "confidence": 0.7, "ret_pct": 1.25, "horizon": 3,
-        "base": 1500.0, "exit": 1518.75, "recommendation": "buy",
-        "stance": "坚守", "dk_regime": "rotation", "dk_profile": "relaxed",
+        "date": "2026-10-16",
+        "symbol": "600519",
+        "run_id": "run-1",
+        "score": 3.2,
+        "confidence": 0.7,
+        "ret_pct": 1.25,
+        "horizon": 3,
+        "base": 1500.0,
+        "exit": 1518.75,
+        "recommendation": "buy",
+        "stance": "坚守",
+        "dk_regime": "rotation",
+        "dk_profile": "relaxed",
         "dk_blocked": False,
     }
     base.update(kw)
@@ -44,8 +54,7 @@ class PerfLedgerTests(unittest.TestCase):
             pl.record_perf_rows([_row(ret_pct=-2.0)], self.root)
 
     def test_missing_anchor_skipped_with_finding(self):
-        r = pl.record_perf_rows([_row(run_id=""), _row(ret_pct="pending")],
-                                self.root)
+        r = pl.record_perf_rows([_row(run_id=""), _row(ret_pct="pending")], self.root)
         self.assertEqual(r["recorded"], 0)
         self.assertEqual(r["skipped"], 2)
         self.assertEqual(len(r["findings"]), 2)
@@ -79,12 +88,14 @@ class ProfileTests(unittest.TestCase):
         self.root = Path(tempfile.mkdtemp(prefix="perf4p_"))
 
     def test_grouping_by_profile(self):
-        rows = [_row(run_id="r%d" % i, dk_profile="relaxed",
-                     ret_pct=1.0 + i) for i in range(3)]
-        rows += [_row(run_id="s%d" % i, dk_profile="strict",
-                      ret_pct=-0.5) for i in range(2)]
-        rows += [_row(run_id="x%d" % i, dk_profile=None, ret_pct=2.0)
-                 for i in range(2)]
+        rows = [
+            _row(run_id="r%d" % i, dk_profile="relaxed", ret_pct=1.0 + i)
+            for i in range(3)
+        ]
+        rows += [
+            _row(run_id="s%d" % i, dk_profile="strict", ret_pct=-0.5) for i in range(2)
+        ]
+        rows += [_row(run_id="x%d" % i, dk_profile=None, ret_pct=2.0) for i in range(2)]
         pl.record_perf_rows(rows, self.root)
         g = pl.by_profile(root=self.root)
         self.assertEqual(g["relaxed"]["n"], 3)
@@ -95,8 +106,7 @@ class ProfileTests(unittest.TestCase):
 
     def test_none_group_never_triggers(self):
         # none 组（无阵容字段）不参与起草——只观测
-        rows = [_row(run_id="n%d" % i, dk_profile=None, ret_pct=-3.0)
-                for i in range(8)]
+        rows = [_row(run_id="n%d" % i, dk_profile=None, ret_pct=-3.0) for i in range(8)]
         pl.record_perf_rows(rows, self.root)
         drafted, findings = pl.auto_draft_roster(self.root, by="tester")
         self.assertEqual(drafted, [])
@@ -109,8 +119,12 @@ class AutoDraftTests(unittest.TestCase):
 
     def _feed(self, prof, n, ret):
         pl.record_perf_rows(
-            [_row(run_id="%s%d" % (prof, i), dk_profile=prof,
-                  ret_pct=ret) for i in range(n)], self.root)
+            [
+                _row(run_id="%s%d" % (prof, i), dk_profile=prof, ret_pct=ret)
+                for i in range(n)
+            ],
+            self.root,
+        )
 
     def test_relaxed_negative_triggers_degrade(self):
         self._feed("relaxed", 6, -2.0)
@@ -118,12 +132,13 @@ class AutoDraftTests(unittest.TestCase):
         self.assertEqual(findings, [])
         self.assertEqual(len(drafted), 1)
         self.assertEqual(drafted[0]["decision"], "degrade")
-        self.assertEqual(drafted[0]["table_urn"],
-                         "agent_platform/perf_ledger")
+        self.assertEqual(drafted[0]["table_urn"], "agent_platform/perf_ledger")
         # 落池实锤 + content_hash 盖章
         pool = json.loads(
             (self.root / "data" / "intel_verdicts.jsonl")
-            .read_text(encoding="utf-8").splitlines()[0])
+            .read_text(encoding="utf-8")
+            .splitlines()[0]
+        )
         self.assertEqual(pool["verdict_id"], drafted[0]["verdict_id"])
         self.assertTrue(pool["content_hash"])
 
@@ -149,20 +164,25 @@ class AutoDraftTests(unittest.TestCase):
         d2, _ = pl.auto_draft_roster(self.root, by="tester")
         self.assertEqual(len(d1), 1)
         self.assertEqual(d2, [])  # 同统计指纹幂等跳过
-        pool = (self.root / "data" / "intel_verdicts.jsonl")\
-            .read_text(encoding="utf-8").splitlines()
+        pool = (
+            (self.root / "data" / "intel_verdicts.jsonl")
+            .read_text(encoding="utf-8")
+            .splitlines()
+        )
         self.assertEqual(len(pool), 1)
 
     def test_stats_shift_creates_new_verdict(self):
         self._feed("relaxed", 6, -2.0)
         pl.auto_draft_roster(self.root, by="tester")
         # 统计态变化（追加新样本）→ 新作业 → 新裁决（#r 修订语义）
-        pl.record_perf_rows(
-            [_row(run_id="relaxed-x7", ret_pct=-3.0)], self.root)
+        pl.record_perf_rows([_row(run_id="relaxed-x7", ret_pct=-3.0)], self.root)
         d2, _ = pl.auto_draft_roster(self.root, by="tester")
         self.assertEqual(len(d2), 1)
-        pool = (self.root / "data" / "intel_verdicts.jsonl")\
-            .read_text(encoding="utf-8").splitlines()
+        pool = (
+            (self.root / "data" / "intel_verdicts.jsonl")
+            .read_text(encoding="utf-8")
+            .splitlines()
+        )
         self.assertEqual(len(pool), 2)
 
 

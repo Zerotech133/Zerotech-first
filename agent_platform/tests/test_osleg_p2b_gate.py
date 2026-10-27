@@ -5,6 +5,7 @@
 - P2b 放行必须 allow_real_store + only_msg ⊆ 批准自测票；
 - only_msg 过滤只消费指定单，其他 eligible 原样保留；重复运行 0 新消费。
 """
+
 from __future__ import annotations
 
 import json
@@ -36,11 +37,14 @@ def _ticket(msg_id, source="synthetic", kind="question", state="inbox"):
 def _write_inbox(root: Path):
     root.mkdir(parents=True, exist_ok=True)
     (root / "inbox").mkdir(exist_ok=True)
-    for rec in (_ticket(APPROVED, source="e2e"),
-                _ticket("lg-other-synthetic"),
-                _ticket("lg-5917d4c4357b", source="synthetic")):
+    for rec in (
+        _ticket(APPROVED, source="e2e"),
+        _ticket("lg-other-synthetic"),
+        _ticket("lg-5917d4c4357b", source="synthetic"),
+    ):
         (root / "inbox" / (rec["id"] + ".json")).write_text(
-            json.dumps(rec, ensure_ascii=False), encoding="utf-8")
+            json.dumps(rec, ensure_ascii=False), encoding="utf-8"
+        )
 
 
 def test_default_gate_still_refuses_real_store():
@@ -49,10 +53,12 @@ def test_default_gate_still_refuses_real_store():
     with pytest.raises(C.ConsumerRefused):
         C._assert_isolated(C.REAL_STORE, allow_real_store=True)  # 无 only_msg
     with pytest.raises(C.ConsumerRefused):
-        C._assert_isolated(C.REAL_STORE, allow_real_store=True,
-                           only_msg_ids=("lg-other-synthetic",))
-    C._assert_isolated(C.REAL_STORE, allow_real_store=True,
-                       only_msg_ids=(APPROVED,))  # 批准单放行
+        C._assert_isolated(
+            C.REAL_STORE, allow_real_store=True, only_msg_ids=("lg-other-synthetic",)
+        )
+    C._assert_isolated(
+        C.REAL_STORE, allow_real_store=True, only_msg_ids=(APPROVED,)
+    )  # 批准单放行
 
 
 def test_run_once_only_msg_filters_and_idempotent(tmp_path):
@@ -67,8 +73,9 @@ def test_run_once_only_msg_filters_and_idempotent(tmp_path):
     # 重复运行：0 新消费；台账记 done（票据已消费移动，不再进 eligible）
     res2 = C.run_once(tmp_path, only_msg_ids=(APPROVED,))
     assert res2["ok"] is True and res2["consumed"] == []
-    ledger = json.loads((tmp_path / "osleg_consumer" / "ledger.json")
-                        .read_text(encoding="utf-8"))
+    ledger = json.loads(
+        (tmp_path / "osleg_consumer" / "ledger.json").read_text(encoding="utf-8")
+    )
     assert ledger["entries"][APPROVED]["status"] == "done"
 
 
@@ -76,4 +83,3 @@ def test_run_once_rejects_unapproved_only_msg(tmp_path):
     _write_inbox(tmp_path)
     with pytest.raises(C.ConsumerRefused):
         C.run_once(tmp_path, only_msg_ids=("lg-other-synthetic",))
-

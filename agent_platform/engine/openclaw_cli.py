@@ -10,6 +10,7 @@
 - 不落盘密钥（由 OpenClaw secret store 承载）；
 - 失败/超时返回 (None, error)，不抛；调用方自行决定显式降级并标注。
 """
+
 from __future__ import annotations
 
 import json
@@ -73,8 +74,11 @@ def parse_stdout(stdout, stderr="", returncode=0):
             if d.get("ok"):
                 out = d.get("text") or d.get("output") or d.get("content")
                 if not out and isinstance(d.get("outputs"), list):
-                    parts = [str(it.get("text") or it.get("content") or "")
-                             for it in d["outputs"] if isinstance(it, dict)]
+                    parts = [
+                        str(it.get("text") or it.get("content") or "")
+                        for it in d["outputs"]
+                        if isinstance(it, dict)
+                    ]
                     out = "\n".join(p for p in parts if p)
                 if not out:
                     res = d.get("result")
@@ -82,8 +86,11 @@ def parse_stdout(stdout, stderr="", returncode=0):
                         out = res.get("text") or res.get("content")
                         # A2-B09：与 portal/comm_zhuge 对齐，兼容 result.outputs[*].text 嵌套
                         if not out and isinstance(res.get("outputs"), list):
-                            parts = [str(it.get("text") or it.get("content") or "")
-                                     for it in res["outputs"] if isinstance(it, dict)]
+                            parts = [
+                                str(it.get("text") or it.get("content") or "")
+                                for it in res["outputs"]
+                                if isinstance(it, dict)
+                            ]
                             out = "\n".join(p for p in parts if p)
                 out = str(out or "").strip()
                 return (out, None) if out else (None, "empty_output")
@@ -92,9 +99,13 @@ def parse_stdout(stdout, stderr="", returncode=0):
             return None, "cli_error: %s" % str(msg)[-160:]
     if returncode != 0:
         return None, "exit=%d: %s" % (returncode, (stderr or txt or "")[-160:])
-    lines = [ln for ln in txt.splitlines()
-             if ln.strip() and not ln.startswith("[openclaw]")
-             and not ln.startswith("[provider-")]
+    lines = [
+        ln
+        for ln in txt.splitlines()
+        if ln.strip()
+        and not ln.startswith("[openclaw]")
+        and not ln.startswith("[provider-")
+    ]
     out = "\n".join(lines).strip()
     return (out, None) if out else (None, "empty_output")
 
@@ -112,10 +123,15 @@ def run(agent, prompt, model=None, timeout=None):
         args += ["--model", model]
     args += ["--prompt", one_line, "--json"]
     try:
-        cp = subprocess.run(args, capture_output=True, text=True,
-                            encoding="utf-8", errors="replace",
-                            timeout=timeout or DEFAULT_TIMEOUT,
-                            env={**os.environ})
+        cp = subprocess.run(
+            args,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=timeout or DEFAULT_TIMEOUT,
+            env={**os.environ},
+        )
     except subprocess.TimeoutExpired:
         return None, "timeout"
     except OSError as ex:  # noqa: BLE001

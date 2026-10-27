@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """赵云 MCP 工具注册表：服务器配置加载 / 探测 / 白名单调用（只读）。"""
+
 from __future__ import annotations
 
 import json
@@ -18,8 +19,11 @@ def load_servers() -> dict:
     try:
         data = json.loads(CONFIG.read_text(encoding="utf-8-sig"))
     except (OSError, ValueError):
-        return {"schema": "zhaoyun_mcp_servers/v1", "servers": {},
-                "error": "config_unreadable"}
+        return {
+            "schema": "zhaoyun_mcp_servers/v1",
+            "servers": {},
+            "error": "config_unreadable",
+        }
     return data
 
 
@@ -45,24 +49,33 @@ def _is_http(cfg: dict) -> bool:
 
 def _http_client(cfg: dict, timeout: float | None = None):
     from mcp.http_client import MCPHttpClient, token_from_env  # noqa: WPS433
-    return MCPHttpClient(str(cfg.get("url") or ""),
-                         token=token_from_env(cfg),
-                         timeout=timeout or _timeout(cfg, 15.0))
+
+    return MCPHttpClient(
+        str(cfg.get("url") or ""),
+        token=token_from_env(cfg),
+        timeout=timeout or _timeout(cfg, 15.0),
+    )
 
 
 def probe(name: str | None = None, timeout: float | None = None) -> dict:
     """启动 server → initialize → tools/list → 关闭；返回健康与工具清单。"""
     sys.path.insert(0, str(PLATFORM))
     from mcp.client import MCPClient, MCPError  # noqa: WPS433
-    servers = (load_servers().get("servers") or {})
+
+    servers = load_servers().get("servers") or {}
     names = [name] if name else list(servers.keys())
     out = []
     for n in names:
         cfg = servers.get(n) or {}
         t0 = time.time()
-        item = {"name": n, "risk": cfg.get("risk", "unknown"),
-                "transport": "http" if _is_http(cfg) else "stdio",
-                "ok": False, "tools": [], "error": ""}
+        item = {
+            "name": n,
+            "risk": cfg.get("risk", "unknown"),
+            "transport": "http" if _is_http(cfg) else "stdio",
+            "ok": False,
+            "tools": [],
+            "error": "",
+        }
         if not cfg:
             item["error"] = "server_not_configured"
             out.append(item)
@@ -72,7 +85,8 @@ def probe(name: str | None = None, timeout: float | None = None) -> dict:
             item["ok"] = True
             item["skipped"] = True
             item["error"] = "transport_disabled" + (
-                "（" + str(cfg.get("note")) + "）" if cfg.get("note") else "")
+                "（" + str(cfg.get("note")) + "）" if cfg.get("note") else ""
+            )
             item["elapsed_ms"] = int((time.time() - t0) * 1000)
             out.append(item)
             continue
@@ -82,8 +96,9 @@ def probe(name: str | None = None, timeout: float | None = None) -> dict:
                 client = _http_client(cfg, timeout)
                 client.initialize()
             else:
-                client = MCPClient(_argv(cfg), cwd=str(REPO),
-                                   timeout=timeout or _timeout(cfg)).start()
+                client = MCPClient(
+                    _argv(cfg), cwd=str(REPO), timeout=timeout or _timeout(cfg)
+                ).start()
             tools = client.list_tools()
             item["ok"] = True
             item["tools"] = [t.get("name") for t in tools if isinstance(t, dict)]
@@ -109,48 +124,79 @@ def summary(force: bool = False, ttl: float = CACHE_TTL) -> dict:
     return rep
 
 
-def call(server: str, tool: str, arguments: dict | None = None,
-         timeout: float = 30.0) -> dict:
-    servers = (load_servers().get("servers") or {})
+def call(
+    server: str, tool: str, arguments: dict | None = None, timeout: float = 30.0
+) -> dict:
+    servers = load_servers().get("servers") or {}
     cfg = servers.get(str(server or ""))
     if not cfg:
         return {"ok": False, "error": "server_not_allowed", "server": server}
     allow = cfg.get("allow_tools") or []
     if allow != "*" and str(tool) not in allow:
-        return {"ok": False, "error": "tool_not_allowed", "server": server,
-                "tool": tool, "allowed": allow}
+        return {
+            "ok": False,
+            "error": "tool_not_allowed",
+            "server": server,
+            "tool": tool,
+            "allowed": allow,
+        }
     if cfg.get("risk") != "read-only":
         return {"ok": False, "error": "server_not_read_only", "server": server}
     sys.path.insert(0, str(PLATFORM))
     if _is_http(cfg):
         if cfg.get("enabled") is False:
-            return {"ok": False, "error": "transport_disabled", "server": server,
-                    "note": cfg.get("note") or ""}
+            return {
+                "ok": False,
+                "error": "transport_disabled",
+                "server": server,
+                "note": cfg.get("note") or "",
+            }
         from mcp.http_client import MCPHttpError  # noqa: WPS433
+
         client = None
         try:
             client = _http_client(cfg, timeout)
             client.initialize()
             rep = client.call_tool(tool, arguments or {})
-            return {"ok": bool(rep.get("ok")), "server": server, "tool": tool,
-                    "payload": rep.get("payload"), "isError": rep.get("isError")}
+            return {
+                "ok": bool(rep.get("ok")),
+                "server": server,
+                "tool": tool,
+                "payload": rep.get("payload"),
+                "isError": rep.get("isError"),
+            }
         except (MCPHttpError, ValueError) as e:
-            return {"ok": False, "error": "%s: %s" % (type(e).__name__, str(e)[:160]),
-                    "server": server, "tool": tool}
+            return {
+                "ok": False,
+                "error": "%s: %s" % (type(e).__name__, str(e)[:160]),
+                "server": server,
+                "tool": tool,
+            }
         finally:
             if client is not None:
                 client.close()
     from mcp.client import MCPClient, MCPError  # noqa: WPS433
+
     client = None
     try:
-        client = MCPClient(_argv(cfg), cwd=str(REPO),
-                           timeout=timeout or _timeout(cfg, 30.0)).start()
+        client = MCPClient(
+            _argv(cfg), cwd=str(REPO), timeout=timeout or _timeout(cfg, 30.0)
+        ).start()
         rep = client.call_tool(tool, arguments or {})
-        return {"ok": bool(rep.get("ok")), "server": server, "tool": tool,
-                "payload": rep.get("payload"), "isError": rep.get("isError")}
+        return {
+            "ok": bool(rep.get("ok")),
+            "server": server,
+            "tool": tool,
+            "payload": rep.get("payload"),
+            "isError": rep.get("isError"),
+        }
     except (MCPError, OSError, ValueError) as e:
-        return {"ok": False, "error": "%s: %s" % (type(e).__name__, str(e)[:160]),
-                "server": server, "tool": tool}
+        return {
+            "ok": False,
+            "error": "%s: %s" % (type(e).__name__, str(e)[:160]),
+            "server": server,
+            "tool": tool,
+        }
     finally:
         if client is not None:
             client.close()
@@ -159,5 +205,8 @@ def call(server: str, tool: str, arguments: dict | None = None,
 def selftest() -> dict:
     rep = probe()
     missing = [s["name"] for s in rep["servers"] if not s.get("tools")]
-    return {"ok": rep["ok"] and not missing, "servers": rep["servers"],
-            "missing_tools": missing}
+    return {
+        "ok": rep["ok"] and not missing,
+        "servers": rep["servers"],
+        "missing_tools": missing,
+    }

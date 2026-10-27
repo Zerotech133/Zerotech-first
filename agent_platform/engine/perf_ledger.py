@@ -15,6 +15,7 @@
 红线：本模块只读决策账本与 K 线后验（由调用方喂行），不产生任何交易
 指令；建议≠凭据；fail-open（单行损坏不拖垮整账）。
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -47,6 +48,7 @@ KNOWN_PROFILES = ("strict", "relaxed", "none")
 
 # ---------------------------------------------------------------- 锚点
 
+
 def perf_key_for(date: str, symbol: str, run_id: str) -> str:
     """perf 幂等键：sha1(date|symbol|run_id) 前 16 位。
 
@@ -54,8 +56,7 @@ def perf_key_for(date: str, symbol: str, run_id: str) -> str:
     后验随 K 线推移会变化，但 perf_key 不变：同键异值（后验更新）走
     「重放拒绝覆盖」语义，后验修正须显式修订（#r 轮次化留给 P5）。
     """
-    payload = "|".join((str(date).strip(), str(symbol).strip(),
-                        str(run_id).strip()))
+    payload = "|".join((str(date).strip(), str(symbol).strip(), str(run_id).strip()))
     if payload == "||":
         raise ValueError("perf_key 三要素全空")
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
@@ -68,9 +69,14 @@ def ledger_path(root: Path = None) -> Path:
 
 # ---------------------------------------------------------------- 记账
 
-def record_perf_rows(rows: List[Dict], root: Path = None,
-                     link_store=None, source: str = "eval-shadow",
-                     declared_at: str = "") -> Dict:
+
+def record_perf_rows(
+    rows: List[Dict],
+    root: Path = None,
+    link_store=None,
+    source: str = "eval-shadow",
+    declared_at: str = "",
+) -> Dict:
     """批量沉淀 J2 明细行。返回 {recorded, replayed, skipped, findings}。
 
     - 缺必填锚点行 → skipped + finding（不伪造）；
@@ -86,12 +92,12 @@ def record_perf_rows(rows: List[Dict], root: Path = None,
     recorded = replayed = skipped = 0
     findings: List[str] = []
     for r in rows or []:
-        missing = [f for f in _ROW_REQUIRED
-                   if r.get(f) in (None, "", "pending")]
+        missing = [f for f in _ROW_REQUIRED if r.get(f) in (None, "", "pending")]
         if missing:
             skipped += 1
-            findings.append("perf 行缺锚点 %s: %s/%s"
-                            % (missing, r.get("date"), r.get("symbol")))
+            findings.append(
+                "perf 行缺锚点 %s: %s/%s" % (missing, r.get("date"), r.get("symbol"))
+            )
             continue
         key = perf_key_for(r["date"], r["symbol"], r["run_id"])
         row = {
@@ -121,14 +127,14 @@ def record_perf_rows(rows: List[Dict], root: Path = None,
                 raise ValueError(
                     "perf 冲突：perf_key=%s 已存在但后验不一致 "
                     "(existing=%s new=%s；M0 契约：同键异值拒绝，"
-                    "后验漂移须人工判读)" % (key, existing.get("ret_pct"),
-                                            row["ret_pct"]))
+                    "后验漂移须人工判读)"
+                    % (key, existing.get("ret_pct"), row["ret_pct"])
+                )
             replayed += 1
         else:
             index[key] = row
             with p.open("a", encoding="utf-8") as fh:
-                fh.write(json.dumps(row, ensure_ascii=False,
-                                    sort_keys=True) + "\n")
+                fh.write(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n")
             recorded += 1
         # 链挂接（账本先行：行已入账，链失败只留痕）
         if link_store is not None:
@@ -140,12 +146,15 @@ def record_perf_rows(rows: List[Dict], root: Path = None,
                     "trade_date": str(r["date"])[:10],
                 }
             try:
-                link_store.record(chain, source=source,
-                                  declared_at=declared_at)
+                link_store.record(chain, source=source, declared_at=declared_at)
             except ValueError as exc:
                 findings.append("trace 链挂接失败（perf 已入账）: %s" % exc)
-    return {"recorded": recorded, "replayed": replayed,
-            "skipped": skipped, "findings": findings}
+    return {
+        "recorded": recorded,
+        "replayed": replayed,
+        "skipped": skipped,
+        "findings": findings,
+    }
 
 
 def _num(v):
@@ -179,6 +188,7 @@ def load_perf_rows(root: Path = None) -> List[Dict]:
 
 # ---------------------------------------------------------------- 聚合
 
+
 def by_profile(rows: List[Dict] = None, root: Path = None) -> Dict[str, Dict]:
     """按阵容分组统计后验：profile -> {n, mean_ret, win_rate, neg_streak_ok}。
 
@@ -203,15 +213,19 @@ def by_profile(rows: List[Dict] = None, root: Path = None) -> Dict[str, Dict]:
 
 # ---------------------------------------------------------------- intel 反馈
 
+
 def _roster_job_key(stats: Dict[str, Dict]) -> str:
     """阵容校准作业指纹：统计态变化即新作业（同态重跑幂等跳过）。"""
     payload = json.dumps(stats, ensure_ascii=False, sort_keys=True)
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:8]
 
 
-def auto_draft_roster(root: Path = None, by: str = "agent",
-                      min_samples: int = MIN_SAMPLES,
-                      mean_floor: float = MEAN_RET_FLOOR) -> Tuple[list, list]:
+def auto_draft_roster(
+    root: Path = None,
+    by: str = "agent",
+    min_samples: int = MIN_SAMPLES,
+    mean_floor: float = MEAN_RET_FLOOR,
+) -> Tuple[list, list]:
     """阵容校准建议自动起草（intel draft 无凭据建议权）。
 
     触发规则（阈值显式、可回放）：
@@ -232,8 +246,7 @@ def auto_draft_roster(root: Path = None, by: str = "agent",
     stats = by_profile(root=root)
     jkey = _roster_job_key(stats)
     drafted: List[Dict] = []
-    pool_ids = {e.get("verdict_id") for e in load_pool(root)
-                if "_error" not in e}
+    pool_ids = {e.get("verdict_id") for e in load_pool(root) if "_error" not in e}
 
     for prof, s in stats.items():
         if prof not in ("strict", "relaxed"):
@@ -255,10 +268,17 @@ def auto_draft_roster(root: Path = None, by: str = "agent",
                 "阵容=%s 样本 n=%d 后验均值 %.2f%%（阈值 %.2f%%，"
                 "win_rate=%.0f%%）——%s。来源 M4-P4 perf_ledger "
                 "自动起草（draft 建议权，adopt 须人工凭据）。"
-                % (prof, s["n"], s["mean_ret"], mean_floor,
-                   s["win_rate"] * 100,
-                   "建议收回放宽回落 strict" if decision == "degrade"
-                   else "稳健阵容亏损多为系统性回落，仅观察不动阵容")),
+                % (
+                    prof,
+                    s["n"],
+                    s["mean_ret"],
+                    mean_floor,
+                    s["win_rate"] * 100,
+                    "建议收回放宽回落 strict"
+                    if decision == "degrade"
+                    else "稳健阵容亏损多为系统性回落，仅观察不动阵容",
+                )
+            ),
         }
         try:
             drafted.append(draft(root, entry, by=by))
@@ -269,6 +289,7 @@ def auto_draft_roster(root: Path = None, by: str = "agent",
 
 # ---------------------------------------------------------------- 全链回放
 
+
 def perf_chain_view(store, target: str, root: Path = None) -> Dict:
     """四环全链回放（M4-P5 总验收句的 perf 版）。
 
@@ -278,11 +299,16 @@ def perf_chain_view(store, target: str, root: Path = None) -> Dict:
     perf_rows=[]，不伪造——链上锚点是登记态，明细以账本为准）。
     """
     from adapters.trace_link import replay_trace
+
     rep = replay_trace(store, target)
     if rep.get("verdict") != "OK":
-        return {"verdict": rep["verdict"], "matches": [],
-                "perf_rows": [], "profile_stats": {},
-                "findings": rep.get("findings", [])}
+        return {
+            "verdict": rep["verdict"],
+            "matches": [],
+            "perf_rows": [],
+            "profile_stats": {},
+            "findings": rep.get("findings", []),
+        }
     hit_keys = set()
     for m in rep["matches"]:
         ref = m["chain"].get("perf") or {}
@@ -301,8 +327,10 @@ def perf_chain_view(store, target: str, root: Path = None) -> Dict:
 
 # ---------------------------------------------------------------- CLI
 
+
 def main(argv: Optional[List[str]] = None) -> int:
     import argparse
+
     ap = argparse.ArgumentParser(description="M4-P4 绩效账本工具")
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("stats", help="账本规模 + 阵容分组后验")
@@ -320,27 +348,36 @@ def main(argv: Optional[List[str]] = None) -> int:
         # intel_verdicts + trace_links），无显式 --root 拒绝执行，防止验收
         # 演示污染真仓（复发两次的判例：演示永不落真仓红线）。
         if not args.root:
-            print("[安全阀 M5-P2] stats 含写侧起草（auto_draft_roster），"
-                  "无显式 --root 拒绝落真仓。生产判读：--root "
-                  "<agent_platform 根>；演示：--root <tmp 目录>",
-                  file=sys.stderr)
+            print(
+                "[安全阀 M5-P2] stats 含写侧起草（auto_draft_roster），"
+                "无显式 --root 拒绝落真仓。生产判读：--root "
+                "<agent_platform 根>；演示：--root <tmp 目录>",
+                file=sys.stderr,
+            )
             return 2
         rows = load_perf_rows(root)
         print("perf_ledger rows=%d" % len(rows))
         for prof, s in by_profile(rows).items():
-            print("  %-8s n=%-4d mean_ret=%+7.2f%% win=%.0f%%"
-                  % (prof, s["n"], s["mean_ret"], s["win_rate"] * 100))
+            print(
+                "  %-8s n=%-4d mean_ret=%+7.2f%% win=%.0f%%"
+                % (prof, s["n"], s["mean_ret"], s["win_rate"] * 100)
+            )
         drafted, findings = auto_draft_roster(root)
         for d in drafted:
-            print("  [draft] %s %s (%s)" % (d["decision"],
-                                            d["verdict_id"], d["impact"]))
+            print(
+                "  [draft] %s %s (%s)" % (d["decision"], d["verdict_id"], d["impact"])
+            )
         for f in findings:
             print("  [finding] %s" % f)
         return 0
     rows = load_perf_rows(root)
-    for r in rows[-args.limit:]:
-        print(r["date"], r["symbol"], "ret=%+.2f%%" % (r["ret_pct"] or 0),
-              "prof=%s" % (r.get("dk_profile") or "none"))
+    for r in rows[-args.limit :]:
+        print(
+            r["date"],
+            r["symbol"],
+            "ret=%+.2f%%" % (r["ret_pct"] or 0),
+            "prof=%s" % (r.get("dk_profile") or "none"),
+        )
     return 0
 
 

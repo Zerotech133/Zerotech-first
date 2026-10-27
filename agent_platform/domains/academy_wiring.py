@@ -49,8 +49,16 @@ SCHEMA_VERSION = "1.0"
 DOMAIN = "academy"
 SOURCE = "academy.research_topics"
 
-ACADEMY_STAGES = ["intake", "hypothesis", "evidence", "validation",
-                  "review", "joint_review", "decision", "closed"]
+ACADEMY_STAGES = [
+    "intake",
+    "hypothesis",
+    "evidence",
+    "validation",
+    "review",
+    "joint_review",
+    "decision",
+    "closed",
+]
 APPROVAL_GATED_TO = {"decision", "closed"}
 TERMINAL_STATUSES = {"closed"}
 
@@ -106,8 +114,7 @@ def find_topic(root: Path, topic_id: str) -> dict:
     for t in load_topics(root):
         if t.get("topic_id") == topic_id:
             return t
-    raise AcademyWiringError("topic_id=%s 不在 research_topics.json 中"
-                             % topic_id)
+    raise AcademyWiringError("topic_id=%s 不在 research_topics.json 中" % topic_id)
 
 
 def _now_naive() -> str:
@@ -117,7 +124,8 @@ def _now_naive() -> str:
 
 def _append_history(topic: dict, stage: str, by: str, note: str) -> None:
     topic.setdefault("history", []).append(
-        {"at": _now_naive(), "stage": stage, "by": by, "note": note})
+        {"at": _now_naive(), "stage": stage, "by": by, "note": note}
+    )
     topic["updated"] = _now_naive()
 
 
@@ -129,29 +137,35 @@ def project_workitems(root: Path) -> List[WorkItem]:
     items = []
     for t in topics:
         stage = t.get("status", "")
-        items.append(WorkItem(
-            workitem_id="academy:%s" % t.get("topic_id", ""),
-            domain=DOMAIN,
-            source=SOURCE,
-            source_ref=t.get("topic_id", ""),
-            title=t.get("title", ""),
-            status=stage,                      # 阶段机原生值，原样保留
-            owner=t.get("owner", ""),
-            payload={"direction": t.get("direction", ""),
-                     "sponsor": t.get("sponsor", ""),
-                     "stage_index": ACADEMY_STAGES.index(stage)
-                     if stage in ACADEMY_STAGES else None,
-                     "worker_mode": (t.get("worker_plan") or {}).get("mode", ""),
-                     "history_len": len(t.get("history", []) or [])},
-        ))
+        items.append(
+            WorkItem(
+                workitem_id="academy:%s" % t.get("topic_id", ""),
+                domain=DOMAIN,
+                source=SOURCE,
+                source_ref=t.get("topic_id", ""),
+                title=t.get("title", ""),
+                status=stage,  # 阶段机原生值，原样保留
+                owner=t.get("owner", ""),
+                payload={
+                    "direction": t.get("direction", ""),
+                    "sponsor": t.get("sponsor", ""),
+                    "stage_index": ACADEMY_STAGES.index(stage)
+                    if stage in ACADEMY_STAGES
+                    else None,
+                    "worker_mode": (t.get("worker_plan") or {}).get("mode", ""),
+                    "history_len": len(t.get("history", []) or []),
+                },
+            )
+        )
     return items
 
 
 # ----------------------------------------------------------------------
 # 自由推进 / 打回（非受门阶段，单一写路径 + 域内 history）
 # ----------------------------------------------------------------------
-def move_stage(root: Path, topic_id: str, to_stage: str, by: str,
-               note: str = "") -> dict:
+def move_stage(
+    root: Path, topic_id: str, to_stage: str, by: str, note: str = ""
+) -> dict:
     """自由推进或打回一个阶段（目标不在审批门内）。
 
     返回 topic（转移后）。非法转移/目标受门/终态 → AcademyWiringError。
@@ -160,10 +174,10 @@ def move_stage(root: Path, topic_id: str, to_stage: str, by: str,
         raise AcademyWiringError("操作人 by 必填（轨迹可追溯）")
     if to_stage in APPROVAL_GATED_TO:
         raise AcademyWiringError(
-            "→%s 是审批门阶段，必须走 approve（凭据先行）" % to_stage)
+            "→%s 是审批门阶段，必须走 approve（凭据先行）" % to_stage
+        )
     if to_stage not in ACADEMY_STAGES:
-        raise AcademyWiringError("未知阶段 %s（合法：%s）"
-                                 % (to_stage, ACADEMY_STAGES))
+        raise AcademyWiringError("未知阶段 %s（合法：%s）" % (to_stage, ACADEMY_STAGES))
     root = Path(root)
     topic = find_topic(root, topic_id)
     from_stage = topic.get("status", "")
@@ -172,7 +186,8 @@ def move_stage(root: Path, topic_id: str, to_stage: str, by: str,
     if to_stage not in LEGAL_TRANSITIONS.get(from_stage, []):
         raise AcademyWiringError(
             "非法转移 %s→%s（合法：%s）；阶段只能前进一步或退回一步"
-            % (from_stage, to_stage, LEGAL_TRANSITIONS.get(from_stage, [])))
+            % (from_stage, to_stage, LEGAL_TRANSITIONS.get(from_stage, []))
+        )
     topic["status"] = to_stage
     _append_history(topic, to_stage, by, note or "stage move")
     save_topics(root, _reload_and_replace(root, topic_id, topic))
@@ -191,9 +206,14 @@ def _reload_and_replace(root: Path, topic_id: str, new_topic: dict) -> List[dict
 # ----------------------------------------------------------------------
 # 受门转移：结题 / 关闭（Approval 凭据先行）
 # ----------------------------------------------------------------------
-def approve_transition(root: Path, topic_id: str, to_status: str, by: str,
-                       reason: str = "", store: ApprovalStore = None
-                       ) -> Tuple[Approval, dict, bool]:
+def approve_transition(
+    root: Path,
+    topic_id: str,
+    to_status: str,
+    by: str,
+    reason: str = "",
+    store: ApprovalStore = None,
+) -> Tuple[Approval, dict, bool]:
     """批准并执行受门阶段转移（→decision / →closed）。
 
     返回 (approval, topic_after, replayed)。语义与 GZH 同款：
@@ -204,19 +224,24 @@ def approve_transition(root: Path, topic_id: str, to_status: str, by: str,
     if to_status not in APPROVAL_GATED_TO:
         raise AcademyWiringError(
             "%s 不是受门阶段（仅 %s 需 Approval）；自由推进走 move"
-            % (to_status, sorted(APPROVAL_GATED_TO)))
+            % (to_status, sorted(APPROVAL_GATED_TO))
+        )
     root = Path(root)
     topic = find_topic(root, topic_id)
     from_stage = topic.get("status", "")
 
     own_store = store is None
-    store = store or ApprovalStore(_AGENT_PLATFORM / "data" / "approvals"
-                                   / "approvals.db")
+    store = store or ApprovalStore(
+        _AGENT_PLATFORM / "data" / "approvals" / "approvals.db"
+    )
     try:
+
         def _find(to: str) -> Optional[Approval]:
-            hits = [a for a in store.list(target_type="workitem")
-                    if a.target_id == "academy:%s" % topic_id
-                    and a.to_status == to]
+            hits = [
+                a
+                for a in store.list(target_type="workitem")
+                if a.target_id == "academy:%s" % topic_id and a.to_status == to
+            ]
             return hits[-1] if hits else None  # 最新凭据（打回重审取新一轮）
 
         # 幂等快路径：目标已达成且有凭据 → 稳定 no-op
@@ -226,56 +251,68 @@ def approve_transition(root: Path, topic_id: str, to_status: str, by: str,
                 return hit, topic, True
             raise AcademyWiringError(
                 "topic %s 阶段已为 %s 但账本无凭据：疑似绕过审批门修改真源，"
-                "拒绝重复批准（先跑 report 审计）" % (topic_id, from_stage))
+                "拒绝重复批准（先跑 report 审计）" % (topic_id, from_stage)
+            )
 
         if from_stage in TERMINAL_STATUSES:
             raise AcademyWiringError("topic %s 已终态 closed，禁止再转移" % topic_id)
         if to_status not in LEGAL_TRANSITIONS.get(from_stage, []):
             raise AcademyWiringError(
                 "非法转移 %s→%s（合法：%s）；阶段只能前进一步或退回一步"
-                % (from_stage, to_status,
-                   LEGAL_TRANSITIONS.get(from_stage, [])))
+                % (from_stage, to_status, LEGAL_TRANSITIONS.get(from_stage, []))
+            )
 
-        own = [a for a in store.list(target_type="workitem")
-               if a.target_id == "academy:%s" % topic_id]
+        own = [
+            a
+            for a in store.list(target_type="workitem")
+            if a.target_id == "academy:%s" % topic_id
+        ]
         # catch-up：最新凭据恰是本次转移、且该转移从未落过 history
-        #（凭据落库后、真源写入前崩溃的窗口）→ 补齐真源写入，重放返回。
+        # （凭据落库后、真源写入前崩溃的窗口）→ 补齐真源写入，重放返回。
         # history 已有 to_status 痕迹 = 凭据曾生效（之后可能被打回），
         # 不得 catch-up——打回重批交给下方轮次化键处理。多轮后再遇
         # 崩溃窗口会降级为新增 #r{n} 凭据（状态仍正确，账本略冗余）。
         applied = {h.get("stage") for h in topic.get("history", [])}
-        if (own and own[-1].to_status == to_status
-                and own[-1].from_status == from_stage
-                and to_status not in applied):
-            topic = _apply_stage(root, topic_id, to_status, by,
-                                 reason or "approval catch-up")
+        if (
+            own
+            and own[-1].to_status == to_status
+            and own[-1].from_status == from_stage
+            and to_status not in applied
+        ):
+            topic = _apply_stage(
+                root, topic_id, to_status, by, reason or "approval catch-up"
+            )
             return own[-1], topic, True
 
         # 轮次化幂等键：受门阶段被打回重批（如 decision→joint_review→
         # decision）是新一轮批准，必须留新凭据（decided_by/reason 可追溯），
         # 不得重放第一轮凭据——同轮重放仍由既有凭据幂等兜底。
-        n = sum(1 for a in own
-                if a.from_status == from_stage and a.to_status == to_status)
+        n = sum(
+            1 for a in own if a.from_status == from_stage and a.to_status == to_status
+        )
         base = "academy:%s:%s>%s" % (topic_id, from_stage, to_status)
         key = base if n == 0 else "%s#r%d" % (base, n + 1)
-        approval, replayed = store.record(Approval(
-            target_type="workitem",
-            target_id="academy:%s" % topic_id,
-            from_status=from_stage,
-            to_status=to_status,
-            decision="approved",
-            decided_by=by,
-            reason=reason,
-            decided_at=datetime.now().astimezone().isoformat(timespec="seconds"),
-            idempotency_key=key,
-        ))
+        approval, replayed = store.record(
+            Approval(
+                target_type="workitem",
+                target_id="academy:%s" % topic_id,
+                from_status=from_stage,
+                to_status=to_status,
+                decision="approved",
+                decided_by=by,
+                reason=reason,
+                decided_at=datetime.now().astimezone().isoformat(timespec="seconds"),
+                idempotency_key=key,
+            )
+        )
         if not replayed:
             topic = _apply_stage(root, topic_id, to_status, by, reason)
             return approval, topic, False
         # 重放：真源若滞后（崩溃窗口）补齐，否则原样返回
         if topic.get("status") != to_status:
-            topic = _apply_stage(root, topic_id, to_status, by,
-                                 reason or "approval catch-up")
+            topic = _apply_stage(
+                root, topic_id, to_status, by, reason or "approval catch-up"
+            )
             return approval, topic, True
         return approval, topic, True
     finally:
@@ -283,8 +320,7 @@ def approve_transition(root: Path, topic_id: str, to_status: str, by: str,
             store.close()
 
 
-def _apply_stage(root: Path, topic_id: str, to_stage: str, by: str,
-                 note: str) -> dict:
+def _apply_stage(root: Path, topic_id: str, to_stage: str, by: str, note: str) -> dict:
     """唯一授权写路径：更新真源阶段 + 追加 history（原子写）。"""
     topic = find_topic(root, topic_id)
     topic["status"] = to_stage
@@ -307,43 +343,56 @@ def audit_report(root: Path, store: ApprovalStore = None) -> dict:
     """
     root = Path(root)
     own_store = store is None
-    store = store or ApprovalStore(_AGENT_PLATFORM / "data" / "approvals"
-                                   / "approvals.db")
+    store = store or ApprovalStore(
+        _AGENT_PLATFORM / "data" / "approvals" / "approvals.db"
+    )
     try:
         items = project_workitems(root)
         approvals = store.list(target_type="workitem")
         violations = []
         for wi in items:
             if wi.status not in ACADEMY_STAGES:
-                violations.append({"topic_id": wi.source_ref,
-                                   "status": wi.status,
-                                   "finding": "阶段值不在阶段机内"})
-                continue
-            if wi.status in APPROVAL_GATED_TO:
-                hit = [a for a in approvals
-                       if a.target_id == wi.workitem_id
-                       and a.to_status == wi.status]
-                if not hit:
-                    violations.append({
+                violations.append(
+                    {
                         "topic_id": wi.source_ref,
                         "status": wi.status,
-                        "finding": "受门阶段=%s 但审批账本无凭据" % wi.status,
-                    })
+                        "finding": "阶段值不在阶段机内",
+                    }
+                )
+                continue
+            if wi.status in APPROVAL_GATED_TO:
+                hit = [
+                    a
+                    for a in approvals
+                    if a.target_id == wi.workitem_id and a.to_status == wi.status
+                ]
+                if not hit:
+                    violations.append(
+                        {
+                            "topic_id": wi.source_ref,
+                            "status": wi.status,
+                            "finding": "受门阶段=%s 但审批账本无凭据" % wi.status,
+                        }
+                    )
         # 交叉校验：凭据轮次 vs history 痕迹（academy=trace 域）
         topics = {t.get("topic_id", ""): t for t in load_topics(root)}
         traces = {}
         for tid, t in topics.items():
             traces["academy:%s" % tid] = {
-                "statuses": [h.get("stage") for h in (t.get("history") or [])
-                             if isinstance(h, dict)],
+                "statuses": [
+                    h.get("stage")
+                    for h in (t.get("history") or [])
+                    if isinstance(h, dict)
+                ],
                 "consumed_keys": set(),
             }
-        academy_creds = [a for a in approvals
-                         if a.target_id.startswith("academy:")]
+        academy_creds = [a for a in approvals if a.target_id.startswith("academy:")]
         cross_v = cross_check(
-            "academy", academy_creds, traces,
-            {"academy:%s" % tid: t.get("status", "")
-             for tid, t in topics.items()})
+            "academy",
+            academy_creds,
+            traces,
+            {"academy:%s" % tid: t.get("status", "") for tid, t in topics.items()},
+        )
         return {
             "schema_version": SCHEMA_VERSION,
             "domain": DOMAIN,
@@ -353,7 +402,8 @@ def audit_report(root: Path, store: ApprovalStore = None) -> dict:
             "violations": violations,
             "cross_check": cross_v,
             "verdict": verdict_for(
-                ([{"severity": "FAIL"}] if violations else []) + cross_v),
+                ([{"severity": "FAIL"}] if violations else []) + cross_v
+            ),
         }
     finally:
         if own_store:
@@ -380,8 +430,9 @@ def main(argv=None) -> int:
     sub.add_parser("report", parents=[common])
     p_mv = sub.add_parser("move", parents=[common])
     p_mv.add_argument("topic_id")
-    p_mv.add_argument("to_stage", choices=[s for s in ACADEMY_STAGES
-                                           if s not in APPROVAL_GATED_TO])
+    p_mv.add_argument(
+        "to_stage", choices=[s for s in ACADEMY_STAGES if s not in APPROVAL_GATED_TO]
+    )
     p_mv.add_argument("--by", required=True)
     p_mv.add_argument("--note", default="")
     p_ap = sub.add_parser("approve", parents=[common])
@@ -395,28 +446,42 @@ def main(argv=None) -> int:
 
     if args.cmd == "list":
         for wi in project_workitems(root):
-            print("%-32s %-12s %-24s idx=%s" % (
-                wi.workitem_id, wi.status, wi.title[:24],
-                wi.payload.get("stage_index")))
+            print(
+                "%-32s %-12s %-24s idx=%s"
+                % (
+                    wi.workitem_id,
+                    wi.status,
+                    wi.title[:24],
+                    wi.payload.get("stage_index"),
+                )
+            )
         return 0
     if args.cmd == "report":
         print(json.dumps(audit_report(root), ensure_ascii=False, indent=2))
         return 0
     if args.cmd == "move":
-        topic = move_stage(root, args.topic_id, args.to_stage, args.by,
-                           args.note)
-        print("[academy_wiring] %s 推进 →%s（history %d 条）"
-              % (args.topic_id, topic["status"],
-                 len(topic.get("history", []))))
+        topic = move_stage(root, args.topic_id, args.to_stage, args.by, args.note)
+        print(
+            "[academy_wiring] %s 推进 →%s（history %d 条）"
+            % (args.topic_id, topic["status"], len(topic.get("history", [])))
+        )
         return 0
     if args.cmd == "approve":
         approval, topic, replayed = approve_transition(
-            root, args.topic_id, args.to_stage, args.by, args.reason)
-        print("[academy_wiring] %s %s：%s→%s%s" % (
-            args.topic_id, "重放" if replayed else "批准",
-            approval.from_status, approval.to_status,
-            "" if not replayed else "（凭据 %s 已存在，真源未重复变更）"
-            % approval.approval_id[:12]))
+            root, args.topic_id, args.to_stage, args.by, args.reason
+        )
+        print(
+            "[academy_wiring] %s %s：%s→%s%s"
+            % (
+                args.topic_id,
+                "重放" if replayed else "批准",
+                approval.from_status,
+                approval.to_status,
+                ""
+                if not replayed
+                else "（凭据 %s 已存在，真源未重复变更）" % approval.approval_id[:12],
+            )
+        )
         return 0
     return 1
 

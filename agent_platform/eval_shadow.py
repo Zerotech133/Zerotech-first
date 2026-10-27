@@ -14,6 +14,7 @@ K-STOCK-397（2026-10-15）J2 采样修复——此前 per_symbol_latest 只取�
 快照价仅兜底），出场=最新收盘；决策日=最新 bar（零持有期）的行跳过并计入
 pending 计数；全部后验为 0 时打价格源告警（防"失败不发声"复发）。
 """
+
 import argparse
 import json
 import sqlite3
@@ -30,7 +31,9 @@ LEDGER = BASE / "data" / "shadow" / "shadow_ledger.jsonl"
 DB = BASE / "data" / "checkpoints.db"
 # 审计修正（K-STOCK-021）：J1 分母须用篮子全集——原从 done 行收集 symbols，
 # 从未成功的票不进分母 → 某票整期全挂时 J1 仍 PASS（自我引用漏洞）
-N_BASKET = 5  # 与 run_shadow.BASKET 一致（不直接 import：顶部拉起 Interpreter/LLM 重依赖）
+N_BASKET = (
+    5  # 与 run_shadow.BASKET 一致（不直接 import：顶部拉起 Interpreter/LLM 重依赖）
+)
 
 
 def load_ledger():
@@ -58,6 +61,7 @@ def _norm_float(v):
 
 def spearman(xs, ys):
     """零依赖 Spearman 秩相关（平均秩处理并列）"""
+
     def ranks(v):
         order = sorted(range(len(v)), key=lambda i: v[i])
         r = [0.0] * len(v)
@@ -117,9 +121,11 @@ def stance_groups(per_symbol_latest: dict) -> dict:
         for sym, r in per_symbol_latest.items():
             row = conn.execute(
                 "SELECT output FROM traces WHERE run_id=? AND agent_id='T1' AND phase='debate_final'",
-                (r["run_id"],)).fetchone()
+                (r["run_id"],),
+            ).fetchone()
             head = (row[0] if row else "")[:40]
             import re as _re
+
             m = _re.search(r"看多|看空", head)
             groups[sym] = "倒戈" if (m and m.group(0) == "看空") else "坚守"
     except Exception:  # noqa: BLE001
@@ -141,13 +147,18 @@ def persist_eval_rows(persist_rows, persist_root):
         raise ValueError("[安全阀 M5-P2] persist_root 必须显式（演示永不落真仓）")
     from adapters.trace_link import LinkStore
     from engine.perf_ledger import record_perf_rows, auto_draft_roster
-    rep = record_perf_rows(persist_rows, source="eval-shadow", root=persist_root,
-                           link_store=LinkStore(persist_root / "data" / "trace"
-                                                / "trace_links.jsonl"),
-                           declared_at=datetime.now().isoformat(timespec="seconds"))
-    print("[J4 perf] 沉淀 recorded=%d replayed=%d skipped=%d findings=%d"
-          % (rep["recorded"], rep["replayed"], rep["skipped"],
-             len(rep["findings"])))
+
+    rep = record_perf_rows(
+        persist_rows,
+        source="eval-shadow",
+        root=persist_root,
+        link_store=LinkStore(persist_root / "data" / "trace" / "trace_links.jsonl"),
+        declared_at=datetime.now().isoformat(timespec="seconds"),
+    )
+    print(
+        "[J4 perf] 沉淀 recorded=%d replayed=%d skipped=%d findings=%d"
+        % (rep["recorded"], rep["replayed"], rep["skipped"], len(rep["findings"]))
+    )
     for f in rep["findings"][:3]:
         print("  [perf-finding] %s" % f)
     drafted, df = auto_draft_roster(root=persist_root)
@@ -157,11 +168,17 @@ def persist_eval_rows(persist_rows, persist_root):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--min-days", type=int, default=5)
-    ap.add_argument("--no-persist", action="store_true",
-                    help="M4-P5：跳过 perf_ledger 入账与阵容校准起草")
-    ap.add_argument("--persist-root", default="",
-                    help="M5-P2 安全阀：persist 需显式账本根目录（生产=agent_platform"
-                         " 目录；演示=tmp）。缺省拒写（演示永不落真仓）")
+    ap.add_argument(
+        "--no-persist",
+        action="store_true",
+        help="M4-P5：跳过 perf_ledger 入账与阵容校准起草",
+    )
+    ap.add_argument(
+        "--persist-root",
+        default="",
+        help="M5-P2 安全阀：persist 需显式账本根目录（生产=agent_platform"
+        " 目录；演示=tmp）。缺省拒写（演示永不落真仓）",
+    )
     args = ap.parse_args()
 
     rows = load_ledger()
@@ -173,14 +190,23 @@ def main():
     days = sorted({r.get("date") for r in done if r.get("date")})
     symbols = sorted({r.get("symbol") for r in done if r.get("symbol")})
     print("=" * 62)
-    print("影子账本：done=%d failed=%d 交易日=%d 票数=%d" % (len(done), len(failed), len(days), len(symbols)))
+    print(
+        "影子账本：done=%d failed=%d 交易日=%d 票数=%d"
+        % (len(done), len(failed), len(days), len(symbols))
+    )
     print("交易日:", ", ".join(days))
 
     j1 = len(days) >= args.min_days and len(done) >= len(days) * N_BASKET * 0.9
-    coverage = 100 * len(done) / max(len(days) * N_BASKET, 1)  # 真覆盖率: done/(篮子×交易日)
-    done_share = 100 * len(done) / max(len(done) + len(failed), 1)  # done 占比（原打印误标为覆盖率）
-    print("[J1 无人干预] %s（篮子覆盖率 %.0f%%, done 占比 %.0f%%）" % (
-        "PASS" if j1 else "WAIT/PENDING", coverage, done_share))
+    coverage = (
+        100 * len(done) / max(len(days) * N_BASKET, 1)
+    )  # 真覆盖率: done/(篮子×交易日)
+    done_share = (
+        100 * len(done) / max(len(done) + len(failed), 1)
+    )  # done 占比（原打印误标为覆盖率）
+    print(
+        "[J1 无人干预] %s（篮子覆盖率 %.0f%%, done 占比 %.0f%%）"
+        % ("PASS" if j1 else "WAIT/PENDING", coverage, done_share)
+    )
 
     per_symbol_latest = {}
     for r in done:
@@ -220,64 +246,133 @@ def main():
                 kline_cache[sym] = []
         try:
             ret, hz, base, now = posterior_row(
-                kline_cache[sym], d, r["price_at_decision"], sym)
+                kline_cache[sym], d, r["price_at_decision"], sym
+            )
             if ret == "pending":
                 pending_rows += 1
                 continue
             scores.append(score)
             confs.append(conf)
             rets.append(ret)
-            detail.append((d, sym, r.get("name", ""), score, conf,
-                           base, now, ret, hz, r.get("recommendation", "?"),
-                           sym_group.get(sym, "?")))
-            persist_rows.append({
-                "date": d, "symbol": sym, "run_id": r.get("run_id", ""),
-                "score": score, "confidence": conf,
-                "ret_pct": ret, "horizon": hz, "base": base, "exit": now,
-                "recommendation": r.get("recommendation", "?"),
-                "stance": sym_group.get(sym, "?"),
-                "dk_regime": r.get("dk_regime"),
-                "dk_profile": r.get("dk_profile"),
-                "dk_blocked": r.get("dk_blocked"),
-            })
+            detail.append(
+                (
+                    d,
+                    sym,
+                    r.get("name", ""),
+                    score,
+                    conf,
+                    base,
+                    now,
+                    ret,
+                    hz,
+                    r.get("recommendation", "?"),
+                    sym_group.get(sym, "?"),
+                )
+            )
+            persist_rows.append(
+                {
+                    "date": d,
+                    "symbol": sym,
+                    "run_id": r.get("run_id", ""),
+                    "score": score,
+                    "confidence": conf,
+                    "ret_pct": ret,
+                    "horizon": hz,
+                    "base": base,
+                    "exit": now,
+                    "recommendation": r.get("recommendation", "?"),
+                    "stance": sym_group.get(sym, "?"),
+                    "dk_regime": r.get("dk_regime"),
+                    "dk_profile": r.get("dk_profile"),
+                    "dk_blocked": r.get("dk_blocked"),
+                }
+            )
         except Exception as e:  # noqa: BLE001
             print("  [warn] %s %s 后验价获取失败: %s" % (d, sym, e))
     if detail:
         print("  逐行明细（按后验收益降序，窗口=决策日→最新收盘）:")
-        print("  %-10s %-8s %-8s %-5s %-5s %-9s %-9s %-8s %-5s %-11s %s" % (
-            "决策日", "票", "名称", "score", "conf", "决策价", "现价", "后验%", "窗口", "决策", "T1组"))
-        for d, sym, name, sc, cf, px0, px1, rt, hz, rec, grp in sorted(detail, key=lambda x: -x[7]):
-            print("  %-10s %-8s %-8s %-5s %-5s %-9s %-9s %+8.2f %-5s %-11s %s" % (
-                d, sym, name[:8], sc, "%.2f" % cf, px0, px1, rt,
-                ("%s日" % hz) if hz is not None else "?", rec, grp))
+        print(
+            "  %-10s %-8s %-8s %-5s %-5s %-9s %-9s %-8s %-5s %-11s %s"
+            % (
+                "决策日",
+                "票",
+                "名称",
+                "score",
+                "conf",
+                "决策价",
+                "现价",
+                "后验%",
+                "窗口",
+                "决策",
+                "T1组",
+            )
+        )
+        for d, sym, name, sc, cf, px0, px1, rt, hz, rec, grp in sorted(
+            detail, key=lambda x: -x[7]
+        ):
+            print(
+                "  %-10s %-8s %-8s %-5s %-5s %-9s %-9s %+8.2f %-5s %-11s %s"
+                % (
+                    d,
+                    sym,
+                    name[:8],
+                    sc,
+                    "%.2f" % cf,
+                    px0,
+                    px1,
+                    rt,
+                    ("%s日" % hz) if hz is not None else "?",
+                    rec,
+                    grp,
+                )
+            )
     if pending_rows:  # K-STOCK-397：零持有期行可见（今日决策，下一评估日自动入样）
         print("  [pending] %d 行零持有期未入 J2（决策日=最新 bar）" % pending_rows)
     if skipped:  # K-STOCK-338：null 决策行不入 J2（skip 容错），但必须可见
-        print("  [skip] %d 行决策字段缺失未入 J2（D1 解析失败·样本缩水非毒化）: %s"
-              % (len(skipped), ",".join(skipped)))
+        print(
+            "  [skip] %d 行决策字段缺失未入 J2（D1 解析失败·样本缩水非毒化）: %s"
+            % (len(skipped), ",".join(skipped))
+        )
     if rets and all(abs(x) < 1e-9 for x in rets):  # K-STOCK-397：零方差=价格源哨
-        print("  [warn] 全部后验收益=0：价格源疑似未刷新（K线与决策价同值），J2 判读无效")
+        print(
+            "  [warn] 全部后验收益=0：价格源疑似未刷新（K线与决策价同值），J2 判读无效"
+        )
     if failed:  # A-1: failed 票可见（评估日不必翻账本）
         print("  failed 票（%d 行）:" % len(failed))
         for r in failed[-10:]:
-            print("    %s %s %s run=%s" % (
-                r.get("date"), r.get("symbol"), r.get("name", ""), r.get("run_id", "?")))
+            print(
+                "    %s %s %s run=%s"
+                % (
+                    r.get("date"),
+                    r.get("symbol"),
+                    r.get("name", ""),
+                    r.get("run_id", "?"),
+                )
+            )
     rho_s = spearman(scores, rets) if scores else None
     rho_c = spearman(confs, rets) if confs else None
     j2 = rho_s is not None and rho_s > 0
-    print("[J2 秩相关] %s（score-vs-ret rho=%s, conf-vs-ret rho=%s, n=%d）" % (
-        "PASS" if j2 else "WAIT/FAIL", None if rho_s is None else round(rho_s, 3),
-        None if rho_c is None else round(rho_c, 3), len(scores)))
+    print(
+        "[J2 秩相关] %s（score-vs-ret rho=%s, conf-vs-ret rho=%s, n=%d）"
+        % (
+            "PASS" if j2 else "WAIT/FAIL",
+            None if rho_s is None else round(rho_s, 3),
+            None if rho_c is None else round(rho_c, 3),
+            len(scores),
+        )
+    )
     # K-ORG-129 / T-20261008-003（B8 第三条 EARS）：并列零显性化——
     # 全篮子 HOLD 时 scores 大面积并列 0，rho 对该子群无分辨；
     # 判读必须看到本行再决定采信与否，不再静默失效
     if scores:
         zeros = sum(1 for s in scores if s == 0)
         if zeros and zeros / len(scores) > 0.5:
-            print("  [warn] score 并列零占比 %.0f%%（%d/%d）——HOLD/中性密集，"
-                  "J2 对该子群无分辨，rho 解读须排除并列零后验读（score 连续化"
-                  "（K-ORG-129）新行起缓解，存量 0/1 行不重写）" % (
-                      100 * zeros / len(scores), zeros, len(scores)))
+            print(
+                "  [warn] score 并列零占比 %.0f%%（%d/%d）——HOLD/中性密集，"
+                "J2 对该子群无分辨，rho 解读须排除并列零后验读（score 连续化"
+                "（K-ORG-129）新行起缓解，存量 0/1 行不重写）"
+                % (100 * zeros / len(scores), zeros, len(scores))
+            )
 
     # 分组判读（K-STOCK-017，B9 定性落地）：坚守/倒戈两组分别算 conf-vs-ret——
     # 倒戈票的低 conf 语义已变（角色自弃拉低），混算会污染整体 rho 解读
@@ -290,8 +385,10 @@ def main():
             groups[grp if grp in groups else "坚守"][1].append(rt)
         for g, (gs, gr) in groups.items():
             rho_g = spearman(gs, gr) if len(gs) >= 3 else None
-            print("  [%s组] n=%d conf-vs-ret rho=%s" % (
-                g, len(gs), "n<3 不计算" if rho_g is None else round(rho_g, 3)))
+            print(
+                "  [%s组] n=%d conf-vs-ret rho=%s"
+                % (g, len(gs), "n<3 不计算" if rho_g is None else round(rho_g, 3))
+            )
     except Exception as e:  # noqa: BLE001
         print("  [warn] 分组判读失败: %s" % e)
 
@@ -303,16 +400,19 @@ def main():
     if args.no_persist:
         pass
     elif not args.persist_root:
-        print("[安全阀 M5-P2] persist 已拒：无显式 --persist-root（演示永不落真仓）。"
-              "生产=--persist-root %s；演示=--persist-root <tmp> 或 --no-persist"
-              % BASE)
+        print(
+            "[安全阀 M5-P2] persist 已拒：无显式 --persist-root（演示永不落真仓）。"
+            "生产=--persist-root %s；演示=--persist-root <tmp> 或 --no-persist" % BASE
+        )
     elif persist_rows:
         try:
             rep, drafted, df = persist_eval_rows(persist_rows, Path(args.persist_root))
             if drafted:
                 for dft in drafted:
-                    print("  [roster-draft] %s %s (%s)"
-                          % (dft["decision"], dft["verdict_id"], dft["impact"]))
+                    print(
+                        "  [roster-draft] %s %s (%s)"
+                        % (dft["decision"], dft["verdict_id"], dft["impact"])
+                    )
             for f in df[:3]:
                 print("  [roster-finding] %s" % f)
         except Exception as e:  # noqa: BLE001
@@ -330,22 +430,34 @@ def main():
             conn = sqlite3.connect(str(DB), check_same_thread=False)
             try:
                 traced = sum(
-                    1 for r in valid
-                    if conn.execute("SELECT COUNT(*) FROM traces WHERE run_id=?",
-                                    (r["run_id"],)).fetchone()[0] > 0
+                    1
+                    for r in valid
+                    if conn.execute(
+                        "SELECT COUNT(*) FROM traces WHERE run_id=?", (r["run_id"],)
+                    ).fetchone()[0]
+                    > 0
                 )
             finally:
                 conn.close()
             j3 = traced == len(done)
-            print("[J3 lineage] %s（%d/%d 决策可回查辩论 trace%s）" % (
-                "PASS" if j3 else "FAIL", traced, len(done),
-                "；%d 行缺 run_id 键" % no_key if no_key else ""))
+            print(
+                "[J3 lineage] %s（%d/%d 决策可回查辩论 trace%s）"
+                % (
+                    "PASS" if j3 else "FAIL",
+                    traced,
+                    len(done),
+                    "；%d 行缺 run_id 键" % no_key if no_key else "",
+                )
+            )
         except sqlite3.Error as e:
-            print("[warn] J3 checkpoints.db 读取失败，判据降级: %s" % e,
-                  file=sys.stderr)
+            print(
+                "[warn] J3 checkpoints.db 读取失败，判据降级: %s" % e, file=sys.stderr
+            )
             j3 = False
-            print("[J3 lineage] DEGRADED（checkpoints.db 异常，%d/%d 待人工回查）"
-                  % (0, len(done)))
+            print(
+                "[J3 lineage] DEGRADED（checkpoints.db 异常，%d/%d 待人工回查）"
+                % (0, len(done))
+            )
     else:
         j3 = False
         print("[J3 lineage] WAIT（无账本或无 checkpoint 库）")

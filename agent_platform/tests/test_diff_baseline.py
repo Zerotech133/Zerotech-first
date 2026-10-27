@@ -15,6 +15,7 @@ jsonl 行构造按真账本取证 schema（shadow_ledger 的 run_id/ts 键、
 trace_links 的 link_id、perf_ledger 的 perf_key、registrations 的
 submit_id），非凭空捏造。
 """
+
 import json
 import shutil
 import sys
@@ -32,37 +33,60 @@ import diff_baseline as db  # noqa: E402
 
 # 隔离测试用的账本对（覆盖 checkpoint binary + 三种 jsonl 身份键形态）
 TEST_PAIRS = (
-    ("shadow_ledger", ("shadow", "shadow_ledger.jsonl"),
-     "shadow_ledger.jsonl.baseline", "jsonl"),
-    ("trace_links", ("trace", "trace_links.jsonl"),
-     "trace_links.jsonl.baseline", "jsonl"),
-    ("checkpoints_db", ("checkpoints.db",),
-     "checkpoints.db.baseline", "binary"),
+    (
+        "shadow_ledger",
+        ("shadow", "shadow_ledger.jsonl"),
+        "shadow_ledger.jsonl.baseline",
+        "jsonl",
+    ),
+    (
+        "trace_links",
+        ("trace", "trace_links.jsonl"),
+        "trace_links.jsonl.baseline",
+        "jsonl",
+    ),
+    ("checkpoints_db", ("checkpoints.db",), "checkpoints.db.baseline", "binary"),
 )
 
 
 def _shadow_row(symbol, run_id, ts=1791442784.86, status="done"):
     """按 run_shadow.py 落账 schema 构造影子行（真仓键结构取证）。"""
-    return {"date": "2026-10-08", "ts": ts, "symbol": symbol,
-            "name": "样本" + symbol, "status": status, "run_id": run_id,
-            "price_at_decision": 10.0, "recommendation": "HOLD",
-            "confidence": 0.55, "score": 0, "target_range": [9.0, 11.0],
-            "degraded": False, "latency_s": 100.0}
+    return {
+        "date": "2026-10-08",
+        "ts": ts,
+        "symbol": symbol,
+        "name": "样本" + symbol,
+        "status": status,
+        "run_id": run_id,
+        "price_at_decision": 10.0,
+        "recommendation": "HOLD",
+        "confidence": 0.55,
+        "score": 0,
+        "target_range": [9.0, 11.0],
+        "degraded": False,
+        "latency_s": 100.0,
+    }
 
 
 def _trace_row(link_id, run_id):
     """按 adapters/trace_link.py record() schema 构造链关联行。"""
-    return {"schema_version": "m4p1.v1", "link_id": link_id,
-            "chain": {"shadow": {"run_id": run_id, "symbol": "600519",
-                                 "trade_date": "2026-10-08"}},
-            "source": "m4p1-bootstrap", "declared_at": "2026-10-17T19:30:00"}
+    return {
+        "schema_version": "m4p1.v1",
+        "link_id": link_id,
+        "chain": {
+            "shadow": {"run_id": run_id, "symbol": "600519", "trade_date": "2026-10-08"}
+        },
+        "source": "m4p1-bootstrap",
+        "declared_at": "2026-10-17T19:30:00",
+    }
 
 
 def _dump_jsonl(path: Path, rows):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         "\n".join(json.dumps(r, ensure_ascii=False) for r in rows) + "\n",
-        encoding="utf-8")
+        encoding="utf-8",
+    )
 
 
 class DiffBaselineBase(unittest.TestCase):
@@ -81,7 +105,8 @@ class DiffBaselineBase(unittest.TestCase):
         for name, rel, baseline_name, kind in TEST_PAIRS:
             if kind == "jsonl":
                 (self.baseline / baseline_name).parent.mkdir(
-                    parents=True, exist_ok=True)
+                    parents=True, exist_ok=True
+                )
                 (self.baseline / baseline_name).write_text("", encoding="utf-8")
                 src = self.data.joinpath(*rel)
                 src.parent.mkdir(parents=True, exist_ok=True)
@@ -119,10 +144,11 @@ class TestNormalGrowth(DiffBaselineBase):
     """场景 1：正常新增行 → 退出码 0，新增按 run_id 列出。"""
 
     def test_growth_exit0(self):
-        old_rows = [_shadow_row("600519", "run_old_1"),
-                    _shadow_row("000858", "run_old_2")]
-        new_rows = old_rows + [_shadow_row("601318", "run_new_1",
-                                           ts=1791443000.0)]
+        old_rows = [
+            _shadow_row("600519", "run_old_1"),
+            _shadow_row("000858", "run_old_2"),
+        ]
+        new_rows = old_rows + [_shadow_row("601318", "run_new_1", ts=1791443000.0)]
         self._baseline_jsonl("shadow_ledger", old_rows)
         self._source_jsonl(TEST_PAIRS[0][1], new_rows)
         rep, out = self._run()
@@ -142,8 +168,10 @@ class TestMissingLine(DiffBaselineBase):
     """场景 2：缺失行 → 退出码 2，篡改/回滚嫌疑最高级别。"""
 
     def test_missing_exit2_and_red_mark(self):
-        old_rows = [_shadow_row("600519", "run_old_1"),
-                    _shadow_row("000858", "run_old_2")]
+        old_rows = [
+            _shadow_row("600519", "run_old_1"),
+            _shadow_row("000858", "run_old_2"),
+        ]
         new_rows = [old_rows[1]]  # 回滚掉了第一行
         self._baseline_jsonl("shadow_ledger", old_rows)
         self._source_jsonl(TEST_PAIRS[0][1], new_rows)
@@ -165,10 +193,8 @@ class TestMissingLine(DiffBaselineBase):
         (self.data / "shadow" / "shadow_ledger.jsonl").unlink()
         rep, _ = self._run()
         self.assertEqual(rep["exit_code"], 2)
-        self.assertEqual(self._item(rep, "trace_links")["status"],
-                         db.MISSING_LINES)
-        self.assertEqual(self._item(rep, "shadow_ledger")["status"],
-                         db.FILE_MISSING)
+        self.assertEqual(self._item(rep, "trace_links")["status"], db.MISSING_LINES)
+        self.assertEqual(self._item(rep, "shadow_ledger")["status"], db.FILE_MISSING)
 
 
 class TestIdentical(DiffBaselineBase):
@@ -195,8 +221,7 @@ class TestBinaryFingerprint(DiffBaselineBase):
 
     def test_fingerprint_diff_does_not_raise_exit_code(self):
         self._binary(self.baseline / "checkpoints.db.baseline", self.BASE_DB)
-        self._binary(self.data / "checkpoints.db",
-                     self.BASE_DB + b"more bytes")
+        self._binary(self.data / "checkpoints.db", self.BASE_DB + b"more bytes")
         rep, out = self._run()
         self.assertEqual(rep["exit_code"], 0)  # 指纹差异不拉高退出码
         it = self._item(rep, "checkpoints_db")
@@ -211,8 +236,9 @@ class TestBinaryFingerprint(DiffBaselineBase):
         self._binary(self.data / "checkpoints.db", self.BASE_DB)
         rep, _ = self._run()
         self.assertEqual(rep["exit_code"], 0)
-        self.assertEqual(self._item(rep, "checkpoints_db")["status"],
-                         db.FINGERPRINT_MATCH)
+        self.assertEqual(
+            self._item(rep, "checkpoints_db")["status"], db.FINGERPRINT_MATCH
+        )
         self.assertTrue(self._item(rep, "checkpoints_db")["sha_equal"])
 
 
@@ -220,8 +246,7 @@ class TestFileMissing(DiffBaselineBase):
     """场景 5：文件缺失 → 中性退出码 1，如实标注。"""
 
     def test_source_missing_neutral_exit1(self):
-        self._baseline_jsonl("shadow_ledger",
-                             [_shadow_row("600519", "run_old_1")])
+        self._baseline_jsonl("shadow_ledger", [_shadow_row("600519", "run_old_1")])
         # 删源文件：data/shadow/shadow_ledger.jsonl 不存在
         (self.data / "shadow" / "shadow_ledger.jsonl").unlink()
         rep, out = self._run()
@@ -232,8 +257,7 @@ class TestFileMissing(DiffBaselineBase):
         self.assertIn("中性", out)
 
     def test_baseline_missing_neutral_exit1(self):
-        self._source_jsonl(TEST_PAIRS[0][1],
-                           [_shadow_row("600519", "run_new_1")])
+        self._source_jsonl(TEST_PAIRS[0][1], [_shadow_row("600519", "run_new_1")])
         # 删基线文件：shadow_ledger.jsonl.baseline 不存在
         (self.baseline / "shadow_ledger.jsonl.baseline").unlink()
         rep, _ = self._run()
@@ -267,8 +291,14 @@ class TestCli(unittest.TestCase):
     def test_main_missing_dir_fails_visible(self):
         out_buf, err_buf = StringIO(), StringIO()
         with redirect_stdout(out_buf), redirect_stderr(err_buf):
-            code = db.main(["--baseline-dir", str(Path(self._tmp) / "nope"),
-                            "--data-root", self._tmp])
+            code = db.main(
+                [
+                    "--baseline-dir",
+                    str(Path(self._tmp) / "nope"),
+                    "--data-root",
+                    self._tmp,
+                ]
+            )
         self.assertEqual(code, 1)
         self.assertIn("不存在", err_buf.getvalue())
 
@@ -279,21 +309,25 @@ class TestCli(unittest.TestCase):
         data.mkdir()
         row = {"run_id": "r1", "ts": 1.0, "symbol": "600519"}
         (base / "shadow_ledger.jsonl.baseline").write_text(
-            json.dumps(row, ensure_ascii=False) + "\n", encoding="utf-8")
+            json.dumps(row, ensure_ascii=False) + "\n", encoding="utf-8"
+        )
         (data / "shadow").mkdir()
         (data / "shadow" / "shadow_ledger.jsonl").write_text(
-            json.dumps(row, ensure_ascii=False) + "\n"
-            + json.dumps({"run_id": "r2", "ts": 2.0, "symbol": "000858"},
-                         ensure_ascii=False) + "\n",
-            encoding="utf-8")
+            json.dumps(row, ensure_ascii=False)
+            + "\n"
+            + json.dumps(
+                {"run_id": "r2", "ts": 2.0, "symbol": "000858"}, ensure_ascii=False
+            )
+            + "\n",
+            encoding="utf-8",
+        )
         # CLI 需要处理全部真实账本对；其余账本两侧均缺失 → 中性
         orig = db.LEDGER_PAIRS
         db.LEDGER_PAIRS = TEST_PAIRS
         try:
             buf = StringIO()
             with redirect_stdout(buf):
-                code = db.main(["--baseline-dir", str(base),
-                                "--data-root", str(data)])
+                code = db.main(["--baseline-dir", str(base), "--data-root", str(data)])
             out = buf.getvalue()
         finally:
             db.LEDGER_PAIRS = orig

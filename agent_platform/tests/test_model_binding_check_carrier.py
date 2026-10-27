@@ -8,6 +8,7 @@
   ②glm/ 等普通 E3 缺 fallback → 仍判 violation（防豁免过宽）；
   ③openai/ 载体席已有 fallback → 不多发 carrier warn（兼容既有 warnings 计数）。
 """
+
 from __future__ import annotations
 
 import importlib.util
@@ -15,7 +16,9 @@ from pathlib import Path
 
 _WT = Path(__file__).resolve().parents[2]
 _TOOL = _WT / "agent_platform" / "tools" / "model_binding_check.py"
-_spec = importlib.util.spec_from_file_location("model_binding_check_carrier", str(_TOOL))
+_spec = importlib.util.spec_from_file_location(
+    "model_binding_check_carrier", str(_TOOL)
+)
 MBC = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(MBC)
 
@@ -30,24 +33,41 @@ TIERS = {
     },
     "grade_policy": {
         "E3": {"label": "30年档 · 裁定", "allow": ["strong"], "default": "glm/glm-5.3"},
-        "E2": {"label": "20年档 · 独立表态", "allow": ["strong", "fast"], "default": "glm/glm-5.3"},
-        "E1": {"label": "10年档 · 执行", "allow": ["fast", "local"], "default": "glm/glm-5.3-flash"},
+        "E2": {
+            "label": "20年档 · 独立表态",
+            "allow": ["strong", "fast"],
+            "default": "glm/glm-5.3",
+        },
+        "E1": {
+            "label": "10年档 · 执行",
+            "allow": ["fast", "local"],
+            "default": "glm/glm-5.3-flash",
+        },
     },
     "degraded_fallback": "qwen3.5:9b",
 }
 
 
 def _org(profiles):
-    return {"departments": [{"dept": "academy", "lead": "AI1",
-                             "agents": [p["agent_id"] for p in profiles],
-                             "agent_profiles": profiles}]}
+    return {
+        "departments": [
+            {
+                "dept": "academy",
+                "lead": "AI1",
+                "agents": [p["agent_id"] for p in profiles],
+                "agent_profiles": profiles,
+            }
+        ]
+    }
 
 
 def test_openai_carrier_exempt_from_fallback():
     prof = {"agent_id": "AI1", "grade": "E3", "llm_binding": "openai/gpt-6.0"}
     rep = MBC.check(_org([prof]), TIERS)
     assert rep["summary"]["violations"] == 0, rep["violations"]
-    assert any(w.get("kind") == "carrier_managed" for w in rep["warnings"]), rep["warnings"]
+    assert any(w.get("kind") == "carrier_managed" for w in rep["warnings"]), rep[
+        "warnings"
+    ]
 
 
 def test_non_carrier_e3_without_fallback_still_violation():
@@ -58,8 +78,14 @@ def test_non_carrier_e3_without_fallback_still_violation():
 
 
 def test_openai_carrier_with_fallback_no_extra_carrier_warn():
-    prof = {"agent_id": "AI1", "grade": "E3", "llm_binding": "openai/gpt-6.0",
-            "llm_fallback": ["glm/glm-5.3"]}
+    prof = {
+        "agent_id": "AI1",
+        "grade": "E3",
+        "llm_binding": "openai/gpt-6.0",
+        "llm_fallback": ["glm/glm-5.3"],
+    }
     rep = MBC.check(_org([prof]), TIERS)
     assert rep["summary"]["violations"] == 0
-    assert not any(w.get("kind") == "carrier_managed" for w in rep["warnings"]), rep["warnings"]
+    assert not any(w.get("kind") == "carrier_managed" for w in rep["warnings"]), rep[
+        "warnings"
+    ]

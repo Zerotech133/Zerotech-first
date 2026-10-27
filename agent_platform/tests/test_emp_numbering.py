@@ -100,7 +100,9 @@ def test_assign_requires_signer_and_matching_ticket():
 
 def test_assign_increments_and_separates_departments():
     led = E.empty_ledger()
-    a = E.assign(led, "A0", "intel", ticket=tk("intel", 1), signed_by="老田", date=D, batch="B1")
+    a = E.assign(
+        led, "A0", "intel", ticket=tk("intel", 1), signed_by="老田", date=D, batch="B1"
+    )
     b = E.assign(led, "D1", "intel", ticket=tk("intel", 2), signed_by="老田", date=D)
     c = E.assign(led, "ST1", "invest", ticket=tk("invest", 1), signed_by="老田", date=D)
     assert (a["emp_no"], b["emp_no"], c["emp_no"]) == ("000001", "000002", "000003")
@@ -114,8 +116,14 @@ def test_assign_increments_and_separates_departments():
 def test_second_day_restarts_department_seq():
     led = E.empty_ledger()
     E.assign(led, "A0", "intel", ticket=tk("intel", 1), signed_by="x", date=D)
-    n = E.assign(led, "D1", "intel", ticket=tk("intel", 1, date="20261024"),
-                 signed_by="x", date="20261024")
+    n = E.assign(
+        led,
+        "D1",
+        "intel",
+        ticket=tk("intel", 1, date="20261024"),
+        signed_by="x",
+        date="20261024",
+    )
     assert n["enroll_no"] == "20261024-情-01"
     assert n["emp_no"] == "000002", "工号跨日连续"
 
@@ -156,7 +164,9 @@ def test_retire_does_not_recycle_number():
     led = E.empty_ledger()
     a = E.assign(led, "A0", "intel", ticket=tk("intel", 1), signed_by="x", date=D)
     E.retire(led, "A0", ticket=tk("intel", 1), signed_by="x", reason="调岗")
-    assert "A0" not in led["employees"] and led["retired"]["A0"]["emp_no"] == a["emp_no"]
+    assert (
+        "A0" not in led["employees"] and led["retired"]["A0"]["emp_no"] == a["emp_no"]
+    )
     nxt = E.assign(led, "NEW4", "intel", ticket=tk("intel", 2), signed_by="x", date=D)
     assert nxt["emp_no"] == "000002", "注销后工号不回收"
 

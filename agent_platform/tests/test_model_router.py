@@ -1,4 +1,5 @@
 """模型路由测试（WO-ZHAOYUN-CAP2）。"""
+
 from __future__ import annotations
 
 import importlib.util
@@ -20,8 +21,9 @@ def test_route_defaults_and_prefer():
     deep = MR.route("deep-reasoning")
     assert deep[0]["model"] == "deepseek/deepseek-v4-pro"
     glm = MR.route("glm-quota")
-    assert any(p["model"].startswith("glm/") and p["risk"] == "quota_429_risk"
-               for p in glm)
+    assert any(
+        p["model"].startswith("glm/") and p["risk"] == "quota_429_risk" for p in glm
+    )
 
 
 def test_invoke_fallback_and_usage_log(tmp_path, monkeypatch):

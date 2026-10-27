@@ -26,17 +26,20 @@ def root(tmp_path):
 
 
 def _write(**kw):
-    base = dict(domain="stock_screen",
-                cue="误拦率偏高的判据是否值得采纳",
-                lesson="采纳样本外口径，误拦率 -7pp",
-                evidence="对照实验 card=EX-1 verifier=3",
-                confidence=0.6,
-                signed_by="laotian")
+    base = dict(
+        domain="stock_screen",
+        cue="误拦率偏高的判据是否值得采纳",
+        lesson="采纳样本外口径，误拦率 -7pp",
+        evidence="对照实验 card=EX-1 verifier=3",
+        confidence=0.6,
+        signed_by="laotian",
+    )
     base.update(kw)
     return base
 
 
 # ---------------------------------------------------------------- 硬门槛
+
 
 def test_requires_signature(root):
     with pytest.raises(S.SignatureRequired):
@@ -86,6 +89,7 @@ def test_evidence_leak_path_rejected(root):
 
 # ---------------------------------------------------------------- 落盘形态
 
+
 def test_write_creates_three_artifacts(root):
     e = S.write_entry(**_write(), root=root)
     assert e.entry_id == "EXP-STOCK_SCREEN-001"
@@ -113,6 +117,7 @@ def test_domain_isolation(root):
 
 
 # ---------------------------------------------------------------- 检索（验收判据）
+
 
 def test_search_finds_entry_by_cue(root):
     e = S.write_entry(**_write(), root=root)

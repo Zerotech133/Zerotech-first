@@ -30,32 +30,73 @@ RULES_VERSION = "1.0"
 # 未来数据列：强前缀 + 精确集 + 后缀，三通道。精确优先避免误杀业务字段
 # （判例：label_free_flag / target_price_high 是合法业务列，不得拦截）
 FUTURE_COL_PREFIXES = (
-    "future_", "fwd_", "forward_", "next_", "ret_fwd_", "ret_next_",
+    "future_",
+    "fwd_",
+    "forward_",
+    "next_",
+    "ret_fwd_",
+    "ret_next_",
     "pct_chg_next_",
 )
-FUTURE_COL_EXACT = frozenset({
-    "label", "label_name", "label_y", "target", "target_y", "y_true", "y_pred",
-    "future_return", "forward_return", "ret_fwd", "ret_next", "pct_chg_next",
-    "close_next", "open_next", "high_next", "low_next", "vwap_next",
-})
+FUTURE_COL_EXACT = frozenset(
+    {
+        "label",
+        "label_name",
+        "label_y",
+        "target",
+        "target_y",
+        "y_true",
+        "y_pred",
+        "future_return",
+        "forward_return",
+        "ret_fwd",
+        "ret_next",
+        "pct_chg_next",
+        "close_next",
+        "open_next",
+        "high_next",
+        "low_next",
+        "vwap_next",
+    }
+)
 FUTURE_COL_SUFFIX_RE = re.compile(r"_(t\+\d+|next|fwd|future|forward)$")
 
 # 评分/裁决键：精确集合（防误杀：不含 score_card 之类业务字段）
-GRADER_KEYS = frozenset({
-    "score", "grade", "verdict", "grader", "judge", "judge_verdict",
-    "rank_final", "total_score", "final_score", "pass_fail",
-})
+GRADER_KEYS = frozenset(
+    {
+        "score",
+        "grade",
+        "verdict",
+        "grader",
+        "judge",
+        "judge_verdict",
+        "rank_final",
+        "total_score",
+        "final_score",
+        "pass_fail",
+    }
+)
 
 # 验证集 / holdout 标记：精确集合
-SPLIT_KEYS = frozenset({
-    "valid_set", "test_set", "holdout", "oof", "oof_flag",
-    "is_valid", "is_test", "in_holdout",
-})
+SPLIT_KEYS = frozenset(
+    {
+        "valid_set",
+        "test_set",
+        "holdout",
+        "oof",
+        "oof_flag",
+        "is_valid",
+        "is_test",
+        "in_holdout",
+    }
+)
 
 # 泄露路径：评分器目录、答案文件、holdout/future 目录
 LEAK_PATH_RES = (
     re.compile(r"(^|/)\.grader(/|$)"),
-    re.compile(r"(^|/)(answers?|ground_truth|solution)s?\.(csv|json|jsonl|parquet|txt|xlsx)$"),
+    re.compile(
+        r"(^|/)(answers?|ground_truth|solution)s?\.(csv|json|jsonl|parquet|txt|xlsx)$"
+    ),
     re.compile(r"(^|/)(future|holdout|valid_set|test_set)(/|$)"),
     re.compile(r"(^|/)labels?\.(csv|parquet)$"),
 )
@@ -66,6 +107,7 @@ STAGES = ("backtest", "research", "evolve")
 @dataclass
 class Finding:
     """单条泄露命中。category: future_column / grader_key / split_key / leak_path"""
+
     category: str
     target: str
     detail: str = ""
@@ -160,8 +202,16 @@ def _selftest() -> int:
         ("split key", dict(payload={"holdout": True}), True),
         ("leak path", dict(paths=["C:/data/.grader/rules.py"]), True),
         ("answers file", dict(paths=["/tmp/answers.csv"]), True),
-        ("clean", dict(columns=["code", "close", "volume"], paths=["/data/daily.csv"]), False),
-        ("clean nested", dict(payload={"candidates": [{"code": "600000", "close": 10.1}]}), False),
+        (
+            "clean",
+            dict(columns=["code", "close", "volume"], paths=["/data/daily.csv"]),
+            False,
+        ),
+        (
+            "clean nested",
+            dict(payload={"candidates": [{"code": "600000", "close": 10.1}]}),
+            False,
+        ),
     ]
     bad = 0
     for name, kwargs, expect_block in cases:
@@ -171,9 +221,14 @@ def _selftest() -> int:
         except LeakageDetected:
             blocked = True
         ok = blocked == expect_block
-        print("%-14s expect=%-5s got=%-5s %s" % (name, expect_block, blocked, "PASS" if ok else "FAIL"))
+        print(
+            "%-14s expect=%-5s got=%-5s %s"
+            % (name, expect_block, blocked, "PASS" if ok else "FAIL")
+        )
         bad += 0 if ok else 1
-    print("selftest:", "PASS" if bad == 0 else "%d FAIL" % bad, "| rules", RULES_VERSION)
+    print(
+        "selftest:", "PASS" if bad == 0 else "%d FAIL" % bad, "| rules", RULES_VERSION
+    )
     return 0 if bad == 0 else 1
 
 

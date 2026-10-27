@@ -53,13 +53,13 @@ class WorkItem(Contract):
     """
 
     workitem_id: str = field(default_factory=new_id)
-    domain: str = ""                 # gzh / academy / research / dev / ppt / personal
-    source: str = ""                 # 领域真源标识，如 gzh.drafts_index
-    source_ref: str = ""             # 真源内 ID，如草稿 id
+    domain: str = ""  # gzh / academy / research / dev / ppt / personal
+    source: str = ""  # 领域真源标识，如 gzh.drafts_index
+    source_ref: str = ""  # 真源内 ID，如草稿 id
     title: str = ""
-    status: str = ""                 # 域内原生状态，原样保留
-    owner: str = ""                  # 当前负责 Agent/人（org.json 身份）
-    project_id: str = ""             # 关联统一 Project（可为空）
+    status: str = ""  # 域内原生状态，原样保留
+    owner: str = ""  # 当前负责 Agent/人（org.json 身份）
+    project_id: str = ""  # 关联统一 Project（可为空）
     payload: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -81,17 +81,17 @@ class Artifact(Contract):
 
     artifact_id: str = field(default_factory=new_id)
     workitem_id: str = ""
-    kind: str = ""                   # md / html / report / code ...
-    path: str = ""                   # 相对仓库根路径
-    fact_hash: str = ""              # sha256(content)
+    kind: str = ""  # md / html / report / code ...
+    path: str = ""  # 相对仓库根路径
+    fact_hash: str = ""  # sha256(content)
     version: str = "1"
-    missing: bool = False            # 真源声明存在但文件缺失时显式标记
-    content_hash: str = ""           # M3：唯一去重键 sha256；空则回退 fact_hash
-    revision: str = "r1"             # supersede 链代次（r1/r2/...）
-    source_system: str = ""          # 产线来源系统，如 gzh.drafts / pitch.decks
-    source_ref: str = ""             # 来源内 ID，如草稿 id
-    produced_by: str = ""            # 负责人/Agent（org.json 身份）
-    supersedes: str = ""             # 被替代的旧 artifact_id（空=首版）
+    missing: bool = False  # 真源声明存在但文件缺失时显式标记
+    content_hash: str = ""  # M3：唯一去重键 sha256；空则回退 fact_hash
+    revision: str = "r1"  # supersede 链代次（r1/r2/...）
+    source_system: str = ""  # 产线来源系统，如 gzh.drafts / pitch.decks
+    source_ref: str = ""  # 来源内 ID，如草稿 id
+    produced_by: str = ""  # 负责人/Agent（org.json 身份）
+    supersedes: str = ""  # 被替代的旧 artifact_id（空=首版）
 
     def to_dict(self) -> Dict[str, Any]:
         data = asdict(self)
@@ -108,16 +108,16 @@ class Approval(Contract):
     """审批凭据：一次受控状态转移的批准记录（append-only）。"""
 
     approval_id: str = field(default_factory=new_id)
-    target_type: str = ""            # workitem / task / skill / prompt ...
-    target_id: str = ""              # 被批对象（如 workitem_id 或 gzh 草稿 id）
+    target_type: str = ""  # workitem / task / skill / prompt ...
+    target_id: str = ""  # 被批对象（如 workitem_id 或 gzh 草稿 id）
     from_status: str = ""
     to_status: str = ""
-    decision: str = "approved"       # approved / rejected（记录裁决，不记录中间态）
-    decided_by: str = ""             # 批准人（用户/授权 Agent）
+    decision: str = "approved"  # approved / rejected（记录裁决，不记录中间态）
+    decided_by: str = ""  # 批准人（用户/授权 Agent）
     reason: str = ""
-    decided_at: str = ""             # ISO8601 带时区
-    idempotency_key: str = ""        # 由调用方给确定性键，如 gzh:<id>:draft>reviewed
-    content_hash: str = ""           # M3-P3：批准时点的内容指纹（批 A 发 B 拒绝锚点）
+    decided_at: str = ""  # ISO8601 带时区
+    idempotency_key: str = ""  # 由调用方给确定性键，如 gzh:<id>:draft>reviewed
+    content_hash: str = ""  # M3-P3：批准时点的内容指纹（批 A 发 B 拒绝锚点）
 
     def to_dict(self) -> Dict[str, Any]:
         data = asdict(self)
@@ -135,5 +135,12 @@ def approval_to_json(ap: Approval) -> str:
     return json.dumps(ap.to_dict(), ensure_ascii=False, sort_keys=True)
 
 
-__all__ = ["WorkItem", "Artifact", "Approval", "fact_hash_of",
-           "approval_to_json", "new_id", "Optional"]
+__all__ = [
+    "WorkItem",
+    "Artifact",
+    "Approval",
+    "fact_hash_of",
+    "approval_to_json",
+    "new_id",
+    "Optional",
+]

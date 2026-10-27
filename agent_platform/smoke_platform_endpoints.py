@@ -19,12 +19,16 @@ sys.path.insert(0, str(REPO / "portal"))
 sys.path.insert(0, str(REPO / "agent_platform"))
 
 import api_approvals  # noqa: E402
-import api_replay   # noqa: E402
+import api_replay  # noqa: E402
 import api_unified  # noqa: E402
 
 
-class MinimalHandler(api_unified.Handler, api_replay.Handler,
-                     api_approvals.Handler, BaseHTTPRequestHandler):
+class MinimalHandler(
+    api_unified.Handler,
+    api_replay.Handler,
+    api_approvals.Handler,
+    BaseHTTPRequestHandler,
+):
     """最小宿主：补 _json、mini do_GET（复刻 portal_api 的两个分支 dispatch）。"""
 
     def do_GET(self):
@@ -60,39 +64,87 @@ def main():
     ok = True
     try:
         # ② 统一投影
-        u = json.loads(opener.open("http://127.0.0.1:8092/api/unified/projection",
-                                   timeout=30).read().decode())
-        print("[② unified] domains:", u.get("summary", {}).get("domains_wired"),
-              "| approvals:", u.get("summary", {}).get("approval_total"),
-              "| findings:", u.get("findings"))
-        print("  gzh verdict:", u.get("gzh", {}).get("verdict"),
-              "| events:", u.get("events", {}).get("record_count"))
+        u = json.loads(
+            opener.open("http://127.0.0.1:8092/api/unified/projection", timeout=30)
+            .read()
+            .decode()
+        )
+        print(
+            "[② unified] domains:",
+            u.get("summary", {}).get("domains_wired"),
+            "| approvals:",
+            u.get("summary", {}).get("approval_total"),
+            "| findings:",
+            u.get("findings"),
+        )
+        print(
+            "  gzh verdict:",
+            u.get("gzh", {}).get("verdict"),
+            "| events:",
+            u.get("events", {}).get("record_count"),
+        )
         # ③ 回放：全量
-        r = json.loads(opener.open("http://127.0.0.1:8092/api/platform/replay?limit=5",
-                                   timeout=30).read().decode())
-        print("[③ replay] matched:", r.get("matched_total"), "| returned:", r.get("returned"),
-              "| canonical_valid:", r.get("canonical_valid"))
+        r = json.loads(
+            opener.open("http://127.0.0.1:8092/api/platform/replay?limit=5", timeout=30)
+            .read()
+            .decode()
+        )
+        print(
+            "[③ replay] matched:",
+            r.get("matched_total"),
+            "| returned:",
+            r.get("returned"),
+            "| canonical_valid:",
+            r.get("canonical_valid"),
+        )
         print("  timeline top:", dict(list(r.get("timeline", {}).items())[:3]))
         e = (r.get("events") or [{}])[0]
-        print("  newest:", e.get("ts"), e.get("kind"),
-              "hash:", (e.get("event_hash") or "")[:12])
+        print(
+            "  newest:",
+            e.get("ts"),
+            e.get("kind"),
+            "hash:",
+            (e.get("event_hash") or "")[:12],
+        )
         # ③ 过滤
-        r2 = json.loads(opener.open(
-            "http://127.0.0.1:8092/api/platform/replay?kind=gzh.approve&limit=3",
-            timeout=30).read().decode())
+        r2 = json.loads(
+            opener.open(
+                "http://127.0.0.1:8092/api/platform/replay?kind=gzh.approve&limit=3",
+                timeout=30,
+            )
+            .read()
+            .decode()
+        )
         print("[③ filter kind=gzh.approve] matched:", r2.get("matched_total"))
         # 注册表
-        a = json.loads(opener.open("http://127.0.0.1:8092/api/platform/approvals?limit=5",
-                                   timeout=30).read().decode())
-        print("[注册表] total:", a.get("total"), "| by_domain:", a.get("by_domain"),
-              "| errors:", a.get("errors"))
+        a = json.loads(
+            opener.open(
+                "http://127.0.0.1:8092/api/platform/approvals?limit=5", timeout=30
+            )
+            .read()
+            .decode()
+        )
+        print(
+            "[注册表] total:",
+            a.get("total"),
+            "| by_domain:",
+            a.get("by_domain"),
+            "| errors:",
+            a.get("errors"),
+        )
         rec = (a.get("records") or [{}])[0]
-        print("  newest:", rec.get("decided_at"), rec.get("target_id"),
-              f"{rec.get('from_status')}->{rec.get('to_status')}", rec.get("decision"))
+        print(
+            "  newest:",
+            rec.get("decided_at"),
+            rec.get("target_id"),
+            f"{rec.get('from_status')}->{rec.get('to_status')}",
+            rec.get("decision"),
+        )
         # ③ 非法参数 → 400
         try:
-            opener.open("http://127.0.0.1:8092/api/platform/replay?since=not-a-date",
-                        timeout=15)
+            opener.open(
+                "http://127.0.0.1:8092/api/platform/replay?since=not-a-date", timeout=15
+            )
             print("[③ invalid since] UNEXPECTED 200")
             ok = False
         except urllib.error.HTTPError as ex:
@@ -100,8 +152,9 @@ def main():
             ok = ok and ex.code == 400
         # 注册表非法参数 → 400
         try:
-            opener.open("http://127.0.0.1:8092/api/platform/approvals?limit=abc",
-                        timeout=15)
+            opener.open(
+                "http://127.0.0.1:8092/api/platform/approvals?limit=abc", timeout=15
+            )
             print("[注册表 invalid limit] UNEXPECTED 200")
             ok = False
         except urllib.error.HTTPError as ex:

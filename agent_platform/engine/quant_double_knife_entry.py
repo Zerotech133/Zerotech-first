@@ -36,13 +36,33 @@ def confirm_double_knife_entry(
 
     df = minute_df.copy().sort_index()
     vwap = _intraday_vwap(df)
-    prior_high = df["high"].rolling(window=breakout_window, min_periods=5).max().shift(1)
-    breakout_strength = float((df["close"].iloc[-1] / prior_high.iloc[-1] - 1.0) if pd.notna(prior_high.iloc[-1]) else 0.0)
+    prior_high = (
+        df["high"].rolling(window=breakout_window, min_periods=5).max().shift(1)
+    )
+    breakout_strength = float(
+        (df["close"].iloc[-1] / prior_high.iloc[-1] - 1.0)
+        if pd.notna(prior_high.iloc[-1])
+        else 0.0
+    )
 
-    volume_mean = df["volume"].rolling(window=volume_window, min_periods=5).mean().iloc[-1]
-    volume_ratio = float(df["volume"].iloc[-1] / volume_mean) if pd.notna(volume_mean) and volume_mean else 1.0
-    vwap_distance = float(abs(df["close"].iloc[-1] / vwap.iloc[-1] - 1.0)) if pd.notna(vwap.iloc[-1]) and vwap.iloc[-1] else 1.0
-    open_relative_strength = float(df["close"].iloc[-1] / df["open"].iloc[0] - 1.0) if df["open"].iloc[0] else 0.0
+    volume_mean = (
+        df["volume"].rolling(window=volume_window, min_periods=5).mean().iloc[-1]
+    )
+    volume_ratio = (
+        float(df["volume"].iloc[-1] / volume_mean)
+        if pd.notna(volume_mean) and volume_mean
+        else 1.0
+    )
+    vwap_distance = (
+        float(abs(df["close"].iloc[-1] / vwap.iloc[-1] - 1.0))
+        if pd.notna(vwap.iloc[-1]) and vwap.iloc[-1]
+        else 1.0
+    )
+    open_relative_strength = (
+        float(df["close"].iloc[-1] / df["open"].iloc[0] - 1.0)
+        if df["open"].iloc[0]
+        else 0.0
+    )
 
     conditions = {
         "breakout": breakout_strength >= breakout_threshold,

@@ -9,6 +9,7 @@
   4. 账本篡改：verdict_key 手编辑 → 判据 e FAIL，退出码 2；
   附：CLI 显式 root 纪律——无 --data-root 拒绝运行（退出码 2）。
 """
+
 import io
 import json
 import shutil
@@ -35,9 +36,13 @@ def _verdict_row(sid, symbol, run_id, trade_date=DAY, **over):
     """按 strategy_registry.record_verdicts 落账 schema 构造判决行。"""
     row = {
         "verdict_key": verdict_key(sid, symbol, trade_date),
-        "strategy_id": sid, "symbol": symbol,
-        "recommendation": "buy", "confidence": 0.7, "stance": "bull",
-        "run_id": run_id, "trade_date": trade_date,
+        "strategy_id": sid,
+        "symbol": symbol,
+        "recommendation": "buy",
+        "confidence": 0.7,
+        "stance": "bull",
+        "run_id": run_id,
+        "trade_date": trade_date,
         "recorded_at": "2026-10-19T17:30:00",
     }
     row.update(over)
@@ -48,7 +53,8 @@ def _write_jsonl(path: Path, rows):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         "\n".join(json.dumps(r, ensure_ascii=False) for r in rows) + "\n",
-        encoding="utf-8")
+        encoding="utf-8",
+    )
 
 
 class CheckObservationPointBase(unittest.TestCase):
@@ -63,30 +69,42 @@ class CheckObservationPointBase(unittest.TestCase):
         (self.root / "shadow" / "last_run.log").write_text(
             "[strategy] codex 桥接插件 +1 (skip 0)\n"
             "[strategy] 600519 产出 4 条 recorded=4 replayed=0\n"
-            "[done] 600519 HOLD %s\n" % RUN_A, encoding="utf-8")
-        _write_jsonl(self.root / "strategy" / "strategy_runs.jsonl",
-                     [_verdict_row("codex_sma20_rsi14", "600519", RUN_A)])
-        _write_jsonl(self.root / "shadow" / "shadow_ledger.jsonl",
-                     [{"schema_version": "m5.v1", "run_id": RUN_A,
-                       "symbol": "600519"}])
+            "[done] 600519 HOLD %s\n" % RUN_A,
+            encoding="utf-8",
+        )
+        _write_jsonl(
+            self.root / "strategy" / "strategy_runs.jsonl",
+            [_verdict_row("codex_sma20_rsi14", "600519", RUN_A)],
+        )
+        _write_jsonl(
+            self.root / "shadow" / "shadow_ledger.jsonl",
+            [{"schema_version": "m5.v1", "run_id": RUN_A, "symbol": "600519"}],
+        )
         (self.root / "shadow" / "monday_checkpoint.log").write_text(
             "[observe] strategy_runs：1 行 / 带 run_id 1 行——观察项\n"
             "[observe] codex_registrations：1 行 / strategy_id: "
-            "codex_sma20_rsi14——观察项\n", encoding="utf-8")
+            "codex_sma20_rsi14——观察项\n",
+            encoding="utf-8",
+        )
         # 判据 e 全绿还需证据仓有对应 strategy.runs 实体——对账项③
         # 修复后真实读取 evidence.db（同源恒真缺陷 B2），缺实体即 FAIL
         row = _verdict_row("codex_sma20_rsi14", "600519", RUN_A)
         store = EvidenceStore(self.root / "evidence" / "evidence.db")
         try:
-            store.record(Evidence(
-                source="strategy.runs",
-                source_ref="strategy:%s" % row["verdict_key"],
-                statement="strategy=codex_sma20_rsi14 symbol=600519 rec=buy "
-                          "stance=bull run_id=%s" % RUN_A,
-                payload={"domain": "strategy",
-                         "kind": "strategy_verdict_fingerprint",
-                         "idempotency_key": row["verdict_key"],
-                         "trade_date": DAY}))
+            store.record(
+                Evidence(
+                    source="strategy.runs",
+                    source_ref="strategy:%s" % row["verdict_key"],
+                    statement="strategy=codex_sma20_rsi14 symbol=600519 rec=buy "
+                    "stance=bull run_id=%s" % RUN_A,
+                    payload={
+                        "domain": "strategy",
+                        "kind": "strategy_verdict_fingerprint",
+                        "idempotency_key": row["verdict_key"],
+                        "trade_date": DAY,
+                    },
+                )
+            )
         finally:
             store.close()
 
@@ -105,8 +123,7 @@ class TestAllGreen(CheckObservationPointBase):
         code, out = self._run_cli("--data-root", str(self.root))
         self.assertEqual(code, 0)
         rep = cop.run_checks(self.root)
-        self.assertEqual([i["status"] for i in rep["items"]],
-                         ["PASS"] * 5)
+        self.assertEqual([i["status"] for i in rep["items"]], ["PASS"] * 5)
         self.assertIn("PASS] a_last_run_marker", out)
         self.assertIn("PASS] e_verdict_key_reconcile", out)
 
@@ -121,15 +138,20 @@ class TestAllGreen(CheckObservationPointBase):
         skip = ("evidence.db-shm", "evidence.db-wal")
         before = sorted(
             (str(p.relative_to(self.root)), p.stat().st_size, p.stat().st_mtime_ns)
-            for p in self.root.rglob("*") if p.is_file() and p.name not in skip)
+            for p in self.root.rglob("*")
+            if p.is_file() and p.name not in skip
+        )
         db_before = (self.root / "evidence" / "evidence.db").read_bytes()
         cop.run_checks(self.root)
         after = sorted(
             (str(p.relative_to(self.root)), p.stat().st_size, p.stat().st_mtime_ns)
-            for p in self.root.rglob("*") if p.is_file() and p.name not in skip)
+            for p in self.root.rglob("*")
+            if p.is_file() and p.name not in skip
+        )
         self.assertEqual(before, after)
-        self.assertEqual((self.root / "evidence" / "evidence.db").read_bytes(),
-                         db_before)
+        self.assertEqual(
+            (self.root / "evidence" / "evidence.db").read_bytes(), db_before
+        )
 
 
 class TestMissingLogs(CheckObservationPointBase):
@@ -153,7 +175,8 @@ class TestEmptyLedgerNeutral(CheckObservationPointBase):
     def test_empty_strategy_runs_pending_not_fail(self):
         self._make_green()
         (self.root / "strategy" / "strategy_runs.jsonl").write_text(
-            "", encoding="utf-8")
+            "", encoding="utf-8"
+        )
         code, _ = self._run_cli("--data-root", str(self.root))
         self.assertEqual(code, 0)  # b/e 双 PENDING，其余 PASS，无 FAIL
         rep = cop.run_checks(self.root)
@@ -188,7 +211,9 @@ class TestTamperedLedger(CheckObservationPointBase):
         code, _ = self._run_cli("--data-root", str(self.root))
         self.assertEqual(code, 2)
         rep = cop.run_checks(self.root)
-        b_item = next(i for i in rep["items"] if i["name"] == "b_strategy_runs_anchored")
+        b_item = next(
+            i for i in rep["items"] if i["name"] == "b_strategy_runs_anchored"
+        )
         self.assertEqual(b_item["status"], "FAIL")
 
 
@@ -209,12 +234,14 @@ class TestCheckpointLogSemantics(CheckObservationPointBase):
     def test_only_one_mark_is_fail(self):
         self._make_green()
         (self.root / "shadow" / "monday_checkpoint.log").write_text(
-            "[observe] strategy_runs：1 行 / 带 run_id 1 行——观察项\n",
-            encoding="utf-8")
+            "[observe] strategy_runs：1 行 / 带 run_id 1 行——观察项\n", encoding="utf-8"
+        )
         code, _ = self._run_cli("--data-root", str(self.root))
         self.assertEqual(code, 2)
         rep = cop.run_checks(self.root)
-        c_item = next(i for i in rep["items"] if i["name"] == "c_checkpoint_observe_sections")
+        c_item = next(
+            i for i in rep["items"] if i["name"] == "c_checkpoint_observe_sections"
+        )
         self.assertEqual(c_item["status"], "FAIL")
 
     def test_stale_log_without_both_marks_is_pending(self):
@@ -222,11 +249,14 @@ class TestCheckpointLogSemantics(CheckObservationPointBase):
         self._make_green()
         (self.root / "shadow" / "monday_checkpoint.log").write_text(
             "[observe] tasks.json schema：228 工单 / ERROR 0 / WARN 13\n",
-            encoding="utf-8")
+            encoding="utf-8",
+        )
         code, _ = self._run_cli("--data-root", str(self.root))
         self.assertEqual(code, 0)
         rep = cop.run_checks(self.root)
-        c_item = next(i for i in rep["items"] if i["name"] == "c_checkpoint_observe_sections")
+        c_item = next(
+            i for i in rep["items"] if i["name"] == "c_checkpoint_observe_sections"
+        )
         self.assertEqual(c_item["status"], "PENDING")
 
 

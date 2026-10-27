@@ -63,6 +63,7 @@ CLI::
 
 退出码：0 = 本轮无失败；1 = 配置/隔离闸/台账错误或存在 failed 单。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -135,8 +136,9 @@ def _now_iso() -> str:
 
 
 def _payload_digest(payload: object) -> str:
-    canonical = json.dumps(payload, ensure_ascii=False, sort_keys=True,
-                           separators=(",", ":"))
+    canonical = json.dumps(
+        payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    )
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
@@ -171,19 +173,22 @@ def _require_store_root(store_root) -> Path:
     return root.resolve()
 
 
-def _assert_isolated(root: Path, allow_real_store: bool = False,
-                     only_msg_ids=None) -> None:
+def _assert_isolated(
+    root: Path, allow_real_store: bool = False, only_msg_ids=None
+) -> None:
     """写入硬闸：拒绝真实 bridge_inbox；P2b 批准窗口仅放行指定自测票。"""
     real = REAL_STORE.resolve()
     if _is_within(root, real) or _is_within(real, root):
         if not allow_real_store:
             raise ConsumerRefused(
-                "隔离红线：拒绝在真实 bridge_inbox 上执行 --run（%s）" % root)
+                "隔离红线：拒绝在真实 bridge_inbox 上执行 --run（%s）" % root
+            )
         ids = set(only_msg_ids or ())
         if not ids or not ids <= P2B_APPROVED_MSG_IDS:
             raise ConsumerRefused(
                 "P2b 真实 bridge_inbox 仅允许 --only-msg 指定批准自测票 %s（收到 %r）"
-                % (sorted(P2B_APPROVED_MSG_IDS), sorted(ids)))
+                % (sorted(P2B_APPROVED_MSG_IDS), sorted(ids))
+            )
 
 
 def _bind_store(root: Path) -> None:
@@ -211,9 +216,10 @@ def _write_json(path: Path, data) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(".%s.tmp-%s" % (path.name, uuid.uuid4().hex[:8]))
     try:
-        tmp.write_text(json.dumps(data, ensure_ascii=False, sort_keys=True,
-                                  indent=1),
-                       encoding="utf-8")
+        tmp.write_text(
+            json.dumps(data, ensure_ascii=False, sort_keys=True, indent=1),
+            encoding="utf-8",
+        )
         os.replace(tmp, path)
     except BaseException:
         try:
@@ -244,42 +250,67 @@ def _classify_file(path: Path):
             "kind": str(rec.get("kind") or ""),
         }
 
-    missing = [key for key in ("id", "kind", "source", "payload")
-               if key not in rec]
+    missing = [key for key in ("id", "kind", "source", "payload") if key not in rec]
     if missing:
-        return "malformed", {"file": file_name,
-                             "reason": "missing_fields:%s" % ",".join(missing)}
+        return "malformed", {
+            "file": file_name,
+            "reason": "missing_fields:%s" % ",".join(missing),
+        }
 
-    msg_id, kind, source, payload = (rec["id"], rec["kind"], rec["source"],
-                                     rec["payload"])
+    msg_id, kind, source, payload = (
+        rec["id"],
+        rec["kind"],
+        rec["source"],
+        rec["payload"],
+    )
     if not isinstance(msg_id, str) or not _ID_RE.match(msg_id):
         return "malformed", {"file": file_name, "reason": "bad_id"}
     if path.stem != msg_id:
-        return "malformed", {"file": file_name, "msg_id": msg_id,
-                             "reason": "id_filename_mismatch"}
+        return "malformed", {
+            "file": file_name,
+            "msg_id": msg_id,
+            "reason": "id_filename_mismatch",
+        }
     if not isinstance(kind, str) or not kind.strip():
-        return "malformed", {"file": file_name, "msg_id": msg_id,
-                             "reason": "bad_kind"}
+        return "malformed", {"file": file_name, "msg_id": msg_id, "reason": "bad_kind"}
     if not isinstance(source, str) or not source.strip():
-        return "malformed", {"file": file_name, "msg_id": msg_id,
-                             "reason": "bad_source"}
+        return "malformed", {
+            "file": file_name,
+            "msg_id": msg_id,
+            "reason": "bad_source",
+        }
     if not isinstance(payload, dict):
-        return "malformed", {"file": file_name, "msg_id": msg_id,
-                             "reason": "bad_payload"}
+        return "malformed", {
+            "file": file_name,
+            "msg_id": msg_id,
+            "reason": "bad_payload",
+        }
 
     state = rec.get("state", "inbox")
     if state != "inbox":
-        return "protected", {"file": file_name, "msg_id": msg_id,
-                             "reason": "state_not_inbox:%s" % state,
-                             "source": source, "kind": kind}
+        return "protected", {
+            "file": file_name,
+            "msg_id": msg_id,
+            "reason": "state_not_inbox:%s" % state,
+            "source": source,
+            "kind": kind,
+        }
     if source not in ELIGIBLE_SOURCES:
-        return "protected", {"file": file_name, "msg_id": msg_id,
-                             "reason": "source_not_whitelisted",
-                             "source": source, "kind": kind}
+        return "protected", {
+            "file": file_name,
+            "msg_id": msg_id,
+            "reason": "source_not_whitelisted",
+            "source": source,
+            "kind": kind,
+        }
     if kind not in ELIGIBLE_KINDS:
-        return "protected", {"file": file_name, "msg_id": msg_id,
-                             "reason": "kind_not_allowed",
-                             "source": source, "kind": kind}
+        return "protected", {
+            "file": file_name,
+            "msg_id": msg_id,
+            "reason": "kind_not_allowed",
+            "source": source,
+            "kind": kind,
+        }
 
     report_id = payload.get("report_id")
     trace_id = payload.get("trace_id")
@@ -335,8 +366,8 @@ def scan(store_root, only_msg_ids=None) -> dict:
             if category == "eligible":
                 recorded = entries.get(item["msg_id"])
                 item["already_done"] = bool(
-                    isinstance(recorded, dict)
-                    and recorded.get("status") == "done")
+                    isinstance(recorded, dict) and recorded.get("status") == "done"
+                )
                 plan["eligible"].append(item)
             else:
                 plan[category].append(item)
@@ -344,8 +375,7 @@ def scan(store_root, only_msg_ids=None) -> dict:
         "eligible": len(plan["eligible"]),
         "protected": len(plan["protected"]),
         "malformed": len(plan["malformed"]),
-        "already_done": sum(1 for item in plan["eligible"]
-                            if item.get("already_done")),
+        "already_done": sum(1 for item in plan["eligible"] if item.get("already_done")),
     }
     return plan
 
@@ -383,8 +413,10 @@ def _append_step(entry: dict, name: str, **extra) -> None:
 
 
 def _has_step(entry: dict, name: str) -> bool:
-    return any(isinstance(step, dict) and step.get("step") == name
-               for step in entry.get("steps") or [])
+    return any(
+        isinstance(step, dict) and step.get("step") == name
+        for step in entry.get("steps") or []
+    )
 
 
 def _answer_ref(msg_id: str) -> str:
@@ -406,13 +438,15 @@ def _ensure_answer_evidence(root: Path, item: dict, answer_ref: str) -> Path:
     if path.exists():
         doc, error = _read_json(path)
         if error is not None or not isinstance(doc, dict):
-            raise ConsumerRefused("answer 证据不可读：%s（%s）"
-                                  % (path.name, error or "not_object"))
-        if (doc.get("msg_id") != item["msg_id"]
-                or doc.get("payload_digest") != item["payload_digest"]
-                or doc.get("answer_ref") != answer_ref):
-            raise ConsumerRefused("answer 证据绑定冲突，拒绝复用：%s"
-                                  % item["msg_id"])
+            raise ConsumerRefused(
+                "answer 证据不可读：%s（%s）" % (path.name, error or "not_object")
+            )
+        if (
+            doc.get("msg_id") != item["msg_id"]
+            or doc.get("payload_digest") != item["payload_digest"]
+            or doc.get("answer_ref") != answer_ref
+        ):
+            raise ConsumerRefused("answer 证据绑定冲突，拒绝复用：%s" % item["msg_id"])
         return path
     doc = {
         "schema": ANSWER_SCHEMA,
@@ -427,8 +461,7 @@ def _ensure_answer_evidence(root: Path, item: dict, answer_ref: str) -> Path:
         "synthetic": True,
         "sent": False,
         "delivery_channel": "not_sent",
-        "note": "离线合成答复摘要；本消费者不发送任何消息，"
-                "deliver 仅打 synthetic 标签",
+        "note": "离线合成答复摘要；本消费者不发送任何消息，deliver 仅打 synthetic 标签",
         "created_at": _now_iso(),
     }
     _write_json(path, doc)
@@ -454,15 +487,18 @@ def _gateway_error(env) -> str:
     return str(error.get("code") or "gateway_failed")
 
 
-def _fail_entry(root: Path, ledger: dict, entry: dict, status: str,
-                error: str) -> dict:
+def _fail_entry(root: Path, ledger: dict, entry: dict, status: str, error: str) -> dict:
     """把失败写进台账（可重试），但不伪装已办；返回失败结果。"""
     entry["status"] = "failed"
     entry["last_error"] = error
     _append_step(entry, "failed", error=error)
     _save_ledger(root, ledger)
-    return {"msg_id": entry.get("msg_id") or "", "status": "failed",
-            "error": error, "gateway_state": status}
+    return {
+        "msg_id": entry.get("msg_id") or "",
+        "status": "failed",
+        "error": error,
+        "gateway_state": status,
+    }
 
 
 def _consume_one(root: Path, item: dict, ledger: dict) -> dict:
@@ -501,11 +537,17 @@ def _consume_one(root: Path, item: dict, ledger: dict) -> dict:
         owner = str(record.get("answered_by") or "")
         recorded_ref = str(record.get("answer_ref") or "")
         if owner and owner != ANSWERED_BY:
-            return _fail_entry(root, ledger, entry, current["state"],
-                               "answer_owner_conflict:%s" % owner)
+            return _fail_entry(
+                root,
+                ledger,
+                entry,
+                current["state"],
+                "answer_owner_conflict:%s" % owner,
+            )
         if recorded_ref and recorded_ref != answer_ref:
-            return _fail_entry(root, ledger, entry, current["state"],
-                               "answer_ref_conflict")
+            return _fail_entry(
+                root, ledger, entry, current["state"], "answer_ref_conflict"
+            )
         answered_already = current["answered"]
         delivered_already = current["delivered"]
 
@@ -518,44 +560,75 @@ def _consume_one(root: Path, item: dict, ledger: dict) -> dict:
     # 2) consume（answered_by=A0；gateway 首次戳记获胜）。
     if not answered_already:
         _bind_store(root)
-        env = inbox_gateway.consume(msg_id, answered_by=ANSWERED_BY,
-                                    answer_ref=answer_ref)
+        env = inbox_gateway.consume(
+            msg_id, answered_by=ANSWERED_BY, answer_ref=answer_ref
+        )
         if not env.get("ok"):
-            return _fail_entry(root, ledger, entry, "consume",
-                               "consume_failed:" + _gateway_error(env))
+            return _fail_entry(
+                root, ledger, entry, "consume", "consume_failed:" + _gateway_error(env)
+            )
         data = env.get("data") or {}
         if data.get("state") != "processed":
-            return _fail_entry(root, ledger, entry,
-                               str(data.get("state") or "unknown"),
-                               "consume_state:%s" % data.get("state"))
-        _append_step(entry, "answered", answered_by=ANSWERED_BY,
-                     answer_ref=answer_ref,
-                     replayed=bool(data.get("replayed")))
+            return _fail_entry(
+                root,
+                ledger,
+                entry,
+                str(data.get("state") or "unknown"),
+                "consume_state:%s" % data.get("state"),
+            )
+        _append_step(
+            entry,
+            "answered",
+            answered_by=ANSWERED_BY,
+            answer_ref=answer_ref,
+            replayed=bool(data.get("replayed")),
+        )
         _save_ledger(root, ledger)
     elif not _has_step(entry, "answered"):
-        _append_step(entry, "answered", answered_by=ANSWERED_BY,
-                     answer_ref=answer_ref, replayed=True, reconciled=True)
+        _append_step(
+            entry,
+            "answered",
+            answered_by=ANSWERED_BY,
+            answer_ref=answer_ref,
+            replayed=True,
+            reconciled=True,
+        )
         _save_ledger(root, ledger)
 
     # 3) deliver（channel 仅标签，绝不真投递）。
     if not delivered_already:
         _bind_store(root)
-        env = inbox_gateway.deliver(msg_id, channel=DELIVER_CHANNEL,
-                                    delivered_ref=delivered_ref)
+        env = inbox_gateway.deliver(
+            msg_id, channel=DELIVER_CHANNEL, delivered_ref=delivered_ref
+        )
         if not env.get("ok"):
-            return _fail_entry(root, ledger, entry, "deliver",
-                               "deliver_failed:" + _gateway_error(env))
+            return _fail_entry(
+                root, ledger, entry, "deliver", "deliver_failed:" + _gateway_error(env)
+            )
         data = env.get("data") or {}
         if data.get("state") != "processed":
-            return _fail_entry(root, ledger, entry,
-                               str(data.get("state") or "unknown"),
-                               "deliver_state:%s" % data.get("state"))
-        _append_step(entry, "delivered", channel=DELIVER_CHANNEL,
-                     delivered_ref=delivered_ref,
-                     replayed=bool(data.get("replayed")))
+            return _fail_entry(
+                root,
+                ledger,
+                entry,
+                str(data.get("state") or "unknown"),
+                "deliver_state:%s" % data.get("state"),
+            )
+        _append_step(
+            entry,
+            "delivered",
+            channel=DELIVER_CHANNEL,
+            delivered_ref=delivered_ref,
+            replayed=bool(data.get("replayed")),
+        )
     if not _has_step(entry, "delivered"):
-        _append_step(entry, "delivered", channel=DELIVER_CHANNEL,
-                     delivered_ref=delivered_ref, reconciled=True)
+        _append_step(
+            entry,
+            "delivered",
+            channel=DELIVER_CHANNEL,
+            delivered_ref=delivered_ref,
+            reconciled=True,
+        )
     entry["status"] = "done"
     entry["done_at"] = _now_iso()
     _save_ledger(root, ledger)
@@ -572,8 +645,7 @@ def _consume_one(root: Path, item: dict, ledger: dict) -> dict:
     }
 
 
-def run_once(store_root, limit=None, allow_real_store=False,
-             only_msg_ids=None) -> dict:
+def run_once(store_root, limit=None, allow_real_store=False, only_msg_ids=None) -> dict:
     """执行一轮消费（claim → consume → answer 摘要 → deliver）。可重复调用。
 
     limit：本轮最多尝试新消费 N 条；已 done 的单不计数，也不重复消费。
@@ -583,7 +655,8 @@ def run_once(store_root, limit=None, allow_real_store=False,
     ids = tuple(only_msg_ids or ())
     if ids and not set(ids) <= P2B_APPROVED_MSG_IDS:
         raise ConsumerRefused(
-            "only_msg_ids 含非批准自测票：%r" % sorted(set(ids) - P2B_APPROVED_MSG_IDS))
+            "only_msg_ids 含非批准自测票：%r" % sorted(set(ids) - P2B_APPROVED_MSG_IDS)
+        )
     _assert_isolated(root, allow_real_store=allow_real_store, only_msg_ids=ids)
     if limit is not None:
         if isinstance(limit, bool) or not isinstance(limit, int) or limit < 0:
@@ -613,8 +686,9 @@ def run_once(store_root, limit=None, allow_real_store=False,
             break
         recorded = ledger["entries"].get(item["msg_id"])
         if isinstance(recorded, dict) and recorded.get("status") == "done":
-            result["already_done"].append({"msg_id": item["msg_id"],
-                                           "status": "already_done"})
+            result["already_done"].append(
+                {"msg_id": item["msg_id"], "status": "already_done"}
+            )
             continue
         attempted += 1
         try:
@@ -622,8 +696,11 @@ def run_once(store_root, limit=None, allow_real_store=False,
         except ConsumerRefused:
             raise  # 隔离/台账/证据冲突：失败关闭，整轮中断
         except OSError as exc:
-            outcome = {"msg_id": item["msg_id"], "status": "failed",
-                       "error": "io_error:%s" % exc}
+            outcome = {
+                "msg_id": item["msg_id"],
+                "status": "failed",
+                "error": "io_error:%s" % exc,
+            }
         if outcome.get("status") == "done":
             result["consumed"].append(outcome)
         elif outcome.get("status") == "already_done":
@@ -649,30 +726,53 @@ def main(argv=None) -> int:
     """CLI：默认 dry-run（只出计划）；--run 才执行；--limit N 限本轮条数。"""
     parser = argparse.ArgumentParser(
         prog="osleg_consumer",
-        description="OSLINK-W4 8795 消费者 worker 骨架（默认 dry-run，隔离 store）")
-    parser.add_argument("--store-root", required=True,
-                        help="隔离 gateway store 根目录（含 inbox/、processed/）")
-    parser.add_argument("--run", action="store_true",
-                        help="执行消费（默认只出计划；拒绝真实 bridge_inbox）")
-    parser.add_argument("--limit", type=int, default=None,
-                        help="本轮最多尝试新消费 N 条（已 done 不计数）")
-    parser.add_argument("--allow-real-store", action="store_true",
-                        help="P2b 批准窗口：允许真实 bridge_inbox（必须配 --only-msg 批准自测票）")
-    parser.add_argument("--only-msg", action="append", default=None,
-                        help="P2b 仅消费指定自测票（可重复；必须 ⊆ 批准清单）")
+        description="OSLINK-W4 8795 消费者 worker 骨架（默认 dry-run，隔离 store）",
+    )
+    parser.add_argument(
+        "--store-root",
+        required=True,
+        help="隔离 gateway store 根目录（含 inbox/、processed/）",
+    )
+    parser.add_argument(
+        "--run",
+        action="store_true",
+        help="执行消费（默认只出计划；拒绝真实 bridge_inbox）",
+    )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="本轮最多尝试新消费 N 条（已 done 不计数）",
+    )
+    parser.add_argument(
+        "--allow-real-store",
+        action="store_true",
+        help="P2b 批准窗口：允许真实 bridge_inbox（必须配 --only-msg 批准自测票）",
+    )
+    parser.add_argument(
+        "--only-msg",
+        action="append",
+        default=None,
+        help="P2b 仅消费指定自测票（可重复；必须 ⊆ 批准清单）",
+    )
     args = parser.parse_args(argv)
     try:
         if args.run:
-            out = run_once(args.store_root, limit=args.limit,
-                           allow_real_store=args.allow_real_store,
-                           only_msg_ids=args.only_msg)
+            out = run_once(
+                args.store_root,
+                limit=args.limit,
+                allow_real_store=args.allow_real_store,
+                only_msg_ids=args.only_msg,
+            )
         else:
             out = scan(args.store_root)
     except ConsumerRefused as exc:
-        out = {"ok": False,
-               "mode": "run" if args.run else "dry-run",
-               "store_root": str(args.store_root),
-               "error": str(exc)}
+        out = {
+            "ok": False,
+            "mode": "run" if args.run else "dry-run",
+            "store_root": str(args.store_root),
+            "error": str(exc),
+        }
     print(json.dumps(out, ensure_ascii=False, indent=1))
     if args.allow_real_store and not args.run:
         return 1

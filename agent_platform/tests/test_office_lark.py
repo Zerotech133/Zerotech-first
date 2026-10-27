@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Office + 通知 outbox 测试（WO-OFFICE-LARK）。"""
+
 from __future__ import annotations
 
 import importlib.util
@@ -59,12 +60,22 @@ def test_outbox_enqueue_and_send_without_webhook(tmp_path, monkeypatch):
 
 def test_approval_card(tmp_path, monkeypatch):
     monkeypatch.setattr(OB, "OUTBOX", tmp_path / "outbox")
-    e = OB.enqueue_approval_card({"id": "ZYREQ-1", "kind": "model_change",
-                                  "status": "pending_human", "reason": "换模型"})
+    e = OB.enqueue_approval_card(
+        {
+            "id": "ZYREQ-1",
+            "kind": "model_change",
+            "status": "pending_human",
+            "reason": "换模型",
+        }
+    )
     assert e["ok"]
     card = e["message"]["card"]
     assert card["msg_type"] == "interactive"
-    buttons = [a for el in card["card"]["elements"] if el.get("tag") == "action"
-               for a in el["actions"]]
+    buttons = [
+        a
+        for el in card["card"]["elements"]
+        if el.get("tag") == "action"
+        for a in el["actions"]
+    ]
     assert {b["value"]["action"] for b in buttons} == {"approve", "reject"}
     assert all(b["value"]["request_id"] == "ZYREQ-1" for b in buttons)

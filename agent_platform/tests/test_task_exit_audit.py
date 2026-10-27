@@ -3,6 +3,7 @@
 纪律：不依赖真实计划任务盘面（会演进的真实数据不写死——S43 判例）；
 用 monkeypatch 自造前置状态；账本/摘要写入 tmp 目录隔离。
 """
+
 from __future__ import annotations
 
 import json
@@ -11,7 +12,9 @@ import sys
 
 import pytest
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools"))
+sys.path.insert(
+    0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools")
+)
 
 import task_exit_audit as ta
 
@@ -23,16 +26,41 @@ def isolated_data_dir(monkeypatch, tmp_path):
 
 
 FAKE_TASKS = [
-    {"name": "LegionMorningMeeting", "state": "Ready", "last_result": 0,
-     "last_run": "2026-10-22 09:00:00", "next_run": "2026-10-23 09:00:00"},
-    {"name": "QuantWatchdog", "state": "Running", "last_result": 2,
-     "last_run": "2026-10-22 01:27:58", "next_run": "2026-10-22 01:28:57"},
-    {"name": "AlertWatch", "state": "Ready", "last_result": 1,
-     "last_run": "2026-10-22 01:15:01", "next_run": "2026-10-22 01:45:00"},
-    {"name": "KG-QuantRetune", "state": "Disabled", "last_result": 267011,
-     "last_run": "", "next_run": ""},
-    {"name": "AgentMondayCheckpoint", "state": "Ready", "last_result": 3221225786,
-     "last_run": "2026-10-19 17:25:00", "next_run": "2026-10-26 17:25:00"},
+    {
+        "name": "LegionMorningMeeting",
+        "state": "Ready",
+        "last_result": 0,
+        "last_run": "2026-10-22 09:00:00",
+        "next_run": "2026-10-23 09:00:00",
+    },
+    {
+        "name": "QuantWatchdog",
+        "state": "Running",
+        "last_result": 2,
+        "last_run": "2026-10-22 01:27:58",
+        "next_run": "2026-10-22 01:28:57",
+    },
+    {
+        "name": "AlertWatch",
+        "state": "Ready",
+        "last_result": 1,
+        "last_run": "2026-10-22 01:15:01",
+        "next_run": "2026-10-22 01:45:00",
+    },
+    {
+        "name": "KG-QuantRetune",
+        "state": "Disabled",
+        "last_result": 267011,
+        "last_run": "",
+        "next_run": "",
+    },
+    {
+        "name": "AgentMondayCheckpoint",
+        "state": "Ready",
+        "last_result": 3221225786,
+        "last_run": "2026-10-19 17:25:00",
+        "next_run": "2026-10-26 17:25:00",
+    },
 ]
 
 
@@ -71,27 +99,60 @@ def test_scan_empty_is_honest(isolated_data_dir, monkeypatch):
 
 
 def test_family_filter(isolated_data_dir, monkeypatch):
-    monkeypatch.setattr(ta, "query_tasks_via_powershell", lambda: list(FAKE_TASKS) + [
-        {"name": "GoogleUpdateTask", "state": "Ready", "last_result": 0,
-         "last_run": "2026-10-01 00:00:00", "next_run": ""}])
+    monkeypatch.setattr(
+        ta,
+        "query_tasks_via_powershell",
+        lambda: (
+            list(FAKE_TASKS)
+            + [
+                {
+                    "name": "GoogleUpdateTask",
+                    "state": "Ready",
+                    "last_result": 0,
+                    "last_run": "2026-10-01 00:00:00",
+                    "next_run": "",
+                }
+            ]
+        ),
+    )
     s = ta.scan(audit_family_only=True)
     assert s["total_scanned"] == 5  # 系统任务被滤除
 
 
 def test_never_run_not_failure(isolated_data_dir, monkeypatch):
     """267011（尚未运行）在非 Disabled 态也不算失败。"""
-    monkeypatch.setattr(ta, "query_tasks_via_powershell", lambda: [
-        {"name": "SpaceAgentTask", "state": "Ready", "last_result": 267011,
-         "last_run": "", "next_run": "2026-10-23 00:00:00"}])
+    monkeypatch.setattr(
+        ta,
+        "query_tasks_via_powershell",
+        lambda: [
+            {
+                "name": "SpaceAgentTask",
+                "state": "Ready",
+                "last_result": 267011,
+                "last_run": "",
+                "next_run": "2026-10-23 00:00:00",
+            }
+        ],
+    )
     s = ta.scan(audit_family_only=False)
     assert s["failed"] == 0 and s["never_run"] == 1
 
 
 def test_launcher_refused_not_failure(isolated_data_dir, monkeypatch):
     """EXEC-R7：0x800710E0（启动器已在运行/启动请求被拒）不计失败，单列 launcher_refused。"""
-    monkeypatch.setattr(ta, "query_tasks_via_powershell", lambda: [
-        {"name": "AI工作站调优回测批次", "state": "Ready", "last_result": 2147946720,
-         "last_run": "2026-10-24 20:23:40", "next_run": ""}])
+    monkeypatch.setattr(
+        ta,
+        "query_tasks_via_powershell",
+        lambda: [
+            {
+                "name": "AI工作站调优回测批次",
+                "state": "Ready",
+                "last_result": 2147946720,
+                "last_run": "2026-10-24 20:23:40",
+                "next_run": "",
+            }
+        ],
+    )
     s = ta.scan(audit_family_only=False)
     assert s["failed"] == 0
     assert s["launcher_refused"] == 1
@@ -117,6 +178,7 @@ def test_ledger_append_only(isolated_data_dir, monkeypatch):
 def _seed_ledger(isolated_data_dir, rounds):
     """自造多轮账本：rounds = [ {任务名: exit码}, ... ] 按时间顺序。"""
     import datetime as dt
+
     ledger = os.path.join(isolated_data_dir, ta.LEDGER_NAME)
     os.makedirs(isolated_data_dir, exist_ok=True)
     base = dt.datetime.now().astimezone() - dt.timedelta(hours=len(rounds) + 1)
@@ -124,22 +186,34 @@ def _seed_ledger(isolated_data_dir, rounds):
         for i, snapshot in enumerate(rounds):
             ts = base + dt.timedelta(hours=i + 1)
             for name, code in snapshot.items():
-                f.write(json.dumps({
-                    "at": ts.isoformat(timespec="seconds"),
-                    "name": name, "state": "Ready",
-                    "last_result": code, "exit_semantics": "",
-                    "last_run": "", "next_run": "",
-                }, ensure_ascii=False) + "\n")
+                f.write(
+                    json.dumps(
+                        {
+                            "at": ts.isoformat(timespec="seconds"),
+                            "name": name,
+                            "state": "Ready",
+                            "last_result": code,
+                            "exit_semantics": "",
+                            "last_run": "",
+                            "next_run": "",
+                        },
+                        ensure_ascii=False,
+                    )
+                    + "\n"
+                )
 
 
 def test_window_diff_classifies(isolated_data_dir, monkeypatch):
     """窗口对比三分类：QuantWatchdog 全程失败（persisting）、心跳 2→0（fixed）、Nginx 0→1（new）。
     时序：旧状态两轮（cutoff 前）→ 新状态一轮（cutoff 后），保证转换发生在窗口内。"""
-    _seed_ledger(isolated_data_dir, [
-        {"QuantWatchdog": 2, "AgentLegionHeartbeat": 2, "AI工作站门户Nginx": 0},
-        {"QuantWatchdog": 2, "AgentLegionHeartbeat": 2, "AI工作站门户Nginx": 0},
-        {"QuantWatchdog": 2, "AgentLegionHeartbeat": 0, "AI工作站门户Nginx": 1},
-    ])
+    _seed_ledger(
+        isolated_data_dir,
+        [
+            {"QuantWatchdog": 2, "AgentLegionHeartbeat": 2, "AI工作站门户Nginx": 0},
+            {"QuantWatchdog": 2, "AgentLegionHeartbeat": 2, "AI工作站门户Nginx": 0},
+            {"QuantWatchdog": 2, "AgentLegionHeartbeat": 0, "AI工作站门户Nginx": 1},
+        ],
+    )
     r = ta.window_diff(hours=1.5)
     assert "error" not in r
     assert r["new_failures"] == ["AI工作站门户Nginx"]
@@ -156,10 +230,13 @@ def test_window_diff_insufficient(isolated_data_dir):
 
 def test_window_diff_disabled_not_failure(isolated_data_dir):
     """Disabled 与 267011（未跑）不计失败。"""
-    _seed_ledger(isolated_data_dir, [
-        {"KG-QuantRetune": 267011, "SpaceTask": 1},
-        {"KG-QuantRetune": 267011, "SpaceTask": 1},
-    ])
+    _seed_ledger(
+        isolated_data_dir,
+        [
+            {"KG-QuantRetune": 267011, "SpaceTask": 1},
+            {"KG-QuantRetune": 267011, "SpaceTask": 1},
+        ],
+    )
     # state 字段在 _seed_ledger 固定为 Ready，这里直接验证 267011 排除逻辑
     r = ta.window_diff(hours=1.5)
     assert "KG-QuantRetune" not in r.get("persisting_failures", [])
@@ -167,15 +244,27 @@ def test_window_diff_disabled_not_failure(isolated_data_dir):
 
 def test_window_diff_excludes_non_failure_rc(isolated_data_dir):
     """EXEC-R7：被取消(0xC000013A)/启动器已在跑(0x800710E0)/上游拒跑(3) 不进失败差集。"""
-    _seed_ledger(isolated_data_dir, [
-        {"CancelledTask": 3221225786, "LauncherTask": 2147946720,
-         "UpstreamTask": 3, "RealFail": 1},
-        {"CancelledTask": 3221225786, "LauncherTask": 2147946720,
-         "UpstreamTask": 3, "RealFail": 1},
-    ])
+    _seed_ledger(
+        isolated_data_dir,
+        [
+            {
+                "CancelledTask": 3221225786,
+                "LauncherTask": 2147946720,
+                "UpstreamTask": 3,
+                "RealFail": 1,
+            },
+            {
+                "CancelledTask": 3221225786,
+                "LauncherTask": 2147946720,
+                "UpstreamTask": 3,
+                "RealFail": 1,
+            },
+        ],
+    )
     r = ta.window_diff(hours=1.5)
     assert "error" not in r
     assert r["persisting_failures"] == ["RealFail"]
+
 
 def test_running_and_terminated_not_failure(isolated_data_dir, monkeypatch):
     """EXEC-2026-10-25：0x41001 跑批中 / 0x41306 被终止 均不计 failed。
@@ -184,10 +273,20 @@ def test_running_and_terminated_not_failure(isolated_data_dir, monkeypatch):
     XueqiuBackfillSprint(267009)、NoticeBackfill(267014) 三个是语义误计。
     """
     fake = [
-        {"name": "AI工作站门户API", "state": "Ready", "last_result": 267009,
-         "last_run": "2026-10-25 15:10:57", "next_run": "2026-10-25 15:15:00"},
-        {"name": "NoticeBackfill", "state": "Ready", "last_result": 267014,
-         "last_run": "2026-10-25 06:45:01", "next_run": "2026-10-26 06:45:00"},
+        {
+            "name": "AI工作站门户API",
+            "state": "Ready",
+            "last_result": 267009,
+            "last_run": "2026-10-25 15:10:57",
+            "next_run": "2026-10-25 15:15:00",
+        },
+        {
+            "name": "NoticeBackfill",
+            "state": "Ready",
+            "last_result": 267014,
+            "last_run": "2026-10-25 06:45:01",
+            "next_run": "2026-10-26 06:45:00",
+        },
     ]
     monkeypatch.setattr(ta, "query_tasks_via_powershell", lambda: fake)
     s = ta.scan(audit_family_only=False)
@@ -205,17 +304,34 @@ def test_running_and_terminated_not_failure(isolated_data_dir, monkeypatch):
 # 旧实现 `if --scan / elif --window`：两参数同给时 --window 被**静默丢弃**，
 # 用组合命令做收口却只落快照——正是“快照假绿”判例要防的假绿。
 
+
 def _fake_scan(audit_family_only=True):
-    return {"total_scanned": 1, "ok": 1, "failed": 0, "upstream_hold": 0,
-            "launcher_refused": 0, "cancelled": 0, "running": 0,
-            "terminated": 0, "disabled": 0, "never_run": 0, "failures": []}
+    return {
+        "total_scanned": 1,
+        "ok": 1,
+        "failed": 0,
+        "upstream_hold": 0,
+        "launcher_refused": 0,
+        "cancelled": 0,
+        "running": 0,
+        "terminated": 0,
+        "disabled": 0,
+        "never_run": 0,
+        "failures": [],
+    }
 
 
 def _fake_window(hours=24.0):
-    return {"window_hours": hours,
-            "compared": {"prior_scan_at": "2026-10-25T00:00:00+08:00",
-                         "latest_scan_at": "2026-10-26T00:00:00+08:00"},
-            "new_failures": ["A"], "persisting_failures": [], "fixed_in_window": []}
+    return {
+        "window_hours": hours,
+        "compared": {
+            "prior_scan_at": "2026-10-25T00:00:00+08:00",
+            "latest_scan_at": "2026-10-26T00:00:00+08:00",
+        },
+        "new_failures": ["A"],
+        "persisting_failures": [],
+        "fixed_in_window": [],
+    }
 
 
 def test_scan_and_window_combined_not_dropped(monkeypatch, capsys):
@@ -262,8 +378,9 @@ def test_scan_only_keeps_flat_output(monkeypatch, capsys):
 def test_combined_window_error_returns_nonzero(monkeypatch, capsys):
     """组合模式下窗口不可用：如实报错（非零退出），但扫描结果照常输出。"""
     monkeypatch.setattr(ta, "scan", lambda audit_family_only=True: _fake_scan())
-    monkeypatch.setattr(ta, "window_diff",
-                        lambda hours=24.0: {"error": "账本仅 1 条，不足两次扫描"})
+    monkeypatch.setattr(
+        ta, "window_diff", lambda hours=24.0: {"error": "账本仅 1 条，不足两次扫描"}
+    )
     rc = ta.main(["--scan", "--window", "--json"])
     data = json.loads(capsys.readouterr().out)
     assert rc == 1

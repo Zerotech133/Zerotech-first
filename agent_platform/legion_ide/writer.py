@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """IDE 受控编辑（R1）：读/写 worktree 内文件 + 变更摘要（不碰 git index）。"""
+
 from __future__ import annotations
 
 import hashlib
@@ -26,8 +27,13 @@ def read_file(worktree: Path, rel: str) -> dict:
         text = data.decode("utf-8")
     except UnicodeDecodeError:
         return G.err("not_utf8", "非 UTF-8 文件，拒绝在线编辑")
-    return {"ok": True, "path": str(Path(rel).as_posix()), "content": text,
-            "bytes": len(data), "sha256": hashlib.sha256(data).hexdigest()}
+    return {
+        "ok": True,
+        "path": str(Path(rel).as_posix()),
+        "content": text,
+        "bytes": len(data),
+        "sha256": hashlib.sha256(data).hexdigest(),
+    }
 
 
 def write_file(worktree: Path, rel: str, content: str) -> dict:
@@ -53,9 +59,14 @@ def write_file(worktree: Path, rel: str, content: str) -> dict:
             tmp.unlink(missing_ok=True)
         except OSError:
             pass
-    return {"ok": True, "path": str(Path(rel).as_posix()), "bytes": len(raw),
-            "sha256": hashlib.sha256(raw).hexdigest(), "created": not existed,
-            "diff": diff_stat(worktree, rel)}
+    return {
+        "ok": True,
+        "path": str(Path(rel).as_posix()),
+        "bytes": len(raw),
+        "sha256": hashlib.sha256(raw).hexdigest(),
+        "created": not existed,
+        "diff": diff_stat(worktree, rel),
+    }
 
 
 def diff_stat(worktree: Path, rel: str = "") -> dict:
@@ -65,10 +76,19 @@ def diff_stat(worktree: Path, rel: str = "") -> dict:
         args.append("--")
         args.append(str(Path(rel).as_posix()))
     try:
-        proc = subprocess.run(args, capture_output=True, text=True,
-                              encoding="utf-8", errors="replace", timeout=20)
-        return {"stat": (proc.stdout or "").strip()[:2000],
-                "untracked_hint": "（未跟踪文件不出现在 diff，用 git status 看）"
-                if not (proc.stdout or "").strip() else ""}
+        proc = subprocess.run(
+            args,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=20,
+        )
+        return {
+            "stat": (proc.stdout or "").strip()[:2000],
+            "untracked_hint": "（未跟踪文件不出现在 diff，用 git status 看）"
+            if not (proc.stdout or "").strip()
+            else "",
+        }
     except (OSError, subprocess.SubprocessError):
         return {"stat": "", "error": "git_diff_failed"}

@@ -9,6 +9,7 @@
    （不重写原则）、坏行 FAIL；
 3. already_done 旧 schema 兼容——无 schema_version/parse_ok 的 v0 行照常识别。
 """
+
 import json
 import sys
 from pathlib import Path
@@ -30,11 +31,19 @@ SRC_STATUS_BAD = {"web": "normal", "kline": "stale"}
 
 # ---------------------------------------------------------------- build_ledger_row
 
+
 def _row(**kw):
-    base = dict(today="2026-10-19", symbol="600519", name="贵州茅台",
-                run_id="abcd1234ef56", price_at_decision="1500.0",
-                dec={"recommendation": "BUY", "confidence": 0.8, "score": 0.8},
-                parse_ok=True, source_status=SRC_STATUS_OK, latency_s=3.2)
+    base = dict(
+        today="2026-10-19",
+        symbol="600519",
+        name="贵州茅台",
+        run_id="abcd1234ef56",
+        price_at_decision="1500.0",
+        dec={"recommendation": "BUY", "confidence": 0.8, "score": 0.8},
+        parse_ok=True,
+        source_status=SRC_STATUS_OK,
+        latency_s=3.2,
+    )
     base.update(kw)
     return build_ledger_row(**base)
 
@@ -73,10 +82,23 @@ def test_none_source_status_tolerated():
 
 
 def test_m5_row_field_complete():
-    required = {"date", "ts", "symbol", "name", "status", "run_id",
-                "price_at_decision", "recommendation", "confidence", "score",
-                "target_range", "parse_ok", "degraded", "schema_version",
-                "latency_s"}
+    required = {
+        "date",
+        "ts",
+        "symbol",
+        "name",
+        "status",
+        "run_id",
+        "price_at_decision",
+        "recommendation",
+        "confidence",
+        "score",
+        "target_range",
+        "parse_ok",
+        "degraded",
+        "schema_version",
+        "latency_s",
+    }
     assert required <= set(_row().keys())
 
 
@@ -86,11 +108,18 @@ def test_ts_override_idempotent():
 
 # ---------------------------------------------------------------- validate profile
 
+
 def _run_profile(lines):
-    raw = "\n".join(json.dumps(l, ensure_ascii=False) if isinstance(l, dict) else l
-                    for l in lines) + "\n"
+    raw = (
+        "\n".join(
+            json.dumps(l, ensure_ascii=False) if isinstance(l, dict) else l
+            for l in lines
+        )
+        + "\n"
+    )
     import io
     from contextlib import redirect_stdout
+
     buf = io.StringIO()
     with redirect_stdout(buf):
         ok = vj._validate_jsonl(raw, "<test>", profile="shadow")
@@ -103,16 +132,23 @@ def test_v1_healthy_row_pass():
 
 
 def test_v0_legacy_row_semantic_exempt():  # 旧行不重写：无 schema_version 豁免
-    legacy = {"date": "2026-10-14", "symbol": "300750", "status": "done",
-              "run_id": "76cf6d30358f", "recommendation": None,
-              "parse_ok": False, "degraded": False}
+    legacy = {
+        "date": "2026-10-14",
+        "symbol": "300750",
+        "status": "done",
+        "run_id": "76cf6d30358f",
+        "recommendation": None,
+        "parse_ok": False,
+        "degraded": False,
+    }
     ok, out = _run_profile([legacy])
     assert ok, out  # 无 schema_version 不触发语义规则
 
 
 def test_v1_parse_fail_with_fields_fails():
-    bad = _row(dec={"recommendation": "BUY", "confidence": 0.8, "score": 0.8},
-               parse_ok=False)
+    bad = _row(
+        dec={"recommendation": "BUY", "confidence": 0.8, "score": 0.8}, parse_ok=False
+    )
     ok, out = _run_profile([bad])
     assert not ok
     assert "残留决策字段" in out
@@ -150,11 +186,17 @@ def test_mixed_v0_v1_ledger_pass():
 
 # ---------------------------------------------------------------- v0 兼容读侧
 
+
 def test_already_done_reads_v0_row(tmp_path, monkeypatch):
     ledger = tmp_path / "shadow_ledger.jsonl"
-    ledger.write_text(json.dumps(
-        {"date": "2026-10-14", "symbol": "300750", "status": "done"},
-        ensure_ascii=False) + "\n", encoding="utf-8")
+    ledger.write_text(
+        json.dumps(
+            {"date": "2026-10-14", "symbol": "300750", "status": "done"},
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     monkeypatch.setattr("run_shadow.LEDGER", ledger)
     assert already_done("2026-10-14", "300750") is True
     assert already_done("2026-10-14", "600519") is False

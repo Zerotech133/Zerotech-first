@@ -7,6 +7,7 @@
 - 情绪面 v1 用 K 线派生代理指标（近5日涨幅/量比/20日位置）；jev 事件库接入留 v2
 - Tushare token 在 jev-eval/rotate_tushare_token.ps1 体系内，接入后可切主源
 """
+
 import json
 import urllib.request
 
@@ -22,7 +23,10 @@ def norm_symbol(code):
 def kline_daily(code, n=30):
     """前复权日 K：[[date, open, close, high, low, vol, ...], ...]"""
     s = norm_symbol(code)
-    u = "https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=%s,day,,,%d,qfq" % (s, n)
+    u = "https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=%s,day,,,%d,qfq" % (
+        s,
+        n,
+    )
     with _op.open(u, timeout=10) as r:
         d = json.load(r)
     node = d["data"][s]
@@ -34,11 +38,13 @@ def quote_snapshot(code):
     s = norm_symbol(code)
     with _op.open("https://qt.gtimg.cn/q=" + s, timeout=10) as r:
         f = r.read().decode("gbk", "ignore").split("~")
+
     def _f(i, default=0.0):
         try:
             return float(f[i])
         except (ValueError, IndexError):
             return default
+
     return {
         "name": f[1] if len(f) > 1 else code,
         "price": _f(3),
@@ -46,7 +52,9 @@ def quote_snapshot(code):
         "turnover_pct": _f(38),
         "pe": _f(39),
         "pb": _f(46),
-        "mktcap_yi": round(_f(45), 1),  # f[45] 单位已是亿（实测茅台 15657.27 = 1.57 万亿）
+        "mktcap_yi": round(
+            _f(45), 1
+        ),  # f[45] 单位已是亿（实测茅台 15657.27 = 1.57 万亿）
     }
 
 
@@ -63,7 +71,11 @@ def make_context(code):
     chg5 = round((closes[-1] / closes[-6] - 1) * 100, 2) if len(closes) >= 6 else None
     vol_ratio = round(vols[-1] / (sum(vols[-6:-1]) / 5), 2) if len(vols) >= 6 else None
     ma5, ma10, ma20 = _ma(closes, 5), _ma(closes, 10), _ma(closes, 20)
-    arrange = "多头排列" if ma5 > ma10 > ma20 else ("空头排列" if ma5 < ma10 < ma20 else "纠缠")
+    arrange = (
+        "多头排列"
+        if ma5 > ma10 > ma20
+        else ("空头排列" if ma5 < ma10 < ma20 else "纠缠")
+    )
     pos20 = round((closes[-1] / max(closes[-20:]) - 1) * 100, 2)
 
     recent = "\n".join(
@@ -77,15 +89,34 @@ def make_context(code):
     )
     fundamental = (
         "快照: 名称=%s 现价=%s 涨跌=%s%% PE=%s PB=%s 总市值=%s亿 换手=%s%%"
-        % (q["name"], q["price"], q["change_pct"], q["pe"], q["pb"], q["mktcap_yi"], q["turnover_pct"])
+        % (
+            q["name"],
+            q["price"],
+            q["change_pct"],
+            q["pe"],
+            q["pb"],
+            q["mktcap_yi"],
+            q["turnover_pct"],
+        )
     )
     sentiment = (
         "情绪代理指标(v1，事件库jev接入v2): 近5日涨跌=%s%%，量比=%s，现价距20日高点=%s%%，"
         "换手率=%s%%。解读提示：放量上涨偏暖、缩量下跌观望、高位放量警惕。"
         % (chg5, vol_ratio, pos20, q["turnover_pct"])
     )
-    final = "基本面快照: %s\n技术面: MA5=%s MA10=%s MA20=%s（%s），近5日=%s%%\n情绪代理: 近5日=%s%% 量比=%s" % (
-        fundamental.split(": ", 1)[1], ma5, ma10, ma20, arrange, chg5, chg5, vol_ratio)
+    final = (
+        "基本面快照: %s\n技术面: MA5=%s MA10=%s MA20=%s（%s），近5日=%s%%\n情绪代理: 近5日=%s%% 量比=%s"
+        % (
+            fundamental.split(": ", 1)[1],
+            ma5,
+            ma10,
+            ma20,
+            arrange,
+            chg5,
+            chg5,
+            vol_ratio,
+        )
+    )
     return {
         "market_technical": market,
         "fundamental": fundamental,
@@ -97,6 +128,7 @@ def make_context(code):
 
 if __name__ == "__main__":
     import sys
+
     ctx = make_context(sys.argv[1] if len(sys.argv) > 1 else "600519")
     for k, v in ctx.items():
         print("== %s ==" % k)

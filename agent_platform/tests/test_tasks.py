@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """任务单系统自测（K-ORG-011 P2-1）：状态机全转移+RBAC越权+强制注记"""
+
 import shutil
 import sys
 import tempfile
@@ -22,7 +23,14 @@ def ok(name, cond=True):
 s = TaskStore(TMP / "org" / "tasks")
 
 # 1. open + ls
-tid = s.open("dev", "T1 prompt 立场强制校准", "四条靶点见基线报告", "P1", opened_by="A0", due="2026-10-16")
+tid = s.open(
+    "dev",
+    "T1 prompt 立场强制校准",
+    "四条靶点见基线报告",
+    "P1",
+    opened_by="A0",
+    due="2026-10-16",
+)
 ok("open 返回 task_id", tid.startswith("T-"))
 ok("ls 默认可见", len(s.ls()) == 1)
 ok("ls 按 dept 过滤", len(s.ls(dept="invest")) == 0)
@@ -63,11 +71,21 @@ try:
     ok("rejected 须写理由", False)
 except TaskError:
     ok("rejected 须写理由", True)
-ok("rejected 带理由", s.move(tid3, "rejected", "dept/trading/TR1",
-                             note="影子冻结期无实盘职责")["status"] == "rejected")
+ok(
+    "rejected 带理由",
+    s.move(tid3, "rejected", "dept/trading/TR1", note="影子冻结期无实盘职责")["status"]
+    == "rejected",
+)
 
 # 6. P0 直达 doing
-tid4 = s.open("dev", "Ollama 服务不可用处置", "failed 告警触发", "P0", opened_by="system/monitor", p0=True)
+tid4 = s.open(
+    "dev",
+    "Ollama 服务不可用处置",
+    "failed 告警触发",
+    "P0",
+    opened_by="system/monitor",
+    p0=True,
+)
 ok("P0 直入 doing", s.ls(status="doing")[0]["task_id"] == tid4)
 
 # 7. 非法部门/严重度/不存在单
@@ -85,7 +103,7 @@ for fn, exc in (
 # 8. append-only：文件行数 = 操作数（无覆盖写）
 files = list((TMP / "org" / "tasks").glob("tasks_*.jsonl"))
 nlines = sum(len(f.read_text(encoding="utf-8").splitlines()) for f in files)
-ok("append-only 行数一致（11 行=成功操作数，被拒操作不落行）" , nlines == 11)
+ok("append-only 行数一致（11 行=成功操作数，被拒操作不落行）", nlines == 11)
 
 shutil.rmtree(TMP, ignore_errors=True)
 print("-" * 40)

@@ -32,14 +32,16 @@ from typing import Dict, List, Optional
 SCHEMA_VERSION = "1.0"
 READ_ONLY = True
 
-_SKIPPED_DECISIONS = {"rejected"}   # 否决凭据不承诺状态生效
+_SKIPPED_DECISIONS = {"rejected"}  # 否决凭据不承诺状态生效
 
 
-def cross_check(domain: str,
-                creds: List,
-                traces: Dict[str, Dict],
-                current_status: Optional[Dict[str, str]] = None,
-                latest_only: bool = False) -> List[Dict]:
+def cross_check(
+    domain: str,
+    creds: List,
+    traces: Dict[str, Dict],
+    current_status: Optional[Dict[str, str]] = None,
+    latest_only: bool = False,
+) -> List[Dict]:
     """交叉校验主入口。
 
     参数：
@@ -54,8 +56,9 @@ def cross_check(domain: str,
     返回 violations 列表（dict，含 kind/severity/target_id/凭据标识）。
     """
     current_status = current_status or {}
-    approved = [c for c in creds
-                if getattr(c, "decision", "approved") not in _SKIPPED_DECISIONS]
+    approved = [
+        c for c in creds if getattr(c, "decision", "approved") not in _SKIPPED_DECISIONS
+    ]
     # 每目标最新一张批准凭据（creds 按发生序，后者覆盖前者）
     latest_of_target: Dict[str, object] = {}
     for c in approved:
@@ -68,17 +71,20 @@ def cross_check(domain: str,
     for tid, t in traces.items():
         for key in t.get("consumed_keys", set()):
             if key and key not in cred_keys:
-                violations.append({
-                    "kind": "marker_without_credential",
-                    "severity": "FAIL",
-                    "domain": domain,
-                    "target_id": tid,
-                    "idempotency_key": key,
-                    "detail": "真源消费标记引用的凭据键不在账本中",
-                })
+                violations.append(
+                    {
+                        "kind": "marker_without_credential",
+                        "severity": "FAIL",
+                        "domain": domain,
+                        "target_id": tid,
+                        "idempotency_key": key,
+                        "detail": "真源消费标记引用的凭据键不在账本中",
+                    }
+                )
 
-    eval_set = ([latest_of_target[t] for t in latest_of_target]
-                if latest_only else approved)
+    eval_set = (
+        [latest_of_target[t] for t in latest_of_target] if latest_only else approved
+    )
     for c in eval_set:
         if c.target_id not in traces:
             # 目标不在真源清单（被删/未同步/测试隔离环境）→ 无法判定
@@ -92,19 +98,24 @@ def cross_check(domain: str,
         if consumed or hit or cur_ok:
             continue
         is_latest = latest_of_target.get(c.target_id) is c
-        violations.append({
-            "kind": ("pending_execution" if is_latest
-                     else "credential_never_effective"),
-            "severity": "WARN" if is_latest else "FAIL",
-            "domain": domain,
-            "target_id": c.target_id,
-            "approval_id": c.approval_id,
-            "idempotency_key": c.idempotency_key,
-            "to_status": c.to_status,
-            "detail": ("凭据已落而真源未达（崩溃窗口候选，等 catch-up）"
-                       if is_latest else
-                       "凭据的 to_status 无任何痕迹且现状未达（死凭据）"),
-        })
+        violations.append(
+            {
+                "kind": (
+                    "pending_execution" if is_latest else "credential_never_effective"
+                ),
+                "severity": "WARN" if is_latest else "FAIL",
+                "domain": domain,
+                "target_id": c.target_id,
+                "approval_id": c.approval_id,
+                "idempotency_key": c.idempotency_key,
+                "to_status": c.to_status,
+                "detail": (
+                    "凭据已落而真源未达（崩溃窗口候选，等 catch-up）"
+                    if is_latest
+                    else "凭据的 to_status 无任何痕迹且现状未达（死凭据）"
+                ),
+            }
+        )
 
     # ── 轮次 vs 痕迹（仅 trace 域：statuses 多重列表可回放）──
     # 只统计「痕迹命中」的凭据（to_status 出现在 statuses）：
@@ -120,15 +131,17 @@ def cross_check(domain: str,
         for (tid, to_st), n_hit in sorted(groups.items()):
             n_trace = (traces.get(tid, {}).get("statuses") or []).count(to_st)
             if n_hit > n_trace:
-                violations.append({
-                    "kind": "round_exceeds_trace",
-                    "severity": "WARN",
-                    "domain": domain,
-                    "target_id": tid,
-                    "to_status": to_st,
-                    "detail": "痕迹命中的凭据 %d 张 > 痕迹 %d 次"
-                              "（轮次账与痕迹不一致）" % (n_hit, n_trace),
-                })
+                violations.append(
+                    {
+                        "kind": "round_exceeds_trace",
+                        "severity": "WARN",
+                        "domain": domain,
+                        "target_id": tid,
+                        "to_status": to_st,
+                        "detail": "痕迹命中的凭据 %d 张 > 痕迹 %d 次"
+                        "（轮次账与痕迹不一致）" % (n_hit, n_trace),
+                    }
+                )
     return violations
 
 

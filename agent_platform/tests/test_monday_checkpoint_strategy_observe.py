@@ -8,6 +8,7 @@
   2. 既有判据输出零变化的回归自证：RESULTS 与 [PASS]/[FAIL] 行一一对应，
      观察项行不改变判据计数。
 """
+
 import json
 import sys
 import unittest
@@ -26,7 +27,8 @@ def _write_jsonl(path, rows):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows),
-        encoding="utf-8")
+        encoding="utf-8",
+    )
 
 
 class _Capture(unittest.TestCase):
@@ -35,6 +37,7 @@ class _Capture(unittest.TestCase):
     def setUp(self):
         import io
         import tempfile
+
         self.tmpdir = Path(tempfile.mkdtemp(prefix="mcobs_"))
         self._old_out = sys.stdout
         self._old_results = list(mc.RESULTS)
@@ -59,16 +62,22 @@ class _Capture(unittest.TestCase):
 
 # ---------------------------------------------------------------- 常量契约
 
+
 class ObservePathContractTests(_Capture):
     def test_strategy_runs_path_is_agent_platform_own_data(self):
         """root 语义与现有账本观察面一致：agent_platform 自身 data/ 下。"""
-        self.assertTrue(mc.STRATEGY_RUNS.as_posix().endswith(
-            "data/strategy/strategy_runs.jsonl"), mc.STRATEGY_RUNS)
-        self.assertTrue(mc.CODEX_REGS.as_posix().endswith(
-            "data/codex_bridge/registrations.jsonl"), mc.CODEX_REGS)
+        self.assertTrue(
+            mc.STRATEGY_RUNS.as_posix().endswith("data/strategy/strategy_runs.jsonl"),
+            mc.STRATEGY_RUNS,
+        )
+        self.assertTrue(
+            mc.CODEX_REGS.as_posix().endswith("data/codex_bridge/registrations.jsonl"),
+            mc.CODEX_REGS,
+        )
 
 
 # ------------------------------------------------------- strategy_runs 观察项
+
 
 class StrategyRunsObserveTests(_Capture):
     def test_missing_file_is_pending_neutral(self):
@@ -81,11 +90,14 @@ class StrategyRunsObserveTests(_Capture):
     def test_present_reports_row_and_runid_counts(self):
         """计数口径=带 run_id 行（判决行实际链接字段；schema 计数已弃用）。"""
         p = self.tmpdir / "strategy_runs.jsonl"
-        _write_jsonl(p, [
-            {"strategy_id": "s1", "run_id": "a1b2c3d4e5f6"},
-            {"strategy_id": "s2", "run_id": "b2c3d4e5f6a1"},
-            {"strategy_id": "s3"},
-        ])
+        _write_jsonl(
+            p,
+            [
+                {"strategy_id": "s1", "run_id": "a1b2c3d4e5f6"},
+                {"strategy_id": "s2", "run_id": "b2c3d4e5f6a1"},
+                {"strategy_id": "s3"},
+            ],
+        )
         mc._strategy_runs_observe(p)
         self.assertIn("strategy_runs：3 行 / 带 run_id 2 行", self.out)
 
@@ -108,6 +120,7 @@ class StrategyRunsObserveTests(_Capture):
 
 # -------------------------------------------------- codex_registrations 观察项
 
+
 class CodexRegsObserveTests(_Capture):
     def test_missing_file_is_pending_neutral(self):
         p = self.tmpdir / "registrations.jsonl"
@@ -116,10 +129,13 @@ class CodexRegsObserveTests(_Capture):
 
     def test_present_reports_rows_and_strategy_ids(self):
         p = self.tmpdir / "registrations.jsonl"
-        _write_jsonl(p, [
-            {"submit_id": "a", "strategy_id": "codex_sma20_rsi14"},
-            {"submit_id": "b", "strategy_id": "codex_dual_ma"},
-        ])
+        _write_jsonl(
+            p,
+            [
+                {"submit_id": "a", "strategy_id": "codex_sma20_rsi14"},
+                {"submit_id": "b", "strategy_id": "codex_dual_ma"},
+            ],
+        )
         mc._codex_regs_observe(p)
         self.assertIn("codex_registrations：2 行", self.out)
         self.assertIn("codex_sma20_rsi14", self.out)
@@ -136,6 +152,7 @@ class CodexRegsObserveTests(_Capture):
 
 
 # ------------------------------------------------- 只读 + 退出码不变量
+
 
 class ReadOnlyAndResultsInvariantTests(_Capture):
     def test_observe_items_are_read_only(self):
@@ -154,8 +171,8 @@ class ReadOnlyAndResultsInvariantTests(_Capture):
     def test_observe_items_never_touch_results(self):
         """观察项永不 append 进 RESULTS（退出码与判据计数冻结的根据）。"""
         n0 = len(mc.RESULTS)
-        sp = self.tmpdir / "missing_strategy.jsonl"   # 缺失分支
-        cp = self.tmpdir / "regs.jsonl"               # 存在分支
+        sp = self.tmpdir / "missing_strategy.jsonl"  # 缺失分支
+        cp = self.tmpdir / "regs.jsonl"  # 存在分支
         _write_jsonl(cp, [{"strategy_id": "c1"}])
         mc._strategy_runs_observe(sp)
         mc._codex_regs_observe(cp)
@@ -163,6 +180,7 @@ class ReadOnlyAndResultsInvariantTests(_Capture):
 
 
 # ------------------------------------------------- main() 集成回归
+
 
 class MainIntegrationTests(_Capture):
     def test_main_emits_observes_without_changing_gate_semantics(self):
@@ -175,19 +193,34 @@ class MainIntegrationTests(_Capture):
         import datetime as _dt
 
         ledger = self.tmpdir / "shadow_ledger.jsonl"
-        _write_jsonl(ledger, [
-            {"date": DAY, "symbol": "60051%d" % i, "status": "done",
-             "schema_version": "m5.v1",
-             **{f: "x" for f in mc.DK_FIELDS}}
-            for i in range(mc.BASKET_N)])
+        _write_jsonl(
+            ledger,
+            [
+                {
+                    "date": DAY,
+                    "symbol": "60051%d" % i,
+                    "status": "done",
+                    "schema_version": "m5.v1",
+                    **{f: "x" for f in mc.DK_FIELDS},
+                }
+                for i in range(mc.BASKET_N)
+            ],
+        )
 
         class _Tuesday(_dt.date):
             @classmethod
             def today(cls):
                 return _dt.date(2026, 10, 20)
 
-        saved = (mc.LEDGER, mc.PERF, mc.LOG, mc._LOG_HANDLE,
-                 mc.STRATEGY_RUNS, mc.CODEX_REGS, mc.date)
+        saved = (
+            mc.LEDGER,
+            mc.PERF,
+            mc.LOG,
+            mc._LOG_HANDLE,
+            mc.STRATEGY_RUNS,
+            mc.CODEX_REGS,
+            mc.date,
+        )
         try:
             mc.LEDGER = ledger
             mc.PERF = self.tmpdir / "perf.jsonl"
@@ -201,20 +234,33 @@ class MainIntegrationTests(_Capture):
             rc = mc.main()
         finally:
             mc._close_log()
-            (mc.LEDGER, mc.PERF, mc.LOG, mc._LOG_HANDLE,
-             mc.STRATEGY_RUNS, mc.CODEX_REGS, mc.date) = saved
+            (
+                mc.LEDGER,
+                mc.PERF,
+                mc.LOG,
+                mc._LOG_HANDLE,
+                mc.STRATEGY_RUNS,
+                mc.CODEX_REGS,
+                mc.date,
+            ) = saved
 
         out = self.out
         self.assertIn("[observe] strategy_runs：1 行 / 带 run_id 1 行", out)
         self.assertIn("[observe] codex_registrations：文件不存在（PENDING 中性）", out)
         n_gate_lines = sum(
-            1 for ln in out.splitlines()
-            if ln.startswith("[PASS]") or ln.startswith("[FAIL]"))
+            1
+            for ln in out.splitlines()
+            if ln.startswith("[PASS]") or ln.startswith("[FAIL]")
+        )
         n_results = len(mc.RESULTS)
-        self.assertEqual(n_gate_lines, n_results,
-                         "判据行与 RESULTS 必须一一对应（观察项不在内）")
-        self.assertIn("结论: %d/%d PASS" % (n_results - sum(
-            1 for _, ok, _ in mc.RESULTS if not ok), n_results), out)
+        self.assertEqual(
+            n_gate_lines, n_results, "判据行与 RESULTS 必须一一对应（观察项不在内）"
+        )
+        self.assertIn(
+            "结论: %d/%d PASS"
+            % (n_results - sum(1 for _, ok, _ in mc.RESULTS if not ok), n_results),
+            out,
+        )
         self.assertIn(rc, (0, 1))
 
 

@@ -77,53 +77,88 @@ def sandbox(tmp_root, monkeypatch):
     monkeypatch.setattr(devtask, "_ckpt", lambda *a, **k: None)
     events = []
     monkeypatch.setattr(
-        devtask, "_emit",
-        lambda kind, task, detail="": events.append((kind, task, detail)))
+        devtask,
+        "_emit",
+        lambda kind, task, detail="": events.append((kind, task, detail)),
+    )
     # org.json 夹具：最小合成组织图（不读真实 org.json —— 多 Agent 共享 worktree
     # 期间它可能被其他工单并发修改，试点门判定不应因此抖动）。
     org = tmp_root / "org.json"
-    org.write_text(json.dumps({
-        "chief": {"agent_id": "A0"},
-        "departments": [{"dept": "dev", "lead": "DEV1",
-                         "agents": ["DEV1", "DEV2"]}],
-    }, ensure_ascii=False), encoding="utf-8")
+    org.write_text(
+        json.dumps(
+            {
+                "chief": {"agent_id": "A0"},
+                "departments": [
+                    {"dept": "dev", "lead": "DEV1", "agents": ["DEV1", "DEV2"]}
+                ],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
     monkeypatch.setattr(devtask, "ORG_JSON", str(org))
     # owner_domain 夹具：external_tools 维持 pending_ruling，非法 owner 可复现
     domain = tmp_root / "owner_domain.json"
-    domain.write_text(json.dumps({
-        "version": 1,
-        "note": "试点门测试夹具",
-        "external_tools": {"status": "pending_ruling",
-                           "observed": ["TraeCode"]},
-        "unowned_tag": "[UNOWNED]",
-    }, ensure_ascii=False), encoding="utf-8")
+    domain.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "note": "试点门测试夹具",
+                "external_tools": {
+                    "status": "pending_ruling",
+                    "observed": ["TraeCode"],
+                },
+                "unowned_tag": "[UNOWNED]",
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
     monkeypatch.setattr(devtask, "OWNER_DOMAIN", str(domain))
     gate_path = tmp_root / "dev_owner_gate.json"
     monkeypatch.setattr(devtask, "DEV_GATE", str(gate_path))
     # 2026-10-27 WO-LEGION-DEVEXEC3：dev 单路由规则夹具（dev_seats 只含 DEV1/DEV2，
     # 便于复现「合法 owner=A0 但不在研发部」的路由告警；缺文件=不启用，向后兼容）。
     routing_path = tmp_root / "dev_routing_rules.json"
-    routing_path.write_text(json.dumps({
-        "version": 1,
-        "dev_dept": "dev",
-        "dev_seats": ["DEV1", "DEV2"],
-        "note": "测试夹具",
-    }, ensure_ascii=False), encoding="utf-8")
+    routing_path.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "dev_dept": "dev",
+                "dev_seats": ["DEV1", "DEV2"],
+                "note": "测试夹具",
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
     monkeypatch.setattr(devtask, "DEV_ROUTING", str(routing_path))
-    monkeypatch.setenv("AGENT_NAME", "DEV1")   # org.json 内的合法成员
-    return {"ledger": ledger, "git_calls": git_calls, "events": events,
-            "gate_path": gate_path, "routing_path": routing_path, "tmp": tmp_root}
+    monkeypatch.setenv("AGENT_NAME", "DEV1")  # org.json 内的合法成员
+    return {
+        "ledger": ledger,
+        "git_calls": git_calls,
+        "events": events,
+        "gate_path": gate_path,
+        "routing_path": routing_path,
+        "tmp": tmp_root,
+    }
 
 
 def _write_gate(path, phase="warn", dept="dev"):
     """写临时门配置（与仓内 dev_owner_gate.json 同结构）。"""
-    path.write_text(json.dumps({
-        "version": 1,
-        "dept": dept,
-        "phase": phase,
-        "acceptance_required": True,
-        "note": "测试夹具",
-    }, ensure_ascii=False), encoding="utf-8")
+    path.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "dept": dept,
+                "phase": phase,
+                "acceptance_required": True,
+                "note": "测试夹具",
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
 
 
 def _task(sandbox, tid):
@@ -150,13 +185,16 @@ class TestLoadDevGate:
         sandbox["gate_path"].write_text("{ not json", encoding="utf-8")
         assert devtask._load_dev_gate() == {"phase": "warn", "dept": "dev"}
 
-    @pytest.mark.parametrize("raw,phase", [
-        ('{"dept": "dev", "phase": "BLOCK "}', "block"),   # 大小写/空白归一
-        ('{"dept": "dev", "phase": "enforce"}', "warn"),   # 未知字面量 → warn
-        ('{"phase": "warn"}', "warn"),                     # 缺 dept → dev
-        ("[]", "warn"),                                    # 非 dict → 默认
-        ('{"dept": "  ", "phase": "block"}', "block"),     # 空白 dept → dev
-    ])
+    @pytest.mark.parametrize(
+        "raw,phase",
+        [
+            ('{"dept": "dev", "phase": "BLOCK "}', "block"),  # 大小写/空白归一
+            ('{"dept": "dev", "phase": "enforce"}', "warn"),  # 未知字面量 → warn
+            ('{"phase": "warn"}', "warn"),  # 缺 dept → dev
+            ("[]", "warn"),  # 非 dict → 默认
+            ('{"dept": "  ", "phase": "block"}', "block"),  # 空白 dept → dev
+        ],
+    )
     def test_字面量归一与结构容错(self, sandbox, raw, phase):
         sandbox["gate_path"].write_text(raw, encoding="utf-8")
         gate = devtask._load_dev_gate()
@@ -169,8 +207,11 @@ class TestLoadDevGate:
         试点期必须是 warn（只告警），任何人擅自改 block 前应先过老田批准——本用例
         让「悄悄改 phase」在测试里显形（改 block 需同步改本用例 = 一次显式决策）。
         """
-        real = json.loads((ROOT / "agent_platform" / "config"
-                           / "dev_owner_gate.json").read_text(encoding="utf-8"))
+        real = json.loads(
+            (ROOT / "agent_platform" / "config" / "dev_owner_gate.json").read_text(
+                encoding="utf-8"
+            )
+        )
         assert real["version"] == 1
         assert real["dept"] == "dev"
         assert real["phase"] == "warn"
@@ -187,11 +228,11 @@ class TestDevGateCheckPure:
     """纯函数判定矩阵：无 IO、无副作用，``gate`` 显式传入。"""
 
     @pytest.mark.parametrize(
-        "dept,owner_ok,acceptance,phase,expect_warnings,expect_blocked", [
+        "dept,owner_ok,acceptance,phase,expect_warnings,expect_blocked",
+        [
             # warn：只告警不拒收
             ("dev", True, None, "warn", ["缺验收命令"], False),
-            ("dev", False, None, "warn",
-             ["owner 不在合法域", "缺验收命令"], False),
+            ("dev", False, None, "warn", ["owner 不在合法域", "缺验收命令"], False),
             ("dev", False, "pytest -q", "warn", ["owner 不在合法域"], False),
             ("dev", True, "pytest -q", "warn", [], False),
             # owner 不可判定（None）≠ 非法：只按缺验收命令告警
@@ -199,8 +240,7 @@ class TestDevGateCheckPure:
             # block：缺合法 owner / 缺验收命令即拒收
             ("dev", True, None, "block", ["缺验收命令"], True),
             ("dev", False, "pytest -q", "block", ["owner 不在合法域"], True),
-            ("dev", False, None, "block",
-             ["owner 不在合法域", "缺验收命令"], True),
+            ("dev", False, None, "block", ["owner 不在合法域", "缺验收命令"], True),
             ("dev", True, "pytest -q", "block", [], False),
             # 非 dev：完全不受 gate 影响
             ("quant", False, None, "block", [], False),
@@ -209,18 +249,21 @@ class TestDevGateCheckPure:
             (None, False, None, "block", [], False),
             # 部门代号大小写/空白归一
             (" Dev ", True, None, "warn", ["缺验收命令"], False),
-        ])
-    def test_判定矩阵(self, dept, owner_ok, acceptance, phase,
-                expect_warnings, expect_blocked):
+        ],
+    )
+    def test_判定矩阵(
+        self, dept, owner_ok, acceptance, phase, expect_warnings, expect_blocked
+    ):
         warnings, blocked = devtask._dev_gate_check(
-            dept, owner_ok, acceptance,
-            gate={"dept": "dev", "phase": phase})
+            dept, owner_ok, acceptance, gate={"dept": "dev", "phase": phase}
+        )
         assert warnings == expect_warnings
         assert blocked is expect_blocked
 
     def test_acceptance空白视为缺验收命令(self):
         warnings, blocked = devtask._dev_gate_check(
-            "dev", True, "   ", gate={"dept": "dev", "phase": "warn"})
+            "dev", True, "   ", gate={"dept": "dev", "phase": "warn"}
+        )
         assert warnings == ["缺验收命令"]
         assert blocked is False
 
@@ -259,9 +302,14 @@ class TestWarnPhase:
 
     def test_warn有验收命令时无缺验收告警(self, sandbox, capsys):
         _write_gate(sandbox["gate_path"], phase="warn")
-        rc = devtask.cmd_new("WO-GATE-WARN-OK", "完整研发单",
-                             "--dept", "dev",
-                             "--acceptance", "python -m pytest -q")
+        rc = devtask.cmd_new(
+            "WO-GATE-WARN-OK",
+            "完整研发单",
+            "--dept",
+            "dev",
+            "--acceptance",
+            "python -m pytest -q",
+        )
         assert rc == 0
         t = _task(sandbox, "WO-GATE-WARN-OK")
         assert t["acceptance_cmd"] == "python -m pytest -q"
@@ -270,15 +318,21 @@ class TestWarnPhase:
         assert "owner 不在合法域" not in err
         kind, _, detail = sandbox["events"][-1]
         assert kind == "task_start"
-        assert detail.startswith("[dev-gate]")       # 研发单标记保留
+        assert detail.startswith("[dev-gate]")  # 研发单标记保留
         assert "缺验收命令" not in detail
 
     def test_warn非法owner仍降级不拒收(self, sandbox, monkeypatch, capsys):
         """非法 owner 在 warn 模式沿用 WO-TF-03 降级（打 [UNOWNED]）而非拒收。"""
         monkeypatch.setenv("AGENT_NAME", "TraeCode")
         _write_gate(sandbox["gate_path"], phase="warn")
-        rc = devtask.cmd_new("WO-GATE-WARN-BAD", "非法owner研发单",
-                             "--dept", "dev", "--acceptance", "pytest -q")
+        rc = devtask.cmd_new(
+            "WO-GATE-WARN-BAD",
+            "非法owner研发单",
+            "--dept",
+            "dev",
+            "--acceptance",
+            "pytest -q",
+        )
         assert rc == 0
         t = _task(sandbox, "WO-GATE-WARN-BAD")
         assert "[UNOWNED]" in t["desc"]
@@ -289,11 +343,16 @@ class TestWarnPhase:
 
     def test_warn取值域不可判定不算非法(self, sandbox, monkeypatch):
         """org.json 读不到 → owner_ok=None，试点门不得把「不可判定」当非法告警。"""
-        monkeypatch.setattr(devtask, "ORG_JSON",
-                            str(sandbox["tmp"] / "nope.json"))
+        monkeypatch.setattr(devtask, "ORG_JSON", str(sandbox["tmp"] / "nope.json"))
         _write_gate(sandbox["gate_path"], phase="warn")
-        rc = devtask.cmd_new("WO-GATE-NOORG", "域不可判定研发单",
-                             "--dept", "dev", "--acceptance", "pytest -q")
+        rc = devtask.cmd_new(
+            "WO-GATE-NOORG",
+            "域不可判定研发单",
+            "--dept",
+            "dev",
+            "--acceptance",
+            "pytest -q",
+        )
         assert rc == 0
         detail = sandbox["events"][-1][2]
         assert "owner 不在合法域" not in detail
@@ -322,17 +381,28 @@ class TestBlockPhase:
         monkeypatch.setenv("AGENT_NAME", "TraeCode")
         _write_gate(sandbox["gate_path"], phase="block")
         with pytest.raises(SystemExit) as ei:
-            devtask.cmd_new("WO-GATE-BLOCK2", "非法owner研发单",
-                            "--dept", "dev", "--acceptance", "pytest -q")
+            devtask.cmd_new(
+                "WO-GATE-BLOCK2",
+                "非法owner研发单",
+                "--dept",
+                "dev",
+                "--acceptance",
+                "pytest -q",
+            )
         assert "owner 不在合法域" in str(ei.value)
         assert sandbox["git_calls"] == []
         assert not sandbox["ledger"].exists()
 
     def test_block条件齐全则放行(self, sandbox):
         _write_gate(sandbox["gate_path"], phase="block")
-        rc = devtask.cmd_new("WO-GATE-PASS", "满足试点门研发单",
-                             "--dept", "dev",
-                             "--acceptance", "python -m pytest -q")
+        rc = devtask.cmd_new(
+            "WO-GATE-PASS",
+            "满足试点门研发单",
+            "--dept",
+            "dev",
+            "--acceptance",
+            "python -m pytest -q",
+        )
         assert rc == 0
         t = _task(sandbox, "WO-GATE-PASS")
         assert t["status"] == "doing"
@@ -364,7 +434,7 @@ class TestNonDevUnaffected:
         assert rc == 0
         t = _task(sandbox, "WO-GATE-QUANT")
         assert t["status"] == "doing"
-        assert t["dept"] == "quant"                  # 声明值原样落账
+        assert t["dept"] == "quant"  # 声明值原样落账
         assert t["acceptance_cmd"] is None
         assert len(_worktree_adds(sandbox)) == 1
         # 非研发单不进试点门：事件 detail 不加 [dev-gate] 标
@@ -386,10 +456,16 @@ class TestDevRouting:
     """新研发需求优先派 ARCH1/组长：owner 非研发席 → warn 告警；block 阶段拒收。"""
 
     def test_warn模式owner非研发部只告警不拒收(self, sandbox, monkeypatch, capsys):
-        monkeypatch.setenv("AGENT_NAME", "A0")   # 合法成员，但不在 dev_seats
+        monkeypatch.setenv("AGENT_NAME", "A0")  # 合法成员，但不在 dev_seats
         _write_gate(sandbox["gate_path"], phase="warn")
-        rc = devtask.cmd_new("WO-ROUTE-WARN", "路由规则研发单", "--dept", "dev",
-                             "--acceptance", "python -m pytest -q")
+        rc = devtask.cmd_new(
+            "WO-ROUTE-WARN",
+            "路由规则研发单",
+            "--dept",
+            "dev",
+            "--acceptance",
+            "python -m pytest -q",
+        )
         assert rc == 0
         err = capsys.readouterr().err
         assert "owner 不在研发部" in err
@@ -402,42 +478,62 @@ class TestDevRouting:
         monkeypatch.setenv("AGENT_NAME", "A0")
         _write_gate(sandbox["gate_path"], phase="block")
         with pytest.raises(SystemExit) as ei:
-            devtask.cmd_new("WO-ROUTE-BLOCK", "路由规则研发单", "--dept", "dev",
-                            "--acceptance", "python -m pytest -q")
+            devtask.cmd_new(
+                "WO-ROUTE-BLOCK",
+                "路由规则研发单",
+                "--dept",
+                "dev",
+                "--acceptance",
+                "python -m pytest -q",
+            )
         assert "owner 不在研发部" in str(ei.value)
         assert sandbox["git_calls"] == []
         assert not sandbox["ledger"].exists()
 
     def test_研发部owner不告警(self, sandbox, capsys):
         _write_gate(sandbox["gate_path"], phase="warn")
-        rc = devtask.cmd_new("WO-ROUTE-OK", "研发部owner单", "--dept", "dev",
-                             "--acceptance", "python -m pytest -q")
+        rc = devtask.cmd_new(
+            "WO-ROUTE-OK",
+            "研发部owner单",
+            "--dept",
+            "dev",
+            "--acceptance",
+            "python -m pytest -q",
+        )
         assert rc == 0
         assert "owner 不在研发部" not in capsys.readouterr().err
 
     def test_非dev单不受路由规则影响(self, sandbox, monkeypatch, capsys):
         monkeypatch.setenv("AGENT_NAME", "A0")
         _write_gate(sandbox["gate_path"], phase="block")
-        rc = devtask.cmd_new("WO-ROUTE-QUANT", "量化单", "--dept", "quant",
-                             "--acceptance", "pytest -q")
+        rc = devtask.cmd_new(
+            "WO-ROUTE-QUANT", "量化单", "--dept", "quant", "--acceptance", "pytest -q"
+        )
         assert rc == 0
         assert not sandbox["events"][-1][2].startswith("[dev-gate]")
 
     def test_路由配置缺失时fail_safe不启用(self, sandbox, monkeypatch):
-        monkeypatch.setattr(devtask, "DEV_ROUTING",
-                            str(sandbox["tmp"] / "nope-routing.json"))
+        monkeypatch.setattr(
+            devtask, "DEV_ROUTING", str(sandbox["tmp"] / "nope-routing.json")
+        )
         assert devtask._load_dev_routing() == {"dev_dept": "dev", "dev_seats": []}
         warnings, blocked = devtask._dev_gate_check(
-            "dev", True, "pytest -q", gate={"phase": "warn", "dept": "dev"},
-            owner="A0")
+            "dev", True, "pytest -q", gate={"phase": "warn", "dept": "dev"}, owner="A0"
+        )
         assert warnings == [] and blocked is False
 
     def test_例外标记放行且不告警(self, sandbox, monkeypatch, capsys):
         """规则文档 §三：例外单须显式写 ``路由例外=`` 标记（block 阶段放行）。"""
         monkeypatch.setenv("AGENT_NAME", "A0")
         _write_gate(sandbox["gate_path"], phase="block")
-        rc = devtask.cmd_new("WO-ROUTE-EXEMPT", "跨部门治理单 路由例外=跨部门治理",
-                             "--dept", "dev", "--acceptance", "pytest -q")
+        rc = devtask.cmd_new(
+            "WO-ROUTE-EXEMPT",
+            "跨部门治理单 路由例外=跨部门治理",
+            "--dept",
+            "dev",
+            "--acceptance",
+            "pytest -q",
+        )
         assert rc == 0
         err = capsys.readouterr().err
         assert "owner 不在研发部" not in err
@@ -456,14 +552,22 @@ class TestBackwardCompat:
         rc = devtask.cmd_new("WO-GATE-OLD", "旧式单（无dept）")
         assert rc == 0
         t = _task(sandbox, "WO-GATE-OLD")
-        assert set(t.keys()) == {"desc", "branch", "worktree", "status",
-                                 "created", "project", "owner"}
+        assert set(t.keys()) == {
+            "desc",
+            "branch",
+            "worktree",
+            "status",
+            "created",
+            "project",
+            "owner",
+        }
         assert "dev-gate" not in capsys.readouterr().err
         assert not sandbox["events"][-1][2].startswith("[dev-gate]")
 
     def test_acceptance不带dept仍按旧式单处理(self, sandbox):
-        rc = devtask.cmd_new("WO-GATE-OLD2", "旧式带验收单",
-                             "--acceptance", "pytest -q")
+        rc = devtask.cmd_new(
+            "WO-GATE-OLD2", "旧式带验收单", "--acceptance", "pytest -q"
+        )
         assert rc == 0
         t = _task(sandbox, "WO-GATE-OLD2")
         assert "dept" not in t
@@ -481,8 +585,9 @@ class TestBackwardCompat:
         assert "--acceptance" in str(ei.value)
 
     def test_dept与acceptance可乱序解析且不污染desc(self, sandbox):
-        rc = devtask.cmd_new("WO-GATE-ORDER", "顺序单",
-                             "--acceptance", "pytest -q", "--dept", "dev")
+        rc = devtask.cmd_new(
+            "WO-GATE-ORDER", "顺序单", "--acceptance", "pytest -q", "--dept", "dev"
+        )
         assert rc == 0
         t = _task(sandbox, "WO-GATE-ORDER")
         assert t["desc"] == "顺序单"

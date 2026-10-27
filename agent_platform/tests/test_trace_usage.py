@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """LLM usage/成本留证测试（WO-TRACE-USAGE）。"""
+
 from __future__ import annotations
 
 import importlib.util
@@ -24,8 +25,11 @@ MR = _load("model_router", _WT / "agent_platform" / "tools" / "model_router.py")
 
 
 def test_usage_tokens_provider_and_estimate():
-    tok = MR._usage_tokens({"prompt_tokens": 100, "completion_tokens": 50},
-                           [{"role": "user", "content": "x"}], "hello")
+    tok = MR._usage_tokens(
+        {"prompt_tokens": 100, "completion_tokens": 50},
+        [{"role": "user", "content": "x"}],
+        "hello",
+    )
     assert tok == {"input": 100, "output": 50, "source": "provider", "total": 150}
     est = MR._usage_tokens({}, [{"role": "user", "content": "abcd" * 10}], "abcdefgh")
     assert est["source"] == "estimated" and est["input"] >= 1 and est["output"] >= 1
@@ -36,11 +40,12 @@ def test_invoke_records_usage_span(tmp_path, monkeypatch):
     monkeypatch.setattr(TR, "DB", db)
 
     def fake(model, messages, max_tokens=256):
-        return {"text": "回复内容" * 10, "usage": {"prompt_tokens": 120,
-                                                  "completion_tokens": 30}}
+        return {
+            "text": "回复内容" * 10,
+            "usage": {"prompt_tokens": 120, "completion_tokens": 30},
+        }
 
-    res = MR.invoke([{"role": "user", "content": "你好"}],
-                    adapters={"call": fake})
+    res = MR.invoke([{"role": "user", "content": "你好"}], adapters={"call": fake})
     assert res["ok"] and res["usage"]["source"] == "provider"
     assert res["usage"]["input"] == 120 and res["usage"]["output"] == 30
     tr = TR.list_traces()

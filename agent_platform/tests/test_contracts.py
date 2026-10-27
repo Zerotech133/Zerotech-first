@@ -58,7 +58,9 @@ class ContractsTest(unittest.TestCase):
         restored = ResearchReport.from_json(report.to_json())
         self.assertEqual(restored.to_dict(), report.to_dict())
         self.assertIsInstance(restored.evidence[0], Evidence)
-        self.assertEqual(json.loads(report.to_json())["evidence"][0]["source"], "shadow")
+        self.assertEqual(
+            json.loads(report.to_json())["evidence"][0]["source"], "shadow"
+        )
 
     def test_all_contracts_are_json_serializable(self):
         values = [

@@ -41,8 +41,12 @@ def profile_index(root: Path) -> dict:
         aid = str(aid or "")
         if not aid or aid in out:
             return
-        out[aid] = {"llm_binding": str(binding or ""), "source": source,
-                    "source_detail": detail, "cn_name": str(cn or "")}
+        out[aid] = {
+            "llm_binding": str(binding or ""),
+            "source": source,
+            "source_detail": detail,
+            "cn_name": str(cn or ""),
+        }
 
     org: dict = {}
     p = root / "registry" / "org.json"
@@ -55,14 +59,23 @@ def profile_index(root: Path) -> dict:
         dept = str(d.get("dept") or "")
         for prof in d.get("agent_profiles") or []:
             persona = prof.get("persona") or {}
-            put(prof.get("agent_id"), prof.get("llm_binding"), SRC_DEPT,
+            put(
+                prof.get("agent_id"),
+                prof.get("llm_binding"),
+                SRC_DEPT,
                 "dept:%s" % dept,
-                cn=prof.get("cn_name") or persona.get("name") or "")
+                cn=prof.get("cn_name") or persona.get("name") or "",
+            )
 
     chief = org.get("chief") or {}
     if isinstance(chief, dict):
-        put(chief.get("agent_id"), chief.get("llm_binding"), SRC_CHIEF, "chief",
-            cn=chief.get("name") or "")
+        put(
+            chief.get("agent_id"),
+            chief.get("llm_binding"),
+            SRC_CHIEF,
+            "chief",
+            cn=chief.get("name") or "",
+        )
 
     reg = root / "registry"
     if reg.exists():
@@ -72,8 +85,13 @@ def profile_index(root: Path) -> dict:
             except (ValueError, OSError):
                 continue
             for a in t.get("agents") or []:
-                put(a.get("agent_id"), a.get("llm_binding"), SRC_TEAM,
-                    "registry/%s" % f.name, cn=a.get("name") or "")
+                put(
+                    a.get("agent_id"),
+                    a.get("llm_binding"),
+                    SRC_TEAM,
+                    "registry/%s" % f.name,
+                    cn=a.get("name") or "",
+                )
     return out
 
 
@@ -115,7 +133,7 @@ def fallbacks_index(root: Path) -> dict[str, list[str]]:
             if not aid or aid in out:
                 continue
             raw = prof.get("llm_fallback")
-            if isinstance(raw, str):        # 容错单串写法（真源标准是 list）
+            if isinstance(raw, str):  # 容错单串写法（真源标准是 list）
                 raw = [raw]
             if not isinstance(raw, (list, tuple)):
                 out[aid] = []
@@ -132,7 +150,9 @@ def fallbacks_index(root: Path) -> dict[str, list[str]]:
 
 
 def _is_project_dept(d: dict) -> bool:
-    return bool(d.get("type") == "project" or str(d.get("dept") or "").startswith("proj_"))
+    return bool(
+        d.get("type") == "project" or str(d.get("dept") or "").startswith("proj_")
+    )
 
 
 def matrix_assignments(org: dict) -> dict:

@@ -76,23 +76,30 @@ class ExperimentCard:
 def _check_diff_safe(diff: dict, label: str) -> None:
     """候选/反方 diff 的键与路径值必须先过 Z5；越不过就不许建卡。"""
     keys = list(diff.keys()) if isinstance(diff, dict) else []
-    paths = [v for v in (diff.values() if isinstance(diff, dict) else [])
-             if isinstance(v, str) and ("/" in v or "\\" in v)]
+    paths = [
+        v
+        for v in (diff.values() if isinstance(diff, dict) else [])
+        if isinstance(v, str) and ("/" in v or "\\" in v)
+    ]
     try:
         lookahead_guard.assert_clean(columns=keys, paths=paths, stage="evolve")
     except lookahead_guard.LeakageDetected as exc:
-        raise CardError("%s diff rejected by lookahead guard: %s" % (label, exc)) from exc
+        raise CardError(
+            "%s diff rejected by lookahead guard: %s" % (label, exc)
+        ) from exc
 
 
-def create_card(hypothesis: str,
-                baseline_diff: dict | None = None,
-                candidate_diff: dict | None = None,
-                adversary_diff: dict | None = None,
-                verifier: list | None = None,
-                budget: int = 1,
-                card_id: str | None = None,
-                kind: str = "experiment",
-                created_at: str | None = None) -> ExperimentCard:
+def create_card(
+    hypothesis: str,
+    baseline_diff: dict | None = None,
+    candidate_diff: dict | None = None,
+    adversary_diff: dict | None = None,
+    verifier: list | None = None,
+    budget: int = 1,
+    card_id: str | None = None,
+    kind: str = "experiment",
+    created_at: str | None = None,
+) -> ExperimentCard:
     if not (hypothesis or "").strip():
         raise CardError("hypothesis required")
     if candidate_diff is None:
@@ -163,17 +170,25 @@ def compare(card: ExperimentCard) -> dict:
 
 def card_fingerprint(card: ExperimentCard) -> str:
     """卡片内容指纹：把签名绑定到"这张卡的具体内容"，防签名被挪用到别的卡。"""
-    return signature_guard.fingerprint_of({
-        "card_id": card.card_id,
-        "hypothesis": card.hypothesis,
-        "arms": {name: dict(arm.diff) for name, arm in card.arms.items()},
-        "verifier": list(card.verifier),
-        "budget": card.budget,
-    })
+    return signature_guard.fingerprint_of(
+        {
+            "card_id": card.card_id,
+            "hypothesis": card.hypothesis,
+            "arms": {name: dict(arm.diff) for name, arm in card.arms.items()},
+            "verifier": list(card.verifier),
+            "budget": card.budget,
+        }
+    )
 
 
-def decide(card: ExperimentCard, adopt: bool, signed_by: str, reason: str = "",
-           signature: dict | None = None, now: float | None = None) -> dict:
+def decide(
+    card: ExperimentCard,
+    adopt: bool,
+    signed_by: str,
+    reason: str = "",
+    signature: dict | None = None,
+    now: float | None = None,
+) -> dict:
     """结案：必须签字；采纳必须有对比证据支撑。
 
     P0-3（渐进签名）：`signature` 为可选的 Ed25519 签名对象
@@ -187,14 +202,22 @@ def decide(card: ExperimentCard, adopt: bool, signed_by: str, reason: str = "",
     if adopt and not table.get("candidate_better"):
         raise CardError("无对比证据支撑采纳（无证据 = kept_base）")
     auth = signature_guard.check(
-        kind="experiment_card", item_id=card.card_id,
+        kind="experiment_card",
+        item_id=card.card_id,
         fingerprint=card_fingerprint(card),
         action="adopt" if adopt else "reject",
-        signed_by=signed_by, signature=signature, now=now)
+        signed_by=signed_by,
+        signature=signature,
+        now=now,
+    )
     card.status = "adopted" if adopt else "rejected"
-    card.verdict = {"adopt": bool(adopt), "signed_by": signed_by.strip(),
-                    "reason": reason, "table": table,
-                    "signature": auth}
+    card.verdict = {
+        "adopt": bool(adopt),
+        "signed_by": signed_by.strip(),
+        "reason": reason,
+        "table": table,
+        "signature": auth,
+    }
     card.experience_candidate = {
         "cue": card.hypothesis,
         "lesson": ("采纳：" if adopt else "否决：") + (reason or "（未写理由）"),
@@ -208,22 +231,38 @@ def decide(card: ExperimentCard, adopt: bool, signed_by: str, reason: str = "",
 
 def to_markdown(card: ExperimentCard) -> str:
     table = card.verdict.get("table") or compare(card)
-    lines = ["## 对照实验 %s" % card.card_id,
-             "**假设**：%s" % card.hypothesis,
-             "**核验项**：%s" % "；".join(card.verifier),
-             "",
-             "| 臂 | 指标 | 值 | 相对基线 | 优于基线 |",
-             "|---|---|---|---|---|"]
+    lines = [
+        "## 对照实验 %s" % card.card_id,
+        "**假设**：%s" % card.hypothesis,
+        "**核验项**：%s" % "；".join(card.verifier),
+        "",
+        "| 臂 | 指标 | 值 | 相对基线 | 优于基线 |",
+        "|---|---|---|---|---|",
+    ]
     for arm, row in table["arms"].items():
         for k, m in row.items():
-            lines.append("| %s | %s | %s | %s | %s |" % (
-                arm, k, m["value"],
-                "—" if m["delta_vs_baseline"] is None else ("%+g" % m["delta_vs_baseline"]),
-                "—" if m["better"] is None else ("是" if m["better"] else "否")))
+            lines.append(
+                "| %s | %s | %s | %s | %s |"
+                % (
+                    arm,
+                    k,
+                    m["value"],
+                    "—"
+                    if m["delta_vs_baseline"] is None
+                    else ("%+g" % m["delta_vs_baseline"]),
+                    "—" if m["better"] is None else ("是" if m["better"] else "否"),
+                )
+            )
     lines.append("")
-    lines.append("**结论**：%s" % (("采纳" if card.verdict.get("adopt") else "否决")
-                                + "（签字：%s）" % card.verdict.get("signed_by")
-                                if card.verdict else "未结案"))
+    lines.append(
+        "**结论**：%s"
+        % (
+            ("采纳" if card.verdict.get("adopt") else "否决")
+            + "（签字：%s）" % card.verdict.get("signed_by")
+            if card.verdict
+            else "未结案"
+        )
+    )
     return "\n".join(lines)
 
 
@@ -253,13 +292,27 @@ def _demo() -> int:
         verifier=["样本外达标", "回滚预案在位", "误拦率不升"],
         budget=1,
     )
-    record_metrics(card, "baseline", {"misblock_rate_lower_better": 0.18, "oos_return": 0.004})
-    record_metrics(card, "candidate", {"misblock_rate_lower_better": 0.11, "oos_return": 0.009})
-    record_metrics(card, "adversary", {"misblock_rate_lower_better": 0.17, "oos_return": 0.005})
+    record_metrics(
+        card, "baseline", {"misblock_rate_lower_better": 0.18, "oos_return": 0.004}
+    )
+    record_metrics(
+        card, "candidate", {"misblock_rate_lower_better": 0.11, "oos_return": 0.009}
+    )
+    record_metrics(
+        card, "adversary", {"misblock_rate_lower_better": 0.17, "oos_return": 0.005}
+    )
     print(to_markdown(card))
-    v = decide(card, adopt=True, signed_by="laotian", reason="误拦率 -7pp 且样本外收益 +0.5pp")
-    print("\nverdict:", json.dumps({k: v[k] for k in ("adopt", "signed_by")}, ensure_ascii=False))
-    print("experience_candidate:", json.dumps(card.experience_candidate, ensure_ascii=False))
+    v = decide(
+        card, adopt=True, signed_by="laotian", reason="误拦率 -7pp 且样本外收益 +0.5pp"
+    )
+    print(
+        "\nverdict:",
+        json.dumps({k: v[k] for k in ("adopt", "signed_by")}, ensure_ascii=False),
+    )
+    print(
+        "experience_candidate:",
+        json.dumps(card.experience_candidate, ensure_ascii=False),
+    )
     print("status:", card.status)
     return 0
 

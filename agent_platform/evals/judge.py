@@ -8,6 +8,7 @@
   · 输出必须 JSON：{score:1-5, rationale, flags}；解析失败同样不伪造；
   · 结果落 data/evals/judge_latest.json，可审计。
 """
+
 from __future__ import annotations
 
 import json
@@ -42,8 +43,7 @@ def budget(limit: int | None = None) -> dict:
     if b.get("date") != _today():
         b = {"date": _today(), "count": 0}
     try:
-        lim = int(limit or os.environ.get("ZHAOYUN_JUDGE_DAILY_LIMIT")
-                  or DEFAULT_LIMIT)
+        lim = int(limit or os.environ.get("ZHAOYUN_JUDGE_DAILY_LIMIT") or DEFAULT_LIMIT)
     except ValueError:
         lim = DEFAULT_LIMIT
     b["limit"] = lim
@@ -58,8 +58,9 @@ def _consume() -> bool:
     b["count"] = int(b.get("count") or 0) + 1
     b["date"] = _today()
     OUT.mkdir(parents=True, exist_ok=True)
-    BUDGET.write_text(json.dumps({"date": b["date"], "count": b["count"]}),
-                      encoding="utf-8")
+    BUDGET.write_text(
+        json.dumps({"date": b["date"], "count": b["count"]}), encoding="utf-8"
+    )
     return True
 
 
@@ -76,56 +77,100 @@ def _parse(text: str) -> dict:
     except (TypeError, ValueError):
         return {"ok": False, "error": "bad_score"}
     score = max(1, min(5, score))
-    return {"ok": True, "score": score,
-            "rationale": str(data.get("rationale") or "")[:300],
-            "flags": [str(x)[:80] for x in (data.get("flags") or [])][:8]}
+    return {
+        "ok": True,
+        "score": score,
+        "rationale": str(data.get("rationale") or "")[:300],
+        "flags": [str(x)[:80] for x in (data.get("flags") or [])][:8],
+    }
 
 
-def judge_text(text: str, purpose: str = "governance", rubric: str | None = None,
-               adapters: dict | None = None) -> dict:
+def judge_text(
+    text: str,
+    purpose: str = "governance",
+    rubric: str | None = None,
+    adapters: dict | None = None,
+) -> dict:
     """对一段治理文本打分；预算/解析失败不伪造分数。"""
     b = budget()
     if b["remaining"] <= 0:
-        return {"ok": False, "error": "budget_exceeded", "budget": b,
-                "source": "unavailable"}
+        return {
+            "ok": False,
+            "error": "budget_exceeded",
+            "budget": b,
+            "source": "unavailable",
+        }
     if not _consume():
-        return {"ok": False, "error": "budget_exceeded", "budget": budget(),
-                "source": "unavailable"}
+        return {
+            "ok": False,
+            "error": "budget_exceeded",
+            "budget": budget(),
+            "source": "unavailable",
+        }
     sys.path.insert(0, str(PLATFORM / "tools"))
     from model_router import invoke  # noqa: WPS433
+
     messages = [
         {"role": "system", "content": rubric or RUBRIC},
         {"role": "user", "content": str(text or "")[:8000]},
     ]
     try:
-        res = invoke(messages, purpose=purpose, prefer=["deepseek/deepseek-flash"],
-                     max_tokens=300, adapters=adapters)
+        res = invoke(
+            messages,
+            purpose=purpose,
+            prefer=["deepseek/deepseek-flash"],
+            max_tokens=300,
+            adapters=adapters,
+        )
     except Exception as e:  # noqa: BLE001
-        return {"ok": False, "error": "invoke_failed",
-                "detail": "%s: %s" % (type(e).__name__, str(e)[:160]),
-                "source": "unavailable", "budget": budget()}
+        return {
+            "ok": False,
+            "error": "invoke_failed",
+            "detail": "%s: %s" % (type(e).__name__, str(e)[:160]),
+            "source": "unavailable",
+            "budget": budget(),
+        }
     if not res.get("ok"):
-        return {"ok": False, "error": "no_model_available",
-                "source": "unavailable", "attempts": res.get("attempts"),
-                "budget": budget()}
+        return {
+            "ok": False,
+            "error": "no_model_available",
+            "source": "unavailable",
+            "attempts": res.get("attempts"),
+            "budget": budget(),
+        }
     parsed = _parse(res.get("text") or "")
     if not parsed.get("ok"):
-        return {"ok": False, "error": parsed.get("error"),
-                "source": "unparseable", "raw": str(res.get("text") or "")[:300],
-                "budget": budget()}
-    return {"ok": True, "score": parsed["score"],
-            "rationale": parsed["rationale"], "flags": parsed["flags"],
-            "model": res.get("model"), "usage": res.get("usage"),
-            "source": "judge", "budget": budget(),
-            "judged_at": time.strftime("%Y-%m-%dT%H:%M:%S%z")}
+        return {
+            "ok": False,
+            "error": parsed.get("error"),
+            "source": "unparseable",
+            "raw": str(res.get("text") or "")[:300],
+            "budget": budget(),
+        }
+    return {
+        "ok": True,
+        "score": parsed["score"],
+        "rationale": parsed["rationale"],
+        "flags": parsed["flags"],
+        "model": res.get("model"),
+        "usage": res.get("usage"),
+        "source": "judge",
+        "budget": budget(),
+        "judged_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+    }
 
 
 def judge_latest(limit: int = 3, adapters: dict | None = None) -> dict:
     """评最近治理 AI draft（data/governance_ai/*.json），最多 limit 条。"""
     d = PLATFORM / "data" / "governance_ai"
     items = []
-    files = sorted(d.glob("*.json"), key=lambda p: p.stat().st_mtime,
-                   reverse=True)[:max(1, min(int(limit), 5))] if d.is_dir() else []
+    files = (
+        sorted(d.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True)[
+            : max(1, min(int(limit), 5))
+        ]
+        if d.is_dir()
+        else []
+    )
     for f in files:
         try:
             data = json.loads(f.read_text(encoding="utf-8-sig"))
@@ -134,10 +179,14 @@ def judge_latest(limit: int = 3, adapters: dict | None = None) -> dict:
         text = json.dumps(data, ensure_ascii=False)[:6000]
         rep = judge_text(text, adapters=adapters)
         items.append({"file": f.name, "result": rep})
-    rep = {"ok": all(i["result"].get("ok") for i in items) if items else False,
-           "count": len(items), "items": items,
-           "budget": budget(), "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
-           "note": "judge 分数仅用于质量参考，不替代人工评审"}
+    rep = {
+        "ok": all(i["result"].get("ok") for i in items) if items else False,
+        "count": len(items),
+        "items": items,
+        "budget": budget(),
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+        "note": "judge 分数仅用于质量参考，不替代人工评审",
+    }
     OUT.mkdir(parents=True, exist_ok=True)
     LATEST.write_text(json.dumps(rep, ensure_ascii=False, indent=1), encoding="utf-8")
     return rep
@@ -152,6 +201,7 @@ def latest() -> dict:
 
 def main(argv=None) -> int:
     import argparse
+
     ap = argparse.ArgumentParser(description="LLM-as-judge")
     ap.add_argument("--text", default="")
     ap.add_argument("--report", action="store_true")

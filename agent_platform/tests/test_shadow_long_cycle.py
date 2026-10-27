@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """SHADOW 长周期只读聚合入口契约测试。"""
+
 import json
 from pathlib import Path
 import sys
@@ -25,20 +26,36 @@ def _write_jsonl(path, rows):
 
 
 def _seed(root):
-    _write_jsonl(root / "data" / "shadow" / "shadow_ledger.jsonl", [
-        {"status": "done", "run_id": "decision-1", "symbol": "600519"},
-        {"status": "failed", "run_id": "decision-2", "symbol": "000858",
-         "error": "source unavailable"},
-    ])
-    _write_jsonl(root / "data" / "strategy" / "strategy_runs.jsonl", [
-        {"status": "done", "run_id": "decision-1", "strategy_id": "s1"},
-    ])
-    _write_jsonl(root / "strategy" / "strategy_promotions.jsonl", [
-        {"status": "accepted", "event_id": "promotion-1"},
-    ])
-    _write_jsonl(root / "data" / "perf_ledger.jsonl", [
-        {"status": "recorded", "run_id": "decision-1", "ret_pct": 1.2},
-    ])
+    _write_jsonl(
+        root / "data" / "shadow" / "shadow_ledger.jsonl",
+        [
+            {"status": "done", "run_id": "decision-1", "symbol": "600519"},
+            {
+                "status": "failed",
+                "run_id": "decision-2",
+                "symbol": "000858",
+                "error": "source unavailable",
+            },
+        ],
+    )
+    _write_jsonl(
+        root / "data" / "strategy" / "strategy_runs.jsonl",
+        [
+            {"status": "done", "run_id": "decision-1", "strategy_id": "s1"},
+        ],
+    )
+    _write_jsonl(
+        root / "strategy" / "strategy_promotions.jsonl",
+        [
+            {"status": "accepted", "event_id": "promotion-1"},
+        ],
+    )
+    _write_jsonl(
+        root / "data" / "perf_ledger.jsonl",
+        [
+            {"status": "recorded", "run_id": "decision-1", "ret_pct": 1.2},
+        ],
+    )
 
 
 def test_default_is_read_only_and_missing_sources_are_visible(tmp_path):
@@ -81,9 +98,12 @@ def test_same_run_with_changed_source_is_visible_failure(tmp_path):
     aggregate_shadow_evidence(root, "cycle-1", output_path=output)
 
     shadow = root / "data" / "shadow" / "shadow_ledger.jsonl"
-    shadow.write_text(shadow.read_text(encoding="utf-8") +
-                      json.dumps({"status": "done", "run_id": "decision-3"}) + "\n",
-                      encoding="utf-8")
+    shadow.write_text(
+        shadow.read_text(encoding="utf-8")
+        + json.dumps({"status": "done", "run_id": "decision-3"})
+        + "\n",
+        encoding="utf-8",
+    )
     result = aggregate_shadow_evidence(root, "cycle-1", output_path=output)
 
     assert result["status"] == "FAILED"
@@ -98,18 +118,21 @@ def test_event_id_is_stable_and_output_must_be_inside_root(tmp_path):
     assert result["event_id"] == event_id_for("cycle-1", result["sources"])
 
     with pytest.raises(ShadowLongCycleError, match="root 内"):
-        aggregate_shadow_evidence(root, "cycle-1", output_path=tmp_path / "outside.jsonl")
+        aggregate_shadow_evidence(
+            root, "cycle-1", output_path=tmp_path / "outside.jsonl"
+        )
 
 
 def test_bad_json_is_fail_visible(tmp_path):
     root = tmp_path / "root"
     _seed(root)
     shadow = root / "data" / "shadow" / "shadow_ledger.jsonl"
-    shadow.write_text(shadow.read_text(encoding="utf-8") + "{broken\n", encoding="utf-8")
+    shadow.write_text(
+        shadow.read_text(encoding="utf-8") + "{broken\n", encoding="utf-8"
+    )
 
     result = aggregate_shadow_evidence(root, "cycle-1")
 
     assert result["status"] == "WARN"
     assert result["source_reports"]["shadow"]["invalid_records"] == 1
-    assert any("shadow: 第 3 行非法 JSON" in finding
-               for finding in result["findings"])
+    assert any("shadow: 第 3 行非法 JSON" in finding for finding in result["findings"])

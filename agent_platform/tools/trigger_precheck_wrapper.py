@@ -37,6 +37,7 @@ portal/ 禁区，未挂——移交方案见 2026-10-18 交付报告。
 
     python.exe -X utf8 tools/trigger_precheck_wrapper.py
 """
+
 from __future__ import annotations
 
 import json
@@ -103,9 +104,12 @@ def _alert_needed(exit_code: int, fail: int) -> bool:
 
 def _same_alert_already_pushed(today: str, exit_code: int, prev: dict) -> bool:
     """同日同退出码已推过 → 不重推（防人工反复手跑刷屏）。"""
-    return bool(prev) and prev.get("date") == today \
-        and prev.get("exit_code") == exit_code \
+    return (
+        bool(prev)
+        and prev.get("date") == today
+        and prev.get("exit_code") == exit_code
         and prev.get("alert_pushed") is True
+    )
 
 
 def _push_feishu(text: str) -> bool:
@@ -116,8 +120,11 @@ def _push_feishu(text: str) -> bool:
         try:
             with open(fd, "w", encoding="utf-8") as f:
                 f.write(text)
-            r = subprocess.run([sys.executable, "-X", "utf8", str(SEND_FEISHU), tmp],
-                               capture_output=True, timeout=120)
+            r = subprocess.run(
+                [sys.executable, "-X", "utf8", str(SEND_FEISHU), tmp],
+                capture_output=True,
+                timeout=120,
+            )
             return "SEND_OK" in (r.stdout or b"").decode("utf-8", errors="replace")
         finally:
             try:
@@ -145,9 +152,18 @@ def run() -> int:
     # 1) 跑预检（timeout 包住；自身崩溃也留痕）
     try:
         proc = subprocess.run(
-            [sys.executable, "-X", "utf8", str(CHECK_SCRIPT),
-             "--repo-root", str(REPO_ROOT)],
-            capture_output=True, timeout=SUBPROCESS_TIMEOUT_S, cwd=str(REPO_ROOT))
+            [
+                sys.executable,
+                "-X",
+                "utf8",
+                str(CHECK_SCRIPT),
+                "--repo-root",
+                str(REPO_ROOT),
+            ],
+            capture_output=True,
+            timeout=SUBPROCESS_TIMEOUT_S,
+            cwd=str(REPO_ROOT),
+        )
         exit_code = proc.returncode
         stdout = proc.stdout.decode("utf-8", errors="replace")
         stderr = proc.stderr.decode("utf-8", errors="replace")
@@ -162,8 +178,10 @@ def run() -> int:
     # 2) 组日志块（[ALERT] 在块首）并落盘
     block = [head]
     if need_alert:
-        block.append("%s 退出码=%s FAIL=%s —— 链路未就绪，按输出「→」指引处置，"
-                     "17:10 前必须查清" % (ALERT_TAG, exit_code, parsed["fail"]))
+        block.append(
+            "%s 退出码=%s FAIL=%s —— 链路未就绪，按输出「→」指引处置，"
+            "17:10 前必须查清" % (ALERT_TAG, exit_code, parsed["fail"])
+        )
     if wrapper_error:
         block.append(wrapper_error)
     block.append(stdout.rstrip())
@@ -186,22 +204,45 @@ def run() -> int:
                 "- 时间：%s\n- 退出码：%s（PASS %s / WARN %s / FAIL %s）\n"
                 "- 结论：%s\n- 日志：C:\\aios\\automation_runs\\trigger_precheck\\\n"
                 "- 处置：按日志内「→」指引逐项处置，17:10 影子首跑前查清"
-                % (ts, exit_code, parsed["pass"], parsed["warn"],
-                   parsed["fail"], parsed["summary_line"]))
-            alert_note = "飞书推送 %s" % ("SEND_OK" if alert_pushed else "失败（人工看日志）")
+                % (
+                    ts,
+                    exit_code,
+                    parsed["pass"],
+                    parsed["warn"],
+                    parsed["fail"],
+                    parsed["summary_line"],
+                )
+            )
+            alert_note = "飞书推送 %s" % (
+                "SEND_OK" if alert_pushed else "失败（人工看日志）"
+            )
 
     # 4) latest.json（人工复核面）
-    state = {"date": today, "exit_code": exit_code,
-             "pass": parsed["pass"], "warn": parsed["warn"], "fail": parsed["fail"],
-             "summary_line": parsed["summary_line"], "ts": ts,
-             "alert_pushed": alert_pushed}
+    state = {
+        "date": today,
+        "exit_code": exit_code,
+        "pass": parsed["pass"],
+        "warn": parsed["warn"],
+        "fail": parsed["fail"],
+        "summary_line": parsed["summary_line"],
+        "ts": ts,
+        "alert_pushed": alert_pushed,
+    }
     if alert_note:
         state["alert_note"] = alert_note
     _write_latest(state)
 
-    print("precheck exit_code=%s pass=%s warn=%s fail=%s alert=%s %s"
-          % (exit_code, parsed["pass"], parsed["warn"], parsed["fail"],
-             alert_pushed, alert_note))
+    print(
+        "precheck exit_code=%s pass=%s warn=%s fail=%s alert=%s %s"
+        % (
+            exit_code,
+            parsed["pass"],
+            parsed["warn"],
+            parsed["fail"],
+            alert_pushed,
+            alert_note,
+        )
+    )
     return 0 if exit_code == 0 else (exit_code if exit_code > 0 else 1)
 
 
@@ -211,12 +252,26 @@ def main() -> int:
     except Exception as exc:  # noqa: BLE001  fail-visible：崩溃也留痕
         err = "wrapper 自身异常: %r" % exc
         try:
-            _append_log(["===== %s WRAPPER CRASH =====" % _now().isoformat(timespec="seconds"),
-                         err, "===== run end ====="])
-            _write_latest({"date": _now().strftime("%Y-%m-%d"), "exit_code": -1,
-                           "pass": -1, "warn": -1, "fail": -1,
-                           "summary_line": err, "ts": _now().isoformat(timespec="seconds"),
-                           "alert_pushed": False})
+            _append_log(
+                [
+                    "===== %s WRAPPER CRASH ====="
+                    % _now().isoformat(timespec="seconds"),
+                    err,
+                    "===== run end =====",
+                ]
+            )
+            _write_latest(
+                {
+                    "date": _now().strftime("%Y-%m-%d"),
+                    "exit_code": -1,
+                    "pass": -1,
+                    "warn": -1,
+                    "fail": -1,
+                    "summary_line": err,
+                    "ts": _now().isoformat(timespec="seconds"),
+                    "alert_pushed": False,
+                }
+            )
         except Exception:  # noqa: BLE001  连日志面都挂了只能 print（任务计划程序历史可见）
             pass
         print(err, file=sys.stderr)

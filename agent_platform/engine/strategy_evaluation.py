@@ -4,6 +4,7 @@
 本模块只消费 Verdict 或 scheduler 结果并返回内存中的评价结果；不接交易执行，
 也不修改 Aggregator 或任何策略账本。
 """
+
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
@@ -61,9 +62,12 @@ def _iter_records(results):
             return _iter_records(nested)
         if "verdict" in results or "recommendation" in results or "status" in results:
             return [results]
-        return [dict(value, strategy_id=key) if isinstance(value, Mapping)
-                and "strategy_id" not in value else value
-                for key, value in results.items()]
+        return [
+            dict(value, strategy_id=key)
+            if isinstance(value, Mapping) and "strategy_id" not in value
+            else value
+            for key, value in results.items()
+        ]
     if isinstance(results, Iterable):
         return list(results)
     return [results]
@@ -78,7 +82,9 @@ def _normalise_record(record, index):
     verdict_refs = _read(verdict, "evidence_refs")
     extras = _read(verdict, "extras", {})
     if isinstance(extras, Mapping):
-        verdict_refs = verdict_refs if verdict_refs is not None else extras.get("evidence_refs")
+        verdict_refs = (
+            verdict_refs if verdict_refs is not None else extras.get("evidence_refs")
+        )
     refs = []
     _merge_refs(refs, outer_refs, verdict_refs)
     trace_id = outer_trace or _read(verdict, "trace_id", "")
@@ -110,8 +116,9 @@ def _normalise_record(record, index):
             "trace_id": trace_id,
         }
     recommendation = recommendation.strip().lower()
-    if recommendation not in (BULLISH_RECOMMENDATIONS | BEARISH_RECOMMENDATIONS |
-                               NEUTRAL_RECOMMENDATIONS):
+    if recommendation not in (
+        BULLISH_RECOMMENDATIONS | BEARISH_RECOMMENDATIONS | NEUTRAL_RECOMMENDATIONS
+    ):
         return {
             "participates": False,
             "strategy_id": strategy_id,
@@ -127,8 +134,13 @@ def _normalise_record(record, index):
     if not math.isfinite(confidence):
         confidence = 0.0
     confidence = min(1.0, max(0.0, confidence))
-    direction = ("buy" if recommendation in BULLISH_RECOMMENDATIONS else
-                 "sell" if recommendation in BEARISH_RECOMMENDATIONS else "hold")
+    direction = (
+        "buy"
+        if recommendation in BULLISH_RECOMMENDATIONS
+        else "sell"
+        if recommendation in BEARISH_RECOMMENDATIONS
+        else "hold"
+    )
     sign = 1 if direction == "buy" else -1 if direction == "sell" else 0
     return {
         "participates": True,
@@ -159,8 +171,10 @@ def arbitrate_strategy_results(results, trace_id=None):
     任一有效策略同时出现多空方向即 ``conflict=True`` 且默认 ``blocked=True``；
     不按票数或置信度做多数决。失败、超时、拒绝及非法 Verdict 不参与仲裁。
     """
-    records = [_normalise_record(record, index)
-               for index, record in enumerate(_iter_records(results))]
+    records = [
+        _normalise_record(record, index)
+        for index, record in enumerate(_iter_records(results))
+    ]
     participants = [record for record in records if record["participates"]]
     directions = {record["direction"] for record in participants}
     conflict = "buy" in directions and "sell" in directions
@@ -201,17 +215,26 @@ def arbitrate_strategy_results(results, trace_id=None):
     else:
         trace_value = _trace_value(trace_ids)
     excluded = [
-        {"strategy_id": record["strategy_id"], "reason": record["reason"],
-         "evidence_refs": list(record["evidence_refs"]),
-         "trace_id": record["trace_id"] or None}
-        for record in records if not record["participates"]
+        {
+            "strategy_id": record["strategy_id"],
+            "reason": record["reason"],
+            "evidence_refs": list(record["evidence_refs"]),
+            "trace_id": record["trace_id"] or None,
+        }
+        for record in records
+        if not record["participates"]
     ]
     consensus_recommendation = None
     if consensus in ("buy", "sell"):
-        options = [record["recommendation"] for record in participants
-                   if record["direction"] == consensus]
+        options = [
+            record["recommendation"]
+            for record in participants
+            if record["direction"] == consensus
+        ]
         if ("strong_buy" if consensus == "buy" else "strong_sell") in options:
-            consensus_recommendation = "strong_buy" if consensus == "buy" else "strong_sell"
+            consensus_recommendation = (
+                "strong_buy" if consensus == "buy" else "strong_sell"
+            )
         else:
             consensus_recommendation = consensus
     elif consensus == "hold":
@@ -222,10 +245,17 @@ def arbitrate_strategy_results(results, trace_id=None):
         "consensus_recommendation": consensus_recommendation,
         "conflict": conflict,
         "blocked": bool(conflict or not participants),
-        "blocked_reason": ("多空策略结果冲突，禁止自动放行" if conflict else
-                           "没有可参与仲裁的成功策略" if not participants else ""),
+        "blocked_reason": (
+            "多空策略结果冲突，禁止自动放行"
+            if conflict
+            else "没有可参与仲裁的成功策略"
+            if not participants
+            else ""
+        ),
         "participating_strategies": [record["strategy_id"] for record in participants],
-        "participating_strategy_ids": [record["strategy_id"] for record in participants],
+        "participating_strategy_ids": [
+            record["strategy_id"] for record in participants
+        ],
         "strategy_contributions": contributions,
         "contributions": contributions,
         "contribution_list": contribution_list,
@@ -274,29 +304,51 @@ def evaluate_incremental(candidate_metrics, baseline_metrics):
     baseline = _metrics_input(baseline_metrics, "baseline_metrics")
     candidate_sample, _ = _metric(candidate, ("sample_size", "sample_count", "samples"))
     baseline_sample, _ = _metric(baseline, ("sample_size", "sample_count", "samples"))
-    candidate_sample = _number(candidate_sample, "candidate sample_size", non_negative=True)
-    baseline_sample = _number(baseline_sample, "baseline sample_size", non_negative=True)
-    if candidate_sample is not None and baseline_sample is not None and candidate_sample < baseline_sample:
-        raise StrategyEvaluationError("candidate sample_size 不能小于 baseline sample_size")
-    incremental_sample = (candidate_sample - baseline_sample
-                          if candidate_sample is not None and baseline_sample is not None else None)
+    candidate_sample = _number(
+        candidate_sample, "candidate sample_size", non_negative=True
+    )
+    baseline_sample = _number(
+        baseline_sample, "baseline sample_size", non_negative=True
+    )
+    if (
+        candidate_sample is not None
+        and baseline_sample is not None
+        and candidate_sample < baseline_sample
+    ):
+        raise StrategyEvaluationError(
+            "candidate sample_size 不能小于 baseline sample_size"
+        )
+    incremental_sample = (
+        candidate_sample - baseline_sample
+        if candidate_sample is not None and baseline_sample is not None
+        else None
+    )
 
     candidate_rate, _ = _metric(candidate, ("win_rate", "winrate"))
     baseline_rate, _ = _metric(baseline, ("win_rate", "winrate"))
     candidate_rate = _number(candidate_rate, "candidate win_rate")
     baseline_rate = _number(baseline_rate, "baseline win_rate")
-    for rate, field in ((candidate_rate, "candidate win_rate"), (baseline_rate, "baseline win_rate")):
+    for rate, field in (
+        (candidate_rate, "candidate win_rate"),
+        (baseline_rate, "baseline win_rate"),
+    ):
         if rate is not None and not 0 <= rate <= 1:
             raise StrategyEvaluationError("%s 必须在 [0, 1] 内" % field)
-    win_rate_delta = (candidate_rate - baseline_rate
-                      if candidate_rate is not None and baseline_rate is not None else None)
+    win_rate_delta = (
+        candidate_rate - baseline_rate
+        if candidate_rate is not None and baseline_rate is not None
+        else None
+    )
 
     candidate_wins, _ = _metric(candidate, ("wins", "win_count"))
     baseline_wins, _ = _metric(baseline, ("wins", "win_count"))
     candidate_wins = _number(candidate_wins, "candidate wins", non_negative=True)
     baseline_wins = _number(baseline_wins, "baseline wins", non_negative=True)
-    incremental_wins = (candidate_wins - baseline_wins
-                        if candidate_wins is not None and baseline_wins is not None else None)
+    incremental_wins = (
+        candidate_wins - baseline_wins
+        if candidate_wins is not None and baseline_wins is not None
+        else None
+    )
     if incremental_wins is not None and incremental_wins < 0:
         raise StrategyEvaluationError("candidate wins 不能小于 baseline wins")
     incremental_win_rate = None
@@ -305,22 +357,38 @@ def evaluate_incremental(candidate_metrics, baseline_metrics):
     elif incremental_sample == 0 and incremental_wins == 0:
         incremental_win_rate = None
 
-    candidate_return, _ = _metric(candidate, ("return", "returns", "total_return", "pnl", "profit"))
-    baseline_return, _ = _metric(baseline, ("return", "returns", "total_return", "pnl", "profit"))
+    candidate_return, _ = _metric(
+        candidate, ("return", "returns", "total_return", "pnl", "profit")
+    )
+    baseline_return, _ = _metric(
+        baseline, ("return", "returns", "total_return", "pnl", "profit")
+    )
     candidate_return = _number(candidate_return, "candidate return")
     baseline_return = _number(baseline_return, "baseline return")
-    return_delta = (candidate_return - baseline_return
-                    if candidate_return is not None and baseline_return is not None else None)
+    return_delta = (
+        candidate_return - baseline_return
+        if candidate_return is not None and baseline_return is not None
+        else None
+    )
 
     candidate_drawdown, _ = _metric(candidate, ("max_drawdown", "drawdown"))
     baseline_drawdown, _ = _metric(baseline, ("max_drawdown", "drawdown"))
-    candidate_drawdown = _number(candidate_drawdown, "candidate max_drawdown", non_negative=True)
-    baseline_drawdown = _number(baseline_drawdown, "baseline max_drawdown", non_negative=True)
-    drawdown_delta = (candidate_drawdown - baseline_drawdown
-                      if candidate_drawdown is not None and baseline_drawdown is not None else None)
+    candidate_drawdown = _number(
+        candidate_drawdown, "candidate max_drawdown", non_negative=True
+    )
+    baseline_drawdown = _number(
+        baseline_drawdown, "baseline max_drawdown", non_negative=True
+    )
+    drawdown_delta = (
+        candidate_drawdown - baseline_drawdown
+        if candidate_drawdown is not None and baseline_drawdown is not None
+        else None
+    )
 
     evidence_refs = []
-    _merge_refs(evidence_refs, candidate.get("evidence_refs"), baseline.get("evidence_refs"))
+    _merge_refs(
+        evidence_refs, candidate.get("evidence_refs"), baseline.get("evidence_refs")
+    )
     candidate_trace = candidate.get("trace_id")
     baseline_trace = baseline.get("trace_id")
     trace_ids = [trace_id for trace_id in (candidate_trace, baseline_trace) if trace_id]

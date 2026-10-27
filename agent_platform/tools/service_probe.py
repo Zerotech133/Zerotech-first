@@ -13,6 +13,7 @@
   python agent_platform/tools/service_probe.py --targets all --json
   python agent_platform/tools/service_probe.py --targets LUSU1,JEV_GATE --quiet
 """
+
 from __future__ import annotations
 
 import argparse
@@ -52,16 +53,26 @@ def _http(url: str, timeout: float) -> dict:
     try:
         with urllib.request.urlopen(url, timeout=timeout) as r:
             body = r.read(65536)
-            return {"ok": 200 <= r.status < 400, "status": r.status,
-                    "elapsed_ms": int((time.time() - t0) * 1000), "bytes": len(body)}
+            return {
+                "ok": 200 <= r.status < 400,
+                "status": r.status,
+                "elapsed_ms": int((time.time() - t0) * 1000),
+                "bytes": len(body),
+            }
     except urllib.error.HTTPError as exc:
-        return {"ok": False, "status": exc.code,
-                "elapsed_ms": int((time.time() - t0) * 1000),
-                "error": "http_%d" % exc.code}
+        return {
+            "ok": False,
+            "status": exc.code,
+            "elapsed_ms": int((time.time() - t0) * 1000),
+            "error": "http_%d" % exc.code,
+        }
     except Exception as exc:  # noqa: BLE001
-        return {"ok": False, "status": None,
-                "elapsed_ms": int((time.time() - t0) * 1000),
-                "error": type(exc).__name__}
+        return {
+            "ok": False,
+            "status": None,
+            "elapsed_ms": int((time.time() - t0) * 1000),
+            "error": type(exc).__name__,
+        }
 
 
 def _file_freshness(path: str, max_age_hours: float) -> dict:
@@ -69,8 +80,9 @@ def _file_freshness(path: str, max_age_hours: float) -> dict:
     root = Path(path)
     try:
         if root.is_dir():
-            latest = max((f.stat().st_mtime for f in root.rglob("*") if f.is_file()),
-                         default=0)
+            latest = max(
+                (f.stat().st_mtime for f in root.rglob("*") if f.is_file()), default=0
+            )
         elif root.is_file():
             latest = root.stat().st_mtime
         else:
@@ -80,9 +92,12 @@ def _file_freshness(path: str, max_age_hours: float) -> dict:
     if not latest:
         return {"ok": False, "error": "empty", "path": str(path)}
     age_h = (time.time() - latest) / 3600.0
-    return {"ok": age_h <= max_age_hours,
-            "age_hours": round(age_h, 2), "max_age_hours": max_age_hours,
-            "path": str(path)}
+    return {
+        "ok": age_h <= max_age_hours,
+        "age_hours": round(age_h, 2),
+        "max_age_hours": max_age_hours,
+        "path": str(path),
+    }
 
 
 def probe_target(t: dict, timeout: float = 5.0) -> dict:
@@ -90,12 +105,18 @@ def probe_target(t: dict, timeout: float = 5.0) -> dict:
     if kind == "http":
         res = _http(str(t.get("url") or ""), timeout)
     elif kind == "file_freshness":
-        res = _file_freshness(str(t.get("path") or ""),
-                              float(t.get("max_age_hours") or 24))
+        res = _file_freshness(
+            str(t.get("path") or ""), float(t.get("max_age_hours") or 24)
+        )
     else:
         res = {"ok": False, "error": "unsupported_kind", "kind": kind}
-    res.update({"kind": kind, "label": str(t.get("label") or ""),
-                "ts": time.strftime("%Y-%m-%dT%H:%M:%S%z")})
+    res.update(
+        {
+            "kind": kind,
+            "label": str(t.get("label") or ""),
+            "ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+        }
+    )
     # 拍板为 OPTIONAL_OFFLINE 的服务（如 9104 飞书卡片回调）：离线属设计内，不判 degraded
     if t.get("expected_offline"):
         res["expected_offline"] = True
@@ -111,7 +132,8 @@ def record(seat: str, result: dict, status_root=None) -> Path:
     seat_dir = root / seat
     seat_dir.mkdir(parents=True, exist_ok=True)
     (seat_dir / "status.json").write_text(
-        json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8")
+        json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8"
+    )
     hist = root / "history.jsonl"
     with open(hist, "a", encoding="utf-8") as f:
         f.write(json.dumps({"seat": seat, **result}, ensure_ascii=False) + "\n")
@@ -127,14 +149,22 @@ def emit_audit(seat: str, result: dict) -> dict:
         if tools not in sys.path:
             sys.path.insert(0, tools)
         import events  # noqa: WPS433
+
         if result["kind"] == "http":
             detail = "service_probe http status=%s(%sms) ok=%s" % (
-                result.get("status"), result.get("elapsed_ms"), result.get("ok"))
+                result.get("status"),
+                result.get("elapsed_ms"),
+                result.get("ok"),
+            )
         else:
             detail = "service_probe file_freshness age=%sh ok=%s path=%s" % (
-                result.get("age_hours"), result.get("ok"), result.get("path"))
-        return events.emit(kind="patrol_verdict", task=seat, agent=seat,
-                           detail=detail[:300])
+                result.get("age_hours"),
+                result.get("ok"),
+                result.get("path"),
+            )
+        return events.emit(
+            kind="patrol_verdict", task=seat, agent=seat, detail=detail[:300]
+        )
     except Exception as exc:  # noqa: BLE001
         return {"ok": False, "error": type(exc).__name__}
 
@@ -142,8 +172,7 @@ def emit_audit(seat: str, result: dict) -> dict:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="运行体/通信线多目标探活")
     ap.add_argument("--config", default=str(DEFAULT_CONFIG))
-    ap.add_argument("--targets", default="all",
-                    help="all 或逗号分隔席码（默认 all）")
+    ap.add_argument("--targets", default="all", help="all 或逗号分隔席码（默认 all）")
     ap.add_argument("--timeout", type=float, default=5.0)
     ap.add_argument("--status-dir", default="")
     ap.add_argument("--json", action="store_true")
@@ -152,8 +181,12 @@ def main(argv=None) -> int:
 
     if kill_switch_on():
         if not args.quiet:
-            print(json.dumps({"ok": False, "skipped": "kill_switch",
-                              "env": KILL_ENV}, ensure_ascii=False))
+            print(
+                json.dumps(
+                    {"ok": False, "skipped": "kill_switch", "env": KILL_ENV},
+                    ensure_ascii=False,
+                )
+            )
         return 0
     try:
         targets = load_targets(Path(args.config))
@@ -171,22 +204,32 @@ def main(argv=None) -> int:
             audit = emit_audit(seat, res)
             results.append({"seat": seat, "result": res, "audit": audit})
     except Exception as exc:  # noqa: BLE001
-        print(json.dumps({"ok": False, "error": type(exc).__name__,
-                          "detail": str(exc)[:200]}, ensure_ascii=False))
+        print(
+            json.dumps(
+                {"ok": False, "error": type(exc).__name__, "detail": str(exc)[:200]},
+                ensure_ascii=False,
+            )
+        )
         return 2
 
     ok_count = sum(1 for x in results if x["result"].get("ok"))
-    summary = {"ok": ok_count == len(results), "total": len(results),
-               "ok_count": ok_count, "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
-               "results": results}
+    summary = {
+        "ok": ok_count == len(results),
+        "total": len(results),
+        "ok_count": ok_count,
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+        "results": results,
+    }
     if not args.quiet:
         if args.json:
             print(json.dumps(summary, ensure_ascii=False, indent=1))
         else:
             for x in results:
                 r = x["result"]
-                print("%-12s %-14s ok=%s %s" % (x["seat"], r.get("kind"), r.get("ok"),
-                                                r.get("error") or ""))
+                print(
+                    "%-12s %-14s ok=%s %s"
+                    % (x["seat"], r.get("kind"), r.get("ok"), r.get("error") or "")
+                )
     return 0 if summary["ok"] else 1
 
 

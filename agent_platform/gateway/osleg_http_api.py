@@ -74,6 +74,7 @@ accounted=False；5xx -> unknown + retryable=True；缺 `trace_id`/`report_id`
         body={"kind": "stock_consult_result", "payload": {"q": "..."},
               "source": "qs1", "report_id": "QR-1", "trace_id": "tr-1"})
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -136,8 +137,15 @@ STATE_REJECTED = "rejected"
 STATE_EXPIRED = "expired"
 STATE_UNKNOWN = "unknown"
 
-W4_STATES = (STATE_SUBMITTED, STATE_ACCEPTED, STATE_CONSUMED, STATE_ANSWERED,
-             STATE_DELIVERED, STATE_REJECTED, STATE_EXPIRED)
+W4_STATES = (
+    STATE_SUBMITTED,
+    STATE_ACCEPTED,
+    STATE_CONSUMED,
+    STATE_ANSWERED,
+    STATE_DELIVERED,
+    STATE_REJECTED,
+    STATE_EXPIRED,
+)
 ALIVE_STATES = (STATE_SUBMITTED, STATE_ACCEPTED, STATE_CONSUMED, STATE_ANSWERED)
 
 METHOD_GET = "GET"
@@ -214,10 +222,22 @@ _GATEWAY_ERROR_TO_API = {
 }
 
 # 占位/默认凭据一律不算"已配置"：配成这些值等同未配置 -> 503 失败关闭。
-_PLACEHOLDER_TOKENS = frozenset({
-    "changeme", "change-me", "change_me", "default", "default-token",
-    "token", "secret", "password", "test", "demo", "example", "xxx",
-})
+_PLACEHOLDER_TOKENS = frozenset(
+    {
+        "changeme",
+        "change-me",
+        "change_me",
+        "default",
+        "default-token",
+        "token",
+        "secret",
+        "password",
+        "test",
+        "demo",
+        "example",
+        "xxx",
+    }
+)
 
 # 配置入口（全部只读 env / 显式注入，绝无默认凭据）
 TOKEN_ENV = "OSLEG_HTTP_TOKEN"
@@ -281,8 +301,13 @@ ENDPOINTS = {
         required_headers=(TOKEN_HEADER, SOURCE_HEADER, IDEMPOTENCY_HEADER),
         # 契约 §三 + gateway 证据门槛：答复证据 answered_by/answer_ref 必填
         # （CH2 请求体只有 msg_id/consumed_by/trace_id，属已有缺口，见模块说明）。
-        required_body=("msg_id", "consumed_by", "answered_by", "answer_ref",
-                       "trace_id"),
+        required_body=(
+            "msg_id",
+            "consumed_by",
+            "answered_by",
+            "answer_ref",
+            "trace_id",
+        ),
         success_http=200,
         success_state=STATE_CONSUMED,
     ),
@@ -330,8 +355,7 @@ def _now_iso() -> str:
 
 
 def _canonical(value) -> str:
-    return json.dumps(value, ensure_ascii=False, sort_keys=True,
-                      separators=(",", ":"))
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
 def _digest(value) -> str:
@@ -377,8 +401,10 @@ def _atomic_write_json(path: Path, data) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(".%s.tmp-%s" % (path.name, uuid.uuid4().hex[:8]))
     try:
-        tmp.write_text(json.dumps(data, ensure_ascii=False, sort_keys=True,
-                                  indent=1), encoding="utf-8")
+        tmp.write_text(
+            json.dumps(data, ensure_ascii=False, sort_keys=True, indent=1),
+            encoding="utf-8",
+        )
         os.replace(tmp, path)
     except BaseException:
         try:
@@ -520,8 +546,9 @@ def _idem_lookup(store, endpoint: str, key: str):
     return entry if isinstance(entry, dict) else None
 
 
-def _idem_save(store, endpoint: str, key: str, digest: str, http_status: int,
-               body: dict) -> None:
+def _idem_save(
+    store, endpoint: str, key: str, digest: str, http_status: int, body: dict
+) -> None:
     data = _read_json(store.idem_path) or {}
     data[_idem_key(endpoint, key)] = {
         "digest": digest,
@@ -534,9 +561,17 @@ def _idem_save(store, endpoint: str, key: str, digest: str, http_status: int,
 
 
 # ---------------------------------------------------------------- 响应信封
-def _failure(endpoint: str, error: str, status_word: str, http_status: int,
-             *, msg_id: str = "", report_id: str = "", trace_id: str = "",
-             **extra) -> dict:
+def _failure(
+    endpoint: str,
+    error: str,
+    status_word: str,
+    http_status: int,
+    *,
+    msg_id: str = "",
+    report_id: str = "",
+    trace_id: str = "",
+    **extra,
+) -> dict:
     """失败关闭响应体：ok=False + accounted=False，不落账（与 CH2 同口径）。"""
     body = {
         "ok": False,
@@ -555,8 +590,15 @@ def _failure(endpoint: str, error: str, status_word: str, http_status: int,
     return body
 
 
-def _success(endpoint: str, state: str, msg_id: str, report_id: str,
-             trace_id: str, http_status: int, **extra) -> dict:
+def _success(
+    endpoint: str,
+    state: str,
+    msg_id: str,
+    report_id: str,
+    trace_id: str,
+    http_status: int,
+    **extra,
+) -> dict:
     """成功响应体：字段与 CH2 `parse_*_response` 兼容，不冒充已送达/已读。"""
     body = {
         "ok": True,
@@ -590,8 +632,7 @@ def _gateway_view(msg_id: str) -> dict:
     """gateway 账只读视图（调用前必须已绑定隔离 store）。"""
     env = inbox_gateway.receipt(msg_id)
     if not env.get("ok"):
-        return {"ok": False,
-                "error": _gateway_error_code(env)}
+        return {"ok": False, "error": _gateway_error_code(env)}
     data = env.get("data") or {}
     record = data.get("record") or {}
     return {
@@ -603,8 +644,9 @@ def _gateway_view(msg_id: str) -> dict:
     }
 
 
-def _gateway_failure(endpoint: str, env, *, msg_id: str = "",
-                     report_id: str = "", trace_id: str = ""):
+def _gateway_failure(
+    endpoint: str, env, *, msg_id: str = "", report_id: str = "", trace_id: str = ""
+):
     """gateway 失败 -> 本层错误码/HTTP 映射（已知校验错误转 4xx，其余 502）。"""
     code = _gateway_error_code(env)
     mapped = _GATEWAY_ERROR_TO_API.get(code)
@@ -612,9 +654,16 @@ def _gateway_failure(endpoint: str, env, *, msg_id: str = "",
         http_status, error, word = 502, "gateway_error", STATE_UNKNOWN
     else:
         http_status, error, word = mapped
-    return http_status, _failure(endpoint, error, word, http_status,
-                                 msg_id=msg_id, report_id=report_id,
-                                 trace_id=trace_id, gateway_error=code)
+    return http_status, _failure(
+        endpoint,
+        error,
+        word,
+        http_status,
+        msg_id=msg_id,
+        report_id=report_id,
+        trace_id=trace_id,
+        gateway_error=code,
+    )
 
 
 def _gateway_idempotency_key(endpoint: str, http_key: str) -> str:
@@ -634,54 +683,103 @@ def _handle_submit(store, headers, body, http_idem):
     report_id = _str(body.get("report_id"))
     if not trace_id:
         # 契约 §六 N5：trace_id 缺失 -> unknown，禁止回填默认值、不落账。
-        return 422, _failure("submit", "trace_id_missing", STATE_UNKNOWN, 422,
-                             report_id=report_id)
+        return 422, _failure(
+            "submit", "trace_id_missing", STATE_UNKNOWN, 422, report_id=report_id
+        )
     if not report_id:
-        return 422, _failure("submit", "report_id_missing", STATE_REJECTED, 422,
-                             trace_id=trace_id)
+        return 422, _failure(
+            "submit", "report_id_missing", STATE_REJECTED, 422, trace_id=trace_id
+        )
     kind = _str(body.get("kind"))
     source = _str(body.get("source"))
     payload = body.get("payload")
     if not kind or not isinstance(payload, dict):
-        return 422, _failure("submit", "invalid_request", STATE_REJECTED, 422,
-                             report_id=report_id, trace_id=trace_id)
+        return 422, _failure(
+            "submit",
+            "invalid_request",
+            STATE_REJECTED,
+            422,
+            report_id=report_id,
+            trace_id=trace_id,
+        )
     if source not in ALLOWED_SOURCES:
-        return 403, _failure("submit", "source_forbidden", STATE_REJECTED, 403,
-                             report_id=report_id, trace_id=trace_id)
+        return 403, _failure(
+            "submit",
+            "source_forbidden",
+            STATE_REJECTED,
+            403,
+            report_id=report_id,
+            trace_id=trace_id,
+        )
     auth_source = _str(headers.get(SOURCE_HEADER.lower()))
     if auth_source and source != auth_source:
-        return 403, _failure("submit", "source_mismatch", STATE_REJECTED, 403,
-                             report_id=report_id, trace_id=trace_id)
+        return 403, _failure(
+            "submit",
+            "source_mismatch",
+            STATE_REJECTED,
+            403,
+            report_id=report_id,
+            trace_id=trace_id,
+        )
     gateway_kind = KIND_TO_GATEWAY.get(kind)
     if gateway_kind is None:
-        return 422, _failure("submit", "kind_not_bridged", STATE_REJECTED, 422,
-                             report_id=report_id, trace_id=trace_id, kind=kind)
+        return 422, _failure(
+            "submit",
+            "kind_not_bridged",
+            STATE_REJECTED,
+            422,
+            report_id=report_id,
+            trace_id=trace_id,
+            kind=kind,
+        )
     try:
         payload_digest = _digest(payload)
     except ValueError:
-        return 422, _failure("submit", "invalid_request", STATE_REJECTED, 422,
-                             report_id=report_id, trace_id=trace_id)
+        return 422, _failure(
+            "submit",
+            "invalid_request",
+            STATE_REJECTED,
+            422,
+            report_id=report_id,
+            trace_id=trace_id,
+        )
 
     gw_env = inbox_gateway.submit(
-        gateway_kind, payload, source=source,
-        idempotency_key=_gateway_idempotency_key("submit", http_idem))
+        gateway_kind,
+        payload,
+        source=source,
+        idempotency_key=_gateway_idempotency_key("submit", http_idem),
+    )
     if not gw_env.get("ok"):
-        return _gateway_failure("submit", gw_env, report_id=report_id,
-                                trace_id=trace_id)
+        return _gateway_failure(
+            "submit", gw_env, report_id=report_id, trace_id=trace_id
+        )
     gw_data = _gateway_data(gw_env)
     msg_id = _str(gw_data.get("id"))
     if not msg_id:
-        return 502, _failure("submit", "gateway_error", STATE_UNKNOWN, 502,
-                             report_id=report_id, trace_id=trace_id,
-                             gateway_error="gateway_msg_id_missing")
+        return 502, _failure(
+            "submit",
+            "gateway_error",
+            STATE_UNKNOWN,
+            502,
+            report_id=report_id,
+            trace_id=trace_id,
+            gateway_error="gateway_msg_id_missing",
+        )
     record = _get_record(store, msg_id)
     if record is None:
         if bool(gw_data.get("replayed")):
             # gateway 幂等键命中但 sidecar 丢失：无法恢复 report_id/trace_id，
             # 失败关闭（不猜、不补默认值）。
-            return 500, _failure("submit", "sidecar_missing", STATE_UNKNOWN, 500,
-                                 msg_id=msg_id, report_id=report_id,
-                                 trace_id=trace_id)
+            return 500, _failure(
+                "submit",
+                "sidecar_missing",
+                STATE_UNKNOWN,
+                500,
+                msg_id=msg_id,
+                report_id=report_id,
+                trace_id=trace_id,
+            )
         record = {
             "msg_id": msg_id,
             "channel": CHANNEL_NAMESPACE,
@@ -706,14 +804,31 @@ def _handle_submit(store, headers, body, http_idem):
             "http_idempotency_key": http_idem,
         }
         _save_record(store, record)
-        return 201, _success("submit", STATE_SUBMITTED, msg_id, report_id,
-                             trace_id, 201, kind=kind,
-                             gateway_kind=gateway_kind, source=source)
+        return 201, _success(
+            "submit",
+            STATE_SUBMITTED,
+            msg_id,
+            report_id,
+            trace_id,
+            201,
+            kind=kind,
+            gateway_kind=gateway_kind,
+            source=source,
+        )
     # 崩溃恢复：gateway 幂等回放 + sidecar 已在 -> 按当前 W4 状态回放。
-    return 200, _success("submit", _str(record.get("state")) or STATE_SUBMITTED,
-                         msg_id, report_id, trace_id, 200, kind=kind,
-                         gateway_kind=gateway_kind, source=source,
-                         replayed=True, duplicate=True)
+    return 200, _success(
+        "submit",
+        _str(record.get("state")) or STATE_SUBMITTED,
+        msg_id,
+        report_id,
+        trace_id,
+        200,
+        kind=kind,
+        gateway_kind=gateway_kind,
+        source=source,
+        replayed=True,
+        duplicate=True,
+    )
 
 
 def _handle_consume(store, headers, body, http_idem):
@@ -721,69 +836,143 @@ def _handle_consume(store, headers, body, http_idem):
     trace_id = _str(body.get("trace_id"))
     report_id = _str(body.get("report_id"))
     if not trace_id:
-        return 422, _failure("consume", "trace_id_missing", STATE_UNKNOWN, 422,
-                             msg_id=msg_id, report_id=report_id)
+        return 422, _failure(
+            "consume",
+            "trace_id_missing",
+            STATE_UNKNOWN,
+            422,
+            msg_id=msg_id,
+            report_id=report_id,
+        )
     if not msg_id:
-        return 422, _failure("consume", "invalid_request", STATE_REJECTED, 422,
-                             trace_id=trace_id)
+        return 422, _failure(
+            "consume", "invalid_request", STATE_REJECTED, 422, trace_id=trace_id
+        )
     record = _get_record(store, msg_id)
     if record is None:
-        return 404, _failure("consume", "not_found", STATE_REJECTED, 404,
-                             msg_id=msg_id, trace_id=trace_id)
+        return 404, _failure(
+            "consume",
+            "not_found",
+            STATE_REJECTED,
+            404,
+            msg_id=msg_id,
+            trace_id=trace_id,
+        )
     record_report = _str(record.get("report_id"))
     record_trace = _str(record.get("trace_id"))
     if trace_id != record_trace:
-        return 422, _failure("consume", "trace_mismatch", STATE_UNKNOWN, 422,
-                             msg_id=msg_id, report_id=record_report)
+        return 422, _failure(
+            "consume",
+            "trace_mismatch",
+            STATE_UNKNOWN,
+            422,
+            msg_id=msg_id,
+            report_id=record_report,
+        )
     if report_id and report_id != record_report:
-        return 422, _failure("consume", "report_id_mismatch", STATE_REJECTED,
-                             422, msg_id=msg_id, report_id=record_report,
-                             trace_id=record_trace)
+        return 422, _failure(
+            "consume",
+            "report_id_mismatch",
+            STATE_REJECTED,
+            422,
+            msg_id=msg_id,
+            report_id=record_report,
+            trace_id=record_trace,
+        )
     consumed_by = _str(body.get("consumed_by"))
     answered_by = _str(body.get("answered_by"))
     answer_ref = _str(body.get("answer_ref"))
     if not consumed_by:
-        return 422, _failure("consume", "invalid_request", STATE_REJECTED, 422,
-                             msg_id=msg_id, report_id=record_report,
-                             trace_id=record_trace)
+        return 422, _failure(
+            "consume",
+            "invalid_request",
+            STATE_REJECTED,
+            422,
+            msg_id=msg_id,
+            report_id=record_report,
+            trace_id=record_trace,
+        )
     if not answered_by or not answer_ref:
         # gateway 证据门槛原样保留（缺 answered_by/answer_ref 不推进任何状态）。
-        return 422, _failure("consume", "bad_answer_evidence", STATE_REJECTED,
-                             422, msg_id=msg_id, report_id=record_report,
-                             trace_id=record_trace)
+        return 422, _failure(
+            "consume",
+            "bad_answer_evidence",
+            STATE_REJECTED,
+            422,
+            msg_id=msg_id,
+            report_id=record_report,
+            trace_id=record_trace,
+        )
 
     state = _str(record.get("state"))
     if state == STATE_CONSUMED:
-        return 200, _success("consume", STATE_CONSUMED, msg_id, record_report,
-                             record_trace, 200, consumed_by=consumed_by,
-                             answered_by=answered_by,
-                             replayed=True, duplicate=True)
+        return 200, _success(
+            "consume",
+            STATE_CONSUMED,
+            msg_id,
+            record_report,
+            record_trace,
+            200,
+            consumed_by=consumed_by,
+            answered_by=answered_by,
+            replayed=True,
+            duplicate=True,
+        )
     if state != STATE_SUBMITTED:
-        return 409, _failure("consume", "state_conflict", STATE_REJECTED, 409,
-                             msg_id=msg_id, report_id=record_report,
-                             trace_id=record_trace, state=state)
+        return 409, _failure(
+            "consume",
+            "state_conflict",
+            STATE_REJECTED,
+            409,
+            msg_id=msg_id,
+            report_id=record_report,
+            trace_id=record_trace,
+            state=state,
+        )
 
-    gw_env = inbox_gateway.consume(msg_id, answered_by=answered_by,
-                                   answer_ref=answer_ref)
+    gw_env = inbox_gateway.consume(
+        msg_id, answered_by=answered_by, answer_ref=answer_ref
+    )
     if not gw_env.get("ok"):
-        return _gateway_failure("consume", gw_env, msg_id=msg_id,
-                                report_id=record_report, trace_id=record_trace)
+        return _gateway_failure(
+            "consume",
+            gw_env,
+            msg_id=msg_id,
+            report_id=record_report,
+            trace_id=record_trace,
+        )
     if _str(_gateway_data(gw_env).get("state")) == "not_found":
-        return 404, _failure("consume", "not_found", STATE_REJECTED, 404,
-                             msg_id=msg_id, report_id=record_report,
-                             trace_id=record_trace)
+        return 404, _failure(
+            "consume",
+            "not_found",
+            STATE_REJECTED,
+            404,
+            msg_id=msg_id,
+            report_id=record_report,
+            trace_id=record_trace,
+        )
 
-    record.update({
-        "state": STATE_CONSUMED,
-        "consumed_at": _now_iso(),
-        "consumed_by": consumed_by,
-        "answered_by": answered_by,
-        "answer_ref": answer_ref,
-    })
+    record.update(
+        {
+            "state": STATE_CONSUMED,
+            "consumed_at": _now_iso(),
+            "consumed_by": consumed_by,
+            "answered_by": answered_by,
+            "answer_ref": answer_ref,
+        }
+    )
     _save_record(store, record)
-    return 200, _success("consume", STATE_CONSUMED, msg_id, record_report,
-                         record_trace, 200, consumed_by=consumed_by,
-                         answered_by=answered_by, answer_ref=answer_ref)
+    return 200, _success(
+        "consume",
+        STATE_CONSUMED,
+        msg_id,
+        record_report,
+        record_trace,
+        200,
+        consumed_by=consumed_by,
+        answered_by=answered_by,
+        answer_ref=answer_ref,
+    )
 
 
 def _handle_answer(store, headers, body, http_idem):
@@ -794,71 +983,146 @@ def _handle_answer(store, headers, body, http_idem):
     raw_text = body.get("text")
     text = raw_text.strip() if isinstance(raw_text, str) else ""
     if not trace_id:
-        return 422, _failure("answer", "trace_id_missing", STATE_UNKNOWN, 422,
-                             msg_id=msg_id, report_id=report_id)
+        return 422, _failure(
+            "answer",
+            "trace_id_missing",
+            STATE_UNKNOWN,
+            422,
+            msg_id=msg_id,
+            report_id=report_id,
+        )
     if not msg_id:
-        return 422, _failure("answer", "invalid_request", STATE_REJECTED, 422,
-                             trace_id=trace_id)
+        return 422, _failure(
+            "answer", "invalid_request", STATE_REJECTED, 422, trace_id=trace_id
+        )
     record = _get_record(store, msg_id)
     if record is None:
-        return 404, _failure("answer", "not_found", STATE_REJECTED, 404,
-                             msg_id=msg_id, trace_id=trace_id)
+        return 404, _failure(
+            "answer", "not_found", STATE_REJECTED, 404, msg_id=msg_id, trace_id=trace_id
+        )
     record_report = _str(record.get("report_id"))
     record_trace = _str(record.get("trace_id"))
     if trace_id != record_trace:
-        return 422, _failure("answer", "trace_mismatch", STATE_UNKNOWN, 422,
-                             msg_id=msg_id, report_id=record_report)
+        return 422, _failure(
+            "answer",
+            "trace_mismatch",
+            STATE_UNKNOWN,
+            422,
+            msg_id=msg_id,
+            report_id=record_report,
+        )
     if not report_id:
         # 契约 §六 N4：答复缺 report_id -> 拒收、linked=False、不写 answered。
-        return 422, _failure("answer", "report_id_missing", STATE_REJECTED, 422,
-                             msg_id=msg_id, trace_id=record_trace, linked=False)
+        return 422, _failure(
+            "answer",
+            "report_id_missing",
+            STATE_REJECTED,
+            422,
+            msg_id=msg_id,
+            trace_id=record_trace,
+            linked=False,
+        )
     if report_id != record_report:
-        return 422, _failure("answer", "report_id_mismatch", STATE_REJECTED,
-                             422, msg_id=msg_id, trace_id=record_trace,
-                             linked=False)
+        return 422, _failure(
+            "answer",
+            "report_id_mismatch",
+            STATE_REJECTED,
+            422,
+            msg_id=msg_id,
+            trace_id=record_trace,
+            linked=False,
+        )
     if not answered_by or not text:
-        return 422, _failure("answer", "invalid_request", STATE_REJECTED, 422,
-                             msg_id=msg_id, report_id=record_report,
-                             trace_id=record_trace)
+        return 422, _failure(
+            "answer",
+            "invalid_request",
+            STATE_REJECTED,
+            422,
+            msg_id=msg_id,
+            report_id=record_report,
+            trace_id=record_trace,
+        )
 
     state = _str(record.get("state"))
     if state in (STATE_ANSWERED, STATE_DELIVERED):
         # 首胜语义：答复已落账，重复答复只回放、不改写正文（幂等）。
-        return 200, _success("answer", state, msg_id, record_report,
-                             record_trace, 200, answered_by=answered_by,
-                             replayed=True, duplicate=True, linked=True)
+        return 200, _success(
+            "answer",
+            state,
+            msg_id,
+            record_report,
+            record_trace,
+            200,
+            answered_by=answered_by,
+            replayed=True,
+            duplicate=True,
+            linked=True,
+        )
     if state != STATE_CONSUMED:
-        return 409, _failure("answer", "state_conflict", STATE_REJECTED, 409,
-                             msg_id=msg_id, report_id=record_report,
-                             trace_id=record_trace, state=state)
+        return 409, _failure(
+            "answer",
+            "state_conflict",
+            STATE_REJECTED,
+            409,
+            msg_id=msg_id,
+            report_id=record_report,
+            trace_id=record_trace,
+            state=state,
+        )
 
     gateway = _gateway_view(msg_id)
     if not gateway.get("ok"):
-        return _gateway_failure("answer", gateway, msg_id=msg_id,
-                                report_id=record_report, trace_id=record_trace)
+        return _gateway_failure(
+            "answer",
+            gateway,
+            msg_id=msg_id,
+            report_id=record_report,
+            trace_id=record_trace,
+        )
     if gateway.get("state") == "not_found" or not gateway.get("answered"):
-        return 409, _failure("answer", "state_conflict", STATE_REJECTED, 409,
-                             msg_id=msg_id, report_id=record_report,
-                             trace_id=record_trace,
-                             gateway_error="gateway_answer_evidence_missing")
+        return 409, _failure(
+            "answer",
+            "state_conflict",
+            STATE_REJECTED,
+            409,
+            msg_id=msg_id,
+            report_id=record_report,
+            trace_id=record_trace,
+            gateway_error="gateway_answer_evidence_missing",
+        )
     if _str((gateway.get("record") or {}).get("answered_by")) != answered_by:
-        return 409, _failure("answer", "actor_mismatch", STATE_REJECTED, 409,
-                             msg_id=msg_id, report_id=record_report,
-                             trace_id=record_trace,
-                             gateway_error="answered_by_mismatch")
+        return 409, _failure(
+            "answer",
+            "actor_mismatch",
+            STATE_REJECTED,
+            409,
+            msg_id=msg_id,
+            report_id=record_report,
+            trace_id=record_trace,
+            gateway_error="answered_by_mismatch",
+        )
 
-    record.update({
-        "state": STATE_ANSWERED,
-        "answered_at": _now_iso(),
-        "answer_text": text,
-        "answered_by": answered_by,
-        "answer_report_id": record_report,
-        "answer_trace_id": record_trace,
-    })
+    record.update(
+        {
+            "state": STATE_ANSWERED,
+            "answered_at": _now_iso(),
+            "answer_text": text,
+            "answered_by": answered_by,
+            "answer_report_id": record_report,
+            "answer_trace_id": record_trace,
+        }
+    )
     _save_record(store, record)
-    return 200, _success("answer", STATE_ANSWERED, msg_id, record_report,
-                         record_trace, 200, answered_by=answered_by,
-                         linked=True)
+    return 200, _success(
+        "answer",
+        STATE_ANSWERED,
+        msg_id,
+        record_report,
+        record_trace,
+        200,
+        answered_by=answered_by,
+        linked=True,
+    )
 
 
 def _handle_deliver(store, headers, body, http_idem):
@@ -868,62 +1132,125 @@ def _handle_deliver(store, headers, body, http_idem):
     channel = _str(body.get("channel"))
     delivered_ref = _str(body.get("delivered_ref"))
     if not trace_id:
-        return 422, _failure("deliver", "trace_id_missing", STATE_UNKNOWN, 422,
-                             msg_id=msg_id, report_id=report_id)
+        return 422, _failure(
+            "deliver",
+            "trace_id_missing",
+            STATE_UNKNOWN,
+            422,
+            msg_id=msg_id,
+            report_id=report_id,
+        )
     if not msg_id:
-        return 422, _failure("deliver", "invalid_request", STATE_REJECTED, 422,
-                             trace_id=trace_id)
+        return 422, _failure(
+            "deliver", "invalid_request", STATE_REJECTED, 422, trace_id=trace_id
+        )
     record = _get_record(store, msg_id)
     if record is None:
-        return 404, _failure("deliver", "not_found", STATE_REJECTED, 404,
-                             msg_id=msg_id, trace_id=trace_id)
+        return 404, _failure(
+            "deliver",
+            "not_found",
+            STATE_REJECTED,
+            404,
+            msg_id=msg_id,
+            trace_id=trace_id,
+        )
     record_report = _str(record.get("report_id"))
     record_trace = _str(record.get("trace_id"))
     if trace_id != record_trace:
-        return 422, _failure("deliver", "trace_mismatch", STATE_UNKNOWN, 422,
-                             msg_id=msg_id, report_id=record_report)
+        return 422, _failure(
+            "deliver",
+            "trace_mismatch",
+            STATE_UNKNOWN,
+            422,
+            msg_id=msg_id,
+            report_id=record_report,
+        )
     if report_id and report_id != record_report:
-        return 422, _failure("deliver", "report_id_mismatch", STATE_REJECTED,
-                             422, msg_id=msg_id, report_id=record_report,
-                             trace_id=record_trace)
+        return 422, _failure(
+            "deliver",
+            "report_id_mismatch",
+            STATE_REJECTED,
+            422,
+            msg_id=msg_id,
+            report_id=record_report,
+            trace_id=record_trace,
+        )
 
     state = _str(record.get("state"))
     if state == STATE_DELIVERED:
-        return 200, _success("deliver", STATE_DELIVERED, msg_id,
-                             record_report, record_trace, 200,
-                             delivered_channel=_str(
-                                 record.get("delivered_channel")),
-                             replayed=True, duplicate=True)
+        return 200, _success(
+            "deliver",
+            STATE_DELIVERED,
+            msg_id,
+            record_report,
+            record_trace,
+            200,
+            delivered_channel=_str(record.get("delivered_channel")),
+            replayed=True,
+            duplicate=True,
+        )
     if state != STATE_ANSWERED:
         # gateway 门槛外的前置：必须先 answered（先回传后答复=伪造交付）。
-        return 409, _failure("deliver", "state_conflict", STATE_REJECTED, 409,
-                             msg_id=msg_id, report_id=record_report,
-                             trace_id=record_trace, state=state)
+        return 409, _failure(
+            "deliver",
+            "state_conflict",
+            STATE_REJECTED,
+            409,
+            msg_id=msg_id,
+            report_id=record_report,
+            trace_id=record_trace,
+            state=state,
+        )
     if not channel or not delivered_ref:
-        return 422, _failure("deliver", "bad_delivery_evidence",
-                             STATE_REJECTED, 422, msg_id=msg_id,
-                             report_id=record_report, trace_id=record_trace)
+        return 422, _failure(
+            "deliver",
+            "bad_delivery_evidence",
+            STATE_REJECTED,
+            422,
+            msg_id=msg_id,
+            report_id=record_report,
+            trace_id=record_trace,
+        )
 
-    gw_env = inbox_gateway.deliver(msg_id, channel=channel,
-                                   delivered_ref=delivered_ref)
+    gw_env = inbox_gateway.deliver(msg_id, channel=channel, delivered_ref=delivered_ref)
     if not gw_env.get("ok"):
-        return _gateway_failure("deliver", gw_env, msg_id=msg_id,
-                                report_id=record_report, trace_id=record_trace)
+        return _gateway_failure(
+            "deliver",
+            gw_env,
+            msg_id=msg_id,
+            report_id=record_report,
+            trace_id=record_trace,
+        )
     if _str(_gateway_data(gw_env).get("state")) == "not_found":
-        return 404, _failure("deliver", "not_found", STATE_REJECTED, 404,
-                             msg_id=msg_id, report_id=record_report,
-                             trace_id=record_trace)
+        return 404, _failure(
+            "deliver",
+            "not_found",
+            STATE_REJECTED,
+            404,
+            msg_id=msg_id,
+            report_id=record_report,
+            trace_id=record_trace,
+        )
 
-    record.update({
-        "state": STATE_DELIVERED,
-        "delivered_at": _now_iso(),
-        "delivered_channel": channel,
-        "delivered_ref": delivered_ref,
-    })
+    record.update(
+        {
+            "state": STATE_DELIVERED,
+            "delivered_at": _now_iso(),
+            "delivered_channel": channel,
+            "delivered_ref": delivered_ref,
+        }
+    )
     _save_record(store, record)
-    return 200, _success("deliver", STATE_DELIVERED, msg_id, record_report,
-                         record_trace, 200, delivered_channel=channel,
-                         delivered_ref=delivered_ref)
+    return 200, _success(
+        "deliver",
+        STATE_DELIVERED,
+        msg_id,
+        record_report,
+        record_trace,
+        200,
+        delivered_channel=channel,
+        delivered_ref=delivered_ref,
+    )
 
 
 def _receipt_record_view(record: dict, gateway: dict) -> dict:
@@ -935,7 +1262,8 @@ def _receipt_record_view(record: dict, gateway: dict) -> dict:
     linked = bool(
         answer_report_id
         and answer_report_id == _str(record.get("report_id"))
-        and answer_trace_id == _str(record.get("trace_id")))
+        and answer_trace_id == _str(record.get("trace_id"))
+    )
     return {
         "msg_id": _str(record.get("msg_id")),
         "channel": CHANNEL_NAMESPACE,
@@ -977,60 +1305,122 @@ def _handle_receipt(store, headers, query):
         if msg_id:
             gateway = _gateway_view(msg_id)
             if gateway.get("ok") and gateway.get("state") != "not_found":
-                return 500, _failure("receipt", "sidecar_missing",
-                                     STATE_UNKNOWN, 500, msg_id=msg_id,
-                                     report_id=report_id)
-        return 404, _failure("receipt", "not_found", STATE_REJECTED, 404,
-                             msg_id=msg_id, report_id=report_id)
+                return 500, _failure(
+                    "receipt",
+                    "sidecar_missing",
+                    STATE_UNKNOWN,
+                    500,
+                    msg_id=msg_id,
+                    report_id=report_id,
+                )
+        return 404, _failure(
+            "receipt",
+            "not_found",
+            STATE_REJECTED,
+            404,
+            msg_id=msg_id,
+            report_id=report_id,
+        )
     if len(matched) > 1:
         # 同 report_id 多条（同报告重复提交）：不静默挑一条，显式要求按 msg_id 查。
         return 409, _failure(
-            "receipt", "ambiguous_report_id", STATE_REJECTED, 409,
+            "receipt",
+            "ambiguous_report_id",
+            STATE_REJECTED,
+            409,
             report_id=report_id,
-            msg_ids=[_str(item.get("msg_id")) for item in matched])
+            msg_ids=[_str(item.get("msg_id")) for item in matched],
+        )
     record = matched[0]
     record_msg_id = _str(record.get("msg_id"))
     record_report = _str(record.get("report_id"))
     record_trace = _str(record.get("trace_id"))
     if trace_id and trace_id != record_trace:
-        return 422, _failure("receipt", "trace_mismatch", STATE_UNKNOWN, 422,
-                             msg_id=record_msg_id, report_id=record_report)
+        return 422, _failure(
+            "receipt",
+            "trace_mismatch",
+            STATE_UNKNOWN,
+            422,
+            msg_id=record_msg_id,
+            report_id=record_report,
+        )
     if report_id and report_id != record_report:
-        return 422, _failure("receipt", "report_id_mismatch", STATE_REJECTED,
-                             422, msg_id=record_msg_id, report_id=record_report,
-                             trace_id=record_trace)
+        return 422, _failure(
+            "receipt",
+            "report_id_mismatch",
+            STATE_REJECTED,
+            422,
+            msg_id=record_msg_id,
+            report_id=record_report,
+            trace_id=record_trace,
+        )
 
     gateway = _gateway_view(record_msg_id)
     if not gateway.get("ok"):
-        return _gateway_failure("receipt", gateway, msg_id=record_msg_id,
-                                report_id=record_report, trace_id=record_trace)
+        return _gateway_failure(
+            "receipt",
+            gateway,
+            msg_id=record_msg_id,
+            report_id=record_report,
+            trace_id=record_trace,
+        )
     if gateway.get("state") == "not_found":
-        return 500, _failure("receipt", "store_diverged", STATE_UNKNOWN, 500,
-                             msg_id=record_msg_id, report_id=record_report,
-                             trace_id=record_trace,
-                             gateway_error="gateway_record_missing")
+        return 500, _failure(
+            "receipt",
+            "store_diverged",
+            STATE_UNKNOWN,
+            500,
+            msg_id=record_msg_id,
+            report_id=record_report,
+            trace_id=record_trace,
+            gateway_error="gateway_record_missing",
+        )
     state = _str(record.get("state"))
     gateway_state = _str(gateway.get("state"))
     if gateway_state == "processed" and state == STATE_SUBMITTED:
-        return 500, _failure("receipt", "store_diverged", STATE_UNKNOWN, 500,
-                             msg_id=record_msg_id, report_id=record_report,
-                             trace_id=record_trace,
-                             gateway_error="sidecar_behind_gateway")
+        return 500, _failure(
+            "receipt",
+            "store_diverged",
+            STATE_UNKNOWN,
+            500,
+            msg_id=record_msg_id,
+            report_id=record_report,
+            trace_id=record_trace,
+            gateway_error="sidecar_behind_gateway",
+        )
     if state in (STATE_CONSUMED, STATE_ANSWERED) and not gateway.get("answered"):
-        return 500, _failure("receipt", "store_diverged", STATE_UNKNOWN, 500,
-                             msg_id=record_msg_id, report_id=record_report,
-                             trace_id=record_trace,
-                             gateway_error="gateway_answer_evidence_missing")
+        return 500, _failure(
+            "receipt",
+            "store_diverged",
+            STATE_UNKNOWN,
+            500,
+            msg_id=record_msg_id,
+            report_id=record_report,
+            trace_id=record_trace,
+            gateway_error="gateway_answer_evidence_missing",
+        )
     if state == STATE_DELIVERED and not gateway.get("delivered"):
-        return 500, _failure("receipt", "store_diverged", STATE_UNKNOWN, 500,
-                             msg_id=record_msg_id, report_id=record_report,
-                             trace_id=record_trace,
-                             gateway_error="gateway_delivery_evidence_missing")
+        return 500, _failure(
+            "receipt",
+            "store_diverged",
+            STATE_UNKNOWN,
+            500,
+            msg_id=record_msg_id,
+            report_id=record_report,
+            trace_id=record_trace,
+            gateway_error="gateway_delivery_evidence_missing",
+        )
     if gateway.get("delivered") and state != STATE_DELIVERED:
-        return 500, _failure("receipt", "store_diverged", STATE_UNKNOWN, 500,
-                             msg_id=record_msg_id, report_id=record_report,
-                             trace_id=record_trace,
-                             gateway_error="delivery_ledger_diverged")
+        return 500, _failure(
+            "receipt",
+            "store_diverged",
+            STATE_UNKNOWN,
+            500,
+            msg_id=record_msg_id,
+            report_id=record_report,
+            trace_id=record_trace,
+            gateway_error="delivery_ledger_diverged",
+        )
 
     view = _receipt_record_view(record, gateway)
     body = {
@@ -1075,8 +1465,7 @@ def _authenticate(endpoint: str, headers: dict, token: str):
     if not provided:
         return 401, _failure(endpoint, "token_missing", STATE_REJECTED, 401)
     try:
-        matched = hmac.compare_digest(provided.encode("utf-8"),
-                                      token.encode("utf-8"))
+        matched = hmac.compare_digest(provided.encode("utf-8"), token.encode("utf-8"))
     except (UnicodeError, TypeError):
         matched = False
     if not matched:
@@ -1090,8 +1479,13 @@ def _authenticate(endpoint: str, headers: dict, token: str):
 # ---------------------------------------------------------------- 幂等重放
 def _replay(store, endpoint: str, digest: str, seen: dict):
     if _str(seen.get("digest")) != digest:
-        return 409, _failure(endpoint, "idempotency_conflict", STATE_REJECTED,
-                             409, conflict_with=_str(seen.get("msg_id")))
+        return 409, _failure(
+            endpoint,
+            "idempotency_conflict",
+            STATE_REJECTED,
+            409,
+            conflict_with=_str(seen.get("msg_id")),
+        )
     payload = dict(seen.get("body") or {})
     payload.update(replayed=True, duplicate=True)
     msg_id = _str(seen.get("msg_id")) or _str(payload.get("msg_id"))
@@ -1118,8 +1512,7 @@ def _handle_post(endpoint: str, store, headers: dict, body):
         return 422, _failure(endpoint, "invalid_request", STATE_REJECTED, 422)
     http_idem = _str(headers.get(IDEMPOTENCY_HEADER.lower()))
     if not http_idem:
-        return 422, _failure(endpoint, "idempotency_key_missing",
-                             STATE_REJECTED, 422)
+        return 422, _failure(endpoint, "idempotency_key_missing", STATE_REJECTED, 422)
     seen = _idem_lookup(store, endpoint, http_idem)
     if seen is not None:
         return _replay(store, endpoint, digest, seen)
@@ -1130,10 +1523,15 @@ def _handle_post(endpoint: str, store, headers: dict, body):
             _idem_save(store, endpoint, http_idem, digest, status, payload)
         except OSError as exc:
             return 500, _failure(
-                endpoint, "idempotency_persist_failed", STATE_UNKNOWN, 500,
+                endpoint,
+                "idempotency_persist_failed",
+                STATE_UNKNOWN,
+                500,
                 msg_id=_str(payload.get("msg_id")),
                 report_id=_str(payload.get("report_id")),
-                trace_id=_str(payload.get("trace_id")), detail=str(exc))
+                trace_id=_str(payload.get("trace_id")),
+                detail=str(exc),
+            )
     return status, payload
 
 
@@ -1162,14 +1560,15 @@ def handle(method, path, headers=None, body=None, query=None):
         with _LOCK:
             store = _active_store()
             if store is None:
-                return 503, _failure(endpoint, "store_unconfigured",
-                                     STATE_UNKNOWN, 503)
+                return 503, _failure(endpoint, "store_unconfigured", STATE_UNKNOWN, 503)
             if endpoint == "receipt":
                 return _handle_receipt(store, normalized, _normalize_query(query))
             return _handle_post(endpoint, store, normalized, body)
     except OSError as exc:
-        return 503, _failure(endpoint, "store_unavailable", STATE_UNKNOWN, 503,
-                             detail=str(exc))
+        return 503, _failure(
+            endpoint, "store_unavailable", STATE_UNKNOWN, 503, detail=str(exc)
+        )
     except Exception as exc:  # noqa: BLE001 - 失败关闭，不向调用方抛内部异常
-        return 500, _failure(endpoint, "internal_error", STATE_UNKNOWN, 500,
-                             detail=type(exc).__name__)
+        return 500, _failure(
+            endpoint, "internal_error", STATE_UNKNOWN, 500, detail=type(exc).__name__
+        )

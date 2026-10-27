@@ -29,10 +29,16 @@ class EventAdapterTests(unittest.TestCase):
             root = Path(tmp)
             path = root / "portal" / "work" / "push_flow.jsonl"
             path.parent.mkdir(parents=True)
-            source = {"kind": "published", "ts": "2026-01-01T00:00:00+08:00", "payload": {"x": 1}}
+            source = {
+                "kind": "published",
+                "ts": "2026-01-01T00:00:00+08:00",
+                "payload": {"x": 1},
+            }
             path.write_text(json.dumps(source) + "\n", encoding="utf-8")
             report = build_report(root)
-            event = next(item for item in report["events"] if item["source"] == "push_flow")
+            event = next(
+                item for item in report["events"] if item["source"] == "push_flow"
+            )
             self.assertEqual(event["ts"], "2025-12-31T16:00:00+00:00")
             self.assertTrue(event["provenance"]["derived_source_id"])
             self.assertEqual(event["payload"]["x"], 1)
@@ -45,8 +51,12 @@ class EventAdapterTests(unittest.TestCase):
             db = root / "portal" / "data" / "portal.db"
             db.parent.mkdir(parents=True)
             with sqlite3.connect(db) as con:
-                con.execute("CREATE TABLE events (id INTEGER PRIMARY KEY, ts TEXT, trace_id TEXT, source TEXT, kind TEXT, payload TEXT)")
-                con.execute("INSERT INTO events VALUES (1, '2026-01-01 00:00:00', 'tr-1', 'paper', 'created', '{\"a\":2}')")
+                con.execute(
+                    "CREATE TABLE events (id INTEGER PRIMARY KEY, ts TEXT, trace_id TEXT, source TEXT, kind TEXT, payload TEXT)"
+                )
+                con.execute(
+                    "INSERT INTO events VALUES (1, '2026-01-01 00:00:00', 'tr-1', 'paper', 'created', '{\"a\":2}')"
+                )
             report = build_report(root)
             event = report["events"][0]
             self.assertEqual(event["source"], "paper")
@@ -55,7 +65,9 @@ class EventAdapterTests(unittest.TestCase):
             self.assertEqual(event["payload"], {"a": 2})
             con = sqlite3.connect(db)
             try:
-                self.assertEqual(con.execute("SELECT COUNT(*) FROM events").fetchone()[0], 1)
+                self.assertEqual(
+                    con.execute("SELECT COUNT(*) FROM events").fetchone()[0], 1
+                )
             finally:
                 con.close()
 

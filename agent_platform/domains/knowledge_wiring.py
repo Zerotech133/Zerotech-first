@@ -33,15 +33,15 @@ _AGENT_PLATFORM = _DOMAINS_DIR.parent
 if str(_AGENT_PLATFORM) not in sys.path:
     sys.path.insert(0, str(_AGENT_PLATFORM))
 
-from contracts.objects import Approval        # noqa: E402
-from engine.approvals import ApprovalStore    # noqa: E402
-from engine.memory import MemoryStore         # noqa: E402
+from contracts.objects import Approval  # noqa: E402
+from engine.approvals import ApprovalStore  # noqa: E402
+from engine.memory import MemoryStore  # noqa: E402
 
 PENDING_FILE = _AGENT_PLATFORM / "data" / "knowledge_pending.jsonl"
 MEMORY_BASE = _AGENT_PLATFORM / "data" / "memory"
 APPROVALS_DB = _AGENT_PLATFORM / "data" / "approvals" / "approvals.db"
 
-GNS_KNOWLEDGE = "share/knowledge"   # 生产知识 gns（跨域可读段）
+GNS_KNOWLEDGE = "share/knowledge"  # 生产知识 gns（跨域可读段）
 
 _KNOWN_KINDS = {"lesson", "decision", "academy_research"}
 
@@ -53,17 +53,22 @@ class KnowledgeWiringError(Exception):
 def candidate_hash(entry: Dict) -> str:
     """候选内容指纹：canonical(kind, dept, content) sha256 前 16 位。"""
     canonical = json.dumps(
-        {"kind": entry.get("kind", ""), "dept": entry.get("dept", ""),
-         "content": entry.get("content", "")},
-        ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        {
+            "kind": entry.get("kind", ""),
+            "dept": entry.get("dept", ""),
+            "content": entry.get("content", ""),
+        },
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:16]
 
 
 # ----------------------------------------------------------------------
 def load_pending(root: Path = None) -> List[Dict]:
     """候选池只读加载（行号随行返回，供定位）。"""
-    p = (Path(root) if root else _AGENT_PLATFORM) / "data" / \
-        "knowledge_pending.jsonl"
+    p = (Path(root) if root else _AGENT_PLATFORM) / "data" / "knowledge_pending.jsonl"
     if not p.exists():
         return []
     out = []
@@ -74,8 +79,7 @@ def load_pending(root: Path = None) -> List[Dict]:
         try:
             entry = json.loads(line)
         except json.JSONDecodeError:
-            out.append({"_line": i + 1, "_error": "json_invalid",
-                        "_raw": line[:80]})
+            out.append({"_line": i + 1, "_error": "json_invalid", "_raw": line[:80]})
             continue
         entry["_line"] = i + 1
         entry["_hash"] = candidate_hash(entry)
@@ -91,23 +95,26 @@ def _memory_has(store: MemoryStore, chash: str) -> bool:
 
 
 def _write_memory(root: Path, entry: Dict, approval: Approval) -> Dict:
-    ms = MemoryStore((Path(root) if root else _AGENT_PLATFORM)
-                     / "data" / "memory", enforce=False)
-    payload = {"kind": entry.get("kind", ""),
-               "dept": entry.get("dept", ""),
-               "content": entry.get("content", ""),
-               "src": entry.get("src", ""),
-               "ts": entry.get("ts", ""),
-               "candidate_hash": entry["_hash"],
-               "approval_id": approval.approval_id,
-               "promoted_by": approval.decided_by}
+    ms = MemoryStore(
+        (Path(root) if root else _AGENT_PLATFORM) / "data" / "memory", enforce=False
+    )
+    payload = {
+        "kind": entry.get("kind", ""),
+        "dept": entry.get("dept", ""),
+        "content": entry.get("content", ""),
+        "src": entry.get("src", ""),
+        "ts": entry.get("ts", ""),
+        "candidate_hash": entry["_hash"],
+        "approval_id": approval.approval_id,
+        "promoted_by": approval.decided_by,
+    }
     rec = ms.write("wiring", GNS_KNOWLEDGE, payload)
     return rec
 
 
-def promote(root: Path, chash: str, by: str, reason: str = "",
-            store: ApprovalStore = None
-            ) -> Tuple[Approval, Dict, bool]:
+def promote(
+    root: Path, chash: str, by: str, reason: str = "", store: ApprovalStore = None
+) -> Tuple[Approval, Dict, bool]:
     """批准提升一条候选知识 → 生产记忆。
 
     返回 (approval, memory_record, replayed)。
@@ -119,14 +126,13 @@ def promote(root: Path, chash: str, by: str, reason: str = "",
     if not by:
         raise KnowledgeWiringError("批准人 by 必填")
     root = Path(root) if root else _AGENT_PLATFORM
-    entry = next((e for e in load_pending(root) if e.get("_hash") == chash),
-                 None)
+    entry = next((e for e in load_pending(root) if e.get("_hash") == chash), None)
     if entry is None or "_error" in entry:
         raise KnowledgeWiringError("候选池无此知识：%s" % chash)
     if entry.get("kind") not in _KNOWN_KINDS:
         raise KnowledgeWiringError(
-            "kind=%s 不在白名单 %s" % (entry.get("kind"),
-                                      sorted(_KNOWN_KINDS)))
+            "kind=%s 不在白名单 %s" % (entry.get("kind"), sorted(_KNOWN_KINDS))
+        )
     if not entry.get("content"):
         raise KnowledgeWiringError("候选内容为空，拒绝提升")
 
@@ -134,41 +140,53 @@ def promote(root: Path, chash: str, by: str, reason: str = "",
     store = store or ApprovalStore(APPROVALS_DB)
     try:
         key = "knowledge:%s:promote" % chash
-        approval, replayed = store.record(Approval(
-            target_type="memory",
-            target_id="knowledge:%s" % chash,
-            from_status="pending", to_status="promoted",
-            decision="approved", decided_by=by, reason=reason,
-            idempotency_key=key))
+        approval, replayed = store.record(
+            Approval(
+                target_type="memory",
+                target_id="knowledge:%s" % chash,
+                from_status="pending",
+                to_status="promoted",
+                decision="approved",
+                decided_by=by,
+                reason=reason,
+                idempotency_key=key,
+            )
+        )
         ms = MemoryStore(root / "data" / "memory", enforce=False)
         if _memory_has(ms, chash):
-            return approval, {}, True          # 全量重放（凭据+记忆都在）
-        rec = _write_memory(root, entry, approval)   # 首次 / catch-up
+            return approval, {}, True  # 全量重放（凭据+记忆都在）
+        rec = _write_memory(root, entry, approval)  # 首次 / catch-up
         return approval, rec, False
     finally:
         if own:
             store.close()
 
 
-def reject(root: Path, chash: str, by: str, reason: str = "",
-           store: ApprovalStore = None) -> Tuple[Approval, bool]:
+def reject(
+    root: Path, chash: str, by: str, reason: str = "", store: ApprovalStore = None
+) -> Tuple[Approval, bool]:
     """否决候选：记凭据不写记忆（append-only 否决历史）。"""
     if not by:
         raise KnowledgeWiringError("否决人 by 必填")
     root = Path(root) if root else _AGENT_PLATFORM
-    entry = next((e for e in load_pending(root) if e.get("_hash") == chash),
-                 None)
+    entry = next((e for e in load_pending(root) if e.get("_hash") == chash), None)
     if entry is None:
         raise KnowledgeWiringError("候选池无此知识：%s" % chash)
     own = store is None
     store = store or ApprovalStore(APPROVALS_DB)
     try:
-        approval, replayed = store.record(Approval(
-            target_type="memory",
-            target_id="knowledge:%s" % chash,
-            from_status="pending", to_status="rejected",
-            decision="rejected", decided_by=by, reason=reason,
-            idempotency_key="knowledge:%s:reject" % chash))
+        approval, replayed = store.record(
+            Approval(
+                target_type="memory",
+                target_id="knowledge:%s" % chash,
+                from_status="pending",
+                to_status="rejected",
+                decision="rejected",
+                decided_by=by,
+                reason=reason,
+                idempotency_key="knowledge:%s:reject" % chash,
+            )
+        )
         return approval, replayed
     finally:
         if own:
@@ -182,8 +200,11 @@ def audit_report(root: Path = None) -> Dict:
     pending = load_pending(root)
     store = ApprovalStore(APPROVALS_DB)
     try:
-        creds = {c.idempotency_key: c for c in store.list()
-                 if c.target_id.startswith("knowledge:")}
+        creds = {
+            c.idempotency_key: c
+            for c in store.list()
+            if c.target_id.startswith("knowledge:")
+        }
     finally:
         store.close()
 
@@ -203,17 +224,19 @@ def audit_report(root: Path = None) -> Dict:
         h = e["_hash"]
         if "knowledge:%s:promote" % h in promoted_keys:
             ok = _memory_has(ms, h)
-            states.append({"line": e["_line"], "hash": h,
-                           "state": "promoted" if ok else
-                           "pending_execution"})
+            states.append(
+                {
+                    "line": e["_line"],
+                    "hash": h,
+                    "state": "promoted" if ok else "pending_execution",
+                }
+            )
             if not ok:
                 findings.append("凭据在而记忆缺（崩溃窗口）：%s" % h)
         elif "knowledge:%s:reject" % h in creds:
-            states.append({"line": e["_line"], "hash": h,
-                           "state": "rejected"})
+            states.append({"line": e["_line"], "hash": h, "state": "rejected"})
         else:
-            states.append({"line": e["_line"], "hash": h,
-                           "state": "pending_review"})
+            states.append({"line": e["_line"], "hash": h, "state": "pending_review"})
 
     # ② 红线：生产记忆中出现无凭据的知识 = 绕门
     n_bypass = 0
@@ -221,8 +244,10 @@ def audit_report(root: Path = None) -> Dict:
         ch = rec.get("payload", {}).get("candidate_hash", "")
         if "knowledge:%s:promote" % ch not in promoted_keys:
             n_bypass += 1
-            findings.append("bypass_promote: share/knowledge 无凭据条目"
-                            " hash=%s" % (ch or "<missing>"))
+            findings.append(
+                "bypass_promote: share/knowledge 无凭据条目"
+                " hash=%s" % (ch or "<missing>")
+            )
     if n_bypass:
         verdict = "FAIL"
     elif any("崩溃窗口" in f for f in findings):
@@ -264,16 +289,21 @@ def main(argv=None) -> int:
     elif args.cmd == "report":
         print(json.dumps(audit_report(), ensure_ascii=False, indent=1))
     elif args.cmd == "promote":
-        ap_, rec, replayed = promote(_AGENT_PLATFORM, args.hash, args.by,
-                                     args.reason)
-        print(json.dumps({"approval_id": ap_.approval_id,
-                          "replayed": replayed, "memory": rec},
-                         ensure_ascii=False))
+        ap_, rec, replayed = promote(_AGENT_PLATFORM, args.hash, args.by, args.reason)
+        print(
+            json.dumps(
+                {"approval_id": ap_.approval_id, "replayed": replayed, "memory": rec},
+                ensure_ascii=False,
+            )
+        )
     else:
-        ap_, replayed = reject(_AGENT_PLATFORM, args.hash, args.by,
-                               args.reason)
-        print(json.dumps({"approval_id": ap_.approval_id,
-                          "replayed": replayed}, ensure_ascii=False))
+        ap_, replayed = reject(_AGENT_PLATFORM, args.hash, args.by, args.reason)
+        print(
+            json.dumps(
+                {"approval_id": ap_.approval_id, "replayed": replayed},
+                ensure_ascii=False,
+            )
+        )
     return 0
 
 

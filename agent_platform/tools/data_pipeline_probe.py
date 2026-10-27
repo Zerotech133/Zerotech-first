@@ -12,6 +12,7 @@
 环境/回滚：`DATA_PIPELINE_PROBE=off` 立即跳过；删除计划任务 + 本工具即回滚。
 退出码：0 全部 ok；1 有 degraded；2 自身错误。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -40,7 +41,9 @@ def kill_switch_on(env=None) -> bool:
 def load_targets(config: Path) -> list:
     data = json.loads(Path(config).read_text(encoding="utf-8"))
     rows = data.get("targets") if isinstance(data, dict) else data
-    return [t for t in rows or [] if isinstance(t, dict) and t.get("seat") and t.get("kind")]
+    return [
+        t for t in rows or [] if isinstance(t, dict) and t.get("seat") and t.get("kind")
+    ]
 
 
 def _abs(path) -> Path:
@@ -54,8 +57,12 @@ def _http(url: str, timeout: float) -> dict:
     try:
         with urllib.request.urlopen(url, timeout=timeout) as r:
             data = r.read(65536)
-            return {"ok": 200 <= r.status < 400, "status": r.status,
-                    "elapsed_ms": int((time.time() - t0) * 1000), "bytes": len(data)}
+            return {
+                "ok": 200 <= r.status < 400,
+                "status": r.status,
+                "elapsed_ms": int((time.time() - t0) * 1000),
+                "bytes": len(data),
+            }
     except urllib.error.HTTPError as exc:
         return {"ok": False, "status": exc.code, "error": "http_%d" % exc.code}
     except Exception as exc:  # noqa: BLE001
@@ -66,19 +73,28 @@ def _tcp(host: str, port: int, timeout: float) -> dict:
     t0 = time.time()
     try:
         with socket.create_connection((host, int(port)), timeout=timeout):
-            return {"ok": True, "host": host, "port": int(port),
-                    "elapsed_ms": int((time.time() - t0) * 1000)}
+            return {
+                "ok": True,
+                "host": host,
+                "port": int(port),
+                "elapsed_ms": int((time.time() - t0) * 1000),
+            }
     except OSError as exc:
-        return {"ok": False, "host": host, "port": int(port),
-                "error": type(exc).__name__}
+        return {
+            "ok": False,
+            "host": host,
+            "port": int(port),
+            "error": type(exc).__name__,
+        }
 
 
 def _file_freshness(path: str, max_age_hours: float) -> dict:
     root = _abs(path)
     try:
         if root.is_dir():
-            latest = max((f.stat().st_mtime for f in root.rglob("*") if f.is_file()),
-                         default=0)
+            latest = max(
+                (f.stat().st_mtime for f in root.rglob("*") if f.is_file()), default=0
+            )
         elif root.is_file():
             latest = root.stat().st_mtime
         else:
@@ -88,8 +104,12 @@ def _file_freshness(path: str, max_age_hours: float) -> dict:
     if not latest:
         return {"ok": False, "error": "empty", "path": str(path)}
     age_h = (time.time() - latest) / 3600.0
-    return {"ok": age_h <= max_age_hours, "age_hours": round(age_h, 2),
-            "max_age_hours": max_age_hours, "path": str(path)}
+    return {
+        "ok": age_h <= max_age_hours,
+        "age_hours": round(age_h, 2),
+        "max_age_hours": max_age_hours,
+        "path": str(path),
+    }
 
 
 def _latest_json(dir_path: str) -> dict:
@@ -114,9 +134,15 @@ def _latest_json(dir_path: str) -> dict:
                 break
     elif isinstance(obj, list):
         items = len(obj)
-    return {"ok": True, "file": str(latest), "top_keys": keys, "items": items,
-            "mtime": time.strftime("%Y-%m-%dT%H:%M:%S",
-                                   time.localtime(latest.stat().st_mtime))}
+    return {
+        "ok": True,
+        "file": str(latest),
+        "top_keys": keys,
+        "items": items,
+        "mtime": time.strftime(
+            "%Y-%m-%dT%H:%M:%S", time.localtime(latest.stat().st_mtime)
+        ),
+    }
 
 
 def probe_target(t: dict, timeout: float = 5.0) -> dict:
@@ -126,14 +152,20 @@ def probe_target(t: dict, timeout: float = 5.0) -> dict:
     elif kind == "tcp":
         res = _tcp(str(t.get("host") or "127.0.0.1"), int(t.get("port") or 0), timeout)
     elif kind == "file_freshness":
-        res = _file_freshness(str(t.get("path") or ""),
-                              float(t.get("max_age_hours") or 24))
+        res = _file_freshness(
+            str(t.get("path") or ""), float(t.get("max_age_hours") or 24)
+        )
     elif kind == "latest_json":
         res = _latest_json(str(t.get("path") or ""))
     else:
         res = {"ok": False, "error": "unsupported_kind", "kind": kind}
-    res.update({"kind": kind, "label": str(t.get("label") or ""),
-                "ts": time.strftime("%Y-%m-%dT%H:%M:%S%z")})
+    res.update(
+        {
+            "kind": kind,
+            "label": str(t.get("label") or ""),
+            "ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+        }
+    )
     return res
 
 
@@ -141,8 +173,9 @@ def record(seat, result, status_root=None) -> Path:
     root = Path(status_root) if status_root else (PLATFORM / "data" / "data_pipeline")
     d = root / seat
     d.mkdir(parents=True, exist_ok=True)
-    (d / "status.json").write_text(json.dumps(result, ensure_ascii=False, indent=1),
-                                   encoding="utf-8")
+    (d / "status.json").write_text(
+        json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8"
+    )
     hist = root / "history.jsonl"
     with open(hist, "a", encoding="utf-8") as f:
         f.write(json.dumps({"seat": seat, **result}, ensure_ascii=False) + "\n")
@@ -158,21 +191,34 @@ def emit_audit(seat: str, result: dict) -> dict:
         if tools not in sys.path:
             sys.path.insert(0, tools)
         import events  # noqa: WPS433
+
         k = result.get("kind")
         if k == "file_freshness":
             detail = "data_probe file age=%sh ok=%s path=%s" % (
-                result.get("age_hours"), result.get("ok"), result.get("path"))
+                result.get("age_hours"),
+                result.get("ok"),
+                result.get("path"),
+            )
         elif k == "latest_json":
             detail = "data_probe latest_json ok=%s items=%s file=%s" % (
-                result.get("ok"), result.get("items"), result.get("file"))
+                result.get("ok"),
+                result.get("items"),
+                result.get("file"),
+            )
         elif k == "tcp":
             detail = "data_probe tcp %s:%s ok=%s" % (
-                result.get("host"), result.get("port"), result.get("ok"))
+                result.get("host"),
+                result.get("port"),
+                result.get("ok"),
+            )
         else:
             detail = "data_probe http status=%s ok=%s" % (
-                result.get("status"), result.get("ok"))
-        return events.emit(kind="patrol_verdict", task=seat, agent=seat,
-                           detail=detail[:300])
+                result.get("status"),
+                result.get("ok"),
+            )
+        return events.emit(
+            kind="patrol_verdict", task=seat, agent=seat, detail=detail[:300]
+        )
     except Exception as exc:  # noqa: BLE001
         return {"ok": False, "error": type(exc).__name__}
 
@@ -188,7 +234,9 @@ def main(argv=None) -> int:
     args = ap.parse_args(argv)
     if kill_switch_on():
         if not args.quiet:
-            print(json.dumps({"ok": False, "skipped": "kill_switch"}, ensure_ascii=False))
+            print(
+                json.dumps({"ok": False, "skipped": "kill_switch"}, ensure_ascii=False)
+            )
         return 0
     try:
         targets = load_targets(Path(args.config))
@@ -203,24 +251,35 @@ def main(argv=None) -> int:
             seat = str(t["seat"]).upper()
             res = probe_target(t, args.timeout)
             record(seat, res, args.status_dir or None)
-            results.append({"seat": seat, "result": res, "audit": emit_audit(seat, res)})
+            results.append(
+                {"seat": seat, "result": res, "audit": emit_audit(seat, res)}
+            )
     except Exception as exc:  # noqa: BLE001
-        print(json.dumps({"ok": False, "error": type(exc).__name__,
-                          "detail": str(exc)[:200]}, ensure_ascii=False))
+        print(
+            json.dumps(
+                {"ok": False, "error": type(exc).__name__, "detail": str(exc)[:200]},
+                ensure_ascii=False,
+            )
+        )
         return 2
     ok_count = sum(1 for x in results if x["result"].get("ok"))
-    summary = {"ok": ok_count == len(results), "total": len(results),
-               "ok_count": ok_count,
-               "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
-               "results": results}
+    summary = {
+        "ok": ok_count == len(results),
+        "total": len(results),
+        "ok_count": ok_count,
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+        "results": results,
+    }
     if not args.quiet:
         if args.json:
             print(json.dumps(summary, ensure_ascii=False, indent=1))
         else:
             for x in results:
                 r = x["result"]
-                print("%-10s %-15s ok=%s %s" % (x["seat"], r.get("kind"), r.get("ok"),
-                                               r.get("error") or ""))
+                print(
+                    "%-10s %-15s ok=%s %s"
+                    % (x["seat"], r.get("kind"), r.get("ok"), r.get("error") or "")
+                )
     return 0 if summary["ok"] else 1
 
 

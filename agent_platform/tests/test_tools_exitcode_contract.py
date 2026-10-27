@@ -28,6 +28,7 @@
 在空根上连目录都不创建（零写面红线）。子进程 cwd 固定为仓库根，
 env 注入 PYTHONIOENCODING=utf-8（Windows 控制台默认 GBK 会炸中文输出）。
 """
+
 from __future__ import annotations
 
 import os
@@ -41,7 +42,9 @@ TOOLS_DIR = REPO_ROOT / "tools"
 SUBPROCESS_TIMEOUT_S = 120
 
 
-def run_tool(tool: str, *args: str, cwd: Path | None = None) -> subprocess.CompletedProcess:
+def run_tool(
+    tool: str, *args: str, cwd: Path | None = None
+) -> subprocess.CompletedProcess:
     """以子进程调用 tools/<tool>，返回 CompletedProcess（text 模式，UTF-8 解码）。"""
     script = TOOLS_DIR / tool
     assert script.is_file(), "工具脚本缺失：%s" % script
@@ -68,6 +71,7 @@ def _both(proc: subprocess.CompletedProcess) -> str:
 # ---------------------------------------------------------------------------
 # check_observation_point：2=有 FAIL / 0=有 PASS 无 FAIL / 1=全 PENDING（中性）
 # ---------------------------------------------------------------------------
+
 
 def test_observation_point_empty_root_is_neutral_rc1(tmp_path):
     """空根（首跑前形态）→ 五判据全 PENDING → rc 1，输出显式中性字样。"""
@@ -106,6 +110,7 @@ def test_observation_point_missing_data_root_rc2(tmp_path):
 # verify_strategy_ledger：0=全 PASS（含空账本中性）/ 1=有 FAIL / 2=缺参
 # ---------------------------------------------------------------------------
 
+
 def test_ledger_empty_root_is_neutral_rc0(tmp_path):
     """空根 → 空账本中性 → rc 0（中性非通过，但退出码仍为 0 契约）。"""
     data_root = tmp_path / "data"
@@ -130,14 +135,16 @@ def test_ledger_missing_data_root_rc2():
 # check_trigger_chain：2=有 FAIL / 0=有 PASS 无 FAIL / 1=全 WARN；--print-config
 # ---------------------------------------------------------------------------
 
+
 def test_trigger_chain_print_config_rc0():
     """--print-config 只打印配置常量后 rc 0。
 
     该分支在 run_checks 之前 return（源码 main() 第 457-459 行），不读计划任务
     XML、不探 Ollama 端口、不启子进程，因此无网络/任务计划依赖，无需 skip。
     """
-    proc = run_tool("check_trigger_chain.py",
-                    "--repo-root", str(REPO_ROOT), "--print-config")
+    proc = run_tool(
+        "check_trigger_chain.py", "--repo-root", str(REPO_ROOT), "--print-config"
+    )
 
     assert proc.returncode == 0, _both(proc)
     assert "check_trigger_chain 配置面" in proc.stdout
@@ -158,12 +165,19 @@ def test_trigger_chain_print_config_still_requires_repo_root(tmp_path):
 # list_rejects：--show 与 --stats 互斥 → 2；浏览路径恒 0
 # ---------------------------------------------------------------------------
 
+
 def test_list_rejects_show_stats_mutex_rc2(tmp_path):
     """同给 --show 与 --stats → rc 2，stdout 无表格输出。"""
     rejects_root = tmp_path / "rejects"
 
-    proc = run_tool("list_rejects.py", "--rejects-root", str(rejects_root),
-                    "--show", "abc123", "--stats")
+    proc = run_tool(
+        "list_rejects.py",
+        "--rejects-root",
+        str(rejects_root),
+        "--show",
+        "abc123",
+        "--stats",
+    )
 
     assert proc.returncode == 2, _both(proc)
     assert "互斥" in proc.stderr
@@ -184,6 +198,7 @@ def test_list_rejects_empty_root_rc0(tmp_path):
 # ---------------------------------------------------------------------------
 # scan_secrets：1=--strict 有命中 / 0=无 --strict 恒 0 / 2=非 git 目录 --git-status
 # ---------------------------------------------------------------------------
+
 
 def test_scan_secrets_paths_clean_rc0(tmp_path):
     """隔离临时目录 + --paths 指定干净文件 → rc 0（--paths 模式不看 git 环境）。"""

@@ -25,8 +25,7 @@ def _load(name: str, rel: str):
     return module
 
 
-er = _load("event_replay_under_test",
-           "agent_platform/adapters/event_replay.py")
+er = _load("event_replay_under_test", "agent_platform/adapters/event_replay.py")
 
 
 def _make_fixture(root: Path) -> None:
@@ -39,8 +38,10 @@ def _make_fixture(root: Path) -> None:
     data_dir = root / "portal" / "data"
     data_dir.mkdir(parents=True)
     con = sqlite3.connect(data_dir / "portal.db")
-    con.execute("CREATE TABLE events (id INTEGER PRIMARY KEY, "
-                "ts TEXT, kind TEXT, actor TEXT, object_id TEXT, source TEXT)")
+    con.execute(
+        "CREATE TABLE events (id INTEGER PRIMARY KEY, "
+        "ts TEXT, kind TEXT, actor TEXT, object_id TEXT, source TEXT)"
+    )
     con.executemany(
         "INSERT INTO events (ts, kind, actor, object_id, source) VALUES (?,?,?,?,?)",
         [
@@ -49,21 +50,30 @@ def _make_fixture(root: Path) -> None:
             ("2026-10-17T10:30:00+08:00", "task.claim", "worker-a", "t1", "portal"),
             ("2026-10-16T18:00:00+08:00", "gzh.approve", "m1-probe", "d0", "portal"),
             (None, "unknown.kind", "ghost", "x", "portal"),
-        ])
+        ],
+    )
     con.commit()
     con.close()
     audit_dir = root / "agent_platform" / "data"
     audit_dir.mkdir(parents=True, exist_ok=True)
     rows = [
-        {"caller": "worker-b", "action": "tool.call", "ts": "2026-10-17T11:00:00+08:00"},  # UTC 03:00
-        {"caller": "worker-b", "action": "tool.call", "ts": "2026-10-17T08:00:00+08:00"},  # UTC 00:00
+        {
+            "caller": "worker-b",
+            "action": "tool.call",
+            "ts": "2026-10-17T11:00:00+08:00",
+        },  # UTC 03:00
+        {
+            "caller": "worker-b",
+            "action": "tool.call",
+            "ts": "2026-10-17T08:00:00+08:00",
+        },  # UTC 00:00
     ]
     (audit_dir / "llm_tool_audit.jsonl").write_text(
-        "\n".join(json.dumps(r, ensure_ascii=False) for r in rows), encoding="utf-8")
+        "\n".join(json.dumps(r, ensure_ascii=False) for r in rows), encoding="utf-8"
+    )
 
 
 class EventReplayTests(unittest.TestCase):
-
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
         self.root = Path(self._tmp.name)
@@ -96,8 +106,9 @@ class EventReplayTests(unittest.TestCase):
         # 纯日期 until 含全天（UTC 语义：事件 ts 规范化为 UTC 存储）：
         # 17 日 UTC 内事件 4 条（01:00/02:30/03:00/00:00）；
         # 16 日 10:00 UTC 与 naive(None) 均被排除。
-        r = er.build_replay(self.root, since="2026-10-17",
-                            until="2026-10-17", limit=100)
+        r = er.build_replay(
+            self.root, since="2026-10-17", until="2026-10-17", limit=100
+        )
         self.assertEqual(r["matched_total"], 4)
 
     def test_naive_ts_sinks_and_excluded(self):
@@ -116,8 +127,12 @@ class EventReplayTests(unittest.TestCase):
         self.assertEqual(r["matched_total"], 6)
 
     def test_invalid_params_visible(self):
-        for kwargs in ({"order": "sideways"}, {"limit": 0}, {"limit": 99999},
-                       {"since": "not-a-date"}):
+        for kwargs in (
+            {"order": "sideways"},
+            {"limit": 0},
+            {"limit": 99999},
+            {"since": "not-a-date"},
+        ):
             with self.assertRaises(ValueError):
                 er.build_replay(self.root, **kwargs)
 
@@ -125,8 +140,11 @@ class EventReplayTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as empty:
             r = er.build_replay(empty, limit=10)
             self.assertEqual(r["matched_total"], 0)
-            missing = [s for s, m in (r["sources"] or {}).items()
-                       if not (m or {}).get("exists", False)]
+            missing = [
+                s
+                for s, m in (r["sources"] or {}).items()
+                if not (m or {}).get("exists", False)
+            ]
             self.assertTrue(missing)  # 源缺失显式可见
             self.assertFalse(r["events"])
 
@@ -136,8 +154,9 @@ class EventReplayTests(unittest.TestCase):
         after = {p: p.stat().st_mtime for p in self.root.rglob("*") if p.is_file()}
         self.assertEqual(before, after)
 
-    @unittest.skipUnless((ROOT / "portal" / "data" / "portal.db").exists(),
-                         "真实仓不存在时跳过")
+    @unittest.skipUnless(
+        (ROOT / "portal" / "data" / "portal.db").exists(), "真实仓不存在时跳过"
+    )
     def test_real_repo_smoke(self):
         r = er.build_replay(ROOT, limit=20)
         self.assertGreater(r["matched_total"], 0)

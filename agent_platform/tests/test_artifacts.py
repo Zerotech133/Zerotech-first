@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[2]
 def _load(name: str, rel: str):
     spec = importlib.util.spec_from_file_location(name, ROOT / rel)
     module = importlib.util.module_from_spec(spec)
-    sys.modules[name] = module          # dataclass 字符串注解判例
+    sys.modules[name] = module  # dataclass 字符串注解判例
     spec.loader.exec_module(module)
     return module
 
@@ -32,14 +32,27 @@ Artifact = objects.Artifact
 ArtifactStore = engine.ArtifactStore
 
 
-def _art(content_hash="h-aaa", path="gzh/drafts/a.md", kind="md",
-         revision="r1", supersedes="", source="gzh.drafts",
-         produced_by="writer-a"):
-    return Artifact(artifact_id="art-" + content_hash, kind=kind, path=path,
-                    fact_hash=content_hash, content_hash=content_hash,
-                    revision=revision, supersedes=supersedes,
-                    source_system=source, source_ref="2026-10-17-22",
-                    produced_by=produced_by)
+def _art(
+    content_hash="h-aaa",
+    path="gzh/drafts/a.md",
+    kind="md",
+    revision="r1",
+    supersedes="",
+    source="gzh.drafts",
+    produced_by="writer-a",
+):
+    return Artifact(
+        artifact_id="art-" + content_hash,
+        kind=kind,
+        path=path,
+        fact_hash=content_hash,
+        content_hash=content_hash,
+        revision=revision,
+        supersedes=supersedes,
+        source_system=source,
+        source_ref="2026-10-17-22",
+        produced_by=produced_by,
+    )
 
 
 class ArtifactStoreContractTests(unittest.TestCase):
@@ -47,7 +60,7 @@ class ArtifactStoreContractTests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.db = Path(self.tmp.name) / "artifacts.db"
-        self.store = ArtifactStore(self.db)   # keeper 连接判例
+        self.store = ArtifactStore(self.db)  # keeper 连接判例
 
     def tearDown(self):
         self.store.close()
@@ -69,8 +82,7 @@ class ArtifactStoreContractTests(unittest.TestCase):
         a = Artifact(kind="md", fact_hash="h-fallback")
         got, replayed = self.store.record(a)
         self.assertFalse(replayed)
-        self.assertEqual(self.store.by_hash("h-fallback").artifact_id,
-                         got.artifact_id)
+        self.assertEqual(self.store.by_hash("h-fallback").artifact_id, got.artifact_id)
 
     # ---- 验收门 1：append-only ----------------------------------------
     def test_append_only_no_update_no_delete(self):
@@ -82,11 +94,10 @@ class ArtifactStoreContractTests(unittest.TestCase):
     # ---- 验收门 1：supersede 链 ---------------------------------------
     def test_supersede_chain_and_rollback_history(self):
         a1, _ = self.store.record(_art(content_hash="h-v1"))
-        a2, _ = self.store.supersede(a1.artifact_id,
-                                     _art(content_hash="h-v2"))
-        a3, _ = self.store.supersede(a2.artifact_id,
-                                     _art(content_hash="h-v3",
-                                          produced_by="writer-b"))
+        a2, _ = self.store.supersede(a1.artifact_id, _art(content_hash="h-v2"))
+        a3, _ = self.store.supersede(
+            a2.artifact_id, _art(content_hash="h-v3", produced_by="writer-b")
+        )
         # 代次递增、指回旧条目
         self.assertEqual((a2.revision, a2.supersedes), ("r2", a1.artifact_id))
         self.assertEqual((a3.revision, a3.supersedes), ("r3", a2.artifact_id))
@@ -98,8 +109,10 @@ class ArtifactStoreContractTests(unittest.TestCase):
         self.assertEqual(self.store.stats()["superseded_count"], 2)
         # 链回放：旧→新完整
         chain = self.store.chain(a3.artifact_id)
-        self.assertEqual([x.artifact_id for x in chain],
-                         [a1.artifact_id, a2.artifact_id, a3.artifact_id])
+        self.assertEqual(
+            [x.artifact_id for x in chain],
+            [a1.artifact_id, a2.artifact_id, a3.artifact_id],
+        )
         self.assertEqual([x.revision for x in chain], ["r1", "r2", "r3"])
 
     def test_supersede_unknown_target_refused(self):
@@ -109,9 +122,8 @@ class ArtifactStoreContractTests(unittest.TestCase):
 
     def test_supersede_same_content_dedups(self):
         a1, _ = self.store.record(_art(content_hash="h-v1"))
-        a2, replayed = self.store.supersede(
-            a1.artifact_id, _art(content_hash="h-v1"))
-        self.assertTrue(replayed)          # 内容没变=重放，不产生 r2
+        a2, replayed = self.store.supersede(a1.artifact_id, _art(content_hash="h-v1"))
+        self.assertTrue(replayed)  # 内容没变=重放，不产生 r2
         self.assertEqual(a2.artifact_id, a1.artifact_id)
         self.assertEqual(a2.revision, "r1")
 

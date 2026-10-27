@@ -4,6 +4,7 @@
 PowerShell Get-ScheduledTaskInfo LastRunTime 本机为斜杠格式
 （"2026/10/17 23:27"），修复前 startswith(ISO) 恒 False 致门 4 fail-open。
 """
+
 import sys
 import os
 from datetime import date
@@ -24,8 +25,7 @@ def test_slash_format_today():
 
 
 def test_slash_format_yesterday_not_today():
-    assert not mc._ran_today(
-        _fmt(2026, 10, 17, "/"))
+    assert not mc._ran_today(_fmt(2026, 10, 17, "/"))
 
 
 def test_iso_format_today():

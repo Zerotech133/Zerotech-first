@@ -23,8 +23,7 @@ class PersonalWiringTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
-        self.pw = _load("personal_wiring",
-                        "agent_platform/domains/personal_wiring.py")
+        self.pw = _load("personal_wiring", "agent_platform/domains/personal_wiring.py")
         self.sched = Path(self.tmp.name) / "schedules.json"
         self.db = Path(self.tmp.name) / "approvals.db"
         self.pw.SCHED_FILE = self.sched
@@ -35,11 +34,23 @@ class PersonalWiringTests(unittest.TestCase):
         self.store.close()
 
     def _mk(self, sid="sch-1", enabled=True):
-        self.sched.write_text(json.dumps([
-            {"id": sid, "agent": "T1", "desc": "测试排程",
-             "cron": "daily 09:30", "weekdays_only": True,
-             "enabled": enabled, "created": "2026-10-17 13:00"},
-        ], ensure_ascii=False), encoding="utf-8")
+        self.sched.write_text(
+            json.dumps(
+                [
+                    {
+                        "id": sid,
+                        "agent": "T1",
+                        "desc": "测试排程",
+                        "cron": "daily 09:30",
+                        "weekdays_only": True,
+                        "enabled": enabled,
+                        "created": "2026-10-17 13:00",
+                    },
+                ],
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
 
     # ---- projection ----
 
@@ -93,7 +104,8 @@ class PersonalWiringTests(unittest.TestCase):
     def test_delete_first_time(self):
         self._mk()
         deleted, replayed = self.pw.delete_schedule(
-            "sch-1", by="laotian", reason="不再需要", store=self.store)
+            "sch-1", by="laotian", reason="不再需要", store=self.store
+        )
         self.assertFalse(replayed)
         self.assertEqual(deleted["id"], "sch-1")
         rows = json.loads(self.sched.read_text(encoding="utf-8"))
@@ -108,13 +120,11 @@ class PersonalWiringTests(unittest.TestCase):
         self._mk()
         self.pw.delete_schedule("sch-1", by="laotian", store=self.store)
         # 重放场景 A：条目已不在 → 账本凭据确认
-        _, replayed = self.pw.delete_schedule(
-            "sch-1", by="laotian", store=self.store)
+        _, replayed = self.pw.delete_schedule("sch-1", by="laotian", store=self.store)
         self.assertTrue(replayed)
         # 重放场景 B：条目被旧链重新加回（同 id）→ catch-up 补删
         self._mk()
-        _, replayed = self.pw.delete_schedule(
-            "sch-1", by="laotian", store=self.store)
+        _, replayed = self.pw.delete_schedule("sch-1", by="laotian", store=self.store)
         self.assertTrue(replayed)
         rows = json.loads(self.sched.read_text(encoding="utf-8"))
         self.assertEqual(rows, [])
@@ -126,7 +136,7 @@ class PersonalWiringTests(unittest.TestCase):
         "不存在（无凭据）"，幂等重放失效——修复后须返回 replayed=True。
         """
         self._mk()
-        self.pw.delete_schedule("sch-1", by="laotian")   # 首次，自建 store
+        self.pw.delete_schedule("sch-1", by="laotian")  # 首次，自建 store
         _, replayed = self.pw.delete_schedule("sch-1", by="laotian")
         self.assertTrue(replayed)
         # 无凭据的未知 sid 仍拒绝（不伪造语义不受影响）
@@ -163,8 +173,7 @@ class PersonalWiringTests(unittest.TestCase):
         self._mk()
         self.pw.delete_schedule("sch-1", by="laotian", store=self.store)
         rep = self.pw.audit_report()
-        self.assertEqual([c["state"] for c in rep["delete_credentials"]],
-                         ["executed"])
+        self.assertEqual([c["state"] for c in rep["delete_credentials"]], ["executed"])
 
 
 if __name__ == "__main__":

@@ -5,6 +5,7 @@
     python replay.py <run_id>            # 各节点结论
     python replay.py <run_id> --trace    # 加 trace 时间线（每轮发言/相似度/延迟）
 """
+
 import argparse
 import json
 import sqlite3
@@ -28,7 +29,8 @@ def main():
 
     run = conn.execute(
         "SELECT stock, status, started_at, finished_at FROM runs WHERE run_id=?",
-        (args.run_id,)).fetchone()
+        (args.run_id,),
+    ).fetchone()
     if not run:
         print("run_id 不存在：%s" % args.run_id)
         sys.exit(1)
@@ -39,8 +41,10 @@ def main():
     print("=" * 62)
 
     for nk, aid, sj in conn.execute(
-            "SELECT node_key, agent_id, state_json FROM checkpoints "
-            "WHERE run_id=? ORDER BY node_key", (args.run_id,)):
+        "SELECT node_key, agent_id, state_json FROM checkpoints "
+        "WHERE run_id=? ORDER BY node_key",
+        (args.run_id,),
+    ):
         st = json.loads(sj)
         body = st.get("merged") or st.get("output", "")
         meta = ""
@@ -54,11 +58,23 @@ def main():
         print("trace 时间线：")
         rows = conn.execute(
             "SELECT agent_id, phase, round, similarity, status, latency_ms, output "
-            "FROM traces WHERE run_id=? ORDER BY ts", (args.run_id,)).fetchall()
+            "FROM traces WHERE run_id=? ORDER BY ts",
+            (args.run_id,),
+        ).fetchall()
         for aid, ph, rd, sim, st, lat, out in rows:
             simtxt = (" sim=%.2f" % sim) if sim is not None else ""
-            print("[%s] %-16s r%s%s (%s, %.0fms): %s" % (
-                aid, ph, rd, simtxt, st, lat or 0, (out or "")[:110].replace("\n", " ")))
+            print(
+                "[%s] %-16s r%s%s (%s, %.0fms): %s"
+                % (
+                    aid,
+                    ph,
+                    rd,
+                    simtxt,
+                    st,
+                    lat or 0,
+                    (out or "")[:110].replace("\n", " "),
+                )
+            )
         if not rows:
             print("  （该 run 无 trace 记录）")
 

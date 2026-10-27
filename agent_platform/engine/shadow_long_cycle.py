@@ -9,6 +9,7 @@
 追加一条聚合事件。run_id 与 event_id 均参与幂等校验：同标识同内容返回
 replayed，不覆盖历史；同标识异内容返回 failed 并保留原账本。
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -38,8 +39,13 @@ def _utc_now() -> str:
 
 
 def _canonical(value) -> str:
-    return json.dumps(value, ensure_ascii=False, sort_keys=True,
-                      separators=(",", ":"), allow_nan=False)
+    return json.dumps(
+        value,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    )
 
 
 def _sha256(data: bytes) -> str:
@@ -126,8 +132,10 @@ def _summarise_source(label: str, rows: Iterable[Mapping]) -> dict:
         run_id = row.get("run_id")
         if run_id and run_id not in run_ids:
             run_ids.append(run_id)
-    failed = sum(statuses.get(value, 0)
-                 for value in ("failed", "failure", "error", "timeout", "rejected"))
+    failed = sum(
+        statuses.get(value, 0)
+        for value in ("failed", "failure", "error", "timeout", "rejected")
+    )
     result = {
         "valid_records": len(rows),
         "failed_records": failed,
@@ -138,8 +146,9 @@ def _summarise_source(label: str, rows: Iterable[Mapping]) -> dict:
     if label == "shadow":
         result["done_records"] = statuses.get("done", 0)
     if label == "promotion":
-        result["accepted_records"] = sum(statuses.get(value, 0)
-                                         for value in ("accepted", "replayed"))
+        result["accepted_records"] = sum(
+            statuses.get(value, 0) for value in ("accepted", "replayed")
+        )
         result["rejected_records"] = statuses.get("rejected", 0)
     return result
 
@@ -216,8 +225,9 @@ def aggregate_shadow_evidence(
     event_id = event_id or event_id_for(run_id, source_fingerprints)
     summary = {
         "source_files": len(SOURCE_RELATIVE),
-        "source_files_present": sum(1 for report in source_reports.values()
-                                     if report["exists"]),
+        "source_files_present": sum(
+            1 for report in source_reports.values() if report["exists"]
+        ),
         "shadow_done": source_summaries["shadow"].get("done_records", 0),
         "shadow_failed": source_summaries["shadow"]["failed_records"],
         "strategy_records": source_summaries["strategy"]["valid_records"],
@@ -277,8 +287,11 @@ def aggregate_shadow_evidence(
             result["status"] = "REPLAYED"
             result["event"] = previous
             return result
-        reason = ("event_id 已存在但事件内容不同，拒绝覆盖"
-                  if same_event else "run_id 已存在但事件内容不同，拒绝追加")
+        reason = (
+            "event_id 已存在但事件内容不同，拒绝覆盖"
+            if same_event
+            else "run_id 已存在但事件内容不同，拒绝追加"
+        )
         result["status"] = "FAILED"
         result["findings"] = list(result["findings"]) + [reason]
         result["error"] = reason
@@ -306,7 +319,9 @@ def main(argv=None) -> int:
     args = parser.parse_args(argv)
     try:
         result = aggregate_shadow_evidence(
-            args.root, args.run_id, event_id=args.event_id,
+            args.root,
+            args.run_id,
+            event_id=args.event_id,
             output_path=args.output,
         )
     except Exception as exc:  # CLI 边界：失败必须可见

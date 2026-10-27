@@ -93,8 +93,9 @@ def set_store(root: Path) -> None:
 
 
 def _digest_key(payload: dict, source: str, kind: str) -> str:
-    canonical = json.dumps({"k": kind, "s": source, "p": payload},
-                           ensure_ascii=False, sort_keys=True)
+    canonical = json.dumps(
+        {"k": kind, "s": source, "p": payload}, ensure_ascii=False, sort_keys=True
+    )
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:32]
 
 
@@ -139,19 +140,23 @@ def _find_by_idem(store: _Store, idem: str):
 
 
 def _has_answer(rec: dict) -> bool:
-    return all(isinstance(rec.get(k), str) and rec[k].strip()
-               for k in ("answered_at", "answered_by", "answer_ref"))
+    return all(
+        isinstance(rec.get(k), str) and rec[k].strip()
+        for k in ("answered_at", "answered_by", "answer_ref")
+    )
 
 
 def _has_delivery(rec: dict) -> bool:
     return _has_answer(rec) and all(
         isinstance(rec.get(k), str) and rec[k].strip()
-        for k in ("delivered_at", "channel", "delivered_ref"))
+        for k in ("delivered_at", "channel", "delivered_ref")
+    )
 
 
 # ---------------------------------------------------------------- 生命周期
 # OSLINK-P4 合同 v1：answered/delivered 戳记。全部经 tmp+os.replace 原子落盘；
 # 幂等语义=首次戳记获胜，重复调用只回放不改写。
+
 
 def _now_iso() -> str:
     return time.strftime("%Y-%m-%dT%H:%M:%S%z")
@@ -170,8 +175,9 @@ def _atomic_write(path: Path, record: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(".%s.tmp-%s" % (path.name, uuid.uuid4().hex[:8]))
     try:
-        tmp.write_text(json.dumps(record, ensure_ascii=False, indent=1),
-                       encoding="utf-8")
+        tmp.write_text(
+            json.dumps(record, ensure_ascii=False, indent=1), encoding="utf-8"
+        )
         os.replace(tmp, path)
     except BaseException:
         try:
@@ -182,34 +188,61 @@ def _atomic_write(path: Path, record: dict) -> None:
 
 
 @timed
-def submit(kind: str, payload: dict, source: str = "external",
-           idempotency_key: str | None = None):
+def submit(
+    kind: str,
+    payload: dict,
+    source: str = "external",
+    idempotency_key: str | None = None,
+):
     """投递任务信封。data: {id, replayed, state}。"""
     if kind not in INBOX_KINDS:
-        return make_envelope(kind=KIND_SUBMIT, ok=False,
-                             error={"code": "bad_kind",
-                                    "message": "kind must be one of %s" % "/".join(INBOX_KINDS)})
+        return make_envelope(
+            kind=KIND_SUBMIT,
+            ok=False,
+            error={
+                "code": "bad_kind",
+                "message": "kind must be one of %s" % "/".join(INBOX_KINDS),
+            },
+        )
     if not isinstance(payload, dict):
-        return make_envelope(kind=KIND_SUBMIT, ok=False,
-                             error={"code": "bad_payload",
-                                    "message": "payload must be dict"})
+        return make_envelope(
+            kind=KIND_SUBMIT,
+            ok=False,
+            error={"code": "bad_payload", "message": "payload must be dict"},
+        )
     idem = idempotency_key or _digest_key(payload, source, kind)
     if not _ID_RE.match(idem):
-        return make_envelope(kind=KIND_SUBMIT, ok=False,
-                             error={"code": "bad_idempotency_key",
-                                    "message": "idempotency_key must match ^[A-Za-z0-9_-]{1,64}$"})
+        return make_envelope(
+            kind=KIND_SUBMIT,
+            ok=False,
+            error={
+                "code": "bad_idempotency_key",
+                "message": "idempotency_key must match ^[A-Za-z0-9_-]{1,64}$",
+            },
+        )
     store = _store()
     with _store_lock(store):
         hit_file, hit_rec = _find_by_idem(store, idem)
         if hit_rec is not None:
-            if (hit_rec.get("kind"), hit_rec.get("source"), hit_rec.get("payload")) != (kind, source, payload):
+            if (hit_rec.get("kind"), hit_rec.get("source"), hit_rec.get("payload")) != (
+                kind,
+                source,
+                payload,
+            ):
                 return make_envelope(
-                    kind=KIND_SUBMIT, ok=False,
-                    error={"code": "idempotency_conflict",
-                           "message": "idempotency_key already used for different content"})
+                    kind=KIND_SUBMIT,
+                    ok=False,
+                    error={
+                        "code": "idempotency_conflict",
+                        "message": "idempotency_key already used for different content",
+                    },
+                )
             state = "processed" if hit_file.parent == store.processed else "inbox"
-            return make_envelope(kind=KIND_SUBMIT, ok=True,
-                                 data={"id": hit_rec["id"], "replayed": True, "state": state})
+            return make_envelope(
+                kind=KIND_SUBMIT,
+                ok=True,
+                data={"id": hit_rec["id"], "replayed": True, "state": state},
+            )
         msg_id = "lg-%s" % uuid.uuid4().hex[:12]
         record = {
             "id": msg_id,
@@ -221,13 +254,15 @@ def submit(kind: str, payload: dict, source: str = "external",
             "state": "inbox",
         }
         _atomic_write(store.inbox / ("%s.json" % msg_id), record)
-        return make_envelope(kind=KIND_SUBMIT, ok=True,
-                             data={"id": msg_id, "replayed": False, "state": "inbox"})
+        return make_envelope(
+            kind=KIND_SUBMIT,
+            ok=True,
+            data={"id": msg_id, "replayed": False, "state": "inbox"},
+        )
 
 
 @timed
-def consume(msg_id: str, answered_by: str | None = None,
-            answer_ref: str | None = None):
+def consume(msg_id: str, answered_by: str | None = None, answer_ref: str | None = None):
     """业务答复（answered）：inbox → processed，落三类戳记。
 
     幂等：已有 answered 戳记 → replayed=True，戳记不改写（首次获胜）。
@@ -235,9 +270,14 @@ def consume(msg_id: str, answered_by: str | None = None,
     老式消费（processed 无戳记）→ 本次调用显式补戳记（这是真实答复动作）。
     """
     if not msg_id or not _ID_RE.match(msg_id):
-        return make_envelope(kind=KIND_CONSUME, ok=False,
-                             error={"code": "bad_id",
-                                    "message": "msg_id must match ^[A-Za-z0-9_-]{1,64}$"})
+        return make_envelope(
+            kind=KIND_CONSUME,
+            ok=False,
+            error={
+                "code": "bad_id",
+                "message": "msg_id must match ^[A-Za-z0-9_-]{1,64}$",
+            },
+        )
     store = _store()
     with _store_lock(store):
         inbox_file = store.inbox / ("%s.json" % msg_id)
@@ -249,19 +289,38 @@ def consume(msg_id: str, answered_by: str | None = None,
                     inbox_file.unlink()
                 except OSError:
                     pass
-            return make_envelope(kind=KIND_CONSUME, ok=True,
-                                 data={"id": msg_id, "replayed": True,
-                                       "state": "processed", "record": rec})
-        if not isinstance(answered_by, str) or not answered_by.strip() or not isinstance(answer_ref, str) or not answer_ref.strip():
-            return make_envelope(kind=KIND_CONSUME, ok=False,
-                                 error={"code": "bad_answer_evidence",
-                                        "message": "answered_by and answer_ref required"})
+            return make_envelope(
+                kind=KIND_CONSUME,
+                ok=True,
+                data={
+                    "id": msg_id,
+                    "replayed": True,
+                    "state": "processed",
+                    "record": rec,
+                },
+            )
+        if (
+            not isinstance(answered_by, str)
+            or not answered_by.strip()
+            or not isinstance(answer_ref, str)
+            or not answer_ref.strip()
+        ):
+            return make_envelope(
+                kind=KIND_CONSUME,
+                ok=False,
+                error={
+                    "code": "bad_answer_evidence",
+                    "message": "answered_by and answer_ref required",
+                },
+            )
         if rec is None:
             rec = _read_record(inbox_file)
         if rec is None:
-            return make_envelope(kind=KIND_CONSUME, ok=True,
-                                 data={"id": msg_id, "state": "not_found",
-                                       "record": {}})
+            return make_envelope(
+                kind=KIND_CONSUME,
+                ok=True,
+                data={"id": msg_id, "state": "not_found", "record": {}},
+            )
         if not _has_answer(rec):
             for key in ("delivered_at", "channel", "delivered_ref"):
                 rec.pop(key, None)
@@ -275,19 +334,25 @@ def consume(msg_id: str, answered_by: str | None = None,
                 inbox_file.unlink()
             except OSError:
                 pass
-        return make_envelope(kind=KIND_CONSUME, ok=True,
-                             data={"id": msg_id, "replayed": False,
-                                   "state": "processed", "record": rec})
+        return make_envelope(
+            kind=KIND_CONSUME,
+            ok=True,
+            data={"id": msg_id, "replayed": False, "state": "processed", "record": rec},
+        )
 
 
 @timed
-def deliver(msg_id: str, channel: str | None = None,
-            delivered_ref: str | None = None):
+def deliver(msg_id: str, channel: str | None = None, delivered_ref: str | None = None):
     """渠道回传（delivered）：必须先 answered；幂等，首次戳记获胜。"""
     if not msg_id or not _ID_RE.match(msg_id):
-        return make_envelope(kind=KIND_DELIVER, ok=False,
-                             error={"code": "bad_id",
-                                    "message": "msg_id must match ^[A-Za-z0-9_-]{1,64}$"})
+        return make_envelope(
+            kind=KIND_DELIVER,
+            ok=False,
+            error={
+                "code": "bad_id",
+                "message": "msg_id must match ^[A-Za-z0-9_-]{1,64}$",
+            },
+        )
     store = _store()
     with _store_lock(store):
         processed_file = store.processed / ("%s.json" % msg_id)
@@ -295,32 +360,61 @@ def deliver(msg_id: str, channel: str | None = None,
         if rec is None:
             if (store.inbox / ("%s.json" % msg_id)).exists():
                 return make_envelope(
-                    kind=KIND_DELIVER, ok=False,
-                    error={"code": "not_answered",
-                           "message": "消息尚未答复（answered），不得回传"})
-            return make_envelope(kind=KIND_DELIVER, ok=True,
-                                 data={"id": msg_id, "state": "not_found",
-                                       "record": {}})
+                    kind=KIND_DELIVER,
+                    ok=False,
+                    error={
+                        "code": "not_answered",
+                        "message": "消息尚未答复（answered），不得回传",
+                    },
+                )
+            return make_envelope(
+                kind=KIND_DELIVER,
+                ok=True,
+                data={"id": msg_id, "state": "not_found", "record": {}},
+            )
         if not _has_answer(rec):
             return make_envelope(
-                kind=KIND_DELIVER, ok=False,
-                error={"code": "not_answered",
-                       "message": "记录无完整 answered 证据，不得回传"})
+                kind=KIND_DELIVER,
+                ok=False,
+                error={
+                    "code": "not_answered",
+                    "message": "记录无完整 answered 证据，不得回传",
+                },
+            )
         if _has_delivery(rec):
-            return make_envelope(kind=KIND_DELIVER, ok=True,
-                                 data={"id": msg_id, "replayed": True,
-                                       "state": "processed", "record": rec})
-        if not isinstance(channel, str) or not channel.strip() or not isinstance(delivered_ref, str) or not delivered_ref.strip():
-            return make_envelope(kind=KIND_DELIVER, ok=False,
-                                 error={"code": "bad_delivery_evidence",
-                                        "message": "channel and delivered_ref required"})
+            return make_envelope(
+                kind=KIND_DELIVER,
+                ok=True,
+                data={
+                    "id": msg_id,
+                    "replayed": True,
+                    "state": "processed",
+                    "record": rec,
+                },
+            )
+        if (
+            not isinstance(channel, str)
+            or not channel.strip()
+            or not isinstance(delivered_ref, str)
+            or not delivered_ref.strip()
+        ):
+            return make_envelope(
+                kind=KIND_DELIVER,
+                ok=False,
+                error={
+                    "code": "bad_delivery_evidence",
+                    "message": "channel and delivered_ref required",
+                },
+            )
         rec["delivered_at"] = _now_iso()
         rec["channel"] = channel
         rec["delivered_ref"] = delivered_ref
         _atomic_write(processed_file, rec)
-        return make_envelope(kind=KIND_DELIVER, ok=True,
-                             data={"id": msg_id, "replayed": False,
-                                   "state": "processed", "record": rec})
+        return make_envelope(
+            kind=KIND_DELIVER,
+            ok=True,
+            data={"id": msg_id, "replayed": False, "state": "processed", "record": rec},
+        )
 
 
 @timed
@@ -328,8 +422,11 @@ def receipt(msg_id: str):
     """回执查询。data: {id, state, record, answered, delivered}；
     state=inbox/processed/not_found（词表不变，P4 只增派生布尔）。"""
     if not msg_id:
-        return make_envelope(kind=KIND_RECEIPT, ok=False,
-                             error={"code": "bad_id", "message": "msg_id required"})
+        return make_envelope(
+            kind=KIND_RECEIPT,
+            ok=False,
+            error={"code": "bad_id", "message": "msg_id required"},
+        )
     store = _store()
     # 优先选择 processed：写 processed 成功但尚未删除 inbox 时不回退旧状态。
     for d, state in ((store.processed, "processed"), (store.inbox, "inbox")):
@@ -337,10 +434,25 @@ def receipt(msg_id: str):
         if rec is not None:
             answered = state == "processed" and _has_answer(rec)
             delivered = state == "processed" and _has_delivery(rec)
-            return make_envelope(kind=KIND_RECEIPT, ok=True,
-                                 data={"id": msg_id, "state": state,
-                                       "record": rec, "answered": answered,
-                                       "delivered": delivered})
-    return make_envelope(kind=KIND_RECEIPT, ok=True,
-                         data={"id": msg_id, "state": "not_found", "record": {},
-                               "answered": False, "delivered": False})
+            return make_envelope(
+                kind=KIND_RECEIPT,
+                ok=True,
+                data={
+                    "id": msg_id,
+                    "state": state,
+                    "record": rec,
+                    "answered": answered,
+                    "delivered": delivered,
+                },
+            )
+    return make_envelope(
+        kind=KIND_RECEIPT,
+        ok=True,
+        data={
+            "id": msg_id,
+            "state": "not_found",
+            "record": {},
+            "answered": False,
+            "delivered": False,
+        },
+    )

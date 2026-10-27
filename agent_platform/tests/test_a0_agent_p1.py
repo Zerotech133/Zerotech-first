@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """A0 权威 binding 与成对判读审计字段的纯本地回归测试。"""
+
 import json
 import sys
 from argparse import Namespace
@@ -17,18 +18,36 @@ def sandbox(tmp_path, monkeypatch):
     (tmp_path / "data" / "shadow").mkdir(parents=True)
     (tmp_path / "prompts").mkdir()
     (tmp_path / "prompts" / "a0_compare.md").write_text("判读", encoding="utf-8")
-    (tmp_path / "registry" / "org.json").write_text(json.dumps({
-        "chief": {"agent_id": "A0", "llm_binding": "glm/old"},
-        "departments": [{"dept": "chief_line", "agent_profiles": [
-            {"agent_id": "A0", "llm_binding": "glm/new"}]}],
-    }), encoding="utf-8")
+    (tmp_path / "registry" / "org.json").write_text(
+        json.dumps(
+            {
+                "chief": {"agent_id": "A0", "llm_binding": "glm/old"},
+                "departments": [
+                    {
+                        "dept": "chief_line",
+                        "agent_profiles": [
+                            {"agent_id": "A0", "llm_binding": "glm/new"}
+                        ],
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
     monkeypatch.setattr(a0, "BASE", tmp_path)
     monkeypatch.setattr(a0, "COMPARE_PERSONA", tmp_path / "prompts" / "a0_compare.md")
     cand, champ = tmp_path / "candidate.md", tmp_path / "champion.md"
     cand.write_text("候选 1", encoding="utf-8")
     champ.write_text("冠军 2", encoding="utf-8")
-    args = Namespace(candidate=str(cand), champion=str(champ), evidence=None,
-                     date="2026-10-26", target="trial", model=None, live=True)
+    args = Namespace(
+        candidate=str(cand),
+        champion=str(champ),
+        evidence=None,
+        date="2026-10-26",
+        target="trial",
+        model=None,
+        live=True,
+    )
     return tmp_path, args
 
 
@@ -36,9 +55,14 @@ def test_chief_model_precedence_and_fallback(sandbox):
     root, _ = sandbox
     org = root / "registry" / "org.json"
     assert a0.chief_model() == "glm/new"
-    org.write_text(json.dumps({"chief": {"agent_id": "A0", "llm_binding": "glm/old"}}), encoding="utf-8")
+    org.write_text(
+        json.dumps({"chief": {"agent_id": "A0", "llm_binding": "glm/old"}}),
+        encoding="utf-8",
+    )
     assert a0.chief_model() == "glm/old"
-    org.write_text(json.dumps({"chief": {"agent_id": "A0", "llm_binding": ""}}), encoding="utf-8")
+    org.write_text(
+        json.dumps({"chief": {"agent_id": "A0", "llm_binding": ""}}), encoding="utf-8"
+    )
     assert a0.chief_model() == "ollama/qwen3.5:9b"
     org.write_text("[]", encoding="utf-8")
     assert a0.chief_model() == "ollama/qwen3.5:9b"
@@ -58,7 +82,11 @@ def _compare(sandbox, monkeypatch, verdict, status="ok", model=None):
 
     monkeypatch.setattr(a0, "route_chat", fake_route)
     a0.run_compare(args)
-    result = json.loads((root / "data" / "shadow" / "a0_compare_2026-10-26_trial.json").read_text(encoding="utf-8"))
+    result = json.loads(
+        (root / "data" / "shadow" / "a0_compare_2026-10-26_trial.json").read_text(
+            encoding="utf-8"
+        )
+    )
     return result, calls
 
 
@@ -74,7 +102,11 @@ def test_compare_mock_is_never_accepted(sandbox, monkeypatch):
     root, args = sandbox
     args.live = False
     a0.run_compare(args)
-    result = json.loads((root / "data" / "shadow" / "a0_compare_2026-10-26_trial.json").read_text(encoding="utf-8"))
+    result = json.loads(
+        (root / "data" / "shadow" / "a0_compare_2026-10-26_trial.json").read_text(
+            encoding="utf-8"
+        )
+    )
     assert result["status"] == "mock"
     assert result["accepted"] is False
 
@@ -95,15 +127,31 @@ def test_compare_fallback_records_actual_and_rejects(sandbox, monkeypatch):
     assert result["quality"]["ok"] is True and result["accepted"] is False
 
 
-@pytest.mark.parametrize("verdict", [
-    {"winner": "candidate", "confidence": "high", "reasons": [None, 3], "missing": ""},
-    {"winner": "candidate", "confidence": "high", "reasons": [
-        {"side": "candidate", "point": [1], "evidence": {"x": 1}},
-        {"side": "champion", "point": "文字", "evidence": "文字"}], "missing": []},
-    [1, 2],
-    {"winner": "tie", "confidence": "low", "reasons": "bad", "missing": 10},
-])
-def test_valid_json_wrong_shape_is_rejected_without_crash(sandbox, monkeypatch, verdict):
+@pytest.mark.parametrize(
+    "verdict",
+    [
+        {
+            "winner": "candidate",
+            "confidence": "high",
+            "reasons": [None, 3],
+            "missing": "",
+        },
+        {
+            "winner": "candidate",
+            "confidence": "high",
+            "reasons": [
+                {"side": "candidate", "point": [1], "evidence": {"x": 1}},
+                {"side": "champion", "point": "文字", "evidence": "文字"},
+            ],
+            "missing": [],
+        },
+        [1, 2],
+        {"winner": "tie", "confidence": "low", "reasons": "bad", "missing": 10},
+    ],
+)
+def test_valid_json_wrong_shape_is_rejected_without_crash(
+    sandbox, monkeypatch, verdict
+):
     result, _ = _compare(sandbox, monkeypatch, verdict)
     assert result["quality"]["ok"] is False
     assert result["accepted"] is False

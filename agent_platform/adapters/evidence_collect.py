@@ -37,13 +37,23 @@ _AGENT_PLATFORM = _ADAPTERS_DIR.parent
 if str(_AGENT_PLATFORM) not in sys.path:
     sys.path.insert(0, str(_AGENT_PLATFORM))
 
-from contracts import Evidence                    # noqa: E402
+from contracts import Evidence  # noqa: E402
 from engine.evidence import EvidenceStore  # noqa: E402
 
 EVIDENCE_DB = _AGENT_PLATFORM / "data" / "evidence" / "evidence.db"
 
-ALL_DOMAINS = ["gzh", "academy", "personal", "dev", "invest", "pitch",
-               "shadow", "artifact", "paper", "strategy"]
+ALL_DOMAINS = [
+    "gzh",
+    "academy",
+    "personal",
+    "dev",
+    "invest",
+    "pitch",
+    "shadow",
+    "artifact",
+    "paper",
+    "strategy",
+]
 
 
 # ----------------------------------------------------------------------
@@ -59,15 +69,22 @@ def _collect_gzh(root: Path):
         fp = ""
         if item.get("md") and md.exists():
             import hashlib
+
             fp = hashlib.sha256(md.read_bytes()).hexdigest()[:16]
         else:
-            findings.append("gzh: %s md 缺失，指纹留空（不伪造）"
-                            % item.get("id"))
-        evs.append(Evidence(
-            source="gzh.drafts", source_ref="gzh:%s" % item.get("id", ""),
-            statement="status=%s md_sha256=%s" % (item.get("status", ""), fp),
-            payload={"domain": "gzh", "kind": "artifact_fingerprint",
-                     "title": item.get("title", "")}))
+            findings.append("gzh: %s md 缺失，指纹留空（不伪造）" % item.get("id"))
+        evs.append(
+            Evidence(
+                source="gzh.drafts",
+                source_ref="gzh:%s" % item.get("id", ""),
+                statement="status=%s md_sha256=%s" % (item.get("status", ""), fp),
+                payload={
+                    "domain": "gzh",
+                    "kind": "artifact_fingerprint",
+                    "title": item.get("title", ""),
+                },
+            )
+        )
     return evs, findings
 
 
@@ -77,13 +94,19 @@ def _collect_academy(root: Path):
     if not p.exists():
         return evs, ["academy: research_topics.json 缺失，跳过该域"]
     for t in json.loads(p.read_text(encoding="utf-8")):
-        evs.append(Evidence(
-            source="academy.research_topics",
-            source_ref="academy:%s" % t.get("topic_id", ""),
-            statement="status=%s history_len=%d"
-                      % (t.get("status", ""), len(t.get("history", []))),
-            payload={"domain": "academy", "kind": "stage_observation",
-                     "title": t.get("title", "")}))
+        evs.append(
+            Evidence(
+                source="academy.research_topics",
+                source_ref="academy:%s" % t.get("topic_id", ""),
+                statement="status=%s history_len=%d"
+                % (t.get("status", ""), len(t.get("history", []))),
+                payload={
+                    "domain": "academy",
+                    "kind": "stage_observation",
+                    "title": t.get("title", ""),
+                },
+            )
+        )
     return evs, findings
 
 
@@ -95,12 +118,15 @@ def _collect_personal(root: Path):
     data = json.loads(p.read_text(encoding="utf-8"))
     items = data if isinstance(data, list) else data.get("schedules", [])
     for s in items:
-        evs.append(Evidence(
-            source="personal.schedules",
-            source_ref="sched:%s" % s.get("id", ""),
-            statement="enabled=%s title=%s"
-                      % (s.get("enabled"), s.get("title", "")),
-            payload={"domain": "personal", "kind": "config_observation"}))
+        evs.append(
+            Evidence(
+                source="personal.schedules",
+                source_ref="sched:%s" % s.get("id", ""),
+                statement="enabled=%s title=%s"
+                % (s.get("enabled"), s.get("title", "")),
+                payload={"domain": "personal", "kind": "config_observation"},
+            )
+        )
     return evs, findings
 
 
@@ -110,12 +136,17 @@ def _collect_dev(root: Path):
     if not base.exists():
         return evs, ["dev: org/tasks 缺失，跳过该域"]
     from engine.tasks import TaskStore
+
     for t in TaskStore(base).ls():
-        evs.append(Evidence(
-            source="dev.tasks", source_ref="dev:%s" % t.get("task_id", ""),
-            statement="status=%s title=%s"
-                      % (t.get("status", ""), t.get("title", "")),
-            payload={"domain": "dev", "kind": "status_observation"}))
+        evs.append(
+            Evidence(
+                source="dev.tasks",
+                source_ref="dev:%s" % t.get("task_id", ""),
+                statement="status=%s title=%s"
+                % (t.get("status", ""), t.get("title", "")),
+                payload={"domain": "dev", "kind": "status_observation"},
+            )
+        )
     return evs, findings
 
 
@@ -127,12 +158,15 @@ def _collect_invest(root: Path):
     data = json.loads(p.read_text(encoding="utf-8"))
     items = data if isinstance(data, list) else data.get("runs", [])
     for r in items:
-        evs.append(Evidence(
-            source="invest.runs_index",
-            source_ref="invest:%s" % r.get("run_id", r.get("id", "")),
-            statement="status=%s decision_sha256=%s"
-                      % (r.get("status", ""), r.get("decision_sha256", "")),
-            payload={"domain": "invest", "kind": "decision_fingerprint"}))
+        evs.append(
+            Evidence(
+                source="invest.runs_index",
+                source_ref="invest:%s" % r.get("run_id", r.get("id", "")),
+                statement="status=%s decision_sha256=%s"
+                % (r.get("status", ""), r.get("decision_sha256", "")),
+                payload={"domain": "invest", "kind": "decision_fingerprint"},
+            )
+        )
     return evs, findings
 
 
@@ -152,14 +186,23 @@ def _collect_pitch(root: Path):
             # 脏行防御（真仓 decks.json 曾被演示写入 artifact=str 路径串，
             # 读侧 .get 崩溃拉穿整条 collect）——fail-visible：显式 finding 不中断
             art_sha = "malformed:%s" % str(art)[:60]
-            findings.append("pitch.decks %s artifact 非 dict（脏行，sha 记为 malformed）"
-                            % d.get("deck_id", "?"))
-        evs.append(Evidence(
-            source="pitch.decks", source_ref="pitch:%s" % d.get("deck_id", ""),
-            statement="status=%s artifact_sha256=%s"
-                      % (d.get("status", ""), art_sha),
-            payload={"domain": "pitch", "kind": "artifact_fingerprint",
-                     "title": d.get("title", "")}))
+            findings.append(
+                "pitch.decks %s artifact 非 dict（脏行，sha 记为 malformed）"
+                % d.get("deck_id", "?")
+            )
+        evs.append(
+            Evidence(
+                source="pitch.decks",
+                source_ref="pitch:%s" % d.get("deck_id", ""),
+                statement="status=%s artifact_sha256=%s"
+                % (d.get("status", ""), art_sha),
+                payload={
+                    "domain": "pitch",
+                    "kind": "artifact_fingerprint",
+                    "title": d.get("title", ""),
+                },
+            )
+        )
     return evs, findings
 
 
@@ -175,8 +218,7 @@ def _collect_shadow(root: Path):
     p = root / "agent_platform" / "data" / "shadow" / "shadow_ledger.jsonl"
     if not p.exists():
         return evs, ["shadow: shadow_ledger.jsonl 缺失，跳过该域"]
-    for lineno, line in enumerate(
-            p.read_text(encoding="utf-8").splitlines(), 1):
+    for lineno, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
         line = line.strip()
         if not line:
             continue
@@ -185,22 +227,34 @@ def _collect_shadow(root: Path):
             if not isinstance(rec, dict):
                 raise ValueError("not an object")
         except (json.JSONDecodeError, ValueError):
-            findings.append(
-                "shadow: 第 %d 行非法 JSON，跳过（不伪造）" % lineno)
+            findings.append("shadow: 第 %d 行非法 JSON，跳过（不伪造）" % lineno)
             continue
         date = str(rec.get("date", ""))
         symbol = str(rec.get("symbol", ""))
         run_id = str(rec.get("run_id", ""))
-        evs.append(Evidence(
-            source="shadow.ledger",
-            source_ref="shadow:%s:%s" % (date, symbol),
-            statement="status=%s run_id=%s rec=%s parse_ok=%s degraded=%s "
-                      "price_at_decision=%s"
-                      % (rec.get("status", ""), run_id,
-                         rec.get("recommendation"), rec.get("parse_ok"),
-                         rec.get("degraded"), rec.get("price_at_decision")),
-            payload={"domain": "shadow", "kind": "shadow_trajectory",
-                     "date": date, "symbol": symbol, "run_id": run_id}))
+        evs.append(
+            Evidence(
+                source="shadow.ledger",
+                source_ref="shadow:%s:%s" % (date, symbol),
+                statement="status=%s run_id=%s rec=%s parse_ok=%s degraded=%s "
+                "price_at_decision=%s"
+                % (
+                    rec.get("status", ""),
+                    run_id,
+                    rec.get("recommendation"),
+                    rec.get("parse_ok"),
+                    rec.get("degraded"),
+                    rec.get("price_at_decision"),
+                ),
+                payload={
+                    "domain": "shadow",
+                    "kind": "shadow_trajectory",
+                    "date": date,
+                    "symbol": symbol,
+                    "run_id": run_id,
+                },
+            )
+        )
     return evs, findings
 
 
@@ -231,20 +285,31 @@ def _collect_artifact(root: Path, explicit: bool = False):
     finally:
         con.close()
     for r in rows:
-        evs.append(Evidence(
-            source="artifacts.registry",
-            source_ref="artifact:%s" % r["artifact_id"],
-            statement="kind=%s path=%s hash=%s rev=%s supersedes=%s "
-                      "src=%s ref=%s by=%s"
-                      % (r["kind"], r["path"],
-                         (r["content_hash"] or r["fact_hash"] or "")[:16],
-                         r["revision"], r["supersedes"] or "-",
-                         r["source_system"], r["source_ref"],
-                         r["produced_by"]),
-            payload={"domain": "artifact", "kind": "artifact_observation",
-                     "artifact_id": r["artifact_id"],
-                     "source_system": r["source_system"],
-                     "revision": r["revision"]}))
+        evs.append(
+            Evidence(
+                source="artifacts.registry",
+                source_ref="artifact:%s" % r["artifact_id"],
+                statement="kind=%s path=%s hash=%s rev=%s supersedes=%s "
+                "src=%s ref=%s by=%s"
+                % (
+                    r["kind"],
+                    r["path"],
+                    (r["content_hash"] or r["fact_hash"] or "")[:16],
+                    r["revision"],
+                    r["supersedes"] or "-",
+                    r["source_system"],
+                    r["source_ref"],
+                    r["produced_by"],
+                ),
+                payload={
+                    "domain": "artifact",
+                    "kind": "artifact_observation",
+                    "artifact_id": r["artifact_id"],
+                    "source_system": r["source_system"],
+                    "revision": r["revision"],
+                },
+            )
+        )
     return evs, findings
 
 
@@ -267,16 +332,26 @@ def _collect_paper(root: Path):
         except json.JSONDecodeError as exc:
             findings.append("paper: 第 %d 行解析失败: %s" % (i, exc))
             continue
-        evs.append(Evidence(
-            source="invest.paper_events",
-            source_ref="paper:%s" % r.get("trace_id", ""),
-            statement="env=%s action=%s code=%s fact_hash=%s decision_id=%s"
-                      % (r.get("environment", ""), r.get("action", ""),
-                         r.get("code", ""), r.get("fact_hash", ""),
-                         r.get("decision_id", "")),
-            payload={"domain": "paper", "kind": "paper_event_fingerprint",
-                     "idempotency_key": r.get("idempotency_key", ""),
-                     "proposed_real": bool(r.get("proposed_real"))}))
+        evs.append(
+            Evidence(
+                source="invest.paper_events",
+                source_ref="paper:%s" % r.get("trace_id", ""),
+                statement="env=%s action=%s code=%s fact_hash=%s decision_id=%s"
+                % (
+                    r.get("environment", ""),
+                    r.get("action", ""),
+                    r.get("code", ""),
+                    r.get("fact_hash", ""),
+                    r.get("decision_id", ""),
+                ),
+                payload={
+                    "domain": "paper",
+                    "kind": "paper_event_fingerprint",
+                    "idempotency_key": r.get("idempotency_key", ""),
+                    "proposed_real": bool(r.get("proposed_real")),
+                },
+            )
+        )
     return evs, findings
 
 
@@ -297,29 +372,45 @@ def _collect_strategy(root):
         except json.JSONDecodeError as exc:
             findings.append("strategy: 第 %d 行解析失败: %s" % (i, exc))
             continue
-        evs.append(Evidence(
-            source="strategy.runs",
-            source_ref="strategy:%s" % r.get("verdict_key", ""),
-            statement="strategy=%s symbol=%s rec=%s stance=%s run_id=%s"
-                      % (r.get("strategy_id", ""), r.get("symbol", ""),
-                         r.get("recommendation", ""), r.get("stance", ""),
-                         r.get("run_id", "")),
-            payload={"domain": "strategy", "kind": "strategy_verdict_fingerprint",
-                     "idempotency_key": r.get("verdict_key", ""),
-                     "trade_date": r.get("trade_date", "")}))
+        evs.append(
+            Evidence(
+                source="strategy.runs",
+                source_ref="strategy:%s" % r.get("verdict_key", ""),
+                statement="strategy=%s symbol=%s rec=%s stance=%s run_id=%s"
+                % (
+                    r.get("strategy_id", ""),
+                    r.get("symbol", ""),
+                    r.get("recommendation", ""),
+                    r.get("stance", ""),
+                    r.get("run_id", ""),
+                ),
+                payload={
+                    "domain": "strategy",
+                    "kind": "strategy_verdict_fingerprint",
+                    "idempotency_key": r.get("verdict_key", ""),
+                    "trade_date": r.get("trade_date", ""),
+                },
+            )
+        )
     return evs, findings
 
 
-_COLLECTORS = {"gzh": _collect_gzh, "academy": _collect_academy,
-               "personal": _collect_personal, "dev": _collect_dev,
-               "invest": _collect_invest, "pitch": _collect_pitch,
-               "shadow": _collect_shadow, "artifact": _collect_artifact,
-               "paper": _collect_paper, "strategy": _collect_strategy}
+_COLLECTORS = {
+    "gzh": _collect_gzh,
+    "academy": _collect_academy,
+    "personal": _collect_personal,
+    "dev": _collect_dev,
+    "invest": _collect_invest,
+    "pitch": _collect_pitch,
+    "shadow": _collect_shadow,
+    "artifact": _collect_artifact,
+    "paper": _collect_paper,
+    "strategy": _collect_strategy,
+}
 
 
 # ----------------------------------------------------------------------
-def collect(root: Path, domains: List[str] = None,
-            store: EvidenceStore = None) -> Dict:
+def collect(root: Path, domains: List[str] = None, store: EvidenceStore = None) -> Dict:
     """六域收编：真源只读扫描 → 证据仓。返回收编报告。"""
     root = Path(root)
     domains = domains or ALL_DOMAINS
@@ -335,8 +426,8 @@ def collect(root: Path, domains: List[str] = None,
             if dom == "artifact":
                 # 点名 artifact 且登记仓缺失 → fail-visible；全域静默
                 evs, findings = _collect_artifact(
-                    root, explicit=(domains is not None
-                                    and domains != ALL_DOMAINS))
+                    root, explicit=(domains is not None and domains != ALL_DOMAINS)
+                )
             else:
                 evs, findings = fn(root)
             report["findings"].extend(findings)
@@ -347,8 +438,11 @@ def collect(root: Path, domains: List[str] = None,
                     n_re += 1
                 else:
                     n_new += 1
-            report["domains"][dom] = {"collected": len(evs),
-                                      "new": n_new, "replayed": n_re}
+            report["domains"][dom] = {
+                "collected": len(evs),
+                "new": n_new,
+                "replayed": n_re,
+            }
             report["new"] += n_new
             report["replayed"] += n_re
         report["verdict"] = "PASS"

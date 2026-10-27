@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """策略 Agent 最小运行时隔离门测试。"""
+
 import sys
 import time
 from pathlib import Path
@@ -14,8 +15,9 @@ from strategy_runtime import StrategyRuntime, run_strategy  # noqa: E402
 
 
 def _verdict(strategy_id, symbol="600519"):
-    return Verdict(strategy_id=strategy_id, symbol=symbol,
-                   recommendation="hold", confidence=0.5)
+    return Verdict(
+        strategy_id=strategy_id, symbol=symbol, recommendation="hold", confidence=0.5
+    )
 
 
 class _Agent(StrategyAgent):
@@ -49,7 +51,8 @@ def test_success_returns_standard_result():
 @pytest.mark.parametrize("lifecycle_state", ["retired", "deprecated"])
 def test_retired_and_deprecated_are_rejected_by_default(lifecycle_state):
     result = _runtime(_Agent("s_blocked", lifecycle_state)).run(
-        "s_blocked", {"symbol": "600519"})
+        "s_blocked", {"symbol": "600519"}
+    )
 
     assert result["status"] == "rejected"
     assert result["verdict"] is None
@@ -61,8 +64,7 @@ def test_deprecated_requires_explicit_replay_opt_in():
     runtime = _runtime(agent)
 
     rejected = runtime.run("s_replay", {"symbol": "600519"})
-    replayed = runtime.run("s_replay", {"symbol": "600519"},
-                           allow_deprecated=True)
+    replayed = runtime.run("s_replay", {"symbol": "600519"}, allow_deprecated=True)
 
     assert rejected["status"] == "rejected"
     assert replayed["status"] == "success"
@@ -71,7 +73,8 @@ def test_deprecated_requires_explicit_replay_opt_in():
 
 def test_allow_deprecated_does_not_allow_retired():
     result = _runtime(_Agent("s_retired", "retired")).run(
-        "s_retired", {"symbol": "600519"}, allow_deprecated=True)
+        "s_retired", {"symbol": "600519"}, allow_deprecated=True
+    )
 
     assert result["status"] == "rejected"
     assert "retired" in result["error"]
@@ -89,8 +92,7 @@ def test_context_is_recursively_readonly_and_original_is_not_mutated():
         return _verdict("s_readonly")
 
     source = {"nested": {"items": ["kept"], "flag": True}}
-    result = _runtime(_Agent("s_readonly", action=mutate)).run(
-        "s_readonly", source)
+    result = _runtime(_Agent("s_readonly", action=mutate)).run("s_readonly", source)
 
     assert result["status"] == "success"
     assert source == {"nested": {"items": ["kept"], "flag": True}}
@@ -102,7 +104,8 @@ def test_exception_is_fail_visible():
         raise ValueError("插件故障")
 
     result = _runtime(_Agent("s_error", action=fail)).run(
-        "s_error", {"symbol": "600519"})
+        "s_error", {"symbol": "600519"}
+    )
 
     assert result["status"] == "error"
     assert result["verdict"] is None
@@ -117,7 +120,8 @@ def test_timeout_is_fail_visible_without_waiting_for_worker():
 
     started = time.perf_counter()
     result = _runtime(_Agent("s_slow", action=slow), timeout_s=0.01).run(
-        "s_slow", {"symbol": "600519"})
+        "s_slow", {"symbol": "600519"}
+    )
     elapsed = time.perf_counter() - started
 
     assert result["status"] == "timeout"
@@ -142,8 +146,7 @@ def test_run_strategy_function_matches_runtime_contract():
     registry = StrategyRegistry()
     registry.register(_Agent("s_function", "experimental"))
 
-    result = run_strategy(registry, "s_function", {"symbol": "600519"},
-                          timeout_s=0.2)
+    result = run_strategy(registry, "s_function", {"symbol": "600519"}, timeout_s=0.2)
 
     assert result["status"] == "success"
     assert result["strategy_id"] == "s_function"
@@ -164,13 +167,13 @@ def test_timeout_wrapping_uses_daemon_thread_not_executor():
         return _verdict("s_probe")
 
     result = _runtime(_Agent("s_probe", action=probe)).run(
-        "s_probe", {"symbol": "600519"})
+        "s_probe", {"symbol": "600519"}
+    )
 
     assert result["status"] == "success"
     assert seen["thread"].daemon is True
 
-    source = (PLATFORM / "engine" / "strategy_runtime.py").read_text(
-        encoding="utf-8")
+    source = (PLATFORM / "engine" / "strategy_runtime.py").read_text(encoding="utf-8")
     assert "concurrent.futures" not in source
     assert "executor.submit" not in source
     assert "threading.Thread" in source

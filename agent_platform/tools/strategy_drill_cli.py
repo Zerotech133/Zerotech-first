@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """开发者可执行的独立 SHADOW 策略验证 CLI。"""
+
 from dataclasses import asdict, is_dataclass
 import argparse
 import json

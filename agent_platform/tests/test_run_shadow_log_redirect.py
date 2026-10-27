@@ -14,6 +14,7 @@
 
 纪律：全部 tmp 隔离（本测试组不落任何 agent_platform/data/ 文件）。
 """
+
 import ctypes
 import os
 import sys
@@ -52,8 +53,7 @@ def test_occupied_falls_back_returns_none(monkeypatch, ledger_root):
 def test_free_file_opens_append_writable(ledger_root):
     """契约 2：文件空闲 → 正常打开，追加写不截断既有内容。"""
     ledger_root.parent.mkdir(parents=True, exist_ok=True)
-    (ledger_root.parent / "last_run.log").write_text("prior\n",
-                                                     encoding="utf-8")
+    (ledger_root.parent / "last_run.log").write_text("prior\n", encoding="utf-8")
     f = run_shadow._redirect_run_log()
     assert f is not None
     f.write("new\n")
@@ -72,8 +72,9 @@ def test_windows_share_violation_simulates_cmd_redirect(ledger_root):
     GENERIC_WRITE = 0x40000000
     OPEN_ALWAYS = 4
     INVALID_HANDLE_VALUE = ctypes.c_void_p(-1).value
-    h = ctypes.windll.kernel32.CreateFileW(str(log_path), GENERIC_WRITE,
-                                           0, None, OPEN_ALWAYS, 0, None)
+    h = ctypes.windll.kernel32.CreateFileW(
+        str(log_path), GENERIC_WRITE, 0, None, OPEN_ALWAYS, 0, None
+    )
     assert h != INVALID_HANDLE_VALUE, "测试前置：独占句柄获取失败"
     try:
         assert run_shadow._redirect_run_log() is None

@@ -86,6 +86,7 @@ data_root 就是 agent_platform/data），且根可完全隔离。第②③段�
 
     python tools/pre_observation.py --dry-run
 """
+
 from __future__ import annotations
 
 import argparse
@@ -100,7 +101,7 @@ TOOL_NAME = "pre_observation"
 TOOL_VERSION = "1.0.0"
 
 _TOOLS_DIR = Path(__file__).resolve().parent
-_AGENT_PLATFORM = _TOOLS_DIR.parent          # .../agent_platform
+_AGENT_PLATFORM = _TOOLS_DIR.parent  # .../agent_platform
 _REPO_ROOT_DEFAULT = _AGENT_PLATFORM.parent  # 含 agent_platform/ 的仓库根
 
 if str(_AGENT_PLATFORM) not in sys.path:
@@ -181,14 +182,23 @@ def _quote(path: Path) -> str:
     return '"%s"' % str(path).replace("\\", "/")
 
 
-def build_plan(repo_root: Path, data_root: Path,
-               with_verify: bool) -> List[Dict[str, Any]]:
+def build_plan(
+    repo_root: Path, data_root: Path, with_verify: bool
+) -> List[Dict[str, Any]]:
     """三段固定顺序的计划（dry-run 与实跑共用同一份，防止两条路径漂移）。"""
     py = sys.executable or "python"
-    obs_argv = [py, str(_TOOLS_DIR / "check_observation_point.py"),
-                "--data-root", str(data_root)]
-    ver_argv = [py, str(_TOOLS_DIR / "verify_strategy_ledger.py"),
-                "--data-root", str(data_root)]
+    obs_argv = [
+        py,
+        str(_TOOLS_DIR / "check_observation_point.py"),
+        "--data-root",
+        str(data_root),
+    ]
+    ver_argv = [
+        py,
+        str(_TOOLS_DIR / "verify_strategy_ledger.py"),
+        "--data-root",
+        str(data_root),
+    ]
     db = data_root / "evidence" / "evidence.db"
 
     return [
@@ -196,10 +206,14 @@ def build_plan(repo_root: Path, data_root: Path,
             "key": STEP_COLLECT,
             "order": "1/3",
             "title": "① 证据收编（strategy 域，幂等）",
-            "cmd": ('evidence_collect collect --root %s --domains strategy'
-                    % _quote(repo_root)),
-            "note": ("in-process 调 collect()，store 注入 %s"
-                     "（--root 只定扫描面，写面由 store 决定）" % _quote(db)),
+            "cmd": (
+                "evidence_collect collect --root %s --domains strategy"
+                % _quote(repo_root)
+            ),
+            "note": (
+                "in-process 调 collect()，store 注入 %s"
+                "（--root 只定扫描面，写面由 store 决定）" % _quote(db)
+            ),
             "argv": None,
             "target_db": str(db),
             "enabled": True,
@@ -208,10 +222,14 @@ def build_plan(repo_root: Path, data_root: Path,
             "key": STEP_OBSERVE,
             "order": "2/3",
             "title": "② 观察点判读（判据 a-e）",
-            "cmd": ('%s %s --data-root %s'
-                    % (_quote(Path(py)),
-                       _quote(_TOOLS_DIR / "check_observation_point.py"),
-                       _quote(data_root))),
+            "cmd": (
+                "%s %s --data-root %s"
+                % (
+                    _quote(Path(py)),
+                    _quote(_TOOLS_DIR / "check_observation_point.py"),
+                    _quote(data_root),
+                )
+            ),
             "note": "只读；rc 0=有PASS无FAIL / 1=全PENDING中性 / 2=有FAIL",
             "argv": obs_argv,
             "target_db": None,
@@ -221,10 +239,14 @@ def build_plan(repo_root: Path, data_root: Path,
             "key": STEP_VERIFY,
             "order": "3/3",
             "title": "③ 账本独立复核（三方对账）",
-            "cmd": ('%s %s --data-root %s'
-                    % (_quote(Path(py)),
-                       _quote(_TOOLS_DIR / "verify_strategy_ledger.py"),
-                       _quote(data_root))),
+            "cmd": (
+                "%s %s --data-root %s"
+                % (
+                    _quote(Path(py)),
+                    _quote(_TOOLS_DIR / "verify_strategy_ledger.py"),
+                    _quote(data_root),
+                )
+            ),
             "note": "可选段（--with-verify）；rc 0=无差异 / 1=有FAIL / 2=参数缺失",
             "argv": ver_argv,
             "target_db": None,
@@ -257,9 +279,10 @@ def _run_collect(repo_root: Path, data_root: Path) -> Dict[str, Any]:
     dom = rep.get("domains", {}).get(STEP_COLLECT, {})
     return {
         "rc": 0,
-        "detail": ("collected=%d new=%d replayed=%d db=%s"
-                   % (dom.get("collected", 0), dom.get("new", 0),
-                      dom.get("replayed", 0), db)),
+        "detail": (
+            "collected=%d new=%d replayed=%d db=%s"
+            % (dom.get("collected", 0), dom.get("new", 0), dom.get("replayed", 0), db)
+        ),
         "warnings": list(rep.get("findings", [])),
         "output": json.dumps(rep, ensure_ascii=False, indent=1),
     }
@@ -267,8 +290,11 @@ def _run_collect(repo_root: Path, data_root: Path) -> Dict[str, Any]:
 
 def _extract_summary(text: str) -> str:
     """从子工具输出里取「汇总/结论」两行作为结论依据（无则空串）。"""
-    picked = [ln.strip() for ln in text.splitlines()
-              if ln.strip().startswith(("汇总:", "结论:", "复核结论:"))]
+    picked = [
+        ln.strip()
+        for ln in text.splitlines()
+        if ln.strip().startswith(("汇总:", "结论:", "复核结论:"))
+    ]
     return "；".join(picked)
 
 
@@ -289,8 +315,9 @@ def _generic_conclusion(step_key: str, status: str) -> str:
     }.get(status, "收编异常")
 
 
-def execute_step(step: Dict[str, Any], repo_root: Path,
-                 data_root: Path) -> Dict[str, Any]:
+def execute_step(
+    step: Dict[str, Any], repo_root: Path, data_root: Path
+) -> Dict[str, Any]:
     """执行单段；异常不外抛（转 ERROR），保证三段都能给出结论。"""
     out: Dict[str, Any] = {
         "key": step["key"],
@@ -319,9 +346,14 @@ def execute_step(step: Dict[str, Any], repo_root: Path,
             out["output"] = res["output"]
         else:
             cp = subprocess.run(
-                step["argv"], cwd=str(_AGENT_PLATFORM), env=_child_env(),
-                capture_output=True, text=True, encoding="utf-8",
-                errors="replace", timeout=600,
+                step["argv"],
+                cwd=str(_AGENT_PLATFORM),
+                env=_child_env(),
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=600,
             )
             rc = cp.returncode
             out["output"] = (cp.stdout or "") + (cp.stderr or "")
@@ -335,43 +367,63 @@ def execute_step(step: Dict[str, Any], repo_root: Path,
     status = normalize_rc(step["key"], rc)
     out["rc"] = rc
     out["status"] = status
-    base = "%s —— %s" % (STATUS_LABEL[status],
-                         _generic_conclusion(step["key"], status))
+    base = "%s —— %s" % (STATUS_LABEL[status], _generic_conclusion(step["key"], status))
     if status == ERROR:
         base = "ERROR —— 子工具退出码 %r 未在归一表内（参数/环境错误）" % (rc,)
     out["conclusion"] = base
     return out
 
 
-def run(plan: List[Dict[str, Any]], repo_root: Path, data_root: Path,
-        dry_run: bool) -> Dict[str, Any]:
+def run(
+    plan: List[Dict[str, Any]], repo_root: Path, data_root: Path, dry_run: bool
+) -> Dict[str, Any]:
     """按计划跑（或只打印）。返回可 JSON 序列化的报告。"""
     if dry_run:
-        steps = [{
-            "key": s["key"], "order": s["order"], "title": s["title"],
-            "cmd": s["cmd"], "note": s["note"], "target_db": s.get("target_db"),
-            "enabled": s["enabled"],
-            "rc": None, "status": PLANNED,
-            "conclusion": ("dry-run：仅打印，未执行" if s["enabled"]
-                           else "未启用（--with-verify 才跑）；dry-run 未执行"),
-            "detail": "", "warnings": [], "output": "",
-        } for s in plan]
+        steps = [
+            {
+                "key": s["key"],
+                "order": s["order"],
+                "title": s["title"],
+                "cmd": s["cmd"],
+                "note": s["note"],
+                "target_db": s.get("target_db"),
+                "enabled": s["enabled"],
+                "rc": None,
+                "status": PLANNED,
+                "conclusion": (
+                    "dry-run：仅打印，未执行"
+                    if s["enabled"]
+                    else "未启用（--with-verify 才跑）；dry-run 未执行"
+                ),
+                "detail": "",
+                "warnings": [],
+                "output": "",
+            }
+            for s in plan
+        ]
         return {
-            "tool": TOOL_NAME, "version": TOOL_VERSION,
-            "dry_run": True, "repo_root": str(repo_root),
-            "data_root": str(data_root), "steps": steps,
-            "status": PLANNED, "exit_code": 0,
-            "summary": {"pass": 0, "pending": 0, "fail": 0, "error": 0,
-                        "skipped": 0},
+            "tool": TOOL_NAME,
+            "version": TOOL_VERSION,
+            "dry_run": True,
+            "repo_root": str(repo_root),
+            "data_root": str(data_root),
+            "steps": steps,
+            "status": PLANNED,
+            "exit_code": 0,
+            "summary": {"pass": 0, "pending": 0, "fail": 0, "error": 0, "skipped": 0},
         }
 
     steps = [execute_step(s, repo_root, data_root) for s in plan]
     status, code = aggregate([s["status"] for s in steps])
     return {
-        "tool": TOOL_NAME, "version": TOOL_VERSION,
-        "dry_run": False, "repo_root": str(repo_root),
-        "data_root": str(data_root), "steps": steps,
-        "status": status, "exit_code": code,
+        "tool": TOOL_NAME,
+        "version": TOOL_VERSION,
+        "dry_run": False,
+        "repo_root": str(repo_root),
+        "data_root": str(data_root),
+        "steps": steps,
+        "status": status,
+        "exit_code": code,
         "summary": {
             "pass": sum(1 for s in steps if s["status"] == PASS),
             "pending": sum(1 for s in steps if s["status"] == PENDING),
@@ -396,12 +448,17 @@ def _print_output(text: str) -> None:
 def render_text(report: Dict[str, Any]) -> None:
     dry = report["dry_run"]
     print("=" * 70)
-    print("T 工位 · 周一 17:25 前置一键（收编 → 判读 → 汇总）v%s"
-          % report["version"])
+    print("T 工位 · 周一 17:25 前置一键（收编 → 判读 → 汇总）v%s" % report["version"])
     print("仓库根: %s" % report["repo_root"])
     print("数据根: %s" % report["data_root"])
-    print("模式  : %s" % ("dry-run（只打印，不执行、不写盘）" if dry
-                          else "实跑（写面仅 data/evidence/）"))
+    print(
+        "模式  : %s"
+        % (
+            "dry-run（只打印，不执行、不写盘）"
+            if dry
+            else "实跑（写面仅 data/evidence/）"
+        )
+    )
     print("=" * 70)
 
     for s in report["steps"]:
@@ -429,14 +486,18 @@ def render_text(report: Dict[str, Any]) -> None:
         return
 
     sm = report["summary"]
-    print("汇总: PASS %d / PENDING %d / FAIL %d / ERROR %d / SKIPPED %d"
-          % (sm["pass"], sm["pending"], sm["fail"], sm["error"], sm["skipped"]))
+    print(
+        "汇总: PASS %d / PENDING %d / FAIL %d / ERROR %d / SKIPPED %d"
+        % (sm["pass"], sm["pending"], sm["fail"], sm["error"], sm["skipped"])
+    )
     st = report["status"]
     if st == PASS:
         print("结论: 全部 PASS——可放行（wrapper 退出码 0）")
     elif st == PASS_WITH_PENDING:
-        print("结论: 无 FAIL，但含 PENDING 中性——未判红、也未全过；"
-              "按 SOP 等首跑/巡检推进，勿把中性当通过（wrapper 退出码 0）")
+        print(
+            "结论: 无 FAIL，但含 PENDING 中性——未判红、也未全过；"
+            "按 SOP 等首跑/巡检推进，勿把中性当通过（wrapper 退出码 0）"
+        )
     elif st == FAIL:
         print("结论: 存在 FAIL——先查清再判门（wrapper 退出码 1）")
     else:
@@ -450,27 +511,43 @@ def main(argv: Optional[List[str]] = None) -> int:
     ap = argparse.ArgumentParser(
         prog="pre_observation",
         description="周一 17:25 前置一键：证据收编 → 观察点判读 →（可选）账本复核。"
-                    "退出码 0=无FAIL / 1=有FAIL / 2=参数或环境错误。",
+        "退出码 0=无FAIL / 1=有FAIL / 2=参数或环境错误。",
     )
-    ap.add_argument("--repo-root", default=str(_REPO_ROOT_DEFAULT),
-                    help="仓库根（含 agent_platform/）；默认按脚本位置自动推断")
-    ap.add_argument("--dry-run", action="store_true", dest="dry_run",
-                    help="只打印将要执行的命令与顺序，不执行、不写任何文件")
-    ap.add_argument("--json", action="store_true", dest="as_json",
-                    help="机读输出（steps 恒为三段）")
-    ap.add_argument("--with-verify", action="store_true", dest="with_verify",
-                    help="追加第③段 verify_strategy_ledger 三方对账")
+    ap.add_argument(
+        "--repo-root",
+        default=str(_REPO_ROOT_DEFAULT),
+        help="仓库根（含 agent_platform/）；默认按脚本位置自动推断",
+    )
+    ap.add_argument(
+        "--dry-run",
+        action="store_true",
+        dest="dry_run",
+        help="只打印将要执行的命令与顺序，不执行、不写任何文件",
+    )
+    ap.add_argument(
+        "--json", action="store_true", dest="as_json", help="机读输出（steps 恒为三段）"
+    )
+    ap.add_argument(
+        "--with-verify",
+        action="store_true",
+        dest="with_verify",
+        help="追加第③段 verify_strategy_ledger 三方对账",
+    )
     args = ap.parse_args(argv)
 
     repo_root = Path(args.repo_root).expanduser().resolve()
     if not repo_root.is_dir():
-        print("参数/环境错误：--repo-root 不存在或不是目录：%s" % repo_root,
-              file=sys.stderr)
+        print(
+            "参数/环境错误：--repo-root 不存在或不是目录：%s" % repo_root,
+            file=sys.stderr,
+        )
         return 2
     data_root = repo_root / "agent_platform" / "data"
     if not data_root.is_dir():
-        print("参数/环境错误：数据根不存在（--repo-root 是否指错层？）：%s"
-              % data_root, file=sys.stderr)
+        print(
+            "参数/环境错误：数据根不存在（--repo-root 是否指错层？）：%s" % data_root,
+            file=sys.stderr,
+        )
         return 2
 
     plan = build_plan(repo_root, data_root, args.with_verify)

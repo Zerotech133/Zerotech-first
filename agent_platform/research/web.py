@@ -8,6 +8,7 @@
   · 每日预算（默认 30 次，env ZHAOYUN_RESEARCH_DAILY_LIMIT 可调；缓存命中不耗预算）；
   · citation 落 data/research/citations.jsonl，供报告引用；不抓取/不提交任何凭据。
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -45,8 +46,11 @@ def _allow_domains() -> list:
 
 
 def allowlist() -> dict:
-    return {"ok": True, "domains": _allow_domains(),
-            "note": "只允许这些域名；新增需人工评审"}
+    return {
+        "ok": True,
+        "domains": _allow_domains(),
+        "note": "只允许这些域名；新增需人工评审",
+    }
 
 
 def _is_public_ip(ip: str) -> bool:
@@ -54,8 +58,14 @@ def _is_public_ip(ip: str) -> bool:
         addr = ipaddress.ip_address(ip)
     except ValueError:
         return False
-    return not (addr.is_private or addr.is_loopback or addr.is_link_local
-                or addr.is_multicast or addr.is_reserved or addr.is_unspecified)
+    return not (
+        addr.is_private
+        or addr.is_loopback
+        or addr.is_link_local
+        or addr.is_multicast
+        or addr.is_reserved
+        or addr.is_unspecified
+    )
 
 
 def validate_url(url: str) -> dict:
@@ -77,8 +87,11 @@ def validate_url(url: str) -> dict:
     if not ok_domain:
         return {"ok": False, "error": "domain_not_allowlisted", "host": host}
     try:
-        infos = socket.getaddrinfo(host, u.port or (443 if u.scheme == "https" else 80),
-                                   proto=socket.IPPROTO_TCP)
+        infos = socket.getaddrinfo(
+            host,
+            u.port or (443 if u.scheme == "https" else 80),
+            proto=socket.IPPROTO_TCP,
+        )
     except OSError as e:
         return {"ok": False, "error": "dns_failed", "detail": str(e)[:120]}
     ips = sorted({info[4][0] for info in infos})
@@ -100,8 +113,11 @@ def budget(limit: int | None = None) -> dict:
     if b.get("date") != _today():
         b = {"date": _today(), "count": 0}
     try:
-        lim = int(limit or os.environ.get("ZHAOYUN_RESEARCH_DAILY_LIMIT")
-                  or DEFAULT_DAILY_LIMIT)
+        lim = int(
+            limit
+            or os.environ.get("ZHAOYUN_RESEARCH_DAILY_LIMIT")
+            or DEFAULT_DAILY_LIMIT
+        )
     except ValueError:
         lim = DEFAULT_DAILY_LIMIT
     b["limit"] = lim
@@ -116,8 +132,9 @@ def _budget_consume() -> bool:
     b["count"] = int(b.get("count") or 0) + 1
     b["date"] = _today()
     RESEARCH.mkdir(parents=True, exist_ok=True)
-    BUDGET.write_text(json.dumps({"date": b["date"], "count": b["count"]}),
-                      encoding="utf-8")
+    BUDGET.write_text(
+        json.dumps({"date": b["date"], "count": b["count"]}), encoding="utf-8"
+    )
     return True
 
 
@@ -163,8 +180,13 @@ def _extract(body: str) -> dict:
 
 
 def _http_get(url: str) -> str:
-    req = urllib.request.Request(url, headers={"User-Agent": UA,
-                                               "Accept": "text/html,application/json;q=0.9,*/*;q=0.8"})
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": UA,
+            "Accept": "text/html,application/json;q=0.9,*/*;q=0.8",
+        },
+    )
     with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
         raw = r.read(MAX_BYTES + 1)
         ctype = (r.headers.get("Content-Type") or "").lower()
@@ -197,19 +219,39 @@ def fetch(url: str, force: bool = False) -> dict:
     try:
         body = _http_get(v["url"])
     except Exception as e:  # noqa: BLE001
-        return {"ok": False, "error": "fetch_failed",
-                "detail": "%s: %s" % (type(e).__name__, str(e)[:160]), "url": v["url"]}
+        return {
+            "ok": False,
+            "error": "fetch_failed",
+            "detail": "%s: %s" % (type(e).__name__, str(e)[:160]),
+            "url": v["url"],
+        }
     sha = hashlib.sha256(body.encode("utf-8", errors="replace")).hexdigest()
     meta = _extract(body)
-    citation = {"schema": "zhaoyun_citation/v1", "url": v["url"],
-                "host": v["host"], "title": meta["title"],
-                "sha256": sha, "fetched_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
-                "excerpt": meta["text"][:500], "bytes": len(body)}
-    rec = {"ok": True, "url": v["url"], "host": v["host"], "title": meta["title"],
-           "text": meta["text"], "excerpt": meta["text"][:800], "sha256": sha,
-           "fetched_at": citation["fetched_at"], "fetched_ts": time.time(),
-           "bytes": len(body), "citation": citation, "cached": False,
-           "budget": budget()}
+    citation = {
+        "schema": "zhaoyun_citation/v1",
+        "url": v["url"],
+        "host": v["host"],
+        "title": meta["title"],
+        "sha256": sha,
+        "fetched_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+        "excerpt": meta["text"][:500],
+        "bytes": len(body),
+    }
+    rec = {
+        "ok": True,
+        "url": v["url"],
+        "host": v["host"],
+        "title": meta["title"],
+        "text": meta["text"],
+        "excerpt": meta["text"][:800],
+        "sha256": sha,
+        "fetched_at": citation["fetched_at"],
+        "fetched_ts": time.time(),
+        "bytes": len(body),
+        "citation": citation,
+        "cached": False,
+        "budget": budget(),
+    }
     cache_file.write_text(json.dumps(rec, ensure_ascii=False), encoding="utf-8")
     try:
         RESEARCH.mkdir(parents=True, exist_ok=True)
@@ -224,12 +266,17 @@ def recent_citations(limit: int = 20) -> dict:
     rows = []
     try:
         lines = CITATIONS.read_text(encoding="utf-8", errors="replace").splitlines()
-        for ln in lines[-max(1, min(int(limit), 100)):]:
+        for ln in lines[-max(1, min(int(limit), 100)) :]:
             try:
                 rows.append(json.loads(ln))
             except ValueError:
                 continue
     except OSError:
         pass
-    return {"ok": True, "count": len(rows), "items": rows,
-            "budget": budget(), "allowlist": _allow_domains()}
+    return {
+        "ok": True,
+        "count": len(rows),
+        "items": rows,
+        "budget": budget(),
+        "allowlist": _allow_domains(),
+    }

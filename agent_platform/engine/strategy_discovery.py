@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """显式策略清单驱动的 StrategyAgent 发现与装配。"""
+
 import importlib
 import json
 from pathlib import Path
@@ -18,7 +19,8 @@ class StrategyDiscoveryError(StrategyError):
 def _non_empty_string(value, field, index):
     if not isinstance(value, str) or not value.strip():
         raise StrategyDiscoveryError(
-            "清单第 %d 项 %s 必须是非空字符串" % (index, field))
+            "清单第 %d 项 %s 必须是非空字符串" % (index, field)
+        )
     return value
 
 
@@ -27,19 +29,18 @@ def _load_entries(manifest_path):
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except OSError as exc:
-        raise StrategyDiscoveryError(
-            "无法读取策略清单 %s: %s" % (path, exc)) from exc
+        raise StrategyDiscoveryError("无法读取策略清单 %s: %s" % (path, exc)) from exc
     except (TypeError, ValueError) as exc:
         raise StrategyDiscoveryError(
-            "策略清单 %s 不是有效 JSON: %s" % (path, exc)) from exc
+            "策略清单 %s 不是有效 JSON: %s" % (path, exc)
+        ) from exc
 
     if isinstance(payload, list):
         entries = payload
     elif isinstance(payload, dict) and isinstance(payload.get("strategies"), list):
         entries = payload["strategies"]
     else:
-        raise StrategyDiscoveryError(
-            "策略清单必须是插件项数组，或包含 strategies 数组")
+        raise StrategyDiscoveryError("策略清单必须是插件项数组，或包含 strategies 数组")
     return entries
 
 
@@ -48,14 +49,15 @@ def _module_allowed(module_name, allowed_modules, allowed_packages):
         return False
     if allowed_packages is not None:
         packages = tuple(allowed_packages)
-        if not any(module_name == package or module_name.startswith(package + ".")
-                   for package in packages):
+        if not any(
+            module_name == package or module_name.startswith(package + ".")
+            for package in packages
+        ):
             return False
     return True
 
 
-def load_manifest(manifest_path, registry, allowed_modules=None,
-                  allowed_packages=None):
+def load_manifest(manifest_path, registry, allowed_modules=None, allowed_packages=None):
     """按显式 JSON 清单导入并注册策略插件。
 
     每项清单必须声明 ``module``、``class``、``strategy_id``。不扫描目录、
@@ -75,7 +77,9 @@ def load_manifest(manifest_path, registry, allowed_modules=None,
         sys.path.insert(0, plugin_root_text)
     loaded = []
     seen_ids = set()
-    registered_ids = set(registry.list_ids()) if hasattr(registry, "list_ids") else set()
+    registered_ids = (
+        set(registry.list_ids()) if hasattr(registry, "list_ids") else set()
+    )
 
     for index, entry in enumerate(entries, 1):
         if not isinstance(entry, dict):
@@ -86,40 +90,48 @@ def load_manifest(manifest_path, registry, allowed_modules=None,
 
         if not _module_allowed(module_name, allowed_modules, allowed_packages):
             raise StrategyDiscoveryError(
-                "清单第 %d 模块 %s 不在允许的导入范围内" % (index, module_name))
+                "清单第 %d 模块 %s 不在允许的导入范围内" % (index, module_name)
+            )
         if strategy_id in seen_ids or strategy_id in registered_ids:
             raise StrategyDiscoveryError(
-                "清单第 %d strategy_id=%s 重复" % (index, strategy_id))
+                "清单第 %d strategy_id=%s 重复" % (index, strategy_id)
+            )
         seen_ids.add(strategy_id)
 
         try:
             module = importlib.import_module(module_name)
         except Exception as exc:
             raise StrategyDiscoveryError(
-                "清单第 %d 无法导入模块 %s: %s" % (index, module_name, exc)) from exc
+                "清单第 %d 无法导入模块 %s: %s" % (index, module_name, exc)
+            ) from exc
         try:
             agent_class = getattr(module, class_name)
         except AttributeError as exc:
             raise StrategyDiscoveryError(
-                "清单第 %d 模块 %s 不存在类 %s" %
-                (index, module_name, class_name)) from exc
-        if not isinstance(agent_class, type) or agent_class is StrategyAgent \
-                or not issubclass(agent_class, StrategyAgent):
+                "清单第 %d 模块 %s 不存在类 %s" % (index, module_name, class_name)
+            ) from exc
+        if (
+            not isinstance(agent_class, type)
+            or agent_class is StrategyAgent
+            or not issubclass(agent_class, StrategyAgent)
+        ):
             raise StrategyDiscoveryError(
-                "清单第 %d 类 %s.%s 非 StrategyAgent 子类" %
-                (index, module_name, class_name))
+                "清单第 %d 类 %s.%s 非 StrategyAgent 子类"
+                % (index, module_name, class_name)
+            )
 
         try:
             agent = agent_class()
         except Exception as exc:
             raise StrategyDiscoveryError(
-                "清单第 %d 无法实例化 %s.%s: %s" %
-                (index, module_name, class_name, exc)) from exc
+                "清单第 %d 无法实例化 %s.%s: %s" % (index, module_name, class_name, exc)
+            ) from exc
         actual_id = getattr(agent, "strategy_id", None)
         if actual_id != strategy_id:
             raise StrategyDiscoveryError(
-                "清单第 %d strategy_id=%s 与实例 ID=%s 不一致" %
-                (index, strategy_id, actual_id))
+                "清单第 %d strategy_id=%s 与实例 ID=%s 不一致"
+                % (index, strategy_id, actual_id)
+            )
         loaded.append(agent)
 
     for agent in loaded:
@@ -127,7 +139,8 @@ def load_manifest(manifest_path, registry, allowed_modules=None,
             registry.register(agent)
         except Exception as exc:
             raise StrategyDiscoveryError(
-                "装配 strategy_id=%s 失败: %s" % (agent.strategy_id, exc)) from exc
+                "装配 strategy_id=%s 失败: %s" % (agent.strategy_id, exc)
+            ) from exc
     return registry
 
 

@@ -28,7 +28,7 @@ def _matrix_ids_by_dept():
     """P2 独立口径：项目部门档案在主档 matrix_assignments（不在部门表）。"""
     out = {}
     for d in _raw_org()["departments"]:
-        for p in (d.get("agent_profiles") or []):
+        for p in d.get("agent_profiles") or []:
             for m in p.get("matrix_assignments") or []:
                 dep = m.get("dept")
                 if dep and p.get("agent_id"):
@@ -39,9 +39,11 @@ def _matrix_ids_by_dept():
 def _expect_depts_without_profile():
     """独立口径：自己从 org.json 数「名单有人但零档案（含矩阵档）」的部门。"""
     mx = _matrix_ids_by_dept()
-    return {d["dept"] for d in _raw_org()["departments"]
-            if d.get("agents") and not d.get("agent_profiles")
-            and not mx.get(d["dept"])}
+    return {
+        d["dept"]
+        for d in _raw_org()["departments"]
+        if d.get("agents") and not d.get("agent_profiles") and not mx.get(d["dept"])
+    }
 
 
 def _known_profile_ids():
@@ -51,8 +53,11 @@ def _known_profile_ids():
     旧口径把「部门表里没有」直接当成「无档案」，等于把在位参谋长报成缺失。
     """
     org = _raw_org()
-    ids = {str(p.get("agent_id")) for d in org["departments"]
-           for p in (d.get("agent_profiles") or [])}
+    ids = {
+        str(p.get("agent_id"))
+        for d in org["departments"]
+        for p in (d.get("agent_profiles") or [])
+    }
     for _dep, _mx in _matrix_ids_by_dept().items():
         ids.update(_mx)
     chief = org.get("chief") or {}
@@ -115,19 +120,22 @@ def _by_code(rep, code):
 
 # ---------------------------------------------------------------- 真实盘面
 
+
 def test_audit_real_summary():
     rep = A.audit(_PLATFORM)
     assert rep["ok"] is True
     s = rep["summary"]
     assert s["depts"] == 17
-    assert s["seats_listed"] >= 60          # 名单口径
+    assert s["seats_listed"] >= 60  # 名单口径
     assert s["seats_profiled"] >= 25
     # 三态必须自平：名单 = 部门档案表 + 档案在别处 + 真无档。
     # 旧断言写的是二态（名单 = 有档 + 无档），档案在 team 文件里的席会被算成无档（S42 修）。
-    assert s["seats_listed"] == (s["seats_profiled"]
-                                 + s.get("seats_matrix", 0)
-                                 + s.get("seats_profiled_elsewhere", 0)
-                                 + s["seats_ghost"])
+    assert s["seats_listed"] == (
+        s["seats_profiled"]
+        + s.get("seats_matrix", 0)
+        + s.get("seats_profiled_elsewhere", 0)
+        + s["seats_ghost"]
+    )
     assert 0 <= s["ghost_ratio"] <= 1
     # 成果锁（S42）：S35→S42 已把「有名无档」清零。回升只可能是有人绕过编制工具
     # 往名单里塞 id 不补档——这正是要抓的，不是该放宽的。
@@ -168,15 +176,18 @@ def test_audit_detects_lead_out_of_dept():
     """
     rep = A.audit(_PLATFORM)
     out = {f["dept"] for f in _by_code(rep, "LEAD_OUT_OF_DEPT")}
-    expect = {d["dept"] for d in _raw_org()["departments"]
-              if d.get("lead") and str(d["lead"]) not in (d.get("agents") or [])}
+    expect = {
+        d["dept"]
+        for d in _raw_org()["departments"]
+        if d.get("lead") and str(d["lead"]) not in (d.get("agents") or [])
+    }
     assert out == expect, "跨部门主官检出与实际不一致"
 
 
 def test_audit_detects_duplicate_names():
     rep = A.audit(_PLATFORM)
     dups = _by_code(rep, "DUPLICATE_CN_NAME")
-    if dups:                                  # 存量 4 对；若已清理则不必红
+    if dups:  # 存量 4 对；若已清理则不必红
         names = {f["name"] for f in dups}
         assert rep["summary"]["duplicate_names"] == len(dups)
         for f in dups:
@@ -204,15 +215,36 @@ def test_audit_is_readonly():
 
 # ---------------------------------------------------------------- tmp 构造场景
 
+
 def _minimal_org(tmp_path, *, profiled=True, lead="X1"):
     r = tmp_path / "plat"
     (r / "registry").mkdir(parents=True)
     (r / "hr").mkdir()
-    prof = [{"agent_id": "X1", "role_profile": "测试岗", "llm_binding": "ollama/qwen3.5:9b"}] if profiled else []
-    org = {"departments": [{"dept": "only", "name": "唯一部", "lead": lead,
-                            "agents": ["X1"], "agent_profiles": prof}]}
-    (r / "registry" / "org.json").write_text(json.dumps(org, ensure_ascii=False, indent=2),
-                                             encoding="utf-8")
+    prof = (
+        [
+            {
+                "agent_id": "X1",
+                "role_profile": "测试岗",
+                "llm_binding": "ollama/qwen3.5:9b",
+            }
+        ]
+        if profiled
+        else []
+    )
+    org = {
+        "departments": [
+            {
+                "dept": "only",
+                "name": "唯一部",
+                "lead": lead,
+                "agents": ["X1"],
+                "agent_profiles": prof,
+            }
+        ]
+    }
+    (r / "registry" / "org.json").write_text(
+        json.dumps(org, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     (r / "hr" / "X1").mkdir()
     (r / "hr" / "X1" / "resume.yaml").write_text("cn_name: 测试员\n", encoding="utf-8")
     return r
@@ -239,8 +271,10 @@ def test_audit_flags_ghost_and_null_lead(tmp_path):
 def test_audit_profile_not_listed(tmp_path):
     r = _minimal_org(tmp_path, profiled=True, lead="X1")
     org = json.loads((r / "registry" / "org.json").read_text(encoding="utf-8"))
-    org["departments"][0]["agents"] = []          # 有档案但名单里没有
-    (r / "registry" / "org.json").write_text(json.dumps(org, ensure_ascii=False), encoding="utf-8")
+    org["departments"][0]["agents"] = []  # 有档案但名单里没有
+    (r / "registry" / "org.json").write_text(
+        json.dumps(org, ensure_ascii=False), encoding="utf-8"
+    )
     rep = A.audit(r)
     assert "PROFILE_NOT_LISTED" in _codes(rep)
 
@@ -252,12 +286,19 @@ def test_audit_missing_org_raises(tmp_path):
 
 # ---------------------------------------------------------------- 快照口径
 
+
 def test_snapshot_shows_all_seats_not_just_profiles():
     """快照必须按『名单 ∪ 档案』出人，否则有名无档的席位会被整个藏起来。"""
     from legion_command.snapshot import build_snapshot
+
     d = build_snapshot()
     total = sum(len(x["agents"]) for x in d["departments"])
-    ghost = sum(1 for x in d["departments"] for a in x["agents"] if a.get("has_profile") is False)
+    ghost = sum(
+        1
+        for x in d["departments"]
+        for a in x["agents"]
+        if a.get("has_profile") is False
+    )
     assert total == d["summary"]["agents"]
     assert total >= 60, "名单口径应 60+ 席"
     # 幽灵席位总数须与独立口径一致（不写死数字，随补档演进）
@@ -270,6 +311,7 @@ def test_snapshot_shows_all_seats_not_just_profiles():
 
 
 # ------------------------------------------- 档案登记位置（rules 1.1 / S41）
+
 
 def test_audit_detects_lead_profile_elsewhere():
     """档案在部门表之外（chief / team_*）须单列，且不得再报成「无档案」。
@@ -289,27 +331,41 @@ def test_audit_cross_dept_note_downgrades(tmp_path):
     plat = tmp_path / "plat"
     (plat / "registry").mkdir(parents=True)
     (plat / "hr").mkdir()
-    cases = {"no_note": None, "with_note": {"cross_dept": True,
-                                            "cross_note": "参谋长兼任直属线主官，指挥链经真源登记"}}
+    cases = {
+        "no_note": None,
+        "with_note": {
+            "cross_dept": True,
+            "cross_note": "参谋长兼任直属线主官，指挥链经真源登记",
+        },
+    }
     findings = {}
     for tag, appointed in cases.items():
-        dept = {"dept": "x", "name": "测试营", "lead": "LEADX",
-                "agents": ["MEM1"], "agent_profiles": [
-                    {"agent_id": "MEM1", "charter_detail": "测试席"},
-                    {"agent_id": "LEADX", "charter_detail": "跨部门主官"}]}
+        dept = {
+            "dept": "x",
+            "name": "测试营",
+            "lead": "LEADX",
+            "agents": ["MEM1"],
+            "agent_profiles": [
+                {"agent_id": "MEM1", "charter_detail": "测试席"},
+                {"agent_id": "LEADX", "charter_detail": "跨部门主官"},
+            ],
+        }
         if appointed:
             dept["lead_appointed"] = appointed
         org = {"departments": [dept]}
         (plat / "registry" / "org.json").write_text(
-            json.dumps(org, ensure_ascii=False), encoding="utf-8")
-        findings[tag] = [f for f in A.audit(plat)["findings"]
-                         if f["code"] == "LEAD_OUT_OF_DEPT"]
+            json.dumps(org, ensure_ascii=False), encoding="utf-8"
+        )
+        findings[tag] = [
+            f for f in A.audit(plat)["findings"] if f["code"] == "LEAD_OUT_OF_DEPT"
+        ]
     assert findings["no_note"] and findings["no_note"][0]["severity"] == "P2"
     assert findings["with_note"] and findings["with_note"][0]["severity"] == "P3"
     assert "跨部门兼任" in findings["with_note"][0]["detail"]
 
 
 # ------------------------------------------- 绑定声明（rules 1.2 / S43）
+
 
 def test_audit_detects_binding_missing(tmp_path):
     """有档案但没写 llm_binding 必须报出来：取档方会回落默认档。
@@ -320,15 +376,23 @@ def test_audit_detects_binding_missing(tmp_path):
     plat = tmp_path / "plat"
     (plat / "registry").mkdir(parents=True)
     (plat / "hr").mkdir()
-    org = {"departments": [{
-        "dept": "x", "name": "测试营", "lead": "P1",
-        "agents": ["P1", "Q1"],
-        "agent_profiles": [
-            {"agent_id": "P1", "llm_binding": "ollama/qwen3.5:9b"},
-            {"agent_id": "Q1"},                      # 有档案、没写绑定
-        ]}]}
+    org = {
+        "departments": [
+            {
+                "dept": "x",
+                "name": "测试营",
+                "lead": "P1",
+                "agents": ["P1", "Q1"],
+                "agent_profiles": [
+                    {"agent_id": "P1", "llm_binding": "ollama/qwen3.5:9b"},
+                    {"agent_id": "Q1"},  # 有档案、没写绑定
+                ],
+            }
+        ]
+    }
     (plat / "registry" / "org.json").write_text(
-        json.dumps(org, ensure_ascii=False), encoding="utf-8")
+        json.dumps(org, ensure_ascii=False), encoding="utf-8"
+    )
     rep = A.audit(plat)
     got = {a for f in _by_code(rep, "BINDING_MISSING") for a in f["agents"]}
     assert got == {"Q1"}, "未声明绑定的席位必须被检出（实际 %r）" % got
@@ -337,15 +401,19 @@ def test_audit_detects_binding_missing(tmp_path):
 def test_audit_binding_missing_matches_independent_count():
     """真实盘面：检出的未声明绑定席位须与独立口径一致（不写死人名）。"""
     from engine.org_profiles import profile_index
+
     rep = A.audit(_PLATFORM)
     got = {a for f in _by_code(rep, "BINDING_MISSING") for a in f["agents"]}
     idx = profile_index(_PLATFORM)
-    listed = {str(a) for d in _raw_org()["departments"] for a in (d.get("agents") or [])}
+    listed = {
+        str(a) for d in _raw_org()["departments"] for a in (d.get("agents") or [])
+    }
     expect = {a for a in listed if (idx.get(a) or {}).get("llm_binding", "") == ""}
     assert got == expect
 
 
 # ------------------------------------------- 绑定声明（rules 1.2 / S43）
+
 
 def test_audit_detects_binding_missing__dup2(tmp_path):
     """有档案但没写 llm_binding 必须报出来：取档方会回落默认档。
@@ -356,15 +424,23 @@ def test_audit_detects_binding_missing__dup2(tmp_path):
     plat = tmp_path / "plat"
     (plat / "registry").mkdir(parents=True)
     (plat / "hr").mkdir()
-    org = {"departments": [{
-        "dept": "x", "name": "测试营", "lead": "P1",
-        "agents": ["P1", "Q1"],
-        "agent_profiles": [
-            {"agent_id": "P1", "llm_binding": "ollama/qwen3.5:9b"},
-            {"agent_id": "Q1"},                      # 有档案、没写绑定
-        ]}]}
+    org = {
+        "departments": [
+            {
+                "dept": "x",
+                "name": "测试营",
+                "lead": "P1",
+                "agents": ["P1", "Q1"],
+                "agent_profiles": [
+                    {"agent_id": "P1", "llm_binding": "ollama/qwen3.5:9b"},
+                    {"agent_id": "Q1"},  # 有档案、没写绑定
+                ],
+            }
+        ]
+    }
     (plat / "registry" / "org.json").write_text(
-        json.dumps(org, ensure_ascii=False), encoding="utf-8")
+        json.dumps(org, ensure_ascii=False), encoding="utf-8"
+    )
     rep = A.audit(plat)
     got = {a for f in _by_code(rep, "BINDING_MISSING") for a in f["agents"]}
     assert got == {"Q1"}, "未声明绑定的席位必须被检出（实际 %r）" % got
@@ -373,10 +449,13 @@ def test_audit_detects_binding_missing__dup2(tmp_path):
 def test_audit_binding_missing_matches_independent_count__dup2():
     """真实盘面：检出的未声明绑定席位须与独立口径一致（不写死人名）。"""
     from engine.org_profiles import profile_index
+
     rep = A.audit(_PLATFORM)
     got = {a for f in _by_code(rep, "BINDING_MISSING") for a in f["agents"]}
     idx = profile_index(_PLATFORM)
-    listed = {str(a) for d in _raw_org()["departments"] for a in (d.get("agents") or [])}
+    listed = {
+        str(a) for d in _raw_org()["departments"] for a in (d.get("agents") or [])
+    }
     expect = {a for a in listed if (idx.get(a) or {}).get("llm_binding", "") == ""}
     assert got == expect
 
@@ -388,6 +467,7 @@ def test_audit_other_dept_profile_downgraded_to_p3():
     取档故障被噪音淹没。口径不写死部门：凡 source_detail 以 dept: 开头的都按 P3。
     """
     from engine.org_profiles import SRC_DEPT, profile_index
+
     idx = profile_index(_PLATFORM)
     rep = A.audit(_PLATFORM)
     checked = 0
@@ -395,7 +475,9 @@ def test_audit_other_dept_profile_downgraded_to_p3():
         src = idx.get(str(f.get("lead"))) or {}
         if src.get("source") == SRC_DEPT:
             checked += 1
-            assert f["severity"] == "P3", "档案在主属部门的跨部门兼任不该报 P2：%r" % (f,)
+            assert f["severity"] == "P3", "档案在主属部门的跨部门兼任不该报 P2：%r" % (
+                f,
+            )
     assert checked > 0, "样本为空：没有「主官档案在别的部门表」的情形，用例失去承重"
 
 
@@ -406,6 +488,7 @@ def test_audit_other_dept_profile_downgraded_to_p3__dup2():
     取档故障被噪音淹没。口径不写死部门：凡 source_detail 以 dept: 开头的都按 P3。
     """
     from engine.org_profiles import SRC_DEPT, profile_index
+
     idx = profile_index(_PLATFORM)
     rep = A.audit(_PLATFORM)
     checked = 0
@@ -413,5 +496,7 @@ def test_audit_other_dept_profile_downgraded_to_p3__dup2():
         src = idx.get(str(f.get("lead"))) or {}
         if src.get("source") == SRC_DEPT:
             checked += 1
-            assert f["severity"] == "P3", "档案在主属部门的跨部门兼任不该报 P2：%r" % (f,)
+            assert f["severity"] == "P3", "档案在主属部门的跨部门兼任不该报 P2：%r" % (
+                f,
+            )
     assert checked > 0, "样本为空：没有「主官档案在别的部门表」的情形，用例失去承重"

@@ -4,6 +4,7 @@
 覆盖：请求形状（URL/鉴权头/模型/消息）、响应解析、重试、错误脱敏、
 密钥解析优先级（env > 显式文件 > KEY_FILE_ENV > 默认文件）、缺 key 报错。
 """
+
 from __future__ import annotations
 
 import json
@@ -27,17 +28,24 @@ class _Capture:
         self._responses = list(responses or [])
 
     def __call__(self, method, url, headers, data, timeout):
-        self.calls.append({"method": method, "url": url,
-                           "headers": dict(headers), "data": data,
-                           "timeout": timeout})
+        self.calls.append(
+            {
+                "method": method,
+                "url": url,
+                "headers": dict(headers),
+                "data": data,
+                "timeout": timeout,
+            }
+        )
         if self._responses:
             return self._responses.pop(0)
         return 200, json.dumps({"choices": [{"message": {"content": "OK"}}]})
 
 
 def _client(capture, **kw):
-    return D.DeepSeekClient(api_key=_FAKE_KEY, transport=capture,
-                            sleep_fn=lambda s: None, **kw)
+    return D.DeepSeekClient(
+        api_key=_FAKE_KEY, transport=capture, sleep_fn=lambda s: None, **kw
+    )
 
 
 def test_chat_request_shape_and_parse():
@@ -56,8 +64,16 @@ def test_chat_request_shape_and_parse():
 
 
 def test_models_endpoint():
-    cap = _Capture([(200, json.dumps({"data": [{"id": "deepseek-flash"},
-                                               {"id": "deepseek-v4-pro"}]}))])
+    cap = _Capture(
+        [
+            (
+                200,
+                json.dumps(
+                    {"data": [{"id": "deepseek-flash"}, {"id": "deepseek-v4-pro"}]}
+                ),
+            )
+        ]
+    )
     c = _client(cap)
     assert c.models() == ["deepseek-flash", "deepseek-v4-pro"]
     assert cap.calls[0]["method"] == "GET"
@@ -65,15 +81,21 @@ def test_models_endpoint():
 
 
 def test_retry_on_503_then_success():
-    cap = _Capture([(503, "busy"),
-                    (200, json.dumps({"choices": [{"message": {"content": "OK"}}]}))])
+    cap = _Capture(
+        [
+            (503, "busy"),
+            (200, json.dumps({"choices": [{"message": {"content": "OK"}}]})),
+        ]
+    )
     c = _client(cap, retries=1)
     assert c.chat([{"role": "user", "content": "hi"}]) == "OK"
     assert len(cap.calls) == 2
 
 
 def test_error_is_sanitized_and_does_not_leak_key():
-    cap = _Capture([(401, json.dumps({"error": {"message": "invalid key " + _FAKE_KEY}}))])
+    cap = _Capture(
+        [(401, json.dumps({"error": {"message": "invalid key " + _FAKE_KEY}}))]
+    )
     c = _client(cap, retries=0)
     with pytest.raises(D.DeepSeekError) as ei:
         c.chat([{"role": "user", "content": "hi"}])
@@ -116,10 +138,12 @@ def test_resolve_key_missing_raises_honest_error(tmp_path, monkeypatch):
 
 
 def test_ping_combines_models_and_chat(tmp_path):
-    cap = _Capture([
-        (200, json.dumps({"data": [{"id": "deepseek-flash"}]})),
-        (200, json.dumps({"choices": [{"message": {"content": "OK"}}]})),
-    ])
+    cap = _Capture(
+        [
+            (200, json.dumps({"data": [{"id": "deepseek-flash"}]})),
+            (200, json.dumps({"choices": [{"message": {"content": "OK"}}]})),
+        ]
+    )
     out = _client(cap).ping()
     assert out["ok"] is True and out["models"] == ["deepseek-flash"]
     assert out["reply"] == "OK"
@@ -127,11 +151,21 @@ def test_ping_combines_models_and_chat(tmp_path):
 
 def test_ping_empty_content_is_not_ok(tmp_path):
     """假成功判例：HTTP 200 但正文为空（推理 token 占满预算）→ ok=False。"""
-    cap = _Capture([
-        (200, json.dumps({"data": [{"id": "deepseek-flash"}]})),
-        (200, json.dumps({"choices": [{"message": {"content": "",
-                                                    "reasoning_content": "思考中"}}]})),
-    ])
+    cap = _Capture(
+        [
+            (200, json.dumps({"data": [{"id": "deepseek-flash"}]})),
+            (
+                200,
+                json.dumps(
+                    {
+                        "choices": [
+                            {"message": {"content": "", "reasoning_content": "思考中"}}
+                        ]
+                    }
+                ),
+            ),
+        ]
+    )
     out = _client(cap).ping()
     assert out["ok"] is False
     assert out["reason"]

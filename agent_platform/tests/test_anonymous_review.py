@@ -27,13 +27,20 @@ def _card():
         adversary_diff={"criteria/rg.md": "反向改动"},
         verifier=["样本外达标", "回滚预案"],
     )
-    E.record_metrics(card, "baseline", {"misblock_lower_better": 0.18, "oos_return": 0.004})
-    E.record_metrics(card, "candidate", {"misblock_lower_better": 0.11, "oos_return": 0.009})
-    E.record_metrics(card, "adversary", {"misblock_lower_better": 0.17, "oos_return": 0.005})
+    E.record_metrics(
+        card, "baseline", {"misblock_lower_better": 0.18, "oos_return": 0.004}
+    )
+    E.record_metrics(
+        card, "candidate", {"misblock_lower_better": 0.11, "oos_return": 0.009}
+    )
+    E.record_metrics(
+        card, "adversary", {"misblock_lower_better": 0.17, "oos_return": 0.005}
+    )
     return card
 
 
 # ---------------------------------------------------------------- 组池与匿名
+
 
 def test_pool_excludes_baseline():
     pool = R.build_pool(_card())
@@ -73,6 +80,7 @@ def test_anon_ids_differ_across_cards():
 
 # ---------------------------------------------------------------- 横评
 
+
 def test_review_winner_is_better_candidate():
     card = _card()
     r = R.review(card)
@@ -93,7 +101,10 @@ def test_winner_must_map_to_better_arm():
     r = R.review(card)
     m = R.reveal(r)
     assert m[r.winner] == "candidate"
-    assert r.scores[m and r.winner] > r.scores[[k for k, v in m.items() if v == "adversary"][0]]
+    assert (
+        r.scores[m and r.winner]
+        > r.scores[[k for k, v in m.items() if v == "adversary"][0]]
+    )
 
 
 def test_review_rationale_no_origin_leak():
@@ -117,8 +128,7 @@ def test_custom_judge_injection():
     card = _card()
 
     def judge(pool, c):
-        return ({p.anon_id: 1.0 for p in pool},
-                {p.anon_id: "custom" for p in pool})
+        return ({p.anon_id: 1.0 for p in pool}, {p.anon_id: "custom" for p in pool})
 
     r = R.review(card, judge=judge)
     assert r.judge == "judge"
@@ -134,6 +144,7 @@ def test_baseline_metrics_required_for_judging():
 
 # ---------------------------------------------------------------- 与 Z2 联动 / 结案边界
 
+
 def test_apply_to_card_does_not_adopt():
     card = _card()
     r = R.review(card)
@@ -141,7 +152,7 @@ def test_apply_to_card_does_not_adopt():
     rev = card.verdict["review"]
     assert rev["winner"] == r.winner
     assert "adopt" not in card.verdict
-    assert card.status == "probing"     # 未结案
+    assert card.status == "probing"  # 未结案
     assert rev["revealed"] is False
 
 

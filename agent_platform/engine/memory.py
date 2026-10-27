@@ -6,6 +6,7 @@ gns 格式：domain/* | dept/{dept}/{type} | agent/{id}/{type} | share/*
 权限：注册表 memory_grants {read:[...], write:[...]}，fnmatch 通配校验，越权抛 PermissionDenied
 复盘纪律：write 一律追加（append-only），「当时的判断」永远保留原始版本（Zep 时态语义）
 """
+
 import fnmatch
 import json
 import threading

@@ -23,6 +23,7 @@ M3 口径：静态过关后在一次性子进程内以合成数据试跑 propose
 exec 仅在校验通过后于受限 globals（白名单 builtins + 白名单 __import__）
 内进行——静态门与 exec 沙箱是两道独立防线。
 """
+
 import ast
 import json
 import os
@@ -35,48 +36,93 @@ from pathlib import Path
 
 try:
     from strategy_registry import (
-        RECOMMENDATIONS, STANCES, StrategyAgent, StrategyError,
-        StrategyRegistry, Verdict)  # noqa: F401
+        RECOMMENDATIONS,
+        STANCES,
+        StrategyAgent,
+        StrategyError,
+        StrategyRegistry,
+        Verdict,
+    )  # noqa: F401
 except ImportError:  # 跨目录直接调用时兜底定位 engine/
     _here = Path(__file__).resolve()
     sys.path.insert(0, str(_here.parent.parent / "engine"))
-    from strategy_registry import (
-        RECOMMENDATIONS, STANCES, StrategyAgent, StrategyError)
+    from strategy_registry import RECOMMENDATIONS, STANCES, StrategyAgent, StrategyError
 
 # ---- 拍板①：import 白名单制（§2.2 建议 → 定稿） ----
 # 七件套纯计算库 + 宿主契约模块 strategy_registry（插件基类/Verdict 来源）。
 # 白名单外一律拒：黑名单永远追不上绕过手法（设计稿风险 §5.1）。
-IMPORT_ALLOWLIST = frozenset({
-    "math", "statistics", "collections", "itertools", "functools",
-    "typing", "dataclasses",
-    "strategy_registry",  # 宿主契约模块（StrategyAgent/Verdict）
-})
+IMPORT_ALLOWLIST = frozenset(
+    {
+        "math",
+        "statistics",
+        "collections",
+        "itertools",
+        "functools",
+        "typing",
+        "dataclasses",
+        "strategy_registry",  # 宿主契约模块（StrategyAgent/Verdict）
+    }
+)
 
 # 危险字面调用（AST Call 扫 Name/Attribute）：命中即拒
-DENY_CALLS = frozenset({
-    "eval", "exec", "compile", "__import__", "open",
-    "globals", "locals", "vars", "getattr", "setattr", "delattr",
-    "system", "popen", "write_text", "write_bytes",  # attribute 尾名
-})
+DENY_CALLS = frozenset(
+    {
+        "eval",
+        "exec",
+        "compile",
+        "__import__",
+        "open",
+        "globals",
+        "locals",
+        "vars",
+        "getattr",
+        "setattr",
+        "delattr",
+        "system",
+        "popen",
+        "write_text",
+        "write_bytes",  # attribute 尾名
+    }
+)
 
 # 凭据形态（R2）
-CRED_PATTERN = re.compile(
-    r"(?i)(api[_-]?key|secret|token|password|credential)\s*=")
+CRED_PATTERN = re.compile(r"(?i)(api[_-]?key|secret|token|password|credential)\s*=")
 
 MAX_LINES = 300
 MAX_BYTES = 16 * 1024
 
 # exec 沙箱 builtins：纯计算常用集 + 受限 __import__（双保险，静态门之外）
 _SAFE_BUILTINS = {
-    "abs": abs, "all": all, "any": any, "bool": bool, "dict": dict,
-    "divmod": divmod, "enumerate": enumerate, "filter": filter,
-    "float": float, "int": int, "len": len, "list": list, "max": max,
-    "min": min, "range": range, "reversed": reversed, "round": round,
-    "set": set, "sorted": sorted, "str": str, "sum": sum, "tuple": tuple,
+    "abs": abs,
+    "all": all,
+    "any": any,
+    "bool": bool,
+    "dict": dict,
+    "divmod": divmod,
+    "enumerate": enumerate,
+    "filter": filter,
+    "float": float,
+    "int": int,
+    "len": len,
+    "list": list,
+    "max": max,
+    "min": min,
+    "range": range,
+    "reversed": reversed,
+    "round": round,
+    "set": set,
+    "sorted": sorted,
+    "str": str,
+    "sum": sum,
+    "tuple": tuple,
     "zip": zip,
-    "ValueError": ValueError, "TypeError": TypeError, "KeyError": KeyError,
-    "IndexError": IndexError, "ZeroDivisionError": ZeroDivisionError,
-    "ArithmeticError": ArithmeticError, "Exception": Exception,
+    "ValueError": ValueError,
+    "TypeError": TypeError,
+    "KeyError": KeyError,
+    "IndexError": IndexError,
+    "ZeroDivisionError": ZeroDivisionError,
+    "ArithmeticError": ArithmeticError,
+    "Exception": Exception,
     "__build_class__": __build_class__,  # class 语句依赖
     "__name__": "codex_plugin",  # 缺省模块名（exec globals 会覆盖）
 }
@@ -102,6 +148,7 @@ def _exec_globals():
 
 
 # ---- M1 静态校验器 ----
+
 
 def validate_source(source, max_lines=MAX_LINES, max_bytes=MAX_BYTES):
     """静态校验 Codex 提交物。返回拒绝原因列表（空=通过）。
@@ -130,60 +177,76 @@ def validate_source(source, max_lines=MAX_LINES, max_bytes=MAX_BYTES):
                 for alias in node.names:
                     top = alias.name.split(".")[0]
                     if top not in IMPORT_ALLOWLIST:
-                        reasons.append("import 白名单外模块：%s（line %d）"
-                                       % (alias.name, node.lineno))
+                        reasons.append(
+                            "import 白名单外模块：%s（line %d）"
+                            % (alias.name, node.lineno)
+                        )
             elif isinstance(node, ast.ImportFrom):
                 top = (node.module or "").split(".")[0]
                 if top not in IMPORT_ALLOWLIST:
-                    reasons.append("from import 白名单外模块：%s（line %d）"
-                                   % (node.module, node.lineno))
+                    reasons.append(
+                        "from import 白名单外模块：%s（line %d）"
+                        % (node.module, node.lineno)
+                    )
         # 2) 危险字面调用
         for node in ast.walk(tree):
             if isinstance(node, ast.Call):
                 fn = node.func
                 if isinstance(fn, ast.Name) and fn.id in DENY_CALLS:
                     reasons.append("禁用调用 %s()（line %d）" % (fn.id, node.lineno))
-                elif (isinstance(fn, ast.Attribute)
-                      and fn.attr in DENY_CALLS):
-                    reasons.append("禁用方法 .%s()（line %d）"
-                                   % (fn.attr, node.lineno))
+                elif isinstance(fn, ast.Attribute) and fn.attr in DENY_CALLS:
+                    reasons.append("禁用方法 .%s()（line %d）" % (fn.attr, node.lineno))
         # 3) 接口签名：恰好一个 StrategyAgent 子类
-        subclasses = [n for n in tree.body
-                      if isinstance(n, ast.ClassDef)
-                      and any(getattr(b, "id", None) == "StrategyAgent"
-                              for b in n.bases)]
+        subclasses = [
+            n
+            for n in tree.body
+            if isinstance(n, ast.ClassDef)
+            and any(getattr(b, "id", None) == "StrategyAgent" for b in n.bases)
+        ]
         if len(subclasses) != 1:
-            reasons.append("文件必须恰好定义一个 StrategyAgent 子类，实得 %d"
-                           % len(subclasses))
+            reasons.append(
+                "文件必须恰好定义一个 StrategyAgent 子类，实得 %d" % len(subclasses)
+            )
         else:
             cls = subclasses[0]
-            methods = {n.name for n in cls.body
-                       if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))}
+            methods = {
+                n.name
+                for n in cls.body
+                if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
+            }
             assigns = {}
             for n in cls.body:
                 val = None
-                if isinstance(n, ast.Assign) and len(n.targets) == 1 \
-                        and isinstance(n.targets[0], ast.Name):
+                if (
+                    isinstance(n, ast.Assign)
+                    and len(n.targets) == 1
+                    and isinstance(n.targets[0], ast.Name)
+                ):
                     val = n.value
-                elif isinstance(n, ast.AnnAssign) \
-                        and isinstance(n.target, ast.Name) and n.value:
+                elif (
+                    isinstance(n, ast.AnnAssign)
+                    and isinstance(n.target, ast.Name)
+                    and n.value
+                ):
                     val = n.value
                 if val is not None:
-                    tgt = (n.target if isinstance(n, ast.AnnAssign)
-                           else n.targets[0])
+                    tgt = n.target if isinstance(n, ast.AnnAssign) else n.targets[0]
                     assigns[tgt.id] = val
             if "__init__" in methods:
                 reasons.append("禁止定义 __init__（插件须无状态，§2.2）")
             if "propose" not in methods:
                 reasons.append("缺少 propose(self, context) 实现")
             sid = assigns.get("strategy_id")
-            if not (isinstance(sid, ast.Constant)
-                    and isinstance(sid.value, str)
-                    and sid.value.startswith("codex_")):
+            if not (
+                isinstance(sid, ast.Constant)
+                and isinstance(sid.value, str)
+                and sid.value.startswith("codex_")
+            ):
                 reasons.append("strategy_id 必须为 codex_ 前缀字符串（审计来源隔离）")
             st = assigns.get("stance")
-            if not (isinstance(st, ast.Constant)
-                    and st.value in ("bull", "bear", "neutral")):
+            if not (
+                isinstance(st, ast.Constant) and st.value in ("bull", "bear", "neutral")
+            ):
                 reasons.append("stance 必须为 bull/bear/neutral 类属性")
 
     # 4) 凭据形态（对全文，R2）
@@ -206,12 +269,17 @@ def register_from_source(source, registry):
     code = compile(module, "<codex_plugin>", "exec")
     namespace = _exec_globals()
     exec(code, namespace)  # noqa: S102 —— 两道防线之后（白名单 AST + 受限 globals）
-    classes = [v for v in namespace.values()
-               if isinstance(v, type) and issubclass(v, StrategyAgent)
-               and v is not StrategyAgent]
+    classes = [
+        v
+        for v in namespace.values()
+        if isinstance(v, type)
+        and issubclass(v, StrategyAgent)
+        and v is not StrategyAgent
+    ]
     if len(classes) != 1:
-        raise StrategyError("实例化后 StrategyAgent 子类数=%d（应恰为 1）"
-                            % len(classes))
+        raise StrategyError(
+            "实例化后 StrategyAgent 子类数=%d（应恰为 1）" % len(classes)
+        )
     agent = classes[0]()
     registry.register(agent)
     return agent
@@ -232,7 +300,7 @@ _RESULT_MARK = "__BRIDGE_RESULT__"
 # （宿主静态门 + 本进程受限 globals = 两道独立防线跨进程生效）。
 # 协议：stdin 收 {"source", "context"} UTF-8 JSON；stdout 打
 # "<_RESULT_MARK>{...}" 单标记行；BaseException 一律转标记行 fail-visible。
-_SANDBOX_RUNNER = r'''
+_SANDBOX_RUNNER = r"""
 # -*- coding: utf-8 -*-
 # 军团-M3 沙箱试跑 runner（独立子进程）。
 import builtins as _b
@@ -313,7 +381,7 @@ if __name__ == "__main__":
         _emit({"ok": False,
                "error": "%s: %s" % (type(e).__name__, str(e)[:300])})
         sys.exit(1)
-'''.strip()
+""".strip()
 
 
 def _verdict_dict_issues(v):
@@ -347,66 +415,93 @@ def sandbox_trial(source, context=None, timeout_s=10.0):
     返回 {"ok", "reason", "elapsed_ms", "killed", "verdict"}。
     """
     ctx = dict(context) if context else dict(SANDBOX_TRIAL_CONTEXT)
-    payload = json.dumps({"source": source, "context": ctx},
-                         ensure_ascii=False)
+    payload = json.dumps({"source": source, "context": ctx}, ensure_ascii=False)
     engine_dir = str(Path(__file__).resolve().parent.parent / "engine")
     platform_dir = str(Path(__file__).resolve().parent.parent)
     repo_root = str(Path(__file__).resolve().parents[2])
     env = dict(os.environ)
     env["PYTHONPATH"] = os.pathsep.join(
-        [engine_dir, platform_dir, repo_root,
-         env.get("PYTHONPATH", "")]).rstrip(os.pathsep)
+        [engine_dir, platform_dir, repo_root, env.get("PYTHONPATH", "")]
+    ).rstrip(os.pathsep)
     # 宿主环境可能启用 PYTHONSAFEPATH=1（PYTHONPATH 被忽略），
     # 因此把导入路径直接注入子进程代码，双保险。
-    runner_code = ("import sys as _sys_boot; _sys_boot.path[:0] = %r\n"
-                   % ([engine_dir, platform_dir, repo_root],)) + _SANDBOX_RUNNER
+    runner_code = (
+        "import sys as _sys_boot; _sys_boot.path[:0] = %r\n"
+        % ([engine_dir, platform_dir, repo_root],)
+    ) + _SANDBOX_RUNNER
     t0 = time.perf_counter()
     proc = subprocess.Popen(
         [sys.executable, "-c", runner_code],
-        stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE, env=env)
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env,
+    )
     try:
-        out, err = proc.communicate(payload.encode("utf-8"),
-                                    timeout=timeout_s)
+        out, err = proc.communicate(payload.encode("utf-8"), timeout=timeout_s)
     except subprocess.TimeoutExpired:
         proc.kill()
         proc.communicate()
-        return {"ok": False, "killed": True,
-                "reason": "试跑超时 %.0fs 被击杀（墙钟口径，Windows 无 "
-                          "rlimit，语义覆盖 CPU 上限）" % timeout_s,
-                "elapsed_ms": int((time.perf_counter() - t0) * 1000),
-                "verdict": None}
+        return {
+            "ok": False,
+            "killed": True,
+            "reason": "试跑超时 %.0fs 被击杀（墙钟口径，Windows 无 "
+            "rlimit，语义覆盖 CPU 上限）" % timeout_s,
+            "elapsed_ms": int((time.perf_counter() - t0) * 1000),
+            "verdict": None,
+        }
     elapsed_ms = int((time.perf_counter() - t0) * 1000)
     text = out.decode("utf-8", "replace")
-    line = next((l for l in text.splitlines()
-                 if l.startswith(_RESULT_MARK)), None)
+    line = next((l for l in text.splitlines() if l.startswith(_RESULT_MARK)), None)
     if line is None:
         tail = err.decode("utf-8", "replace").strip()[-300:]
-        return {"ok": False, "killed": False,
-                "reason": "子进程无结果标记（exit=%s）stderr 尾: %s"
-                          % (proc.returncode, tail or "<empty>"),
-                "elapsed_ms": elapsed_ms, "verdict": None}
+        return {
+            "ok": False,
+            "killed": False,
+            "reason": "子进程无结果标记（exit=%s）stderr 尾: %s"
+            % (proc.returncode, tail or "<empty>"),
+            "elapsed_ms": elapsed_ms,
+            "verdict": None,
+        }
     try:
-        data = json.loads(line[len(_RESULT_MARK):])
+        data = json.loads(line[len(_RESULT_MARK) :])
     except ValueError as e:
-        return {"ok": False, "killed": False,
-                "reason": "结果标记行 JSON 不可解析：%s" % e,
-                "elapsed_ms": elapsed_ms, "verdict": None}
+        return {
+            "ok": False,
+            "killed": False,
+            "reason": "结果标记行 JSON 不可解析：%s" % e,
+            "elapsed_ms": elapsed_ms,
+            "verdict": None,
+        }
     if not data.get("ok"):
-        return {"ok": False, "killed": False,
-                "reason": "试跑失败：%s" % data.get("error", "<no error>"),
-                "elapsed_ms": elapsed_ms, "verdict": None}
+        return {
+            "ok": False,
+            "killed": False,
+            "reason": "试跑失败：%s" % data.get("error", "<no error>"),
+            "elapsed_ms": elapsed_ms,
+            "verdict": None,
+        }
     v = data.get("verdict") or {}
     bad = _verdict_dict_issues(v)
     if bad:
-        return {"ok": False, "killed": False,
-                "reason": "试跑产出非法 Verdict：%s" % "; ".join(bad),
-                "elapsed_ms": elapsed_ms, "verdict": None}
-    return {"ok": True, "killed": False, "reason": "",
-            "elapsed_ms": elapsed_ms, "verdict": v}
+        return {
+            "ok": False,
+            "killed": False,
+            "reason": "试跑产出非法 Verdict：%s" % "; ".join(bad),
+            "elapsed_ms": elapsed_ms,
+            "verdict": None,
+        }
+    return {
+        "ok": True,
+        "killed": False,
+        "reason": "",
+        "elapsed_ms": elapsed_ms,
+        "verdict": v,
+    }
 
 
 # ---- fail-visible 落档（§3.1，rejects 按日归档 §5 风险 6） ----
+
 
 def _today():
     """本地日期口径（限频计数与 rejects 归档共用）。"""
@@ -420,18 +515,21 @@ def write_reject(bridge_dir, submit_id, stage, reasons):
     rj = Path(bridge_dir) / "rejects" / _today()
     rj.mkdir(parents=True, exist_ok=True)
     path = rj / ("%s.md" % submit_id)
-    lines = ["# bridge 拒绝档：%s" % submit_id,
-             "",
-             "- **阶段**：%s" % stage,
-             "- **时间**：%s" % time.strftime("%Y-%m-%d %H:%M:%S"),
-             "- **命中规则**：",
-             ""]
+    lines = [
+        "# bridge 拒绝档：%s" % submit_id,
+        "",
+        "- **阶段**：%s" % stage,
+        "- **时间**：%s" % time.strftime("%Y-%m-%d %H:%M:%S"),
+        "- **命中规则**：",
+        "",
+    ]
     lines += ["%d. %s" % (i + 1, r) for i, r in enumerate(reasons)]
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return path
 
 
 # ---- 处理管线（§3） ----
+
 
 def default_bridge_dir():
     """仓库内 bridge_inbox 根（DATA_ROOT 之外，§3.2）。"""
@@ -454,11 +552,11 @@ def _daily_usage(bridge_dir, data_root):
         used += sum(1 for _ in rej_dir.glob("*.md"))
     legacy_today = time.mktime(time.strptime(_today(), "%Y%m%d"))
     if rej_root.is_dir():
-        used += sum(1 for p in rej_root.glob("*.md")
-                    if p.stat().st_mtime >= legacy_today)
+        used += sum(
+            1 for p in rej_root.glob("*.md") if p.stat().st_mtime >= legacy_today
+        )
     if data_root:
-        ledger = (Path(data_root) / "data" / "codex_bridge"
-                  / "registrations.jsonl")
+        ledger = Path(data_root) / "data" / "codex_bridge" / "registrations.jsonl"
         if ledger.exists():
             today_iso = time.strftime("%Y-%m-%d")
             with ledger.open("r", encoding="utf-8") as fh:
@@ -475,9 +573,15 @@ def _daily_usage(bridge_dir, data_root):
     return used
 
 
-def process_submission(bridge_dir, submit_id, source, registry,
-                       data_root=None, sandbox_timeout_s=10.0,
-                       daily_limit=None):
+def process_submission(
+    bridge_dir,
+    submit_id,
+    source,
+    registry,
+    data_root=None,
+    sandbox_timeout_s=10.0,
+    daily_limit=None,
+):
     """单次提交全流程：inbox 落件 → 校验 → 沙箱试跑 → 注册 → 移档。
 
     data_root 显式时登记注册事件（data/codex_bridge/registrations.jsonl，
@@ -495,9 +599,10 @@ def process_submission(bridge_dir, submit_id, source, registry,
     if daily_limit is not None:
         used = _daily_usage(bdir, data_root)
         if used >= daily_limit:
-            reasons = ["当日受理已达上限 %d（registrations+rejects 合计 "
-                       "已用 %d，本地日期 %s），限频拒绝受理"
-                       % (daily_limit, used, _today())]
+            reasons = [
+                "当日受理已达上限 %d（registrations+rejects 合计 "
+                "已用 %d，本地日期 %s），限频拒绝受理" % (daily_limit, used, _today())
+            ]
             write_reject(bdir, submit_id, "限频", reasons)
             return False, reasons
 
@@ -509,15 +614,13 @@ def process_submission(bridge_dir, submit_id, source, registry,
     reasons = validate_source(source)
     if reasons:
         write_reject(bdir, submit_id, "静态校验", reasons)
-        shutil.move(str(inbox),
-                    str(bdir / "rejects" / _today() / submit_id))
+        shutil.move(str(inbox), str(bdir / "rejects" / _today() / submit_id))
         return False, reasons
 
     trial = sandbox_trial(source, timeout_s=sandbox_timeout_s)
     if not trial["ok"]:
         write_reject(bdir, submit_id, "沙箱试跑", [trial["reason"]])
-        shutil.move(str(inbox),
-                    str(bdir / "rejects" / _today() / submit_id))
+        shutil.move(str(inbox), str(bdir / "rejects" / _today() / submit_id))
         return False, [trial["reason"]]
 
     agent = register_from_source(source, registry)
@@ -525,14 +628,18 @@ def process_submission(bridge_dir, submit_id, source, registry,
     if data_root:
         reg_dir = Path(data_root) / "data" / "codex_bridge"
         reg_dir.mkdir(parents=True, exist_ok=True)
-        row = {"submit_id": submit_id, "strategy_id": agent.strategy_id,
-               "registered_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
-               "sandbox_ms": trial["elapsed_ms"]}
+        row = {
+            "submit_id": submit_id,
+            "strategy_id": agent.strategy_id,
+            "registered_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+            "sandbox_ms": trial["elapsed_ms"],
+        }
         with (reg_dir / "registrations.jsonl").open("a", encoding="utf-8") as fh:
             fh.write(json.dumps(row, ensure_ascii=False) + "\n")
     else:
-        print("[codex-bridge] dry-run：未提供 data_root，注册事件不落账",
-              file=sys.stderr)
+        print(
+            "[codex-bridge] dry-run：未提供 data_root，注册事件不落账", file=sys.stderr
+        )
     return True, []
 
 
@@ -559,9 +666,14 @@ def load_registered(registry, bridge_dir=None):
             if "重复注册" in str(e):
                 skipped += 1
             else:
-                print("[warn] codex 插件装载跳过 %s：%s"
-                      % (src.parent.name, str(e)[:120]), file=sys.stderr)
+                print(
+                    "[warn] codex 插件装载跳过 %s：%s"
+                    % (src.parent.name, str(e)[:120]),
+                    file=sys.stderr,
+                )
         except Exception as e:  # noqa: BLE001  fail-open：坏件不拖垮装配
-            print("[warn] codex 插件装载跳过 %s：%s"
-                  % (src.parent.name, str(e)[:120]), file=sys.stderr)
+            print(
+                "[warn] codex 插件装载跳过 %s：%s" % (src.parent.name, str(e)[:120]),
+                file=sys.stderr,
+            )
     return loaded, skipped

@@ -4,6 +4,7 @@
 对应合同：《2026-10-23_P4_传输层answered_delivered语义合同v1_待签.md》。
 全部用临时目录注入（set_store），零真实消息、零真目录写入。
 """
+
 from __future__ import annotations
 
 import json
@@ -28,8 +29,7 @@ def store(tmp_path):
 def _submit(**kw):
     payload = {"intent": "stock_consult", "code": "605100"}
     payload.update(kw.pop("payload", {}))
-    env = inbox_gateway.submit("task_request", payload,
-                               source="feishu_comm", **kw)
+    env = inbox_gateway.submit("task_request", payload, source="feishu_comm", **kw)
     assert env["ok"] is True
     return env["data"]["id"]
 
@@ -45,8 +45,9 @@ def test_submit_is_inbox_with_no_answer_stamps(store):
 # ---- 2) consume → processed + 三类戳记 + answer_ref 原样 ----
 def test_consume_stamps_answer(store):
     mid = _submit()
-    env = inbox_gateway.consume(mid, answered_by="kanze_comm",
-                                answer_ref="reply:om_abc123")
+    env = inbox_gateway.consume(
+        mid, answered_by="kanze_comm", answer_ref="reply:om_abc123"
+    )
     assert env["ok"] is True and env["data"]["replayed"] is False
     rec = env["data"]["record"]
     assert rec["state"] == "processed"
@@ -64,10 +65,12 @@ def test_consume_stamps_answer(store):
 # ---- 3) 重复 consume 幂等：戳记与首次完全一致 ----
 def test_consume_is_idempotent(store):
     mid = _submit()
-    first = inbox_gateway.consume(mid, answered_by="kanze_comm",
-                                  answer_ref="reply:1")["data"]["record"]
-    second = inbox_gateway.consume(mid, answered_by="someone_else",
-                                   answer_ref="reply:2")["data"]
+    first = inbox_gateway.consume(mid, answered_by="kanze_comm", answer_ref="reply:1")[
+        "data"
+    ]["record"]
+    second = inbox_gateway.consume(
+        mid, answered_by="someone_else", answer_ref="reply:2"
+    )["data"]
     assert second["replayed"] is True
     assert second["record"] == first  # 首次获胜，无第二答复
     assert second["record"]["answer_ref"] == "reply:1"
@@ -95,19 +98,22 @@ def test_deliver_after_answer_and_idempotent(store):
     assert rec["delivered_at"]
     r = inbox_gateway.receipt(mid)["data"]
     assert r["answered"] is True and r["delivered"] is True
-    again = inbox_gateway.deliver(mid, channel="feishu",
-                                  delivered_ref="msg:other")["data"]
+    again = inbox_gateway.deliver(mid, channel="feishu", delivered_ref="msg:other")[
+        "data"
+    ]
     assert again["replayed"] is True
     assert again["record"]["delivered_ref"] == "msg:om_x"  # 首次获胜
 
 
 # ---- 6) consume/deliver 不存在 id → not_found，不造文件 ----
 def test_actions_on_missing_id_are_not_found(store):
-    c = inbox_gateway.consume("lg-doesnotexist1", answered_by="x",
-                              answer_ref="y")["data"]
+    c = inbox_gateway.consume("lg-doesnotexist1", answered_by="x", answer_ref="y")[
+        "data"
+    ]
     assert c["state"] == "not_found" and c["record"] == {}
-    d = inbox_gateway.deliver("lg-doesnotexist1", channel="feishu",
-                              delivered_ref="z")["data"]
+    d = inbox_gateway.deliver("lg-doesnotexist1", channel="feishu", delivered_ref="z")[
+        "data"
+    ]
     assert d["state"] == "not_found" and d["record"] == {}
     assert list((store / "processed").glob("*.json")) == []
 
@@ -117,9 +123,11 @@ def test_submit_replay_after_answer_reports_processed(store):
     mid = _submit(idempotency_key="feishu-om_x100b62b330fa0538dea87ac9b8cd39e")
     inbox_gateway.consume(mid, answered_by="kanze_comm", answer_ref="reply:1")
     env = inbox_gateway.submit(
-        "task_request", {"intent": "stock_consult", "code": "605100"},
+        "task_request",
+        {"intent": "stock_consult", "code": "605100"},
         source="feishu_comm",
-        idempotency_key="feishu-om_x100b62b330fa0538dea87ac9b8cd39e")
+        idempotency_key="feishu-om_x100b62b330fa0538dea87ac9b8cd39e",
+    )
     assert env["ok"] is True
     assert env["data"]["replayed"] is True
     assert env["data"]["id"] == mid
@@ -132,10 +140,8 @@ def test_crash_remnant_self_heals(store):
     inbox_gateway.consume(mid, answered_by="kanze_comm", answer_ref="reply:1")
     # 模拟崩溃残留：inbox 又出现同 id 文件
     remnant = store / "inbox" / ("%s.json" % mid)
-    remnant.write_text(json.dumps({"id": mid, "state": "inbox"}),
-                       encoding="utf-8")
-    env = inbox_gateway.consume(mid, answered_by="other",
-                                answer_ref="reply:2")["data"]
+    remnant.write_text(json.dumps({"id": mid, "state": "inbox"}), encoding="utf-8")
+    env = inbox_gateway.consume(mid, answered_by="other", answer_ref="reply:2")["data"]
     assert env["replayed"] is True
     assert env["record"]["answer_ref"] == "reply:1"  # 既有戳记不被覆盖
     assert not remnant.exists()  # 残留已自愈
@@ -155,8 +161,9 @@ def test_legacy_move_without_stamps_is_not_answered(store):
     env = inbox_gateway.deliver(mid, channel="feishu", delivered_ref="m:1")
     assert env["ok"] is False and env["error"]["code"] == "not_answered"
     # 显式 consume 后补戳记（真实答复动作）
-    env2 = inbox_gateway.consume(mid, answered_by="kanze_comm",
-                                 answer_ref="reply:late")["data"]
+    env2 = inbox_gateway.consume(
+        mid, answered_by="kanze_comm", answer_ref="reply:late"
+    )["data"]
     assert env2["record"]["answer_ref"] == "reply:late"
     r2 = inbox_gateway.receipt(mid)["data"]
     assert r2["answered"] is True
@@ -166,8 +173,7 @@ def test_legacy_move_without_stamps_is_not_answered(store):
 def test_atomic_write_leaves_no_tmp(store):
     mid = _submit()
     inbox_gateway.consume(mid, answered_by="kanze_comm", answer_ref="reply:1")
-    leftovers = [p.name for p in (store / "processed").iterdir()
-                 if ".tmp-" in p.name]
+    leftovers = [p.name for p in (store / "processed").iterdir() if ".tmp-" in p.name]
     assert leftovers == []
 
 
@@ -191,7 +197,9 @@ def test_consume_requires_evidence_without_moving_file(store, who, ref):
     assert not (store / "processed" / (mid + ".json")).exists()
 
 
-@pytest.mark.parametrize("channel,ref", [(None, "r"), (" ", "r"), ("c", ""), ("c", None)])
+@pytest.mark.parametrize(
+    "channel,ref", [(None, "r"), (" ", "r"), ("c", ""), ("c", None)]
+)
 def test_deliver_requires_evidence_without_stamping(store, channel, ref):
     mid = _submit()
     inbox_gateway.consume(mid, answered_by="a", answer_ref="r")
@@ -205,13 +213,22 @@ def test_receipt_rejects_partial_legacy_stamps_and_recovers(store):
     src = store / "inbox" / (mid + ".json")
     dst = store / "processed" / src.name
     rec = json.loads(src.read_text(encoding="utf-8"))
-    rec.update(answered_at="old", answered_by="", answer_ref="r",
-               delivered_at="old", channel="", delivered_ref="d")
+    rec.update(
+        answered_at="old",
+        answered_by="",
+        answer_ref="r",
+        delivered_at="old",
+        channel="",
+        delivered_ref="d",
+    )
     dst.write_text(json.dumps(rec), encoding="utf-8")
     status = inbox_gateway.receipt(mid)["data"]
     assert status["state"] == "processed"
     assert not status["answered"] and not status["delivered"]
-    assert inbox_gateway.deliver(mid, channel="c", delivered_ref="d")["error"]["code"] == "not_answered"
+    assert (
+        inbox_gateway.deliver(mid, channel="c", delivered_ref="d")["error"]["code"]
+        == "not_answered"
+    )
     fixed = inbox_gateway.consume(mid, answered_by="a", answer_ref="r2")["data"]
     assert fixed["replayed"] is False
     assert not inbox_gateway.receipt(mid)["data"]["delivered"]
@@ -221,20 +238,32 @@ def test_receipt_rejects_partial_legacy_stamps_and_recovers(store):
 
 def test_submit_same_key_different_content_conflicts(store):
     first = inbox_gateway.submit("question", {"q": 1}, idempotency_key="same")
-    for kind, payload, source in (("question", {"q": 2}, "external"),
-                                  ("feedback", {"q": 1}, "external"),
-                                  ("question", {"q": 1}, "other")):
-        result = inbox_gateway.submit(kind, payload, source=source, idempotency_key="same")
+    for kind, payload, source in (
+        ("question", {"q": 2}, "external"),
+        ("feedback", {"q": 1}, "external"),
+        ("question", {"q": 1}, "other"),
+    ):
+        result = inbox_gateway.submit(
+            kind, payload, source=source, idempotency_key="same"
+        )
         assert result["ok"] is False
         assert result["error"]["code"] == "idempotency_conflict"
     assert len(list((store / "inbox").glob("*.json"))) == 1
-    assert inbox_gateway.receipt(first["data"]["id"])["data"]["record"]["payload"] == {"q": 1}
+    assert inbox_gateway.receipt(first["data"]["id"])["data"]["record"]["payload"] == {
+        "q": 1
+    }
 
 
 def test_submit_concurrent_threads_single_record(store):
     with ThreadPoolExecutor(max_workers=12) as pool:
-        results = list(pool.map(lambda _: inbox_gateway.submit(
-            "question", {"q": 1}, idempotency_key="thread-key"), range(24)))
+        results = list(
+            pool.map(
+                lambda _: inbox_gateway.submit(
+                    "question", {"q": 1}, idempotency_key="thread-key"
+                ),
+                range(24),
+            )
+        )
     assert all(r["ok"] for r in results)
     assert len({r["data"]["id"] for r in results}) == 1
     assert sum(not r["data"]["replayed"] for r in results) == 1
@@ -257,7 +286,8 @@ def test_submit_concurrent_windows_spawn_processes(store, tmp_path):
         "                           idempotency_key='process-key')\n"
         "with open(sys.argv[3], 'w', encoding='utf-8') as f:\n"
         "    json.dump(env, f, ensure_ascii=False)\n",
-        encoding="utf-8")
+        encoding="utf-8",
+    )
     env = dict(os.environ, PYTHONPATH=str(_PLATFORM))
     results_dir = tmp_path / "results"
     results_dir.mkdir()
@@ -266,10 +296,20 @@ def test_submit_concurrent_windows_spawn_processes(store, tmp_path):
     for i in range(4):
         ef = open(tmp_path / ("err%d.log" % i), "wb")
         err_handles.append(ef)
-        procs.append(subprocess.Popen(
-            [sys.executable, str(runner), str(_PLATFORM), str(store),
-             str(results_dir / ("r%d.json" % i))],
-            env=env, stdout=subprocess.DEVNULL, stderr=ef))
+        procs.append(
+            subprocess.Popen(
+                [
+                    sys.executable,
+                    str(runner),
+                    str(_PLATFORM),
+                    str(store),
+                    str(results_dir / ("r%d.json" % i)),
+                ],
+                env=env,
+                stdout=subprocess.DEVNULL,
+                stderr=ef,
+            )
+        )
     try:
         for p in procs:
             p.wait(timeout=60)
@@ -284,10 +324,13 @@ def test_submit_concurrent_windows_spawn_processes(store, tmp_path):
                 pass
     errs = "\n".join(
         (tmp_path / ("err%d.log" % i)).read_text(encoding="utf-8", errors="replace")
-        for i in range(len(procs)))
+        for i in range(len(procs))
+    )
     assert all(p.returncode == 0 for p in procs), errs[-2000:]
-    results = [json.loads(f.read_text(encoding="utf-8"))
-               for f in sorted(results_dir.glob("r*.json"))]
+    results = [
+        json.loads(f.read_text(encoding="utf-8"))
+        for f in sorted(results_dir.glob("r*.json"))
+    ]
     assert all(r["ok"] for r in results)
     assert len({r["data"]["id"] for r in results}) == 1
     assert sum(not r["data"]["replayed"] for r in results) == 1
@@ -297,20 +340,36 @@ def test_submit_concurrent_windows_spawn_processes(store, tmp_path):
 def test_concurrent_consume_and_deliver_first_stamp_wins(store):
     mid = _submit()
     with ThreadPoolExecutor(max_workers=12) as pool:
-        answers = list(pool.map(lambda i: inbox_gateway.consume(
-            mid, answered_by="a", answer_ref="r:%s" % i), range(20)))
+        answers = list(
+            pool.map(
+                lambda i: inbox_gateway.consume(
+                    mid, answered_by="a", answer_ref="r:%s" % i
+                ),
+                range(20),
+            )
+        )
     assert all(r["ok"] for r in answers)
     assert sum(not r["data"]["replayed"] for r in answers) == 1
-    winner = next(r["data"]["record"]["answer_ref"] for r in answers
-                  if not r["data"]["replayed"])
+    winner = next(
+        r["data"]["record"]["answer_ref"] for r in answers if not r["data"]["replayed"]
+    )
     assert all(r["data"]["record"]["answer_ref"] == winner for r in answers)
     with ThreadPoolExecutor(max_workers=12) as pool:
-        deliveries = list(pool.map(lambda i: inbox_gateway.deliver(
-            mid, channel="c", delivered_ref="d:%s" % i), range(20)))
+        deliveries = list(
+            pool.map(
+                lambda i: inbox_gateway.deliver(
+                    mid, channel="c", delivered_ref="d:%s" % i
+                ),
+                range(20),
+            )
+        )
     assert all(r["ok"] for r in deliveries)
     assert sum(not r["data"]["replayed"] for r in deliveries) == 1
-    winner = next(r["data"]["record"]["delivered_ref"] for r in deliveries
-                  if not r["data"]["replayed"])
+    winner = next(
+        r["data"]["record"]["delivered_ref"]
+        for r in deliveries
+        if not r["data"]["replayed"]
+    )
     assert all(r["data"]["record"]["delivered_ref"] == winner for r in deliveries)
 
 
@@ -322,7 +381,11 @@ def test_crash_window_processed_wins_over_inbox(store):
     rec.update(state="processed", answered_at="old", answered_by="a", answer_ref="r")
     dst.write_text(json.dumps(rec), encoding="utf-8")
     assert inbox_gateway.receipt(mid)["data"]["state"] == "processed"
-    replay = inbox_gateway.submit("task_request", rec["payload"], source="feishu_comm",
-                                  idempotency_key="crash-key")
+    replay = inbox_gateway.submit(
+        "task_request",
+        rec["payload"],
+        source="feishu_comm",
+        idempotency_key="crash-key",
+    )
     assert replay["data"]["state"] == "processed"
     assert replay["data"]["id"] == mid

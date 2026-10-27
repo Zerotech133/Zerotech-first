@@ -27,8 +27,15 @@ DEFAULT_LIMIT = 200
 MAX_LIMIT = 1000
 
 # 白名单过滤字段 → envelope 字段（完全相等匹配；trace_id/object_id 等可空）
-_FILTER_FIELDS = ("source", "kind", "actor", "object_id", "object_type",
-                  "trace_id", "causation_id")
+_FILTER_FIELDS = (
+    "source",
+    "kind",
+    "actor",
+    "object_id",
+    "object_type",
+    "trace_id",
+    "causation_id",
+)
 
 _ORDER_CHOICES = ("asc", "desc")
 
@@ -44,12 +51,14 @@ def _parse_bound(value: str | None) -> str | None:
     if value is None or value == "":
         return None
     text = value.strip().replace("T", " ")
-    for fmt, out in (("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M:%S"),
-                     ("%Y-%m-%d %H:%M", "%Y-%m-%d %H:%M:%S"),
-                     ("%Y-%m-%d", "%Y-%m-%d"),
-                     ("%Y/%m/%d %H:%M:%S", "%Y-%m-%d %H:%M:%S"),
-                     ("%Y/%m/%d %H:%M", "%Y-%m-%d %H:%M:%S"),
-                     ("%Y/%m/%d", "%Y-%m-%d")):
+    for fmt, out in (
+        ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M:%S"),
+        ("%Y-%m-%d %H:%M", "%Y-%m-%d %H:%M:%S"),
+        ("%Y-%m-%d", "%Y-%m-%d"),
+        ("%Y/%m/%d %H:%M:%S", "%Y-%m-%d %H:%M:%S"),
+        ("%Y/%m/%d %H:%M", "%Y-%m-%d %H:%M:%S"),
+        ("%Y/%m/%d", "%Y-%m-%d"),
+    ):
         try:
             dt = datetime.strptime(text, fmt)
             return dt.strftime(out)
@@ -61,7 +70,9 @@ def _parse_bound(value: str | None) -> str | None:
             return dt.strftime("%Y-%m-%d")
         return dt.strftime("%Y-%m-%d %H:%M:%S")
     except ValueError:
-        raise ValueError(f"非法时间参数: {value!r}（期望 ISO 8601 或 YYYY-MM-DD[ HH:MM[:SS]]）")
+        raise ValueError(
+            f"非法时间参数: {value!r}（期望 ISO 8601 或 YYYY-MM-DD[ HH:MM[:SS]]）"
+        )
 
 
 def _norm_ts(ts: str | None) -> str:
@@ -71,12 +82,21 @@ def _norm_ts(ts: str | None) -> str:
     return str(ts).replace("T", " ").replace("/", "-")[:19]
 
 
-def build_replay(root: str | Path, *, source: str | None = None,
-                 kind: str | None = None, actor: str | None = None,
-                 object_id: str | None = None, object_type: str | None = None,
-                 trace_id: str | None = None, causation_id: str | None = None,
-                 since: str | None = None, until: str | None = None,
-                 limit: int = DEFAULT_LIMIT, order: str = "desc") -> dict[str, Any]:
+def build_replay(
+    root: str | Path,
+    *,
+    source: str | None = None,
+    kind: str | None = None,
+    actor: str | None = None,
+    object_id: str | None = None,
+    object_type: str | None = None,
+    trace_id: str | None = None,
+    causation_id: str | None = None,
+    since: str | None = None,
+    until: str | None = None,
+    limit: int = DEFAULT_LIMIT,
+    order: str = "desc",
+) -> dict[str, Any]:
     _here = Path(__file__).resolve().parents[1]
     if str(_here) not in sys.path:
         sys.path.insert(0, str(_here))
@@ -94,7 +114,9 @@ def build_replay(root: str | Path, *, source: str | None = None,
     since_key = _parse_bound(since)
     until_key = _parse_bound(until)
     # 纯日期边界按「当天全天」语义（until=2026-10-17 → 含 17 日 23:59:59 前）
-    until_inclusive = until_key + " 23:59:59" if (until_key and len(until_key) == 10) else until_key
+    until_inclusive = (
+        until_key + " 23:59:59" if (until_key and len(until_key) == 10) else until_key
+    )
     filters = {}
     for name in _FILTER_FIELDS:
         value = locals().get(name)
@@ -116,8 +138,11 @@ def build_replay(root: str | Path, *, source: str | None = None,
         matched.append(event)
 
     matched.sort(
-        key=lambda e: (_norm_ts(e.get("ts")), str(e.get("source_id") or ""),
-                       str(e.get("event_hash"))),
+        key=lambda e: (
+            _norm_ts(e.get("ts")),
+            str(e.get("source_id") or ""),
+            str(e.get("event_hash")),
+        ),
         reverse=(order == "desc"),
     )
     truncated = len(matched) > limit
@@ -136,8 +161,10 @@ def build_replay(root: str | Path, *, source: str | None = None,
         "read_only": True,
         "query": {
             "filters": filters,
-            "since": since_key, "until": until_key,
-            "limit": limit, "order": order,
+            "since": since_key,
+            "until": until_key,
+            "limit": limit,
+            "order": order,
         },
         "sources": report.get("sources"),
         "canonical_valid": report.get("canonical_valid"),
@@ -163,14 +190,25 @@ def main(argv=None) -> int:
     args = ap.parse_args(argv)
     try:
         replay = build_replay(
-            args.root, source=args.source, kind=args.kind, actor=args.actor,
-            object_id=args.object_id, object_type=args.object_type,
-            trace_id=args.trace_id, causation_id=args.causation_id,
-            since=args.since, until=args.until,
-            limit=args.limit, order=args.order)
+            args.root,
+            source=args.source,
+            kind=args.kind,
+            actor=args.actor,
+            object_id=args.object_id,
+            object_type=args.object_type,
+            trace_id=args.trace_id,
+            causation_id=args.causation_id,
+            since=args.since,
+            until=args.until,
+            limit=args.limit,
+            order=args.order,
+        )
     except ValueError as exc:
-        print(json.dumps({"error": "invalid_query", "message": str(exc)},
-                         ensure_ascii=False))
+        print(
+            json.dumps(
+                {"error": "invalid_query", "message": str(exc)}, ensure_ascii=False
+            )
+        )
         return 2
     rendered = json.dumps(replay, ensure_ascii=False, indent=2)
     if args.output:

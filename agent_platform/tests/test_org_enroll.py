@@ -39,7 +39,8 @@ def root(tmp_path):
         if d.get("dept") == "intel":
             d.pop("agent_profiles", None)
     (r / "registry" / "org.json").write_text(
-        json.dumps(org, ensure_ascii=False, indent=2), encoding="utf-8")
+        json.dumps(org, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     for d in (_PLATFORM / "hr").iterdir():
         f = d / "resume.yaml"
         if d.is_dir() and f.exists():
@@ -48,10 +49,17 @@ def root(tmp_path):
     return r
 
 
-OK = dict(dept="dev", agent_id="DEV9", cn_name="蒋琬", role_profile="日志工程师",
-          duty="负责全链路运行日志治理与异常归因，维护日志规范与轮转策略",
-          binding="ollama/qwen3.5:9b", grade="E2",
-          ticket="WO-ORG-210", signed_by="老田")
+OK = dict(
+    dept="dev",
+    agent_id="DEV9",
+    cn_name="蒋琬",
+    role_profile="日志工程师",
+    duty="负责全链路运行日志治理与异常归因，维护日志规范与轮转策略",
+    binding="ollama/qwen3.5:9b",
+    grade="E2",
+    ticket="WO-ORG-210",
+    signed_by="老田",
+)
 
 
 def org_bytes(r):
@@ -59,6 +67,7 @@ def org_bytes(r):
 
 
 # ---------------------------------------------------------------- dry-run
+
 
 def test_plan_writes_nothing(root):
     before = org_bytes(root)
@@ -79,7 +88,7 @@ def test_plan_unknown_dept(root):
 
 
 def test_plan_duplicate_agent_id(root):
-    kw = dict(OK, agent_id="DEV1")                     # dev 部已有 DEV1
+    kw = dict(OK, agent_id="DEV1")  # dev 部已有 DEV1
     with pytest.raises(E.EnrollError) as ei:
         E.build_plan(root, **kw)
     assert "已被占用" in str(ei.value)
@@ -143,6 +152,7 @@ def test_plan_bad_ticket_prefix(root):
 
 # ---------------------------------------------------------------- apply
 
+
 def test_apply_adds_agent_and_hr(root):
     before = json.loads(org_bytes(root).decode("utf-8"))
     n0 = sum(len(d.get("agent_profiles") or []) for d in before["departments"])
@@ -178,8 +188,9 @@ def test_apply_other_departments_untouched(root):
     for k in b:
         if k == "dev":
             continue
-        assert json.dumps(b[k], sort_keys=True, ensure_ascii=False) == \
-               json.dumps(a[k], sort_keys=True, ensure_ascii=False), "%s 被误改" % k
+        assert json.dumps(b[k], sort_keys=True, ensure_ascii=False) == json.dumps(
+            a[k], sort_keys=True, ensure_ascii=False
+        ), "%s 被误改" % k
 
 
 def test_apply_creates_backup(root):
@@ -188,7 +199,9 @@ def test_apply_creates_backup(root):
     res = E.apply_plan(root, E.build_plan(root, **OK), signed_by="老田")
     bak = Path(res["backup"])
     assert bak.exists() and bak.parent.name == "backups"
-    assert bak.read_bytes() == before, "备份须与入编前 org.json 字节一致，否则回滚等于没救"
+    assert bak.read_bytes() == before, (
+        "备份须与入编前 org.json 字节一致，否则回滚等于没救"
+    )
 
 
 def test_apply_signer_mismatch(root):
@@ -204,9 +217,11 @@ def test_apply_refuses_overwrite_hr(root):
     注意：若档案在 build_plan 之前就存在，会在"id 已被占用"更早拦下——
     本用例刻意在计划之后创建，专测 apply 这一道保险。
     """
-    plan = E.build_plan(root, **OK)          # 此刻 hr/DEV9 尚不存在
+    plan = E.build_plan(root, **OK)  # 此刻 hr/DEV9 尚不存在
     (root / "hr" / "DEV9").mkdir()
-    (root / "hr" / "DEV9" / "resume.yaml").write_text("agent_id: DEV9\n", encoding="utf-8")
+    (root / "hr" / "DEV9" / "resume.yaml").write_text(
+        "agent_id: DEV9\n", encoding="utf-8"
+    )
     before = org_bytes(root)
     with pytest.raises(E.EnrollError) as ei:
         E.apply_plan(root, plan, signed_by="老田")
@@ -214,7 +229,9 @@ def test_apply_refuses_overwrite_hr(root):
     assert "已被占用" in str(ei.value) and "hr" in str(ei.value)
     assert org_bytes(root) == before, "拒绝时不得改动 org.json"
     # 既有履历一文不动
-    assert (root / "hr" / "DEV9" / "resume.yaml").read_text(encoding="utf-8") == "agent_id: DEV9\n"
+    assert (root / "hr" / "DEV9" / "resume.yaml").read_text(
+        encoding="utf-8"
+    ) == "agent_id: DEV9\n"
 
 
 def test_apply_rolls_back_when_selfcheck_fails(root, monkeypatch):
@@ -238,7 +255,8 @@ def test_apply_toctou_id_taken_after_plan(root):
     dev = next(d for d in org["departments"] if d["dept"] == "dev")
     dev["agent_profiles"].append({"agent_id": "DEV9", "role_profile": "抢注"})
     (root / "registry" / "org.json").write_text(
-        json.dumps(org, ensure_ascii=False, indent=2), encoding="utf-8")
+        json.dumps(org, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     taken = org_bytes(root)
     with pytest.raises(E.EnrollError) as ei:
         E.apply_plan(root, plan, signed_by="老田")
@@ -247,6 +265,7 @@ def test_apply_toctou_id_taken_after_plan(root):
 
 
 # ---------------------------------------------------------------- rollback
+
 
 def test_rollback_restores_exact_bytes(root):
     before = org_bytes(root)
@@ -278,22 +297,30 @@ def test_rollback_rejects_broken_backup(root):
 
 # ---------------------------------------------------------------- 真实真源只读
 
+
 def test_real_org_untouched_by_tests():
     """本文件所有用例都不得改动真实 org.json（前后哈希一致）。"""
     import hashlib
+
     p = _PLATFORM / "registry" / "org.json"
     h = hashlib.sha256(p.read_bytes()).hexdigest()
-    E.load_org(_PLATFORM)                      # 只读加载一次
+    E.load_org(_PLATFORM)  # 只读加载一次
     E.build_plan(_PLATFORM, **dict(OK, agent_id="ZZTOP1", cn_name="测试不写字"))
     assert hashlib.sha256(p.read_bytes()).hexdigest() == h, "真实 org.json 被改动！"
 
 
 # ---------------------------------------------------------------- 补档模式（S35）
 
-BF = dict(dept="intel", agent_id="XQ1", role_profile="雪球与股吧舆情采集哨",
-          duty="负责雪球与股吧社媒舆情采集：游标深翻、cookie 注入、幂等落库、停轮判据自治",
-          binding="ollama/qwen3.5:9b", grade="E2",
-          ticket="WO-ORG-211", signed_by="老田")
+BF = dict(
+    dept="intel",
+    agent_id="XQ1",
+    role_profile="雪球与股吧舆情采集哨",
+    duty="负责雪球与股吧社媒舆情采集：游标深翻、cookie 注入、幂等落库、停轮判据自治",
+    binding="ollama/qwen3.5:9b",
+    grade="E2",
+    ticket="WO-ORG-211",
+    signed_by="老田",
+)
 
 
 def test_backfill_plan_ok_and_no_write(root):
@@ -338,7 +365,9 @@ def test_backfill_apply_keeps_agents_list_unchanged(root):
     before = json.loads(org_bytes(root).decode("utf-8"))
     intel_before = next(d for d in before["departments"] if d["dept"] == "intel")
     agents_before = list(intel_before["agents"])
-    res = E.apply_backfill_plan(root, E.build_backfill_plan(root, **BF), signed_by="老田")
+    res = E.apply_backfill_plan(
+        root, E.build_backfill_plan(root, **BF), signed_by="老田"
+    )
     assert res["ok"] is True and res["mode"] == "backfill"
 
     after = json.loads(org_bytes(root).decode("utf-8"))
@@ -359,8 +388,9 @@ def test_backfill_other_depts_and_hr_untouched(root):
     for k in b:
         if k == "intel":
             continue
-        assert json.dumps(b[k], sort_keys=True, ensure_ascii=False) == \
-               json.dumps(a[k], sort_keys=True, ensure_ascii=False), "%s 被误改" % k
+        assert json.dumps(b[k], sort_keys=True, ensure_ascii=False) == json.dumps(
+            a[k], sort_keys=True, ensure_ascii=False
+        ), "%s 被误改" % k
     # 补档不重写履历
     assert (root / "hr" / "XQ1" / "resume.yaml").read_bytes() == hr_before
 
@@ -388,8 +418,9 @@ def test_backfill_consecutive_same_second_keeps_distinct_backups(root):
     ids = ["XQ1", "TDX1", "MANCHONG1"]
     paths = []
     for i, aid in enumerate(ids):
-        plan = E.build_backfill_plan(root, **dict(BF, agent_id=aid,
-                                                  ticket="WO-ORG-2%02d" % (11 + i)))
+        plan = E.build_backfill_plan(
+            root, **dict(BF, agent_id=aid, ticket="WO-ORG-2%02d" % (11 + i))
+        )
         res = E.apply_backfill_plan(root, plan, signed_by="老田")
         paths.append(Path(res["backup"]))
     assert len({str(p) for p in paths}) == 3, "三次补档产生了重复备份路径：%s" % paths
@@ -408,7 +439,7 @@ def test_cn_of_id_prefers_cn_name_over_positional_name(tmp_path):
     一遍扫描会在遇到 name 时提前返回，把岗位名当人名——INTEL0 授名时真实踩到过。
     """
     r = tmp_path / "plat"
-    (r / "hr" / "X1").mkdir(parents=True)      # _cn_of_id 只读 hr，不需 registry
+    (r / "hr" / "X1").mkdir(parents=True)  # _cn_of_id 只读 hr，不需 registry
     f = r / "hr" / "X1" / "resume.yaml"
     f.write_text("agent_id: X1\nname: 某岗位名\ncn_name: 真名\n", encoding="utf-8")
     assert E._cn_of_id(r, "X1") == "真名"
@@ -430,8 +461,10 @@ def test_binding_allow_covers_rule_only_seat():
 
 def test_backfill_accepts_rule_only_binding(root):
     """BEACON1 式规则巡检席：binding=none 必须能补档成功。"""
-    plan = E.build_backfill_plan(root, **dict(BF, agent_id="BEACON1", binding="none",
-                                              grade="E2", ticket="WO-ORG-218"))
+    plan = E.build_backfill_plan(
+        root,
+        **dict(BF, agent_id="BEACON1", binding="none", grade="E2", ticket="WO-ORG-218"),
+    )
     assert plan["agent"]["llm_binding"] == "none"
     res = E.apply_backfill_plan(root, plan, signed_by="老田")
     assert res["ok"] is True
@@ -443,6 +476,7 @@ def test_backfill_accepts_rule_only_binding(root):
 
 # ---------------------------------------------------------------- 改档 rebind（S39）
 
+
 def _intel_prof(root, aid):
     org = json.loads(org_bytes(root).decode("utf-8"))
     intel = next(d for d in org["departments"] if d["dept"] == "intel")
@@ -451,35 +485,66 @@ def _intel_prof(root, aid):
 
 def _prep_intel(root, aid="XQ1"):
     """先补一档，供改档用例使用。"""
-    E.apply_backfill_plan(root, E.build_backfill_plan(root, **dict(BF, agent_id=aid)),
-                          signed_by="老田")
+    E.apply_backfill_plan(
+        root, E.build_backfill_plan(root, **dict(BF, agent_id=aid)), signed_by="老田"
+    )
 
 
 def test_rebind_requires_existing_profile(root):
     with pytest.raises(E.EnrollError) as ei:
-        E.build_rebind_plan(root, dept="intel", agent_id="XQ1", binding="glm/glm-5.3",
-                            ticket="WO-ORG-219", signed_by="老田")
+        E.build_rebind_plan(
+            root,
+            dept="intel",
+            agent_id="XQ1",
+            binding="glm/glm-5.3",
+            ticket="WO-ORG-219",
+            signed_by="老田",
+        )
     assert "尚无档案" in str(ei.value)
 
 
 def test_rebind_rejects_bad_binding_and_missing_creds(root):
     _prep_intel(root)
     with pytest.raises(E.EnrollError):
-        E.build_rebind_plan(root, dept="intel", agent_id="XQ1", binding="gpt-9/x",
-                            ticket="WO-ORG-219", signed_by="老田")
+        E.build_rebind_plan(
+            root,
+            dept="intel",
+            agent_id="XQ1",
+            binding="gpt-9/x",
+            ticket="WO-ORG-219",
+            signed_by="老田",
+        )
     with pytest.raises(E.EnrollError):
-        E.build_rebind_plan(root, dept="intel", agent_id="XQ1", binding="glm/glm-5.3",
-                            ticket="", signed_by="老田")
+        E.build_rebind_plan(
+            root,
+            dept="intel",
+            agent_id="XQ1",
+            binding="glm/glm-5.3",
+            ticket="",
+            signed_by="老田",
+        )
     with pytest.raises(E.EnrollError):
-        E.build_rebind_plan(root, dept="intel", agent_id="XQ1", binding="glm/glm-5.3",
-                            ticket="WO-ORG-219", signed_by="  ")
+        E.build_rebind_plan(
+            root,
+            dept="intel",
+            agent_id="XQ1",
+            binding="glm/glm-5.3",
+            ticket="WO-ORG-219",
+            signed_by="  ",
+        )
 
 
 def test_rebind_rejects_same_binding(root):
     _prep_intel(root)
     with pytest.raises(E.EnrollError) as ei:
-        E.build_rebind_plan(root, dept="intel", agent_id="XQ1",
-                            binding="ollama/qwen3.5:9b", ticket="WO-ORG-219", signed_by="老田")
+        E.build_rebind_plan(
+            root,
+            dept="intel",
+            agent_id="XQ1",
+            binding="ollama/qwen3.5:9b",
+            ticket="WO-ORG-219",
+            signed_by="老田",
+        )
     assert "无需改档" in str(ei.value)
 
 
@@ -487,9 +552,15 @@ def test_rebind_apply_changes_only_binding_fields(root):
     """**承重**：改档只动 llm_binding 与 binding_note，其余字段逐项不变。"""
     _prep_intel(root)
     before_prof, _ = _intel_prof(root, "XQ1")
-    plan = E.build_rebind_plan(root, dept="intel", agent_id="XQ1",
-                               binding="glm/glm-5.3", ticket="WO-ORG-219",
-                               signed_by="老田", reason="flash 档实调 400")
+    plan = E.build_rebind_plan(
+        root,
+        dept="intel",
+        agent_id="XQ1",
+        binding="glm/glm-5.3",
+        ticket="WO-ORG-219",
+        signed_by="老田",
+        reason="flash 档实调 400",
+    )
     assert plan["from_binding"] == "ollama/qwen3.5:9b"
     res = E.apply_rebind_plan(root, plan, signed_by="老田")
     assert res["ok"] is True and res["to_binding"] == "glm/glm-5.3"
@@ -508,22 +579,33 @@ def test_rebind_leaves_other_seats_and_depts_untouched(root):
     _prep_intel(root, "XQ1")
     _prep_intel(root, "TDX1")
     before = json.loads(org_bytes(root).decode("utf-8"))
-    E.apply_rebind_plan(root, E.build_rebind_plan(
-        root, dept="intel", agent_id="XQ1", binding="glm/glm-5.3",
-        ticket="WO-ORG-219", signed_by="老田"), signed_by="老田")
+    E.apply_rebind_plan(
+        root,
+        E.build_rebind_plan(
+            root,
+            dept="intel",
+            agent_id="XQ1",
+            binding="glm/glm-5.3",
+            ticket="WO-ORG-219",
+            signed_by="老田",
+        ),
+        signed_by="老田",
+    )
     after = json.loads(org_bytes(root).decode("utf-8"))
     b = {d["dept"]: d for d in before["departments"]}
     a = {d["dept"]: d for d in after["departments"]}
     for k in b:
         if k == "intel":
             continue
-        assert json.dumps(b[k], sort_keys=True, ensure_ascii=False) == \
-               json.dumps(a[k], sort_keys=True, ensure_ascii=False), "%s 被改档误伤" % k
+        assert json.dumps(b[k], sort_keys=True, ensure_ascii=False) == json.dumps(
+            a[k], sort_keys=True, ensure_ascii=False
+        ), "%s 被改档误伤" % k
     # 同部门另一席不动
     t1 = next(p for p in b["intel"]["agent_profiles"] if p["agent_id"] == "TDX1")
     t2 = next(p for p in a["intel"]["agent_profiles"] if p["agent_id"] == "TDX1")
-    assert json.dumps(t1, sort_keys=True, ensure_ascii=False) == \
-           json.dumps(t2, sort_keys=True, ensure_ascii=False)
+    assert json.dumps(t1, sort_keys=True, ensure_ascii=False) == json.dumps(
+        t2, sort_keys=True, ensure_ascii=False
+    )
 
 
 def test_rebind_rolls_back_on_selfcheck_failure(root, monkeypatch):
@@ -535,22 +617,40 @@ def test_rebind_rolls_back_on_selfcheck_failure(root, monkeypatch):
 
     monkeypatch.setattr(E, "_selfcheck_rebind", boom)
     with pytest.raises(E.EnrollError):
-        E.apply_rebind_plan(root, E.build_rebind_plan(
-            root, dept="intel", agent_id="XQ1", binding="glm/glm-5.3",
-            ticket="WO-ORG-219", signed_by="老田"), signed_by="老田")
+        E.apply_rebind_plan(
+            root,
+            E.build_rebind_plan(
+                root,
+                dept="intel",
+                agent_id="XQ1",
+                binding="glm/glm-5.3",
+                ticket="WO-ORG-219",
+                signed_by="老田",
+            ),
+            signed_by="老田",
+        )
     assert org_bytes(root) == before, "自检失败必须回滚"
 
 
 def test_rebind_toctou_binding_changed_after_plan(root):
     _prep_intel(root)
-    plan = E.build_rebind_plan(root, dept="intel", agent_id="XQ1",
-                               binding="glm/glm-5.3", ticket="WO-ORG-219", signed_by="老田")
+    plan = E.build_rebind_plan(
+        root,
+        dept="intel",
+        agent_id="XQ1",
+        binding="glm/glm-5.3",
+        ticket="WO-ORG-219",
+        signed_by="老田",
+    )
     # 模拟别处先改过绑定
     org = json.loads(org_bytes(root).decode("utf-8"))
     intel = next(d for d in org["departments"] if d["dept"] == "intel")
-    next(p for p in intel["agent_profiles"] if p["agent_id"] == "XQ1")["llm_binding"] = "glm/glm-4.6"
+    next(p for p in intel["agent_profiles"] if p["agent_id"] == "XQ1")[
+        "llm_binding"
+    ] = "glm/glm-4.6"
     (root / "registry" / "org.json").write_text(
-        json.dumps(org, ensure_ascii=False, indent=2), encoding="utf-8")
+        json.dumps(org, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     taken = org_bytes(root)
     with pytest.raises(E.EnrollError) as ei:
         E.apply_rebind_plan(root, plan, signed_by="老田")
@@ -559,6 +659,7 @@ def test_rebind_toctou_binding_changed_after_plan(root):
 
 
 # ---------------------------------------------------------------- 连通性冒烟
+
 
 def test_probe_none_is_rule_only():
     r = E.probe_binding("none")
@@ -570,16 +671,25 @@ def test_probe_llm_ok_and_fail(monkeypatch):
     """冒烟须能分辨通与不通——这正是 S38 踩的坑（词表合法但实调 400）。"""
     from gateway import llm_gateway
 
-    monkeypatch.setattr(llm_gateway, "chat",
-                        lambda **k: llm_gateway.make_envelope(
-                            kind="llm_chat", ok=True, data={"text": "OK"}))
+    monkeypatch.setattr(
+        llm_gateway,
+        "chat",
+        lambda **k: llm_gateway.make_envelope(
+            kind="llm_chat", ok=True, data={"text": "OK"}
+        ),
+    )
     r = E.probe_binding("ollama/qwen3.5:9b")
     assert r["ok"] is True and r["kind"] == "llm" and r["text"] == "OK"
 
-    monkeypatch.setattr(llm_gateway, "chat",
-                        lambda **k: llm_gateway.make_envelope(
-                            kind="llm_chat", ok=False,
-                            error={"code": "llm_error", "message": "HTTP 400 Bad Request"}))
+    monkeypatch.setattr(
+        llm_gateway,
+        "chat",
+        lambda **k: llm_gateway.make_envelope(
+            kind="llm_chat",
+            ok=False,
+            error={"code": "llm_error", "message": "HTTP 400 Bad Request"},
+        ),
+    )
     r2 = E.probe_binding("glm/glm-5.3-flash")
     assert r2["ok"] is False and "400" in r2["error"]
 
@@ -595,12 +705,21 @@ def test_backfill_handles_null_agent_profiles(tmp_path):
     (r / "hr" / "Z9").mkdir(parents=True)
     (r / "hr" / "Z9" / "resume.yaml").write_text("cn_name: 测试\n", encoding="utf-8")
     org = {"departments": [{"dept": "x", "agents": ["Z9"], "agent_profiles": None}]}
-    (r / "registry" / "org.json").write_text(json.dumps(org, ensure_ascii=False), encoding="utf-8")
+    (r / "registry" / "org.json").write_text(
+        json.dumps(org, ensure_ascii=False), encoding="utf-8"
+    )
 
-    plan = E.build_backfill_plan(r, dept="x", agent_id="Z9", role_profile="测试岗",
-                                 duty="这是一段足够长的职责描述用于测试补档健壮性",
-                                 binding="ollama/qwen3.5:9b", grade="E2",
-                                 ticket="WO-ORG-299", signed_by="老田")
+    plan = E.build_backfill_plan(
+        r,
+        dept="x",
+        agent_id="Z9",
+        role_profile="测试岗",
+        duty="这是一段足够长的职责描述用于测试补档健壮性",
+        binding="ollama/qwen3.5:9b",
+        grade="E2",
+        ticket="WO-ORG-299",
+        signed_by="老田",
+    )
     res = E.apply_backfill_plan(r, plan, signed_by="老田")
     assert res["ok"] is True
     after = json.loads((r / "registry" / "org.json").read_text(encoding="utf-8"))
@@ -611,6 +730,7 @@ def test_backfill_handles_null_agent_profiles(tmp_path):
 #
 # 口径：一律取 fixture 里的真实结构做动态比对，不写死「某部门主官是谁」
 # ——2026-10-21 已因写死真实数据踩红三次。
+
 
 def _make_leadless(r):
     """在 tmp 副本里**造**一个主官空悬的部门并可写回。
@@ -624,7 +744,8 @@ def _make_leadless(r):
     d["lead"] = None
     d.pop("lead_appointed", None)
     (r / "registry" / "org.json").write_text(
-        json.dumps(org, ensure_ascii=False, indent=2), encoding="utf-8")
+        json.dumps(org, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     return d
 
 
@@ -634,15 +755,21 @@ def _make_ghost_member(r):
     d = next(x for x in org["departments"] if x.get("agents"))
     d["agents"].append("GHOST9")
     (r / "registry" / "org.json").write_text(
-        json.dumps(org, ensure_ascii=False, indent=2), encoding="utf-8")
+        json.dumps(org, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     return d, "GHOST9"
 
 
 def test_set_lead_plan_writes_nothing(root):
     d = _make_leadless(root)
     before = org_bytes(root)
-    plan = E.build_set_lead_plan(root, dept=d["dept"], lead=d["agents"][0],
-                                 ticket="WO-LEGION-S41", signed_by="老田")
+    plan = E.build_set_lead_plan(
+        root,
+        dept=d["dept"],
+        lead=d["agents"][0],
+        ticket="WO-LEGION-S41",
+        signed_by="老田",
+    )
     assert org_bytes(root) == before, "dry-run 不得写入任何字节"
     assert plan["mode"] == "set_lead" and plan["note"].startswith("dry-run")
     assert plan["from_lead"] == "" and plan["to_lead"] == d["agents"][0]
@@ -653,25 +780,41 @@ def test_set_lead_requires_profiled_lead(root):
     """无档案者不得任命：那只是把「主官空悬」换成「主官无档」。"""
     d, aid = _make_ghost_member(root)
     with pytest.raises(E.EnrollError) as ei:
-        E.build_set_lead_plan(root, dept="dev", lead=aid,
-                              ticket="WO-LEGION-S41", signed_by="老田",
-                              cross_note="跨部门兼任测试说明需要足够长的一句话")
+        E.build_set_lead_plan(
+            root,
+            dept="dev",
+            lead=aid,
+            ticket="WO-LEGION-S41",
+            signed_by="老田",
+            cross_note="跨部门兼任测试说明需要足够长的一句话",
+        )
     assert "尚无档案" in str(ei.value)
 
 
 def test_set_lead_cross_dept_needs_note(root):
     d = _make_leadless(root)
-    other = next(a for dep in json.loads(
-        (root / "registry" / "org.json").read_text(encoding="utf-8"))["departments"]
+    other = next(
+        a
+        for dep in json.loads(
+            (root / "registry" / "org.json").read_text(encoding="utf-8")
+        )["departments"]
         if dep["dept"] != d["dept"]
-        for a in (dep.get("agents") or []) if str(a) not in (d.get("agents") or []))
+        for a in (dep.get("agents") or [])
+        if str(a) not in (d.get("agents") or [])
+    )
     with pytest.raises(E.EnrollError) as ei:
-        E.build_set_lead_plan(root, dept=d["dept"], lead=other,
-                              ticket="WO-LEGION-S41", signed_by="老田")
+        E.build_set_lead_plan(
+            root, dept=d["dept"], lead=other, ticket="WO-LEGION-S41", signed_by="老田"
+        )
     assert "跨部门兼任" in str(ei.value)
-    plan = E.build_set_lead_plan(root, dept=d["dept"], lead=other,
-                                 ticket="WO-LEGION-S41", signed_by="老田",
-                                 cross_note="该席跨部门兼任本营主官，指挥链经真源显式登记")
+    plan = E.build_set_lead_plan(
+        root,
+        dept=d["dept"],
+        lead=other,
+        ticket="WO-LEGION-S41",
+        signed_by="老田",
+        cross_note="该席跨部门兼任本营主官，指挥链经真源显式登记",
+    )
     assert plan["cross_dept"] is True and plan["cross_note"]
 
 
@@ -679,27 +822,46 @@ def test_set_lead_rejects_noop_and_missing_creds(root):
     org = json.loads((root / "registry" / "org.json").read_text(encoding="utf-8"))
     dep = next(d for d in org["departments"] if d.get("lead") and d.get("agents"))
     with pytest.raises(E.EnrollError) as ei:
-        E.build_set_lead_plan(root, dept=dep["dept"], lead=dep["lead"],
-                              ticket="WO-LEGION-S41", signed_by="老田")
+        E.build_set_lead_plan(
+            root,
+            dept=dep["dept"],
+            lead=dep["lead"],
+            ticket="WO-LEGION-S41",
+            signed_by="老田",
+        )
     assert "已是" in str(ei.value)
     d = _make_leadless(root)
     with pytest.raises(E.EnrollError):
-        E.build_set_lead_plan(root, dept=d["dept"], lead=d["agents"][0],
-                              ticket="", signed_by="老田")
+        E.build_set_lead_plan(
+            root, dept=d["dept"], lead=d["agents"][0], ticket="", signed_by="老田"
+        )
     with pytest.raises(E.EnrollError):
-        E.build_set_lead_plan(root, dept=d["dept"], lead=d["agents"][0],
-                              ticket="WO-LEGION-S41", signed_by="")
+        E.build_set_lead_plan(
+            root,
+            dept=d["dept"],
+            lead=d["agents"][0],
+            ticket="WO-LEGION-S41",
+            signed_by="",
+        )
     with pytest.raises(E.EnrollError):
-        E.build_set_lead_plan(root, dept=d["dept"], lead="not-an-id",
-                              ticket="WO-LEGION-S41", signed_by="老田")
+        E.build_set_lead_plan(
+            root,
+            dept=d["dept"],
+            lead="not-an-id",
+            ticket="WO-LEGION-S41",
+            signed_by="老田",
+        )
 
 
 def test_set_lead_apply_changes_only_lead_and_leaves_trace(root):
     d = _make_leadless(root)
     dept_name, lead = d["dept"], d["agents"][0]
-    before_org = json.loads((root / "registry" / "org.json").read_text(encoding="utf-8"))
-    plan = E.build_set_lead_plan(root, dept=dept_name, lead=lead,
-                                 ticket="WO-LEGION-S41", signed_by="老田")
+    before_org = json.loads(
+        (root / "registry" / "org.json").read_text(encoding="utf-8")
+    )
+    plan = E.build_set_lead_plan(
+        root, dept=dept_name, lead=lead, ticket="WO-LEGION-S41", signed_by="老田"
+    )
     res = E.apply_set_lead_plan(root, plan, signed_by="老田")
     assert res["ok"] is True and Path(res["backup"]).exists()
 
@@ -708,23 +870,36 @@ def test_set_lead_apply_changes_only_lead_and_leaves_trace(root):
     a = {x["dept"]: x for x in after_org["departments"]}
     assert a[dept_name]["lead"] == lead
     ap = a[dept_name]["lead_appointed"]
-    assert ap["to"] == lead and ap["ticket"] == "WO-LEGION-S41" and ap["signed_by"] == "老田"
+    assert (
+        ap["to"] == lead
+        and ap["ticket"] == "WO-LEGION-S41"
+        and ap["signed_by"] == "老田"
+    )
     # 名单与档案一字未动：任命不是入编
     assert a[dept_name]["agents"] == b[dept_name]["agents"]
-    assert json.dumps(a[dept_name].get("agent_profiles"), sort_keys=True, ensure_ascii=False) == \
-           json.dumps(b[dept_name].get("agent_profiles"), sort_keys=True, ensure_ascii=False)
+    assert json.dumps(
+        a[dept_name].get("agent_profiles"), sort_keys=True, ensure_ascii=False
+    ) == json.dumps(
+        b[dept_name].get("agent_profiles"), sort_keys=True, ensure_ascii=False
+    )
     # 其他部门一字未动
     for name in b:
         if name == dept_name:
             continue
-        assert json.dumps(b[name], sort_keys=True, ensure_ascii=False) == \
-               json.dumps(a[name], sort_keys=True, ensure_ascii=False)
+        assert json.dumps(b[name], sort_keys=True, ensure_ascii=False) == json.dumps(
+            a[name], sort_keys=True, ensure_ascii=False
+        )
 
 
 def test_set_lead_toctou_and_signer_mismatch(root):
     d = _make_leadless(root)
-    plan = E.build_set_lead_plan(root, dept=d["dept"], lead=d["agents"][0],
-                                 ticket="WO-LEGION-S41", signed_by="老田")
+    plan = E.build_set_lead_plan(
+        root,
+        dept=d["dept"],
+        lead=d["agents"][0],
+        ticket="WO-LEGION-S41",
+        signed_by="老田",
+    )
     with pytest.raises(E.EnrollError):
         E.apply_set_lead_plan(root, plan, signed_by="他人")
     # 计划生成后真源被别人改了主官：执行前复核必须拦下
@@ -733,7 +908,8 @@ def test_set_lead_toctou_and_signer_mismatch(root):
         if x["dept"] == d["dept"]:
             x["lead"] = "RIVAL1"
     (root / "registry" / "org.json").write_text(
-        json.dumps(org, ensure_ascii=False, indent=2), encoding="utf-8")
+        json.dumps(org, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     with pytest.raises(E.EnrollError) as ei:
         E.apply_set_lead_plan(root, plan, signed_by="老田")
     assert "当前主官已变" in str(ei.value)
@@ -741,8 +917,13 @@ def test_set_lead_toctou_and_signer_mismatch(root):
 
 def test_set_lead_rolls_back_on_selfcheck_failure(root, monkeypatch):
     d = _make_leadless(root)
-    plan = E.build_set_lead_plan(root, dept=d["dept"], lead=d["agents"][0],
-                                 ticket="WO-LEGION-S41", signed_by="老田")
+    plan = E.build_set_lead_plan(
+        root,
+        dept=d["dept"],
+        lead=d["agents"][0],
+        ticket="WO-LEGION-S41",
+        signed_by="老田",
+    )
     before = org_bytes(root)
 
     def boom(*a, **k):
@@ -768,17 +949,27 @@ def test_set_lead_announce_cross_dept_without_changing_lead(root):
     org = json.loads((root / "registry" / "org.json").read_text(encoding="utf-8"))
     dep = org["departments"][0]
     members = {str(a) for a in (dep.get("agents") or [])}
-    outside = next(str(a) for d in org["departments"] for a in (d.get("agents") or [])
-                   if str(a) not in members)
+    outside = next(
+        str(a)
+        for d in org["departments"]
+        for a in (d.get("agents") or [])
+        if str(a) not in members
+    )
     dep["lead"] = outside
     dep.pop("lead_appointed", None)
     (root / "registry" / "org.json").write_text(
-        json.dumps(org, ensure_ascii=False, indent=2), encoding="utf-8")
+        json.dumps(org, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
 
     note = "该席跨部门兼任本营主官，指挥链经真源显式登记"
-    plan = E.build_set_lead_plan(root, dept=dep["dept"], lead=outside,
-                                 ticket="WO-LEGION-S42", signed_by="老田",
-                                 cross_note=note)
+    plan = E.build_set_lead_plan(
+        root,
+        dept=dep["dept"],
+        lead=outside,
+        ticket="WO-LEGION-S42",
+        signed_by="老田",
+        cross_note=note,
+    )
     assert plan["action"] == "announce_cross"
     assert plan["from_lead"] == plan["to_lead"] == outside
     res = E.apply_set_lead_plan(root, plan, signed_by="老田")
@@ -789,6 +980,12 @@ def test_set_lead_announce_cross_dept_without_changing_lead(root):
     assert ad["lead_appointed"]["cross_note"] == note
     # 幂等：已有留痕再跑一次必须拒绝，不许刷时间戳
     with pytest.raises(E.EnrollError) as ei:
-        E.build_set_lead_plan(root, dept=dep["dept"], lead=outside,
-                              ticket="WO-LEGION-S42", signed_by="老田", cross_note=note)
+        E.build_set_lead_plan(
+            root,
+            dept=dep["dept"],
+            lead=outside,
+            ticket="WO-LEGION-S42",
+            signed_by="老田",
+            cross_note=note,
+        )
     assert "已登记" in str(ei.value)

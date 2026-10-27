@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[2]
 def _load(name: str, rel: str):
     spec = importlib.util.spec_from_file_location(name, ROOT / rel)
     module = importlib.util.module_from_spec(spec)
-    sys.modules[name] = module          # dataclass 字符串注解判例
+    sys.modules[name] = module  # dataclass 字符串注解判例
     spec.loader.exec_module(module)
     return module
 
@@ -33,12 +33,19 @@ Approval = objects.Approval
 ApprovalStore = engine.ApprovalStore
 
 
-def _ap(key="dev:K1:done", to="done", frm="doing",
-        target="dev:K1", decision="approved"):
-    return Approval(target_type="workitem", target_id=target,
-                    from_status=frm, to_status=to, decision=decision,
-                    decided_by="老田", reason="audit",
-                    idempotency_key=key)
+def _ap(
+    key="dev:K1:done", to="done", frm="doing", target="dev:K1", decision="approved"
+):
+    return Approval(
+        target_type="workitem",
+        target_id=target,
+        from_status=frm,
+        to_status=to,
+        decision=decision,
+        decided_by="老田",
+        reason="audit",
+        idempotency_key=key,
+    )
 
 
 class ApprovalStoreContractTests(unittest.TestCase):
@@ -46,7 +53,7 @@ class ApprovalStoreContractTests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.db = Path(self.tmp.name) / "approvals.db"
-        self.store = ApprovalStore(self.db)   # keeper 连接判例
+        self.store = ApprovalStore(self.db)  # keeper 连接判例
 
     def tearDown(self):
         self.store.close()

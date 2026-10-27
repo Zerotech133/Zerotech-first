@@ -52,13 +52,21 @@ def _make_checkpoints(root: Path, runs):
     )
     now = time.time()
     for run_id, stock, status, decision in runs:
-        conn.execute("INSERT OR REPLACE INTO runs VALUES(?,?,?,?,?)",
-                     (run_id, stock, now - 60, now, status))
+        conn.execute(
+            "INSERT OR REPLACE INTO runs VALUES(?,?,?,?,?)",
+            (run_id, stock, now - 60, now, status),
+        )
         if decision:
             conn.execute(
                 "INSERT OR REPLACE INTO checkpoints VALUES(?,?,?,?,?)",
-                (run_id, "d1_decision", "D1",
-                 json.dumps({"output": decision}, ensure_ascii=False), now))
+                (
+                    run_id,
+                    "d1_decision",
+                    "D1",
+                    json.dumps({"output": decision}, ensure_ascii=False),
+                    now,
+                ),
+            )
     conn.commit()
     conn.close()
 
@@ -88,8 +96,10 @@ class InvestWiringTests(unittest.TestCase):
         self.assertEqual(entry["status"], "drafted")
         self.assertEqual(entry["stock"], "600519")
         import hashlib
-        self.assertEqual(entry["decision_hash"],
-                         hashlib.sha256(DECISION_A.encode()).hexdigest())
+
+        self.assertEqual(
+            entry["decision_hash"], hashlib.sha256(DECISION_A.encode()).hexdigest()
+        )
         entry2, replayed2 = iw.register_run(self.root, "run_aaa111")
         self.assertTrue(replayed2)
         self.assertEqual(entry2["decision_hash"], entry["decision_hash"])
@@ -113,8 +123,7 @@ class InvestWiringTests(unittest.TestCase):
     def test_register_replay_drift_rejected(self):
         iw.register_run(self.root, "run_aaa111")
         # 重跑覆盖：D1 决策被改写
-        _make_checkpoints(self.root, [("run_aaa111", "600519", "done",
-                                       "被篡改的决策")])
+        _make_checkpoints(self.root, [("run_aaa111", "600519", "done", "被篡改的决策")])
         with self.assertRaises(iw.InvestWiringError) as cm:
             iw.register_run(self.root, "run_aaa111")
         self.assertIn("指纹漂移", str(cm.exception))
@@ -127,7 +136,7 @@ class InvestWiringTests(unittest.TestCase):
         self.assertEqual(len(items), 2)
         wi = items[0]
         self.assertEqual(wi.workitem_id, "invest:run_aaa111")
-        self.assertEqual(wi.status, "drafted")          # 域内原生状态原样
+        self.assertEqual(wi.status, "drafted")  # 域内原生状态原样
         self.assertEqual(wi.source, "invest.runs_index")
         self.assertEqual(wi.owner, "D1")
         self.assertEqual(wi.payload["stock"], "600519")
@@ -137,67 +146,80 @@ class InvestWiringTests(unittest.TestCase):
     # ---------------- 审批门 ----------------
     def test_approve_full_chain(self):
         iw.register_run(self.root, "run_aaa111")
-        a1, e1, rp1 = iw.approve_transition(self.root, "run_aaa111",
-                                            "reviewed", "老田", "复核通过",
-                                            store=self.store)
+        a1, e1, rp1 = iw.approve_transition(
+            self.root, "run_aaa111", "reviewed", "老田", "复核通过", store=self.store
+        )
         self.assertFalse(rp1)
         self.assertEqual(e1["status"], "reviewed")
-        a2, e2, rp2 = iw.approve_transition(self.root, "run_aaa111",
-                                            "adopted", "老田", "采纳进实盘参考",
-                                            store=self.store)
+        a2, e2, rp2 = iw.approve_transition(
+            self.root,
+            "run_aaa111",
+            "adopted",
+            "老田",
+            "采纳进实盘参考",
+            store=self.store,
+        )
         self.assertFalse(rp2)
         self.assertEqual(e2["status"], "adopted")
 
     def test_approve_idempotent_replay(self):
         iw.register_run(self.root, "run_aaa111")
-        iw.approve_transition(self.root, "run_aaa111", "reviewed", "老田",
-                              store=self.store)
-        a, e, rp = iw.approve_transition(self.root, "run_aaa111",
-                                         "reviewed", "老田", store=self.store)
+        iw.approve_transition(
+            self.root, "run_aaa111", "reviewed", "老田", store=self.store
+        )
+        a, e, rp = iw.approve_transition(
+            self.root, "run_aaa111", "reviewed", "老田", store=self.store
+        )
         self.assertTrue(rp)
         self.assertEqual(e["status"], "reviewed")
 
     def test_approve_skip_level_rejected(self):
         iw.register_run(self.root, "run_aaa111")
         with self.assertRaises(iw.InvestWiringError) as cm:
-            iw.approve_transition(self.root, "run_aaa111", "adopted", "老田",
-                                  store=self.store)
+            iw.approve_transition(
+                self.root, "run_aaa111", "adopted", "老田", store=self.store
+            )
         self.assertIn("非法转移", str(cm.exception))
 
     def test_approve_terminal_rejected(self):
         iw.register_run(self.root, "run_aaa111")
-        iw.approve_transition(self.root, "run_aaa111", "reviewed", "老田",
-                              store=self.store)
-        iw.approve_transition(self.root, "run_aaa111", "adopted", "老田",
-                              store=self.store)
+        iw.approve_transition(
+            self.root, "run_aaa111", "reviewed", "老田", store=self.store
+        )
+        iw.approve_transition(
+            self.root, "run_aaa111", "adopted", "老田", store=self.store
+        )
         with self.assertRaises(iw.InvestWiringError) as cm:
-            iw.approve_transition(self.root, "run_aaa111", "drafted", "老田",
-                                  store=self.store)
+            iw.approve_transition(
+                self.root, "run_aaa111", "drafted", "老田", store=self.store
+            )
         self.assertIn("终态", str(cm.exception))
 
     def test_approve_reject_then_reapprove(self):
         """打回 drafted 后重新走 reviewed（重新复核）：
         第二轮批准必须留新凭据（轮次化幂等键），不得重放第一轮。"""
         iw.register_run(self.root, "run_aaa111")
-        a1, _, _ = iw.approve_transition(self.root, "run_aaa111",
-                                         "reviewed", "老田", store=self.store)
-        iw.approve_transition(self.root, "run_aaa111", "drafted", "老田",
-                              "证据不足打回", store=self.store)
-        a2, e, rp = iw.approve_transition(self.root, "run_aaa111",
-                                          "reviewed", "老田", "补证后复审",
-                                          store=self.store)
+        a1, _, _ = iw.approve_transition(
+            self.root, "run_aaa111", "reviewed", "老田", store=self.store
+        )
+        iw.approve_transition(
+            self.root, "run_aaa111", "drafted", "老田", "证据不足打回", store=self.store
+        )
+        a2, e, rp = iw.approve_transition(
+            self.root, "run_aaa111", "reviewed", "老田", "补证后复审", store=self.store
+        )
         self.assertFalse(rp)
         self.assertEqual(e["status"], "reviewed")
         self.assertNotEqual(a1.approval_id, a2.approval_id)  # 第二轮新凭据
         self.assertEqual(a2.reason, "补证后复审")
-        self.assertEqual(a2.idempotency_key,
-                         "invest:run_aaa111:drafted>reviewed#r2")
+        self.assertEqual(a2.idempotency_key, "invest:run_aaa111:drafted>reviewed#r2")
         self.assertEqual(len(self.store.list(target_type="workitem")), 3)
 
     def test_approve_unknown_run_rejected(self):
         with self.assertRaises(iw.InvestWiringError):
-            iw.approve_transition(self.root, "run_nope", "reviewed", "老田",
-                                  store=self.store)
+            iw.approve_transition(
+                self.root, "run_nope", "reviewed", "老田", store=self.store
+            )
 
     def test_approve_bypass_detected(self):
         """绕过审批门直接改真源 → 同态重批显式拒绝。"""
@@ -206,45 +228,54 @@ class InvestWiringTests(unittest.TestCase):
         entries[0]["status"] = "reviewed"
         iw.save_index(self.root, entries)
         with self.assertRaises(iw.InvestWiringError) as cm:
-            iw.approve_transition(self.root, "run_aaa111", "reviewed", "老田",
-                                  store=self.store)
+            iw.approve_transition(
+                self.root, "run_aaa111", "reviewed", "老田", store=self.store
+            )
         self.assertIn("绕过审批门", str(cm.exception))
 
     def test_catch_up_after_crash_window(self):
         """凭据落库后真源写入前崩溃 → 重放补齐真源。"""
         iw.register_run(self.root, "run_aaa111")
         # 模拟：先手工落凭据（绕过 approve 的真源写入步骤）
-        self.store.record(apv.Approval(
-            target_type="workitem", target_id="invest:run_aaa111",
-            from_status="drafted", to_status="reviewed",
-            decision="approved", decided_by="老田", reason="崩溃模拟",
-            decided_at=iw._now_iso(),
-            idempotency_key="invest:run_aaa111:drafted>reviewed"))
-        a, e, rp = iw.approve_transition(self.root, "run_aaa111",
-                                         "reviewed", "老田", store=self.store)
+        self.store.record(
+            apv.Approval(
+                target_type="workitem",
+                target_id="invest:run_aaa111",
+                from_status="drafted",
+                to_status="reviewed",
+                decision="approved",
+                decided_by="老田",
+                reason="崩溃模拟",
+                decided_at=iw._now_iso(),
+                idempotency_key="invest:run_aaa111:drafted>reviewed",
+            )
+        )
+        a, e, rp = iw.approve_transition(
+            self.root, "run_aaa111", "reviewed", "老田", store=self.store
+        )
         self.assertTrue(rp)
-        self.assertEqual(e["status"], "reviewed")       # catch-up 补齐
+        self.assertEqual(e["status"], "reviewed")  # catch-up 补齐
 
     def test_second_reject_gets_new_credential(self):
         """同转移反复（二次打回）：消费标记判定第二轮批准，落 #r2 新凭据，
         不重放第一轮（devtask 判例回灌：last_wiring_key）。"""
         iw.register_run(self.root, "run_aaa111")
-        iw.approve_transition(self.root, "run_aaa111", "reviewed", "老田",
-                              store=self.store)
-        a1, _, _ = iw.approve_transition(self.root, "run_aaa111", "drafted",
-                                         "老田", "第一次打回",
-                                         store=self.store)
+        iw.approve_transition(
+            self.root, "run_aaa111", "reviewed", "老田", store=self.store
+        )
+        a1, _, _ = iw.approve_transition(
+            self.root, "run_aaa111", "drafted", "老田", "第一次打回", store=self.store
+        )
         # 返工后重新复核（真源回 reviewed）
         entries = iw.load_index(self.root)
         entries[0]["status"] = "reviewed"
         iw.save_index(self.root, entries)
-        a2, e, rp = iw.approve_transition(self.root, "run_aaa111", "drafted",
-                                          "老田", "第二次打回",
-                                          store=self.store)
-        self.assertFalse(rp)                            # 新轮次，非重放
+        a2, e, rp = iw.approve_transition(
+            self.root, "run_aaa111", "drafted", "老田", "第二次打回", store=self.store
+        )
+        self.assertFalse(rp)  # 新轮次，非重放
         self.assertEqual(e["status"], "drafted")
-        self.assertEqual(a2.idempotency_key,
-                         "invest:run_aaa111:reviewed>drafted#r2")
+        self.assertEqual(a2.idempotency_key, "invest:run_aaa111:reviewed>drafted#r2")
         self.assertNotEqual(a1.approval_id, a2.approval_id)
         self.assertEqual(a2.reason, "第二次打回")
 
@@ -252,8 +283,9 @@ class InvestWiringTests(unittest.TestCase):
     def test_audit_pass_on_compliant_state(self):
         iw.register_run(self.root, "run_aaa111")
         iw.register_run(self.root, "run_bbb222")
-        iw.approve_transition(self.root, "run_aaa111", "reviewed", "老田",
-                              store=self.store)
+        iw.approve_transition(
+            self.root, "run_aaa111", "reviewed", "老田", store=self.store
+        )
         rep = iw.audit_report(self.root, store=self.store)
         self.assertEqual(rep["verdict"], "PASS")
         self.assertEqual(rep["by_status"], {"drafted": 1, "reviewed": 1})
@@ -266,18 +298,19 @@ class InvestWiringTests(unittest.TestCase):
         iw.save_index(self.root, entries)
         rep = iw.audit_report(self.root, store=self.store)
         self.assertEqual(rep["verdict"], "FAIL")
-        self.assertTrue(any(v["finding"].startswith("状态=")
-                            for v in rep["violations"]))
+        self.assertTrue(
+            any(v["finding"].startswith("状态=") for v in rep["violations"])
+        )
 
     def test_audit_decision_drift(self):
         """指纹漂移：登记后 D1 决策被重跑覆盖 → FAIL。"""
         iw.register_run(self.root, "run_aaa111")
-        _make_checkpoints(self.root, [("run_aaa111", "600519", "done",
-                                       "事后篡改的决策")])
+        _make_checkpoints(
+            self.root, [("run_aaa111", "600519", "done", "事后篡改的决策")]
+        )
         rep = iw.audit_report(self.root, store=self.store)
         self.assertEqual(rep["verdict"], "FAIL")
-        self.assertTrue(any("指纹漂移" in v["finding"]
-                            for v in rep["violations"]))
+        self.assertTrue(any("指纹漂移" in v["finding"] for v in rep["violations"]))
 
     def test_audit_decision_missing(self):
         """执行底账决策快照被删 → FAIL + missing_artifacts。"""
@@ -295,6 +328,7 @@ class InvestWiringTests(unittest.TestCase):
     def test_cli_register_list_report(self):
         import io
         from contextlib import redirect_stdout
+
         buf = io.StringIO()
         with redirect_stdout(buf):
             rc = iw.main(["register", "run_aaa111", "--root", str(self.root)])
@@ -315,15 +349,26 @@ class InvestWiringTests(unittest.TestCase):
         """CLI approve 通路测试：patch 模块默认 store 根到 tmp，不碰真库。"""
         import io
         from contextlib import redirect_stdout
+
         real_platform = iw._AGENT_PLATFORM
         iw._AGENT_PLATFORM = self.root / "agent_platform"
         try:
             iw.register_run(self.root, "run_aaa111")
             buf = io.StringIO()
             with redirect_stdout(buf):
-                rc = iw.main(["approve", "run_aaa111", "reviewed",
-                              "--by", "老田", "--reason", "复核通过",
-                              "--root", str(self.root)])
+                rc = iw.main(
+                    [
+                        "approve",
+                        "run_aaa111",
+                        "reviewed",
+                        "--by",
+                        "老田",
+                        "--reason",
+                        "复核通过",
+                        "--root",
+                        str(self.root),
+                    ]
+                )
             self.assertEqual(rc, 0)
             self.assertIn("批准", buf.getvalue())
         finally:

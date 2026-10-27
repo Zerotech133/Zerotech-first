@@ -47,8 +47,8 @@ if str(_AGENT_PLATFORM) not in sys.path:
     sys.path.insert(0, str(_AGENT_PLATFORM))
 
 from contracts.objects import Approval, Artifact, fact_hash_of  # noqa: E402
-from engine.approvals import ApprovalStore        # noqa: E402
-from engine.artifacts import ArtifactStore        # noqa: E402
+from engine.approvals import ApprovalStore  # noqa: E402
+from engine.artifacts import ArtifactStore  # noqa: E402
 from adapters.credential_trace import cross_check, verdict_for  # noqa: E402
 
 DECKS_FILE = _AGENT_PLATFORM / "data" / "pitch" / "decks.json"
@@ -62,8 +62,8 @@ def _decks_file(root=None) -> Path:
         return Path(root) / "data" / "pitch" / "decks.json"
     return DECKS_FILE
 
-STAGES = ("outline", "drafted", "fact_check", "reviewed",
-          "approved", "delivered")
+
+STAGES = ("outline", "drafted", "fact_check", "reviewed", "approved", "delivered")
 LEGAL_TRANSITIONS = {
     # 前进 ±1 步；approved 可打回 reviewed；delivered 终态
     "outline": ["drafted"],
@@ -73,7 +73,7 @@ LEGAL_TRANSITIONS = {
     "approved": ["delivered", "reviewed"],
     "delivered": [],
 }
-GATED = {"approved", "delivered"}   # →这些状态必须凭据
+GATED = {"approved", "delivered"}  # →这些状态必须凭据
 CLAIM_KINDS = ("fact", "assumption", "forecast", "pending")
 
 
@@ -105,8 +105,7 @@ def save_decks(rows: List[dict], root=None) -> None:
     f = _decks_file(root)
     f.parent.mkdir(parents=True, exist_ok=True)
     tmp = f.with_suffix(".json.tmp")
-    tmp.write_text(json.dumps(rows, ensure_ascii=False, indent=2),
-                   encoding="utf-8")
+    tmp.write_text(json.dumps(rows, ensure_ascii=False, indent=2), encoding="utf-8")
     tmp.replace(f)
 
 
@@ -121,13 +120,15 @@ def _file_fingerprint(rel: str):
     """artifact 指纹：存在记 sha256，缺失显式 missing（不伪造）。"""
     if not rel:
         return {"path": "", "exists": False, "sha256": ""}
-    p = _AGENT_PLATFORM.parent / rel if not Path(rel).is_absolute() \
-        else Path(rel)
+    p = _AGENT_PLATFORM.parent / rel if not Path(rel).is_absolute() else Path(rel)
     if p.exists():
         data = p.read_bytes()
-        return {"path": rel, "exists": True,
-                "sha256": hashlib.sha256(data).hexdigest()[:16],
-                "bytes": len(data)}
+        return {
+            "path": rel,
+            "exists": True,
+            "sha256": hashlib.sha256(data).hexdigest()[:16],
+            "bytes": len(data),
+        }
     return {"path": rel, "exists": False, "sha256": ""}
 
 
@@ -149,9 +150,9 @@ def _deck_content_hash(deck_id: str) -> str:
     return fact_hash_of(p.read_bytes())
 
 
-def register_deck_artifact(deck_id: str,
-                           artifact_store: ArtifactStore = None
-                           ) -> Tuple[Optional[Artifact], bool]:
+def register_deck_artifact(
+    deck_id: str, artifact_store: ArtifactStore = None
+) -> Tuple[Optional[Artifact], bool]:
     """M3-P2：deck 产物文件存在时登记为统一 Artifact（幂等不设门）。
 
     登记点：drafted（初稿产物诞生）/ delivered（交付达成，首次或
@@ -175,15 +176,17 @@ def register_deck_artifact(deck_id: str,
     own_store = artifact_store is None
     store = artifact_store or ArtifactStore(_artifacts_db())
     try:
-        return store.record(Artifact(
-            kind=kind,
-            path=rel,
-            fact_hash=chash,
-            content_hash=chash,
-            source_system="pitch.decks",
-            source_ref=deck_id,
-            produced_by="COMM1",
-        ))
+        return store.record(
+            Artifact(
+                kind=kind,
+                path=rel,
+                fact_hash=chash,
+                content_hash=chash,
+                source_system="pitch.decks",
+                source_ref=deck_id,
+                produced_by="COMM1",
+            )
+        )
     finally:
         if own_store:
             store.close()
@@ -193,8 +196,9 @@ def _artifacts_db() -> Path:
     return _AGENT_PLATFORM / "data" / "artifacts" / "artifacts.db"
 
 
-def add_deck(deck_id: str, title: str, audience: str = "",
-             goal: str = "", artifact: str = "") -> dict:
+def add_deck(
+    deck_id: str, title: str, audience: str = "", goal: str = "", artifact: str = ""
+) -> dict:
     """登记新 deck（账本真源初始化，无门——登记≠承诺）。"""
     if not deck_id or not title:
         raise PitchWiringError("deck_id 与 title 必填")
@@ -206,11 +210,17 @@ def add_deck(deck_id: str, title: str, audience: str = "",
         "audience": audience,
         "goal": goal,
         "status": "outline",
-        "claims": [],            # [{text, kind}] 四分类声明
-        "artifact": artifact,    # 相对仓库根路径或空
+        "claims": [],  # [{text, kind}] 四分类声明
+        "artifact": artifact,  # 相对仓库根路径或空
         "created": _now_cn(),
-        "history": [{"at": _now_cn(), "action": "create",
-                     "by": "system", "note": "registered at outline"}],
+        "history": [
+            {
+                "at": _now_cn(),
+                "action": "create",
+                "by": "system",
+                "note": "registered at outline",
+            }
+        ],
     }
     rows = load_decks()
     rows.append(deck)
@@ -223,16 +233,15 @@ def set_claims(deck_id: str, claims: List[dict]) -> dict:
     for c in claims:
         if c.get("kind") not in CLAIM_KINDS:
             raise PitchWiringError(
-                "claim kind 须为 %s，收到 %r" % (CLAIM_KINDS,
-                                                c.get("kind")))
+                "claim kind 须为 %s，收到 %r" % (CLAIM_KINDS, c.get("kind"))
+            )
         if not str(c.get("text", "")).strip():
             raise PitchWiringError("claim.text 必填")
     rows = load_decks()
     deck = next((d for d in rows if d.get("deck_id") == deck_id), None)
     if deck is None:
         raise PitchWiringError("deck %s 不存在" % deck_id)
-    deck["claims"] = [{"text": c["text"], "kind": c["kind"]}
-                      for c in claims]
+    deck["claims"] = [{"text": c["text"], "kind": c["kind"]} for c in claims]
     save_decks(rows)
     return deck
 
@@ -244,11 +253,17 @@ def _reload_and_replace(deck_id: str, updated: dict) -> List[dict]:
 
 def _append_history(deck: dict, action: str, by: str, note: str) -> None:
     deck.setdefault("history", []).append(
-        {"at": _now_cn(), "action": action, "by": by, "note": note})
+        {"at": _now_cn(), "action": action, "by": by, "note": note}
+    )
 
 
-def move_stage(deck_id: str, to_stage: str, by: str, note: str = "",
-               artifact_store: ArtifactStore = None) -> dict:
+def move_stage(
+    deck_id: str,
+    to_stage: str,
+    by: str,
+    note: str = "",
+    artifact_store: ArtifactStore = None,
+) -> dict:
     """自由推进（非受门转移）：±1 步，追加 history。
 
     M3-P2：推进到 drafted 达成时自动登记 deck 产物文件（存在才登记，
@@ -261,33 +276,37 @@ def move_stage(deck_id: str, to_stage: str, by: str, note: str = "",
         raise PitchWiringError("deck %s 不存在" % deck_id)
     from_status = deck.get("status", "")
     if from_status in ("delivered",):
-        raise PitchWiringError("deck %s 已终态 delivered，禁止再转移"
-                               % deck_id)
+        raise PitchWiringError("deck %s 已终态 delivered，禁止再转移" % deck_id)
     if to_stage not in LEGAL_TRANSITIONS.get(from_status, []):
         raise PitchWiringError(
-            "非法转移 %s→%s（合法：%s）" % (from_status, to_stage,
-                                          LEGAL_TRANSITIONS.get(from_status)))
+            "非法转移 %s→%s（合法：%s）"
+            % (from_status, to_stage, LEGAL_TRANSITIONS.get(from_status))
+        )
     if to_stage in GATED:
         raise PitchWiringError(
-            "→%s 是受门转移，须走 approve_transition（用户级承诺）"
-            % to_stage)
+            "→%s 是受门转移，须走 approve_transition（用户级承诺）" % to_stage
+        )
     if to_stage == "fact_check" and not deck.get("claims"):
         raise PitchWiringError(
             "claims 为空：进入事实审查前必须声明事实/假设/预测/待补证"
-            "（架构红线，禁止编造）")
+            "（架构红线，禁止编造）"
+        )
     deck["status"] = to_stage
     _append_history(deck, "move:%s" % to_stage, by, note or "stage move")
     save_decks(_reload_and_replace(deck_id, deck))
-    if to_stage == "drafted":                    # M3-P2 自动登记产物
+    if to_stage == "drafted":  # M3-P2 自动登记产物
         register_deck_artifact(deck_id, artifact_store)
     return find_deck(deck_id)
 
 
-def approve_transition(deck_id: str, to_status: str, by: str,
-                       reason: str = "",
-                       store: ApprovalStore = None,
-                       artifact_store: ArtifactStore = None
-                       ) -> Tuple[dict, bool]:
+def approve_transition(
+    deck_id: str,
+    to_status: str,
+    by: str,
+    reason: str = "",
+    store: ApprovalStore = None,
+    artifact_store: ArtifactStore = None,
+) -> Tuple[dict, bool]:
     """受门转移（→approved / →delivered）：凭据先落，再改真源。
 
     M3-P2：delivered 达成（首次或 catch-up 补齐）时自动登记 deck
@@ -300,53 +319,68 @@ def approve_transition(deck_id: str, to_status: str, by: str,
         raise PitchWiringError("deck %s 不存在" % deck_id)
     from_status = deck.get("status", "")
     if to_status not in GATED:
-        raise PitchWiringError("→%s 不是受门状态（受门：%s）"
-                               % (to_status, sorted(GATED)))
+        raise PitchWiringError(
+            "→%s 不是受门状态（受门：%s）" % (to_status, sorted(GATED))
+        )
     if to_status not in LEGAL_TRANSITIONS.get(from_status, []):
         raise PitchWiringError(
             "非法转移 %s→%s（合法：%s）；跳级违反生成/审查/批准/交付分离"
-            % (from_status, to_status,
-               LEGAL_TRANSITIONS.get(from_status, [])))
+            % (from_status, to_status, LEGAL_TRANSITIONS.get(from_status, []))
+        )
 
     own_store = store is None
     store = store or ApprovalStore(_db_path())
     try:
-        own = [a for a in store.list(target_type="workitem")
-               if a.target_id == "pitch:%s" % deck_id]
+        own = [
+            a
+            for a in store.list(target_type="workitem")
+            if a.target_id == "pitch:%s" % deck_id
+        ]
         # M3-P3 批 A 发 B 拒绝（delivered 前置校验）：上一道门（approved）
         # 凭据绑定过内容指纹，且当前 deck 内容已变更 → 原审批失效，
         # 须打回 reviewed 重新走门；拒绝在旧批准上直接交付新内容。
         if to_status == "delivered":
-            approved_creds = [a for a in own
-                              if a.to_status == "approved" and a.content_hash]
+            approved_creds = [
+                a for a in own if a.to_status == "approved" and a.content_hash
+            ]
             cur_hash = _deck_content_hash(deck_id)
-            if approved_creds and cur_hash \
-                    and approved_creds[-1].content_hash != cur_hash:
+            if (
+                approved_creds
+                and cur_hash
+                and approved_creds[-1].content_hash != cur_hash
+            ):
                 raise PitchWiringError(
                     "批 A 发 B 拒绝：approved 凭据 %s 绑定 content_hash=%s…，"
                     "当前 deck=%s…（内容已变更，原审批失效）——打回 reviewed"
                     " 修改后重新走门"
-                    % (approved_creds[-1].approval_id[:12],
-                       approved_creds[-1].content_hash[:12], cur_hash[:12]))
+                    % (
+                        approved_creds[-1].approval_id[:12],
+                        approved_creds[-1].content_hash[:12],
+                        cur_hash[:12],
+                    )
+                )
         # catch-up：最新凭据恰是本转移、且该转移从未落过 history
-        #（凭据落库后、真源写入前崩溃的窗口）→ 补执行，重放返回。
+        # （凭据落库后、真源写入前崩溃的窗口）→ 补执行，重放返回。
         # history 已有 approve:%s 痕迹 = 凭据曾生效（之后可能被打回），
         # 不得 catch-up——打回重批交给下方轮次化键处理（academy 同款：
         # 打回走自由 move 不落凭据，own[-1] 启发式不可靠）。
         applied = {h.get("action") for h in deck.get("history", [])}
-        prior_same = [a for a in own
-                      if a.from_status == from_status
-                      and a.to_status == to_status]
-        if (prior_same
-                and own[-1].idempotency_key == prior_same[-1].idempotency_key
-                and ("approve:%s" % to_status) not in applied):
+        prior_same = [
+            a for a in own if a.from_status == from_status and a.to_status == to_status
+        ]
+        if (
+            prior_same
+            and own[-1].idempotency_key == prior_same[-1].idempotency_key
+            and ("approve:%s" % to_status) not in applied
+        ):
             deck2 = find_deck(deck_id)
             if deck2.get("status") != to_status:
                 deck2["status"] = to_status
-                _append_history(deck2, "approve:%s" % to_status, by,
-                                "catch-up（凭据已落补执行）")
+                _append_history(
+                    deck2, "approve:%s" % to_status, by, "catch-up（凭据已落补执行）"
+                )
                 save_decks(_reload_and_replace(deck_id, deck2))
-                if to_status == "delivered":     # M3-P2 catch-up 补登记
+                if to_status == "delivered":  # M3-P2 catch-up 补登记
                     register_deck_artifact(deck_id, artifact_store)
             return find_deck(deck_id), True
 
@@ -354,37 +388,38 @@ def approve_transition(deck_id: str, to_status: str, by: str,
         # 是新一轮批准，必须留新凭据（decided_by/reason 可追溯），不得
         # 重放第一轮凭据——同轮重放仍由既有凭据幂等兜底。
         base = "pitch:%s:%s>%s" % (deck_id, from_status, to_status)
-        key = (base if not prior_same
-               else "%s#r%d" % (base, len(prior_same) + 1))
-        approval, replayed = store.record(Approval(
-            target_type="workitem",
-            target_id="pitch:%s" % deck_id,
-            from_status=from_status,
-            to_status=to_status,
-            decision="approved",
-            decided_by=by,
-            reason=reason,
-            decided_at=_now_iso(),
-            idempotency_key=key,
-            content_hash=_deck_content_hash(deck_id),   # M3-P3 批准时点绑定
-        ))
+        key = base if not prior_same else "%s#r%d" % (base, len(prior_same) + 1)
+        approval, replayed = store.record(
+            Approval(
+                target_type="workitem",
+                target_id="pitch:%s" % deck_id,
+                from_status=from_status,
+                to_status=to_status,
+                decision="approved",
+                decided_by=by,
+                reason=reason,
+                decided_at=_now_iso(),
+                idempotency_key=key,
+                content_hash=_deck_content_hash(deck_id),  # M3-P3 批准时点绑定
+            )
+        )
         if replayed:
             # 防御分支：轮次化后 key 理论全新；并发窗口同 key 抢先落库时
             # 真源若滞后补齐，否则原样返回
             deck2 = find_deck(deck_id)
             if deck2.get("status") != to_status:
                 deck2["status"] = to_status
-                _append_history(deck2, "approve:%s" % to_status, by,
-                                "catch-up（凭据已落补执行）")
+                _append_history(
+                    deck2, "approve:%s" % to_status, by, "catch-up（凭据已落补执行）"
+                )
                 save_decks(_reload_and_replace(deck_id, deck2))
             return find_deck(deck_id), True
 
         deck = find_deck(deck_id)
         deck["status"] = to_status
-        _append_history(deck, "approve:%s" % to_status, by,
-                        reason or to_status)
+        _append_history(deck, "approve:%s" % to_status, by, reason or to_status)
         save_decks(_reload_and_replace(deck_id, deck))
-        if to_status == "delivered":             # M3-P2 自动登记产物
+        if to_status == "delivered":  # M3-P2 自动登记产物
             register_deck_artifact(deck_id, artifact_store)
         return find_deck(deck_id), False
     finally:
@@ -400,17 +435,19 @@ def projection() -> dict:
         for c in d.get("claims", []):
             if c.get("kind") in counts:
                 counts[c["kind"]] += 1
-        items.append({
-            "deck_id": d.get("deck_id", ""),
-            "title": d.get("title", ""),
-            "audience": d.get("audience", ""),
-            "status": d.get("status", ""),
-            "claims_total": sum(counts.values()),
-            "claims_by_kind": counts,
-            "artifact": _file_fingerprint(d.get("artifact", "")),
-            "history_len": len(d.get("history", [])),
-            "created": d.get("created", ""),
-        })
+        items.append(
+            {
+                "deck_id": d.get("deck_id", ""),
+                "title": d.get("title", ""),
+                "audience": d.get("audience", ""),
+                "status": d.get("status", ""),
+                "claims_total": sum(counts.values()),
+                "claims_by_kind": counts,
+                "artifact": _file_fingerprint(d.get("artifact", "")),
+                "history_len": len(d.get("history", [])),
+                "created": d.get("created", ""),
+            }
+        )
     return {"domain": "pitch", "count": len(items), "decks": items}
 
 
@@ -419,8 +456,7 @@ def audit_report() -> dict:
     decks = {d.get("deck_id"): d for d in load_decks()}
     store = ApprovalStore(_db_path())
     try:
-        creds = [c for c in store.list()
-                 if c.target_id.startswith("pitch:")]
+        creds = [c for c in store.list() if c.target_id.startswith("pitch:")]
     finally:
         store.close()
     violations = []
@@ -429,52 +465,78 @@ def audit_report() -> dict:
         did = c.target_id.split(":", 1)[-1]
         deck = decks.get(did)
         if deck is None:
-            violations.append({
-                "kind": "credential_target_missing",
-                "approval_id": c.approval_id, "deck_id": did})
+            violations.append(
+                {
+                    "kind": "credential_target_missing",
+                    "approval_id": c.approval_id,
+                    "deck_id": did,
+                }
+            )
             continue
-        acts = [h.get("action", "") for h in deck.get("history", [])
-                if isinstance(h, dict)]
-        acts = [h.get("action", "") for h in deck.get("history", [])
-                if isinstance(h, dict)]
-        ok = deck.get("status") == c.to_status or (
-            # 轮次语义：该轮 approve 痕迹存在且其后有 move（合法打回）；
-            # 仅状态被改而无 move 痕迹 = 绕门，仍报 mismatch
-            "approve:%s" % c.to_status in acts and
-            any(a.startswith("move:") for a in
-                acts[len(acts) - acts[::-1].index(
-                    "approve:%s" % c.to_status):])) or (
-            # 轮次语义：该轮 approve 痕迹存在且其后有 move（合法打回）；
-            # 仅状态被改而无 move 痕迹 = 绕门，仍报 mismatch
-            "approve:%s" % c.to_status in acts and
-            any(a.startswith("move:") for a in
-                acts[len(acts) - acts[::-1].index(
-                    "approve:%s" % c.to_status):]))
-        checks.append({
-            "approval_id": c.approval_id,
-            "deck_id": did,
-            "transition": "%s>%s" % (c.from_status, c.to_status),
-            "decided_by": c.decided_by,
-            "state": "consistent" if ok else "status_mismatch",
-        })
-        if not ok:
-            violations.append({
-                "kind": "status_mismatch",
+        acts = [
+            h.get("action", "") for h in deck.get("history", []) if isinstance(h, dict)
+        ]
+        acts = [
+            h.get("action", "") for h in deck.get("history", []) if isinstance(h, dict)
+        ]
+        ok = (
+            deck.get("status") == c.to_status
+            or (
+                # 轮次语义：该轮 approve 痕迹存在且其后有 move（合法打回）；
+                # 仅状态被改而无 move 痕迹 = 绕门，仍报 mismatch
+                "approve:%s" % c.to_status in acts
+                and any(
+                    a.startswith("move:")
+                    for a in acts[
+                        len(acts) - acts[::-1].index("approve:%s" % c.to_status) :
+                    ]
+                )
+            )
+            or (
+                # 轮次语义：该轮 approve 痕迹存在且其后有 move（合法打回）；
+                # 仅状态被改而无 move 痕迹 = 绕门，仍报 mismatch
+                "approve:%s" % c.to_status in acts
+                and any(
+                    a.startswith("move:")
+                    for a in acts[
+                        len(acts) - acts[::-1].index("approve:%s" % c.to_status) :
+                    ]
+                )
+            )
+        )
+        checks.append(
+            {
+                "approval_id": c.approval_id,
                 "deck_id": did,
-                "ledger_to": c.to_status,
-                "actual": deck.get("status")})
+                "transition": "%s>%s" % (c.from_status, c.to_status),
+                "decided_by": c.decided_by,
+                "state": "consistent" if ok else "status_mismatch",
+            }
+        )
+        if not ok:
+            violations.append(
+                {
+                    "kind": "status_mismatch",
+                    "deck_id": did,
+                    "ledger_to": c.to_status,
+                    "actual": deck.get("status"),
+                }
+            )
     # 交叉校验：凭据轮次 vs history 痕迹（pitch=trace 域，action 即痕迹）
     traces = {}
     for did, d in decks.items():
         sts = []
-        for h in (d.get("history") or []):
+        for h in d.get("history") or []:
             act = h.get("action", "") if isinstance(h, dict) else ""
             if act.startswith(("approve:", "move:")):
                 sts.append(act.split(":", 1)[1])
         traces["pitch:%s" % did] = {"statuses": sts, "consumed_keys": set()}
-    cross_v = cross_check("pitch", creds, traces,
-                          {"pitch:%s" % did: d.get("status", "")
-                           for did, d in decks.items()})
+    cross_v = cross_check(
+        "pitch",
+        creds,
+        traces,
+        {"pitch:%s" % did: d.get("status", "") for did, d in decks.items()},
+    )
     return {
         "domain": "pitch",
         "deck_count": len(decks),
@@ -482,7 +544,8 @@ def audit_report() -> dict:
         "violations": violations,
         "cross_check": cross_v,
         "verdict": verdict_for(
-            ([{"severity": "FAIL"}] if violations else []) + cross_v),
+            ([{"severity": "FAIL"}] if violations else []) + cross_v
+        ),
     }
 
 
@@ -492,18 +555,23 @@ def main(argv=None) -> int:
     sub.add_parser("list")
     sub.add_parser("report")
     p_add = sub.add_parser("add")
-    p_add.add_argument("deck_id"); p_add.add_argument("title")
+    p_add.add_argument("deck_id")
+    p_add.add_argument("title")
     p_add.add_argument("--audience", default="")
     p_add.add_argument("--goal", default="")
     p_add.add_argument("--artifact", default="")
-    p_show = sub.add_parser("show"); p_show.add_argument("deck_id")
+    p_show = sub.add_parser("show")
+    p_show.add_argument("deck_id")
     p_move = sub.add_parser("move")
-    p_move.add_argument("deck_id"); p_move.add_argument("to_stage")
-    p_move.add_argument("--by", required=True); p_move.add_argument("--note", default="")
+    p_move.add_argument("deck_id")
+    p_move.add_argument("to_stage")
+    p_move.add_argument("--by", required=True)
+    p_move.add_argument("--note", default="")
     p_ap = sub.add_parser("approve")
     p_ap.add_argument("deck_id")
     p_ap.add_argument("to_status", choices=sorted(GATED))
-    p_ap.add_argument("--by", required=True); p_ap.add_argument("--reason", default="")
+    p_ap.add_argument("--by", required=True)
+    p_ap.add_argument("--reason", default="")
     args = ap.parse_args(argv)
 
     if args.cmd == "list":
@@ -511,24 +579,37 @@ def main(argv=None) -> int:
     elif args.cmd == "report":
         print(json.dumps(audit_report(), ensure_ascii=False, indent=2))
     elif args.cmd == "add":
-        print(json.dumps(add_deck(args.deck_id, args.title,
-                                  args.audience, args.goal,
-                                  args.artifact),
-                         ensure_ascii=False, indent=2))
+        print(
+            json.dumps(
+                add_deck(
+                    args.deck_id, args.title, args.audience, args.goal, args.artifact
+                ),
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
     elif args.cmd == "show":
         d = find_deck(args.deck_id)
         if d is None:
             raise SystemExit("deck 不存在")
         print(json.dumps(d, ensure_ascii=False, indent=2))
     elif args.cmd == "move":
-        print(json.dumps(move_stage(args.deck_id, args.to_stage,
-                                    args.by, args.note),
-                         ensure_ascii=False, indent=2))
+        print(
+            json.dumps(
+                move_stage(args.deck_id, args.to_stage, args.by, args.note),
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
     elif args.cmd == "approve":
-        deck, replayed = approve_transition(args.deck_id, args.to_status,
-                                            args.by, args.reason)
-        print(json.dumps({"deck": deck, "replayed": replayed},
-                         ensure_ascii=False, indent=2))
+        deck, replayed = approve_transition(
+            args.deck_id, args.to_status, args.by, args.reason
+        )
+        print(
+            json.dumps(
+                {"deck": deck, "replayed": replayed}, ensure_ascii=False, indent=2
+            )
+        )
     return 0
 
 

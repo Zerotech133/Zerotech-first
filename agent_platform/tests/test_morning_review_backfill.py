@@ -8,6 +8,7 @@
 - 禁创作语汇（check_report_isolation L34 黑名单）生成语汇零命中；
 - 幂等：已回填占位不在即跳过，不覆盖。
 """
+
 import json
 import time
 import unittest
@@ -28,27 +29,37 @@ mrb = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(mrb)
 
 
-def make_tree(tmp: Path, tasks: dict | None, daily: dict | None,
-              cards: dict[str, str] | None = None,
-              skeleton_no_block: bool = True) -> Path:
+def make_tree(
+    tmp: Path,
+    tasks: dict | None,
+    daily: dict | None,
+    cards: dict[str, str] | None = None,
+    skeleton_no_block: bool = True,
+) -> Path:
     """构造合成账本树（结构与真仓同构）。tasks=None=真源缺失；daily=None=复盘链缺失。"""
     (tmp / "tools").mkdir(parents=True, exist_ok=True)
     (tmp / ".worktrees").mkdir(parents=True, exist_ok=True)
     (tmp / "agent_platform" / "data" / "meetings").mkdir(parents=True, exist_ok=True)
     if tasks is not None:
         (tmp / ".worktrees" / "tasks.json").write_text(
-            json.dumps(tasks, ensure_ascii=False), encoding="utf-8")
+            json.dumps(tasks, ensure_ascii=False), encoding="utf-8"
+        )
     if daily is not None:
         base = tmp / "agent_platform" / "data" / "daily_review" / DAY
         base.mkdir(parents=True, exist_ok=True)
         (base / "_summary.json").write_text(
-            json.dumps(daily, ensure_ascii=False), encoding="utf-8")
+            json.dumps(daily, ensure_ascii=False), encoding="utf-8"
+        )
         for aid, q3 in (cards or {}).items():
             (base / f"{aid}.md").write_text(
                 f"# {aid} 每日复盘 {DAY}\n\n**① 我今天有没有任务**：✅ 有任务\n\n"
                 f"**② 我的任务/进展**：x\n\n**③ 我的进化**：{q3}\n\n"
-                f"**④ 部长点评**：x\n", encoding="utf-8")
-    block3 = "- 无阻塞\n" if skeleton_no_block else "- ⚠️ A1（A1）工单 T-X 超 72h——部长介入\n"
+                f"**④ 部长点评**：x\n",
+                encoding="utf-8",
+            )
+    block3 = (
+        "- 无阻塞\n" if skeleton_no_block else "- ⚠️ A1（A1）工单 T-X 超 72h——部长介入\n"
+    )
     skeleton = (
         "# 研发部 晨会 " + DAY + "（主持：A1）\n\n**与会**：张三、李四\n\n"
         "## 一、昨日完成（读复盘卡）\n- 张三（A1）：✅ 有任务｜x\n- 李四（B1）：❌ 今日无任务｜—\n\n"
@@ -56,15 +67,20 @@ def make_tree(tmp: Path, tasks: dict | None, daily: dict | None,
         "## 三、阻塞求助（超期/依赖）\n" + block3 + "\n"
         "## 四、决议与教训（会后人填/提炼器自动回填）\n"
         "- decisions:（待填）\n"
-        "- lessons:（待填——须可证伪可复用，部务会拍板后入知识环）\n")
+        "- lessons:（待填——须可证伪可复用，部务会拍板后入知识环）\n"
+    )
     f = tmp / "agent_platform" / "data" / "meetings" / f"{DAY}_dev_晨会.md"
     f.write_text(skeleton, encoding="utf-8")
     return f
 
 
 def base_daily():
-    return {"day": DAY, "n": 2, "no_task": ["B1"],
-            "depts": {"dev": {"n": 2, "no_task": ["B1"]}}}
+    return {
+        "day": DAY,
+        "n": 2,
+        "no_task": ["B1"],
+        "depts": {"dev": {"n": 2, "no_task": ["B1"]}},
+    }
 
 
 def run_backfill(tmp: Path):
@@ -77,38 +93,58 @@ def run_backfill(tmp: Path):
         doc, errors, warns = None, [], []
     daily = mrb.load_daily(tmp, DAY)
     overdue = mrb.overdue_tasks(doc, ANCHOR_TS) if doc else []
-    state, new_text = mrb.backfill_file(f, DAY, daily, doc, errors, warns,
-                                        overdue, [], ANCHOR)
-    f.write_text(new_text, encoding="utf-8")  # 与产品 main() 落盘行为同构（幂等测试前提）
+    state, new_text = mrb.backfill_file(
+        f, DAY, daily, doc, errors, warns, overdue, [], ANCHOR
+    )
+    f.write_text(
+        new_text, encoding="utf-8"
+    )  # 与产品 main() 落盘行为同构（幂等测试前提）
     return state, new_text
 
 
 class TriStateTests(unittest.TestCase):
     def setUp(self):
         import tempfile
+
         self.tmp = Path(tempfile.mkdtemp(prefix="w42_test_"))
         import shutil
+
         # validate_json 纯函数随树复制（check_tasks_doc 复用面实测）
-        (self.tmp / "tools").mkdir()  # 目标目录须先建，否则 shutil.copy FileNotFoundError
-        shutil.copy(REPO / "tools" / "validate_json.py",
-                    self.tmp / "tools" / "validate_json.py")
+        (
+            self.tmp / "tools"
+        ).mkdir()  # 目标目录须先建，否则 shutil.copy FileNotFoundError
+        shutil.copy(
+            REPO / "tools" / "validate_json.py", self.tmp / "tools" / "validate_json.py"
+        )
 
     def tearDown(self):
         import shutil
+
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     def test_1_ok_state_full_sources(self):
         """三源齐备 + 勾稽一致 → OK；decisions/lessons/锚/标记逐条在账。"""
-        tasks = {"T-OK1": {"status": "done", "created": "2026-10-10 08:00:00"},
-                 "T-OK2": {"status": "doing", "created": "2026-10-16 08:00:00",
-                           "desc": "[A1] 正常在途"}}
-        make_tree(self.tmp, tasks, base_daily(),
-                      cards={"A1": "把重复性动作固化为工具/判例，写进 knowledge 记忆。"})
+        tasks = {
+            "T-OK1": {"status": "done", "created": "2026-10-10 08:00:00"},
+            "T-OK2": {
+                "status": "doing",
+                "created": "2026-10-16 08:00:00",
+                "desc": "[A1] 正常在途",
+            },
+        }
+        make_tree(
+            self.tmp,
+            tasks,
+            base_daily(),
+            cards={"A1": "把重复性动作固化为工具/判例，写进 knowledge 记忆。"},
+        )
         state, text = run_backfill(self.tmp)
         self.assertEqual(state, "OK")
         self.assertIn("（草稿 OK，待部务会确认）", text)
-        self.assertIn("T-OK1 空壳完工单", text)          # WARN 原文转抄
-        self.assertNotIn("T-OK2", text.split("decisions:")[1].split("lessons:")[0])  # 正常单不入
+        self.assertIn("T-OK1 空壳完工单", text)  # WARN 原文转抄
+        self.assertNotIn(
+            "T-OK2", text.split("decisions:")[1].split("lessons:")[0]
+        )  # 正常单不入
         self.assertIn("A1 复盘卡③「", text)
         self.assertIn("dev 当日无任务 1 人：B1", text)
 
@@ -124,26 +160,41 @@ class TriStateTests(unittest.TestCase):
 
     def test_3_inconclusive_zero_material(self):
         """零素材（空工单账本+无履职卡+无 no_task）→ decisions 出「当日无账本素材，非缺勤」。"""
-        make_tree(self.tmp, {}, {"day": DAY, "n": 0, "no_task": [],
-                                 "depts": {"dev": {"n": 2, "no_task": []}}})
+        make_tree(
+            self.tmp,
+            {},
+            {
+                "day": DAY,
+                "n": 0,
+                "no_task": [],
+                "depts": {"dev": {"n": 2, "no_task": []}},
+            },
+        )
         state, text = run_backfill(self.tmp)
         self.assertEqual(state, "INCONCLUSIVE")
         self.assertIn("当日无账本素材，非缺勤", text)
 
     def test_4_degraded_conflict_double_list(self):
         """骨架③「无阻塞」vs tasks.json 超期单>0 → DEGRADED 双列。"""
-        tasks = {"T-OD1": {"status": "doing", "created": "2026-10-10 08:00:00",
-                           "desc": "[A1] 长期在途"}}
+        tasks = {
+            "T-OD1": {
+                "status": "doing",
+                "created": "2026-10-10 08:00:00",
+                "desc": "[A1] 长期在途",
+            }
+        }
         make_tree(self.tmp, tasks, base_daily(), cards={"A1": "x"})
         state, text = run_backfill(self.tmp)
         self.assertEqual(state, "DEGRADED")
         self.assertIn("冲突双列", text)
-        self.assertIn("- 无阻塞", text)                  # 骨架原文双列保留
+        self.assertIn("- 无阻塞", text)  # 骨架原文双列保留
         self.assertIn("T-OD1 doing 超 72h", text)
 
     def test_4b_degraded_conflict_reverse(self):
         """反向：骨架③列有超期 ⚠️ 而当次实算超期单=0 → DEGRADED。"""
-        make_tree(self.tmp, {}, base_daily(), cards={"A1": "x"}, skeleton_no_block=False)
+        make_tree(
+            self.tmp, {}, base_daily(), cards={"A1": "x"}, skeleton_no_block=False
+        )
         state, text = run_backfill(self.tmp)
         self.assertEqual(state, "DEGRADED")
         self.assertIn("超期单为 0", text)
@@ -153,13 +204,16 @@ class AnchorAndNoFabricationTests(unittest.TestCase):
     def setUp(self):
         import tempfile
         import shutil
+
         self.tmp = Path(tempfile.mkdtemp(prefix="w42_test_"))
         (self.tmp / "tools").mkdir()
-        shutil.copy(REPO / "tools" / "validate_json.py",
-                    self.tmp / "tools" / "validate_json.py")
+        shutil.copy(
+            REPO / "tools" / "validate_json.py", self.tmp / "tools" / "validate_json.py"
+        )
 
     def tearDown(self):
         import shutil
+
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     def _section4(self, text):
@@ -168,20 +222,32 @@ class AnchorAndNoFabricationTests(unittest.TestCase):
 
     def test_5_anchor_coverage(self):
         """出处锚覆盖率 100%：decisions 逐条「出处：」、lessons 逐条含固定标记。"""
-        tasks = {"T-W1": {"status": "done", "created": "2026-10-10 08:00:00"},
-                 "T-W2": {"status": "done", "created": "2026-10-11 08:00:00"}}
-        make_tree(self.tmp, tasks, base_daily(),
-                  cards={"A1": "进化了。"})
+        tasks = {
+            "T-W1": {"status": "done", "created": "2026-10-10 08:00:00"},
+            "T-W2": {"status": "done", "created": "2026-10-11 08:00:00"},
+        }
+        make_tree(self.tmp, tasks, base_daily(), cards={"A1": "进化了。"})
         _, text = run_backfill(self.tmp)
         seg = self._section4(text)
-        dec = [ln for ln in seg if ln.strip().startswith("- ") and ln.startswith("  - ")
-               and "出处：" in ln and "lessons" not in ln]
+        dec = [
+            ln
+            for ln in seg
+            if ln.strip().startswith("- ")
+            and ln.startswith("  - ")
+            and "出处：" in ln
+            and "lessons" not in ln
+        ]
         self.assertTrue(dec)
         lessons = [ln for ln in seg if MARKER in ln]
         self.assertTrue(lessons)
         for ln in seg:
             t = ln.strip()
-            if t.startswith("- ") and "出处：" in t and "lessons" not in ln and "草稿" not in t:
+            if (
+                t.startswith("- ")
+                and "出处：" in t
+                and "lessons" not in ln
+                and "草稿" not in t
+            ):
                 continue  # decisions 行
             if MARKER in ln:
                 self.assertIn(MARKER, ln)
@@ -210,6 +276,7 @@ class AnchorAndNoFabricationTests(unittest.TestCase):
         make_tree(self.tmp, {}, base_daily(), cards={"A1": long_q3})
         _, text = run_backfill(self.tmp)
         import re
+
         m = re.search(r"复盘卡③「(.+?)」", text)
         self.assertTrue(m)
         self.assertLessEqual(len(m.group(1)), 44)
@@ -221,17 +288,24 @@ class AnchorAndNoFabricationTests(unittest.TestCase):
         _, first = run_backfill(self.tmp)
         # 第二次：占位已被替换
         doc, errors, warns = mrb.load_tasks(self.tmp)
-        state2, second = mrb.backfill_file(f, DAY, mrb.load_daily(self.tmp, DAY),
-                                           doc, errors, warns, [], [], ANCHOR)
+        state2, second = mrb.backfill_file(
+            f, DAY, mrb.load_daily(self.tmp, DAY), doc, errors, warns, [], [], ANCHOR
+        )
         self.assertEqual(state2, "SKIP")
         self.assertEqual(second, first)
 
     def test_10_academy_section5_by_title(self):
         """academy 第五段（决议与教训）按标题定位，段号漂移不漏回填。"""
-        make_tree(self.tmp, {"T-W1": {"status": "done", "created": "2026-10-10 08:00:00"}},
-                  base_daily(), cards={"A1": "x"})
+        make_tree(
+            self.tmp,
+            {"T-W1": {"status": "done", "created": "2026-10-10 08:00:00"}},
+            base_daily(),
+            cards={"A1": "x"},
+        )
         f = self.tmp / "agent_platform" / "data" / "meetings" / f"{DAY}_dev_晨会.md"
-        text = f.read_text(encoding="utf-8").replace("## 四、决议与教训", "## 五、决议与教训")
+        text = f.read_text(encoding="utf-8").replace(
+            "## 四、决议与教训", "## 五、决议与教训"
+        )
         f.write_text(text, encoding="utf-8")
         state, new_text = run_backfill(self.tmp)
         self.assertEqual(state, "OK")
@@ -252,7 +326,9 @@ class AnchorAndNoFabricationTests(unittest.TestCase):
 
     def test_13_error_units_excluded_from_decisions(self):
         """ERROR 单（缺 created 等结构性损坏）不出 decisions（施工单开放问题 3）。"""
-        make_tree(self.tmp, {"T-E1": {"status": "done"}}, base_daily(), cards={"A1": "x"})
+        make_tree(
+            self.tmp, {"T-E1": {"status": "done"}}, base_daily(), cards={"A1": "x"}
+        )
         _, text = run_backfill(self.tmp)
         self.assertNotIn("T-E1", text)
 
@@ -266,6 +342,7 @@ class GuardTests(unittest.TestCase):
     def test_15_disable_switch(self):
         """停用开关 LEGION_MEETING_BACKFILL_OFF=1 → exit 0 零写。"""
         import os
+
         old = os.environ.get("LEGION_MEETING_BACKFILL_OFF")
         os.environ["LEGION_MEETING_BACKFILL_OFF"] = "1"
         try:
