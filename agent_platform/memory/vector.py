@@ -10,7 +10,6 @@
 """
 from __future__ import annotations
 
-import array
 import json
 import os
 import sqlite3
@@ -21,9 +20,9 @@ PLATFORM = Path(__file__).resolve().parents[1]
 def _main_repo() -> Path:
     import subprocess
     try:
-        r = subprocess.run([git, -C, str(PLATFORM), rev-parse,
-                            --git-common-dir], capture_output=True, text=True,
-                           timeout=30)
+        r = subprocess.run(
+            ["git", "-C", str(PLATFORM), "rev-parse", "--git-common-dir"],
+            capture_output=True, text=True, timeout=30)
         if r.returncode == 0 and r.stdout.strip():
             common = Path(r.stdout.strip())
             if not common.is_absolute():

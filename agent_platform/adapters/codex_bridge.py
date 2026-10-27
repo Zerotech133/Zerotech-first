@@ -40,8 +40,8 @@ try:
         STANCES,
         StrategyAgent,
         StrategyError,
-        StrategyRegistry,
-        Verdict,
+        StrategyRegistry,  # noqa: F401
+        Verdict,  # noqa: F401
     )  # noqa: F401
 except ImportError:  # 跨目录直接调用时兜底定位 engine/
     _here = Path(__file__).resolve()

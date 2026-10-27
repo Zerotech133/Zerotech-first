@@ -75,7 +75,6 @@ def test_dry_run_no_update(monkeypatch, tmp_path):
 def test_report_aggregates(monkeypatch, tmp_path):
     repo = use_repo(monkeypatch, tmp_path)
     write_adoption(repo, ["a", "a", "b"])
-    out = b.main(["--report", "--json"]) if False else None
     adoptions = b._load_adoptions()
     agg = b.aggregate(adoptions)
     assert agg["a"]["count"] == 2 and agg["b"]["count"] == 1
