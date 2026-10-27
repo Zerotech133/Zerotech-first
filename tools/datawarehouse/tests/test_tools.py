@@ -73,6 +73,18 @@ class TestFreshness(unittest.TestCase):
         self.assertEqual(str(freshness_report._parse_day("20261026")), "2026-10-26")
         self.assertIsNone(freshness_report._parse_day("bad"))
 
+    def test_margin_detail_uses_t1_publish_sla(self):
+        # 2026-10-27 DIAG2：margin_detail 源侧 T+1 发布，不能用 2 天阈值误报
+        self.assertEqual(freshness_report.TABLE_LAG_DAYS.get("margin_detail"), 4)
+
+    def test_stall_db_semantics(self):
+        specs = {s["name"]: s for s in freshness_report.STALL_DBS}
+        # warehouse_runs 为手工台账：只有非 manual 写入存在时才按心跳判停摆
+        self.assertIn("manual_only_sql", specs["warehouse_runs.sqlite3"])
+        # jev_audit 的 trade_day 是 T+1 目标日，活性改看 updated_at
+        self.assertIn("updated_at", specs["jev_audit.db"]["sql"])
+        self.assertIn("trade_day", specs["jev_audit.db"]["info_sql"])
+
 
 class TestQuality(unittest.TestCase):
     def test_missing_table_is_failed_not_raised(self):
