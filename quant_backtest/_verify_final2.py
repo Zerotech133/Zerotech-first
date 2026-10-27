@@ -1,9 +1,18 @@
 # -*- coding: utf-8 -*-
-"""K-SPATIAL-01 最终验收（所有方向修正）"""
+"""K-SPATIAL-01 最终验收（所有方向修正）
+
+2026-10-27 EXEC-R46：删除硬编码 Neo4j 旧口令（R5 轮换后失效且泄密面），
+统一走 kg_schema 凭据链（env → .env.local）。
+"""
+import os
+import sys
 
 from neo4j import GraphDatabase
 
-d = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "KgNeo4j2026!"))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from kg_schema import NEO4J_PASSWORD, NEO4J_URI, NEO4J_USER  # noqa: E402
+
+d = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
 
 
 def run(title, cy, limit=12):

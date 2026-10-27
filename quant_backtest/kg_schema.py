@@ -6,12 +6,35 @@ import os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
+
+def _load_neo4j_password() -> str:
+    """Neo4j 口令解析（2026-10-27 EXEC-R46：禁止硬编码兜底）。
+
+    旧实现兜底 `KgNeo4j2026!`（10-16 换机凭据）；2026-10-26 R5 轮换后旧口令失效，
+    6 个 KG 计划任务（KgLeiden/KgFastRP/KgExtractShadow/KgEventShadow/KgDigest/
+    KgLeidenSummary）因未注入 env 而落到旧兜底 → Neo4j Unauthorized → 全部 rc=1。
+    顺序：进程 env KG_NEO4J_PASSWORD → 同目录 .env.local → 空串（由 KgClient 报明确错）。
+    """
+    pw = _os_kgschema.environ.get("KG_NEO4J_PASSWORD", "").strip()
+    if pw:
+        return pw
+    env_local = os.path.join(HERE, ".env.local")
+    try:
+        with open(env_local, encoding="utf-8") as f:
+            for ln in f:
+                s = ln.strip()
+                if s.startswith("KG_NEO4J_PASSWORD="):
+                    return s.split("=", 1)[1].strip()
+    except OSError:
+        pass
+    return ""
+
+
 # ── Neo4j 连接 ────────────────────────────────────────────────
 NEO4J_URI = _KG_NEO4J_URI
-# 凭据优先读 .env.local 的 KG_NEO4J_USER/KG_NEO4J_PASSWORD（start_kg_sync.ps1 等已注入），
-# 兜底值与 neo4j-kg 容器 NEO4J_AUTH 保持一致（2026-10-16 换机后新容器凭据）
+# 凭据：env → .env.local（见 _load_neo4j_password；不再有硬编码旧值兜底）
 NEO4J_USER = _os_kgschema.environ.get("KG_NEO4J_USER", "neo4j")
-NEO4J_PASSWORD = _os_kgschema.environ.get("KG_NEO4J_PASSWORD", "KgNeo4j2026!")
+NEO4J_PASSWORD = _load_neo4j_password()
 NEO4J_DB = "neo4j"  # community 版只有默认 db
 
 # ── 节点标签 ──────────────────────────────────────────────────
