@@ -9,7 +9,7 @@
   "prompt_ok": 61,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 16,
+  "workorders_doing": 15,
   "workorders_review": 1
  },
  "workorders": [
@@ -137,15 +137,6 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-ZHUGE-P1-8-20261027",
    "created": "2026-10-27 14:42:22",
-   "project": "general"
-  },
-  {
-   "id": "WO-B-CLOSURE-20261027",
-   "desc": "B系列裁决执行+口径收口(L1)：B-01选A规则/B-02 observe确认/B-04选A规则/B-06执行包/B-03登记 + MCP双面口径决策 + A3(已裁定B)与L2批执行记录",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-B-CLOSURE-20261027",
-   "created": "2026-10-27 14:42:50",
    "project": "general"
   },
   {
