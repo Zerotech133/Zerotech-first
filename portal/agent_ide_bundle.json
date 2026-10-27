@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 34,
+  "workorders_doing": 33,
   "workorders_review": 5
  },
  "workorders": [
@@ -353,15 +353,6 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-HUANGZHONG-20261028",
    "created": "2026-10-28 07:01:26",
-   "project": "general"
-  },
-  {
-   "id": "WO-SYNTAX-GATE-20261028",
-   "desc": "修语法门告警：kg_build_p2.py invalid escape '\\ '（3处 \\→\\\\）",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-SYNTAX-GATE-20261028",
-   "created": "2026-10-28 07:05:51",
    "project": "general"
   }
  ],
@@ -7042,11 +7033,6 @@
      "id": "WO-HUANGZHONG-20261028",
      "desc": "黄忠验收守门：charter五维+org授权细化+huangzhong_accept工具(观察模式)",
      "status": "review"
-    },
-    {
-     "id": "WO-SYNTAX-GATE-20261028",
-     "desc": "修语法门告警：kg_build_p2.py invalid escape '\\ '（3处 \\→\\\\）",
-     "status": "doing"
     }
    ]
   }
