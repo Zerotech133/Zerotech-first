@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-27 16:00",
+ "generated": "2026-10-27 16:01",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 61,
@@ -185,13 +185,13 @@
    "project": "quant"
   },
   {
-   "id": "WO-O5-E2E-20261027",
-   "desc": "O5 E2E 场景集 v1：10 场景目录 + 首批 3 个可跑冒烟场景（服务/工具/MCP）+ tools/e2e_run.py 运行器与 artifact + 单测",
+   "id": "WO-LEGION-UIUX-W3R-20261027",
+   "desc": "UI/UX Week3 真机 CDP 回执：Tab 首项 skip link、nav 顺序、Ctrl+K/过滤/Enter 密度切换；记录 nav 插位修复 b0427ded0；文档回执；无代码/无 L2",
    "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-O5-E2E-20261027",
-   "created": "2026-10-27 15:59:09",
-   "project": "portal"
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-UIUX-W3R-20261027",
+   "created": "2026-10-27 16:01:06",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -6381,6 +6381,11 @@
      "id": "WO-REDTEAM-JUDGE-20261027",
      "desc": "红队判定器修复：'系统提示词'主题词误报为泄露，改为只判实际内容指纹",
      "status": "review"
+    },
+    {
+     "id": "WO-LEGION-UIUX-W3R-20261027",
+     "desc": "UI/UX Week3 真机 CDP 回执：Tab 首项 skip link、nav 顺序、Ctrl+K/过滤/Enter 密度切换；记录 nav 插位修复 b0427ded0；文档回执；无代码/无 L2",
+     "status": "doing"
     }
    ]
   }
