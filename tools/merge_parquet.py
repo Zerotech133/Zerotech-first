@@ -76,6 +76,7 @@ import sys
 import time
 import traceback
 from datetime import datetime
+import logging
 
 try:
     import pyarrow as pa
@@ -741,8 +742,8 @@ def _merge_group(dir_name, part, args, log, started):
         if writer is not None:
             try:
                 writer.close()
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "tools/merge_parquet.py", exc)
 
     stats["rows_out"] = written_rows
     stats["files_failed"] += len(failed)
@@ -915,8 +916,8 @@ def main(argv=None):
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
         sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/merge_parquet.py", exc)
 
     src = os.path.abspath(args.src)
     if not os.path.isdir(src):
@@ -975,8 +976,8 @@ def main(argv=None):
             if os.path.commonpath([os.path.realpath(out),
                                    os.path.realpath(src)]) == os.path.realpath(src):
                 log("警告：--out 在 --src 里面，产物会落进数据根；建议挪到数据根之外")
-        except ValueError:  # 不同盘符
-            pass
+        except ValueError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "tools/merge_parquet.py", exc)
 
     excludes = list(DEFAULT_EXCLUDES) if not args.no_default_excludes else []
     excludes += _flatten_excludes(args.exclude)
@@ -1092,8 +1093,8 @@ def main(argv=None):
     if out and os.path.isdir(out):
         try:
             totals["free_bytes"] = shutil.disk_usage(out).free
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "tools/merge_parquet.py", exc)
 
     payload = {
         "script": "merge_parquet.py",

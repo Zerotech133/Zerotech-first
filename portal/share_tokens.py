@@ -28,6 +28,7 @@ import os
 import secrets
 import threading
 import time
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SECRET_PATH = os.path.join(HERE, "work", "share_secret.json")
@@ -42,8 +43,8 @@ def _load_secret():
             s = (json.load(f).get("secret") or "").strip()
             if s:
                 return s
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/share_tokens.py", exc)
     try:
         s = secrets.token_hex(32)
         os.makedirs(os.path.dirname(SECRET_PATH), exist_ok=True)
@@ -139,8 +140,8 @@ def _record(evt, payload):
                 os.write(fd, data)
             finally:
                 os.close(fd)
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/share_tokens.py", exc)
 
 
 def stats(days=7):
@@ -166,8 +167,8 @@ def stats(days=7):
                 if d == today.isoformat() and r.get("evt") == "visit":
                     k = r.get("kind", "?")
                     today_by_kind[k] = today_by_kind.get(k, 0) + 1
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/share_tokens.py", exc)
     seq = [(today - dt.timedelta(days=days - 1 - i)).isoformat() for i in range(days)]
     return {
         "by_day": [

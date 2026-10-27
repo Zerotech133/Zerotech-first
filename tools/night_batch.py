@@ -64,6 +64,7 @@ import sys
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
+import logging
 
 ROOT = Path(__file__).resolve().parents[1]
 PY = sys.executable
@@ -284,8 +285,8 @@ def acquire_instance_lock() -> tuple[bool, dict]:
                 return False, meta
             try:
                 os.remove(LOCK_PATH)
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "tools/night_batch.py", exc)
             continue
         except OSError as exc:
             # 锁目录不可写等意外：不因护栏故障拖死批处理，降级为"无锁运行"并记录。
@@ -306,8 +307,8 @@ def touch_lock() -> None:
     """持锁心跳：仅 touch mtime。"""
     try:
         os.utime(LOCK_PATH, None)
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/night_batch.py", exc)
 
 
 def release_lock() -> None:
@@ -317,8 +318,8 @@ def release_lock() -> None:
         return
     try:
         os.remove(LOCK_PATH)
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/night_batch.py", exc)
 
 
 def write_timeout_alert(log_path: str, rounds: int, jev: int, xq: int,
@@ -379,8 +380,8 @@ class Logger:
         try:
             with self.path.open("a", encoding="utf-8") as fh:
                 fh.write(line + "\n")
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "tools/night_batch.py", exc)
 
 
 def _cutoff(until: str) -> datetime:

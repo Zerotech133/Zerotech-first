@@ -20,6 +20,7 @@ import os
 import threading
 import time
 import uuid
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 WORK = os.path.join(HERE, "work")
@@ -37,15 +38,15 @@ def _secret():
             s = f.read().strip()
         if s:
             return s
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/card_sign.py", exc)
     s = uuid.uuid4().hex + uuid.uuid4().hex
     try:
         os.makedirs(WORK, exist_ok=True)
         with open(p, "w", encoding="utf-8") as f:
             f.write(s)
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/card_sign.py", exc)
     return s
 
 
@@ -129,8 +130,8 @@ def guard(value):
             os.makedirs(WORK, exist_ok=True)
             with open(LEDGER, "a", encoding="utf-8") as f:
                 f.write(json.dumps({"rid": rid, "ts": now}, ensure_ascii=False) + "\n")
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/card_sign.py", exc)
     return True, "ok"
 
 

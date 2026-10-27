@@ -20,6 +20,7 @@ sys.path.insert(0, str(PAPER))
 import gaorta_client  # noqa: E402
 import manager  # noqa: E402
 from manager import fire, hire  # noqa: E402
+import logging
 
 LEGAL_MODEL = "GLM-5.2"
 MSG = [{"role": "user", "content": "你好"}]
@@ -115,15 +116,15 @@ def test_no_active_hire_rejected(monkeypatch):
         try:
             gaorta_client.chat_for_hire("bull_desk", "qd", MSG)
             raise AssertionError("fire 后调用应拒")
-        except RuntimeError:
-            pass
+        except RuntimeError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/tests/test_gaorta_client.py", exc)
         # active 记录存在但 source 不匹配 → 拒
         hire("bull_desk", "qpzm")
         try:
             gaorta_client.chat_for_hire("bull_desk", "qd", MSG)
             raise AssertionError("source 不匹配应拒")
-        except RuntimeError:
-            pass
+        except RuntimeError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/tests/test_gaorta_client.py", exc)
     print("PASS test_no_active_hire_rejected")
 
 
@@ -147,8 +148,8 @@ def test_tampered_model_rejected_by_chat_whitelist(monkeypatch):
         try:
             gaorta_client.chat_for_hire("bull_desk", "qd", MSG)
             raise AssertionError("小写别名应被拒绝（不得 normalize）")
-        except ValueError:
-            pass
+        except ValueError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/tests/test_gaorta_client.py", exc)
     print("PASS test_tampered_model_rejected_by_chat_whitelist")
 
 

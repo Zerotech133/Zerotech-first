@@ -30,6 +30,7 @@ import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit
+import logging
 
 # 精确白名单：path 正则 → 是否允许 POST
 RULES = [
@@ -107,8 +108,8 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         try:
             self.wfile.write(body)
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/m_public_gate.py", exc)
 
     def _handle(self, method):
         ip = self.client_address[0] if self.client_address else "?"
@@ -165,8 +166,8 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if method != "HEAD":
                 self.wfile.write(data)
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/m_public_gate.py", exc)
 
     def do_GET(self):
         self._handle("GET")
@@ -198,8 +199,8 @@ def main(argv=None):
     )
     try:
         srv.serve_forever()
-    except KeyboardInterrupt:
-        pass
+    except KeyboardInterrupt as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/m_public_gate.py", exc)
     return 0
 
 

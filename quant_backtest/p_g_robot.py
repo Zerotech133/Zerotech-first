@@ -39,6 +39,7 @@ import time
 from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor
 from urllib.request import Request, urlopen
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -90,8 +91,8 @@ _cur_tat = None
 
 try:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-except Exception:
-    pass
+except Exception as exc:
+    logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/p_g_robot.py", exc)
 
 # 文件日志（SYSTEM 任务无控制台，stdout 丢失）
 _LOG_FILE = r"C:\Temp\pg_robot_system.log"
@@ -105,8 +106,8 @@ def _log(msg):
         with _log_lock:
             with open(_LOG_FILE, "a", encoding="utf-8") as f:
                 f.write(line + "\n")
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/p_g_robot.py", exc)
 
 
 def find_lark_cli():
@@ -218,8 +219,8 @@ def _wait_ready(p, timeout=20):
                     _log("consume init fail: %s" %
                          json.dumps(d, ensure_ascii=False)[:400])
                     return False
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/p_g_robot.py", exc)
     return False
 
 
@@ -476,8 +477,8 @@ def main():
             try:
                 if p.stdin and not p.stdin.closed:
                     p.stdin.close()
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/p_g_robot.py", exc)
             try:
                 p.wait(timeout=2)
             except Exception:

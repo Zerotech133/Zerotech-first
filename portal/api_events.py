@@ -41,6 +41,7 @@ import re
 import threading
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+import logging
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -152,8 +153,8 @@ def _load_dedup(events_dir, now_epoch):
                     continue
                 if rec_at + DEDUP_TTL.total_seconds() > now_epoch:
                     idx[eid] = rec_at
-    except OSError:
-        pass  # 首日无索引是常态
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_events.py", exc)
     _DEDUP[key] = idx
     return idx
 
@@ -173,8 +174,8 @@ def _record_dedup(events_dir, event_id, now_epoch):
             fh.write(json.dumps({"event_id": event_id,
                                  "recorded_at": now_epoch},
                                 ensure_ascii=False) + "\n")
-    except OSError:
-        pass  # 索引落盘失败不阻塞落账主路径（内存仍在）
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_events.py", exc)
 
 
 def reset_state(events_dir=None):
@@ -257,8 +258,8 @@ def _log_rejection(events_dir, caller, reason, body):
             "reason": reason,
             "body": body if isinstance(body, dict) else None,
         })
-    except OSError:
-        pass  # 归因落账失败不改变拒绝语义
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_events.py", exc)
 
 
 def _lines(path):

@@ -26,6 +26,7 @@ sys.path.insert(0, str(HERE.parent))
 
 from k_stock.kstock.llm import LLMClient
 from k_stock.kstock.orchestrator import Orchestrator, load_team
+import logging
 
 TEAM = HERE / "config" / "team_poc.json"
 OUT_DIR = HERE / "data"
@@ -46,8 +47,8 @@ def _append_guard_log(record: dict) -> None:
             os.write(fd, line)
         finally:
             os.close(fd)
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/run_poc.py", exc)
 
 
 def _write_heartbeat(rc: int, elapsed_s: float, summary: dict) -> None:
@@ -65,8 +66,8 @@ def _write_heartbeat(rc: int, elapsed_s: float, summary: dict) -> None:
         tmp = HEARTBEAT.with_name(HEARTBEAT.name + ".tmp")
         tmp.write_text(json.dumps(rec, ensure_ascii=False, indent=2), encoding="utf-8")
         os.replace(str(tmp), str(HEARTBEAT))
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/run_poc.py", exc)
 
 
 _RUN_DATE: str | None = None  # 模块加载期初始化（先于函数定义，防 NameError）
@@ -125,8 +126,8 @@ def _load_done_codes(path: Path) -> dict[str, dict]:
                 code = str(rec.get("code") or "").strip()
                 if code:
                     done[code] = rec
-    except FileNotFoundError:
-        pass  # 当日首跑，无历史
+    except FileNotFoundError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/run_poc.py", exc)
     except OSError as e:
         print(f"[resume][WARN] 当日账本不可读（{e}），按无历史全量重跑", flush=True)
     return done

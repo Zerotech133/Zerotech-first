@@ -34,6 +34,7 @@ import statistics
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
+import logging
 
 ROOT = Path(__file__).resolve().parent
 REPORT_DIR = ROOT / "reports"
@@ -69,8 +70,8 @@ def _log_run(event: str, detail: dict) -> None:
                 )
                 + "\n"
             )
-    except OSError:
-        pass  # 留痕失败不阻断主流程
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/a4_multi_market_probe.py", exc)
 
 
 def _scanner_min_bars() -> int | None:
@@ -94,8 +95,8 @@ def _rows_of(path: Path) -> int | None:
         import pyarrow.parquet as pq
 
         return int(pq.ParquetFile(str(path)).metadata.num_rows)
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/a4_multi_market_probe.py", exc)
     try:
         import pandas as pd
 
@@ -291,8 +292,8 @@ def probe_xueqiu() -> dict:
     finally:
         try:
             con.close()
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/a4_multi_market_probe.py", exc)
 
     kinds = Counter()
     uniq: dict[str, set] = {}

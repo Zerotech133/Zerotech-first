@@ -15,6 +15,7 @@ import json
 import os
 import sys
 import threading
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 QBT = HERE
@@ -65,8 +66,8 @@ def _save_cache(c):
         os.makedirs(ASSET_DIR, exist_ok=True)
         with open(CACHE, "w", encoding="utf-8") as f:
             json.dump(c, f, ensure_ascii=False)
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/report_card_img.py", exc)
 
 
 def _pivot_label(card_dict):
@@ -93,8 +94,8 @@ def _pivot_label(card_dict):
                 break
         if state == "上方离开" and has3:
             return "三买中枢"
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/report_card_img.py", exc)
     return "当前中枢"
 
 
@@ -132,8 +133,8 @@ def card_png(code, period="1d", show_n=150):
         if (os.path.exists(out)
                 and os.path.getmtime(out) >= os.path.getmtime(src)):
             return out
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/report_card_img.py", exc)
     try:
         from PIL import Image
         im = Image.open(src).convert("RGB")
@@ -188,8 +189,8 @@ def _app_creds():
             # 20261016换机：appSecret 非 str（1.0.5+ 外置引用 dict）即不可用
             if aid and isinstance(sec, str):
                 return aid, sec
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/report_card_img.py", exc)
     return None, None
 
 
