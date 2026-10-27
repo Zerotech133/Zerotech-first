@@ -453,6 +453,9 @@ class Handler(BaseHTTPRequestHandler):
                             "owned_by": "deepseek",
                         },
                         {"id": "qwen3.5:9b", "object": "model", "owned_by": "local"},
+                        {"id": "auto", "object": "model", "owned_by": "gateway"},
+                        {"id": "strong", "object": "model", "owned_by": "gateway"},
+                        {"id": "local", "object": "model", "owned_by": "gateway"},
                     ],
                 }
             )
