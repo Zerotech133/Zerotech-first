@@ -58,6 +58,21 @@ td{padding:5px 4px;border-bottom:.5px dashed #16304F;vertical-align:top}
 <div class="muted" style="margin-bottom:8px">研发部每个成员可单独钉选模型；选择后该 AI 的 auto 请求优先用此模型。覆盖范围：自动 / 本地 4B/9B/35B / 智谱 / DeepSeek / 中转 GPT-6。</div>
 <div id="rd-list" class="muted">加载中…</div>
 </section>
+<section class="log" id="mission-section" style="margin:0 22px 20px">
+<h2>Mission · 文档 → 任务 DAG（Dry-run 派工）</h2>
+<div class="muted" style="margin-bottom:8px">上传/粘贴一份文档，生成任务 DAG；Dry-run 只展示派工计划，不建 worktree、不改代码。</div>
+<div class="add">
+  <input id="mission-name" placeholder="任务名称（如 数据接口重构）">
+  <input id="mission-file" type="file" accept=".md,.txt" style="color:#9fc3e8">
+</div>
+<textarea id="mission-doc" rows="6" placeholder="把文档内容粘贴到这里，或选择 .md/.txt 文件…" style="width:100%;background:#081321;border:.5px solid #1E3A5F;border-radius:8px;color:#E8F0F8;padding:8px;font-family:inherit;margin-top:8px"></textarea>
+<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+  <button id="mission-plan-btn">生成计划（LLM，失败回退规则）</button>
+  <button id="mission-dry-btn">Dry-run 派工</button>
+  <span id="mission-status" class="muted" style="align-self:center"></span>
+</div>
+<div id="mission-result" style="margin-top:10px"></div>
+</section>
 <section class="log" id="cred-section" style="margin:0 22px 20px">
 <h2>统一凭据（JEV / 数据接口 / 飞书）<span class="muted" style="font-size:11px">只读目录 · 真源 _vault（age 加密）· 不显示密钥</span></h2>
 <div id="cred-list"></div>
@@ -272,6 +287,43 @@ async function loadPrefs(){
   }catch(e){document.getElementById('rd-list').textContent='读取失败：'+e.message}
 }
 loadPrefs(); setInterval(loadPrefs,60000);
+
+
+let MISSION_PLAN = null;
+document.getElementById("mission-file").onchange = async (ev)=>{
+  const f=(ev.target.files||[])[0]; if(!f) return;
+  document.getElementById("mission-doc").value = await f.text();
+  if(!document.getElementById("mission-name").value) document.getElementById("mission-name").value = f.name.replace(/\.[^.]+$/,"");
+};
+async function missionPlan(){
+  const name=document.getElementById("mission-name").value.trim()||"未命名任务";
+  const doc=document.getElementById("mission-doc").value.trim();
+  if(!doc){alert("请先粘贴文档或选文件");return}
+  const st=document.getElementById("mission-status"); st.textContent="规划中（强模型）…";
+  const r=await fetch("/api/mission/plan",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name,doc,use_llm:true})});
+  const j=await r.json(); st.textContent="";
+  if(!j.ok){st.textContent="规划失败："+(j.error||"unknown");return}
+  MISSION_PLAN=j.plan;
+  let h='<div class="muted">mission '+MISSION_PLAN.mission_id+' · source '+MISSION_PLAN.source+' · tasks '+MISSION_PLAN.tasks.length+' · valid '+MISSION_PLAN.valid+'</div>';
+  h+='<table><thead><tr><th>ID</th><th>标题</th><th>Owner</th><th>依赖</th><th>写作用域</th><th>验收</th></tr></thead><tbody>';
+  for(const t of MISSION_PLAN.tasks){
+    h+='<tr><td>'+t.id+'</td><td>'+t.title+'</td><td>'+t.owner+'</td><td>'+((t.deps||[]).join(","))+'</td><td>'+((t.write_scope||[]).join(", "))+'</td><td>'+((t.acceptance||[]).join(" / "))+'</td></tr>';
+  }
+  document.getElementById("mission-result").innerHTML=h+'</tbody></table>';
+}
+async function missionDry(){
+  if(!MISSION_PLAN){alert("先生成计划");return}
+  const st=document.getElementById("mission-status"); st.textContent="dry-run 中…";
+  const r=await fetch("/api/mission/dry-run",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({plan:MISSION_PLAN,parallel:3})});
+  const j=await r.json(); st.textContent="";
+  if(!j.ok){document.getElementById("mission-result").innerHTML='<div class="muted">dry-run 失败：'+(j.error||"")+'</div>';return}
+  let h='<div class="muted">dry-run · order '+j.order.join(" → ")+' · waves '+JSON.stringify(j.waves)+' · conflicts '+j.conflicts.length+'</div>';
+  h+='<table><thead><tr><th>#</th><th>任务</th><th>Owner</th><th>Ticket</th><th>命令</th></tr></thead><tbody>';
+  for(const r of j.rows){h+='<tr><td>'+r.step+'</td><td>'+r.task_id+' '+r.title+'</td><td>'+r.owner+'</td><td>'+r.ticket_id+'</td><td class="muted">'+r.command+'</td></tr>'}
+  document.getElementById("mission-result").innerHTML=h+'</tbody></table>';
+}
+document.getElementById("mission-plan-btn").onclick=missionPlan;
+document.getElementById("mission-dry-btn").onclick=missionDry;
 
 load();setInterval(load,30000);
 setInterval(loadVK,30000);
