@@ -230,21 +230,21 @@
    "project": "portal"
   },
   {
-   "id": "WO-O8P3-POLICY-20261027",
-   "desc": "O8 P3 发布年龄策略草案：依赖升级 7 天 cooldown + 例外流程 + 渐进落地；纯文档",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-O8P3-POLICY-20261027",
-   "created": "2026-10-27 23:26:59",
-   "project": "portal"
-  },
-  {
    "id": "WO-LEGION-SIMPLE-P0-20261027",
    "desc": "P0 /paper 首屏减法：4 KPI、去重页面快捷导航、折叠服务/进门路线/AI 值班、保留全部功能；无业务逻辑/无 L2",
    "status": "doing",
    "owner": "ZHAOYUN",
    "branch": "task/WO-LEGION-SIMPLE-P0-20261027",
    "created": "2026-10-27 23:27:54",
+   "project": "general"
+  },
+  {
+   "id": "WO-INFRA-2WK-20261027",
+   "desc": "工程基建2周项：日志轮转工具+测试失败基线+testpaths实测记录",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-INFRA-2WK-20261027",
+   "created": "2026-10-27 23:28:16",
    "project": "general"
   }
  ],
@@ -6806,6 +6806,11 @@
     {
      "id": "WO-LEGION-SIMPLE-P0-20261027",
      "desc": "P0 /paper 首屏减法：4 KPI、去重页面快捷导航、折叠服务/进门路线/AI 值班、保留全部功能；无业务逻辑/无 L2",
+     "status": "doing"
+    },
+    {
+     "id": "WO-INFRA-2WK-20261027",
+     "desc": "工程基建2周项：日志轮转工具+测试失败基线+testpaths实测记录",
      "status": "doing"
     }
    ]
