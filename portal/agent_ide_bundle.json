@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-28 07:07",
+ "generated": "2026-10-28 07:09",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 33,
+  "workorders_doing": 34,
   "workorders_review": 5
  },
  "workorders": [
@@ -354,6 +354,15 @@
    "branch": "task/WO-HUANGZHONG-20261028",
    "created": "2026-10-28 07:01:26",
    "project": "general"
+  },
+  {
+   "id": "K-QUANT-20261028-KEYSV2ANCHOR",
+   "desc": "Phase A 锚点兼容：旧 #logs→?tab=logs；#relay-hero/#main/#vk-section/#cred-section→对应Tab；#mission/#mission-section→/mission",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-QUANT-20261028-KEYSV2ANCHOR",
+   "created": "2026-10-28 07:08:01",
+   "project": "quant"
   }
  ],
  "coder_traces": [
