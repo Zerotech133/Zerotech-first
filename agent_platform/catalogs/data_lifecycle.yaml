@@ -1,0 +1,40 @@
+# 数据资产生命周期覆盖表（L0/L1 之间的手工维护元数据，2026-10-28 建立）
+#
+# 用途：catalog v13 / registry 重建 / freshness 报告 统一读取本文件，解决
+#   - 8 个 placeholder 资产被 registry 当作 unknown 计入资格欠账；
+#   - 静态/停更/规划中表被 freshness 误报「偏旧」。
+#
+# 合法值：
+#   planned     规划中，尚未实现采集（registry 不计 unknown；freshness 不检查）
+#   deprecated  已废弃/非数据资产（registry 标 deprecated；freshness 不检查）
+#   active      正常（默认；无需显式登记）
+#
+# 修改本文件后：重跑 build_catalog（CATALOG_VERSION_OVERRIDE=13）→ registry_rebuild --apply。
+
+version: 1
+updated: 2026-10-28
+tables:
+  xq_comment:
+    lifecycle: planned
+    reason: 雪球评论表未实现采集（xueqiu_info.db 无对应表），设计占位
+  xq_kline_d:
+    lifecycle: planned
+    reason: 雪球日 K 线未实现（历史 K 线走 tushare/tdx，无 xq_kline_d 目录）
+  xq_capital_flow:
+    lifecycle: planned
+    reason: 雪球资金流未实现；资金流走 tushare moneyflow
+  xq_northbound:
+    lifecycle: planned
+    reason: 雪球北向未实现；北向走 tushare hk_hold 等
+  xq_earningforecast:
+    lifecycle: planned
+    reason: 雪球业绩预告未实现；预告走 tushare forecast
+  xq_hot_deal:
+    lifecycle: planned
+    reason: 雪球热门交易未实现（xq_hot_post 为舆情帖，非交易表）
+  xq_inner_trade:
+    lifecycle: planned
+    reason: 雪球内部交易未实现；内部交易走 tushare stk_holdertrade
+  quarantine_prod_overwrite:
+    lifecycle: deprecated
+    reason: 生产覆盖隔离目录（运维产物，非数据资产），不应计入资格台账
