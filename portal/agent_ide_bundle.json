@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-27 17:24",
+ "generated": "2026-10-27 17:25",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 61,
@@ -149,15 +149,6 @@
    "project": "general"
   },
   {
-   "id": "WO-AGENT-SANDBOX-20261027",
-   "desc": "P0⑧ Agent 沙箱+内部 benchmark（ARCH1 owner）：Docker 隔离执行（挂载 worktree、网络出口白名单）+ 10 条内部任务 benchmark（SWE/研究/数据各 3-4）；不引依赖；测试。验收：沙箱内跑通示例；benchmark 出分；无 L2。",
-   "status": "doing",
-   "owner": "ARCH1",
-   "branch": "task/WO-AGENT-SANDBOX-20261027",
-   "created": "2026-10-27 15:53:31",
-   "project": "quant"
-  },
-  {
    "id": "WO-PHOENIX-ISOLATED-20261027",
    "desc": "B-08 Phoenix隔离venv：安装/端口登记/起服务/health验证",
    "status": "doing",
@@ -200,6 +191,15 @@
    "owner": "DEV7",
    "branch": "task/WO-P0-DEV7-WIKI-20261027",
    "created": "2026-10-27 16:51:10",
+   "project": "general"
+  },
+  {
+   "id": "WO-P2-OTEL-FIX2-20261027",
+   "desc": "OTEL 测试修正(L1)：fail-open 用例误判 span 非 None——改为断言进出 traced 不抛异常 + 关闭导出告警噪声",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-P2-OTEL-FIX2-20261027",
+   "created": "2026-10-27 17:24:53",
    "project": "general"
   }
  ],
@@ -2911,14 +2911,7 @@
    ],
    "experience": "30 年系统架构经验：从单体到微服务的演进治理、跨部门方案定稿与技术选型终审；ADR 架构决策记录制度化（tools/adr.py 登记·docs/adr 版本化入 git）的推动者。",
    "dept_name": "研发部",
-   "dept_cn_title": "将作监",
-   "tasks": [
-    {
-     "id": "WO-AGENT-SANDBOX-20261027",
-     "desc": "P0⑧ Agent 沙箱+内部 benchmark（ARCH1 owner）：Docker 隔离执行（挂载 worktree、网络出口白名单）+ 10 条内部任务 benchmark（SWE/研究/数据各 3-4）；不引依赖；测试。验收：沙箱内跑通示例；benchmark 出分；无 L2。",
-     "status": "doing"
-    }
-   ]
+   "dept_cn_title": "将作监"
   },
   "OPS1": {
    "id": "OPS1",
@@ -3610,7 +3603,7 @@
    "role_title": "",
    "memory": {
     "decision": {
-     "count": 58,
+     "count": 59,
      "recent": [
       {
        "ts": "",
@@ -3748,7 +3741,7 @@
    "role_title": "",
    "memory": {
     "decision": {
-     "count": 58,
+     "count": 59,
      "recent": [
       {
        "ts": "",
