@@ -73,9 +73,42 @@
     return head;
   }
 
+  function isAdopted() {
+    var m = document.querySelector('meta[name=wb-shell]');
+    return !!m && m.getAttribute('content') === 'adopted';
+  }
+
+  function adoptedHead(info) {
+    if (document.querySelector('.wb-shell-head')) return;
+    var head = document.createElement('header');
+    head.className = 'wb-shell-head';
+    var h = document.createElement('h1');
+    h.textContent = (info && info.item) || (document.title || '零界').split('·')[0].trim();
+    head.appendChild(h);
+    var sub = document.createElement('p');
+    sub.textContent = '已接入 PageShell v1 · 原页面功能保持，逐步迁移为统一壳';
+    head.appendChild(sub);
+    var act = document.createElement('div');
+    act.className = 'wb-shell-actions';
+    var a1 = document.createElement('a');
+    a1.href = '/'; a1.textContent = '🏠 返回今日工作台';
+    var a2 = document.createElement('a');
+    a2.href = 'javascript:void(0)'; a2.textContent = '⌘K 命令';
+    a2.addEventListener('click', function () {
+      var trig = document.querySelector('.wb-palette-trigger');
+      if (trig) trig.click();
+    });
+    act.appendChild(a1); act.appendChild(a2);
+    head.appendChild(act);
+    var crumbEl = document.querySelector('.wb-crumb');
+    if (crumbEl && crumbEl.parentNode) crumbEl.parentNode.insertBefore(head, crumbEl.nextSibling);
+    else document.body.insertBefore(head, document.body.firstChild);
+  }
+
   function crumb() {
     var p = normPath(location.pathname);
     var modern = !!MODERN[p];
+    var adopted = isAdopted();
     if (modern) document.body.setAttribute(SHELL_ATTR, 'v1');
     if (document.querySelector('.wb-crumb')) return null;
     var info = navMatch();
@@ -94,14 +127,15 @@
       html += '<span class="wb-crumb-sep">›</span>' +
         '<span class="wb-crumb-cur">旧版页面</span>';
     }
-    if (!modern) html += '<span class="wb-legacy-chip">旧版</span>';
+    if (!modern) html += '<span class="wb-crumb-chip ' + (adopted ? 'wb-adopted-chip' : 'wb-legacy-chip') + '">' + (adopted ? '已收编' : '旧版') + '</span>';
     el.innerHTML = html;
     var bar = document.querySelector('.wb-nav');
     if (bar && bar.parentNode) bar.parentNode.insertBefore(el, bar.nextSibling);
     else document.body.insertBefore(el, document.body.firstChild);
     if (!modern) {
-      document.body.classList.add('wb-legacy');
-      document.body.setAttribute(SHELL_ATTR, 'legacy');
+      document.body.classList.add(adopted ? 'wb-adopted' : 'wb-legacy');
+      document.body.setAttribute(SHELL_ATTR, adopted ? 'adopted' : 'legacy');
+      if (adopted) adoptedHead(info);
     }
     return el;
   }

@@ -29,3 +29,7 @@ body.wb-legacy .wb-crumb{background:var(--bg-surface,#0d1822)}
 /* W1：现代页统一用全局 .wb-crumb；旧的内联 crumb 隐藏，避免两套标准 */
 body[data-wb-shell="v1"] .pw-context .pw-crumb,
 body[data-wb-shell="v1"] .dw-context .dw-crumb{display:none}
+
+.wb-crumb .wb-crumb-chip{border-radius:99px;padding:0 7px;font-size:10px;border:1px solid currentColor}
+.wb-crumb .wb-adopted-chip{color:var(--accent,#6bd7e5)}
+body.wb-adopted .wb-shell-head{padding-top:12px}
