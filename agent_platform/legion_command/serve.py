@@ -686,6 +686,43 @@ class Handler(BaseHTTPRequestHandler):
                 return
             stream = bool(req.get("stream"))
             messages = req.get("messages") or []
+            backend = str(self.headers.get("X-DSH-Backend") or req.get("backend") or "").strip()
+            if backend == "litellm":
+                # 可选上游：LiteLLM Router（Key 池→多 provider/fallback/成本）；默认仍是 keypool
+                if req.get("stream"):
+                    self._send_json({"error": {"message": "stream_not_supported_for_litellm",
+                                               "type": "invalid_request_error"}}, 400)
+                    return
+                prompt = ""
+                for m in reversed(messages):
+                    if isinstance(m, dict) and m.get("role") == "user":
+                        prompt = str(m.get("content") or "")
+                        break
+                try:
+                    sys.path.insert(0, str(_PLATFORM.parent / "tools"))
+                    from litellm_route import route as litellm_route
+                    lr = litellm_route(prompt)
+                except Exception as e:  # noqa: BLE001
+                    lr = {"ok": False, "error": "%s: %s" % (type(e).__name__, str(e)[:200])}
+                if not lr.get("ok"):
+                    self._send_json({"error": {"message": lr.get("error") or "litellm_failed",
+                                               "type": "upstream_error"},
+                                     "x_backend": "litellm"}, 502)
+                    return
+                self._send_json({
+                    "id": "chatcmpl-dsh-lite-%s" % int(time.time() * 1000),
+                    "object": "chat.completion",
+                    "created": int(time.time()),
+                    "model": str(lr.get("used_model") or req.get("model") or "auto"),
+                    "choices": [{"index": 0,
+                                 "message": {"role": "assistant",
+                                             "content": lr.get("reply", "")},
+                                 "finish_reason": "stop"}],
+                    "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+                    "x_backend": "litellm",
+                    "x_cost_usd": lr.get("cost_usd", 0),
+                })
+                return
             try:
                 from legion_command import keypool
 
