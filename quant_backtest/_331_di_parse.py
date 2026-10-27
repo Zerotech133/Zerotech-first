@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """331：解析 TdxSync DynamicInfo 的时间戳（LastRun 等）。"""
+
 import time
 import winreg
 
@@ -18,6 +19,7 @@ def ft_to_str(ft):
 
 # 滑窗解所有 8 字节对齐的 FILETIME，落在合理区间的都打印
 import struct
+
 for off in range(0, len(di) - 8):
     (ft,) = struct.unpack_from("<Q", di, off)
     if 134000000000000000 < ft < 140000000000000000:  # ~2025-2027 年区间

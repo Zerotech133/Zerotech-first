@@ -14,6 +14,7 @@
 本模块只做"选路 + 调用 + 留证"：不写 org/bundle 真源、不自动切全局默认。
 调用记录落 `agent_platform/data/zhaoyun_capability_usage.jsonl`（drill-evidence）。
 """
+
 from __future__ import annotations
 
 import json
@@ -26,19 +27,22 @@ REPO = PLATFORM.parent
 USAGE_LOG = PLATFORM / "data" / "zhaoyun_capability_usage.jsonl"
 
 ROUTES = {
-    "governance": ["deepseek/deepseek-flash", "deepseek/deepseek-v4-pro",
-                   "ollama/qwen3.5:9b"],
-    "deep-reasoning": ["deepseek/deepseek-v4-pro", "deepseek/deepseek-flash",
-                       "ollama/qwen3.5:9b"],
+    "governance": [
+        "deepseek/deepseek-flash",
+        "deepseek/deepseek-v4-pro",
+        "ollama/qwen3.5:9b",
+    ],
+    "deep-reasoning": [
+        "deepseek/deepseek-v4-pro",
+        "deepseek/deepseek-flash",
+        "ollama/qwen3.5:9b",
+    ],
     "local-only": ["ollama/qwen3.5:9b"],
-    "glm-quota": ["deepseek/deepseek-flash", "glm/glm-5.3-flash",
-                  "ollama/qwen3.5:9b"],
+    "glm-quota": ["deepseek/deepseek-flash", "glm/glm-5.3-flash", "ollama/qwen3.5:9b"],
     # 研发部指挥链（C4）：E3 组长/主官 glm 强档优先，429/不可用逐档降级
-    "dev-lead": ["glm/glm-5.3", "deepseek/deepseek-flash",
-                 "ollama/qwen3.5:9b"],
+    "dev-lead": ["glm/glm-5.3", "deepseek/deepseek-flash", "ollama/qwen3.5:9b"],
     # 研发部执行链（C4）：E2/E1 执行席 glm 快档优先，同链降级
-    "dev-exec": ["glm/glm-5.3-flash", "deepseek/deepseek-flash",
-                 "ollama/qwen3.5:9b"],
+    "dev-exec": ["glm/glm-5.3-flash", "deepseek/deepseek-flash", "ollama/qwen3.5:9b"],
 }
 
 
@@ -57,9 +61,14 @@ def route(purpose: str = "governance", prefer: list | None = None) -> list:
             risk = "quota_429_risk"
         if m.startswith("ollama/"):
             risk = risk or "local_9b_degraded"
-        out.append({"model": m, "rank": i + 1,
-                    "why": "primary" if i == 0 else "fallback",
-                    "risk": risk})
+        out.append(
+            {
+                "model": m,
+                "rank": i + 1,
+                "why": "primary" if i == 0 else "fallback",
+                "risk": risk,
+            }
+        )
     return out
 
 
@@ -72,14 +81,19 @@ def _call_model(model: str, messages: list, max_tokens: int = 256):
     if model.startswith("deepseek/"):
         sys.path.insert(0, str(PLATFORM))
         from engine import deepseek  # noqa: WPS433
+
         m = model.split("/", 1)[1]
-        full = deepseek.DeepSeekClient().chat_full(messages, model=m,
-                                                  max_tokens=max_tokens)
-        return {"text": str(full.get("content") or ""),
-                "usage": full.get("usage") or {}}
+        full = deepseek.DeepSeekClient().chat_full(
+            messages, model=m, max_tokens=max_tokens
+        )
+        return {
+            "text": str(full.get("content") or ""),
+            "usage": full.get("usage") or {},
+        }
     if model.startswith("ollama/"):
         sys.path.insert(0, str(PLATFORM))
         from engine.llm import make_llm  # noqa: WPS433
+
         llm = make_llm(model)
         return str(llm.chat(messages) or "")
     raise RuntimeError("unsupported_model:%s" % model)
@@ -101,12 +115,16 @@ def _usage_tokens(usage: dict | None, messages: list, text: str) -> dict:
     if pout <= 0:
         pout = max(1, len(str(text or "")) // 4)
         source = "estimated"
-    return {"input": pin, "output": pout, "source": source,
-            "total": pin + pout}
+    return {"input": pin, "output": pout, "source": source, "total": pin + pout}
 
 
-def invoke(messages: list, purpose: str = "governance", prefer: list | None = None,
-           max_tokens: int = 256, adapters: dict | None = None) -> dict:
+def invoke(
+    messages: list,
+    purpose: str = "governance",
+    prefer: list | None = None,
+    max_tokens: int = 256,
+    adapters: dict | None = None,
+) -> dict:
     """按路由链依次尝试；成功即返回并留证；全失败返回 ok=False + attempts。"""
     adapters = adapters or _default_adapters()
     plan = route(purpose, prefer)
@@ -125,41 +143,69 @@ def invoke(messages: list, purpose: str = "governance", prefer: list | None = No
             if not text:
                 raise RuntimeError("empty_reply")
             tokens = _usage_tokens(usage, messages, text)
-            rec = {"ok": True, "model": model, "used": True,
-                   "elapsed_ms": int((time.time() - t0) * 1000),
-                   "attempts": attempts, "text": text, "usage": tokens}
+            rec = {
+                "ok": True,
+                "model": model,
+                "used": True,
+                "elapsed_ms": int((time.time() - t0) * 1000),
+                "attempts": attempts,
+                "text": text,
+                "usage": tokens,
+            }
             _log_usage("model-routing", purpose, model, True)
             _record_llm(model, purpose, True, t0, tokens=tokens, text=text)
             return rec
         except Exception as e:  # noqa: BLE001
-            attempts.append({"model": model, "error": "%s: %s"
-                             % (type(e).__name__, str(e)[:120]),
-                             "elapsed_ms": int((time.time() - t0) * 1000)})
+            attempts.append(
+                {
+                    "model": model,
+                    "error": "%s: %s" % (type(e).__name__, str(e)[:120]),
+                    "elapsed_ms": int((time.time() - t0) * 1000),
+                }
+            )
             _log_usage("model-routing", purpose, model, False)
             _record_llm(model, purpose, False, t0, err=str(e))
     return {"ok": False, "model": None, "used": False, "attempts": attempts}
 
 
-def _record_llm(model: str, purpose: str, ok: bool, t0: float,
-                err: str = "", tokens: dict | None = None,
-                text: str = "") -> None:
+def _record_llm(
+    model: str,
+    purpose: str,
+    ok: bool,
+    t0: float,
+    err: str = "",
+    tokens: dict | None = None,
+    text: str = "",
+) -> None:
     """LLM 调用留证（trace span，OTel GenAI 字段；成本由 usage 估算）。"""
     try:
         sys.path.insert(0, str(PLATFORM))
         from observability import trace as tr  # noqa: WPS433
-        attrs = {"gen_ai.operation.name": "chat",
-                 "gen_ai.request.model": model,
-                 "zhaoyun.purpose": purpose,
-                 "error": str(err or "")[:120]}
+
+        attrs = {
+            "gen_ai.operation.name": "chat",
+            "gen_ai.request.model": model,
+            "zhaoyun.purpose": purpose,
+            "error": str(err or "")[:120],
+        }
         if tokens:
-            attrs.update({
-                "gen_ai.usage.input_tokens": int(tokens.get("input") or 0),
-                "gen_ai.usage.output_tokens": int(tokens.get("output") or 0),
-                "zhaoyun.usage_source": str(tokens.get("source") or "estimated"),
-                "zhaoyun.response_chars": len(str(text or "")),
-            })
-        tr.record(tr.trace_id(), "llm.call", "llm", start=t0, end=time.time(),
-                  status="ok" if ok else "error", attrs=attrs)
+            attrs.update(
+                {
+                    "gen_ai.usage.input_tokens": int(tokens.get("input") or 0),
+                    "gen_ai.usage.output_tokens": int(tokens.get("output") or 0),
+                    "zhaoyun.usage_source": str(tokens.get("source") or "estimated"),
+                    "zhaoyun.response_chars": len(str(text or "")),
+                }
+            )
+        tr.record(
+            tr.trace_id(),
+            "llm.call",
+            "llm",
+            start=t0,
+            end=time.time(),
+            status="ok" if ok else "error",
+            attrs=attrs,
+        )
     except Exception:  # noqa: BLE001
         pass
 
@@ -167,9 +213,13 @@ def _record_llm(model: str, purpose: str, ok: bool, t0: float,
 def _log_usage(capability: str, purpose: str, model: str, ok: bool) -> None:
     try:
         USAGE_LOG.parent.mkdir(parents=True, exist_ok=True)
-        rec = {"ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
-               "capability": capability, "purpose": purpose,
-               "model": model, "ok": bool(ok)}
+        rec = {
+            "ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+            "capability": capability,
+            "purpose": purpose,
+            "model": model,
+            "ok": bool(ok),
+        }
         with open(USAGE_LOG, "a", encoding="utf-8") as f:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
     except OSError:

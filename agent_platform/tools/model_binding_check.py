@@ -31,6 +31,7 @@ org_enroll.BINDING_ALLOW 显式允许 "none"），按 unbound 跳过；本地模
   python -X utf8 agent_platform/tools/model_binding_check.py --root . --dept dev \
       --grades E3 --json --strict        # 验收口径：只看 dev 部 E3 席
 """
+
 from __future__ import annotations
 
 import argparse
@@ -47,8 +48,13 @@ TIERS_FILE = "model_tiers.json"
 E3_GRADE = "E3"
 # 无 LLM 依赖的显式声明（org_enroll.BINDING_ALLOW 允许 "none"）
 UNBOUND_VALUES = frozenset({"none", "null", "-", "n/a", "无"})
-_STATUS_LABELS = {"ok": "OK", "warn": "WARN", "violation": "VIOL",
-                  "unknown": "UNKNOWN", "unbound": "SKIP"}
+_STATUS_LABELS = {
+    "ok": "OK",
+    "warn": "WARN",
+    "violation": "VIOL",
+    "unknown": "UNKNOWN",
+    "unbound": "SKIP",
+}
 
 
 def _read_json(path: Path):
@@ -126,48 +132,81 @@ def _iter_profiles(org: dict):
 def _scan(org: dict, tiers: dict) -> tuple:
     """全组织扫描，返回 (rows, violations, unknown, warnings, unbound)。"""
     models = tiers.get("models") if isinstance(tiers.get("models"), dict) else {}
-    grade_policy = (tiers.get("grade_policy")
-                    if isinstance(tiers.get("grade_policy"), dict) else {})
+    grade_policy = (
+        tiers.get("grade_policy") if isinstance(tiers.get("grade_policy"), dict) else {}
+    )
     rows, violations, unknown, warnings, unbound = [], [], [], [], []
     for dept_id, profile in _iter_profiles(org):
         agent_id = str(profile.get("agent_id") or "")
         grade = str(profile.get("grade") or "").strip()
         binding = _model_name(profile.get("llm_binding"))
-        row = {"dept": dept_id, "agent_id": agent_id, "grade": grade,
-               "binding": binding, "tier": "", "status": "ok"}
+        row = {
+            "dept": dept_id,
+            "agent_id": agent_id,
+            "grade": grade,
+            "binding": binding,
+            "tier": "",
+            "status": "ok",
+        }
         if _is_unbound(binding):
             row["status"] = "unbound"
-            unbound.append({"dept": dept_id, "agent_id": agent_id,
-                            "grade": grade, "binding": binding or "none"})
+            unbound.append(
+                {
+                    "dept": dept_id,
+                    "agent_id": agent_id,
+                    "grade": grade,
+                    "binding": binding or "none",
+                }
+            )
             rows.append(row)
             continue
         problems = []
         key = _lookup_model(binding, models)
         meta = models.get(key) if key is not None else None
         if not isinstance(meta, dict):
-            unknown.append({"dept": dept_id, "agent_id": agent_id,
-                            "grade": grade, "binding": binding,
-                            "model": binding,
-                            "detail": "模型不在 model_tiers.models 表内，无法判档"})
+            unknown.append(
+                {
+                    "dept": dept_id,
+                    "agent_id": agent_id,
+                    "grade": grade,
+                    "binding": binding,
+                    "model": binding,
+                    "detail": "模型不在 model_tiers.models 表内，无法判档",
+                }
+            )
             row["status"] = "unknown"
         else:
             tier = str(meta.get("tier") or "")
             row["tier"] = tier
             policy = grade_policy.get(grade)
             if not isinstance(policy, dict):
-                problems.append(("grade_unknown",
-                                 "grade=%r 不在 grade_policy，无法校验档位" % grade))
+                problems.append(
+                    (
+                        "grade_unknown",
+                        "grade=%r 不在 grade_policy，无法校验档位" % grade,
+                    )
+                )
             else:
                 allow = policy.get("allow")
                 allow = list(allow) if isinstance(allow, (list, tuple)) else []
                 if tier not in allow:
-                    problems.append(("tier_not_allowed",
-                                     "tier=%s 不在 %s.allow=%s（绑定 %s）"
-                                     % (tier, grade, allow, binding)))
+                    problems.append(
+                        (
+                            "tier_not_allowed",
+                            "tier=%s 不在 %s.allow=%s（绑定 %s）"
+                            % (tier, grade, allow, binding),
+                        )
+                    )
             if meta.get("enabled", True) is False:
-                warnings.append({"dept": dept_id, "agent_id": agent_id,
-                                 "grade": grade, "binding": binding,
-                                 "detail": "模型 enabled=false，绑定当前不可调用"})
+                warnings.append(
+                    {
+                        "dept": dept_id,
+                        "agent_id": agent_id,
+                        "grade": grade,
+                        "binding": binding,
+                        "detail": "模型 enabled=false，绑定当前不可调用",
+                    }
+                )
                 row["status"] = "warn"
         if grade == E3_GRADE:
             carrier_managed = binding.startswith("openai/")
@@ -176,39 +215,62 @@ def _scan(org: dict, tiers: dict) -> tuple:
                 # 2026-10-27 T5 第1步：openai/ 走 OpenClaw 载体（自带 relay/GPT6 回切），
                 # 不强制 org llm_fallback；仅在缺链时给一条 warn 供审计，不计 violation。
                 if not fallback or not fallback[0]:
-                    warnings.append({"dept": dept_id, "agent_id": agent_id,
-                                     "grade": grade, "binding": binding,
-                                     "kind": "carrier_managed",
-                                     "detail": "carrier_managed：openai/ 由 OpenClaw 载体自愈，不强制 org llm_fallback"})
+                    warnings.append(
+                        {
+                            "dept": dept_id,
+                            "agent_id": agent_id,
+                            "grade": grade,
+                            "binding": binding,
+                            "kind": "carrier_managed",
+                            "detail": "carrier_managed：openai/ 由 OpenClaw 载体自愈，不强制 org llm_fallback",
+                        }
+                    )
                     if row["status"] == "ok":
                         row["status"] = "warn"
             elif not fallback or not fallback[0]:
-                problems.append(("fallback_missing",
-                                 "E3 席必须带非空 llm_fallback（主绑定降级链）"))
+                problems.append(
+                    ("fallback_missing", "E3 席必须带非空 llm_fallback（主绑定降级链）")
+                )
             elif fallback[0] == binding:
-                problems.append(("fallback_same_as_binding",
-                                 "llm_fallback 首项与主绑定相同（%s），降级链无效"
-                                 % binding))
+                problems.append(
+                    (
+                        "fallback_same_as_binding",
+                        "llm_fallback 首项与主绑定相同（%s），降级链无效" % binding,
+                    )
+                )
         if problems:
             row["status"] = "violation"
             for kind, detail in problems:
-                violations.append({"dept": dept_id, "agent_id": agent_id,
-                                   "grade": grade, "binding": binding,
-                                   "tier": row["tier"], "kind": kind,
-                                   "detail": detail})
+                violations.append(
+                    {
+                        "dept": dept_id,
+                        "agent_id": agent_id,
+                        "grade": grade,
+                        "binding": binding,
+                        "tier": row["tier"],
+                        "kind": kind,
+                        "detail": detail,
+                    }
+                )
         rows.append(row)
     return rows, violations, unknown, warnings, unbound
 
 
-def _counts(rows: list, violations: list, unknown: list, warnings: list,
-            unbound: list) -> dict:
-    return {"checked": sum(1 for row in rows if row["status"] != "unbound"),
-            "violations": len(violations), "unknown": len(unknown),
-            "warnings": len(warnings), "unbound": len(unbound)}
+def _counts(
+    rows: list, violations: list, unknown: list, warnings: list, unbound: list
+) -> dict:
+    return {
+        "checked": sum(1 for row in rows if row["status"] != "unbound"),
+        "violations": len(violations),
+        "unknown": len(unknown),
+        "warnings": len(warnings),
+        "unbound": len(unbound),
+    }
 
 
-def check(org: dict, tiers: dict, depts: list | None = None,
-          grades: list | None = None) -> dict:
+def check(
+    org: dict, tiers: dict, depts: list | None = None, grades: list | None = None
+) -> dict:
     """执行只读校验；depts/grades 为归一化过滤集合（空=全组织）。"""
     depts = list(depts or [])
     grades = list(grades or [])
@@ -222,9 +284,15 @@ def check(org: dict, tiers: dict, depts: list | None = None,
     summary = _counts(rows, violations, unknown, warnings, unbound)
     summary["scope"] = {"dept": depts, "grades": grades}
     summary["full_scope"] = full_scope
-    return {"ok": not violations, "summary": summary,
-            "violations": violations, "unknown": unknown,
-            "warnings": warnings, "unbound": unbound, "rows": rows}
+    return {
+        "ok": not violations,
+        "summary": summary,
+        "violations": violations,
+        "unknown": unknown,
+        "warnings": warnings,
+        "unbound": unbound,
+        "rows": rows,
+    }
 
 
 def _print_table(rep: dict) -> None:
@@ -233,53 +301,88 @@ def _print_table(rep: dict) -> None:
     scoped = bool(scope.get("dept") or scope.get("grades"))
     print("模型档位检查 | root=%s" % rep.get("root"))
     if scoped:
-        print("范围: dept=%s / grades=%s（过滤后 checked=%d；"
-              "全组织 checked=%d / violations=%d）"
-              % (",".join(scope.get("dept") or []) or "-",
-                 ",".join(scope.get("grades") or []) or "-",
-                 summary["checked"], summary["full_scope"]["checked"],
-                 summary["full_scope"]["violations"]))
-    print("  %-8s %-10s %-10s %-5s %-28s %-8s"
-          % ("STATUS", "AGENT", "DEPT", "GRADE", "BINDING", "TIER"))
+        print(
+            "范围: dept=%s / grades=%s（过滤后 checked=%d；"
+            "全组织 checked=%d / violations=%d）"
+            % (
+                ",".join(scope.get("dept") or []) or "-",
+                ",".join(scope.get("grades") or []) or "-",
+                summary["checked"],
+                summary["full_scope"]["checked"],
+                summary["full_scope"]["violations"],
+            )
+        )
+    print(
+        "  %-8s %-10s %-10s %-5s %-28s %-8s"
+        % ("STATUS", "AGENT", "DEPT", "GRADE", "BINDING", "TIER")
+    )
     for row in rep["rows"]:
-        print("  %-8s %-10s %-10s %-5s %-28s %-8s"
-              % (_STATUS_LABELS.get(row["status"], row["status"]),
-                 row["agent_id"], row["dept"], row["grade"] or "-",
-                 row["binding"] or "-", row["tier"] or "-"))
+        print(
+            "  %-8s %-10s %-10s %-5s %-28s %-8s"
+            % (
+                _STATUS_LABELS.get(row["status"], row["status"]),
+                row["agent_id"],
+                row["dept"],
+                row["grade"] or "-",
+                row["binding"] or "-",
+                row["tier"] or "-",
+            )
+        )
     for v in rep["violations"]:
         print("[违规] %(agent_id)s %(dept)s %(grade)s %(kind)s: %(detail)s" % v)
     for u in rep["unknown"]:
-        print("[未知] %(agent_id)s %(dept)s %(grade)s 模型 %(model)s "
-              "不在 model_tiers.models（无法判档）" % u)
+        print(
+            "[未知] %(agent_id)s %(dept)s %(grade)s 模型 %(model)s "
+            "不在 model_tiers.models（无法判档）" % u
+        )
     for w in rep["warnings"]:
         print("[提示] %(agent_id)s %(dept)s %(grade)s %(detail)s" % w)
-    print("汇总: checked=%d / violations=%d / unknown=%d / unbound=%d"
-          % (summary["checked"], summary["violations"],
-             summary["unknown"], summary["unbound"]))
+    print(
+        "汇总: checked=%d / violations=%d / unknown=%d / unbound=%d"
+        % (
+            summary["checked"],
+            summary["violations"],
+            summary["unknown"],
+            summary["unbound"],
+        )
+    )
     if scoped:
         full = summary["full_scope"]
-        print("全组织参考（含存量，不参与本次 strict 判定）: checked=%d / "
-              "violations=%d / unknown=%d / unbound=%d"
-              % (full["checked"], full["violations"],
-                 full["unknown"], full["unbound"]))
+        print(
+            "全组织参考（含存量，不参与本次 strict 判定）: checked=%d / "
+            "violations=%d / unknown=%d / unbound=%d"
+            % (full["checked"], full["violations"], full["unknown"], full["unbound"])
+        )
     elif summary["violations"]:
-        print("注：model_tiers 拍板②「存量绑定不回刷」——以上为全量现状盘点，"
-              "不代表本次新注册违规；验收可用 --dept/--grades 收窄范围。")
+        print(
+            "注：model_tiers 拍板②「存量绑定不回刷」——以上为全量现状盘点，"
+            "不代表本次新注册违规；验收可用 --dept/--grades 收窄范围。"
+        )
 
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(
-        description="模型档位执行点检查：org 席位 llm_binding vs model_tiers 档位策略")
-    parser.add_argument("--root", default=str(REPO),
-                        help="仓库根目录（默认本工具所在仓库，含 "
-                             "agent_platform/registry/）")
-    parser.add_argument("--dept", default="",
-                        help="只检查指定部门（逗号分隔，如 dev,invest；默认全组织）")
-    parser.add_argument("--grades", default="",
-                        help="只检查指定职级（逗号分隔，如 E3,E2；默认全组织）")
+        description="模型档位执行点检查：org 席位 llm_binding vs model_tiers 档位策略"
+    )
+    parser.add_argument(
+        "--root",
+        default=str(REPO),
+        help="仓库根目录（默认本工具所在仓库，含 agent_platform/registry/）",
+    )
+    parser.add_argument(
+        "--dept",
+        default="",
+        help="只检查指定部门（逗号分隔，如 dev,invest；默认全组织）",
+    )
+    parser.add_argument(
+        "--grades", default="", help="只检查指定职级（逗号分隔，如 E3,E2；默认全组织）"
+    )
     parser.add_argument("--json", action="store_true", help="输出机器可读 JSON")
-    parser.add_argument("--strict", action="store_true",
-                        help="过滤范围内有 violation 时退出码 1（门禁口径）")
+    parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="过滤范围内有 violation 时退出码 1（门禁口径）",
+    )
     args = parser.parse_args(argv)
     depts = _split_csv(args.dept)
     grades = _split_csv(args.grades, upper=True)
@@ -292,30 +395,52 @@ def main(argv=None) -> int:
     except (OSError, ValueError) as exc:
         detail = "%s: %s" % (type(exc).__name__, str(exc)[:200])
         if args.json:
-            print(json.dumps({"ok": False, "root": str(root.resolve()),
-                              "error": "registry_unreadable", "detail": detail,
-                              "expected": [str(org_path), str(tiers_path)]},
-                             ensure_ascii=False, indent=1))
+            print(
+                json.dumps(
+                    {
+                        "ok": False,
+                        "root": str(root.resolve()),
+                        "error": "registry_unreadable",
+                        "detail": detail,
+                        "expected": [str(org_path), str(tiers_path)],
+                    },
+                    ensure_ascii=False,
+                    indent=1,
+                )
+            )
         else:
             print("[错误] 注册表读取失败：%s" % detail, file=sys.stderr)
-            print("       期望路径：%s / %s" % (org_path, tiers_path),
-                  file=sys.stderr)
+            print("       期望路径：%s / %s" % (org_path, tiers_path), file=sys.stderr)
         return 2
     rep = check(org, tiers, depts, grades)
-    rep.update({"root": str(root.resolve()),
-                "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
-                "strict": bool(args.strict)})
+    rep.update(
+        {
+            "root": str(root.resolve()),
+            "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+            "strict": bool(args.strict),
+        }
+    )
     summary = rep["summary"]
     if (depts or grades) and summary["checked"] == 0:
-        detail = ("过滤范围未匹配任何已绑定 LLM 的席位（dept=%s / grades=%s），"
-                  "拒绝空门禁" % (",".join(depts) or "-",
-                                  ",".join(grades) or "-"))
+        detail = (
+            "过滤范围未匹配任何已绑定 LLM 的席位（dept=%s / grades=%s），"
+            "拒绝空门禁" % (",".join(depts) or "-", ",".join(grades) or "-")
+        )
         if args.json:
-            print(json.dumps({"ok": False, "root": rep["root"],
-                              "error": "scope_empty", "detail": detail,
-                              "scope": summary["scope"],
-                              "full_scope": summary["full_scope"]},
-                             ensure_ascii=False, indent=1))
+            print(
+                json.dumps(
+                    {
+                        "ok": False,
+                        "root": rep["root"],
+                        "error": "scope_empty",
+                        "detail": detail,
+                        "scope": summary["scope"],
+                        "full_scope": summary["full_scope"],
+                    },
+                    ensure_ascii=False,
+                    indent=1,
+                )
+            )
         else:
             print("[错误] %s" % detail, file=sys.stderr)
         return 2

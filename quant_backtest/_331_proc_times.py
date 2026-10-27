@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """331：列出 powershell.exe / python.exe 进程及启动时间（定位 17:43 挂起实例）。"""
+
 import ctypes
 import ctypes.wintypes as wt
 import subprocess
@@ -9,7 +10,12 @@ r = subprocess.run(["tasklist", "/FO", "CSV"], capture_output=True)
 targets = {}
 for line in r.stdout.decode("gbk", errors="replace").splitlines()[1:]:
     parts = [p.strip('"') for p in line.split('","')]
-    if len(parts) >= 2 and parts[0].lower() in ("powershell.exe", "python.exe", "pythonw.exe", "cmd.exe"):
+    if len(parts) >= 2 and parts[0].lower() in (
+        "powershell.exe",
+        "python.exe",
+        "pythonw.exe",
+        "cmd.exe",
+    ):
         try:
             targets[int(parts[1])] = parts[0]
         except ValueError:
@@ -26,12 +32,14 @@ def creation_time(pid):
         return None
     try:
         ct, et, kt, ut = wt.FILETIME(), wt.FILETIME(), wt.FILETIME(), wt.FILETIME()
-        if not k32.GetProcessTimes(h, ctypes.byref(ct), ctypes.byref(et),
-                                   ctypes.byref(kt), ctypes.byref(ut)):
+        if not k32.GetProcessTimes(
+            h, ctypes.byref(ct), ctypes.byref(et), ctypes.byref(kt), ctypes.byref(ut)
+        ):
             return None
         ft = (ct.dwHighDateTime << 32) | ct.dwLowDateTime
         unix = (ft - 116444736000000000) / 10_000_000
         import time
+
         return time.strftime("%m-%d %H:%M:%S", time.localtime(unix))
     finally:
         k32.CloseHandle(h)

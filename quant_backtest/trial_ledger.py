@@ -24,6 +24,7 @@ N 次试验里挑最优"——幸存者偏差使报告的 Sharpe 系统性偏高
       [--skew -0.1] [--kurt 4.2]
   python trial_ledger.py stats                    # 台账统计
 """
+
 import argparse
 import hashlib
 import json
@@ -39,7 +40,7 @@ LEDGER = os.path.join(HERE, "data", "trial_ledger.jsonl")
 LOCK = LEDGER + ".lock"
 STALE_LOCK_SEC = 120
 
-_DSR_PASS = 0.95          # G2 参考线：DSR ≥0.95 视为"计入学试次数后仍显著"
+_DSR_PASS = 0.95  # G2 参考线：DSR ≥0.95 视为"计入学试次数后仍显著"
 
 
 # ── 数值核（纯 math，可独立测试） ─────────────────────────────
@@ -51,30 +52,53 @@ def _norm_ppf(p):
     """Acklam 逆正态（纯 python，精度 ~1e-9，够 DSR 用）。"""
     if not 0.0 < p < 1.0:
         raise ValueError("p out of (0,1)")
-    a = (-3.969683028665376e+01, 2.209460984245205e+02,
-         -2.759285104469687e+02, 1.383577518672690e+02,
-         -3.066479806614716e+01, 2.506628277459239e+00)
-    b = (-5.447609879822406e+01, 1.615858368580409e+02,
-         -1.556989798598866e+02, 6.680131188771972e+01,
-         -1.328068155288572e+01)
-    c = (-7.784894002430293e-03, -3.223964580411365e-01,
-         -2.400758277161838e+00, -2.549732539343734e+00,
-         4.374664141464968e+00, 2.938163982698783e+00)
-    d = (7.784695709041462e-03, 3.224671290700398e-01,
-         2.445134137142996e+00, 3.754408661907416e+00)
+    a = (
+        -3.969683028665376e01,
+        2.209460984245205e02,
+        -2.759285104469687e02,
+        1.383577518672690e02,
+        -3.066479806614716e01,
+        2.506628277459239e00,
+    )
+    b = (
+        -5.447609879822406e01,
+        1.615858368580409e02,
+        -1.556989798598866e02,
+        6.680131188771972e01,
+        -1.328068155288572e01,
+    )
+    c = (
+        -7.784894002430293e-03,
+        -3.223964580411365e-01,
+        -2.400758277161838e00,
+        -2.549732539343734e00,
+        4.374664141464968e00,
+        2.938163982698783e00,
+    )
+    d = (
+        7.784695709041462e-03,
+        3.224671290700398e-01,
+        2.445134137142996e00,
+        3.754408661907416e00,
+    )
     plow, phigh = 0.02425, 1 - 0.02425
     if p < plow:
         q = math.sqrt(-2 * math.log(p))
-        return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) / \
-               ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1)
+        return (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / (
+            (((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1
+        )
     if p > phigh:
         q = math.sqrt(-2 * math.log(1 - p))
-        return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) / \
-                ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1)
+        return -(
+            ((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]
+        ) / ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1)
     q = p - 0.5
     r = q * q
-    return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q / \
-           (((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1)
+    return (
+        (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5])
+        * q
+        / (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1)
+    )
 
 
 def expected_max_sharpe(n_trials, var_sr, gamma=0.5772156649):
@@ -86,7 +110,7 @@ def expected_max_sharpe(n_trials, var_sr, gamma=0.5772156649):
     if n_trials < 1 or var_sr <= 0:
         raise ValueError("n_trials>=1 且 var_sr>0")
     if n_trials <= 1:
-        return 0.0                      # 无多重性：无基准惩罚（退化为 PSR）
+        return 0.0  # 无多重性：无基准惩罚（退化为 PSR）
     e = math.e
     z1 = _norm_ppf(1.0 - 1.0 / n_trials)
     z2 = _norm_ppf(1.0 - 1.0 / (n_trials * e))
@@ -101,8 +125,7 @@ def var_sharpe(sr, t, skew=0.0, kurt=3.0):
     return max(v, 1e-12)
 
 
-def deflated_sharpe_ratio(sr, t, n_trials, skew=0.0, kurt=3.0,
-                          var_sr=None):
+def deflated_sharpe_ratio(sr, t, n_trials, skew=0.0, kurt=3.0, var_sr=None):
     """DSR ∈ (0,1)：SR 在计入学 N 次试验后仍为真的概率。返回 (dsr, sr0)。
 
     var_sr 缺省时由最优试验自身 (sr,t,skew,kurt) 估计（保守常用口径）。
@@ -110,8 +133,7 @@ def deflated_sharpe_ratio(sr, t, n_trials, skew=0.0, kurt=3.0,
     if var_sr is None:
         var_sr = var_sharpe(sr, t, skew, kurt)
     sr0 = expected_max_sharpe(n_trials, var_sr)
-    denom = math.sqrt(max(1.0 - skew * sr + (kurt - 1.0) / 4.0 * sr * sr,
-                          1e-12))
+    denom = math.sqrt(max(1.0 - skew * sr + (kurt - 1.0) / 4.0 * sr * sr, 1e-12))
     z = (sr - sr0) * math.sqrt(t - 1) / denom
     return _norm_cdf(z), sr0
 
@@ -129,8 +151,8 @@ def sharpe_from_returns(rets):
     sr = mu / sd
     m3 = sum((x - mu) ** 3 for x in rets) / n
     m4 = sum((x - mu) ** 4 for x in rets) / n
-    skew = m3 / sd ** 3
-    kurt = m4 / sd ** 4
+    skew = m3 / sd**3
+    kurt = m4 / sd**4
     return sr, skew, kurt, n
 
 
@@ -177,12 +199,14 @@ def _release_lock():
 
 def record_trial(entry, path=LEDGER):
     """落一条试验记录（幂等：trial_id 撞车则跳过）。返回 (appended, id)。"""
-    tid = trial_id(str(entry.get("strategy")),
-                   str(entry.get("config_fingerprint")))
-    full = {"trial_id": tid,
-            "ts": time.strftime("%Y-%m-%d %H:%M:%S"), **entry,
-            "strategy": str(entry.get("strategy")),
-            "config_fingerprint": str(entry.get("config_fingerprint"))}
+    tid = trial_id(str(entry.get("strategy")), str(entry.get("config_fingerprint")))
+    full = {
+        "trial_id": tid,
+        "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+        **entry,
+        "strategy": str(entry.get("strategy")),
+        "config_fingerprint": str(entry.get("config_fingerprint")),
+    }
     seen = set()
     if os.path.exists(path):
         with open(path, encoding="utf-8") as f:
@@ -200,8 +224,7 @@ def record_trial(entry, path=LEDGER):
     try:
         fd = os.open(path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
         try:
-            os.write(fd, (json.dumps(full, ensure_ascii=False) + "\n")
-                     .encode("utf-8"))
+            os.write(fd, (json.dumps(full, ensure_ascii=False) + "\n").encode("utf-8"))
             os.fsync(fd)
         finally:
             os.close(fd)
@@ -227,8 +250,7 @@ def ledger_stats(path=LEDGER):
     rows = load_trials(path)
     by = {}
     for r in rows:
-        s = by.setdefault(r.get("strategy", "?"),
-                          {"n": 0, "kept": 0, "rejected": 0})
+        s = by.setdefault(r.get("strategy", "?"), {"n": 0, "kept": 0, "rejected": 0})
         s["n"] += 1
         v = str(r.get("verdict", ""))
         if v in ("kept", "rejected"):
@@ -252,8 +274,9 @@ def main(argv=None):
     p_rec.add_argument("--skew", type=float, default=None)
     p_rec.add_argument("--kurt", type=float, default=None)
     p_rec.add_argument("--oos", default=None, help="OOS 判据结果（如 0.63）")
-    p_rec.add_argument("--verdict", default="kept",
-                       choices=["kept", "rejected", "pending"])
+    p_rec.add_argument(
+        "--verdict", default="kept", choices=["kept", "rejected", "pending"]
+    )
     p_rec.add_argument("--note", default="")
     p_rec.add_argument("--path", default=LEDGER, help="台账路径覆盖")
     p_dsr = sub.add_parser("dsr")
@@ -267,25 +290,44 @@ def main(argv=None):
     if a.cmd == "record":
         dsr = sr0 = None
         if a.sharpe is not None and a.t and a.n_trials:
-            dsr, sr0 = deflated_sharpe_ratio(a.sharpe, a.t, a.n_trials,
-                                             a.skew or 0.0, a.kurt or 3.0)
-        ok, tid = record_trial({
-            "strategy": a.strategy, "config_fingerprint": a.config,
-            "sharpe": a.sharpe, "t": a.t, "n_trials": a.n_trials,
-            "skew": a.skew, "kurt": a.kurt, "oos": a.oos,
-            "verdict": a.verdict, "note": a.note,
-            "dsr": None if dsr is None else round(dsr, 4),
-            "sr0": None if sr0 is None else round(sr0, 4)}, a.path)
-        print("RECORD %s id=%s dsr=%s" % (
-            "OK" if ok else "DUP", tid,
-            None if dsr is None else "%.4f%s" % (
-                dsr, " ≥0.95 显著" if dsr >= _DSR_PASS else " <0.95 不显著")))
+            dsr, sr0 = deflated_sharpe_ratio(
+                a.sharpe, a.t, a.n_trials, a.skew or 0.0, a.kurt or 3.0
+            )
+        ok, tid = record_trial(
+            {
+                "strategy": a.strategy,
+                "config_fingerprint": a.config,
+                "sharpe": a.sharpe,
+                "t": a.t,
+                "n_trials": a.n_trials,
+                "skew": a.skew,
+                "kurt": a.kurt,
+                "oos": a.oos,
+                "verdict": a.verdict,
+                "note": a.note,
+                "dsr": None if dsr is None else round(dsr, 4),
+                "sr0": None if sr0 is None else round(sr0, 4),
+            },
+            a.path,
+        )
+        print(
+            "RECORD %s id=%s dsr=%s"
+            % (
+                "OK" if ok else "DUP",
+                tid,
+                None
+                if dsr is None
+                else "%.4f%s"
+                % (dsr, " ≥0.95 显著" if dsr >= _DSR_PASS else " <0.95 不显著"),
+            )
+        )
         return 0
     if a.cmd == "dsr":
-        dsr, sr0 = deflated_sharpe_ratio(a.sharpe, a.t, a.n_trials,
-                                         a.skew, a.kurt)
-        print("DSR=%.4f SR0=%.4f %s" % (
-            dsr, sr0, "PASS(≥0.95)" if dsr >= _DSR_PASS else "FAIL(<0.95)"))
+        dsr, sr0 = deflated_sharpe_ratio(a.sharpe, a.t, a.n_trials, a.skew, a.kurt)
+        print(
+            "DSR=%.4f SR0=%.4f %s"
+            % (dsr, sr0, "PASS(≥0.95)" if dsr >= _DSR_PASS else "FAIL(<0.95)")
+        )
         return 0
     print(json.dumps(ledger_stats(), ensure_ascii=False, indent=1))
     return 0

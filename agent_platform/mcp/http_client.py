@@ -6,6 +6,7 @@
   · 支持 initialize（记录 Mcp-Session-Id 并在后续请求回传）、tools/list、tools/call；
   · token 从环境变量读取（token_env），不落仓、不打印。
 """
+
 from __future__ import annotations
 
 import json
@@ -21,8 +22,13 @@ class MCPHttpError(RuntimeError):
 
 
 class MCPHttpClient:
-    def __init__(self, url: str, token: str | None = None, timeout: float = 15.0,
-                 headers: dict | None = None):
+    def __init__(
+        self,
+        url: str,
+        token: str | None = None,
+        timeout: float = 15.0,
+        headers: dict | None = None,
+    ):
         u = str(url or "").strip()
         if not u.lower().startswith(("http://", "https://")):
             raise ValueError("http_url_required")
@@ -34,9 +40,11 @@ class MCPHttpClient:
         self._next_id = 0
 
     def _headers(self) -> dict:
-        h = {"Content-Type": "application/json",
-             "Accept": "application/json, text/event-stream",
-             "User-Agent": UA}
+        h = {
+            "Content-Type": "application/json",
+            "Accept": "application/json, text/event-stream",
+            "User-Agent": UA,
+        }
         if self.token:
             h["Authorization"] = "Bearer " + self.token
         if self.session_id:
@@ -76,8 +84,11 @@ class MCPHttpClient:
     def _post(self, payload: dict):
         rid = payload.get("id")
         req = urllib.request.Request(
-            self.url, data=json.dumps(payload).encode("utf-8"),
-            headers=self._headers(), method="POST")
+            self.url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers=self._headers(),
+            method="POST",
+        )
         try:
             with urllib.request.urlopen(req, timeout=self.timeout) as r:
                 raw = r.read(2_000_000).decode("utf-8", errors="replace")
@@ -93,16 +104,22 @@ class MCPHttpClient:
 
     def _request(self, method: str, params: dict) -> dict:
         self._next_id += 1
-        return self._post({"jsonrpc": "2.0", "id": self._next_id,
-                           "method": method, "params": params})
+        return self._post(
+            {"jsonrpc": "2.0", "id": self._next_id, "method": method, "params": params}
+        )
 
     def _notify(self, method: str, params: dict) -> None:
         self._post({"jsonrpc": "2.0", "method": method, "params": params})
 
     def initialize(self) -> dict:
-        res = self._request("initialize", {
-            "protocolVersion": PROTOCOL_VERSION, "capabilities": {},
-            "clientInfo": {"name": "zhaoyun-mcp-http", "version": "1.0.0"}})
+        res = self._request(
+            "initialize",
+            {
+                "protocolVersion": PROTOCOL_VERSION,
+                "capabilities": {},
+                "clientInfo": {"name": "zhaoyun-mcp-http", "version": "1.0.0"},
+            },
+        )
         try:
             self._notify("notifications/initialized", {})
         except MCPHttpError:
@@ -113,8 +130,7 @@ class MCPHttpClient:
         return (self._request("tools/list", {}) or {}).get("tools") or []
 
     def call_tool(self, name: str, arguments: dict | None = None) -> dict:
-        res = self._request("tools/call", {"name": name,
-                                           "arguments": arguments or {}})
+        res = self._request("tools/call", {"name": name, "arguments": arguments or {}})
         content = res.get("content") or []
         text = ""
         if content and isinstance(content[0], dict):
@@ -123,8 +139,11 @@ class MCPHttpClient:
             payload = json.loads(text) if text else {}
         except ValueError:
             payload = {"raw": text}
-        return {"ok": not res.get("isError"), "isError": bool(res.get("isError")),
-                "payload": payload}
+        return {
+            "ok": not res.get("isError"),
+            "isError": bool(res.get("isError")),
+            "payload": payload,
+        }
 
     def close(self):
         self.session_id = ""

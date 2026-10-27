@@ -31,6 +31,7 @@ qwen2.5:7b / qwen3:8b 已于 10-24 清理（config/ollama_model_route.json delet
                              此承接（WO-LEGION-DEVEXEC2-20261027 席位级 fallback 链）。
     以上通道失败/空回一律抛 LLMError，**不静默降档本地 9b**（与 GLMCloudLLM 同纪律）。
 """
+
 import json
 import os
 import time
@@ -58,9 +59,17 @@ import urllib.request
 #     iGPU/Vulkan + KV q8_0 实测 16384 与 4096 生成吞吐相同（33.5 vs 33.8 tok/s）。
 MODEL_PROFILES = {
     "qwen3.6:35b-a3b": {"num_predict": 4000, "timeout": 900, "temperature": 0.4},
-    "qwen3.5:9b": {"num_predict": 400, "timeout": 300, "temperature": 0.4,
-                   "num_ctx": 16384},
-    "qwen3.5:4b": {"num_predict": 400, "timeout": 240, "temperature": 0.4},  # T2 轻量层(10-18 补下载落位)
+    "qwen3.5:9b": {
+        "num_predict": 400,
+        "timeout": 300,
+        "temperature": 0.4,
+        "num_ctx": 16384,
+    },
+    "qwen3.5:4b": {
+        "num_predict": 400,
+        "timeout": 240,
+        "temperature": 0.4,
+    },  # T2 轻量层(10-18 补下载落位)
 }
 DEFAULT_PROFILE = {"num_predict": 400, "timeout": 300, "temperature": 0.4}
 # 2026-10-24 模型清理已删 qwen2.5:7b / qwen3:8b（见 config/ollama_model_route.json
@@ -96,7 +105,7 @@ def similarity(a, b):
 
     def grams(s):
         s = "".join(ch for ch in s if not ch.isspace())
-        return Counter(s[i:i + 2] for i in range(len(s) - 1)) or Counter()
+        return Counter(s[i : i + 2] for i in range(len(s) - 1)) or Counter()
 
     ga, gb = grams(a), grams(b)
     if not ga or not gb:
@@ -191,9 +200,15 @@ class OllamaLLM:
                 # 保留生成元信息：旧实现只要 content，done_reason 被丢掉——
                 # 于是「被 num_predict 截断」与「模型没守格式」两种故障在证据上
                 # 完全无法区分（10-17 排障时只能靠外部探针反推）。
-                self.last_meta = {k: d.get(k) for k in
-                                  ("done_reason", "eval_count", "prompt_eval_count",
-                                   "total_duration")}
+                self.last_meta = {
+                    k: d.get(k)
+                    for k in (
+                        "done_reason",
+                        "eval_count",
+                        "prompt_eval_count",
+                        "total_duration",
+                    )
+                }
                 # done_reason=="length"：生成被上限截断，内容不完整（JSON 常在尾部，
                 # 截断必致 parse 失败）→ 显式降级，不当作正常样本入库。
                 status = "degraded" if d.get("done_reason") == "length" else "normal"
@@ -236,8 +251,10 @@ class NovaMaxLLM:
     由 NovaMax 面板(3001)+watchdog nova_patrol 保活，进程死亡自动拉起。
     """
 
-    PORTS = {"1234": "unsloth_Qwen3.5-35B-A3B-GGUF",
-             "1238": "unsloth_Qwen3-30B-A3B-Instruct-2507-GGUF"}
+    PORTS = {
+        "1234": "unsloth_Qwen3.5-35B-A3B-GGUF",
+        "1238": "unsloth_Qwen3-30B-A3B-Instruct-2507-GGUF",
+    }
 
     def __init__(self, port=1238, timeout=600, retries=1):
         if isinstance(port, str) and port.isdigit():
@@ -273,8 +290,7 @@ class NovaMaxLLM:
                     d = json.load(r)
                 choice = d["choices"][0]
                 finish = choice.get("finish_reason")
-                self.last_meta = {"finish_reason": finish,
-                                  "usage": d.get("usage")}
+                self.last_meta = {"finish_reason": finish, "usage": d.get("usage")}
                 # finish_reason=="length" 与 Ollama done_reason=="length" 同义：截断即降级
                 status = "degraded" if finish == "length" else "normal"
                 return choice["message"]["content"], status
@@ -338,6 +354,7 @@ class GLMCloudLLM:
     def _key():
         try:
             from pathlib import Path
+
             # engine/llm.py 的 parents[2] = 项目根（与 a0_agent 的 parent.parent 同点）
             p = Path(__file__).resolve().parents[2] / "portal" / "audit_ai_config.json"
             if p.exists():
@@ -347,13 +364,16 @@ class GLMCloudLLM:
         except Exception:  # noqa: BLE001
             pass
         import os
+
         return os.environ.get("GLM_API_KEY", "")
 
     def chat(self, system, user, model=None):
         key = self._key()
         if not key:
-            raise LLMError("智谱 key 未配置（audit_ai_config.json zhipu_key / "
-                           "GLM_API_KEY 均空）——参谋长席位不静默降档")
+            raise LLMError(
+                "智谱 key 未配置（audit_ai_config.json zhipu_key / "
+                "GLM_API_KEY 均空）——参谋长席位不静默降档"
+            )
         body = {
             "model": model or self.model,
             "max_tokens": 16384,
@@ -370,18 +390,24 @@ class GLMCloudLLM:
                 req = urllib.request.Request(
                     self.ENDPOINT,
                     data=json.dumps(body).encode("utf-8"),
-                    headers={"Content-Type": "application/json",
-                             "Authorization": "Bearer " + key},
+                    headers={
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + key,
+                    },
                 )
                 with op.open(req, timeout=self.timeout) as r:
                     d = json.load(r)
                 msg = (d.get("choices") or [{}])[0].get("message") or {}
                 out = (msg.get("content") or "").strip()
-                self.last_meta = {"finish_reason": d.get("finish_reason"),
-                                  "usage": d.get("usage")}
+                self.last_meta = {
+                    "finish_reason": d.get("finish_reason"),
+                    "usage": d.get("usage"),
+                }
                 if not out:
-                    raise LLMError("glm 空回（思考型吞 content? finish=%s）"
-                                   % d.get("finish_reason"))
+                    raise LLMError(
+                        "glm 空回（思考型吞 content? finish=%s）"
+                        % d.get("finish_reason")
+                    )
                 return out, "normal"
             except LLMError:
                 raise
@@ -433,14 +459,21 @@ class DeepSeekLLM:
     # 短预算会把正文饿空——见 engine/deepseek.py chat_full 判例）。
     DEFAULT_MAX_TOKENS = 2048
 
-    def __init__(self, model=None, timeout=180, retries=1, api_key=None,
-                 transport=None, client=None):
+    def __init__(
+        self,
+        model=None,
+        timeout=180,
+        retries=1,
+        api_key=None,
+        transport=None,
+        client=None,
+    ):
         self.model = model or DEFAULT_DEEPSEEK_MODEL
         self.timeout = timeout
         self.retries = retries
         self.api_key = api_key
-        self.transport = transport      # 注入离线 transport（透传 DeepSeekClient）
-        self._client = client           # 注入现成 client/测试桩；None → 首次 chat 惰性建
+        self.transport = transport  # 注入离线 transport（透传 DeepSeekClient）
+        self._client = client  # 注入现成 client/测试桩；None → 首次 chat 惰性建
         self.last_meta = None
 
     def _ensure_client(self):
@@ -450,9 +483,12 @@ class DeepSeekLLM:
         mod = _deepseek_module()
         try:
             self._client = mod.DeepSeekClient(
-                api_key=self.api_key, model=self.model,
-                timeout=self.timeout, retries=self.retries,
-                transport=self.transport)
+                api_key=self.api_key,
+                model=self.model,
+                timeout=self.timeout,
+                retries=self.retries,
+                transport=self.transport,
+            )
         except Exception as exc:  # noqa: BLE001 —— 任何构造失败都必须显式抛错
             raise LLMError("deepseek 客户端不可用：%s——云端席位不静默降档" % exc)
         return self._client
@@ -463,10 +499,9 @@ class DeepSeekLLM:
         if system:
             messages.append({"role": "system", "content": str(system)})
         messages.append({"role": "user", "content": str(user)})
-        opts = {"temperature": 0.4,
-                "max_tokens": self.DEFAULT_MAX_TOKENS}
+        opts = {"temperature": 0.4, "max_tokens": self.DEFAULT_MAX_TOKENS}
         for key in ("temperature", "max_tokens", "response_format"):
-            if key in kw:                      # 已知档位透传；未知 kw 忽略（不猜语义）
+            if key in kw:  # 已知档位透传；未知 kw 忽略（不猜语义）
                 opts[key] = kw[key]
         model = model or self.model
         mod = _deepseek_module()
@@ -475,18 +510,24 @@ class DeepSeekLLM:
         except mod.DeepSeekError as exc:
             raise LLMError("deepseek 通道调用失败：%s——云端席位不静默降档" % exc)
         except Exception as exc:  # noqa: BLE001 —— transport 异常也要归一
-            raise LLMError("deepseek 通道调用失败：%s: %s——云端席位不静默降档"
-                           % (type(exc).__name__, exc))
+            raise LLMError(
+                "deepseek 通道调用失败：%s: %s——云端席位不静默降档"
+                % (type(exc).__name__, exc)
+            )
         text = str((full or {}).get("content") or "").strip()
         finish = (full or {}).get("finish_reason")
-        self.last_meta = {"model": (full or {}).get("model") or model,
-                          "finish_reason": finish,
-                          "usage": (full or {}).get("usage") or {}}
+        self.last_meta = {
+            "model": (full or {}).get("model") or model,
+            "finish_reason": finish,
+            "usage": (full or {}).get("usage") or {},
+        }
         if not text:
             # 假成功判例：HTTP 200 但正文为空（推理 token 吃光预算）≠ 可用
             self.last_meta["error"] = "empty_content"
-            raise LLMError("deepseek 空回（finish=%s；推理 token 可能吃光 max_tokens）"
-                           "——云端席位不静默降档" % finish)
+            raise LLMError(
+                "deepseek 空回（finish=%s；推理 token 可能吃光 max_tokens）"
+                "——云端席位不静默降档" % finish
+            )
         return text, ("degraded" if finish == "length" else "normal")
 
 
@@ -522,20 +563,20 @@ class OpenClawLLM:
     - 零密钥落盘：本层不读任何 key env，密钥由 OpenClaw secret store 承载。
     """
 
-    AGENT = "zhuge"          # 诸葛亮在 OpenClaw agent-config 中的 agent 名
-    PROMPT_LIMIT = 16000     # 与 8796 /api/chat、portal 口径一致：单行提示上限
+    AGENT = "zhuge"  # 诸葛亮在 OpenClaw agent-config 中的 agent 名
+    PROMPT_LIMIT = 16000  # 与 8796 /api/chat、portal 口径一致：单行提示上限
 
     def __init__(self, agent=None, model=None, timeout=None):
         self.agent = agent or self.AGENT
-        self.model = model or ""   # 仅请求口径记录；实际模型由 agent-config 决定
-        self.timeout = timeout     # None → openclaw_cli.DEFAULT_TIMEOUT（env 可覆盖）
+        self.model = model or ""  # 仅请求口径记录；实际模型由 agent-config 决定
+        self.timeout = timeout  # None → openclaw_cli.DEFAULT_TIMEOUT（env 可覆盖）
         self.last_meta = None
 
     @classmethod
     def compose_prompt(cls, system, user):
         """system + user 拼单行后截 PROMPT_LIMIT（与 openclaw_cli.run 的空白归一幂等）"""
         one_line = " ".join(("%s %s" % (system or "", user or "")).split())
-        return one_line[:cls.PROMPT_LIMIT]
+        return one_line[: cls.PROMPT_LIMIT]
 
     def chat(self, system, user, model=None):
         prompt = self.compose_prompt(system, user)
@@ -544,14 +585,19 @@ class OpenClawLLM:
         except Exception as exc:  # noqa: BLE001 —— 载体桥缺失也必须抛 LLMError
             raise LLMError("openclaw_cli 不可用：%s——异族席位不静默降档" % exc)
         carrier = oc.agent_primary_model(self.agent)
-        self.last_meta = {"mode": "openclaw", "agent": self.agent,
-                          "carrier": carrier, "relay": oc.is_relay(carrier),
-                          "requested_model": model or self.model or "",
-                          "prompt_chars": len(prompt)}
+        self.last_meta = {
+            "mode": "openclaw",
+            "agent": self.agent,
+            "carrier": carrier,
+            "relay": oc.is_relay(carrier),
+            "requested_model": model or self.model or "",
+            "prompt_chars": len(prompt),
+        }
         if not prompt:
             self.last_meta["error"] = "empty_prompt"
-            raise LLMError("openclaw 载体提示为空（agent=%s）——异族席位不静默降档"
-                           % self.agent)
+            raise LLMError(
+                "openclaw 载体提示为空（agent=%s）——异族席位不静默降档" % self.agent
+            )
         # 不传 model：实际模型由 agent-config 决定（--model 仅调试覆盖用，运行时不用）
         if self.timeout is None:
             text, err = oc.run(self.agent, prompt)
@@ -559,10 +605,11 @@ class OpenClawLLM:
             text, err = oc.run(self.agent, prompt, timeout=self.timeout)
         if err or not text:
             self.last_meta["error"] = err or "empty_output"
-            raise LLMError("openclaw 载体不可用（agent=%s, carrier=%s）：%s"
-                           "——异族席位不静默降档"
-                           % (self.agent, carrier or "unknown",
-                              err or "empty_output"))
+            raise LLMError(
+                "openclaw 载体不可用（agent=%s, carrier=%s）：%s"
+                "——异族席位不静默降档"
+                % (self.agent, carrier or "unknown", err or "empty_output")
+            )
         return text, "normal"
 
 
@@ -584,13 +631,15 @@ class OpenAILLM:
     DEFAULT_BASE = "https://api.openai.com/v1"
     KEY_ENVS = ("OPENAI_API_KEY", "OPENAI_GPT6_KEY")
 
-    def __init__(self, model="gpt-6.0", timeout=240, retries=1,
-                 base_url=None, api_key=None):
+    def __init__(
+        self, model="gpt-6.0", timeout=240, retries=1, base_url=None, api_key=None
+    ):
         self.model = model or "gpt-6.0"
         self.timeout = timeout
         self.retries = retries
-        self.base_url = (base_url or os.environ.get("OPENAI_BASE_URL")
-                         or self.DEFAULT_BASE).rstrip("/")
+        self.base_url = (
+            base_url or os.environ.get("OPENAI_BASE_URL") or self.DEFAULT_BASE
+        ).rstrip("/")
         self.api_key = api_key or ""
         self.last_meta = None
 
@@ -605,8 +654,10 @@ class OpenAILLM:
     def chat(self, system, user, model=None):
         key = self.api_key or self._key()
         if not key:
-            raise LLMError("openai key 未配置（%s 均空）——异族席位不静默降档"
-                           % " / ".join(self.KEY_ENVS))
+            raise LLMError(
+                "openai key 未配置（%s 均空）——异族席位不静默降档"
+                % " / ".join(self.KEY_ENVS)
+            )
         body = {
             "model": model or self.model,
             "max_tokens": 4000,
@@ -623,8 +674,10 @@ class OpenAILLM:
                 req = urllib.request.Request(
                     self.base_url + "/chat/completions",
                     data=json.dumps(body).encode("utf-8"),
-                    headers={"Content-Type": "application/json",
-                             "Authorization": "Bearer " + key},
+                    headers={
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + key,
+                    },
                 )
                 with op.open(req, timeout=self.timeout) as r:
                     d = json.load(r)
@@ -632,8 +685,7 @@ class OpenAILLM:
                 msg = choice.get("message") or {}
                 out = (msg.get("content") or "").strip()
                 finish = choice.get("finish_reason")
-                self.last_meta = {"finish_reason": finish,
-                                  "usage": d.get("usage")}
+                self.last_meta = {"finish_reason": finish, "usage": d.get("usage")}
                 if not out:
                     raise LLMError("openai 空回（finish=%s）" % finish)
                 return out, ("degraded" if finish == "length" else "normal")

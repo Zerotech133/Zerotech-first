@@ -9,6 +9,7 @@
 退出码：0 全部心跳成功；1 有失败；2 自身错误（客户端/配置）。
 用法：python agent_platform/tools/seat_heartbeat.py --quiet
 """
+
 from __future__ import annotations
 
 import argparse
@@ -39,38 +40,57 @@ def load_config(path=CONFIG) -> dict:
 def _client():
     sys.path.insert(0, str(PLATFORM))
     from engine import deepseek  # noqa: WPS433
+
     return deepseek.DeepSeekClient()
 
 
 def seat_brief(seat: str, bundle: dict) -> dict:
     card = (bundle.get("agents") or {}).get(seat) or {}
-    return {"seat": seat,
-            "name": card.get("cn_name") or seat,
-            "role": card.get("role_cn") or card.get("role_profile") or "",
-            "charter": (card.get("charter") or "")[:300]}
+    return {
+        "seat": seat,
+        "name": card.get("cn_name") or seat,
+        "role": card.get("role_cn") or card.get("role_profile") or "",
+        "charter": (card.get("charter") or "")[:300],
+    }
 
 
 def heartbeat_one(client, seat: str, brief: dict, model: str, max_tokens: int) -> dict:
-    system = ("你是数字军团席位自检器。只用一句话确认在岗，并复述你的岗位职责；"
-              "不调用工具、不编造数据、不执行动作。")
+    system = (
+        "你是数字军团席位自检器。只用一句话确认在岗，并复述你的岗位职责；"
+        "不调用工具、不编造数据、不执行动作。"
+    )
     user = "席位：%s（%s）。岗位：%s。职责摘要：%s" % (
-        brief["seat"], brief["name"], brief["role"], brief["charter"])
+        brief["seat"],
+        brief["name"],
+        brief["role"],
+        brief["charter"],
+    )
     t0 = time.time()
     try:
         reply = client.chat(
-            [{"role": "system", "content": system},
-             {"role": "user", "content": user}],
-            model=model, temperature=0.0, max_tokens=max_tokens)
+            [{"role": "system", "content": system}, {"role": "user", "content": user}],
+            model=model,
+            temperature=0.0,
+            max_tokens=max_tokens,
+        )
         text = str(reply or "").strip()
-        return {"seat": seat, "ok": bool(text), "model": model,
-                "elapsed_ms": int((time.time() - t0) * 1000),
-                "reply_len": len(text), "reply_sha8": hashlib.sha256(
-                    text.encode("utf-8")).hexdigest()[:8],
-                "reply_head": text[:120]}
+        return {
+            "seat": seat,
+            "ok": bool(text),
+            "model": model,
+            "elapsed_ms": int((time.time() - t0) * 1000),
+            "reply_len": len(text),
+            "reply_sha8": hashlib.sha256(text.encode("utf-8")).hexdigest()[:8],
+            "reply_head": text[:120],
+        }
     except Exception as exc:  # noqa: BLE001
-        return {"seat": seat, "ok": False, "model": model,
-                "elapsed_ms": int((time.time() - t0) * 1000),
-                "error": "%s: %s" % (type(exc).__name__, str(exc)[:160])}
+        return {
+            "seat": seat,
+            "ok": False,
+            "model": model,
+            "elapsed_ms": int((time.time() - t0) * 1000),
+            "error": "%s: %s" % (type(exc).__name__, str(exc)[:160]),
+        }
 
 
 def record(results: list, status_root=None) -> Path:
@@ -82,11 +102,14 @@ def record(results: list, status_root=None) -> Path:
         d.mkdir(parents=True, exist_ok=True)
         (d / "status.json").write_text(
             json.dumps({**r, "generated_at": ts}, ensure_ascii=False, indent=1),
-            encoding="utf-8")
+            encoding="utf-8",
+        )
     hist = root / "history.jsonl"
     with open(hist, "a", encoding="utf-8") as f:
-        f.write(json.dumps({"generated_at": ts, "results": results},
-                           ensure_ascii=False) + "\n")
+        f.write(
+            json.dumps({"generated_at": ts, "results": results}, ensure_ascii=False)
+            + "\n"
+        )
     lines = hist.read_text(encoding="utf-8").splitlines()
     if len(lines) > MAX_HISTORY:
         hist.write_text("\n".join(lines[-MAX_HISTORY:]) + "\n", encoding="utf-8")
@@ -99,10 +122,16 @@ def emit_audit(result: dict) -> dict:
         if tools not in sys.path:
             sys.path.insert(0, tools)
         import events  # noqa: WPS433
+
         return events.emit(
-            kind="patrol_verdict", task=result["seat"], agent=result["seat"],
-            detail=("seat_heartbeat ok=%s model=%s reply_len=%s" % (
-                result.get("ok"), result.get("model"), result.get("reply_len")))[:300])
+            kind="patrol_verdict",
+            task=result["seat"],
+            agent=result["seat"],
+            detail=(
+                "seat_heartbeat ok=%s model=%s reply_len=%s"
+                % (result.get("ok"), result.get("model"), result.get("reply_len"))
+            )[:300],
+        )
     except Exception as exc:  # noqa: BLE001
         return {"ok": False, "error": type(exc).__name__}
 
@@ -116,35 +145,51 @@ def main(argv=None) -> int:
     args = ap.parse_args(argv)
     if kill_switch_on():
         if not args.quiet:
-            print(json.dumps({"ok": False, "skipped": "kill_switch"}, ensure_ascii=False))
+            print(
+                json.dumps({"ok": False, "skipped": "kill_switch"}, ensure_ascii=False)
+            )
         return 0
     try:
         cfg = load_config(args.config)
         seats = [str(s).upper() for s in (cfg.get("seats") or [])]
         model = str(cfg.get("model") or "deepseek-flash")
         max_tokens = int(cfg.get("max_tokens") or 64)
-        bundle = json.loads((REPO / "portal" / "agent_ide_bundle.json")
-                            .read_text(encoding="utf-8"))
+        bundle = json.loads(
+            (REPO / "portal" / "agent_ide_bundle.json").read_text(encoding="utf-8")
+        )
         client = _client()
-        results = [heartbeat_one(client, s, seat_brief(s, bundle), model, max_tokens)
-                   for s in seats]
+        results = [
+            heartbeat_one(client, s, seat_brief(s, bundle), model, max_tokens)
+            for s in seats
+        ]
         audited = [emit_audit(r) for r in results]
         record(results, args.status_dir or None)
     except Exception as exc:  # noqa: BLE001
-        print(json.dumps({"ok": False, "error": type(exc).__name__,
-                          "detail": str(exc)[:200]}, ensure_ascii=False))
+        print(
+            json.dumps(
+                {"ok": False, "error": type(exc).__name__, "detail": str(exc)[:200]},
+                ensure_ascii=False,
+            )
+        )
         return 2
     ok_count = sum(1 for r in results if r.get("ok"))
-    summary = {"ok": ok_count == len(results), "total": len(results),
-               "ok_count": ok_count, "model": model,
-               "results": results, "audits": audited}
+    summary = {
+        "ok": ok_count == len(results),
+        "total": len(results),
+        "ok_count": ok_count,
+        "model": model,
+        "results": results,
+        "audits": audited,
+    }
     if not args.quiet:
         if args.json:
             print(json.dumps(summary, ensure_ascii=False, indent=1))
         else:
             for r in results:
-                print("%-9s ok=%s len=%s %s" % (r["seat"], r.get("ok"),
-                                                r.get("reply_len"), r.get("error") or ""))
+                print(
+                    "%-9s ok=%s len=%s %s"
+                    % (r["seat"], r.get("ok"), r.get("reply_len"), r.get("error") or "")
+                )
     return 0 if summary["ok"] else 1
 
 

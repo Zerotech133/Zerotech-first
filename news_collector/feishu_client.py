@@ -14,6 +14,7 @@
 - 凭证缺省读 ~/.lark-cli/config.json 第一项（send_feishu 判例），
   可显式传 (app_id, app_secret) 供独立 app 接入。
 """
+
 import json
 import os
 import sys
@@ -43,9 +44,10 @@ def _biz_code_from_body(raw):
 def _brief(raw, n=200):
     return str(raw or "").replace("\n", " ")[:n]
 
-_TAT_CACHE = {}                # (app_id, app_secret) -> (expire_ts, tat)
+
+_TAT_CACHE = {}  # (app_id, app_secret) -> (expire_ts, tat)
 _TAT_LOCK = threading.Lock()
-_TAT_TTL = 7200 - 600          # 提前 600s 过期
+_TAT_TTL = 7200 - 600  # 提前 600s 过期
 # 2026-10-16 审计：token 失效/即将失效类业务码 → 清缓存换新重发一次
 _TAT_INVALID_CODES = {99991661, 99991663, 99991664, 99991668}
 
@@ -60,8 +62,13 @@ def _canonical_app_id():
     v = (os.environ.get("FEISHU_APP_ID") or "").strip()
     if v:
         return v
-    kf = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                      "portal", "work", "feishu_secrets", "canonical.json")
+    kf = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "portal",
+        "work",
+        "feishu_secrets",
+        "canonical.json",
+    )
     try:
         with open(kf, encoding="utf-8") as f:
             return str(json.load(f).get("app_id") or "").strip()
@@ -100,19 +107,27 @@ def load_app_creds():
                 sec = app.get("appSecret")
                 if isinstance(sec, str) and sec:
                     return want, sec
-                print("[feishu_client] app %s secret 非明文（外置引用），"
-                      "静态凭证不可用" % want, file=sys.stderr)
+                print(
+                    "[feishu_client] app %s secret 非明文（外置引用），"
+                    "静态凭证不可用" % want,
+                    file=sys.stderr,
+                )
                 return None, None
-        print("[feishu_client] 指定 app_id %s 不在 ~/.lark-cli/config.json"
-              "（现有: %s）" % (want, ",".join(str(a.get("appId")) for a in apps)),
-              file=sys.stderr)
+        print(
+            "[feishu_client] 指定 app_id %s 不在 ~/.lark-cli/config.json"
+            "（现有: %s）" % (want, ",".join(str(a.get("appId")) for a in apps)),
+            file=sys.stderr,
+        )
         return None, None
     aid, sec = apps[0].get("appId"), apps[0].get("appSecret")
     if aid and aid not in _WARNED_APPS:
         _WARNED_APPS.add(aid)
-        print("[feishu_client] WARN 未配置 FEISHU_APP_ID/canonical.json，"
-              "退回 apps[0]=%s（config 共 %d 个 app，顺序漂移会导致 400）"
-              % (aid, len(apps)), file=sys.stderr)
+        print(
+            "[feishu_client] WARN 未配置 FEISHU_APP_ID/canonical.json，"
+            "退回 apps[0]=%s（config 共 %d 个 app，顺序漂移会导致 400）"
+            % (aid, len(apps)),
+            file=sys.stderr,
+        )
     if aid and isinstance(sec, str):
         return aid, sec
     return None, None
@@ -132,20 +147,19 @@ def get_tat(app_id=None, app_secret=None, *, use_cache=True):
         c = _TAT_CACHE.get(key)
         if use_cache and c and c[0] > time.time():
             return c[1]
-    body = json.dumps({"app_id": app_id,
-                       "app_secret": app_secret}).encode("utf-8")
+    body = json.dumps({"app_id": app_id, "app_secret": app_secret}).encode("utf-8")
     req = urllib.request.Request(
         OPEN + "/auth/v3/tenant_access_token/internal",
-        data=body, headers={"Content-Type": "application/json"})
+        data=body,
+        headers={"Content-Type": "application/json"},
+    )
     try:
         with urllib.request.urlopen(req, timeout=15) as r:
-            tok = json.loads(r.read().decode("utf-8")).get(
-                "tenant_access_token")
+            tok = json.loads(r.read().decode("utf-8")).get("tenant_access_token")
     except Exception as e:
         # 2026-10-16 审计：token 获取失败原全静默（调用方只见
         # "no tenant token" 无从定位）——stderr 补原因（网络/代理/凭证）
-        print("[feishu_client] get_tat FAIL %s" % str(e)[:150],
-              file=sys.stderr)
+        print("[feishu_client] get_tat FAIL %s" % str(e)[:150], file=sys.stderr)
         return None
     if not tok:
         return None
@@ -165,6 +179,7 @@ def _flow_record(ok, target, channel="openapi", kind=None):
         if root not in sys.path:
             sys.path.insert(0, root)
         import push_flow
+
         push_flow.record(kind or push_flow.infer_kind(), channel, target, 1, ok)
     except Exception:
         pass
@@ -214,11 +229,16 @@ def _agent_webhook():
     now = time.time()
     if now - _AGENT_WEBHOOK_CACHE["ts"] > 60.0:
         try:
-            kf = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                              "portal", "work", "push_secrets.json")
+            kf = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                "portal",
+                "work",
+                "push_secrets.json",
+            )
             with open(kf, encoding="utf-8") as f:
                 _AGENT_WEBHOOK_CACHE["url"] = str(
-                    json.load(f).get(AGENT_WEBHOOK_SECRETS_KEY) or "").strip()
+                    json.load(f).get(AGENT_WEBHOOK_SECRETS_KEY) or ""
+                ).strip()
         except (OSError, ValueError):
             _AGENT_WEBHOOK_CACHE["url"] = ""
         _AGENT_WEBHOOK_CACHE["ts"] = now
@@ -233,12 +253,16 @@ def agent_webhook_endpoint():
     → URL 或 ""（未配置：空/缺键/占位符）。"""
     return _agent_webhook()
 
+
 # K-PUSH-012 供钥：PUSH_HUB_KEY env 优先，portal/work/push_secrets.json
 # 兜底（gitignore 不入库；60s 缓存降读盘频次）。各跑批计划任务宿主环境
 # 通常无 PUSH_* 变量，文件兜底保证生产者能过 8097 鉴权闸（供钥链闭环）。
 HUB_SECRETS_FILE = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "portal", "work", "push_secrets.json")
+    "portal",
+    "work",
+    "push_secrets.json",
+)
 _HUB_KEY_CACHE = {"ts": 0.0, "key": ""}
 
 
@@ -250,16 +274,26 @@ def _hub_key():
         try:
             with open(HUB_SECRETS_FILE, encoding="utf-8") as f:
                 _HUB_KEY_CACHE["key"] = str(
-                    json.load(f).get("push_hub_key") or "").strip()
+                    json.load(f).get("push_hub_key") or ""
+                ).strip()
         except (OSError, ValueError):
             _HUB_KEY_CACHE["key"] = ""
         _HUB_KEY_CACHE["ts"] = time.time()
     return _HUB_KEY_CACHE["key"]
 
 
-def _hub_send(content, msg_type, receive_id, receive_id_type,
-              kind=None, critical=False, timeout=8, route_targets=None,
-              domain=None, sender_role=None):
+def _hub_send(
+    content,
+    msg_type,
+    receive_id,
+    receive_id_type,
+    kind=None,
+    critical=False,
+    timeout=8,
+    route_targets=None,
+    domain=None,
+    sender_role=None,
+):
     """→ (ok, why, message_id) 闸门结果；hub 不可达也返回失败，不直发。
     K-ORG-201 W38：hub 响应含 message_id（闸内直发回执）时透出，缺则 None。
     K-ORG-204：route_targets 透传给 hub gate，hub 侧转发 Agent webhook。
@@ -268,10 +302,14 @@ def _hub_send(content, msg_type, receive_id, receive_id_type,
     W3（2026-10-24）：sender_role 透传给 hub，由 8097 按角色选发送 app
     （sender 统一：通知/指令/执行/问答各用自己的 app）。缺省不发送该字段。"""
     try:
-        body_obj = {"content": content, "msg_type": msg_type,
-                    "receive_id": receive_id,
-                    "receive_id_type": receive_id_type or "open_id",
-                    "kind": kind, "critical": critical}
+        body_obj = {
+            "content": content,
+            "msg_type": msg_type,
+            "receive_id": receive_id,
+            "receive_id_type": receive_id_type or "open_id",
+            "kind": kind,
+            "critical": critical,
+        }
         if route_targets is not None:
             body_obj["route_targets"] = route_targets
         if domain:
@@ -283,18 +321,18 @@ def _hub_send(content, msg_type, receive_id, receive_id_type,
         if not key:
             return False, "hub authorization not configured", None
         rq = urllib.request.Request(
-            HUB_SEND_URL, data=body,
-            headers={"Content-Type": "application/json", "X-Push-Hub-Key": key})
+            HUB_SEND_URL,
+            data=body,
+            headers={"Content-Type": "application/json", "X-Push-Hub-Key": key},
+        )
         with urllib.request.urlopen(rq, timeout=timeout) as r:
             resp = json.loads(r.read().decode("utf-8"))
         if resp.get("ok"):
             mid = resp.get("message_id")
-            return True, str(resp.get("why") or "hub ok"), (
-                str(mid) if mid else None)
+            return True, str(resp.get("why") or "hub ok"), (str(mid) if mid else None)
         # B1：闸门响应键名统一为 why（error 兜底一版——老闸门只回 error
         # 时真因不应被 "hub deny" 吞掉）
-        return False, str(resp.get("why") or resp.get("error")
-                          or "hub deny"), None
+        return False, str(resp.get("why") or resp.get("error") or "hub deny"), None
     except urllib.error.HTTPError as e:
         if e.code in (401, 403):
             return False, "hub authorization denied", None
@@ -303,9 +341,18 @@ def _hub_send(content, msg_type, receive_id, receive_id_type,
         return False, "hub unavailable or invalid response", None
 
 
-def send_msg(content, msg_type, receive_id=None, receive_id_type="open_id",
-             app_id=None, app_secret=None, kind=None, critical=False,
-             via_hub=True, sender_role=None):
+def send_msg(
+    content,
+    msg_type,
+    receive_id=None,
+    receive_id_type="open_id",
+    app_id=None,
+    app_secret=None,
+    kind=None,
+    critical=False,
+    via_hub=True,
+    sender_role=None,
+):
     """发消息/卡片 → (ok, why)。why 文本兼容 send_feishu 判例
     （no app creds / openapi code=N / openapi err ...）。
 
@@ -316,18 +363,39 @@ def send_msg(content, msg_type, receive_id=None, receive_id_type="open_id",
     K-ORG-201 W38：内部委托 send_msg_tracked 丢掉第三元 message_id，
     在役调用方签名与返回完全零感知。
     W3：sender_role 交给 8097 按角色选发送 app（不填=闸门默认 canonical）。"""
-    ok, why, _mid = send_msg_tracked(content, msg_type, receive_id,
-                                     receive_id_type, app_id, app_secret,
-                                     kind, critical, via_hub, False, None,
-                                     None, sender_role)
+    ok, why, _mid = send_msg_tracked(
+        content,
+        msg_type,
+        receive_id,
+        receive_id_type,
+        app_id,
+        app_secret,
+        kind,
+        critical,
+        via_hub,
+        False,
+        None,
+        None,
+        sender_role,
+    )
     return ok, why
 
 
-def send_msg_tracked(content, msg_type, receive_id=None,
-                     receive_id_type="open_id", app_id=None, app_secret=None,
-                     kind=None, critical=False, via_hub=True,
-                     flow_record=True, route_targets=None, domain=None,
-                     sender_role=None):
+def send_msg_tracked(
+    content,
+    msg_type,
+    receive_id=None,
+    receive_id_type="open_id",
+    app_id=None,
+    app_secret=None,
+    kind=None,
+    critical=False,
+    via_hub=True,
+    flow_record=True,
+    route_targets=None,
+    domain=None,
+    sender_role=None,
+):
     """W38 送达证据版发消息 → (ok, why, message_id or None)。参数同 send_msg。
 
     message_id 口径：经 hub=hub /api/send 响应顶层 message_id；
@@ -339,19 +407,44 @@ def send_msg_tracked(content, msg_type, receive_id=None,
     （App Webhook / 事件订阅），废弃 OpenAPI 直发 chat_id 路径。
     route_targets 为 push_targets 群列表透传给 Agent 侧路由参考。"""
     if via_hub:
-        return _hub_send(content, msg_type, receive_id, receive_id_type,
-                         kind, critical, route_targets=route_targets,
-                         domain=domain, sender_role=sender_role)
+        return _hub_send(
+            content,
+            msg_type,
+            receive_id,
+            receive_id_type,
+            kind,
+            critical,
+            route_targets=route_targets,
+            domain=domain,
+            sender_role=sender_role,
+        )
     # K-ORG-204：via_hub=False 改为 Agent webhook（闸内直发时由 8097 指定 app）
-    return _agent_webhook_send(content, msg_type, receive_id, receive_id_type,
-                               kind, critical, route_targets=route_targets,
-                               flow_record=flow_record, app_id=app_id,
-                               app_secret=app_secret)
+    return _agent_webhook_send(
+        content,
+        msg_type,
+        receive_id,
+        receive_id_type,
+        kind,
+        critical,
+        route_targets=route_targets,
+        flow_record=flow_record,
+        app_id=app_id,
+        app_secret=app_secret,
+    )
 
 
-def _agent_webhook_send(content, msg_type, receive_id, receive_id_type,
-                        kind, critical, route_targets, flow_record,
-                        app_id=None, app_secret=None):
+def _agent_webhook_send(
+    content,
+    msg_type,
+    receive_id,
+    receive_id_type,
+    kind,
+    critical,
+    route_targets,
+    flow_record,
+    app_id=None,
+    app_secret=None,
+):
     """K-ORG-204：推飞书 Agent webhook（App Webhook / 事件订阅）。
     hub 闸内直发路径改道至此——不再直调 OpenAPI /im/v1/messages chat_id。
     route_targets=push_targets 群列表透传给 Agent 侧路由参考。
@@ -364,43 +457,75 @@ def _agent_webhook_send(content, msg_type, receive_id, receive_id_type,
     webhook = _agent_webhook()
     if not webhook:
         if agent_webhook_fallback_enabled():
-            return _openapi_direct_send(content, msg_type, receive_id,
-                                        receive_id_type, kind, flow_record,
-                                        app_id=app_id, app_secret=app_secret)
-        return False, ("no endpoint configured: agent webhook unset (env "
-                       "PUSH_AGENT_WEBHOOK / push_secrets.json %s) and "
-                       "openapi fallback disabled"
-                       % AGENT_WEBHOOK_SECRETS_KEY), None
+            return _openapi_direct_send(
+                content,
+                msg_type,
+                receive_id,
+                receive_id_type,
+                kind,
+                flow_record,
+                app_id=app_id,
+                app_secret=app_secret,
+            )
+        return (
+            False,
+            (
+                "no endpoint configured: agent webhook unset (env "
+                "PUSH_AGENT_WEBHOOK / push_secrets.json %s) and "
+                "openapi fallback disabled" % AGENT_WEBHOOK_SECRETS_KEY
+            ),
+            None,
+        )
     payload = {
         "content": content,
         "msg_type": msg_type,
-        "receive_id": webhook,   # K-ORG-204：receive_id 语义改为 Agent webhook URL
+        "receive_id": webhook,  # K-ORG-204：receive_id 语义改为 Agent webhook URL
         "route_targets": route_targets or [],
         "kind": kind,
         "critical": critical,
     }
     # 兼容旧调用：route_targets 为空但 receive_id 是 chat_id → 单群透传
     if not route_targets and receive_id and str(receive_id).startswith("oc_"):
-        payload["route_targets"] = [{"name": "legacy", "id": receive_id,
-                                      "type": receive_id_type}]
+        payload["route_targets"] = [
+            {"name": "legacy", "id": receive_id, "type": receive_id_type}
+        ]
     try:
         body = json.dumps(payload).encode("utf-8")
         rq = urllib.request.Request(
-            webhook, data=body,
-            headers={"Content-Type": "application/json",
-                     "X-Push-From": "hub-gate-agent-dispatch"})
+            webhook,
+            data=body,
+            headers={
+                "Content-Type": "application/json",
+                "X-Push-From": "hub-gate-agent-dispatch",
+            },
+        )
         with urllib.request.urlopen(rq, timeout=15) as r:
             resp = json.loads(r.read().decode("utf-8"))
-        ok = bool(resp.get("ok")) or resp.get("code") == 0 or resp.get("status") in ("accepted", "queued", "received")
+        ok = (
+            bool(resp.get("ok"))
+            or resp.get("code") == 0
+            or resp.get("status") in ("accepted", "queued", "received")
+        )
         mid = None
         if isinstance(resp, dict):
-            mid = (resp.get("message_id") or resp.get("mid")
-                   or (resp.get("data") or {}).get("message_id"))
+            mid = (
+                resp.get("message_id")
+                or resp.get("mid")
+                or (resp.get("data") or {}).get("message_id")
+            )
         mid = str(mid) if mid else None
         if flow_record:
             _flow_record(ok, webhook, kind=kind)
-        return ok, str(resp.get("why") or resp.get("msg")
-                        or resp.get("error") or "agent webhook ok"), mid
+        return (
+            ok,
+            str(
+                resp.get("why")
+                or resp.get("msg")
+                or resp.get("error")
+                or "agent webhook ok"
+            ),
+            mid,
+        )
     except urllib.error.HTTPError as e:
         raw = ""
         try:
@@ -441,12 +566,15 @@ def _target_app_guard(receive_id, receive_id_type="", targets=None):
     同一 oc_ 值且都能发送成功）→ 仅对 open_id 目标做严格域校验；chat_id
     目标放行（其登记 app 仅作备注）。旧条目无 app 字段 → None（不拦）。
     """
-    if str(receive_id or "").startswith("oc_") or \
-            (receive_id_type or "").lower() == "chat_id":
+    if (
+        str(receive_id or "").startswith("oc_")
+        or (receive_id_type or "").lower() == "chat_id"
+    ):
         return None
     try:
         if targets is None:
             import push_targets
+
             targets = push_targets.targets()
     except Exception:  # noqa: BLE001
         return None
@@ -457,8 +585,16 @@ def _target_app_guard(receive_id, receive_id_type="", targets=None):
     return None
 
 
-def _openapi_direct_send(content, msg_type, receive_id, receive_id_type,
-                         kind, flow_record, app_id=None, app_secret=None):
+def _openapi_direct_send(
+    content,
+    msg_type,
+    receive_id,
+    receive_id_type,
+    kind,
+    flow_record,
+    app_id=None,
+    app_secret=None,
+):
     """DD-1 方案 B 降级路径：Agent webhook 不可用 → OpenAPI 直发
     （K-ORG-204 前的旧出口 POST /im/v1/messages，chat_id/open_id 直发）。
     why 统一带 openapi_fallback: 前缀（证据链可 grep）；message_id 取
@@ -472,31 +608,46 @@ def _openapi_direct_send(content, msg_type, receive_id, receive_id_type,
     tok = get_tat(app_id, app_secret) if app_id else get_tat()
     if not tok:
         if flow_record:
-            _flow_record(False, receive_id, kind=kind,
-                         channel="openapi-fallback")
+            _flow_record(False, receive_id, kind=kind, channel="openapi-fallback")
         return False, "openapi_fallback: no tenant token", None
     want_app = _target_app_guard(receive_id, receive_id_type)
     if want_app:
         used_app = app_id or load_app_creds()[0]
         if used_app and used_app != want_app:
             if flow_record:
-                _flow_record(False, receive_id, kind=kind,
-                             channel="openapi-fallback")
-            return False, ("openapi_fallback: target app mismatch "
-                           "(target needs %s, token app %s)"
-                           % (want_app, used_app))[:300], None
-    body = json.dumps({
-        "receive_id": receive_id, "msg_type": msg_type,
-        "content": _openapi_content(content, msg_type)}).encode("utf-8")
-    url = (OPEN + "/im/v1/messages?receive_id_type=" +
-           urllib.parse.quote(receive_id_type or "open_id", safe=""))
+                _flow_record(False, receive_id, kind=kind, channel="openapi-fallback")
+            return (
+                False,
+                (
+                    "openapi_fallback: target app mismatch "
+                    "(target needs %s, token app %s)" % (want_app, used_app)
+                )[:300],
+                None,
+            )
+    body = json.dumps(
+        {
+            "receive_id": receive_id,
+            "msg_type": msg_type,
+            "content": _openapi_content(content, msg_type),
+        }
+    ).encode("utf-8")
+    url = (
+        OPEN
+        + "/im/v1/messages?receive_id_type="
+        + urllib.parse.quote(receive_id_type or "open_id", safe="")
+    )
     attempts = 3
     resp = None
     last_why = ""
     for attempt in range(1, attempts + 1):
         rq = urllib.request.Request(
-            url, data=body, headers={"Content-Type": "application/json",
-                                     "Authorization": "Bearer " + tok})
+            url,
+            data=body,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + tok,
+            },
+        )
         try:
             with _HTTP_OPEN(rq, timeout=15) as r:
                 resp = json.loads(r.read().decode("utf-8"))
@@ -509,18 +660,17 @@ def _openapi_direct_send(content, msg_type, receive_id, receive_id_type,
             except Exception:  # noqa: BLE001
                 pass
             code = _biz_code_from_body(raw)
-            retryable = (e.code in _RETRY_HTTP_STATUS
-                         or code in _RETRY_BIZ_CODES)
-            last_why = ("openapi_fallback: err HTTP %d %s"
-                        % (e.code, _brief(raw, 300)))[:400]
+            retryable = e.code in _RETRY_HTTP_STATUS or code in _RETRY_BIZ_CODES
+            last_why = (
+                "openapi_fallback: err HTTP %d %s" % (e.code, _brief(raw, 300))
+            )[:400]
             if retryable and attempt < attempts:
                 if code in _TOKEN_BIZ_CODES:
                     tok = get_tat(use_cache=False) or tok
                 time.sleep(0.5 * attempt)
                 continue
             if flow_record:
-                _flow_record(False, receive_id, kind=kind,
-                             channel="openapi-fallback")
+                _flow_record(False, receive_id, kind=kind, channel="openapi-fallback")
             return False, last_why, None
         except Exception as e:  # noqa: BLE001
             last_why = ("openapi_fallback: err " + str(e))[:200]
@@ -528,8 +678,7 @@ def _openapi_direct_send(content, msg_type, receive_id, receive_id_type,
                 time.sleep(0.5 * attempt)
                 continue
             if flow_record:
-                _flow_record(False, receive_id, kind=kind,
-                             channel="openapi-fallback")
+                _flow_record(False, receive_id, kind=kind, channel="openapi-fallback")
             return False, last_why, None
         biz = resp.get("code")
         if biz != 0 and biz in _RETRY_BIZ_CODES and attempt < attempts:
@@ -545,8 +694,9 @@ def _openapi_direct_send(content, msg_type, receive_id, receive_id_type,
     mid = (resp.get("data") or {}).get("message_id") if ok else None
     if flow_record:
         _flow_record(ok, receive_id, kind=kind, channel="openapi-fallback")
-    why = "openapi_fallback: " + (str(resp.get("msg"))[:120] if not ok
-                                  else "openapi direct ok")
+    why = "openapi_fallback: " + (
+        str(resp.get("msg"))[:120] if not ok else "openapi direct ok"
+    )
     return ok, why, (str(mid) if mid else None)
 
 
@@ -565,9 +715,9 @@ def verify_message(message_id, app_id=None, app_secret=None):
         return False
     try:
         rq = urllib.request.Request(
-            OPEN + "/im/v1/messages/" + urllib.parse.quote(str(message_id),
-                                                           safe=""),
-            headers={"Authorization": "Bearer " + tok})
+            OPEN + "/im/v1/messages/" + urllib.parse.quote(str(message_id), safe=""),
+            headers={"Authorization": "Bearer " + tok},
+        )
         with urllib.request.urlopen(rq, timeout=5) as r:
             resp = json.loads(r.read().decode("utf-8"))
         return resp.get("code") == 0
@@ -575,8 +725,9 @@ def verify_message(message_id, app_id=None, app_secret=None):
         return False
 
 
-def upload_image(raw, filename="img.png", image_type="message",
-                 app_id=None, app_secret=None):
+def upload_image(
+    raw, filename="img.png", image_type="message", app_id=None, app_secret=None
+):
     """上传卡内图片 → image_key（失败 None）。multipart 判例保留。"""
     if not app_id or not app_secret:
         app_id, app_secret = load_app_creds()
@@ -588,19 +739,25 @@ def upload_image(raw, filename="img.png", image_type="message",
     boundary = "----QPZMBoundary7MA4YWxkTrZu0gW"
     b = boundary.encode()
     fname = (filename or "img.png").encode("utf-8")
-    parts = [b"--" + b,
-             b'Content-Disposition: form-data; name="image_type"',
-             b"", image_type.encode("utf-8"),
-             b"--" + b,
-             b'Content-Disposition: form-data; name="image"; filename="'
-             + fname + b'"',
-             b"Content-Type: image/png",
-             b""]
+    parts = [
+        b"--" + b,
+        b'Content-Disposition: form-data; name="image_type"',
+        b"",
+        image_type.encode("utf-8"),
+        b"--" + b,
+        b'Content-Disposition: form-data; name="image"; filename="' + fname + b'"',
+        b"Content-Type: image/png",
+        b"",
+    ]
     data = b"\r\n".join(parts) + b"\r\n" + raw + b"\r\n--" + b + b"--\r\n"
     req = urllib.request.Request(
-        OPEN + "/im/v1/images", data=data,
-        headers={"Content-Type": "multipart/form-data; boundary=" + boundary,
-                 "Authorization": "Bearer " + tok})
+        OPEN + "/im/v1/images",
+        data=data,
+        headers={
+            "Content-Type": "multipart/form-data; boundary=" + boundary,
+            "Authorization": "Bearer " + tok,
+        },
+    )
     try:
         with urllib.request.urlopen(req, timeout=60) as r:
             resp = json.loads(r.read().decode("utf-8"))

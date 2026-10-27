@@ -19,6 +19,7 @@ catalog.json（build_catalog.py 已落实测判级 verification_status）推导�
 first_seen 语义：首次进入非 ok 状态的时间，UPSERT 保留旧值——断供计时
 不因重复检查而清零；恢复 ok 时清空。
 """
+
 import io
 import json
 import os
@@ -30,8 +31,7 @@ import psycopg2
 HERE = os.path.dirname(os.path.abspath(__file__))
 CATALOG = os.path.join(HERE, "data", "catalog.json")
 ENV_LOCAL = os.path.join(HERE, ".env.local")
-PG_DSN = dict(host="127.0.0.1", port=5442, dbname="quant_meta",
-              user="quant_user")
+PG_DSN = dict(host="127.0.0.1", port=5442, dbname="quant_meta", user="quant_user")
 PERSIST_DAYS = 7
 
 ALERT_BY_VERIFICATION = {
@@ -76,20 +76,27 @@ def derive(entries):
     for asset, e in entries.items():
         v = e.get("verification_status", "unknown")
         alert = ALERT_BY_VERIFICATION.get(v, "unknown")
-        out.append({
-            "asset": asset, "source": e.get("source"),
-            "verification": v, "freshness": e.get("freshness"),
-            "rows": e.get("rows"), "files": e.get("files"),
-            "manifest_status": e.get("manifest_status"),
-            "alert": alert, "_now": now,
-        })
+        out.append(
+            {
+                "asset": asset,
+                "source": e.get("source"),
+                "verification": v,
+                "freshness": e.get("freshness"),
+                "rows": e.get("rows"),
+                "files": e.get("files"),
+                "manifest_status": e.get("manifest_status"),
+                "alert": alert,
+                "_now": now,
+            }
+        )
     return out
 
 
 def upsert(pg, rows):
     cutoff = datetime.now() - timedelta(days=PERSIST_DAYS)
     with pg.cursor() as cur:
-        cur.executemany("""INSERT INTO meta.disk_health
+        cur.executemany(
+            """INSERT INTO meta.disk_health
             (asset, source, verification, freshness, rows, files,
              manifest_status, alert, first_seen, days_in_alert, checked_at)
             VALUES (%(asset)s, %(source)s, %(verification)s, %(freshness)s,
@@ -115,13 +122,17 @@ def upsert(pg, rows):
                      THEN GREATEST(0, EXTRACT(DAY FROM
                           now() - meta.disk_health.first_seen)::int)
                 ELSE 0 END,
-              checked_at=now()""", rows)
+              checked_at=now()""",
+            rows,
+        )
         # no_data 超 7 天升级 persistent_no_data（断供实锤）
-        cur.execute("""UPDATE meta.disk_health
+        cur.execute(
+            """UPDATE meta.disk_health
                        SET alert = 'persistent_no_data'
                        WHERE alert = 'no_data'
                          AND first_seen IS NOT NULL AND first_seen < %s""",
-                    (cutoff,))
+            (cutoff,),
+        )
         upgraded = cur.rowcount
     pg.commit()
     return upgraded
@@ -143,12 +154,10 @@ def main():
                            WHERE alert = 'persistent_no_data'
                            ORDER BY days_in_alert DESC""")
             persist = cur.fetchall()
-        print("catalog v%s, %d tables checked" % (cat.get("version"),
-                                                  len(rows)))
+        print("catalog v%s, %d tables checked" % (cat.get("version"), len(rows)))
         for a, n in dist:
             print("  %-20s %d" % (a, n))
-        print("persistent_no_data (断供≥%d天): %d" % (PERSIST_DAYS,
-                                                      len(persist)))
+        print("persistent_no_data (断供≥%d天): %d" % (PERSIST_DAYS, len(persist)))
         for r in persist:
             print("   %-22s %-10s %dd" % r)
         if upgraded:

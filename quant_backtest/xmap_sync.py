@@ -43,9 +43,18 @@ TEST_SCHEMA = "xmap_test"
 # 设计稿 §3.2 代码格式映射规则表（rule 引擎唯一依据）
 MARKET_SUFFIX = {"SH": ".SH", "SZ": ".SZ", "BJ": ".BJ"}
 # 兜底前缀推导：market 缺失/未知时
-PREFIX_SUFFIX = (("92", ".BJ"), ("4", ".BJ"), ("8", ".BJ"),
-                 ("6", ".SH"), ("5", ".SH"), ("11", ".SH"),
-                 ("0", ".SZ"), ("3", ".SZ"), ("12", ".SZ"), ("1", ".SZ"))
+PREFIX_SUFFIX = (
+    ("92", ".BJ"),
+    ("4", ".BJ"),
+    ("8", ".BJ"),
+    ("6", ".SH"),
+    ("5", ".SH"),
+    ("11", ".SH"),
+    ("0", ".SZ"),
+    ("3", ".SZ"),
+    ("12", ".SZ"),
+    ("1", ".SZ"),
+)
 
 EXIT_MISSING_CREDENTIAL = 3
 
@@ -74,7 +83,9 @@ def pg_connect():
     _load_env_local_pg_password()
     pwd = os.environ.get("XMAP_PG_PASSWORD", "").strip()
     if not pwd:
-        raise RuntimeError("XMAP_PG_PASSWORD 未配置（env 或 quant_backtest/.env.local）")
+        raise RuntimeError(
+            "XMAP_PG_PASSWORD 未配置（env 或 quant_backtest/.env.local）"
+        )
     return psycopg2.connect(
         host=os.environ.get("XMAP_PG_HOST", "127.0.0.1"),
         port=int(os.environ.get("XMAP_PG_PORT", "5442")),
@@ -189,30 +200,31 @@ def align_rows(rows, securities):
             "list_status": r.get("list_status"),
         }
         item = {"src_id": code, "payload": payload}
-        if ts_src and ts_src in securities:                       # ① ts_code_confirm
-            item.update(dst_id=ts_src, method="ts_code_confirm",
-                        conf="1.000", status="matched")
+        if ts_src and ts_src in securities:  # ① ts_code_confirm
+            item.update(
+                dst_id=ts_src, method="ts_code_confirm", conf="1.000", status="matched"
+            )
             matched.append(item)
-        elif not ts_src and derived and derived in securities:    # ② rule 推导
-            item.update(dst_id=derived, method="rule",
-                        conf="0.990", status="matched")
+        elif not ts_src and derived and derived in securities:  # ② rule 推导
+            item.update(dst_id=derived, method="rule", conf="0.990", status="matched")
             matched.append(item)
         elif ts_src and derived and ts_src != derived and derived in securities:
             # ③a 错码自愈（复盘 A1）：自存 ts_code 不在 S 但推导码在 S
             # → 推导码为准自动修复，audit 留痕（method='rule_fix'）。
-            item.update(dst_id=derived, method="rule_fix",
-                        conf="0.950", status="matched")
+            item.update(
+                dst_id=derived, method="rule_fix", conf="0.950", status="matched"
+            )
             matched.append(item)
-        elif ts_src and derived and ts_src != derived:            # ③ 双码打架且推导也不在 S
+        elif ts_src and derived and ts_src != derived:  # ③ 双码打架且推导也不在 S
             item["reason"] = "ts_code_mismatch"
             unmatched.append(item)
-        elif derived and not ts_src:                              # ③/④ 推导码不在 S
+        elif derived and not ts_src:  # ③/④ 推导码不在 S
             item["reason"] = "dst_not_found"
             unmatched.append(item)
-        elif ts_src:                                              # ④ ts_code 非空但不在 S
+        elif ts_src:  # ④ ts_code 非空但不在 S
             item["reason"] = "dst_not_found"
             unmatched.append(item)
-        else:                                                     # 规则表"其他"→直接入队
+        else:  # 规则表"其他"→直接入队
             item["reason"] = "dst_not_found"
             unmatched.append(item)
     return matched, unmatched
@@ -250,17 +262,31 @@ def upsert_entity(cur, schema, m, entity_type="stock", actor="xmap_sync"):
         SELECT up.id, up.is_insert, up.new_row, prev.old_row
         FROM up LEFT JOIN prev ON true
         """,
-        (entity_type, "rookie", "", m["src_id"],
-         entity_type, m["src_id"], m["dst_id"], m["method"], m["conf"],
-         m["status"], psycopg2.extras.Json(m["payload"])),
+        (
+            entity_type,
+            "rookie",
+            "",
+            m["src_id"],
+            entity_type,
+            m["src_id"],
+            m["dst_id"],
+            m["method"],
+            m["conf"],
+            m["status"],
+            psycopg2.extras.Json(m["payload"]),
+        ),
     )
     map_id, is_insert, new_row, old_row = cur.fetchone()
     cur.execute(
         f"INSERT INTO {schema}.map_audit (map_id, action, old_row, new_row, actor) "
         "VALUES (%s,%s,%s,%s,%s)",
-        (map_id, "insert" if is_insert else "update",
-         psycopg2.extras.Json(old_row) if old_row is not None else None,
-         psycopg2.extras.Json(new_row), actor),
+        (
+            map_id,
+            "insert" if is_insert else "update",
+            psycopg2.extras.Json(old_row) if old_row is not None else None,
+            psycopg2.extras.Json(new_row),
+            actor,
+        ),
     )
     return map_id, "insert" if is_insert else "update"
 
@@ -310,13 +336,20 @@ def load_securities(cur):
     try:  # 回退 Neo4j（可选依赖，失败不阻塞——init 真跑时需确保可达）
         sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
         from kg_client import KgClient  # noqa
+
         kg = KgClient()
-        s = {r["ts_code"] for r in kg.query(
-            "MATCH (n:Security) WHERE n.ts_code IS NOT NULL RETURN n.ts_code AS ts_code")}
+        s = {
+            r["ts_code"]
+            for r in kg.query(
+                "MATCH (n:Security) WHERE n.ts_code IS NOT NULL RETURN n.ts_code AS ts_code"
+            )
+        }
         kg.close()
     except Exception as e:  # noqa
-        print(f"[warn] 零界证券全集获取失败（PG stock_basic 空 且 Neo4j 不可用）：{e}",
-              file=sys.stderr)
+        print(
+            f"[warn] 零界证券全集获取失败（PG stock_basic 空 且 Neo4j 不可用）：{e}",
+            file=sys.stderr,
+        )
     return s
 
 
@@ -333,7 +366,9 @@ def _load_env_local_dsn():
     try:
         for line in open(p, encoding="utf-8"):
             line = line.strip()
-            if line.startswith("CAINIAO_MYSQL_DSN=") and not line.lstrip().startswith("#"):
+            if line.startswith("CAINIAO_MYSQL_DSN=") and not line.lstrip().startswith(
+                "#"
+            ):
                 os.environ["CAINIAO_MYSQL_DSN"] = line.split("=", 1)[1].strip()
                 return
     except OSError:
@@ -342,18 +377,26 @@ def _load_env_local_dsn():
 
 def parse_dsn(dsn):
     u = urlsplit(dsn)
-    return dict(host=u.hostname, port=u.port or 3306, user=u.username,
-                password=u.password or "", database=(u.path or "/").strip("/"),
-                charset="utf8mb4")
+    return dict(
+        host=u.hostname,
+        port=u.port or 3306,
+        user=u.username,
+        password=u.password or "",
+        database=(u.path or "/").strip("/"),
+        charset="utf8mb4",
+    )
 
 
 def get_cainiao_conn():
     _load_env_local_dsn()
     dsn = os.environ.get("CAINIAO_MYSQL_DSN", "").strip()
     if not dsn:
-        print("[exit 3] 缺少菜鸟凭据：请设置环境变量 CAINIAO_MYSQL_DSN"
-              "（mysql://user:pass@host:port/thunder_model?charset=utf8mb4）。"
-              "本轮全量初始化暂缓，待凭据到位。", file=sys.stderr)
+        print(
+            "[exit 3] 缺少菜鸟凭据：请设置环境变量 CAINIAO_MYSQL_DSN"
+            "（mysql://user:pass@host:port/thunder_model?charset=utf8mb4）。"
+            "本轮全量初始化暂缓，待凭据到位。",
+            file=sys.stderr,
+        )
         sys.exit(EXIT_MISSING_CREDENTIAL)
     try:
         import pymysql  # 延迟导入：未安装同样干净退出
@@ -363,12 +406,19 @@ def get_cainiao_conn():
     # pymysql 无 read_only 连接参数（mysql-connector 专属 API）——
     # 只读防线两层：账号权限（xmap_ro 仅 SELECT）为真闸 + 会话级只读为兜底。
     try:
-        conn = pymysql.connect(**parse_dsn(dsn),
-                               connect_timeout=10, cursorclass=__import__(
-                                   "pymysql.cursors", fromlist=["DictCursor"]).DictCursor)
+        conn = pymysql.connect(
+            **parse_dsn(dsn),
+            connect_timeout=10,
+            cursorclass=__import__(
+                "pymysql.cursors", fromlist=["DictCursor"]
+            ).DictCursor,
+        )
     except Exception as e:
-        print(f"[exit 3] 菜鸟 MySQL 不可达：{e}（host 见 DSN；"
-              "内网 192.168.203.x 需 VPN/跳板，自动化重跑即可）", file=sys.stderr)
+        print(
+            f"[exit 3] 菜鸟 MySQL 不可达：{e}（host 见 DSN；"
+            "内网 192.168.203.x 需 VPN/跳板，自动化重跑即可）",
+            file=sys.stderr,
+        )
         sys.exit(EXIT_MISSING_CREDENTIAL)
     try:
         with conn.cursor() as c:
@@ -381,8 +431,10 @@ def get_cainiao_conn():
 
 def fetch_cainiao_stocks(cn_conn, watermark=None):
     """只读拉取菜鸟 stock_basic；watermark 传 timestamptz 时按 update_time > wm 增量。"""
-    sql = ("SELECT stock_code, market, ts_code, stock_name, list_status, update_time "
-           "FROM stock_basic")
+    sql = (
+        "SELECT stock_code, market, ts_code, stock_name, list_status, update_time "
+        "FROM stock_basic"
+    )
     args = None
     if watermark is not None:
         sql += " WHERE update_time > %s"
@@ -407,19 +459,25 @@ def cmd_init(_args):
             create_objects(cur, MAIN_SCHEMA)
             securities = load_securities(cur)
         if not securities:
-            print("[error] 零界证券全集 S 为空，中止 init（先跑零界 stock_basic 同步）",
-                  file=sys.stderr)
+            print(
+                "[error] 零界证券全集 S 为空，中止 init（先跑零界 stock_basic 同步）",
+                file=sys.stderr,
+            )
             sys.exit(1)
         rows = fetch_cainiao_stocks(cn)
         matched, unmatched = align_rows(rows, securities)
         with conn.cursor() as cur:
             n_ins, n_upd = write_results(cur, MAIN_SCHEMA, matched, unmatched)
         conn.commit()
-        print(f"[init] 菜鸟 {len(rows)} 行 | 对齐 {len(matched)}（新插 {n_ins} 更新 {n_upd}）"
-              f" | 入队 {len(unmatched)}")
+        print(
+            f"[init] 菜鸟 {len(rows)} 行 | 对齐 {len(matched)}（新插 {n_ins} 更新 {n_upd}）"
+            f" | 入队 {len(unmatched)}"
+        )
         from collections import Counter
-        print("[init] unmatched 原因分布：",
-              dict(Counter(u["reason"] for u in unmatched)))
+
+        print(
+            "[init] unmatched 原因分布：", dict(Counter(u["reason"] for u in unmatched))
+        )
     finally:
         conn.close()
         cn.close()
@@ -470,9 +528,17 @@ def cmd_incr(_args):
             cur.execute(
                 "INSERT INTO lineage.job_run (job, step, started_at, status, detail) "
                 "VALUES ('xmap_sync', 'incr', now(), 'running', %s) RETURNING id",
-                (json.dumps({"host": parse_dsn(os.environ["CAINIAO_MYSQL_DSN"])["host"]
-                             if os.environ.get("CAINIAO_MYSQL_DSN") else None},
-                            ensure_ascii=False),))
+                (
+                    json.dumps(
+                        {
+                            "host": parse_dsn(os.environ["CAINIAO_MYSQL_DSN"])["host"]
+                            if os.environ.get("CAINIAO_MYSQL_DSN")
+                            else None
+                        },
+                        ensure_ascii=False,
+                    ),
+                ),
+            )
             run_id = cur.fetchone()[0]
         conn.commit()
     except Exception as e:
@@ -490,8 +556,10 @@ def cmd_incr(_args):
         if wm is not None:
             wm_mysql = (wm.astimezone(timezone.utc) + offset).replace(tzinfo=None)
             wm_mysql -= OVERLAP
-            print(f"[incr] stock 水位：{wm} → MySQL 挂钟 {wm_mysql + OVERLAP}"
-                  f"（回看 {OVERLAP}）")
+            print(
+                f"[incr] stock 水位：{wm} → MySQL 挂钟 {wm_mysql + OVERLAP}"
+                f"（回看 {OVERLAP}）"
+            )
         else:
             wm_mysql = None
             print("[incr] stock 水位：（无，全量）")
@@ -508,17 +576,22 @@ def cmd_incr(_args):
             cur.execute(
                 "INSERT INTO xmap.sync_watermark (entity_type, wm) "
                 "VALUES (%s, %s) ON CONFLICT (entity_type) DO UPDATE "
-                "SET wm = EXCLUDED.wm", ("stock", wm_utc))
+                "SET wm = EXCLUDED.wm",
+                ("stock", wm_utc),
+            )
         conn.commit()
-        print(f"[incr] 拉取 {len(rows)} 行 | 新插 {n_ins} 更新 {n_upd} | 入队 {len(unmatched)}"
-              f" | 水位已推进至 {wm_utc.isoformat()}")
+        print(
+            f"[incr] 拉取 {len(rows)} 行 | 新插 {n_ins} 更新 {n_upd} | 入队 {len(unmatched)}"
+            f" | 水位已推进至 {wm_utc.isoformat()}"
+        )
         if run_id is not None:
             try:
                 with conn.cursor() as cur:
                     cur.execute(
                         "UPDATE lineage.job_run SET status='ok', ended_at=now(), "
                         "rows_written=%s WHERE id=%s",
-                        (len(rows), run_id))
+                        (len(rows), run_id),
+                    )
                 conn.commit()
             except Exception as e:
                 print(f"[warn] lineage 收尾失败：{e}", file=sys.stderr)
@@ -530,7 +603,9 @@ def cmd_incr(_args):
                 with conn.cursor() as cur:
                     cur.execute(
                         "UPDATE lineage.job_run SET status='fail', ended_at=now() "
-                        "WHERE id=%s", (run_id,))
+                        "WHERE id=%s",
+                        (run_id,),
+                    )
                 conn.commit()
             except Exception:
                 conn.rollback()
@@ -550,36 +625,97 @@ def _mock_rows():
     while n < 20:
         code = f"6005{i:02d}"
         if code != "600519":
-            rows.append(dict(stock_code=code, market="SH", ts_code=code + ".SH",
-                             stock_name=f"沪样例{n+1}", list_status="L"))
+            rows.append(
+                dict(
+                    stock_code=code,
+                    market="SH",
+                    ts_code=code + ".SH",
+                    stock_name=f"沪样例{n + 1}",
+                    list_status="L",
+                )
+            )
             n += 1
         i += 1
     for i in range(1, 19):
         code = f"0005{i:02d}"
-        rows.append(dict(stock_code=code, market="SZ", ts_code=code + ".SZ",
-                         stock_name=f"深样例{i}", list_status="L"))
+        rows.append(
+            dict(
+                stock_code=code,
+                market="SZ",
+                ts_code=code + ".SZ",
+                stock_name=f"深样例{i}",
+                list_status="L",
+            )
+        )
     # 9 条正常：ts_code 为空，走规则推导（market 明示 2 条 + market 为空 7 条）
-    rows.append(dict(stock_code="688001", market="SH", ts_code=None,
-                     stock_name="科样例1", list_status="L"))
-    rows.append(dict(stock_code="300001", market="SZ", ts_code=None,
-                     stock_name="创样例1", list_status="L"))
-    for i, code in enumerate(["601398", "601988", "000002", "600036",
-                              "000651", "002594", "430047"], start=1):
-        rows.append(dict(stock_code=code, market=None, ts_code=None,
-                         stock_name=f"推导样例{i}", list_status="L"))
+    rows.append(
+        dict(
+            stock_code="688001",
+            market="SH",
+            ts_code=None,
+            stock_name="科样例1",
+            list_status="L",
+        )
+    )
+    rows.append(
+        dict(
+            stock_code="300001",
+            market="SZ",
+            ts_code=None,
+            stock_name="创样例1",
+            list_status="L",
+        )
+    )
+    for i, code in enumerate(
+        ["601398", "601988", "000002", "600036", "000651", "002594", "430047"], start=1
+    ):
+        rows.append(
+            dict(
+                stock_code=code,
+                market=None,
+                ts_code=None,
+                stock_name=f"推导样例{i}",
+                list_status="L",
+            )
+        )
     # 3 条故意问题
-    rows.append(dict(stock_code="900001", market=None, ts_code=None,       # 规则表"其他"
-                     stock_name="坏样例-无法推导", list_status="L"))         # → dst_not_found
-    rows.append(dict(stock_code="600519", market="SH",                      # 自存 ts_code 与推导打架
-                     ts_code="600519.SZ", stock_name="坏样例-后缀打架",
-                     list_status="L"))                                      # → ts_code_mismatch
-    rows.append(dict(stock_code="301999", market="SZ",                      # 合法码但零界 S 无
-                     ts_code="301999.SZ", stock_name="坏样例-零界缺",
-                     list_status="L"))                                      # → dst_not_found
+    rows.append(
+        dict(
+            stock_code="900001",
+            market=None,
+            ts_code=None,  # 规则表"其他"
+            stock_name="坏样例-无法推导",
+            list_status="L",
+        )
+    )  # → dst_not_found
+    rows.append(
+        dict(
+            stock_code="600519",
+            market="SH",  # 自存 ts_code 与推导打架
+            ts_code="600519.SZ",
+            stock_name="坏样例-后缀打架",
+            list_status="L",
+        )
+    )  # → ts_code_mismatch
+    rows.append(
+        dict(
+            stock_code="301999",
+            market="SZ",  # 合法码但零界 S 无
+            ts_code="301999.SZ",
+            stock_name="坏样例-零界缺",
+            list_status="L",
+        )
+    )  # → dst_not_found
     # 复盘 A1 自愈样例：自存 ts_code 错后缀（不在 S），推导码在 S → rule_fix 修复
-    rows.append(dict(stock_code="000520", market="SZ",
-                     ts_code="000520.SH", stock_name="自愈样例-错后缀",
-                     list_status="L"))                                      # → rule_fix matched
+    rows.append(
+        dict(
+            stock_code="000520",
+            market="SZ",
+            ts_code="000520.SH",
+            stock_name="自愈样例-错后缀",
+            list_status="L",
+        )
+    )  # → rule_fix matched
     return rows
 
 
@@ -601,8 +737,8 @@ def cmd_mock_test(_args):
         d = rule_derive_ts_code(r["stock_code"], r["market"])
         if d:
             securities.add(d)
-    securities.add("000519.SH")       # 噪声，验证规则不误配
-    securities.add("000520.SZ")       # A1 自愈样例的正确推导码（手工注入 S）
+    securities.add("000519.SH")  # 噪声，验证规则不误配
+    securities.add("000520.SZ")  # A1 自愈样例的正确推导码（手工注入 S）
 
     try:
         conn = pg_connect()
@@ -622,19 +758,27 @@ def cmd_mock_test(_args):
         with conn.cursor() as cur:
             cur.execute(f"SELECT status, count(*) FROM {schema}.entity_map GROUP BY 1")
             by_status = dict(cur.fetchall())
-            cur.execute(f"SELECT reason, count(*) FROM {schema}.unmatched_queue "
-                        "WHERE status='open' GROUP BY 1")
+            cur.execute(
+                f"SELECT reason, count(*) FROM {schema}.unmatched_queue "
+                "WHERE status='open' GROUP BY 1"
+            )
             by_reason = dict(cur.fetchall())
-            cur.execute(f"SELECT count(*) FROM {schema}.map_audit WHERE action='insert'")
+            cur.execute(
+                f"SELECT count(*) FROM {schema}.map_audit WHERE action='insert'"
+            )
             audit_ins = cur.fetchone()[0]
             cur.execute(f"SELECT count(*) FROM {schema}.unmatched_queue")
             q_total = cur.fetchone()[0]
             # 验收查询示例（设计稿 §7）：正向 + 反向（选正常样例 600501 演示）
-            cur.execute(f"SELECT dst_id FROM {schema}.entity_map WHERE entity_type='stock'"
-                        " AND src_id='600501' AND status='matched'")
+            cur.execute(
+                f"SELECT dst_id FROM {schema}.entity_map WHERE entity_type='stock'"
+                " AND src_id='600501' AND status='matched'"
+            )
             fwd = cur.fetchone()
-            cur.execute(f"SELECT src_id FROM {schema}.entity_map WHERE entity_type='stock'"
-                        " AND dst_id='600501.SH'")
+            cur.execute(
+                f"SELECT src_id FROM {schema}.entity_map WHERE entity_type='stock'"
+                " AND dst_id='600501.SH'"
+            )
             rev = cur.fetchone()
         print("=" * 62)
         print(f"mock-test 统计（schema={schema}）")
@@ -647,10 +791,17 @@ def cmd_mock_test(_args):
         print(f"  §7 反向查询 600501.SH → src_id={rev[0] if rev else None}")
         print("=" * 62)
         rule_fix = sum(1 for m in matched if m.get("method") == "rule_fix")
-        ok = (len(matched) == 48 and q_total == 3 and audit_ins == 48
-              and by_status.get("matched") == 48 and rule_fix == 1)
-        print(f"断言：48 对齐（含 1 条 A1 自愈 rule_fix）+ 3 入队 + 48 audit"
-              f" → {'PASS' if ok else 'FAIL'}")
+        ok = (
+            len(matched) == 48
+            and q_total == 3
+            and audit_ins == 48
+            and by_status.get("matched") == 48
+            and rule_fix == 1
+        )
+        print(
+            f"断言：48 对齐（含 1 条 A1 自愈 rule_fix）+ 3 入队 + 48 audit"
+            f" → {'PASS' if ok else 'FAIL'}"
+        )
         conn.commit()
     except Exception as e:
         print(f"[error] mock-test 执行异常（不挂死，清理后退出）：{e}", file=sys.stderr)
@@ -676,8 +827,10 @@ def cmd_mock_test(_args):
         conn2.close()
         print(f"[cleanup] 已 drop schema {schema}（测试数据已清理，xmap 真表未动）")
     except Exception as e:
-        print(f"[warn] 清理 {schema} 失败：{e}（可手工 DROP SCHEMA {schema} CASCADE）",
-              file=sys.stderr)
+        print(
+            f"[warn] 清理 {schema} 失败：{e}（可手工 DROP SCHEMA {schema} CASCADE）",
+            file=sys.stderr,
+        )
 
 
 # ── 入口 ──────────────────────────────────────────────────────────────
