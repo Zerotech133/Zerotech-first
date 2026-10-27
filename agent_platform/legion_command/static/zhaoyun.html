@@ -68,6 +68,7 @@
     h2 .sec-toggle { margin-left: 8px; font-size: 11px; padding: 1px 8px; }
     h2 { cursor: pointer; }
     #fold-bar { margin: 6px 0; }
+    #sec-jump { margin-right: 8px; max-width: 320px; }
 </style>
 </head>
 <body>
@@ -976,6 +977,27 @@ document.addEventListener('DOMContentLoaded', function () {
       t.textContent = s.classList.contains('collapsed') ? '展开 ▾' : '收起 ▴';
     }
   });
+  var jump = document.createElement('select');
+  jump.id = 'sec-jump';
+  var j0 = document.createElement('option'); j0.value = ''; j0.textContent = '跳转区块 ▾';
+  jump.appendChild(j0);
+  secs.forEach(function (s, i) {
+    var h = s.querySelector('h2'); if (!h) return;
+    var o = document.createElement('option'); o.value = String(i);
+    o.textContent = h.textContent.replace(/展开 ▾|收起 ▴/g, '').trim().slice(0, 40);
+    jump.appendChild(o);
+  });
+  jump.onchange = function () {
+    if (jump.value === '') return;
+    var i = +jump.value, s = secs[i];
+    s.classList.remove('collapsed');
+    var t = s.querySelector('.sec-toggle'); if (t) t.textContent = '收起 ▴';
+    s.scrollIntoView({ behavior: 'smooth' });
+    location.hash = 'sec-' + i;
+    jump.value = '';
+  };
+  bar.insertBefore(jump, bar.firstChild);
+
   allFold.onclick = function () { secs.forEach(function (s) {
     s.classList.add('collapsed');
     var t = s.querySelector('.sec-toggle'); if (t) t.textContent = '展开 ▾';
