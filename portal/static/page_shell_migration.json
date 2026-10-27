@@ -16,7 +16,7 @@
   "redirects": {
     "/picks_index.html": "/picks.html"
   },
-  "notes": "W4 小批收编（第五批：news_intel/org/watch_admin_page/os）；adopted 页接入 PageShell 头部；picks_index 301 到 picks；其余 legacy 保留。",
+  "notes": "W4 小批收编（第六批：os_quick/os_map/agent_board/approvals）；agent_board 为生成页，meta 已加入 agent_census 生成器并即时补；其余 legacy 保留。",
   "adopted": [
     "/home.html",
     "/quant.html",
@@ -36,6 +36,10 @@
     "/news_intel.html",
     "/org.html",
     "/watch_admin_page.html",
-    "/os.html"
+    "/os.html",
+    "/os_quick.html",
+    "/os_map.html",
+    "/agent_board.html",
+    "/approvals.html"
   ]
 }
