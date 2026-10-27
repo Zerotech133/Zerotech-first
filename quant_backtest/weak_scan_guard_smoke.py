@@ -93,8 +93,15 @@ try:
     check("T6b 正常无 WEAKGUARD 日志", "[WEAKGUARD]" not in err.getvalue())
     err.truncate(0)
     err.seek(0)
-    check("T7 日历缺失→WARN 放行", ws.check_trade_day("2026-10-16", exp=None) is None)
-    check("T7b 降级 WARN 留痕", "降级 WARN" in err.getvalue())
+    # 2026-10-27：T7 必须显式置空 CAL_DIR，否则主仓有真日历（今天 10-27，
+    # 期望=10-26）会把 last_day=10-16 判滞后 → 失败；脚本声明"不碰生产数据"。
+    _old_cal = ws.CAL_DIR
+    try:
+        ws.CAL_DIR = os.path.join(tmp, "cal_missing")
+        check("T7 日历缺失→WARN 放行", ws.check_trade_day("2026-10-16", exp=None) is None)
+        check("T7b 降级 WARN 留痕", "降级 WARN" in err.getvalue())
+    finally:
+        ws.CAL_DIR = _old_cal
 finally:
     sys.stderr = _old
 
