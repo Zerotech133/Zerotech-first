@@ -322,6 +322,10 @@ def scan_file(path: str, include_vendor: bool = False):
                     continue
                 if rule_name == "HIGH_ENTROPY":
                     if line.lstrip().startswith(("def ", "async def ", "class ", "#", "//")):
+                        continue  # 整行注释/定义行，不按高熵密钥判定
+                    hash_pos = line.find("#")
+                    if hash_pos >= 0 and m.start() > hash_pos:
+                        continue  # 行尾注释里的 TASK_LOGON 常量类内容非密钥
                         # 2026-10-27：函数/类名、纯注释行常含 token/password 等词，非密钥
                         continue
                         continue  # 2026-10-27：函数/类名常含 token/password 等词，非密钥
