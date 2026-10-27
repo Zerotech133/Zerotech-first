@@ -11,6 +11,14 @@
   架构决策 `docs/adr/ADR-004`（文档体系）、`ADR-005`（Agent 可观测 OTel GenAI）。
 - C6 指标日报工具 `tools/c6_daily_kpi.py`（每日 09:30 提醒）；5 张 dev 派工单（X2/X3/B8/B3/B4）。
 - L2 包：X5 Tushare token 轮换执行包；C 阶段三包合并待批单。
+- **D2 测试门禁**：`tools/ruff_ratchet.py`（F/E9 棘轮 + 基线）、`tools/night_test_baseline.py`
+  （分套件夜跑基线/新增失败 diff）；复用既有 `tools/test_gate.ps1`（并行单交付）。
+- **D3 Agent 可观测**：`agent_platform/observability/genai.py`（`gen_ai.*` 映射 + 默认关 OTel span），
+  `engine/llm.py::make_llm` 单点包装；`docs/specs/2026-10-27_GenAI可观测字段映射_v1.md`。
+- **D4 MCP 安全自查**：`tools/mcp_security_check.py` + `docs/specs/2026-10-27_MCP安全自查_v1.md`
+  （read-only / token 仅 env / URL 无 token / scope；0 error 1 warn）。
+- **D5/D6 构建与发布**：`pyproject.toml`（ruff 配置 + dev 工具组）、`uv.lock`、`requirements-dev.txt`、
+  `docs/standards/2026-10-27_版本与发布流程_v1.md`。
 
 ### Changed
 - WORKPATH Phase 1/2/3：work 根去硬编码；analysis 数据迁 `C:\项目\analysis_work`；

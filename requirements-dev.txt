@@ -1,0 +1,4 @@
+# 开发/门禁工具依赖（runtime 依赖按各线 venv 现状管理；先锁定工具链，P2-3 再收编运行依赖）
+pytest>=9.0
+pytest-timeout>=2.3
+ruff>=0.15

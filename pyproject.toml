@@ -1,0 +1,35 @@
+[project]
+name = "aios-zero-bound"
+version = "0.1.0"
+description = "零界 · 老田的AI助手（单机个人 AI OS：门户/军团/投研/飞书 bot）"
+readme = "README.md"
+requires-python = ">=3.11"
+# 运行依赖按各线 venv 现状分线管理（不在这里一次性收编，避免与现有运行时冲突）；
+# 工具链依赖见 [dependency-groups].dev，uv lock 只锁开发/门禁工具。
+dependencies = []
+
+[dependency-groups]
+dev = [
+  "pytest>=9.0",
+  "pytest-timeout>=2.3",
+  "ruff>=0.15",
+]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+exclude = [
+  ".git",
+  ".worktrees",
+  ".venvs",
+  "node_modules",
+  "pylibs",
+  "video/pylibs",
+]
+
+[tool.ruff.lint]
+# 与本地质量门/CI 草案同一口径：只查未定义名/语法级错误，避免历史风格债一次爆炸。
+select = ["F", "E9"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/__init__.py" = ["F401"]
