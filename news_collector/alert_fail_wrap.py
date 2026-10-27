@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""alert_fail 发送结果可观测化包装器（E1）。
+r"""alert_fail 发送结果可观测化包装器（E1）。
 
 背景三实伤：
     1. launcher 直调 quant_backtest/alert_fail.py 且 1>$null 2>$null，

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""K266 M2 剪贴板监听：轮询剪贴板位图 → 落 inbox/pending（去重靠 ingest 的 sha256）。
+r"""K266 M2 剪贴板监听：轮询剪贴板位图 → 落 inbox/pending（去重靠 ingest 的 sha256）。
 
 用法：python k266_clip_watch.py [间隔秒，默认3]
 退出：Ctrl+C。落在 C:\项目\老田的AI助手\inbox\docs\pending\clip_YYYYmmdd_HHMMSS.png
