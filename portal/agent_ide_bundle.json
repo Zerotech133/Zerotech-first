@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-28 06:54",
+ "generated": "2026-10-28 06:55",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 34,
+  "workorders_doing": 33,
   "workorders_review": 4
  },
  "workorders": [
@@ -344,15 +344,6 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-TESTPATHS-ADJUST-20261028",
    "created": "2026-10-28 05:24:43",
-   "project": "general"
-  },
-  {
-   "id": "WO-LEGION-UIW4C-20261028",
-   "desc": "W4c：已收编旧页面包屑无 nav 匹配时用页面标题兜底，避免显示『旧版页面』",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-UIW4C-20261028",
-   "created": "2026-10-28 06:54:29",
    "project": "general"
   }
  ],
@@ -6987,11 +6978,6 @@
      "id": "WO-TESTPATHS-ADJUST-20261028",
      "desc": "testpaths 注释与行对齐：quant 收集已修但默认不纳入（CI 预算待确认）",
      "status": "review"
-    },
-    {
-     "id": "WO-LEGION-UIW4C-20261028",
-     "desc": "W4c：已收编旧页面包屑无 nav 匹配时用页面标题兜底，避免显示『旧版页面』",
-     "status": "doing"
     }
    ]
   }
