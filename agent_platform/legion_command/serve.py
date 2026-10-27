@@ -475,6 +475,14 @@ class Handler(BaseHTTPRequestHandler):
                     500,
                 )
             return
+        if path == "/api/router/vk":
+            try:
+                from legion_command import seat_router
+                self._send_json({"ok": True, "items": seat_router.list_vk()})
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "vk_list_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
         if path.startswith("/api/zhaoyun/"):
             # WO-ZHAOYUN-DRILL：治理席"下钻"数据（能力详证/任务偏差/记忆/模型/请求）
             try:
@@ -971,6 +979,35 @@ class Handler(BaseHTTPRequestHandler):
                 }
             self._send_json(res, 200 if res.get("ok") else 400)
             return
+        if path == "/api/router/vk":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 32 * 1024:
+                    self._send_json({"ok": False, "error": "bad_request"}, 400)
+                    return
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+                from legion_command import seat_router
+                act = str((req or {}).get("action") or "create")
+                if act == "create":
+                    item = seat_router.create_vk(
+                        str(req.get("owner") or ""),
+                        str(req.get("alias") or "auto"),
+                        req.get("allowed"))
+                    self._send_json({"ok": True, "item": item})
+                    return
+                if act == "disable":
+                    item = seat_router.disable_vk(str(req.get("id") or ""))
+                    self._send_json({"ok": True, "item": item})
+                    return
+                self._send_json({"ok": False, "error": "unknown_action"}, 400)
+                return
+            except ValueError as e:
+                self._send_json({"ok": False, "error": str(e)[:200]}, 400)
+                return
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "vk_action_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+                return
         if path == "/api/keys/action":
             try:
                 length = int(self.headers.get("Content-Length") or 0)
