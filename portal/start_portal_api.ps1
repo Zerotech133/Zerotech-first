@@ -89,6 +89,8 @@ try {
         ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
     Start-Sleep -Seconds 1
     ('starting ' + (Get-Date -Format s)) | Out-File $log -Append -Encoding utf8
+    # P1-2 (2026-10-27): 启用 BM25 RAG（可在 zhuge_grounding 内回退关键词；去掉此行即回退）
+    $env:ZHUGE_RAG = '1'
     # K382 (10-14): append-mode for out/err - overwrite mode erased every bounce
     # scene (08:25/09:24 code=1 root cause unreadable). Session separator first.
     ('===== session start ' + (Get-Date -Format s) + ' =====') |
