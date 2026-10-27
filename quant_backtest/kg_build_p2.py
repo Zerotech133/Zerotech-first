@@ -12,7 +12,7 @@
   - manager   总经理（97.7% 覆盖）
   - secretary 董秘（95.5% 覆盖）
   - G5：stk_managers 全量高管（董事会成员/高管/监事/委员会成员，
-    title 多职以 \ 分隔，begin_date/end_date 真实任期）
+    title 多职以 \\ 分隔，begin_date/end_date 真实任期）
 
 时序图谱铁律：
   - 所有 SERVES_AS 边带 validStart/validEnd
@@ -152,7 +152,7 @@ def build_managers(dryrun=False):
     与 stock_company 三角色快照边共存（source/role 区分）：
       · stock_company 边：role=chairman/manager/secretary，
         validStart=上市日下界（粗），validEnd=open（快照无历史）
-      · stk_managers 边：role=title（\ 分隔多职逐条拆分），
+      · stk_managers 边：role=title（\\ 分隔多职逐条拆分），
         validStart=begin_date（缺省回落 ann_date），
         validEnd=end_date（离任）或 open（在任）
     重名：与 Phase 2-A 同口径 Person.name 唯一键——跨公司同名合并
@@ -195,7 +195,7 @@ def build_managers(dryrun=False):
                 p[c] = v
     person_rows = [persons[k] for k in sorted(persons)]
 
-    # SERVES_AS 边：title 按 \ 拆多职
+    # SERVES_AS 边：title 按 \\ 拆多职
     edges = skip_no_date = skip_no_title = skip_inverted = 0
     edge_rows = []
     for r in df.itertuples():
