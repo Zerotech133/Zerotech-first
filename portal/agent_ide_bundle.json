@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-28 06:51",
+ "generated": "2026-10-28 06:52",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -347,13 +347,13 @@
    "project": "general"
   },
   {
-   "id": "K-QUANT-20261028-KEYSV2A2",
-   "desc": "Phase A-2 Mission 迁出：新建 /mission 独立页复用 Mission 组件；/keys 任务编排Tab只留摘要+入口；旧锚点#mission重定向/mission；修v2参数保留；flag关闭旧页保留",
+   "id": "WO-LEGION-UIW4B-20261028",
+   "desc": "W4b：picks_index 301 加 absolute_redirect off 保留8734端口；补 PageShell adopted/redirect 测试",
    "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-QUANT-20261028-KEYSV2A2",
-   "created": "2026-10-28 06:50:54",
-   "project": "quant"
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-UIW4B-20261028",
+   "created": "2026-10-28 06:51:46",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -6987,6 +6987,11 @@
      "id": "WO-TESTPATHS-ADJUST-20261028",
      "desc": "testpaths 注释与行对齐：quant 收集已修但默认不纳入（CI 预算待确认）",
      "status": "review"
+    },
+    {
+     "id": "WO-LEGION-UIW4B-20261028",
+     "desc": "W4b：picks_index 301 加 absolute_redirect off 保留8734端口；补 PageShell adopted/redirect 测试",
+     "status": "doing"
     }
    ]
   }
