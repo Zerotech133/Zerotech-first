@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 22,
+  "workorders_doing": 21,
   "workorders_review": 3
  },
  "workorders": [
@@ -228,15 +228,6 @@
    "branch": "task/K-MISSION-002505-T1",
    "created": "2026-10-27 23:26:11",
    "project": "portal"
-  },
-  {
-   "id": "K-QUANT-20261027-PLANNERAB",
-   "desc": "阶段4-2 签字经验→planner规则 + A/B：accepted signed 才激活；rule映射(require_checks/unique_scope/planner_retry...)；baseline vs rules 对比 checks/冲突/通过；候选仅模拟不激活；CLI/API/单测",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-QUANT-20261027-PLANNERAB",
-   "created": "2026-10-27 23:42:56",
-   "project": "quant"
   }
  ],
  "coder_traces": [
