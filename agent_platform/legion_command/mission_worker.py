@@ -107,7 +107,9 @@ def _prompt(ctx: dict, context: list) -> str:
     system = ("你是零界军团研发 worker。根据任务卡与现有文件，输出 JSON 文件修改方案。"
               "格式：{\"summary\":\"...\",\"files\":[{\"path\":\"仓库相对路径\",\"content\":\"完整新内容\"}]}。"
               "只能修改 write_scope 内文件；只输出 JSON；不要密钥；不要运行外部命令；保持现有风格。"
-              "最多 %d 个文件。内容必须是完整文件，不是 diff。" % MAX_FILES)
+              "最多 %d 个文件。内容必须是完整文件，不是 diff。"
+              "文档（.md）必须写成可直接照做的说明：给出真实命令、文件路径、安全边界、回滚步骤，"
+              "至少 300 字；禁止只写标题或占位句（如「说明xxx」「列出xxx」）。" % MAX_FILES)
     user = json.dumps({
         "mission": ctx["plan"].get("name"), "task": task,
         "write_scope": task.get("write_scope") or [],
@@ -198,6 +200,9 @@ def run_task(mission_id: str, task_id: str, dry_run: bool = False) -> dict:
             return {"ok": False, "error": "content_too_large", "path": p}
         if SECRET_PAT.search(c):
             return {"ok": False, "error": "secret_like_content", "path": p}
+        if p.lower().endswith(".md") and len(c.strip()) < 300:
+            return {"ok": False, "error": "content_too_shallow",
+                    "detail": "文档至少 300 字，必须含真实命令/路径/回滚步骤", "path": p}
         ops.append((p, c))
     changed = []
     try:
