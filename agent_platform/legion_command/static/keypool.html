@@ -78,6 +78,15 @@ td{padding:5px 4px;border-bottom:.5px dashed #16304F;vertical-align:top}
 </section>
 <section class="log" id="cred-section" style="margin:0 22px 20px">
 <h2>统一凭据（JEV / 数据接口 / 飞书）<span class="muted" style="font-size:11px">只读目录 · 真源 _vault（age 加密）· 不显示密钥</span></h2>
+<div style="margin-bottom:8px"><label class="muted" style="font-size:12px">类别筛选：
+<select id="cred-cat-filter" style="background:#081321;border:1px solid #1E3A5F;border-radius:8px;color:#E8F0F8;padding:4px 8px">
+<option value="">全部</option>
+<option value="data">data</option>
+<option value="jev">jev</option>
+<option value="feishu">feishu</option>
+<option value="internal">internal</option>
+<option value="messaging">messaging</option>
+</select></label></div>
 <div id="cred-list"></div>
 </section>
 <section class="log" id="vk-section" style="margin:0 22px 20px">
@@ -189,16 +198,23 @@ async function createVK(){
   document.getElementById('vk-token').textContent='新 Key（只显示一次）：'+v.item.token;
   loadVK();
 }
+let CRED_CACHE=null;
+function renderCreds(){
+  const v=CRED_CACHE, box=document.getElementById('cred-list');
+  if(!v||!v.items){box.innerHTML='<div class="muted">目录不可用</div>';return}
+  const cat=(document.getElementById('cred-cat-filter')||{}).value||'';
+  const items=cat?v.items.filter(x=>x.category===cat):v.items;
+  let h='<table><thead><tr><th>类别</th><th>名称</th><th>环境变量</th><th>加密</th><th>状态</th><th>更新时间</th><th>轮换入口</th></tr></thead><tbody>';
+  for(const x of items){h+='<tr><td>'+x.category+'</td><td>'+x.name+'</td><td>'+(x.env||'')+'</td><td>'+(x.encrypted?'是':'明文/缺失')+'</td><td>'+x.status+'</td><td>'+(x.updated||'')+'</td><td class="muted">'+(x.rotate||'')+'</td></tr>'}
+  box.innerHTML=h+'</tbody></table>'+(cat?'<div class="muted" style="margin-top:6px">筛选：'+cat+' · '+items.length+' 条</div>':'');
+}
 async function loadCreds(){
   try{
     const r=await fetch('/api/credentials',{cache:'no-store'}); const v=await r.json();
-    const box=document.getElementById('cred-list');
-    if(!v.items){box.innerHTML='<div class="muted">目录不可用</div>';return}
-    let h='<table><thead><tr><th>类别</th><th>名称</th><th>环境变量</th><th>加密</th><th>状态</th><th>更新时间</th><th>轮换入口</th></tr></thead><tbody>';
-    for(const x of v.items){h+='<tr><td>'+x.category+'</td><td>'+x.name+'</td><td>'+(x.env||'')+'</td><td>'+(x.encrypted?'是':'明文/缺失')+'</td><td>'+x.status+'</td><td>'+(x.updated||'')+'</td><td class="muted">'+(x.rotate||'')+'</td></tr>'}
-    box.innerHTML=h+'</tbody></table>';
+    CRED_CACHE=v; renderCreds();
   }catch(e){document.getElementById('cred-list').innerHTML='<div class="muted">加载失败：'+e.message+'</div>'}
 }
+document.getElementById('cred-cat-filter').addEventListener('change',renderCreds);
 loadCreds(); setInterval(loadCreds,60000);
 async function disableVK(id){
   if(!confirm('禁用虚拟 Key '+id+'？'))return;
