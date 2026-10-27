@@ -18,3 +18,5 @@ skills: ['Python 产码', '代码评审', '工单执行', 'AST 静态门']
 self_statement: （存量补办初稿——由 backfill 于 2026-10-16 生成，待人审补充）
 cn_name: 曹操
 cn_origin: 研发部长=孟德唯才是举，统御工程大军
+tools_granted: [devtask, events, codebase_intel, sandbox_verify, eval_harness, trace_log]
+tools_note: "2026-10-27 A0 L1 批：ARCH1 四工具授权（codebase_intel/sandbox_verify/eval_harness/trace_log）；实现见 tools/<name>.py，原 devtask/events 保留"

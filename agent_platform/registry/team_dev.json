@@ -377,7 +377,11 @@
    "llm_binding": "glm/glm-5.3",
    "tools": [
     "devtask",
-    "events"
+    "events",
+    "codebase_intel",
+    "sandbox_verify",
+    "eval_harness",
+    "trace_log"
    ],
    "memory_grants": {
     "read": [
@@ -435,7 +439,8 @@
      "kind": "tool",
      "enabled": true
     }
-   ]
+   ],
+   "tools_note": "2026-10-27 A0 L1 批：ARCH1 四工具授权 codebase_intel/sandbox_verify/eval_harness/trace_log（实现 tools/<name>.py）"
   },
   {
    "agent_id": "OPS1",
