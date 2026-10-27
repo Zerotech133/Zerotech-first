@@ -32,7 +32,7 @@
 
 - [x] 读取本地 `stock_basic`、行情代码并生成缺码清单。
 - [x] 以本地 datamart 的 `source_code=0` 等价读回执核对活跃主数据；未发现可补的活跃缺码。
-- [x] 确认 `603056.SH` 为 `list_status=D` 已退市代码，并保存 [stock_basic_recovery_20261012.json](../../work/stock_basic_recovery_20261012.json)。
+- [x] 确认 `603056.SH` 为 `list_status=D` 已退市代码，并保存 `stock_basic_recovery_20261012.json`（原文链接 `../../work/stock_basic_recovery_20261012.json` 已失效）。
 - [x] 修复粗筛：主数据缺失代码不再进入当前候选池，并加入回归测试。
 
 ### Task 2: 五类因子来源核验
@@ -43,7 +43,7 @@
 
 - [x] 对 `fina`、`margin_detail`、`forecast`、`block_trade`、`news` 按交易日和代码核验。
 - [x] 记录请求参数、`source_code`、行数、字段空值率、合法空状态和响应哈希。
-- [x] 将 `forecast/report_rc/block_trade/fina_indicator` 标为 `qualified_staging`；`margin_detail` 因 `20261001` 合法空、`news` 因尚无稳定 `ts_code` 外键继续保留为 `blocked/candidate_ready`，原因写入 [factor_source_qualification_20261012.json](../../work/factor_source_qualification_20261012.json)。
+- [x] 将 `forecast/report_rc/block_trade/fina_indicator` 标为 `qualified_staging`；`margin_detail` 因 `20261001` 合法空、`news` 因尚无稳定 `ts_code` 外键继续保留为 `blocked/candidate_ready`，原因写入 `factor_source_qualification_20261012.json`（原文链接 `../../work/factor_source_qualification_20261012.json` 已失效）。
 
 ### Task 3: 覆盖率重算与回归
 
@@ -52,5 +52,5 @@
 - Create: `work/coverage_recompute_20261012.json`
 
 - [x] 用统一 v4 snapshot（含 `fina_indicator`）重跑目标锚点，记录候选数、评分数、跳过数及每码 `cov`。
-- [x] 对比补齐前后 `stock_basic` 缺码和 `score=None` 数量，结果写入 [coverage_recompute_20261012.json](../../work/coverage_recompute_20261012.json)。
+- [x] 对比补齐前后 `stock_basic` 缺码和 `score=None` 数量，结果写入 `coverage_recompute_20261012.json`（原文链接 `../../work/coverage_recompute_20261012.json` 已失效）。
 - [x] 运行九维相关测试、`py_compile` 和三项仓库门禁；生产门禁仍关闭。
