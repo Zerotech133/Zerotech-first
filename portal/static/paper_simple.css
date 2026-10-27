@@ -1,0 +1,31 @@
+/* paper_simple.css — P0 首屏减法：只影响 /paper 的默认展示，不删功能。 */
+
+/* 去重导航：全局导航已足够，页面快捷导航隐藏；AI 驾驶舱入口移到上下文条 */
+.paper-simple .topnav{display:none!important;}
+
+/* 首屏 KPI 只留 4 个（快照日并入上下文；第 5 个由 JS 动态插入，默认隐藏） */
+.paper-simple .pw-hero{grid-template-columns:minmax(0,1.15fr) minmax(420px,.85fr);}
+.paper-simple #kpis{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+.paper-simple #kpis .kpi:nth-child(n){grid-column:auto!important;}
+.paper-simple #kpis .kpi:nth-child(5){display:none!important;}
+.paper-simple .kpi .v{font-size:17px;}
+
+/* 折叠：服务说明 / 进门路线 / AI 值班问答 */
+.paper-simple .p0-collapsible{display:none!important;}
+.paper-simple .p0-open .p0-collapsible{display:block!important;}
+
+.paper-simple .p0-toggle{
+  display:inline-flex;align-items:center;gap:5px;
+  border:1px solid var(--dw-line,#2c4058);background:rgba(15,28,46,.6);
+  color:var(--dw-muted,#8fa8c0);border-radius:7px;padding:6px 10px;
+  font-size:11.5px;cursor:pointer;margin:8px 0 2px;
+}
+.paper-simple .p0-toggle:hover{color:var(--dw-cyan,#6bd7e5);border-color:rgba(107,215,229,.45);}
+.paper-simple .p0-hint{font-size:11px;color:var(--dw-muted,#8fa8c0);margin:4px 0 0;}
+
+/* 首屏上下文条保留 AI 驾驶舱入口 */
+.paper-simple .pw-context .p0-cockpit{
+  display:inline-flex;align-items:center;gap:4px;color:var(--dw-cyan,#6bd7e5);
+  text-decoration:none;font-size:10.5px;border:1px solid rgba(107,215,229,.3);
+  border-radius:6px;padding:2px 7px;background:rgba(107,215,229,.07);
+}
