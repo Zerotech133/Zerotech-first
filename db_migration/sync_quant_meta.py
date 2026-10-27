@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""sync_quant_meta.py -- SQLite 活跃三库 -> PostgreSQL quant_meta 增量镜像（双跑期）
+r"""sync_quant_meta.py -- SQLite 活跃三库 -> PostgreSQL quant_meta 增量镜像（双跑期）
 
 P1 消费者切换第 1 阶段（MIGRATION_P1_REPORT.md §8.2）：
   SQLite 为主继续写（现网不动）；本脚本周期性把新增行回放到 PG 侧，

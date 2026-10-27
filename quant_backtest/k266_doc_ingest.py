@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""K266 M2 统一摄取守护：inbox 三入口 → hash 去重 → OCR/pypdf 文本化 → doc_texts。
+r"""K266 M2 统一摄取守护：inbox 三入口 → hash 去重 → OCR/pypdf 文本化 → doc_texts。
 
 入口（全部汇入 INBOX/pending）：
   - 投递目录：手动丢文件
