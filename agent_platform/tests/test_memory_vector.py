@@ -5,6 +5,13 @@ from __future__ import annotations
 import importlib.util
 from pathlib import Path
 
+import pytest
+
+# 向量后端是可选依赖（fastembed/sqlite_vec）；服务器 verify 环境未装 → eval 用
+# monkeypatch 也绕不过模块级 availability 检查（返回 vector_unavailable）。环境缺依赖即 skip。
+_HAS_VECTOR_DEPS = any(
+    importlib.util.find_spec(m) is not None for m in ("fastembed", "sqlite_vec"))
+
 _WT = Path(__file__).resolve().parents[2]
 _spec = importlib.util.spec_from_file_location(
     "memory_vector", str(_WT / "agent_platform" / "memory" / "vector.py"))
@@ -46,6 +53,9 @@ def test_rerank_orders_by_similarity(monkeypatch):
 
 
 def test_eval_hits_fake(monkeypatch, tmp_path):
+    # eval_hits 会先查 available()（可选依赖 fastembed/sqlite_vec）；本用例测的是命中率逻辑，
+    # 用假 embedder/假连接，应把 available 也钉成 True，避免依赖安装状态（服务器/本机可能都没装）。
+    monkeypatch.setattr(V, "available", lambda force=False: True)
     monkeypatch.setattr(V, "embed", _fake_embed)
     monkeypatch.setattr(V, "_connect_plain", lambda db=None: _FakeConn())
     monkeypatch.setattr(V, "EVAL_PATH", _write_queries(tmp_path))

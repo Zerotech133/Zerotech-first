@@ -6,8 +6,16 @@ import importlib.util
 import json
 from pathlib import Path
 
+import pytest
+
 _WT = Path(__file__).resolve().parents[2]
 _EVALS = _WT / "agent_platform" / "evals"
+# 内置评估里的 selfaudit_source 依赖本机 Hermes 真实 profile（~/.hermes/profiles/zhaoyun）；
+# 服务器 verify 环境没有该 profile → 相关用例 skip（避免新门误报）。
+_DEV_PROFILE = Path.home() / ".hermes" / "profiles" / "zhaoyun"
+_DEV_ENV_SKIP = pytest.mark.skipif(
+    not _DEV_PROFILE.is_dir(),
+    reason="依赖本机 Hermes 真实 profile（服务器 verify 环境无 ~/.hermes/profiles/zhaoyun）")
 
 
 def _load(name, path):
@@ -31,6 +39,7 @@ def test_behaviors_catalog_valid():
     assert sum(1 for b in items if b.get("smoke")) >= 10
 
 
+@_DEV_ENV_SKIP
 def test_builtins_all_pass():
     for name in (
         "skills_registry_total",
@@ -48,6 +57,7 @@ def test_run_single_skill_behavior():
     assert rep["ok"] is True
 
 
+@_DEV_ENV_SKIP
 def test_smoke_run_via_subprocess(tmp_path):
     import subprocess
     import sys

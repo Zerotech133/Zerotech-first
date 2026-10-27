@@ -6,8 +6,16 @@ import importlib.util
 import json
 from pathlib import Path
 
+import pytest
+
 _WT = Path(__file__).resolve().parents[2]
 _TOOLS = _WT / "agent_platform" / "tools"
+# 真实 profile 只存在于开发机（~/.hermes/profiles/zhaoyun）；服务器 verify 环境没有，
+# 依赖它的「真环境全量验证」用例在服务器上 skip（否则新门的零允许清单会误报 FAIL）。
+_DEV_PROFILE = Path.home() / ".hermes" / "profiles" / "zhaoyun"
+_DEV_ENV_SKIP = pytest.mark.skipif(
+    not _DEV_PROFILE.is_dir(),
+    reason="依赖本机 Hermes 真实 profile（服务器 verify 环境无 ~/.hermes/profiles/zhaoyun）")
 
 
 def _load(name, path):
@@ -33,6 +41,7 @@ def test_registry_total_and_files():
         assert s.get("verify_cmd", "").endswith("verify.py")
 
 
+@_DEV_ENV_SKIP
 def test_verify_all_passes():
     rep = SR.verify_all()
     assert rep["ok"] is True, rep.get("failed")
@@ -86,6 +95,7 @@ def test_build_is_idempotent_with_tmp_caps(tmp_path, monkeypatch):
     assert (tmp_path / "skills" / "registry.json").exists()
 
 
+@_DEV_ENV_SKIP
 def test_audit_uses_registry_for_real_profile():
     rep = CA.check()  # 默认真实 profile → 走 skills_registry
     assert rep.get("source") == "skills_registry"
