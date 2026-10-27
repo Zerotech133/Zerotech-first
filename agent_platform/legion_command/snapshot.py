@@ -48,6 +48,9 @@ ACTIVITY_RULES = (
     ("key_prefix", "WO-LEGION", "dev", ""),
     # 关羽代码审计/系统整治线（2026-10-27 入编 academy）
     ("key_prefix", "WO-GUANYU", "academy", "GUANYU"),
+    # 2026-10-27：所有 WO-* 研发工单兜底归研发部（新前缀不再长期 unmapped）；
+    # 放在 WO-GUANYU 之后，保证关羽线优先命中。
+    ("key_prefix", "WO-", "dev", ""),
     ("key_contains", "hermes", "ops", ""),
     ("key_contains", "Hermes", "ops", ""),
 )
