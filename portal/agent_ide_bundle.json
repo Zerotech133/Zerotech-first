@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 23,
+  "workorders_doing": 22,
   "workorders_review": 4
  },
  "workorders": [
@@ -228,15 +228,6 @@
    "branch": "task/WO-LEGION-DEEPSHELL-20261027",
    "created": "2026-10-27 21:48:36",
    "project": "general"
-  },
-  {
-   "id": "K-QUANT-20261027-MISSIONP2",
-   "desc": "Mission 阶段2：真实派工建 worktree（依赖门控+并发上限+state.json）、advance 检测提交后自动 devtask merge 评审门、/keys/API/CLI/单测",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-QUANT-20261027-MISSIONP2",
-   "created": "2026-10-27 22:58:07",
-   "project": "quant"
   },
   {
    "id": "WO-X5-TOKEN-WIRE-20261027",
