@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 scan_secrets — 防泄漏只读扫描器（pre-commit 闸门）
@@ -144,7 +144,8 @@ def shannon_entropy(s: str) -> float:
 
 BASE64_DATA_URI_RE = re.compile(r"(?i)(data:image|base64,)")
 # 手机号误报语境：文件大小/计数类数字
-PHONE_NOISE_CTX_RE = re.compile(r"(?i)(size|bytes|字节|容量|timestamp|count|total|limit)")
+PHONE_NOISE_CTX_RE = re.compile(
+    r"(?i)(size|bytes|字节|容量|timestamp|count|total|limit|created_at|mtime|unix|epoch|时间|毫秒|微秒|秒级)")
 
 
 def looks_like_identifier(cand: str) -> bool:
@@ -171,6 +172,11 @@ def is_high_entropy_candidate(cand: str, line: str) -> bool:
         return False  # 内嵌图片资源，非凭据
     if looks_like_identifier(cand):
         return False
+    # 2026-10-27 SCANFIX：multipart boundary / 字典键名 误报
+    if cand.startswith("----") or "boundary" in line.lower():
+        return False
+    if re.search(r"[\"\']" + re.escape(cand) + r"[\"\']\s*:", line):
+        return False  # 被引号包裹且后接冒号 → JSON/字典键名，非密钥
     if "." in cand:
         return False  # 含点号 → 多为标识符/路径/域名，非密钥
     if len(cand) == 40 and HEX_RE.match(cand) and COMMIT_CTX_RE.search(line):
@@ -196,6 +202,38 @@ def is_high_entropy_candidate(cand: str, line: str) -> bool:
         return True
     # 凭据语境词同行时放宽阈值（漏报代价高于误报）
     if CRED_CONTEXT_RE.search(line) and classes >= 2 and ent >= 3.2:
+        return True
+    return False
+
+
+PY_LITERAL_VALUES = {"none", "true", "false", "null", "nil"}
+_ENV_REF_RE = re.compile(r"(?i)(os\.environ|os\.getenv|getenv\s*\(|environ\.get\s*\()")
+
+
+def is_assign_false_positive(cand: str, line: str, m, path_norm: str) -> bool:
+    """TOKEN_ASSIGN/PASSWORD_LITERAL 误报豁免（2026-10-27 关羽 SCANFIX 单）：
+    ① RHS 是 Python 字面量 None/True/False/null/nil；
+    ② kwarg/属性自引用同名（password=同名变量、app_secret=同名变量、
+       self.sign_secret=同名变量）——代码引用而非字面密钥；
+    ③ 同行含 os.environ/getenv 等环境读取（值在运行时注入）；
+    ④ .py 文件里未加引号的标识符（含下划线/纯小写驼峰）→ 变量/函数引用。
+    真实密钥特征保留：加引号字符串、.env/.ps1/.json 等非 .py 文件、含随机字符的 token。
+    """
+    low = cand.lower()
+    if low in PY_LITERAL_VALUES:
+        return True
+    if _ENV_REF_RE.search(line):
+        return True
+    # ② 提取 LHS 名（匹配段内第一个标识符链），与 RHS 最后一段比较
+    lhs = re.match(r"(?i)([A-Za-z_][\w\.]*)\s*[:=：>]{1,2}\s*", m.group(0))
+    if lhs:
+        lhs_name = lhs.group(1).split(".")[-1]
+        if lhs_name and lhs_name.lower() == low and low not in ("token", "secret", "password", "pwd", "key"):
+            return True
+    # ④ .py 里未加引号且形似标识符 → 引用而非字面量
+    start = m.start(1) if m.lastindex else m.start()
+    quoted = start > 0 and line[start - 1] in "\"'`"
+    if path_norm.endswith(".py") and not quoted and re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", cand):
         return True
     return False
 
@@ -293,6 +331,8 @@ def scan_file(path: str, include_vendor: bool = False):
                         continue  # 候选本身是占位符/变量引用
                     if re.fullmatch(r"[A-Z0-9_]+", cand):
                         continue  # SCREAMING_CASE：是变量名不是密钥
+                    if is_assign_false_positive(cand, line, m, path_norm):
+                        continue  # 2026-10-27 SCANFIX：kwarg 自引用/None/环境变量/未加引号标识符
                 if rule_name == "PHONE_CN" and PHONE_NOISE_CTX_RE.search(line):
                     continue  # 文件大小/计数语境下的 11 位数字
                 pending.append((rule_name, cand, path_exempt))
