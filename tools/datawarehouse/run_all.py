@@ -30,6 +30,7 @@ import db_instance_probe  # noqa: E402
 import freshness_report  # noqa: E402
 import manifest_check  # noqa: E402
 import quality_test  # noqa: E402
+import staging_health  # noqa: E402
 
 GNS = "dept/data/observation"
 
@@ -62,6 +63,7 @@ def _collect_impl(mode: str = "daily") -> dict:
     if mode in ("weekly", "monthly"):
         sections["quality"] = _run("quality_test", quality_test.collect)
         sections["db_health"] = _run("db_health", db_health.collect)
+        sections["staging_health"] = _run("staging_health", staging_health.collect)
     codes = [int(s.get("code", 0)) for s in sections.values()]
     code = common.EXIT_NOT_READY if 2 in codes else (common.EXIT_WARN if 1 in codes else common.EXIT_OK)
     return {"tool": "run_all", "mode": mode, "code": code,

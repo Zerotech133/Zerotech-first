@@ -25,6 +25,8 @@ EXPECTED_LAG_DAYS = 2
 # T+1 上午发布，21:37 增量守卫取到的是「昨日已发布」数据；叠加周末最长 4 个
 # 自然日仍正常（周一 10:33 时最新=上周五 20261023，非停摆）。
 TABLE_LAG_DAYS = {"margin_detail": 4}
+# 频率 → 期望最大滞后（自然日）；freq 词表见 build_catalog FREQ_ENUM
+FREQ_LAG_DAYS = {"D": 2, "W": 10, "M": 45, "Q": 120, "A": 400, "H": 1, "T": 1}
 
 STALL_DBS = [
     {"name": "quant.db", "path": common.DATA / "quant.db",
@@ -134,13 +136,43 @@ def sqlite_latest(db: Path, sql: str):
         return None, "sql_error:" + str(e)[:60]
 
 
+def expected_lag(table: str, entry: dict | None = None) -> int | None:
+    """按频率给期望滞后（自然日）：D=2 / W=10 / M=45 / Q=120 / A=400。
+
+    返回 None 表示跳过检查（lifecycle=planned/deprecated、deprecated=True、
+    static_no_date=True 或 freq 未知）。
+    """
+    try:
+        import lifecycle  # noqa: WPS433
+        if lifecycle.skipped(table):
+            return None
+    except Exception:  # noqa: BLE001
+        pass
+    entry = entry or {}
+    if entry.get("deprecated") or entry.get("static_no_date"):
+        return None
+    freq = str(entry.get("freq") or "D").upper()
+    if freq in ("STATIC", "EVENT", "NONE"):
+        return None
+    if table in TABLE_LAG_DAYS:
+        return TABLE_LAG_DAYS[table]
+    return FREQ_LAG_DAYS.get(freq, EXPECTED_LAG_DAYS)
+
+
 def collect() -> dict:
     today = dt.date.today()
     checks, issues = [], []
+    catalog = common.load_json(common.CATALOG) or {}
+    catalog_tables = catalog.get("tables") or {}
     for table, col in DATE_COL.items():
+        entry = catalog_tables.get(table) or {}
+        limit = expected_lag(table, entry)
+        if limit is None:
+            checks.append({"tool": "table", "table": table, "col": col,
+                           "skipped": "lifecycle_or_static", "ok": True})
+            continue
         latest, how = table_latest_date(table, col)
         d = _parse_day(latest)
-        limit = TABLE_LAG_DAYS.get(table, EXPECTED_LAG_DAYS)
         lag = (today - d).days if d else None
         future = bool(d and d > today)
         ok = bool(d and not future and lag is not None and lag <= limit)
