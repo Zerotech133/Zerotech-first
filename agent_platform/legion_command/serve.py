@@ -598,6 +598,14 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({"ok": False, "error": "model_prefs_failed",
                                  "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
             return
+        if path == "/api/mission/list":
+            try:
+                from legion_command import mission_planner
+                self._send_json({"ok": True, "items": mission_planner.list_missions()})
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "mission_list_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
         if path == "/api/credentials":
             try:
                 from legion_command import credential_catalog
@@ -1227,6 +1235,42 @@ class Handler(BaseHTTPRequestHandler):
                                  "seconds": round(time.time() - t0, 2)})
             except Exception as e:  # noqa: BLE001
                 self._send_json({"ok": False, "error": "stt_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
+        if path == "/api/mission/plan":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 2 * 1024 * 1024:
+                    self._send_json({"ok": False, "error": "doc_too_large"}, 400)
+                    return
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+                from legion_command import mission_planner
+                res = mission_planner.plan(str(req.get("name") or ""),
+                                           str(req.get("doc") or ""),
+                                           use_llm=bool(req.get("use_llm", True)))
+                self._send_json({"ok": bool(res.get("valid")), "plan": res})
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "mission_plan_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
+        if path == "/api/mission/dry-run":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 2 * 1024 * 1024:
+                    self._send_json({"ok": False, "error": "bad_request"}, 400)
+                    return
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+                from legion_command import mission_dispatch, mission_planner
+                plan = req.get("plan")
+                if not plan and req.get("mission_id"):
+                    plan = mission_planner.load_plan(str(req["mission_id"]))
+                if not plan:
+                    self._send_json({"ok": False, "error": "plan_required"}, 400)
+                    return
+                res = mission_dispatch.dry_run(plan, int(req.get("parallel") or 3))
+                self._send_json(res)
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "mission_dry_run_failed",
                                  "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
             return
         if path == "/api/model/prefs":
