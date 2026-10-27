@@ -304,7 +304,11 @@
      "memory_grants": [],
      "grade": "E3",
      "grade_note": "补档初始档，待 KPI 观察后调整",
-     "attributes": {}
+     "attributes": {},
+     "llm_fallback": [
+      "deepseek/deepseek-flash",
+      "ollama/qwen3.5:9b"
+     ]
     }
    ],
    "lead_appointed": {
@@ -1333,6 +1337,10 @@
        "dept": "proj_next",
        "migrated_from": "proj_next"
       }
+     ],
+     "llm_fallback": [
+      "deepseek/deepseek-flash",
+      "ollama/qwen3.5:9b"
      ]
     },
     {
@@ -1385,7 +1393,11 @@
        ],
        "danger": "deny"
       }
-     }
+     },
+     "llm_fallback": [
+      "deepseek/deepseek-flash",
+      "ollama/qwen3.5:9b"
+     ]
     },
     {
      "agent_id": "DSGN2",
@@ -1529,6 +1541,10 @@
        "dept": "proj_backtest",
        "migrated_from": "proj_backtest"
       }
+     ],
+     "llm_fallback": [
+      "deepseek/deepseek-flash",
+      "ollama/qwen3.5:9b"
      ]
     },
     {
@@ -1670,7 +1686,11 @@
        ],
        "danger": "deny"
       }
-     }
+     },
+     "llm_fallback": [
+      "deepseek/deepseek-flash",
+      "ollama/qwen3.5:9b"
+     ]
     }
    ],
    "source": "K-ORG-018 新设；K-ORG-019 +SEC1；K-ORG-020 测试双梯队；K-ORG-052 +SEC2（田丰治理模型·研发质量对抗线）",
@@ -1897,7 +1917,11 @@
        "danger": "deny"
       }
      },
-     "binding_note": "auto_assign 10-18：按分工定案自动适配（原 ollama/qwen3.5:9b）"
+     "binding_note": "auto_assign 10-18：按分工定案自动适配（原 ollama/qwen3.5:9b）",
+     "llm_fallback": [
+      "deepseek/deepseek-flash",
+      "ollama/qwen3.5:9b"
+     ]
     }
    ],
    "teams": [
@@ -2304,7 +2328,11 @@
        "knowledge_docs/缠论技术分析知识库.md",
        "knowledge_docs/资本运作知识库.md"
       ]
-     }
+     },
+     "llm_fallback": [
+      "deepseek/deepseek-flash",
+      "ollama/qwen3.5:9b"
+     ]
     },
     {
      "agent_id": "STRAT1",
@@ -2452,7 +2480,10 @@
        ],
        "danger": "deny"
       }
-     }
+     },
+     "llm_fallback": [
+      "ollama/qwen3.5:9b"
+     ]
     },
     {
      "agent_id": "PROD1",
@@ -2842,7 +2873,11 @@
        "principle": "无人能定案时由田丰做最优决策并派 AI 自动执行；仅 L2 报老田，不逐项点确定"
       }
      },
-     "grade_note": "30年档：产品+研发全在性/决策仲裁/多 AI 编排"
+     "grade_note": "30年档：产品+研发全在性/决策仲裁/多 AI 编排",
+     "llm_fallback": [
+      "deepseek/deepseek-flash",
+      "ollama/qwen3.5:9b"
+     ]
     },
     {
      "agent_id": "A0A",
@@ -3037,7 +3072,11 @@
        "danger": "deny"
       }
      },
-     "binding_note": "参谋长线判读本地档；云端恢复后可评估上浮 glm-5.3"
+     "binding_note": "参谋长线判读本地档；云端恢复后可评估上浮 glm-5.3",
+     "llm_fallback": [
+      "deepseek/deepseek-flash",
+      "ollama/qwen3.5:9b"
+     ]
     }
    ],
    "teams": [],

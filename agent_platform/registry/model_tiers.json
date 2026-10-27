@@ -5,6 +5,8 @@
   "models": {
     "glm/glm-5.3": { "tier": "strong", "family": "glm", "scope": "cloud", "enabled": true, "note": "判读/裁决/汇报聚合（思考型，reasoning_content 不拼正文）" },
     "glm/glm-5.3-flash": { "tier": "fast", "family": "glm", "scope": "cloud", "enabled": true, "note": "E1 轻量调度/抽取/分发（Lite 快档）" },
+    "deepseek/deepseek-flash": { "tier": "fast", "family": "deepseek", "scope": "cloud", "enabled": true, "note": "席位级 fallback 快档（429/故障时降级，须标 degraded；2026-10-27 T5 第1步登记）" },
+    "deepseek/deepseek-v4-pro": { "tier": "strong", "family": "deepseek", "scope": "cloud", "enabled": true, "note": "fallback 强档（按实际可用性启用；2026-10-27 T5 第1步登记）" },
     "qwen3.5:9b": { "tier": "local", "family": "qwen", "scope": "local", "enabled": true, "note": "本地降级档（云端不可用 fallback）；数据岗：治理/分配/流转/抓取/蒸馏" },
     "claude/claude-sonnet": { "tier": "strong", "family": "claude", "scope": "cloud", "enabled": false, "note": "预留（需 key，未接通不参与校验白名单）" },
     "openai/gpt-6.0": { "tier": "strong", "family": "openai", "scope": "cloud", "enabled": false, "note": "诸葛亮异族档（2026-10-21 异族编制裁决）；enabled=false 待 OPENAI_API_KEY 注入后置 true" }
