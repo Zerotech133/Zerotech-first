@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-28 00:21",
+ "generated": "2026-10-28 00:23",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 33,
+  "workorders_doing": 34,
   "workorders_review": 3
  },
  "workorders": [
@@ -335,6 +335,15 @@
    "owner": "DOC1",
    "branch": "task/WO-LS12-DOCS-20261027",
    "created": "2026-10-27 23:54:52",
+   "project": "general"
+  },
+  {
+   "id": "WO-LEGION-PICKS-MEMDATE-20261027",
+   "desc": "/picks 记忆按页面+按日期：页面独立 key、扫描日变化自动重置、重置仅清本页、显示记忆日期；静态无服务变更",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-PICKS-MEMDATE-20261027",
+   "created": "2026-10-28 00:22:34",
    "project": "general"
   }
  ],
@@ -6964,6 +6973,11 @@
      "id": "WO-LEGION-DEEPSHELL-20261027",
      "desc": "深屏骨架推广：shared deep_shell.css；/picks.html 立即接入；/strategies 动态生成器接入（待 8091 受控重启生效）；保留业务 JS/数据；无 L2",
      "status": "review"
+    },
+    {
+     "id": "WO-LEGION-PICKS-MEMDATE-20261027",
+     "desc": "/picks 记忆按页面+按日期：页面独立 key、扫描日变化自动重置、重置仅清本页、显示记忆日期；静态无服务变更",
+     "status": "doing"
     }
    ]
   }
