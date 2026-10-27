@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-27 15:39",
+ "generated": "2026-10-27 15:40",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 61,
@@ -9,8 +9,8 @@
   "prompt_ok": 61,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 16,
-  "workorders_review": 3
+  "workorders_doing": 18,
+  "workorders_review": 2
  },
  "workorders": [
   {
@@ -149,15 +149,6 @@
    "project": "general"
   },
   {
-   "id": "WO-GUANYU-KGRENAME-20261027",
-   "desc": "KGStockAnalysis改名归一 [UNOWNED]",
-   "status": "review",
-   "owner": "unknown-agent",
-   "branch": "task/WO-GUANYU-KGRENAME-20261027",
-   "created": "2026-10-27 15:29:47",
-   "project": "general"
-  },
-  {
    "id": "WO-TRACE-COST-20261027",
    "desc": "P0② Agent trace+成本观测（ARCH1 owner）：trace 记录 schema + 写入/查询 CLI + 日汇总（JSONL，轻量不引依赖）；先接入 arch1_ops/research_seat_ops 两类值守任务；测试。验收：每次值守产出 trace_id/耗时/结果；report 出 P95/top 失败；pytest 过；无 L2。",
    "status": "doing",
@@ -183,6 +174,24 @@
    "branch": "task/WO-O4-ACCEPT-20261027",
    "created": "2026-10-27 15:38:09",
    "project": "portal"
+  },
+  {
+   "id": "K-QUANT-20261027-KEYSPATH",
+   "desc": "/keys 兼容 /keys/ 与静态页，HTML 加 no-store 防旧 404 缓存；验证三种 URL",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-QUANT-20261027-KEYSPATH",
+   "created": "2026-10-27 15:40:15",
+   "project": "quant"
+  },
+  {
+   "id": "WO-LEGION-UIUX-W2FIX-20261027",
+   "desc": "修复 nav.js 生成器少一个 + 导致顶栏 JS 语法错误（W2 回归）；重导 nav.js + Node 语法测试 + live 截图验证；不碰业务逻辑/无 L2",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-UIUX-W2FIX-20261027",
+   "created": "2026-10-27 15:40:27",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -6355,6 +6364,11 @@
      "id": "WO-REDTEAM-JUDGE-20261027",
      "desc": "红队判定器修复：'系统提示词'主题词误报为泄露，改为只判实际内容指纹",
      "status": "review"
+    },
+    {
+     "id": "WO-LEGION-UIUX-W2FIX-20261027",
+     "desc": "修复 nav.js 生成器少一个 + 导致顶栏 JS 语法错误（W2 回归）；重导 nav.js + Node 语法测试 + live 截图验证；不碰业务逻辑/无 L2",
+     "status": "doing"
     }
    ]
   }
