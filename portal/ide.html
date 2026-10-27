@@ -1216,7 +1216,7 @@ splitRestore();   // 348：分屏状态恢复（渲染在 bundle 加载后补内
 fetch("/agent_ide_bundle.json", {cache:"no-store"}).then(r=>r.json()).then(d=>{
   B = d;
   document.getElementById("stats").innerHTML =
-    '<span>在编 Agent <b>'+B.stats.agents+'</b></span><span>部门 <b>'+B.stats.departments+'</b></span>'
+    '<span>在编 Agent <b>'+B.stats.agents+'</b> / 总卡 <b>'+(B.stats.total_cards||B.stats.agents)+'</b></span><span>部门 <b>'+B.stats.departments+'</b></span>'
     + '<span>prompt 覆盖 <b style="color:var(--green)">'+B.stats.prompt_ok+'/'+B.stats.agents+'</b></span>'
     + '<span>工单 <b style="color:var(--green)">'+(B.stats.workorders_doing||0)+'</b> doing / <b style="color:var(--amber,#d29922)">'+(B.stats.workorders_review||0)+'</b> review</span>';
   document.getElementById("gen").textContent = "bundle " + B.generated;
