@@ -940,6 +940,37 @@ def _l2_exempt(tid, t, reason):
         return "(审批库异常:%s)" % e, False
 
 
+def _auto_rebuild_ide_bundle(tid):
+    """merge 后自动重建 portal/agent_ide_bundle.json（失败只告警，不影响合并）。"""
+    try:
+        tool = os.path.join(REPO, "tools", "build_agent_ide_bundle.py")
+        r = subprocess.run([sys.executable, "-X", "utf8", tool], cwd=REPO,
+                           capture_output=True, text=True, encoding="utf-8",
+                           errors="replace", env=GUARD_ENV, timeout=180)
+        if r.returncode != 0:
+            print("  IDE bundle   ⚠ 重建失败（不阻断）：%s" % (r.stderr or r.stdout).strip()[:160])
+            return
+        st = subprocess.run(["git", "-C", REPO, "status", "--porcelain",
+                             "portal/agent_ide_bundle.json"], capture_output=True,
+                            text=True, encoding="utf-8", errors="replace")
+        if not (st.stdout or "").strip():
+            print("  IDE bundle   ✓ 已是最新")
+            return
+        subprocess.run(["git", "-C", REPO, "add", "portal/agent_ide_bundle.json"],
+                       capture_output=True, text=True)
+        c = subprocess.run(["git", "-C", REPO, "commit", "-m",
+                            "chore(ide): auto rebuild agent_ide_bundle after merge %s" % tid],
+                           capture_output=True, text=True, encoding="utf-8",
+                           errors="replace")
+        if c.returncode == 0:
+            print("  IDE bundle   ✓ 已重建并提交")
+        else:
+            print("  IDE bundle   ⚠ 重建后提交失败（工作区已更新）：%s"
+                  % (c.stderr or c.stdout).strip()[:160])
+    except Exception as e:  # noqa: BLE001
+        print("  IDE bundle   ⚠ 重建异常（不阻断）：%s" % str(e)[:160])
+
+
 def cmd_merge(tid, *flags):
     # K-STOCK-416：--l2-ack / --l2-reason 人工豁免通道（五要素审批协议）
     ack = "--l2-ack" in flags
@@ -1030,6 +1061,7 @@ def cmd_merge(tid, *flags):
     _emit("merge_done", tid,
           "守卫全绿（含明文凭据扫描），已合并 master；worktree 保留待人工回收")
     print("工单 %s 已合并 ✓（worktree 保留待人工回收）" % tid)
+    _auto_rebuild_ide_bundle(tid)
     if t.get("worktree"):
         print("→ 分支已合并、工作区干净，可执行 `git worktree remove %s` 回收"
               % t["worktree"])
