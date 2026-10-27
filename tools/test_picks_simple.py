@@ -25,3 +25,13 @@ def test_picks_simple_behavior():
     assert "explicit" in s
     css = CSS.read_text(encoding="utf-8")
     assert "#p2-bar" in css
+
+
+def test_filter_memory_contract():
+    s = JS.read_text(encoding="utf-8")
+    assert "localStorage" in s
+    assert "zero.picks.filters.v1" in s
+    assert "restoreState" in s
+    assert "resetState" in s
+    assert "p2-reset" in s
+    assert "advanced" in s and "showAll" in s
