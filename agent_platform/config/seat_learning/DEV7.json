@@ -31,14 +31,14 @@
    "id": "L1",
    "title": "岗位与契约（角色域/边界/验收）",
    "source": "agent_platform/prompts/code_engineer.md",
-   "status": "planned",
+   "status": "learning",
    "evidence": ""
   },
   {
    "id": "L2",
    "title": "代码定位与影响面（repo map/search/refs）",
    "source": "tools/codebase_intel.py",
-   "status": "planned",
+   "status": "learning",
    "evidence": ""
   },
   {
@@ -79,5 +79,13 @@
   "evidence": ""
  },
  "mentor_note": "DEV1 任导师：每周 1 次 30min 评审；以 3 张实践单为考核载体；模块 done 必须有证据（命令输出/链接），不虚报。",
- "updated_at": "2026-10-28"
+ "updated_at": "2026-10-28",
+ "kickoff": {
+  "date": "2026-10-28",
+  "mentor": "DEV1",
+  "mentor_confirmed": false,
+  "l1_due": "2026-10-29",
+  "l2_due": "2026-10-30",
+  "package": "docs/dev/learning/DEV7_L1L2_start.md"
+ }
 }
