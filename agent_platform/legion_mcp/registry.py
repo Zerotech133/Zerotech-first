@@ -10,7 +10,7 @@ from pathlib import Path
 
 PLATFORM = Path(__file__).resolve().parents[1]
 REPO = PLATFORM.parent
-CONFIG = PLATFORM / "mcp" / "servers.json"
+CONFIG = PLATFORM / "legion_mcp" / "servers.json"
 _CACHE: dict = {"ts": 0.0, "data": None}
 CACHE_TTL = 60.0
 
