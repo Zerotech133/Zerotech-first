@@ -15,7 +15,6 @@ import argparse
 import datetime as dt
 import json
 import re
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -121,9 +120,16 @@ def grade(submit_dir: Path | None = None, out_dir: Path | None = None) -> dict:
             + dims["七检解读"]["score"] + dims["回滚完整"]["score"])
     bonus = dims["自评"]["score"] // 5  # 0-5 分加分
     total = min(100, core + bonus)
+    # 模板/占位符识别：含 __ 或 填写 视为未完成提交，最多 60 分（防空模板过关）
+    all_text = "".join(_read(f) for f in (criteria + gates + rollbacks
+                                          + ([self_file] if self_file else [])))
+    placeholder = ("__" in all_text) or ("填写" in all_text) or ("（示例）" in all_text)
+    if placeholder:
+        total = min(total, 60)
     passed = total >= 80
     rep = {
         "ok": True,
+        "placeholder_detected": placeholder,
         "submit_dir": str(d),
         "generated_at": dt.datetime.now().astimezone().isoformat(timespec="seconds"),
         "files": {"criteria": len(criteria), "gate_review": len(gates),
@@ -137,6 +143,8 @@ def grade(submit_dir: Path | None = None, out_dir: Path | None = None) -> dict:
                         if not n.startswith("含") or True],
         "read_only": True,
     }
+    if placeholder:
+        rep["suggestions"].append("检测到模板/占位符（__/填写/示例）：按未完成提交计，最高 60 分")
     out.mkdir(parents=True, exist_ok=True)
     ts = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
     jp = out / ("grade_%s.json" % ts)
