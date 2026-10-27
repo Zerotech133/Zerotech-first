@@ -493,19 +493,6 @@ class Handler(BaseHTTPRequestHandler):
                     500,
                 )
             return
-        if path == "/api/auto/explain":
-            try:
-                from urllib.parse import parse_qs, urlparse
-                from legion_command import model_allocator
-                q = parse_qs(urlparse(self.path).query)
-                agent = (q.get("agent") or [""])[0]
-                task = (q.get("task") or [""])[0]
-                self._send_json({"ok": True,
-                                 "allocation": model_allocator.allocate(agent, task, [])})
-            except Exception as e:  # noqa: BLE001
-                self._send_json({"ok": False, "error": "explain_failed",
-                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
-            return
         if path == "/api/auto/status":
             out = {"ok": True, "mode": "smart", "routing": {
                 "auto": "平台中转站优先 → 强模型 → 本地兜底",
