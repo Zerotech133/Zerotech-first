@@ -16,7 +16,7 @@
   "redirects": {
     "/picks_index.html": "/picks.html"
   },
-  "notes": "W4 小批收编（第三批：capability/perf/ledger；flow 已在第二批）；adopted 页接入 PageShell 头部；picks_index 301 到 picks；其余 legacy 保留。",
+  "notes": "W4 小批收编（第四批：data_guojia/data_daily/market_strategy/stock_analysis）；adopted 页接入 PageShell 头部；picks_index 301 到 picks；其余 legacy 保留。",
   "adopted": [
     "/home.html",
     "/quant.html",
@@ -28,6 +28,10 @@
     "/dataops.html",
     "/capability.html",
     "/perf.html",
-    "/ledger.html"
+    "/ledger.html",
+    "/data_guojia.html",
+    "/data_daily.html",
+    "/market_strategy.html",
+    "/stock_analysis.html"
   ]
 }
