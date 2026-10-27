@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-28 04:05",
+ "generated": "2026-10-28 04:08",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 33,
+  "workorders_doing": 34,
   "workorders_review": 3
  },
  "workorders": [
@@ -335,6 +335,15 @@
    "owner": "DOC1",
    "branch": "task/WO-LS12-DOCS-20261027",
    "created": "2026-10-27 23:54:52",
+   "project": "general"
+  },
+  {
+   "id": "WO-DWMETA-20261028",
+   "desc": "数据仓元数据治理(L1)：lifecycle 覆盖(planned/deprecated)+freshness freq 期望模型+manifest 修复工具+staging 周检+catalog v13/registry 重建",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-DWMETA-20261028",
+   "created": "2026-10-28 04:06:19",
    "project": "general"
   }
  ],
