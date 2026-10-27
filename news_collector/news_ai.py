@@ -24,6 +24,7 @@ from collections import Counter
 from datetime import datetime, timedelta, timezone
 
 import requests
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DB = os.path.join(HERE, "news.db")
@@ -415,8 +416,8 @@ def _jev_key():
         if key:
             _JEV_KEY_MEMO = key
             return key
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/news_ai.py", exc)
     import re
 
     try:
@@ -428,8 +429,8 @@ def _jev_key():
         if m:
             _JEV_KEY_MEMO = m.group(1)
             return m.group(1)
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/news_ai.py", exc)
     # K-STOCK-393（20261015 密钥收口）：env/DPAPI(.enc)/stub 全落空
     # 勿静默——审计实证 stub 化后此出口零提示，jev 云判定静默降级
     # 无人知晓。stderr WARN + env_fallback.flag（同 load_env_dpapi
@@ -447,8 +448,8 @@ def _jev_key():
                     "news_ai._jev_key unresolved %s\n"
                     % time.strftime("%Y-%m-%d %H:%M:%S")
                 )
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/news_ai.py", exc)
     return ""  # 豁免（C2批2）：与"未配置 key"同一出口，jev_judge_one 侧按无 key 跳过
 
 
@@ -535,8 +536,8 @@ def jev_reason(title, bias_cn, scope_cn, timeout=LLM_TIMEOUT_S):
     try:
         with open(os.path.join(HERE, "news_config.json"), encoding="utf-8") as f:
             model = (json.load(f) or {}).get("ai_model") or ""
-    except Exception:
-        pass  # 豁免（C2批2）：配置缺省→环境变量/默认模型兜底，常态容错
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/news_ai.py", exc)
     if not model:
         model = os.environ.get("OLLAMA_MODEL", "qwen3.5:9b")
     try:
@@ -755,8 +756,8 @@ def _jev_stats(db, hours=24):
                         ).total_seconds()
                         / 3600.0,
                     )
-                except Exception:
-                    pass  # 豁免（C2批2）：时间坏值按 0h（权重 1）计
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/news_ai.py", exc)
                 net += math.exp(
                     -math.log(2) * age_h / _JEV_HL_H.get(d.get("bias"), 6.0)
                 ) * (1.0 if d.get("bias") == "bull" else -1.0)
@@ -1487,8 +1488,8 @@ def run(mode, dry):
                     buttons=_btns,
                     level="info",
                 )
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/news_ai.py", exc)
             sent = push_card(card, qr_portal=portal or None)
             if not sent:
                 log("card FAIL -> text fallback")

@@ -34,6 +34,7 @@ from gateway import inbox_gateway, llm_gateway  # noqa: E402  S21 门面复用
 from engine.org_profiles import fallbacks_index, profile_index, stamp  # noqa: E402  S41 统一取档口径
 from engine.openclaw_cli import agent_primary_model, is_relay, run as oc_run  # noqa: E402  OpenClaw 载体桥
 from legion_command.snapshot import build_snapshot  # noqa: E402
+import logging
 
 _STATIC = Path(__file__).resolve().parent / "static"
 # 作战会议室纪要落盘目录（模块级，测试可 monkeypatch 到 tmp）
@@ -231,8 +232,8 @@ def _parse_last_json(stdout: str):
         obj = json.loads(text)
         if isinstance(obj, dict):
             return obj
-    except ValueError:
-        pass
+    except ValueError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/legion_command/serve.py", exc)
     for raw_line in reversed(text.splitlines()):
         line = raw_line.strip()
         if not line:
@@ -621,8 +622,8 @@ class Handler(BaseHTTPRequestHandler):
                                     "zhaoyun.source": "page",
                                 },
                             )
-                        except Exception:  # noqa: BLE001
-                            pass
+                        except Exception as exc:
+                            logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/legion_command/serve.py", exc)
                         self._send_json({"ok": True, "capability": row, "usage": usage})
                 else:
                     self._send_json({"ok": False, "error": "not_found: %s" % path}, 404)
@@ -936,8 +937,8 @@ class Handler(BaseHTTPRequestHandler):
                     _chunk({}, "stop")
                     self.wfile.write(b"data: [DONE]\n\n")
                     self.wfile.flush()
-                except (BrokenPipeError, ConnectionResetError):
-                    pass
+                except (BrokenPipeError, ConnectionResetError) as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/legion_command/serve.py", exc)
                 return
             self._send_json(
                 {
@@ -1101,8 +1102,8 @@ class Handler(BaseHTTPRequestHandler):
                         ),
                     },
                 )
-            except Exception:  # noqa: BLE001
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/legion_command/serve.py", exc)
             self._send_json(res, 200 if res.get("ok") else 400)
             return
         if path == "/api/zhaoyun/evals/run":
@@ -1727,8 +1728,8 @@ def main(argv=None):
     print("legion-command serving on %s:%d" % (args.host, args.port), flush=True)
     try:
         srv.serve_forever()
-    except KeyboardInterrupt:
-        pass
+    except KeyboardInterrupt as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/legion_command/serve.py", exc)
     finally:
         srv.server_close()
     return 0

@@ -33,6 +33,7 @@ import time
 from datetime import datetime, timedelta
 
 import pandas as pd
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -203,8 +204,8 @@ def _bt_agg(sn):
                     continue
                 if r.get("strategy") == sn:
                     runs.append(r)
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/rps_resonance.py", exc)
     if not runs:
         return {"n": 0}
 
@@ -261,8 +262,8 @@ def _token():
                         v = line.strip().split("=", 1)[1]
                         if v:
                             return v
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/rps_resonance.py", exc)
     if not _NO_TOKEN_WARNED:
         _NO_TOKEN_WARNED = True
         print(
@@ -1804,8 +1805,8 @@ def _atomic_write_json(path, payload):
     except Exception:
         try:
             os.remove(tmp)
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/rps_resonance.py", exc)
         raise
 
 
@@ -1827,8 +1828,8 @@ def _shadow_rows(entries, bars, by_code, recent, cfg_strats):
                 sv = int(sig.values[-1])
                 sigs[sn] = sv
                 longs += int(sv > 0)
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/rps_resonance.py", exc)
         tech_old = longs * 25
         ma20 = df["close"].iloc[-20:].mean()
         tech_old = min(
@@ -2103,6 +2104,6 @@ if __name__ == "__main__":
                 timeout=120,
                 check=False,
             )
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/rps_resonance.py", exc)
         raise

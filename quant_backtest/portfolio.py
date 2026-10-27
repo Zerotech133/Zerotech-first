@@ -36,6 +36,7 @@ import os
 import shutil
 import sys
 import time
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPORTS = os.path.join(HERE, "reports")
@@ -162,8 +163,8 @@ def _backup_ledger():
         olds = sorted(f for f in os.listdir(_BACKUP_DIR) if f.startswith("portfolio-"))
         for f in olds[:-_BACKUP_KEEP]:
             os.remove(os.path.join(_BACKUP_DIR, f))
-    except OSError:
-        pass  # 备份失败不阻断主流程（磁盘满等极端场景）
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/portfolio.py", exc)
 
 
 def _atomic(fp, obj):
@@ -1314,8 +1315,8 @@ def daily_report(led, cfg_all=None):
 
             if len(curve) >= 2:
                 m = pm.compute([{"d": c["d"], "nav": _curve_ps(c)} for c in curve])
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/portfolio.py", exc)
         rows.append(
             {
                 "icon": tpl["icon"],
@@ -1418,8 +1419,8 @@ def daily_report(led, cfg_all=None):
                     else "—",
                 )
             )
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/portfolio.py", exc)
     if led.get("bac"):
         tail_s += "\n\n**📋 BAC 月度提案（%s）**\n%s" % (
             led["bac"]["d"],
@@ -1482,8 +1483,8 @@ def daily_report(led, cfg_all=None):
                 "\n\n**♠ 操盘锦标赛（投委会立案票 × 操盘手/盘算六账推演）**"
                 "\n%s%s" % ("\n".join(_sl), _pend_s)
             )
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/portfolio.py", exc)
     card = {
         "config": {"wide_screen_mode": True},
         "header": {
@@ -1560,8 +1561,8 @@ def _spawn_council():
                 stderr=subprocess.STDOUT,
                 cwd=here,
             )
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/portfolio.py", exc)
 
 
 def print_status():

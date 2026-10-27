@@ -19,6 +19,7 @@ import os
 import traceback
 from contextlib import contextmanager
 from datetime import datetime, timezone
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ERR_LOG = os.path.join(HERE, "logs", "lineage_err.log")
@@ -41,8 +42,8 @@ def _log_err(where, exc):
                     traceback.format_exc(),
                 )
             )
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/linreg.py", exc)
 
 
 def _lineage_password():
@@ -58,8 +59,8 @@ def _lineage_password():
                 line = line.strip()
                 if line.startswith("LINEAGE_PASSWORD=") and not line.startswith("#"):
                     return line.split("=", 1)[1].strip()
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/linreg.py", exc)
     raise RuntimeError("LINEAGE_PASSWORD 未配置（env 或 quant_backtest/.env.local）")
 
 
@@ -85,8 +86,8 @@ def _git_sha():
         )
         if out.returncode == 0:
             return out.stdout.strip() or None
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/linreg.py", exc)
     return None
 
 
@@ -117,8 +118,8 @@ class JobRun:
             try:
                 if self._conn:
                     self._conn.rollback()
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/linreg.py", exc)
             return None
 
     # -- 上下文 ----------------------------------------------------------
@@ -180,8 +181,8 @@ class JobRun:
         try:
             if self._conn:
                 self._finish("lost")
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/linreg.py", exc)
 
     def _open(self):
         self._conn = _get_conn()

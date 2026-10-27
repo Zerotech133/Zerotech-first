@@ -27,6 +27,7 @@ import sqlite3
 from datetime import datetime, timedelta
 
 import pandas as pd
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "data", "catalog.json")
@@ -1016,11 +1017,11 @@ def _scan_sqlite(mf):
                 v = conn.execute("SELECT MAX(%s) FROM %s" % (c, t)).fetchone()
                 s = str(v[0]) if v and v[0] else ""
                 fresh[t] = s[:10].replace("-", "") if s[:4].isdigit() else None
-            except sqlite3.OperationalError:
-                pass
+            except sqlite3.OperationalError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/build_catalog.py", exc)
         conn.close()
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/build_catalog.py", exc)
     for t in ("stock_notice", "stock_news", "stock_report"):
         ent = mf.get(t) or {}
         out[t] = {
@@ -1084,11 +1085,11 @@ def _scan_xq_info_db(mf):
                 v = conn.execute("SELECT MAX(%s) FROM %s" % (c, t)).fetchone()
                 s = str(v[0]) if v and v[0] else ""
                 fresh[t] = s[:10].replace("-", "") if s[:4].isdigit() else None
-            except sqlite3.OperationalError:
-                pass
+            except sqlite3.OperationalError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/build_catalog.py", exc)
         conn.close()
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/build_catalog.py", exc)
     xq_mf = (os.path.join(HERE, "data", "xueqiu", "_manifest.json")).replace("\\", "/")
     for t in ("xq_status", "xq_hot_post", "xq_comment"):
         ent = mf.get(t) or {}
@@ -1389,8 +1390,8 @@ def build(data_root=None, out_path=None):
             _prev = json.load(f)
         prev_tables = set(_prev.get("tables") or {})
         prev_version = int(_prev.get("version") or 0)
-    except (OSError, ValueError):
-        pass
+    except (OSError, ValueError) as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/build_catalog.py", exc)
     intel = _register_intel_tables()
     tables.update(intel)
     tables.update(EXTERNAL_TABLES)  # 章程 §3：外部库表（PG 等）并入目录

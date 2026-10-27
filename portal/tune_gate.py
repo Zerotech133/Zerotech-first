@@ -25,6 +25,7 @@ import secrets
 import sys
 import threading
 from datetime import datetime
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 STATION = os.path.dirname(HERE)
@@ -227,8 +228,8 @@ def _sandbox_draft(doc, p):
                 else:
                     _ov[_k] = _v
             draft["bt2_params_override"] = _ov
-    except Exception:
-        pass  # 引擎不可用不影响审批（降级为纯人工对比）
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/tune_gate.py", exc)
     return draft
 
 
@@ -304,8 +305,8 @@ def submit(text, customer="匿名客户", plan="internal", source="text"):
     )
     try:
         _save_store(doc)
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/tune_gate.py", exc)
     _send_card(_approval_card(rid, doc, p), to_group=True)
     return rid
 
@@ -368,8 +369,8 @@ def approve(req_id, operator="", open_id="", note=""):
     doc["approved_at"] = datetime.now().isoformat(timespec="seconds")
     try:
         _save_store(doc)
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/tune_gate.py", exc)
     extra = "沙盒草案已生成（%s 回测台人工跑对比）。\n操作人：%s" % (
         draft["created"],
         operator or open_id or "管理台",
@@ -404,8 +405,8 @@ def approve(req_id, operator="", open_id="", note=""):
             doc["draft"] = draft
             _save_store(doc)
             _spawn_auto_compare(req_id)
-        except Exception:
-            pass  # 自动跑批拉起失败不影响审批（降级纯人工，盘后批次兜底）
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/tune_gate.py", exc)
     return {
         "ok": True,
         "req_id": req_id,
@@ -430,8 +431,8 @@ def _spawn_auto_compare(req_id):
             stderr=subprocess.DEVNULL,
             creationflags=0x00000008,
         )  # DETACHED_PROCESS
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/tune_gate.py", exc)
 
 
 def _auto_compare(req_id):
@@ -500,8 +501,8 @@ def _auto_compare(req_id):
                 intent=doc3.get("intent", "opinion"),
                 scope=doc3.get("scope", "private"),
             )
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/tune_gate.py", exc)
 
 
 def reject(req_id, operator="", open_id="", reason=""):

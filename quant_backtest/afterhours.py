@@ -15,6 +15,7 @@ from datetime import datetime
 
 import premarket as pm
 import rps_resonance as RR
+import logging
 
 HERE = pm.HERE
 REPORTS = pm.REPORTS
@@ -88,8 +89,8 @@ def index_close():
                 }
             )
         out["date"] = d0
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/afterhours.py", exc)
     return out
 
 
@@ -130,8 +131,8 @@ def industry_perf():
 
         out["top"] = _rows(st, False)
         out["bottom"] = _rows(st, True)
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/afterhours.py", exc)
     return out
 
 
@@ -160,8 +161,8 @@ def premarket_review(ic):
             out["hit"] = sh["pct"] < 0
         else:  # 中性：涨跌±0.5%内算贴合
             out["hit"] = abs(sh["pct"]) <= 0.5
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/afterhours.py", exc)
     return out
 
 
@@ -753,8 +754,8 @@ def _doc_sync(md):
     finally:
         try:
             os.remove(tmp)
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/afterhours.py", exc)
 
 
 def push_card(d, doc_url=None):
@@ -877,8 +878,8 @@ def main():
             os.path.join(REPORTS, "afterhours_latest.json"), encoding="utf-8"
         ) as f:
             latest = (json.load(f).get("ic") or {}).get("date")
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/afterhours.py", exc)
     if not a.force:
         if latest == days[-1]:
             print("AFTERHOURS skip：%s 复盘已生成" % latest)

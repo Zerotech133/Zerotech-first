@@ -38,6 +38,7 @@ import threading
 import urllib.parse
 import urllib.request
 from datetime import datetime
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -105,8 +106,8 @@ def log(msg):
             os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
             with open(LOG_PATH, "a", encoding="utf-8") as f:
                 f.write(line + "\n")
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/inbound_gateway.py", exc)
     print(line, flush=True)
 
 
@@ -156,8 +157,8 @@ def _load_jsonl(path):
                     rows.append(json.loads(line))
                 except ValueError:
                     continue  # 损坏行跳过，账本不因单行坏而全废
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/inbound_gateway.py", exc)
     return rows
 
 
@@ -340,8 +341,8 @@ def _detect_embed_model():
             if any(k in name.lower() for k in ("bge", "m3", "embed")):
                 _EMBED_CACHE.update({"model": name, "ts": _now_ts()})
                 return name
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/inbound_gateway.py", exc)
     return ""
 
 
@@ -553,8 +554,8 @@ def _snapshot_url(ticket, url, idx):
             encoding="utf-8",
         ) as f:
             json.dump(meta, f, ensure_ascii=False, indent=1)
-    except OSError:
-        pass  # meta 落盘失败不挡主链（raw 已归档或 error 已留痕）
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/inbound_gateway.py", exc)
     return meta
 
 
@@ -1032,8 +1033,8 @@ def _smart_card(ticket, smart):
             ],
             level="warn",
         )
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/inbound_gateway.py", exc)
     return card
 
 
@@ -1155,8 +1156,8 @@ def _gate_record(open_id, kind, allowed, reason):
                 "receipt_result": "-",
             },
         )
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/inbound_gateway.py", exc)
 
 
 def _subscription_guide_card(open_id=None):
@@ -1192,8 +1193,8 @@ def _subscription_guide_card(open_id=None):
         )
         if isinstance(card, dict) and card.get("elements"):
             return card
-    except Exception:
-        pass  # closed on failure：模板不可用降级内联灰卡，拦截语义不丢
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/inbound_gateway.py", exc)
     return {
         "config": {"wide_screen_mode": True},
         "header": {
