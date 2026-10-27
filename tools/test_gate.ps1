@@ -122,3 +122,5 @@ if ($newFailures -eq 0) {
     Write-Host "GATE FAIL: 新增失败 $newFailures 项" -ForegroundColor Red
     exit 1
 }
+
+# OCR warn-gate validation marker 2026-10-27
