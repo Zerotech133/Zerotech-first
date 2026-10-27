@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-28 06:53",
+ "generated": "2026-10-28 06:54",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -347,13 +347,13 @@
    "project": "general"
   },
   {
-   "id": "K-QUANT-20261028-KEYSV2A3",
-   "desc": "Phase A-3 AI席位：主力5席卡+15部门负责人表格化；配置抽屉URL/model/key/优先级、测试/删除；未配置置灰；页面高度下降",
+   "id": "WO-LEGION-UIW4C-20261028",
+   "desc": "W4c：已收编旧页面包屑无 nav 匹配时用页面标题兜底，避免显示『旧版页面』",
    "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-QUANT-20261028-KEYSV2A3",
-   "created": "2026-10-28 06:52:52",
-   "project": "quant"
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-UIW4C-20261028",
+   "created": "2026-10-28 06:54:29",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -6987,6 +6987,11 @@
      "id": "WO-TESTPATHS-ADJUST-20261028",
      "desc": "testpaths 注释与行对齐：quant 收集已修但默认不纳入（CI 预算待确认）",
      "status": "review"
+    },
+    {
+     "id": "WO-LEGION-UIW4C-20261028",
+     "desc": "W4c：已收编旧页面包屑无 nav 匹配时用页面标题兜底，避免显示『旧版页面』",
+     "status": "doing"
     }
    ]
   }
