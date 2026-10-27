@@ -286,6 +286,9 @@ def main():
                     "team_desc": d.get("description", ""),
                     # K-ORG-054: 属性透传（从业经验/擅长/知识库）；缺省按年限档自动推导
                     "attributes": a.get("attributes") or _default_attributes(a),
+                    # 2026-10-27 WO-ROLE-GROUP-MODEL：角色分工（工程域/中文岗位名）
+                    "discipline": a.get("discipline", ""),
+                    "role_title": a.get("role_title", ""),
                 }
         else:
             for aid in ids:
@@ -323,6 +326,8 @@ def main():
                 "team_desc": d.get("description") or d.get("charter", ""),
                 "attributes": prof.get("attributes") or {},
                 "entry_source": "org_profiles",  # 与 team 文件落卡区分（排查用）
+                "discipline": prof.get("discipline", ""),
+                "role_title": prof.get("role_title", ""),
             }
             new_ids.append(aid)
         if new_ids:
@@ -374,6 +379,13 @@ def main():
         if (not re.search(r"[\u4e00-\u9fff]", card["role_cn"] or "")
                 and re.search(r"[\u4e00-\u9fff]", hr.get("name") or "")):
             card["role_cn"] = hr["name"]
+        # 2026-10-27 WO-ROLE-GROUP-MODEL：真源 role_title/discipline 优先于岗位 slug
+        if not card.get("discipline"):
+            card["discipline"] = prof.get("discipline", "")
+        if not card.get("role_title"):
+            card["role_title"] = prof.get("role_title", "")
+        if card.get("role_title"):
+            card["role_cn"] = card["role_title"]
         if aid == "A0":
             card["role_cn"] = "产品经理+研发（全在性）"
         card["capabilities"] = list(caps)

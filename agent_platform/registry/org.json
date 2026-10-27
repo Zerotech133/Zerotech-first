@@ -419,7 +419,9 @@
        "dept": "proj_data",
        "migrated_from": "proj_data"
       }
-     ]
+     ],
+     "discipline": "backend",
+     "role_title": "后端工程师 · G1 组长"
     },
     {
      "agent_id": "DEV6",
@@ -470,7 +472,9 @@
        ],
        "danger": "deny"
       }
-     }
+     },
+     "discipline": "backend",
+     "role_title": "后端工程师"
     },
     {
      "agent_id": "DEV7",
@@ -521,7 +525,9 @@
        ],
        "danger": "deny"
       }
-     }
+     },
+     "discipline": "backend",
+     "role_title": "后端工程师（标准化交付）"
     },
     {
      "agent_id": "DEV2",
@@ -593,7 +599,9 @@
        "dept": "proj_next",
        "migrated_from": "proj_next"
       }
-     ]
+     ],
+     "discipline": "ai",
+     "role_title": "AI/模型工程师"
     },
     {
      "agent_id": "DEV3",
@@ -665,7 +673,9 @@
        "dept": "proj_backtest",
        "migrated_from": "proj_backtest"
       }
-     ]
+     ],
+     "discipline": "quant",
+     "role_title": "量化策略工程师"
     },
     {
      "agent_id": "DEV4",
@@ -737,7 +747,9 @@
        "dept": "proj_backtest",
        "migrated_from": "proj_backtest"
       }
-     ]
+     ],
+     "discipline": "quant",
+     "role_title": "回测/风控工程师"
     },
     {
      "agent_id": "DEV5",
@@ -794,7 +806,9 @@
        ],
        "danger": "deny"
       }
-     }
+     },
+     "discipline": "frontend",
+     "role_title": "前端工程师 · G2 组长"
     },
     {
      "agent_id": "DEV8",
@@ -845,7 +859,9 @@
        ],
        "danger": "deny"
       }
-     }
+     },
+     "discipline": "frontend",
+     "role_title": "前端工程师"
     },
     {
      "agent_id": "ARCH1",
@@ -1000,7 +1016,9 @@
        "weekly_report"
       ],
       "revocation": "触发 charter red_lines 任一条 -> L0_only，A0 24h 复核，老田决定恢复"
-     }
+     },
+     "discipline": "architecture",
+     "role_title": "研发主官 · 架构师"
     },
     {
      "agent_id": "OPS1",
@@ -1055,7 +1073,9 @@
        ],
        "danger": "deny"
       }
-     }
+     },
+     "discipline": "devops",
+     "role_title": "运维/SRE 工程师"
     },
     {
      "agent_id": "DOC1",
@@ -1103,7 +1123,9 @@
        ],
        "danger": "deny"
       }
-     }
+     },
+     "discipline": "docs",
+     "role_title": "技术文档工程师"
     }
    ],
    "source": "K-ORG-015 实例化；K-ORG-017/018 扩编；K-ORG-020 职级梯队（后端三档/前端双档）",
@@ -1113,7 +1135,7 @@
    "groups": [
     {
      "id": "G1",
-     "name": "后端/平台组",
+     "name": "后端/AI/平台组",
      "lead": "DEV1",
      "members": [
       "DEV6",
@@ -1124,7 +1146,7 @@
     },
     {
      "id": "G2",
-     "name": "前端/业务组",
+     "name": "前端/量化/文档组",
      "lead": "DEV5",
      "members": [
       "DEV8",
