@@ -1,0 +1,22 @@
+{
+  "url": "http://127.0.0.1:8734/os-entry",
+  "captured_at": "2026-10-27T08:25:56.221656+00:00",
+  "views": [
+    {
+      "name": "desktop",
+      "width": 1440,
+      "height": 1200,
+      "file": "os_entry_20261027_desktop_1440.png",
+      "sha256": "9a92e4284c23d8c3ffab6e4ab8539b2b5ee3d08f70775d905f498e60caa562f6",
+      "bytes": 410424
+    },
+    {
+      "name": "mobile",
+      "width": 375,
+      "height": 900,
+      "file": "os_entry_20261027_mobile_375.png",
+      "sha256": "a8212a223153486c243b94ef3291fdb7383a47712da65a7de94d8788f52973f8",
+      "bytes": 623525
+    }
+  ]
+}

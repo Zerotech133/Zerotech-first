@@ -254,6 +254,48 @@ def _secret_scan_gate(branch, worktree=""):
 # sys.stdout.reconfigure(utf-8) 兜底，两处都加 = 双保险。
 GUARD_ENV = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1")
 
+
+def _ui_audit_gate(branch, worktree=""):
+    """UI/UX 静态审计（warn-only，永不阻断合并）。
+
+    只扫分支变更的 .html/.js/.css，报告硬编码 hex/内联 style/a11y/状态/动效指标；
+    warn 只提示，不改变 merge 结果（2026-10-27 Week4）。
+    """
+    try:
+        r = subprocess.run(["git", "-C", REPO, "diff", "--name-only",
+                            "master...%s" % branch], capture_output=True, text=True,
+                           encoding="utf-8", errors="replace")
+        rels = [x.strip() for x in (r.stdout or "").splitlines() if x.strip()]
+        base = Path(worktree) if worktree else Path(REPO)
+        files = [base / rel for rel in rels
+                 if rel.lower().endswith((".html", ".js", ".css")) and (base / rel).is_file()]
+        if not files:
+            return True, "无前端变更"
+        warn = info = 0
+        codes = []
+        for f in files:
+            rr = subprocess.run([sys.executable,
+                                 os.path.join(REPO, "tools", "ui_ux_audit.py"),
+                                 str(f), "--json"],
+                                capture_output=True, text=True, encoding="utf-8",
+                                errors="replace", env=GUARD_ENV)
+            try:
+                data = json.loads(rr.stdout or "[]")
+            except Exception:
+                data = []
+            for item in data if isinstance(data, list) else []:
+                warn += int(item.get("warn") or 0)
+                info += int(item.get("info") or 0)
+                for fnd in item.get("findings", []):
+                    if fnd.get("level") == "warn":
+                        codes.append(fnd.get("code"))
+        detail = ("扫描 %d 文件：warn=%d info=%d%s"
+                  % (len(files), warn, info,
+                     ("；" + ",".join(sorted(set(codes))[:4])) if codes else ""))
+        return True, detail + "（warn-only，不阻断）"
+    except Exception as exc:  # noqa: BLE001 —— 审计异常不得反噬合并
+        return True, "审计异常（不阻断）：%s" % str(exc)[:120]
+
 GATES = [("Mixin方法集", [sys.executable,
                           os.path.join(REPO, "tools", "_mixin_integrity.py"),
                           "--check"]),
@@ -265,6 +307,7 @@ GATES = [("Mixin方法集", [sys.executable,
                        "--strict"]),  # 2026-10-26 WO-UPGRADE-20261026：合并门
          # 必须走 strict，否则非 strict 恒 rc=0 = 假门（审计 B-02）。strict 语义
          # 已拆：只拦「未登记监听/端口冲突」，在册服务离线不判负（check_ports.py）。
+         ("UI/UX审计", _ui_audit_gate),
          ("明文凭据", _secret_scan_gate)]
 
 
