@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 34,
+  "workorders_doing": 33,
   "workorders_review": 4
  },
  "workorders": [
@@ -344,15 +344,6 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-TESTPATHS-ADJUST-20261028",
    "created": "2026-10-28 05:24:43",
-   "project": "general"
-  },
-  {
-   "id": "WO-HUANGZHONG-GRADE-20261028",
-   "desc": "黄忠W1批改工具(Rubric自动评分)+观察指标覆盖率+W1提交模板",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-HUANGZHONG-GRADE-20261028",
-   "created": "2026-10-28 07:50:50",
    "project": "general"
   }
  ],
@@ -7050,11 +7041,6 @@
      "id": "WO-TESTPATHS-ADJUST-20261028",
      "desc": "testpaths 注释与行对齐：quant 收集已修但默认不纳入（CI 预算待确认）",
      "status": "review"
-    },
-    {
-     "id": "WO-HUANGZHONG-GRADE-20261028",
-     "desc": "黄忠W1批改工具(Rubric自动评分)+观察指标覆盖率+W1提交模板",
-     "status": "doing"
     }
    ]
   }
