@@ -13,6 +13,9 @@
         collapsibles.push(el);
       }
     });
+    // 值班经理服务介绍长文也收起；今日盘前简报 (#duty-brief) 保持可见
+    var ob = card.querySelector('#ob-box');
+    if (ob) collapsibles.push(ob);
     collapsibles.forEach(function (el) { el.classList.add('p0-collapsible'); });
 
     var btn = document.createElement('button');
