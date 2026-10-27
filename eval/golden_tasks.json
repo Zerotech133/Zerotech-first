@@ -251,6 +251,19 @@
    ],
    "expect_rc": 0,
    "timeout": 120
+  },
+  {
+   "id": "pytest-onboard",
+   "desc": "AI 接入台单测",
+   "cmd": [
+    "{python}",
+    "-m",
+    "pytest",
+    "tools/test_ai_onboard.py",
+    "-q"
+   ],
+   "expect_rc": 0,
+   "timeout": 120
   }
  ]
 }
