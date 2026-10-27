@@ -28,7 +28,7 @@ if str(_PLATFORM) not in sys.path:
     sys.path.insert(0, str(_PLATFORM))
 
 from gateway import inbox_gateway, llm_gateway  # noqa: E402  S21 门面复用
-from engine.org_profiles import profile_index, stamp  # noqa: E402  S41 统一取档口径
+from engine.org_profiles import fallbacks_index, profile_index, stamp  # noqa: E402  S41 统一取档口径
 from engine.openclaw_cli import agent_primary_model, is_relay, run as oc_run  # noqa: E402  OpenClaw 载体桥
 from legion_command.snapshot import build_snapshot  # noqa: E402
 
@@ -91,7 +91,27 @@ AGENT_BINDING = {
     "DEV2": "ollama/qwen3.6:35b-a3b",
 }
 _DEFAULT_BINDING = "ollama/qwen3.5:9b"
-_BINDING_CACHE = {"mtime": None, "map": {}}
+# 平台级兜底降级档：席位没配 llm_fallback 时只降这一档（A0/AI1 等无链席位的旧行为）
+_DEFAULT_FALLBACK = _DEFAULT_BINDING
+# 同一 stamp 指纹管两张索引：席位绑定（map）与席位降级链（fallbacks）
+_BINDING_CACHE = {"mtime": None, "map": {}, "fallbacks": {}}
+
+
+def _binding_cache(base: Path) -> dict:
+    """按 stamp 指纹刷新「绑定表 + 降级链」双索引，返回缓存本体（零 IO 命中路径）。
+
+    为什么同一指纹管两个索引：两者都只由 org.json / team_*.json 决定，分开缓存会
+    出现「绑定已换、降级链还是旧档」的半拍状态（S41 判例：改档后会议层仍按旧档说话）。
+    `fallbacks` 键缺失（老进程热更新 / 测试只重置了 map）时也强制重算——
+    读到空链会让 glm 失败后静默回落到平台默认档，正是本单要消灭的行为。
+    """
+    cache = _BINDING_CACHE
+    key = stamp(base)
+    if cache.get("mtime") != key or "fallbacks" not in cache:
+        cache["map"] = profile_index(base)
+        cache["fallbacks"] = fallbacks_index(base)
+        cache["mtime"] = key
+    return cache
 
 
 def resolve_binding(agent: str, platform_dir: Path | None = None) -> str:
@@ -105,18 +125,68 @@ def resolve_binding(agent: str, platform_dir: Path | None = None) -> str:
       - 具体绑定串（如 ollama/qwen3.5:9b）
       - "none" 表示该席位为规则执行体，无 LLM 发言能力
     """
-    base = platform_dir or _PLATFORM
-    cache = _BINDING_CACHE
-    # 缓存指纹覆盖 org.json + 全部 team_*.json：A0A 的档案只在 team_chief.json 里，
-    # 只认 org.json 的 mtime 会让它的改档永远读不到（S41 实测）。
-    key = stamp(base)
-    if cache["mtime"] != key:
-        cache["map"] = profile_index(base)
-        cache["mtime"] = key
+    cache = _binding_cache(platform_dir or _PLATFORM)
     hit = cache["map"].get(agent) or {}
     if hit.get("llm_binding"):
         return hit["llm_binding"]
     return AGENT_BINDING.get(agent, _DEFAULT_BINDING)
+
+
+def resolve_fallbacks(agent: str, platform_dir: Path | None = None) -> list[str]:
+    """席位 → 有序降级链（org.json 的 `llm_fallback`）；未配置/无档案返回 `[]`。
+
+    与 `resolve_binding` 共用同一 stamp 缓存：org 改档后绑定与降级链同时失效，
+    不会出现「主绑换新、链还是旧」的错配。返回**副本**——调用方就地改列表
+    （如去重/裁剪）不会污染缓存，也不会串到下一个席位。
+    """
+    cache = _binding_cache(platform_dir or _PLATFORM)
+    return list(cache["fallbacks"].get(agent) or [])
+
+
+def _seat_chat(chat_fn, binding: str, fallbacks, system: str, user: str,
+               default_fallback: str = _DEFAULT_FALLBACK) -> tuple[dict, list[str]]:
+    """会议/指挥台单席位对话：主绑失败时按**席位级降级链**依次尝试。
+
+    纯函数（chat_fn 注入、不读全局、不写缓存），便于离线验收与复用；返回
+    `(env, attempts)`，attempts = 主绑 + 全部已尝试 fallback（按真实调用顺序）。
+
+    分支（与旧 /api/chat 的兼容契约）：
+      · 主绑 ok → `(env, [binding])`：不标 degraded、不碰 data，行为与旧实现一致；
+      · 非 glm 主绑失败 → **原样返回** `(env, [binding])`，一次 fallback 都不调：
+        本地 9b 失败就是失败（fail-visible），伪造「降级成功」会掩盖真故障；
+        openai 族 / 规则执行体同理——降级只对云端判读席（glm）开放；
+      · glm 主绑失败 → 依次尝试 `fallbacks or [default_fallback]`：
+          - 首个 ok 的信封被标 `degraded=True` + `fallback_from`（主绑）+
+            `fallback_reason`（主错 message）+ `fallback_chain`（已尝试的 fallback，
+            含成功项），并补齐 `data.binding_resolved`（缺失时补成实际生效的 fallback，
+            已有则尊重底层口径，供响应 `binding` 字段取值）；
+          - 全部失败 → 返回**主失败信封** + 完整 attempts：展示层要看到主绑原错，
+            而不是最后一条 fallback 的错（否则排障只看到「9b also failed」）。
+    """
+    env = chat_fn(binding=binding, system=system, user=user)
+    attempts = [binding]
+    if env.get("ok"):
+        return env, attempts
+    if not binding.startswith("glm/"):
+        return env, attempts
+    reason = (env.get("error") or {}).get("message") or "cloud unavailable"
+    chain = list(fallbacks or [default_fallback])
+    for fb in chain:
+        fb_env = chat_fn(binding=fb, system=system, user=user)
+        attempts.append(fb)
+        if not fb_env.get("ok"):
+            continue
+        fb_env["degraded"] = True
+        fb_env["fallback_from"] = binding
+        fb_env["fallback_reason"] = reason
+        fb_env["fallback_chain"] = list(attempts[1:])
+        data = fb_env.get("data")
+        if not isinstance(data, dict):
+            data = {}
+            fb_env["data"] = data
+        data.setdefault("binding_resolved", fb)
+        return fb_env, attempts
+    return env, attempts
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -896,22 +966,14 @@ class Handler(BaseHTTPRequestHandler):
                                      "ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
                                      "agent": agent, "binding": binding})
                 return
-            env = llm_gateway.chat(
-                binding=binding,
-                system=str(req.get("system", ""))[:4000],
-                user=str(req.get("user", ""))[:8000])
-            # 云端限额/故障 → 会议展示层显式降级本地 9b（标 degraded + 原因，
-            # 不静默；判读席位语义在 engine 层不变，此处仅会议通道可用性兜底）
-            if not env.get("ok") and binding.startswith("glm/"):
-                fallback = llm_gateway.chat(
-                    binding="ollama/qwen3.5:9b",
-                    system=str(req.get("system", ""))[:4000],
-                    user=str(req.get("user", ""))[:8000])
-                if fallback.get("ok"):
-                    fallback["degraded"] = True
-                    fallback["fallback_from"] = binding
-                    fallback["fallback_reason"] = (env.get("error") or {}).get("message", "cloud unavailable")
-                    env = fallback
+            # 席位级 fallback 链（WO-LEGION-DEVEXEC2-20261027）：glm 主绑失败时不再
+            # 硬编码降 9b，而是按 org.json 的 llm_fallback 依次尝试（缺链→平台默认 9b）。
+            # 非 glm 失败原样透传（不伪造降级）；判读席位语义仍在 engine 层不变，
+            # 此处仅会议通道可用性兜底，并诚实标注 degraded/fallback_from/chain。
+            env, _attempts = _seat_chat(
+                llm_gateway.chat, binding, resolve_fallbacks(agent),
+                str(req.get("system", ""))[:4000],
+                str(req.get("user", ""))[:8000])
             env["agent"] = agent
             env["binding"] = env.get("data", {}).get("binding_resolved", binding)
             self._send_json(env)

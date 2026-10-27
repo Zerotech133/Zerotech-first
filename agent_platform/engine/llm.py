@@ -25,7 +25,11 @@ qwen2.5:7b / qwen3:8b 已于 10-24 清理（config/ollama_model_route.json delet
     "openai-direct/<模型>" → OpenAILLM —— 旧直连保留通道（https://api.openai.com/v1，
                              key 从 OPENAI_API_KEY / OPENAI_GPT6_KEY 读取，零落盘），
                              仅供迁移/对照；生产绑定禁止直接使用。
-    以上两通道失败/空回一律抛 LLMError，**不静默降档本地 9b**（与 GLMCloudLLM 同纪律）。
+    "deepseek/<模型>"      → DeepSeekLLM —— 工具级 DeepSeek 云端通道
+                             （engine/deepseek.py 的 DeepSeekClient 适配器），缺省模型
+                             deepseek-flash；组织 `llm_fallback` 里的 deepseek 项即由
+                             此承接（WO-LEGION-DEVEXEC2-20261027 席位级 fallback 链）。
+    以上通道失败/空回一律抛 LLMError，**不静默降档本地 9b**（与 GLMCloudLLM 同纪律）。
 """
 import json
 import os
@@ -292,6 +296,8 @@ def make_llm(binding):
                              不直连、不需要 env key）
     "openai-direct/<模型>" → OpenAILLM（旧直连保留：api.openai.com + env key，仅供
                              迁移/对照；2026-10-27 B05 起不再被 AI1 绑定使用）
+    "deepseek/<模型>"      → DeepSeekLLM（工具级 DeepSeek 云端；缺模型名走
+                             deepseek-flash——org `llm_fallback` 的降级链目标）
     其余 → OllamaLLM 兜底（会走降级三态，行为与旧版一致）。
     """
     prefix, _, rest = (binding or "").partition("/")
@@ -304,6 +310,8 @@ def make_llm(binding):
         return OpenAILLM(model=rest or "gpt-6.0")
     if prefix == "openai":
         return OpenClawLLM(model=rest)
+    if prefix == "deepseek":
+        return DeepSeekLLM(model=rest or DEFAULT_DEEPSEEK_MODEL)
     return OllamaLLM()
 
 
@@ -381,6 +389,105 @@ class GLMCloudLLM:
                 last = e
                 time.sleep(1.5)
         raise LLMError("glm 通道调用失败 after retry: %s" % last)
+
+
+DEFAULT_DEEPSEEK_MODEL = "deepseek-flash"
+
+
+def _deepseek_module():
+    """延迟导入 engine/deepseek（工具级 DeepSeek 客户端，WO-LEGION-LLMDEEPSEEK）。
+
+    与 `_openclaw_module` 同法兼容两种导入上下文：包上下文（engine.llm）与
+    engine/ 直接进 sys.path 的扁平上下文。延迟导入还保证两条纪律：
+    ① `make_llm("deepseek/…")` 的构造期不读 key、不联网；
+    ② 测试可 monkeypatch `engine.deepseek.*`（取到同一个模块实例）。
+    """
+    try:
+        from engine import deepseek as mod
+    except ImportError:  # engine/ 目录直接位于 sys.path
+        import deepseek as mod
+    return mod
+
+
+class DeepSeekLLM:
+    """DeepSeek 云端通道（`deepseek/<模型>` 前缀；工具级 DeepSeekClient 适配器）
+
+    定位（WO-LEGION-DEVEXEC2-20261027 席位级 fallback 链）：把组织
+    `llm_fallback` 里的 `deepseek/deepseek-flash` 真正接通——glm 主绑失败时，
+    会议/指挥台按席位降级链先落 DeepSeek、再落本地 9b，而不是一律硬降 9b。
+
+    契约与 OllamaLLM 同构（调用方可整体替换）：
+    - `chat(system="", user="", model=None, **kw)` → `(text, status)`；
+      status 二值：`"normal"` / `"degraded"`（finish_reason=="length" 视为截断）；
+    - 空回 / 缺 key / 网络失败 / 响应结构异常 → 抛 `LLMError`，**不静默降档
+      本地 9b**（与 GLMCloudLLM / OpenAILLM 同纪律：降级由调用方显式决定并标注）；
+    - `last_meta` 记录 model/finish_reason/usage，供排障与诚实标签；
+    - 惰性构造 DeepSeekClient：构造期不读 key、不联网——`make_llm` 在无 key 的
+      环境下仍能安全构造，缺 key 到首次 `chat` 才报 `LLMError`（fail-visible）。
+
+    密钥纪律沿用 engine/deepseek.py：DEEPSEEK_API_KEY → DEEPSEEK_API_KEY_FILE →
+    默认私有文件；本类只透传，不打印、不落盘任何密钥。
+    """
+
+    # 一句话级 ≥64，结构化抽取 ≥512（推理模型 reasoning token 与正文共用预算，
+    # 短预算会把正文饿空——见 engine/deepseek.py chat_full 判例）。
+    DEFAULT_MAX_TOKENS = 2048
+
+    def __init__(self, model=None, timeout=180, retries=1, api_key=None,
+                 transport=None, client=None):
+        self.model = model or DEFAULT_DEEPSEEK_MODEL
+        self.timeout = timeout
+        self.retries = retries
+        self.api_key = api_key
+        self.transport = transport      # 注入离线 transport（透传 DeepSeekClient）
+        self._client = client           # 注入现成 client/测试桩；None → 首次 chat 惰性建
+        self.last_meta = None
+
+    def _ensure_client(self):
+        """惰性构造 DeepSeekClient；构造失败（如缺 key）归一为 LLMError。"""
+        if self._client is not None:
+            return self._client
+        mod = _deepseek_module()
+        try:
+            self._client = mod.DeepSeekClient(
+                api_key=self.api_key, model=self.model,
+                timeout=self.timeout, retries=self.retries,
+                transport=self.transport)
+        except Exception as exc:  # noqa: BLE001 —— 任何构造失败都必须显式抛错
+            raise LLMError("deepseek 客户端不可用：%s——云端席位不静默降档" % exc)
+        return self._client
+
+    def chat(self, system="", user="", model=None, **kw):
+        client = self._ensure_client()
+        messages = []
+        if system:
+            messages.append({"role": "system", "content": str(system)})
+        messages.append({"role": "user", "content": str(user)})
+        opts = {"temperature": 0.4,
+                "max_tokens": self.DEFAULT_MAX_TOKENS}
+        for key in ("temperature", "max_tokens", "response_format"):
+            if key in kw:                      # 已知档位透传；未知 kw 忽略（不猜语义）
+                opts[key] = kw[key]
+        model = model or self.model
+        mod = _deepseek_module()
+        try:
+            full = client.chat_full(messages, model=model, **opts)
+        except mod.DeepSeekError as exc:
+            raise LLMError("deepseek 通道调用失败：%s——云端席位不静默降档" % exc)
+        except Exception as exc:  # noqa: BLE001 —— transport 异常也要归一
+            raise LLMError("deepseek 通道调用失败：%s: %s——云端席位不静默降档"
+                           % (type(exc).__name__, exc))
+        text = str((full or {}).get("content") or "").strip()
+        finish = (full or {}).get("finish_reason")
+        self.last_meta = {"model": (full or {}).get("model") or model,
+                          "finish_reason": finish,
+                          "usage": (full or {}).get("usage") or {}}
+        if not text:
+            # 假成功判例：HTTP 200 但正文为空（推理 token 吃光预算）≠ 可用
+            self.last_meta["error"] = "empty_content"
+            raise LLMError("deepseek 空回（finish=%s；推理 token 可能吃光 max_tokens）"
+                           "——云端席位不静默降档" % finish)
+        return text, ("degraded" if finish == "length" else "normal")
 
 
 def _openclaw_module():

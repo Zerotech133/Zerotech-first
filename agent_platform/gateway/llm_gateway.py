@@ -18,6 +18,9 @@ binding 词表（10-18 分工定案 + S20 异族裁决 + 2026-10-27 B05 单轨�
   / "openai-direct/<模型>"（旧直连保留）：engine.OpenAILLM，须 env
   OPENAI_API_KEY / OPENAI_GPT6_KEY，缺=快速 LLMError；仅供迁移/对照，
   生产路由禁止使用。
+  / "deepseek/deepseek-flash"（席位级降级链主力）：engine.DeepSeekLLM
+  （工具级 DeepSeekClient 适配器）；org `llm_fallback` 的 deepseek 项由此承接，
+  glm 429 时由调用方显式降级并标注 degraded（本层不自动改写绑定）。
 """
 
 from __future__ import annotations
@@ -43,8 +46,11 @@ DEFAULT_BINDING = "ollama/qwen3.5:9b"
 #   "openai/<模型>"        → OpenClawLLM(model="<模型>"，实际模型由 agent-config 决定；
 #                            2026-10-27 B05 单轨化：与 L5/8796 同源，不直连、不需 env key)
 #   "openai-direct/<模型>" → OpenAILLM(model="<模型>")（旧直连保留，须 env key）
+#   "deepseek/<模型>"      → DeepSeekLLM(model="<模型>")（席位级降级链目标；
+#                            2026-10-27 起 org llm_fallback 的 deepseek 项由它承接）
 # 因此 chat 时不能再把整串 binding 当 model 传回去。
-_PREFIX_OWNS_MODEL = frozenset({"glm", "nova", "openai", "openai-direct"})
+_PREFIX_OWNS_MODEL = frozenset({"glm", "nova", "openai", "openai-direct",
+                                "deepseek"})
 
 
 @timed
