@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 34,
+  "workorders_doing": 33,
   "workorders_review": 4
  },
  "workorders": [
@@ -344,15 +344,6 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-TESTPATHS-ADJUST-20261028",
    "created": "2026-10-28 05:24:43",
-   "project": "general"
-  },
-  {
-   "id": "WO-LEGION-UIHOME-20261028",
-   "desc": "统一首页 v1：不依赖8798的根入口，直连 /paper /strategies /picks /os-entry；全面 UI 统计；nginx root 切换",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-UIHOME-20261028",
-   "created": "2026-10-28 05:27:44",
    "project": "general"
   }
  ],
@@ -6987,11 +6978,6 @@
      "id": "WO-TESTPATHS-ADJUST-20261028",
      "desc": "testpaths 注释与行对齐：quant 收集已修但默认不纳入（CI 预算待确认）",
      "status": "review"
-    },
-    {
-     "id": "WO-LEGION-UIHOME-20261028",
-     "desc": "统一首页 v1：不依赖8798的根入口，直连 /paper /strategies /picks /os-entry；全面 UI 统计；nginx root 切换",
-     "status": "doing"
     }
    ]
   }
