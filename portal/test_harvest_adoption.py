@@ -64,3 +64,36 @@ def test_direct_visit_not_adoption():
         '127.0.0.1 - - [23/Oct/2026:04:50:00 +0800] "GET /dev HTTP/1.1" 200 1 "-" "-"'
     )
     assert ha.parse_entries([line], since_hours=24) == []
+
+
+def test_query_decision_id_parsed():
+    ref = '" "http://127.0.0.1:8080/os-entry" "-'
+    t = _log_ts(5)
+    line = (
+        f'127.0.0.1 - - [{t}] "GET /dev?decision_id=DR-20261027-01&card_id=ZQ-20261027-01 HTTP/1.1" '
+        f'200 1{ref}'
+    )
+    rows = ha.parse_entries([line], since_hours=24)
+    assert len(rows) == 1
+    assert rows[0]["domain"] == "研发"
+    assert rows[0]["decision_id"] == "DR-20261027-01"
+    assert rows[0]["card_id"] == "ZQ-20261027-01"
+
+
+def test_query_invalid_decision_id_ignored():
+    ref = '" "http://127.0.0.1:8080/os-entry" "-'
+    t = _log_ts(5)
+    line = (
+        f'127.0.0.1 - - [{t}] "GET /dev?decision_id=BAD-ID HTTP/1.1" 200 1{ref}'
+    )
+    rows = ha.parse_entries([line], since_hours=24)
+    assert len(rows) == 1 and "decision_id" not in rows[0]
+
+
+def test_dedup_keeps_distinct_decision_ids():
+    t = _log_ts(5)
+    entries = [
+        {"at": t, "ip": "1.1.1.1", "domain": "研发", "decision_id": "DR-1"},
+        {"at": t, "ip": "1.1.1.1", "domain": "研发", "decision_id": "DR-2"},
+    ]
+    assert len(ha.dedup_window(entries, minutes=5)) == 2

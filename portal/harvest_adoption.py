@@ -21,9 +21,12 @@ import datetime as dt
 import json
 import os
 import re
+import urllib.parse
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "data", "zhuge_adoption.jsonl")
+DECISION_RE = re.compile(r"^DR-\d{8}-\d{2,3}$")
+CARD_RE = re.compile(r"^ZQ-\d{8}-\d{2,3}$")
 
 # 建议卡 linkFor 映射的目标路径 → 领域名（与页面 linkFor 一致，改页面须同步）
 PATH_DOMAIN = {
@@ -58,14 +61,19 @@ def read_log_lines() -> list[str]:
 
 
 def parse_entries(lines: list[str], since_hours: float = 24.0) -> list[dict]:
-    """从 access log 提取「自 OS 页下钻」的建议领域访问（referer 含 os-entry/os_council）。"""
+    """从 access log 提取「自 OS 页下钻」的建议领域访问（referer 含 os-entry/os_council）。
+
+    C3DID：建议卡链接可带 `?decision_id=DR-...&card_id=ZQ-...`（只传 ID，
+    零页面 POST/契约不变）；这里从 GET query 解析，非法 ID 忽略不臆造。
+    """
     cutoff = dt.datetime.now().astimezone() - dt.timedelta(hours=since_hours)
     out = []
     for line in lines:
         m = LINE_PAT.match(line)
         if not m:
             continue
-        ip, ts_raw, path, status, referer = m.groups()
+        ip, ts_raw, raw_path, status, referer = m.groups()
+        path, _, query = raw_path.partition("?")
         if path not in PATH_DOMAIN or status != "200":
             continue
         ref = referer or ""
@@ -77,22 +85,28 @@ def parse_entries(lines: list[str], since_hours: float = 24.0) -> list[dict]:
             continue
         if ts < cutoff:
             continue
-        out.append(
-            {
-                "at": ts.isoformat(timespec="seconds"),
-                "domain": PATH_DOMAIN[path],
-                "ip": ip,
-                "path": path,
-            }
-        )
+        q = urllib.parse.parse_qs(query)
+        decision_id = (q.get("decision_id") or [""])[0].strip()[:40]
+        card_id = (q.get("card_id") or [""])[0].strip()[:40]
+        row = {
+            "at": ts.isoformat(timespec="seconds"),
+            "domain": PATH_DOMAIN[path],
+            "ip": ip,
+            "path": path,
+        }
+        if decision_id and DECISION_RE.fullmatch(decision_id):
+            row["decision_id"] = decision_id
+        if card_id and CARD_RE.fullmatch(card_id):
+            row["card_id"] = card_id
+        out.append(row)
     return out
 
 
 def dedup_window(entries: list[dict], minutes: int = 5) -> list[dict]:
-    """同 IP 同域 5 分钟窗口去重。"""
+    """同 IP 同域（有 decision_id 时含 ID）5 分钟窗口去重。"""
     out, seen = [], {}
     for e in sorted(entries, key=lambda x: x["at"]):
-        key = (e["ip"], e["domain"])
+        key = (e["ip"], e["domain"], e.get("decision_id", ""))
         last = seen.get(key)
         if last:
             t0 = dt.datetime.fromisoformat(last)
