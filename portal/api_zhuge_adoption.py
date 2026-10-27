@@ -25,15 +25,22 @@ from __future__ import annotations
 import datetime as dt
 import json
 import os
+import re
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 LEDGER = os.path.join(HERE, "data", "zhuge_adoption.jsonl")
 MAX_ITEMS = 200
-FIELDS = {"at", "domain", "ua"}
+FIELDS = {"at", "domain", "ua", "decision_id", "card_id"}
+DECISION_RE = re.compile(r"^DR-\d{8}-\d{2,3}$")
+CARD_RE = re.compile(r"^ZQ-\d{8}-\d{2,3}$")
 
 
 def append_items(items: list) -> tuple[int, str]:
-    """校验并追加；返回 (http_status, message)。"""
+    """校验并追加；返回 (http_status, message)。
+
+    2026-10-27 C3DID：可选 decision_id / card_id（只加关联字段，不加执行面）；
+    旧报文（仅 at/domain/ua）保持兼容。
+    """
     if not isinstance(items, list) or not items:
         return 400, "items 须为非空数组"
     if len(items) > MAX_ITEMS:
@@ -42,13 +49,23 @@ def append_items(items: list) -> tuple[int, str]:
     lines = []
     for it in items:
         if not isinstance(it, dict) or set(it.keys()) - FIELDS:
-            return 400, "item 字段越界（仅 at/domain/ua）"
+            return 400, "item 字段越界（仅 at/domain/ua/decision_id/card_id）"
         at, domain = str(it.get("at", "")), str(it.get("domain", ""))
         if not at or not domain:
             return 400, "at/domain 必填"
-        lines.append(json.dumps({"at": at[:40], "domain": domain[:40],
-                                 "ua": str(it.get("ua", ""))[:80],
-                                 "received_at": now}, ensure_ascii=False))
+        decision_id = str(it.get("decision_id", "")).strip()
+        card_id = str(it.get("card_id", "")).strip()
+        if decision_id and not DECISION_RE.fullmatch(decision_id):
+            return 400, "decision_id 格式须为 DR-YYYYMMDD-NN"
+        if card_id and not CARD_RE.fullmatch(card_id):
+            return 400, "card_id 格式须为 ZQ-YYYYMMDD-NN"
+        row = {"at": at[:40], "domain": domain[:40],
+               "ua": str(it.get("ua", ""))[:80], "received_at": now}
+        if decision_id:
+            row["decision_id"] = decision_id[:40]
+        if card_id:
+            row["card_id"] = card_id[:40]
+        lines.append(json.dumps(row, ensure_ascii=False))
     os.makedirs(os.path.dirname(LEDGER), exist_ok=True)
     with open(LEDGER, "a", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n")

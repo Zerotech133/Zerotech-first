@@ -85,3 +85,34 @@ def test_missing_ledger(monkeypatch, tmp_path):
     assert b._load_adoptions() == []
     out = b.sync_adoptions()
     assert out["ok"] and out["adoption_events"] == 0
+
+
+def test_exact_decision_id_links_without_domains(monkeypatch, tmp_path):
+    repo, rid, domain = make_decision(monkeypatch, tmp_path)
+    path = repo / "portal" / "data" / "zhuge_adoption.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", encoding="utf-8", newline="\n") as fh:
+        for i in range(2):
+            fh.write(json.dumps({
+                "at": "2026-10-27T10:0%d:00+08:00" % i,
+                "domain": "unknown:domain",
+                "decision_id": rid,
+                "ua": "test"}, ensure_ascii=False) + "\n")
+    out = b.sync_adoptions()
+    assert out["ok"] and out["decisions"] == 1
+    assert out["linked"] and out["linked"][0]["decision_id"] == rid
+    rec = dr.show(rid)["record"]
+    assert rec["adoption_id"] == "C3:decision:%s" % rid
+    assert "精确匹配" in rec["outcome"]
+
+
+def test_exact_decision_id_unmatched_reported(monkeypatch, tmp_path):
+    repo = use_repo(monkeypatch, tmp_path)
+    path = repo / "portal" / "data" / "zhuge_adoption.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({
+        "at": "2026-10-27T10:00:00+08:00", "domain": "研发",
+        "decision_id": "DR-20261027-99"}, ensure_ascii=False) + "\n",
+        encoding="utf-8")
+    out = b.sync_adoptions()
+    assert out["unmatched_decision_ids"] == ["DR-20261027-99"]
