@@ -505,6 +505,20 @@
         "expect_rc": 0
       },
       "on_miss": "A0 催办 DOC1：跑 python -B tools/gen_docs_index.py 重建索引"
+    },
+    {
+      "id": "ARCH1-03",
+      "agent": "ARCH1",
+      "dept": "dev",
+      "title": "架构决策与技术债巡检（周）：质量门/ADR/近期架构文档/在途 worktree",
+      "why": "ADR 断供与质量门漂移没人周度复核，架构债会以合并门红灯形式晚发现",
+      "freq": "weekly@1 09:50",
+      "evidence": {
+        "type": "file",
+        "path": "agent_platform/data/dev/arch1/*_patrol.md",
+        "max_age_h": 200
+      },
+      "on_miss": "A0 催办 ARCH1：跑 arch1_ops.py weekly 并补 ADR/质量门异常单"
     }
   ]
 }
