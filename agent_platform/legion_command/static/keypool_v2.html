@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 接入与 Key 管理 · 零界</title>
+<style>
+:root{--bg:#0b1220;--panel:#101b2b;--line:#1e334d;--fg:#e8f0f8;--dim:#7f9bb8;--purple:#bc8cff;--green:#39d98a;--red:#ff6b6b;--amber:#f5b94c;--blue:#58a6ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:13px/1.5 "Segoe UI","Microsoft YaHei",sans-serif}
+a{color:var(--blue);text-decoration:none}
+header{padding:18px 22px 10px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-size:22px;margin:0}h1 small{font-size:11px;color:var(--dim);font-weight:400;margin-left:8px}
+.sub{color:var(--dim);font-size:12px;margin-top:4px}
+.badges{display:flex;gap:8px;flex-wrap:wrap;margin:8px 22px 0}
+.badge{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 12px;min-width:150px}
+.badge .n{font-size:20px;font-weight:700}.badge .l{font-size:11px;color:var(--dim)}
+.badge.green .n{color:var(--green)}.badge.red .n{color:var(--red)}.badge.amber .n{color:var(--amber)}.badge.blue .n{color:var(--blue)}
+nav{display:flex;gap:4px;flex-wrap:wrap;padding:14px 22px 0;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:5}
+nav button{background:transparent;border:0;border-bottom:2px solid transparent;color:var(--dim);padding:8px 12px;font-size:13px;cursor:pointer}
+nav button.on{color:var(--fg);border-bottom-color:var(--purple)}
+main{padding:16px 22px 40px;max-width:1500px}
+.panel{display:none;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+.panel.on{display:block}
+.panel h2{font-size:15px;margin:0 0 10px}
+.muted{color:var(--dim);font-size:12px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.kpi{background:#0d1828;border:1px solid var(--line);border-radius:10px;padding:12px}
+.kpi .big{font-size:18px;font-weight:700;margin:4px 0}
+.btn{background:#16263b;border:1px solid #2b4a6d;border-radius:8px;color:var(--fg);padding:6px 10px;cursor:pointer}
+.btn.primary{background:#1d3a2e;border-color:#3f7f57;color:#d6f5e3}
+.btn.warn{background:#33251d;border-color:#7f5a3f;color:#ffe2c8}
+.pill{display:inline-block;border-radius:999px;padding:2px 8px;font-size:11px;border:1px solid var(--line);color:var(--dim)}
+.pill.ok{color:var(--green);border-color:#2b6b4b}.pill.bad{color:var(--red);border-color:#6b2b2b}.pill.warn{color:var(--amber);border-color:#6b552b}
+table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+a.btn-link{display:inline-block;background:#16263b;border:1px solid #2b4a6d;border-radius:8px;color:var(--fg);padding:6px 10px}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>AI 接入与 Key 管理<small>GENOS ACCESS CONSOLE</small></h1>
+    <div class="sub">平台上游、模型路由、AI 席位与虚拟 Key 的统一入口 · 默认只展示状态与入口</div>
+  </div>
+  <div class="muted" id="gen">加载中…</div>
+</header>
+
+<div class="badges">
+  <div class="badge green" id="b-up"><div class="n">—</div><div class="l">平台上游可用 Key</div></div>
+  <div class="badge blue" id="b-local"><div class="n">—</div><div class="l">本地模型在线</div></div>
+  <div class="badge blue" id="b-ai"><div class="n">—</div><div class="l">AI 席位</div></div>
+  <div class="badge red" id="b-bad"><div class="n">—</div><div class="l">异常 Key</div></div>
+</div>
+
+<nav id="tabs">
+  <button data-tab="overview" class="on">概览</button>
+  <button data-tab="routing">模型路由</button>
+  <button data-tab="seats">AI 席位</button>
+  <button data-tab="creds">接入与凭据</button>
+  <button data-tab="vk">虚拟 Key</button>
+  <button data-tab="logs">日志</button>
+  <button data-tab="mission">任务编排</button>
+</nav>
+
+<main>
+  <section class="panel on" id="tab-overview">
+    <h2>平台状态</h2>
+    <div class="kpis" id="overview-kpis"><div class="muted">加载中…</div></div>
+  </section>
+
+  <section class="panel" id="tab-routing">
+    <h2>模型路由</h2>
+    <div class="muted">A-4 将把平台中转站与模型通道合并到此单一可编辑区块；当前跳到旧版配置。</div>
+    <p><a class="btn-link" href="/keys?tab=routing&legacy=1#relay-hero">打开旧版中转站配置</a></p>
+  </section>
+
+  <section class="panel" id="tab-seats">
+    <h2>AI 席位</h2>
+    <div class="muted">A-3 将把部门负责人卡片收成表格 + 配置抽屉。</div>
+    <p><a class="btn-link" href="/keys?v2=0#main">打开旧版席位卡</a></p>
+  </section>
+
+  <section class="panel" id="tab-creds">
+    <h2>接入与凭据</h2>
+    <div class="muted">统一凭据目录（JEV / 数据接口 / 飞书）将迁移到独立页面。</div>
+  </section>
+
+  <section class="panel" id="tab-vk">
+    <h2>虚拟 Key</h2>
+    <div class="muted">虚拟 Key 管理将迁移到本 Tab；当前跳到旧版页面。</div>
+    <p><a class="btn-link" href="/keys?v2=0#vk-section">打开旧版虚拟 Key</a></p>
+  </section>
+
+  <section class="panel" id="tab-logs">
+    <h2>日志</h2>
+    <div class="muted">切换日志将支持筛选/分页；当前跳到旧版日志。</div>
+    <p><a class="btn-link" href="/keys?v2=0#log">打开旧版切换日志</a></p>
+  </section>
+
+  <section class="panel" id="tab-mission">
+    <h2>任务编排</h2>
+    <div class="muted">任务编排（Mission）将迁到独立页面，Key 页只保留状态摘要与入口。</div>
+    <p><a class="btn-link" href="/mission">前往 Mission</a> <a class="btn-link" href="/keys?v2=0#mission-section">临时旧版入口</a></p>
+  </section>
+</main>
+
+<script>
+const TABS=["overview","routing","seats","creds","vk","logs","mission"];
+function setTab(name, push){
+  if(!TABS.includes(name)) name="overview";
+  document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on", b.dataset.tab===name));
+  document.querySelectorAll("main .panel").forEach(p=>p.classList.toggle("on", p.id==="tab-"+name));
+  if(push!==false) history.replaceState(null,"", "?tab="+name);
+}
+document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
+(function(){
+  const hash=location.hash||"";
+  if(hash==="#mission"){ location.replace("/mission"); return; }
+  if(hash==="#logs"){ setTab("logs",false); return; }
+  const q=new URLSearchParams(location.search);
+  setTab(q.get("tab")||"overview", false);
+})();
+
+async function loadOverview(){
+  try{
+    const [ks,ms,vk] = await Promise.all([
+      fetch("/api/keys/state",{cache:"no-store"}).then(r=>r.json()),
+      fetch("/api/models/status",{cache:"no-store"}).then(r=>r.json()),
+      fetch("/api/router/vk",{cache:"no-store"}).then(r=>r.json())
+    ]);
+    const seats=Object.entries(ks.seats||{});
+    const relay=(ks.seats||{}).relay||{};
+    const relayKeys=relay.keys||[];
+    const healthyRelay=relayKeys.filter(k=>k.status==="healthy").length;
+    const allKeys=seats.flatMap(([sid,s])=>(s.keys||[]).map(k=>({sid,...k})));
+    const badKeys=allKeys.filter(k=>["invalid","quota","degraded"].includes(k.status)).length;
+    const local=(ms.local&&ms.local.models)||[];
+    const localOnline=ms.local&&ms.local.online;
+    const aiSeats=seats.filter(([sid])=>sid!=="relay").length;
+    const set=(id,n,cls)=>{const el=document.getElementById(id); if(!el)return; el.querySelector(".n").textContent=n; if(cls){el.classList.remove("green","red","amber","blue"); el.classList.add(cls);}};
+    set("b-up", healthyRelay+"/"+relayKeys.length, healthyRelay>0?"green":"red");
+    set("b-local", (localOnline?local.length:0)+" 在线", localOnline?"blue":"red");
+    set("b-ai", aiSeats, "blue");
+    set("b-bad", badKeys, badKeys?"red":"green");
+    document.getElementById("overview-kpis").innerHTML=[
+      ["平台上游", healthyRelay+" / "+relayKeys.length+" 可用", healthyRelay?"正常":"需要管理员处理"],
+      ["本地模型", localOnline?local.map(m=>m.name).join(" · "):"离线", localOnline?"在线":"Ollama 不可达"],
+      ["AI 席位", aiSeats+" 个（含指挥部/部门负责人）", "统一走 8796 网关"],
+      ["虚拟 Key", ((vk.items||[]).length)+" 个", "AI 接入使用 vk-，不接触真 Key"],
+      ["异常 Key", badKeys+" 条", badKeys?"需在模型路由中处理":"无"]
+    ].map(([t,v,s])=>'<div class="kpi"><div class="muted">'+t+'</div><div class="big">'+v+'</div><div class="muted">'+s+'</div></div>').join("");
+    document.getElementById("gen").textContent="状态已加载 · "+new Date().toLocaleTimeString();
+  }catch(e){
+    document.getElementById("overview-kpis").innerHTML='<div class="muted">读取失败：'+e.message+'</div>';
+    document.getElementById("gen").textContent="读取失败";
+  }
+}
+loadOverview(); setInterval(loadOverview,30000);
+</script>
+</body>
+</html>

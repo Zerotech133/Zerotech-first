@@ -387,8 +387,29 @@ class Handler(BaseHTTPRequestHandler):
             self._send_file(_STATIC / "tianfeng.html", "text/html; charset=utf-8")
             return
         if path in ("/keys", "/keys/", "/keys.html"):
-            # 三席多 Key 池页面
-            self._send_file(_STATIC / "keypool.html", "text/html; charset=utf-8")
+            # Phase A 灰度：KEYS_V2=1 或 ?v2=1 走新页；默认仍旧页，可随时回滚
+            try:
+                from urllib.parse import parse_qs
+                _q = parse_qs(urlparse(self.path).query)
+                _qv = (_q.get("v2") or [""])[0]
+                _on = (_qv == "1") if _qv in ("0", "1") else (os.environ.get("KEYS_V2", "0") == "1")
+            except Exception:
+                _on = False
+            _page = "keypool_v2.html" if _on else "keypool.html"
+            self._send_file(_STATIC / _page, "text/html; charset=utf-8")
+            return
+        if path == "/mission":
+            try:
+                from urllib.parse import parse_qs
+                _q = parse_qs(urlparse(self.path).query)
+                _qv = (_q.get("v2") or [""])[0]
+                _on = (_qv == "1") if _qv in ("0", "1") else (os.environ.get("KEYS_V2", "0") == "1")
+            except Exception:
+                _on = False
+            if _on and (_STATIC / "mission.html").exists():
+                self._send_file(_STATIC / "mission.html", "text/html; charset=utf-8")
+            else:
+                self._send_json({"ok": False, "error": "mission_page_disabled"}, 404)
             return
         m = re.match(r"^/static/([a-z_]+\.html)$", path)
         if m and re.fullmatch(r"[a-z_]+", m.group(1).rsplit(".", 1)[0]):
