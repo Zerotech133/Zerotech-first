@@ -1417,6 +1417,11 @@ def build(data_root=None, out_path=None):
             if _status != "active":
                 _e["lifecycle"] = _status
                 _e["lifecycle_reason"] = _lc.reason_for(_name)
+    # 无源清单声明的表（如 guba_posts：无 manifest 概念）→ not_applicable，
+    # 避免把「不适用」误报成 missing（2026-10-28 manifest 收尾）。
+    for _e in tables.values():
+        if not _e.get("manifest") and _e.get("manifest_status") in ("missing", "open"):
+            _e["manifest_status"] = "not_applicable"
     # 验证体系：全表统一推导 verification_status（此前 222 表全 unknown，
     # catalog 仅有登记没有可信度判定——2026-10-17 治理补齐）
     stale_before = (datetime.now() - timedelta(days=7)).strftime("%Y%m%d")
