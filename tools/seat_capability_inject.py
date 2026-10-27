@@ -79,6 +79,7 @@ CAPABILITIES = {
         {"name": "memory-rag", "what": "本地记忆检索：文档/判例/席位简报的 hash-vector 召回（无外部 Key）", "how": "python -X utf8 tools/memory_rag.py index/search/stats；索引 work/memory_rag", "boundary": "本地索引；不把敏感原文外发；检索结果需核对", "status": "ready"},
         {"name": "durable-workflow", "what": "持久工作流：步骤状态机/超时/重试/断点续跑，长任务不丢", "how": "python -X utf8 tools/durable_workflow.py start/run/status/list；状态 work/workflows", "boundary": "不绕过 L2；失败/超时如实记录", "status": "ready"},
         {"name": "model-routing", "what": "模型路由：Key 池→LiteLLM Router（多 Key/多 provider/fallback/成本）", "how": "python -X utf8 tools/litellm_route.py list/route/costs；成本 work/litellm/cost.jsonl", "boundary": "Key 只在内存/请求用；不落明文；不自动充值", "status": "ready"},
+        {"name": "product-metrics", "what": "产品数据闭环：eval/trace/审批/工作流/浏览器/Key 池聚合 + 反馈", "how": "python -X utf8 tools/product_metrics.py report/feedback/list", "boundary": "本地聚合；不编造指标；反馈如实记录", "status": "ready"},
     ],
     "zhaoyun": [
         {"name": "task-exit-audit", "what": "治理扫描主工具：46 任务退出码+窗口三分类", "how": "python agent_platform/tools/task_exit_audit.py --scan --window 24", "boundary": "只读；Disabled/267011 不计败", "status": "ready"},
@@ -565,6 +566,18 @@ description: LiteLLM 路由：Key 池生成多部署 Router，多 Key/多 provid
 3. 成本：`... costs`；明细 `work/litellm/cost.jsonl`。
 4. Key 只在内存/请求用，不落明文；不自动充值。
 5. 需 `LITELLM_LOCAL_MODEL_COST_MAP=True` 避免联网拉价目表。
+""",
+        "product-metrics": """---
+name: product-metrics
+description: 产品数据闭环：eval/trace/审批/工作流/浏览器/Key 池聚合 + 用户反馈。
+---
+
+# 产品数据闭环
+
+1. 报告：`python -X utf8 tools/product_metrics.py report`。
+2. 反馈：`... feedback --score 1-5 --note "..." --source 老田`。
+3. 汇总：`... list`；报告落 `work/product/metrics.json`。
+4. 本地聚合，不编造指标；反馈如实记录。
 """,
     },
     "zhaoyun": {

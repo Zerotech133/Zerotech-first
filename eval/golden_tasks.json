@@ -225,6 +225,19 @@
    ],
    "expect_rc": 0,
    "timeout": 180
+  },
+  {
+   "id": "pytest-product",
+   "desc": "product-metrics 单测",
+   "cmd": [
+    "{python}",
+    "-m",
+    "pytest",
+    "tools/test_product_metrics.py",
+    "-q"
+   ],
+   "expect_rc": 0,
+   "timeout": 120
   }
  ]
 }
