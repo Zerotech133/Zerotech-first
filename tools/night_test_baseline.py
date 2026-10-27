@@ -20,7 +20,7 @@ from datetime import datetime
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_OUT = os.path.join(REPO, "agent_platform", "data", "dev", "test_baseline")
-DEFAULT_SUITES = ("portal", "k_stock/tests")
+DEFAULT_SUITES = ("portal", "k_stock/tests", "tests/e2e")
 
 SUMMARY_RE = re.compile(r"(\d+) (passed|failed|error|errors|skipped|xfailed|xpassed)")
 FAILED_RE = re.compile(r"^FAILED\s+(\S+)")
