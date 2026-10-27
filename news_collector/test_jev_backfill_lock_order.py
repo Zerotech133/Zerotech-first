@@ -97,12 +97,13 @@ def env(monkeypatch, tmp_path):
     con = sqlite3.connect(dbp)
     con.execute(
         "CREATE TABLE news (id INTEGER PRIMARY KEY, title TEXT, "
-        "stocks TEXT, ts TEXT, jev TEXT)"
+        "stocks TEXT, ts TEXT, jev TEXT, source TEXT)"
     )
     for i in range(1, 4):
         con.execute(
-            "INSERT INTO news(id,title,stocks,ts,jev) VALUES(?,?,?,?,NULL)",
-            (i, "n%d" % i, "[]", "2026-10-%02d" % i),
+            "INSERT INTO news(id,title,stocks,ts,jev,source)"
+            " VALUES(?,?,?,?,NULL,?)",
+            (i, "n%d" % i, "[]", "2026-10-%02d" % i, "test"),
         )
     con.commit()
     fake_ai = FakeNewsAI()
