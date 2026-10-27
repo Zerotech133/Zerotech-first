@@ -9,7 +9,7 @@
   "prompt_ok": 61,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 18,
+  "workorders_doing": 17,
   "workorders_review": 2
  },
  "workorders": [
@@ -182,15 +182,6 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-PHOENIX-ISOLATED-20261027",
    "created": "2026-10-27 16:42:40",
-   "project": "general"
-  },
-  {
-   "id": "WO-GUANYU-HKDB2-20261027",
-   "desc": "HKDB补os导入 [UNOWNED]",
-   "status": "doing",
-   "owner": "unknown-agent",
-   "branch": "task/WO-GUANYU-HKDB2-20261027",
-   "created": "2026-10-27 16:47:25",
    "project": "general"
   }
  ],
