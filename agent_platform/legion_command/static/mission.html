@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mission · 任务编排 · 零界</title>
+<style>
+:root{--bg:#0b1220;--panel:#101b2b;--line:#1e334d;--fg:#e8f0f8;--dim:#7f9bb8;--purple:#bc8cff;--green:#39d98a;--red:#ff6b6b;--amber:#f5b94c;--blue:#58a6ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:13px/1.5 "Segoe UI","Microsoft YaHei",sans-serif}a{color:var(--blue);text-decoration:none}
+header{padding:18px 22px 10px;display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+h1{font-size:21px;margin:0}h1 small{font-size:11px;color:var(--dim);font-weight:400;margin-left:8px}
+main{padding:8px 22px 40px;max-width:1400px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+.panel h2{font-size:15px;margin:0 0 10px}
+.muted{color:var(--dim);font-size:12px}
+.add{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+input,select,textarea{background:#081321;border:1px solid #1e3a5f;border-radius:8px;color:#e8f0f8;padding:7px 9px;font-family:inherit;font-size:12px}
+textarea{width:100%;min-height:140px}
+button{background:#16263b;border:1px solid #2b4a6d;border-radius:8px;color:#e8f0f8;padding:7px 10px;cursor:pointer}
+button.primary{background:#1d3a2e;border-color:#3f7f57;color:#d6f5e3}
+button.warn{background:#2a1f3a;border-color:#7b4db3;color:#e5d4ff}
+button.red{background:#331d1d;border-color:#7f3f3f;color:#ffd6d6}
+table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+pre{white-space:pre-wrap;background:#0d1828;border:1px solid var(--line);border-radius:8px;padding:10px;max-height:320px;overflow:auto}
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
+.kpi{background:#0d1828;border:1px solid var(--line);border-radius:9px;padding:10px}.kpi .n{font-size:18px;font-weight:700}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Mission · 任务编排<small>文档 → 任务 DAG → 派工 → 评审 → 进化</small></h1>
+    <div class="muted">与 Key 管理分离；真实派工会创建工作单/worktree，需确认。</div>
+  </div>
+  <div class="muted"><a href="/keys?tab=mission&v2=1">← 返回 Key 管理</a></div>
+</header>
+<main>
+  <section class="panel">
+    <h2>Mission 状态</h2>
+    <div class="kpis" id="m-kpis"><div class="muted">加载中…</div></div>
+  </section>
+
+  <section class="panel">
+    <h2>文档 → 计划</h2>
+    <div class="add">
+      <input id="mission-name" placeholder="任务名称（如 数据接口重构）" style="min-width:260px">
+      <input id="mission-file" type="file" accept=".md,.txt" style="color:#9fc3e8">
+    </div>
+    <textarea id="mission-doc" placeholder="粘贴文档内容，或选择 .md/.txt 文件…"></textarea>
+    <div class="add" style="margin-top:8px">
+      <button class="primary" id="mission-plan-btn">生成计划</button>
+      <button id="mission-dry-btn">Dry-run 派工</button>
+      <button class="warn" id="mission-real-btn">真实派工（建 worktree）</button>
+      <button id="mission-advance-btn">推进（自动评审门）</button>
+      <button id="mission-evolve-btn">采集结果 · 进化建议</button>
+      <button id="mission-worker-btn">Worker 自动接单（低风险）</button>
+      <button id="planner-ab-btn">Planner A/B</button>
+      <span id="mission-status" class="muted" style="align-self:center"></span>
+    </div>
+    <div id="mission-result"></div>
+  </section>
+
+  <section class="panel">
+    <h2>最近 Mission</h2>
+    <div id="mission-list" class="muted">加载中…</div>
+  </section>
+</main>
+<script>
+let MISSION_PLAN=null;
+const V2=/[?&]v2=1/.test(location.search)?"&v2=1":"";
+document.getElementById("mission-file").onchange=async(ev)=>{
+  const f=(ev.target.files||[])[0]; if(!f)return;
+  document.getElementById("mission-doc").value=await f.text();
+  if(!document.getElementById("mission-name").value)document.getElementById("mission-name").value=f.name.replace(/\.[^.]+$/,"");
+};
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function renderMissionState(st){
+  if(!st)return;
+  let h='<div class="muted" style="margin-top:8px">mission '+esc(st.mission_id)+' · parallel '+esc(st.parallel_limit)+' · updated '+esc(st.updated_at||"")+'</div>';
+  h+='<table><thead><tr><th>任务</th><th>状态</th><th>Owner</th><th>Ticket</th><th>依赖</th><th>最近错误/评审</th></tr></thead><tbody>';
+  for(const [tid,t] of Object.entries(st.tasks||{})){
+    h+='<tr><td>'+esc(tid)+' '+esc(t.title)+'</td><td>'+esc(t.status)+'</td><td>'+esc(t.owner)+'</td><td>'+esc(t.ticket_id||"")+'</td><td>'+esc((t.deps||[]).join(","))+'</td><td class="muted">'+esc(((t.last_error||t.gate_detail||t.create_detail||"")+"").slice(0,160))+'</td></tr>';
+  }
+  document.getElementById("mission-result").innerHTML=h+'</tbody></table>';
+}
+async function missionPlan(){
+  const name=document.getElementById("mission-name").value.trim()||"未命名任务";
+  const doc=document.getElementById("mission-doc").value.trim();
+  if(!doc){alert("请先粘贴文档或选文件");return}
+  const st=document.getElementById("mission-status");st.textContent="规划中（强模型）…";
+  const r=await fetch("/api/mission/plan",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name,doc,use_llm:true})});
+  const j=await r.json();st.textContent="";
+  if(!j.ok){st.textContent="规划失败："+(j.error||"unknown");return}
+  MISSION_PLAN=j.plan;
+  let h='<div class="muted">mission '+esc(MISSION_PLAN.mission_id)+' · source '+esc(MISSION_PLAN.source)+' · tasks '+MISSION_PLAN.tasks.length+' · valid '+MISSION_PLAN.valid+'</div>';
+  h+='<table><thead><tr><th>ID</th><th>标题</th><th>Owner</th><th>依赖</th><th>写作用域</th><th>验收</th></tr></thead><tbody>';
+  for(const t of MISSION_PLAN.tasks){h+='<tr><td>'+esc(t.id)+'</td><td>'+esc(t.title)+'</td><td>'+esc(t.owner)+'</td><td>'+esc((t.deps||[]).join(","))+'</td><td>'+esc((t.write_scope||[]).join(", "))+'</td><td>'+esc((t.acceptance||[]).join(" / "))+'</td></tr>'}
+  document.getElementById("mission-result").innerHTML=h+'</tbody></table>';
+  loadMissionList();
+}
+async function missionDry(){
+  if(!MISSION_PLAN){alert("先生成计划");return}
+  const st=document.getElementById("mission-status");st.textContent="dry-run 中…";
+  const r=await fetch("/api/mission/dry-run",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({plan:MISSION_PLAN,parallel:3})});
+  const j=await r.json();st.textContent="";
+  if(!j.ok){document.getElementById("mission-result").innerHTML='<div class="muted">dry-run 失败：'+esc(j.error||"")+'</div>';return}
+  let h='<div class="muted">dry-run · order '+esc((j.order||[]).join(" → "))+' · waves '+esc(JSON.stringify(j.waves))+' · conflicts '+((j.conflicts||[]).length)+'</div>';
+  h+='<table><thead><tr><th>#</th><th>任务</th><th>Owner</th><th>Ticket</th><th>命令</th></tr></thead><tbody>';
+  for(const r of j.rows){h+='<tr><td>'+r.step+'</td><td>'+esc(r.task_id+" "+r.title)+'</td><td>'+esc(r.owner)+'</td><td>'+esc(r.ticket_id)+'</td><td class="muted">'+esc(r.command)+'</td></tr>'}
+  document.getElementById("mission-result").innerHTML=h+'</tbody></table>';
+}
+async function missionReal(){
+  if(!MISSION_PLAN){alert("先生成计划");return}
+  if(!confirm("真实派工会创建工单和 worktree（会写 .worktrees/）。继续？"))return;
+  const st=document.getElementById("mission-status");st.textContent="真实派工中…";
+  const r=await fetch("/api/mission/dispatch",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({plan:MISSION_PLAN,parallel:3,create:true})});
+  const j=await r.json();st.textContent="";
+  if(!j.ok){document.getElementById("mission-result").innerHTML='<div class="muted">派工失败：'+esc(j.error||"")+'</div>';return}
+  renderMissionState(j.state);
+}
+async function missionAdvance(){
+  const mid=(MISSION_PLAN&&MISSION_PLAN.mission_id)||"";
+  if(!mid){alert("先生成计划");return}
+  const st=document.getElementById("mission-status");st.textContent="推进中（检测提交 + 评审门）…";
+  const r=await fetch("/api/mission/advance",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({mission_id:mid})});
+  const j=await r.json();st.textContent="";
+  if(!j.ok){document.getElementById("mission-result").innerHTML='<div class="muted">推进失败：'+esc(j.error||"")+'</div>';return}
+  renderMissionState(j.state);
+}
+async function missionEvolve(){
+  const st=document.getElementById("mission-status");st.textContent="采集结果并生成经验候选…";
+  const r=await fetch("/api/mission/evolve",{cache:"no-store"});const j=await r.json();st.textContent="";
+  if(!j.ok){document.getElementById("mission-result").innerHTML='<div class="muted">进化失败：'+esc(j.error||"")+'</div>';return}
+  const d=j.data,m=d.metrics||{};
+  let h='<div class="muted">candidate '+esc(d.candidate_id)+' · status '+esc(d.status)+' · 需签字 '+(d.requires_signature?"是":"否")+'</div>';
+  h+='<div class="muted">missions '+m.missions+' · tasks '+m.tasks+' · done '+m.done+' · quality_failed '+(m.quality_failed||0)+' · 通过率 '+(m.gate_pass_rate==null?"-":(m.gate_pass_rate*100).toFixed(1)+"%")+'</div>';
+  h+='<table><thead><tr><th>建议</th><th>优先级</th><th>证据</th><th>动作</th></tr></thead><tbody>';
+  for(const x of (d.suggestions||[])){h+='<tr><td>'+esc(x.id)+'</td><td>'+esc(x.priority)+'</td><td>'+esc(x.evidence)+'</td><td>'+esc(x.action)+'</td></tr>'}
+  document.getElementById("mission-result").innerHTML=h+'</tbody></table><div class="muted" style="margin-top:6px">未签字不入经验库；签字走 CLI tools/mission_evolve.py promote</div>';
+}
+async function missionWorker(){
+  const mid=(MISSION_PLAN&&MISSION_PLAN.mission_id)||"";
+  if(!mid){alert("先生成计划");return}
+  if(!confirm("Worker 将在当前 mission 的 worktree 里自动写文件并提交（仅页面/文档/静态低风险范围）。继续？"))return;
+  const st=document.getElementById("mission-status");st.textContent="Worker 接单并写码中…";
+  const r=await fetch("/api/mission/worker",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({mission_id:mid,limit:1,dry_run:false})});
+  const j=await r.json();st.textContent="";
+  document.getElementById("mission-result").innerHTML='<pre>'+esc(JSON.stringify(j,null,1))+'</pre>';
+}
+async function plannerAB(){
+  const doc=document.getElementById("mission-doc").value.trim();
+  const name=document.getElementById("mission-name").value.trim()||"A/B 对比";
+  if(!doc){alert("请先粘贴文档");return}
+  const st=document.getElementById("mission-status");st.textContent="A/B 对比中…";
+  const r=await fetch("/api/planner/ab",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({doc,name,use_signed:true})});
+  const j=await r.json();st.textContent="";
+  if(!j.ok){document.getElementById("mission-result").innerHTML='<div class="muted">A/B 失败：'+esc(j.error||"")+'</div>';return}
+  const d=j.report,b=d.baseline||{},c=d.candidate||{};
+  let h='<div class="muted">rules='+esc(d.rules_source)+' · signed='+d.rules_signed+' · '+esc(d.note)+'</div>';
+  h+='<table><thead><tr><th>指标</th><th>baseline</th><th>rules</th><th>delta</th></tr></thead><tbody>';
+  for(const k of ["tasks","checks","acceptance","conflicts"]){h+='<tr><td>'+k+'</td><td>'+b[k]+'</td><td>'+c[k]+'</td><td>'+((c[k]||0)-(b[k]||0))+'</td></tr>'}
+  document.getElementById("mission-result").innerHTML=h+'</tbody></table>';
+}
+async function loadMissionList(){
+  try{
+    const r=await fetch("/api/mission/list",{cache:"no-store"});const j=await r.json();
+    const rows=j.items||[];
+    document.getElementById("m-kpis").innerHTML='<div class="kpi"><div class="muted">mission 总数</div><div class="n">'+rows.length+'</div></div>';
+    document.getElementById("mission-list").innerHTML=rows.length?('<table><thead><tr><th>Mission</th><th>来源</th><th>任务</th><th>创建</th></tr></thead><tbody>'+rows.map(x=>'<tr><td>'+esc(x.mission_id)+'<br><span class="muted">'+esc(x.name)+'</span></td><td>'+esc(x.source)+'</td><td>'+x.tasks+'</td><td class="muted">'+esc(x.created)+'</td></tr>').join("")+'</tbody></table>'):"暂无 mission";
+  }catch(e){document.getElementById("mission-list").textContent="读取失败："+e.message}
+}
+document.getElementById("mission-plan-btn").onclick=missionPlan;
+document.getElementById("mission-dry-btn").onclick=missionDry;
+document.getElementById("mission-real-btn").onclick=missionReal;
+document.getElementById("mission-advance-btn").onclick=missionAdvance;
+document.getElementById("mission-evolve-btn").onclick=missionEvolve;
+document.getElementById("mission-worker-btn").onclick=missionWorker;
+document.getElementById("planner-ab-btn").onclick=plannerAB;
+loadMissionList();setInterval(loadMissionList,30000);
+</script>
+</body>
+</html>

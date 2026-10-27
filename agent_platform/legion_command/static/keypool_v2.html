@@ -98,8 +98,9 @@ a.btn-link{display:inline-block;background:#16263b;border:1px solid #2b4a6d;bord
 
   <section class="panel" id="tab-mission">
     <h2>任务编排</h2>
-    <div class="muted">任务编排（Mission）将迁到独立页面，Key 页只保留状态摘要与入口。</div>
-    <p><a class="btn-link" href="/mission">前往 Mission</a> <a class="btn-link" href="/keys?v2=0#mission-section">临时旧版入口</a></p>
+    <div class="muted">Mission 已迁到独立页面；Key 页只保留状态摘要与入口，避免误触真实派工。</div>
+    <div class="kpis" id="mission-summary" style="margin-top:10px"><div class="muted">加载中…</div></div>
+    <p style="margin-top:12px"><a class="btn-link" id="mission-link" href="/mission">前往 Mission（文档→DAG→派工）</a></p>
   </section>
 </main>
 
@@ -109,15 +110,21 @@ function setTab(name, push){
   if(!TABS.includes(name)) name="overview";
   document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on", b.dataset.tab===name));
   document.querySelectorAll("main .panel").forEach(p=>p.classList.toggle("on", p.id==="tab-"+name));
-  if(push!==false) history.replaceState(null,"", "?tab="+name);
+  if(push!==false){
+    const q=new URLSearchParams(location.search);
+    q.set("tab",name);
+    history.replaceState(null,"", "?"+q.toString());
+  }
 }
 document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
 (function(){
   const hash=location.hash||"";
-  if(hash==="#mission"){ location.replace("/mission"); return; }
+  const v2=location.search.includes("v2=1")?"?v2=1":"";
+  if(hash==="#mission"){ location.replace("/mission"+v2); return; }
   if(hash==="#logs"){ setTab("logs",false); return; }
   const q=new URLSearchParams(location.search);
   setTab(q.get("tab")||"overview", false);
+  if(document.getElementById("mission-link")) document.getElementById("mission-link").href="/mission"+v2;
 })();
 
 async function loadOverview(){
@@ -154,7 +161,18 @@ async function loadOverview(){
     document.getElementById("gen").textContent="读取失败";
   }
 }
+async function loadMissionSummary(){
+  try{
+    const j=await fetch("/api/mission/list",{cache:"no-store"}).then(r=>r.json());
+    const rows=j.items||[];
+    document.getElementById("mission-summary").innerHTML=
+      '<div class="kpi"><div class="muted">Mission 总数</div><div class="n" style="font-size:18px;font-weight:700">'+rows.length+'</div></div>'+
+      '<div class="kpi"><div class="muted">最近 Mission</div><div style="font-size:12px;margin-top:4px">'+(rows.length?rows[rows.length-1].mission_id:"暂无")+'</div></div>'+
+      '<div class="kpi"><div class="muted">说明</div><div style="font-size:12px;margin-top:4px">真实派工/自动评审门已迁出本页</div></div>';
+  }catch(e){document.getElementById("mission-summary").innerHTML='<div class="muted">Mission 状态读取失败</div>'}
+}
 loadOverview(); setInterval(loadOverview,30000);
+loadMissionSummary(); setInterval(loadMissionSummary,30000);
 </script>
 </body>
 </html>
