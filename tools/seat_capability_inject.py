@@ -81,6 +81,7 @@ CAPABILITIES = {
         {"name": "model-routing", "what": "模型路由：Key 池→LiteLLM Router（多 Key/多 provider/fallback/成本）", "how": "python -X utf8 tools/litellm_route.py list/route/costs；成本 work/litellm/cost.jsonl", "boundary": "Key 只在内存/请求用；不落明文；不自动充值", "status": "ready"},
         {"name": "product-metrics", "what": "产品数据闭环：eval/trace/审批/工作流/浏览器/Key 池聚合 + 反馈", "how": "python -X utf8 tools/product_metrics.py report/feedback/list", "boundary": "本地聚合；不编造指标；反馈如实记录", "status": "ready"},
         {"name": "agent-onboarding", "what": "新 AI 快速接入：虚拟Key+配置片段+注册表，一条命令接入统一网关", "how": "python -X utf8 tools/ai_onboard.py add/list/disable", "boundary": "真 Key 不下发；注册表不含明文 token", "status": "ready"},
+        {"name": "credential-catalog", "what": "统一凭据目录：JEV/数据接口/飞书等密钥的来源、加密状态、更新与轮换入口", "how": "python -X utf8 tools/credential_catalog.py list；真源 _vault（age）", "boundary": "只读；不读取/返回密钥内容；真源仍是 _vault", "status": "ready"},
     ],
     "zhaoyun": [
         {"name": "task-exit-audit", "what": "治理扫描主工具：46 任务退出码+窗口三分类", "how": "python agent_platform/tools/task_exit_audit.py --scan --window 24", "boundary": "只读；Disabled/267011 不计败", "status": "ready"},
@@ -592,6 +593,19 @@ description: 新 AI 快速接入：一条命令生成虚拟 Key、配置片段�
 3. 查看：`... list`；停用：`... disable <name>`。
 4. 所有 AI 只连 `http://127.0.0.1:8796/v1`；真 Key 只在 Key 池。
 5. 注册表：`config/ai_registry.json`（不含明文 token）。
+""",
+        "credential-catalog": """---
+name: credential-catalog
+description: 统一凭据目录：JEV/数据接口/飞书等密钥的来源、加密状态、更新和轮换入口；只读不取明文。
+---
+
+# 统一凭据目录
+
+1. 查看：`python -X utf8 tools/credential_catalog.py list`。
+2. 真源：`C:\项目\_vault`（age 加密）；本目录只读元数据。
+3. 条目定义：`config/credential_registry.json`（名称/类别/环境变量/来源/轮换命令）。
+4. 只读；不读取、不返回、不复制密钥内容。
+5. LLM Key 仍走 Key 池；业务 Key 不重复建第二个保险库。
 """,
     },
     "zhaoyun": {
