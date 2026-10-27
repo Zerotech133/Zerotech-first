@@ -205,6 +205,18 @@ def _wargame_for(question):
         return None
 
 
+def _debate_for(question):
+    """P2 三席辩论：COMM_ZHUGE_DEBATE=1 时附加（默认关；只读）。"""
+    if str(os.environ.get("COMM_ZHUGE_DEBATE", "0")).strip().lower() not in (
+            "1", "true", "yes", "on"):
+        return None
+    try:
+        mod = _tool_module("zhuge_debate")
+        return mod.debate(question) if mod else None
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def _tool_module(name):
     """从 tools/ 加载可选能力模块；失败返回 None（不阻断主链）。"""
     try:
@@ -562,6 +574,8 @@ def consult(question, open_id="", llm=None, timeout=None, max_chars=DEFAULT_MAX_
                 "sources": grounding.get("sources") if grounding else [],
                 "grounded": bool(grounding and grounding.get("sources")),
                 "plan": _plan_for(q),
+        "debate": _debate_for(q),
+                "debate": _debate_for(q),
         "wargame": _wargame_for(q),
                 "wargame": _wargame_for(q),
                 "reflection": _reflect_for(_trim(raw, max_chars), grounding),
@@ -614,6 +628,7 @@ def consult(question, open_id="", llm=None, timeout=None, max_chars=DEFAULT_MAX_
         "sources": grounding.get("sources") if grounding else [],
         "grounded": bool(grounding and grounding.get("sources")),
         "plan": _plan_for(q),
+        "debate": _debate_for(q),
         "wargame": _wargame_for(q),
         "reflection": _reflect_for(out, grounding),
         "elapsed_ms": int((time.time() - t0) * 1000),
