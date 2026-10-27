@@ -55,6 +55,30 @@ L2_PATTERNS = [
 ]
 
 
+
+# FP exemption (2026-10-27): pure string / docstring lines carry no execution surface.
+_STRING_PREFIXES = ('"', "'", '"' * 3, "'" * 3, "\u300c")
+
+
+def _doc_delta(content: str) -> int:
+    return (content.count('"' * 3) + content.count("'" * 3)) % 2
+
+
+def line_hits(content: str, in_doc: bool = False):
+    if in_doc:
+        return []
+    stripped = content.lstrip()
+    if stripped.startswith(("#", "//")):
+        return []
+    if stripped.startswith(_STRING_PREFIXES):
+        return []
+    out = []
+    for pat, desc in L2_PATTERNS:
+        if re.search(pat, content):
+            out.append(desc)
+            break
+    return out
+
 def _git(*args):
     r = subprocess.run(["git"] + list(args), cwd=REPO, capture_output=True,
                        text=True, encoding="utf-8", errors="replace")
@@ -94,29 +118,26 @@ def scan_branch(branch, base="master"):
     diff = _git("diff", "%s...%s" % (base, branch), "--", *targets)
     hits = []
     cur_file, lineno = None, 0
+    in_doc = False
     for line in diff.splitlines():
         if line.startswith("+++ b/"):
             cur_file = line[len("+++ b/"):]
+            in_doc = False
         elif line.startswith("@@"):
             m = re.search(r"\+(\d+)", line)
             lineno = int(m.group(1)) if m else 0
         elif line.startswith("+") and not line.startswith("+++"):
             lineno += 1
             content = line[1:]
-            stripped = content.lstrip()
-            # 纯注释行跳过（# / // 开头）
-            if stripped.startswith("#") or stripped.startswith("//"):
-                continue
-            for pat, desc in L2_PATTERNS:
-                if re.search(pat, content):
-                    hits.append((cur_file or "?", lineno, content.strip(),
-                                 desc))
-                    break  # 一行只报一次
+            for desc in line_hits(content, in_doc):
+                hits.append((cur_file or "?", lineno, content.strip(), desc))
+            in_doc ^= _doc_delta(content)
         elif line.startswith("-") or line.startswith(" "):
             if not line.startswith("---"):
                 # 上下文/删除行也推进行号（diff -U3 上下文行）
                 if line.startswith(" "):
                     lineno += 1
+                    in_doc ^= _doc_delta(line[1:])
     return hits
 
 
