@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 22,
+  "workorders_doing": 21,
   "workorders_review": 3
  },
  "workorders": [
@@ -227,15 +227,6 @@
    "owner": "DSH-Lead",
    "branch": "task/K-MISSION-002505-T1",
    "created": "2026-10-27 23:26:11",
-   "project": "portal"
-  },
-  {
-   "id": "K-MISSION-9DC8E6-T1",
-   "desc": "编写 Worker Grounding Guard 说明",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-MISSION-9DC8E6-T1",
-   "created": "2026-10-27 23:31:50",
    "project": "portal"
   }
  ],
