@@ -1,0 +1,362 @@
+{
+ "ok": true,
+ "window": {
+  "start": "20260604",
+  "end": "20261027",
+  "trading_days": 97
+ },
+ "events_used": 178468,
+ "events_skipped": 14781,
+ "categories": [
+  {
+   "category": "其他",
+   "n": 99048,
+   "car1": {
+    "n": 99048,
+    "mean": 0.329,
+    "median": -0.4322,
+    "win_rate": 0.4414,
+    "t": 6.1,
+    "std": 16.9794
+   },
+   "car5": {
+    "n": 99048,
+    "mean": 0.19,
+    "median": -0.6946,
+    "win_rate": 0.4479,
+    "t": 3.35,
+    "std": 17.8302
+   },
+   "low_sample": false
+  },
+  {
+   "category": "高管变动",
+   "n": 29502,
+   "car1": {
+    "n": 29502,
+    "mean": -0.1162,
+    "median": -0.4551,
+    "win_rate": 0.4394,
+    "t": -3.94,
+    "std": 5.0619
+   },
+   "car5": {
+    "n": 29502,
+    "mean": -0.1893,
+    "median": -0.7234,
+    "win_rate": 0.4446,
+    "t": -3.84,
+    "std": 8.4771
+   },
+   "low_sample": false
+  },
+  {
+   "category": "股权激励",
+   "n": 9223,
+   "car1": {
+    "n": 9223,
+    "mean": 0.0219,
+    "median": -0.3491,
+    "win_rate": 0.4549,
+    "t": 0.4,
+    "std": 5.2522
+   },
+   "car5": {
+    "n": 9223,
+    "mean": -0.4581,
+    "median": -0.6347,
+    "win_rate": 0.4557,
+    "t": -4.98,
+    "std": 8.8423
+   },
+   "low_sample": false
+  },
+  {
+   "category": "融资/定增",
+   "n": 8706,
+   "car1": {
+    "n": 8706,
+    "mean": -0.0869,
+    "median": -0.5804,
+    "win_rate": 0.4351,
+    "t": -1.36,
+    "std": 5.9735
+   },
+   "car5": {
+    "n": 8706,
+    "mean": -0.6219,
+    "median": -0.8707,
+    "win_rate": 0.4414,
+    "t": -5.63,
+    "std": 10.3022
+   },
+   "low_sample": false
+  },
+  {
+   "category": "回购",
+   "n": 6156,
+   "car1": {
+    "n": 6156,
+    "mean": 0.1099,
+    "median": -0.1696,
+    "win_rate": 0.48,
+    "t": 1.99,
+    "std": 4.3378
+   },
+   "car5": {
+    "n": 6156,
+    "mean": 0.0835,
+    "median": -0.3357,
+    "win_rate": 0.474,
+    "t": 0.88,
+    "std": 7.418
+   },
+   "low_sample": false
+  },
+  {
+   "category": "担保",
+   "n": 5155,
+   "car1": {
+    "n": 5155,
+    "mean": -0.0889,
+    "median": -0.374,
+    "win_rate": 0.4557,
+    "t": -1.34,
+    "std": 4.7561
+   },
+   "car5": {
+    "n": 5155,
+    "mean": -0.3606,
+    "median": -0.629,
+    "win_rate": 0.4557,
+    "t": -3.13,
+    "std": 8.2602
+   },
+   "low_sample": false
+  },
+  {
+   "category": "分红/权益",
+   "n": 4579,
+   "car1": {
+    "n": 4579,
+    "mean": 0.0978,
+    "median": -0.2603,
+    "win_rate": 0.4676,
+    "t": 1.42,
+    "std": 4.65
+   },
+   "car5": {
+    "n": 4579,
+    "mean": 0.4099,
+    "median": -0.3561,
+    "win_rate": 0.4735,
+    "t": 3.36,
+    "std": 8.2606
+   },
+   "low_sample": false
+  },
+  {
+   "category": "诉讼/处罚/风险",
+   "n": 3861,
+   "car1": {
+    "n": 3861,
+    "mean": -0.585,
+    "median": -0.7103,
+    "win_rate": 0.4245,
+    "t": -4.7,
+    "std": 7.735
+   },
+   "car5": {
+    "n": 3861,
+    "mean": -1.1445,
+    "median": -1.1706,
+    "win_rate": 0.4416,
+    "t": -5.84,
+    "std": 12.1861
+   },
+   "low_sample": false
+  },
+  {
+   "category": "增减持",
+   "n": 2987,
+   "car1": {
+    "n": 2987,
+    "mean": -0.1028,
+    "median": -0.3439,
+    "win_rate": 0.4526,
+    "t": -1.09,
+    "std": 5.1709
+   },
+   "car5": {
+    "n": 2987,
+    "mean": -0.2764,
+    "median": -0.871,
+    "win_rate": 0.4416,
+    "t": -1.6,
+    "std": 9.4432
+   },
+   "low_sample": false
+  },
+  {
+   "category": "重组并购",
+   "n": 2498,
+   "car1": {
+    "n": 2498,
+    "mean": 0.022,
+    "median": -0.4781,
+    "win_rate": 0.4588,
+    "t": 0.14,
+    "std": 7.8601
+   },
+   "car5": {
+    "n": 2498,
+    "mean": -0.9416,
+    "median": -1.6037,
+    "win_rate": 0.4099,
+    "t": -3.67,
+    "std": 12.8118
+   },
+   "low_sample": false
+  },
+  {
+   "category": "澄清/异动",
+   "n": 2162,
+   "car1": {
+    "n": 2162,
+    "mean": -0.7879,
+    "median": -1.5333,
+    "win_rate": 0.4038,
+    "t": -4.12,
+    "std": 8.8913
+   },
+   "car5": {
+    "n": 2162,
+    "mean": -2.0552,
+    "median": -3.2043,
+    "win_rate": 0.3932,
+    "t": -6.67,
+    "std": 14.3299
+   },
+   "low_sample": false
+  },
+  {
+   "category": "业绩预告",
+   "n": 2021,
+   "car1": {
+    "n": 2021,
+    "mean": 0.4976,
+    "median": 1.1206,
+    "win_rate": 0.6022,
+    "t": 3.71,
+    "std": 6.0356
+   },
+   "car5": {
+    "n": 2021,
+    "mean": 0.2418,
+    "median": 0.987,
+    "win_rate": 0.5542,
+    "t": 1.06,
+    "std": 10.2505
+   },
+   "low_sample": false
+  },
+  {
+   "category": "对外投资",
+   "n": 1298,
+   "car1": {
+    "n": 1298,
+    "mean": -0.2986,
+    "median": -0.5904,
+    "win_rate": 0.4522,
+    "t": -1.99,
+    "std": 5.4148
+   },
+   "car5": {
+    "n": 1298,
+    "mean": -0.5649,
+    "median": -0.9288,
+    "win_rate": 0.4399,
+    "t": -2.3,
+    "std": 8.8668
+   },
+   "low_sample": false
+  },
+  {
+   "category": "重大合同/中标",
+   "n": 1136,
+   "car1": {
+    "n": 1136,
+    "mean": -0.0332,
+    "median": -0.4071,
+    "win_rate": 0.441,
+    "t": -0.2,
+    "std": 5.6086
+   },
+   "car5": {
+    "n": 1136,
+    "mean": -0.7313,
+    "median": -0.8185,
+    "win_rate": 0.4278,
+    "t": -2.76,
+    "std": 8.9276
+   },
+   "low_sample": false
+  },
+  {
+   "category": "停复牌",
+   "n": 136,
+   "car1": {
+    "n": 136,
+    "mean": -3.9486,
+    "median": -2.9052,
+    "win_rate": 0.375,
+    "t": -1.83,
+    "std": 25.1599
+   },
+   "car5": {
+    "n": 136,
+    "mean": -7.4413,
+    "median": -3.7205,
+    "win_rate": 0.3456,
+    "t": -2.67,
+    "std": 32.5245
+   },
+   "low_sample": false
+  }
+ ],
+ "examples": [
+  {
+   "title": "深华发Ａ:关于控股股东所持公司部分股票将被第二次司法拍卖的提示性公告",
+   "stock": "000020",
+   "notice_date": "2026-06-04",
+   "car1": -1.84
+  },
+  {
+   "title": "中集集团:H股公告-翌日披露报表",
+   "stock": "000039",
+   "notice_date": "2026-06-04",
+   "car1": -4.634
+  },
+  {
+   "title": "深纺织Ａ:2025年度权益分派实施公告",
+   "stock": "000045",
+   "notice_date": "2026-06-04",
+   "car1": -0.638
+  },
+  {
+   "title": "农产品:000061农产品2026年6月4日投资者关系活动记录表",
+   "stock": "000061",
+   "notice_date": "2026-06-04",
+   "car1": -0.572
+  },
+  {
+   "title": "深圳华强:2026年6月4日投资者关系活动记录表",
+   "stock": "000062",
+   "notice_date": "2026-06-04",
+   "car1": -4.074
+  }
+ ],
+ "method": "market-adjusted AR; event day = next trading day after notice_date",
+ "catalog_version": 13,
+ "generated_at": "2026-10-28T07:54:30+08:00"
+}
