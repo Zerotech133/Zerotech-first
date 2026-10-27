@@ -159,7 +159,7 @@ def main(argv=None) -> int:
     args = ap.parse_args(argv)
     try:
         if args.cmd == "start":
-            steps = json.loads(Path(args.steps).read_text(encoding="utf-8"))
+            steps = json.loads(Path(args.steps).read_text(encoding="utf-8-sig"))
             wf = start(args.id, steps)
             print(json.dumps(wf, ensure_ascii=False, indent=1) if args.json else
                   "started %s steps=%d" % (wf["id"], len(wf["steps"])))

@@ -40,3 +40,15 @@ def test_status_list(tmp_path):
     assert D.status("wf3", store=tmp_path)["id"] == "wf3"
     rows = D.list_wf(store=tmp_path)
     assert any(r["id"] == "wf3" for r in rows)
+
+
+def test_steps_bom(tmp_path):
+    import json as _json
+    p = tmp_path / "steps.json"
+    data = [{"id": "s1", "cmd": [sys.executable, "-c", "print(1)"]}]
+    p.write_text("\ufeff" + _json.dumps(data), encoding="utf-8")
+    import durable_workflow as D2
+    steps = _json.loads(p.read_text(encoding="utf-8-sig"))
+    D2.start("wf-bom", steps, store=tmp_path)
+    res = D2.run("wf-bom", store=tmp_path)
+    assert res["ok"] is True

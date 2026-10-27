@@ -29,13 +29,15 @@ SECRETS = [
     ("private_key", re.compile(r"-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----")),
     ("bearer_token", re.compile(r"Bearer\s+[A-Za-z0-9._-]{20,}")),
 ]
+SKIP_NAMES = {"_scan_secrets_selftest.py"}  # 扫描器自测夹具，避免自命中
+IGNORE_MARKERS = ("security-gate:ignore", "nosec")
 DANGER_CALLS = {"eval": "high", "exec": "high", "os.system": "high"}
 DANGER_KW = {"shell": "high", "verify": "medium"}
 
 
 def _iter(root: Path):
     for p in sorted(root.rglob("*")):
-        if not p.is_file():
+        if not p.is_file() or p.name in SKIP_NAMES:
             continue
         try:
             rel = p.relative_to(root)
@@ -117,14 +119,23 @@ def scan(paths=None, changed=False, all_files=False) -> dict:
                     yield t, t.relative_to(REPO).as_posix() if str(t).startswith(str(REPO)) else t.as_posix()
         it = _gen()
     for p, rel in it:
+        if p.name in SKIP_NAMES:
+            continue
         try:
             text = p.read_text(encoding="utf-8", errors="replace")
         except OSError:
             continue
         file_count += 1
+        before = len(findings)
         findings.extend(_scan_secrets(text, rel))
         if p.suffix == ".py":
             findings.extend(_scan_ast(text, rel))
+        # 行级忽略标记（测试夹具/经评审的例外）
+        ignored = {i + 1 for i, ln in enumerate(text.splitlines())
+                   if any(m in ln for m in IGNORE_MARKERS)}
+        if ignored:
+            findings = [f for f in findings
+                        if not (f.get("file") == rel and f.get("line") in ignored)]
     high = [f for f in findings if f["severity"] == "high"]
     out = {"schema": "security_gate/v1", "at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
            "files_scanned": file_count, "findings": findings,
