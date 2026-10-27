@@ -858,7 +858,11 @@
      ],
      "tools": [
       "devtask",
-      "events"
+      "events",
+      "codebase_intel",
+      "sandbox_verify",
+      "eval_harness",
+      "trace_log"
      ],
      "memory_grants": {
       "read": [
@@ -944,7 +948,8 @@
        "dept": "proj_next",
        "migrated_from": "proj_next"
       }
-     ]
+     ],
+     "tools_note": "2026-10-27 A0 L1 批：新增 codebase_intel/sandbox_verify/eval_harness/trace_log（A0 田丰批准；实现 tools/<name>.py；原 devtask/events 保留）"
     },
     {
      "agent_id": "OPS1",
