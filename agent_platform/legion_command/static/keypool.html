@@ -35,7 +35,7 @@ td{padding:5px 4px;border-bottom:.5px dashed #16304F;vertical-align:top}
 <div id="relay-presets" style="display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 10px">
   <button type="button" data-rp="dashscope-plus">百炼 DashScope · qwen-plus</button>
   <button type="button" data-rp="dashscope-max">百炼 DashScope · qwen3-max</button>
-  <button type="button" data-rp="tokenegate">tokenegate · gpt-6-sol</button>
+  <button type="button" data-rp="tokenegate">中转站 GPT-6 · gpt-6-sol</button>
   <button type="button" data-rp="custom">自定义</button>
 </div>
 <div class="add">
@@ -46,6 +46,10 @@ td{padding:5px 4px;border-bottom:.5px dashed #16304F;vertical-align:top}
   <button id="relay-save">保存为平台中转站</button>
 </div>
 <div id="relay-status" class="muted" style="margin-top:8px">加载中…</div>
+</section>
+<section class="log" id="modelch-section" style="margin:14px 22px 0">
+<h2>模型通道（本地 + 中转站 GPT-6）</h2>
+<div id="modelch" style="display:flex;gap:12px;flex-wrap:wrap"></div>
 </section>
 <main id="main"></main>
 <section class="log" id="cred-section" style="margin:0 22px 20px">
@@ -215,6 +219,28 @@ async function saveRelay(){
 document.getElementById('relay-save').onclick=saveRelay;
 loadRelay(); setInterval(loadRelay,30000);
 
+
+
+async function loadModelCh(){
+  const box=document.getElementById('modelch'); if(!box) return;
+  try{
+    const r=await fetch('/api/models/status',{cache:'no-store'}); const v=await r.json();
+    const L=v.local||{}, G=v.relay_gpt6||{};
+    const lc=L.online?('在线'+(L.present?' · 已就绪':' · 模型未拉取')):('离线：'+(L.error||''));
+    const gc=G.configured?('已配置 · '+((G.keys||[]).map(k=>k.masked+'['+k.status+']').join(','))):'未配置 Key（需在平台中转站填中转站 Key）';
+    box.innerHTML=
+      '<div class="card" style="min-width:340px;flex:1"><h2>本地模型 · qwen3.5:9b</h2>'
+      +'<div class="meta">'+lc+'</div><div class="meta">端点 '+ (L.endpoint||'http://127.0.0.1:11434') +' · 无需 Key · 免费/离线可用</div>'
+      +'<div class="meta">网关别名：<b>local</b>；请求 model=local 即走本地</div></div>'
+      +'<div class="card" style="min-width:340px;flex:1"><h2>中转站 GPT-6 · gpt-6-sol</h2>'
+      +'<div class="meta">'+gc+'</div><div class="meta">端点由平台中转站决定 · 需要中转站 Key</div>'
+      +'<div class="meta">网关别名：<b>gpt6</b> / <b>gpt-6-sol</b></div>'
+      +'<button id="gpt6-config">去配置 GPT-6</button></div>';
+    const btn=document.getElementById('gpt6-config');
+    if(btn) btn.onclick=()=>{const b=[...document.querySelectorAll('#relay-presets button')].find(x=>x.dataset.rp==='tokenegate'); if(b) b.click(); document.getElementById('relay-hero').scrollIntoView({behavior:'smooth'});};
+  }catch(e){box.innerHTML='<div class="muted">模型通道读取失败：'+e.message+'</div>'}
+}
+loadModelCh(); setInterval(loadModelCh,30000);
 
 load();setInterval(load,30000);
 setInterval(loadVK,30000);

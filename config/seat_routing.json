@@ -1,9 +1,40 @@
 {
  "schema": "seat_routing/v1",
  "aliases": {
-  "auto": {"seats": ["relay", "tianfeng", "zhaoyun", "zhuge"], "allow_local": true},
-  "strong": {"seats": ["relay", "tianfeng", "zhaoyun", "zhuge"], "allow_local": false},
-  "local": {"seats": [], "allow_local": true}
+  "auto": {
+   "seats": [
+    "relay",
+    "tianfeng",
+    "zhaoyun",
+    "zhuge"
+   ],
+   "allow_local": true
+  },
+  "strong": {
+   "seats": [
+    "relay",
+    "tianfeng",
+    "zhaoyun",
+    "zhuge"
+   ],
+   "allow_local": false
+  },
+  "local": {
+   "seats": [],
+   "allow_local": true
+  },
+  "gpt6": {
+   "seats": [
+    "relay"
+   ],
+   "allow_local": false
+  },
+  "gpt-6-sol": {
+   "seats": [
+    "relay"
+   ],
+   "allow_local": false
+  }
  },
  "seats": {
   "tianfeng": "strong",

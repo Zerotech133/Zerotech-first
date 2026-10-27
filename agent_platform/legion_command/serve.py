@@ -470,6 +470,8 @@ class Handler(BaseHTTPRequestHandler):
                         },
                         {"id": "qwen3.5:9b", "object": "model", "owned_by": "local"},
                         {"id": "auto", "object": "model", "owned_by": "gateway"},
+                        {"id": "gpt6", "object": "model", "owned_by": "gateway"},
+                        {"id": "gpt-6-sol", "object": "model", "owned_by": "relay"},
                         {"id": "strong", "object": "model", "owned_by": "gateway"},
                         {"id": "local", "object": "model", "owned_by": "gateway"},
                     ],
@@ -490,6 +492,37 @@ class Handler(BaseHTTPRequestHandler):
                     },
                     500,
                 )
+            return
+        if path == "/api/models/status":
+            out = {"ok": True, "local": {}, "relay_gpt6": {}}
+            try:
+                import urllib.request as _u
+                with _u.urlopen("http://127.0.0.1:11434/api/tags", timeout=2) as r:
+                    tags = json.loads(r.read().decode("utf-8", "replace"))
+                names = [m.get("name", "") for m in (tags.get("models") or [])]
+                hit = next((n for n in names if n.startswith("qwen3.5:9b")), "")
+                out["local"] = {"online": True, "model": "qwen3.5:9b",
+                                "endpoint": "http://127.0.0.1:11434",
+                                "present": bool(hit), "models": names[:10]}
+            except Exception as e:  # noqa: BLE001
+                out["local"] = {"online": False, "model": "qwen3.5:9b",
+                                "endpoint": "http://127.0.0.1:11434",
+                                "error": "%s: %s" % (type(e).__name__, str(e)[:120])}
+            try:
+                from legion_command import keypool
+                st = keypool.state()
+                relay = (st.get("seats") or {}).get("relay") or {}
+                keys = relay.get("keys") or []
+                out["relay_gpt6"] = {"configured": bool(keys),
+                                     "active_key_id": relay.get("active_key_id"),
+                                     "keys": [{"masked": k.get("masked"),
+                                               "status": k.get("status"),
+                                               "model": k.get("model")} for k in keys],
+                                     "model": "gpt-6-sol"}
+            except Exception as e:  # noqa: BLE001
+                out["relay_gpt6"] = {"configured": False,
+                                     "error": "%s: %s" % (type(e).__name__, str(e)[:120])}
+            self._send_json(out)
             return
         if path == "/api/credentials":
             try:
