@@ -18,6 +18,7 @@ import time
 import urllib.request
 import uuid
 from contextlib import contextmanager
+from contextvars import ContextVar
 from pathlib import Path
 import logging
 
@@ -139,6 +140,38 @@ def span_id() -> str:
     return uuid.uuid4().hex[:16]
 
 
+# ── O6 P2a：run_id 透传（contextvars，默认开启；AIOS_RUN_ID=off 可关）──
+_RUN_ID: ContextVar = ContextVar("aios_run_id", default=None)
+RUN_ID_SWITCH = "AIOS_RUN_ID"
+
+
+def run_enabled() -> bool:
+    return str(os.environ.get(RUN_ID_SWITCH) or "").strip().lower() not in (
+        "off", "0", "false", "no",
+    )
+
+
+def new_run_id() -> str:
+    return "run_%s%s" % (time.strftime("%y%m%d%H%M%S"), uuid.uuid4().hex[:12])
+
+
+def current_run_id():
+    if not run_enabled():
+        return None
+    return _RUN_ID.get()
+
+
+@contextmanager
+def run_scope(run_id: str | None = None):
+    """一次逻辑任务的 run 上下文；嵌套时内层覆盖、退出恢复外层。"""
+    rid = run_id or new_run_id()
+    token = _RUN_ID.set(rid)
+    try:
+        yield rid
+    finally:
+        _RUN_ID.reset(token)
+
+
 def _connect(db: Path | None = None) -> sqlite3.Connection:
     p = Path(db) if db else DB
     p.parent.mkdir(parents=True, exist_ok=True)
@@ -152,6 +185,11 @@ def _connect(db: Path | None = None) -> sqlite3.Connection:
         PRIMARY KEY (trace_id, span_id))""")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_trace ON spans(trace_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_created ON spans(created_at)")
+    # O6 P2a 增量迁移：run_id 只增列（幂等，旧行 NULL）
+    cols = [r[1] for r in conn.execute("PRAGMA table_info(spans)").fetchall()]
+    if "run_id" not in cols:
+        conn.execute("ALTER TABLE spans ADD COLUMN run_id TEXT")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_run ON spans(run_id)")
     conn.commit()
     return conn
 
@@ -166,16 +204,19 @@ def record(
     attrs: dict | None = None,
     parent: str | None = None,
     db: Path | None = None,
+    run_id: str | None = None,
 ) -> dict:
     if not enabled():
         return {"ok": False, "skipped": "trace_off"}
     sid = span_id()
+    rid = run_id if run_id is not None else current_run_id()
     st = time.strftime("%Y-%m-%dT%H:%M:%S%z", time.localtime(start or time.time()))
     et = time.strftime("%Y-%m-%dT%H:%M:%S%z", time.localtime(end or time.time()))
     try:
         conn = _connect(db)
         conn.execute(
-            "INSERT INTO spans VALUES(?,?,?,?,?,?,?,?,?,?)",
+            "INSERT INTO spans(trace_id,span_id,parent_span_id,name,kind,start_ts,end_ts,"
+            "status,attrs_json,created_at,run_id) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
             (
                 trace,
                 sid,
@@ -187,6 +228,7 @@ def record(
                 status,
                 json.dumps(attrs or {}, ensure_ascii=False),
                 time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+                rid,
             ),
         )
         conn.commit()
@@ -208,10 +250,12 @@ def span(
     trace: str | None = None,
     parent: str | None = None,
     db: Path | None = None,
+    run_id: str | None = None,
 ):
     """用法：with span('cap.drill','tool',{'capability':cap}) as sp: ...; sp.set('x',1)"""
     tid = trace or trace_id()
     sid = span_id()
+    rid = run_id if run_id is not None else current_run_id()
     start = time.time()
     data = dict(attrs or {})
     opened = enabled()
@@ -237,7 +281,8 @@ def span(
             try:
                 conn = _connect(db)
                 conn.execute(
-                    "INSERT INTO spans VALUES(?,?,?,?,?,?,?,?,?,?)",
+                    "INSERT INTO spans(trace_id,span_id,parent_span_id,name,kind,start_ts,"
+                    "end_ts,status,attrs_json,created_at,run_id) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
                     (
                         tid,
                         sid,
@@ -249,6 +294,7 @@ def span(
                         "error" if err else "ok",
                         json.dumps(data, ensure_ascii=False),
                         _now(),
+                        rid,
                     ),
                 )
                 conn.commit()
@@ -312,7 +358,7 @@ def get_trace(trace: str, db: Path | None = None) -> dict:
     try:
         conn = _connect(db)
         rows = conn.execute(
-            "SELECT span_id,parent_span_id,name,kind,start_ts,end_ts,status,attrs_json "
+            "SELECT span_id,parent_span_id,name,kind,start_ts,end_ts,status,attrs_json,run_id "
             "FROM spans WHERE trace_id=? ORDER BY start_ts",
             (trace,),
         ).fetchall()
@@ -321,7 +367,7 @@ def get_trace(trace: str, db: Path | None = None) -> dict:
         return {"ok": False, "error": "sqlite:%s" % str(e)[:120]}
     spans = []
     total = 0.0
-    for sid, pid, name, kind, st, et, status, attrs in rows:
+    for sid, pid, name, kind, st, et, status, attrs, run_id in rows:
         try:
             attrs = json.loads(attrs or "{}")
         except ValueError:
@@ -338,6 +384,7 @@ def get_trace(trace: str, db: Path | None = None) -> dict:
                 "end": et,
                 "status": status,
                 "attrs": attrs,
+                "run_id": run_id,
                 "cost": cost,
             }
         )
