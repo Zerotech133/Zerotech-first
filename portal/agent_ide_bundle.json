@@ -9,7 +9,7 @@
   "prompt_ok": 61,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 16,
+  "workorders_doing": 15,
   "workorders_review": 1
  },
  "workorders": [
@@ -147,15 +147,6 @@
    "branch": "task/WO-LEGION-OSLINK-20261027",
    "created": "2026-10-27 14:51:03",
    "project": "general"
-  },
-  {
-   "id": "WO-LEGION-A3-R247-GUIDE-20261027",
-   "desc": "R2/R4/R7 本地轮换通用助手 + 逐项命令卡（老田 14:47 指令）：支持 text/env/json 三种目标、getpass 双输、备份、指纹；预设 R2 LLM/R4 飞书/R7 Telegram-WxPusher-Finnhub-jev_base；dry-run 全量；仅本地、不登录平台、不改服务。",
-   "status": "doing",
-   "owner": "A0",
-   "branch": "task/WO-LEGION-A3-R247-GUIDE-20261027",
-   "created": "2026-10-27 14:51:12",
-   "project": "quant"
   },
   {
    "id": "WO-GUANYU-SKILLS-20261027",
@@ -1262,14 +1253,7 @@
    ],
    "experience": "20 年产品+研发复合经验：从需求定义、架构设计到参考实现与验收全链路；不亲自交付代码，以方案/伪代码/代码参考驱动执行 AI 落地；信息不全时能基于证据做最优决策并组织多 AI 自动执行。",
    "dept_name": "",
-   "dept_cn_title": "",
-   "tasks": [
-    {
-     "id": "WO-LEGION-A3-R247-GUIDE-20261027",
-     "desc": "R2/R4/R7 本地轮换通用助手 + 逐项命令卡（老田 14:47 指令）：支持 text/env/json 三种目标、getpass 双输、备份、指纹；预设 R2 LLM/R4 飞书/R7 Telegram-WxPusher-Finnhub-jev_base；dry-run 全量；仅本地、不登录平台、不改服务。",
-     "status": "doing"
-    }
-   ]
+   "dept_cn_title": ""
   },
   "ACAD1": {
    "id": "ACAD1",
