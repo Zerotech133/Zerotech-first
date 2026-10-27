@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""seat_evidence_packet.py — 田丰取数门面：确定性证据包生成器（零 LLM / 零网络 / 只读源）。
+r"""seat_evidence_packet.py — 田丰取数门面：确定性证据包生成器（零 LLM / 零网络 / 只读源）。
 
 用途（B 分工）：
   Hermes 田丰只做"取数门面"：用本脚本把 健康卡状态 / 工单账本 / 经验库 汇总成
