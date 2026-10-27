@@ -124,7 +124,7 @@ $PY = "C:\Program Files\Python311\python.exe"; cd e:\老田的AI助手\quant_bac
 | `jev-eval/` | JEV 评估告警链（backup_alert.py 三通道发送范式出处） |
 | `reports/` | 产线数据落盘：weak_track 状态流 / weak_scan 扫描 / weak_cases 档案 / 联动图 |
 | `knowledge_docs/` | 知识库文档（缠论/金融/法律/尽调等 6 部） |
-| `知识图谱/` | 席位/关联图谱研究（快照、SQL、study） |
+| ~~`知识图谱/`~~（2026-10-27 移出主仓） | 席位/关联图谱研究（快照、SQL、study，第三方 qianjiang-graph Java/TS）——已归档至 `_archive/2026-10-27_code-cleanup/知识图谱/`，主仓不再跟踪 |
 | `gzh/` | 公众号撰文产线（config + gzh_writer） |
 | `video/` | 视频产线（pipeline） |
 | `ops/` | 健康检查（health_check.py + health_latest.json） |
