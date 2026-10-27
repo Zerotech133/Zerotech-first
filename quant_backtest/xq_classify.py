@@ -49,7 +49,14 @@ from pathlib import Path
 if __package__:
     from .tools.xq_ticker_normalize import normalize_tickers
 else:
-    from tools.xq_ticker_normalize import normalize_tickers
+    # 2026-10-27 GY-01：仓根存在同名 tools 包，`from tools.xq_ticker_normalize` 会
+    # 被 pytest importlib 模式解析成非包对象 → ImportError；改为直连同级 tools 目录。
+    import os as _os
+    import sys as _sys
+    _tools_dir = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "tools")
+    if _tools_dir not in _sys.path:
+        _sys.path.insert(0, _tools_dir)
+    from xq_ticker_normalize import normalize_tickers
 
 HERE = Path(__file__).resolve().parent
 DB_PATH = HERE / "data" / "xueqiu" / "xueqiu_info.db"
