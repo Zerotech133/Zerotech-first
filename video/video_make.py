@@ -11,6 +11,7 @@ from datetime import datetime, timedelta, timezone
 
 import script_gen
 import pipeline
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CFG_PATH = os.path.join(HERE, "config.json")
@@ -55,8 +56,8 @@ def main():
     idx_path = os.path.join(HERE, "output", "index.json")
     try:
         items = json.load(open(idx_path, encoding="utf-8"))
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "video/video_make.py", exc)
     rec = {"id": datetime.now(CST).strftime("%Y%m%d-%H%M"),
            "title": script["title"], "ts": datetime.now(CST).strftime("%m-%d %H:%M"),
            "duration": info["duration"], "scenes": info["scenes"],

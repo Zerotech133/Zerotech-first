@@ -15,6 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import common  # noqa: E402
+import logging
 
 DATE_COL = {"daily": "trade_date", "adj_factor": "trade_date", "daily_basic": "trade_date",
             "index_daily": "trade_date", "moneyflow": "trade_date", "margin_detail": "trade_date"}
@@ -97,8 +98,8 @@ def _parse_day(v) -> dt.date | None:
             f = f / 1000.0
         if f > 1e9:
             return dt.datetime.fromtimestamp(f).date()
-    except (TypeError, ValueError):
-        pass
+    except (TypeError, ValueError) as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/datawarehouse/freshness_report.py", exc)
     s = _norm_date(v)
     if not s:
         return None

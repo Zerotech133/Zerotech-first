@@ -19,6 +19,7 @@ import json
 import os
 import shutil
 from pathlib import Path
+import logging
 
 ARCHIVE = "_log_archive"
 EXPIRED = "_expired"
@@ -35,8 +36,8 @@ def _in_use(path: Path) -> bool:
         try:
             if tmp.exists():
                 os.replace(tmp, path)
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "tools/log_rotate.py", exc)
         return True
 
 

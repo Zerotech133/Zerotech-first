@@ -19,6 +19,7 @@ import os
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+import logging
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 C1_LEDGER_REL = Path("work") / "zhuge_challenge" / "cards.jsonl"
@@ -149,8 +150,8 @@ def sync_all(ledger: Path | None = None, dry_run: bool = False) -> dict:
         try:
             import zhuge_c3_decisions
             out["c3"] = zhuge_c3_decisions.sync_adoptions(dry_run=dry_run)
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "tools/zhuge_c1_decisions.py", exc)
     return out
 
 

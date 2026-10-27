@@ -19,6 +19,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+import logging
 
 HERE = Path(__file__).resolve()
 SECRETS_DIR = HERE.parent
@@ -89,8 +90,8 @@ def encrypt_into_vault(token: str) -> dict:
                 n = STAGE.stat().st_size
                 STAGE.write_bytes(b"\x00" * n)
                 STAGE.unlink()
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "tools/secrets/rotate_token.py", exc)
 
 
 def audit(record: dict) -> None:

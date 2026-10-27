@@ -20,6 +20,7 @@ import os
 import sqlite3
 import sys
 from datetime import datetime
+import logging
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_TRACES = os.path.join(REPO, "agent_platform", "data", "observability", "traces.sqlite")
@@ -42,8 +43,8 @@ def parse_ts(s):
     for fmt in ("%Y-%m-%dT%H:%M:%S%z", "%Y-%m-%dT%H:%M:%S.%f%z"):
         try:
             return datetime.strptime(s, fmt).isoformat()
-        except ValueError:
-            pass
+        except ValueError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "tools/run_contract_view.py", exc)
     return s
 
 
@@ -75,8 +76,8 @@ def _usage(attrs):
             continue
         try:
             out[dst] = int(v) if "tokens" in dst else float(v)
-        except (TypeError, ValueError):
-            pass
+        except (TypeError, ValueError) as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "tools/run_contract_view.py", exc)
     return out
 
 
