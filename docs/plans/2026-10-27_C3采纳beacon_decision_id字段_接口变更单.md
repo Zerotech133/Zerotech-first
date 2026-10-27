@@ -55,6 +55,21 @@
 
 ## 6. 边界
 
-- 不新增 L2/计划任务；不重启 8091（本文档记录「待重启生效」）；
+- 不新增 L2/计划任务；8091 已于 2026-10-27 14:38 受控重启（`98742bcf3` 生效）；
 - 不猜测、不自动补 decision_id；未匹配只报告；
 - decision_id 只用于采纳统计与决策复盘，不触发任何执行动作。
+
+## 7. 更优路径：链接 query（2026-10-27 追加，推荐）
+
+C3 v3 本身就是**服务器侧 access-log 归集**（页面禁 POST/第二 fetch）：
+建议卡下钻时跳 `/dev`、`/intel` 等领域路径，nginx 日志即可当采纳信号。
+因此**不需要新增 sendBeacon**，只需在建议卡链接上带参数：
+
+```text
+/dev?decision_id=DR-20261027-01&card_id=ZQ-20261027-01
+```
+
+- `portal/harvest_adoption.py` 已解析 GET query 的 `decision_id/card_id`（格式校验，非法忽略）；
+- 归集器按 5 分钟窗口去重，去重键含 decision_id（不同决策不互相吞）；
+- 页面侧改动极小：`linkFor` 拼接可选参数，无 JS、无 POST、无 storage，契约不变；
+- 灰度：只给部分建议卡加参数 → 观察 `zhuge_c3_decisions.py --report` 的精确匹配/未匹配数。
