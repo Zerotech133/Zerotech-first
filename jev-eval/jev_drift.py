@@ -17,6 +17,7 @@
 用法: python jev_drift.py [--dry] [--js-threshold 0.05] [--min-n 100]
       --dry 只打印不落库（演练/阈值校准）；计划任务常驻：--once 单轮默认。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -37,14 +38,32 @@ NEWS_DB = os.path.join(HERE, "..", "news_collector", "news.db")
 CST = timezone(timedelta(hours=8))
 
 _BIAS_CN = {"bull": "利多", "bear": "利空", "neutral": "中性"}
-_SCOPE_CN = {"cn": "A股", "hk": "港股", "us": "美股", "commodity": "商品",
-             "crypto": "加密", "macro": "宏观"}
+_SCOPE_CN = {
+    "cn": "A股",
+    "hk": "港股",
+    "us": "美股",
+    "commodity": "商品",
+    "crypto": "加密",
+    "macro": "宏观",
+}
 # K-ORG-157 实证对齐：0.7 待观察线 / 0.9+ 右偏档
-_EVENT_CN = {"earnings": "业绩", "policy": "政策", "rate": "利率",
-             "trade": "贸易", "supply": "供给", "demand": "需求",
-             "price": "价格", "ma": "并购", "equity": "股权",
-             "credit": "债务", "risk": "风险", "tech": "技术",
-             "macro": "宏观", "geo": "地缘", "other": "其他"}
+_EVENT_CN = {
+    "earnings": "业绩",
+    "policy": "政策",
+    "rate": "利率",
+    "trade": "贸易",
+    "supply": "供给",
+    "demand": "需求",
+    "price": "价格",
+    "ma": "并购",
+    "equity": "股权",
+    "credit": "债务",
+    "risk": "风险",
+    "tech": "技术",
+    "macro": "宏观",
+    "geo": "地缘",
+    "other": "其他",
+}
 _CONF_BUCKETS = [("low", 0.0, 0.7), ("mid", 0.7, 0.9), ("high", 0.9, 1.0)]
 _CONF_CN = {"low": "低置信<70%", "mid": "中置信70-90%", "high": "高置信≥90%"}
 # 维度→类别中文名（含未知桶标签）
@@ -89,7 +108,9 @@ def _load_rows(hours=24 * 14):
         try:
             rows = db.execute(
                 "SELECT jev, created_at FROM news WHERE jev IS NOT NULL "
-                "AND jev!='' AND created_at>=?", (since,)).fetchall()
+                "AND jev!='' AND created_at>=?",
+                (since,),
+            ).fetchall()
         finally:
             db.close()
     except Exception as e:  # noqa: BLE001
@@ -169,8 +190,7 @@ def _fmt_dist(c: Counter, cn_map=None):
 
 
 def _alert_id(dim, now):
-    key = "jev-drift-%s-%04dW%02d" % (dim, now.isocalendar()[0],
-                                      now.isocalendar()[1])
+    key = "jev-drift-%s-%04dW%02d" % (dim, now.isocalendar()[0], now.isocalendar()[1])
     return "alert-" + uuid.uuid5(NS_DRIFT, key).hex[:12]
 
 
@@ -180,18 +200,24 @@ def _insert_alert(dim, js, p, q, n_cur, n_base, now, dry):
     message = (
         "JEV 判定分布周窗口对比出现显著漂移（JS=%.3f，阈值 0.05）\n"
         "当前7天(n=%d): %s\n基线前7天(n=%d): %s\n%s"
-        % (js, n_cur, _fmt_dist(p, cn_map), n_base, _fmt_dist(q, cn_map),
-           _HINTS[dim]))
+        % (js, n_cur, _fmt_dist(p, cn_map), n_base, _fmt_dist(q, cn_map), _HINTS[dim])
+    )
     if dry:
-        print("[DRY] %s | %s\n      %s" % (title, message.replace("\n", "\n      "),
-                                           "alert_id=%s" % _alert_id(dim, now)))
+        print(
+            "[DRY] %s | %s\n      %s"
+            % (
+                title,
+                message.replace("\n", "\n      "),
+                "alert_id=%s" % _alert_id(dim, now),
+            )
+        )
         return
     try:
         jc.db_run(
             "INSERT INTO v2_alert(alert_id,level,title,message,status,created_at) "
             "VALUES (%s,%s,%s,%s,%s,%s)",
-            (_alert_id(dim, now), "WARN", title, message, "OPEN",
-             now.isoformat()))
+            (_alert_id(dim, now), "WARN", title, message, "OPEN", now.isoformat()),
+        )
         jc.log("漂移告警已入 v2_alert", level="info", dim=dim, js=round(js, 3))
     except Exception as e:  # noqa: BLE001  豁免（C2批2）：DB 写入失败不阻断
         jc.log("漂移告警入库失败: %s" % str(e)[:100], level="warn", dim=dim)
@@ -200,12 +226,13 @@ def _insert_alert(dim, js, p, q, n_cur, n_base, now, dry):
 def main(argv=None):
     ap = argparse.ArgumentParser(description="JEV 判定漂移监控（M7）")
     ap.add_argument("--dry", action="store_true", help="只打印不落库")
-    ap.add_argument("--js-threshold", type=float, default=0.05,
-                    help="JS 散度告警阈值（默认 0.05）")
-    ap.add_argument("--min-n", type=int, default=100,
-                    help="两窗口最小样本数（默认 100）")
-    ap.add_argument("--window-days", type=int, default=7,
-                    help="对比窗口天数（默认 7）")
+    ap.add_argument(
+        "--js-threshold", type=float, default=0.05, help="JS 散度告警阈值（默认 0.05）"
+    )
+    ap.add_argument(
+        "--min-n", type=int, default=100, help="两窗口最小样本数（默认 100）"
+    )
+    ap.add_argument("--window-days", type=int, default=7, help="对比窗口天数（默认 7）")
     args = ap.parse_args(argv)
 
     jc.set_module("jev_drift")
@@ -236,14 +263,16 @@ def main(argv=None):
             jc.log("漂移 %s：窗口空分布，跳过" % dim, level="info")
             continue
         if n_cur < args.min_n or n_base < args.min_n:
-            jc.log("漂移 %s：样本不足(%d/%d)，跳过" % (dim, n_cur, n_base),
-                   level="info")
+            jc.log(
+                "漂移 %s：样本不足(%d/%d)，跳过" % (dim, n_cur, n_base), level="info"
+            )
             continue
         flag = "DRIFT" if js >= args.js_threshold else "ok"
         cn_map = _CN_MAPS[dim]
-        print("%s %s JS=%.4f (n=%d/%d) 当前[%s] vs 基线[%s]"
-              % (flag, dim, js, n_cur, n_base, _fmt_dist(p, cn_map),
-                 _fmt_dist(q, cn_map)))
+        print(
+            "%s %s JS=%.4f (n=%d/%d) 当前[%s] vs 基线[%s]"
+            % (flag, dim, js, n_cur, n_base, _fmt_dist(p, cn_map), _fmt_dist(q, cn_map))
+        )
         if js >= args.js_threshold:
             _insert_alert(dim, js, p, q, n_cur, n_base, now, args.dry)
             alerted += 1

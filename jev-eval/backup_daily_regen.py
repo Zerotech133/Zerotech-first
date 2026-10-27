@@ -13,6 +13,7 @@ HKLM\\SOFTWARE\\AIStation\\BackupDeploy（part1+part2 base64）是独立存储�
 日志：C:\\Temp\\backup_daily_regen.log（追加一行/次）
 退出码：0=磁盘存在(或已重建)；1=重建失败；2=注册表源缺失
 """
+
 import base64
 import io
 import sys
@@ -34,6 +35,7 @@ def log(msg):
 
 def reg_source():
     import winreg
+
     k = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, REG_KEY)
     data, i = b"", 0
     while True:
@@ -73,7 +75,10 @@ def main():
         log("WARN disk/registry drift (%d bytes), use --force to rewrite" % len(disk))
         return 0
     io.open(TARGET, "wb").write(src)
-    log("REGEN rebuilt disk source from registry (%d bytes, force=%s)" % (len(src), force))
+    log(
+        "REGEN rebuilt disk source from registry (%d bytes, force=%s)"
+        % (len(src), force)
+    )
     return 0
 
 

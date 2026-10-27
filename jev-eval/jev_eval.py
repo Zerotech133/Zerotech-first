@@ -17,6 +17,7 @@
   JEV_BASE_URL  可选，默认 https://api.typesafe.ai/v1
   JEV_MODEL     可选，默认 jev-latest
 """
+
 from __future__ import annotations
 
 import json
@@ -143,8 +144,16 @@ def run(repeats: int, dry_run: bool) -> None:
     noul_answers = [q["answer"] for q in qs if q["type"] == "noul"]
     print(f"题目库：{len(qs)} 题  分布={types}")
     print(f"  noul true/false = {noul_answers.count(True)}/{noul_answers.count(False)}")
-    bad = [q["id"] for q in qs if q["type"] == "choice" and q["answer_index"] >= len(q["options"])]
-    bad += [q["id"] for q in qs if q["type"] == "score" and q["answer_level"] >= len(q["levels"])]
+    bad = [
+        q["id"]
+        for q in qs
+        if q["type"] == "choice" and q["answer_index"] >= len(q["options"])
+    ]
+    bad += [
+        q["id"]
+        for q in qs
+        if q["type"] == "score" and q["answer_level"] >= len(q["levels"])
+    ]
     if bad:
         sys.exit(f"题目库错误，答案越界: {bad}")
 
@@ -177,18 +186,20 @@ def run(repeats: int, dry_run: bool) -> None:
                 _body = e.read()[:80].decode("utf-8", errors="replace")
                 if re.search(r"key|token|sk-", _body, re.IGNORECASE):
                     _body = "[REDACTED：响应体含凭据字样，不打印]"
-                print(f"[{i}/{len(qs)}] {q['id']} 第{r+1}遍 HTTP {e.code}: {_body!r}")
+                print(f"[{i}/{len(qs)}] {q['id']} 第{r + 1}遍 HTTP {e.code}: {_body!r}")
                 preds.append(None)
                 confs.append(None)
                 continue
             except Exception as e:  # noqa: BLE001
-                print(f"[{i}/{len(qs)}] {q['id']} 第{r+1}遍 失败: {e}")
+                print(f"[{i}/{len(qs)}] {q['id']} 第{r + 1}遍 失败: {e}")
                 preds.append(None)
                 confs.append(None)
                 continue
             latencies.append(latency)
             usage = resp.get("usage", {}) or {}
-            total_tokens += (usage.get("input_tokens", 0) or 0) + (usage.get("output_tokens", 0) or 0)
+            total_tokens += (usage.get("input_tokens", 0) or 0) + (
+                usage.get("output_tokens", 0) or 0
+            )
             pred, conf = parse_answer(q, resp)
             preds.append(pred)
             confs.append(conf)
@@ -197,16 +208,28 @@ def run(repeats: int, dry_run: bool) -> None:
         consistent = len(set(map(json.dumps, valid))) == 1 if valid else False
         gt = ground_truth(q)
         correct = all(p == gt for p in valid) if valid else False
-        mean_conf = statistics.mean([c for c in confs if c is not None]) if any(
-            c is not None for c in confs) else None
-        records.append({
-            "id": q["id"], "type": q["type"], "repeats_preds": [str(p) for p in preds],
-            "ground_truth": str(gt), "correct": correct, "consistent": consistent,
-            "mean_confidence": mean_conf, "errors": preds.count(None),
-        })
+        mean_conf = (
+            statistics.mean([c for c in confs if c is not None])
+            if any(c is not None for c in confs)
+            else None
+        )
+        records.append(
+            {
+                "id": q["id"],
+                "type": q["type"],
+                "repeats_preds": [str(p) for p in preds],
+                "ground_truth": str(gt),
+                "correct": correct,
+                "consistent": consistent,
+                "mean_confidence": mean_conf,
+                "errors": preds.count(None),
+            }
+        )
         flag = "OK " if correct else ("~  " if valid else "ERR")
         conf_s = f"{mean_conf:.2f}" if mean_conf is not None else "N/A"
-        print(f"[{i:>2}/{len(qs)}] {q['id']} {flag} 预测={preds} 真值={gt} 置信={conf_s} 一致={consistent}")
+        print(
+            f"[{i:>2}/{len(qs)}] {q['id']} {flag} 预测={preds} 真值={gt} 置信={conf_s} 一致={consistent}"
+        )
 
     # ── 汇总 ────────────────────────────────────────────────
     n = len(records)
@@ -217,10 +240,14 @@ def run(repeats: int, dry_run: bool) -> None:
     lat_avg = statistics.mean(latencies) if latencies else 0
 
     # 校准桶：置信 ≥0.8 却答错（自信勾错，比胡编更难察觉）
-    high_conf_wrong = [r for r in records if r["correct"] is False and
-                       (r["mean_confidence"] or 0) >= 0.8]
-    low_conf_right = [r for r in records if r["correct"] is True and
-                      (r["mean_confidence"] or 1) < 0.5]
+    high_conf_wrong = [
+        r
+        for r in records
+        if r["correct"] is False and (r["mean_confidence"] or 0) >= 0.8
+    ]
+    low_conf_right = [
+        r for r in records if r["correct"] is True and (r["mean_confidence"] or 1) < 0.5
+    ]
 
     # 分题型准确率
     by_type = {}
@@ -230,20 +257,27 @@ def run(repeats: int, dry_run: bool) -> None:
 
     summary = {
         "run_at": datetime.now().isoformat(),
-        "model": MODEL, "base_url": BASE_URL, "repeats": repeats,
+        "model": MODEL,
+        "base_url": BASE_URL,
+        "repeats": repeats,
         "total_questions": n,
         "accuracy": round(acc, 4),
         "self_consistency": round(cons, 4),
         "error_rate": round(err, 4),
-        "latency_ms_median": round(lat_med), "latency_ms_avg": round(lat_avg),
+        "latency_ms_median": round(lat_med),
+        "latency_ms_avg": round(lat_avg),
         "total_tokens": total_tokens,
         "high_conf_wrong_ids": [r["id"] for r in high_conf_wrong],
         "low_conf_right_ids": [r["id"] for r in low_conf_right],
         "by_type_accuracy": {t: round(sum(v) / len(v), 4) for t, v in by_type.items()},
     }
     out = RESULTS_DIR / f"result-{datetime.now():%Y%m%d-%H%M%S}.json"
-    out.write_text(json.dumps({"summary": summary, "records": records},
-                              ensure_ascii=False, indent=2), encoding="utf-8")
+    out.write_text(
+        json.dumps(
+            {"summary": summary, "records": records}, ensure_ascii=False, indent=2
+        ),
+        encoding="utf-8",
+    )
 
     print("\n════════ 汇总 ════════")
     print(f"准确率      : {acc:.1%}  ({sum(r['correct'] for r in records)}/{n})")
@@ -253,9 +287,13 @@ def run(repeats: int, dry_run: bool) -> None:
     print(f"token 总量  : {total_tokens}")
     print(f"分题型准确率: {summary['by_type_accuracy']}")
     if high_conf_wrong:
-        print(f"⚠ 高置信答错({len(high_conf_wrong)}题): {summary['high_conf_wrong_ids']}")
+        print(
+            f"⚠ 高置信答错({len(high_conf_wrong)}题): {summary['high_conf_wrong_ids']}"
+        )
     if low_conf_right:
-        print(f"⚠ 答对但低置信({len(low_conf_right)}题): {summary['low_conf_right_ids']}")
+        print(
+            f"⚠ 答对但低置信({len(low_conf_right)}题): {summary['low_conf_right_ids']}"
+        )
     print(f"\n结果已写入: {out}")
 
 

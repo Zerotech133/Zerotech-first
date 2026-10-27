@@ -21,6 +21,7 @@
   python replay_review.py --market CN    # 单市场
   python replay_review.py --max-pools 10 # 限量试跑
 """
+
 from __future__ import annotations
 
 import argparse
@@ -33,7 +34,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 from signal_review_gate import (  # noqa: E402  复用判定层
-    API_KEY, QUESTIONS, TUSHARE_TOKEN, jev_ask, psql,
+    API_KEY,
+    QUESTIONS,
+    TUSHARE_TOKEN,
+    jev_ask,
+    psql,
 )
 
 if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf8"):
@@ -45,7 +50,7 @@ OUT.mkdir(exist_ok=True)
 
 N_OUTCOME_DAYS = 5
 ANN_DAYS = 14
-REPLAY_END = "2026-09-15"   # 只回放生产期（9/16 起属于部署后，基线口径另算）
+REPLAY_END = "2026-09-15"  # 只回放生产期（9/16 起属于部署后，基线口径另算）
 
 
 def log(msg: str) -> None:
@@ -54,8 +59,10 @@ def log(msg: str) -> None:
 
 # ── as-of 数据组装（防未来函数） ────────────────────────────
 def fetch_pools(market: str | None, max_pools: int) -> list[dict]:
-    sql = ("SELECT pool_id, pool_date, market FROM v2_candidate_pool "
-           "WHERE pool_date <= %s AND candidate_count > 0 ")
+    sql = (
+        "SELECT pool_id, pool_date, market FROM v2_candidate_pool "
+        "WHERE pool_date <= %s AND candidate_count > 0 "
+    )
     params: list = [REPLAY_END]
     if market:
         sql += "AND market = %s "
@@ -63,8 +70,11 @@ def fetch_pools(market: str | None, max_pools: int) -> list[dict]:
     sql += "ORDER BY pool_date ASC, id ASC LIMIT %s"
     params.append(max_pools)
     rows = psql(sql, tuple(params))
-    return [{"pool_id": r[0], "pool_date": r[1], "market": r[2]}
-            for r in rows if len(r) == 3]
+    return [
+        {"pool_id": r[0], "pool_date": r[1], "market": r[2]}
+        for r in rows
+        if len(r) == 3
+    ]
 
 
 def fetch_cands(pool_id: str) -> list[dict]:
@@ -72,10 +82,19 @@ def fetch_cands(pool_id: str) -> list[dict]:
         "SELECT candidate_id, ts_code, market, coalesce(candidate_score,0), "
         "coalesce(candidate_reason,'') FROM v2_candidate_asset "
         "WHERE pool_id = %s ORDER BY candidate_score DESC NULLS LAST LIMIT 20",
-        (pool_id,)
+        (pool_id,),
     )
-    return [{"candidate_id": r[0], "ts_code": r[1], "market": r[2],
-             "score": float(r[3] or 0), "reason": r[4]} for r in rows if len(r) == 5]
+    return [
+        {
+            "candidate_id": r[0],
+            "ts_code": r[1],
+            "market": r[2],
+            "score": float(r[3] or 0),
+            "reason": r[4],
+        }
+        for r in rows
+        if len(r) == 5
+    ]
 
 
 def fetch_held_asof(pool_date: str) -> list[str]:
@@ -84,7 +103,7 @@ def fetch_held_asof(pool_date: str) -> list[str]:
         "SELECT DISTINCT ts_code FROM v2_position "
         "WHERE market='CN' AND opened_at::date <= %s "
         "AND (closed_at IS NULL OR closed_at::date > %s)",
-        (pool_date, pool_date)
+        (pool_date, pool_date),
     )
     return [r[0] for r in rows if r]
 
@@ -94,7 +113,7 @@ def fetch_concepts_sym(ts_code: str) -> list[str]:
         "SELECT c.concept_name FROM v2_concept_membership m "
         "JOIN v2_concept c ON c.id=m.concept_id "
         "WHERE m.symbol = %s LIMIT 10",
-        (ts_code,)
+        (ts_code,),
     )
     return [r[0] for r in rows if r]
 
@@ -105,15 +124,23 @@ def anns_asof(ts_code: str, pool_date: str) -> list[str] | None:
         return None
     try:
         import tushare as ts
+
         pro = ts.pro_api(TUSHARE_TOKEN)
         end = date.fromisoformat(pool_date)
         start = end - timedelta(days=ANN_DAYS)
-        df = pro.anns_d(ts_code=ts_code, start_date=start.strftime("%Y%m%d"),
-                        end_date=end.strftime("%Y%m%d"), src="沪深京")
-        return (df["title"].astype(str).tolist()
-                if df is not None and "title" in df else [])[:15]
+        df = pro.anns_d(
+            ts_code=ts_code,
+            start_date=start.strftime("%Y%m%d"),
+            end_date=end.strftime("%Y%m%d"),
+            src="沪深京",
+        )
+        return (
+            df["title"].astype(str).tolist() if df is not None and "title" in df else []
+        )[:15]
     except Exception as e:  # noqa: BLE001
-        log(f"anns_d 拉取失败 ts_code={ts_code} pool_date={pool_date}: {str(e)[:100]}")  # C2批2
+        log(
+            f"anns_d 拉取失败 ts_code={ts_code} pool_date={pool_date}: {str(e)[:100]}"
+        )  # C2批2
         return None
 
 
@@ -130,18 +157,24 @@ def regime_asof(pool_date: str) -> float:
             "SELECT trade_date, close FROM v2_bar_daily "
             "WHERE symbol IN ('000001.SH','sh000001') AND market='CN' "
             "AND trade_date < %s ORDER BY trade_date DESC LIMIT 5",
-            (pool_date,)
+            (pool_date,),
         )
         if idx:
             txt = "; ".join(f"{r[0]} 收盘 {float(r[1]):.0f}" for r in idx)
             chg = ""
             if len(idx) >= 2:
-                chg = f"（近{len(idx)-1}个交易日累计 {(float(idx[0][1])/float(idx[-1][1])-1):+.1%}）"
+                chg = f"（近{len(idx) - 1}个交易日累计 {(float(idx[0][1]) / float(idx[-1][1]) - 1):+.1%}）"
             state = f"日期 {pool_date}。上证指数近5个交易日: {txt}{chg}。"
-            ans = jev_ask(state, {"regime_fit": {
-                "type": "noul",
-                "instructions": "当前 A 股大盘环境整体适合执行新买入信号"
-                                "（无系统性风险事件主导、消息面未显著恶化）。"}})
+            ans = jev_ask(
+                state,
+                {
+                    "regime_fit": {
+                        "type": "noul",
+                        "instructions": "当前 A 股大盘环境整体适合执行新买入信号"
+                        "（无系统性风险事件主导、消息面未显著恶化）。",
+                    }
+                },
+            )
             p = float(ans.get("regime_fit", {}).get("noul", 1.0))
     except Exception as e:  # noqa: BLE001
         log(f"  regime({pool_date}) 失败降级: {str(e)[:80]}")
@@ -156,7 +189,8 @@ def build_state_asof(cand: dict, held: list[str], anns: list[str] | None) -> str
         rows = psql(
             "SELECT DISTINCT c.concept_name FROM v2_concept_membership m "
             "JOIN v2_concept c ON c.id=m.concept_id WHERE m.symbol = ANY(%s)",
-            (held,))
+            (held,),
+        )
         hs = {r[0] for r in rows if r}
         overlap = [c for c in concepts if c in hs]
     parts = [
@@ -169,7 +203,9 @@ def build_state_asof(cand: dict, held: list[str], anns: list[str] | None) -> str
     if anns is None:
         parts.append("近期公告: 数据源不可用（无法核验）")
     else:
-        parts.append("近期公告标题: " + ("; ".join(anns[:8]) if anns else "近14天无公告"))
+        parts.append(
+            "近期公告标题: " + ("; ".join(anns[:8]) if anns else "近14天无公告")
+        )
     return "\n".join(parts)
 
 
@@ -192,7 +228,8 @@ def outcome_5d(ts_code: str, market: str, pool_date: str) -> dict | None:
         "SELECT trade_date, close FROM v2_bar_daily "
         "WHERE symbol = %s AND market = %s "
         "AND trade_date >= %s ORDER BY trade_date ASC LIMIT %s",
-        (ts_code, market, pool_date, N_OUTCOME_DAYS + 1))
+        (ts_code, market, pool_date, N_OUTCOME_DAYS + 1),
+    )
     if len(rows) < N_OUTCOME_DAYS + 1:
         return None
     entry, exit_ = float(rows[0][1]), float(rows[N_OUTCOME_DAYS][1])
@@ -206,8 +243,11 @@ def run(market: str | None, max_pools: int) -> None:
     if not API_KEY:
         sys.exit("需要 JEV_API_KEY（先 . jev-gate.env.ps1）")
     pools = fetch_pools(market, max_pools)
-    log(f"回放池 {len(pools)} 个（{pools[0]['pool_date']}~{pools[-1]['pool_date']}）"
-        if pools else "无池")
+    log(
+        f"回放池 {len(pools)} 个（{pools[0]['pool_date']}~{pools[-1]['pool_date']}）"
+        if pools
+        else "无池"
+    )
     results = []
     tushare_cn = bool(TUSHARE_TOKEN)
     for i, pool in enumerate(pools, 1):
@@ -215,8 +255,11 @@ def run(market: str | None, max_pools: int) -> None:
         held = fetch_held_asof(pool["pool_date"])
         cands = fetch_cands(pool["pool_id"])
         for c in cands:
-            anns = (anns_asof(c["ts_code"], pool["pool_date"])
-                    if tushare_cn and c["market"] == "CN" else None)
+            anns = (
+                anns_asof(c["ts_code"], pool["pool_date"])
+                if tushare_cn and c["market"] == "CN"
+                else None
+            )
             state = build_state_asof(c, held, anns)
             try:
                 ans = jev_ask(state, QUESTIONS)
@@ -227,22 +270,37 @@ def run(market: str | None, max_pools: int) -> None:
             news_p = float(ans.get("news_risk", {}).get("noul", 0.0))
             overlap_p = float(ans.get("concept_overlap", {}).get("noul", 0.0))
             quality = ans.get("signal_quality", {}).get("choice", "unknown")
-            quality_p = (ans.get("signal_quality", {}).get("probabilities") or {}).get(quality, 0.0)
+            quality_p = (ans.get("signal_quality", {}).get("probabilities") or {}).get(
+                quality, 0.0
+            )
             crowd = ans.get("crowding", {}).get("choice", "unknown")
-            crowd_p = (ans.get("crowding", {}).get("probabilities") or {}).get(crowd, 0.0)
-            d, why = decide(news_p, overlap_p, quality, quality_p, crowd, crowd_p, regime_p)
+            crowd_p = (ans.get("crowding", {}).get("probabilities") or {}).get(
+                crowd, 0.0
+            )
+            d, why = decide(
+                news_p, overlap_p, quality, quality_p, crowd, crowd_p, regime_p
+            )
             o = outcome_5d(c["ts_code"], c["market"], pool["pool_date"])
-            results.append({
-                "pool_date": pool["pool_date"], "market": c["market"],
-                "ts_code": c["ts_code"], "score": c["score"],
-                "decision": d, "why": why,
-                "news_p": news_p, "quality": quality, "crowd": crowd,
-                "regime_p": regime_p,
-                **(o if o else {"ret_5d": None}),
-            })
+            results.append(
+                {
+                    "pool_date": pool["pool_date"],
+                    "market": c["market"],
+                    "ts_code": c["ts_code"],
+                    "score": c["score"],
+                    "decision": d,
+                    "why": why,
+                    "news_p": news_p,
+                    "quality": quality,
+                    "crowd": crowd,
+                    "regime_p": regime_p,
+                    **(o if o else {"ret_5d": None}),
+                }
+            )
             time.sleep(0.25)
-        log(f"[{i}/{len(pools)}] {pool['pool_date']} {pool['market']}: "
-            f"{len(cands)} 条 regime={regime_p:.2f}")
+        log(
+            f"[{i}/{len(pools)}] {pool['pool_date']} {pool['market']}: "
+            f"{len(cands)} 条 regime={regime_p:.2f}"
+        )
 
     out_file = OUT / f"replay-{datetime.now():%Y%m%d-%H%M%S}.jsonl"
     with out_file.open("w", encoding="utf-8") as f:
@@ -267,7 +325,9 @@ def report(results: list[dict]) -> None:
     print("\n========= Jev 接入前 vs 后 · 历史回放对比 =========")
     print(f"{'组':<10}{'样本':<7}{'胜率':<9}{'均值5日收益':<13}{'中位数'}")
     base_n, base_win, base_avg, base_med = stat(valid)
-    print(f"{'基线(全量)':<11}{base_n:<7}{base_win:<9.1%}{base_avg:<13.2%}{base_med:.2%}")
+    print(
+        f"{'基线(全量)':<11}{base_n:<7}{base_win:<9.1%}{base_avg:<13.2%}{base_med:.2%}"
+    )
     groups = defaultdict(list)
     for r in valid:
         groups[r["decision"]].append(r)
@@ -278,11 +338,13 @@ def report(results: list[dict]) -> None:
             stats[d] = a
             print(f"{d:<11}{n:<7}{w:<9.1%}{a:<13.2%}{m:.2%}")
     if "FOCUS" in stats:
-        print(f"\nFOCUS - 基线: {stats['FOCUS']-base_avg:+.2%}  （低置信加分规则增量）")
+        print(
+            f"\nFOCUS - 基线: {stats['FOCUS'] - base_avg:+.2%}  （低置信加分规则增量）"
+        )
     if "PASS" in stats:
-        print(f"PASS - 基线: {stats['PASS']-base_avg:+.2%}")
+        print(f"PASS - 基线: {stats['PASS'] - base_avg:+.2%}")
     if "FOCUS" in stats and "REJECT" in stats:
-        print(f"PASS - REJECT: {stats['PASS']-stats['REJECT']:+.2%}")
+        print(f"PASS - REJECT: {stats['PASS'] - stats['REJECT']:+.2%}")
     print("判读：PASS 跑赢基线 ≥1% 且 REJECT 跑输 → 复核门有真实增益，阶段 2 有据")
     # 分市场明细
     print("\n-- 分市场（PASS 增量）--")
@@ -292,7 +354,7 @@ def report(results: list[dict]) -> None:
         if g and gp:
             ga = sum(x["ret_5d"] for x in gp) / len(gp)
             ba = sum(x["ret_5d"] for x in g) / len(g)
-            print(f"{mk:<8} 样本 {len(g):<5} PASS {len(gp):<5} 增量 {ga-ba:+.2%}")
+            print(f"{mk:<8} 样本 {len(g):<5} PASS {len(gp):<5} 增量 {ga - ba:+.2%}")
 
 
 def main() -> None:

@@ -25,6 +25,7 @@ TUSHARE_TOKEN 行——迁移后该脚本目标失效，轮换流程见 --rotate
   python migrate_env_dpapi.py --verify       # 解密回读 vs 明文比对 → MIGRATION_OK
   python migrate_env_dpapi.py --rotate-checklist  # 打印人工轮换清单（只列键名）
 """
+
 import argparse
 import base64
 import ctypes
@@ -47,8 +48,7 @@ CRYPTPROTECT_UI_FORBIDDEN = 0x1
 
 # ── DPAPI（ctypes 直调 crypt32，无第三方依赖）──────────────────
 class _Blob(ctypes.Structure):
-    _fields_ = [("cbData", wintypes.DWORD),
-                ("pbData", ctypes.c_void_p)]
+    _fields_ = [("cbData", wintypes.DWORD), ("pbData", ctypes.c_void_p)]
 
 
 def dpapi_protect(data: bytes) -> bytes:
@@ -57,8 +57,14 @@ def dpapi_protect(data: bytes) -> bytes:
     fin = _Blob(len(data), ctypes.cast(buf, ctypes.c_void_p))
     fout = _Blob()
     ok = ctypes.windll.crypt32.CryptProtectData(
-        ctypes.byref(fin), DPAPI_DESC, None, None, None,
-        CRYPTPROTECT_UI_FORBIDDEN, ctypes.byref(fout))
+        ctypes.byref(fin),
+        DPAPI_DESC,
+        None,
+        None,
+        None,
+        CRYPTPROTECT_UI_FORBIDDEN,
+        ctypes.byref(fout),
+    )
     if not ok:
         raise OSError("CryptProtectData 失败 err=%d" % ctypes.GetLastError())
     try:
@@ -74,11 +80,18 @@ def dpapi_unprotect(blob: bytes) -> bytes:
     fout = _Blob()
     desc = ctypes.c_wchar_p()
     ok = ctypes.windll.crypt32.CryptUnprotectData(
-        ctypes.byref(fin), ctypes.byref(desc), None, None, None,
-        CRYPTPROTECT_UI_FORBIDDEN, ctypes.byref(fout))
+        ctypes.byref(fin),
+        ctypes.byref(desc),
+        None,
+        None,
+        None,
+        CRYPTPROTECT_UI_FORBIDDEN,
+        ctypes.byref(fout),
+    )
     if not ok:
-        raise OSError("CryptUnprotectData 失败 err=%d（异地/异账户？）"
-                      % ctypes.GetLastError())
+        raise OSError(
+            "CryptUnprotectData 失败 err=%d（异地/异账户？）" % ctypes.GetLastError()
+        )
     try:
         return ctypes.string_at(fout.pbData, fout.cbData)
     finally:
@@ -95,7 +108,7 @@ VALUE_RE = re.compile(r"""^(["'])(.*)\1(?:\s*#.*)?$""", re.S)
 def parse_plain(path=PLAIN_FILE):
     """解析明文 ps1 → (out, lines) 元组（out={键: 值}，lines=原始行）；
     无法解析的键报错（只报键名）。"""
-    with open(path, encoding="utf-8-sig") as f:   # 判例：rotate 脚本保留 BOM
+    with open(path, encoding="utf-8-sig") as f:  # 判例：rotate 脚本保留 BOM
         lines = f.read().splitlines()
     out, bad = {}, []
     for ln in lines:
@@ -112,14 +125,19 @@ def parse_plain(path=PLAIN_FILE):
         v = vm.group(2)
         if vm.group(1) == '"':
             # PS 双引号转义：`" → " ，`` → ` ，`$ → $（凭据常见面窄，够用）
-            v = v.replace("``", "\0").replace('`"', '"') \
-                 .replace("`$", "$").replace("\0", "`")
+            v = (
+                v.replace("``", "\0")
+                .replace('`"', '"')
+                .replace("`$", "$")
+                .replace("\0", "`")
+            )
         else:
             v = v.replace("''", "'")
         out[key] = v
     if bad:
-        raise SystemExit("解析失败键（不打印值）: %s —— 人工检查行格式"
-                         % ", ".join(bad))
+        raise SystemExit(
+            "解析失败键（不打印值）: %s —— 人工检查行格式" % ", ".join(bad)
+        )
     if not out:
         raise SystemExit("未解析到任何 $env: 赋值（源文件为空/结构变化？）")
     return out, lines
@@ -157,25 +175,27 @@ def do_migrate():
         print("已生成回退副本 jev-gate.env.plain.ps1（%d 键）" % len(secrets))
     else:
         print("plain 副本已存在，跳过覆盖（幂等保护）")
-        secrets, lines = parse_plain(PLAIN_FILE)   # 以 plain 为准（真源）
+        secrets, lines = parse_plain(PLAIN_FILE)  # 以 plain 为准（真源）
 
     # 2) 副作用段提取 + 明文值泄漏自检（防续行/here-string 夹带值进新文件）
     effects = extract_effects(lines)
     eff_text = "\n".join(effects) + "\n"
     leaked = [k for k, v in secrets.items() if v and v in eff_text]
     if leaked:
-        raise SystemExit("副作用段自检失败：疑似含明文值的键: %s —— 不落盘"
-                         % ", ".join(leaked))
+        raise SystemExit(
+            "副作用段自检失败：疑似含明文值的键: %s —— 不落盘" % ", ".join(leaked)
+        )
     atomic_write_text(EFFECTS_FILE, eff_text)
 
     # 3) DPAPI 加密 → .enc（原子写）
     enc = {}
     for k, v in secrets.items():
-        enc[k] = base64.b64encode(
-            dpapi_protect(v.encode("utf-8"))).decode("ascii")
+        enc[k] = base64.b64encode(dpapi_protect(v.encode("utf-8"))).decode("ascii")
     atomic_write_json(ENC_FILE, enc)
-    print("迁移完成：%d 键 → %s（DPAPI CurrentUser）"
-          % (len(enc), os.path.basename(ENC_FILE)))
+    print(
+        "迁移完成：%d 键 → %s（DPAPI CurrentUser）"
+        % (len(enc), os.path.basename(ENC_FILE))
+    )
     print("下一步：跑 --verify 确认 MIGRATION_OK，再切换 stub 加载器")
 
 
@@ -190,14 +210,15 @@ def do_verify():
     bad = []
     for k, b64 in enc.items():
         try:
-            if dpapi_unprotect(base64.b64decode(b64)).decode("utf-8") \
-                    != secrets.get(k):
+            if dpapi_unprotect(base64.b64decode(b64)).decode("utf-8") != secrets.get(k):
                 bad.append(k)
         except OSError as e:
             bad.append("%s(%s)" % (k, e))
     if miss or extra or bad:
-        print("VERIFY_FAIL 缺失=%s 多余=%s 不一致/解密失败=%s"
-              % (miss or "无", extra or "无", bad or "无"))
+        print(
+            "VERIFY_FAIL 缺失=%s 多余=%s 不一致/解密失败=%s"
+            % (miss or "无", extra or "无", bad or "无")
+        )
         return 1
     # 副作用段复检：不得含任何明文值
     with open(EFFECTS_FILE, encoding="utf-8") as f:
@@ -206,28 +227,48 @@ def do_verify():
     if leaked:
         print("VERIFY_FAIL effects 泄漏键: %s" % leaked)
         return 1
-    print("MIGRATION_OK（%d 键解密回读与明文逐键一致；effects 无泄漏）"
-          % len(secrets))
+    print("MIGRATION_OK（%d 键解密回读与明文逐键一致；effects 无泄漏）" % len(secrets))
     return 0
 
 
 CHECKLIST = [
-    ("typesafe（Jev 网关）", ["JEV_API_KEY"],
-     "console.typesafe.ai/keys 生成新 key → 更新 plain 对应行 → 重跑本脚本 → --verify"),
-    ("Tushare（公告源）", ["TUSHARE_TOKEN"],
-     "platform.tushare.pro 重置 token → 更新 plain → 重跑本脚本 → --verify；"
-     "注意 rotate_tushare_token.ps1 仍指 stub 路径，轮换期内勿用其自动更新"),
-    ("QuantDinger（QD 桥）", ["QD_USER", "QD_PASSWORD"],
-     "QD 后台改密 → 更新 plain → 重跑本脚本 → --verify"),
-    ("zhice OS v2 后台", ["ZHICE_ADMIN_USER", "ZHICE_ADMIN_PASSWORD"],
-     "zhice 后台改密 → 更新 plain → 重跑本脚本 → --verify"),
-    ("飞书（open_id 类，非密钥）", ["LARK_ALERT_OPEN_ID", "LARK_ALLOWED_OPERATORS"],
-     "无需轮换；确认暴露后的收件人白名单是否符合预期"),
-    ("（清理项）弃用键", ["ALERT_WEBHOOK_URL"],
-     "已弃用（注释确认）；确认无消费方后从 plain 删除该行并重跑本脚本"),
-    ("（收尾）删除明文", ["jev-gate.env.plain.ps1"],
-     "以上全部轮换完成且稳定运行 ≥1 周后，删除 plain 与 .bak_20261014，"
-     "stub 去掉回退分支——是否删除由老田拍板"),
+    (
+        "typesafe（Jev 网关）",
+        ["JEV_API_KEY"],
+        "console.typesafe.ai/keys 生成新 key → 更新 plain 对应行 → 重跑本脚本 → --verify",
+    ),
+    (
+        "Tushare（公告源）",
+        ["TUSHARE_TOKEN"],
+        "platform.tushare.pro 重置 token → 更新 plain → 重跑本脚本 → --verify；"
+        "注意 rotate_tushare_token.ps1 仍指 stub 路径，轮换期内勿用其自动更新",
+    ),
+    (
+        "QuantDinger（QD 桥）",
+        ["QD_USER", "QD_PASSWORD"],
+        "QD 后台改密 → 更新 plain → 重跑本脚本 → --verify",
+    ),
+    (
+        "zhice OS v2 后台",
+        ["ZHICE_ADMIN_USER", "ZHICE_ADMIN_PASSWORD"],
+        "zhice 后台改密 → 更新 plain → 重跑本脚本 → --verify",
+    ),
+    (
+        "飞书（open_id 类，非密钥）",
+        ["LARK_ALERT_OPEN_ID", "LARK_ALLOWED_OPERATORS"],
+        "无需轮换；确认暴露后的收件人白名单是否符合预期",
+    ),
+    (
+        "（清理项）弃用键",
+        ["ALERT_WEBHOOK_URL"],
+        "已弃用（注释确认）；确认无消费方后从 plain 删除该行并重跑本脚本",
+    ),
+    (
+        "（收尾）删除明文",
+        ["jev-gate.env.plain.ps1"],
+        "以上全部轮换完成且稳定运行 ≥1 周后，删除 plain 与 .bak_20261014，"
+        "stub 去掉回退分支——是否删除由老田拍板",
+    ),
 ]
 
 
@@ -241,8 +282,7 @@ def do_checklist():
 def main():
     ap = argparse.ArgumentParser(description="jev-gate 明文凭据 DPAPI 迁移")
     ap.add_argument("--verify", action="store_true", help="解密回读比对")
-    ap.add_argument("--rotate-checklist", action="store_true",
-                    help="打印人工轮换清单")
+    ap.add_argument("--rotate-checklist", action="store_true", help="打印人工轮换清单")
     a = ap.parse_args()
     if a.rotate_checklist:
         do_checklist()

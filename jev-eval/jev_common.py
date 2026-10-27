@@ -14,6 +14,7 @@
   lark-cli     lark_env() / lark_cli_json()（统一信封 {"ok": true} 判定）
   指标         start_metrics(port) / 公共 Counter（P1-6，prometheus_client 可选）
 """
+
 from __future__ import annotations
 
 import contextlib
@@ -63,9 +64,13 @@ def new_trace(prefix: str = "t"):
 
 
 def log(msg: str, level: str = "info", **fields) -> None:
-    rec = {"ts": datetime.now().isoformat(timespec="milliseconds"),
-           "level": level, "mod": _MOD["name"], "msg": msg,
-           "pid": os.getpid()}  # 2026-10-16: 多实例排障（451 来源追踪）
+    rec = {
+        "ts": datetime.now().isoformat(timespec="milliseconds"),
+        "level": level,
+        "mod": _MOD["name"],
+        "msg": msg,
+        "pid": os.getpid(),
+    }  # 2026-10-16: 多实例排障（451 来源追踪）
     if _TRACE.get():
         rec["trace_id"] = _TRACE.get()
     rec.update(fields)
@@ -73,8 +78,11 @@ def log(msg: str, level: str = "info", **fields) -> None:
     print(line, flush=True)
     if _LOG_DIR:
         try:  # 每条独立 open/append/close：轮转/外部读取友好，日志量小性能无虞
-            with open(os.path.join(_LOG_DIR, f"{_MOD['name'] or 'jev'}.log"),
-                      "a", encoding="utf-8") as f:
+            with open(
+                os.path.join(_LOG_DIR, f"{_MOD['name'] or 'jev'}.log"),
+                "a",
+                encoding="utf-8",
+            ) as f:
                 f.write(line + "\n")
         except OSError:
             pass  # 落盘失败不阻断主流程（stdout 仍有输出）
@@ -105,9 +113,11 @@ def with_retry(fn, *, retries: int = 3, base_sec: float = 2.0, label: str = ""):
         except Exception as e:  # noqa: BLE001
             last = e
             if i < retries - 1:
-                wait = base_sec * (2 ** i)
-                log(f"{label}重试 {i + 1}/{retries - 1}（{wait:.0f}s）: {str(e)[:80]}",
-                    level="warn")
+                wait = base_sec * (2**i)
+                log(
+                    f"{label}重试 {i + 1}/{retries - 1}（{wait:.0f}s）: {str(e)[:80]}",
+                    level="warn",
+                )
                 time.sleep(wait)
     assert last is not None
     raise last
@@ -131,9 +141,9 @@ def install_stop() -> dict:
 # 输出归一化到 systemone answers 协议；gate / qd_bridge 共用本入口。
 _JEV_OLLAMA_SYS = (
     "你是交易与投研系统的告警/持仓判定器。只输出一个 JSON 对象，"
-    "禁止输出任何其他文字。数值题型输出 {\"<键名>\": {\"noul\": <0到1小数>}}；"
-    "选择题输出 {\"<键名>\": {\"choice\": \"<选项>\", "
-    "\"probabilities\": {\"<选项>\": <0-1小数>, ...}}}。"
+    '禁止输出任何其他文字。数值题型输出 {"<键名>": {"noul": <0到1小数>}}；'
+    '选择题输出 {"<键名>": {"choice": "<选项>", '
+    '"probabilities": {"<选项>": <0-1小数>, ...}}}。'
 )
 
 
@@ -152,13 +162,17 @@ def _jev_ask_ollama(state: str, questions: dict) -> dict:
             lines.extend(f"  选项 {k}: {v}" for k, v in crit.items())
         if q.get("type") == "choice":
             keys = "、".join(str(k) for k in (crit or {}).keys()) or "题目给定选项"
-            lines.append(f"  → 输出键 {qname}.choice 必须取：{keys} 之一，并附 probabilities")
+            lines.append(
+                f"  → 输出键 {qname}.choice 必须取：{keys} 之一，并附 probabilities"
+            )
         else:
             lines.append(f"  → 输出键 {qname}.noul = 0~1 概率小数")
     body = {
         "model": o_model,
-        "messages": [{"role": "system", "content": _JEV_OLLAMA_SYS},
-                     {"role": "user", "content": "\n".join(lines)}],
+        "messages": [
+            {"role": "system", "content": _JEV_OLLAMA_SYS},
+            {"role": "user", "content": "\n".join(lines)},
+        ],
         "stream": False,
         "format": "json",
         "options": {"temperature": 0, "num_predict": 512},
@@ -166,13 +180,18 @@ def _jev_ask_ollama(state: str, questions: dict) -> dict:
     req = urllib.request.Request(
         o_url + "/api/chat",
         data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
-        headers={"Content-Type": "application/json"}, method="POST")
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
     try:
         with urllib.request.urlopen(req, timeout=60) as resp:
             data = json.loads(resp.read())
     except Exception as e:
-        log(f"ollama 请求异常 url={req.full_url} proxies={urllib.request.getproxies()} "
-            f"err={str(e)[:120]}", level="warn")
+        log(
+            f"ollama 请求异常 url={req.full_url} proxies={urllib.request.getproxies()} "
+            f"err={str(e)[:120]}",
+            level="warn",
+        )
         raise
     ans = json.loads((data.get("message") or {}).get("content", "") or "{}")
 
@@ -213,12 +232,15 @@ def jev_ask_backend(state: str, questions: dict) -> dict:
     log(f"typesafe 后端调用 base={os.environ.get('JEV_BASE_URL', '')[:40]}")
     body = {"model": "jev-latest", "state": state, "questions": questions}
     req = urllib.request.Request(
-        os.environ.get("JEV_BASE_URL",
-                       "https://api.typesafe.ai/v1").rstrip("/") + "/systemone",
+        os.environ.get("JEV_BASE_URL", "https://api.typesafe.ai/v1").rstrip("/")
+        + "/systemone",
         data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
-        headers={"Content-Type": "application/json; charset=utf-8",
-                 "Authorization": "Bearer %s" % os.environ.get("JEV_API_KEY", "")},
-        method="POST")
+        headers={
+            "Content-Type": "application/json; charset=utf-8",
+            "Authorization": "Bearer %s" % os.environ.get("JEV_API_KEY", ""),
+        },
+        method="POST",
+    )
     with urllib.request.urlopen(req, timeout=15) as resp:
         return json.loads(resp.read()).get("answers", {})
 
@@ -238,6 +260,7 @@ NOOP = _NoOp()
 
 try:
     from prometheus_client import Counter, start_http_server
+
     METRICS = True
     C_DB = Counter("jev_db_queries_total", "DB 查询次数", ["mod", "ok"])
     C_JEV = Counter("jev_calls_total", "Jev API 调用次数", ["mod", "ok"])
@@ -275,6 +298,7 @@ _conn = {"c": None, "mode": ""}  # mode: "" 未定 / "direct" / "docker"
 def _get_conn():
     """进程内缓存连接；首次连接成功后记住模式，失败自动重连一次。"""
     import psycopg2
+
     if _conn["c"] is None or _conn["c"].closed:
         _conn["c"] = psycopg2.connect(**DB_DSN)
         _conn["c"].autocommit = True  # 单语句读写，无需事务块
@@ -293,9 +317,23 @@ def _pg_fail(labels_mod: str) -> None:
 def _docker_psql_rows(sql: str, params) -> list[tuple]:
     """降级通道：docker exec psql。%s 占位符转 :'pN' 变量绑定（psql 负责转义）。
     list/tuple/set 参数转为 {a,b} 数组字面量以配合 ANY(%s)。"""
-    args: list = ["docker", "exec", "-i", PG_CONTAINER, "psql",
-                  "-U", DB_DSN["user"], "-d", DB_DSN["dbname"],
-                  "-A", "-t", "-F", "\x1f", "-v", "ON_ERROR_STOP=1"]
+    args: list = [
+        "docker",
+        "exec",
+        "-i",
+        PG_CONTAINER,
+        "psql",
+        "-U",
+        DB_DSN["user"],
+        "-d",
+        DB_DSN["dbname"],
+        "-A",
+        "-t",
+        "-F",
+        "\x1f",
+        "-v",
+        "ON_ERROR_STOP=1",
+    ]
 
     def _fmt(v):
         if isinstance(v, (list, tuple, set)):
@@ -310,8 +348,15 @@ def _docker_psql_rows(sql: str, params) -> list[tuple]:
     for i, v in enumerate(params):
         sql2 += f":'p{i}'" + parts[i + 1]
         args += ["-v", f"p{i}={_fmt(v)}"]
-    out = subprocess.run(args, input=sql2, capture_output=True, text=True, timeout=20,
-                         encoding="utf-8", errors="replace")
+    out = subprocess.run(
+        args,
+        input=sql2,
+        capture_output=True,
+        text=True,
+        timeout=20,
+        encoding="utf-8",
+        errors="replace",
+    )
     if out.returncode != 0:
         raise RuntimeError(f"psql 失败: {out.stderr.strip()[:200]}")
     return [tuple(l.split("\x1f")) for l in out.stdout.strip().splitlines() if l]
@@ -398,6 +443,7 @@ def _load_bot_creds() -> "tuple[str, str, str] | None":
     here = os.path.dirname(os.path.abspath(__file__))
     sys.path.insert(0, os.path.join(os.path.dirname(here), "news_collector"))
     from feishu_client import load_app_creds as _fc_creds, get_tat as _fc_tat
+
     # K-STOCK-368：jev 独立 app 换绑（治本单总线互抢）。env 优先——机器级
     # JEV_CARD_APP_ID/JEV_CARD_APP_SECRET（deploy 判例同 PG-Robot 机器级
     # LARKSUITE_CLI_*）；未配置回落 config.json apps[0]（老 app）现状不变。
@@ -413,12 +459,13 @@ def _load_bot_creds() -> "tuple[str, str, str] | None":
     try:
         tok = _fc_tat(app_id, app_secret)
     except Exception as e:
-        log(f"tenant_access_token 获取失败，bot 凭证注入降级: "
-            f"{str(e)[:100]}", level="warn")  # C2批2
+        log(
+            f"tenant_access_token 获取失败，bot 凭证注入降级: {str(e)[:100]}",
+            level="warn",
+        )  # C2批2
         return None
     if tok:
-        _TAT_CACHE = (time.time() + 7200 - 600, tok,
-                      app_id, app_secret)  # 有效期~7200s
+        _TAT_CACHE = (time.time() + 7200 - 600, tok, app_id, app_secret)  # 有效期~7200s
         return tok, app_id, app_secret
     log("tenant_access_token 为空，bot 凭证注入降级", level="warn")
     return None
@@ -428,12 +475,16 @@ def lark_cli_bin() -> str:
     """lark-cli 可执行路径（K-STOCK-396 解耦）：仓库 bin/ 固定副本优先
     （不受 Trae 插件目录升级/清除影响，2026-10-13 巡检判例），插件目录
     版本扫描回退，最后裸名（PATH 侥幸，不可靠）。"""
-    _bin = os.path.join(os.path.dirname(os.path.dirname(
-        os.path.abspath(__file__))), "bin", "lark-cli.exe")
+    _bin = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "bin",
+        "lark-cli.exe",
+    )
     if os.path.isfile(_bin):
         return _bin
-    root = os.path.join(os.path.expanduser("~"), ".trae-cn", "plugins",
-                        "trae-remote-official", "lark")
+    root = os.path.join(
+        os.path.expanduser("~"), ".trae-cn", "plugins", "trae-remote-official", "lark"
+    )
     if os.path.isdir(root):
         for d in sorted(os.listdir(root), reverse=True):
             p = os.path.join(root, d, "bin", "lark-cli.exe")
@@ -448,21 +499,24 @@ def lark_env() -> dict:
     lark-cli 1.0.5 的 event consume 等子进程要完成 bot 身份握手，
     需要 APP_ID/APP_SECRET/TENANT_ACCESS_TOKEN 三者齐全 +
     USER_ACCESS_TOKEN=""（置空强制 bot 身份），缺一不可。"""
-    env = {**os.environ,
-           "LARKSUITE_CLI_NO_UPDATE_NOTIFIER": "1",
-           "LARKSUITE_CLI_NO_SKILLS_NOTIFIER": "1"}
+    env = {
+        **os.environ,
+        "LARKSUITE_CLI_NO_UPDATE_NOTIFIER": "1",
+        "LARKSUITE_CLI_NO_SKILLS_NOTIFIER": "1",
+    }
     creds = _load_bot_creds()
     if creds:
         tat, app_id, app_secret = creds
         env["LARKSUITE_CLI_APP_ID"] = app_id
         env["LARKSUITE_CLI_APP_SECRET"] = app_secret
         env["LARKSUITE_CLI_TENANT_ACCESS_TOKEN"] = tat
-        env["LARKSUITE_CLI_USER_ACCESS_TOKEN"] = ""   # 强制 bot 身份
+        env["LARKSUITE_CLI_USER_ACCESS_TOKEN"] = ""  # 强制 bot 身份
     return env
 
 
-def lark_cli_json(args: list[str], *, timeout: int = 20, kind: str = "api",
-                  retries: int = 1) -> dict:
+def lark_cli_json(
+    args: list[str], *, timeout: int = 20, kind: str = "api", retries: int = 1
+) -> dict:
     """调 lark-cli 并解析 stdout JSON（lark-cli 统一信封：成功 {"ok": true}）。
 
     信封 ok!=true 或进程失败 → 抛 RuntimeError（调用方自行决定重试策略）。
@@ -470,12 +524,20 @@ def lark_cli_json(args: list[str], *, timeout: int = 20, kind: str = "api",
     last_err = ""
     for i in range(max(1, retries)):
         result = subprocess.run(
-            [lark_cli_bin(), *args], capture_output=True, text=True,
-            encoding="utf-8", errors="replace", env=lark_env(), timeout=timeout)
+            [lark_cli_bin(), *args],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            env=lark_env(),
+            timeout=timeout,
+        )
         if result.returncode != 0:
             # K-STOCK-401：150 恰切在 lark-cli 信封 error.message 之前，
             # 诊断信息全丢（17 天故障期根因排查被阻）；放宽到 300
-            last_err = f"lark-cli 退出码 {result.returncode}: {result.stderr.strip()[:300]}"
+            last_err = (
+                f"lark-cli 退出码 {result.returncode}: {result.stderr.strip()[:300]}"
+            )
         else:
             try:
                 payload = json.loads(result.stdout)

@@ -17,6 +17,7 @@ ps1 侧（stub 加载模式，供 Invoke-Expression；本仓库 jev-gate.env.ps1
   · 解密失败只报键名与异常类型，不打印值
   · 进程内缓存：同一进程重复 get_secret 只解密一次
 """
+
 import base64
 import ctypes
 import json
@@ -27,12 +28,11 @@ from ctypes import wintypes
 HERE = os.path.dirname(os.path.abspath(__file__))
 ENC_FILE = os.path.join(HERE, "jev-gate.env.enc")
 
-_CACHE = None          # {键: 值}，首次访问解密后缓存
+_CACHE = None  # {键: 值}，首次访问解密后缓存
 
 
 class _Blob(ctypes.Structure):
-    _fields_ = [("cbData", wintypes.DWORD),
-                ("pbData", ctypes.c_void_p)]
+    _fields_ = [("cbData", wintypes.DWORD), ("pbData", ctypes.c_void_p)]
 
 
 def _unprotect(blob: bytes) -> bytes:
@@ -41,16 +41,19 @@ def _unprotect(blob: bytes) -> bytes:
     fout = _Blob()
     # 判例（2026-10-16 新机）：计划任务 S4U 登录不加载用户 profile，
     # CurrentUser 作用域（0x1）必然解不开 → .enc 改由 LocalMachine 作用域
-    #（0x4）重加密后，非交互任务也能解。双作用域依次尝试保持向后兼容。
+    # （0x4）重加密后，非交互任务也能解。双作用域依次尝试保持向后兼容。
     ok = 0
     for flags in (0x1, 0x5):  # UI_FORBIDDEN / UI_FORBIDDEN|LOCAL_MACHINE
         ok = ctypes.windll.crypt32.CryptUnprotectData(
-            ctypes.byref(fin), None, None, None, None, flags, ctypes.byref(fout))
+            ctypes.byref(fin), None, None, None, None, flags, ctypes.byref(fout)
+        )
         if ok:
             break
     if not ok:
-        raise OSError("CryptUnprotectData 失败 err=%d（CurrentUser/LocalMachine "
-                      "两作用域均不可解）" % ctypes.GetLastError())
+        raise OSError(
+            "CryptUnprotectData 失败 err=%d（CurrentUser/LocalMachine "
+            "两作用域均不可解）" % ctypes.GetLastError()
+        )
     try:
         return ctypes.string_at(fout.pbData, fout.cbData)
     finally:
@@ -66,8 +69,9 @@ def load_all():
         raise FileNotFoundError("未找到 %s（迁移未执行？回退明文）" % ENC_FILE)
     with open(ENC_FILE, encoding="utf-8") as f:
         enc = json.load(f)
-    _CACHE = {k: _unprotect(base64.b64decode(b64)).decode("utf-8")
-              for k, b64 in enc.items()}
+    _CACHE = {
+        k: _unprotect(base64.b64decode(b64)).decode("utf-8") for k, b64 in enc.items()
+    }
     return _CACHE
 
 
@@ -80,13 +84,12 @@ def get_secret(key: str) -> str:
     try:
         return load_all().get(key, "")
     except Exception as e:
-        sys.stderr.write("load_env_dpapi: 取 %s 失败: %s\n"
-                         % (key, type(e).__name__))
+        sys.stderr.write("load_env_dpapi: 取 %s 失败: %s\n" % (key, type(e).__name__))
         return ""
 
 
 def main():
-    sys.stdout.reconfigure(encoding="utf-8")   # 对齐 stub 的 UTF8 管道约定
+    sys.stdout.reconfigure(encoding="utf-8")  # 对齐 stub 的 UTF8 管道约定
     if "--ps1" in sys.argv:
         vals = load_all()
         for k, v in vals.items():
