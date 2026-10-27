@@ -11,6 +11,7 @@
 | `k_stock/tests` | 791 passed / **2 既存失败** | `test_report_builder::test_no_external_sdk_imported`、`test_riskguard_topics::test_markdown_renders_conclusion_and_groups`（master 同败） |
 | `agent_platform/tests` | 历史 1,833 passed / 10 failed（8 环境/顺序、2 flaky） | 全量较慢；ENVTEST 已修 6 个环境依赖 |
 | `quant_backtest/tests` | **2,379 collected / 0 collection error** | 全量 >20 分钟，建议夜间窗口 |
+| `tests/e2e` | **13 passed**（2026-10-27） | 冒烟 E2E（服务/工具/mock 回执/失败路径）；依赖 8091/8734/8796/bot 存活，已入夜跑默认套件 |
 | 全量（带 per-test timeout） | 2,095 passed / 1 xfailed / 0 failed（298.9s，2026-10-27 实测） | 裸跑可能因外部子进程挂起；见 §四 |
 
 ## 二、常用命令
@@ -21,6 +22,8 @@ python -m pytest portal/test_m_links.py -q -p no:cacheprovider
 python -m pytest k_stock/tests -q --timeout=120 -p no:cacheprovider
 python -m pytest agent_platform/tests -q --timeout=120 -p no:cacheprovider
 python -m pytest quant_backtest/tests --collect-only -q -p no:cacheprovider   # 收集自检
+python -m pytest tests/e2e -q --timeout=120 -p no:cacheprovider                # E2E 冒烟（需服务在线）
+python -X utf8 tools/e2e_run.py                                                # 带 artifact 跑 E2E
 ```
 
 ## 三、失败分类口径（不许糊）
