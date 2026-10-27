@@ -311,7 +311,8 @@ def _gitleaks_warn_gate(branch, worktree=""):
         return
     base = Path(worktree) if worktree else Path(REPO)
     try:
-        r = subprocess.run([sys.executable, str(script), "--path", str(base), "--json"],
+        r = subprocess.run([sys.executable, str(script), "--diff", "master...%s" % branch,
+                            "--worktree", str(base), "--json"],
                            capture_output=True, text=True, encoding="utf-8",
                            errors="replace", env=GUARD_ENV, timeout=600)
     except Exception as e:  # noqa: BLE001 - 告警门不得阻断合并

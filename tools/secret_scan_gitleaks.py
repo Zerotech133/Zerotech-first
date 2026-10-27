@@ -39,6 +39,26 @@ def find_gitleaks() -> str | None:
     return None
 
 
+def _materialize_diff(diff_spec: str, base: Path) -> Path | None:
+    """把 master...branch 的变更文件复制到临时目录（保留相对路径），返回扫描根。"""
+    import shutil
+    import tempfile
+    r = subprocess.run(["git", "-C", str(base), "diff", "--name-only", diff_spec],
+                       capture_output=True, text=True, encoding="utf-8", errors="replace")
+    rels = [x.strip() for x in (r.stdout or "").splitlines() if x.strip()]
+    if not rels:
+        return None
+    out = Path(tempfile.mkdtemp(prefix="gitleaks_diff_"))
+    for rel in rels:
+        src = base / rel
+        if not src.is_file():
+            continue
+        dst = out / rel
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dst)
+    return out
+
+
 def scan(path: Path, report: Path) -> tuple[int, int, list[dict]]:
     exe = find_gitleaks()
     if not exe:
@@ -61,10 +81,20 @@ def scan(path: Path, report: Path) -> tuple[int, int, list[dict]]:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="gitleaks 包装器（第二道凭据扫描）")
     ap.add_argument("--path", default=str(REPO))
+    ap.add_argument("--diff", default="", help="只扫分支变更文件：master...<branch>")
+    ap.add_argument("--worktree", default="", help="diff 模式的文件根（worktree 路径）")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--quiet", action="store_true")
     args = ap.parse_args(argv)
-    rc, n, findings = scan(Path(args.path), REPORT)
+    target = Path(args.path)
+    if args.diff:
+        target = _materialize_diff(args.diff, Path(args.worktree) if args.worktree else Path(REPO))
+        if target is None:
+            if args.json:
+                print(json.dumps({"tool": "secret_scan_gitleaks", "code": 0, "findings": 0,
+                                  "mode": "diff", "note": "no_changed_files"}, ensure_ascii=False))
+            return 0
+    rc, n, findings = scan(target, REPORT)
     if args.json:
         print(json.dumps({
             "tool": "secret_scan_gitleaks",
