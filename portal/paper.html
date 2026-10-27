@@ -153,7 +153,33 @@ body{background:radial-gradient(ellipse at 78% -12%,var(--os-glow) 0%,transparen
   .spin{display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,.4); border-top-color:var(--os-white); border-radius:50%; animation:r .7s linear infinite; vertical-align:-2px; margin-right:6px;}
   @keyframes r{to{transform:rotate(360deg);}}
 </style>
-<link href="/static/paper_workbench.css" rel="stylesheet"/><style id="paper-cleanup-utilities">
+<link href="/static/paper_workbench.css" rel="stylesheet"/>
+<style id="pjs-utilities">
+/* pjs-*：/paper 动态 JS 模板静态样式收口（数据驱动样式仍保留在模板内） */
+.pjs-dim{color:var(--text-dim)!important}
+.pjs-link{color:var(--link)!important}
+.pjs-105{font-size:10.5px!important}
+.pjs-11{font-size:11px!important}
+.pjs-115{font-size:11.5px!important}
+.pjs-12{font-size:12px!important}
+.pjs-125{font-size:12.5px!important}
+.pjs-13{font-size:13px!important}
+.pjs-14{font-size:14px!important}
+.pjs-bold{font-weight:700!important}
+.pjs-normal{font-weight:400!important}
+.pjs-ra{text-align:right!important}
+.pjs-la{text-align:left!important}
+.pjs-pad48{padding:4px 8px!important}
+.pjs-block{display:block!important}
+.pjs-mb3{margin-bottom:3px!important}
+.pjs-mb4{margin-bottom:4px!important}
+.pjs-mt4{margin-top:4px!important}
+.pjs-mt8{margin-top:8px!important}
+.pjs-mt10{margin-top:10px!important}
+.pjs-mt12{margin-top:12px!important}
+.pjs-pointer{cursor:pointer!important}
+.pjs-lh18{line-height:1.8!important}
+</style><style id="paper-cleanup-utilities">
 /* paper_cleanup_utilities（静态展示样式收口；动态业务样式仍在 JS 内） */
 .pw-link{color:var(--pw-cyan)!important}
 .pw-dim{color:var(--pw-muted)!important}
@@ -608,13 +634,13 @@ function renderPlanReview(r,pf){
     `<tr><td><a href="/kg/stock/${esc(x.stock)}">${esc(x.stock)}</a></td>`+
     `<td style="font-size:11.5px;color:${PLAN_RC_COLOR[x.reason_code]||'var(--text-dim)'}">${esc(x.reason_code||'-')}</td></tr>`).join('');
   const prov=r.provider?` · ${esc(r.provider)}`:'';
-  const deg=(!r.parsed)?`<details style="margin-top:4px"><summary style="cursor:pointer;font-size:11px;color:var(--pw-amber)">⚠ 审查输出未按 JSON 解析（原文留痕）</summary><div style="font-size:11.5px;color:var(--text-dim);white-space:pre-wrap;margin-top:4px">${esc(r.body||'').slice(0,600)}</div></details>`:'';
+  const deg=(!r.parsed)?`<details class="pjs-mt4"><summary style="cursor:pointer;font-size:11px;color:var(--pw-amber)">⚠ 审查输出未按 JSON 解析（原文留痕）</summary><div style="font-size:11.5px;color:var(--text-dim);white-space:pre-wrap;margin-top:4px">${esc(r.body||'').slice(0,600)}</div></details>`:'';
   el.innerHTML=
     (r.summary?`<div style="font-size:12.5px;margin-bottom:8px">📋 ${esc(r.summary)}</div>`:'')+
-    (ap?`<table class="mini-table"><tr style="color:var(--text-dim)"><td>批准买入</td><td>理由</td><td>建议仓位</td></tr>${ap}</table>`
+    (ap?`<table class="mini-table"><tr class="pjs-dim"><td>批准买入</td><td>理由</td><td>建议仓位</td></tr>${ap}</table>`
        :'<div class="empty">今日无批准买入</div>')+
-    (rj?`<details style="margin-top:8px"><summary style="cursor:pointer;font-size:11.5px;color:var(--text-dim)">驳回清单（${(r.rejected||[]).length} 只，点击展开）</summary>
-        <table class="mini-table" style="margin-top:4px">${rj}</table></details>`:'')+
+    (rj?`<details class="pjs-mt8"><summary style="cursor:pointer;font-size:11.5px;color:var(--text-dim)">驳回清单（${(r.rejected||[]).length} 只，点击展开）</summary>
+        <table class="mini-table pjs-mt4">${rj}</table></details>`:'')+
     `<div style="font-size:10.5px;color:var(--text-dim);margin-top:6px">审批单 ${esc(r.generated_at||'')}${prov}${deg}</div>`;
 }
 async function loadPlanReview(){
@@ -662,7 +688,7 @@ function renderMeeting(m){
   const mgr=m.manager||{}, dis=m.disagreements||[], items=m.action_items||[];
   const narr=m.minutes_narrative?`<div style="font-size:11.5px;margin-bottom:6px">🗣 ${esc(m.minutes_narrative).slice(0,180)}</div>`:'';
   const dd=dis.length?`<div style="font-size:11.5px;color:var(--pw-amber);margin-bottom:6px">⚖ 分歧 ${dis.length}：${esc(dis[0].on)}…</div>`:'';
-  const ai=items.length?`<div style="font-size:11.5px;color:var(--text-dim)">待办：${esc(items[0]).slice(0,60)}${items.length>1?` 等 ${items.length} 项`:''}</div>`:'';
+  const ai=items.length?`<div class="pjs-dim pjs-115">待办：${esc(items[0]).slice(0,60)}${items.length>1?` 等 ${items.length} 项`:''}</div>`:'';
   el.innerHTML=`<div style="font-weight:700;margin-bottom:6px">${esc(m.date)} · ${mgr.score??'-'} 分 ${mgr.grade??''}</div>${narr}${dd}${ai}
     <div style="font-size:10.5px;color:var(--text-dim);margin-top:6px">纪要已推飞书 · 点按钮可查持仓线位</div>`;
 }
@@ -674,19 +700,19 @@ function renderPortfoliosMulti(ps){
   if(!pfs||!pfs.length){host.style.display='none';return;}   // 静默退回现状
   host.style.display='block';
   host.innerHTML=pfs.map((pf,i)=>{
-    const chips=(pf.strategies||[]).map(s=>`<a href="/market-strategy" style="display:inline-block;border:1px solid var(--border);border-radius:10px;padding:1px 8px;margin:0 4px 4px 0;font-size:11px;text-decoration:none;color:var(--text)">${esc(s)}</a>`).join('')||'<span style="font-size:11px;color:var(--text-dim)">未订阅策略</span>';
+    const chips=(pf.strategies||[]).map(s=>`<a href="/market-strategy" style="display:inline-block;border:1px solid var(--border);border-radius:10px;padding:1px 8px;margin:0 4px 4px 0;font-size:11px;text-decoration:none;color:var(--text)">${esc(s)}</a>`).join('')||'<span class="pjs-dim pjs-11">未订阅策略</span>';
     const eqTotal=(pf.equity&&pf.equity.total!=null)?'¥'+Number(pf.equity.total).toLocaleString():'-';
-    const eqDate=(pf.equity&&pf.equity.date)?`<div style="font-size:10.5px;color:var(--text-dim)">净值快照 ${esc(pf.equity.date)}</div>`:'';
+    const eqDate=(pf.equity&&pf.equity.date)?`<div class="pjs-dim pjs-105">净值快照 ${esc(pf.equity.date)}</div>`:'';
     const pendCnt=(pf.pending||[]).length,posCnt=(pf.positions||[]).length;
-    const traders=(pf.traders||[]).map(t=>`<div>🤖 AI 交易员在岗：<b>${esc(t)}</b></div>`).join('')||'<div style="font-size:11px;color:var(--text-dim)">未聘交易员（可去<a href="/market-strategy">策略市场</a>订阅后一键聘用）</div>';
-    const pend=(pf.pending||[]).slice(0,6).map(p=>`<div>🎯 ${esc(p.side)} <a href="/kg/stock/${esc(p.stock)}">${esc(p.stock)}</a> ×${p.qty}（${esc(p.plan_date||'')}）</div>`).join('')||'<div style="font-size:11px;color:var(--text-dim)">无挂单</div>';
-    const poss=(pf.positions||[]).slice(0,8).map(p=>`<div>📦 <a href="/kg/stock/${esc(p.stock)}">${esc(p.stock)}</a> ${p.qty} 股 @${p.avg_cost!=null?Number(p.avg_cost).toFixed(2):'-'}</div>`).join('')||'<div style="font-size:11px;color:var(--text-dim)">无持仓</div>';
+    const traders=(pf.traders||[]).map(t=>`<div>🤖 AI 交易员在岗：<b>${esc(t)}</b></div>`).join('')||'<div class="pjs-dim pjs-11">未聘交易员（可去<a href="/market-strategy">策略市场</a>订阅后一键聘用）</div>';
+    const pend=(pf.pending||[]).slice(0,6).map(p=>`<div>🎯 ${esc(p.side)} <a href="/kg/stock/${esc(p.stock)}">${esc(p.stock)}</a> ×${p.qty}（${esc(p.plan_date||'')}）</div>`).join('')||'<div class="pjs-dim pjs-11">无挂单</div>';
+    const poss=(pf.positions||[]).slice(0,8).map(p=>`<div>📦 <a href="/kg/stock/${esc(p.stock)}">${esc(p.stock)}</a> ${p.qty} 股 @${p.avg_cost!=null?Number(p.avg_cost).toFixed(2):'-'}</div>`).join('')||'<div class="pjs-dim pjs-11">无持仓</div>';
     return `<div style="margin-bottom:8px;padding:8px;border:1px solid var(--border);border-radius:10px">
-      <div style="cursor:pointer" onclick="pfMultiToggle('pf-multi-detail-${i}')">
-        <div style="font-weight:700">${esc(pf.name||pf.id||'-')} <span style="font-size:10.5px;color:var(--text-dim);font-weight:400">${esc(pf.id||'')}</span> ▾</div>
+      <div class="pjs-pointer" onclick="pfMultiToggle('pf-multi-detail-${i}')">
+        <div class="pjs-bold">${esc(pf.name||pf.id||'-')} <span style="font-size:10.5px;color:var(--text-dim);font-weight:400">${esc(pf.id||'')}</span> ▾</div>
         <div style="font-size:11.5px;color:var(--text-dim);margin:2px 0">${pf.trader?('👤 '+esc(pf.trader)):''}${pf.note?(' · '+esc(pf.note)):''}</div>
         <div style="font-size:12.5px">权益合计 <b>${eqTotal}</b> · 待成交 <b>${pendCnt}</b> 笔 · 持仓 <b>${posCnt}</b> 只</div>
-        <div style="margin-top:4px">${chips}</div>
+        <div class="pjs-mt4">${chips}</div>
         ${eqDate}
         <div style="font-size:10px;color:var(--link);margin-top:2px">点击展开/收起明细</div>
       </div>
@@ -710,10 +736,10 @@ function renderJudge(jd){
   const gc=s=>s>=90?'var(--color-up)':s>=75?'var(--pw-amber)':'var(--color-dn)';
   el.innerHTML=jd.reviews.map(r=>{
     const f=(r.findings||[]).filter(x=>x.severity!=='info').slice(0,3).map(x=>
-      `<div style="font-size:11.5px;color:var(--text-dim)">· [${esc(x.rule)}] ${esc(x.msg)}</div>`).join('');
+      `<div class="pjs-dim pjs-115">· [${esc(x.rule)}] ${esc(x.msg)}</div>`).join('');
     return `<div style="margin-bottom:8px">
-      <div style="font-weight:700">${esc(r.date)} · <span style="color:${gc(r.score)}">${r.score} 分 ${esc(r.grade)}</span></div>
-      ${f||'<div style="font-size:11.5px;color:var(--text-dim)">· 无风险项</div>'}</div>`;
+      <div class="pjs-bold">${esc(r.date)} · <span style="color:${gc(r.score)}">${r.score} 分 ${esc(r.grade)}</span></div>
+      ${f||'<div class="pjs-dim pjs-115">· 无风险项</div>'}</div>`;
   }).join('');
 }
 function renderStrat(st){
@@ -723,8 +749,8 @@ function renderStrat(st){
   const gc=s=>s>=85?'var(--color-up)':s>=70?'var(--pw-amber)':'var(--color-dn)';
   const head=`<div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">快照 ${st.generated_at||'-'} · 影子模式仅建议，不产生调度效果</div>`;
   el.innerHTML=head+st.sources.map(s=>
-    `<div style="margin-bottom:6px"><div style="font-weight:700">${esc(s.name)} · <span style="color:${gc(s.score)}">${s.score} ${esc(s.grade)}</span></div>
-     <div style="font-size:11.5px;color:var(--text-dim)">${esc(s.suggestion||'')}</div></div>`).join('');
+    `<div style="margin-bottom:6px"><div class="pjs-bold">${esc(s.name)} · <span style="color:${gc(s.score)}">${s.score} ${esc(s.grade)}</span></div>
+     <div class="pjs-dim pjs-115">${esc(s.suggestion||'')}</div></div>`).join('');
 }
   renderRecent(j.recent_orders);renderPos(j.positions);
   const sel=$('hist-day');const cur=sel.value;
@@ -739,7 +765,7 @@ function renderCurve(curve, hostId, cur){
   hostId=hostId||'nav-curve';cur=cur||'¥';
   const host=$(hostId);if(!host)return;
   if(!curve||curve.length<2){
-    host.innerHTML='<div class="flow-note" style="margin:10px 0 0">净值曲线自第 2 个交易日快照起绘制（当前 '+
+    host.innerHTML='<div class="flow-note pjs-mt10">净值曲线自第 2 个交易日快照起绘制（当前 '+
       (curve?curve.length:0)+' 个快照点 · 每日 mark 自动积累）</div>';return;}
   const W=860,H=200,P=46;
   const vals=curve.map(c=>c.total),lo=Math.min(...vals),hi=Math.max(...vals);
@@ -767,7 +793,7 @@ function renderUs(us){
   if(!us||!us.ok||!us.accounts||!us.accounts.length){host.innerHTML='';return;}
   host.innerHTML=us.accounts.map(a=>{
     const L=a.latest;
-    if(!L)return `<div class="flow-note" style="margin:12px 0 0">💵 ${a.account_id}（US 独立账本 · USD 原币）：已开户，待首笔成交积累快照</div>`;
+    if(!L)return `<div class="flow-note pjs-mt12">💵 ${a.account_id}（US 独立账本 · USD 原币）：已开户，待首笔成交积累快照</div>`;
     const pos=a.positions.map(p=>
       `<tr><td><a href="/kg/stock/${esc(p.stock)}">${esc(p.stock)}</a></td><td>${p.qty}</td><td>${fmt(p.avg_cost)}</td><td>${fmt(p.last)}</td>`+
       `<td class="${cls(p.pnl)}">${fmt(p.pnl)}</td><td>${(p.strategy||'')}</td></tr>`).join('');
@@ -783,7 +809,7 @@ function renderUs(us){
       `累计 <span class="${cls(L.cum_pct)}">${pct(L.cum_pct)}</span></div>`+
       `<div id="us-curve-${a.account_id}"></div>`+
       (pos?`<table style="width:100%;font-size:12.5px;border-collapse:collapse;margin-top:6px">`+
-        `<tr style="color:var(--text-dim)"><td>标的</td><td>数量</td><td>成本</td><td>现价</td><td>盈亏</td><td>策略</td></tr>${pos}</table>`:'')+
+        `<tr class="pjs-dim"><td>标的</td><td>数量</td><td>成本</td><td>现价</td><td>盈亏</td><td>策略</td></tr>${pos}</table>`:'')+
       (pend?`<div style="font-size:12.5px;margin-top:6px">${pend}</div>`:'')+
       (stp?`<div style="font-size:12.5px;margin-top:6px">${stp}</div>`:'')+
       `</div>`;
@@ -825,7 +851,7 @@ function renderStops(stops){
       `<tr><td><b><a href="/kg/stock/${s.stock}">${s.stock}</a></b></td><td>止损 ${s.stop_price}</td>`+
       `<td class="dist ${s.distance_pct<0?'down':''}">${s.distance_pct!=null?pct(s.distance_pct):'-'}</td>`+
       `<td><button class="btn btn-sm btn-gray" onclick="clearStop('${s.stock}')">解除</button></td></tr>`).join('')+'</table>'+
-    '<div class="flow-note" style="margin-top:8px">收盘 &lt; 止损价 → 次日开盘清仓（ref 幂等）。</div>'
+    '<div class="flow-note pjs-mt8">收盘 &lt; 止损价 → 次日开盘清仓（ref 幂等）。</div>'
     :'<div class="empty">无已设止损 · 在持仓页可挂</div>';
 }
 function renderPend(ps){
@@ -875,14 +901,14 @@ function renderPricing(mk){
     if(p.priority_scheduling)ex.push('盘中实时评审');
     if(p.human_review_channel)ex.push('人工复核通道');
     return '<tr>'
-      +`<td style="text-align:left"><b>${k}</b> ${esc(t.label||'')}</td>`
+      +`<td class="pjs-la"><b>${k}</b> ${esc(t.label||'')}</td>`
       +`<td>${t.years!=null?t.years+' 年':'-'}</td>`
       +`<td>${t.price_note?esc(t.price_note):('¥'+t.price_month)}</td>`
       +`<td>${esc((t.llm_binding||'').split('/').pop()||'-')}</td>`
       +`<td>${p.stop_dist_pct!=null?(p.stop_dist_pct*100).toFixed(0)+'%':'-'}</td>`
       +`<td>${p.max_daily_orders!=null?p.max_daily_orders:'-'}</td>`
       +`<td>${p.max_pos_pct!=null?(p.max_pos_pct*100).toFixed(0)+'%':'-'}</td>`
-      +`<td style="text-align:left">${ex.length?ex.join(' · '):'—'}</td>`
+      +`<td class="pjs-la">${ex.length?ex.join(' · '):'—'}</td>`
       +'</tr>';
   }).join('');
 }
@@ -935,8 +961,8 @@ function renderAgents(j, board){
     let guide='';
     if(c.id&&r){
       guide = r.status==='live'
-        ? '<div style="font-size:11.5px;color:var(--text-dim);margin-top:6px">🟢 已上岗 '+(r.days||0)+' 天——<a href="#" onclick="gotoTab(\'pos\');return false" style="color:var(--link)">持仓</a> / <a href="#" onclick="gotoTab(\'hist\');return false" style="color:var(--link)">历史</a> 页签随时查看战绩明细</div>'
-        : '<div style="font-size:11.5px;color:var(--text-dim);margin-top:6px">🎓 实习中 · 雇佣动线：<a href="/market-strategy" style="color:var(--link)">策略市场</a>订阅策略 → 迎宾向导完成上岗 → 实仓后战绩逐日留痕</div>';
+        ? '<div style="font-size:11.5px;color:var(--text-dim);margin-top:6px">🟢 已上岗 '+(r.days||0)+' 天——<a class="pjs-link" href="#" onclick="gotoTab(\'pos\');return false">持仓</a> / <a class="pjs-link" href="#" onclick="gotoTab(\'hist\');return false">历史</a> 页签随时查看战绩明细</div>'
+        : '<div style="font-size:11.5px;color:var(--text-dim);margin-top:6px">🎓 实习中 · 雇佣动线：<a class="pjs-link" href="/market-strategy">策略市场</a>订阅策略 → 迎宾向导完成上岗 → 实仓后战绩逐日留痕</div>';
     }
     return `<div class="agent-card ${cardCls}"><div class="nm">${c.icon} ${c.nm} ${st}${(c.id&&r&&r.grade)?' <span class="badge">'+esc(r.grade)+'</span>':''}${tchip}</div><div class="role">${c.role}</div><div class="agent-stats">${stats}</div>${guide}</div>`;
   }).join('');
@@ -970,7 +996,7 @@ async function fillComboSelectors(){
       const cands=sm.strategies.filter(s=>s.status==='live'||s.status==='shadow');
       box.innerHTML=cands.map(s=>`<label style="font-size:11.5px;border:1px solid var(--border);border-radius:999px;padding:2px 8px;cursor:pointer;user-select:none">`
         +`<input type="checkbox" class="cbt-ana" value="${esc(s.id)}" style="vertical-align:-2px;margin:0 2px 0 0"> ${esc(s.name)}`
-        +`${s.status==='shadow'?' <span style="color:var(--text-dim)">影子</span>':''}</label>`).join('');
+        +`${s.status==='shadow'?' <span class="pjs-dim">影子</span>':''}</label>`).join('');
     }
     const ms=$('cbt-manager'), ts=$('cbt-trader');
     if(!ms||!ts)return;
@@ -1004,7 +1030,7 @@ function _cbtAddMonths(dstr,m){
 }
 let _cbtJobId=null, _cbtTimer=null;
 function _cbtBarHtml(){
-  return '<div id="cbt-progress" style="margin-top:10px">'
+  return '<div class="pjs-mt10" id="cbt-progress">'
     +'<div style="display:flex;align-items:center;gap:8px">'
     +'<div style="flex:1;height:8px;border:1px solid var(--border);border-radius:999px;overflow:hidden;background:var(--bg)">'
     +'<div id="cbt-bar" style="height:100%;width:2%;background:linear-gradient(90deg,var(--pw-cyan),var(--pw-green));transition:width .5s"></div></div>'
@@ -1046,7 +1072,7 @@ async function pollCbt(){
         +'<span>胜率 <b>'+esc(s.win_rate_pct)+'%</b></span>'
         +'<span>成交 <b>'+esc(s.n_trades)+'</b> 笔</span>'
         +'<span>平均仓位 <b>'+esc(s.avg_invested_pct)+'%</b></span></div>'
-        +'<div style="margin-top:4px"><a href="/bt2view" style="color:var(--link)">→ 去回测中心看逐日账本与逐笔明细（任务 <code>'+esc(_cbtJobId)+'</code>）</a></div>';
+        +'<div class="pjs-mt4"><a class="pjs-link" href="/bt2view">→ 去回测中心看逐日账本与逐笔明细（任务 <code>'+esc(_cbtJobId)+'</code>）</a></div>';
     }
   }else{ // dead
     _cbtStopPoll();
@@ -1126,10 +1152,10 @@ async function loadManagers(){
         `<div><div class="k">状态</div><div class="v">${esc(m.status||'-')}</div></div>`+
         `<div><div class="k">在雇源</div><div class="v">${act.length?act.map(h=>esc(h.source)).join('、'):'无'}</div></div></div>`+
         `<div style="font-size:12px;margin-top:8px"><b>擅长：</b>${(m.capabilities||[]).map(esc).join('、')||'-'}</div>`+
-        `<div style="font-size:12px;color:var(--text-dim)"><b>边界：</b>${(m.boundaries||[]).map(esc).join('；')||'-'}</div>`+
-        `<details style="margin-top:8px;font-size:12px"><summary style="cursor:pointer">职责提示词（role_prompt）</summary>`+
+        `<div class="pjs-dim pjs-12"><b>边界：</b>${(m.boundaries||[]).map(esc).join('；')||'-'}</div>`+
+        `<details style="margin-top:8px;font-size:12px"><summary class="pjs-pointer">职责提示词（role_prompt）</summary>`+
         `<div style="margin-top:6px;color:var(--text-dim);white-space:pre-wrap">${esc(m.role_prompt||'-')}</div></details>`+
-        `<div style="margin-top:10px">${hz}</div></div>`;
+        `<div class="pjs-mt10">${hz}</div></div>`;
     }).join('')||'<div class="empty">无经理档案</div>';
   }catch(e){g.innerHTML='<div class="empty">❌ '+e.message+'</div>';}
 }
@@ -1171,12 +1197,12 @@ function injectMinutes(){
     let el=card.querySelector('div[data-minutes]');
     if(!el){el=document.createElement('div');el.setAttribute('data-minutes','1');card.appendChild(el);}
     el.innerHTML=list.length?
-      '<details style="margin-top:8px;font-size:12px"><summary style="cursor:pointer">🗒️ 会议纪要（'+list.length+'）</summary>'+
+      '<details style="margin-top:8px;font-size:12px"><summary class="pjs-pointer">🗒️ 会议纪要（'+list.length+'）</summary>'+
       list.map(m=>
-        '<details style="margin:6px 0 0 10px"><summary style="cursor:pointer">'+
+        '<details style="margin:6px 0 0 10px"><summary class="pjs-pointer">'+
         '<span class="badge b-dk">'+esc(MINS_KIND_LABEL[m.kind]||m.kind||'纪要')+'</span> '+
         esc(m.title||'(无标题)')+
-        ' <span style="color:var(--text-dim)">'+esc(String(m.created_at||'').slice(0,16).replace('T',' '))+'</span></summary>'+
+        ' <span class="pjs-dim">'+esc(String(m.created_at||'').slice(0,16).replace('T',' '))+'</span></summary>'+
         '<div style="margin-top:6px;color:var(--text-dim);white-space:pre-wrap">'+esc(m.body||'')+'</div></details>'
       ).join('')+'</details>'
       :'<div style="margin-top:8px;font-size:12px;color:var(--text-dim)">🗒️ 暂无会议纪要</div>';
@@ -1337,33 +1363,33 @@ function obwRender(){
   const b=$('obw-body');
   if(OBW.step===1){
     b.innerHTML=OBW.strats.map(s=>
-      '<label style="display:block;margin-bottom:3px"><input type="checkbox" class="obw-strat" value="'+OB_ESC(s.id)+'"'
+      '<label class="pjs-block pjs-mb3"><input type="checkbox" class="obw-strat" value="'+OB_ESC(s.id)+'"'
       +(OBW.sel.includes(s.id)?' checked':'')+'> '+OB_ESC(s.name||s.id)
-      +(s.tagline?(' <span style="color:var(--text-dim)">'+OB_ESC(s.tagline)+'</span>'):'')+'</label>').join('');
+      +(s.tagline?(' <span class="pjs-dim">'+OB_ESC(s.tagline)+'</span>'):'')+'</label>').join('');
   }else if(OBW.step===2){
     b.innerHTML=[['manual','自己手动交易'],['auto','聘请机器人自动交易']].map(([v,t])=>
-      '<label style="display:block;margin-bottom:3px"><input type="radio" name="obw-mode" value="'+v+'"'
+      '<label class="pjs-block pjs-mb3"><input type="radio" name="obw-mode" value="'+v+'"'
       +(OBW.mode===v?' checked':'')+'> '+t+'</label>').join('');
   }else if(OBW.step===3){
-    let h='<label style="display:block;margin-bottom:3px"><input type="radio" name="obw-mgr" value="no"'
+    let h='<label class="pjs-block pjs-mb3"><input type="radio" name="obw-mgr" value="no"'
       +(!OBW.needMgr?' checked':'')+'> 不需要，谢谢</label>'
-      +'<label style="display:block;margin-bottom:3px"><input type="radio" name="obw-mgr" value="yes"'
+      +'<label class="pjs-block pjs-mb3"><input type="radio" name="obw-mgr" value="yes"'
       +(OBW.needMgr?' checked':'')+'> 需要请一位</label>';
     if(OBW.needMgr){
       h+='<div style="margin:6px 0 3px;color:var(--text-dim)">选资历档：</div>'
         +OBW.profiles.map(p=>
-          '<label style="display:block;margin-bottom:3px"><input type="radio" name="obw-tier" value="'+OB_ESC(p.id)+'"'
+          '<label class="pjs-block pjs-mb3"><input type="radio" name="obw-tier" value="'+OB_ESC(p.id)+'"'
           +(OBW.mgr===p.id?' checked':'')+'> '+OB_ESC(p.name||p.id)
           +(p.price!=null?('（¥'+p.price+'/月）'):'')+'</label>').join('');
     }
     b.innerHTML=h;
   }else if(OBW.step===4){
     b.innerHTML=[['yes','要，每天发我'],['no','不用了']].map(([v,t])=>
-      '<label style="display:block;margin-bottom:3px"><input type="radio" name="obw-post" value="'+v+'"'
+      '<label class="pjs-block pjs-mb3"><input type="radio" name="obw-post" value="'+v+'"'
       +((OBW.post?'yes':'no')===v?' checked':'')+'> '+t+'</label>').join('');
   }else if(OBW.step===5){
     b.innerHTML=[['yes','要，每天发我'],['no','不用了']].map(([v,t])=>
-      '<label style="display:block;margin-bottom:3px"><input type="radio" name="obw-pre" value="'+v+'"'
+      '<label class="pjs-block pjs-mb3"><input type="radio" name="obw-pre" value="'+v+'"'
       +((OBW.pre?'yes':'no')===v?' checked':'')+'> '+t+'</label>').join('');
   }else{
     b.innerHTML='<div style="border:1px solid var(--line,var(--pw-line));border-radius:6px;padding:8px;line-height:1.8">'+obwSummary()+'</div>';
@@ -1492,7 +1518,7 @@ async function loadStrategy12(){
         +'<div class="radio"></div>'
         +'<div class="head"><span class="icon">'+(m.icon||'📡')+'</span><span class="name">'+esc(m.name||sid)+'</span>'
         +'<span class="'+stCls((sid==='double_knife')?'live':'')+'">'+esc(m.statusLabel||'')+'</span></div>'
-        +'<div class="desc">'+esc(m.tagline||'')+(hasPanel(sid)?'':'<br><span style="color:var(--text-dim)">· 未接入账本，点击看接入指引</span>')+'</div>'
+        +'<div class="desc">'+esc(m.tagline||'')+(hasPanel(sid)?'':'<br><span class="pjs-dim">· 未接入账本，点击看接入指引</span>')+'</div>'
         +extra+'</div>';
     };
     const aiExtra='<div class="dyn" id="dyn-ai">最近产物：读取中…</div>'
@@ -1688,17 +1714,17 @@ function cmpRender(out,rows){
     const s=r.s||{}; const d=idx===0?'—':(function(){const v=Math.round(((s.total_return_pct||0)-(base.s.total_return_pct||0))*100)/100;return (v>=0?'+':'')+v+'pp';})();
     return '<tr><td style="padding:4px 8px">'+esc(r.name)+'</td>'
       +'<td style="padding:4px 8px;text-align:right;color:var(--text)"><b>'+fmt(s.total_return_pct,'%')+'</b></td>'
-      +'<td style="padding:4px 8px;text-align:right">'+d+'</td>'
-      +'<td style="padding:4px 8px;text-align:right">'+fmt(s.profit_factor,'')+'</td>'
-      +'<td style="padding:4px 8px;text-align:right">'+fmt(s.n_trades,'')+'</td>'
-      +'<td style="padding:4px 8px;text-align:right">'+fmt(s.max_drawdown_pct,'%')+'</td>'
-      +'<td style="padding:4px 8px;text-align:right">'+fmt(s.avg_invested_pct,'%')+'</td></tr>';
+      +'<td class="pjs-ra pjs-pad48">'+d+'</td>'
+      +'<td class="pjs-ra pjs-pad48">'+fmt(s.profit_factor,'')+'</td>'
+      +'<td class="pjs-ra pjs-pad48">'+fmt(s.n_trades,'')+'</td>'
+      +'<td class="pjs-ra pjs-pad48">'+fmt(s.max_drawdown_pct,'%')+'</td>'
+      +'<td class="pjs-ra pjs-pad48">'+fmt(s.avg_invested_pct,'%')+'</td></tr>';
   }).join('');
   const pr=$('cmp-prog');
   if(pr)pr.outerHTML='<div style="margin-top:10px;border-top:1px dashed var(--border);padding-top:8px;font-size:12.5px">'
     +'<b>⚖️ 对比结果</b>（基准＝第 1 条「'+esc(base.name)+'」，delta=收益差 pp）'
     +'<table style="width:100%;border-collapse:collapse;margin-top:6px;font-size:12px">'
-    +'<tr style="color:var(--text-dim)"><th style="text-align:left;padding:4px 8px">策略</th><th style="text-align:right;padding:4px 8px">收益%</th><th style="text-align:right;padding:4px 8px">delta</th><th style="text-align:right;padding:4px 8px">PF</th><th style="text-align:right;padding:4px 8px">笔数</th><th style="text-align:right;padding:4px 8px">回撤%</th><th style="text-align:right;padding:4px 8px">仓位%</th></tr>'
+    +'<tr class="pjs-dim"><th style="text-align:left;padding:4px 8px">策略</th><th class="pjs-ra pjs-pad48">收益%</th><th class="pjs-ra pjs-pad48">delta</th><th class="pjs-ra pjs-pad48">PF</th><th class="pjs-ra pjs-pad48">笔数</th><th class="pjs-ra pjs-pad48">回撤%</th><th class="pjs-ra pjs-pad48">仓位%</th></tr>'
     +lines+'</table></div>';
 }
 async function myDelBtn(){
@@ -1736,10 +1762,10 @@ async function nlParse(){
     const kv=Object.entries(_nlParams).map(([k,v])=>'<span class="ai-chip" style="cursor:default;display:inline-flex;align-items:center;gap:4px">'+esc(k)+' = '+field(k,v)+'</span>').join(' ');
     out.innerHTML='<div style="font-size:12px;margin-bottom:6px"><b>解析结果</b>（引擎：'+esc(j.engine||'规则')+'）——核对/直接改虚线值：</div>'
       +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">'+kv+'</div>'
-      +((j.notes||[]).map(n=>'<div style="font-size:11px;color:var(--text-dim)">· '+esc(n)+'</div>').join(''))
-      +'<div class="btn-row" style="margin-top:8px"><button class="btn btn-primary" onclick="nlRun()">⚡ 用这些参数跑回测</button>'
+      +((j.notes||[]).map(n=>'<div class="pjs-dim pjs-11">· '+esc(n)+'</div>').join(''))
+      +'<div class="btn-row pjs-mt8"><button class="btn btn-primary" onclick="nlRun()">⚡ 用这些参数跑回测</button>'
       +'<button class="btn" onclick="nlSave()">💾 保存为我的策略</button>'
-      +'<span style="font-size:11.5px;color:var(--text-dim)">参数可直接编辑（虚线处）——重跑/保存都以编辑后为准；保存后进策略卡墙「我的策略」组</span></div>';
+      +'<span class="pjs-dim pjs-115">参数可直接编辑（虚线处）——重跑/保存都以编辑后为准；保存后进策略卡墙「我的策略」组</span></div>';
   }catch(e){out.innerHTML='<div class="empty">'+esc(e.message||'解析失败')+'</div>';}
   finally{btn.disabled=false;}
 }
@@ -1792,7 +1818,7 @@ async function nlPoll(id){
         out.insertAdjacentHTML('beforeend','<div style="margin-top:8px;border-top:1px dashed var(--border);padding-top:8px;font-size:12.5px">'
           +'<b>✅ 回测完成</b>：收益 <b style="color:'+(s.total_return_pct>=0?'var(--color-up)':'var(--color-dn)')+'">'+esc(s.total_return_pct)+'%</b>'
           +' ｜ 回撤 '+esc(s.max_drawdown_pct)+'% ｜ PF '+esc(s.profit_factor)+' ｜ '+esc(s.n_trades)+' 笔'
-          +' ｜ <a href="/bt2view" style="color:var(--link)">看完整账本 →</a></div>');
+          +' ｜ <a class="pjs-link" href="/bt2view">看完整账本 →</a></div>');
         return;
       }
       if(j.status==='dead'||j.status==='fail'){
@@ -1831,13 +1857,13 @@ function mgrReport(pfs){
   box.innerHTML='<div style="font-size:13.5px;font-weight:700;margin-bottom:6px">🧑‍💼 值班经理 · 今日汇报</div>'
     +'<div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;line-height:1.7">您好，我是您的值班经理。您名下 <b>'+pfs.length+'</b> 个组合在管（'+OB_ESC(pfs.map(p=>p.name||p.id).join('、'))+'）。先给您过一遍我们的服务，再汇报今天两件事：</div>'
     +'<div style="border:1px solid var(--border);border-radius:8px;padding:9px 11px;margin-bottom:7px">'
-    +'<div style="font-size:12.5px;font-weight:700;margin-bottom:4px">📋 我们的服务 <span style="font-weight:400;color:var(--text-dim)">（免费 / 订阅分清 · 付费均为订阅制，已订的存于您的行囊，随订随退）</span></div>'
+    +'<div class="pjs-125 pjs-bold pjs-mb4">📋 我们的服务 <span class="pjs-dim pjs-normal">（免费 / 订阅分清 · 付费均为订阅制，已订的存于您的行囊，随订随退）</span></div>'
     +'<div id="svc-menu" style="font-size:12px;line-height:1.9;color:var(--text-dim)">读取中…</div></div>'
     +'<div style="border:1px solid var(--border);border-radius:8px;padding:9px 11px;margin-bottom:7px">'
-    +'<div style="font-size:12.5px;font-weight:700;margin-bottom:4px">📈 一、今日交易计划 <span style="font-weight:400;color:var(--text-dim)">（策略产物 · 完整审批单见下方「今天的事」）</span></div>'
+    +'<div class="pjs-125 pjs-bold pjs-mb4">📈 一、今日交易计划 <span class="pjs-dim pjs-normal">（策略产物 · 完整审批单见下方「今天的事」）</span></div>'
     +'<div id="mgr-plan" style="font-size:12px;line-height:1.8;color:var(--text-dim)">读取中…</div></div>'
     +'<div style="border:1px solid var(--border);border-radius:8px;padding:9px 11px">'
-    +'<div style="font-size:12.5px;font-weight:700;margin-bottom:4px">🗒️ 二、今日复盘与经理服务 <span style="font-weight:400;color:var(--text-dim)">（会议产物 · 纪要全文见下方「投研机制」折叠区）</span></div>'
+    +'<div class="pjs-125 pjs-bold pjs-mb4">🗒️ 二、今日复盘与经理服务 <span class="pjs-dim pjs-normal">（会议产物 · 纪要全文见下方「投研机制」折叠区）</span></div>'
     +'<div id="mgr-post" style="font-size:12px;line-height:1.8;color:var(--text-dim)">读取中…</div></div>';
   renderSvcMenu();
   api('/api/plan_review').then(r=>{
@@ -1907,12 +1933,12 @@ $('ob-box').addEventListener('change',e=>{
           +'<div style="color:var(--text-dim);font-size:11.5px;margin-top:4px">'+rows.map(r=>'· '+esc(r.account)+' '+Number(r.total).toLocaleString('zh-CN',{maximumFractionDigits:0})).join('<br>')+'</div>');
       });
     }
-    const tl=(j.timeline||[]).map(t=>'<div style="font-size:12px;line-height:1.8">· '+(t.ran_today?'✔':'○')+' '+esc(t.name)+' <span style="color:var(--text-dim)">'+esc(t.last||'无记录')+'</span></div>').join('');
+    const tl=(j.timeline||[]).map(t=>'<div class="pjs-12 pjs-lh18">· '+(t.ran_today?'✔':'○')+' '+esc(t.name)+' <span class="pjs-dim">'+esc(t.last||'无记录')+'</span></div>').join('');
     h+=card('🏭 公司在跑 · 今日自动化',tl||'—');
-    const cal=((j.calendar||{}).items||[]).map(i=>'<div style="font-size:12px;line-height:1.8">· <b>'+esc(i.day)+'</b>（'+(i.in_days===0?'今天':i.in_days+' 天后')+'）：'+esc(i.what)+'</div>').join('');
+    const cal=((j.calendar||{}).items||[]).map(i=>'<div class="pjs-12 pjs-lh18">· <b>'+esc(i.day)+'</b>（'+(i.in_days===0?'今天':i.in_days+' 天后')+'）：'+esc(i.what)+'</div>').join('');
     h+=card('📅 裁决窗',cal||'—');
     const o=j.org||{};
-    if(o.ok)h+=card('🏛 组织',(o.depts||[]).map(d=>'<div style="font-size:12px;line-height:1.8">· <b>'+esc(d.name)+'</b> ['+esc(d.status||'active')+']</div>').join(''));
+    if(o.ok)h+=card('🏛 组织',(o.depts||[]).map(d=>'<div class="pjs-12 pjs-lh18">· <b>'+esc(d.name)+'</b> ['+esc(d.status||'active')+']</div>').join(''));
     el.innerHTML=h;
   }catch(e){/* 静默：看板不阻塞交易页 */}
 })();
