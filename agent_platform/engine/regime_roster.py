@@ -60,7 +60,6 @@ def dk_snapshot(daily_df, profile: Optional[str] = None) -> Optional[Dict]:
     将其视为异常。
     """
     try:
-        import pandas as pd
         from quant_double_knife import _compute_regime, quant_double_knife
 
         if daily_df is None or len(daily_df) == 0:

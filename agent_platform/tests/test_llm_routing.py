@@ -297,7 +297,7 @@ def test_ollamallm_delegates_nova_prefix(monkeypatch):
 
 def test_ollamallm_keeps_slashed_local_names(monkeypatch):
     """huihui_ai/… 真名带斜杠的本地模型不得被误分发"""
-    llm = llm_mod.OllamaLLM()
+    llm_mod.OllamaLLM()
     prof = llm_mod.resolve_profile("huihui_ai/Qwen3.8-abliterated:latest")
     assert prof == llm_mod.DEFAULT_PROFILE  # 走默认档直连本地,不进 glm/nova 分支
 

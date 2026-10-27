@@ -50,7 +50,6 @@ ORDER BY d DESC LIMIT 10""", c=code)
     # news
     try:
         db_ = sqlite3.connect(ROOT / 'news_collector' / 'news.db')
-        name_hint = ''
         rows = db_.execute("SELECT substr(ts,1,10), substr(title,1,56) FROM news WHERE title LIKE ? ORDER BY ts DESC LIMIT 5",
                            (f'%{code}%',)).fetchall()
         out["news"] = [{"ts": a, "title": b} for a, b in rows]
@@ -65,7 +64,7 @@ def line2_kline(code: str) -> dict:
     mkt = 'SH' if code.startswith('6') else ('SZ' if code[0] in '03' else 'SH')
     df = pd.read_parquet(ROOT / f'quant_backtest/data/ashare/{code}_{mkt}.parquet').sort_values('trade_date')
     last = df.iloc[-1]
-    w20 = df.tail(20)
+    df.tail(20)
     w60 = df.tail(60)
     # 审美判据（可解释规则）
     v_ma20_now = df['volume'].tail(20).mean()
@@ -129,7 +128,7 @@ def funnel_corroborate(code: str) -> dict:
         d = str(e.get("date") or "")
         if d and d != "None":
             ev[d] = (e["title"] or "")[:40]
-    corroborated, refuted = [], []
+    corroborated, _refuted = [], []
     for rd in ops["hypothesis_runup"].get("runup_days", []):
         coupled = [t for d, t in ev.items() if rd < d <= str(int(rd) + 30)]  # 简化：数字序即时间序
         if coupled:

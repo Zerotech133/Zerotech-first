@@ -254,8 +254,8 @@ def build_report(root: Path, monday: date, sunday: date, iso_week: str) -> str:
     L.append(f"# 军团周报 {iso_week}（周窗 {w}）")
     L.append(f"> report_schema_version: {SCHEMA_VERSION} | 报告级三态: {hdr_state} | "
              f"生成时刻: {datetime.now().isoformat(sep=' ', timespec='seconds')}")
-    L.append(f"> 周窗口径：周一 08:00 出报，投影上周一~上周日（巡检段引用上周出件，非「本周」）；"
-             f"daily_review 为交易日口径，周末无账本日如实列缺")
+    L.append("> 周窗口径：周一 08:00 出报，投影上周一~上周日（巡检段引用上周出件，非「本周」）；"
+             "daily_review 为交易日口径，周末无账本日如实列缺")
     L.append(f"> {TRI_EXPLAIN}")
     if missing:
         L.append(f"> 缺日清单：{'、'.join(missing)}")

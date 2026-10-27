@@ -10,7 +10,6 @@
 （save→load 往返 + 不触真仓）；③原子替换语义保持。
 """
 import sys
-import tempfile
 from pathlib import Path
 
 AP = Path(__file__).resolve().parent.parent

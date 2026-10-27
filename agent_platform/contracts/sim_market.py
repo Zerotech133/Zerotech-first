@@ -12,7 +12,7 @@ import math
 from dataclasses import dataclass, field, fields
 from datetime import datetime
 from types import MappingProxyType
-from typing import Any, ClassVar, Dict, Mapping, Optional, Sequence, Tuple
+from typing import Any, ClassVar, Dict, Mapping, Optional, Sequence
 
 
 MODE = "SIM_MARKET"

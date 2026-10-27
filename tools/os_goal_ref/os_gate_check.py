@@ -273,7 +273,6 @@ def _walk(rep: Report, events: List[Dict[str, Any]]) -> None:
     selected_card: Optional[str] = None
     grant: Optional[Dict[str, Any]] = None
     workorder: Optional[Dict[str, Any]] = None
-    claimed = False
     claim_method: Optional[str] = None
     artifact: Optional[Dict[str, Any]] = None
     test_pass = False
@@ -282,13 +281,12 @@ def _walk(rep: Report, events: List[Dict[str, Any]]) -> None:
     prereq_blocked = False
     idem_keys: Dict[str, int] = {}
     g_evidence: Dict[str, List[int]] = {k: [] for k in rep.gates}
-    allowed_gate = False
 
     for ev in events:
         seq = ev.get("seq")
         etype = ev.get("type")
         payload = ev.get("payload") or {}
-        refs = ev.get("refs") or {}
+        ev.get("refs") or {}
         actor = ev.get("actor") or {}
         if isinstance(seq, int):
             ev_by_seq[seq] = ev
@@ -513,7 +511,6 @@ def _walk(rep: Report, events: List[Dict[str, Any]]) -> None:
                              "未核验权威前置却直接派工（seq=%s）" % seq, seq)
             g_evidence["G5"].append(seq)
         elif etype == "workorder.claimed":
-            claimed = True
             claim = payload.get("claim") or {}
             claim_method = claim.get("method")
             if not claim.get("consumer_id"):

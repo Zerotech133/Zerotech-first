@@ -22,8 +22,7 @@ from __future__ import annotations
 
 import argparse
 import re
-import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Iterable
 
 RULES_VERSION = "1.0"

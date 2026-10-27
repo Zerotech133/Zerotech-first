@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """adapters/credential_trace 交叉校验器单元测试（K-M1 审计补强）。"""
 
-import os
 import sys
 import unittest
 from pathlib import Path

@@ -39,8 +39,6 @@ from contracts.objects import Approval, Artifact, WorkItem, fact_hash_of  # noqa
 from engine.approvals import ApprovalStore  # noqa: E402
 from engine.artifacts import ArtifactStore  # noqa: E402
 from adapters.credential_trace import cross_check, verdict_for  # noqa: E402
-from engine.artifacts import ArtifactStore  # noqa: E402
-from adapters.credential_trace import cross_check, verdict_for  # noqa: E402
 
 SCHEMA_VERSION = "1.0"
 DOMAIN = "gzh"

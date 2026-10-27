@@ -26,7 +26,7 @@ import hashlib
 import json
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 _DOMAINS_DIR = Path(__file__).resolve().parent
 _AGENT_PLATFORM = _DOMAINS_DIR.parent

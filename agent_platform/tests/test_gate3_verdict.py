@@ -15,7 +15,6 @@
 5. **只读红线**：工具跑完不写任何文件（用 mtime + 目录快照断言）。
 """
 
-import importlib.util
 import json
 import subprocess
 import sys

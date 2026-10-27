@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import importlib.util
-import json
 import sys
 import tempfile
 import unittest
@@ -115,7 +114,6 @@ class SkillWiringTests(unittest.TestCase):
         self._add()
         self._to_reviewed()
         # 先落凭据（模拟崩溃前），再模拟真源回拨
-        from contracts.objects import Approval
         sw.approve(self.root, "fact-check", "approved", by="laotian",
                    store=self.store)
         skills = sw._load(self.root)

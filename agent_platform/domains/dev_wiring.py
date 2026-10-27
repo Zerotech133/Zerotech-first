@@ -35,7 +35,7 @@ if str(_AGENT_PLATFORM) not in sys.path:
 from contracts.objects import Approval, Artifact, fact_hash_of  # noqa: E402
 from engine.approvals import ApprovalStore        # noqa: E402
 from engine.artifacts import ArtifactStore        # noqa: E402
-from engine.tasks import TaskStore, TaskError     # noqa: E402
+from engine.tasks import TaskStore, TaskError  # noqa: E402,F401  # TaskError 为对外 re-export
 from adapters.credential_trace import cross_check, verdict_for  # noqa: E402
 
 TASKS_BASE = _AGENT_PLATFORM / "data" / "org" / "tasks"

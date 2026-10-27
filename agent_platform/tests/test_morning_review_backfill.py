@@ -9,7 +9,6 @@
 - 幂等：已回填占位不在即跳过，不覆盖。
 """
 import json
-import sys
 import time
 import unittest
 import importlib.util
@@ -103,7 +102,7 @@ class TriStateTests(unittest.TestCase):
         tasks = {"T-OK1": {"status": "done", "created": "2026-10-10 08:00:00"},
                  "T-OK2": {"status": "doing", "created": "2026-10-16 08:00:00",
                            "desc": "[A1] 正常在途"}}
-        f = make_tree(self.tmp, tasks, base_daily(),
+        make_tree(self.tmp, tasks, base_daily(),
                       cards={"A1": "把重复性动作固化为工具/判例，写进 knowledge 记忆。"})
         state, text = run_backfill(self.tmp)
         self.assertEqual(state, "OK")

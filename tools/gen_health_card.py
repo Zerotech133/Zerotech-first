@@ -3388,7 +3388,7 @@ def collect_task_launch_failures() -> dict[str, Any]:
         if prev is None or cells[5].strip() > prev[5].strip():
             best[name] = cells
 
-    now = dt.datetime.now(dt.timezone.utc)
+    dt.datetime.now(dt.timezone.utc)
     scanned = 0
     issues: list[dict[str, Any]] = []      # 动作起来了但目标不存在
     unknown: list[dict[str, Any]] = []     # 未知返回码，需人看

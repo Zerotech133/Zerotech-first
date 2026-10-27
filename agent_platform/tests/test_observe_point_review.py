@@ -6,7 +6,6 @@
 tmp_path——真仓零读写。gate3 经 subprocess.run mock（不真跑）。
 """
 import os
-import subprocess
 import sys
 from datetime import datetime, timedelta
 

@@ -133,7 +133,7 @@ class AutoDraftTests(unittest.TestCase):
         self.assertEqual([d["decision"] for d in drafted], ["watch"])
 
     def test_small_sample_below_threshold_silent(self):
-        self._feed("relaxed", MIN_N := 4, -5.0)
+        self._feed("relaxed", 4, -5.0)
         drafted, findings = pl.auto_draft_roster(self.root, by="tester")
         self.assertEqual(drafted, [])
         self.assertEqual(findings, [])

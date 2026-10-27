@@ -549,7 +549,7 @@ def _selfcheck_rebind(root: Path, before: dict, dept: str, aid: str, new_binding
         raise EnrollError("自检失败：%s 档案丢失" % aid)
     if pa.get("llm_binding") != new_binding:
         raise EnrollError("自检失败：%s 绑定未改为 %r" % (aid, new_binding))
-    allowed = set((plan_changes_keys := set((plan.get("changes") or {}).keys()))) | {"binding_note"}
+    allowed = set((_plan_changes_keys := set((plan.get("changes") or {}).keys()))) | {"binding_note"}
     if pa.get("llm_binding") != plan["to_binding"] and "llm_binding" in allowed:
         raise EnrollError("自检失败：%s 绑定未改为 %r" % (aid, plan["to_binding"]))
     for k, v in pb.items():

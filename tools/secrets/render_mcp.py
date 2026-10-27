@@ -17,6 +17,7 @@ Tushare MCP token。本轮把 token 移出模板/配置文件，只保留占位�
 
 from __future__ import annotations
 
+import subprocess
 import argparse
 import hashlib
 import json

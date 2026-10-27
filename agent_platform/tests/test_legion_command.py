@@ -119,7 +119,7 @@ def test_http_dispatch_via_gateway_inbox(server, store):
                 {"type": "work", "title": "Z5 对照实验",
                  "attendees": ["A0", "R2"], "note": "会终指令测试"})
     assert env["ok"] is True
-    msg_id = env["data"]["id"]
+    env["data"]["id"]
     files = list((store / "inbox").glob("*.json"))
     assert len(files) == 1
     rec = json.loads(files[0].read_text(encoding="utf-8"))

@@ -97,7 +97,7 @@ def test_scan_classifies_three_ways_and_dry_run_writes_nothing(store):
     eligible_b = _submit(source="e2e", kind="question",
                          payload={"intent": "ask", "code": "000001"},
                          idem="dry-b")
-    protected_source = _submit(source="feishu_comm", idem="dry-real")
+    _submit(source="feishu_comm", idem="dry-real")
     _write_json(store / "inbox" / ("%s.json" % HISTORICAL_ID),
                 _historical_record())
     (store / "inbox" / "lg-broken1.json").write_text("{not json",

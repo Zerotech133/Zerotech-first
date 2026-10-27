@@ -18,8 +18,8 @@ def load_kline(code: str) -> pd.DataFrame:
 
 def operators(df: pd.DataFrame) -> dict:
     """五算子：全部基于可复算的量价几何。"""
-    n = len(df)
-    close, vol, high, low = df['close'], df['volume'], df['high'], df['low']
+    len(df)
+    close, vol, _high, _low = df['close'], df['volume'], df['high'], df['low']
     vol_ma20 = vol.rolling(20).mean()
 
     # ── 算子1：放量吸筹嫌疑 ──
@@ -27,7 +27,7 @@ def operators(df: pd.DataFrame) -> dict:
     box = df.tail(60)
     amp60 = (box['high'].max() - box['low'].min()) / box['low'].min()
     pos250 = (close.tail(250) < close.iloc[-1]).mean()
-    ratio = vol / vol_ma20
+    vol / vol_ma20
     surge_days = (df.tail(60)['volume'] / df.tail(60)['volume'].rolling(20).mean() >= 3).sum()
     box_low_hold = box['close'].min() > box['low'].min() * 0.97
     accum = amp60 < 0.25 and pos250 < 0.4 and surge_days >= 3 and box_low_hold

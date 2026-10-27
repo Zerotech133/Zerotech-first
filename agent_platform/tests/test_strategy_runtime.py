@@ -9,7 +9,7 @@ import pytest
 PLATFORM = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PLATFORM / "engine"))
 
-from strategy_registry import StrategyAgent, StrategyError, StrategyRegistry, Verdict  # noqa: E402
+from strategy_registry import StrategyAgent, StrategyRegistry, Verdict  # noqa: E402
 from strategy_runtime import StrategyRuntime, run_strategy  # noqa: E402
 
 

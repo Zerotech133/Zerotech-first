@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 import hashlib
 import json
 from pathlib import Path
-from typing import Dict, Iterable, Mapping, Optional, Tuple
+from typing import Iterable, Mapping, Optional, Tuple
 
 
 SCHEMA_VERSION = "shadow-long-cycle.v1"

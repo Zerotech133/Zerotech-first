@@ -139,10 +139,6 @@ def _audit_shadow_ledger(ledger_path: Path) -> dict:
             # 「降级完成」（done_degraded），保留 done 状态零迁移，审计不再
             # 阻塞——只计数供评估观测。见 docs/audit/2026-10-17_T3产品决策_parse_ok语义.md
             "parse_fail_policy": "done_degraded",
-            # T3 产品决策（2026-10-17 拍板）：done 且 parse_ok=false 语义 =
-            # 「降级完成」（done_degraded），保留 done 状态零迁移，审计不再
-            # 阻塞——只计数供评估观测。见 docs/audit/2026-10-17_T3产品决策_parse_ok语义.md
-            "parse_fail_policy": "done_degraded",
             "duplicate_done_pair_count": len(dup_done_pairs),
             "duplicate_done_pairs_sample": dict(sorted(dup_done_pairs.items())[:20]),
         }

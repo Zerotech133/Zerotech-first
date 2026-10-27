@@ -53,7 +53,7 @@ async def main():
     if hasattr(ov, '__await__'):
         ov = await ov
     contracts = ov.get('contracts', [])
-    movers = sorted(
+    sorted(
         [c for c in contracts if c.get('change') is not None],
         key=lambda x: x.get('change') or 0, reverse=True)[:8]
     # F2: 核心池行情

@@ -4,7 +4,6 @@
 恶意样本集固化为回归测试（设计稿 §5.4 判例：校验器若静默放过一次，
 漏洞即成通道契约）。测试全程 tmp 隔离，绝不写 agent_platform/bridge_inbox。
 """
-import shutil
 import sys
 import time
 from pathlib import Path

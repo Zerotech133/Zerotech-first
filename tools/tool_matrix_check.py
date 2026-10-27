@@ -69,10 +69,8 @@ def check(matrix: dict, agent: str, op: str, target: str) -> tuple[bool, str]:
         # danger 级全岗 deny；回收站删除例外沿铁律走主控特批通道，不在矩阵放行
         return False, "danger 全岗 deny（087：危险操作=全局禁）"
     rules = matrix.get("matrix", {}).get(agent)
-    section = "matrix"
     if rules is None:
         rules = matrix.get("platform_callers", {}).get(agent)
-        section = "platform_callers"
     if rules is None:
         # fail-visible：未登记 caller 默认 deny（087 判例，绝不 fail-open 放行）
         return False, f"caller {agent} 未登记（matrix+platform_callers 均无），默认 deny（fail-visible）"

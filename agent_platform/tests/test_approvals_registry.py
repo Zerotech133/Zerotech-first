@@ -6,7 +6,6 @@ fail-visible / 只读 mtime 断言 / 真仓冒烟。
 """
 
 import importlib.util
-import json
 import sqlite3
 import sys
 import tempfile

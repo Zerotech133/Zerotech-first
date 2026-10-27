@@ -2,9 +2,7 @@
 """lineage_freshness（P1-A 血缘新鲜度维度）测试。"""
 
 import importlib.util
-import json
 import sys
-import tempfile
 import unittest
 from datetime import date
 from pathlib import Path

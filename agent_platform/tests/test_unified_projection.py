@@ -6,7 +6,6 @@ summary 结构 / 真实仓库只读冒烟（存在时）。
 """
 
 import importlib.util
-import json
 import sys
 import tempfile
 import unittest
