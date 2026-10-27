@@ -140,10 +140,18 @@ def sync_all(ledger: Path | None = None, dry_run: bool = False) -> dict:
     rows = []
     for cid in sorted(cards):
         rows.append(sync_card(cards[cid], dr=dr, dry_run=dry_run))
-    return {"ok": True, "cards": len(cards), "ledger": str(path),
-            "created": sum(1 for r in rows for a in r.get("actions", []) if a["action"] == "created"),
-            "decided": sum(1 for r in rows for a in r.get("actions", []) if a["action"] == "decided"),
-            "rows": rows}
+    out = {"ok": True, "cards": len(cards), "ledger": str(path),
+           "created": sum(1 for r in rows for a in r.get("actions", []) if a["action"] == "created"),
+           "decided": sum(1 for r in rows for a in r.get("actions", []) if a["action"] == "decided"),
+           "rows": rows}
+    # C3↔P1-4（可选）：同一次同步里回填采纳 domain 信号
+    if os.environ.get("ZHUGE_C3_DECISION_SYNC", "").strip().lower() in ("1", "true", "yes", "on"):
+        try:
+            import zhuge_c3_decisions
+            out["c3"] = zhuge_c3_decisions.sync_adoptions(dry_run=dry_run)
+        except Exception:  # noqa: BLE001
+            pass
+    return out
 
 
 def enabled() -> bool:
