@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-27 23:19",
+ "generated": "2026-10-27 23:20",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,8 +9,8 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 21,
-  "workorders_review": 4
+  "workorders_doing": 20,
+  "workorders_review": 5
  },
  "workorders": [
   {
@@ -230,13 +230,13 @@
    "project": "general"
   },
   {
-   "id": "K-QUANT-20261027-MISSIONFIX",
-   "desc": "Mission 派工 project 使用已注册线（默认 portal，可由 plan.project 指定），修复 --project mission 未注册拒收",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-QUANT-20261027-MISSIONFIX",
-   "created": "2026-10-27 23:19:40",
-   "project": "quant"
+   "id": "WO-GUANYU-SCANFIX6-20261027",
+   "desc": "扫描器行尾注释误报 [UNOWNED]",
+   "status": "review",
+   "owner": "unknown-agent",
+   "branch": "task/WO-GUANYU-SCANFIX6-20261027",
+   "created": "2026-10-27 23:19:41",
+   "project": "general"
   }
  ],
  "coder_traces": [
