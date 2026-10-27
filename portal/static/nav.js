@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded',function(){
   var on=path===f[1];
   flow+='<a class="wb-nav-pill wb-nav-flow'+(on?' is-active':'')+'" href="'+f[1]+'">'+f[0]+'</a>';
  });
- bar.innerHTML=flow+'<span class="wb-nav-sep">|</span>'<a class="wb-nav-pill" href="/">🏛 零界门面</a><a class="wb-nav-pill" href="/portal">🗂 门户</a>';
+ bar.innerHTML=flow+'<span class="wb-nav-sep">|</span>'+'<a class="wb-nav-pill" href="/">🏛 零界门面</a>'+'<a class="wb-nav-pill" href="/portal">🗂 门户</a>';
  NAV.sections.forEach(function(s){
   var on=cur&&sec===s[0];
   var dd='<details class="wb-nav-details"><summary class="wb-nav-pill'+(on?' is-active':'')+'">'+s[1]+'<span class="wb-nav-caret"> ▾</span></summary><div class="wb-nav-dropdown">'+(NAV.groups[s[0]]||[]).map(function(g){return grp(g[0],g[1],cur);}).join('')+'</div></details>';
