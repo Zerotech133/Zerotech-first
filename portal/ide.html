@@ -264,9 +264,14 @@
     <div class="target" id="dbg-target">未选择 Agent</div>
     <div class="chat" id="chat"></div>
     <div class="dbg-ctl">
-      <select id="model" title="调试推理模型">
-        <option value="qwen3.5:9b">qwen3.5:9b</option>
-        <option value="qwen3.5:4b">qwen3.5:4b（快）</option>
+      <select id="model" title="调试推理模型（统一网关）">
+        <option value="auto">auto · 智能分配</option>
+        <option value="local4">qwen3.5:4b（本地轻量）</option>
+        <option value="local9" selected>qwen3.5:9b（本地默认）</option>
+        <option value="local35">qwen3.6:35b-a3b（本地复杂）</option>
+        <option value="zhipu">智谱 glm-4-flash</option>
+        <option value="deepseek">DeepSeek deepseek-chat</option>
+        <option value="gpt6">中转 GPT-6</option>
       </select>
       <span class="hint">消息里 @ 选择 Agent / 代码文件作为上下文</span>
     </div>
@@ -1026,22 +1031,23 @@ async function send(){
   addLog("send → "+aid+" · model "+model()+" · "+raw.length+" 字", "lg-b");
   const t0 = Date.now();
   try{
-    const r = await fetch("/ollama/api/chat", {
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ model: model(), stream:false, think:false,
-        options:{num_ctx:8192},
+    const m = model();
+    const r = await fetch("http://127.0.0.1:8796/v1/chat/completions", {
+      method:"POST",
+      headers:{"Content-Type":"application/json", "X-DSH-Agent":aid},
+      body: JSON.stringify({ model: m, stream:false,
         messages:[{role:"system",content:B.agents[aid].prompt},{role:"user",content:atContext(raw)}] })
     });
-    if(!r.ok) throw new Error("HTTP "+r.status);
     const d = await r.json();
-    const txt = (d.message&&d.message.content)||"(空响应)";
+    if(!r.ok) throw new Error((d.error&&d.error.message)||("HTTP "+r.status));
+    const txt = (d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content)||"(空响应)";
     const sec = ((Date.now()-t0)/1000).toFixed(1);
-    const html = evTable(txt) + '<span style="color:var(--dim2);font-size:10.5px">── '+sec+'s · eval '+((d.eval_count||0)+" tok")+' ──</span>';
+    const html = evTable(txt) + '<span style="color:var(--dim2);font-size:10.5px">── '+sec+'s · '+esc(m)+' · '+(d.x_channel||"gateway")+' ──</span>';
     r1.el.innerHTML = html;
     if(r1.rec){ r1.rec.html = html; sessSave(aid); }
-    addLog("recv ← "+aid+" · "+sec+"s · eval "+(d.eval_count||0)+" tok", "lg-g");
+    addLog("recv ← "+aid+" · "+sec+"s · "+m, "lg-g");
   }catch(e){
-    const html = "❌ 调用失败："+esc(e.message)+"（检查本地 Ollama 是否在跑 / nginx /ollama/ 反代）";
+    const html = "❌ 调用失败："+esc(e.message)+"（检查 8796 网关是否在跑）";
     r1.el.innerHTML = html;
     if(r1.rec){ r1.rec.html = html; sessSave(aid); }
     addLog("FAIL "+aid+" · "+e.message, "lg-o");
