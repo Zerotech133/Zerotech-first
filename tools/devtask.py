@@ -5,12 +5,16 @@
 
 命令：
   new <TID> <一句话描述> [--project <pid>] [--dept <部门>] [--acceptance "<命令串>"]
-                            [--approver <席位>]
+                            [--approver <席位>] [--expected-output <格式>]
+                            [--boundaries <禁止动什么>] [--effort <预算档>]
+                            [--deps <TID1,TID2>]
                            建任务单+worktree+分支 task/<TID>；--dept 声明部门单，
                            命中研发试点门（agent_platform/config/dev_owner_gate.json）
                            时按 phase=warn 只告警 / phase=block 拒收，且拒收发生在
                            建 worktree 之前（不落空 worktree）（WO-LEGION-DEVEXEC-20261027）；
-                           --approver 记研发域验收署名（charter dev-authority-v1）。
+                           --approver 记研发域验收署名（charter dev-authority-v1）；
+                           --expected-output/--boundaries/--effort/--deps 为任务契约 2.0
+                           可选字段（O2；落账不做强校验，供编排器/评审使用）。
   list                     任务单总览（谁在干什么/分支/进度）
   port <服务名>            申请分配一个未注册端口（并提示写回 REGISTRY）
   merge <TID> [--l2-ack --l2-reason "五要素"]
@@ -925,6 +929,22 @@ def cmd_new(tid, *desc):
             raise SystemExit("--approver 需要跟署名席位（如 --approver ARCH1）")
         approver = desc.pop(i + 1)
         desc.pop(i)
+    # 2026-10-27 WO-HARNESS-O12（O2 任务契约 2.0）：可选契约字段，从 desc 弹出。
+    # 与 --dept 同风格，缺省不落字段（旧调用字段集不变）。
+    def _pop_opt(name):
+        if name in desc:
+            i = desc.index(name)
+            if i + 1 >= len(desc):
+                raise SystemExit("%s 需要跟取值" % name)
+            val = desc.pop(i + 1)
+            desc.pop(i)
+            return val
+        return None
+
+    expected_output = _pop_opt("--expected-output")
+    boundaries = _pop_opt("--boundaries")
+    effort = _pop_opt("--effort")
+    deps_raw = _pop_opt("--deps")
     # 2026-10-27 WO-AUTHORITY-D2：charter approval.mode=block 后，dev 单若未显式
     # 给 --approver，自动落 charter 默认署名（ARCH1），避免误建无署名单卡死在合并门。
     if dept is not None and not approver:
@@ -1006,6 +1026,16 @@ def cmd_new(tid, *desc):
         # 仅 dev/声明 dept 的单一并落验收署名（旧调用字段集不变）。
         if approver:
             rec["approver"] = approver
+        # O2 任务契约 2.0：可选字段（不填不落，保持旧调用字段集不变）
+        if expected_output:
+            rec["expected_output"] = expected_output
+        if boundaries:
+            rec["boundaries"] = boundaries
+        if effort:
+            rec["effort"] = effort
+        if deps_raw:
+            rec["deps"] = [x.strip() for x in str(deps_raw).replace("，", ",").split(",")
+                           if x.strip()]
     tasks[tid] = rec
     _save(tasks, changed=(tid,))
     _ckpt(tid, "kai", tasks[tid]["owner"],
