@@ -4,6 +4,7 @@
 覆盖：通道探测三态（openclaw 可用/不可用/降级本地）、
 key 缺失不打真通道、超时控制、输出清洗、开关默认关、回落 None。
 """
+
 import os
 import sys
 
@@ -38,8 +39,10 @@ def _env(monkeypatch):
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     import tempfile
     import os as _os
-    monkeypatch.setenv("COMM_FLAGS_PATH",
-                       _os.path.join(tempfile.mkdtemp(), "no_flags.json"))
+
+    monkeypatch.setenv(
+        "COMM_FLAGS_PATH", _os.path.join(tempfile.mkdtemp(), "no_flags.json")
+    )
     yield
 
 
@@ -137,8 +140,9 @@ def test_10_openclaw_path_used_when_available(monkeypatch):
     monkeypatch.setenv("COMM_ZHUGE_ENABLED", "1")
     monkeypatch.setattr(cz, "OPENCLAW_MODEL", "itokengate/gpt-6-sol")
     monkeypatch.setattr(cz, "_openclaw_available", lambda: (True, None))
-    monkeypatch.setattr(cz, "_run_openclaw",
-                        lambda q, timeout: ("军师回答：先看流动性。", None))
+    monkeypatch.setattr(
+        cz, "_run_openclaw", lambda q, timeout: ("军师回答：先看流动性。", None)
+    )
     r = cz.consult("为什么跌", "ou_h")
     assert r["mode"] == "openclaw_gpt"
     assert r["relay"] is False
@@ -149,8 +153,7 @@ def test_10_openclaw_path_used_when_available(monkeypatch):
 def test_11_openclaw_failure_falls_back_local(monkeypatch):
     monkeypatch.setenv("COMM_ZHUGE_ENABLED", "1")
     monkeypatch.setattr(cz, "_openclaw_available", lambda: (True, None))
-    monkeypatch.setattr(cz, "_run_openclaw",
-                        lambda q, timeout: (None, "timeout"))
+    monkeypatch.setattr(cz, "_run_openclaw", lambda q, timeout: (None, "timeout"))
     llm = _Stub("本地兜底回答。")
     r = cz.consult("为什么跌", "ou_i", llm=llm)
     assert r["mode"] == "local_soul"
@@ -225,8 +228,10 @@ def test_15_run_parses_error_json(monkeypatch):
 
     class _R:
         returncode = 1
-        stdout = ('{"ok": false, "error": {"type": "cli_error", '
-                  '"message": "Request timed out."}}')
+        stdout = (
+            '{"ok": false, "error": {"type": "cli_error", '
+            '"message": "Request timed out."}}'
+        )
         stderr = ""
 
     monkeypatch.setattr(cz.subprocess, "run", lambda args, **kw: _R())
@@ -265,10 +270,12 @@ def test_18_non_json_stdout_fallback(monkeypatch):
 
 def test_19_status_reports_agent_model(monkeypatch):
     monkeypatch.setattr(cz, "_openclaw_bin", lambda: "/fake/openclaw")
-    monkeypatch.setattr(cz, "_openclaw_config_path",
-                        lambda: cz.Path("/fake/.openclaw/openclaw.json"))
-    monkeypatch.setattr(cz, "_openclaw_agent_model",
-                        lambda agent=None: "deepseek/deepseek-chat")
+    monkeypatch.setattr(
+        cz, "_openclaw_config_path", lambda: cz.Path("/fake/.openclaw/openclaw.json")
+    )
+    monkeypatch.setattr(
+        cz, "_openclaw_agent_model", lambda agent=None: "deepseek/deepseek-chat"
+    )
     st = cz.channel_status()
     assert st["openclaw_ready"] is True
     assert st["agent"] == cz.OPENCLAW_AGENT
@@ -287,12 +294,14 @@ def test_20_relay_label_honest(monkeypatch):
     """agent-config 载体非 GPT6 → openclaw_cloud + carrier 实名 + relay=True。"""
     monkeypatch.setenv("COMM_ZHUGE_ENABLED", "1")
     monkeypatch.setattr(cz, "_openclaw_available", lambda: (True, None))
-    monkeypatch.setattr(cz, "_run_openclaw",
-                        lambda q, timeout: ("中转回答：先走审批。", None))
+    monkeypatch.setattr(
+        cz, "_run_openclaw", lambda q, timeout: ("中转回答：先走审批。", None)
+    )
     monkeypatch.setattr(cz, "OPENCLAW_MODEL", "")
     monkeypatch.setattr(cz, "OPENCLAW_CARRIER", "")
-    monkeypatch.setattr(cz, "_openclaw_agent_model",
-                        lambda agent=None: "deepseek/deepseek-chat")
+    monkeypatch.setattr(
+        cz, "_openclaw_agent_model", lambda agent=None: "deepseek/deepseek-chat"
+    )
     r = cz.consult("问", "ou_k")
     assert r["mode"] == "openclaw_cloud"
     assert r["relay"] is True
@@ -302,12 +311,22 @@ def test_20_relay_label_honest(monkeypatch):
 
 def test_21_agent_model_parsed(monkeypatch, tmp_path):
     import json
+
     oc = tmp_path / ".openclaw"
     oc.mkdir()
-    (oc / "openclaw.json").write_text(json.dumps({
-        "agents": {"entries": {"zhuge": {"model": {
-            "primary": "deepseek/deepseek-chat"}}}}},
-        ensure_ascii=False), encoding="utf-8")
+    (oc / "openclaw.json").write_text(
+        json.dumps(
+            {
+                "agents": {
+                    "entries": {
+                        "zhuge": {"model": {"primary": "deepseek/deepseek-chat"}}
+                    }
+                }
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
     monkeypatch.setenv("USERPROFILE", str(tmp_path))
     assert cz._openclaw_agent_model("zhuge") == "deepseek/deepseek-chat"
     assert cz._openclaw_agent_model("nobody") == ""

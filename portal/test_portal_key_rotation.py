@@ -35,8 +35,9 @@ try:
     # 配置文件（FC.HERE 重定向到临时目录，读值路径完全走生产逻辑）
     FC.HERE = tmp_dir
     os.makedirs(os.path.join(tmp_dir, "work"), exist_ok=True)
-    with open(os.path.join(tmp_dir, "work", "portal_key.json"), "w",
-              encoding="utf-8") as f:
+    with open(
+        os.path.join(tmp_dir, "work", "portal_key.json"), "w", encoding="utf-8"
+    ) as f:
         json.dump({"key": "  file-code  \n"}, f)  # 带空白验证 strip
     check("配置文件读取+strip", FC._load_portal_key() == "file-code")
 
@@ -90,9 +91,9 @@ b64w = base64.b64encode(b"lao:wrong").decode()
 check("basic 错码拒", not _h("/", auth="Basic " + b64w)._basic_ok())
 
 # ── ③ 换轨条件：Cookie 非新码 + query 带码 → 该种新码 ───────
-_h1 = _h("/?key=old-code")                       # 无 Cookie
-_h2 = _h("/?key=old-code", cookie="old-code")    # 旧 Cookie 在身（关键换轨场景）
-_h3 = _h("/?key=new-code", cookie="new-code")    # 已是新码（不必重种）
+_h1 = _h("/?key=old-code")  # 无 Cookie
+_h2 = _h("/?key=old-code", cookie="old-code")  # 旧 Cookie 在身（关键换轨场景）
+_h3 = _h("/?key=new-code", cookie="new-code")  # 已是新码（不必重种）
 cond = lambda hh: hh._query_key_ok() and hh._cookie_value() != SG.NEW_PW
 check("无Cookie+旧key → 种新码", cond(_h1))
 check("旧Cookie+旧key → 种新码（无感换轨核心）", cond(_h2))

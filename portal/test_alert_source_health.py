@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Adversarial, isolated tests for the alerts display and source evidence."""
+
 import datetime
 import json
 import os
@@ -28,16 +29,21 @@ class AlertSourceHealthTests(unittest.TestCase):
         self.weak = os.path.join(self.root, "reports")
         for directory in (self.reports, self.data, self.weak):
             os.makedirs(directory)
-        for name, value in (("QBT_DIR", self.qbt),
-                            ("REPORTS_DIR", self.reports),
-                            ("STATION", self.root)):
+        for name, value in (
+            ("QBT_DIR", self.qbt),
+            ("REPORTS_DIR", self.reports),
+            ("STATION", self.root),
+        ):
             patcher = mock.patch.object(api, name, value)
             patcher.start()
             self.addCleanup(patcher.stop)
         self.cross = types.ModuleType("cross_poll")
-        self.cross.build_cross = lambda: {"stocks": [], "src_state": {},
-                                          "degraded": False,
-                                          "k_gate": {"mode": "normal"}}
+        self.cross.build_cross = lambda: {
+            "stocks": [],
+            "src_state": {},
+            "degraded": False,
+            "k_gate": {"mode": "normal"},
+        }
         patcher = mock.patch.dict(sys.modules, {"cross_poll": self.cross})
         patcher.start()
         self.addCleanup(patcher.stop)
@@ -56,8 +62,10 @@ class AlertSourceHealthTests(unittest.TestCase):
         health = result["source_health"]
         self.assertEqual(health["version"], 1)
         self.assertTrue(health["checked_at"].endswith("+08:00"))
-        self.assertEqual(set(health["sources"]), {"premarket", "chanlun",
-                "nine_dim", "weak", "cross", "council"})
+        self.assertEqual(
+            set(health["sources"]),
+            {"premarket", "chanlun", "nine_dim", "weak", "cross", "council"},
+        )
         for name in ("premarket", "chanlun", "nine_dim", "weak", "cross"):
             self.assertNotIn(health["sources"][name]["status"], ("ok", "empty"))
             self.assertIsNone(health["sources"][name]["as_of"])
@@ -65,46 +73,75 @@ class AlertSourceHealthTests(unittest.TestCase):
         self.assertIsNone(health["sources"]["council"]["business_date"])
 
     def test_nine_dim_proven_empty_and_old_projection(self):
-        today = datetime.datetime.now(datetime.timezone(
-            datetime.timedelta(hours=8))).date().isoformat()
-        generated = datetime.datetime.now(datetime.timezone(
-            datetime.timedelta(hours=8))).isoformat()
-        self.write_json(os.path.join(self.data, "nine_dim_scores.json"),
-                        {"generated_at": generated, "trade_date": today,
-                         "n_alert": 0, "alert_th": 75})
-        self.write_json(os.path.join(self.reports, "premarket_latest.json"),
-                        {"verdict": "偏多（观望）", "trade_date": today,
-                         "prob": 60, "vals": {"外围": 3}})
-        with open(os.path.join(self.data, "chanlun_pool.jsonl"), "w",
-                  encoding="utf-8") as handle:
-            handle.write(json.dumps({"detect_date": today,
-                                     "type": "一类买"}, ensure_ascii=False) + "\n")
+        today = (
+            datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
+            .date()
+            .isoformat()
+        )
+        generated = datetime.datetime.now(
+            datetime.timezone(datetime.timedelta(hours=8))
+        ).isoformat()
+        self.write_json(
+            os.path.join(self.data, "nine_dim_scores.json"),
+            {
+                "generated_at": generated,
+                "trade_date": today,
+                "n_alert": 0,
+                "alert_th": 75,
+            },
+        )
+        self.write_json(
+            os.path.join(self.reports, "premarket_latest.json"),
+            {
+                "verdict": "偏多（观望）",
+                "trade_date": today,
+                "prob": 60,
+                "vals": {"外围": 3},
+            },
+        )
+        with open(
+            os.path.join(self.data, "chanlun_pool.jsonl"), "w", encoding="utf-8"
+        ) as handle:
+            handle.write(
+                json.dumps({"detect_date": today, "type": "一类买"}, ensure_ascii=False)
+                + "\n"
+            )
         result = api.build_alerts()
         self.assertIn("ts", result)
-        self.assertEqual([row["name"] for row in result["alerts"]],
-                         ["盘前倾向", "缠论信号", "九维警报池", "弱于板块在案", "共振做多"])
+        self.assertEqual(
+            [row["name"] for row in result["alerts"]],
+            ["盘前倾向", "缠论信号", "九维警报池", "弱于板块在案", "共振做多"],
+        )
         self.assertEqual(result["alerts"][0]["value"], "偏多")
         self.assertEqual(result["alerts"][2]["value"], "0 只")
         sources = result["source_health"]["sources"]
-        self.assertEqual(sources["nine_dim"], {"status": "empty",
-                                                 "as_of": generated,
-                                                 "business_date": today,
-                                                 "reason": None})
+        self.assertEqual(
+            sources["nine_dim"],
+            {
+                "status": "empty",
+                "as_of": generated,
+                "business_date": today,
+                "reason": None,
+            },
+        )
         self.assertEqual(sources["chanlun"]["status"], "stale")
         self.assertEqual(sources["premarket"]["status"], "stale")
         self.assertEqual(sources["cross"]["status"], "stale")
         self.assertEqual(sources["weak"]["status"], "stale")
 
     def test_empty_and_corrupt_streams_and_blocked_upstream(self):
-        with open(os.path.join(self.data, "chanlun_pool.jsonl"), "w",
-                  encoding="utf-8"):
+        with open(os.path.join(self.data, "chanlun_pool.jsonl"), "w", encoding="utf-8"):
             pass
-        with open(os.path.join(self.weak, "weak_track_600001.jsonl"), "w",
-                  encoding="utf-8") as handle:
+        with open(
+            os.path.join(self.weak, "weak_track_600001.jsonl"), "w", encoding="utf-8"
+        ) as handle:
             handle.write("{broken\n")
-        self.cross.build_cross = lambda: {"stocks": [], "degraded": True,
-                "k_gate": {"mode": "blocked"}, "src_state": {
-                    "9dim": {"status": "error"}}}
+        self.cross.build_cross = lambda: {
+            "stocks": [],
+            "degraded": True,
+            "k_gate": {"mode": "blocked"},
+            "src_state": {"9dim": {"status": "error"}},
+        }
         sources = api.build_alerts()["source_health"]["sources"]
         self.assertEqual(sources["chanlun"]["status"], "stale")
         self.assertEqual(sources["weak"]["status"], "error")
@@ -112,22 +149,41 @@ class AlertSourceHealthTests(unittest.TestCase):
 
     def test_invalid_nine_dim_and_old_future_business_dates(self):
         path = os.path.join(self.data, "nine_dim_scores.json")
-        today = datetime.datetime.now(datetime.timezone(
-            datetime.timedelta(hours=8)))
+        today = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
         for count in (None, "0", -1):
             with self.subTest(count=count):
-                self.write_json(path, {"trade_date": today.date().isoformat(),
-                    "generated_at": today.isoformat(), "n_alert": count})
-                self.assertEqual(api.build_alerts()["source_health"]["sources"]
-                                 ["nine_dim"]["status"], "error")
+                self.write_json(
+                    path,
+                    {
+                        "trade_date": today.date().isoformat(),
+                        "generated_at": today.isoformat(),
+                        "n_alert": count,
+                    },
+                )
+                self.assertEqual(
+                    api.build_alerts()["source_health"]["sources"]["nine_dim"][
+                        "status"
+                    ],
+                    "error",
+                )
         for offset, expected in ((-10, "stale"), (1, "error")):
             with self.subTest(offset=offset):
-                business_day = (today + datetime.timedelta(days=offset)).date().isoformat()
-                self.write_json(path, {"trade_date": business_day,
-                    "generated_at": today.isoformat(), "n_alert": 0})
+                business_day = (
+                    (today + datetime.timedelta(days=offset)).date().isoformat()
+                )
+                self.write_json(
+                    path,
+                    {
+                        "trade_date": business_day,
+                        "generated_at": today.isoformat(),
+                        "n_alert": 0,
+                    },
+                )
                 source = api.build_alerts()["source_health"]["sources"]["nine_dim"]
                 self.assertEqual(source["status"], expected)
-                self.assertEqual(source["as_of"], today.isoformat() if offset < 0 else None)
+                self.assertEqual(
+                    source["as_of"], today.isoformat() if offset < 0 else None
+                )
                 self.assertEqual(source["business_date"], business_day)
 
     def test_naive_timestamps_and_date_only_signals_fail_closed(self):
@@ -135,18 +191,28 @@ class AlertSourceHealthTests(unittest.TestCase):
         day = now.date().isoformat()
         nine_path = os.path.join(self.data, "nine_dim_scores.json")
         pre_path = os.path.join(self.reports, "premarket_latest.json")
-        for generated in (now.strftime("%Y-%m-%d %H:%M:%S"),
-                          now.strftime("%Y-%m-%dT%H:%M:%S"), day):
+        for generated in (
+            now.strftime("%Y-%m-%d %H:%M:%S"),
+            now.strftime("%Y-%m-%dT%H:%M:%S"),
+            day,
+        ):
             with self.subTest(generated=generated):
-                self.write_json(nine_path, {"trade_date": day,
-                                            "generated_at": generated,
-                                            "n_alert": 0})
+                self.write_json(
+                    nine_path,
+                    {"trade_date": day, "generated_at": generated, "n_alert": 0},
+                )
                 source = api.build_alerts()["source_health"]["sources"]["nine_dim"]
                 self.assertEqual(source["status"], "stale")
                 self.assertIsNone(source["as_of"])
                 self.assertEqual(source["business_date"], day)
-        self.write_json(pre_path, {"verdict": "偏多", "trade_date": day,
-                                   "ts": now.strftime("%Y-%m-%d %H:%M")})
+        self.write_json(
+            pre_path,
+            {
+                "verdict": "偏多",
+                "trade_date": day,
+                "ts": now.strftime("%Y-%m-%d %H:%M"),
+            },
+        )
         source = api.build_alerts()["source_health"]["sources"]["premarket"]
         self.assertEqual(source["status"], "stale")
         self.assertIsNone(source["as_of"])
@@ -157,11 +223,20 @@ class AlertSourceHealthTests(unittest.TestCase):
 
     def test_aware_chanlun_completion_anchor(self):
         now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
-        with open(os.path.join(self.data, "chanlun_pool.jsonl"), "w",
-                  encoding="utf-8") as handle:
-            handle.write(json.dumps({"detect_date": now.date().isoformat(),
-                                     "completed_at": now.isoformat(),
-                                     "type": "一类买"}, ensure_ascii=False) + "\n")
+        with open(
+            os.path.join(self.data, "chanlun_pool.jsonl"), "w", encoding="utf-8"
+        ) as handle:
+            handle.write(
+                json.dumps(
+                    {
+                        "detect_date": now.date().isoformat(),
+                        "completed_at": now.isoformat(),
+                        "type": "一类买",
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n"
+            )
         source = api.build_alerts()["source_health"]["sources"]["chanlun"]
         self.assertEqual(source["status"], "ok")
         self.assertEqual(source["as_of"], now.isoformat())
@@ -171,18 +246,23 @@ class AlertSourceHealthTests(unittest.TestCase):
         now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
         day = now.date().isoformat()
         utc = now.astimezone(datetime.timezone.utc).isoformat()
-        self.write_json(os.path.join(self.reports, "premarket_latest.json"),
-                        {"trade_date": day, "ts": utc, "verdict": "偏多"})
-        self.write_json(os.path.join(self.data, "nine_dim_scores.json"),
-                        {"trade_date": day, "generated_at": utc,
-                         "n_alert": 0})
+        self.write_json(
+            os.path.join(self.reports, "premarket_latest.json"),
+            {"trade_date": day, "ts": utc, "verdict": "偏多"},
+        )
+        self.write_json(
+            os.path.join(self.data, "nine_dim_scores.json"),
+            {"trade_date": day, "generated_at": utc, "n_alert": 0},
+        )
         sources = api.build_alerts()["source_health"]["sources"]
         for name, expected in (("premarket", "ok"), ("nine_dim", "empty")):
             with self.subTest(name=name):
                 source = sources[name]
                 self.assertEqual(source["status"], expected)
-                self.assertEqual(datetime.datetime.fromisoformat(
-                    source["as_of"]).utcoffset(), datetime.timedelta(hours=8))
+                self.assertEqual(
+                    datetime.datetime.fromisoformat(source["as_of"]).utcoffset(),
+                    datetime.timedelta(hours=8),
+                )
                 self.assertEqual(source["as_of"][:10], day)
                 self.assertEqual(source["business_date"], day)
 
@@ -193,59 +273,90 @@ class AlertSourceHealthTests(unittest.TestCase):
         # 即当期"），"同日的旧批次"在新口径下按设计就是当期。本用例保留"宽窗口
         # 下无法证明当期就必须拒收"的意图：先把窗口收紧回 5 分钟再断言，
         # 否则结果依赖运行时刻（02:00 前后跨日与否不同）。
-        with mock.patch.object(api, "ALERT_FRESH_WINDOW",
-                               datetime.timedelta(minutes=5)):
+        with mock.patch.object(
+            api, "ALERT_FRESH_WINDOW", datetime.timedelta(minutes=5)
+        ):
             for label, day, generated, expected in (
-                ("same_day_old", now.date(), now - datetime.timedelta(hours=2),
-                 # 02:00 前运行 now-2h 跨到前一天 → invalid_anchor；否则 stale_anchor。
-                 ("stale_anchor", "invalid_anchor")),
-                ("previous_day", (now - datetime.timedelta(days=1)).date(),
-                 now - datetime.timedelta(days=1), ("stale_anchor",)),
-                ("weekend_previous_friday", datetime.date(2026, 10, 16),
-                 datetime.datetime(2026, 10, 16, 17, 0, tzinfo=now.tzinfo),
-                 ("stale_anchor",)),
+                (
+                    "same_day_old",
+                    now.date(),
+                    now - datetime.timedelta(hours=2),
+                    # 02:00 前运行 now-2h 跨到前一天 → invalid_anchor；否则 stale_anchor。
+                    ("stale_anchor", "invalid_anchor"),
+                ),
+                (
+                    "previous_day",
+                    (now - datetime.timedelta(days=1)).date(),
+                    now - datetime.timedelta(days=1),
+                    ("stale_anchor",),
+                ),
+                (
+                    "weekend_previous_friday",
+                    datetime.date(2026, 10, 16),
+                    datetime.datetime(2026, 10, 16, 17, 0, tzinfo=now.tzinfo),
+                    ("stale_anchor",),
+                ),
             ):
                 with self.subTest(label=label):
-                    self.write_json(path, {"trade_date": day.isoformat(),
-                                           "generated_at": generated.isoformat(),
-                                           "n_alert": 0})
+                    self.write_json(
+                        path,
+                        {
+                            "trade_date": day.isoformat(),
+                            "generated_at": generated.isoformat(),
+                            "n_alert": 0,
+                        },
+                    )
                     health = api.build_alerts()["source_health"]["sources"]["nine_dim"]
                     self.assertNotIn(health["status"], ("ok", "empty"))
                     self.assertIn(health["reason"], expected)
                     self.assertEqual(health["business_date"], day.isoformat())
 
     def test_malformed_json_cannot_become_empty(self):
-        for path in (os.path.join(self.reports, "premarket_latest.json"),
-                     os.path.join(self.data, "nine_dim_scores.json")):
+        for path in (
+            os.path.join(self.reports, "premarket_latest.json"),
+            os.path.join(self.data, "nine_dim_scores.json"),
+        ):
             with open(path, "w", encoding="utf-8") as handle:
                 handle.write("{invalid")
         sources = api.build_alerts()["source_health"]["sources"]
         self.assertEqual(sources["premarket"]["reason"], "invalid_json")
         self.assertEqual(sources["nine_dim"]["reason"], "invalid_json")
 
-
     def test_producer_timestamps_cross_council_weak_are_trusted(self):
         """cross/council/weak 有生产者完成时间 + 当期交易日 → ok（不再 unproven）。"""
-        now = datetime.datetime.now(datetime.timezone(
-            datetime.timedelta(hours=8)))
+        now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
         day = now.date().isoformat()
         stamp = now.isoformat(timespec="seconds")
         self.cross.build_cross = lambda: {
-            "stocks": [], "degraded": False,
-            "src_state": {sid: {"status": "ok"} for sid in
-                          ("qpzm", "sig4", "chanlun", "9dim")},
+            "stocks": [],
+            "degraded": False,
+            "src_state": {
+                sid: {"status": "ok"} for sid in ("qpzm", "sig4", "chanlun", "9dim")
+            },
             "k_gate": {"mode": "normal"},
-            "completed_at": stamp, "trade_date": day}
-        with open(os.path.join(self.weak, "weak_track_600001.jsonl"), "w",
-                  encoding="utf-8") as handle:
-            handle.write(json.dumps({"ts": stamp, "code": "600001.SH"},
-                                    ensure_ascii=False) + "\n")
-        self.write_json(os.path.join(self.weak, "weak_scan_last.json"),
-                        {"schema": "weak_scan_last/v1",
-                         "completed_at": stamp, "trade_date": day,
-                         "source": "test", "case_count": 1})
-        with mock.patch.object(api, "_council_stats",
-                               return_value={"d": day, "ts": stamp}):
+            "completed_at": stamp,
+            "trade_date": day,
+        }
+        with open(
+            os.path.join(self.weak, "weak_track_600001.jsonl"), "w", encoding="utf-8"
+        ) as handle:
+            handle.write(
+                json.dumps({"ts": stamp, "code": "600001.SH"}, ensure_ascii=False)
+                + "\n"
+            )
+        self.write_json(
+            os.path.join(self.weak, "weak_scan_last.json"),
+            {
+                "schema": "weak_scan_last/v1",
+                "completed_at": stamp,
+                "trade_date": day,
+                "source": "test",
+                "case_count": 1,
+            },
+        )
+        with mock.patch.object(
+            api, "_council_stats", return_value={"d": day, "ts": stamp}
+        ):
             sources = api.build_alerts()["source_health"]["sources"]
         for name in ("cross", "council", "weak"):
             with self.subTest(name=name):
@@ -255,11 +366,11 @@ class AlertSourceHealthTests(unittest.TestCase):
 
     def test_cross_council_without_producer_timestamps_stay_unproven(self):
         """缺 completed_at/trade_date 或行级 ts → 维持 stale/unproven，不猜 mtime。"""
-        now = datetime.datetime.now(datetime.timezone(
-            datetime.timedelta(hours=8)))
+        now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
         day = now.date().isoformat()
-        with mock.patch.object(api, "_council_stats",
-                               return_value={"d": day, "ts": ""}):
+        with mock.patch.object(
+            api, "_council_stats", return_value={"d": day, "ts": ""}
+        ):
             sources = api.build_alerts()["source_health"]["sources"]
         self.assertEqual(sources["cross"]["status"], "stale")
         self.assertEqual(sources["cross"]["reason"], "unproven_completion")
@@ -272,12 +383,12 @@ class AlertSourceHealthTests(unittest.TestCase):
         解决 cross/council 一类源"as_of 展示的是 completed_at、而业务日仍是
         旧日"的读感：两个字段分开给出，前端可同时显示业务日与完成时间。
         """
-        now = datetime.datetime.now(datetime.timezone(
-            datetime.timedelta(hours=8)))
+        now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
         old_day = (now - datetime.timedelta(days=1)).date().isoformat()
-        self.write_json(os.path.join(self.data, "nine_dim_scores.json"),
-                        {"trade_date": old_day, "generated_at": now.isoformat(),
-                         "n_alert": 0})
+        self.write_json(
+            os.path.join(self.data, "nine_dim_scores.json"),
+            {"trade_date": old_day, "generated_at": now.isoformat(), "n_alert": 0},
+        )
         source = api.build_alerts()["source_health"]["sources"]["nine_dim"]
         self.assertEqual(source["status"], "stale", source)
         self.assertEqual(source["reason"], "stale_anchor", source)

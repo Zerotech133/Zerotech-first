@@ -15,6 +15,7 @@
   A5 km_feishu_hub 调用处含 kind="km_card"（静态）；
   A6 锚点存在性 —— feishu_card_v2 kind=kind 透传锚点 count==1。
 """
+
 import json
 import os
 import re
@@ -30,8 +31,7 @@ import feishu_client  # noqa: E402
 import feishu_card_v2  # noqa: E402
 
 
-_CARD = {"schema": "2.0", "header": {"title": {"tag": "plain_text",
-                                               "content": "t"}}}
+_CARD = {"schema": "2.0", "header": {"title": {"tag": "plain_text", "content": "t"}}}
 
 # ── 桩工具 ────────────────────────────────────────────────────────
 
@@ -50,11 +50,12 @@ def _stub_send_msg(monkeypatch):
 
 # ── A1：kind 透传 ─────────────────────────────────────────────────
 
+
 def test_send_card_passes_kind_kwarg(monkeypatch):
     calls = _stub_send_msg(monkeypatch)
     ok, why = feishu_card_v2.send_card(
-        _CARD, receive_id="ou_x", receive_id_type="open_id",
-        kind="km_card")
+        _CARD, receive_id="ou_x", receive_id_type="open_id", kind="km_card"
+    )
     assert (ok, why) == (True, "stub ok")
     assert len(calls) == 1
     args, kwargs = calls[0]
@@ -78,19 +79,24 @@ def test_send_card_kind_none_is_zero_change(monkeypatch):
 
 # ── A3：位置参数与返回值保持 ──────────────────────────────────────
 
+
 def test_send_card_positional_args_unchanged(monkeypatch):
     calls = _stub_send_msg(monkeypatch)
     feishu_card_v2.send_card(_CARD, "ou_z", "chat_id", "km_card")
     args, kwargs = calls[0]
-    assert args == (json.dumps(_CARD, ensure_ascii=False),
-                    "interactive", "ou_z", "chat_id")
+    assert args == (
+        json.dumps(_CARD, ensure_ascii=False),
+        "interactive",
+        "ou_z",
+        "chat_id",
+    )
     assert kwargs == {"kind": "km_card"}
 
 
 def test_send_card_returns_send_msg_result(monkeypatch):
     monkeypatch.setattr(
-        feishu_client, "send_msg",
-        lambda *a, **k: (False, "silent window"))
+        feishu_client, "send_msg", lambda *a, **k: (False, "silent window")
+    )
     ok, why = feishu_card_v2.send_card(_CARD, kind="km_card")
     assert ok is False and why == "silent window"
 
@@ -110,11 +116,12 @@ def _call_blocks(src, func_name):
             elif src[i] == ")":
                 depth -= 1
             i += 1
-        blocks.append(src[m.start():i])
+        blocks.append(src[m.start() : i])
     return blocks
 
 
 # ── A4：feishu_bot_ws 5 处调用兼容（不传 kind，零变化） ───────────
+
 
 def test_feishu_bot_ws_5_calls_no_kind():
     path = os.path.join(HERE, "feishu_bot_ws.py")
@@ -129,6 +136,7 @@ def test_feishu_bot_ws_5_calls_no_kind():
 
 # ── A5：km_feishu_hub 调用处含 kind="km_card" ────────────────────
 
+
 def test_km_hub_call_has_km_card_kind():
     path = os.path.join(HERE, "km_feishu_hub.py")
     with open(path, encoding="utf-8") as f:
@@ -139,6 +147,7 @@ def test_km_hub_call_has_km_card_kind():
 
 
 # ── A6：锚点存在性 ────────────────────────────────────────────────
+
 
 def test_feishu_card_v2_kind_passthrough_anchor():
     path = os.path.join(HERE, "feishu_card_v2.py")

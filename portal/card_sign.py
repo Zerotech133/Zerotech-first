@@ -10,6 +10,7 @@
 密钥：work/card_sign_secret.txt（首次自动生成；不落代码/不入库）。
 环境变量：CARD_SIGN_ENFORCE=1 时拒绝无签名旧卡（默认仅告警）。
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -50,8 +51,9 @@ def _secret():
 
 def _canonical(value):
     v = {k: v for k, v in (value or {}).items() if k != "_sig"}
-    return json.dumps(v, sort_keys=True, ensure_ascii=False,
-                      separators=(",", ":")).encode("utf-8")
+    return json.dumps(
+        v, sort_keys=True, ensure_ascii=False, separators=(",", ":")
+    ).encode("utf-8")
 
 
 def sign(value):
@@ -59,8 +61,9 @@ def sign(value):
     v = dict(value or {})
     v.setdefault("rid", uuid.uuid4().hex)
     v["_ts"] = int(time.time())
-    v["_sig"] = hmac.new(_secret().encode("utf-8"), _canonical(v),
-                         hashlib.sha256).hexdigest()
+    v["_sig"] = hmac.new(
+        _secret().encode("utf-8"), _canonical(v), hashlib.sha256
+    ).hexdigest()
     return v
 
 
@@ -78,8 +81,9 @@ def verify(value, ttl=None):
         return False, "no_ts"
     if abs(time.time() - ts) > (ttl or _TTL_VERIFY):
         return False, "expired"
-    want = hmac.new(_secret().encode("utf-8"), _canonical(value),
-                    hashlib.sha256).hexdigest()
+    want = hmac.new(
+        _secret().encode("utf-8"), _canonical(value), hashlib.sha256
+    ).hexdigest()
     if not hmac.compare_digest(str(sig), want):
         return False, "signature"
     return True, "ok"
@@ -132,6 +136,7 @@ def guard(value):
 
 def main(argv=None):
     import argparse
+
     ap = argparse.ArgumentParser()
     ap.add_argument("--selftest", action="store_true")
     a = ap.parse_args(argv)

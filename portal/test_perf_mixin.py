@@ -25,7 +25,9 @@ import api_perf  # noqa: E402
 
 from adapters.trace_link import LinkStore  # type: ignore  # noqa: E402
 from engine.perf_ledger import (  # type: ignore  # noqa: E402
-    perf_key_for, record_perf_rows)
+    perf_key_for,
+    record_perf_rows,
+)
 
 
 @pytest.fixture()
@@ -35,14 +37,30 @@ def tmp_repo(tmp_path, monkeypatch):
 
 
 def _feed(root, run_id="run-1", ret=1.25, prof="relaxed"):
-    record_perf_rows([{
-        "date": "2026-10-16", "symbol": "600519", "run_id": run_id,
-        "score": 3.2, "confidence": 0.7, "ret_pct": ret, "horizon": 3,
-        "base": 1500.0, "exit": 1518.75, "recommendation": "buy",
-        "stance": "坚守", "dk_regime": "rotation", "dk_profile": prof,
-        "dk_blocked": False,
-    }], root, link_store=LinkStore(root / "agent_platform" / "data"
-                                   / "trace" / "trace_links.jsonl"))
+    record_perf_rows(
+        [
+            {
+                "date": "2026-10-16",
+                "symbol": "600519",
+                "run_id": run_id,
+                "score": 3.2,
+                "confidence": 0.7,
+                "ret_pct": ret,
+                "horizon": 3,
+                "base": 1500.0,
+                "exit": 1518.75,
+                "recommendation": "buy",
+                "stance": "坚守",
+                "dk_regime": "rotation",
+                "dk_profile": prof,
+                "dk_blocked": False,
+            }
+        ],
+        root,
+        link_store=LinkStore(
+            root / "agent_platform" / "data" / "trace" / "trace_links.jsonl"
+        ),
+    )
 
 
 def _stub():
@@ -82,9 +100,9 @@ class TestPerfBoard:
 
     def test_endpoint_limit_whitelist(self, tmp_repo):
         h = _stub()
-        api_perf.Handler._perf_board(h, {"limit": ["500"]})   # 超上界
+        api_perf.Handler._perf_board(h, {"limit": ["500"]})  # 超上界
         assert h.status == 400
-        api_perf.Handler._perf_board(h, {"limit": ["abc"]})   # 非数字
+        api_perf.Handler._perf_board(h, {"limit": ["abc"]})  # 非数字
         assert h.status == 400
 
     def test_endpoint_raw_query_string_form(self, tmp_repo):
@@ -92,13 +110,13 @@ class TestPerfBoard:
         而非 parse_qs dict——str.get 不存在曾致 AttributeError 静默断连
         （2026-10-17 端点验收实测，stub 全 dict 形态漏网）。"""
         h = _stub()
-        api_perf.Handler._perf_board(h, "")                   # 无参数 → 默认 limit
+        api_perf.Handler._perf_board(h, "")  # 无参数 → 默认 limit
         assert h.status == 200 and h.payload is not None
-        api_perf.Handler._perf_board(h, "limit=3")            # 带参数
+        api_perf.Handler._perf_board(h, "limit=3")  # 带参数
         assert h.status == 200
-        api_perf.Handler._perf_board(h, "limit=abc")          # str 形态参数白名单
+        api_perf.Handler._perf_board(h, "limit=abc")  # str 形态参数白名单
         assert h.status == 400
-        api_perf.Handler._perf_replay(h, "")                  # replay 缺 ref
+        api_perf.Handler._perf_replay(h, "")  # replay 缺 ref
         assert h.status == 400 and h.payload["error"]
 
 
@@ -127,8 +145,9 @@ class TestPerfReplay:
             segs |= set(m["chain"])
         assert {"shadow", "perf"} <= segs
         missing_all = [m["missing_segments"] for m in r["matches"]]
-        assert any("paper" in ms and "execution" in ms
-                   for ms in missing_all)  # 缺环显式留痕
+        assert any(
+            "paper" in ms and "execution" in ms for ms in missing_all
+        )  # 缺环显式留痕
 
     def test_full_chain_via_perf_key(self, tmp_repo):
         _feed(tmp_repo, run_id="run-pk")

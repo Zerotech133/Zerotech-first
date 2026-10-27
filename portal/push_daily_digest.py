@@ -8,6 +8,7 @@
       python push_daily_digest.py         # 发送给 owner
 调度：待老田批准后挂到现有计划任务（不新建任务）。
 """
+
 from __future__ import annotations
 
 import json
@@ -43,24 +44,40 @@ def build_card():
     dl = vals.get("死信 24h", "—")
     fb = vals.get("降级直发 24h", "—")
     url = m_links.url_for("push") or ""
-    buttons = [{"type": "url", "text": "打开推送中台", "url": url,
-                "style": "primary"}] if url else None
+    buttons = (
+        [{"type": "url", "text": "打开推送中台", "url": url, "style": "primary"}]
+        if url
+        else None
+    )
     return feishu_push.build(
-        "notify", "推送日报", summary="今日发送 %s · 24h 成功/失败 %s · 死信 %s · 降级 %s"
+        "notify",
+        "推送日报",
+        summary="今日发送 %s · 24h 成功/失败 %s · 死信 %s · 降级 %s"
         % (today, okfail, dl, fb),
-        kpis=[("今日", "%s" % today), ("成功/失败", "%s" % okfail),
-              ("死信", "%s" % dl), ("降级", "%s" % fb)],
-        items=["渠道：%s" % top_ch,
-               "静默窗 %s（critical 豁免）" % vals.get("静默窗", "—")],
-        ts=d.get("generated_at", ""), source="推送中台（只读）",
-        level="warn" if (str(dl) not in ("0", "—") or
-                         str(okfail).split("/")[-1] not in ("0", "—")) else "info",
-        buttons=buttons, tags="#pj #push_digest")
+        kpis=[
+            ("今日", "%s" % today),
+            ("成功/失败", "%s" % okfail),
+            ("死信", "%s" % dl),
+            ("降级", "%s" % fb),
+        ],
+        items=[
+            "渠道：%s" % top_ch,
+            "静默窗 %s（critical 豁免）" % vals.get("静默窗", "—"),
+        ],
+        ts=d.get("generated_at", ""),
+        source="推送中台（只读）",
+        level="warn"
+        if (str(dl) not in ("0", "—") or str(okfail).split("/")[-1] not in ("0", "—"))
+        else "info",
+        buttons=buttons,
+        tags="#pj #push_digest",
+    )
 
 
 def _in_silent_window(now=None):
     """22:00–07:00 静默窗（非 critical 不发）。→ (是否静默, 原因)。"""
     import datetime as _dt
+
     now = now or _dt.datetime.now()
     if now.hour >= 22 or now.hour < 7:
         return True, "silent_window(%02d:%02d)" % (now.hour, now.minute)
@@ -88,9 +105,15 @@ def send(card, critical=False):
     except Exception as e:  # noqa: BLE001
         return False, "feishu_client 不可用: %s" % str(e)[:80]
     ok, why, mid = _fc.send_msg_tracked(
-        card, "interactive", receive_id=union, receive_id_type="union_id",
-        kind="auto:push_digest", critical=critical, via_hub=True,
-        sender_role="zb.ops.notify")
+        card,
+        "interactive",
+        receive_id=union,
+        receive_id_type="union_id",
+        kind="auto:push_digest",
+        critical=critical,
+        via_hub=True,
+        sender_role="zb.ops.notify",
+    )
     if ok:
         return True, "message_id=" + str(mid or "")
     return False, str(why or "")
@@ -102,6 +125,7 @@ STATE = os.path.join(HERE, "work", "push_digest_state.json")
 def send_once(force=False):
     """每日一次（挂现有 08:00 任务用）。→ (ok, why)。"""
     import datetime as _dt
+
     today = _dt.date.today().isoformat()
     try:
         st = json.load(open(STATE, encoding="utf-8"))
@@ -114,9 +138,15 @@ def send_once(force=False):
     if ok:
         try:
             with open(STATE, "w", encoding="utf-8") as f:
-                json.dump({"date": today,
-                           "ts": _dt.datetime.now().strftime("%Y-%m-%d %H:%M"),
-                           "message_id": why}, f, ensure_ascii=False)
+                json.dump(
+                    {
+                        "date": today,
+                        "ts": _dt.datetime.now().strftime("%Y-%m-%d %H:%M"),
+                        "message_id": why,
+                    },
+                    f,
+                    ensure_ascii=False,
+                )
         except OSError:
             pass
     return ok, why

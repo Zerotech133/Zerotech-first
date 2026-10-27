@@ -5,6 +5,7 @@
 追加到 portal/data/push_legacy_calls.jsonl，供 push_legacy_audit.py 聚合。
 失败静默，绝不影响发卡主链。
 """
+
 from __future__ import annotations
 
 import datetime

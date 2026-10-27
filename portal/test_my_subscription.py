@@ -39,12 +39,12 @@ def page_src() -> str:
 # 1. 页面存在且只读
 # ---------------------------------------------------------------------------
 
+
 def test_page_exists_and_readonly():
     src = page_src()
     assert "POST" not in src, "页面不得出现 POST（零写操作契约）"
     assert not re.search(r"<form\b", src, re.I), "页面不得含 form 提交"
-    assert "method:'GET'" in src or 'method:"GET"' in src, \
-        "所有 fetch 必须显式 GET"
+    assert "method:'GET'" in src or 'method:"GET"' in src, "所有 fetch 必须显式 GET"
 
 
 def test_page_all_fetch_are_get():
@@ -58,6 +58,7 @@ def test_page_all_fetch_are_get():
 # ---------------------------------------------------------------------------
 # 2. 判例要素：degraded / 只读声明 / 页头
 # ---------------------------------------------------------------------------
+
 
 def test_page_has_degraded_and_readonly_banner():
     src = page_src()
@@ -73,13 +74,13 @@ def test_page_uses_tokens_nav_and_refresh_pattern():
     assert "/static/nav.js" in src
     assert "setInterval(load,60000)" in src, "缺 60s 自动刷新"
     assert "AbortController" in src and "8000" in src, "缺 8s 超时"
-    assert "credentials:'same-origin'" in src or \
-        'credentials:"same-origin"' in src
+    assert "credentials:'same-origin'" in src or 'credentials:"same-origin"' in src
 
 
 # ---------------------------------------------------------------------------
 # 3. 端点引用 / 引导态 / 额度渲染
 # ---------------------------------------------------------------------------
+
 
 def test_page_references_status_endpoint_and_guides_without_openid():
     src = page_src()
@@ -102,20 +103,25 @@ def test_page_quota_and_error_rendering():
 # 4. portal_api.py branch 契约
 # ---------------------------------------------------------------------------
 
+
 def test_portal_api_has_status_branch_with_400():
     src = _read(API)
-    assert '/api/subscription/status' in src
+    assert "/api/subscription/status" in src
     assert "missing open_id" in src, "status branch 缺 open_id 必填校验"
     assert "400" in src
     # 只读出口：branch 调 get_subscriber_summary，不调任何写函数
     m = re.search(
-        r'path == "/api/subscription/status".*?(?=\n        elif path == )',
-        src, re.S)
+        r'path == "/api/subscription/status".*?(?=\n        elif path == )', src, re.S
+    )
     assert m, "status branch 结构异常"
     block = m.group(0)
     assert "get_subscriber_summary" in block
-    for banned in ("upsert_subscriber", "grant_subscription",
-                   "expire_sweep", "entitlement_log"):
+    for banned in (
+        "upsert_subscriber",
+        "grant_subscription",
+        "expire_sweep",
+        "entitlement_log",
+    ):
         assert banned not in block, f"status branch 不得调用写函数 {banned}"
     assert "POST" not in block, "status branch 应只处理 GET 语境"
 
@@ -129,6 +135,7 @@ def test_portal_api_has_my_subscription_branch():
 # ---------------------------------------------------------------------------
 # 5. api_common.py nav 条目
 # ---------------------------------------------------------------------------
+
 
 def test_api_common_nav_entries():
     src = _read(COMMON)
@@ -144,14 +151,16 @@ def test_api_common_nav_entries():
 # 6. subscription_store.py 摘要函数契约
 # ---------------------------------------------------------------------------
 
+
 def test_store_has_get_subscriber_summary_closed_on_failure():
     src = _read(STORE)
     assert "def get_subscriber_summary(open_id" in src
     m = re.search(r"def get_subscriber_summary\(.*?\n(?=def |\Z)", src, re.S)
     assert m, "get_subscriber_summary 结构异常"
     body = m.group(0)
-    assert '"error"' in body or "'error'" in body, \
+    assert '"error"' in body or "'error'" in body, (
         "异常应返回 error 键（closed on failure 不抛）"
+    )
     assert "store_unavailable" in body, "读路径不建库：store 缺失应报 store_unavailable"
     # 纯只读：不做任何 INSERT/UPDATE/CREATE
     for banned in ("INSERT INTO", "UPDATE ", "CREATE TABLE"):

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """W4 SOP 执行器单测：dry-run 7 步全绿、无生产副作用、live 缺角色 FAIL、CLI。"""
+
 import hashlib
 import json
 import os
@@ -61,9 +62,13 @@ def test_render_contains_steps():
 
 
 def test_cli_dry_run_json():
-    script = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                          "feishu_sop_runner.py")
-    r = subprocess.run([sys.executable, script, "--dry-run", "--json"],
-                       capture_output=True, timeout=120)
+    script = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "feishu_sop_runner.py"
+    )
+    r = subprocess.run(
+        [sys.executable, script, "--dry-run", "--json"],
+        capture_output=True,
+        timeout=120,
+    )
     data = json.loads(r.stdout.decode("utf-8", "replace"))
     assert data["total"] == 7 and data["verdict"] == "PASS"

@@ -13,6 +13,7 @@
   · 问题经 stdin 传入、不拼接 shell（防注入与引号问题）；
   · 同一时间只处理一个（进程内锁）。
 """
+
 import json
 import os
 import subprocess
@@ -22,22 +23,27 @@ import time
 
 DSH_EXE = os.environ.get("DSH_EXE") or (
     r"C:\Users\t\AppData\Local\Programs\DeepSeek Harness"
-    r"\DeepSeek Harness.exe")
+    r"\DeepSeek Harness.exe"
+)
 DSH_CLI = os.environ.get("DSH_CLI") or (
     r"C:\Users\t\AppData\Local\Programs\DeepSeek Harness"
     r"\resources\app.asar\dsh\node_modules\@deepseek-ai"
-    r"\dsh-desktop-host\lib\cli.js")
+    r"\dsh-desktop-host\lib\cli.js"
+)
 DSH_REMOTE_DIR = os.environ.get("DSH_REMOTE_DIR") or r"C:\项目\dsh_runtime"
 PATCH = os.environ.get("DSH_HEADLESS_PATCH") or (
-    os.path.join(DSH_REMOTE_DIR, "headless-account.patch.yml"))
+    os.path.join(DSH_REMOTE_DIR, "headless-account.patch.yml")
+)
 CWD = os.environ.get("DSH_RELAY_CWD") or r"C:\项目"
 TIMEOUT = int(os.environ.get("DSH_RELAY_TIMEOUT") or "240")
 MAX_OUT = 1800
 SESS_FILE = os.environ.get("DSH_RELAY_SESSIONS") or (
-    os.path.join(DSH_REMOTE_DIR, "conv_sessions.json"))
+    os.path.join(DSH_REMOTE_DIR, "conv_sessions.json")
+)
 SESSION_TTL_SEC = int(os.environ.get("DSH_RELAY_SESSION_TTL") or str(3 * 86400))
 OWNERS_FILE = os.environ.get("DSH_OWNER_FILE") or (
-    r"C:\项目\老田的AI助手\portal\work\feishu_secrets\owners.json")
+    r"C:\项目\老田的AI助手\portal\work\feishu_secrets\owners.json"
+)
 
 PREFIXES = ("机器问：", "机器问:", "问：", "问:", "AI：", "AI:", "ai：", "ai:")
 _LOCK = threading.Lock()
@@ -48,7 +54,7 @@ def strip_prefix(text):
     t = (text or "").strip()
     for prefix in PREFIXES:
         if t.startswith(prefix):
-            return t[len(prefix):].strip()
+            return t[len(prefix) :].strip()
     return None
 
 
@@ -71,14 +77,14 @@ def owner_ids():
     env_ids = os.environ.get("FEISHU_OWNER_OPEN_IDS", "")
     ids.update(x.strip() for x in env_ids.split(",") if x.strip())
     cfg = _owner_config()
-    ids.update(str(x).strip() for x in (cfg.get("open_ids") or [])
-               if str(x).strip())
+    ids.update(str(x).strip() for x in (cfg.get("open_ids") or []) if str(x).strip())
     try:
         root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         nc = os.path.join(root, "news_collector")
         if nc not in sys.path:
             sys.path.insert(0, nc)
         import push_targets
+
         legacy = push_targets.target_id("个人")
         if legacy:
             ids.add(legacy)
@@ -159,8 +165,15 @@ def reset(key):
 # ── headless 调用 ───────────────────────────────────────────────
 def _run_headless(question, session_id):
     """→ (text, session_id, error)。"""
-    cmd = [DSH_EXE, "--expose-internals", DSH_CLI,
-           "headless", "--patch", PATCH, "--json"]
+    cmd = [
+        DSH_EXE,
+        "--expose-internals",
+        DSH_CLI,
+        "headless",
+        "--patch",
+        PATCH,
+        "--json",
+    ]
     if session_id:
         cmd += ["--session-id", session_id]
     cmd.append("-")
@@ -168,9 +181,14 @@ def _run_headless(question, session_id):
     env["ELECTRON_RUN_AS_NODE"] = "1"
     try:
         proc = subprocess.run(
-            cmd, cwd=CWD, input=(question + "\n").encode("utf-8"),
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            timeout=TIMEOUT, env=env)
+            cmd,
+            cwd=CWD,
+            input=(question + "\n").encode("utf-8"),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=TIMEOUT,
+            env=env,
+        )
     except subprocess.TimeoutExpired:
         return "", "", "⏱ DSH 处理超时（>%d 秒）已终止；可把问题拆小再问。" % TIMEOUT
     except OSError as exc:
@@ -199,9 +217,15 @@ def _run_headless(question, session_id):
         stderr = (proc.stderr or b"").decode("utf-8", "replace").strip()
         if stderr:
             tail = stderr.splitlines()[-1][:200]
-        return "", sid, "❌ DSH 执行失败（rc=%d）%s" % (
-            proc.returncode,
-            "：" + (err_text[:200] or tail) if (err_text or tail) else "")
+        return (
+            "",
+            sid,
+            "❌ DSH 执行失败（rc=%d）%s"
+            % (
+                proc.returncode,
+                "：" + (err_text[:200] or tail) if (err_text or tail) else "",
+            ),
+        )
     return final_text.strip(), sid, ""
 
 

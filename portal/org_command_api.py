@@ -22,6 +22,7 @@
 响应缺 response 一律返回 ok:false 且笔记不落盘——绝不把原文当 digest 假蒸馏（不假绿）。
 心跳灯仅对配置了 heartbeat.probe 的岗位计算。
 """
+
 import json
 import os
 import re
@@ -30,9 +31,16 @@ import time
 import urllib.request
 
 __all__ = [
-    "api_org", "api_meta", "api_preview", "api_register", "api_project_preview",
-    "api_project_register", "api_agent_update", "api_agent_knowledge",
-    "api_agent_learn", "STATION",
+    "api_org",
+    "api_meta",
+    "api_preview",
+    "api_register",
+    "api_project_preview",
+    "api_project_register",
+    "api_agent_update",
+    "api_agent_knowledge",
+    "api_agent_learn",
+    "STATION",
 ]
 
 STATION = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -46,6 +54,7 @@ GRADES = ("E1", "E2", "E3")
 
 
 # ---------------- 基础 IO（全部显式传目录，不默认绑真路径） ----------------
+
 
 def _read_json(path):
     try:
@@ -72,8 +81,9 @@ def _append_jsonl(path, row):
 def _backup(station, relpaths, tag):
     """把将被改写的文件整份拷入 binding_backups/<ts>_<tag>/，返回备份目录。"""
     ts = time.strftime("%Y%m%d_%H%M%S")
-    bdir = os.path.join(station, "agent_platform", "registry",
-                        "binding_backups", "%s_%s" % (ts, tag))
+    bdir = os.path.join(
+        station, "agent_platform", "registry", "binding_backups", "%s_%s" % (ts, tag)
+    )
     for rel in relpaths:
         src = os.path.join(station, rel)
         if os.path.exists(src):
@@ -92,6 +102,7 @@ def _err(msg):
 
 
 # ---------------- 注册表读取 ----------------
+
 
 def _load_org(station):
     org = _read_json(_reg(station, "org.json"))
@@ -125,9 +136,11 @@ def _all_agents_raw(org, station=STATION):
     agent_profiles；查无 profile 的 id 也产出最小条目（诚实降级，前端灰显缺字段）。"""
     for dep in org.get("departments", []):
         dk = dep.get("dept", "")
-        profiles = {p.get("agent_id"): p
-                    for p in (dep.get("agent_profiles") or [])
-                    if isinstance(p, dict)}
+        profiles = {
+            p.get("agent_id"): p
+            for p in (dep.get("agent_profiles") or [])
+            if isinstance(p, dict)
+        }
         for a in dep.get("agents", []) or []:
             if isinstance(a, dict):
                 yield dk, a
@@ -285,14 +298,16 @@ def load_bundle(station=STATION):
         # ids 与 agents 字典同源（_all_agents_raw 单一口径，2026-10-19 修订）：
         # dept.agents 字符串 id + agent_profiles / 内联 dict / team 引用统一收集
         ids = list(by_dept.get(dep.get("dept", ""), []))
-        departments.append({
-            "id": dep.get("dept", ""),
-            "name": dep.get("name", dep.get("dept", "")),
-            "type": "project" if dep.get("type") == "project" else "func",
-            "charter": dep.get("charter", ""),
-            "status": dep.get("status", ""),
-            "agents": ids,
-        })
+        departments.append(
+            {
+                "id": dep.get("dept", ""),
+                "name": dep.get("name", dep.get("dept", "")),
+                "type": "project" if dep.get("type") == "project" else "func",
+                "charter": dep.get("charter", ""),
+                "status": dep.get("status", ""),
+                "agents": ids,
+            }
+        )
     return {
         "agents": agents,
         "departments": departments,
@@ -309,12 +324,16 @@ def api_org(station=STATION):
             with open(audit_path, encoding="utf-8") as f:
                 rows = [json.loads(x) for x in f if x.strip()]
             audit_tail = rows[-20:][::-1]
-        return {"ok": True,
-                "bundle": load_bundle(station),
-                "org": {"chief": org.get("chief", {}),
-                        "report_to": org.get("report_to", "human")},
-                "audit_tail": audit_tail,
-                "knowledge_docs": []}
+        return {
+            "ok": True,
+            "bundle": load_bundle(station),
+            "org": {
+                "chief": org.get("chief", {}),
+                "report_to": org.get("report_to", "human"),
+            },
+            "audit_tail": audit_tail,
+            "knowledge_docs": [],
+        }
     except Exception as e:  # fail-visible：恒 200 携错误体（判例）
         return dict(_err("org bundle: %r" % (e,)))
 
@@ -328,54 +347,73 @@ def api_meta(station=STATION):
     档位表/技能库缺失时降级为空表（ok 仍 true，前端自行容错）。"""
     try:
         tiers = _load_tiers(station)
-        models = {mid: {"tier": m.get("tier", ""),
-                        "enabled": m.get("enabled", True),
-                        "note": m.get("note", "")}
-                  for mid, m in (tiers.get("models", {}) or {}).items()}
+        models = {
+            mid: {
+                "tier": m.get("tier", ""),
+                "enabled": m.get("enabled", True),
+                "note": m.get("note", ""),
+            }
+            for mid, m in (tiers.get("models", {}) or {}).items()
+        }
         kind_map = {"tool": "tools", "algo": "algos", "automation": "automations"}
         skills = {"tools": [], "algos": [], "automations": []}
         for s in _load_skills(station).get("skills", []):
             bucket = kind_map.get(s.get("kind"))
             if bucket and s.get("id"):
                 skills[bucket].append(s["id"])
-        return {"ok": True,
-                "models": models,
-                "grade_policy": tiers.get("grade_policy", {}),
-                "skills": skills}
+        return {
+            "ok": True,
+            "models": models,
+            "grade_policy": tiers.get("grade_policy", {}),
+            "skills": skills,
+        }
     except Exception as e:  # fail-visible：恒 200 携错误体（判例）
         return _err("meta: %r" % (e,))
 
 
 # ---------------- 校验（拍板①②硬闸） ----------------
 
+
 def _tier_check(station, grade, model):
     tiers = _load_tiers(station)
     models = tiers.get("models", {})
-    pol = (tiers.get("grade_policy", {}).get(grade, {}))
+    pol = tiers.get("grade_policy", {}).get(grade, {})
     if not model:
-        return _err("model 必填（模型档位表 " + "；".join(
-            "%s→%s" % (g, p.get("default", "?")) for g, p in
-            tiers.get("grade_policy", {}).items()) + "）")
+        return _err(
+            "model 必填（模型档位表 "
+            + "；".join(
+                "%s→%s" % (g, p.get("default", "?"))
+                for g, p in tiers.get("grade_policy", {}).items()
+            )
+            + "）"
+        )
     if model not in models:
         return _err("模型 %r 不在档位表白名单" % model)
     if not models[model].get("enabled", True):
         return _err("模型 %r 未启用（%s）" % (model, models[model].get("note", "")))
     allow = pol.get("allow", [])
     if models[model].get("tier") not in allow:
-        return _err("档位不符：%s 档 allow=%s，而 %s 属 %s 档（拍板②：E3=strong，E1=fast/local）"
-                    % (grade, allow, model, models[model].get("tier")))
+        return _err(
+            "档位不符：%s 档 allow=%s，而 %s 属 %s 档（拍板②：E3=strong，E1=fast/local）"
+            % (grade, allow, model, models[model].get("tier"))
+        )
     return None
 
 
 def _skill_ids(station, kind):
-    return {s.get("id") for s in _load_skills(station).get("skills", [])
-            if s.get("kind") == kind}
+    return {
+        s.get("id")
+        for s in _load_skills(station).get("skills", [])
+        if s.get("kind") == kind
+    }
 
 
 def _validate_agent_payload(station, p, org):
     aid = (p.get("agent_id") or "").strip()
     if not AGENT_ID_RE.match(aid):
-        return _err("agent_id %r 不合法（大写字母开头 2-8 位大写字母/数字，如 DEV3）" % aid)
+        return _err(
+            "agent_id %r 不合法（大写字母开头 2-8 位大写字母/数字，如 DEV3）" % aid
+        )
     if aid in _existing_agent_ids(org, station):
         return _err("agent_id %r 已在编（重复注册拒绝）" % aid)
     grade = (p.get("grade") or "").strip()
@@ -384,13 +422,14 @@ def _validate_agent_payload(station, p, org):
     tier_err = _tier_check(station, grade, (p.get("model") or "").strip())
     if tier_err:
         return tier_err
-    tools = [t.strip() for t in (p.get("tool_preset") or "").split(",")
-             if t.strip()]
+    tools = [t.strip() for t in (p.get("tool_preset") or "").split(",") if t.strip()]
     tool_ids = _skill_ids(station, "tool")
     algo_ids = _skill_ids(station, "algo")
     for t in tools:
         if t not in tool_ids and t not in algo_ids:
-            return _err("工具/技能 %r 不在 skill_registry（引用不内嵌：先在技能库登记）" % t)
+            return _err(
+                "工具/技能 %r 不在 skill_registry（引用不内嵌：先在技能库登记）" % t
+            )
     dept = (p.get("dept") or "").strip()
     if not dept:
         return _err("dept 必填")
@@ -405,22 +444,53 @@ def _validate_agent_payload(station, p, org):
 
 # ---------------- 预览（两段式第一段：只算不写） ----------------
 
+
 def _plan_rows_agent(station, p, org, new_dept):
     bdir = "agent_platform/registry"
-    rows = [{"action": "backup", "path": bdir + "/binding_backups/<ts>_agent_" + p["agent_id"],
-             "what": "改写前整份备份 org.json（+人设文件）"}]
+    rows = [
+        {
+            "action": "backup",
+            "path": bdir + "/binding_backups/<ts>_agent_" + p["agent_id"],
+            "what": "改写前整份备份 org.json（+人设文件）",
+        }
+    ]
     if new_dept:
-        rows.append({"action": "update", "path": bdir + "/org.json",
-                     "what": "新增部门 %s（%s）" % (p["dept"], p.get("dept_name", ""))})
-    rows.append({"action": "update", "path": bdir + "/org.json",
-                 "what": "部门 %s 的 agents 增编 %s（%s · %s · %s）"
-                         % (p["dept"], p["agent_id"], p.get("grade"),
-                            p.get("model"), p.get("name", ""))})
+        rows.append(
+            {
+                "action": "update",
+                "path": bdir + "/org.json",
+                "what": "新增部门 %s（%s）" % (p["dept"], p.get("dept_name", "")),
+            }
+        )
+    rows.append(
+        {
+            "action": "update",
+            "path": bdir + "/org.json",
+            "what": "部门 %s 的 agents 增编 %s（%s · %s · %s）"
+            % (
+                p["dept"],
+                p["agent_id"],
+                p.get("grade"),
+                p.get("model"),
+                p.get("name", ""),
+            ),
+        }
+    )
     if (p.get("persona") or "").strip():
-        rows.append({"action": "create", "path": "agent_platform/prompts/%s.md" % p["agent_id"].lower(),
-                     "what": "人设落盘（prompts 按 role_profile 解析，interpreter 同口径）"})
-    rows.append({"action": "audit", "path": bdir + "/org_audit.jsonl",
-                 "what": "事后审计一行（kind=agent，拍板③：直属线直接生效）"})
+        rows.append(
+            {
+                "action": "create",
+                "path": "agent_platform/prompts/%s.md" % p["agent_id"].lower(),
+                "what": "人设落盘（prompts 按 role_profile 解析，interpreter 同口径）",
+            }
+        )
+    rows.append(
+        {
+            "action": "audit",
+            "path": bdir + "/org_audit.jsonl",
+            "what": "事后审计一行（kind=agent，拍板③：直属线直接生效）",
+        }
+    )
     return rows
 
 
@@ -439,6 +509,7 @@ def api_preview(body, station=STATION):
 
 # ---------------- 落盘（两段式第二段） ----------------
 
+
 def api_register(body, station=STATION):
     try:
         p = body or {}
@@ -451,8 +522,7 @@ def api_register(body, station=STATION):
         new_dept = p["dept"] not in {d.get("dept") for d in org.get("departments", [])}
 
         written = [os.path.relpath(org_path, station)]
-        bdir = _backup(station, ["agent_platform/registry/org.json"],
-                       "agent_" + aid)
+        bdir = _backup(station, ["agent_platform/registry/org.json"], "agent_" + aid)
 
         dep = None
         for d in org.get("departments", []):
@@ -460,22 +530,31 @@ def api_register(body, station=STATION):
                 dep = d
                 break
         if new_dept:
-            dep = {"dept": p["dept"], "name": (p.get("dept_name") or "").strip(),
-                   "status": "active", "charter": (p.get("dept_charter") or "").strip(),
-                   "agents": [], "teams": []}
+            dep = {
+                "dept": p["dept"],
+                "name": (p.get("dept_name") or "").strip(),
+                "status": "active",
+                "charter": (p.get("dept_charter") or "").strip(),
+                "agents": [],
+                "teams": [],
+            }
             org.setdefault("departments", []).append(dep)
-        ag = {"agent_id": aid,
-              "role_profile": aid.lower(),
-              "name": (p.get("name") or "").strip() or aid,
-              "grade": p["grade"],
-              "level": 2,
-              "node_key": aid.lower(),
-              "parent_node_keys": [],
-              "llm_binding": p["model"],
-              "tools": [t.strip() for t in (p.get("tool_preset") or "").split(",") if t.strip()],
-              "charter_detail": (p.get("charter") or "").strip(),
-              "attributes": {"experience": "", "specialties": [], "knowledge": []},
-              "status": "active"}
+        ag = {
+            "agent_id": aid,
+            "role_profile": aid.lower(),
+            "name": (p.get("name") or "").strip() or aid,
+            "grade": p["grade"],
+            "level": 2,
+            "node_key": aid.lower(),
+            "parent_node_keys": [],
+            "llm_binding": p["model"],
+            "tools": [
+                t.strip() for t in (p.get("tool_preset") or "").split(",") if t.strip()
+            ],
+            "charter_detail": (p.get("charter") or "").strip(),
+            "attributes": {"experience": "", "specialties": [], "knowledge": []},
+            "status": "active",
+        }
         dep.setdefault("agents", []).append(ag)
         _write_json_atomic(org_path, org)
 
@@ -487,13 +566,22 @@ def api_register(body, station=STATION):
                 f.write(persona)
             written.append(os.path.relpath(pp, station))
 
-        row = {"ts": time.strftime("%Y-%m-%d %H:%M:%S"), "kind": "agent",
-               "agent_id": aid, "dept": p["dept"], "grade": p["grade"],
-               "files": written, "backup": os.path.relpath(bdir, station),
-               "caller": (p.get("caller") or "").strip()}
+        row = {
+            "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "kind": "agent",
+            "agent_id": aid,
+            "dept": p["dept"],
+            "grade": p["grade"],
+            "files": written,
+            "backup": os.path.relpath(bdir, station),
+            "caller": (p.get("caller") or "").strip(),
+        }
         _append_jsonl(_reg(station, "org_audit.jsonl"), row)
-        return {"ok": True, "headcount": len(load_bundle(station)["agents"]),
-                "audit": row}
+        return {
+            "ok": True,
+            "headcount": len(load_bundle(station)["agents"]),
+            "audit": row,
+        }
     except Exception as e:
         return _err("register: %r" % (e,))
 
@@ -506,12 +594,24 @@ def api_project_preview(body, station=STATION):
         if verr:
             return verr
         bdir = "agent_platform/registry"
-        return {"ok": True, "plan": [
-            {"action": "create",
-             "path": bdir + "/workflow_candidates/pending_a0_confirm/" + p["project_id"] + ".json",
-             "what": "项目线立案暂存（拍板③：跨部门项目走参谋长 A0 确认后生效）"},
-            {"action": "audit", "path": bdir + "/org_audit.jsonl",
-             "what": "审计一行（kind=project_pending）"}]}
+        return {
+            "ok": True,
+            "plan": [
+                {
+                    "action": "create",
+                    "path": bdir
+                    + "/workflow_candidates/pending_a0_confirm/"
+                    + p["project_id"]
+                    + ".json",
+                    "what": "项目线立案暂存（拍板③：跨部门项目走参谋长 A0 确认后生效）",
+                },
+                {
+                    "action": "audit",
+                    "path": bdir + "/org_audit.jsonl",
+                    "what": "审计一行（kind=project_pending）",
+                },
+            ],
+        }
     except Exception as e:
         return _err("project preview: %r" % (e,))
 
@@ -537,26 +637,45 @@ def api_project_register(body, station=STATION):
         verr = _validate_project_payload(station, p, org)
         if verr:
             return verr
-        pend_dir = os.path.join(_reg(station, "workflow_candidates"),
-                                "pending_a0_confirm")
+        pend_dir = os.path.join(
+            _reg(station, "workflow_candidates"), "pending_a0_confirm"
+        )
         target = os.path.join(pend_dir, (p.get("project_id") or "P") + ".json")
         rel_target = os.path.relpath(target, station)
-        _backup(station, ["agent_platform/registry/org.json"],
-                "project_" + (p.get("project_id") or "P"))
-        _write_json_atomic(target, {
-            "status": "pending_a0_confirm",
-            "payload": p, "ts": time.strftime("%Y-%m-%d %H:%M:%S")})
-        row = {"ts": time.strftime("%Y-%m-%d %H:%M:%S"), "kind": "project_pending",
-               "project_id": p.get("project_id"), "dept": p.get("dept"),
-               "files": [rel_target], "caller": (p.get("caller") or "").strip()}
+        _backup(
+            station,
+            ["agent_platform/registry/org.json"],
+            "project_" + (p.get("project_id") or "P"),
+        )
+        _write_json_atomic(
+            target,
+            {
+                "status": "pending_a0_confirm",
+                "payload": p,
+                "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+            },
+        )
+        row = {
+            "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "kind": "project_pending",
+            "project_id": p.get("project_id"),
+            "dept": p.get("dept"),
+            "files": [rel_target],
+            "caller": (p.get("caller") or "").strip(),
+        }
         _append_jsonl(_reg(station, "org_audit.jsonl"), row)
-        return {"ok": True, "pending_a0_confirm": True, "path": rel_target,
-                "note": "项目线已入列待参谋长（A0）确认，确认后生效（拍板③）"}
+        return {
+            "ok": True,
+            "pending_a0_confirm": True,
+            "path": rel_target,
+            "note": "项目线已入列待参谋长（A0）确认，确认后生效（拍板③）",
+        }
     except Exception as e:
         return _err("project register: %r" % (e,))
 
 
 # ---------------- 属性/模型编辑（详情页编辑区） ----------------
+
 
 def api_agent_update(body, station=STATION):
     try:
@@ -582,7 +701,8 @@ def api_agent_update(body, station=STATION):
         spec = p.get("specialties")
         if spec is not None:
             target.setdefault("attributes", {})["specialties"] = [
-                s.strip() for s in re.split(r"[,，]", str(spec)) if s.strip()]
+                s.strip() for s in re.split(r"[,，]", str(spec)) if s.strip()
+            ]
             changed.append("擅长")
         model = (p.get("model") or "").strip()
         if model and model != target.get("llm_binding"):
@@ -606,10 +726,15 @@ def api_agent_update(body, station=STATION):
         written = ["agent_platform/registry/org.json"]
         bdir = _backup(station, written, "update_" + aid)
         _write_json_atomic(org_path, org)
-        row = {"ts": time.strftime("%Y-%m-%d %H:%M:%S"), "kind": "agent_update",
-               "agent_id": aid, "changed": changed, "files": written,
-               "backup": os.path.relpath(bdir, station),
-               "caller": (p.get("caller") or "").strip()}
+        row = {
+            "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "kind": "agent_update",
+            "agent_id": aid,
+            "changed": changed,
+            "files": written,
+            "backup": os.path.relpath(bdir, station),
+            "caller": (p.get("caller") or "").strip(),
+        }
         _append_jsonl(_reg(station, "org_audit.jsonl"), row)
         return {"ok": True, "changed": changed}
     except Exception as e:
@@ -617,6 +742,7 @@ def api_agent_update(body, station=STATION):
 
 
 # ---------------- 知识沉淀（学习环） ----------------
+
 
 def _knowledge_path(station, aid):
     return os.path.join(_reg(station, "knowledge"), aid + ".jsonl")
@@ -669,14 +795,25 @@ def api_agent_learn(body, station=STATION, llm_base_url=None):
         except Exception as e:  # 诚实降级：任何 LLM 失败都可见，笔记不落盘
             return _err("学习环 LLM 提炼失败：%r；笔记未落盘" % (e,))
         kpath = _knowledge_path(station, aid)
-        _append_jsonl(kpath, {
-            "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
-            "doc": doc, "digest": digest, "model": model})
+        _append_jsonl(
+            kpath,
+            {
+                "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+                "doc": doc,
+                "digest": digest,
+                "model": model,
+            },
+        )
         # 审计行（写回安全链判例平移）：笔记成功落盘才记账，失败路径不写
-        row = {"ts": time.strftime("%Y-%m-%d %H:%M:%S"), "kind": "learn",
-               "agent_id": aid, "files": [os.path.relpath(kpath, station)],
-               "model": model, "digest_len": len(digest),
-               "caller": (p.get("caller") or "").strip()}
+        row = {
+            "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "kind": "learn",
+            "agent_id": aid,
+            "files": [os.path.relpath(kpath, station)],
+            "model": model,
+            "digest_len": len(digest),
+            "caller": (p.get("caller") or "").strip(),
+        }
         _append_jsonl(_reg(station, "org_audit.jsonl"), row)
         return {"ok": True, "digest_len": len(digest), "model": model}
     except Exception as e:  # fail-visible：恒 200 携错误体（判例）
@@ -685,30 +822,38 @@ def api_agent_learn(body, station=STATION, llm_base_url=None):
 
 # ---- 学习环 LLM 提炼（常量收敛，K-ORG-136 判例档） ----
 
-LEARN_MODEL = "qwen3.5:9b"          # 本地降级档（K-ORG-136 判例）
-LEARN_DOC_MAX = 6000                # 输入 doc 截断上限（防超长）
-LEARN_TIMEOUT = 60                  # socket 超时（秒）
-LEARN_PROMPT_PREFIX = ("你是投研知识蒸馏助手。把下面的文档提炼成不超过 500 字的"
-                       "结构化笔记（要点+可复用结论），直接输出笔记正文：")
+LEARN_MODEL = "qwen3.5:9b"  # 本地降级档（K-ORG-136 判例）
+LEARN_DOC_MAX = 6000  # 输入 doc 截断上限（防超长）
+LEARN_TIMEOUT = 60  # socket 超时（秒）
+LEARN_PROMPT_PREFIX = (
+    "你是投研知识蒸馏助手。把下面的文档提炼成不超过 500 字的"
+    "结构化笔记（要点+可复用结论），直接输出笔记正文："
+)
 
 
 def _llm_base_url(explicit):
     """base_url 优先级：显式参数 > 环境变量 OLLAMA_URL > 本机 Ollama 缺省。"""
-    return (explicit or os.environ.get("OLLAMA_URL")
-            or "http://127.0.0.1:11434").rstrip("/")
+    return (
+        explicit or os.environ.get("OLLAMA_URL") or "http://127.0.0.1:11434"
+    ).rstrip("/")
 
 
 def _llm_distill(base_url, doc):
     """调 Ollama /api/generate 提炼，返回 (digest, model)。
     连接失败/超时/非 200/响应缺 response（含空 response）→ 抛异常交上层诚实降级。"""
-    payload = json.dumps({
-        "model": LEARN_MODEL,
-        "prompt": LEARN_PROMPT_PREFIX + doc[:LEARN_DOC_MAX],
-        "stream": False,
-    }).encode("utf-8")
+    payload = json.dumps(
+        {
+            "model": LEARN_MODEL,
+            "prompt": LEARN_PROMPT_PREFIX + doc[:LEARN_DOC_MAX],
+            "stream": False,
+        }
+    ).encode("utf-8")
     req = urllib.request.Request(
-        base_url + "/api/generate", data=payload,
-        headers={"Content-Type": "application/json"}, method="POST")
+        base_url + "/api/generate",
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
     with urllib.request.urlopen(req, timeout=LEARN_TIMEOUT) as resp:
         data = json.loads(resp.read().decode("utf-8"))
     digest = str(data.get("response") or "").strip()

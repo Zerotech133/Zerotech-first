@@ -40,6 +40,7 @@
     decide_route(intent) -> dict            # K1.2
     cost_aware_route(intent, confidence)    # K1.3
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -52,14 +53,14 @@ from pathlib import Path
 
 # ── 八意图闭集（与 v2 方案 §2.1 一致，新增意图必须同时补 ROUTE_TABLE）──
 INTENTS = (
-    "stock_consult",     # 个股咨询
-    "watch_setup",       # 盯票/预警设置
-    "subscription_qa",   # 我的订阅/额度（查账本直答）
-    "billing",           # 账单/发票/退款（涉资金，人工兜底）
-    "complaint",         # 投诉（永远受理，最高优先级）
-    "feed",              # 长文/链接投喂
-    "smalltalk",         # 闲聊
-    "unclear",           # 判不出来 → 澄清卡
+    "stock_consult",  # 个股咨询
+    "watch_setup",  # 盯票/预警设置
+    "subscription_qa",  # 我的订阅/额度（查账本直答）
+    "billing",  # 账单/发票/退款（涉资金，人工兜底）
+    "complaint",  # 投诉（永远受理，最高优先级）
+    "feed",  # 长文/链接投喂
+    "smalltalk",  # 闲聊
+    "unclear",  # 判不出来 → 澄清卡
 )
 
 FAST_MODEL = "ollama/qwen3.5:9b"
@@ -81,56 +82,80 @@ _CODE_RE = re.compile(r"\b(\d{6})\b")
 _URL_RE = re.compile(r"https?://[^\s<>\"']+", re.I)
 
 _COMPLAINT_RE = re.compile(
-    r"(投诉|失望|没人回|没人理|差评|退钱|骗|垃圾|太差|什么破|态度)")
+    r"(投诉|失望|没人回|没人理|差评|退钱|骗|垃圾|太差|什么破|态度)"
+)
 _WATCH_RE = re.compile(r"(盯|提醒|预警|监控)")
 _STOCK_RE = re.compile(
-    r"(买|卖|能进|能上|走势|分析|看看|看一下|怎么样|支撑|压力|止盈|止损|仓位)")
-_SUBSCRIPTION_RE = re.compile(
-    r"(订阅|额度|剩几天|还剩|剩余|套餐|到期|档位)")
-_BILLING_RE = re.compile(
-    r"(账单|发票|退款|支付|扣款|续费|付款|对账|多少钱)")
+    r"(买|卖|能进|能上|走势|分析|看看|看一下|怎么样|支撑|压力|止盈|止损|仓位)"
+)
+_SUBSCRIPTION_RE = re.compile(r"(订阅|额度|剩几天|还剩|剩余|套餐|到期|档位)")
+_BILLING_RE = re.compile(r"(账单|发票|退款|支付|扣款|续费|付款|对账|多少钱)")
 
 # ── 域路由表（v2 方案 §2.2）：target=接活的席位；gate=订阅闸口径；
 #    priority 越小越优先（投诉=1 永远最前）；action=回执形态
 ROUTE_TABLE = {
     "stock_consult": {
-        "target": "simayi", "domain": "quant", "gate": "subscription",
-        "action": "dispatch_result_card", "priority": 3,
+        "target": "simayi",
+        "domain": "quant",
+        "gate": "subscription",
+        "action": "dispatch_result_card",
+        "priority": 3,
         "desc": "个股咨询 → 司马懿席（盯盘官转派）",
     },
     "watch_setup": {
-        "target": "xuchu_g1", "domain": "quant", "gate": "subscription",
-        "action": "dispatch_confirm_card", "priority": 3,
+        "target": "xuchu_g1",
+        "domain": "quant",
+        "gate": "subscription",
+        "action": "dispatch_confirm_card",
+        "priority": 3,
         "desc": "盯票设置 → 许褚营 G1 触发器",
     },
     "subscription_qa": {
-        "target": "self", "domain": "business", "gate": "no_gate",
-        "action": "summary_card", "priority": 2,
+        "target": "self",
+        "domain": "business",
+        "gate": "no_gate",
+        "action": "summary_card",
+        "priority": 2,
         "desc": "订阅/额度查询 → 中台查账本直答（零 Agent）",
     },
     "billing": {
-        "target": "self_human", "domain": "business", "gate": "no_gate",
-        "action": "human_fallback_card", "priority": 2,
+        "target": "self_human",
+        "domain": "business",
+        "gate": "no_gate",
+        "action": "human_fallback_card",
+        "priority": 2,
         "desc": "账单/发票/退款 → 直答摘要 + 人工兜底（涉资金不自动答）",
     },
     "complaint": {
-        "target": "tianfeng", "domain": "governance", "gate": "no_gate",
-        "action": "accept_card_with_ticket", "priority": 1,
+        "target": "tianfeng",
+        "domain": "governance",
+        "gate": "no_gate",
+        "action": "accept_card_with_ticket",
+        "priority": 1,
         "desc": "投诉 → 田丰归口（最高优先级，永不受闸限）",
     },
     "feed": {
-        "target": "knowledge", "domain": "knowledge", "gate": "no_gate",
-        "action": "ingested_card", "priority": 5,
+        "target": "knowledge",
+        "domain": "knowledge",
+        "gate": "no_gate",
+        "action": "ingested_card",
+        "priority": 5,
         "desc": "长文/链接 → 知识库既有链路",
     },
     "smalltalk": {
-        "target": "clarify", "domain": "comm", "gate": "no_gate",
-        "action": "clarify_card", "priority": 4,
+        "target": "clarify",
+        "domain": "comm",
+        "gate": "no_gate",
+        "action": "clarify_card",
+        "priority": 4,
         "desc": "闲聊 → 澄清卡（带建议指令）",
     },
     "unclear": {
-        "target": "clarify", "domain": "comm", "gate": "no_gate",
-        "action": "clarify_card", "priority": 4,
+        "target": "clarify",
+        "domain": "comm",
+        "gate": "no_gate",
+        "action": "clarify_card",
+        "priority": 4,
         "desc": "判不出来 → 澄清卡（不猜）",
     },
 }
@@ -207,7 +232,7 @@ def _parse_llm_json(raw):
     # 模型偶尔带前后缀说明文字：截首个 { 到末个 }
     l, r = s.find("{"), s.rfind("}")
     if l >= 0 and r > l:
-        s = s[l:r + 1]
+        s = s[l : r + 1]
     obj = json.loads(s)
     if not isinstance(obj, dict):
         raise ValueError("llm output not object")
@@ -235,40 +260,73 @@ def classify_intent(text, llm=None, status_sink=None):
     hit = _regex_classify(text)
     if hit is not None:
         intent, ents = hit
-        return {"intent": intent, "confidence": REGEX_CONFIDENCE,
-                "entities": ents, "channel": "regex", "llm_ok": False,
-                "error": None}
+        return {
+            "intent": intent,
+            "confidence": REGEX_CONFIDENCE,
+            "entities": ents,
+            "channel": "regex",
+            "llm_ok": False,
+            "error": None,
+        }
 
     if llm is None:
         llm, err = _default_llm()
         if llm is None:
-            return {"intent": "unclear", "confidence": 0.0, "entities": {},
-                    "channel": "fallback", "llm_ok": False,
-                    "error": "llm_unavailable: %s" % err}
+            return {
+                "intent": "unclear",
+                "confidence": 0.0,
+                "entities": {},
+                "channel": "fallback",
+                "llm_ok": False,
+                "error": "llm_unavailable: %s" % err,
+            }
     try:
-        raw, status = llm.chat(_CLASSIFY_SYSTEM, (text or "")[:2000],
-                               model="qwen3.5:9b")
+        raw, status = llm.chat(
+            _CLASSIFY_SYSTEM, (text or "")[:2000], model="qwen3.5:9b"
+        )
         if status_sink is not None:
             status_sink.append(status)
         if status != "normal":
             # degraded 也接受（本地兜底已产出合理文本），但如实标记
             intent, conf, ents = _parse_llm_json(raw)
-            return {"intent": intent, "confidence": conf, "entities": ents,
-                    "channel": "llm", "llm_ok": False,
-                    "error": "llm_status=%s" % status}
+            return {
+                "intent": intent,
+                "confidence": conf,
+                "entities": ents,
+                "channel": "llm",
+                "llm_ok": False,
+                "error": "llm_status=%s" % status,
+            }
         intent, conf, ents = _parse_llm_json(raw)
     except Exception as ex:  # noqa: BLE001 —— 降级必须留因
-        return {"intent": "unclear", "confidence": 0.0, "entities": {},
-                "channel": "fallback", "llm_ok": False,
-                "error": "%s: %s" % (type(ex).__name__, str(ex)[:120])}
+        return {
+            "intent": "unclear",
+            "confidence": 0.0,
+            "entities": {},
+            "channel": "fallback",
+            "llm_ok": False,
+            "error": "%s: %s" % (type(ex).__name__, str(ex)[:120]),
+        }
 
     if conf < UNCLEAR_CONF_THRESHOLD:
         # 宁澄清不瞎猜：保留原判在 entities_hint 供排障
-        return {"intent": "unclear", "confidence": conf,
-                "entities": ents, "channel": "llm", "llm_ok": True,
-                "error": None, "hint": intent}
-    return {"intent": intent, "confidence": conf, "entities": ents,
-            "channel": "llm", "llm_ok": True, "error": None}
+        return {
+            "intent": "unclear",
+            "confidence": conf,
+            "entities": ents,
+            "channel": "llm",
+            "llm_ok": True,
+            "error": None,
+            "hint": intent,
+        }
+    return {
+        "intent": intent,
+        "confidence": conf,
+        "entities": ents,
+        "channel": "llm",
+        "llm_ok": True,
+        "error": None,
+    }
 
 
 # ── K1.2 域路由 ──────────────────────────────────
@@ -286,25 +344,40 @@ def cost_aware_route(intent, confidence):
     歧义裁决）/ template（模板生成，不经模型——投诉与涉资金场景）。
     """
     if intent == "complaint":
-        return {"tier": TEMPLATE_TIER, "binding": "template://complaint",
-                "reason": "投诉走模板+人工，模型不得代答",
-                "degraded_chain": ["template"]}
+        return {
+            "tier": TEMPLATE_TIER,
+            "binding": "template://complaint",
+            "reason": "投诉走模板+人工，模型不得代答",
+            "degraded_chain": ["template"],
+        }
     if intent == "billing":
-        return {"tier": TEMPLATE_TIER, "binding": "template://billing",
-                "reason": "涉资金口径走模板+人工兜底，不自动答",
-                "degraded_chain": ["template"]}
+        return {
+            "tier": TEMPLATE_TIER,
+            "binding": "template://billing",
+            "reason": "涉资金口径走模板+人工兜底，不自动答",
+            "degraded_chain": ["template"],
+        }
     if confidence < CLOUD_CONF_THRESHOLD:
-        return {"tier": "cloud", "binding": CLOUD_MODEL,
-                "reason": "置信度 %.2f < %.1f，升云裁决"
-                          % (confidence, CLOUD_CONF_THRESHOLD),
-                "degraded_chain": ["glm", FAST_MODEL, "template"]}
+        return {
+            "tier": "cloud",
+            "binding": CLOUD_MODEL,
+            "reason": "置信度 %.2f < %.1f，升云裁决"
+            % (confidence, CLOUD_CONF_THRESHOLD),
+            "degraded_chain": ["glm", FAST_MODEL, "template"],
+        }
     if intent == "stock_consult":
-        return {"tier": "deep", "binding": DEEP_MODEL,
-                "reason": "研究推理类，本地 35b 深答",
-                "degraded_chain": [DEEP_MODEL, FAST_MODEL, "template"]}
-    return {"tier": "fast", "binding": FAST_MODEL,
-            "reason": "常规意图，本地 9b 零成本",
-            "degraded_chain": [FAST_MODEL, "template"]}
+        return {
+            "tier": "deep",
+            "binding": DEEP_MODEL,
+            "reason": "研究推理类，本地 35b 深答",
+            "degraded_chain": [DEEP_MODEL, FAST_MODEL, "template"],
+        }
+    return {
+        "tier": "fast",
+        "binding": FAST_MODEL,
+        "reason": "常规意图，本地 9b 零成本",
+        "degraded_chain": [FAST_MODEL, "template"],
+    }
 
 
 # ── 留痕（不存原文）───────────────────────────────
@@ -374,11 +447,11 @@ def route_message(text, llm=None, log=True):
             "route_target": rt["target"],
             "model_tier": md["tier"],
             "text_len": len(text or ""),
-            "text_md5": _md5(text),      # 只存指纹，不存原文
+            "text_md5": _md5(text),  # 只存指纹，不存原文
             "elapsed_ms": elapsed_ms,
         }
         ok, err = _write_trace(entry)
         result["logged"] = ok
         if not ok:
-            result["log_error"] = err   # 留痕失败如实上报，不静默
+            result["log_error"] = err  # 留痕失败如实上报，不静默
     return result

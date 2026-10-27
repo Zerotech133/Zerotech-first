@@ -47,16 +47,20 @@ WLOG_PATH = os.path.join(WORK, "publish_watchdog.log")
 DEFAULT_TIMES = ["16:45", "23:45"]
 TIME_RE = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 
-_lock = threading.RLock()         # 配置/状态写锁（RLock：save_state 可能在持锁路径内被调用）
-_run_lock = threading.Lock()      # 巡检串行化（同一时刻只跑一条链）
+_lock = threading.RLock()  # 配置/状态写锁（RLock：save_state 可能在持锁路径内被调用）
+_run_lock = threading.Lock()  # 巡检串行化（同一时刻只跑一条链）
 _state = {"last_run": None, "running": False, "fired": {}, "last_tick": 0.0}
 
 
 # ---------- 配置与状态 ----------
 
+
 def load_config():
-    cfg = {"enabled": True, "times": list(DEFAULT_TIMES),
-           "updated_at": time.strftime("%Y-%m-%d %H:%M:%S")}
+    cfg = {
+        "enabled": True,
+        "times": list(DEFAULT_TIMES),
+        "updated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+    }
     try:
         with open(CONFIG_PATH, encoding="utf-8") as f:
             d = json.load(f)
@@ -70,8 +74,9 @@ def load_config():
 
 def atomic_write_json(path, obj):
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path),
-                               prefix=os.path.basename(path) + ".", suffix=".tmp")
+    fd, tmp = tempfile.mkstemp(
+        dir=os.path.dirname(path), prefix=os.path.basename(path) + ".", suffix=".tmp"
+    )
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             json.dump(obj, f, ensure_ascii=False, indent=2)
@@ -105,6 +110,7 @@ def load_state():
 
 # ---------- 巡检执行 ----------
 
+
 def run_inspection(trigger):
     """跑一键链（复用看门狗全逻辑：告警/旗标/恢复）。串行化，返回退出码。"""
     with _run_lock:
@@ -112,6 +118,7 @@ def run_inspection(trigger):
         t0 = time.time()
         try:
             import publish_watchdog
+
             rc = publish_watchdog.inspect()
         except Exception as e:  # noqa: BLE001 — 调度器不能被单次巡检弄死
             rc = -1
@@ -148,11 +155,15 @@ def scheduler_loop():
                                 for k in sorted(_state["fired"])[:-60]:
                                     _state["fired"].pop(k, None)
                             save_state()
-                        threading.Thread(target=run_inspection,
-                                         args=("schedule " + key,), daemon=True).start()
+                        threading.Thread(
+                            target=run_inspection,
+                            args=("schedule " + key,),
+                            daemon=True,
+                        ).start()
         except Exception as e:  # noqa: BLE001 — 调度线程永不退出
             try:
                 import publish_watchdog
+
                 publish_watchdog.log("[scheduler] tick 异常: %r" % e)
             except Exception:
                 pass
@@ -168,10 +179,15 @@ def next_fire(cfg):
     later = sorted(t for t in cfg["times"] if t > hhmm_now)
     if later:
         return time.strftime("%Y-%m-%d ", now) + later[0]
-    return time.strftime("%Y-%m-%d", time.localtime(time.time() + 86400)) + " " + cfg["times"][0]
+    return (
+        time.strftime("%Y-%m-%d", time.localtime(time.time() + 86400))
+        + " "
+        + cfg["times"][0]
+    )
 
 
 # ---------- HTTP ----------
+
 
 def tail_watchdog_log(n=15):
     try:
@@ -310,7 +326,6 @@ load();setInterval(load,5000);
 
 
 class Handler(BaseHTTPRequestHandler):
-
     def log_message(self, fmt, *args):  # 安静模式
         pass
 
@@ -379,8 +394,9 @@ class Handler(BaseHTTPRequestHandler):
                 if _state["running"]:
                     self._json({"ok": False, "error": "已有巡检在跑，请稍候"})
                     return
-                threading.Thread(target=run_inspection, args=("manual",),
-                                 daemon=True).start()
+                threading.Thread(
+                    target=run_inspection, args=("manual",), daemon=True
+                ).start()
                 self._json({"ok": True, "started": True})
             else:
                 self._json({"ok": False, "error": "unknown action"}, 400)
@@ -389,18 +405,28 @@ class Handler(BaseHTTPRequestHandler):
 def main():
     parser = argparse.ArgumentParser(description="picks 定时发布管理页 + 调度器")
     parser.add_argument("--port", type=int, default=8095)
-    parser.add_argument("--bg", action="store_true",
-                        help="脱离会话后台驻留（DETACHED_PROCESS，日志到 work/schedule_server.out）")
+    parser.add_argument(
+        "--bg",
+        action="store_true",
+        help="脱离会话后台驻留（DETACHED_PROCESS，日志到 work/schedule_server.out）",
+    )
     args = parser.parse_args()
 
     if args.bg:
         out = open(os.path.join(WORK, "schedule_server.out"), "ab")
         subprocess.Popen(
             [sys.executable, os.path.abspath(__file__), "--port", str(args.port)],
-            cwd=HERE, stdin=subprocess.DEVNULL, stdout=out, stderr=out,
-            creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
+            cwd=HERE,
+            stdin=subprocess.DEVNULL,
+            stdout=out,
+            stderr=out,
+            creationflags=subprocess.DETACHED_PROCESS
+            | subprocess.CREATE_NEW_PROCESS_GROUP,
         )
-        print("[ok] 已后台驻留：http://127.0.0.1:%d/（日志 work/schedule_server.out）" % args.port)
+        print(
+            "[ok] 已后台驻留：http://127.0.0.1:%d/（日志 work/schedule_server.out）"
+            % args.port
+        )
         return 0
 
     load_state()

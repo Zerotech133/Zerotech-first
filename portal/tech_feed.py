@@ -3,6 +3,7 @@
 源：①GitHub Trending（daily, html 抓 repo 名/描述/star）②arXiv cs.AI 最新（Atom XML）。
 纪律：同 policy_geo_collector——限频/UA/失败如实/空不凑样本；SSL 代理链降级仅无凭据 GET。
 """
+
 from __future__ import annotations
 
 import json
@@ -28,16 +29,29 @@ def _fetch(url: str, timeout: int = 25) -> str:
         if "CERTIFICATE" not in str(e):
             raise
         import ssl
-        with urllib.request.urlopen(req, timeout=timeout, context=ssl._create_unverified_context()) as r:
+
+        with urllib.request.urlopen(
+            req, timeout=timeout, context=ssl._create_unverified_context()
+        ) as r:
             return r.read().decode("utf-8", errors="replace")
 
 
 def gh_trending(max_n: int = 8) -> list[dict]:
     html = _fetch(GH)
     out = []
-    for m in re.finditer(r'<h2[^>]*>\s*<a[^>]+href="/([^"/]+/[^"/]+)"[^>]*>[\s\S]*?</h2>[\s\S]{0,400}?<p[^>]*>([^<]{4,120})', html):
+    for m in re.finditer(
+        r'<h2[^>]*>\s*<a[^>]+href="/([^"/]+/[^"/]+)"[^>]*>[\s\S]*?</h2>[\s\S]{0,400}?<p[^>]*>([^<]{4,120})',
+        html,
+    ):
         repo, desc = m.group(1), m.group(2).strip()
-        out.append({"date": time.strftime("%Y-%m-%d"), "title": repo, "note": desc[:90], "src": "github/trending"})
+        out.append(
+            {
+                "date": time.strftime("%Y-%m-%d"),
+                "title": repo,
+                "note": desc[:90],
+                "src": "github/trending",
+            }
+        )
     # star 数可选补:找到 svg aria-label star 行——简化省略,描述已可用
     return out[:max_n]
 
@@ -51,9 +65,14 @@ def arxiv_ai(max_n: int = 6) -> list[dict]:
         d = re.search(r"<published>(\d{4}-\d{2}-\d{2})", blk)
         s = re.search(r"<summary>([\s\S]{10,200}?)</summary>", blk)
         if t and d:
-            out.append({"date": d.group(1), "title": " ".join(t.group(1).split())[:80],
-                        "note": (" ".join(s.group(1).split())[:90] + "…") if s else "",
-                        "src": "arxiv/cs.AI"})
+            out.append(
+                {
+                    "date": d.group(1),
+                    "title": " ".join(t.group(1).split())[:80],
+                    "note": (" ".join(s.group(1).split())[:90] + "…") if s else "",
+                    "src": "arxiv/cs.AI",
+                }
+            )
     return out[:max_n]
 
 
@@ -93,8 +112,13 @@ def main() -> int:
     fresh = [x for x in items if x["title"] not in known]
     with open(LEDGER, "a", encoding="utf-8") as f:
         for x in fresh:
-            f.write(json.dumps({**x, "fetched": time.strftime("%Y-%m-%dT%H:%M:%S%z")},
-                               ensure_ascii=False) + "\n")
+            f.write(
+                json.dumps(
+                    {**x, "fetched": time.strftime("%Y-%m-%dT%H:%M:%S%z")},
+                    ensure_ascii=False,
+                )
+                + "\n"
+            )
     print("OK: 新增 %d / 本轮 %d" % (len(fresh), len(items)))
     return 0
 

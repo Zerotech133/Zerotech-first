@@ -18,6 +18,7 @@ agent_auto_commit.py — 各 Agent 代码定时强制入库（portal 统揽板�
 
 退出码：0 = 成功/空跑/守卫拦截；2 = 提交失败（重试耗尽）
 """
+
 import json
 import re
 import subprocess
@@ -33,31 +34,36 @@ LOG_FILE = LOG_DIR / "auto_commit.log"
 LOCK_WAIT_RETRY, LOCK_WAIT_SEC = 3, 10
 
 # ---- 膨胀守卫阈值（2026-10-08）：防大文件/大批量新文件击穿快照库 ----
-BLOAT_MAX_NEW_FILES = 300   # 单次提交新增文件数上限
-BLOAT_MAX_TOTAL_MB = 50     # 单次提交新增文件总字节上限
-BLOAT_MAX_SINGLE_MB = 20    # 单个新增文件体积上限
+BLOAT_MAX_NEW_FILES = 300  # 单次提交新增文件数上限
+BLOAT_MAX_TOTAL_MB = 50  # 单次提交新增文件总字节上限
+BLOAT_MAX_SINGLE_MB = 20  # 单个新增文件体积上限
 
 # ---- 在途文件排除表（2026-10-12 拍板材料方案 B 轻量版）----
 # 演练账本/Agent 记忆类文件高频翻转，扫进快照只会污染历史；真成果由对应
 # Agent 正式提交。新增同类产物时在此追加一行即可。
 EXCLUDE_PATHSPECS = [
-    ":(exclude)**/MEMORY*",                 # Agent 记忆/笔记（多项目通用）
-    ":(exclude)**/hires.json",              # 操盘手雇佣演练账本
-    ":(exclude)**/manager_hires.json",      # 经理雇佣账本（K-STOCK-137，同类）
-    ":(exclude)**/minutes.json",            # 纪要账本（K-STOCK-137 S-c，同类）
-    ":(exclude)**/minutes_inbox.json",      # 站内纪要收件箱（运行时翻转）
+    ":(exclude)**/MEMORY*",  # Agent 记忆/笔记（多项目通用）
+    ":(exclude)**/hires.json",  # 操盘手雇佣演练账本
+    ":(exclude)**/manager_hires.json",  # 经理雇佣账本（K-STOCK-137，同类）
+    ":(exclude)**/minutes.json",  # 纪要账本（K-STOCK-137 S-c，同类）
+    ":(exclude)**/minutes_inbox.json",  # 站内纪要收件箱（运行时翻转）
     ":(exclude)**/minutes_trader_feed.json",  # 操盘手纪要订阅流（运行时翻转）
-    ":(exclude)work/tmp*",                  # work/ 下临时产物
+    ":(exclude)work/tmp*",  # work/ 下临时产物
 ]
 
 
 def git(*args: str, check: bool = True) -> subprocess.CompletedProcess:
     r = subprocess.run(
         ["git", "-C", str(REPO), *args],
-        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
     )
     if check and r.returncode != 0:
-        raise RuntimeError(f"git {' '.join(args)} 失败: {(r.stderr or r.stdout).strip()[:300]}")
+        raise RuntimeError(
+            f"git {' '.join(args)} 失败: {(r.stderr or r.stdout).strip()[:300]}"
+        )
     return r
 
 
@@ -68,7 +74,7 @@ def commit_with_retry(msg: str) -> subprocess.CompletedProcess:
         if r.returncode == 0:
             return r
         last = r
-        err = (r.stderr or "")
+        err = r.stderr or ""
         if "index.lock" in err:
             time.sleep(LOCK_WAIT_SEC)  # 另一 Agent 的 git 进程持锁，等待重试
             continue
@@ -89,14 +95,17 @@ SECRET_FILE_RE = re.compile(
     r"|[^/]*\.(pem|pfx|p12|keystore|token)$"
     r"|[^/]*_(token|secret|key)$"
     r"|[^/]*(secret|credential|api[_-]?key|private[_-]?key|access[_-]?token)"
-    r"[^/]*\.(json|ya?ml|txt|ini|cfg|conf|py)$)", re.I)
+    r"[^/]*\.(json|ya?ml|txt|ini|cfg|conf|py)$)",
+    re.I,
+)
 SECRET_BODY_RE = re.compile(
     r"(BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY"
     r"|sk-[A-Za-z0-9_\-]{20,}"
     r"|ghp_[A-Za-z0-9]{20,}"
     r"|AKIA[0-9A-Z]{16}"
     r"|xox[abp]-[A-Za-z0-9\-]{10,}"
-    r"|(?:GLM_API_KEY|API_KEY|SECRET_KEY)\s*=\s*[\"'][^\"']{8,}[\"'])")
+    r"|(?:GLM_API_KEY|API_KEY|SECRET_KEY)\s*=\s*[\"'][^\"']{8,}[\"'])"
+)
 SECRET_SCAN_CAP = 8_000_000  # 暂存 diff 扫描字节上限
 
 
@@ -128,12 +137,16 @@ def bloat_reason() -> str:
         sizes.append((sz, f))
     sizes.sort(reverse=True)
     top = "; ".join(f"{f}({s / 1048576:.1f}MB)" for s, f in sizes[:5])
-    if (len(new_files) > BLOAT_MAX_NEW_FILES
-            or total > BLOAT_MAX_TOTAL_MB * 1048576
-            or sizes[0][0] > BLOAT_MAX_SINGLE_MB * 1048576):
-        return (f"新增文件数={len(new_files)} 总量={total / 1048576:.1f}MB "
-                f"超阈值(>{BLOAT_MAX_NEW_FILES}个 或 总量>{BLOAT_MAX_TOTAL_MB}MB "
-                f"或 单文件>{BLOAT_MAX_SINGLE_MB}MB) top5: {top}")
+    if (
+        len(new_files) > BLOAT_MAX_NEW_FILES
+        or total > BLOAT_MAX_TOTAL_MB * 1048576
+        or sizes[0][0] > BLOAT_MAX_SINGLE_MB * 1048576
+    ):
+        return (
+            f"新增文件数={len(new_files)} 总量={total / 1048576:.1f}MB "
+            f"超阈值(>{BLOAT_MAX_NEW_FILES}个 或 总量>{BLOAT_MAX_TOTAL_MB}MB "
+            f"或 单文件>{BLOAT_MAX_SINGLE_MB}MB) top5: {top}"
+        )
     return ""
 
 
@@ -172,7 +185,9 @@ def main() -> int:
 
         # 撞车判定：status 到 add 之间人工提交抢先落库 → 排除表过滤后暂存区
         # 可能为空，属正常空跑而非失败
-        staged_files = git("diff", "--cached", "--name-only", check=False).stdout.strip()
+        staged_files = git(
+            "diff", "--cached", "--name-only", check=False
+        ).stdout.strip()
         if not staged_files:
             status.update(ok=True, detail="撞车或全被排除：暂存区为空，空跑")
             print(f"[{ts}] 空跑：暂存区为空（人工已提交或命中排除表）")
@@ -192,14 +207,16 @@ def main() -> int:
             print(f"[{ts}] SKIP {status['detail']}")
             return finish(status)
 
-        staged = git("diff", "--cached", "--stat", check=False).stdout.strip().splitlines()
+        staged = (
+            git("diff", "--cached", "--stat", check=False).stdout.strip().splitlines()
+        )
         stat_line = staged[-1].strip() if staged else ""
 
         r = commit_with_retry(
             f"auto: 各Agent代码定时入库快照 {now.strftime('%m-%d %H:%M')}（改{mod} 新增{new} 删{dele}）"
         )
         if r is None or r.returncode != 0:
-            err = ((r.stderr if r else '') or '').strip()
+            err = ((r.stderr if r else "") or "").strip()
             # 撞车兜底：commit 时人工已把暂存区提交走 → nothing to commit 属空跑
             if "nothing to commit" in err or "没有已暂存的变更" in err:
                 status.update(ok=True, detail="撞车：暂存已被人工提交抢先，空跑")
@@ -210,8 +227,7 @@ def main() -> int:
             return finish(status, code=2)
 
         head = git("log", "-1", "--format=%h %s").stdout.strip()
-        status.update(ok=True, committed=True,
-                      detail=f"{head} | diffstat: {stat_line}")
+        status.update(ok=True, committed=True, detail=f"{head} | diffstat: {stat_line}")
         print(f"[{ts}] OK {head}\n  改动: 改{mod} 新增{new} 删{dele} | {stat_line}")
         return finish(status)
     except Exception as e:  # noqa: BLE001
@@ -222,9 +238,13 @@ def main() -> int:
 
 def finish(status: dict, code: int = 0) -> int:
     try:
-        STATUS_FILE.write_text(json.dumps(status, ensure_ascii=False, indent=2), encoding="utf-8")
+        STATUS_FILE.write_text(
+            json.dumps(status, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
         with open(LOG_FILE, "a", encoding="utf-8") as f:
-            f.write(f"{status['time']} | {'OK' if status['ok'] else 'FAIL'} | {status['detail']}\n")
+            f.write(
+                f"{status['time']} | {'OK' if status['ok'] else 'FAIL'} | {status['detail']}\n"
+            )
     except OSError:
         pass
     return code

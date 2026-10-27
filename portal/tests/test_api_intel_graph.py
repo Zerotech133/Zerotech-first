@@ -1,4 +1,5 @@
 """K-MDC-E2 tests: dossier endpoint — honest empty, candidate-only, traceable."""
+
 import sys
 from pathlib import Path
 
@@ -24,24 +25,61 @@ def test_dossier_returns_candidate_only_with_traceable_keys():
 
 def test_seat_stock_code_parsing_covers_all_candidate_shapes():
     """E2FIX: 三类席位候选的股票码都必须取到——basis 形态各异, 只认 evidence_key."""
-    confirmed = seat_pairs(pd.DataFrame([
-        {"ts_code": "600001.SH", "trade_date": "20261021", "exalter": "A部", "side": "0"},
-        {"ts_code": "600001.SH", "trade_date": "20261021", "exalter": "B部", "side": "1"},
-    ]))[0]
-    assert confirmed.basis.startswith("lhb_same_day_same_stock:")  # 前缀不匹配 basis 路线
+    confirmed = seat_pairs(
+        pd.DataFrame(
+            [
+                {
+                    "ts_code": "600001.SH",
+                    "trade_date": "20261021",
+                    "exalter": "A部",
+                    "side": "0",
+                },
+                {
+                    "ts_code": "600001.SH",
+                    "trade_date": "20261021",
+                    "exalter": "B部",
+                    "side": "1",
+                },
+            ]
+        )
+    )[0]
+    assert confirmed.basis.startswith(
+        "lhb_same_day_same_stock:"
+    )  # 前缀不匹配 basis 路线
     assert _seat_stock_code(confirmed) == "600001.SH"
-    group = seat_pairs(pd.DataFrame([
-        {"ts_code": "600009.SH", "trade_date": "20261021", "exalter": f"营业部{i}", "side": "0"}
-        for i in range(12)
-    ]))[0]
+    group = seat_pairs(
+        pd.DataFrame(
+            [
+                {
+                    "ts_code": "600009.SH",
+                    "trade_date": "20261021",
+                    "exalter": f"营业部{i}",
+                    "side": "0",
+                }
+                for i in range(12)
+            ]
+        )
+    )[0]
     assert group.basis.endswith(":12")  # 群体边 basis 尾段是席位数, 不是代码
     assert _seat_stock_code(group) == "600009.SH"
-    s2 = seat_pairs(pd.DataFrame([
-        {"ts_code": "600001.SH", "trade_date": "20261021",
-         "exalter": "甲证券北京第1营业部", "side": "0"},
-        {"ts_code": "600001.SH", "trade_date": "20261021",
-         "exalter": "甲证券北京第2营业部", "side": "1"},
-    ]))[0]
+    s2 = seat_pairs(
+        pd.DataFrame(
+            [
+                {
+                    "ts_code": "600001.SH",
+                    "trade_date": "20261021",
+                    "exalter": "甲证券北京第1营业部",
+                    "side": "0",
+                },
+                {
+                    "ts_code": "600001.SH",
+                    "trade_date": "20261021",
+                    "exalter": "甲证券北京第2营业部",
+                    "side": "1",
+                },
+            ]
+        )
+    )[0]
     assert s2.basis.startswith("seat_S2_candidate:")
     assert _seat_stock_code(s2) == "600001.SH"
     assert _seat_stock_code(None) is None
@@ -49,14 +87,32 @@ def test_seat_stock_code_parsing_covers_all_candidate_shapes():
 
 def test_seat_edges_queryable_by_stock_with_isolated_fixture(monkeypatch):
     """自造两席一票：验证消费端确实按票索引，不依赖会演进的真实分区。"""
-    frame = pd.DataFrame([
-        {"ts_code": "600001.SH", "trade_date": "20261021", "exalter": "A部", "side": "0"},
-        {"ts_code": "600001.SH", "trade_date": "20261021", "exalter": "B部", "side": "1"},
-    ])
-    monkeypatch.setattr(api_intel_graph, "load_seat_rows", lambda *_args, **_kwargs: frame)
-    monkeypatch.setattr(api_intel_graph.pd, "read_parquet", lambda *_args, **_kwargs:
-                        pd.DataFrame(columns=["holder_name", "ts_code", "end_date",
-                                              "hold_ratio", "ann_date"]))
+    frame = pd.DataFrame(
+        [
+            {
+                "ts_code": "600001.SH",
+                "trade_date": "20261021",
+                "exalter": "A部",
+                "side": "0",
+            },
+            {
+                "ts_code": "600001.SH",
+                "trade_date": "20261021",
+                "exalter": "B部",
+                "side": "1",
+            },
+        ]
+    )
+    monkeypatch.setattr(
+        api_intel_graph, "load_seat_rows", lambda *_args, **_kwargs: frame
+    )
+    monkeypatch.setattr(
+        api_intel_graph.pd,
+        "read_parquet",
+        lambda *_args, **_kwargs: pd.DataFrame(
+            columns=["holder_name", "ts_code", "end_date", "hold_ratio", "ann_date"]
+        ),
+    )
     d = build_view().dossier("600001.SH")
     assert d["total_edges"] == 1
     assert d["verdict"] == "candidate_only"
@@ -65,12 +121,28 @@ def test_seat_edges_queryable_by_stock_with_isolated_fixture(monkeypatch):
 
 
 def test_missing_holder_ratio_does_not_fabricate_value(monkeypatch):
-    monkeypatch.setattr(api_intel_graph, "load_seat_rows", lambda *_args, **_kwargs:
-                        pd.DataFrame(columns=["trade_date", "ts_code", "exalter", "side"]))
-    monkeypatch.setattr(api_intel_graph.pd, "read_parquet", lambda *_args, **_kwargs:
-                        pd.DataFrame([{"holder_name": "甲", "ts_code": "600001.SH",
-                                       "end_date": "20260930", "hold_ratio": None,
-                                       "ann_date": "20261020"}]))
+    monkeypatch.setattr(
+        api_intel_graph,
+        "load_seat_rows",
+        lambda *_args, **_kwargs: pd.DataFrame(
+            columns=["trade_date", "ts_code", "exalter", "side"]
+        ),
+    )
+    monkeypatch.setattr(
+        api_intel_graph.pd,
+        "read_parquet",
+        lambda *_args, **_kwargs: pd.DataFrame(
+            [
+                {
+                    "holder_name": "甲",
+                    "ts_code": "600001.SH",
+                    "end_date": "20260930",
+                    "hold_ratio": None,
+                    "ann_date": "20261020",
+                }
+            ]
+        ),
+    )
     d = build_view().dossier("600001.SH")
     assert d["total_edges"] == 0
     assert d["edges"] == []  # Unknown ratio must never be rendered as 0.01%.

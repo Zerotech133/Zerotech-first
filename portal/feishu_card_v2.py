@@ -9,6 +9,7 @@ schema V2 不支持 note 组件（灰字用 markdown font 标签）。
   card = build_drill_card(code, facts, sections=[("📈 缠论中枢与操作方案", md1), ...])
   ok = send_card(card)
 """
+
 import json
 import os
 import sys
@@ -27,7 +28,9 @@ from send_feishu import USER_ID  # noqa: E402
 # 2026-10-18：项目 E 盘→C 盘搬迁后按目录重建了发布沙箱，域名换新
 # （老 quant-picks-board.app.workbuddy.host 为孤儿沙箱、数据陈旧且本账号
 # 无发布记录无法下线，已决策弃用；老域名勿再写入任何卡片/链接）。
-PORTAL_BASE = "https://quant-picks-board-74446.app.workbuddy.host"  # 公网鉴权站（访问码门禁）
+PORTAL_BASE = (
+    "https://quant-picks-board-74446.app.workbuddy.host"  # 公网鉴权站（访问码门禁）
+)
 
 # 2026-10-25 移动端 /m：链接自动签发（开关见 portal/work/m_link.json；默认关，
 # 关闭时卡片保持旧链接零变化；开启后按钮指向 /m 页面）。
@@ -55,8 +58,7 @@ def _load_portal_key():
     if env_k:
         return env_k
     try:
-        with open(os.path.join(HERE, "work", "portal_key.json"),
-                  encoding="utf-8") as f:
+        with open(os.path.join(HERE, "work", "portal_key.json"), encoding="utf-8") as f:
             k = (json.load(f).get("key") or "").strip()
             if k:
                 return k
@@ -77,7 +79,10 @@ def _fmt_quote(facts):
     pct = q.get("pct")
     color = "red" if (pct or 0) >= 0 else "green"
     s = "现价 **%s**（<font color='%s'>%+.2f%%</font>）" % (
-        q.get("px"), color, pct or 0)
+        q.get("px"),
+        color,
+        pct or 0,
+    )
     if q.get("amount"):
         s += " · 成交 %.2f 亿" % (q["amount"] / 1e8)
     return s
@@ -94,61 +99,91 @@ def _verdict_line(facts):
 def _legacy_note(tag):
     try:
         import legacy_telemetry
+
         legacy_telemetry.hit(tag)
     except Exception:  # noqa: BLE001
         pass
 
 
-def build_drill_card(code, facts, sections, title_extra="",
-                     trade_basis="2026-09-30 收盘（国庆休市）"):
+def build_drill_card(
+    code, facts, sections, title_extra="", trade_basis="2026-09-30 收盘（国庆休市）"
+):
     """sections: [(layer_title, md_content), ...] → 卡片 2.0 JSON dict。"""
     name = facts.get("name") or code
     cl = facts.get("chanlun") or {}
     key_line = "行情加载中" if not facts.get("quote") else _fmt_quote(facts)
     if cl.get("dzg"):
         key_line += "\n**关键位** 中枢 %s~%s ｜ 止损 %s ｜ 操作 %s" % (
-            cl.get("dzd"), cl.get("dzg"), cl.get("stop"),
-            (cl.get("plan") or "")[:40])
+            cl.get("dzd"),
+            cl.get("dzg"),
+            cl.get("stop"),
+            (cl.get("plan") or "")[:40],
+        )
     elements = [
-        {"tag": "markdown", "content":
-            "%s\n%s" % (_verdict_line(facts), key_line)},
+        {"tag": "markdown", "content": "%s\n%s" % (_verdict_line(facts), key_line)},
         {"tag": "hr"},
     ]
     for t, md in sections:
-        elements.append({
-            "tag": "collapsible_panel", "expanded": False,
-            "header": {"title": {"tag": "plain_text", "content": t}},
-            "border": {"color": "grey"}, "vertical_spacing": "8px",
-            "padding": "8px 12px",
-            "elements": [{"tag": "markdown", "content": md}]})
+        elements.append(
+            {
+                "tag": "collapsible_panel",
+                "expanded": False,
+                "header": {"title": {"tag": "plain_text", "content": t}},
+                "border": {"color": "grey"},
+                "vertical_spacing": "8px",
+                "padding": "8px 12px",
+                "elements": [{"tag": "markdown", "content": md}],
+            }
+        )
     elements.append({"tag": "hr"})
     # 2026-10-25 老田拍板「用H5」：下钻按钮统一指向 H5 /m/chan；
     # H5 未启用才回退旧门户按钮（绝不发死链）。
     _m_url = m_links.url_for("chan", code=code) if m_links else ""
     if _m_url:
-        elements.append({
-            "tag": "button", "type": "primary", "size": "medium",
-            "text": {"tag": "plain_text", "content": "📱 移动端详情（H5）"},
-            "behaviors": [{"type": "open_url", "default_url": _m_url}]})
+        elements.append(
+            {
+                "tag": "button",
+                "type": "primary",
+                "size": "medium",
+                "text": {"tag": "plain_text", "content": "📱 移动端详情（H5）"},
+                "behaviors": [{"type": "open_url", "default_url": _m_url}],
+            }
+        )
     else:
-        elements.append({
-            "tag": "button", "type": "primary", "size": "medium",
-            "text": {"tag": "plain_text", "content": "门户详情页"},
-            "behaviors": [{"type": "open_url",
-                           "default_url": "%s/picks.html?key=%s" % (
-                               PORTAL_BASE, _load_portal_key())}]})
-    elements.append({
-        "tag": "markdown", "content":
-            "<font color='grey'>老田的AI工作站 · 缠论引擎K78+K246 · "
-            "数据基准 %s</font>" % trade_basis})
+        elements.append(
+            {
+                "tag": "button",
+                "type": "primary",
+                "size": "medium",
+                "text": {"tag": "plain_text", "content": "门户详情页"},
+                "behaviors": [
+                    {
+                        "type": "open_url",
+                        "default_url": "%s/picks.html?key=%s"
+                        % (PORTAL_BASE, _load_portal_key()),
+                    }
+                ],
+            }
+        )
+    elements.append(
+        {
+            "tag": "markdown",
+            "content": "<font color='grey'>老田的AI工作站 · 缠论引擎K78+K246 · "
+            "数据基准 %s</font>" % trade_basis,
+        }
+    )
     return {
         "schema": "2.0",
         "config": {"update_multi": True},
         "header": {
-            "title": {"tag": "plain_text",
-                      "content": "%s %s %s" % (code, name, title_extra)},
-            "template": "orange"},
-        "body": {"elements": elements}}
+            "title": {
+                "tag": "plain_text",
+                "content": "%s %s %s" % (code, name, title_extra),
+            },
+            "template": "orange",
+        },
+        "body": {"elements": elements},
+    }
 
 
 def send_card(card, receive_id=None, receive_id_type="open_id", kind=None):
@@ -159,14 +194,20 @@ def send_card(card, receive_id=None, receive_id_type="open_id", kind=None):
     if receive_id is None:
         receive_id = USER_ID
     from feishu_client import send_msg  # NEWS 已挂 path（K-STOCK-228 出口收敛）
+
     # P3 观察：发送旧模板卡时记一笔（统一卡 #unified 不计）
     try:
         if "#unified" not in json.dumps(card, ensure_ascii=False):
             _legacy_note("send_card")
     except Exception:  # noqa: BLE001
         pass
-    return send_msg(json.dumps(card, ensure_ascii=False), "interactive",
-                    receive_id, receive_id_type, kind=kind)
+    return send_msg(
+        json.dumps(card, ensure_ascii=False),
+        "interactive",
+        receive_id,
+        receive_id_type,
+        kind=kind,
+    )
 
 
 # ── K-PUSH-004：卡片 v3 域色模板（统一构件规范）──────────────
@@ -175,23 +216,35 @@ def send_card(card, receive_id=None, receive_id_type="open_id", kind=None):
 # 域色规范（原型 tpl 分区拍板）：蓝媒（资讯）/ 紫交互（审批·双向）/
 # 绿例行（日报）/ 金回执（凭证）/ 红预警（critical，不受静默限制）。
 V3_DOMAINS = {
-    "news":     ("blue",   "📰", "资讯"),
+    "news": ("blue", "📰", "资讯"),
     "interact": ("violet", "⚖", "交互"),
-    "daily":    ("green",  "🌅", "例行"),
-    "receipt":  ("yellow", "🧾", "回执"),
-    "alert":    ("red",    "🚨", "预警"),
+    "daily": ("green", "🌅", "例行"),
+    "receipt": ("yellow", "🧾", "回执"),
+    "alert": ("red", "🚨", "预警"),
 }
 
 
 def v3_audit_id(title):
     import hashlib
     import time
-    return hashlib.md5(("%s|%s" % (title, time.time())).encode(
-        "utf-8", "replace")).hexdigest()[:4]
+
+    return hashlib.md5(
+        ("%s|%s" % (title, time.time())).encode("utf-8", "replace")
+    ).hexdigest()[:4]
 
 
-def build_v3(domain, title, source, rows=None, md=None, buttons=None,
-             tags="", audit=None, subtitle=None, extra_els=None):
+def build_v3(
+    domain,
+    title,
+    source,
+    rows=None,
+    md=None,
+    buttons=None,
+    tags="",
+    audit=None,
+    subtitle=None,
+    extra_els=None,
+):
     """v3 统一卡 → (card, audit_id)。
 
     rows:       [(label, value_md), ...] 键值区（value 支持 markdown 着色）
@@ -206,6 +259,7 @@ def build_v3(domain, title, source, rows=None, md=None, buttons=None,
     extra_els:  追加 2.0 元素列表（md 之后、buttons 之前；collapsible_panel 等）
     """
     import datetime
+
     if domain not in V3_DOMAINS:
         raise ValueError("未知域：%s（可用 %s）" % (domain, "/".join(V3_DOMAINS)))
     tpl, emoji, dname = V3_DOMAINS[domain]
@@ -216,8 +270,7 @@ def build_v3(domain, title, source, rows=None, md=None, buttons=None,
     if rows:
         els.append({"tag": "hr"})
         for label, val in rows:
-            els.append({"tag": "markdown",
-                        "content": "**%s**　%s" % (label, val)})
+            els.append({"tag": "markdown", "content": "**%s**　%s" % (label, val)})
     if md:
         els.append({"tag": "hr"})
         els.append({"tag": "markdown", "content": md})
@@ -228,6 +281,7 @@ def build_v3(domain, title, source, rows=None, md=None, buttons=None,
     if buttons:
         els.append({"tag": "hr"})
         import card_actions
+
         for label, spec, style in buttons:
             if spec[0] == "action":
                 _, aid, payload = spec
@@ -240,41 +294,66 @@ def build_v3(domain, title, source, rows=None, md=None, buttons=None,
                 val.update(payload or {})
                 try:  # W40：签名 + rid（防伪造/重放）
                     import card_sign
+
                     val = card_sign.sign(val)
                 except Exception:
                     pass
-                els.append({"tag": "button", "type": style or "primary",
-                            "text": {"tag": "plain_text", "content": label},
-                            "behaviors": [{"type": "callback", "value": val}]})
+                els.append(
+                    {
+                        "tag": "button",
+                        "type": style or "primary",
+                        "text": {"tag": "plain_text", "content": label},
+                        "behaviors": [{"type": "callback", "value": val}],
+                    }
+                )
             elif spec[0] == "url":
-                els.append({"tag": "button", "type": style or "default",
-                            "text": {"tag": "plain_text", "content": label},
-                            "behaviors": [{"type": "open_url",
-                                           "default_url": spec[1]}]})
+                els.append(
+                    {
+                        "tag": "button",
+                        "type": style or "default",
+                        "text": {"tag": "plain_text", "content": label},
+                        "behaviors": [{"type": "open_url", "default_url": spec[1]}],
+                    }
+                )
             elif spec[0] == "m":
                 # ("m", scene, {"code": ..., "id": ..., "tab": ...})
                 # 自动签发 /m 链接；未启用/签发失败 → 不渲染（绝不发死链）
-                _murl = (m_links.url_for(spec[1], **(spec[2] or {}))
-                         if m_links and len(spec) >= 2 else "")
+                _murl = (
+                    m_links.url_for(spec[1], **(spec[2] or {}))
+                    if m_links and len(spec) >= 2
+                    else ""
+                )
                 if _murl:
-                    els.append({"tag": "button", "type": style or "default",
-                                "text": {"tag": "plain_text",
-                                         "content": label},
-                                "behaviors": [{"type": "open_url",
-                                               "default_url": _murl}]})
+                    els.append(
+                        {
+                            "tag": "button",
+                            "type": style or "default",
+                            "text": {"tag": "plain_text", "content": label},
+                            "behaviors": [{"type": "open_url", "default_url": _murl}],
+                        }
+                    )
             else:
                 raise ValueError("未知按钮 spec：%r" % (spec[0],))
 
-    els.append({"tag": "markdown", "content":
-                "<font color='grey'>%s · %s · %s · act:%s</font>" % (
-                    (tags or ("#%s" % domain)), source,
-                    now.strftime("%m-%d %H:%M"), audit)})
-    card = {"schema": "2.0", "config": {"update_multi": True},
-            "header": {"title": {"tag": "plain_text",
-                                 "content": "%s %s · %s" % (emoji, dname, title)},
-                       "template": tpl},
-            "body": {"elements": els}}
+    els.append(
+        {
+            "tag": "markdown",
+            "content": "<font color='grey'>%s · %s · %s · act:%s</font>"
+            % ((tags or ("#%s" % domain)), source, now.strftime("%m-%d %H:%M"), audit),
+        }
+    )
+    card = {
+        "schema": "2.0",
+        "config": {"update_multi": True},
+        "header": {
+            "title": {
+                "tag": "plain_text",
+                "content": "%s %s · %s" % (emoji, dname, title),
+            },
+            "template": tpl,
+        },
+        "body": {"elements": els},
+    }
     if subtitle:
-        card["header"]["subtitle"] = {"tag": "plain_text",
-                                      "content": subtitle}
+        card["header"]["subtitle"] = {"tag": "plain_text", "content": subtitle}
     return card, audit

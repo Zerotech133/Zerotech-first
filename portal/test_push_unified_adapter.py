@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """P2 适配器单测：disabled 原样 / shadow 只记录 / enabled 换新卡 / 异常回落。"""
+
 import json
 import os
 import tempfile
@@ -18,7 +19,11 @@ import push_unified_adapter as A  # noqa: E402
 
 @pytest.fixture()
 def cfg(monkeypatch):
-    root = os.path.join(os.environ.get("LOCALAPPDATA") or tempfile.gettempdir(), "aios_test_tmp", uuid.uuid4().hex)
+    root = os.path.join(
+        os.environ.get("LOCALAPPDATA") or tempfile.gettempdir(),
+        "aios_test_tmp",
+        uuid.uuid4().hex,
+    )
     os.makedirs(root, exist_ok=True)
     path = os.path.join(root, "push_unified.json")
     monkeypatch.setattr(fp, "UNIFIED_CFG", path)
@@ -46,8 +51,9 @@ def test_producer_override_disabled(cfg):
 
 def test_enabled_returns_unified(cfg):
     _write(cfg, enabled=True)
-    card = A.adapt("picks", LEGACY, "picks", "选股", SECTIONS,
-                   ts="2026-10-25", source="选股引擎")
+    card = A.adapt(
+        "picks", LEGACY, "picks", "选股", SECTIONS, ts="2026-10-25", source="选股引擎"
+    )
     assert "🎯" in card["header"]["title"]["content"]
     assert card["schema"] == "2.0"
 

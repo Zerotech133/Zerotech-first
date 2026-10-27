@@ -4,6 +4,7 @@
 覆盖：记忆写入/窗口/坏行容错/代词消解/清空、回复生成五类、
 开关默认关零行为变化、smart_intake 全链（含降级）。
 """
+
 import json
 import os
 import sys
@@ -35,6 +36,7 @@ def env(tmp_path, monkeypatch):
     # 复合函数的测试 fixture 必须覆盖**全部下游落盘路径**，只隔一部分=污染生产。
     try:
         from gateway import inbox_gateway as _ig
+
         _ig.set_store(tmp_path / "bridge_inbox")
     except Exception:  # noqa: BLE001 —— 无 agent_platform 路径时跳过（不静默改判）
         pass
@@ -87,8 +89,10 @@ def test_03_window_limit(env, monkeypatch):
 def test_04_bad_line_tolerated(env):
     p = mem._path_for("ou_d")
     p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text('{"ts": "t", "role": "customer", "code": "600519"}\n'
-                 'not-a-json-line\n', encoding="utf-8")
+    p.write_text(
+        '{"ts": "t", "role": "customer", "code": "600519"}\nnot-a-json-line\n',
+        encoding="utf-8",
+    )
     rows = mem.recall("ou_d")
     assert len(rows) == 1 and rows[0]["code"] == "600519"
 
@@ -144,9 +148,16 @@ def test_12_intake_enabled_via_env(env, monkeypatch):
 # ── K2.1 回复生成 ───────────────────────────────
 def _res(intent, code=None, trace="abcdef1234567890", conf=0.9):
     ents = {"code": code} if code else {}
-    return {"intent": intent, "confidence": conf, "entities": ents,
-            "trace_id": trace, "route": {}, "model": {}, "channel": "regex",
-            "llm_ok": False}
+    return {
+        "intent": intent,
+        "confidence": conf,
+        "entities": ents,
+        "trace_id": trace,
+        "route": {},
+        "model": {},
+        "channel": "regex",
+        "llm_ok": False,
+    }
 
 
 def test_13_billing_is_human_fallback_no_amount(env):
@@ -158,22 +169,28 @@ def test_13_billing_is_human_fallback_no_amount(env):
 
 def test_14_complaint_has_ticket_and_priority(env):
     # A2：投诉只认真实派单号；未派单时不得拼 TS- 假号（但仍保留最高优先级语义）。
-    r = ci.build_reply(_res("complaint"), "ou_l",
-                       dispatch_result={"ok": True,
-                                        "dispatch_id": "lg-complaint-1"})
+    r = ci.build_reply(
+        _res("complaint"),
+        "ou_l",
+        dispatch_result={"ok": True, "dispatch_id": "lg-complaint-1"},
+    )
     assert r["action"] == ci.ACTION_REPLY
     assert "lg-complaint-1" in r["text"]
     assert "最高优先级" in r["text"]
-    r2 = ci.build_reply(_res("complaint"), "ou_l",
-                        dispatch_result={"ok": False, "reason": "disabled"})
+    r2 = ci.build_reply(
+        _res("complaint"), "ou_l", dispatch_result={"ok": False, "reason": "disabled"}
+    )
     assert "TS-" not in r2["text"], "不得编造 TS- 假工单号"
     assert "未派单" in r2["text"]
 
 
 def test_15_stock_dispatch_honest_when_channel_off(env):
     """派单通道未启用时如实告知「登记中」，不假称已转。"""
-    r = ci.build_reply(_res("stock_consult", code="605100"), "ou_m",
-                       dispatch_result={"ok": False, "reason": "disabled"})
+    r = ci.build_reply(
+        _res("stock_consult", code="605100"),
+        "ou_m",
+        dispatch_result={"ok": False, "reason": "disabled"},
+    )
     assert r["action"] == ci.ACTION_DISPATCH
     assert "605100" in r["text"]
     assert "登记中" in r["text"] and "未启用" in r["text"]
@@ -182,16 +199,22 @@ def test_15_stock_dispatch_honest_when_channel_off(env):
 
 def test_15b_stock_dispatch_real_ticket(env, monkeypatch):
     """派单成功：文案带真实 lg- 单号 + 5 分钟时限。"""
-    r = ci.build_reply(_res("stock_consult", code="605100"), "ou_m",
-                       dispatch_result={"ok": True, "dispatch_id": "lg-abc123"})
+    r = ci.build_reply(
+        _res("stock_consult", code="605100"),
+        "ou_m",
+        dispatch_result={"ok": True, "dispatch_id": "lg-abc123"},
+    )
     assert "lg-abc123" in r["text"]
     assert "5 分钟" in r["text"]
 
 
 def test_15c_dispatch_failure_honest(env):
     """派单异常：如实说不可用，不说已转。"""
-    r = ci.build_reply(_res("watch_setup", code="300750"), "ou_m",
-                       dispatch_result={"ok": False, "reason": "submit_exception"})
+    r = ci.build_reply(
+        _res("watch_setup", code="300750"),
+        "ou_m",
+        dispatch_result={"ok": False, "reason": "submit_exception"},
+    )
     assert "暂时不可用" in r["text"]
     assert "lg-" not in r["text"]
 
@@ -224,8 +247,8 @@ def test_18_smart_intake_full_chain(env, monkeypatch):
 
 def test_19_smart_intake_pronoun_resolution_end_to_end(env, monkeypatch):
     monkeypatch.setenv("COMM_INTENT_ENABLED", "1")
-    ci.smart_intake("帮我看看 605100 能进吗", "ou_q")     # 记住 code
-    r = ci.smart_intake("刚才那只票现在能进吗", "ou_q")   # 代词指代
+    ci.smart_intake("帮我看看 605100 能进吗", "ou_q")  # 记住 code
+    r = ci.smart_intake("刚才那只票现在能进吗", "ou_q")  # 代词指代
     assert r is not None
     assert r["entities"].get("code") == "605100"
     assert r.get("resolved_from_memory") is True
@@ -266,19 +289,29 @@ def test_23_inbound_wiring_smart_branch(env, monkeypatch):
     monkeypatch.setenv("LAOTIAN_OPEN_ID", "ou_wire_1")
 
     sent, ledgers = [], []
-    monkeypatch.setattr(gw, "_send_card",
-                        lambda card, oid: (sent.append(card) or (True, "ok", "om_stub")))
-    monkeypatch.setattr(gw, "_append_ledger",
-                        lambda path, row: ledgers.append(row))
+    monkeypatch.setattr(
+        gw, "_send_card", lambda card, oid: sent.append(card) or (True, "ok", "om_stub")
+    )
+    monkeypatch.setattr(gw, "_append_ledger", lambda path, row: ledgers.append(row))
     # 桩 LLM：判成 smalltalk（避免依赖真实模型）
-    monkeypatch.setattr(ci, "smart_intake",
-                        lambda text, oid, mid="", llm=None, async_sink=None: {
-                            "intent": "smalltalk", "reply_text": "我是助手",
-                            "action": ci.ACTION_REPLY, "meta": [],
-                            "llm_ok": True, "route": {"target": "clarify"},
-                            "model": {"tier": "fast"}, "trace_id": "t" * 12,
-                            "channel": "llm", "confidence": 0.9,
-                            "entities": {}, "msg_id": mid})
+    monkeypatch.setattr(
+        ci,
+        "smart_intake",
+        lambda text, oid, mid="", llm=None, async_sink=None: {
+            "intent": "smalltalk",
+            "reply_text": "我是助手",
+            "action": ci.ACTION_REPLY,
+            "meta": [],
+            "llm_ok": True,
+            "route": {"target": "clarify"},
+            "model": {"tier": "fast"},
+            "trace_id": "t" * 12,
+            "channel": "llm",
+            "confidence": 0.9,
+            "entities": {},
+            "msg_id": mid,
+        },
+    )
 
     out = gw.handle_inbound("ou_wire_1", "嗯那个", "M9")
     assert out["consumed"] is True
@@ -297,13 +330,14 @@ def test_24_inbound_wiring_off_unchanged(env, monkeypatch):
     monkeypatch.setattr(gw, "LOG_PATH", work + "/gw.log")
     monkeypatch.setenv("LAOTIAN_OPEN_ID", "ou_wire_2")
     sent, ledgers = [], []
-    monkeypatch.setattr(gw, "_send_card",
-                        lambda card, oid: (sent.append(card) or (True, "ok", "om_stub")))
-    monkeypatch.setattr(gw, "_append_ledger",
-                        lambda path, row: ledgers.append(row))
+    monkeypatch.setattr(
+        gw, "_send_card", lambda card, oid: sent.append(card) or (True, "ok", "om_stub")
+    )
+    monkeypatch.setattr(gw, "_append_ledger", lambda path, row: ledgers.append(row))
     called = []
-    monkeypatch.setattr(ci, "smart_intake",
-                        lambda *a, **k: called.append(1) or {"intent": "x"})
+    monkeypatch.setattr(
+        ci, "smart_intake", lambda *a, **k: called.append(1) or {"intent": "x"}
+    )
 
     out = gw.handle_inbound("ou_wire_2", "嗯那个", "M10")
     assert out["route"] == "unclear"
@@ -315,14 +349,22 @@ def test_24_inbound_wiring_off_unchanged(env, monkeypatch):
 def test_25_consult_async_receipt_then_sink(env, monkeypatch):
     """K6.1 军师异步：立即回「思考中」回执卡，算完经 async_sink 补发。"""
     import time as _t
+
     monkeypatch.setenv("COMM_INTENT_ENABLED", "1")
     monkeypatch.setenv("COMM_ZHUGE_ENABLED", "1")
-    monkeypatch.setattr(ci.zhuge, "consult",
-                        lambda q, open_id="", **k: {
-                            "text": "结论先行：先看流动性。", "mode": "local_soul",
-                            "llm_ok": True, "error": "local_fallback"})
+    monkeypatch.setattr(
+        ci.zhuge,
+        "consult",
+        lambda q, open_id="", **k: {
+            "text": "结论先行：先看流动性。",
+            "mode": "local_soul",
+            "llm_ok": True,
+            "error": "local_fallback",
+        },
+    )
     got = {}
     import threading as _th
+
     ready = _th.Event()
 
     def _sink(oid, q, zr, trace):
@@ -331,8 +373,9 @@ def test_25_consult_async_receipt_then_sink(env, monkeypatch):
 
     llm = _StubLLM('{"intent": "smalltalk", "confidence": 0.9}')
     t0 = _t.time()
-    r = ci.smart_intake("为什么今天大盘跌", "ou_consult", msg_id="MC1",
-                        llm=llm, async_sink=_sink)
+    r = ci.smart_intake(
+        "为什么今天大盘跌", "ou_consult", msg_id="MC1", llm=llm, async_sink=_sink
+    )
     elapsed = _t.time() - t0
     assert r is not None
     assert r["intent"] == "consult"
@@ -350,8 +393,9 @@ def test_26_plain_smalltalk_not_consult(env, monkeypatch):
     monkeypatch.setenv("COMM_INTENT_ENABLED", "1")
     monkeypatch.setenv("COMM_ZHUGE_ENABLED", "1")
     called = []
-    monkeypatch.setattr(ci.zhuge, "consult",
-                        lambda *a, **k: called.append(1) or {"text": "x"})
+    monkeypatch.setattr(
+        ci.zhuge, "consult", lambda *a, **k: called.append(1) or {"text": "x"}
+    )
     llm = _StubLLM('{"intent": "smalltalk", "confidence": 0.9}')
     ci.smart_intake("早上好", "ou_hello", llm=llm)
     assert called == [], "寒暄不得调用咨询位"
@@ -361,12 +405,19 @@ def test_27_consult_channel_down_sink_says_honest(env, monkeypatch):
     """K6.1 行为变更：军师全挂也先回执（已承诺稍后送达），由 sink 发诚实
     失败说明（不再回落澄清卡——客户已收到「思考中」不能装没看见）。"""
     import threading as _th
+
     monkeypatch.setenv("COMM_INTENT_ENABLED", "1")
     monkeypatch.setenv("COMM_ZHUGE_ENABLED", "1")
-    monkeypatch.setattr(ci.zhuge, "consult",
-                        lambda q, open_id="", **k: {
-                            "text": None, "mode": None, "llm_ok": False,
-                            "error": "all_channels_down"})
+    monkeypatch.setattr(
+        ci.zhuge,
+        "consult",
+        lambda q, open_id="", **k: {
+            "text": None,
+            "mode": None,
+            "llm_ok": False,
+            "error": "all_channels_down",
+        },
+    )
     got = {}
     ready = _th.Event()
 
@@ -375,8 +426,9 @@ def test_27_consult_channel_down_sink_says_honest(env, monkeypatch):
         ready.set()
 
     llm = _StubLLM('{"intent": "smalltalk", "confidence": 0.85}')
-    r = ci.smart_intake("为什么今天大盘跌", "ou_fb", msg_id="MC3",
-                        llm=llm, async_sink=_sink)
+    r = ci.smart_intake(
+        "为什么今天大盘跌", "ou_fb", msg_id="MC3", llm=llm, async_sink=_sink
+    )
     assert r is not None, "异步模式先回执，不再回落澄清卡"
     assert ready.wait(timeout=5)
     assert got["zr"]["text"] is None, "sink 收到 None 才能发诚实失败卡"
@@ -384,19 +436,20 @@ def test_27_consult_channel_down_sink_says_honest(env, monkeypatch):
 
 # ── 2026-10-26 A2-B02/B03：不假装已执行 / 不产生孤儿派单 ───────────
 def test_28_billing_no_fake_ticket_when_dispatch_disabled():
-    r = ci.build_reply({"intent": "billing", "trace_id": "abcdef",
-                        "entities": {}},
-                       dispatch_result={"ok": False, "reason": "disabled",
-                                        "dispatch_id": None})
+    r = ci.build_reply(
+        {"intent": "billing", "trace_id": "abcdef", "entities": {}},
+        dispatch_result={"ok": False, "reason": "disabled", "dispatch_id": None},
+    )
     assert "BI-" not in r["text"], "不得编造 BI- 假工单号"
     assert "已转人工" not in r["text"], "未派单不得说已转"
     assert "人工" in r["text"] and "未派单" in r["text"]
 
 
 def test_29_billing_uses_real_dispatch_id():
-    r = ci.build_reply({"intent": "billing", "trace_id": "abcdef",
-                        "entities": {}},
-                       dispatch_result={"ok": True, "dispatch_id": "lg-abc123"})
+    r = ci.build_reply(
+        {"intent": "billing", "trace_id": "abcdef", "entities": {}},
+        dispatch_result={"ok": True, "dispatch_id": "lg-abc123"},
+    )
     assert "lg-abc123" in r["text"] and "已转人工" in r["text"]
     assert "BI-" not in r["text"]
 
@@ -404,25 +457,43 @@ def test_29_billing_uses_real_dispatch_id():
 def test_30_zhuge_takes_stock_consult_without_orphan_dispatch(env, monkeypatch):
     """stock_consult 无标的被军师接管时，不得先真派单再丢弃（A2-B03）。"""
     import threading as _th
+
     monkeypatch.setenv("COMM_INTENT_ENABLED", "1")
     monkeypatch.setattr(ci, "_is_consult", lambda t: True)
     monkeypatch.setattr(ci.zhuge, "enabled", lambda: True)
-    monkeypatch.setattr(ci.zhuge, "consult",
-                        lambda q, open_id="", **k: {"text": "军师答",
-                                                    "mode": "openclaw_cloud",
-                                                    "llm_ok": True, "error": None})
+    monkeypatch.setattr(
+        ci.zhuge,
+        "consult",
+        lambda q, open_id="", **k: {
+            "text": "军师答",
+            "mode": "openclaw_cloud",
+            "llm_ok": True,
+            "error": None,
+        },
+    )
     calls = []
-    monkeypatch.setattr(ci.dispatch, "dispatch",
-                        lambda *a, **k: calls.append(a) or {"ok": True,
-                                                            "dispatch_id": "x"})
-    monkeypatch.setattr(ci.cr, "route_message",
-                        lambda text, **kw: {"intent": "stock_consult",
-                                            "entities": {}, "trace_id": "TR1",
-                                            "confidence": 0.9, "route": "dispatch",
-                                            "model": "local", "channel": "text"})
+    monkeypatch.setattr(
+        ci.dispatch,
+        "dispatch",
+        lambda *a, **k: calls.append(a) or {"ok": True, "dispatch_id": "x"},
+    )
+    monkeypatch.setattr(
+        ci.cr,
+        "route_message",
+        lambda text, **kw: {
+            "intent": "stock_consult",
+            "entities": {},
+            "trace_id": "TR1",
+            "confidence": 0.9,
+            "route": "dispatch",
+            "model": "local",
+            "channel": "text",
+        },
+    )
     done = _th.Event()
-    r = ci.smart_intake("分析一下大盘", "ou_orphan", msg_id="M1",
-                        async_sink=lambda *a: done.set())
+    r = ci.smart_intake(
+        "分析一下大盘", "ou_orphan", msg_id="M1", async_sink=lambda *a: done.set()
+    )
     assert r is not None and r["intent"] == "consult"
     assert calls == [], "军师接管后不得再派单（孤儿工单）"
     assert done.wait(timeout=5)

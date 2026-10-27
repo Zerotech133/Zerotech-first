@@ -8,6 +8,7 @@
 源：https://www.gov.cn/zhengce/zhengceku/gwywj/index.htm（国务院文件）
      后续扩：部门文件页 / 解读页 / 地缘要闻（人民网国际）——逐源核权利后接入。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -24,12 +25,15 @@ UA = "Mozilla/5.0 (compatible; ZeroOS-PolicyBot/0.1; +personal intel dashboard)"
 SRC = "https://www.gov.cn/zhengce/zhengceku/gwywj/index.htm"
 SRC_JSON = "https://www.gov.cn/zhengce/zhengceku/gwywj/TONGYONGGAILAN.json"  # 国务院文件（全量结构化）
 SRC_JSON_BM = "https://www.gov.cn/zhengce/zhengceku/bmwj/TONGYONGGAILAN.json"  # 部门文件（同构，12812 条）
-SRC_RSS_GEO = "http://www.people.com.cn/rss/politics.xml"  # 人民网时政 RSS（地缘要闻，免费公开）
+SRC_RSS_GEO = (
+    "http://www.people.com.cn/rss/politics.xml"  # 人民网时政 RSS（地缘要闻，免费公开）
+)
 
 
 def _fetch(url: str, timeout: int = 20) -> str:
     req = urllib.request.Request(url, headers={"User-Agent": UA})
     import ssl
+
     # 本机代理(59403)自签链会拦公网证书——公开只读页降级为未验证上下文；
     # 仅用于无凭据 GET，绝不用于带认证请求。若直连环境应恢复验证。
     try:
@@ -65,6 +69,7 @@ def _collect_gov_json(src: str, tag: str, max_items: int) -> list[dict]:
 def _collect_geo_rss(max_items: int) -> list[dict]:
     """人民网时政 RSS（xml 简析：title/pubDate/link）。"""
     import email.utils
+
     xml = _fetch(SRC_RSS_GEO, timeout=25)
     out = []
     for m in re.finditer(r"<item>([\s\S]*?)</item>", xml):
@@ -78,8 +83,14 @@ def _collect_geo_rss(max_items: int) -> list[dict]:
             d = email.utils.parsedate_to_datetime(dm.group(1)).strftime("%Y-%m-%d")
         except Exception:
             d = ""
-        out.append({"date": d, "title": tm.group(1).strip()[:64],
-                    "url": (lm.group(1).strip() if lm else ""), "src": "people.com.cn/geo"})
+        out.append(
+            {
+                "date": d,
+                "title": tm.group(1).strip()[:64],
+                "url": (lm.group(1).strip() if lm else ""),
+                "src": "people.com.cn/geo",
+            }
+        )
     return out[:max_items]
 
 
@@ -96,7 +107,9 @@ def collect(max_items: int = 20) -> list[dict]:
         d = str(x.get("DOCRELPUBTIME", ""))[:10]
         u = str(x.get("URL", "")).strip()
         if t and d and u:
-            rows.append({"date": d, "title": t[:64], "url": u, "src": "gov.cn/zhengceku"})
+            rows.append(
+                {"date": d, "title": t[:64], "url": u, "src": "gov.cn/zhengceku"}
+            )
     rows.sort(key=lambda r: r["date"], reverse=True)
     return rows[:max_items]
 
@@ -125,17 +138,32 @@ def main() -> int:
     ap.add_argument("--report", action="store_true")
     a = ap.parse_args()
     if a.report:
-        print(json.dumps({"at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
-                          "recent": load_recent(12)}, ensure_ascii=False, indent=1))
+        print(
+            json.dumps(
+                {"at": time.strftime("%Y-%m-%dT%H:%M:%S%z"), "recent": load_recent(12)},
+                ensure_ascii=False,
+                indent=1,
+            )
+        )
         return 0
     items: list[dict] = []
     fails: list[str] = []
-    for fn, tag, mi in ((_collect_gov_json, "gov.cn/gwywj", 12),
-                        (lambda **k: _collect_gov_json(SRC_JSON_BM, "gov.cn/bmwj", 8), "gov.cn/bmwj", 8),
-                        (_collect_geo_rss, "people.com.cn/geo", 8)):
+    for fn, tag, mi in (
+        (_collect_gov_json, "gov.cn/gwywj", 12),
+        (
+            lambda **k: _collect_gov_json(SRC_JSON_BM, "gov.cn/bmwj", 8),
+            "gov.cn/bmwj",
+            8,
+        ),
+        (_collect_geo_rss, "people.com.cn/geo", 8),
+    ):
         try:
             src = SRC_JSON if fn is _collect_gov_json else None
-            part = fn(src=src, tag=tag, max_items=mi) if fn is _collect_gov_json else fn(max_items=mi)
+            part = (
+                fn(src=src, tag=tag, max_items=mi)
+                if fn is _collect_gov_json
+                else fn(max_items=mi)
+            )
             items.extend(part)
         except Exception as e:
             fails.append(tag + ":" + str(e)[:60])
@@ -152,8 +180,13 @@ def main() -> int:
     fresh = [x for x in items if x["title"] not in known]
     with open(LEDGER, "a", encoding="utf-8") as f:
         for x in fresh:
-            f.write(json.dumps({**x, "fetched": time.strftime("%Y-%m-%dT%H:%M:%S%z")},
-                               ensure_ascii=False) + "\n")
+            f.write(
+                json.dumps(
+                    {**x, "fetched": time.strftime("%Y-%m-%dT%H:%M:%S%z")},
+                    ensure_ascii=False,
+                )
+                + "\n"
+            )
     print("OK: 新增 %d / 本页 %d（源 %s）" % (len(fresh), len(items), SRC))
     return 0
 

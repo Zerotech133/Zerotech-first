@@ -2,6 +2,7 @@
 """FeishuBotWatchdog 拉起器：无 feishu_bot_ws 进程则 DETACHED 启动。
 计划任务每 5 分钟调本脚本（SYSTEM 上下文）；幂等，已有实例则直接退出。
 """
+
 import os
 import subprocess
 import sys
@@ -25,11 +26,17 @@ def running():
     # 由 guardian 下跳 dedup（树根判据）收敛偶发双开。
     try:
         r2 = subprocess.run(
-            ["powershell", "-NoProfile", "-Command",
-             "(Get-CimInstance Win32_Process -Filter \"Name='python.exe'\")"
-             "|Where-Object{$_.CommandLine -like '*feishu_bot_ws*'}"
-             "|Select-Object -First 1 ProcessId|Format-List"],
-            capture_output=True, timeout=30)
+            [
+                "powershell",
+                "-NoProfile",
+                "-Command",
+                "(Get-CimInstance Win32_Process -Filter \"Name='python.exe'\")"
+                "|Where-Object{$_.CommandLine -like '*feishu_bot_ws*'}"
+                "|Select-Object -First 1 ProcessId|Format-List",
+            ],
+            capture_output=True,
+            timeout=30,
+        )
     except Exception as e:
         _fail("running() probe failed (treat as not-running): %r" % e)
         return False
@@ -44,8 +51,11 @@ def _fail(msg):
     # 审核#1/#2：watchdog 自身故障必须落 out.log——start 脚本 stdout/stderr 由
     # Task Scheduler 丢弃，不留痕=零痕迹瘫痪（venv 基座被 WorkBuddy 清理即此链）
     with open(LOG, "ab") as fo:
-        fo.write(("%s watchdog: %s\n" % (
-            time.strftime("%m-%d %H:%M:%S"), msg)).encode("utf-8", "replace"))
+        fo.write(
+            ("%s watchdog: %s\n" % (time.strftime("%m-%d %H:%M:%S"), msg)).encode(
+                "utf-8", "replace"
+            )
+        )
 
 
 def main():
@@ -59,9 +69,11 @@ def main():
     # K-STOCK-122 M7 白名单：止盈止损指令仅限老田（env 注入子进程）
     sys.path.insert(0, os.path.join(os.path.dirname(HERE), "news_collector"))
     import push_targets  # K-STOCK-403：收件人单一事实源
+
     env = dict(os.environ)
-    env.setdefault("EXIT_ALLOW_OPEN_IDS",
-                   push_targets.target_id("个人") or "")  # 老田 bot 域 open_id
+    env.setdefault(
+        "EXIT_ALLOW_OPEN_IDS", push_targets.target_id("个人") or ""
+    )  # 老田 bot 域 open_id
     try:
         with open(LOG, "ab") as fo:
             # D2（N11 启动链 utf8）：-X utf8 令子进程 stdout/stderr 以
@@ -69,10 +81,15 @@ def main():
             # 启动链中文日志乱码；stdout=fo 为二进制追加，字节流即
             # UTF-8，_fail() 写入亦显式 utf-8/replace，全链编码一致。
             subprocess.Popen(
-                [PY, "-X", "utf8", "-u", BOT], stdin=subprocess.DEVNULL, stdout=fo,
-                stderr=subprocess.STDOUT, env=env,
-                creationflags=(subprocess.DETACHED_PROCESS
-                               | subprocess.CREATE_NEW_PROCESS_GROUP))
+                [PY, "-X", "utf8", "-u", BOT],
+                stdin=subprocess.DEVNULL,
+                stdout=fo,
+                stderr=subprocess.STDOUT,
+                env=env,
+                creationflags=(
+                    subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
+                ),
+            )
     except OSError as e:  # 审核#2：Popen 失败原走无人接收的 stderr
         _fail("launch failed: %r" % e)
         return

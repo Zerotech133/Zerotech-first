@@ -9,6 +9,7 @@
 5. observe 卡引用 /api/notify/queue（customer 域留痕数据源）
 6. 订阅者总览引用 /api/subscription/status（逐查保留）与 /api/subscription/list（P2.6 已上线）
 """
+
 import os
 import re
 
@@ -29,7 +30,9 @@ def test_nginx_has_sub_admin_location():
     # 静态页模式判例：try_files + no-cache
     assert re.search(
         r"location = /sub-admin \{ try_files /static/sub_admin\.html =404; "
-        r'add_header Cache-Control "no-cache"; \}', conf)
+        r'add_header Cache-Control "no-cache"; \}',
+        conf,
+    )
     # 判例锚点仍在（零破坏）
     assert conf.count("location = /ops-board") == 1
     assert conf.count("location = /notify-command") == 1

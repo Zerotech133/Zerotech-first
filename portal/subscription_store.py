@@ -208,6 +208,7 @@ def _today(now_str: str) -> str:
 # 契约函数
 # ---------------------------------------------------------------------------
 
+
 def is_entitled(open_id, kind, now=None):
     """权益判定（只读）。返回 (bool, reason)；契约语义见模块 docstring。
 
@@ -310,8 +311,13 @@ def grant_subscription(open_id, plan_id, days):
             (open_id, plan_id, now_str, end, STATUS_ACTIVE),
         )
         conn.commit()
-    return {"open_id": open_id, "plan_id": plan_id,
-            "start": now_str, "end": end, "status": STATUS_ACTIVE}
+    return {
+        "open_id": open_id,
+        "plan_id": plan_id,
+        "start": now_str,
+        "end": end,
+        "status": STATUS_ACTIVE,
+    }
 
 
 def expire_sweep(now=None):
@@ -392,6 +398,7 @@ def entitlement_log(open_id, kind, allowed, reason, now=None):
 # FD-A（飞书中台 P2.5 · 2026-10-20）客户订阅面只读摘要——只追加不改写
 # ---------------------------------------------------------------------------
 
+
 def get_subscriber_summary(open_id, now=None):
     """订阅者只读摘要（P2.5 客户订阅面 /api/subscription/status 数据出口）。
 
@@ -468,6 +475,7 @@ def get_subscriber_summary(open_id, now=None):
 # FE-B（飞书中台 P2.6 · 2026-10-20）订阅者全集只读列表——只追加不改写
 # ---------------------------------------------------------------------------
 
+
 def list_subscribers(limit=50, now=None, offset=0):
     """订阅者全集只读列表（P2.6 商务面 /api/subscription/list 数据出口）。
 
@@ -542,21 +550,26 @@ def list_subscribers(limit=50, now=None, offset=0):
                     break
             if pick is None and recs:
                 pick = recs[0]  # end DESC 的最新一行
-            subscribers.append({
-                "open_id": open_id,
-                "display_name": display_name,
-                "plan_id": pick[0] if pick else None,
-                "status": pick[1] if pick else None,
-                "start": pick[2] if pick else None,
-                "end": pick[3] if pick else None,
-                "daily_quota": pick[4] if pick else None,
-                "used_today": used.get(open_id, 0),
-            })
+            subscribers.append(
+                {
+                    "open_id": open_id,
+                    "display_name": display_name,
+                    "plan_id": pick[0] if pick else None,
+                    "status": pick[1] if pick else None,
+                    "start": pick[2] if pick else None,
+                    "end": pick[3] if pick else None,
+                    "daily_quota": pick[4] if pick else None,
+                    "used_today": used.get(open_id, 0),
+                }
+            )
         subscribers = subscribers[:_limit]
-        return {"ok": True, "count": len(subscribers),
-                "subscribers": subscribers,
-                "offset": _offset,
-                "has_more": len(subscribers) == _limit}
+        return {
+            "ok": True,
+            "count": len(subscribers),
+            "subscribers": subscribers,
+            "offset": _offset,
+            "has_more": len(subscribers) == _limit,
+        }
     except Exception:  # closed on failure：不抛，诚实报错
         return {"ok": False, "error": "store_unavailable"}
 
@@ -611,29 +624,47 @@ def iter_all_subscribers(page_size=200, now=None, max_pages=50):
     reached_end = False
     while pages < _cap:
         try:
-            payload = list_subscribers(limit=_size, now=now_str,
-                                       offset=pages * _size)
+            payload = list_subscribers(limit=_size, now=now_str, offset=pages * _size)
         except Exception as exc:  # closed on failure：不当成「没有更多」
             error = "store_exception"
-            problems.append({"reason": "store_exception", "page": pages + 1,
-                             "detail": str(exc)[:200]})
+            problems.append(
+                {
+                    "reason": "store_exception",
+                    "page": pages + 1,
+                    "detail": str(exc)[:200],
+                }
+            )
             break
         if not isinstance(payload, dict):
             error = "bad_payload"
-            problems.append({"reason": "bad_payload", "page": pages + 1,
-                             "detail": "list_subscribers 返回 %s"
-                                       % type(payload).__name__})
+            problems.append(
+                {
+                    "reason": "bad_payload",
+                    "page": pages + 1,
+                    "detail": "list_subscribers 返回 %s" % type(payload).__name__,
+                }
+            )
             break
         if payload.get("ok") is False:
             error = str(payload.get("error") or "store_unavailable")
-            problems.append({"reason": "store_unavailable", "page": pages + 1,
-                             "detail": error[:200]})
+            problems.append(
+                {
+                    "reason": "store_unavailable",
+                    "page": pages + 1,
+                    "detail": error[:200],
+                }
+            )
             break
         page_rows = payload.get("subscribers")
         if not isinstance(page_rows, (list, tuple)):
             error = "bad_payload"
-            problems.append({"reason": "bad_payload", "page": pages + 1,
-                             "detail": "subscribers 不是列表"})
+            problems.append(
+                {
+                    "reason": "bad_payload",
+                    "page": pages + 1,
+                    "detail": "subscribers 不是列表",
+                }
+            )
             break
         page_rows = list(page_rows)
         rows.extend(page_rows)
@@ -643,11 +674,18 @@ def iter_all_subscribers(page_size=200, now=None, max_pages=50):
             break
 
     truncated = error is None and not reached_end
-    return {"ok": error is None, "error": error, "count": len(rows),
-            "subscribers": rows, "page_size": _size, "pages": pages,
-            "max_pages": _cap, "truncated": truncated,
-            "complete": error is None and not truncated,
-            "problems": problems}
+    return {
+        "ok": error is None,
+        "error": error,
+        "count": len(rows),
+        "subscribers": rows,
+        "page_size": _size,
+        "pages": pages,
+        "max_pages": _cap,
+        "truncated": truncated,
+        "complete": error is None and not truncated,
+        "problems": problems,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -658,6 +696,7 @@ def iter_all_subscribers(page_size=200, now=None, max_pages=50):
 # 替代「在飞书手工执行一次开通指令触发建库」的旧补救办法（旧办法会写入
 # 一条假业务数据，且依赖在役 bot 可用）。
 # 刻意只做「确保」：不新增 DDL、不改表结构、不删任何行。
+
 
 def ensure_schema(now=None) -> dict:
     """幂等确保账本目录与 5 表存在并写入种子档位。返回结构化结果。
@@ -687,7 +726,11 @@ def ensure_schema(now=None) -> dict:
     seeded = 0
     # 5 表口径就地声明（不新增模块级常量，保持本次改动只有「追加一个函数」）
     ledger_tables = (
-        "subscriber", "plan", "subscription", "entitlement_log", "payment_order",
+        "subscriber",
+        "plan",
+        "subscription",
+        "entitlement_log",
+        "payment_order",
     )
     seed_ids = [p["plan_id"] for p in SEED_PLANS]
 
@@ -695,7 +738,8 @@ def ensure_schema(now=None) -> dict:
         conn = _connect(create=True)
         try:
             present = {
-                row[0] for row in conn.execute(
+                row[0]
+                for row in conn.execute(
                     "SELECT name FROM sqlite_master WHERE type='table'"
                 ).fetchall()
             }
@@ -705,8 +749,8 @@ def ensure_schema(now=None) -> dict:
                     problems.append("missing_table:%s" % t)
             if "plan" in present:
                 got = {
-                    row[0] for row in conn.execute(
-                        "SELECT plan_id FROM plan").fetchall()
+                    row[0]
+                    for row in conn.execute("SELECT plan_id FROM plan").fetchall()
                 }
                 seeded = len([pid for pid in seed_ids if pid in got])
         finally:
@@ -714,8 +758,7 @@ def ensure_schema(now=None) -> dict:
             # 不代关）；Windows 下未关的连接会锁住库文件。
             conn.close()
     except Exception as exc:  # closed on failure：落 problems，不抛
-        problems.append(
-            "ensure_failed:%s: %s" % (type(exc).__name__, exc))
+        problems.append("ensure_failed:%s: %s" % (type(exc).__name__, exc))
 
     return {
         "ok": not problems,

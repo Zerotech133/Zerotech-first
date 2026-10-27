@@ -4,6 +4,7 @@
 主表：portal/work/authorization.json（zb.authorization.v1）
 用途：出口/入向/决策/H5 统一查"这个人/这个群在不在名单、有什么权限"。
 """
+
 from __future__ import annotations
 
 import json
@@ -18,16 +19,19 @@ def load(force=False):
     try:
         mtime = os.path.getmtime(PATH)
     except OSError:
-        return {"schema": "zb.authorization.v1", "people": [], "groups": [],
-                "roles": {}}
+        return {
+            "schema": "zb.authorization.v1",
+            "people": [],
+            "groups": [],
+            "roles": {},
+        }
     if not force and _CACHE["data"] is not None and _CACHE["mtime"] == mtime:
         return _CACHE["data"]
     try:
         with open(PATH, encoding="utf-8") as f:
             d = json.load(f)
     except (OSError, ValueError):
-        d = {"schema": "zb.authorization.v1", "people": [], "groups": [],
-             "roles": {}}
+        d = {"schema": "zb.authorization.v1", "people": [], "groups": [], "roles": {}}
     _CACHE.update({"mtime": mtime, "data": d})
     return d
 
@@ -94,23 +98,33 @@ def permissions_for(name):
 
 
 def summary():
-    return {"people": len(people()), "groups": len(groups()),
-            "owners": sum(1 for p in people() if "owner" in (p.get("roles") or []))}
+    return {
+        "people": len(people()),
+        "groups": len(groups()),
+        "owners": sum(1 for p in people() if "owner" in (p.get("roles") or [])),
+    }
 
 
 def main(argv=None):
     import argparse
+
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args(argv)
     s = summary()
     if a.json:
-        print(json.dumps({"summary": s, "people": people(), "groups": groups()},
-                         ensure_ascii=False, indent=1))
+        print(
+            json.dumps(
+                {"summary": s, "people": people(), "groups": groups()},
+                ensure_ascii=False,
+                indent=1,
+            )
+        )
     else:
-        print("授权主表：人=%d 群=%d owner=%d"
-              % (s["people"], s["groups"], s["owners"]))
+        print(
+            "授权主表：人=%d 群=%d owner=%d" % (s["people"], s["groups"], s["owners"])
+        )
     errs = []
     for p in people():
         if not p.get("open_ids"):

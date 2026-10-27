@@ -37,14 +37,26 @@ END_T3 = "2026-11-19 10:00:00"
 START = "2026-10-20 00:00:00"
 
 REQUIRED_KEYS = {
-    "ok", "mode", "tz", "ledger", "state", "collected", "expired_swept",
-    "reminders", "items", "reconcile", "side_effects", "problems", "warnings",
+    "ok",
+    "mode",
+    "tz",
+    "ledger",
+    "state",
+    "collected",
+    "expired_swept",
+    "reminders",
+    "items",
+    "reconcile",
+    "side_effects",
+    "problems",
+    "warnings",
 }
 
 
 # ---------------------------------------------------------------------------
 # 夹具：全部锚到临时目录
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def env(tmp_path, monkeypatch):
@@ -68,10 +80,14 @@ def _subscribe(db, open_id, plan_id, start, end, status="active"):
     try:
         conn.execute(
             "INSERT OR IGNORE INTO subscriber(open_id, display_name, created_at)"
-            " VALUES(?,?,?)", (open_id, "测试订阅者", start))
+            " VALUES(?,?,?)",
+            (open_id, "测试订阅者", start),
+        )
         conn.execute(
             "INSERT INTO subscription(subscriber_open_id, plan_id, start, end,"
-            " status) VALUES(?,?,?,?,?)", (open_id, plan_id, start, end, status))
+            " status) VALUES(?,?,?,?,?)",
+            (open_id, plan_id, start, end, status),
+        )
         conn.commit()
     finally:
         conn.close()
@@ -81,8 +97,8 @@ def _status_of(db, open_id):
     conn = sqlite3.connect(str(db))
     try:
         row = conn.execute(
-            "SELECT status FROM subscription WHERE subscriber_open_id=?",
-            (open_id,)).fetchone()
+            "SELECT status FROM subscription WHERE subscriber_open_id=?", (open_id,)
+        ).fetchone()
         return row[0] if row else None
     finally:
         conn.close()
@@ -93,8 +109,14 @@ def _row_counts(db):
     try:
         return tuple(
             conn.execute("SELECT COUNT(*) FROM %s" % t).fetchone()[0]
-            for t in ("subscriber", "plan", "subscription",
-                      "entitlement_log", "payment_order"))
+            for t in (
+                "subscriber",
+                "plan",
+                "subscription",
+                "entitlement_log",
+                "payment_order",
+            )
+        )
     finally:
         conn.close()
 
@@ -112,6 +134,7 @@ def _run_json(capsys, *argv):
 # ---------------------------------------------------------------------------
 # 1. 库不存在：报 ledger_missing、退出 1、不建库
 # ---------------------------------------------------------------------------
+
 
 def test_01_ledger_missing_reports_and_creates_nothing(env, capsys):
     db, state = env
@@ -134,6 +157,7 @@ def test_01_ledger_missing_reports_and_creates_nothing(env, capsys):
 # 2. dry-run 不写状态文件
 # ---------------------------------------------------------------------------
 
+
 def test_02_dry_run_writes_no_state_file(env, capsys):
     db, state = env
     _schema(db)
@@ -151,6 +175,7 @@ def test_02_dry_run_writes_no_state_file(env, capsys):
 # ---------------------------------------------------------------------------
 # 3. dry-run 不改账本（mtime 与行数都不变）
 # ---------------------------------------------------------------------------
+
 
 def test_03_dry_run_leaves_ledger_untouched(env, capsys):
     db, state = env
@@ -171,6 +196,7 @@ def test_03_dry_run_leaves_ledger_untouched(env, capsys):
 # ---------------------------------------------------------------------------
 # 4. 3 天后到期 → to_send=1
 # ---------------------------------------------------------------------------
+
 
 def test_04_three_days_left_is_due(env, capsys):
     db, state = env
@@ -195,15 +221,19 @@ def test_04_three_days_left_is_due(env, capsys):
 # 5. 已 mark_sent 过的项 → already_sent=1、to_send=0
 # ---------------------------------------------------------------------------
 
+
 def test_05_already_sent_is_not_queued_again(env, capsys):
     db, state = env
     _schema(db)
     _subscribe(db, ALICE, PLAN, START, END_T3)
 
     saved = st.load(str(state))
-    out = st.mark_sent(saved,
-                       {"open_id": ALICE, "plan_id": PLAN, "stage": "t3"},
-                       TODAY, path=str(state))
+    out = st.mark_sent(
+        saved,
+        {"open_id": ALICE, "plan_id": PLAN, "stage": "t3"},
+        TODAY,
+        path=str(state),
+    )
     assert out["ok"] is True and out["written"] is True
 
     code, data = _run_json(capsys, "--dry-run", "--json", "--now", NOW)
@@ -219,6 +249,7 @@ def test_05_already_sent_is_not_queued_again(env, capsys):
 # 6. commit-state 写状态文件，第二次运行 to_send 归 0（幂等）
 # ---------------------------------------------------------------------------
 
+
 def test_06_commit_state_is_idempotent(env, capsys):
     """commit-state + --mark-sent 才落标记；落了之后重跑幂等。
 
@@ -230,8 +261,9 @@ def test_06_commit_state_is_idempotent(env, capsys):
     _schema(db)
     _subscribe(db, ALICE, PLAN, START, END_T3)
 
-    code, first = _run_json(capsys, "--commit-state", "--mark-sent",
-                            "--json", "--now", NOW)
+    code, first = _run_json(
+        capsys, "--commit-state", "--mark-sent", "--json", "--now", NOW
+    )
 
     assert code == 0
     assert first["mode"] == "commit-state"
@@ -245,8 +277,9 @@ def test_06_commit_state_is_idempotent(env, capsys):
     on_disk = json.loads(state.read_text(encoding="utf-8"))
     assert len(on_disk["sent"]) == 1
 
-    code2, second = _run_json(capsys, "--commit-state", "--mark-sent",
-                              "--json", "--now", NOW)
+    code2, second = _run_json(
+        capsys, "--commit-state", "--mark-sent", "--json", "--now", NOW
+    )
 
     assert code2 == 0
     assert second["reminders"]["to_send"] == 0
@@ -288,11 +321,18 @@ def test_06b_commit_state_without_mark_sent_never_marks(env, capsys):
 # 7. commit-state 真调 expire_sweep（过期未清扫行 → expired）
 # ---------------------------------------------------------------------------
 
+
 def test_07_commit_state_runs_expire_sweep(env, capsys):
     db, state = env
     _schema(db)
-    _subscribe(db, "ou_stale001", PLAN, "2026-10-01 00:00:00",
-               "2026-11-01 00:00:00", status="active")
+    _subscribe(
+        db,
+        "ou_stale001",
+        PLAN,
+        "2026-10-01 00:00:00",
+        "2026-11-01 00:00:00",
+        status="active",
+    )
 
     # dry-run 只看不扫：账本仍是 active，勾稽报 stale_active → 退出 1
     code, dry = _run_json(capsys, "--dry-run", "--json", "--now", NOW)
@@ -311,6 +351,7 @@ def test_07_commit_state_runs_expire_sweep(env, capsys):
 # ---------------------------------------------------------------------------
 # 8. 状态文件 corrupt：退出 1、不继续、不覆盖
 # ---------------------------------------------------------------------------
+
 
 def test_08_corrupt_state_stops_without_overwrite(env, capsys):
     db, state = env
@@ -337,6 +378,7 @@ def test_08_corrupt_state_stops_without_overwrite(env, capsys):
 # 9. 勾稽发现问题（paid 无订阅）→ 退出 1 且 reconcile.ok=false
 # ---------------------------------------------------------------------------
 
+
 def test_09_reconcile_issue_makes_exit_nonzero(env, capsys):
     db, state = env
     _schema(db)
@@ -346,7 +388,8 @@ def test_09_reconcile_issue_makes_exit_nonzero(env, capsys):
         conn.execute(
             "INSERT INTO payment_order(order_id, open_id, amount, channel,"
             " status, created_at) VALUES(?,?,?,?,?,?)",
-            ("PO-0001", "ou_paidonly01", "", "", "paid", "2026-11-10 12:00:00"))
+            ("PO-0001", "ou_paidonly01", "", "", "paid", "2026-11-10 12:00:00"),
+        )
         conn.commit()
     finally:
         conn.close()
@@ -366,6 +409,7 @@ def test_09_reconcile_issue_makes_exit_nonzero(env, capsys):
 # 10. --json 结构齐备、open_id 掩码、全文不含明文 open_id
 # ---------------------------------------------------------------------------
 
+
 def test_10_json_shape_and_no_plain_open_id(env, capsys):
     db, state = env
     _schema(db)
@@ -378,11 +422,21 @@ def test_10_json_shape_and_no_plain_open_id(env, capsys):
     assert REQUIRED_KEYS <= set(data)
     # P3.10-lite 契约演进：collected 追加分页元信息三键（pages/truncated/complete）
     assert set(data["collected"]) == {
-        "count", "warnings", "problems", "pages", "truncated", "complete"}
+        "count",
+        "warnings",
+        "problems",
+        "pages",
+        "truncated",
+        "complete",
+    }
     assert set(data["reminders"]) == {"total", "to_send", "already_sent", "skipped"}
     assert set(data["reconcile"]) == {"ok", "checked", "issues_count"}
     assert data["items"] and set(data["items"][0]) == {
-        "open_id_masked", "plan_id", "days_left", "stage"}
+        "open_id_masked",
+        "plan_id",
+        "days_left",
+        "stage",
+    }
     assert data["items"][0]["open_id_masked"] == "ou_***001"
     # 明文 open_id 不得出现在输出任何位置（日志 / 汇报会原样贴这段）
     assert ALICE not in out
@@ -393,10 +447,16 @@ def test_10_json_shape_and_no_plain_open_id(env, capsys):
 # 11. 源码静态断言：无发送调用、无建库调用
 # ---------------------------------------------------------------------------
 
+
 def test_11_source_has_no_send_and_no_schema_calls():
     src = (TOOLS / "daily_subscription_job.py").read_text(encoding="utf-8")
-    for token in ("send_msg", "send_card", "feishu_client",
-                  "requests.post", "ensure_schema"):
+    for token in (
+        "send_msg",
+        "send_card",
+        "feishu_client",
+        "requests.post",
+        "ensure_schema",
+    ):
         assert token not in src, "源码不得出现 %s" % token
     # 确实用了该用的两个写/读入口，说明不是空壳
     assert "expire_sweep" in src
@@ -407,6 +467,7 @@ def test_11_source_has_no_send_and_no_schema_calls():
 # ---------------------------------------------------------------------------
 # 12. --help 明示不发送；13. 参数错误退出 2
 # ---------------------------------------------------------------------------
+
 
 def test_12_help_states_no_message_is_sent(capsys):
     with pytest.raises(SystemExit) as excinfo:
@@ -426,6 +487,7 @@ def test_13_bad_now_is_argument_error(env, capsys):
 # ---------------------------------------------------------------------------
 # P3.10-lite O-B 追加：分页元信息与截断联动
 # ---------------------------------------------------------------------------
+
 
 def test_ob_6_json_collected_has_paging_keys(env, capsys):
     """--json 的 collected 必须带 pages/truncated/complete 三键（只追加口径）。"""
@@ -449,6 +511,7 @@ def test_ob_7_truncated_forces_exit_1(env, capsys, monkeypatch):
     _subscribe(db, ALICE, PLAN, START, END_T3)
 
     import daily_subscription_job as job
+
     real = job._reminder.collect_subscribers
 
     def fake_collect(**kw):
@@ -464,6 +527,5 @@ def test_ob_7_truncated_forces_exit_1(env, capsys, monkeypatch):
 
     assert code == 1
     assert data["collected"]["truncated"] is True
-    assert any(p["reason"] == "subscribers_truncated"
-               for p in data["problems"])
+    assert any(p["reason"] == "subscribers_truncated" for p in data["problems"])
     assert data["ok"] is False

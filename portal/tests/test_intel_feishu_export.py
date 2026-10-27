@@ -1,4 +1,5 @@
 """K-MDC-E3 tests: window gate, digest honesty, four-account receipt. 全离线不真发."""
+
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -8,14 +9,26 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from intel_feishu_export import (  # noqa: E402
-    ExportRejected, MAX_EDGES, ExportReceipt, append_ledger, export, in_window, render_digest,
+    ExportRejected,
+    MAX_EDGES,
+    ExportReceipt,
+    append_ledger,
+    export,
+    in_window,
+    render_digest,
 )
 
 TZ = ZoneInfo("Asia/Shanghai")
-DOSSIER = {"stock_code": "600001.SH", "total_edges": 8, "shown": 5,
-           "truncated": True,
-           "edges": [{"rel_type": "co_occurrence", "pair": f"A×B{i}",
-                      "question": f"是否共谋{i}？"} for i in range(5)]}
+DOSSIER = {
+    "stock_code": "600001.SH",
+    "total_edges": 8,
+    "shown": 5,
+    "truncated": True,
+    "edges": [
+        {"rel_type": "co_occurrence", "pair": f"A×B{i}", "question": f"是否共谋{i}？"}
+        for i in range(5)
+    ],
+}
 
 
 def at(h, m, dow_friday=False):
@@ -24,13 +37,13 @@ def at(h, m, dow_friday=False):
 
 
 def test_window_gate_open_closed_weekend():
-    assert in_window(at(8, 45))            # 盘前中
-    assert in_window(at(15, 30))           # 盘后中
-    assert not in_window(at(12, 0))        # 午间关
-    assert not in_window(at(7, 0))         # 早外
+    assert in_window(at(8, 45))  # 盘前中
+    assert in_window(at(15, 30))  # 盘后中
+    assert not in_window(at(12, 0))  # 午间关
+    assert not in_window(at(7, 0))  # 早外
     assert not in_window(at(22, 0))
     sat = datetime(2026, 10, 24, 8, 45, tzinfo=TZ)
-    assert not in_window(sat)              # 周六关
+    assert not in_window(sat)  # 周六关
 
 
 def test_naive_now_rejected():
@@ -75,6 +88,16 @@ def test_digest_rejects_bad_payload():
 def test_ledger_appends_four_accounts(tmp_path):
     r1 = ExportReceipt("t1", "600001.SH", 8, 5, True, True, "open")
     r2 = ExportReceipt("t2", "600002.SH", 0, 0, False, False, "closed")
-    append_ledger(tmp_path, r1); append_ledger(tmp_path, r2)
-    lines = (tmp_path / "intel_export_ledger.jsonl").read_text(encoding="utf-8").strip().splitlines()
-    assert len(lines) == 2 and '"accepted": true' in lines[0] and '"accepted": false' in lines[1]
+    append_ledger(tmp_path, r1)
+    append_ledger(tmp_path, r2)
+    lines = (
+        (tmp_path / "intel_export_ledger.jsonl")
+        .read_text(encoding="utf-8")
+        .strip()
+        .splitlines()
+    )
+    assert (
+        len(lines) == 2
+        and '"accepted": true' in lines[0]
+        and '"accepted": false' in lines[1]
+    )

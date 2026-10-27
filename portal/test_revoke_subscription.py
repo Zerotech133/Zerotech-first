@@ -43,8 +43,9 @@ def db(tmp_path, monkeypatch):
     yield p
 
 
-def _grant_here(open_id, plan_id="basic_monthly", days=30,
-                start=datetime(2026, 10, 20, 8, 0, 0)):
+def _grant_here(
+    open_id, plan_id="basic_monthly", days=30, start=datetime(2026, 10, 20, 8, 0, 0)
+):
     # 先建主档：无 subscriber 行会被勾稽 orphan_open_id 逮（数据构造
     # 缺陷非被测行为），统一在此补齐，避免逐用例遗漏。
     ss.upsert_subscriber(open_id)
@@ -53,8 +54,13 @@ def _grant_here(open_id, plan_id="basic_monthly", days=30,
         conn.execute(
             "INSERT INTO subscription(subscriber_open_id, plan_id, start,"
             " end, status) VALUES (?,?,?,?,?)",
-            (open_id, plan_id, start.strftime("%Y-%m-%d %H:%M:%S"),
-             end.strftime("%Y-%m-%d %H:%M:%S"), "active"),
+            (
+                open_id,
+                plan_id,
+                start.strftime("%Y-%m-%d %H:%M:%S"),
+                end.strftime("%Y-%m-%d %H:%M:%S"),
+                "active",
+            ),
         )
         conn.commit()
 
@@ -63,7 +69,8 @@ def _sub_rows(open_id):
     conn = sqlite3.connect(str(ss._db_path()))
     rows = conn.execute(
         "SELECT plan_id, status, start, end FROM subscription"
-        " WHERE subscriber_open_id=? ORDER BY plan_id", (open_id,)
+        " WHERE subscriber_open_id=? ORDER BY plan_id",
+        (open_id,),
     ).fetchall()
     conn.close()
     return rows
@@ -72,8 +79,8 @@ def _sub_rows(open_id):
 def _log_rows(open_id):
     conn = sqlite3.connect(str(ss._db_path()))
     rows = conn.execute(
-        "SELECT kind, allowed, reason FROM entitlement_log"
-        " WHERE open_id=? ORDER BY ts", (open_id,)
+        "SELECT kind, allowed, reason FROM entitlement_log WHERE open_id=? ORDER BY ts",
+        (open_id,),
     ).fetchall()
     conn.close()
     return rows
@@ -86,7 +93,7 @@ def test_01_revoke_success_row_expired_log_left(db):
     assert n == 1
     rows = _sub_rows("ou_r1")
     assert len(rows) == 1
-    assert rows[0][1] == "expired"          # status
+    assert rows[0][1] == "expired"  # status
     assert rows[0][3] == "2026-11-19 08:00:00"  # end 不动（end>=now 形态）
     logs = _log_rows("ou_r1")
     assert logs == [("subscription.revoke", 0, "revoked")]

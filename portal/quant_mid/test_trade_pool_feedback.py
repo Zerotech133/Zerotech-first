@@ -13,6 +13,7 @@
   PG→SQLite 类型映射仅用于建表。set_feedback 的 NOW() 在 SQLite 中
   以 CURRENT_TIMESTAMP 等价替换执行。真 PG 上的最终验证须老田批准后执行。
 """
+
 from __future__ import annotations
 import os
 import re
@@ -31,6 +32,7 @@ FEEDBACK_COLS = ["feedback_type", "feedback_note", "feedback_score", "feedback_a
 
 
 # ═══ A. set_feedback mock 单测 ═══════════════════════════
+
 
 @pytest.fixture
 def _mock_conn():
@@ -57,8 +59,9 @@ def _clear_secrets_cache():
 def test_set_feedback_updates_all_four_columns(_mock_conn):
     fake_conn, fake_cur = _mock_conn
     fake_cur.rowcount = 1
-    tp.set_feedback(7, feedback_type="approve",
-                    feedback_note="信号有效", feedback_score=0.85)
+    tp.set_feedback(
+        7, feedback_type="approve", feedback_note="信号有效", feedback_score=0.85
+    )
     sql, args = fake_cur.execute.call_args[0]
     assert "UPDATE trade_pool" in sql
     for col in FEEDBACK_COLS:
@@ -90,8 +93,11 @@ def test_set_feedback_row_not_found_raises(_mock_conn):
 
 # PG 类型 → SQLite 类型 (仅模拟用)
 _PG_TO_SQLITE = {
-    "VARCHAR(20)": "TEXT", "VARCHAR(10)": "TEXT",
-    "TEXT": "TEXT", "NUMERIC(4,3)": "REAL", "TIMESTAMPTZ": "TEXT",
+    "VARCHAR(20)": "TEXT",
+    "VARCHAR(10)": "TEXT",
+    "TEXT": "TEXT",
+    "NUMERIC(4,3)": "REAL",
+    "TIMESTAMPTZ": "TEXT",
 }
 
 
@@ -100,8 +106,7 @@ def _parse_add_columns() -> list:
     with open(MIGRATE_SQL, encoding="utf-8") as f:
         text = f.read()
     out = []
-    for m in re.finditer(
-            r"ADD COLUMN (\w+)\s+([A-Z]+(?:\(\d+(?:,\d+)?\))?)", text):
+    for m in re.finditer(r"ADD COLUMN (\w+)\s+([A-Z]+(?:\(\d+(?:,\d+)?\))?)", text):
         col, pg_type = m.group(1), m.group(2)
         assert pg_type in _PG_TO_SQLITE, f"未覆盖的 PG 类型: {pg_type}"
         out.append((col, _PG_TO_SQLITE[pg_type]))
@@ -152,7 +157,8 @@ def test_migration_adds_exactly_four_columns():
 
         row = conn.execute(
             "SELECT feedback_type, feedback_note, feedback_score, feedback_at "
-            "FROM trade_pool WHERE id=1").fetchone()
+            "FROM trade_pool WHERE id=1"
+        ).fetchone()
         assert row == (None, None, None, None)
 
 
@@ -188,7 +194,8 @@ def test_set_feedback_sql_works_on_migrated_table():
         conn.commit()
         row = conn.execute(
             "SELECT feedback_type, feedback_note, feedback_score, "
-            "feedback_at IS NOT NULL FROM trade_pool WHERE id=1").fetchone()
+            "feedback_at IS NOT NULL FROM trade_pool WHERE id=1"
+        ).fetchone()
         assert row == ("calibrate", "对照缠论卖点", 0.7, 1)
 
 

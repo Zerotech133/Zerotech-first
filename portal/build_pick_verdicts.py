@@ -22,6 +22,7 @@
 窗口未满（湖还没走到首次可操作日或窗口终点）如实标 pending，不硬凑。
 用法: "C:/Program Files/Python311/python.exe" portal/build_pick_verdicts.py
 """
+
 import glob
 import json
 import os
@@ -64,8 +65,14 @@ def pct_between(code, exec_day, d1):
     """
     try:
         from tdx_read import read_range, table_ready
-        df = read_range("ts_daily", exec_day, d1, codes=[code],
-                        columns=["ts_code", "trade_date", "open", "close"])
+
+        df = read_range(
+            "ts_daily",
+            exec_day,
+            d1,
+            codes=[code],
+            columns=["ts_code", "trade_date", "open", "close"],
+        )
         if df is None or len(df) < 1:
             return None
         df = df.sort_values("trade_date")
@@ -75,8 +82,7 @@ def pct_between(code, exec_day, d1):
         if table_ready("ts_adj_factor"):
             da = read_range("ts_adj_factor", exec_day, d1, codes=[code])
             if da is not None and len(da):
-                am = {str(t)[:8]: a for t, a in zip(
-                    da["trade_date"], da["adj_factor"])}
+                am = {str(t)[:8]: a for t, a in zip(da["trade_date"], da["adj_factor"])}
                 adjs = [am.get(str(t)[:8]) for t in df["trade_date"]]
         if adjs is not None and all(a is not None for a in adjs):
             buy = float(opens[0]) * float(adjs[0])
@@ -88,14 +94,16 @@ def pct_between(code, exec_day, d1):
             prev = float(closes[k - 1])
             if prev and float(opens[k]) / prev - 1 <= -0.305:
                 return "exdiv"
-        buy = float(opens[0])    # 首次可操作日开盘
+        buy = float(opens[0])  # 首次可操作日开盘
         sel = float(closes[-1])  # 窗口终点收盘
         return round((sel / buy - 1) * 100, 2) if buy else None
     except Exception as ex:  # noqa: BLE001
         # A5 分诊：pct_between 是后验收益计算核心——静默 None 会
         # 直接污染 RiskGuard 误杀复算统计（拦截/放行样本收益缺失）——留痕
-        print("[verdicts] 个股收益读取失败 code=%s %s~%s：%s"
-              % (code, exec_day, d1, str(ex)[:60]))
+        print(
+            "[verdicts] 个股收益读取失败 code=%s %s~%s：%s"
+            % (code, exec_day, d1, str(ex)[:60])
+        )
         return None
 
 
@@ -124,22 +132,27 @@ def main():
         if key not in day_cache:
             try:
                 import pandas as pd
+
                 o = read_day("ts_daily", d0, columns=["ts_code", "open"])
                 c = read_day("ts_daily", d1, columns=["ts_code", "close"])
                 if o is None or c is None or not len(o) or not len(c):
                     day_cache[key] = None
                     return None
-                m = pd.merge(o[["ts_code", "open"]],
-                             c[["ts_code", "close"]], on="ts_code")
+                m = pd.merge(
+                    o[["ts_code", "open"]], c[["ts_code", "close"]], on="ts_code"
+                )
                 vals = sorted(
                     (float(cc) / float(oo) - 1) * 100
                     for oo, cc in zip(m["open"], m["close"])
-                    if oo and float(oo) > 0 and cc is not None)
+                    if oo and float(oo) > 0 and cc is not None
+                )
                 day_cache[key] = vals[len(vals) // 2] if vals else None
             except Exception as ex:  # noqa: BLE001
                 # A5 分诊：静默 None 会让基准对照整体缺失（裁决静默劣化）——留痕
-                print("[verdicts] 窗口基准中位数读取失败 %s~%s：%s"
-                      % (d0, d1, str(ex)[:60]))
+                print(
+                    "[verdicts] 窗口基准中位数读取失败 %s~%s：%s"
+                    % (d0, d1, str(ex)[:60])
+                )
                 day_cache[key] = None
         return day_cache[key]
 
@@ -151,11 +164,14 @@ def main():
     trade_days = []
     try:
         from tdx_read import read_range
-        df_cal = read_range("ts_daily", "20200101", today,
-                            columns=["trade_date"])
-        trade_days = sorted({str(d)[:8] for d in
-                             (df_cal["trade_date"].tolist()
-                              if df_cal is not None else [])})
+
+        df_cal = read_range("ts_daily", "20200101", today, columns=["trade_date"])
+        trade_days = sorted(
+            {
+                str(d)[:8]
+                for d in (df_cal["trade_date"].tolist() if df_cal is not None else [])
+            }
+        )
     except Exception as ex:  # noqa: BLE001
         print("[verdicts] 交易日历读取降级：%s" % str(ex)[:60])
 
@@ -180,8 +196,10 @@ def main():
             doc = json.load(open(fp, encoding="utf-8"))
         except Exception as ex:  # noqa: BLE001
             # A5 分诊：坏档静默跳过会让该信号日整批样本消失——留痕
-            print("[verdicts] 档案读取失败跳过 %s：%s"
-                  % (os.path.basename(fp), str(ex)[:60]))
+            print(
+                "[verdicts] 档案读取失败跳过 %s：%s"
+                % (os.path.basename(fp), str(ex)[:60])
+            )
             continue
         sig = (doc.get("scan_run_date") or "").replace("-", "")
         if not sig or sig > today:
@@ -191,12 +209,18 @@ def main():
             code = _code_to_ts(r.get("code"))
             if not code or "." not in code:
                 continue  # 后验口径当前只覆盖 A 股（湖 ts_daily）
-            rec = per_code.setdefault(code, {
-                "name": r.get("name"), "tier": r.get("tier"),
-                "date": sig, "strategies": sorted({s.get("s") for s in
-                                                   (r.get("sources") or [])
-                                                   if s.get("s")}),
-                "win": {}})
+            rec = per_code.setdefault(
+                code,
+                {
+                    "name": r.get("name"),
+                    "tier": r.get("tier"),
+                    "date": sig,
+                    "strategies": sorted(
+                        {s.get("s") for s in (r.get("sources") or []) if s.get("s")}
+                    ),
+                    "win": {},
+                },
+            )
             if sig < rec["date"]:
                 continue  # 只保留每票最近一次信号
             if sig > rec["date"]:
@@ -206,12 +230,17 @@ def main():
                 # 汇总事件样本也漏记新入选）。
                 # 四十审：name 加 None 守卫——新档缺名（停牌票源 name 空，
                 # 实据 603056）时保留旧档名，不倒退清空。
-                rec.update({"name": r.get("name") or rec.get("name"),
-                            "tier": r.get("tier"),
-                            "date": sig, "win": {},
-                            "strategies": sorted({s.get("s") for s in
-                                                  (r.get("sources") or [])
-                                                  if s.get("s")})})
+                rec.update(
+                    {
+                        "name": r.get("name") or rec.get("name"),
+                        "tier": r.get("tier"),
+                        "date": sig,
+                        "win": {},
+                        "strategies": sorted(
+                            {s.get("s") for s in (r.get("sources") or []) if s.get("s")}
+                        ),
+                    }
+                )
             exec_d = after_days(sig, 2)  # 首次可操作日（画像+1 日产出、+2 开盘可买）
             for w in WINDOWS:
                 if w in rec["win"]:
@@ -224,16 +253,27 @@ def main():
                 if r1 == "exdiv":
                     # 三十一审：除权窗口 void 样本——不入桶不计 n，
                     # 结构留痕（前端/工具可识别 void 字段），控制台同步留痕。
-                    rec["win"][w] = {"r": None, "base": None,
-                                     "exec": exec_d, "ex": None,
-                                     "void": "exdiv"}
-                    print("[verdicts] 除权窗口剔除 code=%s win=%s exec=%s"
-                          % (code, w, exec_d))
+                    rec["win"][w] = {
+                        "r": None,
+                        "base": None,
+                        "exec": exec_d,
+                        "ex": None,
+                        "void": "exdiv",
+                    }
+                    print(
+                        "[verdicts] 除权窗口剔除 code=%s win=%s exec=%s"
+                        % (code, w, exec_d)
+                    )
                     continue
                 b1 = window_mid(exec_d, d1)
-                rec["win"][w] = {"r": r1, "base": b1, "exec": exec_d, "ex": (
-                    round(r1 - b1, 2) if r1 is not None and b1 is not None
-                    else None)}
+                rec["win"][w] = {
+                    "r": r1,
+                    "base": b1,
+                    "exec": exec_d,
+                    "ex": (
+                        round(r1 - b1, 2) if r1 is not None and b1 is not None else None
+                    ),
+                }
                 if r1 is not None:
                     buckets[w].append(r1)
                     # 二十五审（方案A 2026-10-10）：策略分层只收可操作层
@@ -253,7 +293,9 @@ def main():
                         for s in rec["strategies"]:
                             if s in ("strong", "chanlun", "qpzm", "cross"):
                                 strat_buckets.setdefault(s, {}).setdefault(
-                                    w, []).append(r1)
+                                    w, []
+                                ).append(r1)
+
     # 汇总
     def blk(vals, w):
         if not vals:
@@ -261,12 +303,16 @@ def main():
         vals_s = sorted(vals)
         # 三十三审：删除恒等死字段 win_rt（与 hit 同公式同值，全库无消费
         # 方——picks.html/控制台只用 hit，双字段并列易误读为两个口径）
-        return {"n": len(vals),
-                "hit": round(100 * sum(1 for v in vals if v > 0) / len(vals), 1),
-                "avg": round(sum(vals) / len(vals), 2),
-                "med": vals_s[len(vals_s) // 2]}
+        return {
+            "n": len(vals),
+            "hit": round(100 * sum(1 for v in vals if v > 0) / len(vals), 1),
+            "avg": round(sum(vals) / len(vals), 2),
+            "med": vals_s[len(vals_s) // 2],
+        }
+
     summary = {
-        "asof": today, "archives": n_arch,
+        "asof": today,
+        "archives": n_arch,
         # K-STOCK-070 口径自证：可成交口径（九审）自 2026-10-10 起生效，
         # 与此前 D 收盘起算的旧口径数字不可直接比（旧口径对强势票系统性虚高）
         "caliber": {
@@ -287,13 +333,18 @@ def main():
         # 三十六审：桶源限看多源白名单；多源事件跨桶计入（n 勿跨策略加总，
         # 1009 档 T1/T2 加总放大 1.33x）
         "by_strategy_caliber": "仅 T1/T2 入池事件×看多源白名单（strong/chanlun/"
-                               "qpzm/cross；weak/ninedim 非入池原因不计桶）；"
-                               "多源事件跨桶计入，n 勿跨策略加总；windows 为全池口径",
-        "by_strategy": {s: {str(w): blk(b.get(w) or [], w) for w in WINDOWS}
-                        for s, b in sorted(strat_buckets.items())},
+        "qpzm/cross；weak/ninedim 非入池原因不计桶）；"
+        "多源事件跨桶计入，n 勿跨策略加总；windows 为全池口径",
+        "by_strategy": {
+            s: {str(w): blk(b.get(w) or [], w) for w in WINDOWS}
+            for s, b in sorted(strat_buckets.items())
+        },
     }
-    out = {"generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-           "summary": summary, "per_code": per_code}
+    out = {
+        "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "summary": summary,
+        "per_code": per_code,
+    }
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     # K-STOCK-393（20261015 原子写补齐）：api_misc 请求路径并发读此
     # 文件，直写可被读到半截 JSON（sync_publish 判例：tmp+os.replace）
@@ -301,12 +352,15 @@ def main():
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False)
     os.replace(tmp, OUT)
-    print("[verdicts] 归档 %d 份 | 覆盖 %d 票 | asof %s" %
-          (n_arch, len(per_code), today))
+    print(
+        "[verdicts] 归档 %d 份 | 覆盖 %d 票 | asof %s" % (n_arch, len(per_code), today)
+    )
     for w in WINDOWS:
         b = summary["windows"][str(w)]
-        print("  execT+%d(首买=信号+2开盘): n=%s 命中率=%s%% 均值=%s%%" %
-              (w, b["n"], b["hit"], b["avg"]))
+        print(
+            "  execT+%d(首买=信号+2开盘): n=%s 命中率=%s%% 均值=%s%%"
+            % (w, b["n"], b["hit"], b["avg"])
+        )
 
 
 if __name__ == "__main__":

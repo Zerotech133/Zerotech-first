@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """W40 收口单测：卡片签名/幂等、操作人配对、超时升级、日报每日一次。"""
+
 import json
 import os
 import sys

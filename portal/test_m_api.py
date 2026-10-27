@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """P1 移动端接口单测：令牌→scene 数据、picks 每票短链、埋点校验、HTTP 适配桩。"""
+
 import json
 import os
 import tempfile
@@ -18,7 +19,11 @@ import m_tokens as mt  # noqa: E402
 @pytest.fixture()
 def ws_tmp():
     """沙箱内 temp 目录 ACL 不可写 → 用 workspace 下的临时目录。"""
-    root = os.path.join(os.environ.get("LOCALAPPDATA") or tempfile.gettempdir(), "aios_test_tmp", uuid.uuid4().hex)
+    root = os.path.join(
+        os.environ.get("LOCALAPPDATA") or tempfile.gettempdir(),
+        "aios_test_tmp",
+        uuid.uuid4().hex,
+    )
     os.makedirs(root, exist_ok=True)
     try:
         yield root
@@ -61,17 +66,45 @@ def test_chan_payload_unknown_code():
 
 def test_chan_payload_chart(monkeypatch):
     """缠论页补图：三周期 structure → chart.periods/bars/pivots/signals。"""
-    struct = {"ok": True, "bars": [
-        {"dt": "2026-10-20", "o": 10, "h": 11, "l": 9.5, "c": 10.5, "v": 100},
-        {"dt": "2026-10-21", "o": 10.5, "h": 11.2, "l": 10.1, "c": 11, "v": 120}],
-        "pivots": [{"s_dt": "2026-10-20", "e_dt": "2026-10-21",
-                    "zg": 11.2, "zd": 9.5, "n_bi": 3}],
-        "bis": [{"s_dt": "2026-10-20", "e_dt": "2026-10-21",
-                 "s_price": 9.5, "e_price": 11.2, "dir": 1}],
-        "signals": [{"type": "3买", "dt": "2026-10-21", "price": 11,
-                     "note": "test", "bei": True, "fv": [1, 2],
-                     "mt": True, "mtv": [1], "reg": "bull",
-                     "reg_ev": [1, 2, 3]}]}
+    struct = {
+        "ok": True,
+        "bars": [
+            {"dt": "2026-10-20", "o": 10, "h": 11, "l": 9.5, "c": 10.5, "v": 100},
+            {"dt": "2026-10-21", "o": 10.5, "h": 11.2, "l": 10.1, "c": 11, "v": 120},
+        ],
+        "pivots": [
+            {
+                "s_dt": "2026-10-20",
+                "e_dt": "2026-10-21",
+                "zg": 11.2,
+                "zd": 9.5,
+                "n_bi": 3,
+            }
+        ],
+        "bis": [
+            {
+                "s_dt": "2026-10-20",
+                "e_dt": "2026-10-21",
+                "s_price": 9.5,
+                "e_price": 11.2,
+                "dir": 1,
+            }
+        ],
+        "signals": [
+            {
+                "type": "3买",
+                "dt": "2026-10-21",
+                "price": 11,
+                "note": "test",
+                "bei": True,
+                "fv": [1, 2],
+                "mt": True,
+                "mtv": [1],
+                "reg": "bull",
+                "reg_ev": [1, 2, 3],
+            }
+        ],
+    }
 
     def fake_get(path, timeout=15):
         if "chanlun/structure" in path:
@@ -140,10 +173,12 @@ def test_build_entry_lists_scenes():
 
 
 def test_beacon_validate_ok():
-    clean = ma.validate_events([
-        {"event": "m_page_view", "scene": "picks", "from": "feishu"},
-        {"event": "m_action", "scene": "picks", "action": "refresh"},
-    ])
+    clean = ma.validate_events(
+        [
+            {"event": "m_page_view", "scene": "picks", "from": "feishu"},
+            {"event": "m_action", "scene": "picks", "action": "refresh"},
+        ]
+    )
     assert isinstance(clean, list) and len(clean) == 2
     assert clean[0]["event"] == "m_page_view"
 
@@ -210,8 +245,9 @@ def _session_cookie(open_id):
     import time as _t
 
     now = int(_t.time())
-    tok = mt.sign({"scope": "session", "open_id": open_id,
-                   "nbf": now, "exp": now + 3600})
+    tok = mt.sign(
+        {"scope": "session", "open_id": open_id, "nbf": now, "exp": now + 3600}
+    )
     return "m_sess=" + tok
 
 
@@ -219,7 +255,9 @@ def test_ticket_page_token_cannot_reply(monkeypatch):
     """查看工单的页面令牌 + 无飞书会话：失败关闭，且绝不进入发送链。"""
     import ticket_loop
 
-    monkeypatch.setattr(ticket_loop, "reply", lambda *a, **kw: pytest.fail("reply must not run"))
+    monkeypatch.setattr(
+        ticket_loop, "reply", lambda *a, **kw: pytest.fail("reply must not run")
+    )
     token, _ = mt.make_page_token("ticket", id="lg-test")
     h = _H(body={"t": token, "text": "伪答复"})
     ma.handle_post(h, "/api/m/ticket/reply")
@@ -231,11 +269,15 @@ def test_ticket_reply_wrong_identity_403(monkeypatch):
     """有飞书会话但不是处理人名单成员：403，且不进发送链。"""
     import ticket_loop
 
-    monkeypatch.setattr(ticket_loop, "reply", lambda *a, **kw: pytest.fail("reply must not run"))
+    monkeypatch.setattr(
+        ticket_loop, "reply", lambda *a, **kw: pytest.fail("reply must not run")
+    )
     monkeypatch.setattr(ma, "_handler_open_ids", lambda: ["ou_owner"])
     token, _ = mt.make_page_token("ticket", id="lg-test")
-    h = _H(body={"t": token, "text": "伪答复"},
-           headers={"Cookie": _session_cookie("ou_other")})
+    h = _H(
+        body={"t": token, "text": "伪答复"},
+        headers={"Cookie": _session_cookie("ou_other")},
+    )
     ma.handle_post(h, "/api/m/ticket/reply")
     assert h.sent[0] == 403
     assert "无权" in h.sent[1]["error"]
@@ -245,11 +287,15 @@ def test_ticket_reply_no_handler_roster_fails_closed(monkeypatch):
     """处理人名单不可读/为空：失败关闭（403），不静默放行。"""
     import ticket_loop
 
-    monkeypatch.setattr(ticket_loop, "reply", lambda *a, **kw: pytest.fail("reply must not run"))
+    monkeypatch.setattr(
+        ticket_loop, "reply", lambda *a, **kw: pytest.fail("reply must not run")
+    )
     monkeypatch.setattr(ma, "_handler_open_ids", lambda: [])
     token, _ = mt.make_page_token("ticket", id="lg-test")
-    h = _H(body={"t": token, "text": "伪答复"},
-           headers={"Cookie": _session_cookie("ou_owner")})
+    h = _H(
+        body={"t": token, "text": "伪答复"},
+        headers={"Cookie": _session_cookie("ou_owner")},
+    )
     ma.handle_post(h, "/api/m/ticket/reply")
     assert h.sent[0] == 403
 
@@ -267,8 +313,10 @@ def test_ticket_reply_handler_identity_passes(monkeypatch):
     monkeypatch.setattr(ticket_loop, "reply", fake_reply)
     monkeypatch.setattr(ma, "_handler_open_ids", lambda: ["ou_owner"])
     token, _ = mt.make_page_token("ticket", id="lg-test")
-    h = _H(body={"t": token, "text": "已处理"},
-           headers={"Cookie": _session_cookie("ou_owner")})
+    h = _H(
+        body={"t": token, "text": "已处理"},
+        headers={"Cookie": _session_cookie("ou_owner")},
+    )
     ma.handle_post(h, "/api/m/ticket/reply")
     assert h.sent[0] == 200 and h.sent[1]["ok"] is True
     assert seen["tid"] == "lg-test" and seen["text"] == "已处理"
@@ -282,10 +330,13 @@ def test_handler_open_ids_env_union(monkeypatch):
 
 
 def test_ticket_payload_can_reply_flag(monkeypatch):
-    fake = {"ticket": {"dispatch_id": "lg-5917d4c4357b", "state": "inbox"},
-            "timeline": []}
+    fake = {
+        "ticket": {"dispatch_id": "lg-5917d4c4357b", "state": "inbox"},
+        "timeline": [],
+    }
     monkeypatch.setattr(ma, "_local_get", lambda p, timeout=15: (200, fake))
     import types
+
     mod = types.ModuleType("ticket_loop")
     mod.summary = lambda tid: {"ok": True, "replies": [], "can_nudge": True}
     monkeypatch.setitem(__import__("sys").modules, "ticket_loop", mod)
@@ -303,7 +354,9 @@ def test_ticket_payload_can_reply_flag(monkeypatch):
 def test_ticket_reply_rejects_wrong_scene(monkeypatch):
     import ticket_loop
 
-    monkeypatch.setattr(ticket_loop, "reply", lambda *a, **kw: pytest.fail("reply must not run"))
+    monkeypatch.setattr(
+        ticket_loop, "reply", lambda *a, **kw: pytest.fail("reply must not run")
+    )
     token, _ = mt.make_page_token("picks", id="lg-test")
     h = _H(body={"t": token, "text": "伪答复"})
     ma.handle_post(h, "/api/m/ticket/reply")
@@ -321,11 +374,11 @@ def test_handle_post_beacon(monkeypatch, ws_tmp):
 def test_beacon_st_triggers_share_visit(monkeypatch, ws_tmp):
     """m_page_view 带 st → 调 _st_visit 落归因账（失败静默）。"""
     calls = []
-    monkeypatch.setattr(ma, "_st_visit",
-                        lambda tok: calls.append(tok) or True)
+    monkeypatch.setattr(ma, "_st_visit", lambda tok: calls.append(tok) or True)
     monkeypatch.setattr(ma, "EVENTS", os.path.join(ws_tmp, "events.jsonl"))
-    n = ma.append_events([{"event": "m_page_view", "scene": "picks",
-                           "st": "st.abc.def"}])
+    n = ma.append_events(
+        [{"event": "m_page_view", "scene": "picks", "st": "st.abc.def"}]
+    )
     assert n == 1 and calls == ["st.abc.def"]
     # 无 st / 非法前缀不调用
     ma.append_events([{"event": "m_page_view", "scene": "picks", "st": "junk"}])
@@ -339,16 +392,22 @@ def test_st_visit_records_visit(monkeypatch, ws_tmp):
     import hmac
     import json as _json
     import time as _time
+
     monkeypatch.setattr(ma, "WORK", ws_tmp)
     secret = "a" * 64
-    with open(os.path.join(ws_tmp, "share_secret.json"), "w",
-              encoding="utf-8") as f:
+    with open(os.path.join(ws_tmp, "share_secret.json"), "w", encoding="utf-8") as f:
         _json.dump({"secret": secret}, f)
-    payload = {"jti": "abcd1234", "code": "", "kind": "test",
-               "tenant": "default", "iat": int(_time.time()),
-               "exp": int(_time.time()) + 3600}
+    payload = {
+        "jti": "abcd1234",
+        "code": "",
+        "kind": "test",
+        "tenant": "default",
+        "iat": int(_time.time()),
+        "exp": int(_time.time()) + 3600,
+    }
     body = base64.urlsafe_b64encode(
-        _json.dumps(payload, separators=(",", ":")).encode()).rstrip(b"=")
+        _json.dumps(payload, separators=(",", ":")).encode()
+    ).rstrip(b"=")
     sig = hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()[:16]
     tok = "st." + body.decode() + "." + sig
     assert ma._st_visit(tok) is True
@@ -442,26 +501,51 @@ def test_data_payload_has_nav_links():
     ma.handle_get(h, "/api/m/data", "t=" + tok)
     assert h.sent[0] == 200
     nav = h.sent[1].get("nav") or {}
-    for s in ("entry", "picks", "position", "notify", "subscription",
-              "daily", "ledger", "lineage"):
+    for s in (
+        "entry",
+        "picks",
+        "position",
+        "notify",
+        "subscription",
+        "daily",
+        "ledger",
+        "lineage",
+    ):
         assert nav.get(s, "").startswith("http://test.local:8080/m/")
 
 
 # ── 全量对接：日报/账本/血缘/工单/统一入口 ───────────────────
 def test_daily_payload(monkeypatch):
-    fake = {"dist": {"total": 813,
-                     "bias": {"bull": 106, "bear": 68, "neutral": 639},
-                     "conf_buckets": {"low": 10, "mid": 212, "high": 576},
-                     "event_type": {"earnings": 170, "equity": 81}},
-            "generated_at": "2026-10-25T10:00:00+08:00",
-            "drift": {"open_count": 3, "alerts": [
-                {"title": "漂移", "message": "第一行原因\n详细内容",
-                 "status": "OPEN"}]},
-            "bt": {"exists": True, "n": 100, "news_day_range": ["a", "b"],
-                   "groups": {"bull": {"pct1_avg": -1.2, "vs_mkt1": -0.3},
-                              "bear": {"pct1_avg": -1.0, "vs_mkt1": 0.1}}},
-            "health": {"items": [{"name": "a", "exists": True},
-                                 {"name": "b", "exists": False, "path": "C:/x"}]}}
+    fake = {
+        "dist": {
+            "total": 813,
+            "bias": {"bull": 106, "bear": 68, "neutral": 639},
+            "conf_buckets": {"low": 10, "mid": 212, "high": 576},
+            "event_type": {"earnings": 170, "equity": 81},
+        },
+        "generated_at": "2026-10-25T10:00:00+08:00",
+        "drift": {
+            "open_count": 3,
+            "alerts": [
+                {"title": "漂移", "message": "第一行原因\n详细内容", "status": "OPEN"}
+            ],
+        },
+        "bt": {
+            "exists": True,
+            "n": 100,
+            "news_day_range": ["a", "b"],
+            "groups": {
+                "bull": {"pct1_avg": -1.2, "vs_mkt1": -0.3},
+                "bear": {"pct1_avg": -1.0, "vs_mkt1": 0.1},
+            },
+        },
+        "health": {
+            "items": [
+                {"name": "a", "exists": True},
+                {"name": "b", "exists": False, "path": "C:/x"},
+            ]
+        },
+    }
     monkeypatch.setattr(ma, "_local_get", lambda p, timeout=15: (200, fake))
     d = ma.daily_payload()
     assert d["ok"] and d["total"] == 813
@@ -483,40 +567,68 @@ def test_ledger_payload_real():
 
 
 def test_lineage_payload(monkeypatch):
-    fake = {"view": "breaks", "data": {
-        "tracked_tables": 20, "healthy_count": 20, "runs_not_ok": 20,
-        "broken": [],
-        "freshness": {"fresh_count": 18, "watch": [
-            {"table": "neo4j:X", "age_trade_days": 2}],
-            "stale": [], "broken_count": 0},
-        "all_latest": [{"output_table": "neo4j:X", "job": "j", "status": "ok",
-                        "freshness": "watch", "age_trade_days": 2,
-                        "rows_written": 80},
-                       {"output_table": "neo4j:HAS_CANDLE", "job": "j",
-                        "status": "ok", "freshness": "fresh",
-                        "age_trade_days": 0, "rows_written": 10}]}}
+    fake = {
+        "view": "breaks",
+        "data": {
+            "tracked_tables": 20,
+            "healthy_count": 20,
+            "runs_not_ok": 20,
+            "broken": [],
+            "freshness": {
+                "fresh_count": 18,
+                "watch": [{"table": "neo4j:X", "age_trade_days": 2}],
+                "stale": [],
+                "broken_count": 0,
+            },
+            "all_latest": [
+                {
+                    "output_table": "neo4j:X",
+                    "job": "j",
+                    "status": "ok",
+                    "freshness": "watch",
+                    "age_trade_days": 2,
+                    "rows_written": 80,
+                },
+                {
+                    "output_table": "neo4j:HAS_CANDLE",
+                    "job": "j",
+                    "status": "ok",
+                    "freshness": "fresh",
+                    "age_trade_days": 0,
+                    "rows_written": 10,
+                },
+            ],
+        },
+    }
     monkeypatch.setattr(ma, "_local_get", lambda p, timeout=15: (200, fake))
     d = ma.lineage_payload()
     assert d["ok"] and d["tracked"] == 20
     assert d["level"] == "warn" and d["watch_n"] == 1
-    assert d["rows"][0]["table"] == "neo4j:X"   # 偏旧排前
+    assert d["rows"][0]["table"] == "neo4j:X"  # 偏旧排前
     assert d["rows"][0]["label"] == "X"
     assert d["rows"][1]["label"] == "K线关系"
-    assert d["history_fail_runs"] == 20          # 历史累计，非当前异常
+    assert d["history_fail_runs"] == 20  # 历史累计，非当前异常
     assert d["attention"][0]["level"] == "warn"
     assert "偏旧" in d["status_line"]
 
 
 def test_ticket_payload_ok(monkeypatch):
-    fake = {"ok": True,
-            "ticket": {"dispatch_id": "lg-5917d4c4357b", "state": "inbox",
-                       "kind_label": "派单请求", "intent_label": "个股咨询",
-                       "code": "605100", "route_desc": "司马懿席",
-                       "deadline_min": 5,
-                       "submitted_at": "2026-10-21T16:29:24",
-                       "open_id_masked": "ou_50a**d4"},
-            "timeline": [{"label": "已提交", "time": "2026-10-21T16:29:24"}],
-            "next_hint": "预计 5 分钟"}
+    fake = {
+        "ok": True,
+        "ticket": {
+            "dispatch_id": "lg-5917d4c4357b",
+            "state": "inbox",
+            "kind_label": "派单请求",
+            "intent_label": "个股咨询",
+            "code": "605100",
+            "route_desc": "司马懿席",
+            "deadline_min": 5,
+            "submitted_at": "2026-10-21T16:29:24",
+            "open_id_masked": "ou_50a**d4",
+        },
+        "timeline": [{"label": "已提交", "time": "2026-10-21T16:29:24"}],
+        "next_hint": "预计 5 分钟",
+    }
     monkeypatch.setattr(ma, "_local_get", lambda p, timeout=15: (200, fake))
     d = ma.ticket_payload("lg-5917d4c4357b")
     assert d["ok"] and d["ticket"]["code"] == "605100" and d["timeline"]
@@ -546,8 +658,9 @@ class _CookieH:
 def test_session_cookie_roundtrip(monkeypatch, ws_tmp):
     monkeypatch.setenv("M_LINK_SECRET_FILE", os.path.join(ws_tmp, "s.txt"))
     monkeypatch.setattr(mt, "SECRET_FILE", os.path.join(ws_tmp, "s.txt"))
-    tok = mt.sign({"scope": "session", "open_id": "ou_abc123",
-                   "nbf": 0, "exp": 9999999999})
+    tok = mt.sign(
+        {"scope": "session", "open_id": "ou_abc123", "nbf": 0, "exp": 9999999999}
+    )
     h = _CookieH("a=1; m_sess=" + tok + "; b=2")
     assert ma._session_open_id(h) == "ou_abc123"
     assert ma._session_open_id(_CookieH("")) == ""
@@ -561,8 +674,9 @@ def test_auth_check(monkeypatch, ws_tmp):
     h = _CookieH("")
     ma.auth_check(h)
     assert h.sent[0] == 200 and h.sent[1]["authed"] is False
-    tok = mt.sign({"scope": "session", "open_id": "ou_abc123",
-                   "nbf": 0, "exp": 9999999999})
+    tok = mt.sign(
+        {"scope": "session", "open_id": "ou_abc123", "nbf": 0, "exp": 9999999999}
+    )
     h2 = _CookieH("m_sess=" + tok)
     ma.auth_check(h2)
     assert h2.sent[1]["authed"] is True
@@ -585,8 +699,7 @@ class _RedirectH:
 
 
 def test_auth_start_redirect(monkeypatch):
-    monkeypatch.setattr(ma, "_feishu_app_token",
-                        lambda: ("apptok", "cli_test"))
+    monkeypatch.setattr(ma, "_feishu_app_token", lambda: ("apptok", "cli_test"))
     monkeypatch.setattr(ma, "base_url", lambda: "https://m.example.com")
     h = _RedirectH()
     ma.auth_start(h, "t=tok123")
@@ -601,26 +714,45 @@ def test_entry_payload_links():
     d = ma.entry_payload()
     assert d["ok"] and len(d["links"]) >= 10
     scenes = {x["scene"] for x in d["links"]}
-    assert {"picks", "chan", "position", "daily", "ledger", "lineage",
-            "ticket", "notify", "subscription"} <= scenes
+    assert {
+        "picks",
+        "chan",
+        "position",
+        "daily",
+        "ledger",
+        "lineage",
+        "ticket",
+        "notify",
+        "subscription",
+    } <= scenes
     for x in d["links"]:
         assert "/m/" in x["url"] and "t=" in x["url"]
 
 
 def test_ticket_payload_loop_fields(monkeypatch):
-    fake = {"ticket": {"dispatch_id": "lg-5917d4c4357b", "state": "inbox",
-                       "kind_label": "派单请求"},
-            "timeline": [],
-            "next_hint": "预计 5 分钟"}
+    fake = {
+        "ticket": {
+            "dispatch_id": "lg-5917d4c4357b",
+            "state": "inbox",
+            "kind_label": "派单请求",
+        },
+        "timeline": [],
+        "next_hint": "预计 5 分钟",
+    }
     monkeypatch.setattr(ma, "_local_get", lambda p, timeout=15: (200, fake))
     import types
+
     mod = types.ModuleType("ticket_loop")
-    mod.summary = lambda tid: {"ok": True, "state": "inbox",
-                               "waited_min": 3.2, "nudge_n": 2,
-                               "last_nudge": "2026-10-25 16:00",
-                               "escalate": True,
-                               "replies": [{"text": "已跟进", "by": "seat"}],
-                               "can_nudge": True}
+    mod.summary = lambda tid: {
+        "ok": True,
+        "state": "inbox",
+        "waited_min": 3.2,
+        "nudge_n": 2,
+        "last_nudge": "2026-10-25 16:00",
+        "escalate": True,
+        "replies": [{"text": "已跟进", "by": "seat"}],
+        "can_nudge": True,
+    }
     monkeypatch.setitem(__import__("sys").modules, "ticket_loop", mod)
     d = ma.ticket_payload("lg-5917d4c4357b")
     assert d["ok"] is True

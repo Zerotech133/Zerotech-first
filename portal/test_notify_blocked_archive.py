@@ -11,6 +11,7 @@
 
 monkeypatch fixture 沿 test_api_notify.py 模式（env AIOS_ROOT → tmp）。
 """
+
 import json
 import sys
 from datetime import datetime, timedelta
@@ -35,7 +36,8 @@ def root(tmp_path, monkeypatch):
 def make_flow(root, rows):
     (root / "portal" / "work" / "push_flow.jsonl").write_text(
         "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows),
-        encoding="utf-8")
+        encoding="utf-8",
+    )
 
 
 def payload(root):
@@ -43,21 +45,32 @@ def payload(root):
 
 
 def fail_row(date, kind, target, ts=None):
-    return {"ts": ts or (date + "T08:00:00"), "date": date, "kind": kind,
-            "channel": "openapi", "target": target, "count": 1, "ok": 0,
-            "tenant": "default"}
+    return {
+        "ts": ts or (date + "T08:00:00"),
+        "date": date,
+        "kind": kind,
+        "channel": "openapi",
+        "target": target,
+        "count": 1,
+        "ok": 0,
+        "tenant": "default",
+    }
 
 
 def test_same_kind_target_clustered_with_size(root):
     """同 kind+target 三条失败 → 1 条簇代表，cluster_size=3，raw=3。"""
-    make_flow(root, [
-        fail_row(TODAY, "daily:report", "ou_a", ts=TODAY + "T08:00:00"),
-        fail_row(TODAY, "daily:report", "ou_a", ts=TODAY + "T09:00:00"),
-        fail_row(TODAY, "daily:report", "ou_a", ts=TODAY + "T10:00:00"),
-    ])
+    make_flow(
+        root,
+        [
+            fail_row(TODAY, "daily:report", "ou_a", ts=TODAY + "T08:00:00"),
+            fail_row(TODAY, "daily:report", "ou_a", ts=TODAY + "T09:00:00"),
+            fail_row(TODAY, "daily:report", "ou_a", ts=TODAY + "T10:00:00"),
+        ],
+    )
     p = payload(root)
-    fb = [i for i in p["items"] if i["state"] == "blocked"
-          and i["source"] == "push_flow"]
+    fb = [
+        i for i in p["items"] if i["state"] == "blocked" and i["source"] == "push_flow"
+    ]
     assert len(fb) == 1
     assert fb[0]["cluster_size"] == 3
     assert "失败簇共 3 条" in fb[0]["reason"]
@@ -70,10 +83,13 @@ def test_same_kind_target_clustered_with_size(root):
 
 def test_different_target_not_merged(root):
     """同 kind 不同 target 是不同投递事实，各成一簇。"""
-    make_flow(root, [
-        fail_row(TODAY, "daily:alert", "ou_a"),
-        fail_row(TODAY, "daily:alert", "ou_b"),
-    ])
+    make_flow(
+        root,
+        [
+            fail_row(TODAY, "daily:alert", "ou_a"),
+            fail_row(TODAY, "daily:alert", "ou_b"),
+        ],
+    )
     p = payload(root)
     fb = [i for i in p["items"] if i["state"] == "blocked"]
     assert len(fb) == 2 and p["meta"]["blocked_archive"]["raw_blocked"] == 2
@@ -82,10 +98,13 @@ def test_different_target_not_merged(root):
 def test_overdue_rows_auto_archive_t_plus_7(root):
     """T+7 核心：8 天前失败行超窗自动出队，raw_blocked 不含它。"""
     old = (datetime.now() - timedelta(days=8)).strftime("%Y-%m-%d")
-    make_flow(root, [
-        fail_row(TODAY, "subscribe:quote_move", "个人"),
-        fail_row(old, "subscribe:quote_move", "个人"),   # 超窗
-    ])
+    make_flow(
+        root,
+        [
+            fail_row(TODAY, "subscribe:quote_move", "个人"),
+            fail_row(old, "subscribe:quote_move", "个人"),  # 超窗
+        ],
+    )
     p = payload(root)
     fb = [i for i in p["items"] if i["state"] == "blocked"]
     assert len(fb) == 1 and fb[0]["cluster_size"] == 1
@@ -95,14 +114,31 @@ def test_overdue_rows_auto_archive_t_plus_7(root):
 
 def test_gate_deny_rows_idle_and_not_clustered(root):
     """闸门策略内抑制行归 idle，不进折叠（与投递失败分开治理口径）。"""
-    make_flow(root, [
-        {"ts": NOW_ISO, "date": TODAY, "kind": "matrix:us|deny:silent window",
-         "channel": "hub-gate", "target": "oc_us", "count": 1, "ok": 0},
-        {"ts": NOW_ISO, "date": TODAY, "kind": "matrix:cn|deny:quota",
-         "channel": "hub-gate", "target": "oc_cn", "count": 1, "ok": 0},
-        fail_row(TODAY, "daily:report", "ou_a"),
-        fail_row(TODAY, "daily:report", "ou_a"),
-    ])
+    make_flow(
+        root,
+        [
+            {
+                "ts": NOW_ISO,
+                "date": TODAY,
+                "kind": "matrix:us|deny:silent window",
+                "channel": "hub-gate",
+                "target": "oc_us",
+                "count": 1,
+                "ok": 0,
+            },
+            {
+                "ts": NOW_ISO,
+                "date": TODAY,
+                "kind": "matrix:cn|deny:quota",
+                "channel": "hub-gate",
+                "target": "oc_cn",
+                "count": 1,
+                "ok": 0,
+            },
+            fail_row(TODAY, "daily:report", "ou_a"),
+            fail_row(TODAY, "daily:report", "ou_a"),
+        ],
+    )
     p = payload(root)
     idle = [i for i in p["items"] if i["state"] == "idle"]
     assert len(idle) == 2 and all(i.get("cluster_size") is None for i in idle)

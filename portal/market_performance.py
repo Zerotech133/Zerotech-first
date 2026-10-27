@@ -3,6 +3,7 @@
 账本由 ``tools/build_performance_ledger.py`` 生成；本模块只读取并做
 结构校验，不计算收益、不写文件，也不提供下单或雇佣接口。
 """
+
 from __future__ import annotations
 
 import json

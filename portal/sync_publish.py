@@ -42,11 +42,17 @@ SINGLE_FILES = [
     # data_daily.html），显式提供 index.html → picks.html 钉死看板入口
     ("picks_index.html", "index.html"),
     (os.path.join("static", "tokens.css"), os.path.join("static", "tokens.css")),
-    (os.path.join("data", "todays_picks.json"), os.path.join("data", "todays_picks.json")),
+    (
+        os.path.join("data", "todays_picks.json"),
+        os.path.join("data", "todays_picks.json"),
+    ),
     # 信号后验（build_pick_verdicts.py 产物）：picks.html fetch 它渲染策略卡
     # 「后验T+1·可操作层」与详情「信号后验·可成交」；缺失时前端优雅降级隐藏，
     # 但线上看板会缺整块功能，故必须随快照发布（2026-10-19 补入）
-    (os.path.join("data", "pick_verdicts.json"), os.path.join("data", "pick_verdicts.json")),
+    (
+        os.path.join("data", "pick_verdicts.json"),
+        os.path.join("data", "pick_verdicts.json"),
+    ),
 ]
 # K-STOCK-411 止血判例（2026-10-15 线上取证）：CloudStudio Gateway 为静态
 # 直出、不执行 Python 进程——曾发布的 ledger/ledger.json/pick_details/
@@ -54,10 +60,10 @@ SINGLE_FILES = [
 # 敏感件一律停发，快照残留移档（见 remove_sensitive），线上待 deploy 下架。
 # 若未来网关支持边缘鉴权/进程托管，再评审恢复（届时 server_gate.py 源头仍在 git）。
 SENSITIVE_REMOVAL = [
-    "ledger.html",                 # K-STOCK-353 交易台账页（41 笔持仓/胜率/盈亏）
+    "ledger.html",  # K-STOCK-353 交易台账页（41 笔持仓/胜率/盈亏）
     os.path.join("data", "ledger.json"),
     os.path.join("data", "pick_details"),  # 个股明细目录（止损位/操作方案）
-    "server.py",                   # 口令明文（v1.1 旧版滞留线上）
+    "server.py",  # 口令明文（v1.1 旧版滞留线上）
 ]
 
 
@@ -75,7 +81,9 @@ def atomic_copy(src_path, dst_path, dry_run):
         return
     os.makedirs(os.path.dirname(dst_path), exist_ok=True)
     fd, tmp_path = tempfile.mkstemp(
-        dir=os.path.dirname(dst_path), prefix=os.path.basename(dst_path) + ".", suffix=".tmp"
+        dir=os.path.dirname(dst_path),
+        prefix=os.path.basename(dst_path) + ".",
+        suffix=".tmp",
     )
     try:
         with os.fdopen(fd, "wb") as out, open(src_path, "rb") as src:
@@ -91,7 +99,11 @@ def classify(src_path, dst_path):
     """返回 (动作, 是否同 hash)。动作: add/update/skip；dst 不存在时同 hash=False。"""
     if not os.path.exists(dst_path):
         return "add", False
-    return ("skip", True) if sha256_of(src_path) == sha256_of(dst_path) else ("update", False)
+    return (
+        ("skip", True)
+        if sha256_of(src_path) == sha256_of(dst_path)
+        else ("update", False)
+    )
 
 
 def remove_sensitive(dry_run):
@@ -100,8 +112,7 @@ def remove_sensitive(dry_run):
     移档≠删除（Windows 删除红线），同卷 os.replace 原子搬移；重复执行时
     目标已存在则追加时间戳后缀防覆盖。返回移档相对路径列表。
     """
-    archive_root = os.path.join(PORTAL, "work", "unpublished",
-                                time.strftime("%Y%m%d"))
+    archive_root = os.path.join(PORTAL, "work", "unpublished", time.strftime("%Y%m%d"))
     moved = []
     for rel in SENSITIVE_REMOVAL:
         dst = os.path.join(DST, rel)
@@ -122,7 +133,9 @@ def remove_sensitive(dry_run):
 
 def main():
     parser = argparse.ArgumentParser(description="刷新 picks_public 快照目录")
-    parser.add_argument("--dry-run", action="store_true", help="只显示计划动作，不写文件")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="只显示计划动作，不写文件"
+    )
     args = parser.parse_args()
 
     t0 = time.time()
@@ -164,8 +177,10 @@ def main():
     elapsed = time.time() - t0
     print("")
     print("==== 快照刷新统计%s ====" % ("（dry-run，未写盘）" if args.dry_run else ""))
-    print("新增: %d  更新: %d  跳过(hash相同): %d  敏感移档: %d" % (
-        stats["add"], stats["update"], stats["skip"], stats["removed"]))
+    print(
+        "新增: %d  更新: %d  跳过(hash相同): %d  敏感移档: %d"
+        % (stats["add"], stats["update"], stats["skip"], stats["removed"])
+    )
     print("总耗时: %.2fs" % elapsed)
 
     if errors:

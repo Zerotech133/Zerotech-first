@@ -5,6 +5,7 @@
 手动登记：--add '{"name":"张总","role":"客户","note":"AI平台采购意向"}'
 边界：个人信息本机存储不外传；议会厅喂入仅提取已公开说的内容，不推测。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -44,9 +45,13 @@ def load(n: int = 50) -> list[dict]:
 
 
 def add(rec: dict) -> dict:
-    rec = {"name": str(rec.get("name", ""))[:30], "role": str(rec.get("role", "联系"))[:10],
-           "note": str(rec.get("note", ""))[:200], "since": rec.get("since") or __import__("time").strftime("%Y-%m-%d"),
-           "src": rec.get("src", "manual")}
+    rec = {
+        "name": str(rec.get("name", ""))[:30],
+        "role": str(rec.get("role", "联系"))[:10],
+        "note": str(rec.get("note", ""))[:200],
+        "since": rec.get("since") or __import__("time").strftime("%Y-%m-%d"),
+        "src": rec.get("src", "manual"),
+    }
     if not rec["name"]:
         raise ValueError("name required")
     os.makedirs(os.path.dirname(LEDGER), exist_ok=True)
@@ -76,14 +81,25 @@ def mine_meetings() -> list[dict]:
                     continue
                 for pat, role in _PATTERNS:
                     for m in pat.finditer(text):
-                        ctx = text[max(0, m.start() - 20):m.end() + 20].replace("\n", " ")
+                        ctx = text[max(0, m.start() - 20) : m.end() + 20].replace(
+                            "\n", " "
+                        )
                         key = "纪要提及·" + role
-                        found.setdefault(key, {"note_ctx": []})["note_ctx"].append(ctx[:60])
+                        found.setdefault(key, {"note_ctx": []})["note_ctx"].append(
+                            ctx[:60]
+                        )
                 for pat, label in _DOC_PATTERNS:
                     if pat.search(text):
                         found.setdefault("文档·" + label, {"note_ctx": []})
-    return [{"name": k, "role": "线索", "note": "；".join(v["note_ctx"][:2])[:180],
-             "src": "council-mined"} for k, v in found.items()]
+    return [
+        {
+            "name": k,
+            "role": "线索",
+            "note": "；".join(v["note_ctx"][:2])[:180],
+            "src": "council-mined",
+        }
+        for k, v in found.items()
+    ]
 
 
 def docs_inventory() -> list[dict]:
@@ -92,7 +108,8 @@ def docs_inventory() -> list[dict]:
     if os.path.isdir(DOCS_DIR):
         for f in sorted(os.listdir(DOCS_DIR)):
             if f.endswith((".md", ".html")) and any(
-                    k in f for k in ("BP", "商业计划", "项目", "研发方案", "产品")):
+                k in f for k in ("BP", "商业计划", "项目", "研发方案", "产品")
+            ):
                 out.append({"file": f[:60], "path": os.path.join(DOCS_DIR, f)})
     return out[:12]
 
@@ -112,9 +129,21 @@ def main() -> int:
             r = add(c)
             if not r.get("dup"):
                 added += 1
-        print(json.dumps({"mined_added": added, "docs": docs_inventory()}, ensure_ascii=False, indent=1))
+        print(
+            json.dumps(
+                {"mined_added": added, "docs": docs_inventory()},
+                ensure_ascii=False,
+                indent=1,
+            )
+        )
         return 0
-    print(json.dumps({"contacts": load(20), "docs": docs_inventory()}, ensure_ascii=False, indent=1))
+    print(
+        json.dumps(
+            {"contacts": load(20), "docs": docs_inventory()},
+            ensure_ascii=False,
+            indent=1,
+        )
+    )
     return 0
 
 

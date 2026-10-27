@@ -23,8 +23,15 @@ CLOCK = datetime(2026, 10, 21, 9, 0, tzinfo=BEIJING)
 CLOCK_ISO = "2026-10-21T09:00:00+08:00"
 DAY = "2026-10-21"
 
-ALL_SOURCES = ("os", "home", "alerts", "notify", "tasks", "capability",
-               "pushflow")  # WO-OS-20 起为七源
+ALL_SOURCES = (
+    "os",
+    "home",
+    "alerts",
+    "notify",
+    "tasks",
+    "capability",
+    "pushflow",
+)  # WO-OS-20 起为七源
 
 
 def _zm():
@@ -38,22 +45,43 @@ def _stub_fetchers():
         "home": lambda: {"ok": True},
         "alerts": lambda: {
             "ok": True,
-            "source_health": {"sources": {
-                "news": {"status": "ok", "as_of": CLOCK_ISO},
-            }},
+            "source_health": {
+                "sources": {
+                    "news": {"status": "ok", "as_of": CLOCK_ISO},
+                }
+            },
         },
         "notify": lambda: {
             "ok": True,
-            "items": [{"id": "n1", "state": "blocked", "title": "阻断通知",
-                       "reason": "待本人核对", "created_at": CLOCK_ISO}],
+            "items": [
+                {
+                    "id": "n1",
+                    "state": "blocked",
+                    "title": "阻断通知",
+                    "reason": "待本人核对",
+                    "created_at": CLOCK_ISO,
+                }
+            ],
         },
         "tasks": lambda: {
             "ok": True,
-            "tasks": [{"task_id": "t1", "status": "open", "title": "今日单",
-                       "due": DAY, "created_at": CLOCK_ISO},
-                      # WO-OS-23 起 blocked 聚合成 P2，桩需一条真 P1（逾期）才能验 top_priority
-                      {"task_id": "t9", "status": "open", "title": "逾期单",
-                       "due": "2026-10-19", "created_at": CLOCK_ISO}],
+            "tasks": [
+                {
+                    "task_id": "t1",
+                    "status": "open",
+                    "title": "今日单",
+                    "due": DAY,
+                    "created_at": CLOCK_ISO,
+                },
+                # WO-OS-23 起 blocked 聚合成 P2，桩需一条真 P1（逾期）才能验 top_priority
+                {
+                    "task_id": "t9",
+                    "status": "open",
+                    "title": "逾期单",
+                    "due": "2026-10-19",
+                    "created_at": CLOCK_ISO,
+                },
+            ],
         },
         "capability": lambda: {"ok": True},
     }
@@ -70,8 +98,15 @@ def test_writes_json_to_out_dir_with_beijing_day(tmp_path):
     assert Path(out["path"]) == target
 
     data = json.loads(target.read_text(encoding="utf-8"))
-    for key in ("engine", "suggestions", "gaps", "business_day",
-                "generated_at", "model_invoked", "dispatched"):
+    for key in (
+        "engine",
+        "suggestions",
+        "gaps",
+        "business_day",
+        "generated_at",
+        "model_invoked",
+        "dispatched",
+    ):
         assert key in data, f"产物 JSON 缺字段 {key}"
     assert data["engine"] == "rule-based"
     assert data["model_invoked"] is False
@@ -91,7 +126,8 @@ def test_summary_counts_match_payload(tmp_path):
     assert summary["suggestions"] == len(data["suggestions"])
     assert summary["gaps"] == len(data["gaps"])
     assert summary["top_priority"] == sum(
-        1 for s in data["suggestions"] if s["priority"] == 1)
+        1 for s in data["suggestions"] if s["priority"] == 1
+    )
     assert summary["top_priority"] >= 1, "stub 里 notify:blocked / 逾期单应产优先级 1"
 
 
@@ -99,8 +135,9 @@ def test_summary_counts_match_payload(tmp_path):
 def test_dry_run_writes_nothing(tmp_path):
     zm = _zm()
     out = tmp_path / "nested" / "brief"
-    res = zm.generate(clock=CLOCK_ISO, out_dir=out, dry_run=True,
-                      fetchers=_stub_fetchers())
+    res = zm.generate(
+        clock=CLOCK_ISO, out_dir=out, dry_run=True, fetchers=_stub_fetchers()
+    )
     assert res["written"] is False
     assert not out.exists(), "dry-run 不得创建目录"
     assert list(tmp_path.rglob("*.json")) == []
@@ -146,8 +183,9 @@ def test_same_day_regenerate_overwrites(tmp_path):
 
 
 # ── ⑦ 坏 clock：显式抛错（不静默回落到当前时间）────────────────────────
-@pytest.mark.parametrize("bad", ["not-a-date", "2026-13-45T09:00:00+08:00",
-                                 "2026-10-21T09:00:00", "", "  "])
+@pytest.mark.parametrize(
+    "bad", ["not-a-date", "2026-13-45T09:00:00+08:00", "2026-10-21T09:00:00", "", "  "]
+)
 def test_bad_clock_raises(bad):
     zm = _zm()
     with pytest.raises(ValueError):
@@ -157,8 +195,9 @@ def test_bad_clock_raises(bad):
 def test_naive_datetime_clock_raises():
     zm = _zm()
     with pytest.raises(ValueError):
-        zm.generate(clock=datetime(2026, 10, 21, 9, 0), out_dir=Path("unused"),
-                    fetchers={})
+        zm.generate(
+            clock=datetime(2026, 10, 21, 9, 0), out_dir=Path("unused"), fetchers={}
+        )
 
 
 # ── ⑧ CLI：--dry-run 不写盘；--out-dir/--clock 生效；退出码 0 ───────────
@@ -183,23 +222,26 @@ def test_cli_writes_and_reports_path(tmp_path, capsys):
 
 def test_cli_bad_clock_exit_nonzero(tmp_path):
     zm = _zm()
-    assert zm.main(["--dry-run", "--out-dir", str(tmp_path),
-                    "--clock", "garbage"]) != 0
+    assert zm.main(["--dry-run", "--out-dir", str(tmp_path), "--clock", "garbage"]) != 0
 
 
 # ── ⑨ 默认产物路径：portal/data/zhuge_brief/（可由 --out-dir 覆盖）──────
 def test_default_out_dir_is_portal_data_zhuge_brief():
     zm = _zm()
-    assert Path(zm.DEFAULT_OUT_DIR).as_posix().endswith(
-        "portal/data/zhuge_brief")
+    assert Path(zm.DEFAULT_OUT_DIR).as_posix().endswith("portal/data/zhuge_brief")
     assert Path(zm.DEFAULT_OUT_DIR).is_absolute()
 
 
 # ── ⑩ 源码禁项扫描：零通知发送 / 零计划任务 / 零外部 HTTP 写 ────────────
 def test_source_has_no_dispatch_or_schedule_wiring():
     src = (HERE / "zhuge_morning.py").read_text(encoding="utf-8")
-    for banned in ("requests.", "urllib.request", "smtplib",
-                   "schedules.json", "subprocess"):
+    for banned in (
+        "requests.",
+        "urllib.request",
+        "smtplib",
+        "schedules.json",
+        "subprocess",
+    ):
         assert banned not in src, f"生成器源码不得出现 {banned}"
     for banned in ("urlopen", "http.client", "socket", "os.system", "popen"):
         assert banned not in src, f"生成器源码不得出现 {banned}"
@@ -229,8 +271,14 @@ def test_source_has_no_send_calls():
 def test_source_does_not_touch_six_sources_or_engine():
     """不修改六源与引擎本体：生成器只 import，不写盘到那些模块。"""
     src = (HERE / "zhuge_morning.py").read_text(encoding="utf-8")
-    for mod in ("api_misc", "api_common", "api_notify", "api_tickets",
-                "api_capability", "api_zhuge_brief"):
+    for mod in (
+        "api_misc",
+        "api_common",
+        "api_notify",
+        "api_tickets",
+        "api_capability",
+        "api_zhuge_brief",
+    ):
         assert f"import {mod}" in src or f"from {mod}" in src or mod not in src
     assert "open(" in src, "落盘应使用最小 open 写，便于审计"
     assert "__file__" in src
@@ -241,16 +289,23 @@ def test_pushflow_suggestion_lands_in_artifact(tmp_path):
     zm = _zm()
     fs = _stub_fetchers()
     fs["pushflow"] = lambda: {
-        "ok": True, "today": 276, "attempted": 276, "ok_count": 124,
-        "fail_count": 152, "fail_rate": 0.55, "policy_suppressed": 0,
-        "channels": {"openapi": {"ok": 100, "fail": 150},
-                     "lark-cli": {"ok": 24, "fail": 2}},
+        "ok": True,
+        "today": 276,
+        "attempted": 276,
+        "ok_count": 124,
+        "fail_count": 152,
+        "fail_rate": 0.55,
+        "policy_suppressed": 0,
+        "channels": {
+            "openapi": {"ok": 100, "fail": 150},
+            "lark-cli": {"ok": 24, "fail": 2},
+        },
     }
     res = zm.generate(clock=CLOCK_ISO, out_dir=tmp_path, fetchers=fs)
-    data = json.loads((tmp_path / f"zhuge_brief_{DAY}.json")
-                      .read_text(encoding="utf-8"))
-    s = next((x for x in data["suggestions"]
-              if x["id"] == "pushflow:daily_rate"), None)
+    data = json.loads(
+        (tmp_path / f"zhuge_brief_{DAY}.json").read_text(encoding="utf-8")
+    )
+    s = next((x for x in data["suggestions"] if x["id"] == "pushflow:daily_rate"), None)
     assert s is not None, "注入 pushflow 后产物应含 pushflow:daily_rate"
     assert s["priority"] == 1
     assert "今日真实投递失败率 55%" in s["reason"]
@@ -258,4 +313,3 @@ def test_pushflow_suggestion_lands_in_artifact(tmp_path):
     assert s["source"] == "/api/zhuge/brief.pushflow"
     assert res["summary"]["top_priority"] >= 2
     assert all(g["source"] != "pushflow" for g in data["gaps"])
-

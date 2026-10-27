@@ -61,17 +61,33 @@ def tmp_repo(tmp_path, monkeypatch):
 
 
 def _mk_art(store, aid, chash, source="gzh.drafts", ref="d1"):
-    return store.record(Artifact(
-        artifact_id=aid, kind="md", path="docs/%s.md" % aid,
-        content_hash=chash, fact_hash=chash, source_system=source,
-        source_ref=ref, produced_by="laotian"))
+    return store.record(
+        Artifact(
+            artifact_id=aid,
+            kind="md",
+            path="docs/%s.md" % aid,
+            content_hash=chash,
+            fact_hash=chash,
+            source_system=source,
+            source_ref=ref,
+            produced_by="laotian",
+        )
+    )
 
 
 def _mk_ap(store, key, target_type, target_id, chash=""):
-    return store.record(Approval(
-        target_type=target_type, target_id=target_id,
-        from_status="draft", to_status="reviewed", decision="approved",
-        decided_by="t", idempotency_key=key, content_hash=chash))
+    return store.record(
+        Approval(
+            target_type=target_type,
+            target_id=target_id,
+            from_status="draft",
+            to_status="reviewed",
+            decision="approved",
+            decided_by="t",
+            idempotency_key=key,
+            content_hash=chash,
+        )
+    )
 
 
 # ----------------------------------------------------------------------
@@ -85,8 +101,13 @@ def test_board_empty_when_no_ledgers(tmp_repo):
     assert board["artifacts"]["total"] == 0
     assert board["artifacts"]["supersede_chains"] == []
     # 五条产线全显式给行（缺位计 0，不静默漏行）
-    assert [l["prefix"] for l in board["production_lines"]] == \
-        ["gzh", "pitch", "dev", "skill", "intel"]
+    assert [l["prefix"] for l in board["production_lines"]] == [
+        "gzh",
+        "pitch",
+        "dev",
+        "skill",
+        "intel",
+    ]
     assert all(not l["registered"] for l in board["production_lines"])
 
 
@@ -96,9 +117,16 @@ def test_board_artifacts_projection_and_chain(tmp_repo):
     try:
         _, replayed = _mk_art(store, "a1", "H1")
         assert replayed is False
-        new, _ = store.supersede("a1", Artifact(
-            artifact_id="a2", kind="md", path="docs/a2.md",
-            content_hash="H2", fact_hash="H2"))
+        new, _ = store.supersede(
+            "a1",
+            Artifact(
+                artifact_id="a2",
+                kind="md",
+                path="docs/a2.md",
+                content_hash="H2",
+                fact_hash="H2",
+            ),
+        )
         assert new.revision == "r2"
     finally:
         store.close()
@@ -112,8 +140,7 @@ def test_board_artifacts_projection_and_chain(tmp_repo):
     assert len(chains) == 1 and len(chains[0]) == 2
     assert chains[0] == ["a1", "a2"]  # 旧→新
     # 产线覆盖：source_system 前缀 'gzh.drafts' → 'gzh' 行计数
-    gzh = next(l for l in board["production_lines"]
-               if l["prefix"] == "gzh")
+    gzh = next(l for l in board["production_lines"] if l["prefix"] == "gzh")
     assert gzh["artifact_count"] == 2 and gzh["registered"] is True
 
 
@@ -154,8 +181,14 @@ def test_handler_capability_board_stub(tmp_repo):
     h = _stub(api_capability)
     h._capability_board()
     assert h.status == 200
-    for key in ("read_only", "artifacts", "approvals",
-                "production_lines", "note", "generated_at"):
+    for key in (
+        "read_only",
+        "artifacts",
+        "approvals",
+        "production_lines",
+        "note",
+        "generated_at",
+    ):
         assert key in h.payload
 
 
@@ -172,9 +205,14 @@ def test_unified_evidence_with_data(tmp_repo):
     db = tmp_repo / "agent_platform" / "data" / "evidence" / "evidence.db"
     store = EvidenceStore(db)
     try:
-        store.record(Evidence(source="t", source_ref="r1",
-                              statement="s1",
-                              payload={"domain": "gzh", "kind": "obs"}))
+        store.record(
+            Evidence(
+                source="t",
+                source_ref="r1",
+                statement="s1",
+                payload={"domain": "gzh", "kind": "obs"},
+            )
+        )
     finally:
         store.close()
     h = _stub(api_unified)

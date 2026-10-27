@@ -38,6 +38,7 @@ P5 质量分层（2026-10-11 用户拍板）：毒层买点（3买bei=False：T+
 用法: python portal/build_todays_picks.py（无参聚合；个股详情另跑
       python portal/build_pick_details.py --tier T1）
 """
+
 import csv
 import glob
 import json
@@ -49,9 +50,13 @@ from datetime import datetime
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, ".."))
-NEWS_DIR = os.path.join(ROOT, "news_collector")  # P2-2 源级降级推送（outbox+send_feishu）
+NEWS_DIR = os.path.join(
+    ROOT, "news_collector"
+)  # P2-2 源级降级推送（outbox+send_feishu）
 MAX_LAG_DAYS = 10  # weak 周扫源允许的最大滞后自然日（覆盖长假+周一节奏）
-IS_A = re.compile(r"^\d{6}\.(SH|SZ|BJ)$")  # 本清单为 A 股口径（cross/qpzm 多市场源入清单前过滤）
+IS_A = re.compile(
+    r"^\d{6}\.(SH|SZ|BJ)$"
+)  # 本清单为 A 股口径（cross/qpzm 多市场源入清单前过滤）
 QB = os.path.join(ROOT, "quant_backtest")
 OUT = os.path.join(HERE, "data", "todays_picks.json")
 STALE_LAG_DAILY = 4  # 日扫源允许的最大滞后自然日（覆盖周末+小长假；五审闸门）
@@ -74,20 +79,37 @@ def _stale_meta(basis_day, src_day, max_lag, label, file, tail):
     if not basis_day:
         return None
     if not src_day:
-        return {"label": label, "n": 0, "stale": True, "file": file,
-                "note": "源数据缺基准日字段（生产端格式变更？），无法证新鲜，"
-                        "整源不入清单%s" % tail}
+        return {
+            "label": label,
+            "n": 0,
+            "stale": True,
+            "file": file,
+            "note": "源数据缺基准日字段（生产端格式变更？），无法证新鲜，"
+            "整源不入清单%s" % tail,
+        }
     try:
-        lag = (datetime.strptime(basis_day, "%Y%m%d")
-               - datetime.strptime(src_day, "%Y%m%d")).days
+        lag = (
+            datetime.strptime(basis_day, "%Y%m%d")
+            - datetime.strptime(src_day, "%Y%m%d")
+        ).days
     except ValueError:
-        return {"label": label, "n": 0, "stale": True, "file": file,
-                "note": "源基准日 %s 不可解析（格式变更？），无法证新鲜，"
-                        "整源不入清单%s" % (src_day, tail)}
+        return {
+            "label": label,
+            "n": 0,
+            "stale": True,
+            "file": file,
+            "note": "源基准日 %s 不可解析（格式变更？），无法证新鲜，"
+            "整源不入清单%s" % (src_day, tail),
+        }
     if lag > max_lag:
-        return {"label": label, "n": 0, "stale": True, "file": file,
-                "note": "数据基准 %s 落后行情湖 %s %d 天(>%d)，旧信号不入清单%s"
-                        % (src_day, basis_day, lag, max_lag, tail)}
+        return {
+            "label": label,
+            "n": 0,
+            "stale": True,
+            "file": file,
+            "note": "数据基准 %s 落后行情湖 %s %d 天(>%d)，旧信号不入清单%s"
+            % (src_day, basis_day, lag, max_lag, tail),
+        }
     return None
 
 
@@ -113,38 +135,59 @@ def load_strong(stocks, basis_day=None):
     # lag=-1、单日漏跑 lag=0，永远拦不住「strong 腿用了 D-2 行情」。
     # basis=数据基准日（板块锚同日校验值，10-10 起随 strong_scan 落盘），
     # 优先使用；旧文件无 basis 回退 date。
-    stale = _stale_meta(basis_day,
-                        _ymd(d.get("basis")
-                             or d.get("date")
-                             or str(d.get("ts") or "")[:10]),
-                        STALE_LAG_DAILY, "强势板块领涨（599板块扫描）",
-                        "quant_backtest/reports/strong_latest.json",
-                        "；待板块扫描刷新")
+    stale = _stale_meta(
+        basis_day,
+        _ymd(d.get("basis") or d.get("date") or str(d.get("ts") or "")[:10]),
+        STALE_LAG_DAILY,
+        "强势板块领涨（599板块扫描）",
+        "quant_backtest/reports/strong_latest.json",
+        "；待板块扫描刷新",
+    )
     if stale:
         return stale
     rows = d.get("list") or []
     for r in rows:
         c = _std_code(r.get("code"))
-        e = stocks.setdefault(c, {"code": c, "name": r.get("name"),
-                                  "industry": None, "close": None,
-                                  "pct_chg": None, "sources": []})
+        e = stocks.setdefault(
+            c,
+            {
+                "code": c,
+                "name": r.get("name"),
+                "industry": None,
+                "close": None,
+                "pct_chg": None,
+                "sources": [],
+            },
+        )
         e["name"] = e["name"] or r.get("name")
-        e["sources"].append({
-            "s": "strong", "tag": r.get("tag"),
-            "block": r.get("block"), "ex250": r.get("ex250"),
-            "reasons": (r.get("reasons") or [])[:2]})
+        e["sources"].append(
+            {
+                "s": "strong",
+                "tag": r.get("tag"),
+                "block": r.get("block"),
+                "ex250": r.get("ex250"),
+                "reasons": (r.get("reasons") or [])[:2],
+            }
+        )
     n = len(rows)
     lead = len(d.get("lead") or [])
-    meta = {"label": "强势板块领涨（599板块扫描）", "n": n, "lead": lead,
-            "observe": n - lead, "file": "quant_backtest/reports/strong_latest.json",
-            "ts": d.get("ts"), "note": "lead=板块领涨 observe=逆板块强势"}
+    meta = {
+        "label": "强势板块领涨（599板块扫描）",
+        "n": n,
+        "lead": lead,
+        "observe": n - lead,
+        "file": "quant_backtest/reports/strong_latest.json",
+        "ts": d.get("ts"),
+        "note": "lead=板块领涨 observe=逆板块强势",
+    }
     return meta
 
 
 def load_weak(stocks, basis_day=None):
     rep = os.path.join(ROOT, "reports")
-    cands = [f for f in os.listdir(rep)
-             if f.startswith("weak_scan_") and f.endswith(".csv")]
+    cands = [
+        f for f in os.listdir(rep) if f.startswith("weak_scan_") and f.endswith(".csv")
+    ]
     if not cands:
         return {"label": "弱势失速扫描", "n": 0, "note": "无输出"}
     cands.sort()
@@ -157,36 +200,61 @@ def load_weak(stocks, basis_day=None):
         # 数据基准日（命名变更？）不再静默放行——旧名单可能借闸门盲区
         # 入场。整源不入清单；湖不可达（basis_day 空）时保持放行（设计
         # 内降级，同 _stale_meta）。
-        return {"label": "弱势失速扫描（超额回撤监控）", "n": 0,
-                "stale": True, "file": "reports/" + cands[-1],
-                "note": "文件名无法解析数据基准日（%s，命名变更？），"
-                        "闸门 fail-closed 不放行；待 WeakScan 刷新或人工核名"
-                        % cands[-1]}
+        return {
+            "label": "弱势失速扫描（超额回撤监控）",
+            "n": 0,
+            "stale": True,
+            "file": "reports/" + cands[-1],
+            "note": "文件名无法解析数据基准日（%s，命名变更？），"
+            "闸门 fail-closed 不放行；待 WeakScan 刷新或人工核名" % cands[-1],
+        }
     if m and basis_day:
-        lag = (datetime.strptime(basis_day, "%Y%m%d")
-               - datetime.strptime(m.group(1), "%Y%m%d")).days
+        lag = (
+            datetime.strptime(basis_day, "%Y%m%d")
+            - datetime.strptime(m.group(1), "%Y%m%d")
+        ).days
         if lag > MAX_LAG_DAYS:
-            return {"label": "弱势失速扫描（超额回撤监控）", "n": 0,
-                    "stale": True, "file": "reports/" + cands[-1],
-                    "note": "数据基准 %s 落后行情湖 %s %d 天(>%d)，旧名单不入清单；"
-                            "待 WeakScan 周一 15:35 刷新"
-                            % (m.group(1), basis_day, lag, MAX_LAG_DAYS)}
+            return {
+                "label": "弱势失速扫描（超额回撤监控）",
+                "n": 0,
+                "stale": True,
+                "file": "reports/" + cands[-1],
+                "note": "数据基准 %s 落后行情湖 %s %d 天(>%d)，旧名单不入清单；"
+                "待 WeakScan 周一 15:35 刷新"
+                % (m.group(1), basis_day, lag, MAX_LAG_DAYS),
+            }
     rows = list(csv.DictReader(open(fp, encoding="utf-8-sig")))
     # 只取 focus 标注的重点池（深度垫底/强失速等），CSV 全量行不进清单
     rows = [r for r in rows if (r.get("focus") or "").strip()]
     for r in rows:
         c = _std_code(r.get("code"))
-        e = stocks.setdefault(c, {"code": c, "name": r.get("name"),
-                                  "industry": r.get("industry"), "close": None,
-                                  "pct_chg": None, "sources": []})
+        e = stocks.setdefault(
+            c,
+            {
+                "code": c,
+                "name": r.get("name"),
+                "industry": r.get("industry"),
+                "close": None,
+                "pct_chg": None,
+                "sources": [],
+            },
+        )
         e["industry"] = e["industry"] or r.get("industry")
-        e["sources"].append({
-            "s": "weak", "tag": r.get("focus"),
-            "block": r.get("block_name"), "ex": r.get("ex"),
-            "rank_in": r.get("rank_in")})
-    return {"label": "弱势失速扫描（超额回撤监控）", "n": len(rows),
-            "file": "reports/" + os.path.basename(fp),
-            "note": "focus=深度垫底/强失速等弱势标签（反向参考）"}
+        e["sources"].append(
+            {
+                "s": "weak",
+                "tag": r.get("focus"),
+                "block": r.get("block_name"),
+                "ex": r.get("ex"),
+                "rank_in": r.get("rank_in"),
+            }
+        )
+    return {
+        "label": "弱势失速扫描（超额回撤监控）",
+        "n": len(rows),
+        "file": "reports/" + os.path.basename(fp),
+        "note": "focus=深度垫底/强失速等弱势标签（反向参考）",
+    }
 
 
 def load_chanlun(stocks, basis_day=None):
@@ -204,41 +272,68 @@ def load_chanlun(stocks, basis_day=None):
             except Exception:
                 continue
     latest = max((r.get("detect_date") or "") for r in rows)
-    stale = _stale_meta(basis_day, _ymd(latest), STALE_LAG_DAILY,
-                        "缠论信号池（三类买卖点）",
-                        "quant_backtest/data/chanlun_pool.jsonl",
-                        "；待缠论扫描刷新")
+    stale = _stale_meta(
+        basis_day,
+        _ymd(latest),
+        STALE_LAG_DAILY,
+        "缠论信号池（三类买卖点）",
+        "quant_backtest/data/chanlun_pool.jsonl",
+        "；待缠论扫描刷新",
+    )
     if stale:
         return stale
     batch = [r for r in rows if r.get("detect_date") == latest]
     for r in batch:
         c = _std_code(r.get("code"))
-        e = stocks.setdefault(c, {"code": c, "name": r.get("name"),
-                                  "industry": None, "close": r.get("price"),
-                                  "pct_chg": None, "sources": []})
+        e = stocks.setdefault(
+            c,
+            {
+                "code": c,
+                "name": r.get("name"),
+                "industry": None,
+                "close": r.get("price"),
+                "pct_chg": None,
+                "sources": [],
+            },
+        )
         e["name"] = e["name"] or r.get("name")
         e["close"] = e["close"] or r.get("price")
-        e["sources"].append({
-            "s": "chanlun", "tag": r.get("type"),
-            "dt": r.get("dt"), "trend": r.get("trend"),
-            "tbe": r.get("tbe"), "entry_px": r.get("entry_px"),
-            # P3 环境闸门差异化（2026-10-11）：reg=信号时大盘 regime
-            # （P8 附标，down/flat/up）随源带出，供影子标注与后验分层。
-            # P5b 毒层过滤（2026-10-11）：bei=盘整背驰标注（3类适用，
-            # True/False/None 不可判），供 3买bei=False 毒层判定。
-            "reg": r.get("reg"), "bei": r.get("bei")})
-    return {"label": "缠论信号池（三类买卖点）", "n": len(batch),
-            "batch_date": latest, "file": "quant_backtest/data/chanlun_pool.jsonl",
-            "note": "取最新扫描批次；type=1买/2买/3买/1卖/2卖/3卖"}
+        e["sources"].append(
+            {
+                "s": "chanlun",
+                "tag": r.get("type"),
+                "dt": r.get("dt"),
+                "trend": r.get("trend"),
+                "tbe": r.get("tbe"),
+                "entry_px": r.get("entry_px"),
+                # P3 环境闸门差异化（2026-10-11）：reg=信号时大盘 regime
+                # （P8 附标，down/flat/up）随源带出，供影子标注与后验分层。
+                # P5b 毒层过滤（2026-10-11）：bei=盘整背驰标注（3类适用，
+                # True/False/None 不可判），供 3买bei=False 毒层判定。
+                "reg": r.get("reg"),
+                "bei": r.get("bei"),
+            }
+        )
+    return {
+        "label": "缠论信号池（三类买卖点）",
+        "n": len(batch),
+        "batch_date": latest,
+        "file": "quant_backtest/data/chanlun_pool.jsonl",
+        "note": "取最新扫描批次；type=1买/2买/3买/1卖/2卖/3卖",
+    }
 
 
 def load_qpzm(stocks, basis_day=None):
     fp = os.path.join(QB, "reports", "rps_latest.json")
     d = json.load(open(fp, encoding="utf-8"))
-    stale = _stale_meta(basis_day, _ymd(d.get("latest")), STALE_LAG_DAILY,
-                        "青萍之末（RPS+技术+环境闸门）",
-                        "quant_backtest/reports/rps_latest.json",
-                        "；待 qpzm 扫描刷新")
+    stale = _stale_meta(
+        basis_day,
+        _ymd(d.get("latest")),
+        STALE_LAG_DAILY,
+        "青萍之末（RPS+技术+环境闸门）",
+        "quant_backtest/reports/rps_latest.json",
+        "；待 qpzm 扫描刷新",
+    )
     if stale:
         return stale
     rows = d.get("res") or []
@@ -248,20 +343,40 @@ def load_qpzm(stocks, basis_day=None):
         if not IS_A.match(c):
             continue  # qpzm 池含美股/加密，本清单仅 A 股
         n_in += 1
-        e = stocks.setdefault(c, {"code": c, "name": r.get("name"),
-                                  "industry": None, "close": r.get("px"),
-                                  "pct_chg": None, "sources": []})
+        e = stocks.setdefault(
+            c,
+            {
+                "code": c,
+                "name": r.get("name"),
+                "industry": None,
+                "close": r.get("px"),
+                "pct_chg": None,
+                "sources": [],
+            },
+        )
         e["name"] = e["name"] or r.get("name")
         e["close"] = e["close"] or r.get("px")
-        e["sources"].append({
-            "s": "qpzm", "tag": (r.get("action") or "").split("（")[0] or "观察池",
-            "action": r.get("action"), "score": r.get("score"),
-            "rps": r.get("rps"), "tech": r.get("tech"), "env": r.get("env"),
-            "added": r.get("added")})
-    return {"label": "青萍之末（RPS+技术+环境闸门）", "n": n_in,
-            "trade_date": d.get("latest"), "file": "quant_backtest/reports/rps_latest.json",
-            "ts": d.get("ts"), "note": "action 含 回避（环境闸门）标记",
-            "env_gate": _a_share_env(d.get("envs"))}
+        e["sources"].append(
+            {
+                "s": "qpzm",
+                "tag": (r.get("action") or "").split("（")[0] or "观察池",
+                "action": r.get("action"),
+                "score": r.get("score"),
+                "rps": r.get("rps"),
+                "tech": r.get("tech"),
+                "env": r.get("env"),
+                "added": r.get("added"),
+            }
+        )
+    return {
+        "label": "青萍之末（RPS+技术+环境闸门）",
+        "n": n_in,
+        "trade_date": d.get("latest"),
+        "file": "quant_backtest/reports/rps_latest.json",
+        "ts": d.get("ts"),
+        "note": "action 含 回避（环境闸门）标记",
+        "env_gate": _a_share_env(d.get("envs")),
+    }
 
 
 def _a_share_env(envs):
@@ -273,8 +388,12 @@ def _a_share_env(envs):
     meta 不产出（过期闸门状态同样不可信，fail-closed）。"""
     for e in envs or []:
         if str(e.get("label") or "").startswith("A股"):
-            return {"safe": e.get("safe"), "state": e.get("state"),
-                    "score": e.get("score"), "breadth": e.get("breadth")}
+            return {
+                "safe": e.get("safe"),
+                "state": e.get("state"),
+                "score": e.get("score"),
+                "breadth": e.get("breadth"),
+            }
     return None
 
 
@@ -298,8 +417,9 @@ def _env_diff_shadow(e, gate_tight):
     → gate_tight=False（闸门状态不可信不打日级标注，与 _a_share_env
     fail-closed 哲学一致）。返回 (env_diff, panic_buy, why)。
     """
-    cl_buys = [s for s in e["sources"]
-               if s["s"] == "chanlun" and "买" in (s.get("tag") or "")]
+    cl_buys = [
+        s for s in e["sources"] if s["s"] == "chanlun" and "买" in (s.get("tag") or "")
+    ]
     if not cl_buys:
         return False, False, None
     panic = any(s.get("reg") == "down" for s in cl_buys)
@@ -335,13 +455,10 @@ def _env_diff_exempt(e, gate_tight):
     """
     if not gate_tight:
         return False
-    if not any(s["s"] == "chanlun" and s.get("tag") == "1买"
-               for s in e["sources"]):
+    if not any(s["s"] == "chanlun" and s.get("tag") == "1买" for s in e["sources"]):
         return False
-    avoids = [s for s in e["sources"]
-              if s["s"] == "qpzm" and s.get("tag") == "回避"]
-    return bool(avoids) and all(
-        "环境闸门" in (s.get("action") or "") for s in avoids)
+    avoids = [s for s in e["sources"] if s["s"] == "qpzm" and s.get("tag") == "回避"]
+    return bool(avoids) and all("环境闸门" in (s.get("action") or "") for s in avoids)
 
 
 def _chanlun_toxic(srcs):
@@ -379,21 +496,25 @@ def _q_layer_marks(e):
         全池 -1.14，分半稳健；P5c「T1 腿 1买独占」是否启用由后验说话）
     返回 (q_toxic, q_first_buy)。
     """
-    cl_buys = [s for s in e["sources"]
-               if s["s"] == "chanlun" and "买" in (s.get("tag") or "")]
+    cl_buys = [
+        s for s in e["sources"] if s["s"] == "chanlun" and "买" in (s.get("tag") or "")
+    ]
     if not cl_buys:
         return False, False
-    return (_chanlun_toxic(e["sources"]),
-            any(s.get("tag") == "1买" for s in cl_buys))
+    return (_chanlun_toxic(e["sources"]), any(s.get("tag") == "1买" for s in cl_buys))
 
 
 def load_ninedim(stocks, basis_day=None):
     fp = os.path.join(QB, "data", "nine_dim_scores.json")
     d = json.load(open(fp, encoding="utf-8"))
-    stale = _stale_meta(basis_day, _ymd(d.get("trade_date")), STALE_LAG_DAILY,
-                        "九维评分（多维因子合成）",
-                        "quant_backtest/data/nine_dim_scores.json",
-                        "；待九维评分刷新")
+    stale = _stale_meta(
+        basis_day,
+        _ymd(d.get("trade_date")),
+        STALE_LAG_DAILY,
+        "九维评分（多维因子合成）",
+        "quant_backtest/data/nine_dim_scores.json",
+        "；待九维评分刷新",
+    )
     if stale:
         return stale
     rows = d.get("rows") or []
@@ -405,43 +526,77 @@ def load_ninedim(stocks, basis_day=None):
             n_scored += 1
         c = _std_code(r.get("code"))
         scored = r.get("score") is not None
-        e = stocks.setdefault(c, {"code": c, "name": r.get("name"),
-                                  "industry": r.get("industry"),
-                                  "close": r.get("close"),
-                                  "pct_chg": r.get("pct_chg"), "sources": []})
+        e = stocks.setdefault(
+            c,
+            {
+                "code": c,
+                "name": r.get("name"),
+                "industry": r.get("industry"),
+                "close": r.get("close"),
+                "pct_chg": r.get("pct_chg"),
+                "sources": [],
+            },
+        )
         e["industry"] = e["industry"] or r.get("industry")
         e["close"] = e["close"] if e["close"] is not None else r.get("close")
-        e["sources"].append({
-            "s": "ninedim",
-            "tag": ("九维出分" if scored else
-                    ("九维候选·满权重" if r.get("full") else "九维候选(影子未出分)")),
-            "score": r.get("score"), "cov": r.get("cov"),
-            "band": r.get("band"), "rps50": r.get("rps50")})
-    return {"label": "九维评分（多维因子合成）", "n": n_cand,
-            "trade_date": d.get("trade_date"),
-            "file": "quant_backtest/data/nine_dim_scores.json",
-            "ts": d.get("generated_at"),
-            "note": "候选池口径（RPS50>80+额>2亿+动能）；K33：高分=拥挤警报非买入；"
-                    "cov<0.75 不出分；本批 %d/%d 只出分" % (n_scored, n_cand)}
+        e["sources"].append(
+            {
+                "s": "ninedim",
+                "tag": (
+                    "九维出分"
+                    if scored
+                    else (
+                        "九维候选·满权重" if r.get("full") else "九维候选(影子未出分)"
+                    )
+                ),
+                "score": r.get("score"),
+                "cov": r.get("cov"),
+                "band": r.get("band"),
+                "rps50": r.get("rps50"),
+            }
+        )
+    return {
+        "label": "九维评分（多维因子合成）",
+        "n": n_cand,
+        "trade_date": d.get("trade_date"),
+        "file": "quant_backtest/data/nine_dim_scores.json",
+        "ts": d.get("generated_at"),
+        "note": "候选池口径（RPS50>80+额>2亿+动能）；K33：高分=拥挤警报非买入；"
+        "cov<0.75 不出分；本批 %d/%d 只出分" % (n_scored, n_cand),
+    }
 
 
 def load_cross(stocks, basis_day=None):
     sys.path.insert(0, QB)
     import cross_poll
+
     # 过期闸门（五审）：cross 白名单输入 = qpzm + chanlun，取两者数据基准较旧者
     # 与行情湖比对（chanlun 以 JSONL 批次日期为代理——SQLite/JSONL 双写同批）。
     days = []
     try:
-        days.append(_ymd(json.load(open(
-            os.path.join(QB, "reports", "rps_latest.json"),
-            encoding="utf-8")).get("latest")))
+        days.append(
+            _ymd(
+                json.load(
+                    open(
+                        os.path.join(QB, "reports", "rps_latest.json"), encoding="utf-8"
+                    )
+                ).get("latest")
+            )
+        )
     except Exception as ex:  # A5: 新鲜度探针失败静默=staleness 口径缺角——留痕
         print("[picks] rps_latest 读取失败：%s" % str(ex)[:60])
     try:
-        days.append(_ymd(max(json.loads(ln).get("detect_date") or ""
-                             for ln in open(os.path.join(
-                                 QB, "data", "chanlun_pool.jsonl"),
-                                 encoding="utf-8") if ln.strip())))
+        days.append(
+            _ymd(
+                max(
+                    json.loads(ln).get("detect_date") or ""
+                    for ln in open(
+                        os.path.join(QB, "data", "chanlun_pool.jsonl"), encoding="utf-8"
+                    )
+                    if ln.strip()
+                )
+            )
+        )
     except Exception as ex:  # A5: 同上——留痕
         print("[picks] chanlun_pool 读取失败：%s" % str(ex)[:60])
     days = [x for x in days if x]
@@ -449,14 +604,22 @@ def load_cross(stocks, basis_day=None):
     # cross_poll 内部按每票最新取信号且 detect_date 有 dt 回退，旧数据可
     # 绕道进 T1（且此时 cl_sell 守卫因 chanlun 源 n=0 查空失效）。
     if not days:
-        return {"label": "交叉共振（多策略同命中）", "n": 0, "stale": True,
-                "file": "quant_backtest/cross_poll.py(内存聚合)",
-                "note": "qpzm/chanlun 新鲜度探针均无基准日（格式变更？），"
-                        "整源不入清单；待上游扫描刷新"}
-    stale = _stale_meta(basis_day, min(days), STALE_LAG_DAILY,
-                        "交叉共振（多策略同命中）",
-                        "quant_backtest/cross_poll.py(内存聚合)",
-                        "；待上游 qpzm/chanlun 扫描刷新")
+        return {
+            "label": "交叉共振（多策略同命中）",
+            "n": 0,
+            "stale": True,
+            "file": "quant_backtest/cross_poll.py(内存聚合)",
+            "note": "qpzm/chanlun 新鲜度探针均无基准日（格式变更？），"
+            "整源不入清单；待上游扫描刷新",
+        }
+    stale = _stale_meta(
+        basis_day,
+        min(days),
+        STALE_LAG_DAILY,
+        "交叉共振（多策略同命中）",
+        "quant_backtest/cross_poll.py(内存聚合)",
+        "；待上游 qpzm/chanlun 扫描刷新",
+    )
     if stale:
         return stale
     d = cross_poll.build_cross(force=True)
@@ -477,50 +640,74 @@ def load_cross(stocks, basis_day=None):
         # 该票若在最新缠论批次自带卖点，缠论不计入看多源——与 tier_of
         # 「同批买卖并存不计共振」同口径，堵住经 cross 绕过降级的旁路。
         # （依赖 chanlun 先于 cross 加载；chanlun 源失败时守卫自动失效降级。）
-        cl_sell = any(src["s"] == "chanlun" and "卖" in (src.get("tag") or "")
-                      for src in (stocks.get(c) or {}).get("sources") or [])
+        cl_sell = any(
+            src["s"] == "chanlun" and "卖" in (src.get("tag") or "")
+            for src in (stocks.get(c) or {}).get("sources") or []
+        )
         # P5b 毒层同步（2026-10-11）：毒层买点（_chanlun_toxic 口径）
         # 不计入 cross 看多源——与 tier_of cl_buy 收紧同口径，堵旁路
         # （依赖 chanlun 先于 cross 加载；chanlun 源失败守卫自动失效降级）。
-        cl_toxic = _chanlun_toxic(
-            (stocks.get(c) or {}).get("sources") or [])
+        cl_toxic = _chanlun_toxic((stocks.get(c) or {}).get("sources") or [])
         # weak 否决（五审）：强失速/深度垫底 = 显式负面信号，与 qpzm 回避同哲学，
         # 不挂「多策略共振」标签（依赖 weak 先于 cross 加载，顺序见 main）。
-        weak_bad = any(src["s"] == "weak"
-                       for src in (stocks.get(c) or {}).get("sources") or [])
+        weak_bad = any(
+            src["s"] == "weak" for src in (stocks.get(c) or {}).get("sources") or []
+        )
         # ST 封顶（七审）：ST/*ST 不挂「多策略共振」标签（与 tier_of 封顶同口径）
-        nm = (s.get("name")
-              or (stocks.get(c) or {}).get("name") or "")
+        nm = s.get("name") or (stocks.get(c) or {}).get("name") or ""
         is_st = bool(re.match(r"^\*?ST", nm.upper()))  # B1: 前缀口径防误伤
-        n_long = sum(1 for h in hits
-                     if h.get("dir") == "long"
-                     and h.get("sid") in ("qpzm", "chanlun")
-                     and not (cl_sell and h.get("sid") == "chanlun")
-                     and not (TOXIC_EXCLUDE and cl_toxic
-                              and h.get("sid") == "chanlun"))
-        avoid = any(h.get("sid") == "qpzm" and h.get("dir") == "short"
-                    for h in hits)
+        n_long = sum(
+            1
+            for h in hits
+            if h.get("dir") == "long"
+            and h.get("sid") in ("qpzm", "chanlun")
+            and not (cl_sell and h.get("sid") == "chanlun")
+            and not (TOXIC_EXCLUDE and cl_toxic and h.get("sid") == "chanlun")
+        )
+        avoid = any(h.get("sid") == "qpzm" and h.get("dir") == "short" for h in hits)
         if n_long < 2 or avoid or weak_bad or is_st:
             if len(hits) >= 2:
                 n_skip += 1  # 仅统计旧口径(n_hit>=2)本会入选、被新口径拦下的
             continue
         n += 1
-        e = stocks.setdefault(c, {"code": c, "name": s.get("name"),
-                                  "industry": None, "close": None,
-                                  "pct_chg": None, "sources": []})
+        e = stocks.setdefault(
+            c,
+            {
+                "code": c,
+                "name": s.get("name"),
+                "industry": None,
+                "close": None,
+                "pct_chg": None,
+                "sources": [],
+            },
+        )
         e["name"] = e["name"] or s.get("name")
         # label@日期=信号检出日（缠论为 90 天有效窗内取最新，旧信号显式可见）
-        hit_labels = ["%s|%s%s" % (h.get("sid"), h.get("label"),
-                                   ("@" + h["dt"][:10]) if h.get("dt") else "")
-                      for h in hits]
-        e["sources"].append({
-            "s": "cross", "tag": "多策略共振",
-            "state": s.get("state"), "hits": hit_labels})
-    return {"label": "交叉共振（多策略同命中）", "n": n,
-            "file": "quant_backtest/cross_poll.py(内存聚合)",
-            "note": "仅收 A 股看多共振（白名单=qpzm买入/缠论买>=2；sig4/九维不计入；"
-                    "qpzm 回避否决）；本批过滤 n_hit>=2 但口径不符的 %d 只；"
-                    "label@日期=信号检出日" % n_skip}
+        hit_labels = [
+            "%s|%s%s"
+            % (
+                h.get("sid"),
+                h.get("label"),
+                ("@" + h["dt"][:10]) if h.get("dt") else "",
+            )
+            for h in hits
+        ]
+        e["sources"].append(
+            {
+                "s": "cross",
+                "tag": "多策略共振",
+                "state": s.get("state"),
+                "hits": hit_labels,
+            }
+        )
+    return {
+        "label": "交叉共振（多策略同命中）",
+        "n": n,
+        "file": "quant_backtest/cross_poll.py(内存聚合)",
+        "note": "仅收 A 股看多共振（白名单=qpzm买入/缠论买>=2；sig4/九维不计入；"
+        "qpzm 回避否决）；本批过滤 n_hit>=2 但口径不符的 %d 只；"
+        "label@日期=信号检出日" % n_skip,
+    }
 
 
 def _pick_sort_key(x):
@@ -529,8 +716,7 @@ def _pick_sort_key(x):
     优先级，不影响 tier 判定/拦截；形态 B（strong∩chanlun 通道 1买
     独占）待影子达标另议，数据工具 t1_channel_verdicts.py。"""
     order = {"T1": 0, "T2": 1, "CROWD": 2, "T3": 3}
-    return (order[x["tier"]], not x.get("q_first_buy"),
-            -x["n_hit"], x["code"])
+    return (order[x["tier"]], not x.get("q_first_buy"), -x["n_hit"], x["code"])
 
 
 def tier_of(e, veto_ok=True, gate_tight=False):
@@ -550,16 +736,16 @@ def tier_of(e, veto_ok=True, gate_tight=False):
     srcs = e["sources"]
     ss = {s["s"] for s in srcs}
     cl_tags = [s.get("tag") or "" for s in srcs if s["s"] == "chanlun"]
-    cl_buy = (any("买" in t for t in cl_tags)
-              and not any("卖" in t for t in cl_tags))
+    cl_buy = any("买" in t for t in cl_tags) and not any("卖" in t for t in cl_tags)
     # P5b 毒层过滤（2026-10-11 启用）：毒层买点（3买bei=False/2买range）
     # 不计 T1 共振票——票仍走 T2 单策略通道；回退=TOXIC_EXCLUDE=False。
     if TOXIC_EXCLUDE and cl_buy and _chanlun_toxic(srcs):
         cl_buy = False
-    bull = (any(s["s"] == "qpzm" and s.get("tag") == "买入" for s in srcs)
-            + cl_buy
-            + any(s["s"] == "strong" and s.get("tag") == "板块领涨"
-                  for s in srcs))
+    bull = (
+        any(s["s"] == "qpzm" and s.get("tag") == "买入" for s in srcs)
+        + cl_buy
+        + any(s["s"] == "strong" and s.get("tag") == "板块领涨" for s in srcs)
+    )
     qpzm_avoid = any(s["s"] == "qpzm" and s.get("tag") == "回避" for s in srcs)
     # 环境闸门差异化豁免（P4 启用 2026-10-11）：收紧日 × 缠论1买 × 回避
     # 全为环境闸门型 → qpzm_avoid 不再否决 T1（市场差恰是 1买 质量最高
@@ -580,24 +766,29 @@ def tier_of(e, veto_ok=True, gate_tight=False):
     # T1/T2——动量型共振票恰是九维高分人群，此前 T1 分支先于 CROWD 判定
     # return，拥挤标记被最优标签吞掉、crowd_alert 计数漏记；alert 票直接
     # 落独立 CROWD 警报层（low/na 九维不影响 T1/T2 判定）。
-    nd_alert = any(s["s"] == "ninedim" and s.get("band") in ("alert", "alert2")
-                   for s in srcs)
+    nd_alert = any(
+        s["s"] == "ninedim" and s.get("band") in ("alert", "alert2") for s in srcs
+    )
     if not (is_st or nd_alert):
-        if (veto_ok and (bull >= 2 or "cross" in ss)
-                and not qpzm_avoid and "weak" not in ss):
+        if (
+            veto_ok
+            and (bull >= 2 or "cross" in ss)
+            and not qpzm_avoid
+            and "weak" not in ss
+        ):
             return "T1"
-        if "chanlun" in ss and any(s["s"] == "chanlun"
-                                   and "买" in (s.get("tag") or "")
-                                   for s in srcs):
+        if "chanlun" in ss and any(
+            s["s"] == "chanlun" and "买" in (s.get("tag") or "") for s in srcs
+        ):
             return "T2"
-        if "strong" in ss and any(s["s"] == "strong"
-                                  and s.get("tag") == "板块领涨"
-                                  for s in srcs):
+        if "strong" in ss and any(
+            s["s"] == "strong" and s.get("tag") == "板块领涨" for s in srcs
+        ):
             return "T2"
-        if "qpzm" in ss and any(s["s"] == "qpzm"
-                                and s.get("tag") == "买入"
-                                and (s.get("score") or 0) >= 80
-                                for s in srcs):
+        if "qpzm" in ss and any(
+            s["s"] == "qpzm" and s.get("tag") == "买入" and (s.get("score") or 0) >= 80
+            for s in srcs
+        ):
             return "T2"
     if nd_alert:
         return "CROWD"
@@ -631,12 +822,16 @@ def _backfill_quotes(stocks):
     try:
         sys.path.insert(0, QB)
         from tdx_read import read_day, latest_date  # noqa: E402
+
         day = latest_date("ts_daily")
         if not day:
             return None, 0
         df = read_day("ts_daily", day, columns=["ts_code", "close", "pct_chg"])
-        q = {r.ts_code: (float(r.close), float(r.pct_chg))
-             for r in df.itertuples() if r.ts_code}
+        q = {
+            r.ts_code: (float(r.close), float(r.pct_chg))
+            for r in df.itertuples()
+            if r.ts_code
+        }
         n = 0
         for c, e in stocks.items():
             hit = q.get(c)
@@ -694,8 +889,10 @@ def _snapshot_qpzm(hist_dir, basis_day):
             d = json.load(f)
         latest = str(d.get("latest") or "")
         if latest != basis_day.replace("-", ""):
-            print("  [qpzm 快照] 跳过：源 latest=%s 与 basis=%s 错位"
-                  "（防误标，不落档）" % (latest or "?", basis_day))
+            print(
+                "  [qpzm 快照] 跳过：源 latest=%s 与 basis=%s 错位"
+                "（防误标，不落档）" % (latest or "?", basis_day)
+            )
             return
         out = os.path.join(hist_dir, "qpzm_%s.json" % basis_day)
         if os.path.exists(out):
@@ -704,9 +901,15 @@ def _snapshot_qpzm(hist_dir, basis_day):
         with open(tmp, "w", encoding="utf-8") as f:
             json.dump(d, f, ensure_ascii=False, indent=1)
         os.replace(tmp, out)
-        print("  [qpzm 快照] 留档 %s（res=%s tops=%s envs=%s）"
-              % (os.path.basename(out), len(d.get("res") or []),
-                 len(d.get("tops") or []), len(d.get("envs") or [])))
+        print(
+            "  [qpzm 快照] 留档 %s（res=%s tops=%s envs=%s）"
+            % (
+                os.path.basename(out),
+                len(d.get("res") or []),
+                len(d.get("tops") or []),
+                len(d.get("envs") or []),
+            )
+        )
     except Exception as ex:  # noqa: BLE001
         print("  [qpzm 快照] 失败（不反噬主链）：%s" % str(ex)[:80])
 
@@ -724,8 +927,11 @@ def gate_failed_sources(metas):
     P2-3（2026-10-11）从 main 内联抽出为可测函数；源键整体缺失
     （loader 未注册）按停挂计——`not metas.get(s, {}).get("ok")`。
     """
-    return [s for s in ("chanlun", "weak", "qpzm", "strong", "ninedim")
-            if not metas.get(s, {}).get("ok")]
+    return [
+        s
+        for s in ("chanlun", "weak", "qpzm", "strong", "ninedim")
+        if not metas.get(s, {}).get("ok")
+    ]
 
 
 def _push_source_alert(metas, veto_failed, basis_day):
@@ -751,28 +957,30 @@ def _push_source_alert(metas, veto_failed, basis_day):
         if sid == "linkage":
             continue  # 纯记录源恒 ok=True，无名单语义
         if not m.get("ok"):
-            lines.append("- %s 异常失败: %s" % (
-                sid, (m.get("err") or "")[:60]))
+            lines.append("- %s 异常失败: %s" % (sid, (m.get("err") or "")[:60]))
         elif m.get("stale"):
-            lines.append("- %s 过期拦截: %s" % (
-                sid, (m.get("note") or "")[:60]))
+            lines.append("- %s 过期拦截: %s" % (sid, (m.get("note") or "")[:60]))
     if not lines:
         return
-    msg = ("[PICKS 源级降级] todays_picks 聚合完成（T1 闸正常，rc=0），"
-           "但以下源降级未入清单（数据基准 %s）：\n%s\n"
-           "页面策略卡有显示；请检查对应上游任务是否停摆。"
-           % (basis_day or "?", "\n".join(lines)))
-    print("  [PICKS 源级降级] " + "；".join(
-        l[2:] for l in lines))
+    msg = (
+        "[PICKS 源级降级] todays_picks 聚合完成（T1 闸正常，rc=0），"
+        "但以下源降级未入清单（数据基准 %s）：\n%s\n"
+        "页面策略卡有显示；请检查对应上游任务是否停摆。"
+        % (basis_day or "?", "\n".join(lines))
+    )
+    print("  [PICKS 源级降级] " + "；".join(l[2:] for l in lines))
     try:
-        tmp = os.path.join(NEWS_DIR, "outbox",
-                           "pending_picks_sources.txt")
+        tmp = os.path.join(NEWS_DIR, "outbox", "pending_picks_sources.txt")
         os.makedirs(os.path.dirname(tmp), exist_ok=True)
         with open(tmp, "w", encoding="utf-8") as f:
             f.write(msg)
         r = subprocess.run(
             [sys.executable, os.path.join(NEWS_DIR, "send_feishu.py"), tmp],
-            capture_output=True, text=True, encoding="utf-8", timeout=60)
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=60,
+        )
         print("  [picks] 源级降级推送：%s" % (r.stdout or "").strip()[:60])
     except Exception as ex:  # noqa: BLE001 — 推送失败不反噬 rc
         print("  [picks] 源级降级推送失败（不影响聚合）：%s" % str(ex)[:80])
@@ -785,20 +993,29 @@ def main():
     try:
         sys.path.insert(0, QB)
         from tdx_read import latest_date
+
         basis0 = latest_date("ts_daily")
     except Exception as ex:  # A5: 湖基准日失败会让 basis_day 回退——留痕
         print("[picks] 行情湖 latest_date 失败 basis0=None：%s" % str(ex)[:60])
-    for sid, fn in (("strong", load_strong), ("weak", load_weak),
-                    ("chanlun", load_chanlun), ("qpzm", load_qpzm),
-                    ("ninedim", load_ninedim), ("cross", load_cross)):
+    for sid, fn in (
+        ("strong", load_strong),
+        ("weak", load_weak),
+        ("chanlun", load_chanlun),
+        ("qpzm", load_qpzm),
+        ("ninedim", load_ninedim),
+        ("cross", load_cross),
+    ):
         try:
             metas[sid] = fn(stocks, basis0)
             metas[sid]["ok"] = True
         except Exception as ex:  # noqa: BLE001 — 单源失败不拖垮聚合
             metas[sid] = {"label": sid, "ok": False, "err": str(ex)[:120]}
     metas["linkage"] = {
-        "label": "板块联动信号", "ok": True, "n": None,
-        "note": "个股级工具（linkage_signals.py 需指定代码），无全市场扫描口径，今日不产生名单"}
+        "label": "板块联动信号",
+        "ok": True,
+        "n": None,
+        "note": "个股级工具（linkage_signals.py 需指定代码），无全市场扫描口径，今日不产生名单",
+    }
     # T1 否决链状态（十一审）：ok=False 的源含 err（异常失败）；stale 闸门
     # 拦截的源 ok=True（设计内放行）不触发停挂——五源名单语义见
     # gate_failed_sources docstring（三十九审；P2-3 抽出）。
@@ -854,8 +1071,12 @@ def main():
     os.makedirs(hist_dir, exist_ok=True)
     cur_codes = {r["code"] for r in out_rows}
     prev_path = _latest_history(hist_dir, exclude_day=basis_day)
-    rotation = {"new_in": None, "dropped": None, "retained": None,
-                "vs": os.path.basename(prev_path) if prev_path else None}
+    rotation = {
+        "new_in": None,
+        "dropped": None,
+        "retained": None,
+        "vs": os.path.basename(prev_path) if prev_path else None,
+    }
     if prev_path:
         try:
             prev = json.load(open(prev_path, encoding="utf-8"))
@@ -870,10 +1091,16 @@ def main():
         "scan_run_date": basis_s or now[:10],
         "trade_basis": trade_basis,
         "strategies": metas,
-        "t1_gate": {"ok": veto_ok, "failed": veto_failed,
-                    "note": ("" if veto_ok else
-                             "关键源（否决/证据/封顶）异常失败，T1 当日停挂"
-                             "（共振票降 T2/T3）——三十九审五源全景闸")},
+        "t1_gate": {
+            "ok": veto_ok,
+            "failed": veto_failed,
+            "note": (
+                ""
+                if veto_ok
+                else "关键源（否决/证据/封顶）异常失败，T1 当日停挂"
+                "（共振票降 T2/T3）——三十九审五源全景闸"
+            ),
+        },
         "counts": {
             "total": len(out_rows),
             "T1_resonance": sum(1 for r in out_rows if r["tier"] == "T1"),
@@ -908,32 +1135,51 @@ def main():
     if basis_day:
         arch, wrote = _archive_once(hist_dir, basis_day, doc)
         if not wrote:
-            print("  归档 %s 已存在：保留首次快照（重跑不覆写；如需重写先删该文件）"
-                  % os.path.basename(arch))
+            print(
+                "  归档 %s 已存在：保留首次快照（重跑不覆写；如需重写先删该文件）"
+                % os.path.basename(arch)
+            )
         # qpzm 源快照独立补档（K-STOCK-121）：归档在不在都照补，
         # 回填既有 basis_day；与归档同日随 TodaysPicks 自然积累
         _snapshot_qpzm(hist_dir, basis_day)
-    print("  轮动(vs %s)：新进 %s / 退出 %s / 留存 %s；归档 %s"
-          % (rotation["vs"] or "无", rotation["new_in"], rotation["dropped"],
-             rotation["retained"],
-             "todays_%s.json" % basis_day if basis_day else "跳过(无基准日)"))
-    print("todays_picks: total=%d T1=%d T2=%d CROWD=%d T3=%d -> %s"
-          % (doc["counts"]["total"], doc["counts"]["T1_resonance"],
-             doc["counts"]["T2_high_value"], doc["counts"]["crowd_alert"],
-             doc["counts"]["T3_single"], OUT))
+    print(
+        "  轮动(vs %s)：新进 %s / 退出 %s / 留存 %s；归档 %s"
+        % (
+            rotation["vs"] or "无",
+            rotation["new_in"],
+            rotation["dropped"],
+            rotation["retained"],
+            "todays_%s.json" % basis_day if basis_day else "跳过(无基准日)",
+        )
+    )
+    print(
+        "todays_picks: total=%d T1=%d T2=%d CROWD=%d T3=%d -> %s"
+        % (
+            doc["counts"]["total"],
+            doc["counts"]["T1_resonance"],
+            doc["counts"]["T2_high_value"],
+            doc["counts"]["crowd_alert"],
+            doc["counts"]["T3_single"],
+            OUT,
+        )
+    )
     if not veto_ok:
         # 双通道告警（十二审）：stdout 给运维日志；stderr 给 alert_fail——
         # start_todays_picks.ps1 只把 err.log 传给 alert_fail，stdout 警告
         # 收报人看不到，exit=3 推送将无法区分"停挂"与"崩溃"。
-        _hold = ("[T1停挂] 否决源异常失败: %s —— 同批卖点/weak/qpzm回避否决"
-                 "失效，今日不产 T1（共振票降 T2/T3）；exit=3 触发 alert_fail 推送"
-                 % ",".join(veto_failed))
+        _hold = (
+            "[T1停挂] 否决源异常失败: %s —— 同批卖点/weak/qpzm回避否决"
+            "失效，今日不产 T1（共振票降 T2/T3）；exit=3 触发 alert_fail 推送"
+            % ",".join(veto_failed)
+        )
         print("  " + _hold)
         print(_hold, file=sys.stderr)
     print("  行情回填：基准 %s，回填 %d 只" % (basis_day or "无", n_backfill))
     for sid, m in metas.items():
-        print("  %-8s ok=%s n=%s %s" % (sid, m.get("ok"), m.get("n"),
-                                        (m.get("err") or "")[:60]))
+        print(
+            "  %-8s ok=%s n=%s %s"
+            % (sid, m.get("ok"), m.get("n"), (m.get("err") or "")[:60])
+        )
     # P2-2（2026-10-11）：rc=0 路径的源级降级（cross 失败/stale 拦截）
     # 推送飞书——此前页面有卡、无人被通知；停挂路径 rc=3 已走 alert_fail。
     _push_source_alert(metas, veto_failed, basis_day)
@@ -943,9 +1189,11 @@ def main():
 if __name__ == "__main__":
     # argparse 化：此前无参解析，--help 会直接触发真实聚合写盘（副作用 bug）
     import argparse
+
     _ap = argparse.ArgumentParser(
         description="聚合六策略选股产物 → portal/data/todays_picks.json"
-                    "（个股详情见 build_pick_details.py）")
+        "（个股详情见 build_pick_details.py）"
+    )
     _ap.parse_args()
     # 退出码口径（十一审）：0=正常；3=跑完但 T1 停挂（否决源 err，清单已
     # 落盘仅缺 T1 层）——start_todays_picks.ps1 透传给 alert_fail 推送。

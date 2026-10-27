@@ -12,6 +12,7 @@
 
 测试与手工验证均可用 base_dir 指向临时目录；生产默认 portal/data/os_goals。
 """
+
 from __future__ import annotations
 
 import json
@@ -28,8 +29,9 @@ except ImportError:  # 以包方式导入时
     from . import os_goal_contract as C  # type: ignore
 
 BEIJING = timezone(timedelta(hours=8))
-DEFAULT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                           "data", "os_goals")
+DEFAULT_DIR = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "data", "os_goals"
+)
 LEDGER = "events.jsonl"
 LOCKFILE = ".lock"
 
@@ -51,6 +53,7 @@ def _file_lock(path: str) -> Iterator[None]:
     try:
         try:
             import msvcrt
+
             deadline = time.time() + 10
             while True:
                 try:
@@ -68,6 +71,7 @@ def _file_lock(path: str) -> Iterator[None]:
         if locked:
             try:
                 import msvcrt
+
                 msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
             except (ImportError, OSError):
                 pass
@@ -117,7 +121,9 @@ class OsGoalStore:
         for expect, ev in enumerate(self._events, 1):
             errs = C.validate_envelope(ev, prev, expect)
             if errs:
-                raise LedgerError("账本损坏（seq=%r）：%s" % (ev.get("seq"), "；".join(errs)))
+                raise LedgerError(
+                    "账本损坏（seq=%r）：%s" % (ev.get("seq"), "；".join(errs))
+                )
             prev = ev["hash"]
             self._apply(ev)
 
@@ -140,15 +146,20 @@ class OsGoalStore:
             C.check_item(payload, self._goals.get(gid))
             if payload["item_id"] in self._items:
                 raise C.ContractError("item_id 重复：%r" % payload["item_id"])
-            self._items[payload["item_id"]] = {"payload": dict(payload),
-                                               "goal_id": gid, "seq": ev["seq"]}
+            self._items[payload["item_id"]] = {
+                "payload": dict(payload),
+                "goal_id": gid,
+                "seq": ev["seq"],
+            }
         elif etype == "outcome.produced":
             iid = refs.get("item_id")
             item = self._items.get(iid)
-            C.check_outcome(payload, item["payload"] if item else None,
-                            self._first_conf)
-            self._outcomes.append({"item_id": iid, "seq": ev["seq"],
-                                   "payload": dict(payload)})
+            C.check_outcome(
+                payload, item["payload"] if item else None, self._first_conf
+            )
+            self._outcomes.append(
+                {"item_id": iid, "seq": ev["seq"], "payload": dict(payload)}
+            )
         elif etype == "item.cancelled":
             iid = refs.get("item_id")
             if iid not in self._items:
@@ -158,9 +169,14 @@ class OsGoalStore:
             self._idem[str(ev["idempotency_key"])] = ev.get("event_id", "")
 
     # ------------------------------------------------------------ 写入
-    def _append(self, etype: str, refs: Dict[str, Any], payload: Dict[str, Any],
-                actor: Optional[Dict[str, Any]] = None,
-                idem: Optional[str] = None) -> Dict[str, Any]:
+    def _append(
+        self,
+        etype: str,
+        refs: Dict[str, Any],
+        payload: Dict[str, Any],
+        actor: Optional[Dict[str, Any]] = None,
+        idem: Optional[str] = None,
+    ) -> Dict[str, Any]:
         with self._mu, _file_lock(self.lock_path):
             if idem:
                 key = str(idem)
@@ -209,56 +225,105 @@ class OsGoalStore:
         """取某事项相关事件（按 seq 升序，含目标级事件）。"""
         item = self._items.get(item_id) or {}
         gid = item.get("goal_id")
-        return [ev for ev in self._events
-                if ev["refs"].get("item_id") == item_id
-                or ev["payload"].get("item_id") == item_id
-                or (gid and (ev["refs"].get("goal_id") == gid
-                             or ev["payload"].get("goal_id") == gid))]
+        return [
+            ev
+            for ev in self._events
+            if ev["refs"].get("item_id") == item_id
+            or ev["payload"].get("item_id") == item_id
+            or (
+                gid
+                and (
+                    ev["refs"].get("goal_id") == gid
+                    or ev["payload"].get("goal_id") == gid
+                )
+            )
+        ]
 
-    def create_goal(self, statement: str, target_user: str,
-                    assumptions: List[Dict[str, Any]],
-                    success_signals: List[str],
-                    idem: Optional[str] = None) -> Dict[str, Any]:
-        payload = {"goal_id": self._next_id("GOL", self._goals),
-                   "statement": statement, "target_user": target_user,
-                   "assumptions": assumptions, "success_signals": success_signals}
+    def create_goal(
+        self,
+        statement: str,
+        target_user: str,
+        assumptions: List[Dict[str, Any]],
+        success_signals: List[str],
+        idem: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        payload = {
+            "goal_id": self._next_id("GOL", self._goals),
+            "statement": statement,
+            "target_user": target_user,
+            "assumptions": assumptions,
+            "success_signals": success_signals,
+        }
         return self._append("goal.created", {}, payload, idem=idem)
 
-    def update_assumption(self, goal_id: str, assumption_id: str,
-                          status: str, evidence_refs: Optional[List[str]] = None,
-                          reason: str = "", idem: Optional[str] = None) -> Dict[str, Any]:
-        payload = {"goal_id": goal_id, "assumption_id": assumption_id,
-                   "status": status, "evidence_refs": evidence_refs or [],
-                   "reason": reason}
+    def update_assumption(
+        self,
+        goal_id: str,
+        assumption_id: str,
+        status: str,
+        evidence_refs: Optional[List[str]] = None,
+        reason: str = "",
+        idem: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        payload = {
+            "goal_id": goal_id,
+            "assumption_id": assumption_id,
+            "status": status,
+            "evidence_refs": evidence_refs or [],
+            "reason": reason,
+        }
         return self._append("goal.updated", {}, payload, idem=idem)
 
-    def create_item(self, goal_id: str, title: str, why_now: str,
-                    outcome_kind: str, attempt_no: int = 1,
-                    idem: Optional[str] = None) -> Dict[str, Any]:
-        payload = {"item_id": self._next_id("ITM", self._items),
-                   "title": title, "why_now": why_now,
-                   "outcome_kind": outcome_kind, "attempt_no": attempt_no}
-        return self._append("item.created", {"goal_id": goal_id}, payload,
-                            idem=idem)
+    def create_item(
+        self,
+        goal_id: str,
+        title: str,
+        why_now: str,
+        outcome_kind: str,
+        attempt_no: int = 1,
+        idem: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        payload = {
+            "item_id": self._next_id("ITM", self._items),
+            "title": title,
+            "why_now": why_now,
+            "outcome_kind": outcome_kind,
+            "attempt_no": attempt_no,
+        }
+        return self._append("item.created", {"goal_id": goal_id}, payload, idem=idem)
 
-    def produce_outcome(self, item_id: str, outcome_kind: str, version: str,
-                        content_ref: str, sha256: str,
-                        citations: List[Dict[str, Any]],
-                        evidence_refs: Optional[List[str]] = None,
-                        idem: Optional[str] = None) -> Dict[str, Any]:
-        payload = {"outcome_kind": outcome_kind, "version": version,
-                   "content_ref": content_ref, "sha256": sha256,
-                   "citations": citations,
-                   "evidence_refs": evidence_refs or []}
-        return self._append("outcome.produced", {"item_id": item_id},
-                            payload, idem=idem)
+    def produce_outcome(
+        self,
+        item_id: str,
+        outcome_kind: str,
+        version: str,
+        content_ref: str,
+        sha256: str,
+        citations: List[Dict[str, Any]],
+        evidence_refs: Optional[List[str]] = None,
+        idem: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        payload = {
+            "outcome_kind": outcome_kind,
+            "version": version,
+            "content_ref": content_ref,
+            "sha256": sha256,
+            "citations": citations,
+            "evidence_refs": evidence_refs or [],
+        }
+        return self._append(
+            "outcome.produced", {"item_id": item_id}, payload, idem=idem
+        )
 
     # ------------------------------------------------------------ 查询
     def list_goals(self) -> List[Dict[str, Any]]:
         out = []
         for gid, g in self._goals.items():
-            items = [i["payload"]["item_id"] for i in self._items.values()
-                     if i["goal_id"] == gid]
+            items = [
+                i["payload"]["item_id"]
+                for i in self._items.values()
+                if i["goal_id"] == gid
+            ]
             out.append({**g, "items": items})
         return out
 
@@ -266,16 +331,22 @@ class OsGoalStore:
         goal = self._goals.get(goal_id)
         if goal is None:
             raise KeyError("目标不存在：%r" % goal_id)
-        items = [self._item_view(iid) for iid, it in self._items.items()
-                 if it["goal_id"] == goal_id]
+        items = [
+            self._item_view(iid)
+            for iid, it in self._items.items()
+            if it["goal_id"] == goal_id
+        ]
         return {**goal, "items": items}
 
     def _item_view(self, item_id: str) -> Dict[str, Any]:
         it = self._items[item_id]
         outs = [o["payload"] for o in self._outcomes if o["item_id"] == item_id]
-        return {**it["payload"], "goal_id": it["goal_id"],
-                "cancelled": bool(it.get("cancelled")),
-                "outcomes": outs}
+        return {
+            **it["payload"],
+            "goal_id": it["goal_id"],
+            "cancelled": bool(it.get("cancelled")),
+            "outcomes": outs,
+        }
 
     def get_item(self, item_id: str) -> Dict[str, Any]:
         if item_id not in self._items:
@@ -284,23 +355,32 @@ class OsGoalStore:
 
     def evidence_bundle(self, item_id: str) -> Dict[str, Any]:
         item = self.get_item(item_id)
-        related = [ev for ev in self._events
-                   if ev["refs"].get("item_id") == item_id
-                   or ev["payload"].get("item_id") == item_id
-                   or ev["refs"].get("goal_id") == item.get("goal_id")
-                   or ev["payload"].get("goal_id") == item.get("goal_id")]
+        related = [
+            ev
+            for ev in self._events
+            if ev["refs"].get("item_id") == item_id
+            or ev["payload"].get("item_id") == item_id
+            or ev["refs"].get("goal_id") == item.get("goal_id")
+            or ev["payload"].get("goal_id") == item.get("goal_id")
+        ]
         # 判据报告以整本账为准（避免子集序号不连续）；明细只取该事项相关事件
-        return {"item": item,
-                "report": C.evaluate(self._events),
-                "events": related,
-                "event_count": len(related)}
+        return {
+            "item": item,
+            "report": C.evaluate(self._events),
+            "events": related,
+            "event_count": len(related),
+        }
 
     def report(self) -> Dict[str, Any]:
         return C.evaluate(self._events)
 
     def health(self) -> Dict[str, Any]:
-        return {"ok": True, "data_dir": self.base_dir,
-                "events": len(self._events),
-                "goals": len(self._goals), "items": len(self._items),
-                "outcomes": len(self._outcomes),
-                "last_hash": self._events[-1]["hash"] if self._events else None}
+        return {
+            "ok": True,
+            "data_dir": self.base_dir,
+            "events": len(self._events),
+            "goals": len(self._goals),
+            "items": len(self._items),
+            "outcomes": len(self._outcomes),
+            "last_hash": self._events[-1]["hash"] if self._events else None,
+        }

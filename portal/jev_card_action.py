@@ -12,6 +12,7 @@
   · 「已处理」「忽略」都置 ACKED；差异在 gate_ignored.json（忽略 = 不再推送）。
   · 卡片视觉更新由 WS 回执承担；本模块只做数据状态 + 审计。失败不伪装成功。
 """
+
 from __future__ import annotations
 
 import json
@@ -31,6 +32,7 @@ def _jev_common():
     if JEV_DIR not in sys.path:
         sys.path.insert(0, JEV_DIR)
     import jev_common as jc  # noqa: WPS433（函数内 import：避免未装 psycopg2 的进程导入失败）
+
     return jc
 
 
@@ -54,9 +56,11 @@ def allowed_operators():
     env），若只认 env 会把老田也拒掉——故补 push_targets 个人作为最终回退
     （数据源仍是单一收件人表，不写死 open_id）。
     """
-    explicit = {s.strip() for s in
-                os.environ.get("LARK_ALLOWED_OPERATORS", "").split(",")
-                if s.strip()}
+    explicit = {
+        s.strip()
+        for s in os.environ.get("LARK_ALLOWED_OPERATORS", "").split(",")
+        if s.strip()
+    }
     if explicit:
         return explicit
     recipient = os.environ.get("LARK_ALERT_OPEN_ID", "").strip()
@@ -75,7 +79,8 @@ def fetch_alert_title(alert_id):
     """查 v2_alert.title 供忽略记录；失败返回 ""。"""
     try:
         rows = _jev_common().db_rows(
-            "SELECT title FROM v2_alert WHERE alert_id=%s", (alert_id,))
+            "SELECT title FROM v2_alert WHERE alert_id=%s", (alert_id,)
+        )
     except Exception:  # noqa: BLE001
         return ""
     if not rows:
@@ -91,7 +96,9 @@ def ack_alert_in_db(alert_id):
     try:
         _jev_common().db_execute(
             "UPDATE v2_alert SET status='ACKED', acked_at=now() "
-            "WHERE alert_id=%s AND status='OPEN'", (alert_id,))
+            "WHERE alert_id=%s AND status='OPEN'",
+            (alert_id,),
+        )
         return True
     except Exception:  # noqa: BLE001
         return False
@@ -122,8 +129,9 @@ def save_ignored(items, path=None):
     os.replace(tmp, path)
 
 
-def handle_action(action_id, payload=None, who="", ack_fn=None, title_fn=None,
-                  ignore_file=None):
+def handle_action(
+    action_id, payload=None, who="", ack_fn=None, title_fn=None, ignore_file=None
+):
     """→ (ok, msg)。ack_fn/title_fn/ignore_file 可注入（单测用）。"""
     payload = dict(payload or {})
     alert_id = str(payload.get("alert_id") or payload.get("id") or "").strip()
@@ -132,8 +140,9 @@ def handle_action(action_id, payload=None, who="", ack_fn=None, title_fn=None,
     if action_id not in ACTIONS:
         return False, "不支持的动作：%s" % action_id
     if not is_allowed(who):
-        return False, ("操作者不在允许名单（配置 LARK_ALLOWED_OPERATORS "
-                       "或 LARK_ALERT_OPEN_ID）")
+        return False, (
+            "操作者不在允许名单（配置 LARK_ALLOWED_OPERATORS 或 LARK_ALERT_OPEN_ID）"
+        )
     ok = (ack_fn or ack_alert_in_db)(alert_id)
     if not ok:
         return False, "数据库回写失败（按钮保留，可重试）"
@@ -141,10 +150,16 @@ def handle_action(action_id, payload=None, who="", ack_fn=None, title_fn=None,
         return True, "已处理（ACKED）"
     title = (title_fn or fetch_alert_title)(alert_id)
     try:
-        items = [it for it in load_ignored(ignore_file)
-                 if it.get("alert_id") != alert_id]
-        items.append({"alert_id": alert_id, "title": title,
-                      "ts": datetime.now().isoformat(timespec="seconds")})
+        items = [
+            it for it in load_ignored(ignore_file) if it.get("alert_id") != alert_id
+        ]
+        items.append(
+            {
+                "alert_id": alert_id,
+                "title": title,
+                "ts": datetime.now().isoformat(timespec="seconds"),
+            }
+        )
         save_ignored(items, ignore_file)
     except OSError as e:
         return False, "忽略集写入失败：%s" % e
@@ -152,7 +167,14 @@ def handle_action(action_id, payload=None, who="", ack_fn=None, title_fn=None,
 
 
 if __name__ == "__main__":
-    print(json.dumps({"actions": ACTIONS,
-                      "ignore_file": IGNORE_FILE,
-                      "allowed": sorted(allowed_operators())},
-                     ensure_ascii=False, indent=1))
+    print(
+        json.dumps(
+            {
+                "actions": ACTIONS,
+                "ignore_file": IGNORE_FILE,
+                "allowed": sorted(allowed_operators()),
+            },
+            ensure_ascii=False,
+            indent=1,
+        )
+    )

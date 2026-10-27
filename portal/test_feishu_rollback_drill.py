@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """W4 回滚演练单测：材料核验结构、回滚清单完整、结论口径、CLI。"""
+
 import json
 import os
 import subprocess
@@ -50,10 +51,12 @@ def test_render_contains_plan():
 
 
 def test_cli_json_runs():
-    script = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                          "feishu_rollback_drill.py")
-    r = subprocess.run([sys.executable, script, "--json"],
-                       capture_output=True, timeout=120)
+    script = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "feishu_rollback_drill.py"
+    )
+    r = subprocess.run(
+        [sys.executable, script, "--json"], capture_output=True, timeout=120
+    )
     data = json.loads(r.stdout.decode("utf-8", "replace"))
     assert data["verdict"] in ("READY", "NOT-READY")
     assert data["plan"]

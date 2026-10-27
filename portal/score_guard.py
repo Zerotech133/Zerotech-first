@@ -13,6 +13,7 @@
   r = validate_items(anns, for_push=True)   # ok / missing / errors
   line = render_line("rps50", 88)           # "RPS50 88（rps50 · B · 2026-10-26 15:00）"
 """
+
 from __future__ import annotations
 
 import os
@@ -25,14 +26,12 @@ if HERE not in sys.path:
 import score_registry as sr  # noqa: E402
 
 # 5 个核心指标（与注册表 core=true 对齐；focus_p 为 D 级不可推送，用 kg_resonance 替代）
-DEFAULT_CORE = ("rps50", "nine_dim_score", "jev_conf", "chan_signal",
-                "kg_resonance")
+DEFAULT_CORE = ("rps50", "nine_dim_score", "jev_conf", "chan_signal", "kg_resonance")
 LEVELS = ("A", "B", "C", "D")
 
 
 def core_ids():
-    ids = [m["metric_id"] for m in (sr.load().get("metrics") or [])
-           if m.get("core")]
+    ids = [m["metric_id"] for m in (sr.load().get("metrics") or []) if m.get("core")]
     return tuple(ids) or DEFAULT_CORE
 
 
@@ -60,8 +59,7 @@ def _validate_one(d, for_push=True, for_decision=False):
     return errs
 
 
-def validate_items(items, for_push=True, for_decision=False,
-                   require_all_core=True):
+def validate_items(items, for_push=True, for_decision=False, require_all_core=True):
     """校验注解列表；→ {ok, missing, errors, warnings, count}
 
     require_all_core=True（默认，卡片/H5 展示必须 5 核心齐全）；
@@ -70,13 +68,17 @@ def validate_items(items, for_push=True, for_decision=False,
     items = list(items or [])
     errs = []
     for d in items:
-        errs.extend(_validate_one(d, for_push=for_push,
-                                  for_decision=for_decision))
+        errs.extend(_validate_one(d, for_push=for_push, for_decision=for_decision))
     got = {d.get("metric_id") for d in items if isinstance(d, dict)}
     missing = [x for x in core_ids() if x not in got] if require_all_core else []
-    return {"ok": not errs and not missing, "missing": missing,
-            "errors": errs, "warnings": [], "count": len(items),
-            "core": list(core_ids())}
+    return {
+        "ok": not errs and not missing,
+        "missing": missing,
+        "errors": errs,
+        "warnings": [],
+        "count": len(items),
+        "core": list(core_ids()),
+    }
 
 
 def require_core(items):
@@ -105,12 +107,11 @@ def parse_registry_line(line):
     j = line.find(" · ", i)
     if i < 0 or j < 0:
         return None
-    return line[i + 1:j].strip() or None
+    return line[i + 1 : j].strip() or None
 
 
 def selftest():
-    anns = [sr.annotate(mid, 1, as_of="2026-10-26 15:00")
-            for mid in core_ids()]
+    anns = [sr.annotate(mid, 1, as_of="2026-10-26 15:00") for mid in core_ids()]
     r = validate_items(anns)
     assert r["ok"], r
     bad = validate_items([{"metric_id": "not_exist", "value": 1}])

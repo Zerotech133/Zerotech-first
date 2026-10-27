@@ -5,6 +5,7 @@
 幂等（同 msg_id 二次投递 replayed）、回执查询、
 超时扫描（deadline 判定）、失败诚实返回、开关默认关。
 """
+
 import json
 import os
 import sys
@@ -24,6 +25,7 @@ import comm_dispatch as cd  # noqa: E402
 @pytest.fixture
 def inbox(tmp_path, monkeypatch):
     from gateway import inbox_gateway as ig
+
     root = tmp_path / "bridge_inbox"
     ig.set_store(root)
     monkeypatch.setattr(cd, "_inbox", lambda: ig)
@@ -34,8 +36,13 @@ def inbox(tmp_path, monkeypatch):
 
 
 def _res(intent="stock_consult", code="605100", trace="abc123def456"):
-    return {"intent": intent, "entities": {"code": code} if code else {},
-            "trace_id": trace, "confidence": 0.9, "channel": "regex"}
+    return {
+        "intent": intent,
+        "entities": {"code": code} if code else {},
+        "trace_id": trace,
+        "confidence": 0.9,
+        "channel": "regex",
+    }
 
 
 # ── kind 映射 ────────────────────────────────
@@ -109,12 +116,13 @@ def test_08_receipt_not_found(inbox):
 def test_09_sweep_overdue(inbox):
     r = cd.dispatch(_res(), "ou_g", msg_id="M8", deadline_min=5)
     # 手工把 submitted_at 改到 10 分钟前
-    f = (inbox / "inbox" / ("%s.json" % r["dispatch_id"]))
+    f = inbox / "inbox" / ("%s.json" % r["dispatch_id"])
     rec = json.loads(f.read_text(encoding="utf-8"))
     import time
+
     rec["submitted_at"] = time.strftime(
-        "%Y-%m-%dT%H:%M:%S",
-        time.localtime(time.time() - 10 * 60))
+        "%Y-%m-%dT%H:%M:%S", time.localtime(time.time() - 10 * 60)
+    )
     f.write_text(json.dumps(rec, ensure_ascii=False), encoding="utf-8")
     over = cd.sweep_overdue()
     assert any(o["dispatch_id"] == r["dispatch_id"] for o in over)
@@ -172,6 +180,7 @@ def test_nudge_rejects_done_or_unknown(inbox, tmp_path, monkeypatch):
     did = _make_dispatch(inbox)
     # 模拟已处理：把文件挪到 processed
     import shutil
+
     f = list((inbox / "inbox").glob("*.json"))[0]
     (inbox / "processed").mkdir(exist_ok=True)
     shutil.move(str(f), str(inbox / "processed" / f.name))

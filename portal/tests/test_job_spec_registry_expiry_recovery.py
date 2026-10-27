@@ -26,19 +26,30 @@ def two_source_catalog(monkeypatch, tmp_path):
     path = tmp_path / "catalog.json"
     registry = JobSpecRegistry(str(path))
     common = dict(
-        source_version="v1", source_kind="bar_store", market="CN",
-        timezone="Asia/Shanghai", timeframe="1m",
-        store_config_ref="runtime:store", intent_batch_ref="runtime:intents",
-        provider_policy_ref="runtime:policy", registered_at=_Clock.current.isoformat(),
+        source_version="v1",
+        source_kind="bar_store",
+        market="CN",
+        timezone="Asia/Shanghai",
+        timeframe="1m",
+        store_config_ref="runtime:store",
+        intent_batch_ref="runtime:intents",
+        provider_policy_ref="runtime:policy",
+        registered_at=_Clock.current.isoformat(),
     )
-    registry.register(JobSpecDescriptor(
-        source_ref="expired", expires_at=(_Clock.current + timedelta(days=1)).isoformat(),
-        **common,
-    ))
-    registry.register(JobSpecDescriptor(
-        source_ref="active", expires_at=(_Clock.current + timedelta(days=30)).isoformat(),
-        **common,
-    ))
+    registry.register(
+        JobSpecDescriptor(
+            source_ref="expired",
+            expires_at=(_Clock.current + timedelta(days=1)).isoformat(),
+            **common,
+        )
+    )
+    registry.register(
+        JobSpecDescriptor(
+            source_ref="active",
+            expires_at=(_Clock.current + timedelta(days=30)).isoformat(),
+            **common,
+        )
+    )
     _Clock.current += timedelta(days=2)
     return path
 
@@ -60,12 +71,17 @@ def test_natural_expiry_does_not_invalidate_other_source(two_source_catalog):
         registry.register(JobSpecDescriptor(**registry.get("expired").as_dict()))
 
 
-@pytest.mark.parametrize("corrupt", [
-    lambda raw: raw.update(store_config_ref="file:///etc/passwd"),
-    lambda raw: raw.update(expires_at="2030-01-02T00:00:00"),
-    lambda raw: raw.update(source_ref="wrong-key"),
-])
-def test_malformed_expired_descriptor_still_invalidates_catalog(two_source_catalog, corrupt):
+@pytest.mark.parametrize(
+    "corrupt",
+    [
+        lambda raw: raw.update(store_config_ref="file:///etc/passwd"),
+        lambda raw: raw.update(expires_at="2030-01-02T00:00:00"),
+        lambda raw: raw.update(source_ref="wrong-key"),
+    ],
+)
+def test_malformed_expired_descriptor_still_invalidates_catalog(
+    two_source_catalog, corrupt
+):
     path = two_source_catalog
     raw = json.loads(path.read_text(encoding="utf-8"))
     corrupt(raw["expired"])

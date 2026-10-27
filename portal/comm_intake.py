@@ -25,6 +25,7 @@
 - feed / smalltalk / unclear：交回原链路（知识库投递 / 澄清卡）。
 - stock_consult / watch_setup：走派单话术（K5 前为 stub 回执，不假装已执行）。
 """
+
 from __future__ import annotations
 
 import time
@@ -38,9 +39,9 @@ import comm_router as cr
 import comm_zhuge as zhuge
 
 # 处理动作 → 上游（inbound_gateway）据此决定回卡形态
-ACTION_REPLY = "reply"          # 直接回文本卡
-ACTION_DISPATCH = "dispatch"    # 派单回执（K5 前 stub）
-ACTION_FALLBACK = None          # 交回原流程（澄清卡/知识库）
+ACTION_REPLY = "reply"  # 直接回文本卡
+ACTION_DISPATCH = "dispatch"  # 派单回执（K5 前 stub）
+ACTION_FALLBACK = None  # 交回原流程（澄清卡/知识库）
 
 
 def enabled():
@@ -50,6 +51,7 @@ def enabled():
     故新增本机标志文件通道（见 comm_flags.py 文档）。
     """
     import comm_flags
+
     return comm_flags.get("intent")
 
 
@@ -73,9 +75,11 @@ def _is_consult(text):
     global _CONSULT_RE
     if _CONSULT_RE is None:
         import re
+
         _CONSULT_RE = re.compile(
             r"(为什么|为啥|怎么办|如何|怎么|该不该|能不能|是不是|"
-            r"什么意思|讲讲|分析一下|建议|看法|意见|判断)")
+            r"什么意思|讲讲|分析一下|建议|看法|意见|判断)"
+        )
     return bool(_CONSULT_RE.search(text or ""))
 
 
@@ -88,8 +92,12 @@ def build_reply(intent_result, open_id="", dispatch_result=None):
 
     if intent == "subscription_qa":
         detail = _subscription_summary(open_id)
-        return {"text": detail, "action": ACTION_REPLY, "llm_ok": False,
-                "meta": ["查账本直答", "零Agent", "trace:" + trace]}
+        return {
+            "text": detail,
+            "action": ACTION_REPLY,
+            "llm_ok": False,
+            "meta": ["查账本直答", "零Agent", "trace:" + trace],
+        }
 
     if intent == "billing":
         # 2026-10-26 A2-B02：不再编 BI-xxxx 假工单号。只认真实派单结果；
@@ -97,38 +105,59 @@ def build_reply(intent_result, open_id="", dispatch_result=None):
         dr = dispatch_result or {}
         real_id = dr.get("dispatch_id") if dr.get("ok") else None
         if real_id:
-            return {"text": ("您的账单/发票/退款类问题涉及资金口径，已转人工专员跟进"
-                             "（工单 %s），一个工作日内回复。为避免口径出错，"
-                             "此类问题我不自动答复金额与退款结论。" % real_id),
-                    "action": ACTION_REPLY, "llm_ok": False,
-                    "meta": ["涉资金·模板+真实派单", "不自动答金额",
-                             "trace:" + trace]}
+            return {
+                "text": (
+                    "您的账单/发票/退款类问题涉及资金口径，已转人工专员跟进"
+                    "（工单 %s），一个工作日内回复。为避免口径出错，"
+                    "此类问题我不自动答复金额与退款结论。" % real_id
+                ),
+                "action": ACTION_REPLY,
+                "llm_ok": False,
+                "meta": ["涉资金·模板+真实派单", "不自动答金额", "trace:" + trace],
+            }
         reason = dr.get("reason")
-        tail = "转人工通道未启用，请回复「人工」转专员。" if reason == "disabled" \
+        tail = (
+            "转人工通道未启用，请回复「人工」转专员。"
+            if reason == "disabled"
             else "转人工暂时不可用，请回复「人工」转专员。"
-        return {"text": ("您的账单/发票/退款类问题涉及资金口径，已留痕（未派单）。"
-                         + tail + "此类问题我不自动答复金额与退款结论。"),
-                "action": ACTION_REPLY, "llm_ok": False,
-                "meta": ["涉资金·模板+人工未接通(如实)", "不自动答金额",
-                         "trace:" + trace]}
+        )
+        return {
+            "text": (
+                "您的账单/发票/退款类问题涉及资金口径，已留痕（未派单）。"
+                + tail
+                + "此类问题我不自动答复金额与退款结论。"
+            ),
+            "action": ACTION_REPLY,
+            "llm_ok": False,
+            "meta": ["涉资金·模板+人工未接通(如实)", "不自动答金额", "trace:" + trace],
+        }
 
     if intent == "complaint":
         # 2026-10-26 A2：投诉同样只认真实派单号，不再拼 TS- 假号。
         dr = dispatch_result or {}
         real_id = dr.get("dispatch_id") if dr.get("ok") else None
         if real_id:
-            return {"text": ("非常抱歉给您带来不好的体验。您的反馈已升级为最高优先级"
-                             "工单 %s，田丰大人亲自督办，30 分钟内必有答复。" % real_id),
-                    "action": ACTION_REPLY, "llm_ok": False,
-                    "meta": ["田丰归口", "最高优先级", "真实派单",
-                             "trace:" + trace]}
+            return {
+                "text": (
+                    "非常抱歉给您带来不好的体验。您的反馈已升级为最高优先级"
+                    "工单 %s，田丰大人亲自督办，30 分钟内必有答复。" % real_id
+                ),
+                "action": ACTION_REPLY,
+                "llm_ok": False,
+                "meta": ["田丰归口", "最高优先级", "真实派单", "trace:" + trace],
+            }
         reason = dr.get("reason")
-        tail = "投诉通道未启用，请回复「人工」转专员。" if reason == "disabled" \
+        tail = (
+            "投诉通道未启用，请回复「人工」转专员。"
+            if reason == "disabled"
             else "投诉转接暂时不可用，请回复「人工」转专员。"
-        return {"text": ("非常抱歉给您带来不好的体验。已记录您的反馈（未派单）。"
-                         + tail),
-                "action": ACTION_REPLY, "llm_ok": False,
-                "meta": ["田丰归口", "通道未接通(如实)", "trace:" + trace]}
+        )
+        return {
+            "text": ("非常抱歉给您带来不好的体验。已记录您的反馈（未派单）。" + tail),
+            "action": ACTION_REPLY,
+            "llm_ok": False,
+            "meta": ["田丰归口", "通道未接通(如实)", "trace:" + trace],
+        }
 
     if intent in ("stock_consult", "watch_setup"):
         # K5.1：真投递成功用真实工单号（lg-xxx）；投递未启用/失败如实说明，
@@ -137,8 +166,9 @@ def build_reply(intent_result, open_id="", dispatch_result=None):
         real_id = dr.get("dispatch_id") if dr.get("ok") else None
         if real_id:
             ticket_txt = real_id
-            state_txt = "预计 5 分钟内回复" if intent == "stock_consult" \
-                else "确认卡稍后送达"
+            state_txt = (
+                "预计 5 分钟内回复" if intent == "stock_consult" else "确认卡稍后送达"
+            )
             extra = []
         elif dr.get("reason") == "disabled":
             ticket_txt = "登记中（派单通道未启用，稍后确认）"
@@ -149,48 +179,71 @@ def build_reply(intent_result, open_id="", dispatch_result=None):
             state_txt = "已记录您的需求"
             extra = ["派单异常·如实告知"]
         if intent == "stock_consult":
-            return {"text": ("已收到您对 %s 的咨询，正在转接盯盘官（司马懿席）"
-                             "分析，%s。工单 %s。"
-                             % (code or "该标的", state_txt, ticket_txt)),
-                    "action": ACTION_DISPATCH, "llm_ok": False,
-                    "meta": ["派单·司马懿席", "时限5min",
-                             "trace:" + trace] + extra}
-        return {"text": ("已收到：为 %s 设置盯盘提醒。已转许褚营设置触发器，%s。"
-                         "工单 %s。" % (code or "该标的", state_txt, ticket_txt)),
-                "action": ACTION_DISPATCH, "llm_ok": False,
-                "meta": ["派单·许褚G1", "操作确认",
-                         "trace:" + trace] + extra}
+            return {
+                "text": (
+                    "已收到您对 %s 的咨询，正在转接盯盘官（司马懿席）"
+                    "分析，%s。工单 %s。" % (code or "该标的", state_txt, ticket_txt)
+                ),
+                "action": ACTION_DISPATCH,
+                "llm_ok": False,
+                "meta": ["派单·司马懿席", "时限5min", "trace:" + trace] + extra,
+            }
+        return {
+            "text": (
+                "已收到：为 %s 设置盯盘提醒。已转许褚营设置触发器，%s。"
+                "工单 %s。" % (code or "该标的", state_txt, ticket_txt)
+            ),
+            "action": ACTION_DISPATCH,
+            "llm_ok": False,
+            "meta": ["派单·许褚G1", "操作确认", "trace:" + trace] + extra,
+        }
 
     # feed / smalltalk / unclear：交回原链路
-    return {"text": None, "action": ACTION_FALLBACK, "llm_ok": False,
-            "meta": ["回落原链路", "trace:" + trace]}
+    return {
+        "text": None,
+        "action": ACTION_FALLBACK,
+        "llm_ok": False,
+        "meta": ["回落原链路", "trace:" + trace],
+    }
 
 
 def _subscription_summary(open_id):
     """查订阅账本（只读，零写入）。异常如实降级，不编数字。"""
     try:
         import subscription_store as ss
+
         s = ss.get_subscriber_summary(open_id) if open_id else {}
         if s.get("error"):
-            return ("暂时无法读取您的订阅信息（%s），已记录并转人工核对，"
-                    "稍后回复您准确数据。" % s["error"])
+            return (
+                "暂时无法读取您的订阅信息（%s），已记录并转人工核对，"
+                "稍后回复您准确数据。" % s["error"]
+            )
         subs = s.get("subscriptions") or []
         if not subs:
-            return ("您当前还没有生效的订阅。可回复「订阅」查看档位，"
-                    "或回复「人工」由专员为您介绍。")
+            return (
+                "您当前还没有生效的订阅。可回复「订阅」查看档位，"
+                "或回复「人工」由专员为您介绍。"
+            )
         row = subs[-1]
         used = s.get("today_used_by_prefix") or {}
         plan = row.get("plan_id", "")
         quota = (s.get("daily_quota_by_plan") or {}).get(plan, 0)
-        used_n = sum(v for k, v in used.items() if k.startswith("news")) \
-            if used else 0
-        return ("您当前订阅：%s · 有效期至 %s · 今日额度已用 %s%s 次。"
-                "到期前 7 天会主动提醒您。"
-                % (row.get("plan_id", "-"), row.get("end", "-")[:10],
-                   used_n, ("/" + str(quota)) if quota else ""))
+        used_n = sum(v for k, v in used.items() if k.startswith("news")) if used else 0
+        return (
+            "您当前订阅：%s · 有效期至 %s · 今日额度已用 %s%s 次。"
+            "到期前 7 天会主动提醒您。"
+            % (
+                row.get("plan_id", "-"),
+                row.get("end", "-")[:10],
+                used_n,
+                ("/" + str(quota)) if quota else "",
+            )
+        )
     except Exception as ex:  # noqa: BLE001 —— 账本故障如实降级不臆造
-        return ("暂时无法读取订阅账本（%s），已记录待核，稍后回复您准确信息。"
-                % type(ex).__name__)
+        return (
+            "暂时无法读取订阅账本（%s），已记录待核，稍后回复您准确信息。"
+            % type(ex).__name__
+        )
 
 
 # ── K3.1 智能接话总入口 ──────────────────────────
@@ -203,9 +256,11 @@ def smart_intake(text, open_id, msg_id="", llm=None, async_sink=None):
     res = cr.route_message(text, llm=llm, log=True)
 
     # 代词消解：判定为个股/盯票但无 code 时，用记忆里的最近代码补齐
-    if res["intent"] in ("stock_consult", "watch_setup") \
-            and not (res.get("entities") or {}).get("code") \
-            and ref["injected_code"]:
+    if (
+        res["intent"] in ("stock_consult", "watch_setup")
+        and not (res.get("entities") or {}).get("code")
+        and ref["injected_code"]
+    ):
         res["entities"]["code"] = ref["injected_code"]
         res["resolved_from_memory"] = True
 
@@ -217,9 +272,14 @@ def smart_intake(text, open_id, msg_id="", llm=None, async_sink=None):
     # 触发条件（细化）：smalltalk+疑问 → 军师；stock_consult 但**无具体标的**
     # （大盘/趋势类判断）→ 也交军师；有标的的个股咨询仍走司马懿席（不抢单）。
     _no_code = not (res.get("entities") or {}).get("code")
-    _to_zhuge = zhuge.enabled() and _is_consult(text) and (
-        res["intent"] == "smalltalk"
-        or (res["intent"] == "stock_consult" and _no_code))
+    _to_zhuge = (
+        zhuge.enabled()
+        and _is_consult(text)
+        and (
+            res["intent"] == "smalltalk"
+            or (res["intent"] == "stock_consult" and _no_code)
+        )
+    )
     if _to_zhuge:
         # K6.1（WO-FS-156）军师咨询改异步：本地 9b 推理实测 11~14 秒，
         # 同步等待期间客户侧零反馈（飞书显示无响应）。改为：
@@ -227,11 +287,15 @@ def smart_intake(text, open_id, msg_id="", llm=None, async_sink=None):
         # ②后台线程真咨询，算完经 async_sink 回调补发结果卡；
         # ③线程异常只降级为补发失败提示，不反噬消息主链。
         trace = res["trace_id"]
-        rp = {"text": ("已收到您的问题，军师正在研判（通常 10~20 秒），"
-                       "答案稍后单独送达。回执 %s。"
-                       % ("ZG-" + trace[:6].upper())),
-              "action": ACTION_REPLY, "llm_ok": False,
-              "meta": ["咨询位·异步", "trace:" + trace]}
+        rp = {
+            "text": (
+                "已收到您的问题，军师正在研判（通常 10~20 秒），"
+                "答案稍后单独送达。回执 %s。" % ("ZG-" + trace[:6].upper())
+            ),
+            "action": ACTION_REPLY,
+            "llm_ok": False,
+            "meta": ["咨询位·异步", "trace:" + trace],
+        }
         res["intent"] = "consult"
         res["zhuge"] = {"mode": "async"}
 
@@ -245,25 +309,34 @@ def smart_intake(text, open_id, msg_id="", llm=None, async_sink=None):
 
         threading.Thread(target=_bg_consult, daemon=True).start()
     else:
-        if res["intent"] in ("stock_consult", "watch_setup", "complaint",
-                             "billing"):
+        if res["intent"] in ("stock_consult", "watch_setup", "complaint", "billing"):
             dr = dispatch.dispatch(res, open_id, msg_id=msg_id)
         rp = build_reply(res, open_id=open_id, dispatch_result=dr)
     if rp["action"] is ACTION_FALLBACK:
         # 仍判不出：记忆也记一笔（供后续代词消解），然后交回原链路
-        mem.remember(open_id, "customer", text, intent=res["intent"],
-                     code=(res.get("entities") or {}).get("code"))
+        mem.remember(
+            open_id,
+            "customer",
+            text,
+            intent=res["intent"],
+            code=(res.get("entities") or {}).get("code"),
+        )
         return None
 
-    mem.remember(open_id, "customer", text, intent=res["intent"],
-                 code=(res.get("entities") or {}).get("code"))
+    mem.remember(
+        open_id,
+        "customer",
+        text,
+        intent=res["intent"],
+        code=(res.get("entities") or {}).get("code"),
+    )
     mem.remember(open_id, "bot", rp["text"] or "", intent=res["intent"])
 
     # K4.1：行为统计落 customer_interest（只记统计不记原文）。
     # 订阅闸拦下的（blocked）由调用方另行标记——本层只看意图侧事实。
     ok_i, err_i = interest.record(
-        open_id, intent=res["intent"],
-        code=(res.get("entities") or {}).get("code"))
+        open_id, intent=res["intent"], code=(res.get("entities") or {}).get("code")
+    )
 
     return {
         "intent": res["intent"],

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """VOICE3：本地 SenseVoice ASR 端点与页面接线测试。"""
+
 import os
 import sys
 
@@ -48,16 +49,26 @@ def test_asr_bad_base64_rejected(store):
 
 def test_page_local_asr_wiring():
     text = open(os.path.join(PORTAL, "os_quick.html"), encoding="utf-8").read()
-    for kw in ("/api/os/asr", "resampleTo16k", "encodeWav16k", "本地高精度",
-               "X-OS-Page", "SenseVoice"):
+    for kw in (
+        "/api/os/asr",
+        "resampleTo16k",
+        "encodeWav16k",
+        "本地高精度",
+        "X-OS-Page",
+        "SenseVoice",
+    ):
         assert kw in text, kw
+
 
 def test_load_wav_array_stereo_to_mono(tmp_path):
     import struct
     import wave
+
     p = tmp_path / "stereo.wav"
     with wave.open(str(p), "wb") as w:
-        w.setnchannels(2); w.setsampwidth(2); w.setframerate(22050)
+        w.setnchannels(2)
+        w.setsampwidth(2)
+        w.setframerate(22050)
         w.writeframes(struct.pack("<8h", 1, 1, 2, 2, 3, 3, 4, 4))
     arr = os_asr._load_wav_array(str(p))
     assert arr.ndim == 1 and abs(float(arr[0]) - 1.0 / 32768) < 1e-6
@@ -66,9 +77,12 @@ def test_load_wav_array_stereo_to_mono(tmp_path):
 
 def test_load_wav_array_empty_rejected(tmp_path):
     import wave
+
     p = tmp_path / "empty.wav"
     with wave.open(str(p), "wb") as w:
-        w.setnchannels(1); w.setsampwidth(2); w.setframerate(16000)
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(16000)
         w.writeframes(b"")
     with pytest.raises(os_asr.AsrUnavailable):
         os_asr._load_wav_array(str(p))

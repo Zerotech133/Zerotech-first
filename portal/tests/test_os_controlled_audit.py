@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """C0/C1 审计修复回归测试：撤销/停用/重复裁决/过期/能力匹配。"""
+
 import os
 import sys
 from datetime import datetime, timedelta, timezone
@@ -23,20 +24,34 @@ def store(tmp_path):
 
 
 def make_item(store):
-    g = store.create_goal("审计目标", "老田",
-                          [{"id": "A1", "text": "受控", "status": "hypothesis"}],
-                          ["审计通过"])
-    return store.create_item(g["payload"]["goal_id"], "审计事项", "审计",
-                             "software")["payload"]["item_id"]
+    g = store.create_goal(
+        "审计目标",
+        "老田",
+        [{"id": "A1", "text": "受控", "status": "hypothesis"}],
+        ["审计通过"],
+    )
+    return store.create_item(g["payload"]["goal_id"], "审计事项", "审计", "software")[
+        "payload"
+    ]["item_id"]
 
 
 def setup(store, caps=None, workorder_caps=None):
     iid = make_item(store)
-    X.register_consumer(store, "CONS-AUD", kind="agent",
-                        capabilities=caps or ["artifact.generate", "test.run"])
-    g = X.sign_real_grant(store, iid, ["artifact.generate", "test.run"], nonce="nonce-audit-123")
-    X.create_formal_workorder(store, iid, "验收口径",
-                              required_capabilities=workorder_caps or ["artifact.generate"])
+    X.register_consumer(
+        store,
+        "CONS-AUD",
+        kind="agent",
+        capabilities=caps or ["artifact.generate", "test.run"],
+    )
+    g = X.sign_real_grant(
+        store, iid, ["artifact.generate", "test.run"], nonce="nonce-audit-123"
+    )
+    X.create_formal_workorder(
+        store,
+        iid,
+        "验收口径",
+        required_capabilities=workorder_caps or ["artifact.generate"],
+    )
     return iid, g
 
 
@@ -102,16 +117,34 @@ def test_expired_approval_blocks_outbox(store):
     iid, _ = setup(store)
     aid = "APR-EXPIRED-001"
     past = (datetime.now(BJT) - timedelta(minutes=5)).isoformat(timespec="seconds")
-    store.append_event("approval.requested", {"item_id": iid},
-                       {"approval_id": aid, "action": "publish", "consumer_id": "CONS-AUD",
-                        "summary": "过期测试", "expires_at": past, "status": "pending",
-                        "env": "controlled", "external_sent": False},
-                       actor={"kind": "consumer", "id": "CONS-AUD"})
-    store.append_event("approval.decided", {"item_id": iid},
-                       {"approval_id": aid, "decision": "approved", "note": "历史批准",
-                        "action": "publish", "consumer_id": "CONS-AUD",
-                        "signer": {"kind": "user", "id": "laotian"}},
-                       actor={"kind": "user", "id": "laotian"})
+    store.append_event(
+        "approval.requested",
+        {"item_id": iid},
+        {
+            "approval_id": aid,
+            "action": "publish",
+            "consumer_id": "CONS-AUD",
+            "summary": "过期测试",
+            "expires_at": past,
+            "status": "pending",
+            "env": "controlled",
+            "external_sent": False,
+        },
+        actor={"kind": "consumer", "id": "CONS-AUD"},
+    )
+    store.append_event(
+        "approval.decided",
+        {"item_id": iid},
+        {
+            "approval_id": aid,
+            "decision": "approved",
+            "note": "历史批准",
+            "action": "publish",
+            "consumer_id": "CONS-AUD",
+            "signer": {"kind": "user", "id": "laotian"},
+        },
+        actor={"kind": "user", "id": "laotian"},
+    )
     st = X._approval_state(store, iid, aid)
     assert st["status"] == "expired"
     with pytest.raises(C.ContractError):
@@ -122,15 +155,31 @@ def test_chain_c1_blocked_when_approval_expired(store):
     iid, _ = setup(store)
     aid = "APR-EXPIRED-002"
     past = (datetime.now(BJT) - timedelta(minutes=5)).isoformat(timespec="seconds")
-    store.append_event("approval.requested", {"item_id": iid},
-                       {"approval_id": aid, "action": "publish", "consumer_id": "CONS-AUD",
-                        "summary": "过期测试", "expires_at": past, "status": "pending"},
-                       actor={"kind": "consumer", "id": "CONS-AUD"})
-    store.append_event("approval.decided", {"item_id": iid},
-                       {"approval_id": aid, "decision": "approved", "action": "publish",
-                        "consumer_id": "CONS-AUD",
-                        "signer": {"kind": "user", "id": "laotian"}},
-                       actor={"kind": "user", "id": "laotian"})
+    store.append_event(
+        "approval.requested",
+        {"item_id": iid},
+        {
+            "approval_id": aid,
+            "action": "publish",
+            "consumer_id": "CONS-AUD",
+            "summary": "过期测试",
+            "expires_at": past,
+            "status": "pending",
+        },
+        actor={"kind": "consumer", "id": "CONS-AUD"},
+    )
+    store.append_event(
+        "approval.decided",
+        {"item_id": iid},
+        {
+            "approval_id": aid,
+            "decision": "approved",
+            "action": "publish",
+            "consumer_id": "CONS-AUD",
+            "signer": {"kind": "user", "id": "laotian"},
+        },
+        actor={"kind": "user", "id": "laotian"},
+    )
     rep = X.chain_report_c1(store, iid)
     assert rep["gates"]["C1-DECISION"]["status"] == "BLOCKED"
     assert rep["verdict"] != "CONTROLLED_L2_APPROVED"
@@ -139,7 +188,8 @@ def test_chain_c1_blocked_when_approval_expired(store):
 def test_api_grant_revoke_route(store):
     iid, g = setup(store)
     st, d = __import__("api_os_goal").handle_post(
-        store, "/api/os/item/%s/grant/revoke" % iid, {"grant_id": g["grant_id"]})
+        store, "/api/os/item/%s/grant/revoke" % iid, {"grant_id": g["grant_id"]}
+    )
     assert st == 201 and d["ok"] is True
     with __import__("pytest").raises(C.ContractError):
         X.create_formal_workorder(store, iid, "撤销后工单")
@@ -148,7 +198,8 @@ def test_api_grant_revoke_route(store):
 def test_api_consumer_deactivate_route(store):
     iid, _ = setup(store)
     st, d = __import__("api_os_goal").handle_post(
-        store, "/api/os/consumer/deactivate", {"consumer_id": "CONS-AUD", "reason": "t"})
+        store, "/api/os/consumer/deactivate", {"consumer_id": "CONS-AUD", "reason": "t"}
+    )
     assert st == 201 and d["ok"] is True
     with __import__("pytest").raises(C.ContractError):
         X.real_claim(store, iid, "CONS-AUD")
@@ -157,8 +208,9 @@ def test_api_consumer_deactivate_route(store):
 def test_consumer_reactivation_works(store):
     iid, _ = setup(store)
     X.deactivate_consumer(store, "CONS-AUD")
-    c = X.register_consumer(store, "CONS-AUD", kind="agent",
-                            capabilities=["artifact.generate", "test.run"])
+    c = X.register_consumer(
+        store, "CONS-AUD", kind="agent", capabilities=["artifact.generate", "test.run"]
+    )
     assert c["status"] == "active" and c.get("reactivated") is True
     X.risk_verdict(store, iid, "artifact.generate", consumer_id="CONS-AUD")
     X.real_claim(store, iid, "CONS-AUD")
@@ -166,19 +218,29 @@ def test_consumer_reactivation_works(store):
 
 def test_bad_numeric_field_returns_422_not_500(store):
     import api_os_goal as A
+
     iid, _ = setup(store)
-    st, d = A.handle_post(store, "/api/os/item/%s/grant/real" % iid,
-                          {"actions": ["artifact.generate"], "nonce": "nonce-audit-123",
-                           "valid_hours": "abc"})
+    st, d = A.handle_post(
+        store,
+        "/api/os/item/%s/grant/real" % iid,
+        {
+            "actions": ["artifact.generate"],
+            "nonce": "nonce-audit-123",
+            "valid_hours": "abc",
+        },
+    )
     assert st == 422 and d.get("error") == "bad_value", (st, d)
 
 
 def test_bad_ttl_returns_422_not_500(store):
     import api_os_goal as A
+
     iid, _ = setup(store)
-    st, d = A.handle_post(store, "/api/os/item/%s/approval/request" % iid,
-                          {"action": "publish", "consumer_id": "CONS-AUD",
-                           "ttl_minutes": "xx"})
+    st, d = A.handle_post(
+        store,
+        "/api/os/item/%s/approval/request" % iid,
+        {"action": "publish", "consumer_id": "CONS-AUD", "ttl_minutes": "xx"},
+    )
     assert st == 422 and d.get("error") == "bad_value", (st, d)
 
 
@@ -229,23 +291,57 @@ def test_c1_chain_history_stable_after_expiry(store):
     iid, _ = setup(store)
     aid = "APR-HIST-001"
     past = (datetime.now(BJT) - timedelta(minutes=10)).isoformat(timespec="seconds")
-    store.append_event("approval.requested", {"item_id": iid},
-                       {"approval_id": aid, "action": "publish", "consumer_id": "CONS-AUD",
-                        "summary": "历史审批", "expires_at": past, "status": "pending"},
-                       actor={"kind": "consumer", "id": "CONS-AUD"})
-    store.append_event("approval.decided", {"item_id": iid},
-                       {"approval_id": aid, "decision": "approved", "action": "publish",
-                        "consumer_id": "CONS-AUD",
-                        "signer": {"kind": "user", "id": "laotian"}},
-                       actor={"kind": "user", "id": "laotian"})
-    store.append_event("risk.verdict", {"item_id": iid},
-                       {"action": "publish", "decision": "allow", "approval_id": aid,
-                        "consumer_id": "CONS-AUD", "reasons": ["历史"], "risk_level": "L2"},
-                       actor={"kind": "system", "id": "os_controlled"})
-    store.append_event("l2.outbox.recorded", {"item_id": iid},
-                       {"outbox_id": "OUT-HIST-001", "approval_id": aid, "action": "publish",
-                        "consumer_id": "CONS-AUD", "external_sent": False, "env": "controlled"},
-                       actor={"kind": "consumer", "id": "CONS-AUD"})
+    store.append_event(
+        "approval.requested",
+        {"item_id": iid},
+        {
+            "approval_id": aid,
+            "action": "publish",
+            "consumer_id": "CONS-AUD",
+            "summary": "历史审批",
+            "expires_at": past,
+            "status": "pending",
+        },
+        actor={"kind": "consumer", "id": "CONS-AUD"},
+    )
+    store.append_event(
+        "approval.decided",
+        {"item_id": iid},
+        {
+            "approval_id": aid,
+            "decision": "approved",
+            "action": "publish",
+            "consumer_id": "CONS-AUD",
+            "signer": {"kind": "user", "id": "laotian"},
+        },
+        actor={"kind": "user", "id": "laotian"},
+    )
+    store.append_event(
+        "risk.verdict",
+        {"item_id": iid},
+        {
+            "action": "publish",
+            "decision": "allow",
+            "approval_id": aid,
+            "consumer_id": "CONS-AUD",
+            "reasons": ["历史"],
+            "risk_level": "L2",
+        },
+        actor={"kind": "system", "id": "os_controlled"},
+    )
+    store.append_event(
+        "l2.outbox.recorded",
+        {"item_id": iid},
+        {
+            "outbox_id": "OUT-HIST-001",
+            "approval_id": aid,
+            "action": "publish",
+            "consumer_id": "CONS-AUD",
+            "external_sent": False,
+            "env": "controlled",
+        },
+        actor={"kind": "consumer", "id": "CONS-AUD"},
+    )
     rep = X.chain_report_c1(store, iid)
     assert rep["gates"]["C1-DECISION"]["status"] == "PASS", rep["gates"]["C1-DECISION"]
     assert rep["verdict"] == "CONTROLLED_L2_APPROVED", rep

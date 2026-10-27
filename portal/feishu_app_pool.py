@@ -14,6 +14,7 @@
   validate_target_app(target, app_id)  纯函数：目标域与 sender app 一致性
   status_report()           各角色凭据就绪情况（管理台/巡检用）
 """
+
 from __future__ import annotations
 
 import json
@@ -121,8 +122,10 @@ def status_report(base_dir=None):
     """各角色凭据就绪情况（管理台/巡检用，不发网络）。"""
     try:
         import feishu_registry as fr
-        roles, _ = fr.load_registry(os.path.join(HERE, "data", "feishu",
-                                                 "registry.json"))
+
+        roles, _ = fr.load_registry(
+            os.path.join(HERE, "data", "feishu", "registry.json")
+        )
     except Exception:  # noqa: BLE001
         roles = {}
     rows = []
@@ -132,12 +135,19 @@ def status_report(base_dir=None):
             ready = True
         except AppPoolError:
             aid, ready = meta.get("app_id_current") or "", False
-        rows.append({"role": rid, "display": meta.get("display"),
-                     "status": meta.get("status"),
-                     "app_id": aid, "secret_ready": ready})
+        rows.append(
+            {
+                "role": rid,
+                "display": meta.get("display"),
+                "status": meta.get("status"),
+                "app_id": aid,
+                "secret_ready": ready,
+            }
+        )
     return {"canonical_app": canonical_app_id(base_dir), "roles": rows}
 
 
 if __name__ == "__main__":
     import json as _json
+
     print(_json.dumps(status_report(), ensure_ascii=False, indent=1))

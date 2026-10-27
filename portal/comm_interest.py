@@ -22,6 +22,7 @@
 - 写入时机：smart_intake 判定后同步 upsert（不依赖定时任务）。
 - 只读查询：stats_7d / signals，供 sub_admin 商务面与个性化引导卡消费。
 """
+
 from __future__ import annotations
 
 import json
@@ -30,8 +31,7 @@ import sqlite3
 from datetime import date, timedelta
 from pathlib import Path
 
-CONSULT_INTENTS = ("stock_consult", "watch_setup", "subscription_qa",
-                   "billing")
+CONSULT_INTENTS = ("stock_consult", "watch_setup", "subscription_qa", "billing")
 QUANT_INTENTS = ("stock_consult", "watch_setup")
 BUSINESS_INTENTS = ("subscription_qa", "billing")
 KNOWLEDGE_INTENTS = ("feed",)
@@ -108,8 +108,9 @@ def record(open_id, intent, code=None, blocked=False, day=None):
         "domain_quant": 1 if intent in QUANT_INTENTS else 0,
         "domain_business": 1 if intent in BUSINESS_INTENTS else 0,
         "domain_knowledge": 1 if intent in KNOWLEDGE_INTENTS else 0,
-        "domain_comm": 1 if intent not in (
-            QUANT_INTENTS + BUSINESS_INTENTS + KNOWLEDGE_INTENTS) else 0,
+        "domain_comm": 1
+        if intent not in (QUANT_INTENTS + BUSINESS_INTENTS + KNOWLEDGE_INTENTS)
+        else 0,
         "consult_count": 1 if intent in CONSULT_INTENTS else 0,
         "blocked_count": 1 if blocked else 0,
     }
@@ -117,13 +118,18 @@ def record(open_id, intent, code=None, blocked=False, day=None):
         init_schema()
         with _conn() as c:
             row = c.execute(
-                "SELECT top_codes FROM customer_interest"
-                " WHERE open_id=? AND day=?", (open_id, d)).fetchone()
-            codes = _merge_json_counts(row["top_codes"] if row else "{}",
-                                       code) if code else (
-                row["top_codes"] if row else "{}")
+                "SELECT top_codes FROM customer_interest WHERE open_id=? AND day=?",
+                (open_id, d),
+            ).fetchone()
+            codes = (
+                _merge_json_counts(row["top_codes"] if row else "{}", code)
+                if code
+                else (row["top_codes"] if row else "{}")
+            )
             import time
-            c.execute("""
+
+            c.execute(
+                """
                 INSERT INTO customer_interest
                   (open_id, day, domain_quant, domain_business,
                    domain_knowledge, domain_comm, consult_count,
@@ -138,10 +144,21 @@ def record(open_id, intent, code=None, blocked=False, day=None):
                   blocked_count  = blocked_count  + excluded.blocked_count,
                   top_codes      = ?,
                   updated_at     = excluded.updated_at
-            """, (open_id, d, delta["domain_quant"], delta["domain_business"],
-                  delta["domain_knowledge"], delta["domain_comm"],
-                  delta["consult_count"], delta["blocked_count"], codes,
-                  time.strftime("%Y-%m-%d %H:%M:%S"), codes))
+            """,
+                (
+                    open_id,
+                    d,
+                    delta["domain_quant"],
+                    delta["domain_business"],
+                    delta["domain_knowledge"],
+                    delta["domain_comm"],
+                    delta["consult_count"],
+                    delta["blocked_count"],
+                    codes,
+                    time.strftime("%Y-%m-%d %H:%M:%S"),
+                    codes,
+                ),
+            )
         return True, None
     except sqlite3.Error as ex:
         return False, "%s: %s" % (type(ex).__name__, ex)
@@ -150,8 +167,9 @@ def record(open_id, intent, code=None, blocked=False, day=None):
 def _rows_between(open_id=None, days=7, offset_days=0):
     end = date.today() - timedelta(days=offset_days)
     start = end - timedelta(days=days - 1)
-    q = ("SELECT * FROM customer_interest WHERE day BETWEEN ? AND ?"
-         + (" AND open_id=?" if open_id else ""))
+    q = "SELECT * FROM customer_interest WHERE day BETWEEN ? AND ?" + (
+        " AND open_id=?" if open_id else ""
+    )
     args = [start.isoformat(), end.isoformat()] + ([open_id] if open_id else [])
     try:
         init_schema()
@@ -164,8 +182,14 @@ def _rows_between(open_id=None, days=7, offset_days=0):
 def stats_7d(open_id):
     """→ {consult_count, blocked_count, domain_*, top_codes, active_days}。"""
     rows = _rows_between(open_id, days=7)
-    agg = {"consult_count": 0, "blocked_count": 0, "domain_quant": 0,
-           "domain_business": 0, "domain_knowledge": 0, "domain_comm": 0}
+    agg = {
+        "consult_count": 0,
+        "blocked_count": 0,
+        "domain_quant": 0,
+        "domain_business": 0,
+        "domain_knowledge": 0,
+        "domain_comm": 0,
+    }
     codes = {}
     for r in rows:
         for k in agg:
@@ -189,6 +213,7 @@ def _default_subscribed_lookup(open_ids):
     out = {}
     try:
         import subscription_store as ss
+
         for oid in open_ids:
             try:
                 s = ss.get_subscriber_summary(oid) or {}
@@ -230,8 +255,9 @@ def signals(subscribed=None, limit=50):
     per = {}
     for r in rows:
         oid = r["open_id"]
-        cur = per.setdefault(oid, {"consult": 0, "blocked": 0,
-                                   "days": set(), "codes": {}})
+        cur = per.setdefault(
+            oid, {"consult": 0, "blocked": 0, "days": set(), "codes": {}}
+        )
         cur["consult"] += int(r.get("consult_count") or 0)
         cur["blocked"] += int(r.get("blocked_count") or 0)
         cur["days"].add(r["day"])
@@ -241,10 +267,10 @@ def signals(subscribed=None, limit=50):
         except ValueError:
             continue
 
-    sub_map = subscribed if subscribed is not None else \
-        _default_subscribed_lookup(list(per))
-    recent = set(r["open_id"] for r in _rows_between(
-        None, days=CHURN_IDLE_DAYS))
+    sub_map = (
+        subscribed if subscribed is not None else _default_subscribed_lookup(list(per))
+    )
+    recent = set(r["open_id"] for r in _rows_between(None, days=CHURN_IDLE_DAYS))
 
     out = []
     for oid, m in per.items():
@@ -252,15 +278,22 @@ def signals(subscribed=None, limit=50):
         level = stars = None
         hint = ""
         d2e = _days_to(end) if is_sub else None
-        if not is_sub and m["consult"] >= HOT_CONSULT_MIN \
-                and m["blocked"] >= HOT_BLOCKED_MIN:
+        if (
+            not is_sub
+            and m["consult"] >= HOT_CONSULT_MIN
+            and m["blocked"] >= HOT_BLOCKED_MIN
+        ):
             level, stars = "hot", 3
             hint = "立即人工跟进 / 发限时体验券"
         elif not is_sub and m["consult"] >= PROSPECT_CONSULT_MIN:
             level, stars = "prospect", 2
             hint = "引导卡持续触达，观察升级为热客户"
-        elif is_sub and d2e is not None and 0 <= d2e <= EXPIRING_DAYS \
-                and m["consult"] >= PROSPECT_CONSULT_MIN:
+        elif (
+            is_sub
+            and d2e is not None
+            and 0 <= d2e <= EXPIRING_DAYS
+            and m["consult"] >= PROSPECT_CONSULT_MIN
+        ):
             level, stars = "expiring", 2
             hint = "订阅 %d 天后到期且仍活跃——续费提醒优先触达" % d2e
         elif is_sub and oid not in recent and m["consult"] >= CHURN_ACTIVE_MIN:
@@ -269,14 +302,19 @@ def signals(subscribed=None, limit=50):
         if not level:
             continue
         top = sorted(m["codes"].items(), key=lambda x: -x[1])[:3]
-        out.append({
-            "open_id": oid,
-            "open_id_masked": _mask(oid),
-            "level": level, "stars": stars, "hint": hint,
-            "consult_7d": m["consult"], "blocked_7d": m["blocked"],
-            "active_days": len(m["days"]),
-            "top_codes": [c for c, _ in top],
-        })
+        out.append(
+            {
+                "open_id": oid,
+                "open_id_masked": _mask(oid),
+                "level": level,
+                "stars": stars,
+                "hint": hint,
+                "consult_7d": m["consult"],
+                "blocked_7d": m["blocked"],
+                "active_days": len(m["days"]),
+                "top_codes": [c for c, _ in top],
+            }
+        )
     out.sort(key=lambda x: (-x["stars"], -x["blocked_7d"], -x["consult_7d"]))
     return out[:limit]
 
@@ -297,8 +335,12 @@ def guide_text(open_id, top_n=2):
     if st["top_codes"]:
         codes = "、".join(list(st["top_codes"])[:top_n])
         parts.append(codes)
-    text = ("您本周已咨询 %d 次%s——订阅「盯盘档」后，这类问题由盯盘官"
-            "实时解答，还能设自动提醒。"
-            % (st["consult_count"],
-               ("（主要是 " + "、".join(parts) + "）") if parts else ""))
+    text = (
+        "您本周已咨询 %d 次%s——订阅「盯盘档」后，这类问题由盯盘官"
+        "实时解答，还能设自动提醒。"
+        % (
+            st["consult_count"],
+            ("（主要是 " + "、".join(parts) + "）") if parts else "",
+        )
+    )
     return text

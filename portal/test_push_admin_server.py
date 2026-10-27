@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """推送调度保存与计划任务联动结果；所有计划任务调用均打桩。"""
+
 import json
 import subprocess
 import sys
@@ -20,14 +21,20 @@ def schedule_env(tmp_path, monkeypatch):
 
 
 def request(apply=True):
-    return {"action": "save_schedule", "apply_tasks": apply,
-            "sources": [{"id": "daily_report", "time": "04:00"},
-                        {"id": "news_digest", "time": "09:00"}]}
+    return {
+        "action": "save_schedule",
+        "apply_tasks": apply,
+        "sources": [
+            {"id": "daily_report", "time": "04:00"},
+            {"id": "news_digest", "time": "09:00"},
+        ],
+    }
 
 
 def test_save_only_does_not_apply(schedule_env, monkeypatch):
-    monkeypatch.setattr(admin, "ps_set_task_time",
-                        lambda *args: pytest.fail("不应联动计划任务"))
+    monkeypatch.setattr(
+        admin, "ps_set_task_time", lambda *args: pytest.fail("不应联动计划任务")
+    )
     result = admin.dispatch(request(False))
     assert result["ok"] is True
     assert result["saved"] is True
@@ -53,7 +60,9 @@ def test_all_tasks_applied(schedule_env, monkeypatch):
     assert calls == [("AI工作站统一日报", "04:00"), ("金融新闻日报", "09:00")]
 
 
-def test_partial_failure_keeps_saved_config_and_each_task_error(schedule_env, monkeypatch):
+def test_partial_failure_keeps_saved_config_and_each_task_error(
+    schedule_env, monkeypatch
+):
     def fail_one(name, hhmm):
         return (False, "access denied") if name == "AI工作站统一日报" else (True, "")
 
@@ -84,14 +93,16 @@ def test_apply_exception_does_not_hide_other_task_result(schedule_env, monkeypat
 
 
 def test_invalid_time_does_not_save_or_apply(schedule_env, monkeypatch):
-    monkeypatch.setattr(admin, "ps_set_task_time",
-                        lambda *args: pytest.fail("非法输入不可联动"))
+    monkeypatch.setattr(
+        admin, "ps_set_task_time", lambda *args: pytest.fail("非法输入不可联动")
+    )
     req = request()
     req["sources"][0]["time"] = "25:00"
     result = admin.dispatch(req)
     assert result["ok"] is False
     assert not schedule_env.exists() or "updated_at" not in json.loads(
-        schedule_env.read_text(encoding="utf-8"))
+        schedule_env.read_text(encoding="utf-8")
+    )
 
 
 def test_schedule_page_marks_partial_failure_as_error():

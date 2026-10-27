@@ -4,6 +4,7 @@
 用临时 news.db / jev_audit.db 验证过滤、窗口、后验联查与参数错误，
 不依赖生产库（monkeypatch 模块常量）。
 """
+
 from __future__ import annotations
 
 import datetime as dt
@@ -31,36 +32,80 @@ def _make_dbs(tmp_path: Path) -> tuple[Path, Path]:
     news = tmp_path / "news_collector" / "news.db"
     news.parent.mkdir(parents=True)
     c = sqlite3.connect(str(news))
-    c.execute("CREATE TABLE news (id TEXT PRIMARY KEY, source TEXT, ts TEXT, title TEXT,"
-              " content TEXT, hit INTEGER, pushed INTEGER, digested INTEGER,"
-              " created_at TEXT, stocks TEXT, jev TEXT)")
+    c.execute(
+        "CREATE TABLE news (id TEXT PRIMARY KEY, source TEXT, ts TEXT, title TEXT,"
+        " content TEXT, hit INTEGER, pushed INTEGER, digested INTEGER,"
+        " created_at TEXT, stocks TEXT, jev TEXT)"
+    )
     rows = [
-        ("n1", "sina", _ts(1), "茅台提价", json.dumps({"stocks": ["600519.SH"]}),
-         {"bias": "bull", "conf": 0.85, "event_type": "price", "companies": ["600519"],
-          "reason": "提价利好"}),
-        ("n2", "eastmoney", _ts(2), "监管收紧", json.dumps({"stocks": ["000001.SZ"]}),
-         {"bias": "bear", "conf": 0.80, "event_type": "policy", "companies": ["000001"],
-          "reason": "监管风险"}),
-        ("n3", "xueqiu", _ts(3), "公司澄清", "[]",
-         {"bias": "neutral", "conf": 0.60, "event_type": "other", "companies": [],
-          "reason": "无明确方向"}),
-        ("n4", "sina", _ts(30), "旧闻", "[]",
-         {"bias": "bull", "conf": 0.70, "event_type": "other", "companies": []}),
+        (
+            "n1",
+            "sina",
+            _ts(1),
+            "茅台提价",
+            json.dumps({"stocks": ["600519.SH"]}),
+            {
+                "bias": "bull",
+                "conf": 0.85,
+                "event_type": "price",
+                "companies": ["600519"],
+                "reason": "提价利好",
+            },
+        ),
+        (
+            "n2",
+            "eastmoney",
+            _ts(2),
+            "监管收紧",
+            json.dumps({"stocks": ["000001.SZ"]}),
+            {
+                "bias": "bear",
+                "conf": 0.80,
+                "event_type": "policy",
+                "companies": ["000001"],
+                "reason": "监管风险",
+            },
+        ),
+        (
+            "n3",
+            "xueqiu",
+            _ts(3),
+            "公司澄清",
+            "[]",
+            {
+                "bias": "neutral",
+                "conf": 0.60,
+                "event_type": "other",
+                "companies": [],
+                "reason": "无明确方向",
+            },
+        ),
+        (
+            "n4",
+            "sina",
+            _ts(30),
+            "旧闻",
+            "[]",
+            {"bias": "bull", "conf": 0.70, "event_type": "other", "companies": []},
+        ),
     ]
     for nid, src, ts, title, stocks, jev in rows:
         # created_at 与 ts 同值：窗口/排序按采集时间
-        c.execute("INSERT INTO news(id,source,ts,title,stocks,jev,created_at)"
-                  " VALUES(?,?,?,?,?,?,?)",
-                  (nid, src, ts, title, stocks,
-                   json.dumps(jev, ensure_ascii=False), ts))
+        c.execute(
+            "INSERT INTO news(id,source,ts,title,stocks,jev,created_at)"
+            " VALUES(?,?,?,?,?,?,?)",
+            (nid, src, ts, title, stocks, json.dumps(jev, ensure_ascii=False), ts),
+        )
     c.commit()
     c.close()
 
     audit = tmp_path / "agent_platform" / "data" / "jev_audit" / "jev_audit.db"
     audit.parent.mkdir(parents=True)
     a = sqlite3.connect(str(audit))
-    a.execute("CREATE TABLE dec_audit (news_id TEXT PRIMARY KEY, trade_day TEXT,"
-              " ret REAL, bench REAL, excess REAL, hit INTEGER)")
+    a.execute(
+        "CREATE TABLE dec_audit (news_id TEXT PRIMARY KEY, trade_day TEXT,"
+        " ret REAL, bench REAL, excess REAL, hit INTEGER)"
+    )
     a.execute("INSERT INTO dec_audit VALUES('n1','20261027',2.5,1.0,1.5,1)")
     a.execute("INSERT INTO dec_audit VALUES('n3','20261027',0.2,0.1,0.1,1)")
     a.execute("INSERT INTO dec_audit VALUES('n2','20261027',-1.2,0.5,-1.7,1)")
@@ -115,7 +160,7 @@ def test_posterior_join(dbs):
     by_id = {i["id"]: i for i in r["items"]}
     assert by_id["n1"]["posterior"]["excess"] == 1.5
     assert by_id["n1"]["posterior"]["hit"] is True
-    assert by_id["n3"]["posterior"]["highvol"] is False   # 0.1% 带宽内
+    assert by_id["n3"]["posterior"]["highvol"] is False  # 0.1% 带宽内
     assert r["posterior_band_pct"] == 2.5
 
 

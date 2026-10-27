@@ -42,6 +42,7 @@ def db(tmp_path, monkeypatch):
 # list_subscribers 契约
 # ---------------------------------------------------------------------------
 
+
 def test_01_empty_db(db):
     """空库（已建表无行）→ ok=True/count=0/subscribers=[]，不冒充有数据。
 
@@ -50,8 +51,13 @@ def test_01_empty_db(db):
     """
     ss._connect(create=True).close()
     r = ss.list_subscribers()
-    assert r == {"ok": True, "count": 0, "subscribers": [],
-                 "offset": 0, "has_more": False}
+    assert r == {
+        "ok": True,
+        "count": 0,
+        "subscribers": [],
+        "offset": 0,
+        "has_more": False,
+    }
 
 
 def test_02_with_data_fields_and_stable_order(db):
@@ -65,8 +71,16 @@ def test_02_with_data_fields_and_stable_order(db):
     assert r["count"] == len(r["subscribers"]) == 2
     assert [s["open_id"] for s in r["subscribers"]] == ["ou_a1", "ou_b2"]
     a = r["subscribers"][0]
-    assert set(a) == {"open_id", "display_name", "plan_id", "status",
-                      "start", "end", "daily_quota", "used_today"}
+    assert set(a) == {
+        "open_id",
+        "display_name",
+        "plan_id",
+        "status",
+        "start",
+        "end",
+        "daily_quota",
+        "used_today",
+    }
     assert a["plan_id"] == "basic_monthly" and a["status"] == "active"
     assert a["daily_quota"] == 20 and a["used_today"] == 0
     assert a["start"] and a["end"]
@@ -115,8 +129,9 @@ def test_06_limit_clamp_upper_200(db):
         ss.upsert_subscriber("ou_x%03d" % i, "批量%d" % i)
     r = ss.list_subscribers(limit=999)
     assert r["count"] == 200 == len(r["subscribers"])
-    assert [s["open_id"] for s in r["subscribers"]] == \
-        ["ou_x%03d" % i for i in range(200)]  # 稳定序不被截断打乱
+    assert [s["open_id"] for s in r["subscribers"]] == [
+        "ou_x%03d" % i for i in range(200)
+    ]  # 稳定序不被截断打乱
     r_all = ss.list_subscribers(limit=201)
     assert r_all["count"] == 200  # 201 → 钳到 200
 
@@ -125,6 +140,7 @@ def test_07_used_today_matches_is_entitled_pool(db):
     """used_today 口径：当日 allowed=1 计数（跨前缀订阅者级合计），
     与 is_entitled 的当日额度计数同源；allowed=0 不计、他日不计。"""
     from datetime import datetime, timedelta
+
     ss._connect(create=True).close()
     ss.upsert_subscriber("ou_u1", "用一")
     ss.grant_subscription("ou_u1", "basic_monthly", 30)
@@ -147,15 +163,19 @@ def test_07_used_today_matches_is_entitled_pool(db):
 def test_08_signature_and_all_and_readonly(db):
     """签名逐字锚 + __all__ 追加 + 函数体纯只读（无 INSERT/UPDATE/CREATE）。"""
     src = _read(PORTAL / "subscription_store.py")
-    assert "def list_subscribers(limit=50, now=None, offset=0):" in src, \
-        ("契约签名必须逐字为 def list_subscribers(limit=50, now=None, offset=0):"
-         "（P3.9-lite 追加 offset，位于末尾以保位置传参 list_subscribers(200) 语义不变）")
+    assert "def list_subscribers(limit=50, now=None, offset=0):" in src, (
+        "契约签名必须逐字为 def list_subscribers(limit=50, now=None, offset=0):"
+        "（P3.9-lite 追加 offset，位于末尾以保位置传参 list_subscribers(200) 语义不变）"
+    )
     assert '"list_subscribers"' in src
     import ast
+
     tree = ast.parse(src)
-    fn = next(n for n in ast.walk(tree)
-              if isinstance(n, ast.FunctionDef)
-              and n.name == "list_subscribers")
+    fn = next(
+        n
+        for n in ast.walk(tree)
+        if isinstance(n, ast.FunctionDef) and n.name == "list_subscribers"
+    )
     body_src = ast.get_source_segment(src, fn)
     for banned in ("INSERT INTO", "UPDATE ", "CREATE TABLE"):
         assert banned not in body_src, f"list_subscribers 应纯只读，发现 {banned}"
@@ -165,20 +185,25 @@ def test_08_signature_and_all_and_readonly(db):
 # portal_api.py branch 契约（读文件断言）
 # ---------------------------------------------------------------------------
 
+
 def test_09_portal_api_list_branch():
     """portal_api 有 /api/subscription/list branch：调 list_subscribers、
     ?limit= 可选默认 50 钳 200、零写参数、不调任何写函数。"""
     src = _read(API)
     assert 'path == "/api/subscription/list"' in src, "缺 list branch"
     m = re.search(
-        r'path == "/api/subscription/list".*?(?=\n        elif path == )',
-        src, re.S)
+        r'path == "/api/subscription/list".*?(?=\n        elif path == )', src, re.S
+    )
     assert m, "list branch 结构异常"
     block = m.group(0)
     assert "list_subscribers" in block
     assert "_limit = 50" in block and "200" in src, "limit 默认/钳制缺失"
-    for banned in ("upsert_subscriber", "grant_subscription",
-                   "expire_sweep", "entitlement_log"):
+    for banned in (
+        "upsert_subscriber",
+        "grant_subscription",
+        "expire_sweep",
+        "entitlement_log",
+    ):
         assert banned not in block, f"list branch 不得调用写函数 {banned}"
     assert "POST" not in block, "list branch 应只处理 GET 语境"
 

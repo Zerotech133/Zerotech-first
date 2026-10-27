@@ -4,6 +4,7 @@
 归因语义：只对清单里 ts+kind+target 三者精确匹配的行从 lost24 剔除，
 并在检查项文本里单独显示「已归因测试 N」；不删流水、不改 ok。
 """
+
 import json
 import os
 import sys
@@ -17,11 +18,15 @@ import feishu_console as fc  # noqa: E402
 
 def test_load_annotations_skips_bad_lines(tmp_path):
     p = tmp_path / "ann.jsonl"
-    good = {"ts": "2026-10-26T02:19:29",
-            "kind": "auto:push_digest",
-            "target": "ou_1", "reason": "W40 未挂调度测试发送"}
-    p.write_text(json.dumps(good, ensure_ascii=False) + "\nnot-json\n\n",
-                 encoding="utf-8")
+    good = {
+        "ts": "2026-10-26T02:19:29",
+        "kind": "auto:push_digest",
+        "target": "ou_1",
+        "reason": "W40 未挂调度测试发送",
+    }
+    p.write_text(
+        json.dumps(good, ensure_ascii=False) + "\nnot-json\n\n", encoding="utf-8"
+    )
     anns = fc._load_annotations(str(p))
     assert len(anns) == 1
     assert anns[0]["kind"] == "auto:push_digest"
@@ -32,10 +37,8 @@ def test_missing_annotations_file_is_empty(tmp_path):
 
 
 def test_is_annotated_requires_exact_triplet(tmp_path):
-    anns = [{"ts": "2026-10-26T02:19:29", "kind": "auto:push_digest",
-             "target": "ou_1"}]
-    row = {"ts": "2026-10-26T02:19:29", "kind": "auto:push_digest",
-           "target": "ou_1"}
+    anns = [{"ts": "2026-10-26T02:19:29", "kind": "auto:push_digest", "target": "ou_1"}]
+    row = {"ts": "2026-10-26T02:19:29", "kind": "auto:push_digest", "target": "ou_1"}
     assert fc._is_annotated(row, anns) is True
     assert fc._is_annotated({**row, "ts": "2026-10-26T02:19:38"}, anns) is False
     assert fc._is_annotated({**row, "kind": "auto:news_collector"}, anns) is False
@@ -45,8 +48,7 @@ def test_is_annotated_requires_exact_triplet(tmp_path):
 
 def test_is_self_test_target():
     """W41 死信自测的一次性假收件人：只按显式前缀识别，不误伤真实收件人。"""
-    assert fc._is_self_test_target(
-        {"target": "ou_deadpayload_selftest_001"}) is True
+    assert fc._is_self_test_target({"target": "ou_deadpayload_selftest_001"}) is True
     assert fc._is_self_test_target({"target": "ou_825c6146a104d7c4"}) is False
     assert fc._is_self_test_target({"target": "oc_6b97bee8b5"}) is False
     assert fc._is_self_test_target({"target": ""}) is False

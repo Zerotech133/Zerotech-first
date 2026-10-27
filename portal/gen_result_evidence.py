@@ -19,6 +19,7 @@
   python gen_result_evidence.py --dry-run       # 只打印不写盘
   python gen_result_evidence.py --limit 50 --day 2026-10-21
 """
+
 from __future__ import annotations
 
 import argparse
@@ -36,9 +37,7 @@ OUT_DIR = PORTAL / "data" / "result_evidence"
 DELIVERABLES = STATION / "deliverables"
 
 # 研发域交付物 → domain 标注；无法判定的一律归"研发"（本线交付）
-DOMAIN_BY_PREFIX = (
-    ("2026-", "研发"),
-)
+DOMAIN_BY_PREFIX = (("2026-", "研发"),)
 
 
 def _beijing_day(moment: datetime) -> str:
@@ -69,17 +68,31 @@ def _collect_commits_all(day: str, runner=None) -> List[Dict[str, Any]]:
     runner 为测试注入点：接收 argv 列表返回 (rc, stdout)。
     """
     if runner is None:
+
         def runner(argv):  # noqa: D401 - 默认实现
-            proc = subprocess.run(argv, cwd=str(STATION), capture_output=True,
-                                  text=True, encoding="utf-8", errors="replace")
+            proc = subprocess.run(
+                argv,
+                cwd=str(STATION),
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+            )
             return proc.returncode, proc.stdout
 
     # 用 --since/--until 收窄到目标日（北京日 → 本地时间字符串，git 按本地时区解释）
     since = "%s 00:00:00" % day
     until = "%s 23:59:59" % day
     # 不设 -n：需要真实总量
-    argv = ["git", "log", "--since", since, "--until", until,
-            "--pretty=format:%H%x1f%aI%x1f%s"]
+    argv = [
+        "git",
+        "log",
+        "--since",
+        since,
+        "--until",
+        until,
+        "--pretty=format:%H%x1f%aI%x1f%s",
+    ]
     rc, out = runner(argv)
     if rc != 0 or not out:
         return []
@@ -95,28 +108,30 @@ def _collect_commits_all(day: str, runner=None) -> List[Dict[str, Any]]:
             continue
         if _beijing_day(moment) != day:
             continue  # 时区跨界，收窄到目标日
-        rows.append({
-            "id": "commit:%s" % sha[:8],
-            "domain": "研发",
-            "business_day": _beijing_day(moment),
-            "producer_time": _iso_beijing(moment),
-            "outcome": "done",
-            "evidence_uri": "commit:%s" % sha,
-            # 自证不是复核：留空，页面据此显示 unverified，不冒充已验收
-            "receipt_uri": None,
-            "title": subject[:120],
-        })
+        rows.append(
+            {
+                "id": "commit:%s" % sha[:8],
+                "domain": "研发",
+                "business_day": _beijing_day(moment),
+                "producer_time": _iso_beijing(moment),
+                "outcome": "done",
+                "evidence_uri": "commit:%s" % sha,
+                # 自证不是复核：留空，页面据此显示 unverified，不冒充已验收
+                "receipt_uri": None,
+                "title": subject[:120],
+            }
+        )
     return rows
 
 
-def collect_commits(day: str, limit: int = 20,
-                    runner=None) -> List[Dict[str, Any]]:
+def collect_commits(day: str, limit: int = 20, runner=None) -> List[Dict[str, Any]]:
     """读取指定北京日内的提交（截断到 limit），映射为 ResultEvidence。"""
     return _collect_commits_all(day, runner=runner)[:limit]
 
 
-def _collect_deliverables_all(day: str,
-                              root: Optional[Path] = None) -> List[Dict[str, Any]]:
+def _collect_deliverables_all(
+    day: str, root: Optional[Path] = None
+) -> List[Dict[str, Any]]:
     """读取当日落盘的全部交付文档（mtime 落在目标北京日，不截断）。"""
     base = Path(root) if root is not None else DELIVERABLES
     if not base.is_dir():
@@ -134,27 +149,31 @@ def _collect_deliverables_all(day: str,
         if _beijing_day(stamp) != day:
             continue
         rel = "deliverables/%s" % path.name
-        rows.append({
-            "id": "doc:%s" % path.name,
-            "domain": "研发",
-            "business_day": _beijing_day(stamp),
-            "producer_time": _iso_beijing(stamp),
-            "outcome": "delivered",
-            "evidence_uri": rel,
-            "receipt_uri": None,
-            "title": path.name,
-        })
+        rows.append(
+            {
+                "id": "doc:%s" % path.name,
+                "domain": "研发",
+                "business_day": _beijing_day(stamp),
+                "producer_time": _iso_beijing(stamp),
+                "outcome": "delivered",
+                "evidence_uri": rel,
+                "receipt_uri": None,
+                "title": path.name,
+            }
+        )
     return rows
 
 
-def collect_deliverables(day: str, limit: int = 20,
-                         root: Optional[Path] = None) -> List[Dict[str, Any]]:
+def collect_deliverables(
+    day: str, limit: int = 20, root: Optional[Path] = None
+) -> List[Dict[str, Any]]:
     """读取当日落盘的交付文档（截断到 limit）。"""
     return _collect_deliverables_all(day, root=root)[:limit]
 
 
-def build_payload(day: str, limit: int = 20, runner=None,
-                  deliverables_root: Optional[Path] = None) -> Dict[str, Any]:
+def build_payload(
+    day: str, limit: int = 20, runner=None, deliverables_root: Optional[Path] = None
+) -> Dict[str, Any]:
     """合并两源并给出诚实标注。
 
     WO-OS-28：payload 必带 total_available 与 limit，页面据此明说
@@ -169,9 +188,11 @@ def build_payload(day: str, limit: int = 20, runner=None,
     merged.sort(key=lambda x: str(x.get("producer_time") or ""), reverse=True)
     items = merged[:limit]
     total_available = len(commits_all) + len(docs_all)
-    note = ("研发交付物与当日提交作为证据源；receipt 一律为空，"
-            "因未走独立复核，故状态为 unverified，不计入已验收。"
-            "本产物为截断视图（两源合并按时间倒序取前 %d 条），非当日全部工作。" % limit)
+    note = (
+        "研发交付物与当日提交作为证据源；receipt 一律为空，"
+        "因未走独立复核，故状态为 unverified，不计入已验收。"
+        "本产物为截断视图（两源合并按时间倒序取前 %d 条），非当日全部工作。" % limit
+    )
     return {
         "ok": True,
         "business_day": day,
@@ -209,17 +230,23 @@ def main(argv=None) -> int:
 
     if args.dry_run:
         print("[dry-run] 未写盘，目标路径: %s" % target)
-        print("证据条数: %d（提交 %d / 交付物 %d）" % (
-            len(payload["items"]),
-            sum(1 for x in payload["items"] if x["id"].startswith("commit:")),
-            sum(1 for x in payload["items"] if x["id"].startswith("doc:"))))
+        print(
+            "证据条数: %d（提交 %d / 交付物 %d）"
+            % (
+                len(payload["items"]),
+                sum(1 for x in payload["items"] if x["id"].startswith("commit:")),
+                sum(1 for x in payload["items"] if x["id"].startswith("doc:")),
+            )
+        )
         print("回执: 全部为空（unverified，不冒充已验收）")
         return 0
 
     out_dir.mkdir(parents=True, exist_ok=True)
     target.write_text(text, encoding="utf-8")
-    print("已写入 %s（%d 条，%d 字节）" % (target, len(payload["items"]),
-                                       len(text.encode("utf-8"))))
+    print(
+        "已写入 %s（%d 条，%d 字节）"
+        % (target, len(payload["items"]), len(text.encode("utf-8")))
+    )
     return 0
 
 

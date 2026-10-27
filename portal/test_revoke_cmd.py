@@ -4,6 +4,7 @@
 只桩测指令路由与回执文案，store 真实契约由 test_revoke_subscription.py 承担。
 参照 test_sub_admin_cmds.py 的 capture fixture 形态（判例风格）。
 """
+
 import inspect
 import os
 import sys
@@ -28,8 +29,9 @@ MID = "M_test"
 def captured(monkeypatch):
     """send_text 回执捕获 + revoke 桩位（is_admin 放行，判例同 sub_admin_cmds）。"""
     sent = []
-    monkeypatch.setattr(feishu_bot_ws, "send_text",
-                        lambda text, mid=None: sent.append(text) or True)
+    monkeypatch.setattr(
+        feishu_bot_ws, "send_text", lambda text, mid=None: sent.append(text) or True
+    )
     monkeypatch.setattr(tune_gate, "is_admin", lambda oid: oid == ADMIN)
     calls = {"revoke": []}
 
@@ -37,8 +39,7 @@ def captured(monkeypatch):
         calls["revoke"].append((oid, plan))
         return 1
 
-    monkeypatch.setattr(subscription_store, "revoke_subscription",
-                        _fake_revoke)
+    monkeypatch.setattr(subscription_store, "revoke_subscription", _fake_revoke)
     return {"sent": sent, "calls": calls}
 
 
@@ -49,8 +50,7 @@ def _last_text(cap):
 
 def test_01_revoke_routes_to_store(captured):
     """撤销指令调 store 且回执含掩码 open_id 与留痕说明。"""
-    feishu_bot_ws.handle_cmd("撤销 ou_abc123 basic_monthly", MID,
-                             open_id=ADMIN)
+    feishu_bot_ws.handle_cmd("撤销 ou_abc123 basic_monthly", MID, open_id=ADMIN)
     assert captured["calls"]["revoke"] == [("ou_abc123", "basic_monthly")]
     text = _last_text(captured)
     assert "已撤销" in text and "revoked" in text
@@ -60,8 +60,10 @@ def test_01_revoke_routes_to_store(captured):
 
 def test_02_revoke_valueerror_honest_reply(captured, monkeypatch):
     """无生效行/档位不存在 → ValueError 转诚实回执，不臆造。"""
+
     def _raise(oid, plan, now=None):
         raise ValueError("无生效订阅行：ou_x basic_monthly")
+
     monkeypatch.setattr(subscription_store, "revoke_subscription", _raise)
     feishu_bot_ws.handle_cmd("撤销 ou_x basic_monthly", MID, open_id=ADMIN)
     text = _last_text(captured)
@@ -84,8 +86,7 @@ def test_04_help_mentions_revoke(captured):
 
 def test_05_revoke_prefix_not_confused_with_other_cmds(captured):
     """「撤销」前缀路由进撤销分支（与卡片按钮文案无碰撞，文本前缀独占）。"""
-    feishu_bot_ws.handle_cmd("撤销 ou_p1 basic_monthly", MID,
-                             open_id=ADMIN)
+    feishu_bot_ws.handle_cmd("撤销 ou_p1 basic_monthly", MID, open_id=ADMIN)
     assert captured["calls"]["revoke"] == [("ou_p1", "basic_monthly")]
 
 

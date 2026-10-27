@@ -8,14 +8,29 @@
   3) 纯文本清洗（HTML 剥标签）。
 输出：{"title","text","extractor","chars"}；不抛异常（失败返回文本为空）。
 """
+
 from __future__ import annotations
 
 import re
 
 from bs4 import BeautifulSoup
 
-DROP_TAGS = ("script", "style", "nav", "footer", "aside", "header", "form",
-             "noscript", "iframe", "svg", "canvas", "button", "input", "select")
+DROP_TAGS = (
+    "script",
+    "style",
+    "nav",
+    "footer",
+    "aside",
+    "header",
+    "form",
+    "noscript",
+    "iframe",
+    "svg",
+    "canvas",
+    "button",
+    "input",
+    "select",
+)
 CAND_REGEX = re.compile(r"\s+")
 TITLE_MAX = 120
 TEXT_MAX = 30000
@@ -29,9 +44,12 @@ def _clean(t):
 
 
 def _title(soup, url=""):
-    for sel in (("meta", {"property": "og:title"}),
-                ("meta", {"name": "twitter:title"}),
-                ("h1", None), ("title", None)):
+    for sel in (
+        ("meta", {"property": "og:title"}),
+        ("meta", {"name": "twitter:title"}),
+        ("h1", None),
+        ("title", None),
+    ):
         try:
             if sel[0] == "meta":
                 node = soup.find("meta", attrs=sel[1])
@@ -62,8 +80,12 @@ def _trafilatura(html, url=""):
     except Exception:  # noqa: BLE001
         return None
     try:
-        text = trafilatura.extract(html, url=url or None, include_comments=False,
-                                   include_tables=False) or ""
+        text = (
+            trafilatura.extract(
+                html, url=url or None, include_comments=False, include_tables=False
+            )
+            or ""
+        )
         if len(text.strip()) >= 200:
             return _clean(text)
     except Exception:  # noqa: BLE001
@@ -78,8 +100,16 @@ def _heuristic(html, url=""):
     for tag in soup(DROP_TAGS):
         tag.decompose()
     best = ""
-    for sel in ("article", "main", "[role=main]", "#content", ".content",
-                ".article", ".post", "body"):
+    for sel in (
+        "article",
+        "main",
+        "[role=main]",
+        "#content",
+        ".content",
+        ".article",
+        ".post",
+        "body",
+    ):
         try:
             nodes = soup.select(sel)
         except Exception:  # noqa: BLE001
@@ -114,14 +144,22 @@ def extract_main(raw, url=""):
             title = _title(soup, url)
         except Exception:  # noqa: BLE001
             pass
-        return {"title": title, "text": t[:TEXT_MAX],
-                "extractor": "trafilatura", "chars": len(t)}
+        return {
+            "title": title,
+            "text": t[:TEXT_MAX],
+            "extractor": "trafilatura",
+            "chars": len(t),
+        }
     # 2) lxml 启发式
     try:
         title, text = _heuristic(html, url)
         if len(text) >= 20:
-            return {"title": title, "text": text,
-                    "extractor": "lxml-heuristic", "chars": len(text)}
+            return {
+                "title": title,
+                "text": text,
+                "extractor": "lxml-heuristic",
+                "chars": len(text),
+            }
     except Exception:  # noqa: BLE001
         pass
     # 3) 纯文本兜底（同样先删隐藏节点/脚本等，防隐藏指令入库）
@@ -131,18 +169,32 @@ def extract_main(raw, url=""):
         for tag in soup(DROP_TAGS):
             tag.decompose()
         text = _clean(soup.get_text("\n", strip=True))[:TEXT_MAX]
-        return {"title": _title(soup, url), "text": text,
-                "extractor": "text-fallback", "chars": len(text)}
+        return {
+            "title": _title(soup, url),
+            "text": text,
+            "extractor": "text-fallback",
+            "chars": len(text),
+        }
     except Exception:  # noqa: BLE001
-        return {"title": "", "text": _clean(html)[:TEXT_MAX],
-                "extractor": "raw-fallback", "chars": 0}
+        return {
+            "title": "",
+            "text": _clean(html)[:TEXT_MAX],
+            "extractor": "raw-fallback",
+            "chars": 0,
+        }
 
 
 if __name__ == "__main__":
     import sys
+
     p = sys.argv[1] if len(sys.argv) > 1 else ""
-    raw = open(p, "rb").read() if p else (
-        "<html><head><title>T</title><style>x</style></head><body>"
-        "<nav>菜单</nav><article><h1>标题</h1><p>正文一</p><p>正文二</p>"
-        "</article><script>evil()</script></body></html>")
+    raw = (
+        open(p, "rb").read()
+        if p
+        else (
+            "<html><head><title>T</title><style>x</style></head><body>"
+            "<nav>菜单</nav><article><h1>标题</h1><p>正文一</p><p>正文二</p>"
+            "</article><script>evil()</script></body></html>"
+        )
+    )
     print(extract_main(raw, "https://example.com/a?x=1"))

@@ -1,4 +1,5 @@
 """验证真实渲染的数据口径及不可信内容转义，不访问生产数据。"""
+
 import importlib.util
 import json
 from pathlib import Path
@@ -18,22 +19,84 @@ def dashboard():
 
 
 def report():
-    return {"generated_at": "2026-10-09 02:50:33", "kpi": {"n_tables": 92, "total_mb": 12154},
-            "gaps": [], "groups": [{"name": "TDX 远端仓", "kind": "tdx", "rows": [
-                {"asset": "ts_daily", "rows": "415 万", "latest": "20261008", "age_hours": None,
-                 "size_mb": 100, "extra": "同步完成"}]}],
-            "integrity": {"generated_at": "2026-10-09 02:45:00", "expected_latest": "20261008", "metrics": [
-                {"name": "tdx_sector_daily_daily_coverage", "status": "FAIL", "value": 51, "details": {
-                    "20261008": {"rows": 1118, "unique_codes": 1118, "reference_unique_codes": 1119, "missing_count": 1},
-                    "_summary": {"value_unit": "相对近期最大断面的缺键总数"}}},
-                {"name": "sector_definition_key_reconciliation", "status": "FAIL", "value": 51, "details": {
-                    "20261008": {"defined": 1119, "actual": 1118, "missing": ["880843"], "extra": []}}},
-                {"name": "sector_minute_required_nulls", "status": "FAIL", "value": 14693,
-                 "details": {"vol": 7347, "amount": 7346}},
-                {"name": "query_daily_history", "status": "OK", "value": 12, "details": {"rows": 12}},
-                {"name": "ts_daily_daily_coverage", "status": "OK", "value": 0, "details": {
-                    "20261008": {"rows": 5500, "unique_codes": 5500, "reference_unique_codes": 0}}}
-            ]}}
+    return {
+        "generated_at": "2026-10-09 02:50:33",
+        "kpi": {"n_tables": 92, "total_mb": 12154},
+        "gaps": [],
+        "groups": [
+            {
+                "name": "TDX 远端仓",
+                "kind": "tdx",
+                "rows": [
+                    {
+                        "asset": "ts_daily",
+                        "rows": "415 万",
+                        "latest": "20261008",
+                        "age_hours": None,
+                        "size_mb": 100,
+                        "extra": "同步完成",
+                    }
+                ],
+            }
+        ],
+        "integrity": {
+            "generated_at": "2026-10-09 02:45:00",
+            "expected_latest": "20261008",
+            "metrics": [
+                {
+                    "name": "tdx_sector_daily_daily_coverage",
+                    "status": "FAIL",
+                    "value": 51,
+                    "details": {
+                        "20261008": {
+                            "rows": 1118,
+                            "unique_codes": 1118,
+                            "reference_unique_codes": 1119,
+                            "missing_count": 1,
+                        },
+                        "_summary": {"value_unit": "相对近期最大断面的缺键总数"},
+                    },
+                },
+                {
+                    "name": "sector_definition_key_reconciliation",
+                    "status": "FAIL",
+                    "value": 51,
+                    "details": {
+                        "20261008": {
+                            "defined": 1119,
+                            "actual": 1118,
+                            "missing": ["880843"],
+                            "extra": [],
+                        }
+                    },
+                },
+                {
+                    "name": "sector_minute_required_nulls",
+                    "status": "FAIL",
+                    "value": 14693,
+                    "details": {"vol": 7347, "amount": 7346},
+                },
+                {
+                    "name": "query_daily_history",
+                    "status": "OK",
+                    "value": 12,
+                    "details": {"rows": 12},
+                },
+                {
+                    "name": "ts_daily_daily_coverage",
+                    "status": "OK",
+                    "value": 0,
+                    "details": {
+                        "20261008": {
+                            "rows": 5500,
+                            "unique_codes": 5500,
+                            "reference_unique_codes": 0,
+                        }
+                    },
+                },
+            ],
+        },
+    }
 
 
 def test_health_counts_checks_without_adding_overlapping_key_values(dashboard):
@@ -47,7 +110,9 @@ def test_health_counts_checks_without_adding_overlapping_key_values(dashboard):
 
 def test_coverage_uses_missing_keys_and_preserves_reference_policy(dashboard):
     model = dashboard.build_model(report(), {"refreshing": False, "error": None})
-    sector = next(x for x in model["coverage"] if x["name"] == "tdx_sector_daily_daily_coverage")
+    sector = next(
+        x for x in model["coverage"] if x["name"] == "tdx_sector_daily_daily_coverage"
+    )
     day = sector["days"]["20261008"]
     assert day["missing_count"] == 1
     assert day["missing"] == ["880843"]
@@ -65,32 +130,69 @@ def test_zero_reference_is_unknown_instead_of_healthy(dashboard):
 def test_source_empty_day_is_labeled_pending_source_verification(dashboard):
     data = report()
     data["integrity"]["metrics"][0]["details"]["20261008"].update(
-        rows=0, unique_codes=0, reference_unique_codes=1119,
-        missing_count=1119, source_state="source_empty_pending")
+        rows=0,
+        unique_codes=0,
+        reference_unique_codes=1119,
+        missing_count=1119,
+        source_state="source_empty_pending",
+    )
     model = dashboard.build_model(data, {"refreshing": False, "error": None})
     day = model["coverage"][0]["days"]["20261008"]
     assert day["source_empty_pending"] is True
-    html = dashboard.render_dashboard(data, {"refreshing": False, "error": None},
-                                      freshness_html="", graph_html="", nav="", base_css="", preview_js="")
+    html = dashboard.render_dashboard(
+        data,
+        {"refreshing": False, "error": None},
+        freshness_html="",
+        graph_html="",
+        nav="",
+        base_css="",
+        preview_js="",
+    )
     assert "待来源核验" in html
 
 
 def test_reference_count_difference_is_distinct_from_qualified_missing_keys(dashboard):
     data = report()
-    data["integrity"]["metrics"].append({"name": "ts_margin_detail_daily_coverage", "status": "OK", "value": 0,
-        "details": {"20260930": {"rows": 2, "unique_codes": 2, "reference_unique_codes": 3,
-                                 "missing_count": 0, "missing": [], "prelisting_excluded_count": 1}}})
-    data["integrity"]["metrics"][-2]["details"]["20261008"].update(unique_codes=5500, reference_unique_codes=5561, missing_count=61)
+    data["integrity"]["metrics"].append(
+        {
+            "name": "ts_margin_detail_daily_coverage",
+            "status": "OK",
+            "value": 0,
+            "details": {
+                "20260930": {
+                    "rows": 2,
+                    "unique_codes": 2,
+                    "reference_unique_codes": 3,
+                    "missing_count": 0,
+                    "missing": [],
+                    "prelisting_excluded_count": 1,
+                }
+            },
+        }
+    )
+    data["integrity"]["metrics"][-2]["details"]["20261008"].update(
+        unique_codes=5500, reference_unique_codes=5561, missing_count=61
+    )
     model = dashboard.build_model(data, {"refreshing": False, "error": None})
     by_name = {m["name"]: m for m in model["coverage"]}
-    assert by_name["ts_daily_daily_coverage"]["days"]["20261008"]["gap_type"] == "reference"
-    assert by_name["ts_margin_detail_daily_coverage"]["days"]["20260930"]["qualified"] is True
+    assert (
+        by_name["ts_daily_daily_coverage"]["days"]["20261008"]["gap_type"]
+        == "reference"
+    )
+    assert (
+        by_name["ts_margin_detail_daily_coverage"]["days"]["20260930"]["qualified"]
+        is True
+    )
 
 
 def test_definition_missing_keys_override_equal_count_coverage(dashboard):
     data = report()
-    data["integrity"]["metrics"][0]["details"]["20261008"].update(unique_codes=2, reference_unique_codes=2, missing_count=0)
-    data["integrity"]["metrics"][1]["details"]["20261008"].update(defined=3, actual=2, missing=["880843"])
+    data["integrity"]["metrics"][0]["details"]["20261008"].update(
+        unique_codes=2, reference_unique_codes=2, missing_count=0
+    )
+    data["integrity"]["metrics"][1]["details"]["20261008"].update(
+        defined=3, actual=2, missing=["880843"]
+    )
     model = dashboard.build_model(data, {"refreshing": False, "error": None})
     day = model["coverage"][0]["days"]["20261008"]
     assert day["status"] == "gap"
@@ -100,9 +202,22 @@ def test_definition_missing_keys_override_equal_count_coverage(dashboard):
 
 def test_minute_fallback_without_definition_does_not_claim_per_key_proof(dashboard):
     data = report()
-    data["integrity"]["metrics"].append({"name": "sector_minute_daily_coverage", "status": "FAIL", "value": 1,
-        "details": {"20261008": {"unique_codes": 2, "reference_unique_codes": 3, "missing_count": 1, "missing": []},
-                    "_summary": {"reference_source": "recent_max_unique_count"}}})
+    data["integrity"]["metrics"].append(
+        {
+            "name": "sector_minute_daily_coverage",
+            "status": "FAIL",
+            "value": 1,
+            "details": {
+                "20261008": {
+                    "unique_codes": 2,
+                    "reference_unique_codes": 3,
+                    "missing_count": 1,
+                    "missing": [],
+                },
+                "_summary": {"reference_source": "recent_max_unique_count"},
+            },
+        }
+    )
     model = dashboard.build_model(data, {"refreshing": False, "error": None})
     assert model["coverage"][-1]["days"]["20261008"]["gap_type"] == "reference"
 
@@ -117,14 +232,28 @@ def test_missing_integrity_is_explicit_instead_of_zero_fail_healthy(dashboard):
 
 def test_monitoring_rows_are_not_counted_again_as_warehouse_assets(dashboard):
     data = report()
-    data["groups"].append({"name": "新鲜度监控", "kind": "freshness", "rows": [
-        {"asset": "daily", "rows": "lag 0天", "latest": "20261008", "age_hours": 0}]})
+    data["groups"].append(
+        {
+            "name": "新鲜度监控",
+            "kind": "freshness",
+            "rows": [
+                {
+                    "asset": "daily",
+                    "rows": "lag 0天",
+                    "latest": "20261008",
+                    "age_hours": 0,
+                }
+            ],
+        }
+    )
     model = dashboard.build_model(data, {"refreshing": False, "error": None})
     assert len(model["assets"]) == 1
 
 
 def test_refresh_failure_keeps_previous_scan_and_visible_warning(dashboard):
-    model = dashboard.build_model(report(), {"refreshing": False, "error": "扫描读取失败"})
+    model = dashboard.build_model(
+        report(), {"refreshing": False, "error": "扫描读取失败"}
+    )
     assert model["stale"] is True
     assert "扫描读取失败" in model["notice"]
     assert model["generated_at"] == "2026-10-09 02:50:33"
@@ -135,10 +264,21 @@ def test_render_does_not_allow_details_to_break_out_of_json_script(dashboard):
     attack = '</script><img src=x onerror="alert(1)">'
     data["integrity"]["metrics"][0]["details"]["error"] = attack
     data["groups"][0]["rows"][0]["asset"] = attack
-    output = dashboard.render_dashboard(data, {"refreshing": False, "error": None},
-                                          freshness_html="", graph_html="", nav="", base_css="", preview_js="")
+    output = dashboard.render_dashboard(
+        data,
+        {"refreshing": False, "error": None},
+        freshness_html="",
+        graph_html="",
+        nav="",
+        base_css="",
+        preview_js="",
+    )
     assert attack not in output
-    payload = re.search(r'<script type="application/json" id="warehouse-data">(.*?)</script>', output, re.S)
+    payload = re.search(
+        r'<script type="application/json" id="warehouse-data">(.*?)</script>',
+        output,
+        re.S,
+    )
     assert payload
     decoded = json.loads(payload.group(1))
     assert decoded["metrics"][0]["details"]["error"] == attack
@@ -146,73 +286,153 @@ def test_render_does_not_allow_details_to_break_out_of_json_script(dashboard):
 
 def test_null_field_details_and_all_keys_survive_export_payload(dashboard):
     data = report()
-    data["integrity"]["metrics"][1]["details"]["20261008"]["missing"] = [str(n) for n in range(4000)]
-    output = dashboard.render_dashboard(data, {"refreshing": False, "error": None},
-                                          freshness_html="", graph_html="", nav="", base_css="", preview_js="")
-    payload = json.loads(re.search(r'id="warehouse-data">(.*?)</script>', output, re.S).group(1))
+    data["integrity"]["metrics"][1]["details"]["20261008"]["missing"] = [
+        str(n) for n in range(4000)
+    ]
+    output = dashboard.render_dashboard(
+        data,
+        {"refreshing": False, "error": None},
+        freshness_html="",
+        graph_html="",
+        nav="",
+        base_css="",
+        preview_js="",
+    )
+    payload = json.loads(
+        re.search(r'id="warehouse-data">(.*?)</script>', output, re.S).group(1)
+    )
     assert len(payload["metrics"][1]["details"]["20261008"]["missing"]) == 4000
     assert payload["metrics"][2]["details"] == {"vol": 7347, "amount": 7346}
 
 
 def test_render_separates_freshness_from_integrity_and_labels_time(dashboard):
     data = report()
-    data['freshness'] = {'counts': {'WARN': 1, 'STALE': 1, 'FAIL': 1, 'SNAP': 1, 'NA': 1}}
-    data['groups'][0]['rows'][0].update(rows='未计量 (×1片)', latest_kind='file_mtime',
-        business_date='20261008', measured_at='2026-10-09 11:30', extra='未登记（运行状态待核实）')
-    output = dashboard.render_dashboard(data, {}, freshness_html='', graph_html='', nav='', base_css='', preview_js='')
-    assert '新鲜度：WARN 1' in output
-    assert 'STALE 1' in output
-    assert 'SNAP 1' in output
-    assert '文件修改时间' in output
-    assert '业务日期：20261008' in output
-    assert '未计量' in output
-    assert dashboard.build_model(data, {})['counts']['FAIL'] == 3
+    data["freshness"] = {
+        "counts": {"WARN": 1, "STALE": 1, "FAIL": 1, "SNAP": 1, "NA": 1}
+    }
+    data["groups"][0]["rows"][0].update(
+        rows="未计量 (×1片)",
+        latest_kind="file_mtime",
+        business_date="20261008",
+        measured_at="2026-10-09 11:30",
+        extra="未登记（运行状态待核实）",
+    )
+    output = dashboard.render_dashboard(
+        data, {}, freshness_html="", graph_html="", nav="", base_css="", preview_js=""
+    )
+    assert "新鲜度：WARN 1" in output
+    assert "STALE 1" in output
+    assert "SNAP 1" in output
+    assert "文件修改时间" in output
+    assert "业务日期：20261008" in output
+    assert "未计量" in output
+    assert dashboard.build_model(data, {})["counts"]["FAIL"] == 3
 
 
 def test_business_monitoring_is_visible_and_escaped(dashboard):
     data = report()
-    data['monitoring'] = {'nine_dim': {'status': 'FAIL', 'n_candidates': 218, 'n_full': 0,
-        'generated_at': '2026-10-09', 'factors': {'eps': {'name': '盈利预期', 'unjudgeable': 218}}},
-        'graph_qa': {'status': 'FAIL', 'generated_at': '2026-10-08', 'live_verified': False, 'details': '<img onerror=evil>'},
-        'graph_counts': {'status': 'INFO', 'generated_at': '2026-10-09'}}
-    output = dashboard.render_dashboard(data, {}, freshness_html='', graph_html='', nav='', base_css='', preview_js='')
-    assert '完整评分 0 / 218' in output
-    assert '盈利预期' in output
-    assert '图谱 QA' in output
-    assert '实时连接未核验' in output
-    assert '<img onerror=evil>' not in output
+    data["monitoring"] = {
+        "nine_dim": {
+            "status": "FAIL",
+            "n_candidates": 218,
+            "n_full": 0,
+            "generated_at": "2026-10-09",
+            "factors": {"eps": {"name": "盈利预期", "unjudgeable": 218}},
+        },
+        "graph_qa": {
+            "status": "FAIL",
+            "generated_at": "2026-10-08",
+            "live_verified": False,
+            "details": "<img onerror=evil>",
+        },
+        "graph_counts": {"status": "INFO", "generated_at": "2026-10-09"},
+    }
+    output = dashboard.render_dashboard(
+        data, {}, freshness_html="", graph_html="", nav="", base_css="", preview_js=""
+    )
+    assert "完整评分 0 / 218" in output
+    assert "盈利预期" in output
+    assert "图谱 QA" in output
+    assert "实时连接未核验" in output
+    assert "<img onerror=evil>" not in output
 
 
-def test_manifest_only_receipts_are_visible_without_inflating_physical_assets(dashboard):
+def test_manifest_only_receipts_are_visible_without_inflating_physical_assets(
+    dashboard,
+):
     data = report()
-    data['groups'].append({'name': 'manifest独立回执', 'kind': 'manifest_receipt',
-        'rows': [{'asset': 'anns_d_probe', 'rows': '1.2 万', 'extra': '去向待核验'}]})
+    data["groups"].append(
+        {
+            "name": "manifest独立回执",
+            "kind": "manifest_receipt",
+            "rows": [
+                {"asset": "anns_d_probe", "rows": "1.2 万", "extra": "去向待核验"}
+            ],
+        }
+    )
     model = dashboard.build_model(data, {})
-    assert len(model['assets']) == 1
-    assert len(model['manifest_receipts']) == 1
-    output = dashboard.render_dashboard(data, {}, freshness_html='', graph_html='', nav='', base_css='', preview_js='')
-    assert 'anns_d_probe' in output
-    assert '去向待核验' in output
+    assert len(model["assets"]) == 1
+    assert len(model["manifest_receipts"]) == 1
+    output = dashboard.render_dashboard(
+        data, {}, freshness_html="", graph_html="", nav="", base_css="", preview_js=""
+    )
+    assert "anns_d_probe" in output
+    assert "去向待核验" in output
 
 
 def test_fifth_daily_panel_keeps_existing_views_and_accessible_controls(dashboard):
-    output=dashboard.render_dashboard(report(),{},freshness_html='',graph_html='',nav='',base_css='',preview_js='')
-    assert re.findall(r'role="tab"',output)==['role="tab"']*5
-    for name in ('overview','coverage','gaps','assets','daily'):
+    output = dashboard.render_dashboard(
+        report(),
+        {},
+        freshness_html="",
+        graph_html="",
+        nav="",
+        base_css="",
+        preview_js="",
+    )
+    assert re.findall(r'role="tab"', output) == ['role="tab"'] * 5
+    for name in ("overview", "coverage", "gaps", "assets", "daily"):
         assert f'id="wh-{name}"' in output
-    for label in ('浏览日期','更新来源','更新市场','预览当前来源范围','预览当天未完成项','每日状态与来源 JSON'):
+    for label in (
+        "浏览日期",
+        "更新来源",
+        "更新市场",
+        "预览当前来源范围",
+        "预览当天未完成项",
+        "每日状态与来源 JSON",
+    ):
         assert label in output
     assert '<dialog id="wh-daily-plan-dialog"' in output
     assert 'aria-labelledby="wh-daily-plan-title"' in output
-    assert 'wh-daily-progress' in output
+    assert "wh-daily-progress" in output
 
 
 def test_daily_snapshot_is_non_live_and_preserves_full_json_safely(dashboard):
-    data=report()
-    data['daily_snapshot']={'date':'2026-10-09','assets':[{'asset_id':'</script><img src=x>','data_status':'unknown','update_enabled':False}], 'runs':[]}
-    output=dashboard.render_dashboard(data,{'preview':True},freshness_html='',graph_html='',nav='',base_css='',preview_js='')
-    assert '非实时快照' in output and '启动已禁用' in output
-    assert '</script><img src=x>' not in output
-    payload=json.loads(re.search(r'id="warehouse-data">(.*?)</script>',output,re.S).group(1))
-    assert payload['daily_read_only'] is True
-    assert payload['daily_snapshot']['assets'][0]['asset_id']=='</script><img src=x>'
+    data = report()
+    data["daily_snapshot"] = {
+        "date": "2026-10-09",
+        "assets": [
+            {
+                "asset_id": "</script><img src=x>",
+                "data_status": "unknown",
+                "update_enabled": False,
+            }
+        ],
+        "runs": [],
+    }
+    output = dashboard.render_dashboard(
+        data,
+        {"preview": True},
+        freshness_html="",
+        graph_html="",
+        nav="",
+        base_css="",
+        preview_js="",
+    )
+    assert "非实时快照" in output and "启动已禁用" in output
+    assert "</script><img src=x>" not in output
+    payload = json.loads(
+        re.search(r'id="warehouse-data">(.*?)</script>', output, re.S).group(1)
+    )
+    assert payload["daily_read_only"] is True
+    assert payload["daily_snapshot"]["assets"][0]["asset_id"] == "</script><img src=x>"

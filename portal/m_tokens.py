@@ -11,6 +11,7 @@ base64url(payload) + "." + base64url(signature)。
   · 密钥存 portal/work/m_link_secret.txt（32 字节 hex，首次自动生成，gitignored）
   · 校验 exp/nbf/scope；错误一律抛 TokenError（调用方返回 401/403，不落日志明文）
 """
+
 from __future__ import annotations
 
 import base64
@@ -23,7 +24,8 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SECRET_FILE = os.environ.get("M_LINK_SECRET_FILE") or os.path.join(
-    HERE, "work", "m_link_secret.txt")
+    HERE, "work", "m_link_secret.txt"
+)
 DEFAULT_TTL = 7 * 86400
 
 
@@ -59,8 +61,9 @@ def load_secret(path=None):
 def sign(payload, secret=None):
     """payload dict → token str。"""
     sec = secret or load_secret()
-    body = json.dumps(payload, ensure_ascii=False, sort_keys=True,
-                      separators=(",", ":")).encode("utf-8")
+    body = json.dumps(
+        payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
     sig = hmac.new(sec, body, hashlib.sha256).digest()
     return _b64e(body) + "." + _b64e(sig)
 
@@ -92,12 +95,10 @@ def verify(token, scope=None, now=None, secret=None):
     return payload
 
 
-def make_page_token(scene, id="", code="", ttl=DEFAULT_TTL, extra=None,
-                    secret=None):
+def make_page_token(scene, id="", code="", ttl=DEFAULT_TTL, extra=None, secret=None):
     """卡片/页面令牌。"""
     now = int(time.time())
-    payload = {"scope": "page", "scene": scene, "nbf": now,
-               "exp": now + int(ttl)}
+    payload = {"scope": "page", "scene": scene, "nbf": now, "exp": now + int(ttl)}
     if id:
         payload["id"] = str(id)
     if code:
@@ -107,12 +108,15 @@ def make_page_token(scene, id="", code="", ttl=DEFAULT_TTL, extra=None,
     return sign(payload, secret=secret), payload
 
 
-def make_share_token(resource, id="", ttl=DEFAULT_TTL, extra=None,
-                     secret=None):
+def make_share_token(resource, id="", ttl=DEFAULT_TTL, extra=None, secret=None):
     """外部分享令牌（scope=share）。"""
     now = int(time.time())
-    payload = {"scope": "share", "resource": resource, "nbf": now,
-               "exp": now + int(ttl)}
+    payload = {
+        "scope": "share",
+        "resource": resource,
+        "nbf": now,
+        "exp": now + int(ttl),
+    }
     if id:
         payload["id"] = str(id)
     if extra:

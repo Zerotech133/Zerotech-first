@@ -7,6 +7,7 @@
     python register_feishu_watchdog_task.py          # 注册并立即触发一次
     python register_feishu_watchdog_task.py --no-run # 仅注册
 """
+
 import os
 import subprocess
 import sys
@@ -29,8 +30,23 @@ def run(cmd, timeout=60):
 def main():
     no_run = "--no-run" in sys.argv
     tr = f'"{PY}" "{BOT}"'
-    cmd = ["schtasks", "/Create", "/TN", TASK, "/TR", tr,
-           "/SC", "MINUTE", "/MO", "5", "/RU", "SYSTEM", "/RL", "HIGHEST", "/F"]
+    cmd = [
+        "schtasks",
+        "/Create",
+        "/TN",
+        TASK,
+        "/TR",
+        tr,
+        "/SC",
+        "MINUTE",
+        "/MO",
+        "5",
+        "/RU",
+        "SYSTEM",
+        "/RL",
+        "HIGHEST",
+        "/F",
+    ]
     print("[1] register:", " ".join(cmd[:6]), "...")
     rc, out, err = run(cmd)
     print("    rc=", rc, "|", out or err)
@@ -39,9 +55,23 @@ def main():
         return 1
     # 复核：查询任务状态
     rc, out, err = run(["schtasks", "/Query", "/TN", TASK, "/FO", "LIST"])
-    keep = [l for l in out.splitlines()
-            if any(k in l for k in ("TaskName", "Status", "任务名", "状态",
-                                    "Next Run", "下次", "模式", "Logon"))]
+    keep = [
+        l
+        for l in out.splitlines()
+        if any(
+            k in l
+            for k in (
+                "TaskName",
+                "Status",
+                "任务名",
+                "状态",
+                "Next Run",
+                "下次",
+                "模式",
+                "Logon",
+            )
+        )
+    ]
     print("[2] query rc=", rc)
     for l in keep:
         print("   ", l.strip())

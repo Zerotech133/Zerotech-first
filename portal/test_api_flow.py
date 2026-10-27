@@ -52,7 +52,7 @@ class _SchtasksSentry:
     def __call__(self, cmd, **kw):
         self.calls.append(list(cmd))
         r = subprocess.CompletedProcess(cmd, self.rc)
-        r.stdout = b"SUCCESS: the scheduled task \"X\" has been run"
+        r.stdout = b'SUCCESS: the scheduled task "X" has been run'
         return r
 
 
@@ -69,10 +69,12 @@ def _fixed_now(monkeypatch, y, m, d):
     注意 _dt 是共享模块对象，这里 patch 的是 api_flow 可见同名属性，
     测试结束 monkeypatch 还原，不外溢。
     """
+
     class _Fixed(_dt.datetime):
         @classmethod
         def now(cls, tz=None):
             return cls(y, m, d, 12, 0, 0)
+
     monkeypatch.setattr(api_flow._dt, "datetime", _Fixed)
 
 
@@ -96,12 +98,14 @@ def env(tmp_path, monkeypatch):
     """全部数据面注入 tmp + subprocess 打桩。返回哨兵。"""
     sentry = _SchtasksSentry()
     monkeypatch.setattr(api_flow.subprocess, "run", sentry)
-    monkeypatch.setattr(api_flow, "SHADOW_LEDGER",
-                        str(tmp_path / "shadow_ledger.jsonl"))
+    monkeypatch.setattr(
+        api_flow, "SHADOW_LEDGER", str(tmp_path / "shadow_ledger.jsonl")
+    )
     monkeypatch.setattr(api_flow, "CHIEF_LOG", str(tmp_path / "chief_last_run.log"))
     monkeypatch.setattr(api_flow, "EVAL_LOG", str(tmp_path / "eval_last_run.log"))
-    monkeypatch.setattr(api_flow, "OBSERVE_AUDIT",
-                        str(tmp_path / "llm_tool_audit.jsonl"))
+    monkeypatch.setattr(
+        api_flow, "OBSERVE_AUDIT", str(tmp_path / "llm_tool_audit.jsonl")
+    )
     return sentry
 
 
@@ -190,11 +194,18 @@ def test_shadow_daily_blocked_weekend(env, monkeypatch):
 def test_shadow_daily_blocked_same_day_ledger(env, monkeypatch):
     _fixed_now(monkeypatch, 2026, 10, 19)  # 周一
     Path(api_flow.SHADOW_LEDGER).write_text(
-        json.dumps({"date": "2026-10-19", "status": "done", "symbol": "600519"},
-                   ensure_ascii=False) + "\n"
-        + json.dumps({"date": "2026-10-16", "status": "done", "symbol": "000858"},
-                     ensure_ascii=False) + "\n",
-        encoding="utf-8")
+        json.dumps(
+            {"date": "2026-10-19", "status": "done", "symbol": "600519"},
+            ensure_ascii=False,
+        )
+        + "\n"
+        + json.dumps(
+            {"date": "2026-10-16", "status": "done", "symbol": "000858"},
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     h = _rerun("AgentShadowDaily")
     assert h.resp["ok"] is False
     assert "当日" in h.resp["blocked"] and "账本" in h.resp["blocked"]
@@ -286,10 +297,18 @@ def test_valve_none_for_legacy_tasks(tmp_path, monkeypatch):
 
 def test_valve_weekday_saturday(tmp_path, monkeypatch):
     monkeypatch.setattr(api_flow, "SHADOW_LEDGER", str(tmp_path / "x.jsonl"))
-    assert api_flow._rerun_blocked(
-        "AgentShadowDaily", now=_dt.datetime(2026, 10, 17, 12, 0)) is not None  # 周六
-    assert api_flow._rerun_blocked(
-        "AgentShadowDaily", now=_dt.datetime(2026, 10, 19, 12, 0)) is None      # 周一
+    assert (
+        api_flow._rerun_blocked(
+            "AgentShadowDaily", now=_dt.datetime(2026, 10, 17, 12, 0)
+        )
+        is not None
+    )  # 周六
+    assert (
+        api_flow._rerun_blocked(
+            "AgentShadowDaily", now=_dt.datetime(2026, 10, 19, 12, 0)
+        )
+        is None
+    )  # 周一
 
 
 # ── 6. observe 账本 fail-open（写失败不影响 rerun 主流程） ─────────────────
@@ -299,8 +318,9 @@ def test_observe_fail_open(env, tmp_path, monkeypatch):
     blocker = tmp_path / "blocker.txt"
     blocker.write_text("i am a file", encoding="utf-8")
     # OBSERVE_AUDIT 落在「文件路径之下」→ makedirs 必失败
-    monkeypatch.setattr(api_flow, "OBSERVE_AUDIT",
-                        str(blocker / "llm_tool_audit.jsonl"))
+    monkeypatch.setattr(
+        api_flow, "OBSERVE_AUDIT", str(blocker / "llm_tool_audit.jsonl")
+    )
     _fixed_now(monkeypatch, 2026, 10, 19)
     h = _rerun("AgentShadowDaily")  # 归因写失败不得影响放行
     assert h.code == 200 and h.resp["ok"] is True

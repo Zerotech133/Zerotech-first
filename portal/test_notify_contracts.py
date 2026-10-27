@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """K-ORG-201 轨道A：notify_contracts 底座契约单测。"""
+
 import os
 import sys
 
@@ -9,6 +10,7 @@ import notify_contracts as nc  # noqa: E402
 
 
 # ── 常量完备性 ──────────────────────────────────────────────
+
 
 def test_constants_complete():
     assert len(nc.QUEUE_STATES) == 4
@@ -24,6 +26,7 @@ def test_constants_complete():
 
 # ── 四态映射 ────────────────────────────────────────────────
 
+
 def test_map_decision_state():
     assert nc.map_decision_state("sent") == "auto"
     assert nc.map_decision_state("recorded") == "review"
@@ -38,6 +41,7 @@ def test_map_decision_state():
 
 # ── 送达证据映射 ────────────────────────────────────────────
 
+
 def test_map_delivery_evidence():
     assert nc.map_delivery_evidence("api_accepted", "sent") == "api_accepted"
     assert nc.map_delivery_evidence("receiver_verified") == "receiver_verified"
@@ -51,17 +55,22 @@ def test_map_delivery_evidence():
 
 # ── 频道登记表校验 ──────────────────────────────────────────
 
+
 def _channel(**over):
-    ch = {"id": "c1", "name": "频道一", "kinds": ["decision:alert"],
-          "autonomy": "auto", "red_lines": ["仅名单内目标"],
-          "evidence_level": "drilled"}
+    ch = {
+        "id": "c1",
+        "name": "频道一",
+        "kinds": ["decision:alert"],
+        "autonomy": "auto",
+        "red_lines": ["仅名单内目标"],
+        "evidence_level": "drilled",
+    }
     ch.update(over)
     return ch
 
 
 def test_validate_channels_ok():
-    assert nc.validate_channels({"version": 1,
-                                 "channels": [_channel()]}) == []
+    assert nc.validate_channels({"version": 1, "channels": [_channel()]}) == []
 
 
 def test_validate_channels_rejects():
@@ -74,8 +83,7 @@ def test_validate_channels_rejects():
         ({"version": 1, "channels": [_channel(autonomy="free")]}, "autonomy"),
         ({"version": 1, "channels": [_channel(kinds=[])]}, "空 kinds"),
         ({"version": 1, "channels": [_channel(red_lines=[])]}, "空红线"),
-        ({"version": 1, "channels": [_channel(evidence_level="guess")]},
-         "证据级别"),
+        ({"version": 1, "channels": [_channel(evidence_level="guess")]}, "证据级别"),
     ]
     for data, why in bad:
         errs = nc.validate_channels(data)
@@ -105,11 +113,15 @@ def test_load_channels_fail_visible(tmp_path):
 
 # ── 授权名单条目 schema ─────────────────────────────────────
 
+
 def _entry(**over):
-    e = {"name": "老田（灰度预演）",
-         "markets": ["cn", "hk", "us", "commodity", "crypto", "fx"],
-         "tier": "daily", "chat_id": "ou_50a95455c7dffec1090ade400886d0d4",
-         "chat_id_type": "open_id"}
+    e = {
+        "name": "老田（灰度预演）",
+        "markets": ["cn", "hk", "us", "commodity", "crypto", "fx"],
+        "tier": "daily",
+        "chat_id": "ou_50a95455c7dffec1090ade400886d0d4",
+        "chat_id_type": "open_id",
+    }
     e.update(over)
     return e
 
@@ -143,8 +155,10 @@ def test_validate_subscriber_rejects():
 def test_push_subscribers_json_all_entries_valid():
     """在役订阅配置全部条目过校验（灰度首群 laotian_self 真实口径）。"""
     import json
-    path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                        "push_subscribers.json")
+
+    path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "push_subscribers.json"
+    )
     with open(path, encoding="utf-8") as f:
         subs = json.load(f)
     errs = []

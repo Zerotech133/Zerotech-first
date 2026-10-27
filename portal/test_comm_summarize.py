@@ -4,6 +4,7 @@
 覆盖：正常生成、数字编造守卫、超长截断、模型失败降级模板、
 开关关闭、缓存命中、输出过短降级。
 """
+
 import os
 import sys
 
@@ -37,17 +38,21 @@ def _env(monkeypatch):
     monkeypatch.delenv("COMM_SUMMARY_ENABLED", raising=False)
     import tempfile
     import os as _os
-    monkeypatch.setenv("COMM_FLAGS_PATH",
-                       _os.path.join(tempfile.mkdtemp(), "no_flags.json"))
+
+    monkeypatch.setenv(
+        "COMM_FLAGS_PATH", _os.path.join(tempfile.mkdtemp(), "no_flags.json")
+    )
     monkeypatch.setenv("COMM_SUMMARY_MAX_CHARS", "220")
     cs.clear_cache()
     yield
     cs.clear_cache()
 
 
-ITEMS = ["沪深两市成交额 1.82 万亿，较昨日放量 12%",
-         "北向资金净流入 43 亿",
-         "涨停 58 家，跌停 3 家"]
+ITEMS = [
+    "沪深两市成交额 1.82 万亿，较昨日放量 12%",
+    "北向资金净流入 43 亿",
+    "涨停 58 家，跌停 3 家",
+]
 
 
 def test_01_normal_generation():
@@ -59,7 +64,7 @@ def test_01_normal_generation():
 
 
 def test_02_number_fabrication_blocked():
-    llm = _Stub("今日成交 9.99 万亿，涨停 58 家。")   # 9.99 输入里没有
+    llm = _Stub("今日成交 9.99 万亿，涨停 58 家。")  # 9.99 输入里没有
     r = cs.humanize("收盘速览", ITEMS, llm=llm, use_cache=False)
     assert r["llm_ok"] is False
     assert r["error"] == "number_fabrication_guard"
@@ -83,8 +88,7 @@ def test_04_too_short_output_falls_back():
 def test_05_long_output_trimmed():
     long_txt = "市场今日表现分化，" * 40
     llm = _Stub(long_txt)
-    r = cs.humanize("速览", ["涨停 58 家"], llm=llm, max_chars=60,
-                    use_cache=False)
+    r = cs.humanize("速览", ["涨停 58 家"], llm=llm, max_chars=60, use_cache=False)
     assert r["llm_ok"] is True
     assert len(r["text"]) <= 60
 
@@ -124,5 +128,5 @@ def test_10_degraded_status_marked():
     llm = _Stub("成交 1.82 万亿，涨停 58 家。", status="degraded")
     r = cs.humanize("速览", ITEMS, llm=llm, use_cache=False)
     assert r["tier"] == "degraded"
-    assert r["llm_ok"] is True          # 文本可用，但 tier 如实标降级
+    assert r["llm_ok"] is True  # 文本可用，但 tier 如实标降级
     assert r["error"] == "llm_status=degraded"

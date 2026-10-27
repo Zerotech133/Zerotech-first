@@ -1,4 +1,5 @@
 """K-INTEL-20261022-FE: offline skeleton contracts, without loading live sources."""
+
 from pathlib import Path
 import re
 import shutil
@@ -17,7 +18,9 @@ def test_frontend_admission_and_five_views():
     html = _page()
     assert '<link rel="stylesheet" href="/static/tokens.css">' in html
     assert '<script src="/static/nav.js" defer></script>' in html
-    assert html.count("<h2") == 6  # E2 第六屏后: overview/case/graph/sources/review/drill
+    assert (
+        html.count("<h2") == 6
+    )  # E2 第六屏后: overview/case/graph/sources/review/drill
     for view in ("overview", "case", "graph", "sources", "review", "drill"):
         assert f'<section id="{view}"' in html
         assert f'<option value="{view}">' in html
@@ -30,10 +33,21 @@ def test_offline_boundary_has_no_network_or_claimed_facts():
     # E2 后受控演进: 允许对同源只读端点 /api/intel-graph 的 fetch; 仍禁外网/写操作/存储
     for m in re.finditer(r"fetch\(([^)]*)\)", html):
         arg = m.group(1)
-        assert "'/api/intel-graph/dossier?code='" in arg or "\"/api/intel-graph/dossier?code=\"" in arg, \
-            f"fetch 目标越界(仅允许同源 dossier 端点): {arg[:80]}"
-    for forbidden in ("XMLHttpRequest", "WebSocket(", "sendBeacon(", "http://", "https://",
-                      "localStorage", "sessionStorage", "<form", "type=\"submit\""):
+        assert (
+            "'/api/intel-graph/dossier?code='" in arg
+            or '"/api/intel-graph/dossier?code="' in arg
+        ), f"fetch 目标越界(仅允许同源 dossier 端点): {arg[:80]}"
+    for forbidden in (
+        "XMLHttpRequest",
+        "WebSocket(",
+        "sendBeacon(",
+        "http://",
+        "https://",
+        "localStorage",
+        "sessionStorage",
+        "<form",
+        'type="submit"',
+    ):
         assert forbidden not in html
     assert "历史 as_of 默认关闭" in html
     assert "没有批准、推送、写图或交易按钮" in html
@@ -43,7 +57,9 @@ def test_offline_boundary_has_no_network_or_claimed_facts():
 
 def test_dossier_untrusted_fields_are_text_only():
     html = _page()
-    match = re.search(r"fetch\('/api/intel-graph/dossier\?code='.*?\}\);\s*</script>", html, re.S)
+    match = re.search(
+        r"fetch\('/api/intel-graph/dossier\?code='.*?\}\);\s*</script>", html, re.S
+    )
     assert match, "dossier rendering block missing"
     renderer = match.group(0)
     assert "out.innerHTML" not in renderer
@@ -60,7 +76,7 @@ def test_historical_eligibility_fails_closed():
     match = re.search(r"// eligibility:start\s*(.*?)\s*// eligibility:end", html, re.S)
     assert match, "eligibility function missing"
     js = match.group(1)
-    cases = r'''
+    cases = r"""
 const base = {
   rights: 'verified', reviewed: true, clockAuthorityVerified: true,
   sourceKey: 'synthetic/key', version: 'v1',
@@ -88,9 +104,10 @@ const checks = [
 for (const [row, moment, expected] of checks) {
   if (historicalEligibility(row, moment) !== expected) process.exit(1);
 }
-'''
+"""
     if NODE is None:
         raise AssertionError("Node.js is required to run behavioral contract tests")
-    proc = subprocess.run([NODE, "-e", js + cases], capture_output=True,
-                          text=True, timeout=10)
+    proc = subprocess.run(
+        [NODE, "-e", js + cases], capture_output=True, text=True, timeout=10
+    )
     assert proc.returncode == 0, proc.stderr

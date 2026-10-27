@@ -89,8 +89,9 @@ def in_window(now: datetime, matrix: dict) -> tuple[str | None, dict | None]:
     return None, None
 
 
-def next_window(now: datetime, matrix: dict,
-                scan_days: int = 2) -> tuple[str | None, dict | None, datetime | None]:
+def next_window(
+    now: datetime, matrix: dict, scan_days: int = 2
+) -> tuple[str | None, dict | None, datetime | None]:
     """下一个开始时间 > now 的窗口（今明两天扫描，跨市场按开始时间取最早）。"""
     cands: list[tuple[datetime, str, dict]] = []
     for off in range(scan_days):
@@ -120,9 +121,9 @@ def is_quiet(now: datetime, matrix: dict, tier: str = "daily") -> bool:
     return now >= q_start or now < q_end  # 跨午夜 22:00-07:30
 
 
-def anchor_status(anchor_id: str, matrix: dict,
-                  now: datetime | None = None,
-                  repo: Path | None = None) -> dict:
+def anchor_status(
+    anchor_id: str, matrix: dict, now: datetime | None = None, repo: Path | None = None
+) -> dict:
     """数据锚就绪判定（mtime_today 规则）。
 
     返回 {status: ok|missing|stale|disabled|unknown, detail, mtime}。
@@ -131,27 +132,43 @@ def anchor_status(anchor_id: str, matrix: dict,
     """
     a = (matrix.get("anchors") or {}).get(anchor_id)
     if a is None:
-        return {"status": "unknown", "detail": "矩阵未注册锚 %s" % anchor_id,
-                "mtime": None}
+        return {
+            "status": "unknown",
+            "detail": "矩阵未注册锚 %s" % anchor_id,
+            "mtime": None,
+        }
     if not a.get("enabled", True):
-        return {"status": "disabled", "detail": "锚未启用（%s）" % anchor_id,
-                "mtime": None}
+        return {
+            "status": "disabled",
+            "detail": "锚未启用（%s）" % anchor_id,
+            "mtime": None,
+        }
     root = Path(repo) if repo else REPO
     p = root / a["path"]
     if not p.exists():
-        return {"status": "missing", "detail": "锚文件缺失: %s" % a["path"],
-                "mtime": None}
+        return {
+            "status": "missing",
+            "detail": "锚文件缺失: %s" % a["path"],
+            "mtime": None,
+        }
     mt = datetime.fromtimestamp(p.stat().st_mtime)
     now = now or datetime.now()
     today = now.date()
     if mt.date() != today:
-        return {"status": "stale", "detail": "mtime=%s 非今日" % mt.strftime(
-            "%Y-%m-%d %H:%M:%S"), "mtime": mt}
+        return {
+            "status": "stale",
+            "detail": "mtime=%s 非今日" % mt.strftime("%Y-%m-%d %H:%M:%S"),
+            "mtime": mt,
+        }
     min_mt = a.get("min_mtime")
     if min_mt:
         hh, mm = _hhmm(min_mt)
         if mt < datetime.combine(today, datetime.min.time()).replace(
-                hour=hh, minute=mm):
-            return {"status": "stale", "detail": "mtime=%s 早于 %s" % (
-                mt.strftime("%H:%M:%S"), min_mt), "mtime": mt}
+            hour=hh, minute=mm
+        ):
+            return {
+                "status": "stale",
+                "detail": "mtime=%s 早于 %s" % (mt.strftime("%H:%M:%S"), min_mt),
+                "mtime": mt,
+            }
     return {"status": "ok", "detail": "", "mtime": mt}

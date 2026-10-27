@@ -14,6 +14,7 @@
   刚才/那只/这个/它 等指代且无 6 位代码时，回填最近一次出现的代码。
 - 失败即诚实：写盘失败返回 False + 原因，不静默（禁吞异常判例）。
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -26,8 +27,7 @@ from pathlib import Path
 DEFAULT_TURNS = 8
 PREVIEW_CHARS = 40
 
-_PRONOUN_RE = re.compile(
-    r"(刚才|刚刚|那只|这只|那个|这个|上一只|它|上次说)")
+_PRONOUN_RE = re.compile(r"(刚才|刚刚|那只|这只|那个|这个|上一只|它|上次说)")
 _CODE_RE = re.compile(r"\b(\d{6})\b")
 
 
@@ -55,7 +55,7 @@ def remember(open_id, role, text, intent=None, code=None):
     """追加一轮。→ (ok, error)。写失败如实返回，不阻断消息链。"""
     entry = {
         "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
-        "role": role,                       # customer / bot
+        "role": role,  # customer / bot
         "text_md5": _md5(text),
         "text_preview": (text or "")[:PREVIEW_CHARS],
         "code": code or "",
@@ -86,7 +86,7 @@ def _load(open_id, turns=None):
                 try:
                     rows.append(json.loads(line))
                 except ValueError:
-                    continue      # 单行损坏跳过（rest of file 仍可用）
+                    continue  # 单行损坏跳过（rest of file 仍可用）
     except OSError:
         return []
     return rows[-n:]

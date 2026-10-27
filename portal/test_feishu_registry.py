@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """feishu_registry 单测（W1 底座）：合法/非法注册表、路由匹配、白名单、通道铁律。"""
+
 import copy
 import os
 import sys
@@ -44,8 +45,11 @@ def test_duplicate_role_rejected(real_registry):
 
 
 def test_channel_policy_locked(real_registry):
-    for key, bad in (("outbound", "any"), ("inbound", "any"),
-                     ("direct_openapi", "allowed")):
+    for key, bad in (
+        ("outbound", "any"),
+        ("inbound", "any"),
+        ("direct_openapi", "allowed"),
+    ):
         data = copy.deepcopy(real_registry)
         data["channel_policy"][key] = bad
         with pytest.raises(fr.RegistryError):
@@ -84,18 +88,24 @@ def test_route_unknown_role_rejected(real_registry, real_routes):
 def test_match_exec_task_p2p(real_registry, real_routes):
     roles, _ = fr.validate_registry(real_registry)
     routes = fr.validate_routes(real_routes, roles_index=roles)
-    assert fr.match_route(routes, role="zb.owner.exec", intent="task",
-                          chat_type="p2p") == "dsh:exec"
-    assert fr.match_route(routes, role="zb.owner.exec", intent="audio",
-                          chat_type="p2p") == "dsh:voice"
+    assert (
+        fr.match_route(routes, role="zb.owner.exec", intent="task", chat_type="p2p")
+        == "dsh:exec"
+    )
+    assert (
+        fr.match_route(routes, role="zb.owner.exec", intent="audio", chat_type="p2p")
+        == "dsh:voice"
+    )
 
 
 def test_match_exec_group_falls_to_fallback(real_registry, real_routes):
     roles, _ = fr.validate_registry(real_registry)
     routes = fr.validate_routes(real_routes, roles_index=roles)
     # 执行域只允许 p2p；群聊任务不得命中 dsh:exec
-    assert fr.match_route(routes, role="zb.owner.exec", intent="task",
-                          chat_type="group") != "dsh:exec"
+    assert (
+        fr.match_route(routes, role="zb.owner.exec", intent="task", chat_type="group")
+        != "dsh:exec"
+    )
 
 
 def test_match_feed_and_confirm_global(real_registry, real_routes):
@@ -108,17 +118,20 @@ def test_match_feed_and_confirm_global(real_registry, real_routes):
 def test_match_ticker_vs_qa(real_registry, real_routes):
     roles, _ = fr.validate_registry(real_registry)
     routes = fr.validate_routes(real_routes, roles_index=roles)
-    assert fr.match_route(routes, role="zb.quant.ticker",
-                          intent="command") == "quant:ticker_cmd"
-    assert fr.match_route(routes, role="zb.quant.qa",
-                          intent="question") == "qa:answer"
+    assert (
+        fr.match_route(routes, role="zb.quant.ticker", intent="command")
+        == "quant:ticker_cmd"
+    )
+    assert fr.match_route(routes, role="zb.quant.qa", intent="question") == "qa:answer"
 
 
 def test_cli_check_exit_zero():
     import subprocess
+
     py = sys.executable
-    script = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                          "feishu_registry.py")
+    script = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "feishu_registry.py"
+    )
     r = subprocess.run([py, script, "--check"], capture_output=True)
     assert r.returncode == 0, r.stdout + r.stderr
     assert "zb.owner.exec" in r.stdout.decode("utf-8", "replace")

@@ -15,6 +15,7 @@
 保活：并入计划任务「AI工作站CowAgent看门狗」（ops/keepalive_9899.py，8099 探针）。
 日志：work/km_hub.out（服务 stdout）/ work/km_stats.jsonl（统计流水）。
 """
+
 import argparse
 import logging
 import hashlib
@@ -39,7 +40,9 @@ WORK = os.path.join(HERE, "work")
 CONFIG_PATH = os.path.join(WORK, "km_config.json")
 SNAP_DIR = os.path.join(WORK, "km_snapshots")
 STATS_PATH = os.path.join(WORK, "km_stats.jsonl")
-LOG_PATH = os.path.join(WORK, "km_hub.out")  # 本服务日志尾巴（log() 写入处）；旧读 publish_watchdog.log 属跨服务串台，K-STOCK-394 纠偏
+LOG_PATH = os.path.join(
+    WORK, "km_hub.out"
+)  # 本服务日志尾巴（log() 写入处）；旧读 publish_watchdog.log 属跨服务串台，K-STOCK-394 纠偏
 NEWS_CFG = os.path.join(NEWS, "news_config.json")
 
 TIME_RE = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
@@ -47,15 +50,17 @@ EXT_RE = re.compile(r"^\.[A-Za-z0-9]{1,12}$")
 BODY_CAP = 65536
 SKIP_DIRS = {".git", "node_modules", "__pycache__", ".venv", "venv", "$RECYCLE.BIN"}
 
-_lock = threading.RLock()      # 配置/状态/fired 写锁
-_run_lock = threading.Lock()   # 推送串行化（一次只跑一个库的扫描+发送）
+_lock = threading.RLock()  # 配置/状态/fired 写锁
+_run_lock = threading.Lock()  # 推送串行化（一次只跑一个库的扫描+发送）
 _state = {"running": False, "last_tick": 0.0, "fired": {}, "last_results": {}}
 
 
 # ---------- 基础设施 ----------
 
+
 def atomic_write_json(path, obj):
     import tempfile
+
     d = os.path.dirname(path)
     os.makedirs(d, exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=d, suffix=".tmp")
@@ -67,7 +72,9 @@ def atomic_write_json(path, obj):
         try:
             os.remove(tmp)
         except OSError as exc:
-            logging.getLogger(__name__).warning("silent-except %s: %s", "km_feishu_hub.py", exc)
+            logging.getLogger(__name__).warning(
+                "silent-except %s: %s", "km_feishu_hub.py", exc
+            )
         raise
 
 
@@ -90,7 +97,9 @@ def known_targets():
         with open(NEWS_CFG, encoding="utf-8") as f:
             targets = list(json.load(f).get("push_targets", []))
     except (OSError, ValueError) as exc:
-        logging.getLogger(__name__).warning("silent-except %s: %s", "km_feishu_hub.py", exc)
+        logging.getLogger(__name__).warning(
+            "silent-except %s: %s", "km_feishu_hub.py", exc
+        )
     cfg = load_config()
     names = {t.get("name") for t in targets}
     for t in cfg.get("extra_targets", []):
@@ -105,11 +114,14 @@ def log(msg):
         with open(os.path.join(WORK, "km_hub.out"), "a", encoding="utf-8") as f:
             f.write(line)
     except OSError as exc:
-        logging.getLogger(__name__).warning("silent-except %s: %s", "km_feishu_hub.py", exc)
+        logging.getLogger(__name__).warning(
+            "silent-except %s: %s", "km_feishu_hub.py", exc
+        )
     print(line, end="", flush=True)
 
 
 # ---------- 库扫描（增量 + 分类） ----------
+
 
 def _walk_files(root, exts, max_files):
     files = {}
@@ -133,7 +145,9 @@ def _walk_files(root, exts, max_files):
 
 
 def _snapshot_path(lib_name):
-    return os.path.join(SNAP_DIR, hashlib.md5(lib_name.encode("utf-8")).hexdigest() + ".json")
+    return os.path.join(
+        SNAP_DIR, hashlib.md5(lib_name.encode("utf-8")).hexdigest() + ".json"
+    )
 
 
 def _load_snapshot(lib_name):
@@ -171,41 +185,63 @@ def scan_lib(lib, commit=True):
             key = os.path.splitext(rel)[1].lower() or "(无扩展名)"
         cats[key] = cats.get(key, 0) + 1
     cats = dict(sorted(cats.items(), key=lambda kv: -kv[1])[:12])
-    return {"added": added, "changed": changed, "removed": len(removed),
-            "total": len(files), "categories": cats, "truncated": truncated}
+    return {
+        "added": added,
+        "changed": changed,
+        "removed": len(removed),
+        "total": len(files),
+        "categories": cats,
+        "truncated": truncated,
+    }
 
 
 # ---------- 卡片与推送 ----------
+
 
 def build_card(lib, res, trigger):
     n_add, n_chg = len(res["added"]), res.get("n_changed", len(res["changed"]))
     # K-PUSH-008：v3 统一卡（有更新=蓝域资讯，无更新=绿域例行）
     domain = "news" if (n_add or n_chg) else "daily"
     head = "**新增 %d · 更新 %d · 库存量 %d**%s" % (
-        n_add, n_chg, res["total"],
-        "（文件数超上限，未全扫）" if res.get("truncated") else "")
+        n_add,
+        n_chg,
+        res["total"],
+        "（文件数超上限，未全扫）" if res.get("truncated") else "",
+    )
     if n_add + n_chg == 0:
         head += "\n本次无新增/更新。"
     extra = [{"tag": "markdown", "content": head}]
     if res["categories"]:
-        cat_md = " ｜ ".join("**%s** ×%d" % (k, v) for k, v in res["categories"].items())
+        cat_md = " ｜ ".join(
+            "**%s** ×%d" % (k, v) for k, v in res["categories"].items()
+        )
         extra.append({"tag": "hr"})
         extra.append({"tag": "markdown", "content": "**分类** " + cat_md})
     items = res["added"][:10] + res["changed"][:5]
     if items:
         lines = "\n".join("- " + i for i in items)
         extra.append({"tag": "hr"})
-        extra.append({"tag": "collapsible_panel", "expanded": False,
-                      "header": {"title": {"tag": "plain_text",
-                                           "content": "本次变更清单（前 15）"}},
-                      "border": {"color": "grey"}, "padding": "8px 12px",
-                      "elements": [{"tag": "markdown", "content": lines}]})
+        extra.append(
+            {
+                "tag": "collapsible_panel",
+                "expanded": False,
+                "header": {
+                    "title": {"tag": "plain_text", "content": "本次变更清单（前 15）"}
+                },
+                "border": {"color": "grey"},
+                "padding": "8px 12px",
+                "elements": [{"tag": "markdown", "content": lines}],
+            }
+        )
     from feishu_card_v2 import build_v3
+
     card, _audit = build_v3(
-        domain, "%s · 知识库摘要" % lib["name"],
-        source="老田的AI工作站 · KM 知识库联动 · %s · 路径 %s" % (
-            "手动" if trigger == "manual" else "定时", lib["path"]),
-        extra_els=extra)
+        domain,
+        "%s · 知识库摘要" % lib["name"],
+        source="老田的AI工作站 · KM 知识库联动 · %s · 路径 %s"
+        % ("手动" if trigger == "manual" else "定时", lib["path"]),
+        extra_els=extra,
+    )
     return card
 
 
@@ -219,7 +255,11 @@ def push_lib(lib, trigger):
             res = scan_lib(lib, commit=True)
             res["n_changed"] = len(res["changed"])
             n_dyn = len(res["added"]) + res["n_changed"]
-            skip = bool(lib.get("skip_empty", True)) and trigger == "schedule" and n_dyn == 0
+            skip = (
+                bool(lib.get("skip_empty", True))
+                and trigger == "schedule"
+                and n_dyn == 0
+            )
             if skip:
                 sent_targets = ["(无变更，跳过发送)"]
             else:
@@ -227,6 +267,7 @@ def push_lib(lib, trigger):
                 try:
                     sys.path.insert(0, os.path.dirname(HERE))
                     import push_flow
+
                     _, _, _, qblk = push_flow.quota_check()
                 except Exception:
                     qblk = False
@@ -234,13 +275,20 @@ def push_lib(lib, trigger):
                     err = "日配额已用尽，跳过发送（quota_block）"
                     sent_targets = ["(配额拦截)"]
                     try:  # 拦截也留痕（ok=false，不计费）
-                        push_flow.record(kind="quota_block:km_card",
-                                         channel="feishu", target=name,
-                                         count=1, ok=False)
+                        push_flow.record(
+                            kind="quota_block:km_card",
+                            channel="feishu",
+                            target=name,
+                            count=1,
+                            ok=False,
+                        )
                     except Exception as exc:
-                        logging.getLogger(__name__).warning("silent-except %s: %s", "km_feishu_hub.py", exc)
+                        logging.getLogger(__name__).warning(
+                            "silent-except %s: %s", "km_feishu_hub.py", exc
+                        )
                 else:
                     from feishu_card_v2 import send_card
+
                     card = build_card(lib, res, trigger)
                     tmap = {t["name"]: t for t in known_targets()}
                     for tn in lib.get("targets", []):
@@ -251,51 +299,95 @@ def push_lib(lib, trigger):
                             # K-STOCK-414：send_card 返回 (ok, why) 二元组，
                             # 误用单值接收时非空元组恒真→失败恒计成功（污染计费）
                             ok, _why = send_card(
-                                card, receive_id=t["id"],
-                                receive_id_type=t["type"], kind="km_card")
+                                card,
+                                receive_id=t["id"],
+                                receive_id_type=t["type"],
+                                kind="km_card",
+                            )
                         except Exception as e:  # noqa: BLE001
                             ok = False
-                            print("km_card send fail %s: %r" % (tn, e),
-                                  file=sys.stderr)
+                            print("km_card send fail %s: %r" % (tn, e), file=sys.stderr)
                         if ok:
                             sent_ok += 1
                             sent_targets.append(tn)
                     # 统一发送流水（商业化计费依据；fail-safe）
                     try:
-                        push_flow.record(kind="km_card", channel="feishu",
-                                         target=",".join(sent_targets) or "none",
-                                         count=1, ok=sent_ok > 0)
+                        push_flow.record(
+                            kind="km_card",
+                            channel="feishu",
+                            target=",".join(sent_targets) or "none",
+                            count=1,
+                            ok=sent_ok > 0,
+                        )
                     except Exception as exc:
-                        logging.getLogger(__name__).warning("silent-except %s: %s", "km_feishu_hub.py", exc)
+                        logging.getLogger(__name__).warning(
+                            "silent-except %s: %s", "km_feishu_hub.py", exc
+                        )
         except Exception as e:  # noqa: BLE001
             err = "%s" % e
-            res = {"added": [], "changed": [], "n_changed": 0, "total": 0,
-                   "categories": {}, "truncated": False, "removed": 0}
-        row = {"ts": datetime.now().isoformat(timespec="seconds"),
-               "date": datetime.now().strftime("%Y-%m-%d"),
-               "lib": name, "trigger": trigger,
-               "added": len(res["added"]), "changed": res["n_changed"],
-               "total": res["total"], "sent_ok": sent_ok,
-               "sent_targets": sent_targets, "error": err}
+            res = {
+                "added": [],
+                "changed": [],
+                "n_changed": 0,
+                "total": 0,
+                "categories": {},
+                "truncated": False,
+                "removed": 0,
+            }
+        row = {
+            "ts": datetime.now().isoformat(timespec="seconds"),
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "lib": name,
+            "trigger": trigger,
+            "added": len(res["added"]),
+            "changed": res["n_changed"],
+            "total": res["total"],
+            "sent_ok": sent_ok,
+            "sent_targets": sent_targets,
+            "error": err,
+        }
         try:
             os.makedirs(WORK, exist_ok=True)
             with open(STATS_PATH, "a", encoding="utf-8") as f:
                 f.write(json.dumps(row, ensure_ascii=False) + "\n")
         except OSError as exc:
-            logging.getLogger(__name__).warning("silent-except %s: %s", "km_feishu_hub.py", exc)
-        result = {"ts": row["ts"], "trigger": trigger, "added": row["added"],
-                  "changed": row["changed"], "sent_ok": sent_ok,
-                  "sent_targets": sent_targets, "error": err,
-                  "ok": err is None and (sent_ok > 0 or "(无变更" in "".join(sent_targets) or not lib.get("targets"))}
+            logging.getLogger(__name__).warning(
+                "silent-except %s: %s", "km_feishu_hub.py", exc
+            )
+        result = {
+            "ts": row["ts"],
+            "trigger": trigger,
+            "added": row["added"],
+            "changed": row["changed"],
+            "sent_ok": sent_ok,
+            "sent_targets": sent_targets,
+            "error": err,
+            "ok": err is None
+            and (
+                sent_ok > 0
+                or "(无变更" in "".join(sent_targets)
+                or not lib.get("targets")
+            ),
+        }
         with _lock:
             _state["last_results"][name] = result
-        log("[km] %s %s 新增%d 更新%d 发送%d/%d %s" % (
-            name, trigger, row["added"], row["changed"], sent_ok,
-            len(lib.get("targets", [])), err or "ok"))
+        log(
+            "[km] %s %s 新增%d 更新%d 发送%d/%d %s"
+            % (
+                name,
+                trigger,
+                row["added"],
+                row["changed"],
+                sent_ok,
+                len(lib.get("targets", [])),
+                err or "ok",
+            )
+        )
         return result
 
 
 # ---------- 调度 ----------
+
 
 def scheduler_loop():
     while True:
@@ -322,8 +414,9 @@ def scheduler_loop():
                     if len(_state["fired"]) > 60:
                         for k in sorted(_state["fired"])[:-60]:
                             _state["fired"].pop(k, None)
-                threading.Thread(target=push_lib, args=(lib, "schedule"),
-                                 daemon=True).start()
+                threading.Thread(
+                    target=push_lib, args=(lib, "schedule"), daemon=True
+                ).start()
         except Exception:  # noqa: BLE001
             traceback.print_exc()
         time.sleep(15)
@@ -340,8 +433,9 @@ def next_fires(cfg):
         if not lib.get("enabled", True):
             continue
         for t in sorted(lib.get("times") or []):
-            fire = datetime.strptime("%s %s" % (now.strftime("%Y-%m-%d"), t),
-                                     "%Y-%m-%d %H:%M")
+            fire = datetime.strptime(
+                "%s %s" % (now.strftime("%Y-%m-%d"), t), "%Y-%m-%d %H:%M"
+            )
             if fire >= now:
                 out.append((fire.strftime("%m-%d %H:%M"), lib["name"]))
     return sorted(out)
@@ -352,6 +446,7 @@ def stats_digest():
     days = []
     for i in range(13, -1, -1):
         from datetime import timedelta
+
         days.append((datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d"))
     rows = []
     try:
@@ -362,7 +457,9 @@ def stats_digest():
                 except ValueError:
                     continue
     except OSError as exc:
-        logging.getLogger(__name__).warning("silent-except %s: %s", "km_feishu_hub.py", exc)
+        logging.getLogger(__name__).warning(
+            "silent-except %s: %s", "km_feishu_hub.py", exc
+        )
     today_agg = {}
     for r in rows:
         if r.get("date") == today:
@@ -376,8 +473,14 @@ def stats_digest():
             a = trend.setdefault(r["date"], {"added": 0, "sent": 0})
             a["added"] += r.get("added", 0)
             a["sent"] += r.get("sent_ok", 0)
-    trend = [{"date": d, "added": trend.get(d, {}).get("added", 0),
-              "sent": trend.get(d, {}).get("sent", 0)} for d in days]
+    trend = [
+        {
+            "date": d,
+            "added": trend.get(d, {}).get("added", 0),
+            "sent": trend.get(d, {}).get("sent", 0),
+        }
+        for d in days
+    ]
     return today_agg, trend
 
 
@@ -391,9 +494,15 @@ def tail_log(n=15):
 
 # ---------- HTTP ----------
 
+
 def esc(s):
-    return (str(s).replace("&", "&amp;").replace("<", "&lt;")
-            .replace(">", "&gt;").replace('"', "&quot;"))
+    return (
+        str(s)
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+    )
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -417,16 +526,35 @@ class Handler(BaseHTTPRequestHandler):
                 lasts = dict(_state["last_results"])
             libs = []
             for lib in cfg.get("libraries", []):
-                libs.append({k: lib.get(k) for k in
-                             ("name", "path", "times", "targets", "exts",
-                              "category_by", "skip_empty", "enabled")})
+                libs.append(
+                    {
+                        k: lib.get(k)
+                        for k in (
+                            "name",
+                            "path",
+                            "times",
+                            "targets",
+                            "exts",
+                            "category_by",
+                            "skip_empty",
+                            "enabled",
+                        )
+                    }
+                )
                 libs[-1]["last"] = lasts.get(lib["name"])
-            self._json({
-                "heartbeat": heartbeat_ok(), "enabled": cfg.get("enabled", True),
-                "libs": libs, "next": next_fires(cfg),
-                "targets": known_targets(), "today": today, "trend": trend,
-                "running": _state["running"],
-                "log_tail": tail_log()})
+            self._json(
+                {
+                    "heartbeat": heartbeat_ok(),
+                    "enabled": cfg.get("enabled", True),
+                    "libs": libs,
+                    "next": next_fires(cfg),
+                    "targets": known_targets(),
+                    "today": today,
+                    "trend": trend,
+                    "running": _state["running"],
+                    "log_tail": tail_log(),
+                }
+            )
         elif p == "/health":
             self._json({"ok": True, "ts": datetime.now().isoformat(timespec="seconds")})
         elif p == "/":
@@ -459,8 +587,11 @@ def _validate_lib(lib, cfg):
     name = (lib.get("name") or "").strip()
     if not name or len(name) > 40:
         return "库名必填且 ≤40 字"
-    if any(l["name"] == name for l in cfg.get("libraries", [])
-           if l["name"] != lib.get("_orig_name")):
+    if any(
+        l["name"] == name
+        for l in cfg.get("libraries", [])
+        if l["name"] != lib.get("_orig_name")
+    ):
         return "库名已存在：%s" % name
     path = (lib.get("path") or "").strip()
     if not os.path.isdir(path):
@@ -472,7 +603,7 @@ def _validate_lib(lib, cfg):
     bad = [t for t in (lib.get("targets") or []) if t not in tnames]
     if bad:
         return "目标不存在（需先在 extra_targets 或 news_config 定义）：%s" % bad
-    for e in (lib.get("exts") or []):
+    for e in lib.get("exts") or []:
         if not EXT_RE.match(e):
             return "扩展名格式非法（需 .xxx）：%s" % e
     if lib.get("category_by") not in (None, "", "ext", "subdir"):
@@ -497,8 +628,7 @@ def dispatch(req):
         libs.append(lib)
         save_config(cfg)
         res = scan_lib(lib, commit=True)  # 基线扫描：首扫记 0 增量
-        return {"ok": True, "baseline": {"total": res["total"]},
-                "config": cfg}
+        return {"ok": True, "baseline": {"total": res["total"]}, "config": cfg}
 
     if act == "update_lib":
         lib = req.get("lib") or {}
@@ -519,7 +649,9 @@ def dispatch(req):
         try:
             os.remove(_snapshot_path(name))
         except OSError as exc:
-            logging.getLogger(__name__).warning("silent-except %s: %s", "km_feishu_hub.py", exc)
+            logging.getLogger(__name__).warning(
+                "silent-except %s: %s", "km_feishu_hub.py", exc
+            )
         return {"ok": True, "config": cfg}
 
     if act == "toggle_lib":
@@ -536,8 +668,11 @@ def dispatch(req):
 
     if act == "add_target":
         t = req.get("target") or {}
-        if not t.get("name") or not t.get("id") or \
-                t.get("type") not in ("chat_id", "open_id"):
+        if (
+            not t.get("name")
+            or not t.get("id")
+            or t.get("type") not in ("chat_id", "open_id")
+        ):
             return {"ok": False, "error": "target 需含 name/id/type(chat_id|open_id)"}
         if any(x["name"] == t["name"] for x in known_targets()):
             return {"ok": False, "error": "目标名已存在：%s" % t["name"]}
@@ -553,11 +688,13 @@ def dispatch(req):
         if _state["running"]:
             return {"ok": False, "error": "已有推送在进行"}
         _state["running"] = True
+
         def worker():
             try:
                 push_lib(lib, "manual")
             finally:
                 _state["running"] = False
+
         threading.Thread(target=worker, daemon=True).start()
         return {"ok": True}
 
@@ -566,12 +703,14 @@ def dispatch(req):
             return {"ok": False, "error": "已有推送在进行"}
         enabled = [l for l in libs if l.get("enabled", True)]
         _state["running"] = True
+
         def worker():
             try:
                 for l in enabled:
                     push_lib(l, "manual")
             finally:
                 _state["running"] = False
+
         threading.Thread(target=worker, daemon=True).start()
         return {"ok": True, "count": len(enabled)}
 
@@ -680,17 +819,23 @@ refresh();setInterval(refresh,5000);
 
 # ---------- main ----------
 
+
 def main():
     parser = argparse.ArgumentParser(description="KM 知识库飞书联动枢纽")
     parser.add_argument("--port", type=int, default=PORT)
-    parser.add_argument("--bg", action="store_true",
-                        help="脱离会话后台驻留（DETACHED_PROCESS，日志到 work/km_hub.out）")
+    parser.add_argument(
+        "--bg",
+        action="store_true",
+        help="脱离会话后台驻留（DETACHED_PROCESS，日志到 work/km_hub.out）",
+    )
     args = parser.parse_args()
 
     if args.bg:
         out = open(os.path.join(WORK, "km_hub.out"), "ab")
         subprocess_detached(args.port, out)
-        print("[ok] 已后台驻留：http://127.0.0.1:%d/（日志 work/km_hub.out）" % args.port)
+        print(
+            "[ok] 已后台驻留：http://127.0.0.1:%d/（日志 work/km_hub.out）" % args.port
+        )
         return 0
 
     os.makedirs(WORK, exist_ok=True)
@@ -701,14 +846,21 @@ def main():
         try:
             _s.reconfigure(line_buffering=True)
         except Exception as exc:
-            logging.getLogger(__name__).warning("silent-except %s: %s", "km_feishu_hub.py", exc)
+            logging.getLogger(__name__).warning(
+                "silent-except %s: %s", "km_feishu_hub.py", exc
+            )
     try:
         import faulthandler
+
         faulthandler.enable(open(os.path.join(WORK, "km_hub_fault.log"), "ab"))
     except Exception as exc:
-        logging.getLogger(__name__).warning("silent-except %s: %s", "km_feishu_hub.py", exc)
-    print("[start] PID=%s %s port=%d" % (
-        os.getpid(), datetime.now().strftime("%m-%d %H:%M:%S"), args.port))
+        logging.getLogger(__name__).warning(
+            "silent-except %s: %s", "km_feishu_hub.py", exc
+        )
+    print(
+        "[start] PID=%s %s port=%d"
+        % (os.getpid(), datetime.now().strftime("%m-%d %H:%M:%S"), args.port)
+    )
     if not os.path.exists(CONFIG_PATH):
         save_config(load_config())
     threading.Thread(target=scheduler_loop, daemon=True).start()
@@ -719,22 +871,31 @@ def main():
         return 1
     print("[ok] KM 知识库飞书联动：http://127.0.0.1:%d/" % args.port)
     cfg = load_config()
-    print("[ok] 已注册库：%s（enabled=%s）" % (
-        [l["name"] for l in cfg.get("libraries", [])], cfg.get("enabled", True)))
+    print(
+        "[ok] 已注册库：%s（enabled=%s）"
+        % ([l["name"] for l in cfg.get("libraries", [])], cfg.get("enabled", True))
+    )
     try:
         srv.serve_forever()
     finally:
-        print("[exit] PID=%s %s" % (
-            os.getpid(), datetime.now().strftime("%m-%d %H:%M:%S")))
+        print(
+            "[exit] PID=%s %s"
+            % (os.getpid(), datetime.now().strftime("%m-%d %H:%M:%S"))
+        )
     return 0
 
 
 def subprocess_detached(port, out):
     import subprocess
+
     subprocess.Popen(
         [sys.executable, os.path.abspath(__file__), "--port", str(port)],
-        cwd=HERE, stdin=subprocess.DEVNULL, stdout=out, stderr=out,
-        creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP)
+        cwd=HERE,
+        stdin=subprocess.DEVNULL,
+        stdout=out,
+        stderr=out,
+        creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
+    )
 
 
 if __name__ == "__main__":

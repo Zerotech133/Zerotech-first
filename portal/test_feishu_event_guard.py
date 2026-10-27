@@ -13,38 +13,42 @@ sys.path.insert(0, HERE)
 
 # ── T1：签名公式等价/失真修复 ─────────────────────────
 ts, nc, ek = "1760000000", "abc123", "test-encrypt-key"
-ok_body = json.dumps({"type": "url_verification",
-                      "challenge": "中文挑战✓"}).encode("utf-8")
-old = hashlib.sha256((ts + nc + ek + ok_body.decode("utf-8", "replace")
-                      ).encode("utf-8")).hexdigest()
+ok_body = json.dumps({"type": "url_verification", "challenge": "中文挑战✓"}).encode(
+    "utf-8"
+)
+old = hashlib.sha256(
+    (ts + nc + ek + ok_body.decode("utf-8", "replace")).encode("utf-8")
+).hexdigest()
 new = hashlib.sha256((ts + nc + ek).encode("utf-8") + ok_body).hexdigest()
 assert old == new, "合法 UTF-8 body 上新旧公式应等价"
 
-bad_body = ok_body + b'\xff\xfe\x80'          # 非法 UTF-8 尾巴
-old_bad = hashlib.sha256((ts + nc + ek + bad_body.decode("utf-8", "replace")
-                          ).encode("utf-8")).hexdigest()
+bad_body = ok_body + b"\xff\xfe\x80"  # 非法 UTF-8 尾巴
+old_bad = hashlib.sha256(
+    (ts + nc + ek + bad_body.decode("utf-8", "replace")).encode("utf-8")
+).hexdigest()
 new_bad = hashlib.sha256((ts + nc + ek).encode("utf-8") + bad_body).hexdigest()
 assert new_bad != old_bad, "旧公式在非 UTF-8 body 上应失真（新=官方字节真值）"
 print("T1 验签字节化 OK（合法UTF-8等价 / 非UTF-8失真修复）")
 
 # ── T2/T3：降级告警状态机（同日一次 + 计数 + 跨日重置） ──
 import api_misc  # noqa: E402
+
 H = api_misc.Handler
 _called = []
 # 桩前先保存原引用：api_misc.subprocess 就是标准库 subprocess 模块本体，
 # 模块级替换 = 污染全进程（2026-10-20 判例：后续 test_subscription_smoke
 # 的子进程调用拿到无 stdout 的桩对象 → AttributeError）。文件末尾恢复。
 _orig_subprocess_run = api_misc.subprocess.run
-api_misc.subprocess.run = (lambda *a, **k:
-                           _called.append(a) or types.SimpleNamespace(
-                               returncode=0))
+api_misc.subprocess.run = lambda *a, **k: (
+    _called.append(a) or types.SimpleNamespace(returncode=0)
+)
 fake = types.SimpleNamespace(log_message=lambda *a, **k: _called.append(("log", a)))
 
 flag = os.path.join(tempfile.gettempdir(), "_test_397_flag.json")
 os.environ["FEISHU_EVENT_FLAG"] = flag
 
-H._feishu_unverified_alert(fake)   # 第 1 次：推送 + 日志
-H._feishu_unverified_alert(fake)   # 第 2/3 次：只计数
+H._feishu_unverified_alert(fake)  # 第 1 次：推送 + 日志
+H._feishu_unverified_alert(fake)  # 第 2/3 次：只计数
 H._feishu_unverified_alert(fake)
 sends = [c for c in _called if c and c[0] != "log"]
 logs = [c for c in _called if c and c[0] == "log"]
@@ -52,10 +56,9 @@ assert len(sends) == 1 and len(logs) == 1, (sends, logs)
 with open(flag, encoding="utf-8") as f:
     st = json.load(f)
 assert st["count"] == 3 and st["alerted"] is True, st
-print("T2 同日节流 OK: count=%d 推送=%d 日志=%d" % (st["count"],
-                                                   len(sends), len(logs)))
+print("T2 同日节流 OK: count=%d 推送=%d 日志=%d" % (st["count"], len(sends), len(logs)))
 
-with open(flag, "w", encoding="utf-8") as f:   # 伪造昨日态
+with open(flag, "w", encoding="utf-8") as f:  # 伪造昨日态
     json.dump({"day": "1970-01-01", "count": 9, "alerted": True}, f)
 _called.clear()
 H._feishu_unverified_alert(fake)
@@ -70,65 +73,83 @@ with open(flag, "w", encoding="utf-8") as f:
     json.dump({"day": "1970-01-01", "count": 0, "alerted": True}, f)
 del os.environ["FEISHU_EVENT_FLAG"]
 
+
 # ── T4（K-STOCK-399 F2 收紧）：事件分发路由 ───────────
 def _fake_handler(body_dict):
     import time
+
     resp, routed = [], []
     raw = json.dumps(body_dict).encode("utf-8")
     ts, nc, key = str(int(time.time())), "test-nonce", "test-route-key"
     sig = hashlib.sha256((ts + nc + key).encode("utf-8") + raw).hexdigest()
     h = types.SimpleNamespace(
-        headers={"X-Lark-Request-Timestamp": ts, "X-Lark-Request-Nonce": nc,
-                 "X-Lark-Signature": sig},
+        headers={
+            "X-Lark-Request-Timestamp": ts,
+            "X-Lark-Request-Nonce": nc,
+            "X-Lark-Signature": sig,
+        },
         _json=lambda obj, code=200: resp.append((obj, code)),
         _handle_card_action=lambda ev: routed.append(ev),
         _feishu_encrypt_key=lambda: key,
         _feishu_unverified_alert=lambda: None,
-        log_message=lambda *a, **k: None)
+        log_message=lambda *a, **k: None,
+    )
     return h, resp, routed, raw
 
+
 # T4a：外来事件含字符串 action 字段（如 contact/approval 变更）→ 不误路由
-h, resp, routed, raw = _fake_handler({
-    "header": {"event_type": "contact.user.updated_v3"},
-    "event": {"action": "created", "obj": {}}})
+h, resp, routed, raw = _fake_handler(
+    {
+        "header": {"event_type": "contact.user.updated_v3"},
+        "event": {"action": "created", "obj": {}},
+    }
+)
 H._api_feishu_event(h, raw)
 assert not routed, "字符串 action 不得进卡片处理器"
 assert resp and resp[0][1] == 200, resp
 
 # T4b：旧 schema 卡按钮（body 顶层 action.value）→ 正常路由
-h, resp, routed, raw = _fake_handler({
-    "action": {"value": {"tag": "subscribe", "kind": "intraday"}}})
+h, resp, routed, raw = _fake_handler(
+    {"action": {"value": {"tag": "subscribe", "kind": "intraday"}}}
+)
 H._api_feishu_event(h, raw)
 assert len(routed) == 1 and routed[0]["action"]["value"]["tag"] == "subscribe"
 
 # T4c：v2 schema card.action.trigger → 正常路由
-h, resp, routed, raw = _fake_handler({
-    "header": {"event_type": "card.action.trigger"},
-    "event": {"action": {"value": {"tag": "subscribe"}}, "operator": {}}})
+h, resp, routed, raw = _fake_handler(
+    {
+        "header": {"event_type": "card.action.trigger"},
+        "event": {"action": {"value": {"tag": "subscribe"}}, "operator": {}},
+    }
+)
 H._api_feishu_event(h, raw)
 assert len(routed) == 1
 
 # T4d：含 dict action 但无 value 键的外来事件 → 不误路由（收紧核心）
-h, resp, routed, raw = _fake_handler({
-    "event": {"action": {"type": "unknown", "form": []}}})
+h, resp, routed, raw = _fake_handler(
+    {"event": {"action": {"type": "unknown", "form": []}}}
+)
 H._api_feishu_event(h, raw)
 assert not routed and resp and resp[0][1] == 200, resp
 
 # T4e：未配置 Key，包括合法 JSON 与畸形 JSON，均不得走降级 200。
-for raw in (b'{"type":"url_verification","challenge":"x"}', b'{'):
+for raw in (b'{"type":"url_verification","challenge":"x"}', b"{"):
     resp, routed, alerted = [], [], []
     h = types.SimpleNamespace(
-        headers={}, _json=lambda obj, code=200: resp.append((obj, code)),
+        headers={},
+        _json=lambda obj, code=200: resp.append((obj, code)),
         _handle_card_action=lambda ev: routed.append(ev),
         _feishu_encrypt_key=lambda: None,
         _feishu_unverified_alert=lambda: alerted.append(True),
-        log_message=lambda *a, **k: None)
+        log_message=lambda *a, **k: None,
+    )
     H._api_feishu_event(h, raw)
     assert resp and resp[0][1] == 503 and not routed and not alerted, resp
 
 # T4f：有 Key、无签名时，即便 body 为握手也必须 403。
-h, resp, routed, raw = _fake_handler({
-    "type": "url_verification", "challenge": "unsigned"})
+h, resp, routed, raw = _fake_handler(
+    {"type": "url_verification", "challenge": "unsigned"}
+)
 h.headers.pop("X-Lark-Signature")
 H._api_feishu_event(h, raw)
 assert resp and resp[0][1] == 403 and not routed, resp
@@ -150,13 +171,17 @@ def _probe(body_dict, ts):
     sig = _hl.sha256((ts + nc + _EK407).encode("utf-8") + raw).hexdigest()
     resp, routed = [], []
     hh = types.SimpleNamespace(
-        headers={"X-Lark-Request-Timestamp": ts, "X-Lark-Request-Nonce": nc,
-                 "X-Lark-Signature": sig},
+        headers={
+            "X-Lark-Request-Timestamp": ts,
+            "X-Lark-Request-Nonce": nc,
+            "X-Lark-Signature": sig,
+        },
         _json=lambda obj, code=200: resp.append((obj, code)),
         _handle_card_action=lambda ev: routed.append(ev),
         _feishu_encrypt_key=lambda: _EK407,
         _feishu_unverified_alert=lambda: None,
-        log_message=lambda *a, **k: None)
+        log_message=lambda *a, **k: None,
+    )
     return hh, resp, routed
 
 

@@ -7,6 +7,7 @@
 （id/ts/bias/conf），真库只读——这是「读层 v1 未路由」补链的验收证据。
 含 since_id 水位模式（量化读点 rowid 游标）单测 T7-T9。
 """
+
 import json
 import os
 import shutil
@@ -34,37 +35,96 @@ OLD_TS = "2026-01-01 00:00"
 db_dir = Path(FIX) / "news_collector"
 db_dir.mkdir(parents=True)
 db = sqlite3.connect(db_dir / "news.db")
-db.execute("CREATE TABLE news (id TEXT PRIMARY KEY, source TEXT, ts TEXT, "
-           "created_at TEXT, title TEXT, content TEXT, stocks TEXT, "
-           "jev TEXT, hit INTEGER DEFAULT 0, pushed INTEGER DEFAULT 0)")
+db.execute(
+    "CREATE TABLE news (id TEXT PRIMARY KEY, source TEXT, ts TEXT, "
+    "created_at TEXT, title TEXT, content TEXT, stocks TEXT, "
+    "jev TEXT, hit INTEGER DEFAULT 0, pushed INTEGER DEFAULT 0)"
+)
 rows = [
-    ("n1", "sina", SINCE_TS, SINCE_TS, "标题甲",
-     "内容", json.dumps(["600000.SH"]), json.dumps(
-         {"bias": "bull", "conf": 0.9, "impact_cn": "高", "reason": "r1"})),
-    ("n2", "sina", SINCE_TS, SINCE_TS, "标题乙",
-     "内容", json.dumps(["000001.SZ", "600000.SH"]), "not-json"),  # 坏 jev
-    ("n3", "east", SINCE_TS, SINCE_TS, "标题丙",
-     "内容", "[]", ""),                                                    # 无标的
-    ("n4", "east", OLD_TS, OLD_TS, "窗口外",
-     "内容", json.dumps(["600000.SH"]), json.dumps({"bias": "bear", "conf": 0.5})),
-    ("n5", "sina", SINCE_TS, SINCE_TS, "标题丁",
-     "内容", "bad-json", json.dumps({"bias": "neutral", "conf": 0.3})),
+    (
+        "n1",
+        "sina",
+        SINCE_TS,
+        SINCE_TS,
+        "标题甲",
+        "内容",
+        json.dumps(["600000.SH"]),
+        json.dumps({"bias": "bull", "conf": 0.9, "impact_cn": "高", "reason": "r1"}),
+    ),
+    (
+        "n2",
+        "sina",
+        SINCE_TS,
+        SINCE_TS,
+        "标题乙",
+        "内容",
+        json.dumps(["000001.SZ", "600000.SH"]),
+        "not-json",
+    ),  # 坏 jev
+    ("n3", "east", SINCE_TS, SINCE_TS, "标题丙", "内容", "[]", ""),  # 无标的
+    (
+        "n4",
+        "east",
+        OLD_TS,
+        OLD_TS,
+        "窗口外",
+        "内容",
+        json.dumps(["600000.SH"]),
+        json.dumps({"bias": "bear", "conf": 0.5}),
+    ),
+    (
+        "n5",
+        "sina",
+        SINCE_TS,
+        SINCE_TS,
+        "标题丁",
+        "内容",
+        "bad-json",
+        json.dumps({"bias": "neutral", "conf": 0.3}),
+    ),
 ]
-db.executemany("INSERT INTO news VALUES (?,?,?,?,?,?,?,?,?,?)",
-               [r + (0, 0) for r in rows])
+db.executemany(
+    "INSERT INTO news VALUES (?,?,?,?,?,?,?,?,?,?)", [r + (0, 0) for r in rows]
+)
 db.commit()
 db.close()
 
 with open(os.path.join(FIX, "events.jsonl"), "w", encoding="utf-8") as f:
-    f.write(json.dumps({"id": "e1", "kind": "news", "ts": SINCE_TS,
-                        "text": "事件一", "source": "sina",
-                        "stocks": ["600000.SH"], "bias": "bull",
-                        "conf": 0.98, "reason": "r1", "tag": "jev"}) + "\n")
+    f.write(
+        json.dumps(
+            {
+                "id": "e1",
+                "kind": "news",
+                "ts": SINCE_TS,
+                "text": "事件一",
+                "source": "sina",
+                "stocks": ["600000.SH"],
+                "bias": "bull",
+                "conf": 0.98,
+                "reason": "r1",
+                "tag": "jev",
+            }
+        )
+        + "\n"
+    )
     f.write("not-a-json-line\n")  # 坏行
-    f.write(json.dumps({"id": "e2", "kind": "news", "ts": OLD_TS,
-                        "text": "窗口外", "source": "sina",
-                        "stocks": ["600000.SH"], "bias": "bear",
-                        "conf": 0.4, "reason": "r2", "tag": "jev"}) + "\n")
+    f.write(
+        json.dumps(
+            {
+                "id": "e2",
+                "kind": "news",
+                "ts": OLD_TS,
+                "text": "窗口外",
+                "source": "sina",
+                "stocks": ["600000.SH"],
+                "bias": "bear",
+                "conf": 0.4,
+                "reason": "r2",
+                "tag": "jev",
+            }
+        )
+        + "\n"
+    )
 
 _n = 0
 
@@ -90,14 +150,14 @@ _ok("参数白名单/域/代码格式/天数上限 四路 400")
 body, st = bus.bus_query({"domain": "news", "code": "600000.SH", "days": "7"})
 assert st == 200 and body["ok"]
 ids = [i["id"] for i in body["items"]]
-assert ids == ["n2", "n1"], ids                 # n3 无标的/n4 窗口外/
-assert body["count"] == 2                       # n5 stocks 坏 JSON 不匹配代码
+assert ids == ["n2", "n1"], ids  # n3 无标的/n4 窗口外/
+assert body["count"] == 2  # n5 stocks 坏 JSON 不匹配代码
 by_id = {i["id"]: i for i in body["items"]}
 assert by_id["n1"]["jev"]["bias"] == "bull"
-assert by_id["n2"]["jev"] is None              # 坏 JSON → None 不炸
+assert by_id["n2"]["jev"] is None  # 坏 JSON → None 不炸
 body, st = bus.bus_query({"domain": "news", "days": "7", "limit": "100"})
 n5 = [i for i in body["items"] if i["id"] == "n5"]
-assert n5 and n5[0]["stocks"] == []            # 无代码过滤时 stocks 坏→[] 在列
+assert n5 and n5[0]["stocks"] == []  # 无代码过滤时 stocks 坏→[] 在列
 _ok("news 域窗口/代码过滤与坏数据兜底")
 
 # ── T3 jev 域：只收有效判定，坏行计数 ──────────────────────────
@@ -119,12 +179,11 @@ assert item["code"] == "600000.SH"
 _ok("evidence 域委托委托口径（精确 ts_code）")
 
 # ── T5 events 域：窗口过滤 + 坏行跳过 ──────────────────────────
-body, st = bus.bus_query({"domain": "events", "code": "600000.SH",
-                          "days": "7"})
+body, st = bus.bus_query({"domain": "events", "code": "600000.SH", "days": "7"})
 assert st == 200 and [i["id"] for i in body["items"]] == ["e1"]
 assert body["items"][0]["bias"] == "bull" and body["count"] == 1
 body, st = bus.bus_query({"domain": "events", "days": "7", "limit": "100"})
-assert body["errors"].get("bad_rows") == 1     # not-a-json-line
+assert body["errors"].get("bad_rows") == 1  # not-a-json-line
 _ok("events 域窗口/坏行计数")
 
 # ── T6 缺源 fail-visible ──────────────────────────────────────
@@ -135,11 +194,13 @@ os.environ["INTEL_BUS_EVENTS_PATH"] = os.path.join(FIX, "events.jsonl")
 _ok("events 缺源 503 fail-visible")
 
 # ── T7 since_id 参数门 ────────────────────────────────────────
-for bad in ({"domain": "news", "since_id": "abc"},
-            {"domain": "news", "since_id": "-1"},
-            {"domain": "news", "since_id": "1.5"},
-            {"domain": "events", "since_id": "1"},
-            {"domain": "evidence", "since_id": "1"}):
+for bad in (
+    {"domain": "news", "since_id": "abc"},
+    {"domain": "news", "since_id": "-1"},
+    {"domain": "news", "since_id": "1.5"},
+    {"domain": "events", "since_id": "1"},
+    {"domain": "evidence", "since_id": "1"},
+):
     body, st = bus.bus_query(bad)
     assert st == 400 and not body["ok"], (bad, st)
 _ok("since_id 非法值/越界域 五路 400")
@@ -152,9 +213,9 @@ assert [i["id"] for i in body["items"]] == ["n1"]
 assert body["count"] == 2 and body["errors"]["bad_rows"] == 1
 assert body["errors"]["max_rowid"] == 2
 assert body["items"][0]["rid"] == 1
-assert body["items"][0]["jev"]["reason"] == "r1"   # 完整 dict 非投影
+assert body["items"][0]["jev"]["reason"] == "r1"  # 完整 dict 非投影
 body, st = bus.bus_query({"domain": "jev", "since_id": "2", "limit": "2"})
-assert [i["id"] for i in body["items"]] == ["n4", "n5"]      # 窗口外 n4 也在
+assert [i["id"] for i in body["items"]] == ["n4", "n5"]  # 窗口外 n4 也在
 assert body["errors"]["max_rowid"] == 5 and body["count"] == 2
 body, st = bus.bus_query({"domain": "jev", "since_id": "5", "limit": "2"})
 assert st == 200 and body["items"] == [] and body["count"] == 0
@@ -178,21 +239,22 @@ print("UNIT PASS（情报总线 9 组单测）")
 # ── 影子对账（真库只读）────────────────────────────────────────
 if __name__ == "__main__":
     print("--- 影子对账：总线 vs 直读基线（真实 news.db，mode=ro）---")
-    base = Path(os.environ.get("AIOS_ROOT", "C:/aios")) / "news_collector" / \
-        "news.db"
+    base = Path(os.environ.get("AIOS_ROOT", "C:/aios")) / "news_collector" / "news.db"
     if not base.is_file():
         print("RECONCILE SKIP：真实 news.db 不存在（%s）" % base)
     else:
         days = 7
         since, until = bus._window(days)
-        con = sqlite3.connect("file:" + base.resolve().as_posix() +
-                              "?mode=ro", uri=True)
+        con = sqlite3.connect(
+            "file:" + base.resolve().as_posix() + "?mode=ro", uri=True
+        )
         baseline = con.execute(
             "SELECT id,ts,jev FROM news WHERE ts>=? AND ts<=? "
-            "AND jev IS NOT NULL AND jev!=''", (since, until)).fetchall()
+            "AND jev IS NOT NULL AND jev!=''",
+            (since, until),
+        ).fetchall()
         con.close()
-        body, st = bus.bus_query({"domain": "jev", "days": str(days),
-                                  "limit": "100"})
+        body, st = bus.bus_query({"domain": "jev", "days": str(days), "limit": "100"})
         assert st == 200
         bus_rows = {i["id"]: i for i in body["items"]}
         # 对账口径：基线 id 全集 vs 总线 id 全集（limit 100 内）；逐条
@@ -200,6 +262,7 @@ if __name__ == "__main__":
         base_ids = set()
         mismatch = []
         import api_news_intel as ni
+
         bad_base = 0
         for _id, ts, raw in baseline:
             j = ni._parse_jev(raw)
@@ -208,18 +271,25 @@ if __name__ == "__main__":
                 continue
             base_ids.add(_id)
             b = bus_rows.get(_id)
-            if not b or b["ts"] != ts or b["jev"]["bias"] != j["bias"] or \
-                    b["jev"]["conf"] != j["conf"]:
+            if (
+                not b
+                or b["ts"] != ts
+                or b["jev"]["bias"] != j["bias"]
+                or b["jev"]["conf"] != j["conf"]
+            ):
                 mismatch.append(_id)
         extra = set(bus_rows) - base_ids
-        green = not mismatch and not extra and \
-            body["count"] >= len(base_ids) - 0
-        print("基线有效判定 %d（坏 JSON %d）｜总线 items %d｜不一致 %s｜"
-              "总线多出 %s" % (len(base_ids), bad_base, len(bus_rows),
-                               mismatch or "无", extra or "无"))
+        green = not mismatch and not extra and body["count"] >= len(base_ids) - 0
+        print(
+            "基线有效判定 %d（坏 JSON %d）｜总线 items %d｜不一致 %s｜"
+            "总线多出 %s"
+            % (len(base_ids), bad_base, len(bus_rows), mismatch or "无", extra or "无")
+        )
         # 窗口超 100 条时总线 limit 截断属预期，比较限于前 100
-        print("RECONCILE %s" % ("PASS（读层 v1 未路由→总线接线对账一致）"
-                                if green else "FAIL"))
+        print(
+            "RECONCILE %s"
+            % ("PASS（读层 v1 未路由→总线接线对账一致）" if green else "FAIL")
+        )
         sys.exit(0 if green else 1)
 
 shutil.rmtree(FIX, ignore_errors=True)

@@ -22,6 +22,7 @@ import push_matrix_send as ms  # noqa: E402
 
 # ---------- 测试夹具 ----------
 
+
 def _matrix():
     """测试矩阵：两市场不同 daily_cap + 静默窗 + critical 窗口 + 国灶模板。"""
     return {
@@ -29,25 +30,57 @@ def _matrix():
         "quiet_hours": {"start": "22:00", "end": "07:30"},
         "critical_tiers": ["critical"],
         "markets": {
-            "cn": {"daily_cap": 1, "windows": [
-                {"name": "morning", "start": "07:40", "end": "09:15",
-                 "tier": "daily", "anchor": "guojia",
-                 "template": "daily_digest", "deadline": "08:00"}]},
-            "us": {"daily_cap": 2, "windows": [
-                {"name": "preopen", "start": "20:40", "end": "21:20",
-                 "tier": "daily", "anchor": "guojia",
-                 "template": "us_preopen", "deadline": "21:00"},
-                {"name": "burst", "start": "12:00", "end": "13:00",
-                 "tier": "critical", "anchor": "guojia",
-                 "template": "market_close", "deadline": "12:30"}]},
+            "cn": {
+                "daily_cap": 1,
+                "windows": [
+                    {
+                        "name": "morning",
+                        "start": "07:40",
+                        "end": "09:15",
+                        "tier": "daily",
+                        "anchor": "guojia",
+                        "template": "daily_digest",
+                        "deadline": "08:00",
+                    }
+                ],
+            },
+            "us": {
+                "daily_cap": 2,
+                "windows": [
+                    {
+                        "name": "preopen",
+                        "start": "20:40",
+                        "end": "21:20",
+                        "tier": "daily",
+                        "anchor": "guojia",
+                        "template": "us_preopen",
+                        "deadline": "21:00",
+                    },
+                    {
+                        "name": "burst",
+                        "start": "12:00",
+                        "end": "13:00",
+                        "tier": "critical",
+                        "anchor": "guojia",
+                        "template": "market_close",
+                        "deadline": "12:30",
+                    },
+                ],
+            },
         },
         "templates": {
-            "daily_digest": {"title": "晨报",
-                             "snapshot": "picks_public/data_daily.html"},
-            "market_close": {"title": "收盘对账",
-                             "snapshot": "picks_public/data_guojia.html"},
-            "us_preopen": {"title": "美股盘前",
-                           "snapshot": "picks_public/data_daily.html"},
+            "daily_digest": {
+                "title": "晨报",
+                "snapshot": "picks_public/data_daily.html",
+            },
+            "market_close": {
+                "title": "收盘对账",
+                "snapshot": "picks_public/data_guojia.html",
+            },
+            "us_preopen": {
+                "title": "美股盘前",
+                "snapshot": "picks_public/data_daily.html",
+            },
         },
         "anchors": {},
     }
@@ -55,20 +88,46 @@ def _matrix():
 
 def _subs():
     """测试订阅：A 订 cn（daily）、B 订 cn+us（daily）、C 仅 critical 档。"""
-    return {"version": 1, "dryrun_default": True, "groups": {
-        "A": {"name": "群A", "markets": ["cn"], "tier": "daily",
-              "chat_id": "oc_aaa"},
-        "B": {"name": "群B", "markets": ["cn", "us"], "tier": "daily",
-              "chat_id": "oc_bbb"},
-        "C": {"name": "群C", "markets": ["cn"], "tier": "critical",
-              "chat_id": "oc_ccc"},
-    }}
+    return {
+        "version": 1,
+        "dryrun_default": True,
+        "groups": {
+            "A": {
+                "name": "群A",
+                "markets": ["cn"],
+                "tier": "daily",
+                "chat_id": "oc_aaa",
+            },
+            "B": {
+                "name": "群B",
+                "markets": ["cn", "us"],
+                "tier": "daily",
+                "chat_id": "oc_bbb",
+            },
+            "C": {
+                "name": "群C",
+                "markets": ["cn"],
+                "tier": "critical",
+                "chat_id": "oc_ccc",
+            },
+        },
+    }
 
 
-WIN_MORNING = {"name": "morning", "start": "07:40", "end": "09:15",
-               "tier": "daily", "template": "daily_digest"}
-WIN_BURST = {"name": "burst", "start": "12:00", "end": "13:00",
-             "tier": "critical", "template": "market_close"}
+WIN_MORNING = {
+    "name": "morning",
+    "start": "07:40",
+    "end": "09:15",
+    "tier": "daily",
+    "template": "daily_digest",
+}
+WIN_BURST = {
+    "name": "burst",
+    "start": "12:00",
+    "end": "13:00",
+    "tier": "critical",
+    "template": "market_close",
+}
 
 
 class _Poster:
@@ -98,8 +157,7 @@ def iso(tmp_path, monkeypatch):
 
 def _picked_pls(subs, market, window, matrix, repo):
     groups = ms.pick_groups(subs, market, window["tier"])
-    pls = {gid: ms.build_payload(g, market, window, matrix, repo)
-           for gid, g in groups}
+    pls = {gid: ms.build_payload(g, market, window, matrix, repo) for gid, g in groups}
     return groups, pls
 
 
@@ -108,25 +166,26 @@ def _write_cfg(iso):
     pdir = iso / "portal"
     pdir.mkdir(exist_ok=True)
     mpath = pdir / "push_matrix.json"
-    mpath.write_text(json.dumps(_matrix(), ensure_ascii=False),
-                     encoding="utf-8")
+    mpath.write_text(json.dumps(_matrix(), ensure_ascii=False), encoding="utf-8")
     spath = iso / "subs.json"
-    spath.write_text(json.dumps(_subs(), ensure_ascii=False),
-                     encoding="utf-8")
+    spath.write_text(json.dumps(_subs(), ensure_ascii=False), encoding="utf-8")
     return mpath, spath
 
 
 # ---------- (a0) 流水 JSONL（2026-10-19 审计 P1-3 修复回归） ----------
 
+
 class TestSendLogJsonl:
     def test_legacy_array_still_read(self, iso):
         """旧 JSON 数组档（只读历史）+ 新 JSONL 合并返回。"""
         iso.joinpath("log.json").write_text(
-            json.dumps([{"date": "2026-10-18", "market": "cn",
-                         "group": "A"}]), encoding="utf-8")
+            json.dumps([{"date": "2026-10-18", "market": "cn", "group": "A"}]),
+            encoding="utf-8",
+        )
         for i in range(3):
-            ms._append_log({"date": "2026-10-19", "market": "cn",
-                            "group": "A", "seq": i})
+            ms._append_log(
+                {"date": "2026-10-19", "market": "cn", "group": "A", "seq": i}
+            )
         rows = ms._read_log()
         assert len(rows) == 4
         assert sum(1 for r in rows if r.get("date") == "2026-10-19") == 3
@@ -152,12 +211,14 @@ class TestSendLogJsonl:
     def test_concurrent_appends_no_loss(self, iso):
         """并发追加零丢失（P1-3 核心回归）：模拟双市场窗口进程交错写。"""
         import threading
+
         def worker(tag, n):
             for i in range(n):
-                ms._append_log({"date": "2026-10-19", "market": tag,
-                                "group": "G", "seq": i})
-        ts = [threading.Thread(target=worker, args=(m, 50))
-              for m in ("cn", "us")]
+                ms._append_log(
+                    {"date": "2026-10-19", "market": tag, "group": "G", "seq": i}
+                )
+
+        ts = [threading.Thread(target=worker, args=(m, 50)) for m in ("cn", "us")]
         [t.start() for t in ts]
         [t.join() for t in ts]
         rows = ms._read_log()
@@ -165,6 +226,7 @@ class TestSendLogJsonl:
 
 
 # ---------- (a) 选群：市场 + tier 过滤 ----------
+
 
 class TestPickGroups:
     def test_daily_filters_critical_only(self):
@@ -174,8 +236,7 @@ class TestPickGroups:
 
     def test_critical_sends_all(self):
         s = _subs()
-        assert [g for g, _ in
-                ms.pick_groups(s, "cn", "critical")] == ["A", "B", "C"]
+        assert [g for g, _ in ms.pick_groups(s, "cn", "critical")] == ["A", "B", "C"]
 
     def test_market_mismatch_excluded(self):
         s = _subs()
@@ -184,14 +245,14 @@ class TestPickGroups:
 
 # ---------- (b) 静默窗（critical 豁免） ----------
 
+
 class TestQuiet:
     def test_daily_skip_with_reason(self, iso):
         m = _matrix()
         groups, pls = _picked_pls(_subs(), "cn", WIN_MORNING, m, iso)
         p = _Poster()
         now = datetime(2026, 10, 19, 23, 0)  # 静默窗 22:00-07:30 内
-        res = ms.send_cards(groups, pls, live=False, now=now,
-                            poster=p, matrix=m)
+        res = ms.send_cards(groups, pls, live=False, now=now, poster=p, matrix=m)
         assert p.calls == [] and res["sent"] == []
         assert len(res["skipped"]) == 2
         assert all("静默" in s["reason"] for s in res["skipped"])
@@ -200,26 +261,44 @@ class TestQuiet:
         m = _matrix()
         groups, pls = _picked_pls(_subs(), "cn", WIN_BURST, m, iso)
         now = datetime(2026, 10, 19, 23, 0)
-        res = ms.send_cards(groups, pls, live=False, now=now,
-                            poster=_Poster(), matrix=m)
+        res = ms.send_cards(
+            groups, pls, live=False, now=now, poster=_Poster(), matrix=m
+        )
         assert res["skipped"] == []  # critical 档豁免静默，不 skip
         assert len(res["would_send"]) == 3
 
 
 # ---------- (c) 日频控 ----------
 
+
 class TestDailyCap:
     def test_cap_blocks_group_after_filled(self, iso):
         m = _matrix()  # cn daily_cap=1
         groups, pls = _picked_pls(_subs(), "cn", WIN_MORNING, m, iso)
         today = "2026-10-19"
-        (iso / "log.json").write_text(json.dumps([
-            {"date": today, "market": "cn", "window": "morning",
-             "group": "A", "ts": today + " 08:00:00"}]), encoding="utf-8")
+        (iso / "log.json").write_text(
+            json.dumps(
+                [
+                    {
+                        "date": today,
+                        "market": "cn",
+                        "window": "morning",
+                        "group": "A",
+                        "ts": today + " 08:00:00",
+                    }
+                ]
+            ),
+            encoding="utf-8",
+        )
         p = _Poster()
-        res = ms.send_cards(groups, pls, live=False,
-                            now=datetime(2026, 10, 19, 8, 0),
-                            poster=p, matrix=m)
+        res = ms.send_cards(
+            groups,
+            pls,
+            live=False,
+            now=datetime(2026, 10, 19, 8, 0),
+            poster=p,
+            matrix=m,
+        )
         assert p.calls == []
         by = {s["group"]: s["reason"] for s in res["skipped"]}
         assert "日频控" in by["A"]
@@ -233,38 +312,61 @@ class TestDailyCap:
         m = _matrix()
         groups, pls = _picked_pls(_subs(), "cn", WIN_MORNING, m, iso)
         today = "2026-10-19"
-        (iso / "log.json").write_text(json.dumps([
-            {"date": today, "market": "cn", "window": "morning",
-             "group": gid, "ts": today + " 08:00:00"} for gid in ("A", "B")]),
-            encoding="utf-8")
+        (iso / "log.json").write_text(
+            json.dumps(
+                [
+                    {
+                        "date": today,
+                        "market": "cn",
+                        "window": "morning",
+                        "group": gid,
+                        "ts": today + " 08:00:00",
+                    }
+                    for gid in ("A", "B")
+                ]
+            ),
+            encoding="utf-8",
+        )
         p = _Poster()
-        res = ms.send_cards(groups, pls, live=True,
-                            now=datetime(2026, 10, 19, 8, 30),
-                            poster=p, matrix=m)
+        res = ms.send_cards(
+            groups,
+            pls,
+            live=True,
+            now=datetime(2026, 10, 19, 8, 30),
+            poster=p,
+            matrix=m,
+        )
         assert p.calls == []  # 双双注满 cap=1 → 全部拦截
         assert len(res["skipped"]) == 2
 
 
 # ---------- (d) DRYRUN：预览落盘 / 零 HTTP / 不写 log ----------
 
+
 class TestDryrun:
     def test_preview_no_http_no_log(self, iso):
         m = _matrix()
         groups, pls = _picked_pls(_subs(), "cn", WIN_MORNING, m, iso)
         p = _Poster()
-        res = ms.send_cards(groups, pls, live=False,
-                            now=datetime(2026, 10, 19, 8, 0),
-                            poster=p, matrix=m)
-        assert p.calls == []                      # 零 HTTP
-        assert not (iso / "log.json").exists()    # 不写流水
+        res = ms.send_cards(
+            groups,
+            pls,
+            live=False,
+            now=datetime(2026, 10, 19, 8, 0),
+            poster=p,
+            matrix=m,
+        )
+        assert p.calls == []  # 零 HTTP
+        assert not (iso / "log.json").exists()  # 不写流水
         assert res["live"] is False and res["preview"]
         prev = json.loads((iso / "preview.json").read_text(encoding="utf-8"))
         assert set(prev) == {"generated_at", "would_send", "skipped"}
         assert [w["group"] for w in prev["would_send"]] == ["A", "B"]
         # 预览里的卡片走统一 v3 规范
         assert prev["would_send"][0]["card"]["schema"] == "2.0"
-        assert "晨报 · A股" in \
-            prev["would_send"][0]["card"]["header"]["title"]["content"]
+        assert (
+            "晨报 · A股" in prev["would_send"][0]["card"]["header"]["title"]["content"]
+        )
 
     def test_subs_dryrun_default_forces_dryrun(self, iso, monkeypatch):
         # --live 意图 + env 门禁开，但订阅 dryrun_default=true → 仍强制 DRYRUN
@@ -272,28 +374,33 @@ class TestDryrun:
         monkeypatch.setenv("PUSH_HUB_KEY", "k-test")
         mpath, spath = _write_cfg(iso)
         p = _Poster()
-        res = ms.run("cn", "morning", live=True,
-                     now=datetime(2026, 10, 19, 8, 0),
-                     matrix_path=mpath, subs_path=spath, poster=p)
+        res = ms.run(
+            "cn",
+            "morning",
+            live=True,
+            now=datetime(2026, 10, 19, 8, 0),
+            matrix_path=mpath,
+            subs_path=spath,
+            poster=p,
+        )
         assert p.calls == [] and res["live"] is False
-        assert (iso / "preview.json").exists() and \
-            not (iso / "log.json").exists()
+        assert (iso / "preview.json").exists() and not (iso / "log.json").exists()
 
     def test_live_intent_env_closed_all_skipped(self, iso, monkeypatch):
         # 双门禁之一：意图 live 但 env MATRIX_SEND_LIVE 未开 → 拒绝发送
         m = _matrix()
         groups, pls = _picked_pls(_subs(), "cn", WIN_MORNING, m, iso)
         p = _Poster()
-        res = ms.send_cards(groups, pls, live=True,
-                            now=datetime(2026, 10, 19, 8, 0),
-                            poster=p, matrix=m)
+        res = ms.send_cards(
+            groups, pls, live=True, now=datetime(2026, 10, 19, 8, 0), poster=p, matrix=m
+        )
         assert p.calls == [] and not (iso / "log.json").exists()
         assert len(res["skipped"]) == 2
-        assert all("MATRIX_SEND_LIVE" in s["reason"]
-                   for s in res["skipped"])
+        assert all("MATRIX_SEND_LIVE" in s["reason"] for s in res["skipped"])
 
 
 # ---------- (e) live 发送：schema / 流水 / 失败处理 ----------
+
 
 class TestLive:
     def _env(self, monkeypatch):
@@ -307,9 +414,9 @@ class TestLive:
         m = _matrix()
         groups, pls = _picked_pls(s, "cn", WIN_MORNING, m, iso)
         p = _Poster()
-        res = ms.send_cards(groups, pls, live=True,
-                            now=datetime(2026, 10, 19, 8, 0),
-                            poster=p, matrix=m)
+        res = ms.send_cards(
+            groups, pls, live=True, now=datetime(2026, 10, 19, 8, 0), poster=p, matrix=m
+        )
         assert [c[1]["receive_id"] for c in p.calls] == ["oc_aaa"]
         by = {x["group"]: x["reason"] for x in res["skipped"]}
         assert "chat_id" in by["B"]
@@ -319,9 +426,9 @@ class TestLive:
         m = _matrix()
         groups, pls = _picked_pls(_subs(), "cn", WIN_MORNING, m, iso)
         p = _Poster()
-        res = ms.send_cards(groups, pls, live=True,
-                            now=datetime(2026, 10, 19, 8, 0),
-                            poster=p, matrix=m)
+        res = ms.send_cards(
+            groups, pls, live=True, now=datetime(2026, 10, 19, 8, 0), poster=p, matrix=m
+        )
         assert res["live"] is True and len(res["sent"]) == 2
         assert len(p.calls) == 2
         url, body, key = p.calls[0]
@@ -340,17 +447,21 @@ class TestLive:
         # 仅成功发送才追加流水（P1-3 后现役档为 log.jsonl）
         log = ms._read_log()
         assert [e["group"] for e in log] == ["A", "B"]
-        assert all(e["date"] == "2026-10-19" and e["market"] == "cn"
-                   and e["window"] == "morning" for e in log)
+        assert all(
+            e["date"] == "2026-10-19"
+            and e["market"] == "cn"
+            and e["window"] == "morning"
+            for e in log
+        )
 
     def test_poster_fail_no_log(self, iso, monkeypatch):
         self._env(monkeypatch)
         m = _matrix()
         groups, pls = _picked_pls(_subs(), "cn", WIN_MORNING, m, iso)
         p = _Poster(resp={"ok": False, "why": "silent window", "via": "hub"})
-        res = ms.send_cards(groups, pls, live=True,
-                            now=datetime(2026, 10, 19, 8, 0),
-                            poster=p, matrix=m)
+        res = ms.send_cards(
+            groups, pls, live=True, now=datetime(2026, 10, 19, 8, 0), poster=p, matrix=m
+        )
         assert len(p.calls) == 2 and res["sent"] == []
         assert not (iso / "log.json").exists()  # 失败不落流水
         assert all("发送失败" in s["reason"] for s in res["skipped"])
@@ -360,38 +471,43 @@ class TestLive:
         m = _matrix()
         groups, pls = _picked_pls(_subs(), "cn", WIN_MORNING, m, iso)
         with pytest.raises(RuntimeError):
-            ms.send_cards(groups, pls, live=True,
-                          now=datetime(2026, 10, 19, 8, 0),
-                          poster=_Poster(), matrix=m)
+            ms.send_cards(
+                groups,
+                pls,
+                live=True,
+                now=datetime(2026, 10, 19, 8, 0),
+                poster=_Poster(),
+                matrix=m,
+            )
 
 
 # ---------- (f) 国灶摘要 fail-soft ----------
 
+
 class TestGuojiaDigest:
     def test_missing_summary_omitted(self, iso):
         m = _matrix()  # market_close 模板 snapshot 含 data_guojia
-        pl = ms.build_payload(_subs()["groups"]["C"], "cn", WIN_BURST,
-                              m, iso)
+        pl = ms.build_payload(_subs()["groups"]["C"], "cn", WIN_BURST, m, iso)
         assert pl["digest"] is None  # 缺 summary 不抛错，摘要省略
         assert pl["card"]["schema"] == "2.0"
 
     def test_present_and_broken_json(self, iso):
         sp = iso / "news_collector" / "data" / "guojia" / "summary.json"
         sp.parent.mkdir(parents=True, exist_ok=True)
-        sp.write_text(json.dumps(
-            {"overall": {"hit_rate": 0.78, "n_reconciled": 132}}),
-            encoding="utf-8")
+        sp.write_text(
+            json.dumps({"overall": {"hit_rate": 0.78, "n_reconciled": 132}}),
+            encoding="utf-8",
+        )
         m = _matrix()
-        pl = ms.build_payload(_subs()["groups"]["C"], "cn", WIN_BURST,
-                              m, iso)
+        pl = ms.build_payload(_subs()["groups"]["C"], "cn", WIN_BURST, m, iso)
         assert "0.78" in pl["digest"] and "132" in pl["digest"]
         sp.write_text("{broken", encoding="utf-8")  # 坏 JSON 同样 fail-soft
-        pl2 = ms.build_payload(_subs()["groups"]["C"], "cn", WIN_BURST,
-                               m, iso)
+        pl2 = ms.build_payload(_subs()["groups"]["C"], "cn", WIN_BURST, m, iso)
         assert pl2["digest"] is None
 
 
 # ---------- 订阅加载与 CLI ----------
+
 
 class TestLoadAndCli:
     def test_shipped_subs_locked_dryrun(self):
@@ -410,9 +526,20 @@ class TestLoadAndCli:
 
     def test_cli_dryrun_exit0(self, iso, capsys):
         mpath, spath = _write_cfg(iso)
-        rc = ms.main(["--market", "cn", "--window", "morning",
-                      "--now", "2026-10-19T08:00",
-                      "--matrix", str(mpath), "--subs", str(spath)])
+        rc = ms.main(
+            [
+                "--market",
+                "cn",
+                "--window",
+                "morning",
+                "--now",
+                "2026-10-19T08:00",
+                "--matrix",
+                str(mpath),
+                "--subs",
+                str(spath),
+            ]
+        )
         assert rc == 0
         res = json.loads(capsys.readouterr().out)
         assert res["market"] == "cn" and res["window"] == "morning"
@@ -421,8 +548,19 @@ class TestLoadAndCli:
 
     def test_cli_bad_window_exit1(self, iso, capsys):
         mpath, spath = _write_cfg(iso)
-        rc = ms.main(["--market", "cn", "--window", "nope",
-                      "--now", "2026-10-19T08:00",
-                      "--matrix", str(mpath), "--subs", str(spath)])
+        rc = ms.main(
+            [
+                "--market",
+                "cn",
+                "--window",
+                "nope",
+                "--now",
+                "2026-10-19T08:00",
+                "--matrix",
+                str(mpath),
+                "--subs",
+                str(spath),
+            ]
+        )
         assert rc == 1
         assert "FAIL" in capsys.readouterr().out

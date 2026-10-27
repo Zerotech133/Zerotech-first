@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """零界机器人公共壳 v1（邓芝台 W1，2026-10-24）。
 
 目标：新机器人 = 本壳 + 角色 handler（≤200 行），通道能力不重复实现。
@@ -15,6 +15,7 @@
     shell = Shell("zb.owner.exec", on_text=my_on_text, on_audio=my_on_audio)
     shell.run()          # 阻塞；断线自动重连；心跳/自检在后台线程
 """
+
 from __future__ import annotations
 
 import json
@@ -122,6 +123,7 @@ def group_policy_allows(policy, chat_type, chat_id, text, whitelist_chat_ids=())
 
 def strip_at(text):
     import re
+
     return re.sub(re.escape(AT_PLACEHOLDER) + r"\d+\s*", "", text or "").strip()
 
 
@@ -138,9 +140,17 @@ def mask_open_id(open_id):
 class Shell:
     """一个机器人进程的公共外壳。handler 在独立线程执行，不阻塞 WS 心跳。"""
 
-    def __init__(self, role, on_text=None, on_audio=None, on_card=None,
-                 HB_INTERVAL_S=HB_INTERVAL_S, secret_dir=None, log_dir=None,
-                 registry=None):
+    def __init__(
+        self,
+        role,
+        on_text=None,
+        on_audio=None,
+        on_card=None,
+        HB_INTERVAL_S=HB_INTERVAL_S,
+        secret_dir=None,
+        log_dir=None,
+        registry=None,
+    ):
         self.role = role
         self.on_text = on_text
         self.on_audio = on_audio
@@ -149,30 +159,45 @@ class Shell:
         self.secret_dir = secret_dir or SECRET_DIR
         self.log_dir = log_dir or LOG_DIR
         self.registry = registry or _load_registry_safe()
-        roles_index = self.registry.get("_index") if isinstance(self.registry, dict) else None
+        roles_index = (
+            self.registry.get("_index") if isinstance(self.registry, dict) else None
+        )
         if isinstance(roles_index, dict):
             self.meta = roles_index.get(role) or {}
         else:
             self.meta = (self.registry or {}).get(role) or {}
         self.display = self.meta.get("display") or role
-        self.whitelist = {
-            g.get("chat_id") for g in
-            ((self.registry or {}).get("group_whitelist") or []) if g.get("chat_id")
-        } if isinstance(self.registry, dict) else set()
+        self.whitelist = (
+            {
+                g.get("chat_id")
+                for g in ((self.registry or {}).get("group_whitelist") or [])
+                if g.get("chat_id")
+            }
+            if isinstance(self.registry, dict)
+            else set()
+        )
         self.client = None
-        self.api = None  # lark.Client（HTTP API 用；与 ws.Client 分开，2026-10-25 修复）
+        self.api = (
+            None  # lark.Client（HTTP API 用；与 ws.Client 分开，2026-10-25 修复）
+        )
         self._miss = 0
         self._lock = threading.Lock()
 
     # 日志/心跳
     def log(self, msg):
-        line = "%s [%s] %s" % (datetime.now().strftime("%m-%d %H:%M:%S"),
-                               self.role, msg)
+        line = "%s [%s] %s" % (
+            datetime.now().strftime("%m-%d %H:%M:%S"),
+            self.role,
+            msg,
+        )
         print(line, flush=True)
         try:
             os.makedirs(self.log_dir, exist_ok=True)
-            with open(os.path.join(self.log_dir, "feishu_bot_%s.log" % self.role),
-                      "a", encoding="utf-8") as f:
+            with open(
+                os.path.join(self.log_dir, "feishu_bot_%s.log" % self.role),
+                "a",
+                encoding="utf-8",
+            ) as f:
                 f.write(line + "\n")
         except OSError:
             pass
@@ -183,15 +208,19 @@ class Shell:
     # 群策略
     def allow_inbound(self, chat_type, chat_id, text):
         policy = self.meta.get("group_policy") or {}
-        ok, why = group_policy_allows(policy, chat_type, chat_id, text,
-                                      whitelist_chat_ids=self.whitelist)
-        self.log("inbound policy: %s id=%s -> %s (%s)"
-                 % (chat_type, (chat_id or "-")[:12], ok, why))
+        ok, why = group_policy_allows(
+            policy, chat_type, chat_id, text, whitelist_chat_ids=self.whitelist
+        )
+        self.log(
+            "inbound policy: %s id=%s -> %s (%s)"
+            % (chat_type, (chat_id or "-")[:12], ok, why)
+        )
         return ok
 
     # 回复（带网络抖动重试：DNS/连接错误最多重试 7 次、约 60s 窗口）
-    def _reply_with_retry(self, make_request, tag="reply", attempts=7,
-                          delays=(0, 1, 2, 4, 8, 15, 30)):
+    def _reply_with_retry(
+        self, make_request, tag="reply", attempts=7, delays=(0, 1, 2, 4, 8, 15, 30)
+    ):
         last = ""
         for i in range(attempts):
             if i:
@@ -204,30 +233,36 @@ class Shell:
                     return True
                 code = getattr(resp, "code", "?")
                 msg = getattr(resp, "msg", "?")
-                self.log("%s api error code=%s msg=%s (attempt %d)"
-                         % (tag, code, msg, i + 1))
-                if code not in (99991400, 99991661, 99991663, 99991664,
-                                99991668):
+                self.log(
+                    "%s api error code=%s msg=%s (attempt %d)" % (tag, code, msg, i + 1)
+                )
+                if code not in (99991400, 99991661, 99991663, 99991664, 99991668):
                     return False
             except Exception as e:  # noqa: BLE001
                 last = str(e)[-300:]
-                self.log("%s network error (attempt %d): %s"
-                         % (tag, i + 1, last))
+                self.log("%s network error (attempt %d): %s" % (tag, i + 1, last))
         self.log("%s failed after %d attempts: %s" % (tag, attempts, last))
         return False
 
     def reply(self, message_id, text):
         if not message_id or not self.api:
             return False
-        from lark_oapi.api.im.v1 import (ReplyMessageRequest,
-                                         ReplyMessageRequestBody)
+        from lark_oapi.api.im.v1 import ReplyMessageRequest, ReplyMessageRequestBody
 
         def _make():
-            body = (ReplyMessageRequestBody.builder()
-                    .content(json.dumps({"text": text}, ensure_ascii=False))
-                    .msg_type("text").build())
-            return (ReplyMessageRequest.builder().message_id(message_id)
-                    .request_body(body).build())
+            body = (
+                ReplyMessageRequestBody.builder()
+                .content(json.dumps({"text": text}, ensure_ascii=False))
+                .msg_type("text")
+                .build()
+            )
+            return (
+                ReplyMessageRequest.builder()
+                .message_id(message_id)
+                .request_body(body)
+                .build()
+            )
+
         try:
             return self._reply_with_retry(_make, tag="reply")
         except Exception:  # noqa: BLE001
@@ -237,15 +272,22 @@ class Shell:
     def reply_card(self, message_id, card):
         if not message_id or not self.api:
             return False
-        from lark_oapi.api.im.v1 import (ReplyMessageRequest,
-                                         ReplyMessageRequestBody)
+        from lark_oapi.api.im.v1 import ReplyMessageRequest, ReplyMessageRequestBody
 
         def _make():
-            body = (ReplyMessageRequestBody.builder()
-                    .content(json.dumps(card, ensure_ascii=False))
-                    .msg_type("interactive").build())
-            return (ReplyMessageRequest.builder().message_id(message_id)
-                    .request_body(body).build())
+            body = (
+                ReplyMessageRequestBody.builder()
+                .content(json.dumps(card, ensure_ascii=False))
+                .msg_type("interactive")
+                .build()
+            )
+            return (
+                ReplyMessageRequest.builder()
+                .message_id(message_id)
+                .request_body(body)
+                .build()
+            )
+
         try:
             return self._reply_with_retry(_make, tag="reply_card")
         except Exception:  # noqa: BLE001
@@ -265,7 +307,9 @@ class Shell:
                 conn = getattr(self.client, "_conn", None) if self.client else None
                 if self.client is not None and conn is None:
                     self._miss += 1
-                    self.log("ws guard: no connection (%d/%d)" % (self._miss, WS_MAX_MISS))
+                    self.log(
+                        "ws guard: no connection (%d/%d)" % (self._miss, WS_MAX_MISS)
+                    )
                     if self._miss >= WS_MAX_MISS:
                         self.log("ws guard: ws dead >10min, exit(3) for watchdog")
                         os._exit(3)
@@ -282,8 +326,7 @@ class Shell:
 
         app_id, app_secret = load_secret(self.role, self.secret_dir)
         # ws.Client 只负责长连接；HTTP API（回复/下载资源/发卡）必须用 lark.Client。
-        self.api = (lark.Client.builder()
-                    .app_id(app_id).app_secret(app_secret).build())
+        self.api = lark.Client.builder().app_id(app_id).app_secret(app_secret).build()
         self.log("starting %s (%s) app=%s…" % (self.display, self.role, app_id[:10]))
         self.heartbeat("start")
         threading.Thread(target=self._heartbeat_loop, daemon=True).start()
@@ -297,8 +340,10 @@ class Shell:
                 except Exception:  # noqa: BLE001
                     pass
                 chat_id = getattr(msg, "chat_id", "") or ""
-                self.log("msg frame: type=%s chat=%s sender=%s"
-                         % (msg.message_type, msg.chat_type, mask_open_id(sender)))
+                self.log(
+                    "msg frame: type=%s chat=%s sender=%s"
+                    % (msg.message_type, msg.chat_type, mask_open_id(sender))
+                )
                 self.heartbeat("msg")
                 text = ""
                 if msg.message_type == "text":
@@ -311,18 +356,28 @@ class Shell:
                     text = strip_at(text)
                     if not text:
                         return
-                    ctx = {"message_id": msg.message_id, "open_id": sender,
-                           "chat_type": msg.chat_type, "chat_id": chat_id}
-                    threading.Thread(target=_safe(self.on_text, self, ctx, text),
-                                     daemon=True).start()
+                    ctx = {
+                        "message_id": msg.message_id,
+                        "open_id": sender,
+                        "chat_type": msg.chat_type,
+                        "chat_id": chat_id,
+                    }
+                    threading.Thread(
+                        target=_safe(self.on_text, self, ctx, text), daemon=True
+                    ).start()
                 elif msg.message_type == "audio" and self.on_audio:
                     if not self.allow_inbound(msg.chat_type, chat_id, ""):
                         return
-                    ctx = {"message_id": msg.message_id, "open_id": sender,
-                           "chat_type": msg.chat_type, "chat_id": chat_id,
-                           "content": msg.content}
-                    threading.Thread(target=_safe(self.on_audio, self, ctx, msg, data),
-                                     daemon=True).start()
+                    ctx = {
+                        "message_id": msg.message_id,
+                        "open_id": sender,
+                        "chat_type": msg.chat_type,
+                        "chat_id": chat_id,
+                        "content": msg.content,
+                    }
+                    threading.Thread(
+                        target=_safe(self.on_audio, self, ctx, msg, data), daemon=True
+                    ).start()
                 else:
                     self.log("skip non-text: %s" % msg.message_type)
             except Exception:  # noqa: BLE001
@@ -342,21 +397,28 @@ class Shell:
                     sender = ev.operator.open_id or ""
                 except Exception:  # noqa: BLE001
                     pass
-                self.log("card cb: val=%r op=%s" % (str(val)[:80], mask_open_id(sender)))
+                self.log(
+                    "card cb: val=%r op=%s" % (str(val)[:80], mask_open_id(sender))
+                )
                 ctx = {"open_id": sender}
-                threading.Thread(target=_safe(self.on_card, self, ctx, val),
-                                 daemon=True).start()
+                threading.Thread(
+                    target=_safe(self.on_card, self, ctx, val), daemon=True
+                ).start()
             except Exception:  # noqa: BLE001
                 self.log("card err " + traceback.format_exc()[-300:])
 
         def build_client():
-            handler = (lark.EventDispatcherHandler.builder("", "")
-                       .register_p2_im_message_receive_v1(on_msg))
+            handler = lark.EventDispatcherHandler.builder(
+                "", ""
+            ).register_p2_im_message_receive_v1(on_msg)
             if self.on_card:
                 handler = handler.register_p2_card_action_trigger(on_card)
-            return Client(app_id, app_secret,
-                          event_handler=handler.build(),
-                          log_level=lark.LogLevel.INFO)
+            return Client(
+                app_id,
+                app_secret,
+                event_handler=handler.build(),
+                log_level=lark.LogLevel.INFO,
+            )
 
         self.client = build_client()
         delay = 0.0
@@ -369,8 +431,10 @@ class Shell:
                 return
             except Exception:  # noqa: BLE001
                 alive = time.time() - started
-                self.log("ws closed on failure (alive=%.0fs): %s"
-                         % (alive, traceback.format_exc()[-200:]))
+                self.log(
+                    "ws closed on failure (alive=%.0fs): %s"
+                    % (alive, traceback.format_exc()[-200:])
+                )
                 delay = 1.0 if alive >= 60 else min(max(delay * 2, 1.0), 60.0)
                 n += 1
                 self.log("reconnect #%d in %.1fs" % (n, delay))
@@ -390,6 +454,7 @@ def _safe(fn, *args):
             fn(*args)
         except Exception:  # noqa: BLE001
             traceback.print_exc()
+
     return _run
 
 
@@ -408,4 +473,3 @@ def _load_registry_safe():
 
 if __name__ == "__main__":
     print("feishu_bot_base：公共壳，不直接运行；用法见模块 docstring")
-

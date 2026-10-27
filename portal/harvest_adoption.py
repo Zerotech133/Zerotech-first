@@ -12,6 +12,7 @@
 - 归集窗口按 5 分钟去重（同 IP 同路径窗口内算一次）；
 - 日志缺失/无记录 → 如实 0 条，不造样本。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -33,15 +34,21 @@ PATH_DOMAIN = {
 }
 
 LINE_PAT = re.compile(
-    r'^(\S+) \S+ \S+ \[([^\]]+)\] "GET (\S+)[^"]*" (\d{3}) \S+ "([^"]*)"')
+    r'^(\S+) \S+ \S+ \[([^\]]+)\] "GET (\S+)[^"]*" (\d{3}) \S+ "([^"]*)"'
+)
 
 
 def read_log_lines() -> list[str]:
     """读 access log 行：优先 docker logs ai-portal（Windows 侧无宿主路径）。"""
     import subprocess
+
     try:
-        r = subprocess.run(["docker", "logs", "ai-portal"], capture_output=True,
-                           timeout=120, check=False)
+        r = subprocess.run(
+            ["docker", "logs", "ai-portal"],
+            capture_output=True,
+            timeout=120,
+            check=False,
+        )
         if r.returncode == 0:
             return r.stdout.decode("utf-8", errors="replace").splitlines()
     except (OSError, subprocess.TimeoutExpired):
@@ -70,8 +77,14 @@ def parse_entries(lines: list[str], since_hours: float = 24.0) -> list[dict]:
             continue
         if ts < cutoff:
             continue
-        out.append({"at": ts.isoformat(timespec="seconds"),
-                    "domain": PATH_DOMAIN[path], "ip": ip, "path": path})
+        out.append(
+            {
+                "at": ts.isoformat(timespec="seconds"),
+                "domain": PATH_DOMAIN[path],
+                "ip": ip,
+                "path": path,
+            }
+        )
     return out
 
 
@@ -99,7 +112,9 @@ def append_ledger(rows: list[dict]) -> int:
             for line in f:
                 try:
                     rec = json.loads(line)
-                    seen.add((rec.get("at", ""), rec.get("ip", ""), rec.get("domain", "")))
+                    seen.add(
+                        (rec.get("at", ""), rec.get("ip", ""), rec.get("domain", ""))
+                    )
                 except json.JSONDecodeError:
                     continue
     added = 0
@@ -115,7 +130,9 @@ def append_ledger(rows: list[dict]) -> int:
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description="诸葛亮建议采纳率归集器（服务器侧日志方案）")
+    ap = argparse.ArgumentParser(
+        description="诸葛亮建议采纳率归集器（服务器侧日志方案）"
+    )
     ap.add_argument("--since-hours", type=float, default=24.0)
     ap.add_argument("--stat", action="store_true")
     args = ap.parse_args(argv)
@@ -130,14 +147,18 @@ def main(argv=None) -> int:
         return 0
     log_lines = read_log_lines()
     if not log_lines:
-        print("[FAIL] 读不到 ai-portal access log（docker logs 失败且无宿主路径）——"
-              "如实报：无法归集，不造样本")
+        print(
+            "[FAIL] 读不到 ai-portal access log（docker logs 失败且无宿主路径）——"
+            "如实报：无法归集，不造样本"
+        )
         return 1
     entries = parse_entries(log_lines, args.since_hours)
     rows = dedup_window(entries)
     added = append_ledger(rows)
-    print(f"归集完成：日志命中 {len(entries)} / 去重后 {len(rows)} / 新增 {added} → "
-          f"{os.path.relpath(OUT, HERE)}")
+    print(
+        f"归集完成：日志命中 {len(entries)} / 去重后 {len(rows)} / 新增 {added} → "
+        f"{os.path.relpath(OUT, HERE)}"
+    )
     return 0
 
 

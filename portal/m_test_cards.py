@@ -14,6 +14,7 @@
 
 安全：只读 secrets 文件；不打印 token/URL 令牌全文；失败重试 3 次。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -33,37 +34,58 @@ OPENAPI = "https://open.feishu.cn/open-apis"
 SCENES = [
     ("entry", "统一入口", "所有飞书页面汇总在这里（10 个入口，令牌 7 天）", "blue", {}),
     ("picks", "今日选股", "候选 / T1·T2 / 点个股进缠论", "green", {}),
-    ("chan", "缠论详情 605100", "中枢 / 止损止盈 / 决策链（数据为缓存，页面会标注）", "orange",
-     {"code": "605100"}),
+    (
+        "chan",
+        "缠论详情 605100",
+        "中枢 / 止损止盈 / 决策链（数据为缓存，页面会标注）",
+        "orange",
+        {"code": "605100"},
+    ),
     ("position", "持仓 · 止盈止损", "模拟仓线位 / 盈亏", "red", {}),
     ("daily", "数据日报", "情绪 × 次日实证 / 漂移哨兵 / 管道体检", "turquoise", {}),
     ("ledger", "账本", "开仓 / 待定 / 已平 / 胜率", "purple", {}),
     ("lineage", "数据血缘", "追踪表 / 健康 / 断链与最新产出", "indigo", {}),
-    ("ticket", "工单详情", "派单受理进度（示例工单）", "grey",
-     {"id": "lg-5917d4c4357b"}),
+    (
+        "ticket",
+        "工单详情",
+        "派单受理进度（示例工单）",
+        "grey",
+        {"id": "lg-5917d4c4357b"},
+    ),
 ]
 
 
 def _token(app):
-    req = urllib.request.Request(OPENAPI + "/auth/v3/tenant_access_token/internal",
-                                 data=json.dumps({"app_id": app["app_id"],
-                                                  "app_secret": app["app_secret"]}).encode(),
-                                 headers={"Content-Type": "application/json"})
+    req = urllib.request.Request(
+        OPENAPI + "/auth/v3/tenant_access_token/internal",
+        data=json.dumps(
+            {"app_id": app["app_id"], "app_secret": app["app_secret"]}
+        ).encode(),
+        headers={"Content-Type": "application/json"},
+    )
     with urllib.request.urlopen(req, timeout=20) as r:
         return json.loads(r.read().decode())["tenant_access_token"]
 
 
 def _send(token, receive_id, receive_type, card, retries=3):
-    body = json.dumps({"receive_id": receive_id, "msg_type": "interactive",
-                       "content": json.dumps(card, ensure_ascii=False)},
-                      ensure_ascii=False).encode()
+    body = json.dumps(
+        {
+            "receive_id": receive_id,
+            "msg_type": "interactive",
+            "content": json.dumps(card, ensure_ascii=False),
+        },
+        ensure_ascii=False,
+    ).encode()
     for i in range(retries):
         try:
             req = urllib.request.Request(
                 OPENAPI + "/im/v1/messages?receive_id_type=" + receive_type,
                 data=body,
-                headers={"Authorization": "Bearer " + token,
-                         "Content-Type": "application/json"})
+                headers={
+                    "Authorization": "Bearer " + token,
+                    "Content-Type": "application/json",
+                },
+            )
             with urllib.request.urlopen(req, timeout=25) as r:
                 res = json.loads(r.read().decode())
             return (res.get("data") or {}).get("message_id") or "?"
@@ -77,6 +99,7 @@ def _send(token, receive_id, receive_type, card, retries=3):
 def _st_token(kind="h5_test"):
     try:
         import share_tokens
+
         return share_tokens.gen(kind=kind, ttl_hours=72)
     except Exception:  # noqa: BLE001
         return ""
@@ -95,14 +118,14 @@ def main(argv=None):
     args = ap.parse_args(argv)
 
     import m_links
+
     if not m_links.enabled():
         print("m_link.json 未启用（enabled=false），先启用再发卡")
         return 2
 
     scene_list = SCENES
     if args.scene:
-        scene_list = [(s, t, d, c, k) for (s, t, d, c, k) in SCENES
-                      if s == args.scene]
+        scene_list = [(s, t, d, c, k) for (s, t, d, c, k) in SCENES if s == args.scene]
     elif args.only:
         want = {x.strip() for x in args.only.split(",") if x.strip()}
         scene_list = [x for x in SCENES if x[0] in want]
@@ -133,21 +156,43 @@ def main(argv=None):
     for i, scene, title, desc, color, url in planned:
         card = {
             "config": {"wide_screen_mode": True},
-            "header": {"template": color,
-                       "title": {"tag": "plain_text",
-                                 "content": "零界 H5 · 测试 %d/%d · %s"
-                                            % (i, len(planned), title)}},
+            "header": {
+                "template": color,
+                "title": {
+                    "tag": "plain_text",
+                    "content": "零界 H5 · 测试 %d/%d · %s" % (i, len(planned), title),
+                },
+            },
             "elements": [
-                {"tag": "div", "text": {
-                    "tag": "lark_md",
-                    "content": desc + "\n\n<font color='grey'>点下面按钮，用手机打开这个页面。</font>"}},
-                {"tag": "action", "actions": [
-                    {"tag": "button", "type": "primary",
-                     "text": {"tag": "plain_text", "content": "打开 · " + title},
-                     "url": url}]},
-                {"tag": "note", "elements": [
-                    {"tag": "plain_text",
-                     "content": "第 %d/%d 张 · 逐页验收" % (i, len(planned))}]}],
+                {
+                    "tag": "div",
+                    "text": {
+                        "tag": "lark_md",
+                        "content": desc
+                        + "\n\n<font color='grey'>点下面按钮，用手机打开这个页面。</font>",
+                    },
+                },
+                {
+                    "tag": "action",
+                    "actions": [
+                        {
+                            "tag": "button",
+                            "type": "primary",
+                            "text": {"tag": "plain_text", "content": "打开 · " + title},
+                            "url": url,
+                        }
+                    ],
+                },
+                {
+                    "tag": "note",
+                    "elements": [
+                        {
+                            "tag": "plain_text",
+                            "content": "第 %d/%d 张 · 逐页验收" % (i, len(planned)),
+                        }
+                    ],
+                },
+            ],
         }
         mid = _send(tok, args.to, args.to_type, card)
         print("%d/%d %-9s %s" % (i, len(planned), scene, mid), flush=True)

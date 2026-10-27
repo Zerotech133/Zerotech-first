@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """score_guard 测试（B1 评分口径强制，2026-10-26）。"""
+
 import os
 import sys
 
@@ -14,23 +15,26 @@ import score_registry as sr  # noqa: E402
 def test_core_is_five_and_registered():
     ids = g.core_ids()
     assert len(ids) == 5, ids
-    assert set(ids) == {"rps50", "nine_dim_score", "jev_conf",
-                        "chan_signal", "kg_resonance"}
+    assert set(ids) == {
+        "rps50",
+        "nine_dim_score",
+        "jev_conf",
+        "chan_signal",
+        "kg_resonance",
+    }
     for mid in ids:
         assert sr.get(mid), mid
 
 
 def test_full_core_annotations_ok():
-    anns = [sr.annotate(mid, 1, as_of="2026-10-26 15:00")
-            for mid in g.core_ids()]
+    anns = [sr.annotate(mid, 1, as_of="2026-10-26 15:00") for mid in g.core_ids()]
     r = g.validate_items(anns)
     assert r["ok"], r
     assert not r["missing"]
 
 
 def test_missing_core_detected():
-    anns = [sr.annotate(mid, 1, as_of="2026-10-26 15:00")
-            for mid in g.core_ids()][1:]
+    anns = [sr.annotate(mid, 1, as_of="2026-10-26 15:00") for mid in g.core_ids()][1:]
     r = g.validate_items(anns)
     assert not r["ok"]
     assert set(r["missing"]) == {g.core_ids()[0]}

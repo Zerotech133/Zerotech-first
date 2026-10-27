@@ -60,7 +60,9 @@ def parse_audio_content(raw) -> dict:
         try:
             obj = json.loads(raw or "{}")
         except ValueError:
-            raise VoiceError("BAD_CONTENT", "语音消息格式无法解析（content 不是合法 JSON）")
+            raise VoiceError(
+                "BAD_CONTENT", "语音消息格式无法解析（content 不是合法 JSON）"
+            )
     elif isinstance(raw, dict):
         obj = raw
     else:
@@ -82,12 +84,14 @@ def check_limits(meta: dict, size_bytes: int | None = None) -> None:
         raise VoiceError(
             "TOO_LONG",
             "语音 %d 秒，超过 %d 秒上限，请分段发送"
-            % (round(dur / 1000), MAX_DURATION_MS // 1000))
+            % (round(dur / 1000), MAX_DURATION_MS // 1000),
+        )
     if size_bytes is not None and size_bytes > MAX_BYTES:
         raise VoiceError(
             "TOO_LARGE",
             "音频 %.1fMB，超过 %dMB 上限"
-            % (size_bytes / 1024 / 1024, MAX_BYTES // 1024 // 1024))
+            % (size_bytes / 1024 / 1024, MAX_BYTES // 1024 // 1024),
+        )
 
 
 # ── 识别引擎 ────────────────────────────────────────────────────
@@ -95,31 +99,48 @@ def _openai_transcribe(path: str, cfg: dict) -> str:
     """OpenAI 兼容的 /audio/transcriptions。纯 stdlib 拼 multipart，不引入依赖。"""
     base = (cfg.get("base_url") or "").rstrip("/")
     if not base:
-        raise VoiceError("ASR_MISCONFIG", "已选 openai 识别，但 VOICE_ASR_BASE_URL 未配置")
+        raise VoiceError(
+            "ASR_MISCONFIG", "已选 openai 识别，但 VOICE_ASR_BASE_URL 未配置"
+        )
     key = cfg.get("api_key") or ""
     if not key:
-        raise VoiceError("ASR_MISCONFIG", "已选 openai 识别，但 VOICE_ASR_API_KEY 未配置")
+        raise VoiceError(
+            "ASR_MISCONFIG", "已选 openai 识别，但 VOICE_ASR_API_KEY 未配置"
+        )
     model = cfg.get("model") or "whisper-1"
 
     boundary = "----voice" + uuid.uuid4().hex
     with open(path, "rb") as fh:
         audio = fh.read()
     name = os.path.basename(path)
-    body = b"".join([
-        ("--%s\r\n" % boundary).encode(),
-        ('Content-Disposition: form-data; name="model"\r\n\r\n%s\r\n' % model).encode(),
-        ("--%s\r\n" % boundary).encode(),
-        ('Content-Disposition: form-data; name="file"; filename="%s"\r\n' % name).encode(),
-        b"Content-Type: application/octet-stream\r\n\r\n",
-        audio, b"\r\n",
-        ("--%s--\r\n" % boundary).encode(),
-    ])
+    body = b"".join(
+        [
+            ("--%s\r\n" % boundary).encode(),
+            (
+                'Content-Disposition: form-data; name="model"\r\n\r\n%s\r\n' % model
+            ).encode(),
+            ("--%s\r\n" % boundary).encode(),
+            (
+                'Content-Disposition: form-data; name="file"; filename="%s"\r\n' % name
+            ).encode(),
+            b"Content-Type: application/octet-stream\r\n\r\n",
+            audio,
+            b"\r\n",
+            ("--%s--\r\n" % boundary).encode(),
+        ]
+    )
     req = urllib.request.Request(
-        base + "/audio/transcriptions", data=body,
-        headers={"Authorization": "Bearer " + key,
-                 "Content-Type": "multipart/form-data; boundary=" + boundary})
+        base + "/audio/transcriptions",
+        data=body,
+        headers={
+            "Authorization": "Bearer " + key,
+            "Content-Type": "multipart/form-data; boundary=" + boundary,
+        },
+    )
     try:
-        with urllib.request.urlopen(req, timeout=int(cfg.get("timeout") or DEFAULT_TIMEOUT)) as r:
+        with urllib.request.urlopen(
+            req, timeout=int(cfg.get("timeout") or DEFAULT_TIMEOUT)
+        ) as r:
             payload = json.loads(r.read().decode("utf-8", "replace") or "{}")
     except Exception as e:  # noqa: BLE001
         raise VoiceError("ASR_FAILED", "识别服务调用失败：%s" % (str(e)[:120],))
@@ -141,6 +162,7 @@ def _faster_whisper_transcribe(path: str, cfg: dict) -> str:
     # 而本机 av 19 已移除该参数（TypeError）。给 av.open 包一层，丢掉该 kwarg。
     try:
         import av as _av
+
         if not getattr(_av, "_dsh_meta_patched", False):
             _orig_open = _av.open
 
@@ -153,6 +175,7 @@ def _faster_whisper_transcribe(path: str, cfg: dict) -> str:
     except Exception:  # noqa: BLE001
         pass
     from faster_whisper import WhisperModel
+
     name = cfg.get("model") or os.environ.get("VOICE_ASR_MODEL") or "small"
     key = (name, "int8")
     model = _WHISPER_CACHE.get(key)
@@ -192,15 +215,32 @@ def build_transcriber(env=None):
         try:
             import faster_whisper  # noqa: F401
         except Exception:  # noqa: BLE001
-            return None, provider, ("本机未安装 faster-whisper，无法本地识别；"
-                                    "可改用 VOICE_ASR_PROVIDER=openai 或先安装该包")
+            return (
+                None,
+                provider,
+                (
+                    "本机未安装 faster-whisper，无法本地识别；"
+                    "可改用 VOICE_ASR_PROVIDER=openai 或先安装该包"
+                ),
+            )
         return _faster_whisper_transcribe, "local", ""
     return None, provider, "不认识的识别引擎：%s" % provider
 
 
-def ingest_audio(*, message_id, content, sender_id, chat_type, download,
-                 transcriber, notify, dispatch=None, log=None, auto_execute=False,
-                 transcriber_reason=""):
+def ingest_audio(
+    *,
+    message_id,
+    content,
+    sender_id,
+    chat_type,
+    download,
+    transcriber,
+    notify,
+    dispatch=None,
+    log=None,
+    auto_execute=False,
+    transcriber_reason="",
+):
     """全链路：解析 → 限额 → 引擎可用性 → 下载 → 识别 → （可选）派发 / 回告。
 
     依赖全部注入：
@@ -211,9 +251,17 @@ def ingest_audio(*, message_id, content, sender_id, chat_type, download,
     返回 dict，便于日志与测试断言；不抛异常（异常都转成明确回告）。
     """
     log = log or (lambda m: None)
-    rec = {"message_id": message_id, "chat_type": chat_type, "sender": sender_id,
-           "status": "init", "provider": None, "duration_ms": 0,
-           "bytes": 0, "audio_sha256": "", "text_chars": 0}
+    rec = {
+        "message_id": message_id,
+        "chat_type": chat_type,
+        "sender": sender_id,
+        "status": "init",
+        "provider": None,
+        "duration_ms": 0,
+        "bytes": 0,
+        "audio_sha256": "",
+        "text_chars": 0,
+    }
 
     try:
         meta = parse_audio_content(content)
@@ -222,8 +270,9 @@ def ingest_audio(*, message_id, content, sender_id, chat_type, download,
 
         # 引擎不可用要在下载之前失败：不要把 10MB 音频白拉一遍再告诉用户"没配"。
         if transcriber is None:
-            raise VoiceError("ASR_UNAVAILABLE",
-                             transcriber_reason or "服务端还没有配置语音识别引擎")
+            raise VoiceError(
+                "ASR_UNAVAILABLE", transcriber_reason or "服务端还没有配置语音识别引擎"
+            )
 
         data, cleanup = download(meta)
         try:
@@ -241,7 +290,7 @@ def ingest_audio(*, message_id, content, sender_id, chat_type, download,
                 text = transcriber(path, {})
             finally:
                 try:
-                    os.unlink(path)          # 转完即删，音频不落长期盘
+                    os.unlink(path)  # 转完即删，音频不落长期盘
                 except OSError:
                     pass
         finally:
@@ -264,7 +313,10 @@ def ingest_audio(*, message_id, content, sender_id, chat_type, download,
             notify("🎙 已按语音执行：%s" % text)
         else:
             rec["status"] = "transcribed"
-            notify("🎙 识别结果：%s\n\n（语音只转成文字，未执行任何指令。要执行请直接发文字。）" % text)
+            notify(
+                "🎙 识别结果：%s\n\n（语音只转成文字，未执行任何指令。要执行请直接发文字。）"
+                % text
+            )
         return rec
 
     except VoiceError as e:
@@ -289,9 +341,19 @@ def ingest_audio(*, message_id, content, sender_id, chat_type, download,
 
 def enabled(env=None) -> bool:
     env = os.environ if env is None else env
-    return (env.get("VOICE_INGEST_ENABLED") or "0").strip() in ("1", "true", "True", "yes")
+    return (env.get("VOICE_INGEST_ENABLED") or "0").strip() in (
+        "1",
+        "true",
+        "True",
+        "yes",
+    )
 
 
 def auto_execute(env=None) -> bool:
     env = os.environ if env is None else env
-    return (env.get("VOICE_AUTO_EXECUTE") or "0").strip() in ("1", "true", "True", "yes")
+    return (env.get("VOICE_AUTO_EXECUTE") or "0").strip() in (
+        "1",
+        "true",
+        "True",
+        "yes",
+    )

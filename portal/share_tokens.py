@@ -19,6 +19,7 @@ payload：{"jti","code","kind","tenant","iat","exp"}（jti=随机 8 hex，
     前端 beacon 尝试 /s/<token>（公网 404 静默失败，内网同源命中）——
     降级可接受：公网访问量后续经 nginx/边缘方案收口再补。
 """
+
 import base64
 import hashlib
 import hmac
@@ -47,8 +48,11 @@ def _load_secret():
         s = secrets.token_hex(32)
         os.makedirs(os.path.dirname(SECRET_PATH), exist_ok=True)
         with open(SECRET_PATH, "w", encoding="utf-8") as f:
-            json.dump({"secret": s, "created": time.strftime("%Y-%m-%d")},
-                      f, ensure_ascii=False)
+            json.dump(
+                {"secret": s, "created": time.strftime("%Y-%m-%d")},
+                f,
+                ensure_ascii=False,
+            )
         return s
     except Exception:
         return ""
@@ -67,13 +71,18 @@ def gen(code="", kind="card", ttl_hours=72, tenant="default"):
     secret = _load_secret()
     if not secret:
         return ""
-    payload = {"jti": secrets.token_hex(4), "code": str(code or "")[:16],
-               "kind": str(kind or "card")[:24],
-               "tenant": str(tenant or "default")[:40],
-               "iat": int(time.time()), "exp": int(time.time()) + ttl_hours * 3600}
+    payload = {
+        "jti": secrets.token_hex(4),
+        "code": str(code or "")[:16],
+        "kind": str(kind or "card")[:24],
+        "tenant": str(tenant or "default")[:40],
+        "iat": int(time.time()),
+        "exp": int(time.time()) + ttl_hours * 3600,
+    }
     body = _b64u(json.dumps(payload, ensure_ascii=False).encode("utf-8"))
-    sig = hmac.new(secret.encode("utf-8"), body.encode("ascii"),
-                   hashlib.sha256).hexdigest()[:16]
+    sig = hmac.new(
+        secret.encode("utf-8"), body.encode("ascii"), hashlib.sha256
+    ).hexdigest()[:16]
     _record("issue", payload)
     return "st.%s.%s" % (body, sig)
 
@@ -87,8 +96,9 @@ def verify(token):
         secret = _load_secret()
         if not secret:
             return None
-        want = hmac.new(secret.encode("utf-8"), body.encode("ascii"),
-                        hashlib.sha256).hexdigest()[:16]
+        want = hmac.new(
+            secret.encode("utf-8"), body.encode("ascii"), hashlib.sha256
+        ).hexdigest()[:16]
         if not hmac.compare_digest(want, sig):
             return None
         payload = json.loads(_b64u_dec(body).decode("utf-8"))
@@ -112,15 +122,19 @@ def _record(evt, payload):
     """issue/visit 事件落账，fail-safe 吞异常（追溯账丢失可容忍）。"""
     try:
         from datetime import datetime
-        row = {"ts": datetime.now().isoformat(timespec="seconds"),
-               "date": datetime.now().strftime("%Y-%m-%d"),
-               "evt": evt, "jti": payload.get("jti", ""),
-               "code": payload.get("code", ""), "kind": payload.get("kind", ""),
-               "tenant": payload.get("tenant", "")}
+
+        row = {
+            "ts": datetime.now().isoformat(timespec="seconds"),
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "evt": evt,
+            "jti": payload.get("jti", ""),
+            "code": payload.get("code", ""),
+            "kind": payload.get("kind", ""),
+            "tenant": payload.get("tenant", ""),
+        }
         data = (json.dumps(row, ensure_ascii=False) + "\n").encode("utf-8")
         with _lock:
-            fd = os.open(FLOW_PATH, os.O_APPEND | os.O_CREAT | os.O_WRONLY,
-                         0o644)
+            fd = os.open(FLOW_PATH, os.O_APPEND | os.O_CREAT | os.O_WRONLY, 0o644)
             try:
                 os.write(fd, data)
             finally:
@@ -132,6 +146,7 @@ def _record(evt, payload):
 def stats(days=7):
     """近 N 天：逐日签发/访问数 + 今日按 kind 的访问分布。"""
     import datetime as dt
+
     today = dt.date.today()
     start = (today - dt.timedelta(days=days - 1)).isoformat()
     by_day, today_by_kind = {}, {}
@@ -153,12 +168,18 @@ def stats(days=7):
                     today_by_kind[k] = today_by_kind.get(k, 0) + 1
     except OSError:
         pass
-    seq = [(today - dt.timedelta(days=days - 1 - i)).isoformat()
-           for i in range(days)]
-    return {"by_day": [{"date": d, "issue": by_day.get(d, {}).get("issue", 0),
-                        "visit": by_day.get(d, {}).get("visit", 0)}
-                       for d in seq],
-            "today_visit_by_kind": today_by_kind}
+    seq = [(today - dt.timedelta(days=days - 1 - i)).isoformat() for i in range(days)]
+    return {
+        "by_day": [
+            {
+                "date": d,
+                "issue": by_day.get(d, {}).get("issue", 0),
+                "visit": by_day.get(d, {}).get("visit", 0),
+            }
+            for d in seq
+        ],
+        "today_visit_by_kind": today_by_kind,
+    }
 
 
 if __name__ == "__main__":

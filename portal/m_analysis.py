@@ -10,6 +10,7 @@
   quant_backtest/data/nine_dim_scores.json
   quant_backtest/data/kg_resonance_last.json
 """
+
 from __future__ import annotations
 
 import html as _html
@@ -73,6 +74,7 @@ def _html_text(path, limit=1400, ttl=180):
         p.feed(raw)
         text = "".join(p.parts)
         import re as _re
+
         _NAV = _re.compile(
             r"(返回门户|域内导航|盘前与驾驶|策略资产|研究与数据|"
             r"^指挥$|^量化$|^情报$|^创作$|^开发$|^系统$|"
@@ -82,7 +84,8 @@ def _html_text(path, limit=1400, ttl=180):
             r"缠论$|TBE 分层|量子双刀|预警池|三线联动|弱于板块案例|"
             r"九维$|共振$|投委会|操盘锦标赛|辩论室|卖点研判|报告$|"
             r"选股中心|板块强弱|期货量化|寻优|板块$|数据仓|"
-            r"^←|^▶|^▼)")
+            r"^←|^▶|^▼)"
+        )
         lines = []
         for ln in text.splitlines():
             ln = " ".join(_html.unescape(ln).split())
@@ -90,9 +93,11 @@ def _html_text(path, limit=1400, ttl=180):
                 continue
             if _NAV.search(ln):
                 continue
-            emoji = sum(1 for ch in ln
-                        if 0x1F300 <= ord(ch) <= 0x1FAFF
-                        or 0x2600 <= ord(ch) <= 0x27BF)
+            emoji = sum(
+                1
+                for ch in ln
+                if 0x1F300 <= ord(ch) <= 0x1FAFF or 0x2600 <= ord(ch) <= 0x27BF
+            )
             if emoji >= 2:
                 continue  # 多 emoji 行基本是菜单
             lines.append(ln)
@@ -116,15 +121,19 @@ def _env_stats():
     for e in (d.get("envs") or [])[:3]:
         score = e.get("score")
         state = str(e.get("state") or "")
-        level = "ok" if (e.get("safe") is True) else (
-            "warn" if score is not None and score >= 30 else "bad")
-        items.append({
-            "label": str(e.get("label") or "")[:12],
-            "value": "%s" % (score if score is not None else "—"),
-            "sub": "宽度 %s · %s" % (_pct(e.get("breadth")),
-                                    state[:18] or "—"),
-            "level": level,
-        })
+        level = (
+            "ok"
+            if (e.get("safe") is True)
+            else ("warn" if score is not None and score >= 30 else "bad")
+        )
+        items.append(
+            {
+                "label": str(e.get("label") or "")[:12],
+                "value": "%s" % (score if score is not None else "—"),
+                "sub": "宽度 %s · %s" % (_pct(e.get("breadth")), state[:18] or "—"),
+                "level": level,
+            }
+        )
     return d, items
 
 
@@ -133,8 +142,7 @@ def _sellpoint():
     rows = []
     _seen = set()
     try:
-        with open(os.path.join(DATA, "sellpoint_cards.jsonl"),
-                  encoding="utf-8") as f:
+        with open(os.path.join(DATA, "sellpoint_cards.jsonl"), encoding="utf-8") as f:
             for ln in f:
                 ln = ln.strip()
                 if not ln:
@@ -143,8 +151,7 @@ def _sellpoint():
                     c = json.loads(ln)
                 except ValueError:
                     continue
-                key = (c.get("code"), c.get("type"),
-                       c.get("detect_date"))
+                key = (c.get("code"), c.get("type"), c.get("detect_date"))
                 if key in _seen:
                     continue
                 _seen.add(key)
@@ -157,30 +164,41 @@ def _sellpoint():
                 rows.append(c)
     except OSError:
         pass
-    rows = sorted(rows, key=lambda c: str(c.get("detect_date") or ""),
-                  reverse=True)[:8]
-    items = [{
-        "left": "%s %s" % (c.get("name") or "", c.get("code") or ""),
-        "sub": "%s · %s · 现价 %s · %s" % (
-            c.get("type") or "", c.get("detect_date") or "—",
-            c.get("price") if c.get("price") is not None else "—",
-            "持仓" if c.get("held") else "观察"),
-        "right": "TBE" if c.get("tbe") else "",
-    } for c in rows]
+    rows = sorted(rows, key=lambda c: str(c.get("detect_date") or ""), reverse=True)[:8]
+    items = [
+        {
+            "left": "%s %s" % (c.get("name") or "", c.get("code") or ""),
+            "sub": "%s · %s · 现价 %s · %s"
+            % (
+                c.get("type") or "",
+                c.get("detect_date") or "—",
+                c.get("price") if c.get("price") is not None else "—",
+                "持仓" if c.get("held") else "观察",
+            ),
+            "right": "TBE" if c.get("tbe") else "",
+        }
+        for c in rows
+    ]
     return stats, items
 
 
 def _nine_dim():
     d = _json(os.path.join(DATA, "nine_dim_scores.json"), {}) or {}
-    rows = sorted((d.get("rows") or []),
-                  key=lambda r: -(r.get("score") or 0))[:6]
-    items = [{
-        "left": "%s %s" % (r.get("name") or "", r.get("code") or ""),
-        "sub": "%s · RPS %.1f · 评分 %.1f · %s" % (
-            r.get("industry") or "—", r.get("rps50") or 0,
-            r.get("score") or 0, r.get("band") or "—"),
-        "right": "%+.1f%%" % (r.get("pct_chg") or 0),
-    } for r in rows]
+    rows = sorted((d.get("rows") or []), key=lambda r: -(r.get("score") or 0))[:6]
+    items = [
+        {
+            "left": "%s %s" % (r.get("name") or "", r.get("code") or ""),
+            "sub": "%s · RPS %.1f · 评分 %.1f · %s"
+            % (
+                r.get("industry") or "—",
+                r.get("rps50") or 0,
+                r.get("score") or 0,
+                r.get("band") or "—",
+            ),
+            "right": "%+.1f%%" % (r.get("pct_chg") or 0),
+        }
+        for r in rows
+    ]
     funnel = d.get("funnel") or {}
     return d, funnel, items
 
@@ -190,11 +208,13 @@ def _resonance():
     items = []
     for r in (d.get("full") or [])[:6]:
         lines = r.get("lines") or []
-        items.append({
-            "left": "%s %s" % (r.get("name") or "", r.get("code") or ""),
-            "sub": " · ".join(str(x) for x in lines[:3]) or "三线共振",
-            "right": "全共振",
-        })
+        items.append(
+            {
+                "left": "%s %s" % (r.get("name") or "", r.get("code") or ""),
+                "sub": " · ".join(str(x) for x in lines[:3]) or "三线共振",
+                "right": "全共振",
+            }
+        )
     return d, items
 
 
@@ -207,30 +227,71 @@ def analysis_payload():
     kg, kg_items = _resonance()
 
     blocks = [
-        {"type": "stats", "title": "市场环境（RPS）", "items": env_items,
-         "note": "数据时点 %s" % (rps.get("latest") or "—")},
-        {"type": "md", "title": "盘前要点", "content": pm_text or "暂无数据",
-         "note": "实时读取 /premarket"},
-        {"type": "md", "title": "盘后复盘", "content": ah_text or "暂无数据",
-         "note": "实时读取 /afterhours"},
-        {"type": "list", "title": "卖点研判（最近 8 条）", "items": sp_items,
-         "note": "共 %d 卡 · 1卖 %d / 2卖 %d / 3卖 %d · 持仓命中 %d" % (
-             sp_stats["total"], sp_stats["1卖"], sp_stats["2卖"],
-             sp_stats["3卖"], sp_stats["held"])},
-        {"type": "list", "title": "九维候选（评分 TOP6）", "items": nd_items,
-         "note": "候选池 %s · 买入 %s · 预警 %s · 生成 %s" % (
-             funnel.get("候选池(≤400)") or "—", nd.get("n_buy") or 0,
-             nd.get("n_alert") or 0, (nd.get("generated_at") or "")[:16])},
-        {"type": "list", "title": "三线共振（全共振）", "items": kg_items,
-         "note": "主题 %s · 窗口 %s 天 · 全文 %s 条 · 生成 %s" % (
-             kg.get("theme") or "—", kg.get("window_days") or "—",
-             kg.get("n_full") or 0, (kg.get("generated_at") or "")[:16])},
-        {"type": "note", "content":
-         "统一分格 · 分析总览 | 数据源：RPS/盘前/盘后/卖点/九维/三线共振；"
-         "各板块详情页按同一模板逐步接入。"},
+        {
+            "type": "stats",
+            "title": "市场环境（RPS）",
+            "items": env_items,
+            "note": "数据时点 %s" % (rps.get("latest") or "—"),
+        },
+        {
+            "type": "md",
+            "title": "盘前要点",
+            "content": pm_text or "暂无数据",
+            "note": "实时读取 /premarket",
+        },
+        {
+            "type": "md",
+            "title": "盘后复盘",
+            "content": ah_text or "暂无数据",
+            "note": "实时读取 /afterhours",
+        },
+        {
+            "type": "list",
+            "title": "卖点研判（最近 8 条）",
+            "items": sp_items,
+            "note": "共 %d 卡 · 1卖 %d / 2卖 %d / 3卖 %d · 持仓命中 %d"
+            % (
+                sp_stats["total"],
+                sp_stats["1卖"],
+                sp_stats["2卖"],
+                sp_stats["3卖"],
+                sp_stats["held"],
+            ),
+        },
+        {
+            "type": "list",
+            "title": "九维候选（评分 TOP6）",
+            "items": nd_items,
+            "note": "候选池 %s · 买入 %s · 预警 %s · 生成 %s"
+            % (
+                funnel.get("候选池(≤400)") or "—",
+                nd.get("n_buy") or 0,
+                nd.get("n_alert") or 0,
+                (nd.get("generated_at") or "")[:16],
+            ),
+        },
+        {
+            "type": "list",
+            "title": "三线共振（全共振）",
+            "items": kg_items,
+            "note": "主题 %s · 窗口 %s 天 · 全文 %s 条 · 生成 %s"
+            % (
+                kg.get("theme") or "—",
+                kg.get("window_days") or "—",
+                kg.get("n_full") or 0,
+                (kg.get("generated_at") or "")[:16],
+            ),
+        },
+        {
+            "type": "note",
+            "content": "统一分格 · 分析总览 | 数据源：RPS/盘前/盘后/卖点/九维/三线共振；"
+            "各板块详情页按同一模板逐步接入。",
+        },
     ]
     return {
-        "ok": True, "scene": "analysis", "title": "分析总览",
+        "ok": True,
+        "scene": "analysis",
+        "title": "分析总览",
         "subtitle": "盘前盘后 · 板块环境 · 卖点 · 九维 · 三线共振",
         "generated_at": time.strftime("%Y-%m-%d %H:%M"),
         "blocks": blocks,

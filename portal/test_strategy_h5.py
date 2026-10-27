@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """策略工单 H5 单测（W43 环 3 工程落地）。"""
+
 import os
 import sys
 
@@ -45,14 +46,22 @@ def test_strategy_submit_spawns_worker(monkeypatch, tmp_path):
             calls.append((args, kw))
 
     monkeypatch.setattr(ms.subprocess, "Popen", _FakePopen)
-    r = ms.submit("缠论二买，全市场选股池，top10，单票8%，持有最多10天",
-                  "1y", operator_open_id="ou_owner", token_hash="tok123")
+    r = ms.submit(
+        "缠论二买，全市场选股池，top10，单票8%，持有最多10天",
+        "1y",
+        operator_open_id="ou_owner",
+        token_hash="tok123",
+    )
     assert r["ok"] is True and r["order_id"].startswith("STR-")
     assert calls and calls[0][0][1:3] == ["-X", "utf8"]
     row = sr._last_order(r["order_id"])
     assert row["source"] == "m_strategy"
     assert row["status"] == "received"
     # 频率限制：同 token_hash 30s 内第二次拒绝
-    r2 = ms.submit("缠论二买，全市场选股池，top10，单票8%",
-                   "1y", operator_open_id="ou_owner", token_hash="tok123")
+    r2 = ms.submit(
+        "缠论二买，全市场选股池，top10，单票8%",
+        "1y",
+        operator_open_id="ou_owner",
+        token_hash="tok123",
+    )
     assert r2["ok"] is False and "频繁" in r2["error"]

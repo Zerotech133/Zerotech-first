@@ -50,26 +50,45 @@ def run_sql(path, statement, params=()):
 
 
 def add_subscriber(path, open_id):
-    run_sql(path, "INSERT INTO subscriber(open_id, display_name, created_at)"
-                  " VALUES (?,?,?)", (open_id, "测试用户", NOW))
+    run_sql(
+        path,
+        "INSERT INTO subscriber(open_id, display_name, created_at) VALUES (?,?,?)",
+        (open_id, "测试用户", NOW),
+    )
 
 
-def add_sub(path, open_id, plan_id="basic_monthly", start="2026-10-01 00:00:00",
-            end="2026-11-01 00:00:00", status="active"):
-    run_sql(path, "INSERT INTO subscription(subscriber_open_id, plan_id, start,"
-                  " end, status) VALUES (?,?,?,?,?)",
-            (open_id, plan_id, start, end, status))
+def add_sub(
+    path,
+    open_id,
+    plan_id="basic_monthly",
+    start="2026-10-01 00:00:00",
+    end="2026-11-01 00:00:00",
+    status="active",
+):
+    run_sql(
+        path,
+        "INSERT INTO subscription(subscriber_open_id, plan_id, start,"
+        " end, status) VALUES (?,?,?,?,?)",
+        (open_id, plan_id, start, end, status),
+    )
 
 
 def add_log(path, open_id, kind, allowed=1, reason="subscription_active"):
-    run_sql(path, "INSERT INTO entitlement_log(ts, open_id, kind, allowed, reason)"
-                  " VALUES (?,?,?,?,?)", (NOW, open_id, kind, allowed, reason))
+    run_sql(
+        path,
+        "INSERT INTO entitlement_log(ts, open_id, kind, allowed, reason)"
+        " VALUES (?,?,?,?,?)",
+        (NOW, open_id, kind, allowed, reason),
+    )
 
 
 def add_order(path, order_id, open_id, status="paid"):
-    run_sql(path, "INSERT INTO payment_order(order_id, open_id, amount, channel,"
-                  " status, created_at) VALUES (?,?,?,?,?,?)",
-            (order_id, open_id, "0.00", "test", status, NOW))
+    run_sql(
+        path,
+        "INSERT INTO payment_order(order_id, open_id, amount, channel,"
+        " status, created_at) VALUES (?,?,?,?,?,?)",
+        (order_id, open_id, "0.00", "test", status, NOW),
+    )
 
 
 def codes(result):
@@ -80,6 +99,7 @@ def codes(result):
 # 1. 干净库
 # ---------------------------------------------------------------------------
 
+
 def test_01_clean_ledger_is_ok(db):
     """干净库（只有种子档位）→ ok=True、零 issue、checked=2 行 plan。"""
     result = rc.reconcile(now=NOW)
@@ -89,6 +109,7 @@ def test_01_clean_ledger_is_ok(db):
 # ---------------------------------------------------------------------------
 # 2~7. 六类账本内容问题
 # ---------------------------------------------------------------------------
+
 
 def test_02_orphan_open_id(db):
     """subscription 引用的 open_id 不在 subscriber → orphan_open_id。"""
@@ -128,8 +149,13 @@ def test_05_stale_active(db):
 def test_06_status_contradiction(db):
     """status=expired 但 end >= now → status_contradiction。"""
     add_subscriber(db, "ou_a")
-    add_sub(db, "ou_a", start="2026-10-01 00:00:00", end="2026-10-25 00:00:00",
-            status="expired")
+    add_sub(
+        db,
+        "ou_a",
+        start="2026-10-01 00:00:00",
+        end="2026-10-25 00:00:00",
+        status="expired",
+    )
     result = rc.reconcile(now=NOW)
     assert codes(result) == ["status_contradiction"]
 
@@ -152,6 +178,7 @@ def test_07_paid_without_subscription(db):
 # ---------------------------------------------------------------------------
 # 8. orphan_entitlement
 # ---------------------------------------------------------------------------
+
 
 def test_08_orphan_entitlement_kind_not_declared(db):
     """plan.kinds 不覆盖的放行 kind 要报；news.* 覆盖与 allowed=0 不报。
@@ -176,6 +203,7 @@ def test_08_orphan_entitlement_kind_not_declared(db):
 # ---------------------------------------------------------------------------
 # 9~10. fail-visible
 # ---------------------------------------------------------------------------
+
 
 def test_09_missing_table_yields_check_failed_and_continues(db):
     """表缺失 → check_failed；其余校验仍继续跑并报出真实问题。"""
@@ -215,6 +243,7 @@ def test_11_broken_plan_kinds_yields_check_failed(db):
 # ---------------------------------------------------------------------------
 # 12~13. 退出码 / 只读实证
 # ---------------------------------------------------------------------------
+
 
 def test_12_exit_codes(db, capsys):
     """干净 → 0；发现问题 → 1；--json 输出契约三键。"""

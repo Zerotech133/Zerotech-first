@@ -19,6 +19,7 @@
   源缺失或结构非法时退出码 1 并打 stderr——调用方（定时任务）可据此报警，
   页面侧则安静降级显示「盘后作业未产出」占位。
 """
+
 import glob
 import json
 import os
@@ -26,7 +27,7 @@ import re
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))          # 仓库根
+ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))  # 仓库根
 REPORTS_DIR = os.path.join(ROOT, "quant_backtest", "reports")
 OUT_PATH = os.path.join(HERE, "..", "data", "xunyou_latest.json")  # portal/data/
 POOL_RE = re.compile(r"^xunyou_pool_(\d{8})\.json$")
@@ -55,7 +56,9 @@ def is_divergent(item):
 
 def score_key(item):
     v = item.get("score")
-    return v if isinstance(v, (int, float)) and not isinstance(v, bool) else float("-inf")
+    return (
+        v if isinstance(v, (int, float)) and not isinstance(v, bool) else float("-inf")
+    )
 
 
 def truncate(text):
@@ -72,22 +75,32 @@ def build_payload(src_path, data):
     for item in ranked[:TOP_N]:
         if not isinstance(item, dict):
             continue
-        top.append({
-            "symbol": item.get("symbol"),
-            "score": item.get("score"),
-            "confidence": item.get("confidence"),
-            "divergence": is_divergent(item),
-            # tier 透传（2026-10-19 拍板分档）：旧池文件无 tier 字段 → 空串
-            "tier": item.get("tier", "") if isinstance(item.get("tier", ""), str) else "",
-            "rationale": truncate(item.get("rationale")),
-        })
+        top.append(
+            {
+                "symbol": item.get("symbol"),
+                "score": item.get("score"),
+                "confidence": item.get("confidence"),
+                "divergence": is_divergent(item),
+                # tier 透传（2026-10-19 拍板分档）：旧池文件无 tier 字段 → 空串
+                "tier": item.get("tier", "")
+                if isinstance(item.get("tier", ""), str)
+                else "",
+                "rationale": truncate(item.get("rationale")),
+            }
+        )
     div_count = sum(1 for it in pool if isinstance(it, dict) and is_divergent(it))
     stats = data.get("stats") or {}
-    if isinstance(stats, dict) and stats.get("divergence_total") is not None \
-            and stats["divergence_total"] != div_count:
+    if (
+        isinstance(stats, dict)
+        and stats.get("divergence_total") is not None
+        and stats["divergence_total"] != div_count
+    ):
         # 以 pool 实算为准；stats 不一致仅告警（不阻断、不改源）
-        print("[warn] stats.divergence_total=%s 与 pool 实算 %s 不一致，取实算值"
-              % (stats["divergence_total"], div_count), file=sys.stderr)
+        print(
+            "[warn] stats.divergence_total=%s 与 pool 实算 %s 不一致，取实算值"
+            % (stats["divergence_total"], div_count),
+            file=sys.stderr,
+        )
     return {
         "agent": data.get("agent"),
         "trade_date": data.get("trade_date"),
@@ -104,8 +117,11 @@ def build_payload(src_path, data):
 def main():
     src = latest_pool_file()
     if not src:
-        print("[error] 未找到 %s/xunyou_pool_<YYYYMMDD>.json（盘后作业未产出）"
-              % REPORTS_DIR, file=sys.stderr)
+        print(
+            "[error] 未找到 %s/xunyou_pool_<YYYYMMDD>.json（盘后作业未产出）"
+            % REPORTS_DIR,
+            file=sys.stderr,
+        )
         return 1
     try:
         with open(src, "r", encoding="utf-8") as f:

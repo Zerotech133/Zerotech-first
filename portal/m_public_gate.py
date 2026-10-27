@@ -18,6 +18,7 @@
   python m_public_gate.py --port 8081 --target http://127.0.0.1:8080
   python m_public_gate.py --port 8081 --dry-run   # 只打印白名单，不监听
 """
+
 from __future__ import annotations
 
 import argparse
@@ -46,11 +47,18 @@ RULES = [
 # 公网不开放的页面（即使有令牌也不给入口）；订阅页对外可看（空态/脱敏）
 DENY_PATHS = re.compile(r"^/m/(ops)(?:\.html)?(?:/.*)?$")
 
-RATE_LIMIT = 120          # 每 IP 每分钟
+RATE_LIMIT = 120  # 每 IP 每分钟
 RATE_WINDOW = 60.0
-STRIP_REQ_HEADERS = {"cookie", "authorization", "x-forwarded-for",
-                     "x-forwarded-proto", "x-real-ip", "x-portal-token",
-                     "x-portal-key", "x-push-hub-key"}
+STRIP_REQ_HEADERS = {
+    "cookie",
+    "authorization",
+    "x-forwarded-for",
+    "x-forwarded-proto",
+    "x-real-ip",
+    "x-portal-token",
+    "x-portal-key",
+    "x-push-hub-key",
+}
 
 
 class _Limiter:
@@ -122,8 +130,9 @@ class Handler(BaseHTTPRequestHandler):
         n = int(self.headers.get("Content-Length") or 0)
         body = self.rfile.read(n) if n else None
         try:
-            conn = http.client.HTTPConnection(self.target[0], self.target[1],
-                                              timeout=30)
+            conn = http.client.HTTPConnection(
+                self.target[0], self.target[1], timeout=30
+            )
             hdrs = {}
             for k, v in self.headers.items():
                 if k.lower() in STRIP_REQ_HEADERS:
@@ -141,8 +150,13 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(resp.status)
         for k, v in resp.getheaders():
             lk = k.lower()
-            if lk in ("transfer-encoding", "connection", "keep-alive",
-                      "content-length", "set-cookie"):
+            if lk in (
+                "transfer-encoding",
+                "connection",
+                "keep-alive",
+                "content-length",
+                "set-cookie",
+            ):
                 continue
             self.send_header(k, v)
         self.send_header("Content-Length", str(len(data)))
@@ -177,8 +191,11 @@ def main(argv=None):
         print("DENY:", DENY_PATHS.pattern)
         return 0
     srv = ThreadingHTTPServer((args.bind, args.port), Handler)
-    print("m_public_gate listening on %s:%d → %s (rate %d/min/IP)"
-          % (args.bind, args.port, args.target, RATE_LIMIT), flush=True)
+    print(
+        "m_public_gate listening on %s:%d → %s (rate %d/min/IP)"
+        % (args.bind, args.port, args.target, RATE_LIMIT),
+        flush=True,
+    )
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

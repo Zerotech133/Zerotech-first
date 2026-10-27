@@ -60,8 +60,9 @@ def log(msg):
 
 def atomic_write_json(path, obj):
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path),
-                               prefix=os.path.basename(path) + ".", suffix=".tmp")
+    fd, tmp = tempfile.mkstemp(
+        dir=os.path.dirname(path), prefix=os.path.basename(path) + ".", suffix=".tmp"
+    )
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             json.dump(obj, f, ensure_ascii=False, indent=2)
@@ -76,8 +77,12 @@ def run_chain():
     """跑一键链；返回 (退出码, stdout尾部, stderr尾部)。stderr 不再丢弃（P1-3）。"""
     proc = subprocess.run(
         [sys.executable, CHAIN, "--check-online"],
-        cwd=HERE, capture_output=True, text=True,
-        encoding="utf-8", errors="replace", env=CHILD_ENV,
+        cwd=HERE,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        env=CHILD_ENV,
     )
     out_tail = [ln for ln in (proc.stdout or "").splitlines() if ln.strip()][-8:]
     err_tail = [ln for ln in (proc.stderr or "").splitlines() if ln.strip()][-5:]
@@ -99,7 +104,9 @@ def compare_md(hashes, online_hashes):
     for rel, oh in online_hashes.items():
         lh = hashes.get(rel, "?")
         mark = "一致" if oh == lh else "**不一致**"
-        lines.append("- %s：%s（本地 `%s...` / 线上 `%s...`）" % (rel, mark, lh[:16], oh[:16]))
+        lines.append(
+            "- %s：%s（本地 `%s...` / 线上 `%s...`）" % (rel, mark, lh[:16], oh[:16])
+        )
     return "\n".join(lines) or "（无比对数据）"
 
 
@@ -113,8 +120,10 @@ def send_feishu(title, template, md):
     body = {
         "schema": "2.0",
         "config": {"update_multi": True},
-        "header": {"title": {"tag": "plain_text", "content": title},
-                   "template": template},
+        "header": {
+            "title": {"tag": "plain_text", "content": title},
+            "template": template,
+        },
         "body": {"elements": [{"tag": "markdown", "content": md}]},
     }
     try:
@@ -125,12 +134,15 @@ def send_feishu(title, template, md):
 
 
 def write_flag(hashes, online_hashes, mismatched):
-    atomic_write_json(FLAG_PATH, {
-        "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
-        "mismatched": mismatched,
-        "hashes": hashes,
-        "online_hashes": online_hashes,
-    })
+    atomic_write_json(
+        FLAG_PATH,
+        {
+            "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "mismatched": mismatched,
+            "hashes": hashes,
+            "online_hashes": online_hashes,
+        },
+    )
 
 
 def clear_flag():
@@ -157,8 +169,12 @@ def inspect():
         if os.path.exists(FLAG_PATH):
             if clear_flag():
                 log("[恢复] 线上已追平，清除 DEPLOY_PENDING 旗标")
-                send_feishu("picks 发布已恢复", "green",
-                            "线上比对文件已全部与本地快照一致，DEPLOY_PENDING 已清除。\n%s" % LINK)
+                send_feishu(
+                    "picks 发布已恢复",
+                    "green",
+                    "线上比对文件已全部与本地快照一致，DEPLOY_PENDING 已清除。\n%s"
+                    % LINK,
+                )
             else:
                 # P1-4：清除失败不发绿卡，留待下次重试
                 log("[warn] 旗标清除失败（可能被占用），保留待下次重试，本次不发恢复卡")
@@ -171,19 +187,26 @@ def inspect():
         mismatched = [rel for rel, oh in online_hashes.items() if hashes.get(rel) != oh]
         write_flag(hashes, online_hashes, mismatched)
         log("[滞后] 线上滞后，已落旗标并发飞书告警")
-        send_feishu("⚠️ picks 线上滞后告警", "red",
-                    "本地快照与线上不一致，需要重新 deploy。\n\n"
-                    "**处置**：对 WorkBuddy agent 说「**重新发布 picks**」即可"
-                    "（目录/入口/appId 不变，链接不变）。\n\n"
-                    + compare_md(hashes, online_hashes) + "\n\n链接：%s" % LINK)
+        send_feishu(
+            "⚠️ picks 线上滞后告警",
+            "red",
+            "本地快照与线上不一致，需要重新 deploy。\n\n"
+            "**处置**：对 WorkBuddy agent 说「**重新发布 picks**」即可"
+            "（目录/入口/appId 不变，链接不变）。\n\n"
+            + compare_md(hashes, online_hashes)
+            + "\n\n链接：%s" % LINK,
+        )
         return 2
 
     # 其余一律按链路异常处理（含 rc==2 无佐证）
     reason = err_tail[-1] if err_tail else (out_tail[-1] if out_tail else "无输出")
     log("[异常] 一键链退出码 %d" % rc)
-    send_feishu("⚠️ picks 发布链异常", "orange",
-                "publish_picks.py 退出码 %d（非确认滞后、非正常），请人工查看\n"
-                "portal/work/publish_watchdog.log。\n\n最后一行错误：`%s`" % (rc, reason))
+    send_feishu(
+        "⚠️ picks 发布链异常",
+        "orange",
+        "publish_picks.py 退出码 %d（非确认滞后、非正常），请人工查看\n"
+        "portal/work/publish_watchdog.log。\n\n最后一行错误：`%s`" % (rc, reason),
+    )
     return rc if rc != 2 else 1
 
 
@@ -192,10 +215,22 @@ def install():
     注意（审计 P2-5）：该路径被安全中心黑名单拦截、尚未实测，放行后需
     schtasks /Query /TN x5-picks-publish-check /V 核对 /TR 完整命令行。"""
     action = '"%s" "%s"' % (sys.executable, os.path.abspath(__file__))
-    cmd = ["schtasks", "/Create", "/F", "/TN", TASK_NAME,
-           "/SC", "DAILY", "/ST", TASK_TIME, "/TR", action]
-    proc = subprocess.run(cmd, capture_output=True, text=True,
-                          encoding="gbk", errors="replace")
+    cmd = [
+        "schtasks",
+        "/Create",
+        "/F",
+        "/TN",
+        TASK_NAME,
+        "/SC",
+        "DAILY",
+        "/ST",
+        TASK_TIME,
+        "/TR",
+        action,
+    ]
+    proc = subprocess.run(
+        cmd, capture_output=True, text=True, encoding="gbk", errors="replace"
+    )
     print(proc.stdout or "")
     if proc.returncode != 0:
         print(proc.stderr or "", file=sys.stderr)
@@ -206,16 +241,22 @@ def install():
 
 
 def uninstall():
-    proc = subprocess.run(["schtasks", "/Delete", "/F", "/TN", TASK_NAME],
-                          capture_output=True, text=True,
-                          encoding="gbk", errors="replace")
+    proc = subprocess.run(
+        ["schtasks", "/Delete", "/F", "/TN", TASK_NAME],
+        capture_output=True,
+        text=True,
+        encoding="gbk",
+        errors="replace",
+    )
     print(proc.stdout or proc.stderr or "")
     return proc.returncode
 
 
 def main():
     parser = argparse.ArgumentParser(description="picks 公网发布看门狗")
-    parser.add_argument("--install", action="store_true", help="注册每日 %s 计划任务" % TASK_TIME)
+    parser.add_argument(
+        "--install", action="store_true", help="注册每日 %s 计划任务" % TASK_TIME
+    )
     parser.add_argument("--uninstall", action="store_true", help="删除计划任务")
     args = parser.parse_args()
     if args.install:

@@ -7,6 +7,7 @@
 .tmp、filter_new 正确切分、env 路径覆盖、不完整 item 拒绝、today_str 随
 RENEWAL_TZ 切换。
 """
+
 import json
 import os
 import sys
@@ -18,8 +19,13 @@ if HERE not in sys.path:
 
 import renewal_state as st  # noqa: E402
 
-ITEM = {"open_id": "ou_alice001", "plan_id": "basic_monthly",
-        "stage": "t3", "days_left": 3, "end": "2026-11-19 10:00:00"}
+ITEM = {
+    "open_id": "ou_alice001",
+    "plan_id": "basic_monthly",
+    "stage": "t3",
+    "days_left": 3,
+    "end": "2026-11-19 10:00:00",
+}
 DAY = "2026-11-16"
 
 
@@ -29,6 +35,7 @@ def _state_file(tmp_path, name="renewal_state.json"):
 
 # 1. 首次 load：文件不存在 → 空结构，不抛、不落盘
 
+
 def test_load_missing_returns_empty_state(tmp_path):
     path = _state_file(tmp_path)
     state = st.load(path)
@@ -37,10 +44,11 @@ def test_load_missing_returns_empty_state(tmp_path):
     assert state["sent"] == {} and state["problems"] == []
     assert state["path"] == os.path.abspath(path)
     assert state["version"] == st.STATE_VERSION
-    assert os.path.exists(path) is False      # load 只读，不创建文件
+    assert os.path.exists(path) is False  # load 只读，不创建文件
 
 
 # 2. mark 后 already_sent 为真，且真落盘（重新 load 仍在）
+
 
 def test_mark_sent_then_already_sent(tmp_path):
     path = _state_file(tmp_path)
@@ -68,6 +76,7 @@ def test_mark_sent_then_already_sent(tmp_path):
 
 # 3. 不同 stage 不互相压制（t3 发过，t1 仍要发）
 
+
 def test_different_stage_not_suppressed(tmp_path):
     path = _state_file(tmp_path)
     state = st.load(path)
@@ -80,25 +89,36 @@ def test_different_stage_not_suppressed(tmp_path):
 
 # 4. 不同 day 不互相压制（昨日发过，今日重跑仍提醒）
 
+
 def test_different_day_not_suppressed(tmp_path):
     path = _state_file(tmp_path)
     state = st.load(path)
     st.mark_sent(state, ITEM, "2026-11-15", path=path)
-    assert st.already_sent(state, "ou_alice001", "basic_monthly", "t3", "2026-11-15") is True
-    assert st.already_sent(state, "ou_alice001", "basic_monthly", "t3", "2026-11-16") is False
-    assert len(st.load(path)["sent"]) == 1      # 只标记过 11-15 那一条
+    assert (
+        st.already_sent(state, "ou_alice001", "basic_monthly", "t3", "2026-11-15")
+        is True
+    )
+    assert (
+        st.already_sent(state, "ou_alice001", "basic_monthly", "t3", "2026-11-16")
+        is False
+    )
+    assert len(st.load(path)["sent"]) == 1  # 只标记过 11-15 那一条
 
 
 # 5. prune：清掉早于 (today - keep_days) 的记录，保留近期
 
+
 def test_prune_drops_old_records(tmp_path):
     path = _state_file(tmp_path)
     state = st.load(path)
-    for open_id, day in (("ou_old00001", "2026-10-01"),
-                         ("ou_recent02", "2026-11-15"),
-                         ("ou_today003", "2026-11-16")):
-        st.mark_sent(state, {"open_id": open_id, "plan_id": "p1",
-                             "stage": "t3"}, day, path=path)
+    for open_id, day in (
+        ("ou_old00001", "2026-10-01"),
+        ("ou_recent02", "2026-11-15"),
+        ("ou_today003", "2026-11-16"),
+    ):
+        st.mark_sent(
+            state, {"open_id": open_id, "plan_id": "p1", "stage": "t3"}, day, path=path
+        )
 
     # keep_days=30、today=2026-11-16 → 截止 2026-10-17，10-01 被清
     removed = st.prune(state, keep_days=30, today="2026-11-16")
@@ -114,6 +134,7 @@ def test_prune_drops_old_records(tmp_path):
 
 
 # 6. 坏 JSON：load 不抛、标 corrupt；mark 拒绝写，原文件一字未改
+
 
 def test_corrupt_state_reported_and_not_overwritten(tmp_path):
     path = _state_file(tmp_path)
@@ -138,10 +159,11 @@ def test_corrupt_state_reported_and_not_overwritten(tmp_path):
     assert _parts[1:] == ["basic_monthly", "t3", "2026-11-16"]
     assert "ou_alice001" not in out["key"]
     with open(path, "r", encoding="utf-8") as fh:
-        assert fh.read() == broken          # 不覆盖、不丢已发数据
+        assert fh.read() == broken  # 不覆盖、不丢已发数据
 
 
 # 7. 原子写：成功后不残留 .tmp，文件可解析且版本正确
+
 
 def test_atomic_write_leaves_no_tmp(tmp_path):
     path = _state_file(tmp_path)
@@ -160,15 +182,16 @@ def test_atomic_write_leaves_no_tmp(tmp_path):
 
 # 8. filter_new：按已发状态切分，新项 / 已发项各归各位
 
+
 def test_filter_new_splits(tmp_path):
     path = _state_file(tmp_path)
     state = st.load(path)
     st.mark_sent(state, ITEM, DAY, path=path)
 
     items = [
-        dict(ITEM),                                    # 已发
-        dict(ITEM, open_id="ou_bob0002"),              # 新人同 stage
-        dict(ITEM, stage="t1"),                        # 同人不同 stage
+        dict(ITEM),  # 已发
+        dict(ITEM, open_id="ou_bob0002"),  # 新人同 stage
+        dict(ITEM, stage="t1"),  # 同人不同 stage
         {"open_id": "ou_no_stage03", "plan_id": "p1"},  # 无法去重 → 归新项
     ]
     new_items, sent_items = st.filter_new(items, state, DAY)
@@ -180,14 +203,15 @@ def test_filter_new_splits(tmp_path):
 
 # 9. env RENEWAL_STATE_PATH 覆盖默认路径
 
+
 def test_env_state_path_override(tmp_path, monkeypatch):
     path = _state_file(tmp_path, "env_state.json")
     monkeypatch.setenv("RENEWAL_STATE_PATH", path)
     assert st.state_path() == os.path.abspath(path)
 
-    state = st.load()                       # 不传 path，走 env
+    state = st.load()  # 不传 path，走 env
     assert state["path"] == os.path.abspath(path)
-    st.mark_sent(state, ITEM, DAY)          # 不传 path，同样走 env
+    st.mark_sent(state, ITEM, DAY)  # 不传 path，同样走 env
     assert os.path.exists(path) is True
     assert st.already_sent(st.load(), "ou_alice001", "basic_monthly", "t3", DAY) is True
 
@@ -199,6 +223,7 @@ def test_default_state_path_under_portal_work(monkeypatch):
 
 
 # 10. 不完整 item：拒绝标记，不写文件
+
 
 def test_mark_sent_rejects_incomplete_item(tmp_path):
     path = _state_file(tmp_path)
@@ -215,6 +240,7 @@ def test_mark_sent_rejects_incomplete_item(tmp_path):
 
 # 11. today_str 随 RENEWAL_TZ 切换（与 reminder 的 days_left 同口径）
 
+
 def test_today_str_follows_renewal_tz(monkeypatch):
     now = datetime(2026, 11, 16, 16, 30, tzinfo=timezone.utc)  # +08 已是次日
     monkeypatch.setenv("RENEWAL_TZ", "Asia/Shanghai")
@@ -224,6 +250,7 @@ def test_today_str_follows_renewal_tz(monkeypatch):
 
 
 # 12. 空文件：当空态处理但留痕（problems 有 state_empty）
+
 
 def test_empty_file_treated_as_empty_state(tmp_path):
     path = _state_file(tmp_path)
@@ -241,8 +268,12 @@ def test_oid_never_plaintext_in_key_or_entry(tmp_path):
     raw_oid = "ou_privacy_check_9f3a"
     p = tmp_path / "state.json"
     _state = st.load(str(p))
-    r = st.mark_sent(_state, {"open_id": raw_oid, "plan_id": "basic_monthly",
-                          "stage": "d7"}, "2026-10-21", path=str(p))
+    r = st.mark_sent(
+        _state,
+        {"open_id": raw_oid, "plan_id": "basic_monthly", "stage": "d7"},
+        "2026-10-21",
+        path=str(p),
+    )
     assert r["ok"] is True
     body = p.read_text(encoding="utf-8")
     assert raw_oid not in body, "状态文件不得出现明文 open_id"
@@ -261,21 +292,29 @@ def test_sent_key_stable_and_unique():
 def test_already_sent_roundtrip_after_hash(tmp_path):
     _state = st.load(str(tmp_path / "s0.json"))
     item = {"open_id": "ou_RT", "plan_id": "basic_monthly", "stage": "d3"}
-    assert st.already_sent(_state, "ou_RT", "basic_monthly", "d3",
-                           "2026-10-21") is False
+    assert (
+        st.already_sent(_state, "ou_RT", "basic_monthly", "d3", "2026-10-21") is False
+    )
     p = str(tmp_path / "s.json")
     st.mark_sent(_state, item, "2026-10-21", path=p)
-    assert st.already_sent(_state, "ou_RT", "basic_monthly", "d3",
-                           "2026-10-21") is True
+    assert st.already_sent(_state, "ou_RT", "basic_monthly", "d3", "2026-10-21") is True
 
 
 def test_prune_still_works_with_hashed_keys(tmp_path):
     _state = st.load(str(tmp_path / "s0b.json"))
     p = str(tmp_path / "s.json")
-    st.mark_sent(_state, {"open_id": "ou_old", "plan_id": "p", "stage": "d7"},
-                 "2026-01-01", path=p)
-    st.mark_sent(_state, {"open_id": "ou_new", "plan_id": "p", "stage": "d7"},
-                 "2026-10-21", path=p)
+    st.mark_sent(
+        _state,
+        {"open_id": "ou_old", "plan_id": "p", "stage": "d7"},
+        "2026-01-01",
+        path=p,
+    )
+    st.mark_sent(
+        _state,
+        {"open_id": "ou_new", "plan_id": "p", "stage": "d7"},
+        "2026-10-21",
+        path=p,
+    )
     removed = st.prune(_state, keep_days=7, today="2026-10-21")
     assert removed == 1
     assert len(_state["sent"]) == 1

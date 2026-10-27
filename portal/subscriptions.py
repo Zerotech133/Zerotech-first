@@ -10,6 +10,7 @@
 
 CLI 自测：python portal/subscriptions.py
 """
+
 import json
 import os
 from datetime import datetime
@@ -26,8 +27,7 @@ def _now():
 
 def _reg_ids():
     with open(REG, encoding="utf-8") as f:
-        return [s["id"] for s in
-                (json.load(f).get("strategies") or [])]
+        return [s["id"] for s in (json.load(f).get("strategies") or [])]
 
 
 def _load():
@@ -49,9 +49,16 @@ def _pf(d, pid=DEFAULT_PF):
     for p in d["portfolios"]:
         if p["id"] == pid:
             return p
-    p = {"id": pid, "name": "我的组合", "strategies": [],
-         "price": 0, "paid": False, "trader": None,
-         "note": "免费体验 · 未来商业化收费", "created_at": _now()}
+    p = {
+        "id": pid,
+        "name": "我的组合",
+        "strategies": [],
+        "price": 0,
+        "paid": False,
+        "trader": None,
+        "note": "免费体验 · 未来商业化收费",
+        "created_at": _now(),
+    }
     d["portfolios"].append(p)
     return p
 
@@ -61,19 +68,21 @@ def portfolios():
     reg = {}
     with open(REG, encoding="utf-8") as f:
         for s in json.load(f).get("strategies") or []:
-            reg[s["id"]] = {"name": s.get("name"),
-                            "tagline": s.get("tagline"),
-                            "status": s.get("status")}
+            reg[s["id"]] = {
+                "name": s.get("name"),
+                "tagline": s.get("tagline"),
+                "status": s.get("status"),
+            }
     d = _load()
     for p in d["portfolios"]:
         p["_detail"] = [reg[sid] for sid in p["strategies"] if sid in reg]
-        p["_shadow"] = [sid for sid in p["strategies"]
-                        if reg.get(sid, {}).get("status") == "shadow"]
+        p["_shadow"] = [
+            sid for sid in p["strategies"] if reg.get(sid, {}).get("status") == "shadow"
+        ]
     return {"ok": True, "portfolios": d["portfolios"]}
 
 
-def subscribe(strategy_id: str, action: str = "add",
-              pid: str = DEFAULT_PF) -> dict:
+def subscribe(strategy_id: str, action: str = "add", pid: str = DEFAULT_PF) -> dict:
     """订阅/退订（action: add|remove|toggle）。非法策略 id 拒绝。"""
     ids = _reg_ids()
     if strategy_id not in ids:
@@ -88,8 +97,13 @@ def subscribe(strategy_id: str, action: str = "add",
     elif action == "remove" and has:
         p["strategies"].remove(strategy_id)
     _save(d)
-    return {"ok": True, "action": action, "portfolio": p["id"],
-            "strategies": p["strategies"], "at": _now()}
+    return {
+        "ok": True,
+        "action": action,
+        "portfolio": p["id"],
+        "strategies": p["strategies"],
+        "at": _now(),
+    }
 
 
 def bind_trader(trader: str, pid: str = DEFAULT_PF) -> dict:
@@ -100,8 +114,12 @@ def bind_trader(trader: str, pid: str = DEFAULT_PF) -> dict:
     p["trader"] = trader
     p["hired_at"] = _now()
     _save(d)
-    return {"ok": True, "portfolio": p["id"], "trader": trader,
-            "strategies": p["strategies"]}
+    return {
+        "ok": True,
+        "portfolio": p["id"],
+        "trader": trader,
+        "strategies": p["strategies"],
+    }
 
 
 def unbind_trader(pid: str = DEFAULT_PF) -> dict:

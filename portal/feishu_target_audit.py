@@ -14,6 +14,7 @@
     python feishu_target_audit.py
     python feishu_target_audit.py --json
 """
+
 from __future__ import annotations
 
 import argparse
@@ -50,14 +51,22 @@ def audit_target(target, token, opener=None, canonical_app=""):
     tid = str(target.get("id") or "")
     app = str(target.get("app") or "")
     ttype = classify_target(target)
-    rec = {"name": name, "id": tid, "type": ttype, "app": app,
-           "ok": False, "reason": ""}
+    rec = {
+        "name": name,
+        "id": tid,
+        "type": ttype,
+        "app": app,
+        "ok": False,
+        "reason": "",
+    }
     if ttype == "unknown":
         rec["reason"] = "id 前缀不认识（非 ou_/oc_）"
         return rec
     if canonical_app and app and app != canonical_app:
-        rec["reason"] = ("app mismatch：目标登记 %s ≠ 当前凭据 app %s"
-                         "（跨应用域必得 230001）" % (app, canonical_app))
+        rec["reason"] = (
+            "app mismatch：目标登记 %s ≠ 当前凭据 app %s"
+            "（跨应用域必得 230001）" % (app, canonical_app)
+        )
         return rec
     if not token:
         rec["reason"] = "无 tenant token（凭证缺失）"
@@ -65,8 +74,12 @@ def audit_target(target, token, opener=None, canonical_app=""):
     if ttype == "chat_id":
         url = OPEN + "/im/v1/chats/" + urllib.parse.quote(tid, safe="")
     else:
-        url = (OPEN + "/contact/v3/users/" + urllib.parse.quote(tid, safe="")
-               + "?user_id_type=open_id")
+        url = (
+            OPEN
+            + "/contact/v3/users/"
+            + urllib.parse.quote(tid, safe="")
+            + "?user_id_type=open_id"
+        )
     req = urllib.request.Request(url, headers={"Authorization": "Bearer " + token})
     try:
         o = opener or urllib.request.urlopen
@@ -93,9 +106,12 @@ def audit_target(target, token, opener=None, canonical_app=""):
 def audit(token, targets=None, opener=None, canonical_app=""):
     if targets is None:
         import push_targets
+
         targets = push_targets.targets()
-    rows = [audit_target(t, token, opener=opener,
-                         canonical_app=canonical_app) for t in targets]
+    rows = [
+        audit_target(t, token, opener=opener, canonical_app=canonical_app)
+        for t in targets
+    ]
     summary = {
         "total": len(rows),
         "ok": sum(1 for r in rows if r["ok"]),
@@ -111,6 +127,7 @@ def main(argv=None):
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args(argv)
     import feishu_client
+
     token = feishu_client.get_tat()
     canonical = ""
     try:
@@ -123,14 +140,22 @@ def main(argv=None):
     if args.json:
         print(json.dumps(s, ensure_ascii=False, indent=1))
     else:
-        print("收件人可达性审计：total=%d ok=%d bad=%d canonical_app=%s" % (
-            s["total"], s["ok"], s["bad"], s.get("canonical_app") or "-"))
+        print(
+            "收件人可达性审计：total=%d ok=%d bad=%d canonical_app=%s"
+            % (s["total"], s["ok"], s["bad"], s.get("canonical_app") or "-")
+        )
         for r in s["rows"]:
-            print("  %s %-12s %-8s app=%-14s %s  %s" % (
-                "✅" if r["ok"] else "❌", r["name"], r["type"],
-                (r.get("app") or "-")[:14],
-                r["id"][:20] + ("…" if len(r["id"]) > 20 else ""),
-                r["reason"][:90]))
+            print(
+                "  %s %-12s %-8s app=%-14s %s  %s"
+                % (
+                    "✅" if r["ok"] else "❌",
+                    r["name"],
+                    r["type"],
+                    (r.get("app") or "-")[:14],
+                    r["id"][:20] + ("…" if len(r["id"]) > 20 else ""),
+                    r["reason"][:90],
+                )
+            )
     return 0 if s["bad"] == 0 else 1
 
 

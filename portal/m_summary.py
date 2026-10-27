@@ -6,6 +6,7 @@
   GET /api/m/feed/summary       投喂面汇总
   GET /api/m/customer/summary   客户域/飞书角色健康汇总
 """
+
 from __future__ import annotations
 
 import json
@@ -37,6 +38,7 @@ def _rows(path, limit=None):
 def strategy_summary():
     try:
         import strategy_ring as sr
+
         orders = _rows(sr.ORDERS)
         shadow = _rows(sr.SHADOW)
         latest = {}
@@ -49,6 +51,7 @@ def strategy_summary():
         def _age(ts):
             try:
                 from datetime import datetime
+
                 return int(now - datetime.fromisoformat(str(ts)).timestamp())
             except (TypeError, ValueError):
                 return None
@@ -65,15 +68,24 @@ def strategy_summary():
         for r in vals[:5]:
             bt = (r.get("backtest") or {}).get("result") or {}
             sm = bt.get("summary") or {}
-            recent.append({"id": str(r.get("id") or "")[:12],
-                           "status": r.get("status"),
-                           "return_pct": sm.get("total_return_pct"),
-                           "trades": sm.get("n_trades")})
-        return {"ok": True, "total": len(vals), "shadowing": shadowing,
-                "rejected": sum(1 for r in vals if r.get("status") == "rejected"),
-                "backtested": sum(1 for r in vals
-                                  if (r.get("backtest") or {}).get("status") == "done"),
-                "recent": recent}
+            recent.append(
+                {
+                    "id": str(r.get("id") or "")[:12],
+                    "status": r.get("status"),
+                    "return_pct": sm.get("total_return_pct"),
+                    "trades": sm.get("n_trades"),
+                }
+            )
+        return {
+            "ok": True,
+            "total": len(vals),
+            "shadowing": shadowing,
+            "rejected": sum(1 for r in vals if r.get("status") == "rejected"),
+            "backtested": sum(
+                1 for r in vals if (r.get("backtest") or {}).get("status") == "done"
+            ),
+            "recent": recent,
+        }
     except Exception as e:  # noqa: BLE001
         return {"ok": False, "error": "策略汇总不可用：%s" % str(e)[:120]}
 
@@ -81,14 +93,20 @@ def strategy_summary():
 def feed_summary():
     try:
         import m_feed
+
         d = m_feed.feed_payload()
-        stats = {it.get("label"): it.get("value")
-                 for it in (d.get("blocks") or [{}])[0].get("items") or []}
-        return {"ok": True, "stats": stats,
-                "total": stats.get("累计工单", 0),
-                "today": stats.get("今日", 0),
-                "dedup": stats.get("去重命中", 0),
-                "rejected": stats.get("身份闸拒绝", 0)}
+        stats = {
+            it.get("label"): it.get("value")
+            for it in (d.get("blocks") or [{}])[0].get("items") or []
+        }
+        return {
+            "ok": True,
+            "stats": stats,
+            "total": stats.get("累计工单", 0),
+            "today": stats.get("今日", 0),
+            "dedup": stats.get("去重命中", 0),
+            "rejected": stats.get("身份闸拒绝", 0),
+        }
     except Exception as e:  # noqa: BLE001
         return {"ok": False, "error": "投喂汇总不可用：%s" % str(e)[:120]}
 
@@ -108,8 +126,12 @@ def customer_summary():
             age_s = int(time.time() - os.path.getmtime(hb))
         except OSError:
             pass
-        return {"ok": True, "roles": roles, "roles_n": len(roles),
-                "bot_heartbeat_age_s": age_s,
-                "bot_fresh": bool(age_s is not None and age_s < 600)}
+        return {
+            "ok": True,
+            "roles": roles,
+            "roles_n": len(roles),
+            "bot_heartbeat_age_s": age_s,
+            "bot_fresh": bool(age_s is not None and age_s < 600),
+        }
     except Exception as e:  # noqa: BLE001
         return {"ok": False, "error": "客户域汇总不可用：%s" % str(e)[:120]}

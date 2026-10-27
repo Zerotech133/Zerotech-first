@@ -5,6 +5,7 @@
 所有展示值必须带 metric_id + as_of + evidence_level（见 score_guard）。
 数据缺失时返回 `missing` 与 `value=None`，不编数。
 """
+
 from __future__ import annotations
 
 import json
@@ -50,8 +51,7 @@ def _rps():
     envs = d.get("envs") or []
     a = next((x for x in envs if "A股" in str(x.get("label") or "")), None)
     if a and a.get("score") is not None:
-        return _annot("rps50", a["score"], latest,
-                      "A股全市场 RPS 环境分（0-100）")
+        return _annot("rps50", a["score"], latest, "A股全市场 RPS 环境分（0-100）")
     return None
 
 
@@ -60,25 +60,32 @@ def _nine_dim():
     if not d:
         return None
     rows = d.get("rows") or []
-    scores = [float(r["score"]) for r in rows
-              if isinstance(r, dict) and r.get("score") is not None]
+    scores = [
+        float(r["score"])
+        for r in rows
+        if isinstance(r, dict) and r.get("score") is not None
+    ]
     if not scores:
         return None
     scores.sort()
     med = scores[len(scores) // 2]
-    return _annot("nine_dim_score", round(med, 1),
-                  str(d.get("trade_date") or ""),
-                  "候选池九维评分中位数（%d 只）" % len(scores))
+    return _annot(
+        "nine_dim_score",
+        round(med, 1),
+        str(d.get("trade_date") or ""),
+        "候选池九维评分中位数（%d 只）" % len(scores),
+    )
 
 
 def _jev_conf():
     try:
         c = sqlite3.connect(NEWS_DB, timeout=10)
-        cutoff = (datetime.now() - timedelta(hours=24)).strftime(
-            "%Y-%m-%d %H:%M:%S")
+        cutoff = (datetime.now() - timedelta(hours=24)).strftime("%Y-%m-%d %H:%M:%S")
         rows = c.execute(
             "SELECT jev FROM news WHERE ts>=? AND jev IS NOT NULL "
-            "ORDER BY ts DESC LIMIT 500", (cutoff,)).fetchall()
+            "ORDER BY ts DESC LIMIT 500",
+            (cutoff,),
+        ).fetchall()
         c.close()
     except sqlite3.Error:
         return None
@@ -93,9 +100,12 @@ def _jev_conf():
     if not vals:
         return None
     avg = sum(vals) / len(vals)
-    return _annot("jev_conf", round(avg, 3),
-                  datetime.now().strftime("%Y-%m-%d %H:%M"),
-                  "近 24h JEV 平均置信（%d 条）" % len(vals))
+    return _annot(
+        "jev_conf",
+        round(avg, 3),
+        datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "近 24h JEV 平均置信（%d 条）" % len(vals),
+    )
 
 
 def _chan_signal():
@@ -103,11 +113,13 @@ def _chan_signal():
     if not d:
         return None
     opens = d.get("open") or []
-    buys = [x for x in opens if str(x.get("type") or "") in ("1买", "2买",
-                                                             "3买")]
-    return _annot("chan_signal", len(buys),
-                  str(d.get("updated_at") or "")[:16].replace("T", " "),
-                  "缠论持仓中买点信号数（%d）" % len(buys))
+    buys = [x for x in opens if str(x.get("type") or "") in ("1买", "2买", "3买")]
+    return _annot(
+        "chan_signal",
+        len(buys),
+        str(d.get("updated_at") or "")[:16].replace("T", " "),
+        "缠论持仓中买点信号数（%d）" % len(buys),
+    )
 
 
 def _kg_resonance():
@@ -117,15 +129,17 @@ def _kg_resonance():
     sig = d.get("signal")
     if sig is None:
         return None
-    return _annot("kg_resonance", str(sig),
-                  str(d.get("generated_at") or ""),
-                  "三线共振档位")
+    return _annot(
+        "kg_resonance", str(sig), str(d.get("generated_at") or ""), "三线共振档位"
+    )
 
 
 def snapshot():
     builders = [
-        ("rps50", _rps), ("nine_dim_score", _nine_dim),
-        ("jev_conf", _jev_conf), ("chan_signal", _chan_signal),
+        ("rps50", _rps),
+        ("nine_dim_score", _nine_dim),
+        ("jev_conf", _jev_conf),
+        ("chan_signal", _chan_signal),
         ("kg_resonance", _kg_resonance),
     ]
     items, missing, sources = [], [], {}
@@ -141,15 +155,21 @@ def snapshot():
         else:
             missing.append(mid)
             sources.setdefault(mid, "未就绪")
-    return {"items": items, "missing": missing, "sources": sources,
-            "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "core": list(sr.core_ids()) if hasattr(sr, "core_ids")
-            else [x[0] for x in builders]}
+    return {
+        "items": items,
+        "missing": missing,
+        "sources": sources,
+        "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "core": list(sr.core_ids())
+        if hasattr(sr, "core_ids")
+        else [x[0] for x in builders],
+    }
 
 
 def core_snapshot():
     """供 H5/API：5 核心指标 + 校验结果。"""
     import score_guard as sg
+
     snap = snapshot()
     vr = sg.validate_items(snap["items"], require_all_core=True)
     snap.update({"ok": vr["ok"], "validate": vr})

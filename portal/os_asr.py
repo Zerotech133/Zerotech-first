@@ -11,6 +11,7 @@
 3. **超时熔断**：推理超过 60s 标记 broken 并快速失败（重启 8091 恢复），不再无限挂起；
 4. **离线**：MODELSCOPE_OFFLINE=1 + disable_update=True。
 """
+
 from __future__ import annotations
 
 import concurrent.futures
@@ -32,8 +33,14 @@ _EXEC = concurrent.futures.ThreadPoolExecutor(max_workers=1)
 _STATE: Dict[str, Any] = {"loading": False, "broken": False, "error": ""}
 
 DEFAULT_MODEL_DIR = os.path.join(
-    os.path.expanduser("~"), ".cache", "modelscope", "models",
-    "iic--SenseVoiceSmall", "snapshots", "master")
+    os.path.expanduser("~"),
+    ".cache",
+    "modelscope",
+    "models",
+    "iic--SenseVoiceSmall",
+    "snapshots",
+    "master",
+)
 
 
 class AsrUnavailable(RuntimeError):
@@ -52,18 +59,33 @@ def _model_dir() -> Optional[str]:
 def engine_status() -> Dict[str, Any]:
     path = _model_dir()
     if not path:
-        return {"engine": "unavailable", "reason": "SenseVoiceSmall 模型未找到",
-                "model_dir": None, "loaded": False, "loading": False, "broken": False}
+        return {
+            "engine": "unavailable",
+            "reason": "SenseVoiceSmall 模型未找到",
+            "model_dir": None,
+            "loaded": False,
+            "loading": False,
+            "broken": False,
+        }
     try:
         import funasr  # noqa: F401
     except Exception as exc:  # pragma: no cover
-        return {"engine": "unavailable", "reason": "funasr 未安装: %s" % exc,
-                "model_dir": path, "loaded": False, "loading": False, "broken": False}
-    return {"engine": "sensevoice_local", "model_dir": path,
-            "loaded": bool(_CACHE.get("sv")),
-            "loading": bool(_STATE.get("loading")),
-            "broken": bool(_STATE.get("broken")),
-            "reason": str(_STATE.get("error") or "")}
+        return {
+            "engine": "unavailable",
+            "reason": "funasr 未安装: %s" % exc,
+            "model_dir": path,
+            "loaded": False,
+            "loading": False,
+            "broken": False,
+        }
+    return {
+        "engine": "sensevoice_local",
+        "model_dir": path,
+        "loaded": bool(_CACHE.get("sv")),
+        "loading": bool(_STATE.get("loading")),
+        "broken": bool(_STATE.get("broken")),
+        "reason": str(_STATE.get("error") or ""),
+    }
 
 
 def _load_model():
@@ -72,6 +94,7 @@ def _load_model():
         raise AsrUnavailable("SenseVoiceSmall 模型未找到")
     try:
         import torch
+
         torch.set_num_threads(2)
     except Exception:
         pass
@@ -80,8 +103,9 @@ def _load_model():
     except Exception as exc:
         raise AsrUnavailable("funasr 未安装: %s" % exc)
     try:
-        return AutoModel(model=path, device="cpu", disable_update=True,
-                         trust_remote_code=False)
+        return AutoModel(
+            model=path, device="cpu", disable_update=True, trust_remote_code=False
+        )
     except Exception as exc:  # pragma: no cover
         raise AsrUnavailable("SenseVoice 加载失败: %s" % exc)
 
@@ -100,7 +124,9 @@ def ensure_preload() -> None:
             with _GEN_LOCK:
                 if _CACHE.get("sv") is None:
                     _CACHE["sv"] = _load_model()
-            threading.Thread(target=_startup_selfcheck, name="os-asr-selfcheck", daemon=True).start()
+            threading.Thread(
+                target=_startup_selfcheck, name="os-asr-selfcheck", daemon=True
+            ).start()
         except Exception as exc:  # pragma: no cover
             _STATE["error"] = str(exc)
             _STATE["broken"] = True
@@ -123,6 +149,7 @@ def recover() -> None:
 
 def _wait_ready(timeout: float = 45.0) -> bool:
     import time as _t
+
     end = _t.time() + timeout
     while _t.time() < end:
         if _CACHE.get("sv") is not None:
@@ -138,9 +165,14 @@ def _infer(arr, lang: str) -> str:
         model = _CACHE.get("sv")
         if model is None:
             raise AsrUnavailable("模型尚未加载")
-        result = model.generate(input=arr, fs=16000, cache={},
-                                language=lang or "zh", use_itn=True,
-                                batch_size_s=60)
+        result = model.generate(
+            input=arr,
+            fs=16000,
+            cache={},
+            language=lang or "zh",
+            use_itn=True,
+            batch_size_s=60,
+        )
     text = ""
     if isinstance(result, list) and result:
         text = str(result[0].get("text") or "")
@@ -150,10 +182,15 @@ def _infer(arr, lang: str) -> str:
 def _load_wav_array(src: str):
     """读 WAV → numpy float32 单声道 16k（内存直达，不落临时文件，规避文件相关 EINVAL）。"""
     import numpy as np
+
     try:
         with wave.open(src, "rb") as w:
-            ch, sw, fr, n = (w.getnchannels(), w.getsampwidth(),
-                             w.getframerate(), w.getnframes())
+            ch, sw, fr, n = (
+                w.getnchannels(),
+                w.getsampwidth(),
+                w.getframerate(),
+                w.getnframes(),
+            )
             raw = w.readframes(n)
     except Exception as exc:
         raise AsrUnavailable("WAV 无法解析: %s" % exc)
@@ -168,7 +205,7 @@ def _load_wav_array(src: str):
         new_len = max(1, int(a.size * 16000 / fr))
         idx = np.linspace(0, a.size - 1, new_len)
         a = np.interp(idx, np.arange(a.size), a).astype(np.float32)
-    return a[:16000 * 30]
+    return a[: 16000 * 30]
 
 
 def selfcheck() -> Dict[str, Any]:
@@ -176,27 +213,44 @@ def selfcheck() -> Dict[str, Any]:
     用于服务重启后检测 Errno22 一类进程级推理异常（加载成功但推理失败）。
     """
     import numpy as np
+
     if _STATE.get("broken"):
-        return {"ok": False, "engine": "sensevoice_local", "reason": "broken",
-                "error": _STATE.get("error")}
+        return {
+            "ok": False,
+            "engine": "sensevoice_local",
+            "reason": "broken",
+            "error": _STATE.get("error"),
+        }
     if _CACHE.get("sv") is None:
         ensure_preload()
         if not _wait_ready(60.0):
-            return {"ok": False, "engine": "sensevoice_local", "reason": "not_loaded",
-                    "error": _STATE.get("error")}
+            return {
+                "ok": False,
+                "engine": "sensevoice_local",
+                "reason": "not_loaded",
+                "error": _STATE.get("error"),
+            }
     try:
-        arr = (np.sin(2 * np.pi * 440 * np.arange(16000) / 16000) * 0.1).astype("float32")
+        arr = (np.sin(2 * np.pi * 440 * np.arange(16000) / 16000) * 0.1).astype(
+            "float32"
+        )
         out = _infer(arr, "zh")
         return {"ok": True, "engine": "sensevoice_local", "text": str(out)[:60]}
     except Exception as exc:  # noqa: BLE001
         try:
             with open(r"C:\Temp\os_asr_selfcheck.log", "a", encoding="utf-8") as fh:
-                fh.write("=== %s selfcheck FAIL: %r broken=%s\n"
-                         % (time.strftime("%F %T"), exc, _STATE.get("broken")))
+                fh.write(
+                    "=== %s selfcheck FAIL: %r broken=%s\n"
+                    % (time.strftime("%F %T"), exc, _STATE.get("broken"))
+                )
         except Exception:
             pass
-        return {"ok": False, "engine": "sensevoice_local", "error": repr(exc),
-                "broken": bool(_STATE.get("broken"))}
+        return {
+            "ok": False,
+            "engine": "sensevoice_local",
+            "error": repr(exc),
+            "broken": bool(_STATE.get("broken")),
+        }
 
 
 def _startup_selfcheck() -> None:
@@ -204,8 +258,10 @@ def _startup_selfcheck() -> None:
     try:
         res = selfcheck()
         with open(r"C:\Temp\os_asr_selfcheck.log", "a", encoding="utf-8") as fh:
-            fh.write("=== %s startup selfcheck ok=%s %r\n"
-                     % (time.strftime("%F %T"), res.get("ok"), res))
+            fh.write(
+                "=== %s startup selfcheck ok=%s %r\n"
+                % (time.strftime("%F %T"), res.get("ok"), res)
+            )
         if not res.get("ok"):
             recover()
     except Exception:
@@ -217,12 +273,16 @@ def transcribe_wav(path: str, lang: str = "zh") -> str:
     if not os.path.isfile(path):
         raise AsrUnavailable("音频文件不存在: %r" % path)
     if _STATE.get("broken"):
-        raise AsrUnavailable("本地 ASR 已熔断（%s）；重启 8091 可恢复"
-                             % (_STATE.get("error") or "上次推理超时"))
+        raise AsrUnavailable(
+            "本地 ASR 已熔断（%s）；重启 8091 可恢复"
+            % (_STATE.get("error") or "上次推理超时")
+        )
     if _CACHE.get("sv") is None:
         ensure_preload()
         if not _wait_ready(45.0):
-            raise AsrUnavailable("模型加载中或失败：%s" % (_STATE.get("error") or "请稍后再试"))
+            raise AsrUnavailable(
+                "模型加载中或失败：%s" % (_STATE.get("error") or "请稍后再试")
+            )
     arr = _load_wav_array(path)
     if arr.size < 4000:  # <0.25s 视为无有效语音
         raise AsrUnavailable("音频太短（不到 0.25 秒），请重说")
@@ -241,9 +301,12 @@ def transcribe_wav(path: str, lang: str = "zh") -> str:
         # 单次异常不永久熔断：连续 3 次才熔断；留 traceback 便于定位
         try:
             import traceback
+
             with open(r"C:\Temp\os_asr_err.log", "a", encoding="utf-8") as fh:
-                fh.write("\n=== %s ===\n%s\n" % (time.strftime("%F %T"),
-                                                   traceback.format_exc()))
+                fh.write(
+                    "\n=== %s ===\n%s\n"
+                    % (time.strftime("%F %T"), traceback.format_exc())
+                )
         except Exception:
             pass
         fails = int(_STATE.get("fails") or 0) + 1

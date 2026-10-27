@@ -13,6 +13,7 @@ portal 依赖以轻量 shim 提供（staticmethod 直引，不构造 HTTP Handle
   python build_pick_details.py --shard 0/4        # 全部(T1+T2)分片
 增量：已存在且当日生成的 detail 文件自动跳过。
 """
+
 import json
 import os
 import sys
@@ -67,8 +68,9 @@ def main():
                 old = json.load(open(fp, encoding="utf-8"))
                 if (old.get("ts") or "").startswith(today):
                     # --stale：只重抓行情/K线维度残缺的当日文件
-                    if stale and not (old.get("quote") is None
-                                      or old.get("has_bars") is not True):
+                    if stale and not (
+                        old.get("quote") is None or old.get("has_bars") is not True
+                    ):
                         skip += 1
                         continue
                     if not stale:
@@ -87,16 +89,29 @@ def main():
                 json.dump(f, fh, ensure_ascii=False, indent=1)
             os.replace(tmp, fp)
             done += 1
-            print("[%s] %d/%d %s %s ok %.0fs" %
-                  (tier or ("shard" if shard else "all"), k + 1, len(rows),
-                   code, r.get("name"), time.time() - t0), flush=True)
+            print(
+                "[%s] %d/%d %s %s ok %.0fs"
+                % (
+                    tier or ("shard" if shard else "all"),
+                    k + 1,
+                    len(rows),
+                    code,
+                    r.get("name"),
+                    time.time() - t0,
+                ),
+                flush=True,
+            )
         except Exception as ex:  # noqa: BLE001 — 单只失败不拖垮批次
             fail += 1
-            print("[%d/%d] %s FAIL %s" % (k + 1, len(rows), code,
-                                          str(ex)[:80]), flush=True)
-    print("DONE %s: done=%d skip=%d fail=%d elapsed=%.0fs"
-          % (tier or shard or "all", done, skip, fail, time.time() - t0),
-          flush=True)
+            print(
+                "[%d/%d] %s FAIL %s" % (k + 1, len(rows), code, str(ex)[:80]),
+                flush=True,
+            )
+    print(
+        "DONE %s: done=%d skip=%d fail=%d elapsed=%.0fs"
+        % (tier or shard or "all", done, skip, fail, time.time() - t0),
+        flush=True,
+    )
 
 
 if __name__ == "__main__":
