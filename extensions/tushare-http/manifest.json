@@ -9,9 +9,19 @@
   "url": "https://api.tushare.pro/mcp/",
   "token_env": "TUSHARE_MCP_TOKEN",
   "allow_tools": "*",
-  "docs": ["docs/ops/2026-10-27_工具操作手册_v1.md", "docs/specs/2026-10-27_MCP安全自查_v1.md"],
-  "tests": ["tools/test_mcp_security_check.py"],
-  "compat": {"min_platform": "2026.10"},
+  "docs": [
+    "docs/ops/2026-10-27_工具操作手册_v1.md",
+    "docs/specs/2026-10-27_MCP安全自查_v1.md"
+  ],
+  "tests": [
+    "tools/test_mcp_security_check.py"
+  ],
+  "compat": {
+    "min_platform": "2026.10"
+  },
   "lifecycle": "active",
-  "notes": "allow_tools=\"*\" 为已知 scope 宽项（质量分级 warn），后续白名单化需改 servers.json + 重启 8796（L2）"
+  "notes": "allow_tools=\"*\" 为已知 scope 宽项（质量分级 warn），后续白名单化需改 servers.json + 重启 8796（L2）",
+  "runtime": {
+    "mcp_server": "tushare-http"
+  }
 }

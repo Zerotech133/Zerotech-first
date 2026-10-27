@@ -1,0 +1,31 @@
+{
+  "name": "ro-zhaoyun",
+  "version": "1.0.0",
+  "type": "mcp",
+  "owner": "ARCH1",
+  "description": "MCP 只读赵云数据（tasks/org/docs/health 查询，不写账本）",
+  "risk": "read-only",
+  "transport": "stdio",
+  "entry": "tools/mcp_ro_zhaoyun.py",
+  "allow_tools": [
+    "tasks_read",
+    "org_read",
+    "docs_search",
+    "health_read"
+  ],
+  "docs": [
+    "docs/ops/2026-10-27_工具操作手册_v1.md",
+    "docs/testing.md"
+  ],
+  "tests": [
+    "tools/test_mcp_security_check.py"
+  ],
+  "compat": {
+    "min_platform": "2026.10",
+    "python": ">=3.11"
+  },
+  "lifecycle": "active",
+  "runtime": {
+    "mcp_server": "zhaoyun-read"
+  }
+}
