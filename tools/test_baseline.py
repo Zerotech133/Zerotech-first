@@ -14,9 +14,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-PLATFORM = Path(__file__).resolve().parents[1]
-OUT = PLATFORM / "data" / "test_baseline"
-REPO = PLATFORM.parent
+ROOT = Path(__file__).resolve().parents[1]          # 仓库根（tools/ 的上一级）
+OUT = ROOT / "agent_platform" / "data" / "test_baseline"
+REPO = ROOT
 
 # 核心套件（与 QualityGate tests 检一致的近似集；可按需扩）
 SUITES = [
