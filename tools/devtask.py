@@ -5,10 +5,12 @@
 
 命令：
   new <TID> <一句话描述> [--project <pid>] [--dept <部门>] [--acceptance "<命令串>"]
+                            [--approver <席位>]
                            建任务单+worktree+分支 task/<TID>；--dept 声明部门单，
                            命中研发试点门（agent_platform/config/dev_owner_gate.json）
                            时按 phase=warn 只告警 / phase=block 拒收，且拒收发生在
-                           建 worktree 之前（不落空 worktree）（WO-LEGION-DEVEXEC-20261027）
+                           建 worktree 之前（不落空 worktree）（WO-LEGION-DEVEXEC-20261027）；
+                           --approver 记研发域验收署名（charter dev-authority-v1）。
   list                     任务单总览（谁在干什么/分支/进度）
   port <服务名>            申请分配一个未注册端口（并提示写回 REGISTRY）
   merge <TID> [--l2-ack --l2-reason "五要素"]
@@ -56,6 +58,11 @@ DEV_GATE = os.path.join(REPO, "agent_platform", "config", "dev_owner_gate.json")
 # 新研发需求优先派 ARCH1/组长，不直接落 DSH/治理席；本配置给试点门提供 dev_seats
 # 口径（owner 非研发席 → warn 告警，phase=block 时拒收）。配置缺失/坏 JSON 不启用。
 DEV_ROUTING = os.path.join(REPO, "agent_platform", "config", "dev_routing_rules.json")
+# 2026-10-27 WO-AUTHORITY-B2：研发域最高权限 charter（老田 10-27 批，L1）。
+# approval.mode=warn 时合并缺 ARCH1 署名只告警；mode=block 时拒收。
+# 配置缺失/坏 JSON 一律降级 warn（fail-safe，不误拒研发单）。
+DEV_AUTHORITY = os.path.join(REPO, "agent_platform", "config",
+                             "dev_authority_charter.json")
 SCAN_SECRETS = os.path.join(REPO, "tools", "scan_secrets.py")
 # 2026-10-26 EXEC-R33：凭据扫描基线豁免表。存在才传给扫描器；缺失则回退旧行为
 # （不带 --baseline，全部未豁免命中照旧拒绝合并 = fail-closed）。
@@ -737,6 +744,55 @@ def _is_routing_exempt(desc):
     return "路由例外=" in str(desc or "")
 
 
+def _load_dev_authority():
+    """读取研发域最高权限 charter 的审批段（缺文件/坏 JSON → fail-safe warn）。"""
+    try:
+        cfg = json.load(open(DEV_AUTHORITY, encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        cfg = {}
+    if not isinstance(cfg, dict):
+        cfg = {}
+    approval = cfg.get("approval")
+    if not isinstance(approval, dict):
+        approval = {}
+    mode = str(approval.get("mode") or "warn").strip().lower()
+    approval["mode"] = mode if mode in ("warn", "block") else "warn"
+    approval.setdefault("approver", "ARCH1")
+    if not isinstance(approval.get("alternates"), list):
+        approval["alternates"] = ["DEV1"]
+    cfg["approval"] = approval
+    return cfg
+
+
+def _approval_check(task, auth=None):
+    """研发域合并审批判定（纯函数）：返回 (warnings, blocked)。
+
+    - 非 dev 单不适用；
+    - dev 单缺 `approver`（或不在授权人/代行人集合）→ 告警；mode=block 时拒收；
+    - 自审自批（approver == owner）→ 告警；mode=block 时拒收。
+    """
+    auth = auth if isinstance(auth, dict) else _load_dev_authority()
+    approval = auth.get("approval") if isinstance(auth.get("approval"), dict) else {}
+    if str((task or {}).get("dept") or "").strip().lower() != "dev":
+        return [], False
+    allowed = {str(approval.get("approver") or "ARCH1").strip().upper()}
+    for a in approval.get("alternates") or []:
+        if isinstance(a, str) and a.strip():
+            allowed.add(a.strip().upper())
+    approver = str(task.get("approver") or "").strip().upper()
+    owner = str(task.get("owner") or "").strip().upper()
+    warnings = []
+    if not approver:
+        warnings.append("缺 ARCH1 验收署名（--approver）")
+    elif approver not in allowed:
+        warnings.append("approver=%s 不在授权集合（%s）"
+                        % (approver, ",".join(sorted(allowed))))
+    elif owner and owner == approver:
+        warnings.append("自审自批：approver 与 owner 同为 %s" % approver)
+    blocked = str(approval.get("mode") or "warn").lower() == "block" and bool(warnings)
+    return warnings, blocked
+
+
 def _dev_gate_check(dept, owner_ok, acceptance, gate=None, owner=None,
                     routing=None, desc=None):
     """研发试点门判定（纯函数：无 IO、无副作用，``gate/routing=None`` 时才读配置）。
@@ -818,6 +874,14 @@ def cmd_new(tid, *desc):
                              "（如 --acceptance \"python -m pytest -q\"）")
         acceptance = desc.pop(i + 1)
         desc.pop(i)
+    # 2026-10-27 WO-AUTHORITY-B2：研发域最高权限 charter 的验收署名（可选）。
+    approver = None
+    if "--approver" in desc:
+        i = desc.index("--approver")
+        if i + 1 >= len(desc):
+            raise SystemExit("--approver 需要跟署名席位（如 --approver ARCH1）")
+        approver = desc.pop(i + 1)
+        desc.pop(i)
     desc = " ".join(desc) or "(无描述)"
     tasks = _tasks()
     if tid in tasks:
@@ -889,6 +953,9 @@ def cmd_new(tid, *desc):
     if dept is not None:
         rec["dept"] = dept
         rec["acceptance_cmd"] = acceptance
+        # 仅 dev/声明 dept 的单一并落验收署名（旧调用字段集不变）。
+        if approver:
+            rec["approver"] = approver
     tasks[tid] = rec
     _save(tasks, changed=(tid,))
     _ckpt(tid, "kai", tasks[tid]["owner"],
@@ -1070,6 +1137,22 @@ def cmd_merge(tid, *flags):
     t = tasks.get(tid)
     if not t:
         raise SystemExit("无此工单")
+    # 2026-10-27 WO-AUTHORITY-B2：研发域最高权限 charter 的合并审批（ARCH1 署名）。
+    # mode=warn 只告警（灰度）；mode=block 拒收。非 dev 单不适用。
+    appr_cfg = _load_dev_authority()
+    appr_warnings, appr_blocked = _approval_check(t, appr_cfg)
+    for w in appr_warnings:
+        print("[warn] dev-approval: %s（mode=%s，只告警不拒收）"
+              % (w, appr_cfg["approval"].get("mode", "warn")),
+              file=sys.stderr)
+    if appr_blocked:
+        t["status"] = "review"
+        _save(tasks, changed=(tid,))
+        _emit("guard_fail", tid,
+              "研发域审批门拒收：%s" % "；".join(appr_warnings))
+        raise SystemExit("研发域审批门（mode=block）拒收 %s：%s"
+                         "——补 --approver 或修正署名后重试"
+                         % (tid, "；".join(appr_warnings)))
     # 防呆（K-ORG-139 / P0-1）：分支无提交即拒绝合并，保留 worktree。
     # 亲历事故：K-ORG-137 在 worktree 改了文件但未 commit 就跑 merge——
     # 分支指向 master 使 `git merge --no-ff` 空转（Already up to date）；
@@ -1147,6 +1230,9 @@ def cmd_merge(tid, *flags):
     _ckpt(tid, "merge", t.get("owner", "devtask"), {"status": "done"})
     _emit("merge_done", tid,
           "守卫全绿（含明文凭据扫描），已合并 master；worktree 保留待人工回收")
+    if str(t.get("dept") or "").strip().lower() == "dev":
+        _emit("review_verdict", tid,
+              "approver=%s merged=1" % (t.get("approver") or "MISSING"))
     print("工单 %s 已合并 ✓（worktree 保留待人工回收）" % tid)
     _auto_rebuild_ide_bundle(tid)
     if t.get("worktree"):
