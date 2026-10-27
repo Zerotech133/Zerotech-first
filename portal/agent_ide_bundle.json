@@ -1,18 +1,16 @@
 {
- "generated": "2026-10-27 21:39",
+ "generated": "2026-10-27 21:40",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
   "departments": 19,
   "governance_seats": 1,
   "total_cards": 63,
-  "prompt_ok": 61,
-  "prompt_miss": [
-   "HUANGZHONG"
-  ],
+  "prompt_ok": 62,
+  "prompt_miss": [],
   "name_collisions": {},
   "workorders_doing": 21,
-  "workorders_review": 2
+  "workorders_review": 3
  },
  "workorders": [
   {
@@ -207,7 +205,7 @@
   {
    "id": "K-QUANT-20261027-COMMANDHQ",
    "desc": "组织指挥部：田丰/赵云/诸葛亮/关羽/黄忠；新增黄忠 HUANGZHONG 入编（研究院E3交付验收）；org.command_hq+bundle+IDE左树指挥部区块/顶栏入口；key_seats 加黄忠",
-   "status": "doing",
+   "status": "review",
    "owner": "DSH-Lead",
    "branch": "task/K-QUANT-20261027-COMMANDHQ",
    "created": "2026-10-27 21:39:28",
@@ -221,6 +219,15 @@
    "branch": "task/WO-O7-DIAG-20261027",
    "created": "2026-10-27 21:39:42",
    "project": "portal"
+  },
+  {
+   "id": "WO-SANDBOX-QUOTA-20261027",
+   "desc": "P0⑧ 增强（L1 设计+实现）：沙箱 --memory/--cpus/--pids-limit 资源配额；egress allowlist 策略 schema（sandbox_network_policy.json，默认 deny、精确 host/port、proxy 模式）+ network_policy_check.py 校验/决策 + 测试；仅设计不执行 L2（不改防火墙/网络/代理进程）。验收：配额 flags 生效于 docker run 计划；policy check 通过；测试。",
+   "status": "doing",
+   "owner": "ARCH1",
+   "branch": "task/WO-SANDBOX-QUOTA-20261027",
+   "created": "2026-10-27 21:40:15",
+   "project": "quant"
   }
  ],
  "coder_traces": [
@@ -2471,7 +2478,14 @@
    ],
    "experience": "30 年系统架构经验：从单体到微服务的演进治理、跨部门方案定稿与技术选型终审；ADR 架构决策记录制度化（tools/adr.py 登记·docs/adr 版本化入 git）的推动者。",
    "dept_name": "研发部",
-   "dept_cn_title": "将作监"
+   "dept_cn_title": "将作监",
+   "tasks": [
+    {
+     "id": "WO-SANDBOX-QUOTA-20261027",
+     "desc": "P0⑧ 增强（L1 设计+实现）：沙箱 --memory/--cpus/--pids-limit 资源配额；egress allowlist 策略 schema（sandbox_network_policy.json，默认 deny、精确 host/port、proxy 模式）+ network_policy_check.py 校验/决策 + 测试；仅设计不执行 L2（不改防火墙/网络/代理进程）。验收：配额 flags 生效于 docker run 计划；policy check 通过；测试。",
+     "status": "doing"
+    }
+   ]
   },
   "OPS1": {
    "id": "OPS1",
@@ -4732,8 +4746,8 @@
    "tools": [],
    "grants_read": [],
    "grants_write": [],
-   "prompt_file": "",
-   "prompt": "",
+   "prompt_file": "agent_platform/prompts/delivery_acceptance_chief.md",
+   "prompt": "# HUANGZHONG · 交付验收总长（指挥部老将）\n\n你是黄忠，零界军团**指挥部**五席之一，交付验收总长，直接对 A0 田丰负责。\n\n## 职责\n- 交付终验：代码/文档/数据产物上线前做最后一道验收，不通过不签收；\n- 质量把关：对照 charter、spec、验收标准逐项核对，拒绝\"差不多\"；\n- 上线前风险清单：列出回滚点、证据缺口、未闭环项；\n- 与赵云治理席、关羽审计席协同，但不替代二者。\n\n## 边界\n- 只做验收与把关，不直接改业务代码；\n- 证据不足时明确说\"不能签收\"，不编造结论；\n- 重大不可逆操作仍报 A0/老田。\n",
    "projects": [],
    "team_desc": "策略研究与商业化逻辑研究：交易策略研发与回测验证、AI能力方法论提炼、商业化路径探索（算法商品/策略市场/对外服务）、竞争情报对标——军团的知识发动机",
    "attributes": {},
@@ -4747,7 +4761,7 @@
    "matrix_assignments": [],
    "cn_name": "黄忠",
    "name": "黄忠",
-   "role_cn": "delivery_acceptance_chief",
+   "role_cn": "交付验收总长",
    "capabilities": [],
    "skills": [],
    "experience": "",
