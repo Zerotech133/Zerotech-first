@@ -35,7 +35,7 @@ class TestBuildContract(unittest.TestCase):
         self.assertEqual(c["apiVersion"], "v3.0.2")
         self.assertEqual(c["kind"], "DataContract")
         self.assertEqual(c["id"], "zerobond.daily")
-        self.assertEqual(c["owners"][0]["name"], "DATA1 张松")
+        self.assertEqual(c["team"][0]["name"], "DATA1 张松")
         sch = c["schema"][0]
         self.assertEqual(sch["name"], "daily")
         self.assertEqual(sch["physicalName"], "tushare/daily")
