@@ -7,9 +7,22 @@
   "risk": "read-only",
   "transport": "cli",
   "entry": "tools/seat_evidence_packet.py",
-  "allow_tools": ["read_only"],
-  "docs": ["docs/ops/2026-10-27_工具操作手册_v1.md", "docs/testing.md"],
-  "tests": ["tools/test_d2_gates.py"],
-  "compat": {"min_platform": "2026.10", "python": ">=3.11"},
-  "lifecycle": "active"
+  "allow_tools": [
+    "read_only"
+  ],
+  "docs": [
+    "docs/ops/2026-10-27_工具操作手册_v1.md",
+    "docs/testing.md"
+  ],
+  "tests": [
+    "tools/test_d2_gates.py"
+  ],
+  "compat": {
+    "min_platform": "2026.10",
+    "python": ">=3.11"
+  },
+  "lifecycle": "active",
+  "runtime": {
+    "tool_entry": "tools/seat_evidence_packet.py"
+  }
 }

@@ -7,10 +7,25 @@
   "risk": "read-only",
   "transport": "stdio",
   "entry": "tools/mcp_ro_filesystem.py",
-  "allow_tools": ["list_dir", "read_file", "stat"],
-  "docs": ["docs/ops/2026-10-27_工具操作手册_v1.md", "docs/testing.md"],
-  "tests": ["tools/test_mcp_security_check.py"],
-  "compat": {"min_platform": "2026.10", "python": ">=3.11"},
+  "allow_tools": [
+    "list_dir",
+    "read_file",
+    "stat"
+  ],
+  "docs": [
+    "docs/ops/2026-10-27_工具操作手册_v1.md",
+    "docs/testing.md"
+  ],
+  "tests": [
+    "tools/test_mcp_security_check.py"
+  ],
+  "compat": {
+    "min_platform": "2026.10",
+    "python": ">=3.11"
+  },
   "lifecycle": "active",
-  "notes": "由 agent_platform/legion_mcp/servers.json 声明，本文件为契约镜像"
+  "notes": "由 agent_platform/legion_mcp/servers.json 声明，本文件为契约镜像",
+  "runtime": {
+    "mcp_server": "filesystem"
+  }
 }
