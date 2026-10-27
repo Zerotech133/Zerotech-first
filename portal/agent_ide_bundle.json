@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-27 15:26",
+ "generated": "2026-10-27 15:27",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 61,
@@ -10,7 +10,7 @@
   "prompt_miss": [],
   "name_collisions": {},
   "workorders_doing": 14,
-  "workorders_review": 2
+  "workorders_review": 3
  },
  "workorders": [
   {
@@ -151,10 +151,19 @@
   {
    "id": "K-QUANT-20261027-CREDCAT",
    "desc": "统一凭据目录：JEV/Tushare/数据接口/飞书凭据统一展示（来源/加密状态/更新/轮换入口），不复制明文；/keys 页面新增区块 + /api/credentials；能力39→40+卡+测试+golden",
-   "status": "doing",
+   "status": "review",
    "owner": "DSH-Lead",
    "branch": "task/K-QUANT-20261027-CREDCAT",
    "created": "2026-10-27 15:25:30",
+   "project": "quant"
+  },
+  {
+   "id": "WO-LEGION-OSS-BENCH-20261027",
+   "desc": "开源社区同类项目调研与优化方案（老田 15:25 指令）：调研 MetaGPT/ChatDev/TheAgentCompany/TradingAgents/RD-Agent/Qlib/NautilusTrader/Letta/Graphiti/Langfuse/promptfoo/Inspect/OPA/OpenHands/OpenLineage 等；总结可抄经验与反模式；对照我们的 seat realness/事件账本/devtask/LCS-1 现状给分层优化方案（底座保留、8 个优先引入、P0/P1/P2 路线、度量、工单衔接）。只读调研+文档，不改生产、不引入依赖。",
+   "status": "doing",
+   "owner": "A0",
+   "branch": "task/WO-LEGION-OSS-BENCH-20261027",
+   "created": "2026-10-27 15:27:16",
    "project": "quant"
   }
  ],
@@ -1253,7 +1262,14 @@
    ],
    "experience": "20 年产品+研发复合经验：从需求定义、架构设计到参考实现与验收全链路；不亲自交付代码，以方案/伪代码/代码参考驱动执行 AI 落地；信息不全时能基于证据做最优决策并组织多 AI 自动执行。",
    "dept_name": "",
-   "dept_cn_title": ""
+   "dept_cn_title": "",
+   "tasks": [
+    {
+     "id": "WO-LEGION-OSS-BENCH-20261027",
+     "desc": "开源社区同类项目调研与优化方案（老田 15:25 指令）：调研 MetaGPT/ChatDev/TheAgentCompany/TradingAgents/RD-Agent/Qlib/NautilusTrader/Letta/Graphiti/Langfuse/promptfoo/Inspect/OPA/OpenHands/OpenLineage 等；总结可抄经验与反模式；对照我们的 seat realness/事件账本/devtask/LCS-1 现状给分层优化方案（底座保留、8 个优先引入、P0/P1/P2 路线、度量、工单衔接）。只读调研+文档，不改生产、不引入依赖。",
+     "status": "doing"
+    }
+   ]
   },
   "ACAD1": {
    "id": "ACAD1",
