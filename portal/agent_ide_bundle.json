@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-27 23:56",
+ "generated": "2026-10-27 23:57",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 36,
+  "workorders_doing": 35,
   "workorders_review": 3
  },
  "workorders": [
@@ -354,15 +354,6 @@
    "branch": "task/WO-O6P2D-AGG-20261027",
    "created": "2026-10-27 23:55:48",
    "project": "portal"
-  },
-  {
-   "id": "WO-LEGION-SIMPLE-P3-20261027",
-   "desc": "P3 快捷入口/高级筛选收口：/picks 筛选抽屉+顶部链接精简；/strategies 隐去重复页面快捷条；静态，无服务变更",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-SIMPLE-P3-20261027",
-   "created": "2026-10-27 23:56:37",
-   "project": "general"
   }
  ],
  "coder_traces": [
@@ -6991,11 +6982,6 @@
      "id": "WO-LEGION-DEEPSHELL-20261027",
      "desc": "深屏骨架推广：shared deep_shell.css；/picks.html 立即接入；/strategies 动态生成器接入（待 8091 受控重启生效）；保留业务 JS/数据；无 L2",
      "status": "review"
-    },
-    {
-     "id": "WO-LEGION-SIMPLE-P3-20261027",
-     "desc": "P3 快捷入口/高级筛选收口：/picks 筛选抽屉+顶部链接精简；/strategies 隐去重复页面快捷条；静态，无服务变更",
-     "status": "doing"
     }
    ]
   }
