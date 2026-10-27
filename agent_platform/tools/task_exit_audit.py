@@ -115,6 +115,11 @@ DATA_DIR = os.path.join(
 )
 LEDGER_NAME = "task_exit_ledger.jsonl"
 SUMMARY_NAME = "task_exit_summary.json"
+# 2026-10-27 OS-FIX-TASKAUDIT-SCOPE：--all-families 全量扫描必须写独立文件，
+# 否则会覆盖 canonical（军团系）摘要，让健康卡把 Windows 系统任务误判成真失败
+# （实测：14:11 全量扫描 371 任务 → 健康卡 failed 25，恢复 canonical 后仅 2）。
+LEDGER_ALL_NAME = "task_exit_ledger_all.jsonl"
+SUMMARY_ALL_NAME = "task_exit_summary_all.json"
 
 
 def _now_iso() -> str:
@@ -192,8 +197,11 @@ def scan(audit_family_only: bool = True) -> dict[str, Any]:
             if any(str(t.get("name", "")).startswith(f) for f in KNOWN_SCHED_FAMILIES)
         ]
 
-    ledger_path = os.path.join(DATA_DIR, LEDGER_NAME)
-    summary_path = os.path.join(DATA_DIR, SUMMARY_NAME)
+    # canonical（军团系）与全量扫描分文件落盘：健康卡只读 canonical，防污染。
+    ledger_name = LEDGER_NAME if audit_family_only else LEDGER_ALL_NAME
+    summary_name = SUMMARY_NAME if audit_family_only else SUMMARY_ALL_NAME
+    ledger_path = os.path.join(DATA_DIR, ledger_name)
+    summary_path = os.path.join(DATA_DIR, summary_name)
 
     failures: list[dict[str, Any]] = []
     upstream_hold: list[dict[str, Any]] = []
@@ -242,6 +250,7 @@ def scan(audit_family_only: bool = True) -> dict[str, Any]:
 
     summary = {
         "generated_at": _now_iso(),
+        "canonical": audit_family_only,
         "scope": f"军团系计划任务（前缀 {', '.join(KNOWN_SCHED_FAMILIES)}）"
         if audit_family_only
         else "全部计划任务",
