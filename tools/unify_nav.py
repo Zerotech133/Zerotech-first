@@ -33,6 +33,8 @@ SELF_NAV_PAGES = {
                      r'<a\s+href="/zero_proto\.html#system"[^>]*>\s*← 返回系统'),
     "zero_home.html": (r'<nav\s+class="nav"',
                        r'<a\s+href="/zero_proto\.html#product"[^>]*>\s*← 返回产品建设'),
+    "home_v3.html": (r'<nav\s+class="nav"[^>]*aria-label="主导航"',
+                     r'href="/home\.html"[^>]*>打开旧总览'),
 }
 
 
