@@ -1,0 +1,26 @@
+<!DOCTYPE html><html lang='zh-CN'><head><meta charset='utf-8'>
+<title>研发部组级看板（A 阶段）</title>
+<link rel='stylesheet' href='/static/tokens.css'>
+<script src='/static/nav.js' defer></script>
+<style>body{background:var(--bg,#0d1117);color:var(--fg,#e6edf3);font-family:'Segoe UI','Microsoft YaHei',sans-serif;padding:24px}table{border-collapse:collapse;width:100%;font-size:13px;margin:12px 0}th,td{border:1px solid var(--border,#30363d);padding:8px 12px;text-align:left}th{background:var(--panel,#161b22)}h1{font-size:20px}h2{font-size:16px}.muted{color:var(--muted,#8b949e);font-size:12px}</style></head><body>
+<h1>研发部组级看板 · A 阶段准备</h1>
+<p class='muted'>数据源 org.dev.groups + .worktrees/tasks.json · 生成 2026-10-27T15:07:50 · 窗口 7 天（切点 2026-10-20）· 只读生成物</p>
+<table><tr><th>组</th><th>组长</th><th>成员</th><th>总单</th><th>近 7 天</th><th>在制</th><th>近 7 天完成</th><th>前置 p50（分钟）</th><th>验收覆盖</th></tr>
+<tr><td><b>G1</b> 后端/平台组</td><td>DEV1</td><td>DEV1、DEV2、DEV6、DEV7、OPS1</td><td>26</td><td>7</td><td>3</td><td>4</td><td>41.1</td><td>6/6</td></tr>
+<tr><td><b>G2</b> 前端/业务组</td><td>DEV5</td><td>DEV3、DEV4、DEV5、DEV8、DOC1</td><td>7</td><td>5</td><td>2</td><td>3</td><td>41.6</td><td>4/4</td></tr>
+</table>
+<h2>成员负载（近 7 天/在制）</h2>
+<table><tr><th>席位</th><th>组</th><th>总单</th><th>近 7 天</th><th>在制</th></tr>
+<tr><td>DEV1</td><td>G1</td><td>8</td><td>2</td><td>1</td></tr>
+<tr><td>DEV2</td><td>G1</td><td>9</td><td>0</td><td>0</td></tr>
+<tr><td>DEV6</td><td>G1</td><td>3</td><td>3</td><td>1</td></tr>
+<tr><td>DEV7</td><td>G1</td><td>2</td><td>2</td><td>1</td></tr>
+<tr><td>OPS1</td><td>G1</td><td>4</td><td>0</td><td>0</td></tr>
+<tr><td>DEV3</td><td>G2</td><td>1</td><td>0</td><td>0</td></tr>
+<tr><td>DEV4</td><td>G2</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>DEV5</td><td>G2</td><td>2</td><td>2</td><td>1</td></tr>
+<tr><td>DEV8</td><td>G2</td><td>4</td><td>3</td><td>1</td></tr>
+<tr><td>DOC1</td><td>G2</td><td>0</td><td>0</td><td>0</td></tr>
+</table>
+<p class='muted'>说明：只读看板；验收覆盖=dept=dev 单中带验收命令占比；前置时间仅统计 created→merged 的完成单；无数据记 —。</p>
+</body></html>
