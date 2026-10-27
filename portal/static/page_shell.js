@@ -75,10 +75,8 @@
 
   function crumb() {
     var p = normPath(location.pathname);
-    if (MODERN[p]) {
-      document.body.setAttribute(SHELL_ATTR, 'v1');
-      return null;
-    }
+    var modern = !!MODERN[p];
+    if (modern) document.body.setAttribute(SHELL_ATTR, 'v1');
     if (document.querySelector('.wb-crumb')) return null;
     var info = navMatch();
     var el = document.createElement('nav');
@@ -96,13 +94,15 @@
       html += '<span class="wb-crumb-sep">›</span>' +
         '<span class="wb-crumb-cur">旧版页面</span>';
     }
-    html += '<span class="wb-legacy-chip">旧版</span>';
+    if (!modern) html += '<span class="wb-legacy-chip">旧版</span>';
     el.innerHTML = html;
     var bar = document.querySelector('.wb-nav');
     if (bar && bar.parentNode) bar.parentNode.insertBefore(el, bar.nextSibling);
     else document.body.insertBefore(el, document.body.firstChild);
-    document.body.classList.add('wb-legacy');
-    document.body.setAttribute(SHELL_ATTR, 'legacy');
+    if (!modern) {
+      document.body.classList.add('wb-legacy');
+      document.body.setAttribute(SHELL_ATTR, 'legacy');
+    }
     return el;
   }
 

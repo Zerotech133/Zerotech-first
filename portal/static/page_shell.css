@@ -25,3 +25,7 @@
 }
 body.wb-legacy .wb-crumb{background:var(--bg-surface,#0d1822)}
 @media(max-width:620px){.wb-crumb{padding:6px 12px;font-size:11px}}
+
+/* W1：现代页统一用全局 .wb-crumb；旧的内联 crumb 隐藏，避免两套标准 */
+body[data-wb-shell="v1"] .pw-context .pw-crumb,
+body[data-wb-shell="v1"] .dw-context .dw-crumb{display:none}
