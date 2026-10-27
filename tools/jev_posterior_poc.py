@@ -24,6 +24,7 @@ from pathlib import Path
 import pyarrow as pa
 import pyarrow.compute as pc
 import pyarrow.parquet as pq
+import logging
 
 ROOT = Path(r"C:\项目\老田的AI助手")
 NEWS_DB = Path(r"C:\aios\news_collector\news.db")
@@ -86,8 +87,8 @@ def load_judged(days: int) -> list[dict]:
         codes = []
         try:
             codes += [norm_ts_code(c) for c in (json.loads(stocks or "[]") or [])]
-        except ValueError:
-            pass
+        except ValueError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "tools/jev_posterior_poc.py", exc)
         codes += [norm_ts_code(c) for c in (j.get("companies") or [])]
         codes = sorted({c for c in codes if c})
         out.append({"id": nid, "ts": str(ts), "source": source, "codes": codes,

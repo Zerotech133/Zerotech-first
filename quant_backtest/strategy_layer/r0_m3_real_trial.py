@@ -37,6 +37,7 @@ from .r0_m3_drill import (
 from .r0_receipt_attestation import verify_receipt_attestation
 from .r0_receipt_replay_guard import ReplayLedger
 from .r0_source_attestation import verify_source_attestation
+import logging
 
 TRIAL_ISSUER_ID = "r0-m3-trial-issuer"
 TRIAL_RECEIVER_IDENTITY = "tianfeng-guikou-receiver"
@@ -369,8 +370,8 @@ def run_real_trial(
                 if kp.exists():
                     kp.unlink()
                     destroyed.append(kp.name)
-            except OSError:
-                pass  # 销毁失败留待人工清钥，不掩盖原终态
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/strategy_layer/r0_m3_real_trial.py", exc)
         if destroyed:
             report["segments"]["key_hygiene"] = {
                 "status": "DESTROYED",

@@ -5,6 +5,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import spec_flow as S  # noqa: E402
+import logging
 
 
 def test_init_and_check_fails_then_passes(tmp_path):
@@ -36,5 +37,5 @@ def test_bad_id(tmp_path):
     try:
         S.init("../evil", "x", root=tmp_path)
         assert False
-    except ValueError:
-        pass
+    except ValueError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/test_spec_flow.py", exc)

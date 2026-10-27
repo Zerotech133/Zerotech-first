@@ -40,6 +40,7 @@ import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
+import logging
 
 SCHEMA = "quant-sector-status-point/v1"
 
@@ -159,8 +160,8 @@ def write_status_point(point: Dict[str, Any],
     except BaseException:
         try:
             os.unlink(tmp_name)
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/quant_sector/status_point.py", exc)
         raise
     return target
 

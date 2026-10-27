@@ -22,6 +22,7 @@ import functools
 import os
 import sys
 from typing import Any, Callable
+import logging
 
 ENV_ENABLED = "OTEL_ENABLED"
 ENV_ENDPOINT = "OTEL_EXPORTER_OTLP_ENDPOINT"
@@ -83,8 +84,8 @@ def traced(name: str, **attrs):
             for k, v in attrs.items():
                 try:
                     span.set_attribute(k, v if isinstance(v, (str, int, float, bool)) else str(v)[:200])
-                except Exception:  # noqa: BLE001
-                    pass
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "tools/otel_tracing.py", exc)
             yield span
     except Exception:  # noqa: BLE001 - 不吞业务异常，仅重新抛出
         raise

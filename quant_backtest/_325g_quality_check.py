@@ -21,6 +21,7 @@ sys.path.insert(0, os.path.join(ROOT, "quant_backtest"))
 
 import pandas as pd  # 3.11 保证有
 from backtest_engine_v2 import calc_dknife_signals_market
+import logging
 
 BASKET = {"000858", "300750", "600036", "600519", "601318"}
 
@@ -100,8 +101,8 @@ def main():
             for f in sorted(_g.glob(os.path.join(sec_dir, "*.parquet")))[:40]:
                 try:
                     parts.append(pd.read_parquet(f))
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/_325g_quality_check.py", exc)
             if parts:
                 mem = pd.concat(parts)
                 cols = [

@@ -28,6 +28,7 @@ sys.path.insert(0, os.path.join(ROOT, "portal"))
 sys.path.insert(0, os.path.join(ROOT, "agent_platform", "engine"))
 import portal_db as pdb  # noqa: E402
 from idem_hook import DualTrackHook  # noqa: E402  M0 P4 双轨幂等
+import logging
 
 PY = sys.executable
 CLI = os.path.join(ROOT, "k_stock", "paper", "cli.py")
@@ -82,8 +83,8 @@ def _lookup_close(code):
         for s in tp.get("stocks", []):
             if s.get("code") == code and s.get("close"):
                 return float(s["close"])
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/paper_bridge.py", exc)
     return None
 
 

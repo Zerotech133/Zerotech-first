@@ -17,6 +17,7 @@ import ast
 import json
 import time
 from pathlib import Path
+import logging
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
@@ -111,8 +112,8 @@ def _save_cache(files: dict) -> None:
         CACHE.write_text(json.dumps({"schema": "codebase_intel_cache/v1",
                                      "saved_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
                                      "files": files}, ensure_ascii=False), encoding="utf-8")
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/codebase_intel.py", exc)
 
 
 def build_map(root: Path | None = None, scope=None, use_cache: bool = True) -> dict:

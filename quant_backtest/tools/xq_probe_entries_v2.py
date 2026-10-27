@@ -28,11 +28,12 @@ import os
 import sys
 import time
 from datetime import datetime
+import logging
 
 try:
     sys.stdout.reconfigure(encoding="utf-8")
-except Exception:
-    pass
+except Exception as exc:
+    logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/tools/xq_probe_entries_v2.py", exc)
 
 SOCIAL = "https://xueqiu.com"
 UA_FALLBACK = (

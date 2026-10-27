@@ -32,6 +32,7 @@ import json
 import sys
 import time
 from pathlib import Path
+import logging
 
 ROOT = Path(__file__).resolve().parents[1]
 EVENTS_PATH = ROOT / "portal" / "data" / "dev_events.jsonl"
@@ -48,8 +49,8 @@ def _ensure_utf8_stdout():
     for stream in (sys.stdout, sys.stderr):
         try:
             stream.reconfigure(encoding="utf-8", errors="replace")
-        except (AttributeError, ValueError, OSError):
-            pass
+        except (AttributeError, ValueError, OSError) as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "tools/dev_gate_warn_report.py", exc)
 
 
 def load_events(path=EVENTS_PATH):

@@ -25,6 +25,7 @@ OUT_DIR = os.path.join(os.path.dirname(HERE), "reports", "weak_cases")
 
 
 from codes import normalize_code as _norm  # noqa: E402  P1-2 统一代码归一（北交所 8/4/92 开头 → .BJ）
+import logging
 
 
 def render(code, name, pivots):
@@ -51,8 +52,8 @@ def block_info(code):
         if blk:
             return "%s（%s，%s 匹配）" % (blk["name"], blk["code"],
                                          blk.get("seg", "industry"))
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/weak_track_newcase.py", exc)
     return None
 
 

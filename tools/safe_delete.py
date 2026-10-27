@@ -28,6 +28,7 @@ import json
 import os
 import sys
 from ctypes import wintypes
+import logging
 
 FO_DELETE = 3
 FOF_ALLOWUNDO = 0x0040          # 进回收站
@@ -60,8 +61,8 @@ def measure(path: str) -> tuple[int, int]:
             try:
                 files += 1
                 size += os.path.getsize(fp)
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "tools/safe_delete.py", exc)
     return files, size
 
 

@@ -28,6 +28,7 @@ import sys
 from datetime import date, datetime, time, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
+import logging
 
 DEFAULT_TZ = "Asia/Shanghai"
 A_SHARE_CLOSE = time(15, 0, 0)  # A 股规范消费时点（收盘）回退默认
@@ -63,8 +64,8 @@ def business_day_consumption_timepoint(
             sess = provider.session_bounds(d)
             if sess.close_at is not None:
                 return sess.close_at.astimezone(ZoneInfo(tz))
-        except Exception:
-            pass  # 回退默认，不抛（冻结对齐不应因日历缺失而失败）
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/tools/freeze_alignment.py", exc)
     return datetime.combine(d, close, tzinfo=ZoneInfo(tz))
 
 

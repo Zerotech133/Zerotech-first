@@ -20,6 +20,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
 from legion_pulse import heartbeat, recent
+import logging
 
 ORG = ROOT / "agent_platform" / "registry" / "org.json"
 HR = ROOT / "agent_platform" / "hr"
@@ -43,8 +44,8 @@ def patrol() -> dict:
     tasks = {}
     try:
         tasks = json.loads((ROOT / ".worktrees" / "tasks.json").read_text(encoding="utf-8"))
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/a0_patrol.py", exc)
     now = time.time()
     overdue, review_stuck = [], []
     for k, v in tasks.items():

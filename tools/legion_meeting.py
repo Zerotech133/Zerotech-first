@@ -15,6 +15,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
 from legion_pulse import heartbeat
+import logging
 
 ORG = ROOT / "agent_platform" / "registry" / "org.json"
 HR = ROOT / "agent_platform" / "hr"
@@ -30,8 +31,8 @@ def cn_name(aid: str) -> str:
                 return ln.split(":", 1)[1].strip()
             if ln.startswith("name:"):
                 return ln.split(":", 1)[1].strip()
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/legion_meeting.py", exc)
     return aid
 
 

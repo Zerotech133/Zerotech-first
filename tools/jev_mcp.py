@@ -27,12 +27,13 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+import logging
 
 try:  # ENCPROT：非 UTF-8 控制台
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-except Exception:  # noqa: BLE001
-    pass
+except Exception as exc:
+    logging.getLogger(__name__).warning("silent-except %s: %s", "tools/jev_mcp.py", exc)
 
 SERVER_NAME = "jev-news"
 SERVER_VERSION = "1.0.0"

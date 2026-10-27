@@ -51,6 +51,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Protocol, Tuple
+import logging
 
 SCHEMA = "agent-bridge-proxy-dialogue/v1"
 
@@ -315,8 +316,8 @@ class FileLedger:
         except (OSError, TypeError, ValueError) as exc:
             try:
                 os.unlink(tmp_name)
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/agent_bridge/proxy_dialogue.py", exc)
             raise LedgerError("台账写入失败（%s：%s）：显式报错，不静默"
                               % (target, exc)) from exc
         return target

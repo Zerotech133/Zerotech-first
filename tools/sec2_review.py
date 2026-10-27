@@ -26,6 +26,7 @@ if TOOLS_DIR not in sys.path:
     sys.path.insert(0, TOOLS_DIR)
 
 import agent_coder  # noqa: E402
+import logging
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = ROOT / "agent_platform" / "data" / "sec2"
@@ -97,8 +98,8 @@ def emit_event(task, detail):
                         "--kind", "deviation_report", "--task", task,
                         "--agent", "SEC2", "--detail", detail],
                        capture_output=True, timeout=30)
-    except Exception:  # noqa: BLE001  事件层永远不挡走查
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/sec2_review.py", exc)
 
 
 def main(argv=None):

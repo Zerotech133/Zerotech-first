@@ -28,6 +28,7 @@ import os
 import subprocess
 import sys
 from datetime import datetime
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RUNS_ROOT = r"C:\aios\automation_runs"
@@ -148,8 +149,8 @@ def lock_release(p_lock: str) -> None:
     try:
         if os.path.exists(p_lock):
             os.remove(p_lock)
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/xq_seed_parallel.py", exc)
 
 
 def main(argv=None) -> int:

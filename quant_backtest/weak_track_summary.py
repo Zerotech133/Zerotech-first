@@ -25,6 +25,7 @@ import json
 import os
 import re
 import time
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REP = os.path.join(os.path.dirname(HERE), "reports")
@@ -144,8 +145,8 @@ def build_summary(f):
                 if not l.lstrip().startswith("#")
             )
             return text.format(**f).rstrip("\n")
-        except (KeyError, IndexError, ValueError):
-            pass
+        except (KeyError, IndexError, ValueError) as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/weak_track_summary.py", exc)
     return (
         "📊 [WEAK SUMMARY] 案例库结案汇总（§10）\n"
         "范围：{first_ts} ~ {last_ts}｜已结案 {n} 例\n"

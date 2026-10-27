@@ -26,6 +26,7 @@ import time
 
 import pandas as pd
 import requests
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "data", "tushare")
@@ -685,8 +686,8 @@ def incr_mins(m, market, dryrun=False):
                     df = pull_paged("hk_hold", {"trade_date": d}, 4200)
                     if not df.empty:
                         hk.update(df["ts_code"].dropna().tolist())
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/tushare_sync.py", exc)
         if hk:
             tables.append(("hk_mins", sorted(hk), 8000, False, "16:00:00"))
 

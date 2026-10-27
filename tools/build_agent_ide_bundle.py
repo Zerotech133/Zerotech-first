@@ -18,6 +18,7 @@ import re
 import sys
 import time
 import pathlib
+import logging
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # 工单真源固定在主仓（worktree 里跑 bundle 时也能看到主任务板）
@@ -155,8 +156,8 @@ def memory_digest(agent_id, max_recent=8):
                 e = json.loads(l)
                 recent.append({"ts": e.get("ts", ""), "event": e.get("event", ""),
                                "desc": (e.get("desc", "") or "")[:200]})
-            except Exception:  # noqa: BLE001
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "tools/build_agent_ide_bundle.py", exc)
         ns[kind] = {"count": len(lines), "recent": recent}
     return ns or None
 

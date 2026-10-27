@@ -12,6 +12,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools" / "research"))
 
 import xq_r3_calibration as m
+import logging
 
 
 # ── normalize_security ────────────────────────────────────────
@@ -60,8 +61,8 @@ def test_load_r3_blocks_missing(tmp_path):
     try:
         m.load_r3_blocks(str(tmp_path / "nope.jsonl"))
         assert False, "should raise"
-    except FileNotFoundError:
-        pass
+    except FileNotFoundError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/tests/test_xq_r3_calibration.py", exc)
 
 
 # ── compare_around_block / verdict_of ─────────────────────────

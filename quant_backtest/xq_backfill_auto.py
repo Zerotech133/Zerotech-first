@@ -18,6 +18,7 @@ import os
 import subprocess
 import sys
 from datetime import datetime
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RUNS_ROOT = r"C:\aios\automation_runs"  # 定时任务产物统一根（2026-10-18 老田拍板：产物/日志/临时文件不再散落）
@@ -87,8 +88,8 @@ def lock_release() -> None:
     try:
         if os.path.exists(LOCK_PATH):
             os.remove(LOCK_PATH)
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/xq_backfill_auto.py", exc)
 
 
 def main() -> int:

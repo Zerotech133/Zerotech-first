@@ -29,6 +29,7 @@ import os
 import subprocess
 import sys
 import time
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -157,8 +158,8 @@ def build_health(f):
                 if not l.lstrip().startswith("#")
             )
             return text.format(**f).rstrip("\n")
-        except (KeyError, IndexError, ValueError):
-            pass
+        except (KeyError, IndexError, ValueError) as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/weak_track_health.py", exc)
     return (
         "🚨 [WEAK HEALTH] 任务群健康守护（§16）\n异常任务 {n} 个｜{ts}\n{detail}"
     ).format(**f)

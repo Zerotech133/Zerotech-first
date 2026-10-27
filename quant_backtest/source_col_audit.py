@@ -22,6 +22,7 @@ import json
 import os
 import sys
 import time
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -409,8 +410,8 @@ def run_graph_schema(cli=None):
         for old in olds[:-7]:
             try:
                 os.remove(old)
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/source_col_audit.py", exc)
         issues = schema_diff(cur, prev)
         for lv, kind, sub, msg in issues:
             print("[%s] graph-schema %s/%s %s" % (lv, kind, sub, msg))

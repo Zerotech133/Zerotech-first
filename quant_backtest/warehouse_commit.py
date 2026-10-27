@@ -17,6 +17,7 @@ import uuid
 import pandas as pd
 
 from warehouse_runs import COUNT_FIELDS, TERMINAL
+import logging
 
 
 class PublicationPending(RuntimeError):
@@ -95,8 +96,8 @@ def publication_guard(resource, *, mode):
             if locked:
                 try:
                     fcntl.flock(descriptor, fcntl.LOCK_UN)
-                except OSError:
-                    pass
+                except OSError as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/warehouse_commit.py", exc)
             os.close(descriptor)
         return
 

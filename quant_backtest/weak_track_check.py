@@ -38,6 +38,7 @@ OUT_DIR = os.path.join(os.path.dirname(HERE), "reports")
 
 
 from codes import normalize_code as _norm  # noqa: E402  P1-2 统一代码归一（北交所 8/4/92 开头 → .BJ）
+import logging
 
 TRIG_EX_TH = -5  # §6 触发1 阈值：250 日超额收敛至 -5pp 以内
 
@@ -96,8 +97,8 @@ def block_daily_bc(bc, refresh=True):
     if refresh:
         try:
             linkage.refresh_min_tail(quiet=True)
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/weak_track_check.py", exc)
     bb = linkage.block_bars(bc, "1d", 500)
     have = bb[-1]["dt"] if bb else ""
     mm = linkage.block_bars(bc, "30m", 480)
