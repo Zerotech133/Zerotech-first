@@ -28,6 +28,7 @@ SAFE_EXT = {".md", ".txt", ".html", ".htm", ".js", ".css", ".json", ".py", ".svg
 MAX_FILES = 4
 MAX_CHARS_PER_FILE = 120000
 SECRET_PAT = re.compile(r"(sk-[A-Za-z0-9_\-]{16,}|AKIA[0-9A-Z]{12,}|BEGIN (RSA |EC )?PRIVATE KEY|password\s*[:=]\s*['\"][^'\"]{6,})", re.I)
+SAFE_CHECK_CMDS = {"python", "python.exe", "py", "pytest", "node", "npm", "git"}
 CMD_PREFIX = ("python", "py ", "node", "npm", "pytest", "git ", "devtask", "mission_worker",
               "powershell", "pwsh", "cmd ", "curl", "wget", "ollama", "ffmpeg", "make ")
 SLASH_CMD_RE = re.compile(r"^/[a-z][a-z0-9]*(?:-[a-z0-9]+)+$", re.I)
@@ -103,6 +104,9 @@ def _run_checks(wt: Path, checks: list) -> str:
                     cmd = cmd.split()
                 if not isinstance(cmd, list) or not cmd:
                     return "check_failed:cmd_empty"
+                head = Path(str(cmd[0])).name.lower()
+                if head not in SAFE_CHECK_CMDS:
+                    return "check_failed:cmd_not_allowed:%s" % head
                 r = _run(cmd, wt, int(c.get("timeout") or 120))
                 if r.returncode != int(c.get("expect_rc") or 0):
                     return "check_failed:cmd:%s" % " ".join(cmd)[:120]

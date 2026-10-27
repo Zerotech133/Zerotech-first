@@ -61,6 +61,7 @@ def collect(mission_id: str = "") -> list:
         tasks = st.get("tasks") or {}
         done = [t for t in tasks.values() if t.get("status") == "done"]
         failed = [t for t in tasks.values() if t.get("status") == "gate_failed"]
+        quality_failed = [t for t in tasks.values() if t.get("status") == "quality_failed"]
         cycles = [c for c in (_cycle_sec(t) for t in done) if c is not None]
         rec = {
             "schema": "mission_outcome/v1",
@@ -72,9 +73,11 @@ def collect(mission_id: str = "") -> list:
             "tasks_total": len(tasks),
             "tasks_done": len(done),
             "tasks_gate_failed": len(failed),
+            "tasks_quality_failed": len(quality_failed),
             "tasks_blocked": sum(1 for t in tasks.values() if t.get("status") == "blocked"),
             "tasks_doing": sum(1 for t in tasks.values() if t.get("status") in ("queued", "doing", "review")),
-            "gate_pass_rate": round(len(done) / (len(done) + len(failed)), 4) if (done or failed) else None,
+            "gate_pass_rate": round(len(done) / (len(done) + len(failed) + len(quality_failed)), 4)
+                             if (done or failed or quality_failed) else None,
             "avg_cycle_sec": round(sum(cycles) / len(cycles), 1) if cycles else None,
             "conflicts": len(dry.get("conflicts") or []),
             "task_records": [
@@ -93,6 +96,7 @@ def summarize(records: list) -> dict:
     tasks = sum(r["tasks_total"] for r in records)
     done = sum(r["tasks_done"] for r in records)
     failed = sum(r["tasks_gate_failed"] for r in records)
+    quality_failed = sum(r.get("tasks_quality_failed", 0) for r in records)
     cycles = [r["avg_cycle_sec"] for r in records if r.get("avg_cycle_sec") is not None]
     models, owners, sources = {}, {}, {}
     for r in records:
@@ -105,7 +109,9 @@ def summarize(records: list) -> dict:
         "tasks": tasks,
         "done": done,
         "gate_failed": failed,
-        "gate_pass_rate": round(done / (done + failed), 4) if (done + failed) else None,
+        "quality_failed": quality_failed,
+        "gate_pass_rate": round(done / (done + failed + quality_failed), 4)
+                          if (done + failed + quality_failed) else None,
         "avg_cycle_sec": round(sum(cycles) / len(cycles), 1) if cycles else None,
         "conflicts": sum(r["conflicts"] for r in records),
         "sources": sources,
@@ -139,6 +145,12 @@ def suggestions(metrics: dict) -> list:
                                 % (sources.get("fallback", 0), sources.get("llm", 0)),
                     "action": "检查强模型/网关可用性；planner 输出加 schema 校验与重试",
                     "auto_apply": False})
+    if metrics.get("quality_failed", 0) > 0:
+        out.append({"id": "S5", "priority": "high",
+                    "evidence": "质量失败 %s 条（Worker 产出未过 grounding/quality 门）"
+                                % metrics.get("quality_failed"),
+                    "action": "planner 规则要求 checks；Worker 只允许带 allowed_commands/checks 的任务",
+                    "rule": {"require_checks": True}, "auto_apply": False})
     if not out:
         out.append({"id": "S4", "priority": "info",
                     "evidence": "样本通过率正常",

@@ -20,8 +20,9 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
 EVID = REPO / "work" / "security"
-EXCLUDE = {".git", ".worktrees", "node_modules", "__pycache__", ".venv", "venv",
-           "dist", "build", ".pytest_cache", "work", "quant_backtest"}
+EXCLUDE = {".git", ".worktrees", "node_modules", "__pycache__", ".venv", ".venvs",
+           "venv", "site-packages", "pylibs", "vendor", ".cache", ".mypy_cache",
+           ".ruff_cache", "dist", "build", ".pytest_cache", "work", "quant_backtest"}
 SECRETS = [
     ("aws_ak", re.compile(r"AKIA[0-9A-Z]{16}")),
     ("openai_sk", re.compile(r"\bsk-[A-Za-z0-9]{20,}\b")),
