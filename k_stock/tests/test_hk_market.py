@@ -293,6 +293,23 @@ def test_refresh_calendar_all_missing_raises(tmp_path):
         hm.refresh_calendar(export_dir=tmp_path / "nope", hk_dir=tmp_path)
 
 
+# ---------------- B1：hk_pass 必须用 HK config（2026-10-27 链路验证抓到的真 bug） ----------------
+
+
+def test_hk_pass_engines_use_hk_config(tmp_path):
+    """回归：hk_pass 建引擎必须传 hk_default_config（否则跑批用 A 股费率）。"""
+    db = tmp_path / "t.db"
+    m = FakeMarket({"00700.HK": [{"trade_date": "20261016", "open": 415.0, "high": 420.0,
+                                  "low": 410.0, "close": 416.0, "pre_close": 415.0}]})
+    PaperEngine(db, m, config=hm.hk_default_config(), account="hk_qingping").ensure_account()
+    hk = hm.hk_pass(db, do_refresh=False)
+    assert hk and hk["engines"]
+    for _aid, eng in hk["engines"]:
+        assert eng.cfg["stamp_tax_buy"] == hm.STAMP_DUTY
+        assert eng.cfg["t_plus"] == 0
+        assert eng.cfg["commission_rate"] == hm.COMMISSION_RATE
+
+
 # ---------------- B1：HK_PAPER_DB 环境变量（副本跑批） ----------------
 
 

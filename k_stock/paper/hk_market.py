@@ -423,7 +423,12 @@ def hk_pass(db_path: Path | str | None = None, do_refresh: bool = True) -> dict 
     apply_hk_engine_waivers()
     return {
         "accounts": aids,
-        "engines": [(aid, PaperEngine(db, HkMarket(), account=aid)) for aid in aids],
+        # 2026-10-27 B1 链路验证发现：原实现漏传 config → 跑批一直用 A 股默认费率
+        # （佣金 0.025%、卖出印花税 0.05%、无买入印花税、T+1）。修复：HK config 必须生效。
+        "engines": [
+            (aid, PaperEngine(db, HkMarket(), config=hk_default_config(), account=aid))
+            for aid in aids
+        ],
         "refreshed": refreshed,
         "refresh_fail": failed,
     }
