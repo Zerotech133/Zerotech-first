@@ -699,9 +699,22 @@ class Handler(BaseHTTPRequestHandler):
                         prompt = str(m.get("content") or "")
                         break
                 try:
-                    sys.path.insert(0, str(_PLATFORM.parent / "tools"))
-                    from litellm_route import route as litellm_route
-                    lr = litellm_route(prompt)
+                    import subprocess as _sp
+                    tool = _PLATFORM.parent / "tools" / "litellm_route.py"
+                    py = Path(r"C:\项目\py312\python.exe")
+                    exe = str(py) if py.exists() else sys.executable
+                    env2 = dict(os.environ, LITELLM_LOCAL_MODEL_COST_MAP="True",
+                                PYTHONIOENCODING="utf-8", PYTHONUTF8="1")
+                    cp = _sp.run([exe, "-X", "utf8", str(tool), "route", prompt, "--json"],
+                                 capture_output=True, text=True, encoding="utf-8",
+                                 errors="replace", timeout=180, env=env2)
+                    lr = None
+                    for ln in (cp.stdout or "").splitlines():
+                        if ln.strip().startswith("{"):
+                            lr = json.loads(cp.stdout)
+                            break
+                    if lr is None:
+                        lr = {"ok": False, "error": "litellm_tool_no_json rc=%s" % cp.returncode}
                 except Exception as e:  # noqa: BLE001
                     lr = {"ok": False, "error": "%s: %s" % (type(e).__name__, str(e)[:200])}
                 if not lr.get("ok"):
