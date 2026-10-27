@@ -126,9 +126,9 @@ REL_HAS_TRADED = "HAS_TRADED"  # TradeDate -[HAS_TRADED]-> TradeAction
 # 情报线边族（写入器在 C:\项目\zerobound-kg：kg_ann_history_link/kg_corroborate_edges/
 # kg_annotation 等）——图内实核 ≈100.5 万条，本侧此前零注册（检查器/统计不可见）。
 # 双版本为设计：EXP_ 前缀=实验/候选域，无前缀=转正域（kg_annotation.py 的
-# rel[4:] 去前缀映射即两域桥）。保鲜检查按域分治：情报线 lag 由 KGStockAnalysis
+# rel[4:] 去前缀映射即两域桥）。保鲜检查按域分治：情报线 lag 由 zerobound-kg（旧名 KGStockAnalysis）
 # 侧 kg_check 负责，本侧 COVERAGE_EDGES 不纳入（节奏不同避免误报）。
-# KGStockAnalysis 侧 schema 同样缺这 10 个（同病），其补注册挂对方项目线。
+# zerobound-kg（旧名 KGStockAnalysis）侧 schema 同样缺这 10 个（同病），其补注册挂对方项目线。
 REL_INVOLVES = "INVOLVES"  # Security -[INVOLVES]-> Event 公告事件（自家缺口补注册！kg_build_p3_evt/kg_build_m2 写入，validStart=事件日，方向勿写反；COVERAGE_EDGES 消费方）
 REL_MENTIONS = "MENTIONS"  # IntelItem -[MENTIONS]-> Security 情报提及标的（无前缀转正版，4 source）
 REL_REPORTED_BY = (

@@ -11,7 +11,7 @@ RiskGuard 每次 evaluate（拦截与放行）落一行决策粒度留痕，供�
 - 隐私与体积：只记结构化字段，note 截断 200 字符，单行 <1KB，
   不落新闻原文等大对象。
 - 原子追加：O_APPEND + 单次 os.write（行 <4KB，同引擎
-  KGStockAnalysis/kg_riskguard.py append_ledger 范式）。
+  zerobound-kg/kg_riskguard.py append_ledger 范式（旧名 KGStockAnalysis，2026-10-17 已改名））。
 - fwd5/fwd20 写入时恒 null，窗口成熟后由回填器原子重写（先例
   quant_backtest/chanlun_sample.py _backfill_r60/_atomic_write，
   回填器 v0 后续实现，不在本模块）。

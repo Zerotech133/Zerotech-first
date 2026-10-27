@@ -240,7 +240,7 @@ def write_report(rows, skip, table, rule_summary, monthly_out, n_price_rows,
         v = monthly_out[m]
         lines.append("| %s | %s | %s |" % (m, _fmt(v["block"]), _fmt(v["pass"])))
     lines += ["", "## 四、给 S3 复核的判读要点", "",
-              "0. **数据面声明（防误读）**：本报告复算的是 KGStockAnalysis `riskguard_ledger/"
+              "0. **数据面声明（防误读）**：本报告复算的是 zerobound-kg（旧名 KGStockAnalysis）`riskguard_ledger/"
               "ledger.jsonl`（9-10 月 shadow 决策留痕 ~3.2 万行）；历史判案「拦截 +0.65% vs "
               "放行 -0.25%（213 样本）」来自盯盘 quant_engine 侧更早的分析口径——**两者不同源"
               "不同期，数值不可直接对比**，本报告提供的是当前账本窗口的独立证据。",

@@ -24,7 +24,7 @@
 # NOTE: notice_llm step never aborts the chain (Ollama down = skip judge,
 #       backfill stale rows only, script exits 0 by design).
 # NOTE: intel_link + mentions_rebuild steps (added 2026-09-30, approved by
-#       laotian) run KGStockAnalysis dev scripts via absolute path, EXP_
+#       laotian) run zerobound-kg（旧名 KGStockAnalysis）dev scripts via absolute path, EXP_
 #       layer only; intel_link exits 1 on main-graph drift (fail-closed).
 # NOTE: 2026-10-16 machine-migration repair (kg-graph-storage-design 6):
 #       - $kg_root variable replaces the dead E:\KGStockAnalysis hardcode
@@ -101,7 +101,7 @@ $env:HF_HUB_DISABLE_SYMLINKS_WARNING = '1'
 $log = 'C:\Temp\kg_sync_task.log'
 $py = 'C:\Program Files\Python311\python.exe'
 $wd = 'C:\项目\老田的AI助手\quant_backtest'
-# [20261016血缘收编] KGStockAnalysis 侧脚本经此变量桥接 import linreg（章程 §4.4）
+# [20261016血缘收编] zerobound-kg（旧名 KGStockAnalysis）侧脚本经此变量桥接 import linreg（章程 §4.4）
 $env:QUANT_BACKTEST_ROOT = $wd
 try {
     foreach ($step in @(
@@ -128,7 +128,7 @@ try {
         @{name='ontology_snap';    script='ontology.py';            arg='--export'},
         @{name='kg_brief';         script='kg_brief.py';            arg=''}
     )) {
-        # rooted script paths (e.g. KGStockAnalysis dev scripts) bypass $wd join
+        # rooted script paths (e.g. zerobound-kg dev scripts) bypass $wd join
         $sp = if ([IO.Path]::IsPathRooted($step.script)) { $step.script } else { "$wd\" + $step.script }
         $pyargs = @('-X','utf8', $sp)
         if ($step.arg) { $pyargs += $step.arg }
