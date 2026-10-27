@@ -19,6 +19,7 @@ import sys
 import urllib.request
 from datetime import datetime
 from pathlib import Path
+import logging
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
@@ -63,8 +64,8 @@ def _load(path: Path, default: dict) -> dict:
         d = json.loads(path.read_text(encoding="utf-8"))
         if isinstance(d, dict) and isinstance(d.get("items"), list):
             return d
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/paper/minutes.py", exc)
     return default
 
 

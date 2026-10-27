@@ -12,6 +12,7 @@ import json
 import subprocess
 import time
 from pathlib import Path
+import logging
 
 PLATFORM = Path(__file__).resolve().parents[1]
 
@@ -30,8 +31,8 @@ def _main_repo() -> Path:
             if not common.is_absolute():
                 common = (PLATFORM / common).resolve()
             return common.parent
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/evals/incident_to_test.py", exc)
     return PLATFORM.parent
 
 

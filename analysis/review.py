@@ -17,6 +17,7 @@ import sqlite3
 import time
 
 from . import config, db
+import logging
 
 EXT_COLS = (("reviewed_at", "TEXT"), ("review_note", "TEXT"), ("category_final", "TEXT"))
 
@@ -30,8 +31,8 @@ def connect(path=None):
     for col, typ in EXT_COLS:
         try:
             con.execute("ALTER TABLE events ADD COLUMN %s %s" % (col, typ))
-        except sqlite3.OperationalError:
-            pass
+        except sqlite3.OperationalError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "analysis/review.py", exc)
     return con
 
 

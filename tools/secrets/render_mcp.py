@@ -28,6 +28,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import vault  # noqa: E402
+import logging
 
 PLACEHOLDER = "${TUSHARE_MCP_TOKEN}"
 TOKEN_CIPHER_REL = "mcp/tushare_mcp_token.age"
@@ -82,8 +83,8 @@ def _atomic_write(path: Path, text: str) -> None:
         if os.path.exists(tmp_name):
             try:
                 os.unlink(tmp_name)
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "tools/secrets/render_mcp.py", exc)
 
 
 def _sha256_text(text: str) -> str:
@@ -215,8 +216,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
         sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-    except (AttributeError, OSError):
-        pass
+    except (AttributeError, OSError) as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/secrets/render_mcp.py", exc)
     ap = argparse.ArgumentParser(prog="render_mcp.py", description="渲染 .mcp.local.json（不打印 token）")
     ap.add_argument("--check", action="store_true", help="只校验模板/密文/渲染一致性，不写文件")
     ap.add_argument("--dry-run", action="store_true", help="渲染但不写盘")

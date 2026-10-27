@@ -15,6 +15,7 @@ import json
 import sys
 import time
 from pathlib import Path
+import logging
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
@@ -70,8 +71,8 @@ def _traces() -> dict:
         try:
             if json.loads(ln).get("status") != "ok":
                 errs += 1
-        except ValueError:
-            pass
+        except ValueError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "tools/product_metrics.py", exc)
     return {"count": len(rows), "errors": errs}
 
 
@@ -93,8 +94,8 @@ def _workflows() -> dict:
             wf = json.loads(f.read_text(encoding="utf-8"))
             total += len(wf.get("steps") or [])
             done += sum(1 for s in wf.get("steps") or [] if s.get("status") == "done")
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "tools/product_metrics.py", exc)
     return {"workflows": len(fs), "steps_done": done, "steps_total": total}
 
 

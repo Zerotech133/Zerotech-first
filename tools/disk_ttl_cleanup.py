@@ -24,6 +24,7 @@ import sys
 import time
 from datetime import datetime
 from pathlib import Path
+import logging
 
 sys.stdout.reconfigure(encoding="utf-8")
 REPO = Path(r"C:/项目/老田的AI助手")
@@ -54,8 +55,8 @@ def remove_empty_dirs(target: Path) -> int:
             try:
                 dp.rmdir()
                 removed += 1
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "tools/disk_ttl_cleanup.py", exc)
         except OSError:
             continue
     return removed
@@ -121,8 +122,8 @@ def main() -> int:
         LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
         with open(LOG_FILE, "a", encoding="utf-8") as fh:
             fh.write("\n".join(log_lines) + "\n")
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/disk_ttl_cleanup.py", exc)
     return 0
 
 

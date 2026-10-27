@@ -14,6 +14,7 @@ import secrets
 import time
 import uuid
 from pathlib import Path
+import logging
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent
@@ -39,8 +40,8 @@ def load_config(path: Path | None = None) -> dict:
         d = json.loads(p.read_text(encoding="utf-8"))
         if isinstance(d, dict) and d.get("aliases"):
             return d
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/legion_command/seat_router.py", exc)
     return json.loads(json.dumps(DEFAULT_CONFIG))
 
 

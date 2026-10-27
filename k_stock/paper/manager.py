@@ -11,6 +11,7 @@ import re
 import sys
 from datetime import datetime
 from pathlib import Path
+import logging
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
@@ -76,8 +77,8 @@ def _load_hires() -> dict:
         d = json.loads(HIRES_PATH.read_text(encoding="utf-8"))
         if isinstance(d, dict) and isinstance(d.get("hires"), list):
             return d
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/paper/manager.py", exc)
     return {"hires": []}
 
 

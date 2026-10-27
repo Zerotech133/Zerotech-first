@@ -37,6 +37,7 @@ if str(_PLATFORM) not in sys.path:
 
 from gateway import inbox_gateway, llm_gateway  # noqa: E402
 from gateway.envelope import make_envelope  # noqa: E402
+import logging
 
 # OSLINK-W4 通道② 开关（K-QUANT-20261026-OSLEG-8795API）：
 # 仅当 env OSLEG_HTTP_API 显式开启时把 /osleg/v1/* 路由到 osleg_http_api；
@@ -186,8 +187,8 @@ def main(argv=None):
     print("legion-gateway serving on %s:%d" % (args.host, args.port))
     try:
         srv.serve_forever()
-    except KeyboardInterrupt:
-        pass
+    except KeyboardInterrupt as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/gateway/serve.py", exc)
     finally:
         srv.server_close()
     return 0

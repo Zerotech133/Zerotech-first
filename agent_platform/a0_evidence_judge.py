@@ -27,6 +27,7 @@ from pathlib import Path
 BASE = Path(__file__).resolve().parent
 sys.path.insert(0, str(BASE.parent / "tools"))
 from _repo_paths import repo_root  # noqa: E402
+import logging
 
 REPO = repo_root(BASE)
 DEFAULT_PACKETS = REPO / "work" / "seat_brief"
@@ -47,8 +48,8 @@ def _load_persona() -> str:
     if PERSONA.is_file():
         try:
             return PERSONA.read_text(encoding="utf-8")
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/a0_evidence_judge.py", exc)
     return (
         "你是数字军团 A0 参谋长。基于给定证据包输出判读：一句话结论、关键证据"
         "（来源+时间戳）、风险与未覆盖、下一步动作与负责项；不得编造；末尾标'草稿·待老田签'。"

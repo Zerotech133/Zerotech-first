@@ -36,6 +36,7 @@ import json
 import os
 import time
 import urllib.request
+import logging
 
 # ---- 模型自动路由表（10-18 调优：按模型名自动配置，调用方零感知）----
 # num_predict：35b 重岗（A0 判读/日报长文）需长输出；9b 判读位 400 够用（JSON/短评）
@@ -374,8 +375,8 @@ class GLMCloudLLM:
                 zk = json.loads(p.read_text(encoding="utf-8")).get("zhipu_key", "")
                 if zk:
                     return zk
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/engine/llm.py", exc)
         import os
 
         return os.environ.get("GLM_API_KEY", "")

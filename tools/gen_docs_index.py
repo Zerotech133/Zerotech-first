@@ -48,11 +48,12 @@ try:  # 2026-10-26 K-ORG-20261026-ENCPROT: non-UTF8 console printing CJK/checkma
     # raises UnicodeEncodeError and can crash merge/hook paths; degrade to UTF-8 output.
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-except Exception:  # noqa: BLE001 - non-TTY/old interpreter: ignore
-    pass
+except Exception as exc:
+    logging.getLogger(__name__).warning("silent-except %s: %s", "tools/gen_docs_index.py", exc)
 import time
 from dataclasses import dataclass
 from pathlib import Path
+import logging
 
 PROJECT_DIRNAME = "老田的AI助手"
 OUTPUT_FILENAME = "DOCS_INDEX.md"
@@ -182,8 +183,8 @@ def read_title(path: Path) -> str:
                     title = line[2:].strip()
                     if title:
                         return title
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/gen_docs_index.py", exc)
     return ""
 
 

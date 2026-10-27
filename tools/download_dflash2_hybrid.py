@@ -17,6 +17,7 @@ import urllib.request
 import threading
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
+import logging
 
 # v2 修复: 多线程共用文件句柄时 seek+write 存在竞态（v1 主文件 sha256 不匹配的根因）。
 # Windows 无 os.pwrite，改为每个 worker 线程持有独立文件句柄（CreateFile 共享写），
@@ -160,8 +161,8 @@ def download_file(meta):
                     try:
                         if fh:
                             fh.close()
-                    except Exception:
-                        pass
+                    except Exception as exc:
+                        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/download_dflash2_hybrid.py", exc)
                     fh = None
         except Exception as e:
             log("part %d fatal: %r" % (idx, e))
@@ -169,8 +170,8 @@ def download_file(meta):
             try:
                 if fh:
                     fh.close()
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "tools/download_dflash2_hybrid.py", exc)
 
     total_done = sum(p["done"] for p in parts)
     log("%s: resume at %.2f/%.2f GB (%d parts)" % (name, total_done / 1e9, total / 1e9, len(parts)))

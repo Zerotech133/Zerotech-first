@@ -82,6 +82,7 @@ if str(_PLATFORM) not in sys.path:
     sys.path.insert(0, str(_PLATFORM))
 
 from gateway import inbox_gateway  # noqa: E402
+import logging
 
 __all__ = [
     "ANSWERED_BY",
@@ -224,8 +225,8 @@ def _write_json(path: Path, data) -> None:
     except BaseException:
         try:
             tmp.unlink()
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/gateway/osleg_consumer.py", exc)
         raise
 
 

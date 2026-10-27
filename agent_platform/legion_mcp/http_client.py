@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import os
 import urllib.request
+import logging
 
 PROTOCOL_VERSION = "2025-06-18"
 UA = "zhaoyun-mcp-http/1.0"
@@ -122,8 +123,8 @@ class MCPHttpClient:
         )
         try:
             self._notify("notifications/initialized", {})
-        except MCPHttpError:
-            pass
+        except MCPHttpError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/legion_mcp/http_client.py", exc)
         return res
 
     def list_tools(self) -> list:

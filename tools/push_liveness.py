@@ -20,6 +20,7 @@ import re
 import subprocess
 import sys
 from datetime import datetime
+import logging
 
 WD_LOG = r"C:\Temp\push_liveness.log"
 STATE_FILE = r"C:\Temp\push_liveness_state.json"
@@ -48,8 +49,8 @@ def wd_log(msg):
             lines = lines[-100:]
         with open(WD_LOG, "w", encoding="utf-8") as f:
             f.write("\n".join(lines) + "\n")
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/push_liveness.py", exc)
 
 
 def _sig_ok(path, patterns):
@@ -103,8 +104,8 @@ def save_state(st):
     try:
         with open(STATE_FILE, "w", encoding="utf-8") as f:
             json.dump(st, f, ensure_ascii=False)
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/push_liveness.py", exc)
 
 
 def send_alert(key, text):

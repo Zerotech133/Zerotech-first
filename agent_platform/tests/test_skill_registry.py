@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 import pytest
+import logging
 
 _WT = Path(__file__).resolve().parents[2]
 _TOOLS = _WT / "agent_platform" / "tools"
@@ -54,8 +55,8 @@ def test_verify_unknown_and_traversal():
     try:
         SR._verify_script("../escape")
         raise AssertionError("should reject traversal")
-    except ValueError:
-        pass
+    except ValueError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/tests/test_skill_registry.py", exc)
 
 
 def test_build_is_idempotent_with_tmp_caps(tmp_path, monkeypatch):

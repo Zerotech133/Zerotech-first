@@ -9,6 +9,7 @@ import subprocess
 from pathlib import Path
 
 from . import rw_guard as G
+import logging
 
 MAX_READ = G.MAX_FILE_BYTES
 
@@ -57,8 +58,8 @@ def write_file(worktree: Path, rel: str, content: str) -> dict:
     finally:
         try:
             tmp.unlink(missing_ok=True)
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/legion_ide/writer.py", exc)
     return {
         "ok": True,
         "path": str(Path(rel).as_posix()),

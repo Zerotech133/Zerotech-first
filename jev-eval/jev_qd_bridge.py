@@ -44,6 +44,7 @@ from jev_common import (
     set_module,
     with_retry,
 )
+import logging
 
 if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf8"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -400,8 +401,8 @@ def review_qd_watchlist(force: bool = False) -> None:
                 last[f"{rec.get('market', '')}:{rec.get('symbol', '')}"] = rec.get(
                     "ts", ""
                 )
-            except Exception:  # noqa: BLE001
-                pass  # 豁免（C2批2）：review 坏行跳过，仅影响 24h 去重
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "jev-eval/jev_qd_bridge.py", exc)
     now = datetime.now()
     n_new, n_skip, n_err = 0, 0, 0
     with QD_REVIEW.open("a", encoding="utf-8") as f:

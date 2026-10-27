@@ -7,6 +7,7 @@ import sqlite3
 import pandas as pd
 
 from . import config
+import logging
 
 
 def _q(name):
@@ -172,8 +173,8 @@ def load_snapshot(code, as_of):
             row = lv1[lv1["index_code"] == ic]
             name_l1 = row["industry_name"].iloc[0] if len(row) else ic
             snap["industry"] = {"index_code": ic, "l1_name": name_l1}
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "analysis/snapshot.py", exc)
     snap["domains"]["industry"] = {"as_of": None, "rows": 0 if not snap["industry"] else 1,
                                    "status": "ok" if snap["industry"] else "missing", "source": "sw_l1_member"}
 

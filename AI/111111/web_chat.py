@@ -12,6 +12,7 @@ from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
+import logging
 try:
  from .rag_web_backend import RagUnavailable, RagWebService
  from .web_ui import render_chat_page
@@ -40,8 +41,8 @@ def _news_time(value, reference=None):
  try:
   parsed = datetime.fromisoformat(value.replace('Z', '+00:00'))
   return parsed.replace(tzinfo=CST) if parsed.tzinfo is None else parsed.astimezone(CST)
- except ValueError:
-  pass
+ except ValueError as exc:
+     logging.getLogger(__name__).warning("silent-except %s: %s", "AI/111111/web_chat.py", exc)
  if re.fullmatch(r'\d{2}-\d{2} \d{2}:\d{2}', value) and reference:
   candidates = []
   for year in (reference.year - 1, reference.year, reference.year + 1):

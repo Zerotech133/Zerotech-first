@@ -18,6 +18,7 @@ r"""kg_neo4j_backup.py — neo4j-kg 周备停库 dump（K-STOCK-075 案 A 变体
 import subprocess
 import sys
 from datetime import datetime
+import logging
 
 CONTAINER = "neo4j-kg"
 IMAGE = "neo4j:5-community"
@@ -32,8 +33,8 @@ def log(msg):
     line = "%s  %s" % (datetime.now().strftime("%F %T"), msg)
     try:
         open(LOG, "a", encoding="utf-8").write(line + "\n")
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "jev-eval/kg_neo4j_backup.py", exc)
     print(line)
 
 

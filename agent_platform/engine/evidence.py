@@ -35,6 +35,7 @@ if str(_ENGINE_DIR.parent) not in sys.path:
     sys.path.insert(0, str(_ENGINE_DIR.parent))
 
 from contracts import Evidence  # type: ignore  # noqa: E402
+import logging
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS evidence (
@@ -110,8 +111,8 @@ class EvidenceStore:
             mode = self._conn.execute("PRAGMA journal_mode").fetchone()[0]
             if str(mode).lower() != "wal":
                 self._conn.execute("PRAGMA journal_mode=WAL")
-        except sqlite3.OperationalError:
-            pass
+        except sqlite3.OperationalError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/engine/evidence.py", exc)
         self._conn.executescript(SCHEMA)
         self._conn.commit()
 

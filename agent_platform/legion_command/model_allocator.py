@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import logging
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent
@@ -41,8 +42,8 @@ def load_config() -> dict:
         d = json.loads(CONFIG.read_text(encoding="utf-8"))
         if isinstance(d, dict):
             return d
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/legion_command/model_allocator.py", exc)
     return json.loads(json.dumps(DEFAULT))
 
 

@@ -18,6 +18,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable
+import logging
 
 ChatFn = Callable[..., tuple[str, str]]  # LLMClient.chat 签名
 
@@ -280,8 +281,8 @@ class Orchestrator:
             if m:
                 try:
                     return json.loads(m.group(0))
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/kstock/orchestrator.py", exc)
             if key not in degraded:
                 degraded.append(key + ":parse")
             return {"degraded": True, "raw": text[:200]}

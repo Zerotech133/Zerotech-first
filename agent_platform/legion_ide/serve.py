@@ -37,6 +37,7 @@ if str(_PLATFORM) not in sys.path:
 from legion_ide import rw_guard as G  # noqa: E402
 from legion_ide import writer as W  # noqa: E402
 from legion_ide import exec_runner as X  # noqa: E402
+import logging
 
 VERSION = "2.0"
 DEFAULT_HOST = "127.0.0.1"
@@ -436,8 +437,8 @@ def main(argv: list[str] | None = None) -> int:
     )
     try:
         httpd.serve_forever()
-    except KeyboardInterrupt:
-        pass
+    except KeyboardInterrupt as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/legion_ide/serve.py", exc)
     finally:
         httpd.server_close()
     return 0

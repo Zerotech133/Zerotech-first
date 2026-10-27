@@ -24,6 +24,7 @@ stage 枚举：
 import json
 import os
 import threading
+import logging
 
 FLOW_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                          "portal", "work", "tune_requests.jsonl")
@@ -90,8 +91,8 @@ def events(req_id=None, path=None):
                 if req_id and r.get("req_id") != req_id:
                     continue
                 out.append(r)
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "feedback_flow.py", exc)
     return out
 
 
