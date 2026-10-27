@@ -88,13 +88,14 @@ def _run_checks(wt: Path, checks: list) -> str:
             elif typ == "file_min_chars":
                 if not p or not p.is_file() or len(p.read_text(encoding="utf-8", errors="replace")) < int(c.get("min") or 1):
                     return "check_failed:file_min_chars:%s" % rel
-            elif typ == "file_contains":
+            elif typ in ("file_contains", "file_not_contains"):
+                needle = str(c.get("text") or "")
+                if not needle:
+                    return "check_failed:%s_empty:%s" % (typ, rel)
                 txt = p.read_text(encoding="utf-8", errors="replace") if p and p.is_file() else ""
-                if str(c.get("text") or "") not in txt:
+                if typ == "file_contains" and needle not in txt:
                     return "check_failed:file_contains:%s" % rel
-            elif typ == "file_not_contains":
-                txt = p.read_text(encoding="utf-8", errors="replace") if p and p.is_file() else ""
-                if str(c.get("text") or "") in txt:
+                if typ == "file_not_contains" and needle in txt:
                     return "check_failed:file_not_contains:%s" % rel
             elif typ == "cmd":
                 cmd = c.get("cmd")
