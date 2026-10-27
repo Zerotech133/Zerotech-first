@@ -1,4 +1,4 @@
-﻿# K266 文档服务自愈脚本（计划任务 K266-DocServices 每 5 分钟触发）
+# K266 文档服务自愈脚本（计划任务 K266-DocServices 每 5 分钟触发）
 # 职责：① 拉起 clip_watch 常驻（单实例检查） ② doc_ingest --once 幂等单扫
 #       ③ M3 结构化（幂等跳过已判 doc，产出 structure_shadow tags → /kg/doc 词云）
 $ErrorActionPreference = 'SilentlyContinue'
@@ -36,9 +36,35 @@ Log "ingest --once rc=$rc $($out -join ' | ')"
 # 旗文件 C:\Temp\k266_m3.pause 由 tools\jev_night.py 写入/删除；
 # 删旗后下一 tick 自动恢复（"OK d" 判定不变，只多一道暂停闸）。
 $m3Pause = 'C:\Temp\k266_m3.pause'
-if (Test-Path $m3Pause) {
-    Log "m3: 暂停旗存在（夜间 JEV 独占），本轮不拉起"
-} elseif ("$out" -match 'OK d') {
+
+function Get-LockPid([string]$path) {
+    try {
+        $j = Get-Content -LiteralPath $path -Raw -Encoding UTF8 | ConvertFrom-Json
+        if ($j -and $j.pid) { return [int]$j.pid }
+    } catch { }
+    return 0
+}
+function Test-PidAlive([int]$procId) {
+    if ($procId -le 0) { return $false }
+    return [bool](Get-Process -Id $procId -ErrorAction SilentlyContinue)
+}
+
+$m3PauseActive = Test-Path $m3Pause
+if ($m3PauseActive) {
+    $nbPid = Get-LockPid "$root\locks\night_batch.lock"
+    $jnPid = Get-LockPid "$root\locks\jev_night.lock"
+    $ownerAlive = (Test-PidAlive $nbPid) -or (Test-PidAlive $jnPid)
+    if ($ownerAlive) {
+        Log "m3: 暂停旗存在（night_batch/jev_night 持有），本轮不拉起"
+    } else {
+        # 2026-10-27 OS-FIX-K266GUARD：任务被强杀（如 schtasks /End）不会走
+        # finally，暂停旗残留会让 M3 永久停摆。无存活 owner 即清理并恢复 M3。
+        Remove-Item -LiteralPath $m3Pause -Force -ErrorAction SilentlyContinue
+        Log "m3: 陈旧暂停旗已清理（无 night_batch/jev_night 活进程），恢复 M3"
+        $m3PauseActive = $false
+    }
+}
+if (-not $m3PauseActive -and "$out" -match 'OK d') {
     $m3run = Get-CimInstance Win32_Process -Filter "Name='python.exe'" |
         Where-Object { $_.CommandLine -match 'k266_m3_structure' }
     if ($m3run) {
