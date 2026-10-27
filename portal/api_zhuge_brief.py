@@ -10,7 +10,10 @@ SOURCES = os / home / alerts / notify / tasks / capability / pushflow
 """
 from __future__ import annotations
 
+import json
+import os
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 BEIJING = timezone(timedelta(hours=8))
@@ -136,6 +139,45 @@ def _suggestion(sid: str, domain: str, priority: int, reason: str,
         "as_of": as_of.isoformat() if as_of else None,
         "confidence": ENGINE,
     }
+
+
+def _decision_suggestion_map() -> Dict[str, str]:
+    """决策记录声明的 suggestion_ids → decision_id（精确映射，不猜）。
+
+    只读 `work/p1/decisions/decisions.jsonl`；可在测试中用
+    ZHUGE_DECISION_REPO 指向临时仓库。
+    """
+    root = os.environ.get("ZHUGE_DECISION_REPO", "").strip()
+    base = Path(root) if root else Path(__file__).resolve().parent.parent
+    path = base / "work" / "p1" / "decisions" / "decisions.jsonl"
+    if not path.is_file():
+        return {}
+    records: Dict[str, Dict[str, Any]] = {}
+    try:
+        for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+            if not line.strip():
+                continue
+            try:
+                ev = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            kind = ev.get("event")
+            rid = ev.get("id")
+            if kind == "created" and isinstance(ev.get("record"), dict):
+                rec = ev["record"]
+                if rec.get("id"):
+                    records[rec["id"]] = dict(rec)
+            elif kind == "updated" and rid in records and "suggestion_ids" in ev:
+                records[rid]["suggestion_ids"] = ev["suggestion_ids"]
+    except OSError:
+        return {}
+    mapping: Dict[str, str] = {}
+    for rid, rec in records.items():
+        for sid in rec.get("suggestion_ids") or []:
+            sid = str(sid).strip()
+            if sid:
+                mapping[sid] = rid
+    return mapping
 
 
 def build_brief(raw: Dict[str, Any], clock: datetime) -> Dict[str, Any]:
@@ -313,6 +355,13 @@ def build_brief(raw: Dict[str, Any], clock: datetime) -> Dict[str, Any]:
             continue
         seen.add(s["id"])
         deduped.append(s)
+
+    # 建议→决策：只按决策记录的 suggestion_ids 精确 join；无映射不编造
+    dmap = _decision_suggestion_map()
+    for s in deduped:
+        rid = dmap.get(str(s.get("id", "")))
+        if rid:
+            s["decision_id"] = rid
 
     return {
         "engine": ENGINE,
