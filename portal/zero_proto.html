@@ -37,7 +37,7 @@ main{max-width:1120px;margin:auto;padding:22px 24px 80px}
 <span class="tip" data-q="现在开会讨论本周量化复盘">开会</span>
 <span class="tip" data-q="预约明天9点半田丰赵云谈警报治理">预约（暂不可提交）</span>
 <span class="tip" data-q="我有个想法：盯盘预警加情绪因子">抛想法</span>
-<span class="tip" data-q="查一下0x80070003">查记录</span>
+<span class="tip" data-q="查一下0x80070003">查记录</span><span class="tip" id="os-quick-entry" data-os-entry="1">一句话开事项 →</span>
 <span class="tip" data-q="帮我规划下周的工作">规划下周</span>
 <span class="tip" data-q="打开能力总库">找能力</span>
 </div></div>
@@ -296,7 +296,7 @@ aiVoice.addEventListener('click',()=>{
   recognition.onend=()=>{clearTimeout(watchdog);aiListening=false;aiRecognizer=null;aiVoice.setAttribute('aria-pressed','false');aiVoice.textContent='🎙 说话';if(!heard&&!failed)aiStatus('收音已结束，没有识别到文字。请重试或直接打字。')};
   try{recognition.start()}catch(e){clearTimeout(watchdog);failed=true;recognition.onend();aiStatus('无法启动语音识别，请检查浏览器和麦克风权限，或改用文字输入。')}
 });
-document.querySelectorAll('.tip').forEach(t=>t.addEventListener('click',()=>{document.getElementById('ai-say').value=t.dataset.q;aiSay()}));
+document.querySelectorAll('.tip').forEach(t=>t.addEventListener('click',()=>{document.getElementById('ai-say').value=t.dataset.q;aiSay()}));const osEntry=document.getElementById('os-quick-entry');if(osEntry){osEntry.addEventListener('click',()=>{const q=(document.getElementById('ai-say').value||'').trim();const url='/os_quick.html?text=1'+(q?('&prefill='+encodeURIComponent(q)):'');window.location.href=url;});}
 async function load(){let st=null;try{st=await opsGet('/api/council/state');const b=document.getElementById('sys-bridge');b.className='pill ok';b.textContent='在线'}catch(e){const b=document.getElementById('sys-bridge');b.className='pill hot';b.textContent=e.message.startsWith('未授权：')?'未授权':'读取失败';document.getElementById('council-at').textContent=b.textContent;document.getElementById('t-decide').textContent=opsError(e);document.getElementById('t-tasks').textContent=opsError(e);return}
 const at=document.getElementById('council-at');at.textContent=st.generated_at?'更新 '+String(st.generated_at).slice(5,16).replace('T',' '):'时点未提供';
 const dec=document.getElementById('t-decide');dec.innerHTML='';
