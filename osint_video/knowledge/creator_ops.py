@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from common import db
+import logging
 
 _ALLOWED_RUN_TYPES = {
     "history_backfill",
@@ -68,8 +69,8 @@ def _cursor_key(cursor: str | None) -> tuple[Any, ...] | None:
         decoded = base64.urlsafe_b64decode(padded.encode()).decode()
         if "|" in decoded:
             raw = decoded
-    except (ValueError, TypeError, UnicodeError):
-        pass
+    except (ValueError, TypeError, UnicodeError) as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "osint_video/knowledge/creator_ops.py", exc)
     if "|" in raw:
         stamp, item = raw.rsplit("|", 1)
         try:

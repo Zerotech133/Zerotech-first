@@ -43,6 +43,7 @@ import hashlib
 import json
 import os
 from datetime import date, datetime, timedelta, timezone
+import logging
 
 try:  # Python 3.9+ 标准库；Windows 缺 tzdata 时 ZoneInfo() 才报错，import 本身安全
     from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -383,8 +384,8 @@ def _atomic_write(path, data):
         try:
             if os.path.exists(tmp):
                 os.remove(tmp)
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/renewal_state.py", exc)
         return False, str(exc)[:200]
 
 

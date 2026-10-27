@@ -20,6 +20,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
@@ -92,8 +93,8 @@ def resolve_sender_app(domain, role="", base_dir=None):
     if role:
         try:
             return app_for_role(role, base_dir)[0]
-        except AppPoolError:
-            pass
+        except AppPoolError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/feishu_app_pool.py", exc)
     canonical = canonical_app_id(base_dir)
     if canonical:
         return canonical

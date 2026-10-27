@@ -19,6 +19,7 @@ sys.path.insert(0, str(PAPER))
 
 import manager  # noqa: E402
 from manager import Reject, fire, hire, hires_list, load_profile  # noqa: E402
+import logging
 
 
 def _setup(tmp: Path):
@@ -54,8 +55,8 @@ def _rejects(fn, why: str):
     try:
         fn()
         raise AssertionError(why)
-    except Reject:
-        pass
+    except Reject as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/tests/test_manager.py", exc)
 
 
 def test_hire_normal_path_price_snapshot():

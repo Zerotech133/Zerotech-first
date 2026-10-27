@@ -24,6 +24,7 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -95,8 +96,8 @@ def audit_target(target, token, opener=None, canonical_app=""):
         raw = ""
         try:
             raw = e.read().decode("utf-8", "replace")[:160]
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/feishu_target_audit.py", exc)
         rec["reason"] = "HTTP %d %s" % (e.code, raw)
     except Exception as e:  # noqa: BLE001
         rec["reason"] = "ERR " + str(e)[:120]

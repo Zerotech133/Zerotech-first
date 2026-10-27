@@ -19,6 +19,7 @@ from api_common import (
     data_freshness_bg,
     _TP_JS,
     _tp_row)
+import logging
 
 
 _WAREHOUSE_SERVICES_LOCK = threading.Lock()
@@ -187,8 +188,8 @@ def data_sync_status(src):
                 sz = f.tell()
                 f.seek(max(0, sz - 4000))
                 tail = f.read().decode("utf-8", "replace").strip()[-1200:]
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_data.py", exc)
     rc = job["p"].poll() if job else None
     if job and rc is not None and not job.get("cache_cleared"):
         # 同步任务刚结束：失效 freshness 缓存，页面刷新即见新时点

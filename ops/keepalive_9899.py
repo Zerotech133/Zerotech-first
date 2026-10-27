@@ -24,6 +24,7 @@ import subprocess
 import sys
 import time
 from datetime import datetime
+import logging
 
 PORT = 9899
 # K-STOCK-414：旧机 E:\ 硬编码换机即死（cwd 不存在 → Popen 抛 FileNotFoundError
@@ -47,8 +48,8 @@ def log(msg):
     try:
         with open(LOG, "a", encoding="utf-8") as f:
             f.write(line)
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "ops/keepalive_9899.py", exc)
     print(line, end="")
 
 

@@ -27,6 +27,7 @@ import time
 import urllib.request
 
 import trading_cal  # 同目录模块：脚本运行时脚本目录在 sys.path；测试亦插入 HERE
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 STATION = os.path.dirname(HERE)
@@ -295,8 +296,8 @@ def main():
                 level="bad",
                 footer="AI工作站 · 阈值监听（每 30 分钟比对）· 不构成投资建议",
             )
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/alert_watch.py", exc)
         try:
             tres = alert_push.push_card_multi(card, targets=targets)
         except Exception as exc:

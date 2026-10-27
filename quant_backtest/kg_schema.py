@@ -3,6 +3,7 @@ import os as _os_kgschema
 _KG_NEO4J_URI = _os_kgschema.environ.get("KG_NEO4J_URI", "bolt://localhost:7687")
 
 import os
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -25,8 +26,8 @@ def _load_neo4j_password() -> str:
                 s = ln.strip()
                 if s.startswith("KG_NEO4J_PASSWORD="):
                     return s.split("=", 1)[1].strip()
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/kg_schema.py", exc)
     return ""
 
 

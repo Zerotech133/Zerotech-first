@@ -8,6 +8,7 @@ import math
 from pathlib import Path, PurePosixPath, PureWindowsPath
 import stat
 from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple
+import logging
 
 # G1 包内收敛（RC-0 S1）：包路径 quant_backtest.bar_sources 走包内相对导入；
 # 顶层加载（bar_store/execution_engine 顶层链 / 既有测试经 sys.path 注入）走顶层
@@ -494,8 +495,8 @@ class PostgresBarSource:
             if connection is not None:
                 try:
                     connection.close()
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/bar_sources.py", exc)
         try:
             bars = [
                 _bar(row, "v2_bar_minute", market, timeframe, self.source_version)

@@ -24,6 +24,7 @@ import os
 import tempfile
 
 import pandas as pd
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT_DIR = os.path.join(HERE, "data", "index_daily")
@@ -53,8 +54,8 @@ def _token():
                 ln = ln.strip()
                 if ln.startswith("TUSHARE_TOKEN="):
                     return ln.split("=", 1)[1].strip()
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/index_daily.py", exc)
     return None
 
 

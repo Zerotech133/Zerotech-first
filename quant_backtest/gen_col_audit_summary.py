@@ -11,6 +11,7 @@ import glob
 import json
 import os
 from datetime import datetime
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPORTS = os.path.join(HERE, "reports")
@@ -162,8 +163,8 @@ __ROWS__
         try:
             os.remove(old)
             print("pruned:", os.path.basename(old))
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/gen_col_audit_summary.py", exc)
     print("summary:", os.path.basename(out), "fails=%d skips=%d" % (n_fail, n_skip))
 
 

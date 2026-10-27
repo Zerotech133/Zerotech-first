@@ -19,6 +19,7 @@ import os
 import time
 import urllib.request
 from html.parser import HTMLParser
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -162,8 +163,8 @@ def _sellpoint():
                 if c.get("held"):
                     stats["held"] += 1
                 rows.append(c)
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/m_analysis.py", exc)
     rows = sorted(rows, key=lambda c: str(c.get("detect_date") or ""), reverse=True)[:8]
     items = [
         {

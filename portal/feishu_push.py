@@ -25,6 +25,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
@@ -281,8 +282,8 @@ def shadow_log(name, old_card, new_card):
         }
         with open(path, "a", encoding="utf-8") as f:
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
-    except Exception:  # noqa: BLE001 —— 影子记录失败不影响主链
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/feishu_push.py", exc)
 
 
 def from_sections(

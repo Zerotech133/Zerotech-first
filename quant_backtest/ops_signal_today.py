@@ -32,6 +32,7 @@ POLICY = (
 
 sys.path.insert(0, os.path.join(BASE, "quant_backtest"))
 from chanlun_signal import analyze as chan_analyze  # noqa: E402
+import logging
 
 
 def _latest_pool_file():
@@ -115,8 +116,8 @@ def compute(force=False):
             if c.get("pool", {}).get("file") == pool_name:
                 c["cached"] = True
                 return c
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/ops_signal_today.py", exc)
 
     books = _load_books(stocks)
 

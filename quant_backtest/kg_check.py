@@ -29,6 +29,7 @@ from datetime import datetime
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from kg_client import KgClient  # noqa: E402
+import logging
 
 STATE_DIR = os.path.join(HERE, "data", "graph_check")
 LATEST = os.path.join(STATE_DIR, "latest.json")
@@ -254,8 +255,8 @@ def main():
                 [sys.executable, wrapper, "kg_check", "1", tp], timeout=120, check=False
             )
             os.remove(tp)
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/kg_check.py", exc)
     return 0  # 告警不阻断（日报仍发），升级走上面的飞书直报
 
 

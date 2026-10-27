@@ -6,6 +6,7 @@ import json
 import os
 import subprocess
 import sys
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ASSET_DIR = os.path.join(HERE, "assets")
@@ -49,8 +50,8 @@ def ensure_qr_image_key(url=None):
             cache = json.load(f)
         if cache.get("url") == url and cache.get("image_key"):
             return cache["image_key"]
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/card_assets.py", exc)
     os.makedirs(ASSET_DIR, exist_ok=True)
     png = os.path.join(ASSET_DIR, "portal_qr.png")
     try:

@@ -27,6 +27,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import logging
 
 HERE = Path(__file__).resolve()
 REPO = HERE.parents[1]  # quant_backtest/
@@ -106,8 +107,8 @@ def load_panel(data_root: Path = DATA_ROOT, start: str = "", end: str = "",
             df = df.merge(basic, on=["ts_code", "trade_date"], how="left")
             if df["turnover_rate"].notna().mean() >= 0.5:
                 diag["turnover_source"] = "ts_daily_basic.turnover_rate"
-        except SystemExit:
-            pass
+        except SystemExit as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/baseline_factors.py", exc)
     diag["load_seconds"] = round(time.time() - t0, 2)
     return df, diag
 

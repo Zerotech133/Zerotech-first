@@ -150,8 +150,8 @@ def audit(event: str, **fields: Any) -> None:
     """
     try:
         get_audit_logger().info(event, extra={"event": event, **fields})
-    except Exception:  # noqa: BLE001 —— 审计失败静默（磁盘满等极端场景）
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "osint_video/common/logging_setup.py", exc)
 
 
 def get_log_dir() -> Path:

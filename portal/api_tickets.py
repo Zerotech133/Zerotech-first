@@ -18,6 +18,7 @@ Windows 编码判例：jsonl 是 UTF-8（TaskStore 写侧 ensure_ascii=False）�
 import json
 from datetime import datetime
 from pathlib import Path
+import logging
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -110,8 +111,8 @@ class Handler:
             if part.startswith("limit="):
                 try:
                     limit = max(1, min(100, int(part[6:])))
-                except ValueError:
-                    pass
+                except ValueError as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_tickets.py", exc)
         dept = None
         for part in qs.split("&"):
             if part.startswith("dept="):

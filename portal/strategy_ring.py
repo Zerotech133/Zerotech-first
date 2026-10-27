@@ -14,6 +14,7 @@ import json
 import os
 import uuid
 from datetime import date, datetime, timedelta
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 WORK = os.path.join(HERE, "work")
@@ -52,8 +53,8 @@ def _rows(path):
                     out.append(json.loads(line))
                 except ValueError:
                     continue
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/strategy_ring.py", exc)
     return out
 
 

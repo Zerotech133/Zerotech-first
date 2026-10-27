@@ -20,6 +20,7 @@ import os
 import sys
 import tempfile
 from datetime import datetime
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 JEV_DIR = os.path.join(os.path.dirname(HERE), "jev-eval")
@@ -44,8 +45,8 @@ def _push_owner_open_id():
             for t in json.load(f).get("push_targets") or []:
                 if t.get("name") == "个人" and t.get("id"):
                     return str(t["id"]).strip()
-    except (OSError, ValueError):
-        pass
+    except (OSError, ValueError) as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/jev_card_action.py", exc)
     return ""
 
 

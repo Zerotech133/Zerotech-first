@@ -26,6 +26,7 @@ import sys
 import time
 from datetime import datetime
 from pathlib import Path
+import logging
 
 REPO = Path(r"C:/项目/老田的AI助手")
 LOG_DIR = REPO / "portal" / "logs"
@@ -245,8 +246,8 @@ def finish(status: dict, code: int = 0) -> int:
             f.write(
                 f"{status['time']} | {'OK' if status['ok'] else 'FAIL'} | {status['detail']}\n"
             )
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/agent_auto_commit.py", exc)
     return code
 
 

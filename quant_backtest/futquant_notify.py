@@ -30,6 +30,7 @@ import sys
 import tempfile
 import time
 from datetime import datetime
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(HERE, "data")
@@ -188,8 +189,8 @@ def main():
         if st.get("date") == _today():
             print("already handled today: %s" % st.get("status"))
             return
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/futquant_notify.py", exc)
 
     exits = None
     for _ in range(POLL_MAX):

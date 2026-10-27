@@ -31,6 +31,7 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+import logging
 
 
 def _configure_stdio() -> None:
@@ -42,8 +43,8 @@ def _configure_stdio() -> None:
     for stream in (sys.stdout, sys.stderr):
         try:
             stream.reconfigure(encoding="utf-8", errors="replace")
-        except (AttributeError, ValueError, OSError):
-            pass
+        except (AttributeError, ValueError, OSError) as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/increment_guard.py", exc)
 
 
 def _safe_print(text: str, limit: int, file=None) -> None:

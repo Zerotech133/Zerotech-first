@@ -43,6 +43,7 @@ sys.path.insert(0, str(ROOT / "portal"))
 
 import push_matrix as pm  # noqa: E402
 import publish_watchdog as pw  # noqa: E402
+import logging
 
 WORK = ROOT / "portal" / "work"
 LOG_PATH = str(WORK / "deadline_watch.log")
@@ -58,8 +59,8 @@ def log(msg):
         os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
         with open(LOG_PATH, "a", encoding="utf-8") as f:
             f.write("%s %s\n" % (time.strftime("%Y-%m-%d %H:%M:%S"), msg))
-    except OSError:
-        pass  # 日志失败不影响巡检主流程（结果仍由退出码与旗标承载）
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/deadline_watchdog.py", exc)
 
 
 def _at(d, hhmm):

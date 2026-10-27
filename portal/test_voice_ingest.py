@@ -15,6 +15,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import voice_ingest as vi  # noqa: E402
+import logging
 
 PASS, FAIL = [], []
 
@@ -112,8 +113,8 @@ def main():
     check("无引擎 → 绝不派发", not dispatched)
     try:
         vi._openai_transcribe.__call__  # noqa: B018
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/test_voice_ingest.py", exc)
 
     print("\n[4] 空音频 / 超大音频")
     rec, notes, *_ = run(

@@ -26,6 +26,7 @@ import datetime
 import json
 import os
 import re
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 STATION = os.path.dirname(HERE)
@@ -91,8 +92,8 @@ def _as_date(day):
     if isinstance(day, str) and _DATE_RE.match(day):
         try:
             return datetime.date.fromisoformat(day)
-        except ValueError:
-            pass
+        except ValueError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/trading_cal.py", exc)
     raise TypeError("expect datetime.date, got %s" % type(day).__name__)
 
 

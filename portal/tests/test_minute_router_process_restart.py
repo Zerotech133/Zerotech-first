@@ -19,6 +19,7 @@ import time
 from typing import Any
 
 import pytest
+import logging
 
 
 REPO = Path(__file__).resolve().parents[2]
@@ -188,8 +189,8 @@ def _stop(process: subprocess.Popen[str], graceful: bool = True) -> None:
         try:
             process.stdin.write("STOP\n")
             process.stdin.flush()
-        except BrokenPipeError:
-            pass
+        except BrokenPipeError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/tests/test_minute_router_process_restart.py", exc)
     if not graceful and process.poll() is None:
         process.kill()
     try:

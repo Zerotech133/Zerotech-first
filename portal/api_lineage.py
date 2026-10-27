@@ -24,6 +24,7 @@ from __future__ import annotations
 import os
 import sys
 import urllib.parse as _urlparse
+import logging
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _QBT_DIR = os.path.join(os.path.dirname(_HERE), "quant_backtest")
@@ -73,8 +74,8 @@ def _lineage_password() -> str:
                 line = line.strip()
                 if line.startswith("LINEAGE_PASSWORD=") and not line.startswith("#"):
                     return line.split("=", 1)[1].strip()
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_lineage.py", exc)
     raise RuntimeError("LINEAGE_PASSWORD 未配置（env 或 quant_backtest/.env.local）")
 
 

@@ -44,6 +44,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 import api_xq_intel
+import logging
 
 # REPO 锚：env AIOS_ROOT 可覆盖（仅测试用，调用时读取——沿 api_notify 判例，
 # 模块级常量会让 monkeypatch env 失效）
@@ -93,8 +94,8 @@ def load_policy_cfg():
         v = cfg.get("policy_authority_sources")
         if isinstance(v, list) and v:
             auth = tuple(str(x) for x in v if x)
-    except Exception:
-        pass  # 兜底路径，fail-visible 不适用（拍板明示内置默认表兜底）
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_news_intel.py", exc)
     return kw, auth
 
 

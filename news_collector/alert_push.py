@@ -22,6 +22,7 @@ import sys
 import time
 import urllib.request
 from datetime import datetime, timedelta, timezone
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 STATION = os.path.dirname(HERE)
@@ -297,8 +298,8 @@ def push_card_multi(card, qr_portal=None, targets=None, kind="daily:alert"):
             count=1,
             ok=any(v for k, v in results.items() if not k.startswith("_")),
         )
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/alert_push.py", exc)
     return results
 
 

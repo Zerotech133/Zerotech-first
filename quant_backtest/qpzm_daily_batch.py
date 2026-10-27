@@ -43,6 +43,7 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
@@ -631,8 +632,8 @@ def spawn_backtest(log_path=None):
 def main(argv=None):
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/qpzm_daily_batch.py", exc)
     ap = argparse.ArgumentParser(description="青萍之末每日选股批次回测")
     ap.add_argument(
         "--backfill",

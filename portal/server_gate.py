@@ -32,6 +32,7 @@ import os
 import re
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
+import logging
 
 PORT = int(os.environ.get("PORT", "3000"))
 USERNAME = os.environ.get("PICKS_USER", "lao")
@@ -219,8 +220,8 @@ class Handler(BaseHTTPRequestHandler):
                 import share_tokens
 
                 share_tokens.visit(m.group(1))
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "portal/server_gate.py", exc)
             self._send(204, b"")
             return
         self._send(404, b"404 not found")

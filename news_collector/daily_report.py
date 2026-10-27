@@ -21,6 +21,7 @@ if HERE not in sys.path:
     sys.path.insert(0, HERE)
 
 import card_build  # noqa: E402
+import logging
 
 STATION = os.path.dirname(HERE)
 CST = timezone(timedelta(hours=8))
@@ -266,8 +267,8 @@ def main():
             ("📊 数据日报", _daily, "primary"),
             ("📈 选股看板", _picks, "default"),
         ]
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/daily_report.py", exc)
     card = card_build.build_card3(  # K-PUSH-008：v3 绿域例行
         "daily",
         "🌙 AI 工作站统一日报",

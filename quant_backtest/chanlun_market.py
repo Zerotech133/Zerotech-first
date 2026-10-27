@@ -18,6 +18,7 @@ import os
 import sys
 import tempfile
 from datetime import datetime, timezone
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
@@ -384,8 +385,8 @@ def dynamic_pos(brief, write=True):
             with os.fdopen(fd, "w", encoding="utf-8") as f:
                 json.dump(out, f, ensure_ascii=False)
             os.replace(tmp, POS_STATE)
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/chanlun_market.py", exc)
     return out
 
 
