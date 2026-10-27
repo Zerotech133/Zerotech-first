@@ -22,6 +22,7 @@
 用法：
   "C:/Program Files/Python311/python.exe" jev_graduation_bydomain.py
 """
+
 from __future__ import annotations
 
 import json
@@ -34,11 +35,11 @@ TRIPLES = HERE / "review_data" / "triples.jsonl"
 REPLAY = HERE / "replay" / "replay-20260922-030434.jsonl"
 OUT_JSON = HERE / "review_data" / "graduation_bydomain_20261014.json"
 
-GRAD_N_MIN = 300      # 毕业判据 v1（周报口径）
-GRAD_PP = 0.01        # 毕业判据 v1：前向均值 >+1pp
+GRAD_N_MIN = 300  # 毕业判据 v1（周报口径）
+GRAD_PP = 0.01  # 毕业判据 v1：前向均值 >+1pp
 # 判据 v2 建议参数（按有效标的数计的最小样本；依据见报告）
-V2_N_MIN = 30         # 每市场域有效标的数 ≥30（对齐阶段2判据 n≥30 的量级）
-CRYPTO_V2_N_MIN = 6   # CRYPTO 域降级门槛（当前 fresh 池规模下可达的量级）
+V2_N_MIN = 30  # 每市场域有效标的数 ≥30（对齐阶段2判据 n≥30 的量级）
+CRYPTO_V2_N_MIN = 6  # CRYPTO 域降级门槛（当前 fresh 池规模下可达的量级）
 
 if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf8"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -60,10 +61,17 @@ def load_all() -> list[dict]:
         if r["candidate_id"] in seen:
             continue
         seen.add(r["candidate_id"])
-        recs.append({"src": "live", "decision": r["decision"],
-                     "market": r.get("market", "?"), "ts_code": r["ts_code"],
-                     "pool_date": r.get("pool_date", ""),
-                     "ret5": float(r["ret_nd"]), "quality": r.get("quality", "?")})
+        recs.append(
+            {
+                "src": "live",
+                "decision": r["decision"],
+                "market": r.get("market", "?"),
+                "ts_code": r["ts_code"],
+                "pool_date": r.get("pool_date", ""),
+                "ret5": float(r["ret_nd"]),
+                "quality": r.get("quality", "?"),
+            }
+        )
     seen = set()
     for line in REPLAY.read_text(encoding="utf-8").splitlines():
         if not line.strip():
@@ -75,10 +83,17 @@ def load_all() -> list[dict]:
         if key in seen:
             continue
         seen.add(key)
-        recs.append({"src": "replay", "decision": r["decision"],
-                     "market": r.get("market", "?"), "ts_code": r["ts_code"],
-                     "pool_date": r.get("pool_date", ""),
-                     "ret5": float(r["ret_5d"]), "quality": r.get("quality", "?")})
+        recs.append(
+            {
+                "src": "replay",
+                "decision": r["decision"],
+                "market": r.get("market", "?"),
+                "ts_code": r["ts_code"],
+                "pool_date": r.get("pool_date", ""),
+                "ret5": float(r["ret_5d"]),
+                "quality": r.get("quality", "?"),
+            }
+        )
     return recs
 
 
@@ -98,11 +113,13 @@ def domain_stats(fo: list[dict], pool: list[dict], m: str) -> dict:
         "ret5_nominal": round(mean([r["ret5"] for r in rs]), 6) if rs else None,
         "ret5_cluster": round(mean(code_means), 6) if code_means else None,
         "code_mean_range": [round(min(code_means), 4), round(max(code_means), 4)]
-        if code_means else None,
+        if code_means
+        else None,
         "pass_n": len(ps),
         "pass_ret5": round(mean(ps), 6) if ps else None,
         "focus_minus_pass": round(mean([r["ret5"] for r in rs]) - mean(ps), 6)
-        if rs and ps else None,
+        if rs and ps
+        else None,
         "top_codes": Counter({c: len(by_code[c]) for c in codes}).most_common(6),
     }
 
@@ -120,24 +137,37 @@ def main() -> None:
     for m in markets:
         st = domain_stats(fo, recs, m)
         rows[m] = st
-        v1 = "n未达标" if st["n_nominal"] < GRAD_N_MIN else (
-            "✓过线" if (st["ret5_nominal"] or 0) > GRAD_PP else "✗未过+1pp")
-        print(f"{m:8s} {st['n_nominal']:>5d} {st['n_unique_codes']:>5d} "
-              f"{st['rec_per_code']:>7.1f} {(st['ret5_nominal'] or 0)*100:>+8.2f}pp "
-              f"{(st['ret5_cluster'] or 0)*100:>+8.2f}pp "
-              f"{(st['focus_minus_pass'] or 0)*100:>+7.2f}pp {v1:>10s}")
+        v1 = (
+            "n未达标"
+            if st["n_nominal"] < GRAD_N_MIN
+            else ("✓过线" if (st["ret5_nominal"] or 0) > GRAD_PP else "✗未过+1pp")
+        )
+        print(
+            f"{m:8s} {st['n_nominal']:>5d} {st['n_unique_codes']:>5d} "
+            f"{st['rec_per_code']:>7.1f} {(st['ret5_nominal'] or 0) * 100:>+8.2f}pp "
+            f"{(st['ret5_cluster'] or 0) * 100:>+8.2f}pp "
+            f"{(st['focus_minus_pass'] or 0) * 100:>+7.2f}pp {v1:>10s}"
+        )
 
     # ── CRYPTO 有效独立样本修正 ──
     print("\n===== CRYPTO 域有效独立样本修正 =====")
     cr = rows.get("CRYPTO", {})
-    print(f"名义 {cr['n_nominal']} 条 → 唯一标的仅 {cr['n_unique_codes']} 只"
-          f"（每只平均入池 {cr['rec_per_code']} 次）" if cr else "无 CRYPTO 样本")
+    print(
+        f"名义 {cr['n_nominal']} 条 → 唯一标的仅 {cr['n_unique_codes']} 只"
+        f"（每只平均入池 {cr['rec_per_code']} 次）"
+        if cr
+        else "无 CRYPTO 样本"
+    )
     if cr:
         print(f"标的循环入池明细（top6）：{cr['top_codes']}")
-        print(f"名义均值 {cr['ret5_nominal']*100:+.2f}pp vs 标的聚类均值 "
-              f"{cr['ret5_cluster']*100:+.2f}pp —— 差异来自单标的重复计数")
-        print(f"标的内均值极差 {[x*100 for x in cr['code_mean_range']]}% "
-              f"→ 6 只标的互相之间方向都不同，名义 n 虚高")
+        print(
+            f"名义均值 {cr['ret5_nominal'] * 100:+.2f}pp vs 标的聚类均值 "
+            f"{cr['ret5_cluster'] * 100:+.2f}pp —— 差异来自单标的重复计数"
+        )
+        print(
+            f"标的内均值极差 {[x * 100 for x in cr['code_mean_range']]}% "
+            f"→ 6 只标的互相之间方向都不同，名义 n 虚高"
+        )
 
     # ── v2 判据对照 ──
     print("\n===== 毕业判据 v2 对照（每域独立：有效标的数 + 前向均值>+1pp） =====")
@@ -147,25 +177,37 @@ def main() -> None:
         thr = CRYPTO_V2_N_MIN if m == "CRYPTO" else V2_N_MIN
         ok_n = "✓" if n_eff >= thr else "✗"
         ok_pp = "✓" if (st["ret5_cluster"] or 0) > GRAD_PP else "✗"
-        print(f"{m:8s} 有效标的 {n_eff:>3d}/{thr} {ok_n}  聚类均值 "
-              f"{(st['ret5_cluster'] or 0)*100:>+6.2f}pp（>{GRAD_PP*100:.0f}pp {ok_pp}）")
+        print(
+            f"{m:8s} 有效标的 {n_eff:>3d}/{thr} {ok_n}  聚类均值 "
+            f"{(st['ret5_cluster'] or 0) * 100:>+6.2f}pp（>{GRAD_PP * 100:.0f}pp {ok_pp}）"
+        )
 
     out = {
         "generated_at": "2026-10-14",
-        "sample": {"total": len(recs), "focus_n_nominal": len(fo),
-                   "window": "2026-08-13 ~ 2026-10-08（T+5 回填截止）"},
-        "criterion_v1": {"n_min": GRAD_N_MIN, "pp": GRAD_PP,
-                         "source": "docs/changes/20261014_shadow_report_changes.md:26"},
+        "sample": {
+            "total": len(recs),
+            "focus_n_nominal": len(fo),
+            "window": "2026-08-13 ~ 2026-10-08（T+5 回填截止）",
+        },
+        "criterion_v1": {
+            "n_min": GRAD_N_MIN,
+            "pp": GRAD_PP,
+            "source": "docs/changes/20261014_shadow_report_changes.md:26",
+        },
         "criterion_v2_proposal": {
-            "per_domain": True, "n_by_unique_codes": True,
-            "n_min": V2_N_MIN, "crypto_n_min": CRYPTO_V2_N_MIN, "pp": GRAD_PP},
+            "per_domain": True,
+            "n_by_unique_codes": True,
+            "n_min": V2_N_MIN,
+            "crypto_n_min": CRYPTO_V2_N_MIN,
+            "pp": GRAD_PP,
+        },
         "by_market": rows,
         "all_focus_nominal": {
             "n": len(fo),
-            "ret5_nominal": round(mean([r["ret5"] for r in fo]), 6)},
+            "ret5_nominal": round(mean([r["ret5"] for r in fo]), 6),
+        },
     }
-    OUT_JSON.write_text(json.dumps(out, ensure_ascii=False, indent=2),
-                        encoding="utf-8")
+    OUT_JSON.write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"\n结果已写 {OUT_JSON}")
 
 

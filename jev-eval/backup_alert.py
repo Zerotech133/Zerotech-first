@@ -20,10 +20,15 @@ import sys
 
 # 2026-10-16 换机修复：旧机硬编码 C:\Users\Administrator\... 新机不存在
 # （K-STOCK-414 send_feishu 同款判例）——expanduser 跟随当前用户。
-LARK_PLUGIN_ROOT = os.path.join(os.path.expanduser("~"), ".trae-cn",
-                                "plugins", "trae-remote-official", "lark")
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(
-    os.path.abspath(__file__))), "news_collector"))
+LARK_PLUGIN_ROOT = os.path.join(
+    os.path.expanduser("~"), ".trae-cn", "plugins", "trae-remote-official", "lark"
+)
+sys.path.insert(
+    0,
+    os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "news_collector"
+    ),
+)
 import push_targets  # noqa: E402  K-STOCK-403：收件人单一事实源
 
 DEFAULT_USER_ID = push_targets.target_id("个人") or ""
@@ -35,8 +40,11 @@ DEFAULT_GROUP_ID = push_targets.target_id("内部测试") or ""
 def find_lark_cli():
     # K-STOCK-396 exe 解耦：仓库 bin/ 固定副本优先（2026-10-13 巡检判例：
     # 插件目录不在 PATH 注册表，升级/清除即断链），插件扫描降为回退。
-    _bin = os.path.join(os.path.dirname(os.path.dirname(
-        os.path.abspath(__file__))), "bin", "lark-cli.exe")
+    _bin = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "bin",
+        "lark-cli.exe",
+    )
     if os.path.isfile(_bin):
         return _bin
     if os.path.isdir(LARK_PLUGIN_ROOT):
@@ -91,29 +99,42 @@ def build_backup_card(fields, with_buttons=True):
     return {
         "config": {"wide_screen_mode": True, "update_multi": True},
         "header": {
-            "title": {"tag": "plain_text",
-                      "content": "\U0001f6a8 AI\u5de5\u4f5c\u7ad9\u6bcf\u65e5\u5907\u4efd\u5931\u8d25"},
+            "title": {
+                "tag": "plain_text",
+                "content": "\U0001f6a8 AI\u5de5\u4f5c\u7ad9\u6bcf\u65e5\u5907\u4efd\u5931\u8d25",
+            },
             "template": "red",
         },
-        "elements":
+        "elements": [
+            {
+                "tag": "div",
+                "text": {
+                    "tag": "lark_md",
+                    "content": "**\u5931\u8d25\u9879\u6570\uff1a**{0}\u3000\u3000**\u65f6\u95f4\u6233\uff1a**{1}".format(
+                        failed, stamp
+                    ),
+                },
+            },
+            {
+                "tag": "markdown",
+                "content": "**\u6709\u5907\u4efd\u9879\u672a\u5b8c\u6210\uff0c\u8bf7\u68c0\u67e5\u5907\u4efd\u65e5\u5fd7\uff1a**\n\n`"
+                + log_path
+                + "`",
+            },
+        ]
+        + (
             [
                 {
-                    "tag": "div",
-                    "text": {"tag": "lark_md",
-                             "content": "**\u5931\u8d25\u9879\u6570\uff1a**{0}\u3000\u3000**\u65f6\u95f4\u6233\uff1a**{1}".format(failed, stamp)},
-                },
-                {
-                    "tag": "markdown",
-                    "content": "**\u6709\u5907\u4efd\u9879\u672a\u5b8c\u6210\uff0c\u8bf7\u68c0\u67e5\u5907\u4efd\u65e5\u5fd7\uff1a**\n\n`"
-                               + log_path + "`",
-                },
-            ] + ([{
-                "tag": "action",
-                "actions": [
-                    _btn("\u2713 \u786e\u8ba4\u77e5\u6653", "primary", "ack"),
-                    _btn("\u5ffd\u7565", "default", "ignore"),
-                ],
-            }] if with_buttons else []),
+                    "tag": "action",
+                    "actions": [
+                        _btn("\u2713 \u786e\u8ba4\u77e5\u6653", "primary", "ack"),
+                        _btn("\u5ffd\u7565", "default", "ignore"),
+                    ],
+                }
+            ]
+            if with_buttons
+            else []
+        ),
     }
 
 
@@ -121,12 +142,12 @@ def load_app_creds():
     """Read app credentials from ~/.lark-cli/config.json (OPS-1001d followup:
     lark-cli 1.0.5 uses externally injected creds; scheduled tasks have none.
     OpenAPI direct calls with these static creds are unattended-safe)."""
-    cfg = os.path.join(os.path.expanduser('~'), '.lark-cli', 'config.json')
+    cfg = os.path.join(os.path.expanduser("~"), ".lark-cli", "config.json")
     try:
-        with open(cfg, encoding='utf-8') as f:
-            apps = json.load(f).get('apps') or []
+        with open(cfg, encoding="utf-8") as f:
+            apps = json.load(f).get("apps") or []
         if apps:
-            aid, sec = apps[0].get('appId'), apps[0].get('appSecret')
+            aid, sec = apps[0].get("appId"), apps[0].get("appSecret")
             # 20261016换机：appSecret 非 str（1.0.5+ 外置引用 dict）即不可用
             if aid and isinstance(sec, str):
                 return aid, sec
@@ -135,26 +156,30 @@ def load_app_creds():
     return None, None
 
 
-def send_openapi(msg_type, content, user_id, receive_id_type='open_id'):
+def send_openapi(msg_type, content, user_id, receive_id_type="open_id"):
     """Send via Feishu OpenAPI. K-STOCK-228: delegate to
     news_collector/feishu_client (single API base for the whole repo).
     receive_id_type: 'open_id' (user) or 'chat_id' (group).
     Returns True on success (network errors degrade to False, not raise)."""
     here = os.path.dirname(os.path.abspath(__file__))
-    sys.path.insert(0, os.path.join(os.path.dirname(here), 'news_collector'))
+    sys.path.insert(0, os.path.join(os.path.dirname(here), "news_collector"))
     from feishu_client import send_msg
+
     ok, _why = send_msg(content, msg_type, user_id, receive_id_type)
     return ok
 
 
 def load_webhook():
     """Read alert_webhook.txt next to this script: line1=url, line2=secret(opt)."""
-    cfg = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'alert_webhook.txt')
+    cfg = os.path.join(os.path.dirname(os.path.abspath(__file__)), "alert_webhook.txt")
     if os.path.isfile(cfg):
-        lines = [l.strip() for l in
-                 open(cfg, encoding='utf-8-sig').read().splitlines() if l.strip()]
-        if lines and lines[0].startswith('http'):
-            return lines[0], (lines[1] if len(lines) > 1 else '')
+        lines = [
+            l.strip()
+            for l in open(cfg, encoding="utf-8-sig").read().splitlines()
+            if l.strip()
+        ]
+        if lines and lines[0].startswith("http"):
+            return lines[0], (lines[1] if len(lines) > 1 else "")
     return None, None
 
 
@@ -166,21 +191,27 @@ def send_webhook(url, secret, msg_type, content):
     import hmac as _hmac
     import time as _time
     import urllib.request as _rq
-    if msg_type == 'interactive':
-        body = {'msg_type': 'interactive', 'card': json.loads(content)}
+
+    if msg_type == "interactive":
+        body = {"msg_type": "interactive", "card": json.loads(content)}
     else:
-        body = {'msg_type': 'text', 'content': {'text': json.loads(content)['text']}}
+        body = {"msg_type": "text", "content": {"text": json.loads(content)["text"]}}
     if secret:
         ts = str(int(_time.time()))
-        string_to_sign = '{}\n{}'.format(ts, secret)
-        digest = _hmac.new(string_to_sign.encode('utf-8'), digestmod=_sha.sha256).digest()
-        body['timestamp'] = ts
-        body['sign'] = _b64.b64encode(digest).decode('ascii')
-    req = _rq.Request(url, data=json.dumps(body).encode('utf-8'),
-                      headers={'Content-Type': 'application/json'})
+        string_to_sign = "{}\n{}".format(ts, secret)
+        digest = _hmac.new(
+            string_to_sign.encode("utf-8"), digestmod=_sha.sha256
+        ).digest()
+        body["timestamp"] = ts
+        body["sign"] = _b64.b64encode(digest).decode("ascii")
+    req = _rq.Request(
+        url,
+        data=json.dumps(body).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+    )
     with _rq.urlopen(req, timeout=15) as r:
-        resp = json.loads(r.read().decode('utf-8'))
-    return resp.get('code') == 0 or resp.get('StatusCode') == 0
+        resp = json.loads(r.read().decode("utf-8"))
+    return resp.get("code") == 0 or resp.get("StatusCode") == 0
 
 
 def main():
@@ -213,14 +244,23 @@ def main():
             group_id = os.environ.get("LARK_ALERT_GROUP_ID", DEFAULT_GROUP_ID)
             if group_id:
                 if msg_type == "interactive":
-                    g_content = json.dumps(build_backup_card(fields, with_buttons=False),
-                                           ensure_ascii=False)
+                    g_content = json.dumps(
+                        build_backup_card(fields, with_buttons=False),
+                        ensure_ascii=False,
+                    )
                 else:
                     g_content = card_content
                 try:
-                    print("ALERT_GROUP_" + ("OK" if send_openapi(
-                        msg_type, g_content, group_id, receive_id_type='chat_id')
-                        else "FAIL"))
+                    print(
+                        "ALERT_GROUP_"
+                        + (
+                            "OK"
+                            if send_openapi(
+                                msg_type, g_content, group_id, receive_id_type="chat_id"
+                            )
+                            else "FAIL"
+                        )
+                    )
                 except Exception as ge:
                     print("ALERT_GROUP_ERROR " + str(ge)[:150])
             sys.exit(0)
@@ -233,8 +273,9 @@ def main():
     if url:
         try:
             if msg_type == "interactive":
-                content = json.dumps(build_backup_card(fields, with_buttons=False),
-                                     ensure_ascii=False)
+                content = json.dumps(
+                    build_backup_card(fields, with_buttons=False), ensure_ascii=False
+                )
             else:
                 content = json.dumps({"text": text})
             if send_webhook(url, secret, msg_type, content):
@@ -249,9 +290,22 @@ def main():
         content = json.dumps(build_backup_card(fields), ensure_ascii=False)
     else:
         content = json.dumps({"text": text})
-    args = [find_lark_cli(), "im", "+messages-send", "--as", "bot",
-            "--user-id", user_id, "--msg-type", msg_type, "--content", content]
-    r = subprocess.run(args, capture_output=True, text=True, encoding="utf-8", timeout=60)
+    args = [
+        find_lark_cli(),
+        "im",
+        "+messages-send",
+        "--as",
+        "bot",
+        "--user-id",
+        user_id,
+        "--msg-type",
+        msg_type,
+        "--content",
+        content,
+    ]
+    r = subprocess.run(
+        args, capture_output=True, text=True, encoding="utf-8", timeout=60
+    )
     ok = False
     # K-STOCK-400（2026-10-16 移植 send_feishu）：整体 json.loads 遇新版
     # lark-cli pretty-print 多行 JSON/混入提示行必败 → 误判失败。

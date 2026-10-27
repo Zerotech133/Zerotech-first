@@ -38,7 +38,10 @@ def _run_script():
         check("周五→下周一 =1", W(date(2026, 10, 9), date(2026, 10, 12)) == 1)
         check("周五→下周三 =3", W(date(2026, 10, 9), date(2026, 10, 14)) == 3)
         check("周五→下周四 =4", W(date(2026, 10, 9), date(2026, 10, 15)) == 4)
-        check("周五→下周五 =5（满窗即 due）", W(date(2026, 10, 9), date(2026, 10, 16)) == 5)
+        check(
+            "周五→下周五 =5（满窗即 due）",
+            W(date(2026, 10, 9), date(2026, 10, 16)) == 5,
+        )
         check("周六→下周一 =1", W(date(2026, 10, 10), date(2026, 10, 12)) == 1)
         check("同日 =0", W(date(2026, 10, 14), date(2026, 10, 14)) == 0)
         check("整四周 =20", W(date(2026, 10, 12), date(2026, 11, 9)) == 20)
@@ -46,7 +49,9 @@ def _run_script():
 
         # ── BUG-4 场景复现：周五池 + 下周三 → 旧日历口径 due / 新交易日口径 not due ──
         pool_fri, today_wed = date(2026, 10, 9), date(2026, 10, 14)
-        old_due = pool_fri <= today_wed - __import__("datetime").timedelta(days=N_OUTCOME_DAYS)
+        old_due = pool_fri <= today_wed - __import__("datetime").timedelta(
+            days=N_OUTCOME_DAYS
+        )
         new_due = W(pool_fri, today_wed) >= N_OUTCOME_DAYS
         check("BUG-4 场景：旧口径误判 due", old_due is True)
         check("BUG-4 场景：新口径正确 not-due", new_due is False)
@@ -55,19 +60,39 @@ def _run_script():
         lines = [
             json.dumps({"candidate_id": "c1", "decision": "PASS", "ret_nd": 0.01}),
             json.dumps({"candidate_id": "c2", "decision": "FOCUS", "ret_nd": 0.02}),
-            json.dumps({"candidate_id": "c1", "decision": "PASS", "ret_nd": 0.015}),  # 崩溃窗口重复
+            json.dumps(
+                {"candidate_id": "c1", "decision": "PASS", "ret_nd": 0.015}
+            ),  # 崩溃窗口重复
             "",
-            json.dumps({"candidate_id": "c2", "decision": "FOCUS", "ret_nd": 0.025}),  # 重复取末次
+            json.dumps(
+                {"candidate_id": "c2", "decision": "FOCUS", "ret_nd": 0.025}
+            ),  # 重复取末次
             "{bad json",  # 坏行保留
         ]
         out = dedup_triples(lines)
         recs = [json.loads(l) for l in out if not l.startswith("{bad")]
         check("去重后行数 =3（c1+c2+坏行；空行丢弃）", len(out) == 3)
-        check("c1 取末次 ret=0.015", any(r["candidate_id"] == "c1" and r["ret_nd"] == 0.015 for r in recs if "candidate_id" in r))
-        check("c2 取末次 ret=0.025", any(r["candidate_id"] == "c2" and r["ret_nd"] == 0.025 for r in recs if "candidate_id" in r))
+        check(
+            "c1 取末次 ret=0.015",
+            any(
+                r["candidate_id"] == "c1" and r["ret_nd"] == 0.015
+                for r in recs
+                if "candidate_id" in r
+            ),
+        )
+        check(
+            "c2 取末次 ret=0.025",
+            any(
+                r["candidate_id"] == "c2" and r["ret_nd"] == 0.025
+                for r in recs
+                if "candidate_id" in r
+            ),
+        )
         check("坏行保留", any(l == "{bad json" for l in out))
-        check("报告计数不虚增（c2 只计 1 次）",
-              sum(1 for r in recs if r.get("candidate_id") == "c2") == 1)
+        check(
+            "报告计数不虚增（c2 只计 1 次）",
+            sum(1 for r in recs if r.get("candidate_id") == "c2") == 1,
+        )
     finally:
         os.chdir(old_cwd)
 

@@ -58,6 +58,7 @@ jev_eval.py 的 questions.json 完全兼容（noul/choice/score 三类，
   oos_question_set_v3.json（默认）/ oos_question_set_v2.json（--v2）/
   oos_question_set_v1.json（--v1）+ stdout 抽样摘要
 """
+
 from __future__ import annotations
 
 import argparse
@@ -75,17 +76,23 @@ sys.path.insert(0, str(HERE))
 from jev_common import db_rows  # noqa: E402
 
 TRIPLES = HERE / "review_data" / "triples.jsonl"
-REPLAYS = [HERE / "replay" / "replay-20260922-020710.jsonl",
-           HERE / "replay" / "replay-20260922-030434.jsonl"]
+REPLAYS = [
+    HERE / "replay" / "replay-20260922-020710.jsonl",
+    HERE / "replay" / "replay-20260922-030434.jsonl",
+]
 
 SEED = 20261014
-N_EVENTS = 36          # 36 事件 × 2 题 = 72 题（≥60）
+N_EVENTS = 36  # 36 事件 × 2 题 = 72 题（≥60）
 MIN_PER_MARKET = 4
 BANDS = (("low", 0.0, 0.5), ("mid", 0.5, 0.7), ("high", 0.7, 1.01))
 BAND_LABEL = {"low": "低（0-0.5）", "mid": "中（0.5-0.7）", "high": "高（0.7-1）"}
 MARKETS = ("CN", "US", "HK", "CRYPTO")
-MARKET_LABEL = {"CN": "CN（A股）", "US": "US（美股）", "HK": "HK（港股）",
-                "CRYPTO": "CRYPTO（加密货币）"}
+MARKET_LABEL = {
+    "CN": "CN（A股）",
+    "US": "US（美股）",
+    "HK": "HK（港股）",
+    "CRYPTO": "CRYPTO（加密货币）",
+}
 # 市场域字样（含标签全形与裸键，用于 v2 脱敏与断言；只对真值市场使用）
 MARKET_PAT = {
     "CN": re.compile(r"CN（A股）|\bCN\b|A股"),
@@ -127,7 +134,8 @@ def fetch_fresh() -> list[dict]:
         "coalesce(a.candidate_score,0), coalesce(a.candidate_reason,''), "
         "p.pool_date, coalesce(p.pool_type,'') "
         "FROM v2_candidate_asset a JOIN v2_candidate_pool p ON a.pool_id = p.pool_id "
-        "ORDER BY p.pool_date DESC, a.candidate_score DESC NULLS LAST")
+        "ORDER BY p.pool_date DESC, a.candidate_score DESC NULLS LAST"
+    )
     fresh, dropped_missing = [], 0
     for cid, code, mkt, score, reason, pd_, ptype in rows:
         if cid in tri_ids or (str(code), str(pd_)) in rep_pairs:
@@ -136,10 +144,17 @@ def fetch_fresh() -> list[dict]:
         if score <= 0:  # 评分缺失（HK v1 通道）不参与分层
             dropped_missing += 1
             continue
-        fresh.append({"candidate_id": cid, "ts_code": str(code),
-                      "market": str(mkt or "?"), "score": score,
-                      "reason": str(reason or ""), "pool_date": str(pd_),
-                      "pool_type": str(ptype)})
+        fresh.append(
+            {
+                "candidate_id": cid,
+                "ts_code": str(code),
+                "market": str(mkt or "?"),
+                "score": score,
+                "reason": str(reason or ""),
+                "pool_date": str(pd_),
+                "pool_type": str(ptype),
+            }
+        )
     print(f"fresh 池：{len(fresh)} 事件（另排除 score=0 缺失 {dropped_missing} 条）")
     return fresh
 
@@ -150,9 +165,11 @@ def allocate(fresh: list[dict]) -> dict[str, list[dict]]:
     for r in fresh:
         by_mkt[r["market"]].append(r)
     totals = {m: len(by_mkt[m]) for m in MARKETS if by_mkt.get(m)}
-    sq = {m: max(MIN_PER_MARKET, n ** 0.5) for m, n in totals.items()}
-    quota = {m: max(MIN_PER_MARKET, round(N_EVENTS * v / sum(sq.values())))
-             for m, v in sq.items()}
+    sq = {m: max(MIN_PER_MARKET, n**0.5) for m, n in totals.items()}
+    quota = {
+        m: max(MIN_PER_MARKET, round(N_EVENTS * v / sum(sq.values())))
+        for m, v in sq.items()
+    }
     # 配额不得超过域内可用量
     quota = {m: min(q, totals[m]) for m, q in quota.items()}
     rng = random.Random(SEED)
@@ -166,9 +183,11 @@ def allocate(fresh: list[dict]) -> dict[str, list[dict]]:
         remain = q
         for name, _, _ in sorted(BANDS, key=lambda b: len(bands[b[0]])):
             avail = len(bands[name])
-            want = round(remain * avail / max(1, sum(len(bands[b[0]])
-                                                     for b in BANDS
-                                                     if bands.get(b[0]))))
+            want = round(
+                remain
+                * avail
+                / max(1, sum(len(bands[b[0]]) for b in BANDS if bands.get(b[0])))
+            )
             take = min(avail, want)
             band_quota[name] = take
             remain -= take
@@ -184,8 +203,10 @@ def allocate(fresh: list[dict]) -> dict[str, list[dict]]:
             pool = sorted(bands.get(name, []), key=lambda r: r["candidate_id"])
             sel += rng.sample(pool, min(band_quota.get(name, 0), len(pool)))
         picked[m] = sel
-        print(f"  {m:<7} 配额 {q}（域样本 {totals[m]:>4}）→ 实抽 {len(sel)} "
-              f"按段 {dict(Counter(band_of(r['score']) for r in sel))}")
+        print(
+            f"  {m:<7} 配额 {q}（域样本 {totals[m]:>4}）→ 实抽 {len(sel)} "
+            f"按段 {dict(Counter(band_of(r['score']) for r in sel))}"
+        )
     return picked
 
 
@@ -196,16 +217,17 @@ def assert_no_leak(q: dict, r: dict, hide_market: bool, hide_score: bool) -> Non
         if MARKET_PAT[r["market"]].search(state):
             raise AssertionError(
                 f"{q['id']}: 脱敏断言失败——答案市场域标识反查命中 state"
-                f"（market={r['market']}，只报键不报值上下文）")
+                f"（market={r['market']}，只报键不报值上下文）"
+            )
     if hide_score:
         if "策略评分 [REDACTED]" not in state:
             raise AssertionError(
-                f"{q['id']}: 脱敏断言失败——state 未含 [REDACTED] 占位（脱敏未生效）")
+                f"{q['id']}: 脱敏断言失败——state 未含 [REDACTED] 占位（脱敏未生效）"
+            )
         # 只查精确注入格式（%.4f）：裸 str(score) 子串会误命中理由中的
         # 无关数字段（判例：score=1.0 vs 理由「rsi=41.0072」含 "1.0"）
         if f"{r['score']:.4f}" in state:
-            raise AssertionError(
-                f"{q['id']}: 脱敏断言失败——答案评分数值反查命中 state")
+            raise AssertionError(f"{q['id']}: 脱敏断言失败——答案评分数值反查命中 state")
 
 
 def redact_state(state: str, r: dict, hide_market: bool, hide_score: bool) -> str:
@@ -238,20 +260,28 @@ def make_questions(picked: dict[str, list[dict]], version: str = "v2") -> list[d
     if version == "v3":
         score_evs = collect_score_events(picked)
         v3_median = statistics.median(r["score"] for r in score_evs)
-        print(f"v3 score 判据：{len(score_evs)} 个 score 事件评分中位数 = "
-              f"{v3_median:.6f}（≥ 中位 → FOCUS）")
+        print(
+            f"v3 score 判据：{len(score_evs)} 个 score 事件评分中位数 = "
+            f"{v3_median:.6f}（≥ 中位 → FOCUS）"
+        )
     for m in MARKETS:
         for r in picked.get(m, []):
             # 该事件两题分别考什么（4 循环 × 2 交替），决定 state 脱敏面
-            kind = idx % 4                      # ① noul：0/1=评分 陈述 2/3=市场 陈述
-            q2_is_score = idx % 2 == 1          # ② score 档位（否则 choice 市场域）
+            kind = idx % 4  # ① noul：0/1=评分 陈述 2/3=市场 陈述
+            q2_is_score = idx % 2 == 1  # ② score 档位（否则 choice 市场域）
             hide_market = kind in (2, 3) or not q2_is_score
             hide_score = kind in (0, 1) or q2_is_score
-            src = {"candidate_id": r["candidate_id"], "pool_date": r["pool_date"],
-                   "market": r["market"], "score": r["score"]}
-            state = (f"候选信号事件（{r['pool_date']}，{MARKET_LABEL.get(r['market'], r['market'])}，"
-                     f"池类型 {r['pool_type'] or '未标注'}）：标的 {r['ts_code']}，"
-                     f"策略评分 {r['score']:.4f}。信号理由：{r['reason'][:200] or '（无理由文本）'}")
+            src = {
+                "candidate_id": r["candidate_id"],
+                "pool_date": r["pool_date"],
+                "market": r["market"],
+                "score": r["score"],
+            }
+            state = (
+                f"候选信号事件（{r['pool_date']}，{MARKET_LABEL.get(r['market'], r['market'])}，"
+                f"池类型 {r['pool_type'] or '未标注'}）：标的 {r['ts_code']}，"
+                f"策略评分 {r['score']:.4f}。信号理由：{r['reason'][:200] or '（无理由文本）'}"
+            )
             if version in ("v2", "v3"):
                 state = redact_state(state, r, hide_market, hide_score)
             # ① noul：真/假事实陈述，4 循环（评分真/评分假/市场真/市场假）
@@ -262,13 +292,20 @@ def make_questions(picked: dict[str, list[dict]], version: str = "v2") -> list[d
                     if kind == 0:
                         claimed = lv
                         ans = True
-                    else:   # 假陈述：确定性偏移到下一档（保证与真值不同）
+                    else:  # 假陈述：确定性偏移到下一档（保证与真值不同）
                         order = [b[0] for b in BANDS]
                         claimed = order[(order.index(lv) + 1) % len(order)]
                         ans = False
-                    qs.append({"id": f"oos-n{n + 1:03d}", "type": "noul", "state": state,
-                               "question": f"该候选策略评分所处档位为 {BAND_LABEL[claimed]}。",
-                               "answer": ans, "src": src})
+                    qs.append(
+                        {
+                            "id": f"oos-n{n + 1:03d}",
+                            "type": "noul",
+                            "state": state,
+                            "question": f"该候选策略评分所处档位为 {BAND_LABEL[claimed]}。",
+                            "answer": ans,
+                            "src": src,
+                        }
+                    )
                 else:
                     shown = r["score"]
                     if kind == 1:  # 扰动 ±0.05 且夹到 [0,1]，保证与真值不同
@@ -276,18 +313,32 @@ def make_questions(picked: dict[str, list[dict]], version: str = "v2") -> list[d
                         if shown == round(r["score"], 4):
                             shown = round(min(1.0, max(0.0, r["score"] - 0.05)), 4)
                     ans = kind == 0
-                    qs.append({"id": f"oos-n{n + 1:03d}", "type": "noul", "state": state,
-                               "question": f"该候选的策略评分为 {shown:.4f}。",
-                               "answer": ans, "src": src})
+                    qs.append(
+                        {
+                            "id": f"oos-n{n + 1:03d}",
+                            "type": "noul",
+                            "state": state,
+                            "question": f"该候选的策略评分为 {shown:.4f}。",
+                            "answer": ans,
+                            "src": src,
+                        }
+                    )
                 noul_ans[ans] += 1
                 n += 1
             else:
                 wrong = next(x for x in MARKETS if x != r["market"])
                 ans = kind == 2
                 claimed = r["market"] if ans else wrong
-                qs.append({"id": f"oos-n{n + 1:03d}", "type": "noul", "state": state,
-                           "question": f"该候选信号属于 {MARKET_LABEL[claimed]} 市场域。",
-                           "answer": ans, "src": src})
+                qs.append(
+                    {
+                        "id": f"oos-n{n + 1:03d}",
+                        "type": "noul",
+                        "state": state,
+                        "question": f"该候选信号属于 {MARKET_LABEL[claimed]} 市场域。",
+                        "answer": ans,
+                        "src": src,
+                    }
+                )
                 noul_ans[ans] += 1
                 n += 1
             # ② choice（市场域）/ score（评分档位）交替；choice 正确项位置轮转
@@ -296,30 +347,51 @@ def make_questions(picked: dict[str, list[dict]], version: str = "v2") -> list[d
                 rot = idx % 4
                 opts = opts[rot:] + opts[:rot]
                 ai = opts.index(r["market"])
-                qs.append({"id": f"oos-c{c + 1:03d}", "type": "choice", "state": state,
-                           "question": "该候选信号属于哪个市场域？",
-                           "options": [MARKET_LABEL[x] for x in opts],
-                           "answer_index": ai, "src": src})
+                qs.append(
+                    {
+                        "id": f"oos-c{c + 1:03d}",
+                        "type": "choice",
+                        "state": state,
+                        "question": "该候选信号属于哪个市场域？",
+                        "options": [MARKET_LABEL[x] for x in opts],
+                        "answer_index": ai,
+                        "src": src,
+                    }
+                )
                 c += 1
             else:
                 if version == "v3":
                     # v3 修复：档位三选一 → FOCUS/PASS 两档二分类（判据=中位数，
                     # 基线 50%）；state 与 v2 同款脱敏（评分 [REDACTED]）
                     focus = r["score"] >= v3_median
-                    qs.append({"id": f"oos-s{s + 1:03d}", "type": "score", "state": state,
-                               "question": "该候选的策略评分（数值已隐去）在同期候选中处于中位水平之上还是之下？"
-                                           "换作跟进决策：应 FOCUS 还是 PASS？",
-                               "levels": ["PASS（评分低于同期候选中位水平，不予跟进）",
-                                          "FOCUS（评分达到同期候选中位水平及以上，予以跟进）"],
-                               "answer_level": 1 if focus else 0,
-                               "src": src})
+                    qs.append(
+                        {
+                            "id": f"oos-s{s + 1:03d}",
+                            "type": "score",
+                            "state": state,
+                            "question": "该候选的策略评分（数值已隐去）在同期候选中处于中位水平之上还是之下？"
+                            "换作跟进决策：应 FOCUS 还是 PASS？",
+                            "levels": [
+                                "PASS（评分低于同期候选中位水平，不予跟进）",
+                                "FOCUS（评分达到同期候选中位水平及以上，予以跟进）",
+                            ],
+                            "answer_level": 1 if focus else 0,
+                            "src": src,
+                        }
+                    )
                 else:
                     lv = band_of(r["score"])
-                    qs.append({"id": f"oos-s{s + 1:03d}", "type": "score", "state": state,
-                               "question": "该候选策略评分所处的档位是？",
-                               "levels": ["低（0-0.5）", "中（0.5-0.7）", "高（0.7-1）"],
-                               "answer_level": ("low", "mid", "high").index(lv),
-                               "src": src})
+                    qs.append(
+                        {
+                            "id": f"oos-s{s + 1:03d}",
+                            "type": "score",
+                            "state": state,
+                            "question": "该候选策略评分所处的档位是？",
+                            "levels": ["低（0-0.5）", "中（0.5-0.7）", "高（0.7-1）"],
+                            "answer_level": ("low", "mid", "high").index(lv),
+                            "src": src,
+                        }
+                    )
                 s += 1
             # 脱敏断言（v2/v3）：答案信息反查 state，命中 raise
             if version in ("v2", "v3"):
@@ -334,11 +406,16 @@ def make_questions(picked: dict[str, list[dict]], version: str = "v2") -> list[d
             if cnt / len(sc) > 0.6:
                 raise AssertionError(
                     f"v3 score 自检失败：{name} 占比 {cnt}/{len(sc)} 超过 60%，"
-                    f"题集仍偏置，禁止落盘（判据中位数 {v3_median:.6f}）")
-        print(f"v3 score 自检通过：PASS/FOCUS = {dist.get(0, 0)}/{dist.get(1, 0)}"
-              f"（单类均 ≤60%）")
-    print(f"出题（{version}）：noul {n}（真/假 {noul_ans[True]}/{noul_ans[False]}）+ "
-          f"choice {c} + score {s} = {len(qs)} 题")
+                    f"题集仍偏置，禁止落盘（判据中位数 {v3_median:.6f}）"
+                )
+        print(
+            f"v3 score 自检通过：PASS/FOCUS = {dist.get(0, 0)}/{dist.get(1, 0)}"
+            f"（单类均 ≤60%）"
+        )
+    print(
+        f"出题（{version}）：noul {n}（真/假 {noul_ans[True]}/{noul_ans[False]}）+ "
+        f"choice {c} + score {s} = {len(qs)} 题"
+    )
     return qs
 
 
@@ -383,11 +460,17 @@ V2_SCORE_NOTE = """# oos_question_set_v2.json score 子卷缺陷说明（score �
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="OOS 题集生成（默认 v3：score=FOCUS/PASS 二分类）")
-    ap.add_argument("--v1", action="store_true",
-                    help="复现 v1 旧口径（含已知泄题缺陷，勿用于评估）")
-    ap.add_argument("--v2", action="store_true",
-                    help="复现 v2 口径（score 子卷档位偏置缺陷，score 子卷勿用于认定）")
+    ap = argparse.ArgumentParser(
+        description="OOS 题集生成（默认 v3：score=FOCUS/PASS 二分类）"
+    )
+    ap.add_argument(
+        "--v1", action="store_true", help="复现 v1 旧口径（含已知泄题缺陷，勿用于评估）"
+    )
+    ap.add_argument(
+        "--v2",
+        action="store_true",
+        help="复现 v2 口径（score 子卷档位偏置缺陷，score 子卷勿用于认定）",
+    )
     args = ap.parse_args()
     version = "v1" if args.v1 else ("v2" if args.v2 else "v3")
     out = HERE / f"oos_question_set_{version}.json"
@@ -428,24 +511,33 @@ def main() -> None:
         ],
         "stratum_base": {"by_market": dict(by_mkt), "by_band": dict(by_band)},
         "answer_distribution": {
-            "noul_true_false": [sum(1 for q in qs if q["type"] == "noul" and q["answer"]),
-                                sum(1 for q in qs if q["type"] == "noul" and not q["answer"])],
-            "choice_answer_index": dict(Counter(q["answer_index"] for q in qs
-                                                if q["type"] == "choice")),
-            "score_answer_level": dict(Counter(q["answer_level"] for q in qs
-                                               if q["type"] == "score")),
+            "noul_true_false": [
+                sum(1 for q in qs if q["type"] == "noul" and q["answer"]),
+                sum(1 for q in qs if q["type"] == "noul" and not q["answer"]),
+            ],
+            "choice_answer_index": dict(
+                Counter(q["answer_index"] for q in qs if q["type"] == "choice")
+            ),
+            "score_answer_level": dict(
+                Counter(q["answer_level"] for q in qs if q["type"] == "score")
+            ),
         },
         "known_limits": (
-            ["fresh 池评分天然集中 high 段（low/mid 稀薄）——v3 已用 FOCUS/PASS "
-             "二分类规避档位偏置（见 score_fix），但题面判据是「同批中位数」这一"
-             "相对水平约定，非独立业务标注，判读时注意",
-             "加密域事件少，配额下限保证其存在但样本代表性有限"]
-            if version == "v3" else
-            ["mid 段（0.5-0.7）在 fresh 池内天然稀薄，score 题 answer_level 分布"
-             "随数据偏置（已在 answer_distribution 披露），判读时注意",
-             "加密域事件少，配额下限保证其存在但样本代表性有限"]),
+            [
+                "fresh 池评分天然集中 high 段（low/mid 稀薄）——v3 已用 FOCUS/PASS "
+                "二分类规避档位偏置（见 score_fix），但题面判据是「同批中位数」这一"
+                "相对水平约定，非独立业务标注，判读时注意",
+                "加密域事件少，配额下限保证其存在但样本代表性有限",
+            ]
+            if version == "v3"
+            else [
+                "mid 段（0.5-0.7）在 fresh 池内天然稀薄，score 题 answer_level 分布"
+                "随数据偏置（已在 answer_distribution 披露），判读时注意",
+                "加密域事件少，配额下限保证其存在但样本代表性有限",
+            ]
+        ),
         "how_to_run": "评估执行需将 jev_eval.py QUESTIONS_FILE 指向本文件；"
-                      "是否跑、何时跑由老田拍板（本生成不消耗 AI 调用）",
+        "是否跑、何时跑由老田拍板（本生成不消耗 AI 调用）",
     }
     if version in ("v2", "v3"):
         meta["redaction_rules"] = [
@@ -460,35 +552,41 @@ def main() -> None:
             " noul 评分题面按上述规则脱敏",
         ]
     if version == "v2":
-        meta["v1_flaw_note"] = ("v1 state 明文含市场域与评分（开卷题，无区分度），"
-                                "缺陷说明见 oos_question_set_v1_FLAWED.note.md")
+        meta["v1_flaw_note"] = (
+            "v1 state 明文含市场域与评分（开卷题，无区分度），"
+            "缺陷说明见 oos_question_set_v1_FLAWED.note.md"
+        )
         (HERE / "oos_question_set_v1_FLAWED.note.md").write_text(
-            FLAWED_NOTE, encoding="utf-8")
+            FLAWED_NOTE, encoding="utf-8"
+        )
     if version == "v3":
         score_evs = collect_score_events(picked)
         med = statistics.median(r["score"] for r in score_evs)
-        meta["v1_flaw_note"] = ("v1 state 明文含市场域与评分（开卷题，无区分度），"
-                                "缺陷说明见 oos_question_set_v1_FLAWED.note.md")
+        meta["v1_flaw_note"] = (
+            "v1 state 明文含市场域与评分（开卷题，无区分度），"
+            "缺陷说明见 oos_question_set_v1_FLAWED.note.md"
+        )
         meta["score_fix"] = {
             "problem": "v2 score 子卷 18 题答案档位 {2:16, 0:1, 1:1}（fresh 池评分"
-                       "天然集中 high 段，抽题余量回补大段所致），全猜档 2 基线 88.9%，"
-                       "v2 首评 score 72.2% 低于基线，无正区分度（见 "
-                       "oos_question_set_v2_score_biased.note.md）",
+            "天然集中 high 段，抽题余量回补大段所致），全猜档 2 基线 88.9%，"
+            "v2 首评 score 72.2% 低于基线，无正区分度（见 "
+            "oos_question_set_v2_score_biased.note.md）",
             "fix_option": "b（改题型）：score 题从档位三选一改为 FOCUS/PASS 两档"
-                          "二分类；备选 a（分档均衡抽题）因 fresh 池 low/mid 段天然"
-                          "稀薄、强行均衡需大幅缩量（18→2~3 题）不可行而弃用",
+            "二分类；备选 a（分档均衡抽题）因 fresh 池 low/mid 段天然"
+            "稀薄、强行均衡需大幅缩量（18→2~3 题）不可行而弃用",
             "why_b": "二分类平凡基线 50%，区分度天花板高；判据贴近毕业判据真实用途"
-                     "（候选跟/弃决策）",
+            "（候选跟/弃决策）",
             "judge_rule": "score >= 同批 score 事件评分中位数 → FOCUS(1)，"
-                          "否则 PASS(0)；判据由源数据确定性推导",
+            "否则 PASS(0)；判据由源数据确定性推导",
             "judge_median": round(med, 6),
             "score_event_count": len(score_evs),
             "guard": "生成器内置断言：FOCUS/PASS 单类占比超 60% 即 raise，"
-                     "不落盘；脱敏沿 v2 规则（评分 [REDACTED]，断言反查 0 泄露）",
+            "不落盘；脱敏沿 v2 规则（评分 [REDACTED]，断言反查 0 泄露）",
             "unchanged": "noul/choice 子卷与 v2 逐字一致（同种子同抽题同脱敏）",
         }
         (HERE / "oos_question_set_v2_score_biased.note.md").write_text(
-            V2_SCORE_NOTE, encoding="utf-8")
+            V2_SCORE_NOTE, encoding="utf-8"
+        )
 
     bank = {"meta": meta, "questions": qs}
     out.write_text(json.dumps(bank, ensure_ascii=False, indent=2), encoding="utf-8")

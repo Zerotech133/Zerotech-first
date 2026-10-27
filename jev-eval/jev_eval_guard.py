@@ -12,6 +12,7 @@
   python jev_eval_guard.py                # 判定最新一份（无论达标与否都推摘要）
   python jev_eval_guard.py --no-push      # 只打印不推送
 """
+
 from __future__ import annotations
 
 import json
@@ -25,9 +26,9 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf8"):
 
 HERE = Path(__file__).parent
 RESULTS = HERE / "results"
-ACC_MIN = 0.90          # 总准确率地板
-TYPE_MIN = 0.95         # noul/choice 分题型地板（生产只用这两种题型）
-MAX_AGE_DAYS = 3        # 结果文件超 N 天 → 评测链路故障提示
+ACC_MIN = 0.90  # 总准确率地板
+TYPE_MIN = 0.95  # noul/choice 分题型地板（生产只用这两种题型）
+MAX_AGE_DAYS = 3  # 结果文件超 N 天 → 评测链路故障提示
 
 
 def push(text: str) -> None:
@@ -36,7 +37,10 @@ def push(text: str) -> None:
     msg_file.write_text(text, encoding="utf-8")
     r = subprocess.run(
         [sys.executable, str(HERE / "backup_alert.py"), str(msg_file)],
-        capture_output=True, text=True, timeout=90)
+        capture_output=True,
+        text=True,
+        timeout=90,
+    )
     print(f"推送 exit={r.returncode} {r.stdout.strip()[:120]}")
 
 
@@ -44,7 +48,9 @@ def main() -> int:
     no_push = "--no-push" in args
     files = sorted(RESULTS.glob("result-*.json"))
     if not files:
-        msg = "[Jev评测] results/ 无评测结果文件——月度评测任务未产出，请检查 run_eval.ps1"
+        msg = (
+            "[Jev评测] results/ 无评测结果文件——月度评测任务未产出，请检查 run_eval.ps1"
+        )
         print(msg)
         if not no_push:
             push(msg)
@@ -65,10 +71,13 @@ def main() -> int:
             problems.append(f"{t} 题型 {v:.1%} < {TYPE_MIN:.0%}（生产在用）")
 
     head = "⚠ [Jev评测] 基线漂移告警" if problems else "[Jev评测] 月度回归正常"
-    lines = [head, f"结果: {latest.name}（{s['run_at'][:16]}，repeats={s['repeats']}）",
-             f"总准确率 {s['accuracy']:.1%} / 一致率 {s['self_consistency']:.1%} / "
-             f"失败率 {s['error_rate']:.1%} / 延迟中位 {s['latency_ms_median']}ms",
-             f"分题型: {json.dumps(by_type, ensure_ascii=False)}"]
+    lines = [
+        head,
+        f"结果: {latest.name}（{s['run_at'][:16]}，repeats={s['repeats']}）",
+        f"总准确率 {s['accuracy']:.1%} / 一致率 {s['self_consistency']:.1%} / "
+        f"失败率 {s['error_rate']:.1%} / 延迟中位 {s['latency_ms_median']}ms",
+        f"分题型: {json.dumps(by_type, ensure_ascii=False)}",
+    ]
     if s.get("high_conf_wrong_ids"):
         lines.append(f"高置信答错: {s['high_conf_wrong_ids']}")
     lines += [f"  - {p}" for p in problems]

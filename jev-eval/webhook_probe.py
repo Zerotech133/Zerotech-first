@@ -14,21 +14,29 @@ if not url:
     print("WEBHOOK_TEST_NO_CFG")
     sys.exit(1)
 
-body = {"msg_type": "text",
-        "content": {"text": "[ALERT] webhook channel test "
-                             + time.strftime("%Y%m%d_%H%M%S")
-                             + " (no action needed)"}}
+body = {
+    "msg_type": "text",
+    "content": {
+        "text": "[ALERT] webhook channel test "
+        + time.strftime("%Y%m%d_%H%M%S")
+        + " (no action needed)"
+    },
+}
 if secret:
     import base64 as b64
     import hashlib as sha
     import hmac as hmc
+
     ts = str(int(time.time()))
     dig = hmc.new(ts + "\n" + secret, digestmod=sha.sha256).digest()
     body["timestamp"] = ts
     body["sign"] = b64.b64encode(dig).decode("ascii")
 
-req = rq.Request(url, data=json.dumps(body).encode("utf-8"),
-                 headers={"Content-Type": "application/json"})
+req = rq.Request(
+    url,
+    data=json.dumps(body).encode("utf-8"),
+    headers={"Content-Type": "application/json"},
+)
 try:
     with rq.urlopen(req, timeout=15) as r:
         print("HTTP", r.status)

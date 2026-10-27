@@ -15,6 +15,7 @@
 
 B 通道在役（K-STOCK-395），禁增新功能；退役并轨待老田拍板（2026-10-19 派工单 FB-A）
 """
+
 from __future__ import annotations
 
 import json
@@ -33,7 +34,10 @@ from jev_common import NOOP, atomic_write_text, install_stop, log, new_trace, se
 
 if jc.METRICS:
     from prometheus_client import Counter
-    C_ACTION = Counter("jev_card_actions_total", "卡片按钮回调处理次数", ["action", "result"])
+
+    C_ACTION = Counter(
+        "jev_card_actions_total", "卡片按钮回调处理次数", ["action", "result"]
+    )
 else:
     C_ACTION = NOOP
 
@@ -44,9 +48,9 @@ HERE = Path(__file__).parent
 IGNORE_FILE = HERE / "gate_ignored.json"
 PENDING_FILE = HERE / "card_update_pending.jsonl"
 READY_TIMEOUT_SEC = 15  # ready 标记等待上限，超时判定启动失败
-CARD_RETRY = 3          # 卡片更新重试次数
-DEDUP_MAX = 1000        # 事件去重窗口（飞书重投间隔在分钟级，内存集合足够）
-METRICS_PORT = 9104     # P1-6 Prometheus /metrics 端点
+CARD_RETRY = 3  # 卡片更新重试次数
+DEDUP_MAX = 1000  # 事件去重窗口（飞书重投间隔在分钟级，内存集合足够）
+METRICS_PORT = 9104  # P1-6 Prometheus /metrics 端点
 
 # 优雅退出（P1-1：收敛到 jev_common）
 _STOP = install_stop()
@@ -56,7 +60,11 @@ def _load_allowed_operators() -> set:
     """操作者白名单（P1-5）：LARK_ALLOWED_OPERATORS 显式配置优先（逗号分隔 open_id）；
     未配置时默认仅允许告警收件人本人（卡片只发给他，白名单也只认他）。
     空集 = 未获知任何允许者（仍会拒绝而非放行所有）。"""
-    explicit = {s.strip() for s in os.environ.get("LARK_ALLOWED_OPERATORS", "").split(",") if s.strip()}
+    explicit = {
+        s.strip()
+        for s in os.environ.get("LARK_ALLOWED_OPERATORS", "").split(",")
+        if s.strip()
+    }
     if explicit:
         return explicit
     recipient = os.environ.get("LARK_ALERT_OPEN_ID", "").strip()
@@ -82,26 +90,30 @@ def load_ignored() -> list:
                     out.append({"alert_id": it, "title": "", "ts": ""})
             return out
         except Exception as e:  # noqa: BLE001
-            log(f"gate_ignored.json 解析失败，忽略集清零（已忽略告警恢复推送）: {str(e)[:80]}",
-                level="warn")  # C2批2
+            log(
+                f"gate_ignored.json 解析失败，忽略集清零（已忽略告警恢复推送）: {str(e)[:80]}",
+                level="warn",
+            )  # C2批2
             return []
     return []
 
 
 def save_ignored(ignored: list) -> None:
-    atomic_write_text(IGNORE_FILE,
-                      json.dumps(ignored[-2000:], ensure_ascii=False))
+    atomic_write_text(IGNORE_FILE, json.dumps(ignored[-2000:], ensure_ascii=False))
 
 
 def fetch_alert_title(alert_id: str) -> str:
     """查 v2_alert.title 供忽略模式记录（K-STOCK-404）。查询失败返回 ''。"""
     try:
-        rows = jc.db_rows("SELECT title FROM v2_alert WHERE alert_id=%s",
-                          (alert_id,))
+        rows = jc.db_rows("SELECT title FROM v2_alert WHERE alert_id=%s", (alert_id,))
         return (rows[0][0] or "") if rows else ""
     except Exception as e:  # noqa: BLE001
-        log("忽略记录查 title 失败（降级仅记 alert_id）", alert_id=alert_id,
-            err=str(e)[:100], level="warn")
+        log(
+            "忽略记录查 title 失败（降级仅记 alert_id）",
+            alert_id=alert_id,
+            err=str(e)[:100],
+            level="warn",
+        )
         return ""
 
 
@@ -140,7 +152,8 @@ def ack_alert_in_db(alert_id: str) -> bool:
         n = jc.db_execute(
             "UPDATE v2_alert SET status='ACKED', acked_at=now() "
             "WHERE alert_id=%s AND status='OPEN'",
-            (alert_id,))
+            (alert_id,),
+        )
         log("数据库回写", alert_id=alert_id, rows=n)
         return True
     except Exception as e:  # noqa: BLE001
@@ -149,15 +162,18 @@ def ack_alert_in_db(alert_id: str) -> bool:
 
 
 # ── 卡片更新（带重试） ──────────────────────────────────────
-def _mutate_card(card_content: str, status_text: str, template: str,
-                 operator_id: str) -> str | None:
+def _mutate_card(
+    card_content: str, status_text: str, template: str, operator_id: str
+) -> str | None:
     """把原始卡片 JSON 改为终态（header 变色 + 按钮区替换为状态文本）。
     K-STOCK-370：双格式兼容——v1 卡（elements）与 2.0 卡（body.elements）
     的按钮区都是最后一个元素，替换逻辑同构。"""
     try:
         card = json.loads(card_content)
     except Exception:  # noqa: BLE001
-        return None  # 豁免（C2批2）：调用方 update_card 已落日志（card_content 解析失败）
+        return (
+            None  # 豁免（C2批2）：调用方 update_card 已落日志（card_content 解析失败）
+        )
     if "header" in card:
         card["header"]["template"] = template
     elements = card.get("elements") or card.get("body", {}).get("elements") or []
@@ -178,20 +194,37 @@ def _update_card_api(message_id: str, card_json: str) -> str:
     （REST 实测新旧两种卡片格式均通过，lark-cli api 通道验证 ok）。"""
     # K-STOCK-370 fix：PATCH 的 content 字段要求是 JSON 字符串而非嵌套对象
     # （对象形态报 9499 Invalid parameters；REST 手测时用的是字符串所以通过）
-    data = json.dumps({"msg_type": "interactive", "content": card_json},
-                      ensure_ascii=False)
+    data = json.dumps(
+        {"msg_type": "interactive", "content": card_json}, ensure_ascii=False
+    )
     try:
         jc.lark_cli_json(
-            ["api", "PATCH", f"/open-apis/im/v1/messages/{message_id}", "--as", "bot",
-             "--data", data],
-            timeout=15, kind="card_update")
+            [
+                "api",
+                "PATCH",
+                f"/open-apis/im/v1/messages/{message_id}",
+                "--as",
+                "bot",
+                "--data",
+                data,
+            ],
+            timeout=15,
+            kind="card_update",
+        )
         return ""
     except Exception as e:  # noqa: BLE001
-        return str(e)[:200]  # 豁免（C2批2）：错误信息随返回值上抛，update_card 重试链已有日志
+        return str(e)[
+            :200
+        ]  # 豁免（C2批2）：错误信息随返回值上抛，update_card 重试链已有日志
 
 
-def update_card(message_id: str, card_content: str, status_text: str,
-                template: str, operator_id: str) -> bool:
+def update_card(
+    message_id: str,
+    card_content: str,
+    status_text: str,
+    template: str,
+    operator_id: str,
+) -> bool:
     """更新卡片：3 次指数退避重试。无法构造卡片时视为完成（不重试）。"""
     if not message_id or not card_content:
         log("message_id/card_content 为空，跳过卡片更新（仅记录操作）")
@@ -209,19 +242,31 @@ def update_card(message_id: str, card_content: str, status_text: str,
             return True
         if i < CARD_RETRY - 1:
             wait = 2 * (i + 1)
-            log(f"卡片更新失败（{i + 1}/{CARD_RETRY}），{wait}s 后重试: {last_err}",
-                level="warn")
+            log(
+                f"卡片更新失败（{i + 1}/{CARD_RETRY}），{wait}s 后重试: {last_err}",
+                level="warn",
+            )
             time.sleep(wait)
     log(f"卡片更新失败（已重试 {CARD_RETRY} 次）: {last_err}", level="error")
     return False
 
 
 # ── 卡片更新 outbox：失败补偿，重启时冲刷 ───────────────────
-def append_pending(message_id: str, card_content: str, status_text: str,
-                   template: str, operator_id: str) -> None:
-    rec = {"ts": datetime.now().isoformat(timespec="seconds"), "message_id": message_id,
-           "card_content": card_content, "status_text": status_text,
-           "template": template, "operator_id": operator_id}
+def append_pending(
+    message_id: str,
+    card_content: str,
+    status_text: str,
+    template: str,
+    operator_id: str,
+) -> None:
+    rec = {
+        "ts": datetime.now().isoformat(timespec="seconds"),
+        "message_id": message_id,
+        "card_content": card_content,
+        "status_text": status_text,
+        "template": template,
+        "operator_id": operator_id,
+    }
     try:
         with PENDING_FILE.open("a", encoding="utf-8") as f:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
@@ -247,8 +292,13 @@ def flush_pending() -> None:
             continue  # 豁免（C2批2）：outbox 损坏行直接丢弃，正常容错
         # K-STOCK-369：旧记录（token 时代）无 message_id，update_card 会记日志跳过并
         # 返回 True（视为完成移出 outbox，避免死循环冲刷）
-        if update_card(rec.get("message_id", ""), rec["card_content"], rec["status_text"],
-                       rec["template"], rec["operator_id"]):
+        if update_card(
+            rec.get("message_id", ""),
+            rec["card_content"],
+            rec["status_text"],
+            rec["template"],
+            rec["operator_id"],
+        ):
             n_ok += 1
         else:
             remaining.append(line)
@@ -268,13 +318,18 @@ def handle_event(event: dict) -> None:
     try:
         action_value = json.loads(action_value_str)
     except Exception:  # noqa: BLE001
-        log(f"action_value 非 JSON，事件丢弃（操作者点击无响应风险）: "
-            f"{str(action_value_str)[:80]}", level="warn")  # C2批2
+        log(
+            f"action_value 非 JSON，事件丢弃（操作者点击无响应风险）: "
+            f"{str(action_value_str)[:80]}",
+            level="warn",
+        )  # C2批2
         return
 
     action = action_value.get("action", "")
     alert_id = action_value.get("alert_id", "")
-    source = action_value.get("source", "jev")  # jev=走 v2_alert 回写；backup=仅本地记录
+    source = action_value.get(
+        "source", "jev"
+    )  # jev=走 v2_alert 回写；backup=仅本地记录
     token = event.get("token", "")
     # K-STOCK-369：卡片更新改走 im/v1/messages PATCH，主键换 message_id
     # （token 仅留作去重键成分，30 分钟时效不再适合当更新凭据）
@@ -289,8 +344,12 @@ def handle_event(event: dict) -> None:
 
     # 操作者鉴权（P1-5）：非白名单用户点击只记录不处理，卡片按钮保留给授权人
     if ALLOWED_OPERATORS and operator_id not in ALLOWED_OPERATORS:
-        log("未授权操作者点击，已拒绝", alert_id=alert_id,
-            operator=operator_id, level="warn")
+        log(
+            "未授权操作者点击，已拒绝",
+            alert_id=alert_id,
+            operator=operator_id,
+            level="warn",
+        )
         C_ACTION.labels(action or "unknown", "denied").inc()
         return
 
@@ -308,9 +367,13 @@ def handle_event(event: dict) -> None:
             # K-STOCK-404：记录升级为 {alert_id, title, ts}——jev_gate 按
             # title 抑制同类新告警（alert_id 抑制无意义：点击时 DB 已 ACKED）
             ignored = load_ignored()
-            ignored.append({"alert_id": alert_id,
-                            "title": fetch_alert_title(alert_id),
-                            "ts": datetime.now().isoformat(timespec="seconds")})
+            ignored.append(
+                {
+                    "alert_id": alert_id,
+                    "title": fetch_alert_title(alert_id),
+                    "ts": datetime.now().isoformat(timespec="seconds"),
+                }
+            )
             save_ignored(ignored)
         status_text, template = "已忽略", "grey"
     else:
@@ -321,17 +384,29 @@ def handle_event(event: dict) -> None:
     if source == "backup":
         # 备份失败告警无 v2_alert 实体：仅追加本地确认记录（低频，直接 append）
         try:
-            rec = {"ts": datetime.now().isoformat(timespec="seconds"),
-                   "alert_id": alert_id, "action": action, "operator": operator_id}
+            rec = {
+                "ts": datetime.now().isoformat(timespec="seconds"),
+                "alert_id": alert_id,
+                "action": action,
+                "operator": operator_id,
+            }
             with (HERE / "backup_card_acks.jsonl").open("a", encoding="utf-8") as f:
                 f.write(json.dumps(rec, ensure_ascii=False) + "\n")
             db_ok = True
-            log("备份告警卡片操作已记录", alert_id=alert_id,
-                action=action, operator=operator_id)
+            log(
+                "备份告警卡片操作已记录",
+                alert_id=alert_id,
+                action=action,
+                operator=operator_id,
+            )
         except Exception as e:  # noqa: BLE001
             db_ok = False
-            log("备份告警确认记录写入失败", alert_id=alert_id,
-                err=str(e)[:150], level="error")
+            log(
+                "备份告警确认记录写入失败",
+                alert_id=alert_id,
+                err=str(e)[:150],
+                level="error",
+            )
     else:
         db_ok = ack_alert_in_db(alert_id)
     if not db_ok:
@@ -362,11 +437,17 @@ def main() -> int:
     log("飞书卡片回调监听器启动")
 
     proc = subprocess.Popen(
-        [jc.lark_cli_bin(), "event", "consume",
-         "card.action.trigger", "--as", "bot"],  # K-STOCK-396：bin/ 固定副本优先
+        [
+            jc.lark_cli_bin(),
+            "event",
+            "consume",
+            "card.action.trigger",
+            "--as",
+            "bot",
+        ],  # K-STOCK-396：bin/ 固定副本优先
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,  # 合并单流：防 stderr 缓冲填满导致子进程阻塞死锁
-        stdin=subprocess.PIPE,     # 保持 stdin 管道打开，防止 lark-cli EOF 退出
+        stdin=subprocess.PIPE,  # 保持 stdin 管道打开，防止 lark-cli EOF 退出
         text=True,
         encoding="utf-8",
         errors="replace",
@@ -407,7 +488,10 @@ def main() -> int:
             # stderr 的 token_missing 错误信封被 continue 吞掉，排障多耗数轮。
             log(f"cli-diag {line.strip()[:300]}")
     if not ready:
-        log(f"等待 ready 标记超时（{READY_TIMEOUT_SEC}s），终止子进程退出", level="error")
+        log(
+            f"等待 ready 标记超时（{READY_TIMEOUT_SEC}s），终止子进程退出",
+            level="error",
+        )
         try:
             proc.kill()
         except OSError:

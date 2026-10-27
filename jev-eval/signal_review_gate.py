@@ -33,6 +33,7 @@
   python signal_review_gate.py --loop          # 常驻（盘中每 10 分钟查新候选）
 环境变量：JEV_API_KEY（必需）；TUSHARE_TOKEN 可选（zhice .env.local 有则可复用）
 """
+
 from __future__ import annotations
 
 import atexit
@@ -46,8 +47,7 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 
 import jev_common as jc
-from jev_common import (C_JEV, atomic_write_text, db_rows, install_stop, log,
-                        set_module)
+from jev_common import C_JEV, atomic_write_text, db_rows, install_stop, log, set_module
 
 if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf8"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -55,10 +55,10 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf8"):
 HERE = Path(__file__).parent
 DATA = HERE / "review_data"
 DATA.mkdir(exist_ok=True)
-TRIPLES = DATA / "triples.jsonl"      # (快照, 判定) 三元组流
+TRIPLES = DATA / "triples.jsonl"  # (快照, 判定) 三元组流
 ARCHIVE = DATA / "triples_archive.jsonl"  # R12：终端记录归档（毕业统计仍全量读取）
-REGIME_CACHE = DATA / "regime.json"   # regime_fit 每日一判缓存
-SEEN_FILE = DATA / "seen.json"        # 已复核 candidate_id
+REGIME_CACHE = DATA / "regime.json"  # regime_fit 每日一判缓存
+SEEN_FILE = DATA / "seen.json"  # 已复核 candidate_id
 
 API_KEY = os.environ.get("JEV_API_KEY", "")
 BASE_URL = os.environ.get("JEV_BASE_URL", "https://api.typesafe.ai/v1").rstrip("/")
@@ -68,9 +68,9 @@ TS_PROXY = os.environ.get("TS_PROXY", "http://127.0.0.1:7890")
 TUSHARE_TOKEN = os.environ.get("TUSHARE_TOKEN", "")
 METRICS_PORT = 9102  # P1-6 Prometheus /metrics 端点
 
-N_OUTCOME_DAYS = 5          # 校准用 N 日收益窗口
-LOOKBACK_POOLS = 3          # 每次最多看最近 3 个候选池
-ANN_LOOKBACK_DAYS = 14      # 公告回看窗口
+N_OUTCOME_DAYS = 5  # 校准用 N 日收益窗口
+LOOKBACK_POOLS = 3  # 每次最多看最近 3 个候选池
+ANN_LOOKBACK_DAYS = 14  # 公告回看窗口
 # P1-1（A3 2026-10-07）：回填覆盖率守卫阈值 + 告警收件人（jev-gate.env.ps1 注入）
 COVERAGE_MIN = float(os.environ.get("JEV_BACKFILL_COVERAGE_MIN", "0.5"))
 LARK_ALERT_OPEN_ID = os.environ.get("LARK_ALERT_OPEN_ID", "")
@@ -115,10 +115,13 @@ def fetch_recent_pools() -> list[dict]:
     rows = psql(
         "SELECT pool_id, pool_date, pool_type, candidate_count FROM v2_candidate_pool "
         "ORDER BY pool_date DESC, id DESC LIMIT %s",
-        (LOOKBACK_POOLS,)
+        (LOOKBACK_POOLS,),
     )
-    return [{"pool_id": r[0], "pool_date": r[1], "pool_type": r[2], "count": r[3]}
-            for r in rows if len(r) == 4]
+    return [
+        {"pool_id": r[0], "pool_date": r[1], "pool_type": r[2], "count": r[3]}
+        for r in rows
+        if len(r) == 4
+    ]
 
 
 def fetch_candidates(pool_id: str) -> list[dict]:
@@ -127,10 +130,19 @@ def fetch_candidates(pool_id: str) -> list[dict]:
         "SELECT candidate_id, ts_code, market, coalesce(candidate_score,0), "
         "coalesce(candidate_reason,'') FROM v2_candidate_asset "
         "WHERE pool_id = %s ORDER BY candidate_score DESC NULLS LAST LIMIT 20",
-        (pool_id,))
-    return [{"candidate_id": r[0], "ts_code": r[1], "market": r[2],
-             "score": float(r[3] or 0), "reason": r[4]}
-            for r in rows if len(r) == 5]
+        (pool_id,),
+    )
+    return [
+        {
+            "candidate_id": r[0],
+            "ts_code": r[1],
+            "market": r[2],
+            "score": float(r[3] or 0),
+            "reason": r[4],
+        }
+        for r in rows
+        if len(r) == 5
+    ]
 
 
 def fetch_positions() -> list[str]:
@@ -148,7 +160,8 @@ def fetch_concepts(ts_code: str) -> list[str]:
         "SELECT c.concept_name FROM v2_concept_membership m "
         "JOIN v2_concept c ON c.id = m.concept_id "
         "WHERE m.symbol = %s LIMIT 10",
-        (ts_code,))
+        (ts_code,),
+    )
     return [r[0] for r in rows if r]
 
 
@@ -160,7 +173,8 @@ def fetch_concept_overlap(cand_concepts: list[str], held: list[str]) -> list[str
         "SELECT DISTINCT c.concept_name FROM v2_concept_membership m "
         "JOIN v2_concept c ON c.id = m.concept_id "
         "WHERE m.symbol = ANY(%s)",
-        (held,))
+        (held,),
+    )
     held_set = {r[0] for r in rows if r}
     return [c for c in cand_concepts if c in held_set]
 
@@ -188,12 +202,19 @@ def probe_ann_source() -> None:
 def tushare_anns(ts_code: str, lookback: int = ANN_LOOKBACK_DAYS) -> list[str]:
     """Tushare anns_d 拉个股公告标题（近 lookback 天）。需要 2000+ 积分权限。"""
     import tushare as ts  # zhice venv 里有；外部跑需 pip install tushare
+
     pro = ts.pro_api(TUSHARE_TOKEN)
     end = date.today()
     start = end - timedelta(days=lookback)
-    df = pro.anns_d(ts_code=ts_code, start_date=start.strftime("%Y%m%d"),
-                    end_date=end.strftime("%Y%m%d"), src="沪深京")
-    titles = df["title"].astype(str).tolist() if df is not None and "title" in df else []
+    df = pro.anns_d(
+        ts_code=ts_code,
+        start_date=start.strftime("%Y%m%d"),
+        end_date=end.strftime("%Y%m%d"),
+        src="沪深京",
+    )
+    titles = (
+        df["title"].astype(str).tolist() if df is not None and "title" in df else []
+    )
     return titles[:15]
 
 
@@ -211,7 +232,9 @@ def build_state(cand: dict, held: list[str], anns: list[str] | None) -> str:
     if anns is None:
         parts.append("近期公告: 数据源不可用（无法核验）")
     else:
-        parts.append("近期公告标题: " + ("; ".join(anns[:8]) if anns else "近14天无公告"))
+        parts.append(
+            "近期公告标题: " + ("; ".join(anns[:8]) if anns else "近14天无公告")
+        )
     return "\n".join(parts)
 
 
@@ -220,7 +243,7 @@ QUESTIONS = {
     "news_risk": {
         "type": "noul",
         "instructions": "该股近期公告中存在尚未被股价消化的实质利空"
-                        "（立案调查/减持/业绩暴雷/重大诉讼等）。",
+        "（立案调查/减持/业绩暴雷/重大诉讼等）。",
     },
     "concept_overlap": {
         "type": "noul",
@@ -229,8 +252,8 @@ QUESTIONS = {
     "signal_quality": {
         "type": "choice",
         "instructions": "基于信号理由文本，独立评估该买入信号的质量。"
-                        "注意：理由可能来自缠论/趋势动量/事件等不同策略，按各自逻辑评估；"
-                        "若理由只有入场标记而无实质依据，判 low。",
+        "注意：理由可能来自缠论/趋势动量/事件等不同策略，按各自逻辑评估；"
+        "若理由只有入场标记而无实质依据，判 low。",
         "criteria": {
             "high": "理由具体充分：结构/趋势/事件依据清晰且自洽",
             "mid": "理由基本成立但有瑕疵（依据单薄或缺少确认）",
@@ -251,7 +274,7 @@ REGIME_QUESTION = {
     "regime_fit": {
         "type": "noul",
         "instructions": "当前 A 股大盘环境整体适合执行新买入信号"
-                        "（无系统性风险事件主导、消息面未显著恶化）。",
+        "（无系统性风险事件主导、消息面未显著恶化）。",
     },
 }
 
@@ -283,9 +306,10 @@ def jev_ask(state: str, questions: dict) -> dict:
             except Exception as e:  # noqa: BLE001
                 last = e
             if i < 2:
-                wait = 2.0 * (2 ** i)
-                log(f"jev 重试 {i + 1}/2（{wait:.0f}s）: {str(last)[:80]}",
-                    level="warn")
+                wait = 2.0 * (2**i)
+                log(
+                    f"jev 重试 {i + 1}/2（{wait:.0f}s）: {str(last)[:80]}", level="warn"
+                )
                 time.sleep(wait)
         assert last is not None
         raise last
@@ -303,8 +327,10 @@ def regime_ok_today() -> float:
             if cache.get("date") == key:
                 return float(cache.get("regime_p", 1.0))
         except Exception as e:  # noqa: BLE001
-            log(f"regime.json 缓存解析失败，忽略缓存重新计算: {str(e)[:80]}",
-                level="warn")  # C2批2
+            log(
+                f"regime.json 缓存解析失败，忽略缓存重新计算: {str(e)[:80]}",
+                level="warn",
+            )  # C2批2
     p = 1.0
     if API_KEY:
         try:
@@ -314,18 +340,20 @@ def regime_ok_today() -> float:
                 "WHERE symbol IN ('000001.SH','sh000001') AND market='CN' "
                 "ORDER BY trade_date DESC LIMIT 5"
             )
-            idx_txt = "; ".join(f"{r[0]} 收盘 {float(r[1]):.0f}" for r in idx) or "无数据"
+            idx_txt = (
+                "; ".join(f"{r[0]} 收盘 {float(r[1]):.0f}" for r in idx) or "无数据"
+            )
             chg = ""
             if len(idx) >= 2:
-                chg = f"（近{len(idx)-1}个交易日累计 {(float(idx[0][1])/float(idx[-1][1])-1):+.1%}）"
+                chg = f"（近{len(idx) - 1}个交易日累计 {(float(idx[0][1]) / float(idx[-1][1]) - 1):+.1%}）"
             state = f"日期 {key}。上证指数近5个交易日: {idx_txt}{chg}。\n当前持仓 {len(fetch_positions())} 只。"
             ans = jev_ask(state, REGIME_QUESTION)
             p = float(ans.get("regime_fit", {}).get("noul", 1.0))
         except Exception as e:  # noqa: BLE001
             log(f"regime 判定失败（降级放行）: {str(e)[:100]}")
     atomic_write_text(
-        REGIME_CACHE,
-        json.dumps({"date": key, "regime_p": p}, ensure_ascii=False))
+        REGIME_CACHE, json.dumps({"date": key, "regime_p": p}, ensure_ascii=False)
+    )
     return p
 
 
@@ -364,7 +392,9 @@ def review_candidate(cand: dict, held: list[str], regime_p: float) -> dict:
     news_p = float(ans.get("news_risk", {}).get("noul", 0.0))
     overlap_p = float(ans.get("concept_overlap", {}).get("noul", 0.0))
     quality = ans.get("signal_quality", {}).get("choice", "unknown")
-    quality_p = (ans.get("signal_quality", {}).get("probabilities") or {}).get(quality, 0.0)
+    quality_p = (ans.get("signal_quality", {}).get("probabilities") or {}).get(
+        quality, 0.0
+    )
     crowd = ans.get("crowding", {}).get("choice", "unknown")
     crowd_p = (ans.get("crowding", {}).get("probabilities") or {}).get(crowd, 0.0)
 
@@ -384,8 +414,7 @@ def review_candidate(cand: dict, held: list[str], regime_p: float) -> dict:
         decision, why = "FOCUS", f"quality=low({quality_p:.2f}) 临界信号加分"
     elif quality == "low":
         decision, why = "FOCUS", f"quality=low({quality_p:.2f})"
-    elif (cand.get("market") == "CN" and quality == "mid"
-          and quality_p <= CN_MID_LOW_P):
+    elif cand.get("market") == "CN" and quality == "mid" and quality_p <= CN_MID_LOW_P:
         # CN 相对临界影子组（K-STOCK-365 P0-B 后续）：不进生产 FOCUS 组，
         # 独立 FOCUS_CN 档位仅供毕业统计对照，影子期不参与任何拦截/推送决策
         decision, why = "FOCUS_CN", f"CN相对临界 mid({quality_p:.2f})"
@@ -394,14 +423,20 @@ def review_candidate(cand: dict, held: list[str], regime_p: float) -> dict:
     else:
         decision, why = "PASS", "regular"
 
-    record.update({
-        "status": "reviewed",
-        "news_p": news_p, "overlap_p": overlap_p,
-        "quality": quality, "quality_p": quality_p,
-        "crowd": crowd, "crowd_p": crowd_p,
-        "regime_p": regime_p,
-        "decision": decision, "decision_why": why,
-    })
+    record.update(
+        {
+            "status": "reviewed",
+            "news_p": news_p,
+            "overlap_p": overlap_p,
+            "quality": quality,
+            "quality_p": quality_p,
+            "crowd": crowd,
+            "crowd_p": crowd_p,
+            "regime_p": regime_p,
+            "decision": decision,
+            "decision_why": why,
+        }
+    )
     return record
 
 
@@ -411,8 +446,10 @@ def load_seen() -> set:
         try:
             return set(json.loads(SEEN_FILE.read_text(encoding="utf-8")))
         except Exception as e:  # noqa: BLE001
-            log(f"seen.json 解析失败，已复核集清零（候选将重复复核）: {str(e)[:80]}",
-                level="warn")  # C2批2
+            log(
+                f"seen.json 解析失败，已复核集清零（候选将重复复核）: {str(e)[:80]}",
+                level="warn",
+            )  # C2批2
             return set()
     return set()
 
@@ -476,7 +513,7 @@ def weekdays_after(d: date, today: date) -> int:
 
 # ── 三元组轮转归档（R12：防活文件无界增长） ──────────────────
 _ARCHIVE_TTL_DAYS = 30  # 终端记录保留 30 天后归档
-_last_archive = ""      # 最近归档日（按日节流）
+_last_archive = ""  # 最近归档日（按日节流）
 
 
 def _maybe_archive_triples() -> int:
@@ -513,7 +550,9 @@ def _maybe_archive_triples() -> int:
             f.flush()
             os.fsync(f.fileno())
         atomic_write_text(TRIPLES, "\n".join(keep) + "\n")
-        log(f"三元组归档 {len(arch)} 条（活文件 {len(keep)} 条，TTL {_ARCHIVE_TTL_DAYS} 天）")
+        log(
+            f"三元组归档 {len(arch)} 条（活文件 {len(keep)} 条，TTL {_ARCHIVE_TTL_DAYS} 天）"
+        )
     return len(arch)
 
 
@@ -551,21 +590,32 @@ def run_once(dry: bool = False) -> int:
         log(f"池 {pool['pool_date']} {pool['pool_type']}: {len(todo)} 待复核")
         for c in todo:
             c["pool_date"] = pool["pool_date"]
-            r = review_candidate(c, held, regime_p) if not dry else {
-                "candidate_id": c["candidate_id"], "ts_code": c["ts_code"],
-                "status": "dry", "state_len": 0}
+            r = (
+                review_candidate(c, held, regime_p)
+                if not dry
+                else {
+                    "candidate_id": c["candidate_id"],
+                    "ts_code": c["ts_code"],
+                    "status": "dry",
+                    "state_len": 0,
+                }
+            )
             new_records.append(r)
             tag = r.get("decision") or r.get("status")
-            log(f"  {c['ts_code']} → {tag}"
-                + (f" ({r['decision_why']})" if r.get("decision_why") else ""))
+            log(
+                f"  {c['ts_code']} → {tag}"
+                + (f" ({r['decision_why']})" if r.get("decision_why") else "")
+            )
             seen.add(c["candidate_id"])
             if not dry:
                 time.sleep(0.3)  # 温和限速
     if new_records and not dry:
         append_triples(new_records)
         save_seen(seen)
-    log(f"本轮 {len(new_records)} 条（{'dry' if dry else '已落盘'}）"
-        f" regime={regime_p:.2f} 公告源={_ANN_SRC['mode']}")
+    log(
+        f"本轮 {len(new_records)} 条（{'dry' if dry else '已落盘'}）"
+        f" regime={regime_p:.2f} 公告源={_ANN_SRC['mode']}"
+    )
     return len(new_records)
 
 
@@ -579,7 +629,8 @@ def run_backfill() -> int:
     _maybe_archive_triples()  # R12：每日归档后重新读活文件（终端记录已出活文件）
     cutoff_today = date.today()
     lines = dedup_triples(  # K-STOCK-402：崩溃窗口重复行自愈（重写即去重）
-        TRIPLES.read_text(encoding="utf-8").splitlines())
+        TRIPLES.read_text(encoding="utf-8").splitlines()
+    )
     out, filled, pending = [], 0, 0
     for line in lines:
         if _STOP["flag"]:
@@ -616,7 +667,8 @@ def run_backfill() -> int:
             "SELECT trade_date, close FROM v2_bar_daily "
             "WHERE symbol = %s AND market = %s AND trade_date >= %s "
             "ORDER BY trade_date ASC LIMIT %s",
-            (r["ts_code"], mkt, pd_, N_OUTCOME_DAYS + 1))
+            (r["ts_code"], mkt, pd_, N_OUTCOME_DAYS + 1),
+        )
         if len(rows) < N_OUTCOME_DAYS + 1:
             pending += 1
             out.append(line)
@@ -642,10 +694,21 @@ def fetch_candidates_by_ids(ids: list[str]) -> dict[str, dict]:
         "SELECT a.candidate_id, a.ts_code, a.market, "
         "coalesce(a.candidate_score,0), coalesce(a.candidate_reason,''), p.pool_date "
         "FROM v2_candidate_asset a JOIN v2_candidate_pool p ON a.pool_id = p.pool_id "
-        "WHERE a.candidate_id IN (%s)" % ph, tuple(ids))
-    return {r[0]: {"candidate_id": r[0], "ts_code": r[1], "market": r[2],
-                   "score": float(r[3] or 0), "reason": r[4], "pool_date": r[5]}
-            for r in rows if len(r) == 6}
+        "WHERE a.candidate_id IN (%s)" % ph,
+        tuple(ids),
+    )
+    return {
+        r[0]: {
+            "candidate_id": r[0],
+            "ts_code": r[1],
+            "market": r[2],
+            "score": float(r[3] or 0),
+            "reason": r[4],
+            "pool_date": r[5],
+        }
+        for r in rows
+        if len(r) == 6
+    }
 
 
 def run_retry(dry: bool = False) -> int:
@@ -671,13 +734,14 @@ def run_retry(dry: bool = False) -> int:
             r = json.loads(line)
         except Exception:  # noqa: BLE001
             continue
-        if (r.get("status") == "unreviewed"
-                and r.get("reason") in ("jev_error", "no_key")
-                and r.get("retry_count", 0) < RETRY_MAX
-                and r.get("candidate_id")):
+        if (
+            r.get("status") == "unreviewed"
+            and r.get("reason") in ("jev_error", "no_key")
+            and r.get("retry_count", 0) < RETRY_MAX
+            and r.get("candidate_id")
+        ):
             targets.append((i, r))
-    log(f"补判候选 {len(targets)} 条"
-        + ("（dry 跳过）" if dry else ""))
+    log(f"补判候选 {len(targets)} 条" + ("（dry 跳过）" if dry else ""))
     if not targets or dry:
         return 0
     if not API_KEY:
@@ -703,9 +767,18 @@ def run_retry(dry: bool = False) -> int:
         r["retry_count"] = r.get("retry_count", 0) + 1
         if new.get("status") == "reviewed":
             ok += 1
-            for k in ("status", "news_p", "overlap_p", "quality", "quality_p",
-                      "crowd", "crowd_p", "regime_p", "decision",
-                      "decision_why"):
+            for k in (
+                "status",
+                "news_p",
+                "overlap_p",
+                "quality",
+                "quality_p",
+                "crowd",
+                "crowd_p",
+                "regime_p",
+                "decision",
+                "decision_why",
+            ):
                 if k in new:
                     r[k] = new[k]
             r["retried"] = 1
@@ -733,7 +806,8 @@ def coverage_guard() -> float:
     today = date.today()
     due = filled = 0
     for line in dedup_triples(  # K-STOCK-402 BUG-3：重复行不重复计数
-            TRIPLES.read_text(encoding="utf-8").splitlines()):
+        TRIPLES.read_text(encoding="utf-8").splitlines()
+    ):
         if not line.strip():
             continue
         try:
@@ -758,11 +832,17 @@ def coverage_guard() -> float:
     if due and pct < COVERAGE_MIN:
         # 2026-10-16（K-STOCK-401 判例对齐 jev_gate.push_feishu）：lark-cli
         # 注入凭证发其他 app 签发 open_id 必 99992361——改 OpenAPI 直连优先
-        #（apps[0] + push_targets("个人") 自洽配对），lark-cli 降为回退。
-        _text = json.dumps({"text": (
-            f"[Jev复核门] 回填覆盖率告警：{filled}/{due} = {pct:.0%}"
-            f"（阈值 {COVERAGE_MIN:.0%}）。到期未回填多为 bar 断档，"
-            f"请核查 v2_bar_daily 数据源覆盖。")}, ensure_ascii=False)
+        # （apps[0] + push_targets("个人") 自洽配对），lark-cli 降为回退。
+        _text = json.dumps(
+            {
+                "text": (
+                    f"[Jev复核门] 回填覆盖率告警：{filled}/{due} = {pct:.0%}"
+                    f"（阈值 {COVERAGE_MIN:.0%}）。到期未回填多为 bar 断档，"
+                    f"请核查 v2_bar_daily 数据源覆盖。"
+                )
+            },
+            ensure_ascii=False,
+        )
         sent = False
         try:
             _root = os.path.dirname(os.path.abspath(__file__))
@@ -771,25 +851,35 @@ def coverage_guard() -> float:
                 sys.path.insert(0, _nc)
             import push_targets
             from feishu_client import send_msg
+
             _oid = push_targets.target_id("个人")
             if _oid:
                 sent, _why = send_msg(_text, "text", receive_id=_oid)
                 if not sent:
-                    log(f"覆盖率告警 OpenAPI 直连失败: {str(_why)[:120]}",
-                        level="warn")
+                    log(f"覆盖率告警 OpenAPI 直连失败: {str(_why)[:120]}", level="warn")
         except Exception as e:  # noqa: BLE001
             log(f"覆盖率告警 OpenAPI 直连异常: {str(e)[:150]}", level="warn")
         if not sent and LARK_ALERT_OPEN_ID:
             try:
                 jc.lark_cli_json(
-                    ["im", "+messages-send", "--as", "bot",
-                     "--user-id", LARK_ALERT_OPEN_ID,
-                     "--msg-type", "text", "--content", _text],
-                    timeout=20, kind="push")
+                    [
+                        "im",
+                        "+messages-send",
+                        "--as",
+                        "bot",
+                        "--user-id",
+                        LARK_ALERT_OPEN_ID,
+                        "--msg-type",
+                        "text",
+                        "--content",
+                        _text,
+                    ],
+                    timeout=20,
+                    kind="push",
+                )
                 sent = True
             except Exception as e:  # noqa: BLE001
-                log(f"覆盖率告警 lark-cli 回退失败: {str(e)[:150]}",
-                    level="warn")
+                log(f"覆盖率告警 lark-cli 回退失败: {str(e)[:150]}", level="warn")
     return pct
 
 
@@ -821,22 +911,27 @@ def run_report() -> None:
         rets.sort()
         win = sum(1 for x in rs if x["outcome"] == "win")
         med = rets[len(rets) // 2]
-        print(f"{d:<8}{len(rs):<6}{win/len(rs):<8.1%}{sum(rets)/len(rs):<12.2%}{med:<10.2%}")
+        print(
+            f"{d:<8}{len(rs):<6}{win / len(rs):<8.1%}{sum(rets) / len(rs):<12.2%}{med:<10.2%}"
+        )
     pass_ = groups.get("PASS", [])
     focus = groups.get("FOCUS", [])
     rej = groups.get("REJECT", [])
     if pass_ and rej:
-        diff = (sum(x["ret_nd"] for x in pass_) / len(pass_)) - \
-               (sum(x["ret_nd"] for x in rej) / len(rej))
+        diff = (sum(x["ret_nd"] for x in pass_) / len(pass_)) - (
+            sum(x["ret_nd"] for x in rej) / len(rej)
+        )
         print(f"\n放行-否决 收益差: {diff:+.2%}")
     # JEV 毕业三条件（老田 2026-10-07 晚 B3 面谈拍板，riskguard-jev-calib-brief §五 #4）：
     # ① FOCUS-PASS 收益差 ≥+1% 且持续 2 周（连续两份周报达标，人工核对）
     # ② FOCUS 样本 n≥300   ③ REJECT 样本 n≥30（均按已回填 ret_nd 口径）
     # 纪律：REJECT 触发率不因凑样本放宽（否决阈值不得下调）。
     if focus and pass_:
-        diff = (sum(x["ret_nd"] for x in focus) / len(focus)) - \
-               (sum(x["ret_nd"] for x in pass_) / len(pass_))
+        diff = (sum(x["ret_nd"] for x in focus) / len(focus)) - (
+            sum(x["ret_nd"] for x in pass_) / len(pass_)
+        )
         print(f"FOCUS-PASS 收益差: {diff:+.2%}（全量混合口径，含市场构成偏差）")
+
         def _mkt(x):
             tc = str(x.get("ts_code") or "")
             if tc.endswith((".SH", ".SZ", ".BJ")) or x.get("market") == "CN":
@@ -844,38 +939,54 @@ def run_report() -> None:
             if "/USDT" in tc:
                 return "CRYPTO"
             return x.get("market") or "?"
+
         pe = [x for x in pass_ if _mkt(x) != "CN"]
         fe = [x for x in focus if _mkt(x) != "CN"]
-        dd_ex = ((sum(x["ret_nd"] for x in fe) / len(fe)) -
-                 (sum(x["ret_nd"] for x in pe) / len(pe))) if pe and fe else None
+        dd_ex = (
+            (
+                (sum(x["ret_nd"] for x in fe) / len(fe))
+                - (sum(x["ret_nd"] for x in pe) / len(pe))
+            )
+            if pe and fe
+            else None
+        )
         n_rej = len(groups.get("REJECT", []))
         # K-STOCK-365 P0-B：毕业①勾只认「同市场域(剔CN)」口径（2026-10-07 辛普森
         # 悖论判例：全量混合口径的收益差主要由市场构成贡献，PASS 含 CN 大跌票而
         # FOCUS CN=0，不可比）。此前判定行按全量打勾与脚注口径打架，本修统一。
         ok1 = dd_ex is not None and dd_ex >= 0.01
         d1 = f"{dd_ex:+.2%}" if dd_ex is not None else "-"
-        print(f"毕业① 收益差≥+1%: {'✓' if ok1 else '✗'}"
-              f"（剔CN同市场域 {d1} 为勾判口径；全量 {diff:+.2%} 仅参考；"
-              "持续性需连续两份周报达标）")
-        print(f"毕业② FOCUS n≥300: {'✓' if len(focus) >= 300 else '✗'}"
-              f"（当前 {len(focus)}）")
+        print(
+            f"毕业① 收益差≥+1%: {'✓' if ok1 else '✗'}"
+            f"（剔CN同市场域 {d1} 为勾判口径；全量 {diff:+.2%} 仅参考；"
+            "持续性需连续两份周报达标）"
+        )
+        print(
+            f"毕业② FOCUS n≥300: {'✓' if len(focus) >= 300 else '✗'}"
+            f"（当前 {len(focus)}）"
+        )
         # 毕业③口径（2026-10-07 晚拍板，brief §八 #1）：原「REJECT n≥30」攒样
         # 需 ≈464 交易日实质不可达（触发率 0.11%，news_risk 语义猎极端尾部）
         # → 改「高危组负收益验证」：news_p≥0.5 且 CN（news 通道有效域）的
         # 已回填样本 n≥10 且均值 < PASS 同域均值。REJECT 生产阈值 0.70 不动
         # （「触发率不放宽」拍板仍有效，仅毕业考核换证据口径）。
-        hi = [x for rs in groups.values() for x in rs
-              if _mkt(x) == "CN" and (x.get("news_p") or 0) >= 0.5]
+        hi = [
+            x
+            for rs in groups.values()
+            for x in rs
+            if _mkt(x) == "CN" and (x.get("news_p") or 0) >= 0.5
+        ]
         cn_pass = [x for x in pass_ if _mkt(x) == "CN"]
         hi_avg = (sum(x["ret_nd"] for x in hi) / len(hi)) if hi else None
-        cp_avg = (sum(x["ret_nd"] for x in cn_pass) / len(cn_pass)) \
-            if cn_pass else None
+        cp_avg = (sum(x["ret_nd"] for x in cn_pass) / len(cn_pass)) if cn_pass else None
         ok3 = len(hi) >= 10 and cp_avg is not None and hi_avg < cp_avg
         h = f"{hi_avg:+.2%}" if hi_avg is not None else "-"
         c = f"{cp_avg:+.2%}" if cp_avg is not None else "-"
-        print(f"毕业③ 高危组负收益验证: {'✓' if ok3 else '✗'}"
-              f"（news_p≥0.5 CN n={len(hi)} 均 {h} vs CN-PASS 均 {c}；"
-              f"REJECT 生产 n={n_rej} 照旧拦截）")
+        print(
+            f"毕业③ 高危组负收益验证: {'✓' if ok3 else '✗'}"
+            f"（news_p≥0.5 CN n={len(hi)} 均 {h} vs CN-PASS 均 {c}；"
+            f"REJECT 生产 n={n_rej} 照旧拦截）"
+        )
         print("三条件齐 → 阶段 2 放行评审；缺任一 → 继续影子观察")
         # 分市场拆解（2026-10-07 晚研究发现辛普森悖论，brief §7.2：混合口径
         # +1.95pp 主要由市场构成贡献——PASS 含 CN 大跌票而 FOCUS CN=0，
@@ -886,23 +997,21 @@ def run_report() -> None:
             fm = [x for x in focus if _mkt(x) == m]
             if not pm and not fm:
                 continue
-            ps = (f"{sum(x['ret_nd'] for x in pm)/len(pm):+.2%}"
-                  if pm else "  -  ")
-            fs = (f"{sum(x['ret_nd'] for x in fm)/len(fm):+.2%}"
-                  if fm else "  -  ")
-            print(f"  {m:<7} PASS {len(pm):>3} {ps} | "
-                  f"FOCUS {len(fm):>3} {fs}")
+            ps = f"{sum(x['ret_nd'] for x in pm) / len(pm):+.2%}" if pm else "  -  "
+            fs = f"{sum(x['ret_nd'] for x in fm) / len(fm):+.2%}" if fm else "  -  "
+            print(f"  {m:<7} PASS {len(pm):>3} {ps} | FOCUS {len(fm):>3} {fs}")
         if pe and fe:
-            print(f"  同市场域(剔CN) FOCUS-PASS: {dd_ex:+.2%}"
-                  "（= 毕业①勾判口径）")
+            print(f"  同市场域(剔CN) FOCUS-PASS: {dd_ex:+.2%}（= 毕业①勾判口径）")
         if not any(_mkt(x) == "CN" for x in focus):
             # K-STOCK-365 P0-B 结构性标注：CN 候选 quality 历史分布 mid/high
             # 双占（low=0），FOCUS 唯一入口 quality=low 从未在 CN 触发——
             # FOCUS 组全在 US/HK/CRYPTO，剔CN口径是被迫而非可选；Jev 对 CN
             # 候选的 quality 判定倾向值得人工抽检（非代码 bug，模型行为）。
-            print("⚠ 结构性缺位：CN 组 quality 从未判 low（FOCUS 唯一入口），"
-                  "FOCUS 全部来自 US/HK/CRYPTO——剔CN口径为被迫；"
-                  "FOCUS 在 A 股的价值主张尚无样本支撑")
+            print(
+                "⚠ 结构性缺位：CN 组 quality 从未判 low（FOCUS 唯一入口），"
+                "FOCUS 全部来自 US/HK/CRYPTO——剔CN口径为被迫；"
+                "FOCUS 在 A 股的价值主张尚无样本支撑"
+            )
     else:
         print("判读：FOCUS/PASS 组数据不足，继续影子观察")
 

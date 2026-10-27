@@ -16,6 +16,7 @@
   python run_oos_eval.py             # 正式跑 72 题×1 遍
 退出码：0 正常完成；3 连续 5 题失败熔断。
 """
+
 from __future__ import annotations
 
 import os
@@ -56,11 +57,15 @@ import jev_eval  # noqa: E402
 # v3（2026-10-14）：默认题集升级为 oos_question_set_v3.json（score 子卷改
 # FOCUS/PASS 二分类，修 v2 档位偏置缺陷）；OOS_QUESTIONS_FILE 环境变量可指向
 # 子集文件（如 v3_score_only）控制评估预算，仅限本包装器，不动 jev_eval.py。
-jev_eval.QUESTIONS_FILE = Path(os.environ.get(
-    "OOS_QUESTIONS_FILE", str(HERE / "oos_question_set_v3.json")))
+jev_eval.QUESTIONS_FILE = Path(
+    os.environ.get("OOS_QUESTIONS_FILE", str(HERE / "oos_question_set_v3.json"))
+)
 
 _orig_call = jev_eval.call_jev
-_state = {"attempt": 0, "consec_fail": 0}  # attempt: 当前请求已试次数；consec_fail: 连续失败请求数
+_state = {
+    "attempt": 0,
+    "consec_fail": 0,
+}  # attempt: 当前请求已试次数；consec_fail: 连续失败请求数
 
 
 def call_with_retry(body: dict):
@@ -74,7 +79,10 @@ def call_with_retry(body: dict):
         if e.code in (401, 403, 451):
             _state["attempt"] = 0
             _state["consec_fail"] += 1
-            print(f"    HTTP {e.code}（内容级确定性拒绝，不重试），连续失败 {_state['consec_fail']}/5", flush=True)
+            print(
+                f"    HTTP {e.code}（内容级确定性拒绝，不重试），连续失败 {_state['consec_fail']}/5",
+                flush=True,
+            )
             if _state["consec_fail"] >= 5:
                 print("!! 连续 5 题失败，按纪律中止评估（退出码 3）", flush=True)
                 sys.exit(3)
@@ -87,7 +95,10 @@ def call_with_retry(body: dict):
 def _call_with_retry_inner(body: dict, first_err: Exception):
     _state["attempt"] += 1
     if _state["attempt"] <= 1:  # 首次失败 → 重试 1 次（仅网络/瞬时类错误）
-        print(f"    请求失败（{type(first_err).__name__}: {first_err}），2s 后重试 1 次...", flush=True)
+        print(
+            f"    请求失败（{type(first_err).__name__}: {first_err}），2s 后重试 1 次...",
+            flush=True,
+        )
         time.sleep(2.0)
         try:
             out = _orig_call(body)
@@ -99,7 +110,10 @@ def _call_with_retry_inner(body: dict, first_err: Exception):
     # 重试仍失败：交给 jev_eval 记 None（计错题），并累加熔断计数
     _state["attempt"] = 0
     _state["consec_fail"] += 1
-    print(f"    重试后仍失败（{type(first_err).__name__}: {first_err}），连续失败 {_state['consec_fail']}/5", flush=True)
+    print(
+        f"    重试后仍失败（{type(first_err).__name__}: {first_err}），连续失败 {_state['consec_fail']}/5",
+        flush=True,
+    )
     if _state["consec_fail"] >= 5:
         print("!! 连续 5 题失败，按纪律中止评估（退出码 3）", flush=True)
         sys.exit(3)
@@ -110,5 +124,8 @@ jev_eval.call_jev = call_with_retry
 
 if __name__ == "__main__":
     dry = "--dry-run" in sys.argv[1:]
-    print(f"OOS 首评：题集={jev_eval.QUESTIONS_FILE.name} repeats=1 model={jev_eval.MODEL}", flush=True)
+    print(
+        f"OOS 首评：题集={jev_eval.QUESTIONS_FILE.name} repeats=1 model={jev_eval.MODEL}",
+        flush=True,
+    )
     jev_eval.run(repeats=1, dry_run=dry)

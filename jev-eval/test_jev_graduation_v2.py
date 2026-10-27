@@ -5,6 +5,7 @@
 只测纯函数 judge_domain / overall_light，全部用合成数据，不读真实数据源。
 运行：  "C:/Program Files/Python311/python.exe" test_jev_graduation_v2.py
 """
+
 from __future__ import annotations
 
 import sys
@@ -95,7 +96,12 @@ class TestJudgeDomain(unittest.TestCase):
 
 
 class TestOverallLight(unittest.TestCase):
-    DOM = {"n_eff": 10, "cluster_mean_pp": -0.5, "focus_pass_gap_pp": None, "pass": False}
+    DOM = {
+        "n_eff": 10,
+        "cluster_mean_pp": -0.5,
+        "focus_pass_gap_pp": None,
+        "pass": False,
+    }
 
     def _dom(self, **kw):
         d = dict(self.DOM)
@@ -103,12 +109,17 @@ class TestOverallLight(unittest.TestCase):
         return d
 
     def test_green_when_any_live_domain_pass(self):
-        doms = {"US": self._dom(**{"pass": True}), "HK": self._dom(focus_pass_gap_pp=2.4)}
+        doms = {
+            "US": self._dom(**{"pass": True}),
+            "HK": self._dom(focus_pass_gap_pp=2.4),
+        }
         self.assertEqual(overall_light(doms), "green")
 
     def test_yellow_when_no_pass_but_positive_gap(self):
-        doms = {"US": self._dom(focus_pass_gap_pp=1.55),
-                "HK": self._dom(focus_pass_gap_pp=-1.0)}
+        doms = {
+            "US": self._dom(focus_pass_gap_pp=1.55),
+            "HK": self._dom(focus_pass_gap_pp=-1.0),
+        }
         self.assertEqual(overall_light(doms), "yellow")
 
     def test_yellow_counts_excluded_domain_gap(self):
@@ -117,14 +128,18 @@ class TestOverallLight(unittest.TestCase):
         self.assertEqual(overall_light(doms), "yellow")
 
     def test_red_when_all_negative(self):
-        doms = {"US": self._dom(focus_pass_gap_pp=-1.5),
-                "HK": self._dom(focus_pass_gap_pp=None),
-                "CN": self._dom(focus_pass_gap_pp=None)}
+        doms = {
+            "US": self._dom(focus_pass_gap_pp=-1.5),
+            "HK": self._dom(focus_pass_gap_pp=None),
+            "CN": self._dom(focus_pass_gap_pp=None),
+        }
         self.assertEqual(overall_light(doms), "red")
 
     def test_green_beats_yellow(self):
-        doms = {"US": self._dom(**{"pass": True}, focus_pass_gap_pp=-1.0),
-                "HK": self._dom(focus_pass_gap_pp=2.0)}
+        doms = {
+            "US": self._dom(**{"pass": True}, focus_pass_gap_pp=-1.0),
+            "HK": self._dom(focus_pass_gap_pp=2.0),
+        }
         self.assertEqual(overall_light(doms), "green")
 
 

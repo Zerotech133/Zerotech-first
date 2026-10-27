@@ -21,6 +21,7 @@
   python jev_qd_bridge.py --loop           # 常驻：每小时 sync + review
 环境变量：JEV_API_KEY（review 需要）；QD_BASE_URL / QD_USER / QD_PASSWORD 可覆盖
 """
+
 from __future__ import annotations
 
 import atexit
@@ -34,8 +35,15 @@ from datetime import datetime
 from pathlib import Path
 
 import jev_common as jc
-from jev_common import (C_JEV, atomic_write_text, db_rows, install_stop, log,
-                        set_module, with_retry)
+from jev_common import (
+    C_JEV,
+    atomic_write_text,
+    db_rows,
+    install_stop,
+    log,
+    set_module,
+    with_retry,
+)
 
 if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf8"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -45,24 +53,30 @@ DATA = HERE / "review_data"
 # 2026-10-16 审计：review_data 缺失时 QD_REVIEW.open("a") 直接
 # FileNotFoundError 炸进程——启动即确保目录存在
 DATA.mkdir(exist_ok=True)
-TRIPLES = DATA / "triples.jsonl"          # 复核门三元组（正向数据源）
-QD_REVIEW = DATA / "qd_review.jsonl"      # 反向复核判定流
-QD_PUSHED = DATA / "qd_pushed.json"       # 已推送 QD 的 (market,symbol) 集合
-QD_FAILED = DATA / "qd_failed.json"       # QD 目录无此标的 → 永久跳过集合
+TRIPLES = DATA / "triples.jsonl"  # 复核门三元组（正向数据源）
+QD_REVIEW = DATA / "qd_review.jsonl"  # 反向复核判定流
+QD_PUSHED = DATA / "qd_pushed.json"  # 已推送 QD 的 (market,symbol) 集合
+QD_FAILED = DATA / "qd_failed.json"  # QD 目录无此标的 → 永久跳过集合
 
 API_KEY = os.environ.get("JEV_API_KEY", "")
 JEV_BASE = os.environ.get("JEV_BASE_URL", "https://api.typesafe.ai/v1").rstrip("/")
 QD_BASE = os.environ.get("QD_BASE_URL", "http://localhost:15000").rstrip("/")
 QD_USER = os.environ.get("QD_USER", "admin")
-QD_PASSWORD = os.environ.get("QD_PASSWORD", "")  # 凭据移到 .env.local，空则 qd_login 抛 RuntimeError
+QD_PASSWORD = os.environ.get(
+    "QD_PASSWORD", ""
+)  # 凭据移到 .env.local，空则 qd_login 抛 RuntimeError
 
 # zhice market → QD market（CN 无对应，跳过）
 MARKET_MAP = {"HK": "HKStock", "US": "USStock", "CRYPTO": "Crypto"}
-SYNC_DECISIONS = ("FOCUS",)               # 正向同步的判定集合
+SYNC_DECISIONS = ("FOCUS",)  # 正向同步的判定集合
 # P2-2（A3 2026-10-07）：阈值 env 化（默认=历史值，影子期行为不变；调优改 jev-gate.env.ps1）
-REVIEW_KEEP_THRESHOLD = float(os.environ.get("QD_REVIEW_KEEP_THRESHOLD", "0.35"))  # keep_p 低于此值 → flag 警示
-QD_CROWD_THRESHOLD = float(os.environ.get("QD_CROWD_THRESHOLD", "0.7"))  # crowding=hot 置信达此值 → flag 警示
-METRICS_PORT = 9103                       # P1-6 Prometheus /metrics 端点
+REVIEW_KEEP_THRESHOLD = float(
+    os.environ.get("QD_REVIEW_KEEP_THRESHOLD", "0.35")
+)  # keep_p 低于此值 → flag 警示
+QD_CROWD_THRESHOLD = float(
+    os.environ.get("QD_CROWD_THRESHOLD", "0.7")
+)  # crowding=hot 置信达此值 → flag 警示
+METRICS_PORT = 9103  # P1-6 Prometheus /metrics 端点
 
 _token_cache = {"token": "", "exp": 0.0}
 
@@ -110,15 +124,18 @@ atexit.register(_flush_failed)
 def qd_login() -> str:
     body = json.dumps({"username": QD_USER, "password": QD_PASSWORD}).encode()
     req = urllib.request.Request(
-        QD_BASE + "/api/auth/login", data=body, method="POST",
-        headers={"Content-Type": "application/json"})
+        QD_BASE + "/api/auth/login",
+        data=body,
+        method="POST",
+        headers={"Content-Type": "application/json"},
+    )
     with urllib.request.urlopen(req, timeout=10) as resp:
         data = json.loads(resp.read())
     tok = (data.get("data") or {}).get("token", "")
     if not tok:
         raise RuntimeError(f"QD 登录失败: {data.get('msg')}")
     _token_cache["token"] = tok
-    _token_cache["exp"] = time.time() + 3600 * 6   # token 实际 7 天，保守缓存 6h
+    _token_cache["exp"] = time.time() + 3600 * 6  # token 实际 7 天，保守缓存 6h
     return tok
 
 
@@ -132,9 +149,14 @@ def qd_call(method: str, path: str, payload: dict | None = None) -> dict:
     body = json.dumps(payload).encode() if payload is not None else None
     for _attempt in range(2):  # 正常一次 + 401 重新登录后一次
         req = urllib.request.Request(
-            QD_BASE + path, data=body, method=method,
-            headers={"Content-Type": "application/json",
-                     "Authorization": f"Bearer {qd_token()}"})
+            QD_BASE + path,
+            data=body,
+            method=method,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {qd_token()}",
+            },
+        )
         try:
             with urllib.request.urlopen(req, timeout=15) as resp:
                 return json.loads(resp.read())
@@ -147,7 +169,9 @@ def qd_call(method: str, path: str, payload: dict | None = None) -> dict:
                 err_body = e.read().decode("utf-8", errors="replace")
                 try:
                     err_json = json.loads(err_body)
-                    err_msg = str(err_json.get("msg") or err_json.get("detail") or err_body)
+                    err_msg = str(
+                        err_json.get("msg") or err_json.get("detail") or err_body
+                    )
                 except Exception:  # noqa: BLE001
                     err_msg = err_body
                 return {"code": -e.code, "msg": err_msg[:200]}
@@ -176,8 +200,10 @@ def load_pushed() -> set[str]:
         try:
             return set(json.loads(QD_PUSHED.read_text(encoding="utf-8")))
         except Exception as e:  # noqa: BLE001
-            log(f"qd_pushed.jsonl 解析失败，去重集清零（有重复推送风险）: {str(e)[:80]}",
-                level="warn")  # C2批2
+            log(
+                f"qd_pushed.jsonl 解析失败，去重集清零（有重复推送风险）: {str(e)[:80]}",
+                level="warn",
+            )  # C2批2
     return set()
 
 
@@ -191,8 +217,10 @@ def load_failed() -> set[str]:
         try:
             return set(json.loads(QD_FAILED.read_text(encoding="utf-8")))
         except Exception as e:  # noqa: BLE001
-            log(f"qd_failed.jsonl 解析失败，永久跳过集清零（400 标的将重试）: {str(e)[:80]}",
-                level="warn")  # C2批2
+            log(
+                f"qd_failed.jsonl 解析失败，永久跳过集清零（400 标的将重试）: {str(e)[:80]}",
+                level="warn",
+            )  # C2批2
     return set()
 
 
@@ -207,8 +235,8 @@ def sync_focus_to_qd() -> None:
         return
     pushed = load_pushed()
     failed = load_failed()
-    focus: dict[str, dict] = {}     # key=(market,normalized_symbol) → 最新判定记录
-    cn_focus = 0                    # CN 无法映射 QD，仅记数（修复：原在已滤 CN 的集合里数 CN 恒为 0）
+    focus: dict[str, dict] = {}  # key=(market,normalized_symbol) → 最新判定记录
+    cn_focus = 0  # CN 无法映射 QD，仅记数（修复：原在已滤 CN 的集合里数 CN 恒为 0）
     for line in TRIPLES.read_text(encoding="utf-8").splitlines():
         line = line.strip()
         if not line:
@@ -241,7 +269,7 @@ def sync_focus_to_qd() -> None:
         if ok:
             pushed.add(cache_key)
             stats["push"] += 1
-            log(f"  推送 {qd_mkt} {symbol} ← FOCUS({rec.get('pool_date','')})")
+            log(f"  推送 {qd_mkt} {symbol} ← FOCUS({rec.get('pool_date', '')})")
             save_pushed(pushed)  # 每推一条立即落盘，防中断丢已推集合
         else:
             msg_low = str(msg).lower()
@@ -249,16 +277,20 @@ def sync_focus_to_qd() -> None:
                 # QD 目录无此标的 → 永久跳过，避免每小时 400 浪费 API
                 failed.add(cache_key)
                 stats["skip_failed"] += 1
-                log(f"  永久跳过 {qd_mkt} {symbol}: QD 目录无此标的（原始 ts_code={rec.get('ts_code','')}）")
+                log(
+                    f"  永久跳过 {qd_mkt} {symbol}: QD 目录无此标的（原始 ts_code={rec.get('ts_code', '')}）"
+                )
                 save_failed(failed)
             else:
                 stats["err"] += 1
                 log(f"  失败 {qd_mkt} {symbol}: {msg}")
     save_pushed(pushed)
     save_failed(failed)
-    log(f"正向同步完成: 推送 {stats['push']} / 已推 {stats['skip_pushed']} / "
+    log(
+        f"正向同步完成: 推送 {stats['push']} / 已推 {stats['skip_pushed']} / "
         f"永久跳过 {stats['skip_failed']} / 失败 {stats['err']}"
-        f"（CN 池内 FOCUS {cn_focus} 只无法映射，留 zhice 闭环）")
+        f"（CN 池内 FOCUS {cn_focus} 只无法映射，留 zhice 闭环）"
+    )
 
 
 # ── 反向：QD watchlist → Jev 复核 ──────────────────────────
@@ -266,8 +298,8 @@ REVIEW_QUESTIONS = {
     "keep": {
         "type": "noul",
         "instructions": "综合该标的已知信号判定（Jev 复核 FOCUS=临界加强）与当前"
-                        "组合状态，该标的当前仍值得保留在观察名单中"
-                        "（无未被消化的利空、无显著过热迹象）。",
+        "组合状态，该标的当前仍值得保留在观察名单中"
+        "（无未被消化的利空、无显著过热迹象）。",
     },
     "crowding": {
         "type": "choice",
@@ -296,13 +328,14 @@ def fetch_market_context(qd_market: str, symbol: str) -> str:
             "SELECT trade_date, close FROM v2_bar_daily "
             "WHERE symbol = %s AND market = %s "
             "ORDER BY trade_date DESC LIMIT 6",
-            (symbol, zs_mkt))
+            (symbol, zs_mkt),
+        )
         if len(rows) < 2:
             return ""
         closes = [(str(r[0]), float(r[1])) for r in rows]
         chg = closes[0][1] / closes[-1][1] - 1
         seq = "; ".join(f"{d} 收 {c:g}" for d, c in reversed(closes))
-        return f"近{len(closes)-1}个交易日累计 {chg:+.1%}。逐日收盘（旧→新）: {seq}"
+        return f"近{len(closes) - 1}个交易日累计 {chg:+.1%}。逐日收盘（旧→新）: {seq}"
     except Exception as e:  # noqa: BLE001
         log("行情查询失败", symbol=symbol, err=str(e)[:80], level="warn")
         return ""
@@ -311,8 +344,8 @@ def fetch_market_context(qd_market: str, symbol: str) -> str:
 def build_review_state(item: dict, known: dict | None) -> str:
     """组装反向复核快照（<400 token）：代码组装事实，Jev 只判断。"""
     parts = [
-        f"标的: {item.get('symbol','?')} 市场 {item.get('market','?')}"
-        f" 名称 {item.get('name','') or '未知'}",
+        f"标的: {item.get('symbol', '?')} 市场 {item.get('market', '?')}"
+        f" 名称 {item.get('name', '') or '未知'}",
         "来源: QuantDinger 观察名单（人工/AI 加入）",
     ]
     mkt_ctx = fetch_market_context(item.get("market", ""), item.get("symbol", ""))
@@ -320,9 +353,10 @@ def build_review_state(item: dict, known: dict | None) -> str:
         parts.append(f"行情: {mkt_ctx}")
     if known:
         parts.append(
-            f"已知信号: zhice 候选池 {known.get('pool_date','')} 评分 "
-            f"{known.get('score', 0):.3f}，Jev 复核判定 {known.get('decision','?')}"
-            f"（{known.get('why','')}）")
+            f"已知信号: zhice 候选池 {known.get('pool_date', '')} 评分 "
+            f"{known.get('score', 0):.3f}，Jev 复核判定 {known.get('decision', '?')}"
+            f"（{known.get('why', '')}）"
+        )
     else:
         parts.append("已知信号: 无（仅 QD 观察名单，未经 zhice 候选池复核）")
     return "\n".join(parts)
@@ -342,7 +376,7 @@ def load_known_decisions() -> dict[str, dict]:
         except Exception:  # noqa: BLE001
             continue  # 豁免（C2批2）：triples 坏行跳过，正常容错
         if rec.get("ts_code"):
-            known[rec["ts_code"]] = rec   # 顺序读，后者覆盖 → 最新
+            known[rec["ts_code"]] = rec  # 顺序读，后者覆盖 → 最新
     return known
 
 
@@ -363,23 +397,30 @@ def review_qd_watchlist(force: bool = False) -> None:
         for line in QD_REVIEW.read_text(encoding="utf-8").splitlines():
             try:
                 rec = json.loads(line)
-                last[f"{rec.get('market','')}:{rec.get('symbol','')}"] = rec.get("ts", "")
+                last[f"{rec.get('market', '')}:{rec.get('symbol', '')}"] = rec.get(
+                    "ts", ""
+                )
             except Exception:  # noqa: BLE001
                 pass  # 豁免（C2批2）：review 坏行跳过，仅影响 24h 去重
     now = datetime.now()
     n_new, n_skip, n_err = 0, 0, 0
     with QD_REVIEW.open("a", encoding="utf-8") as f:
         for item in items:
-            key = f"{item.get('market','')}:{item.get('symbol','')}"
+            key = f"{item.get('market', '')}:{item.get('symbol', '')}"
             prev = last.get(key, "")
-            if prev and not force and (now - datetime.fromisoformat(prev)).total_seconds() < 86400:
+            if (
+                prev
+                and not force
+                and (now - datetime.fromisoformat(prev)).total_seconds() < 86400
+            ):
                 n_skip += 1
                 continue
             # 2026-10-16 审计：QD symbol → ts_code 反向归一化后查 known
-            #（原 BRK.B/00700 永远 miss）；原样直查保留为回退。
+            # （原 BRK.B/00700 永远 miss）；原样直查保留为回退。
             sym = item.get("symbol", "")
-            rec_known = known.get(_ts_code_of(item.get("market", ""), sym)) \
-                or known.get(sym)
+            rec_known = known.get(
+                _ts_code_of(item.get("market", ""), sym)
+            ) or known.get(sym)
             state = build_review_state(item, rec_known)
             record = {
                 "ts": now.isoformat(timespec="seconds"),
@@ -394,25 +435,38 @@ def review_qd_watchlist(force: bool = False) -> None:
                     # （JEV_BACKEND=ollama 走本地模型，typesafe.ai 451 屏蔽）
                     ans = with_retry(
                         lambda: jc.jev_ask_backend(state, REVIEW_QUESTIONS),
-                        retries=3, base_sec=2.0, label="jev ")
+                        retries=3,
+                        base_sec=2.0,
+                        label="jev ",
+                    )
                     C_JEV.labels("qdbridge", "1").inc()
                 except Exception:
                     C_JEV.labels("qdbridge", "0").inc()
                     raise
                 keep_p = float(ans.get("keep", {}).get("noul", 1.0))
                 crowd = ans.get("crowding", {}).get("choice", "unknown")
-                crowd_p = (ans.get("crowding", {}).get("probabilities") or {}).get(crowd, 0.0)
-                record.update({
-                    "keep_p": keep_p,
-                    "crowding": crowd,
-                    "crowding_p": crowd_p,
-                    # 阈值 env 化（P2-2）：QD_REVIEW_KEEP_THRESHOLD / QD_CROWD_THRESHOLD
-                    "flag": "WARN" if (keep_p < REVIEW_KEEP_THRESHOLD
-                                       or (crowd == "hot" and crowd_p >= QD_CROWD_THRESHOLD)) else "OK",
-                })
+                crowd_p = (ans.get("crowding", {}).get("probabilities") or {}).get(
+                    crowd, 0.0
+                )
+                record.update(
+                    {
+                        "keep_p": keep_p,
+                        "crowding": crowd,
+                        "crowding_p": crowd_p,
+                        # 阈值 env 化（P2-2）：QD_REVIEW_KEEP_THRESHOLD / QD_CROWD_THRESHOLD
+                        "flag": "WARN"
+                        if (
+                            keep_p < REVIEW_KEEP_THRESHOLD
+                            or (crowd == "hot" and crowd_p >= QD_CROWD_THRESHOLD)
+                        )
+                        else "OK",
+                    }
+                )
                 n_new += 1
-                log(f"  {key}: keep={keep_p:.2f} crowd={crowd}({crowd_p:.2f}) "
-                    f"→ {record['flag']}")
+                log(
+                    f"  {key}: keep={keep_p:.2f} crowd={crowd}({crowd_p:.2f}) "
+                    f"→ {record['flag']}"
+                )
             except Exception as e:  # noqa: BLE001
                 record.update({"status": "jev_error", "err": str(e)[:120]})
                 n_err += 1

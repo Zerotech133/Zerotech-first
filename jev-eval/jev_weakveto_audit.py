@@ -25,6 +25,7 @@
   "C:/Program Files/Python311/python.exe" jev_weakveto_audit.py [--skip-db]
 输出：stdout 报告 + review_data/weakveto_audit_20261014.json（供留痕文档引用）
 """
+
 from __future__ import annotations
 
 import json
@@ -40,11 +41,11 @@ OUT_JSON = HERE / "review_data" / "weakveto_audit_20261014.json"
 # 弱否决网格（任务书指定）：下界×上界
 GRID_LO = (0.4, 0.5, 0.6)
 GRID_HI = (0.6, 0.7, 0.8)
-HARD_NEWS = 0.7       # 产线 REJECT_NEWS_P
-WEAK_MIN_N = 50       # 档位样本不稀薄的最低要求
+HARD_NEWS = 0.7  # 产线 REJECT_NEWS_P
+WEAK_MIN_N = 50  # 档位样本不稀薄的最低要求
 BAND_FRAC_MIN = 0.02  # 且占池比例 ≥2%
-VERDICT_PP = 0.005    # 判定阈值：前向改善 ≥0.5pp（同市场域口径）
-PROMOTED = 0.5        # 降权档权重（weak veto 降权反事实用）
+VERDICT_PP = 0.005  # 判定阈值：前向改善 ≥0.5pp（同市场域口径）
+PROMOTED = 0.5  # 降权档权重（weak veto 降权反事实用）
 
 if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf8"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -65,15 +66,23 @@ def load_triples() -> list[dict]:
         if cid in seen:
             continue
         seen.add(cid)
-        out.append({
-            "source": "live", "ts_code": r["ts_code"], "market": r.get("market", "?"),
-            "pool_date": r.get("pool_date", ""), "news_p": float(r.get("news_p") or 0),
-            "overlap_p": float(r.get("overlap_p") or 0),
-            "quality": r.get("quality", "?"), "quality_p": float(r.get("quality_p") or 0),
-            "crowd": r.get("crowd", "?"), "crowd_p": float(r.get("crowd_p") or 0),
-            "regime_p": float(r.get("regime_p") or 0),
-            "ret5": float(r["ret_nd"]), "ret10": None,
-        })
+        out.append(
+            {
+                "source": "live",
+                "ts_code": r["ts_code"],
+                "market": r.get("market", "?"),
+                "pool_date": r.get("pool_date", ""),
+                "news_p": float(r.get("news_p") or 0),
+                "overlap_p": float(r.get("overlap_p") or 0),
+                "quality": r.get("quality", "?"),
+                "quality_p": float(r.get("quality_p") or 0),
+                "crowd": r.get("crowd", "?"),
+                "crowd_p": float(r.get("crowd_p") or 0),
+                "regime_p": float(r.get("regime_p") or 0),
+                "ret5": float(r["ret_nd"]),
+                "ret10": None,
+            }
+        )
     return out
 
 
@@ -93,15 +102,23 @@ def load_replay() -> list[dict]:
             continue
         seen.add(key)
         hot = r.get("crowd") == "hot"
-        out.append({
-            "source": "replay", "ts_code": r["ts_code"], "market": r.get("market", "?"),
-            "pool_date": r.get("pool_date", ""), "news_p": float(r.get("news_p") or 0),
-            "overlap_p": None,
-            "quality": r.get("quality", "?"), "quality_p": None,
-            "crowd": r.get("crowd", "?"), "crowd_p": 1.0 if hot else 0.0,
-            "regime_p": float(r.get("regime_p") or 0),
-            "ret5": float(r["ret_5d"]), "ret10": None,
-        })
+        out.append(
+            {
+                "source": "replay",
+                "ts_code": r["ts_code"],
+                "market": r.get("market", "?"),
+                "pool_date": r.get("pool_date", ""),
+                "news_p": float(r.get("news_p") or 0),
+                "overlap_p": None,
+                "quality": r.get("quality", "?"),
+                "quality_p": None,
+                "crowd": r.get("crowd", "?"),
+                "crowd_p": 1.0 if hot else 0.0,
+                "regime_p": float(r.get("regime_p") or 0),
+                "ret5": float(r["ret_5d"]),
+                "ret10": None,
+            }
+        )
     return out
 
 
@@ -122,7 +139,8 @@ def backfill_ret10(recs: list[dict]) -> int:
                 "SELECT trade_date, close FROM v2_bar_daily "
                 "WHERE symbol = %s AND market = %s AND trade_date >= %s "
                 "ORDER BY trade_date ASC LIMIT 11",
-                (ts_code, mkt, pd_))
+                (ts_code, mkt, pd_),
+            )
         except Exception as e:  # noqa: BLE001
             print(f"[warn] bar 查询失败 {ts_code}: {str(e)[:80]}，跳过 T+10")
             return filled
@@ -166,10 +184,13 @@ def pool_stats(recs: list[dict], key: str = "ret5") -> dict:
     daily = [mean(by_day[d]) for d in sorted(by_day)]
     s = sorted(rets)
     k = max(1, len(s) // 10)
-    return {"n": len(rets), "mean": round(mean(rets), 6),
-            "mdd": round(max_drawdown(daily), 6),
-            "worst_day": round(min(daily), 6) if daily else 0.0,
-            "tail10_mean": round(mean(s[:k]), 6)}
+    return {
+        "n": len(rets),
+        "mean": round(mean(rets), 6),
+        "mdd": round(max_drawdown(daily), 6),
+        "worst_day": round(min(daily), 6) if daily else 0.0,
+        "tail10_mean": round(mean(s[:k]), 6),
+    }
 
 
 def market_domain_improve(base: list[dict], kept: list[dict], key: str) -> dict:
@@ -185,9 +206,11 @@ def market_domain_improve(base: list[dict], kept: list[dict], key: str) -> dict:
         d = mean(k) - mean(b)
         per[m] = {"n_base": len(b), "n_kept": len(k), "diff": round(d, 6)}
         diffs.append(d)
-    return {"per_market": per,
-            "cross_market": round(mean(diffs), 6) if diffs else None,
-            "n_domains": len(diffs)}
+    return {
+        "per_market": per,
+        "cross_market": round(mean(diffs), 6) if diffs else None,
+        "n_domains": len(diffs),
+    }
 
 
 def histogram(recs: list[dict], field: str) -> dict:
@@ -197,7 +220,7 @@ def histogram(recs: list[dict], field: str) -> dict:
         if v is None:
             continue
         b = min(9, int(v * 10))
-        k = f"{b/10:.1f}-{(b+1)/10:.1f}"
+        k = f"{b / 10:.1f}-{(b + 1) / 10:.1f}"
         bins[k] = bins.get(k, 0) + 1
     return dict(sorted(bins.items()))
 
@@ -218,8 +241,10 @@ def main() -> None:
     live = load_triples()
     replay = load_replay()
     recs = live + replay
-    print(f"样本：live(影子期) {len(live)} + replay(回放,去重) {len(replay)} "
-          f"= {len(recs)} 条（均含 T+5 收益）")
+    print(
+        f"样本：live(影子期) {len(live)} + replay(回放,去重) {len(replay)} "
+        f"= {len(recs)} 条（均含 T+5 收益）"
+    )
     pd_all = sorted(r["pool_date"] for r in recs if r["pool_date"])
     print(f"窗口：{pd_all[0]} ~ {pd_all[-1]}")
     if not SKIP_DB:
@@ -239,8 +264,10 @@ def main() -> None:
         if f == "news_p":
             band = sum(v for k, v in h.items() if k in ("0.5-0.6", "0.6-0.7"))
             rej = sum(1 for r in recs if r["news_p"] >= HARD_NEWS)
-            tag = (f"  ← [0.5,0.7) 合计 {band} 条；[0.7,1] 硬否决区 {rej} 条"
-                   f"（news 通道触发率 {rej/len(recs):.2%}）")
+            tag = (
+                f"  ← [0.5,0.7) 合计 {band} 条；[0.7,1] 硬否决区 {rej} 条"
+                f"（news 通道触发率 {rej / len(recs):.2%}）"
+            )
         print(f"{f:<11} {h}{tag}")
     # 0.5-0.7 段画像
     band_recs = [r for r in recs if in_band(r, 0.5, 0.7)]
@@ -248,10 +275,12 @@ def main() -> None:
     band_mkt = Counter(r["market"] for r in band_recs)
     band_ret = mean([r["ret5"] for r in band_recs]) if band_recs else None
     pool_ret = mean([r["ret5"] for r in recs])
-    print(f"\n[0.5,0.7) 段画像：n={len(band_recs)}（占池 {len(band_recs)/len(recs):.1%}），"
-          f"其中按产线口径仍触发硬否决 {band_rej} 条（crowd-hot 通道）；"
-          f"市场域 {dict(band_mkt)}；段内 T+5 均值 {band_ret:+.2%} "
-          f"vs 全池 {pool_ret:+.2%}")
+    print(
+        f"\n[0.5,0.7) 段画像：n={len(band_recs)}（占池 {len(band_recs) / len(recs):.1%}），"
+        f"其中按产线口径仍触发硬否决 {band_rej} 条（crowd-hot 通道）；"
+        f"市场域 {dict(band_mkt)}；段内 T+5 均值 {band_ret:+.2%} "
+        f"vs 全池 {pool_ret:+.2%}"
+    )
     # 其他原子 0.5-0.7 段对照（证明主轴选择的唯一性）
     for f in ("crowd_p", "regime_p", "overlap_p"):
         seg = [r for r in recs if r.get(f) is not None and 0.5 <= r[f] < 0.7]
@@ -261,18 +290,30 @@ def main() -> None:
     print("\n===== 2. 硬否决（产线现状 news_p≥0.7 ∨ crowd-hot）反事实 =====")
     kept_hard = [r for r in recs if not hard_reject(r)]
     hard5 = market_domain_improve(recs, kept_hard, "ret5")
-    hard_stats = {"removed": len(recs) - len(kept_hard),
-                  "t5": hard5, "pool_after": pool_stats(kept_hard)}
-    print(f"剔除 {len(recs) - len(kept_hard)} 条 → 同市场域 T+5 改善 "
-          f"{hard5['cross_market']*100 if hard5['cross_market'] is not None else 0:+.2f}pp"
-          f"（域数 {hard5['n_domains']}）；逐域："
-          + "; ".join(f"{m} {v['diff']*100:+.2f}pp(n={v['n_base']})"
-                      for m, v in hard5["per_market"].items() if v["diff"] is not None))
+    hard_stats = {
+        "removed": len(recs) - len(kept_hard),
+        "t5": hard5,
+        "pool_after": pool_stats(kept_hard),
+    }
+    print(
+        f"剔除 {len(recs) - len(kept_hard)} 条 → 同市场域 T+5 改善 "
+        f"{hard5['cross_market'] * 100 if hard5['cross_market'] is not None else 0:+.2f}pp"
+        f"（域数 {hard5['n_domains']}）；逐域："
+        + "; ".join(
+            f"{m} {v['diff'] * 100:+.2f}pp(n={v['n_base']})"
+            for m, v in hard5["per_market"].items()
+            if v["diff"] is not None
+        )
+    )
     if any(r.get("ret10") is not None for r in recs):
         hard10 = market_domain_improve(recs, kept_hard, "ret10")
         hard_stats["t10"] = hard10
         c10 = hard10["cross_market"]
-        print(f"  T+10 同市场域改善 {c10*100:+.2f}pp" if c10 is not None else "  T+10 覆盖不足")
+        print(
+            f"  T+10 同市场域改善 {c10 * 100:+.2f}pp"
+            if c10 is not None
+            else "  T+10 覆盖不足"
+        )
 
     # ── 3. 弱否决阈值网格 ──
     print("\n===== 3. 弱否决阈值网格（剔除口径，T+5 同市场域改善，跨域等权） =====")
@@ -290,12 +331,18 @@ def main() -> None:
             imp5 = market_domain_improve(recs, kept, "ret5")
             # 分半稳健性：窗口中位日期切两段，各自域内改善同号才算稳健
             seg = {}
-            for name, pool in (("H1", [r for r in recs if r["pool_date"] < mid_date]),
-                               ("H2", [r for r in recs if r["pool_date"] >= mid_date])):
+            for name, pool in (
+                ("H1", [r for r in recs if r["pool_date"] < mid_date]),
+                ("H2", [r for r in recs if r["pool_date"] >= mid_date]),
+            ):
                 kb = [r for r in pool if not in_band(r, lo, hi)]
                 seg[name] = market_domain_improve(pool, kb, "ret5")["cross_market"]
-            same_sign = (seg["H1"] is not None and seg["H2"] is not None
-                         and seg["H1"] > 0 and seg["H2"] > 0)
+            same_sign = (
+                seg["H1"] is not None
+                and seg["H2"] is not None
+                and seg["H1"] > 0
+                and seg["H2"] > 0
+            )
             # 降权口径：band 权重 0.5 的加权均值改善
             w_imp = {}
             for key in ("ret5", "ret10"):
@@ -306,60 +353,87 @@ def main() -> None:
                     b = [r for r in recs if r["market"] == m and r.get(key) is not None]
                     if len(b) < 10:
                         continue
-                    wmean = (sum(r[key] * (PROMOTED if in_band(r, lo, hi) else 1.0)
-                                 for r in b)
-                             / sum((PROMOTED if in_band(r, lo, hi) else 1.0) for r in b))
+                    wmean = sum(
+                        r[key] * (PROMOTED if in_band(r, lo, hi) else 1.0) for r in b
+                    ) / sum((PROMOTED if in_band(r, lo, hi) else 1.0) for r in b)
                     per.append(wmean - mean([r[key] for r in b]))
                 w_imp[key] = round(mean(per), 6) if per else None
             row = {
-                "band": f"[{lo},{hi})", "lo": lo, "hi": hi,
-                "n_band": len(band), "frac": round(len(band) / len(recs), 4),
+                "band": f"[{lo},{hi})",
+                "lo": lo,
+                "hi": hi,
+                "n_band": len(band),
+                "frac": round(len(band) / len(recs), 4),
                 "band_ret5": round(band_ret if band_ret else 0, 6),
-                "t5_imp": imp5["cross_market"], "t5_per_market": imp5["per_market"],
+                "t5_imp": imp5["cross_market"],
+                "t5_per_market": imp5["per_market"],
                 "t10_imp": market_domain_improve(recs, kept, "ret10")["cross_market"]
-                if any(r.get("ret10") is not None for r in recs) else None,
+                if any(r.get("ret10") is not None for r in recs)
+                else None,
                 "downweight_t5": w_imp.get("ret5"),
                 "downweight_t10": w_imp.get("ret10"),
-                "h1_imp": seg["H1"], "h2_imp": seg["H2"], "same_sign": same_sign,
+                "h1_imp": seg["H1"],
+                "h2_imp": seg["H2"],
+                "same_sign": same_sign,
                 "mdd_after": pool_stats(kept)["mdd"],
             }
             grid_rows.append(row)
             t5 = row["t5_imp"]
             t10 = row["t10_imp"]
-            print(f"[{lo},{hi}): n={row['n_band']:>3} ({row['frac']:.1%}) "
-                  f"T5 {t5*100 if t5 is not None else 0:+.2f}pp"
-                  + (f" T10 {t10*100:+.2f}pp" if t10 is not None else "")
-                  + f" 降权T5 {row['downweight_t5']*100:+.2f}pp"
-                  + f" | H1 {seg['H1']*100 if seg['H1'] is not None else 0:+.2f} / "
-                    f"H2 {seg['H2']*100 if seg['H2'] is not None else 0:+.2f} "
-                    f"{'✓同向' if same_sign else '✗'}")
+            print(
+                f"[{lo},{hi}): n={row['n_band']:>3} ({row['frac']:.1%}) "
+                f"T5 {t5 * 100 if t5 is not None else 0:+.2f}pp"
+                + (f" T10 {t10 * 100:+.2f}pp" if t10 is not None else "")
+                + f" 降权T5 {row['downweight_t5'] * 100:+.2f}pp"
+                + f" | H1 {seg['H1'] * 100 if seg['H1'] is not None else 0:+.2f} / "
+                f"H2 {seg['H2'] * 100 if seg['H2'] is not None else 0:+.2f} "
+                f"{'✓同向' if same_sign else '✗'}"
+            )
 
     # ── 4. 基线回撤对照 ──
     print("\n===== 4. 回撤对照（T+5 池日均累加曲线 MDD） =====")
     base_stats = pool_stats(recs)
-    print(f"基线池: n={base_stats['n']} mean {base_stats['mean']:+.2%} "
-          f"MDD {base_stats['mdd']:.2%} 最差日 {base_stats['worst_day']:+.2%} "
-          f"尾部10% {base_stats['tail10_mean']:+.2%}")
+    print(
+        f"基线池: n={base_stats['n']} mean {base_stats['mean']:+.2%} "
+        f"MDD {base_stats['mdd']:.2%} 最差日 {base_stats['worst_day']:+.2%} "
+        f"尾部10% {base_stats['tail10_mean']:+.2%}"
+    )
     if hard_stats.get("t5"):
         hs = hard_stats["pool_after"]
-        print(f"硬否决后: n={hs['n']} mean {hs['mean']:+.2%} MDD {hs['mdd']:.2%} "
-              f"最差日 {hs['worst_day']:+.2%} 尾部10% {hs['tail10_mean']:+.2%}")
+        print(
+            f"硬否决后: n={hs['n']} mean {hs['mean']:+.2%} MDD {hs['mdd']:.2%} "
+            f"最差日 {hs['worst_day']:+.2%} 尾部10% {hs['tail10_mean']:+.2%}"
+        )
 
     # ── 5. 判定 ──
     print("\n===== 5. 判定 =====")
     mdd_base = base_stats["mdd"]
-    cand = [g for g in grid_rows
-            if g["t5_imp"] is not None and g["t5_imp"] >= VERDICT_PP
-            and g["n_band"] >= WEAK_MIN_N and g["frac"] >= BAND_FRAC_MIN
-            and g["same_sign"] and g["mdd_after"] <= mdd_base * 1.05]
+    cand = [
+        g
+        for g in grid_rows
+        if g["t5_imp"] is not None
+        and g["t5_imp"] >= VERDICT_PP
+        and g["n_band"] >= WEAK_MIN_N
+        and g["frac"] >= BAND_FRAC_MIN
+        and g["same_sign"]
+        and g["mdd_after"] <= mdd_base * 1.05
+    ]
     verdict = {
-        "sample": {"live": len(live), "replay": len(replay), "total": len(recs),
-                   "window": [pd_all[0], pd_all[-1]],
-                   "t10_covered": sum(1 for r in recs if r.get("ret10") is not None)},
+        "sample": {
+            "live": len(live),
+            "replay": len(replay),
+            "total": len(recs),
+            "window": [pd_all[0], pd_all[-1]],
+            "t10_covered": sum(1 for r in recs if r.get("ret10") is not None),
+        },
         "distributions": dist,
-        "band_0507": {"n": len(band_recs), "frac": round(len(band_recs)/len(recs), 4),
-                      "hard_reject_in_band": band_rej, "markets": dict(band_mkt),
-                      "ret5_mean": round(band_ret, 6) if band_ret is not None else None},
+        "band_0507": {
+            "n": len(band_recs),
+            "frac": round(len(band_recs) / len(recs), 4),
+            "hard_reject_in_band": band_rej,
+            "markets": dict(band_mkt),
+            "ret5_mean": round(band_ret, 6) if band_ret is not None else None,
+        },
         "hard_veto": hard_stats,
         "grid": grid_rows,
         "baseline_stats": base_stats,
@@ -369,30 +443,41 @@ def main() -> None:
     if cand:
         best = max(cand, key=lambda g: g["t5_imp"])
         verdict["best_band"] = best["band"]
-        print(f"GO：{len(cand)} 个档位达标 {verdict['qualifying_bands']}，"
-              f"最优 {best['band']}（T+5 同市场域改善 {best['t5_imp']*100:+.2f}pp，"
-              f"两段同向，MDD {best['mdd_after']:.2%} ≤ 基线 {mdd_base:.2%}×1.05）"
-              f"→ 出产线变更方案（只写不动手）")
+        print(
+            f"GO：{len(cand)} 个档位达标 {verdict['qualifying_bands']}，"
+            f"最优 {best['band']}（T+5 同市场域改善 {best['t5_imp'] * 100:+.2f}pp，"
+            f"两段同向，MDD {best['mdd_after']:.2%} ≤ 基线 {mdd_base:.2%}×1.05）"
+            f"→ 出产线变更方案（只写不动手）"
+        )
     else:
         # 否定证据归因：为什么全挂
         best_row = max(grid_rows, key=lambda g: g["t5_imp"] or -1)
-        print(f"NO-GO：无档位同时满足 改善≥{VERDICT_PP*100:.1f}pp + n≥{WEAK_MIN_N} "
-              f"+ 两段同向 + 回撤不恶化。")
-        print(f"  网格最优档 {best_row['band']}: n={best_row['n_band']} "
-              f"T5 {best_row['t5_imp']*100 if best_row['t5_imp'] is not None else 0:+.2f}pp "
-              f"H1/H2 同向={best_row['same_sign']}")
+        print(
+            f"NO-GO：无档位同时满足 改善≥{VERDICT_PP * 100:.1f}pp + n≥{WEAK_MIN_N} "
+            f"+ 两段同向 + 回撤不恶化。"
+        )
+        print(
+            f"  网格最优档 {best_row['band']}: n={best_row['n_band']} "
+            f"T5 {best_row['t5_imp'] * 100 if best_row['t5_imp'] is not None else 0:+.2f}pp "
+            f"H1/H2 同向={best_row['same_sign']}"
+        )
         seg_ret = mean([r["ret5"] for r in band_recs]) if band_recs else 0
         cap_pp = (len(band_recs) / len(recs)) * (pool_ret - seg_ret) * 100
-        print(f"  证据①：[0.5,0.7) 段 T+5 均值 {seg_ret:+.2%} vs 全池 {pool_ret:+.2%}"
-              f"（段内确实更差）；但段仅占池 {len(band_recs)/len(recs):.1%}，"
-              f"即使整段全剔，全池改善的理论上限 = 占比×均值差 ≈ {cap_pp:+.2f}pp，"
-              f"物理上到不了 {VERDICT_PP*100:.1f}pp 阈值——样本太薄，不是阈值调不调的问题。")
-        print(f"  证据②：产线硬否决（news≥0.7 ∨ crowd-hot，21 条）剔除后同市场域改善 "
-              f"{(hard_stats['t5']['cross_market'] or 0)*100:+.2f}pp ≈ 0——"
-              f"否决通道在现有样本上整段无边际贡献。")
+        print(
+            f"  证据①：[0.5,0.7) 段 T+5 均值 {seg_ret:+.2%} vs 全池 {pool_ret:+.2%}"
+            f"（段内确实更差）；但段仅占池 {len(band_recs) / len(recs):.1%}，"
+            f"即使整段全剔，全池改善的理论上限 = 占比×均值差 ≈ {cap_pp:+.2f}pp，"
+            f"物理上到不了 {VERDICT_PP * 100:.1f}pp 阈值——样本太薄，不是阈值调不调的问题。"
+        )
+        print(
+            f"  证据②：产线硬否决（news≥0.7 ∨ crowd-hot，21 条）剔除后同市场域改善 "
+            f"{(hard_stats['t5']['cross_market'] or 0) * 100:+.2f}pp ≈ 0——"
+            f"否决通道在现有样本上整段无边际贡献。"
+        )
 
-    OUT_JSON.write_text(json.dumps(verdict, ensure_ascii=False, indent=2),
-                        encoding="utf-8")
+    OUT_JSON.write_text(
+        json.dumps(verdict, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     print(f"\n结果已写 {OUT_JSON}")
 
 
