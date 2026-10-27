@@ -16,11 +16,15 @@
   "redirects": {
     "/picks_index.html": "/picks.html"
   },
-  "notes": "W4 小批收编：adopted 页接入 PageShell 头部；picks_index 0字节重复页 301 到 picks；其余 legacy 保留，后续逐页。",
+  "notes": "W4 小批收编（第二批：flow/ops/academy/dataops）；adopted 页接入 PageShell 头部；picks_index 0字节重复页 301 到 picks；其余 legacy 保留，后续逐页。",
   "adopted": [
     "/home.html",
     "/quant.html",
     "/screen.html",
-    "/intel_workbench.html"
+    "/intel_workbench.html",
+    "/flow.html",
+    "/ops.html",
+    "/academy.html",
+    "/dataops.html"
   ]
 }
