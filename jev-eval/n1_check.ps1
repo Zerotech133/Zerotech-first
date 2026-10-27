@@ -4,6 +4,7 @@
 #   - OneDrive C:\Users\Administrator -> C:\Users\t
 #   - neo4j 周备目录 E:\KGStockAnalysis\backups\neo4j -> C:\aios\backups\neo4j
 #     （E:\ 为旧机来源路径；2026-10-25 EXEC-R11 核实本机无 E: 盘，仅作迁移历史留档）
+#     （KGStockAnalysis 为旧名，2026-10-17 已物理改名 zerobound-kg）
 #   - MinFiles 10 -> 6（v11 清单裁剪：quant_db/qd_db/webui_data/quant_src 移除，
 #     剩 zhice_db.enc + jev_eval + quant_data + neo4j_kg + quant_code + backup.log）
 #   - quant_code 基线待新机首次备份后回填（旧机末值不同源不可比）

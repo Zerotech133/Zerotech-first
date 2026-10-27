@@ -201,7 +201,7 @@ class KgClient:
                 # 概念级语义边（K265-P1：LLM 供应链/需求带动）
                 S.REL_SUPPLIES,
                 S.REL_DRIVES,
-                # 情报线边族（K264 跨项目收录：写入器在 KGStockAnalysis，
+                # 情报线边族（K264 跨项目收录：写入器在 zerobound-kg（旧名 KGStockAnalysis），
                 # 双版本设计 EXP_=实验域/无前缀=转正域，≈100.5 万条）
                 S.REL_MENTIONS,
                 S.REL_REPORTED_BY,

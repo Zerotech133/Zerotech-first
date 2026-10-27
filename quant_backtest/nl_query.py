@@ -33,7 +33,7 @@ import time
 from datetime import datetime, timezone
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-# 2026-10-07 A/B 全量合并为单一权威版：kg_paths 仅 KGStockAnalysis 侧存在，
+# 2026-10-07 A/B 全量合并为单一权威版：kg_paths 仅 zerobound-kg（旧名 KGStockAnalysis）侧存在，
 # quant_backtest 产线无此模块 → ImportError 回落 HERE/data（两侧行为均不变）
 try:
     import kg_paths  # noqa: E402  单一数据库指针
