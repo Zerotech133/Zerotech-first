@@ -57,6 +57,7 @@ import os
 import csv
 import json
 import re
+import sqlite3
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -394,6 +395,34 @@ def hk_symbols_in_db(db_path: Path | str) -> list[str]:
     return sorted({file_code(r[0]) for r in rows if is_hk_code(str(r[0]))})
 
 
+def cancel_pending(db_path: Path | str | None = None, dry_run: bool = False) -> dict:
+    """撤销 hk_% 账本的全部 pending 单（2026-10-27 R1 缺口补齐）。
+
+    - dry_run=True：只统计不写库；
+    - 只处理 ``account_id LIKE 'hk_%' AND status='pending'``，不影响 main/us；
+    - reason 保留原值并前缀 ``manual cancel-pending |``，便于审计。
+    """
+    db = Path(db_path) if db_path else _paper_db()
+    if not db.is_file():
+        return {"ok": True, "cancelled": 0, "note": "账本不存在（灰态）", "db": str(db)}
+    con = sqlite3.connect(str(db))
+    try:
+        n = con.execute(
+            "SELECT COUNT(*) FROM orders WHERE account_id LIKE 'hk_%' AND status='pending'"
+        ).fetchone()[0]
+        if dry_run or not n:
+            return {"ok": True, "dry_run": bool(dry_run), "cancelled": int(n), "db": str(db)}
+        con.execute(
+            "UPDATE orders SET status='cancelled', "
+            "reason='manual cancel-pending | ' || COALESCE(reason,'') "
+            "WHERE account_id LIKE 'hk_%' AND status='pending'"
+        )
+        con.commit()
+        return {"ok": True, "dry_run": False, "cancelled": int(n), "db": str(db)}
+    finally:
+        con.close()
+
+
 def hk_pass(db_path: Path | str | None = None, do_refresh: bool = True) -> dict | None:
     """HK 独立账本通道（镜像 cli.py _us_pass）：存在 hk_% 账本才跑。
 
@@ -530,6 +559,11 @@ def main(argv: list[str]) -> int:
                     f"仓位 {m['pos_pct']:.1%} 待撮合 {m['pending']} "
                     f"对账 {'OK' if m['verify_ok'] else 'FAIL'}"
                 )
+        return 0
+    if argv and argv[0] == "cancel-pending":
+        dry = "--dry-run" in argv[1:]
+        db_arg = next((a for a in argv[1:] if not a.startswith("--")), None)
+        print(json.dumps(cancel_pending(db_arg, dry_run=dry), ensure_ascii=False))
         return 0
     if argv and argv[0] == "status":
         db = Path(argv[1]) if len(argv) > 1 else _paper_db()

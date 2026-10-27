@@ -293,6 +293,40 @@ def test_refresh_calendar_all_missing_raises(tmp_path):
         hm.refresh_calendar(export_dir=tmp_path / "nope", hk_dir=tmp_path)
 
 
+# ---------------- cancel-pending（2026-10-27 R1 缺口补齐） ----------------
+
+
+def test_cancel_pending_dry_run_and_exec(tmp_path):
+    import sqlite3
+
+    db = tmp_path / "t.db"
+    m = FakeMarket({"00700.HK": [{"trade_date": "20261016", "open": 415.0, "high": 420.0,
+                                  "low": 410.0, "close": 416.0, "pre_close": 415.0}]})
+    PaperEngine(db, m, account="hk_qingping").ensure_account()
+    con = sqlite3.connect(db)
+    ins = ("INSERT INTO orders(ts,source,ref,stock,side,qty,price_base,status,account_id,created_at) "
+           "VALUES(?,?,?,?,?,?,?,?,?,?)")
+    con.execute(ins, ("t", "ai", "", "00700.HK", "BUY", 100, "open", "pending", "hk_qingping", "t"))
+    con.execute(ins, ("t", "ai", "", "600519.SH", "BUY", 100, "open", "pending", "main", "t"))
+    con.commit()
+    con.close()
+
+    r1 = hm.cancel_pending(db, dry_run=True)
+    assert r1["cancelled"] == 1  # 只数 hk_%
+    con = sqlite3.connect(db)
+    assert con.execute("SELECT COUNT(*) FROM orders WHERE account_id='hk_qingping' AND status='pending'").fetchone()[0] == 1
+    con.close()
+
+    r2 = hm.cancel_pending(db)
+    assert r2["cancelled"] == 1
+    con = sqlite3.connect(db)
+    hk = con.execute("SELECT status, reason FROM orders WHERE account_id='hk_qingping'").fetchone()
+    main = con.execute("SELECT status FROM orders WHERE account_id='main'").fetchone()
+    con.close()
+    assert hk[0] == "cancelled" and "manual cancel-pending" in (hk[1] or "")
+    assert main[0] == "pending"  # main 不受影响
+
+
 # ---------------- B1：hk_pass 必须用 HK config（2026-10-27 链路验证抓到的真 bug） ----------------
 
 
