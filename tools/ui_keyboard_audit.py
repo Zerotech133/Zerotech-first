@@ -24,15 +24,17 @@ class _Parser(HTMLParser):
         super().__init__(convert_charrefs=True)
         self.items = []
         self._hidden = 0
+        self._stack = []          # (tag, hidden_here)，用于正确配对嵌套 hidden
         self._cur = None
+        self._cur_tag = None
         self._tabindex_warn = []
 
     def handle_starttag(self, tag, attrs):
         a = dict(attrs)
-        hidden = ("hidden" in a) or a.get("aria-hidden") == "true"
-        if hidden:
+        hidden_here = ("hidden" in a) or a.get("aria-hidden") == "true"
+        self._stack.append((tag, hidden_here))
+        if hidden_here:
             self._hidden += 1
-            return
         if self._hidden:
             return
         tabindex = a.get("tabindex")
@@ -52,13 +54,18 @@ class _Parser(HTMLParser):
                 "text": "",
                 "tabindex": tabindex or "",
             }
+            self._cur_tag = tag
             self.items.append(self._cur)
 
     def handle_endtag(self, tag):
-        if self._hidden:
-            self._hidden -= 1
+        if not self._stack:
             return
-        self._cur = None
+        tag0, hidden_here = self._stack.pop()
+        if hidden_here:
+            self._hidden = max(0, self._hidden - 1)
+        if self._cur is not None and tag0 == self._cur_tag:
+            self._cur = None
+            self._cur_tag = None
 
     def handle_data(self, data):
         if self._cur is not None and data.strip():
