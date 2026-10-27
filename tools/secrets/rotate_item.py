@@ -25,6 +25,7 @@
   r7-jev        R7 飞书 Base        -> _vault/secrets/news_config_private.json jev_base_token (json, 需 vault 加密)
 """
 from __future__ import annotations
+from typing import NoReturn
 
 import argparse
 import getpass

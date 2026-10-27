@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """审计 A 修复回归测试（K-QUANT-20261026-AUDITFIX）。
 
 覆盖：M1 注释模板不计经验 / M2 主工作树根解析 / M3 inject --dry-run 零写入与幂等 /

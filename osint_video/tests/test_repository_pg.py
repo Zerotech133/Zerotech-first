@@ -139,7 +139,6 @@ class TestClaimAndTransition:
         repo.submit_links(_urls())
         created = repo.list_tasks()["items"][0]
         # 置为 failed 且退避时间在未来 → 不应被认领
-        from common import db
 
         db.execute(
             """

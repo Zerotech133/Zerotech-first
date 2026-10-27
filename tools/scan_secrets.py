@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 scan_secrets — 防泄漏只读扫描器（pre-commit 闸门）
