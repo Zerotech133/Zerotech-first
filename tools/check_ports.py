@@ -67,6 +67,7 @@ REGISTRY = {
     8097: "推送中台总览(push_admin_server.py)",
     8100: "datamart-api 数仓读层HTTP门面(zerobound-kg 数据市集API/datamart_api.py,K-STOCK-415)",  # 2026-10-26 去重：原 10-17 与本行两次登记，Python dict 静默覆盖
     8123: "claudemind server(桌面第三方,非平台栈)",
+    8104: "Bytebase 数据治理UI(Docker,2026-10-27 上架)",
     # 2026-10-16 数据仓止血入册：PG/Neo4j 容器口此前仅靠 dockerd 豁免（治理盲区）。
     # 2026-10-16 审计修正：5432 实为 RAGFlow infinity；zhice-db 真实映射 5446。
     # 2026-10-16 二次勘误：5442 并非残留占用，实为 quant-pg 容器
