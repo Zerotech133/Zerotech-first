@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-28 07:03",
+ "generated": "2026-10-28 07:04",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,8 +9,8 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 36,
-  "workorders_review": 5
+  "workorders_doing": 34,
+  "workorders_review": 6
  },
  "workorders": [
   {
@@ -349,7 +349,7 @@
   {
    "id": "WO-HUANGZHONG-20261028",
    "desc": "黄忠验收守门：charter五维+org授权细化+huangzhong_accept工具(观察模式)",
-   "status": "doing",
+   "status": "review",
    "owner": "ZHAOYUN",
    "branch": "task/WO-HUANGZHONG-20261028",
    "created": "2026-10-28 07:01:26",
@@ -363,15 +363,6 @@
    "branch": "task/K-QUANT-20261028-KEYSV2ON",
    "created": "2026-10-28 07:01:37",
    "project": "quant"
-  },
-  {
-   "id": "K-ORG-20261028-JEVTRUNC",
-   "desc": "JEV 本地判读输出预算 80→220 token：修复长公司名单 JSON 截断（毒丸 2 条）",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-ORG-20261028-JEVTRUNC",
-   "created": "2026-10-28 07:01:58",
-   "project": "general"
   },
   {
    "id": "WO-DELIVERY-OPS-20261028",
@@ -7059,7 +7050,7 @@
     {
      "id": "WO-HUANGZHONG-20261028",
      "desc": "黄忠验收守门：charter五维+org授权细化+huangzhong_accept工具(观察模式)",
-     "status": "doing"
+     "status": "review"
     }
    ]
   }
