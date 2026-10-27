@@ -230,13 +230,13 @@
    "project": "portal"
   },
   {
-   "id": "WO-INFRA-2WK-20261027",
-   "desc": "工程基建2周项：日志轮转工具+测试失败基线+testpaths实测记录",
+   "id": "K-MISSION-9DC8E6-T1",
+   "desc": "编写 Worker Grounding Guard 说明",
    "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-INFRA-2WK-20261027",
-   "created": "2026-10-27 23:28:16",
-   "project": "general"
+   "owner": "DSH-Lead",
+   "branch": "task/K-MISSION-9DC8E6-T1",
+   "created": "2026-10-27 23:31:50",
+   "project": "portal"
   }
  ],
  "coder_traces": [
@@ -6793,11 +6793,6 @@
      "id": "WO-LEGION-DEEPSHELL-20261027",
      "desc": "深屏骨架推广：shared deep_shell.css；/picks.html 立即接入；/strategies 动态生成器接入（待 8091 受控重启生效）；保留业务 JS/数据；无 L2",
      "status": "review"
-    },
-    {
-     "id": "WO-INFRA-2WK-20261027",
-     "desc": "工程基建2周项：日志轮转工具+测试失败基线+testpaths实测记录",
-     "status": "doing"
     }
    ]
   }
