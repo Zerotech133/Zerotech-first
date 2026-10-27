@@ -129,6 +129,25 @@ def test_manual_buy_fill_and_fees(tmp_path):
     assert e.verify()["ok"]
 
 
+def test_buy_fee_includes_stamp_tax_buy_config(tmp_path):
+    """D1-A：买入印花税经 config 生效（A 股默认 0，零影响）。"""
+    e = PaperEngine(tmp_path / "paper.db", _mk_market(), config={"stamp_tax_buy": 0.001})
+    r = e.buy("600519.SH", 100)  # 1252 * 100 = 125,200 HKD/元
+    fee = round(max(5, 100 * 1252.0 * 0.00025) + 100 * 1252.0 * 0.001, 2)
+    assert r["fee"] == fee
+    assert e.verify()["ok"]
+
+
+def test_t_plus_zero_allows_same_day_sell(tmp_path):
+    """D2-A：t_plus=0 时不冻结当日买入（A 股默认 1，零影响）。"""
+    e = PaperEngine(tmp_path / "paper.db", _mk_market(), config={"t_plus": 0})
+    e.buy("600519.SH", 100)
+    assert e.available_qty("600519.SH") == 100
+    r = e.sell("600519.SH", 100)
+    assert r["qty"] == 100
+    assert e.verify()["ok"]
+
+
 def test_lot_and_manual_price_bounds(tmp_path):
     e = _mk_engine(tmp_path)
     with pytest.raises(Reject):  # 非整手

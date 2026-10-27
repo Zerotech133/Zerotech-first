@@ -43,6 +43,8 @@ _DEFAULTS = dict(
     commission_rate=0.00025,
     min_commission=5.0,
     stamp_tax=0.0005,  # 仅卖出
+    stamp_tax_buy=0.0,  # 买入印花税（A 股 0；HK 0.1% 由 config 覆盖；2026-10-27 拍板 D1-A）
+    t_plus=1,  # 可卖锁定期：1=A股T+1冻结；0=HK T+0（2026-10-27 拍板 D2-A）
     max_pos_pct=0.20,  # 单票市值 / 总资产
     max_total_pct=0.95,  # 总持仓市值 / 总资产
 )
@@ -431,6 +433,8 @@ class PaperEngine:
         ).fetchone()
         if not pos:
             return 0
+        if int(self.cfg.get("t_plus", 1)) == 0:
+            return int(pos["qty"])  # HK T+0：当日买入即可卖
         frozen = self.con.execute(
             "SELECT COALESCE(SUM(filled_qty),0) FROM orders "
             "WHERE account_id=? AND stock=? AND side='BUY' AND status='filled' AND fill_date=?",
@@ -488,9 +492,8 @@ class PaperEngine:
     # ---------------- 费率 ----------------
 
     def _fee_buy(self, amount: float) -> float:
-        return round(
-            max(self.cfg["min_commission"], amount * self.cfg["commission_rate"]), 2
-        )
+        c = max(self.cfg["min_commission"], amount * self.cfg["commission_rate"])
+        return round(c + amount * self.cfg.get("stamp_tax_buy", 0.0), 2)
 
     def _fee_sell(self, amount: float) -> float:
         c = max(self.cfg["min_commission"], amount * self.cfg["commission_rate"])
