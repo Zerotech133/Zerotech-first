@@ -53,6 +53,11 @@ td{padding:5px 4px;border-bottom:.5px dashed #16304F;vertical-align:top}
 <div id="modelch" style="display:flex;gap:12px;flex-wrap:wrap"></div>
 </section>
 <main id="main"></main>
+<section class="log" id="rd-switch" style="margin:0 22px 20px">
+<h2>研发板块 · 模型手动切换（所有模型可选）</h2>
+<div class="muted" style="margin-bottom:8px">研发部每个成员可单独钉选模型；选择后该 AI 的 auto 请求优先用此模型。覆盖范围：自动 / 本地 4B/9B/35B / 智谱 / DeepSeek / 中转 GPT-6。</div>
+<div id="rd-list" class="muted">加载中…</div>
+</section>
 <section class="log" id="cred-section" style="margin:0 22px 20px">
 <h2>统一凭据（JEV / 数据接口 / 飞书）<span class="muted" style="font-size:11px">只读目录 · 真源 _vault（age 加密）· 不显示密钥</span></h2>
 <div id="cred-list"></div>
@@ -244,6 +249,30 @@ async function loadModelCh(){
   }catch(e){box.innerHTML='<div class="muted">模型通道读取失败：'+e.message+'</div>'}
 }
 loadModelCh(); setInterval(loadModelCh,30000);
+
+async function loadPrefs(){
+  try{
+    const r=await fetch('/api/model/prefs',{cache:'no-store'}); const v=await r.json();
+    const box=document.getElementById('rd-list'); if(!v.ok){box.textContent='读取失败';return}
+    const opts=(v.models||[]).map(m=>'<option value="'+m.id+'">'+m.label+'</option>').join('');
+    let h='<table><thead><tr><th>研发成员</th><th>当前模型</th><th>状态</th></tr></thead><tbody>';
+    for(const a of (v.agents||[])){
+      const cur=(v.prefs||{})[a.id]||'auto';
+      h+='<tr><td>'+a.name+'</td><td><select data-agent="'+a.id+'">'+opts+'</select></td><td class="muted" id="pref-'+a.id+'">'+cur+'</td></tr>';
+    }
+    box.innerHTML=h+'</tbody></table>';
+    box.querySelectorAll('select[data-agent]').forEach(sel=>{
+      sel.value=(v.prefs||{})[sel.dataset.agent]||'auto';
+      sel.onchange=async()=>{
+        const r2=await fetch('/api/model/prefs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agent:sel.dataset.agent,model:sel.value})});
+        const j=await r2.json(); const st=document.getElementById('pref-'+sel.dataset.agent);
+        if(j.ok){st.textContent=j.model;st.className='ok'}else{st.textContent='失败';st.className='bad'}
+      };
+    });
+  }catch(e){document.getElementById('rd-list').textContent='读取失败：'+e.message}
+}
+loadPrefs(); setInterval(loadPrefs,60000);
+
 load();setInterval(load,30000);
 setInterval(loadVK,30000);
 </script></body></html>

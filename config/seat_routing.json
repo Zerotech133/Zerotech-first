@@ -49,6 +49,19 @@
    "seats": [],
    "allow_local": true,
    "local_model": "qwen3.6:35b-a3b"
+  },
+  "zhipu": {
+   "seats": [
+    "tianfeng"
+   ],
+   "allow_local": false
+  },
+  "deepseek": {
+   "seats": [
+    "zhaoyun",
+    "zhuge"
+   ],
+   "allow_local": false
   }
  },
  "seats": {

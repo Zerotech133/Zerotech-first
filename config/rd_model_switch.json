@@ -1,0 +1,17 @@
+{
+ "schema": "rd_model_switch/v1",
+ "team": "研发部",
+ "agents": [
+  {"id": "ARCH1", "name": "曹操（研发负责人）"},
+  {"id": "DEV1", "name": "DEV1（G1 组长）"},
+  {"id": "DEV2", "name": "DEV2"},
+  {"id": "DEV3", "name": "DEV3"},
+  {"id": "DEV4", "name": "DEV4"},
+  {"id": "DEV5", "name": "DEV5（G2 组长）"},
+  {"id": "DEV6", "name": "DEV6"},
+  {"id": "DEV7", "name": "DEV7"},
+  {"id": "DEV8", "name": "DEV8"},
+  {"id": "OPS1", "name": "OPS1"},
+  {"id": "DOC1", "name": "DOC1"}
+ ]
+}
