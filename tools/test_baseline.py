@@ -46,14 +46,17 @@ def build_cmd(py: str, suites: list[str] | None = None,
 
 
 def parse_summary(stdout: str) -> dict:
+    """pytest 汇总行顺序不固定（如 "3 failed, 2204 passed"），逐项独立匹配。"""
     tail = stdout[-4000:]
-    m = _SUMMARY_RE.search(tail)
-    if not m:
-        return {"passed": None, "skipped": None, "failed": None, "error": None}
-    return {"passed": int(m.group(1)),
-            "skipped": int(m.group(2) or 0),
-            "failed": int(m.group(3) or 0),
-            "error": int(m.group(4) or 0)}
+
+    def _n(pat: str) -> int:
+        m = re.search(pat, tail)
+        return int(m.group(1)) if m else 0
+
+    return {"passed": _n(r"(\d+) passed"),
+            "skipped": _n(r"(\d+) skipped"),
+            "failed": _n(r"(\d+) failed"),
+            "error": _n(r"(\d+) error")}
 
 
 def run_baseline(py: str | None = None, suites: list[str] | None = None,

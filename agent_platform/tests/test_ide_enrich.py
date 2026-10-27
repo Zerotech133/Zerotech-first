@@ -52,13 +52,13 @@ def test_role_cn_from_prompt_forms():
 def test_bundle_names_and_capabilities_contract():
     bundle = json.load(open(Path(B.OUT), encoding="utf-8"))
     agents = bundle["agents"]
-    assert len(agents) == 62, "61 在编 + 1 治理席虚拟卡（关羽已入编）"
-    assert bundle["stats"]["agents"] == 61
+    assert len(agents) == 63, "62 在编 + 1 治理席虚拟卡"
+    assert bundle["stats"]["agents"] == 62
     assert bundle["stats"]["governance_seats"] == 1
-    assert bundle["stats"]["prompt_ok"] == 61
+    assert bundle["stats"]["prompt_ok"] == 62
     assert bundle["stats"]["prompt_miss"] == []
     named = [c for c in agents.values() if c.get("cn_name")]
-    assert len(named) == 62, "中文名覆盖应 62/62（含关羽；COWBRIDGE 桥玄已补档）"
+    assert len(named) == 63, "中文名覆盖应 63/63（含新入编席）"
     assert all(c.get("role_cn") for c in agents.values()), "每席应有中文岗位名"
     with_caps = [c for c in agents.values() if c.get("capabilities")]
     assert len(with_caps) >= 39, "专长覆盖应 >= 39/61"

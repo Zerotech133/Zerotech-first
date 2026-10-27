@@ -583,6 +583,22 @@ function loadDrill() {
     });
   });
 }
+function _mkTable(out, headers, rows) {
+  var tbl = document.createElement('table'); tbl.className = 'tbl';
+  var tr = document.createElement('tr');
+  headers.forEach(function (x) { var th = document.createElement('th'); th.textContent = x; tr.appendChild(th); });
+  tbl.appendChild(tr);
+  rows.forEach(function (cells) {
+    var row = document.createElement('tr');
+    cells.forEach(function (c) { var td = document.createElement('td'); td.textContent = String(c == null ? '' : c); row.appendChild(td); });
+    tbl.appendChild(row);
+  });
+  out.appendChild(tbl);
+}
+function _mkMuted(out, text) {
+  var d = document.createElement('div'); d.className = 'muted'; d.textContent = text; out.appendChild(d);
+}
+
 async function debateRun() {
   var out = document.getElementById('db-out');
   out.textContent = '辩论中…';
@@ -595,13 +611,10 @@ async function debateRun() {
     var r = await fetch('/api/zhaoyun/debate?' + p.toString());
     var d = await r.json();
     if (!d.ok) { out.textContent = '辩论失败：' + (d.error || 'unknown'); return; }
-    var html = '<table class="tbl"><tr><th>席位</th><th>立场</th><th>论据</th></tr>';
-    (d.seats || []).forEach(function (s) {
-      html += '<tr><td>' + s.name + '</td><td>' + s.stance + '</td><td>' + s.argument + '</td></tr>';
-    });
-    html += '</table><div class="muted">分歧：' + ((d.divergence || {}).dissent || []).join('；') + '</div>';
-    html += '<div class="muted">决策提示：' + (d.decision_hint || '') + '</div>';
-    out.innerHTML = html;
+    out.replaceChildren();
+    _mkTable(out, ['席位', '立场', '论据'], (d.seats || []).map(function (s) { return [s.name, s.stance, s.argument]; }));
+    _mkMuted(out, '分歧：' + ((d.divergence || {}).dissent || []).join('；'));
+    _mkMuted(out, '决策提示：' + (d.decision_hint || ''));
   } catch (e) { out.textContent = '辩论异常：' + e; }
 }
 
@@ -619,19 +632,13 @@ async function wargameRun() {
     var r = await fetch('/api/zhaoyun/wargame?' + p.toString());
     var d = await r.json();
     if (!d.ok) { out.textContent = '推演失败：' + (d.error || 'unknown'); return; }
-    var html = '<table class="tbl"><tr><th>情景</th><th>影响分</th><th>判断</th></tr>';
-    (d.scenarios || []).forEach(function (s) {
-      html += '<tr><td>' + s.name + '</td><td>' + s.impact_score + '</td><td>' + s.impact + '</td></tr>';
-    });
-    html += '</table><div class="muted">敏感性（降序）：' +
-      (d.sensitivity || []).map(function (x) { return x.variable + '(' + x.contribution + ')'; }).join(' · ') + '</div>';
-    if ((d.triggers || []).length) {
-      html += '<div class="muted">触发条件：' + d.triggers.join('；') + '</div>';
-    }
+    out.replaceChildren();
+    _mkTable(out, ['情景', '影响分', '判断'], (d.scenarios || []).map(function (s) { return [s.name, s.impact_score, s.impact]; }));
+    _mkMuted(out, '敏感性（降序）：' + (d.sensitivity || []).map(function (x) { return x.variable + '(' + x.contribution + ')'; }).join(' · '));
+    if ((d.triggers || []).length) { _mkMuted(out, '触发条件：' + d.triggers.join('；')); }
     if (d.evidence && d.evidence.ok) {
-      html += '<div class="muted">证据：' + d.evidence.code + ' 近 ' + (d.evidence.rows || []).length + ' 日线（只读，不参与打分）</div>';
+      _mkMuted(out, '证据：' + d.evidence.code + ' 近 ' + (d.evidence.rows || []).length + ' 日线（只读，不参与打分）');
     }
-    out.innerHTML = html;
   } catch (e) { out.textContent = '推演异常：' + e; }
 }
 
@@ -655,12 +662,9 @@ async function quantQuery() {
     var rows = d.rows || [];
     if (!rows.length) { out.textContent = '（无数据）'; return; }
     var cols = Object.keys(rows[0]).slice(0, 8);
-    var html = '<table class="tbl"><tr>' + cols.map(function (c) { return '<th>' + c + '</th>'; }).join('') + '</tr>';
-    rows.slice(0, 20).forEach(function (row) {
-      html += '<tr>' + cols.map(function (c) { return '<td>' + String(row[c] == null ? '' : row[c]) + '</td>'; }).join('') + '</tr>';
-    });
-    html += '</table><div class="muted">共 ' + d.count + ' 行（只读）</div>';
-    out.innerHTML = html;
+    out.replaceChildren();
+    _mkTable(out, cols, rows.slice(0, 20).map(function (row) { return cols.map(function (c) { return row[c]; }); }));
+    _mkMuted(out, '共 ' + d.count + ' 行（只读）');
   } catch (e) { out.textContent = '查询异常：' + e; }
 }
 

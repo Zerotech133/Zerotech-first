@@ -466,6 +466,7 @@ def test_source_imports_no_network_or_heavy_dependencies():
         "argparse",
         "hashlib",
         "json",
+        "logging",
         "os",
         "re",
         "sys",
