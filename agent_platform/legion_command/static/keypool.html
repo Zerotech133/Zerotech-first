@@ -62,7 +62,10 @@ async function load(){
     for(const [sid,s] of Object.entries(v.seats)){
       const c=el('div','card');
       c.appendChild(el('h2','',s.cn+' · '+s.provider));
-      c.appendChild(el('div','meta','绑定 '+s.binding+' ｜ active '+((s.active_key_id)||'—')+' ｜ '+(s.degraded?'<span class="bad">全部不可用</span>':'自动切换 '+(s.auto_switch?'ON':'OFF'))));
+      const meta=el('div','meta','绑定 '+s.binding+' ｜ active '+((s.active_key_id)||'—')+' ｜ ');
+      if(s.degraded){ meta.appendChild(el('span','bad','全部不可用')); }
+      else { meta.appendChild(document.createTextNode('自动切换 '+(s.auto_switch?'ON':'OFF'))); }
+      c.appendChild(meta);
       const tb=document.createElement('table');
       tb.innerHTML='<thead><tr><th>#</th><th>标签</th><th>Key</th><th>状态</th><th>操作</th></tr></thead><tbody></tbody>';
       const tbody=tb.querySelector('tbody');
