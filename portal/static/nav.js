@@ -64,5 +64,11 @@ document.addEventListener('DOMContentLoaded',function(){
  if(!document.querySelector('script[data-wb-palette]')){
   var ps=document.createElement('script');ps.src='/static/ui_palette.js';ps.defer=true;ps.setAttribute('data-wb-palette','1');document.head.appendChild(ps);
  }
+ if(!document.querySelector('link[data-wb-shell-css]')){
+  var sl=document.createElement('link');sl.rel='stylesheet';sl.href='/static/page_shell.css';sl.setAttribute('data-wb-shell-css','1');document.head.appendChild(sl);
+ }
+ if(!document.querySelector('script[data-wb-shell]')){
+  var ss=document.createElement('script');ss.src='/static/page_shell.js';ss.defer=true;ss.setAttribute('data-wb-shell','1');document.head.appendChild(ss);
+ }
 });
 })();
