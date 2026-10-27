@@ -16,7 +16,6 @@ from __future__ import annotations
 import argparse
 import fnmatch
 import json
-import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve()

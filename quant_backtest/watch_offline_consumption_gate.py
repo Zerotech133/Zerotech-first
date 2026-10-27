@@ -72,16 +72,14 @@ def consume_watch_offline_sources(
     unavailable = OfflineConsumptionDiagnosis(
         "SOURCE_UNVERIFIED", "AUTHORITY_UNAVAILABLE"
     )
-    if (
-        authority is None
-        or type(evaluation_as_of) is not datetime
-        or evaluation_as_of.tzinfo is None
-    ):
+    if authority is None:
         return unavailable
+    if type(evaluation_as_of) is not datetime or evaluation_as_of.tzinfo is None:
+        return OfflineConsumptionDiagnosis("SOURCE_UNVERIFIED", "EVALUATION_TIME")
     try:
         offset = evaluation_as_of.utcoffset()
         if offset is None or offset.total_seconds() != 0:
-            return unavailable
+            return OfflineConsumptionDiagnosis("SOURCE_UNVERIFIED", "EVALUATION_TIME")
         result = verify_watch_sources(
             events, evaluation_as_of=evaluation_as_of, authority=authority
         )

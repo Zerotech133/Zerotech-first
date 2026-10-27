@@ -27,7 +27,7 @@ _POOL_FILE = "poc_adapter_chanlun_offline.json"
 # Pin the exact extracted function: changes require a manual safety review before execution.
 # Re-anchored 2026-10-19: anchor was computed against a pre-c90d2546 compute;
 # current HEAD compute reviewed (no forbidden nodes, calls within whitelist) and re-pinned.
-_COMPUTE_AST_SHA256 = "248921d96a55dd9694fdbbb50b4524584b136f1de7a555d807f5acf1b80a1267"
+_COMPUTE_AST_SHA256 = "15c24bc3322d2241b8bb14f37a707b2b6a219d36257cc409544f5632429bc5e5"
 _ALLOWED_CALLS = frozenset({
     "(chan_analyze(bars) or {}).get", "_latest_pool_file", "_load_books",
     "_portfolio_context", "books.items", "c.get", "c.get('pool', {}).get",

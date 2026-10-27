@@ -32,7 +32,6 @@ POLICY = (
 
 sys.path.insert(0, os.path.join(BASE, "quant_backtest"))
 from chanlun_signal import analyze as chan_analyze  # noqa: E402
-import logging
 
 
 def _latest_pool_file():
@@ -103,6 +102,7 @@ def compute(force=False):
     os.makedirs(STATE_DIR, exist_ok=True)
     cache_fp = os.path.join(STATE_DIR, "ops_today_cache.json")
     state_fp = os.path.join(STATE_DIR, "signal_state.json")
+    cache_error = ""
 
     pool_name = _latest_pool_file()
     pool = json.load(open(os.path.join(POOL_DIR, pool_name), encoding="utf-8"))
@@ -117,7 +117,8 @@ def compute(force=False):
                 c["cached"] = True
                 return c
         except Exception as exc:
-            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/ops_signal_today.py", exc)
+            # compute 必须保持 AST 可审计（无 import/无 logging）；错误随结果透出
+            cache_error = str(exc)[:200]
 
     books = _load_books(stocks)
 
@@ -223,6 +224,7 @@ def compute(force=False):
         "portfolio": _portfolio_context(),
         "policy": POLICY,
         "price_basis": "hfq后复权（官方pct_chg因子链·263a铁律）+ seen-ever 去重",
+        "cache_error": cache_error,
     }
     json.dump(out, open(cache_fp, "w", encoding="utf-8"), ensure_ascii=False)
     return out
