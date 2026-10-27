@@ -77,6 +77,60 @@ def profile_index(root: Path) -> dict:
     return out
 
 
+def fallbacks_index(root: Path) -> dict[str, list[str]]:
+    """返回 {agent_id: [降级绑定串, ...]}——席位级 fallback 链的唯一读取口径。
+
+    真源只有一个：`registry/org.json` 的 `departments[].agent_profiles[].llm_fallback`
+    （`llm_fallback` 是**有序**列表，首项优先；与 `profile_index` 的三处登记不同，
+    降级链只写在部门档案表里，顶层 chief 与 team_*.json 均无此字段）。
+
+    归一规则（宁可少一条，不编造一条）：
+      · 只收**字符串**项；非串（dict/None/数字/嵌套 list）与空白串一律过滤——
+        `{"model": ...}` 这类写法不猜语义，避免把 dict 序列化后当成 binding 发出去；
+      · 保序去重：同一 binding 只保留首次出现的位置（降级链顺序即优先级）；
+      · 缺省 `[]`：有档案但没配 fallback 的席位也必须出现在索引里（空链≠无档案）。
+
+    同 key 先到先得（与 `profile_index` 同策略）：同一 agent_id 在多部门重复登记时，
+    以**先出现**的档案为准，不覆盖（后来者可能是复制粘贴残留，不应改写降级顺序）。
+
+    只读，不写任何真源；坏 JSON/缺文件降级为 `{}`（与 profile_index 同容错口径）。
+    """
+    org: dict = {}
+    p = root / "registry" / "org.json"
+    try:
+        org = json.loads(p.read_text(encoding="utf-8"))
+    except (ValueError, OSError):
+        org = {}
+    if not isinstance(org, dict):
+        return {}
+
+    out: dict[str, list[str]] = {}
+    for d in org.get("departments") or []:
+        if not isinstance(d, dict):
+            continue
+        for prof in d.get("agent_profiles") or []:
+            if not isinstance(prof, dict):
+                continue
+            aid = str(prof.get("agent_id") or "")
+            if not aid or aid in out:
+                continue
+            raw = prof.get("llm_fallback")
+            if isinstance(raw, str):        # 容错单串写法（真源标准是 list）
+                raw = [raw]
+            if not isinstance(raw, (list, tuple)):
+                out[aid] = []
+                continue
+            chain: list[str] = []
+            for item in raw:
+                if not isinstance(item, str):
+                    continue
+                token = item.strip()
+                if token and token not in chain:
+                    chain.append(token)
+            out[aid] = chain
+    return out
+
+
 def _is_project_dept(d: dict) -> bool:
     return bool(d.get("type") == "project" or str(d.get("dept") or "").startswith("proj_"))
 
