@@ -5,30 +5,51 @@
   "servers": {
     "filesystem": {
       "script": "tools/mcp_ro_filesystem.py",
-      "args": ["--root", ".", "--root", "C:/项目/deliverables"],
+      "args": [
+        "--root",
+        ".",
+        "--root",
+        "C:/项目/deliverables"
+      ],
       "risk": "read-only",
-      "allow_tools": ["list_dir", "read_file", "stat"],
+      "allow_tools": [
+        "list_dir",
+        "read_file",
+        "stat"
+      ],
       "timeout": 20
     },
     "git": {
       "script": "tools/mcp_ro_git.py",
-      "args": ["--repo", "."],
+      "args": [
+        "--repo",
+        "."
+      ],
       "risk": "read-only",
-      "allow_tools": ["git_status", "git_log", "git_diff"],
+      "allow_tools": [
+        "git_status",
+        "git_log",
+        "git_diff"
+      ],
       "timeout": 20
     },
     "zhaoyun-read": {
       "script": "tools/mcp_ro_zhaoyun.py",
       "args": [],
       "risk": "read-only",
-      "allow_tools": ["tasks_read", "org_read", "docs_search", "health_read"],
+      "allow_tools": [
+        "tasks_read",
+        "org_read",
+        "docs_search",
+        "health_read"
+      ],
       "timeout": 25
     },
     "tushare-http": {
       "transport": "http",
       "url": "https://api.tushare.pro/mcp/",
       "token_env": "TUSHARE_MCP_TOKEN",
-      "enabled": false,
+      "enabled": true,
       "risk": "read-only",
       "allow_tools": "*",
       "timeout": 15,
