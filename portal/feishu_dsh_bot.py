@@ -48,11 +48,12 @@ HELP = """**零界·执行 · 指令**
 
 def machine_entry_text():
     """读本机 web 表层入口链接（current_url.txt 优先，其次 dsh_web.log）。"""
+    remote_dir = os.environ.get("DSH_REMOTE_DIR") or r"C:\项目\dsh_runtime"
     candidates = [
         os.environ.get("DSH_REMOTE_URL_FILE") or "",
-        r"C:\项目\work\_dsh_remote\current_url.txt",
+        os.path.join(remote_dir, "current_url.txt"),
         os.environ.get("DSH_REMOTE_LOG") or "",
-        r"C:\项目\work\_dsh_remote\dsh_web.log",
+        os.path.join(remote_dir, "dsh_web.log"),
     ]
     for path in candidates:
         if not path or not os.path.exists(path):
