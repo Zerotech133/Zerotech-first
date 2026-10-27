@@ -414,3 +414,89 @@ def test_combined_window_error_returns_nonzero(monkeypatch, capsys):
     assert rc == 1
     assert data["scan"]["total_scanned"] == 1
     assert "不足两次扫描" in data["window"]["error"]
+
+
+# ---------------------------------------------------------------------------
+# 2026-10-27 AUDIT-09（审计 L-7）：任务级 by-design 语义映射单测
+#   KgChainWatchdog rc=1 = 发现坏链 → alert_found（非任务失败）
+#   PytestWeekly   rc=1 = k_stock 2 个既存失败（已知基线）→ known_baseline
+# ---------------------------------------------------------------------------
+def test_classify_task_by_design_mapping():
+    assert ta.classify_task_by_design("KgChainWatchdog", 1) == (
+        "alert_found",
+        "发现坏链告警(by-design，非任务失败)",
+    )
+    assert ta.classify_task_by_design("PytestWeekly", 1) == (
+        "known_baseline",
+        "k_stock 2 个既存失败(已知基线，非任务失败)",
+    )
+    # 其它任务同码 / 同任务其它码 → 不映射（保持既有口径）
+    assert ta.classify_task_by_design("SomeOtherTask", 1) is None
+    assert ta.classify_task_by_design("KgChainWatchdog", 2) is None
+    assert ta.classify_task_by_design("PytestWeekly", 0) is None
+
+
+def test_scan_task_semantics_not_counted_as_failure(isolated_data_dir, monkeypatch):
+    """KgChainWatchdog/PytestWeekly 的 rc=1 单列 alert_found/known_baseline，不计 failed。"""
+    monkeypatch.setattr(ta, "query_tasks_via_powershell", lambda: [
+        {"name": "KgChainWatchdog", "state": "Ready", "last_result": 1,
+         "last_run": "2026-10-27 08:00:10", "next_run": "2026-10-27 12:30:00"},
+        {"name": "PytestWeekly", "state": "Ready", "last_result": 1,
+         "last_run": "2026-10-24 09:00:01", "next_run": "2026-10-31 09:00:00"},
+        {"name": "SomeOtherTask", "state": "Ready", "last_result": 1,
+         "last_run": "2026-10-27 07:00:00", "next_run": ""},
+    ])
+    s = ta.scan(audit_family_only=False)
+    assert s["failed"] == 1, s["failures"]
+    assert {f["name"] for f in s["failures"]} == {"SomeOtherTask"}
+    assert s["alert_found"] == 1 and s["known_baseline"] == 1
+    assert [f["name"] for f in s["alert_found_tasks"]] == ["KgChainWatchdog"]
+    assert [f["name"] for f in s["known_baseline_tasks"]] == ["PytestWeekly"]
+    assert "发现坏链" in s["alert_found_tasks"][0]["exit_semantics"]
+    assert "已知基线" in s["known_baseline_tasks"][0]["exit_semantics"]
+    assert "alert_found" in s["note"] and "known_baseline" in s["note"]
+    # 账本仍 append-only 记录全部 3 条，且映射行带 task_semantics 字段
+    ledger = os.path.join(isolated_data_dir, ta.LEDGER_ALL_NAME)
+    rows = [json.loads(x) for x in open(ledger, encoding="utf-8") if x.strip()]
+    assert len(rows) == 3
+    by_name = {r["name"]: r for r in rows}
+    assert "task_semantics" in by_name["KgChainWatchdog"]
+    assert "task_semantics" in by_name["PytestWeekly"]
+    assert "task_semantics" not in by_name["SomeOtherTask"]
+
+
+def test_window_diff_excludes_task_by_design(isolated_data_dir):
+    """窗口差集排除 by-design 两类；真实失败仍持续失败。"""
+    _seed_ledger(isolated_data_dir, [
+        {"KgChainWatchdog": 1, "PytestWeekly": 1, "RealFail": 1},
+        {"KgChainWatchdog": 1, "PytestWeekly": 1, "RealFail": 1},
+    ])
+    r = ta.window_diff(hours=1.5)
+    assert "error" not in r
+    assert r["persisting_failures"] == ["RealFail"]
+    assert "KgChainWatchdog" not in r["persisting_failures"]
+    assert "PytestWeekly" not in r["persisting_failures"]
+
+
+def test_scan_text_print_shows_semantics_buckets(isolated_data_dir, monkeypatch, capsys):
+    """文本摘要必须显示「告警发现/已知基线」计数与明细（不淹没在 failures 里）。"""
+    def fake_scan(audit_family_only=True):
+        return {
+            "total_scanned": 2, "ok": 0, "failed": 0, "upstream_hold": 0,
+            "launcher_refused": 0, "cancelled": 0, "running": 0, "terminated": 0,
+            "alert_found": 1, "known_baseline": 1, "disabled": 0, "never_run": 0,
+            "failures": [],
+            "alert_found_tasks": [{"name": "KgChainWatchdog", "last_result": 1,
+                                   "exit_semantics": "发现坏链告警(by-design，非任务失败)",
+                                   "last_run": "2026-10-27 08:00:10"}],
+            "known_baseline_tasks": [{"name": "PytestWeekly", "last_result": 1,
+                                      "exit_semantics": "k_stock 2 个既存失败(已知基线，非任务失败)",
+                                      "last_run": "2026-10-24 09:00:01"}],
+        }
+    monkeypatch.setattr(ta, "scan", fake_scan)
+    rc = ta.main(["--scan"])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "告警发现 1" in out and "已知基线 1" in out
+    assert "[ALERT_FOUND] KgChainWatchdog" in out
+    assert "[BASELINE] PytestWeekly" in out

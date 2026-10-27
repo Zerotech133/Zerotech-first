@@ -84,6 +84,24 @@ NON_FAILURE_RC = frozenset(
     }
 )
 
+# 2026-10-27 AUDIT-09（审计 L-7）：**按任务名+退出码**的 by-design「非任务失败」语义映射。
+# 这些返回码表示"任务按设计完成、但结论是告警/已知基线失败"，不是任务本体失败：
+#   KgChainWatchdog rc=1 = 发现坏链（告警本体已落 alerts_*.json + alert_latest.txt；
+#       chain_watchdog.py 注释明确"发现坏链"≠"任务自身故障"）
+#   PytestWeekly   rc=1 = 全量 pytest 周门命中 2 个 k_stock 既存失败（已知基线，
+#       按设计每周红；见 2026-10-27 审计 00-lead-findings L-7）
+# 单列成 alert_found / known_baseline：不计 failed、不进 window_diff 失败差集；
+# 其它任务同码仍按通用语义（rc=1=一般失败）处理，保持既有口径不变。
+TASK_RC_SEMANTICS: dict[tuple[str, int], tuple[str, str]] = {
+    ("KgChainWatchdog", 1): ("alert_found", "发现坏链告警(by-design，非任务失败)"),
+    ("PytestWeekly", 1): ("known_baseline", "k_stock 2 个既存失败(已知基线，非任务失败)"),
+}
+
+
+def classify_task_by_design(name: str, code: int) -> tuple[str, str] | None:
+    """任务级 by-design 语义：返回 (bucket, semantics) 或 None（走通用口径）。"""
+    return TASK_RC_SEMANTICS.get((str(name or ""), int(code)))
+
 KNOWN_SCHED_FAMILIES = (
     "Legion",
     "Agent",
@@ -209,6 +227,8 @@ def scan(audit_family_only: bool = True) -> dict[str, Any]:
     cancelled: list[dict[str, Any]] = []
     running: list[dict[str, Any]] = []
     terminated: list[dict[str, Any]] = []
+    alert_found: list[dict[str, Any]] = []
+    known_baseline: list[dict[str, Any]] = []
     ok_count = 0
     disabled_count = 0
     never_run = 0
@@ -226,6 +246,9 @@ def scan(audit_family_only: bool = True) -> dict[str, Any]:
             "last_run": t.get("last_run", ""),
             "next_run": t.get("next_run", ""),
         }
+        sem_hit = classify_task_by_design(name, code)
+        if sem_hit is not None:
+            rec["task_semantics"] = sem_hit[1]
         _append_ledger(ledger_path, rec)
 
         if state.lower() == "disabled":
@@ -245,6 +268,12 @@ def scan(audit_family_only: bool = True) -> dict[str, Any]:
             running.append(rec)
         elif code == TERMINATED_EXIT:  # 0x41306 被强制终止：单列，不计失败
             terminated.append(rec)
+        elif sem_hit is not None:
+            # 2026-10-27 AUDIT-09：任务级 by-design 语义（发现告警/已知基线），不计 failed
+            if sem_hit[0] == "alert_found":
+                alert_found.append(rec)
+            else:  # known_baseline
+                known_baseline.append(rec)
         else:
             failures.append(rec)
 
@@ -262,6 +291,8 @@ def scan(audit_family_only: bool = True) -> dict[str, Any]:
         "cancelled": len(cancelled),
         "running": len(running),
         "terminated": len(terminated),
+        "alert_found": len(alert_found),
+        "known_baseline": len(known_baseline),
         "disabled": disabled_count,
         "never_run": never_run,
         "failures": [
@@ -319,6 +350,24 @@ def scan(audit_family_only: bool = True) -> dict[str, Any]:
             }
             for f in terminated
         ],
+        "alert_found_tasks": [
+            {
+                "name": f["name"],
+                "last_result": f["last_result"],
+                "exit_semantics": f.get("task_semantics", "发现告警(by-design)"),
+                "last_run": f["last_run"],
+            }
+            for f in alert_found
+        ],
+        "known_baseline_tasks": [
+            {
+                "name": f["name"],
+                "last_result": f["last_result"],
+                "exit_semantics": f.get("task_semantics", "已知基线(by-design)"),
+                "last_run": f["last_run"],
+            }
+            for f in known_baseline
+        ],
         "note": "LastTaskResult=0 只证明正常退出不证明有产出；产出核对仍需人工或产物探针。"
         "Disabled 任务未计失败（它没失败，只是没开）。"
         "exit 3 = 脚本主动拒跑（上游证据不足），不计失败、单列 upstream；"
@@ -328,6 +377,9 @@ def scan(audit_family_only: bool = True) -> dict[str, Any]:
         "0x41001 = 上一轮实例仍在运行（IgnoreNew 并发保护），单列 running；"
         "0x41306 = 任务被强制终止（超时/手动结束/关机打断），单列 terminated——"
         "两者同样不计 failed（2026-10-25 实测：8 个 failed 里有 3 个属于这两类误计）。"
+        "任务级 by-design 语义（2026-10-27 AUDIT-09 L-7）：KgChainWatchdog rc=1 ="
+        "发现坏链 → 单列 alert_found；PytestWeekly rc=1 = k_stock 2 个既存失败的"
+        "已知基线 → 单列 known_baseline——两者均不计 failed、不进窗口失败差集。"
         "账本 append-only 可回放。",
         "ledger": os.path.relpath(
             ledger_path, os.path.join(DATA_DIR, "..", "..", "..")
@@ -390,7 +442,10 @@ def window_diff(hours: float = 24.0) -> dict[str, Any]:
         return {
             n
             for n, code in last.items()
-            if state.get(n, "").lower() != "disabled" and code not in NON_FAILURE_RC
+            if state.get(n, "").lower() != "disabled"
+            and code not in NON_FAILURE_RC
+            # 2026-10-27 AUDIT-09：任务级 by-design（发现告警/已知基线）不进失败差集
+            and classify_task_by_design(n, code) is None
         }
 
     dt.datetime.now().astimezone()
@@ -422,6 +477,7 @@ def _print_scan_result(result: dict) -> None:
         f"扫描 {result['total_scanned']} 任务：正常 {result['ok']} / 失败 {result['failed']} / "
         f"上游拒跑 {result.get('upstream_hold', 0)} / 启动器已在跑 {result.get('launcher_refused', 0)} / "
         f"被取消 {result.get('cancelled', 0)} / 跑批中 {result.get('running', 0)} / 被终止 {result.get('terminated', 0)} / "
+        f"告警发现 {result.get('alert_found', 0)} / 已知基线 {result.get('known_baseline', 0)} / "
         f"禁用 {result['disabled']} / 未跑 {result['never_run']}（旧摘要无新字段时按 0 显示）"
     )
     for f in result["failures"]:
@@ -443,6 +499,14 @@ def _print_scan_result(result: dict) -> None:
     for f in result.get("terminated_tasks", []):
         print(
             f"  [TERMINATED] {f['name']} exit={f['last_result']} ({f['exit_semantics']}) last={f['last_run']}"
+        )
+    for f in result.get("alert_found_tasks", []):
+        print(
+            f"  [ALERT_FOUND] {f['name']} exit={f['last_result']} ({f['exit_semantics']}) last={f['last_run']}"
+        )
+    for f in result.get("known_baseline_tasks", []):
+        print(
+            f"  [BASELINE] {f['name']} exit={f['last_result']} ({f['exit_semantics']}) last={f['last_run']}"
         )
 
 
