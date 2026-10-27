@@ -11,6 +11,15 @@ from pathlib import Path
 QBT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(QBT / "experiments"))
 
+import pytest  # noqa: E402
+
+# 2026-10-27 GY-01：experiments/ 当前被 .gitignore 覆盖（未入库），干净 checkout 里
+# 该模块不存在 → 收集期 ImportError。用 importorskip 让"有模块则跑、无则 skip"。
+pytest.importorskip(
+    "stop_loss_harness",
+    reason="experiments/stop_loss_harness.py 未入库（见 GY-01 收集 triage 回执）",
+)
+
 from stop_loss_harness import (  # noqa: E402
     STOP_LOSS_EXPERIMENT_ENABLED,
     compare_strategies,
