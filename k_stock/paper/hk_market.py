@@ -69,6 +69,15 @@ DEFAULT_HK_DIR = (
     ROOT / "quant_backtest" / "data" / "hk_paper"
 )  # 派生数据落点（日历，独占）
 DEFAULT_DB = HERE.parent / "data" / "paper.db"  # 共享账本（hk_% 账户行独占）
+
+
+def _paper_db() -> Path:
+    """B1（2026-10-27）：``HK_PAPER_DB`` 环境变量可把账本指向副本库，默认生产库不变。
+
+    用于「副本跑批/链路验证」：不写生产 paper.db（老田批的只读副本口径）。
+    """
+    override = os.environ.get("HK_PAPER_DB", "").strip()
+    return Path(override) if override else DEFAULT_DB
 # 日历回退基准票：00700 腾讯（zhice-db HK 最稠密单票，H2 实证 107 根）；
 # 正常路径走 market_days.csv 全市场聚合日历（不依赖单票长历史）。
 CAL_SYMBOL = "00700"
@@ -392,7 +401,7 @@ def hk_pass(db_path: Path | str | None = None, do_refresh: bool = True) -> dict 
     无 hk_% 账本返回 None（灰态）。"""
     from engine import PaperEngine  # noqa: PLC0415  同目录
 
-    db = Path(db_path) if db_path else DEFAULT_DB
+    db = Path(db_path) if db_path else _paper_db()
     aids = hk_accounts(db)
     if not aids:
         return None
@@ -460,8 +469,9 @@ def main(argv: list[str]) -> int:
         from engine import PaperEngine  # noqa: PLC0415  同目录
 
         apply_hk_engine_waivers()
+        db_path = _paper_db()
         eng = PaperEngine(
-            DEFAULT_DB, HkMarket(), config=hk_default_config(), account=HK_ACCOUNT
+            db_path, HkMarket(), config=hk_default_config(), account=HK_ACCOUNT
         )
         acc = eng.ensure_account(HK_ACCOUNT)
         print(
@@ -471,7 +481,7 @@ def main(argv: list[str]) -> int:
                     "account_id": HK_ACCOUNT,
                     "cash": acc["cash"],
                     "currency": "HKD",
-                    "db": str(DEFAULT_DB),
+                    "db": str(db_path),
                 },
                 ensure_ascii=False,
             )
@@ -516,7 +526,7 @@ def main(argv: list[str]) -> int:
                 )
         return 0
     if argv and argv[0] == "status":
-        db = Path(argv[1]) if len(argv) > 1 else DEFAULT_DB
+        db = Path(argv[1]) if len(argv) > 1 else _paper_db()
         hk = hk_pass(db, do_refresh=False)
         if not hk:
             print("（无 hk_% 账本，灰态）")
