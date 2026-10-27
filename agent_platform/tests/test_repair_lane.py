@@ -50,8 +50,10 @@ def test_create_and_run_batch(tmp_path, monkeypatch):
     test.write_text("def test_ok():\n    assert 1 + 1 == 2\n", encoding="utf-8")
     b = L.create_batch("demo", "test_ok.py")
     assert b["ok"]
-    rep = L.run_batch(b["batch"]["id"], timeout=120)
-    assert rep["ok"] is True and rep["batch"]["status"] == "passed"
+    # 2026-10-27 WO-AUDIT5-FLAKY2：全量并发跑时子进程 pytest 启动可能 >120s，
+    # 放宽到 300s；断言失败时附 result（rc/tail）便于定位而非只看 False。
+    rep = L.run_batch(b["batch"]["id"], timeout=300)
+    assert rep["ok"] is True and rep["batch"]["status"] == "passed", rep.get("result")
     assert rep["result"]["rc"] == 0
 
 
