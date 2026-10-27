@@ -609,7 +609,9 @@ def jev_judge_one_local(title, stocks, timeout=60):
                 "stream": False,
                 "think": False,
                 "format": "json",
-                "options": {"temperature": 0.1, "num_predict": 80},
+                # 2026-10-28 JEVTRUNC: 80 token 对「长公司名单」类快讯会截断 JSON
+                # （Unterminated string char~157 → 永久毒丸）；JSON 输出上限 ~220 token。
+                "options": {"temperature": 0.1, "num_predict": 220},
             },
             timeout=timeout,
         )
