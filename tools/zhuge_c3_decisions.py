@@ -62,6 +62,21 @@ def aggregate(adoptions: list[dict]) -> dict:
     return result
 
 
+def aggregate_decisions(adoptions: list[dict]) -> dict:
+    """按 decision_id 聚合（C3 beacon 可选精确关联字段）。"""
+    result = {}
+    for row in adoptions:
+        did = str(row.get("decision_id") or "").strip()
+        if not did:
+            continue
+        item = result.setdefault(did, {"count": 0, "last_at": ""})
+        item["count"] += 1
+        at = str(row.get("at") or row.get("received_at") or "")
+        if at > item["last_at"]:
+            item["last_at"] = at
+    return result
+
+
 def _dr():
     tools = str(Path(__file__).resolve().parent)
     if tools not in sys.path:
@@ -74,10 +89,29 @@ def sync_adoptions(adoption_path: Path | None = None, dry_run: bool = False) -> 
     dr = _dr()
     adoptions = _load_adoptions(adoption_path)
     by_domain = aggregate(adoptions)
+    by_decision = aggregate_decisions(adoptions)
     records = dr._fold(dr._load_events())
     linked = []
     unmatched = sorted(by_domain)
+    unmatched_decisions = sorted(by_decision)
     for rid, rec in records.items():
+        # ① 精确 decision_id 优先（有该字段的 beacon）
+        stat = by_decision.get(rid)
+        if stat:
+            outcome = "C3 采纳信号 %d 条（decision_id 精确匹配，最近 %s）" % (
+                stat["count"], stat["last_at"] or "unknown")
+            adoption_id = "C3:decision:%s" % rid
+            unmatched_decisions = [d for d in unmatched_decisions if d != rid]
+            if dry_run:
+                linked.append({"id": rid, "decision_id": rid,
+                               "count": stat["count"], "action": "would_update"})
+                continue
+            res = dr.update(rid, outcome=outcome, adoption_id=adoption_id)
+            linked.append({"id": rid, "decision_id": rid, "count": stat["count"],
+                           "action": "updated" if res.get("ok") else "skipped",
+                           "error": None if res.get("ok") else res.get("error")})
+            continue
+        # ② 无精确 ID 时按声明的 adoption_domains 回填
         domains = rec.get("adoption_domains") or []
         if not domains:
             continue
@@ -104,9 +138,11 @@ def sync_adoptions(adoption_path: Path | None = None, dry_run: bool = False) -> 
         "ok": True,
         "adoption_events": len(adoptions),
         "domains": len(by_domain),
+        "decisions": len(by_decision),
         "linked": linked,
         "unmatched_domains": unmatched[:50],
         "unmatched_count": len(unmatched),
+        "unmatched_decision_ids": unmatched_decisions[:50],
         "dry_run": dry_run,
     }
 

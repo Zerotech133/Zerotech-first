@@ -238,3 +238,39 @@ def test_route_wired_in_portal_api_source():
     assert "import api_zhuge_adoption" in src, "路由模块须显式 import（mixin 判例）"
     assert 'path == "/api/zhuge/adoption"' in src, "do_POST 须有分发行"
     assert "api_zhuge_adoption.handle_post(" in src, "须回调模块 handle_post"
+
+
+# ── ⑪ C3DID：可选 decision_id/card_id（只加字段，旧报文兼容）──────────
+def test_post_with_decision_id_card_id_200(ledger):
+    h, seen = _make_handler()
+    body = json.dumps({"items": [{
+        "at": "2026-10-27T10:00:00+08:00", "domain": "研发",
+        "decision_id": "DR-20261027-01", "card_id": "ZQ-20261027-01"}]},
+        ensure_ascii=False).encode("utf-8")
+    _h_post(h, body)
+    assert seen.get("code") == 200
+    rows = _rows(ledger)
+    assert rows[0]["decision_id"] == "DR-20261027-01"
+    assert rows[0]["card_id"] == "ZQ-20261027-01"
+
+
+def test_post_invalid_decision_id_400(ledger):
+    h, seen = _make_handler()
+    body = json.dumps({"items": [{
+        "at": "2026-10-27T10:00:00+08:00", "domain": "研发",
+        "decision_id": "BAD-ID"}]}, ensure_ascii=False).encode("utf-8")
+    _h_post(h, body)
+    assert seen.get("code") == 400
+    assert "decision_id 格式" in seen["obj"]["message"]
+    assert not ledger.exists()
+
+
+def test_post_invalid_card_id_400(ledger):
+    h, seen = _make_handler()
+    body = json.dumps({"items": [{
+        "at": "2026-10-27T10:00:00+08:00", "domain": "研发",
+        "card_id": "not-a-card"}]}, ensure_ascii=False).encode("utf-8")
+    _h_post(h, body)
+    assert seen.get("code") == 400
+    assert "card_id 格式" in seen["obj"]["message"]
+    assert not ledger.exists()
