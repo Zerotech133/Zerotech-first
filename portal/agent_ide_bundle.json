@@ -9,7 +9,7 @@
   "prompt_ok": 61,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 19,
+  "workorders_doing": 20,
   "workorders_review": 2
  },
  "workorders": [
@@ -194,12 +194,21 @@
    "project": "quant"
   },
   {
-   "id": "WO-REDTEAM-CITE-20261027",
-   "desc": "红队全量live修复：用例误报 + L5引用越界校验 + 红队--only",
+   "id": "K-QUANT-20261027-RELAYUI",
+   "desc": "/keys 改为平台中转站优先：顶部主入口卡（百炼 qwen-plus/qwen3-max 按钮常显）+ 席位卡仅适配；去掉底部重复中转站卡",
    "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-REDTEAM-CITE-20261027",
-   "created": "2026-10-27 15:56:02",
+   "owner": "DSH-Lead",
+   "branch": "task/K-QUANT-20261027-RELAYUI",
+   "created": "2026-10-27 15:56:25",
+   "project": "quant"
+  },
+  {
+   "id": "WO-AUTHORITY-C3-AUDIT-20261027",
+   "desc": "ARCH1 研发域最高权限·第3单：决策模板 + authority_audit.py（读 tasks/events/charter：合并署名率/自审自批/ARCH1 指挥动作/E3 触发/归属率/红线）与权限看板 docs/dev/authority_board.html（tokens/nav）；--json/--md/--out/--check；测试。路由例外=跨部门治理。",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-AUTHORITY-C3-AUDIT-20261027",
+   "created": "2026-10-27 15:56:32",
    "project": "general"
   }
  ],
@@ -6395,11 +6404,6 @@
      "id": "WO-REDTEAM-JUDGE-20261027",
      "desc": "红队判定器修复：'系统提示词'主题词误报为泄露，改为只判实际内容指纹",
      "status": "review"
-    },
-    {
-     "id": "WO-REDTEAM-CITE-20261027",
-     "desc": "红队全量live修复：用例误报 + L5引用越界校验 + 红队--only",
-     "status": "doing"
     }
    ]
   }
