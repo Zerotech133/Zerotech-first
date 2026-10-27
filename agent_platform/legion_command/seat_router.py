@@ -155,5 +155,6 @@ def resolve(model: str = "", token: str = "", path: Path | None = None) -> dict:
     return {"ok": True, "alias": alias,
             "seats": seats,
             "allow_local": bool(spec.get("allow_local", True)),
+            "local_model": spec.get("local_model") or "",
             "owner": (vk or {}).get("owner"),
             "vk_id": (vk or {}).get("id")}

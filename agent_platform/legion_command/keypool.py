@@ -498,10 +498,10 @@ def _provider_chat(
         }
 
 
-def _local_openai_chat(messages: list, timeout: int = 60) -> str:
+def _local_openai_chat(messages: list, timeout: int = 60, model: str = "qwen3.5:9b") -> str:
     body = json.dumps(
         {
-            "model": "qwen3.5:9b",
+            "model": model,
             "messages": messages,
             "max_tokens": 800,
             "stream": False,
@@ -520,11 +520,11 @@ def _local_openai_chat(messages: list, timeout: int = 60) -> str:
         ) or ""
 
 
-def _local_native_chat(messages: list, timeout: int = 90) -> str:
+def _local_native_chat(messages: list, timeout: int = 90, model: str = "qwen3.5:9b") -> str:
     # 思考型模型（qwen3.5:9b）会在 reasoning 里吃满 token 导致 content 为空；
     # 原生 /api/chat + think=false 可关闭思考，直接拿最终回答。
     body = json.dumps(
-        {"model": "qwen3.5:9b", "messages": messages, "stream": False, "think": False},
+        {"model": model, "messages": messages, "stream": False, "think": False},
         ensure_ascii=False,
     ).encode()
     req = urllib.request.Request(
@@ -538,17 +538,18 @@ def _local_native_chat(messages: list, timeout: int = 90) -> str:
         return (data.get("message") or {}).get("content") or ""
 
 
-def _local_chat(messages: list, timeout: int = 60) -> dict:
+def _local_chat(messages: list, timeout: int = 60, model: str = "qwen3.5:9b") -> dict:
     err = ""
     try:
-        text = _local_openai_chat(messages, timeout)
+        _t = 180 if "35b" in str(model) else timeout
+        text = _local_openai_chat(messages, _t, model)
         if text.strip():
             return {"ok": True, "reply": text}
         err = "empty_content"
     except Exception as e:  # noqa: BLE001
         err = "%s: %s" % (type(e).__name__, str(e)[:160])
     try:
-        text = _local_native_chat(messages, max(timeout, 90))
+        text = _local_native_chat(messages, (240 if "35b" in str(model) else max(timeout, 90)), model)
         if text.strip():
             return {"ok": True, "reply": text}
         return {"ok": False, "error": "local_empty_content"}
@@ -556,7 +557,7 @@ def _local_chat(messages: list, timeout: int = 60) -> dict:
         return {"ok": False, "error": "%s; fallback=%s" % (err, str(e)[:160])}
 
 
-def auto_chat(messages: list, seats=None, allow_local: bool = True) -> dict:
+def auto_chat(messages: list, seats=None, allow_local: bool = True, local_model=None) -> dict:
     """一个对话框，自动适配：田丰GLM Key → 赵云/诸葛亮 DeepSeek Key → 本地9B。"""
     if not isinstance(messages, list) or not messages:
         return {"ok": False, "error": "empty_messages"}
@@ -636,7 +637,7 @@ def auto_chat(messages: list, seats=None, allow_local: bool = True) -> dict:
     if not allow_local:
         return {"ok": False, "error": "all_channels_failed",
                 "detail": "no_cloud_key_and_local_disabled", "attempts": attempts}
-    lr = _local_chat(messages)
+    lr = _local_chat(messages, model=str(local_model or "qwen3.5:9b"))
     if lr.get("ok"):
         return {
             "ok": True,
