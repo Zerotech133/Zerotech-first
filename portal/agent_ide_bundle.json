@@ -9,7 +9,7 @@
   "prompt_ok": 61,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 21,
+  "workorders_doing": 20,
   "workorders_review": 2
  },
  "workorders": [
@@ -200,15 +200,6 @@
    "owner": "unknown-agent",
    "branch": "task/legion-1027175009",
    "created": "2026-10-27 17:50:16",
-   "project": "general"
-  },
-  {
-   "id": "WO-LEGION-PAPER2-20261027",
-   "desc": "模拟仓 /paper 整体设计与整体改造：深屏工作台骨架/五 Tab/卡片表格/响应式/状态，新增 paper_workbench.css 并重构 header/context/tabs/footer；保留全部 DOM ID 与交易 JS；不改业务逻辑/无 L2",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-PAPER2-20261027",
-   "created": "2026-10-27 21:35:18",
    "project": "general"
   },
   {
@@ -6715,11 +6706,6 @@
     {
      "id": "WO-PHOENIX-ISOLATED-20261027",
      "desc": "B-08 Phoenix隔离venv：安装/端口登记/起服务/health验证",
-     "status": "doing"
-    },
-    {
-     "id": "WO-LEGION-PAPER2-20261027",
-     "desc": "模拟仓 /paper 整体设计与整体改造：深屏工作台骨架/五 Tab/卡片表格/响应式/状态，新增 paper_workbench.css 并重构 header/context/tabs/footer；保留全部 DOM ID 与交易 JS；不改业务逻辑/无 L2",
      "status": "doing"
     }
    ]
