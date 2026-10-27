@@ -1,0 +1,19 @@
+{
+  "generated_at": "2026-10-27 15:11:43",
+  "select": "F,E9",
+  "roots": [
+    "portal",
+    "agent_platform",
+    "tools",
+    "k_stock",
+    "analysis",
+    "common"
+  ],
+  "total": 48,
+  "codes": {
+    "F401": 13,
+    "F841": 31,
+    "F541": 3,
+    "F601": 1
+  }
+}
