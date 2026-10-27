@@ -512,8 +512,9 @@ class Handler(BaseHTTPRequestHandler):
                                                    "model": k.get("model")} for k in rk],
                                    "healthy": healthy}
                 out["keys_total"] = total_keys
-                if not rk:
+                if (not rk) or healthy == 0:
                     out["mode"] = "needs_admin_key"
+                    out["reason"] = "no_healthy_upstream_key"
             except Exception as e:  # noqa: BLE001
                 out["upstream"] = {"relay_configured": False,
                                    "error": "%s: %s" % (type(e).__name__, str(e)[:120])}
