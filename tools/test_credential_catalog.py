@@ -33,3 +33,16 @@ def test_no_secret_fields():
     d = C.catalog()
     for x in d["items"]:
         assert "secret" not in json.dumps(x).lower() or "encrypted_source" in x
+
+
+def test_age_source_encrypted(tmp_path):
+    ws = tmp_path
+    (ws / "_vault" / "secrets.enc").mkdir(parents=True)
+    (ws / "_vault" / "secrets.enc" / "x.age").write_text("cipher", encoding="utf-8")
+    cfg = tmp_path / "r.json"
+    cfg.write_text(json.dumps({"entries": [
+        {"name": "X", "category": "data", "source": "_vault/secrets.enc/x.age"}]}),
+        encoding="utf-8")
+    d = C.catalog(cfg, workspace=ws)
+    x = next(i for i in d["items"] if i["name"] == "X")
+    assert x["encrypted"] is True and x["status"] == "ok"

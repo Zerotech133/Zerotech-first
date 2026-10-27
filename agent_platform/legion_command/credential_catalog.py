@@ -49,18 +49,19 @@ def catalog(config_path=None, workspace=None) -> dict:
         src = _resolve(str(e.get("source") or ""), ws)
         enc = _resolve(str(e.get("encrypted_source") or ""), ws) if e.get("encrypted_source") else None
         ss, es = _stat(src), _stat(enc) if enc else {"exists": False}
+        is_cipher = bool((enc and es["exists"]) or str(src).endswith(".age"))
         if enc and es["exists"]:
             status, updated, size = "ok", es["updated"], es["size"]
             if enc.is_relative_to(ws):
                 seen_enc.add(str(enc.relative_to(ws)).replace("\\", "/"))
         elif ss["exists"]:
-            status, updated, size = "plaintext" if not str(src).endswith(".age") else "ok", ss["updated"], ss["size"]
+            status, updated, size = ("ok" if is_cipher else "plaintext"), ss["updated"], ss["size"]
         else:
             status, updated, size = "missing", "", 0
         items.append({"name": e.get("name"), "category": e.get("category"),
                       "env": e.get("env"), "source": e.get("source"),
                       "encrypted_source": e.get("encrypted_source"),
-                      "encrypted": bool(enc and es["exists"]),
+                      "encrypted": is_cipher,
                       "status": status, "updated": updated, "size": size,
                       "rotate": e.get("rotate"), "note": e.get("note")})
     # 额外扫描未登记的 age 密文
@@ -80,7 +81,7 @@ def catalog(config_path=None, workspace=None) -> dict:
                 break
     except OSError:
         pass
-    return {"schema": "credential_catalog/v1",
+    return {"ok": True, "schema": "credential_catalog/v1",
             "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
             "vault": str(vault_enc), "items": items,
             "counts": {"total": len(items),
