@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-28 04:08",
+ "generated": "2026-10-28 04:17",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 34,
+  "workorders_doing": 35,
   "workorders_review": 3
  },
  "workorders": [
@@ -345,6 +345,15 @@
    "branch": "task/WO-DWMETA-20261028",
    "created": "2026-10-28 04:06:19",
    "project": "general"
+  },
+  {
+   "id": "K-QUANT-20261028-AUDITFIX1",
+   "desc": "审计修复1：security_gate scan 遇不可访问文件(WinError1920 mysql.sock)崩溃；_iter/扫描加 OSError 跳过+测试；同时修 mission_worker check 空文本误过",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-QUANT-20261028-AUDITFIX1",
+   "created": "2026-10-28 04:09:31",
+   "project": "quant"
   }
  ],
  "coder_traces": [
