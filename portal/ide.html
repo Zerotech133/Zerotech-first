@@ -161,6 +161,28 @@
   .dbg-ctl select{background:var(--panel2);border:1px solid var(--line);color:var(--fg);font-size:11px;
     border-radius:7px;padding:3px 6px}
   .dbg-ctl .hint{font-size:10.5px;color:var(--dim2)}
+  /* K-QUANT-20261028-IDEMODELS3：全模型可下滑选择 + 在线状态 */
+  .model-pick{position:relative;flex:none}
+  .model-btn{background:var(--panel2);border:1px solid var(--line);color:var(--fg);font-size:11px;
+    border-radius:7px;padding:4px 9px;display:flex;align-items:center;gap:7px;cursor:pointer;white-space:nowrap}
+  .model-btn:hover{border-color:var(--blue)}
+  .model-btn .m-dot{width:7px;height:7px;border-radius:50%;background:var(--dim2);flex:none}
+  .model-btn .m-dot.on{background:var(--green,#39d98a);box-shadow:0 0 5px rgba(57,217,138,.6)}
+  .model-btn .m-dot.warn{background:var(--amber,#f5b94c)}
+  .model-btn .m-dot.off{background:var(--red,#ff6b6b)}
+  .model-menu{position:absolute;bottom:100%;left:0;margin-bottom:5px;width:360px;max-height:350px;overflow-y:auto;
+    background:var(--panel2);border:1px solid var(--line);border-radius:9px;box-shadow:0 -6px 22px rgba(0,0,0,.5);
+    z-index:30;display:none;padding:4px}
+  .model-menu.on{display:block}
+  .model-menu .mg{font-size:10px;color:var(--dim2);padding:6px 8px 3px;letter-spacing:.06em}
+  .model-menu .mi{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:6px;cursor:pointer;font-size:11.5px}
+  .model-menu .mi:hover,.model-menu .mi.on{background:rgba(88,166,255,.13)}
+  .model-menu .mi .mi-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .model-menu .mi .mi-sub{font-size:10px;color:var(--dim2);margin-left:6px}
+  .model-menu .mi .mi-st{font-size:10px;padding:1px 6px;border-radius:999px;border:1px solid var(--line);color:var(--dim2);flex:none}
+  .model-menu .mi .mi-st.ok{color:#8ff0bd;border-color:#2b6b4b}
+  .model-menu .mi .mi-st.warn{color:#ffd58a;border-color:#6b552b}
+  .model-menu .mi .mi-st.off{color:#ffb0b0;border-color:#6b2b2b}
   .at-menu{position:absolute;bottom:100%;left:14px;right:110px;background:var(--panel2);border:1px solid var(--line);
     border-radius:9px;max-height:210px;overflow:auto;z-index:20;display:none;box-shadow:0 -4px 16px rgba(0,0,0,.4)}
   .at-menu .am{display:flex;gap:8px;align-items:center;font-size:12px;padding:6px 10px;cursor:pointer}
@@ -264,14 +286,23 @@
     <div class="target" id="dbg-target">未选择 Agent</div>
     <div class="chat" id="chat"></div>
     <div class="dbg-ctl">
-      <select id="model" title="调试推理模型（统一网关）">
+      <div class="model-pick" id="model-pick">
+        <button class="model-btn" id="model-btn" title="调试推理模型：本地 / 智谱 / DeepSeek / 中转 GPT-6 全部可选">
+          <span class="m-dot" id="model-dot"></span><span id="model-btn-text">qwen3.5:9b（本地默认）</span><span style="color:var(--dim2)">▾</span>
+        </button>
+        <div class="model-menu" id="model-menu"></div>
+      </div>
+      <select id="model" hidden tabindex="-1" aria-hidden="true">
         <option value="auto">auto · 智能分配</option>
+        <option value="strong">strong · 强模型</option>
+        <option value="local">local · 本地自动</option>
         <option value="local4">qwen3.5:4b（本地轻量）</option>
         <option value="local9" selected>qwen3.5:9b（本地默认）</option>
         <option value="local35">qwen3.6:35b-a3b（本地复杂）</option>
         <option value="zhipu">智谱 glm-4-flash</option>
         <option value="deepseek">DeepSeek deepseek-chat</option>
         <option value="gpt6">中转 GPT-6</option>
+        <option value="gpt-6-sol">中转 GPT-6 Sol</option>
       </select>
       <span class="hint">消息里 @ 选择 Agent / 代码文件作为上下文</span>
     </div>
@@ -943,10 +974,93 @@ async function toggleMic(){
 }
 document.getElementById("mic").onclick=toggleMic;
 
-function model(){ return document.getElementById("model").value; }
+function model(){ const el=document.getElementById("model"); return (el&&el.value)||"local9"; }
 document.getElementById("model").addEventListener("change", ()=>{
   if(DBGCUR) dbgSelect(DBGCUR.id);
 });
+
+/* K-QUANT-20261028-IDEMODELS3：全模型选择器（可下滑 + 在线/降级/离线） */
+const MODEL_OPTS = [
+  {v:"auto", label:"auto · 智能分配", group:"通用", sub:"网关按任务自动选", kind:"auto"},
+  {v:"strong", label:"strong · 强模型", group:"通用", sub:"云端优先，不允许本地兜底", kind:"strong"},
+  {v:"local", label:"local · 本地自动", group:"通用", sub:"Ollama 本地模型", kind:"local"},
+  {v:"local4", label:"qwen3.5:4b", group:"本地", sub:"轻量 · 3.1GB", kind:"local", lm:"qwen3.5:4b"},
+  {v:"local9", label:"qwen3.5:9b", group:"本地", sub:"默认 · 6.1GB", kind:"local", lm:"qwen3.5:9b"},
+  {v:"local35", label:"qwen3.6:35b-a3b", group:"本地", sub:"复杂 · 21GB", kind:"local", lm:"qwen3.6:35b-a3b"},
+  {v:"zhipu", label:"智谱 GLM-4-Flash", group:"云端", sub:"席位 tianfeng · 智谱直连", kind:"zhipu"},
+  {v:"deepseek", label:"DeepSeek Chat", group:"云端", sub:"席位 zhaoyun / zhuge · DeepSeek", kind:"deepseek"},
+  {v:"gpt6", label:"中转 GPT-6", group:"中转", sub:"relay 席位 · 统一网关", kind:"relay"},
+  {v:"gpt-6-sol", label:"中转 GPT-6 Sol", group:"中转", sub:"relay 席位 · gpt-6-sol 显式别名", kind:"relay"},
+];
+let MODEL_STATUS={};
+function modelStatusOf(o){
+  const ks=MODEL_STATUS.keys||{}, ms=MODEL_STATUS.models||{};
+  if(o.kind==="local"){
+    const on=!!(ms.local&&ms.local.online);
+    const present=on && ((ms.local.models||[]).some(m=>m.name===o.lm));
+    return present?["ok","在线"]:["off","离线"];
+  }
+  if(o.kind==="zhipu"){
+    const st=((ks.seats||{}).tianfeng||{}).status;
+    return st==="available"?["ok","在线"]:st==="throttled"?["warn","降级"]:["off","不在线"];
+  }
+  if(o.kind==="deepseek"){
+    const a=((ks.seats||{}).zhaoyun||{}).status, b=((ks.seats||{}).zhuge||{}).status;
+    return (a==="available"||b==="available")?["ok","在线"]:(a==="throttled"||b==="throttled")?["warn","降级"]:["off","不在线"];
+  }
+  if(o.kind==="relay"){
+    const keys=((ks.seats||{}).relay||{}).keys||[];
+    const want=o.v==="gpt6"?"gpt-6-sol":o.v;
+    const hit=keys.filter(k=>String(k.model||"").indexOf(want)===0||String(k.model||"")===want);
+    if(hit.some(k=>k.status==="healthy"))return["ok","在线"];
+    if(hit.some(k=>["degraded","quota"].includes(k.status)))return["warn","降级"];
+    return["off","不在线"];
+  }
+  return["ok","自动"];
+}
+function renderModelMenu(){
+  const menu=document.getElementById("model-menu");
+  if(!menu)return;
+  const cur=model(); let last="";
+  let h="";
+  for(const o of MODEL_OPTS){
+    if(o.group!==last){ h+='<div class="mg">'+esc(o.group)+'</div>'; last=o.group; }
+    const [cls,txt]=modelStatusOf(o);
+    h+='<div class="mi'+(o.v===cur?' on':'')+'" data-model="'+o.v+'" title="'+esc(o.label)+' · '+esc(o.sub)+'">'+
+       '<span class="mi-name">'+esc(o.label)+'<span class="mi-sub">'+esc(o.sub)+'</span></span>'+
+       '<span class="mi-st '+cls+'">'+txt+'</span></div>';
+  }
+  menu.innerHTML=h;
+  menu.querySelectorAll('.mi').forEach(el=>el.onclick=()=>{ setModel(el.dataset.model); menu.classList.remove("on"); });
+}
+function setModel(v){
+  const sel=document.getElementById("model");
+  if(!MODEL_OPTS.some(o=>o.v===v))v="local9";
+  sel.value=v; localStorage.setItem("ide-model",v);
+  const o=MODEL_OPTS.find(x=>x.v===v);
+  document.getElementById("model-btn-text").textContent=o?o.label:v;
+  const [cls,txt]=modelStatusOf(o||{});
+  const dot=document.getElementById("model-dot");
+  dot.className="m-dot "+(cls==="ok"?"on":cls==="warn"?"warn":"off");
+  document.getElementById("model-btn").title="当前模型："+(o?o.label:v)+" · "+txt;
+  renderModelMenu();
+  sel.dispatchEvent(new Event("change",{bubbles:true}));
+}
+async function loadModelPicker(){
+  try{
+    const [ks,ms]=await Promise.all([
+      fetch("http://127.0.0.1:8796/api/keys/state",{cache:"no-store"}).then(r=>r.json()),
+      fetch("http://127.0.0.1:8796/api/models/status",{cache:"no-store"}).then(r=>r.json())
+    ]);
+    MODEL_STATUS={keys:ks,models:ms};
+  }catch(e){ MODEL_STATUS={}; }
+  renderModelMenu();
+  const saved=localStorage.getItem("ide-model")||"local9";
+  setModel(MODEL_OPTS.some(o=>o.v===saved)?saved:"local9");
+}
+document.getElementById("model-btn").onclick=(e)=>{ e.stopPropagation(); document.getElementById("model-menu").classList.toggle("on"); };
+document.addEventListener("click",(e)=>{ const m=document.getElementById("model-menu"); if(m&&!m.contains(e.target)&&e.target.id!=="model-btn")m.classList.remove("on"); });
+loadModelPicker(); setInterval(loadModelPicker,60000);
 
 function addMsg(cls, who, html){
   const c = document.getElementById("chat");
