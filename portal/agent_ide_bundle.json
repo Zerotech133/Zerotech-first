@@ -9,7 +9,7 @@
   "prompt_ok": 61,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 13,
+  "workorders_doing": 12,
   "workorders_review": 1
  },
  "workorders": [
@@ -128,15 +128,6 @@
    "owner": "DEV8",
    "branch": "task/WO-DEV-B4-NIGHTBASE-20261027",
    "created": "2026-10-27 14:19:12",
-   "project": "general"
-  },
-  {
-   "id": "WO-AUDIT7-MONDAY-20261027",
-   "desc": "代码审计第7批：test_monday_drill 只读性测试在全量套件期间被常驻服务写 governance_clock_state.json 假阳性。路由例外=跨部门治理。修：snapshot() 排除常驻服务易变文件（governance_clock_state.json 及 *.db/*.db-wal/*.db-shm），保留其余文件集+mtime/size 严格比对。验收：test_monday_drill 单跑绿；全量 master 复跑 0 红。",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-AUDIT7-MONDAY-20261027",
-   "created": "2026-10-27 14:57:06",
    "project": "general"
   }
  ],
