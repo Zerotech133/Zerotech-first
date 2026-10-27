@@ -10,7 +10,7 @@
   "prompt_miss": [],
   "name_collisions": {},
   "workorders_doing": 23,
-  "workorders_review": 4
+  "workorders_review": 3
  },
  "workorders": [
   {
@@ -237,15 +237,6 @@
    "branch": "task/WO-INFRA-2WK-20261027",
    "created": "2026-10-27 23:28:16",
    "project": "general"
-  },
-  {
-   "id": "K-QUANT-20261027-GROUNDGUARD",
-   "desc": "Worker Grounding Guard：任务卡 allowed_commands 白名单 + checks 断言（文件存在/包含/最小长度/命令返回码）；未授权命令拒收、断言失败回滚；单测与真实任务验证",
-   "status": "review",
-   "owner": "DSH-Lead",
-   "branch": "task/K-QUANT-20261027-GROUNDGUARD",
-   "created": "2026-10-27 23:29:26",
-   "project": "quant"
   },
   {
    "id": "WO-LEGION-SIMPLE-P0B-20261027",
