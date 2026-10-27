@@ -300,6 +300,19 @@ class NovaMaxLLM:
         raise LLMError("novamax chat failed after retry: %s" % last)
 
 
+def _maybe_wrap_llm(llm):
+    """D3 / ADR-005：可观测单点包装。默认完全 no-op；DSH_OTEL_ENABLED=1 且
+    opentelemetry 可用时才加 gen_ai span；任何异常都回退原对象（不反噬主链路）。"""
+    try:
+        try:
+            from agent_platform.observability.genai import wrap_llm
+        except ImportError:  # 以 agent_platform 为 sys.path 根时
+            from observability.genai import wrap_llm
+        return wrap_llm(llm)
+    except Exception:  # noqa: BLE001
+        return llm
+
+
 def make_llm(binding):
     """按 binding 前缀路由到 provider（10-18 自动路由入口；10-27 B05 双轨拆分）
 
@@ -319,16 +332,16 @@ def make_llm(binding):
     prefix, _, rest = (binding or "").partition("/")
     if prefix == "nova":
         port = rest.split("/", 1)[0] if "/" in rest else rest
-        return NovaMaxLLM(port=port)
+        return _maybe_wrap_llm(NovaMaxLLM(port=port))
     if prefix == "glm":
-        return GLMCloudLLM(model=rest)
+        return _maybe_wrap_llm(GLMCloudLLM(model=rest))
     if prefix == "openai-direct":
-        return OpenAILLM(model=rest or "gpt-6.0")
+        return _maybe_wrap_llm(OpenAILLM(model=rest or "gpt-6.0"))
     if prefix == "openai":
-        return OpenClawLLM(model=rest)
+        return _maybe_wrap_llm(OpenClawLLM(model=rest))
     if prefix == "deepseek":
-        return DeepSeekLLM(model=rest or DEFAULT_DEEPSEEK_MODEL)
-    return OllamaLLM()
+        return _maybe_wrap_llm(DeepSeekLLM(model=rest or DEFAULT_DEEPSEEK_MODEL))
+    return _maybe_wrap_llm(OllamaLLM())
 
 
 class GLMCloudLLM:
