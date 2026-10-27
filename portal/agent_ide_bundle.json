@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-27 23:53",
+ "generated": "2026-10-27 23:54",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 22,
+  "workorders_doing": 29,
   "workorders_review": 3
  },
  "workorders": [
@@ -230,12 +230,75 @@
    "project": "portal"
   },
   {
-   "id": "WO-BASELINE-DIAG-20261027",
-   "desc": "基线工具补 stdout_tail/failure_lines 并查 rc=1 异常",
+   "id": "WO-LEGION-SCREEN-20261027",
+   "desc": "研发军团作战屏 v1 父单（只读）：组织架构+11席角色+在制+C6指标一页聚合；WBS 见 deliverables/2026-10-27_任务拆解试点_研发军团作战屏v1_工作要素下发书.md；子单 LS-02~LS-12；M0 契约冻结→M1 并行→M2 联调→M3 部署→M4 验收。路由例外=跨部门治理。",
    "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-BASELINE-DIAG-20261027",
-   "created": "2026-10-27 23:53:01",
+   "owner": "ARCH1",
+   "branch": "task/WO-LEGION-SCREEN-20261027",
+   "created": "2026-10-27 23:53:53",
+   "project": "general"
+  },
+  {
+   "id": "WO-LS02-CONTRACT-20261027",
+   "desc": "LS-02 架构与数据契约/ADR（父单 WO-LEGION-SCREEN-20261027）：页面架构+API schema+只读边界冻结",
+   "status": "doing",
+   "owner": "ARCH1",
+   "branch": "task/WO-LS02-CONTRACT-20261027",
+   "created": "2026-10-27 23:53:58",
+   "project": "general"
+  },
+  {
+   "id": "WO-LS03-API-20261027",
+   "desc": "LS-03 后端只读 API /api/dev/legion（新文件 portal/api_dev_legion.py，不改 portal_api 行数）",
+   "status": "doing",
+   "owner": "DEV1",
+   "branch": "task/WO-LS03-API-20261027",
+   "created": "2026-10-27 23:54:03",
+   "project": "general"
+  },
+  {
+   "id": "WO-LS04-METRICS-20261027",
+   "desc": "LS-04 任务/C6 指标聚合（tasks.json + daily_metrics.json，坏 JSON 降级空态）",
+   "status": "doing",
+   "owner": "DEV6",
+   "branch": "task/WO-LS04-METRICS-20261027",
+   "created": "2026-10-27 23:54:08",
+   "project": "general"
+  },
+  {
+   "id": "WO-LS05-AICARD-20261027",
+   "desc": "LS-05 AI 席位卡数据（模型/档位/评估状态；v1 不调外部模型）",
+   "status": "doing",
+   "owner": "DEV2",
+   "branch": "task/WO-LS05-AICARD-20261027",
+   "created": "2026-10-27 23:54:13",
+   "project": "general"
+  },
+  {
+   "id": "WO-LS06-QUANTCARD-20261027",
+   "desc": "LS-06 量化席位卡数据（策略注册/影子状态口径；无数据标注未接，不伪造）",
+   "status": "doing",
+   "owner": "DEV3",
+   "branch": "task/WO-LS06-QUANTCARD-20261027",
+   "created": "2026-10-27 23:54:19",
+   "project": "general"
+  },
+  {
+   "id": "WO-GUANYU-F821FIX-20261027",
+   "desc": "F821回归修复 [UNOWNED]",
+   "status": "doing",
+   "owner": "unknown-agent",
+   "branch": "task/WO-GUANYU-F821FIX-20261027",
+   "created": "2026-10-27 23:54:20",
+   "project": "general"
+  },
+  {
+   "id": "WO-LS07-RISKCARD-20261027",
+   "desc": "LS-07 回测/风控卡数据（Go-No-Go/判据冻结状态口径）",
+   "status": "doing",
+   "owner": "DEV4",
+   "branch": "task/WO-LS07-RISKCARD-20261027",
+   "created": "2026-10-27 23:54:24",
    "project": "general"
   }
  ],
@@ -2336,6 +2399,11 @@
      "id": "WO-P0-DEV1-MONDAY-20261027",
      "desc": "P0 派工周-1（G1 DEV1）：修 MondayCheckpoint 回放锚点误报（审计复核v2 A1）——定位锚点回放判定逻辑，排除系统/陈旧噪声，补回归测试；验收=新测试全绿 + 次日任务执行总线无该误报",
      "status": "doing"
+    },
+    {
+     "id": "WO-LS03-API-20261027",
+     "desc": "LS-03 后端只读 API /api/dev/legion（新文件 portal/api_dev_legion.py，不改 portal_api 行数）",
+     "status": "doing"
     }
    ]
   },
@@ -2473,7 +2541,14 @@
    ],
    "experience": "20 年机器学习工程经验：模型训练、评估与版本化登记全流程，熟悉特征工程与离线/在线评估一致性校验，坚持模型版本登记 domain/model_registry 的可追溯纪律。",
    "dept_name": "研发部",
-   "dept_cn_title": "将作监"
+   "dept_cn_title": "将作监",
+   "tasks": [
+    {
+     "id": "WO-LS05-AICARD-20261027",
+     "desc": "LS-05 AI 席位卡数据（模型/档位/评估状态；v1 不调外部模型）",
+     "status": "doing"
+    }
+   ]
   },
   "DEV3": {
    "id": "DEV3",
@@ -2610,7 +2685,14 @@
    ],
    "experience": "20 年量化策略研发经验：策略从想法到上线的完整纪律链——注册制新增、回测判据前置自检、影子账挂载验证；深知跳过影子期直上模拟仓的代价（缠论联立/快枪手判例亲历者）。",
    "dept_name": "研发部",
-   "dept_cn_title": "将作监"
+   "dept_cn_title": "将作监",
+   "tasks": [
+    {
+     "id": "WO-LS06-QUANTCARD-20261027",
+     "desc": "LS-06 量化席位卡数据（策略注册/影子状态口径；无数据标注未接，不伪造）",
+     "status": "doing"
+    }
+   ]
   },
   "DEV4": {
    "id": "DEV4",
@@ -2747,7 +2829,14 @@
    ],
    "experience": "20 年回测与风控复核经验：BacktestEngine 执行、冻结判据下的 Go/No-Go 独立表态、结果登记 domain/backtest_registry；判据冻结期内不改判据是职业底线。",
    "dept_name": "研发部",
-   "dept_cn_title": "将作监"
+   "dept_cn_title": "将作监",
+   "tasks": [
+    {
+     "id": "WO-LS07-RISKCARD-20261027",
+     "desc": "LS-07 回测/风控卡数据（Go-No-Go/判据冻结状态口径）",
+     "status": "doing"
+    }
+   ]
   },
   "DEV5": {
    "id": "DEV5",
@@ -3015,6 +3104,16 @@
     {
      "id": "WO-SANDBOX-QUOTA-20261027",
      "desc": "P0⑧ 增强（L1 设计+实现）：沙箱 --memory/--cpus/--pids-limit 资源配额；egress allowlist 策略 schema（sandbox_network_policy.json，默认 deny、精确 host/port、proxy 模式）+ network_policy_check.py 校验/决策 + 测试；仅设计不执行 L2（不改防火墙/网络/代理进程）。验收：配额 flags 生效于 docker run 计划；policy check 通过；测试。",
+     "status": "doing"
+    },
+    {
+     "id": "WO-LEGION-SCREEN-20261027",
+     "desc": "研发军团作战屏 v1 父单（只读）：组织架构+11席角色+在制+C6指标一页聚合；WBS 见 deliverables/2026-10-27_任务拆解试点_研发军团作战屏v1_工作要素下发书.md；子单 LS-02~LS-12；M0 契约冻结→M1 并行→M2 联调→M3 部署→M4 验收。路由例外=跨部门治理。",
+     "status": "doing"
+    },
+    {
+     "id": "WO-LS02-CONTRACT-20261027",
+     "desc": "LS-02 架构与数据契约/ADR（父单 WO-LEGION-SCREEN-20261027）：页面架构+API schema+只读边界冻结",
      "status": "doing"
     }
    ]
@@ -3348,6 +3447,11 @@
     {
      "id": "WO-P0-DEV6-TRACE-20261027",
      "desc": "P0 派工周-3（DEV6）：O4 可观测性 v0——dev_events 事件增 trace_id/span_id/parent_id（可选字段，缺省可空），devtask/工具写入任务时带 trace_id；补测试；验收=新测试全绿 + 抽样事件可串成树",
+     "status": "doing"
+    },
+    {
+     "id": "WO-LS04-METRICS-20261027",
+     "desc": "LS-04 任务/C6 指标聚合（tasks.json + daily_metrics.json，坏 JSON 降级空态）",
      "status": "doing"
     }
    ]
@@ -6793,11 +6897,6 @@
      "id": "WO-LEGION-DEEPSHELL-20261027",
      "desc": "深屏骨架推广：shared deep_shell.css；/picks.html 立即接入；/strategies 动态生成器接入（待 8091 受控重启生效）；保留业务 JS/数据；无 L2",
      "status": "review"
-    },
-    {
-     "id": "WO-BASELINE-DIAG-20261027",
-     "desc": "基线工具补 stdout_tail/failure_lines 并查 rc=1 异常",
-     "status": "doing"
     }
    ]
   }
