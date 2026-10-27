@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-27 14:46",
+ "generated": "2026-10-27 14:47",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 61,
@@ -149,12 +149,12 @@
    "project": "quant"
   },
   {
-   "id": "WO-LEGION-C3DIDHARVEST-20261027",
-   "desc": "C3 采纳 decision_id 走 access-log：harvest_adoption 解析建议卡下钻路径 query 的 decision_id/card_id（保持零页面 POST/契约不变）；去重键纳入 decision_id；单测；接口变更单补充页面只需在链接带参数；无 L2",
+   "id": "WO-AUDIT6-LANE-20261027",
+   "desc": "代码审计第6批：repair_lane 子进程 pytest 在全量套件并发下偶发 collection FileNotFoundError（相邻进程 TEMP/缓存竞态）。路由例外=跨部门治理。修：lane.run_batch 子进程改为 hermetic——独立 --basetemp、TEMP/TMP 指向独立目录、清 PYTEST_CURRENT_TEST/PYTEST_ADDOPTS、保留 -p no:cacheprovider；若仍 rc!=0 且 tail 含 ERROR collecting 则换新 basetemp 重试一次（仅一次）。验收：test_repair_lane 单跑绿；全量 master 复跑 0 红。",
    "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-C3DIDHARVEST-20261027",
-   "created": "2026-10-27 14:45:44",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-AUDIT6-LANE-20261027",
+   "created": "2026-10-27 14:46:56",
    "project": "general"
   }
  ],
@@ -6331,11 +6331,6 @@
     {
      "id": "WO-ZHUGE-P1-8-20261027",
      "desc": "P1-8 红队对抗演练：注入/越狱/幻觉用例集+判定器+报告",
-     "status": "doing"
-    },
-    {
-     "id": "WO-LEGION-C3DIDHARVEST-20261027",
-     "desc": "C3 采纳 decision_id 走 access-log：harvest_adoption 解析建议卡下钻路径 query 的 decision_id/card_id（保持零页面 POST/契约不变）；去重键纳入 decision_id；单测；接口变更单补充页面只需在链接带参数；无 L2",
      "status": "doing"
     }
    ]
