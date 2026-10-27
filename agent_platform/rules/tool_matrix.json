@@ -184,7 +184,11 @@
       "execute": [
         "git",
         "pytest",
-        "python"
+        "python",
+        "codebase_intel",
+        "sandbox_verify",
+        "eval_harness",
+        "trace_log"
       ],
       "danger": "deny"
     },
