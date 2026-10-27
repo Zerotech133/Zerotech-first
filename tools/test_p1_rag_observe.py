@@ -77,3 +77,19 @@ def test_evaluate_index_missing_stale():
                       "source_count_avg": 2, "latency_ms": {"p95": 100}},
                      {"exists": False})
     assert any(a["code"] == "index_missing" for a in res["alerts"])
+
+
+def test_since_filters_old_samples(tmp_path):
+    path = tmp_path / "usage.jsonl"
+    path.write_text("\n".join([
+        json.dumps({"ts": "2026-10-27 14:00:00", "rag_enabled": False,
+                    "source_count": 0, "elapsed_ms": 10}),
+        json.dumps({"ts": "2026-10-27 15:10:30", "rag_enabled": True,
+                    "source_count": 2, "elapsed_ms": 20}),
+    ]), encoding="utf-8")
+    assert len(o.load(path)) == 2
+    rows = o.load(path, since="2026-10-27 15:10:00")
+    assert len(rows) == 1 and rows[0]["rag_enabled"] is True
+    summary = o.summarize(rows)
+    res = o.evaluate(summary, {"exists": True, "built_at": "2026-10-27"})
+    assert res["action_required"] is False

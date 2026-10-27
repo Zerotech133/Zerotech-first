@@ -52,7 +52,7 @@ def summarize(rows: list[dict]) -> dict:
     }
 
 
-def load(path: Path | None = None) -> list[dict]:
+def load(path: Path | None = None, since: str = "") -> list[dict]:
     path = Path(path) if path else (REPO_ROOT / LOG_REL)
     if not path.is_file():
         return []
@@ -65,6 +65,8 @@ def load(path: Path | None = None) -> list[dict]:
         except json.JSONDecodeError:
             continue
         if isinstance(row, dict):
+            if since and str(row.get("ts", "")) < since:
+                continue
             rows.append(row)
     return rows
 
@@ -136,11 +138,12 @@ def main(argv=None) -> int:
     ap.add_argument("--log", default="")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--check", action="store_true", help="按阈值巡检并返回告警")
+    ap.add_argument("--since", default="", help="只统计 ts>=since 的样本（如 2026-10-27 15:10:00）")
     args = ap.parse_args(argv)
     path = Path(args.log) if args.log else (REPO_ROOT / LOG_REL)
-    rows = load(path)
+    rows = load(path, since=args.since)
     summary = summarize(rows)
-    out = {"log": str(path), "exists": path.is_file(), **summary}
+    out = {"log": str(path), "exists": path.is_file(), "since": args.since, **summary}
     if args.check:
         out["watch"] = evaluate(summary, _index_info())
     print(json.dumps(out, ensure_ascii=False, indent=2) if not args.json
