@@ -1,4 +1,4 @@
-<!doctype html><html lang="zh-CN"><head><link rel="icon" href="data:,"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>零界 · AI 驾驶舱</title><!-- 定型主版本(老田 2026-10-23 裁定)：本页自带四入口浅色导航，故不加载 /static/nav.js —— 否则会叠加深色二条导航(动线8+五下拉)，正是"导航太复杂"的来源。深屏工作台经首页「系统」与页脚进入。 --><style>
+<!doctype html><html lang="zh-CN"><head><link rel="icon" href="data:,"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>零界 · AI 驾驶舱</title><!-- 双版本(老田 2026-10-27 确认)：本页=浅色「亮」驾驶舱（人看的首页，自带六入口浅色导航，不加载 /static/nav.js）；深色 v9=/os-entry 专业深屏。两版互链，不混用导航/主题。 --><style>
 :root{color-scheme:light;--bg:#f4f7fa;--paper:#ffffff;--ink:#1e3348;--muted:#5a6f83;--line:#dbe5ee;--blue:#0e7490;--bluebg:#e8f4f7;--amber:#936224;--red:#b3402e;--green:#227a4b}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.7 "Microsoft YaHei",system-ui,sans-serif}
 .top{position:sticky;top:0;z-index:9;display:flex;align-items:center;gap:14px;height:56px;padding:0 24px;background:#ffffffee;border-bottom:1px solid var(--line);backdrop-filter:blur(8px)}.brand{font-size:18px;font-weight:800;color:var(--blue)}.seg{display:flex;gap:4px;margin-left:auto}.seg button{cursor:pointer;border:1px solid transparent;background:transparent;color:var(--muted);border-radius:8px;padding:6px 14px;font-size:13.5px;font-weight:600}.seg button.on{color:var(--blue);background:var(--bluebg);border-color:#bcd8e2}
 main{max-width:1120px;margin:auto;padding:22px 24px 80px}
@@ -23,14 +23,14 @@ main{max-width:1120px;margin:auto;padding:22px 24px 80px}
 @media(max-width:900px){.g2,.g4,.caps,.summary-grid,.ability-grid,.intel-grid,.detail-grid,.more-grid,.flow{grid-template-columns:1fr 1fr}.seg{overflow-x:auto}}
 @media(max-width:600px){.summary-grid,.ability-grid,.intel-grid,.detail-grid,.more-grid,.flow{grid-template-columns:1fr}.top{padding:0 12px;gap:6px}.brand{font-size:16px}.seg{gap:0}.seg button{padding:6px 8px;font-size:12px;white-space:nowrap}main{padding:16px 14px 60px}.g2,.g4,.caps{grid-template-columns:1fr}.airow{display:grid;grid-template-columns:40px 1fr;gap:8px;align-items:center}.airow .ava{grid-area:1/1}.airow input{grid-area:1/2;font-size:14px}.airow .voice-button{grid-area:2/1/3/2;padding:12px}.airow #ai-go{grid-area:2/2/3/3;padding:12px}.aihero{padding:16px}.krow{display:grid;grid-template-columns:1fr auto;gap:2px 8px;align-items:center}.krow b{grid-area:1/1;min-width:0}.krow small{grid-area:2/1/3/3}.krow .pill{grid-area:1/2;justify-self:end}.foot{flex-wrap:wrap}}
 </style></head><body><header class="top"><div class="brand">零界</div><nav class="seg" aria-label="板块">
-<button class="on" data-s="home">首页</button><button data-s="council">会议指挥</button><button data-s="intelall">情报</button><button data-s="system">系统</button>
+<button class="on" data-s="home">首页</button><button data-s="council">会议指挥</button><button data-s="intelall">情报全谱</button><button data-s="domains">业务域</button><button data-s="product">产品建设</button><button data-s="system">系统</button>
 </nav></header><main>
 <div class="back-row" id="back-row"><button id="back-screen" type="button">← 返回上一页</button></div>
 <section class="sec on" id="s-home">
 <div class="aihero">
 <div class="airow"><div class="ava">亮</div>
-<input id="ai-say" aria-label="告诉零界你想做什么" placeholder="说说你想做什么，例如：帮我查记录、讨论一个想法">
-<button id="ai-voice" class="voice-button" type="button" aria-label="语音输入" aria-pressed="false">🎙 说话</button><button id="ai-go" type="button">发送</button></div>
+<input id="ai-say" aria-label="告诉零界你想做什么" placeholder="对零界说一句话——我来指挥整个系统（开会/预约/想法/查询/定稿都行）">
+<button id="ai-voice" class="voice-button" type="button" aria-label="语音输入" aria-pressed="false">🎙 说话</button><button id="ai-go" type="button">说 → 执行</button></div>
 <p class="voice-note">说话会先转成文字供你核对；不会自动发送或授权执行。语音识别是否可用取决于浏览器及其服务。</p>
 <div class="ai-echo" id="ai-echo" role="status" aria-live="polite"></div>
 <div class="ai-tips">
@@ -217,7 +217,7 @@ main{max-width:1120px;margin:auto;padding:22px 24px 80px}
 <div class="card"><h2>深屏工作台</h2><p style="color:var(--muted);font-size:13px">v9 生产页（四视图+大屏）保留。</p><a class="tile" style="display:block;text-align:center" href="/os-entry">打开 v9 →</a></div>
 </div></section>
 
-<div class="foot"><span>零界 AI 驾驶舱 · 定型主版</span><span>专业深屏从所属板块进入；旧工作台不作为首页</span></div>
+<div class="foot"><span>零界 AI 驾驶舱 v0.2 · 浅色</span><a href="/os-entry">v9 深屏</a><a href="/os_council.html">议会厅</a><a href="/zero_home.html">产品台</a><span>人看的首页；专业深屏从 v9 进入</span></div>
 </main>
 <script>
 const OPS=(location.protocol.startsWith('http')&&location.hostname)?('http://'+location.hostname+':8798'):'http://127.0.0.1:8798';
