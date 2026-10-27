@@ -24,6 +24,7 @@ failure，禁静默降级到默认参数——错参数落单比不落单危害�
 写入快照 context_json["combo"]（加法演进，读侧容忍缺失），快照 combo_id
 列从 account_id 替换为注册表组合 id（decision_snapshot.py 预留的批 2 口）。
 """
+
 from __future__ import annotations
 
 import json
@@ -68,7 +69,8 @@ def load_registry(path: Path | str | None = None) -> dict:
     ver = raw.get("registry_schema_version")
     if ver != REGISTRY_SCHEMA_VERSION:
         raise ComboRegistryError(
-            f"注册表 schema 版本不支持: {ver!r}（本实现只认 {REGISTRY_SCHEMA_VERSION}）")
+            f"注册表 schema 版本不支持: {ver!r}（本实现只认 {REGISTRY_SCHEMA_VERSION}）"
+        )
     combos = raw.get("combos")
     if not isinstance(combos, list) or not combos:
         raise ComboRegistryError(f"注册表 combos 须为非空数组: {p}")
@@ -111,7 +113,8 @@ def _validate_entry(entry, src) -> None:
         v = params.get(k)
         if not isinstance(v, (int, float)) or isinstance(v, bool):
             raise ComboRegistryError(
-                f"组合 {cid} persona.params.{k} 须为数值（persona v1）: {where}")
+                f"组合 {cid} persona.params.{k} 须为数值（persona v1）: {where}"
+            )
     if not 0 <= float(params["conf_floor"]) <= 1:
         raise ComboRegistryError(f"组合 {cid} persona.conf_floor 须在 [0,1]: {where}")
     for k in ("max_pos_pct", "max_total_pct"):

@@ -14,6 +14,7 @@ _K-STOCK-100.md §4。原则：
   python k_stock/paper/distill_export.py --since 1   # 最近 N 天
   python k_stock/paper/distill_export.py --stats     # 语料统计
 """
+
 from __future__ import annotations
 
 import argparse
@@ -69,9 +70,14 @@ def _judge_lookup() -> dict:
         for fp in REVIEWS.glob("*.json"):
             try:
                 d = json.loads(fp.read_text(encoding="utf-8"))
-                out[d["date"]] = {"score": d.get("score"),
-                                  "flags": [f["rule"] for f in d.get("findings", [])
-                                            if f["severity"] in ("high", "critical")]}
+                out[d["date"]] = {
+                    "score": d.get("score"),
+                    "flags": [
+                        f["rule"]
+                        for f in d.get("findings", [])
+                        if f["severity"] in ("high", "critical")
+                    ],
+                }
             except Exception:
                 continue
     return out
@@ -81,11 +87,13 @@ def export(since_days: int | None = None) -> dict:
     con = _connect()
     try:
         wm = _watermark()
-        sql = ("SELECT * FROM orders WHERE id>? AND source IN ('ai','manual') "
-               "AND status IN ('pending','filled','rejected','cancelled')")
+        sql = (
+            "SELECT * FROM orders WHERE id>? AND source IN ('ai','manual') "
+            "AND status IN ('pending','filled','rejected','cancelled')"
+        )
         args = [wm]
         if since_days:
-            iso = (datetime.now().strftime("%Y-%m-%dT%H:%M:%S"))
+            iso = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
             sql += " AND ts>=?"
             args.append(iso)  # 占位：水位优先，since 仅提示用
         rows = con.execute(sql + " ORDER BY id", args).fetchall()
@@ -100,25 +108,52 @@ def export(since_days: int | None = None) -> dict:
                 ep = {
                     "episode_id": f"{jdate}-{o['account_id']}-{o['stock']}-{o['side']}-{o['id']}",
                     "order_id": o["id"],
-                    "ts": ts, "account": o["account_id"], "strategy": o["strategy"],
-                    "context": {"run_ref": o["ref"], "conf": o["conf"],
-                                "equity": None, "pos_pct": None, "regime": None},
-                    "signal": {"side": o["side"], "qty": o["qty"],
-                               "plan_date": o["plan_date"], "price_base": o["price_base"],
-                               "reason": o["reason"]},
-                    "exec": {"status": o["status"], "fill_price": o["filled_price"],
-                             "fee": o["fee"], "order_kind": o["order_kind"],
-                             "guard_flags": _guard_flags(o["reason"] or "", o["status"])},
-                    "outcome": {"ret_5d": None, "ret_20d": None,
-                                "mfe": None, "mae": None},
-                    "judge": {"score": j.get("score"), "flags": j.get("flags", []),
-                              "narrative": None},
+                    "ts": ts,
+                    "account": o["account_id"],
+                    "strategy": o["strategy"],
+                    "context": {
+                        "run_ref": o["ref"],
+                        "conf": o["conf"],
+                        "equity": None,
+                        "pos_pct": None,
+                        "regime": None,
+                    },
+                    "signal": {
+                        "side": o["side"],
+                        "qty": o["qty"],
+                        "plan_date": o["plan_date"],
+                        "price_base": o["price_base"],
+                        "reason": o["reason"],
+                    },
+                    "exec": {
+                        "status": o["status"],
+                        "fill_price": o["filled_price"],
+                        "fee": o["fee"],
+                        "order_kind": o["order_kind"],
+                        "guard_flags": _guard_flags(o["reason"] or "", o["status"]),
+                    },
+                    "outcome": {
+                        "ret_5d": None,
+                        "ret_20d": None,
+                        "mfe": None,
+                        "mae": None,
+                    },
+                    "judge": {
+                        "score": j.get("score"),
+                        "flags": j.get("flags", []),
+                        "narrative": None,
+                    },
                 }
                 f.write(json.dumps(ep, ensure_ascii=False) + "\n")
                 n += 1
-        return {"exported": n, "watermark_before": wm,
-                "total_lines": sum(1 for _ in CORPUS.open(encoding="utf-8")) if CORPUS.exists() else 0,
-                "path": str(CORPUS)}
+        return {
+            "exported": n,
+            "watermark_before": wm,
+            "total_lines": sum(1 for _ in CORPUS.open(encoding="utf-8"))
+            if CORPUS.exists()
+            else 0,
+            "path": str(CORPUS),
+        }
     finally:
         con.close()
 
@@ -140,8 +175,13 @@ def stats() -> dict:
             if ep["exec"]["guard_flags"]:
                 guarded += 1
             by_status[ep["exec"]["status"]] = by_status.get(ep["exec"]["status"], 0) + 1
-    return {"total": total, "trainable_filled": train,
-            "guard_intervened": guarded, "by_status": by_status, "path": str(CORPUS)}
+    return {
+        "total": total,
+        "trainable_filled": train,
+        "guard_intervened": guarded,
+        "by_status": by_status,
+        "path": str(CORPUS),
+    }
 
 
 def main(argv=None) -> int:

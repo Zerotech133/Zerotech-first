@@ -25,6 +25,7 @@
   python combo_accounts.py --apply         # 落库（须签准）
   python combo_accounts.py --db path.db    # 指定库（测试用）
 """
+
 from __future__ import annotations
 
 import argparse
@@ -34,24 +35,26 @@ import sys
 import time
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent          # k_stock/paper
+HERE = Path(__file__).resolve().parent  # k_stock/paper
 if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
 
-import combo_registry as creg                   # noqa: E402
-import strategy_branch as sb                    # noqa: E402
+import combo_registry as creg  # noqa: E402
+import strategy_branch as sb  # noqa: E402
 
 DEFAULT_DB = HERE.parent / "data" / "paper.db"
-INITIAL_CASH = 1_000_000.0                      # 与现有 6 个账户一致
+INITIAL_CASH = 1_000_000.0  # 与现有 6 个账户一致
 
 
-def build_plan(conn, combo_ids=None, branch_ids=None,
-               initial_cash=INITIAL_CASH) -> list:
+def build_plan(
+    conn, combo_ids=None, branch_ids=None, initial_cash=INITIAL_CASH
+) -> list:
     """返回待建账户计划（不写库）。已存在的标 skip。"""
     if combo_ids is None:
         reg = creg.load_registry()
-        combo_ids = [c["combo_id"] for c in reg.get("combos") or []
-                     if (c or {}).get("combo_id")]
+        combo_ids = [
+            c["combo_id"] for c in reg.get("combos") or [] if (c or {}).get("combo_id")
+        ]
     if branch_ids is None:
         branch_ids = list(sb.registered_branch_ids())
     have = {r[0] for r in conn.execute("SELECT account_id FROM account")}
@@ -59,12 +62,16 @@ def build_plan(conn, combo_ids=None, branch_ids=None,
     for cid in combo_ids:
         for bid in branch_ids:
             aid = "%s@%s" % (cid, bid)
-            plan.append({
-                "account_id": aid, "combo_id": cid, "branch_id": bid,
-                "initial_cash": initial_cash,
-                "action": "skip" if aid in have else "create",
-                "reason": "已存在，不重复注资" if aid in have else "",
-            })
+            plan.append(
+                {
+                    "account_id": aid,
+                    "combo_id": cid,
+                    "branch_id": bid,
+                    "initial_cash": initial_cash,
+                    "action": "skip" if aid in have else "create",
+                    "reason": "已存在，不重复注资" if aid in have else "",
+                }
+            )
     return plan
 
 
@@ -80,14 +87,18 @@ def apply_plan(conn, plan, ts=None) -> dict:
             c = r["initial_cash"]
             conn.execute(
                 "INSERT INTO account(account_id, cash, initial_cash, created_at) "
-                "VALUES(?,?,?,?)", (r["account_id"], c, c, ts))
+                "VALUES(?,?,?,?)",
+                (r["account_id"], c, c, ts),
+            )
             conn.execute(
                 "INSERT INTO ledger(ts, type, amount, cash_after, account_id) "
-                "VALUES(?,?,?,?,?)", (ts, "deposit", c, c, r["account_id"]))
+                "VALUES(?,?,?,?,?)",
+                (ts, "deposit", c, c, r["account_id"]),
+            )
             created.append(r["account_id"])
         conn.commit()
     except Exception:
-        conn.rollback()                          # 全部或全不
+        conn.rollback()  # 全部或全不
         raise
     return {"ok": True, "created": created, "skipped": skipped}
 
@@ -103,8 +114,9 @@ def _connect(db_path):
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="组合隔离账户开户（默认 dry-run）")
     ap.add_argument("--db", default=str(DEFAULT_DB))
-    ap.add_argument("--apply", action="store_true",
-                    help="真正落库（须老田签准；缺省仅 dry-run）")
+    ap.add_argument(
+        "--apply", action="store_true", help="真正落库（须老田签准；缺省仅 dry-run）"
+    )
     ap.add_argument("--cash", type=float, default=INITIAL_CASH)
     args = ap.parse_args(argv)
 
@@ -112,20 +124,31 @@ def main(argv=None) -> int:
     try:
         plan = build_plan(conn, initial_cash=args.cash)
         n_create = sum(1 for r in plan if r["action"] == "create")
-        print(json.dumps({
-            "mode": "apply" if args.apply else "dry-run",
-            "db": args.db, "total": len(plan),
-            "to_create": n_create, "to_skip": len(plan) - n_create,
-            "initial_cash": args.cash,
-        }, ensure_ascii=False))
+        print(
+            json.dumps(
+                {
+                    "mode": "apply" if args.apply else "dry-run",
+                    "db": args.db,
+                    "total": len(plan),
+                    "to_create": n_create,
+                    "to_skip": len(plan) - n_create,
+                    "initial_cash": args.cash,
+                },
+                ensure_ascii=False,
+            )
+        )
         for r in plan:
             print("  %-8s %-42s %s" % (r["action"], r["account_id"], r["reason"]))
         if not args.apply:
             print("\n[dry-run] 未写库。确认后加 --apply（须老田签准）。")
             return 0
         res = apply_plan(conn, plan)
-        print(json.dumps({"created": len(res["created"]),
-                          "skipped": len(res["skipped"])}, ensure_ascii=False))
+        print(
+            json.dumps(
+                {"created": len(res["created"]), "skipped": len(res["skipped"])},
+                ensure_ascii=False,
+            )
+        )
         return 0
     finally:
         conn.close()

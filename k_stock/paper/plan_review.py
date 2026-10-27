@@ -35,6 +35,7 @@ GET /api/plan_review?pf_id= 直接投影当日 JSON。
   python plan_review.py review pf_001 laotian_pm   # 审查并落审批单
   python plan_review.py show   pf_001 [YYYYMMDD]   # 查看审批单
 """
+
 import argparse
 import json
 import os
@@ -56,8 +57,8 @@ OUT_DIR = DATA_DIR / "plan_review"
 SUBS_PATH = HERE.parent.parent / "portal" / "data" / "strategy_subscriptions.json"
 DB_PATH = DATA_DIR / "paper.db"
 
-TOP_CONTEXT = 15      # 意图清单摘要里的 Top 信心标的数
-TOP_APPROVED = 8      # 审批单建议批准上限（写入指令，LLM 可少批不可超）
+TOP_CONTEXT = 15  # 意图清单摘要里的 Top 信心标的数
+TOP_APPROVED = 8  # 审批单建议批准上限（写入指令，LLM 可少批不可超）
 REASON_CODES = ("信心不足", "行业集中", "风险敞口", "流动性")
 
 SCHEMA = "k-stock-163/plan-review-v0.1"
@@ -80,6 +81,7 @@ class PlanReviewError(Exception):
 
 # ── collect_context：意图清单文本摘要 ────────────────────────────
 
+
 def _today_tag(now: datetime | None = None) -> str:
     return (now or datetime.now()).strftime("%Y%m%d")
 
@@ -88,8 +90,11 @@ def _latest_merged_run(pf_id: str, now: datetime | None = None) -> Path | None:
     """当日最新 merged run 产物（poc_<pf_id>_<YYYYMMDD>_<HHMM>.json 口径）。"""
     tag = _today_tag(now)
     pat = re.compile(rf"^poc_{re.escape(pf_id)}_(\d{{8}})_\d{{4}}\.json$")
-    hits = [p for p in DATA_DIR.glob(f"poc_{pf_id}_*.json")
-            if (m := pat.match(p.name)) and m.group(1) == tag]
+    hits = [
+        p
+        for p in DATA_DIR.glob(f"poc_{pf_id}_*.json")
+        if (m := pat.match(p.name)) and m.group(1) == tag
+    ]
     return max(hits, key=lambda p: p.name) if hits else None
 
 
@@ -115,13 +120,17 @@ def _pending_buys(trader: str) -> list[dict]:
             rows = con.execute(
                 "SELECT stock, qty, conf, strategy, plan_date FROM orders "
                 "WHERE account_id=? AND status='pending' AND side='BUY' "
-                "ORDER BY id", (trader,)).fetchall()
+                "ORDER BY id",
+                (trader,),
+            ).fetchall()
         finally:
             con.close()
     except sqlite3.Error:
         return []
-    return [{"stock": r[0], "qty": r[1], "conf": r[2],
-             "strategy": r[3], "plan_date": r[4]} for r in rows]
+    return [
+        {"stock": r[0], "qty": r[1], "conf": r[2], "strategy": r[3], "plan_date": r[4]}
+        for r in rows
+    ]
 
 
 def collect_context(pf_id: str, now: datetime | None = None) -> str:
@@ -135,9 +144,13 @@ def collect_context(pf_id: str, now: datetime | None = None) -> str:
     if run:
         try:
             raw = json.loads(run.read_text(encoding="utf-8"))
-            items = [it for it in raw
-                     if isinstance(it, dict) and it.get("stock")
-                     and ((it.get("outputs") or {}).get("D1") or {}).get("action") == "BUY"]
+            items = [
+                it
+                for it in raw
+                if isinstance(it, dict)
+                and it.get("stock")
+                and ((it.get("outputs") or {}).get("D1") or {}).get("action") == "BUY"
+            ]
         except (OSError, ValueError):
             items = []
     trader = _pf_trader(pf_id)
@@ -148,36 +161,45 @@ def collect_context(pf_id: str, now: datetime | None = None) -> str:
 
     lines = [f"【今日买入意图清单摘要】组合 {pf_id}（{now:%Y-%m-%d}）"]
     src_note = f"产物 {run.name}" if run else "无当日 merged run 产物"
-    lines.append(f"意图总笔数 {len(items)}（{src_note}）+ 待撮合 pending 买入 "
-                 f"{len(pend)} 笔（账本 {trader or '未知'}）")
+    lines.append(
+        f"意图总笔数 {len(items)}（{src_note}）+ 待撮合 pending 买入 "
+        f"{len(pend)} 笔（账本 {trader or '未知'}）"
+    )
     if items:
         tiers: dict[str, int] = {}
         for it in items:
             t = str(it.get("_tier") or "未分诊")
             tiers[t] = tiers.get(t, 0) + 1
-        lines.append("tier 分布：" + " ".join(
-            f"{t}={n}" for t, n in sorted(tiers.items())))
+        lines.append(
+            "tier 分布：" + " ".join(f"{t}={n}" for t, n in sorted(tiers.items()))
+        )
 
         def _conf(it):
-            return float(((it.get("outputs") or {}).get("D1") or {})
-                         .get("confidence") or 0.0)
+            return float(
+                ((it.get("outputs") or {}).get("D1") or {}).get("confidence") or 0.0
+            )
+
         top = sorted(items, key=_conf, reverse=True)[:TOP_CONTEXT]
         lines.append(f"Top 信心标的（{len(top)}）：")
         for it in top:
             d1 = (it.get("outputs") or {}).get("D1") or {}
-            lines.append(f"  {it['stock']} conf={_conf(it):.2f} "
-                         f"src={it.get('_src_strategy') or '-'}"
-                         + (f"｜{str(d1.get('reason'))[:40]}"
-                            if d1.get("reason") else ""))
+            lines.append(
+                f"  {it['stock']} conf={_conf(it):.2f} "
+                f"src={it.get('_src_strategy') or '-'}"
+                + (f"｜{str(d1.get('reason'))[:40]}" if d1.get("reason") else "")
+            )
     if pend:
         lines.append("pending 买入单（原样列出，供审查去重）：")
         for o in pend[:TOP_CONTEXT]:
-            lines.append(f"  {o['stock']} qty={o['qty']} conf={o['conf']} "
-                         f"strategy={o['strategy']}")
+            lines.append(
+                f"  {o['stock']} qty={o['qty']} conf={o['conf']} "
+                f"strategy={o['strategy']}"
+            )
     return "\n".join(lines)
 
 
 # ── review_plan：审查 → 审批单产物 ───────────────────────────────
+
 
 def _parse_review_json(text: str) -> dict | None:
     """宽松提取 LLM 输出里的审批单 JSON（fenced 块优先，其次首尾大括号截取）。"""
@@ -189,7 +211,7 @@ def _parse_review_json(text: str) -> dict | None:
         candidates.append(m.group(1))
     i, j = text.find("{"), text.rfind("}")
     if i != -1 and j > i:
-        candidates.append(text[i:j + 1])
+        candidates.append(text[i : j + 1])
     candidates.append(text.strip())
     for c in candidates:
         try:
@@ -209,34 +231,42 @@ def _atomic_write_json(fp: Path, obj: dict) -> None:
     os.replace(tmp, fp)
 
 
-def review_plan(pf_id: str, manager_id: str,
-                source: str | None = None) -> dict:
+def review_plan(pf_id: str, manager_id: str, source: str | None = None) -> dict:
     """审查当日买入意图，生成并落盘审批单。返回审批单 dict。"""
     source = source or pf_id
     context = collect_context(pf_id)
     if not context:
         raise PlanReviewError(
             f"plan_review {pf_id}: 无可用买入意图清单"
-            f"（无当日 poc_{pf_id}_* merged run 产物且无 pending 挂单），拒绝空审")
+            f"（无当日 poc_{pf_id}_* merged run 产物且无 pending 挂单），拒绝空审"
+        )
 
     # 经理档案 + active 雇佣校验（同 meeting.hold_meeting 口径）
     try:
         profile = manager.load_profile(manager_id)
     except manager.Reject as e:
         raise PlanReviewError(f"plan_review {pf_id}: 经理校验拒绝 → {e}") from e
-    active = [h for h in manager.hires_list()
-              if h.get("manager") == manager_id and h.get("source") == source
-              and h.get("status") == "active"]
+    active = [
+        h
+        for h in manager.hires_list()
+        if h.get("manager") == manager_id
+        and h.get("source") == source
+        and h.get("status") == "active"
+    ]
     if not active:
         raise PlanReviewError(
             f"plan_review {pf_id}: 无 {manager_id}×{source} 的 active 雇佣"
-            f"（账本 {manager.HIRES_PATH}），须先由经理雇佣建立")
+            f"（账本 {manager.HIRES_PATH}），须先由经理雇佣建立"
+        )
 
     role_prompt = profile.get("role_prompt") or (
-        f"你是 K-STOCK 模拟仓投资部经理 {profile.get('name', manager_id)}。")
+        f"你是 K-STOCK 模拟仓投资部经理 {profile.get('name', manager_id)}。"
+    )
     messages = [
-        {"role": "system",
-         "content": role_prompt + "\n\n【审查指令】\n" + _REVIEW_INSTRUCTIONS},
+        {
+            "role": "system",
+            "content": role_prompt + "\n\n【审查指令】\n" + _REVIEW_INSTRUCTIONS,
+        },
         {"role": "user", "content": context},
     ]
     try:
@@ -246,7 +276,8 @@ def review_plan(pf_id: str, manager_id: str,
         body = meeting._try_zhipu_fallback(messages, active[0].get("model"), e)
         if body is None:
             raise PlanReviewError(
-                f"plan_review {pf_id}: LLM 审查失败（不落半截审批单）→ {e}") from e
+                f"plan_review {pf_id}: LLM 审查失败（不落半截审批单）→ {e}"
+            ) from e
         provider = "zhipu-fallback"
     else:
         body = (out or {}).get("content") or ""
@@ -257,13 +288,23 @@ def review_plan(pf_id: str, manager_id: str,
     # 宽松解析；失败降级整文留痕（不静默丢）
     parsed = _parse_review_json(body)
     if parsed is not None:
-        approved = [{"stock": str(x.get("stock", "")),
-                     "reason": str(x.get("reason", "")),
-                     "weight": str(x.get("weight", ""))}
-                    for x in parsed.get("approved", []) if isinstance(x, dict)]
-        rejected = [{"stock": str(x.get("stock", "")),
-                     "reason_code": str(x.get("reason_code", ""))}
-                    for x in parsed.get("rejected", []) if isinstance(x, dict)]
+        approved = [
+            {
+                "stock": str(x.get("stock", "")),
+                "reason": str(x.get("reason", "")),
+                "weight": str(x.get("weight", "")),
+            }
+            for x in parsed.get("approved", [])
+            if isinstance(x, dict)
+        ]
+        rejected = [
+            {
+                "stock": str(x.get("stock", "")),
+                "reason_code": str(x.get("reason_code", "")),
+            }
+            for x in parsed.get("rejected", [])
+            if isinstance(x, dict)
+        ]
         summary = str(parsed.get("summary", ""))
         parsed_ok = True
     else:
@@ -282,7 +323,7 @@ def review_plan(pf_id: str, manager_id: str,
         "approved": approved,
         "rejected": rejected,
         "summary": summary,
-        "body": body,   # LLM 原文全程留痕（含降级场景）
+        "body": body,  # LLM 原文全程留痕（含降级场景）
     }
     _atomic_write_json(OUT_DIR / f"{artifact['date']}_{pf_id}.json", artifact)
     return artifact
@@ -302,14 +343,19 @@ def load_review(pf_id: str, date: str | None = None) -> dict | None:
 
 # ── CLI ──────────────────────────────────────────────────────────
 def _main(argv=None) -> int:
-    ap = argparse.ArgumentParser(prog="plan_review",
-                                 description="交易计划审查线（经理盘前审批单）")
+    ap = argparse.ArgumentParser(
+        prog="plan_review", description="交易计划审查线（经理盘前审批单）"
+    )
     sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("review", help="审查当日买入意图并落审批单")
     p.add_argument("pf_id")
     p.add_argument("manager_id")
-    p.add_argument("source", nargs="?", default=None,
-                   help="雇佣 source（缺省=pf_id，组合雇佣口径）")
+    p.add_argument(
+        "source",
+        nargs="?",
+        default=None,
+        help="雇佣 source（缺省=pf_id，组合雇佣口径）",
+    )
     p = sub.add_parser("show", help="查看审批单")
     p.add_argument("pf_id")
     p.add_argument("date", nargs="?", default=None, help="YYYYMMDD（缺省当日）")
@@ -318,8 +364,10 @@ def _main(argv=None) -> int:
         if args.cmd == "review":
             r = review_plan(args.pf_id, args.manager_id, args.source)
             n_ap, n_rj = len(r["approved"]), len(r["rejected"])
-            print(f"OK 审批单已落盘：批准 {n_ap} 只 / 驳回 {n_rj} 只"
-                  f" / parsed={r['parsed']} / provider={r['provider']}")
+            print(
+                f"OK 审批单已落盘：批准 {n_ap} 只 / 驳回 {n_rj} 只"
+                f" / parsed={r['parsed']} / provider={r['provider']}"
+            )
         else:
             r = load_review(args.pf_id, args.date)
             if r is None:

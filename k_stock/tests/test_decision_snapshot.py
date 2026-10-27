@@ -11,6 +11,7 @@
   5. 同 run_ref 唯一：exec_run 重放（幂等路径 orders 空）不产第二份；
   6. settle 闭环：按 run_ref 取快照 → 与 orders 关联 → 撮合后可配对后验。
 """
+
 import json
 import sys
 from pathlib import Path
@@ -21,27 +22,37 @@ HERE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(HERE / "paper"))
 sys.path.insert(0, str(HERE / "tests"))
 
-from engine import PaperEngine, ENGINE_VERSION   # noqa: E402
-import decision_snapshot                          # noqa: E402
-from market import FakeMarket                     # noqa: E402
+from engine import PaperEngine, ENGINE_VERSION  # noqa: E402
+import decision_snapshot  # noqa: E402
+from market import FakeMarket  # noqa: E402
 
 from test_paper_engine import _bar, _write_run, RUN_ASOF  # noqa: E402
 
 
 def _mk_engine(tmp_path) -> PaperEngine:
-    bars = {"600519.SH": [
-        _bar("20261008", open_=1244.6, pre_close=1246.2, close=1247.0),
-        _bar("20261009", open_=1250.0, pre_close=1247.0, close=1252.0),
-    ]}
+    bars = {
+        "600519.SH": [
+            _bar("20261008", open_=1244.6, pre_close=1246.2, close=1247.0),
+            _bar("20261009", open_=1250.0, pre_close=1247.0, close=1252.0),
+        ]
+    }
     e = PaperEngine(tmp_path / "paper.db", FakeMarket(bars))
     e.ensure_account()
     return e
 
 
 def _buy_run(tmp_path, name="poc_snap.json", stock="600519.SH"):
-    return _write_run(tmp_path, name, [
-        {"stock": stock, "asof": RUN_ASOF,
-         "outputs": {"D1": {"action": "BUY", "confidence": 0.75}}}])
+    return _write_run(
+        tmp_path,
+        name,
+        [
+            {
+                "stock": stock,
+                "asof": RUN_ASOF,
+                "outputs": {"D1": {"action": "BUY", "confidence": 0.75}},
+            }
+        ],
+    )
 
 
 def _count(con) -> int:
@@ -102,12 +113,14 @@ def test_settle_pairs_snapshot_to_fills(tmp_path):
     order_id = snap["orders_json"][0]["order_id"]
     s = e.settle()
     assert s["filled"][0]["order_id"] == order_id
-    assert s["filled"][0]["price"] == 1250.0        # plan_date 当日开盘
+    assert s["filled"][0]["price"] == 1250.0  # plan_date 当日开盘
     # 快照的决策 → 成交结果可追溯配对
     row = e.con.execute(
         "SELECT o.filled_price, s.run_ref FROM orders o "
         "JOIN decision_snapshots s ON o.ref LIKE s.run_ref || '#%' "
-        "WHERE o.id=?", (order_id,)).fetchone()
+        "WHERE o.id=?",
+        (order_id,),
+    ).fetchone()
     assert row["run_ref"] == "poc_snap.json"
     assert row["filled_price"] == pytest.approx(1250.0)
     assert e.verify()["ok"]
@@ -122,8 +135,13 @@ def test_same_run_multi_account_two_snapshots(tmp_path):
     assert r1["orders"] and r2["orders"]
     assert r1["snapshot_id"] != r2["snapshot_id"]
     assert _count(e.con) == 2
-    assert decision_snapshot.by_ref(e.con, "poc_snap.json", "main")["combo_id"] == "main"
-    assert decision_snapshot.by_ref(e.con, "poc_snap.json", "taishan")["combo_id"] == "taishan"
+    assert (
+        decision_snapshot.by_ref(e.con, "poc_snap.json", "main")["combo_id"] == "main"
+    )
+    assert (
+        decision_snapshot.by_ref(e.con, "poc_snap.json", "taishan")["combo_id"]
+        == "taishan"
+    )
 
 
 if __name__ == "__main__":

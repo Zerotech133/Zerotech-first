@@ -20,6 +20,7 @@
     → strategy=qingping_hk）；watchlist 形态 rt_hk00700 适配器内转 00700.HK
   · 幂等：exec_run 的 ref={run文件}#{stock} 天然防重，同缓存重复导入自动跳过
 """
+
 from __future__ import annotations
 
 import json
@@ -33,7 +34,7 @@ REPORTS = STATION / "quant_backtest" / "reports"
 DATA_DIR = HERE.parent / "data"
 
 QINGPING_CONF = 0.60
-US_ACCOUNT = "us_qingping"       # US 独立子账本（USD 原币，与 A 股账本不混算）
+US_ACCOUNT = "us_qingping"  # US 独立子账本（USD 原币，与 A 股账本不混算）
 US_STRATEGY = "qingping_us"
 
 
@@ -44,9 +45,13 @@ def _cache_path() -> Path:
     return p
 
 
-def cache_to_run(cache_path: Path | None = None, out_dir: Path | None = None,
-                 split_us: bool = False, split_hk: bool = False,
-                 write_cn: bool = True):
+def cache_to_run(
+    cache_path: Path | None = None,
+    out_dir: Path | None = None,
+    split_us: bool = False,
+    split_hk: bool = False,
+    write_cn: bool = True,
+):
     """青萍产物 → poc_* 兼容决策产物（strategy 语义在 exec_run 侧标注）。
 
     split_us=False（默认）：与历史行为一致——US 行进 skipped，返回 CN run 路径。
@@ -67,18 +72,30 @@ def cache_to_run(cache_path: Path | None = None, out_dir: Path | None = None,
         market = str(row.get("market", "")).strip()
         action = str(row.get("action", ""))
         if "买入" not in action:
-            continue                      # 观察/回避（含环境闸门）不进 picks
+            continue  # 观察/回避（含环境闸门）不进 picks
         if market not in ("CN", "US", "HK"):
-            skipped.append({"stock": code or market,
-                            "why": f"market={market} 暂不支持（CRYPTO 等独立再议）"})
+            skipped.append(
+                {
+                    "stock": code or market,
+                    "why": f"market={market} 暂不支持（CRYPTO 等独立再议）",
+                }
+            )
             continue
         if market == "US" and not split_us:
-            skipped.append({"stock": code,
-                            "why": "market=US 默认兼容口径未路由（split_us=True 开启 US 独立账本）"})
+            skipped.append(
+                {
+                    "stock": code,
+                    "why": "market=US 默认兼容口径未路由（split_us=True 开启 US 独立账本）",
+                }
+            )
             continue
         if market == "HK" and not split_hk:
-            skipped.append({"stock": code,
-                            "why": "market=HK 默认兼容口径未路由（split_hk=True 开启 HK 独立账本）"})
+            skipped.append(
+                {
+                    "stock": code,
+                    "why": "market=HK 默认兼容口径未路由（split_hk=True 开启 HK 独立账本）",
+                }
+            )
             continue
         if not code:
             continue
@@ -86,9 +103,14 @@ def cache_to_run(cache_path: Path | None = None, out_dir: Path | None = None,
             "stock": code,
             "asof": d.get("ts") or datetime.now().isoformat(timespec="seconds"),
             "outputs": {"D1": {"action": "BUY", "confidence": QINGPING_CONF}},
-            "_meta": {"source": "qingping", "name": row.get("name"),
-                      "score": row.get("score"), "px": row.get("px"),
-                      "dims": row.get("dims"), "rps": row.get("rps")},
+            "_meta": {
+                "source": "qingping",
+                "name": row.get("name"),
+                "score": row.get("score"),
+                "px": row.get("px"),
+                "dims": row.get("dims"),
+                "rps": row.get("rps"),
+            },
         }
         if market == "CN":
             items.append(item)
@@ -106,15 +128,17 @@ def cache_to_run(cache_path: Path | None = None, out_dir: Path | None = None,
     # 仍用 now() 的话幂等彻底失效——红队审查 045a FIX-1
     ts_raw = d.get("ts")
     if not ts_raw:
-        ts_raw = datetime.fromtimestamp(
-            Path(cache_path).stat().st_mtime).isoformat(timespec="seconds")
+        ts_raw = datetime.fromtimestamp(Path(cache_path).stat().st_mtime).isoformat(
+            timespec="seconds"
+        )
     stamp = str(ts_raw).replace("-", "").replace(":", "").replace(" ", "_")
     out_dir.mkdir(parents=True, exist_ok=True)
     cn_path = us_path = hk_path = None
     if items and write_cn:
         cn_path = out_dir / f"poc_qpzm_{stamp}.json"
-        cn_path.write_text(json.dumps(items, ensure_ascii=False, indent=2),
-                           encoding="utf-8")
+        cn_path.write_text(
+            json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
     if not split_hk:
         # 兼容口径：split_hk=False 时 HK 行回退 skipped（历史行为），
         # 返回形态与 split_us 口径完全一致（单值 / 二元组）。
@@ -124,17 +148,20 @@ def cache_to_run(cache_path: Path | None = None, out_dir: Path | None = None,
             return cn_path
         if us_items:
             us_path = out_dir / f"poc_qpzmus_{stamp}.json"
-            us_path.write_text(json.dumps(us_items, ensure_ascii=False, indent=2),
-                               encoding="utf-8")
+            us_path.write_text(
+                json.dumps(us_items, ensure_ascii=False, indent=2), encoding="utf-8"
+            )
         return cn_path, us_path
     if us_items:
         us_path = out_dir / f"poc_qpzmus_{stamp}.json"
-        us_path.write_text(json.dumps(us_items, ensure_ascii=False, indent=2),
-                           encoding="utf-8")
+        us_path.write_text(
+            json.dumps(us_items, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
     if hk_items:
         hk_path = out_dir / f"poc_qpzmhk_{stamp}.json"
-        hk_path.write_text(json.dumps(hk_items, ensure_ascii=False, indent=2),
-                           encoding="utf-8")
+        hk_path.write_text(
+            json.dumps(hk_items, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
     return cn_path, us_path, hk_path
 
 
@@ -147,9 +174,10 @@ def _hk_engine_code(raw: str) -> str:
     normalize_hk_code（老票 1-4 位 zfill(5) 同口径）。"""
     sys.path.insert(0, str(HERE))
     from hk_market import normalize_hk_code  # noqa: E402  同目录纯 stdlib 模块
+
     s = str(raw).strip()
     if s.lower().startswith("rt_hk"):
-        s = s[len("rt_hk"):]
+        s = s[len("rt_hk") :]
     return normalize_hk_code(s)
 
 
@@ -164,30 +192,43 @@ def _run_us(us_path: Path, dry_run: bool, force_trading: bool = False) -> dict:
 
     单票 refresh 失败只降级该票（写 skipped），SPY 日历失败才整段放弃。"""
     sys.path.insert(0, str(HERE))
-    from engine import PaperEngine          # noqa: E402
+    from engine import PaperEngine  # noqa: E402
     from us_market import UsMarket, refresh  # noqa: E402
     from trade_guard import ensure_trading_day  # noqa: E402
 
     us_mkt = UsMarket()
     if not force_trading:
-        ensure_trading_day(us_mkt, market_label="US")   # 077q 交易日守卫
-    res = {"run": us_path.name, "account_id": US_ACCOUNT, "strategy": US_STRATEGY,
-           "orders": [], "skipped": [], "refreshed": [], "dry_run": dry_run}
+        ensure_trading_day(us_mkt, market_label="US")  # 077q 交易日守卫
+    res = {
+        "run": us_path.name,
+        "account_id": US_ACCOUNT,
+        "strategy": US_STRATEGY,
+        "orders": [],
+        "skipped": [],
+        "refreshed": [],
+        "dry_run": dry_run,
+    }
     try:
-        refresh("spy")                     # 日历基准优先
+        refresh("spy")  # 日历基准优先
     except Exception as e:  # noqa: BLE001
-        return {**res, "skipped": [{"stock": "ALL",
-                                    "why": f"SPY 日历 refresh 失败，US 段放弃: {e}"}]}
+        return {
+            **res,
+            "skipped": [
+                {"stock": "ALL", "why": f"SPY 日历 refresh 失败，US 段放弃: {e}"}
+            ],
+        }
     for sym in _us_stocks(us_path):
         try:
             p = refresh(sym)
             res["refreshed"].append(p.stem)
         except Exception as e:  # noqa: BLE001
-            res["skipped"].append({"stock": sym,
-                                   "why": f"行情 refresh 失败降级跳过: {e}"})
+            res["skipped"].append(
+                {"stock": sym, "why": f"行情 refresh 失败降级跳过: {e}"}
+            )
     eng = PaperEngine(DATA_DIR / "paper.db", us_mkt)
-    r = eng.exec_run(us_path, dry_run=dry_run, strategy=US_STRATEGY,
-                     account_id=US_ACCOUNT)
+    r = eng.exec_run(
+        us_path, dry_run=dry_run, strategy=US_STRATEGY, account_id=US_ACCOUNT
+    )
     # 合并：exec 结果为主，refresh 降级行去重后追加（同票已进 exec skipped 则不重复记）
     exec_stocks = {o["stock"] for o in r["orders"]} | {s["stock"] for s in r["skipped"]}
     extra = [s for s in res["skipped"] if s["stock"] not in exec_stocks]
@@ -211,31 +252,55 @@ def _run_hk(hk_path: Path, dry_run: bool, force_trading: bool = False) -> dict:
     from hk_market import HkMarket, hk_pass, HK_ACCOUNT, HK_STRATEGY  # noqa: E402
     from trade_guard import ensure_trading_day  # noqa: E402
 
-    res = {"run": hk_path.name, "account_id": HK_ACCOUNT, "strategy": HK_STRATEGY,
-           "orders": [], "skipped": [], "refreshed": [], "dry_run": dry_run}
+    res = {
+        "run": hk_path.name,
+        "account_id": HK_ACCOUNT,
+        "strategy": HK_STRATEGY,
+        "orders": [],
+        "skipped": [],
+        "refreshed": [],
+        "dry_run": dry_run,
+    }
     if not force_trading:
         ensure_trading_day(HkMarket(), market_label="HK")
     hk = hk_pass(do_refresh=True)
     if not hk:
-        return {**res, "skipped": [{"stock": "ALL",
-                                    "why": "无 hk_% 账本（灰态，同 US ok 先例），HK 段跳过"}]}
+        return {
+            **res,
+            "skipped": [
+                {
+                    "stock": "ALL",
+                    "why": "无 hk_% 账本（灰态，同 US ok 先例），HK 段跳过",
+                }
+            ],
+        }
     res["refreshed"] = list(hk["refreshed"])
     if hk["refresh_fail"]:
-        res["skipped"].extend({"stock": s.split(":", 1)[0], "why": s}
-                              for s in hk["refresh_fail"])
+        res["skipped"].extend(
+            {"stock": s.split(":", 1)[0], "why": s} for s in hk["refresh_fail"]
+        )
     eng = dict(hk["engines"]).get(HK_ACCOUNT)
     if eng is None:
-        return {**res, "skipped": [{"stock": "ALL",
-                                    "why": f"hk_pass 引擎清单无 {HK_ACCOUNT}（账本未开立？）"}]}
-    r = eng.exec_run(hk_path, dry_run=dry_run, strategy=HK_STRATEGY,
-                     account_id=HK_ACCOUNT)
+        return {
+            **res,
+            "skipped": [
+                {
+                    "stock": "ALL",
+                    "why": f"hk_pass 引擎清单无 {HK_ACCOUNT}（账本未开立？）",
+                }
+            ],
+        }
+    r = eng.exec_run(
+        hk_path, dry_run=dry_run, strategy=HK_STRATEGY, account_id=HK_ACCOUNT
+    )
     exec_stocks = {o["stock"] for o in r["orders"]} | {s["stock"] for s in r["skipped"]}
     extra = [s for s in res["skipped"] if s["stock"] not in exec_stocks]
     return {**res, "orders": r["orders"], "skipped": list(r["skipped"]) + extra}
 
 
-def run_hk_only(dry_run: bool = False, cache_path: Path | None = None,
-                force_trading: bool = False) -> dict:
+def run_hk_only(
+    dry_run: bool = False, cache_path: Path | None = None, force_trading: bool = False
+) -> dict:
     """仅 HK 段（07:05 automation 4e 专用）：HK 产物落盘 + HK exec。
 
     不触碰 CN/US 落单、CN run 文件也不写——当前 07:05 编排重构后无 4d
@@ -246,13 +311,22 @@ def run_hk_only(dry_run: bool = False, cache_path: Path | None = None,
         if "无买入行" in str(e):
             # 全回避/空 res：HK 段灰态正常（同 4d 验收单「无买入」口径），
             # 不作失败——4e 汇报灰态即可，exit 0。
-            return {"run": None, "orders": [], "skipped": [], "hk": None,
-                    "run_path": None,
-                    "note": "青萍产物无 HK 买入行（灰态正常）"}
+            return {
+                "run": None,
+                "orders": [],
+                "skipped": [],
+                "hk": None,
+                "run_path": None,
+                "note": "青萍产物无 HK 买入行（灰态正常）",
+            }
         raise
-    result = {"run": Path(hk_path).name if hk_path else None, "orders": [],
-              "skipped": [], "hk": None,
-              "run_path": str(hk_path) if hk_path else None}
+    result = {
+        "run": Path(hk_path).name if hk_path else None,
+        "orders": [],
+        "skipped": [],
+        "hk": None,
+        "run_path": str(hk_path) if hk_path else None,
+    }
     if not hk_path:
         result["note"] = "青萍产物无 HK 买入行（灰态正常）"
         return result
@@ -260,8 +334,9 @@ def run_hk_only(dry_run: bool = False, cache_path: Path | None = None,
     return result
 
 
-def run_cn_us(dry_run: bool = False, cache_path: Path | None = None,
-              force_trading: bool = False) -> dict:
+def run_cn_us(
+    dry_run: bool = False, cache_path: Path | None = None, force_trading: bool = False
+) -> dict:
     """仅 CN/US 双路（07:05 automation 4d 段恢复专用，2026-10-20 老田拍板）。
 
     HK 行走 skipped 侧（split_hk=False）——HK 落单归属 4e --hk-only 段
@@ -270,27 +345,37 @@ def run_cn_us(dry_run: bool = False, cache_path: Path | None = None,
     灰态：无买入行 / 无 CN/US 买入行 → 返回 note 不 raise（4d 安静日
     路径不作失败，同 4d 验收单「无买入」口径）。"""
     sys.path.insert(0, str(HERE))
-    from engine import PaperEngine          # noqa: E402
-    from market import ParquetMarket        # noqa: E402
+    from engine import PaperEngine  # noqa: E402
+    from market import ParquetMarket  # noqa: E402
     from trade_guard import ensure_trading_day  # noqa: E402
 
     try:
         cn_path, us_path = cache_to_run(cache_path, split_us=True, split_hk=False)
     except ValueError as e:
         if "无买入行" in str(e):
-            return {"run": None, "orders": [], "skipped": [], "us": None,
-                    "run_path": None,
-                    "note": "青萍产物无买入行（灰态正常）"}
+            return {
+                "run": None,
+                "orders": [],
+                "skipped": [],
+                "us": None,
+                "run_path": None,
+                "note": "青萍产物无买入行（灰态正常）",
+            }
         raise
-    result = {"run": Path(cn_path).name if cn_path else
-              (Path(us_path).name if us_path else None),
-              "orders": [], "skipped": [], "us": None}
+    result = {
+        "run": Path(cn_path).name
+        if cn_path
+        else (Path(us_path).name if us_path else None),
+        "orders": [],
+        "skipped": [],
+        "us": None,
+    }
     if not cn_path and not us_path:
         result["note"] = "青萍产物无 CN/US 买入行（灰态正常）"
         return result
     cn_mkt = ParquetMarket()
     if not force_trading:
-        ensure_trading_day(cn_mkt, market_label="CN")   # 077q 交易日守卫
+        ensure_trading_day(cn_mkt, market_label="CN")  # 077q 交易日守卫
     if cn_path:
         eng = PaperEngine(DATA_DIR / "paper.db", cn_mkt)
         r = eng.exec_run(cn_path, dry_run=dry_run, strategy="qingping")
@@ -301,21 +386,28 @@ def run_cn_us(dry_run: bool = False, cache_path: Path | None = None,
     return result
 
 
-def run(dry_run: bool = False, cache_path: Path | None = None,
-        force_trading: bool = False) -> dict:
+def run(
+    dry_run: bool = False, cache_path: Path | None = None, force_trading: bool = False
+) -> dict:
     """一条龙：青萍产物 → run 文件 → 三路 exec（CN 走 A 股湖 / US、HK 走独立账本）。"""
     sys.path.insert(0, str(HERE))
-    from engine import PaperEngine          # noqa: E402
-    from market import ParquetMarket        # noqa: E402
+    from engine import PaperEngine  # noqa: E402
+    from market import ParquetMarket  # noqa: E402
     from trade_guard import ensure_trading_day  # noqa: E402
 
     cn_mkt = ParquetMarket()
     if not force_trading:
-        ensure_trading_day(cn_mkt, market_label="CN")   # 077q 交易日守卫
+        ensure_trading_day(cn_mkt, market_label="CN")  # 077q 交易日守卫
     cn_path, us_path, hk_path = cache_to_run(cache_path, split_us=True, split_hk=True)
-    result = {"run": Path(cn_path).name if cn_path else next(
-                  (Path(p).name for p in (us_path, hk_path) if p), None),
-              "orders": [], "skipped": [], "us": None, "hk": None}
+    result = {
+        "run": Path(cn_path).name
+        if cn_path
+        else next((Path(p).name for p in (us_path, hk_path) if p), None),
+        "orders": [],
+        "skipped": [],
+        "us": None,
+        "hk": None,
+    }
     if cn_path:
         eng = PaperEngine(DATA_DIR / "paper.db", cn_mkt)
         r = eng.exec_run(cn_path, dry_run=dry_run, strategy="qingping")
@@ -330,65 +422,109 @@ def run(dry_run: bool = False, cache_path: Path | None = None,
 
 if __name__ == "__main__":
     import argparse
+
     ap = argparse.ArgumentParser(description="青萍之末买入信号 → 模拟仓落单")
     ap.add_argument("--dry-run", action="store_true")
-    ap.add_argument("--hk-only", action="store_true",
-                    help="仅跑 HK 段（07:05 4e 专用；CN/US 落单不在此触发）")
-    ap.add_argument("--cnus", action="store_true",
-                    help="仅跑 CN/US 双路（07:05 4d 恢复；HK 落单不在此触发）")
+    ap.add_argument(
+        "--hk-only",
+        action="store_true",
+        help="仅跑 HK 段（07:05 4e 专用；CN/US 落单不在此触发）",
+    )
+    ap.add_argument(
+        "--cnus",
+        action="store_true",
+        help="仅跑 CN/US 双路（07:05 4d 恢复；HK 落单不在此触发）",
+    )
     ap.add_argument("--cache", default=None, help="指定 rps_latest.json 路径")
-    ap.add_argument("--force-trading", dest="force_trading", action="store_true",
-                    help="跳过交易日守卫（调试用；automation 勿加）")
-    ap.add_argument("--json", action="store_true", help="JSON 输出（供门户 API 子进程解析）")
+    ap.add_argument(
+        "--force-trading",
+        dest="force_trading",
+        action="store_true",
+        help="跳过交易日守卫（调试用；automation 勿加）",
+    )
+    ap.add_argument(
+        "--json", action="store_true", help="JSON 输出（供门户 API 子进程解析）"
+    )
     a = ap.parse_args()
     try:
-        res = (run_hk_only(dry_run=a.dry_run, cache_path=a.cache,
-                           force_trading=getattr(a, "force_trading", False))
-               if a.hk_only else
-               run_cn_us(dry_run=a.dry_run, cache_path=a.cache,
-                         force_trading=getattr(a, "force_trading", False))
-               if a.cnus else
-               run(dry_run=a.dry_run, cache_path=a.cache,
-                   force_trading=getattr(a, "force_trading", False)))
+        res = (
+            run_hk_only(
+                dry_run=a.dry_run,
+                cache_path=a.cache,
+                force_trading=getattr(a, "force_trading", False),
+            )
+            if a.hk_only
+            else run_cn_us(
+                dry_run=a.dry_run,
+                cache_path=a.cache,
+                force_trading=getattr(a, "force_trading", False),
+            )
+            if a.cnus
+            else run(
+                dry_run=a.dry_run,
+                cache_path=a.cache,
+                force_trading=getattr(a, "force_trading", False),
+            )
+        )
         res["ok"] = True
     except Exception as e:  # 产物缺失/无买入等 → fail loud（JSON 化）
         if a.json:
-            print(json.dumps({"ok": False, "error": f"{type(e).__name__}: {e}"},
-                             ensure_ascii=False))
+            print(
+                json.dumps(
+                    {"ok": False, "error": f"{type(e).__name__}: {e}"},
+                    ensure_ascii=False,
+                )
+            )
             sys.exit(2)
         raise
     if a.json:
         n_pend = len([o for o in res["orders"] if o.get("status") == "pending"])
-        out = {"ok": True, "run_path": res["run_path"],
-               "pending": n_pend, "orders": res["orders"],
-               "skipped": res["skipped"]}
+        out = {
+            "ok": True,
+            "run_path": res["run_path"],
+            "pending": n_pend,
+            "orders": res["orders"],
+            "skipped": res["skipped"],
+        }
         if res.get("note"):
-            out["note"] = res["note"]       # 灰态口径透出（供 automation 汇报）
+            out["note"] = res["note"]  # 灰态口径透出（供 automation 汇报）
         print(json.dumps(out, ensure_ascii=False))
     else:
-        print(f"青萍产物 {Path(res['run_path']).name if res['run_path'] else '（灰态：无买入行）'}: "
-              f"落单 {len([o for o in res['orders'] if o.get('status') == 'pending'])} 笔")
+        print(
+            f"青萍产物 {Path(res['run_path']).name if res['run_path'] else '（灰态：无买入行）'}: "
+            f"落单 {len([o for o in res['orders'] if o.get('status') == 'pending'])} 笔"
+        )
         if res.get("note"):
             print(f"  [note] {res['note']}")
         for o in res["orders"]:
-            print(f"  [{o['status']}] {o['side']} {o['stock']} {o['qty']} 股 | {o['reason']}")
+            print(
+                f"  [{o['status']}] {o['side']} {o['stock']} {o['qty']} 股 | {o['reason']}"
+            )
         for s in res["skipped"]:
             print(f"  [skip] {s['stock']}: {s['why']}")
         if res.get("us"):
             u = res["us"]
-            print(f"US 账本 {u['account_id']}: 落单 "
-                  f"{len([o for o in u['orders'] if o.get('status') == 'pending'])} 笔"
-                  f"（refresh {len(u.get('refreshed', []))} 票）")
+            print(
+                f"US 账本 {u['account_id']}: 落单 "
+                f"{len([o for o in u['orders'] if o.get('status') == 'pending'])} 笔"
+                f"（refresh {len(u.get('refreshed', []))} 票）"
+            )
             for o in u["orders"]:
-                print(f"  [{o['status']}] {o['side']} {o['stock']} {o['qty']} 股 | {o['reason']}")
+                print(
+                    f"  [{o['status']}] {o['side']} {o['stock']} {o['qty']} 股 | {o['reason']}"
+                )
             for s in u["skipped"]:
                 print(f"  [skip] {s['stock']}: {s['why']}")
         if res.get("hk"):
             h = res["hk"]
-            print(f"HK 账本 {h['account_id']}: 落单 "
-                  f"{len([o for o in h['orders'] if o.get('status') == 'pending'])} 笔"
-                  f"（refresh {len(h.get('refreshed', []))} 项）")
+            print(
+                f"HK 账本 {h['account_id']}: 落单 "
+                f"{len([o for o in h['orders'] if o.get('status') == 'pending'])} 笔"
+                f"（refresh {len(h.get('refreshed', []))} 项）"
+            )
             for o in h["orders"]:
-                print(f"  [{o['status']}] {o['side']} {o['stock']} {o['qty']} 股 | {o['reason']}")
+                print(
+                    f"  [{o['status']}] {o['side']} {o['stock']} {o['qty']} 股 | {o['reason']}"
+                )
             for s in h["skipped"]:
                 print(f"  [skip] {s['stock']}: {s['why']}")

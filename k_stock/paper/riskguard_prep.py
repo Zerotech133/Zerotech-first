@@ -18,6 +18,7 @@ zerobound-kg 生产参数**；五要素审批单由主会话提交老田，批�
 §3.3（R3 双闸回放：绝对数 5→8，拦截 28→10 收窄 64%，命中组 ret5
 -9.79%→-13.29%，settled n=13 小样本）——**n 小，仅作方向候选**。
 """
+
 from __future__ import annotations
 
 import os
@@ -25,9 +26,9 @@ import re
 from pathlib import Path
 
 # ── 生产参数（只读锚点；本模块绝不写它）────────────────────────────
-KEY = "riskguard_bear_min_n"                 # R3 绝对数闸（params.yaml 单一事实源）
-DENSITY_KEY = "riskguard_bear_density"       # R3 密度闸（维持 0.5，不动）
-SHADOW_PERIOD_DAYS = 14                      # 影子期 ≥2 周
+KEY = "riskguard_bear_min_n"  # R3 绝对数闸（params.yaml 单一事实源）
+DENSITY_KEY = "riskguard_bear_density"  # R3 密度闸（维持 0.5，不动）
+SHADOW_PERIOD_DAYS = 14  # 影子期 ≥2 周
 APPROVAL_REQUIRED = "五要素审批单（主会话提交老田批准后方可动生产）"
 
 
@@ -76,7 +77,7 @@ def build_r3_threshold_prep_package(params_path=None) -> dict:
         "prep_id": "WO-QT-20261020-023-b-R3-min_n-5to8",
         "prepared_at": "2026-10-20",
         "decision_ref": "老田 2026-10-20 16:00 拍板 1.1 之 b 项（R3 绝对数闸 5→8 "
-                        "进入下一轮影子校准）",
+        "进入下一轮影子校准）",
         # **本单只出准备件**：以下两个标记为 False 是审查件的核心语义
         "applied_to_production": False,
         "production_write": False,
@@ -105,15 +106,17 @@ def build_r3_threshold_prep_package(params_path=None) -> dict:
                     "to": candidate,
                     "calib_ver": "待老田批准后写（形如 2026-XX-XX-user-approved）",
                     "basis": "WS-RG §3.3 双闸回放：绝对数 5→8 拦截 28→10（收窄 64%），"
-                             "命中组 ret5 -9.79%→-13.29%（拦得更准），settled n=13 属小样本"
-                             "→ 仅方向候选，须经影子期与满月 OOS 复跑确认",
+                    "命中组 ret5 -9.79%→-13.29%（拦得更准），settled n=13 属小样本"
+                    "→ 仅方向候选，须经影子期与满月 OOS 复跑确认",
                     "note": "**登记草案，未写入生产**；enforce 解锁三条件不变"
-                            "（显式 --enforce + 全键 calibrated + 样本外 |t|≥3 + 老田批准）",
+                    "（显式 --enforce + 全键 calibrated + 样本外 |t|≥3 + 老田批准）",
                 },
             ],
             "enforce_conditions_unchanged": [
-                "显式 --enforce", "GUARD_KEYS 全键 calibrated",
-                "样本外 |t|≥3", "老田批准",
+                "显式 --enforce",
+                "GUARD_KEYS 全键 calibrated",
+                "样本外 |t|≥3",
+                "老田批准",
             ],
             "enforce_allowed_mechanical_refusal": "保持不动（kg_riskguard.enforce_allowed() 恒 False）",
         },
@@ -146,16 +149,18 @@ def build_r3_threshold_prep_package(params_path=None) -> dict:
             ],
         },
         "rollback_plan": {
-            "trigger": ["影子期内出现与回放方向相反的实测偏离",
-                        "满月复跑未达 pass_criteria",
-                        "老田主动要求撤回"],
+            "trigger": [
+                "影子期内出现与回放方向相反的实测偏离",
+                "满月复跑未达 pass_criteria",
+                "老田主动要求撤回",
+            ],
             "steps": [
                 "1) 保持 params.yaml 原值不动（本单本就未改生产 → 回滚即**无需生产动作**）",
                 "2) 影子期账本行保留为历史证据（账本 append-only，不删不改）",
                 "3) 在准备件上登记撤回结论与原因（可回放引用）",
             ],
             "irreversibility_assessment": "**无不可逆点**：生产参数未改，影子账本 append-only "
-                                          "只增不改，回滚不产生数据损失",
+            "只增不改，回滚不产生数据损失",
             "post_rollback_state": "R3 绝对数闸维持现行值，enforce 三条件与机械拒绝均不变",
         },
         "evidence_refs": [
@@ -177,52 +182,89 @@ def render_prep_markdown(pkg: dict) -> str:
     c = pkg["params_candidate"]
     main = c[KEY]
     lines = [
-        f"# RiskGuard R3 绝对数闸 5→8 校准准备件（{pkg['prep_id']}）", "",
+        f"# RiskGuard R3 绝对数闸 5→8 校准准备件（{pkg['prep_id']}）",
+        "",
         f"- 依据：{pkg['decision_ref']}",
         f"- 状态：**准备件（未落地）**｜applied_to_production="
         f"{pkg['applied_to_production']}｜production_write={pkg['production_write']}",
-        f"- 审批前置：{pkg['approval_required']}", "",
-        "## 一、参数候选", "",
+        f"- 审批前置：{pkg['approval_required']}",
+        "",
+        "## 一、参数候选",
+        "",
         "| 键 | 现值 | 候选 | 文件 | 变更 |",
         "|---|---|---|---|---|",
         f"| `{KEY}` | {main['current']} | **{main['candidate']}** | {main['file']} | 仅改值 |",
         f"| `{DENSITY_KEY}` | {c[DENSITY_KEY]['current']} | {c[DENSITY_KEY]['candidate']} | "
         f"{main['file']} | 不动 |",
-        "", f"> {main['note']}", "",
-        "## 二、calibrated_keys 登记草案（未写入生产）", "",
+        "",
+        f"> {main['note']}",
+        "",
+        "## 二、calibrated_keys 登记草案（未写入生产）",
+        "",
     ]
     for d in pkg["calibrated_keys_registration_draft"]["calibrated_keys_draft"]:
         lines += [
             f"- 键：`{d['key']}`｜{d['action']}｜{d['from']} → {d['to']}",
             f"  - 校准版本：{d['calib_ver']}",
             f"  - 依据：{d['basis']}",
-            f"  - 注：{d['note']}", "",
+            f"  - 注：{d['note']}",
+            "",
         ]
-    lines += ["enforce 解锁三条件（不变）：" +
-              "、".join(pkg["calibrated_keys_registration_draft"]
-                        ["enforce_conditions_unchanged"]) +
-              "；" + pkg["calibrated_keys_registration_draft"]
-              ["enforce_allowed_mechanical_refusal"], ""]
+    lines += [
+        "enforce 解锁三条件（不变）："
+        + "、".join(
+            pkg["calibrated_keys_registration_draft"]["enforce_conditions_unchanged"]
+        )
+        + "；"
+        + pkg["calibrated_keys_registration_draft"][
+            "enforce_allowed_mechanical_refusal"
+        ],
+        "",
+    ]
     sp = pkg["shadow_plan"]
-    lines += ["## 三、影子期方案（≥2 周）", "",
-              f"- 时长：{sp['shadow_period_days']} 天（{sp['minimum']}）｜模式：{sp['mode']}",
-              f"- 复核节奏：{sp['review_cadence']}", "",
-              "观测项：", ""]
+    lines += [
+        "## 三、影子期方案（≥2 周）",
+        "",
+        f"- 时长：{sp['shadow_period_days']} 天（{sp['minimum']}）｜模式：{sp['mode']}",
+        f"- 复核节奏：{sp['review_cadence']}",
+        "",
+        "观测项：",
+        "",
+    ]
     lines += [f"- {x}" for x in sp["observation_items"]]
     rc = pkg["recon_full_month_criteria"]
-    lines += ["", "## 四、recon 满月复跑判据", "",
-              f"- 工具：{rc['recon_tool']}｜horizons：fwd5 {rc['horizons']['fwd5']}、"
-              f"fwd20 {rc['horizons']['fwd20']}", "", "通过条件：", ""]
+    lines += [
+        "",
+        "## 四、recon 满月复跑判据",
+        "",
+        f"- 工具：{rc['recon_tool']}｜horizons：fwd5 {rc['horizons']['fwd5']}、"
+        f"fwd20 {rc['horizons']['fwd20']}",
+        "",
+        "通过条件：",
+        "",
+    ]
     lines += [f"- {x}" for x in rc["pass_criteria"]]
     lines += ["", "不通过处置：", ""]
     lines += [f"- {x}" for x in rc["fail_actions"]]
     rb = pkg["rollback_plan"]
-    lines += ["", "## 五、回滚预案", "",
-              f"- 触发条件：{'；'.join(rb['trigger'])}", "", "步骤：", ""]
+    lines += [
+        "",
+        "## 五、回滚预案",
+        "",
+        f"- 触发条件：{'；'.join(rb['trigger'])}",
+        "",
+        "步骤：",
+        "",
+    ]
     lines += [f"- {x}" for x in rb["steps"]]
-    lines += ["", f"- 不可逆点评估：{rb['irreversibility_assessment']}",
-              f"- 回滚后状态：{rb['post_rollback_state']}", "",
-              "## 六、本单范围外（明确不做）", ""]
+    lines += [
+        "",
+        f"- 不可逆点评估：{rb['irreversibility_assessment']}",
+        f"- 回滚后状态：{rb['post_rollback_state']}",
+        "",
+        "## 六、本单范围外（明确不做）",
+        "",
+    ]
     lines += [f"- {x}" for x in pkg["scope_exclusions"]]
     lines += ["", "## 七、证据引用", ""]
     lines += [f"- {x}" for x in pkg["evidence_refs"]]
@@ -231,14 +273,18 @@ def render_prep_markdown(pkg: dict) -> str:
 
 def main(argv=None) -> int:
     import argparse
+
     ap = argparse.ArgumentParser(description="RiskGuard 校准准备件（只读，不落生产）")
     ap.add_argument("--params", default=None, help="生产 params.yaml 路径（只读）")
-    ap.add_argument("--out-json", default=None, help="准备件 JSON 落盘路径（显式给定才写）")
+    ap.add_argument(
+        "--out-json", default=None, help="准备件 JSON 落盘路径（显式给定才写）"
+    )
     ap.add_argument("--out-md", default=None, help="准备件 Markdown 落盘路径")
     a = ap.parse_args(argv)
     pkg = build_r3_threshold_prep_package(a.params)
     if a.out_json:
         import json
+
         with open(a.out_json, "w", encoding="utf-8") as f:
             json.dump(pkg, f, ensure_ascii=False, indent=1)
     if a.out_md:

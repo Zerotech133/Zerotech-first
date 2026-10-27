@@ -36,6 +36,7 @@ plan_meeting_ledger（-006）、decision_snapshot（-004）。
   - 模拟计费：record_combo_cost 为显式喂入口，真实 token 计量（对接
     llm_cost.record_cost 或上游网关）属后续工单。
 """
+
 from __future__ import annotations
 
 import json
@@ -53,18 +54,19 @@ BUDGET_FIELD = "monthly_llm_cost_budget"
 
 # 注册文件顶层必填字段（budget 单独强校验，见 _validate_budget——
 # 预算缺失归 BudgetViolationError/budget_missing，不混同普通缺字段）
-_REGISTRATION_REQUIRED = ("factory_schema_version", "combo_id", "name",
-                          "quad")
+_REGISTRATION_REQUIRED = ("factory_schema_version", "combo_id", "name", "quad")
 
 # 默认数据文件（append-only jsonl；测试注入临时路径）
-DEFAULT_SUBSCRIPTION_LOG = (Path(__file__).resolve().parent.parent / "data"
-                            / "combo_review_subscriptions.jsonl")
-DEFAULT_BUDGET_LEDGER = (Path(__file__).resolve().parent.parent / "data"
-                         / "combo_budget_ledger.jsonl")
+DEFAULT_SUBSCRIPTION_LOG = (
+    Path(__file__).resolve().parent.parent / "data" / "combo_review_subscriptions.jsonl"
+)
+DEFAULT_BUDGET_LEDGER = (
+    Path(__file__).resolve().parent.parent / "data" / "combo_budget_ledger.jsonl"
+)
 
 # 复盘订阅消费口（对齐 -007/-008 的既有消费函数，只登记引用，不复制实现）
 REVIEW_CONSUMERS = (
-    "event_receipts.completeness",          # -007：四类回执完整度
+    "event_receipts.completeness",  # -007：四类回执完整度
     "strategy_branch.BranchRunner.compare_reviews",  # -008：复盘钩子并排比较
 )
 
@@ -91,6 +93,7 @@ class BudgetExceededError(BudgetViolationError):
 
 # ---------- 注册文件校验（先全量校验，后落盘——不留半成品） ----------
 
+
 def _validate_budget(budget, where: str) -> dict:
     """预算强校验（X-5 硬验收）：budget 须为对象且含数值>0 的
     monthly_llm_cost_budget。缺失/类型错/≤0 → BudgetViolationError。"""
@@ -98,12 +101,14 @@ def _validate_budget(budget, where: str) -> dict:
         raise BudgetViolationError(
             "budget_missing",
             f"注册文件缺预算字段 budget.{BUDGET_FIELD}（X-5：组合不是免费的，"
-            f"token 成本要进账）: {where}")
+            f"token 成本要进账）: {where}",
+        )
     v = budget[BUDGET_FIELD]
     if not isinstance(v, (int, float)) or isinstance(v, bool) or not v > 0:
         raise BudgetViolationError(
             "budget_invalid",
-            f"budget.{BUDGET_FIELD} 须为数值且 > 0，收到 {v!r}: {where}")
+            f"budget.{BUDGET_FIELD} 须为数值且 > 0，收到 {v!r}: {where}",
+        )
     return dict(budget)
 
 
@@ -114,23 +119,27 @@ def _load_registration(path: Path | str) -> dict:
     try:
         raw = json.loads(p.read_text(encoding="utf-8"))
     except FileNotFoundError as e:
-        raise ComboFactoryError("registration_missing",
-                                f"组合注册文件不存在: {where}") from e
+        raise ComboFactoryError(
+            "registration_missing", f"组合注册文件不存在: {where}"
+        ) from e
     except (json.JSONDecodeError, UnicodeDecodeError) as e:
-        raise ComboFactoryError("registration_invalid_json",
-                                f"组合注册文件不是合法 UTF-8 JSON: {where} ({e})") from e
+        raise ComboFactoryError(
+            "registration_invalid_json",
+            f"组合注册文件不是合法 UTF-8 JSON: {where} ({e})",
+        ) from e
     if not isinstance(raw, dict):
-        raise ComboFactoryError("registration_invalid",
-                                f"组合注册文件根须为对象: {where}")
+        raise ComboFactoryError(
+            "registration_invalid", f"组合注册文件根须为对象: {where}"
+        )
     for k in _REGISTRATION_REQUIRED:
         if k not in raw:
-            raise ComboFactoryError("missing_field",
-                                    f"注册文件缺必填字段 {k}: {where}")
+            raise ComboFactoryError("missing_field", f"注册文件缺必填字段 {k}: {where}")
     if raw["factory_schema_version"] != FACTORY_SCHEMA_VERSION:
         raise ComboFactoryError(
             "schema_version_unsupported",
             f"factory_schema_version 只认 {FACTORY_SCHEMA_VERSION}，"
-            f"收到 {raw['factory_schema_version']!r}: {where}")
+            f"收到 {raw['factory_schema_version']!r}: {where}",
+        )
     budget = _validate_budget(raw.get("budget"), where)
     entry = {"combo_id": raw["combo_id"], "name": raw["name"], "quad": raw["quad"]}
     # 四元组/persona v1 参数结构复用 -003 校验（同一注册口径，不复制规则）
@@ -144,22 +153,25 @@ def _load_registration(path: Path | str) -> dict:
 def _dup_check(registry_path: Path | str | None, combo_id: str) -> None:
     """重复 combo_id 拒绝（对既有注册表查重；注册制下同 id 即同契约）。"""
     reg = combo_registry.load_registry(
-        registry_path or combo_registry.default_registry_path())
+        registry_path or combo_registry.default_registry_path()
+    )
     try:
         combo_registry.resolve(reg, combo_id)
     except combo_registry.ComboNotFound:
         return
     raise DuplicateComboError(
         "duplicate_combo",
-        f"combo_id 已注册，拒绝重复创建: {combo_id}（新实验单元请用新 id）")
+        f"combo_id 已注册，拒绝重复创建: {combo_id}（新实验单元请用新 id）",
+    )
 
 
 def _atomic_write_json(path: Path, data: dict) -> None:
     """原子写 JSON（同目录临时文件 + os.replace，避免半截文件）。"""
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n",
-                   encoding="utf-8")
+    tmp.write_text(
+        json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
     os.replace(tmp, path)
 
 
@@ -171,6 +183,7 @@ def _append_line(log_path: Path, entry: dict) -> dict:
 
 
 # ---------- 复盘订阅（挂接 -007 completeness / -008 compare_reviews） ----------
+
 
 def _subscription_entry(combo_id: str, account_ids: dict) -> dict:
     """复盘订阅条目：组合创建即订阅同一信号的回执完整度与分支复盘对比。
@@ -192,11 +205,13 @@ def _subscription_entry(combo_id: str, account_ids: dict) -> dict:
 def combo_receipt_kinds() -> tuple:
     """本组合复盘订阅关注的回执类型（-007 四类全量）。"""
     import event_receipts
+
     return event_receipts.RECEIPT_KINDS
 
 
-def load_subscriptions(log_path: Path | str | None = None,
-                       combo_id: str | None = None) -> list[dict]:
+def load_subscriptions(
+    log_path: Path | str | None = None, combo_id: str | None = None
+) -> list[dict]:
     """读复盘订阅账（只读）。combo_id 给定时过滤单组合。"""
     p = Path(log_path) if log_path is not None else DEFAULT_SUBSCRIPTION_LOG
     if not p.exists():
@@ -214,45 +229,62 @@ def load_subscriptions(log_path: Path | str | None = None,
 
 # ---------- 隔离账本标识（对齐 -008：account_id = combo_id@分支标识） ----------
 
+
 def branch_account_ids(combo_id: str) -> dict:
     """组合在各已注册分支下的隔离模拟账 account_id（-008 口径镜像）。"""
-    return {bid: f"{combo_id}@{bid}"
-            for bid in strategy_branch.registered_branch_ids()}
+    return {bid: f"{combo_id}@{bid}" for bid in strategy_branch.registered_branch_ids()}
 
 
 # ---------- 成本账本（组合维度，模拟计费：显式喂入成本记录） ----------
 
-def record_combo_cost(combo_id: str, cost, note: str = "",
-                      ledger: Path | str | None = None,
-                      ts: str | None = None) -> dict:
+
+def record_combo_cost(
+    combo_id: str,
+    cost,
+    note: str = "",
+    ledger: Path | str | None = None,
+    ts: str | None = None,
+) -> dict:
     """登记一笔组合维度 LLM 成本（模拟计费：调用方显式喂入，非真实 token
     计量——真实计量属后续工单）。cost 须为数值>0；append-only jsonl。"""
     if not isinstance(cost, (int, float)) or isinstance(cost, bool) or not cost > 0:
         raise BudgetViolationError(
-            "cost_invalid", f"成本记录须为数值且 > 0，收到 {cost!r}（combo={combo_id}）")
+            "cost_invalid", f"成本记录须为数值且 > 0，收到 {cost!r}（combo={combo_id}）"
+        )
     if not isinstance(combo_id, str) or not combo_id.strip():
-        raise ComboFactoryError("combo_id_invalid", f"combo_id 须为非空字符串: {combo_id!r}")
-    entry = {"ts": ts or datetime.now().isoformat(timespec="seconds"),
-             "kind": "llm_cost", "combo_id": combo_id,
-             "cost": round(float(cost), 6), "note": str(note or ""),
-             "factory_schema_version": FACTORY_SCHEMA_VERSION}
-    return _append_line(Path(ledger) if ledger is not None else DEFAULT_BUDGET_LEDGER,
-                        entry)
+        raise ComboFactoryError(
+            "combo_id_invalid", f"combo_id 须为非空字符串: {combo_id!r}"
+        )
+    entry = {
+        "ts": ts or datetime.now().isoformat(timespec="seconds"),
+        "kind": "llm_cost",
+        "combo_id": combo_id,
+        "cost": round(float(cost), 6),
+        "note": str(note or ""),
+        "factory_schema_version": FACTORY_SCHEMA_VERSION,
+    }
+    return _append_line(
+        Path(ledger) if ledger is not None else DEFAULT_BUDGET_LEDGER, entry
+    )
 
 
 def _month_of(ts: str) -> str:
     return ts[:7]  # ISO 时刻前 7 位即 YYYY-MM
 
 
-def combo_budget_status(combo_id: str, registry_path: Path | str | None = None,
-                        ledger: Path | str | None = None,
-                        month: str | None = None) -> dict:
+def combo_budget_status(
+    combo_id: str,
+    registry_path: Path | str | None = None,
+    ledger: Path | str | None = None,
+    month: str | None = None,
+) -> dict:
     """组合预算状态（只读）：当月累计成本 vs budget.monthly_llm_cost_budget。
 
     status: "ok" | "over_budget"（超预算即标记，供 guard_dispatch 与后续
     调度消费）。combo 未注册 → ComboNotFound（closed on failure）。"""
     reg = combo_registry.load_registry(
-        registry_path or combo_registry.default_registry_path())
+        registry_path or combo_registry.default_registry_path()
+    )
     entry = combo_registry.resolve(reg, combo_id)
     budget = float(entry["budget"][BUDGET_FIELD])
     p = Path(ledger) if ledger is not None else DEFAULT_BUDGET_LEDGER
@@ -264,19 +296,30 @@ def combo_budget_status(combo_id: str, registry_path: Path | str | None = None,
             if not line:
                 continue
             e = json.loads(line)
-            if e.get("combo_id") == combo_id and e.get("kind") == "llm_cost" \
-                    and _month_of(e.get("ts", "")) == cur:
+            if (
+                e.get("combo_id") == combo_id
+                and e.get("kind") == "llm_cost"
+                and _month_of(e.get("ts", "")) == cur
+            ):
                 accumulated += float(e.get("cost") or 0.0)
     accumulated = round(accumulated, 6)
     over = accumulated > budget
-    return {"combo_id": combo_id, "month": cur,
-            BUDGET_FIELD: budget, "cost_accumulated": accumulated,
-            "remaining": round(max(0.0, budget - accumulated), 6),
-            "over_budget": over, "status": "over_budget" if over else "ok"}
+    return {
+        "combo_id": combo_id,
+        "month": cur,
+        BUDGET_FIELD: budget,
+        "cost_accumulated": accumulated,
+        "remaining": round(max(0.0, budget - accumulated), 6),
+        "over_budget": over,
+        "status": "over_budget" if over else "ok",
+    }
 
 
-def guard_dispatch(combo_id: str, registry_path: Path | str | None = None,
-                   ledger: Path | str | None = None) -> dict:
+def guard_dispatch(
+    combo_id: str,
+    registry_path: Path | str | None = None,
+    ledger: Path | str | None = None,
+) -> dict:
     """派任务前预算闸门（X-5 预留 API，供后续调度消费；本单不接真实调度）。
 
     over_budget → BudgetExceededError（closed on failure，拒绝再派任务）；
@@ -286,15 +329,19 @@ def guard_dispatch(combo_id: str, registry_path: Path | str | None = None,
         raise BudgetExceededError(
             "over_budget",
             f"组合 {combo_id} 当月累计成本 {st['cost_accumulated']} 已超预算 "
-            f"{st[BUDGET_FIELD]}（X-5：超预算拒绝再派任务，closed on failure）")
+            f"{st[BUDGET_FIELD]}（X-5：超预算拒绝再派任务，closed on failure）",
+        )
     return st
 
 
 # ---------- 工厂主入口：create_combo（零代码创建） ----------
 
-def create_combo(registration_path: Path | str,
-                 registry_path: Path | str | None = None,
-                 subscription_log: Path | str | None = None) -> dict:
+
+def create_combo(
+    registration_path: Path | str,
+    registry_path: Path | str | None = None,
+    subscription_log: Path | str | None = None,
+) -> dict:
     """读一份组合注册文件 → 校验 → 注册 → 建隔离账本标识 → 挂复盘订阅
     → 返回组合凭据。全程零代码改动（纯数据文件驱动）。
 
@@ -312,10 +359,16 @@ def create_combo(registration_path: Path | str,
     combo_id = entry["combo_id"]
     _dup_check(registry_path, combo_id)
 
-    sub_log = Path(subscription_log) if subscription_log is not None \
+    sub_log = (
+        Path(subscription_log)
+        if subscription_log is not None
         else DEFAULT_SUBSCRIPTION_LOG
-    reg_path = Path(registry_path) if registry_path is not None \
+    )
+    reg_path = (
+        Path(registry_path)
+        if registry_path is not None
         else combo_registry.default_registry_path()
+    )
 
     account_ids = branch_account_ids(combo_id)
     sub_entry = _subscription_entry(combo_id, account_ids)

@@ -6,6 +6,7 @@
 trade_date 统一 YYYYMMDD 字符串。pandas 惰性 import（引擎测试用 FakeMarket 不需要 pandas，
 managed python 可跑测试；真实 exec/settle 用系统 Python311，与 datafeed.py 同口径）。
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta
@@ -56,8 +57,10 @@ class ParquetMarket:
         if hit.empty:
             return None
         r = hit.iloc[-1]
-        return {k: (str(r[k]) if k == "trade_date" else float(r[k]))
-                for k in ("trade_date", "open", "high", "low", "close", "pre_close")}
+        return {
+            k: (str(r[k]) if k == "trade_date" else float(r[k]))
+            for k in ("trade_date", "open", "high", "low", "close", "pre_close")
+        }
 
     def first_bar_on_or_after(self, code: str, trade_date: str) -> dict | None:
         """≥ 给定日的第一个有行情的交易日 bar（settle 纠偏用）。"""
@@ -68,16 +71,20 @@ class ParquetMarket:
         if hit.empty:
             return None
         r = hit.iloc[0]
-        return {k: (str(r[k]) if k == "trade_date" else float(r[k]))
-                for k in ("trade_date", "open", "high", "low", "close", "pre_close")}
+        return {
+            k: (str(r[k]) if k == "trade_date" else float(r[k]))
+            for k in ("trade_date", "open", "high", "low", "close", "pre_close")
+        }
 
     def last_bar(self, code: str) -> dict | None:
         df = self._read(code)
         if df is None or df.empty:
             return None
         r = df.iloc[-1]
-        return {k: (str(r[k]) if k == "trade_date" else float(r[k]))
-                for k in ("trade_date", "open", "high", "low", "close", "pre_close")}
+        return {
+            k: (str(r[k]) if k == "trade_date" else float(r[k]))
+            for k in ("trade_date", "open", "high", "low", "close", "pre_close")
+        }
 
     def last_bar_before(self, code: str, trade_date: str) -> dict | None:
         """≤ 给定日的最后一根 bar（AsOfMarket 时点视角用；last_bar 的带界版）。"""
@@ -88,8 +95,10 @@ class ParquetMarket:
         if hit.empty:
             return None
         r = hit.iloc[-1]
-        return {k: (str(r[k]) if k == "trade_date" else float(r[k]))
-                for k in ("trade_date", "open", "high", "low", "close", "pre_close")}
+        return {
+            k: (str(r[k]) if k == "trade_date" else float(r[k]))
+            for k in ("trade_date", "open", "high", "low", "close", "pre_close")
+        }
 
     def next_trading_day(self, ts_iso: str) -> str | None:
         """决策时刻之后第一个（可能的）交易日（公共实现，见 _next_td_impl）。"""
@@ -158,7 +167,9 @@ class FakeMarket:
     """测试注入：bars = {code: [bar dict, ...]}，bar 按 trade_date 升序。"""
 
     def __init__(self, bars: dict[str, list[dict]]):
-        self.bars = {c: sorted(v, key=lambda b: b["trade_date"]) for c, v in bars.items()}
+        self.bars = {
+            c: sorted(v, key=lambda b: b["trade_date"]) for c, v in bars.items()
+        }
 
     def trading_days(self) -> list[str]:
         days: set[str] = set()

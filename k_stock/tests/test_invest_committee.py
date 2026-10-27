@@ -14,6 +14,7 @@
   5. 影子期红线：会审模块零 import 执行链（AST 级断言），新 combo
      只注册不触 engine.exec_run / signal_consumer / 交易链。
 """
+
 import ast
 import json
 import sys
@@ -31,46 +32,78 @@ WO = "WO-QT-20261020-083"
 
 # ---------- 造股票池 v1 测试输入（合成小池，证据字段对齐真实 schema） ----------
 
+
 def _stock(code, name, **kw):
-    base = {"code": code, "name": name, "industry": None, "close": 10.0,
-            "pct_chg": 1.0, "sources": [], "n_hit": 1, "tier": "T3",
-            "env_diff": False, "panic_buy": False, "q_toxic": False,
-            "q_first_buy": False}
+    base = {
+        "code": code,
+        "name": name,
+        "industry": None,
+        "close": 10.0,
+        "pct_chg": 1.0,
+        "sources": [],
+        "n_hit": 1,
+        "tier": "T3",
+        "env_diff": False,
+        "panic_buy": False,
+        "q_toxic": False,
+        "q_first_buy": False,
+    }
     base.update(kw)
     return base
 
 
 def _picks(stocks, scan_run_date="2026-10-19"):
-    return {"generated_at": "2026-10-19 15:40:09",
-            "scan_run_date": scan_run_date,
-            "trade_basis": "测试口径",
-            "strategies": {}, "t1_gate": {"ok": True, "failed": [],
-                                          "note": ""},
-            "counts": {"total": len(stocks)}, "stocks": stocks}
+    return {
+        "generated_at": "2026-10-19 15:40:09",
+        "scan_run_date": scan_run_date,
+        "trade_basis": "测试口径",
+        "strategies": {},
+        "t1_gate": {"ok": True, "failed": [], "note": ""},
+        "counts": {"total": len(stocks)},
+        "stocks": stocks,
+    }
 
 
 def _sample_stocks():
     return [
         # 三重利好：缠论买点 + 九维出分 + T2 → 三席一致看多
-        _stock("000001.SZ", "平安甲", tier="T2", n_hit=2,
-               sources=[{"s": "chanlun", "tag": "1买", "dt": "2026-10-01"},
-                        {"s": "ninedim", "tag": "九维出分", "dt": "2026-10-16"}]),
+        _stock(
+            "000001.SZ",
+            "平安甲",
+            tier="T2",
+            n_hit=2,
+            sources=[
+                {"s": "chanlun", "tag": "1买", "dt": "2026-10-01"},
+                {"s": "ninedim", "tag": "九维出分", "dt": "2026-10-16"},
+            ],
+        ),
         # 风控否决样：缠论买点但 q_toxic + weak 深度垫底
-        _stock("000002.SZ", "平安乙",
-               sources=[{"s": "chanlun", "tag": "2买", "dt": "2026-10-01"},
-                        {"s": "weak", "tag": "深度垫底", "dt": "2026-10-16"}],
-               q_toxic=True),
+        _stock(
+            "000002.SZ",
+            "平安乙",
+            sources=[
+                {"s": "chanlun", "tag": "2买", "dt": "2026-10-01"},
+                {"s": "weak", "tag": "深度垫底", "dt": "2026-10-16"},
+            ],
+            q_toxic=True,
+        ),
         # 平庸样：仅九维候选影子，无强证据
-        _stock("000003.SZ", "平安丙",
-               sources=[{"s": "ninedim", "tag": "九维候选(影子未出分)",
-                         "dt": "2026-10-16"}]),
+        _stock(
+            "000003.SZ",
+            "平安丙",
+            sources=[
+                {"s": "ninedim", "tag": "九维候选(影子未出分)", "dt": "2026-10-16"}
+            ],
+        ),
     ]
 
 
 # ---------- 验收①：三席各出意见 ----------
 
+
 def test_three_seats_each_produce_opinion():
     import invest_committee as ic
+
     session = ic.run_session(_picks(_sample_stocks()), now="2026-10-20T09:00:00")
     assert session["wo"] == WO
     seat_ids = [s["seat_id"] for s in session["seats"]]
@@ -90,22 +123,25 @@ def test_three_seats_each_produce_opinion():
 
 # ---------- 验收②：聚合结论可复算（确定性） ----------
 
+
 def test_aggregate_recomputable_deterministic():
     import invest_committee as ic
+
     picks = _picks(_sample_stocks())
     s1 = ic.run_session(picks, now="2026-10-20T09:00:00")
     s2 = ic.run_session(picks, now="2026-10-20T09:00:00")
-    assert json.dumps(s1, sort_keys=True, ensure_ascii=False) == \
-        json.dumps(s2, sort_keys=True, ensure_ascii=False)
+    assert json.dumps(s1, sort_keys=True, ensure_ascii=False) == json.dumps(
+        s2, sort_keys=True, ensure_ascii=False
+    )
     w = s1["seat_weights"]
     for rev in s1["reviews"]:
         manual = round(sum(o["score"] * w[o["seat_id"]] for o in rev["opinions"]), 4)
         assert rev["aggregate"]["score"] == manual
         # 精选判定 = 聚合分过线 且 风控席非 AVOID（聚合稳健联判；原 persona 已去人格化）
-        risk = [o for o in rev["opinions"]
-                if o["seat_id"] == ic.RISK_SEAT_ID][0]
-        expect_sel = (rev["aggregate"]["score"] >= s1["v2_floor"]
-                      and risk["rating"] != "AVOID")
+        risk = [o for o in rev["opinions"] if o["seat_id"] == ic.RISK_SEAT_ID][0]
+        expect_sel = (
+            rev["aggregate"]["score"] >= s1["v2_floor"] and risk["rating"] != "AVOID"
+        )
         assert rev["aggregate"]["selected"] == expect_sel
     # 样票 000002.SZ（q_toxic）必被风控席 AVOID 拦在 v2 外
     rev_b = [r for r in s1["reviews"] if r["code"] == "000002.SZ"][0]
@@ -113,8 +149,8 @@ def test_aggregate_recomputable_deterministic():
     assert risk_b["rating"] == "AVOID"
     assert rev_b["aggregate"]["selected"] is False
     assert set(s1["summary"]["codes_selected"]).issubset(
-        {s["code"] for s in picks["stocks"]})
-
+        {s["code"] for s in picks["stocks"]}
+    )
 
 
 # ---------- 验收②补强（主会话验收补）：高分但风控 AVOID 必被一票否决 ----------
@@ -122,16 +158,36 @@ def test_aggregate_recomputable_deterministic():
 # 聚合稳健联判下 selected 必为 False。该用例使"一票否决"逻辑可被
 # 变异区分（拆 risk_ok 否决 → 本用例红），防否决条款沦为冗余保险。
 
+
 def test_high_score_but_risk_avoid_vetoed():
     import invest_committee as ic
-    stock = _stock("000004.SZ", "平安丁", tier="T2", n_hit=2,
-                   sources=[{"s": "chanlun", "tag": "1买", "dt": "2026-10-01"},
-                            {"s": "ninedim", "tag": "九维出分", "dt": "2026-10-16"}],
-                   q_toxic=True)
-    picks = _picks([_stock("000001.SZ", "平安甲", tier="T2", n_hit=2,
-                           sources=[{"s": "chanlun", "tag": "1买", "dt": "2026-10-01"},
-                                    {"s": "ninedim", "tag": "九维出分", "dt": "2026-10-16"}]),
-                    stock])
+
+    stock = _stock(
+        "000004.SZ",
+        "平安丁",
+        tier="T2",
+        n_hit=2,
+        sources=[
+            {"s": "chanlun", "tag": "1买", "dt": "2026-10-01"},
+            {"s": "ninedim", "tag": "九维出分", "dt": "2026-10-16"},
+        ],
+        q_toxic=True,
+    )
+    picks = _picks(
+        [
+            _stock(
+                "000001.SZ",
+                "平安甲",
+                tier="T2",
+                n_hit=2,
+                sources=[
+                    {"s": "chanlun", "tag": "1买", "dt": "2026-10-01"},
+                    {"s": "ninedim", "tag": "九维出分", "dt": "2026-10-16"},
+                ],
+            ),
+            stock,
+        ]
+    )
     s = ic.run_session(picks, now="2026-10-20T09:00:00")
     rev = [r for r in s["reviews"] if r["code"] == "000004.SZ"][0]
     risk = [o for o in rev["opinions"] if o["seat_id"] == ic.RISK_SEAT_ID][0]
@@ -143,8 +199,10 @@ def test_high_score_but_risk_avoid_vetoed():
 
 # ---------- 验收③：v2 账本 append-only ----------
 
+
 def test_v2_ledger_append_only(tmp_path):
     import invest_committee as ic
+
     ledger = tmp_path / "pool_v2_sessions.jsonl"
     picks = _picks(_sample_stocks())
     # 轮次计数依赖账本状态：run_session 传同一 ledger_path（确定性）
@@ -155,39 +213,51 @@ def test_v2_ledger_append_only(tmp_path):
     ic.append_session(r2, ledger_path=ledger)
     # 首行字节级不变（append-only：不 update 不 delete）
     assert ledger.read_bytes().startswith(first_bytes)
-    lines = [json.loads(x) for x in
-             ledger.read_text(encoding="utf-8").splitlines() if x.strip()]
+    lines = [
+        json.loads(x)
+        for x in ledger.read_text(encoding="utf-8").splitlines()
+        if x.strip()
+    ]
     assert len(lines) == 2
     # 轮次化 session_id：同 scan_run_date 第二轮 r2
     assert r1["session_id"].endswith(".r1")
     assert r2["session_id"].endswith(".r2")
-    assert ic.read_sessions(ledger_path=ledger)[0]["session_id"] == \
-        r1["session_id"]
+    assert ic.read_sessions(ledger_path=ledger)[0]["session_id"] == r1["session_id"]
 
 
 # ---------- 验收④：persona_neutral 第三例注册与隔离 ----------
 
 NEUTRAL_COMBO_ID = "combo_zhongxing"
 
+
 def test_persona_neutral_registered_and_isolated():
-    reg = combo_registry.load_registry()   # 生产注册面（k_stock/paper/combos.json）
+    reg = combo_registry.load_registry()  # 生产注册面（k_stock/paper/combos.json）
     combos = {c["combo_id"]: c for c in reg["combos"]}
     assert set(combos) == {"combo_wenjian", "combo_jijin", NEUTRAL_COMBO_ID}
     # 既有两实例零变化（隔离红线：本工单不改其任何字段）
     assert combos["combo_wenjian"]["quad"]["persona"]["id"] == "persona_conservative"
     assert combos["combo_wenjian"]["quad"]["persona"]["params"] == {
-        "risk_appetite": "conservative", "conf_floor": 0.70,
-        "max_pos_pct": 0.15, "max_total_pct": 0.60}
+        "risk_appetite": "conservative",
+        "conf_floor": 0.70,
+        "max_pos_pct": 0.15,
+        "max_total_pct": 0.60,
+    }
     assert combos["combo_jijin"]["quad"]["persona"]["id"] == "persona_aggressive"
     assert combos["combo_jijin"]["quad"]["persona"]["params"] == {
-        "risk_appetite": "aggressive", "conf_floor": 0.50,
-        "max_pos_pct": 0.30, "max_total_pct": 0.90}
+        "risk_appetite": "aggressive",
+        "conf_floor": 0.50,
+        "max_pos_pct": 0.30,
+        "max_total_pct": 0.90,
+    }
     # 第三例 persona_neutral：口径一致（四元组+persona v1 参数齐全）
     neutral = combos[NEUTRAL_COMBO_ID]
     assert neutral["quad"]["persona"]["id"] == "persona_neutral"
     p = neutral["quad"]["persona"]["params"]
-    assert 0 <= p["conf_floor"] <= 1 and 0 < p["max_pos_pct"] <= 1 \
+    assert (
+        0 <= p["conf_floor"] <= 1
+        and 0 < p["max_pos_pct"] <= 1
         and 0 < p["max_total_pct"] <= 1
+    )
     for key in combo_registry.QUAD_KEYS:
         assert neutral["quad"][key]["id"] and neutral["quad"][key]["version"]
 
@@ -195,51 +265,80 @@ def test_persona_neutral_registered_and_isolated():
 def test_persona_neutral_factory_zero_code_and_dup_rejected(tmp_path):
     """松耦合实证：tmp 注册表 + 注册文件经 create_combo 零代码注册第三例。"""
     import combo_factory
+
     reg_path = tmp_path / "combos.json"
-    reg_path.write_text(json.dumps({
-        "registry_schema_version": 1,
-        "combos": [c for c in
-                   combo_registry.load_registry()["combos"]
-                   if c["combo_id"] != NEUTRAL_COMBO_ID],
-    }, ensure_ascii=False), encoding="utf-8")
+    reg_path.write_text(
+        json.dumps(
+            {
+                "registry_schema_version": 1,
+                "combos": [
+                    c
+                    for c in combo_registry.load_registry()["combos"]
+                    if c["combo_id"] != NEUTRAL_COMBO_ID
+                ],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
     reg_file = tmp_path / "neutral_registration.json"
-    reg_file.write_text(json.dumps({
-        "factory_schema_version": 1,
-        "combo_id": NEUTRAL_COMBO_ID,
-        "name": "中性组合（虚拟）",
-        "quad": {
-            "pick_source": {"id": "poc_run", "version": "v1"},
-            "persona": {"id": "persona_neutral", "version": "v1",
-                        "params": {"risk_appetite": "neutral",
-                                   "conf_floor": 0.60, "max_pos_pct": 0.20,
-                                   "max_total_pct": 0.75}},
-            "watch_style": {"id": "daily_close", "version": "v1"},
-            "trader": {"id": "trader_main", "version": "v1"},
-        },
-        "budget": {"monthly_llm_cost_budget": 10.0},
-    }, ensure_ascii=False), encoding="utf-8")
+    reg_file.write_text(
+        json.dumps(
+            {
+                "factory_schema_version": 1,
+                "combo_id": NEUTRAL_COMBO_ID,
+                "name": "中性组合（虚拟）",
+                "quad": {
+                    "pick_source": {"id": "poc_run", "version": "v1"},
+                    "persona": {
+                        "id": "persona_neutral",
+                        "version": "v1",
+                        "params": {
+                            "risk_appetite": "neutral",
+                            "conf_floor": 0.60,
+                            "max_pos_pct": 0.20,
+                            "max_total_pct": 0.75,
+                        },
+                    },
+                    "watch_style": {"id": "daily_close", "version": "v1"},
+                    "trader": {"id": "trader_main", "version": "v1"},
+                },
+                "budget": {"monthly_llm_cost_budget": 10.0},
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
     sub_log = tmp_path / "subs.jsonl"
-    cred = combo_factory.create_combo(reg_file, registry_path=reg_path,
-                                      subscription_log=sub_log)
+    cred = combo_factory.create_combo(
+        reg_file, registry_path=reg_path, subscription_log=sub_log
+    )
     assert cred["status"] == "ready"
     assert cred["quad"]["persona"]["id"] == "persona_neutral"
     # 隔离：既有两实例条目原文不动
-    after = {c["combo_id"]: c for c in
-             combo_registry.load_registry(reg_path)["combos"]}
+    after = {c["combo_id"]: c for c in combo_registry.load_registry(reg_path)["combos"]}
     assert len(after) == 3
     assert after["combo_wenjian"]["quad"]["persona"]["params"]["conf_floor"] == 0.70
     assert after["combo_jijin"]["quad"]["persona"]["params"]["conf_floor"] == 0.50
     # 重复注册拒绝（closed on failure）
     with pytest.raises(combo_factory.DuplicateComboError):
-        combo_factory.create_combo(reg_file, registry_path=reg_path,
-                                   subscription_log=sub_log)
+        combo_factory.create_combo(
+            reg_file, registry_path=reg_path, subscription_log=sub_log
+        )
 
 
 # ---------- 验收⑤：影子期红线——零 import 执行链 ----------
 
-FORBIDDEN_IMPORTS = {"signal_consumer", "engine", "combo_factory",
-                     "combo_review", "gaorta_client", "trade_guard",
-                     "decision_snapshot", "portfolio"}
+FORBIDDEN_IMPORTS = {
+    "signal_consumer",
+    "engine",
+    "combo_factory",
+    "combo_review",
+    "gaorta_client",
+    "trade_guard",
+    "decision_snapshot",
+    "portfolio",
+}
 
 
 def _module_imports(path):
@@ -268,18 +367,25 @@ def test_shadow_period_no_execution_chain_import():
         elif isinstance(node, ast.Name):
             identifiers.add(node.id)
     for token in ("exec_run", "place_order", "consume", "normalize_signal"):
-        assert token not in identifiers, \
-            f"影子期红线：代码不得调用执行链入口 {token}"
+        assert token not in identifiers, f"影子期红线：代码不得调用执行链入口 {token}"
     # 字符串常量级断言（结构化跳过模块 docstring 节点）：不引用执行链路径/库文件
-    doc_node = (tree.body[0].value if tree.body
-                and isinstance(tree.body[0], ast.Expr)
-                and isinstance(tree.body[0].value, ast.Constant) else None)
+    doc_node = (
+        tree.body[0].value
+        if tree.body
+        and isinstance(tree.body[0], ast.Expr)
+        and isinstance(tree.body[0].value, ast.Constant)
+        else None
+    )
     for node in ast.walk(tree):
-        if isinstance(node, ast.Constant) and isinstance(node.value, str) \
-                and node is not doc_node:
+        if (
+            isinstance(node, ast.Constant)
+            and isinstance(node.value, str)
+            and node is not doc_node
+        ):
             for token in ("signal_pool", "paper.db", "exec_run"):
-                assert token not in node.value, \
+                assert token not in node.value, (
                     f"影子期红线：代码字符串不得引用执行链 {token}"
+                )
 
 
 # ==========================================================================
@@ -295,14 +401,18 @@ NAMING_WO = "WO-QT-20261021-091"
 def test_wo091_organizer_is_anonymous_engine():
     """组织者=无名确定性引擎：无 zi/字号等人格字段，id/kind 显式声明机器属性。"""
     import invest_committee as ic
+
     assert ic.ORGANIZER["id"] == "anonymous_engine"
     assert ic.ORGANIZER["kind"] == "deterministic_engine"
     assert "zi" not in ic.ORGANIZER, "组织者不得携带字号（人格字段）"
     assert "子敬" not in json.dumps(ic.ORGANIZER, ensure_ascii=False)
     assert "鲁肃" not in json.dumps(ic.ORGANIZER, ensure_ascii=False)
     # 席权/精选线/风控席原值保留（改名不动数）
-    assert ic.SEAT_WEIGHTS == {"seat_jishu": 0.40, "seat_jiazhi": 0.30,
-                               "seat_fengkong": 0.30}
+    assert ic.SEAT_WEIGHTS == {
+        "seat_jishu": 0.40,
+        "seat_jiazhi": 0.30,
+        "seat_fengkong": 0.30,
+    }
     assert ic.V2_FLOOR == 0.62
     assert ic.RISK_SEAT_ID == "seat_fengkong"
 
@@ -310,12 +420,13 @@ def test_wo091_organizer_is_anonymous_engine():
 def test_wo091_session_has_no_persona_naming():
     """整场会审 JSON 无人名残留；minutes.host 为引擎名；带命名修订单号留痕。"""
     import invest_committee as ic
+
     s = ic.run_session(_picks(_sample_stocks()), now="2026-10-21T10:00:00")
     blob = json.dumps(s, ensure_ascii=False)
     for bad in ("鲁肃", "子敬", "lu_su"):
         assert bad not in blob, f"场次残留人格命名: {bad}"
     assert s["naming_revision"] == NAMING_WO
-    assert s["wo"] == WO          # 建单号不变（083 建的模块）
+    assert s["wo"] == WO  # 建单号不变（083 建的模块）
     assert s["minutes"]["host"] == "确定性聚合引擎"
     assert "确定性聚合引擎" in s["minutes"]["conclusion"]
 
@@ -326,13 +437,14 @@ def test_wo091_aggregate_numeric_unchanged():
     本用例对「改名顺手改了权重/线值」类回归承重（权重改则红）。
     """
     import invest_committee as ic
+
     ops = [
         {"seat_id": "seat_jishu", "score": 0.80, "rating": "BUY"},
         {"seat_id": "seat_jiazhi", "score": 0.60, "rating": "HOLD"},
         {"seat_id": "seat_fengkong", "score": 0.50, "rating": "HOLD"},
     ]
     got = ic.aggregate(ops)
-    expect = round(0.80 * 0.40 + 0.60 * 0.30 + 0.50 * 0.30, 4)   # 0.65
+    expect = round(0.80 * 0.40 + 0.60 * 0.30 + 0.50 * 0.30, 4)  # 0.65
     assert got["score"] == expect == 0.65
     assert got["rating"] == "SELECT" and got["selected"] is True
     # 风控席 AVOID 一票否决仍在（改名不动否决条款）
@@ -345,8 +457,9 @@ def test_wo091_aggregate_numeric_unchanged():
 
 def test_wo091_persona_registry_annotated():
     """人格册鲁肃条目带 091 标注 + 2026-10-27 判例口径；量化职能已剥离、通信部归属不成立。"""
-    reg = json.loads((HERE.parent / "portal" / "persona_registry.json")
-                     .read_text(encoding="utf-8"))
+    reg = json.loads(
+        (HERE.parent / "portal" / "persona_registry.json").read_text(encoding="utf-8")
+    )
     dep = [x for x in reg["departments"] if x.get("name") == "鲁肃"][0]
     assert dep["naming_revision"] == NAMING_WO
     assert dep.get("service_line") == "invest_decision"
@@ -359,13 +472,22 @@ def test_wo091_persona_registry_annotated():
 
 def test_wo091_no_persona_leak_in_module_code():
     """代码层无残留：源码（剥离 docstring）不得再出现人名组织者。"""
-    tree = ast.parse((HERE / "paper" / "invest_committee.py")
-                     .read_text(encoding="utf-8"))
-    doc_node = (tree.body[0].value if tree.body
-                and isinstance(tree.body[0], ast.Expr)
-                and isinstance(tree.body[0].value, ast.Constant) else None)
+    tree = ast.parse(
+        (HERE / "paper" / "invest_committee.py").read_text(encoding="utf-8")
+    )
+    doc_node = (
+        tree.body[0].value
+        if tree.body
+        and isinstance(tree.body[0], ast.Expr)
+        and isinstance(tree.body[0].value, ast.Constant)
+        else None
+    )
     for node in ast.walk(tree):
-        if isinstance(node, ast.Constant) and isinstance(node.value, str) \
-                and node is not doc_node:
-            assert "鲁肃" not in node.value, \
+        if (
+            isinstance(node, ast.Constant)
+            and isinstance(node.value, str)
+            and node is not doc_node
+        ):
+            assert "鲁肃" not in node.value, (
                 f"代码字符串残留人名组织者: {node.value[:40]}"
+            )

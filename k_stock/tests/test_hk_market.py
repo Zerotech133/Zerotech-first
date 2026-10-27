@@ -3,6 +3,7 @@
 全市场聚合日历 / 09:30 HKT 时界 / HK 费率常量 / T+0 挂账 / LOT 与涨跌停运行时豁免 /
 直读湖 _read 清洗。pandas 仅在 I/O 边界——逻辑层测试纯 stdlib（_read 注入），
 pandas 路径以 fake 模块注入离线测。"""
+
 import csv
 import sys
 from pathlib import Path
@@ -21,22 +22,24 @@ from market import FakeMarket  # noqa: E402
 
 
 def test_normalize_hk_code():
-    assert hm.normalize_hk_code("700") == "00700.HK"        # 3 位 zfill(5)
-    assert hm.normalize_hk_code("0700") == "00700.HK"       # 4 位 zfill(5)
-    assert hm.normalize_hk_code("00700") == "00700.HK"      # 5 位补后缀
-    assert hm.normalize_hk_code("00700.HK") == "00700.HK"   # 规范形态原样
-    assert hm.normalize_hk_code("9988") == "09988.HK"       # 阿里旧写法
-    assert hm.normalize_hk_code("2800") == "02800.HK"       # 盈富基金
-    assert hm.normalize_hk_code("600519.SH") == "600519.SH"  # A 股形态不误收（原样返回）
-    assert hm.normalize_hk_code("AAPL") == "AAPL"           # 非 HK 原样
+    assert hm.normalize_hk_code("700") == "00700.HK"  # 3 位 zfill(5)
+    assert hm.normalize_hk_code("0700") == "00700.HK"  # 4 位 zfill(5)
+    assert hm.normalize_hk_code("00700") == "00700.HK"  # 5 位补后缀
+    assert hm.normalize_hk_code("00700.HK") == "00700.HK"  # 规范形态原样
+    assert hm.normalize_hk_code("9988") == "09988.HK"  # 阿里旧写法
+    assert hm.normalize_hk_code("2800") == "02800.HK"  # 盈富基金
+    assert (
+        hm.normalize_hk_code("600519.SH") == "600519.SH"
+    )  # A 股形态不误收（原样返回）
+    assert hm.normalize_hk_code("AAPL") == "AAPL"  # 非 HK 原样
 
 
 def test_is_hk_code_boundaries():
     assert hm.is_hk_code("00700.HK")
     assert hm.is_hk_code("00700")
     assert hm.is_hk_code("700")
-    assert not hm.is_hk_code("600519.SH")   # A 股 6 位带后缀
-    assert not hm.is_hk_code("gb_AAPL")     # US 前缀
+    assert not hm.is_hk_code("600519.SH")  # A 股 6 位带后缀
+    assert not hm.is_hk_code("gb_AAPL")  # US 前缀
     assert not hm.is_hk_code("AAPL")
 
 
@@ -55,13 +58,27 @@ def test_stamp_duty_constant():
     assert cfg["stamp_tax"] == hm.STAMP_DUTY
     assert cfg["commission_rate"] == hm.COMMISSION_RATE
     assert cfg["min_commission"] == hm.MIN_COMMISSION
-    assert cfg["initial_cash"] == 1_000_000.0   # HKD 原币（P-5）
+    assert cfg["initial_cash"] == 1_000_000.0  # HKD 原币（P-5）
 
 
 def test_hk_fee_sell_includes_stamp_tax(tmp_path):
-    m = FakeMarket({"00700.HK": [{"trade_date": "20261015", "open": 400.0, "high": 410.0,
-                                  "low": 395.0, "close": 405.0, "pre_close": 400.0}]})
-    e = PaperEngine(tmp_path / "t.db", m, config=hm.hk_default_config(), account="hk_fee")
+    m = FakeMarket(
+        {
+            "00700.HK": [
+                {
+                    "trade_date": "20261015",
+                    "open": 400.0,
+                    "high": 410.0,
+                    "low": 395.0,
+                    "close": 405.0,
+                    "pre_close": 400.0,
+                }
+            ]
+        }
+    )
+    e = PaperEngine(
+        tmp_path / "t.db", m, config=hm.hk_default_config(), account="hk_fee"
+    )
     # 卖 500 股 @400 = 200,000 → 佣金 max(3, 200000*0.0003)=60 + 印花税 200000*0.001=200
     assert e._fee_sell(200_000.0) == 260.0
     # 买入无印花税参数（引擎 _fee_buy 无 stamp_tax_buy，灰位期挂账低估）
@@ -72,23 +89,46 @@ def test_hk_fee_sell_includes_stamp_tax(tmp_path):
 
 
 def _rows_00700():
-    return [{"trade_date": "20261015", "open": 410.0, "high": 420.0, "low": 405.0,
-             "close": 415.0, "pre_close": 408.0},
-            {"trade_date": "20261016", "open": 420.0, "high": 428.0, "low": 414.0,
-             "close": 417.8, "pre_close": 415.0}]
+    return [
+        {
+            "trade_date": "20261015",
+            "open": 410.0,
+            "high": 420.0,
+            "low": 405.0,
+            "close": 415.0,
+            "pre_close": 408.0,
+        },
+        {
+            "trade_date": "20261016",
+            "open": 420.0,
+            "high": 428.0,
+            "low": 414.0,
+            "close": 417.8,
+            "pre_close": 415.0,
+        },
+    ]
 
 
 def test_hk_market_contract(tmp_path, monkeypatch):
     # hk_dir 一并指 tmp：隔离真实 market_days.csv（判例：测试禁绑真实派生数据落点）
     m = hm.HkMarket(export_dir=tmp_path, hk_dir=tmp_path / "hk_paper_empty")
-    monkeypatch.setattr(m, "_read",
-                        lambda code: _rows_00700() if hm.file_code(code) == "00700" else None)
-    assert m.trading_days() == ["20261015", "20261016"]   # 回退路径：基准票 00700
-    b = m.bar("00700.HK", "20261016")                     # 引擎原码（.HK 后缀）直达
-    assert b == {"trade_date": "20261016", "open": 420.0, "high": 428.0,
-                 "low": 414.0, "close": 417.8, "pre_close": 415.0}
-    assert m.bar("00700.HK", "20261017") is None          # 非交易日 None
-    assert m.bar("09988.HK", "20261016") is None          # 无湖文件票 None
+    monkeypatch.setattr(
+        m,
+        "_read",
+        lambda code: _rows_00700() if hm.file_code(code) == "00700" else None,
+    )
+    assert m.trading_days() == ["20261015", "20261016"]  # 回退路径：基准票 00700
+    b = m.bar("00700.HK", "20261016")  # 引擎原码（.HK 后缀）直达
+    assert b == {
+        "trade_date": "20261016",
+        "open": 420.0,
+        "high": 428.0,
+        "low": 414.0,
+        "close": 417.8,
+        "pre_close": 415.0,
+    }
+    assert m.bar("00700.HK", "20261017") is None  # 非交易日 None
+    assert m.bar("09988.HK", "20261016") is None  # 无湖文件票 None
     assert m.last_bar("00700.HK")["trade_date"] == "20261016"
     assert m.last_bar_before("00700.HK", "20261015")["close"] == 415.0
     assert m.first_bar_on_or_after("00700.HK", "20261016")["trade_date"] == "20261016"
@@ -100,7 +140,8 @@ def test_trading_days_market_days_csv_priority(tmp_path):
     d = tmp_path / "hk_paper"
     d.mkdir()
     (d / hm.MARKET_DAYS_FILE).write_text(
-        "trade_date\n20261014\n20261015\n20261016\n", encoding="utf-8")
+        "trade_date\n20261014\n20261015\n20261016\n", encoding="utf-8"
+    )
     m = hm.HkMarket(export_dir=tmp_path, hk_dir=d)
     assert m.trading_days() == ["20261014", "20261015", "20261016"]
 
@@ -118,7 +159,8 @@ def test_next_trading_day_hkt_boundary(tmp_path):
     d = tmp_path / "hk_paper"
     d.mkdir()
     (d / hm.MARKET_DAYS_FILE).write_text(
-        "trade_date\n20261015\n20261016\n", encoding="utf-8")
+        "trade_date\n20261015\n20261016\n", encoding="utf-8"
+    )
     m = hm.HkMarket(export_dir=tmp_path, hk_dir=d)
     # 盘前（北京 08:00 = HKT 08:00 < 09:30）→ 当日开盘价尚未产生，可成交
     assert m.next_trading_day("2026-10-16T08:00:00") == "20261016"
@@ -133,11 +175,14 @@ def test_next_trading_day_hkt_boundary(tmp_path):
 
 class FakeSeries(list):
     def fillna(self, other):
-        return FakeSeries(v if (v is not None and v == v) else o
-                          for v, o in zip(self, other))
+        return FakeSeries(
+            v if (v is not None and v == v) else o for v, o in zip(self, other)
+        )
 
     def shift(self, n=1):
-        return FakeSeries([None] * n + list(self[: len(self) - n]) if n > 0 else list(self))
+        return FakeSeries(
+            [None] * n + list(self[: len(self) - n]) if n > 0 else list(self)
+        )
 
     def astype(self, _t):
         return FakeSeries(str(v) for v in self)
@@ -146,8 +191,11 @@ class FakeSeries(list):
 class FakeDF:
     def __init__(self, records):
         self._records = [dict(r) for r in records]
-        self._cols = {k: FakeSeries(r[k] for r in self._records)
-                      for k in self._records[0]} if self._records else {}
+        self._cols = (
+            {k: FakeSeries(r[k] for r in self._records) for k in self._records[0]}
+            if self._records
+            else {}
+        )
 
     def sort_values(self, _col):
         return self
@@ -162,17 +210,31 @@ class FakeDF:
         return out
 
     def to_dict(self, _orient):
-        return [{k: list(col)[i] for k, col in self._cols.items()}
-                for i in range(len(next(iter(self._cols.values()))))]
+        return [
+            {k: list(col)[i] for k, col in self._cols.items()}
+            for i in range(len(next(iter(self._cols.values()))))
+        ]
 
 
 def test_read_fills_pre_close_from_prev_close(tmp_path, monkeypatch):
     """湖 pre_close 实量 NaN：次行补前日 close、首行回填当日 open（bar 契约完整性）。"""
     records = [
-        {"trade_date": 20261015, "open": 410.0, "high": 420.0, "low": 405.0,
-         "close": 415.0, "pre_close": None},
-        {"trade_date": 20261016, "open": 420.0, "high": 428.0, "low": 414.0,
-         "close": 417.8, "pre_close": None},
+        {
+            "trade_date": 20261015,
+            "open": 410.0,
+            "high": 420.0,
+            "low": 405.0,
+            "close": 415.0,
+            "pre_close": None,
+        },
+        {
+            "trade_date": 20261016,
+            "open": 420.0,
+            "high": 428.0,
+            "low": 414.0,
+            "close": 417.8,
+            "pre_close": None,
+        },
     ]
 
     class _FakePD:
@@ -181,11 +243,11 @@ def test_read_fills_pre_close_from_prev_close(tmp_path, monkeypatch):
             return FakeDF(records)
 
     monkeypatch.setitem(sys.modules, "pandas", _FakePD)
-    (tmp_path / "00700.parquet").write_bytes(b"fake")   # 仅需存在性
+    (tmp_path / "00700.parquet").write_bytes(b"fake")  # 仅需存在性
     rows = hm.HkMarket(export_dir=tmp_path)._read("00700.HK")
-    assert rows[0]["pre_close"] == 410.0                # 首行 NaN → 当日 open
-    assert rows[1]["pre_close"] == 415.0                # 次行 → 前日 close
-    assert rows[0]["trade_date"] == "20261015"          # 统一 YYYYMMDD 字符串
+    assert rows[0]["pre_close"] == 410.0  # 首行 NaN → 当日 open
+    assert rows[1]["pre_close"] == 415.0  # 次行 → 前日 close
+    assert rows[0]["trade_date"] == "20261015"  # 统一 YYYYMMDD 字符串
 
 
 def test_read_missing_file_returns_none(tmp_path):
@@ -209,9 +271,13 @@ class _FakeCalPD:
 
 
 def test_refresh_calendar_union_sorted(tmp_path, monkeypatch):
-    fake = _FakeCalPD({"00700": [20261015, 20261016],
-                       "02800": [20260827, 20261016],   # 02800 短历史（H2 实证 36 根）
-                       "09988": [20261014, 20261016]})
+    fake = _FakeCalPD(
+        {
+            "00700": [20261015, 20261016],
+            "02800": [20260827, 20261016],  # 02800 短历史（H2 实证 36 根）
+            "09988": [20261014, 20261016],
+        }
+    )
     monkeypatch.setitem(sys.modules, "pandas", fake)
     export_dir = tmp_path / "hk"
     export_dir.mkdir()
@@ -233,16 +299,36 @@ def test_refresh_calendar_all_missing_raises(tmp_path):
 def test_t0_freeze_kept_as_debt(tmp_path):
     """HK T+0 不豁免是拍板挂账：当日买入 T+1 冻结语义对 HK 账本依然生效（保守无害）。
     TODO(引擎工单)：available_qty 市场开关拍板后本测试同步更新。"""
-    m = FakeMarket({"00700.HK": [{"trade_date": "20261015", "open": 400.0, "high": 420.0,
-                                  "low": 395.0, "close": 415.0, "pre_close": 400.0},
-                                 {"trade_date": "20261016", "open": 416.0, "high": 430.0,
-                                  "low": 410.0, "close": 420.0, "pre_close": 415.0}]})
-    e = PaperEngine(tmp_path / "t.db", m, config=hm.hk_default_config(), account="hk_t0")
-    r = e.buy("00700.HK", 400, 416.0)          # 指定价须落在最近 bar 区间内且 ≤20% 仓位
-    assert r["fill_date"] == "20261016"        # 手动单 fill_date=湖内最后交易日
-    assert e.available_qty("00700.HK") == 0    # T+1 冻结保持（未豁免=挂账行为）
+    m = FakeMarket(
+        {
+            "00700.HK": [
+                {
+                    "trade_date": "20261015",
+                    "open": 400.0,
+                    "high": 420.0,
+                    "low": 395.0,
+                    "close": 415.0,
+                    "pre_close": 400.0,
+                },
+                {
+                    "trade_date": "20261016",
+                    "open": 416.0,
+                    "high": 430.0,
+                    "low": 410.0,
+                    "close": 420.0,
+                    "pre_close": 415.0,
+                },
+            ]
+        }
+    )
+    e = PaperEngine(
+        tmp_path / "t.db", m, config=hm.hk_default_config(), account="hk_t0"
+    )
+    r = e.buy("00700.HK", 400, 416.0)  # 指定价须落在最近 bar 区间内且 ≤20% 仓位
+    assert r["fill_date"] == "20261016"  # 手动单 fill_date=湖内最后交易日
+    assert e.available_qty("00700.HK") == 0  # T+1 冻结保持（未豁免=挂账行为）
     with pytest.raises(Exception):
-        e.sell("00700.HK", 400)                # 当日买不可卖（挂账口径下被冻结）
+        e.sell("00700.HK", 400)  # 当日买不可卖（挂账口径下被冻结）
 
 
 # ---------------- 运行时豁免（灰位期落地，进程内生效，不改 engine.py） ----------------
@@ -258,31 +344,57 @@ def hk_waivers():
 
 
 def test_waiver_limit_ratio_hk(hk_waivers):
-    assert hk_waivers.limit_ratio("00700.HK") == 1.0   # HK 无涨跌停
+    assert hk_waivers.limit_ratio("00700.HK") == 1.0  # HK 无涨跌停
     assert hk_waivers.limit_ratio("02800.HK") == 1.0
     assert hk_waivers.limit_ratio("09988.HK") == 1.0
     assert hk_waivers.limit_ratio("600519.SH") == 0.10  # A 股主板不受影响
     assert hk_waivers.limit_ratio("300750.SZ") == 0.20  # 创业板不受影响
-    assert hk_waivers.limit_ratio("gb_AAPL") == 1.0     # US 先例豁免保持
+    assert hk_waivers.limit_ratio("gb_AAPL") == 1.0  # US 先例豁免保持
 
 
 def test_waiver_lot_non_100_buy(tmp_path, hk_waivers):
     """LOT 放开（P-4 灰位期）：HK 每手股数各异（汇丰 400/腾讯 100），非 100 倍数放行。"""
-    m = FakeMarket({"00005.HK": [{"trade_date": "20261015", "open": 88.0, "high": 90.0,
-                                  "low": 87.0, "close": 89.0, "pre_close": 88.0}]})
-    e = PaperEngine(tmp_path / "t.db", m, config=hm.hk_default_config(), account="hk_lot")
-    r = e.buy("00005.HK", 400, 88.0)   # 汇丰每手 400 股——A 股 LOT=100 会拒，HK 放行
+    m = FakeMarket(
+        {
+            "00005.HK": [
+                {
+                    "trade_date": "20261015",
+                    "open": 88.0,
+                    "high": 90.0,
+                    "low": 87.0,
+                    "close": 89.0,
+                    "pre_close": 88.0,
+                }
+            ]
+        }
+    )
+    e = PaperEngine(
+        tmp_path / "t.db", m, config=hm.hk_default_config(), account="hk_lot"
+    )
+    r = e.buy("00005.HK", 400, 88.0)  # 汇丰每手 400 股——A 股 LOT=100 会拒，HK 放行
     assert r["qty"] == 400
     assert abs(r["fee"] - 400 * 88.0 * hm.COMMISSION_RATE) < 0.01
 
 
 def test_no_waiver_lot_100_default(tmp_path):
     """未豁免时引擎保持 A 股 LOT=100 原语义（豁免只作用于显式调用的 HK 跑批进程）。"""
-    m = FakeMarket({"600519.SH": [{"trade_date": "20261015", "open": 1250.0, "high": 1260.0,
-                                   "low": 1240.0, "close": 1255.0, "pre_close": 1250.0}]})
+    m = FakeMarket(
+        {
+            "600519.SH": [
+                {
+                    "trade_date": "20261015",
+                    "open": 1250.0,
+                    "high": 1260.0,
+                    "low": 1240.0,
+                    "close": 1255.0,
+                    "pre_close": 1250.0,
+                }
+            ]
+        }
+    )
     e = PaperEngine(tmp_path / "t.db", m, account="main")
     with pytest.raises(Exception):
-        e.buy("600519.SH", 150, 1250.0)   # 150 非 100 倍数 → 拒（原语义保持）
+        e.buy("600519.SH", 150, 1250.0)  # 150 非 100 倍数 → 拒（原语义保持）
 
 
 # ---------------- 账本通道灰态（同 US 先例：无账本不算错） ----------------
@@ -295,15 +407,22 @@ def test_hk_accounts_gray_when_no_db(tmpdir):
 
 def test_hk_symbols_in_db_filters_hk(tmp_path):
     import sqlite3
+
     db = tmp_path / "t.db"
     con = sqlite3.connect(str(db))
     con.executescript(paper_engine._SCHEMA)
-    con.execute("INSERT INTO account(account_id,cash,initial_cash,created_at) "
-                "VALUES('hk_qingping',1000000,1000000,'2026-10-19T00:00:00')")
-    con.execute("INSERT INTO positions(account_id,stock,qty,avg_cost,updated_at) "
-                "VALUES('hk_qingping','00700.HK',500,400.0,'2026-10-19T00:00:00')")
-    con.execute("INSERT INTO positions(account_id,stock,qty,avg_cost,updated_at) "
-                "VALUES('main','600519.SH',100,1250.0,'2026-10-19T00:00:00')")
+    con.execute(
+        "INSERT INTO account(account_id,cash,initial_cash,created_at) "
+        "VALUES('hk_qingping',1000000,1000000,'2026-10-19T00:00:00')"
+    )
+    con.execute(
+        "INSERT INTO positions(account_id,stock,qty,avg_cost,updated_at) "
+        "VALUES('hk_qingping','00700.HK',500,400.0,'2026-10-19T00:00:00')"
+    )
+    con.execute(
+        "INSERT INTO positions(account_id,stock,qty,avg_cost,updated_at) "
+        "VALUES('main','600519.SH',100,1250.0,'2026-10-19T00:00:00')"
+    )
     con.commit()
     con.close()
     assert hm.hk_accounts(db) == ["hk_qingping"]

@@ -92,6 +92,7 @@ CH-08 内容级检测（假绿根治）：H5 日期判绿只证明「件在且�
 严重度序：``red > yellow > green``，整体 ``status`` 取所有 finding 里最高级
 （同severity 时按 check_id 排序稳定输出）。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -212,7 +213,9 @@ def normalize_date(date) -> str:
     if isinstance(date, datetime):
         return date.strftime("%Y%m%d")
     if not isinstance(date, str):
-        raise ValueError("date 必须是 'YYYYMMDD'/'YYYY-MM-DD' 字符串或 datetime，收到 %r" % (date,))
+        raise ValueError(
+            "date 必须是 'YYYYMMDD'/'YYYY-MM-DD' 字符串或 datetime，收到 %r" % (date,)
+        )
     s = date.strip().replace("-", "").replace("/", "")
     if not _DATE_IN_NAME.fullmatch(s):
         raise ValueError("date 格式非法: %r（期望 YYYYMMDD 或 YYYY-MM-DD）" % (date,))
@@ -238,8 +241,13 @@ def load_frequency_ledger(path=None) -> dict:
     **只记 ``_error`` 不抛**——调用方拿不到台账时按默认判，红不会被吃掉。
     """
     p = Path(path) if path else FREQUENCY_LEDGER_PATH
-    out = {"channels": {}, "feeds": {}, "artifacts": {},
-           "_source": str(p), "_error": None}
+    out = {
+        "channels": {},
+        "feeds": {},
+        "artifacts": {},
+        "_source": str(p),
+        "_error": None,
+    }
     try:
         raw = _read_text(p)
     except OSError as e:
@@ -279,11 +287,14 @@ def _ledger_disabled(entry: dict) -> tuple[bool, str]:
     reason = str(entry.get("reason") or entry.get("note") or "未注明原因")
     by = str(entry.get("approved_by") or "").strip()
     return True, "已停用（显式声明）：%s%s" % (
-        reason, ("；停用拍板人：%s" % by) if by else "")
+        reason,
+        ("；停用拍板人：%s" % by) if by else "",
+    )
 
 
-def _ledger_stale_days(entry: dict, fallback: int, *,
-                       fallback_is_explicit: bool = False) -> int:
+def _ledger_stale_days(
+    entry: dict, fallback: int, *, fallback_is_explicit: bool = False
+) -> int:
     """台账声明的时效阈值；优先级从高到低：
 
     1. 台账**显式数字**（``stale_days`` / ``max_age_days``）——最具体的声明，最高优先；
@@ -378,7 +389,8 @@ def _err(check_id: str, title: str, exc: Exception, action: str) -> _F:
         check_id=check_id,
         severity="red",
         title=title,
-        evidence="判据执行异常 %s: %s（证据不可得≠健康，按红处理）" % (type(exc).__name__, exc),
+        evidence="判据执行异常 %s: %s（证据不可得≠健康，按红处理）"
+        % (type(exc).__name__, exc),
         action=action,
         check_error=True,
     )
@@ -397,8 +409,13 @@ def _check_h1(paths: HealthPaths, date: str) -> _F:
     title = "H1 影子晨批心跳"
     action = "查 automation 69b51985 调度状态与 ~/.workbuddy/logs/automation.log，确认影子段是否真跑"
     if not log.exists():
-        return _F("H1", "red", title,
-                  "last_run.log 不存在: %s（无心跳证据=调度静默失败嫌疑）" % log, action)
+        return _F(
+            "H1",
+            "red",
+            title,
+            "last_run.log 不存在: %s（无心跳证据=调度静默失败嫌疑）" % log,
+            action,
+        )
     try:
         text = _read_text(log)
     except OSError as e:
@@ -406,39 +423,60 @@ def _check_h1(paths: HealthPaths, date: str) -> _F:
 
     done_dates = _SHADOW_DONE.findall(text)
     if not done_dates:
-        return _F("H1", "red", title,
-                  "last_run.log 无任何 'shadow day <date> done' 完成记录（len=%d 字节）；"
-                  "最近内容首行: %r" % (len(text), text.splitlines()[:1]),
-                  "确认影子跑批是否中途崩溃；无 done 行即未完成，不可当正常"
-                  + action)
+        return _F(
+            "H1",
+            "red",
+            title,
+            "last_run.log 无任何 'shadow day <date> done' 完成记录（len=%d 字节）；"
+            "最近内容首行: %r" % (len(text), text.splitlines()[:1]),
+            "确认影子跑批是否中途崩溃；无 done 行即未完成，不可当正常" + action,
+        )
     last = done_dates[-1]
     if last == _iso(date):
-        return _F("H1", "green", title,
-                  "last_run.log 记录当日完成: shadow day %s done（累计 %d 条 done 行）"
-                  % (last, len(done_dates)), "无需动作")
+        return _F(
+            "H1",
+            "green",
+            title,
+            "last_run.log 记录当日完成: shadow day %s done（累计 %d 条 done 行）"
+            % (last, len(done_dates)),
+            "无需动作",
+        )
     age = _days_between(last, date)
     if age < 0:
         # 目标日是历史回看日，账本最新心跳比目标日新——不能按「无当日心跳」罚，
         # 但last_run.log 是滚动覆盖的单文件，历史日的 done 行可能已被后续跑批冲掉，
         # 故按「不可回溯核验」给黄并说明，而不是绿。
-        return _F("H1", "yellow", title,
-                  "目标日 %s 为历史回看日；last_run.log 最新完成日 %s 晚于目标日 %d 天，"
-                  "该文件为滚动覆盖，历史日心跳不可回溯核验（不可核验≠绿）"
-                  % (_iso(date), last, -age),
-                  "历史日回看请另用 shadow_ledger.jsonl 的 date 字段交叉核对；"
-                  "滚动日志不保留历史属已知限制")
+        return _F(
+            "H1",
+            "yellow",
+            title,
+            "目标日 %s 为历史回看日；last_run.log 最新完成日 %s 晚于目标日 %d 天，"
+            "该文件为滚动覆盖，历史日心跳不可回溯核验（不可核验≠绿）"
+            % (_iso(date), last, -age),
+            "历史日回看请另用 shadow_ledger.jsonl 的 date 字段交叉核对；"
+            "滚动日志不保留历史属已知限制",
+        )
     if age <= 1:
-        return _F("H1", "yellow", title,
-                  "last_run.log 最新完成日为 %s，距目标日 %d 天（无当日心跳）" % (last, age),
-                  "确认今日影子段是否漏跑；连续 2 日无心跳按红处理并升级 " + action)
-    return _F("H1", "red", title,
-              "last_run.log 最新完成日为 %s，距目标日 %d 天（>1 日阈值）" % (last, age),
-              "影子链已停摆，按红升级: " + action)
+        return _F(
+            "H1",
+            "yellow",
+            title,
+            "last_run.log 最新完成日为 %s，距目标日 %d 天（无当日心跳）" % (last, age),
+            "确认今日影子段是否漏跑；连续 2 日无心跳按红处理并升级 " + action,
+        )
+    return _F(
+        "H1",
+        "red",
+        title,
+        "last_run.log 最新完成日为 %s，距目标日 %d 天（>1 日阈值）" % (last, age),
+        "影子链已停摆，按红升级: " + action,
+    )
 
 
 # ---------------------------------------------------------------------------
 # H2 各通道最新 run 时效
 # ---------------------------------------------------------------------------
+
 
 def _iso(date: str) -> str:
     """'20261020' → '2026-10-20'（用于比对 last_run.log 那种带横线的日期）。"""
@@ -475,14 +513,17 @@ def _verify_prefix_alignment() -> str | None:
     try:
         sys.path.insert(0, str(HERE))
         import trainee  # noqa: WPS433（运行时按路径导入，容忍裁剪部署）
+
         declared = tuple(trainee._NON_AI_PREFIXES)
     except Exception:
         return None
     mine = tuple(CHANNEL_PREFIXES[c] for c in CHANNELS) + ("poc_pf_", "poc_adapter_")
     missing = [p for p in mine if p not in declared]
     if missing:
-        return ("本模块前缀 %s 未出现在 trainee._NON_AI_PREFIXES=%s，"
-                "口径已漂移需对齐" % (list(missing), list(declared)))
+        return (
+            "本模块前缀 %s 未出现在 trainee._NON_AI_PREFIXES=%s，"
+            "口径已漂移需对齐" % (list(missing), list(declared))
+        )
     return None
 
 
@@ -504,12 +545,17 @@ def _zero_buy_evidence(zb: dict) -> str:
     return "声明：%s；证据：%s%s" % (
         zb.get("reason") or "未注明原因",
         zb.get("evidence") or "未附证据",
-        ("；拍板人：%s" % zb["approved_by"]) if zb.get("approved_by") else "")
+        ("；拍板人：%s" % zb["approved_by"]) if zb.get("approved_by") else "",
+    )
 
 
-def _check_h2(paths: HealthPaths, date: str, stale_days: int = 1,
-              ledger: dict | None = None,
-              stale_days_explicit: bool = False) -> list[_F]:
+def _check_h2(
+    paths: HealthPaths,
+    date: str,
+    stale_days: int = 1,
+    ledger: dict | None = None,
+    stale_days_explicit: bool = False,
+) -> list[_F]:
     """各通道最新 poc 产物日期。缺=红；>stale_days=黄；>2*stale_days=红。
 
     台账接入（WO-QT-20261020-021）：
@@ -529,8 +575,15 @@ def _check_h2(paths: HealthPaths, date: str, stale_days: int = 1,
     action = "跑对应通道刷新（如 qd_adapter / qpzm_adapter / hk_market / us_market），确认调度是否派发"
 
     if not data_dir.exists():
-        return [_F("H2", "red", "H2 各通道最新 run 时效",
-                   "k_stock/data 不存在: %s（四个通道产物全不可得）" % data_dir, action)]
+        return [
+            _F(
+                "H2",
+                "red",
+                "H2 各通道最新 run 时效",
+                "k_stock/data 不存在: %s（四个通道产物全不可得）" % data_dir,
+                action,
+            )
+        ]
 
     drift = _verify_prefix_alignment()
 
@@ -544,29 +597,42 @@ def _check_h2(paths: HealthPaths, date: str, stale_days: int = 1,
         if disabled:
             # 显式停用：先落「已停用」，不去 glob 产物（无产物是停用的预期结果，
             # 不是断线）。仍标 yellow 而非 green —— 见函数 docstring 的双重理由。
-            out.append(_F(cid, "yellow", title,
-                          "%s；停用是台账显式声明（frequency=%s），非断线事故。"
-                          "该通道当前无新产物属预期——停用≠健康，故不判绿"
-                          % (why, entry.get("frequency") or "未声明"),
-                          "如需恢复，从台账改 enabled=true 并补挂调度面"))
+            out.append(
+                _F(
+                    cid,
+                    "yellow",
+                    title,
+                    "%s；停用是台账显式声明（frequency=%s），非断线事故。"
+                    "该通道当前无新产物属预期——停用≠健康，故不判绿"
+                    % (why, entry.get("frequency") or "未声明"),
+                    "如需恢复，从台账改 enabled=true 并补挂调度面",
+                )
+            )
             continue
 
         # G-01：台账 zero_buy 声明（可选）。未声明 → None，行为与旧版完全一致。
         zb = _zero_buy_decl(entry)
-        eff_stale = _ledger_stale_days(entry, stale_days,
-                                       fallback_is_explicit=stale_days_explicit)
+        eff_stale = _ledger_stale_days(
+            entry, stale_days, fallback_is_explicit=stale_days_explicit
+        )
 
         newest = _newest_prefix_file(data_dir, prefix)
         if newest is None:
             if zb:
                 # 闸门收紧零买入：上游 safe=false → adapter 契约性 raise 不落盘，
                 # 是风控正确行为不是断线。判黄不判红（G-01），与断供红明确分开。
-                out.append(_F(cid, "yellow", title,
-                              "业务零产出（闸门收紧，非断线）：通道 %s 无任何 %s*.json "
-                              "产物于 %s。台账 zero_buy 显式%s"
-                              % (ch, prefix, data_dir, _zero_buy_evidence(zb)),
-                              "闸门放开（safe=true）后通道自动恢复产出；挂载调度须另行走"
-                              "五要素审批，不在本判据范围"))
+                out.append(
+                    _F(
+                        cid,
+                        "yellow",
+                        title,
+                        "业务零产出（闸门收紧，非断线）：通道 %s 无任何 %s*.json "
+                        "产物于 %s。台账 zero_buy 显式%s"
+                        % (ch, prefix, data_dir, _zero_buy_evidence(zb)),
+                        "闸门放开（safe=true）后通道自动恢复产出；挂载调度须另行走"
+                        "五要素审批，不在本判据范围",
+                    )
+                )
                 continue
             sev = "red"
             ev = "通道 %s 无任何 %s*.json 产物于 %s（缺=红）" % (ch, prefix, data_dir)
@@ -574,15 +640,22 @@ def _check_h2(paths: HealthPaths, date: str, stale_days: int = 1,
                 ev += "；" + drift
             if entry:
                 ev += "；台账声明 frequency=%s（期望频次非停用）" % (
-                    entry.get("frequency") or "未声明")
+                    entry.get("frequency") or "未声明"
+                )
             out.append(_F(cid, sev, title, ev, action))
             continue
         m = _date_from_name(newest.name)
         if not m:
-            out.append(_F(cid, "yellow", title,
-                          "最新件 %s 文件名内无日期戳，无法判定时效（按不可判定=黄，"
-                          "禁当绿）" % newest.name,
-                          "修命名规范或补解析口径: " + action))
+            out.append(
+                _F(
+                    cid,
+                    "yellow",
+                    title,
+                    "最新件 %s 文件名内无日期戳，无法判定时效（按不可判定=黄，"
+                    "禁当绿）" % newest.name,
+                    "修命名规范或补解析口径: " + action,
+                )
+            )
             continue
         latest = m
         age = _days_between(_iso(latest), date)
@@ -595,35 +668,76 @@ def _check_h2(paths: HealthPaths, date: str, stale_days: int = 1,
         except OSError:
             pass
         mtime_note = ("；落盘 mtime %s" % mtime_txt) if mtime_txt else ""
-        thr_note = ("台账 frequency=%s → 阈值 %d 天" % (
-            entry.get("frequency"), eff_stale) if entry else "阈值 %d 天" % eff_stale)
+        thr_note = (
+            "台账 frequency=%s → 阈值 %d 天" % (entry.get("frequency"), eff_stale)
+            if entry
+            else "阈值 %d 天" % eff_stale
+        )
         if age <= 0:
-            out.append(_F(cid, "green", title,
-                          "最新件 %s（日期 %s，当日/更新%s；%s）"
-                          % (newest.name, latest, mtime_note, thr_note),
-                          "无需动作"))
+            out.append(
+                _F(
+                    cid,
+                    "green",
+                    title,
+                    "最新件 %s（日期 %s，当日/更新%s；%s）"
+                    % (newest.name, latest, mtime_note, thr_note),
+                    "无需动作",
+                )
+            )
         elif age <= eff_stale:
-            out.append(_F(cid, "yellow", title,
-                          "最新件 %s（日期 %s），距 %s 已 %d 天（>0 即黄；%s%s）"
-                          % (newest.name, latest, date, age, thr_note, mtime_note),
-                          "确认通道是否降频运行；若为已知降频请调台账: " + action))
+            out.append(
+                _F(
+                    cid,
+                    "yellow",
+                    title,
+                    "最新件 %s（日期 %s），距 %s 已 %d 天（>0 即黄；%s%s）"
+                    % (newest.name, latest, date, age, thr_note, mtime_note),
+                    "确认通道是否降频运行；若为已知降频请调台账: " + action,
+                )
+            )
         elif zb:
             # 闸门收紧零买入（G-01）：超期但台账显式声明零买入是风控正确行为。
-            out.append(_F(cid, "yellow", title,
-                          "业务零产出（闸门收紧，非断线）：最新件 %s（业务日期 %s，"
-                          "距 %s 已 %d 天%s）。台账 zero_buy 显式%s"
-                          % (newest.name, latest, date, age, mtime_note,
-                             _zero_buy_evidence(zb)),
-                          "闸门放开（safe=true）后通道自动恢复产出；挂载调度须另行走"
-                          "五要素审批，不在本判据范围"))
+            out.append(
+                _F(
+                    cid,
+                    "yellow",
+                    title,
+                    "业务零产出（闸门收紧，非断线）：最新件 %s（业务日期 %s，"
+                    "距 %s 已 %d 天%s）。台账 zero_buy 显式%s"
+                    % (
+                        newest.name,
+                        latest,
+                        date,
+                        age,
+                        mtime_note,
+                        _zero_buy_evidence(zb),
+                    ),
+                    "闸门放开（safe=true）后通道自动恢复产出；挂载调度须另行走"
+                    "五要素审批，不在本判据范围",
+                )
+            )
         elif age <= 2 * eff_stale:
-            out.append(_F(cid, "red", title,
-                          "最新件 %s（日期 %s），距 %s 已 %d 天（>2 倍阈值=红；%s%s）"
-                          % (newest.name, latest, date, age, thr_note, mtime_note), action))
+            out.append(
+                _F(
+                    cid,
+                    "red",
+                    title,
+                    "最新件 %s（日期 %s），距 %s 已 %d 天（>2 倍阈值=红；%s%s）"
+                    % (newest.name, latest, date, age, thr_note, mtime_note),
+                    action,
+                )
+            )
         else:
-            out.append(_F(cid, "red", title,
-                          "最新件 %s（日期 %s），距 %s 已 %d 天（通道停摆；%s%s）"
-                          % (newest.name, latest, date, age, thr_note, mtime_note), action))
+            out.append(
+                _F(
+                    cid,
+                    "red",
+                    title,
+                    "最新件 %s（日期 %s），距 %s 已 %d 天（通道停摆；%s%s）"
+                    % (newest.name, latest, date, age, thr_note, mtime_note),
+                    action,
+                )
+            )
     return out
 
 
@@ -651,41 +765,64 @@ def _check_h3(paths: HealthPaths, date: str, gray_note: str | None) -> _F:
         try:
             con = _open_ro(db)
             try:
-                tables = {r[0] for r in con.execute(
-                    "SELECT name FROM sqlite_master WHERE type='table'")}
+                tables = {
+                    r[0]
+                    for r in con.execute(
+                        "SELECT name FROM sqlite_master WHERE type='table'"
+                    )
+                }
                 if _SNAPSHOT_DDL_HINT not in tables:
                     # 表未建（D-1 快照功能未落地/未启用）→ 这是配置事实而非断线，
                     # 但「无法判定」不能算绿，故按黄并说明。
-                    return _F(cid, "yellow", title,
-                              "paper.db 无 %s 表（功能未落地），无法核验当日快照；"
-                              "未启用≠已核验通过，按黄处理" % _SNAPSHOT_DDL_HINT,
-                              "启用 D-1 快照（decision_snapshot.ensure_table）或在本工具登记豁免口径")
+                    return _F(
+                        cid,
+                        "yellow",
+                        title,
+                        "paper.db 无 %s 表（功能未落地），无法核验当日快照；"
+                        "未启用≠已核验通过，按黄处理" % _SNAPSHOT_DDL_HINT,
+                        "启用 D-1 快照（decision_snapshot.ensure_table）或在本工具登记豁免口径",
+                    )
                 n_snap = con.execute(
                     "SELECT COUNT(*) FROM %s WHERE substr(captured_at,1,10)=?"
-                    % _SNAPSHOT_DDL_HINT, (_iso(date),)).fetchone()[0]
+                    % _SNAPSHOT_DDL_HINT,
+                    (_iso(date),),
+                ).fetchone()[0]
             finally:
                 con.close()
         except (sqlite3.Error, OSError) as e:
             return _err(cid, title, e, "修复 paper.db 只读访问: %s" % e)
     else:
-        return _err(cid, title, FileNotFoundError("paper.db 不存在: %s" % db),
-                    "账本缺失不可当干净；先确认账本位置: %s" % db)
+        return _err(
+            cid,
+            title,
+            FileNotFoundError("paper.db 不存在: %s" % db),
+            "账本缺失不可当干净；先确认账本位置: %s" % db,
+        )
 
     if n_snap and n_snap > 0:
-        return _F(cid, "green", title,
-                  "当日快照 %d 条（%s）" % (n_snap, db.name), "无需动作")
+        return _F(
+            cid, "green", title, "当日快照 %d 条（%s）" % (n_snap, db.name), "无需动作"
+        )
 
     if gray_note:
-        return _F(cid, "yellow", title,
-                  "当日快照 0 条，但有明确灰态说明：「%s」——灰态无样本，"
-                  "是事实陈述不是健康证明，最高只给黄" % gray_note,
-                  "确认灰态是否已记账（灰态 note 落 shadow 账本或 automation 日志），"
-                  "下个工作日补样本")
+        return _F(
+            cid,
+            "yellow",
+            title,
+            "当日快照 0 条，但有明确灰态说明：「%s」——灰态无样本，"
+            "是事实陈述不是健康证明，最高只给黄" % gray_note,
+            "确认灰态是否已记账（灰态 note 落 shadow 账本或 automation 日志），"
+            "下个工作日补样本",
+        )
 
-    return _F(cid, "red", title,
-              "当日快照 0 条且无任何灰态说明：零落单又无人说明，"
-              "正是今晨静默失败形态（automation 跑了但失败、仓内无痕迹）",
-              action)
+    return _F(
+        cid,
+        "red",
+        title,
+        "当日快照 0 条且无任何灰态说明：零落单又无人说明，"
+        "正是今晨静默失败形态（automation 跑了但失败、仓内无痕迹）",
+        action,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -745,8 +882,9 @@ def _segment_note_evidence(paths: HealthPaths, date: str, segment: str) -> str |
     return None
 
 
-def _check_h4(paths: HealthPaths, date: str, gray_notes: dict | None,
-              ledger: dict | None = None) -> list[_F]:
+def _check_h4(
+    paths: HealthPaths, date: str, gray_notes: dict | None, ledger: dict | None = None
+) -> list[_F]:
     """4d/4e 段产物存在性，三档：文件 / 无文件但有note / 无文件且无证据。
 
     台账接入（WO-QT-20261020-021）：段号映射到 channels 里的通道名（4d→qpzm_us、
@@ -766,15 +904,22 @@ def _check_h4(paths: HealthPaths, date: str, gray_notes: dict | None,
         entry = _ledger_entry(ledger, "channels", SEGMENT_CHANNEL.get(seg, ""))
         disabled, why = _ledger_disabled(entry)
         if disabled:
-            out.append(_F(cid, "yellow", title,
-                          "%s；停用是台账显式声明，零落盘属预期——停用≠健康，故不判绿"
-                          % why,
-                          "如需恢复，从台账改 enabled=true 并补挂调度面"))
+            out.append(
+                _F(
+                    cid,
+                    "yellow",
+                    title,
+                    "%s；停用是台账显式声明，零落盘属预期——停用≠健康，故不判绿" % why,
+                    "如需恢复，从台账改 enabled=true 并补挂调度面",
+                )
+            )
             continue
         pending = ""
         if entry.get("pending_mount"):
-            pending = ("；台账标 pending_mount（已实现但未挂载调度）→ 本红是**接线缺口**"
-                       "不是段崩溃，别重复救火")
+            pending = (
+                "；台账标 pending_mount（已实现但未挂载调度）→ 本红是**接线缺口**"
+                "不是段崩溃，别重复救火"
+            )
 
         note = notes.get(seg) or _segment_note_evidence(paths, date, seg)
 
@@ -786,14 +931,24 @@ def _check_h4(paths: HealthPaths, date: str, gray_notes: dict | None,
                     today_hit = p
                     break
             if today_hit:
-                out.append(_F(cid, "green", title,
-                              "当日段产物存在: %s" % today_hit.name, "无需动作"))
+                out.append(
+                    _F(
+                        cid,
+                        "green",
+                        title,
+                        "当日段产物存在: %s" % today_hit.name,
+                        "无需动作",
+                    )
+                )
                 continue
             latest = _newest_prefix_file(data_dir, prefix)
             if latest is not None:
                 latest_date = _date_from_name(latest.name)
                 ev = "无当日产物（%s），最新为 %s（日期 %s）" % (
-                    pattern, latest.name, latest_date or "无日期戳")
+                    pattern,
+                    latest.name,
+                    latest_date or "无日期戳",
+                )
                 sev = "yellow"
                 act = "确认该段是否降频/灰态: " + action
                 if latest_date is None:
@@ -812,17 +967,28 @@ def _check_h4(paths: HealthPaths, date: str, gray_notes: dict | None,
             continue
 
         # kstock_data 都不存在 → 无文件，走 note 判定
-        out.append(_F(cid, "yellow" if note else "red", title,
-                      "kstock_data 不存在: %s（无段产物）%s"
-                      % (data_dir, ("；有 note 证据：「%s」" % note) if note
-                         else "，且无 note 证据" + pending),
-                      action))
+        out.append(
+            _F(
+                cid,
+                "yellow" if note else "red",
+                title,
+                "kstock_data 不存在: %s（无段产物）%s"
+                % (
+                    data_dir,
+                    ("；有 note 证据：「%s」" % note)
+                    if note
+                    else "，且无 note 证据" + pending,
+                ),
+                action,
+            )
+        )
     return out
 
 
 # ---------------------------------------------------------------------------
 # H5 数据断线（fail-open 禁令的核心落点）
 # ---------------------------------------------------------------------------
+
 
 def _latest_date_in_json(path: Path) -> str | None:
     """从 JSON 里抠日期：依次试 date/trade_date/asof/generated_at/updated_at。"""
@@ -866,8 +1032,10 @@ def _content_degradation(path) -> str | None:
                     vu = v.strip().upper()
                     if k == "status" and vu == "DEGRADED":
                         reason = node.get("reason") or node.get("detail") or ""
-                        hits.append("%s=DEGRADED%s" % (
-                            kp, ("（%s）" % reason) if reason else ""))
+                        hits.append(
+                            "%s=DEGRADED%s"
+                            % (kp, ("（%s）" % reason) if reason else "")
+                        )
                     elif k == "cutover_verdict" and vu.startswith("BLOCK_"):
                         hits.append("%s=%s" % (kp, v.strip()))
                 elif isinstance(v, (dict, list)):
@@ -893,7 +1061,11 @@ def _feed_latest_date(path: Path, pattern: str) -> tuple[str | None, str, Path |
     if "*" in pattern:
         hits = sorted(p for p in path.parent.glob(path.name) if p.is_file())
         if not hits:
-            return None, "产物不存在: %s（glob %s 无匹配）" % (path.parent, pattern), None
+            return (
+                None,
+                "产物不存在: %s（glob %s 无匹配）" % (path.parent, pattern),
+                None,
+            )
         # 先按 JSON 内容判（权威），内容读不出的再按文件名（mtime, 名字）破平取新
         dated = []
         for p in hits:
@@ -906,16 +1078,25 @@ def _feed_latest_date(path: Path, pattern: str) -> tuple[str | None, str, Path |
             if d:
                 dated.append((d, p.name))
         if not dated:
-            return None, "产物 %s 存在但无任何可识别日期（内容与文件名皆无）" % [
-                p.name for p in hits[:3]], None
+            return (
+                None,
+                "产物 %s 存在但无任何可识别日期（内容与文件名皆无）"
+                % [p.name for p in hits[:3]],
+                None,
+            )
         latest, name = max(dated, key=lambda t: (t[0], t[1]))
         latest_path = path.parent / name
-        return latest, "最新件 %s（日期 %s，共 %d 个候选）" % (name, latest, len(hits)), latest_path
+        return (
+            latest,
+            "最新件 %s（日期 %s，共 %d 个候选）" % (name, latest, len(hits)),
+            latest_path,
+        )
     return _latest_date_in_json(path), "产物 %s" % path.name, path
 
 
-def _check_h5(paths: HealthPaths, date: str, feeds: dict,
-              ledger: dict | None = None) -> list[_F]:
+def _check_h5(
+    paths: HealthPaths, date: str, feeds: dict, ledger: dict | None = None
+) -> list[_F]:
     """已知断线源：产物缺失或日期超期 → 红。
 
     **断线必须显式**：产物不存在 = red（不是「没这项业务」= green）。
@@ -937,26 +1118,48 @@ def _check_h5(paths: HealthPaths, date: str, feeds: dict,
         entry = _ledger_entry(ledger, "feeds", name)
         disabled, why = _ledger_disabled(entry)
         if disabled:
-            out.append(_F(cid, "yellow", title,
-                          "%s；停用是台账显式声明，产物不更新属预期——停用≠健康，故不判绿"
-                          % why,
-                          "如需恢复，从台账改 enabled=true 并补挂采集链路"))
+            out.append(
+                _F(
+                    cid,
+                    "yellow",
+                    title,
+                    "%s；停用是台账显式声明，产物不更新属预期——停用≠健康，故不判绿"
+                    % why,
+                    "如需恢复，从台账改 enabled=true 并补挂采集链路",
+                )
+            )
             continue
         eff_age = _ledger_stale_days(entry, max_age)
 
         if not p.exists() and "*" not in rel and not p.parent.exists():
-            out.append(_F(cid, "red", title,
-                          "产物目录不存在: %s（缺=断线红，绝不按「没这项业务」当正常）"
-                          % p.parent, action))
+            out.append(
+                _F(
+                    cid,
+                    "red",
+                    title,
+                    "产物目录不存在: %s（缺=断线红，绝不按「没这项业务」当正常）"
+                    % p.parent,
+                    action,
+                )
+            )
             continue
         try:
             latest, ev, latest_path = _feed_latest_date(p, rel)
         except (ValueError, OSError) as e:
-            out.append(_err(cid, title, e, "修复/登记产物格式: %s（解析失败≠正常）" % e))
+            out.append(
+                _err(cid, title, e, "修复/登记产物格式: %s（解析失败≠正常）" % e)
+            )
             continue
         if latest is None:
-            out.append(_F(cid, "red", title,
-                          "%s；无可判定日期（不可判定≠正常，按红）" % ev, action))
+            out.append(
+                _F(
+                    cid,
+                    "red",
+                    title,
+                    "%s；无可判定日期（不可判定≠正常，按红）" % ev,
+                    action,
+                )
+            )
             continue
         age = _days_between(_iso(latest), date)
         if age <= eff_age:
@@ -964,26 +1167,46 @@ def _check_h5(paths: HealthPaths, date: str, feeds: dict,
             # 业务字段含 DEGRADED/BLOCK_* → 判黄「形式在、内容降级」，不得假绿。
             deg = _content_degradation(latest_path) if latest_path else None
             if deg:
-                out.append(_F(cid, "yellow", title,
-                              "%s，距 %s %d 天（阈值 %d）——但**形式在、内容降级**"
-                              "（不得假绿）：%s" % (ev, date, age, eff_age, deg),
-                              "内容降级说明上游产出链有缺口，按黄处置；恢复上游产出后"
-                              "本判据自动回绿"))
+                out.append(
+                    _F(
+                        cid,
+                        "yellow",
+                        title,
+                        "%s，距 %s %d 天（阈值 %d）——但**形式在、内容降级**"
+                        "（不得假绿）：%s" % (ev, date, age, eff_age, deg),
+                        "内容降级说明上游产出链有缺口，按黄处置；恢复上游产出后"
+                        "本判据自动回绿",
+                    )
+                )
             else:
-                out.append(_F(cid, "green", title,
-                              "%s，距 %s %d 天（阈值 %d；内容无降级标记）"
-                              % (ev, date, age, eff_age),
-                              "无需动作"))
+                out.append(
+                    _F(
+                        cid,
+                        "green",
+                        title,
+                        "%s，距 %s %d 天（阈值 %d；内容无降级标记）"
+                        % (ev, date, age, eff_age),
+                        "无需动作",
+                    )
+                )
         else:
-            out.append(_F(cid, "red", title,
-                          "%s，距 %s 已 %d 天（超阈值 %d 天）= 断线"
-                          % (ev, date, age, eff_age), action))
+            out.append(
+                _F(
+                    cid,
+                    "red",
+                    title,
+                    "%s，距 %s 已 %d 天（超阈值 %d 天）= 断线"
+                    % (ev, date, age, eff_age),
+                    action,
+                )
+            )
     return out
 
 
 # ---------------------------------------------------------------------------
 # H6 产物新鲜度
 # ---------------------------------------------------------------------------
+
 
 def _check_h6(paths: HealthPaths, date: str, artifacts: dict) -> list[_F]:
     """三查报告/日报当日是否产出，缺=黄（缺产物不至于要救火，但要有账）。"""
@@ -995,8 +1218,15 @@ def _check_h6(paths: HealthPaths, date: str, artifacts: dict) -> list[_F]:
         base = Path(paths.repo_root) / rel
         parent = base.parent
         if not parent.exists():
-            out.append(_F(cid, "yellow", title,
-                          "产物目录不存在: %s（不可判定=黄）" % parent, action))
+            out.append(
+                _F(
+                    cid,
+                    "yellow",
+                    title,
+                    "产物目录不存在: %s（不可判定=黄）" % parent,
+                    action,
+                )
+            )
             continue
         try:
             hits = sorted(p for p in parent.glob(base.name) if p.is_file())
@@ -1009,19 +1239,34 @@ def _check_h6(paths: HealthPaths, date: str, artifacts: dict) -> list[_F]:
             if d:
                 dated.append((d, p.name))
         if not dated:
-            out.append(_F(cid, "yellow", title,
-                          "目录 %s 下无带日期戳的 %s（不可判定=黄）" % (parent.name, base.name),
-                          action))
+            out.append(
+                _F(
+                    cid,
+                    "yellow",
+                    title,
+                    "目录 %s 下无带日期戳的 %s（不可判定=黄）"
+                    % (parent.name, base.name),
+                    action,
+                )
+            )
             continue
         latest_date, latest_name = max(dated, key=lambda t: (t[0], t[1]))
         if latest_date == date:
-            out.append(_F(cid, "green", title,
-                          "当日产物存在: %s" % latest_name, "无需动作"))
+            out.append(
+                _F(cid, "green", title, "当日产物存在: %s" % latest_name, "无需动作")
+            )
         else:
             age = _days_between(_iso(latest_date), date)
-            out.append(_F(cid, "yellow", title,
-                          "无当日产物，最新 %s（日期 %s），距 %s %d 天"
-                          % (latest_name, latest_date, date, age), action))
+            out.append(
+                _F(
+                    cid,
+                    "yellow",
+                    title,
+                    "无当日产物，最新 %s（日期 %s），距 %s %d 天"
+                    % (latest_name, latest_date, date, age),
+                    action,
+                )
+            )
     return out
 
 
@@ -1032,12 +1277,17 @@ def _check_h6(paths: HealthPaths, date: str, artifacts: dict) -> list[_F]:
 _UNSET = object()
 
 
-def check_morning(date="20261020", *, paths: HealthPaths | None = None,
-                  stale_days=_UNSET, feeds: dict | None = None,
-                  artifacts: dict | None = None,
-                  gray_notes: dict | None = None,
-                  ledger: dict | None = None,
-                  ledger_path=None) -> dict:
+def check_morning(
+    date="20261020",
+    *,
+    paths: HealthPaths | None = None,
+    stale_days=_UNSET,
+    feeds: dict | None = None,
+    artifacts: dict | None = None,
+    gray_notes: dict | None = None,
+    ledger: dict | None = None,
+    ledger_path=None,
+) -> dict:
     """晨批健康自检。返回 ``{date, status, findings[], summary{}}``。
 
     ``status`` 取全部 finding 里最高 severity（red > yellow > green）。
@@ -1069,44 +1319,53 @@ def check_morning(date="20261020", *, paths: HealthPaths | None = None,
     findings: list[_F] = []
     try:
         findings.append(_check_h1(p, date))
-    except Exception as e:                                # noqa: BLE001
+    except Exception as e:  # noqa: BLE001
         findings.append(_err("H1", "H1 影子晨批心跳", e, "人工核查 last_run.log"))
 
     try:
-        findings.extend(_check_h2(p, date, eff_stale_default, ledger,
-                                  stale_days_explicit=stale_explicit))
-    except Exception as e:                                # noqa: BLE001
+        findings.extend(
+            _check_h2(
+                p, date, eff_stale_default, ledger, stale_days_explicit=stale_explicit
+            )
+        )
+    except Exception as e:  # noqa: BLE001
         findings.append(_err("H2", "H2 各通道最新 run 时效", e, "人工核查通道产物"))
 
     try:
         findings.append(_check_h3(p, date, (gray_notes or {}).get("snapshot")))
-    except Exception as e:                                # noqa: BLE001
+    except Exception as e:  # noqa: BLE001
         findings.append(_err("H3", "H3 D-1 决策快照", e, "人工核查 paper.db 快照"))
 
     try:
         findings.extend(_check_h4(p, date, gray_notes, ledger))
-    except Exception as e:                                # noqa: BLE001
+    except Exception as e:  # noqa: BLE001
         findings.append(_err("H4", "H4 段完整性", e, "人工核查 4d/4e 段产物"))
 
     try:
         findings.extend(_check_h5(p, date, feeds, ledger))
-    except Exception as e:                                # noqa: BLE001
+    except Exception as e:  # noqa: BLE001
         findings.append(_err("H5", "H5 数据断线", e, "人工核查数据源链路"))
 
     try:
         findings.extend(_check_h6(p, date, artifacts))
-    except Exception as e:                                # noqa: BLE001
+    except Exception as e:  # noqa: BLE001
         findings.append(_err("H6", "H6 产物新鲜度", e, "人工核查报告产物"))
 
     # 台账自身状态单列一条 finding：台账坏了必须被看见（fail-visible），
     # 但不因此把整体判红——红是给数据断线的，台账故障是另一类问题（判黄，
     # 证据里写明「已回落默认阈值，未放宽」）。
     if ledger.get("_error"):
-        findings.append(_F("H0", "yellow", "H0 通道频次台账",
-                           "%s；台账路径 %s。已回落代码默认阈值（更严），"
-                           "本次判据未因台账故障而放宽"
-                           % (ledger["_error"], ledger.get("_source")),
-                           "修台账文件；停用声明须带 reason+evidence+approved_by"))
+        findings.append(
+            _F(
+                "H0",
+                "yellow",
+                "H0 通道频次台账",
+                "%s；台账路径 %s。已回落代码默认阈值（更严），"
+                "本次判据未因台账故障而放宽"
+                % (ledger["_error"], ledger.get("_source")),
+                "修台账文件；停用声明须带 reason+evidence+approved_by",
+            )
+        )
 
     findings.sort(key=lambda f: (f.check_id,))
     status = _worst(f.severity for f in findings)
@@ -1146,15 +1405,21 @@ def render_markdown(result: dict) -> str:
         "> 只读自检 · DRYRUN（不推送，推送属 WO-QT-20261020-015 待授权单）· "
         "生成于 %s" % result["generated_at"],
         "",
-        "## 总判：%s %s（%s）" % (_ICON[result["status"]], _LABEL[result["status"]],
-                                "存在缺口，需处置" if result["status"] != "green" else "全绿"),
+        "## 总判：%s %s（%s）"
+        % (
+            _ICON[result["status"]],
+            _LABEL[result["status"]],
+            "存在缺口，需处置" if result["status"] != "green" else "全绿",
+        ),
         "",
         "- 红 %d · 黄 %d · 绿 %d（共 %d 条判据）"
         % (s["red"], s["yellow"], s["green"], s["total"]),
     ]
     if s["check_errors"]:
-        lines.append("- ⚠️ 判据执行异常 %d 条（证据不可得已按红处理，非静默通过）"
-                     % s["check_errors"])
+        lines.append(
+            "- ⚠️ 判据执行异常 %d 条（证据不可得已按红处理，非静默通过）"
+            % s["check_errors"]
+        )
     lines += ["", "## 明细", ""]
 
     for sev in ("red", "yellow", "green"):
@@ -1195,9 +1460,17 @@ def render_markdown(result: dict) -> str:
 def render_human(result: dict) -> str:
     """终端紧凑输出。"""
     s = result["summary"]
-    out = ["晨批健康自检 %s → %s %s（红%d 黄%d 绿%d）  [DRYRUN 只读]"
-           % (result["date"], _ICON[result["status"]], _LABEL[result["status"]],
-              s["red"], s["yellow"], s["green"])]
+    out = [
+        "晨批健康自检 %s → %s %s（红%d 黄%d 绿%d）  [DRYRUN 只读]"
+        % (
+            result["date"],
+            _ICON[result["status"]],
+            _LABEL[result["status"]],
+            s["red"],
+            s["yellow"],
+            s["green"],
+        )
+    ]
     for f in result["findings"]:
         if f["severity"] == "green":
             continue
@@ -1213,14 +1486,20 @@ def main(argv=None) -> int:
     """CLI 入口。退出码 0=green / 1=yellow / 2=red / 3=工具自身失败。"""
     ap = argparse.ArgumentParser(
         prog="morning_health",
-        description="晨批健康自检（红黄绿）。只读、DRYRUN、不推送。")
-    ap.add_argument("--date", default=datetime.now().strftime("%Y%m%d"),
-                    help="目标日 YYYYMMDD（默认今天）")
+        description="晨批健康自检（红黄绿）。只读、DRYRUN、不推送。",
+    )
+    ap.add_argument(
+        "--date",
+        default=datetime.now().strftime("%Y%m%d"),
+        help="目标日 YYYYMMDD（默认今天）",
+    )
     ap.add_argument("--json", action="store_true", help="输出 JSON 契约")
     ap.add_argument("--md", action="store_true", help="输出 Markdown")
     ap.add_argument("--out", help="写入指定路径（默认只打印）")
     ap.add_argument("--repo-root", help="仓根目录（默认自动定位）")
-    ap.add_argument("--ledger", help="通道频次台账路径（默认同目录 channel_frequency.json）")
+    ap.add_argument(
+        "--ledger", help="通道频次台账路径（默认同目录 channel_frequency.json）"
+    )
     args = ap.parse_args(argv)
 
     try:
@@ -1229,8 +1508,11 @@ def main(argv=None) -> int:
     except ValueError as e:
         print("[morning_health] 参数非法: %s" % e, file=sys.stderr)
         return 3
-    except Exception as e:                                # noqa: BLE001
-        print("[morning_health] 自检执行失败: %s: %s" % (type(e).__name__, e), file=sys.stderr)
+    except Exception as e:  # noqa: BLE001
+        print(
+            "[morning_health] 自检执行失败: %s: %s" % (type(e).__name__, e),
+            file=sys.stderr,
+        )
         return 3
 
     if args.json:

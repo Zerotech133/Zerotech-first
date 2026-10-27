@@ -13,6 +13,7 @@
 注意：routine（settle/check-stops/mark）不加此守卫——mark 每天都要跑
 （权益曲线连续性），settle 在非交易日无新 bar 可撮、天然无害。
 """
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -36,7 +37,7 @@ def is_trading_day_today(market) -> bool:
             return True
         last = days[-1] if days else ""
         if last and today > last and datetime.now().weekday() < 5:
-            return True   # 盘前：湖日历未及今天，工作日放行
+            return True  # 盘前：湖日历未及今天，工作日放行
         return False
     except Exception:
         return True
@@ -48,4 +49,5 @@ def ensure_trading_day(market, market_label: str = "CN") -> None:
         raise Reject(
             f"[trade_guard] 今日 {datetime.now():%Y-%m-%d} 非 {market_label} 交易日，"
             "exec 不执行（产物保留，下一交易日例行执行最新意图；"
-            "调试用 --force-trading 绕过）")
+            "调试用 --force-trading 绕过）"
+        )
