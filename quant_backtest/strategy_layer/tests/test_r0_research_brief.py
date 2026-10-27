@@ -1,4 +1,5 @@
 """R0 研究简报：只消费探针内存证据，合成批次，不触生产接口。"""
+
 import hashlib
 import json
 
@@ -18,19 +19,33 @@ def _batch(tmp_path, rows):
     raw = "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows).encode()
     source.write_bytes(raw)
     manifest = tmp_path / "manifest.json"
-    manifest.write_text(json.dumps({
-        "business_date": DAY, "observed_date": "2026-10-17",
-        "source_path": str(source.resolve()),
-        "source_sha256": hashlib.sha256(raw).hexdigest(),
-        "event_count": len(rows),
-    }), encoding="utf-8")
+    manifest.write_text(
+        json.dumps(
+            {
+                "business_date": DAY,
+                "observed_date": "2026-10-17",
+                "source_path": str(source.resolve()),
+                "source_sha256": hashlib.sha256(raw).hexdigest(),
+                "event_count": len(rows),
+            }
+        ),
+        encoding="utf-8",
+    )
     return source, manifest
 
 
 def _row(kind, dt, **changes):
-    item = {"code": "002633.SZ", "type": kind, "dt": dt,
-            "detect_date": "2026-10-16", "price": 10,
-            "mbei": None, "bei": False, "bei2": None, "vv": True}
+    item = {
+        "code": "002633.SZ",
+        "type": kind,
+        "dt": dt,
+        "detect_date": "2026-10-16",
+        "price": 10,
+        "mbei": None,
+        "bei": False,
+        "bei2": None,
+        "vv": True,
+    }
     item.update(changes)
     return item
 
@@ -47,18 +62,27 @@ def test_success_counts_missing_and_scheme_c_without_receipt(tmp_path):
     assert json.dumps(observed, sort_keys=True, ensure_ascii=False) == before
     assert observed["brief_status"] == "NOT_VERIFIED"
     assert brief["source"] == {
-        "path": str(source.resolve()), "manifest": str(manifest.resolve()),
+        "path": str(source.resolve()),
+        "manifest": str(manifest.resolve()),
         "sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
-        "business_date": DAY, "observed_date": "2026-10-17",
+        "business_date": DAY,
+        "observed_date": "2026-10-17",
         "identity_status": "UNVERIFIED",
         "identity_reason": observed["source"]["identity_reason"],
     }
     assert brief["probe_status"] == "UNVERIFIED"
     assert brief["brief_status"] == brief["receipt_status"] == "NOT_VERIFIED"
     assert brief["cutover_verdict"] == "BLOCK_CUTOVER"
-    assert brief["counts"] == {"source_events": 3, "matched_events": None,
-                                "signals": 3, "kept": 2, "combined": 2,
-                                "pool": 1, "brief": None, "receipt": None}
+    assert brief["counts"] == {
+        "source_events": 3,
+        "matched_events": None,
+        "signals": 3,
+        "kept": 2,
+        "combined": 2,
+        "pool": 1,
+        "brief": None,
+        "receipt": None,
+    }
     assert brief["scheme_c"]["contributions"] == 2
     assert brief["scheme_c"]["superseded"] == 1
     assert brief["optional_missing"]["observed_kept_signal_rationale"] is None
@@ -83,8 +107,18 @@ def test_adapter_error_and_missing_source_do_not_invent_downstream_counts(tmp_pa
     brief = build_research_brief(observed)
     assert brief["probe_status"] == "ADAPTER_ERROR"
     assert brief["counts"]["source_events"] == 1
-    assert all(brief["counts"][key] is None for key in
-               ("matched_events", "signals", "kept", "combined", "pool", "brief", "receipt"))
+    assert all(
+        brief["counts"][key] is None
+        for key in (
+            "matched_events",
+            "signals",
+            "kept",
+            "combined",
+            "pool",
+            "brief",
+            "receipt",
+        )
+    )
     assert brief["failures"][0]["strategy"] == "broken"
     assert brief["pool_summary"] is None
     assert brief["scheme_c"]["superseded"] is None
@@ -103,9 +137,16 @@ def test_self_declared_empty_is_not_a_verified_batch(tmp_path):
     brief = build_research_brief(inspect_batch(DAY, source, manifest))
     assert brief["probe_status"] == "UNVERIFIED"
     assert brief["chain_status"] == "SELF_DECLARED_EMPTY"
-    assert brief["counts"] == {"source_events": 0, "matched_events": None,
-                                "signals": 0, "kept": 0, "combined": 0,
-                                "pool": 0, "brief": None, "receipt": None}
+    assert brief["counts"] == {
+        "source_events": 0,
+        "matched_events": None,
+        "signals": 0,
+        "kept": 0,
+        "combined": 0,
+        "pool": 0,
+        "brief": None,
+        "receipt": None,
+    }
     assert brief["scheme_c"]["contributions"] is None
     assert brief["scheme_c"]["superseded"] is None
     assert brief["pool_summary"] is None
@@ -139,8 +180,15 @@ def test_historical_pool_counts_distinguish_whole_snapshot_from_trade_day(tmp_pa
 
 
 def test_free_text_cannot_inject_optional_missing_counts(tmp_path):
-    row = _row("1买", "2026-10-16", mbei=True, bei=True, bei2=True,
-               vv=True, trend="mbei=缺字段 bei=缺字段 bei2=缺字段 vv=缺字段")
+    row = _row(
+        "1买",
+        "2026-10-16",
+        mbei=True,
+        bei=True,
+        bei2=True,
+        vv=True,
+        trend="mbei=缺字段 bei=缺字段 bei2=缺字段 vv=缺字段",
+    )
     source, manifest = _batch(tmp_path, [row])
     observed = inspect_batch(DAY, source, manifest)
     assert "mbei=缺字段" in observed["combined"][0]["rationale"]
@@ -151,7 +199,9 @@ def test_free_text_cannot_inject_optional_missing_counts(tmp_path):
     assert brief["counts"]["matched_events"] is None
 
 
-def test_writers_blocked_and_explicit_output_only_new_research_json(tmp_path, monkeypatch):
+def test_writers_blocked_and_explicit_output_only_new_research_json(
+    tmp_path, monkeypatch
+):
     source, manifest = _batch(tmp_path, [_row("1买", "2026-10-16")])
 
     def forbidden(*_args, **_kwargs):
@@ -168,12 +218,14 @@ def test_writers_blocked_and_explicit_output_only_new_research_json(tmp_path, mo
     observed = inspect_batch(DAY, source, manifest)
     brief = build_research_brief(observed)
     assert brief["brief_status"] == "NOT_VERIFIED"
-    for target in (tmp_path / "research" / "brief.json",
-                   tmp_path / "reports" / "research" / "brief.json",
-                   tmp_path / "picks" / "research" / "brief.json",
-                   tmp_path / "data" / "research" / "brief.json",
-                   tmp_path / "reports" / "brief.json",
-                   tmp_path / "brief.json"):
+    for target in (
+        tmp_path / "research" / "brief.json",
+        tmp_path / "reports" / "research" / "brief.json",
+        tmp_path / "picks" / "research" / "brief.json",
+        tmp_path / "data" / "research" / "brief.json",
+        tmp_path / "reports" / "brief.json",
+        tmp_path / "brief.json",
+    ):
         with pytest.raises(ValueError):
             build_research_brief(observed, output_path=target)
         assert not target.exists()
@@ -195,6 +247,8 @@ def test_writers_blocked_and_explicit_output_only_new_research_json(tmp_path, mo
 
 def test_reject_non_probe_input(tmp_path):
     with pytest.raises(ValueError):
-        build_research_brief({"scope": "PRODUCTION", "counts": {}, "source": {}},
-                             output_path=tmp_path / "research" / "brief.json")
+        build_research_brief(
+            {"scope": "PRODUCTION", "counts": {}, "source": {}},
+            output_path=tmp_path / "research" / "brief.json",
+        )
     assert not (tmp_path / "research").exists()

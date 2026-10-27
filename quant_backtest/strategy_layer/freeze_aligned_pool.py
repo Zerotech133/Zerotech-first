@@ -14,6 +14,7 @@ freeze_pool_point_in_time 完成点时冻结（manifest 含 freeze_basis）。
   r0_source_attestation 的全行 detect_date 校验同口径（空白行/重复
   JSON 字段/非法常量一律拒绝；detect_date 须逐行严格等于业务日 ISO 形式）。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -56,8 +57,8 @@ def _check_alignment(raw: bytes, business_day: str) -> str | None:
         return f"业务日格式错误（须 YYYYMMDD）: {business_day!r}"
     try:
         expected = date.fromisoformat(
-            f"{business_day[:4]}-{business_day[4:6]}-"
-            f"{business_day[6:]}").isoformat()
+            f"{business_day[:4]}-{business_day[4:6]}-{business_day[6:]}"
+        ).isoformat()
     except ValueError:
         return f"业务日日期无效: {business_day!r}"
     try:
@@ -71,14 +72,14 @@ def _check_alignment(raw: bytes, business_day: str) -> str | None:
         try:
             if not line.strip():
                 raise ValueError("空白行")
-            row = json.loads(line, object_pairs_hook=_unique_object,
-                             parse_constant=_reject_constant)
+            row = json.loads(
+                line, object_pairs_hook=_unique_object, parse_constant=_reject_constant
+            )
             if type(row) is not dict:
                 raise ValueError("事件行必须为 JSON 对象")
             actual = row.get("detect_date")
             if actual != expected:
-                raise ValueError(
-                    f"detect_date={actual!r} 与业务日 {expected} 不一致")
+                raise ValueError(f"detect_date={actual!r} 与业务日 {expected} 不一致")
         except (ValueError, TypeError) as exc:
             return f"第 {number} 行: {exc}"
     return None
@@ -88,11 +89,14 @@ def main(argv=None, *, now=None) -> int:
     """N7 独立冻结入口：对齐校验通过才冻结；拒绝路径零写入。"""
     parser = argparse.ArgumentParser(
         prog="freeze_aligned_pool",
-        description="N7：信号池点时冻结 + 业务日对齐（RESEARCH_ONLY）")
-    parser.add_argument("--source", required=True,
-                        help="真实信号池 JSONL 路径（只读）")
-    parser.add_argument("--business-day", required=True,
-                        help="业务日 YYYYMMDD（须与全部源行 detect_date 一致）")
+        description="N7：信号池点时冻结 + 业务日对齐（RESEARCH_ONLY）",
+    )
+    parser.add_argument("--source", required=True, help="真实信号池 JSONL 路径（只读）")
+    parser.add_argument(
+        "--business-day",
+        required=True,
+        help="业务日 YYYYMMDD（须与全部源行 detect_date 一致）",
+    )
     parser.add_argument("--work-dir", required=True, help="冻结产物目录")
     args = parser.parse_args(argv)
 
@@ -110,7 +114,8 @@ def main(argv=None, *, now=None) -> int:
         return 1
 
     manifest = freeze_pool_point_in_time(
-        source, args.work_dir, args.business_day, now=now, source_bytes=raw)
+        source, args.work_dir, args.business_day, now=now, source_bytes=raw
+    )
     print(json.dumps(manifest, ensure_ascii=False, indent=2))
     return 0
 

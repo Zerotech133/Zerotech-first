@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Signal 构造校验测试：非法 action / 越界分数 / 空 rationale 等。"""
+
 import pytest
 
 from strategy_layer.signal import Signal, VALID_ACTIONS

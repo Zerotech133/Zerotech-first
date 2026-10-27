@@ -4,14 +4,18 @@
 核心断言：调用后证据链账本字节数不变、后验统计输出文件字节不变——
 只读性验收；全部内存/tmp 夹具，不碰 PG / 生产数据。
 """
+
 import json
 import os
 
 import pytest
 
 from strategy_layer import xunyou
-from strategy_layer.xunyou import read_evidence_state, read_posterior, \
-    replay_evidence_entry
+from strategy_layer.xunyou import (
+    read_evidence_state,
+    read_posterior,
+    replay_evidence_entry,
+)
 
 DAY = "20261016"
 SYMBOL = "002633.SZ"
@@ -35,13 +39,20 @@ def ev_db(tmp_path):
 
     db = str(tmp_path / "ev.db")
     store = EvidenceChainStore(db)
-    store.transition(ENTRY, "pool_in",
-                     {"symbol": SYMBOL, "trade_date": DAY,
-                      "strategy": "chan_monitor", "action": "buy",
-                      "score": 80.0, "rationale": "缠论1买",
-                      "_meta": {"symbol": SYMBOL, "trade_date": DAY,
-                                "strategy": "chan_monitor"}},
-                     actor="test")
+    store.transition(
+        ENTRY,
+        "pool_in",
+        {
+            "symbol": SYMBOL,
+            "trade_date": DAY,
+            "strategy": "chan_monitor",
+            "action": "buy",
+            "score": 80.0,
+            "rationale": "缠论1买",
+            "_meta": {"symbol": SYMBOL, "trade_date": DAY, "strategy": "chan_monitor"},
+        },
+        actor="test",
+    )
     store.close()
     return db
 
@@ -97,21 +108,26 @@ def test_read_evidence_tools_leave_db_bytes_unchanged(ev_db):
 @pytest.fixture()
 def posterior_file(tmp_path):
     """combined_verdicts.py write_out 同构的统计输出夹具。"""
-    doc = {"generated_at": "2026-10-19 18:00:00",
-           "summary": {"asof": "20261016", "events": 3,
-                       "windows": {"1": {"n": 3, "hit": 66.7,
-                                         "avg": 1.2, "med": 1.0}},
-                       "by_strategy": {"kg_boost":
-                                       {"1": {"n": 2, "hit": 50.0,
-                                              "avg": 0.5, "med": 0.5}}},
-                       "by_weight_group": {"kg_boost":
-                                           {"ge075":
-                                            {"1": {"n": 1, "hit": 100.0,
-                                                   "avg": 2.0, "med": 2.0}}}},
-                       "by_shadow": {"panic_buy":
-                                     {"1": {"n": 1, "hit": 0.0,
-                                            "avg": -1.0, "med": -1.0}}}},
-           "per_code": {}}
+    doc = {
+        "generated_at": "2026-10-19 18:00:00",
+        "summary": {
+            "asof": "20261016",
+            "events": 3,
+            "windows": {"1": {"n": 3, "hit": 66.7, "avg": 1.2, "med": 1.0}},
+            "by_strategy": {
+                "kg_boost": {"1": {"n": 2, "hit": 50.0, "avg": 0.5, "med": 0.5}}
+            },
+            "by_weight_group": {
+                "kg_boost": {
+                    "ge075": {"1": {"n": 1, "hit": 100.0, "avg": 2.0, "med": 2.0}}
+                }
+            },
+            "by_shadow": {
+                "panic_buy": {"1": {"n": 1, "hit": 0.0, "avg": -1.0, "med": -1.0}}
+            },
+        },
+        "per_code": {},
+    }
     p = tmp_path / "combined_verdicts.json"
     p.write_text(json.dumps(doc, ensure_ascii=False), encoding="utf-8")
     return str(p)

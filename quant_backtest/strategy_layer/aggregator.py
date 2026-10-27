@@ -37,6 +37,7 @@ r"""L4 组合裁决层：SignalAggregator 多策略加权融合（多策略链�
 环境约定（同 xmap_sync.py 判例）：PG 凭据读 XMAP_PG_*（env 或
 quant_backtest/.env.local），容器 quant-pg 主机口 5442、容器内 5432。
 """
+
 from __future__ import annotations
 
 import csv
@@ -52,21 +53,39 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ENV_LOCAL = os.path.join(PROJECT_ROOT, ".env.local")
 
 ACTION_TIEBREAK_ORDER = ("buy", "sell", "hold", "watch")  # 全并列时的固定序
-OPPOSITE_ACTION = {"buy": "sell", "sell": "buy"}          # 对立方向判定
-DEFAULT_WEIGHT = 1.0                                       # 权重缺失兜底
-PSQL_TIMEOUT = 10                                          # docker exec 秒数上限
-CONNECT_TIMEOUT = 10                                       # psycopg2 秒数上限
+OPPOSITE_ACTION = {"buy": "sell", "sell": "buy"}  # 对立方向判定
+DEFAULT_WEIGHT = 1.0  # 权重缺失兜底
+PSQL_TIMEOUT = 10  # docker exec 秒数上限
+CONNECT_TIMEOUT = 10  # psycopg2 秒数上限
 
 # 同票预聚合（方案 C）：dt 缺失时的排序占位（视为最旧，凡有 dt 者优先）
 _DT_NONE_SENTINEL = "0000-00-00"
 
 COMBINED_TABLE = "strategy.signals_combined"
 STAGING_TABLE = "strategy._stg_combined"  # \copy 兜底的中转暂存表
-COMBINED_COLS = ("trade_date", "symbol", "action", "score", "confidence",
-                 "contributions", "divergence", "rationale")
-DOCKER_PSQL_BASE = ("docker", "exec", "-i", "quant-pg", "psql",
-                    "-U", "quant_user", "-d", "quant_system",
-                    "-v", "ON_ERROR_STOP=1")
+COMBINED_COLS = (
+    "trade_date",
+    "symbol",
+    "action",
+    "score",
+    "confidence",
+    "contributions",
+    "divergence",
+    "rationale",
+)
+DOCKER_PSQL_BASE = (
+    "docker",
+    "exec",
+    "-i",
+    "quant-pg",
+    "psql",
+    "-U",
+    "quant_user",
+    "-d",
+    "quant_system",
+    "-v",
+    "ON_ERROR_STOP=1",
+)
 
 
 def _load_env_local() -> None:
@@ -94,7 +113,9 @@ def _pg_connect():
     _load_env_local()
     pwd = os.environ.get("XMAP_PG_PASSWORD", "").strip()
     if not pwd:
-        raise RuntimeError("XMAP_PG_PASSWORD 未配置（env 或 quant_backtest/.env.local）")
+        raise RuntimeError(
+            "XMAP_PG_PASSWORD 未配置（env 或 quant_backtest/.env.local）"
+        )
     return psycopg2.connect(
         host=os.environ.get("XMAP_PG_HOST", "127.0.0.1"),
         port=int(os.environ.get("XMAP_PG_PORT", "5442")),
@@ -110,7 +131,7 @@ def _pg_connect():
 class AggResult:
     """聚合裁决结果：combined 为写库行，divergences 为分歧标的明细。"""
 
-    combined: list = field(default_factory=list)     # list[dict]
+    combined: list = field(default_factory=list)  # list[dict]
     divergences: list = field(default_factory=list)  # list[dict]
 
 
@@ -148,8 +169,8 @@ def preaggregate_symbol(entries: list) -> tuple:
         kept_entries: 过滤后的 [(sid, weight, sig)]，每 sid 至多一条；
         superseded: {sid: [{"action","score","dt","rationale"}, ...]}。
     """
-    kept: list = []           # (sid, w, sig, dt_key)
-    index_of: dict = {}       # sid -> kept 索引
+    kept: list = []  # (sid, w, sig, dt_key)
+    index_of: dict = {}  # sid -> kept 索引
     superseded: dict = {}
     for sid, w, sig in entries:
         dt = _sig_get(sig, "dt")
@@ -160,7 +181,8 @@ def preaggregate_symbol(entries: list) -> tuple:
             raise ValueError(
                 "Signal.dt 契约违例: dt 须为 YYYY-MM-DD 字符串或 None, "
                 "收到 %s(%r); 聚合入口显式拒绝, 请上游策略修正"
-                % (type(dt).__name__, dt))
+                % (type(dt).__name__, dt)
+            )
         dt_key = dt if isinstance(dt, str) and dt else _DT_NONE_SENTINEL
         if sid in index_of:
             idx = index_of[sid]
@@ -169,7 +191,8 @@ def preaggregate_symbol(entries: list) -> tuple:
                 kept[idx] = (sid, w, sig, dt_key)
             else:
                 superseded.setdefault(sid, []).append(
-                    _superseded_of((sid, w, sig, dt_key)))
+                    _superseded_of((sid, w, sig, dt_key))
+                )
         else:
             index_of[sid] = len(kept)
             kept.append((sid, w, sig, dt_key))
@@ -203,28 +226,37 @@ def _persist_psycopg2(rows: list) -> bool:
     dates = sorted({str(r["trade_date"]) for r in rows})
     if not all(d.isdigit() and len(d) == 8 for d in dates):
         raise ValueError("trade_date 含非数字，拒绝删除替换: %r" % dates[:3])
-    sql = ("INSERT INTO %s (%s) VALUES %%s "
-           "ON CONFLICT (trade_date, symbol) DO UPDATE SET "
-           "action = EXCLUDED.action, score = EXCLUDED.score, "
-           "confidence = EXCLUDED.confidence, "
-           "contributions = EXCLUDED.contributions, "
-           "divergence = EXCLUDED.divergence, rationale = EXCLUDED.rationale, "
-           "created_at = now()"
-           % (COMBINED_TABLE, ",".join(COMBINED_COLS)))
+    sql = (
+        "INSERT INTO %s (%s) VALUES %%s "
+        "ON CONFLICT (trade_date, symbol) DO UPDATE SET "
+        "action = EXCLUDED.action, score = EXCLUDED.score, "
+        "confidence = EXCLUDED.confidence, "
+        "contributions = EXCLUDED.contributions, "
+        "divergence = EXCLUDED.divergence, rationale = EXCLUDED.rationale, "
+        "created_at = now()" % (COMBINED_TABLE, ",".join(COMBINED_COLS))
+    )
     tuples = [
-        (r["trade_date"], r["symbol"], r["action"], r["score"],
-         r["confidence"], json.dumps(r["contributions"], ensure_ascii=False),
-         bool(r["divergence"]), r["rationale"])
+        (
+            r["trade_date"],
+            r["symbol"],
+            r["action"],
+            r["score"],
+            r["confidence"],
+            json.dumps(r["contributions"], ensure_ascii=False),
+            bool(r["divergence"]),
+            r["rationale"],
+        )
         for r in rows
     ]
     conn = _pg_connect()
     try:
         with conn:
             with conn.cursor() as cur:
-                cur.execute("DELETE FROM %s WHERE trade_date = ANY(%%s)"
-                            % COMBINED_TABLE, (dates,))
-                psycopg2.extras.execute_values(cur, sql, tuples,
-                                               page_size=200)
+                cur.execute(
+                    "DELETE FROM %s WHERE trade_date = ANY(%%s)" % COMBINED_TABLE,
+                    (dates,),
+                )
+                psycopg2.extras.execute_values(cur, sql, tuples, page_size=200)
     finally:
         conn.close()
     return True
@@ -241,13 +273,18 @@ def _persist_docker_exec(rows: list) -> bool:
     buf = io.StringIO()
     writer = csv.writer(buf, quoting=csv.QUOTE_MINIMAL, lineterminator="\n")
     for r in rows:
-        writer.writerow([
-            r["trade_date"], r["symbol"], r["action"], r["score"],
-            r["confidence"],
-            json.dumps(r["contributions"], ensure_ascii=False),
-            "t" if r["divergence"] else "f",
-            r["rationale"],
-        ])
+        writer.writerow(
+            [
+                r["trade_date"],
+                r["symbol"],
+                r["action"],
+                r["score"],
+                r["confidence"],
+                json.dumps(r["contributions"], ensure_ascii=False),
+                "t" if r["divergence"] else "f",
+                r["rationale"],
+            ]
+        )
     stg = STAGING_TABLE
     dates = sorted({str(r["trade_date"]) for r in rows})
     if not all(d.isdigit() and len(d) == 8 for d in dates):
@@ -261,25 +298,26 @@ def _persist_docker_exec(rows: list) -> bool:
         "contributions = EXCLUDED.contributions, "
         "divergence = EXCLUDED.divergence, rationale = EXCLUDED.rationale, "
         "created_at = now(); TRUNCATE %s"
-        % (COMBINED_TABLE, ",".join(COMBINED_COLS),
-           ",".join(COMBINED_COLS), stg, stg))
-    steps = ["TRUNCATE %s" % stg,
-             "DELETE FROM %s WHERE trade_date IN (%s)"
-             % (COMBINED_TABLE, date_list),
-             "\\copy %s(%s) FROM STDIN WITH (FORMAT csv)" % (
-                 stg, ",".join(COMBINED_COLS)),
-             merge_sql]
+        % (COMBINED_TABLE, ",".join(COMBINED_COLS), ",".join(COMBINED_COLS), stg, stg)
+    )
+    steps = [
+        "TRUNCATE %s" % stg,
+        "DELETE FROM %s WHERE trade_date IN (%s)" % (COMBINED_TABLE, date_list),
+        "\\copy %s(%s) FROM STDIN WITH (FORMAT csv)" % (stg, ",".join(COMBINED_COLS)),
+        merge_sql,
+    ]
     for step in steps:
         proc = subprocess.run(
             list(DOCKER_PSQL_BASE) + ["-c", step],
-            input=buf.getvalue().encode("utf-8")
-            if step.startswith("\\copy") else None,
-            capture_output=True, timeout=PSQL_TIMEOUT,
+            input=buf.getvalue().encode("utf-8") if step.startswith("\\copy") else None,
+            capture_output=True,
+            timeout=PSQL_TIMEOUT,
         )
         if proc.returncode != 0:
             raise RuntimeError(
-                "docker exec psql 失败: %s" % proc.stderr.decode(
-                    "utf-8", "replace")[:200])
+                "docker exec psql 失败: %s"
+                % proc.stderr.decode("utf-8", "replace")[:200]
+            )
     return True
 
 
@@ -310,6 +348,7 @@ def _notify_persist_failure(trade_date: str, rows_count: int, error) -> None:
     """
     try:
         from strategy_layer import alert_bridge  # noqa: 延迟 import
+
         alert_bridge.alert_persist_failure(trade_date, rows_count, error)
     except Exception as exc:  # noqa: BLE001 — 告警观测层不能反噬
         print("[aggregator][WARN] E1 告警链调用失败: %s" % str(exc)[:120])
@@ -344,8 +383,7 @@ class SignalAggregator:
             try:
                 adapter = self.registry.get(sid)
             except Exception as exc:  # noqa: BLE001
-                print("[aggregator][WARN] registry.get(%s) 失败，跳过: %s"
-                      % (sid, exc))
+                print("[aggregator][WARN] registry.get(%s) 失败，跳过: %s" % (sid, exc))
                 continue
             if adapter is not None:
                 out.append(adapter)
@@ -407,13 +445,14 @@ class SignalAggregator:
         # 1) 逐策略收集（异常降级 0 贡献）
         collected: list = []  # (strategy_id, weight, signal)
         for adapter in adapters:
-            sid = str(getattr(adapter, "strategy_id", "") or
-                      type(adapter).__name__)
+            sid = str(getattr(adapter, "strategy_id", "") or type(adapter).__name__)
             try:
                 signals = adapter.score(trade_date) or []
             except Exception as exc:  # noqa: BLE001 — 降级≠失败
-                print("[aggregator][DEGRADED] 策略 %s score(%s) 失败，"
-                      "本轮计 0 贡献: %s" % (sid, trade_date, exc))
+                print(
+                    "[aggregator][DEGRADED] 策略 %s score(%s) 失败，"
+                    "本轮计 0 贡献: %s" % (sid, trade_date, exc)
+                )
                 continue
             weight = self._weight_of(sid, adapter)
             # P2-20261017：单策略 top-N 截断（registry.json 的 top_n 配置；
@@ -425,9 +464,9 @@ class SignalAggregator:
                 signals = sorted(
                     signals,
                     key=lambda s: float(_sig_get(s, "score", 0) or 0),
-                    reverse=True)[:n]
-                print("[aggregator] 策略 %s 截断 top-%d（原 %d 条）"
-                      % (sid, n, orig))
+                    reverse=True,
+                )[:n]
+                print("[aggregator] 策略 %s 截断 top-%d（原 %d 条）" % (sid, n, orig))
             for sig in signals:
                 collected.append((sid, weight, sig))
 
@@ -443,31 +482,40 @@ class SignalAggregator:
         combined: list = []
         divergences: list = []
         for symbol in sorted(by_symbol):
-            kept_entries, superseded = preaggregate_symbol(
-                by_symbol[symbol])
-            row = self._fuse_symbol(trade_date, symbol, kept_entries,
-                                    superseded=superseded)
+            kept_entries, superseded = preaggregate_symbol(by_symbol[symbol])
+            row = self._fuse_symbol(
+                trade_date, symbol, kept_entries, superseded=superseded
+            )
             combined.append(row)
             if row["divergence"]:
-                divergences.append({
-                    "symbol": symbol,
-                    "trade_date": trade_date,
-                    "actions": {sid: _sig_get(sig, "action", "")
-                                for sid, _, sig in kept_entries},
-                    "combined_action": row["action"],
-                    "combined_score": row["score"],
-                })
+                divergences.append(
+                    {
+                        "symbol": symbol,
+                        "trade_date": trade_date,
+                        "actions": {
+                            sid: _sig_get(sig, "action", "")
+                            for sid, _, sig in kept_entries
+                        },
+                        "combined_action": row["action"],
+                        "combined_score": row["score"],
+                    }
+                )
 
         # 4) 落库（失败只告警不中断；G9：失败事实同步走 E1 告警链留痕）
         try:
             if not persist_combined(combined):
-                print("[aggregator][WARN] signals_combined 写库返回失败，"
-                      "内存结果照常返回（%d 行）" % len(combined))
-                _notify_persist_failure(trade_date, len(combined),
-                                        "persist_combined 返回 False")
+                print(
+                    "[aggregator][WARN] signals_combined 写库返回失败，"
+                    "内存结果照常返回（%d 行）" % len(combined)
+                )
+                _notify_persist_failure(
+                    trade_date, len(combined), "persist_combined 返回 False"
+                )
         except Exception as exc:  # noqa: BLE001 — 写库失败不中断
-            print("[aggregator][WARN] signals_combined 写库异常，"
-                  "内存结果照常返回（%d 行）: %s" % (len(combined), exc))
+            print(
+                "[aggregator][WARN] signals_combined 写库异常，"
+                "内存结果照常返回（%d 行）: %s" % (len(combined), exc)
+            )
             _notify_persist_failure(trade_date, len(combined), exc)
 
         # 5) 证据链入池（B1：融合裁决产出后自动写证据链 pool_in 态；
@@ -475,16 +523,20 @@ class SignalAggregator:
         result = AggResult(combined=combined, divergences=divergences)
         try:
             from strategy_layer import evidence_intake
+
             evidence_intake.record_pool_intake(trade_date, result)
         except Exception as exc:  # noqa: BLE001 — 证据链写入不反噬主链
-            print("[evidence-intake][WARN] 证据链入池调用失败: %s"
-                  % str(exc)[:120])
+            print("[evidence-intake][WARN] 证据链入池调用失败: %s" % str(exc)[:120])
 
         return result
 
-    def _fuse_symbol(self, trade_date: str, symbol: str,
-                     entries: list,
-                     superseded: Optional[dict] = None) -> dict:
+    def _fuse_symbol(
+        self,
+        trade_date: str,
+        symbol: str,
+        entries: list,
+        superseded: Optional[dict] = None,
+    ) -> dict:
         """单 symbol 融合：加权分 / 权重多数决 action / 置信度 / contributions。
 
         superseded（可选，方案 C）：{sid: [被覆盖明细]} 由同票预聚合传入，
@@ -497,8 +549,10 @@ class SignalAggregator:
             entries = [(sid, DEFAULT_WEIGHT, sig) for sid, _, sig in entries]
             total_w = float(len(entries))
 
-        score = sum(w * float(_sig_get(sig, "score", 0.0) or 0.0)
-                    for _, w, sig in entries) / total_w
+        score = (
+            sum(w * float(_sig_get(sig, "score", 0.0) or 0.0) for _, w, sig in entries)
+            / total_w
+        )
 
         # 权重多数决：action → (权重和, 信号数)；全并列按固定序
         tally: dict = {}
@@ -509,22 +563,28 @@ class SignalAggregator:
             acc["n"] += 1
         action = sorted(
             tally.items(),
-            key=lambda kv: (-kv[1]["w"], -kv[1]["n"],
-                            ACTION_TIEBREAK_ORDER.index(kv[0])
-                            if kv[0] in ACTION_TIEBREAK_ORDER
-                            else len(ACTION_TIEBREAK_ORDER)),
+            key=lambda kv: (
+                -kv[1]["w"],
+                -kv[1]["n"],
+                ACTION_TIEBREAK_ORDER.index(kv[0])
+                if kv[0] in ACTION_TIEBREAK_ORDER
+                else len(ACTION_TIEBREAK_ORDER),
+            ),
         )[0][0]
 
         # 置信度 = max(各源 confidence) × 平均权重系数（mean(w_i/Σw)=1/n）
         n = len(entries)
-        max_conf = max(float(_sig_get(sig, "confidence", 0.0) or 0.0)
-                       for _, _, sig in entries)
+        max_conf = max(
+            float(_sig_get(sig, "confidence", 0.0) or 0.0) for _, _, sig in entries
+        )
         confidence = max_conf * (sum(w / total_w for _, w, _ in entries) / n)
 
         contributions = {
-            sid: {"score": float(_sig_get(sig, "score", 0.0) or 0.0),
-                  "weight": round(w / total_w, 6),
-                  "action": str(_sig_get(sig, "action", "") or "")}
+            sid: {
+                "score": float(_sig_get(sig, "score", 0.0) or 0.0),
+                "weight": round(w / total_w, 6),
+                "action": str(_sig_get(sig, "action", "") or ""),
+            }
             for sid, w, sig in entries
         }
         if superseded:
@@ -533,12 +593,12 @@ class SignalAggregator:
                     contributions[sid]["superseded"] = items
         rationale = "；".join(
             "[%s] %s" % (sid, str(_sig_get(sig, "rationale", "") or "").strip())
-            for sid, _, sig in entries if str(_sig_get(sig, "rationale", "") or "").strip()
+            for sid, _, sig in entries
+            if str(_sig_get(sig, "rationale", "") or "").strip()
         )
 
         actions = {_sig_get(sig, "action", "") for _, _, sig in entries}
-        divergence = bool(actions & set(OPPOSITE_ACTION)
-                          == set(OPPOSITE_ACTION))
+        divergence = bool(actions & set(OPPOSITE_ACTION) == set(OPPOSITE_ACTION))
 
         return {
             "trade_date": trade_date,

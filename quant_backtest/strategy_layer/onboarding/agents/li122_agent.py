@@ -73,6 +73,7 @@ dt 字典序切片语义（逐字保留回测口径，禁止"聪明地"修正）
 引用）、不修改 chanlun_li122.py / chanlun_fractal.py / chanlun_data.py
 等任何本体文件；Agent 是纯包装层。
 """
+
 import importlib.util
 import os
 import sys
@@ -80,7 +81,7 @@ import sys
 # ---------------------------------------------------------------- 路径 #
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _QB_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(_HERE)))  # quant_backtest/
-_REPO_ROOT = os.path.dirname(_QB_ROOT)                               # 仓库根
+_REPO_ROOT = os.path.dirname(_QB_ROOT)  # 仓库根
 
 # 模板基准分（与 classic_adapter / classic_agents 口径一致；S4 校准位）
 BUY_SCORE = 70.0
@@ -122,16 +123,18 @@ def _load_ap_contract():
         return mod.StrategyAgent, mod.Verdict
     try:
         from strategy_registry import StrategyAgent, Verdict
+
         mod = sys.modules["strategy_registry"]
     except ImportError:
         try:
             from agent_platform.engine.strategy_registry import StrategyAgent, Verdict
+
             mod = sys.modules["agent_platform.engine.strategy_registry"]
         except ImportError:
-            path = os.path.join(_REPO_ROOT, "agent_platform", "engine",
-                                "strategy_registry.py")
-            spec = importlib.util.spec_from_file_location(
-                _CONTRACT_MOD_NAME, path)
+            path = os.path.join(
+                _REPO_ROOT, "agent_platform", "engine", "strategy_registry.py"
+            )
+            spec = importlib.util.spec_from_file_location(_CONTRACT_MOD_NAME, path)
             mod = importlib.util.module_from_spec(spec)
             sys.modules[_CONTRACT_MOD_NAME] = mod  # 先注册再执行（防环）
             spec.loader.exec_module(mod)
@@ -154,6 +157,7 @@ def _chanlun_judge():
     if _QB_ROOT not in sys.path:
         sys.path.insert(0, _QB_ROOT)
     from chanlun_li122 import judge, RULESETS
+
     return judge, RULESETS
 
 
@@ -162,6 +166,7 @@ def _chanlun_signal_analyze():
     if _QB_ROOT not in sys.path:
         sys.path.insert(0, _QB_ROOT)
     from chanlun_signal import analyze
+
     return analyze
 
 
@@ -189,8 +194,11 @@ class Li122Agent(_STRATEGY_AGENT):
     strategy_id = "chanlun_li122"
     version = "1.0.0"
     family = "chanlun"
-    capability_manifest = ("multi_timeframe_bars", "chanlun_structure_filter",
-                           "long_only")
+    capability_manifest = (
+        "multi_timeframe_bars",
+        "chanlun_structure_filter",
+        "long_only",
+    )
     lifecycle_state = "experimental"
     stance = "bull"
 
@@ -217,7 +225,8 @@ class Li122Agent(_STRATEGY_AGENT):
             return self._propose(context, symbol)
         except Exception as exc:  # 兜底降级：对齐 chan_monitor 降级语义
             return self._fail_closed(
-                symbol, "联立判定异常降级（绝不 raise）：%r" % (exc,))
+                symbol, "联立判定异常降级（绝不 raise）：%r" % (exc,)
+            )
 
     def _propose(self, context, symbol):
         as_of = context.get("as_of", "")
@@ -227,16 +236,20 @@ class Li122Agent(_STRATEGY_AGENT):
             judge, rulesets = _chanlun_judge()
         except Exception as exc:
             return self._fail_closed(
-                symbol, "chanlun 依赖导入失败（常见原因：chanlun "
-                        "config.json 缺失，chanlun_data 导入期读取该文件）"
-                        "：%r" % (exc,))
+                symbol,
+                "chanlun 依赖导入失败（常见原因：chanlun "
+                "config.json 缺失，chanlun_data 导入期读取该文件）"
+                "：%r" % (exc,),
+            )
         # ② ruleset 解析（未知键回落默认档，不硬拒）
         requested = self.ruleset_key
         ruleset_key = requested if requested in rulesets else DEFAULT_RULESET
         fallback_note = None
         if ruleset_key != requested:
-            fallback_note = ("ruleset_key=%r 不在 RULESETS，回落默认档 %s"
-                             % (requested, ruleset_key))
+            fallback_note = "ruleset_key=%r 不在 RULESETS，回落默认档 %s" % (
+                requested,
+                ruleset_key,
+            )
         rule = rulesets[ruleset_key]
         # ③ 上级信号解析（注入优先，否则自足现算）
         upper, mode = self._resolve_upper(context, rule)
@@ -252,44 +265,71 @@ class Li122Agent(_STRATEGY_AGENT):
         # ⑤ 最小窗口闸门（窗口不足/预热区不可证 → fail-closed）
         if len(mid) < rule["mid_confirm_bars"] + 1:
             return self._fail_closed(
-                symbol, "中级窗口不足（fail-closed）：信号 dt=%r 截断后 "
-                        "mid=%d 根 < mid_confirm_bars+1=%d"
-                        % (sig_dt, len(mid), rule["mid_confirm_bars"] + 1))
+                symbol,
+                "中级窗口不足（fail-closed）：信号 dt=%r 截断后 "
+                "mid=%d 根 < mid_confirm_bars+1=%d"
+                % (sig_dt, len(mid), rule["mid_confirm_bars"] + 1),
+            )
         if len(low) < 2 * rule["low_window"]:
             return self._fail_closed(
-                symbol, "低级窗口不足（fail-closed）：信号 dt=%r 截断后 "
-                        "low=%d 根 < 2×low_window=%d"
-                        % (sig_dt, len(low), 2 * rule["low_window"]))
+                symbol,
+                "低级窗口不足（fail-closed）：信号 dt=%r 截断后 "
+                "low=%d 根 < 2×low_window=%d"
+                % (sig_dt, len(low), 2 * rule["low_window"]),
+            )
         # ⑥ 本体判定（纯函数，零改动直接调用）
         res = judge(upper, mid, low, ruleset_key)
-        extras = {"ruleset": ruleset_key, "checks": res["checks"],
-                  "no": res["no"], "upper_source": mode,
-                  "upper_type": upper.get("type"), "upper_dt": sig_dt,
-                  "as_of": as_of, "requested_ruleset": requested}
+        extras = {
+            "ruleset": ruleset_key,
+            "checks": res["checks"],
+            "no": res["no"],
+            "upper_source": mode,
+            "upper_type": upper.get("type"),
+            "upper_dt": sig_dt,
+            "as_of": as_of,
+            "requested_ruleset": requested,
+        }
         if fallback_note:
             extras["ruleset_fallback"] = fallback_note
         # ⑦ Verdict 映射（过滤语义，不产 sell）
         if res["ok"]:
             conf = OK_CONFIDENCE.get(ruleset_key, OK_CONFIDENCE_DEFAULT)
-            rationale = ("联立放行：%s@%s 三查全过（%s）"
-                         % (upper.get("type"), sig_dt, ruleset_key))
+            rationale = "联立放行：%s@%s 三查全过（%s）" % (
+                upper.get("type"),
+                sig_dt,
+                ruleset_key,
+            )
             if fallback_note:
                 rationale += "；" + fallback_note
             return _VERDICT(
-                strategy_id=self.strategy_id, symbol=symbol,
-                recommendation="buy", confidence=conf, stance="bull",
-                score=BUY_SCORE, rationale=rationale, trace_id=trace_id,
-                extras=extras)
+                strategy_id=self.strategy_id,
+                symbol=symbol,
+                recommendation="buy",
+                confidence=conf,
+                stance="bull",
+                score=BUY_SCORE,
+                rationale=rationale,
+                trace_id=trace_id,
+                extras=extras,
+            )
         failed = next((c for c in res["checks"] if not c["ok"]), None)
-        rationale = ("联立拦截（%s）：%s；li122 为买向过滤器，不产 sell"
-                     % (res["no"], failed["detail"] if failed else "未知"))
+        rationale = "联立拦截（%s）：%s；li122 为买向过滤器，不产 sell" % (
+            res["no"],
+            failed["detail"] if failed else "未知",
+        )
         if fallback_note:
             rationale += "；" + fallback_note
         return _VERDICT(
-            strategy_id=self.strategy_id, symbol=symbol,
-            recommendation="hold", confidence=0.0, stance="neutral",
-            score=0.0, rationale=rationale, trace_id=trace_id,
-            extras=extras)
+            strategy_id=self.strategy_id,
+            symbol=symbol,
+            recommendation="hold",
+            confidence=0.0,
+            stance="neutral",
+            score=0.0,
+            rationale=rationale,
+            trace_id=trace_id,
+            extras=extras,
+        )
 
     # ------------------------------------------------------------------ #
     # 上级信号解析（注入优先，否则自足现算 + 组内最大 dt 选最新）
@@ -300,25 +340,34 @@ class Li122Agent(_STRATEGY_AGENT):
         upper = context.get("upper_signal")
         if isinstance(upper, dict) and upper:
             if not upper.get("type") or not upper.get("dt"):
-                return ("上级信号注入不完整（缺 type/dt），判定不可证"
-                        "（fail-closed）", "fail_closed")
+                return (
+                    "上级信号注入不完整（缺 type/dt），判定不可证（fail-closed）",
+                    "fail_closed",
+                )
             return upper, "driver"
         as_of = context.get("as_of", "")
         bars_up = (context.get("bars") or {}).get(rule["upper_period"]) or []
         cut = _cut_bars(bars_up, as_of)
         if len(cut) < self.min_upper_bars:
-            return ("上级结构预热不足（自足模式，fail-closed）：%s 截断至 "
-                    "as_of=%r 仅 %d 根 < min_upper_bars=%d"
-                    % (rule["upper_period"], as_of, len(cut),
-                       self.min_upper_bars), "fail_closed")
+            return (
+                "上级结构预热不足（自足模式，fail-closed）：%s 截断至 "
+                "as_of=%r 仅 %d 根 < min_upper_bars=%d"
+                % (rule["upper_period"], as_of, len(cut), self.min_upper_bars),
+                "fail_closed",
+            )
         try:
             st = _chanlun_signal_analyze()(cut)
         except Exception as exc:
-            return ("chanlun_signal 现算失败（常见原因：chanlun "
-                    "config.json 缺失）：%r" % (exc,), "fail_closed")
-        cands = [s for s in (st.get("signals") or [])
-                 if s.get("type") in rule["upper_types"]
-                 and str(s.get("dt", "")) <= as_of]
+            return (
+                "chanlun_signal 现算失败（常见原因：chanlun "
+                "config.json 缺失）：%r" % (exc,),
+                "fail_closed",
+            )
+        cands = [
+            s
+            for s in (st.get("signals") or [])
+            if s.get("type") in rule["upper_types"] and str(s.get("dt", "")) <= as_of
+        ]
         if not cands:
             return None, "no_signal"
         # 组内最大 dt 判例：每标的每 as_of 只取最新一条（QA-20261017），
@@ -330,21 +379,37 @@ class Li122Agent(_STRATEGY_AGENT):
     # ------------------------------------------------------------------ #
     def _hold_no_signal(self, symbol, as_of, ruleset_key, trace_id=""):
         return _VERDICT(
-            strategy_id=self.strategy_id, symbol=symbol,
-            recommendation="hold", confidence=0.0, stance="neutral",
+            strategy_id=self.strategy_id,
+            symbol=symbol,
+            recommendation="hold",
+            confidence=0.0,
+            stance="neutral",
             score=0.0,
             rationale="自足模式：as_of=%r 截断序列无 upper_types 买向信号"
-                      "（合法判定，非 fail-closed）" % (as_of,),
+            "（合法判定，非 fail-closed）" % (as_of,),
             trace_id=trace_id,
-            extras={"ruleset": ruleset_key, "checks": [],
-                    "no": NO_UPPER_SIGNAL, "upper_source": "computed",
-                    "as_of": as_of})
+            extras={
+                "ruleset": ruleset_key,
+                "checks": [],
+                "no": NO_UPPER_SIGNAL,
+                "upper_source": "computed",
+                "as_of": as_of,
+            },
+        )
 
     def _fail_closed(self, symbol, reason):
         return _VERDICT(
-            strategy_id=self.strategy_id, symbol=symbol,
-            recommendation="hold", confidence=0.0, stance="neutral",
-            score=0.0, rationale=reason,
-            extras={"fail_closed": True, "reason": reason,
-                    "ruleset": self.ruleset_key,
-                    "min_upper_bars": self.min_upper_bars})
+            strategy_id=self.strategy_id,
+            symbol=symbol,
+            recommendation="hold",
+            confidence=0.0,
+            stance="neutral",
+            score=0.0,
+            rationale=reason,
+            extras={
+                "fail_closed": True,
+                "reason": reason,
+                "ruleset": self.ruleset_key,
+                "min_upper_bars": self.min_upper_bars,
+            },
+        )

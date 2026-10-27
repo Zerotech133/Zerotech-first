@@ -20,6 +20,7 @@ r"""策略研究 Agent「荀攸」（公达）盘后作业运行器（2026-10-19
     python -m strategy_layer.xunyou            # 当日
     python -m strategy_layer.xunyou 20261017   # 指定日（补跑/回放）
 """
+
 from __future__ import annotations
 
 import json
@@ -35,6 +36,7 @@ if _QUANT_BT not in sys.path:
 
 from strategy_layer import Registry, bootstrap_default_adapters  # noqa: E402
 from strategy_layer.aggregator import SignalAggregator  # noqa: E402
+
 # N1 universe 休眠开关（默认 False → build_pool 不改变任何行为；
 # 老田在 N1 门翻开关后才真正过滤样本域）。
 from strategy_layer.liudu_universe import LIUDU_UNIVERSE_ENABLED  # noqa: E402
@@ -51,8 +53,12 @@ SCOPE = "RESEARCH_ONLY_NOT_PRODUCTION"
 # divergence=true 一律人工复核、不进任何档。
 # T1 触发提醒的接线（量化交易部门上行链）另行设计，本模块只落分档数据。
 T1_SCORE_MIN = 99.0  # T1 下沿：score > 99.0（开区间）；99.0→99.17 微断层 = kg_boost/chan_monitor 两套量纲分界
-T1_RANK_CAP = 20     # T1 当日排名封顶：按 score 降序 1 起计，排名 ≤ 20 才入 T1（防告警量爆炸）
-T2_SCORE_MIN = 95.0  # T2 下沿：95 ≤ score ≤ 99.0（95→97 断层收下沿；上沿与 T1 下沿衔接）
+T1_RANK_CAP = (
+    20  # T1 当日排名封顶：按 score 降序 1 起计，排名 ≤ 20 才入 T1（防告警量爆炸）
+)
+T2_SCORE_MIN = (
+    95.0  # T2 下沿：95 ≤ score ≤ 99.0（95→97 断层收下沿；上沿与 T1 下沿衔接）
+)
 
 
 def assign_tiers(rows: list) -> list:
@@ -66,6 +72,7 @@ def assign_tiers(rows: list) -> list:
       divergence=true 强制 tier="" 且 review_required=True（人工复核，
       不进任何档）。
     """
+
     def _score(row):
         try:
             return float(row.get("score", 0.0))
@@ -78,9 +85,13 @@ def assign_tiers(rows: list) -> list:
 
     eligible = sorted(
         ((i, _score(r)) for i, r in enumerate(rows) if not _divergent(r)),
-        key=lambda t: (-t[1], t[0]))
-    t1_idx = {i for rank, (i, sc) in enumerate(eligible, 1)
-              if rank <= T1_RANK_CAP and sc > T1_SCORE_MIN}
+        key=lambda t: (-t[1], t[0]),
+    )
+    t1_idx = {
+        i
+        for rank, (i, sc) in enumerate(eligible, 1)
+        if rank <= T1_RANK_CAP and sc > T1_SCORE_MIN
+    }
     out = []
     for i, row in enumerate(rows):
         item = dict(row)
@@ -102,21 +113,23 @@ def build_pool(trade_date: str, combined: list, divergences: list) -> dict:
     """融合结果 → 荀攸股票池（buy 按 score 降序，并按拍板口径标注 tier）。"""
     buys = sorted(
         (row for row in combined if row.get("action") == "buy"),
-        key=lambda r: (-float(r.get("score", 0.0)),
-                       str(r.get("symbol", ""))))
+        key=lambda r: (-float(r.get("score", 0.0)), str(r.get("symbol", ""))),
+    )
     # ── N1 universe 过滤（休眠默认：LIUDU_UNIVERSE_ENABLED=False → 不生效）──
     # 老田已拍板 universe=market；开关打开前本调用不执行，行为完全一致。
     # 激活后：仅保留 A 股，从样本层面消除外源 ticker 污染（见 N3/STRAT1 证据）。
     removed_by_universe = []
     if LIUDU_UNIVERSE_ENABLED:
         from strategy_layer.liudu_universe import apply_universe_filter
+
         buys, removed_by_universe = apply_universe_filter(buys)
     tiered = assign_tiers(buys)
     superseded_total = sum(
         len(c.get("superseded", ()))
         for row in combined
         for c in (row.get("contributions") or {}).values()
-        if isinstance(c, dict))
+        if isinstance(c, dict)
+    )
     t1 = [r for r in tiered if r["tier"] == "T1"]
     t2 = [r for r in tiered if r["tier"] == "T2"]
     review = [r for r in tiered if r.get("review_required")]
@@ -127,13 +140,19 @@ def build_pool(trade_date: str, combined: list, divergences: list) -> dict:
         "scope": SCOPE,
         "cutover_verdict": VERDICT,
         "pool": [
-            {"symbol": r["symbol"], "action": r["action"],
-             "score": r["score"], "confidence": r["confidence"],
-             "divergence": r["divergence"], "rationale": r["rationale"],
-             "contributions": r["contributions"],
-             "tier": r["tier"],
-             **({"review_required": True} if r.get("review_required") else {})}
-            for r in tiered],
+            {
+                "symbol": r["symbol"],
+                "action": r["action"],
+                "score": r["score"],
+                "confidence": r["confidence"],
+                "divergence": r["divergence"],
+                "rationale": r["rationale"],
+                "contributions": r["contributions"],
+                "tier": r["tier"],
+                **({"review_required": True} if r.get("review_required") else {}),
+            }
+            for r in tiered
+        ],
         "stats": {
             "combined_total": len(combined),
             "buy_total": len(buys),
@@ -158,12 +177,14 @@ def _build_pool_notes(removed_by_universe: list) -> list:
     if removed_by_universe:
         notes.append(
             "N1 universe=market 已生效：剔除非A股/北交所 %d 只（样本层面防污染）"
-            % len(removed_by_universe))
+            % len(removed_by_universe)
+        )
     return notes
 
 
-def write_upstream_report(trade_date: str, pool: dict,
-                          enabled: list, a4: dict | None = None) -> str:
+def write_upstream_report(
+    trade_date: str, pool: dict, enabled: list, a4: dict | None = None
+) -> str:
     """给量化交易部门老大的汇报信（落盘返回路径；不直连飞书）。
 
     纪律（章程）：本函数只负责落盘 reports/xunyou_report_{date}.md 并返回
@@ -174,44 +195,46 @@ def write_upstream_report(trade_date: str, pool: dict,
         "# 荀攸盘后汇报（%s）" % trade_date,
         "",
         "- 致：量化交易部门老大（单一上行路，不直连飞书）",
-        "- 生成：%s ｜ 性质：%s ｜ %s"
-        % (pool["generated_at"], SCOPE, VERDICT),
+        "- 生成：%s ｜ 性质：%s ｜ %s" % (pool["generated_at"], SCOPE, VERDICT),
         "- 启用策略：%s" % ", ".join(enabled) if enabled else "- 启用策略：无",
         "",
         "## 股票池摘要",
         "- 融合 %d 条；buy 候选 **%d** 只（按 score 降序，已按拍板口径分档）"
         % (pool["stats"]["combined_total"], pool["stats"]["buy_total"]),
         "- 分歧标的 %d；同票预聚合覆盖明细 %d 条（可回放）"
-        % (pool["stats"]["divergence_total"],
-           pool["stats"]["superseded_total"]),
+        % (pool["stats"]["divergence_total"], pool["stats"]["superseded_total"]),
         "",
     ]
     tiered_rows = pool.get("pool") or []
     t1_rows = [r for r in tiered_rows if r.get("tier") == "T1"]
     t2_rows = [r for r in tiered_rows if r.get("tier") == "T2"]
-    review_rows = [r for r in tiered_rows
-                   if r.get("review_required")
-                   or r.get("divergence") is True
-                   or r.get("divergence") == "true"]
+    review_rows = [
+        r
+        for r in tiered_rows
+        if r.get("review_required")
+        or r.get("divergence") is True
+        or r.get("divergence") == "true"
+    ]
     lines += [
         "## 分层陈述（2026-10-19 拍板口径）",
         "- T1（告警档：score>99.0 且当日排名≤20）**%d** 条：%s"
-        % (len(t1_rows),
-           "、".join(str(r.get("symbol")) for r in t1_rows) or "（无）"),
+        % (len(t1_rows), "、".join(str(r.get("symbol")) for r in t1_rows) or "（无）"),
         "- T2（人工关注档：95≤score≤99.0）**%d** 条：%s"
-        % (len(t2_rows),
-           "、".join(str(r.get("symbol")) for r in t2_rows) or "（无）"),
+        % (len(t2_rows), "、".join(str(r.get("symbol")) for r in t2_rows) or "（无）"),
         "- 人工复核（分歧票 divergence=true，不进任何档）**%d** 只：%s"
-        % (len(review_rows),
-           "、".join(str(r.get("symbol")) for r in review_rows) or "（无）"),
+        % (
+            len(review_rows),
+            "、".join(str(r.get("symbol")) for r in review_rows) or "（无）",
+        ),
         "- T1 触发提醒的接线走量化交易部门上行链（另行设计）；本信只呈"
         "分档数据，不直连飞书",
         "",
     ]
     for i, row in enumerate(pool["pool"][:10], 1):
-        lines.append("%d. %s score=%.1f conf=%.2f | %s"
-                     % (i, row["symbol"], row["score"],
-                        row["confidence"], row["rationale"][:70]))
+        lines.append(
+            "%d. %s score=%.1f conf=%.2f | %s"
+            % (i, row["symbol"], row["score"], row["confidence"], row["rationale"][:70])
+        )
     if len(pool["pool"]) > 10:
         lines.append("…（其余 %d 只见池文件）" % (len(pool["pool"]) - 10))
     lines += [
@@ -271,8 +294,10 @@ def collect_a4_comparison(trade_date: str) -> dict:
             "cutover_verdict": "BLOCK_CUTOVER",
         }
     except Exception as exc:  # noqa: BLE001 — 对账降级不阻断池产出
-        return {"status": "DEGRADED", "reason": "%s: %s"
-                % (type(exc).__name__, str(exc)[:120])}
+        return {
+            "status": "DEGRADED",
+            "reason": "%s: %s" % (type(exc).__name__, str(exc)[:120]),
+        }
 
 
 # ── G4 只读工具集：读证据链 / 读后验 ──────────────────────────────────
@@ -281,18 +306,20 @@ def _evidence_read_store(db_path: str | None = None):
     import sqlite3
 
     import evidence_chain as _ec
-    store = _ec.EvidenceChainStore(db_path or _ec.DEFAULT_DB_PATH,
-                                   read_only=True)
+
+    store = _ec.EvidenceChainStore(db_path or _ec.DEFAULT_DB_PATH, read_only=True)
     # read_only 分支未设 row_factory（不改 evidence_chain.py，仅连接级设置）
     store._con.row_factory = sqlite3.Row
     return store
 
 
-def read_evidence_state(trade_date: str | None = None,
-                        state: str | None = None,
-                        symbol: str | None = None,
-                        limit: int = 200,
-                        db_path: str | None = None) -> dict:
+def read_evidence_state(
+    trade_date: str | None = None,
+    state: str | None = None,
+    symbol: str | None = None,
+    limit: int = 200,
+    db_path: str | None = None,
+) -> dict:
     """【只读工具】读证据链：当前态投影 STATE 查询（evidence_chain 查询面）。
 
     纪律：荀攸不写证据链——read_only 连接打开，绝不调用 transition/
@@ -301,18 +328,20 @@ def read_evidence_state(trade_date: str | None = None,
     try:
         store = _evidence_read_store(db_path)
         try:
-            rows = store.query_state(trade_date=trade_date, state=state,
-                                     symbol=symbol, limit=limit)
+            rows = store.query_state(
+                trade_date=trade_date, state=state, symbol=symbol, limit=limit
+            )
         finally:
             store.close()
         return {"status": "OK", "count": len(rows), "states": rows}
     except Exception as exc:  # noqa: BLE001 — 降级不阻断池产出
-        return {"status": "DEGRADED", "reason": "%s: %s"
-                % (type(exc).__name__, str(exc)[:120])}
+        return {
+            "status": "DEGRADED",
+            "reason": "%s: %s" % (type(exc).__name__, str(exc)[:120]),
+        }
 
 
-def replay_evidence_entry(entry_id: str,
-                          db_path: str | None = None) -> dict:
+def replay_evidence_entry(entry_id: str, db_path: str | None = None) -> dict:
     """【只读工具】读证据链：单条目事件回放（入池→授权→出池→结果全链）。
 
     纪律：只读 get_history/get_state 查询面，不写入。
@@ -320,15 +349,19 @@ def replay_evidence_entry(entry_id: str,
     try:
         store = _evidence_read_store(db_path)
         try:
-            return {"status": "OK",
-                    "entry_id": entry_id,
-                    "state": store.get_state(entry_id),
-                    "events": store.get_history(entry_id)}
+            return {
+                "status": "OK",
+                "entry_id": entry_id,
+                "state": store.get_state(entry_id),
+                "events": store.get_history(entry_id),
+            }
         finally:
             store.close()
     except Exception as exc:  # noqa: BLE001 — 降级不阻断池产出
-        return {"status": "DEGRADED", "reason": "%s: %s"
-                % (type(exc).__name__, str(exc)[:120])}
+        return {
+            "status": "DEGRADED",
+            "reason": "%s: %s" % (type(exc).__name__, str(exc)[:120]),
+        }
 
 
 def read_posterior(out_path: str | None = None) -> dict:
@@ -341,30 +374,38 @@ def read_posterior(out_path: str | None = None) -> dict:
     import json as _json
 
     from strategy_layer.combined_verdicts import OUT_DEFAULT
+
     path = out_path or OUT_DEFAULT
     try:
         with open(path, encoding="utf-8") as fh:
             doc = _json.load(fh)
     except Exception as exc:  # noqa: BLE001 — 降级不阻断池产出
-        return {"status": "DEGRADED", "reason": "%s: %s"
-                % (type(exc).__name__, str(exc)[:120])}
+        return {
+            "status": "DEGRADED",
+            "reason": "%s: %s" % (type(exc).__name__, str(exc)[:120]),
+        }
     summary = doc.get("summary") if isinstance(doc, dict) else None
     if not isinstance(summary, dict):
         return {"status": "DEGRADED", "reason": "统计输出缺 summary 块"}
     for key in ("windows", "by_strategy", "by_weight_group", "by_shadow"):
         if key in summary and not isinstance(summary[key], dict):
-            return {"status": "DEGRADED", "reason": "统计输出 summary.%s 类型错误" % key}
-    return {"status": "OK", "out_path": path,
-            "asof": summary.get("asof", ""),
-            "windows": summary.get("windows", {}),
-            "by_strategy": summary.get("by_strategy", {}),
-            "by_weight_group": summary.get("by_weight_group", {}),
-            "by_shadow": summary.get("by_shadow", {})}
+            return {
+                "status": "DEGRADED",
+                "reason": "统计输出 summary.%s 类型错误" % key,
+            }
+    return {
+        "status": "OK",
+        "out_path": path,
+        "asof": summary.get("asof", ""),
+        "windows": summary.get("windows", {}),
+        "by_strategy": summary.get("by_strategy", {}),
+        "by_weight_group": summary.get("by_weight_group", {}),
+        "by_shadow": summary.get("by_shadow", {}),
+    }
 
 
 def main(argv: list) -> int:
-    trade_date = (argv[1] if len(argv) > 1
-                  else datetime.now().strftime("%Y%m%d"))
+    trade_date = argv[1] if len(argv) > 1 else datetime.now().strftime("%Y%m%d")
     try:
         registry = bootstrap_default_adapters(Registry())
     except Exception as exc:  # noqa: BLE001 — bootstrap 致命
@@ -381,16 +422,21 @@ def main(argv: list) -> int:
     a4 = collect_a4_comparison(trade_date)
     os.makedirs(REPORT_DIR, exist_ok=True)
     pool_path = os.path.join(REPORT_DIR, "xunyou_pool_%s.json" % trade_date)
-    _atomic_write(pool_path,
-                  json.dumps(pool, ensure_ascii=False, indent=2)
-                  .encode("utf-8"))
+    _atomic_write(
+        pool_path, json.dumps(pool, ensure_ascii=False, indent=2).encode("utf-8")
+    )
     report_path = write_upstream_report(trade_date, pool, enabled, a4=a4)
-    print("[xunyou] 股票池 %d 只（buy）→ %s"
-          % (pool["stats"]["buy_total"], pool_path))
+    print("[xunyou] 股票池 %d 只（buy）→ %s" % (pool["stats"]["buy_total"], pool_path))
     print("[xunyou] 汇报信已呈上级（不直连飞书）→ %s" % report_path)
-    print("[xunyou] %s ｜ 分歧 %d ｜ 覆盖明细 %d ｜ A4对账 %s"
-          % (VERDICT, pool["stats"]["divergence_total"],
-             pool["stats"]["superseded_total"], a4.get("status")))
+    print(
+        "[xunyou] %s ｜ 分歧 %d ｜ 覆盖明细 %d ｜ A4对账 %s"
+        % (
+            VERDICT,
+            pool["stats"]["divergence_total"],
+            pool["stats"]["superseded_total"],
+            a4.get("status"),
+        )
+    )
     return 0
 
 

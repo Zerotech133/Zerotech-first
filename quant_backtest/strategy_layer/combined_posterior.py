@@ -28,6 +28,7 @@
 用法：
   python combined_posterior.py --rows-file f.json [--out o.json] [--limit N]
 """
+
 from __future__ import annotations
 
 import json
@@ -44,9 +45,9 @@ except ImportError:  # 直接脚本运行时的路径兜底
 HERE = os.path.dirname(os.path.abspath(__file__))
 REGISTRY_PATH = os.path.join(HERE, "strategy_registry.json")
 
-WEIGHT_FULL_MIN = 0.5          # weight>=0.5 → full
+WEIGHT_FULL_MIN = 0.5  # weight>=0.5 → full
 WEIGHT_GROUPS = ("full", "shadow", "off")
-WIN_RATE_WINDOW = "t1"         # win_rate 口径窗：T+1 收益 > 0
+WIN_RATE_WINDOW = "t1"  # win_rate 口径窗：T+1 收益 > 0
 
 
 # ── 权重分层口径 ───────────────────────────────────────────────────────
@@ -82,8 +83,11 @@ def row_weight(row: dict, registry_weights: dict):
     不应计入 full 组。
     """
     contribs = row.get("contributions") or {}
-    ws = [_contrib_weight(c, registry_weights, sid)
-          for sid, c in contribs.items() if isinstance(c, dict)]
+    ws = [
+        _contrib_weight(c, registry_weights, sid)
+        for sid, c in contribs.items()
+        if isinstance(c, dict)
+    ]
     if not ws or any(w is None for w in ws):
         return None
     return min(ws)
@@ -121,8 +125,9 @@ def _block(st: dict) -> dict:
     t1, t5 = st["t1"], st["t5"]
     return {
         "count": st["n"],
-        "win_rate": (round(100.0 * sum(1 for v in t1 if v > 0) / len(t1), 1)
-                     if t1 else None),
+        "win_rate": (
+            round(100.0 * sum(1 for v in t1 if v > 0) / len(t1), 1) if t1 else None
+        ),
         "avg_ret_t1": round(sum(t1) / len(t1), 2) if t1 else None,
         "avg_ret_t5": round(sum(t5) / len(t5), 2) if t5 else None,
         "missing": st["miss"],
@@ -151,9 +156,15 @@ def _write_json_atomic(doc: dict, path: str) -> str:
 
 
 # ── 后验主流程 ─────────────────────────────────────────────────────────
-def build_combined_posterior(trade_dates=None, rows=None, quote_fetcher=None,
-                             out_path=None, rows_file=None, loader=None,
-                             registry_path=None) -> dict:
+def build_combined_posterior(
+    trade_dates=None,
+    rows=None,
+    quote_fetcher=None,
+    out_path=None,
+    rows_file=None,
+    loader=None,
+    registry_path=None,
+) -> dict:
     """signals_combined 分层后验统计（只读计算 + 可选原子落盘）。
 
     Parameters
@@ -194,15 +205,13 @@ def build_combined_posterior(trade_dates=None, rows=None, quote_fetcher=None,
 
         # 行归属组：overall 必入；分歧票只进 divergence 组（单独一组，
         # 不混入策略/权重组分母），普通票进各贡献策略 + 权重组
-        sids = sorted(sid for sid, c in contribs.items()
-                      if isinstance(c, dict))
+        sids = sorted(sid for sid, c in contribs.items() if isinstance(c, dict))
         gw = weight_group_of(row_weight(row, registry_weights))
         groups = [overall]
         if divergence:
             groups.append(div_state)
         else:
-            groups += [strat_states.setdefault(s, _new_state())
-                       for s in sids]
+            groups += [strat_states.setdefault(s, _new_state()) for s in sids]
             groups.append(group_states[gw])
 
         # 行情后验（单票异常降级：该票记 missing，整体继续）
@@ -248,15 +257,13 @@ def build_combined_posterior(trade_dates=None, rows=None, quote_fetcher=None,
                 "win_rate": "T+1 收益 > 0 占比（%），分母=T+1 收益可算的票",
                 "missing": "行情不可得票数（不计入统计分母，显式计数）",
                 "layering": "per_strategy=contributions 键（多源跨桶）；"
-                            "per_weight_group=行内最小贡献权重分带"
-                            "(>=0.5 full / 0-0.5 shadow / 0 off)；"
-                            "divergence=true 单独一组，不混入其他分层分母",
+                "per_weight_group=行内最小贡献权重分带"
+                "(>=0.5 full / 0-0.5 shadow / 0 off)；"
+                "divergence=true 单独一组，不混入其他分层分母",
             },
             "windows": {"t1": _block(overall), "t5": _block(overall)},
-            "by_strategy": {s: _block(b)
-                            for s, b in sorted(strat_states.items())},
-            "by_weight_group": {g: _block(group_states[g])
-                                for g in WEIGHT_GROUPS},
+            "by_strategy": {s: _block(b) for s, b in sorted(strat_states.items())},
+            "by_weight_group": {g: _block(group_states[g]) for g in WEIGHT_GROUPS},
             "by_shadow": {"divergence": _block(div_state)},
         },
     }
@@ -283,17 +290,34 @@ def main(argv: list | None = None) -> int:
     doc = build_combined_posterior(rows=rows, out_path=out)
 
     if quote_fetcher_not_provided(doc):
-        print("[combined_posterior] 未注入 quote_fetcher，全部票记 missing"
-              "（行情由调用方注入，本模块不自行取数）")
+        print(
+            "[combined_posterior] 未注入 quote_fetcher，全部票记 missing"
+            "（行情由调用方注入，本模块不自行取数）"
+        )
     s = doc["summary"]
-    print("[combined_posterior] rows=%d missing=%d asof=%s → %s"
-          % (doc["total_rows"], doc["missing_total"], doc["asof"],
-             doc.get("out_path") or "(未落盘)"))
-    for name, blk in [("overall", s["windows"]["t1"]),
-                      ("divergence", s["by_shadow"]["divergence"])]:
-        print("  [%s] count=%s win_rate=%s%% avg_ret_t1=%s avg_ret_t5=%s"
-              % (name, blk["count"], blk["win_rate"],
-                 blk["avg_ret_t1"], blk["avg_ret_t5"]))
+    print(
+        "[combined_posterior] rows=%d missing=%d asof=%s → %s"
+        % (
+            doc["total_rows"],
+            doc["missing_total"],
+            doc["asof"],
+            doc.get("out_path") or "(未落盘)",
+        )
+    )
+    for name, blk in [
+        ("overall", s["windows"]["t1"]),
+        ("divergence", s["by_shadow"]["divergence"]),
+    ]:
+        print(
+            "  [%s] count=%s win_rate=%s%% avg_ret_t1=%s avg_ret_t5=%s"
+            % (
+                name,
+                blk["count"],
+                blk["win_rate"],
+                blk["avg_ret_t1"],
+                blk["avg_ret_t5"],
+            )
+        )
     for g, blk in s["by_weight_group"].items():
         print("  [w:%s] count=%s missing=%s" % (g, blk["count"], blk["missing"]))
     return 0

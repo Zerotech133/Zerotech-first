@@ -4,6 +4,7 @@
 全程离线：rows/行情/权重口径全部注入（tmp_path 假数据），禁连真实
 PG、禁读真实 data/ 生产档、禁跑生产任务。
 """
+
 from __future__ import annotations
 
 import json
@@ -16,24 +17,38 @@ from strategy_layer import combined_posterior as cp
 
 # ── 注入数据工厂 ───────────────────────────────────────────────────────
 def _row(sym, td, contribs, divergence=False, action="buy"):
-    return {"trade_date": td, "symbol": sym, "action": action,
-            "score": 99.0, "confidence": 0.9, "contributions": contribs,
-            "divergence": divergence, "rationale": ""}
+    return {
+        "trade_date": td,
+        "symbol": sym,
+        "action": action,
+        "score": 99.0,
+        "confidence": 0.9,
+        "contributions": contribs,
+        "divergence": divergence,
+        "rationale": "",
+    }
 
 
 def _fixture_rows():
     return [
         # A：双源（min 权重 0.4 → shadow），t1 +10%，t5 -10%
-        _row("600000.SH", "20260105",
-             {"kg_boost": {"weight": 0.6, "score": 50},
-              "chan_monitor": {"weight": 0.4, "score": 49}}),
+        _row(
+            "600000.SH",
+            "20260105",
+            {
+                "kg_boost": {"weight": 0.6, "score": 50},
+                "chan_monitor": {"weight": 0.4, "score": 49},
+            },
+        ),
         # B：单源（权重 1.0 → full），t1 -10%，t5 +10%
-        _row("000001.SZ", "20260105",
-             {"kg_boost": {"weight": 1.0, "score": 50}}),
+        _row("000001.SZ", "20260105", {"kg_boost": {"weight": 1.0, "score": 50}}),
         # C：分歧票（单独一组，不进其他分层）
-        _row("300001.SZ", "20260106",
-             {"chan_monitor": {"weight": 0.5, "score": 50}},
-             divergence=True),
+        _row(
+            "300001.SZ",
+            "20260106",
+            {"chan_monitor": {"weight": 0.5, "score": 50}},
+            divergence=True,
+        ),
     ]
 
 
@@ -48,13 +63,15 @@ def _fixture_quotes():
 def _fetcher(quotes):
     def fetch(sym, td):
         return quotes.get((sym, td))
+
     return fetch
 
 
 # ── 1. 分层统计数值（手工算期望值） ────────────────────────────────────
 def test_layered_stats_values(tmp_path):
     doc = cp.build_combined_posterior(
-        rows=_fixture_rows(), quote_fetcher=_fetcher(_fixture_quotes()))
+        rows=_fixture_rows(), quote_fetcher=_fetcher(_fixture_quotes())
+    )
     assert doc["status"] == "OK"
     assert doc["total_rows"] == 3
     assert doc["missing_total"] == 0
@@ -105,9 +122,9 @@ def test_missing_quote_not_in_denominator():
     doc = cp.build_combined_posterior(rows=rows, quote_fetcher=_fetcher(quotes))
     assert doc["missing_total"] == 1
     kg = doc["per_strategy"]["kg_boost"]
-    assert kg["count"] == 1          # 缺失票不计入分母
+    assert kg["count"] == 1  # 缺失票不计入分母
     assert kg["missing"] == 1
-    assert kg["win_rate"] == 100.0   # 分母只剩 +10% 一票
+    assert kg["win_rate"] == 100.0  # 分母只剩 +10% 一票
     assert kg["avg_ret_t1"] == 10.0
     assert doc["per_weight_group"]["full"]["count"] == 0
     assert doc["per_weight_group"]["full"]["missing"] == 1
@@ -127,7 +144,7 @@ def test_fetcher_error_single_row_degrades():
     kg = doc["per_strategy"]["kg_boost"]
     assert kg["count"] == 1
     assert kg["missing"] == 1
-    assert kg["avg_ret_t1"] == 10.0   # 好票统计完整
+    assert kg["avg_ret_t1"] == 10.0  # 好票统计完整
     assert doc["summary"]["windows"]["t1"]["count"] == 1
 
 
@@ -162,9 +179,9 @@ def test_read_posterior_compat_status_ok(tmp_path, monkeypatch):
     from strategy_layer.xunyou import read_posterior
 
     out = str(tmp_path / "posterior.json")
-    cp.build_combined_posterior(rows=_fixture_rows(),
-                                quote_fetcher=_fetcher(_fixture_quotes()),
-                                out_path=out)
+    cp.build_combined_posterior(
+        rows=_fixture_rows(), quote_fetcher=_fetcher(_fixture_quotes()), out_path=out
+    )
     monkeypatch.setattr(combined_verdicts, "OUT_DEFAULT", out)
     res = read_posterior()
     assert res["status"] == "OK"
@@ -179,7 +196,8 @@ def test_read_posterior_compat_status_ok(tmp_path, monkeypatch):
 def test_divergence_group_independent():
     rows = _fixture_rows()
     doc = cp.build_combined_posterior(
-        rows=rows, quote_fetcher=_fetcher(_fixture_quotes()))
+        rows=rows, quote_fetcher=_fetcher(_fixture_quotes())
+    )
     dv = doc["divergence_group"]
     assert dv["count"] == 1
     assert dv["avg_ret_t1"] == 10.0
@@ -196,19 +214,21 @@ def test_divergence_group_independent():
 # ── 8. rows-file 注入路径跑通（含 CLI --rows-file/--out/--limit） ──────
 def test_rows_file_injection_and_cli(tmp_path):
     rows_file = tmp_path / "rows.json"
-    rows_file.write_text(json.dumps({"rows": _fixture_rows()},
-                                    ensure_ascii=False), encoding="utf-8")
+    rows_file.write_text(
+        json.dumps({"rows": _fixture_rows()}, ensure_ascii=False), encoding="utf-8"
+    )
     direct = cp.build_combined_posterior(
-        rows=_fixture_rows(), quote_fetcher=_fetcher(_fixture_quotes()))
+        rows=_fixture_rows(), quote_fetcher=_fetcher(_fixture_quotes())
+    )
     via_file = cp.build_combined_posterior(
-        rows_file=str(rows_file), quote_fetcher=_fetcher(_fixture_quotes()))
+        rows_file=str(rows_file), quote_fetcher=_fetcher(_fixture_quotes())
+    )
     assert via_file["total_rows"] == 3
     assert via_file["per_strategy"] == direct["per_strategy"]
     assert via_file["per_weight_group"] == direct["per_weight_group"]
 
     out = tmp_path / "cli_out.json"
-    rc = cp.main(["--rows-file", str(rows_file),
-                  "--out", str(out), "--limit", "2"])
+    rc = cp.main(["--rows-file", str(rows_file), "--out", str(out), "--limit", "2"])
     assert rc == 0
     doc = json.load(open(out, encoding="utf-8"))
     assert doc["total_rows"] == 2
@@ -218,9 +238,10 @@ def test_rows_file_injection_and_cli(tmp_path):
 # ── 9. 权重分带口径（registry 回退 + off 组） ──────────────────────────
 def test_weight_group_bands(tmp_path):
     reg = tmp_path / "registry.json"
-    reg.write_text(json.dumps({"weights": {"kg_boost": 0.5,
-                                           "chan_monitor": 0.5}}),
-                   encoding="utf-8")
+    reg.write_text(
+        json.dumps({"weights": {"kg_boost": 0.5, "chan_monitor": 0.5}}),
+        encoding="utf-8",
+    )
     rows = [
         # 条目权重 0.5 → full
         _row("600000.SH", "20260105", {"kg_boost": {"weight": 0.5}}),
@@ -233,10 +254,12 @@ def test_weight_group_bands(tmp_path):
         # 无贡献 → off
         _row("600003.SH", "20260105", {}),
     ]
-    quotes = {(r["symbol"], "20260105"): {"close": 10.0, "t1": 10.0, "t5": 10.0}
-              for r in rows}
-    doc = cp.build_combined_posterior(rows=rows, quote_fetcher=_fetcher(quotes),
-                                      registry_path=str(reg))
+    quotes = {
+        (r["symbol"], "20260105"): {"close": 10.0, "t1": 10.0, "t5": 10.0} for r in rows
+    }
+    doc = cp.build_combined_posterior(
+        rows=rows, quote_fetcher=_fetcher(quotes), registry_path=str(reg)
+    )
     g = doc["per_weight_group"]
     assert g["full"]["count"] == 2
     assert g["shadow"]["count"] == 1
@@ -251,10 +274,14 @@ def test_weight_group_bands(tmp_path):
 # ── 10. trade_dates 过滤 ──────────────────────────────────────────────
 def test_trade_dates_filter():
     doc = cp.build_combined_posterior(
-        trade_dates=["20260105"], rows=_fixture_rows(),
-        quote_fetcher=_fetcher(_fixture_quotes()))
+        trade_dates=["20260105"],
+        rows=_fixture_rows(),
+        quote_fetcher=_fetcher(_fixture_quotes()),
+    )
     assert doc["total_rows"] == 2
     assert doc["asof"] == "20260105"
     assert doc["divergence_group"]["count"] == 0
-    assert "chan_monitor" not in doc["per_strategy"] or \
-        doc["per_strategy"]["chan_monitor"]["count"] == 1
+    assert (
+        "chan_monitor" not in doc["per_strategy"]
+        or doc["per_strategy"]["chan_monitor"]["count"] == 1
+    )

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """AgentSignalAdapter 的隔离契约测试。"""
+
 from types import MappingProxyType
 import sys
 from pathlib import Path
@@ -19,8 +20,15 @@ from strategy_layer.adapters.agent_bridge import AgentSignalAdapter
 class _FixedAgent(StrategyAgent):
     strategy_id = "agent_fixed"
 
-    def __init__(self, recommendation, *, score=72.0, trace_id="", extras=None,
-                 rationale="Agent 依据"):
+    def __init__(
+        self,
+        recommendation,
+        *,
+        score=72.0,
+        trace_id="",
+        extras=None,
+        rationale="Agent 依据",
+    ):
         self.recommendation = recommendation
         self.score = score
         self.trace_id = trace_id
@@ -44,13 +52,19 @@ class _FixedAgent(StrategyAgent):
 
 @pytest.mark.parametrize(
     ("recommendation", "action"),
-    [("strong_buy", "buy"), ("buy", "buy"), ("hold", "hold"),
-     ("sell", "sell"), ("strong_sell", "sell")],
+    [
+        ("strong_buy", "buy"),
+        ("buy", "buy"),
+        ("hold", "hold"),
+        ("sell", "sell"),
+        ("strong_sell", "sell"),
+    ],
 )
 def test_recommendation_maps_to_signal_action(recommendation, action):
     agent = _FixedAgent(recommendation)
     adapter = AgentSignalAdapter(
-        agent, context_provider=lambda date: {"symbol": "600519.SH", "date": date})
+        agent, context_provider=lambda date: {"symbol": "600519.SH", "date": date}
+    )
 
     signals = adapter.score("20261018")
 

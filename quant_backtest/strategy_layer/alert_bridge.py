@@ -22,22 +22,22 @@ news_collector/alert_fail_wrap.py 的原语——
 纪律：本模块任何异常都不外抛（告警观测层不能反噬聚合主流程）；
 本模块不做任何聚合判定，只消费 aggregator 传入的失败事实。
 """
+
 import os
 import subprocess
 import sys
 import time
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_NEWS_DIR = os.path.abspath(os.path.join(
-    _HERE, "..", "..", "news_collector"))
+_NEWS_DIR = os.path.abspath(os.path.join(_HERE, "..", "..", "news_collector"))
 if _NEWS_DIR not in sys.path:
     sys.path.insert(0, _NEWS_DIR)
 
 import alert_fail_wrap as _wrap  # noqa: E402  E1 口径单一事实源
 
 SEND_FEISHU_PY = os.path.join(_NEWS_DIR, "send_feishu.py")
-TASK = "SignalsCombined"     # outbox 文件名与 alert_send.log 的 task 字段
-SEND_TIMEOUT = 60            # send_feishu.py 子进程秒数上限（alert_fail 同量级）
+TASK = "SignalsCombined"  # outbox 文件名与 alert_send.log 的 task 字段
+SEND_TIMEOUT = 60  # send_feishu.py 子进程秒数上限（alert_fail 同量级）
 
 
 def build_message(trade_date: str, rows_count: int, error=None) -> str:
@@ -59,8 +59,12 @@ def _send_feishu(pending: str):
     try:
         r = subprocess.run(
             [sys.executable, "-X", "utf8", SEND_FEISHU_PY, pending],
-            capture_output=True, text=True, encoding="utf-8",
-            errors="replace", timeout=SEND_TIMEOUT)
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=SEND_TIMEOUT,
+        )
     except Exception as exc:  # noqa: BLE001 — 子进程不可用也走 FAIL 落痕
         return False, "send_err " + str(exc)[:100]
     out = ((r.stdout or "") + "\n" + (r.stderr or "")).strip()
@@ -78,18 +82,33 @@ def alert_persist_failure(trade_date: str, rows_count: int, error) -> None:
         ok, reason = _send_feishu(pending)
         try:
             action = _wrap.handle_send_result(
-                pending, TASK, ok, reason, task_rc="1",
+                pending,
+                TASK,
+                ok,
+                reason,
+                task_rc="1",
                 result_summary=reason,
-                exception_kind=_wrap.exception_class("1", ok, reason))
+                exception_kind=_wrap.exception_class("1", ok, reason),
+            )
         except Exception as exc:  # noqa: BLE001 — 改名失败不吞发送事实
-            _wrap.log_send(TASK, "feishu", ok,
-                           reason + " rename_err " + str(exc)[:60],
-                           task_rc="1", result_summary=reason,
-                           exception_kind=_wrap.exception_class(
-                               "1", ok, reason, rename_error=True))
+            _wrap.log_send(
+                TASK,
+                "feishu",
+                ok,
+                reason + " rename_err " + str(exc)[:60],
+                task_rc="1",
+                result_summary=reason,
+                exception_kind=_wrap.exception_class(
+                    "1", ok, reason, rename_error=True
+                ),
+            )
             action = "rename_err"
-        print("[aggregator][ALERT] task=%s ok=%s action=%s reason=%s"
-              % (TASK, ok, action, reason[:80]))
+        print(
+            "[aggregator][ALERT] task=%s ok=%s action=%s reason=%s"
+            % (TASK, ok, action, reason[:80])
+        )
     except Exception as exc:  # noqa: BLE001 — 告警链自身失败不反噬主流程
-        print("[aggregator][ALERT][WARN] 告警链自身失败(结果已留运行日志): %s"
-              % str(exc)[:120])
+        print(
+            "[aggregator][ALERT][WARN] 告警链自身失败(结果已留运行日志): %s"
+            % str(exc)[:120]
+        )

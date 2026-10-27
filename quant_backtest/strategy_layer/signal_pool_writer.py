@@ -35,6 +35,7 @@ C. 休眠默认红线（N11 拍板后已激活 SIGNAL_POOL_AUTO_WRITE=True）
 
 依赖：纯 stdlib（json / pathlib）。
 """
+
 from __future__ import annotations
 
 import json

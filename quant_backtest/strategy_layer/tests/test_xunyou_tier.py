@@ -4,6 +4,7 @@
 覆盖：断层分界 / 封顶旋钮 / 分歧票不进档不占额度 / build_pool 集成 /
 汇报信分层陈述段 / 导出脚本对新旧池文件的兼容。
 """
+
 import importlib.util
 import json
 import os
@@ -20,9 +21,16 @@ DAY = "20261019"
 
 
 def row(symbol, score, divergence=False):
-    return {"trade_date": DAY, "symbol": symbol, "action": "buy",
-            "score": score, "confidence": 0.8, "divergence": divergence,
-            "rationale": "r-" + symbol, "contributions": {}}
+    return {
+        "trade_date": DAY,
+        "symbol": symbol,
+        "action": "buy",
+        "score": score,
+        "confidence": 0.8,
+        "divergence": divergence,
+        "rationale": "r-" + symbol,
+        "contributions": {},
+    }
 
 
 def by_symbol(rows):
@@ -38,8 +46,7 @@ def test_t1_boundary_is_strictly_above_99():
 
 
 def test_t2_boundary_closed_at_95_and_99():
-    rows = [row("A", 95.0), row("B", 94.99), row("C", 99.0),
-            row("D", 97.0)]
+    rows = [row("A", 95.0), row("B", 94.99), row("C", 99.0), row("D", 97.0)]
     tiers = by_symbol(assign_tiers(rows))
     assert tiers["A"]["tier"] == "T2"
     assert tiers["B"]["tier"] == ""  # 95 以下不入档
@@ -66,14 +73,17 @@ def test_over_cap_scores_do_not_leak_into_t2():
     rows = [row("S%02d" % i, 99.5) for i in range(T1_RANK_CAP + 3)]
     tiers = by_symbol(assign_tiers(rows))
     assert sum(1 for r in tiers.values() if r["tier"] == "T1") == T1_RANK_CAP
-    assert all(r["tier"] == "" for r in tiers.values()
-               if r["symbol"] >= "S20")  # 超封顶 = 不入档，绝不落 T2
+    assert all(
+        r["tier"] == "" for r in tiers.values() if r["symbol"] >= "S20"
+    )  # 超封顶 = 不入档，绝不落 T2
 
 
 def test_rank_cap_counts_from_top_by_score_desc():
-    rows = ([row("TOP", 100.0)]
-            + [row("F%02d" % i, 99.5) for i in range(19)]
-            + [row("EDGE", 99.1)])
+    rows = (
+        [row("TOP", 100.0)]
+        + [row("F%02d" % i, 99.5) for i in range(19)]
+        + [row("EDGE", 99.1)]
+    )
     tiers = by_symbol(assign_tiers(rows))
     assert tiers["TOP"]["tier"] == "T1"
     assert tiers["EDGE"]["tier"] == ""  # 排名 21，score>99.0 仍被封顶裁掉
@@ -87,8 +97,9 @@ def test_divergence_forced_review_and_untiered():
 
 
 def test_divergence_does_not_consume_t1_rank_quota():
-    rows = ([row("DIV", 100.0, divergence=True)]
-            + [row("S%02d" % i, 99.5) for i in range(T1_RANK_CAP)])
+    rows = [row("DIV", 100.0, divergence=True)] + [
+        row("S%02d" % i, 99.5) for i in range(T1_RANK_CAP)
+    ]
     tiers = by_symbol(assign_tiers(rows))
     assert tiers["DIV"]["tier"] == ""
     assert tiers["DIV"]["review_required"] is True
@@ -106,8 +117,12 @@ def test_divergence_string_true_also_bypassed():
 
 # ── build_pool 集成：池条目带 tier、stats 计数、notes 拍板口径 ─────────
 def test_build_pool_annotates_tiers_and_stats():
-    combined = [row("T1A", 99.9), row("T2A", 97.0),
-                row("LOW", 60.0), row("DIV", 100.0, divergence=True)]
+    combined = [
+        row("T1A", 99.9),
+        row("T2A", 97.0),
+        row("LOW", 60.0),
+        row("DIV", 100.0, divergence=True),
+    ]
     pool = build_pool(DAY, combined, [{"symbol": "DIV"}])
     tiers = by_symbol(pool["pool"])
     assert tiers["T1A"]["tier"] == "T1"
@@ -119,8 +134,9 @@ def test_build_pool_annotates_tiers_and_stats():
     assert pool["stats"]["tier2_total"] == 1
     assert pool["stats"]["review_total"] == 1
     assert any("2026-10-19" in n and "T1" in n for n in pool["notes"])
-    assert all("review_required" not in r for r in pool["pool"]
-               if not r["divergence"])  # 复核标记仅分歧票携带
+    assert all(
+        "review_required" not in r for r in pool["pool"] if not r["divergence"]
+    )  # 复核标记仅分歧票携带
     json.dumps(pool, ensure_ascii=False)  # 可序列化
 
 
@@ -135,9 +151,11 @@ def test_build_pool_empty_result_has_zero_tiers():
 # ── 汇报信分层陈述段（落盘至 tmp，绝不写真实 reports/）────────────────
 def test_upstream_report_contains_tier_section(tmp_path, monkeypatch):
     monkeypatch.setattr(xunyou, "REPORT_DIR", str(tmp_path))
-    pool = build_pool(DAY, [row("T1A", 99.9), row("T2A", 97.0),
-                            row("DIV", 63.475, divergence=True)],
-                      [{"symbol": "DIV"}])
+    pool = build_pool(
+        DAY,
+        [row("T1A", 99.9), row("T2A", 97.0), row("DIV", 63.475, divergence=True)],
+        [{"symbol": "DIV"}],
+    )
     path = xunyou.write_upstream_report(DAY, pool, ["kg_boost"])
     text = open(path, encoding="utf-8").read()
     assert "## 分层陈述（2026-10-19 拍板口径）" in text
@@ -150,41 +168,74 @@ def test_upstream_report_contains_tier_section(tmp_path, monkeypatch):
 # ── 导出脚本：tier 透传 + 旧池文件（无 tier 字段）兼容不崩 ────────────
 def _load_export_module():
     here = os.path.dirname(os.path.abspath(__file__))
-    script = os.path.abspath(os.path.join(
-        here, "..", "..", "..", "portal", "tools",
-        "export_xunyou_latest.py"))
-    spec = importlib.util.spec_from_file_location("export_xunyou_latest",
-                                                  script)
+    script = os.path.abspath(
+        os.path.join(
+            here, "..", "..", "..", "portal", "tools", "export_xunyou_latest.py"
+        )
+    )
+    spec = importlib.util.spec_from_file_location("export_xunyou_latest", script)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
 
 
 def _pool_doc(items):
-    return {"agent": "荀攸（公达）", "trade_date": DAY,
-            "generated_at": "2026-10-19 17:50:40",
-            "scope": "RESEARCH_ONLY_NOT_PRODUCTION",
-            "cutover_verdict": "BLOCK_CUTOVER", "pool": items,
-            "stats": {"divergence_total": 0}}
+    return {
+        "agent": "荀攸（公达）",
+        "trade_date": DAY,
+        "generated_at": "2026-10-19 17:50:40",
+        "scope": "RESEARCH_ONLY_NOT_PRODUCTION",
+        "cutover_verdict": "BLOCK_CUTOVER",
+        "pool": items,
+        "stats": {"divergence_total": 0},
+    }
 
 
 def test_export_passthrough_tier_for_new_pool_files():
     mod = _load_export_module()
-    doc = _pool_doc([
-        {"symbol": "600519.SH", "score": 99.9, "confidence": 0.8,
-         "divergence": False, "rationale": "r1", "tier": "T1"},
-        {"symbol": "000002.SZ", "score": 97.0, "confidence": 0.7,
-         "divergence": False, "rationale": "r2", "tier": "T2"}])
+    doc = _pool_doc(
+        [
+            {
+                "symbol": "600519.SH",
+                "score": 99.9,
+                "confidence": 0.8,
+                "divergence": False,
+                "rationale": "r1",
+                "tier": "T1",
+            },
+            {
+                "symbol": "000002.SZ",
+                "score": 97.0,
+                "confidence": 0.7,
+                "divergence": False,
+                "rationale": "r2",
+                "tier": "T2",
+            },
+        ]
+    )
     payload = mod.build_payload("fake.json", doc)
     assert [t["tier"] for t in payload["top"]] == ["T1", "T2"]
 
 
 def test_export_old_pool_files_without_tier_do_not_crash():
     mod = _load_export_module()
-    doc = _pool_doc([
-        {"symbol": "600519.SH", "score": 99.9, "confidence": 0.8,
-         "divergence": False, "rationale": "r1"},  # 旧文件：无 tier 字段
-        {"symbol": "000002.SZ", "score": 97.0, "confidence": 0.7,
-         "divergence": False, "rationale": "r2"}])
+    doc = _pool_doc(
+        [
+            {
+                "symbol": "600519.SH",
+                "score": 99.9,
+                "confidence": 0.8,
+                "divergence": False,
+                "rationale": "r1",
+            },  # 旧文件：无 tier 字段
+            {
+                "symbol": "000002.SZ",
+                "score": 97.0,
+                "confidence": 0.7,
+                "divergence": False,
+                "rationale": "r2",
+            },
+        ]
+    )
     payload = mod.build_payload("fake.json", doc)
     assert all(t["tier"] == "" for t in payload["top"])  # 兼容为空串

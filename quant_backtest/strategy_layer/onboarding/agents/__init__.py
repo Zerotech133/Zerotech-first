@@ -10,6 +10,7 @@
 装配条目（module/class/strategy_id）见同目录 ASSEMBLY_DRAFT.md——
 待 S3 回放对账过 + S4 影子期满才可进正式装配（S5 授权步骤，本包不注册）。
 """
+
 from .classic_agents import (
     BollBreakoutAgent,
     ClassicStrategyAgent,

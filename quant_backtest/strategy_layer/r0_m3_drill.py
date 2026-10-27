@@ -19,6 +19,7 @@
 - "模拟通道"仅指简报规范化字节的内存约定（canonical_json_bytes）；
   真实通道契约属 R1。
 """
+
 from __future__ import annotations
 
 import base64
@@ -45,8 +46,14 @@ SOURCE_ISSUER_ID = "r0-m3-drill-source-issuer"
 RECEIVER_IDENTITY = "r0-m3-drill-receiver"
 _RECEIPT_DOMAIN = b"r0-research-brief-receipt-v1\x00"
 _LEDGER_FILENAME = "replay_ledger.json"
-_SEGMENT_ORDER = ("source_attestation", "probe", "brief", "receipt",
-                  "replay_guard", "reconciliation")
+_SEGMENT_ORDER = (
+    "source_attestation",
+    "probe",
+    "brief",
+    "receipt",
+    "replay_guard",
+    "reconciliation",
+)
 _STAGE_ORDER = ("source", "signal", "combined", "pool", "brief", "receipt")
 
 # 固定种子演练密钥材料：只为保证演练可重复；【演练密钥，严禁复用于任何真实签发】。
@@ -66,17 +73,17 @@ def receiver_private_key() -> Ed25519PrivateKey:
 
 def raw_public_key(key: Ed25519PrivateKey) -> bytes:
     return key.public_key().public_bytes(
-        serialization.Encoding.Raw, serialization.PublicFormat.Raw)
+        serialization.Encoding.Raw, serialization.PublicFormat.Raw
+    )
 
 
 def drill_issued_at(business_day: str = DEFAULT_BUSINESS_DAY) -> str:
     """演练签发时刻：业务日 08:00:00Z（晚于演练时钟即被验签拒绝）。"""
-    return (f"{business_day[:4]}-{business_day[4:6]}-{business_day[6:]}"
-            "T08:00:00Z")
+    return f"{business_day[:4]}-{business_day[4:6]}-{business_day[6:]}T08:00:00Z"
 
 
 def canonical_json_bytes(payload: dict) -> bytes:
-    """"模拟通道"的简报规范化字节；真实通道契约属 R1。
+    """ "模拟通道"的简报规范化字节；真实通道契约属 R1。
 
     发送前把 source.path 归一为纯文件名：探针内嵌的是本机绝对路径，
     不属于研究产物内容；归一后简报字节与 work_dir 无关，演练可逐字节
@@ -86,39 +93,71 @@ def canonical_json_bytes(payload: dict) -> bytes:
     source = normalized.get("source")
     if type(source) is dict and type(source.get("path")) is str:
         source["path"] = Path(source["path"]).name
-    return json.dumps(normalized, sort_keys=True, separators=(",", ":"),
-                      ensure_ascii=False, allow_nan=False).encode("utf-8")
+    return json.dumps(
+        normalized,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    ).encode("utf-8")
 
 
 def synthetic_drill_rows(business_day: str = DEFAULT_BUSINESS_DAY) -> list[dict]:
     """两笔不同标的的合成当日事件；仅供演练，不代表任何真实采集。"""
     day = f"{business_day[:4]}-{business_day[4:6]}-{business_day[6:]}"
     return [
-        {"market": "CN", "code": "002633.SZ", "type": "2买", "dt": day,
-         "detect_date": day, "price": 10.0, "mbei": None, "bei": None,
-         "bei2": None, "vv": True},
-        {"market": "CN", "code": "002634.SZ", "type": "2买", "dt": day,
-         "detect_date": day, "price": 11.0, "mbei": None, "bei": None,
-         "bei2": None, "vv": True},
+        {
+            "market": "CN",
+            "code": "002633.SZ",
+            "type": "2买",
+            "dt": day,
+            "detect_date": day,
+            "price": 10.0,
+            "mbei": None,
+            "bei": None,
+            "bei2": None,
+            "vv": True,
+        },
+        {
+            "market": "CN",
+            "code": "002634.SZ",
+            "type": "2买",
+            "dt": day,
+            "detect_date": day,
+            "price": 11.0,
+            "mbei": None,
+            "bei": None,
+            "bei2": None,
+            "vv": True,
+        },
     ]
 
 
-def write_drill_source(source_rows, work_dir, *,
-                       business_day: str = DEFAULT_BUSINESS_DAY,
-                       filename: str = "drill_source.jsonl") -> tuple[Path, bytes]:
+def write_drill_source(
+    source_rows,
+    work_dir,
+    *,
+    business_day: str = DEFAULT_BUSINESS_DAY,
+    filename: str = "drill_source.jsonl",
+) -> tuple[Path, bytes]:
     """把调用方给定的源行写为 UTF-8 JSONL（仅写入调用方指定的 work_dir）。"""
     directory = Path(work_dir)
     directory.mkdir(parents=True, exist_ok=True)
-    raw = "".join(json.dumps(row, ensure_ascii=False) + "\n"
-                  for row in source_rows).encode("utf-8")
+    raw = "".join(
+        json.dumps(row, ensure_ascii=False) + "\n" for row in source_rows
+    ).encode("utf-8")
     path = directory / filename
     path.write_bytes(raw)
     return path, raw
 
 
 def issue_source_attestation(
-    signing_key: Ed25519PrivateKey, business_day: str, source_bytes: bytes, *,
-    issuer_id: str = SOURCE_ISSUER_ID, issued_at: str | None = None,
+    signing_key: Ed25519PrivateKey,
+    business_day: str,
+    source_bytes: bytes,
+    *,
+    issuer_id: str = SOURCE_ISSUER_ID,
+    issued_at: str | None = None,
 ) -> dict:
     """演练签发者对源字节签发来源凭证（与真实凭证契约同构）。"""
     lines = source_bytes.decode("utf-8").split("\n")
@@ -132,15 +171,27 @@ def issue_source_attestation(
         "event_count": len(lines),
         "issued_at": issued_at or drill_issued_at(business_day),
     }
-    payload = json.dumps(claims, sort_keys=True, separators=(",", ":"),
-                         ensure_ascii=False, allow_nan=False).encode("utf-8")
-    return {"claims": claims,
-            "signature": base64.b64encode(signing_key.sign(payload)).decode("ascii")}
+    payload = json.dumps(
+        claims,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    ).encode("utf-8")
+    return {
+        "claims": claims,
+        "signature": base64.b64encode(signing_key.sign(payload)).decode("ascii"),
+    }
 
 
 def sign_drill_receipt(
-    signing_key: Ed25519PrivateKey, brief_bytes: bytes, *,
-    batch_id: str, source_identity: str, received_at: str, message_id: str,
+    signing_key: Ed25519PrivateKey,
+    brief_bytes: bytes,
+    *,
+    batch_id: str,
+    source_identity: str,
+    received_at: str,
+    message_id: str,
     receiver_identity: str = RECEIVER_IDENTITY,
 ) -> dict:
     """演练接收方对简报字节签发回执（与真实回执契约同构）。"""
@@ -153,11 +204,10 @@ def sign_drill_receipt(
         "message_id": message_id,
     }
     message = _RECEIPT_DOMAIN + json.dumps(
-        fields, ensure_ascii=False, sort_keys=True,
-        separators=(",", ":")).encode("utf-8")
+        fields, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
     receipt = dict(fields)
-    receipt["signature"] = base64.b64encode(
-        signing_key.sign(message)).decode("ascii")
+    receipt["signature"] = base64.b64encode(signing_key.sign(message)).decode("ascii")
     return receipt
 
 
@@ -171,11 +221,14 @@ def _blank_report(business_day: str, clock: datetime) -> dict:
         "channel_note": "简报经模拟通道规范化为字节；真实通道契约属 R1",
         "status": "FAILED",
         "stopped_at": None,
-        "segments": {name: {"status": "NOT_RUN", "reason": None}
-                     for name in _SEGMENT_ORDER},
-        "final": {"status": "FAILED",
-                  "real_source_verdict": "BLOCKED_REAL_DATA",
-                  "cutover_verdict": "BLOCK_CUTOVER"},
+        "segments": {
+            name: {"status": "NOT_RUN", "reason": None} for name in _SEGMENT_ORDER
+        },
+        "final": {
+            "status": "FAILED",
+            "real_source_verdict": "BLOCKED_REAL_DATA",
+            "cutover_verdict": "BLOCK_CUTOVER",
+        },
     }
 
 
@@ -190,8 +243,13 @@ def _contains_ready(value) -> bool:
     return False
 
 
-def run_full_drill(source_rows, work_dir, *, now: datetime | None = None,
-                   business_day: str = DEFAULT_BUSINESS_DAY) -> dict:
+def run_full_drill(
+    source_rows,
+    work_dir,
+    *,
+    now: datetime | None = None,
+    business_day: str = DEFAULT_BUSINESS_DAY,
+) -> dict:
     """逐段执行合成演练链；任何一段非预期即停止，返回结构化失败报告。
 
     - source_rows：调用方给定的源行列表（dict，含 detect_date/code/type 等）。
@@ -218,18 +276,27 @@ def run_full_drill(source_rows, work_dir, *, now: datetime | None = None,
     try:
         # 段 1：写源 + 演练签发者签发 + 独立验签
         source_path, source_bytes = write_drill_source(
-            source_rows, work_dir, business_day=business_day)
+            source_rows, work_dir, business_day=business_day
+        )
         attestation = issue_source_attestation(
-            issuer_private_key(), business_day, source_bytes)
+            issuer_private_key(), business_day, source_bytes
+        )
         source_result = verify_source_attestation(
-            business_day, source_bytes, attestation,
-            trusted_public_keys={SOURCE_ISSUER_ID: raw_public_key(issuer_private_key())},
-            trusted_as_of=clock)
+            business_day,
+            source_bytes,
+            attestation,
+            trusted_public_keys={
+                SOURCE_ISSUER_ID: raw_public_key(issuer_private_key())
+            },
+            trusted_as_of=clock,
+        )
         if source_result["status"] != "VERIFIED":
-            return fail("source_attestation", source_result["status"],
-                        source_result["reason"])
+            return fail(
+                "source_attestation", source_result["status"], source_result["reason"]
+            )
         segments["source_attestation"] = {
-            "status": "VERIFIED", "reason": source_result["reason"],
+            "status": "VERIFIED",
+            "reason": source_result["reason"],
             "issuer_id": source_result["issuer_id"],
             "source_sha256": source_result["source_sha256"],
             "event_count": source_result["event_count"],
@@ -239,13 +306,18 @@ def run_full_drill(source_rows, work_dir, *, now: datetime | None = None,
         # 段 2：历史池探针（内存链；只读段 1 写入的同一份字节）
         stage = "probe"
         probe = inspect_historical_pool(business_day, source_path)
-        if (probe["status"] != "UNVERIFIED"
-                or probe["chain_status"] != "VERIFIED_IN_MEMORY"):
-            return fail("probe", probe["status"],
-                        f"chain_status={probe['chain_status']}; "
-                        f"failures={probe['failures']}")
+        if (
+            probe["status"] != "UNVERIFIED"
+            or probe["chain_status"] != "VERIFIED_IN_MEMORY"
+        ):
+            return fail(
+                "probe",
+                probe["status"],
+                f"chain_status={probe['chain_status']}; failures={probe['failures']}",
+            )
         segments["probe"] = {
-            "status": probe["status"], "chain_status": probe["chain_status"],
+            "status": probe["status"],
+            "chain_status": probe["chain_status"],
             "counts": dict(probe["counts"]),
             "reason": "内存链完成但源身份未验证；仅研究用途",
         }
@@ -254,11 +326,12 @@ def run_full_drill(source_rows, work_dir, *, now: datetime | None = None,
         stage = "brief"
         brief = build_research_brief(probe)
         brief_bytes = canonical_json_bytes(brief)
-        if (brief.get("scope") != "RESEARCH_ONLY_NOT_PRODUCTION"
-                or brief.get("cutover_verdict") != "BLOCK_CUTOVER"
-                or brief.get("trade_date") != business_day
-                or brief.get("source", {}).get("sha256")
-                != source_result["source_sha256"]):
+        if (
+            brief.get("scope") != "RESEARCH_ONLY_NOT_PRODUCTION"
+            or brief.get("cutover_verdict") != "BLOCK_CUTOVER"
+            or brief.get("trade_date") != business_day
+            or brief.get("source", {}).get("sha256") != source_result["source_sha256"]
+        ):
             return fail("brief", "INVALID_BRIEF", "简报研究边界或源身份不一致")
         segments["brief"] = {
             "status": "BUILT_IN_MEMORY",
@@ -270,22 +343,29 @@ def run_full_drill(source_rows, work_dir, *, now: datetime | None = None,
         stage = "receipt"
         message_id = f"r0-m3-drill-{business_day}-receipt-0001"
         receipt = sign_drill_receipt(
-            receiver_private_key(), brief_bytes, batch_id=business_day,
+            receiver_private_key(),
+            brief_bytes,
+            batch_id=business_day,
             source_identity=brief["source"]["sha256"],
-            received_at=clock.isoformat(), message_id=message_id)
+            received_at=clock.isoformat(),
+            message_id=message_id,
+        )
         seen_message_ids: set[str] = set()
         receipt_result = verify_receipt_attestation(
-            brief_bytes, receipt,
+            brief_bytes,
+            receipt,
             trusted_receiver_public_key=raw_public_key(receiver_private_key()),
             expected_batch_id=business_day,
             expected_source_identity=brief["source"]["sha256"],
             expected_receiver_identity=RECEIVER_IDENTITY,
-            seen_message_ids=seen_message_ids, now=clock)
+            seen_message_ids=seen_message_ids,
+            now=clock,
+        )
         if receipt_result["status"] != "VERIFIED_RECEIPT_ONLY":
-            return fail("receipt", receipt_result["status"],
-                        "回执未通过独立接收方验签")
+            return fail("receipt", receipt_result["status"], "回执未通过独立接收方验签")
         segments["receipt"] = {
-            "status": "VERIFIED_RECEIPT_ONLY", "message_id": message_id,
+            "status": "VERIFIED_RECEIPT_ONLY",
+            "message_id": message_id,
             "reason": "回执独立验签通过；仅证明此回执，不代表真实接收",
         }
 
@@ -296,12 +376,18 @@ def run_full_drill(source_rows, work_dir, *, now: datetime | None = None,
         second_claim = ledger.claim(message_id)
         # claim 返回 dict（含真实时钟 claimed_at），只取 status 入报告以保可重复
         first_status = first_claim.get("status") if type(first_claim) is dict else None
-        second_status = second_claim.get("status") if type(second_claim) is dict else None
+        second_status = (
+            second_claim.get("status") if type(second_claim) is dict else None
+        )
         if first_status != "CLAIMED" or second_status != "DUPLICATE":
-            return fail("replay_guard", "REPLAY_NOT_ENFORCED",
-                        f"claim 结果为 {first_claim!r}/{second_claim!r}")
+            return fail(
+                "replay_guard",
+                "REPLAY_NOT_ENFORCED",
+                f"claim 结果为 {first_claim!r}/{second_claim!r}",
+            )
         segments["replay_guard"] = {
-            "status": "ENFORCED", "message_id": message_id,
+            "status": "ENFORCED",
+            "message_id": message_id,
             "claims": [first_status, second_status],
             "reason": "同 message_id 二次领取被拒绝",
         }
@@ -309,22 +395,38 @@ def run_full_drill(source_rows, work_dir, *, now: datetime | None = None,
         # 段 6：逐段对账
         stage = "reconciliation"
         reconciliation = reconcile_evidence(
-            business_day, probe=probe, source_attestation=source_result,
-            brief=brief, receipt_attestation=receipt_result)
-        actual_stages = [reconciliation["stages"][name]["status"]
-                         for name in _STAGE_ORDER]
-        expected_stages = ["CALLER_ATTESTATION_CLAIM", "IN_MEMORY_ONLY",
-                           "IN_MEMORY_ONLY", "IN_MEMORY_ONLY",
-                           "IN_MEMORY_ONLY", "CALLER_RECEIPT_CLAIM"]
-        if (reconciliation["status"] != "NOT_VERIFIED"
-                or actual_stages != expected_stages):
-            return fail("reconciliation", reconciliation["status"],
-                        f"stages={actual_stages}; "
-                        f"reasons={reconciliation['reasons']}")
+            business_day,
+            probe=probe,
+            source_attestation=source_result,
+            brief=brief,
+            receipt_attestation=receipt_result,
+        )
+        actual_stages = [
+            reconciliation["stages"][name]["status"] for name in _STAGE_ORDER
+        ]
+        expected_stages = [
+            "CALLER_ATTESTATION_CLAIM",
+            "IN_MEMORY_ONLY",
+            "IN_MEMORY_ONLY",
+            "IN_MEMORY_ONLY",
+            "IN_MEMORY_ONLY",
+            "CALLER_RECEIPT_CLAIM",
+        ]
+        if (
+            reconciliation["status"] != "NOT_VERIFIED"
+            or actual_stages != expected_stages
+        ):
+            return fail(
+                "reconciliation",
+                reconciliation["status"],
+                f"stages={actual_stages}; reasons={reconciliation['reasons']}",
+            )
         segments["reconciliation"] = {
             "status": reconciliation["status"],
-            "stages": {name: dict(reconciliation["stages"][name])
-                       for name in reconciliation["stages"]},
+            "stages": {
+                name: dict(reconciliation["stages"][name])
+                for name in reconciliation["stages"]
+            },
             "counts": dict(reconciliation["counts"]),
             "reason": "六段对账一致但仍 NOT_VERIFIED；不构成 READY",
         }
@@ -337,11 +439,12 @@ def run_full_drill(source_rows, work_dir, *, now: datetime | None = None,
             "real_source_verdict": reconciliation["real_source_verdict"],
             "cutover_verdict": reconciliation["cutover_verdict"],
         }
-        if (report["final"]["real_source_verdict"] != "BLOCKED_REAL_DATA"
-                or report["final"]["cutover_verdict"] != "BLOCK_CUTOVER"
-                or _contains_ready(report)):
+        if (
+            report["final"]["real_source_verdict"] != "BLOCKED_REAL_DATA"
+            or report["final"]["cutover_verdict"] != "BLOCK_CUTOVER"
+            or _contains_ready(report)
+        ):
             return fail("reconciliation", "FINAL_GUARD_FAILED", "终态护栏被破坏")
         return report
     except Exception as exc:  # 失败关闭：异常也结构化，不裸抛
-        return fail(stage, "UNEXPECTED_EXCEPTION",
-                    f"{type(exc).__name__}: {exc}")
+        return fail(stage, "UNEXPECTED_EXCEPTION", f"{type(exc).__name__}: {exc}")

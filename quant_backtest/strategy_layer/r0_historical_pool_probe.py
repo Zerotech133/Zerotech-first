@@ -1,4 +1,5 @@
 """历史 CN 多日 JSONL 事后截取；只读取一次源字节，不签发冻结身份或落盘。"""
+
 from __future__ import annotations
 
 from datetime import date
@@ -21,7 +22,9 @@ _TYPES = frozenset(("1买", "2买", "3买", "1卖", "2卖", "3卖"))
 
 
 def _calendar_day(value: object) -> str:
-    if not isinstance(value, str) or not re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", value):
+    if not isinstance(value, str) or not re.fullmatch(
+        r"[0-9]{4}-[0-9]{2}-[0-9]{2}", value
+    ):
         raise ValueError("日期必须为 YYYY-MM-DD")
     if date.fromisoformat(value).isoformat() != value:
         raise ValueError("日期无效")
@@ -54,8 +57,7 @@ def _validate_row(row: object) -> dict:
     if _calendar_day(row.get("dt")) > detect:
         raise ValueError("dt 晚于 detect_date")
     price = row.get("price")
-    if (type(price) not in (int, float) or not math.isfinite(price)
-            or price <= 0):
+    if type(price) not in (int, float) or not math.isfinite(price) or price <= 0:
         raise ValueError("price 必须为有限正数")
     for key in ("mbei", "bei", "bei2", "vv"):
         if key in row and row[key] is not None and type(row[key]) is not bool:
@@ -79,24 +81,43 @@ def inspect_historical_pool(business_day: str, source_path: str | Path) -> dict:
         "extraction": "历史多日池事后截取，非点时冻结批次",
         "status": "NOT_VERIFIED",
         "source": {
-            "path": str(source), "manifest": None, "sha256": None,
-            "business_date": business_day, "observed_date": None,
+            "path": str(source),
+            "manifest": None,
+            "sha256": None,
+            "business_date": business_day,
+            "observed_date": None,
             "identity_status": "UNVERIFIED",
             "identity_reason": "源字节哈希仅标识本次所读快照，不能自证独立冻结身份或历史可见性",
         },
-        "counts": {"source_events": None, "matched_events": None,
-                   "signals": None, "kept": None, "combined": None, "pool": None},
-        "chain_status": "NOT_VERIFIED", "pool_status": "NOT_VERIFIED",
-        "brief_status": "NOT_VERIFIED", "receipt_status": "NOT_VERIFIED",
-        "real_source_verdict": "BLOCKED_REAL_DATA", "failures": [],
+        "counts": {
+            "source_events": None,
+            "matched_events": None,
+            "signals": None,
+            "kept": None,
+            "combined": None,
+            "pool": None,
+        },
+        "chain_status": "NOT_VERIFIED",
+        "pool_status": "NOT_VERIFIED",
+        "brief_status": "NOT_VERIFIED",
+        "receipt_status": "NOT_VERIFIED",
+        "real_source_verdict": "BLOCKED_REAL_DATA",
+        "failures": [],
     }
 
     def finish() -> dict:
         brief = build_research_brief(result)
-        brief["risks"] = [risk for risk in brief["risks"] if "自声明 manifest" not in risk]
-        brief["risks"].insert(0, "历史多日池事后截取：哈希仅标识本次快照，不证明独立冻结、点时可见性或真实影子作业")
+        brief["risks"] = [
+            risk for risk in brief["risks"] if "自声明 manifest" not in risk
+        ]
+        brief["risks"].insert(
+            0,
+            "历史多日池事后截取：哈希仅标识本次快照，不证明独立冻结、点时可见性或真实影子作业",
+        )
         if result["status"] == "NO_MATCH_UNVERIFIED":
-            brief["risks"].append("未匹配当日行不等于可信零事件，无法证明当日实际无信号")
+            brief["risks"].append(
+                "未匹配当日行不等于可信零事件，无法证明当日实际无信号"
+            )
         result["brief"] = brief
         return result
 
@@ -113,15 +134,23 @@ def inspect_historical_pool(business_day: str, source_path: str | Path) -> dict:
             try:
                 if not line.strip():
                     raise ValueError("空白行")
-                row = json.loads(line, object_pairs_hook=_unique_object,
-                                 parse_constant=_reject_constant)
+                row = json.loads(
+                    line,
+                    object_pairs_hook=_unique_object,
+                    parse_constant=_reject_constant,
+                )
                 rows.append(_validate_row(row))
             except (ValueError, TypeError) as exc:
                 raise ValueError(f"第 {number} 行: {exc}") from exc
     except (OSError, UnicodeError, ValueError, TypeError) as exc:
         result["status"] = "INVALID_SOURCE"
-        result["failures"].append({"stage": "source", "strategy": None,
-                                   "reason": f"{type(exc).__name__}: {exc}"})
+        result["failures"].append(
+            {
+                "stage": "source",
+                "strategy": None,
+                "reason": f"{type(exc).__name__}: {exc}",
+            }
+        )
         return finish()
 
     result["counts"]["source_events"] = len(rows)
@@ -135,8 +164,12 @@ def inspect_historical_pool(business_day: str, source_path: str | Path) -> dict:
     try:
         adapter = ChanMonitorAdapter(pool_globs=[str(source)])
         signals = [adapter._convert(row, business_day) for row in picked]
-        if any(not isinstance(sig, Signal) or sig.strategy != adapter.strategy_id
-               or sig.trade_date != business_day for sig in signals):
+        if any(
+            not isinstance(sig, Signal)
+            or sig.strategy != adapter.strategy_id
+            or sig.trade_date != business_day
+            for sig in signals
+        ):
             raise ValueError("信号转换不完整")
         grouped = {}
         for sig in signals:
@@ -147,19 +180,32 @@ def inspect_historical_pool(business_day: str, source_path: str | Path) -> dict:
         for symbol in sorted(grouped):
             kept, superseded = preaggregate_symbol(grouped[symbol])
             kept_total += len(kept)
-            item = fuser._fuse_symbol(business_day, symbol, kept,
-                                      superseded=superseded)
+            item = fuser._fuse_symbol(business_day, symbol, kept, superseded=superseded)
             combined.append(item)
             if item["divergence"]:
                 divergences.append({"symbol": symbol, "trade_date": business_day})
         pool = build_pool(business_day, combined, divergences)
-        result["counts"].update(signals=len(signals), kept=kept_total,
-                                combined=len(combined), pool=pool["stats"]["buy_total"])
-        result.update(status="UNVERIFIED", chain_status="VERIFIED_IN_MEMORY",
-                      pool_status="IN_MEMORY_ONLY", combined=combined, pool=pool)
+        result["counts"].update(
+            signals=len(signals),
+            kept=kept_total,
+            combined=len(combined),
+            pool=pool["stats"]["buy_total"],
+        )
+        result.update(
+            status="UNVERIFIED",
+            chain_status="VERIFIED_IN_MEMORY",
+            pool_status="IN_MEMORY_ONLY",
+            combined=combined,
+            pool=pool,
+        )
     except Exception as exc:
         result["status"] = "CONVERSION_ERROR"
-        result["failures"].append({"stage": "adapter", "strategy": "chan_monitor",
-                                   "reason": f"{type(exc).__name__}: {exc}"})
+        result["failures"].append(
+            {
+                "stage": "adapter",
+                "strategy": "chan_monitor",
+                "reason": f"{type(exc).__name__}: {exc}",
+            }
+        )
 
     return finish()

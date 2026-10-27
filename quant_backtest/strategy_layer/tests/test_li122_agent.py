@@ -22,6 +22,7 @@
 环境缺 chanlun config.json 时相关用例 pytest.skip（fail-visible，
 SKIP 原因写明「chanlun config.json 缺失」，绝不静默）。
 """
+
 import importlib.util
 import json
 import os
@@ -31,8 +32,8 @@ from datetime import datetime, timedelta
 import pytest
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_QB_ROOT = os.path.dirname(os.path.dirname(_HERE))          # quant_backtest/
-_REPO_ROOT = os.path.dirname(_QB_ROOT)                      # 仓库根
+_QB_ROOT = os.path.dirname(os.path.dirname(_HERE))  # quant_backtest/
+_REPO_ROOT = os.path.dirname(_QB_ROOT)  # 仓库根
 _AGENTS_DIR = os.path.join(_QB_ROOT, "strategy_layer", "onboarding", "agents")
 
 if _QB_ROOT not in sys.path:
@@ -50,8 +51,8 @@ def _load_module(name, path):
 
 # 被测插件包（先加载：其内部单例化 agent_platform 契约模块）
 li122_agent = _load_module(
-    "li122_agent_under_test",
-    os.path.join(_AGENTS_DIR, "li122_agent.py"))
+    "li122_agent_under_test", os.path.join(_AGENTS_DIR, "li122_agent.py")
+)
 # agent_platform 契约（真校验器）：复用插件已加载的同一份模块对象，
 # 保证 StrategyAgent/Verdict 类身份一致（isinstance 可判定）
 _ap_registry = li122_agent.ap_registry_module()
@@ -62,6 +63,7 @@ try:
     from chanlun_li122 import judge as _direct_judge
     from chanlun_li122 import RULESETS as _RULESETS
     from chanlun_signal import analyze as _direct_analyze
+
     _CHANLUN_ERR = None
 except Exception as _exc:  # pragma: no cover - 仅缺 config.json 环境触发
     _CHANLUN_ERR = _exc
@@ -71,9 +73,11 @@ except Exception as _exc:  # pragma: no cover - 仅缺 config.json 环境触发
 def chanlun_ready():
     """chanlun 依赖可用性闸门：缺失时 fail-visible 跳过（原因写明根因）。"""
     if _CHANLUN_ERR is not None:
-        pytest.skip("chanlun config.json 缺失（chanlun_data.py 导入期读取 "
-                    "quant_backtest/config.json），chanlun 本体链不可用，"
-                    "相关用例跳过——导入异常：%r" % (_CHANLUN_ERR,))
+        pytest.skip(
+            "chanlun config.json 缺失（chanlun_data.py 导入期读取 "
+            "quant_backtest/config.json），chanlun 本体链不可用，"
+            "相关用例跳过——导入异常：%r" % (_CHANLUN_ERR,)
+        )
 
 
 AGENT = li122_agent.Li122Agent
@@ -81,21 +85,25 @@ AGENT = li122_agent.Li122Agent
 
 class Li122B(AGENT):
     """档 B 变体：类属性参数化子类（无参构造范式）。"""
+
     ruleset_key = "B_D_30F_5F"
 
 
 class Li122A1(AGENT):
     """严格变体：上级仅一买参与联立。"""
+
     ruleset_key = "A1_30F_5F_1F_only1"
 
 
 class Li122A2(AGENT):
     """敏感性变体：更长观察窗 + 更大容差。"""
+
     ruleset_key = "A2_30F_5F_1F_wide"
 
 
 class Li122BadRuleset(AGENT):
     """未知 ruleset 键：应回落默认档而非硬拒。"""
+
     ruleset_key = "NO_SUCH_RULESET"
 
 
@@ -104,15 +112,25 @@ class Li122BadRuleset(AGENT):
 # ---------------------------------------------------------------------- #
 def _dt_seq(start, n, step_min):
     t0 = datetime.strptime(start, "%Y-%m-%d %H:%M")
-    return [(t0 + timedelta(minutes=step_min * i)).strftime("%Y-%m-%d %H:%M")
-            for i in range(n)]
+    return [
+        (t0 + timedelta(minutes=step_min * i)).strftime("%Y-%m-%d %H:%M")
+        for i in range(n)
+    ]
 
 
 def _pattern_bars(dts, pattern):
     """按 4 根周期循环的锯齿 h/l 形态（中级底分型可稳定成立）。"""
-    return [{"dt": d, "o": 100.0, "h": pattern[i % len(pattern)][0],
-             "l": pattern[i % len(pattern)][1], "c": 100.0, "v": 1.0}
-            for i, d in enumerate(dts)]
+    return [
+        {
+            "dt": d,
+            "o": 100.0,
+            "h": pattern[i % len(pattern)][0],
+            "l": pattern[i % len(pattern)][1],
+            "c": 100.0,
+            "v": 1.0,
+        }
+        for i, d in enumerate(dts)
+    ]
 
 
 def _v_bars(dts, trough_idx, slope):
@@ -120,18 +138,30 @@ def _v_bars(dts, trough_idx, slope):
     out = []
     trough = 100.0 - slope * trough_idx
     for i, d in enumerate(dts):
-        low = (100.0 - slope * i) if i <= trough_idx else \
-              (trough + slope * (i - trough_idx))
-        out.append({"dt": d, "o": 100.0, "h": low + 2.0, "l": low,
-                    "c": 100.0, "v": 1.0})
+        low = (
+            (100.0 - slope * i)
+            if i <= trough_idx
+            else (trough + slope * (i - trough_idx))
+        )
+        out.append(
+            {"dt": d, "o": 100.0, "h": low + 2.0, "l": low, "c": 100.0, "v": 1.0}
+        )
     return out
 
 
 def _desc_bars(dts, slope):
     """单调下行低点（低级持续创新低 → check_low 不过）。"""
-    return [{"dt": d, "o": 100.0, "h": 102.0 - slope * i,
-             "l": 100.0 - slope * i, "c": 100.0, "v": 1.0}
-            for i, d in enumerate(dts)]
+    return [
+        {
+            "dt": d,
+            "o": 100.0,
+            "h": 102.0 - slope * i,
+            "l": 100.0 - slope * i,
+            "c": 100.0,
+            "v": 1.0,
+        }
+        for i, d in enumerate(dts)
+    ]
 
 
 ZIG = [(101.0, 99.0), (100.5, 98.0), (101.0, 99.0), (101.5, 99.5)]
@@ -139,30 +169,40 @@ ZIG = [(101.0, 99.0), (100.5, 98.0), (101.0, 99.0), (101.5, 99.5)]
 
 def _bars_a():
     """档 A 数据：1m 400 根（V 形，谷在 idx200）+ 5m 80 根锯齿。"""
-    return {"1m": _v_bars(_dt_seq("2026-06-01 09:30", 400, 1), 200, 0.05),
-            "5m": _pattern_bars(_dt_seq("2026-06-01 09:30", 80, 5), ZIG)}
+    return {
+        "1m": _v_bars(_dt_seq("2026-06-01 09:30", 400, 1), 200, 0.05),
+        "5m": _pattern_bars(_dt_seq("2026-06-01 09:30", 80, 5), ZIG),
+    }
 
 
 def _bars_a_low_fail():
     """档 A 数据但低级持续创新低（check_low_no_lower_low 不过）。"""
-    return {"1m": _desc_bars(_dt_seq("2026-06-01 09:30", 400, 1), 0.05),
-            "5m": _pattern_bars(_dt_seq("2026-06-01 09:30", 80, 5), ZIG)}
+    return {
+        "1m": _desc_bars(_dt_seq("2026-06-01 09:30", 400, 1), 0.05),
+        "5m": _pattern_bars(_dt_seq("2026-06-01 09:30", 80, 5), ZIG),
+    }
 
 
 def _bars_b():
     """档 B 数据：30m 60 根锯齿（中级）+ 5m 80 根 V 形（低级）。"""
-    return {"30m": _pattern_bars(_dt_seq("2026-06-01 09:30", 60, 30), ZIG),
-            "5m": _v_bars(_dt_seq("2026-06-01 09:30", 80, 5), 40, 0.1)}
+    return {
+        "30m": _pattern_bars(_dt_seq("2026-06-01 09:30", 60, 30), ZIG),
+        "5m": _v_bars(_dt_seq("2026-06-01 09:30", 80, 5), 40, 0.1),
+    }
 
 
 UPPER_A = {"type": "1买", "dt": "2026-06-01 16:10", "price": 90.0}
-UPPER_B = {"type": "1买", "dt": "2026-06-03", "price": 90.0}       # 日线级 dt
+UPPER_B = {"type": "1买", "dt": "2026-06-03", "price": 90.0}  # 日线级 dt
 UPPER_B_SAMEDAY = {"type": "1买", "dt": "2026-06-01", "price": 90.0}
 
 
 def _ctx_driver(upper, bars, **extra):
-    ctx = {"symbol": SYMBOL, "as_of": upper["dt"],
-           "upper_signal": dict(upper), "bars": bars}
+    ctx = {
+        "symbol": SYMBOL,
+        "as_of": upper["dt"],
+        "upper_signal": dict(upper),
+        "bars": bars,
+    }
     ctx.update(extra)
     return ctx
 
@@ -200,14 +240,20 @@ SELF_SUFF_AS_OF = _dt_seq("2026-05-20 09:30", 120, 30)[-1]
 DRIVER_SCENARIOS = [
     ("A_pass", _ctx_driver(UPPER_A, _bars_a()), "A_30F_5F_1F", AGENT),
     ("A2_pass", _ctx_driver(UPPER_A, _bars_a()), "A2_30F_5F_1F_wide", Li122A2),
-    ("A1_intercept_type",
-     _ctx_driver({**UPPER_A, "type": "2买"}, _bars_a()),
-     "A1_30F_5F_1F_only1", Li122A1),
-    ("A_low_fail", _ctx_driver(UPPER_A, _bars_a_low_fail()),
-     "A_30F_5F_1F", AGENT),
+    (
+        "A1_intercept_type",
+        _ctx_driver({**UPPER_A, "type": "2买"}, _bars_a()),
+        "A1_30F_5F_1F_only1",
+        Li122A1,
+    ),
+    ("A_low_fail", _ctx_driver(UPPER_A, _bars_a_low_fail()), "A_30F_5F_1F", AGENT),
     ("B_pass", _ctx_driver(UPPER_B, _bars_b()), "B_D_30F_5F", Li122B),
-    ("B_same_day_exclusion",
-     _ctx_driver(UPPER_B_SAMEDAY, _bars_b()), "B_D_30F_5F", Li122B),
+    (
+        "B_same_day_exclusion",
+        _ctx_driver(UPPER_B_SAMEDAY, _bars_b()),
+        "B_D_30F_5F",
+        Li122B,
+    ),
 ]
 
 
@@ -221,9 +267,17 @@ def test_propose_returns_valid_verdict(chanlun_ready):
     assert v.strategy_id == "chanlun_li122"
     assert v.symbol == SYMBOL
     v.validate()  # 五档枚举 / confidence [0,1] / stance / symbol 白名单
-    d = json.loads(json.dumps({
-        "recommendation": v.recommendation, "confidence": v.confidence,
-        "stance": v.stance, "score": v.score, "extras": v.extras}))
+    d = json.loads(
+        json.dumps(
+            {
+                "recommendation": v.recommendation,
+                "confidence": v.confidence,
+                "stance": v.stance,
+                "score": v.score,
+                "extras": v.extras,
+            }
+        )
+    )
     assert d["recommendation"] in _ap_registry.RECOMMENDATIONS
 
 
@@ -257,13 +311,17 @@ def test_identity_attrs_per_manifest_guide():
 # ---------------------------------------------------------------------- #
 # ② 驱动模式与 judge 直算逐场景一致（S3 对账 100% 硬门槛预演）
 # ---------------------------------------------------------------------- #
-@pytest.mark.parametrize("name,ctx,key,cls", DRIVER_SCENARIOS,
-                         ids=[s[0] for s in DRIVER_SCENARIOS])
-def test_driver_mode_parity_with_direct_judge(name, ctx, key, cls,
-                                              chanlun_ready):
+@pytest.mark.parametrize(
+    "name,ctx,key,cls", DRIVER_SCENARIOS, ids=[s[0] for s in DRIVER_SCENARIOS]
+)
+def test_driver_mode_parity_with_direct_judge(name, ctx, key, cls, chanlun_ready):
     rule = _RULESETS[key]
-    direct = _direct_judge(ctx["upper_signal"], ctx["bars"][rule["mid_period"]],
-                           ctx["bars"][rule["low_period"]], key)
+    direct = _direct_judge(
+        ctx["upper_signal"],
+        ctx["bars"][rule["mid_period"]],
+        ctx["bars"][rule["low_period"]],
+        key,
+    )
     v = cls().propose(ctx)
     v.validate()
     # ok 布尔一致率 100%（硬门槛，无公差）：buy ⇔ ok；fail-closed ⇒ 拦截
@@ -274,18 +332,22 @@ def test_driver_mode_parity_with_direct_judge(name, ctx, key, cls,
         assert direct["ok"] is False and v.confidence == 0.0, name
         return
     assert v.extras["no"] == direct["no"], name
-    assert [c["ok"] for c in v.extras["checks"]] == \
-           [c["ok"] for c in direct["checks"]], name
-    assert [c["detail"] for c in v.extras["checks"]] == \
-           [c["detail"] for c in direct["checks"]], name
+    assert [c["ok"] for c in v.extras["checks"]] == [
+        c["ok"] for c in direct["checks"]
+    ], name
+    assert [c["detail"] for c in v.extras["checks"]] == [
+        c["detail"] for c in direct["checks"]
+    ], name
     assert v.extras["ruleset"] == key
 
 
 def test_pass_verdict_shape_and_confidence(chanlun_ready):
     """ok=True → buy + 档位置信 + bull + 全量诊断 extras。"""
-    cases = [(AGENT, _ctx_driver(UPPER_A, _bars_a()), 0.7),
-             (Li122A1, _ctx_driver(UPPER_A, _bars_a()), 0.75),
-             (Li122B, _ctx_driver(UPPER_B, _bars_b()), 0.65)]
+    cases = [
+        (AGENT, _ctx_driver(UPPER_A, _bars_a()), 0.7),
+        (Li122A1, _ctx_driver(UPPER_A, _bars_a()), 0.75),
+        (Li122B, _ctx_driver(UPPER_B, _bars_b()), 0.65),
+    ]
     for cls, ctx, conf in cases:
         v = cls().propose(ctx)
         v.validate()
@@ -345,27 +407,28 @@ def _assert_fail_closed(v, reason_kw):
 def test_fail_closed_mid_window_insufficient():
     bars = _bars_a()
     bars["5m"] = bars["5m"][:2]  # < mid_confirm_bars+1=3
-    _assert_fail_closed(AGENT().propose(_ctx_driver(UPPER_A, bars)),
-                        "中级窗口不足")
+    _assert_fail_closed(AGENT().propose(_ctx_driver(UPPER_A, bars)), "中级窗口不足")
 
 
 def test_fail_closed_low_window_insufficient():
     bars = _bars_a()
     bars["1m"] = bars["1m"][:100]  # < 2×low_window=120
-    _assert_fail_closed(AGENT().propose(_ctx_driver(UPPER_A, bars)),
-                        "低级窗口不足")
+    _assert_fail_closed(AGENT().propose(_ctx_driver(UPPER_A, bars)), "低级窗口不足")
 
 
 def test_fail_closed_missing_period_bars():
     bars = _bars_a()
     del bars["1m"]
-    _assert_fail_closed(AGENT().propose(_ctx_driver(UPPER_A, bars)),
-                        "低级窗口不足")
+    _assert_fail_closed(AGENT().propose(_ctx_driver(UPPER_A, bars)), "低级窗口不足")
 
 
 def test_fail_closed_upper_injection_incomplete():
-    ctx = {"symbol": SYMBOL, "as_of": "2026-06-01 16:10",
-           "upper_signal": {"type": "1买"}, "bars": _bars_a()}  # 缺 dt
+    ctx = {
+        "symbol": SYMBOL,
+        "as_of": "2026-06-01 16:10",
+        "upper_signal": {"type": "1买"},
+        "bars": _bars_a(),
+    }  # 缺 dt
     _assert_fail_closed(AGENT().propose(ctx), "注入不完整")
 
 
@@ -373,8 +436,8 @@ def test_fail_closed_self_suff_warmup_insufficient():
     bars = _bars_self_suff()
     bars["30m"] = bars["30m"][:50]  # < min_upper_bars=100
     _assert_fail_closed(
-        AGENT().propose(_ctx_self_suff(bars, bars["30m"][-1]["dt"])),
-        "预热不足")
+        AGENT().propose(_ctx_self_suff(bars, bars["30m"][-1]["dt"])), "预热不足"
+    )
 
 
 def test_fail_closed_when_chanlun_unavailable(monkeypatch):
@@ -399,8 +462,9 @@ def test_self_suff_parity_with_driver(chanlun_ready):
     # 测试内直算期望：同源 analyze + BUY 过滤 + 组内最大 dt（与 agent 同规则）
     cut30 = [b for b in bars["30m"] if b["dt"] <= SELF_SUFF_AS_OF]
     st = _direct_analyze(cut30)
-    cands = [s for s in st["signals"]
-             if s["type"] in _RULESETS["A_30F_5F_1F"]["upper_types"]]
+    cands = [
+        s for s in st["signals"] if s["type"] in _RULESETS["A_30F_5F_1F"]["upper_types"]
+    ]
     assert v.extras["upper_source"] == "computed"
     if not cands:
         assert v.recommendation == "hold" and v.confidence == 0.0
@@ -413,15 +477,18 @@ def test_self_suff_parity_with_driver(chanlun_ready):
     assert v.recommendation == v2.recommendation
     assert round(v.confidence, 6) == round(v2.confidence, 6)
     assert v.extras["no"] == v2.extras["no"]
-    assert [c["detail"] for c in v.extras["checks"]] == \
-           [c["detail"] for c in v2.extras["checks"]]
+    assert [c["detail"] for c in v.extras["checks"]] == [
+        c["detail"] for c in v2.extras["checks"]
+    ]
 
 
 def test_self_suff_no_buy_signal_is_legal_hold(chanlun_ready):
     """自足模式无买向信号 → 合法判定 hold（非 fail-closed）。"""
     dts30 = _dt_seq("2026-05-20 09:30", 150, 30)
-    flat = [{"dt": d, "o": 100.0, "h": 100.0, "l": 100.0, "c": 100.0, "v": 1.0}
-            for d in dts30]  # 全平序列：无结构 → 无信号
+    flat = [
+        {"dt": d, "o": 100.0, "h": 100.0, "l": 100.0, "c": 100.0, "v": 1.0}
+        for d in dts30
+    ]  # 全平序列：无结构 → 无信号
     bars = _bars_a()
     bars["30m"] = flat
     v = AGENT().propose(_ctx_self_suff(bars, dts30[-1]))
@@ -440,8 +507,9 @@ def test_daily_upper_dt_excludes_same_day_bars(chanlun_ready):
     ctx = _ctx_driver(UPPER_B_SAMEDAY, _bars_b())
     rule = _RULESETS["B_D_30F_5F"]
     # 本体直算佐证：同数据同口径下 judge 的中级截断为 0 根
-    direct = _direct_judge(ctx["upper_signal"], ctx["bars"]["30m"],
-                           ctx["bars"]["5m"], "B_D_30F_5F")
+    direct = _direct_judge(
+        ctx["upper_signal"], ctx["bars"]["30m"], ctx["bars"]["5m"], "B_D_30F_5F"
+    )
     assert direct["ok"] is False
     assert direct["checks"][1]["detail"].startswith("mid_bars=0")
     # Agent：窗口不足 fail-closed（不"聪明地"修正基线口径）
@@ -487,9 +555,11 @@ class _NoWriteMapping(dict):
 @pytest.mark.parametrize("mode", ["driver", "self_sufficient"])
 def test_propose_has_no_write_side_effects(mode, chanlun_ready):
     agent = AGENT()
-    ctx = _NoWriteMapping(_ctx_driver(UPPER_A, _bars_a()) if mode == "driver"
-                          else _ctx_self_suff(_bars_self_suff(),
-                                              SELF_SUFF_AS_OF))
+    ctx = _NoWriteMapping(
+        _ctx_driver(UPPER_A, _bars_a())
+        if mode == "driver"
+        else _ctx_self_suff(_bars_self_suff(), SELF_SUFF_AS_OF)
+    )
     v = agent.propose(ctx)
     v.validate()
     assert ctx.writes == []
@@ -501,11 +571,18 @@ def test_propose_has_no_write_side_effects(mode, chanlun_ready):
 
 def test_module_source_free_of_execution_chain():
     """模块源码不引用执行链/账本/下单（红线静态断言）。"""
-    src = open(os.path.join(_AGENTS_DIR, "li122_agent.py"),
-               encoding="utf-8").read()
-    for forbidden in ("execution_engine", "place_order", "cancel_order",
-                      "order_book", "ledger_write", "write_ledger",
-                      "account", "broker", "trade_api"):
+    src = open(os.path.join(_AGENTS_DIR, "li122_agent.py"), encoding="utf-8").read()
+    for forbidden in (
+        "execution_engine",
+        "place_order",
+        "cancel_order",
+        "order_book",
+        "ledger_write",
+        "write_ledger",
+        "account",
+        "broker",
+        "trade_api",
+    ):
         assert forbidden not in src, "源码含禁用标识: %s" % forbidden
 
 
@@ -513,8 +590,8 @@ def test_module_import_does_not_pull_chanlun_chain():
     """插件模块导入期零 chanlun 依赖（config.json 隐藏 IO 隔离在 propose）。"""
     before = set(sys.modules)
     fresh = _load_module(
-        "li122_agent_fresh_import_check",
-        os.path.join(_AGENTS_DIR, "li122_agent.py"))
+        "li122_agent_fresh_import_check", os.path.join(_AGENTS_DIR, "li122_agent.py")
+    )
     assert hasattr(fresh, "Li122Agent")
     new = set(sys.modules) - before
     pulled = [k for k in new if k.startswith("chanlun")]
@@ -543,7 +620,6 @@ def test_shadow_asof_policy_locked():
     assert AGENT.shadow_asof_policy == "T+1_prev_close"
     # 类属性注释必须携带定案依据（防后人不知所以然直接改掉）；
     # 直接读源文件（测试 loader 无 source，inspect.getsource 不可用）
-    with open(os.path.join(_AGENTS_DIR, "li122_agent.py"),
-              "r", encoding="utf-8") as f:
+    with open(os.path.join(_AGENTS_DIR, "li122_agent.py"), "r", encoding="utf-8") as f:
         src = f.read()
     assert "右沿" in src and "T+1_prev_close" in src and "122/122" in src

@@ -23,6 +23,7 @@
 数据全部合成（零 DB / 零 parquet 依赖）；qpzm_backtest 只读引用，
 不修改任何本体文件。
 """
+
 import importlib.util
 import json
 import math
@@ -34,8 +35,8 @@ import pandas as pd
 import pytest
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_QB_ROOT = os.path.dirname(os.path.dirname(_HERE))          # quant_backtest/
-_REPO_ROOT = os.path.dirname(_QB_ROOT)                      # 仓库根
+_QB_ROOT = os.path.dirname(os.path.dirname(_HERE))  # quant_backtest/
+_REPO_ROOT = os.path.dirname(_QB_ROOT)  # 仓库根
 _AGENTS_DIR = os.path.join(_QB_ROOT, "strategy_layer", "onboarding", "agents")
 
 if _QB_ROOT not in sys.path:
@@ -53,8 +54,8 @@ def _load_module(name, path):
 
 # 被测插件包（先加载：其内部单例化 agent_platform 契约模块）
 qpzm_agent = _load_module(
-    "qpzm_agent_under_test",
-    os.path.join(_AGENTS_DIR, "qpzm_agent.py"))
+    "qpzm_agent_under_test", os.path.join(_AGENTS_DIR, "qpzm_agent.py")
+)
 # agent_platform 契约（真校验器）：复用插件已加载的同一份模块对象，
 # 保证 StrategyAgent/Verdict 类身份一致（isinstance 可判定）
 _ap_registry = qpzm_agent.ap_registry_module()
@@ -67,29 +68,47 @@ AGENT = qpzm_agent.QpzmAgent
 
 class QpzmThAlt(AGENT):
     """阈值变体：TH_ALT 70/50。"""
+
     buy_th = 70.0
 
 
 class QpzmGateOff(AGENT):
     """闸门关闭变体。"""
+
     gate_on = False
 
 
 # ---------------------------------------------------------------------- #
 # 合成 context 与 combine_score 直算基线
 # ---------------------------------------------------------------------- #
-def _ctx(tech=None, rps_mix=None, n_avail=3, env_score=50.0, env_safe=True,
-         eligible=True, **extra):
-    ctx = {"symbol": SYMBOL, "as_of": 20261016,
-           "fields": {"tech": tech, "rps_mix": rps_mix, "n_avail": n_avail,
-                      "env_score": env_score, "env_safe": env_safe,
-                      "eligible": eligible}}
+def _ctx(
+    tech=None,
+    rps_mix=None,
+    n_avail=3,
+    env_score=50.0,
+    env_safe=True,
+    eligible=True,
+    **extra,
+):
+    ctx = {
+        "symbol": SYMBOL,
+        "as_of": 20261016,
+        "fields": {
+            "tech": tech,
+            "rps_mix": rps_mix,
+            "n_avail": n_avail,
+            "env_score": env_score,
+            "env_safe": env_safe,
+            "eligible": eligible,
+        },
+    }
     ctx.update(extra)
     return ctx
 
 
-def _direct_combine(tech, rps_mix, env_score, env_safe, eligible,
-                    buy_th=75.0, obs_th=50.0, gate_on=True):
+def _direct_combine(
+    tech, rps_mix, env_score, env_safe, eligible, buy_th=75.0, obs_th=50.0, gate_on=True
+):
     """qpzm_backtest.combine_score 单格直算（测试专用 import 读公式）。
 
     返回 (sc, buy, obs)——与 Agent 逐格对拍的期望值来源。
@@ -99,11 +118,17 @@ def _direct_combine(tech, rps_mix, env_score, env_safe, eligible,
     df_t = pd.DataFrame([[t]], dtype=float)
     df_r = pd.DataFrame([[r]], dtype=float)
     df_e = pd.DataFrame([[bool(eligible)]])
-    env_df = pd.DataFrame({"score": [float(env_score)],
-                           "safe": [bool(env_safe)]})
+    env_df = pd.DataFrame({"score": [float(env_score)], "safe": [bool(env_safe)]})
     sc, buy, obs = _qpzm_bt.combine_score(
-        df_t, df_r, env_df, buy_th=float(buy_th), obs_th=float(obs_th),
-        gate_on=gate_on, eligible=df_e, jev_mode="missing")
+        df_t,
+        df_r,
+        env_df,
+        buy_th=float(buy_th),
+        obs_th=float(obs_th),
+        gate_on=gate_on,
+        eligible=df_e,
+        jev_mode="missing",
+    )
     return float(sc.iloc[0, 0]), bool(buy.iloc[0, 0]), bool(obs.iloc[0, 0])
 
 
@@ -197,9 +222,17 @@ def test_propose_returns_valid_verdict():
     assert v.strategy_id == "qpzm"
     assert v.symbol == SYMBOL
     v.validate()  # 五档枚举 / confidence [0,1] / stance / symbol 白名单
-    d = json.loads(json.dumps({
-        "recommendation": v.recommendation, "confidence": v.confidence,
-        "stance": v.stance, "score": v.score, "extras": v.extras}))
+    d = json.loads(
+        json.dumps(
+            {
+                "recommendation": v.recommendation,
+                "confidence": v.confidence,
+                "stance": v.stance,
+                "score": v.score,
+                "extras": v.extras,
+            }
+        )
+    )
     assert d["recommendation"] in _ap_registry.RECOMMENDATIONS
 
 
@@ -227,8 +260,9 @@ def test_identity_attrs_and_class_param():
     assert agent.buy_th == 75.0 and agent.obs_th == 50.0
     assert agent.gate_on is True
     for cls, (bth, oth, gate) in (
-            (QpzmThAlt, (70.0, 50.0, True)),
-            (QpzmGateOff, (75.0, 50.0, False))):
+        (QpzmThAlt, (70.0, 50.0, True)),
+        (QpzmGateOff, (75.0, 50.0, False)),
+    ):
         sub = cls()
         assert sub.buy_th == bth and sub.obs_th == oth and sub.gate_on is gate
 
@@ -243,8 +277,14 @@ def test_parity_with_combine_score_1e9(vname, cls, kw):
     for combo in COMBOS:
         tech, rps_mix, env_score, env_safe, eligible = combo
         sc_direct, buy_direct, obs_direct = _direct_combine(*combo, **kw)
-        ctx = _ctx(tech=tech, rps_mix=rps_mix, env_score=env_score,
-                   env_safe=env_safe, eligible=eligible, n_avail=3)
+        ctx = _ctx(
+            tech=tech,
+            rps_mix=rps_mix,
+            env_score=env_score,
+            env_safe=env_safe,
+            eligible=eligible,
+            n_avail=3,
+        )
         v = agent.propose(ctx)
         v.validate()
         # 判定布尔 100% 硬门槛（无公差）：buy ⇔ buy_m；buy ⇔ obs_m 独立
@@ -258,8 +298,9 @@ def test_parity_with_combine_score_1e9(vname, cls, kw):
             n_obs += 1
         else:
             assert v.recommendation == "hold" and v.confidence == 0.0, combo
-            label, veto = _expected_hold_label(tech, rps_mix, env_safe,
-                                               eligible, kw["gate_on"])
+            label, veto = _expected_hold_label(
+                tech, rps_mix, env_safe, eligible, kw["gate_on"]
+            )
             assert v.extras.get("no") == label, combo
             assert v.extras.get("veto") == veto, combo
             assert not v.extras.get("fail_closed"), combo
@@ -279,8 +320,7 @@ def test_parity_covers_at_least_50_combos():
 # ③ 五档映射逐行（含 extras 契约键）
 # ---------------------------------------------------------------------- #
 def test_row1_buy_shape():
-    v = AGENT().propose(_ctx(tech=80.0, rps_mix=83.0, env_score=50.0,
-                             n_avail=3))
+    v = AGENT().propose(_ctx(tech=80.0, rps_mix=83.0, env_score=50.0, n_avail=3))
     v.validate()
     assert v.recommendation == "buy" and v.confidence == 0.7
     assert v.stance == "bull"
@@ -318,8 +358,7 @@ def test_row3_score_below_is_legal_hold():
 
 def test_row4_env_gate_veto_keeps_score():
     """闸门否决：hold 但 score 承载 sc 原值（env 分仍计入打分）。"""
-    v = AGENT().propose(_ctx(tech=80.0, rps_mix=83.0, env_score=50.0,
-                             env_safe=False))
+    v = AGENT().propose(_ctx(tech=80.0, rps_mix=83.0, env_score=50.0, env_safe=False))
     v.validate()
     sc, _, _ = _direct_combine(80.0, 83.0, 50.0, False, True)
     assert sc == pytest.approx(75.0, abs=1e-9)  # sc 与闸门无关
@@ -332,8 +371,9 @@ def test_row4_env_gate_veto_keeps_score():
 
 def test_row4_gate_off_variant_does_not_veto():
     """gate_off 变体：safe=False 不否决，同格出买入（env 分仍计入）。"""
-    v = QpzmGateOff().propose(_ctx(tech=80.0, rps_mix=83.0, env_score=50.0,
-                                   env_safe=False))
+    v = QpzmGateOff().propose(
+        _ctx(tech=80.0, rps_mix=83.0, env_score=50.0, env_safe=False)
+    )
     v.validate()
     assert v.recommendation == "buy" and v.confidence == 0.7
     assert v.extras["gate_on"] is False
@@ -378,9 +418,15 @@ def test_never_sell_across_grid():
     agent = AGENT()
     for combo in COMBOS:
         tech, rps_mix, env_score, env_safe, eligible = combo
-        v = agent.propose(_ctx(tech=tech, rps_mix=rps_mix,
-                               env_score=env_score, env_safe=env_safe,
-                               eligible=eligible))
+        v = agent.propose(
+            _ctx(
+                tech=tech,
+                rps_mix=rps_mix,
+                env_score=env_score,
+                env_safe=env_safe,
+                eligible=eligible,
+            )
+        )
         assert v.recommendation in ("buy", "hold"), combo
 
 
@@ -391,9 +437,15 @@ def test_action_buynotify_roundtrip():
         tech, rps_mix, env_score, env_safe, eligible = combo
         if tech is None or rps_mix is None or not eligible:
             continue
-        v = agent.propose(_ctx(tech=tech, rps_mix=rps_mix,
-                               env_score=env_score, env_safe=env_safe,
-                               eligible=eligible))
+        v = agent.propose(
+            _ctx(
+                tech=tech,
+                rps_mix=rps_mix,
+                env_score=env_score,
+                env_safe=env_safe,
+                eligible=eligible,
+            )
+        )
         is_signal = v.extras.get("action") in ("买入", "观察")
         assert is_signal == (v.recommendation == "buy"), combo
 
@@ -403,7 +455,7 @@ def test_action_buynotify_roundtrip():
 # ---------------------------------------------------------------------- #
 def test_th_alt_variant_threshold_flips():
     """sc=72：现行档观察，th7050 档买入（对拍同值翻档）。"""
-    tech, rps, env = 70.0, 70.0, 76.0   # (24.5+11.4+17.5)/0.75 = 71.2
+    tech, rps, env = 70.0, 70.0, 76.0  # (24.5+11.4+17.5)/0.75 = 71.2
     sc, _, _ = _direct_combine(tech, rps, env, True, True, buy_th=70.0)
     assert 70.0 <= sc < 75.0
     v_base = AGENT().propose(_ctx(tech=tech, rps_mix=rps, env_score=env))
@@ -424,8 +476,7 @@ def _assert_fail_closed(v, reason_kw):
     assert reason_kw in v.rationale
 
 
-FIELD_KEYS = ("tech", "rps_mix", "n_avail", "env_score", "env_safe",
-              "eligible")
+FIELD_KEYS = ("tech", "rps_mix", "n_avail", "env_score", "env_safe", "eligible")
 
 
 @pytest.mark.parametrize("key", FIELD_KEYS)
@@ -435,19 +486,22 @@ def test_fail_closed_missing_each_key(key):
     _assert_fail_closed(AGENT().propose(ctx), "缺键")
 
 
-@pytest.mark.parametrize("key,bad", [
-    ("tech", "80"),            # 字符串不是分
-    ("rps_mix", [80.0]),
-    ("n_avail", "3"),
-    ("n_avail", True),         # bool 不是周期数
-    ("env_score", None),       # env_score 无缺维语义（NaN 由装配层注入 float）
-    ("env_score", "60"),
-    ("env_safe", 1),           # int 不是 bool
-    ("env_safe", None),
-    ("eligible", 1),
-    ("eligible", None),
-    ("tech", True),            # bool 不是分
-])
+@pytest.mark.parametrize(
+    "key,bad",
+    [
+        ("tech", "80"),  # 字符串不是分
+        ("rps_mix", [80.0]),
+        ("n_avail", "3"),
+        ("n_avail", True),  # bool 不是周期数
+        ("env_score", None),  # env_score 无缺维语义（NaN 由装配层注入 float）
+        ("env_score", "60"),
+        ("env_safe", 1),  # int 不是 bool
+        ("env_safe", None),
+        ("eligible", 1),
+        ("eligible", None),
+        ("tech", True),  # bool 不是分
+    ],
+)
 def test_fail_closed_bad_type_each_key(key, bad):
     ctx = _ctx(tech=80.0, rps_mix=83.0)
     ctx["fields"][key] = bad
@@ -456,8 +510,9 @@ def test_fail_closed_bad_type_each_key(key, bad):
 
 def test_fail_closed_fields_missing_or_not_mapping():
     _assert_fail_closed(AGENT().propose({"symbol": SYMBOL}), "fields 缺失")
-    _assert_fail_closed(AGENT().propose(
-        {"symbol": SYMBOL, "fields": [1, 2]}), "fields 缺失")
+    _assert_fail_closed(
+        AGENT().propose({"symbol": SYMBOL, "fields": [1, 2]}), "fields 缺失"
+    )
 
 
 def test_exception_fallback_never_raises():
@@ -511,16 +566,25 @@ class _NoWriteMapping(dict):
         raise AssertionError("Agent clear context")
 
 
-@pytest.mark.parametrize("combo", [
-    (80.0, 83.0, 50.0, True, True),     # 买入格
-    (80.0, None, 50.0, False, True),    # rps_missing 格
-    (80.0, 83.0, 50.0, True, False),    # min_bars 格
-])
+@pytest.mark.parametrize(
+    "combo",
+    [
+        (80.0, 83.0, 50.0, True, True),  # 买入格
+        (80.0, None, 50.0, False, True),  # rps_missing 格
+        (80.0, 83.0, 50.0, True, False),  # min_bars 格
+    ],
+)
 def test_propose_has_no_write_side_effects(combo):
     tech, rps_mix, env_score, env_safe, eligible = combo
-    ctx = _NoWriteMapping(_ctx(tech=tech, rps_mix=rps_mix,
-                               env_score=env_score, env_safe=env_safe,
-                               eligible=eligible))
+    ctx = _NoWriteMapping(
+        _ctx(
+            tech=tech,
+            rps_mix=rps_mix,
+            env_score=env_score,
+            env_safe=env_safe,
+            eligible=eligible,
+        )
+    )
     v = AGENT().propose(ctx)
     v.validate()
     assert ctx.writes == []
@@ -535,32 +599,45 @@ def test_module_import_does_not_pull_qpzm_chain():
     Agent 只复刻单格公式 + 常量类属性，导入期绝对干净。"""
     before = set(sys.modules)
     fresh = _load_module(
-        "qpzm_agent_fresh_import_check",
-        os.path.join(_AGENTS_DIR, "qpzm_agent.py"))
+        "qpzm_agent_fresh_import_check", os.path.join(_AGENTS_DIR, "qpzm_agent.py")
+    )
     assert hasattr(fresh, "QpzmAgent")
     new = set(sys.modules) - before
-    pulled = [k for k in new if k.startswith(
-        ("qpzm", "pandas", "numpy", "rps_"))]
+    pulled = [k for k in new if k.startswith(("qpzm", "pandas", "numpy", "rps_"))]
     assert not pulled, "模块导入期拉起了禁用依赖: %s" % pulled
 
 
 def test_module_source_free_of_execution_chain_and_body():
     """模块源码不引用执行链/账本/下单/本体（红线静态断言）。"""
-    src = open(os.path.join(_AGENTS_DIR, "qpzm_agent.py"),
-               encoding="utf-8").read()
-    for forbidden in ("execution_engine", "place_order", "cancel_order",
-                      "order_book", "ledger_write", "write_ledger",
-                      "account", "broker", "trade_api",
-                      "import qpzm_backtest", "import qpzm_daily_batch",
-                      "import rps_resonance", "from qpzm_backtest",
-                      "import pandas", "import numpy"):
+    src = open(os.path.join(_AGENTS_DIR, "qpzm_agent.py"), encoding="utf-8").read()
+    for forbidden in (
+        "execution_engine",
+        "place_order",
+        "cancel_order",
+        "order_book",
+        "ledger_write",
+        "write_ledger",
+        "account",
+        "broker",
+        "trade_api",
+        "import qpzm_backtest",
+        "import qpzm_daily_batch",
+        "import rps_resonance",
+        "from qpzm_backtest",
+        "import pandas",
+        "import numpy",
+    ):
         assert forbidden not in src, "源码含禁用标识: %s" % forbidden
 
 
 def test_live_diff_freeze_registered_in_docstring():
     """live/replay 已知差异冻结登记（R3 风险：不得当 bug 修）。"""
-    src = open(os.path.join(_AGENTS_DIR, "qpzm_agent.py"),
-               encoding="utf-8").read()
-    for token in ("K233", "次新降级", "jev_mode=\"missing\"", "hr 压死",
-                  "cross_section_context"):
+    src = open(os.path.join(_AGENTS_DIR, "qpzm_agent.py"), encoding="utf-8").read()
+    for token in (
+        "K233",
+        "次新降级",
+        'jev_mode="missing"',
+        "hr 压死",
+        "cross_section_context",
+    ):
         assert token in src, "docstring 缺冻结登记: %s" % token

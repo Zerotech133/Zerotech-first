@@ -4,6 +4,7 @@
 凭证签名覆盖固定 JSON 规范化 claims；签发时间是被签名的声明，不是可信时间戳。
 即使签名有效，也不证明签发者可信、原始采集真实性、历史可见性或单日冻结。
 """
+
 from __future__ import annotations
 
 import base64
@@ -21,8 +22,16 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 _DAY = re.compile(r"[0-9]{8}\Z")
 _HASH = re.compile(r"[0-9a-f]{64}\Z")
 _UTC = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z\Z")
-_CLAIMS = frozenset(("schema_version", "issuer_id", "business_date",
-                     "source_sha256", "event_count", "issued_at"))
+_CLAIMS = frozenset(
+    (
+        "schema_version",
+        "issuer_id",
+        "business_date",
+        "source_sha256",
+        "event_count",
+        "issued_at",
+    )
+)
 
 
 def _unique_object(pairs):
@@ -52,9 +61,13 @@ def verify_source_attestation(
     VERIFIED 只表示签名/声明/本次内存快照一致，不表示 READY 或真实历史冻结。
     """
     result = {
-        "status": "REJECTED", "identity_status": "UNVERIFIED",
-        "issuer_id": None, "business_date": business_day,
-        "source_sha256": None, "event_count": None, "issued_at_claim": None,
+        "status": "REJECTED",
+        "identity_status": "UNVERIFIED",
+        "issuer_id": None,
+        "business_date": business_day,
+        "source_sha256": None,
+        "event_count": None,
+        "issued_at_claim": None,
         "historical_single_day_frozen": False,
         "real_source_verdict": "BLOCKED_REAL_DATA",
         "reason": "凭证验证失败",
@@ -66,7 +79,9 @@ def verify_source_attestation(
     try:
         if not isinstance(business_day, str) or not _DAY.fullmatch(business_day):
             raise ValueError("业务日格式错误")
-        day = date.fromisoformat(f"{business_day[:4]}-{business_day[4:6]}-{business_day[6:]}")
+        day = date.fromisoformat(
+            f"{business_day[:4]}-{business_day[4:6]}-{business_day[6:]}"
+        )
         if type(source_bytes) is not bytes:
             raise ValueError("源快照必须为本次读取的原始 bytes")
         if type(attestation) is not dict or set(attestation) != {"claims", "signature"}:
@@ -82,20 +97,31 @@ def verify_source_attestation(
             raise ValueError("外部可信公钥无效")
         if type(claims["schema_version"]) is not int or claims["schema_version"] != 1:
             raise ValueError("不支持凭证版本")
-        if type(claims["business_date"]) is not str or claims["business_date"] != business_day:
+        if (
+            type(claims["business_date"]) is not str
+            or claims["business_date"] != business_day
+        ):
             raise ValueError("凭证业务日不一致")
-        if type(claims["source_sha256"]) is not str or not _HASH.fullmatch(claims["source_sha256"]):
+        if type(claims["source_sha256"]) is not str or not _HASH.fullmatch(
+            claims["source_sha256"]
+        ):
             raise ValueError("摘要格式错误")
         if type(claims["event_count"]) is not int or claims["event_count"] < 0:
             raise ValueError("事件数无效")
         timestamp = claims["issued_at"]
         if type(timestamp) is not str or not _UTC.fullmatch(timestamp):
             raise ValueError("签发时间须为 UTC 秒级时间")
-        issued = datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+        issued = datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%SZ").replace(
+            tzinfo=timezone.utc
+        )
         if issued.date() < day:
             raise ValueError("签发时间早于业务日")
         now = trusted_as_of if trusted_as_of is not None else datetime.now(timezone.utc)
-        if not isinstance(now, datetime) or now.tzinfo is None or now.utcoffset() is None:
+        if (
+            not isinstance(now, datetime)
+            or now.tzinfo is None
+            or now.utcoffset() is None
+        ):
             raise ValueError("可信核验时间须带时区")
         if issued > now:
             raise ValueError("签发时间晚于核验时间")
@@ -103,10 +129,18 @@ def verify_source_attestation(
         if type(signature_text) is not str:
             raise ValueError("签名编码无效")
         signature = base64.b64decode(signature_text, validate=True)
-        if len(signature) != 64 or base64.b64encode(signature).decode("ascii") != signature_text:
+        if (
+            len(signature) != 64
+            or base64.b64encode(signature).decode("ascii") != signature_text
+        ):
             raise ValueError("签名长度或编码无效")
-        payload = json.dumps(claims, sort_keys=True, separators=(",", ":"),
-                             ensure_ascii=False, allow_nan=False).encode("utf-8")
+        payload = json.dumps(
+            claims,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        ).encode("utf-8")
         Ed25519PublicKey.from_public_bytes(key).verify(signature, payload)
 
         actual = hashlib.sha256(source_bytes).hexdigest()
@@ -122,15 +156,29 @@ def verify_source_attestation(
             raise ValueError("源事件数不一致")
         expected_date = day.isoformat()
         for line in lines:
-            row = json.loads(line, object_pairs_hook=_unique_object,
-                             parse_constant=_invalid_constant)
+            row = json.loads(
+                line, object_pairs_hook=_unique_object, parse_constant=_invalid_constant
+            )
             if type(row) is not dict or row.get("detect_date") != expected_date:
                 raise ValueError("源事件不属于凭证业务日")
-    except (ValueError, TypeError, UnicodeError, KeyError, binascii.Error, InvalidSignature) as exc:
+    except (
+        ValueError,
+        TypeError,
+        UnicodeError,
+        KeyError,
+        binascii.Error,
+        InvalidSignature,
+    ) as exc:
         result["reason"] = f"{type(exc).__name__}: {exc}"
         return result
 
-    result.update(status="VERIFIED", identity_status="VERIFIED", issuer_id=issuer,
-                  source_sha256=actual, event_count=len(lines), issued_at_claim=timestamp,
-                  reason="签名与本次内存快照相符；不证明签发时间权威性或历史冻结")
+    result.update(
+        status="VERIFIED",
+        identity_status="VERIFIED",
+        issuer_id=issuer,
+        source_sha256=actual,
+        event_count=len(lines),
+        issued_at_claim=timestamp,
+        reason="签名与本次内存快照相符；不证明签发时间权威性或历史冻结",
+    )
     return result

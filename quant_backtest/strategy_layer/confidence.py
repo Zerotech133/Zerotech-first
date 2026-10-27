@@ -38,7 +38,7 @@ HALF_LIFE_HOURS: dict[str, float] = {
 CONF_FLOOR: float = 0.1
 
 # 融合增益参数
-DUAL_AGREE_BOOST: float = 1.15   # 双源一致 → 置信 * 1.15，封顶 1.0
+DUAL_AGREE_BOOST: float = 1.15  # 双源一致 → 置信 * 1.15，封顶 1.0
 DUAL_CONFLICT_PENALTY: float = 0.7  # 双源冲突 → 置信 * 0.7
 
 # score_to_confidence 样本量收敛参数（可调）

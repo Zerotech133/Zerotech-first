@@ -39,6 +39,7 @@ detect_date <= trade_date 中最大 detect_date 当日全部信号（即「最�
 降级语义：池文件缺失 / 全部行损坏 / 无匹配信号 → 打印日志返回 []，
 绝不 raise 到调用方。
 """
+
 import glob
 import json
 import os
@@ -58,14 +59,22 @@ DEFAULT_POOL_GLOBS = [
 
 # 买卖点类型 → 分位基表（score 基准）
 _TYPE_BASE_SCORE: Dict[str, float] = {
-    "1买": 95.0, "2买": 85.0, "3买": 75.0,
-    "3卖": 25.0, "2卖": 15.0, "1卖": 5.0,
+    "1买": 95.0,
+    "2买": 85.0,
+    "3买": 75.0,
+    "3卖": 25.0,
+    "2卖": 15.0,
+    "1卖": 5.0,
 }
 
 # 买卖点类型 → action
 _TYPE_ACTION: Dict[str, str] = {
-    "1买": "buy", "2买": "buy", "3买": "buy",
-    "1卖": "sell", "2卖": "sell", "3卖": "sell",
+    "1买": "buy",
+    "2买": "buy",
+    "3买": "buy",
+    "1卖": "sell",
+    "2卖": "sell",
+    "3卖": "sell",
 }
 
 # 参与共振加成的影子标注字段
@@ -101,8 +110,7 @@ class ChanMonitorAdapter:
         try:
             rows = self._load_rows()
             if not rows:
-                print(f"[chan_monitor] 降级：信号池无可用记录"
-                      f"({self._pool_globs})")
+                print(f"[chan_monitor] 降级：信号池无可用记录({self._pool_globs})")
                 return []
             picked = self._pick_rows(rows, trade_date)
             if not picked:
@@ -163,8 +171,7 @@ class ChanMonitorAdapter:
     # 选日与转换
     # ------------------------------------------------------------------ #
     @staticmethod
-    def _pick_rows(rows: List[Dict[str, Any]],
-                   trade_date: str) -> List[Dict[str, Any]]:
+    def _pick_rows(rows: List[Dict[str, Any]], trade_date: str) -> List[Dict[str, Any]]:
         """分市场各取 detect_date <= trade_date 中最大 detect_date 的全部信号行。
 
         D3 并轨口径（2026-10-19 确认门①拍板，替代原 dt 口径）：选日
@@ -177,6 +184,7 @@ class ChanMonitorAdapter:
         - 某组无 dt ≤ trade_date 的行则该组返回空（不影响其他组）；
         - 行缺 detect_date / 非 YYYY-MM-DD 格式 / 缺 code 的一律忽略。
         """
+
         def det_key(row: Dict[str, Any]) -> str:
             d = row.get("detect_date")
             if not isinstance(d, str) or len(d) != 10 or d[4] != "-":
@@ -203,8 +211,7 @@ class ChanMonitorAdapter:
             return []
         out: List[Dict[str, Any]] = []
         for mkt, best in best_by_mkt.items():
-            out.extend(r for r in rows
-                       if det_key(r) == best and market_of(r) == mkt)
+            out.extend(r for r in rows if det_key(r) == best and market_of(r) == mkt)
         return out
 
     @staticmethod
@@ -221,8 +228,7 @@ class ChanMonitorAdapter:
             return "2买∧trend=range"
         return ""
 
-    def _convert(self, row: Dict[str, Any],
-                 trade_date: str) -> Optional[Signal]:
+    def _convert(self, row: Dict[str, Any], trade_date: str) -> Optional[Signal]:
         """单行信号池记录 → Signal；未知 type / 缺关键字段返回 None。"""
         sig_type = row.get("type")
         if sig_type not in _TYPE_BASE_SCORE:
@@ -240,8 +246,9 @@ class ChanMonitorAdapter:
 
         tone = row.get("trend") or row.get("reg") or ""
         tone_part = f"·{tone}" if tone else ""
-        rationale = (f"缠论{sig_type}{tone_part}：信号日 {row.get('dt')}，"
-                     f"价 {row.get('price')}")
+        rationale = (
+            f"缠论{sig_type}{tone_part}：信号日 {row.get('dt')}，价 {row.get('price')}"
+        )
 
         # 毒层降档（Δ4，确认门① A 方案）：score 封顶、action 不变
         # （buy 仍 buy，池内低分沉底，语义同 picks 链「T1 共振不计票、
@@ -283,5 +290,7 @@ if __name__ == "__main__":
     sigs = adapter.score(today)
     print(f"chan_monitor smoke: {len(sigs)} signals @ {today}")
     for s in sigs[:5]:
-        print(f"  {s.symbol} {s.action} score={s.score} "
-              f"conf={s.confidence} | {s.rationale}")
+        print(
+            f"  {s.symbol} {s.action} score={s.score} "
+            f"conf={s.confidence} | {s.rationale}"
+        )

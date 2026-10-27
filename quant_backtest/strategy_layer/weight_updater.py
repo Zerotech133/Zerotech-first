@@ -19,6 +19,7 @@
     python -X utf8 weight_updater.py --weeks 4        # 指定窗口
     python -X utf8 weight_updater.py --apply          # 真实写回（影子期禁用）
 """
+
 from __future__ import annotations
 
 import argparse
@@ -38,19 +39,34 @@ if _QUANT_BT not in sys.path:
 from strategy_layer import Registry, bootstrap_default_adapters  # noqa: E402
 
 # ── 常量（影子期参数，判据预注册防事后调参）────────────────────────────
-ALPHA = 0.3          # EWMA 新数据权重
+ALPHA = 0.3  # EWMA 新数据权重
 W_MIN, W_MAX = 0.1, 0.7
-FB_ACCEPT, FB_REJECT = 1.0, -1.0        # mute 记 0
-RET_CLAMP = 0.05     # 单信号次日收益截断 ±5%（防一字板极端值绑架）
+FB_ACCEPT, FB_REJECT = 1.0, -1.0  # mute 记 0
+RET_CLAMP = 0.05  # 单信号次日收益截断 ±5%（防一字板极端值绑架）
 NORM_FLOOR = 1e-9
 ASHARE_DIR = os.path.join(_QUANT_BT, "data", "ashare")
 PSQL_TIMEOUT = 10
 CONNECT_TIMEOUT = 10
-DOCKER_PSQL_BASE = ("docker", "exec", "quant-pg", "psql",
-                    "-U", "quant_user", "-d", "quant_system")
+DOCKER_PSQL_BASE = (
+    "docker",
+    "exec",
+    "quant-pg",
+    "psql",
+    "-U",
+    "quant_user",
+    "-d",
+    "quant_system",
+)
 
-__all__ = ["fb_score", "norm01", "ewma", "normalize_clamp",
-           "next_day_return", "compute_targets", "main"]
+__all__ = [
+    "fb_score",
+    "norm01",
+    "ewma",
+    "normalize_clamp",
+    "next_day_return",
+    "compute_targets",
+    "main",
+]
 
 
 # ── 纯函数（单测覆盖核心）─────────────────────────────────────────────
@@ -132,16 +148,16 @@ def normalize_clamp(weights: Dict[str, float]) -> Dict[str, float]:
         norm = {k: v / tot for k, v in out.items()}
         clamped = {k: min(max(v, W_MIN), W_MAX) for k, v in norm.items()}
         tot2 = sum(clamped.values())
-        if tot2 > NORM_FLOOR and all(
-                abs(clamped[k] - norm[k]) < 1e-9 for k in norm):
+        if tot2 > NORM_FLOOR and all(abs(clamped[k] - norm[k]) < 1e-9 for k in norm):
             out = clamped
         else:
             out = norm
     return out
 
 
-def next_day_return(symbol: str, trade_date: str,
-                    ashare_dir: str = ASHARE_DIR) -> Optional[float]:
+def next_day_return(
+    symbol: str, trade_date: str, ashare_dir: str = ASHARE_DIR
+) -> Optional[float]:
     """信号日→次交易日收益（后复权 close 相邻比）；数据缺失返回 None。
 
     symbol 形如 000001.SZ → ashare/000001_SZ.parquet；
@@ -156,6 +172,7 @@ def next_day_return(symbol: str, trade_date: str,
         return None
     try:
         import pyarrow.parquet as pq
+
         tbl = pq.read_table(path, columns=["trade_date", "close"])
         df = tbl.to_pandas()
     except Exception:  # noqa: BLE001 — 单票数据坏不拖垮整体
@@ -197,6 +214,7 @@ def _load_env_local() -> None:
 
 def _pg_connect():
     import psycopg2
+
     _load_env_local()
     pwd = os.environ.get("XMAP_PG_PASSWORD", "").strip()
     if not pwd:
@@ -213,30 +231,45 @@ def _pg_connect():
 
 def _psql_exec(sql: str) -> str:
     cmd = DOCKER_PSQL_BASE + ("-At", "-F", "\t", "-c", sql)
-    p = subprocess.run(cmd, capture_output=True, text=True,
-                       encoding="utf-8", errors="replace",
-                       timeout=PSQL_TIMEOUT)
+    p = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=PSQL_TIMEOUT,
+    )
     if p.returncode != 0:
-        raise RuntimeError("docker psql rc=%d: %s" % (p.returncode,
-                                                      p.stderr[:200]))
+        raise RuntimeError("docker psql rc=%d: %s" % (p.returncode, p.stderr[:200]))
     return p.stdout
 
 
 def fetch_feedback(weeks: int) -> List[Dict[str, str]]:
     """近 N 周 feedback 行（psycopg2 优先 / docker 兜底）。"""
-    sql = ("SELECT trade_date, symbol, strategy, verdict "
-           "FROM strategy.feedback WHERE created_at >= now() "
-           "- interval '%d weeks'" % max(int(weeks), 1))
+    sql = (
+        "SELECT trade_date, symbol, strategy, verdict "
+        "FROM strategy.feedback WHERE created_at >= now() "
+        "- interval '%d weeks'" % max(int(weeks), 1)
+    )
     try:
         conn = _pg_connect()
         try:
             with conn.cursor() as cur:
-                cur.execute("SELECT trade_date, symbol, strategy, verdict "
-                            "FROM strategy.feedback WHERE created_at >= "
-                            "now() - interval '%s weeks'", (max(int(weeks), 1),))
-                rows = [{"trade_date": str(r[0]), "symbol": str(r[1]),
-                         "strategy": str(r[2]), "verdict": str(r[3])}
-                        for r in cur.fetchall()]
+                cur.execute(
+                    "SELECT trade_date, symbol, strategy, verdict "
+                    "FROM strategy.feedback WHERE created_at >= "
+                    "now() - interval '%s weeks'",
+                    (max(int(weeks), 1),),
+                )
+                rows = [
+                    {
+                        "trade_date": str(r[0]),
+                        "symbol": str(r[1]),
+                        "strategy": str(r[2]),
+                        "verdict": str(r[3]),
+                    }
+                    for r in cur.fetchall()
+                ]
         finally:
             conn.close()
         return rows
@@ -245,24 +278,34 @@ def fetch_feedback(weeks: int) -> List[Dict[str, str]]:
         for line in _psql_exec(sql).splitlines():
             parts = line.split("\t")
             if len(parts) >= 4:
-                out.append({"trade_date": parts[0], "symbol": parts[1],
-                            "strategy": parts[2], "verdict": parts[3]})
+                out.append(
+                    {
+                        "trade_date": parts[0],
+                        "symbol": parts[1],
+                        "strategy": parts[2],
+                        "verdict": parts[3],
+                    }
+                )
         return out
 
 
 def fetch_signals(weeks: int) -> List[Dict[str, Any]]:
     """近 N 周 signals_combined（contributions 已解析为 dict）。"""
-    sql = ("SELECT trade_date, symbol, contributions::text "
-           "FROM strategy.signals_combined WHERE created_at >= now() "
-           "- interval '%d weeks'" % max(int(weeks), 1))
+    sql = (
+        "SELECT trade_date, symbol, contributions::text "
+        "FROM strategy.signals_combined WHERE created_at >= now() "
+        "- interval '%d weeks'" % max(int(weeks), 1)
+    )
     try:
         conn = _pg_connect()
         try:
             with conn.cursor() as cur:
-                cur.execute("SELECT trade_date, symbol, contributions "
-                            "FROM strategy.signals_combined WHERE "
-                            "created_at >= now() - interval '%s weeks'",
-                            (max(int(weeks), 1),))
+                cur.execute(
+                    "SELECT trade_date, symbol, contributions "
+                    "FROM strategy.signals_combined WHERE "
+                    "created_at >= now() - interval '%s weeks'",
+                    (max(int(weeks), 1),),
+                )
                 raw = [(str(r[0]), str(r[1]), r[2]) for r in cur.fetchall()]
         finally:
             conn.close()
@@ -276,19 +319,20 @@ def fetch_signals(weeks: int) -> List[Dict[str, Any]]:
     for td, sym, contrib in raw:
         if isinstance(contrib, (str, bytes)):
             try:
-                contrib = json.loads(contrib if isinstance(contrib, str)
-                                     else contrib.decode("utf-8"))
+                contrib = json.loads(
+                    contrib if isinstance(contrib, str) else contrib.decode("utf-8")
+                )
             except ValueError:
                 continue
         if isinstance(contrib, dict):
-            out.append({"trade_date": td, "symbol": sym,
-                        "contributions": contrib})
+            out.append({"trade_date": td, "symbol": sym, "contributions": contrib})
     return out
 
 
 # ── 融合主流程 ────────────────────────────────────────────────────────
-def compute_targets(registry: Registry, weeks: int = 2,
-                    log: Optional[callable] = print) -> Dict[str, Dict]:
+def compute_targets(
+    registry: Registry, weeks: int = 2, log: Optional[callable] = print
+) -> Dict[str, Dict]:
     """双通道打分 → 目标权重 → EWMA → 归一化。返回逐策略明细（dry-run 展示与单测用）。
 
     返回 {sid: {"w_old","fb","ret_mean","ret_n","target","w_new"}}。
@@ -313,17 +357,16 @@ def compute_targets(registry: Registry, weeks: int = 2,
 
     # 归一（全窗口 min-max；None 通道退化到另一通道）
     ret_vals = [v for v in ret_mean.values() if v is not None]
-    fb_vals = [v for v in (fb_score(fb_rows, sid) for sid in sids)
-               if v is not None]
+    fb_vals = [v for v in (fb_score(fb_rows, sid) for sid in sids) if v is not None]
     detail: Dict[str, Dict] = {}
     for sid in sids:
         has_ret = ret_mean.get(sid) is not None
         fb = fb_score(fb_rows, sid)
         has_fb = fb is not None
         if has_ret and has_fb:
-            t = 0.5 * norm01(ret_mean[sid],
-                             min(ret_vals), max(ret_vals)) \
-                + 0.5 * norm01(fb, min(fb_vals), max(fb_vals))
+            t = 0.5 * norm01(
+                ret_mean[sid], min(ret_vals), max(ret_vals)
+            ) + 0.5 * norm01(fb, min(fb_vals), max(fb_vals))
         elif has_ret:
             t = norm01(ret_mean[sid], min(ret_vals), max(ret_vals))
         elif has_fb:
@@ -331,12 +374,16 @@ def compute_targets(registry: Registry, weeks: int = 2,
         else:  # 两通道全缺 → 保持原权重（w_target=w_old，EWMA 后不变）
             t = w_old[sid]
         w_new = ewma(w_old[sid], t)
-        detail[sid] = {"w_old": round(w_old[sid], 4),
-                       "fb": None if fb is None else round(fb, 4),
-                       "ret_mean": (None if ret_mean.get(sid) is None
-                                    else round(ret_mean[sid], 6)),
-                       "ret_n": len(rets[sid]),
-                       "target": round(t, 4), "w_new": round(w_new, 4)}
+        detail[sid] = {
+            "w_old": round(w_old[sid], 4),
+            "fb": None if fb is None else round(fb, 4),
+            "ret_mean": (
+                None if ret_mean.get(sid) is None else round(ret_mean[sid], 6)
+            ),
+            "ret_n": len(rets[sid]),
+            "target": round(t, 4),
+            "w_new": round(w_new, 4),
+        }
     final = normalize_clamp({sid: detail[sid]["w_new"] for sid in sids})
     for sid in sids:
         detail[sid]["w_final"] = round(final.get(sid, w_old[sid]), 4)
@@ -354,7 +401,9 @@ def apply_weights(detail: Dict[str, Dict]) -> None:
                         "INSERT INTO strategy.weights (strategy_id, weight) "
                         "VALUES (%s, %s) ON CONFLICT (strategy_id) "
                         "DO UPDATE SET weight = EXCLUDED.weight, "
-                        "updated_at = now()", (sid, d["w_final"]))
+                        "updated_at = now()",
+                        (sid, d["w_final"]),
+                    )
     finally:
         conn.close()
     registry = bootstrap_default_adapters(Registry())
@@ -366,10 +415,10 @@ def apply_weights(detail: Dict[str, Dict]) -> None:
 # ── CLI ───────────────────────────────────────────────────────────────
 def main(argv: Optional[List[str]] = None) -> int:
     ap = argparse.ArgumentParser(description="策略权重进化器（P4）")
-    ap.add_argument("--weeks", type=int, default=2,
-                    help="回看窗口（周），默认 2")
-    ap.add_argument("--apply", action="store_true",
-                    help="真实写回（影子期禁用；默认 dry-run）")
+    ap.add_argument("--weeks", type=int, default=2, help="回看窗口（周），默认 2")
+    ap.add_argument(
+        "--apply", action="store_true", help="真实写回（影子期禁用；默认 dry-run）"
+    )
     args = ap.parse_args(argv)
     try:
         registry = bootstrap_default_adapters(Registry())
@@ -377,23 +426,43 @@ def main(argv: Optional[List[str]] = None) -> int:
         print("[weight_updater][FATAL] 注册引导失败: %s" % exc)
         return 1
     detail = compute_targets(registry, weeks=args.weeks)
-    print("[weight_updater] %s 窗口=%d周 模式=%s"
-          % (time.strftime("%Y-%m-%d %H:%M"), args.weeks,
-             "APPLY" if args.apply else "dry-run"))
+    print(
+        "[weight_updater] %s 窗口=%d周 模式=%s"
+        % (
+            time.strftime("%Y-%m-%d %H:%M"),
+            args.weeks,
+            "APPLY" if args.apply else "dry-run",
+        )
+    )
     hdr = "%-14s %8s %8s %10s %6s %8s %8s" % (
-        "strategy", "w_old", "fb", "ret_mean", "ret_n", "target", "w_final")
+        "strategy",
+        "w_old",
+        "fb",
+        "ret_mean",
+        "ret_n",
+        "target",
+        "w_final",
+    )
     print(hdr)
     for sid, d in sorted(detail.items(), key=lambda kv: -kv[1]["w_final"]):
-        print("%-14s %8.3f %8s %10s %6d %8.3f %8.3f" % (
-            sid, d["w_old"],
-            "-" if d["fb"] is None else "%.2f" % d["fb"],
-            "-" if d["ret_mean"] is None else "%.3f%%" % (d["ret_mean"] * 100),
-            d["ret_n"], d["target"], d["w_final"]))
-    n_data = sum(1 for d in detail.values()
-                 if d["fb"] is not None or d["ret_n"] > 0)
+        print(
+            "%-14s %8.3f %8s %10s %6d %8.3f %8.3f"
+            % (
+                sid,
+                d["w_old"],
+                "-" if d["fb"] is None else "%.2f" % d["fb"],
+                "-" if d["ret_mean"] is None else "%.3f%%" % (d["ret_mean"] * 100),
+                d["ret_n"],
+                d["target"],
+                d["w_final"],
+            )
+        )
+    n_data = sum(1 for d in detail.values() if d["fb"] is not None or d["ret_n"] > 0)
     if n_data < len(detail):
-        print("[weight_updater] 有策略两通道全缺 → 权重保持不变（影子期正常，"
-              "攒满数据后自动参与进化）")
+        print(
+            "[weight_updater] 有策略两通道全缺 → 权重保持不变（影子期正常，"
+            "攒满数据后自动参与进化）"
+        )
     if args.apply:
         apply_weights(detail)
         print("[weight_updater] 已写回 strategy.weights + registry.json")

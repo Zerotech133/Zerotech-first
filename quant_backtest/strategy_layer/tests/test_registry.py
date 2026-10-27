@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Registry 测试：注册 / 查询 / 开关 / 权重 / 坏 JSON 回退 / 写失败降级。"""
+
 import json
 
 import pytest
@@ -19,9 +20,15 @@ class FakeAdapter:
 
 
 def _signal(strategy: str = "a") -> Signal:
-    return Signal(symbol="000338.SZ", action="hold", score=50.0,
-                  confidence=0.5, rationale="测试", strategy=strategy,
-                  trade_date="20261016")
+    return Signal(
+        symbol="000338.SZ",
+        action="hold",
+        score=50.0,
+        confidence=0.5,
+        rationale="测试",
+        strategy=strategy,
+        trade_date="20261016",
+    )
 
 
 class TestRegisterAndQuery:
@@ -167,10 +174,16 @@ class TestBootstrap:
 
     def test_bootstrap_respects_persisted_store(self, tmp_path):
         store = tmp_path / "store.json"
-        store.write_text(json.dumps(
-            {"enabled": ["kg_boost"],
-             "weights": {"kg_boost": 0.7, "chan_monitor": 0.3}},
-            ensure_ascii=False), encoding="utf-8")
+        store.write_text(
+            json.dumps(
+                {
+                    "enabled": ["kg_boost"],
+                    "weights": {"kg_boost": 0.7, "chan_monitor": 0.3},
+                },
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
         reg = Registry(store_path=str(store))
         bootstrap_default_adapters(reg)
         assert reg.enabled_ids() == ["kg_boost"]
@@ -179,12 +192,14 @@ class TestBootstrap:
 
     def test_exported_from_package(self):
         import strategy_layer as pkg
+
         assert hasattr(pkg, "bootstrap_default_adapters")
 
 
 class TestProtocolConformance:
     def test_fake_adapter_satisfies_protocol(self):
         from strategy_layer.adapter import StrategyAdapter
+
         assert isinstance(FakeAdapter("x"), StrategyAdapter)
 
     def test_real_signal_list_flows_through(self, tmp_path):

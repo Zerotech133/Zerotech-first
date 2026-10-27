@@ -27,6 +27,7 @@ CLI：
     python -m strategy_layer.onboarding.shadow_collect \
         --strategy ma_cross --report
 """
+
 import argparse
 import json
 import math
@@ -45,10 +46,10 @@ from strategy_layer.onboarding.classic_adapter import (  # noqa: E402
 )
 
 # 统计口径常量（对齐 council_shadow.py）
-NS = (5, 20)                                   # 前向收益窗口
+NS = (5, 20)  # 前向收益窗口
 BUCKETS = ("0-25", "25-50", "50-75", "75-100")  # score 四分桶
-N_MIN = 30                                     # 转正门槛样本量（K55 口径）
-SIG_T = 2.0                                    # |t|≥2 近似 5% 显著
+N_MIN = 30  # 转正门槛样本量（K55 口径）
+SIG_T = 2.0  # |t|≥2 近似 5% 显著
 
 # 事件帧口径（2026-10-18 拍板定案）：影子档只记 buy/sell 事件帧，
 # hold（含 fail-closed 中性 Verdict 映射出的 hold）不入统计样本。
@@ -71,8 +72,9 @@ def shadow_path(strategy_id: str) -> str:
 # ---------------------------------------------------------------------- #
 # 采集：adapter 信号 → 影子档 JSONL（幂等 append）
 # ---------------------------------------------------------------------- #
-def collect_once(adapter: ClassicStrategyAdapter, trade_date: str,
-                 out_path: Optional[str] = None) -> dict:
+def collect_once(
+    adapter: ClassicStrategyAdapter, trade_date: str, out_path: Optional[str] = None
+) -> dict:
     """跑 adapter.score(trade_date) 并幂等落档。返回 {recorded, replayed, ...}。
 
     行格式：ts / strategy_id / symbol / action / score / confidence /
@@ -116,8 +118,12 @@ def collect_once(adapter: ClassicStrategyAdapter, trade_date: str,
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
             seen.add(key)
             recorded += 1
-    return {"recorded": recorded, "replayed": replayed,
-            "skipped_non_event": skipped_non_event, "path": out_path}
+    return {
+        "recorded": recorded,
+        "replayed": replayed,
+        "skipped_non_event": skipped_non_event,
+        "path": out_path,
+    }
 
 
 def _load_keys(path: str) -> set:
@@ -168,8 +174,14 @@ def _default_fwd(symbol: str, trade_date: str) -> Optional[Dict[int, float]]:
     """
     try:
         from agent_tools import call as T
-        r = T("datamart_read", table="ts_daily", codes=[symbol],
-              start=trade_date, limit=40)
+
+        r = T(
+            "datamart_read",
+            table="ts_daily",
+            codes=[symbol],
+            start=trade_date,
+            limit=40,
+        )
         d2 = r.get("data") if isinstance(r.get("data"), dict) else r
         rows = d2.get("rows") or []
     except Exception:
@@ -177,20 +189,29 @@ def _default_fwd(symbol: str, trade_date: str) -> Optional[Dict[int, float]]:
     d8 = str(trade_date).replace("-", "")[:8]
     closes: List[float] = []
     for row in rows:
-        dt = str(next((row[k] for k in ("trade_date", "d", "date", "datetime")
-                       if row.get(k)), ""))[:10].replace("-", "")[:8]
+        dt = str(
+            next(
+                (row[k] for k in ("trade_date", "d", "date", "datetime") if row.get(k)),
+                "",
+            )
+        )[:10].replace("-", "")[:8]
         if dt < d8:
             continue
-        px = next((row[k] for k in ("close", "Close", "close_price")
-                   if row.get(k) is not None), None)
+        px = next(
+            (
+                row[k]
+                for k in ("close", "Close", "close_price")
+                if row.get(k) is not None
+            ),
+            None,
+        )
         if px is None:
             continue
         closes.append(float(px))
     if not closes:
         return None
     base = closes[0]
-    return {n: round((closes[n] / base - 1) * 100, 2)
-            for n in NS if len(closes) > n}
+    return {n: round((closes[n] / base - 1) * 100, 2) for n in NS if len(closes) > n}
 
 
 # ---------------------------------------------------------------------- #
@@ -204,11 +225,14 @@ def _bucket(score: float) -> str:
 def _agg(rows: List[dict]) -> dict:
     r5s = [r["r5"] for r in rows if r.get("r5") is not None]
     r20s = [r["r20"] for r in rows if r.get("r20") is not None]
-    return {"n": len(rows),
-            "win5": round(100.0 * sum(1 for x in r5s if x > 0) / len(r5s), 1)
-            if r5s else None,
-            "r5": round(sum(r5s) / len(r5s), 2) if r5s else None,
-            "r20": round(sum(r20s) / len(r20s), 2) if r20s else None}
+    return {
+        "n": len(rows),
+        "win5": round(100.0 * sum(1 for x in r5s if x > 0) / len(r5s), 1)
+        if r5s
+        else None,
+        "r5": round(sum(r5s) / len(r5s), 2) if r5s else None,
+        "r20": round(sum(r20s) / len(r20s), 2) if r20s else None,
+    }
 
 
 def _corr(pairs: List[tuple]) -> Optional[dict]:
@@ -227,10 +251,10 @@ def _corr(pairs: List[tuple]) -> Optional[dict]:
     return {"n": n, "r": round(r, 3), "t": round(t, 2)}
 
 
-def compute_shadow_stats(rows: List[dict],
-                         fwd_fn: Optional[Callable[[str, str],
-                                                   Optional[Dict[int, float]]]] = None,
-                         ) -> dict:
+def compute_shadow_stats(
+    rows: List[dict],
+    fwd_fn: Optional[Callable[[str, str], Optional[Dict[int, float]]]] = None,
+) -> dict:
     """影子档行 → 统计 dict（gate 三态判据见 shadow_report_template.md）。
 
     fwd_fn 注入模式供沙盒测试（(symbol, trade_date) -> {5:%,20:%}）；
@@ -248,34 +272,46 @@ def compute_shadow_stats(rows: List[dict],
         if key not in cache:
             cache[key] = fwd(symbol, td)
         f = cache[key] or {}
-        samples.append({"symbol": symbol, "trade_date": td,
-                        "score": float(row.get("score") or 0.0),
-                        "confidence": float(row.get("confidence") or 0.0),
-                        "action": row.get("action"),
-                        "r5": f.get(5), "r20": f.get(20)})
+        samples.append(
+            {
+                "symbol": symbol,
+                "trade_date": td,
+                "score": float(row.get("score") or 0.0),
+                "confidence": float(row.get("confidence") or 0.0),
+                "action": row.get("action"),
+                "r5": f.get(5),
+                "r20": f.get(20),
+            }
+        )
     have = [s for s in samples if s["r5"] is not None or s["r20"] is not None]
-    by_score_bucket = [{"bucket": b,
-                        **_agg([s for s in have
-                                if _bucket(s["score"]) == b])}
-                       for b in BUCKETS]
-    pairs = [(s["score"], s["r20"]) for s in samples
-             if s.get("r20") is not None]
+    by_score_bucket = [
+        {"bucket": b, **_agg([s for s in have if _bucket(s["score"]) == b])}
+        for b in BUCKETS
+    ]
+    pairs = [(s["score"], s["r20"]) for s in samples if s.get("r20") is not None]
     corr = _corr(pairs)
     if len(pairs) < N_MIN:
-        gate = {"status": "样本积累中·影子延期", "n": len(pairs),
-                "need": N_MIN, "corr": corr}
+        gate = {
+            "status": "样本积累中·影子延期",
+            "n": len(pairs),
+            "need": N_MIN,
+            "corr": corr,
+        }
     elif corr and corr["t"] >= SIG_T:
         gate = {"status": "显著正向·建议转正评估（人工拍板）", "corr": corr}
     elif corr and corr["t"] <= -SIG_T:
         gate = {"status": "显著反向·建议淘汰", "corr": corr}
     else:
         gate = {"status": "不显著·维持影子（可再延一个观察窗）", "corr": corr}
-    return {"updated": time.strftime("%Y-%m-%d %H:%M:%S"),
-            "n_total": len(samples), "n_have_fwd": len(have),
-            "by_score_bucket": by_score_bucket, "corr": corr,
-            "gate": gate,
-            "samples": sorted(samples, key=lambda s: s["trade_date"],
-                              reverse=True)}
+    return {
+        "updated": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "n_total": len(samples),
+        "n_have_fwd": len(have),
+        "by_score_bucket": by_score_bucket,
+        "corr": corr,
+        "gate": gate,
+        "samples": sorted(samples, key=lambda s: s["trade_date"], reverse=True),
+    }
 
 
 def main(argv: Optional[List[str]] = None) -> int:
@@ -285,12 +321,14 @@ def main(argv: Optional[List[str]] = None) -> int:
         pass
     ap = argparse.ArgumentParser(description="S4 影子期每日采集与统计")
     ap.add_argument("--strategy", help="策略名（strategies.REGISTRY 键）")
-    ap.add_argument("--symbol", default=None,
-                    help="标的，逗号分隔（采集模式必填）")
+    ap.add_argument("--symbol", default=None, help="标的，逗号分隔（采集模式必填）")
     ap.add_argument("--market", default="CN")
     ap.add_argument("--date", default=None, help="采集交易日 YYYYMMDD")
-    ap.add_argument("--report", action="store_true",
-                    help="统计模式：读影子档算分位/相关性/gate 三态")
+    ap.add_argument(
+        "--report",
+        action="store_true",
+        help="统计模式：读影子档算分位/相关性/gate 三态",
+    )
     ap.add_argument("--out", default=None, help="影子档路径覆写（测试用）")
     a = ap.parse_args(argv)
 
@@ -301,15 +339,24 @@ def main(argv: Optional[List[str]] = None) -> int:
         return 0
 
     if not (a.strategy and a.symbol and a.date):
-        print("shadow_collect: 采集模式需 --strategy/--symbol/--date；"
-              "统计模式需 --report")
+        print(
+            "shadow_collect: 采集模式需 --strategy/--symbol/--date；统计模式需 --report"
+        )
         return 2
     symbols = [s.strip() for s in a.symbol.split(",") if s.strip()]
     adapter = ClassicStrategyAdapter(a.strategy, symbols, market=a.market)
     res = collect_once(adapter, a.date, out_path=a.out)
-    print("[SHADOW] %s %s recorded=%d replayed=%d skipped_non_event=%d -> %s"
-          % (a.strategy, a.date, res["recorded"], res["replayed"],
-             res["skipped_non_event"], res["path"]))
+    print(
+        "[SHADOW] %s %s recorded=%d replayed=%d skipped_non_event=%d -> %s"
+        % (
+            a.strategy,
+            a.date,
+            res["recorded"],
+            res["replayed"],
+            res["skipped_non_event"],
+            res["path"],
+        )
+    )
     return 0
 
 

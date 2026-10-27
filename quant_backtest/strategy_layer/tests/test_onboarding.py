@@ -7,6 +7,7 @@
 ③ replay_reconcile 对账逻辑：100% 一致 → 退出码 0；95% 不一致 → 退出码 1
 ④ 零主链断言：import onboarding 全部模块后执行链未被拉起（子进程隔离）
 """
+
 import dataclasses
 import importlib.util
 import json
@@ -19,8 +20,8 @@ import pandas as pd
 import pytest
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_QB_ROOT = os.path.dirname(os.path.dirname(_HERE))          # quant_backtest/
-_REPO_ROOT = os.path.dirname(_QB_ROOT)                      # 仓库根
+_QB_ROOT = os.path.dirname(os.path.dirname(_HERE))  # quant_backtest/
+_REPO_ROOT = os.path.dirname(_QB_ROOT)  # 仓库根
 _ONBOARDING = os.path.join(_QB_ROOT, "strategy_layer", "onboarding")
 TEMPLATE_PATH = os.path.join(_ONBOARDING, "manifest_template.json")
 
@@ -28,10 +29,10 @@ CLASSIC_IDS = ["ma_cross", "rsi_reversal", "boll_breakout", "trend_follow"]
 
 # agent_platform/engine/strategy_config.py 按路径加载（不污染 sys.path、
 # 不触发 agent_platform 包 __init__）。
-_AP_CFG_PATH = os.path.join(_REPO_ROOT, "agent_platform", "engine",
-                            "strategy_config.py")
-_spec = importlib.util.spec_from_file_location("ap_strategy_config",
-                                               _AP_CFG_PATH)
+_AP_CFG_PATH = os.path.join(
+    _REPO_ROOT, "agent_platform", "engine", "strategy_config.py"
+)
+_spec = importlib.util.spec_from_file_location("ap_strategy_config", _AP_CFG_PATH)
 ap_cfg = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(ap_cfg)
 
@@ -44,8 +45,10 @@ def _synth_df(n=120):
     布林突破/趋势斜率翻转全覆盖）。"""
     idx = pd.date_range("2026-04-01", periods=n, freq="B")
     close = pd.Series(100.0 + 30.0 * np.sin(np.arange(n) / 5.0), index=idx)
-    df = pd.DataFrame({"open": close, "high": close, "low": close,
-                       "close": close, "volume": 1000.0}, index=idx)
+    df = pd.DataFrame(
+        {"open": close, "high": close, "low": close, "close": close, "volume": 1000.0},
+        index=idx,
+    )
     return df
 
 
@@ -60,7 +63,8 @@ def _load_onboarding(name):
     """按路径加载 onboarding 模块（与被测目录解耦，不依赖运行 cwd）。"""
     path = os.path.join(_ONBOARDING, name + ".py")
     spec = importlib.util.spec_from_file_location(
-        "strategy_layer.onboarding." + name, path)
+        "strategy_layer.onboarding." + name, path
+    )
     mod = importlib.util.module_from_spec(spec)
     # 覆盖注册（先执行后覆盖亦可，但需在 exec 前占位以防环）：若此处用
     # setdefault，当先前用例已按包路径 import 同名模块时，本副本不进
@@ -80,7 +84,8 @@ shadow_collect = _load_onboarding("shadow_collect")
 
 def _adapter(name, loader, symbol="TEST.SH"):
     return classic_adapter.ClassicStrategyAdapter(
-        name, [symbol], market="CN", loader=loader)
+        name, [symbol], market="CN", loader=loader
+    )
 
 
 # ---------------------------------------------------------------------- #
@@ -101,12 +106,21 @@ class TestManifestTemplate:
     def test_template_field_discipline(self):
         raw = json.load(open(TEMPLATE_PATH, encoding="utf-8"))
         assert set(raw) == {"strategies"}
-        required = {"strategy_id", "version", "allowed_data",
-                    "resource_budget", "allowed_modes", "permissions"}
+        required = {
+            "strategy_id",
+            "version",
+            "allowed_data",
+            "resource_budget",
+            "allowed_modes",
+            "permissions",
+        }
         for entry in raw["strategies"]:
-            assert set(entry) == required            # 多一字段都不过校验器
+            assert set(entry) == required  # 多一字段都不过校验器
             assert set(entry["resource_budget"]) == {
-                "timeout_s", "max_concurrency", "max_context_bytes"}
+                "timeout_s",
+                "max_concurrency",
+                "max_context_bytes",
+            }
 
     def test_template_rejects_extra_field(self, tmp_path):
         """防回归：多塞一个字段必须被既有校验器拒绝（严格模式仍生效）。"""
@@ -151,8 +165,7 @@ class TestClassicAdapter:
         fn = classic_adapter.strategy_fn(name)
         pos = fn(_synth_df(), {})
         events = set(classic_adapter.position_change_events(pos))
-        quiet = [dt for dt in pos.index
-                 if dt not in events][:1]
+        quiet = [dt for dt in pos.index if dt not in events][:1]
         td8 = quiet[0].strftime("%Y%m%d")
         assert ad.score(td8) == []
 
@@ -160,13 +173,23 @@ class TestClassicAdapter:
         """与 chan_monitor 输出同构：同为 Signal 契约、字段集合一致。"""
         from strategy_layer.signal import Signal
         from strategy_layer.adapters.chan_monitor import ChanMonitorAdapter
+
         _, loader = synth_env
         pool = tmp_path / "pool.jsonl"
-        pool.write_text(json.dumps({
-            "market": "CN", "code": "000338.SZ", "type": "2买",
-            "dt": "2026-04-01", "detect_date": "2026-04-01",
-            "price": 15.8}, ensure_ascii=False),
-            encoding="utf-8")
+        pool.write_text(
+            json.dumps(
+                {
+                    "market": "CN",
+                    "code": "000338.SZ",
+                    "type": "2买",
+                    "dt": "2026-04-01",
+                    "detect_date": "2026-04-01",
+                    "price": 15.8,
+                },
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
         ref = ChanMonitorAdapter(pool_globs=[str(pool)]).score("20260402")[0]
         mine = _adapter("ma_cross", loader).score("20260401")
         fn = classic_adapter.strategy_fn("ma_cross")
@@ -175,8 +198,9 @@ class TestClassicAdapter:
         td8 = next(iter(events)).strftime("%Y%m%d")
         mine = _adapter("ma_cross", loader).score(td8)[0]
         assert type(mine) is type(ref) is Signal
-        assert ([f.name for f in dataclasses.fields(mine)]
-                == [f.name for f in dataclasses.fields(ref)])
+        assert [f.name for f in dataclasses.fields(mine)] == [
+            f.name for f in dataclasses.fields(ref)
+        ]
 
     def test_unknown_strategy_rejected(self, synth_env):
         _, loader = synth_env
@@ -185,8 +209,10 @@ class TestClassicAdapter:
 
     def test_degradation_never_raises(self, synth_env, capsys):
         """loader 抛异常 → 降级返回 []，不向调用方 raise（协议约定）。"""
+
         def bad_loader(*a, **k):
             raise RuntimeError("db down")
+
         ad = _adapter("ma_cross", bad_loader)
         assert ad.score("20260601") == []
         assert "降级" in capsys.readouterr().out
@@ -194,13 +220,13 @@ class TestClassicAdapter:
     def test_sorted_by_score_desc(self, synth_env):
         df, loader = synth_env
         ad = classic_adapter.ClassicStrategyAdapter(
-            "ma_cross", ["A.SH", "B.SH"], loader=loader)
+            "ma_cross", ["A.SH", "B.SH"], loader=loader
+        )
         fn = classic_adapter.strategy_fn("ma_cross")
         events = classic_adapter.position_change_events(fn(df, {}))
         td8 = next(iter(events)).strftime("%Y%m%d")
         sigs = ad.score(td8)
-        assert [s.score for s in sigs] == sorted(
-            [s.score for s in sigs], reverse=True)
+        assert [s.score for s in sigs] == sorted([s.score for s in sigs], reverse=True)
 
 
 # ---------------------------------------------------------------------- #
@@ -212,8 +238,9 @@ class TestReplayReconcile:
     def _baseline(self, df, name="ma_cross"):
         fn = classic_adapter.strategy_fn(name)
         pos = fn(df, {})
-        return {self.SYM: {replay_reconcile._to_ymd8(dt): int(v)
-                           for dt, v in pos.items()}}
+        return {
+            self.SYM: {replay_reconcile._to_ymd8(dt): int(v) for dt, v in pos.items()}
+        }
 
     def test_full_consistency_exit_0(self, synth_env, tmp_path, monkeypatch):
         """合成数据构造 100% 一致例 → passed=True，main 退出码 0。"""
@@ -222,7 +249,8 @@ class TestReplayReconcile:
         ad = _adapter("ma_cross", loader)
         dates = sorted(baseline[self.SYM])
         adapter_pos = replay_reconcile.adapter_positions_from_scores(
-            ad, dates, [self.SYM])
+            ad, dates, [self.SYM]
+        )
         report = replay_reconcile.run_reconcile(baseline, adapter_pos)
         assert report["n_total"] == len(df)
         assert report["agree_rate"] == 1.0
@@ -233,26 +261,43 @@ class TestReplayReconcile:
         bl = tmp_path / "baseline.jsonl"
         with open(bl, "w", encoding="utf-8") as f:
             for td, p in baseline[self.SYM].items():
-                f.write(json.dumps({"strategy": "ma_cross",
-                                    "symbol": self.SYM,
-                                    "trade_date": td, "position": p}) + "\n")
-        rc = replay_reconcile.main([
-            "--strategy", "ma_cross", "--symbol", self.SYM,
-            "--end", "2026-12-31", "--baseline", str(bl)])
+                f.write(
+                    json.dumps(
+                        {
+                            "strategy": "ma_cross",
+                            "symbol": self.SYM,
+                            "trade_date": td,
+                            "position": p,
+                        }
+                    )
+                    + "\n"
+                )
+        rc = replay_reconcile.main(
+            [
+                "--strategy",
+                "ma_cross",
+                "--symbol",
+                self.SYM,
+                "--end",
+                "2026-12-31",
+                "--baseline",
+                str(bl),
+            ]
+        )
         assert rc == 0
 
-    def test_95pct_inconsistency_exit_1(self, synth_env, tmp_path,
-                                        monkeypatch):
+    def test_95pct_inconsistency_exit_1(self, synth_env, tmp_path, monkeypatch):
         """95% 一致（< 99% 阈值）→ passed=False，main 退出码 1。"""
         df, loader = synth_env
         baseline = self._baseline(df)
         days = sorted(baseline[self.SYM])
-        flip = days[: max(1, int(len(days) * 0.05))]      # 翻转 5% 仓位
+        flip = days[: max(1, int(len(days) * 0.05))]  # 翻转 5% 仓位
         for td in flip:
             baseline[self.SYM][td] = 1 - baseline[self.SYM][td]
         ad = _adapter("ma_cross", loader)
         adapter_pos = replay_reconcile.adapter_positions_from_scores(
-            ad, days, [self.SYM])
+            ad, days, [self.SYM]
+        )
         report = replay_reconcile.run_reconcile(baseline, adapter_pos)
         assert report["agree_rate"] < 0.99
         assert report["passed"] is False
@@ -261,37 +306,77 @@ class TestReplayReconcile:
         bl = tmp_path / "baseline_bad.jsonl"
         with open(bl, "w", encoding="utf-8") as f:
             for td, p in baseline[self.SYM].items():
-                f.write(json.dumps({"strategy": "ma_cross",
-                                    "symbol": self.SYM,
-                                    "trade_date": td, "position": p}) + "\n")
-        rc = replay_reconcile.main([
-            "--strategy", "ma_cross", "--symbol", self.SYM,
-            "--end", "2026-12-31", "--baseline", str(bl)])
+                f.write(
+                    json.dumps(
+                        {
+                            "strategy": "ma_cross",
+                            "symbol": self.SYM,
+                            "trade_date": td,
+                            "position": p,
+                        }
+                    )
+                    + "\n"
+                )
+        rc = replay_reconcile.main(
+            [
+                "--strategy",
+                "ma_cross",
+                "--symbol",
+                self.SYM,
+                "--end",
+                "2026-12-31",
+                "--baseline",
+                str(bl),
+            ]
+        )
         assert rc == 1
 
     def test_baseline_jsonl_tolerates_bad_rows(self, tmp_path):
         """基线文件坏行跳过；strategy 不符的行拒收（防拿错文件）。"""
         p = tmp_path / "b.jsonl"
         rows = [
-            {"strategy": "ma_cross", "symbol": "A.SH",
-             "trade_date": "2026-06-01", "position": 1},   # 日期横杠容忍
-            {"strategy": "other", "symbol": "A.SH",
-             "trade_date": "20260602", "position": 1},     # 策略不符 → 跳过
+            {
+                "strategy": "ma_cross",
+                "symbol": "A.SH",
+                "trade_date": "2026-06-01",
+                "position": 1,
+            },  # 日期横杠容忍
+            {
+                "strategy": "other",
+                "symbol": "A.SH",
+                "trade_date": "20260602",
+                "position": 1,
+            },  # 策略不符 → 跳过
             "{broken",
-            {"strategy": "ma_cross", "symbol": "A.SH",
-             "trade_date": "20260603", "position": 0},
+            {
+                "strategy": "ma_cross",
+                "symbol": "A.SH",
+                "trade_date": "20260603",
+                "position": 0,
+            },
         ]
-        p.write_text("\n".join(json.dumps(r) if isinstance(r, dict) else r
-                               for r in rows) + "\n", encoding="utf-8")
+        p.write_text(
+            "\n".join(json.dumps(r) if isinstance(r, dict) else r for r in rows) + "\n",
+            encoding="utf-8",
+        )
         out = replay_reconcile.load_baseline_jsonl(str(p), "ma_cross")
         assert out == {"A.SH": {"20260601": 1, "20260603": 0}}
 
     def test_empty_baseline_fails_fast(self, tmp_path):
         p = tmp_path / "empty.jsonl"
         p.write_text("", encoding="utf-8")
-        rc = replay_reconcile.main([
-            "--strategy", "ma_cross", "--symbol", "A.SH",
-            "--end", "2026-12-31", "--baseline", str(p)])
+        rc = replay_reconcile.main(
+            [
+                "--strategy",
+                "ma_cross",
+                "--symbol",
+                "A.SH",
+                "--end",
+                "2026-12-31",
+                "--baseline",
+                str(p),
+            ]
+        )
         assert rc == 2
 
 
@@ -305,15 +390,25 @@ class TestShadowCollect:
         for i in range(n):
             score = 10.0 + (i % 10) * 8.0
             r = (0.3 * score - 10.0) * (1 if positive else -1)
-            rows.append({"symbol": "A.SH", "trade_date": "202606%02d" % (i + 1),
-                         "score": score, "confidence": 0.5,
-                         "action": "buy"})
+            rows.append(
+                {
+                    "symbol": "A.SH",
+                    "trade_date": "202606%02d" % (i + 1),
+                    "score": score,
+                    "confidence": 0.5,
+                    "action": "buy",
+                }
+            )
         return rows
 
     def _fwd(self, rows):
-        table = {r["trade_date"]: {5: r["score"] * 0.3 - 10.0 + 15.0,
-                                   20: r["score"] * 0.3 - 10.0}
-                 for r in rows}
+        table = {
+            r["trade_date"]: {
+                5: r["score"] * 0.3 - 10.0 + 15.0,
+                20: r["score"] * 0.3 - 10.0,
+            }
+            for r in rows
+        }
         return lambda symbol, td: table.get(td)
 
     def test_gate_three_states(self):
@@ -324,24 +419,27 @@ class TestShadowCollect:
         assert st["gate"]["corr"]["t"] >= 2.0
         # 显著反向 → 淘汰（负相关表：score 越高 r20 越低）
         neg_rows = self._rows(35, positive=False)
-        neg_table = {r["trade_date"]: {5: 1.0,
-                                       20: -(r["score"] - 50.0) * 0.5}
-                     for r in neg_rows}
+        neg_table = {
+            r["trade_date"]: {5: 1.0, 20: -(r["score"] - 50.0) * 0.5} for r in neg_rows
+        }
         st_neg = shadow_collect.compute_shadow_stats(
-            neg_rows, fwd_fn=lambda s, td: neg_table.get(td))
+            neg_rows, fwd_fn=lambda s, td: neg_table.get(td)
+        )
         assert st_neg["gate"]["status"].startswith("显著反向·建议淘汰")
         # n<30 → 样本积累中（延期）
         st_few = shadow_collect.compute_shadow_stats(
-            self._rows(10), fwd_fn=self._fwd(self._rows(10)))
+            self._rows(10), fwd_fn=self._fwd(self._rows(10))
+        )
         assert st_few["gate"]["status"].startswith("样本积累中")
         assert st_few["gate"]["need"] == shadow_collect.N_MIN
 
     def test_bucket_structure(self):
         rows = self._rows(35)
         st = shadow_collect.compute_shadow_stats(rows, fwd_fn=self._fwd(rows))
-        assert [b["bucket"] for b in st["by_score_bucket"]] == \
-            list(shadow_collect.BUCKETS)
-        assert st["by_score_bucket"][3]["n"] > 0     # 高分桶有样本
+        assert [b["bucket"] for b in st["by_score_bucket"]] == list(
+            shadow_collect.BUCKETS
+        )
+        assert st["by_score_bucket"][3]["n"] > 0  # 高分桶有样本
 
     def test_collect_once_idempotent(self, synth_env, tmp_path):
         """重复采集幂等：第二轮全 replay（对齐 record_verdicts 幂等纪律）。"""
@@ -378,8 +476,13 @@ class TestZeroMainChain:
         )
         env = dict(os.environ)
         env["PYTHONPATH"] = _QB_ROOT + os.pathsep + env.get("PYTHONPATH", "")
-        proc = subprocess.run([sys.executable, "-c", code], cwd=_QB_ROOT,
-                              env=env, capture_output=True, text=True,
-                              timeout=120)
+        proc = subprocess.run(
+            [sys.executable, "-c", code],
+            cwd=_QB_ROOT,
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
         assert proc.returncode == 0, proc.stderr
         assert "OK" in proc.stdout

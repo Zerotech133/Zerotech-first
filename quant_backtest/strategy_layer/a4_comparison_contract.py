@@ -6,7 +6,9 @@ from collections.abc import Mapping
 from datetime import date
 
 
-_BASELINE_ISSUES = frozenset({"SIX_STRATEGY_CONTRACT_UNPROVEN", "PG_PERSISTENCE_UNPROVEN"})
+_BASELINE_ISSUES = frozenset(
+    {"SIX_STRATEGY_CONTRACT_UNPROVEN", "PG_PERSISTENCE_UNPROVEN"}
+)
 _ARCHIVE_STATUSES = {
     "MATCHED": "MATCHED",
     "DATE_MISMATCH": "DATE_MISMATCH",
@@ -30,13 +32,21 @@ def evaluate_comparison(observation):
     archive_status = _ARCHIVE_STATUSES.get(raw_archive, "INVALID")
     if archive_status != "MATCHED":
         block("ARCHIVE_" + archive_status)
-    elif (not isinstance(data.get("trade_date"), str)
-          or len(data["trade_date"]) != 8 or not data["trade_date"].isdigit()
-          or history.get("scan_run_date") != (
-              data["trade_date"][:4] + "-" + data["trade_date"][4:6]
-              + "-" + data["trade_date"][6:])
-          or not isinstance(history.get("trade_basis"), str)
-          or not history["trade_basis"].startswith(history["scan_run_date"] + " 收盘")):
+    elif (
+        not isinstance(data.get("trade_date"), str)
+        or len(data["trade_date"]) != 8
+        or not data["trade_date"].isdigit()
+        or history.get("scan_run_date")
+        != (
+            data["trade_date"][:4]
+            + "-"
+            + data["trade_date"][4:6]
+            + "-"
+            + data["trade_date"][6:]
+        )
+        or not isinstance(history.get("trade_basis"), str)
+        or not history["trade_basis"].startswith(history["scan_run_date"] + " 收盘")
+    ):
         block("ARCHIVE_DAY_EVIDENCE_INCONSISTENT")
 
     try:
@@ -50,9 +60,14 @@ def evaluate_comparison(observation):
     cn = health.get("CN") if isinstance(health, Mapping) else None
     if isinstance(health, Mapping) and "CN" not in health:
         cn_batch = "ABSENT"
-    elif (isinstance(cn, Mapping) and isinstance(cn.get("detect_date"), str)
-          and isinstance(cn.get("rows"), int) and not isinstance(cn["rows"], bool)
-          and cn["rows"] > 0 and cn.get("status") in ("FRESH", "STALE", "FUTURE")):
+    elif (
+        isinstance(cn, Mapping)
+        and isinstance(cn.get("detect_date"), str)
+        and isinstance(cn.get("rows"), int)
+        and not isinstance(cn["rows"], bool)
+        and cn["rows"] > 0
+        and cn.get("status") in ("FRESH", "STALE", "FUTURE")
+    ):
         cn_batch = "PRESENT"
     else:
         cn_batch = "INVALID"
@@ -70,14 +85,19 @@ def evaluate_comparison(observation):
                 batch_day = date.fromisoformat(item["detect_date"])
                 age = (trade_day - batch_day).days
                 reported_age = item["age_calendar_days"]
-                if (type(reported_age) is not int or reported_age != age
-                        or item["status"] != (
-                            "FUTURE" if age < 0 else "STALE" if age > 4 else "FRESH")):
+                if (
+                    type(reported_age) is not int
+                    or reported_age != age
+                    or item["status"]
+                    != ("FUTURE" if age < 0 else "STALE" if age > 4 else "FRESH")
+                ):
                     raise ValueError("batch age/status mismatch")
             except (TypeError, KeyError, ValueError, AttributeError):
                 block("MARKET_BATCH_DATE_AGE_INCONSISTENT")
                 break
-    if cn_batch == "PRESENT" and cn.get("age_calendar_days") != data.get("cn_age_calendar_days"):
+    if cn_batch == "PRESENT" and cn.get("age_calendar_days") != data.get(
+        "cn_age_calendar_days"
+    ):
         block("CN_BATCH_AGE_INCONSISTENT")
 
     reconcile = data.get("chanlun_reconciliation")
@@ -88,12 +108,20 @@ def evaluate_comparison(observation):
             batch_alignment = reconcile.get("batch_status")
             if batch_alignment not in ("MATCHED", "MISMATCH", "UNPROVEN"):
                 batch_alignment = "INVALID_EVIDENCE"
-            elif batch_alignment == "MATCHED" and history.get("chanlun_batch_date") != cn["detect_date"]:
+            elif (
+                batch_alignment == "MATCHED"
+                and history.get("chanlun_batch_date") != cn["detect_date"]
+            ):
                 batch_alignment = "INVALID_EVIDENCE"
             count = reconcile.get("source_difference_count")
             diffs = reconcile.get("source_differences")
-            if (isinstance(count, int) and not isinstance(count, bool) and count >= 0
-                    and isinstance(diffs, Mapping) and count == len(diffs)):
+            if (
+                isinstance(count, int)
+                and not isinstance(count, bool)
+                and count >= 0
+                and isinstance(diffs, Mapping)
+                and count == len(diffs)
+            ):
                 source_events = "MATCHED" if count == 0 else "MISMATCH"
             else:
                 source_events = "INVALID_EVIDENCE"
@@ -138,30 +166,45 @@ def evaluate_comparison(observation):
     ):
         block("MARKET_HEALTH_NOT_FRESH_OR_INVALID")
     issues = data.get("issues")
-    if (not isinstance(issues, list) or not all(isinstance(x, str) for x in issues)
-            or not _BASELINE_ISSUES.issubset(issues)):
+    if (
+        not isinstance(issues, list)
+        or not all(isinstance(x, str) for x in issues)
+        or not _BASELINE_ISSUES.issubset(issues)
+    ):
         block("PROBE_ISSUES_INVALID")
     elif set(issues) - _BASELINE_ISSUES:
         block("PROBE_ISSUES_PRESENT")
     manifest = data.get("input_manifest")
-    if (data.get("input_snapshot_scope") != "PROBE_ONLY_NOT_PRODUCTION"
-            or not isinstance(manifest, Mapping)
-            or manifest.get("scope") != "PROBE_OBSERVATIONS_NOT_GLOBAL_ATOMIC_OR_PRODUCTION"):
+    if (
+        data.get("input_snapshot_scope") != "PROBE_ONLY_NOT_PRODUCTION"
+        or not isinstance(manifest, Mapping)
+        or manifest.get("scope") != "PROBE_OBSERVATIONS_NOT_GLOBAL_ATOMIC_OR_PRODUCTION"
+    ):
         block("OBSERVATION_SCOPE_INVALID")
     try:
         pool_manifest = manifest["pool_files"]
         archive_manifest = manifest["archive"]
-        if not isinstance(pool_manifest, list) or not isinstance(archive_manifest, Mapping):
+        if not isinstance(pool_manifest, list) or not isinstance(
+            archive_manifest, Mapping
+        ):
             raise ValueError("invalid manifest")
-        expected_pool = [{"path": item["path"], "status": item["status"],
-                          "sha256": item["sha256"]} for item in files]
-        expected_archive = {"path": history["path"], "status": history["status"],
-                            "sha256": history.get("sha256")}
+        expected_pool = [
+            {"path": item["path"], "status": item["status"], "sha256": item["sha256"]}
+            for item in files
+        ]
+        expected_archive = {
+            "path": history["path"],
+            "status": history["status"],
+            "sha256": history.get("sha256"),
+        }
         if pool_manifest != expected_pool or archive_manifest != expected_archive:
             raise ValueError("manifest fields differ from observation")
         payload = {"pool_files": pool_manifest, "archive": dict(archive_manifest)}
-        digest = hashlib.sha256(json.dumps(payload, ensure_ascii=False,
-                                           sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()
+        digest = hashlib.sha256(
+            json.dumps(
+                payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+            ).encode("utf-8")
+        ).hexdigest()
         if digest != manifest["sha256"]:
             raise ValueError("manifest digest mismatch")
     except (TypeError, KeyError, ValueError):
@@ -175,7 +218,8 @@ def evaluate_comparison(observation):
         "cn_source_events": source_events,
         "cn_batch_alignment": batch_alignment,
         "observation_comparability": (
-            "COMPARABLE_WITHIN_PROBE" if not reasons else "NOT_COMPARABLE"),
+            "COMPARABLE_WITHIN_PROBE" if not reasons else "NOT_COMPARABLE"
+        ),
         "missing_source_paths": sorted(set(paths)),
         "missing_market_inference": "NOT_INFERRED_FROM_MISSING_PATHS",
         "observation_scope": "PROBE_ONLY_NOT_PRODUCTION_ATOMIC_SNAPSHOT",

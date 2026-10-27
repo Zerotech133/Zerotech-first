@@ -4,6 +4,7 @@
 该模块只调用 Agent 的只读 ``propose`` 接口（或 Agent 平台 Registry 的
 ``run`` 接口），不写入任一平台账本，也不修改 Signal/Registry/Aggregator。
 """
+
 from __future__ import annotations
 
 import copy
@@ -17,15 +18,24 @@ from typing import Any, List, Optional
 from ..signal import Signal
 
 try:
-    from agent_platform.engine.strategy_registry import StrategyAgent, StrategyRegistry, Verdict
+    from agent_platform.engine.strategy_registry import (
+        StrategyAgent,
+        StrategyRegistry,
+        Verdict,
+    )
 except ImportError:
     # quant_backtest 常被单独作为工作目录运行；此时把同仓库根目录加入
     # import path，仍然复用 Agent 平台的真实类定义，而不是复制契约。
     _REPO_ROOT = os.path.dirname(
-        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    )
     if _REPO_ROOT not in sys.path:
         sys.path.insert(0, _REPO_ROOT)
-    from agent_platform.engine.strategy_registry import StrategyAgent, StrategyRegistry, Verdict
+    from agent_platform.engine.strategy_registry import (
+        StrategyAgent,
+        StrategyRegistry,
+        Verdict,
+    )
 
 
 _RECOMMENDATION_TO_ACTION = {
@@ -97,7 +107,9 @@ class AgentSignalAdapter:
             verdict.validate()
             return [self._to_signal(verdict, trade_date)]
         except Exception as exc:
-            print(f"[agent_bridge:{self.strategy_id}] 降级：打分失败，返回空信号列表: {exc}")
+            print(
+                f"[agent_bridge:{self.strategy_id}] 降级：打分失败，返回空信号列表: {exc}"
+            )
             return []
 
     def _context(self, trade_date: str) -> Mapping[str, Any]:

@@ -12,6 +12,7 @@
 - dt          可选：源事件日 YYYY-MM-DD（同票预聚合排序键，方案 C
               2026-10-19 拍板；缺省 None 时预聚合回退输入序）
 """
+
 import re
 
 from dataclasses import dataclass
@@ -32,13 +33,13 @@ class Signal:
     保证下游拿到的 Signal 一定满足契约。
     """
 
-    symbol: str        # 标准格式：000338.SZ / 600519.SH / 00700.HK
-    action: str        # buy / sell / hold / watch（四值之一）
-    score: float       # 0-100 标准化分
+    symbol: str  # 标准格式：000338.SZ / 600519.SH / 00700.HK
+    action: str  # buy / sell / hold / watch（四值之一）
+    score: float  # 0-100 标准化分
     confidence: float  # 0-1 置信度
-    rationale: str     # 人话依据（前端直接展示，必须非空）
-    strategy: str      # 来源策略 id（如 kg_boost）
-    trade_date: str    # YYYYMMDD
+    rationale: str  # 人话依据（前端直接展示，必须非空）
+    strategy: str  # 来源策略 id（如 kg_boost）
+    trade_date: str  # YYYYMMDD
     dt: Optional[str] = None  # 可选源事件日 YYYY-MM-DD（预聚合排序键）
 
     def __post_init__(self) -> None:
@@ -46,12 +47,15 @@ class Signal:
             raise ValueError("symbol 必须为非空字符串")
         if self.action not in VALID_ACTIONS:
             raise ValueError(
-                f"action 必须为 {VALID_ACTIONS} 之一，收到: {self.action!r}")
+                f"action 必须为 {VALID_ACTIONS} 之一，收到: {self.action!r}"
+            )
         if not isinstance(self.score, (int, float)) or isinstance(self.score, bool):
             raise ValueError("score 必须为数值")
         if not (0.0 <= float(self.score) <= 100.0):
             raise ValueError(f"score 必须在 0-100 区间，收到: {self.score}")
-        if not isinstance(self.confidence, (int, float)) or isinstance(self.confidence, bool):
+        if not isinstance(self.confidence, (int, float)) or isinstance(
+            self.confidence, bool
+        ):
             raise ValueError("confidence 必须为数值")
         if not (0.0 <= float(self.confidence) <= 1.0):
             raise ValueError(f"confidence 必须在 0-1 区间，收到: {self.confidence}")
@@ -59,5 +63,9 @@ class Signal:
             raise ValueError("rationale 必须为非空字符串")
         if not isinstance(self.strategy, str) or not self.strategy.strip():
             raise ValueError("strategy 必须为非空字符串")
-        if not isinstance(self.trade_date, str) or not _TRADE_DATE_RE.match(self.trade_date):
-            raise ValueError(f"trade_date 必须为 YYYYMMDD 格式，收到: {self.trade_date!r}")
+        if not isinstance(self.trade_date, str) or not _TRADE_DATE_RE.match(
+            self.trade_date
+        ):
+            raise ValueError(
+                f"trade_date 必须为 YYYYMMDD 格式，收到: {self.trade_date!r}"
+            )

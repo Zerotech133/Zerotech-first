@@ -15,6 +15,7 @@
 纪律：零 LLM 调用、零网络（前向收益全部 fwd_fn 注入）、零全局 patch
 （不碰 time.sleep）、测试时间动态生成、唯一写副作用限定 pytest tmp_path。
 """
+
 import math
 import os
 import time
@@ -35,9 +36,15 @@ ADAPTER_ID = "s4_smoke_strategy"
 
 
 def _sig(symbol: str, action: str, score: float, td8: str) -> Signal:
-    return Signal(symbol=symbol, action=action, score=score,
-                  confidence=0.5, rationale="s4 冒烟合成信号",
-                  strategy=ADAPTER_ID, trade_date=td8)
+    return Signal(
+        symbol=symbol,
+        action=action,
+        score=score,
+        confidence=0.5,
+        rationale="s4 冒烟合成信号",
+        strategy=ADAPTER_ID,
+        trade_date=td8,
+    )
 
 
 class _FakeAdapter:
@@ -63,11 +70,19 @@ def _mk_rows(n, seed, slope):
     rows, fwd_map = [], {}
     for i, s in enumerate(scores):
         td = (base + timedelta(days=i)).strftime("%Y%m%d")
-        rows.append({"symbol": "SMK.SH", "trade_date": td,
-                     "score": round(float(s), 2), "confidence": 0.5,
-                     "action": "buy"})
-        fwd_map[td] = {5: round(0.3 * float(s) + float(rng.normal(0, 0.5)), 2),
-                       20: round(slope * float(s) + float(rng.normal(0, 1.0)), 2)}
+        rows.append(
+            {
+                "symbol": "SMK.SH",
+                "trade_date": td,
+                "score": round(float(s), 2),
+                "confidence": 0.5,
+                "action": "buy",
+            }
+        )
+        fwd_map[td] = {
+            5: round(0.3 * float(s) + float(rng.normal(0, 0.5)), 2),
+            20: round(slope * float(s) + float(rng.normal(0, 1.0)), 2),
+        }
     return rows, fwd_map
 
 
@@ -92,10 +107,10 @@ def _council_style_corr(pairs):
 # 1. 口径一致性（shadow_collect vs council_shadow）
 # ---------------------------------------------------------------------- #
 def test_constants_parity_with_council_shadow():
-    assert sc.NS == cs.NS == (5, 20)          # r5/r20 前向收益窗口
-    assert sc.BUCKETS == cs.BUCKETS           # 四分桶边界命名
-    assert sc.N_MIN == cs.N_MIN == 30         # 转正门槛样本量
-    assert sc.SIG_T == 2.0                    # council 内联判据 abs(t)>=2
+    assert sc.NS == cs.NS == (5, 20)  # r5/r20 前向收益窗口
+    assert sc.BUCKETS == cs.BUCKETS  # 四分桶边界命名
+    assert sc.N_MIN == cs.N_MIN == 30  # 转正门槛样本量
+    assert sc.SIG_T == 2.0  # council 内联判据 abs(t)>=2
 
 
 def test_bucket_boundary_parity_with_council_shadow():
@@ -110,23 +125,27 @@ def test_bucket_boundary_parity_with_council_shadow():
 
 
 def test_agg_parity_with_council_shadow():
-    rows = [{"r5": 1.5, "r20": 2.0}, {"r5": -0.5, "r20": -1.0},
-            {"r5": None, "r20": 3.0}, {"r5": 0.2, "r20": None},
-            {"r5": None, "r20": None}]
+    rows = [
+        {"r5": 1.5, "r20": 2.0},
+        {"r5": -0.5, "r20": -1.0},
+        {"r5": None, "r20": 3.0},
+        {"r5": 0.2, "r20": None},
+        {"r5": None, "r20": None},
+    ]
     assert sc._agg(rows) == cs._agg(rows)
     a = sc._agg(rows)
     assert a["n"] == 5
-    assert a["win5"] == round(100.0 * 2 / 3, 1)   # r5>0 记胜：1.5/0.2 共 2 笔
+    assert a["win5"] == round(100.0 * 2 / 3, 1)  # r5>0 记胜：1.5/0.2 共 2 笔
     assert a["r5"] == round((1.5 - 0.5 + 0.2) / 3, 2)
     assert a["r20"] == round((2.0 - 1.0 + 3.0) / 3, 2)
 
 
 def test_corr_parity_with_council_shadow_and_numpy():
     datasets = [
-        [(1.0, 2.0), (2.0, 4.1), (3.0, 5.9), (4.0, 8.2)],        # 近线性正向
-        [(10.0, 5.0), (20.0, 3.0), (30.0, 8.0), (40.0, 1.0)],    # 弱相关
-        [(1.0, 9.0), (2.0, 7.0), (3.0, 5.5), (4.0, 2.1)],        # 反向
-        [(1.0, 5.0), (2.0, 5.0), (3.0, 5.0)],                    # vy=0 → None
+        [(1.0, 2.0), (2.0, 4.1), (3.0, 5.9), (4.0, 8.2)],  # 近线性正向
+        [(10.0, 5.0), (20.0, 3.0), (30.0, 8.0), (40.0, 1.0)],  # 弱相关
+        [(1.0, 9.0), (2.0, 7.0), (3.0, 5.5), (4.0, 2.1)],  # 反向
+        [(1.0, 5.0), (2.0, 5.0), (3.0, 5.0)],  # vy=0 → None
     ]
     for pairs in datasets:
         assert sc._corr(pairs) == _council_style_corr(pairs)
@@ -137,7 +156,7 @@ def test_corr_parity_with_council_shadow_and_numpy():
             if ys.std() > 0:
                 expect_r = round(float(np.corrcoef(xs, ys)[0, 1]), 3)
                 assert got["r"] == expect_r
-    assert sc._corr([(1.0, 5.0), (2.0, 5.0)]) is None   # 样本 <3 不评判
+    assert sc._corr([(1.0, 5.0), (2.0, 5.0)]) is None  # 样本 <3 不评判
 
 
 # ---------------------------------------------------------------------- #
@@ -146,10 +165,12 @@ def test_corr_parity_with_council_shadow_and_numpy():
 def _four_bucket_signals(td8):
     # 四分桶各至少 1 条样本（幂等键 strategy|symbol|date → 每 symbol 一条）
     # 事件帧口径（拍板定案）：全部用 buy/sell——watch/hold 不入影子统计样本
-    return [_sig("SMK1.SH", "buy", 10.0, td8),
-            _sig("SMK2.SH", "sell", 40.0, td8),
-            _sig("SMK3.SH", "buy", 60.0, td8),
-            _sig("SMK4.SH", "sell", 90.0, td8)]
+    return [
+        _sig("SMK1.SH", "buy", 10.0, td8),
+        _sig("SMK2.SH", "sell", 40.0, td8),
+        _sig("SMK3.SH", "buy", 60.0, td8),
+        _sig("SMK4.SH", "sell", 90.0, td8),
+    ]
 
 
 def test_collect_once_writes_jsonl_and_is_idempotent(tmp_path):
@@ -166,11 +187,11 @@ def test_collect_once_writes_jsonl_and_is_idempotent(tmp_path):
     assert len(rows) == 4
     for row in rows:
         assert row["strategy_id"] == ADAPTER_ID
-        assert row["mode"] == "SHADOW"            # 影子产出标注，与产线隔离
+        assert row["mode"] == "SHADOW"  # 影子产出标注，与产线隔离
         assert row["trade_date"] == td8
         assert row["shadow_key"] == "%s|%s|%s" % (ADAPTER_ID, row["symbol"], td8)
         assert isinstance(row["score"], float) and isinstance(row["confidence"], float)
-        assert row["ts"]                          # 动态生成的时间戳
+        assert row["ts"]  # 动态生成的时间戳
     assert {r["score"] for r in rows} == {10.0, 40.0, 60.0, 90.0}
 
     # 幂等：同日重采全部 replayed，不追加新行
@@ -194,13 +215,17 @@ def test_event_frame_filter_skips_non_buy_sell(tmp_path):
     # 仅以 skipped_non_event 计数保留可观测性。
     td8 = "20261016"
     out = str(tmp_path / "shadow.jsonl")
-    adapter = _FakeAdapter({td8: [
-        _sig("EV1.SH", "buy", 70.0, td8),
-        _sig("EV2.SH", "sell", 30.0, td8),
-        _sig("EV3.SH", "hold", 50.0, td8),        # 普通 hold（仓位不变）
-        _sig("EV4.SH", "hold", 0.0, td8),         # fail-closed 中性（conf=0）
-        _sig("EV5.SH", "watch", 85.0, td8),       # 非事件 action
-    ]})
+    adapter = _FakeAdapter(
+        {
+            td8: [
+                _sig("EV1.SH", "buy", 70.0, td8),
+                _sig("EV2.SH", "sell", 30.0, td8),
+                _sig("EV3.SH", "hold", 50.0, td8),  # 普通 hold（仓位不变）
+                _sig("EV4.SH", "hold", 0.0, td8),  # fail-closed 中性（conf=0）
+                _sig("EV5.SH", "watch", 85.0, td8),  # 非事件 action
+            ]
+        }
+    )
 
     res = sc.collect_once(adapter, td8, out_path=out)
     assert res["recorded"] == 2
@@ -224,8 +249,9 @@ def test_event_actions_constant_and_cli_reports_skip(tmp_path):
     assert sc.EVENT_ACTIONS == ("buy", "sell")
     td8 = "20261016"
     out = str(tmp_path / "shadow.jsonl")
-    adapter = _FakeAdapter({td8: [_sig("EV1.SH", "buy", 70.0, td8),
-                                  _sig("EV2.SH", "hold", 10.0, td8)]})
+    adapter = _FakeAdapter(
+        {td8: [_sig("EV1.SH", "buy", 70.0, td8), _sig("EV2.SH", "hold", 10.0, td8)]}
+    )
     sc.collect_once(adapter, td8, out_path=out)
     assert sc.load_rows(out)[0]["action"] == "buy"
 
@@ -238,14 +264,13 @@ def test_full_chain_collect_stats_report(tmp_path):
 
     rows = sc.load_rows(out)
     fwd_map = {("SMK%d.SH" % i, td8): {5: 1.5, 20: 2.5} for i in range(1, 5)}
-    stats = sc.compute_shadow_stats(
-        rows, fwd_fn=lambda sym, td: fwd_map.get((sym, td)))
+    stats = sc.compute_shadow_stats(rows, fwd_fn=lambda sym, td: fwd_map.get((sym, td)))
 
     assert stats["n_total"] == 4
     assert stats["n_have_fwd"] == 4
     assert [b["bucket"] for b in stats["by_score_bucket"]] == list(sc.BUCKETS)
     for b in stats["by_score_bucket"]:
-        assert b["n"] == 1                     # 四分桶各桶 ≥1 条样本
+        assert b["n"] == 1  # 四分桶各桶 ≥1 条样本
         assert b["r5"] == 1.5 and b["r20"] == 2.5
         assert b["win5"] == 100.0
     # 样本 <N_MIN → 不可结论态而非崩溃
@@ -255,8 +280,7 @@ def test_full_chain_collect_stats_report(tmp_path):
     assert stats["samples"][0]["trade_date"] == td8
 
     # 报告渲染：模板字符串填充（只读模板文件）
-    tpl_path = os.path.join(os.path.dirname(sc.__file__),
-                            "shadow_report_template.md")
+    tpl_path = os.path.join(os.path.dirname(sc.__file__), "shadow_report_template.md")
     with open(tpl_path, "r", encoding="utf-8") as f:
         report = f.read()
     report = report.replace("{STRATEGY_ID}", ADAPTER_ID)
@@ -264,7 +288,12 @@ def test_full_chain_collect_stats_report(tmp_path):
     for b in stats["by_score_bucket"]:
         tline = "| %s | {N} | {R5} | {WIN5} | {R20} |" % b["bucket"]
         rline = "| %s | %s | %s | %s | %s |" % (
-            b["bucket"], b["n"], b["r5"], b["win5"], b["r20"])
+            b["bucket"],
+            b["n"],
+            b["r5"],
+            b["win5"],
+            b["r20"],
+        )
         assert tline in report
         report = report.replace(tline, rline)
     report = report.replace("{PAIRS_N}", str(stats["gate"].get("n") or 0))
@@ -281,8 +310,7 @@ def test_full_chain_collect_stats_report(tmp_path):
 # 3. gate 三态（确定性构造，n≥N_MIN=30）
 # ---------------------------------------------------------------------- #
 def _stats_for(rows, fwd_map):
-    return sc.compute_shadow_stats(
-        rows, fwd_fn=lambda sym, td: fwd_map.get(td))
+    return sc.compute_shadow_stats(rows, fwd_fn=lambda sym, td: fwd_map.get(td))
 
 
 def test_gate_significant_positive_promote():
@@ -319,7 +347,7 @@ def test_gate_below_n_min_inconclusive():
         fwd_map[td] = None
     st = _stats_for(rows, fwd_map)
     assert st["n_total"] == 10
-    assert st["n_have_fwd"] == 8               # 缺窗口的样本只记录不评判
+    assert st["n_have_fwd"] == 8  # 缺窗口的样本只记录不评判
     assert st["gate"]["status"] == "样本积累中·影子延期"
     assert st["gate"]["n"] == 8 and st["gate"]["need"] == sc.N_MIN
 
@@ -334,21 +362,24 @@ def test_empty_rows_fail_visible():
     assert st["gate"]["status"] == "样本积累中·影子延期"
     assert st["gate"]["n"] == 0 and st["gate"]["need"] == sc.N_MIN
     assert [b["n"] for b in st["by_score_bucket"]] == [0, 0, 0, 0]
-    assert all(b["win5"] is None and b["r5"] is None and b["r20"] is None
-               for b in st["by_score_bucket"])
+    assert all(
+        b["win5"] is None and b["r5"] is None and b["r20"] is None
+        for b in st["by_score_bucket"]
+    )
 
 
 def test_malformed_rows_skipped(tmp_path):
     p = tmp_path / "shadow.jsonl"
-    p.write_text('{"symbol":"SMK.SH","trade_date":"20261016","score":50}\n'
-                 'garbage-line\n'
-                 '{"symbol":"SMK.SH","trade_date":"2026101","score":50}\n',
-                 encoding="utf-8")
+    p.write_text(
+        '{"symbol":"SMK.SH","trade_date":"20261016","score":50}\n'
+        "garbage-line\n"
+        '{"symbol":"SMK.SH","trade_date":"2026101","score":50}\n',
+        encoding="utf-8",
+    )
     rows = sc.load_rows(str(p))
-    assert len(rows) == 2                       # 仅坏 JSON 行被 load_rows 跳过
-    st = sc.compute_shadow_stats(
-        rows, fwd_fn=lambda sym, td: {5: 1.0, 20: 2.0})
-    assert st["n_total"] == 1                   # 7 位 trade_date 在统计层被跳过
+    assert len(rows) == 2  # 仅坏 JSON 行被 load_rows 跳过
+    st = sc.compute_shadow_stats(rows, fwd_fn=lambda sym, td: {5: 1.0, 20: 2.0})
+    assert st["n_total"] == 1  # 7 位 trade_date 在统计层被跳过
 
 
 def test_load_rows_missing_file_returns_empty(tmp_path):

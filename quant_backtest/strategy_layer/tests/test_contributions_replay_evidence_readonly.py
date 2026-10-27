@@ -7,6 +7,7 @@
 preaggregate_symbol 的内存路径；绝不调用 SignalAggregator.run
 （有 PG 写入副作用）。
 """
+
 import pytest
 
 from strategy_layer.aggregator import SignalAggregator, preaggregate_symbol
@@ -19,23 +20,30 @@ SYMBOL = "002633.SZ"
 
 def sig(action, score, dt, rationale=""):
     """dict 形态信号（_sig_get 双形态兼容），字段取最小充分集。"""
-    return {"symbol": SYMBOL, "action": action, "score": score,
-            "confidence": 0.8, "dt": dt, "rationale": rationale,
-            "strategy_id": SID}
+    return {
+        "symbol": SYMBOL,
+        "action": action,
+        "score": score,
+        "confidence": 0.8,
+        "dt": dt,
+        "rationale": rationale,
+        "strategy_id": SID,
+    }
 
 
 def fuse(entries):
     """经预聚合的完整 run() 内存路径（不含落库）。"""
     kept, superseded = preaggregate_symbol(entries)
-    return SignalAggregator()._fuse_symbol(DAY, SYMBOL, kept,
-                                           superseded=superseded)
+    return SignalAggregator()._fuse_symbol(DAY, SYMBOL, kept, superseded=superseded)
 
 
 def test_preaggregate_keeps_latest_dt_and_records_superseded():
     """同策略 buy(旧)+sell(新)：按 dt 最新保留 sell，
     被覆盖 buy 记入 contributions[SID].superseded —— 裁决可回放。"""
-    entries = [(SID, W, sig("buy", 80.0, "2026-07-06", "缠论1买")),
-               (SID, W, sig("sell", 20.0, "2026-07-21", "缠论1卖"))]
+    entries = [
+        (SID, W, sig("buy", 80.0, "2026-07-06", "缠论1买")),
+        (SID, W, sig("sell", 20.0, "2026-07-21", "缠论1卖")),
+    ]
     out = fuse(entries)
 
     # 预聚合后仅 1 条：score 即保留条分数，不再均值
@@ -64,8 +72,10 @@ def test_preaggregate_independent_of_entry_order():
 
     assert out_ab["action"] == out_ba["action"] == "sell"
     assert out_ab["score"] == out_ba["score"] == pytest.approx(20.0)
-    assert (out_ab["contributions"][SID]["superseded"]
-            == out_ba["contributions"][SID]["superseded"])
+    assert (
+        out_ab["contributions"][SID]["superseded"]
+        == out_ba["contributions"][SID]["superseded"]
+    )
 
 
 def test_preaggregate_same_dt_keeps_later_input():
@@ -109,5 +119,6 @@ def test_cross_strategy_entries_untouched_by_preaggregate():
 def test_fuse_symbol_old_signature_still_supported():
     """旧签名兼容：不传 superseded 时 contributions 无该键（探针直调不受影响）。"""
     out = SignalAggregator()._fuse_symbol(
-        DAY, SYMBOL, [(SID, W, sig("buy", 80.0, "2026-07-06"))])
+        DAY, SYMBOL, [(SID, W, sig("buy", 80.0, "2026-07-06"))]
+    )
     assert "superseded" not in out["contributions"][SID]

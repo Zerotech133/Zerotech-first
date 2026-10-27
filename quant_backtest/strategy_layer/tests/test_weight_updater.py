@@ -4,6 +4,7 @@
 覆盖：显式反馈打分 / 归一化退化 / EWMA / clamp 归一化往返 /
 次日收益（真实 parquet + 人造边界）。PG/文件 IO 不进单测。
 """
+
 import os
 import sys
 
@@ -12,7 +13,11 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from strategy_layer.weight_updater import (  # noqa: E402
-    fb_score, norm01, ewma, normalize_clamp, next_day_return,
+    fb_score,
+    norm01,
+    ewma,
+    normalize_clamp,
+    next_day_return,
 )
 
 
@@ -44,8 +49,8 @@ def test_norm01_basic():
     assert norm01(0.0, 0.0, 1.0) == 0.0
     assert norm01(1.0, 0.0, 1.0) == 1.0
     assert norm01(0.5, 0.0, 1.0) == pytest.approx(0.5)
-    assert norm01(-1.0, 0.0, 1.0) == 0.0      # 越下界 clamp
-    assert norm01(2.0, 0.0, 1.0) == 1.0       # 越上界 clamp
+    assert norm01(-1.0, 0.0, 1.0) == 0.0  # 越下界 clamp
+    assert norm01(2.0, 0.0, 1.0) == 1.0  # 越上界 clamp
 
 
 def test_norm01_degenerate_range_returns_midpoint():
@@ -56,7 +61,7 @@ def test_norm01_degenerate_range_returns_midpoint():
 # ── ewma ──────────────────────────────────────────────────────────────
 def test_ewma_alpha_blend():
     assert ewma(0.5, 1.0) == pytest.approx(0.3 * 1.0 + 0.7 * 0.5)
-    assert ewma(0.5, 0.5) == pytest.approx(0.5)   # 目标=旧值时不动
+    assert ewma(0.5, 0.5) == pytest.approx(0.5)  # 目标=旧值时不动
 
 
 # ── normalize_clamp ───────────────────────────────────────────────────
@@ -82,8 +87,12 @@ def test_normalize_clamp_empty():
 
 
 # ── next_day_return（真实 parquet）────────────────────────────────────
-REAL = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
-    os.path.abspath(__file__)))), "data", "ashare", "000001_SZ.parquet")
+REAL = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    "data",
+    "ashare",
+    "000001_SZ.parquet",
+)
 
 
 @pytest.mark.skipif(not os.path.isfile(REAL), reason="无 ashare 数据")
@@ -99,8 +108,7 @@ def test_next_day_return_non_a_share_none():
 
 
 def test_next_day_return_missing_file_none(tmp_path):
-    assert next_day_return("999999.SZ", "20261016",
-                           ashare_dir=str(tmp_path)) is None
+    assert next_day_return("999999.SZ", "20261016", ashare_dir=str(tmp_path)) is None
 
 
 def test_next_day_return_future_date_none(tmp_path):

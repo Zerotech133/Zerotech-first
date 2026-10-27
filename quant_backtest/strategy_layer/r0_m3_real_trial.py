@@ -14,6 +14,7 @@
 - 试运行口径偏差（接收方由本席代收执行、密钥托管非生产级）必须写入终报
   disclosures，不得静默。
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -85,9 +86,14 @@ def _export_public_key(key: Ed25519PrivateKey, path: Path) -> None:
     path.write_bytes(pem)
 
 
-def freeze_pool_point_in_time(source_path: str | Path, work_dir: str | Path,
-                              business_day: str, *, now: datetime | None = None,
-                              source_bytes: bytes | None = None) -> dict:
+def freeze_pool_point_in_time(
+    source_path: str | Path,
+    work_dir: str | Path,
+    business_day: str,
+    *,
+    now: datetime | None = None,
+    source_bytes: bytes | None = None,
+) -> dict:
     """段 1 因子化（WO-QT-20261020-056 机制复用；N7 独立冻结入口共用）。
 
     信号池点时冻结：唯一一次读取源字节，冻结副本落
@@ -133,16 +139,21 @@ def freeze_pool_point_in_time(source_path: str | Path, work_dir: str | Path,
         "freeze_basis": "point_in_time_freeze_of_live_pool_file",
     }
     (work / _MANIFEST).write_text(
-        json.dumps(manifest, ensure_ascii=False, indent=2),
-        encoding="utf-8")
+        json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     return manifest
 
 
-def run_real_trial(source_path: str | Path, work_dir: str | Path,
-                   business_day: str, *, pubkey_out_dir: str | Path,
-                   issuer_id: str = TRIAL_ISSUER_ID,
-                   receiver_identity: str = TRIAL_RECEIVER_IDENTITY,
-                   now: datetime | None = None) -> dict:
+def run_real_trial(
+    source_path: str | Path,
+    work_dir: str | Path,
+    business_day: str,
+    *,
+    pubkey_out_dir: str | Path,
+    issuer_id: str = TRIAL_ISSUER_ID,
+    receiver_identity: str = TRIAL_RECEIVER_IDENTITY,
+    now: datetime | None = None,
+) -> dict:
     """R1 六段试运行：冻结→签发→验签→探针→简报→回执→重放→对账。
 
     Parameters
@@ -170,19 +181,23 @@ def run_real_trial(source_path: str | Path, work_dir: str | Path,
         "issuer_id": issuer_id,
         "receiver_identity": receiver_identity,
         "disclosures": list(_DISCLOSURES),
-        "status": "FAILED", "stopped_at": None,
+        "status": "FAILED",
+        "stopped_at": None,
         "real_source_verdict": "BLOCKED_REAL_DATA",
         "cutover_verdict": "BLOCK_CUTOVER",
-        "segments": {}, "final": None,
+        "segments": {},
+        "final": None,
     }
 
     def fail(stage: str, status: str, reason: str) -> dict:
         report["status"] = "FAILED"
         report["stopped_at"] = stage
         report["segments"][stage] = {"status": status, "reason": reason}
-        report["final"] = {"status": "FAILED",
-                           "real_source_verdict": "BLOCKED_REAL_DATA",
-                           "cutover_verdict": "BLOCK_CUTOVER"}
+        report["final"] = {
+            "status": "FAILED",
+            "real_source_verdict": "BLOCKED_REAL_DATA",
+            "cutover_verdict": "BLOCK_CUTOVER",
+        }
         return report
 
     try:
@@ -190,10 +205,13 @@ def run_real_trial(source_path: str | Path, work_dir: str | Path,
         source = Path(source_path)
         raw = source.read_bytes()
         manifest = freeze_pool_point_in_time(
-            source_path, work, business_day, now=clock, source_bytes=raw)
+            source_path, work, business_day, now=clock, source_bytes=raw
+        )
         report["segments"]["freeze"] = {
-            "status": "FROZEN", "event_count": manifest["event_count"],
-            "sha256": manifest["source_sha256"]}
+            "status": "FROZEN",
+            "event_count": manifest["event_count"],
+            "sha256": manifest["source_sha256"],
+        }
 
         # 段 2：真实签发（os.urandom 一次性密钥）+ 独立验签
         issuer_key = Ed25519PrivateKey.from_private_bytes(os.urandom(32))
@@ -203,55 +221,79 @@ def run_real_trial(source_path: str | Path, work_dir: str | Path,
         _export_public_key(issuer_key, pub_dir / "issuer_public.pem")
         _export_public_key(receiver_key, pub_dir / "receiver_public.pem")
         attestation = issue_source_attestation(
-            issuer_key, business_day, raw,
-            issuer_id=issuer_id, issued_at=clock.strftime("%Y-%m-%dT%H:%M:%SZ"))
+            issuer_key,
+            business_day,
+            raw,
+            issuer_id=issuer_id,
+            issued_at=clock.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        )
         source_result = verify_source_attestation(
-            business_day, raw, attestation,
+            business_day,
+            raw,
+            attestation,
             trusted_public_keys={issuer_id: raw_public_key(issuer_key)},
-            trusted_as_of=clock)
+            trusted_as_of=clock,
+        )
         if source_result["status"] != "VERIFIED":
-            return fail("source_attestation", source_result["status"],
-                        source_result["reason"])
+            return fail(
+                "source_attestation", source_result["status"], source_result["reason"]
+            )
         report["segments"]["source_attestation"] = {
-            "status": "VERIFIED", "issuer_id": issuer_id,
-            "source_sha256": source_result["source_sha256"]}
+            "status": "VERIFIED",
+            "issuer_id": issuer_id,
+            "source_sha256": source_result["source_sha256"],
+        }
 
         # 段 3：真实探针（内存链；真实行校验+当日匹配）
         probe = inspect_historical_pool(business_day, work / _SOURCE_COPY)
         report["segments"]["probe"] = {
-            "status": probe["status"], "chain_status": probe["chain_status"],
+            "status": probe["status"],
+            "chain_status": probe["chain_status"],
             "counts": dict(probe["counts"]),
-            "failures": [dict(f) for f in probe["failures"]]}
+            "failures": [dict(f) for f in probe["failures"]],
+        }
         if probe["status"] not in ("UNVERIFIED", "NO_MATCH_UNVERIFIED"):
-            return fail("probe", probe["status"],
-                        f"chain_status={probe['chain_status']}; "
-                        f"failures={probe['failures']}")
+            return fail(
+                "probe",
+                probe["status"],
+                f"chain_status={probe['chain_status']}; failures={probe['failures']}",
+            )
 
         # 段 4：研究简报 + 模拟通道字节 + 接收方回签 + 独立验签
         brief = probe["brief"]
-        if (brief.get("scope") != "RESEARCH_ONLY_NOT_PRODUCTION"
-                or brief.get("cutover_verdict") != "BLOCK_CUTOVER"):
+        if (
+            brief.get("scope") != "RESEARCH_ONLY_NOT_PRODUCTION"
+            or brief.get("cutover_verdict") != "BLOCK_CUTOVER"
+        ):
             return fail("brief", "INVALID_BRIEF", "简报研究边界不一致")
         brief_bytes = canonical_json_bytes(brief)
         message_id = f"r0-m3-trial-{business_day}-receipt-0001"
         receipt = sign_drill_receipt(
-            receiver_key, brief_bytes, batch_id=business_day,
+            receiver_key,
+            brief_bytes,
+            batch_id=business_day,
             source_identity=brief["source"]["sha256"],
-            received_at=clock.isoformat(), message_id=message_id,
-            receiver_identity=receiver_identity)
+            received_at=clock.isoformat(),
+            message_id=message_id,
+            receiver_identity=receiver_identity,
+        )
         receipt_result = verify_receipt_attestation(
-            brief_bytes, receipt,
+            brief_bytes,
+            receipt,
             trusted_receiver_public_key=raw_public_key(receiver_key),
             expected_batch_id=business_day,
             expected_source_identity=brief["source"]["sha256"],
             expected_receiver_identity=receiver_identity,
-            seen_message_ids=set(), now=clock)
+            seen_message_ids=set(),
+            now=clock,
+        )
         if receipt_result["status"] != "VERIFIED_RECEIPT_ONLY":
-            return fail("receipt", receipt_result["status"],
-                        "回执未通过独立接收方验签")
+            return fail("receipt", receipt_result["status"], "回执未通过独立接收方验签")
         report["segments"]["receipt"] = {
-            "status": "VERIFIED_RECEIPT_ONLY", "message_id": message_id,
-            "receiver_identity": receiver_identity}
+            "status": "VERIFIED_RECEIPT_ONLY",
+            "message_id": message_id,
+            "receiver_identity": receiver_identity,
+        }
 
         # 段 5：重放账本（同 message_id 先 CLAIMED 后 DUPLICATE）
         ledger = ReplayLedger(str(work / _LEDGER_FILENAME))
@@ -260,51 +302,69 @@ def run_real_trial(source_path: str | Path, work_dir: str | Path,
         first_status = first.get("status") if type(first) is dict else None
         second_status = second.get("status") if type(second) is dict else None
         if first_status != "CLAIMED" or second_status != "DUPLICATE":
-            return fail("replay_guard", "REPLAY_NOT_ENFORCED",
-                        f"claim 结果为 {first!r}/{second!r}")
+            return fail(
+                "replay_guard",
+                "REPLAY_NOT_ENFORCED",
+                f"claim 结果为 {first!r}/{second!r}",
+            )
         report["segments"]["replay_guard"] = {
-            "status": "ENFORCED", "claims": [first_status, second_status]}
+            "status": "ENFORCED",
+            "claims": [first_status, second_status],
+        }
 
         # 段 6：对账终态（如实呈现，不提升为 READY）
         reconciliation = reconcile_evidence(
-            business_day, probe=probe, source_attestation=source_result,
-            brief=brief, receipt_attestation=receipt_result)
+            business_day,
+            probe=probe,
+            source_attestation=source_result,
+            brief=brief,
+            receipt_attestation=receipt_result,
+        )
         if reconciliation["status"] == "REJECTED":
-            fr = fail("reconciliation", "RECONCILIATION_REJECTED",
-                      "对账层判定 REJECTED，终报不得洗白为合法终态")
-            fr["segments"]["reconciliation"]["counts"] = dict(
-                reconciliation["counts"])
+            fr = fail(
+                "reconciliation",
+                "RECONCILIATION_REJECTED",
+                "对账层判定 REJECTED，终报不得洗白为合法终态",
+            )
+            fr["segments"]["reconciliation"]["counts"] = dict(reconciliation["counts"])
             return fr
         report["segments"]["reconciliation"] = {
             "status": reconciliation["status"],
-            "counts": dict(reconciliation["counts"])}
+            "counts": dict(reconciliation["counts"]),
+        }
         report["final"] = {
             "status": reconciliation["status"],
             "real_source_verdict": reconciliation["real_source_verdict"],
             "cutover_verdict": reconciliation["cutover_verdict"],
         }
-        if (report["final"]["real_source_verdict"] != "BLOCKED_REAL_DATA"
-                or report["final"]["cutover_verdict"] != "BLOCK_CUTOVER"):
+        if (
+            report["final"]["real_source_verdict"] != "BLOCKED_REAL_DATA"
+            or report["final"]["cutover_verdict"] != "BLOCK_CUTOVER"
+        ):
             return fail("reconciliation", "FINAL_GUARD_FAILED", "终态门位被破坏")
         report["status"] = "BLOCKED_NOT_READY"
         report["stopped_at"] = None
         report["trial_outcome"] = {
             "probe_status": probe["status"],
             "matched_events": probe["counts"].get("matched_events"),
-            "note": ("业务日当日零检出事件（冻结态如此），零匹配不等于可信"
-                     "零事件；有数路径另跑补充业务日" if probe["status"]
-                     == "NO_MATCH_UNVERIFIED" else "当日有匹配事件，全链贯通"),
+            "note": (
+                "业务日当日零检出事件（冻结态如此），零匹配不等于可信"
+                "零事件；有数路径另跑补充业务日"
+                if probe["status"] == "NO_MATCH_UNVERIFIED"
+                else "当日有匹配事件，全链贯通"
+            ),
         }
         return report
     except Exception as exc:  # 失败关闭：异常也结构化，不裸抛
-        return fail("trial", "UNEXPECTED_EXCEPTION",
-                    f"{type(exc).__name__}: {exc}")
+        return fail("trial", "UNEXPECTED_EXCEPTION", f"{type(exc).__name__}: {exc}")
     finally:
         # 一次性私钥生命周期终结（机制约束，非仅披露文案）：
         # 无论成功/失败路径，链尾销毁私钥文件并在终报留痕。
         destroyed = []
-        for kp in (work / "keys" / "issuer_private.pem",
-                   work / "keys" / "receiver_private.pem"):
+        for kp in (
+            work / "keys" / "issuer_private.pem",
+            work / "keys" / "receiver_private.pem",
+        ):
             try:
                 if kp.exists():
                     kp.unlink()
@@ -313,17 +373,22 @@ def run_real_trial(source_path: str | Path, work_dir: str | Path,
                 pass  # 销毁失败留待人工清钥，不掩盖原终态
         if destroyed:
             report["segments"]["key_hygiene"] = {
-                "status": "DESTROYED", "files": destroyed,
-                "note": "一次性私钥用后销毁；用后不复用为机制约束"}
+                "status": "DESTROYED",
+                "files": destroyed,
+                "note": "一次性私钥用后销毁；用后不复用为机制约束",
+            }
 
 
 def save_report(report: dict, work_dir: str | Path) -> Path:
     """终报落盘（work_dir/trial_report.json）。"""
     path = Path(work_dir) / _REPORT
-    path.write_text(json.dumps(report, ensure_ascii=False, indent=2),
-                    encoding="utf-8")
+    path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     return path
 
 
-__all__ = ["run_real_trial", "save_report", "TRIAL_ISSUER_ID",
-           "TRIAL_RECEIVER_IDENTITY"]
+__all__ = [
+    "run_real_trial",
+    "save_report",
+    "TRIAL_ISSUER_ID",
+    "TRIAL_RECEIVER_IDENTITY",
+]

@@ -28,6 +28,7 @@ closed on failure 铁律
   record_pool_intake("20261019", agg_result)              # 默认库
   record_pool_intake("20261019", agg_result, db_path=p)   # 显式库
 """
+
 from __future__ import annotations
 
 import os
@@ -61,9 +62,11 @@ def build_intake_payload(row: dict, trade_date: str, strategy_key: str) -> dict:
         "contributions": row.get("contributions") or {},
         "divergence": bool(row.get("divergence", False)),
         "rationale": str(row.get("rationale", "") or ""),
-        "_meta": {"symbol": str(row.get("symbol", "") or ""),
-                  "trade_date": str(trade_date),
-                  "strategy": str(strategy_key)},
+        "_meta": {
+            "symbol": str(row.get("symbol", "") or ""),
+            "trade_date": str(trade_date),
+            "strategy": str(strategy_key),
+        },
     }
 
 
@@ -81,11 +84,13 @@ def _resolve_db_path(db_path: Optional[str]) -> Optional[str]:
     if "PYTEST_CURRENT_TEST" in os.environ:
         return None
     import evidence_chain as ec
+
     return ec.DEFAULT_DB_PATH
 
 
-def record_pool_intake(trade_date: str, agg_result: Any,
-                       db_path: Optional[str] = None) -> dict:
+def record_pool_intake(
+    trade_date: str, agg_result: Any, db_path: Optional[str] = None
+) -> dict:
     """把当日融合入池票逐条写入证据链 pool_in 态（closed on failure）。
 
     Parameters
@@ -104,8 +109,15 @@ def record_pool_intake(trade_date: str, agg_result: Any,
         计数摘要 {total, recorded, replayed, conflict, failed,
         db_path, error}；任何失败只落在 error/failed 计数，绝不抛出。
     """
-    summary = {"total": 0, "recorded": 0, "replayed": 0, "conflict": 0,
-               "failed": 0, "db_path": None, "error": None}
+    summary = {
+        "total": 0,
+        "recorded": 0,
+        "replayed": 0,
+        "conflict": 0,
+        "failed": 0,
+        "db_path": None,
+        "error": None,
+    }
 
     # 1) 取融合行（AggResult / dict 双形态；空集不触库直接返回）
     try:
@@ -115,8 +127,9 @@ def record_pool_intake(trade_date: str, agg_result: Any,
             rows = list(getattr(agg_result, "combined", None) or [])
     except Exception as exc:  # noqa: BLE001 — 观测层不外抛
         summary["error"] = "read agg_result: %s" % str(exc)[:120]
-        print("%s 读取融合结果失败，跳过证据链入池: %s"
-              % (WARN_PREFIX, summary["error"]))
+        print(
+            "%s 读取融合结果失败，跳过证据链入池: %s" % (WARN_PREFIX, summary["error"])
+        )
         return summary
     summary["total"] = len(rows)
     if not rows:
@@ -125,18 +138,23 @@ def record_pool_intake(trade_date: str, agg_result: Any,
     # 2) 打开证据链库（惰性 import；失败降级返回）
     try:
         import evidence_chain as ec
+
         resolved = _resolve_db_path(db_path)
         if resolved is None:
-            summary["error"] = ("skipped: pytest 进程未显式指定 db_path，"
-                                "拒绝写默认证据库（防污染真实账本）")
+            summary["error"] = (
+                "skipped: pytest 进程未显式指定 db_path，"
+                "拒绝写默认证据库（防污染真实账本）"
+            )
             print("%s %s" % (WARN_PREFIX, summary["error"]))
             return summary
         summary["db_path"] = resolved
         store = ec.EvidenceChainStore(resolved)
     except Exception as exc:  # noqa: BLE001 — 库打不开不阻断主链
         summary["error"] = "open store: %s" % str(exc)[:160]
-        print("%s 证据链库打开失败，跳过入池（closed on failure）: %s"
-              % (WARN_PREFIX, summary["error"]))
+        print(
+            "%s 证据链库打开失败，跳过入池（closed on failure）: %s"
+            % (WARN_PREFIX, summary["error"])
+        )
         return summary
 
     # 3) 逐票入池（单票失败只计数告警，不中断其余票）
@@ -146,13 +164,14 @@ def record_pool_intake(trade_date: str, agg_result: Any,
             skey = strategy_key_of(row)
             if not symbol or not skey:
                 summary["failed"] += 1
-                print("%s combined 行缺 symbol/contributions，跳过"
-                      "（symbol=%r）" % (WARN_PREFIX, symbol))
+                print(
+                    "%s combined 行缺 symbol/contributions，跳过"
+                    "（symbol=%r）" % (WARN_PREFIX, symbol)
+                )
                 continue
             payload = build_intake_payload(row, trade_date, skey)
             entry_id = ec.make_entry_id(skey, trade_date, symbol)
-            out = store.transition(entry_id, ec.S_POOL_IN, payload,
-                                   actor="aggregator")
+            out = store.transition(entry_id, ec.S_POOL_IN, payload, actor="aggregator")
             if out.get("outcome") == "replayed":
                 summary["replayed"] += 1
             else:
@@ -162,8 +181,7 @@ def record_pool_intake(trade_date: str, agg_result: Any,
             summary["conflict"] += 1
         except Exception as exc:  # noqa: BLE001 — 单票失败不中断
             summary["failed"] += 1
-            print("%s 入池单票失败（不阻断其余票）: %s"
-                  % (WARN_PREFIX, str(exc)[:120]))
+            print("%s 入池单票失败（不阻断其余票）: %s" % (WARN_PREFIX, str(exc)[:120]))
     try:
         store.close()
     except Exception:  # noqa: BLE001 — 收尾关闭失败无副作用

@@ -65,6 +65,7 @@
 只读包装铁律：不 import、不修改 strategies.py 与 agent_platform 本体；
 策略函数与身份基类均懒加载/路径兜底加载（模块导入期不拉起任何执行链）。
 """
+
 import importlib.util
 import os
 import sys
@@ -72,7 +73,7 @@ import sys
 # ---------------------------------------------------------------- 路径 #
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _QB_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(_HERE)))  # quant_backtest/
-_REPO_ROOT = os.path.dirname(_QB_ROOT)                               # 仓库根
+_REPO_ROOT = os.path.dirname(_QB_ROOT)  # 仓库根
 
 # 模板基准分（与 classic_adapter 口径一致；S4 影子期校准位）
 BUY_SCORE = 70.0
@@ -107,16 +108,18 @@ def _load_ap_contract():
         return mod.StrategyAgent, mod.Verdict
     try:
         from strategy_registry import StrategyAgent, Verdict
+
         mod = sys.modules["strategy_registry"]
     except ImportError:
         try:
             from agent_platform.engine.strategy_registry import StrategyAgent, Verdict
+
             mod = sys.modules["agent_platform.engine.strategy_registry"]
         except ImportError:
-            path = os.path.join(_REPO_ROOT, "agent_platform", "engine",
-                                "strategy_registry.py")
-            spec = importlib.util.spec_from_file_location(
-                _CONTRACT_MOD_NAME, path)
+            path = os.path.join(
+                _REPO_ROOT, "agent_platform", "engine", "strategy_registry.py"
+            )
+            spec = importlib.util.spec_from_file_location(_CONTRACT_MOD_NAME, path)
             mod = importlib.util.module_from_spec(spec)
             sys.modules[_CONTRACT_MOD_NAME] = mod  # 先注册再执行（防环）
             spec.loader.exec_module(mod)
@@ -138,17 +141,20 @@ def _strategy_fn(name):
     if _QB_ROOT not in sys.path:
         sys.path.insert(0, _QB_ROOT)
     import strategies as _strat
+
     try:
         return _strat.REGISTRY[name]
     except KeyError as exc:
-        raise ValueError("未知经典策略: %s（可选: %s）"
-                         % (name, sorted(_strat.REGISTRY))) from exc
+        raise ValueError(
+            "未知经典策略: %s（可选: %s）" % (name, sorted(_strat.REGISTRY))
+        ) from exc
 
 
 def _default_params(name):
     if _QB_ROOT not in sys.path:
         sys.path.insert(0, _QB_ROOT)
     import strategies as _strat
+
     return dict(_strat.PARAM_DEFAULTS.get(name, {}))
 
 
@@ -188,19 +194,23 @@ class ClassicStrategyAgent(_STRATEGY_AGENT):
         df = self._build_df(context)
         if df is None or len(df) < self.min_window:
             return self._fail_closed(
-                symbol, "窗口不足（fail-closed）：min_window=%d，实际 %s"
-                % (self.min_window, 0 if df is None else len(df)))
+                symbol,
+                "窗口不足（fail-closed）：min_window=%d，实际 %s"
+                % (self.min_window, 0 if df is None else len(df)),
+            )
         pos = _strategy_fn(self.strategy_name)(df, self._params())
         values = [int(v) for v in pos.tolist()]
         cur = values[-1]
         prev = values[-2] if len(values) >= 2 else 0
         if self.event_frame and not self._event_state_verifiable(values):
             return self._fail_closed(
-                symbol, "持有状态不可证（fail-closed）：触发事件落在预热区"
-                "（warmup=%d）或窗口前，窗口重算与全历史可能不一致"
-                % self.warmup)
-        return self._to_verdict(symbol, prev, cur, len(values),
-                                context.get("trace_id", ""))
+                symbol,
+                "持有状态不可证（fail-closed）：触发事件落在预热区"
+                "（warmup=%d）或窗口前，窗口重算与全历史可能不一致" % self.warmup,
+            )
+        return self._to_verdict(
+            symbol, prev, cur, len(values), context.get("trace_id", "")
+        )
 
     # ------------------------------------------------------------------ #
     # context 解析与窗口纪律
@@ -214,6 +224,7 @@ class ClassicStrategyAgent(_STRATEGY_AGENT):
         bars = context.get("bars")
         if bars:
             import pandas as pd
+
             df = pd.DataFrame(list(bars))
             if "date" in df.columns:
                 df.index = pd.DatetimeIndex(df["date"])
@@ -223,6 +234,7 @@ class ClassicStrategyAgent(_STRATEGY_AGENT):
         closes = context.get("closes")
         if closes:
             import pandas as pd
+
             return pd.DataFrame({"close": [float(c) for c in closes]})
         return None
 
@@ -260,26 +272,40 @@ class ClassicStrategyAgent(_STRATEGY_AGENT):
             rec, score, conf, stance = "hold", HOLD_SCORE, HOLD_CONFIDENCE, "neutral"
             note = "空仓不变"
         return _VERDICT(
-            strategy_id=self.strategy_id, symbol=symbol, recommendation=rec,
-            confidence=conf, stance=stance, score=score,
+            strategy_id=self.strategy_id,
+            symbol=symbol,
+            recommendation=rec,
+            confidence=conf,
+            stance=stance,
+            score=score,
             rationale="%s：仓位 %d→%d（%s），参数 %s"
-                      % (self.strategy_id, prev, cur, note, self._params()),
+            % (self.strategy_id, prev, cur, note, self._params()),
             trace_id=trace_id,
             extras={
-                "prev_position": prev, "position": cur,
-                "bars_used": bars_used, "min_window": self.min_window,
-                "warmup": self.warmup, "event_frame": self.event_frame,
+                "prev_position": prev,
+                "position": cur,
+                "bars_used": bars_used,
+                "min_window": self.min_window,
+                "warmup": self.warmup,
+                "event_frame": self.event_frame,
                 "s4_calibrate": "分数/置信为模板基准值，S4 影子期校准",
             },
         )
 
     def _fail_closed(self, symbol, reason):
         return _VERDICT(
-            strategy_id=self.strategy_id, symbol=symbol,
-            recommendation="hold", confidence=FAIL_CLOSED_CONFIDENCE,
-            stance="neutral", score=0.0, rationale=reason,
-            extras={"fail_closed": True, "reason": reason,
-                    "min_window": self.min_window},
+            strategy_id=self.strategy_id,
+            symbol=symbol,
+            recommendation="hold",
+            confidence=FAIL_CLOSED_CONFIDENCE,
+            stance="neutral",
+            score=0.0,
+            rationale=reason,
+            extras={
+                "fail_closed": True,
+                "reason": reason,
+                "min_window": self.min_window,
+            },
         )
 
 
@@ -289,10 +315,11 @@ class MaCrossAgent(ClassicStrategyAgent):
     最小窗口公式：min_window = slow + 1（slow 期均线在 idx ≥ slow-1 才
     与全历史一致；变化检测需 tail 与 tail-1 两帧都精确 → +1）。
     """
+
     strategy_name = "ma_cross"
     strategy_id = "ma_cross"
-    warmup = 20          # PARAM_DEFAULTS.slow；窗口纪律按默认参数声明，
-    min_window = 21      # 参数寻优改配置时同步升 version 并改本值
+    warmup = 20  # PARAM_DEFAULTS.slow；窗口纪律按默认参数声明，
+    min_window = 21  # 参数寻优改配置时同步升 version 并改本值
 
 
 class TrendFollowAgent(ClassicStrategyAgent):
@@ -301,9 +328,10 @@ class TrendFollowAgent(ClassicStrategyAgent):
     最小窗口公式：min_window = n + slope_lookback + 1（slope=i 需
     m[i-slope_lookback] 精确 → i ≥ n-1+slope_lookback；变化检测再 +1）。
     """
+
     strategy_name = "trend_follow"
     strategy_id = "trend_follow"
-    warmup = 25          # n(20) + slope_lookback(5)
+    warmup = 25  # n(20) + slope_lookback(5)
     min_window = 26
 
 
@@ -315,11 +343,12 @@ class RsiReversalAgent(ClassicStrategyAgent):
     一致）；max_hold_upper 为预期最长持有期上界契约。窗口不足或持有状态
     不可证时 fail-closed（见模块 docstring 残余风险与 S3 对账注意事项）。
     """
+
     strategy_name = "rsi_reversal"
     strategy_id = "rsi_reversal"
     event_frame = True
-    warmup = 15          # period(14) + 1
-    min_window = 75      # 15 + max_hold_upper(60)
+    warmup = 15  # period(14) + 1
+    min_window = 75  # 15 + max_hold_upper(60)
 
 
 class BollBreakoutAgent(ClassicStrategyAgent):
@@ -329,8 +358,9 @@ class BollBreakoutAgent(ClassicStrategyAgent):
     period 期 rolling 均值/标准差在 idx ≥ period-1 才与全历史一致。
     fail-closed 纪律同 RsiReversalAgent。
     """
+
     strategy_name = "boll_breakout"
     strategy_id = "boll_breakout"
     event_frame = True
-    warmup = 20          # period(20)
-    min_window = 80      # 20 + max_hold_upper(60)
+    warmup = 20  # period(20)
+    min_window = 80  # 20 + max_hold_upper(60)
