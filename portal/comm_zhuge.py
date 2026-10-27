@@ -86,6 +86,43 @@ def _grounding_module():
     return _GROUNDING_MOD or None
 
 
+_QUANT_CODE_RE = re.compile(r"\b(\d{6}\.(?:SZ|SH|BJ))\b", re.I)
+
+
+def _quant_sources(question, existing: int = 0) -> list:
+    """COMM_ZHUGE_QUANT=0 关；问题含 6 位 A 股代码时取近 5 日线作为资料。"""
+    if str(os.environ.get("COMM_ZHUGE_QUANT", "1")).strip().lower() in (
+            "0", "false", "no", "off"):
+        return []
+    m = _QUANT_CODE_RE.search(question or "")
+    if not m:
+        return []
+    code = m.group(1).upper()
+    try:
+        root = Path(__file__).resolve().parent.parent
+        py = Path(r"C:\项目\py312\python.exe")
+        exe = str(py) if py.exists() else sys.executable
+        r = subprocess.run(
+            [exe, "-X", "utf8", str(root / "tools" / "quant_readonly.py"),
+             "--tool", "daily", "--code", code, "--limit", "5", "--json"],
+            capture_output=True, text=True, encoding="utf-8",
+            errors="replace", timeout=60)
+        rep = json.loads(r.stdout or "{}")
+    except Exception:  # noqa: BLE001
+        return []
+    if not rep.get("ok") or not rep.get("rows"):
+        return []
+    rows = rep["rows"][:5]
+    parts = []
+    for row in rows:
+        parts.append("%s 收 %s 涨跌 %s%% 量 %s" % (
+            row.get("trade_date", ""), row.get("close", ""),
+            row.get("pct_chg", ""), row.get("vol", "")))
+    return [{"id": "S%d" % (existing + 1),
+             "path": "tushare:daily:%s" % code, "line": 0,
+             "snippet": "；".join(parts)[:400], "score": 1.0, "quant": True}]
+
+
 def _build_grounding(question):
     if not GROUNDING_ENABLED:
         return None
@@ -93,7 +130,19 @@ def _build_grounding(question):
     if mod is None:
         return None
     try:
-        return mod.build_grounding(question)
+        g = mod.build_grounding(question)
+        if isinstance(g, dict):
+            existing = len(g.get("sources") or [])
+            extra = _quant_sources(question, existing)
+            if extra:
+                g["sources"] = list(g.get("sources") or []) + extra
+                lines = ["[%s] %s:%s — %s" % (s["id"], s["path"], s["line"],
+                                              s["snippet"]) for s in extra]
+                g["context"] = ((g.get("context") or "") + " " + " ".join(lines)).strip()
+                g["citations"] = list(g.get("citations") or []) + [
+                    "[%s] %s:%s — %s" % (s["id"], s["path"], s["line"],
+                                         s["snippet"][:100]) for s in extra]
+        return g
     except Exception:  # noqa: BLE001
         return None
 
