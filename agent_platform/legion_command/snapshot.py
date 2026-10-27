@@ -46,6 +46,8 @@ ACTIVITY_RULES = (
     # 不知道是谁的活"，治理绊线 test_activity_mapping_* 长期红（2026-10-26 批次核验实录）。
     ("key_prefix", "OS-", "ops_runtime", ""),
     ("key_prefix", "WO-LEGION", "dev", ""),
+    # 关羽代码审计/系统整治线（2026-10-27 入编 academy）
+    ("key_prefix", "WO-GUANYU", "academy", "GUANYU"),
     ("key_contains", "hermes", "ops", ""),
     ("key_contains", "Hermes", "ops", ""),
 )

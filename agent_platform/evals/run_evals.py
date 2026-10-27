@@ -109,7 +109,6 @@ def build_report(smoke: bool = False, judge: bool = False) -> dict:
     results = [run(b["id"], b) for b in items]
     passed = sum(1 for r in results if r["ok"])
     total = len(results)
-    high = [b for b in items if b.get("severity") == "high"]
     high_failed = [r["id"] for b, r in zip(items, results)
                    if b.get("severity") == "high" and not r["ok"]]
     rep = {
