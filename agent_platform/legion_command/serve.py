@@ -493,6 +493,19 @@ class Handler(BaseHTTPRequestHandler):
                     500,
                 )
             return
+        if path == "/api/auto/explain":
+            try:
+                from urllib.parse import parse_qs, urlparse
+                from legion_command import model_allocator
+                q = parse_qs(urlparse(self.path).query)
+                agent = (q.get("agent") or [""])[0]
+                task = (q.get("task") or [""])[0]
+                self._send_json({"ok": True,
+                                 "allocation": model_allocator.allocate(agent, task, [])})
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "explain_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
         if path == "/api/auto/status":
             out = {"ok": True, "mode": "smart", "routing": {
                 "auto": "平台中转站优先 → 强模型 → 本地兜底",
@@ -973,6 +986,20 @@ class Handler(BaseHTTPRequestHandler):
                                                "type": "auth_error"}},
                                     int(route.get("code") or 401))
                     return
+                _model_req = str(req.get("model") or "").strip()
+                _agent = str(self.headers.get("X-DSH-Agent") or route.get("owner")
+                             or req.get("agent") or "").strip()
+                _task = str(self.headers.get("X-DSH-Task") or req.get("task") or "").strip()
+                _alloc = None
+                if _model_req in ("", "auto"):
+                    from legion_command import model_allocator
+                    _alloc = model_allocator.allocate(_agent, _task, messages)
+                    route["seats"] = list(_alloc.get("seats") or [])
+                    route["allow_local"] = bool(_alloc.get("allow_local", True))
+                    route["alias"] = _alloc.get("tier")
+                    owner = route.get("owner")
+                    if owner and _alloc.get("tier") != "local" and owner not in route["seats"]:
+                        route["seats"] = [owner] + route["seats"]
                 from legion_command import keypool
 
                 res = keypool.auto_chat(messages, seats=route.get("seats") or [],
@@ -1056,7 +1083,8 @@ class Handler(BaseHTTPRequestHandler):
                     },
                     "x_channel": channel,
                     "x_alias": route.get("alias"),
-                    "x_vk_owner": route.get("owner"),
+                    "x_allocator": (_alloc or {}),
+                    "x_key_owner": route.get("owner"),
                     "x_attempts": res.get("attempts", []),
                 }
             )

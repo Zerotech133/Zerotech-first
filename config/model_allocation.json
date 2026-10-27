@@ -1,0 +1,41 @@
+{
+ "schema": "model_allocation/v1",
+ "default_tier": "auto",
+ "tasks": {
+  "chat": "auto",
+  "simple": "local",
+  "summarize": "local",
+  "format": "local",
+  "classify": "local",
+  "translate": "local",
+  "reasoning": "strong",
+  "coding": "strong",
+  "code_review": "strong",
+  "audit": "strong",
+  "planning": "strong",
+  "decision": "strong",
+  "quality": "strong",
+  "judge": "strong",
+  "research": "auto",
+  "tool": "auto",
+  "default": "auto"
+ },
+ "roles": {
+  "A0": "strong",
+  "ZHAOYUN": "strong",
+  "AI1": "strong",
+  "GUANYU": "strong",
+  "D1": "auto",
+  "ARCH1": "auto",
+  "TR1": "auto",
+  "DATA1": "auto",
+  "PM1": "auto",
+  "QA1": "auto",
+  "LEG1": "auto",
+  "default": "auto"
+ },
+ "heuristics": {
+  "strong_keywords": ["推理", "架构", "审计", "代码", "决策", "规划", "证明", "为什么", "设计"],
+  "local_keywords": ["翻译", "摘要", "格式化", "分类", "提取", "改写"]
+ }
+}
