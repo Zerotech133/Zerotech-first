@@ -40,6 +40,7 @@ import datetime as dt
 import json
 import os
 import sys
+import time
 from pathlib import Path
 
 HERE = Path(__file__).resolve()
@@ -47,6 +48,11 @@ ROOT_DEFAULT = HERE.parents[2]
 ACADEMY_REL = Path("agent_platform") / "data" / "academy"
 DISPATCH_REL = ACADEMY_REL / "dispatch_requests"
 TASKS_REL = Path(".worktrees") / "tasks.json"
+
+try:  # P0② trace（可选依赖，失败不阻断值守）
+    from trace_cost import record as _trace_record
+except Exception:  # noqa: BLE001
+    _trace_record = None
 FREEZE_FIELDS = ("data_version", "sample_in", "sample_out", "cost_model")
 EIGHT_FIELDS = (
     ("question", "研究问题"),
@@ -412,6 +418,7 @@ def run(
     no_emit: bool = False,
     json_out: bool = False,
 ) -> dict:
+    t0 = time.monotonic()
     builders = {"strat1": build_strat1, "back1": build_back1, "weekly": build_weekly}
     text, summary = builders[action](root)
     out = _out_path(root, action)
@@ -430,6 +437,19 @@ def run(
         else:
             agent = "STRAT1" if action == "strat1" else "BACK1"
             emits[agent] = _emit(root, agent, "research_report %s" % action, no_emit)
+    if not dry_run and _trace_record:
+        try:
+            agent_map = {"strat1": "STRAT1", "back1": "BACK1", "weekly": "ACAD1"}
+            _trace_record(
+                agent_map.get(action, "ACAD1"),
+                "research_%s" % action,
+                status="ok",
+                elapsed_ms=(time.monotonic() - t0) * 1000,
+                root=root,
+                detail="written=%s emits=%s" % (written, {k: v.get("ok") for k, v in emits.items()}),
+            )
+        except Exception:  # noqa: BLE001
+            pass
     result = {
         "action": action,
         "dry_run": bool(dry_run),

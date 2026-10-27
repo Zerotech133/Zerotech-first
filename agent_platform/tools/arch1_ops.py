@@ -23,6 +23,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 HERE = Path(__file__).resolve()
@@ -30,6 +31,11 @@ ROOT_DEFAULT = HERE.parents[2]
 DEV_REL = Path("agent_platform") / "data" / "dev"
 ADR_REL = Path("docs") / "adr"
 PLANS_REL = Path("docs") / "plans"
+
+try:  # P0② trace（可选依赖，失败不阻断值守）
+    from trace_cost import record as _trace_record
+except Exception:  # noqa: BLE001
+    _trace_record = None
 
 
 def _today() -> str:
@@ -246,6 +252,7 @@ def run(
     skip_gates: bool = False,
     json_out: bool = False,
 ) -> dict:
+    t0 = time.monotonic()
     text, summary = build_weekly(root, skip_gates=skip_gates)
     out = _out_path(root)
     written = ""
@@ -264,6 +271,19 @@ def run(
             ),
             no_emit=no_emit,
         )
+    if not dry_run and _trace_record:
+        try:
+            _trace_record(
+                "ARCH1", "arch1_weekly",
+                status="ok" if not summary["failed_gates"] else "fail",
+                elapsed_ms=(time.monotonic() - t0) * 1000,
+                root=root,
+                detail="gates=%d/%d adr=%d worktrees=%s"
+                % (len(summary["gates"]) - len(summary["failed_gates"]),
+                   len(summary["gates"]), summary["adr"]["count"], summary["worktrees"]),
+            )
+        except Exception:  # noqa: BLE001
+            pass
     result = {
         "action": "weekly",
         "dry_run": bool(dry_run),
