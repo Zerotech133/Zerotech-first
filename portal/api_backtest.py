@@ -3,6 +3,7 @@
 Handler 壳经基座多继承并入（禁 import *）。
 """
 import datetime
+import logging
 import hashlib
 import json
 import math
@@ -600,8 +601,8 @@ def _bt_resolve(q):
         e = stock_analyze.resolve_stock(q)
         if e and e.get("name"):
             return e
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "api_backtest.py", exc)
     # A股 RPS 榜形态（sh605177）：直接成条目，名称从快照 tops 反查
     if _re.fullmatch(r"[a-z]{2}\d{6}", q):
         nm = ""
@@ -613,8 +614,8 @@ def _bt_resolve(q):
                 if t.get("sym") == "%s.%s" % (q[2:8], q[:2].upper()):
                     nm = t.get("name") or ""
                     break
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "api_backtest.py", exc)
         if not nm:
             # K18-FIX：榜外票（不在 RPS tops）名称从图谱 Security 反查
             try:
@@ -624,8 +625,8 @@ def _bt_resolve(q):
                            "RETURN s.name AS nm LIMIT 1",
                            tc="%s.%s" % (q[2:8], q[:2].upper()))
                 nm = ((r or [{}])[0] or {}).get("nm") or ""
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "api_backtest.py", exc)
         return {"name": nm or q.upper(), "code": q, "aliases": []}
     try:
         wl = json.load(open(os.path.join(STATION, "news_collector",
@@ -678,8 +679,8 @@ def _bt_jev_news(name, aliases, hours=24 * 7):
                 if (_dt(_y, _p.month, _p.day) - _dt.now()).days > 1:
                     _y -= 1
                 t = "%04d-%s" % (_y, t)
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "api_backtest.py", exc)
         out.append({"ts": t[:16], "title": title,
                     "bias_cn": jv.get("bias_cn", "?"),
                     "conf": round((jv.get("conf") or 0) * 100),
@@ -821,8 +822,8 @@ def _sa_worker(jid, q):
                           encoding="utf-8") as f:
                     f.write(json.dumps(rec, ensure_ascii=False) + "\n")
                 d["card"] = "queued"
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "api_backtest.py", exc)
         SA_JOBS[jid] = {"status": "done", "d": d}
         if d.get("ok"):
             _sa_hist_append(d)
@@ -835,8 +836,8 @@ def _sa_worker(jid, q):
                                    "sa_page_error.log"), "a",
                       encoding="utf-8") as f:
                 f.write("[%s] %s\n" % (q, traceback.format_exc()))
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "api_backtest.py", exc)
     finally:
         SA_BUSY["v"] = False
 def _sa_hist_read(n=8):
@@ -852,8 +853,8 @@ def _sa_hist_append(rec):
         os.makedirs(os.path.dirname(SA_HIST), exist_ok=True)
         with open(SA_HIST, "a", encoding="utf-8") as f:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "api_backtest.py", exc)
 SA_HIST = os.path.join(STATION, "news_collector", "sa_history.jsonl")
 SA_BUSY = {"v": False}
 # ── 个股分析（极简入口：一个输入框，后台跑 analyze_detail） ──
@@ -948,8 +949,8 @@ class Handler:  # Mixin 壳：经基座多继承并入
             with open(os.path.join(STATION, "news_collector",
                                    "sectors.json"), encoding="utf-8") as f:
                 data = json.load(f)
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "api_backtest.py", exc)
         items = data.get("items") or []
         mx = max((abs(s["pct"]) for s in items), default=1.0) or 1.0
         rows = "".join(
@@ -1352,8 +1353,8 @@ class Handler:  # Mixin 壳：经基座多继承并入
                         if v is not None and v == v:
                             k = r["ts_code"]
                             inst[k] = inst.get(k, 0.0) + float(v)
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "api_backtest.py", exc)
         # 板块（stock_basic.industry 静态映射 ~0.1s；bak_basic 按日读
         # 实测 8-9s 为本页首瓶颈，弃用；94% 覆盖与当日快照相当）
         ind = {}
@@ -1365,8 +1366,8 @@ class Handler:  # Mixin 壳：经基座多继承并入
                        for r in sb.to_dict("records")
                        if r.get("industry")
                        and str(r.get("industry")).strip()}
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "api_backtest.py", exc)
         n = len(recs)
         tot_net = sum(v["net"] for v in recs.values()) / 1e8
         # 板块扎堆条形（关联炒作：同板块多票同日上榜）
@@ -1611,8 +1612,8 @@ class Handler:  # Mixin 壳：经基座多继承并入
             if tl is not None and not tl.empty:
                 nm = tl.dropna(subset=["name"]).drop_duplicates(
                     "ts_code").set_index("ts_code")["name"].to_dict()
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "api_backtest.py", exc)
 
         def _f(v):
             try:
@@ -1972,8 +1973,8 @@ class Handler:  # Mixin 壳：经基座多继承并入
             rr = next((x for x in snap.get("res", [])
                        if x.get("code") == code or x.get("name") == name),
                       None)
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "api_backtest.py", exc)
 
         # 4 策略信号状态（实时算；供矩阵计数 + 详情表）
         SIG4_LIST = (("trend_follow", "趋势跟随"),
@@ -2015,8 +2016,8 @@ class Handler:  # Mixin 壳：经基座多继承并入
                           encoding="utf-8") as f:
                     f.write(time.strftime("%m-%d %H:%M:%S ") + q + "\n")
                     traceback.print_exc(file=f)
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "api_backtest.py", exc)
             sig_err = "技术引擎暂不可用（%s）" % e(str(ex)[:60])
 
         # 多策略共振（cross_poll 注册表驱动聚合：各策略对该票的命中、
@@ -2030,8 +2031,8 @@ class Handler:  # Mixin 壳：经基座多继承并入
             nc = _CP.norm_code(code)
             cross_hit = next((st for st in cross_data.get("stocks", [])
                               if st.get("code") == nc), None)
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "api_backtest.py", exc)
 
         # JEV 关联新闻
         items = _bt_jev_news(name, aliases)
@@ -2060,8 +2061,8 @@ class Handler:  # Mixin 壳：经基座多继承并入
             try:
                 from event_graph import events_for_stock as _egf
                 _er = _egf(_kg_ts, days=30)
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "api_backtest.py", exc)
 
         # ── 渲染 ────────────────────────────────────────────
         # ① 行情（新浪快照；K235 补全基础行情：昨收/开盘/高低/涨跌幅/
@@ -3363,8 +3364,8 @@ class Handler:  # Mixin 壳：经基座多继承并入
                            "" if r[2] else "（降级：模型未参与）",
                            _html.escape(r[3] or "")))
             db.close()
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "api_backtest.py", exc)
         body = ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
                 "<meta name='viewport' content='width=device-width,"
                 "initial-scale=1'><title>AI 晨报</title></head>"
@@ -3487,10 +3488,10 @@ class Handler:  # Mixin 壳：经基座多继承并入
                         try:
                             last = _j.loads(ln.lstrip("\ufeff"))
                             n += 1
-                        except Exception:
-                            pass
-            except Exception:
-                pass
+                        except Exception as exc:
+                            logging.getLogger(__name__).warning("silent-except %s: %s", "api_backtest.py", exc)
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "api_backtest.py", exc)
             return last, n
 
         def _rev_md(c6):
@@ -3666,8 +3667,8 @@ class Handler:  # Mixin 壳：经基座多继承并入
             from urllib.parse import urlparse, parse_qs
             mkt_q = (parse_qs(urlparse(self.path).query)
                      .get("m", [""])[0]).upper()
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "api_backtest.py", exc)
 
         def _in_mkt(st):
             if not mkt_q:
@@ -5044,8 +5045,8 @@ class Handler:  # Mixin 壳：经基座多继承并入
         if _os.path.exists(_p):
             try:
                 return self._html(open(_p, encoding="utf-8").read())
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "api_backtest.py", exc)
         import html as _h
         qe = _h.escape(q or "")
         hist = _sa_hist_read()
@@ -5708,8 +5709,8 @@ def _bt2_write_state(jid, **kv):
             if temporary is not None:
                 try:
                     os.unlink(temporary)
-                except FileNotFoundError:
-                    pass
+                except FileNotFoundError as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "api_backtest.py", exc)
         return
     try:
         os.makedirs(_BT2_STATE_DIR, exist_ok=True)
@@ -5963,8 +5964,8 @@ def _bt2_start(rec):
         if reserved:
             try:
                 os.unlink(_bt2_state_path(jid))
-            except FileNotFoundError:
-                pass
+            except FileNotFoundError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "api_backtest.py", exc)
         return _minute_artifact_unavailable()
     t = _threading.Thread(target=_bt2_worker, args=(jid, params), daemon=True)
     t.start()

@@ -22,6 +22,7 @@
 保活：并入计划任务「AI工作站CowAgent看门狗」（ops/keepalive_9899.py）。
 """
 import argparse
+import logging
 import hmac
 import json
 import os
@@ -127,8 +128,8 @@ def atomic_write_json(path, obj):
     except BaseException:
         try:
             os.remove(tmp)
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
         raise
 
 
@@ -145,8 +146,8 @@ def log(msg):
     try:
         with open(os.path.join(WORK, "push_admin.out"), "a", encoding="utf-8") as f:
             f.write(line)
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
     print(line, end="", flush=True)
 
 
@@ -316,8 +317,8 @@ def source_health():
             with urllib.request.urlopen(
                     "http://127.0.0.1:%d/health" % port, timeout=1.5) as r:
                 ok = bool(json.loads(r.read().decode("utf-8")).get("ok"))
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
         out.append({"name": name, "port": port, "ok": ok})
     return out
 
@@ -337,8 +338,8 @@ def km_today_sent():
                     continue
                 if r.get("date") == today_str():
                     n += r.get("sent_ok", 0)
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
     return n
 
 
@@ -372,8 +373,8 @@ def test_sub(sid):
             try:
                 with open(TEST_LOG, encoding="utf-8", errors="replace") as f:
                     tail = f.read().splitlines()[-1]
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
             _state["last_test"] = {"id": sid, "ts": datetime.now().isoformat(timespec="seconds"),
                                    "status": "done", "rc": rc, "tail": tail}
             log("[test] %s rc=%d %s" % (sid, rc, tail))
@@ -638,8 +639,8 @@ class Handler(BaseHTTPRequestHandler):
                         card_req = dict(req)
                         card_req.update(out.get("decision") or {})
                         approval_card.push_review_card(card_req)
-                    except Exception:
-                        pass
+                    except Exception as exc:
+                        logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
                 return self._json(out)
             if caller != "admin_ui":
                 return self._json({"ok": False, "error": "审批或执行需人工管理凭证"}, 403)
@@ -712,8 +713,8 @@ def load_schedule():
         try:
             atomic_write_json(SCHEDULE_PATH, s)
             log("[sched] schedule.json 缺失/损坏，已写缺省矩阵（静默 22:00-07:30，预警/盘中豁免）")
-        except Exception:
-            pass  # 写盘失败不挡服务（下次读仍回落内存缺省）
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
     return s
 
 
@@ -755,8 +756,8 @@ def _flow_gate_deny(kind, target, why):
         import push_flow
         push_flow.record("%s|deny:%s" % (kind or "hub", why)[:80],
                          "hub-gate", target, 1, False)
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
 
 
 # ── N6（派工单 2026-10-19 / P0-4）：死信计数观测 + 阈值告警 ─────────
@@ -844,8 +845,8 @@ def _dead_letter_alert_if_needed(stats=None):
         try:
             with open(sp, encoding="utf-8") as f:
                 last = float(json.load(f).get("last_alert_ts") or 0)
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
         import time as _t
         if _t.time() - last < DEAD_ALERT_COOLDOWN_SEC:
             return
@@ -871,8 +872,8 @@ def _dead_letter_alert_if_needed(stats=None):
                 send_msg_tracked(body, "text", rid, "open_id",
                                  kind="dead_letter_alert", critical=True,
                                  via_hub=True, flow_record=True)
-            except Exception:
-                pass  # fail-safe：告警失败不反噬主链，冷却窗后重试
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
 
         threading.Thread(target=_send, daemon=True).start()
         with open(sp, "w", encoding="utf-8") as f:
@@ -932,8 +933,8 @@ def api_send(req):
                     obs_kind = "%s|silent-window" % obs_kind
                 push_flow.record(obs_kind, "domain-observe", rid, 1, True,
                                  domain=domain)
-            except Exception:
-                pass  # 观察留痕失败不拦发送（fail-safe）
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
     if not content or not rid:
         return {"ok": False, "why": "missing content/receive_id",
                 "error": "missing content/receive_id"}
@@ -954,8 +955,8 @@ def api_send(req):
             return {"ok": False,
                     "error": "quota block: plan=%s sent=%d quota=%d" % (
                         plan, sent, quota)}
-    except Exception:
-        pass  # 配额判定异常不拦发送（fail-safe）
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
 
     # 闸 3（K-PUSH-004）：卡片按钮注册校验——未注册/禁用动作的按钮，
     # warn 模式仅记观察流水，enforce 模式拒发（按钮统一归档的强制入口）
@@ -968,8 +969,8 @@ def api_send(req):
                 _flow_gate_deny(kind, rid, "unregistered-btn %s" % ",".join(bad)[:40])
                 return {"ok": False, "why": why3, "error": why3,
                         "via": "hub"}
-        except Exception:
-            pass  # 解析异常不拦发送（fail-safe）
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
 
     # 直发（via_hub=False 防环；W38 起改走 tracked 版拿 message_id，
     # flow_record=False 由本函数统一落 evidence 证据账，防同一发送双行）
@@ -982,8 +983,8 @@ def api_send(req):
     try:
         from card_templates import apply_card_template
         content, msg_type = apply_card_template(kind, content, msg_type)
-    except Exception:
-        pass  # 模板层异常不拦发送（fail-safe）
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
     # W3（2026-10-24）sender 统一：调用方传 sender_role 时按角色选发送 app；
     # 缺省 None = 走 canonical（存量调用零变化）。凭据缺失 closed on failure，
     # 绝不静默换别的 app 发（防跨应用域 230001 / 身份漂移）。
@@ -1004,8 +1005,8 @@ def api_send(req):
                 import push_flow
                 push_flow.record(kind or "hub", "openapi", rid, 1, False,
                                  evidence="dead_letter")
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
             return {"ok": False, "why": why4, "error": why4, "via": "hub"}
     ok, why, mid = send_msg_tracked(
         content, msg_type, rid, rtype, kind=kind,
@@ -1026,8 +1027,8 @@ def api_send(req):
         import push_flow
         push_flow.record(kind or "hub", "openapi", rid, 1, bool(ok),
                          evidence=evidence)
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
     if not ok and not str(kind or "").startswith("dead_letter_redelivery"):
         # 直发失败 → 死信登记（闸门拒绝不算死信，走 _flow_gate_deny）
         # 2026-10-26：补达失败不再回填死信（否则巡线补达→失败→新死信→再补达 风暴）
@@ -1038,8 +1039,8 @@ def api_send(req):
                                  payload=(content if isinstance(content, str)
                                           else json.dumps(content,
                                                           ensure_ascii=False)))
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
     # B1（2026-10-19）：返回键统一 why 主键；error 同值镜像一版过渡
     # （防外部老客户端仍读 error——_hub_send/inbound_gateway 已改读 why）。
     resp = {"ok": bool(ok), "why": why, "error": why, "via": "hub",
@@ -1070,8 +1071,8 @@ def _execute_decision(decision_id):
             try:
                 nd.update_send_evidence(decision_id, r["message_id"],
                                         r.get("evidence") or "api_accepted")
-            except Exception:
-                pass  # 证据回写失败不拦 execute 结果
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
     elif dec.get("outcome") in ("gate_or_send_failed", "unknown_after_attempt"):
         try:
             import dead_letter
@@ -1079,8 +1080,8 @@ def _execute_decision(decision_id):
                                  "openapi", dec.get("target_id") or "",
                                  str(dec.get("outcome")),
                                  decision_id=decision_id)
-        except Exception:
-            pass  # 死信登记失败不拦 execute 结果
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
     return out
 
 
@@ -1115,8 +1116,8 @@ def _save_subscribers_snapshot(data, operator, group_id, action, before, after):
                 raw = f.read()
             with open(SUBSCRIBERS_PATH + ".bak", "wb") as f:
                 f.write(raw)
-        except OSError:
-            pass  # .bak 失败不拦主写（主写仍 .tmp→replace 原子）
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
     tmp = SUBSCRIBERS_PATH + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=1)
@@ -1127,8 +1128,8 @@ def _save_subscribers_snapshot(data, operator, group_id, action, before, after):
                "action": action, "before": before, "after": after}
         with open(TARGET_AUDIT_PATH, "a", encoding="utf-8") as f:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
 
 
 def _targets_operator(req):
@@ -1288,8 +1289,8 @@ def flow_matrix():
                     deny.append({"ts": r.get("ts", "")[-8:], "kind": k[:40],
                                  "target": _target_group(r.get("target", "")),
                                  "note": "拦截" if "deny" in k else "发送失败"})
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
     import push_flow
     try:
         plan, daily, sent, blocked = push_flow.quota_check()
@@ -1959,8 +1960,8 @@ def scheduler_loop():
             with _lock:
                 _state["last_tick"] = time.time()
             tasks_snapshot()
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "push_admin_server.py", exc)
         time.sleep(15)
 
 

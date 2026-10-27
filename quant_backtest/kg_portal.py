@@ -15,6 +15,7 @@ portal_api.py 的 /kg/* 端点调本模块 api(kind, arg, days)；
 会话每请求独立（门户为 ThreadingHTTPServer）。
 """
 import json
+import logging
 import re
 import sys
 import os
@@ -52,8 +53,8 @@ def candle_coverage():
                 stem = stem.rsplit("_", 1)[0].replace("_", ".")
                 if "." in stem:
                     codes.add(stem)
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "kg_portal.py", exc)
     with _lock:
         _cov_cache["ts"] = now
         _cov_cache["set"] = frozenset(codes)
@@ -226,8 +227,8 @@ def stock(code, days=120):
                                 else float(r0["wr_chg20"])),
                    "cost_span": float(r0["cost_span"]),
                    "weight_avg": float(r0["weight_avg"])}
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "kg_portal.py", exc)
     cov = candle_coverage()
     return {"ok": True, "code": code, "window_days": days,
             "basic": basic[0], "structures": structures,
@@ -2013,8 +2014,8 @@ def battle_timeline(code, days=250):
                            "label": str(r.get("reason") or "")[:24],
                            "dir": "bull" if (net or 0) > 0 else "bear",
                            "value": net, "meta": {"reason": r.get("reason")}})
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "kg_portal.py", exc)
     # ③ 资金：ts_moneyflow 净流入（万元）
     flows = []
     try:
@@ -2033,8 +2034,8 @@ def battle_timeline(code, days=250):
                            "label": "%.0f万" % v,
                            "dir": "bull" if v > 0 else "bear",
                            "value": v, "meta": {}})
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "kg_portal.py", exc)
     # ④ 公告：events_for_stock（K260 已回填 bias/tag；中性不占图层）
     notices = []
     try:
@@ -2053,8 +2054,8 @@ def battle_timeline(code, days=250):
                            "value": e.get("conf"),
                            "meta": {"reason": e.get("reason"),
                                     "source": e.get("source")}})
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "kg_portal.py", exc)
     # ⑤ 形态：图内涨跌停 + 榜后差额 + 结构（图不可达整层跳过）
     try:
         lm = _q("MATCH (s:Security {ts_code:$c})-[:HAS_LIMIT]->(m:MarketEvent) "
@@ -2079,8 +2080,8 @@ def battle_timeline(code, days=250):
                            "label": str(r.get("reason") or "")[:20],
                            "dir": "bull" if (g or 0) > 0 else "bear",
                            "value": g, "meta": {}})
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "kg_portal.py", exc)
     layers.sort(key=lambda x: x["date"])
     rules = _battle_rules(sigs, tops, flows, notices)
     return {"ok": True, "code": code, "window_days": days,
@@ -2273,8 +2274,8 @@ def _records_riskguard(here):
                           f.read(), re.M)
         if m:
             note += " · R2 已拍板毕业 vol_mult=%s" % m.group(1)
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "kg_portal.py", exc)
     return {"layer": "RiskGuard(影子)", "note": note, "rows": rows}
 
 

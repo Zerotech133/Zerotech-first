@@ -23,6 +23,7 @@
   · 产物目录 mtime 扫描（分析/归档）· schtasks State=Running（进行中，stats 内）
 """
 import os
+import logging
 import json
 import time
 import sqlite3
@@ -275,8 +276,8 @@ def _jsonl_tail_events(path, since_date, mapper, max_lines=4000):
             ev = mapper(obj)
             if ev:
                 out.append(ev)
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "api_flow.py", exc)
     return out
 
 
@@ -382,8 +383,8 @@ def _running_tasks():
         if out:
             return [ln.strip() for ln in str(out).splitlines()
                     if ln.strip() and len(ln.strip()) < 60]
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "api_flow.py", exc)
     return []
 
 
@@ -430,8 +431,8 @@ def _jev_health():
                     err7 += 1
         if n7:
             h["err7_ratio"] = round(err7 / n7, 3)
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "api_flow.py", exc)
 
     # 2) runs：投喂 / AI 判定最近态 + 今日次数
     db = _news_db()
@@ -450,8 +451,8 @@ def _jev_health():
                               "last_new": row[2], "today": tot or 0,
                               "today_ok": ok_sum or 0}
             con.close()
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "api_flow.py", exc)
 
     # 3) 后验回填 + 毕业水位
     try:
@@ -461,13 +462,13 @@ def _jev_health():
             last = json.loads(ol[-1])
             h["outcome"] = {"count": len(ol),
                             "last_at": last.get("backfilled_at") or last.get("ts")}
-    except (OSError, ValueError, json.JSONDecodeError):
-        pass
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "api_flow.py", exc)
     try:
         with open(GRADUATION, "r", encoding="utf-8") as f:
             h["graduation"] = json.load(f)
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "api_flow.py", exc)
 
     # 4) PG gate_seen（凭据与 jev_common.py 同源；3s 超时静默降级为 None）
     try:
@@ -485,8 +486,8 @@ def _jev_health():
         mx = cur.fetchone()[0]
         h["gate_seen"] = {"count": n, "last": str(mx or "")[:19]}
         con.close()
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "api_flow.py", exc)
 
     # 5) 综合灯（阈值见 docstring）
     feed = h.get("feed") or {}

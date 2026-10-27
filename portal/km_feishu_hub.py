@@ -16,6 +16,7 @@
 日志：work/km_hub.out（服务 stdout）/ work/km_stats.jsonl（统计流水）。
 """
 import argparse
+import logging
 import hashlib
 import json
 import os
@@ -65,8 +66,8 @@ def atomic_write_json(path, obj):
     except BaseException:
         try:
             os.remove(tmp)
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "km_feishu_hub.py", exc)
         raise
 
 
@@ -88,8 +89,8 @@ def known_targets():
     try:
         with open(NEWS_CFG, encoding="utf-8") as f:
             targets = list(json.load(f).get("push_targets", []))
-    except (OSError, ValueError):
-        pass
+    except (OSError, ValueError) as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "km_feishu_hub.py", exc)
     cfg = load_config()
     names = {t.get("name") for t in targets}
     for t in cfg.get("extra_targets", []):
@@ -103,8 +104,8 @@ def log(msg):
     try:
         with open(os.path.join(WORK, "km_hub.out"), "a", encoding="utf-8") as f:
             f.write(line)
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "km_feishu_hub.py", exc)
     print(line, end="", flush=True)
 
 
@@ -236,8 +237,8 @@ def push_lib(lib, trigger):
                         push_flow.record(kind="quota_block:km_card",
                                          channel="feishu", target=name,
                                          count=1, ok=False)
-                    except Exception:
-                        pass
+                    except Exception as exc:
+                        logging.getLogger(__name__).warning("silent-except %s: %s", "km_feishu_hub.py", exc)
                 else:
                     from feishu_card_v2 import send_card
                     card = build_card(lib, res, trigger)
@@ -264,8 +265,8 @@ def push_lib(lib, trigger):
                         push_flow.record(kind="km_card", channel="feishu",
                                          target=",".join(sent_targets) or "none",
                                          count=1, ok=sent_ok > 0)
-                    except Exception:
-                        pass
+                    except Exception as exc:
+                        logging.getLogger(__name__).warning("silent-except %s: %s", "km_feishu_hub.py", exc)
         except Exception as e:  # noqa: BLE001
             err = "%s" % e
             res = {"added": [], "changed": [], "n_changed": 0, "total": 0,
@@ -280,8 +281,8 @@ def push_lib(lib, trigger):
             os.makedirs(WORK, exist_ok=True)
             with open(STATS_PATH, "a", encoding="utf-8") as f:
                 f.write(json.dumps(row, ensure_ascii=False) + "\n")
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "km_feishu_hub.py", exc)
         result = {"ts": row["ts"], "trigger": trigger, "added": row["added"],
                   "changed": row["changed"], "sent_ok": sent_ok,
                   "sent_targets": sent_targets, "error": err,
@@ -360,8 +361,8 @@ def stats_digest():
                     rows.append(json.loads(line))
                 except ValueError:
                     continue
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "km_feishu_hub.py", exc)
     today_agg = {}
     for r in rows:
         if r.get("date") == today:
@@ -517,8 +518,8 @@ def dispatch(req):
         save_config(cfg)
         try:
             os.remove(_snapshot_path(name))
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "km_feishu_hub.py", exc)
         return {"ok": True, "config": cfg}
 
     if act == "toggle_lib":
@@ -699,13 +700,13 @@ def main():
     for _s in (sys.stdout, sys.stderr):
         try:
             _s.reconfigure(line_buffering=True)
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "km_feishu_hub.py", exc)
     try:
         import faulthandler
         faulthandler.enable(open(os.path.join(WORK, "km_hub_fault.log"), "ab"))
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "km_feishu_hub.py", exc)
     print("[start] PID=%s %s port=%d" % (
         os.getpid(), datetime.now().strftime("%m-%d %H:%M:%S"), args.port))
     if not os.path.exists(CONFIG_PATH):

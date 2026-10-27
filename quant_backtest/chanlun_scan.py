@@ -27,6 +27,7 @@ reg(P8-b 大盘) 取顺风子集（chanlun_flow.aligned）；mt(P7) 全市场无
   python chanlun_scan.py --scan --market HK   # 港股扫描（独立池链 _hk）
 """
 import argparse
+import logging
 import json
 import os
 import subprocess
@@ -366,8 +367,8 @@ def _load_paper():
         try:
             with open(PAPER, encoding="utf-8") as f:
                 return json.load(f)
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "chanlun_scan.py", exc)
     return {"updated_at": None, "open": [], "closed": []}
 
 
@@ -746,8 +747,8 @@ def scan_all():
         # 失败单信号记 None 不阻断扫描；prev 仅判可见性不 enrich）
         try:
             _gray_enrich(bars, st)
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "chanlun_scan.py", exc)
         detect = bars[-1]["dt"]
         epx = bars[-1]["c"]
         # T 批：日线趋势影子字段（HH/HL+末笔延伸修正，K24 _trend 口径）；
@@ -890,8 +891,8 @@ def _pool_lock():
         lf.seek(0)
         msvcrt.locking(lf.fileno(), msvcrt.LK_LOCK, 1)
         locked = True
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "chanlun_scan.py", exc)
     try:
         yield
     finally:
@@ -901,8 +902,8 @@ def _pool_lock():
                     import msvcrt
                     lf.seek(0)
                     msvcrt.locking(lf.fileno(), msvcrt.LK_UNLCK, 1)
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "chanlun_scan.py", exc)
             lf.close()
 
 
@@ -991,8 +992,8 @@ def _push_manual_impl(code, sig_type=None, sig_dt=None):
         return {"ok": False, "error": "analyze 失败: %s" % str(e)[:120]}
     try:
         _gray_enrich(bars, st)
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "chanlun_scan.py", exc)
     detect = bars[-1]["dt"]
     epx = bars[-1]["c"]
     try:
@@ -1223,8 +1224,8 @@ def refresh_shadow_1sell_tbe():
         for tr in _tg_rows():
             tg_npv[(tr.get("code"), tr.get("type"), tr.get("sig_dt"))] = \
                 tr.get("npv")
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "chanlun_scan.py", exc)
     rows = []
     for r in pool:
         if r.get("type") != "1卖" or r.get("tbe") is not True:
@@ -1428,8 +1429,8 @@ def push_1sell_tbe_alert(new_rows):
             avg_c = sum(r["exe20"] for r in closed) / n_c
             lines.append("实盘扫描：n=%d win=%.0f%% avg=%+.2f%%"
                          % (n_c, win_c * 100.0 / n_c, avg_c * 100.0))
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "chanlun_scan.py", exc)
     # 同型先例摘要（semantica_mvp 实时检索 chanlun_paper.json closed[]）
     # 首次调用会加载 fastembed ONNX + 嵌入 5000 条先例（约 30s），
     # 后续进程缓存毫秒级；失败则跳过不影响推送主流程。
@@ -1592,8 +1593,8 @@ def _auto_overlays(row):
         ev = float(row.get("entry_px"))
         if ev > 0:
             ovs.insert(0, (ev, "入场", "#3fb950"))
-    except (TypeError, ValueError):
-        pass
+    except (TypeError, ValueError) as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "chanlun_scan.py", exc)
     return ovs
 
 

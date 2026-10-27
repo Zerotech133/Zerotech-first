@@ -4,6 +4,7 @@
 Handler 壳经基座多继承并入（禁 import *）。
 """
 import glob
+import logging
 import hmac
 import json
 import os
@@ -54,8 +55,8 @@ def get_disks():
             u = shutil.disk_usage(letter)
             out[letter[0]] = {"free_gb": round(u.free / 2 ** 30, 1),
                               "total_gb": round(u.total / 2 ** 30, 1)}
-        except Exception:
-            pass  # 豁免（C2批1）：盘符可能不存在（无 D 盘等），属常态
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "api_misc.py", exc)
     return out
 def get_tasks():
     out = run(["powershell", "-NoProfile", "-Command", PS_TASKS], timeout=45)
@@ -65,8 +66,8 @@ def get_tasks():
         if line.startswith("{"):
             try:
                 tasks.append(json.loads(line))
-            except Exception:
-                pass  # 豁免（C2批1）：schtasks 输出坏行跳过，正常容错
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "api_misc.py", exc)
     return tasks
 def get_containers():
     out = run(["docker", "ps", "-a", "--format", "{{json .}}"], timeout=25)
@@ -367,8 +368,8 @@ def build_os_cockpit():
         try:
             if time.mktime(time.strptime(str(ra)[:16], "%Y-%m-%d %H:%M")) > now:
                 remind += 1
-        except ValueError:
-            pass  # 豁免：提醒时间格式不对的条目跳过不计数
+        except ValueError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "api_misc.py", exc)
     out["todo"] = {
         "health": len(hp.get("issues") or []),
         "biz_remind": remind,
@@ -497,8 +498,8 @@ def get_alerts():
                 res["acks"].append({"ts": j.get("ts", ""),
                                     "id": j.get("alert_id", ""),
                                     "action": j.get("action", "")})
-            except Exception:
-                pass  # 豁免（C2批1）：ack 行坏行跳过，正常容错
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "api_misc.py", exc)
     fl = os.path.join(JEV, "alerts", "forward.log")
     if os.path.exists(fl):
         with open(fl, "r", encoding="utf-8", errors="replace") as f:
@@ -590,8 +591,8 @@ class Handler:
             with open(os.path.join(STATION, "video", "output", "index.json"),
                       encoding="utf-8") as f:
                 items = json.load(f)
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "api_misc.py", exc)
         secs = []
         for e in items:
             d = _q(e.get("dir", ""))
@@ -644,8 +645,8 @@ background:#000'></video>
             with open(os.path.join(STATION, "gzh", "drafts", "index.json"),
                       encoding="utf-8") as f:
                 items = json.load(f)
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "api_misc.py", exc)
         ST = {"draft": ("草稿", "#9db1d4"), "reviewed": ("已审", "#e6a23c"),
               "published": ("已发", "#f85149")}
         from urllib.parse import quote as _q
@@ -753,8 +754,8 @@ background:#000'></video>
                 k = a.get("encryptKey") or a.get("encrypt_key")
                 if k and k != "EMPTY":
                     return k
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "api_misc.py", exc)
         return None
     def _feishu_unverified_alert(self):
         """K-STOCK-397：回调未验签降级告警（同日一次，A 通道 send_feishu）。
@@ -798,14 +799,14 @@ background:#000'></video>
                 self.log_message(
                     "WARNING feishu/event FEISHU_ENCRYPT_KEY 未配置，回调未验签"
                     "（降级告警已按日触发；叠加 8091 绑回环，风险已降级）")
-            except Exception:
-                pass  # 推送失败不反噬回调处理；flag 不置 alerted，下次再试
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "api_misc.py", exc)
         try:
             os.makedirs(os.path.dirname(flag), exist_ok=True)
             with open(flag, "w", encoding="utf-8") as f:
                 json.dump(st, f, ensure_ascii=False)
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "api_misc.py", exc)
     def _api_feishu_event(self, raw):
         """K250 飞书事件回调入口（POST /feishu/event）。
 
@@ -1183,8 +1184,8 @@ transition:.3s;z-index:9}
                           encoding="utf-8") as f:
                     f.write(time.strftime("%m-%d %H:%M:%S ") + q + "\n")
                     traceback.print_exc(file=f)
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "api_misc.py", exc)
             self._json({"ok": False, "msg": "报告生成异常：%s"
                         % str(ex)[:150]})
     def _analyst_report_page(self, qs):
@@ -2055,8 +2056,8 @@ transition:.3s;z-index:9}
             if c.get("base") and c.get("key") and c.get("model"):
                 c.setdefault("api", "openai")
                 return c
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "api_misc.py", exc)
         return {"api": "ollama",
                 "model": os.environ.get("AUDIT_MODEL", "qwen3.5:9b")}
 
@@ -2094,8 +2095,8 @@ transition:.3s;z-index:9}
                         _rev.get("pf_id", "?"), len(_rj)))
             if not _files:
                 out.append("今日计划：审批单尚未生成。")
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "api_misc.py", exc)
         # ② 模拟仓账本概要（组合/挂单/止损哨兵，实数口径=页面一致）
         try:
             _ks = r"C:\项目\老田的AI助手\k_stock"
@@ -2135,8 +2136,8 @@ transition:.3s;z-index:9}
                     out.append(_msg)
             else:
                 out.append("账本：%s" % str(_d.get("error"))[:80])
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "api_misc.py", exc)
         return out
 
     def _api_ai_duty(self, raw):
@@ -2161,8 +2162,8 @@ transition:.3s;z-index:9}
                 len(ss), "；".join("%s %d 个" % (k, v) for k, v in by.items())))
             ctx.append("代表策略：" + "、".join(
                 "%s（%s）" % (s.get("name"), s.get("status")) for s in ss[:6]))
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "api_misc.py", exc)
         uctx = str(req.get("ctx") or "").strip()[:1200]
         if uctx:
             ctx.append("客户当前所在：" + uctx)
@@ -2171,8 +2172,8 @@ transition:.3s;z-index:9}
             _today = self._today_context()
             if _today:
                 ctx.append("【当日动态】\n" + "\n".join(_today))
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "api_misc.py", exc)
         sysmsg = self._AI_DUTY_SYSTEM % ("\n".join(ctx) or "（暂无）")
         try:
             reply, backend = self._audit_chat(
@@ -2248,8 +2249,8 @@ transition:.3s;z-index:9}
                 with open(tmp, "w", encoding="utf-8") as fh:
                     json.dump(payload, fh, ensure_ascii=False)
                 os.replace(tmp, fp)
-            except Exception:
-                pass  # 落盘失败不阻断应答（下次 snapshot 重写）
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "api_misc.py", exc)
         elif os.path.exists(fp) and self._duty_brief_phase() != "pre":
             try:
                 with open(fp, encoding="utf-8") as fh:
@@ -2361,8 +2362,8 @@ transition:.3s;z-index:9}
                         evs.append(json.loads(ln))
                     except Exception:
                         continue
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "api_misc.py", exc)
         today = [e for e in evs if e.get("day") == day]
         by_kind = {k: 0 for k in self._DEV_KINDS}
         agents = {}

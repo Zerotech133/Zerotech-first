@@ -32,6 +32,7 @@
   python nine_dim_backtest.py --force             # 忽略已回放锚点重跑
 """
 import argparse
+import logging
 import json
 import os
 import sqlite3
@@ -180,8 +181,8 @@ def _trade_days(latest):
                                  "cal_date"].astype(str))
             if days:
                 return days
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "nine_dim_backtest.py", exc)
     rows, fields = nd._ts("trade_cal", exchange="SSE",
                           start_date=st, end_date=latest)
     i_o, i_c = fields.index("is_open"), fields.index("cal_date")
@@ -236,8 +237,8 @@ def _load_cache(path):
     if os.path.exists(path):
         try:
             return json.load(open(path, encoding="utf-8"))
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "nine_dim_backtest.py", exc)
     return {}
 
 
@@ -272,8 +273,8 @@ def _fina_bt(codes):
                     rec["rows"] = sorted(rows, key=lambda r: (
                         nd._td8(r[i["end_date"]]), nd._td8(r[i["ann_date"]])))
                     rec["fields"] = fields
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "nine_dim_backtest.py", exc)
                 db.nd_fina_upsert(conn, c, rec["rows"], rec["fields"],
                                   rec["fetched_at"])
                 time.sleep(0.12)
@@ -288,8 +289,8 @@ def _fina_bt(codes):
     except Exception as e:
         try:
             conn.close()
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "nine_dim_backtest.py", exc)
         print("  fina_bt: sqlite path failed (%s), fallback to json" % e,
               flush=True)
         return _fina_bt_json(codes)
@@ -314,8 +315,8 @@ def _fina_bt_json(codes):
             rec["rows"] = sorted(rows, key=lambda r: (
                 nd._td8(r[i["end_date"]]), nd._td8(r[i["ann_date"]])))
             rec["fields"] = fields
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "nine_dim_backtest.py", exc)
         cache[c] = rec
         time.sleep(0.12)
         if (k + 1) % 50 == 0:
@@ -419,8 +420,8 @@ def _rc_bt(codes, st):
     except Exception as e:
         try:
             conn.close()
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "nine_dim_backtest.py", exc)
         print("  rc_bt: sqlite path failed (%s), fallback to json" % e,
               flush=True)
         return _rc_bt_json(codes, st)
@@ -530,8 +531,8 @@ def _fc_bt(codes, st):
     except Exception as e:
         try:
             conn.close()
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "nine_dim_backtest.py", exc)
         print("  fc_bt: sqlite path failed (%s), fallback to json" % e,
               flush=True)
         return _fc_bt_json(codes, st)
@@ -634,8 +635,8 @@ def _news_stats_at(codes, basic, anchor_i):
                     elif b == "bear":
                         s["bear"] += 1
         db.close()
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "nine_dim_backtest.py", exc)
     return stats
 
 

@@ -3,6 +3,7 @@
 Handler 壳经基座多继承并入（禁 import *）。pandas 均为函数内局部导入。
 """
 import json
+import logging
 import os
 import re
 import sys
@@ -288,8 +289,8 @@ def _kline_data(q, n=250):
                 marks.append({"d": s.get("date") or "",
                               "t": s.get("type") or "",
                               "c": round(s.get("conf") or 0, 2)})
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "api_screen.py", exc)
     # JEV 新闻 bias 标注（按日期去重，同日多条取 conf 最高）
     news = {}
     for it in _bt_jev_news(name, aliases):
@@ -673,8 +674,8 @@ def build_screen():
                 if ln:
                     try:
                         rows.append(json.loads(ln))
-                    except Exception:
-                        pass
+                    except Exception as exc:
+                        logging.getLogger(__name__).warning("silent-except %s: %s", "api_screen.py", exc)
 
         def _sig(r):
             return {"code": r.get("code"), "name": r.get("name"),
@@ -818,8 +819,8 @@ def build_screen():
             if br:
                 out["news_brief"] = {"date": br[0][0], "ts": br[0][1],
                                      "brief": (br[0][2] or "")[:900]}
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "api_screen.py", exc)
         _con.close()
     except Exception:
         log_exc("_screen_page:news.db 快讯/晨报")  # C2批1
@@ -960,8 +961,8 @@ class Handler:
                                      float(val["total_mv"]) / 1e4))
                                  if val.get("total_mv") else
                                  ("估值", "总市值(亿)", "—")]
-                    except (TypeError, ValueError):
-                        pass
+                    except (TypeError, ValueError) as exc:
+                        logging.getLogger(__name__).warning("silent-except %s: %s", "api_screen.py", exc)
                     rows.append(("估值", "换手率", _fmt_pct(
                         val.get("turnover_rate"))))
                 if QBT_DIR not in sys.path:
@@ -978,8 +979,8 @@ class Handler:
                     if v != "—" and p not in (None, ""):
                         try:
                             v += "（前值 %s）" % _fmt_pct(float(p))
-                        except (TypeError, ValueError):
-                            pass
+                        except (TypeError, ValueError) as exc:
+                            logging.getLogger(__name__).warning("silent-except %s: %s", "api_screen.py", exc)
                     return v
                 _eb_s = "—"
                 try:                      # tushare ebitda 实测单位：元
@@ -991,8 +992,8 @@ class Handler:
                         _eb_s = (("%.2f亿" % (_ebv / 1e8))
                                  if abs(_ebv) >= 1e8
                                  else "%.0f万" % (_ebv / 1e4))
-                except (TypeError, ValueError):
-                    pass
+                except (TypeError, ValueError) as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "api_screen.py", exc)
                 # K235 扩容：(组, 标签, 值) 三元组——估值/盈利/成长/健康
                 # 四组汇总；新增现金流覆盖(ocf_to_or)与 EBITDA
                 rows += [("盈利", "ROE", _fmt_pct(cur.get("roe"))),
@@ -1026,8 +1027,8 @@ class Handler:
                     if r.get("total_market_cap"):
                         rows.append(("估值", "总市值(亿)", "%.0f" % (
                             float(r["total_market_cap"]) / 1e8)))
-                except (TypeError, ValueError):
-                    pass
+                except (TypeError, ValueError) as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "api_screen.py", exc)
                 rows += [("盈利", "ROE", _fmt_pct(r.get("roe_avg"))),
                          ("盈利", "毛利率", _fmt_pct(
                              r.get("gross_profit_ratio"))),
@@ -1074,8 +1075,8 @@ class Handler:
                 try:
                     json.dump(cache, open(cf, "w", encoding="utf-8"),
                               ensure_ascii=False)
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "api_screen.py", exc)
         except Exception:
             val = None
         return val

@@ -20,6 +20,7 @@ pysnowball 0.1.8 实测口径（本机已装，utls.py 源码核验）：
 被 xueqiu_sync.py（L1/L2）与 xueqiu_crawl.py（L3）复用。
 """
 import atexit
+import logging
 import json
 import os
 import random
@@ -250,10 +251,10 @@ def ensure_session_cookies(sess: "requests.Session", token: str = "") -> str:
             if got:
                 os.environ["XUEQIUTOKEN"] = tok
                 return tok
-    except ImportError:
-        pass
-    except Exception:
-        pass
+    except ImportError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "xueqiu_common.py", exc)
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "xueqiu_common.py", exc)
     # 第 3 级：Playwright 匿名预热（四级链，2026-10-17 立项落地）
     try:
         from xq_browser import harvest_cookies
@@ -266,8 +267,8 @@ def ensure_session_cookies(sess: "requests.Session", token: str = "") -> str:
         if tok:
             os.environ["XUEQIUTOKEN"] = tok
             return tok
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "xueqiu_common.py", exc)
     # 第 4 级：首页 warm（历史行为保留；WAF 化后仅得 acw_tc，
     # 保留为公开端点最后兜底）
     warm_token = warm_session(sess)
@@ -363,8 +364,8 @@ def ip_block_trip(mf: "XqManifest",
     try:
         from xq_proxy import notify_blocked
         notify_blocked()
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "xueqiu_common.py", exc)
     return until
 
 
@@ -422,8 +423,8 @@ def _close_browser() -> None:
                     obj.close()
                 else:
                     obj.stop()
-        except Exception:  # noqa: BLE001 关闭失败不影响主流程
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "xueqiu_common.py", exc)
         st[key] = None
     st["ctx"] = None
 
@@ -663,8 +664,8 @@ class XqManifest:
                 if isinstance(loaded, dict):
                     base.update(loaded)
                     base.setdefault("health", {})
-            except Exception:
-                pass                        # 损坏：当新文件重写
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "xueqiu_common.py", exc)
         self._data = base
         return self._data
 
@@ -725,8 +726,8 @@ def atomic_parquet(df: pd.DataFrame, path: str) -> None:
         if os.path.exists(tmp):             # 异常时清理半成品
             try:
                 os.remove(tmp)
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "xueqiu_common.py", exc)
 
 
 def upsert_sqlite(db_path: str, table: str, rows: list[dict],
@@ -760,8 +761,8 @@ def upsert_sqlite(db_path: str, table: str, rows: list[dict],
                 try:
                     conn.execute('ALTER TABLE "%s" ADD COLUMN "%s" %s'
                                  % (table, c, col_type))
-                except sqlite3.OperationalError:
-                    pass
+                except sqlite3.OperationalError as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "xueqiu_common.py", exc)
             for _name, idx_sql in spec.get("idx", []):
                 conn.execute(idx_sql)
         else:

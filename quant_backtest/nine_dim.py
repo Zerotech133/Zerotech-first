@@ -62,6 +62,7 @@ V3 结构修订（2026-09-27，P2 V2-final 1565 样本逐维诊断驱动；
 影子纪律：只写门户数据文件，不接推送；n<10 不构成结论。
 """
 import json
+import logging
 import os
 import sqlite3
 import sys
@@ -225,8 +226,8 @@ def append_history(record, path=None):
         payload = (json.dumps(record, ensure_ascii=False) + "\n").encode("utf-8")
         try:
             os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-        except OSError:
-            pass                     # 目录已存在/不可建：交给 open 抛错走告警分支
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "nine_dim.py", exc)
         fd = os.open(path, os.O_APPEND | os.O_CREAT | os.O_WRONLY, 0o644)
         try:
             os.write(fd, payload)
@@ -422,8 +423,8 @@ def _idx_bars():
                     (datetime.now() - timedelta(days=4)) \
                     .strftime("%Y%m%d"):
                 return c
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "nine_dim.py", exc)
     rows, fields = _ts("index_daily", ts_code=INDEX_CODE)
     i = {f: k for k, f in enumerate(fields)}
     bars = sorted(((_td8(r[i["trade_date"]]), float(r[i["close"]]))
@@ -504,8 +505,8 @@ def _kg_enrich(codes, evt_days=30):
                     "person_shared": int(r.get("person_shared") or 0),
                     "peer_shared_prod": int(r.get("peer_shared_prod") or 0),
                 }
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "nine_dim.py", exc)
     # 近 N 天 bull/bear 事件计数（Neo4j）
     try:
         from kg_client import KgClient
@@ -522,8 +523,8 @@ def _kg_enrich(codes, evt_days=30):
         cli.close()
         for r in rows:
             out.setdefault(r["code"], {})["evt_" + r["bias"]] = r["n"]
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "nine_dim.py", exc)
     return {c: v for c, v in out.items() if v}
 
 
@@ -610,8 +611,8 @@ def _daily_basic(tday):
                         "pe_ttm": r["pe_ttm"], "total_mv": r["total_mv"],
                         "float_mv": r["circ_mv"]}
                         for r in rows.to_dict("records")})
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "nine_dim.py", exc)
     rows, ok = _by_trade_date("daily_basic", tday,
                              ["pe_ttm", "total_mv", "circ_mv"])
     if ok:
@@ -784,8 +785,8 @@ def _fetch_margin(tday, prev_tday):
             if out["detail"]:
                 out["mode"] = "detail"
                 return out
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "nine_dim.py", exc)
     try:                                     # 全局回退：rzye 近 2 周增幅
         st = (datetime.now() - timedelta(days=14)).strftime("%Y%m%d")
         rows, fields = _ts("margin", start_date=st, end_date="20991231")
@@ -800,8 +801,8 @@ def _fetch_margin(tday, prev_tday):
             out["global_growth"] = round(
                 (tot[days[-1]] / tot[days[0]] - 1) * 100, 2)
             out["mode"] = "global"
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "nine_dim.py", exc)
     return out
 
 
@@ -912,8 +913,8 @@ def _report_rc(codes):
             rows, fields = _ts("report_rc", ts_code=c,
                                start_date=st, end_date=ed, limit=300)
             rec.update(_rc_stats(rows, fields))
-        except Exception:
-            pass                          # 保持 None → 不可判
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "nine_dim.py", exc)
         out[c] = rec
         time.sleep(0.1)
     return out
@@ -992,8 +993,8 @@ def _news_stats(codes, basic):
                     elif b == "bear":
                         s["bear"] += 1
         db.close()
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "nine_dim.py", exc)
     return stats
 
 
@@ -1368,8 +1369,8 @@ def run_scan(dryrun=False):
         days = sorted(r[i_c] for r in rows if r[i_o] == 1)
         if len(days) >= 6:
             prev8 = days[-6]                 # 5 个交易日前
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "nine_dim.py", exc)
     flow = _fetch_flow(latest)
     marg = _fetch_margin(latest, prev8)
     north = _fetch_hsgt()
