@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-27 16:50",
+ "generated": "2026-10-27 16:51",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 61,
@@ -9,7 +9,7 @@
   "prompt_ok": 61,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 18,
+  "workorders_doing": 23,
   "workorders_review": 2
  },
  "workorders": [
@@ -185,12 +185,57 @@
    "project": "general"
   },
   {
-   "id": "WO-GUANYU-HKDB4-20261027",
-   "desc": "测试隔离修复 [UNOWNED]",
+   "id": "WO-P0-DEV1-MONDAY-20261027",
+   "desc": "P0 派工周-1（G1 DEV1）：修 MondayCheckpoint 回放锚点误报（审计复核v2 A1）——定位锚点回放判定逻辑，排除系统/陈旧噪声，补回归测试；验收=新测试全绿 + 次日任务执行总线无该误报",
    "status": "doing",
-   "owner": "unknown-agent",
-   "branch": "task/WO-GUANYU-HKDB4-20261027",
-   "created": "2026-10-27 16:50:33",
+   "owner": "DEV1",
+   "branch": "task/WO-P0-DEV1-MONDAY-20261027",
+   "created": "2026-10-27 16:50:48",
+   "project": "general"
+  },
+  {
+   "id": "WO-P0-DEV5-EVALCASES-20261027",
+   "desc": "P0 派工周-2（G2 DEV5）：O3 Agent 评估用例 v1——建 agent_platform/evals/agent_cases.jsonl 20 条（派工决策/验收判定/代码评审/升级判断四类）+ tools/agent_eval.py（--check/--json，LLM judge 可后接）；验收=--check rc0、20 条载荷可读",
+   "status": "doing",
+   "owner": "DEV5",
+   "branch": "task/WO-P0-DEV5-EVALCASES-20261027",
+   "created": "2026-10-27 16:50:56",
+   "project": "general"
+  },
+  {
+   "id": "K-QUANT-20261027-SMART2",
+   "desc": "智能托管状态：只有存在 healthy 上游 Key 才算智能分配开启，否则提示管理员修复平台 Key",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-QUANT-20261027-SMART2",
+   "created": "2026-10-27 16:50:57",
+   "project": "quant"
+  },
+  {
+   "id": "WO-P0-DEV6-TRACE-20261027",
+   "desc": "P0 派工周-3（DEV6）：O4 可观测性 v0——dev_events 事件增 trace_id/span_id/parent_id（可选字段，缺省可空），devtask/工具写入任务时带 trace_id；补测试；验收=新测试全绿 + 抽样事件可串成树",
+   "status": "doing",
+   "owner": "DEV6",
+   "branch": "task/WO-P0-DEV6-TRACE-20261027",
+   "created": "2026-10-27 16:51:03",
+   "project": "general"
+  },
+  {
+   "id": "WO-P0-DEV7-WIKI-20261027",
+   "desc": "P0 派工周-4（DEV7）：O5 project wiki 生成器——tools/project_wiki.py 用 codebase_intel 生成 docs/project_wiki.md（仓库地图/ADR 索引/约定），--check 校验；验收=生成物存在且 --check rc0",
+   "status": "doing",
+   "owner": "DEV7",
+   "branch": "task/WO-P0-DEV7-WIKI-20261027",
+   "created": "2026-10-27 16:51:10",
+   "project": "general"
+  },
+  {
+   "id": "WO-P0-DEV8-METRICS-20261027",
+   "desc": "P0 派工周-5（DEV8）：C6 每日指标脚本——tools/dev_metrics_daily.py 复用 dev_weekly_report compute，落 agent_platform/data/dev/daily_metrics.json，含阈值告警（采集<5/归属<85%/验证<90%）；验收=--check rc0 + 当日文件生成",
+   "status": "doing",
+   "owner": "DEV8",
+   "branch": "task/WO-P0-DEV8-METRICS-20261027",
+   "created": "2026-10-27 16:51:18",
    "project": "general"
   }
  ],
@@ -2224,6 +2269,11 @@
      "id": "WO-RUFF-F401F821-20261027",
      "desc": "[排期工单·A阶段质量] ruff F401/F821/F601/F541 清理（14 处，含 2 处真风险）：真风险=①tools/secrets/rotate_item.py:108 与 rotate_tushare_token.py:53 `NoReturn` 未导入（补 from typing import NoReturn 或去注解）；②portal/m_api.py:570 字典键 ok 重复（确认语义后修正）。其余=quant_mid/__init__.py 11 条 F401 导出面（加 __all__ 或 redundant alias）、test_a_phase_group_board.py/test_zhuge_suggestion_map.py 未用 json、council_ops.py:802 F541 无占位 f-string。要求 ruff F401,F541,F601,F821=0 且全量测试绿。",
      "status": "doing"
+    },
+    {
+     "id": "WO-P0-DEV1-MONDAY-20261027",
+     "desc": "P0 派工周-1（G1 DEV1）：修 MondayCheckpoint 回放锚点误报（审计复核v2 A1）——定位锚点回放判定逻辑，排除系统/陈旧噪声，补回归测试；验收=新测试全绿 + 次日任务执行总线无该误报",
+     "status": "doing"
     }
    ]
   },
@@ -2727,6 +2777,11 @@
      "id": "WO-RUFF-F841-20261027",
      "desc": "[排期工单·A阶段质量] ruff F841 清理（23 处未用变量，低风险）：portal/api_backtest.py:382,6087; api_chanlun_pages.py:2202; api_events.py:366; api_kg.py:3605,5094; api_legion_ops_v2.py:107; api_misc.py:243,2268; council_ops.py:904; feishu_sop_runner.py:189; m_feed.py:198,211; os_controlled.py:508,809; portal_api.py:1264; portal_report.py:414,608; route_baseline.py:90; test_api_zhuge_brief.py:85,237; test_bot_ws_backoff.py:100; warehouse_update_services.py:123。要求逐处确认 RHS 是否有副作用（有副作用保留调用、仅去掉变量名），改后 ruff F841=0 且全量测试绿。",
      "status": "doing"
+    },
+    {
+     "id": "WO-P0-DEV5-EVALCASES-20261027",
+     "desc": "P0 派工周-2（G2 DEV5）：O3 Agent 评估用例 v1——建 agent_platform/evals/agent_cases.jsonl 20 条（派工决策/验收判定/代码评审/升级判断四类）+ tools/agent_eval.py（--check/--json，LLM judge 可后接）；验收=--check rc0、20 条载荷可读",
+     "status": "doing"
     }
    ]
   },
@@ -3187,6 +3242,11 @@
      "id": "WO-DEV-B8-PATHFIRST-20261027",
      "desc": "长尾债首批：tools/ 与 portal/ 硬编码 C:\\项目 路径 ≤10 文件改 env/Path 口径（不碰运行态数据），每文件回归；报告计数下降",
      "status": "doing"
+    },
+    {
+     "id": "WO-P0-DEV6-TRACE-20261027",
+     "desc": "P0 派工周-3（DEV6）：O4 可观测性 v0——dev_events 事件增 trace_id/span_id/parent_id（可选字段，缺省可空），devtask/工具写入任务时带 trace_id；补测试；验收=新测试全绿 + 抽样事件可串成树",
+     "status": "doing"
     }
    ]
   },
@@ -3282,7 +3342,14 @@
    ],
    "experience": "10 年后端标准执行经验：批量修改、格式化重构、依赖升级等标准化工程任务，产出严格走 E2+ 复核闭环。",
    "dept_name": "研发部",
-   "dept_cn_title": "将作监"
+   "dept_cn_title": "将作监",
+   "tasks": [
+    {
+     "id": "WO-P0-DEV7-WIKI-20261027",
+     "desc": "P0 派工周-4（DEV7）：O5 project wiki 生成器——tools/project_wiki.py 用 codebase_intel 生成 docs/project_wiki.md（仓库地图/ADR 索引/约定），--check 校验；验收=生成物存在且 --check rc0",
+     "status": "doing"
+    }
+   ]
   },
   "DEV8": {
    "id": "DEV8",
@@ -3391,7 +3458,14 @@
    ],
    "experience": "20 年前端交付经验：常规页面与图表组件独立交付，严守 tokens 纪律与页面宽度规范，疑难上报 DEV5。",
    "dept_name": "研发部",
-   "dept_cn_title": "将作监"
+   "dept_cn_title": "将作监",
+   "tasks": [
+    {
+     "id": "WO-P0-DEV8-METRICS-20261027",
+     "desc": "P0 派工周-5（DEV8）：C6 每日指标脚本——tools/dev_metrics_daily.py 复用 dev_weekly_report compute，落 agent_platform/data/dev/daily_metrics.json，含阈值告警（采集<5/归属<85%/验证<90%）；验收=--check rc0 + 当日文件生成",
+     "status": "doing"
+    }
+   ]
   },
   "INTEL0": {
    "id": "INTEL0",
