@@ -10,7 +10,7 @@
   "prompt_miss": [],
   "name_collisions": {},
   "workorders_doing": 20,
-  "workorders_review": 3
+  "workorders_review": 2
  },
  "workorders": [
   {
@@ -201,15 +201,6 @@
    "branch": "task/legion-1027175009",
    "created": "2026-10-27 17:50:16",
    "project": "general"
-  },
-  {
-   "id": "WO-O7-DIAG-20261027",
-   "desc": "O7 Diagnostics 一键取证：tools/diagnostics.py（脱敏 zip：meta/端口/健康/质量/测试/日志）+ 单测 + 使用说明；quality_scale 集成 diagnostics 指向本工具",
-   "status": "review",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-O7-DIAG-20261027",
-   "created": "2026-10-27 21:39:42",
-   "project": "portal"
   },
   {
    "id": "WO-SANDBOX-QUOTA-20261027",
