@@ -17,9 +17,9 @@ import common  # noqa: E402
 
 INSTANCES = [
     (5442, "quant-pg (quant_meta/quant_system)"), (5446, "zhice-db (zhice_os_v2)"),
-    (5444, "bettafish-db"), (5448, "osint-pg"), (5455, "docker-mysql-1 (rag_flow)"),
+    (5455, "docker-mysql-1 (rag_flow)"),
     (3306, "openmetadata_mysql"), (3307, "quant-cainiao-mysql"),
-    (6379, "docker-redis-1"), (6380, "zhice-redis"),
+    (6379, "docker-redis-1"),
     (7474, "neo4j-kg HTTP"), (7687, "neo4j-kg Bolt"),
     (17687, "zerobound-neo4j-independent"),
     (11434, "Ollama"), (8091, "portal-api"), (8734, "人类入口"),
