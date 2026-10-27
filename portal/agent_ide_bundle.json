@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-27 15:17",
+ "generated": "2026-10-27 15:18",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 61,
@@ -9,7 +9,7 @@
   "prompt_ok": 61,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 14,
+  "workorders_doing": 13,
   "workorders_review": 2
  },
  "workorders": [
@@ -138,15 +138,6 @@
    "branch": "task/WO-RUFF-F401F821-20261027",
    "created": "2026-10-27 15:09:31",
    "project": "general"
-  },
-  {
-   "id": "WO-D5D6-BUILD-20261027",
-   "desc": "D5/D6 依赖构建与发布：pyproject.toml + ruff 配置 + 依赖工具清单 + 版本/发布流程文档 + CHANGELOG 入口",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-D5D6-BUILD-20261027",
-   "created": "2026-10-27 15:10:34",
-   "project": "portal"
   },
   {
    "id": "WO-GUANYU-B4-20261027",
