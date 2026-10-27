@@ -125,6 +125,16 @@ def main():
         "ps.defer=true;ps.setAttribute('data-wb-palette','1');"
         "document.head.appendChild(ps);\n"
         " }\n"
+        " if(!document.querySelector('link[data-wb-shell-css]')){\n"
+        "  var sl=document.createElement('link');sl.rel='stylesheet';"
+        "sl.href='/static/page_shell.css';sl.setAttribute('data-wb-shell-css','1');"
+        "document.head.appendChild(sl);\n"
+        " }\n"
+        " if(!document.querySelector('script[data-wb-shell]')){\n"
+        "  var ss=document.createElement('script');ss.src='/static/page_shell.js';"
+        "ss.defer=true;ss.setAttribute('data-wb-shell','1');"
+        "document.head.appendChild(ss);\n"
+        " }\n"
         "});\n"
         "})();\n")
     open(OUT, "w", encoding="utf-8").write(js)

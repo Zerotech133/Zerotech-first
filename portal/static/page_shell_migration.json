@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "component": "page_shell",
+  "modern": [
+    "/", "/home_v3.html", "/paper", "/paper.html", "/picks", "/picks.html",
+    "/strategies", "/os-entry", "/zero_proto.html"
+  ],
+  "legacy_marker": "旧版",
+  "redirects": {},
+  "notes": "W4 长尾收口清单：旧页先由 page_shell.js 注入面包屑+旧版标记，后续逐页套壳或配置 301；不在本批批量重写。"
+}
