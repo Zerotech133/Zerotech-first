@@ -25,8 +25,8 @@
     padding:6px 12px;border-radius:8px;background:var(--panel)}
 
   /* ── 工作区切换器（K-STOCK-346）── */
-  .wsbar{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
-  .wsbtn{font-size:11.5px;padding:5px 11px;border-radius:8px;border:1px solid var(--line);
+  .wsbar{display:flex;gap:5px;align-items:center;flex-wrap:nowrap;overflow-x:auto;max-width:100%;white-space:nowrap;scrollbar-width:thin;padding-bottom:2px}
+  .wsbtn{flex:0 0 auto;font-size:11.5px;padding:5px 11px;border-radius:8px;border:1px solid var(--line);
     background:var(--panel);color:var(--dim);cursor:pointer;user-select:none}
   .wsbtn:hover{color:var(--fg);border-color:var(--dim)}
   .wsbtn.on{color:var(--fg);border-color:var(--purple);background:rgba(188,140,255,.13)}
@@ -221,7 +221,7 @@
 <script src="/static/nav.js" defer></script></head>
 <body>
 <header>
-  <h1>⌨ Agent IDE<small>GENOS AGENT WORKBENCH · 多工作区</small></h1>
+  <h1>⌨ Agent IDE<small>GENOS AGENT WORKBENCH · 部门导航</small></h1>
   <div class="wsbar" id="wsbar"></div>
   <div class="wsbar" id="projbar" style="display:none"></div>
   <select id="me" class="mesel" onchange="setMe(this.value)" title="身份视角：以某 Agent 的视角看工单与组织"></select>
@@ -435,22 +435,15 @@ function panelToggle(){
 const WS_ICONS = ["🅰","🅱","🅲","🅳","🅴","🅵"];
 function renderWs(){
   const el = document.getElementById("wsbar");
-  const pds = projDepts();
-  let h = '<span class="wsbtn'+(WS==="all"?' on':'')+'" onclick="setWs(\'all\')" title="聚合视图（全部部门）">🌐 全部</span>';
-  if(pds.length > 5){
-    /* K-ORG-057：工作区 >5 个折叠为下拉（防 8+ 部门按钮挤爆顶栏） */
-    const cur = pds.find(d=>d.name===WS);
-    h += '<select class="mesel" style="width:auto" onchange="setWs(this.value)" title="选择工作区（项目部）">'
-      + '<option value="" disabled'+(cur?'':' selected')+'>选择工作区…</option>'
-      + pds.map(d=>'<option value="'+esc(d.name)+'"'+(WS===d.name?' selected':'')+'>'+esc(d.name)+'</option>').join('')
-      + '</select>';
-    if(cur) h += '<span class="wsbtn on">'+(WS_ICONS[pds.indexOf(cur)]||"▫")+' '+esc(WS)+'</span>';
-  } else {
-    pds.forEach((d,i)=>{
-      h += '<span class="wsbtn'+(WS===d.name?' on':'')+'" onclick="setWs('+q(d.name)+')"'
-        + ' title="'+esc((d.agents||[]).join(' / '))+'">'+(WS_ICONS[i]||"▫")+' '+esc(d.name)+'</span>';
-    });
-  }
+  const depts = (B && B.departments) || [];
+  let h = '<span class="wsbtn'+(WS==="all"?' on':'')+'" onclick="setWs(\'all\')" title="聚合视图（全部部门）">🌐 全部部门</span>';
+  depts.forEach((d,i)=>{
+    const icon = d.type==="project" ? (WS_ICONS[i]||"▫")
+      : (d.type==="chief" ? "🧭" : (d.type==="func" ? "🏛" : "▫"));
+    const brief = (d.agents||[]).slice(0,6).join(" / ") + ((d.agents||[]).length>6?" …":"");
+    h += '<span class="wsbtn'+(WS===d.name?' on':'')+'" onclick="setWs('+q(d.name)+')"'
+      + ' title="'+esc(d.name)+' · '+esc(brief)+'">'+icon+' '+esc(d.name)+'</span>';
+  });
   el.innerHTML = h;
 }
 function setWs(name){
@@ -466,7 +459,7 @@ function setWs(name){
   document.getElementById("dbg-target").textContent = "未选择 Agent";
   document.getElementById("send").disabled = true;
   renderWs(); renderProjBar(); renderAct(); renderSide(); renderTabs(); renderTab(); renderSess(); pRender();
-  addLog("工作区 → "+(name==="all"?"全部":name), "lg-b");
+  addLog("部门 → "+(name==="all"?"全部部门":name), "lg-b");
 }
 
 /* ═══ ① 活动栏 + ② 侧栏四视图 ═══ */
