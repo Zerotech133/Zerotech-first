@@ -110,6 +110,19 @@ def _apply_citations(text, grounding):
         return text
 
 
+_INTERNAL_PATH_RE = re.compile(
+    r"(C:\\项目(?:\\[^\s，。；、）)]*)?|C:\\aios(?:\\[^\s，。；、）)]*)?"
+    r"|_vault(?:/|\\|\b)[^\s，。；、）)]*)"
+)
+
+
+def _redact(text):
+    """P1-8 红队修复：隐藏内部绝对路径/保险库路径（保留相对 docs 引用）。"""
+    if not text:
+        return text
+    return _INTERNAL_PATH_RE.sub("[内部路径]", text)
+
+
 def _tool_module(name):
     """从 tools/ 加载可选能力模块；失败返回 None（不阻断主链）。"""
     try:
@@ -458,7 +471,7 @@ def consult(question, open_id="", llm=None, timeout=None, max_chars=DEFAULT_MAX_
             is_gpt6 = "gpt-6" in model_used.lower()
             mode = "openclaw_gpt" if is_gpt6 else "openclaw_cloud"
             return {
-                "text": _trim(raw, max_chars),
+                "text": _redact(_trim(raw, max_chars)),
                 "mode": mode,
                 "carrier": carrier,
                 "relay": (not is_gpt6),
@@ -494,7 +507,7 @@ def consult(question, open_id="", llm=None, timeout=None, max_chars=DEFAULT_MAX_
             "error": "%s: %s" % (type(ex).__name__, str(ex)[:100]),
             "elapsed_ms": int((time.time() - t0) * 1000),
         }
-    out = _trim(_apply_citations(raw, grounding), max_chars)
+    out = _redact(_trim(_apply_citations(raw, grounding), max_chars))
     if not out:
         return {
             "text": None,
