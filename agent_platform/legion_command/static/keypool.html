@@ -36,6 +36,10 @@ td{padding:5px 4px;border-bottom:.5px dashed #16304F;vertical-align:top}
 <button id="chatsend">发送</button></div>
 <div id="chatmeta" class="muted" style="margin-top:6px"></div>
 </section>
+<section class="log" id="cred-section" style="margin:0 22px 20px">
+<h2>统一凭据（JEV / 数据接口 / 飞书）<span class="muted" style="font-size:11px">只读目录 · 真源 _vault（age 加密）· 不显示密钥</span></h2>
+<div id="cred-list"></div>
+</section>
 <section class="log" id="vk-section" style="margin:0 22px 20px">
 <h2>虚拟 Key（给 AI 用，不暴露真 Key）</h2>
 <div id="vk-list" style="margin-bottom:8px"></div>
@@ -160,6 +164,18 @@ async function createVK(){
   if(!v.ok){alert('失败：'+v.error);return}
   document.getElementById('vk-token').textContent='新 Key（只显示一次）：'+v.item.token;
   loadVK();
+async function loadCreds(){
+  try{
+    const r=await fetch('/api/credentials',{cache:'no-store'}); const v=await r.json();
+    const box=document.getElementById('cred-list');
+    if(!v.items){box.innerHTML='<div class="muted">目录不可用</div>';return}
+    let h='<table><thead><tr><th>类别</th><th>名称</th><th>环境变量</th><th>加密</th><th>状态</th><th>更新时间</th><th>轮换入口</th></tr></thead><tbody>';
+    for(const x of v.items){h+='<tr><td>'+x.category+'</td><td>'+x.name+'</td><td>'+(x.env||'')+'</td><td>'+(x.encrypted?'是':'明文/缺失')+'</td><td>'+x.status+'</td><td>'+(x.updated||'')+'</td><td class="muted">'+(x.rotate||'')+'</td></tr>'}
+    box.innerHTML=h+'</tbody></table>';
+  }catch(e){document.getElementById('cred-list').innerHTML='<div class="muted">加载失败：'+e.message+'</div>'}
+}
+loadCreds(); setInterval(loadCreds,60000);
+
 }
 async function disableVK(id){
   if(!confirm('禁用虚拟 Key '+id+'？'))return;

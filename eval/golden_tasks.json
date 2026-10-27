@@ -264,6 +264,19 @@
    ],
    "expect_rc": 0,
    "timeout": 120
+  },
+  {
+   "id": "pytest-credential",
+   "desc": "统一凭据目录单测",
+   "cmd": [
+    "{python}",
+    "-m",
+    "pytest",
+    "tools/test_credential_catalog.py",
+    "-q"
+   ],
+   "expect_rc": 0,
+   "timeout": 120
   }
  ]
 }

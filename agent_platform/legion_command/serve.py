@@ -490,6 +490,14 @@ class Handler(BaseHTTPRequestHandler):
                     500,
                 )
             return
+        if path == "/api/credentials":
+            try:
+                from legion_command import credential_catalog
+                self._send_json(credential_catalog.catalog())
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "credential_catalog_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
         if path == "/api/router/vk":
             try:
                 from legion_command import seat_router
