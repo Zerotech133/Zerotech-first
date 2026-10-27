@@ -716,7 +716,7 @@ def write_html(card: dict, path: Path) -> None:
                 ('<ul class="manuallist">%s</ul>' % man_li) if man_li else ""))
 
     doc = """<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">
-<title>零界 · 智能体点名册</title>
+<meta name=wb-shell content=adopted><title>零界 · 智能体点名册</title>
 <style>
 :root{--bg:#f5f6f8;--card:#fff;--line:#e3e6ea;--txt:#1b2430;--sub:#6b7684;
 --work:#12805c;--debt:#c0392b;--idle:#b7791f;--silent:#9aa4b1}
