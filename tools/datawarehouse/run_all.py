@@ -29,6 +29,7 @@ import db_health  # noqa: E402
 import db_instance_probe  # noqa: E402
 import freshness_report  # noqa: E402
 import manifest_check  # noqa: E402
+import metadata_consistency  # noqa: E402
 import quality_test  # noqa: E402
 import staging_health  # noqa: E402
 
@@ -60,6 +61,7 @@ def _collect_impl(mode: str = "daily") -> dict:
         sections["manifest"] = _run("manifest_check", manifest_check.collect)
         sections["backup"] = _run("backup_receipt_check", backup_receipt_check.collect)
         sections["instances"] = _run("db_instance_probe", db_instance_probe.collect)
+        sections["metadata"] = _run("metadata_consistency", metadata_consistency.check)
     if mode in ("weekly", "monthly"):
         sections["quality"] = _run("quality_test", quality_test.collect)
         sections["db_health"] = _run("db_health", db_health.collect)
