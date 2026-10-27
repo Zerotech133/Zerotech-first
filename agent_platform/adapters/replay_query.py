@@ -214,16 +214,6 @@ def _artifacts_db(root: Path = None) -> Path:
     return _ap_base(root) / "data" / "artifacts" / "artifacts.db"
 
 
-def _artifact_target_candidates(art) -> List[str]:
-    """产物 → 可命中的 target 候选（source_system 前缀 + source_ref /
-    workitem_id；别名为空跳过）。"""
-    cands: List[str] = []
-    prefix = str(art.source_system or "").split(".")[0]
-    if prefix and art.source_ref:
-        cands.append("%s:%s" % (prefix, art.source_ref))
-    if art.workitem_id:
-        cands.append(art.workitem_id)
-    return [c for c in dict.fromkeys(cands) if c]
 
 
 def _load_artifacts(root: Path = None) -> List[dict]:

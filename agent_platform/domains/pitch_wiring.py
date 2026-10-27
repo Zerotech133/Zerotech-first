@@ -192,8 +192,6 @@ def register_deck_artifact(
             store.close()
 
 
-def _artifacts_db() -> Path:
-    return _AGENT_PLATFORM / "data" / "artifacts" / "artifacts.db"
 
 
 def add_deck(

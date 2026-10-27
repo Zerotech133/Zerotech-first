@@ -1,4 +1,4 @@
-﻿"""scan_secrets 误报修复回归（WO-GUANYU-SCANFIX-20261027，2026-10-27）。
+"""scan_secrets 误报修复回归（WO-GUANYU-SCANFIX-20261027，2026-10-27）。
 
 覆盖三类误报豁免 + 三类真实凭据不弱化：
 - kwarg/属性自引用（app_secret=app_secret、self.sign_secret=sign_secret）

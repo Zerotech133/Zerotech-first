@@ -177,7 +177,7 @@ Select-String 301216 e:\老田的AI助手\quant_backtest\data\chanlun_pool.jsonl
 & "C:\Program Files\Python311\python.exe" -X utf8 e:\老田的AI助手\quant_backtest\weak_track_alert.py 301216 --tpl C:\Temp\my_tpl.txt --send
 ```
 
-推送格式外置可调：改 [weak_track_alert_tpl.txt](file:///e:/老田的AI助手/quant_backtest/weak_track_alert_tpl.txt)
+推送格式外置可调：改 [weak_track_alert_tpl.txt](weak_track_alert_tpl.txt)
 即生效（`#` 注释行不推送；占位符 `{code} {trig} {px_d} {px} {ex} {trend} {actions} {ts}`；
 `{actions}` 内容按触发类型自动生成）；模板损坏自动回退内置格式，不影响推送。
 

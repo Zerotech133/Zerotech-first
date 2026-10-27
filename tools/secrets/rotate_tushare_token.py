@@ -19,6 +19,7 @@
   5) 打印指纹与下一步验收提示。
 """
 from __future__ import annotations
+from typing import NoReturn
 
 import argparse
 import getpass

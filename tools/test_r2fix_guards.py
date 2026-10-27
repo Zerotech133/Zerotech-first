@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """K-QUANT-20261026-R2FIX：畸形上游输入守卫回归测试。"""
 import importlib.util
 import sys

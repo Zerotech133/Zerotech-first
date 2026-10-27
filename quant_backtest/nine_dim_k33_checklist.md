@@ -1,6 +1,6 @@
 # K33 警报池 · V4 复评触发检查清单
 
-> 依据：[nine_dim_k33_spec.md](file:///e:/老田的AI助手/quant_backtest/nine_dim_k33_spec.md) §7。
+> 依据：[nine_dim_k33_spec.md](nine_dim_k33_spec.md) §7。
 > 性质：操作 SOP。三类触发——A 事件强制（结构修订）/ B 例行监测（影子战绩）/ C 里程碑（样本外 n≥30）。
 > 任何一项判据失败 → 停止定稿流程，转 §D 失败处置。
 

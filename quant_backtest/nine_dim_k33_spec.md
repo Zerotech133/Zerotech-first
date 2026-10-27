@@ -52,7 +52,7 @@
 
 | 落点 | 位置 |
 |---|---|
-| 常量 | [nine_dim.py](file:///e:/老田的AI助手/quant_backtest/nine_dim.py) `ALERT_TH=75`（`BUY_TH=90` 保留仅作参照） |
+| 常量 | [nine_dim.py](nine_dim.py) `ALERT_TH=75`（`BUY_TH=90` 保留仅作参照） |
 | 分段函数 | `nine_dim.py _band(score)` |
 | 入池逻辑 | `run_scan` 尾部入池段（band 驱动） |
 | 快照 | `data/nine_dim_scores.json`（rows[].band、n_alert、alert_th） |

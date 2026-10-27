@@ -286,7 +286,7 @@ git init → 首次提交 4fe5553
 
 ### 7.1.3 源码纳入每日备份（双保险之二）
 
-扩展既有 [backup_daily.ps1](file:///E:/老田的AI助手/backup_daily.ps1)（计划任务每日自动执行），新增第 6 段：
+扩展既有 [backup_daily.ps1](../../jev-eval/backup_daily.ps1)（计划任务每日自动执行），新增第 6 段：
 
 ```powershell
 tar -czf "$Dest\quant_src.tar.gz" `
