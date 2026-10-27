@@ -170,8 +170,19 @@ def _scan(org: dict, tiers: dict) -> tuple:
                                  "detail": "模型 enabled=false，绑定当前不可调用"})
                 row["status"] = "warn"
         if grade == E3_GRADE:
+            carrier_managed = binding.startswith("openai/")
             fallback = _fallback_models(profile)
-            if not fallback or not fallback[0]:
+            if carrier_managed:
+                # 2026-10-27 T5 第1步：openai/ 走 OpenClaw 载体（自带 relay/GPT6 回切），
+                # 不强制 org llm_fallback；仅在缺链时给一条 warn 供审计，不计 violation。
+                if not fallback or not fallback[0]:
+                    warnings.append({"dept": dept_id, "agent_id": agent_id,
+                                     "grade": grade, "binding": binding,
+                                     "kind": "carrier_managed",
+                                     "detail": "carrier_managed：openai/ 由 OpenClaw 载体自愈，不强制 org llm_fallback"})
+                    if row["status"] == "ok":
+                        row["status"] = "warn"
+            elif not fallback or not fallback[0]:
                 problems.append(("fallback_missing",
                                  "E3 席必须带非空 llm_fallback（主绑定降级链）"))
             elif fallback[0] == binding:
