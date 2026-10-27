@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-27 23:15",
+ "generated": "2026-10-27 23:18",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,8 +9,8 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 20,
-  "workorders_review": 4
+  "workorders_doing": 21,
+  "workorders_review": 3
  },
  "workorders": [
   {
@@ -203,15 +203,6 @@
    "project": "general"
   },
   {
-   "id": "WO-O7-DIAG-20261027",
-   "desc": "O7 Diagnostics 一键取证：tools/diagnostics.py（脱敏 zip：meta/端口/健康/质量/测试/日志）+ 单测 + 使用说明；quality_scale 集成 diagnostics 指向本工具",
-   "status": "review",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-O7-DIAG-20261027",
-   "created": "2026-10-27 21:39:42",
-   "project": "portal"
-  },
-  {
    "id": "WO-SANDBOX-QUOTA-20261027",
    "desc": "P0⑧ 增强（L1 设计+实现）：沙箱 --memory/--cpus/--pids-limit 资源配额；egress allowlist 策略 schema（sandbox_network_policy.json，默认 deny、精确 host/port、proxy 模式）+ network_policy_check.py 校验/决策 + 测试；仅设计不执行 L2（不改防火墙/网络/代理进程）。验收：配额 flags 生效于 docker run 计划；policy check 通过；测试。",
    "status": "doing",
@@ -227,6 +218,15 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-LEGION-DEEPSHELL-20261027",
    "created": "2026-10-27 21:48:36",
+   "project": "general"
+  },
+  {
+   "id": "WO-GUANYU-B12-20261027",
+   "desc": "except-pass第九批清零 [UNOWNED]",
+   "status": "doing",
+   "owner": "unknown-agent",
+   "branch": "task/WO-GUANYU-B12-20261027",
+   "created": "2026-10-27 23:16:34",
    "project": "general"
   }
  ],
