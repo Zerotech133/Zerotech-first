@@ -9,9 +9,9 @@
 |---|---:|
 | `agent_platform/` | 393 |
 | `portal/` | 365 |
-| `tools/` | 341 |
+| `tools/` | 342 |
 
-codebase_intel 统计：模块 **1099** / 符号 **13355**。
+codebase_intel 统计：模块 **1100** / 符号 **13359**。
 
 ## 2. 核心模块（按路径）
 
@@ -1032,6 +1032,7 @@ codebase_intel 统计：模块 **1099** / 符号 **13355**。
 | `tools/test_p1_rag_observe.py` | p1_rag_observe 单测（离线，临时 JSONL）。 |
 | `tools/test_post_commit_event.py` | post-commit 事件适配器测试。 |
 | `tools/test_product_metrics.py` | — |
+| `tools/test_project_wiki.py` | project_wiki 生成器契约。 |
 | `tools/test_quality_scale_check.py` | O2 质量分级检查器单测。 |
 | `tools/test_quant_redteam_ops.py` | P2 单测：量化只读（fake MCP）+ 红队定时（fake responder/临时账本）。 |
 | `tools/test_r2fix_guards.py` | K-QUANT-20261026-R2FIX：畸形上游输入守卫回归测试。 |

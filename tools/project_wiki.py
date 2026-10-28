@@ -142,7 +142,7 @@ def main(argv=None) -> int:
         if not out.is_file():
             print("[project_wiki] MISSING %s" % out)
             return 1
-        current = _read_text(out)
+        current = _read_text(out).replace("\r\n", "\n")
         if current != text:
             print("[project_wiki] STALE %s（重跑生成器）" % out)
             return 1

@@ -38,4 +38,4 @@ def test_generated_wiki_is_current():
     mod = _load()
     out = Path(mod.DEFAULT_OUT)
     assert out.is_file(), "docs/project_wiki.md 未生成"
-    assert out.read_text(encoding="utf-8") == mod.render(), "wiki 过期，重跑 tools/project_wiki.py"
+    assert out.read_text(encoding="utf-8").replace("\r\n", "\n") == mod.render(), "wiki 过期，重跑 tools/project_wiki.py"
