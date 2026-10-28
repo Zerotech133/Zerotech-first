@@ -327,7 +327,7 @@ def run(mode: str, days: int, cost_bps: int = 15, split: float = 0.6,
 def render(res: dict) -> str:
     if not res.get("ok"):
         return "# 失败\n\n" + json.dumps(res, ensure_ascii=False)
-    title = ("H11 三年公告 CAR（行业中性）" if res["mode"] == "h11"
+    title = ("H11 三年公告 CAR（行业×规模中性）" if res["mode"] == "h11"
              else "H11dir 盈余方向事件研究（预增/预盈 vs 预减/预亏）" if res["mode"] == "h11dir"
              else "H2 PEAD（公告后漂移）")
     lines = ["# %s" % title, ""]

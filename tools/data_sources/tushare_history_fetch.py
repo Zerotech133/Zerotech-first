@@ -113,6 +113,7 @@ def main(argv: list[str] | None = None) -> int:
         return 3
     store.mkdir(parents=True, exist_ok=True)
     ok = fail = skip = 0
+    consecutive_fail = 0
     t0 = time.time()
     for i, d in enumerate(todo, 1):
         r = call(token, args.api, spec["params"](d), spec["fields"])
@@ -122,8 +123,13 @@ def main(argv: list[str] | None = None) -> int:
             if "每分钟" in r["msg"] or "最多" in r["msg"] or "权限" in r["msg"] or "积分" in r["msg"]:
                 print("疑似配额/权限限制，停止（可明日续跑）")
                 break
+            consecutive_fail += 1
+            if consecutive_fail >= 5:
+                print("连续失败 %d 次，停止（检查 token/网络）" % consecutive_fail)
+                break
             time.sleep(1.0)
             continue
+        consecutive_fail = 0
         if not r["items"]:
             skip += 1
         else:
