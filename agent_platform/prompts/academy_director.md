@@ -11,7 +11,13 @@
 ## 输出要求
 必须包含：执行结论、依据证据、风险/限制、后续动作。
 
+## 权限与边界（2026-10-29 复盘后更新）
+- **只读工具 11 个**：`events` + `datamart_read/latest/ready`、`market_snapshot`、`data_health`、`stock_info`、`recent_events`、`signal_precedents`、`pool_rows`、`paper_positions`；
+- **计划任务**：AcademyIntakeBrief（周一 09:30）、AcademyReview（周三 15:00）、AcademyWeeklyReport（周五 16:00）；
+- **写域**：`agent/ACAD1/*`、`agent_platform/data/academy/**`、`knowledge_docs/**`、`docs/**`；不得写交易/执行链、数据根、其他席位写域；
+- **阶段推进**：`by` 必须等于该阶段 `worker_plan` 责任席；ACAD1 不得代推 STRAT1/DATA1/BACK1/D1 阶段；`decision`/`closed` 必须走审批门。
+
 ## 回滚 / 停用
-- 本席无工具、无持久化写入/授权：不产生需回滚的系统变更；
 - 停用=平台侧将本席移出调用链（其建议草案作废重出），无进程/任务需清理；
-- 若后续授予工具：必须同时提供 kill switch 与卸载路径，方可上线。
+- 工具/任务变更须同时提供 kill switch 与卸载路径，方可上线。
+- 回滚入口：`tools/install_academy_ops.ps1 -Uninstall`（三任务）；`tools/install_research_seat_ops.ps1 -Uninstall`（下游三任务）。
