@@ -45,6 +45,8 @@ EXEMPT_PATH_PATTERNS = [
     # 2026-10-26 EXEC-R39：基线豁免清单本身含大量 path:rule 形态的 key 文本，
     # 扫描它会自指命中（如长文档名触发 HIGH_ENTROPY）；它不是凭据载体，按路径豁免。
     r"(^|/)scan_secrets_allowlist\.tsv$",
+    # 自动生成的仓库 Wiki 会列模块文件名；非凭据载体，按生成物路径豁免。
+    r"(^|/)project_wiki\.md$",
 ]
 
 # 测试桩目录/文件标记（按路径豁免）
