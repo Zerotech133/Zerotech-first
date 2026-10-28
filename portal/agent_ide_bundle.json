@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-28 18:10",
+ "generated": "2026-10-28 18:16",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 25,
+  "workorders_doing": 26,
   "workorders_review": 6
  },
  "workorders": [
@@ -290,6 +290,15 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-LEGION-HEALTHCARD-20261028",
    "created": "2026-10-28 17:59:15",
+   "project": "general"
+  },
+  {
+   "id": "WO-GUANYU-P15-20261028",
+   "desc": "脏文件协议 [UNOWNED]",
+   "status": "doing",
+   "owner": "unknown-agent",
+   "branch": "task/WO-GUANYU-P15-20261028",
+   "created": "2026-10-28 18:10:47",
    "project": "general"
   }
  ],
