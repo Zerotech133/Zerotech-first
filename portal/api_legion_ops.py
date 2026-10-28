@@ -46,7 +46,8 @@ def build_roster() -> dict:
             try:
                 for line in (HR / aid / "resume.yaml").read_text(encoding="utf-8").splitlines():
                     if line.startswith("cn_name:"):
-                        nm = line.split(":", 1)[1].strip(); break
+                        nm = line.split(":", 1)[1].strip()
+                        break
                     if line.startswith("name:"):
                         nm = line.split(":", 1)[1].strip()
             except Exception as exc:

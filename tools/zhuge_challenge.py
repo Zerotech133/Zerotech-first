@@ -1135,10 +1135,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--json", action="store_true", help="JSON 输出（机器可读）")
     sub = p.add_subparsers(dest="command", required=True)
 
-    c = sub.add_parser("check", help="校验三件套②白名单（只读）"); _add_json_flag(c)
+    c = sub.add_parser("check", help="校验三件套②白名单（只读）")
+    _add_json_flag(c)
     c.set_defaults(func=cmd_check)
 
-    s = sub.add_parser("snapshot", help="生成/查看计划快照（不联网）"); _add_json_flag(s)
+    s = sub.add_parser("snapshot", help="生成/查看计划快照（不联网）")
+    _add_json_flag(s)
     s.add_argument("--snapshot", default=None, help="快照 JSON 文件路径")
     s.add_argument("--auto-snapshot", action="store_true",
                    help="自动扫描沙盘仓 plans/ 最新可用快照（W5；无可用回落 tasks）")
@@ -1150,7 +1152,8 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--out", default=None, help="把归一快照写入该 JSON 文件（不得写沙盘仓）")
     s.set_defaults(func=cmd_snapshot)
 
-    e = sub.add_parser("emit", help="生成质询卡（open）"); _add_json_flag(e)
+    e = sub.add_parser("emit", help="生成质询卡（open）")
+    _add_json_flag(e)
     e.add_argument("--snapshot", default=None, help="快照 JSON 文件路径")
     e.add_argument("--auto-snapshot", action="store_true",
                    help="自动扫描沙盘仓 plans/ 最新可用快照（W5；无可用回落 tasks）")
@@ -1170,7 +1173,8 @@ def build_parser() -> argparse.ArgumentParser:
     e.add_argument("--dry-run", action="store_true", help="只算不写")
     e.set_defaults(func=cmd_emit)
 
-    r = sub.add_parser("respond", help="田丰响应/整改（open→answered）"); _add_json_flag(r)
+    r = sub.add_parser("respond", help="田丰响应/整改（open→answered）")
+    _add_json_flag(r)
     r.add_argument("--card-id", required=True)
     r.add_argument("--by", required=True, help="响应人")
     r.add_argument("--note", required=True, help="响应/整改留痕")
@@ -1178,7 +1182,8 @@ def build_parser() -> argparse.ArgumentParser:
     r.add_argument("--dry-run", action="store_true")
     r.set_defaults(func=cmd_respond)
 
-    cl = sub.add_parser("close", help="结案（answered→closed；须响应后才可结案）"); _add_json_flag(cl)
+    cl = sub.add_parser("close", help="结案（answered→closed；须响应后才可结案）")
+    _add_json_flag(cl)
     cl.add_argument("--card-id", required=True)
     cl.add_argument("--outcome", required=True, choices=list(DECISIONS))
     cl.add_argument("--by", required=True, help="结案人（本 MVP 不代签）")
@@ -1186,11 +1191,13 @@ def build_parser() -> argparse.ArgumentParser:
     cl.add_argument("--dry-run", action="store_true")
     cl.set_defaults(func=cmd_close)
 
-    ls = sub.add_parser("list", help="列出卡片（可按状态过滤）"); _add_json_flag(ls)
+    ls = sub.add_parser("list", help="列出卡片（可按状态过滤）")
+    _add_json_flag(ls)
     ls.add_argument("--status", default=None, help="open/answered/closed")
     ls.set_defaults(func=cmd_list)
 
-    sh = sub.add_parser("show", help="查看单卡与历史事件"); _add_json_flag(sh)
+    sh = sub.add_parser("show", help="查看单卡与历史事件")
+    _add_json_flag(sh)
     sh.add_argument("--card-id", required=True)
     sh.set_defaults(func=cmd_show)
     return p

@@ -38,7 +38,8 @@ def test_scan_excludes_non_council(tmp_path, monkeypatch):
     """P1 到点验证批等交付回执不得混入会议发言流。"""
     monkeypatch.setattr(gcd, "DELIVERABLES", str(tmp_path / "d"))
     monkeypatch.setattr(gcd, "REPO", str(tmp_path / "d" / ".."))
-    d = tmp_path / "d"; d.mkdir()
+    d = tmp_path / "d"
+    d.mkdir()
     (d / "2026-10-22_互审单001_回执3_x.md").write_text("# 回执3", encoding="utf-8")
     (d / "2026-10-22_P1到点验证批_回执.md").write_text("# P1", encoding="utf-8")
     (d / "2026-10-22_普通交付.md").write_text("# 普通", encoding="utf-8")
@@ -52,7 +53,9 @@ def test_scan_excludes_non_council(tmp_path, monkeypatch):
 def test_probe_seats_honest_unverifiable(monkeypatch):
     """不可测席位诚实标 unknowable，不得假装在线。"""
     def fake_run(*a, **k):
-        class R: returncode = 0; stdout = b"True"
+        class R:
+            returncode = 0
+            stdout = b"True"
         return R()
     monkeypatch.setattr(gcd.subprocess, "run", fake_run)
     seats = gcd.probe_seats()

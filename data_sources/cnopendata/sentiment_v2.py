@@ -100,14 +100,18 @@ def score_tokens(tokens: list[str], pos: set[str], neg: set[str],
                 weight *= 0.6
         if tok in pos:
             if negated:
-                n += weight; n_hits += 1
+                n += weight
+                n_hits += 1
             else:
-                p += weight; p_hits += 1
+                p += weight
+                p_hits += 1
         else:
             if negated:
-                p += weight; p_hits += 1
+                p += weight
+                p_hits += 1
             else:
-                n += weight; n_hits += 1
+                n += weight
+                n_hits += 1
     total = p + n
     return {
         "pos_w": p, "neg_w": n,

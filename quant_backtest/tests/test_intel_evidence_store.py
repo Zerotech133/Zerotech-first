@@ -49,13 +49,15 @@ def test_idempotent_reoffer_and_provenance_conflict(tmp_path):
 
 def test_buffer_full_counts_drop_and_recovers_after_drain(tmp_path):
     store = EvidenceStore(tmp_path, capacity=2)
-    store.offer(item(1)); store.offer(item(2))
+    store.offer(item(1))
+    store.offer(item(2))
     with pytest.raises(StoreRejected, match="OFFER_BUFFER_FULL"):
         store.offer(item(3))
     assert store.drop_count == 1
     # drain one through the pipeline, buffer frees
     it = item(1)
-    store.accept(it); store.persist(it)
+    store.accept(it)
+    store.persist(it)
     third = store.offer(item(3))
     assert third["state"] == OFFERED and store.drop_count == 1  # drop_count is cumulative offers-rejected
 
@@ -63,7 +65,8 @@ def test_buffer_full_counts_drop_and_recovers_after_drain(tmp_path):
 def test_write_after_persist_crash_keeps_persisted_and_no_duplicate(tmp_path):
     store = EvidenceStore(tmp_path)
     it = item(7)
-    store.offer(it); store.accept(it)
+    store.offer(it)
+    store.accept(it)
 
     def boom():
         raise RuntimeError("downstream handler exploded after durable write")
@@ -82,8 +85,12 @@ def test_write_after_persist_crash_keeps_persisted_and_no_duplicate(tmp_path):
 def test_crash_replay_preserves_states_and_visibility_receipts(tmp_path):
     store = EvidenceStore(tmp_path)
     a, b, c = item(1), item(2), item(3)
-    store.offer(a); store.accept(a); store.persist(a); store.mark_visible(a, "os", "rcpt-a")
-    store.offer(b); store.accept(b)
+    store.offer(a)
+    store.accept(a)
+    store.persist(a)
+    store.mark_visible(a, "os", "rcpt-a")
+    store.offer(b)
+    store.accept(b)
     store.offer(c)
     revived = store.replay()
     assert revived.counts() == {OFFERED: 1, ACCEPTED: 1, PERSISTED: 0, VISIBLE: 1}
@@ -96,18 +103,25 @@ def test_crash_replay_preserves_states_and_visibility_receipts(tmp_path):
 def test_watermark_freezes_on_hole_and_advances_when_filled(tmp_path):
     store = EvidenceStore(tmp_path)
     a, b, c = item(1), item(2), item(3)
-    store.offer(a); store.accept(a); store.persist(a)
+    store.offer(a)
+    store.accept(a)
+    store.persist(a)
     store.offer(b)                       # hole: offered, not confirmed
-    store.offer(c); store.accept(c); store.persist(c)
+    store.offer(c)
+    store.accept(c)
+    store.persist(c)
     assert store.high_watermark() == 1   # c persisted but b blocks the run
-    store.accept(b); store.persist(b)
+    store.accept(b)
+    store.persist(b)
     assert store.high_watermark() == 3   # contiguous run complete
 
 
 def test_visibility_receipt_and_consumer_required(tmp_path):
     store = EvidenceStore(tmp_path)
     it = item(5)
-    store.offer(it); store.accept(it); store.persist(it)
+    store.offer(it)
+    store.accept(it)
+    store.persist(it)
     with pytest.raises(StoreRejected, match="VISIBILITY_RECEIPT_REQUIRED"):
         store.mark_visible(it, "consumer-A", " ")
     with pytest.raises(StoreRejected, match="consumer_id required"):
