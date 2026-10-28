@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-29 05:48",
+ "generated": "2026-10-29 07:07",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,8 +9,8 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 31,
-  "workorders_review": 5
+  "workorders_doing": 21,
+  "workorders_review": 7
  },
  "workorders": [
   {
@@ -149,15 +149,6 @@
    "project": "general"
   },
   {
-   "id": "K-MISSION-002505-T1",
-   "desc": "编写 Worker 自动接单说明文档",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-MISSION-002505-T1",
-   "created": "2026-10-27 23:26:11",
-   "project": "portal"
-  },
-  {
    "id": "WO-LEGION-SCREEN-20261027",
    "desc": "研发军团作战屏 v1 父单（只读）：组织架构+11席角色+在制+C6指标一页聚合；WBS 见 deliverables/2026-10-27_任务拆解试点_研发军团作战屏v1_工作要素下发书.md；子单 LS-02~LS-12；M0 契约冻结→M1 并行→M2 联调→M3 部署→M4 验收。路由例外=跨部门治理。",
    "status": "doing",
@@ -212,78 +203,6 @@
    "project": "general"
   },
   {
-   "id": "K-MISSION-419F21-T1",
-   "desc": "需求澄清与架构方案",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-MISSION-419F21-T1",
-   "created": "2026-10-29 00:40:31",
-   "project": "portal"
-  },
-  {
-   "id": "K-MISSION-66426C-T1",
-   "desc": "需求澄清与架构方案",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-MISSION-66426C-T1",
-   "created": "2026-10-29 00:49:41",
-   "project": "portal"
-  },
-  {
-   "id": "K-MISSION-66426C-T2",
-   "desc": "后端/AI/平台实现",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-MISSION-66426C-T2",
-   "created": "2026-10-29 00:49:44",
-   "project": "portal"
-  },
-  {
-   "id": "K-MISSION-66426C-T3",
-   "desc": "前端/交互实现",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-MISSION-66426C-T3",
-   "created": "2026-10-29 00:49:46",
-   "project": "portal"
-  },
-  {
-   "id": "K-MISSION-709060-T1",
-   "desc": "需求澄清与架构方案",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-MISSION-709060-T1",
-   "created": "2026-10-29 00:50:50",
-   "project": "portal"
-  },
-  {
-   "id": "K-MISSION-709060-T2",
-   "desc": "后端/AI/平台实现",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-MISSION-709060-T2",
-   "created": "2026-10-29 00:50:53",
-   "project": "portal"
-  },
-  {
-   "id": "K-MISSION-709060-T3",
-   "desc": "前端/交互实现",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-MISSION-709060-T3",
-   "created": "2026-10-29 00:50:55",
-   "project": "portal"
-  },
-  {
-   "id": "K-MISSION-709060-T4",
-   "desc": "测试与验收",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-MISSION-709060-T4",
-   "created": "2026-10-29 00:50:57",
-   "project": "portal"
-  },
-  {
    "id": "WO-GUANYU-P19-20261029",
    "desc": "ruff收尾E702F401 [UNOWNED]",
    "status": "doing",
@@ -304,7 +223,7 @@
   {
    "id": "WO-GUANYU-P19B-20261029",
    "desc": "ruff收尾窄单 [UNOWNED]",
-   "status": "doing",
+   "status": "review",
    "owner": "unknown-agent",
    "branch": "task/WO-GUANYU-P19B-20261029",
    "created": "2026-10-29 05:09:52",
@@ -336,6 +255,15 @@
    "branch": "task/WO-MEETING-JS-20261029",
    "created": "2026-10-29 05:46:49",
    "project": "quant"
+  },
+  {
+   "id": "WO-LEGION-F401FIN-20261029",
+   "desc": "DEV4 收尾：ruff F401/F601 剩余 9 处清零；含 find_spec/重复键语义；目标 F401/F821/F601/F541=0",
+   "status": "review",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-F401FIN-20261029",
+   "created": "2026-10-29 06:52:09",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -6951,6 +6879,11 @@
      "id": "WO-HQ-ACCEPT-RESTORE-20261029",
      "desc": "恢复 P1b 文件：auto-bundle chore 104ac8f95 误删 5 文件",
      "status": "doing"
+    },
+    {
+     "id": "WO-LEGION-F401FIN-20261029",
+     "desc": "DEV4 收尾：ruff F401/F601 剩余 9 处清零；含 find_spec/重复键语义；目标 F401/F821/F601/F541=0",
+     "status": "review"
     }
    ]
   }
