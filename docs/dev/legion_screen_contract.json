@@ -1,6 +1,6 @@
 {
  "schema": "legion_screen_contract/v1",
- "status": "proposed",
+ "status": "frozen",
  "version": "1.0",
  "generated_at": "2026-10-28",
  "endpoint": "/api/dev/legion",
@@ -20,13 +20,23 @@
      "id": "G1",
      "name": "后端/AI/平台组",
      "lead": "DEV1",
-     "members": ["DEV6", "DEV7", "DEV2", "OPS1"]
+     "members": [
+      "DEV6",
+      "DEV7",
+      "DEV2",
+      "OPS1"
+     ]
     },
     {
      "id": "G2",
      "name": "前端/量化/文档组",
      "lead": "DEV5",
-     "members": ["DEV8", "DEV3", "DEV4", "DOC1"]
+     "members": [
+      "DEV8",
+      "DEV3",
+      "DEV4",
+      "DOC1"
+     ]
     }
    ]
   },
@@ -47,7 +57,11 @@
    {
     "owner": "string",
     "tasks": [
-     {"id": "string", "status": "doing|review", "desc": "string"}
+     {
+      "id": "string",
+      "status": "doing|review",
+      "desc": "string"
+     }
     ]
    }
   ],
@@ -62,7 +76,11 @@
    "dev_leadtime_p50_min": "float|null"
   },
   "redlines": [
-   {"id": "owner_legal_rate|e3_trigger|merge_approval_coverage|self_review", "value": "any", "ok": "bool|null"}
+   {
+    "id": "owner_legal_rate|e3_trigger|merge_approval_coverage|self_review",
+    "value": "any",
+    "ok": "bool|null"
+   }
   ],
   "sources": [
    "agent_platform/registry/org.json",
@@ -73,5 +91,7 @@
  "errors": {
   "fallback": "empty",
   "note": "任一真源缺失/损坏时返回空态并标注，不 500"
- }
+ },
+ "frozen_at": "2026-10-28",
+ "approved_by": "老田（代确认 ARCH1 契约；2026-10-28 会话授权）"
 }
