@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-28 17:19",
+ "generated": "2026-10-28 17:21",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 26,
+  "workorders_doing": 25,
   "workorders_review": 6
  },
  "workorders": [
@@ -291,15 +291,6 @@
    "branch": "task/WO-HUANGZHONG-DAILY-TASK-20261028",
    "created": "2026-10-28 10:55:18",
    "project": "general"
-  },
-  {
-   "id": "K-QUANT-20261028-IDEENVALL",
-   "desc": "IDE 全量开发环境选择器：项目线+研发项目部门+所有工单开发流自动生成，可下滑选择；选择流按工单前缀过滤；部门选择切工作区；新项目自动出现",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-QUANT-20261028-IDEENVALL",
-   "created": "2026-10-28 17:18:32",
-   "project": "quant"
   }
  ],
  "coder_traces": [
