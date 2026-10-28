@@ -38,7 +38,6 @@ from engine.openclaw_cli import agent_primary_model, is_relay, run as oc_run  # 
 from legion_command.snapshot import build_snapshot  # noqa: E402
 from legion_command import hq_meeting  # noqa: E402
 from legion_command import hq_agenda  # noqa: E402
-from legion_command import hq_acceptance  # noqa: E402
 import logging
 
 _STATIC = Path(__file__).resolve().parent / "static"
@@ -46,9 +45,6 @@ _STATIC = Path(__file__).resolve().parent / "static"
 MEETINGS_DIR = _PLATFORM / "data" / "meetings" / "warroom"
 HQ_MEETINGS_DIR = _PLATFORM / "data" / "meetings" / "hq"
 COUNCIL_DATA = _PLATFORM.parent / "portal" / "data"
-_BASELINE_FILE = _PLATFORM / "data" / "test_baseline" / "latest.json"
-_REDTEAM_DIR = _PLATFORM.parent / "work" / "p1" / "redteam"
-_ACCEPTANCE_DIR = _PLATFORM.parent / "work" / "huangzhong"
 _KIND_MAP = {"work": "task_request", "trade": "task_request", "study": "question"}
 
 
@@ -446,10 +442,6 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/api/evolution":
             self._send_json(self._evolution())
-            return
-        if path == "/api/hq/meeting/acceptance/evidence":
-            self._send_json(hq_acceptance.gather(
-                _BASELINE_FILE, _REDTEAM_DIR, _ACCEPTANCE_DIR))
             return
         if path == "/api/hq/agenda":
             self._send_json(hq_agenda.load_agenda(COUNCIL_DATA))

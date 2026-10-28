@@ -62,7 +62,7 @@ def is_docs_only(files: list[str]) -> bool:
     for f in files:
         if not f.endswith(DOC_SUFFIX):
             return False
-        if not f.startswith(DOC_PREFIX) and "/" not in f:
+        if not f.startswith(DOC_PREFIX):
             return False
     return True
 
