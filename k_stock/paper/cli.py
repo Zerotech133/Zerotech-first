@@ -18,7 +18,6 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from datetime import date
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -494,8 +493,7 @@ def _mark_selected(args, db: Path, accounts: list[str]) -> int:
     if not accounts:
         print("❌ 无已开户账户，未生成任何快照", file=sys.stderr)
         return 1
-    from datetime import datetime
-    from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+    from zoneinfo import ZoneInfoNotFoundError
 
     try:
         captured = _env_now()

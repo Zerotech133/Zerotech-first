@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """O8 P3b 依赖年龄检查单测（不联网）。"""
 import importlib.util
-import json
 import pathlib
 from datetime import datetime, timezone
 

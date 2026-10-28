@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 """O8 P3c 夜跑 dep_age 段单测（不联网）。"""
-import importlib.util
 import pathlib
 import sys
 

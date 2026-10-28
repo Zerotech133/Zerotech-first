@@ -574,9 +574,7 @@ def consult(question, open_id="", llm=None, timeout=None, max_chars=DEFAULT_MAX_
                 "sources": grounding.get("sources") if grounding else [],
                 "grounded": bool(grounding and grounding.get("sources")),
                 "plan": _plan_for(q),
-        "debate": _debate_for(q),
                 "debate": _debate_for(q),
-        "wargame": _wargame_for(q),
                 "wargame": _wargame_for(q),
                 "reflection": _reflect_for(_trim(raw, max_chars), grounding),
                 "elapsed_ms": int((time.time() - t0) * 1000),
@@ -628,8 +626,6 @@ def consult(question, open_id="", llm=None, timeout=None, max_chars=DEFAULT_MAX_
         "sources": grounding.get("sources") if grounding else [],
         "grounded": bool(grounding and grounding.get("sources")),
         "plan": _plan_for(q),
-        "debate": _debate_for(q),
-        "wargame": _wargame_for(q),
         "reflection": _reflect_for(out, grounding),
         "elapsed_ms": int((time.time() - t0) * 1000),
     }
