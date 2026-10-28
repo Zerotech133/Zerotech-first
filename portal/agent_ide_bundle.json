@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-28 17:08",
+ "generated": "2026-10-28 17:09",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -329,12 +329,12 @@
    "project": "general"
   },
   {
-   "id": "WO-GUANYU-P5-20261028",
-   "desc": "api_kg拆分方案 [UNOWNED]",
+   "id": "WO-LS08-UIFIX-20261028",
+   "desc": "LS-08 UI 测试修复：dev_legion.html 样式去掉 tokens var() 的 hex 兜底（var(--warn,#d29922) 等），tokens 单源；测试须 4 passed。",
    "status": "doing",
-   "owner": "unknown-agent",
-   "branch": "task/WO-GUANYU-P5-20261028",
-   "created": "2026-10-28 17:07:49",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-LS08-UIFIX-20261028",
+   "created": "2026-10-28 17:08:57",
    "project": "general"
   }
  ],
