@@ -567,7 +567,7 @@ def notify_payload(limit=15):
         "scene": "notify",
         "window_hours": 24,
         "total": len(r24),
-        "ok_count": ok,
+        "ok": ok,
         "denied_silent": denied,
         "fail": len(fails),
         "headline": headline,
