@@ -22,6 +22,51 @@ GATEWAY = "http://127.0.0.1:8796/v1/chat/completions"
 
 ALLOWED_FALLBACK = ["ARCH1", "DEV1", "DEV2", "DEV3", "DEV5", "DEV6", "DEV7", "QA1"]
 DEFAULT_SCOPES = ["agent_platform/", "tools/", "portal/"]
+PLANNER_PATHS = REPO / "config" / "planner_paths.json"
+DEFAULT_ROUTES = {
+    "/keys": {"frontend": ["agent_platform/legion_command/static/keypool_v2.html"],
+              "backend": []},
+    "/mission": {"frontend": ["agent_platform/legion_command/static/mission.html"], "backend": []},
+    "/ide": {"frontend": ["portal/ide.html"], "backend": []},
+}
+_EXPLICIT_FILE_RE = re.compile(r"[A-Za-z0-9_./-]+\.(?:py|html|js|css|md|json|ya?ml)")
+
+
+def _route_map() -> dict:
+    try:
+        d = json.loads(PLANNER_PATHS.read_text(encoding="utf-8"))
+        routes = d.get("routes") if isinstance(d, dict) else None
+        return routes if isinstance(routes, dict) and routes else DEFAULT_ROUTES
+    except Exception:
+        return DEFAULT_ROUTES
+
+
+def _doc_files(doc: str) -> dict:
+    """从文档提取显式文件路径 + 路由映射，返回 frontend/backend/all。"""
+    doc = str(doc or "")
+    routes = _route_map()
+    frontend, backend, all_files = [], [], []
+    for route, spec in routes.items():
+        if route and route in doc and isinstance(spec, dict):
+            for f in spec.get("frontend") or []:
+                if f not in frontend:
+                    frontend.append(f)
+            for f in spec.get("backend") or []:
+                if f not in backend:
+                    backend.append(f)
+    for m in _EXPLICIT_FILE_RE.findall(doc):
+        f = m.strip().replace("\\", "/").lstrip("./")
+        if ".." in f.split("/") or f.startswith("/"):
+            continue
+        if f not in all_files:
+            all_files.append(f)
+        if f.endswith((".html", ".js", ".css")):
+            if f not in frontend:
+                frontend.append(f)
+        elif f.endswith(".py"):
+            if f not in backend:
+                backend.append(f)
+    return {"frontend": frontend, "backend": backend, "all": all_files}
 
 
 def _allowed_owners() -> list:
@@ -63,7 +108,8 @@ def _llm_plan(name: str, doc: str) -> dict:
     owners = _allowed_owners()
     system = ("你是零界军团研发指挥官。把文档拆成可执行任务 DAG。只输出 JSON，不要解释。"
               "每个任务必须包含 id/title/owner/deps/write_scope/acceptance/model。"
-              "owner 只能从 %s 中选；deps 引用已有任务 id；write_scope 用仓库相对路径前缀；"
+              "owner 只能从 %s 中选；deps 引用已有任务 id；write_scope 必须优先精确到文件路径"
+              "（无法确定时用目录）；每个任务尽量给出 checks（file_exists/file_contains/cmd）；"
               "acceptance 必须是可验证条件。最多 12 个任务，必须是 DAG（无环）。" % owners)
     user = "任务名称：%s\n\n文档：\n%s" % (name, doc[:12000])
     body = json.dumps({
@@ -81,23 +127,30 @@ def _llm_plan(name: str, doc: str) -> dict:
     return _extract_json(text)
 
 
-def _fallback_plan(doc: str) -> dict:
+def _fallback_plan(doc: str, name: str = "") -> dict:
+    slug = _slug(name or "mission")
+    files = _doc_files(doc)
+    spec_path = "deliverables/specs/%s.md" % slug
+    accept_path = "deliverables/acceptance/%s.md" % slug
+    backend_scope = files["backend"][:2] or ["agent_platform/", "tools/"]
+    frontend_scope = files["frontend"][:2] or ["portal/"]
     return {
         "source": "fallback",
         "tasks": [
             {"id": "T1", "title": "需求澄清与架构方案", "owner": "ARCH1", "deps": [],
-             "write_scope": ["deliverables/specs/"], "acceptance": ["spec/plan 文档完成", "接口与数据边界明确"],
-             "model": "strong", "description": "锁定目标、边界、验收口径与架构方案"},
+             "write_scope": [spec_path],
+             "acceptance": ["spec/plan 文档完成", "接口与数据边界明确"],
+             "model": "strong", "description": "锁定目标、边界、验收口径与架构方案；产出精确文档路径"},
             {"id": "T2", "title": "后端/AI/平台实现", "owner": "DEV1", "deps": ["T1"],
-             "write_scope": ["agent_platform/", "tools/"], "acceptance": ["核心功能可运行", "pytest 通过"],
+             "write_scope": backend_scope, "acceptance": ["核心功能可运行", "pytest 通过"],
              "model": "auto", "description": "实现核心逻辑与接口"},
             {"id": "T3", "title": "前端/交互实现", "owner": "DEV5", "deps": ["T1"],
-             "write_scope": ["portal/"], "acceptance": ["页面可访问", "浏览器控制台无错误"],
+             "write_scope": frontend_scope, "acceptance": ["页面可访问", "浏览器控制台无错误"],
              "model": "auto", "description": "实现用户可见页面"},
             {"id": "T4", "title": "测试与验收", "owner": "QA1", "deps": ["T2", "T3"],
-             "write_scope": ["tools/", "agent_platform/tests/"],
+             "write_scope": [accept_path],
              "acceptance": ["测试全绿", "验收证据落盘"], "model": "auto",
-             "description": "验证并出验收证据"},
+             "description": "验证并出验收证据；产出精确验收文档"},
         ],
     }
 
@@ -182,7 +235,7 @@ def plan(name: str, doc: str, use_llm: bool = True,
         except Exception:
             raw = None
     if raw is None:
-        raw = _fallback_plan(doc)
+        raw = _fallback_plan(doc, name)
     try:
         doc_path = str((mdir / "doc.md").relative_to(REPO)).replace("\\", "/")
     except ValueError:
