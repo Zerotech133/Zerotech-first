@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-28 17:09",
+ "generated": "2026-10-28 17:10",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 30,
+  "workorders_doing": 29,
   "workorders_review": 6
  },
  "workorders": [
@@ -326,15 +326,6 @@
    "owner": "DSH-Lead",
    "branch": "task/WO-RESEARCH2-20261028",
    "created": "2026-10-28 16:59:22",
-   "project": "general"
-  },
-  {
-   "id": "WO-LS08-UIFIX-20261028",
-   "desc": "LS-08 UI 测试修复：dev_legion.html 样式去掉 tokens var() 的 hex 兜底（var(--warn,#d29922) 等），tokens 单源；测试须 4 passed。",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-LS08-UIFIX-20261028",
-   "created": "2026-10-28 17:08:57",
    "project": "general"
   }
  ],
@@ -4201,7 +4192,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 59,
+     "count": 60,
      "recent": [
       {
        "ts": "",
@@ -4343,7 +4334,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 59,
+     "count": 60,
      "recent": [
       {
        "ts": "",
