@@ -286,7 +286,7 @@ const AGENTS = {
   GUANYU:{ nm:'关羽·整治', av:'羽', c:'c-b', md:'deepseek-flash', grp:'zhong', line:'执行面：代码审计与系统整治，先根因后批量修复，带证据包。' },
   HUANGZHONG:{ nm:'黄忠·验收', av:'忠', c:'c-t', md:'glm-5.3', grp:'zhong', line:'验收面：只验不改、只退不批；基线/红队不过即 REJECT，回滚点必须写。' },
 };
-const GROUPS = { zhong:'pick-zhong, quant:'pick-quant', risk:'pick-risk', acad:'pick-acad', intel:'pick-intel', ops:'pick-ops', dev:'pick-dev' };
+const GROUPS = { zhong:'pick-zhong', quant:'pick-quant', risk:'pick-risk', acad:'pick-acad', intel:'pick-intel', ops:'pick-ops', dev:'pick-dev' };
 let picked = [];
 
 Object.entries(AGENTS).forEach(([id, a]) => {
