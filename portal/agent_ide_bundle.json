@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-28 23:51",
+ "generated": "2026-10-29 00:39",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 25,
+  "workorders_doing": 27,
   "workorders_review": 7
  },
  "workorders": [
@@ -299,6 +299,24 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-LEGION-CENSUS2-20261028",
    "created": "2026-10-28 23:25:44",
+   "project": "general"
+  },
+  {
+   "id": "WO-HQ-ACCEPT-20261028",
+   "desc": "黄忠验收会接入：/api/hq/meeting/acceptance/evidence + 验收结论入纪要",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-HQ-ACCEPT-20261028",
+   "created": "2026-10-28 23:58:55",
+   "project": "general"
+  },
+  {
+   "id": "WO-LEGION-F841B-20261029",
+   "desc": "工程卫生 ruff F841 79 条清理：逐项审查 unsafe-fix，保留副作用；编译+定向测试+质量闸",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-F841B-20261029",
+   "created": "2026-10-29 00:34:31",
    "project": "general"
   }
  ],
@@ -6944,6 +6962,16 @@
     {
      "id": "WO-LEGION-CENSUS2-20261028",
      "desc": "agent_census 时间解析二次落地：fromisoformat 优先，消除 ISO silent-except；不改变口径",
+     "status": "doing"
+    },
+    {
+     "id": "WO-HQ-ACCEPT-20261028",
+     "desc": "黄忠验收会接入：/api/hq/meeting/acceptance/evidence + 验收结论入纪要",
+     "status": "doing"
+    },
+    {
+     "id": "WO-LEGION-F841B-20261029",
+     "desc": "工程卫生 ruff F841 79 条清理：逐项审查 unsafe-fix，保留副作用；编译+定向测试+质量闸",
      "status": "doing"
     }
    ]
