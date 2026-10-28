@@ -30,6 +30,11 @@
     background:var(--panel);color:var(--dim);cursor:pointer;user-select:none}
   .wsbtn:hover{color:var(--fg);border-color:var(--dim)}
   .wsbtn.on{color:var(--fg);border-color:var(--purple);background:rgba(188,140,255,.13)}
+  /* K-QUANT-20261028-IDEENVALL：全量开发环境选择器 */
+  .env-sel{background:var(--panel2);border:1px solid var(--line);color:var(--fg);font-size:11.5px;
+    border-radius:7px;padding:4px 8px;max-width:360px;cursor:pointer}
+  .env-sel:hover,.env-sel:focus{border-color:var(--purple);outline:none}
+  .env-label{font-size:11px;color:var(--dim2);white-space:nowrap}
 
   /* ── 五区 grid（342 设计稿）：活动栏 | 侧栏 | 编辑器 | 调试台 / 底部面板 ── */
   .main{flex:1;display:grid;min-height:0;
@@ -358,6 +363,7 @@ function wsAgents(){   // 当前工作区成员 Set；null=全部不过滤
 /* ═══ 项目线（K-ORG-057：工作区内二级维度，不另开工作区）═══
    键位：ide-proj@<ws> · 过滤面=工单视图/看板/轨迹（k_id 前缀归线）· 会话按 agent 键不切线 */
 let PROJ = "all";
+let ENV = "all";               // 开发环境：all / line:<id> / dept:<id> / stream:<prefix>
 function wsDeptId(){
   if(WS==="all" || !B) return null;
   const d = B.departments.find(x=>x.name===WS);
@@ -370,35 +376,97 @@ function wsProjects(){
     .sort((a,b)=>(a.status==="active"?0:1)-(b.status==="active"?0:1));
 }
 function curProj(){ return PROJ==="all" ? null : (B.projects||[]).find(p=>p.project_id===PROJ) || null; }
+function envStreamPrefix(){
+  return ENV.indexOf("stream:")===0 ? ENV.slice(7) : "";
+}
+function envLabel(){
+  if(ENV==="all") return "全部开发环境";
+  if(ENV.indexOf("line:")===0){
+    const p=(B.projects||[]).find(x=>x.project_id===ENV.slice(5));
+    return "项目线 · "+(p?p.name:ENV.slice(5));
+  }
+  if(ENV.indexOf("dept:")===0){
+    const d=(B.departments||[]).find(x=>x.id===ENV.slice(5));
+    return "项目部门 · "+(d?d.name:ENV.slice(5));
+  }
+  if(ENV.indexOf("stream:")===0) return "工单流 · "+ENV.slice(7);
+  return "全部开发环境";
+}
+function envStreams(){
+  const m={};
+  (B.workorders||[]).forEach(w=>{
+    const id=String(w.id||"");
+    const parts=id.split("-");
+    if(parts.length<2) return;
+    let p="";
+    if(/^WO-/.test(id) || /^K-/.test(id)) p=parts.slice(0,2).join("-");
+    else return;
+    m[p]=(m[p]||0)+1;
+  });
+  return Object.entries(m).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));
+}
 function renderProjBar(){
   const el = document.getElementById("projbar");
-  const ps = wsProjects();
-  if(!ps.length){ el.innerHTML=""; el.style.display="none"; return; }
+  if(!B){ el.style.display="none"; return; }
+  if(ENV.indexOf("line:")===0) PROJ = ENV.slice(5);
+  const lines = wsProjects(), depts = projDepts(), streams = envStreams();
+  if(!lines.length && !depts.length && !streams.length){ el.innerHTML=""; el.style.display="none"; return; }
   el.style.display="flex";
-  const cur = curProj();
-  let h = '<span style="font-size:11px;color:var(--dim2);align-self:center;margin-right:2px">项目线</span>';
-  h += '<span class="wsbtn'+(PROJ==="all"?' on':'')+'" onclick="setProj(\'all\')">全部</span>';
-  ps.forEach(p=>{
-    const off = p.status!=="active";
-    h += '<span class="wsbtn'+(PROJ===p.project_id?' on':'')+'"'+(off?' style="opacity:.45"':'')
-      + ' onclick="setProj('+q(p.project_id)+')"'
-      + ' title="'+esc(p.name)+' · '+esc(p.k_prefix)+' 前缀归线'+(off?' · 已归档':'')+'">'
-      + esc(p.name)+(off?'（结项）':'')+'</span>';
-  });
+  let h = '<span class="env-label">开发环境</span><select id="env-select" class="env-sel" title="所有与开发有关的项目/环境；数据驱动，新增项目自动出现">';
+  h += '<option value="all">全部开发环境（项目线+项目部门+工单流）</option>';
+  if(lines.length){
+    h += '<optgroup label="项目线（工单前缀）">';
+    lines.forEach(p=>{ h += '<option value="line:'+esc(p.project_id)+'">'+esc(p.name)+' · '+esc(p.k_prefix||p.project_id)+(p.status!=="active"?'（结项）':'')+'</option>'; });
+    h += '</optgroup>';
+  }
+  if(depts.length){
+    h += '<optgroup label="研发项目部门">';
+    depts.forEach(d=>{ h += '<option value="dept:'+esc(d.id)+'">'+esc(d.name)+'</option>'; });
+    h += '</optgroup>';
+  }
+  if(streams.length){
+    h += '<optgroup label="工单开发流（按工单前缀）">';
+    streams.forEach(([p,n])=>{ h += '<option value="stream:'+esc(p)+'">'+esc(p)+' · '+n+' 张工单</option>'; });
+    h += '</optgroup>';
+  }
+  h += '</select>';
   el.innerHTML = h;
+  const sel = document.getElementById("env-select");
+  const values = Array.from(sel.options).map(o=>o.value);
+  if(!values.includes(ENV)) ENV = "all";
+  sel.value = ENV;
+  sel.onchange = ()=>setEnv(sel.value);
+}
+function setEnv(v){
+  ENV = v || "all";
+  wsSet("ide-env", ENV);
+  if(ENV.indexOf("line:")===0){
+    PROJ = ENV.slice(5);
+    wsSet("ide-proj", PROJ);
+    renderProjBar(); renderSide(); renderTabs(); renderTab();
+  }else if(ENV.indexOf("dept:")===0){
+    PROJ = "all"; wsSet("ide-proj", "all");
+    const d=(B.departments||[]).find(x=>x.id===ENV.slice(5));
+    if(d && d.name!==WS){ setWs(d.name); }
+    else { renderProjBar(); renderSide(); renderTabs(); renderTab(); }
+  }else{
+    PROJ = "all"; wsSet("ide-proj", "all");
+    renderProjBar(); renderSide(); renderTabs(); renderTab();
+  }
+  addLog("开发环境 → "+envLabel(), "lg-b");
 }
 function setProj(pid){
-  if(pid===PROJ) return;
-  PROJ = pid;
-  wsSet("ide-proj", pid);
-  renderProjBar(); renderSide(); renderTabs(); renderTab();
-  addLog("项目线 → "+(pid==="all"?"全部":pid), "lg-b");
+  setEnv(pid==="all" ? "all" : "line:"+pid);
 }
-function projMatchK(kPrefix, kId){   // k_id 前缀归线（K-ORG-057）
+function projMatchK(kPrefix, kId){   // k_id 前缀归线 + 工单流
+  const sp = envStreamPrefix();
+  if(sp) return String(kId||"").indexOf(sp)===0;
   if(!curProj() || !kPrefix) return true;
   return String(kId||"").indexOf(kPrefix)===0;
 }
-function projMatch(p){   // 工单 project 字段过滤
+function projMatch(p){   // 项目线 / 工单流过滤
+  const sp = envStreamPrefix();
+  if(sp) return String(p.id||"").indexOf(sp)===0;
   const c = curProj();
   if(!c) return true;
   return (p.project||"general")===c.project_id
@@ -1383,7 +1451,7 @@ fetch("/agent_ide_bundle.json", {cache:"no-store"}).then(r=>r.json()).then(d=>{
     + '<span>prompt 覆盖 <b style="color:var(--green)">'+B.stats.prompt_ok+'/'+B.stats.agents+'</b></span>'
     + '<span>工单 <b style="color:var(--green)">'+(B.stats.workorders_doing||0)+'</b> doing / <b style="color:var(--amber,#d29922)">'+(B.stats.workorders_review||0)+'</b> review</span>';
   document.getElementById("gen").textContent = "bundle " + B.generated;
-  renderMe(); renderWs(); PROJ = wsGet("ide-proj") || "all"; renderProjBar(); renderAct(); renderSide(); renderTabs(); renderTab(); renderSess(); pRender();
+  renderMe(); renderWs(); PROJ = wsGet("ide-proj") || "all"; ENV = wsGet("ide-env") || "all"; renderProjBar(); renderAct(); renderSide(); renderTabs(); renderTab(); renderSess(); pRender();
   if(SPLIT.on) renderSplit();
   addLog("bundle 加载完成 · agents "+B.stats.agents+" · code_files "+((B.code_files||[]).length)+" 件 · 工单 "+(B.stats.workorders_doing||0)+" doing · 工作区 "+(WS==="all"?"全部":WS), "lg-g");
   if(B.a0_daily) addLog("A0 日报快照 "+B.a0_daily.date+" · 点评 "+(B.a0_review?B.a0_review.date:"无"));
