@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-28 18:22",
+ "generated": "2026-10-28 21:09",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 25,
+  "workorders_doing": 26,
   "workorders_review": 6
  },
  "workorders": [
@@ -291,6 +291,15 @@
    "branch": "task/WO-LEGION-HEALTHCARD-20261028",
    "created": "2026-10-28 17:59:15",
    "project": "general"
+  },
+  {
+   "id": "K-QUANT-20261028-KEYV2B2",
+   "desc": "Phase B-2 虚拟Key运营：usage requests/success/fail、last_used、quota限额、enable/disable、网关记录、keys v2 VK表格+创建/启停/配额；测试",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-QUANT-20261028-KEYV2B2",
+   "created": "2026-10-28 21:07:36",
+   "project": "quant"
   }
  ],
  "coder_traces": [
