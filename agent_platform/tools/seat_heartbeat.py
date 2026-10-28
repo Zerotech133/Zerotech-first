@@ -66,31 +66,48 @@ def heartbeat_one(client, seat: str, brief: dict, model: str, max_tokens: int) -
         brief["charter"],
     )
     t0 = time.time()
-    try:
-        reply = client.chat(
-            [{"role": "system", "content": system}, {"role": "user", "content": user}],
-            model=model,
-            temperature=0.0,
-            max_tokens=max_tokens,
-        )
-        text = str(reply or "").strip()
-        return {
-            "seat": seat,
-            "ok": bool(text),
-            "model": model,
-            "elapsed_ms": int((time.time() - t0) * 1000),
-            "reply_len": len(text),
-            "reply_sha8": hashlib.sha256(text.encode("utf-8")).hexdigest()[:8],
-            "reply_head": text[:120],
-        }
-    except Exception as exc:  # noqa: BLE001
-        return {
-            "seat": seat,
-            "ok": False,
-            "model": model,
-            "elapsed_ms": int((time.time() - t0) * 1000),
-            "error": "%s: %s" % (type(exc).__name__, str(exc)[:160]),
-        }
+    messages = [
+        {"role": "system", "content": system},
+        {"role": "user", "content": user},
+    ]
+    attempts = 0
+    last_error = ""
+    finish_reason = None
+    usage = {}
+    for _ in range(2):  # 2026-10-28 OS-FIX-L1-AUDIT：空回复重试一次
+        attempts += 1
+        try:
+            full = getattr(client, "chat_full", None)
+            if callable(full):
+                data = full(messages, model=model, temperature=0.0,
+                            max_tokens=max_tokens) or {}
+                text = str(data.get("content") or "").strip()
+                finish_reason = data.get("finish_reason")
+                usage = data.get("usage") or {}
+            else:
+                text = str(client.chat(messages, model=model,
+                                       temperature=0.0,
+                                       max_tokens=max_tokens) or "").strip()
+        except Exception as exc:  # noqa: BLE001
+            last_error = "%s: %s" % (type(exc).__name__, str(exc)[:160])
+            text = ""
+        if text:
+            break
+    out = {
+        "seat": seat,
+        "ok": bool(text),
+        "model": model,
+        "elapsed_ms": int((time.time() - t0) * 1000),
+        "attempts": attempts,
+        "reply_len": len(text),
+        "reply_sha8": hashlib.sha256(text.encode("utf-8")).hexdigest()[:8],
+        "reply_head": text[:120],
+        "finish_reason": finish_reason,
+        "usage": usage,
+    }
+    if not text:
+        out["error"] = last_error or "empty_reply(finish_reason=%s)" % finish_reason
+    return out
 
 
 def record(results: list, status_root=None) -> Path:

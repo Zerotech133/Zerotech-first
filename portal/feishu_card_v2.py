@@ -187,10 +187,12 @@ def build_drill_card(
     }
 
 
-def send_card(card, receive_id=None, receive_id_type="open_id", kind=None):
+def send_card(card, receive_id=None, receive_id_type="open_id", kind=None, critical=False):
     """发送 interactive 卡片：K-STOCK-228 起委托 feishu_client 统一底座。
     P3.5-lite：可选 kind 透传（非 None 时传给 feishu_client.send_msg，
     走 8097 hub 按 kind 套卡片模板；缺省 None 零变化，向后兼容）。
+    2026-10-28 OS-FIX-L1-AUDIT：critical=True 透传（预警类豁免静默窗），
+    修复 picks 红卡连续三晚被 silent window 吞。
     """
     if receive_id is None:
         receive_id = USER_ID
@@ -208,6 +210,7 @@ def send_card(card, receive_id=None, receive_id_type="open_id", kind=None):
         receive_id,
         receive_id_type,
         kind=kind,
+        critical=critical,
     )
 
 
