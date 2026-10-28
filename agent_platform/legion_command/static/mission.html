@@ -24,6 +24,8 @@ table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}th,td{te
 pre{white-space:pre-wrap;background:#0d1828;border:1px solid var(--line);border-radius:8px;padding:10px;max-height:320px;overflow:auto}
 .kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
 .kpi{background:#0d1828;border:1px solid var(--line);border-radius:9px;padding:10px}.kpi .n{font-size:18px;font-weight:700}
+.wpill{display:inline-block;border-radius:999px;padding:1px 7px;font-size:10.5px;border:1px solid var(--line)}
+.wpill.ok{color:#8ff0bd;border-color:#2b6b4b}.wpill.no{color:#ffd58a;border-color:#6b552b}
 </style>
 </head>
 <body>
@@ -74,12 +76,17 @@ document.getElementById("mission-file").onchange=async(ev)=>{
   if(!document.getElementById("mission-name").value)document.getElementById("mission-name").value=f.name.replace(/\.[^.]+$/,"");
 };
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function planTask(tid){ return (MISSION_PLAN&&(MISSION_PLAN.tasks||[]).find(t=>t.id===tid)) || null; }
+function workerCell(t){
+  const eligible=!!(t && t.worker_eligible!==false);
+  return eligible?'<span class="wpill ok">Worker 可接</span>':'<span class="wpill no">不接（人工/DEV1）</span>';
+}
 function renderMissionState(st){
   if(!st)return;
   let h='<div class="muted" style="margin-top:8px">mission '+esc(st.mission_id)+' · parallel '+esc(st.parallel_limit)+' · updated '+esc(st.updated_at||"")+'</div>';
-  h+='<table><thead><tr><th>任务</th><th>状态</th><th>Owner</th><th>Ticket</th><th>依赖</th><th>最近错误/评审</th></tr></thead><tbody>';
+  h+='<table><thead><tr><th>任务</th><th>状态</th><th>Owner</th><th>Worker</th><th>Ticket</th><th>依赖</th><th>最近错误/评审</th></tr></thead><tbody>';
   for(const [tid,t] of Object.entries(st.tasks||{})){
-    h+='<tr><td>'+esc(tid)+' '+esc(t.title)+'</td><td>'+esc(t.status)+'</td><td>'+esc(t.owner)+'</td><td>'+esc(t.ticket_id||"")+'</td><td>'+esc((t.deps||[]).join(","))+'</td><td class="muted">'+esc(((t.last_error||t.gate_detail||t.create_detail||"")+"").slice(0,160))+'</td></tr>';
+    h+='<tr><td>'+esc(tid)+' '+esc(t.title)+'</td><td>'+esc(t.status)+'</td><td>'+esc(t.owner)+'</td><td>'+workerCell(planTask(tid))+'</td><td>'+esc(t.ticket_id||"")+'</td><td>'+esc((t.deps||[]).join(","))+'</td><td class="muted">'+esc(((t.last_error||t.gate_detail||t.create_detail||"")+"").slice(0,160))+'</td></tr>';
   }
   document.getElementById("mission-result").innerHTML=h+'</tbody></table>';
 }
@@ -93,8 +100,8 @@ async function missionPlan(){
   if(!j.ok){st.textContent="规划失败："+(j.error||"unknown");return}
   MISSION_PLAN=j.plan;
   let h='<div class="muted">mission '+esc(MISSION_PLAN.mission_id)+' · source '+esc(MISSION_PLAN.source)+' · tasks '+MISSION_PLAN.tasks.length+' · valid '+MISSION_PLAN.valid+'</div>';
-  h+='<table><thead><tr><th>ID</th><th>标题</th><th>Owner</th><th>依赖</th><th>写作用域</th><th>验收</th></tr></thead><tbody>';
-  for(const t of MISSION_PLAN.tasks){h+='<tr><td>'+esc(t.id)+'</td><td>'+esc(t.title)+'</td><td>'+esc(t.owner)+'</td><td>'+esc((t.deps||[]).join(","))+'</td><td>'+esc((t.write_scope||[]).join(", "))+'</td><td>'+esc((t.acceptance||[]).join(" / "))+'</td></tr>'}
+  h+='<table><thead><tr><th>ID</th><th>标题</th><th>Owner</th><th>Worker</th><th>依赖</th><th>写作用域</th><th>验收</th></tr></thead><tbody>';
+  for(const t of MISSION_PLAN.tasks){h+='<tr><td>'+esc(t.id)+'</td><td>'+esc(t.title)+'</td><td>'+esc(t.owner)+'</td><td>'+workerCell(t)+'</td><td>'+esc((t.deps||[]).join(","))+'</td><td>'+esc((t.write_scope||[]).join(", "))+'</td><td>'+esc((t.acceptance||[]).join(" / "))+'</td></tr>'}
   document.getElementById("mission-result").innerHTML=h+'</tbody></table>';
   loadMissionList();
 }
