@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-29 00:46",
+ "generated": "2026-10-29 00:48",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 29,
+  "workorders_doing": 28,
   "workorders_review": 7
  },
  "workorders": [
@@ -327,15 +327,6 @@
    "branch": "task/K-MISSION-419F21-T1",
    "created": "2026-10-29 00:40:31",
    "project": "portal"
-  },
-  {
-   "id": "K-QUANT-20261029-WORKERLLM",
-   "desc": "Worker LLM降级：auto空响应时依次重试glm-4-flash/deepseek-chat，JSON解析失败再换；测试",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-QUANT-20261029-WORKERLLM",
-   "created": "2026-10-29 00:43:58",
-   "project": "quant"
   }
  ],
  "coder_traces": [
