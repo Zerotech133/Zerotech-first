@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-28 22:46",
+ "generated": "2026-10-28 22:52",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 26,
+  "workorders_doing": 27,
   "workorders_review": 7
  },
  "workorders": [
@@ -302,13 +302,22 @@
    "project": "general"
   },
   {
-   "id": "WO-O8P3C-DEPAGE-NIGHT-20261028",
-   "desc": "O8 P3c：依赖年龄检查接入夜跑基线（warn 段，不改 rc）+ 合并预检在依赖文件变更时 warn 提示（不阻断）+ 单测 + 策略文档 P3c",
+   "id": "WO-HQ-MEETING-P0-20261028",
+   "desc": "指挥部会议P0：五席晨会预设+决议面板+订单派单（schema v2，8796增量）",
    "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-O8P3C-DEPAGE-NIGHT-20261028",
-   "created": "2026-10-28 22:41:47",
-   "project": "portal"
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-HQ-MEETING-P0-20261028",
+   "created": "2026-10-28 22:50:08",
+   "project": "general"
+  },
+  {
+   "id": "WO-LEGION-GOVAI-20261028",
+   "desc": "治理 AI 连续失败：anomaly_digest 输出预算 4096→8192；priority_advice 数字接地支持千分位；重跑验证",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-GOVAI-20261028",
+   "created": "2026-10-28 22:51:25",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -6955,6 +6964,16 @@
     {
      "id": "WO-LEGION-HEALTHCARD-20261028",
      "desc": "健康卡 task_audit 口径：应用 task_exit_audit by-design 语义（alert_found/known_baseline），failed 9→5 降假红",
+     "status": "doing"
+    },
+    {
+     "id": "WO-HQ-MEETING-P0-20261028",
+     "desc": "指挥部会议P0：五席晨会预设+决议面板+订单派单（schema v2，8796增量）",
+     "status": "doing"
+    },
+    {
+     "id": "WO-LEGION-GOVAI-20261028",
+     "desc": "治理 AI 连续失败：anomaly_digest 输出预算 4096→8192；priority_advice 数字接地支持千分位；重跑验证",
      "status": "doing"
     }
    ]
