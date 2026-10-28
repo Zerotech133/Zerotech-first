@@ -304,8 +304,16 @@
         <option value="local4">qwen3.5:4b（本地轻量）</option>
         <option value="local9" selected>qwen3.5:9b（本地默认）</option>
         <option value="local35">qwen3.6:35b-a3b（本地复杂）</option>
-        <option value="zhipu">智谱 glm-4-flash</option>
-        <option value="deepseek">DeepSeek deepseek-chat</option>
+        <option value="zhipu">智谱自动（GLM-4-Flash）</option>
+        <option value="glm-4-flash">智谱 GLM-4-Flash</option>
+        <option value="glm-5.3">智谱 GLM-5.3</option>
+        <option value="glm-5">智谱 GLM-5</option>
+        <option value="deepseek">DeepSeek 自动</option>
+        <option value="deepseek-chat">DeepSeek Chat</option>
+        <option value="deepseek-v4-pro">DeepSeek V4 Pro</option>
+        <option value="deepseek-flash">DeepSeek Flash</option>
+        <option value="qwen-plus">通义千问 Plus</option>
+        <option value="qwen3-max">通义千问 3 Max</option>
         <option value="gpt6">中转 GPT-6</option>
         <option value="gpt-6-sol">中转 GPT-6 Sol</option>
       </select>
@@ -1056,10 +1064,18 @@ const MODEL_OPTS = [
   {v:"local4", label:"qwen3.5:4b", group:"本地", sub:"轻量 · 3.1GB", kind:"local", lm:"qwen3.5:4b"},
   {v:"local9", label:"qwen3.5:9b", group:"本地", sub:"默认 · 6.1GB", kind:"local", lm:"qwen3.5:9b"},
   {v:"local35", label:"qwen3.6:35b-a3b", group:"本地", sub:"复杂 · 21GB", kind:"local", lm:"qwen3.6:35b-a3b"},
-  {v:"zhipu", label:"智谱 GLM-4-Flash", group:"云端", sub:"席位 tianfeng · 智谱直连", kind:"zhipu"},
-  {v:"deepseek", label:"DeepSeek Chat", group:"云端", sub:"席位 zhaoyun / zhuge · DeepSeek", kind:"deepseek"},
+  {v:"zhipu", label:"智谱自动（GLM-4-Flash）", group:"智谱", sub:"tianfeng 席位 · 自动选 Key", kind:"zhipu"},
+  {v:"glm-4-flash", label:"智谱 GLM-4-Flash", group:"智谱", sub:"具体模型 · tianfeng", kind:"model", model:"glm-4-flash"},
+  {v:"glm-5.3", label:"智谱 GLM-5.3", group:"智谱", sub:"具体模型 · relay 健康 Key", kind:"model", model:"glm-5.3"},
+  {v:"glm-5", label:"智谱 GLM-5", group:"智谱", sub:"具体模型 · relay（当前限流）", kind:"model", model:"glm-5"},
+  {v:"deepseek", label:"DeepSeek 自动", group:"DeepSeek", sub:"zhaoyun / zhuge 席位", kind:"deepseek"},
+  {v:"deepseek-chat", label:"DeepSeek Chat", group:"DeepSeek", sub:"具体模型 · zhaoyun / zhuge", kind:"deepseek"},
+  {v:"deepseek-v4-pro", label:"DeepSeek V4 Pro", group:"DeepSeek", sub:"具体模型 · relay", kind:"model", model:"deepseek-v4-pro"},
+  {v:"deepseek-flash", label:"DeepSeek Flash", group:"DeepSeek", sub:"具体模型 · relay", kind:"model", model:"deepseek-flash"},
+  {v:"qwen-plus", label:"通义千问 Plus", group:"百炼 / 中转", sub:"具体模型 · relay（当前失效）", kind:"model", model:"qwen-plus"},
+  {v:"qwen3-max", label:"通义千问 3 Max", group:"百炼 / 中转", sub:"具体模型 · relay（当前失效）", kind:"model", model:"qwen3-max"},
   {v:"gpt6", label:"中转 GPT-6", group:"中转", sub:"relay 席位 · 统一网关", kind:"relay"},
-  {v:"gpt-6-sol", label:"中转 GPT-6 Sol", group:"中转", sub:"relay 席位 · gpt-6-sol 显式别名", kind:"relay"},
+  {v:"gpt-6-sol", label:"中转 GPT-6 Sol", group:"中转", sub:"具体模型 · relay", kind:"model", model:"gpt-6-sol"},
 ];
 let MODEL_STATUS={};
 function modelStatusOf(o){
@@ -1068,6 +1084,13 @@ function modelStatusOf(o){
     const on=!!(ms.local&&ms.local.online);
     const present=on && ((ms.local.models||[]).some(m=>m.name===o.lm));
     return present?["ok","在线"]:["off","离线"];
+  }
+  if(o.kind==="model"){
+    const keys=Object.values(ks.seats||{}).flatMap(s=>s.keys||[])
+      .filter(k=>String(k.model||"").trim()===o.model);
+    if(keys.some(k=>k.status==="healthy"))return["ok","在线"];
+    if(keys.some(k=>["degraded","quota"].includes(k.status)))return["warn","降级"];
+    return["off","不在线"];
   }
   if(o.kind==="zhipu"){
     const st=((ks.seats||{}).tianfeng||{}).status;

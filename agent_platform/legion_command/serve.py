@@ -1131,7 +1131,8 @@ class Handler(BaseHTTPRequestHandler):
 
                 res = keypool.auto_chat(messages, seats=route.get("seats") or [],
                                         allow_local=bool(route.get("allow_local", True)),
-                                        local_model=route.get("local_model") or None)
+                                        local_model=route.get("local_model") or None,
+                                        model_filter=route.get("model") or None)
             except Exception as e:  # noqa: BLE001
                 res = {
                     "ok": False,
