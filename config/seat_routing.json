@@ -33,7 +33,8 @@
    "seats": [
     "relay"
    ],
-   "allow_local": false
+   "allow_local": false,
+   "model": "gpt-6-sol"
   },
   "local4": {
    "seats": [],
@@ -57,6 +58,62 @@
    "allow_local": false
   },
   "deepseek": {
+   "seats": [
+    "zhaoyun",
+    "zhuge"
+   ],
+   "allow_local": false
+  },
+  "glm-4-flash": {
+   "seats": [
+    "tianfeng"
+   ],
+   "allow_local": false,
+   "model": "glm-4-flash"
+  },
+  "glm-5.3": {
+   "seats": [
+    "relay"
+   ],
+   "allow_local": false,
+   "model": "glm-5.3"
+  },
+  "glm-5": {
+   "seats": [
+    "relay"
+   ],
+   "allow_local": false,
+   "model": "glm-5"
+  },
+  "deepseek-v4-pro": {
+   "seats": [
+    "relay"
+   ],
+   "allow_local": false,
+   "model": "deepseek-v4-pro"
+  },
+  "deepseek-flash": {
+   "seats": [
+    "relay"
+   ],
+   "allow_local": false,
+   "model": "deepseek-flash"
+  },
+  "qwen-plus": {
+   "seats": [
+    "relay"
+   ],
+   "allow_local": false,
+   "model": "qwen-plus"
+  },
+  "qwen3-max": {
+   "seats": [
+    "relay"
+   ],
+   "allow_local": false,
+   "model": "qwen3-max"
+  },
+  "deepseek-chat": {
    "seats": [
     "zhaoyun",
     "zhuge"

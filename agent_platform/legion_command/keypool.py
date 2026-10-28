@@ -479,6 +479,26 @@ def _active_secret(d: dict, seat: str):
         return k, None
 
 
+def _model_secret(d: dict, seat: str, want: str):
+    """按具体模型名选 Key（healthy 优先），用于 glm-5.3/deepseek-v4-pro 等精确模型。"""
+    want = str(want or "").strip()
+    if not want:
+        return None, None
+    rank = {"healthy": 0, "degraded": 1, "quota": 2, "invalid": 3}
+    cands = [
+        k for k in d.get("keys", [])
+        if k.get("seat") == seat and k.get("enabled", True)
+        and str(k.get("model") or "").strip() == want
+    ]
+    cands.sort(key=lambda k: (rank.get(str(k.get("status")), 9), int(k.get("priority") or 99)))
+    for k in cands:
+        try:
+            return k, _decrypt(k.get("secret_enc") or "")
+        except Exception:
+            continue
+    return None, None
+
+
 def _provider_chat(
     provider: str,
     secret: str,
@@ -587,7 +607,8 @@ def _local_chat(messages: list, timeout: int = 60, model: str = "qwen3.5:9b") ->
         return {"ok": False, "error": "%s; fallback=%s" % (err, str(e)[:160])}
 
 
-def auto_chat(messages: list, seats=None, allow_local: bool = True, local_model=None) -> dict:
+def auto_chat(messages: list, seats=None, allow_local: bool = True, local_model=None,
+              model_filter=None) -> dict:
     """一个对话框，自动适配：田丰GLM Key → 赵云/诸葛亮 DeepSeek Key → 本地9B。"""
     if not isinstance(messages, list) or not messages:
         return {"ok": False, "error": "empty_messages"}
@@ -601,13 +622,16 @@ def auto_chat(messages: list, seats=None, allow_local: bool = True, local_model=
     attempts = []
     order = list(seats) if seats else ["relay", "tianfeng", "zhaoyun", "zhuge"]
     for seat in order:
-        k, secret = _active_secret(d, seat)
+        if model_filter:
+            k, secret = _model_secret(d, seat, str(model_filter))
+        else:
+            k, secret = _active_secret(d, seat)
         if not k:
             attempts.append(
                 {
                     "seat": seat,
                     "channel": _meta(seat).get("provider", "custom"),
-                    "result": "no_active_key",
+                    "result": ("model_not_configured:%s" % model_filter) if model_filter else "no_active_key",
                 }
             )
             continue
@@ -625,7 +649,7 @@ def auto_chat(messages: list, seats=None, allow_local: bool = True, local_model=
             secret,
             messages,
             base_url=str(k.get("base_url") or ""),
-            model=str(k.get("model") or ""),
+            model=str(model_filter or k.get("model") or ""),
         )
         if r.get("ok"):
             _log(d, seat, k.get("id"), k.get("id"), "auto_chat", "used")

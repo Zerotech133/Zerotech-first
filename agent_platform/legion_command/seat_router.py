@@ -155,6 +155,7 @@ def resolve(model: str = "", token: str = "", path: Path | None = None) -> dict:
         seats = [owner] + seats
     return {"ok": True, "alias": alias,
             "seats": seats,
+            "model": str(spec.get("model") or ""),
             "allow_local": bool(spec.get("allow_local", True)),
             "local_model": spec.get("local_model") or "",
             "owner": (vk or {}).get("owner"),
