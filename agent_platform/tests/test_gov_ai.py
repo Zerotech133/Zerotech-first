@@ -1,4 +1,4 @@
-"""GOVAI-1 地基测试（WO-LEGION-GOVAI1-20261026）。
+﻿"""GOVAI-1 地基测试（WO-LEGION-GOVAI1-20261026）。
 
 全离线：假 transport/假客户端，不联网、不读真实密钥、不写生产目录。
 覆盖：输入构建、数字/名称接地、字段白名单、id 确定性、Z5、run 成功/失败/
@@ -624,3 +624,7 @@ def test_validate_string_evidence_still_grounded():
     }
     r = G.validate_items("anomaly_digest", [item], payload)
     assert r["ok"] is False and r["grounding_ok"] is False
+
+
+def test_num_tokens_thousands_separator():
+    assert G._num_tokens("16,280") == {"16280"}
