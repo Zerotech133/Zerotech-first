@@ -7,6 +7,7 @@
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import sys
@@ -17,6 +18,14 @@ HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
 ROOT = REPO / "work" / "credentials"
 INDEX = ROOT / "index.json"
+
+# 2026-10-28 审计：已知泄露旧 Tushare token 指纹（C:\Temp\rotation_canary.log）。
+# 默认拒绝再次写入；仅迁移/应急可 force，并在元数据标 known_leaked=True。
+KNOWN_LEAKED_SHA8 = {"05240a8e"}
+
+
+def sha256_8(secret: str) -> str:
+    return hashlib.sha256(str(secret or "").encode("utf-8")).hexdigest()[:8]
 
 
 def _protect(secret: str, desc: str = "dsh-credential") -> bytes:
@@ -52,20 +61,50 @@ def mask(secret: str) -> str:
     return s[:4] + "***" + s[-4:] if len(s) > 10 else "***"
 
 
-def set_secret(name: str, secret: str, category: str = "data", env: str = "") -> dict:
+def set_secret(name: str, secret: str, category: str = "data", env: str = "",
+               force: bool = False) -> dict:
     name = str(name or "").strip()
     secret = str(secret or "").strip()
     if not name or not secret:
         raise ValueError("name/secret 必填")
+    digest = sha256_8(secret)
+    if digest in KNOWN_LEAKED_SHA8 and not force:
+        raise ValueError(
+            "refuse known-leaked token sha256_8=%s（仅迁移可 force=True）" % digest
+        )
     ROOT.mkdir(parents=True, exist_ok=True)
     path = ROOT / (name + ".dpapi")
     path.write_bytes(_protect(secret, "dsh:" + name))
     idx = _load_index()
     idx[name] = {"name": name, "category": category, "env": env,
                  "masked": mask(secret), "file": path.name,
+                 "sha256_8": digest,
+                 "known_leaked": digest in KNOWN_LEAKED_SHA8,
                  "updated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z")}
     _save_index(idx)
     return idx[name]
+
+
+def refresh_metadata(name: str | None = None) -> dict:
+    """回填/刷新 sha256_8 与 known_leaked（本地 DPAPI 解密；不打印明文）。"""
+    idx = _load_index()
+    changed = 0
+    targets = [name] if name else list(idx)
+    for key in targets:
+        item = idx.get(key)
+        if not isinstance(item, dict):
+            continue
+        path = ROOT / (str(item.get("file") or (key + ".dpapi")))
+        if not path.exists():
+            continue
+        digest = sha256_8(_unprotect(path.read_bytes()))
+        if item.get("sha256_8") != digest or item.get("known_leaked") != (digest in KNOWN_LEAKED_SHA8):
+            item["sha256_8"] = digest
+            item["known_leaked"] = digest in KNOWN_LEAKED_SHA8
+            changed += 1
+    if changed:
+        _save_index(idx)
+    return {"ok": True, "changed": changed, "index": idx}
 
 
 def get_secret(name: str, show: bool = False) -> str:
@@ -92,19 +131,24 @@ def main(argv=None) -> int:
     s.add_argument("--category", default="data")
     s.add_argument("--env", default="")
     s.add_argument("--from-env", default="DSH_CREDENTIAL_VALUE")
+    s.add_argument("--force", action="store_true", help="允许已知泄露指纹（仅迁移）")
     g = sub.add_parser("get")
     g.add_argument("name")
     g.add_argument("--show", action="store_true")
     sub.add_parser("list")
+    r = sub.add_parser("refresh")
+    r.add_argument("name", nargs="?", default="")
     args = ap.parse_args(argv)
     if args.cmd == "set":
         secret = os.environ.get(args.from_env) or sys.stdin.readline().strip()
-        item = set_secret(args.name, secret, args.category, args.env)
+        item = set_secret(args.name, secret, args.category, args.env, force=args.force)
         print(json.dumps(item, ensure_ascii=False, indent=1))
     elif args.cmd == "get":
         get_secret(args.name, args.show)
         if not args.show:
             print("（已解密，未打印；需要输出请加 --show）")
+    elif args.cmd == "refresh":
+        print(json.dumps(refresh_metadata(args.name or None), ensure_ascii=False, indent=1))
     else:
         print(json.dumps(list_secrets(), ensure_ascii=False, indent=1))
     return 0

@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-28 09:23",
+ "generated": "2026-10-28 10:52",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,8 +9,8 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 33,
-  "workorders_review": 4
+  "workorders_doing": 34,
+  "workorders_review": 5
  },
  "workorders": [
   {
@@ -142,7 +142,7 @@
   {
    "id": "WO-GUANYU-B4-20261027",
    "desc": "B4机械修 [UNOWNED]",
-   "status": "doing",
+   "status": "review",
    "owner": "DEV4",
    "branch": "task/WO-GUANYU-B4-20261027",
    "created": "2026-10-27 15:13:23",
@@ -236,15 +236,6 @@
    "owner": "ARCH1",
    "branch": "task/WO-LEGION-SCREEN-20261027",
    "created": "2026-10-27 23:53:53",
-   "project": "general"
-  },
-  {
-   "id": "WO-LS02-CONTRACT-20261027",
-   "desc": "LS-02 架构与数据契约/ADR（父单 WO-LEGION-SCREEN-20261027）：页面架构+API schema+只读边界冻结",
-   "status": "doing",
-   "owner": "ARCH1",
-   "branch": "task/WO-LS02-CONTRACT-20261027",
-   "created": "2026-10-27 23:53:58",
    "project": "general"
   },
   {
@@ -344,6 +335,33 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-TESTPATHS-ADJUST-20261028",
    "created": "2026-10-28 05:24:43",
+   "project": "general"
+  },
+  {
+   "id": "legion-1028093051",
+   "desc": "[T1] 盘前 weak 池三线扫描 [UNOWNED]",
+   "status": "doing",
+   "owner": "unknown-agent",
+   "branch": "task/legion-1028093051",
+   "created": "2026-10-28 09:31:00",
+   "project": "general"
+  },
+  {
+   "id": "WO-HUANGZHONG-EXEMPLAR-20261028",
+   "desc": "黄忠W1示范答卷（根据真实证据填写，批改工具验证≥80）",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-HUANGZHONG-EXEMPLAR-20261028",
+   "created": "2026-10-28 10:50:11",
+   "project": "general"
+  },
+  {
+   "id": "WO-LS02-TESTFIX-20261028",
+   "desc": "LS-02 契约测试修复：worktree 内无运行时数据（.worktrees/tasks.json、daily_metrics.json）导致 sources 存在性断言失败；改为只校验仓库内真源，运行时真源只断言在 sources 列表（不要求 worktree 存在）。",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-LS02-TESTFIX-20261028",
+   "created": "2026-10-28 10:51:52",
    "project": "general"
   }
  ],
@@ -2906,7 +2924,7 @@
     {
      "id": "WO-GUANYU-B4-20261027",
      "desc": "B4机械修 [UNOWNED]",
-     "status": "doing"
+     "status": "review"
     },
     {
      "id": "WO-LS07-RISKCARD-20261027",
@@ -3186,11 +3204,6 @@
     {
      "id": "WO-LEGION-SCREEN-20261027",
      "desc": "研发军团作战屏 v1 父单（只读）：组织架构+11席角色+在制+C6指标一页聚合；WBS 见 deliverables/2026-10-27_任务拆解试点_研发军团作战屏v1_工作要素下发书.md；子单 LS-02~LS-12；M0 契约冻结→M1 并行→M2 联调→M3 部署→M4 验收。路由例外=跨部门治理。",
-     "status": "doing"
-    },
-    {
-     "id": "WO-LS02-CONTRACT-20261027",
-     "desc": "LS-02 架构与数据契约/ADR（父单 WO-LEGION-SCREEN-20261027）：页面架构+API schema+只读边界冻结",
      "status": "doing"
     }
    ]
@@ -7041,6 +7054,11 @@
      "id": "WO-TESTPATHS-ADJUST-20261028",
      "desc": "testpaths 注释与行对齐：quant 收集已修但默认不纳入（CI 预算待确认）",
      "status": "review"
+    },
+    {
+     "id": "WO-HUANGZHONG-EXEMPLAR-20261028",
+     "desc": "黄忠W1示范答卷（根据真实证据填写，批改工具验证≥80）",
+     "status": "doing"
     }
    ]
   }
