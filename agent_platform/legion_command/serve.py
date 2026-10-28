@@ -1398,12 +1398,23 @@ class Handler(BaseHTTPRequestHandler):
                 if env and not _re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]{1,63}", env):
                     self._send_json({"ok": False, "error": "invalid_env"}, 400)
                     return
-                import importlib.util
+                # 服务解释器不一定有 pywin32；调用带 DPAPI 的 py312 子进程
                 _cs_path = _PLATFORM.parent / "tools" / "credential_store.py"
-                _spec = importlib.util.spec_from_file_location("credential_store", str(_cs_path))
-                _cs = importlib.util.module_from_spec(_spec)
-                _spec.loader.exec_module(_cs)
-                item = _cs.set_secret(name, secret, category, env)
+                _py = _PLATFORM.parent.parent / "py312" / "python.exe"
+                if not _py.is_file():
+                    _py = Path(sys.executable)
+                _env = dict(os.environ)
+                _env["DSH_CREDENTIAL_VALUE"] = secret
+                _env["PYTHONIOENCODING"] = "utf-8"
+                _p = subprocess.run(
+                    [str(_py), "-X", "utf8", str(_cs_path), "set", name,
+                     "--category", category, "--env", env],
+                    capture_output=True, text=True, encoding="utf-8", errors="replace",
+                    env=_env, timeout=30,
+                )
+                if _p.returncode != 0:
+                    raise RuntimeError("credential_store rc=%s" % _p.returncode)
+                item = json.loads(_p.stdout)
                 self._send_json({"ok": True, "item": {k: v for k, v in item.items() if k != "secret"}})
             except Exception as e:  # noqa: BLE001
                 self._send_json({"ok": False, "error": "credential_set_failed",
