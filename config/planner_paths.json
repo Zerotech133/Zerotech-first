@@ -1,0 +1,23 @@
+{
+ "schema": "planner_paths/v1",
+ "note": "文档路由/关键词 → 精确文件映射；planner fallback 用它生成 write_scope，require_checks 再自动挂 file_exists",
+ "routes": {
+  "/keys": {
+   "frontend": ["agent_platform/legion_command/static/keypool_v2.html"],
+   "backend": []
+  },
+  "/mission": {
+   "frontend": ["agent_platform/legion_command/static/mission.html"],
+   "backend": []
+  },
+  "/ide": {
+   "frontend": ["portal/ide.html"],
+   "backend": []
+  }
+ },
+ "keywords": {
+  "凭据目录": ["agent_platform/legion_command/credential_catalog.py"],
+  "虚拟key": ["agent_platform/legion_command/seat_router.py"],
+  "mcp": ["agent_platform/legion_command/mcp_bridge.py"]
+ }
+}
