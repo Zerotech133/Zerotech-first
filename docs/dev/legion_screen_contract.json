@@ -1,0 +1,77 @@
+{
+ "schema": "legion_screen_contract/v1",
+ "status": "proposed",
+ "version": "1.0",
+ "generated_at": "2026-10-28",
+ "endpoint": "/api/dev/legion",
+ "method": "GET",
+ "readonly": true,
+ "cache_ttl_s": 60,
+ "response": {
+  "generated_at": "string (ISO-8601)",
+  "department": {
+   "id": "dev",
+   "name": "研发部",
+   "lead": "ARCH1",
+   "lead_name": "曹操",
+   "deputy": "DEV1",
+   "groups": [
+    {
+     "id": "G1",
+     "name": "后端/AI/平台组",
+     "lead": "DEV1",
+     "members": ["DEV6", "DEV7", "DEV2", "OPS1"]
+    },
+    {
+     "id": "G2",
+     "name": "前端/量化/文档组",
+     "lead": "DEV5",
+     "members": ["DEV8", "DEV3", "DEV4", "DOC1"]
+    }
+   ]
+  },
+  "seats": [
+   {
+    "id": "string",
+    "name": "string",
+    "role_title": "string",
+    "discipline": "backend|frontend|ai|quant|devops|docs|architecture",
+    "group": "G1|G2|",
+    "grade": "E1|E2|E3",
+    "model": "string",
+    "org_role": "string",
+    "report_to": "string"
+   }
+  ],
+  "work_in_progress": [
+   {
+    "owner": "string",
+    "tasks": [
+     {"id": "string", "status": "doing|review", "desc": "string"}
+    ]
+   }
+  ],
+  "metrics": {
+   "window_days": 7,
+   "dev_tasks_recent": "int",
+   "dev_merged_recent": "int",
+   "dev_capture_share_recent": "float",
+   "owner_legal_rate_recent": "float",
+   "verification_rate": "float",
+   "e3_trigger": "string (如 4/4)",
+   "dev_leadtime_p50_min": "float|null"
+  },
+  "redlines": [
+   {"id": "owner_legal_rate|e3_trigger|merge_approval_coverage|self_review", "value": "any", "ok": "bool|null"}
+  ],
+  "sources": [
+   "agent_platform/registry/org.json",
+   ".worktrees/tasks.json",
+   "agent_platform/data/dev/daily_metrics.json"
+  ]
+ },
+ "errors": {
+  "fallback": "empty",
+  "note": "任一真源缺失/损坏时返回空态并标注，不 500"
+ }
+}
