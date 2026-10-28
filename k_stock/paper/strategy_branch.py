@@ -443,7 +443,7 @@ def register_branch(cls: type) -> type:
     bid = cls.branch_id
     if not isinstance(bid, str) or not bid.strip():
         raise BranchError(
-            "branch_id_missing", f"注册分支缺非空 branch_id（closed on failure）"
+            "branch_id_missing", "注册分支缺非空 branch_id（closed on failure）"
         )
     if bid in _BRANCH_REGISTRY:
         raise DuplicateBranchError(

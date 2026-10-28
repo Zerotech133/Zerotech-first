@@ -363,7 +363,7 @@ def _leg_return(side: str, entry: float, exit_: float, qty: int, unit: str) -> f
     if unit == RET_PCT:
         if entry == 0:
             raise PosteriorLinkError(
-                "entry_zero", f"成本基准/成交价为 0 → 收益率口径不可计算（entry=0）"
+                "entry_zero", "成本基准/成交价为 0 → 收益率口径不可计算（entry=0）"
             )
         return diff / entry
     return diff * qty

@@ -70,7 +70,7 @@ def main() -> int:
     print("=== N5/N6 凭证就绪自检（仅报在/缺/脱钩/别名，不打印值）===")
     if not ENV_LOCAL.exists():
         print(f"[缺失] .env.local 不存在：{ENV_LOCAL}")
-        print(f"        请先复制模板：cp .env.example .env.local 并在 N6 授权后填值")
+        print("        请先复制模板：cp .env.example .env.local 并在 N6 授权后填值")
         return 3
 
     env = load_dotenv_file(str(ENV_LOCAL))  # 仅解析，不自动注入
