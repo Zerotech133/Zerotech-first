@@ -1,0 +1,38 @@
+# -*- coding: utf-8 -*-
+"""merge_gated 纯逻辑单测（2026-10-28，P7）。"""
+import sys
+from pathlib import Path
+
+TOOLS = Path(__file__).resolve().parents[1]
+if str(TOOLS) not in sys.path:
+    sys.path.insert(0, str(TOOLS))
+
+from merge_gated import DOC_PREFIX, DOC_SUFFIX, is_docs_only  # noqa: E402
+
+
+def test_docs_only_true_for_docs_files():
+    assert is_docs_only(["docs/plans/x.md", "deliverables/y.md"])
+    assert is_docs_only(["agent_platform/skills/guanyu/SKILL.md"])
+
+
+def test_docs_only_true_for_frontend_assets():
+    assert is_docs_only(["portal/static/nav.js", "portal/static/tokens.css"])
+
+
+def test_docs_only_false_for_py():
+    assert not is_docs_only(["tools/devtask.py"])
+    assert not is_docs_only(["docs/a.md", "portal/api_kg.py"])
+
+
+def test_docs_only_false_for_root_md():
+    # 根目录文档不在白名单前缀内 → 视为代码变更，需跑测试（保守）
+    assert not is_docs_only(["README.md"])
+
+
+def test_docs_only_false_for_empty():
+    assert not is_docs_only([])
+
+
+def test_suffix_and_prefix_sets_sane():
+    assert ".md" in DOC_SUFFIX
+    assert "docs/" in DOC_PREFIX
