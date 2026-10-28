@@ -3066,6 +3066,11 @@ color:#fff;font-size:13.5px;cursor:pointer}
         raw = self.path
         path = raw.split("?", 1)[0]
         qs = raw.split("?", 1)[1] if "?" in raw else ""
+        if path == '/api/dev/legion':
+            # 2026-10-28 LS-03：研发军团作战屏只读 API（独立文件 api_dev_legion.py）
+            import api_dev_legion
+            api_dev_legion.handle_get(self, path, qs)
+            return
         # P1 移动端 /m 家族（2026-10-25）：新 handler 独立文件 m_api.py，
         # 本处仅做早分支路由（portal_api 只改不扩）。
         if path.startswith('/api/m/'):
