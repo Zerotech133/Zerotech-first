@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 32,
+  "workorders_doing": 31,
   "workorders_review": 6
  },
  "workorders": [
@@ -236,15 +236,6 @@
    "owner": "ARCH1",
    "branch": "task/WO-LEGION-SCREEN-20261027",
    "created": "2026-10-27 23:53:53",
-   "project": "general"
-  },
-  {
-   "id": "WO-LS04-METRICS-20261027",
-   "desc": "LS-04 任务/C6 指标聚合（tasks.json + daily_metrics.json，坏 JSON 降级空态）",
-   "status": "doing",
-   "owner": "DEV6",
-   "branch": "task/WO-LS04-METRICS-20261027",
-   "created": "2026-10-27 23:54:08",
    "project": "general"
   },
   {
@@ -3537,11 +3528,6 @@
     {
      "id": "WO-P0-DEV6-TRACE-20261027",
      "desc": "P0 派工周-3（DEV6）：O4 可观测性 v0——dev_events 事件增 trace_id/span_id/parent_id（可选字段，缺省可空），devtask/工具写入任务时带 trace_id；补测试；验收=新测试全绿 + 抽样事件可串成树",
-     "status": "doing"
-    },
-    {
-     "id": "WO-LS04-METRICS-20261027",
-     "desc": "LS-04 任务/C6 指标聚合（tasks.json + daily_metrics.json，坏 JSON 降级空态）",
      "status": "doing"
     }
    ]
