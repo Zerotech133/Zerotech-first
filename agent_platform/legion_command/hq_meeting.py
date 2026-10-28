@@ -19,6 +19,39 @@ KIND_MAP = {"work": "task_request", "trade": "task_request", "study": "question"
 MID_RE = re.compile(r"hq-\d{8}-\d{6}")
 
 
+_REPO = Path(__file__).resolve().parents[2]
+
+
+def _load_events_module():
+    """按文件路径加载 tools/events.py（避免环境里同名 tools 包劫持）。"""
+    import importlib.util
+    path = _REPO / "tools" / "events.py"
+    spec = importlib.util.spec_from_file_location("aios_dev_events", path)
+    if spec is None or spec.loader is None:
+        raise ImportError("events module unavailable")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _emit_event(kind: str, task: str, detail: str) -> None:
+    """会议事件回流 dev_events（失败静默，不挡会议）。"""
+    try:
+        _load_events_module().emit(kind, task=task, agent="A0", detail=detail)
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def _trace(name: str, attrs: dict, start: float) -> None:
+    """会议 span → 本地 SQLite + Phoenix（OTLP 已接；失败静默）。"""
+    try:
+        from observability import trace
+        trace.record(trace.trace_id(), name, kind="meeting",
+                     start=start, end=time.time(), status="ok", attrs=attrs)
+    except Exception:  # noqa: BLE001
+        pass
+
+
 def _r(v, n: int) -> str:
     return str(v or "")[:n]
 
@@ -131,7 +164,13 @@ def save_meeting(dirpath, req) -> tuple[int, dict]:
     doc, err = validate(req)
     if err:
         return 400, {"ok": False, "error": err}
+    start = time.time()
     target = _write(dirpath, doc["meeting_id"], doc)
+    _emit_event("meeting_saved", doc["meeting_id"],
+                "type=%s status=%s decisions=%d attendees=%d"
+                % (doc["type"], doc["status"], len(doc["decisions"]), len(doc["attendees"])))
+    _trace("hq.meeting.save", {"meeting_id": doc["meeting_id"], "type": doc["type"],
+                               "status": doc["status"], "decisions": len(doc["decisions"])}, start)
     return 200, {"ok": True, "meeting_id": doc["meeting_id"],
                  "saved": str(target), "status": doc["status"],
                  "count": len(doc["transcript"]),
@@ -201,5 +240,8 @@ def dispatch_meeting(dirpath, req, submit) -> tuple[int, dict]:
              "state": "已生成任务申请", "dispatch": env}
     doc.setdefault("orders", []).append(order)
     doc["status"] = "dispatched"
+    start = time.time()
     _write(dirpath, mid, doc)
+    _emit_event("meeting_dispatched", mid, "order=%s owner=%s" % (title[:80], owner))
+    _trace("hq.meeting.dispatch", {"meeting_id": mid, "owner": owner, "order_type": ot}, start)
     return 200, {"ok": True, "meeting_id": mid, "dispatch": env, "order": order}

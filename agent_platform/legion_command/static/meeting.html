@@ -465,7 +465,8 @@ async function loadHqAgenda() {
     const m2 = (env.messages || []).slice(-2).map(x => (x.seat || '?') + '：' + (x.text || ''));
     document.getElementById('hqPre').textContent =
       '会前议题（议会厅收编只读）：' + (t3.length ? t3.join(' / ') : '暂无') +
-      (m2.length ? ' ｜ 最新留言：' + m2.join(' ; ') : '');
+      (m2.length ? ' ｜ 最新留言：' + m2.join(' ; ') : '') +
+      ' ｜ 近事件 ' + (env.events_count || 0) + ' 条（merge/guard/会议）';
   } catch (e) { document.getElementById('hqPre').textContent = '会前议题加载失败：' + e.message; }
 }
 async function hqPostMsg() {
