@@ -409,7 +409,8 @@ function renderProjBar(){
   const el = document.getElementById("projbar");
   if(!B){ el.style.display="none"; return; }
   if(ENV.indexOf("line:")===0) PROJ = ENV.slice(5);
-  const lines = wsProjects(), depts = projDepts(), streams = envStreams();
+  const lines = ((B.projects||[]).slice()).sort((a,b)=>(a.status==="active"?0:1)-(b.status==="active"?0:1));
+  const depts = projDepts(), streams = envStreams();
   if(!lines.length && !depts.length && !streams.length){ el.innerHTML=""; el.style.display="none"; return; }
   el.style.display="flex";
   let h = '<span class="env-label">开发环境</span><select id="env-select" class="env-sel" title="所有与开发有关的项目/环境；数据驱动，新增项目自动出现">';
