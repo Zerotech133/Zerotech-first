@@ -169,7 +169,6 @@ def main(argv: list[str] | None = None) -> int:
     res = plan(apply=args.apply)
     if args.lint:
         import shutil
-        import subprocess
         dc = shutil.which("datacontract") or r"C:\项目\py312\Scripts\datacontract.exe"
         lint = []
         for tinfo in res["tables"]:

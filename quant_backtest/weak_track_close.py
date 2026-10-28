@@ -155,7 +155,7 @@ def build_close(rows, ctype, note, arch, ncase=""):
     ).format(**f) + (("\n" + ncase) if ncase else "")
 
 
-from codes import normalize_code as _norm  # noqa: E402  P1-2 统一代码归一（北交所 8/4/92 开头 → .BJ）
+from codes import normalize_code as _norm  # noqa: E402
 import logging
 
 

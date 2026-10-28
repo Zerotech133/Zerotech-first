@@ -84,7 +84,7 @@ def _call_with_timeout(fn, seconds, *args, **kwargs):
     def _run():
         try:
             box["ok"], box["val"] = True, fn(*args, **kwargs)
-        except Exception as e:  # noqa: BLE001 - 探针需吞一切异常
+        except Exception as e:  # noqa: BLE001
             box["ok"], box["val"] = False, e
 
     t = threading.Thread(target=_run, daemon=True)

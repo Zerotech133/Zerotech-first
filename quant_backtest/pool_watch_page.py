@@ -31,8 +31,8 @@ ROOT = os.path.dirname(HERE)
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
 
-import pool_watch  # noqa: E402  阈值与监控集单一口径源（只读复用）
-import signal_pool  # noqa: E402  触发事件只读（read_events）
+import pool_watch  # noqa: E402
+import signal_pool  # noqa: E402
 
 CST = timezone(timedelta(hours=8))
 REPORT_PATH = os.path.join(HERE, "reports", "pool_watch.html")

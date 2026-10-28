@@ -33,7 +33,7 @@ _NEWS_DIR = os.path.abspath(os.path.join(_HERE, "..", "..", "news_collector"))
 if _NEWS_DIR not in sys.path:
     sys.path.insert(0, _NEWS_DIR)
 
-import alert_fail_wrap as _wrap  # noqa: E402  E1 口径单一事实源
+import alert_fail_wrap as _wrap  # noqa: E402
 
 SEND_FEISHU_PY = os.path.join(_NEWS_DIR, "send_feishu.py")
 TASK = "SignalsCombined"  # outbox 文件名与 alert_send.log 的 task 字段
@@ -65,7 +65,7 @@ def _send_feishu(pending: str):
             errors="replace",
             timeout=SEND_TIMEOUT,
         )
-    except Exception as exc:  # noqa: BLE001 — 子进程不可用也走 FAIL 落痕
+    except Exception as exc:  # noqa: BLE001
         return False, "send_err " + str(exc)[:100]
     out = ((r.stdout or "") + "\n" + (r.stderr or "")).strip()
     return _wrap.parse_send_result(out, r.returncode)
@@ -90,7 +90,7 @@ def alert_persist_failure(trade_date: str, rows_count: int, error) -> None:
                 result_summary=reason,
                 exception_kind=_wrap.exception_class("1", ok, reason),
             )
-        except Exception as exc:  # noqa: BLE001 — 改名失败不吞发送事实
+        except Exception as exc:  # noqa: BLE001
             _wrap.log_send(
                 TASK,
                 "feishu",
@@ -107,7 +107,7 @@ def alert_persist_failure(trade_date: str, rows_count: int, error) -> None:
             "[aggregator][ALERT] task=%s ok=%s action=%s reason=%s"
             % (TASK, ok, action, reason[:80])
         )
-    except Exception as exc:  # noqa: BLE001 — 告警链自身失败不反噬主流程
+    except Exception as exc:  # noqa: BLE001
         print(
             "[aggregator][ALERT][WARN] 告警链自身失败(结果已留运行日志): %s"
             % str(exc)[:120]

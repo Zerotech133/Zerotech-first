@@ -212,7 +212,7 @@ def test_missing_data_skip():
 
 
 def test_load_wide_eligibility(tmpdir):
-    import pyarrow  # noqa: F401  确认 parquet 依赖存在
+    import pyarrow  # noqa: F401
 
     d = os.path.join(tmpdir, "ash")
     os.makedirs(d, exist_ok=True)

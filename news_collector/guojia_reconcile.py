@@ -209,7 +209,7 @@ def fetch_bars(scope):
     """单市场基准日线 → (bars 升序带 pct, None) 或 (None, 错误串)。"""
     try:
         return _bars_from_closes(FETCHERS[scope]()), None
-    except Exception as e:  # noqa: BLE001  单源降级不拖垮整批
+    except Exception as e:  # noqa: BLE001
         return None, str(e)[:120]
 
 
@@ -232,7 +232,7 @@ def _parse_ents(raw_stocks, companies):
     if isinstance(raw_stocks, str) and raw_stocks.strip():
         try:
             arr = json.loads(raw_stocks)
-        except Exception:  # noqa: BLE001  老数据存在非 JSON 值
+        except Exception:  # noqa: BLE001
             arr = raw_stocks
         if isinstance(arr, list):
             for x in arr:
@@ -275,7 +275,7 @@ def load_signals(db_path, window_days):
         counts["total_jev"] += 1
         try:
             j = json.loads(raw)
-        except Exception:  # noqa: BLE001  坏行计数不中断
+        except Exception:  # noqa: BLE001
             counts["bad_jev"] += 1
             continue
         scope = (j.get("scope") or "").strip().lower()
@@ -328,7 +328,7 @@ def load_verdicts(path):
             try:
                 v = json.loads(ln)
                 out[(int(v["rowid"]), str(v["day"]), str(v["scope"]))] = v
-            except Exception:  # noqa: BLE001  坏行容错（口径同 sentiment_backtest）
+            except Exception:  # noqa: BLE001
                 continue
     return out
 

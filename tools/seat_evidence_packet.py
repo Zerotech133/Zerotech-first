@@ -163,7 +163,7 @@ def _emit_audit(json_path: Path, packet: dict) -> dict:
                 Path(json_path).name,
                 (packet.get("tickets") or {}).get("total", "?"),
                 (packet.get("experience") or {}).get("total", 0)))
-    except Exception:  # noqa: BLE001 —— 事件层不得挡住取数
+    except Exception:  # noqa: BLE001
         return {"ok": False}
 
 

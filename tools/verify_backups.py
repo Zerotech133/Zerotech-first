@@ -1375,7 +1375,7 @@ def main(argv: list[str] | None = None) -> int:
     except KeyboardInterrupt:
         _p("ERROR: 被中断（KeyboardInterrupt）")
         return 2
-    except Exception as exc:  # noqa: BLE001 - 兜底成退出码 2，绝不假装通过
+    except Exception as exc:  # noqa: BLE001
         _p("ERROR: 未预期异常：%s: %s" % (type(exc).__name__, exc))
         traceback.print_exc(file=sys.stderr)
         if getattr(args, "json", False):

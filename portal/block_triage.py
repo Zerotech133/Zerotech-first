@@ -594,7 +594,7 @@ def main(argv=None) -> int:
 
     try:
         result, ok = analyze(args)
-    except Exception as e:  # noqa: BLE001  任何异常都不裸崩
+    except Exception as e:  # noqa: BLE001
         print("closed on failure: 分析器异常 %r" % e, file=sys.stderr)
         return 2
 

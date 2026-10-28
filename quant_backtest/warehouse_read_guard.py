@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 import threading
 
-from warehouse_commit import PublicationPending, publication_guard  # noqa: F401  (re-export: tdx_read 转导入 PublicationPending)
+from warehouse_commit import PublicationPending, publication_guard  # noqa: F401
 
 
 _READ_STATE = threading.local()

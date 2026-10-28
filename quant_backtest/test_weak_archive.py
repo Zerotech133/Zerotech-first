@@ -22,7 +22,7 @@ import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import test_weak_learn as tl  # noqa: E402  (fake close md 造数复用)
+import test_weak_learn as tl  # noqa: E402
 import weak_track_summary as ws  # noqa: E402
 import weak_track_archive as wa  # noqa: E402
 

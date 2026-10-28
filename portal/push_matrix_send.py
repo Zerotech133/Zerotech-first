@@ -66,7 +66,7 @@ def _os_unlock(fd):
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import push_matrix  # noqa: E402  轨道A 解析器（REPO/load_matrix/is_quiet/resolve_windows）
+import push_matrix  # noqa: E402
 import logging
 
 MKT_CN = {
@@ -529,7 +529,7 @@ def main(argv=None) -> int:
             matrix_path=Path(a.matrix) if a.matrix else None,
             subs_path=Path(a.subs) if a.subs else None,
         )
-    except Exception as e:  # noqa: BLE001  fail-visible：错误退出码 1
+    except Exception as e:  # noqa: BLE001
         print("FAIL %s" % e)
         return 1
     print(json.dumps(res, ensure_ascii=False))

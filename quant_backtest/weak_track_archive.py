@@ -33,8 +33,8 @@ import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import weak_track_summary as wts  # noqa: E402  (parse_cases 唯一解析器)
-import weak_track_learn as wl  # noqa: E402  (learn_fields 统计复用)
+import weak_track_summary as wts  # noqa: E402
+import weak_track_learn as wl  # noqa: E402
 import logging
 
 CASES = os.path.join(os.path.dirname(HERE), "reports", "weak_cases")

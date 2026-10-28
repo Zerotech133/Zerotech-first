@@ -34,7 +34,7 @@ for _p in (str(REPO_ROOT), str(OSINT_ROOT), str(NEWS_DIR)):
         sys.path.insert(0, _p)
 
 from common.feishu import DIRECT_ENV, FeishuNotifier  # noqa: E402
-import feishu_client  # noqa: E402  # news_collector 判例：目录挂 sys.path 后 import
+import feishu_client  # noqa: E402
 import push_targets  # noqa: E402
 
 HUB_URL = "http://127.0.0.1:8097/api/send"

@@ -221,7 +221,7 @@ def _handle(req: dict) -> dict | None:
         args = params.get("arguments") or {}
         try:
             text = _call_tool(name, args)
-        except Exception as exc:  # noqa: BLE001 - 工具错误如实回传，不断连接
+        except Exception as exc:  # noqa: BLE001
             _log("tool %s error: %s" % (name, exc))
             return {"jsonrpc": "2.0", "id": rid, "result": {
                 "content": [{"type": "text", "text": str(exc)}], "isError": True}}
@@ -250,7 +250,7 @@ def main() -> int:
             continue
         try:
             resp = _handle(req)
-        except Exception as exc:  # noqa: BLE001 - 单条请求失败不退出
+        except Exception as exc:  # noqa: BLE001
             _log("handler error: %s" % exc)
             resp = {"jsonrpc": "2.0", "id": req.get("id") if isinstance(req, dict) else None,
                     "error": {"code": -32603, "message": "Internal error: %s" % exc}}

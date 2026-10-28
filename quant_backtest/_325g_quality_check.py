@@ -91,7 +91,7 @@ def main():
                 )
             )
         except Exception:
-            sdef = None
+            pass
     sec_dir = os.path.join(ROOT, "quant_backtest", "data/tdx/tdx_sector_member")
     if os.path.isdir(sec_dir):
         try:

@@ -279,7 +279,7 @@ def _calendar_for(account: str):
                 from market import ParquetMarket
             days = ParquetMarket().trading_days()
         return [_norm_day(d) for d in days]
-    except Exception as e:  # noqa: BLE001 —— 日历降级是数据面常态（灰位/湖未就绪）
+    except Exception as e:  # noqa: BLE001
         return e
 
 
@@ -310,7 +310,7 @@ def check_ledger_freshness(
             continue
         try:
             days = calendar_fn(acct)
-        except Exception as e:  # noqa: BLE001 —— 日历源异常一律降级不误报
+        except Exception as e:  # noqa: BLE001
             days = e
         if isinstance(days, Exception) or days is None:
             why = str(days) if isinstance(days, Exception) else "calendar_fn 返回 None"

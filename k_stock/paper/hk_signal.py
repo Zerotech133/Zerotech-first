@@ -178,7 +178,7 @@ def main(argv: list[str]) -> int:
     if not payload:
         print("[exec] 无可用信号（数据不足），退出")
         return 1
-    from engine import PaperEngine  # noqa: PLC0415 同目录
+    from engine import PaperEngine  # noqa: PLC0415
     import hk_market as hm  # noqa: PLC0415
 
     out_dir.mkdir(parents=True, exist_ok=True)

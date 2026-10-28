@@ -128,7 +128,7 @@ def open_ticket(name, body, today):
     """
     title = "计划任务失败必响：%s（%s）" % (name, today)
     try:
-        from tasks import TaskStore  # noqa: E402  engine path 已注入
+        from tasks import TaskStore  # noqa: E402
         ts = TaskStore(_REPO / "agent_platform" / "data" / "org" / "tasks")
         dup = [t for t in ts.ls(dept="dev") if t["title"] == title]
         if dup:
@@ -136,7 +136,7 @@ def open_ticket(name, body, today):
         tid = ts.open("dev", title, body, "P0",
                       opened_by="system/execution-watchdog", p0=True)
         return tid, "已开单（P0 直入 doing）"
-    except Exception as e:  # noqa: BLE001  开单 fail-open：不中断推送
+    except Exception as e:  # noqa: BLE001
         return None, "开单异常（不中断推送）: %s" % e
 
 
@@ -300,7 +300,7 @@ def main(argv=None):
             print("[dry-run] 心跳/节流状态未写（零副作用），本轮汇总："
                   "将响 %d · 节流跳过 %d" % (len(alerted), len(skipped)))
         return exit_code
-    except Exception as e:  # noqa: BLE001  自身异常 → exit 1（N1 可探）
+    except Exception as e:  # noqa: BLE001
         print("[exwd] 巡检自身异常: %s" % e)
         try:
             if not dry:

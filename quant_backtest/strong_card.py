@@ -55,7 +55,7 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import weak_track_card as wtc  # noqa: E402  (to2/_md/_f2 卡片组件范式)
+import weak_track_card as wtc  # noqa: E402
 import logging
 
 NEWS_DIR = os.path.abspath(os.path.join(HERE, "..", "news_collector"))

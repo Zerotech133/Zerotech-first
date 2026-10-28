@@ -3,7 +3,6 @@
 import importlib.util
 import json
 import pathlib
-import tempfile
 
 HERE = pathlib.Path(__file__).resolve().parent
 spec = importlib.util.spec_from_file_location("extension_manifest_audit", HERE / "extension_manifest_audit.py")

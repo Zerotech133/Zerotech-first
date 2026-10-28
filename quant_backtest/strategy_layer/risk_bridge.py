@@ -45,7 +45,7 @@ def _tail_lines(path, n=TAIL_LINES):
             return list(deque_safe(f, n))
     except OSError:
         return []
-    except Exception:  # noqa: BLE001 — 任何损坏一律降级空
+    except Exception:  # noqa: BLE001
         return []
 
 
@@ -65,7 +65,7 @@ def _parse(rows):
     for line in rows:
         try:
             r = json.loads(line)
-        except Exception:  # noqa: BLE001 — 坏行跳过
+        except Exception:  # noqa: BLE001
             continue
         if isinstance(r, dict):
             out.append(r)

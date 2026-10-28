@@ -26,7 +26,7 @@ if QUANT_BT not in sys.path:
     sys.path.insert(0, QUANT_BT)
 
 from strategy_layer import aggregator, alert_bridge  # noqa: E402
-import alert_fail_wrap as _wrap  # noqa: E402  E1 口径单一事实源
+import alert_fail_wrap as _wrap  # noqa: E402
 
 TS_LINE_RE = (
     r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2} \| task=\S+ "

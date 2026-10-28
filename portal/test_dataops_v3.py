@@ -78,7 +78,7 @@ def fetch(url, timeout=15):
             return resp.status, resp.read().decode("utf-8", "replace")
     except urllib.error.HTTPError as e:
         return e.code, e.read().decode("utf-8", "replace")
-    except Exception as e:  # noqa: BLE001 — 网络类异常统一降级
+    except Exception as e:  # noqa: BLE001
         return 0, repr(e)
 
 

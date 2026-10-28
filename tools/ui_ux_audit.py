@@ -19,7 +19,6 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import sys
 from pathlib import Path
 
 HEX_RE = re.compile(r"#[0-9a-fA-F]{3,8}\b")

@@ -81,7 +81,7 @@ def _truth_bias(items: list[dict], live: bool) -> tuple[dict, float]:
             j = news_ai.jev_judge_one(it["title"], [])
             bias = (j or {}).get("bias")
             conf = (j or {}).get("conf")
-        except Exception:                   # noqa: BLE001  判读失败按 None 记（不参与漏判分母）
+        except Exception:                   # noqa: BLE001
             bias, conf = None, None
         out[it["id"]] = {"bias": bias, "conf": conf, "ms": int((time.time() - ms0) * 1000)}
     return out, time.time() - t0

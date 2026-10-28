@@ -4209,7 +4209,7 @@ color:#fff;font-size:13.5px;cursor:pointer}
                         _gd_cm = None
                         try:
                             _gd_cm = _ci_cm.guide_text(_oid_cm)
-                        except Exception:  # noqa: BLE001 —— 引导文案非必需
+                        except Exception:  # noqa: BLE001
                             _gd_cm = None
                         self._json({"ok": True, "auth_mode": _auth_cm,
                                     "open_id": _oid_cm,
@@ -4219,7 +4219,7 @@ color:#fff;font-size:13.5px;cursor:pointer}
                         self._json({"ok": True, "auth_mode": _auth_cm,
                                     "count": len(_sig_cm),
                                     "signals": _sig_cm})
-                except Exception:  # noqa: BLE001 —— 稳定结构，不泄 traceback
+                except Exception:  # noqa: BLE001
                     self._json({"ok": False, "auth_mode": _auth_cm,
                                 "error": "interest_unavailable",
                                 "signals": []}, 200)

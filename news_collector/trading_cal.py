@@ -72,7 +72,7 @@ def load_open_days(path=None):
     try:
         with open(p, encoding="utf-8") as f:
             payload = json.load(f)
-    except Exception as exc:  # noqa: BLE001  fail-open：日历缺失/损坏不能弄死告警链
+    except Exception as exc:  # noqa: BLE001
         _warn("load %s failed: %s -> fallback weekday<5" % (p, str(exc)[:120]))
         _CACHE[p] = set()
         return set()

@@ -28,7 +28,7 @@ LARK_ROOT = os.path.join(
     os.path.expanduser("~"), ".trae-cn", "plugins", "trae-remote-official", "lark"
 )
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import push_targets  # noqa: E402  K-STOCK-403：收件人单一事实源
+import push_targets  # noqa: E402
 import logging
 
 USER_ID = push_targets.target_id("个人") or ""  # bot 应用域 open_id（apps[0] 视角）

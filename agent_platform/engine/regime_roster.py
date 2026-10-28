@@ -108,7 +108,7 @@ def dk_snapshot(daily_df, profile: Optional[str] = None) -> Optional[Dict]:
             "dk_signal": signal,
             "reason": reason,
         }
-    except Exception as exc:  # noqa: BLE001  fail-open：影子主链优先
+    except Exception as exc:  # noqa: BLE001
         return {"dk_error": "%s: %s" % (type(exc).__name__, exc)}
 
 

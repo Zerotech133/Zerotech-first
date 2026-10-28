@@ -374,7 +374,7 @@ def _resample_consistency(ask_fn, first_bias, k=3):
     for _ in range(k - 1):
         try:
             j2 = ask_fn()
-        except Exception:  # noqa: BLE001  豁免（C2批2）：重采样失败不阻断
+        except Exception:  # noqa: BLE001
             continue
         if isinstance(j2, dict):
             b2 = (j2.get("bias") or "").strip().lower()

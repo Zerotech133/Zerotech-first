@@ -30,8 +30,8 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import weak_track_summary as wts  # noqa: E402  (parse_cases 唯一解析器)
-import weak_track_watch as ww  # noqa: E402  (_task_map 复用)
+import weak_track_summary as wts  # noqa: E402
+import weak_track_watch as ww  # noqa: E402
 import logging
 
 REP = os.path.join(os.path.dirname(HERE), "reports")

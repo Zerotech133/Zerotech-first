@@ -102,7 +102,7 @@ def main():
                 ),
                 flush=True,
             )
-        except Exception as ex:  # noqa: BLE001 — 单只失败不拖垮批次
+        except Exception as ex:  # noqa: BLE001
             fail += 1
             print(
                 "[%d/%d] %s FAIL %s" % (k + 1, len(rows), code, str(ex)[:80]),

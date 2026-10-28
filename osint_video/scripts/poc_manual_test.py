@@ -97,7 +97,7 @@ def process_directory(
         except ExtractionError as exc:
             record["error"] = str(exc)
             print(f"    ✗ 失败：{exc}")
-        except Exception as exc:  # noqa: BLE001 —— 未预期异常也计入失败清单，不中断批次
+        except Exception as exc:  # noqa: BLE001
             record["error"] = f"未预期异常：{type(exc).__name__}: {exc}"
             print(f"    ✗ 未预期异常：{exc}")
         else:

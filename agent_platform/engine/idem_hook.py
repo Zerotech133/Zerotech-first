@@ -74,7 +74,7 @@ class DualTrackHook:
                 payload=payload,
                 stale_seconds=self.stale_seconds,
             )
-        except Exception as exc:  # noqa: BLE001  fail-open 纪律
+        except Exception as exc:  # noqa: BLE001
             return self._fail_open(exc)
 
     def complete(
@@ -87,7 +87,7 @@ class DualTrackHook:
             return self._store_or_none().complete(
                 attempt_id, result_ref=result_ref, ok=ok, error=error
             )
-        except Exception as exc:  # noqa: BLE001  fail-open 纪律
+        except Exception as exc:  # noqa: BLE001
             return self._fail_open(exc)
 
     def close(self) -> None:

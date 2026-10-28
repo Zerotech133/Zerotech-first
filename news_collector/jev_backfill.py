@@ -291,7 +291,7 @@ def main():
                 % (pref_skipped, len(items)),
                 flush=True,
             )
-        except Exception as exc:  # noqa: BLE001  粗筛异常 → 全量走 9B（fail-open）
+        except Exception as exc:  # noqa: BLE001
             print("BACKFILL prefilter DISABLED by error: %r" % (exc,), file=sys.stderr)
             pref_skipped = 0
 

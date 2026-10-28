@@ -60,7 +60,7 @@ def generate_questions(items, max_questions=MAX_MODEL_QUESTIONS, timeout=120,
     prompt = build_prompt(items, cap)
     try:
         text, err = oc_run(agent, prompt, timeout=timeout)
-    except Exception as exc:  # noqa: BLE001 —— 失败必须降级，不反噬主链
+    except Exception as exc:  # noqa: BLE001
         return None, {"mode": "real3", "agent": agent,
                       "error": "%s: %s" % (type(exc).__name__, str(exc)[:120])}
     if not text:

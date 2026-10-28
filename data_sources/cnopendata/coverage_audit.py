@@ -24,7 +24,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from alias_probe import extract, fetch, norm, to_text  # noqa: E402  同一口径
+from alias_probe import extract, fetch, norm, to_text  # noqa: E402
 
 BASE = Path(__file__).resolve().parent
 REGISTRY = BASE / "registry.json"

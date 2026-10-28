@@ -31,7 +31,7 @@ from common.paths import COLLECTOR_VERSION, work_dir_for
 from extraction.align_merge import merge_channels
 from extraction.audio_extract import extract_wav16k, probe_duration_sec
 from extraction.frame_extract import extract_frames
-from extraction.ocr_paddle import OCRItem  # noqa: F401 —— 类型再导出便于调用方注解
+from extraction.ocr_paddle import OCRItem  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +81,7 @@ def _run_audio_channel(
     try:
         if force or not wav_path.exists():
             extract_wav16k(video_path, wav_path)
-    except Exception as exc:  # noqa: BLE001 —— ffmpeg 属硬错误，但仅音频通道先降级
+    except Exception as exc:  # noqa: BLE001
         raise ExtractionError(f"音频抽取失败：{exc}") from exc
 
     # ASR：重依赖延迟导入（asr_sensevoice 内部处理）

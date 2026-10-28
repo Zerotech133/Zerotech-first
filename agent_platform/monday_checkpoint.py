@@ -190,7 +190,7 @@ def _tee_log():
     try:
         LOG.parent.mkdir(parents=True, exist_ok=True)
         _LOG_HANDLE = open(LOG, "a", encoding="utf-8")
-    except Exception:  # noqa: BLE001  落盘失败不阻断巡检
+    except Exception:  # noqa: BLE001
         _LOG_HANDLE = None
         return
     sys.stdout = _Tee(sys.stdout, _LOG_HANDLE)
@@ -223,7 +223,7 @@ def _tasks_schema_observe():
         from validate_json import check_tasks_doc
 
         obj = json.loads(path.read_text(encoding="utf-8"))
-    except Exception as exc:  # noqa: BLE001  观察项永不阻断巡检
+    except Exception as exc:  # noqa: BLE001
         print(
             "[observe] tasks.json schema：不可读/不可校验（%s）——观察项，"
             "不计入退出码" % str(exc)[:100]
@@ -271,7 +271,7 @@ def _strategy_runs_observe(path=None):
             "[observe] strategy_runs：%d 行 / 带 run_id %d 行"
             "——观察项，不计入退出码" % (len(rows), anchored)
         )
-    except Exception as exc:  # noqa: BLE001  观察项不阻断巡检，但异常必须可见
+    except Exception as exc:  # noqa: BLE001
         print(
             "[observe] strategy_runs：不可读（%s）——观察项，不计入退出码"
             % str(exc)[:100]

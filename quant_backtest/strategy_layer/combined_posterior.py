@@ -220,7 +220,7 @@ def build_combined_posterior(
         if quote_fetcher is not None:
             try:
                 quote = quote_fetcher(sym, td)
-            except Exception:  # noqa: BLE001 — 单票行情异常不阻断整体
+            except Exception:  # noqa: BLE001
                 quote = None
         base = None
         if isinstance(quote, dict):

@@ -186,7 +186,7 @@ def _run_one(tag: str, desc: str, over: dict) -> dict:
                     )
                 },
             }
-        except Exception as exc:  # noqa: BLE001 — 坏产物按重跑处理
+        except Exception as exc:  # noqa: BLE001
             print("[a3] 既有产物损坏，重跑 %s: %s" % (tag, exc))
     t0 = time.time()
     res, err = eng.run_job(params, job_id)

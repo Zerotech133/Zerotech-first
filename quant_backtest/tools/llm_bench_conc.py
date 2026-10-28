@@ -39,7 +39,7 @@ HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
 sys.path.insert(0, str(REPO))
 
-import xq_classify as xq  # noqa: E402  （单源：MODEL/PROMPT/DB_PATH/常量全取自它）
+import xq_classify as xq  # noqa: E402
 
 DB_PATH = xq.DB_PATH
 DEFAULT_OUT = (
@@ -142,7 +142,7 @@ def ollama_ps() -> dict:
             }
         except FileNotFoundError:
             continue
-        except Exception as e:  # noqa: BLE001 取证不致命
+        except Exception as e:  # noqa: BLE001
             return {"cmd": cmd[0], "exit_code": None, "error": str(e)[:200]}
     return {
         "cmd": "ollama",
@@ -210,7 +210,7 @@ def call_one(
         rec["content_head"] = (content or "")[:120]
         rec["verdict"] = parse_verdict(content)
         rec["parse_ok"] = rec["verdict"]["parse_ok"]
-    except Exception as e:  # noqa: BLE001 fail-记数不中断
+    except Exception as e:  # noqa: BLE001
         rec["wall_s"] = round(time.time() - t0, 3)
         rec["error"] = str(e)[:200]
     return rec

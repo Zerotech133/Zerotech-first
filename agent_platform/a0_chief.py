@@ -252,7 +252,7 @@ def build(today):
     lines.append("## 五、任务单看板（未闭环）")
     lines.append("")
     try:
-        from tasks import TaskStore  # noqa: E402  engine/tasks.py（K-ORG-011）
+        from tasks import TaskStore  # noqa: E402
 
         open_tasks = [
             t

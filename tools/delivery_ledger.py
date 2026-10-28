@@ -15,7 +15,7 @@ import io
 import json
 import os
 import sys
-from collections import Counter, defaultdict
+from collections import Counter
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_DIR = os.path.join(REPO, "agent_platform", "data", "dev", "delivery_ledger")

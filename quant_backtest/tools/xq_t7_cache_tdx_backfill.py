@@ -43,7 +43,7 @@ TOOLS_DIR = Path(__file__).resolve().parent  # quant_backtest/tools/
 if str(TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(TOOLS_DIR))
 
-import xq_factor_v1 as factor  # noqa: E402  复用同口径解析与审计（纯离线）
+import xq_factor_v1 as factor  # noqa: E402
 
 # 与 tools/xq_quote_alt_probe._TDX_DAY 一致：32 字节小端 .day 记录
 _TDX_DAY = struct.Struct("<IIIIIfII")
@@ -593,7 +593,7 @@ def local_source_census(
     for name, probe in probes:
         try:
             result = probe()
-        except Exception as e:  # noqa: BLE001 单源失败隔离
+        except Exception as e:  # noqa: BLE001
             result = {"status": "error", "error": str(e)[:200]}
         src[name] = result
         if isinstance(result, dict) and result.get("covered_symbols"):
@@ -719,7 +719,7 @@ def plan_tushare_backfill(
                 "note": "pandas/pyarrow 不可用，tushare 分支跳过",
             }
         return per_symbol, additions
-    except Exception as e:  # noqa: BLE001 单源失败隔离
+    except Exception as e:  # noqa: BLE001
         for s in symbols:
             per_symbol[s] = {"status": "error", "error": str(e)[:200]}
         return per_symbol, additions
@@ -1008,7 +1008,7 @@ def plan_anchored_prepend(
                 "status": "engine_missing",
                 "note": "pandas/pyarrow 不可用，前扩分支跳过",
             }
-    except Exception as e:  # noqa: BLE001 单源失败隔离
+    except Exception as e:  # noqa: BLE001
         for s in symbols:
             if s not in per_symbol:
                 per_symbol[s] = {"status": "error", "error": str(e)[:200]}
@@ -1086,7 +1086,7 @@ def run(
         per_symbol_tw, additions_tw = plan_tushare_backfill(
             tw_symbols, data_root=data_root, window=census_window, reader=parquet_reader
         )
-    except Exception as e:  # noqa: BLE001 分支失败不拖垮
+    except Exception as e:  # noqa: BLE001
         per_symbol_tw = {
             s: {"status": "error", "error": str(e)[:200]} for s in tw_symbols
         }
@@ -1111,7 +1111,7 @@ def run(
                 scan_from=prepend_scan_from,
                 reader=parquet_reader,
             )
-        except Exception as e:  # noqa: BLE001 分支失败不拖垮
+        except Exception as e:  # noqa: BLE001
             per_symbol_pre = {
                 s: {"status": "error", "error": str(e)[:200]} for s in pre_syms
             }
@@ -1181,7 +1181,7 @@ def run(
         census = local_source_census(
             missing, data_root=data_root, window=census_window, reader=parquet_reader
         )
-    except Exception as e:  # noqa: BLE001 普查失败不拖垮主流程
+    except Exception as e:  # noqa: BLE001
         census = {"status": "error", "error": str(e)[:200]}
 
     counts = {

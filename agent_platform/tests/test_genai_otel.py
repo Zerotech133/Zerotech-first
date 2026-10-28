@@ -3,7 +3,6 @@
 import contextlib
 import importlib.util
 import pathlib
-import sys
 
 HERE = pathlib.Path(__file__).resolve().parents[1]  # agent_platform/
 spec = importlib.util.spec_from_file_location(

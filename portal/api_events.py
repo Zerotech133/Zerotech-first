@@ -364,7 +364,6 @@ def _ingest(body, manifest_path, events_dir, now):
             st = folds[fold_key] = {"n": _count_window(d, source, etype, minute),
                                     "summary": None, "idx": -1}
         if st["n"] >= FOLD_LIMIT:
-            folded = True
             resp = _fold_into_summary(d, st, fold_key, envelope)
             _record_dedup(d, event_id, now_epoch)
             return resp

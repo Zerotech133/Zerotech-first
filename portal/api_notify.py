@@ -112,7 +112,7 @@ def decision_items(errors: list) -> list:
             " FROM decisions"
         ).fetchall()
         con.close()
-    except Exception as e:  # noqa: BLE001  锁不可达/坏库 fail-visible 不抛
+    except Exception as e:  # noqa: BLE001
         errors.append("决策 DB: 只读查询失败 %r" % e)
         return out
     for r in rows:

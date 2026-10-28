@@ -249,7 +249,6 @@ def scan_market(d0, d1, workers=None, progress=None):
     stocks = market_stocks()
     if progress:
         progress("宇宙", 3, f"全市场 {len(stocks)} 只（剔 ST/北交所/指数）")
-    cal = None
     # 日历：用 000001_SZ（2023-04 起全量；000001_SH 指数文件是 300 行残片勿用）
     idx_fp = os.path.join(DATA, "000001_SZ.parquet")
     cal_all = (

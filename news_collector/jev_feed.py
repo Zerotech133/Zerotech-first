@@ -135,7 +135,7 @@ def feed_source(alias, kind, wm_date, days, cap, dryrun=False):
         return 0, 0, None, None
     try:
         df = dm.read(alias, start=start, limit=cap)
-    except Exception as e:  # noqa: BLE001 - 任何源读取异常都是"源失败"，不静默吞
+    except Exception as e:  # noqa: BLE001
         return 0, 0, None, "dm.read(%r) 异常: %s" % (alias, str(e)[:200])
     if df is None:
         return 0, 0, None, "dm.read(%r) 返回 None（源不可用/未就绪）" % alias
@@ -231,7 +231,7 @@ def judge_pending(kind, cap, dryrun=False):
                 items.append({"id": nid, "title": title, "stocks": st})
             try:
                 got = news_ai.jev_judge_batch(items) or {}
-            except Exception as e:  # noqa: BLE001 - 判定阶段异常必须可见
+            except Exception as e:  # noqa: BLE001
                 res["missing"] += len(items)
                 res["error"] = res["error"] or (
                     "jev_judge_batch(%s) 异常: %s" % (kind, str(e)[:200])

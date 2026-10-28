@@ -47,7 +47,7 @@ sys.path.insert(0, HERE)
 
 import kg_schema as S  # noqa: E402
 from kg_client import KgClient  # noqa: E402
-import linreg  # noqa: E402  X3 血缘登记（best-effort，不阻断）
+import linreg  # noqa: E402
 
 TS_DIR = os.path.join(HERE, "data", "tushare")
 MINS_DIR = os.path.join(HERE, "data", "tushare", "stk_mins")

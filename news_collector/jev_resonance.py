@@ -34,8 +34,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 QBT = os.path.normpath(os.path.join(HERE, "..", "quant_backtest"))
 sys.path.insert(0, HERE)
 sys.path.insert(0, QBT)
-import sentiment_backtest as sbt  # noqa: E402  (复用 run/_load_samples 链)
-import datamart  # noqa: E402  (补查 vol/high/low/open)
+import sentiment_backtest as sbt  # noqa: E402
+import datamart  # noqa: E402
 import logging
 
 RESULT = os.path.join(HERE, "data", "jev_resonance.json")

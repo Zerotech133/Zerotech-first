@@ -841,7 +841,7 @@ def _backfill_quotes(stocks):
                 e["close"], e["pct_chg"] = hit[0], hit[1]
                 n += 1
         return day, n
-    except Exception as ex:  # noqa: BLE001 — 回填失败降级不拖垮
+    except Exception as ex:  # noqa: BLE001
         print("[backfill] 行情回填降级：%s" % str(ex)[:80])
         return None, 0
 
@@ -982,7 +982,7 @@ def _push_source_alert(metas, veto_failed, basis_day):
             timeout=60,
         )
         print("  [picks] 源级降级推送：%s" % (r.stdout or "").strip()[:60])
-    except Exception as ex:  # noqa: BLE001 — 推送失败不反噬 rc
+    except Exception as ex:  # noqa: BLE001
         print("  [picks] 源级降级推送失败（不影响聚合）：%s" % str(ex)[:80])
 
 
@@ -1008,7 +1008,7 @@ def main():
         try:
             metas[sid] = fn(stocks, basis0)
             metas[sid]["ok"] = True
-        except Exception as ex:  # noqa: BLE001 — 单源失败不拖垮聚合
+        except Exception as ex:  # noqa: BLE001
             metas[sid] = {"label": sid, "ok": False, "err": str(ex)[:120]}
     metas["linkage"] = {
         "label": "板块联动信号",

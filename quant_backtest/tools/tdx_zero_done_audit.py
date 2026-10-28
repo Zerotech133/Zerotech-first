@@ -24,7 +24,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 QB = os.path.dirname(HERE)
 sys.path.insert(0, QB)
 
-import tdx_sync as ts  # noqa: E402  复用 MANIFEST/OUT/_get/_remote_tables
+import tdx_sync as ts  # noqa: E402
 
 REPORTS = os.path.join(QB, "reports")
 

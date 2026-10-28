@@ -105,7 +105,6 @@ def _hr_of(aid: str) -> dict:
         return out
     try:
         for line in (d / "resume.yaml").read_text(encoding="utf-8").splitlines():
-            mm = None
             s = line.strip()
             if s.startswith("name:"): out["name"] = s.split(":", 1)[1].strip()
             elif s.startswith("kind:"): out["kind"] = s.split(":", 1)[1].strip()

@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 """OTel→Phoenix 导出单测（fake urlopen，不联网）。"""
-import json
 import sys
 from pathlib import Path
 

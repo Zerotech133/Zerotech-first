@@ -358,7 +358,7 @@ def execute_step(
             rc = cp.returncode
             out["output"] = (cp.stdout or "") + (cp.stderr or "")
             out["detail"] = _extract_summary(out["output"])
-    except Exception as exc:  # noqa: BLE001  fail-visible：环境异常必须可见
+    except Exception as exc:  # noqa: BLE001
         out["status"] = ERROR
         out["rc"] = None
         out["conclusion"] = "ERROR —— 执行异常：%s" % str(exc)[:160]

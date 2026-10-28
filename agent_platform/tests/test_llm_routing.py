@@ -24,7 +24,7 @@ sys.path.insert(0, str(PLATFORM))
 sys.path.insert(0, str(PLATFORM / "engine"))
 
 import llm as llm_mod  # noqa: E402
-from engine import openclaw_cli as oc_mod  # noqa: E402  B05：OpenClaw 载体桥（monkeypatch run）
+from engine import openclaw_cli as oc_mod  # noqa: E402, B05
 
 
 # ---------------------------------------------------------------- 离线层

@@ -84,5 +84,5 @@ def adapt(
             fp.shadow_log(name, legacy, new)
             return legacy
         return new
-    except Exception:  # noqa: BLE001 —— 统一卡失败绝不反噬主链
+    except Exception:  # noqa: BLE001
         return legacy

@@ -126,7 +126,7 @@ def record_pool_intake(
             rows = list(agg_result.get("combined") or [])
         else:
             rows = list(getattr(agg_result, "combined", None) or [])
-    except Exception as exc:  # noqa: BLE001 — 观测层不外抛
+    except Exception as exc:  # noqa: BLE001
         summary["error"] = "read agg_result: %s" % str(exc)[:120]
         print(
             "%s 读取融合结果失败，跳过证据链入池: %s" % (WARN_PREFIX, summary["error"])
@@ -150,7 +150,7 @@ def record_pool_intake(
             return summary
         summary["db_path"] = resolved
         store = ec.EvidenceChainStore(resolved)
-    except Exception as exc:  # noqa: BLE001 — 库打不开不阻断主链
+    except Exception as exc:  # noqa: BLE001
         summary["error"] = "open store: %s" % str(exc)[:160]
         print(
             "%s 证据链库打开失败，跳过入池（closed on failure）: %s"
@@ -180,7 +180,7 @@ def record_pool_intake(
         except ec.ConflictError:
             # 同 entry+state 不同内容（粘性冲突）按已存在跳过，不覆盖
             summary["conflict"] += 1
-        except Exception as exc:  # noqa: BLE001 — 单票失败不中断
+        except Exception as exc:  # noqa: BLE001
             summary["failed"] += 1
             print("%s 入池单票失败（不阻断其余票）: %s" % (WARN_PREFIX, str(exc)[:120]))
     try:

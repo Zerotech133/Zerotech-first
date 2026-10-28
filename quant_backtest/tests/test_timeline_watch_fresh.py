@@ -21,7 +21,7 @@ if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
 import xq_timeline_watch as xtw  # noqa: E402
-import xq_classify  # noqa: E402  # fixture extractor_version 动态取，升版免疫
+import xq_classify  # noqa: E402
 
 DAY = "2026-10-18"
 

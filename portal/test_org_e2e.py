@@ -47,7 +47,7 @@ os.chdir(HERE)
 sys.path.insert(0, HERE)
 sys.path.insert(0, STATION)
 
-import portal_api as pa  # noqa: E402  （导入即完成全部 mixin 接线）
+import portal_api as pa  # noqa: E402
 import logging
 
 RESULTS = []          # (步骤名, ok, 详情)

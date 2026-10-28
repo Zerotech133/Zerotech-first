@@ -32,9 +32,9 @@ _PLATFORM = Path(__file__).resolve().parents[1]
 if str(_PLATFORM) not in sys.path:
     sys.path.insert(0, str(_PLATFORM))
 
-from gateway import inbox_gateway, llm_gateway  # noqa: E402  S21 门面复用
-from engine.org_profiles import fallbacks_index, profile_index, stamp  # noqa: E402  S41 统一取档口径
-from engine.openclaw_cli import agent_primary_model, is_relay, run as oc_run  # noqa: E402  OpenClaw 载体桥
+from gateway import inbox_gateway, llm_gateway  # noqa: E402, S21
+from engine.org_profiles import fallbacks_index, profile_index, stamp  # noqa: E402, S41
+from engine.openclaw_cli import agent_primary_model, is_relay, run as oc_run  # noqa: E402
 from legion_command.snapshot import build_snapshot  # noqa: E402
 import logging
 

@@ -74,7 +74,7 @@ def _create_engine():
             continue
     try:
         return PaddleOCR()
-    except Exception as exc:  # noqa: BLE001 —— 初始化失败原因多样，统一包装
+    except Exception as exc:  # noqa: BLE001
         raise OCREngineUnavailableError(
             f"PaddleOCR 引擎初始化失败：{exc}\n{PADDLE_INSTALL_HINT}"
         ) from exc
@@ -193,7 +193,7 @@ def recognize(
             lines = _parse_ocr_output(_run_ocr(active_engine, path))
         except OCREngineUnavailableError:
             raise
-        except Exception as exc:  # noqa: BLE001 —— 单帧识别失败不终止整通道
+        except Exception as exc:  # noqa: BLE001
             logger.warning("单帧 OCR 失败（%s）：%s", path.name, exc)
             continue
         for text, conf in lines:

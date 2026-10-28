@@ -18,7 +18,7 @@ from pathlib import Path
 # 让脚本在任意 cwd 下都能以包内绝对导入运行（python scripts/init_db.py）
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import psycopg  # noqa: E402 —— 需在 sys.path 调整后导入
+import psycopg  # noqa: E402
 
 from common.logging_setup import setup_logging  # noqa: E402
 from common.paths import SCHEMA_SQL_PATH  # noqa: E402

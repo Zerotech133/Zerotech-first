@@ -85,7 +85,7 @@ TRACE_ID = "li122-shadow-collect"
 def _chanlun_data():
     if _QB_ROOT not in sys.path:
         sys.path.insert(0, _QB_ROOT)
-    import chanlun_data  # noqa: F401  导入期读 config.json（隐藏 IO），必须懒
+    import chanlun_data  # noqa: F401
 
     return sys.modules["chanlun_data"]
 

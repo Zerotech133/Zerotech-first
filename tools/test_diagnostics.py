@@ -3,7 +3,6 @@
 import importlib.util
 import json
 import pathlib
-import tempfile
 import zipfile
 
 HERE = pathlib.Path(__file__).resolve().parent

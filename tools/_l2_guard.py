@@ -28,7 +28,7 @@ import sys
 try:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-except Exception:  # noqa: BLE001 - 非 TTY/旧解释器时忽略
+except Exception:  # noqa: BLE001
     pass
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

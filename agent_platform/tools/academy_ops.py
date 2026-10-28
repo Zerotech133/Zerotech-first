@@ -116,10 +116,10 @@ def _emit(root: Path, kind: str, detail: str, no_emit: bool = False) -> dict:
         return {"ok": False, "skipped": True}
     try:
         sys.path.insert(0, str(root / "tools"))
-        import events  # noqa: WPS433  (平台事件层，纯标准库)
+        import events  # noqa: WPS433
 
         return events.emit(kind=kind, task="ACAD1", agent="ACAD1", detail=detail[:300])
-    except Exception as exc:  # noqa: BLE001 事件层永不阻塞
+    except Exception as exc:  # noqa: BLE001
         return {"ok": False, "error": "%s: %s" % (type(exc).__name__, str(exc)[:100])}
 
 
@@ -497,7 +497,7 @@ def main(argv=None) -> int:
     except SystemExit as exc:  # _read_json 抛出的真源错误
         print(json.dumps({"ok": False, "error": str(exc)}, ensure_ascii=False))
         return 2
-    except Exception as exc:  # noqa: BLE001 兜底：退出码 2，便于计划任务判读
+    except Exception as exc:  # noqa: BLE001
         print(
             json.dumps(
                 {"ok": False, "error": "%s: %s" % (type(exc).__name__, str(exc)[:160])},

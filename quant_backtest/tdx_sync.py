@@ -579,7 +579,7 @@ def _remote_tables_with_retry(tries=5, gap=30):
     for i in range(tries):
         try:
             return _remote_tables()
-        except Exception as e:  # noqa: BLE001 — 探针失败可重试
+        except Exception as e:  # noqa: BLE001
             last = e
             print(
                 "[probe] /api/data/status attempt %d/%d failed: %s"

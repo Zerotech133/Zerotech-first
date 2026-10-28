@@ -33,7 +33,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.abspath(os.path.join(HERE, "..", "portal")))
 
-import strong_ts_window_research as R  # noqa: E402  复用湖加载/日历/收益
+import strong_ts_window_research as R  # noqa: E402
 
 POOL = os.path.join(HERE, "data", "chanlun_pool.jsonl")
 BUY_TYPES = ("1买", "2买", "3买")

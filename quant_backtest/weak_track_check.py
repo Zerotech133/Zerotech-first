@@ -37,7 +37,7 @@ POOL = os.path.join(HERE, "data", "chanlun_pool.jsonl")
 OUT_DIR = os.path.join(os.path.dirname(HERE), "reports")
 
 
-from codes import normalize_code as _norm  # noqa: E402  P1-2 统一代码归一（北交所 8/4/92 开头 → .BJ）
+from codes import normalize_code as _norm  # noqa: E402
 import logging
 
 TRIG_EX_TH = -5  # §6 触发1 阈值：250 日超额收敛至 -5pp 以内

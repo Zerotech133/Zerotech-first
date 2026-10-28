@@ -29,7 +29,7 @@ from pathlib import Path
 
 try:
     from zhuge_evidence import fetch_url, validate_claims
-except Exception:  # noqa: BLE001 —— 证据模块缺失时工具显式不可用，不反噬 server
+except Exception:  # noqa: BLE001
     fetch_url = None
     validate_claims = None
 
@@ -102,7 +102,7 @@ def _http_get_json(url: str, timeout: float = DEFAULT_TIMEOUT) -> dict:
             data = json.loads(raw.decode("utf-8", errors="replace"))
         return _ok(url=url, status_code=resp.status,
                    elapsed_ms=round((time.time() - t0) * 1000, 1), data=data)
-    except Exception as exc:  # noqa: BLE001 —— 只读工具失败不抛穿
+    except Exception as exc:  # noqa: BLE001
         return _err("http_failed", "%s: %s" % (type(exc).__name__, str(exc)[:200]))
 
 
@@ -256,7 +256,7 @@ def brief_read(clock: str = "", timeout: float = 15.0) -> dict:
 # ---------------------------------------------------------------------------
 try:
     from mcp.server.fastmcp import FastMCP
-except Exception:  # noqa: BLE001 —— 未装 mcp 时允许直接函数/单测使用
+except Exception:  # noqa: BLE001
     FastMCP = None
 
 INSTRUCTIONS = (

@@ -37,7 +37,7 @@ import pandas as pd
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from tushare_sync import ts_call  # noqa: E402  token/.env.local + 限频退避内建
+from tushare_sync import ts_call  # noqa: E402
 
 PROD = HERE / "data" / "tushare"
 STAGING = HERE / "data" / "tushare_staging"

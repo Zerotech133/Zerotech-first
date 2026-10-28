@@ -107,7 +107,7 @@ def _drill_rows():
                     continue
                 try:
                     v = json.loads(ln)
-                except Exception:  # noqa: BLE001  坏行容错口径同对账端
+                except Exception:  # noqa: BLE001
                     continue
                 v.setdefault("title", None)
                 if not isinstance(v.get("ents"), list):

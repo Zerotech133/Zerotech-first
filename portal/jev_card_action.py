@@ -32,7 +32,7 @@ ACTIONS = ("jev_ack", "jev_ignore")
 def _jev_common():
     if JEV_DIR not in sys.path:
         sys.path.insert(0, JEV_DIR)
-    import jev_common as jc  # noqa: WPS433（函数内 import：避免未装 psycopg2 的进程导入失败）
+    import jev_common as jc  # noqa: WPS433
 
     return jc
 

@@ -21,7 +21,7 @@ from datetime import datetime, timedelta, timezone
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-import runner  # noqa: E402  复用 _load_ledger/build_card/push_feishu/CFG
+import runner  # noqa: E402
 import logging
 
 CST = timezone(timedelta(hours=8))

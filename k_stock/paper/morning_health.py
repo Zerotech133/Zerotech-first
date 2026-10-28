@@ -513,7 +513,7 @@ def _verify_prefix_alignment() -> str | None:
     """
     try:
         sys.path.insert(0, str(HERE))
-        import trainee  # noqa: WPS433（运行时按路径导入，容忍裁剪部署）
+        import trainee  # noqa: WPS433
 
         declared = tuple(trainee._NON_AI_PREFIXES)
     except Exception:

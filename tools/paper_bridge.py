@@ -27,7 +27,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "portal"))
 sys.path.insert(0, os.path.join(ROOT, "agent_platform", "engine"))
 import portal_db as pdb  # noqa: E402
-from idem_hook import DualTrackHook  # noqa: E402  M0 P4 双轨幂等
+from idem_hook import DualTrackHook  # noqa: E402
 import logging
 
 PY = sys.executable

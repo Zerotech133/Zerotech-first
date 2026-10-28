@@ -42,7 +42,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
-import xq_daily_report as xqdr  # noqa: E402  （复用生产逻辑，见模块 docstring）
+import xq_daily_report as xqdr  # noqa: E402
 import logging
 
 SEED_DAY = "2020-05-13"  # seed 播种验证日（2026-10-18 判例）

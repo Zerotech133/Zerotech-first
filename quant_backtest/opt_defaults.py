@@ -22,8 +22,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 import backtest  # noqa: E402
-import metrics as mt  # noqa: E402  (纪律门折窗评估，walk_forward 同源)
-import runner  # noqa: E402  (复用 CFG/resolve_watchlist/NEWS_DIR/push_feishu)
+import metrics as mt  # noqa: E402
+import runner  # noqa: E402
 import strategies as strat  # noqa: E402
 from data_loader import load_bars  # noqa: E402
 import logging

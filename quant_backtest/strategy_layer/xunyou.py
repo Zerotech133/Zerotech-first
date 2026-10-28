@@ -293,7 +293,7 @@ def collect_a4_comparison(trade_date: str) -> dict:
             "issues": observation.get("issues", [])[:8],
             "cutover_verdict": "BLOCK_CUTOVER",
         }
-    except Exception as exc:  # noqa: BLE001 — 对账降级不阻断池产出
+    except Exception as exc:  # noqa: BLE001
         return {
             "status": "DEGRADED",
             "reason": "%s: %s" % (type(exc).__name__, str(exc)[:120]),
@@ -334,7 +334,7 @@ def read_evidence_state(
         finally:
             store.close()
         return {"status": "OK", "count": len(rows), "states": rows}
-    except Exception as exc:  # noqa: BLE001 — 降级不阻断池产出
+    except Exception as exc:  # noqa: BLE001
         return {
             "status": "DEGRADED",
             "reason": "%s: %s" % (type(exc).__name__, str(exc)[:120]),
@@ -357,7 +357,7 @@ def replay_evidence_entry(entry_id: str, db_path: str | None = None) -> dict:
             }
         finally:
             store.close()
-    except Exception as exc:  # noqa: BLE001 — 降级不阻断池产出
+    except Exception as exc:  # noqa: BLE001
         return {
             "status": "DEGRADED",
             "reason": "%s: %s" % (type(exc).__name__, str(exc)[:120]),
@@ -379,7 +379,7 @@ def read_posterior(out_path: str | None = None) -> dict:
     try:
         with open(path, encoding="utf-8") as fh:
             doc = _json.load(fh)
-    except Exception as exc:  # noqa: BLE001 — 降级不阻断池产出
+    except Exception as exc:  # noqa: BLE001
         return {
             "status": "DEGRADED",
             "reason": "%s: %s" % (type(exc).__name__, str(exc)[:120]),
@@ -408,7 +408,7 @@ def main(argv: list) -> int:
     trade_date = argv[1] if len(argv) > 1 else datetime.now().strftime("%Y%m%d")
     try:
         registry = bootstrap_default_adapters(Registry())
-    except Exception as exc:  # noqa: BLE001 — bootstrap 致命
+    except Exception as exc:  # noqa: BLE001
         print("[xunyou][FATAL] 注册引导失败: %s" % exc)
         traceback.print_exc()
         return 1

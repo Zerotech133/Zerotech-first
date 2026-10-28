@@ -29,7 +29,7 @@ sys.path.insert(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "news_collector"
     ),
 )
-import push_targets  # noqa: E402  K-STOCK-403：收件人单一事实源
+import push_targets  # noqa: E402
 import logging
 
 DEFAULT_USER_ID = push_targets.target_id("个人") or ""

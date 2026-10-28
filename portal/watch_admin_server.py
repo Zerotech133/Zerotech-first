@@ -100,7 +100,7 @@ class _Handler(BaseHTTPRequestHandler):
             try:
                 data = WatchAdminAggregator().build(replay_at=replay)
                 self._send(200, data)
-            except Exception as exc:  # noqa: BLE001  (fail-visible, still 200-ish)
+            except Exception as exc:  # noqa: BLE001
                 self._send(
                     200,
                     {

@@ -1193,9 +1193,9 @@ def _alert_acceptable_days(today):
         news_dir = os.path.join(STATION, "news_collector")
         if news_dir not in sys.path:
             sys.path.insert(0, news_dir)
-        import trading_cal  # noqa: PLC0415  消费端同款只读交易日历
+        import trading_cal  # noqa: PLC0415
         days.add(trading_cal.last_trading_day(prev))
-    except Exception:  # noqa: BLE001  日历不可用不能让告警链崩
+    except Exception:  # noqa: BLE001
         days.add(_alert_prev_weekday(prev))
     return days
 

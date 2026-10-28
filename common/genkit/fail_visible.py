@@ -31,7 +31,7 @@ def read_json_visible(path: str | Path) -> tuple[Any, bool, str]:
         return None, False, f"source_missing:{p}"
     try:
         return json.loads(p.read_text(encoding="utf-8")), True, ""
-    except Exception as exc:  # noqa: BLE001 - 此处需捕获一切以降级为可见观测态
+    except Exception as exc:  # noqa: BLE001
         return None, False, f"parse_error:{exc}"
 
 

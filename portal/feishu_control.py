@@ -111,7 +111,7 @@ def _db():
     if _jev is None:
         if JEV_DIR not in sys.path:
             sys.path.insert(0, JEV_DIR)
-        import jev_common  # noqa: WPS433  懒加载：DB 断连不应拖垮控制卡
+        import jev_common  # noqa: WPS433
 
         _jev = jev_common
     return _jev
@@ -433,7 +433,7 @@ def handle_ctl(val, operator=""):
                 None,
             )
         return False, "未知动作 %s" % tag, None
-    except Exception as e:  # noqa: BLE001  回调链路绝不因单点失败断掉
+    except Exception as e:  # noqa: BLE001
         return False, "处理失败：%s" % str(e)[:100], None
 
 

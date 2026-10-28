@@ -1569,7 +1569,7 @@ def handle(method, path, headers=None, body=None, query=None):
         return 503, _failure(
             endpoint, "store_unavailable", STATE_UNKNOWN, 503, detail=str(exc)
         )
-    except Exception as exc:  # noqa: BLE001 - 失败关闭，不向调用方抛内部异常
+    except Exception as exc:  # noqa: BLE001
         return 500, _failure(
             endpoint, "internal_error", STATE_UNKNOWN, 500, detail=type(exc).__name__
         )

@@ -503,7 +503,7 @@ class DeepSeekLLM:
                 retries=self.retries,
                 transport=self.transport,
             )
-        except Exception as exc:  # noqa: BLE001 —— 任何构造失败都必须显式抛错
+        except Exception as exc:  # noqa: BLE001
             raise LLMError("deepseek 客户端不可用：%s——云端席位不静默降档" % exc)
         return self._client
 
@@ -523,7 +523,7 @@ class DeepSeekLLM:
             full = client.chat_full(messages, model=model, **opts)
         except mod.DeepSeekError as exc:
             raise LLMError("deepseek 通道调用失败：%s——云端席位不静默降档" % exc)
-        except Exception as exc:  # noqa: BLE001 —— transport 异常也要归一
+        except Exception as exc:  # noqa: BLE001
             raise LLMError(
                 "deepseek 通道调用失败：%s: %s——云端席位不静默降档"
                 % (type(exc).__name__, exc)
@@ -596,7 +596,7 @@ class OpenClawLLM:
         prompt = self.compose_prompt(system, user)
         try:
             oc = _openclaw_module()
-        except Exception as exc:  # noqa: BLE001 —— 载体桥缺失也必须抛 LLMError
+        except Exception as exc:  # noqa: BLE001
             raise LLMError("openclaw_cli 不可用：%s——异族席位不静默降档" % exc)
         carrier = oc.agent_primary_model(self.agent)
         self.last_meta = {

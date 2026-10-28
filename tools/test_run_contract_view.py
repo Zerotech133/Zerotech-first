@@ -5,7 +5,6 @@ import json
 import os
 import pathlib
 import sqlite3
-import time
 
 HERE = pathlib.Path(__file__).resolve().parent
 spec = importlib.util.spec_from_file_location("run_contract_view", HERE / "run_contract_view.py")

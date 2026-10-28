@@ -230,7 +230,7 @@ def _env_gate_via_gatekeeper(breadth, med, upfrac, ledger_fp=None):
                 }
             )
             seen.add(str(d))
-        except Exception as e:  # noqa: BLE001 账本失败不炸判定
+        except Exception as e:  # noqa: BLE001
             print("[env_gate] 判定账本写入失败 %s: %s" % (d, e), flush=True)
     return pd.Series(out, index=breadth.index, dtype=bool)
 

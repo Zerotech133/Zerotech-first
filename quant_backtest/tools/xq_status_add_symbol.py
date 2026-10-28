@@ -54,7 +54,7 @@ REPO_ROOT = HERE.parent
 if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
 
-import xq_ticker_normalize as xtn  # noqa: E402  (sys.path 先行)
+import xq_ticker_normalize as xtn  # noqa: E402
 import logging
 
 # 实读自 build_catalog.py:43 XQ_INFO_DB（data/xueqiu/xueqiu_info.db）

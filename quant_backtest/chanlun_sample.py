@@ -27,7 +27,7 @@ sys.path.insert(0, HERE)
 SAMPLES = os.path.join(HERE, "data", "chanlun_samples.jsonl")
 EVAL_CACHE = os.path.join(HERE, "data", "chanlun_eval_cache.json")
 
-from chanlun_backtest import _dir_ret  # noqa: E402  回填与回测同口径
+from chanlun_backtest import _dir_ret  # noqa: E402
 
 
 def _watchlist():

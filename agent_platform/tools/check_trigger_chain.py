@@ -802,7 +802,7 @@ def check_e_code_importable(repo_root: Path) -> Tuple[str, str]:
             fails.append(
                 "%s 顶层导入超时 %ds（疑模块级阻塞）" % (name, CODE_IMPORT_TIMEOUT_S)
             )
-        except Exception as exc:  # noqa: BLE001  fail-visible
+        except Exception as exc:  # noqa: BLE001
             fails.append("%s 导入探测自身异常：%r" % (name, exc))
 
     if fails:

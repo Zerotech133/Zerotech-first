@@ -33,7 +33,7 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from signal_review_gate import (  # noqa: E402  复用判定层
+from signal_review_gate import (  # noqa: E402
     API_KEY,
     QUESTIONS,
     TUSHARE_TOKEN,

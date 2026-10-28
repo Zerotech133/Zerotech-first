@@ -166,7 +166,7 @@ def _hkt_date_hhmm(ts_iso: str) -> tuple[str, str]:
             .astimezone(ZoneInfo("Asia/Hong_Kong"))
         )
         return dt.strftime("%Y%m%d"), dt.strftime("%H%M")
-    except Exception:  # noqa: BLE001  ZoneInfo 找不到 tzdata 等
+    except Exception:  # noqa: BLE001
         dt = datetime.fromisoformat(str(ts_iso)[:19])
         return dt.strftime("%Y%m%d"), dt.strftime("%H%M")
 
@@ -341,7 +341,7 @@ def apply_hk_engine_waivers() -> None:
     · engine.limit_ratio 包装：.HK / 1-5 位数字码 → 1.0（HK 无涨跌停，
       照 engine.py:189 gb_ 前缀豁免先例）；A 股/US 码转发原实现零影响。
     仅可对 k_stock/paper/engine.py 模块调用（import 同目录模块）。"""
-    import engine as paper_engine  # noqa: PLC0415  同目录（HERE 已在 sys.path）
+    import engine as paper_engine  # noqa: PLC0415
 
     paper_engine.LOT = 1
     orig_limit_ratio = paper_engine.limit_ratio
@@ -429,7 +429,7 @@ def hk_pass(db_path: Path | str | None = None, do_refresh: bool = True) -> dict 
     settle 前自动聚合日历 + 校验敞口票湖文件（单票缺失降级记录不炸 settle）；
     湖数据更新本体走共享工具 export_us_hk.py --market HK（automation 接线时前置）。
     无 hk_% 账本返回 None（灰态）。"""
-    from engine import PaperEngine  # noqa: PLC0415  同目录
+    from engine import PaperEngine  # noqa: PLC0415
 
     db = Path(db_path) if db_path else _paper_db()
     aids = hk_accounts(db)
@@ -440,7 +440,7 @@ def hk_pass(db_path: Path | str | None = None, do_refresh: bool = True) -> dict 
         try:
             refresh_calendar()
             refreshed.append(MARKET_DAYS_FILE)
-        except Exception as ex:  # noqa: BLE001  日历失败仍可 settle（回退基准票/湖内已有 bar）
+        except Exception as ex:  # noqa: BLE001
             failed.append(f"{MARKET_DAYS_FILE}: {ex}")
         for sym in hk_symbols_in_db(db):
             if export_parquet_path(sym).exists():
@@ -501,7 +501,7 @@ def main(argv: list[str]) -> int:
         return 0
     if argv and argv[0] == "init":
         """开立 HK 影子账本（hk_qingping，HKD 原币；幂等——已存在则原样返回）。"""
-        from engine import PaperEngine  # noqa: PLC0415  同目录
+        from engine import PaperEngine  # noqa: PLC0415
 
         apply_hk_engine_waivers()
         db_path = _paper_db()

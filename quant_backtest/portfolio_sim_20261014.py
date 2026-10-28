@@ -114,7 +114,7 @@ def _shift1(v):
 
 
 def build_signals_cross():
-    import scipy.stats  # noqa: F401  确认依赖
+    import scipy.stats  # noqa: F401
 
     cache = os.path.join(os.environ.get("TEMP", "/tmp"), "cross_grid_cache_npz.npz")
     z = np.load(cache, allow_pickle=True)
