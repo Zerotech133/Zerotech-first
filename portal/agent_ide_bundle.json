@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-29 05:12",
+ "generated": "2026-10-29 05:15",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -284,15 +284,6 @@
    "project": "portal"
   },
   {
-   "id": "K-QUANT-20261029-T2MANUAL",
-   "desc": "T2人工派单：dispatch标waiting_human；Mission显示待人工；advance支持人工完成；planner_paths补/api/kg与/api/dataops；测试",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-QUANT-20261029-T2MANUAL",
-   "created": "2026-10-29 05:02:10",
-   "project": "quant"
-  },
-  {
    "id": "WO-O8P3D-DEPAGE-WEEKLY-20261029",
    "desc": "O8 P3d：依赖 triage 纳入周报（只读不阻断）——tools/weekly_dep_triage.py 生成 Markdown 段 + 周报定时提示 + 策略/台账文档 + 单测",
    "status": "doing",
@@ -335,6 +326,15 @@
    "owner": "unknown-agent",
    "branch": "task/WO-GUANYU-P19B-20261029",
    "created": "2026-10-29 05:09:52",
+   "project": "general"
+  },
+  {
+   "id": "WO-CODEREW2-20261029",
+   "desc": "代码审查补丁2(L1)：earn_direction 补扭亏/首亏（修复 review 测试失败）",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-CODEREW2-20261029",
+   "created": "2026-10-29 05:12:16",
    "project": "general"
   }
  ],
