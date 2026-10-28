@@ -37,6 +37,20 @@ except Exception:  # noqa: BLE001
     ann_classify = None
 
 
+def earn_direction(title: str) -> str:
+    """从公告标题提取盈余方向：pos(预增/预盈) / neg(预减/预亏) / actual(快报) / unknown。"""
+    t = title or ""
+    if not any(k in t for k in ("业绩预告", "业绩快报", "预增", "预减", "预盈", "预亏")):
+        return ""
+    if "预增" in t or "预盈" in t:
+        return "pos"
+    if "预减" in t or "预亏" in t:
+        return "neg"
+    if "快报" in t:
+        return "actual"
+    return "unknown"
+
+
 def classify(columns_txt: str, title: str) -> str:
     if ann_classify is not None:
         return ann_classify.classify(columns_txt, title)
@@ -219,10 +233,18 @@ def run(mode: str, days: int, cost_bps: int = 15, split: float = 0.6,
     events = load_anns_d_events(since, until)
     horizons = [5, 10, 20] if mode == "pead" else [5]
     focus = "业绩预告"
+    if mode == "h11dir":
+        focus = "earnings"
     rows = []
     for ev in events:
         if mode in ("h11", "pead") and ev["category"] != focus:
             continue
+        if mode == "h11dir":
+            if ev["category"] != "业绩预告":
+                continue
+            direction = earn_direction(ev["title"])
+            if direction not in ("pos", "neg"):
+                continue
         ymd = ev["notice_date"].replace("-", "")
         idx = bisect.bisect_left(dates, ymd) if shift == 0 else bisect.bisect_right(dates, ymd)
         if idx <= 0 or idx + max(horizons) >= len(dates):
@@ -241,7 +263,8 @@ def run(mode: str, days: int, cost_bps: int = 15, split: float = 0.6,
         if not ok:
             continue
         seg = "IS" if idx < split_idx else "OOS"
-        rows.append({"seg": seg, "ars": ars,
+        rows.append({"seg": seg, "dir": direction if mode == "h11dir" else "",
+                     "ars": ars,
                      "car": {h: sum(ars[: h + 1]) for h in horizons},
                      "post": {h: sum(ars[1: h + 1]) for h in horizons}})
     if not rows:
@@ -268,6 +291,21 @@ def run(mode: str, days: int, cost_bps: int = 15, split: float = 0.6,
         oos = summarize("OOS", h)
         passed = bool(oos.get("n", 0) >= min_n and oos.get("mean", -1) > 0 and oos.get("t", 0) >= 1.5)
         out["result"][str(h)] = {"is": is_s, "oos": oos, "pass": passed}
+        if mode == "h11dir":
+            pos_is = [r["car"][h] - cost_pct for r in rows if r["seg"] == "IS" and r["dir"] == "pos"]
+            neg_is = [r["car"][h] - cost_pct for r in rows if r["seg"] == "IS" and r["dir"] == "neg"]
+            pos_oos = [r["car"][h] - cost_pct for r in rows if r["seg"] == "OOS" and r["dir"] == "pos"]
+            neg_oos = [r["car"][h] - cost_pct for r in rows if r["seg"] == "OOS" and r["dir"] == "neg"]
+            sp_is, sn_is, sp_o, sn_o = stats(pos_is), stats(neg_is), stats(pos_oos), stats(neg_oos)
+            ls_is = round(sp_is["mean"] - sn_is["mean"], 4) if pos_is and neg_is else None
+            ls_oos = round(sp_o["mean"] - sn_o["mean"], 4) if pos_oos and neg_oos else None
+            out["result"][str(h)]["pos"] = {"is": sp_is, "oos": sp_o}
+            out["result"][str(h)]["neg"] = {"is": sn_is, "oos": sn_o}
+            out["result"][str(h)]["ls_is"] = ls_is
+            out["result"][str(h)]["ls_oos"] = ls_oos
+            out["result"][str(h)]["pass"] = bool(
+                sp_o["n"] >= min_n and sn_o["n"] >= min_n
+                and ls_oos is not None and ls_oos >= 0.30)  # OOS 多空差需覆盖 30bp 成本才通过
     if mode == "pead":
         # 按事件日 AR0 符号分组（正/负），比较 CAR[后] 延续性
         for h in horizons:
@@ -290,7 +328,9 @@ def run(mode: str, days: int, cost_bps: int = 15, split: float = 0.6,
 def render(res: dict) -> str:
     if not res.get("ok"):
         return "# 失败\n\n" + json.dumps(res, ensure_ascii=False)
-    title = "H11 三年公告 CAR（行业中性）" if res["mode"] == "h11" else "H2 PEAD（公告后漂移）"
+    title = ("H11 三年公告 CAR（行业中性）" if res["mode"] == "h11"
+             else "H11dir 盈余方向事件研究（预增/预盈 vs 预减/预亏）" if res["mode"] == "h11dir"
+             else "H2 PEAD（公告后漂移）")
     lines = ["# %s" % title, ""]
     lines.append("- 生成：%s；窗口 %s..%s（%d 交易日；样本内截止 %s）" % (
         res["generated_at"], res["window"]["start"], res["window"]["end"],
@@ -309,6 +349,13 @@ def render(res: dict) -> str:
             lines.append("- IS：n=%s 净均值=%s%% t=%s；OOS：n=%s 净均值=%s%% t=%s → **%s**" % (
                 r["is"]["n"], r["is"]["mean"], r["is"]["t"], r["oos"]["n"], r["oos"]["mean"],
                 r["oos"]["t"], "通过" if r["pass"] else "未通过"))
+        if "pos" in r:
+            p, n = r["pos"], r["neg"]
+            lines.append("- 预增/预盈：IS n=%s 净=%s%% / OOS n=%s 净=%s%%（t=%s）；预减/预亏：IS n=%s 净=%s%% / OOS n=%s 净=%s%%（t=%s）" % (
+                p["is"]["n"], p["is"]["mean"], p["oos"]["n"], p["oos"]["mean"], p["oos"]["t"],
+                n["is"]["n"], n["is"]["mean"], n["oos"]["n"], n["oos"]["mean"], n["oos"]["t"]))
+            lines.append("- 多空差：IS=%s%% / OOS=%s%% → **%s**" % (
+                r.get("ls_is"), r.get("ls_oos"), "通过" if r["pass"] else "未通过"))
         if "long_leg" in r:
             lines.append("- 事件后窗口（排除 AR0）正/负组：n=%s 净=%s%% / n=%s 净=%s%%；多空差=%s%%" % (
                 r["long_leg"]["n"], r["long_leg"]["mean"], r["short_leg"]["n"],
@@ -323,7 +370,7 @@ def render(res: dict) -> str:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="H11/H2 事件研究 v3")
-    ap.add_argument("--mode", choices=["h11", "pead"], default="h11")
+    ap.add_argument("--mode", choices=["h11", "h11dir", "pead"], default="h11")
     ap.add_argument("--days", type=int, default=760)
     ap.add_argument("--cost-bps", type=int, default=15)
     ap.add_argument("--split", type=float, default=0.6)
@@ -340,7 +387,9 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     day = datetime.now().strftime("%Y%m%d")
-    name = "H11_announcement_car_3y_%s" % day if args.mode == "h11" else "H2_pead_3y_%s" % day
+    name = ("H11_announcement_car_3y_%s" % day if args.mode == "h11"
+            else "H11dir_earnings_direction_%s" % day if args.mode == "h11dir"
+            else "H2_pead_3y_%s" % day)
     md = REPORT_DIR / (name + ".md")
     js = REPORT_DIR / (name + ".json")
     md.write_text(render(res), encoding="utf-8")
