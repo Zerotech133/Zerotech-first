@@ -80,7 +80,7 @@ def test_trader_feed_append():
 def test_feishu_fail_closed():
     with tempfile.TemporaryDirectory() as tmp:
         _setup(Path(tmp))
-        (mdir := Path(tmp) / "managers" / "bull_desk.json").write_text(
+        (Path(tmp) / "managers" / "bull_desk.json").write_text(
             json.dumps(
                 {
                     "id": "bull_desk",
