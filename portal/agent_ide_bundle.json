@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-28 22:52",
+ "generated": "2026-10-28 22:58",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,8 +9,8 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 27,
-  "workorders_review": 7
+  "workorders_doing": 26,
+  "workorders_review": 8
  },
  "workorders": [
   {
@@ -302,22 +302,22 @@
    "project": "general"
   },
   {
-   "id": "WO-HQ-MEETING-P0-20261028",
-   "desc": "指挥部会议P0：五席晨会预设+决议面板+订单派单（schema v2，8796增量）",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-HQ-MEETING-P0-20261028",
-   "created": "2026-10-28 22:50:08",
-   "project": "general"
-  },
-  {
    "id": "WO-LEGION-GOVAI-20261028",
    "desc": "治理 AI 连续失败：anomaly_digest 输出预算 4096→8192；priority_advice 数字接地支持千分位；重跑验证",
-   "status": "doing",
+   "status": "review",
    "owner": "ZHAOYUN",
    "branch": "task/WO-LEGION-GOVAI-20261028",
    "created": "2026-10-28 22:51:25",
    "project": "general"
+  },
+  {
+   "id": "K-QUANT-20261028-PLANFILE",
+   "desc": "Planner精确文件/checks：fallback输出spec/验收/路由映射精确文件；require_checks自动挂file_exists；A/B真实delta；LLM提示要求精确路径；测试",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-QUANT-20261028-PLANFILE",
+   "created": "2026-10-28 22:54:28",
+   "project": "quant"
   }
  ],
  "coder_traces": [
@@ -6967,14 +6967,9 @@
      "status": "doing"
     },
     {
-     "id": "WO-HQ-MEETING-P0-20261028",
-     "desc": "指挥部会议P0：五席晨会预设+决议面板+订单派单（schema v2，8796增量）",
-     "status": "doing"
-    },
-    {
      "id": "WO-LEGION-GOVAI-20261028",
      "desc": "治理 AI 连续失败：anomaly_digest 输出预算 4096→8192；priority_advice 数字接地支持千分位；重跑验证",
-     "status": "doing"
+     "status": "review"
     }
    ]
   }
