@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 26,
+  "workorders_doing": 25,
   "workorders_review": 6
  },
  "workorders": [
@@ -291,15 +291,6 @@
    "branch": "task/WO-HUANGZHONG-DAILY-TASK-20261028",
    "created": "2026-10-28 10:55:18",
    "project": "general"
-  },
-  {
-   "id": "K-QUANT-20261028-IDEENVALLF",
-   "desc": "修复：IDE开发环境选择器选择项目部门后项目线选项消失；项目线始终从 B.projects 全量列出",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-QUANT-20261028-IDEENVALLF",
-   "created": "2026-10-28 17:23:24",
-   "project": "quant"
   }
  ],
  "coder_traces": [
