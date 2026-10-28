@@ -99,9 +99,14 @@ WORKER_SAFE_ROOTS = ("agent_platform/legion_command/static/", "portal/", "delive
 
 
 def _worker_eligible(task: dict) -> bool:
-    """任务所有 write_scope 都在 Worker 安全根内才允许自动接单。"""
+    """仅在安全页面/文档范围内允许 Worker；后端代码任务强制人工。"""
     scopes = [str(s or "").replace("\\", "/").lstrip("./") for s in (task.get("write_scope") or [])]
     if not scopes:
+        return False
+    if any(s.endswith((".py", ".ps1", ".sql", ".sh")) for s in scopes):
+        return False
+    title = str(task.get("title") or "")
+    if "后端" in title or "API" in title.upper():
         return False
     return all(any(s.startswith(root) for root in WORKER_SAFE_ROOTS) for s in scopes)
 

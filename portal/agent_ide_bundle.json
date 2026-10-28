@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-29 05:26",
+ "generated": "2026-10-29 05:28",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -284,15 +284,6 @@
    "project": "portal"
   },
   {
-   "id": "WO-O8P3D-DEPAGE-WEEKLY-20261029",
-   "desc": "O8 P3d：依赖 triage 纳入周报（只读不阻断）——tools/weekly_dep_triage.py 生成 Markdown 段 + 周报定时提示 + 策略/台账文档 + 单测",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-O8P3D-DEPAGE-WEEKLY-20261029",
-   "created": "2026-10-29 05:02:14",
-   "project": "portal"
-  },
-  {
    "id": "WO-GUANYU-P19-20261029",
    "desc": "ruff收尾E702F401 [UNOWNED]",
    "status": "doing",
@@ -353,6 +344,15 @@
    "owner": "DSH-Lead",
    "branch": "task/WO-BUG-RESTORE-20261029",
    "created": "2026-10-29 05:24:16",
+   "project": "general"
+  },
+  {
+   "id": "WO-DEVTASK-BUNDLE-FIX-20261029",
+   "desc": "修 auto-bundle 提交范围：git commit 只提交 bundle 路径，防止吞并发 staged 改动",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-DEVTASK-BUNDLE-FIX-20261029",
+   "created": "2026-10-29 05:27:04",
    "project": "general"
   }
  ],
@@ -6968,6 +6968,11 @@
     {
      "id": "WO-HQ-ACCEPT-RESTORE-20261029",
      "desc": "恢复 P1b 文件：auto-bundle chore 104ac8f95 误删 5 文件",
+     "status": "doing"
+    },
+    {
+     "id": "WO-DEVTASK-BUNDLE-FIX-20261029",
+     "desc": "修 auto-bundle 提交范围：git commit 只提交 bundle 路径，防止吞并发 staged 改动",
      "status": "doing"
     }
    ]
