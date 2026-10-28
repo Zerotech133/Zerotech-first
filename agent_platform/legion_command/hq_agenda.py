@@ -51,8 +51,19 @@ def load_agenda(dirpath) -> dict:
             archives = sum(1 for x in am.rglob("*") if x.is_file())
         except OSError:
             archives = 0
+    recent_events = []
+    try:
+        for row in _read_jsonl(d / "dev_events.jsonl", 400):
+            if row.get("kind") in ("merge_done", "guard_fail", "meeting_saved",
+                                   "meeting_dispatched"):
+                recent_events.append(row)
+    except OSError:
+        recent_events = []
+    recent_events = recent_events[-10:]
     return {
         "ok": True,
+        "recent_events": recent_events,
+        "events_count": len(recent_events),
         "source": "council_ops(8798) 收编只读；8798 转只读归档、不再启动",
         "topics": topics[-20:],
         "messages": messages[-50:],
