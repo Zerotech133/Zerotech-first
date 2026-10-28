@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 33,
+  "workorders_doing": 32,
   "workorders_review": 5
  },
  "workorders": [
@@ -344,15 +344,6 @@
    "owner": "unknown-agent",
    "branch": "task/legion-1028093051",
    "created": "2026-10-28 09:31:00",
-   "project": "general"
-  },
-  {
-   "id": "WO-HUANGZHONG-EXEMPLAR-20261028",
-   "desc": "黄忠W1示范答卷（根据真实证据填写，批改工具验证≥80）",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-HUANGZHONG-EXEMPLAR-20261028",
-   "created": "2026-10-28 10:50:11",
    "project": "general"
   }
  ],
@@ -7045,11 +7036,6 @@
      "id": "WO-TESTPATHS-ADJUST-20261028",
      "desc": "testpaths 注释与行对齐：quant 收集已修但默认不纳入（CI 预算待确认）",
      "status": "review"
-    },
-    {
-     "id": "WO-HUANGZHONG-EXEMPLAR-20261028",
-     "desc": "黄忠W1示范答卷（根据真实证据填写，批改工具验证≥80）",
-     "status": "doing"
     }
    ]
   }
