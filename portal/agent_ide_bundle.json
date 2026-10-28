@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-28 17:25",
+ "generated": "2026-10-28 17:26",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 25,
+  "workorders_doing": 24,
   "workorders_review": 6
  },
  "workorders": [
@@ -245,15 +245,6 @@
    "owner": "OPS1",
    "branch": "task/WO-LS11-DEPLOY-20261027",
    "created": "2026-10-27 23:54:47",
-   "project": "general"
-  },
-  {
-   "id": "WO-LS12-DOCS-20261027",
-   "desc": "LS-12 文档/索引/导航（使用说明 + DOCS_INDEX 更新）",
-   "status": "doing",
-   "owner": "DOC1",
-   "branch": "task/WO-LS12-DOCS-20261027",
-   "created": "2026-10-27 23:54:52",
    "project": "general"
   },
   {
@@ -3338,14 +3329,7 @@
    ],
    "experience": "20 年技术文档经验：docs/plans 计划谱系与 INDEX 索引总账维护、判例沉淀入册（撞号/行尾/回滚死引用等）、宪法文档保鲜；让组织每次踩坑都变成可检索资产。",
    "dept_name": "研发部",
-   "dept_cn_title": "将作监",
-   "tasks": [
-    {
-     "id": "WO-LS12-DOCS-20261027",
-     "desc": "LS-12 文档/索引/导航（使用说明 + DOCS_INDEX 更新）",
-     "status": "doing"
-    }
-   ]
+   "dept_cn_title": "将作监"
   },
   "DEV6": {
    "id": "DEV6",
