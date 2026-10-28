@@ -29,6 +29,11 @@ def _tasks():
         "T-DEV-SELF": {"dept": "dev", "owner": "ARCH1", "status": "done",
                        "created": "2026-10-25 10:00:00", "merged": "2026-10-25 11:00:00",
                        "approver": "ARCH1"},
+        "T-DEV-NEW-OK": {"dept": "dev", "owner": "DEV6", "status": "done",
+                         "created": "2026-10-28 10:00:00", "merged": "2026-10-28 11:00:00",
+                         "approver": "ARCH1"},
+        "T-DEV-NEW-MISS": {"dept": "dev", "owner": "DEV8", "status": "done",
+                           "created": "2026-10-28 12:00:00", "merged": "2026-10-28 13:00:00"},
         "T-OTHER": {"dept": "quant", "owner": "D1", "status": "doing",
                     "created": "2026-10-27 09:00:00"},
     }
@@ -51,12 +56,18 @@ def _events():
 
 def test_compute_metrics():
     m = A.compute(_tasks(), _events(), CHARTER, adr_files=["ADR-001.md"], now=NOW)
-    assert m["dev"]["done"] == 3
-    assert m["dev"]["approved"] == 2
-    assert m["dev"]["missing"] == 1
+    assert m["dev"]["done"] == 5
+    assert m["dev"]["approved"] == 3
+    assert m["dev"]["missing"] == 1          # 新单缺署名（历史不追改）
+    assert m["dev"]["historical_missing"] == 1
+    assert m["dev"]["new_done"] == 2
     assert m["dev"]["self_review"] == 1
+    assert m["dev"]["missing"] == 1
     assert m["arch1_actions_7d"] == 2
     assert m["e3"]["OPS1"]["ok"] == 0
+    rl = {r["id"]: r for r in m["red_lines"]}
+    assert rl["merge_approval_coverage"]["value"] == 0.5
+    assert rl["merge_approval_coverage"]["ok"] is False
     assert isinstance(m["red_lines"], list)
     assert m["adr_count"] == 1
 
