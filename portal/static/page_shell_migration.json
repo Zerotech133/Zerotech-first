@@ -16,7 +16,7 @@
   "redirects": {
     "/picks_index.html": "/picks.html"
   },
-  "notes": "W4 小批收编（第七批：os_goal/os_issues/os_software/os_personal；os_issues 自导航单独挂 PageShell）；其余 legacy 保留。",
+  "notes": "W4 小批收编（第八批：os_room_preview/os_voice_eval/os_demo/os_integrated_demo）；其余 legacy 保留。",
   "adopted": [
     "/home.html",
     "/quant.html",
@@ -44,6 +44,10 @@
     "/os_goal.html",
     "/os_issues.html",
     "/os_software.html",
-    "/os_personal.html"
+    "/os_personal.html",
+    "/os_room_preview.html",
+    "/os_voice_eval.html",
+    "/os_demo.html",
+    "/os_integrated_demo.html"
   ]
 }
