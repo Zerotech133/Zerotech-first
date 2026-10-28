@@ -130,8 +130,18 @@ button.small{padding:3px 8px;font-size:11px}
 
   <section class="panel" id="tab-vk">
     <h2>虚拟 Key</h2>
-    <div class="muted">虚拟 Key 管理将迁移到本 Tab；当前跳到旧版页面。</div>
-    <p><a class="btn-link" href="/keys?v2=0#vk-section">打开旧版虚拟 Key</a></p>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px">
+      <div class="muted">给 AI 用 vk- 接入；只显示掩码；配额=总请求上限，0=不限。</div>
+      <button class="btn primary" id="vk-add-btn">＋ 新建虚拟 Key</button>
+    </div>
+    <div class="cred-form" id="vk-form" style="display:none">
+      <div class="field"><label>归属 AI / 席位</label><input id="vk-owner" placeholder="如 DEV3 / ARCH1 / 外部助手"></div>
+      <div class="field"><label>默认别名</label><select id="vk-alias"></select></div>
+      <div class="field"><label>配额（总请求数，0 不限）</label><input id="vk-quota" type="number" min="0" value="0"></div>
+      <div style="display:flex;gap:8px;align-items:end"><button class="btn primary" id="vk-create">创建</button><button class="btn" id="vk-cancel">取消</button></div>
+    </div>
+    <div id="vk-token" class="muted"></div>
+    <div id="vk-table"><div class="muted">加载中…</div></div>
   </section>
 
   <section class="panel" id="tab-logs">
@@ -401,6 +411,62 @@ async function loadOverview(){
     document.getElementById("gen").textContent="读取失败";
   }
 }
+let VK_DATA={items:[],aliases:[]};
+function renderVK(){
+  const items=VK_DATA.items||[];
+  const sel=document.getElementById("vk-alias");
+  if(sel && !sel.options.length){
+    (VK_DATA.aliases||[]).forEach(a=>{const o=document.createElement("option");o.value=a;o.textContent=a;sel.appendChild(o);});
+  }
+  let h='<table><thead><tr><th>归属</th><th>掩码</th><th>别名</th><th>状态</th><th>配额</th><th>已用</th><th>最近使用</th><th>操作</th></tr></thead><tbody>';
+  for(const v of items){
+    const u=v.usage||{}; const q=Number(v.quota||0); const used=Number(u.requests||0);
+    const quota=q?(used+"/"+q):"不限";
+    h+='<tr><td>'+esc(v.owner)+'</td><td><code>'+esc(v.masked)+'</code></td><td>'+esc(v.alias)+'</td>'+
+      '<td><span class="pill '+(v.enabled?"ok":"bad")+'">'+(v.enabled?"启用":"停用")+'</span></td>'+
+      '<td>'+quota+'</td><td>'+used+' <span class="muted">(✓'+Number(u.success||0)+' ✗'+Number(u.fail||0)+')</span></td>'+
+      '<td class="muted">'+esc((v.last_used||"—").slice(0,19))+'</td>'+
+      '<td><button class="btn small" onclick="vkAction(\''+v.id+'\',\''+(v.enabled?"disable":"enable")+'\')">'+(v.enabled?"停用":"启用")+'</button> '+
+      '<button class="btn small" onclick="vkQuota(\''+v.id+'\','+q+')">配额</button></td></tr>';
+  }
+  document.getElementById("vk-table").innerHTML=items.length?h+'</tbody></table>':'<div class="muted">暂无虚拟 Key，点右上角新建</div>';
+}
+async function loadVK(){
+  try{
+    const j=await fetch("/api/router/vk",{cache:"no-store"}).then(r=>r.json());
+    VK_DATA={items:j.items||[],aliases:j.aliases||[]}; renderVK();
+  }catch(e){document.getElementById("vk-table").innerHTML='<div class="muted">读取失败：'+e.message+'</div>'}
+}
+function toggleVKForm(show){
+  document.getElementById("vk-form").style.display=show?"grid":"none";
+  if(show)document.getElementById("vk-owner").focus();
+}
+document.getElementById("vk-add-btn").onclick=()=>toggleVKForm(document.getElementById("vk-form").style.display==="none");
+document.getElementById("vk-cancel").onclick=()=>toggleVKForm(false);
+async function createVK(){
+  const owner=document.getElementById("vk-owner").value.trim();
+  const alias=document.getElementById("vk-alias").value||"auto";
+  const quota=Number(document.getElementById("vk-quota").value)||0;
+  if(!owner){alert("归属必填");return}
+  const r=await fetch("/api/router/vk",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"create",owner,alias,quota})});
+  const j=await r.json(); if(!j.ok){alert("创建失败："+(j.error||""));return}
+  document.getElementById("vk-token").innerHTML='<div class="kpi" style="margin:8px 0"><div class="muted">新虚拟 Key 只显示一次，请立即复制</div><pre style="white-space:pre-wrap;margin:6px 0">'+esc(j.item.token)+'</pre><div class="muted">归属 '+esc(j.item.owner)+' · 别名 '+esc(j.item.alias)+'</div></div>';
+  document.getElementById("vk-owner").value=""; toggleVKForm(false); await loadVK();
+}
+document.getElementById("vk-create").onclick=createVK;
+async function vkAction(id,act){
+  if(act==="disable"&&!confirm("停用该虚拟 Key？"))return;
+  const r=await fetch("/api/router/vk",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:act,id})});
+  const j=await r.json(); if(!j.ok){alert("操作失败："+(j.error||""));return}
+  await loadVK();
+}
+async function vkQuota(id,cur){
+  const v=prompt("配额（总请求数，0=不限）",String(cur||0)); if(v===null)return;
+  const r=await fetch("/api/router/vk",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"quota",id,quota:Number(v)||0})});
+  const j=await r.json(); if(!j.ok){alert("失败："+(j.error||""));return}
+  await loadVK();
+}
+loadVK(); setInterval(loadVK,30000);
 async function loadMissionSummary(){
   try{
     const j=await fetch("/api/mission/list",{cache:"no-store"}).then(r=>r.json());
