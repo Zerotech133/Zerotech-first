@@ -42,7 +42,11 @@ def _e3(trigger):
 
 def build_metrics(daily):
     """daily_metrics.json → 契约 metrics（窗口/采集/合并/归属/验证/E3/前置时间）。"""
-    dm = (daily or {}).get("metrics") or {}
+    if not isinstance(daily, dict):
+        daily = {}
+    dm = daily.get("metrics") or {}
+    if not isinstance(dm, dict):
+        dm = {}
     tagged = dm.get("dev_dept_tagged") or 0
     covered = dm.get("dev_dept_with_acceptance") or 0
     e3_str, _ok, _total = _e3(dm.get("e3_trigger"))
@@ -60,7 +64,7 @@ def build_metrics(daily):
 
 def build_redlines(metrics):
     """metrics → 红线（可判定项 ok bool；不可判定 None）。"""
-    metrics = metrics or {}
+    metrics = metrics if isinstance(metrics, dict) else {}
     rate = metrics.get("owner_legal_rate_recent")
     e3 = str(metrics.get("e3_trigger") or "")
     e3_ok = None
