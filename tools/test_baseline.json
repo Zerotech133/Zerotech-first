@@ -1,34 +1,36 @@
 {
-  "_note": "测试门禁既存失败/flaky 基线（GY-01，2026-10-27；2026-10-28 修订）。known_failures=任何环境都登记；env_failures=数据/环境依赖失败（含行情湖未更新到当日、worktree 无数据根），任何位置都登记但单独列出；flaky=顺序依赖。新增失败必须修或正式登记，不得直接加白。",
-  "portal/tests": {
-    "known_failures": [],
-    "flaky": []
-  },
-  "k_stock/tests": {
-    "known_failures": [
-      "k_stock/tests/test_report_builder.py::test_no_external_sdk_imported",
-      "k_stock/tests/test_riskguard_topics.py::test_markdown_renders_conclusion_and_groups"
-    ],
-    "flaky": [],
-    "env_failures": [
-      "k_stock/tests/test_datafeed_watchlist.py::TestLakeCode::test_mapping_hits_real_lake_files",
-      "k_stock/tests/test_datafeed_watchlist.py::TestWatchlistFromQuotes::test_prefix_codes_resurface_and_gb_skipped",
-      "k_stock/tests/test_paper_cli.py::test_mark_default_us_failure_is_nonzero_and_no_false_us_row",
-      "k_stock/tests/test_paper_cli.py::test_mark_all_real_engine_cash_only_accounts",
-      "k_stock/tests/test_period_summary.py::test_cn_accounts_normal"
-    ]
-  },
-  "agent_platform/tests": {
-    "known_failures": [],
-    "flaky": [
-      "agent_platform/tests/test_heartbeat.py::SafetyValveTests::test_bad_checked_at_rejected",
-      "agent_platform/tests/test_repair_lane.py::test_create_and_run_batch"
-    ],
-    "_flaky_note": "2026-10-27 全量实测 2 failed/2093 passed/1 xfail；两项单项与同跑均通过 → 顺序依赖 flaky。"
-  },
-  "quant_backtest/tests": {
-    "known_failures": [],
-    "flaky": [],
-    "note": "全量 >20min，建议夜间窗口跑；当前仅要求 0 收集错误"
-  }
+ "_note": "测试门禁既存失败/flaky 基线（GY-01，2026-10-27；2026-10-28 修订）。known_failures=任何环境都登记；env_failures=数据/环境依赖失败（含行情湖未更新到当日、worktree 无数据根），任何位置都登记但单独列出；flaky=顺序依赖。新增失败必须修或正式登记，不得直接加白。",
+ "portal/tests": {
+  "known_failures": [],
+  "flaky": []
+ },
+ "k_stock/tests": {
+  "known_failures": [
+   "k_stock/tests/test_report_builder.py::test_no_external_sdk_imported",
+   "k_stock/tests/test_riskguard_topics.py::test_markdown_renders_conclusion_and_groups"
+  ],
+  "flaky": [],
+  "env_failures": [
+   "k_stock/tests/test_datafeed_watchlist.py::TestLakeCode::test_mapping_hits_real_lake_files",
+   "k_stock/tests/test_datafeed_watchlist.py::TestWatchlistFromQuotes::test_prefix_codes_resurface_and_gb_skipped",
+   "k_stock/tests/test_paper_cli.py::test_mark_default_us_failure_is_nonzero_and_no_false_us_row",
+   "k_stock/tests/test_paper_cli.py::test_mark_all_real_engine_cash_only_accounts",
+   "k_stock/tests/test_period_summary.py::test_cn_accounts_normal"
+  ]
+ },
+ "agent_platform/tests": {
+  "known_failures": [],
+  "flaky": [
+   "agent_platform/tests/test_heartbeat.py::SafetyValveTests::test_bad_checked_at_rejected",
+   "agent_platform/tests/test_repair_lane.py::test_create_and_run_batch",
+   "agent_platform/tests/test_legion_command.py::test_minutes_bad_length_rejected",
+   "agent_platform/tests/test_monday_drill.py::test_read_only_no_side_effects"
+  ],
+  "_flaky_note": "2026-10-27 全量实测 2 failed/2093 passed/1 xfail；两项单项与同跑均通过 -> 顺序依赖 flaky。 2026-10-28 复测：minutes_bad_length_rejected / monday read_only 单项通过、全量顺序失败，追加入 flaky。"
+ },
+ "quant_backtest/tests": {
+  "known_failures": [],
+  "flaky": [],
+  "note": "全量 >20min，建议夜间窗口跑；当前仅要求 0 收集错误"
+ }
 }
