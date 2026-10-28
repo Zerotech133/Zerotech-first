@@ -284,21 +284,21 @@
    "project": "quant"
   },
   {
-   "id": "K-QUANT-20261028-MCPTUSHAREF",
-   "desc": "清理 Tushare MCP 凭据重复项，合并到既有条目并补验证说明",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-QUANT-20261028-MCPTUSHAREF",
-   "created": "2026-10-28 17:36:25",
-   "project": "quant"
-  },
-  {
    "id": "WO-H4-FLOW-20261028",
    "desc": "H4 资金流背离(L1)：moneyflow 3年数据 → 资金流/价格背离分组 → 行业×规模中性 5/10日反转检验（IS/OOS/成本）",
    "status": "doing",
    "owner": "DSH-Lead",
    "branch": "task/WO-H4-FLOW-20261028",
    "created": "2026-10-28 17:37:14",
+   "project": "general"
+  },
+  {
+   "id": "WO-GUANYU-P9-20261028",
+   "desc": "质量闸quotepath修复 [UNOWNED]",
+   "status": "doing",
+   "owner": "unknown-agent",
+   "branch": "task/WO-GUANYU-P9-20261028",
+   "created": "2026-10-28 17:37:33",
    "project": "general"
   }
  ],
