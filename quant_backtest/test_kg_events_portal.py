@@ -402,7 +402,6 @@ def test_api_dispatch_unknown(monkeypatch):
 
 
 def test_api_routes(monkeypatch):
-    hits = []
     monkeypatch.setattr(KE, "situ", lambda: {"ok": True, "tag": "s"})
     monkeypatch.setattr(KE, "graph", lambda qp: {"ok": True, "tag": "g"})
     monkeypatch.setattr(KE, "list_rows", lambda qp: {"ok": True, "tag": "l"})

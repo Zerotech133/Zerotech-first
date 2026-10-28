@@ -36,7 +36,6 @@ def main():
         "ts_daily", start=start, columns=["ts_code", "trade_date", "close"]
     )
     px = px[px["ts_code"] == code].sort_values("trade_date")
-    last_day = px["trade_date"].iloc[-1] if len(px) else ""
     last_px = float(px["close"].iloc[-1]) if len(px) else 0.0
 
     # --- A. 龙虎榜上榜史 ---

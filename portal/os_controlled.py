@@ -806,7 +806,6 @@ def risk_verdict_with_approval(
             reasons.append("审批未通过：status=%s" % st["status"])
         else:
             req = st.get("request") or {}
-            dec = st.get("decision") or {}
             if req.get("action") != action:
                 reasons.append("审批动作与执行动作不一致")
             elif req.get("consumer_id") != consumer_id:

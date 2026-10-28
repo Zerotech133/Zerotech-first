@@ -410,11 +410,6 @@ def main():
     for no, src, title, desc, expect, ext_text in samples:
         text = ext_text if ext_text is not None else (title or "") + " " + (desc or "")
         res = {name: extract_tickers(text, rx) for name, rx in versions}
-        fixed_l = (
-            "是"
-            if (res["v1.6现行为"] != [] and res["乙字面式"] == [])
-            else ("—" if res["v1.6现行为"] == res["乙字面式"] else "回归!")
-        )
         rows_out.append((no, src, title, desc, res, expect))
         print(
             "%-4s %-26s %-28s | %-16s | %-16s | %-16s"

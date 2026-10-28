@@ -901,22 +901,6 @@ def notify(title: str, body: str, deep_link: str = "") -> dict:
             ),
             None,
         )
-        news = (
-            json.load(
-                open(
-                    os.path.join(
-                        os.path.dirname(REPO),
-                        "..",
-                        "aios",
-                        "news_collector",
-                        "news_config.json",
-                    ),
-                    encoding="utf-8",
-                )
-            )
-            if False
-            else None
-        )
         import sys as _sys
 
         _sys.path.insert(0, "C:/项目/老田的AI助手/news_collector")

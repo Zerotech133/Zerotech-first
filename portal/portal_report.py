@@ -412,7 +412,6 @@ def _facts_no_buy_reasons(code, facts):
     """
     reasons = []
     cl = facts.get("chanlun") or {}
-    q = facts.get("quote") or {}
     px = facts.get("px")
     # 1) 取缠论卡完整判定
     card = None

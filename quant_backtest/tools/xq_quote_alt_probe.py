@@ -290,7 +290,6 @@ def probe_akshare(limit=20):
         )
     samples, notes, errs = {}, [], []
     for sym, label in SAMPLES:
-        code = sym[2:]  # sh600519 → 600519
         try:
             rows = _call_with_timeout(_akshare_daily, 30, ak, sym, limit)
             samples[sym] = rows

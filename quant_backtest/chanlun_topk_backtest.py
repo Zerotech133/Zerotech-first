@@ -78,7 +78,6 @@ def day_candidates(D, codes, warmup=250):
             i = dates.index(D)
             if i < 60:
                 continue
-            prev = dates[i - 1]
             win_now = df_full.iloc[max(0, i + 1 - warmup) : i + 1]
             sig_now = sigset(to_bars(win_now))
             sig_prev = sigset(to_bars(df_full.iloc[max(0, i - warmup) : i]))

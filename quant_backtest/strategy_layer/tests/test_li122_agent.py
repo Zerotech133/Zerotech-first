@@ -505,7 +505,6 @@ def test_self_suff_no_buy_signal_is_legal_hold(chanlun_ready):
 def test_daily_upper_dt_excludes_same_day_bars(chanlun_ready):
     """日线 dt="2026-06-01"：当日 30m/5m 桶全被排除（截至前一日收盘）。"""
     ctx = _ctx_driver(UPPER_B_SAMEDAY, _bars_b())
-    rule = _RULESETS["B_D_30F_5F"]
     # 本体直算佐证：同数据同口径下 judge 的中级截断为 0 根
     direct = _direct_judge(
         ctx["upper_signal"], ctx["bars"]["30m"], ctx["bars"]["5m"], "B_D_30F_5F"

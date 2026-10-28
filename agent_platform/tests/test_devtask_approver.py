@@ -55,7 +55,6 @@ def test_approval_check_logic():
     assert devtask._approval_check({"dept": "quant", "owner": "X"}, cfg) == ([], False)
     ok = {"dept": "dev", "owner": "DEV1", "approver": "ARCH1"}
     assert devtask._approval_check(ok, cfg) == ([], False)
-    warn = []
     w, blocked = devtask._approval_check({"dept": "dev", "owner": "DEV1"}, cfg)
     assert blocked is False and any("缺 ARCH1" in x for x in w)
     w2, b2 = devtask._approval_check({"dept": "dev", "owner": "DEV1",

@@ -389,7 +389,6 @@ class TestShadowCollect:
         rows = []
         for i in range(n):
             score = 10.0 + (i % 10) * 8.0
-            r = (0.3 * score - 10.0) * (1 if positive else -1)
             rows.append(
                 {
                     "symbol": "A.SH",

@@ -2681,7 +2681,6 @@ def canvas_ask(q):
         answer = answer.strip('"')
     except Exception as e:
         answer = ""
-        err = str(e)[:80]
     if not answer or "暂无" in answer or "没有" in answer[:12]:
         answer = _fallback_answer(facts) + "（图事实直读）"
     return {"ok": True, "answer": answer, "sources": sources, "model": MODEL}
