@@ -1190,8 +1190,11 @@ def _auto_rebuild_ide_bundle(tid):
             return
         subprocess.run(["git", "-C", REPO, "add", "portal/agent_ide_bundle.json"],
                        capture_output=True, text=True)
+        # 2026-10-29 WO-BUG-RESTORE：限定 pathspec，防止把索引中其他旧内容
+        # 一并提交（判例 e9a4e3476 把 6 个修复文件回退）。
         c = subprocess.run(["git", "-C", REPO, "commit", "-m",
-                            "chore(ide): auto rebuild agent_ide_bundle after merge %s" % tid],
+                            "chore(ide): auto rebuild agent_ide_bundle after merge %s" % tid,
+                            "--", "portal/agent_ide_bundle.json"],
                            capture_output=True, text=True, encoding="utf-8",
                            errors="replace")
         if c.returncode == 0:
