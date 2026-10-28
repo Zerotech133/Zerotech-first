@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-28 22:58",
+ "generated": "2026-10-28 23:05",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -302,22 +302,22 @@
    "project": "general"
   },
   {
-   "id": "WO-LEGION-GOVAI-20261028",
-   "desc": "治理 AI 连续失败：anomaly_digest 输出预算 4096→8192；priority_advice 数字接地支持千分位；重跑验证",
-   "status": "review",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-GOVAI-20261028",
-   "created": "2026-10-28 22:51:25",
-   "project": "general"
-  },
-  {
    "id": "K-QUANT-20261028-PLANFILE",
    "desc": "Planner精确文件/checks：fallback输出spec/验收/路由映射精确文件；require_checks自动挂file_exists；A/B真实delta；LLM提示要求精确路径；测试",
-   "status": "doing",
+   "status": "review",
    "owner": "DSH-Lead",
    "branch": "task/K-QUANT-20261028-PLANFILE",
    "created": "2026-10-28 22:54:28",
    "project": "quant"
+  },
+  {
+   "id": "WO-HQ-MEETING-P0-FIX-20261028",
+   "desc": "清 ruff F401：test_hq_meeting 未用 SimpleNamespace",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-HQ-MEETING-P0-FIX-20261028",
+   "created": "2026-10-28 22:59:00",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -6967,9 +6967,9 @@
      "status": "doing"
     },
     {
-     "id": "WO-LEGION-GOVAI-20261028",
-     "desc": "治理 AI 连续失败：anomaly_digest 输出预算 4096→8192；priority_advice 数字接地支持千分位；重跑验证",
-     "status": "review"
+     "id": "WO-HQ-MEETING-P0-FIX-20261028",
+     "desc": "清 ruff F401：test_hq_meeting 未用 SimpleNamespace",
+     "status": "doing"
     }
    ]
   }
