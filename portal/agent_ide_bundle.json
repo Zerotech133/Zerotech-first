@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-28 17:42",
+ "generated": "2026-10-28 17:43",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 25,
+  "workorders_doing": 26,
   "workorders_review": 6
  },
  "workorders": [
@@ -275,15 +275,6 @@
    "project": "general"
   },
   {
-   "id": "OS-FIX-PYTESTNET-20261028",
-   "desc": "PytestWeekly 全量 gate2 联网用例隔离：test_xueqiu_crawl::test_crawl_all_end_to_end 默认 skip（RUN_LIVE_NETWORK_TESTS=1 才跑），修周门禁 rc=1",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/OS-FIX-PYTESTNET-20261028",
-   "created": "2026-10-28 17:39:52",
-   "project": "general"
-  },
-  {
    "id": "WO-GUANYU-P10-20261028",
    "desc": "文档单验证 [UNOWNED]",
    "status": "doing",
@@ -291,6 +282,24 @@
    "branch": "task/WO-GUANYU-P10-20261028",
    "created": "2026-10-28 17:41:59",
    "project": "general"
+  },
+  {
+   "id": "WO-LEGION-JEVCHART-20261028",
+   "desc": "JEV 图片上传失败诊断：静默 except 补日志，复现判断 lark-cli/token/路径/格式；不推送",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-JEVCHART-20261028",
+   "created": "2026-10-28 17:43:14",
+   "project": "general"
+  },
+  {
+   "id": "K-QUANT-20261028-KEYV2B1",
+   "desc": "Phase B-1 凭据可写：/api/credentials/set DPAPI加密+校验；catalog合并work/credentials动态条目；keys v2凭据页新增/轮换表单；单测；不回显明文",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-QUANT-20261028-KEYV2B1",
+   "created": "2026-10-28 17:43:25",
+   "project": "quant"
   }
  ],
  "coder_traces": [
@@ -6940,6 +6949,11 @@
      "id": "WO-HUANGZHONG-DAILY-TASK-20261028",
      "desc": "记录 HuangzhongDaily 批准+注册+首跑验证（rc0/PASS）",
      "status": "review"
+    },
+    {
+     "id": "WO-LEGION-JEVCHART-20261028",
+     "desc": "JEV 图片上传失败诊断：静默 except 补日志，复现判断 lark-cli/token/路径/格式；不推送",
+     "status": "doing"
     }
    ]
   }
