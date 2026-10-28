@@ -37,12 +37,14 @@ from engine.org_profiles import fallbacks_index, profile_index, stamp  # noqa: E
 from engine.openclaw_cli import agent_primary_model, is_relay, run as oc_run  # noqa: E402
 from legion_command.snapshot import build_snapshot  # noqa: E402
 from legion_command import hq_meeting  # noqa: E402
+from legion_command import hq_agenda  # noqa: E402
 import logging
 
 _STATIC = Path(__file__).resolve().parent / "static"
 # 作战会议室纪要落盘目录（模块级，测试可 monkeypatch 到 tmp）
 MEETINGS_DIR = _PLATFORM / "data" / "meetings" / "warroom"
 HQ_MEETINGS_DIR = _PLATFORM / "data" / "meetings" / "hq"
+COUNCIL_DATA = _PLATFORM.parent / "portal" / "data"
 _KIND_MAP = {"work": "task_request", "trade": "task_request", "study": "question"}
 
 
@@ -440,6 +442,9 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/api/evolution":
             self._send_json(self._evolution())
+            return
+        if path == "/api/hq/agenda":
+            self._send_json(hq_agenda.load_agenda(COUNCIL_DATA))
             return
         if path == "/api/hq/meeting/list":
             self._send_json(hq_meeting.list_meetings(HQ_MEETINGS_DIR))
@@ -2104,6 +2109,18 @@ class Handler(BaseHTTPRequestHandler):
             env["agent"] = agent
             env["binding"] = env.get("data", {}).get("binding_resolved", binding)
             self._send_json(env)
+            return
+        if path == "/api/hq/agenda/message":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 64 * 1024:
+                    raise ValueError("bad length")
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+            except (ValueError, UnicodeDecodeError):
+                self._send_json({"ok": False, "error": "bad_request"}, 400)
+                return
+            code, env = hq_agenda.append_message(COUNCIL_DATA, req)
+            self._send_json(env, code)
             return
         if path == "/api/hq/meeting/save":
             try:
