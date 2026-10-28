@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-28 17:13",
+ "generated": "2026-10-28 17:16",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 28,
+  "workorders_doing": 27,
   "workorders_review": 6
  },
  "workorders": [
@@ -236,15 +236,6 @@
    "owner": "ARCH1",
    "branch": "task/WO-LEGION-SCREEN-20261027",
    "created": "2026-10-27 23:53:53",
-   "project": "general"
-  },
-  {
-   "id": "WO-LS06-QUANTCARD-20261027",
-   "desc": "LS-06 量化席位卡数据（策略注册/影子状态口径；无数据标注未接，不伪造）",
-   "status": "doing",
-   "owner": "DEV3",
-   "branch": "task/WO-LS06-QUANTCARD-20261027",
-   "created": "2026-10-27 23:54:19",
    "project": "general"
   },
   {
@@ -2716,11 +2707,6 @@
      "id": "WO-GUANYU-HTTP-20261027",
      "desc": "HTTP统一封装+迁移首批 [UNOWNED]",
      "status": "doing"
-    },
-    {
-     "id": "WO-LS06-QUANTCARD-20261027",
-     "desc": "LS-06 量化席位卡数据（策略注册/影子状态口径；无数据标注未接，不伪造）",
-     "status": "doing"
     }
    ]
   },
@@ -3893,7 +3879,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 60,
+     "count": 62,
      "recent": [
       {
        "ts": "",
@@ -4041,7 +4027,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 60,
+     "count": 62,
      "recent": [
       {
        "ts": "",
@@ -4183,7 +4169,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 61,
+     "count": 62,
      "recent": [
       {
        "ts": "",
@@ -4325,7 +4311,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 61,
+     "count": 62,
      "recent": [
       {
        "ts": "",
@@ -4466,7 +4452,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 60,
+     "count": 61,
      "recent": [
       {
        "ts": "",
