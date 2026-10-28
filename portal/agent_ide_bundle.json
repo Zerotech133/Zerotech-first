@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-29 05:28",
+ "generated": "2026-10-29 05:35",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 33,
+  "workorders_doing": 31,
   "workorders_review": 5
  },
  "workorders": [
@@ -336,24 +336,6 @@
    "branch": "task/K-QUANT-20261029-T2MANUAL2",
    "created": "2026-10-29 05:16:14",
    "project": "quant"
-  },
-  {
-   "id": "WO-BUG-RESTORE-20261029",
-   "desc": "BUG 修复（恢复+根因）：上一单 merge 后 auto bundle 提交把 6 个文件回退（HEAD e9a4e3476），疑似 _auto_rebuild_ide_bundle 的 git commit 未限定 pathspec，把工作区/索引中的旧内容一并提交。①从 merge 2bf685bb6 恢复 api/aggregate/卡模块/测试；②devtask._auto_rebuild_ide_bundle 提交改为限定 portal/agent_ide_bundle.json；③回归验证。",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-BUG-RESTORE-20261029",
-   "created": "2026-10-29 05:24:16",
-   "project": "general"
-  },
-  {
-   "id": "WO-DEVTASK-BUNDLE-FIX-20261029",
-   "desc": "修 auto-bundle 提交范围：git commit 只提交 bundle 路径，防止吞并发 staged 改动",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-DEVTASK-BUNDLE-FIX-20261029",
-   "created": "2026-10-29 05:27:04",
-   "project": "general"
   }
  ],
  "coder_traces": [
@@ -6968,11 +6950,6 @@
     {
      "id": "WO-HQ-ACCEPT-RESTORE-20261029",
      "desc": "恢复 P1b 文件：auto-bundle chore 104ac8f95 误删 5 文件",
-     "status": "doing"
-    },
-    {
-     "id": "WO-DEVTASK-BUNDLE-FIX-20261029",
-     "desc": "修 auto-bundle 提交范围：git commit 只提交 bundle 路径，防止吞并发 staged 改动",
      "status": "doing"
     }
    ]
