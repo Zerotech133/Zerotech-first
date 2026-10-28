@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-29 07:07",
+ "generated": "2026-10-29 07:23",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -10,7 +10,7 @@
   "prompt_miss": [],
   "name_collisions": {},
   "workorders_doing": 21,
-  "workorders_review": 7
+  "workorders_review": 6
  },
  "workorders": [
   {
@@ -255,15 +255,6 @@
    "branch": "task/WO-MEETING-JS-20261029",
    "created": "2026-10-29 05:46:49",
    "project": "quant"
-  },
-  {
-   "id": "WO-LEGION-F401FIN-20261029",
-   "desc": "DEV4 收尾：ruff F401/F601 剩余 9 处清零；含 find_spec/重复键语义；目标 F401/F821/F601/F541=0",
-   "status": "review",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-F401FIN-20261029",
-   "created": "2026-10-29 06:52:09",
-   "project": "general"
   }
  ],
  "coder_traces": [
@@ -6879,11 +6870,6 @@
      "id": "WO-HQ-ACCEPT-RESTORE-20261029",
      "desc": "恢复 P1b 文件：auto-bundle chore 104ac8f95 误删 5 文件",
      "status": "doing"
-    },
-    {
-     "id": "WO-LEGION-F401FIN-20261029",
-     "desc": "DEV4 收尾：ruff F401/F601 剩余 9 处清零；含 find_spec/重复键语义；目标 F401/F821/F601/F541=0",
-     "status": "review"
     }
    ]
   }
