@@ -16,6 +16,7 @@ REPO = HERE.parent.parent
 WORKSPACE = REPO.parent
 CONFIG = REPO / "config" / "credential_registry.json"
 VAULT_ENC = WORKSPACE / "_vault" / "secrets.enc"
+LOCAL_INDEX = REPO / "work" / "credentials" / "index.json"
 
 
 def _load(config_path=None) -> list:
@@ -41,7 +42,15 @@ def _resolve(rel: str, workspace: Path) -> Path:
     return p if p.is_absolute() else workspace / p
 
 
-def catalog(config_path=None, workspace=None) -> dict:
+def _load_local(index_path: Path) -> dict:
+    try:
+        d = json.loads(index_path.read_text(encoding="utf-8"))
+        return d if isinstance(d, dict) else {}
+    except Exception:
+        return {}
+
+
+def catalog(config_path=None, workspace=None, local_index=None) -> dict:
     ws = Path(workspace) if workspace else WORKSPACE
     entries = _load(config_path)
     items = []
@@ -65,6 +74,36 @@ def catalog(config_path=None, workspace=None) -> dict:
                       "encrypted": is_cipher,
                       "status": status, "updated": updated, "size": size,
                       "rotate": e.get("rotate"), "note": e.get("note")})
+    # 平台 DPAPI 凭据（页面新增/轮换）：合并到目录；同 env 覆盖登记项
+    idx_path = Path(local_index) if local_index else LOCAL_INDEX
+    local_root = idx_path.parent
+    for lname, meta in _load_local(idx_path).items():
+        f = local_root / str(meta.get("file") or (lname + ".dpapi"))
+        st = _stat(f)
+        if f.is_relative_to(ws):
+            rel = str(f.relative_to(ws)).replace("\\", "/")
+        else:
+            rel = str(f)
+        env = str(meta.get("env") or "")
+        cat = str(meta.get("category") or "data")
+        match = None
+        if env:
+            match = next((i for i in items if i.get("env") == env), None)
+        if match is not None:
+            match.update({"source": "", "encrypted_source": rel, "encrypted": True,
+                          "status": "ok" if st["exists"] else "missing",
+                          "updated": st["updated"], "size": st["size"],
+                          "note": "DPAPI 保险箱（页面新增/轮换）"})
+            seen_enc.add(rel)
+            continue
+        if any(i.get("name") == lname for i in items):
+            continue
+        items.append({"name": lname, "category": cat, "env": env,
+                      "source": "", "encrypted_source": rel, "encrypted": True,
+                      "status": "ok" if st["exists"] else "missing",
+                      "updated": st["updated"], "size": st["size"],
+                      "rotate": "", "note": "DPAPI 保险箱（页面新增/轮换）"})
+        seen_enc.add(rel)
     # 额外扫描未登记的 age 密文
     vault_enc = ws / "_vault" / "secrets.enc"
     try:
