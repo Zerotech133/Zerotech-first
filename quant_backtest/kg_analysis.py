@@ -172,7 +172,7 @@ def main(dry_run=False):
         # 3) 导出 top 快照 → parquet 湖
         os.makedirs(OUT_DIR, exist_ok=True)
         rows = s.run(
-            f"""
+            """
             MATCH (x) WHERE x.pagerank IS NOT NULL
             RETURN coalesce(labels(x)[0],'?') AS label,
                    coalesce(x.name, x.symbol, x.code, toString(id(x))) AS name,
