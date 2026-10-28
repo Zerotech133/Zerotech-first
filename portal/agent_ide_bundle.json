@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-28 16:58",
+ "generated": "2026-10-28 16:59",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 32,
+  "workorders_doing": 33,
   "workorders_review": 6
  },
  "workorders": [
@@ -347,12 +347,21 @@
    "project": "general"
   },
   {
-   "id": "WO-PHOENIX-IDEM-FIX-20261028",
-   "desc": "修 phoenix_start 测试（worktree 无 .venvs → monkeypatch PHOENIX 到 tmp 文件）",
+   "id": "WO-GUANYU-B17-20261028",
+   "desc": "B4窄单机械修 [UNOWNED]",
    "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-PHOENIX-IDEM-FIX-20261028",
-   "created": "2026-10-28 16:57:17",
+   "owner": "unknown-agent",
+   "branch": "task/WO-GUANYU-B17-20261028",
+   "created": "2026-10-28 16:59:05",
+   "project": "general"
+  },
+  {
+   "id": "WO-RESEARCH2-20261028",
+   "desc": "研究第二批(L1)：公告分类v2(columns_txt+标题) + H11 三年窗口/行业中性 + H2 PEAD + H6 市场方向兜底归因",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-RESEARCH2-20261028",
+   "created": "2026-10-28 16:59:22",
    "project": "general"
   }
  ],
@@ -7045,11 +7054,6 @@
      "id": "WO-HUANGZHONG-DAILY-TASK-20261028",
      "desc": "记录 HuangzhongDaily 批准+注册+首跑验证（rc0/PASS）",
      "status": "review"
-    },
-    {
-     "id": "WO-PHOENIX-IDEM-FIX-20261028",
-     "desc": "修 phoenix_start 测试（worktree 无 .venvs → monkeypatch PHOENIX 到 tmp 文件）",
-     "status": "doing"
     }
    ]
   }
