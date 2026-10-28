@@ -36,3 +36,9 @@ def test_docs_only_false_for_empty():
 def test_suffix_and_prefix_sets_sane():
     assert ".md" in DOC_SUFFIX
     assert "docs/" in DOC_PREFIX
+
+def test_docs_only_handles_quoted_non_ascii_paths():
+    """git core.quotepath 未关时中文路径会带引号；_clean_path 兜底后仍应识别。"""
+    from merge_gated import _clean_path, is_docs_only
+    assert _clean_path('"docs/ops/2026-10-28_中文.md"') == "docs/ops/2026-10-28_中文.md"
+    assert is_docs_only([_clean_path('"docs/ops/2026-10-28_中文.md"')])
