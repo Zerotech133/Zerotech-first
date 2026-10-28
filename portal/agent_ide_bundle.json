@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 29,
+  "workorders_doing": 28,
   "workorders_review": 6
  },
  "workorders": [
@@ -317,15 +317,6 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-HUANGZHONG-DAILY-TASK-20261028",
    "created": "2026-10-28 10:55:18",
-   "project": "general"
-  },
-  {
-   "id": "WO-GUANYU-P6-20261028",
-   "desc": "api_kg契约测试 [UNOWNED]",
-   "status": "doing",
-   "owner": "unknown-agent",
-   "branch": "task/WO-GUANYU-P6-20261028",
-   "created": "2026-10-28 17:12:10",
    "project": "general"
   }
  ],
