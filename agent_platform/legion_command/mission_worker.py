@@ -210,23 +210,47 @@ def _prompt(ctx: dict, context: list) -> str:
     return system, user
 
 
-def _call_llm(ctx: dict) -> dict:
-    system, user = _prompt(ctx, _collect_context(ctx["worktree"], (ctx["plan_task"] or ctx["task"]).get("write_scope") or []))
-    body = json.dumps({"model": "auto", "stream": False,
-                       "messages": [{"role": "system", "content": system},
-                                    {"role": "user", "content": user}]}).encode()
-    import urllib.request
-    req = urllib.request.Request(GATEWAY, data=body, method="POST",
-                                 headers={"Content-Type": "application/json",
-                                          "X-DSH-Task": "coding",
-                                          "X-DSH-Agent": str((ctx["task"].get("owner") or "DEV5"))})
-    with urllib.request.urlopen(req, timeout=240) as r:
-        data = json.loads(r.read().decode("utf-8", "replace"))
-    text = ((data.get("choices") or [{}])[0].get("message") or {}).get("content") or ""
+WORKER_MODELS = ("auto", "glm-4-flash", "deepseek-chat")
+
+
+def _extract_worker_json(text: str) -> dict:
+    text = str(text or "").strip()
+    m = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.S)
+    if m:
+        text = m.group(1)
     a, b = text.find("{"), text.rfind("}")
     if a < 0 or b <= a:
         raise ValueError("worker_output_not_json")
-    return json.loads(text[a:b + 1])
+    data = json.loads(text[a:b + 1])
+    if not isinstance(data, dict) or not isinstance(data.get("files"), list):
+        raise ValueError("worker_output_schema_invalid")
+    return data
+
+
+def _call_llm(ctx: dict) -> dict:
+    system, user = _prompt(ctx, _collect_context(ctx["worktree"], (ctx["plan_task"] or ctx["task"]).get("write_scope") or []))
+    import urllib.request
+    last = ""
+    for model in WORKER_MODELS:
+        try:
+            body = json.dumps({"model": model, "stream": False,
+                               "messages": [{"role": "system", "content": system},
+                                            {"role": "user", "content": user}]}).encode()
+            req = urllib.request.Request(GATEWAY, data=body, method="POST",
+                                         headers={"Content-Type": "application/json",
+                                                  "X-DSH-Task": "coding",
+                                                  "X-DSH-Agent": str((ctx["task"].get("owner") or "DEV5"))})
+            with urllib.request.urlopen(req, timeout=240) as r:
+                data = json.loads(r.read().decode("utf-8", "replace"))
+            text = ((data.get("choices") or [{}])[0].get("message") or {}).get("content") or ""
+            if not str(text).strip():
+                last = "%s: empty_response" % model
+                continue
+            return _extract_worker_json(text)
+        except Exception as e:  # noqa: BLE001
+            last = "%s: %s" % (model, str(e)[:120])
+            continue
+    raise ValueError("worker_llm_failed: " + (last or "no_model"))
 
 
 def _restore(wt: Path, files: list) -> None:
