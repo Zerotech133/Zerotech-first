@@ -326,6 +326,11 @@ class TestCommentUpsert(_TmpEnv):
         self.assertNotIn("max_id", calls[0])  # 首步不带游标
         self.assertEqual(calls[1]["max_id"], "257156")  # 官方游标推进
 
+    @unittest.skipUnless(
+        os.environ.get("RUN_LIVE_NETWORK_TESTS") == "1",
+        "该用例实际会走真实雪球请求（仅 mock 了 session 未 mock X.xq_get），"
+        "默认跳过；联调时 RUN_LIVE_NETWORK_TESTS=1 再跑（防周门禁 852s 超时）",
+    )
     def test_crawl_all_end_to_end(self):
         """timeline+hot 全链（mock HTTP）→ SQLite 落库 + manifest。"""
         items = [
