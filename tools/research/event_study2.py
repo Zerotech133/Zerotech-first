@@ -40,11 +40,11 @@ except Exception:  # noqa: BLE001
 def earn_direction(title: str) -> str:
     """从公告标题提取盈余方向：pos(预增/预盈) / neg(预减/预亏) / actual(快报) / unknown。"""
     t = title or ""
-    if not any(k in t for k in ("业绩预告", "业绩快报", "预增", "预减", "预盈", "预亏")):
+    if not any(k in t for k in ("业绩预告", "业绩快报", "预增", "预减", "预盈", "预亏", "扭亏", "首亏")):
         return ""
-    if "预增" in t or "预盈" in t:
+    if "预增" in t or "预盈" in t or "扭亏" in t:
         return "pos"
-    if "预减" in t or "预亏" in t:
+    if "预减" in t or "预亏" in t or "首亏" in t:
         return "neg"
     if "快报" in t:
         return "actual"
