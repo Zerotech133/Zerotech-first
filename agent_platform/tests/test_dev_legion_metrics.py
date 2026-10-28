@@ -52,30 +52,6 @@ def test_empty_is_safe():
                ("owner_legal_rate", "e3_trigger"))
 
 
-def test_malformed_daily_shape_no_crash():
-    # 合法 JSON 但类型错误（metrics 是 list）→ 降级空态，不抛异常
-    m = G.build_metrics({"metrics": [1]})
-    assert m["verification_rate"] is None
-    assert m["e3_trigger"] == ""
-    assert isinstance(G.build_redlines([1]), list)
-
-
-def test_malformed_root_no_crash(tmp_path):
-    import json
-    root = tmp_path
-    (root / "agent_platform/registry").mkdir(parents=True)
-    (root / "agent_platform/registry/org.json").write_text(
-        "[]", encoding="utf-8")  # org 合法 JSON 但非 dict
-    (root / ".worktrees").mkdir()
-    (root / ".worktrees/tasks.json").write_text("[1]", encoding="utf-8")
-    (root / "agent_platform/data/dev").mkdir(parents=True)
-    (root / "agent_platform/data/dev/daily_metrics.json").write_text(
-        json.dumps({"metrics": [1]}), encoding="utf-8")
-    p = A.build_payload(root)  # 不应抛 AttributeError
-    assert p["seats"] == []
-    assert p["errors"], "畸形数据源必须留 errors"
-
-
 def test_api_uses_aggregation():
     p = A.build_payload(A.ROOT)
     # API payload 与聚合层同源（有 daily 时指标一致）

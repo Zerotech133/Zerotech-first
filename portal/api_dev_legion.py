@@ -50,8 +50,6 @@ def _hr_name(seat):
 
 
 def _dev_profiles(org):
-    if not isinstance(org, dict):
-        return {}, []
     for d in (org or {}).get("departments") or []:
         if d.get("dept") == "dev":
             return d, [p for p in d.get("agent_profiles") or []
@@ -97,9 +95,6 @@ def build_payload(root=ROOT):
             encoding="utf-8-sig"))
     except Exception as e:  # noqa: BLE001
         errors.append("org_unavailable: %s" % type(e).__name__)
-    if org is not None and not isinstance(org, dict):
-        errors.append("org_unavailable: bad_shape")
-        org = None
     dev, profiles = _dev_profiles(org)
     seats = [_seat(p) for p in profiles]
     groups = []

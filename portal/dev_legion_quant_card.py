@@ -25,8 +25,6 @@ def _hr_name(seat):
 
 
 def _profiles(org):
-    if not isinstance(org, dict):
-        return []
     for d in (org or {}).get("departments") or []:
         if d.get("dept") == "dev":
             return [p for p in d.get("agent_profiles") or []

@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-29 05:15",
+ "generated": "2026-10-29 05:23",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 31,
+  "workorders_doing": 33,
   "workorders_review": 5
  },
  "workorders": [
@@ -335,6 +335,24 @@
    "owner": "DSH-Lead",
    "branch": "task/WO-CODEREW2-20261029",
    "created": "2026-10-29 05:12:16",
+   "project": "general"
+  },
+  {
+   "id": "K-QUANT-20261029-T2MANUAL2",
+   "desc": "T2人工规则收紧：.py/.ps1/后端任务强制worker_eligible=false；测试/api/kg T2待人工",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-QUANT-20261029-T2MANUAL2",
+   "created": "2026-10-29 05:16:14",
+   "project": "quant"
+  },
+  {
+   "id": "WO-HQ-ACCEPT-FINISH-20261029",
+   "desc": "收尾 P1b：提交 serve/hq_meeting/meeting.html 三处接线（HEAD 已有 acceptance 模块）",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-HQ-ACCEPT-FINISH-20261029",
+   "created": "2026-10-29 05:20:58",
    "project": "general"
   }
  ],
@@ -6950,6 +6968,11 @@
     {
      "id": "WO-HQ-ACCEPT-RESTORE-20261029",
      "desc": "恢复 P1b 文件：auto-bundle chore 104ac8f95 误删 5 文件",
+     "status": "doing"
+    },
+    {
+     "id": "WO-HQ-ACCEPT-FINISH-20261029",
+     "desc": "收尾 P1b：提交 serve/hq_meeting/meeting.html 三处接线（HEAD 已有 acceptance 模块）",
      "status": "doing"
     }
    ]
