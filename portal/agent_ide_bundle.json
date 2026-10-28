@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 25,
+  "workorders_doing": 24,
   "workorders_review": 6
  },
  "workorders": [
@@ -273,15 +273,6 @@
    "branch": "task/WO-HUANGZHONG-DAILY-TASK-20261028",
    "created": "2026-10-28 10:55:18",
    "project": "general"
-  },
-  {
-   "id": "K-QUANT-20261028-MODELSFULL",
-   "desc": "补齐模型：seat_routing新增glm-5.3/glm-5/glm-4-flash/deepseek-v4-pro/deepseek-flash/qwen-plus/qwen3-max等；auto_chat支持model_filter按模型选Key；gateway透传；IDE 17模型全量可下滑+状态",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-QUANT-20261028-MODELSFULL",
-   "created": "2026-10-28 17:28:23",
-   "project": "quant"
   },
   {
    "id": "WO-GUANYU-P7-20261028",
