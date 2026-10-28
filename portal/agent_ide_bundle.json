@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-28 17:57",
+ "generated": "2026-10-28 18:01",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -10,7 +10,7 @@
   "prompt_miss": [],
   "name_collisions": {},
   "workorders_doing": 25,
-  "workorders_review": 6
+  "workorders_review": 7
  },
  "workorders": [
   {
@@ -268,7 +268,7 @@
   {
    "id": "OS-FIX-L1-AUDIT-20261028",
    "desc": "L1 三修：gen_health_card 消费 canonical failures/known_baseline；publish_watchdog critical 透传+发送结果后置；seat_heartbeat 记录 finish_reason/usage+空回复重试",
-   "status": "doing",
+   "status": "review",
    "owner": "DSH-Lead",
    "branch": "task/OS-FIX-L1-AUDIT-20261028",
    "created": "2026-10-28 17:48:30",
@@ -290,6 +290,15 @@
    "owner": "unknown-agent",
    "branch": "task/WO-GUANYU-P12-20261028",
    "created": "2026-10-28 17:55:46",
+   "project": "general"
+  },
+  {
+   "id": "WO-LEGION-HEALTHCARD-20261028",
+   "desc": "健康卡 task_audit 口径：应用 task_exit_audit by-design 语义（alert_found/known_baseline），failed 9→5 降假红",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-HEALTHCARD-20261028",
+   "created": "2026-10-28 17:59:15",
    "project": "general"
   }
  ],
@@ -6933,6 +6942,11 @@
      "id": "WO-HUANGZHONG-DAILY-TASK-20261028",
      "desc": "记录 HuangzhongDaily 批准+注册+首跑验证（rc0/PASS）",
      "status": "review"
+    },
+    {
+     "id": "WO-LEGION-HEALTHCARD-20261028",
+     "desc": "健康卡 task_audit 口径：应用 task_exit_audit by-design 语义（alert_found/known_baseline），failed 9→5 降假红",
+     "status": "doing"
     }
    ]
   }
