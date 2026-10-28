@@ -680,7 +680,9 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/router/vk":
             try:
                 from legion_command import seat_router
-                self._send_json({"ok": True, "items": seat_router.list_vk()})
+                _cfg = seat_router.load_config()
+                self._send_json({"ok": True, "items": seat_router.list_vk(),
+                                 "aliases": sorted((_cfg.get("aliases") or {}).keys())})
             except Exception as e:  # noqa: BLE001
                 self._send_json({"ok": False, "error": "vk_list_failed",
                                  "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
@@ -1133,6 +1135,13 @@ class Handler(BaseHTTPRequestHandler):
                                         allow_local=bool(route.get("allow_local", True)),
                                         local_model=route.get("local_model") or None,
                                         model_filter=route.get("model") or None)
+                if route.get("vk_id"):
+                    try:
+                        seat_router.record_usage(
+                            str(route["vk_id"]), ok=bool(res.get("ok")),
+                            model=str(route.get("model") or _model_req or route.get("alias") or ""))
+                    except Exception:
+                        pass
             except Exception as e:  # noqa: BLE001
                 res = {
                     "ok": False,
@@ -1261,11 +1270,21 @@ class Handler(BaseHTTPRequestHandler):
                     item = seat_router.create_vk(
                         str(req.get("owner") or ""),
                         str(req.get("alias") or "auto"),
-                        req.get("allowed"))
+                        req.get("allowed"),
+                        quota=int(req.get("quota") or 0))
                     self._send_json({"ok": True, "item": item})
                     return
                 if act == "disable":
                     item = seat_router.disable_vk(str(req.get("id") or ""))
+                    self._send_json({"ok": True, "item": item})
+                    return
+                if act == "enable":
+                    item = seat_router.enable_vk(str(req.get("id") or ""))
+                    self._send_json({"ok": True, "item": item})
+                    return
+                if act == "quota":
+                    item = seat_router.set_quota(str(req.get("id") or ""),
+                                                 int(req.get("quota") or 0))
                     self._send_json({"ok": True, "item": item})
                     return
                 self._send_json({"ok": False, "error": "unknown_action"}, 400)
