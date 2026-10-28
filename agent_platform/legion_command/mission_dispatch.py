@@ -172,7 +172,11 @@ def _schedule(state: dict, plan: dict, parallel_limit: int) -> list:
             t["create_detail"] = res.get("detail", "")[-400:]
             t["attempts"] = int(t.get("attempts") or 0) + 1
             if res["ok"]:
-                t["status"] = "doing"
+                if t.get("worker_eligible") is False:
+                    t["status"] = "waiting_human"
+                    t["manual_owner"] = t.get("owner") or "DEV1"
+                else:
+                    t["status"] = "doing"
                 t["started_at"] = time.strftime("%Y-%m-%dT%H:%M:%S%z")
                 created.append(tid)
                 slots -= 1
@@ -198,6 +202,7 @@ def dispatch(plan: dict, parallel_limit: int = 3, create: bool = True) -> dict:
                 "title": t.get("title"), "owner": t.get("owner"),
                 "deps": t.get("deps") or [], "write_scope": t.get("write_scope") or [],
                 "acceptance": t.get("acceptance") or [], "model": t.get("model") or "auto",
+                "worker_eligible": t.get("worker_eligible"),
                 "status": "blocked", "attempts": 0,
             }
         try:
@@ -227,7 +232,7 @@ def advance(mission_id: str) -> dict:
     tasks = state.get("tasks") or {}
     merged, failed = [], []
     for tid, t in tasks.items():
-        if t.get("status") not in ("queued", "doing", "review"):
+        if t.get("status") not in ("queued", "doing", "review", "waiting_human"):
             continue
         ticket = t.get("ticket_id")
         if not ticket or not _has_commits(ticket):
