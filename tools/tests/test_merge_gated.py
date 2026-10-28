@@ -29,6 +29,13 @@ def test_docs_only_false_for_root_md():
     assert not is_docs_only(["README.md"])
 
 
+def test_docs_only_false_for_md_outside_prefix():
+    # 非白名单前缀（即使带子目录）也不能跳过测试，否则质量闸可被绕过
+    assert not is_docs_only(["quant_backtest/notes.md"])
+    assert not is_docs_only(["agent_platform/notes.json"])
+    assert not is_docs_only(["tools/ops.md"])
+
+
 def test_docs_only_false_for_empty():
     assert not is_docs_only([])
 
