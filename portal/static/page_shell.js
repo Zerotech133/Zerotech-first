@@ -114,9 +114,10 @@
     var info = navMatch();
     if (!info.item && isAdopted()) {
       var parts = (document.title || '').split('·').map(function (x) { return x.trim(); }).filter(Boolean);
+      var brands = { '零界': 1, '老田的个人 OS': 1 };
       var tt = '';
       for (var pi = 0; pi < parts.length; pi++) {
-        if (parts[pi] !== '零界') { tt = parts[pi].split('｜')[0].trim(); break; }
+        if (!brands[parts[pi]]) { tt = parts[pi].split('｜')[0].trim(); break; }
       }
       if (!tt) tt = parts[0] || '';
       if (tt) info.item = tt;
