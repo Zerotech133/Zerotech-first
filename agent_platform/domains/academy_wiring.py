@@ -129,6 +129,18 @@ def _append_history(topic: dict, stage: str, by: str, note: str) -> None:
     topic["updated"] = _now_naive()
 
 
+def _stage_owner(topic: dict, stage: str) -> str:
+    """目标阶段的责任席（来自 worker_plan.stages；无 plan/无该阶段返回空串）。
+
+    阶段推进必须由责任席执行，禁止 ACAD1/其他席代推（2026-10-29 复盘整改）。
+    """
+    plan = topic.get("worker_plan") or {}
+    for item in plan.get("stages") or []:
+        if isinstance(item, dict) and item.get("stage") == stage:
+            return str(item.get("agent") or "").strip()
+    return ""
+
+
 # ----------------------------------------------------------------------
 # 只读投影：WorkItem
 # ----------------------------------------------------------------------
@@ -187,6 +199,12 @@ def move_stage(
         raise AcademyWiringError(
             "非法转移 %s→%s（合法：%s）；阶段只能前进一步或退回一步"
             % (from_stage, to_stage, LEGAL_TRANSITIONS.get(from_stage, []))
+        )
+    owner = _stage_owner(topic, to_stage)
+    if owner and by != owner:
+        raise AcademyWiringError(
+            "阶段 %s 责任席=%s，禁止 %s 代推；请由责任席执行（或走审批门）"
+            % (to_stage, owner, by)
         )
     topic["status"] = to_stage
     _append_history(topic, to_stage, by, note or "stage move")
