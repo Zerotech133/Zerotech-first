@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-28 17:05",
+ "generated": "2026-10-28 17:06",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 31,
+  "workorders_doing": 30,
   "workorders_review": 6
  },
  "workorders": [
@@ -236,15 +236,6 @@
    "owner": "ARCH1",
    "branch": "task/WO-LEGION-SCREEN-20261027",
    "created": "2026-10-27 23:53:53",
-   "project": "general"
-  },
-  {
-   "id": "WO-LS05-AICARD-20261027",
-   "desc": "LS-05 AI 席位卡数据（模型/档位/评估状态；v1 不调外部模型）",
-   "status": "doing",
-   "owner": "DEV2",
-   "branch": "task/WO-LS05-AICARD-20261027",
-   "created": "2026-10-27 23:54:13",
    "project": "general"
   },
   {
@@ -2598,11 +2589,6 @@
     {
      "id": "WO-GUANYU-APMCP-20261027",
      "desc": "mcp改名后测试路径修复 [UNOWNED]",
-     "status": "doing"
-    },
-    {
-     "id": "WO-LS05-AICARD-20261027",
-     "desc": "LS-05 AI 席位卡数据（模型/档位/评估状态；v1 不调外部模型）",
      "status": "doing"
     }
    ]
