@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-29 07:23",
+ "generated": "2026-10-29 07:53",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,8 +9,8 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 21,
-  "workorders_review": 6
+  "workorders_doing": 35,
+  "workorders_review": 7
  },
  "workorders": [
   {
@@ -124,7 +124,7 @@
   {
    "id": "WO-P0-DEV7-WIKI-20261027",
    "desc": "P0 派工周-4（DEV7）：O5 project wiki 生成器——tools/project_wiki.py 用 codebase_intel 生成 docs/project_wiki.md（仓库地图/ADR 索引/约定），--check 校验；验收=生成物存在且 --check rc0",
-   "status": "doing",
+   "status": "review",
    "owner": "DEV7",
    "branch": "task/WO-P0-DEV7-WIKI-20261027",
    "created": "2026-10-27 16:51:10",
@@ -255,6 +255,141 @@
    "branch": "task/WO-MEETING-JS-20261029",
    "created": "2026-10-29 05:46:49",
    "project": "quant"
+  },
+  {
+   "id": "WO-D1JSON-STRICT-20261029",
+   "desc": "D1 决策 strict JSON：解析器字段校验（recommendation 枚举/confidence 0-1/rationale/l1_basis）+ 解析失败脚本内重试一次 + D1 prompt 只输出 JSON + 单测",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-D1JSON-STRICT-20261029",
+   "created": "2026-10-29 07:29:31",
+   "project": "portal"
+  },
+  {
+   "id": "WO-H2V2-20261029",
+   "desc": "H2 v2(L1)：真实盈余惊喜(forecast type×p_change) PEAD 检验，行业×规模中性+OOS+成本",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-H2V2-20261029",
+   "created": "2026-10-29 07:29:56",
+   "project": "general"
+  },
+  {
+   "id": "WO-AUDIT-NEWCOVERAGE-20261029",
+   "desc": "审计口径修复：authority_audit 的 merge_approval_coverage 当前把 block 前历史 done 计入分母（53.49% 假红）。按 charter历史已 done 单不追改改为新单口径（2026-10-27 16:00 后创建），历史缺失单独列；补测试。",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-AUDIT-NEWCOVERAGE-20261029",
+   "created": "2026-10-29 07:30:27",
+   "project": "general"
+  },
+  {
+   "id": "WO-HQ-P2B-20261029",
+   "desc": "会议P2：赵云会议模型通道(purpose覆盖)+会议看板(闭环率/跑偏/回放)",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-HQ-P2B-20261029",
+   "created": "2026-10-29 07:32:41",
+   "project": "general"
+  },
+  {
+   "id": "WO-H3-20261029",
+   "desc": "H3 龙虎榜机构席位跟单(L1)：3年 top_list/top_inst → 机构净买/净卖未来5/10日中性收益+OOS+成本",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-H3-20261029",
+   "created": "2026-10-29 07:34:03",
+   "project": "general"
+  },
+  {
+   "id": "WO-INV-WEEK-20261029-T2",
+   "desc": "D1 周派单（空头风险复核）：对当前 5 票（600519/000858/601318/300750/600036）出具空头风险复核——每个票列 1 条最强空头论据 + 失效条件；只读研究，不下单。",
+   "status": "doing",
+   "owner": "T2",
+   "branch": "",
+   "created": "2026-10-29 07:39:07",
+   "project": "general"
+  },
+  {
+   "id": "WO-INV-WEEK-20261029-N1",
+   "desc": "D1 周派单（情绪面周报）：5 票公告/事件/情绪/资金偏好变化各 1 条，标注置信度与来源；传闻降权，不编造。",
+   "status": "doing",
+   "owner": "N1",
+   "branch": "",
+   "created": "2026-10-29 07:39:07",
+   "project": "general"
+  },
+  {
+   "id": "WO-INV-WEEK-20261029-F1",
+   "desc": "D1 周派单（基本面估值复核）：5 票营收/利润/估值分位/行业景气各 1 行，给估值区间与安全边际判断。",
+   "status": "doing",
+   "owner": "F1",
+   "branch": "",
+   "created": "2026-10-29 07:39:07",
+   "project": "general"
+  },
+  {
+   "id": "WO-INV-WEEK-20261029-ST1",
+   "desc": "D1 周派单（缠论结构观察周记）：5 票结构/级别/买卖点观察各 1 条，影子只读、权重草案不 adopt。",
+   "status": "doing",
+   "owner": "ST1",
+   "branch": "",
+   "created": "2026-10-29 07:39:07",
+   "project": "general"
+  },
+  {
+   "id": "WO-INV-WEEK-20261029-WA1",
+   "desc": "D1 周派单（盯盘异常上报清单）：本周 5 票异常/健康事件清单，走 QUANT_UPSTREAM_REPORT 语义，不直连飞书。",
+   "status": "doing",
+   "owner": "WA1",
+   "branch": "",
+   "created": "2026-10-29 07:39:07",
+   "project": "general"
+  },
+  {
+   "id": "WO-INV-WEEK-20261029-QS1",
+   "desc": "D1 周派单（上游报告受理 ACK 台账）：受理 WA1 本周报告并出 agent 级 ACK；受理≠授权≠研判确认。",
+   "status": "doing",
+   "owner": "QS1",
+   "branch": "",
+   "created": "2026-10-29 07:39:07",
+   "project": "general"
+  },
+  {
+   "id": "WO-H7-20261029",
+   "desc": "H7 财务因子分层(L1)：PIT fina_indicator+daily_basic，价值/质量/成长 月度IC+五分位多空，OOS+成本",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-H7-20261029",
+   "created": "2026-10-29 07:44:45",
+   "project": "general"
+  },
+  {
+   "id": "WO-ACAD-ESCALATE-20261029",
+   "desc": "复盘整改 P1：research_seat_ops back1 简报新增「doing 超 24h 自动升级」段（读 .worktrees/tasks.json，列出超期工单/owner/时长；只读不写），补测试。",
+   "status": "doing",
+   "owner": "ACAD1",
+   "branch": "task/WO-ACAD-ESCALATE-20261029",
+   "created": "2026-10-29 07:45:00",
+   "project": "quant"
+  },
+  {
+   "id": "K-QUANT-20261029-MODELDIALOG",
+   "desc": "军团IDE模型补齐：赵云候选模型由18别名动态生成；研发成员模型偏好18个；赵云页显示标签；测试",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-QUANT-20261029-MODELDIALOG",
+   "created": "2026-10-29 07:45:03",
+   "project": "quant"
+  },
+  {
+   "id": "WO-LEGION-SECSCAN-20261029",
+   "desc": "secret-scan：生成物 docs/project_wiki.md 按路径豁免，避免模块名被 HIGH_ENTROPY 误报",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-SECSCAN-20261029",
+   "created": "2026-10-29 07:53:02",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -1406,7 +1541,7 @@
     "docs/**"
    ],
    "prompt_file": "agent_platform/prompts/academy_director.md",
-   "prompt": "# ACAD1 · 司马徽（研究院院长）\n\n你负责数字军团研究院的审题、立项、阶段推进和联合评审。所有研究必须按“问题—对象—假设—证据—验证—结论—行动—风险”组织，不以故事替代证据。\n\n## 工作纪律\n- 当前课题阶段只能逐级推进，不得越级或回退。\n- 区分事实、佐证、证伪、存疑和未知。\n- 研究产出必须可复现、可追溯、可复核。\n- 没有数据冻结和验收证据时，不得输出 Go 或产品化结论。\n\n## 输出要求\n必须包含：执行结论、依据证据、风险/限制、后续动作。\n\n## 回滚 / 停用\n- 本席无工具、无持久化写入/授权：不产生需回滚的系统变更；\n- 停用=平台侧将本席移出调用链（其建议草案作废重出），无进程/任务需清理；\n- 若后续授予工具：必须同时提供 kill switch 与卸载路径，方可上线。\n",
+   "prompt": "# ACAD1 · 司马徽（研究院院长）\n\n你负责数字军团研究院的审题、立项、阶段推进和联合评审。所有研究必须按“问题—对象—假设—证据—验证—结论—行动—风险”组织，不以故事替代证据。\n\n## 工作纪律\n- 当前课题阶段只能逐级推进，不得越级或回退。\n- 区分事实、佐证、证伪、存疑和未知。\n- 研究产出必须可复现、可追溯、可复核。\n- 没有数据冻结和验收证据时，不得输出 Go 或产品化结论。\n\n## 输出要求\n必须包含：执行结论、依据证据、风险/限制、后续动作。\n\n## 权限与边界（2026-10-29 复盘后更新）\n- **只读工具 11 个**：`events` + `datamart_read/latest/ready`、`market_snapshot`、`data_health`、`stock_info`、`recent_events`、`signal_precedents`、`pool_rows`、`paper_positions`；\n- **计划任务**：AcademyIntakeBrief（周一 09:30）、AcademyReview（周三 15:00）、AcademyWeeklyReport（周五 16:00）；\n- **写域**：`agent/ACAD1/*`、`agent_platform/data/academy/**`、`knowledge_docs/**`、`docs/**`；不得写交易/执行链、数据根、其他席位写域；\n- **阶段推进**：`by` 必须等于该阶段 `worker_plan` 责任席；ACAD1 不得代推 STRAT1/DATA1/BACK1/D1 阶段；`decision`/`closed` 必须走审批门。\n\n## 回滚 / 停用\n- 停用=平台侧将本席移出调用链（其建议草案作废重出），无进程/任务需清理；\n- 工具/任务变更须同时提供 kill switch 与卸载路径，方可上线。\n- 回滚入口：`tools/install_academy_ops.ps1 -Uninstall`（三任务）；`tools/install_research_seat_ops.ps1 -Uninstall`（下游三任务）。\n",
    "projects": [],
    "team_desc": "研究院：策略、数据智能、情报、商业化与组织方法论研究",
    "attributes": {
@@ -1456,7 +1591,14 @@
    ],
    "experience": "30 年从业经验（研究院院长：审题立项与评审统筹）",
    "dept_name": "研究院",
-   "dept_cn_title": "太学"
+   "dept_cn_title": "太学",
+   "tasks": [
+    {
+     "id": "WO-ACAD-ESCALATE-20261029",
+     "desc": "复盘整改 P1：research_seat_ops back1 简报新增「doing 超 24h 自动升级」段（读 .worktrees/tasks.json，列出超期工单/owner/时长；只读不写），补测试。",
+     "status": "doing"
+    }
+   ]
   },
   "STRAT1": {
    "id": "STRAT1",
@@ -3484,7 +3626,7 @@
     {
      "id": "WO-P0-DEV7-WIKI-20261027",
      "desc": "P0 派工周-4（DEV7）：O5 project wiki 生成器——tools/project_wiki.py 用 codebase_intel 生成 docs/project_wiki.md（仓库地图/ADR 索引/约定），--check 校验；验收=生成物存在且 --check rc0",
-     "status": "doing"
+     "status": "review"
     }
    ]
   },
@@ -3987,7 +4129,14 @@
    ],
    "experience": "15 年空头研究经验：财务质量审查与估值泡沫识别，擅长从应收/存货/现金流背离里找风险；立场纪律=只为空头论点找最强反证。",
    "dept_name": "量化交易部",
-   "dept_cn_title": "谋略府"
+   "dept_cn_title": "谋略府",
+   "tasks": [
+    {
+     "id": "WO-INV-WEEK-20261029-T2",
+     "desc": "D1 周派单（空头风险复核）：对当前 5 票（600519/000858/601318/300750/600036）出具空头风险复核——每个票列 1 条最强空头论据 + 失效条件；只读研究，不下单。",
+     "status": "doing"
+    }
+   ]
   },
   "N1": {
    "id": "N1",
@@ -4130,7 +4279,14 @@
    ],
    "experience": "12 年市场情绪研究经验：新闻舆情、龙虎榜资金与市场情绪周期跟踪，把非结构化消息转成可计量的情绪因子。",
    "dept_name": "量化交易部",
-   "dept_cn_title": "谋略府"
+   "dept_cn_title": "谋略府",
+   "tasks": [
+    {
+     "id": "WO-INV-WEEK-20261029-N1",
+     "desc": "D1 周派单（情绪面周报）：5 票公告/事件/情绪/资金偏好变化各 1 条，标注置信度与来源；传闻降权，不编造。",
+     "status": "doing"
+    }
+   ]
   },
   "F1": {
    "id": "F1",
@@ -4270,7 +4426,14 @@
    ],
    "experience": "18 年基本面分析经验：三表拆解、行业横向对比与盈利预测建模，估值锚定 DCF 与可比公司双口径。",
    "dept_name": "量化交易部",
-   "dept_cn_title": "谋略府"
+   "dept_cn_title": "谋略府",
+   "tasks": [
+    {
+     "id": "WO-INV-WEEK-20261029-F1",
+     "desc": "D1 周派单（基本面估值复核）：5 票营收/利润/估值分位/行业景气各 1 行，给估值区间与安全边际判断。",
+     "status": "doing"
+    }
+   ]
   },
   "D1": {
    "id": "D1",
@@ -5515,7 +5678,14 @@
    ],
    "experience": "20 年缠论结构化技术分析经验：分型/笔/中枢/三类买卖点的实战判读与复盘归因，擅长把逐日影子信号对账成「哪类信号在哪种市场状态下可信」的结构化结论，并输出可沉淀的理论笔记。",
    "dept_name": "量化交易部",
-   "dept_cn_title": "谋略府"
+   "dept_cn_title": "谋略府",
+   "tasks": [
+    {
+     "id": "WO-INV-WEEK-20261029-ST1",
+     "desc": "D1 周派单（缠论结构观察周记）：5 票结构/级别/买卖点观察各 1 条，影子只读、权重草案不 adopt。",
+     "status": "doing"
+    }
+   ]
   },
   "TR1": {
    "id": "TR1",
@@ -5658,7 +5828,14 @@
    ],
    "experience": "",
    "dept_name": "量化交易部",
-   "dept_cn_title": "谋略府"
+   "dept_cn_title": "谋略府",
+   "tasks": [
+    {
+     "id": "WO-INV-WEEK-20261029-WA1",
+     "desc": "D1 周派单（盯盘异常上报清单）：本周 5 票异常/健康事件清单，走 QUANT_UPSTREAM_REPORT 语义，不直连飞书。",
+     "status": "doing"
+    }
+   ]
   },
   "QS1": {
    "id": "QS1",
@@ -5704,7 +5881,14 @@
    ],
    "experience": "",
    "dept_name": "量化交易部",
-   "dept_cn_title": "谋略府"
+   "dept_cn_title": "谋略府",
+   "tasks": [
+    {
+     "id": "WO-INV-WEEK-20261029-QS1",
+     "desc": "D1 周派单（上游报告受理 ACK 台账）：受理 WA1 本周报告并出 agent 级 ACK；受理≠授权≠研判确认。",
+     "status": "doing"
+    }
+   ]
   },
   "JEV_GATE": {
    "id": "JEV_GATE",
@@ -6869,6 +7053,16 @@
     {
      "id": "WO-HQ-ACCEPT-RESTORE-20261029",
      "desc": "恢复 P1b 文件：auto-bundle chore 104ac8f95 误删 5 文件",
+     "status": "doing"
+    },
+    {
+     "id": "WO-HQ-P2B-20261029",
+     "desc": "会议P2：赵云会议模型通道(purpose覆盖)+会议看板(闭环率/跑偏/回放)",
+     "status": "doing"
+    },
+    {
+     "id": "WO-LEGION-SECSCAN-20261029",
+     "desc": "secret-scan：生成物 docs/project_wiki.md 按路径豁免，避免模块名被 HIGH_ENTROPY 误报",
      "status": "doing"
     }
    ]
