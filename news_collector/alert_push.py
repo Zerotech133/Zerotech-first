@@ -60,7 +60,7 @@ SHANGHAI = timezone(timedelta(hours=8))
 # 仍然 stale，不会被洗绿。日历缺失时退回 weekday 口径，绝不阻断告警链。
 try:
     import trading_cal as _tcal
-except Exception:  # noqa: BLE001 - 告警链不能被日历依赖弄死
+except Exception:  # noqa: BLE001
     _tcal = None
 
 

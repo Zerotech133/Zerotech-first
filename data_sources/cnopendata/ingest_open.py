@@ -217,7 +217,7 @@ def _czyx_prov_values() -> list[str]:
                 continue
             try:
                 frames = read_frames(path)
-            except Exception:  # noqa: BLE001  单文件坏了不该毁掉映射来源
+            except Exception:  # noqa: BLE001
                 continue
             for _label, frame, _note in frames:
                 values.extend(_prov_values_from_frame(clean(frame)))

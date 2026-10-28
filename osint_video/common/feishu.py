@@ -50,7 +50,7 @@ def _load_hub_modules():
     for path in (_REPO_ROOT, _NEWS_DIR):
         if path not in sys.path:
             sys.path.append(path)
-    import feishu_client  # noqa: PLC0415 —— 纯 stdlib 模块，惰性加载
+    import feishu_client  # noqa: PLC0415
     import push_targets  # noqa: PLC0415
 
     return feishu_client, push_targets
@@ -105,7 +105,7 @@ class FeishuNotifier:
         """
         try:
             fc, pt = _load_hub_modules()
-        except Exception:  # noqa: BLE001 —— 跨包导入失败按未就绪降级，不抛
+        except Exception:  # noqa: BLE001
             return False
         if not self.target_name:
             return False
@@ -197,7 +197,7 @@ class FeishuNotifier:
             ok, why, message_id = self._hub_send(
                 content, msg_type, kind, bool(critical)
             )
-        except Exception as exc:  # noqa: BLE001 —— 闸门故障绝不阻塞管线
+        except Exception as exc:  # noqa: BLE001
             logger.warning(
                 "[feishu:hub降级] 8097 调用异常（closed on failure，不回落直发）：%s",
                 exc,
@@ -240,7 +240,7 @@ class FeishuNotifier:
                 "[feishu:降级] 发送失败 status=%s body=%s", response.status_code, data
             )
             return False
-        except Exception as exc:  # noqa: BLE001 —— 飞书故障绝不阻塞管线
+        except Exception as exc:  # noqa: BLE001
             logger.warning("[feishu:降级] 发送异常：%s", exc)
             return False
 

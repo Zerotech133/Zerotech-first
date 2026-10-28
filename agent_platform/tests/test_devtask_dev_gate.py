@@ -37,7 +37,7 @@ TOOLS = ROOT / "tools"
 if str(TOOLS) not in sys.path:
     sys.path.insert(0, str(TOOLS))
 
-import devtask  # noqa: E402  —— 需先补 sys.path 再导入
+import devtask  # noqa: E402
 
 
 # ----------------------------------------------------------------------

@@ -56,14 +56,14 @@ def _init():
         try:
             from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
             exporter = OTLPSpanExporter(endpoint=endpoint)
-        except Exception:  # noqa: BLE001 - 无 http exporter 时退回 grpc
+        except Exception:  # noqa: BLE001
             from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
             exporter = OTLPSpanExporter(endpoint=endpoint.replace("/v1/traces", ""))
         provider.add_span_processor(BatchSpanProcessor(exporter))
         trace.set_tracer_provider(provider)
         _state["tracer"] = trace.get_tracer("zerobond.tools")
         _state["init"] = True
-    except Exception as e:  # noqa: BLE001 - fail-open
+    except Exception as e:  # noqa: BLE001
         _state["tracer"] = None
         _state["error"] = "%s: %s" % (type(e).__name__, str(e)[:160])
     return _state["tracer"]
@@ -87,7 +87,7 @@ def traced(name: str, **attrs):
                 except Exception as exc:
                     logging.getLogger(__name__).warning("silent-except %s: %s", "tools/otel_tracing.py", exc)
             yield span
-    except Exception:  # noqa: BLE001 - 不吞业务异常，仅重新抛出
+    except Exception:  # noqa: BLE001
         raise
 
 

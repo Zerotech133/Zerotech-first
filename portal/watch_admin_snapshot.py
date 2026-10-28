@@ -585,7 +585,7 @@ class WatchAdminAggregator:
         path = self.kpaper_dir / "combos.json"
         try:
             self._ensure_kpaper_path()
-            import combo_registry as _cr  # noqa: WPS433 (lazy, stdlib-only)
+            import combo_registry as _cr  # noqa: WPS433
             return _cr.load_registry(str(path)), None, "combo_registry.load_registry"
         except Exception as exc:
             logging.getLogger(__name__).warning("silent-except %s: %s", "portal/watch_admin_snapshot.py", exc)
@@ -833,7 +833,7 @@ class WatchAdminAggregator:
         self._combo_review_import_err = False
         try:
             self._ensure_kpaper_path()
-            import combo_review  # noqa: WPS433 (lazy)
+            import combo_review  # noqa: WPS433
             reg = self._read_combo_registry()[0]
             if not isinstance(reg, dict):
                 return None

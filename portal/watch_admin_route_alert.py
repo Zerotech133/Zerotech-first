@@ -62,7 +62,7 @@ try:
     from quant_backtest import watch_alert_contract as _alert_contract  # noqa: E402
     from quant_backtest import watch_source_authority as _source_authority  # noqa: E402
     _CONTRACT_MODULES_OK = True
-except Exception as _exc:  # noqa: BLE001 - 导入失败需 fail-visible，绝不抛出
+except Exception as _exc:  # noqa: BLE001
     _IMPORT_ERROR = "%s:%s" % (type(_exc).__name__, _exc)
 
 
@@ -244,7 +244,7 @@ if _CONTRACT_MODULES_OK:
     try:
         _CONTRACT_SUMMARY: List[Dict[str, Any]] = _build_contract_summary()
         _FREEZE_EVIDENCE: Dict[str, Any] = _build_freeze_evidence()
-    except Exception as _exc:  # noqa: BLE001 - 投影异常不得上抛到 import 阶段
+    except Exception as _exc:  # noqa: BLE001
         _IMPORT_ERROR = "projection_error:%s:%s" % (type(_exc).__name__, _exc)
         _CONTRACT_MODULES_OK = False
         _CONTRACT_SUMMARY = []

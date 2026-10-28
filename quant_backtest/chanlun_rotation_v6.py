@@ -190,7 +190,6 @@ def simulate(use_regime=True):
                 nav_peak[s] = max(nav_peak.get(s, ac), float(ac))
             val = sum(t["val"] for t in p["tr"])
             cost = sum(t["cost"] for t in p["tr"])
-            basis = cost
             price_ret = val / cost - 1 if cost else 0
             exit_how = None
             if any(

@@ -59,7 +59,7 @@ def _http(url: str, timeout: float) -> dict:
             "elapsed_ms": int((time.time() - t0) * 1000),
             "error": "http_%d" % exc.code,
         }
-    except Exception as exc:  # noqa: BLE001 —— 探活失败必须返回结构化结果，不抛
+    except Exception as exc:  # noqa: BLE001
         return {
             "ok": False,
             "status": None,

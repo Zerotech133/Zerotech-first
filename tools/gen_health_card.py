@@ -2052,7 +2052,7 @@ def _read_parquet_column(
     """
     try:
         import pyarrow.parquet as parquet  # 惰性：仅本组检查需要
-    except Exception as exc:  # noqa: BLE001 - 失败原因要原样进 detail
+    except Exception as exc:  # noqa: BLE001
         return None, "pyarrow 不可用（%s），无法读 parquet 单列" % _short_exc(exc)
     try:
         schema = parquet.read_schema(str(path))
@@ -2170,7 +2170,7 @@ def collect_shibor_lpr_freshness(
         block.update(reason="shibor.parquet / 原始层 shibor / shibor_lpr 均缺失",
                      status="missing", level="yellow")
         return block
-    except Exception as exc:  # noqa: BLE001 - fail-visible：不拖垮整卡
+    except Exception as exc:  # noqa: BLE001
         block.update(reason="检查异常：%s" % _short_exc(exc),
                      status="error", level="yellow")
         return block
@@ -6166,7 +6166,7 @@ def _evaluate(card: dict[str, Any]) -> tuple[list[dict[str, str]], str, list[str
         _hp = _collect_hermes_push()
         _hp_level, _hp_detail = _hermes_push_level(_hp)
         add("hermes.push", _hp_level, _hp_detail)
-    except Exception as _exc:  # noqa: BLE001  fail-visible 但不拖垮整张卡
+    except Exception as _exc:  # noqa: BLE001
         add("hermes.push", "yellow", "Hermes 推送健康检查异常：%r" % (_exc,))
 
     # ---------------------------------------------------------------------------
@@ -6188,7 +6188,7 @@ def _evaluate(card: dict[str, Any]) -> tuple[list[dict[str, str]], str, list[str
         _gd = str(_gobj.get("detail") or "治理 AI 健康检查无输出")
         add("governance.ai_advice", _gl if _gl in ("green", "yellow", "red") else "yellow",
             _gd[:300])
-    except Exception as _exc:  # noqa: BLE001  fail-visible 但不拖垮整张卡
+    except Exception as _exc:  # noqa: BLE001
         add("governance.ai_advice", "yellow", "治理 AI 健康检查未运行：%r" % (_exc,))
 
     # ---------------------------------------------------------------------------
@@ -6216,7 +6216,7 @@ def _evaluate(card: dict[str, Any]) -> tuple[list[dict[str, str]], str, list[str
             _el = "yellow"
             _ed = "经验库 %d 条中 verified %d（存在未验签）" % (_total, _verified)
         add("governance.experience_library", _el, _ed[:300])
-    except Exception as _exc:  # noqa: BLE001  fail-visible 但不拖垮整张卡
+    except Exception as _exc:  # noqa: BLE001
         add("governance.experience_library", "yellow",
             "经验库消费检查未运行：%r" % (_exc,))
 

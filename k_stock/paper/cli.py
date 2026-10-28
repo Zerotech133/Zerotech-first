@@ -26,7 +26,7 @@ sys.path.insert(0, str(HERE))
 
 from engine import PaperEngine, Reject  # noqa: E402
 from market import ParquetMarket  # noqa: E402
-from trainee import stop_dist_for, _newest_ai_run  # noqa: E402  P-5 止损档案化
+from trainee import stop_dist_for, _newest_ai_run  # noqa: E402
 
 DATA_DIR = HERE.parent / "data"
 DEFAULT_DB = DATA_DIR / "paper.db"
@@ -510,7 +510,7 @@ def _mark_selected(args, db: Path, accounts: list[str]) -> int:
                 f"总资产 {r['total']:,.2f} 仓位 {r['pos_pct']:.1%} "
                 f"待撮合 {r['pending']}"
             )
-        except Exception as ex:  # noqa: BLE001 - 逐账户报错，完整尝试后返回非零
+        except Exception as ex:  # noqa: BLE001
             failed.append(aid)
             print(f"❌ [{aid}] 快照失败: {ex}", file=sys.stderr)
         finally:

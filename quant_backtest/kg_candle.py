@@ -502,7 +502,7 @@ def main():
         cli.close()
 
 
-from kg_client import KgClient  # noqa: E402（probe 单独建连晚绑）
+from kg_client import KgClient  # noqa: E402
 
 
 if __name__ == "__main__":

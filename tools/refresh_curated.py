@@ -163,7 +163,7 @@ def count_source_rows(src: Path, dirs: list[str]) -> tuple[int, int, list[str]]:
         for f in d.glob("*.parquet"):
             try:
                 n = pq.ParquetFile(f).metadata.num_rows
-            except Exception:  # noqa: BLE001 - 坏文件计数，不中断
+            except Exception:  # noqa: BLE001
                 failed.append(f.name)
                 continue
             if n == 0:
@@ -187,7 +187,7 @@ def count_product_rows(out: Path) -> tuple[int, int, list[str]]:
     for f in out.glob("*.parquet"):
         try:
             n = pq.ParquetFile(f).metadata.num_rows
-        except Exception:  # noqa: BLE001 - 抽出失败清单，交给调用方判死
+        except Exception:  # noqa: BLE001
             failed.append(f.name)
             continue
         rows += n

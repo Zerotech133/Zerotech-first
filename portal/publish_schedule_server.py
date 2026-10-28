@@ -121,7 +121,7 @@ def run_inspection(trigger):
             import publish_watchdog
 
             rc = publish_watchdog.inspect()
-        except Exception as e:  # noqa: BLE001 — 调度器不能被单次巡检弄死
+        except Exception as e:  # noqa: BLE001
             rc = -1
             publish_watchdog.log("[scheduler] 巡检异常: %r" % e)
         _state["running"] = False
@@ -161,7 +161,7 @@ def scheduler_loop():
                             args=("schedule " + key,),
                             daemon=True,
                         ).start()
-        except Exception as e:  # noqa: BLE001 — 调度线程永不退出
+        except Exception as e:  # noqa: BLE001
             try:
                 import publish_watchdog
 

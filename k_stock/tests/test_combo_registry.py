@@ -345,7 +345,7 @@ def test_pool_stamp_enables_scope_replay(tmp_path):
 
 
 def test_pool_stamp_closed_on_failure(tmp_path):
-    from combo_registry import ComboRegistryError  # noqa: F401  (同族语义对照)
+    from combo_registry import ComboRegistryError  # noqa: F401
     from decision_snapshot import PoolStampError
 
     e = _mk_engine(tmp_path)

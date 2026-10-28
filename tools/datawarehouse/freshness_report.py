@@ -15,7 +15,6 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import common  # noqa: E402
-import logging
 
 DATE_COL = {"daily": "trade_date", "adj_factor": "trade_date", "daily_basic": "trade_date",
             "index_daily": "trade_date", "moneyflow": "trade_date", "margin_detail": "trade_date"}

@@ -32,7 +32,7 @@ hook_mod = _load("idem_hook_under_test", "agent_platform/engine/idem_hook.py")
 IdempotencyStore = idy.IdempotencyStore
 DualTrackHook = hook_mod.DualTrackHook
 
-import time  # noqa: E402  死信判定需要 updated_at 与 now 产生可测时差
+import time  # noqa: E402
 
 
 class DeadLetterTests(unittest.TestCase):

@@ -95,7 +95,7 @@ def _scan_table(path: Path, manifest: dict[str, Any], source: str) -> dict[str, 
     for file in files:
         try:
             frames.append(pd.read_parquet(file))
-        except Exception as exc:  # noqa: BLE001 - 基线必须记录损坏分片而不是猜测
+        except Exception as exc:  # noqa: BLE001
             errors.append(f"{file.name}:{type(exc).__name__}")
     frame = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
     keys = _key_columns(frame)

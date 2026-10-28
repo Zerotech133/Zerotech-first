@@ -156,7 +156,7 @@ def _guarded(section_fn, *args, **kwargs) -> dict:
     """单节源抛异常 → 降级占位，整体继续（closed on failure 逐节隔离）。"""
     try:
         return section_fn(*args, **kwargs)
-    except Exception as exc:  # noqa: BLE001 — 降级不中断整份简报
+    except Exception as exc:  # noqa: BLE001
         return {
             "status": "DEGRADED",
             "reason": "单节读取异常，已降级占位",

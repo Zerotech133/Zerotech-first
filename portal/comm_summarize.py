@@ -145,7 +145,7 @@ def humanize(title, items, kind="daily", llm=None, max_chars=None, use_cache=Tru
             }
     try:
         raw, status = llm.chat(_SYSTEM, body, model="qwen3.5:9b")
-    except Exception as ex:  # noqa: BLE001 —— 降级必须留因
+    except Exception as ex:  # noqa: BLE001
         return {
             "text": fallback,
             "llm_ok": False,

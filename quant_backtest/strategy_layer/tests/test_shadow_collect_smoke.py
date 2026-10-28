@@ -26,7 +26,7 @@ import numpy as np
 from strategy_layer.onboarding import shadow_collect as sc
 from strategy_layer.signal import Signal
 
-import council_shadow as cs  # noqa: E402  （conftest 已把 quant_backtest 置于 sys.path）
+import council_shadow as cs  # noqa: E402
 
 
 # ---------------------------------------------------------------------- #

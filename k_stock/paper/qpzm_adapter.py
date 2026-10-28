@@ -173,7 +173,7 @@ def _hk_engine_code(raw: str) -> str:
     湖文件查找失败 → _plan_buy raise）。剥 rt_hk 前缀后走 hk_market 单源
     normalize_hk_code（老票 1-4 位 zfill(5) 同口径）。"""
     sys.path.insert(0, str(HERE))
-    from hk_market import normalize_hk_code  # noqa: E402  同目录纯 stdlib 模块
+    from hk_market import normalize_hk_code  # noqa: E402
 
     s = str(raw).strip()
     if s.lower().startswith("rt_hk"):

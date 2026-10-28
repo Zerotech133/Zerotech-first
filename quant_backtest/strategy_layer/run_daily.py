@@ -33,7 +33,7 @@ def main(argv: list) -> int:
     trade_date = argv[1] if len(argv) > 1 else datetime.now().strftime("%Y%m%d")
     try:
         registry = bootstrap_default_adapters(Registry())
-    except Exception as exc:  # noqa: BLE001 — bootstrap 致命，任务失败
+    except Exception as exc:  # noqa: BLE001
         print("[strategy_daily][FATAL] 注册引导失败: %s" % exc)
         traceback.print_exc()
         return 1
@@ -89,7 +89,7 @@ def main(argv: list) -> int:
             sys.stderr.write(
                 "[strategy_daily][WARN] 策源快照缺口: %s\n" % "; ".join(gaps)
             )
-    except Exception as exc:  # noqa: BLE001 — 策源不阻断策略主线
+    except Exception as exc:  # noqa: BLE001
         sys.stderr.write("[strategy_daily][WARN] 策源快照失败: %s\n" % exc)
     return 0
 

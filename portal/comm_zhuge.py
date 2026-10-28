@@ -176,7 +176,7 @@ def _apply_citations(text, grounding):
         return _sanitize_citations(
             mod.ensure_citations(text, grounding["sources"]),
             grounding["sources"])
-    except Exception:  # noqa: BLE001  引用兜底失败不阻断主链
+    except Exception:  # noqa: BLE001
         return _sanitize_citations(text, grounding["sources"])
 
 
@@ -597,7 +597,7 @@ def consult(question, open_id="", llm=None, timeout=None, max_chars=DEFAULT_MAX_
         raw, status = llm.chat(
             ZHUGE_SOUL, _local_grounded_prompt(q, grounding), model="qwen3.5:9b"
         )
-    except Exception as ex:  # noqa: BLE001 —— 降级必须留因
+    except Exception as ex:  # noqa: BLE001
         return {
             "text": None,
             "mode": None,

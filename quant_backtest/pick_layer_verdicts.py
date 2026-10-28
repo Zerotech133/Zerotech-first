@@ -26,7 +26,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.abspath(os.path.join(HERE, "..", "portal")))
 
-import strong_ts_window_research as R  # noqa: E402  湖加载/日历/收益
+import strong_ts_window_research as R  # noqa: E402
 
 HIST = os.path.join(HERE, "..", "portal", "data", "picks_history")
 LAYERS = ("q_toxic", "q_first_buy", "env_diff_exempt", "panic_buy", "env_diff")

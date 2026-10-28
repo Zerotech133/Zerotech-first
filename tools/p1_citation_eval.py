@@ -34,7 +34,7 @@ def main(argv=None) -> int:
     cases = [json.loads(line) for line in CASES.read_text(encoding="utf-8").splitlines()
              if line.strip()]
     factual = [c for c in cases if c.get("category") == "factual"][: args.limit]
-    from zhuge_grounding import grounded_chat  # noqa: E402 —— tools/ 由脚本目录入 sys.path
+    from zhuge_grounding import grounded_chat  # noqa: E402
     rows = []
     for case in factual:
         res = grounded_chat(case["input"], binding=args.binding)

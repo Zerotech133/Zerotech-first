@@ -30,9 +30,9 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import weak_track_watch as ww  # noqa: E402  (§12 巡检)
-import weak_track_audit as wa  # noqa: E402  (§13 审计)
-import weak_track_close as wc  # noqa: E402  (_load/_case_name)
+import weak_track_watch as ww  # noqa: E402
+import weak_track_audit as wa  # noqa: E402
+import weak_track_close as wc  # noqa: E402
 import logging
 
 TPL = os.path.join(HERE, "weak_track_weekly_tpl.txt")

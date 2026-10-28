@@ -285,9 +285,9 @@ def test_evaluate_never_writes_plan_book() -> None:
 
     def snapshot() -> dict[str, object]:
         return {
-            "plans": dict(book._plans),          # noqa: SLF001 - read-only probe
-            "revoked": dict(book._revoked_refs),  # noqa: SLF001 - read-only probe
-            "signals": dict(book._signals),       # noqa: SLF001 - read-only probe
+            "plans": dict(book._plans),          # noqa: SLF001
+            "revoked": dict(book._revoked_refs),  # noqa: SLF001
+            "signals": dict(book._signals),       # noqa: SLF001
             "meetings": book.meetings_for("s1"),
             "reviews": book.reviews_for("s1"),
             "frozen_match": book.signal_match("s1"),

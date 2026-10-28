@@ -336,7 +336,7 @@ def _daily_rollup(rows: list) -> dict:
     try:
         import agent_daily as daily  # 同目录，避免两处判定漂移
         dcard = daily.build(None)
-    except Exception as exc:  # noqa: BLE001 - 任何失败都不能让看板整体挂掉
+    except Exception as exc:  # noqa: BLE001
         return {"available": False, "reason": "%s: %s" % (type(exc).__name__, exc)}
     if dcard.get("error"):
         return {"available": False, "reason": dcard["error"]}
@@ -447,7 +447,7 @@ def _status_task() -> dict:
         return {"ok": True, "failed": int(j.get("failed") or 0),
                 "names": [f.get("name") for f in fails[:3]],
                 "age_h": _age_hours_from_iso(j.get("generated_at"))}
-    except Exception as exc:  # noqa: BLE001  fail-open：卡片降级
+    except Exception as exc:  # noqa: BLE001
         return {"ok": False, "err": type(exc).__name__}
 
 
@@ -601,7 +601,7 @@ def write_html(card: dict, path: Path) -> None:
 
     try:
         _sys_html = render_system_status(collect_system_status())
-    except Exception as _exc:  # noqa: BLE001  系统卡渲染失败不能拖垮看板
+    except Exception as _exc:  # noqa: BLE001
         _sys_html = '<section class="sysgrid"><h2>系统态势</h2><div class="sysrow">' \
                     '<div class="syscard mute"><div class="systitle">采集失败</div>' \
                     '<div class="sysbig">?</div></div></div></section>'

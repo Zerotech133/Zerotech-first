@@ -30,7 +30,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-from codes import normalize_code as _norm  # noqa: E402  P1-2 统一代码归一
+from codes import normalize_code as _norm  # noqa: E402
 
 STRONG_EX_TH = 10  # 250 日超额达标阈值：≥ +10pp 显著跑赢板块
 MIN_BLOCK_MEMBERS = 5  # 板块成员数门槛：≥5 只才参与（防小板块噪声）

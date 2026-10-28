@@ -207,7 +207,6 @@ def simulate(use_regime=True, use_sell_signal=True, use_stop=True, stop_pct=STOP
                     p["val"] += amt * (1 - COST)
                     p["cost"] += amt * (1 - COST)
             if add_total > 0.005:
-                trim_state = False
                 n_refill += 1
         eqv = cash + sum(p["val"] for p in pos.values())
         equity.append(

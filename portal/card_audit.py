@@ -294,7 +294,7 @@ def _scan_file(rel_path):
 
 def audit():
     """跑审计 → 结构化结果 dict（纯内存，零写盘）。"""
-    import card_templates  # noqa: PLC0415 —— 注册表现状（纯函数模块，无 IO）
+    import card_templates  # noqa: PLC0415
 
     registered = set(card_templates.KIND_CARD_TEMPLATES)
 

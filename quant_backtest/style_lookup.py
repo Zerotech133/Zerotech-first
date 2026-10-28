@@ -32,7 +32,7 @@ EQ_BLOCK = "880008"  # 全Ａ等权
 IDX = "000001.SH"  # 上证（加权）
 
 
-from codes import normalize_code as _norm  # noqa: E402  P1-2 统一代码归一（北交所 8/4/92 开头 → .BJ）
+from codes import normalize_code as _norm  # noqa: E402
 
 
 def _r(bars, days):

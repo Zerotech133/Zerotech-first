@@ -97,7 +97,6 @@ def test_patch_ws_card_route_idempotent_and_card_routed():
     from lark_oapi.ws import client as wsc
 
     feishu_bot_ws._patch_ws_card_route()
-    patched_once = wsc.Client._handle_data_frame
     feishu_bot_ws._patch_ws_card_route()  # 二次调用（模拟环内重复 patch）
     patched_twice = wsc.Client._handle_data_frame
 

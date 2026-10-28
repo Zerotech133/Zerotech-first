@@ -25,7 +25,7 @@ TOOLS_DIR = str(Path(__file__).resolve().parent)
 if TOOLS_DIR not in sys.path:
     sys.path.insert(0, TOOLS_DIR)
 
-import agent_coder  # noqa: E402  （必须在 sys.path 处理之后再导入）
+import agent_coder  # noqa: E402
 
 DIFF_MAX_CHARS = 16000  # K-ORG-056 判例：原 3000 截断致 QA1 看不见核心交付物而退回（与 sec2_review FILE_MAX 同宗根因）
 NOTE_MAX_CHARS = 8000  # K-ORG-056: 附证上限放宽（证据包四项约 4~6KB）  # K-ORG-043: 附证文本上限，进 prompt 前截断

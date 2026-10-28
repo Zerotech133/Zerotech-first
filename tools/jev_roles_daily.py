@@ -83,7 +83,7 @@ def _tail_jsonl(path: Path, max_bytes: int = TAIL_BYTES) -> list[dict]:
                     continue
                 try:
                     d = json.loads(line)
-                except Exception:      # noqa: BLE001 坏行跳过
+                except Exception:      # noqa: BLE001
                     continue
                 if isinstance(d, dict):
                     out.append(d)
@@ -138,7 +138,7 @@ def collect_gate(day: str) -> dict:
         # 降噪率 = 被拦下 / (拦下 + 推送)；分母为 0 时 None（今日无告警，属正常）
         denom = rec["suppress"] + rec["push"]
         rec["suppress_rate"] = round(rec["suppress"] / denom, 4) if denom else None
-    except Exception as exc:          # noqa: BLE001  fail-open
+    except Exception as exc:          # noqa: BLE001
         rec.update(ok=False, err="%s: %s" % (type(exc).__name__, exc))
     return rec
 
@@ -238,7 +238,7 @@ def sample_review_queue(day: str, n: int = SAMPLE_N) -> list[dict]:
                 "event_type": j.get("event_type"), "src": j.get("src"),
                 "reason": str(j.get("reason") or "")[:80],
             })
-    except Exception:                 # noqa: BLE001  复核队列缺失不拖垮日报
+    except Exception:                 # noqa: BLE001
         return out
     return out
 

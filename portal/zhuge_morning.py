@@ -35,8 +35,8 @@ HERE = Path(__file__).resolve().parent
 if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
 
-from api_zhuge_brief import BEIJING, SOURCES  # noqa: E402  引擎常量（只读复用）
-import api_zhuge_route  # noqa: E402  七源聚合（与 /api/zhuge/brief 同款口径）
+from api_zhuge_brief import BEIJING, SOURCES  # noqa: E402
+import api_zhuge_route  # noqa: E402
 
 DEFAULT_OUT_DIR = HERE / "data" / "zhuge_brief"
 FILE_PREFIX = "zhuge_brief_"

@@ -113,7 +113,7 @@ def _read_jsonl_lines(path: Path):
     """
     try:
         text = path.read_text(encoding="utf-8", errors="replace")
-    except Exception as exc:  # noqa: BLE001  fail-visible
+    except Exception as exc:  # noqa: BLE001
         return [], 0, str(exc)[:120]
     lines: List[str] = []
     bad = 0
@@ -134,7 +134,7 @@ def _identify(raw: str) -> str:
     head = raw[:DISPLAY_TRUNC]
     try:
         row = json.loads(raw)
-    except Exception:  # noqa: BLE001  坏行原样截断展示
+    except Exception:  # noqa: BLE001
         return head
     if not isinstance(row, dict):
         return head
@@ -195,7 +195,7 @@ def _diff_jsonl_pair(name: str, old_path: Path, new_path: Path) -> dict:
     try:
         old_sha = _sha256_of(old_path)
         new_sha = _sha256_of(new_path)
-    except Exception as exc:  # noqa: BLE001  fail-visible
+    except Exception as exc:  # noqa: BLE001
         item["status"] = ERROR
         item["evidence"] = "读取失败（%s）" % str(exc)[:100]
         return item
@@ -263,7 +263,7 @@ def _diff_binary_pair(name: str, old_path: Path, new_path: Path) -> dict:
     try:
         old_sha, new_sha = _sha256_of(old_path), _sha256_of(new_path)
         old_size, new_size = old_path.stat().st_size, new_path.stat().st_size
-    except Exception as exc:  # noqa: BLE001  fail-visible
+    except Exception as exc:  # noqa: BLE001
         item["status"] = ERROR
         item["evidence"] = "读取失败（%s）" % str(exc)[:100]
         return item

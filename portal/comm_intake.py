@@ -240,7 +240,7 @@ def _subscription_summary(open_id):
                 ("/" + str(quota)) if quota else "",
             )
         )
-    except Exception as ex:  # noqa: BLE001 —— 账本故障如实降级不臆造
+    except Exception as ex:  # noqa: BLE001
         return (
             "暂时无法读取订阅账本（%s），已记录待核，稍后回复您准确信息。"
             % type(ex).__name__

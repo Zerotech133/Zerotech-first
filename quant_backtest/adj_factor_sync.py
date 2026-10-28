@@ -41,7 +41,7 @@ import pandas as pd
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-from tushare_sync import ts_call  # noqa: E402  token + 限频退避（61s）
+from tushare_sync import ts_call  # noqa: E402
 from tdx_read import latest_date, read_range  # noqa: E402
 
 OUT = os.path.join(HERE, "data", "tdx")

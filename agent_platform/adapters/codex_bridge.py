@@ -268,7 +268,7 @@ def register_from_source(source, registry):
     module = ast.parse(source)
     code = compile(module, "<codex_plugin>", "exec")
     namespace = _exec_globals()
-    exec(code, namespace)  # noqa: S102 —— 两道防线之后（白名单 AST + 受限 globals）
+    exec(code, namespace)  # noqa: S102
     classes = [
         v
         for v in namespace.values()
@@ -671,7 +671,7 @@ def load_registered(registry, bridge_dir=None):
                     % (src.parent.name, str(e)[:120]),
                     file=sys.stderr,
                 )
-        except Exception as e:  # noqa: BLE001  fail-open：坏件不拖垮装配
+        except Exception as e:  # noqa: BLE001
             print(
                 "[warn] codex 插件装载跳过 %s：%s" % (src.parent.name, str(e)[:120]),
                 file=sys.stderr,

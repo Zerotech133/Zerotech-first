@@ -217,7 +217,7 @@ def chanlun_api(query: dict) -> dict:
             "不整库载入、不写回。按过滤条件计数+偏移分页（单次扫描，仅缓冲本页行）。"
             % _CHANLUN_PATH
         )
-    except Exception as exc:  # noqa: BLE001  (fail-visible — never raise)
+    except Exception as exc:  # noqa: BLE001
         envelope["verified"] = False
         envelope["state"] = "unknown"
         envelope["error_code"] = "read_error:%s:%s" % (

@@ -241,7 +241,7 @@ def append_history(record, path=None):
         finally:
             os.close(fd)
         return True
-    except Exception as e:  # noqa: BLE001 - 账本失败不得影响主计算
+    except Exception as e:  # noqa: BLE001
         print("9DIM history WARN 追加失败 %r（不阻断主计算）" % e, file=sys.stderr)
         return False
 
@@ -275,7 +275,7 @@ def record_run_history(snap, rows, path=None):
     """
     try:
         return append_history(build_history_record(snap, rows), path=path)
-    except Exception as e:  # noqa: BLE001 - 历史账本失败不得影响主计算
+    except Exception as e:  # noqa: BLE001
         print(
             "9DIM history WARN %r（历史账本未追加，不影响主计算结果）" % e,
             file=sys.stderr,

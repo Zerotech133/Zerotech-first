@@ -76,9 +76,9 @@ import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import nine_dim as nd  # noqa: E402  规则点表单一来源（只读）
-import nine_dim_backtest as nb  # noqa: E402  复用 _fina_asof（只读）
-import db  # noqa: E402  fina SQLite 读层（只读）
+import nine_dim as nd  # noqa: E402
+import nine_dim_backtest as nb  # noqa: E402
+import db  # noqa: E402
 
 REPLAY = os.path.join(HERE, "data", "nine_dim_replay.jsonl")
 STAGING = os.path.join(HERE, "data", "tushare_staging")

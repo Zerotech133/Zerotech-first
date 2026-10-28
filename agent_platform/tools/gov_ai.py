@@ -664,7 +664,7 @@ def run(
         status = "draft" if validated["ok"] else "failed"
     except (GovAiError, DS.DeepSeekError) as exc:
         notes = [_sanitize(exc)]
-    except Exception as exc:  # noqa: BLE001 —— fail-visible，不静默
+    except Exception as exc:  # noqa: BLE001
         notes = ["%s: %s" % (type(exc).__name__, _sanitize(exc))]
 
     result = {

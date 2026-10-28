@@ -59,10 +59,10 @@ for _p in (str(_REPO_ROOT / "portal"), str(_HERE)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-import reconcile_subscription  # noqa: E402  （只 import 复用，不修改）
-import renewal_reminder as rr  # noqa: E402  （只 import 复用，不修改）
-import renewal_state as rs  # noqa: E402  （只 import 复用，不修改）
-import subscription_store as store  # noqa: E402  （只 import 复用，禁止修改）
+import reconcile_subscription  # noqa: E402
+import renewal_reminder as rr  # noqa: E402
+import renewal_state as rs  # noqa: E402
+import subscription_store as store  # noqa: E402
 import logging
 
 __all__ = ["IsolationError", "resolve_paths", "run_all", "main", "STEP_NAMES"]

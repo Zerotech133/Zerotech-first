@@ -108,7 +108,7 @@ def run_strategy(
     def _work():
         try:
             box["verdict"] = registry.run(strategy_id, readonly)
-        except BaseException as e:  # noqa: BLE001  单策略异常 fail-visible，见 docstring
+        except BaseException as e:  # noqa: BLE001
             box["error"] = e
 
     t = threading.Thread(

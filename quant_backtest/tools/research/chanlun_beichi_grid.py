@@ -52,8 +52,8 @@ GRID_P6A = [(r, n) for r in (0.8, 0.9, 1.0) for n in (1, 2)]  # 幅度比×确�
 GRID_P5 = [0.8, 0.9, 1.0]  # 力度比
 
 sys.path.insert(0, QT)
-from chanlun_signal import analyze as chan_analyze  # noqa: E402 只读
-from chanlun_macd import macd_series  # noqa: E402 只读
+from chanlun_signal import analyze as chan_analyze  # noqa: E402
+from chanlun_macd import macd_series  # noqa: E402
 
 # ---------- 日志（stdout + 文件双写） ----------
 logging.basicConfig(

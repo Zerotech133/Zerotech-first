@@ -140,7 +140,7 @@ def _read_prev_latest() -> dict:
     try:
         with open(STATE_DIR / "latest.json", "r", encoding="utf-8") as f:
             return json.load(f)
-    except Exception:  # noqa: BLE001  缺失/坏 JSON = 无历史（不节流，宁重报勿漏报）
+    except Exception:  # noqa: BLE001
         return {}
 
 
@@ -169,7 +169,7 @@ def run() -> int:
         stdout = proc.stdout.decode("utf-8", errors="replace")
         stderr = proc.stderr.decode("utf-8", errors="replace")
         wrapper_error = None
-    except Exception as exc:  # noqa: BLE001  超时/拉起失败 = fail-visible
+    except Exception as exc:  # noqa: BLE001
         exit_code, stdout, stderr = -1, "", ""
         wrapper_error = "wrapper 拉起 check_trigger_chain 失败: %r" % exc
 
@@ -250,7 +250,7 @@ def run() -> int:
 def main() -> int:
     try:
         return run()
-    except Exception as exc:  # noqa: BLE001  fail-visible：崩溃也留痕
+    except Exception as exc:  # noqa: BLE001
         err = "wrapper 自身异常: %r" % exc
         try:
             _append_log(

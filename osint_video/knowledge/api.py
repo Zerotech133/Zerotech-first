@@ -38,7 +38,7 @@ def current_browser_session_health() -> BrowserSessionHealth:
         return BrowserSessionHealth(status=BrowserSessionStatus.UNKNOWN)
     try:
         return _browser_fetcher.session_health()
-    except Exception:  # noqa: BLE001 - health must never break the API
+    except Exception:  # noqa: BLE001
         return BrowserSessionHealth(status=BrowserSessionStatus.UNKNOWN)
 
 

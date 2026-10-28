@@ -194,7 +194,7 @@ def _default_llm():
 
         timeout = float(os.environ.get("COMM_INTENT_TIMEOUT", "12"))
         return OllamaLLM(timeout=timeout), None
-    except Exception as ex:  # noqa: BLE001 —— 失败原因必须回传留痕
+    except Exception as ex:  # noqa: BLE001
         return None, "%s: %s" % (type(ex).__name__, ex)
 
 
@@ -298,7 +298,7 @@ def classify_intent(text, llm=None, status_sink=None):
                 "error": "llm_status=%s" % status,
             }
         intent, conf, ents = _parse_llm_json(raw)
-    except Exception as ex:  # noqa: BLE001 —— 降级必须留因
+    except Exception as ex:  # noqa: BLE001
         return {
             "intent": "unclear",
             "confidence": 0.0,

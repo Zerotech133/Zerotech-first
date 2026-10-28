@@ -118,7 +118,7 @@ def _build_payload():
     for cfg in tasks_cfg:
         try:
             entries.append(classify(cfg, rows.get(cfg["name"]), now))
-        except Exception as e:  # noqa: BLE001  单行坏不拖垮整卡
+        except Exception as e:  # noqa: BLE001
             entries.append({
                 "name": cfg.get("name", "?"),
                 "expected_cadence": "?", "last_run": None,
@@ -174,7 +174,7 @@ def _refresh_background():
         with _LOCK:
             _CACHE["ts"] = time.monotonic()
             _CACHE["data"] = payload
-    except Exception as e:  # noqa: BLE001  fail-open：后台失败不冒泡
+    except Exception as e:  # noqa: BLE001
         sys.stderr.write(
             "[api_execution] 后台刷新失败(前台返回旧缓存不受影响): "
             "%s: %s\n" % (type(e).__name__, e))
@@ -357,7 +357,7 @@ def poll_tasks(names, force=False):
     try:
         rows = _ps_query(names)
         return rows, True, None, int((time.monotonic() - t0) * 1000)
-    except Exception as e:  # noqa: BLE001  fail-visible：失败如实上报
+    except Exception as e:  # noqa: BLE001
         return {}, False, "%s: %s" % (type(e).__name__, e), int(
             (time.monotonic() - t0) * 1000)
 
@@ -586,7 +586,7 @@ class Handler:
         force = "force=1" in (qs or "").lower() or "force=true" in (qs or "").lower()
         try:
             payload = build_execution_health(force=force)
-        except Exception as e:  # noqa: BLE001  兜底 fail-visible
+        except Exception as e:  # noqa: BLE001
             payload = {
                 "read_only": True,
                 "generated_at": datetime.now().isoformat(timespec="seconds"),

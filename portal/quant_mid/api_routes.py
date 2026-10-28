@@ -120,7 +120,7 @@ def handle(method: str, path: str, headers: dict, body: bytes = b"") -> Tuple[in
 
     try:
         return handler(method, path, headers, body)
-    except Exception as e:  # noqa: BLE001 — HTTP 层兜底
+    except Exception as e:  # noqa: BLE001
         return 500, {"ok": False, "error": str(e),
                      "handler": handler.__name__ if handler else None}
 

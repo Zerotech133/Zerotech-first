@@ -74,7 +74,7 @@ def _load_model(model_dir: str | None = None):
             device="cpu",
             disable_update=True,
         )
-    except Exception as exc:  # noqa: BLE001 —— 模型加载失败原因多样，统一包装
+    except Exception as exc:  # noqa: BLE001
         raise ASRModelUnavailableError(
             f"SenseVoice 模型加载失败：{exc}\n{FUNASR_INSTALL_HINT}"
         ) from exc
@@ -150,7 +150,7 @@ def transcribe(
         )
     except ASRModelUnavailableError:
         raise
-    except Exception as exc:  # noqa: BLE001 —— 推理失败统一包装为模型不可用
+    except Exception as exc:  # noqa: BLE001
         raise ASRModelUnavailableError(
             f"ASR 推理失败：{exc}\n{FUNASR_INSTALL_HINT}"
         ) from exc

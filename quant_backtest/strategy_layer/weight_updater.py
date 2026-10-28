@@ -176,7 +176,7 @@ def next_day_return(
 
         tbl = pq.read_table(path, columns=["trade_date", "close"])
         df = tbl.to_pandas()
-    except Exception:  # noqa: BLE001 — 单票数据坏不拖垮整体
+    except Exception:  # noqa: BLE001
         return None
     if df.empty:
         return None
@@ -274,7 +274,7 @@ def fetch_feedback(weeks: int) -> List[Dict[str, str]]:
         finally:
             conn.close()
         return rows
-    except Exception:  # noqa: BLE001 — 兜底路径
+    except Exception:  # noqa: BLE001
         out = []
         for line in _psql_exec(sql).splitlines():
             parts = line.split("\t")
@@ -310,7 +310,7 @@ def fetch_signals(weeks: int) -> List[Dict[str, Any]]:
                 raw = [(str(r[0]), str(r[1]), r[2]) for r in cur.fetchall()]
         finally:
             conn.close()
-    except Exception:  # noqa: BLE001 — 兜底路径
+    except Exception:  # noqa: BLE001
         raw = []
         for line in _psql_exec(sql).splitlines():
             parts = line.split("\t")

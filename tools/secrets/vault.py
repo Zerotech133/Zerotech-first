@@ -255,7 +255,7 @@ def _aesgcm_decrypt_bytes(raw_key: bytes, blob: bytes) -> bytes:
     nonce, ct = body[:12], body[12:]
     try:
         return AESGCM(raw_key).decrypt(nonce, ct, AESGCM_MAGIC)
-    except Exception as e:  # noqa: BLE001 - InvalidTag 等
+    except Exception as e:  # noqa: BLE001
         raise VaultError(f"AESGCM 解密失败（密文损坏或密钥不匹配）：{e}") from e
 
 
@@ -318,7 +318,7 @@ def tighten_acl(path: Path) -> str:
             return "acl-tightened(owner+SYSTEM+Administrators)"
         os.chmod(path, 0o600)
         return "chmod-600"
-    except Exception as e:  # noqa: BLE001 - 权限收紧失败不能阻断初始化
+    except Exception as e:  # noqa: BLE001
         return f"warn({e})"
 
 

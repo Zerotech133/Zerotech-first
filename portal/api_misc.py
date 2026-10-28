@@ -2265,7 +2265,6 @@ transition:.3s;z-index:9}
     def _devops_page(self):
         """开发指挥台页（108 原型落地版·只读）：四类计数 + 工单表 + 事件流。"""
         import html as _h
-        e = _h.escape
         cards = "".join(
             "<div style='background:var(--bg-surface);border:1px solid var(--border);"
             "border-radius:10px;padding:12px 15px;'>"

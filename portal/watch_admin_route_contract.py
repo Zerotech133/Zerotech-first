@@ -30,7 +30,7 @@ from __future__ import annotations
 import json
 import math
 import os
-import urllib.error  # noqa: F401  (imported defensively; used in _http_get_json)
+import urllib.error  # noqa: F401
 import urllib.request
 from typing import Any, Dict, List, Optional, Tuple
 

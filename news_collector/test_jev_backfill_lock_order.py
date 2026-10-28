@@ -56,10 +56,10 @@ class FakeNewsAI:
             self.hook(title, stocks)
         return {"bias": "bull", "conf": 0.9, "title": title}
 
-    def log(self, msg):  # noqa: D102 - 只吞日志
+    def log(self, msg):  # noqa: D102
         pass
 
-    def push_message(self, msg):  # noqa: D102 - 单测不推送
+    def push_message(self, msg):  # noqa: D102
         pass
 
 

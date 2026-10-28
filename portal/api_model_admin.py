@@ -24,7 +24,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "agent_platform" / "engine"))
 
-import router as router_mod  # noqa: E402  # SmartRouter 引擎
+import router as router_mod  # noqa: E402
 import logging
 
 ORG = ROOT / "agent_platform" / "registry" / "org.json"

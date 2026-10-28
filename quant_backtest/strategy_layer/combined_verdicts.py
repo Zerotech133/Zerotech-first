@@ -134,7 +134,7 @@ def load_rows_pg(trade_date=None, limit=PG_LIMIT_DEFAULT) -> list:
                 raw = cur.fetchall()
         finally:
             conn.close()
-    except Exception:  # noqa: BLE001 — docker exec 兜底
+    except Exception:  # noqa: BLE001
         raw = _psql_rows(
             "SELECT %s FROM strategy.signals_combined %s%s" % (cols, where, tail),
             DOCKER_PSQL_BASE,

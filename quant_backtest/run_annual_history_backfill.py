@@ -90,7 +90,7 @@ def resume_annual_refresh(
             rows = (
                 response.get("rows") if isinstance(response.get("rows"), list) else []
             )
-        except Exception as exc:  # noqa: BLE001 - 失败必须落回执
+        except Exception as exc:  # noqa: BLE001
             status, rows, response = (
                 "source_error",
                 [],

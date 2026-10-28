@@ -197,7 +197,6 @@ if __name__ == "__main__":
 class TestBattPendingDynamic(unittest.TestCase):
     def test_ps_parse_six_field_bat(self):
         """第 6 字段 bat 解析：true/false → bool。"""
-        line = "StrategyDaily|Queued|2026/10/17 7:30:00|0|2026/10/18 7:30:00|True"
         # 走真解析：mock subprocess 不现实，直接构造——解析逻辑内联在
         # _ps_query_tasks，这里验证语义端到端（通过 monkeypatch stdout）。
         out = "\n".join(

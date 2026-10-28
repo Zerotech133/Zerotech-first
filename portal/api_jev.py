@@ -235,7 +235,7 @@ def handle_get(handler, path: str, qs_raw: str) -> None:
     except RuntimeError as exc:
         handler._json({"ok": False, "error": "unavailable", "message": str(exc)}, 503)
         return
-    except Exception as exc:  # noqa: BLE001 - fail loud but 不炸门户
+    except Exception as exc:  # noqa: BLE001
         handler._json({"ok": False, "error": "internal",
                        "message": "%s: %s" % (type(exc).__name__, exc)}, 500)
         return

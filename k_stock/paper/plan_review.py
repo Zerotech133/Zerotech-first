@@ -50,7 +50,7 @@ sys.path.insert(0, str(HERE))
 
 import gaorta_client  # noqa: E402
 import manager  # noqa: E402
-import meeting  # noqa: E402  # 复用智谱兜底链（勿复制逻辑）
+import meeting  # noqa: E402
 
 DATA_DIR = HERE.parent / "data"
 OUT_DIR = DATA_DIR / "plan_review"

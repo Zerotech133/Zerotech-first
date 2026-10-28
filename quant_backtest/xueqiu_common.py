@@ -442,7 +442,7 @@ def _browser_context():
         pw = sync_playwright().start()
         try:
             browser = pw.chromium.launch(channel="msedge", headless=True)
-        except Exception:  # noqa: BLE001 系统 Edge 不可用时退回内置 chromium
+        except Exception:  # noqa: BLE001
             browser = pw.chromium.launch(headless=True)
         ctx = browser.new_context(user_agent=UA)
         page = ctx.new_page()
@@ -451,7 +451,7 @@ def _browser_context():
         st.update({"pw": pw, "browser": browser, "ctx": ctx})
         atexit.register(_close_browser)
         return ctx
-    except Exception:  # noqa: BLE001 playwright 未装/浏览器起不来 → 静默
+    except Exception:  # noqa: BLE001
         st["failed"] = True
         return None
 

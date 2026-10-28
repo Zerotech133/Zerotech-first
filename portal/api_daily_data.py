@@ -92,7 +92,7 @@ def dist_section() -> dict:
     for created_at, raw in rows:
         try:
             j = json.loads(raw)
-        except Exception:  # noqa: BLE001  坏行计数不中断（容错口径同 sentiment_backtest）
+        except Exception:  # noqa: BLE001
             bad += 1
             continue
         day = str(created_at or "")[:10]
@@ -189,7 +189,7 @@ def drift_section() -> dict:
                         "status": r[3], "created_at": str(r[4] or "")}
                        for r in rows],
         })
-    except Exception as e:  # noqa: BLE001  DB 不可达降级（feishu_control 同款）
+    except Exception as e:  # noqa: BLE001
         out["error"] = "v2_alert 不可达: %s" % str(e)[:80]
     return out
 

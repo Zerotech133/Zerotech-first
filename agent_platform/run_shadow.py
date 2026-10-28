@@ -27,13 +27,13 @@ BASE = Path(__file__).parent
 sys.path.insert(0, str(BASE / "engine"))
 
 from checkpoints import Checkpointer  # noqa: E402
-from idem_hook import DualTrackHook  # noqa: E402  M0 P4 双轨幂等
+from idem_hook import DualTrackHook  # noqa: E402
 from interpreter import Interpreter, Team  # noqa: E402
 from llm import OllamaLLM  # noqa: E402
 from memory import MemoryStore  # noqa: E402
 from tools import make_context, quote_snapshot, kline_daily  # noqa: E402
-from regime_roster import dk_snapshot, enrich_row, bars_to_df  # noqa: E402  M4-P3 双刀阵容
-from strategy_runtime import run_strategy as _rt_run_strategy  # noqa: E402  拍板01 唯一口径
+from regime_roster import dk_snapshot, enrich_row, bars_to_df  # noqa: E402
+from strategy_runtime import run_strategy as _rt_run_strategy  # noqa: E402
 
 BASKET = [
     "600519",
@@ -391,7 +391,7 @@ def open_failed_task(failed_rows, today, store=None):
     if not failed_rows:
         return None
     try:
-        from tasks import TaskStore  # noqa: E402  engine path 已在顶部注入
+        from tasks import TaskStore  # noqa: E402
 
         ts = store or TaskStore(_data_root() / "org" / "tasks")
         title = "影子运行 failed 处置（%s）" % today
@@ -666,7 +666,7 @@ def main():
                             % str(_se)[:120]
                         )
                 break
-            except Exception as e:  # noqa: BLE001  无人干预要求：失败入账不中断
+            except Exception as e:  # noqa: BLE001
                 row = {
                     "date": today,
                     "ts": time.time(),

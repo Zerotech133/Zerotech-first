@@ -159,7 +159,7 @@ def main():
             fails += 1 if step_qpzm(a.force) != 0 else 0
         if a.only in (None, "cross"):
             fails += 1 if step_cross(a.force) != 0 else 0
-    except Exception as e:  # noqa: BLE001 异常也留日志收尾行+非零退出
+    except Exception as e:  # noqa: BLE001
         log("STEP 异常未捕获: %r" % e)
         fails += 1
     log("=== 队列结束 fails=%d ===" % fails)

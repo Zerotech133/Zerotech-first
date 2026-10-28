@@ -34,7 +34,7 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import weak_track_close as wc  # noqa: E402  (_load/_case_name)
+import weak_track_close as wc  # noqa: E402
 import logging
 
 REP = os.path.join(os.path.dirname(HERE), "reports")

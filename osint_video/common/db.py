@@ -63,7 +63,7 @@ def get_engine() -> Engine:
         )
         with engine.connect() as conn:  # 试连：尽早暴露配置/驱动问题
             conn.execute(text("SELECT 1"))
-    except Exception as exc:  # noqa: BLE001 —— 统一转译为业务可识别异常
+    except Exception as exc:  # noqa: BLE001
         raise DatabaseUnavailableError(
             f"PostgreSQL 不可用（{settings.pg_host}:{settings.pg_port}/{settings.pg_db}）：{exc}\n{_TROUBLESHOOT_HINT}"
         ) from exc

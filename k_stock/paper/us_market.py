@@ -66,7 +66,7 @@ def _et_date_hhmm(ts_iso: str) -> tuple[str, str]:
             .astimezone(ZoneInfo("America/New_York"))
         )
         return dt.strftime("%Y%m%d"), dt.strftime("%H%M")
-    except Exception:  # noqa: BLE001  ZoneInfo 找不到 tzdata 等
+    except Exception:  # noqa: BLE001
         dt = datetime.fromisoformat(str(ts_iso)[:19]) - timedelta(hours=12)
         return dt.strftime("%Y%m%d"), dt.strftime("%H%M")
 

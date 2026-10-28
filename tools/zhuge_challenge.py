@@ -333,14 +333,14 @@ def load_whitelist(path, parser: str = "auto") -> dict:
     used = "pyyaml"
     if parser in ("auto", "pyyaml"):
         try:
-            import yaml  # noqa: PLC0415 —— 延迟导入，缺库走 fallback
+            import yaml  # noqa: PLC0415
 
             data = yaml.safe_load(text)
         except ImportError:
             if parser == "pyyaml":
                 raise WhitelistError("PyYAML 不可用且指定了 --whitelist-parser pyyaml")
             data = None
-        except Exception:  # noqa: BLE001 —— YAML 语法错误：auto 走 fallback 并显式标注
+        except Exception:  # noqa: BLE001
             data = None
     if data is None:
         data = _minimal_parse_whitelist(text)
@@ -877,7 +877,7 @@ def cmd_emit(args) -> int:
             from zhuge_challenge_model import generate_questions as _gen_model
             model_qs, info = _gen_model(
                 snap["items"], max_questions=min(3, len(snap["items"])))
-        except Exception as exc:  # noqa: BLE001 —— 模型失败不反噬主链
+        except Exception as exc:  # noqa: BLE001
             model_qs, info = None, {"mode": "real3",
                                     "error": "%s: %s" % (type(exc).__name__, str(exc)[:120])}
         if model_qs:

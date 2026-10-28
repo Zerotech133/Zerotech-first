@@ -37,7 +37,7 @@ PAPER_DIR = os.path.join(ROOT, "k_stock", "paper")
 if PAPER_DIR not in sys.path:
     sys.path.insert(0, PAPER_DIR)
 
-import signal_consumer  # noqa: E402  契约校验（只 import 不改）
+import signal_consumer  # noqa: E402
 
 POOL_ID = "todays_picks"
 DATA_DIR = os.path.join(HERE, "data")

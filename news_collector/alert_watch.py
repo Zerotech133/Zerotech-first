@@ -103,7 +103,7 @@ def _write_heartbeat(rc, upstream_ok, routes_count, note):
         with open(tmp, "w", encoding="utf-8") as f:
             json.dump(payload, f, ensure_ascii=False)
         os.replace(tmp, HEARTBEAT_PATH)
-    except Exception as exc:  # noqa: BLE001  心跳写失败不得影响主流程
+    except Exception as exc:  # noqa: BLE001
         print("ALERT_WATCH_WARN heartbeat write %s" % str(exc)[:100])
     return payload
 
@@ -350,7 +350,7 @@ if __name__ == "__main__":
         _rc = main()
     except SystemExit:
         raise
-    except Exception as _exc:  # noqa: BLE001  崩溃也要留下"本体在跑"的证据
+    except Exception as _exc:  # noqa: BLE001
         _write_heartbeat(1, False, 0, "exception: %s" % str(_exc)[:120])
         raise
     sys.exit(_rc)
