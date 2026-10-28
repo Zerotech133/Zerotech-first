@@ -81,12 +81,17 @@ function workerCell(t){
   const eligible=!!(t && t.worker_eligible!==false);
   return eligible?'<span class="wpill ok">Worker 可接</span>':'<span class="wpill no">不接（人工/DEV1）</span>';
 }
+function statusLabel(tid,t){
+  const p=planTask(tid);
+  if((p&&p.worker_eligible===false) || t.status==="waiting_human") return "待人工";
+  return t.status;
+}
 function renderMissionState(st){
   if(!st)return;
   let h='<div class="muted" style="margin-top:8px">mission '+esc(st.mission_id)+' · parallel '+esc(st.parallel_limit)+' · updated '+esc(st.updated_at||"")+'</div>';
   h+='<table><thead><tr><th>任务</th><th>状态</th><th>Owner</th><th>Worker</th><th>Ticket</th><th>依赖</th><th>最近错误/评审</th></tr></thead><tbody>';
   for(const [tid,t] of Object.entries(st.tasks||{})){
-    h+='<tr><td>'+esc(tid)+' '+esc(t.title)+'</td><td>'+esc(t.status)+'</td><td>'+esc(t.owner)+'</td><td>'+workerCell(planTask(tid))+'</td><td>'+esc(t.ticket_id||"")+'</td><td>'+esc((t.deps||[]).join(","))+'</td><td class="muted">'+esc(((t.last_error||t.gate_detail||t.create_detail||"")+"").slice(0,160))+'</td></tr>';
+    h+='<tr><td>'+esc(tid)+' '+esc(t.title)+'</td><td><span class="wpill '+(statusLabel(tid,t)==="待人工"?"no":"ok")+'">'+esc(statusLabel(tid,t))+'</span></td><td>'+esc(t.owner)+'</td><td>'+workerCell(planTask(tid))+'</td><td>'+esc(t.ticket_id||"")+'</td><td>'+esc((t.deps||[]).join(","))+'</td><td class="muted">'+esc(((t.last_error||t.gate_detail||t.create_detail||"")+"").slice(0,160))+'</td></tr>';
   }
   document.getElementById("mission-result").innerHTML=h+'</tbody></table>';
 }

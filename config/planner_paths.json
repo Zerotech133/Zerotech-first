@@ -1,5 +1,5 @@
 {
- "schema": "planner_paths/v4",
+ "schema": "planner_paths/v5",
  "note": "文档路由/关键词 → 精确文件；planner fallback 用它生成 write_scope，require_checks 再逐文件挂 file_exists",
  "routes": {
   "/keys": {
@@ -213,6 +213,51 @@
    "backend": [
     "agent_platform/legion_command/serve.py",
     "agent_platform/legion_command/keypool.py"
+   ]
+  },
+  "/api/kg/lineage": {
+   "frontend": [],
+   "backend": [
+    "portal/api_lineage.py"
+   ]
+  },
+  "/api/kg": {
+   "frontend": [],
+   "backend": [
+    "portal/api_lineage.py",
+    "portal/api_misc.py"
+   ]
+  },
+  "/api/dataops/overview": {
+   "frontend": [
+    "portal/dataops.html"
+   ],
+   "backend": [
+    "portal/api_dataops.py"
+   ]
+  },
+  "/api/dataops/map": {
+   "frontend": [
+    "portal/dataops.html"
+   ],
+   "backend": [
+    "portal/api_dataops.py"
+   ]
+  },
+  "/api/dataops/entity": {
+   "frontend": [
+    "portal/dataops.html"
+   ],
+   "backend": [
+    "portal/api_dataops.py"
+   ]
+  },
+  "/api/dataops": {
+   "frontend": [
+    "portal/dataops.html"
+   ],
+   "backend": [
+    "portal/api_dataops.py"
    ]
   }
  },
