@@ -40,14 +40,20 @@ def run(cmd: list[str], timeout: int = 3600) -> int:
 def branch_changed_files(tid: str) -> list[str]:
     """任务分支相对 master 的改动文件列表。"""
     branch = "task/%s" % tid
-    r = subprocess.run(["git", "-C", str(REPO), "merge-base", "master", branch],
+    r = subprocess.run(["git", "-C", str(REPO), "-c", "core.quotepath=false", "merge-base", "master", branch],
                        capture_output=True, text=True, encoding="utf-8", errors="replace")
     base = (r.stdout or "").strip()
     if not base:
         return []
-    r = subprocess.run(["git", "-C", str(REPO), "diff", "--name-only", base, branch],
+    r = subprocess.run(["git", "-C", str(REPO), "-c", "core.quotepath=false", "diff", "--name-only", base, branch],
                        capture_output=True, text=True, encoding="utf-8", errors="replace")
-    return [x.strip().replace("\\", "/") for x in (r.stdout or "").splitlines() if x.strip()]
+    return [_clean_path(x) for x in (r.stdout or "").splitlines() if x.strip()]
+
+def _clean_path(x: str) -> str:
+    x = x.strip().replace("\\", "/")
+    if len(x) >= 2 and x[0] == '"' and x[-1] == '"':
+        x = x[1:-1]
+    return x
 
 
 def is_docs_only(files: list[str]) -> bool:
