@@ -624,3 +624,7 @@ def test_validate_string_evidence_still_grounded():
     }
     r = G.validate_items("anomaly_digest", [item], payload)
     assert r["ok"] is False and r["grounding_ok"] is False
+
+
+def test_num_tokens_thousands_separator():
+    assert G._num_tokens("16,280") == {"16280"}
