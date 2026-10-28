@@ -98,6 +98,17 @@ def validate(req) -> tuple[dict | None, str | None]:
             return None, "bad_order_type"
         orders.append({"title": _r(o.get("title"), 120), "type": ot,
                        "owner": _r(o.get("owner"), 24), "state": "待派工"})
+    acceptance = []
+    for a in (req.get("acceptance") or [])[:5]:
+        if not isinstance(a, dict):
+            continue
+        acceptance.append({
+            "verdict": _r(a.get("verdict"), 12),
+            "ticket": _r(a.get("ticket"), 64),
+            "commit": _r(a.get("commit"), 64),
+            "evidence": _r(a.get("evidence"), 500),
+            "report": _r(a.get("report"), 200),
+        })
     return {
         "schema_version": SCHEMA,
         "meeting_id": _now_id(),
@@ -108,6 +119,7 @@ def validate(req) -> tuple[dict | None, str | None]:
         "transcript": transcript,
         "decisions": decisions,
         "orders": orders,
+        "acceptance": acceptance,
         "status": "decided" if decisions else "draft",
         "source_verification": "server_recorded_client_text",
         "note": "指挥部会议纪要 v2：服务端落盘；发言文本仍为客户端声明，未经真实模型回执验证；"
