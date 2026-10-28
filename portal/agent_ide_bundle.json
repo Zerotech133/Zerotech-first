@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 27,
+  "workorders_doing": 26,
   "workorders_review": 6
  },
  "workorders": [
@@ -264,15 +264,6 @@
    "branch": "task/WO-HUANGZHONG-DAILY-TASK-20261028",
    "created": "2026-10-28 10:55:18",
    "project": "general"
-  },
-  {
-   "id": "WO-O8P3B-DEPAGE-20261028",
-   "desc": "O8 P3b：依赖版本年龄检查 tools/dep_age_check.py（读 pip freeze/uv.lock，查 PyPI 发布时间，7天内 warn-only；--strict 可选）+ 单测 + 策略文档 P3b 标完成",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-O8P3B-DEPAGE-20261028",
-   "created": "2026-10-28 17:47:46",
-   "project": "portal"
   },
   {
    "id": "OS-FIX-L1-AUDIT-20261028",
