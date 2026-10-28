@@ -677,6 +677,15 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({"ok": False, "error": "credential_catalog_failed",
                                  "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
             return
+        if path == "/api/mcp/tushare/tools":
+            try:
+                from legion_command import mcp_bridge
+                tools = mcp_bridge.list_tools()
+                self._send_json({"ok": True, "count": len(tools), "tools": tools})
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "mcp_tools_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
         if path == "/api/router/vk":
             try:
                 from legion_command import seat_router
@@ -1394,6 +1403,23 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(res)
             except Exception as e:  # noqa: BLE001
                 self._send_json({"ok": False, "error": "mission_dispatch_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
+        if path == "/api/mcp/tushare/call":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 256 * 1024:
+                    self._send_json({"ok": False, "error": "bad_request"}, 400)
+                    return
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+                from legion_command import mcp_bridge
+                result = mcp_bridge.call_tool(str(req.get("tool") or ""),
+                                              req.get("args") if isinstance(req.get("args"), dict) else {})
+                self._send_json({"ok": True, "tool": req.get("tool"), "result": result})
+            except ValueError as e:
+                self._send_json({"ok": False, "error": str(e)[:200]}, 400)
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "mcp_call_failed",
                                  "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
             return
         if path == "/api/credentials/set":
