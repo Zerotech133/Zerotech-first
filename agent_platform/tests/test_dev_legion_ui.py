@@ -17,15 +17,18 @@ def test_three_piece():
 
 def test_fetch_and_sections():
     assert 'fetch("/api/dev/legion"' in TXT
-    for sid in ("groups", "seats", "wip", "metrics", "redlines"):
+    for sid in ("groups", "seats", "ai", "quant", "risk",
+                "wip", "metrics", "redlines"):
         assert ("id=\"" + sid + "\"") in TXT
-    for sec in ("组织架构", "在制任务", "C6 指标", "红线状态"):
+    for sec in ("组织架构", "AI 席位卡", "量化席位卡", "回测/风控卡",
+                "在制任务", "C6 指标", "红线状态"):
         assert sec in TXT
 
 
 def test_shortscreen_rule():
-    # h2 < 6，无需 shortscreen.js；若未来加到 >=6 必须引入
-    assert len(re.findall(r"<h2[ >]", TXT)) < 6
+    # h2 >= 6：必须引入 shortscreen.js（短屏化）
+    assert len(re.findall(r"<h2[ >]", TXT)) >= 6
+    assert "/static/shortscreen.js" in TXT
 
 
 def test_no_hardcoded_hex_colors():

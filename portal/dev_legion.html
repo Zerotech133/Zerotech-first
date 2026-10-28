@@ -6,6 +6,7 @@
 <title>研发军团作战屏 v1</title>
 <link rel="stylesheet" href="/static/tokens.css">
 <script src="/static/nav.js" defer></script>
+<script src="/static/shortscreen.js" defer></script>
 <style>
   body{background:var(--bg);color:var(--fg);font-family:"Segoe UI","Microsoft YaHei",sans-serif;margin:0}
   .wrap{max-width:1200px;margin:0 auto;padding:20px 16px 48px}
@@ -37,6 +38,15 @@
   <div class="muted" id="dept"></div>
   <div id="groups"></div>
   <div class="grid" id="seats"></div>
+
+  <h2>AI 席位卡</h2>
+  <div class="grid" id="ai"></div>
+
+  <h2>量化席位卡</h2>
+  <div class="grid" id="quant"></div>
+
+  <h2>回测/风控卡</h2>
+  <div class="grid" id="risk"></div>
 
   <h2>在制任务</h2>
   <div id="wip"></div>
@@ -78,6 +88,17 @@ function render(d){
     '<div class="group"><h3>'+esc(g.id)+" "+esc(g.name)+" · 组长 "+esc(g.lead)+"</h3>"+
     '<div class="muted">组员：'+esc((g.members||[]).join("、"))+'</div></div>').join("");
   $("seats").innerHTML = (d.seats||[]).map(card).join("");
+  const mini = (rows, fields) => (rows || []).map(r =>
+    '<div class="card"><b>' + esc(r.id) + ' ' + esc(r.name || "") + '</b>' +
+    '<div class="sub">' + esc(r.role_title || "") + '</div>' +
+    fields.map(f => '<div class="sub">' + esc(f[0]) + '：' +
+      esc(r[f[1]] == null ? "—" : r[f[1]]) + '</div>').join("") + '</div>').join("");
+  $("ai").innerHTML = mini(d.ai_cards,
+    [["模型", "model"], ["档位", "grade"], ["评估", "eval_status"]]);
+  $("quant").innerHTML = mini(d.quant_cards,
+    [["模型", "model"], ["策略", "strategy_status"], ["注册", "registry_status"]]);
+  $("risk").innerHTML = mini(d.risk_cards,
+    [["Go-No-Go", "go_no_go_status"], ["判据冻结", "criterion_freeze_status"]]);
   const wip = d.work_in_progress||[];
   $("wip").innerHTML = wip.length ? wip.map(w=>
     '<div class="group"><h3>'+esc(w.owner)+'（'+((w.tasks||[]).length)+'）</h3>'+
