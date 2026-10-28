@@ -1811,7 +1811,7 @@ def _auto_overlays(row):
         _all = st.get("pivots") or []
         piv = [p for p in _all if float(p["zd"]) < px] or _all
         if piv:
-            zg, zd = float(piv[-1]["zg"]), float(piv[-1]["zd"])
+            zg, _zd = float(piv[-1]["zg"]), float(piv[-1]["zd"])
             if px > zg:
                 ovs.append((zg, "止损", "#f85149"))
             else:

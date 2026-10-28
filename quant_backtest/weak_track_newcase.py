@@ -58,7 +58,7 @@ def block_info(code):
 
 
 def next_steps(rep, has_tbd):
-    c6, task = rep["{C6}"], rep["{TASK}"]
+    _c6, task = rep["{C6}"], rep["{TASK}"]
     piv = ",".join(x for x in (rep["{P1}"], rep["{P2}"], rep["{P3}"]))
     s = ["\n下一步三件事：",
          "1) 联动页首查回填 §1：http://127.0.0.1:8091/bt-linkage?code=%s"

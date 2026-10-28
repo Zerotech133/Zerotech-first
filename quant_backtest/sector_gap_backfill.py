@@ -188,7 +188,7 @@ def stage_sector_daily(
     data_dir = root / "tdx_sector_daily"
     raw_dir.mkdir(parents=True, exist_ok=True)
     data_dir.mkdir(parents=True, exist_ok=True)
-    identities = [
+    [
         (str(item.get("code", "")), str(item.get("trade_date", ""))) for item in keys
     ]
     seen: set[tuple[str, str]] = set()

@@ -120,7 +120,7 @@ class RunLogs:
             aligned = begin + boundary + 1 if boundary >= 0 else begin
             if begin > 0 and boundary < 0:
                 stream.seek(offset)
-                fragment = stream.readline(min(limit, 65536))
+                stream.readline(min(limit, 65536))
                 next_offset = stream.tell()
                 text = "[过长日志行，已隐藏]"
             else:

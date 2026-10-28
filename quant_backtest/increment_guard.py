@@ -266,7 +266,7 @@ def main() -> int:
     mp.write_text(json.dumps(man, ensure_ascii=False, indent=2), encoding="utf-8")
 
     # 5. git（内联身份，有 diff 才提交）
-    g = run(["git", *GIT_ID, "add", "_manifest.json"])
+    run(["git", *GIT_ID, "add", "_manifest.json"])
     st = run(["git", "status", "--short", "--", "_manifest.json"])
     if st.stdout.strip():
         c = run(

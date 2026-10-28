@@ -708,7 +708,6 @@ def main():
     g80_i = stats([r for r in thinned if (r["_v"]["ind"] or 0) >= 80])
     _hhm, ok_m = two_halves(rows, "mkt", 75)
     _hhi, ok_i = two_halves(rows, "ind", 75)
-    switch = False
     if g85_m and g85_i and g85_m["n"] >= 10 and g85_m["avg"] < 0:
         gain = (abs(g85_i["avg"]) - abs(g85_m["avg"])) / abs(g85_m["avg"])
         ap(

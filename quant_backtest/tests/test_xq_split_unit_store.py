@@ -268,6 +268,6 @@ def test_repersist_with_changed_relations_never_collides(tmp_path) -> None:
         assert len(after) == len(before) + 1
         all_ids = [row[0] for row in after]
         assert len(all_ids) == len(set(all_ids))
-        payloads = [row[4] for row in after]
+        [row[4] for row in after]
         corrected = [row[4] for row in after if row[0] == mention_second[0].unit_id]
         assert len(corrected) == 1 and "$SH600000" in corrected[0]

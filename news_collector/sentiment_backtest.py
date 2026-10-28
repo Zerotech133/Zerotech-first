@@ -264,7 +264,7 @@ def run():
     if not tds:
         print("BT no trade_cal, abort")
         return None
-    tset = set(tds)
+    set(tds)
     today = datetime.now().strftime("%Y%m%d")
     tds = [t for t in tds if t <= today]  # 未来日无行情，截到今天
     tidx = {d: i for i, d in enumerate(tds)}

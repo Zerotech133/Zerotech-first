@@ -78,12 +78,12 @@ def main():
 
     sector_map = {}
     try:
-        sdef = pd.read_parquet(
+        pd.read_parquet(
             os.path.join(ROOT, "quant_backtest", "data/tdx/ts_sector_def.parquet")
         )
     except Exception:
         try:
-            sdef = pd.read_parquet(
+            pd.read_parquet(
                 os.path.join(
                     ROOT,
                     "quant_backtest",

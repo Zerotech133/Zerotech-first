@@ -6120,7 +6120,7 @@ def _bt2_worker(jid, params):
             worker_params["transaction_policy"] = policy
         res, err = eng.run_job(worker_params, jid, progress=progress)
         if err:
-            text = str(err)
+            str(err)
             stable = _minute_error_code(err)
             _bt2_write_state(jid, status="dead", error=stable, error_code=stable, source_error=stable,
                              source_ref=params.get("source_ref"), source_availability="available",

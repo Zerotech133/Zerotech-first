@@ -365,7 +365,7 @@ def _parse(out, actions=None):
     """三行标签解析 + 白名单动词校验。返回 (强度, 动作, 理由, 风险, ok)。
     actions 传入 agent 白名单（缺省用全集 ACTIONS）。"""
     actions = actions or ACTIONS
-    strength = action = reason = risk = ""
+    strength = action = risk = ""
     for ln in (out or "").splitlines():
         s = ln.strip()
         if s.startswith("强度:"):

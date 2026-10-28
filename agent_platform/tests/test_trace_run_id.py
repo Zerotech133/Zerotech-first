@@ -109,7 +109,7 @@ def test_migration_from_old_schema(tmp_path, monkeypatch):
 
 
 def test_new_run_id_and_get_trace(tmp_path, monkeypatch):
-    db = _db(tmp_path, monkeypatch)
+    _db(tmp_path, monkeypatch)
     rid = TR.new_run_id()
     assert re.match(r"^run_\d{12}[0-9a-f]{12}$", rid)
     tid = TR.trace_id()

@@ -113,7 +113,7 @@ def build_report(records: list[dict[str, Any]]) -> str:
     """汇总结果 → Markdown 质量报表。"""
     ok_records = [r for r in records if r["ok"]]
     fail_records = [r for r in records if not r["ok"]]
-    n = max(len(ok_records), 1)
+    max(len(ok_records), 1)
 
     def _avg(key: str) -> float:
         vals = [r[key] for r in ok_records if isinstance(r.get(key), (int, float))]

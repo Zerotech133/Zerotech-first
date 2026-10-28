@@ -189,7 +189,7 @@ def run(theme=None):
             out["themes"][t] = {"digest": "", "verified": False, "note": "Neo4j 不可达"}
             print("[%s] gather 失败: %s" % (t, e))
             continue
-        ents = [
+        [
             it["stock"]
             for seg in facts.get("segments", [])
             for it in seg.get("stocks", [])

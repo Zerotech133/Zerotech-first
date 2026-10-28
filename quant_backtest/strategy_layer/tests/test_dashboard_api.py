@@ -40,7 +40,7 @@ class StubRegistry:
 
 class TestStrategiesPayload:
     def test_registry_driven(self, monkeypatch):
-        reg = StubRegistry(
+        StubRegistry(
             ["dual_blade", "kg_boost"], weights={"dual_blade": 0.6, "kg_boost": 0.4}
         )
         monkeypatch.setattr(
@@ -637,7 +637,7 @@ class TestRegisterRoutes:
 
     def test_register_idempotent(self, monkeypatch):
         """重复注册不叠加包装。"""
-        captured = self._send_capture(monkeypatch)
+        self._send_capture(monkeypatch)
         first = register_routes(self.handler_cls)
         get1 = self.handler_cls.__dict__["do_GET"]
         second = register_routes(self.handler_cls)

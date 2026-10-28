@@ -110,7 +110,7 @@ def validate(org):
     if not dev:
         return ["org 缺 dev 部门"], c
     lead = dev.get("lead")
-    deputy = dev.get("deputy")
+    dev.get("deputy")
     if c["profiles"].get(lead, {}).get("report_to") != "A0":
         errors.append("部门主官 %s report_to 应为 A0（实际 %r）"
                       % (lead, c["profiles"].get(lead, {}).get("report_to")))

@@ -58,7 +58,7 @@ def _iso_rules(tmp_path, monkeypatch):
 
 
 def test_set_tp_writes_rule(tmp_path):
-    eng = _eng(tmp_path)
+    _eng(tmp_path)
     r = exit_rules.set_line(ACCT, "605100", "tp", "8")
     assert r["ok"] and r["line"] == 10.8 and r["pct"] == 8.0
     d = json.loads(exit_rules.RULES_PATH.read_text(encoding="utf-8"))
