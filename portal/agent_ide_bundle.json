@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-28 10:53",
+ "generated": "2026-10-28 16:53",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -10,7 +10,7 @@
   "prompt_miss": [],
   "name_collisions": {},
   "workorders_doing": 32,
-  "workorders_review": 5
+  "workorders_review": 6
  },
  "workorders": [
   {
@@ -344,6 +344,15 @@
    "owner": "unknown-agent",
    "branch": "task/legion-1028093051",
    "created": "2026-10-28 09:31:00",
+   "project": "general"
+  },
+  {
+   "id": "WO-HUANGZHONG-DAILY-TASK-20261028",
+   "desc": "记录 HuangzhongDaily 批准+注册+首跑验证（rc0/PASS）",
+   "status": "review",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-HUANGZHONG-DAILY-TASK-20261028",
+   "created": "2026-10-28 10:55:18",
    "project": "general"
   }
  ],
@@ -7035,6 +7044,11 @@
     {
      "id": "WO-TESTPATHS-ADJUST-20261028",
      "desc": "testpaths 注释与行对齐：quant 收集已修但默认不纳入（CI 预算待确认）",
+     "status": "review"
+    },
+    {
+     "id": "WO-HUANGZHONG-DAILY-TASK-20261028",
+     "desc": "记录 HuangzhongDaily 批准+注册+首跑验证（rc0/PASS）",
      "status": "review"
     }
    ]
