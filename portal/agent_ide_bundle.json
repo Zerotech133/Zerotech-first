@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-29 05:06",
+ "generated": "2026-10-29 05:12",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 29,
+  "workorders_doing": 31,
   "workorders_review": 5
  },
  "workorders": [
@@ -302,21 +302,39 @@
    "project": "portal"
   },
   {
-   "id": "WO-CODEREW-20261029",
-   "desc": "代码审查修复(L1)：新研究工具/数据抓取/归因 SQL 优先级/编码事故，补单测",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-CODEREW-20261029",
-   "created": "2026-10-29 05:04:57",
-   "project": "general"
-  },
-  {
    "id": "WO-GUANYU-P19-20261029",
    "desc": "ruff收尾E702F401 [UNOWNED]",
    "status": "doing",
    "owner": "unknown-agent",
    "branch": "task/WO-GUANYU-P19-20261029",
    "created": "2026-10-29 05:05:06",
+   "project": "general"
+  },
+  {
+   "id": "WO-HQ-ACCEPT-RESTORE-20261029",
+   "desc": "恢复 P1b 文件：auto-bundle chore 104ac8f95 误删 5 文件",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-HQ-ACCEPT-RESTORE-20261029",
+   "created": "2026-10-29 05:06:47",
+   "project": "general"
+  },
+  {
+   "id": "WO-AUDIT-20261029-FIX",
+   "desc": "2026-10-29 代码审计修复：merge_gated.is_docs_only 对非白名单前缀但含子目录的 .md/.json 误判为纯文档→质量闸被绕过（如 quant_backtest/x.md 会跳过测试）；改为必须命中 DOC_PREFIX；补测试。",
+   "status": "doing",
+   "owner": "ARCH1",
+   "branch": "task/WO-AUDIT-20261029-FIX",
+   "created": "2026-10-29 05:08:12",
+   "project": "quant"
+  },
+  {
+   "id": "WO-GUANYU-P19B-20261029",
+   "desc": "ruff收尾窄单 [UNOWNED]",
+   "status": "doing",
+   "owner": "unknown-agent",
+   "branch": "task/WO-GUANYU-P19B-20261029",
+   "created": "2026-10-29 05:09:52",
    "project": "general"
   }
  ],
@@ -3103,6 +3121,11 @@
     {
      "id": "WO-LEGION-SCREEN-20261027",
      "desc": "研发军团作战屏 v1 父单（只读）：组织架构+11席角色+在制+C6指标一页聚合；WBS 见 deliverables/2026-10-27_任务拆解试点_研发军团作战屏v1_工作要素下发书.md；子单 LS-02~LS-12；M0 契约冻结→M1 并行→M2 联调→M3 部署→M4 验收。路由例外=跨部门治理。",
+     "status": "doing"
+    },
+    {
+     "id": "WO-AUDIT-20261029-FIX",
+     "desc": "2026-10-29 代码审计修复：merge_gated.is_docs_only 对非白名单前缀但含子目录的 .md/.json 误判为纯文档→质量闸被绕过（如 quant_backtest/x.md 会跳过测试）；改为必须命中 DOC_PREFIX；补测试。",
      "status": "doing"
     }
    ]
@@ -6922,6 +6945,11 @@
     {
      "id": "WO-LEGION-F841B-20261029",
      "desc": "工程卫生 ruff F841 79 条清理：逐项审查 unsafe-fix，保留副作用；编译+定向测试+质量闸",
+     "status": "doing"
+    },
+    {
+     "id": "WO-HQ-ACCEPT-RESTORE-20261029",
+     "desc": "恢复 P1b 文件：auto-bundle chore 104ac8f95 误删 5 文件",
      "status": "doing"
     }
    ]
