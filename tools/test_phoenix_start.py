@@ -25,6 +25,9 @@ def test_already_running(monkeypatch):
 
 def test_starts_when_down(monkeypatch, tmp_path):
     p = _load()
+    fake_exe = tmp_path / "phoenix.exe"
+    fake_exe.write_text("", encoding="utf-8")
+    monkeypatch.setattr(p, "PHOENIX", fake_exe)
     calls = {"n": 0}
 
     def health():
@@ -41,6 +44,9 @@ def test_starts_when_down(monkeypatch, tmp_path):
 
 def test_spawn_failure(monkeypatch, tmp_path):
     p = _load()
+    fake_exe = tmp_path / "phoenix.exe"
+    fake_exe.write_text("", encoding="utf-8")
+    monkeypatch.setattr(p, "PHOENIX", fake_exe)
 
     def boom(cmd, log):
         raise OSError("no")
@@ -58,8 +64,11 @@ def test_missing_exe(monkeypatch, tmp_path):
     assert rep["ok"] is False and rep["action"] == "missing_exe"
 
 
-def test_unhealthy_after_wait(tmp_path):
+def test_unhealthy_after_wait(monkeypatch, tmp_path):
     p = _load()
+    fake_exe = tmp_path / "phoenix.exe"
+    fake_exe.write_text("", encoding="utf-8")
+    monkeypatch.setattr(p, "PHOENIX", fake_exe)
     rep = p.ensure_running(health=lambda: False,
                            spawner=lambda c, l: None,
                            wait_s=1, log_path=tmp_path / "x.log")
