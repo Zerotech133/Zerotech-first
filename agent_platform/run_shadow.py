@@ -69,6 +69,21 @@ if "--rehearsal" in sys.argv:
 REHEARSAL = os.environ.get("SHADOW_REHEARSAL") == "1"
 DATA_ROOT = Path(os.environ.get("SHADOW_DATA_ROOT") or (BASE / "data"))
 LEDGER = DATA_ROOT / "shadow" / "shadow_ledger.jsonl"
+
+def _trace_links_path():
+    """跟随 LEDGER 所在数据根，隔离根/测试 monkeypatch 不写真仓。"""
+    return Path(LEDGER).parent.parent / "trace" / "trace_links.jsonl"
+
+
+def _record_trace_link(row):
+    """影子落账后补 shadow-only 链；失败不影响主链（fail-open）。"""
+    try:
+        from adapters.trace_link import record_shadow_anchor
+
+        return record_shadow_anchor(row, path=_trace_links_path(), source="run_shadow")
+    except Exception as exc:  # noqa: BLE001
+        print("[warn] trace link 补登跳过：%s" % str(exc)[:120])
+        return None
 # K-ORG-129 / T-20261008-003（B8：全篮子 HOLD 使 J2 失效）：score 基数表——
 # 枚举档 × confidence 连续落账（见 parse_decision），HOLD=0 中性锚不动；
 # WATCH 新档 -0.5：L4 存疑观察＝弱负证据，低于 HOLD、高于 SELL，不再与 HOLD 同分
@@ -693,6 +708,7 @@ def main():
                 file=sys.stderr,
             )
             return 3
+            _record_trace_link(row)
         if attempt_id:  # 双轨回写：done→completed；failed→允许下次死信后重试
             hook.complete(
                 attempt_id,
