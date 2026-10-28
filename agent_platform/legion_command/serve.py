@@ -1377,6 +1377,38 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({"ok": False, "error": "mission_dispatch_failed",
                                  "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
             return
+        if path == "/api/credentials/set":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 128 * 1024:
+                    self._send_json({"ok": False, "error": "bad_request"}, 400)
+                    return
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+                name = str(req.get("name") or "").strip()
+                secret = str(req.get("secret") or "").strip()
+                category = str(req.get("category") or "data").strip()
+                env = str(req.get("env") or "").strip()
+                import re as _re
+                if not _re.fullmatch(r"[A-Za-z0-9_.-]{2,64}", name):
+                    self._send_json({"ok": False, "error": "invalid_name"}, 400)
+                    return
+                if len(secret) < 6 or len(secret) > 4096:
+                    self._send_json({"ok": False, "error": "invalid_secret"}, 400)
+                    return
+                if env and not _re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]{1,63}", env):
+                    self._send_json({"ok": False, "error": "invalid_env"}, 400)
+                    return
+                import importlib.util
+                _cs_path = _PLATFORM.parent / "tools" / "credential_store.py"
+                _spec = importlib.util.spec_from_file_location("credential_store", str(_cs_path))
+                _cs = importlib.util.module_from_spec(_spec)
+                _spec.loader.exec_module(_cs)
+                item = _cs.set_secret(name, secret, category, env)
+                self._send_json({"ok": True, "item": {k: v for k, v in item.items() if k != "secret"}})
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "credential_set_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
         if path == "/api/planner/build-rules":
             try:
                 from legion_command import planner_rules

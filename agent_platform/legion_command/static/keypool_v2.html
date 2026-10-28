@@ -45,6 +45,9 @@ button.small{padding:3px 8px;font-size:11px}
 .drawer.on{right:0}
 .drawer h3{margin:0 0 4px}.drawer .field{margin:9px 0}.drawer label{display:block;font-size:11px;color:var(--dim);margin-bottom:3px}
 .drawer input,.drawer select{width:100%}
+.cred-form{background:#0d1828;border:1px solid var(--line);border-radius:9px;padding:12px;margin:8px 0;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.cred-form .field label{display:block;font-size:11px;color:var(--dim);margin-bottom:3px}
+.cred-form input,.cred-form select{width:100%;background:#081321;border:1px solid #1e3a5f;border-radius:7px;color:var(--fg);padding:6px 8px}
 </style>
 </head>
 <body>
@@ -110,8 +113,18 @@ button.small{padding:3px 8px;font-size:11px}
   </section>
   <section class="panel" id="tab-creds">
     <h2>接入与凭据</h2>
-    <div class="muted" style="margin-bottom:8px">只读目录：显示状态与掩码，不显示密钥；写入走 DPAPI 凭据库。</div>
-    <div id="cred-filters" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px">
+      <div class="muted">真实密钥只进 Windows DPAPI 保险箱；页面只显示状态与掩码。</div>
+      <button class="btn primary" id="cred-add-btn">＋ 新增 / 轮换凭据</button>
+    </div>
+    <div class="cred-form" id="cred-form" style="display:none">
+      <div class="field"><label>名称（英文，如 my_api_key）</label><input id="cred-name" placeholder="my_api_key"></div>
+      <div class="field"><label>分类</label><select id="cred-cat"><option value="data">data</option><option value="cloud">cloud</option><option value="feishu">feishu</option><option value="jev">jev</option><option value="internal">internal</option><option value="messaging">messaging</option><option value="other">other</option></select></div>
+      <div class="field"><label>环境变量名（可选）</label><input id="cred-env" placeholder="MY_API_KEY"></div>
+      <div class="field"><label>密钥（不回显）</label><input id="cred-secret" type="password" placeholder="粘贴 Key / Token"></div>
+      <div style="display:flex;gap:8px"><button class="btn primary" id="cred-save">加密保存</button><button class="btn" id="cred-cancel">取消</button></div>
+    </div>
+    <div id="cred-filters" style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0"></div>
     <div id="cred-table"><div class="muted">加载中…</div></div>
   </section>
 
@@ -328,6 +341,32 @@ async function loadCreds(){
   catch(e){document.getElementById("cred-table").innerHTML='<div class="muted">读取失败：'+e.message+'</div>'}
 }
 loadCreds(); setInterval(loadCreds,60000);
+function toggleCredForm(show){
+  const f=document.getElementById("cred-form");
+  f.style.display=show?"grid":"none";
+  if(show)document.getElementById("cred-name").focus();
+}
+document.getElementById("cred-add-btn").onclick=()=>toggleCredForm(document.getElementById("cred-form").style.display==="none");
+document.getElementById("cred-cancel").onclick=()=>toggleCredForm(false);
+async function saveCred(){
+  const name=document.getElementById("cred-name").value.trim();
+  const secret=document.getElementById("cred-secret").value.trim();
+  const category=document.getElementById("cred-cat").value;
+  const env=document.getElementById("cred-env").value.trim();
+  if(!name||!secret){alert("名称和密钥必填");return}
+  const btn=document.getElementById("cred-save"); btn.disabled=true; btn.textContent="加密保存中…";
+  try{
+    const r=await fetch("/api/credentials/set",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name,category,env,secret})});
+    const j=await r.json();
+    if(!j.ok){alert("保存失败："+(j.error||"unknown"));return}
+    document.getElementById("cred-secret").value="";
+    document.getElementById("cred-name").value="";
+    document.getElementById("cred-env").value="";
+    toggleCredForm(false); CRED_CAT="all"; await loadCreds();
+  }catch(e){alert("保存失败："+e.message)}
+  finally{btn.disabled=false;btn.textContent="加密保存";}
+}
+document.getElementById("cred-save").onclick=saveCred;
 async function loadOverview(){
   try{
     const [ks,ms,vk] = await Promise.all([
