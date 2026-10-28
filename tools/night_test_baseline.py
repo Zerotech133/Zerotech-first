@@ -99,6 +99,46 @@ def load_latest_previous(out_dir):
         return json.load(f)
 
 
+TOOLS = os.path.dirname(os.path.abspath(__file__))
+
+
+def build_dep_age_command(limit=0):
+    cmd = [sys.executable, "-X", "utf8", os.path.join(TOOLS, "dep_age_check.py"), "--json"]
+    if limit and limit > 0:
+        cmd += ["--limit", str(limit)]
+    return cmd
+
+
+def summarize_dep_age(payload):
+    fresh = payload.get("fresh") or []
+    return {
+        "checked": payload.get("checked", 0),
+        "fresh_count": payload.get("fresh_count", len(fresh)),
+        "error_count": payload.get("error_count", 0),
+        "cutoff": payload.get("cutoff", ""),
+        "fresh_top": [
+            {"name": x.get("name"), "version": x.get("version"), "age_days": x.get("age_days")}
+            for x in fresh[:10]
+        ],
+        "warn_only": True,
+    }
+
+
+def run_dep_age(limit=0, timeout_s=600):
+    """跑依赖年龄检查；任何失败只记录，不影响夜跑 rc（warn-only）。"""
+    try:
+        proc = subprocess.run(
+            build_dep_age_command(limit), cwd=REPO, capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=timeout_s,
+        )
+        payload = json.loads((proc.stdout or "").strip())
+        out = summarize_dep_age(payload)
+        out.update({"ok": True, "rc": proc.returncode})
+        return out
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "error": "%s: %s" % (type(exc).__name__, str(exc)[:160])}
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description="夜跑测试基线")
     ap.add_argument("--suites", nargs="+", default=list(DEFAULT_SUITES))
@@ -106,6 +146,9 @@ def main(argv=None):
     ap.add_argument("--out-dir", default=DEFAULT_OUT)
     ap.add_argument("--check", action="store_true", help="对比最近两次基线，新增失败 rc=1")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--skip-dep-age", action="store_true", help="跳过依赖年龄检查段")
+    ap.add_argument("--dep-age-limit", type=int, default=0, help="只查前 N 个包（0=全部）")
+    ap.add_argument("--dep-age-timeout", type=int, default=600)
     args = ap.parse_args(argv)
 
     os.makedirs(args.out_dir, exist_ok=True)
@@ -126,11 +169,26 @@ def main(argv=None):
         return 0 if not new else 1
 
     suites = [run_suite(s, args.timeout, args.dry_run) for s in args.suites]
+    if args.skip_dep_age:
+        dep_age = {"skipped": True}
+    elif args.dry_run:
+        dep_age = {"dry_run": True, "command": " ".join(build_dep_age_command(args.dep_age_limit))}
+    else:
+        dep_age = run_dep_age(args.dep_age_limit, args.dep_age_timeout)
+        if dep_age.get("ok"):
+            print("[night] dep_age checked=%d fresh=%d errors=%d cutoff=%s (warn-only)" % (
+                dep_age.get("checked", 0), dep_age.get("fresh_count", 0),
+                dep_age.get("error_count", 0), dep_age.get("cutoff", "")))
+            for x in dep_age.get("fresh_top") or []:
+                print("  FRESH %s==%s age=%sd" % (x.get("name"), x.get("version"), x.get("age_days")))
+        else:
+            print("[night] dep_age skip: %s（warn-only，不影响 rc）" % dep_age.get("error"))
     stamp = datetime.now().strftime("%Y-%m-%d")
     doc = {
         "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "date": stamp,
         "suites": suites,
+        "dep_age": dep_age,
         "totals": {
             "passed": sum(s.get("passed", 0) for s in suites),
             "failed": sum(s.get("failed", 0) for s in suites),
