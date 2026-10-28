@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-28 10:51",
+ "generated": "2026-10-28 10:52",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -356,21 +356,21 @@
    "project": "quant"
   },
   {
-   "id": "WO-H1-PROMOTE-20261028",
-   "desc": "H1 晋级三关(L1)：事件研究增加样本外切分+市值中性化+成本后净CAR，跑 H1 v2 判定是否 validated",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-H1-PROMOTE-20261028",
-   "created": "2026-10-28 10:50:08",
-   "project": "general"
-  },
-  {
    "id": "WO-HUANGZHONG-EXEMPLAR-20261028",
    "desc": "黄忠W1示范答卷（根据真实证据填写，批改工具验证≥80）",
    "status": "doing",
    "owner": "ZHAOYUN",
    "branch": "task/WO-HUANGZHONG-EXEMPLAR-20261028",
    "created": "2026-10-28 10:50:11",
+   "project": "general"
+  },
+  {
+   "id": "WO-LS02-TESTFIX-20261028",
+   "desc": "LS-02 契约测试修复：worktree 内无运行时数据（.worktrees/tasks.json、daily_metrics.json）导致 sources 存在性断言失败；改为只校验仓库内真源，运行时真源只断言在 sources 列表（不要求 worktree 存在）。",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-LS02-TESTFIX-20261028",
+   "created": "2026-10-28 10:51:52",
    "project": "general"
   }
  ],
