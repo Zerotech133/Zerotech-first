@@ -191,9 +191,13 @@ def market_fallback(since: str = "") -> dict:
         return {"ok": False, "error": "bench_missing"}
     band = 1.0
     con = sqlite3.connect("file:%s?mode=ro" % str(AUDIT_DB).replace("\\", "/"), uri=True, timeout=30)
-    rows = con.execute(
-        "SELECT bias, trade_day FROM dec_audit WHERE companies IS NULL OR companies IN ('','[]')"
-        + (" AND ts>=?" if since else ""), ((since,) if since else ())).fetchall()
+    sql = ("SELECT bias, trade_day FROM dec_audit "
+           "WHERE (companies IS NULL OR companies IN ('','[]'))")
+    params = ()
+    if since:
+        sql += " AND ts>=?"
+        params = (since,)
+    rows = con.execute(sql, params).fetchall()
     con.close()
     total = correct = scored = 0
     by_bias = {}
