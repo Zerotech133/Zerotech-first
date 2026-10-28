@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 24,
+  "workorders_doing": 23,
   "workorders_review": 6
  },
  "workorders": [
@@ -272,15 +272,6 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-HUANGZHONG-DAILY-TASK-20261028",
    "created": "2026-10-28 10:55:18",
-   "project": "general"
-  },
-  {
-   "id": "WO-GUANYU-P7-20261028",
-   "desc": "合并质量闸 [UNOWNED]",
-   "status": "doing",
-   "owner": "unknown-agent",
-   "branch": "task/WO-GUANYU-P7-20261028",
-   "created": "2026-10-28 17:29:32",
    "project": "general"
   }
  ],
