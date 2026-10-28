@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 33,
+  "workorders_doing": 32,
   "workorders_review": 6
  },
  "workorders": [
@@ -345,15 +345,6 @@
    "branch": "task/WO-HUANGZHONG-DAILY-TASK-20261028",
    "created": "2026-10-28 10:55:18",
    "project": "general"
-  },
-  {
-   "id": "WO-X5-PKG-V3-20261028",
-   "desc": "X5 五要素包 v3（L1 文档）：按当前 8796（legion_command serve.py 新版，health=dsh-llm-gateway，MCP tushare-http 258 tools，LegionOps sentinel）刷新令牌轮换+重启步骤；含 fingerprint 校验/回滚/验收；不执行轮换、不重启。",
-   "status": "doing",
-   "owner": "ARCH1",
-   "branch": "task/WO-X5-PKG-V3-20261028",
-   "created": "2026-10-28 16:57:09",
-   "project": "quant"
   },
   {
    "id": "WO-PHOENIX-IDEM-FIX-20261028",
@@ -3199,11 +3190,6 @@
     {
      "id": "WO-LEGION-SCREEN-20261027",
      "desc": "研发军团作战屏 v1 父单（只读）：组织架构+11席角色+在制+C6指标一页聚合；WBS 见 deliverables/2026-10-27_任务拆解试点_研发军团作战屏v1_工作要素下发书.md；子单 LS-02~LS-12；M0 契约冻结→M1 并行→M2 联调→M3 部署→M4 验收。路由例外=跨部门治理。",
-     "status": "doing"
-    },
-    {
-     "id": "WO-X5-PKG-V3-20261028",
-     "desc": "X5 五要素包 v3（L1 文档）：按当前 8796（legion_command serve.py 新版，health=dsh-llm-gateway，MCP tushare-http 258 tools，LegionOps sentinel）刷新令牌轮换+重启步骤；含 fingerprint 校验/回滚/验收；不执行轮换、不重启。",
      "status": "doing"
     }
    ]
