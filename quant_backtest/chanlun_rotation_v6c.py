@@ -119,7 +119,6 @@ def simulate(use_regime=True, use_sell_signal=True, use_stop=True, stop_pct=STOP
     cash, pos = 1.0, {}
     pending_init = set(books)  # 初始建仓名单：有数据即进
     equity, trades, inv_hist = [], [], []
-    trim_state = False
     n_trim = n_refill = 0
     SLOT0 = CAP_HIGH / len(books)  # 初始等权槽位（满配下每只 ~1.05%）
     for di, day in enumerate(cal):

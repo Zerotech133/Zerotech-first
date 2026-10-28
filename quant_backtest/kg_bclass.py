@@ -266,7 +266,7 @@ def _holder_feat():
     )
     df["holder_num_chg"] = df.groupby("ts_code")["holder_num"].pct_change()
     df.to_parquet(HOLDER_FEAT, index=False)
-    latest = df.dropna(subset=["holder_num_chg"])
+    df.dropna(subset=["holder_num_chg"])
     print(
         "特征 %s：%d 标的 × %d 期（%s~%s）"
         % (

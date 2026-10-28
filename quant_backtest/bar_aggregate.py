@@ -119,7 +119,7 @@ class SessionAggregator:
             ).astimezone(timezone.utc)
             closed = effective_as_of >= expected_close
             first, last = items[0], items[-1]
-            values = [item for item in items if item.c is not None]
+            [item for item in items if item.c is not None]
             result.append(
                 Bar(
                     symbol=symbol,

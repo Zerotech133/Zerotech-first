@@ -82,7 +82,7 @@ def _load():
 
 def test_module_loadable_and_pure():
     m = _load()
-    out = m.build_brief(GOOD_SIX, CLOCK)
+    m.build_brief(GOOD_SIX, CLOCK)
     # 纯函数：不修改输入
     import copy
 
@@ -234,7 +234,7 @@ def test_bad_clock_raises():
 
 
 def test_no_write_side_effects_by_design():
-    m = _load()
+    _load()
     # 模块级不得出现写库/HTTP派单调用痕迹
     src = Path(__file__).with_name("api_zhuge_brief.py").read_text(encoding="utf-8")
     for banned in (

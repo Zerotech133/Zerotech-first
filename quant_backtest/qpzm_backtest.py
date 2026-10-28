@@ -1126,7 +1126,7 @@ def build_killed_payload(
     adm_mean = float(adm_ret.mean()) if len(adm_ret) else 0.0
     def_th = max(0.05, 2.0 * adm_mean)
 
-    br, md, uf = env_df["breadth"], env_df["med20"], env_df["upfrac"]
+    br, md, _uf = env_df["breadth"], env_df["med20"], env_df["upfrac"]
     veto_w = (buy_off & ~buy_on).loc[in_win]
     on_w = buy_on.loc[in_win]
     unf_t1 = wide["unfill"].shift(-1).fillna(False).loc[in_win]

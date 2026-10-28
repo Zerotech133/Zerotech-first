@@ -70,7 +70,7 @@ def derive_migrations(flows, min_amt, next_td):
     for d in dates:
         chain = next_td(d)
         nxt[d] = chain
-    window = set([d for d in dates] + [x for c in nxt.values() for x in c])
+    set([d for d in dates] + [x for c in nxt.values() for x in c])
     out = []
     for d in dates:
         sells = [

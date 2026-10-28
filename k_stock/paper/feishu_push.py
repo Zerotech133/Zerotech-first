@@ -735,7 +735,7 @@ def is_quiet(
         return False
     sh, sm = _parse_hhmm(quiet_hours[0])
     eh, em = _parse_hhmm(quiet_hours[1])
-    t = now.time()
+    now.time()
     start, end = sh * 60 + sm, eh * 60 + em
     cur = now.hour * 60 + now.minute
     if start <= end:

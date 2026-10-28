@@ -187,7 +187,7 @@ def dry_run(role=DEFAULT_ROLE, display=DEFAULT_DISPLAY):
         )
 
         # 7) 验收：路由三跳证据（收→路由→回执）用 match_route + dispatch 表验证
-        from_log = os.path.join(tmp, "action_log.jsonl")
+        os.path.join(tmp, "action_log.jsonl")
         steps.append(
             _step(
                 7,

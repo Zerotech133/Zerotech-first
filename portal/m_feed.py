@@ -196,7 +196,7 @@ def feed_payload(ticket=""):
     if ticket:
         return _detail(ticket)
     rows = _jsonl(TICKETS)
-    dedup = _jsonl(DEDUP)
+    _jsonl(DEDUP)
     today = time.strftime("%Y-%m-%d")
     n_today = sum(1 for r in rows if str(r.get("ts") or "").startswith(today))
     n_rej = sum(

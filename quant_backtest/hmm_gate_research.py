@@ -597,7 +597,7 @@ def main():
 
     # ---- 自动结论 ----
     hard45 = next(r for r in rows if r["name"] == "硬阈值 breadth<45")
-    filt = next(r for r in rows if r["type"] == "hmm_filtered")
+    next(r for r in rows if r["type"] == "hmm_filtered")
     hyst = next(r for r in rows if r["type"] == "hmm_hysteresis")
     ov45 = next(o for o in overlap if o["threshold"] == 45.0)
     lines.append("## 5. 结论\n")

@@ -395,7 +395,7 @@ def main():
     gain = {vn: float(hit[vn] - hit["fixed"]) for vn in variants if vn != "fixed"}
     # ---- 判定 B：名单调优（T+20 板块相对超额均值，自适应不差于固定） ----
     t20 = {vn: (float(np.mean(v)) if v else None) for vn, v in t20_db.items()}
-    t20_med = {vn: (float(np.median(v)) if v else None) for vn, v in t20_db.items()}
+    {vn: (float(np.median(v)) if v else None) for vn, v in t20_db.items()}
     ok_a = {vn: bool(gain[vn] >= MIN_GAIN_PP) for vn in gain}
     ok_b = {
         vn: bool(

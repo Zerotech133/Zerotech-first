@@ -275,7 +275,6 @@ def run(mode: str, days: int, cost_bps: int = 15, split: float = 0.6,
         return stats(vals)
 
     cats = {}
-    cat_rows = {}
     if mode == "h11":
         for ev in events:
             cats[ev["category"]] = cats.get(ev["category"], 0) + 1

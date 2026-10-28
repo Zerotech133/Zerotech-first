@@ -605,7 +605,7 @@ def _link_notices_events(notices, ve, kline_n=3):
     import numpy as np
 
     dts = ve["dts"]
-    pos = {d: i for i, d in enumerate(dts)}
+    {d: i for i, d in enumerate(dts)}
     links = []
     for a in notices:
         ad = re.sub(r"\D", "", str(a.get("date") or ""))[:8]

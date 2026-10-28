@@ -411,7 +411,7 @@ def _expected_mark_day(aid: str, now=None) -> str:
 
     market, zone, _ = _mark_market(aid)
     try:
-        bj = ZoneInfo("Asia/Shanghai")
+        ZoneInfo("Asia/Shanghai")
         local = ZoneInfo(zone)
         if now is None:
             now = _env_now()

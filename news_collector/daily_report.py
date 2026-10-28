@@ -237,7 +237,7 @@ def main():
     from config_local import load_news_config
 
     cfg = load_news_config()
-    portal = cfg.get("portal_url")
+    cfg.get("portal_url")
     doc = cfg.get("doc_url", "")
     blocks = build_blocks(today)
     footer = "统一日报 · 各域计划任务自动产出汇总 · 不构成投资建议"

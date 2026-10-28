@@ -722,7 +722,7 @@ def incremental(m, market="cn", dryrun=False):
         save_full("trade_cal", cal, m)
         open_days = sorted(cal[cal["is_open"] == 1]["cal_date"].astype(str).tolist())
     else:
-        m_cal = load_manifest()
+        load_manifest()
         calp = sorted(glob.glob(os.path.join(OUT, "trade_cal", "part_*.parquet")))
         cal = pd.concat([pd.read_parquet(p, columns=["cal_date", "is_open"])
                          for p in calp]) if calp else pd.DataFrame()

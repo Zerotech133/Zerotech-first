@@ -189,7 +189,7 @@ def apply_rules(rows, n_min=N_MIN, m_min=M_MIN):
         same = max(len(yz_pos), len(yz_neg))
         if same < m_min:
             continue
-        codes = [r["tc"] for r in rs]
+        [r["tc"] for r in rs]
         pens = [r for r in rs if r.get("pen") == 1]
         tickets.append(
             {
@@ -432,7 +432,7 @@ def replay(n_days=250):
             for t in ts:
                 ind_days[(n, m)].add((d, t["industry"]))
     for n, m in sorted(grid):
-        nd = len(ind_days[(n, m)])
+        len(ind_days[(n, m)])
         print(
             "  n_min=%d m_min=%d → 触发 %d 单（日均 %.2f）"
             % (n, m, hit[(n, m)], hit[(n, m)] / max(1, len(ds)))

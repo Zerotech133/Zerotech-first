@@ -132,7 +132,7 @@ def main():
     if not blk:
         print("板块解析失败")
         return 2
-    bc, bname = blk["code"], blk["name"]
+    bc, _bname = blk["code"], blk["name"]
 
     # --- A/B. 三线现价+关键位+趋势 ---
     sk = load_kline(code, "1d", 500)

@@ -89,7 +89,7 @@ def _e3(trigger):
 def build_payload(root=ROOT):
     root = Path(root)
     errors = []
-    org_ex, org = None, None
+    _org_ex, org = None, None
     try:
         org = json.loads((root / "agent_platform/registry/org.json").read_text(
             encoding="utf-8-sig"))

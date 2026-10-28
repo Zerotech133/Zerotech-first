@@ -71,7 +71,7 @@ def main():
         a: {d: {p["stock"] for p in data[a]["holdings"].get(d, [])} for d in days}
         for a in ARMS
     }
-    active = [d for d in days if hold[ARMS[0]][d] or hold[ARMS[1]][d]]
+    [d for d in days if hold[ARMS[0]][d] or hold[ARMS[1]][d]]
     both_active = [d for d in days if hold[ARMS[0]][d] and hold[ARMS[1]][d]]
     inter_days = [d for d in both_active if hold[ARMS[0]][d] & hold[ARMS[1]][d]]
     jac = (len(inter_days) / len(both_active)) if both_active else float("nan")

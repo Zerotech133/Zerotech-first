@@ -505,7 +505,7 @@ def produce_controlled_artifact(
 # ---------------- 审计链 ----------------
 def chain_report_controlled(store: S.OsGoalStore, item_id: str) -> Dict[str, Any]:
     evs = _evs(store, item_id)
-    item = _item(store, item_id)
+    _item(store, item_id)
     grant = _find(evs, "grant.signed")
     wo = _find(evs, "workorder.formal")
     claim = _find(evs, "workorder.claimed")

@@ -131,7 +131,7 @@ def test_spawned_processes_never_exceed_budget(tmp_path: Path) -> None:
 def test_crash_after_physical_send_never_replays_or_unblocks(tmp_path: Path) -> None:
     """硬退出时 OS 锁自动释放，但悬置请求阻断任何后继发送。"""
     path: Path = tmp_path / "crash_during_send.sqlite"
-    gate = RequestGate(path, max_requests=2, window_seconds=60,
+    RequestGate(path, max_requests=2, window_seconds=60,
                        min_interval_seconds=0, clock=FakeClock())
     context = multiprocessing.get_context("spawn")
     sent = context.Queue()

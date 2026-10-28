@@ -541,7 +541,7 @@ def calc_dknife_signals_market(d0, d1, progress=None, profile="relaxed", hist_st
     snap = pd.read_parquet(snap_fp)
     days = sorted(snap.trade_date.unique())
     cover = [d for d in days if d0 <= d <= d1]
-    missing = [d for d in days if d0 <= d <= d1]  # 全部可得日中的窗内日
+    [d for d in days if d0 <= d <= d1]  # 全部可得日中的窗内日
     if not cover:
         return (
             None,

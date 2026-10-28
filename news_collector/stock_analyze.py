@@ -547,7 +547,7 @@ def _mark_done(rid):
 def _list_rows(out="sa_poll.ndjson"):
     """record-list 一遍；返回 {rid: (股票, 状态文本)}。"""
     cfg = _cfg()
-    r = subprocess.run(
+    subprocess.run(
         [
             LARK,
             "base",

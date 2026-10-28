@@ -141,7 +141,7 @@ def _fmt(v, suffix=""):
 
 
 def build_report(ctx):
-    m, snap, feat, vd, ev = ctx["meta"], ctx["snapshot"], ctx["features"], ctx["verdict"], ctx["events"]
+    _m, snap, feat, vd, _ev = ctx["meta"], ctx["snapshot"], ctx["features"], ctx["verdict"], ctx["events"]
     tech, val, fnd = feat["technical"], feat["valuation"], feat["fundamental"]
     mf, chips = feat.get("moneyflow", {}), feat.get("chips", {})
     L = []

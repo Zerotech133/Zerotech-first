@@ -296,7 +296,7 @@ def test_stock_positions_basic():
     check("positions int range 0-4", pos.between(0, 4).all() and pos.dtype.kind in "iu")
     check("uptrend late bars have longs>=1", int(pos.iloc[-1]) >= 1)
     flat = pd.Series(np.full(60, 10.0))  # RSI=50, 不触发
-    pos_f = qb.stock_positions(flat)
+    qb.stock_positions(flat)
     check(
         "flat series rsi bit 0 (rsi=50 never <30)", True
     )  # rsi 事件帧不触发，其余维随 ma/boll 判定，仅冒烟不崩溃

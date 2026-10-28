@@ -353,7 +353,7 @@ def test_mismatched_ack_lands_unknown_and_pool_stays_claimed():
     pool_append(h, env, "sig-1")
     claim_pool(h, "sig-1")
     report, sector_report = report_up(h, env)
-    receipt = h.inbox.accept(sector_report, now=ACCEPT_AT)
+    h.inbox.accept(sector_report, now=ACCEPT_AT)
 
     # Ack bound to a different report: the ack port refuses to verify it.
     stranger = AgentAck(ack_id="ack-stranger", report_id="rpt-other",

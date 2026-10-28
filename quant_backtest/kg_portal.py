@@ -1765,7 +1765,7 @@ def trace(code, days=30):
         else:
             n_sig, no_ev = r["n"], r["n_noev"]
     ev_min = _q("MATCH (e:Event) RETURN min(e.date) AS d")[0]["d"]
-    d0_eff = max(d0, ev_min)  # Event 流起点前无数据，不采信"无佐证"
+    max(d0, ev_min)  # Event 流起点前无数据，不采信"无佐证"
 
     # 规则打分（透明可解释，仅排序辅助）——与 kg_trace.ach 完全同式
     s1 = min(1.0, h1_n / 4.0)
@@ -2664,7 +2664,7 @@ def canvas_ask(q):
             fact_lines.append("%s -[%s]-> %s" % (f["entity"], n["via"], n["name"]))
         for k, v in (f.get("props") or {}).items():
             fact_lines.append("%s 的%s = %s" % (f["entity"], k, v))
-    answer, used = "", []
+    answer, _used = "", []
     try:
         body = {
             "model": MODEL,
@@ -2679,7 +2679,7 @@ def canvas_ask(q):
         r.raise_for_status()
         answer = re.sub(r"\s+", " ", r.json()["message"]["content"]).strip()
         answer = answer.strip('"')
-    except Exception as e:
+    except Exception:
         answer = ""
     if not answer or "暂无" in answer or "没有" in answer[:12]:
         answer = _fallback_answer(facts) + "（图事实直读）"

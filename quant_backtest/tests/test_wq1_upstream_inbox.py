@@ -73,7 +73,7 @@ def test_same_report_id_different_content_conflicts():
 
 
 def test_invalid_report_kind_rejected():
-    inbox = UpstreamInbox()
+    UpstreamInbox()
     with pytest.raises(UpstreamInboxError, match="REPORT_KIND_INVALID"):
         make_report(report_kind="TRADE_SIGNAL")
     with pytest.raises(UpstreamInboxError, match="REPORT_KIND_INVALID"):
