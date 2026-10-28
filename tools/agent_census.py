@@ -126,18 +126,24 @@ def load_roster() -> dict[str, dict]:
 
 
 def _parse_ts(value) -> float | None:
-    """兼容三种时间：ISO 字符串 / epoch 浮点字符串 / epoch 数字。"""
+    """兼容 ISO 字符串（含时区/微秒）/ epoch 浮点字符串 / epoch 数字。"""
     if value is None:
         return None
     text = str(value).strip()
     if not text:
         return None
+    # 优先 fromisoformat：支持 2026-10-28T22:51:13Z / +08:00 / 微秒；
+    # 旧实现先 float，ISO 会刷 silent-except，且带时区时固定格式解析失败。
+    try:
+        return datetime.fromisoformat(text.replace("Z", "+00:00")).timestamp()
+    except ValueError:
+        pass
     try:
         num = float(text)
         if num > 1e9:            # epoch 秒
             return num
-    except ValueError as exc:
-        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/agent_census.py", exc)
+    except ValueError:
+        pass
     for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S.%f"):
         try:
             return datetime.strptime(text[:len(fmt) + 6], fmt).timestamp()
