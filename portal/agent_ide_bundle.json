@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-28 17:55",
+ "generated": "2026-10-28 17:57",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -275,21 +275,21 @@
    "project": "general"
   },
   {
-   "id": "K-QUANT-20261028-KEYV2B1F",
-   "desc": "B-1F 凭据写入修复：服务解释器无win32crypt，改为调用py312 credential_store子进程；仍不回显secret",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-QUANT-20261028-KEYV2B1F",
-   "created": "2026-10-28 17:49:07",
-   "project": "quant"
-  },
-  {
    "id": "legion-1028175309",
    "desc": "[A0A] 每日复盘三问汇总 [UNOWNED]",
    "status": "doing",
    "owner": "unknown-agent",
    "branch": "task/legion-1028175309",
    "created": "2026-10-28 17:53:20",
+   "project": "general"
+  },
+  {
+   "id": "WO-GUANYU-P12-20261028",
+   "desc": "flaky基线补登 [UNOWNED]",
+   "status": "doing",
+   "owner": "unknown-agent",
+   "branch": "task/WO-GUANYU-P12-20261028",
+   "created": "2026-10-28 17:55:46",
    "project": "general"
   }
  ],
