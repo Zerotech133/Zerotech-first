@@ -32,28 +32,54 @@ DEFAULT_ROUTES = {
 _EXPLICIT_FILE_RE = re.compile(r"[A-Za-z0-9_./-]+\.(?:py|html|js|css|md|json|ya?ml)")
 
 
-def _route_map() -> dict:
+def _path_config() -> dict:
     try:
         d = json.loads(PLANNER_PATHS.read_text(encoding="utf-8"))
-        routes = d.get("routes") if isinstance(d, dict) else None
-        return routes if isinstance(routes, dict) and routes else DEFAULT_ROUTES
+        if isinstance(d, dict) and isinstance(d.get("routes"), dict) and d["routes"]:
+            return d
     except Exception:
-        return DEFAULT_ROUTES
+        pass
+    return {"routes": DEFAULT_ROUTES, "keywords": {}}
 
 
 def _doc_files(doc: str) -> dict:
-    """从文档提取显式文件路径 + 路由映射，返回 frontend/backend/all。"""
+    """从文档提取显式文件路径 + 路由/关键词映射，返回 frontend/backend/all。"""
     doc = str(doc or "")
-    routes = _route_map()
+    cfg = _path_config()
+    routes = cfg.get("routes") or DEFAULT_ROUTES
+    lower = doc.lower()
     frontend, backend, all_files = [], [], []
+
+    def _add(f: str, kind: str = "") -> None:
+        f = str(f or "").strip().replace("\\", "/").lstrip("./")
+        if not f or ".." in f.split("/") or f.startswith("/"):
+            return
+        if f not in all_files:
+            all_files.append(f)
+        if kind == "frontend" or (not kind and f.endswith((".html", ".js", ".css"))):
+            if f not in frontend:
+                frontend.append(f)
+        elif kind == "backend" or (not kind and f.endswith((".py", ".ps1", ".json"))):
+            if f not in backend:
+                backend.append(f)
+
     for route, spec in routes.items():
         if route and route in doc and isinstance(spec, dict):
             for f in spec.get("frontend") or []:
-                if f not in frontend:
-                    frontend.append(f)
+                _add(f, "frontend")
             for f in spec.get("backend") or []:
-                if f not in backend:
-                    backend.append(f)
+                _add(f, "backend")
+    for kw, spec in (cfg.get("keywords") or {}).items():
+        if not kw or str(kw).lower() not in lower:
+            continue
+        if isinstance(spec, dict):
+            for f in spec.get("frontend") or []:
+                _add(f, "frontend")
+            for f in spec.get("backend") or []:
+                _add(f, "backend")
+        else:
+            for f in (spec if isinstance(spec, list) else [spec]):
+                _add(str(f))
     for m in _EXPLICIT_FILE_RE.findall(doc):
         f = m.strip().replace("\\", "/").lstrip("./")
         if ".." in f.split("/") or f.startswith("/"):
@@ -132,7 +158,7 @@ def _fallback_plan(doc: str, name: str = "") -> dict:
     files = _doc_files(doc)
     spec_path = "deliverables/specs/%s.md" % slug
     accept_path = "deliverables/acceptance/%s.md" % slug
-    backend_scope = files["backend"][:2] or ["agent_platform/", "tools/"]
+    backend_scope = files["backend"][:4] or ["agent_platform/", "tools/"]
     frontend_scope = files["frontend"][:2] or ["portal/"]
     return {
         "source": "fallback",
