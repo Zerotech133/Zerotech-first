@@ -210,11 +210,6 @@ def _dd_svg(dd, bench_dd):
 
     strat_pts = xy(dd)
     x0, x1 = PAD, W - PAD
-    fill = "%s %.1f %s" % (
-        strat_pts.split()[0].split(",")[0],
-        PAD,
-        strat_pts.split()[-1].split(",")[0],
-    )
     return "".join(
         [
             '<svg viewBox="0 0 %d %d" preserveAspectRatio="none">' % (W, H),

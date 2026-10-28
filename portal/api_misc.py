@@ -240,9 +240,6 @@ def build_os_cockpit():
             npos = db.execute(
                 "SELECT COUNT(*) FROM positions WHERE account_id=?",
                 (aid,)).fetchone()[0]
-            nord = db.execute(
-                "SELECT COUNT(*) FROM orders WHERE ref LIKE ? OR source='ai'",
-                ("%" + aid + "%",)).fetchone()[0]  # ref 带 account 的口径粗对
             total = eq["total"] if eq else a["cash"]
             accounts.append({
                 "id": aid, "market": ACCOUNT_MARKET.get(aid, "cn"),
@@ -2264,7 +2261,6 @@ transition:.3s;z-index:9}
 
     def _devops_page(self):
         """开发指挥台页（108 原型落地版·只读）：四类计数 + 工单表 + 事件流。"""
-        import html as _h
         cards = "".join(
             "<div style='background:var(--bg-surface);border:1px solid var(--border);"
             "border-radius:10px;padding:12px 15px;'>"

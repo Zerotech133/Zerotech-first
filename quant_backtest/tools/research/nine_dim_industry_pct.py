@@ -716,7 +716,6 @@ def main():
             "%+.0f%%，阈值 +20%%）"
             % (g85_m["n"], g85_m["avg"], g85_i["n"], g85_i["avg"], 100 * gain)
         )
-        switch = gain >= 0.20 and ok_m and ok_i
     else:
         ap(
             "- ≥85 段样本不足（mkt n=%s，ind n=%s，n<10 灰显），任务判定"

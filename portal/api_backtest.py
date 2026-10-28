@@ -379,7 +379,6 @@ def sellpoint_page_html():
                      if c.get("tbe") is True else "")
         reason = (c.get("reason") or "").replace("。", "。 ")
         an = c.get("agent_name") or "legacy_cons"
-        method = c.get("method") or ""
         timing = c.get("timing")
         if timing:
             timing_txt = "%s%s" % (_esc(timing),

@@ -435,9 +435,6 @@ def main():
     pq_issues = audit_parquet()
     for lv, store, rel, msg in pq_issues:
         print("[%s] %s/%s %s" % (lv, store, rel, msg))
-    n_ok = len(CONSUMERS) - sum(
-        1 for i in pq_issues if i[0] != "OK" and False
-    )  # OK 不进 issues
     print(
         "parquet 链：%d 表，FAIL %d / SKIP %d"
         % (

@@ -729,7 +729,6 @@ def incremental(m, market="cn", dryrun=False):
         open_days = sorted(cal[cal["is_open"] == 1]["cal_date"].astype(str).tolist()) \
             if not cal.empty else []
     past = [d for d in open_days if d <= today_s]
-    last_open = past[-1] if past else today_s
 
     # 2) 浅表全量覆盖（数据小）
     shallow_tbls = [

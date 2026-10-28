@@ -513,7 +513,6 @@ def test_market_valuation_day_cross_timezone_and_holidays():
 
 
 def test_mark_uses_checked_price_when_market_changes(tmp_path, monkeypatch):
-    db = tmp_path / "paper.db"
     seen = []
 
     class Market:

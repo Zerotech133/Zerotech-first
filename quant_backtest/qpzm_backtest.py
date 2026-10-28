@@ -677,7 +677,6 @@ def run_backtest(args):
         in_win &= union >= int(args.start)
     if args.end:
         in_win &= union <= int(args.end)
-    win_index = union[in_win]
     holds = args.holds
     eligible = wide["eligible"]
 

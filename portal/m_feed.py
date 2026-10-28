@@ -209,7 +209,6 @@ def feed_payload(ticket=""):
 
     trows = []
     for r in rows[-20:][::-1]:
-        d = r.get("detail") or {}
         typ = ROUTE_CN.get(str(r.get("route") or ""), str(r.get("route") or "—"))
         ev = str(r.get("evidence") or "-")[:18]
         trows.append(

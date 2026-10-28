@@ -167,7 +167,6 @@ def simulate(use_regime=True, use_sell_signal=True, use_stop=True, stop_pct=STOP
                 if p["val"] < 0.0005 * eqv:
                     cash += p["val"] * (1 - COST)
                     del pos[s]
-            trim_state = True
             n_trim += 1
         # 进场：初始名单（有数据即进）+ 新买点名单；容量允许即进（永不禁开仓）
         want_in = {s for s in pending_init if s in row_idx and day in row_idx[s].index}

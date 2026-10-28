@@ -358,7 +358,6 @@ def _ingest(body, manifest_path, events_dir, now):
         minute = str(body["ts"])[:16]
         fold_key = (source, etype, minute)
         folds = _FOLD.setdefault(str(d), {})
-        folded = False
         st = folds.get(fold_key)
         if st is None:
             st = folds[fold_key] = {"n": _count_window(d, source, etype, minute),

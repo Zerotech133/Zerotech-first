@@ -1261,7 +1261,6 @@ gap:14px;align-items:start}}
                         "</span></h2>" + style + body + "</div>")
             pos.append(i)
         tail_i = body.find("跨市场 RPS 最强")
-        sec_head = body[:min(pos)]
         tabs = []
         for k, (lb, _) in enumerate(anchors):
             end = pos[k + 1] if k + 1 < len(anchors) else (
