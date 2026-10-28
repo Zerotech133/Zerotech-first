@@ -1,0 +1,93 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""合并前预检（pre-merge-commit 钩子用，2026-10-28 · P13）。
+
+在 git 生成 merge commit 之前运行：
+  - 计算 HEAD 与 MERGE_HEAD 的改动文件；
+  - 纯文档/配置变更 → 直接放行；
+  - 否则跑 `tools/test_gate.ps1 -Suite fast`，新增失败 → exit 1（git 中止合并）。
+
+环境变量：
+  DEVTOOL_MERGE_GATE=0  → 显式跳过（回滚/紧急，须在回单注明"绕过质量闸"）
+  DEVTOOL_MERGE_SUITE   → 覆盖套件（默认 fast）
+
+退出码：0=放行，1=拒绝合并，2=预检自身异常（按拒绝处理）。
+"""
+from __future__ import annotations
+
+import os
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+REPO = HERE.parent
+TMP = Path(os.environ.get("TEMP", r"C:\Temp"))
+DOC_SUFFIX = (".md", ".json", ".yaml", ".yml", ".txt", ".tsv", ".csv", ".html", ".css", ".js")
+DOC_PREFIX = ("docs/", "deliverables/", "portal/static/", "agent_platform/skills/")
+
+
+def changed_files() -> list[str]:
+    r = subprocess.run(["git", "-C", str(REPO), "-c", "core.quotepath=false",
+                        "diff", "--name-only", "HEAD", "MERGE_HEAD"],
+                       capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if r.returncode != 0:
+        # 兜底：暂存区 vs HEAD
+        r = subprocess.run(["git", "-C", str(REPO), "-c", "core.quotepath=false",
+                            "diff", "--name-only", "--cached", "HEAD"],
+                           capture_output=True, text=True, encoding="utf-8", errors="replace")
+    out = []
+    for x in (r.stdout or "").splitlines():
+        x = x.strip().replace("\\", "/")
+        if len(x) >= 2 and x[0] == '"' and x[-1] == '"':
+            x = x[1:-1]
+        if x:
+            out.append(x)
+    return out
+
+
+def is_docs_only(files: list[str]) -> bool:
+    if not files:
+        return False
+    return all(f.endswith(DOC_SUFFIX) and f.startswith(DOC_PREFIX) for f in files)
+
+
+def main() -> int:
+    if os.environ.get("DEVTOOL_MERGE_GATE") == "0":
+        print("[merge-gate] DEVTOOL_MERGE_GATE=0 → 显式跳过（回滚/紧急）")
+        return 0
+    suite = os.environ.get("DEVTOOL_MERGE_SUITE", "fast")
+    try:
+        files = changed_files()
+    except Exception as exc:  # 预检异常按拒绝处理
+        print("[merge-gate] 预检异常：%s" % exc)
+        return 2
+    docs = is_docs_only(files)
+    print("[merge-gate] 合并改动 %d 文件；docs_only=%s；套件=%s" % (len(files), docs, suite))
+    if docs:
+        print("[merge-gate] 纯文档/配置变更 → 放行（不跑测试）")
+        return 0
+    log = TMP / ("merge_hook_%s.log" % time.strftime("%Y%m%d_%H%M%S"))
+    print("[merge-gate] 跑测试门：test_gate -Suite %s（日志 %s）" % (suite, log))
+    with log.open("w", encoding="utf-8") as f:
+        rc = subprocess.run(
+            ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass",
+             "-File", str(HERE / "test_gate.ps1"), "-Suite", suite],
+            cwd=str(REPO), stdout=f, stderr=subprocess.STDOUT,
+        ).returncode
+    if rc != 0:
+        print("[merge-gate] FAIL：测试门未过（rc=%d），拒绝合并。日志：%s" % (rc, log))
+        try:
+            tail = log.read_text(encoding="utf-8", errors="replace").splitlines()[-12:]
+            for ln in tail:
+                print("  |", ln)
+        except Exception:
+            pass
+        return 1
+    print("[merge-gate] PASS：测试门通过，放行合并")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
