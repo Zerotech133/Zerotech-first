@@ -20,6 +20,7 @@ from dev_legion_aggregate import (build_metrics, build_redlines,
                                   build_wip)
 from dev_legion_ai_card import build_ai_cards
 from dev_legion_quant_card import build_quant_cards
+from dev_legion_risk_card import build_risk_cards
 
 ROOT = Path(__file__).resolve().parents[1]
 ORG = ROOT / "agent_platform" / "registry" / "org.json"
@@ -137,6 +138,7 @@ def build_payload(root=ROOT):
         "seats": seats,
         "ai_cards": build_ai_cards(org),
         "quant_cards": build_quant_cards(org),
+        "risk_cards": build_risk_cards(org),
         "work_in_progress": wip,
         "metrics": metrics,
         "redlines": redlines,
