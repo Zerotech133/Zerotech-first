@@ -17,7 +17,6 @@ import math
 import sys
 from datetime import datetime
 from pathlib import Path
-from statistics import median
 
 import pyarrow.parquet as pq
 

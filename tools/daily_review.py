@@ -62,7 +62,8 @@ def member_review(aid: str) -> dict:
     try:
         for ln in (HR / aid / "resume.yaml").read_text(encoding="utf-8").splitlines():
             if ln.startswith("skills:"):
-                skill_line = ln.split(":", 1)[1].strip()[:80]; break
+                skill_line = ln.split(":", 1)[1].strip()[:80]
+                break
     except Exception as exc:
         logging.getLogger(__name__).warning("silent-except %s: %s", "tools/daily_review.py", exc)
     has_task = bool(tasks_open or acts)

@@ -88,7 +88,8 @@ def test_cross_signal_is_candidate_only_verdict():
 def test_shadow_writes_nothing(tmp_path, monkeypatch):
     # 归集只读: 运行后源目录 mtime 集不变(用写入企图捕获替代)
     before = sorted(p.name for p in REAL.glob("*.parquet"))
-    lhb_shadow(REAL); holders_shadow(REAL)
+    lhb_shadow(REAL)
+    holders_shadow(REAL)
     after = sorted(p.name for p in REAL.glob("*.parquet"))
     assert before == after
     assert not list(tmp_path.glob("*.parquet"))  # 无副本产生
