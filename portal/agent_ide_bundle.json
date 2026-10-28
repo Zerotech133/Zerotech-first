@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-29 00:48",
+ "generated": "2026-10-29 05:06",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,28 +9,10 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 28,
-  "workorders_review": 7
+  "workorders_doing": 29,
+  "workorders_review": 5
  },
  "workorders": [
-  {
-   "id": "legion-1027093009",
-   "desc": "[T1] 盘前 weak 池三线扫描 [UNOWNED]",
-   "status": "doing",
-   "owner": "T1",
-   "branch": "task/legion-1027093009",
-   "created": "2026-10-27 09:30:15",
-   "project": "general"
-  },
-  {
-   "id": "WO-GUANYU-SQL-20261027",
-   "desc": "SQL triage A类参数化 [UNOWNED]",
-   "status": "doing",
-   "owner": "DATA1",
-   "branch": "task/WO-GUANYU-SQL-20261027",
-   "created": "2026-10-27 10:04:55",
-   "project": "general"
-  },
   {
    "id": "WO-LCS1-HARNESS-20261027",
    "desc": "LCS-1 回测 harness（ARCH1 派单，需求单 WO-LEGION-LCS1-HARNESS-REQ-20261027）：实现 quant_backtest/lcs1_backtest.py——复用 tools/chart_hypothesis.operators（禁复制阈值）、as-of 截断、成本读冻结回执、--dry-run 零写、产物按 BACK1 回测执行清单 §5；验收 A1-A8（20票五算子一致/未来函数单测/成本口径/12项产物/S3对账接口/pytest/merge守卫）；BACK1 主责实现、DEV4 复核、ARCH1 终审。非目标：不做产品化/交易接入/不改数据根。回滚：git revert merge-commit。",
@@ -39,15 +21,6 @@
    "branch": "task/WO-LCS1-HARNESS-20261027",
    "created": "2026-10-27 11:16:24",
    "project": "quant"
-  },
-  {
-   "id": "WO-GUANYU-FMT11-20261027",
-   "desc": "补格式化L2误报文件 [UNOWNED]",
-   "status": "review",
-   "owner": "QA1",
-   "branch": "task/WO-GUANYU-FMT11-20261027",
-   "created": "2026-10-27 11:27:20",
-   "project": "general"
   },
   {
    "id": "WO-LCS1-FREEZE-20261027",
@@ -74,15 +47,6 @@
    "owner": "DEV1",
    "branch": "task/WO-DEV-X2-HARVEST-20261027",
    "created": "2026-10-27 14:18:36",
-   "project": "general"
-  },
-  {
-   "id": "WO-GUANYU-APMCP-20261027",
-   "desc": "mcp改名后测试路径修复 [UNOWNED]",
-   "status": "doing",
-   "owner": "DEV2",
-   "branch": "task/WO-GUANYU-APMCP-20261027",
-   "created": "2026-10-27 14:18:44",
    "project": "general"
   },
   {
@@ -113,15 +77,6 @@
    "project": "general"
   },
   {
-   "id": "WO-RUFF-F841-20261027",
-   "desc": "[排期工单·A阶段质量] ruff F841 清理（23 处未用变量，低风险）：portal/api_backtest.py:382,6087; api_chanlun_pages.py:2202; api_events.py:366; api_kg.py:3605,5094; api_legion_ops_v2.py:107; api_misc.py:243,2268; council_ops.py:904; feishu_sop_runner.py:189; m_feed.py:198,211; os_controlled.py:508,809; portal_api.py:1264; portal_report.py:414,608; route_baseline.py:90; test_api_zhuge_brief.py:85,237; test_bot_ws_backoff.py:100; warehouse_update_services.py:123。要求逐处确认 RHS 是否有副作用（有副作用保留调用、仅去掉变量名），改后 ruff F841=0 且全量测试绿。",
-   "status": "doing",
-   "owner": "DEV8",
-   "branch": "task/WO-RUFF-F841-20261027",
-   "created": "2026-10-27 15:09:26",
-   "project": "general"
-  },
-  {
    "id": "WO-RUFF-F401F821-20261027",
    "desc": "[排期工单·A阶段质量] ruff F401/F821/F601/F541 清理（14 处，含 2 处真风险）：真风险=①tools/secrets/rotate_item.py:108 与 rotate_tushare_token.py:53 `NoReturn` 未导入（补 from typing import NoReturn 或去注解）；②portal/m_api.py:570 字典键 ok 重复（确认语义后修正）。其余=quant_mid/__init__.py 11 条 F401 导出面（加 __all__ 或 redundant alias）、test_a_phase_group_board.py/test_zhuge_suggestion_map.py 未用 json、council_ops.py:802 F541 无占位 f-string。要求 ruff F401,F541,F601,F821=0 且全量测试绿。",
    "status": "doing",
@@ -149,15 +104,6 @@
    "project": "general"
   },
   {
-   "id": "WO-P0-DEV1-MONDAY-20261027",
-   "desc": "P0 派工周-1（G1 DEV1）：修 MondayCheckpoint 回放锚点误报（审计复核v2 A1）——定位锚点回放判定逻辑，排除系统/陈旧噪声，补回归测试；验收=新测试全绿 + 次日任务执行总线无该误报",
-   "status": "doing",
-   "owner": "DEV1",
-   "branch": "task/WO-P0-DEV1-MONDAY-20261027",
-   "created": "2026-10-27 16:50:48",
-   "project": "general"
-  },
-  {
    "id": "WO-P0-DEV5-EVALCASES-20261027",
    "desc": "P0 派工周-2（G2 DEV5）：O3 Agent 评估用例 v1——建 agent_platform/evals/agent_cases.jsonl 20 条（派工决策/验收判定/代码评审/升级判断四类）+ tools/agent_eval.py（--check/--json，LLM judge 可后接）；验收=--check rc0、20 条载荷可读",
    "status": "doing",
@@ -182,15 +128,6 @@
    "owner": "DEV7",
    "branch": "task/WO-P0-DEV7-WIKI-20261027",
    "created": "2026-10-27 16:51:10",
-   "project": "general"
-  },
-  {
-   "id": "legion-1027175009",
-   "desc": "[A0A] 每日复盘三问汇总 [UNOWNED]",
-   "status": "doing",
-   "owner": "A0A",
-   "branch": "task/legion-1027175009",
-   "created": "2026-10-27 17:50:16",
    "project": "general"
   },
   {
@@ -239,39 +176,12 @@
    "project": "general"
   },
   {
-   "id": "legion-1028093051",
-   "desc": "[T1] 盘前 weak 池三线扫描 [UNOWNED]",
-   "status": "doing",
-   "owner": "unknown-agent",
-   "branch": "task/legion-1028093051",
-   "created": "2026-10-28 09:31:00",
-   "project": "general"
-  },
-  {
    "id": "WO-HUANGZHONG-DAILY-TASK-20261028",
    "desc": "记录 HuangzhongDaily 批准+注册+首跑验证（rc0/PASS）",
    "status": "review",
    "owner": "ZHAOYUN",
    "branch": "task/WO-HUANGZHONG-DAILY-TASK-20261028",
    "created": "2026-10-28 10:55:18",
-   "project": "general"
-  },
-  {
-   "id": "legion-1028175309",
-   "desc": "[A0A] 每日复盘三问汇总 [UNOWNED]",
-   "status": "doing",
-   "owner": "unknown-agent",
-   "branch": "task/legion-1028175309",
-   "created": "2026-10-28 17:53:20",
-   "project": "general"
-  },
-  {
-   "id": "WO-GUANYU-P12-20261028",
-   "desc": "flaky基线补登 [UNOWNED]",
-   "status": "doing",
-   "owner": "unknown-agent",
-   "branch": "task/WO-GUANYU-P12-20261028",
-   "created": "2026-10-28 17:55:46",
    "project": "general"
   },
   {
@@ -284,30 +194,12 @@
    "project": "general"
   },
   {
-   "id": "WO-GUANYU-P17-20261028",
-   "desc": "时间注入P0#3-1 [UNOWNED]",
-   "status": "review",
-   "owner": "unknown-agent",
-   "branch": "task/WO-GUANYU-P17-20261028",
-   "created": "2026-10-28 21:20:12",
-   "project": "general"
-  },
-  {
    "id": "WO-LEGION-CENSUS2-20261028",
    "desc": "agent_census 时间解析二次落地：fromisoformat 优先，消除 ISO silent-except；不改变口径",
    "status": "doing",
    "owner": "ZHAOYUN",
    "branch": "task/WO-LEGION-CENSUS2-20261028",
    "created": "2026-10-28 23:25:44",
-   "project": "general"
-  },
-  {
-   "id": "WO-HQ-ACCEPT-20261028",
-   "desc": "黄忠验收会接入：/api/hq/meeting/acceptance/evidence + 验收结论入纪要",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-HQ-ACCEPT-20261028",
-   "created": "2026-10-28 23:58:55",
    "project": "general"
   },
   {
@@ -327,6 +219,105 @@
    "branch": "task/K-MISSION-419F21-T1",
    "created": "2026-10-29 00:40:31",
    "project": "portal"
+  },
+  {
+   "id": "K-MISSION-66426C-T1",
+   "desc": "需求澄清与架构方案",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-MISSION-66426C-T1",
+   "created": "2026-10-29 00:49:41",
+   "project": "portal"
+  },
+  {
+   "id": "K-MISSION-66426C-T2",
+   "desc": "后端/AI/平台实现",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-MISSION-66426C-T2",
+   "created": "2026-10-29 00:49:44",
+   "project": "portal"
+  },
+  {
+   "id": "K-MISSION-66426C-T3",
+   "desc": "前端/交互实现",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-MISSION-66426C-T3",
+   "created": "2026-10-29 00:49:46",
+   "project": "portal"
+  },
+  {
+   "id": "K-MISSION-709060-T1",
+   "desc": "需求澄清与架构方案",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-MISSION-709060-T1",
+   "created": "2026-10-29 00:50:50",
+   "project": "portal"
+  },
+  {
+   "id": "K-MISSION-709060-T2",
+   "desc": "后端/AI/平台实现",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-MISSION-709060-T2",
+   "created": "2026-10-29 00:50:53",
+   "project": "portal"
+  },
+  {
+   "id": "K-MISSION-709060-T3",
+   "desc": "前端/交互实现",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-MISSION-709060-T3",
+   "created": "2026-10-29 00:50:55",
+   "project": "portal"
+  },
+  {
+   "id": "K-MISSION-709060-T4",
+   "desc": "测试与验收",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-MISSION-709060-T4",
+   "created": "2026-10-29 00:50:57",
+   "project": "portal"
+  },
+  {
+   "id": "K-QUANT-20261029-T2MANUAL",
+   "desc": "T2人工派单：dispatch标waiting_human；Mission显示待人工；advance支持人工完成；planner_paths补/api/kg与/api/dataops；测试",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-QUANT-20261029-T2MANUAL",
+   "created": "2026-10-29 05:02:10",
+   "project": "quant"
+  },
+  {
+   "id": "WO-O8P3D-DEPAGE-WEEKLY-20261029",
+   "desc": "O8 P3d：依赖 triage 纳入周报（只读不阻断）——tools/weekly_dep_triage.py 生成 Markdown 段 + 周报定时提示 + 策略/台账文档 + 单测",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-O8P3D-DEPAGE-WEEKLY-20261029",
+   "created": "2026-10-29 05:02:14",
+   "project": "portal"
+  },
+  {
+   "id": "WO-CODEREW-20261029",
+   "desc": "代码审查修复(L1)：新研究工具/数据抓取/归因 SQL 优先级/编码事故，补单测",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-CODEREW-20261029",
+   "created": "2026-10-29 05:04:57",
+   "project": "general"
+  },
+  {
+   "id": "WO-GUANYU-P19-20261029",
+   "desc": "ruff收尾E702F401 [UNOWNED]",
+   "status": "doing",
+   "owner": "unknown-agent",
+   "branch": "task/WO-GUANYU-P19-20261029",
+   "created": "2026-10-29 05:05:06",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -2073,14 +2064,7 @@
    ],
    "experience": "10 年调度执行经验：研发方案按部门并发分发、产出归集初筛（聚类/异常标红·宁松勿严）、修改命令下发台账跟踪；只调度不决策，判断类一律上浮田丰/SEC2。",
    "dept_name": "",
-   "dept_cn_title": "",
-   "tasks": [
-    {
-     "id": "legion-1027175009",
-     "desc": "[A0A] 每日复盘三问汇总 [UNOWNED]",
-     "status": "doing"
-    }
-   ]
+   "dept_cn_title": ""
   },
   "LUSU1": {
    "id": "LUSU1",
@@ -2297,11 +2281,6 @@
    "dept_cn_title": "兰台",
    "tasks": [
     {
-     "id": "WO-GUANYU-SQL-20261027",
-     "desc": "SQL triage A类参数化 [UNOWNED]",
-     "status": "doing"
-    },
-    {
      "id": "WO-LCS1-FREEZE-20261027",
      "desc": "LCS-1 数据冻结回执（DATA1 主责，ACAD1 请求单 WO-LEGION-LCS1-FREEZE-REQ-20261027 / 请求单 2026-10-27_DATA1_LCS1冻结回执请求单_v1）：按四字段写 freeze_receipts/AC-20261017-LCS1.json（data_version/sample_in/sample_out/cost_model+sha256+frozen_at+by），同步 backtests.jsonl 四字段；数据不足则出《冻结不可用报告》不伪造；deadline 2026-10-28 12:00；验收=research_seat_ops back1 显示 READY。非目标：不改数据根结构/不跑回测/不代签。回滚：git revert merge-commit。",
      "status": "doing"
@@ -2432,11 +2411,6 @@
     {
      "id": "WO-DEV-X2-HARVEST-20261027",
      "desc": "C3 adoption harvest 无产出：定位 harvest_adoption.py 输出路径/日志解析，补当日新增 zhuge_adoption.jsonl（非空、字段齐）；范围 agent_platform/portal 数据管线，不碰数据根",
-     "status": "doing"
-    },
-    {
-     "id": "WO-P0-DEV1-MONDAY-20261027",
-     "desc": "P0 派工周-1（G1 DEV1）：修 MondayCheckpoint 回放锚点误报（审计复核v2 A1）——定位锚点回放判定逻辑，排除系统/陈旧噪声，补回归测试；验收=新测试全绿 + 次日任务执行总线无该误报",
      "status": "doing"
     }
    ]
@@ -2575,14 +2549,7 @@
    ],
    "experience": "20 年机器学习工程经验：模型训练、评估与版本化登记全流程，熟悉特征工程与离线/在线评估一致性校验，坚持模型版本登记 domain/model_registry 的可追溯纪律。",
    "dept_name": "研发部",
-   "dept_cn_title": "将作监",
-   "tasks": [
-    {
-     "id": "WO-GUANYU-APMCP-20261027",
-     "desc": "mcp改名后测试路径修复 [UNOWNED]",
-     "status": "doing"
-    }
-   ]
+   "dept_cn_title": "将作监"
   },
   "DEV3": {
    "id": "DEV3",
@@ -3691,14 +3658,7 @@
    ],
    "experience": "20 年前端交付经验：常规页面与图表组件独立交付，严守 tokens 纪律与页面宽度规范，疑难上报 DEV5。",
    "dept_name": "研发部",
-   "dept_cn_title": "将作监",
-   "tasks": [
-    {
-     "id": "WO-RUFF-F841-20261027",
-     "desc": "[排期工单·A阶段质量] ruff F841 清理（23 处未用变量，低风险）：portal/api_backtest.py:382,6087; api_chanlun_pages.py:2202; api_events.py:366; api_kg.py:3605,5094; api_legion_ops_v2.py:107; api_misc.py:243,2268; council_ops.py:904; feishu_sop_runner.py:189; m_feed.py:198,211; os_controlled.py:508,809; portal_api.py:1264; portal_report.py:414,608; route_baseline.py:90; test_api_zhuge_brief.py:85,237; test_bot_ws_backoff.py:100; warehouse_update_services.py:123。要求逐处确认 RHS 是否有副作用（有副作用保留调用、仅去掉变量名），改后 ruff F841=0 且全量测试绿。",
-     "status": "doing"
-    }
-   ]
+   "dept_cn_title": "将作监"
   },
   "INTEL0": {
    "id": "INTEL0",
@@ -3945,14 +3905,7 @@
    ],
    "experience": "15 年多头研究经验：成长股挖掘与产业趋势研判，擅长从产能周期与订单数据里找拐点；立场纪律=只为多头论点找最强证据。",
    "dept_name": "量化交易部",
-   "dept_cn_title": "谋略府",
-   "tasks": [
-    {
-     "id": "legion-1027093009",
-     "desc": "[T1] 盘前 weak 池三线扫描 [UNOWNED]",
-     "status": "doing"
-    }
-   ]
+   "dept_cn_title": "谋略府"
   },
   "T2": {
    "id": "T2",
@@ -5193,14 +5146,7 @@
    ],
    "experience": "30 年质量工程经验：验收测试执行、三守卫（AST gate/金样本/回测判据）人化复核、review 积压质检分派、质量红线亮牌；连续多轮抓出产码方增量违规，质量判断独立不受产码方影响。",
    "dept_name": "质量工程部",
-   "dept_cn_title": "监军府",
-   "tasks": [
-    {
-     "id": "WO-GUANYU-FMT11-20261027",
-     "desc": "补格式化L2误报文件 [UNOWNED]",
-     "status": "review"
-    }
-   ]
+   "dept_cn_title": "监军府"
   },
   "SEC1": {
    "id": "SEC1",
@@ -6971,11 +6917,6 @@
     {
      "id": "WO-LEGION-CENSUS2-20261028",
      "desc": "agent_census 时间解析二次落地：fromisoformat 优先，消除 ISO silent-except；不改变口径",
-     "status": "doing"
-    },
-    {
-     "id": "WO-HQ-ACCEPT-20261028",
-     "desc": "黄忠验收会接入：/api/hq/meeting/acceptance/evidence + 验收结论入纪要",
      "status": "doing"
     },
     {

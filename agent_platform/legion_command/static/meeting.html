@@ -180,12 +180,6 @@
       </select>
       <input id="hqDue" placeholder="截止 2026-11-01" style="flex:1;background:#0F2440;color:#E6EDF5;border:0.5px solid #1E3A5F;border-radius:8px;padding:5px">
     </div>
-    <div class="muted" id="hqEvidence" style="margin-top:6px">验收证据：验收会模板自动载入基线/红队/验收单</div>
-    <select id="hqVerdict" style="width:100%;margin-top:6px;background:#0F2440;color:#E6EDF5;border:0.5px solid #1E3A5F;border-radius:8px;padding:5px">
-      <option value="OBSERVE">结论：观察（证据不足）</option>
-      <option value="PASS">结论：PASS（可放行）</option>
-      <option value="REJECT">结论：REJECT（退回）</option>
-    </select>
     <button class="btn" style="width:100%;margin-top:8px" onclick="hqSave()">保存指挥部纪要</button>
     <button class="btn amber" style="width:100%;margin-top:6px" onclick="hqDispatch()">决议派单（仅建任务申请）</button>
     <div class="muted" id="hqPre" style="margin-top:8px">会前议题：加载中…</div>
@@ -414,7 +408,6 @@ function hqPreset(kind) {
   renderTable();
   document.getElementById('hqState').textContent = HQ_TITLE[kind];
   document.getElementById('hqAgenda').textContent = '议程：' + HQ_AGENDA[kind].map(a => a.item).join(' → ');
-  if (kind === 'acceptance') { loadHqEvidence(); }
   add('HOST', '【指挥部' + HQ_TITLE[kind] + '】' + HQ_AGENDA[kind].map((a, i) => (i + 1) + '.' + a.item).join(' '), 'host');
 }
 async function hqSave() {
@@ -425,13 +418,9 @@ async function hqSave() {
       attendees: picked.slice(),
       agenda: HQ_AGENDA[HQ_TYPE],
       transcript: MINUTES.slice(),
-      decisions: dec ? [{ decision: (HQ_TYPE === 'acceptance' ? '验收结论[' + document.getElementById('hqVerdict').value + ']：' + dec : dec),
-                          owner: document.getElementById('hqOwner').value,
+      decisions: dec ? [{ decision: dec, owner: document.getElementById('hqOwner').value,
                           due: document.getElementById('hqDue').value.trim(),
                           evidence: HQ_ID ? ['meeting:' + HQ_ID] : [] }] : [],
-      acceptance: (HQ_TYPE === 'acceptance' && HQ_EVIDENCE) ? [{ verdict: document.getElementById('hqVerdict').value,
-        commit: ((HQ_EVIDENCE.acceptance || {}).commit || ''), report: ((HQ_EVIDENCE.acceptance || {}).file || ''),
-        evidence: JSON.stringify({ baseline: HQ_EVIDENCE.baseline, redteam: HQ_EVIDENCE.redteam }).slice(0, 500) }] : [],
     };
     const r = await fetch('/api/hq/meeting/save', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
     const env = await r.json();
@@ -481,24 +470,6 @@ async function hqPostMsg() {
     document.getElementById('hqMsg').value = '';
     loadHqAgenda();
   } catch (e) { add('HOST', '留言失败：' + e.message, 'host'); }
-}
-
-
-// ---- 验收会证据（黄忠验收会接入）----
-let HQ_EVIDENCE = null;
-async function loadHqEvidence() {
-  try {
-    const r = await fetch('/api/hq/meeting/acceptance/evidence');
-    const env = await r.json();
-    if (!env.ok) throw new Error(env.error || '加载失败');
-    HQ_EVIDENCE = env;
-    const b = env.baseline || {}, rt = env.redteam || {}, ac = env.acceptance || {};
-    document.getElementById('hqEvidence').textContent =
-      '验收证据：基线 ' + (b.ok ? (b.passed + ' passed / ' + b.failed + ' failed') : (b.error || '缺')) +
-      ' ｜ 红队 ' + (rt.ok ? Math.round((rt.pass_rate || 0) * 100) + '%' : (rt.error || '缺')) +
-      ' ｜ 验收单 ' + (ac.ok ? ac.verdict + ' ' + (ac.file || '') : (ac.error || '缺'));
-    if (ac.ok && ac.verdict) { document.getElementById('hqVerdict').value = ac.verdict; }
-  } catch (e) { document.getElementById('hqEvidence').textContent = '验收证据加载失败：' + e.message; }
 }
 
 renderTable();
