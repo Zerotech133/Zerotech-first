@@ -42,7 +42,14 @@ def test_metrics_and_sources():
               "owner_legal_rate_recent", "verification_rate", "e3_trigger",
               "dev_leadtime_p50_min"):
         assert k in m
-    for src in c["response"]["sources"]:
+    sources = c["response"]["sources"]
+    # 运行时真源（worktree/CI 可能无数据）只要求声明，不要求文件存在
+    assert ".worktrees/tasks.json" in sources
+    assert "agent_platform/data/dev/daily_metrics.json" in sources
+    for src in sources:
+        if src in (".worktrees/tasks.json",
+                   "agent_platform/data/dev/daily_metrics.json"):
+            continue
         assert (ROOT / src).exists(), src
 
 
