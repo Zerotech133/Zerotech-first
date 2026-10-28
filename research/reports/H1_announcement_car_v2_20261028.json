@@ -1,0 +1,674 @@
+{
+ "ok": true,
+ "window": {
+  "start": "20260603",
+  "end": "20261027",
+  "trading_days": 98,
+  "split_date": "20260825"
+ },
+ "events": {
+  "其他": 104114,
+  "高管变动": 31375,
+  "股权激励": 9699,
+  "融资/定增": 9122,
+  "回购": 6562,
+  "担保": 5435,
+  "分红/权益": 4810,
+  "诉讼/处罚/风险": 4129,
+  "增减持": 3160,
+  "重组并购": 2630,
+  "澄清/异动": 2297,
+  "业绩预告": 2044,
+  "对外投资": 1376,
+  "重大合同/中标": 1192,
+  "停复牌": 151
+ },
+ "cost_bps_per_side": 15,
+ "cost_pct_roundtrip": 0.3,
+ "min_n": 30,
+ "class_focus": "业绩预告",
+ "focus": {
+  "category": "业绩预告",
+  "n_is": 1876,
+  "n_oos": 168,
+  "is_raw": {
+   "n": 1876,
+   "mean": 0.54,
+   "median": 1.2407,
+   "win_rate": 0.6141,
+   "t": 3.85,
+   "std": 6.0696
+  },
+  "oos_raw": {
+   "n": 168,
+   "mean": 0.02,
+   "median": -0.5482,
+   "win_rate": 0.4524,
+   "t": 0.04,
+   "std": 5.853
+  },
+  "oos_neutral": {
+   "n": 168,
+   "mean": -1.2308,
+   "median": -1.5017,
+   "win_rate": 0.3512,
+   "t": -2.66,
+   "std": 6.0038
+  },
+  "oos_net": {
+   "n": 168,
+   "mean": -1.5308,
+   "median": -1.8017,
+   "win_rate": 0.3274,
+   "t": -3.3,
+   "std": 6.0038
+  },
+  "cost_pct": 0.3,
+  "pass": false,
+  "low_sample": false
+ },
+ "categories": [
+  {
+   "category": "其他",
+   "n_is": 49375,
+   "n_oos": 54739,
+   "is_raw": {
+    "n": 49375,
+    "mean": 0.4852,
+    "median": -0.4668,
+    "win_rate": 0.447,
+    "t": 5.26,
+    "std": 20.512
+   },
+   "oos_raw": {
+    "n": 54739,
+    "mean": 0.1452,
+    "median": -0.3996,
+    "win_rate": 0.4385,
+    "t": 2.83,
+    "std": 12.0193
+   },
+   "oos_neutral": {
+    "n": 54739,
+    "mean": 0.4123,
+    "median": 0.1346,
+    "win_rate": 0.5186,
+    "t": 7.95,
+    "std": 12.1263
+   },
+   "oos_net": {
+    "n": 54739,
+    "mean": 0.1123,
+    "median": -0.1654,
+    "win_rate": 0.4776,
+    "t": 2.17,
+    "std": 12.1263
+   },
+   "cost_pct": 0.3,
+   "pass": true,
+   "low_sample": false
+  },
+  {
+   "category": "高管变动",
+   "n_is": 16767,
+   "n_oos": 14608,
+   "is_raw": {
+    "n": 16767,
+    "mean": -0.1857,
+    "median": -0.5301,
+    "win_rate": 0.4382,
+    "t": -4.32,
+    "std": 5.5595
+   },
+   "oos_raw": {
+    "n": 14608,
+    "mean": -0.0836,
+    "median": -0.3663,
+    "win_rate": 0.4427,
+    "t": -2.23,
+    "std": 4.5271
+   },
+   "oos_neutral": {
+    "n": 14608,
+    "mean": -0.0209,
+    "median": 0.0321,
+    "win_rate": 0.5034,
+    "t": -0.52,
+    "std": 4.837
+   },
+   "oos_net": {
+    "n": 14608,
+    "mean": -0.3209,
+    "median": -0.2679,
+    "win_rate": 0.4699,
+    "t": -8.02,
+    "std": 4.837
+   },
+   "cost_pct": 0.3,
+   "pass": false,
+   "low_sample": false
+  },
+  {
+   "category": "股权激励",
+   "n_is": 5028,
+   "n_oos": 4671,
+   "is_raw": {
+    "n": 5028,
+    "mean": 0.2858,
+    "median": -0.3399,
+    "win_rate": 0.466,
+    "t": 3.38,
+    "std": 5.998
+   },
+   "oos_raw": {
+    "n": 4671,
+    "mean": -0.294,
+    "median": -0.3269,
+    "win_rate": 0.4517,
+    "t": -4.73,
+    "std": 4.2507
+   },
+   "oos_neutral": {
+    "n": 4671,
+    "mean": -0.3639,
+    "median": -0.4069,
+    "win_rate": 0.4676,
+    "t": -5.32,
+    "std": 4.6729
+   },
+   "oos_net": {
+    "n": 4671,
+    "mean": -0.6639,
+    "median": -0.7069,
+    "win_rate": 0.432,
+    "t": -9.71,
+    "std": 4.6729
+   },
+   "cost_pct": 0.3,
+   "pass": false,
+   "low_sample": false
+  },
+  {
+   "category": "融资/定增",
+   "n_is": 5264,
+   "n_oos": 3858,
+   "is_raw": {
+    "n": 5264,
+    "mean": 0.2911,
+    "median": -0.5069,
+    "win_rate": 0.4462,
+    "t": 3.17,
+    "std": 6.6717
+   },
+   "oos_raw": {
+    "n": 3858,
+    "mean": -0.6624,
+    "median": -0.678,
+    "win_rate": 0.4168,
+    "t": -8.52,
+    "std": 4.8294
+   },
+   "oos_neutral": {
+    "n": 3858,
+    "mean": -0.9571,
+    "median": -0.6771,
+    "win_rate": 0.4295,
+    "t": -11.54,
+    "std": 5.1525
+   },
+   "oos_net": {
+    "n": 3858,
+    "mean": -1.2571,
+    "median": -0.9771,
+    "win_rate": 0.381,
+    "t": -15.15,
+    "std": 5.1525
+   },
+   "cost_pct": 0.3,
+   "pass": false,
+   "low_sample": false
+  },
+  {
+   "category": "回购",
+   "n_is": 3988,
+   "n_oos": 2574,
+   "is_raw": {
+    "n": 3988,
+    "mean": 0.1822,
+    "median": -0.0993,
+    "win_rate": 0.4877,
+    "t": 2.45,
+    "std": 4.6994
+   },
+   "oos_raw": {
+    "n": 2574,
+    "mean": -0.0592,
+    "median": -0.2365,
+    "win_rate": 0.4627,
+    "t": -0.79,
+    "std": 3.7917
+   },
+   "oos_neutral": {
+    "n": 2574,
+    "mean": -0.5157,
+    "median": -0.481,
+    "win_rate": 0.4258,
+    "t": -6.37,
+    "std": 4.1065
+   },
+   "oos_net": {
+    "n": 2574,
+    "mean": -0.8157,
+    "median": -0.781,
+    "win_rate": 0.3765,
+    "t": -10.08,
+    "std": 4.1065
+   },
+   "cost_pct": 0.3,
+   "pass": false,
+   "low_sample": false
+  },
+  {
+   "category": "担保",
+   "n_is": 3049,
+   "n_oos": 2386,
+   "is_raw": {
+    "n": 3049,
+    "mean": -0.0886,
+    "median": -0.4425,
+    "win_rate": 0.4529,
+    "t": -0.95,
+    "std": 5.1532
+   },
+   "oos_raw": {
+    "n": 2386,
+    "mean": -0.1078,
+    "median": -0.2804,
+    "win_rate": 0.4593,
+    "t": -1.28,
+    "std": 4.1173
+   },
+   "oos_neutral": {
+    "n": 2386,
+    "mean": -0.3672,
+    "median": -0.3944,
+    "win_rate": 0.4556,
+    "t": -3.97,
+    "std": 4.5176
+   },
+   "oos_net": {
+    "n": 2386,
+    "mean": -0.6672,
+    "median": -0.6944,
+    "win_rate": 0.4141,
+    "t": -7.21,
+    "std": 4.5176
+   },
+   "cost_pct": 0.3,
+   "pass": false,
+   "low_sample": false
+  },
+  {
+   "category": "分红/权益",
+   "n_is": 3145,
+   "n_oos": 1665,
+   "is_raw": {
+    "n": 3145,
+    "mean": 0.2375,
+    "median": -0.0949,
+    "win_rate": 0.4893,
+    "t": 2.63,
+    "std": 5.0559
+   },
+   "oos_raw": {
+    "n": 1665,
+    "mean": -0.166,
+    "median": -0.4537,
+    "win_rate": 0.4336,
+    "t": -1.87,
+    "std": 3.6208
+   },
+   "oos_neutral": {
+    "n": 1665,
+    "mean": 0.1312,
+    "median": 0.0195,
+    "win_rate": 0.5033,
+    "t": 1.36,
+    "std": 3.9406
+   },
+   "oos_net": {
+    "n": 1665,
+    "mean": -0.1688,
+    "median": -0.2805,
+    "win_rate": 0.4559,
+    "t": -1.75,
+    "std": 3.9406
+   },
+   "cost_pct": 0.3,
+   "pass": false,
+   "low_sample": false
+  },
+  {
+   "category": "诉讼/处罚/风险",
+   "n_is": 2952,
+   "n_oos": 1177,
+   "is_raw": {
+    "n": 2952,
+    "mean": -0.5133,
+    "median": -0.7403,
+    "win_rate": 0.4353,
+    "t": -3.25,
+    "std": 8.5689
+   },
+   "oos_raw": {
+    "n": 1177,
+    "mean": -0.7296,
+    "median": -0.5399,
+    "win_rate": 0.4163,
+    "t": -3.58,
+    "std": 6.9846
+   },
+   "oos_neutral": {
+    "n": 1177,
+    "mean": -1.0584,
+    "median": -1.0172,
+    "win_rate": 0.3891,
+    "t": -5.07,
+    "std": 7.1587
+   },
+   "oos_net": {
+    "n": 1177,
+    "mean": -1.3584,
+    "median": -1.3172,
+    "win_rate": 0.3653,
+    "t": -6.51,
+    "std": 7.1587
+   },
+   "cost_pct": 0.3,
+   "pass": false,
+   "low_sample": false
+  },
+  {
+   "category": "增减持",
+   "n_is": 1835,
+   "n_oos": 1325,
+   "is_raw": {
+    "n": 1835,
+    "mean": 0.0191,
+    "median": -0.2733,
+    "win_rate": 0.4681,
+    "t": 0.14,
+    "std": 5.9844
+   },
+   "oos_raw": {
+    "n": 1325,
+    "mean": -0.3902,
+    "median": -0.4372,
+    "win_rate": 0.4309,
+    "t": -3.45,
+    "std": 4.1199
+   },
+   "oos_neutral": {
+    "n": 1325,
+    "mean": -0.7767,
+    "median": -0.7187,
+    "win_rate": 0.4098,
+    "t": -6.2,
+    "std": 4.5576
+   },
+   "oos_net": {
+    "n": 1325,
+    "mean": -1.0767,
+    "median": -1.0187,
+    "win_rate": 0.3721,
+    "t": -8.6,
+    "std": 4.5576
+   },
+   "cost_pct": 0.3,
+   "pass": false,
+   "low_sample": false
+  },
+  {
+   "category": "重组并购",
+   "n_is": 1478,
+   "n_oos": 1152,
+   "is_raw": {
+    "n": 1478,
+    "mean": 0.3299,
+    "median": -0.5823,
+    "win_rate": 0.4526,
+    "t": 1.39,
+    "std": 9.0936
+   },
+   "oos_raw": {
+    "n": 1152,
+    "mean": -0.3267,
+    "median": -0.404,
+    "win_rate": 0.4627,
+    "t": -1.86,
+    "std": 5.9542
+   },
+   "oos_neutral": {
+    "n": 1152,
+    "mean": -0.5201,
+    "median": -0.268,
+    "win_rate": 0.4644,
+    "t": -2.93,
+    "std": 6.034
+   },
+   "oos_net": {
+    "n": 1152,
+    "mean": -0.8201,
+    "median": -0.568,
+    "win_rate": 0.4141,
+    "t": -4.61,
+    "std": 6.034
+   },
+   "cost_pct": 0.3,
+   "pass": false,
+   "low_sample": false
+  },
+  {
+   "category": "澄清/异动",
+   "n_is": 1697,
+   "n_oos": 600,
+   "is_raw": {
+    "n": 1697,
+    "mean": -0.9565,
+    "median": -1.6582,
+    "win_rate": 0.3954,
+    "t": -4.5,
+    "std": 8.7533
+   },
+   "oos_raw": {
+    "n": 600,
+    "mean": 0.3647,
+    "median": -0.9399,
+    "win_rate": 0.4533,
+    "t": 0.85,
+    "std": 10.4541
+   },
+   "oos_neutral": {
+    "n": 600,
+    "mean": -0.193,
+    "median": -1.0302,
+    "win_rate": 0.4383,
+    "t": -0.45,
+    "std": 10.5556
+   },
+   "oos_net": {
+    "n": 600,
+    "mean": -0.493,
+    "median": -1.3302,
+    "win_rate": 0.42,
+    "t": -1.14,
+    "std": 10.5556
+   },
+   "cost_pct": 0.3,
+   "pass": false,
+   "low_sample": false
+  },
+  {
+   "category": "业绩预告",
+   "n_is": 1876,
+   "n_oos": 168,
+   "is_raw": {
+    "n": 1876,
+    "mean": 0.54,
+    "median": 1.2407,
+    "win_rate": 0.6141,
+    "t": 3.85,
+    "std": 6.0696
+   },
+   "oos_raw": {
+    "n": 168,
+    "mean": 0.02,
+    "median": -0.5482,
+    "win_rate": 0.4524,
+    "t": 0.04,
+    "std": 5.853
+   },
+   "oos_neutral": {
+    "n": 168,
+    "mean": -1.2308,
+    "median": -1.5017,
+    "win_rate": 0.3512,
+    "t": -2.66,
+    "std": 6.0038
+   },
+   "oos_net": {
+    "n": 168,
+    "mean": -1.5308,
+    "median": -1.8017,
+    "win_rate": 0.3274,
+    "t": -3.3,
+    "std": 6.0038
+   },
+   "cost_pct": 0.3,
+   "pass": false,
+   "low_sample": false
+  },
+  {
+   "category": "对外投资",
+   "n_is": 765,
+   "n_oos": 611,
+   "is_raw": {
+    "n": 765,
+    "mean": -0.3758,
+    "median": -0.7123,
+    "win_rate": 0.4497,
+    "t": -1.75,
+    "std": 5.9521
+   },
+   "oos_raw": {
+    "n": 611,
+    "mean": -0.2121,
+    "median": -0.3476,
+    "win_rate": 0.4664,
+    "t": -1.13,
+    "std": 4.629
+   },
+   "oos_neutral": {
+    "n": 611,
+    "mean": -0.3791,
+    "median": -0.4665,
+    "win_rate": 0.4452,
+    "t": -1.89,
+    "std": 4.9657
+   },
+   "oos_net": {
+    "n": 611,
+    "mean": -0.6791,
+    "median": -0.7665,
+    "win_rate": 0.419,
+    "t": -3.38,
+    "std": 4.9657
+   },
+   "cost_pct": 0.3,
+   "pass": false,
+   "low_sample": false
+  },
+  {
+   "category": "重大合同/中标",
+   "n_is": 667,
+   "n_oos": 525,
+   "is_raw": {
+    "n": 667,
+    "mean": -0.0492,
+    "median": -0.3904,
+    "win_rate": 0.4408,
+    "t": -0.21,
+    "std": 5.9391
+   },
+   "oos_raw": {
+    "n": 525,
+    "mean": -0.1693,
+    "median": -0.4269,
+    "win_rate": 0.4381,
+    "t": -0.75,
+    "std": 5.1564
+   },
+   "oos_neutral": {
+    "n": 525,
+    "mean": -0.1715,
+    "median": -0.37,
+    "win_rate": 0.459,
+    "t": -0.7,
+    "std": 5.5776
+   },
+   "oos_net": {
+    "n": 525,
+    "mean": -0.4715,
+    "median": -0.67,
+    "win_rate": 0.421,
+    "t": -1.94,
+    "std": 5.5776
+   },
+   "cost_pct": 0.3,
+   "pass": false,
+   "low_sample": false
+  },
+  {
+   "category": "停复牌",
+   "n_is": 87,
+   "n_oos": 64,
+   "is_raw": {
+    "n": 87,
+    "mean": -3.0691,
+    "median": -1.3805,
+    "win_rate": 0.4138,
+    "t": -1.68,
+    "std": 17.0681
+   },
+   "oos_raw": {
+    "n": 64,
+    "mean": -4.3932,
+    "median": -1.6234,
+    "win_rate": 0.3438,
+    "t": -1.13,
+    "std": 31.1153
+   },
+   "oos_neutral": {
+    "n": 64,
+    "mean": -4.7603,
+    "median": -3.0346,
+    "win_rate": 0.25,
+    "t": -1.2,
+    "std": 31.8292
+   },
+   "oos_net": {
+    "n": 64,
+    "mean": -5.0603,
+    "median": -3.3346,
+    "win_rate": 0.25,
+    "t": -1.27,
+    "std": 31.8292
+   },
+   "cost_pct": 0.3,
+   "pass": false,
+   "low_sample": false
+  }
+ ],
+ "catalog_version": 13,
+ "generated_at": "2026-10-28T10:50:41+08:00"
+}
