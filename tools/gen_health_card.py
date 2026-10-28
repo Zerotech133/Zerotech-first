@@ -555,6 +555,16 @@ def collect_task_audit(
     if summary is not None:
         result["summary_generated_at"] = summary.get("generated_at")
 
+    # 2026-10-28 OS-FIX-L1-AUDIT：canonical 摘要已按任务级语义把 DeadlineWatch/x5/
+    # PytestWeekly/ObservePoint 等单列 known_baseline（不计 failed）；健康卡若继续
+    # 从 ledger 重算会把它们再当失败（实测 9 vs 5）。这里消费摘要语义名单。
+    _summary_semantic_skip: set[str] = set()
+    if isinstance(summary, dict) and summary.get("canonical", True) is not False:
+        for _key in ("known_baseline_tasks", "alert_found_tasks"):
+            for _item in summary.get(_key) or []:
+                if isinstance(_item, dict) and _item.get("name"):
+                    _summary_semantic_skip.add(str(_item["name"]))
+
     ledger_path = audit_root / LEDGER_NAME
     if not ledger_path.is_file():
         result["reason"] = f"账本不存在: {ledger_path}"
@@ -637,6 +647,8 @@ def collect_task_audit(
             if (state_key == "disabled" or code in (0, NEVER_RUN_CODE)
                     or code in NON_FAILURE_TASK_CODES):
                 continue
+            if str(rec.get("name") or "?") in _summary_semantic_skip:
+                continue
             names.add(str(rec.get("name") or "?"))
         return names
 
@@ -683,6 +695,8 @@ def collect_task_audit(
             never_run += 1
             continue
         if code in NON_FAILURE_TASK_CODES:  # 跑批中/被终止/取消/上游拒跑：单列不计失败
+            continue
+        if name in _summary_semantic_skip:  # 任务级 by-design（known_baseline/alert_found）
             continue
 
         # 与 task_exit_audit 同口径：非 0、非 267011、非 Disabled 即失败

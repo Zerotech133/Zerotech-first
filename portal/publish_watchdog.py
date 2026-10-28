@@ -110,13 +110,14 @@ def compare_md(hashes, online_hashes):
     return "\n".join(lines) or "（无比对数据）"
 
 
-def send_feishu(title, template, md):
-    """发飞书卡片给老田（send_card 默认 USER_ID）；失败只记日志不抛。"""
+def send_feishu(title, template, md, critical=False):
+    """发飞书卡片给老田；返回 (ok, msg)，失败不抛（2026-10-28 OS-FIX-L1-AUDIT）。"""
     try:
         from feishu_card_v2 import send_card
     except Exception as e:  # noqa: BLE001
-        log("[warn] feishu_card_v2 导入失败: %s" % e)
-        return
+        msg = "feishu_card_v2 导入失败: %s" % e
+        log("[warn] " + msg)
+        return False, msg
     body = {
         "schema": "2.0",
         "config": {"update_multi": True},
@@ -127,10 +128,13 @@ def send_feishu(title, template, md):
         "body": {"elements": [{"tag": "markdown", "content": md}]},
     }
     try:
-        ok, msg = send_card(body)
+        ok, msg = send_card(body, critical=critical)
         log("[feishu] ok=%s msg=%s" % (ok, msg))
+        return bool(ok), str(msg)
     except Exception as e:  # noqa: BLE001
-        log("[warn] 飞书发送异常: %s" % e)
+        msg = "飞书发送异常: %s" % e
+        log("[warn] " + msg)
+        return False, msg
 
 
 def write_flag(hashes, online_hashes, mismatched):
@@ -186,8 +190,7 @@ def inspect():
         hashes, online_hashes = read_state_compare()
         mismatched = [rel for rel, oh in online_hashes.items() if hashes.get(rel) != oh]
         write_flag(hashes, online_hashes, mismatched)
-        log("[滞后] 线上滞后，已落旗标并发飞书告警")
-        send_feishu(
+        ok, msg = send_feishu(
             "⚠️ picks 线上滞后告警",
             "red",
             "本地快照与线上不一致，需要重新 deploy。\n\n"
@@ -195,7 +198,17 @@ def inspect():
             "（目录/入口/appId 不变，链接不变）。\n\n"
             + compare_md(hashes, online_hashes)
             + "\n\n链接：%s" % LINK,
+            critical=True,  # 预警类豁免静默窗（修复连续三晚被吞）
         )
+        if ok:
+            log("[滞后] 线上滞后，已落旗标并发送红卡")
+        else:
+            log("[FAIL] 线上滞后红卡未送达：%s" % msg)
+            atomic_write_json(
+                os.path.join(WORK, "PUBLISH_ALERT_FAILED.json"),
+                {"ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+                 "mismatched": mismatched, "error": msg},
+            )
         return 2
 
     # 其余一律按链路异常处理（含 rc==2 无佐证）
@@ -268,3 +281,4 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
+
