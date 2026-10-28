@@ -15,6 +15,7 @@
 """
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
@@ -26,6 +27,10 @@ REPO = HERE.parent
 TMP = Path(os.environ.get("TEMP", r"C:\Temp"))
 DOC_SUFFIX = (".md", ".json", ".yaml", ".yml", ".txt", ".tsv", ".csv", ".html", ".css", ".js")
 DOC_PREFIX = ("docs/", "deliverables/", "portal/static/", "agent_platform/skills/")
+DEPS_FILES = ("uv.lock", "pyproject.toml")
+DEPS_PREFIX = ("requirements/",)
+DEP_AGE_HINT_LIMIT = 40
+DEP_AGE_HINT_TIMEOUT = 120
 
 
 def changed_files() -> list[str]:
@@ -51,6 +56,45 @@ def is_docs_only(files: list[str]) -> bool:
     if not files:
         return False
     return all(f.endswith(DOC_SUFFIX) and f.startswith(DOC_PREFIX) for f in files)
+
+
+def deps_changed(files: list[str]) -> bool:
+    for f in files or []:
+        name = f.replace("\\", "/")
+        if name in DEPS_FILES or any(name.startswith(p) for p in DEPS_PREFIX):
+            return True
+    return False
+
+
+def dep_age_hint(files: list[str], runner=None):
+    """依赖文件变更时打印年龄 warn；**永不阻断合并**（warn-only）。"""
+    if not deps_changed(files):
+        return None
+    if os.environ.get("DEVTOOL_DEP_AGE_HINT", "1") == "0":
+        print("[merge-gate] dep-age hint：DEVTOOL_DEP_AGE_HINT=0 → 跳过（warn-only）")
+        return {"skipped": True}
+    cmd = [sys.executable, "-X", "utf8", str(HERE / "dep_age_check.py"),
+           "--limit", str(DEP_AGE_HINT_LIMIT), "--json"]
+    try:
+        run = runner or subprocess.run
+        proc = run(cmd, cwd=str(REPO), capture_output=True, text=True,
+                   encoding="utf-8", errors="replace", timeout=DEP_AGE_HINT_TIMEOUT)
+        payload = json.loads((proc.stdout or "").strip())
+        fresh = payload.get("fresh") or []
+        out = {"checked": payload.get("checked", 0),
+               "fresh_count": payload.get("fresh_count", len(fresh)),
+               "error_count": payload.get("error_count", 0),
+               "fresh_top": [(x.get("name"), x.get("version"), x.get("age_days"))
+                             for x in fresh[:5]]}
+        print("[merge-gate] dep-age hint：checked=%d fresh=%d errors=%d（仅提示，不阻断）" % (
+            out["checked"], out["fresh_count"], out["error_count"]))
+        for name, ver, age in out["fresh_top"]:
+            print("  DEP-FRESH %s==%s age=%sd" % (name, ver, age))
+        return out
+    except Exception as exc:  # noqa: BLE001
+        print("[merge-gate] dep-age hint 跳过（%s: %s；不阻断）" % (
+            type(exc).__name__, str(exc)[:120]))
+        return {"error": "%s: %s" % (type(exc).__name__, str(exc)[:120])}
 
 
 def main() -> int:
@@ -86,6 +130,7 @@ def main() -> int:
             pass
         return 1
     print("[merge-gate] PASS：测试门通过，放行合并")
+    dep_age_hint(files)
     return 0
 
 
