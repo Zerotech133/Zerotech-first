@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-28 17:38",
+ "generated": "2026-10-28 17:41",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -284,12 +284,12 @@
    "project": "general"
   },
   {
-   "id": "WO-GUANYU-P9-20261028",
-   "desc": "质量闸quotepath修复 [UNOWNED]",
+   "id": "OS-FIX-PYTESTNET-20261028",
+   "desc": "PytestWeekly 全量 gate2 联网用例隔离：test_xueqiu_crawl::test_crawl_all_end_to_end 默认 skip（RUN_LIVE_NETWORK_TESTS=1 才跑），修周门禁 rc=1",
    "status": "doing",
-   "owner": "unknown-agent",
-   "branch": "task/WO-GUANYU-P9-20261028",
-   "created": "2026-10-28 17:37:33",
+   "owner": "DSH-Lead",
+   "branch": "task/OS-FIX-PYTESTNET-20261028",
+   "created": "2026-10-28 17:39:52",
    "project": "general"
   }
  ],
