@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-28 17:10",
+ "generated": "2026-10-28 17:13",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -320,12 +320,12 @@
    "project": "general"
   },
   {
-   "id": "WO-RESEARCH2-20261028",
-   "desc": "研究第二批(L1)：公告分类v2(columns_txt+标题) + H11 三年窗口/行业中性 + H2 PEAD + H6 市场方向兜底归因",
+   "id": "WO-GUANYU-P6-20261028",
+   "desc": "api_kg契约测试 [UNOWNED]",
    "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-RESEARCH2-20261028",
-   "created": "2026-10-28 16:59:22",
+   "owner": "unknown-agent",
+   "branch": "task/WO-GUANYU-P6-20261028",
+   "created": "2026-10-28 17:12:10",
    "project": "general"
   }
  ],
@@ -3902,7 +3902,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 59,
+     "count": 60,
      "recent": [
       {
        "ts": "",
@@ -4050,7 +4050,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 59,
+     "count": 60,
      "recent": [
       {
        "ts": "",
@@ -4192,7 +4192,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 60,
+     "count": 61,
      "recent": [
       {
        "ts": "",
@@ -4334,7 +4334,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 60,
+     "count": 61,
      "recent": [
       {
        "ts": "",
@@ -4475,7 +4475,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 59,
+     "count": 60,
      "recent": [
       {
        "ts": "",
