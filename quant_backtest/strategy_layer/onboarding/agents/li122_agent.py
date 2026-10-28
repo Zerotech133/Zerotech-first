@@ -122,14 +122,10 @@ def _load_ap_contract():
         _AP_REGISTRY_MODULE = mod
         return mod.StrategyAgent, mod.Verdict
     try:
-        from strategy_registry import StrategyAgent, Verdict
-
-        mod = sys.modules["strategy_registry"]
+        import strategy_registry as mod
     except ImportError:
         try:
-            from agent_platform.engine.strategy_registry import StrategyAgent, Verdict
-
-            mod = sys.modules["agent_platform.engine.strategy_registry"]
+            from agent_platform.engine import strategy_registry as mod
         except ImportError:
             path = os.path.join(
                 _REPO_ROOT, "agent_platform", "engine", "strategy_registry.py"
