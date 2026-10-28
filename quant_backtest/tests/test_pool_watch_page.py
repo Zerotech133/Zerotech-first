@@ -244,7 +244,7 @@ class TestWriteHtml(_Tmp):
             body = f.read()
         self.assertIn("</html>", body)
         self.assertIn("华兰生物", body)
-        self.assertIn(evs_sig := "todays_picks.002007.SZ.break.20261021.r1",
+        self.assertIn("todays_picks.002007.SZ.break.20261021.r1",
                       body)
 
 
