@@ -1191,7 +1191,8 @@ def _auto_rebuild_ide_bundle(tid):
         subprocess.run(["git", "-C", REPO, "add", "portal/agent_ide_bundle.json"],
                        capture_output=True, text=True)
         c = subprocess.run(["git", "-C", REPO, "commit", "-m",
-                            "chore(ide): auto rebuild agent_ide_bundle after merge %s" % tid],
+                            "chore(ide): auto rebuild agent_ide_bundle after merge %s" % tid,
+                            "--", "portal/agent_ide_bundle.json"],
                            capture_output=True, text=True, encoding="utf-8",
                            errors="replace")
         if c.returncode == 0:
