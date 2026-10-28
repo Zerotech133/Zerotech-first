@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """研发板块模型手动切换偏好：agent → model 别名。
 
-可用模型：auto / local4 / local9 / local35 / zhipu / deepseek / gpt6
+可用模型：与 config/seat_routing.json 的 18 个别名一致（自动/强模型/本地/智谱/DeepSeek/百炼/中转）
 存储：work/models/preferences.json（只存偏好，不含密钥）
 """
 from __future__ import annotations
@@ -18,12 +18,23 @@ STORE = REPO / "work" / "models" / "preferences.json"
 
 MODELS = [
     {"id": "auto", "label": "自动（智能分配）"},
+    {"id": "strong", "label": "强模型（云端优先）"},
+    {"id": "local", "label": "本地自动"},
     {"id": "local4", "label": "本地 · qwen3.5:4b（轻量）"},
     {"id": "local9", "label": "本地 · qwen3.5:9b（默认）"},
     {"id": "local35", "label": "本地 · qwen3.6:35b-a3b（复杂）"},
-    {"id": "zhipu", "label": "智谱 · glm-4-flash"},
-    {"id": "deepseek", "label": "DeepSeek · deepseek-chat"},
-    {"id": "gpt6", "label": "中转站 · GPT-6 gpt-6-sol"},
+    {"id": "zhipu", "label": "智谱自动（GLM-4-Flash）"},
+    {"id": "glm-4-flash", "label": "智谱 GLM-4-Flash"},
+    {"id": "glm-5.3", "label": "智谱 GLM-5.3"},
+    {"id": "glm-5", "label": "智谱 GLM-5"},
+    {"id": "deepseek", "label": "DeepSeek 自动"},
+    {"id": "deepseek-chat", "label": "DeepSeek Chat"},
+    {"id": "deepseek-v4-pro", "label": "DeepSeek V4 Pro"},
+    {"id": "deepseek-flash", "label": "DeepSeek Flash"},
+    {"id": "qwen-plus", "label": "通义千问 Plus"},
+    {"id": "qwen3-max", "label": "通义千问 3 Max"},
+    {"id": "gpt6", "label": "中转站 · GPT-6"},
+    {"id": "gpt-6-sol", "label": "中转站 · GPT-6 Sol"},
 ]
 MODEL_IDS = {m["id"] for m in MODELS}
 

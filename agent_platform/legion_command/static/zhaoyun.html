@@ -536,12 +536,13 @@ function loadDrill() {
     else {
       (mdl.seats || []).forEach((s) => kv(mb2, s.seat + '（' + (s.cn_name || '') + '）',
         (s.llm || '—') + (s.in_headcount ? ' · 编制' : ' · 不占编')));
-      kv(mb2, '候选模型', (mdl.candidate_models || []).join(' / '));
+      const labels = mdl.candidate_labels || {};
+      kv(mb2, '候选模型', (mdl.candidate_models || []).map((m) => labels[m] || m).join(' / '));
       const bar = el('div', 'row'); bar.style.marginTop = '6px';
       const selSeat = el('select'); selSeat.id = 'mdl-seat';
       (mdl.seats || []).forEach((s) => { const o = el('option', '', s.seat); o.value = s.seat; selSeat.appendChild(o); });
       const sel = el('select'); sel.id = 'mdl-model';
-      (mdl.candidate_models || []).forEach((m) => { const o = el('option', '', m); o.value = m; sel.appendChild(o); });
+      (mdl.candidate_models || []).forEach((m) => { const o = el('option', '', (labels[m] || m) + ' · ' + m); o.value = m; sel.appendChild(o); });
       const reason = el('input'); reason.id = 'mdl-reason';
       reason.placeholder = '变更原因'; reason.style.flex = '1';
       const btn = el('button', '', '提交模型变更申请');
