@@ -1,5 +1,5 @@
 {
-  "_note": "测试门禁既存失败/flaky 基线（GY-01，2026-10-27）。known_failures=任何环境都登记；env_failures=仅 worktree 无数据根时豁免（主仓必须过）；新增失败必须修或正式登记，不得直接加白。",
+  "_note": "测试门禁既存失败/flaky 基线（GY-01，2026-10-27；2026-10-28 修订）。known_failures=任何环境都登记；env_failures=数据/环境依赖失败（含行情湖未更新到当日、worktree 无数据根），任何位置都登记但单独列出；flaky=顺序依赖。新增失败必须修或正式登记，不得直接加白。",
   "portal/tests": {
     "known_failures": [],
     "flaky": []
