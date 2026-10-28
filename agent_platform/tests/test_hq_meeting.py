@@ -5,7 +5,6 @@ import sys
 import threading
 import urllib.request
 from pathlib import Path
-from types import SimpleNamespace
 
 WT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(WT / "agent_platform"))
