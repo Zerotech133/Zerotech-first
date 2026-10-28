@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-28 23:14",
+ "generated": "2026-10-28 23:23",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 26,
+  "workorders_doing": 27,
   "workorders_review": 7
  },
  "workorders": [
@@ -309,6 +309,15 @@
    "branch": "task/K-QUANT-20261028-PLANMAP2",
    "created": "2026-10-28 23:12:47",
    "project": "quant"
+  },
+  {
+   "id": "WO-HQ-AGENDA2-20261028",
+   "desc": "会议P1a：8798收编——/api/hq/agenda 只读议题/留言+留言追加，8798转只读归档",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-HQ-AGENDA2-20261028",
+   "created": "2026-10-28 23:16:17",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -6955,6 +6964,11 @@
     {
      "id": "WO-LEGION-HEALTHCARD-20261028",
      "desc": "健康卡 task_audit 口径：应用 task_exit_audit by-design 语义（alert_found/known_baseline），failed 9→5 降假红",
+     "status": "doing"
+    },
+    {
+     "id": "WO-HQ-AGENDA2-20261028",
+     "desc": "会议P1a：8798收编——/api/hq/agenda 只读议题/留言+留言追加，8798转只读归档",
      "status": "doing"
     }
    ]

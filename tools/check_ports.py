@@ -111,7 +111,7 @@ REGISTRY = {
     # 2026-10-23 K-MDC-20261023-P8798：8798 实测 PID33388=portal/council_ops.py
     # （议会厅交互桥 v3，127.0.0.1 单线程 HTTP，落盘本仓，git 可溯）。
     # 评审门 non-strict 曾示警"未登记监听"——按 8796 同语义入册。
-    8798: "议会厅交互桥(council_ops.py)",
+    8798: "议会厅交互桥(council_ops.py·2026-10-28 收编入 8796 /api/hq/agenda，只读归档不再启动)",
     # 2026-10-23 K-MDC-20261023-REV：8101=情报交付评审实例。portal_api.py 的
     # PORT=8091 硬编码，评审实例以导入方式另起（127.0.0.1:8101，同一 Handler），
     # 用于冷启动前零停机验证 /intel-dossier 与 /api/intel-graph/dossier；

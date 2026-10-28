@@ -182,6 +182,12 @@
     </div>
     <button class="btn" style="width:100%;margin-top:8px" onclick="hqSave()">保存指挥部纪要</button>
     <button class="btn amber" style="width:100%;margin-top:6px" onclick="hqDispatch()">决议派单（仅建任务申请）</button>
+    <div class="muted" id="hqPre" style="margin-top:8px">会前议题：加载中…</div>
+    <div style="display:flex;gap:6px;margin-top:6px">
+      <input id="hqTopic" placeholder="议题" style="flex:1;background:#0F2440;color:#E6EDF5;border:0.5px solid #1E3A5F;border-radius:8px;padding:5px;min-width:0">
+      <input id="hqMsg" placeholder="会前留言" style="flex:1;background:#0F2440;color:#E6EDF5;border:0.5px solid #1E3A5F;border-radius:8px;padding:5px;min-width:0">
+      <button class="btn" onclick="hqPostMsg()">留言</button>
+    </div>
     <div class="dfoot" style="margin-top:6px">仅记录 + 建任务申请：不自动执行、不代批 L2；订单仍待田丰派工。</div>
   </div>
 </div>
@@ -437,7 +443,37 @@ async function hqDispatch() {
   } catch (e) { add('HOST', '派单失败：' + e.message, 'host'); }
 }
 
+
+// ---- 会前议题（8798 收编只读 + 留言追加）----
+async function loadHqAgenda() {
+  try {
+    const r = await fetch('/api/hq/agenda');
+    const env = await r.json();
+    if (!env.ok) throw new Error(env.error || '加载失败');
+    const t3 = (env.topics || []).slice(-3).map(x => x.topic).filter(Boolean);
+    const m2 = (env.messages || []).slice(-2).map(x => (x.seat || '?') + '：' + (x.text || ''));
+    document.getElementById('hqPre').textContent =
+      '会前议题（议会厅收编只读）：' + (t3.length ? t3.join(' / ') : '暂无') +
+      (m2.length ? ' ｜ 最新留言：' + m2.join(' ; ') : '');
+  } catch (e) { document.getElementById('hqPre').textContent = '会前议题加载失败：' + e.message; }
+}
+async function hqPostMsg() {
+  const topic = document.getElementById('hqTopic').value.trim();
+  const text = document.getElementById('hqMsg').value.trim();
+  if (!topic || !text) { add('HOST', '议题和留言都要填。', 'host'); return; }
+  try {
+    const r = await fetch('/api/hq/agenda/message', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ topic: topic, text: text, seat: 'laotian', kind: 'hq' }) });
+    const env = await r.json();
+    if (!r.ok || !env.ok) throw new Error(env.error || '留言失败');
+    add('HOST', '会前留言已记录：' + topic, 'host');
+    document.getElementById('hqMsg').value = '';
+    loadHqAgenda();
+  } catch (e) { add('HOST', '留言失败：' + e.message, 'host'); }
+}
+
 renderTable();
+setTimeout(loadHqAgenda, 400);
 setTimeout(() => { add('HOST', '点左侧名册选人上桌，或直接点快捷议题开会。'); }, 300);
 </script>
 </body>
