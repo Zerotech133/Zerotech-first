@@ -111,9 +111,11 @@ def apply_rules(plan: dict, rules: dict) -> dict:
             if not isinstance(t, dict) or t.get("checks"):
                 continue
             scopes = t.get("write_scope") or []
-            if len(scopes) == 1 and not str(scopes[0]).endswith("/"):
+            for sc in scopes[:4]:
+                if not sc or str(sc).endswith("/"):
+                    continue
                 t.setdefault("checks", []).append(
-                    {"type": "file_exists", "path": str(scopes[0])})
+                    {"type": "file_exists", "path": str(sc)})
                 meta["checks_added"] += 1
     if rules.get("unique_write_scope"):
         for i, a in enumerate(tasks):
