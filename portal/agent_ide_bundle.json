@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 35,
+  "workorders_doing": 34,
   "workorders_review": 5
  },
  "workorders": [
@@ -345,15 +345,6 @@
    "branch": "task/legion-1028093051",
    "created": "2026-10-28 09:31:00",
    "project": "general"
-  },
-  {
-   "id": "WO-CRED-HARDEN-20261028",
-   "desc": "凭据库加固（L1）：credential_store 元数据增 sha256_8/known_leaked；已知泄露旧指纹（05240a8e）写入默认拒绝（--force 可强制并标记）；保留 get/set/list 兼容；迁移现有 tushare 索引；测试。不改外部凭据。",
-   "status": "doing",
-   "owner": "DATA1",
-   "branch": "task/WO-CRED-HARDEN-20261028",
-   "created": "2026-10-28 10:49:17",
-   "project": "quant"
   },
   {
    "id": "WO-HUANGZHONG-EXEMPLAR-20261028",
@@ -2349,11 +2340,6 @@
     {
      "id": "WO-LCS1-FREEZE-20261027",
      "desc": "LCS-1 数据冻结回执（DATA1 主责，ACAD1 请求单 WO-LEGION-LCS1-FREEZE-REQ-20261027 / 请求单 2026-10-27_DATA1_LCS1冻结回执请求单_v1）：按四字段写 freeze_receipts/AC-20261017-LCS1.json（data_version/sample_in/sample_out/cost_model+sha256+frozen_at+by），同步 backtests.jsonl 四字段；数据不足则出《冻结不可用报告》不伪造；deadline 2026-10-28 12:00；验收=research_seat_ops back1 显示 READY。非目标：不改数据根结构/不跑回测/不代签。回滚：git revert merge-commit。",
-     "status": "doing"
-    },
-    {
-     "id": "WO-CRED-HARDEN-20261028",
-     "desc": "凭据库加固（L1）：credential_store 元数据增 sha256_8/known_leaked；已知泄露旧指纹（05240a8e）写入默认拒绝（--force 可强制并标记）；保留 get/set/list 兼容；迁移现有 tushare 索引；测试。不改外部凭据。",
      "status": "doing"
     }
    ]
