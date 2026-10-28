@@ -157,6 +157,71 @@ def aw_attribution() -> dict:
             "by_status": groups("coalesce(status,'-')", 8)}
 
 
+def market_fallback(since: str = "") -> dict:
+    """无 companies 行的市场方向兜底归因。
+
+    口径：companies 为空的历史行无法计算个股收益，但可用沪深300 当日涨跌判断
+    「方向对错」：bull→bench>0、bear→bench<0、neutral→|bench|<=band（默认 1.0）。
+    这不是个股 alpha，只是**判断方向的市场级替代指标**，用于在 82% 空公司行上
+    找回可评估信息。
+    """
+    import pyarrow.parquet as pq
+    import glob
+    data = ROOT / "quant_backtest" / "data"
+    if not (data / "tushare").exists():
+        data = Path(r"C:\项目\老田的AI助手\quant_backtest\data")
+    bench = {}
+    pats = [str(data / "tushare_curated" / "index_daily.parquet"),
+            str(data / "tushare" / "index_daily" / "*.parquet")]
+    for pat in pats:
+        files = sorted(glob.glob(pat))
+        if not files:
+            continue
+        try:
+            tb = pq.read_table(files[-1], columns=["ts_code", "trade_date", "pct_chg"])
+        except Exception:  # noqa: BLE001
+            continue
+        for c, d, p in zip(tb.column("ts_code").to_pylist(), tb.column("trade_date").to_pylist(),
+                           tb.column("pct_chg").to_pylist()):
+            if str(c) in ("000300.SH", "399300.SZ") and p is not None:
+                bench[str(d)] = float(p)
+        if bench:
+            break
+    if not bench:
+        return {"ok": False, "error": "bench_missing"}
+    band = 1.0
+    con = sqlite3.connect("file:%s?mode=ro" % str(AUDIT_DB).replace("\\", "/"), uri=True, timeout=30)
+    rows = con.execute(
+        "SELECT bias, trade_day FROM dec_audit WHERE companies IS NULL OR companies IN ('','[]')"
+        + (" AND ts>=?" if since else ""), ((since,) if since else ())).fetchall()
+    con.close()
+    total = correct = scored = 0
+    by_bias = {}
+    for bias, td in rows:
+        total += 1
+        if not td or td not in bench:
+            continue
+        b = bench[td]
+        if bias == "bull":
+            hit = b > 0
+        elif bias == "bear":
+            hit = b < 0
+        elif bias == "neutral":
+            hit = abs(b) <= band
+        else:
+            continue
+        scored += 1
+        correct += 1 if hit else 0
+        d = by_bias.setdefault(bias, {"n": 0, "hit": 0})
+        d["n"] += 1
+        d["hit"] += 1 if hit else 0
+    return {"ok": True, "bench_days": len(bench), "rows_total": total, "rows_scored": scored,
+            "coverage_pct": round(scored * 100.0 / total, 2) if total else 0,
+            "direction_accuracy": round(correct / scored, 4) if scored else None,
+            "by_bias": {k: {"n": v["n"], "hit_rate": round(v["hit"] / v["n"], 4)}
+                        for k, v in by_bias.items()}}
+
+
 def render_md(audit: dict, aw: dict) -> str:
     lines = ["# H6 JEV 决策归因（第一版）", "",
              "- 生成：%s" % datetime.now().astimezone().isoformat(timespec="seconds"),
@@ -207,6 +272,15 @@ def render_md(audit: dict, aw: dict) -> str:
             lines.append("| %s | %d | %s | %s | %s |" % (
                 g["key"], g["n"], g["mean"], g["mean_nonzero"], g["win_rate_nonzero"]))
         lines.append("")
+    mf = aw.get("_market_fallback") if isinstance(aw, dict) else None
+    if mf and mf.get("ok"):
+        lines += ["", "## 无 companies 行的市场方向兜底（沪深300）", "",
+                  "- 空公司行 %d 行，其中可评分 %d 行（%.1f%%）；" % (
+                      mf["rows_total"], mf["rows_scored"], mf["coverage_pct"]),
+                  "- **方向准确率 = %.1f%%**（市场级替代指标，非个股 alpha）" % (
+                      (mf.get("direction_accuracy") or 0) * 100), ""]
+        for k, v in mf["by_bias"].items():
+            lines.append("- %s：n=%d 命中率=%s" % (k, v["n"], v["hit_rate"]))
     lines += ["", "## 局限（第一版）",
               "1. dec_audit 的后验收益口径（ret/excess/hit）由 JEV 回填流程决定，覆盖不全；",
               "2. aw_decision 的 fwd_ret_5d 未扣成本，且样本以产线决策为主（选择偏差）；",
@@ -222,6 +296,12 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
     audit = audit_attribution()
     aw = aw_attribution()
+    try:
+        mf = market_fallback()
+    except Exception as e:  # noqa: BLE001
+        mf = {"ok": False, "error": str(e)[:80]}
+    if isinstance(aw, dict):
+        aw["_market_fallback"] = mf
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     day = datetime.now().strftime("%Y%m%d")
     md = REPORT_DIR / ("H6_jev_attribution_%s.md" % day)

@@ -1,0 +1,132 @@
+{
+ "ok": true,
+ "mode": "pead",
+ "window": {
+  "start": "20230802",
+  "end": "20261027",
+  "trading_days": 782,
+  "split_date": "20250711"
+ },
+ "neutral_mode": "industry_size",
+ "cost_bps_per_side": 15,
+ "cost_pct_roundtrip": 0.3,
+ "events_used": 32650,
+ "focus": "业绩预告",
+ "class_coverage": {},
+ "result": {
+  "5": {
+   "is": {
+    "n": 22260,
+    "mean": -3.2903,
+    "median": -1.6383,
+    "win_rate": 0.4058,
+    "t": -43.55,
+    "std": 11.2722
+   },
+   "oos": {
+    "n": 10390,
+    "mean": -0.5047,
+    "median": -0.4025,
+    "win_rate": 0.4719,
+    "t": -6.51,
+    "std": 7.9008
+   },
+   "pass": false,
+   "long_leg": {
+    "n": 14446,
+    "mean": -0.6774,
+    "median": -0.9242,
+    "win_rate": 0.4313,
+    "t": -10.67,
+    "std": 7.6282
+   },
+   "short_leg": {
+    "n": 18204,
+    "mean": -3.1719,
+    "median": -1.7193,
+    "win_rate": 0.4008,
+    "t": -43.09,
+    "std": 9.9305
+   },
+   "long_short_mean": 2.4945
+  },
+  "10": {
+   "is": {
+    "n": 22260,
+    "mean": -0.0014,
+    "median": -0.0227,
+    "win_rate": 0.4989,
+    "t": -0.02,
+    "std": 10.7732
+   },
+   "oos": {
+    "n": 10390,
+    "mean": 0.0998,
+    "median": -0.1133,
+    "win_rate": 0.4937,
+    "t": 1.01,
+    "std": 10.0794
+   },
+   "pass": false,
+   "long_leg": {
+    "n": 14446,
+    "mean": 0.0583,
+    "median": -0.1731,
+    "win_rate": 0.4904,
+    "t": 0.7,
+    "std": 10.0712
+   },
+   "short_leg": {
+    "n": 18204,
+    "mean": 0.611,
+    "median": 0.6415,
+    "win_rate": 0.5376,
+    "t": 8.39,
+    "std": 9.8215
+   },
+   "long_short_mean": -0.5527
+  },
+  "20": {
+   "is": {
+    "n": 22260,
+    "mean": 2.5688,
+    "median": 1.7011,
+    "win_rate": 0.5719,
+    "t": 29.65,
+    "std": 12.9248
+   },
+   "oos": {
+    "n": 10390,
+    "mean": 1.4966,
+    "median": 0.8379,
+    "win_rate": 0.5368,
+    "t": 11.12,
+    "std": 13.7179
+   },
+   "pass": true,
+   "long_leg": {
+    "n": 14446,
+    "mean": 2.2511,
+    "median": 1.1389,
+    "win_rate": 0.5468,
+    "t": 21.1,
+    "std": 12.8216
+   },
+   "short_leg": {
+    "n": 18204,
+    "mean": 2.8109,
+    "median": 2.2014,
+    "win_rate": 0.5907,
+    "t": 29.84,
+    "std": 12.7098
+   },
+   "long_short_mean": -0.5598
+  }
+ },
+ "industry_coverage": {
+  "stocks_with_industry": 5575,
+  "stocks_total": 5577,
+  "industries": 111
+ },
+ "generated_at": "2026-10-28T17:07:26+08:00"
+}
