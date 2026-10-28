@@ -162,6 +162,28 @@
     <div class="dfoot" style="margin-top:8px">会终仅保存纪要，不触发派工；订单保持待派工。交易类指令永远先过 RiskGuard + 模拟盘验证。</div>
     <button class="btn amber" style="width:100%;margin-top:10px" onclick="endMeeting()">会终 · 保存纪要</button>
   </div>
+
+  <div class="panelbox hq">
+    <h3>指挥部会议（A 组 · 五席）<span class="muted" id="hqState">选模板载入</span></h3>
+    <div class="quick">
+      <button class="qk" onclick="hqPreset('morning')">晨会 · 15min</button>
+      <button class="qk" onclick="hqPreset('operation')">作战会 · 30-45min</button>
+      <button class="qk" onclick="hqPreset('acceptance')">验收/复盘会</button>
+    </div>
+    <div class="muted" id="hqAgenda">议程：点模板载入（五席固定上桌：田丰/诸葛亮/赵云/关羽/黄忠）</div>
+    <textarea id="hqDecision" placeholder="决议（一句话，可验收；仅记录，不自动执行）" style="width:100%;height:52px;margin-top:8px;background:#0F2440;color:#E6EDF5;border:0.5px solid #1E3A5F;border-radius:8px;padding:6px;box-sizing:border-box"></textarea>
+    <div style="display:flex;gap:6px;margin-top:6px">
+      <select id="hqOwner" style="flex:1;background:#0F2440;color:#E6EDF5;border:0.5px solid #1E3A5F;border-radius:8px;padding:5px">
+        <option value="A0">田丰</option><option value="AI1">诸葛亮</option>
+        <option value="ZHAOYUN">赵云</option><option value="GUANYU">关羽</option>
+        <option value="HUANGZHONG">黄忠</option>
+      </select>
+      <input id="hqDue" placeholder="截止 2026-11-01" style="flex:1;background:#0F2440;color:#E6EDF5;border:0.5px solid #1E3A5F;border-radius:8px;padding:5px">
+    </div>
+    <button class="btn" style="width:100%;margin-top:8px" onclick="hqSave()">保存指挥部纪要</button>
+    <button class="btn amber" style="width:100%;margin-top:6px" onclick="hqDispatch()">决议派单（仅建任务申请）</button>
+    <div class="dfoot" style="margin-top:6px">仅记录 + 建任务申请：不自动执行、不代批 L2；订单仍待田丰派工。</div>
+  </div>
 </div>
 
 <script>
@@ -254,8 +276,11 @@ const AGENTS = {
   HERMES_UI:{nm:'邓芝桥', av:'邓', c:'c-g', md:'8787', grp:'ops', line:'通讯面：会议纪要可实时推飞书卡。' },
   DEV1:{ nm:'曹操', av:'曹', c:'c-b', md:'9b', grp:'dev', line:'研发面：凭单实施，无单不写码。工期一天内。' },
   DEV2:{ nm:'蒸馏席', av:'蒸', c:'c-b', md:'35b', grp:'dev', line:'数据面：可先离线蒸馏一版判据样本再上。' },
+  ZHAOYUN:{ nm:'赵云·治理', av:'云', c:'c-y', md:'glm-5.3', grp:'zhong', line:'治理面：审计/审批/记忆与评估飞轮，L2 不代批。' },
+  GUANYU:{ nm:'关羽·整治', av:'羽', c:'c-b', md:'deepseek-flash', grp:'zhong', line:'执行面：代码审计与系统整治，先根因后批量修复，带证据包。' },
+  HUANGZHONG:{ nm:'黄忠·验收', av:'忠', c:'c-t', md:'glm-5.3', grp:'zhong', line:'验收面：只验不改、只退不批；基线/红队不过即 REJECT，回滚点必须写。' },
 };
-const GROUPS = { zhong:'pick-zhong', quant:'pick-quant', risk:'pick-risk', acad:'pick-acad', intel:'pick-intel', ops:'pick-ops', dev:'pick-dev' };
+const GROUPS = { zhong:'pick-zhong, quant:'pick-quant', risk:'pick-risk', acad:'pick-acad', intel:'pick-intel', ops:'pick-ops', dev:'pick-dev' };
 let picked = [];
 
 Object.entries(AGENTS).forEach(([id, a]) => {
@@ -353,6 +378,65 @@ async function endMeeting() {
     button.disabled = false;
   }
 }
+
+// ---- 指挥部会议 P0：五席预设 / 决议 / 派单 ----
+let HQ_TYPE = 'morning';
+let HQ_ID = '';
+const HQ_TITLE = { morning:'晨会', operation:'作战会', acceptance:'验收/复盘会' };
+const HQ_AGENDA = {
+  morning: [{item:'昨日决议跟进',owner:'A0',minutes:3},{item:'今日三优先',owner:'A0',minutes:4},
+            {item:'阻塞与风险',owner:'GUANYU',minutes:3},{item:'黄忠验收闸口',owner:'HUANGZHONG',minutes:3},
+            {item:'老田终裁',owner:'LAOTIAN',minutes:2}],
+  operation: [{item:'诸葛亮败因卡',owner:'AI1',minutes:5},{item:'各席证据陈述',owner:'ALL',minutes:12},
+              {item:'黄忠验收判据',owner:'HUANGZHONG',minutes:4},{item:'决议草案',owner:'A0',minutes:4},
+              {item:'老田终裁',owner:'LAOTIAN',minutes:3}],
+  acceptance: [{item:'基线/红队证据',owner:'HUANGZHONG',minutes:5},{item:'PASS/REJECT',owner:'HUANGZHONG',minutes:5},
+               {item:'拒绝理由与回滚点',owner:'GUANYU',minutes:5},{item:'赵云归档判例',owner:'ZHAOYUN',minutes:3},
+               {item:'改进项',owner:'A0',minutes:3}]
+};
+function hqPreset(kind) {
+  HQ_TYPE = kind;
+  picked = ['A0','AI1','ZHAOYUN','GUANYU','HUANGZHONG'];
+  document.querySelectorAll('.pa').forEach(x => x.classList.remove('on'));
+  picked.forEach(id => { const el = document.getElementById('pk-' + id); if (el) el.classList.add('on'); });
+  renderTable();
+  document.getElementById('hqState').textContent = HQ_TITLE[kind];
+  document.getElementById('hqAgenda').textContent = '议程：' + HQ_AGENDA[kind].map(a => a.item).join(' → ');
+  add('HOST', '【指挥部' + HQ_TITLE[kind] + '】' + HQ_AGENDA[kind].map((a, i) => (i + 1) + '.' + a.item).join(' '), 'host');
+}
+async function hqSave() {
+  try {
+    const dec = document.getElementById('hqDecision').value.trim();
+    const body = {
+      type: HQ_TYPE,
+      attendees: picked.slice(),
+      agenda: HQ_AGENDA[HQ_TYPE],
+      transcript: MINUTES.slice(),
+      decisions: dec ? [{ decision: dec, owner: document.getElementById('hqOwner').value,
+                          due: document.getElementById('hqDue').value.trim(),
+                          evidence: HQ_ID ? ['meeting:' + HQ_ID] : [] }] : [],
+    };
+    const r = await fetch('/api/hq/meeting/save', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+    const env = await r.json();
+    if (!r.ok || !env.ok) throw new Error(env.error || '保存失败');
+    HQ_ID = env.meeting_id;
+    add('HOST', '指挥部纪要已存：' + HQ_ID + '（决议 ' + (dec ? '1' : '0') + ' 条；仅记录，不自动执行、不代批 L2）', 'host');
+  } catch (e) { add('HOST', '指挥部纪要保存失败：' + e.message, 'host'); }
+}
+async function hqDispatch() {
+  try {
+    const dec = document.getElementById('hqDecision').value.trim();
+    if (!dec) { add('HOST', '先填写决议再派单。', 'host'); return; }
+    if (!HQ_ID) { await hqSave(); }
+    if (!HQ_ID) { return; }
+    const r = await fetch('/api/hq/meeting/dispatch', { method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ meeting_id: HQ_ID, title: dec, order_type: 'work', owner: document.getElementById('hqOwner').value }) });
+    const env = await r.json();
+    if (!r.ok || !env.ok) throw new Error(env.error || '派单失败');
+    add('HOST', '已生成任务申请（待田丰派工，未执行）：' + JSON.stringify(env.dispatch), 'host');
+  } catch (e) { add('HOST', '派单失败：' + e.message, 'host'); }
+}
+
 renderTable();
 setTimeout(() => { add('HOST', '点左侧名册选人上桌，或直接点快捷议题开会。'); }, 300);
 </script>
