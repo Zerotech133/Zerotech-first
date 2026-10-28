@@ -16,6 +16,9 @@ import json
 import time
 from pathlib import Path
 
+from dev_legion_aggregate import (build_metrics, build_redlines,
+                                  build_wip)
+
 ROOT = Path(__file__).resolve().parents[1]
 ORG = ROOT / "agent_platform" / "registry" / "org.json"
 TASKS = ROOT / ".worktrees" / "tasks.json"
@@ -67,19 +70,8 @@ def _seat(p):
 
 
 def _wip(tasks, seat_ids):
-    out = []
-    for sid in seat_ids:
-        rows = []
-        for tid, t in (tasks or {}).items():
-            if not isinstance(t, dict) or t.get("owner") != sid:
-                continue
-            if t.get("status") not in ("doing", "review"):
-                continue
-            rows.append({"id": tid, "status": t.get("status", ""),
-                         "desc": (t.get("desc") or "")[:120]})
-        if rows:
-            out.append({"owner": sid, "tasks": sorted(rows, key=lambda r: r["id"])})
-    return out
+    """委托 LS-04 聚合层（保留旧函数名兼容）。"""
+    return build_wip(tasks, seat_ids)
 
 
 def _e3(trigger):
@@ -120,31 +112,8 @@ def build_payload(root=ROOT):
                            .read_text(encoding="utf-8-sig"))
     except Exception as e:  # noqa: BLE001
         errors.append("daily_metrics_unavailable: %s" % type(e).__name__)
-    dm = (daily or {}).get("metrics") or {}
-    tagged = dm.get("dev_dept_tagged") or 0
-    covered = dm.get("dev_dept_with_acceptance") or 0
-    ver_rate = round(covered / tagged, 4) if tagged else None
-    e3_str, e3_ok, e3_total = _e3(dm.get("e3_trigger"))
-    metrics = {
-        "window_days": (daily or {}).get("window_days", 7),
-        "dev_tasks_recent": dm.get("dev_tasks_recent"),
-        "dev_merged_recent": dm.get("dev_merged_recent"),
-        "dev_capture_share_recent": dm.get("dev_capture_share_recent"),
-        "owner_legal_rate_recent": dm.get("owner_legal_rate_recent"),
-        "verification_rate": ver_rate,
-        "e3_trigger": e3_str,
-        "dev_leadtime_p50_min": dm.get("dev_leadtime_p50_min"),
-    }
-    rate = metrics["owner_legal_rate_recent"]
-    redlines = [
-        {"id": "owner_legal_rate",
-         "value": rate,
-         "ok": (None if rate is None else rate >= 0.85)},
-        {"id": "e3_trigger", "value": e3_str,
-         "ok": (None if not e3_total else e3_ok == e3_total)},
-        {"id": "merge_approval_coverage", "value": None, "ok": None},
-        {"id": "self_review", "value": None, "ok": None},
-    ]
+    metrics = build_metrics(daily)
+    redlines = build_redlines(metrics)
     lead = dev.get("lead", "")
     lead_name = ""
     for _p in profiles:
