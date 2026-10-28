@@ -259,6 +259,10 @@ def run_task(mission_id: str, task_id: str, dry_run: bool = False) -> dict:
         return {"ok": False, "error": "task_not_found"}
     task = ctx["plan_task"] or ctx["task"]
     scopes = task.get("write_scope") or []
+    if task.get("worker_eligible") is False:
+        return {"ok": False, "error": "worker_not_eligible",
+                "reason": "task scope outside worker safe roots", "scopes": scopes,
+                "allowed_roots": list(SAFE_ROOTS)}
     bad = [s for s in scopes if not _safe_scope(s)]
     if bad:
         return {"ok": False, "error": "unsafe_scope", "bad": bad,
@@ -340,11 +344,16 @@ def run_task(mission_id: str, task_id: str, dry_run: bool = False) -> dict:
 
 
 def poll(mission_id: str, limit: int = 1, dry_run: bool = False) -> dict:
-    state = _load(MISSIONS / mission_id / "state.json") or {}
+    mdir = MISSIONS / mission_id
+    state = _load(mdir / "state.json") or {}
+    plan = _load(mdir / "plan.json") or {}
+    pmap = {t.get("id"): t for t in (plan.get("tasks") or []) if isinstance(t, dict)}
     out = []
     for tid, t in (state.get("tasks") or {}).items():
         if len(out) >= limit:
             break
+        if (pmap.get(tid) or {}).get("worker_eligible") is False:
+            continue
         if t.get("status") in ("doing", "queued") and t.get("ticket_id"):
             out.append(run_task(mission_id, tid, dry_run))
     return {"ok": True, "mission_id": mission_id, "results": out}

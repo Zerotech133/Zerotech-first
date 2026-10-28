@@ -95,6 +95,24 @@ def _doc_files(doc: str) -> dict:
     return {"frontend": frontend, "backend": backend, "all": all_files}
 
 
+WORKER_SAFE_ROOTS = ("agent_platform/legion_command/static/", "portal/", "deliverables/", "docs/")
+
+
+def _worker_eligible(task: dict) -> bool:
+    """任务所有 write_scope 都在 Worker 安全根内才允许自动接单。"""
+    scopes = [str(s or "").replace("\\", "/").lstrip("./") for s in (task.get("write_scope") or [])]
+    if not scopes:
+        return False
+    return all(any(s.startswith(root) for root in WORKER_SAFE_ROOTS) for s in scopes)
+
+
+def _annotate_worker(tasks: list) -> list:
+    for t in tasks:
+        if isinstance(t, dict):
+            t["worker_eligible"] = _worker_eligible(t)
+    return tasks
+
+
 def _allowed_owners() -> list:
     try:
         d = json.loads(ORG.read_text(encoding="utf-8"))
@@ -160,9 +178,7 @@ def _fallback_plan(doc: str, name: str = "") -> dict:
     accept_path = "deliverables/acceptance/%s.md" % slug
     backend_scope = files["backend"][:4] or ["agent_platform/", "tools/"]
     frontend_scope = files["frontend"][:2] or ["portal/"]
-    return {
-        "source": "fallback",
-        "tasks": [
+    tasks = [
             {"id": "T1", "title": "需求澄清与架构方案", "owner": "ARCH1", "deps": [],
              "write_scope": [spec_path],
              "acceptance": ["spec/plan 文档完成", "接口与数据边界明确"],
@@ -177,8 +193,8 @@ def _fallback_plan(doc: str, name: str = "") -> dict:
              "write_scope": [accept_path],
              "acceptance": ["测试全绿", "验收证据落盘"], "model": "auto",
              "description": "验证并出验收证据；产出精确验收文档"},
-        ],
-    }
+    ]
+    return {"source": "fallback", "tasks": _annotate_worker(tasks)}
 
 
 def validate_plan(plan: dict) -> list:
@@ -275,6 +291,7 @@ def plan(name: str, doc: str, use_llm: bool = True,
         "doc_path": doc_path,
         "tasks": raw["tasks"],
     }
+    _annotate_worker(result["tasks"])
     if apply_planner_rules:
         try:
             from legion_command import planner_rules
