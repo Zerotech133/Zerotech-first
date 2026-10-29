@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>数据仓 · 来源治理与挖掘 · 零界</title>
+<title>数据仓驾驶舱 · 零界</title>
 <link rel="stylesheet" href="/static/nav.css">
 <style>
 :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2333;--bd:#2d333b;--fg:#e6edf3;--dim:#8b949e;
@@ -11,49 +11,87 @@
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.6 "Microsoft YaHei",system-ui,sans-serif;padding:24px}
 h1{font-size:22px;margin:0 0 4px} h1 small{color:var(--dim);font-size:13px;font-weight:normal}
-.sub{color:var(--dim);font-size:12px;margin-bottom:18px}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:18px}
-.card{background:var(--panel);border:1px solid var(--bd);border-radius:8px;padding:12px 14px}
+.sub{color:var(--dim);font-size:12px;margin-bottom:14px}
+.topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.btn{background:var(--panel);border:1px solid var(--bd);color:var(--acc);border-radius:7px;padding:6px 12px;cursor:pointer;font-size:13px}
+.btn:hover{background:var(--panel2)}
+.btn.pri{background:#1f6feb;border-color:#1f6feb;color:#fff}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:10px;margin:14px 0}
+.card{background:var(--panel);border:1px solid var(--bd);border-radius:10px;padding:12px 14px;cursor:pointer;transition:border-color .15s,transform .15s;position:relative}
+.card:hover{border-color:var(--acc);transform:translateY(-1px)}
 .card .k{color:var(--dim);font-size:12px}.card .v{font-size:24px;font-weight:700;margin-top:2px}
-.card .v.blue{color:var(--acc)}.card .v.green{color:var(--ok)}.card .v.warn{color:var(--warn)}.card .v.red{color:var(--bad)}
+.card .v.blue{color:var(--acc)}.card .v.green{color:var(--ok)}.card .v.warn{color:var(--warn)}
+.card .v.red{color:var(--bad)}.card .v.purple{color:var(--purple)}
 .card .s{color:var(--dim);font-size:11px;margin-top:2px}
+.card .dd{position:absolute;right:10px;top:10px;color:var(--dim);font-size:12px}
+.strip{background:var(--panel);border:1px solid var(--bd);border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:13px}
+.strip b{color:var(--acc)}
+.chip{display:inline-block;background:var(--panel2);border:1px solid var(--bd);border-radius:12px;padding:2px 10px;margin:3px 4px 3px 0;font-size:12px;cursor:pointer}
+.chip:hover{border-color:var(--acc)}
 .tabs{display:flex;gap:8px;margin:6px 0 14px;flex-wrap:wrap}
-.tabs button{background:var(--panel);border:1px solid var(--bd);color:var(--fg);padding:7px 18px;
-  border-radius:8px;cursor:pointer;font-size:14px;font-weight:600}
+.tabs button{background:var(--panel);border:1px solid var(--bd);color:var(--fg);padding:7px 18px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600}
 .tabs button.on{background:#1f6feb;border-color:#1f6feb;color:#fff}
 table{width:100%;border-collapse:collapse;background:var(--panel);border-radius:8px;overflow:hidden}
 th,td{padding:8px 10px;border-bottom:1px solid var(--bd);text-align:left;font-size:13px;vertical-align:top}
 th{background:var(--panel2);color:var(--dim);font-weight:600;white-space:nowrap}
 tr:last-child td{border-bottom:none}
+tr.clickable{cursor:pointer}tr.clickable:hover td{background:var(--panel2)}
 .badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;font-weight:600;white-space:nowrap}
-.b-done{background:#12261e;color:var(--ok)} .b-in_progress{background:#122642;color:var(--acc)}
-.b-mining{background:#2a2410;color:var(--warn)} .b-pending{background:#2a1512;color:#ffa198}
-.b-backtested{background:#12261e;color:var(--ok)} .b-rejected{background:#2a1512;color:#ffa198}
+.b-done{background:#12261e;color:var(--ok)}.b-in_progress{background:#122642;color:var(--acc)}
+.b-mining{background:#2a2410;color:var(--warn)}.b-pending{background:#2a1512;color:#ffa198}
+.b-backtested{background:#12261e;color:var(--ok)}.b-rejected{background:#2a1512;color:#ffa198}
 .b-idea{background:#2a2410;color:var(--warn)}
-.filters{display:flex;gap:8px;margin:0 0 10px;flex-wrap:wrap;align-items:center}
-.filters input,.filters select{background:var(--panel);border:1px solid var(--bd);color:var(--fg);
-  border-radius:7px;padding:6px 10px;font-size:13px}
-.muted{color:var(--dim)} .num{font-variant-numeric:tabular-nums;text-align:right}
-.foot{margin-top:22px;color:var(--dim);font-size:12px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
-.btn{background:var(--panel);border:1px solid var(--bd);color:var(--acc);border-radius:7px;padding:6px 12px;cursor:pointer;font-size:13px}
-.btn:hover{background:var(--panel2)}
+.muted{color:var(--dim)}.num{font-variant-numeric:tabular-nums;text-align:right}
 .mono{font-family:Consolas,monospace;font-size:12px;color:#9aa4b2}
-.err{background:#2a1512;border:1px solid #67221c;color:#ffa198;border-radius:8px;padding:10px 14px;margin:10px 0}
+.filters{display:flex;gap:8px;margin:0 0 10px;flex-wrap:wrap;align-items:center}
+.filters input,.filters select{background:var(--panel);border:1px solid var(--bd);color:var(--fg);border-radius:7px;padding:6px 10px;font-size:13px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:1000px){.grid2{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--bd);border-radius:10px;padding:14px}
+.panel h3{margin:0 0 10px;font-size:14px;color:var(--acc)}
+/* timeline */
+.tl{position:relative;margin:8px 0 4px;padding-left:18px}
+.tl:before{content:'';position:absolute;left:6px;top:4px;bottom:4px;width:2px;background:var(--bd)}
+.tl-item{position:relative;margin:0 0 12px;cursor:pointer}
+.tl-item:hover .tl-t{color:var(--acc)}
+.tl-item:before{content:'';position:absolute;left:-15px;top:5px;width:9px;height:9px;border-radius:50%;background:var(--acc);border:2px solid var(--bg)}
+.tl-item.done:before{background:var(--ok)}.tl-item.pending:before{background:var(--warn)}.tl-item.in_progress:before{background:var(--acc)}
+.tl-date{color:var(--dim);font-size:11px}.tl-t{font-weight:600;font-size:13px}
+.tl-n{color:var(--dim);font-size:12px}
+/* modal */
+#mask{position:fixed;inset:0;background:rgba(1,4,9,.65);display:none;z-index:80}
+#mask.on{display:block}
+#modal{position:fixed;top:8%;left:50%;transform:translateX(-50%);width:min(920px,94vw);max-height:82vh;overflow:auto;
+  background:var(--panel);border:1px solid var(--bd);border-radius:12px;padding:18px;z-index:90;display:none;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+#modal.on{display:block}
+#modal h3{margin:0 0 4px;color:var(--acc);font-size:17px}
+#modal .close{position:absolute;top:10px;right:14px;cursor:pointer;color:var(--dim);font-size:20px;background:none;border:none}
+.foot{margin-top:20px;color:var(--dim);font-size:12px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
 .hidden{display:none}
+.err{background:#2a1512;border:1px solid #67221c;color:#ffa198;border-radius:8px;padding:10px 14px;margin:10px 0}
 </style>
 <script src="/static/nav.js" defer></script><meta name=wb-shell content=adopted></head>
 <body>
-<h1>🗄 数据仓 <small>来源治理 · 治理中 · 挖掘中 · 运维健康</small></h1>
-<div class="sub" id="sub">加载中…</div>
+<div class="topbar">
+  <div><h1>🗄 数据仓驾驶舱 <small>来源治理 · 今日动态 · 挖掘时间线 · 治理路线</small></h1>
+  <div class="sub" id="sub">加载中…</div></div>
+  <div class="btns">
+    <button class="btn" onclick="load()">刷新</button>
+    <button class="btn pri" onclick="dlJSON()">下载快照 JSON</button>
+    <button class="btn" onclick="dlCSV('sources')">来源 CSV</button>
+    <button class="btn" onclick="dlCSV('hypotheses')">台账 CSV</button>
+  </div>
+</div>
 <div id="err" class="err hidden"></div>
 
 <div class="cards" id="cards"></div>
+<div class="strip" id="todayStrip">今日动态加载中…</div>
 
 <div class="tabs" id="tabs">
   <button data-tab="sources" class="on">来源治理</button>
-  <button data-tab="governance">治理进度</button>
-  <button data-tab="mining">挖掘台账</button>
-  <button data-tab="reports">研究产出</button>
+  <button data-tab="roadmap">治理路线</button>
+  <button data-tab="mining">挖掘时间线</button>
   <button data-tab="ops">运维健康</button>
 </div>
 
@@ -63,111 +101,208 @@ tr:last-child td{border-bottom:none}
     <select id="fStatus"><option value="">全部状态</option>
       <option value="done">✅ 已治理</option><option value="in_progress">🔧 治理中</option>
       <option value="mining">⛏ 待挖掘</option><option value="pending">⏳ 待办</option></select>
-    <input id="fSearch" placeholder="搜索名称/备注…" style="min-width:220px">
+    <input id="fSearch" placeholder="搜索名称/备注…" style="min-width:200px">
+    <span class="muted" id="srcCount"></span>
   </div>
-  <table><thead><tr><th>来源</th><th>层</th><th>状态</th><th>说明</th><th class="num">文件数</th>
-    <th class="num">体积 MB</th><th>登记(catalog)</th><th>manifest</th></tr></thead><tbody id="tbSources"></tbody></table>
+  <table><thead><tr><th>来源</th><th>层</th><th>状态</th><th>说明</th><th class="num">文件/体积</th>
+    <th>数据范围</th><th>最近更新</th><th>契约</th><th>关联假设</th></tr></thead><tbody id="tbSources"></tbody></table>
 </div>
 
-<div id="tab-governance" class="hidden">
-  <table><thead><tr><th>治理项</th><th>状态</th><th>说明</th></tr></thead><tbody id="tbGov"></tbody></table>
+<div id="tab-roadmap" class="hidden">
+  <div class="grid2">
+    <div class="panel"><h3>治理进度（点击看详情）</h3><div id="govList"></div></div>
+    <div class="panel"><h3>路线图 / 时间表（点击看详情）</h3><div class="tl" id="roadmap"></div></div>
+  </div>
 </div>
 
 <div id="tab-mining" class="hidden">
-  <table><thead><tr><th>ID</th><th>状态</th><th>假设</th><th>结论</th><th>证据</th></tr></thead><tbody id="tbHyp"></tbody></table>
-</div>
-
-<div id="tab-reports" class="hidden">
-  <table><thead><tr><th>报告</th><th class="num">大小 KB</th><th>时间</th></tr></thead><tbody id="tbRep"></tbody></table>
+  <div class="grid2">
+    <div class="panel"><h3>假设时间线（按创建/更新，点击看详情）</h3><div class="tl" id="hypTl"></div></div>
+    <div class="panel"><h3>研究产出（最近 40 份）</h3><div id="repList" style="max-height:520px;overflow:auto"></div></div>
+  </div>
+  <h3 style="font-size:14px;color:var(--acc);margin:18px 0 8px">台账明细</h3>
+  <table><thead><tr><th>ID</th><th>状态</th><th>假设</th><th>结论</th><th>更新时间</th><th>证据</th></tr></thead><tbody id="tbHyp"></tbody></table>
 </div>
 
 <div id="tab-ops" class="hidden">
-  <div id="opsBox"></div>
+  <div class="grid2">
+    <div class="panel"><h3>备份（BackupDaily）</h3><div id="opsBackup"></div></div>
+    <div class="panel"><h3>运行健康</h3><div id="opsHealth"></div></div>
+  </div>
 </div>
 
-<div class="foot"><span id="gen"></span><span><button class="btn" onclick="load()">刷新</button></span></div>
+<div class="foot"><span id="gen"></span><span class="muted">数据源：catalog v16 / registry / hypotheses.db / tasks.json / backups / approvals.jsonl</span></div>
+
+<div id="mask" onclick="closeModal()"></div>
+<div id="modal"><button class="close" onclick="closeModal()">×</button><div id="modalBody"></div></div>
 
 <script>
 const ST={done:['b-done','✅ 已治理'],in_progress:['b-in_progress','🔧 治理中'],
   mining:['b-mining','⛏ 待挖掘'],pending:['b-pending','⏳ 待办']};
+const GS={done:['b-done','✅ 完成'],in_progress:['b-in_progress','🔧 进行中'],pending:['b-pending','⏳ 待办']};
+const HS={backtested:['b-backtested','✅ backtested'],rejected:['b-rejected','❌ rejected'],
+  idea:['b-idea','💡 idea'],in_progress:['b-in_progress','🔧 in_progress'],validated:['b-backtested','✅ validated']};
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
-function badge(s){const x=ST[s]||['b-in_progress',esc(s)];return '<span class="badge '+x[0]+'">'+x[1]+'</span>';}
+function badge(st,map){const x=(map||ST)[st]||['b-in_progress',esc(st)];return '<span class="badge '+x[0]+'">'+x[1]+'</span>';}
 let SNAP=null;
 async function load(){
   try{
     const r=await fetch('/static/dw_snapshot.json?ts='+Date.now(),{cache:'no-store'});
     if(!r.ok) throw new Error('HTTP '+r.status);
-    SNAP=await r.json(); render(); document.getElementById('err').classList.add('hidden');
+    SNAP=await r.json(); render();
+    document.getElementById('err').classList.add('hidden');
   }catch(e){
-    const el=document.getElementById('err'); el.classList.remove('hidden');
-    el.textContent='快照加载失败：'+e.message+'（先生成 tools/dw_dashboard.py 快照）';
+    const el=document.getElementById('err');el.classList.remove('hidden');
+    el.textContent='快照加载失败：'+e.message+'（先运行 python tools/dw_dashboard.py）';
   }
 }
-function render(){
-  const c=SNAP.catalog;
-  const hCounts={}; (SNAP.mining.hypotheses||[]).forEach(x=>hCounts[x.status]=(hCounts[x.status]||0)+1);
-  const src=SNAP.sources||[];
-  const cnt={done:0,in_progress:0,mining:0,pending:0}; src.forEach(s=>cnt[s.status]=(cnt[s.status]||0)+1);
-  document.getElementById('sub').textContent='catalog v'+c.version+' · '+c.tables+' 表 · registry '+c.registry.physical+' 物理/'+c.registry.display+' 展示 · 契约 '+c.contracts+' 份 · 快照 '+SNAP.generated_at;
-  const o=SNAP.ops||{};
-  document.getElementById('cards').innerHTML=[
-    ['catalog 表数',c.tables,'blue','v'+c.version+' · registry '+c.registry.physical],
-    ['数据源',src.length,'blue','已治理 '+cnt.done+' / 治理中 '+cnt.in_progress+' / 待挖掘 '+cnt.mining],
-    ['契约 ODCS',c.contracts,'warn','覆盖研究用表扩展中'],
-    ['资格未知',c.qualification_unknown,'warn','evidence/qualify 覆盖待扩'],
-    ['研究台账',(SNAP.mining.hypotheses||[]).length,'green','backtested '+(hCounts.backtested||0)+' / rejected '+(hCounts.rejected||0)+' / idea '+(hCounts.idea||0)],
-    ['最新备份',(o.backup||{}).latest||'—','green',((o.backup||{}).products||[]).length+' 产物'],
-    ['审批台账',(o.approvals||{}).count||0,'purple','S2 approvals.jsonl'],
-    ['Supervisor',((o.supervisor||{}).red||[]).length?((o.supervisor||{}).red||[]).join(','):'全绿','green','L1/L3/L4 dry-run']
-  ].map(x=>'<div class="card"><div class="k">'+esc(x[0])+'</div><div class="v '+x[2]+'">'+esc(x[1])+'</div><div class="s">'+esc(x[3]||'')+'</div></div>').join('');
-  const layers=[...new Set(src.map(s=>s.layer))].sort();
-  const sel=document.getElementById('fLayer');
-  if(sel.options.length===1) layers.forEach(l=>sel.add(new Option(l,l)));
-  const fs=document.getElementById('fSearch').value.trim().toLowerCase();
-  const fl=sel.value, fst=document.getElementById('fStatus').value;
-  const rows=src.filter(s=>(!fl||s.layer===fl)&&(!fst||s.status===fst)&&
-    (!fs||(s.name+' '+s.label+' '+s.note).toLowerCase().includes(fs)));
-  document.getElementById('tbSources').innerHTML=rows.map(s=>'<tr><td><b>'+esc(s.label)+'</b><div class="mono">'+esc(s.name)+'</div></td>'+
-    '<td>'+esc(s.layer)+'</td><td>'+badge(s.status)+'</td><td class="muted">'+esc(s.note)+'</td>'+
-    '<td class="num">'+(s.files==null?'—':s.files)+'</td><td class="num">'+(s.size_mb==null?'—':s.size_mb)+'</td>'+
-    '<td>'+(s.registered?'✅':'❌')+'</td><td class="mono">'+esc(s.manifest)+'</td></tr>').join('');
-  const GST={done:['b-done','✅ 完成'],in_progress:['b-in_progress','🔧 进行中'],pending:['b-pending','⏳ 待办']};
-  document.getElementById('tbGov').innerHTML=(SNAP.governance||[]).map(g=>{
-    const x=GST[g.status]||['b-in_progress',esc(g.status)];
-    return '<tr><td><b>'+esc(g.item)+'</b></td><td><span class="badge '+x[0]+'">'+x[1]+'</span></td><td class="muted">'+esc(g.note)+'</td></tr>';
-  }).join('');
-  const HS={backtested:['b-backtested','✅ backtested'],rejected:['b-rejected','❌ rejected'],
-    idea:['b-idea','💡 idea'],in_progress:['b-in_progress','🔧 in_progress'],validated:['b-backtested','✅ validated']};
-  document.getElementById('tbHyp').innerHTML=(SNAP.mining.hypotheses||[]).map(h=>{
-    const x=HS[h.status]||['b-in_progress',esc(h.status)];
-    return '<tr><td><b>'+esc(h.id)+'</b></td><td><span class="badge '+x[0]+'">'+x[1]+'</span></td>'+
-      '<td>'+esc(h.title)+(h.question?'<div class="muted">'+esc(h.question)+'</div>':'')+'</td>'+
-      '<td class="muted">'+esc(h.conclusion||'—')+'</td><td class="mono">'+esc(h.evidence||'—')+'</td></tr>';
-  }).join('');
-  document.getElementById('tbRep').innerHTML=(SNAP.mining.reports||[]).map(r=>'<tr><td class="mono">'+esc(r.name)+'</td>'+
-    '<td class="num">'+r.size_kb+'</td><td class="muted">'+esc(r.mtime)+'</td></tr>').join('');
-  const b=o.backup||{};
-  document.getElementById('opsBox').innerHTML=
-    '<h2 style="font-size:15px;color:var(--acc);border-bottom:1px solid var(--bd);padding-bottom:6px;margin:10px 0">备份（BackupDaily）</h2>'+
-    '<table><thead><tr><th>代</th><th>产物</th><th class="num">MB</th></tr></thead><tbody>'+
-    '<tr><td>'+esc(b.latest||'—')+'</td><td>'+esc((b.products||[]).map(x=>x.name).join(' / ')||'—')+'</td>'+
-    '<td class="num">'+esc((b.products||[]).map(x=>x.mb).join(' / ')||'—')+'</td></tr></tbody></table>'+
-    '<h2 style="font-size:15px;color:var(--acc);border-bottom:1px solid var(--bd);padding-bottom:6px;margin:18px 0 10px">运行健康</h2>'+
-    '<table><thead><tr><th>检查</th><th>结果</th></tr></thead><tbody>'+
-    '<tr><td>Supervisor L1/L3/L4</td><td>'+((o.supervisor||{}).red||[]).length?'<span class="badge b-pending">red</span>':'<span class="badge b-done">全绿</span>'+'</td></tr>'+
-    '<tr><td>最新审批</td><td class="mono">'+esc(JSON.stringify(((o.approvals||{}).latest||[]).slice(-1)[0]||{}).slice(0,180))+'</td></tr>'+
-    '</tbody></table>';
-  document.getElementById('gen').textContent='快照生成：'+SNAP.generated_at+'（数据源 tools/dw_dashboard.py）';
+/* ===== KPI cards 可下钻 ===== */
+const CARD_DEFS=[
+  ['sources_total','数据来源',d=>String(d.cockpit.sources_total),'blue',d=>'已治理 '+d.cockpit.sources_done+' / 治理中 '+d.cockpit.sources_in_progress+' / 待挖掘 '+d.cockpit.sources_mining],
+  ['new_today','今日新增',d=>String(d.cockpit.new_today),'green',d=>(d.new_today_sources||[]).map(s=>s.label).slice(0,3).join('、')||'暂无新增'],
+  ['pilot_today','今日试点',d=>String(d.cockpit.pilot_today),'purple',d=>'doing/review '+d.cockpit.pilot_today+' · 今日合并 '+d.cockpit.merged_today],
+  ['coverage_pct','治理覆盖率',d=>d.cockpit.coverage_pct+'%','green',d=>'done '+d.cockpit.sources_done+'/'+d.cockpit.sources_total],
+  ['hypotheses','挖掘台账',d=>String(d.cockpit.hypotheses),'blue',d=>'backtested '+(d.cockpit.hypotheses_by_status.backtested||0)+' / rejected '+(d.cockpit.hypotheses_by_status.rejected||0)+' / idea '+(d.cockpit.hypotheses_by_status.idea||0)],
+  ['reports_today','今日报告',d=>String(d.cockpit.reports_today),'warn',d=>'累计 '+d.cockpit.reports_total+' 份'],
+  ['backup_latest','最新备份',d=>(d.cockpit.backup_latest||'—').slice(5),'green',d=>'距今 '+(d.cockpit.backup_age_hours||0)+' 小时'],
+  ['approvals_today','今日审批',d=>String(d.cockpit.approvals_today),'purple',d=>'累计 '+d.ops.approvals.count+' 条'],
+  ['risks','风险项',d=>String(d.cockpit.risks.length),'red',d=>'未完成治理项'],
+  ['supervisor','Supervisor',d=>(d.cockpit.supervisor_red||[]).length?d.cockpit.supervisor_red.join(','):'全绿','green',d=>'L1/L3/L4 dry-run']
+];
+function renderCards(){
+  const cards=CARD_DEFS.map(([key,label,fmt,color,sub])=>
+    '<div class="card" data-drill="'+key+'"><div class="dd">▸</div><div class="k">'+label+'</div>'+
+    '<div class="v '+color+'">'+esc(fmt(SNAP))+'</div><div class="s">'+esc(sub(SNAP))+'</div></div>').join('');
+  document.getElementById('cards').innerHTML=cards;
+  document.querySelectorAll('.card[data-drill]').forEach(c=>c.onclick=()=>drillCard(c.dataset.drill));
 }
+function drillCard(key){
+  const c=SNAP.cockpit;
+  let title='',body='';
+  if(key==='sources_total'){title='数据来源全清单';body=sourcesTable(SNAP.sources);}
+  else if(key==='new_today'){title='今日新增数据源';body=(SNAP.new_today_sources||[]).length?sourcesTable(SNAP.new_today_sources):'<div class="muted">今日无新增来源（目录 mtime 判定）</div>';}
+  else if(key==='pilot_today'){title='今日试点/进行中任务';body=tasksTable((SNAP.tasks.today_pilot||[]).concat(SNAP.tasks.doing||[]).slice(0,40));}
+  else if(key==='coverage_pct'){title='治理覆盖分解';body='<div class="muted" style="margin-bottom:8px">已治理 '+c.sources_done+' · 治理中 '+c.sources_in_progress+' · 待挖掘 '+c.sources_mining+' · 待办 '+c.sources_pending+'</div>'+statusBreakdown();}
+  else if(key==='hypotheses'){title='挖掘台账统计';body=hypSummaryTable();}
+  else if(key==='reports_today'){title='研究报告';body=reportsTable(SNAP.reports);}
+  else if(key==='backup_latest'){title='备份详情';body=backupTable();}
+  else if(key==='approvals_today'){title='审批台账（最近 5 条）';body=approvalsTable();}
+  else if(key==='risks'){title='未完成治理项';body=risksTable();}
+  else if(key==='supervisor'){title='Supervisor 检查';body=supervisorTable();}
+  openModal(title,body);
+}
+function sourcesTable(list){return '<table><thead><tr><th>来源</th><th>层</th><th>状态</th><th>说明</th><th class="num">体积</th><th>最近更新</th></tr></thead><tbody>'+
+  list.map(s=>'<tr class="clickable" data-src="'+esc(s.name)+'"><td><b>'+esc(s.label)+'</b><div class="mono">'+esc(s.name)+'</div></td><td>'+esc(s.layer)+'</td><td>'+badge(s.status)+'</td><td class="muted">'+esc(s.note)+'</td><td class="num">'+esc(s.size_h)+'</td><td class="muted">'+esc(s.last_update||'—')+'</td></tr>').join('')+'</tbody></table>';}
+function tasksTable(list){if(!list.length)return '<div class="muted">无</div>';return '<table><thead><tr><th>工单</th><th>状态</th><th>owner</th><th>摘要</th></tr></thead><tbody>'+
+  list.map(t=>'<tr><td class="mono">'+esc(t.id)+'</td><td>'+esc(t.status)+'</td><td>'+esc(t.owner)+'</td><td class="muted">'+esc(t.desc)+'</td></tr>').join('')+'</tbody></table>';}
+function statusBreakdown(){const m={};SNAP.sources.forEach(s=>m[s.status]=(m[s.status]||0)+1);
+  return '<table><thead><tr><th>状态</th><th>数量</th></tr></thead><tbody>'+Object.keys(m).map(k=>'<tr><td>'+badge(k)+'</td><td>'+m[k]+'</td></tr>').join('')+'</tbody></table>';}
+function hypSummaryTable(){const m=SNAP.cockpit.hypotheses_by_status||{};
+  return '<table><thead><tr><th>状态</th><th>数量</th><th>条目</th></tr></thead><tbody>'+Object.keys(m).map(k=>'<tr><td>'+badge(k,HS)+'</td><td>'+m[k]+'</td><td class="mono">'+esc((SNAP.hypotheses||[]).filter(h=>h.status===k).map(h=>h.id).join(' '))+'</td></tr>').join('')+'</tbody></table>';}
+function reportsTable(list){return '<table><thead><tr><th>报告</th><th class="num">KB</th><th>时间</th></tr></thead><tbody>'+list.map(r=>'<tr><td class="mono">'+esc(r.name)+'</td><td class="num">'+r.size_kb+'</td><td class="muted">'+esc(r.date)+' '+esc(r.time)+'</td></tr>').join('')+'</tbody></table>';}
+function backupTable(){const b=SNAP.ops.backup;return '<div class="muted" style="margin-bottom:6px">最新代：'+esc(b.latest)+'（距今 '+(b.age_hours||0)+' 小时）</div><table><thead><tr><th>产物</th><th class="num">MB</th></tr></thead><tbody>'+(b.products||[]).map(p=>'<tr><td class="mono">'+esc(p.name)+'</td><td class="num">'+p.mb+'</td></tr>').join('')+'</tbody></table>';}
+function approvalsTable(){return '<table><thead><tr><th>时间</th><th>动作</th><th>任务</th><th>操作人</th></tr></thead><tbody>'+((SNAP.ops.approvals.latest||[]).map(a=>'<tr><td class="muted">'+esc(a.ts)+'</td><td>'+badge(a.action==='approve'?'backtested':'rejected',{approve:['b-done','批准'],reject:['b-rejected','驳回'],escalate:['b-idea','转人工']})+'</td><td>'+esc(a.task)+'</td><td class="mono">'+esc(a.operator)+'</td></tr>').join(''))+'</tbody></table>';}
+function risksTable(){const r=SNAP.cockpit.risks||[];return '<table><thead><tr><th>治理项</th><th>状态</th><th>说明</th></tr></thead><tbody>'+r.map(x=>'<tr><td><b>'+esc(x.item)+'</b></td><td>'+badge(x.status,GS)+'</td><td class="muted">'+esc(x.note)+'</td></tr>').join('')+'</tbody></table>';}
+function supervisorTable(){const s=SNAP.ops.supervisor;return '<div class="muted" style="margin-bottom:6px">generated_at: '+esc(s.generated_at||'—')+'</div>'+(s.checks?'<pre class="mono" style="white-space:pre-wrap">'+esc(JSON.stringify(s.checks,null,1))+'</pre>':'<div>无 checks 数据</div>');}
+function openModal(title,html){document.getElementById('modalBody').innerHTML='<h3>'+esc(title)+'</h3>'+html;document.getElementById('modal').classList.add('on');document.getElementById('mask').classList.add('on');}
+function closeModal(){document.getElementById('modal').classList.remove('on');document.getElementById('mask').classList.remove('on');}
+/* ===== 今日动态条 ===== */
+function renderToday(){
+  const c=SNAP.cockpit,ns=SNAP.new_today_sources||[];
+  const chips=ns.map(s=>'<span class="chip" onclick="drillSource(\''+esc(s.name)+'\')">🆕 '+esc(s.label)+'</span>').join('');
+  const pilots=(SNAP.tasks.today_pilot||[]).slice(0,6).map(t=>'<span class="chip" onclick="openModal(\'试点任务\',tasksTable(['+JSON.stringify(t).replace(/"/g,'&quot;')+']))">🧪 '+esc(t.id)+'</span>').join('');
+  const reps=(SNAP.reports||[]).filter(r=>r.date===SNAP.today).slice(0,6).map(r=>'<span class="chip" onclick="openModal(\'报告详情\',reportsTable(['+JSON.stringify(r).replace(/"/g,'&quot;')+']))">📄 '+esc(r.name)+'</span>').join('');
+  const apps=(SNAP.ops.approvals.latest||[]).filter(a=>String(a.ts||'').startsWith(SNAP.today)).map(a=>'<span class="chip">✅ '+esc(a.task)+'</span>').join('');
+  document.getElementById('todayStrip').innerHTML=
+    '<b>今日动态</b>（'+esc(SNAP.today)+'）：新增来源 '+ns.length+' · 试点/进行中 '+c.pilot_today+' · 今日报告 '+c.reports_today+' · 今日审批 '+c.approvals_today+
+    '<div style="margin-top:6px">'+chips+pilots+reps+apps+'</div>';
+}
+/* ===== 来源表 ===== */
+function renderSources(){
+  const sel=document.getElementById('fLayer');
+  const layers=[...new Set((SNAP.sources||[]).map(s=>s.layer))];
+  if(sel.options.length===1) levels(layers).forEach(l=>sel.add(new Option(l,l)));
+  function levels(a){return a;}
+  const fs=document.getElementById('fSearch').value.trim().toLowerCase();
+  const fl=sel.value,fst=document.getElementById('fStatus').value;
+  const rows=(SNAP.sources||[]).filter(s=>(!fl||s.layer===fl)&&(!fst||s.status===fst)&&
+    (!fs||(s.name+' '+s.label+' '+s.note).toLowerCase().includes(fs)));
+  document.getElementById('srcCount').textContent='共 '+rows.length+' 个来源';
+  document.getElementById('tbSources').innerHTML=rows.map(s=>'<tr class="clickable" data-src="'+esc(s.name)+'">'+
+    '<td><b>'+esc(s.label)+'</b><div class="mono">'+esc(s.name)+'</div></td><td>'+esc(s.layer)+'</td>'+
+    '<td>'+badge(s.status)+'</td><td class="muted">'+esc(s.note)+'</td>'+
+    '<td class="num">'+(s.files==null?'—':s.files)+' / '+esc(s.size_h)+'</td>'+
+    '<td class="num">'+esc(s.range||'—')+'</td><td class="muted">'+esc(s.last_update||'—')+'</td>'+
+    '<td>'+(s.contract?'✅':'—')+'</td><td class="mono">'+esc((s.hypothesis_ids||[]).join(' '))+'</td></tr>').join('');
+  document.querySelectorAll('#tbSources tr[data-src]').forEach(tr=>tr.onclick=()=>drillSource(tr.dataset.src));
+}
+function drillSource(name){
+  const s=(SNAP.sources||[]).find(x=>x.name===name);
+  if(!s){return;}
+  const hyps=(s.hypothesis_ids||[]).map(id=>{const h=(SNAP.hypotheses||[]).find(x=>x.id===id);return h?('<span class="chip" onclick="drillHyp(\''+id+'\')">'+id+' '+esc(h.status)+'</span>'):id;}).join('');
+  const body='<table><tbody>'+
+    row('标签',s.label)+row('目录/库',s.name)+row('层',s.layer)+row('状态',badge(s.status))+
+    row('说明',s.note)+row('文件数',s.files)+row('体积',s.size_h)+row('数据范围',s.range||'—')+
+    row('最近更新',s.last_update||'—')+row('catalog 登记',s.registered?'✅':'❌')+
+    row('manifest',s.manifest)+row('契约',s.contract?'✅':'\u2014')+
+    row('一日新增文件',s.today_new||0)+row('关联假设',hyps||'\u2014')+row('下一步',s.next_action||'\u2014')+'</tbody></table>';
+  openModal('来源详情 · '+s.label,body);
+}
+function row(k,v){return '<tr><th style="width:130px">'+esc(k)+'</th><td>'+v+'</td></tr>';}
+function drillHyp(id){const h=(SNAP.hypotheses||[]).find(x=>x.id===id);if(!h)return;
+  openModal('假设 '+h.id,row('标题',esc(h.title))+row('状态',badge(h.status,HS))+row('问题',esc(h.question))+
+  row('数据',esc(h.data_sources))+row('方法',esc(h.method))+row('结论',esc(h.conclusion))+
+  row('创建',esc(h.created_at))+row('更新',esc(h.updated_at))+row('证据',esc(h.evidence)));}
+/* ===== 治理/路线 ===== */
+function renderGov(){
+  document.getElementById('govList').innerHTML='<table><thead><tr><th>治理项</th><th>状态</th><th>日期</th></tr></thead><tbody>'+
+    (SNAP.governance||[]).map(g=>'<tr class="clickable" data-gov="'+esc(g.item)+'"><td>'+esc(g.item)+'</td><td>'+badge(g.status,GS)+'</td><td class="muted">'+esc(g.date||'—')+'</td></tr>').join('')+'</tbody></table>';
+  document.querySelectorAll('#govList tr[data-gov]').forEach(tr=>tr.onclick=()=>{const g=(SNAP.governance||[]).find(x=>x.item===tr.dataset.gov);openModal('治理项 · '+g.item,row('状态',badge(g.status,GS))+row('说明',esc(g.note))+row('日期',esc(g.date||'—')));});
+  const rm=document.getElementById('roadmap');
+  rm.innerHTML=(SNAP.roadmap||[]).map(p=>'<div class="tl-item '+esc(p.status)+'" onclick="openModal(\'路线 · '+esc(p.phase)+'\',row(\'状态\',badge(\''+esc(p.status)+'\',GS))+row(\'日期\',\''+esc(p.date)+'\')+row(\'说明\',\''+esc(p.note)+'\'))"><div class="tl-date">'+esc(p.date)+' · '+badge(p.status,GS)+'</div><div class="tl-t">'+esc(p.phase)+'</div><div class="tl-n">'+esc(p.note)+'</div></div>').join('');
+}
+/* ===== 挖掘 ===== */
+function renderMining(){
+  const hs=SNAP.hypotheses||[];
+  document.getElementById('hypTl').innerHTML=hs.map(h=>'<div class="tl-item '+esc(h.status)+'" onclick="drillHyp(\''+h.id+'\')"><div class="tl-date">'+esc(h.created_at||'—')+' · '+badge(h.status,HS)+'</div><div class="tl-t">'+esc(h.id)+' '+esc(h.title)+'</div><div class="tl-n">'+esc((h.conclusion||h.question||'').slice(0,110))+'</div></div>').join('');
+  document.getElementById('repList').innerHTML='<table><tbody>'+(SNAP.reports||[]).map(r=>'<tr class="clickable" onclick="openModal(\'报告 · '+esc(r.name)+'\',reportsTable(['+JSON.stringify(r).replace(/"/g,'&quot;')+']))"><td class="mono">'+esc(r.name)+'</td><td class="num">'+r.size_kb+'KB</td><td class="muted">'+esc(r.date)+'</td></tr>').join('')+'</tbody></table>';
+  document.getElementById('tbHyp').innerHTML=hs.map(h=>'<tr class="clickable" onclick="drillHyp(\''+h.id+'\')"><td><b>'+esc(h.id)+'</b></td><td>'+badge(h.status,HS)+'</td><td>'+esc(h.title)+'<div class="muted">'+esc(h.question||'')+'</div></td><td class="muted">'+esc(h.conclusion||'—')+'</td><td class="muted">'+esc(h.updated_at||'')+'</td><td class="mono">'+esc(h.evidence||'—')+'</td></tr>').join('');
+}
+/* ===== 运维 ===== */
+function renderOps(){
+  document.getElementById('opsBackup').innerHTML=backupTable();
+  const c=SNAP.cockpit;
+  document.getElementById('opsHealth').innerHTML='<table><tbody>'+
+    row('Supervisor',(c.supervisor_red||[]).length?'<span class="badge b-pending">red: '+esc(c.supervisor_red.join(','))+'</span>':'<span class="badge b-done">全绿</span>')+
+    row('最新备份',esc(c.backup_latest||'—'))+row('备份距今年数',''+(c.backup_age_hours||0)+' h')+
+    row('今日审批',c.approvals_today+' 条')+row('今日新增来源',c.new_today+' 个')+'</tbody></table>';
+}
+function render(){
+  const c=SNAP.cockpit;
+  document.getElementById('sub').textContent='catalog v'+(SNAP.catalog.version||'?')+' · '+SNAP.catalog.tables+' 表 · registry '+
+    (SNAP.catalog.registry.physical||'?')+' 物理/'+(SNAP.catalog.registry.display||'?')+' 展示 · 来源 '+c.sources_total+
+    ' · 契约 '+(SNAP.catalog.contracts||0)+' 份 · 快照 '+SNAP.generated_at;
+  renderCards();renderToday();renderSources();renderGov();renderMining();renderOps();
+  document.getElementById('gen').textContent='快照：'+SNAP.generated_at+' ｜ 今日：'+SNAP.today;
+}
+/* ===== tabs / 下载 ===== */
 document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x===b));
-  ['sources','governance','mining','reports','ops'].forEach(t=>
-    document.getElementById('tab-'+t).classList.toggle('hidden',t!==b.dataset.tab));
+  ['sources','roadmap','mining','ops'].forEach(t=>document.getElementById('tab-'+t).classList.toggle('hidden',t!==b.dataset.tab));
 });
-['fLayer','fStatus','fSearch'].forEach(id=>{
-  const el=document.getElementById(id); if(!el) return;
-  el.addEventListener(el.tagName==='INPUT'?'input':'change',()=>{if(SNAP)render();});
-});
+['fLayer','fStatus','fSearch'].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener(el.tagName==='INPUT'?'input':'change',()=>{if(SNAP)renderSources();});});
+function dl(name,text){const a=document.createElement('a');a.href='data:text/plain;charset=utf-8,'+encodeURIComponent(text);a.download=name;a.click();}
+function dlJSON(){dl('dw_snapshot_'+SNAP.today+'.json',JSON.stringify(SNAP,null,1));}
+function dlCSV(kind){
+  const rows=[];let head=[];
+  if(kind==='sources'){head=['name','label','layer','status','files','size_mb','range','last_update','contract','hypothesis_ids'];
+    (SNAP.sources||[]).forEach(s=>rows.push([s.name,s.label,s.layer,s.status,s.files,s.size_mb,s.range,s.last_update,s.contract,(s.hypothesis_ids||[]).join('|')]));}
+  else{head=['id','title','status','created_at','updated_at','conclusion','evidence'];
+    (SNAP.hypotheses||[]).forEach(h=>rows.push([h.id,h.title,h.status,h.created_at,h.updated_at,h.conclusion,h.evidence]));}
+  const csv=[head.join(',')].concat(rows.map(r=>r.map(v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"').join(','))).join('\n');
+  dl('dw_'+kind+'_'+SNAP.today+'.csv',csv);
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
 load();
 </script>
 </body>
