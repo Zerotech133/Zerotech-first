@@ -131,3 +131,13 @@ yz-substrate `refill(posterior_map={"jev.bias": fn})` 直接读取，**双方不
 4. 附加观察：`price` 类事件方向准确率 46.5%（n=213）低于抛硬币，后续考虑降级/过滤。
 
 字段层影响：`dec_audit.hit` 对 neutral 按 2.5% 带宽计算；`assessment` 段随报告输出。
+
+## 十、P0 三项契约拍板（2026-10-29）
+
+见 `docs/plans/2026-10-29_判定中台P0三项契约拍板.md`，摘要：
+1. WireJudge `/v1/systemone` = 建议信号源，只入 `model_verdict`，不直写判定；
+2. refill `ctx_provider` = 最小上下文（question/point/答案格式/state_snapshot 摘要/市场数据引用），不注入原始正文，字段版本化；
+3. V5 direct-accept = 禁止；全部判定必经 schema 校验→账本→采样校准门控。
+
+配套落地：`assessment.low_signal_event_types`（price n=342/acc=48.8% 标记低信号）；夜跑按需闸
+（`JEV_NIGHT_MIN_BACKLOG` 默认 500，pending 低于阈值跳过夜跑，日常流入交小时轮）。

@@ -65,3 +65,14 @@ curl "http://127.0.0.1:8091/api/jev/query?hours=168&code=600519&with_posterior=1
 4. 8091 冷启动自带 import 冒烟预检（K-ORG-155），断链会拒绝拉起——这是保护，不要绕过。
 5. 查询窗口用 **created_at（采集时间）**：news.ts 常是发布日（如次日 00:00 公告），按 ts 会漏/混入。
 6. Hermes 重启：`Hermes/restart_hermes_8787.ps1` 需管理员（8787 属 SYSTEM 会话）；重启后 MCP 在**新 agent 会话**启动。
+
+## 九、日常话术模板（Hermes 两步调用）
+
+对 Hermes 说「查 JEV 今天有哪些利空」，模型按两步执行即可：
+
+1. `tool_search`：`{"queries": ["jev"]}` → 拿到 `jev_query` / `jev_calibration` 的 schema；
+2. `tool_call`：`{"name": "jev_query", "arguments": {"hours": 24, "bias": "bear", "limit": 10}}`
+   或 `{"name": "jev_calibration", "arguments": {}}`。
+
+注意：Hermes 的 MCP 工具默认 deferred，直接 `tool_call` 会报 unknown tool name；
+若模型先说"未找到工具"，让它先执行第 1 步 tool_search 再重试。

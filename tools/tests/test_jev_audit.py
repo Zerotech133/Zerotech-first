@@ -78,3 +78,25 @@ def test_assess_report_flags():
     assert a["neutral"]["usable_as_direction"] is False
     assert a["confidence"]["decision_weight"] is False
     assert a["directional"]["edge_vs_baseline"] == 0.05
+
+
+
+def test_assess_event_type_low_signal():
+    report = {
+        "directional": {"n": 2000, "rate": 0.60,
+                        "baseline_all_bull": {"n": 2000, "rate": 0.55}},
+        "by_bias": {"bull": {"n": 1200, "accuracy": 0.62},
+                    "bear": {"n": 400, "accuracy": 0.50}},
+        "neutral": {"n": 800, "band_hit_rate": 0.70, "highvol_share": 0.30},
+        "by_event_type": {
+            "price": {"n": 342, "rate": 0.488},
+            "other": {"n": 1348, "rate": 0.588},
+            "tiny": {"n": 30, "rate": 0.40},
+        },
+        "scope": {"band_pct": 2.5},
+    }
+    a = ja.assess_report(report)
+    assert a["low_signal_event_types"] == ["price"]
+    assert a["event_types"]["price"]["use"] == "low_signal"
+    assert "tiny" not in a["event_types"]      # 样本不足 100 不标记
+    assert "other" not in a["low_signal_event_types"]
