@@ -88,7 +88,6 @@ def compute(root=None):
     for c in cards:
         disciplines[c["discipline"]] = disciplines.get(c["discipline"], 0) + 1
     role_missing = [k for k in REQUIRED if disciplines.get(k, 0) < 1]
-    leads = [c for c in cards if c["id"] in ("DEV1", "DEV5")]
     chain_bad = []
     for c in cards:
         rt = c["report_to"]
