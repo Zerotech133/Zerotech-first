@@ -10,7 +10,7 @@
   "prompt_miss": [],
   "name_collisions": {},
   "workorders_doing": 26,
-  "workorders_review": 8
+  "workorders_review": 7
  },
  "workorders": [
   {
@@ -282,15 +282,6 @@
    "branch": "task/K-QUANT-20261030-IDEOUTPUT",
    "created": "2026-10-30 01:51:03",
    "project": "quant"
-  },
-  {
-   "id": "WO-LEGION-OS-UI-UNIFY-20261030",
-   "desc": "全站OS UI统一：共享主题+全局下钻/返回，批量注入全部portal页面",
-   "status": "review",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-OS-UI-UNIFY-20261030",
-   "created": "2026-10-30 01:51:16",
-   "project": "general"
   },
   {
    "id": "WO-ACAD-BOARD-V2-20261030",
@@ -7010,11 +7001,6 @@
      "id": "WO-AUDIT-FIX-20261029",
      "desc": "审计修复：hq_stats双计数、hk_r1_daily台账表格插入+去重+锁、kg zip strict",
      "status": "doing"
-    },
-    {
-     "id": "WO-LEGION-OS-UI-UNIFY-20261030",
-     "desc": "全站OS UI统一：共享主题+全局下钻/返回，批量注入全部portal页面",
-     "status": "review"
     }
    ]
   }
