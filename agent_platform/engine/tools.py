@@ -65,6 +65,10 @@ def _ma(closes, n):
 def make_context(code):
     """返回 {analysis_type: 数据文本段}，注入各角色 prompt（防 LLM 臆造数据）"""
     bars = kline_daily(code, 30)
+    if not bars:
+        # 2026-10-30 WO-INV-BJ-EMPTY：北交所/无K线标的此前 bars[0] 裸 IndexError；
+        # 改为 fail-visible，让 run_shadow 记 failed 而非整链异常。
+        raise ValueError("KLINE_EMPTY: %s（无可用日K数据）" % code)
     q = quote_snapshot(code)
     closes = [float(b[2]) for b in bars]
     vols = [float(b[5]) for b in bars] if len(bars[0]) > 5 else []
