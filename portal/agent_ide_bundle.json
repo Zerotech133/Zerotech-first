@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 00:13",
+ "generated": "2026-10-30 00:16",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 24,
+  "workorders_doing": 25,
   "workorders_review": 3
  },
  "workorders": [
@@ -248,12 +248,21 @@
    "project": "quant"
   },
   {
-   "id": "WO-MERGE-RETRY-20261030",
-   "desc": "devtask merge HEAD锁竞态自动abort+重试（P0）",
+   "id": "WO-LEGION-A3ALERT-20261030",
+   "desc": "task_exit_audit：A3RotationCanary rc=1 登记 alert_found（旧凭据指纹告警，非任务失败）",
    "status": "doing",
    "owner": "ZHAOYUN",
-   "branch": "task/WO-MERGE-RETRY-20261030",
-   "created": "2026-10-30 00:09:59",
+   "branch": "task/WO-LEGION-A3ALERT-20261030",
+   "created": "2026-10-30 00:14:10",
+   "project": "general"
+  },
+  {
+   "id": "WO-GUANYU-P42-20261030",
+   "desc": "merge分段计时",
+   "status": "doing",
+   "owner": "GUANYU",
+   "branch": "task/WO-GUANYU-P42-20261030",
+   "created": "2026-10-30 00:15:08",
    "project": "general"
   }
  ],
@@ -6228,7 +6237,14 @@
    ],
    "experience": "30 年工程治理经验：漏洞分级与补丁流程、失败测试基线修复、编码规范与门禁落地、技术债清欠与重复功能合并；证据驱动、逐项闭环，只出报告与工单不自行合并，开发动作限独立 worktree 提交+跑测试并交 L2 人签。",
    "dept_name": "研究院",
-   "dept_cn_title": "太学"
+   "dept_cn_title": "太学",
+   "tasks": [
+    {
+     "id": "WO-GUANYU-P42-20261030",
+     "desc": "merge分段计时",
+     "status": "doing"
+    }
+   ]
   },
   "HUANGZHONG": {
    "id": "HUANGZHONG",
@@ -6892,8 +6908,8 @@
      "status": "doing"
     },
     {
-     "id": "WO-MERGE-RETRY-20261030",
-     "desc": "devtask merge HEAD锁竞态自动abort+重试（P0）",
+     "id": "WO-LEGION-A3ALERT-20261030",
+     "desc": "task_exit_audit：A3RotationCanary rc=1 登记 alert_found（旧凭据指纹告警，非任务失败）",
      "status": "doing"
     }
    ]
