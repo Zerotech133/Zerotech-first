@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-29 23:50",
+ "generated": "2026-10-29 23:58",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 23,
+  "workorders_doing": 22,
   "workorders_review": 4
  },
  "workorders": [
@@ -236,15 +236,6 @@
    "owner": "DSH-Lead",
    "branch": "task/WO-H13-20261029",
    "created": "2026-10-29 23:21:15",
-   "project": "general"
-  },
-  {
-   "id": "WO-GUANYU-P40-20261029",
-   "desc": "check_ports并行优化",
-   "status": "doing",
-   "owner": "GUANYU",
-   "branch": "task/WO-GUANYU-P40-20261029",
-   "created": "2026-10-29 23:23:53",
    "project": "general"
   },
   {
@@ -6199,14 +6190,7 @@
    ],
    "experience": "30 年工程治理经验：漏洞分级与补丁流程、失败测试基线修复、编码规范与门禁落地、技术债清欠与重复功能合并；证据驱动、逐项闭环，只出报告与工单不自行合并，开发动作限独立 worktree 提交+跑测试并交 L2 人签。",
    "dept_name": "研究院",
-   "dept_cn_title": "太学",
-   "tasks": [
-    {
-     "id": "WO-GUANYU-P40-20261029",
-     "desc": "check_ports并行优化",
-     "status": "doing"
-    }
-   ]
+   "dept_cn_title": "太学"
   },
   "HUANGZHONG": {
    "id": "HUANGZHONG",
