@@ -162,6 +162,7 @@ async function load(){
 /* ===== KPI cards 可下钻 ===== */
 const CARD_DEFS=[
   ['sources_total','数据来源',d=>String(d.cockpit.sources_total),'blue',d=>{const mc=d.method_counts||{};return '接口 '+ (mc['接口同步']||0)+' · 爬虫 '+(mc['爬虫采集']||0)+' · 本地库 '+(mc['本地库']||0)+' · 容器库 '+(mc['容器库']||0);}],
+  ['lagging','日频滞后',d=>String((d.lagging_daily||[]).length),'red',d=>(d.lagging_daily||[]).slice(0,3).map(x=>x.label+' '+x.lag+'天').join(' / ')||'无'],
   ['new_today','今日新增',d=>String(d.cockpit.new_today),'green',d=>(d.new_today_sources||[]).map(s=>s.label).slice(0,3).join('、')||'暂无新增'],
   ['pilot_today','今日数据试点',d=>String(d.cockpit.pilot_today),'purple',d=>'数据相关 doing/review '+d.cockpit.pilot_today+' · 数据相关合并 '+d.cockpit.merged_today],
   ['coverage_pct','治理覆盖率',d=>d.cockpit.coverage_pct+'%','green',d=>'done '+d.cockpit.sources_done+'/'+d.cockpit.sources_total],
@@ -231,7 +232,7 @@ function renderSources(){
   const rows=(SNAP.sources||[]).filter(s=>(!fl||s.layer===fl)&&(!fst||s.status===fst)&&(!fme||s.method===fme)&&
     (!fs||(s.name+' '+s.label+' '+s.note).toLowerCase().includes(fs)));
   document.getElementById('srcCount').textContent='共 '+rows.length+' 个来源';
-  document.getElementById('tbSources').innerHTML=rows.map(s=>{const lag=s.lag_days;const lagHtml=lag==null?'<span class="muted">—</span>':('<span class="'+(lag>7?'':'')+'" style="font-weight:600;color:'+(lag>7?'#f85149':lag>2?'#d29922':'#3fb950')+'">'+lag+' 天</span>');const gap=s.gap_note?('<div class="muted">⚠ '+esc(s.gap_note)+'</div>'):'';return '<tr class="clickable" data-src="'+esc(s.name)+'">'+'<td><b>'+esc(s.label)+'</b><div class="mono">'+esc(s.name)+'</div></td>'+'<td><span class="badge b-in_progress">'+esc(s.method||'—')+'</span></td>'+'<td>'+badge(s.status)+'</td>'+'<td class="num">'+esc(s.rows_h||'—')+'</td>'+'<td class="muted">'+esc(s.latest_date||'—')+'</td>'+'<td class="num">'+lagHtml+'</td>'+'<td class="muted">'+esc(s.note)+gap+'</td>'+'<td class="muted">'+esc(s.last_update||'—')+'</td>'+'<td>'+(s.contract?'✅':'—')+'</td><td class="mono">'+esc((s.hypothesis_ids||[]).join(' '))+'</td></tr>';}).join('');
+  document.getElementById('tbSources').innerHTML=rows.map(s=>{const fm=s.freshness_mode||'daily';const lag=s.lag_days;const lagHtml=fm==='period_only'?'<span class="muted">报告期口径</span>':(fm==='unused'?'<span class="muted">未启用</span>':(fm==='low_freq'?'<span class="muted">低频</span>':('<span class="'+(lag>7?'':'')+'" style="font-weight:600;color:'+(lag>7?'#f85149':lag>2?'#d29922':'#3fb950')+'">'+lag+' 天</span>'));const gap=s.gap_note?('<div class="muted">⚠ '+esc(s.gap_note)+'</div>'):'';return '<tr class="clickable" data-src="'+esc(s.name)+'">'+'<td><b>'+esc(s.label)+'</b><div class="mono">'+esc(s.name)+'</div></td>'+'<td><span class="badge b-in_progress">'+esc(s.method||'—')+'</span></td>'+'<td>'+badge(s.status)+'</td>'+'<td class="num">'+esc(s.rows_h||'—')+'</td>'+'<td class="muted">'+esc(s.latest_date||'—')+'</td>'+'<td class="num">'+lagHtml+'</td>'+'<td class="muted">'+esc(s.note)+gap+'</td>'+'<td class="muted">'+esc(s.last_update||'—')+'</td>'+'<td>'+(s.contract?'✅':'—')+'</td><td class="mono">'+esc((s.hypothesis_ids||[]).join(' '))+'</td></tr>';}).join('');
   document.querySelectorAll('#tbSources tr[data-src]').forEach(tr=>tr.onclick=()=>drillSource(tr.dataset.src));
 }
 function drillSource(name){

@@ -53,6 +53,23 @@ MINING = {
     "stk_pledge", "stk_holdernumber", "stk_managers", "stock_company", "top10_holders",
     "top10_floatholders", "limit_list_d", "sw_l1_member", "npr", "news",
 }
+FRESHNESS_MODE = {
+    # 报告期口径（不按日滞后）：港股财报不强制季报
+    "hk_income": "period_only", "hk_balancesheet": "period_only",
+    "hk_cashflow": "period_only", "hk_fina_indicator": "period_only",
+    # 低频/未启用（不参与日频滞后判定）
+    "cyq_chips": "low_freq", "cyq_perf": "low_freq", "irm_qa_sh": "low_freq",
+    "irm_qa_sz": "low_freq", "top10_holders": "low_freq", "top10_floatholders": "low_freq",
+    "stk_holdernumber": "low_freq", "stk_managers": "low_freq", "stk_pledge": "low_freq",
+    "major_news": "low_freq", "npr": "low_freq", "research_report": "low_freq",
+    "sf_month": "low_freq", "shibor": "low_freq", "shibor_lpr": "low_freq",
+    "cb_basic": "low_freq", "cb_daily": "low_freq", "stock_company": "low_freq",
+    "bak_basic": "low_freq", "index_weight": "low_freq", "sw_l1_member": "low_freq",
+    "us_daily": "unused", "sv_daily": "unused", "us_basic": "unused",
+    "us_income": "unused", "us_balancesheet": "unused", "us_cashflow": "unused",
+    "us_fina_indicator": "unused", "hk_basic": "unused",
+}
+
 LAYER_ORDER = ["原始层", "采集流", "生产库", "研究库", "治理库"]
 STATUS_ORDER = ["done", "in_progress", "mining", "pending"]
 SOURCE_META = {
@@ -277,7 +294,11 @@ def load_sources(cat: dict) -> list[dict]:
             except Exception:  # noqa: BLE001
                 latest_date = ""
         lag = _lag_days(latest_date, TODAY) if latest_date else None
+        mode = FRESHNESS_MODE.get(d.name, "daily")
+        if mode != "daily":
+            lag = None
         rows.append({"name": d.name, "label": label, "method": method, "layer": "接口同步",
+                     "freshness_mode": mode,
                      "status": status, "note": note, "files": files_n, "size_mb": mb,
                      "size_h": _fmt_size(mb), "rows": rows_n,
                      "rows_h": ("%s 万" % round(rows_n / 10000, 1)) if rows_n and rows_n >= 10000 else (str(rows_n) if rows_n else "—"),
@@ -429,6 +450,7 @@ def load_other_sources() -> list[dict]:
         elif name == "xueqiu_info.db":
             gap = "2021+ 密度低（月均数十条）"
         rows.append({"name": name, "label": label, "method": method, "layer": "本地库",
+                     "freshness_mode": "daily",
                      "status": status, "note": note, "files": 1, "size_mb": mb,
                      "size_h": _fmt_size(mb), "rows": stats.get("rows"),
                      "rows_h": (str(stats.get("rows")) if stats.get("rows") else "—"),
@@ -616,6 +638,9 @@ def main(argv=None) -> int:
                     "manifest": {k: sum(1 for t in cat["tables"].values()
                                         if isinstance(t, dict) and t.get("manifest_status") == k)
                                  for k in ("closed", "not_applicable", "open", "missing")}},
+        "lagging_daily": [{"name": s["name"], "label": s["label"], "lag": s.get("lag_days")}
+                          for s in sources if s.get("lag_days") is not None and s["lag_days"] > 2
+                          and s.get("freshness_mode", "daily") == "daily"],
         "cockpit": {"sources_total": total, "sources_done": done,
                     "sources_in_progress": status_cnt.get("in_progress", 0),
                     "sources_mining": status_cnt.get("mining", 0),

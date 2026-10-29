@@ -59,6 +59,11 @@ STEPS = {
         "cmd": [PY312, "-X", "utf8", str(REPO / "tools" / "fin_report_sync.py"), "--period", _last_quarter_end()],
         "cwd": REPO, "timeout": 2400,
     },
+    "recent": {
+        "desc": "研究相关数据补齐（龙虎榜/港股/资金流/全球指数/预告快报）",
+        "cmd": [PY312, "-X", "utf8", str(REPO / "tools" / "recent_data_fill.py"), "--days", "7"],
+        "cwd": REPO, "timeout": 900,
+    },
     "snapshot": {
         "desc": "刷新驾驶舱快照（dw_snapshot.json）",
         "cmd": [PY312, "-X", "utf8", str(REPO / "tools" / "dw_dashboard.py")],
