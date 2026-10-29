@@ -1439,6 +1439,15 @@ async function autoProjectContext(raw){
   }catch(e){ return ""; }
 }
 
+function needsTools(raw){
+  const s = String(raw||"");
+  if(/@[\w.\-]+/.test(s)) return true;
+  if(/(项目|文件|目录|文件夹|代码|源码|仓库|路径|研发计划|计划文档|读取|查看|搜索|查找|打开)/.test(s)) return true;
+  if(/(\.py|\.md|\.json|\.html|\.js|\.css|\.yaml|\.yml|\.txt|\.ps1|\.sql)\b/i.test(s)) return true;
+  if(/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.\-\/]+/.test(s)) return true;
+  return false;
+}
+
 async function send(){
   const raw = qbox.value.trim();
   if(!raw || !DBGCUR) return;
@@ -1451,11 +1460,16 @@ async function send(){
   const t0 = Date.now();
   try{
     const m = model();
+    const useTools = needsTools(raw);
     let userContent = atContext(raw);
-    const autoCtx = await autoProjectContext(raw);
-    if(autoCtx) userContent = autoCtx + "\n\n=== 用户消息 ===\n" + userContent;
+    if(useTools){
+      const autoCtx = await autoProjectContext(raw);
+      if(autoCtx) userContent = autoCtx + "\n\n=== 用户消息 ===\n" + userContent;
+    }
     const messages = [
-      {role:"system",content:B.agents[aid].prompt + "\n\n" + IDE_TOOL_RULES},
+      {role:"system",content:B.agents[aid].prompt
+        + (useTools ? ("\n\n" + IDE_TOOL_RULES)
+                    : "\n\n[普通对话] 当前消息不需要读取项目文件；直接自然语言回答，不要输出工具 JSON。")},
       {role:"user",content:userContent}
     ];
     let txt = "";
@@ -1463,7 +1477,7 @@ async function send(){
     let finalText = "";
     const toolTrace = [];
     for(let round=0; round<3; round++){
-      r1.el.innerHTML = "🔧 正在读取项目文件（第 "+(round+1)+" 轮）…";
+      if(useTools) r1.el.innerHTML = "🔧 正在读取项目文件（第 "+(round+1)+" 轮）…";
       const r = await fetch("http://127.0.0.1:8796/v1/chat/completions", {
         method:"POST",
         headers:{"Content-Type":"application/json", "X-DSH-Agent":aid},
@@ -1473,6 +1487,7 @@ async function send(){
       if(!r.ok) throw new Error((d.error&&d.error.message)||("HTTP "+r.status));
       channel = d.x_channel || channel;
       txt = (d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content)||"";
+      if(!useTools){ finalText = txt; break; }
       const calls = parseToolCalls(txt);
       if(!calls.length){ finalText = txt; break; }
       addLog("fs tools → "+calls.length+" 个 · "+calls.map(c=>c.tool).join(","), "lg-b");
