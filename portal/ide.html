@@ -1539,6 +1539,34 @@ async function send(){
       messages.push({role:"assistant",content:txt});
       messages.push({role:"user",content:obsParts.join("\n---\n") + "\n\n以上工具已执行。现在只输出最终自然语言答复，禁止再输出工具 JSON 或代码块。"});
     }
+    const okTools = toolTrace.filter(x => x.ok).length;
+    if(useTools && okTools === 0){
+      // 模型没有发起工具调用/全部失败：IDE 自动做一次只读目录探测，并明确标部分完成
+      partial = true;
+      steps.push("模型未获得工具结果 · 自动读取项目目录");
+      renderProc("⏳ 自动读取项目目录…");
+      const probes = ["."];
+      if(/seat_brief|取数|工单|决策|org|事件/.test(raw)) probes.push("work/seat_brief");
+      const autoParts = [];
+      for(const p of probes.slice(0, 3)){
+        const obs = await fsTool("list_dir", {path:p});
+        const cnt = (obs.items||[]).length;
+        toolTrace.push({tool:"list_dir", args:{path:p}, ok:!!obs.ok,
+                        count:cnt, error:obs.error||""});
+        if(obs.ok){
+          steps.push("✓ 自动 list_dir "+p+" · "+cnt+" 项");
+          autoParts.push("[自动工具结果 list_dir "+p+"]\n"+JSON.stringify(obs).slice(0, 12000));
+        } else {
+          steps.push("✗ 自动 list_dir "+p+" · "+(obs.error||"失败"));
+        }
+        renderProc("⏳ 自动读取项目目录…");
+      }
+      if(autoParts.length){
+        messages.push({role:"assistant", content:"（IDE 自动执行只读目录探测）"});
+        messages.push({role:"user", content:autoParts.join("\n---\n") + "\n\n以上目录已实际读取。请基于结果给出最终自然语言答复，并明确未读取的文件内容。"});
+      }
+      finalText = "";
+    }
     if(!finalText || parseToolCalls(finalText).length){
       // 工具轮次结束后再强制一次“只总结、不调工具”的收口请求
       try{
