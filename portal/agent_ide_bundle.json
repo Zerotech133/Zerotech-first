@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-29 08:29",
+ "generated": "2026-10-29 08:30",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 41,
+  "workorders_doing": 40,
   "workorders_review": 7
  },
  "workorders": [
@@ -434,15 +434,6 @@
    "owner": "DSH-Lead",
    "branch": "task/WO-H14-20261029",
    "created": "2026-10-29 08:27:56",
-   "project": "general"
-  },
-  {
-   "id": "K-ORG-20261029-JEVRETRO",
-   "desc": "JEV 项目完整复盘：产能清零/判读校准/集成/事故/未决（2026-10-24→10-29）",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-ORG-20261029-JEVRETRO",
-   "created": "2026-10-29 08:28:16",
    "project": "general"
   }
  ],
