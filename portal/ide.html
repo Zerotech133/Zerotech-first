@@ -1264,7 +1264,17 @@ function addMsg(cls, who, html){
     sessSave(DBGCUR.id);
     renderSess();
   }
-  return {el: d.querySelector(".bubble"), rec};
+  return {el: d.querySelector(".bubble"), whoEl: d.querySelector(".who"), rec};
+}
+function fmtInline(s){
+  return esc(s).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/`([^`]+)`/g, "<code>$1</code>");
+}
+function procHtml(steps, status){
+  const lis = (steps||[]).map(x => "<li>"+esc(x)+"</li>").join("");
+  return '<div style="border:1px solid #1E3A5F;border-radius:7px;padding:6px 8px;margin-bottom:6px;background:#0a1625">'
+    + '<div style="font-size:11px;color:#9fd0ff">'+esc(status)+'</div>'
+    + (lis ? '<ol style="margin:4px 0 0 16px;padding:0;font-size:10.5px;color:#7f9ab8;max-height:120px;overflow:auto">'+lis+'</ol>' : '')
+    + '</div>';
 }
 /* 证据表渲染：连续 | 分隔的行 → table（342⑤） */
 function evTable(txt){
@@ -1278,7 +1288,7 @@ function evTable(txt){
         const cells = row.split("|").slice(1,-1).map(s=>s.trim());
         if(!cells.length) return;
         const tag = (i===0) ? "th" : "td";
-        out += "<tr>" + cells.map(x=>"<"+tag+">"+esc(x)+"</"+tag+">").join("") + "</tr>";
+        out += "<tr>" + cells.map(x=>"<"+tag+">"+fmtInline(x)+"</"+tag+">").join("") + "</tr>";
       });
       out += "</table>";
     }
@@ -1287,7 +1297,7 @@ function evTable(txt){
   for(const line of lines){
     const s = line.trim();
     if(s.startsWith("|") && s.endsWith("|") && s.length>2){ if(!tbl) tbl=[]; tbl.push(s); }
-    else { flush(); out += esc(line)+"\n"; }
+    else { flush(); out += fmtInline(line)+"\n"; }
   }
   flush();
   return out;
@@ -1455,9 +1465,17 @@ async function send(){
   qbox.value = "";
   addMsg("u", aid + " 的测试指令", esc(raw));
   const btn = document.getElementById("send"); btn.disabled = true;
-  const r1 = addMsg("a", aid + "（"+model()+"）· 推理中…", "…");
+  const r1 = addMsg("a", aid + "（"+model()+"）· 运行中…", "…");
   addLog("send → "+aid+" · model "+model()+" · "+raw.length+" 字", "lg-b");
   const t0 = Date.now();
+  const steps = [];
+  let partial = false;
+  const renderProc = (status, answer) => {
+    r1.el.innerHTML = procHtml(steps, status)
+      + (answer != null ? '<div style="margin-top:6px">'+evTable(answer || "(空响应)")+'</div>' : '');
+  };
+  steps.push("收到请求 · 模型 " + model());
+  renderProc("⏳ 运行中…");
   try{
     const m = model();
     const useTools = needsTools(raw);
@@ -1477,7 +1495,8 @@ async function send(){
     let finalText = "";
     const toolTrace = [];
     for(let round=0; round<3; round++){
-      if(useTools) r1.el.innerHTML = "🔧 正在读取项目文件（第 "+(round+1)+" 轮）…";
+      steps.push("调用模型 " + m + " · 第 " + (round+1) + " 轮");
+      renderProc("⏳ 运行中…");
       const r = await fetch("http://127.0.0.1:8796/v1/chat/completions", {
         method:"POST",
         headers:{"Content-Type":"application/json", "X-DSH-Agent":aid},
@@ -1490,12 +1509,17 @@ async function send(){
       if(!useTools){ finalText = txt; break; }
       const calls = parseToolCalls(txt);
       if(!calls.length){ finalText = txt; break; }
+      steps.push("模型请求读取 "+calls.length+" 项");
       addLog("fs tools → "+calls.length+" 个 · "+calls.map(c=>c.tool).join(","), "lg-b");
       const obsParts = [];
       for(const call of calls.slice(0, 6)){
         const obs = await fsTool(call.tool, call.args);
+        const cnt = (obs.items||obs.hits||[]).length;
         toolTrace.push({tool:call.tool, args:call.args||{}, ok:!!obs.ok,
-                        count:(obs.items||obs.hits||[]).length, error:obs.error||""});
+                        count:cnt, error:obs.error||""});
+        steps.push((obs.ok ? "✓ " : "✗ ") + call.tool + " " + JSON.stringify(call.args||{})
+                   + (obs.ok ? (cnt ? (" · "+cnt+" 项") : " · ok") : (" · "+(obs.error||"失败"))));
+        renderProc("⏳ 运行中…");
         addLog("fs tool → "+call.tool+" "+JSON.stringify(call.args||{}).slice(0,160), "lg-b");
         obsParts.push("[工具结果 "+call.tool+" "+JSON.stringify(call.args||{})+"]\n" + JSON.stringify(obs).slice(0, 12000));
       }
@@ -1505,7 +1529,8 @@ async function send(){
     if(!finalText || parseToolCalls(finalText).length){
       // 工具轮次结束后再强制一次“只总结、不调工具”的收口请求
       try{
-        r1.el.innerHTML = "🧾 工具读取完成，正在生成总结…";
+        steps.push("工具轮次结束 · 生成最终总结");
+        renderProc("🧾 正在生成总结…");
         const finalMessages = [
           {role:"system", content:B.agents[aid].prompt + "\n\n[最终答复阶段] 禁止调用任何工具；只输出自然语言总结：读取了什么、关键发现、未读取范围、下一步建议。"},
           ...messages.slice(1),
@@ -1524,6 +1549,8 @@ async function send(){
       }catch(e){}
     }
     if(!finalText || parseToolCalls(finalText).length){
+      partial = true;
+      steps.push("工具轮次用尽 · 输出读取记录");
       const lines = toolTrace.map((x, i) =>
         (i+1)+". "+x.tool+" "+JSON.stringify(x.args)+" → "+(x.ok ? ("ok"+(x.count?(" · "+x.count+" 项"):"")) : ("失败: "+x.error)));
       finalText = "已执行 "+toolTrace.length+" 次只读文件操作，但没有在限定轮次内得到模型的自然语言总结。\n\n"
@@ -1532,14 +1559,20 @@ async function send(){
     }
     txt = finalText;
     const sec = ((Date.now()-t0)/1000).toFixed(1);
-    const html = evTable(txt || "(空响应)") + '<span style="color:var(--dim2);font-size:10.5px">── '+sec+'s · '+esc(m)+' · '+esc(channel)+' ──</span>';
+    const status = partial ? ("⚠ 部分完成 · "+sec+"s") : ("✅ 完成 · "+sec+"s");
+    steps.push(partial ? "请求结束 · 部分完成" : "请求结束 · 完成");
+    const html = procHtml(steps, status)
+      + '<div style="margin-top:6px">'+evTable(txt || "(空响应)")+'</div>'
+      + '<span style="color:var(--dim2);font-size:10.5px">── '+sec+'s · '+esc(m)+' · '+esc(channel)+' ──</span>';
     r1.el.innerHTML = html;
-    if(r1.rec){ r1.rec.html = html; sessSave(aid); }
+    if(r1.whoEl) r1.whoEl.textContent = aid+"（"+m+"） · "+status;
+    if(r1.rec){ r1.rec.who = aid+"（"+m+"） · "+status; r1.rec.html = html; sessSave(aid); }
     addLog("recv ← "+aid+" · "+sec+"s · "+m, "lg-g");
   }catch(e){
     const html = "❌ 调用失败："+esc(e.message)+"（检查 8796 网关是否在跑）";
     r1.el.innerHTML = html;
-    if(r1.rec){ r1.rec.html = html; sessSave(aid); }
+    if(r1.whoEl) r1.whoEl.textContent = aid+" · ❌ 失败";
+    if(r1.rec){ r1.rec.who = aid+" · ❌ 失败"; r1.rec.html = html; sessSave(aid); }
     addLog("FAIL "+aid+" · "+e.message, "lg-o");
   }
   btn.disabled = false;
