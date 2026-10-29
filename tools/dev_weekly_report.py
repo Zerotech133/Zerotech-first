@@ -32,6 +32,9 @@ ROUTING_PATH = ROOT / "agent_platform" / "config" / "dev_routing_rules.json"
 GATE_PATH = ROOT / "agent_platform" / "config" / "dev_owner_gate.json"
 DEFAULT_OUT = ROOT / "agent_platform" / "data" / "dev" / "weekly_report.md"
 E3_SEATS = ("ARCH1", "DEV1", "DEV5", "OPS1")
+# 真席位执行率：block 生效后新 dev 单，owner 非代做席
+SEAT_CUTOFF = "2026-10-27T16:00"
+PROXY_OWNERS = ("DSH-Lead",)
 
 
 def _load_json(path, default):
@@ -115,6 +118,13 @@ def compute(tasks, events, routing=None, gate=None, window_days=7, now=None):
     dev_all = [r for r in rows if r["owner"] in dev_seats] if dev_seats else []
     dev_recent = [r for r in recent if r["owner"] in dev_seats] if dev_seats else []
     dev_merged = [r for r in dev_all if (r["merged"] or "")[:10] >= cut]
+    dev_dept_rows = [r for r in rows if (r["dept"] or "") == "dev"]
+    new_dev_done = [r for r in dev_dept_rows
+                    if r["status"] == "done" and r["merged"]
+                    and (r["created"] or r["merged"]).replace(" ", "T")[:16]
+                    >= SEAT_CUTOFF]
+    new_seat_exec = [r for r in new_dev_done
+                     if r["owner"] not in PROXY_OWNERS]
     lead = []
     for r in dev_all:
         if r["status"] == "done" and r["merged"] and r["created"]:
@@ -155,6 +165,10 @@ def compute(tasks, events, routing=None, gate=None, window_days=7, now=None):
         "dev_capture_share_recent": round(len(dev_recent) / rn, 4) if rn else None,
         "dev_tasks_recent": len(dev_recent),
         "dev_merged_recent": len(dev_merged),
+        "dev_new_done": len(new_dev_done),
+        "dev_seat_exec_new": len(new_seat_exec),
+        "dev_seat_exec_share_new": (round(len(new_seat_exec) / len(new_dev_done), 4)
+                                    if new_dev_done else None),
         "dev_leadtime_p50_min": _pct(lead, 0.5),
         "dev_leadtime_p90_min": _pct(lead, 0.9),
         "dev_leadtime_n": len(lead),
@@ -203,6 +217,11 @@ def render_markdown(m):
         "| 验证覆盖（dev 单带验收命令） | %s/%s | ≥90%% | %s |" % (
             m["dev_dept_with_acceptance"], m["dev_dept_tagged"],
             "达标" if m["dev_dept_tagged"] and m["dev_dept_with_acceptance"] >= m["dev_dept_tagged"] * 0.9 else "未达标"),
+        "| 真席位执行率（block 后新单，非代做） | %s/%s（%s） | 观察，目标 11-30 ≥50%% | %s |" % (
+            m["dev_seat_exec_new"], m["dev_new_done"],
+            ("%.1f%%" % (m["dev_seat_exec_share_new"] * 100))
+            if m["dev_seat_exec_share_new"] is not None else "—",
+            "达标" if (m["dev_seat_exec_share_new"] or 0) >= 0.5 else "未达标/观察"),
         "| review 等待 p90 | N/A（无字段） | ≤4h（人工） | 待接线 |",
         "| 返工率 / 逃逸缺陷 | N/A（无字段） | 人工登记 | 待接线 |",
         "",
