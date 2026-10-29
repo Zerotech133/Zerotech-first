@@ -16,14 +16,21 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-BASE_URL = os.environ.get("OPENHANDS_URL", "http://127.0.0.1:8770").rstrip("/")
+# 方案 A 第二阶段：默认走 Docker sandbox（Linux 容器内执行工具，绕开 Windows
+# FileEditor 挂起；worktree 通过 C:\legion-worktrees -> /workspaces 绑定挂载）。
+BASE_URL = os.environ.get("OPENHANDS_SANDBOX_URL", "http://127.0.0.1:8771").rstrip("/")
+HOST_BASE_URL = os.environ.get("OPENHANDS_HOST_URL", "http://127.0.0.1:8770").rstrip("/")
 KEY_FILE = Path(os.environ.get("OPENHANDS_KEY_FILE", r"C:\项目\legion-openhands\.session_key"))
-LEGION_GATEWAY = os.environ.get("OPENHANDS_GATEWAY_URL", "http://127.0.0.1:8797/v1")
+# 容器内访问宿主机网关；容器外测试可覆盖为 127.0.0.1。
+LEGION_GATEWAY = os.environ.get(
+    "OPENHANDS_GATEWAY_URL", "http://host.docker.internal:8797/v1"
+)
 REPO_ROOT = Path(os.environ.get("OPENHANDS_REPO", r"C:\项目\老田的AI助手")).resolve()
-# Windows 中文路径会被 OpenHands 工具参数编码成乱码；用 ASCII junction 映射。
 WORKTREE_ROOT = Path(os.environ.get("OPENHANDS_WORKTREE_ROOT", r"C:\legion-worktrees"))
-DEFAULT_WORKDIR = Path(r"C:\legion-openhands\workspace\project")
-LOCAL_ROOTS = (WORKTREE_ROOT, Path(r"C:\legion-openhands\workspace"))
+CONTAINER_WORKTREE_ROOT = "/workspaces"
+DEFAULT_HOST_WORKDIR = Path(r"C:\legion-worktrees\_default")
+DEFAULT_CONTAINER_WORKDIR = CONTAINER_WORKTREE_ROOT + "/_default"
+LOCAL_ROOTS = (WORKTREE_ROOT, Path(r"C:\legion-oh-worktrees"))
 DEFAULT_TIMEOUT = 600
 TASK_RE = re.compile(r"^[A-Za-z0-9_.\-]{3,80}$")
 
@@ -64,38 +71,40 @@ def _req(path: str, method: str = "GET", body=None, timeout: int = 30):
                       "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}
 
 
-def _resolve_worktree(task: str = "", worktree: str = "") -> tuple[Path | None, dict | None]:
-    """只允许军团 .worktrees/<TID> 或 OpenHands 本地 workspace 根。"""
-    # 不做 symlink/junction 解析：保留 ASCII 路径本身，避免 Windows 中文路径
-    # 进入 OpenHands 工具参数后变成乱码。安全校验用绝对路径字符串前缀。
-    candidate = None
+def _resolve_worktree(task: str = "", worktree: str = ""):
+    """返回 (宿主 worktree, 容器内 working_dir, error)。
+
+    Docker sandbox 只挂载 C:\\legion-worktrees -> /workspaces 与
+    C:\\legion-oh-worktrees -> /workspaces-extra。
+    """
+    host = None
+    container = None
     if worktree:
         try:
-            candidate = Path(worktree).expanduser().absolute()
+            host = Path(worktree).expanduser().absolute()
         except OSError:
-            return None, {"ok": False, "error": "bad_worktree"}
+            return None, None, {"ok": False, "error": "bad_worktree"}
     elif task:
         task = str(task or "").strip()
         if not TASK_RE.match(task):
-            return None, {"ok": False, "error": "bad_task_id"}
-        candidate = (WORKTREE_ROOT / task).absolute()
+            return None, None, {"ok": False, "error": "bad_task_id"}
+        host = (WORKTREE_ROOT / task).absolute()
     else:
-        candidate = DEFAULT_WORKDIR.absolute()
-    allowed = False
-    for root in LOCAL_ROOTS:
-        try:
-            if candidate.is_relative_to(root.absolute()):
-                allowed = True
-                break
-        except (OSError, ValueError):
-            continue
-    if not allowed:
-        return None, {"ok": False, "error": "worktree_out_of_scope",
-                      "detail": str(candidate)}
-    if candidate.exists() and not candidate.is_dir():
-        return None, {"ok": False, "error": "worktree_not_dir"}
-    candidate.mkdir(parents=True, exist_ok=True)
-    return candidate, None
+        host = DEFAULT_HOST_WORKDIR.absolute()
+
+    if host.is_relative_to(WORKTREE_ROOT.absolute()):
+        rel = host.relative_to(WORKTREE_ROOT.absolute()).as_posix()
+        container = CONTAINER_WORKTREE_ROOT + "/" + rel
+    elif host.is_relative_to(Path(r"C:\legion-oh-worktrees").absolute()):
+        rel = host.relative_to(Path(r"C:\legion-oh-worktrees").absolute()).as_posix()
+        container = "/workspaces-extra/" + rel
+    else:
+        return None, None, {"ok": False, "error": "worktree_out_of_scope",
+                            "detail": str(host)}
+    if host.exists() and not host.is_dir():
+        return None, None, {"ok": False, "error": "worktree_not_dir"}
+    host.mkdir(parents=True, exist_ok=True)
+    return host, container, None
 
 
 def _llm(model: str) -> dict:
@@ -114,9 +123,10 @@ def _conversation(conversation_id: str) -> tuple[dict, dict | None]:
     return d, None
 
 
-def _start(message: str, workdir: Path, model: str, max_iterations: int = 60) -> tuple[str | None, dict | None]:
+def _start(message: str, container_workdir: str, model: str,
+           max_iterations: int = 60) -> tuple[str | None, dict | None]:
     body = {
-        "workspace": {"working_dir": str(workdir), "kind": "LocalWorkspace"},
+        "workspace": {"working_dir": str(container_workdir), "kind": "LocalWorkspace"},
         "initial_message": {"role": "user", "content": [{"type": "text", "text": message}]},
         "agent_settings": {"llm": _llm(model)},
         "max_iterations": max(1, min(int(max_iterations or 60), 100)),
@@ -217,8 +227,9 @@ def events(cid: str, limit: int = 60) -> list[dict]:
 def health() -> dict:
     _r, data = _req("/health", timeout=5)
     if data.get("status") == "ok":
-        return {"ok": True, "base_url": BASE_URL, "mode": "native",
-                "worktree_root": str(WORKTREE_ROOT)}
+        return {"ok": True, "base_url": BASE_URL, "mode": "docker-sandbox",
+                "worktree_root": str(WORKTREE_ROOT),
+                "container_root": CONTAINER_WORKTREE_ROOT}
     return {"ok": False, "base_url": BASE_URL,
             **{k: v for k, v in (data or {}).items() if k != "ok"}}
 
@@ -228,13 +239,13 @@ def chat(message: str, conversation_id: str = "", timeout: int = DEFAULT_TIMEOUT
     message = str(message or "").strip()
     if not message:
         return {"ok": False, "error": "empty_message"}
-    wd, error = _resolve_worktree(task=task, worktree=worktree)
+    host_wd, container_wd, error = _resolve_worktree(task=task, worktree=worktree)
     if error:
         return error
     cid = str(conversation_id or "").strip()
     created = False
     if not cid:
-        cid, error = _start(message, wd, model)
+        cid, error = _start(message, container_wd, model)
         if error:
             return error
         created = True
@@ -251,7 +262,8 @@ def chat(message: str, conversation_id: str = "", timeout: int = DEFAULT_TIMEOUT
     started = time.time()
     state, error = _wait(cid, timeout)
     if error:
-        return {**error, "conversation_id": cid, "worktree": str(wd)}
+        return {**error, "conversation_id": cid, "worktree": str(host_wd),
+                "container_worktree": container_wd}
     reply = _final(cid)
     evs = events(cid)
     status = str(state.get("execution_status") or "")
@@ -259,11 +271,12 @@ def chat(message: str, conversation_id: str = "", timeout: int = DEFAULT_TIMEOUT
         "ok": status == "finished",
         "reply": reply or ("（OpenHands 状态：%s）" % status),
         "conversation_id": cid,
-        "worktree": str(wd),
+        "worktree": str(host_wd),
+        "container_worktree": container_wd,
         "created": created,
         "status": status,
         "duration_ms": int((time.time() - started) * 1000),
-        "engine": "openhands-native",
+        "engine": "openhands-sandbox",
         "model": _llm(model)["model"],
         "events": evs,
     }
