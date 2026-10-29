@@ -255,6 +255,16 @@ def load_sources(cat: dict) -> list[dict]:
         latest_date = ""
         if files and files[-1].stem.startswith("d_"):
             latest_date = files[-1].stem[2:]
+        elif files and table.get("date_col"):
+            try:
+                import pyarrow.parquet as pq
+                import pyarrow.compute as pc
+                col = table["date_col"]
+                tb = pq.read_table(files[-1], columns=[col])
+                mx = pc.max(tb[col]).as_py()
+                latest_date = str(mx or "")[:10].replace("-", "")
+            except Exception:  # noqa: BLE001
+                latest_date = ""
         lag = _lag_days(latest_date, TODAY) if latest_date else None
         rows.append({"name": d.name, "label": label, "method": method, "layer": "接口同步",
                      "status": status, "note": note, "files": files_n, "size_mb": mb,
@@ -374,11 +384,11 @@ def load_other_sources() -> list[dict]:
          "保留 365 天；历史不可回填（接口深度约 1 周）", REPO / "news_collector" / "news.db", ["H5", "H6"]),
         ("xueqiu_info.db", "雪球舆情·本地库(SQLite)", "xq_status", "created_at", "爬虫采集", "in_progress",
          "2012-2026；2021+ 稀疏，已加 3 轮抓取", DATA / "xueqiu" / "xueqiu_info.db", ["H5"]),
-        ("jev_audit.db", "JEV判定账本·本地库(SQLite)", "dec_audit", "ts", "文件导入", "in_progress",
+        ("jev_audit.db", "JEV判定账本·本地库(SQLite)", "dec_audit", "ts", "本地库", "in_progress",
          "判定账本；后验/company 覆盖不足（见缺口）", REPO / "agent_platform" / "data" / "jev_audit" / "jev_audit.db", ["H6"]),
-        ("ann_history.db", "公告历史·本地库(SQLite)", "ann", "notice_date", "文件导入", "in_progress",
+        ("ann_history.db", "公告历史·本地库(SQLite)", "ann", "notice_date", "本地库", "in_progress",
          "49 万条（2026-02 起）", REPO / "zerobound-kg" / "data" / "ann_history" / "ann_history.db", ["H1", "H11"]),
-        ("evidence_chain.db", "证据链·本地库(SQLite)", "", "", "文件导入", "done",
+        ("evidence_chain.db", "证据链·本地库(SQLite)", "", "", "本地库", "done",
          "资格/取证底账", DATA / "evidence_chain.db", []),
     ]
     rows = []
