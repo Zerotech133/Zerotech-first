@@ -91,11 +91,27 @@ function render(d){
     '<div class="group"><h3>'+esc(g.id)+" "+esc(g.name)+" · 组长 "+esc(g.lead)+"</h3>"+
     '<div class="muted">组员：'+esc((g.members||[]).join("、"))+'</div></div>').join("");
   $("seats").innerHTML = (d.seats||[]).map(card).join("");
+  const realText = (r) => {
+    const x = r.real; if (!x || !x.metrics) return "";
+    const m = x.metrics, bits = [];
+    if (m.strategies != null) bits.push("策略" + m.strategies);
+    if (m.runs_window != null) bits.push("近" + (m.window_days || 7) + "天" + m.runs_window);
+    if (m.stance) bits.push("多" + m.stance.buy + "/空" + m.stance.sell + "/中" + m.stance.hold);
+    if (m.shadow) bits.push("影子" + m.shadow.rows + "条/" + (m.shadow.last_date || "—"));
+    if (m.shadow && m.shadow.degraded_rate != null)
+      bits.push("降级" + (m.shadow.degraded_rate * 100).toFixed(1) + "%");
+    if (m.backtests) bits.push("回测" + m.backtests.total +
+      " Go:" + (m.backtests.go_no_go?.go ?? "—") +
+      " No:" + (m.backtests.go_no_go?.no ?? "—") +
+      " Pend:" + (m.backtests.go_no_go?.pending ?? "—"));
+    return bits.length ? '<div class="sub">真实 · ' + esc(x.as_of || "—") + ' · ' +
+      bits.map(esc).join(" · ") + '</div>' : "";
+  };
   const mini = (rows, fields) => (rows || []).map(r =>
     '<div class="card"><b>' + esc(r.id) + ' ' + esc(r.name || "") + '</b>' +
     '<div class="sub">' + esc(r.role_title || "") + '</div>' +
     fields.map(f => '<div class="sub">' + esc(f[0]) + '：' +
-      esc(r[f[1]] == null ? "—" : r[f[1]]) + '</div>').join("") + '</div>').join("");
+      esc(r[f[1]] == null ? "—" : r[f[1]]) + '</div>').join("") + realText(r) + '</div>').join("");
   $("ai").innerHTML = mini(d.ai_cards,
     [["模型", "model"], ["档位", "grade"], ["评估", "eval_status"]]);
   $("quant").innerHTML = mini(d.quant_cards,
