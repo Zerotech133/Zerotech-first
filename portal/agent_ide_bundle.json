@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 01:54",
+ "generated": "2026-10-30 02:00",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,8 +9,8 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 27,
-  "workorders_review": 6
+  "workorders_doing": 25,
+  "workorders_review": 8
  },
  "workorders": [
   {
@@ -286,7 +286,7 @@
   {
    "id": "WO-LEGION-OS-UI-UNIFY-20261030",
    "desc": "全站OS UI统一：共享主题+全局下钻/返回，批量注入全部portal页面",
-   "status": "doing",
+   "status": "review",
    "owner": "ZHAOYUN",
    "branch": "task/WO-LEGION-OS-UI-UNIFY-20261030",
    "created": "2026-10-30 01:51:16",
@@ -304,7 +304,7 @@
   {
    "id": "WO-ACAD-BOARD-V2-20261030",
    "desc": "策阅板块重整 v2：策略发现→推荐池→鲁肃(D1)军团判断 单流程；架构/数据契约/页面；只读，不接下单。",
-   "status": "doing",
+   "status": "review",
    "owner": "ACAD1",
    "branch": "task/WO-ACAD-BOARD-V2-20261030",
    "created": "2026-10-30 01:54:51",
@@ -1555,7 +1555,7 @@
     {
      "id": "WO-ACAD-BOARD-V2-20261030",
      "desc": "策阅板块重整 v2：策略发现→推荐池→鲁肃(D1)军团判断 单流程；架构/数据契约/页面；只读，不接下单。",
-     "status": "doing"
+     "status": "review"
     }
    ]
   },
@@ -7005,7 +7005,7 @@
     {
      "id": "WO-LEGION-OS-UI-UNIFY-20261030",
      "desc": "全站OS UI统一：共享主题+全局下钻/返回，批量注入全部portal页面",
-     "status": "doing"
+     "status": "review"
     },
     {
      "id": "WO-NIGHTLY-TOOLS-20261030",
