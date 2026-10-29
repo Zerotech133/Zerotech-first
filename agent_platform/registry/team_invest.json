@@ -18,7 +18,11 @@
       "debate_partner_key": "t2_market",
       "max_debate_rounds": 2,
       "llm_binding": "ollama/qwen3.5:9b",
-      "tools": [],
+      "tools": [
+        "kline_daily",
+        "quote_snapshot",
+        "events"
+      ],
       "memory_grants": {
         "read": [
           "domain/*",
@@ -83,7 +87,11 @@
       "debate_partner_key": "t1_market",
       "max_debate_rounds": 2,
       "llm_binding": "ollama/qwen3.5:9b",
-      "tools": [],
+      "tools": [
+        "kline_daily",
+        "quote_snapshot",
+        "events"
+      ],
       "memory_grants": {
         "read": [
           "domain/*",
@@ -148,7 +156,8 @@
       "max_debate_rounds": 0,
       "llm_binding": "ollama/qwen3.5:9b",
       "tools": [
-        "events_for_stock"
+        "events_for_stock",
+        "quote_snapshot"
       ],
       "memory_grants": {
         "read": [
@@ -209,7 +218,9 @@
       "max_debate_rounds": 0,
       "llm_binding": "ollama/qwen3.5:9b",
       "tools": [
-        "datamart_read"
+        "datamart_read",
+        "quote_snapshot",
+        "make_context"
       ],
       "memory_grants": {
         "read": [
@@ -274,7 +285,11 @@
       "debate_partner_key": null,
       "max_debate_rounds": 0,
       "llm_binding": "glm/glm-5.3",
-      "tools": [],
+      "tools": [
+        "make_context",
+        "quote_snapshot",
+        "events"
+      ],
       "memory_grants": {
         "read": [
           "domain/*",
@@ -326,7 +341,11 @@
           "enabled": true
         }
       ],
-      "llm_binding_note": "2026-10-29 WO-INV-P0-ALIGN：与 org D1 统一为 glm/glm-5.3（E3 裁决强模型）；原 ollama/qwen3.5:9b 为临时降级。"
+      "llm_binding_note": "2026-10-29 WO-INV-P0-ALIGN：与 org D1 统一为 glm/glm-5.3（E3 裁决强模型）；原 ollama/qwen3.5:9b 为临时降级。",
+      "llm_fallback": [
+        "deepseek/deepseek-flash",
+        "ollama/qwen3.5:9b"
+      ]
     }
   ]
 }
