@@ -1,0 +1,24 @@
+{
+ "schema": "plan_dispatch/v1",
+ "project": "war-screen-v1.1-m1",
+ "elements": [
+  {
+   "id": "E1",
+   "title": "v1.1 策略运行聚合适配器（LV-02）",
+   "owner": "DEV3",
+   "discipline": "quant",
+   "acceptance": "python -X utf8 -m pytest agent_platform/tests/test_dev_legion_real.py -q",
+   "effort": "M",
+   "deps": []
+  },
+  {
+   "id": "E2",
+   "title": "v1.1 影子/回测风控聚合适配器（LV-03）",
+   "owner": "DEV4",
+   "discipline": "quant",
+   "acceptance": "python -X utf8 -m pytest agent_platform/tests/test_dev_legion_real.py -q",
+   "effort": "M",
+   "deps": []
+  }
+ ]
+}
