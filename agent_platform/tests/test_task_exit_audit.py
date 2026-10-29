@@ -503,3 +503,9 @@ def test_scan_text_print_shows_semantics_buckets(isolated_data_dir, monkeypatch,
     assert "告警发现 1" in out and "已知基线 1" in out
     assert "[ALERT_FOUND] KgChainWatchdog" in out
     assert "[BASELINE] PytestWeekly" in out
+
+
+def test_terminated_exit_includes_dbg_terminate():
+    assert 1073807364 in ta.TERMINATED_EXITS
+    assert 1073807364 in ta.NON_FAILURE_RC
+    assert 1073807364 not in ta.TASK_RC_SEMANTICS.values()
