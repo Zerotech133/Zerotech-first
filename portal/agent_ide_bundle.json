@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-29 09:21",
+ "generated": "2026-10-29 09:26",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 42,
+  "workorders_doing": 45,
   "workorders_review": 6
  },
  "workorders": [
@@ -419,15 +419,6 @@
    "project": "general"
   },
   {
-   "id": "K-ORG-20261029-JUDGEHUB",
-   "desc": "判定中台 P0 三项契约拍板 + P1 准备：price 降级标记、夜跑按需闸（backlog<500 自动跳过）",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-ORG-20261029-JUDGEHUB",
-   "created": "2026-10-29 08:52:00",
-   "project": "general"
-  },
-  {
    "id": "K-QUANT-20261029-IDELOOP",
    "desc": "IDE工具循环修复：A0始终优先绑定模型；支持一次多个工具调用；工具后强制最终答复；不把原始JSON当答复；测试",
    "status": "doing",
@@ -443,6 +434,42 @@
    "owner": "DSH-Lead",
    "branch": "task/WO-SEAT-ITER-20261029",
    "created": "2026-10-29 09:10:32",
+   "project": "general"
+  },
+  {
+   "id": "WO-ACAD-GOLDEN4-20261029",
+   "desc": "按 AI1 方案落 4 席 golden：seat_golden 加 COMM1/INTEL1/AI1/PROD1 各3条确定性断言（schema v2：contains_all/not_contains_any/regex/min_urls）；seat_eval 兼容 v2 断言执行器；测试；目标 4 席 seat_realness --with-eval 6/6。",
+   "status": "doing",
+   "owner": "AI1",
+   "branch": "task/WO-ACAD-GOLDEN4-20261029",
+   "created": "2026-10-29 09:23:21",
+   "project": "quant"
+  },
+  {
+   "id": "K-QUANT-20261029-IDELOOP2",
+   "desc": "IDE工具循环收口：进度提示；工具结束强制最终自然语言；仍失败则基于工具轨迹兜底总结，不再显示未给出最终答复；测试",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-QUANT-20261029-IDELOOP2",
+   "created": "2026-10-29 09:23:44",
+   "project": "quant"
+  },
+  {
+   "id": "WO-DEVTASK-MERGE-LOCK-20261029",
+   "desc": "devtask 合并锁：仓库级文件锁串行化 git merge（防并发 HEAD/index 竞争），带超时/陈旧锁回收/pid 校验；merge 段 try/finally 释放；补并发/陈旧锁单测",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-DEVTASK-MERGE-LOCK-20261029",
+   "created": "2026-10-29 09:24:02",
+   "project": "portal"
+  },
+  {
+   "id": "WO-GUANYU-P26-20261029",
+   "desc": "B1登记更新 [UNOWNED]",
+   "status": "doing",
+   "owner": "unknown-agent",
+   "branch": "task/WO-GUANYU-P26-20261029",
+   "created": "2026-10-29 09:26:24",
    "project": "general"
   }
  ],
@@ -2050,7 +2077,14 @@
    ],
    "experience": "30 年从业经验（AI 方法论：Agent 能力、评测与知识反哺）",
    "dept_name": "研究院",
-   "dept_cn_title": "太学"
+   "dept_cn_title": "太学",
+   "tasks": [
+    {
+     "id": "WO-ACAD-GOLDEN4-20261029",
+     "desc": "按 AI1 方案落 4 席 golden：seat_golden 加 COMM1/INTEL1/AI1/PROD1 各3条确定性断言（schema v2：contains_all/not_contains_any/regex/min_urls）；seat_eval 兼容 v2 断言执行器；测试；目标 4 席 seat_realness --with-eval 6/6。",
+     "status": "doing"
+    }
+   ]
   },
   "PROD1": {
    "id": "PROD1",
