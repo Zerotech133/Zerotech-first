@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-29 09:14",
+ "generated": "2026-10-29 09:15",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 48,
+  "workorders_doing": 47,
   "workorders_review": 6
  },
  "workorders": [
@@ -461,15 +461,6 @@
    "owner": "unknown-agent",
    "branch": "task/WO-GUANYU-P24-20261029",
    "created": "2026-10-29 08:46:03",
-   "project": "general"
-  },
-  {
-   "id": "WO-GUANYU-P24B-20261029",
-   "desc": "批准单入主线B [UNOWNED]",
-   "status": "doing",
-   "owner": "unknown-agent",
-   "branch": "task/WO-GUANYU-P24B-20261029",
-   "created": "2026-10-29 08:47:01",
    "project": "general"
   },
   {
