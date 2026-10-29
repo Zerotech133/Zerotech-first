@@ -1336,6 +1336,37 @@ def _auto_rebuild_ide_bundle(tid):
         print("  IDE bundle   ⚠ 重建异常（不阻断）：%s" % str(e)[:160])
 
 
+def _quality_gate(tid):
+    """合并前测试门（P0#1 内联，2026-10-29 WO-GUANYU-P37）。
+
+    口径同 tools/merge_gated.py：纯文档/配置变更跳过，其余跑
+    `tools/test_gate.ps1 -Suite fast`（portal+k_stock），新增失败即拒绝。
+    显式绕过：DEVTOOL_MERGE_GATE=0（仅回滚/紧急，回单注明"绕过质量闸"）。
+    """
+    if os.environ.get("DEVTOOL_MERGE_GATE") == "0":
+        return True, "已显式绕过（DEVTOOL_MERGE_GATE=0）"
+    tools_dir = os.path.dirname(os.path.abspath(__file__))
+    if tools_dir not in sys.path:
+        sys.path.insert(0, tools_dir)
+    try:
+        import merge_gated as _mg
+    except ImportError:
+        return False, "质量闸组件缺失（tools/merge_gated.py）"
+    try:
+        files = _mg.branch_changed_files(tid)
+    except Exception as exc:  # noqa: BLE001
+        return False, "改动文件计算异常：%r" % exc
+    if _mg.is_docs_only(files):
+        return True, "纯文档/配置变更（跳过测试）"
+    print("  质量闸   … 跑 test_gate -Suite fast（portal+k_stock，约 4~5 分钟）")
+    rc = _mg.run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass",
+                  "-File", os.path.join(REPO, "tools", "test_gate.ps1"),
+                  "-Suite", "fast"], timeout=1800)
+    if rc != 0:
+        return False, "test_gate fast rc=%d（日志 %s）" % (rc, _mg.LOG)
+    return True, "fast 门通过（%d 文件）" % len(files)
+
+
 def cmd_merge(tid, *flags):
     # 2026-10-29 合并串行锁：直接调用 devtask merge 也串行化（父进程已持锁则复用）
     if not os.environ.get("AIOS_MERGE_LOCK_TOKEN"):
@@ -1452,6 +1483,16 @@ def cmd_merge(tid, *flags):
             _save(tasks, changed=(tid,))
             _emit("guard_fail", tid, "L2 门未过（K-STOCK-416）：%s" % detail[:120])
             return 1
+    qg_ok, qg_detail = _quality_gate(tid)
+    if qg_ok:
+        print("  %-8s ✓ %s" % ("质量闸", qg_detail))
+    else:
+        print("  %-8s ✗ %s" % ("质量闸", qg_detail[:200]))
+        print("门未过，拒绝合并。修完重跑。")
+        t["status"] = "review"
+        _save(tasks, changed=(tid,))
+        _emit("guard_fail", tid, "质量闸未过：%s" % qg_detail[:120])
+        return 1
     lock = _acquire_merge_lock(tid)
     if lock is None:
         return 1
