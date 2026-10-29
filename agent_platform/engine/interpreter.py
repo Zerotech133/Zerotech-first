@@ -245,12 +245,7 @@ class Interpreter:
         # 菜鸟 createResultSummary + node_exec 执行账（落 agent_platform/data/team_exec）
         try:
             records = team_exec.read_run(run_id)
-            dec_obj = {}
-            if isinstance(decision, str) and decision.strip().startswith("{"):
-                try:
-                    dec_obj = json.loads(decision)
-                except ValueError:
-                    dec_obj = {}
+            dec_obj = team_exec.parse_decision_text(decision)
             summary = team_exec.build_summary(dec_obj, records, stock)
             team_exec.write_summary(run_id, summary)
         except Exception as exc:  # noqa: BLE001 摘要失败不阻塞决策

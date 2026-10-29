@@ -16,7 +16,7 @@ from datetime import datetime
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DEFAULT_DIR = os.path.join(REPO, "agent_platform", "data", "team_exec")
-SUMMARY_FILE = "summaries.jsonl"
+SUMMARY_FILE = "result_summaries.jsonl"
 
 
 def _dir():
@@ -76,6 +76,21 @@ def read_run(run_id):
             except ValueError:
                 continue
     return out
+
+
+def parse_decision_text(text):
+    """从 D1 输出提取 JSON 决策（兼容前缀/围栏）；失败返回 {}。"""
+    import re
+    if not text:
+        return {}
+    m = re.search(r"\{[\s\S]*\}", str(text))
+    if not m:
+        return {}
+    try:
+        d = json.loads(m.group(0))
+        return d if isinstance(d, dict) else {}
+    except ValueError:
+        return {}
 
 
 def build_summary(decision, records, stock=None):
