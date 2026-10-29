@@ -592,6 +592,16 @@ def load_approvals() -> dict:
             "latest": rows[-5:]}
 
 
+def load_audit() -> dict:
+    f = REPO / "work" / "data_sync" / "audit_latest.json"
+    if not f.exists():
+        return {"stores": {}, "financials": {}, "events": {}}
+    try:
+        return json.loads(f.read_text(encoding="utf-8"))
+    except ValueError:
+        return {"stores": {}, "financials": {}, "events": {}}
+
+
 def load_sync() -> dict:
     """手动/计划同步最近一次执行状态（work/data_sync/last.json）。"""
     f = REPO / "work" / "data_sync" / "last.json"
@@ -630,6 +640,23 @@ def main(argv=None) -> int:
     contracts_n = len(list((REPO / "agent_platform" / "catalogs" / "contracts").glob("*.yaml")))
     total = len(sources)
     done = status_cnt.get("done", 0)
+    audit = load_audit()
+    for s in sources:
+        st = audit.get("stores", {}).get(s["name"])
+        if st:
+            s["audit"] = {"source_latest": st.get("source_latest"),
+                          "local_latest": st.get("local_latest"),
+                          "verdict": st.get("verdict"), "filled": st.get("filled")}
+        elif s["name"] in ("income", "balancesheet", "cashflow", "fina_indicator"):
+            fa = audit.get("financials", {}).get(s["name"]) or {}
+            s["audit"] = {"source_latest": fa.get("source_latest_ann"),
+                          "local_latest": s.get("latest_date"),
+                          "verdict": "aligned" if s.get("latest_date") else "unknown"}
+        elif s["name"] in ("forecast", "express"):
+            ev = audit.get("events", {}).get(s["name"]) or {}
+            s["audit"] = {"source_latest": ev.get("source_latest"),
+                          "local_latest": ev.get("local_latest"),
+                          "verdict": ev.get("verdict")}
     snap = {
         "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
         "today": TODAY,
@@ -667,6 +694,7 @@ def main(argv=None) -> int:
         "roadmap": [{"phase": a, "status": b, "date": c, "note": d} for a, b, c, d in ROADMAP],
         "ops": {"backup": backup, "supervisor": sup, "approvals": approvals},
         "sync": load_sync(),
+        "audit": audit,
         "layers": LAYER_ORDER, "status_order": STATUS_ORDER,
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)

@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-10-30T02:37:46+08:00",
+ "generated_at": "2026-10-30T02:57:18+08:00",
  "today": "2026-10-30",
  "catalog": {
   "version": 16,
@@ -26,7 +26,7 @@
   "sources_pending": 0,
   "coverage_pct": 34.8,
   "new_today": 38,
-  "pilot_today": 5,
+  "pilot_today": 6,
   "merged_today": 9,
   "hypotheses": 14,
   "hypotheses_by_status": {
@@ -80,7 +80,7 @@
    }
   ],
   "backup_latest": "2026-10-29_0300",
-  "backup_age_hours": 26.6,
+  "backup_age_hours": 27.0,
   "supervisor_red": []
  },
  "sources": [
@@ -169,7 +169,12 @@
     "H7"
    ],
    "gap_note": "",
-   "next_action": "—"
+   "next_action": "—",
+   "audit": {
+    "source_latest": "20261030",
+    "local_latest": "20261030",
+    "verdict": "aligned"
+   }
   },
   {
    "name": "cashflow",
@@ -198,7 +203,12 @@
     "H7"
    ],
    "gap_note": "",
-   "next_action": "—"
+   "next_action": "—",
+   "audit": {
+    "source_latest": "20261030",
+    "local_latest": "20261030",
+    "verdict": "aligned"
+   }
   },
   {
    "name": "cb_basic",
@@ -345,7 +355,13 @@
     "H14"
    ],
    "gap_note": "",
-   "next_action": "—"
+   "next_action": "—",
+   "audit": {
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "aligned",
+    "filled": 0
+   }
   },
   {
    "name": "daily_basic",
@@ -376,7 +392,13 @@
     "H14"
    ],
    "gap_note": "",
-   "next_action": "—"
+   "next_action": "—",
+   "audit": {
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "aligned",
+    "filled": 0
+   }
   },
   {
    "name": "etf_mins",
@@ -432,7 +454,12 @@
     "H2"
    ],
    "gap_note": "",
-   "next_action": "—"
+   "next_action": "—",
+   "audit": {
+    "source_latest": "20261021",
+    "local_latest": "20261021",
+    "verdict": "aligned"
+   }
   },
   {
    "name": "fina_indicator",
@@ -463,7 +490,12 @@
     "H14"
    ],
    "gap_note": "",
-   "next_action": "—"
+   "next_action": "—",
+   "audit": {
+    "source_latest": "20261030",
+    "local_latest": "20261030",
+    "verdict": "aligned"
+   }
   },
   {
    "name": "forecast",
@@ -494,7 +526,12 @@
     "H12"
    ],
    "gap_note": "",
-   "next_action": "—"
+   "next_action": "—",
+   "audit": {
+    "source_latest": "20261024",
+    "local_latest": "20261024",
+    "verdict": "aligned"
+   }
   },
   {
    "name": "fx_daily",
@@ -633,7 +670,13 @@
     "H9"
    ],
    "gap_note": "",
-   "next_action": "726 日/152.7 万行；A/H 研究待开"
+   "next_action": "726 日/152.7 万行；A/H 研究待开",
+   "audit": {
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "aligned",
+    "filled": 0
+   }
   },
   {
    "name": "hk_fina_indicator",
@@ -743,7 +786,12 @@
     "H7"
    ],
    "gap_note": "",
-   "next_action": "—"
+   "next_action": "—",
+   "audit": {
+    "source_latest": "20261030",
+    "local_latest": "20261030",
+    "verdict": "aligned"
+   }
   },
   {
    "name": "index_daily",
@@ -803,7 +851,13 @@
     "H9"
    ],
    "gap_note": "",
-   "next_action": "—"
+   "next_action": "—",
+   "audit": {
+    "source_latest": null,
+    "local_latest": null,
+    "verdict": "aligned",
+    "filled": null
+   }
   },
   {
    "name": "index_member_all",
@@ -924,7 +978,7 @@
    "freshness_mode": "daily",
    "status": "mining",
    "note": "已入库，未用于研究",
-   "files": 279,
+   "files": 280,
    "size_mb": 5.4,
    "size_h": "5 MB",
    "rows": 28859,
@@ -934,14 +988,20 @@
    "latest_date": "20261029",
    "report_period": "",
    "lag_days": 1,
-   "today_new": 4,
+   "today_new": 10,
    "registered": true,
    "manifest": "closed",
    "date_status": "registered",
    "contract": false,
    "hypothesis_ids": [],
    "gap_note": "",
-   "next_action": "已入库，未用于研究"
+   "next_action": "已入库，未用于研究",
+   "audit": {
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "aligned",
+    "filled": 0
+   }
   },
   {
    "name": "major_news",
@@ -1025,7 +1085,13 @@
     "H13"
    ],
    "gap_note": "",
-   "next_action": "—"
+   "next_action": "—",
+   "audit": {
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "aligned",
+    "filled": 0
+   }
   },
   {
    "name": "news",
@@ -1513,7 +1579,13 @@
     "H3"
    ],
    "gap_note": "",
-   "next_action": "—"
+   "next_action": "—",
+   "audit": {
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "aligned",
+    "filled": 0
+   }
   },
   {
    "name": "top_list",
@@ -1542,7 +1614,13 @@
     "H3"
    ],
    "gap_note": "",
-   "next_action": "—"
+   "next_action": "—",
+   "audit": {
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "aligned",
+    "filled": 0
+   }
   },
   {
    "name": "trade_cal",
@@ -1744,13 +1822,13 @@
    "status": "in_progress",
    "note": "保留 365 天；历史不可回填（接口深度约 1 周）",
    "files": 1,
-   "size_mb": 105.93,
+   "size_mb": 106.0,
    "size_h": "106 MB",
-   "rows": 100896,
-   "rows_h": "100896",
+   "rows": 100907,
+   "rows_h": "100907",
    "range": "news.db",
    "last_update": "2026-10-30",
-   "latest_date": "2026-10-30 02:34",
+   "latest_date": "2026-10-30 02:46",
    "lag_days": 0,
    "today_new": 1,
    "registered": true,
@@ -1885,8 +1963,8 @@
    "files": 1,
    "size_mb": 8379,
    "size_h": "8.4 GB",
-   "rows": 15825468,
-   "rows_h": "1582.5 万",
+   "rows": 15826240,
+   "rows_h": "1582.6 万",
    "range": "2026-08-11 起（分钟线）",
    "last_update": "2026-10-30",
    "latest_date": "2026-10-29",
@@ -2019,7 +2097,12 @@
     "H7"
    ],
    "gap_note": "",
-   "next_action": "—"
+   "next_action": "—",
+   "audit": {
+    "source_latest": "20261030",
+    "local_latest": "20261030",
+    "verdict": "aligned"
+   }
   },
   {
    "name": "cashflow",
@@ -2048,7 +2131,12 @@
     "H7"
    ],
    "gap_note": "",
-   "next_action": "—"
+   "next_action": "—",
+   "audit": {
+    "source_latest": "20261030",
+    "local_latest": "20261030",
+    "verdict": "aligned"
+   }
   },
   {
    "name": "cb_basic",
@@ -2141,7 +2229,13 @@
     "H14"
    ],
    "gap_note": "",
-   "next_action": "—"
+   "next_action": "—",
+   "audit": {
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "aligned",
+    "filled": 0
+   }
   },
   {
    "name": "daily_basic",
@@ -2172,7 +2266,13 @@
     "H14"
    ],
    "gap_note": "",
-   "next_action": "—"
+   "next_action": "—",
+   "audit": {
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "aligned",
+    "filled": 0
+   }
   },
   {
    "name": "etf_mins",
@@ -2230,7 +2330,12 @@
     "H14"
    ],
    "gap_note": "",
-   "next_action": "—"
+   "next_action": "—",
+   "audit": {
+    "source_latest": "20261030",
+    "local_latest": "20261030",
+    "verdict": "aligned"
+   }
   },
   {
    "name": "hk_basic",
@@ -2286,7 +2391,13 @@
     "H9"
    ],
    "gap_note": "",
-   "next_action": "726 日/152.7 万行；A/H 研究待开"
+   "next_action": "726 日/152.7 万行；A/H 研究待开",
+   "audit": {
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "aligned",
+    "filled": 0
+   }
   },
   {
    "name": "idx_mins",
@@ -2342,7 +2453,12 @@
     "H7"
    ],
    "gap_note": "",
-   "next_action": "—"
+   "next_action": "—",
+   "audit": {
+    "source_latest": "20261030",
+    "local_latest": "20261030",
+    "verdict": "aligned"
+   }
   },
   {
    "name": "index_daily",
@@ -2402,7 +2518,13 @@
     "H9"
    ],
    "gap_note": "",
-   "next_action": "—"
+   "next_action": "—",
+   "audit": {
+    "source_latest": null,
+    "local_latest": null,
+    "verdict": "aligned",
+    "filled": null
+   }
   },
   {
    "name": "index_weight",
@@ -2439,7 +2561,7 @@
    "freshness_mode": "daily",
    "status": "mining",
    "note": "已入库，未用于研究",
-   "files": 279,
+   "files": 280,
    "size_mb": 5.4,
    "size_h": "5 MB",
    "rows": 28859,
@@ -2449,14 +2571,20 @@
    "latest_date": "20261029",
    "report_period": "",
    "lag_days": 1,
-   "today_new": 4,
+   "today_new": 10,
    "registered": true,
    "manifest": "closed",
    "date_status": "registered",
    "contract": false,
    "hypothesis_ids": [],
    "gap_note": "",
-   "next_action": "已入库，未用于研究"
+   "next_action": "已入库，未用于研究",
+   "audit": {
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "aligned",
+    "filled": 0
+   }
   },
   {
    "name": "major_news",
@@ -2540,7 +2668,13 @@
     "H13"
    ],
    "gap_note": "",
-   "next_action": "—"
+   "next_action": "—",
+   "audit": {
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "aligned",
+    "filled": 0
+   }
   },
   {
    "name": "news",
@@ -2839,7 +2973,13 @@
     "H3"
    ],
    "gap_note": "",
-   "next_action": "—"
+   "next_action": "—",
+   "audit": {
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "aligned",
+    "filled": 0
+   }
   },
   {
    "name": "top_list",
@@ -2868,7 +3008,13 @@
     "H3"
    ],
    "gap_note": "",
-   "next_action": "—"
+   "next_action": "—",
+   "audit": {
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "aligned",
+    "filled": 0
+   }
   },
   {
    "name": "trade_cal",
@@ -2962,13 +3108,13 @@
    "status": "in_progress",
    "note": "保留 365 天；历史不可回填（接口深度约 1 周）",
    "files": 1,
-   "size_mb": 105.93,
+   "size_mb": 106.0,
    "size_h": "106 MB",
-   "rows": 100896,
-   "rows_h": "100896",
+   "rows": 100907,
+   "rows_h": "100907",
    "range": "news.db",
    "last_update": "2026-10-30",
-   "latest_date": "2026-10-30 02:34",
+   "latest_date": "2026-10-30 02:46",
    "lag_days": 0,
    "today_new": 1,
    "registered": true,
@@ -3691,22 +3837,34 @@
     "desc": "部门AI分工与每日自动化：健康表/选池台账/日报；修 TodaysPicks 产品链；新增计划任务需 A0 L2 批。"
    },
    {
-    "id": "WO-HZ-POLICY-20261030",
-    "status": "review",
-    "owner": "DSH-Lead",
-    "desc": "v0验收单豁免+③复核口径补丁"
-   },
-   {
-    "id": "WO-GUANYU-P55-20261030",
-    "status": "doing",
-    "owner": "GUANYU",
-    "desc": "legacy登记"
-   },
-   {
     "id": "WO-ACAD-PROTO-20261030",
     "status": "doing",
     "owner": "ACAD1",
     "desc": "ACAD1 原型先行：策略独立工作台（青萍样板）+ ACAD1选池日历 + 鲁肃判断台 三原型；5175无登录；先样例/标注真实缺口，评审后再接数据。"
+   },
+   {
+    "id": "WO-GUANYU-P56-20261030",
+    "status": "review",
+    "owner": "GUANYU",
+    "desc": "X5轮换批准单"
+   },
+   {
+    "id": "WO-SEC-AUDIT-TASK-20261030",
+    "status": "review",
+    "owner": "ZHAOYUN",
+    "desc": "security_audit.ps1：py311 pip-audit(freeze)+py312 bandit，固定日志/status，任务可靠退出"
+   },
+   {
+    "id": "WO-LEGION-UI-KIT-20261030",
+    "status": "doing",
+    "owner": "ZHAOYUN",
+    "desc": "零界UI能力基座：开源对标、组件库、UI Kit页与全项目重规划"
+   },
+   {
+    "id": "WO-INV-POOL-UI-20261030",
+    "status": "doing",
+    "owner": "DSH-Lead",
+    "desc": "司马徽推荐池前端页 /acad1_pool.html：31只全池复盘（D1裁决/多角度明细/来源/时效）+ /api/acad1/pool 数据口"
    }
   ],
   "doing_data": [
@@ -3763,6 +3921,12 @@
     "status": "doing",
     "owner": "ACAD1",
     "desc": "ACAD1 原型先行：策略独立工作台（青萍样板）+ ACAD1选池日历 + 鲁肃判断台 三原型；5175无登录；先样例/标注真实缺口，评审后再接数据。"
+   },
+   {
+    "id": "WO-INV-POOL-UI-20261030",
+    "status": "doing",
+    "owner": "DSH-Lead",
+    "desc": "司马徽推荐池前端页 /acad1_pool.html：31只全池复盘（D1裁决/多角度明细/来源/时效）+ /api/acad1/pool 数据口"
    }
   ],
   "today_pilot": [
@@ -3827,22 +3991,34 @@
     "desc": "部门AI分工与每日自动化：健康表/选池台账/日报；修 TodaysPicks 产品链；新增计划任务需 A0 L2 批。"
    },
    {
-    "id": "WO-HZ-POLICY-20261030",
-    "status": "review",
-    "owner": "DSH-Lead",
-    "desc": "v0验收单豁免+③复核口径补丁"
-   },
-   {
-    "id": "WO-GUANYU-P55-20261030",
-    "status": "doing",
-    "owner": "GUANYU",
-    "desc": "legacy登记"
-   },
-   {
     "id": "WO-ACAD-PROTO-20261030",
     "status": "doing",
     "owner": "ACAD1",
     "desc": "ACAD1 原型先行：策略独立工作台（青萍样板）+ ACAD1选池日历 + 鲁肃判断台 三原型；5175无登录；先样例/标注真实缺口，评审后再接数据。"
+   },
+   {
+    "id": "WO-GUANYU-P56-20261030",
+    "status": "review",
+    "owner": "GUANYU",
+    "desc": "X5轮换批准单"
+   },
+   {
+    "id": "WO-SEC-AUDIT-TASK-20261030",
+    "status": "review",
+    "owner": "ZHAOYUN",
+    "desc": "security_audit.ps1：py311 pip-audit(freeze)+py312 bandit，固定日志/status，任务可靠退出"
+   },
+   {
+    "id": "WO-LEGION-UI-KIT-20261030",
+    "status": "doing",
+    "owner": "ZHAOYUN",
+    "desc": "零界UI能力基座：开源对标、组件库、UI Kit页与全项目重规划"
+   },
+   {
+    "id": "WO-INV-POOL-UI-20261030",
+    "status": "doing",
+    "owner": "DSH-Lead",
+    "desc": "司马徽推荐池前端页 /acad1_pool.html：31只全池复盘（D1裁决/多角度明细/来源/时效）+ /api/acad1/pool 数据口"
    }
   ],
   "today_pilot_data": [
@@ -3875,6 +4051,12 @@
     "status": "doing",
     "owner": "ACAD1",
     "desc": "ACAD1 原型先行：策略独立工作台（青萍样板）+ ACAD1选池日历 + 鲁肃判断台 三原型；5175无登录；先样例/标注真实缺口，评审后再接数据。"
+   },
+   {
+    "id": "WO-INV-POOL-UI-20261030",
+    "status": "doing",
+    "owner": "DSH-Lead",
+    "desc": "司马徽推荐池前端页 /acad1_pool.html：31只全池复盘（D1裁决/多角度明细/来源/时效）+ /api/acad1/pool 数据口"
    }
   ],
   "today_merged": [
@@ -4287,16 +4469,40 @@
     "desc": "元数据日报"
    },
    {
+    "id": "WO-HZ-POLICY-20261030",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "v0验收单豁免+③复核口径补丁"
+   },
+   {
     "id": "WO-HZ-CERT-EVID-20261030",
     "status": "done",
     "owner": "DSH-Lead",
     "desc": "黄忠认证证据：演练签字+赵云抽查3单+11-04 runbook"
    },
    {
+    "id": "WO-GUANYU-P55-20261030",
+    "status": "done",
+    "owner": "GUANYU",
+    "desc": "legacy登记"
+   },
+   {
     "id": "WO-LEGION-OS-IA4-20261030",
     "status": "done",
     "owner": "ZHAOYUN",
     "desc": "折叠 MutationObserver 自激修复：summary 文本变化才写"
+   },
+   {
+    "id": "K-QUANT-20261030-OHENGINE",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "方案A：OpenHands执行引擎接入；网关tools/tool_calls透传；适配器+健康检查；端到端任务测试"
+   },
+   {
+    "id": "WO-HZ-COVERAGE-20261030",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "11-04 runbook 更新：覆盖率提频每小时+证据刷新排程+满窗核对"
    }
   ],
   "today_merged_data": [
@@ -4357,9 +4563,9 @@
   ],
   "counts": {
    "aborted": 89,
-   "done": 1229,
-   "review": 9,
-   "doing": 27
+   "done": 1235,
+   "review": 10,
+   "doing": 28
   }
  },
  "governance": [
@@ -4558,11 +4764,11 @@
     }
    ],
    "receipt": "offsite_remote_receipt.txt",
-   "age_hours": 26.6
+   "age_hours": 27.0
   },
   "supervisor": {
    "red": [],
-   "generated_at": "2026-10-30T02:37:46"
+   "generated_at": "2026-10-30T02:57:17"
   },
   "approvals": {
    "count": 2,
@@ -4654,6 +4860,581 @@
   ],
   "log": "C:\\项目\\老田的AI助手\\work\\data_sync\\sync_20261030_020800.log",
   "how_to": "python tools/data_sync_manual.py（或指定 --steps tushare,hk,snapshot）"
+ },
+ "audit": {
+  "generated_at": "2026-10-30T02:55:26+08:00",
+  "trading_days": [
+   "20261016",
+   "20261019",
+   "20261020",
+   "20261021",
+   "20261022",
+   "20261023",
+   "20261026",
+   "20261027",
+   "20261028",
+   "20261029"
+  ],
+  "dry_run": false,
+  "stores": {
+   "daily": {
+    "store": "daily",
+    "api": "daily",
+    "checked_days": 10,
+    "filled": 0,
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "aligned",
+    "checks": [
+     {
+      "date": "20261016",
+      "source_rows": 5567,
+      "local_rows": 5567,
+      "action": "ok"
+     },
+     {
+      "date": "20261019",
+      "source_rows": 5564,
+      "local_rows": 5564,
+      "action": "ok"
+     },
+     {
+      "date": "20261020",
+      "source_rows": 5568,
+      "local_rows": 5568,
+      "action": "ok"
+     },
+     {
+      "date": "20261021",
+      "source_rows": 5568,
+      "local_rows": 5568,
+      "action": "ok"
+     },
+     {
+      "date": "20261022",
+      "source_rows": 5570,
+      "local_rows": 5570,
+      "action": "ok"
+     },
+     {
+      "date": "20261023",
+      "source_rows": 5572,
+      "local_rows": 5572,
+      "action": "ok"
+     },
+     {
+      "date": "20261026",
+      "source_rows": 5570,
+      "local_rows": 5570,
+      "action": "ok"
+     },
+     {
+      "date": "20261027",
+      "source_rows": 5570,
+      "local_rows": 5570,
+      "action": "ok"
+     },
+     {
+      "date": "20261028",
+      "source_rows": 5570,
+      "local_rows": 5570,
+      "action": "ok"
+     },
+     {
+      "date": "20261029",
+      "source_rows": 5570,
+      "local_rows": 5570,
+      "action": "ok"
+     }
+    ]
+   },
+   "daily_basic": {
+    "store": "daily_basic",
+    "api": "daily_basic",
+    "checked_days": 10,
+    "filled": 0,
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "aligned",
+    "checks": [
+     {
+      "date": "20261016",
+      "source_rows": 5567,
+      "local_rows": 5567,
+      "action": "ok"
+     },
+     {
+      "date": "20261019",
+      "source_rows": 5564,
+      "local_rows": 5564,
+      "action": "ok"
+     },
+     {
+      "date": "20261020",
+      "source_rows": 5568,
+      "local_rows": 5568,
+      "action": "ok"
+     },
+     {
+      "date": "20261021",
+      "source_rows": 5568,
+      "local_rows": 5568,
+      "action": "ok"
+     },
+     {
+      "date": "20261022",
+      "source_rows": 5570,
+      "local_rows": 5570,
+      "action": "ok"
+     },
+     {
+      "date": "20261023",
+      "source_rows": 5572,
+      "local_rows": 5572,
+      "action": "ok"
+     },
+     {
+      "date": "20261026",
+      "source_rows": 5570,
+      "local_rows": 5570,
+      "action": "ok"
+     },
+     {
+      "date": "20261027",
+      "source_rows": 5570,
+      "local_rows": 5570,
+      "action": "ok"
+     },
+     {
+      "date": "20261028",
+      "source_rows": 5570,
+      "local_rows": 5570,
+      "action": "ok"
+     },
+     {
+      "date": "20261029",
+      "source_rows": 5570,
+      "local_rows": 5570,
+      "action": "ok"
+     }
+    ]
+   },
+   "moneyflow": {
+    "store": "moneyflow",
+    "api": "moneyflow",
+    "checked_days": 10,
+    "filled": 0,
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "aligned",
+    "checks": [
+     {
+      "date": "20261016",
+      "source_rows": 5577,
+      "local_rows": 5577,
+      "action": "ok"
+     },
+     {
+      "date": "20261019",
+      "source_rows": 5575,
+      "local_rows": 5575,
+      "action": "ok"
+     },
+     {
+      "date": "20261020",
+      "source_rows": 5575,
+      "local_rows": 5575,
+      "action": "ok"
+     },
+     {
+      "date": "20261021",
+      "source_rows": 5576,
+      "local_rows": 5576,
+      "action": "ok"
+     },
+     {
+      "date": "20261022",
+      "source_rows": 5577,
+      "local_rows": 5577,
+      "action": "ok"
+     },
+     {
+      "date": "20261023",
+      "source_rows": 5577,
+      "local_rows": 5577,
+      "action": "ok"
+     },
+     {
+      "date": "20261026",
+      "source_rows": 5577,
+      "local_rows": 5577,
+      "action": "ok"
+     },
+     {
+      "date": "20261027",
+      "source_rows": 5577,
+      "local_rows": 5577,
+      "action": "ok"
+     },
+     {
+      "date": "20261028",
+      "source_rows": 5576,
+      "local_rows": 5576,
+      "action": "ok"
+     },
+     {
+      "date": "20261029",
+      "source_rows": 5577,
+      "local_rows": 5577,
+      "action": "ok"
+     }
+    ]
+   },
+   "top_list": {
+    "store": "top_list",
+    "api": "top_list",
+    "checked_days": 10,
+    "filled": 0,
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "aligned",
+    "checks": [
+     {
+      "date": "20261016",
+      "source_rows": 66,
+      "local_rows": 66,
+      "action": "ok"
+     },
+     {
+      "date": "20261019",
+      "source_rows": 80,
+      "local_rows": 80,
+      "action": "ok"
+     },
+     {
+      "date": "20261020",
+      "source_rows": 82,
+      "local_rows": 82,
+      "action": "ok"
+     },
+     {
+      "date": "20261021",
+      "source_rows": 69,
+      "local_rows": 69,
+      "action": "ok"
+     },
+     {
+      "date": "20261022",
+      "source_rows": 75,
+      "local_rows": 75,
+      "action": "ok"
+     },
+     {
+      "date": "20261023",
+      "source_rows": 101,
+      "local_rows": 101,
+      "action": "ok"
+     },
+     {
+      "date": "20261026",
+      "source_rows": 89,
+      "local_rows": 89,
+      "action": "ok"
+     },
+     {
+      "date": "20261027",
+      "source_rows": 88,
+      "local_rows": 88,
+      "action": "ok"
+     },
+     {
+      "date": "20261028",
+      "source_rows": 78,
+      "local_rows": 78,
+      "action": "ok"
+     },
+     {
+      "date": "20261029",
+      "source_rows": 75,
+      "local_rows": 75,
+      "action": "ok"
+     }
+    ]
+   },
+   "top_inst": {
+    "store": "top_inst",
+    "api": "top_inst",
+    "checked_days": 10,
+    "filled": 0,
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "aligned",
+    "checks": [
+     {
+      "date": "20261016",
+      "source_rows": 660,
+      "local_rows": 660,
+      "action": "ok"
+     },
+     {
+      "date": "20261019",
+      "source_rows": 800,
+      "local_rows": 800,
+      "action": "ok"
+     },
+     {
+      "date": "20261020",
+      "source_rows": 820,
+      "local_rows": 820,
+      "action": "ok"
+     },
+     {
+      "date": "20261021",
+      "source_rows": 690,
+      "local_rows": 690,
+      "action": "ok"
+     },
+     {
+      "date": "20261022",
+      "source_rows": 750,
+      "local_rows": 750,
+      "action": "ok"
+     },
+     {
+      "date": "20261023",
+      "source_rows": 1010,
+      "local_rows": 1010,
+      "action": "ok"
+     },
+     {
+      "date": "20261026",
+      "source_rows": 890,
+      "local_rows": 890,
+      "action": "ok"
+     },
+     {
+      "date": "20261027",
+      "source_rows": 880,
+      "local_rows": 880,
+      "action": "ok"
+     },
+     {
+      "date": "20261028",
+      "source_rows": 780,
+      "local_rows": 780,
+      "action": "ok"
+     },
+     {
+      "date": "20261029",
+      "source_rows": 750,
+      "local_rows": 750,
+      "action": "ok"
+     }
+    ]
+   },
+   "limit_list_d": {
+    "store": "limit_list_d",
+    "api": "limit_list_d",
+    "checked_days": 10,
+    "filled": 0,
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "aligned",
+    "checks": [
+     {
+      "date": "20261016",
+      "source_rows": 120,
+      "local_rows": 120,
+      "action": "ok"
+     },
+     {
+      "date": "20261019",
+      "source_rows": 89,
+      "local_rows": 89,
+      "action": "ok"
+     },
+     {
+      "date": "20261020",
+      "source_rows": 89,
+      "local_rows": 89,
+      "action": "ok"
+     },
+     {
+      "date": "20261021",
+      "source_rows": 74,
+      "local_rows": 74,
+      "action": "ok"
+     },
+     {
+      "date": "20261022",
+      "source_rows": 104,
+      "local_rows": 104,
+      "action": "ok"
+     },
+     {
+      "date": "20261023",
+      "source_rows": 100,
+      "local_rows": 100,
+      "action": "ok"
+     },
+     {
+      "date": "20261026",
+      "source_rows": 104,
+      "local_rows": 104,
+      "action": "ok"
+     },
+     {
+      "date": "20261027",
+      "source_rows": 91,
+      "local_rows": 91,
+      "action": "ok"
+     },
+     {
+      "date": "20261028",
+      "source_rows": 146,
+      "local_rows": 146,
+      "action": "ok"
+     },
+     {
+      "date": "20261029",
+      "source_rows": 105,
+      "local_rows": 105,
+      "action": "ok"
+     }
+    ]
+   },
+   "hk_daily": {
+    "store": "hk_daily",
+    "api": "hk_daily",
+    "checked_days": 10,
+    "filled": 0,
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "aligned",
+    "checks": [
+     {
+      "date": "20261016",
+      "source_rows": 2234,
+      "local_rows": 2234,
+      "action": "ok"
+     },
+     {
+      "date": "20261019",
+      "source_rows": 0,
+      "local_rows": null,
+      "action": "ok"
+     },
+     {
+      "date": "20261020",
+      "source_rows": 2267,
+      "local_rows": 2267,
+      "action": "ok"
+     },
+     {
+      "date": "20261021",
+      "source_rows": 2225,
+      "local_rows": 2225,
+      "action": "ok"
+     },
+     {
+      "date": "20261022",
+      "source_rows": 2331,
+      "local_rows": 2331,
+      "action": "ok"
+     },
+     {
+      "date": "20261023",
+      "source_rows": 2235,
+      "local_rows": 2235,
+      "action": "ok"
+     },
+     {
+      "date": "20261026",
+      "source_rows": 2187,
+      "local_rows": 2187,
+      "action": "ok"
+     },
+     {
+      "date": "20261027",
+      "source_rows": 2181,
+      "local_rows": 2181,
+      "action": "ok"
+     },
+     {
+      "date": "20261028",
+      "source_rows": 2201,
+      "local_rows": 2201,
+      "action": "ok"
+     },
+     {
+      "date": "20261029",
+      "source_rows": 2153,
+      "local_rows": 2153,
+      "action": "ok"
+     }
+    ]
+   },
+   "index_global": {
+    "store": "index_global",
+    "codes": 20,
+    "new_rows": 0,
+    "verdict": "aligned"
+   }
+  },
+  "financials": {
+   "income": {
+    "source_rows": 7606,
+    "source_codes": 4939,
+    "source_latest_ann": "20261030",
+    "sample": 300,
+    "sample_with_q3": 270,
+    "coverage_pct": 90.0,
+    "verdict": "aligned"
+   },
+   "balancesheet": {
+    "source_rows": 7000,
+    "source_codes": 4836,
+    "source_latest_ann": "20261030",
+    "sample": 300,
+    "sample_with_q3": 252,
+    "coverage_pct": 84.0,
+    "verdict": "aligned"
+   },
+   "cashflow": {
+    "source_rows": 4943,
+    "source_codes": 4939,
+    "source_latest_ann": "20261030",
+    "sample": 300,
+    "sample_with_q3": 270,
+    "coverage_pct": 90.0,
+    "verdict": "aligned"
+   },
+   "fina_indicator": {
+    "source_rows": 5996,
+    "source_codes": 4939,
+    "source_latest_ann": "20261030",
+    "sample": 300,
+    "sample_with_q3": 270,
+    "coverage_pct": 90.0,
+    "verdict": "aligned"
+   }
+  },
+  "events": {
+   "forecast": {
+    "store": "forecast",
+    "api": "forecast_vip",
+    "local_latest": "20261024",
+    "source_latest": "20261024",
+    "verdict": "aligned"
+   },
+   "express": {
+    "store": "express",
+    "api": "express_vip",
+    "local_latest": "20261021",
+    "source_latest": "20261021",
+    "verdict": "aligned"
+   }
+  }
  },
  "layers": [
   "原始层",
