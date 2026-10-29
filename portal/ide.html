@@ -374,6 +374,7 @@ try{
       <button class="send" id="mic" title="本地语音输入（Windows 离线识别，不上传云端）" style="background:#1f2b3a;border:1px solid #33506f;border-radius:8px;padding:0 10px;color:#dbe8f5;cursor:pointer;margin-right:6px">🎙️</button>
       <button class="send" id="send" onclick="send()" disabled>发送</button>
       <button class="send" id="stop" onclick="cancelSend()" style="display:none;background:#3a1f1f;border-color:#7a2a2e;color:#ffb0b0;margin-left:6px">停止</button>
+      <button class="send" id="oh" onclick="toggleOH()" title="OpenHands 执行引擎：真实工具循环/文件修改" style="background:#1f2f3a;border-color:#2f6f7a;color:#9fe3ee;margin-left:6px">OH</button>
     </div>
     <div class="dbg-note">经 nginx /ollama/ 反代直连本地 Ollama(11434) · 9b 约 10-60s · 此调试不发工单不落记忆 · 每Agent独立会话切人保留历史</div>
   </div>
@@ -1549,9 +1550,63 @@ function cancelSend(){
   }
 }
 
+let OH_MODE = localStorage.getItem("oh-mode") === "1";
+function toggleOH(){
+  OH_MODE = !OH_MODE;
+  localStorage.setItem("oh-mode", OH_MODE ? "1" : "0");
+  const b = document.getElementById("oh");
+  if(b){ b.textContent = OH_MODE ? "OH ON" : "OH"; b.style.background = OH_MODE ? "#163f2f" : "#1f2f3a"; }
+  addLog("OpenHands 模式 " + (OH_MODE ? "ON" : "OFF"), "lg-b");
+}
+async function sendOpenHands(raw){
+  const aid = DBGCUR.id;
+  qbox.value = "";
+  addMsg("u", aid + " 的 OpenHands 指令", esc(raw), raw);
+  const btn = document.getElementById("send"); btn.disabled = true;
+  CURRENT_ABORT = new AbortController();
+  document.getElementById("stop").style.display = "";
+  const r1 = addMsg("a", aid + " · OpenHands 执行引擎 · 运行中…", "…");
+  const t0 = Date.now();
+  try{
+    const cid = localStorage.getItem("ohconv-" + aid) || "";
+    const {r, d} = await fetchJsonTimeout("http://127.0.0.1:8796/api/ide/openhands/chat", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({message: raw, conversation_id: cid, timeout: 900})
+    }, 900000, 0, null, CURRENT_ABORT.signal);
+    if(!r.ok || !d.ok) throw new Error((d && (d.detail || d.error)) || ("HTTP " + r.status));
+    if(d.conversation_id) localStorage.setItem("ohconv-" + aid, d.conversation_id);
+    const sec = ((Date.now()-t0)/1000).toFixed(1);
+    const steps = [
+      "OpenHands runtime 已接收任务",
+      "模型经军团网关：" + (d.model || "deepseek-flash"),
+      "工具循环完成 · " + (d.duration_ms || 0) + "ms",
+      d.conversation_id ? ("会话 " + d.conversation_id.slice(0,8)) : "会话已结束"
+    ];
+    const html = procHtml(steps, "✅ OpenHands 完成 · " + sec + "s")
+      + '<div style="margin-top:6px">' + evTable(d.reply || "(空响应)") + '</div>';
+    r1.el.innerHTML = html;
+    if(r1.whoEl) r1.whoEl.textContent = aid + " · OpenHands · ✅ " + sec + "s";
+    if(r1.rec){ r1.rec.who = aid + " · OpenHands"; r1.rec.html = html; r1.rec.raw = d.reply || ""; sessSave(aid); }
+    addLog("OpenHands ← " + aid + " · " + sec + "s", "lg-g");
+  }catch(e){
+    const sec = ((Date.now()-t0)/1000).toFixed(1);
+    const stopped = e && e.message === "用户已停止";
+    const html = procHtml(["OpenHands 执行失败", e && e.message ? e.message : "unknown"],
+      (stopped ? "⏹ 已停止 · " : "❌ OpenHands 失败 · ") + sec + "s");
+    r1.el.innerHTML = html;
+    if(r1.whoEl) r1.whoEl.textContent = aid + " · OpenHands · " + (stopped ? "已停止" : "失败");
+    addLog("OpenHands FAIL " + aid + " · " + (e && e.message), "lg-o");
+  }
+  CURRENT_ABORT = null;
+  const stopBtn = document.getElementById("stop");
+  if(stopBtn) stopBtn.style.display = "none";
+  btn.disabled = false;
+}
+
 async function send(){
   const raw = qbox.value.trim();
   if(!raw || !DBGCUR) return;
+  if(OH_MODE){ return sendOpenHands(raw); }
   const aid = DBGCUR.id;   // 捕获：推理期间切会话不串线（346）
   const prior = sessLoad(aid).filter(x =>
     (x.cls === "u" || x.cls === "a") && x.raw && x.raw !== "…" && !String(x.raw).startsWith("(")
@@ -1933,6 +1988,8 @@ fetch("/agent_ide_bundle.json", {cache:"no-store"}).then(r=>r.json()).then(d=>{
   if(B.a0_daily) addLog("A0 日报快照 "+B.a0_daily.date+" · 点评 "+(B.a0_review?B.a0_review.date:"无"));
   const lastDbg = wsGet("ide-dbg");
   if(lastDbg && B.agents[lastDbg]) dbgSelect(lastDbg);   // 恢复上次调试目标+会话
+  const ohb = document.getElementById("oh");
+  if(ohb && OH_MODE){ ohb.textContent = "OH ON"; ohb.style.background = "#163f2f"; }
 }).catch(e=>{ document.getElementById("side").innerHTML = '<div class="dep">bundle 加载失败：'+e+'</div>'; });
 </script>
 <script src="/static/dataops_link.js" data-entity="tg:其他" defer></script>
