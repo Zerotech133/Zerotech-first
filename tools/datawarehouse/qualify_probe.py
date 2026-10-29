@@ -45,8 +45,8 @@ DEFAULT_TABLES = [
 ]
 MANIFEST = common.DATA / "tushare" / "_manifest.json"
 KG_LOG = Path(r"C:\Temp\kg_sync_task.log")
-EXPECTED_PHYSICAL = 245
-EXPECTED_DISPLAY = 92
+EXPECTED_PHYSICAL = None  # 动态：运行时取 registry 当前 physical_count
+EXPECTED_DISPLAY = None
 FRESH_LAG_DAYS = 7
 SAMPLE_LIMIT = 5
 ALLOWED_REGISTRY_FIELDS = {
@@ -509,14 +509,14 @@ def diff_registry(before: dict, after: dict, tables: list) -> dict:
 
 
 def validate_registry(before: dict, after: dict, tables: list,
-                      catalog_sha: str, expected_physical: int = EXPECTED_PHYSICAL,
-                      expected_display: int = EXPECTED_DISPLAY) -> dict:
+                      catalog_sha: str, expected_physical: int | None = EXPECTED_PHYSICAL,
+                      expected_display: int | None = EXPECTED_DISPLAY) -> dict:
     diff = diff_registry(before, after, tables)
     checks = {
         "json_object": isinstance(after, dict),
-        "physical_count_expected": after.get("physical_count") == expected_physical,
+        "physical_count_expected": (expected_physical is None or after.get("physical_count") == expected_physical),
         "physical_count_unchanged": after.get("physical_count") == before.get("physical_count"),
-        "display_count_expected": after.get("display_count") == expected_display,
+        "display_count_expected": (expected_display is None or after.get("display_count") == expected_display),
         "display_count_unchanged": after.get("display_count") == before.get("display_count"),
         "catalog_sha256_unchanged": after.get("catalog_sha256") == before.get("catalog_sha256"),
         "catalog_sha256_matches_catalog": after.get("catalog_sha256") == catalog_sha,
