@@ -1172,6 +1172,22 @@ def _l2_exempt(tid, t, reason):
         return "(审批库异常:%s)" % e, False
 
 
+IDE_BUNDLE_REL = "portal/agent_ide_bundle.json"
+
+
+def _ide_bundle_commit_args(tid, repo=None):
+    """IDE bundle 收尾提交参数（并发修复，2026-10-29）。
+
+    必须用 pathspec 限定只提交 bundle 本身：旧实现 `git commit -m ...` 会提交
+    整个暂存区；并行会话的 index 若含其它改动（甚至误删刚合入文件），收尾提交
+    会把这些一起带上，造成「刚合入就被抹掉」事故（WO-D1-OUTCOME 实证）。
+    参数抽成纯函数，方便测试锁死 pathspec。
+    """
+    return ["git", "-C", repo or REPO, "commit", "-m",
+            "chore(ide): auto rebuild agent_ide_bundle after merge %s" % tid,
+            "--", IDE_BUNDLE_REL]
+
+
 def _auto_rebuild_ide_bundle(tid):
     """merge 后自动重建 portal/agent_ide_bundle.json（失败只告警，不影响合并）。"""
     try:
@@ -1183,22 +1199,19 @@ def _auto_rebuild_ide_bundle(tid):
             print("  IDE bundle   ⚠ 重建失败（不阻断）：%s" % (r.stderr or r.stdout).strip()[:160])
             return
         st = subprocess.run(["git", "-C", REPO, "status", "--porcelain",
-                             "portal/agent_ide_bundle.json"], capture_output=True,
+                             IDE_BUNDLE_REL], capture_output=True,
                             text=True, encoding="utf-8", errors="replace")
         if not (st.stdout or "").strip():
             print("  IDE bundle   ✓ 已是最新")
             return
-        subprocess.run(["git", "-C", REPO, "add", "portal/agent_ide_bundle.json"],
+        subprocess.run(["git", "-C", REPO, "add", "--", IDE_BUNDLE_REL],
                        capture_output=True, text=True)
-        # 2026-10-29 WO-BUG-RESTORE：限定 pathspec，防止把索引中其他旧内容
-        # 一并提交（判例 e9a4e3476 把 6 个修复文件回退）。
-        c = subprocess.run(["git", "-C", REPO, "commit", "-m",
-                            "chore(ide): auto rebuild agent_ide_bundle after merge %s" % tid,
-                            "--", "portal/agent_ide_bundle.json"],
+        # 2026-10-29 WO-DEVTASK-IDE-RACE：pathspec 限定，绝不提交索引中的其它内容。
+        c = subprocess.run(_ide_bundle_commit_args(tid),
                            capture_output=True, text=True, encoding="utf-8",
                            errors="replace")
         if c.returncode == 0:
-            print("  IDE bundle   ✓ 已重建并提交")
+            print("  IDE bundle   ✓ 已重建并提交（仅 bundle 路径）")
         else:
             print("  IDE bundle   ⚠ 重建后提交失败（工作区已更新）：%s"
                   % (c.stderr or c.stdout).strip()[:160])
