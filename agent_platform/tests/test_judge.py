@@ -80,3 +80,11 @@ def test_judge_report_latest(tmp_path, monkeypatch):
     )
     assert rep["count"] == 1 and rep["items"][0]["result"]["score"] == 3
     assert J.latest()["count"] == 1
+
+
+def test_judge_salvages_truncated_json(tmp_path, monkeypatch):
+    _sandbox(tmp_path, monkeypatch)
+    reply = '{"score": 4, "rationale": "边界清晰但缺引用", "flags": ["缺引用"'
+    rep = J.judge_text("x", adapters=_adapter(reply))
+    assert rep["ok"] is True and rep["score"] == 4
+    assert rep["source"] == "judge" and rep["partial"] is True
