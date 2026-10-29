@@ -58,6 +58,20 @@
     .data-table td:nth-child(2):before{content:"用途"}
     .data-table td:nth-child(3):before{content:"状态"}
   }
+
+  tr.clickable,li[data-detail]{cursor:pointer}
+  tr.clickable:hover{background:#1c2a3a}
+  li[data-detail]:hover{background:#111820}
+  li[data-detail]{border-radius:6px;padding-right:6px}
+  .hint{font-size:12px;color:#8b949e;margin:6px 0 0}
+  .modal{display:none;position:fixed;inset:0;z-index:99;background:rgba(0,0,0,.62);padding:18px;align-items:center;justify-content:center}
+  .modal.open{display:flex}
+  .modal-card{width:min(720px,100%);max-height:86vh;overflow:auto;background:#0f1722;border:1px solid #30363d;border-radius:12px;padding:16px 18px;box-shadow:0 16px 50px rgba(0,0,0,.5)}
+  .modal-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;border-bottom:1px solid #30363d;padding-bottom:10px;margin-bottom:10px}
+  .modal-head h3{margin:0;font-size:16px;color:#e6edf3}
+  .modal-close{background:#21262d;border:1px solid #30363d;color:#c9d1d9;border-radius:7px;padding:4px 10px;font-size:12px;cursor:pointer}
+  .modal-body{font-size:13px;line-height:1.8}.modal-body p{margin:6px 0}.modal-body b{color:#e6edf3}
+  .modal-body .sub{color:#8b949e;font-size:12px}
 </style>
 </head>
 <body>
@@ -84,12 +98,13 @@
   <h2>二、A6 全市场结果（L1-only）</h2>
   <div class="table-wrap"><table class="a6-table">
     <tr><th>窗口</th><th>假设</th><th class="num">信号</th><th class="num">5 日超额/胜率</th><th class="num">10 日</th><th class="num">20 日</th></tr>
-    <tr><td>in 2023-07-31~2025-06-30</td><td>runup</td><td class="num">168,725</td><td class="num">+0.023% / 41.2%</td><td class="num">+0.058% / 40.0%</td><td class="num">+0.186% / 39.5%</td></tr>
-    <tr><td>in 2023-07-31~2025-06-30</td><td>accumulate</td><td class="num">61</td><td class="num neg">-1.32% / 42.6%</td><td class="num neg">-2.85% / 44.3%</td><td class="num neg">-7.29% / 23.0%</td></tr>
-    <tr><td>out 2025-07-01~2026-10-16</td><td>runup</td><td class="num">31,769</td><td class="num">+0.020% / 45.7%</td><td class="num">+0.109% / 44.8%</td><td class="num">+0.127% / 44.0%</td></tr>
-    <tr><td>out 2025-07-01~2026-10-16</td><td>accumulate</td><td class="num">2</td><td class="num">样本不足</td><td class="num">—</td><td class="num">—</td></tr>
+    <tr class="clickable" data-detail="a6-in-runup"><td>in 2023-07-31~2025-06-30</td><td>runup</td><td class="num">168,725</td><td class="num">+0.023% / 41.2%</td><td class="num">+0.058% / 40.0%</td><td class="num">+0.186% / 39.5%</td></tr>
+    <tr class="clickable" data-detail="a6-in-accumulate"><td>in 2023-07-31~2025-06-30</td><td>accumulate</td><td class="num">61</td><td class="num neg">-1.32% / 42.6%</td><td class="num neg">-2.85% / 44.3%</td><td class="num neg">-7.29% / 23.0%</td></tr>
+    <tr class="clickable" data-detail="a6-out-runup"><td>out 2025-07-01~2026-10-16</td><td>runup</td><td class="num">31,769</td><td class="num">+0.020% / 45.7%</td><td class="num">+0.109% / 44.8%</td><td class="num">+0.127% / 44.0%</td></tr>
+    <tr class="clickable" data-detail="a6-out-accumulate"><td>out 2025-07-01~2026-10-16</td><td>accumulate</td><td class="num">2</td><td class="num">样本不足</td><td class="num">—</td><td class="num">—</td></tr>
   </table></div>
   <div class="sub" style="margin-top:6px">结论：无成本后稳定优势；按预注册规则终止 A6，不进入组合回测、不调参救结果。</div>
+  <div class="hint">点击表格任意行 / 时间线节点，查看详细情况。</div>
 
   <h2>三、accumulate 失效归因（待 P1 验证）</h2>
   <div class="box">
@@ -111,16 +126,16 @@
   <h2>五、数据冻结与进度</h2>
   <div class="table-wrap"><table class="data-table">
     <tr><th>数据</th><th>用途</th><th>状态</th></tr>
-    <tr><td>D1 tdx 日线/复权/基础</td><td>L1 价格/量</td><td class="pos">✅ 已冻结（sha d538a1be…fdc）</td></tr>
-    <tr><td>D3 news.db / ts_news</td><td>L2 事件</td><td class="neg">❌ 未冻结（DATA1 申请已提，deadline 11-03）</td></tr>
-    <tr><td>D4 ts_top_list / ts_top_inst</td><td>L3 席位</td><td class="neg">❌ 未冻结（同上）</td></tr>
+    <tr class="clickable" data-detail="data-d1"><td>D1 tdx 日线/复权/基础</td><td>L1 价格/量</td><td class="pos">✅ 已冻结（sha d538a1be…fdc）</td></tr>
+    <tr class="clickable" data-detail="data-d3"><td>D3 news.db / ts_news</td><td>L2 事件</td><td class="neg">❌ 未冻结（DATA1 申请已提，deadline 11-03）</td></tr>
+    <tr class="clickable" data-detail="data-d4"><td>D4 ts_top_list / ts_top_inst</td><td>L3 席位</td><td class="neg">❌ 未冻结（同上）</td></tr>
   </table></div>
   <ul class="timeline">
-    <li class="done"><b>P0 假设卡</b><span class="tag done">done</span><br><span class="sub">ACAD1 评审 PASS（有条件）</span></li>
-    <li class="doing"><b>P1 归因</b><span class="tag doing">doing</span><br><span class="sub">100 码/2 年；单条件分解 + 复权对照；不出收益结论</span></li>
-    <li class="todo"><b>P2 数据冻结</b><span class="tag todo">blocked</span><br><span class="sub">D3/D4 四字段 + sha + as-of</span></li>
-    <li class="todo"><b>P3 小样本回测</b><span class="tag todo">blocked</span><br><span class="sub">预注册后开跑；样本内外分开 + S3≥99%</span></li>
-    <li class="todo"><b>P4 扩全市场 / 终止</b><span class="tag todo">pending</span><br><span class="sub">通过才扩；不通过终止，不硬救</span></li>
+    <li class="done" data-detail="p0"><b>P0 假设卡</b><span class="tag done">done</span><br><span class="sub">ACAD1 评审 PASS（有条件）</span></li>
+    <li class="doing" data-detail="p1"><b>P1 归因</b><span class="tag doing">doing</span><br><span class="sub">100 码/2 年；单条件分解 + 复权对照；不出收益结论</span></li>
+    <li class="todo" data-detail="p2"><b>P2 数据冻结</b><span class="tag todo">blocked</span><br><span class="sub">D3/D4 四字段 + sha + as-of</span></li>
+    <li class="todo" data-detail="p3"><b>P3 小样本回测</b><span class="tag todo">blocked</span><br><span class="sub">预注册后开跑；样本内外分开 + S3≥99%</span></li>
+    <li class="todo" data-detail="p4"><b>P4 扩全市场 / 终止</b><span class="tag todo">pending</span><br><span class="sub">通过才扩；不通过终止，不硬救</span></li>
   </ul>
 
   <h2>六、边界</h2>
@@ -131,11 +146,48 @@
     <p>· 研究结论须 ACAD1 评审，Go 仍须老田签。</p>
   </div>
 
-  <div class="foot">
+  
+  <div id="detail-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="detail-title">
+    <div class="modal-card">
+      <div class="modal-head"><h3 id="detail-title">详情</h3><button class="modal-close" onclick="closeDetail()">关闭</button></div>
+      <div id="detail-body" class="modal-body"></div>
+    </div>
+  </div>
+<div class="foot">
     文档：<a href="/static/">返回静态页</a> ｜
     <a href="/academy">研究院</a> ｜
     数据来源：deliverables/2026-10-30_LCS1_A6_No-Go报告_v1.md、假设卡 v0.1、ACAD1 评审 v1。
   </div>
 </div>
+
+<script>
+const DETAILS = {
+ "a6-in-runup": "<p><b>样本内 · runup</b></p><p>代码 5,487；信号 168,725；5/10/20 日超额 +0.023%/+0.058%/+0.186%，胜率 41.2%/40.0%/39.5%。</p><p class='sub'>判读：幅度接近 0、胜率不足 50%，成本后无优势；仅作 A6 证据，不构成交易信号。</p>",
+ "a6-in-accumulate": "<p><b>样本内 · accumulate</b></p><p>信号仅 61 个（阈值合取过严）；5/10/20 日超额 -1.32%/-2.85%/-7.29%，胜率 42.6%/44.3%/23.0%。</p><p class='sub'>判读：样本稀疏且显著为负，统计不可用；只做归因，不出结论。</p>",
+ "a6-out-runup": "<p><b>样本外 · runup</b></p><p>代码 5,608；信号 31,769；5/10/20 日超额 +0.020%/+0.109%/+0.127%，胜率 45.7%/44.8%/44.0%。</p><p class='sub'>判读：样本外无成本后正超额，A6 判 No-Go。</p>",
+ "a6-out-accumulate": "<p><b>样本外 · accumulate</b></p><p>仅 2 个信号，无统计意义；不能据此判断策略有效/无效。</p><p class='sub'>判读：样本不足，不扩样本、不调参救结果。</p>",
+ "data-d1": "<p><b>D1 已冻结</b></p><p>tdx 日线/复权/基础，142 文件、364,253,331 B；sha256 <code>d538a1be…fdc</code>；窗口 in 2023-07-31~2025-06-30 / out 2025-07-01~2026-10-16。</p><p class='sub'>回执：agent_platform/data/academy/freeze_receipts/AC-20261017-LCS1.json。</p>",
+ "data-d3": "<p><b>D3 news.db / ts_news · 未冻结</b></p><p>用于 L2 事件三态；必须 as-of 截断，禁止未来新闻；需 DATA1 给 data_version/sha/sample 窗口。</p><p>申请：freeze_requests/AC-20261030-LCS1-REDEFINE.request.json；deadline 2026-11-03。</p><p class='sub'>未冻结前不得做 L2 结论。</p>",
+ "data-d4": "<p><b>D4 ts_top_list / ts_top_inst · 未冻结</b></p><p>用于 L3 席位方向；未上榜=unknown，不默认证伪；需 DATA1 四字段+sha+as-of。</p><p>申请同上；deadline 2026-11-03。</p><p class='sub'>未冻结前不得做 L3 结论。</p>",
+ "p0": "<p><b>P0 假设卡 · done</b></p><p>交付：LCS-1 信号重定义假设卡 v0.1；ACAD1 评审 PASS（有条件）。</p><p class='sub'>条件：D3/D4 先冻结；P1 不出收益结论；P3 前预注册。</p>",
+ "p1": "<p><b>P1 归因 · doing</b></p><p>范围：100 码/2 年；accumulate 单条件分解 + 复权/量口径对照；只出归因，不出收益/Go。</p><p class='sub'>负责人：STRAT1；BACK1 复核。</p>",
+ "p2": "<p><b>P2 数据冻结 · blocked</b></p><p>D3/D4 四字段 + sha + as-of 由 DATA1 提供；回执落 freeze_receipts/AC-20261030-LCS1-REDEFINE.json。</p><p class='sub'>未冻结不得进入 L2/L3 回测。</p>",
+ "p3": "<p><b>P3 小样本回测 · blocked</b></p><p>前置：P2 完成 + 预注册信号/窗口/成本/否决条件；样本内外分开 + S3≥99%。</p><p class='sub'>禁止看结果后调阈值。</p>",
+ "p4": "<p><b>P4 扩全市场 / 终止 · pending</b></p><p>小样本通过才扩全市场；不通过则终止，不硬救。结论须 ACAD1 评审，Go 仍须老田签。</p>"
+};
+function openDetail(id){
+  const d = DETAILS[id]; if(!d) return;
+  document.getElementById('detail-title').textContent = ({'a6-in-runup':'A6 样本内 · runup','a6-in-accumulate':'A6 样本内 · accumulate','a6-out-runup':'A6 样本外 · runup','a6-out-accumulate':'A6 样本外 · accumulate','data-d1':'D1 数据冻结','data-d3':'D3 事件数据','data-d4':'D4 席位数据','p0':'P0 假设卡','p1':'P1 归因','p2':'P2 数据冻结','p3':'P3 小样本回测','p4':'P4 扩全市场/终止'}[id] || '详情');
+  document.getElementById('detail-body').innerHTML = d;
+  document.getElementById('detail-modal').classList.add('open');
+}
+function closeDetail(){ document.getElementById('detail-modal').classList.remove('open'); }
+document.addEventListener('click', function(e){
+  const el = e.target.closest('[data-detail]');
+  if(el){ e.preventDefault(); openDetail(el.getAttribute('data-detail')); }
+  if(e.target && e.target.id === 'detail-modal') closeDetail();
+});
+document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeDetail(); });
+</script>
 </body>
 </html>
