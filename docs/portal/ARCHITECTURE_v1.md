@@ -59,3 +59,10 @@ portal/*.py（静态页服务/调度/推送/飞书/盯盘等工具）
 - 拆分守则：`docs/plans/2026-10-28_portal大文件拆分守则_v1.md`
 - 全代码审计：`deliverables/2026-10-28_老田AI助手_全代码审计报告_v1.md`
 - 测试基线：`deliverables/2026-10-27_测试基线_v1.md`
+
+## api_kg 拆分收尾（2026-10-30 P57）
+
+- `portal/api_kg.py` 5,913 → **97 行**：只保留 Handler 委托 + 顶层 helper；
+- 实体逻辑与内嵌 JS 常量分居 `portal/kg/*`（kg_html/kg_pages_{misc,events,canvas}/kg_service/kg_js）；
+- 依赖单向：`portal/kg/*` 不得 import `api_kg`（契约测试守卫）；
+- 行数守卫：api_kg ≤ 300 行，只减不增。
