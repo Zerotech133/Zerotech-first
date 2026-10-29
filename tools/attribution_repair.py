@@ -33,6 +33,17 @@ OUT = os.path.join(REPO, "agent_platform", "data", "dev", "attribution_repairs.j
 MARKER = "attribution_missing=1"
 UNOWNED = {"", "unknown-agent", "devtask", "unknown"}
 OWNER_RE = re.compile(r"(?:--owner[= ]\s*|owner=)([A-Za-z0-9_.\-]+)")
+TASK_PREFIX_RE = re.compile(r"^WO-([A-Z][A-Z0-9]{2,})-")
+BRACKET_RE = re.compile(r"\[([A-Z][A-Z0-9]{1,8})\]")
+# 任务 ID 命名空间 → 席位（仅无歧义前缀；DEV/LEGION 等多席前缀不猜）
+PREFIX_AGENTS = {"GUANYU": "GUANYU"}
+KNOWN_BRACKET = {
+    "T1", "T2", "N1", "F1", "D1", "ST1", "WA1", "QS1", "A0", "A0A",
+    "ARCH1", "DEV1", "DEV2", "DEV3", "DEV4", "DEV5", "DEV6", "DEV7", "DEV8",
+    "OPS1", "DOC1", "DATA1", "ACAD1", "INTEL0", "BACK1", "ZHAOYUN", "DSH-Lead",
+    "GUANYU", "PM1", "QA1", "QA2", "SEC1", "SEC2", "LEG1", "MKT1",
+    "R1", "R2", "R3", "TR1", "OPT1", "COMM1", "PROD1", "AI1",
+}
 
 
 def fingerprint(e):
@@ -57,6 +68,14 @@ def resolve_event(e, tasks):
     m = OWNER_RE.search(str(e.get("detail") or ""))
     if m and _valid(m.group(1)):
         return m.group(1), "detail-owner"
+    # 任务 ID 命名空间（如 WO-GUANYU-* → GUANYU；仅显式登记的无歧义前缀）
+    m = TASK_PREFIX_RE.match(str(e.get("task") or ""))
+    if m and m.group(1) in PREFIX_AGENTS:
+        return PREFIX_AGENTS[m.group(1)], "task-id-prefix"
+    # detail 里的席位标签（如 [T1]、[A0A]）
+    for tag in BRACKET_RE.findall(str(e.get("detail") or "")):
+        if tag in KNOWN_BRACKET:
+            return tag, "detail-seat-tag"
     return None, None
 
 
