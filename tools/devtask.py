@@ -1188,6 +1188,118 @@ def _ide_bundle_commit_args(tid, repo=None):
             "--", IDE_BUNDLE_REL]
 
 
+MERGE_LOCK_NAME = "devtask_merge.lock"
+MERGE_LOCK_STALE_S = 1800
+
+
+def _merge_lock_path():
+    git_dir = os.path.join(REPO, ".git")
+    return os.path.join(git_dir if os.path.isdir(git_dir) else REPO, MERGE_LOCK_NAME)
+
+
+def _pid_alive(pid):
+    try:
+        pid = int(pid)
+    except (TypeError, ValueError):
+        return False
+    if pid <= 0:
+        return False
+    if os.name == "nt":
+        # Windows 的 os.kill(pid, 0) 会走 TerminateProcess（sig=0 会杀进程！），
+        # 不能用来探活；改用 OpenProcess + GetExitCodeProcess。
+        try:
+            import ctypes
+            k32 = ctypes.windll.kernel32
+            h = k32.OpenProcess(0x1000, False, pid)  # PROCESS_QUERY_LIMITED_INFORMATION
+            if not h:
+                return k32.GetLastError() == 5  # 5=ACCESS_DENIED：进程存在但无权查
+            try:
+                code = ctypes.c_ulong()
+                ok = k32.GetExitCodeProcess(h, ctypes.byref(code))
+                return bool(ok) and code.value == 259  # STILL_ACTIVE
+            finally:
+                k32.CloseHandle(h)
+        except Exception:  # noqa: BLE001
+            return True  # 保守：不误收活锁
+    try:
+        os.kill(pid, 0)
+        return True
+    except OSError:
+        return False
+    except Exception:  # noqa: BLE001  权限/平台异常按“可能活着”保守处理
+        return True
+
+
+def _acquire_merge_lock(tid, timeout_s=None, path=None):
+    """获取仓库级合并锁（文件 O_EXCL + pid/超时）。
+
+    串行化 `git merge` 临界区，避免并行会话 HEAD/index 竞争（今日多次
+    update_ref failed / MERGE_HEAD exists / unmerged files 的根因）。
+    陈旧锁（pid 已死或超过 STALE_S）可回收；等待超时则 fail-visible 返回 None，
+    调用方拒绝合并（不冒进）。返回锁文件路径或 None。
+    """
+    path = path or _merge_lock_path()
+    if timeout_s is None:
+        try:
+            timeout_s = float(os.environ.get("DEVTOOL_MERGE_LOCK_TIMEOUT", "600"))
+        except ValueError:
+            timeout_s = 600.0
+    start = time.time()
+    waited = False
+    while True:
+        try:
+            fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except FileExistsError:
+            meta = {}
+            try:
+                with open(path, encoding="utf-8") as f:
+                    meta = json.load(f)
+            except (OSError, ValueError):
+                meta = {}
+            age = time.time() - float(meta.get("start") or 0)
+            if (not _pid_alive(meta.get("pid"))) or age > MERGE_LOCK_STALE_S:
+                try:
+                    os.unlink(path)
+                    print("[merge-lock] 回收陈旧锁（pid=%s age=%.0fs）"
+                          % (meta.get("pid"), age))
+                    continue
+                except OSError:
+                    pass
+            if time.time() - start > timeout_s:
+                print("[merge-lock] 等待超时（%.0fs），未执行合并（防 HEAD 竞争）；"
+                      "锁持有者 pid=%s tid=%s" % (timeout_s, meta.get("pid"),
+                                                  meta.get("tid")), file=sys.stderr)
+                return None
+            if not waited:
+                print("[merge-lock] 仓库合并锁被占用（pid=%s tid=%s），等待…"
+                      % (meta.get("pid"), meta.get("tid")))
+                waited = True
+            time.sleep(2)
+            continue
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump({"pid": os.getpid(),
+                       "host": os.environ.get("COMPUTERNAME", ""),
+                       "tid": tid, "start": time.time()}, f, ensure_ascii=False)
+        print("[merge-lock] 已获取（pid=%s tid=%s）" % (os.getpid(), tid))
+        return path
+
+
+def _release_merge_lock(path):
+    """释放本进程持有的锁；非本进程持有则不动（防误删）。"""
+    if not path:
+        return False
+    try:
+        with open(path, encoding="utf-8") as f:
+            meta = json.load(f)
+        if int(meta.get("pid") or -1) != os.getpid():
+            return False
+        os.unlink(path)
+        print("[merge-lock] 已释放")
+        return True
+    except (OSError, ValueError):
+        return False
+
+
 def _auto_rebuild_ide_bundle(tid):
     """merge 后自动重建 portal/agent_ide_bundle.json（失败只告警，不影响合并）。"""
     try:
@@ -1317,20 +1429,26 @@ def cmd_merge(tid, *flags):
             _save(tasks, changed=(tid,))
             _emit("guard_fail", tid, "L2 门未过（K-STOCK-416）：%s" % detail[:120])
             return 1
-    _git("merge", "--no-ff", t["branch"], "-m",
-         "merge task/%s: %s" % (tid, t["desc"]))
-    # 合并后不自动删除 worktree/分支：删除不可逆，只提示、留给人确认执行。
-    t["status"] = "done"
-    t["merged"] = time.strftime("%F %T")
-    _save(tasks, changed=(tid,))
-    _ckpt(tid, "merge", t.get("owner", "devtask"), {"status": "done"})
-    _emit("merge_done", tid,
-          "守卫全绿（含明文凭据扫描），已合并 master；worktree 保留待人工回收")
-    if str(t.get("dept") or "").strip().lower() == "dev":
-        _emit("review_verdict", tid,
-              "approver=%s merged=1" % (t.get("approver") or "MISSING"))
-    print("工单 %s 已合并 ✓（worktree 保留待人工回收）" % tid)
-    _auto_rebuild_ide_bundle(tid)
+    lock = _acquire_merge_lock(tid)
+    if lock is None:
+        return 1
+    try:
+        _git("merge", "--no-ff", t["branch"], "-m",
+             "merge task/%s: %s" % (tid, t["desc"]))
+        # 合并后不自动删除 worktree/分支：删除不可逆，只提示、留给人确认执行。
+        t["status"] = "done"
+        t["merged"] = time.strftime("%F %T")
+        _save(tasks, changed=(tid,))
+        _ckpt(tid, "merge", t.get("owner", "devtask"), {"status": "done"})
+        _emit("merge_done", tid,
+              "守卫全绿（含明文凭据扫描），已合并 master；worktree 保留待人工回收")
+        if str(t.get("dept") or "").strip().lower() == "dev":
+            _emit("review_verdict", tid,
+                  "approver=%s merged=1" % (t.get("approver") or "MISSING"))
+        print("工单 %s 已合并 ✓（worktree 保留待人工回收）" % tid)
+        _auto_rebuild_ide_bundle(tid)
+    finally:
+        _release_merge_lock(lock)
     if t.get("worktree"):
         print("→ 分支已合并、工作区干净，可执行 `git worktree remove %s` 回收"
               % t["worktree"])
