@@ -81,12 +81,9 @@ def restart(flag: Path = FLAG, task: str = TASK, url: str = HEALTH,
                 "flag": str(flag)}
     hp = health_fn or (lambda u: health(u))
     deadline = time.time() + max(5, timeout)
-    seen_healthy = False
     last = {}
     while time.time() < deadline:
         last = hp(url)
-        if last.get("ok"):
-            seen_healthy = True
         # 2026-10-30 审计修复：必须「当前」健康才能报成功；旧实现只要求曾经健康，
         # 可能在服务刚被杀死、尚未拉起时返回 ok=true + health=失败（假成功）。
         if last.get("ok") and not flag.exists():
