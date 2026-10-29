@@ -31,6 +31,31 @@ def _read(path: Path) -> dict:
         return {}
 
 
+def _pid_alive(pid: int) -> bool:
+    """持锁进程是否还活着（Windows：OpenProcess + GetExitCodeProcess 探测）。"""
+    if not pid or pid <= 0:
+        return False
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+        STILL_ACTIVE = 259
+        k32 = ctypes.windll.kernel32
+        h = k32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, int(pid))
+        if not h:
+            return False
+        try:
+            code = wintypes.DWORD()
+            if k32.GetExitCodeProcess(h, ctypes.byref(code)):
+                return code.value == STILL_ACTIVE
+            return True
+        finally:
+            k32.CloseHandle(h)
+    except Exception:  # noqa: BLE001
+        return True
+
+
 def acquire(cmd: str = "", timeout: float = 0, stale_sec: float = STALE_SEC):
     """获取锁；返回 token 或 None（超时）。timeout=0 表示只试一次。"""
     deadline = time.time() + max(0.0, timeout)
@@ -42,7 +67,15 @@ def acquire(cmd: str = "", timeout: float = 0, stale_sec: float = STALE_SEC):
                 age = time.time() - LOCK.stat().st_mtime
             except OSError:
                 age = 0
-            if age > stale_sec:
+            info = _read(LOCK)
+            try:
+                holder_pid = int((info or {}).get("pid") or 0)
+            except (TypeError, ValueError):
+                holder_pid = 0
+            holder_dead = bool(holder_pid) and not _pid_alive(holder_pid)
+            if holder_dead:
+                print("[merge-lock] 持锁进程 %d 已退出，判 stale 接管" % holder_pid)
+            if holder_dead or age > stale_sec:
                 stale = LOCK.with_name("aios_merge.stale.%d" % int(time.time()))
                 try:
                     os.replace(LOCK, stale)
