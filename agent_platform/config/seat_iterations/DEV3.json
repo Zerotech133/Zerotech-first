@@ -1,0 +1,45 @@
+{
+ "schema": "seat_iteration/v1",
+ "seat": "DEV3",
+ "cn_name": "",
+ "role_title": "量化策略工程师",
+ "discipline": "quant",
+ "group": "G2",
+ "grade": "E2",
+ "mentor": "DEV5",
+ "version": 1,
+ "baseline": {
+  "specialties": [
+   "量化策略设计与实现",
+   "回测判据前置自检",
+   "影子账验证流程",
+   "策略注册制管理"
+  ],
+  "certified": false,
+  "level": "v1"
+ },
+ "iteration": {
+  "id": "IT1",
+  "start": "2026-10-29",
+  "target_capability": "策略数据契约与回测口径",
+  "learning": {
+   "material": "v1.1 白名单/字段契约",
+   "status": "planned",
+   "evidence": ""
+  },
+  "practice": {
+   "tid": "待定（下一任务）",
+   "acceptance": "单测 + 抽样一致 + 脱敏审计",
+   "status": "planned",
+   "evidence": ""
+  },
+  "assessment": {
+   "method": "导师评审 + 工单验收 + 证据",
+   "mentor": "DEV5",
+   "status": "planned",
+   "evidence": ""
+  }
+ },
+ "history": [],
+ "updated_at": "2026-10-29"
+}

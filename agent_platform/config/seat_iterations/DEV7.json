@@ -1,0 +1,44 @@
+{
+ "schema": "seat_iteration/v1",
+ "seat": "DEV7",
+ "cn_name": "",
+ "role_title": "后端工程师（标准化交付）",
+ "discipline": "backend",
+ "group": "G1",
+ "grade": "E1",
+ "mentor": "DEV1",
+ "version": 1,
+ "baseline": {
+  "specialties": [
+   "批量代码修改与重构",
+   "代码格式化与静态检查修复",
+   "回归验证与证据采集"
+  ],
+  "certified": false,
+  "level": "v1"
+ },
+ "iteration": {
+  "id": "IT1",
+  "start": "2026-10-29",
+  "target_capability": "标准化交付（L1/L2 已启动）",
+  "learning": {
+   "material": "seat_learning DEV7 计划 L1–L4",
+   "status": "planned",
+   "evidence": ""
+  },
+  "practice": {
+   "tid": "WO-P0-DEV7-WIKI-20261027",
+   "acceptance": "4 模块 + 2 实践单 + 导师 pass",
+   "status": "planned",
+   "evidence": ""
+  },
+  "assessment": {
+   "method": "导师评审 + 工单验收 + 证据",
+   "mentor": "DEV1",
+   "status": "planned",
+   "evidence": ""
+  }
+ },
+ "history": [],
+ "updated_at": "2026-10-29"
+}

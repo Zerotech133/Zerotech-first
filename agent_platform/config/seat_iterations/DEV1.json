@@ -1,0 +1,45 @@
+{
+ "schema": "seat_iteration/v1",
+ "seat": "DEV1",
+ "cn_name": "",
+ "role_title": "后端工程师 · G1 组长",
+ "discipline": "backend",
+ "group": "G1",
+ "grade": "E3",
+ "mentor": "ARCH1",
+ "version": 1,
+ "baseline": {
+  "specialties": [
+   "Python 后端工程化",
+   "研发工具链与工作流设计",
+   "code review 与疑难攻关",
+   "worktree 并行开发治理"
+  ],
+  "certified": false,
+  "level": "v1"
+ },
+ "iteration": {
+  "id": "IT1",
+  "start": "2026-10-29",
+  "target_capability": "质量门与 code review 判据",
+  "learning": {
+   "material": "devtask 质量门 + AGENTS 红线",
+   "status": "planned",
+   "evidence": ""
+  },
+  "practice": {
+   "tid": "WO-P0-DEV1-MONDAY-20261027",
+   "acceptance": "评审结论有据 + 0 假绿",
+   "status": "planned",
+   "evidence": ""
+  },
+  "assessment": {
+   "method": "导师评审 + 工单验收 + 证据",
+   "mentor": "ARCH1",
+   "status": "planned",
+   "evidence": ""
+  }
+ },
+ "history": [],
+ "updated_at": "2026-10-29"
+}
