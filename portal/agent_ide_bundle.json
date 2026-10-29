@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-29 09:18",
+ "generated": "2026-10-29 09:19",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 46,
+  "workorders_doing": 45,
   "workorders_review": 6
  },
  "workorders": [
@@ -362,15 +362,6 @@
    "owner": "unknown-agent",
    "branch": "task/WO-GUANYU-P23-20261029",
    "created": "2026-10-29 08:18:21",
-   "project": "general"
-  },
-  {
-   "id": "WO-GUANYU-P21B-20261029",
-   "desc": "lint修复B [UNOWNED]",
-   "status": "doing",
-   "owner": "unknown-agent",
-   "branch": "task/WO-GUANYU-P21B-20261029",
-   "created": "2026-10-29 08:20:06",
    "project": "general"
   },
   {
