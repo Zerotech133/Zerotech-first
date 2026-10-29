@@ -349,7 +349,12 @@ def test_http_write_requires_lock(tmp_path, monkeypatch):
         httpd.server_close()
 
 
-def test_http_lock_then_write_ok(tmp_path, monkeypatch):
+def test_http_lock_then_preview_confirm_write_ok(tmp_path, monkeypatch):
+    """两阶段写契约（K-QUANT-20261030-IDEPREVIEW）：lock → write/preview → write/confirm。
+
+    旧用例直接 POST /api/ide/write 期望 200，与现行契约（write 返回
+    write_requires_preview）漂移——本用例对齐契约并锁定「直写被拒」行为。
+    """
     repo, wt = make_repo(tmp_path)
     httpd, base = _serve(repo, monkeypatch)
     try:
@@ -368,7 +373,27 @@ def test_http_lock_then_write_ok(tmp_path, monkeypatch):
             "path": "agent_platform/pkg/a.py",
             "content": "x = 3\n",
         }
+        # 单阶段直写已被拒绝（契约锁）
         status, _h, body = _req(base, "POST", "/api/ide/write", body=payload, headers=h)
+        assert status == 400 and json.loads(body)["error"] == "write_requires_preview"
+        # 阶段一：预览 → 拿 preview_id
+        status, _h, body = _req(
+            base, "POST", "/api/ide/write/preview", body=payload, headers=h
+        )
+        data = json.loads(body)
+        assert status == 200 and data["ok"] is True and data.get("preview_id")
+        # 阶段二：确认写盘
+        status, _h, body = _req(
+            base,
+            "POST",
+            "/api/ide/write/confirm",
+            body={
+                "task": "T-BOOT",
+                "owner": "o1",
+                "preview_id": data["preview_id"],
+            },
+            headers=h,
+        )
         assert status == 200 and json.loads(body)["ok"] is True
         assert (wt / "agent_platform" / "pkg" / "a.py").read_text(
             encoding="utf-8"
