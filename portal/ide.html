@@ -1251,7 +1251,7 @@ document.getElementById("model-btn").onclick=(e)=>{ e.stopPropagation(); documen
 document.addEventListener("click",(e)=>{ const m=document.getElementById("model-menu"); if(m&&!m.contains(e.target)&&e.target.id!=="model-btn")m.classList.remove("on"); });
 loadModelPicker(); setInterval(loadModelPicker,60000);
 
-function addMsg(cls, who, html){
+function addMsg(cls, who, html, raw=""){
   const c = document.getElementById("chat");
   const d = document.createElement("div");
   d.className = "msg "+cls;
@@ -1259,7 +1259,7 @@ function addMsg(cls, who, html){
   c.appendChild(d); c.scrollTop = c.scrollHeight;
   let rec = null;
   if(DBGCUR){          // 入当前会话（持久化·按 ws 隔离）
-    rec = {cls, who, html};
+    rec = {cls, who, html, raw};
     sessLoad(DBGCUR.id).push(rec);
     sessSave(DBGCUR.id);
     renderSess();
@@ -1462,8 +1462,11 @@ async function send(){
   const raw = qbox.value.trim();
   if(!raw || !DBGCUR) return;
   const aid = DBGCUR.id;   // 捕获：推理期间切会话不串线（346）
+  const prior = sessLoad(aid).filter(x =>
+    (x.cls === "u" || x.cls === "a") && x.raw && x.raw !== "…" && !String(x.raw).startsWith("(")
+  ).slice(-8);
   qbox.value = "";
-  addMsg("u", aid + " 的测试指令", esc(raw));
+  addMsg("u", aid + " 的测试指令", esc(raw), raw);
   const btn = document.getElementById("send"); btn.disabled = true;
   const r1 = addMsg("a", aid + "（"+model()+"）· 运行中…", "…");
   addLog("send → "+aid+" · model "+model()+" · "+raw.length+" 字", "lg-b");
@@ -1484,10 +1487,20 @@ async function send(){
       const autoCtx = await autoProjectContext(raw);
       if(autoCtx) userContent = autoCtx + "\n\n=== 用户消息 ===\n" + userContent;
     }
+    const historyMsgs = [];
+    let historyChars = 0;
+    for(const h of prior){
+      const c = String(h.raw || "").slice(0, 4000);
+      if(!c) continue;
+      if(historyChars + c.length > 12000) break;
+      historyMsgs.push({role: h.cls === "u" ? "user" : "assistant", content: c});
+      historyChars += c.length;
+    }
     const messages = [
       {role:"system",content:B.agents[aid].prompt
         + (useTools ? ("\n\n" + IDE_TOOL_RULES)
                     : "\n\n[普通对话] 当前消息不需要读取项目文件；直接自然语言回答，不要输出工具 JSON。")},
+      ...historyMsgs,
       {role:"user",content:userContent}
     ];
     let txt = "";
@@ -1566,13 +1579,13 @@ async function send(){
       + '<span style="color:var(--dim2);font-size:10.5px">── '+sec+'s · '+esc(m)+' · '+esc(channel)+' ──</span>';
     r1.el.innerHTML = html;
     if(r1.whoEl) r1.whoEl.textContent = aid+"（"+m+"） · "+status;
-    if(r1.rec){ r1.rec.who = aid+"（"+m+"） · "+status; r1.rec.html = html; sessSave(aid); }
+    if(r1.rec){ r1.rec.who = aid+"（"+m+"） · "+status; r1.rec.html = html; r1.rec.raw = finalText; sessSave(aid); }
     addLog("recv ← "+aid+" · "+sec+"s · "+m, "lg-g");
   }catch(e){
     const html = "❌ 调用失败："+esc(e.message)+"（检查 8796 网关是否在跑）";
     r1.el.innerHTML = html;
     if(r1.whoEl) r1.whoEl.textContent = aid+" · ❌ 失败";
-    if(r1.rec){ r1.rec.who = aid+" · ❌ 失败"; r1.rec.html = html; sessSave(aid); }
+    if(r1.rec){ r1.rec.who = aid+" · ❌ 失败"; r1.rec.html = html; r1.rec.raw = ""; sessSave(aid); }
     addLog("FAIL "+aid+" · "+e.message, "lg-o");
   }
   btn.disabled = false;
