@@ -18,6 +18,8 @@ def use_repo(monkeypatch, tmp_path):
     repo.mkdir()
     monkeypatch.setenv("ZHUGE_C1DEC_REPO", str(repo))
     monkeypatch.setenv("ZHUGE_DECISION_REPO", str(repo))
+    monkeypatch.setenv("ZHUGE_MEMORY_REPO", str(repo))
+    monkeypatch.setenv("ZHUGE_MEMORY_AUTOWRITE", "1")
     return repo
 
 
@@ -118,3 +120,20 @@ def test_idempotent_resync(monkeypatch, tmp_path):
     assert out2["created"] == 0
     from zhuge_decision_record import list_records
     assert list_records()["total"] == 1
+
+
+def test_sync_accepted_writes_memory(monkeypatch, tmp_path):
+    repo = use_repo(monkeypatch, tmp_path)
+    ledger = write_ledger(repo, [created("ZQ-20261027-04")])
+    b.sync_all(ledger=ledger)
+    with open(ledger, "a", encoding="utf-8") as fh:
+        fh.write(json.dumps({"event": "closed", "card_id": "ZQ-20261027-04",
+                             "outcome": "accepted", "by": "田丰",
+                             "note": "整改完成", "at": "2026-10-27 10:03:00"},
+                            ensure_ascii=False) + "\n")
+    b.sync_all(ledger=ledger)
+    mem = repo / "work" / "p1" / "memory" / "memory.jsonl"
+    assert mem.is_file()
+    rows = [json.loads(x) for x in mem.read_text(encoding="utf-8").splitlines() if x.strip()]
+    assert any(r.get("kind") == "decision" and "ZQ-20261027-04" in " ".join(r.get("tags") or [])
+               for r in rows)
