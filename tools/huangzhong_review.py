@@ -3,21 +3,29 @@
 
 用途：2026-11-04 观察期复核 / 黄忠认证评审的「六条硬指标」一键复核，
 输出 JSON + Markdown 报告（默认 work/huangzhong/review_<ts>.json/md）。
-判据来源：docs/plans/2026-10-30_黄忠认证标准v2与验收工具证据口径拍板_v1.md 第二节。
+判据来源：docs/plans/2026-10-30_黄忠认证标准v2与验收工具证据口径拍板_v1.md 第二节；
+口径补丁来源：docs/plans/2026-10-30_黄忠v0验收单豁免与复核口径补丁_v1.md
+（WO-HZ-POLICY-20261030，工具版本 v1.1）。
 
 六条（每条状态 = ✓ / ✗ / pending / tracking，仅六条全 ✓ 才 overall_pass=True）：
   ① PASS 样本量：acceptance_*.json 中 verdict=PASS 按 commit sha 去重（同 commit
      取最新），排除演练单（drill 台账 drill_ledger_*.json 列出 / drill 标记）；≥10 达标。
   ② 受控拒收演练：drill 台账中 verdict∈{REJECT,OBSERVE} 的条目 ≥1 达标；
      台账缺失（或不可读）→ pending（等 Lead/黄忠演练后补台账再跑）。
-  ③ 误拒绝率：自然 REJECT 单 <20 → pending（按「逐单人工复核」口径，清单落
-     work/huangzhong/reject_review*.json）；≥20 时读复核清单计算推翻率，<5% 达标。
+  ③ 误拒绝率（v1.1 口径修正）：自然 REJECT 单 <20 → 按「逐单人工复核」口径：
+     work/huangzhong/reject_review*.json 覆盖全部 REJECT（自然+演练）且推翻=0
+     → ✓；清单不完整 → pending；有推翻 → ✗。自然 REJECT≥20 时读复核清单计算
+     推翻率（分母=REJECT 总单含演练单），<5% 达标（原逻辑不变）。
   ④ 漏放：PASS 单满 7 天窗口判定（generated_at + 7d），窗口内与该 commit 相关
      事故数 = 0 达标；无满窗单 → tracking（认证后跟踪项）；可选读
      work/huangzhong/incidents.jsonl。
   ⑤ 证据链：每份 PASS 单 8 类必需字段完整率 100%（commit.sha/verdict/mode/
      blocking/rollback_point/evidence.baseline 与 .redteam 的 generated_at+age+
      stale），且记录的证据年龄 ≤48h（含 stale=False）达标。
+     **legacy v0 豁免（v1.1）**：缺证据年龄字段（evidence.baseline.age_hours/
+     stale、或顶层 max_evidence_age_hours 缺失）的旧验收单判为 legacy，默认
+     不计入⑤分母与分子（老田 2026-10-30 拍板，--legacy-v0-policy exempt）；
+     count = 旧行为（legacy 计入分母，缺字段照判 ✗）。无非 legacy 单 → pending。
   ⑥ 赵云抽查：work/huangzhong/audit_sample_3.json 3/3 一致达标；缺失 → pending。
 
 边界：只读。不写业务代码/验收单/证据，只落复核报告；不代批（最终由老田签字）。
@@ -38,6 +46,9 @@ NATURAL_REJECT_MIN = 20       # ③ 5% 阈值的自然 REJECT 最小样本量
 MISREJECT_RATE_MAX = 0.05     # ③ 误拒绝率上限（<5%）
 EVIDENCE_MAX_AGE_HOURS = 48.0  # ⑤ 认证口径证据年龄门（工具默认门）
 MATURITY_DAYS = 7             # ④ 漏放窗口（PASS 后 7 天）
+# ⑤ legacy v0 口径：exempt=豁免（老田 2026-10-30 拍板，默认）；count=旧行为
+LEGACY_V0_POLICY_DEFAULT = "exempt"
+LEGACY_V0_POLICIES = ("exempt", "count")
 
 OK, FAIL, PENDING, TRACKING = "✓", "✗", "pending", "tracking"
 STATUS_LABEL = {OK: "✓ 达标", FAIL: "✗ 未达标", PENDING: "pending 待补证",
@@ -214,6 +225,7 @@ def load_acceptance(work_dir: Path) -> dict:
             "generated_at": data.get("generated_at"),
             "evidence": evidence,
             "evidence_scope": data.get("evidence_scope"),
+            "max_evidence_age_hours": data.get("max_evidence_age_hours"),
             "drill_flag": _truthy(data.get("drill")) or data.get("mode") == "drill",
         })
     return {"files": [p.name for p in files], "sheets": sheets, "invalid": invalid}
@@ -481,6 +493,29 @@ def _sheet_key(sheet: dict) -> str:
     return "sha:" + sha8 if sha8 else "file:" + sheet["file"].lower()
 
 
+def _reject_targets(natural: list[dict], drill_reject: list[dict]) -> list[dict]:
+    """REJECT 目标清单（自然验收单 + 演练台账），按复核匹配键去重、保序。
+
+    v1.1 ③ 小样本口径用它判断「复核清单是否覆盖全部 REJECT（自然+演练）」。
+    """
+    raw: list[dict] = []
+    for s in natural:
+        raw.append({"key": _sheet_key(s), "label": s["file"],
+                    "sha8": s["sha"][:8], "source": "natural"})
+    for e in drill_reject:
+        key = ("sha:" + e["sha"][:8].lower() if len(e["sha"]) >= 8
+               else "file:" + e["file"].lower())
+        raw.append({"key": key, "label": e["file"] or "(台账条目)",
+                    "sha8": e["sha"][:8], "source": "drill"})
+    out, seen = [], set()
+    for t in raw:
+        if t["key"] in seen:
+            continue
+        seen.add(t["key"])
+        out.append(t)
+    return out
+
+
 def _overturned(rec: dict) -> bool | None:
     """复核记录 → 是否推翻（True=误拒 / False=确认拒收 / None=无法判定）。"""
     if isinstance(rec.get("overturned"), bool):
@@ -558,6 +593,14 @@ def item3_misreject(acc: dict, drills: dict, work_dir: Path) -> dict:
                     if (e.get("verdict") or "").upper() == "REJECT"]
     total_reject = len(natural) + len(drill_reject)
     review = load_reject_reviews(Path(work_dir))
+    verdict_map = {}
+    for row in review["rows"]:
+        key = _review_key(row)
+        if not key:
+            continue
+        val = _overturned(row)
+        if val is not None:
+            verdict_map[key] = val
     detail = {
         "natural_reject_sheets": len(natural),
         "natural_reject_samples": _cap([{"file": s["file"], "sha8": s["sha"][:8],
@@ -574,26 +617,57 @@ def item3_misreject(acc: dict, drills: dict, work_dir: Path) -> dict:
     }
     base = {"id": "③", "title": "误拒绝率 <5%", "detail": detail}
     if len(natural) < NATURAL_REJECT_MIN:
-        detail["note"] = ("自然 REJECT %d 单 < %d：5%% 阈值无统计意义，按「逐单人工复核，"
-                          "确认无误拒」口径判定 → pending；复核清单请落 "
-                          "work/huangzhong/reject_review*.json（谁复核/结论/证据依据）"
-                          % (len(natural), NATURAL_REJECT_MIN))
-        base.update({"status": PENDING,
-                     "target": "<%s（自然 REJECT≥%d 时硬指标；否则逐单人工复核）"
-                               % (int(MISREJECT_RATE_MAX * 100), NATURAL_REJECT_MIN),
-                     "measured": "自然 REJECT %d 单（<20，待人工复核）" % len(natural),
-                     "value": {"natural_reject": len(natural), "rate": None,
-                               "target": len(natural) >= NATURAL_REJECT_MIN}})
+        # v1.1 口径（老田 2026-10-30 拍板补丁 b）：<20 时按「逐单人工复核，
+        # 确认无误拒」判定——复核清单须覆盖全部 REJECT（自然+演练）且 0 推翻。
+        targets = _reject_targets(natural, drill_reject)
+        unreviewed = [t for t in targets if t["key"] not in verdict_map]
+        overturned = sum(1 for t in targets if verdict_map.get(t["key"]) is True)
+        reviewed = len(targets) - len(unreviewed)
+        detail.update({"review_mode": "manual_per_sheet",
+                       "reject_total_unique": len(targets),
+                       "reviewed": reviewed,
+                       "unreviewed": _cap(unreviewed),
+                       "overturned": overturned})
+        target_txt = ("逐单人工复核 0 推翻（自然 REJECT<%d 时）；≥%d 单时按 <%s%% "
+                      "推翻率硬指标"
+                      % (NATURAL_REJECT_MIN, NATURAL_REJECT_MIN,
+                         int(MISREJECT_RATE_MAX * 100)))
+        value = {"natural_reject": len(natural), "rate": None,
+                 "overturned": overturned, "total_reject": total_reject,
+                 "reviewed": reviewed}
+        if not targets:
+            detail["note"] = ("自然 REJECT 0 单、演练 REJECT 0 单：无 REJECT 样本可复核"
+                              " → pending（等收到首批 REJECT/OBSERVE 后按逐单复核口径判定）")
+            base.update({"status": PENDING, "target": target_txt,
+                         "measured": "自然 REJECT 0 单（<20）；无 REJECT 样本可复核",
+                         "value": value})
+            return base
+        if overturned:
+            detail["note"] = ("逐单复核推翻 %d 单（已复核 %d/%d 单）→ ✗；误拒单须作废重验/"
+                              "修正后重新复核（自然 REJECT<20 口径要求 0 推翻）"
+                              % (overturned, reviewed, len(targets)))
+            base.update({"status": FAIL, "target": target_txt,
+                         "measured": "自然 REJECT %d 单（<20）；逐单复核推翻 %d/%d 单"
+                                     % (len(natural), overturned, len(targets)),
+                         "value": value})
+            return base
+        if unreviewed:
+            detail["note"] = ("复核清单不完整（%d/%d 单未见结论）→ pending；补齐 "
+                              "reject_review*.json（谁复核/结论/证据依据）后重跑"
+                              % (len(unreviewed), len(targets)))
+            base.update({"status": PENDING, "target": target_txt,
+                         "measured": "自然 REJECT %d 单（<20）；逐单复核 %d/%d 单，清单不完整"
+                                     % (len(natural), reviewed, len(targets)),
+                         "value": value})
+            return base
+        detail["note"] = ("自然 REJECT<20：按 v2 §2.2③「逐单人工复核，确认无误拒」口径，"
+                          "复核清单覆盖全部 REJECT（自然+演练）且 0 推翻 → ✓")
+        base.update({"status": OK, "target": target_txt,
+                     "measured": "自然 REJECT %d<20；逐单复核 0 推翻（清单 %d 条）"
+                                 % (len(natural), len(targets)),
+                     "value": value})
         return base
-    # ≥20：按复核清单计算推翻率（分母=REJECT 总单，含演练单，v2 口径）
-    verdict_map = {}
-    for row in review["rows"]:
-        key = _review_key(row)
-        if not key:
-            continue
-        val = _overturned(row)
-        if val is not None:
-            verdict_map[key] = val
+    # ≥20：按复核清单计算推翻率（分母=REJECT 总单，含演练单，v2 口径）——原逻辑不变
     rejects = [{"key": _sheet_key(s), "label": s["file"], "sha8": s["sha"][:8]}
                for s in natural]
     rejects += [{"key": "sha:" + e["sha"][:8].lower() if len(e["sha"]) >= 8
@@ -602,7 +676,8 @@ def item3_misreject(acc: dict, drills: dict, work_dir: Path) -> dict:
                 for e in drill_reject]
     unreviewed = [r for r in rejects if r["key"] not in verdict_map]
     overturned = sum(1 for r in rejects if verdict_map.get(r["key"]) is True)
-    detail.update({"reviewed": len(rejects) - len(unreviewed),
+    detail.update({"review_mode": "rate",
+                   "reviewed": len(rejects) - len(unreviewed),
                    "unreviewed": _cap(unreviewed),
                    "overturned": overturned})
     if unreviewed:
@@ -760,10 +835,43 @@ def _reconstructed_age(sheet: dict, key: str) -> float | None:
     return round((gen_sheet - gen_ev).total_seconds() / 3600.0, 2)
 
 
-def item5_evidence(acc: dict, drills: dict) -> dict:
+def _legacy_v0_missing(sheet: dict) -> list[str]:
+    """v0 旧验收单判定：返回缺失的「证据年龄字段」列表（空 = 非 legacy）。
+
+    legacy 口径（老田 2026-10-30 拍板，WO-HZ-POLICY-20261030）：PASS 单缺
+    evidence.baseline.age_hours / evidence.baseline.stale，或顶层
+    max_evidence_age_hours（v0 工具不落年龄字段，无法按 48h 年龄门复核）。
+    """
+    ev = sheet.get("evidence") if isinstance(sheet.get("evidence"), dict) else {}
+    base = ev.get("baseline") if isinstance(ev.get("baseline"), dict) else {}
+    missing = []
+    if not _num(base.get("age_hours")):
+        missing.append("evidence.baseline.age_hours")
+    if not isinstance(base.get("stale"), bool):
+        missing.append("evidence.baseline.stale")
+    if not _num(sheet.get("max_evidence_age_hours")):
+        missing.append("max_evidence_age_hours")
+    return missing
+
+
+def item5_evidence(acc: dict, drills: dict,
+                   legacy_v0_policy: str = LEGACY_V0_POLICY_DEFAULT) -> dict:
+    policy = (legacy_v0_policy if legacy_v0_policy in LEGACY_V0_POLICIES
+              else LEGACY_V0_POLICY_DEFAULT)
     samples = _pass_samples(acc, drills)["samples"]
-    rows, complete_n, fresh_n = [], 0, 0
+    legacy_rows, active = [], []
     for s in samples:
+        missing_age = _legacy_v0_missing(s)
+        if missing_age:
+            legacy_rows.append({"file": s["file"], "sha8": s["sha"][:8],
+                                "missing_age_fields": missing_age})
+        else:
+            active.append(s)
+    # exempt（老田拍板默认）= legacy 不进⑤分子分母；count = 旧行为（计入分母）
+    judged = active if policy == "exempt" else samples
+    excluded = legacy_rows if policy == "exempt" else []
+    rows, complete_n, fresh_n = [], 0, 0
+    for s in judged:
         missing, ev = _required_checks(s)
         complete = not missing
         base, rt = ev["baseline"], ev["redteam"]
@@ -791,16 +899,22 @@ def item5_evidence(acc: dict, drills: dict) -> dict:
             },
             "evidence_scope": s.get("evidence_scope"),
         })
-    total = len(samples)
+    total = len(judged)
     completeness = round(complete_n / total, 4) if total else None
     if not samples:
         status, measured, rate = PENDING, "无 PASS 样本可判", None
+    elif not judged:
+        status, rate = PENDING, None
+        measured = ("无非 legacy PASS 单可判（legacy v0 豁免 %d 单）"
+                    % len(legacy_rows))
     else:
         status = OK if (complete_n == total and fresh_n == complete_n) else FAIL
         rate = completeness
         measured = "完整率 %.1f%%（%d/%d），新鲜 %d/%d，年龄门 ≤%.0fh" % (
             (completeness or 0) * 100, complete_n, total, fresh_n, total,
             EVIDENCE_MAX_AGE_HOURS)
+        if excluded:
+            measured += "；legacy v0 豁免 %d 单" % len(excluded)
     required = {
         "count": len(REQUIRED_FIELDS),
         "fields": list(REQUIRED_FIELDS),
@@ -811,14 +925,35 @@ def item5_evidence(acc: dict, drills: dict) -> dict:
               "completeness_rate": rate,
               "fresh_count": fresh_n,
               "max_age_hours": EVIDENCE_MAX_AGE_HOURS,
+              "legacy_policy": policy,
+              "legacy_detected_count": len(legacy_rows),
+              "legacy_excluded": {
+                  "count": len(excluded),
+                  "files": _cap([r["file"] for r in excluded]),
+                  "samples": _cap(excluded),
+              },
               "samples": _cap(rows), "required": required}
+    if policy == "exempt" and legacy_rows and judged:
+        detail["note"] = ("legacy v0 豁免：%d 单缺证据年龄字段，不计入⑤分母"
+                          "（老田 2026-10-30 拍板；--legacy-v0-policy count 回旧行为）"
+                          % len(legacy_rows))
+    elif policy == "exempt" and legacy_rows and not judged:
+        detail["note"] = ("无非 legacy PASS 单可判（legacy v0 豁免 %d 单）→ pending；"
+                          "等带证据年龄字段的新口径 PASS 单入库后重跑"
+                          % len(legacy_rows))
+    elif policy == "count" and legacy_rows:
+        detail["note"] = ("legacy v0 检出 %d 单：按 count 旧口径计入⑤分母，"
+                          "缺字段照判 ✗（--legacy-v0-policy exempt 恢复豁免）"
+                          % len(legacy_rows))
     return {"id": "⑤", "title": "证据链完整率 100% + 年龄 ≤48h",
             "status": status,
             "target": "%d 项必需字段完整率 100%%；证据年龄 ≤%.0fh"
                       % (len(REQUIRED_FIELDS), EVIDENCE_MAX_AGE_HOURS),
             "measured": measured,
             "value": {"complete": complete_n, "total": total,
-                      "fresh": fresh_n, "completeness_rate": rate},
+                      "fresh": fresh_n, "completeness_rate": rate,
+                      "legacy_excluded": len(excluded),
+                      "legacy_policy": policy},
             "detail": detail}
 
 
@@ -1020,8 +1155,18 @@ def _render_md(rep: dict) -> str:
             md.append("- 自然 REJECT %d 单；演练 REJECT %d 单；REJECT 总单 %d"
                       % (d.get("natural_reject_sheets", 0),
                          d.get("drill_reject_entries", 0), d.get("total_reject", 0)))
-            md.append("- 人工复核清单：`%s`（已发现 %d 份）"
-                      % (d.get("manual_review_glob"), len(d.get("manual_review_files") or [])))
+            md.append("- 人工复核清单：`%s`（已发现 %d 份、%d 行）"
+                      % (d.get("manual_review_glob"),
+                         len(d.get("manual_review_files") or []),
+                         d.get("manual_review_rows", 0)))
+            if d.get("reviewed") is not None:
+                mode_txt = ("逐单人工复核（自然 REJECT<20）"
+                            if d.get("review_mode") == "manual_per_sheet"
+                            else "推翻率（自然 REJECT≥20）")
+                md.append("- 口径=%s：已复核 %d/%d 单；推翻 %d 单"
+                          % (mode_txt, d.get("reviewed", 0),
+                             d.get("reject_total_unique") or d.get("total_reject", 0),
+                             d.get("overturned", 0)))
             if d.get("note"):
                 md.append("- %s" % d["note"])
         elif it["id"] == "④":
@@ -1044,6 +1189,14 @@ def _render_md(rep: dict) -> str:
                          d.get("complete_count", 0), d.get("total", 0),
                          d.get("fresh_count", 0), d.get("total", 0),
                          d.get("max_age_hours", 48)))
+            legacy = d.get("legacy_excluded") or {}
+            if legacy.get("count"):
+                md.append("- legacy v0 豁免 %d 单（不计入⑤分母；口径=%s）：%s"
+                          % (legacy.get("count"), d.get("legacy_policy"),
+                             "、".join(legacy.get("files") or []) or "-"))
+            elif d.get("legacy_detected_count"):
+                md.append("- legacy v0 检出 %d 单（口径=%s：计入⑤分母）"
+                          % (d.get("legacy_detected_count"), d.get("legacy_policy")))
             for row in d.get("samples") or []:
                 if row.get("complete") and row.get("fresh"):
                     continue
@@ -1051,6 +1204,8 @@ def _render_md(rep: dict) -> str:
                           % (row.get("sha8") or "-", row.get("file"),
                              "、".join(row.get("missing") or []) or "-",
                              row.get("max_age_hours"), row.get("fresh")))
+            if d.get("note"):
+                md.append("- %s" % d["note"])
         elif it["id"] == "⑥":
             md.append("- 抽查记录：`%s`（seed=%s）"
                       % (d.get("path"), d.get("seed")))
@@ -1084,17 +1239,21 @@ def _render_md(rep: dict) -> str:
 
 def review(work_dir: Path | str | None = None, out_dir: Path | str | None = None,
            days: int = 7, now: dt.datetime | None = None,
-           repo_root: Path | str | None = None) -> dict:
+           repo_root: Path | str | None = None,
+           legacy_v0_policy: str = LEGACY_V0_POLICY_DEFAULT) -> dict:
     """执行六条复核并落 JSON/MD 报告（只读数据，只写报告）。
 
     work_dir 缺省 = repo_root/work/huangzhong（repo_root 缺省=工具所在仓库根）；
-    out_dir 缺省 = work_dir；now 可注入以获得确定性（测试用）。
+    out_dir 缺省 = work_dir；now 可注入以获得确定性（测试用）；
+    legacy_v0_policy=exempt（默认，老田 2026-10-30 拍板口径）| count（旧行为）。
     """
     now = now or _now()
     root = Path(repo_root) if repo_root else ROOT
     work = Path(work_dir) if work_dir else root / "work" / "huangzhong"
     out = Path(out_dir) if out_dir else work
     days = int(days) if int(days) > 0 else 7
+    policy = (legacy_v0_policy if legacy_v0_policy in LEGACY_V0_POLICIES
+              else LEGACY_V0_POLICY_DEFAULT)
     warnings: list[str] = []
 
     acc = load_acceptance(work)
@@ -1116,7 +1275,7 @@ def review(work_dir: Path | str | None = None, out_dir: Path | str | None = None
         item2_drill(drills),
         item3_misreject(acc, drills, work),
         item4_leakage(acc, drills, work, now),
-        item5_evidence(acc, drills),
+        item5_evidence(acc, drills, policy),
         item6_audit(work),
     ]
     kpi = _kpi(root, work, days, now)
@@ -1137,17 +1296,19 @@ def review(work_dir: Path | str | None = None, out_dir: Path | str | None = None
     rep = {
         "ok": True,
         "tool": "huangzhong_review.py",
-        "version": "v1 (2026-10-30)",
+        "version": "v1.1 (2026-10-30)",
         "generated_at": _iso(now),
         "window_days": days,
         "repo_root": str(root),
         "work_dir": str(work),
         "read_only": True,
+        "legacy_v0_policy": policy,
         "targets": {"pass_samples": PASS_TARGET, "drills": DRILL_TARGET,
                     "natural_reject_min": NATURAL_REJECT_MIN,
                     "misreject_rate_max": MISREJECT_RATE_MAX,
                     "evidence_max_age_hours": EVIDENCE_MAX_AGE_HOURS,
-                    "maturity_days": MATURITY_DAYS},
+                    "maturity_days": MATURITY_DAYS,
+                    "legacy_v0_policy": policy},
         "items": items,
         "summary": _summary(items),
         "kpi": kpi,
@@ -1182,11 +1343,16 @@ def main(argv=None) -> int:
                     help="数据目录（默认 <repo-root>/work/huangzhong）")
     ap.add_argument("--repo-root", default="",
                     help="仓库根（默认工具所在仓库；worktree 内 dry-run 主仓时显式指定）")
+    ap.add_argument("--legacy-v0-policy", choices=list(LEGACY_V0_POLICIES),
+                    default=LEGACY_V0_POLICY_DEFAULT,
+                    help="⑤ v0 旧验收单（缺证据年龄字段）口径：exempt=豁免不计入"
+                         "⑤分母（老田 2026-10-30 拍板，默认）；count=旧行为（计入分母）")
     args = ap.parse_args(argv)
     rep = review(work_dir=args.work_dir or None,
                  out_dir=args.out_dir or None,
                  days=args.days,
-                 repo_root=args.repo_root or None)
+                 repo_root=args.repo_root or None,
+                 legacy_v0_policy=args.legacy_v0_policy)
     if args.json:
         print(json.dumps(rep, ensure_ascii=False, indent=1))
     else:

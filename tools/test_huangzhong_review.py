@@ -7,12 +7,16 @@
   · drill 台账命中（dict / 顶层数组 / JSONL 三种写法、verdict 缺失回填）→ ② ✓；
     drill 台账缺失 → ② pending；
   · 证据超龄 / 缺字段 → ⑤ ✗；
+  · ⑤ legacy v0 豁免（v1.1）：缺证据年龄字段的旧 PASS 单不计入分母 →
+    exempt 豁免后⑤达标；--legacy-v0-policy count → 旧行为判 ✗；无非 legacy → pending；
   · 赵云抽查缺失 → ⑥ pending；抽查不一致 → ⑥ ✗；
-  · 误拒绝率：自然 REJECT<20 → pending；≥20 且推翻率≥5% → ✗；复核清单缺失 → pending；
+  · 误拒绝率：自然 REJECT<20 → 逐单人工复核（清单覆盖全部 REJECT 且 0 推翻 → ✓；
+    清单缺项 → pending；有推翻 → ✗；无 REJECT 样本 → pending）；
+    自然 REJECT≥20 且推翻率≥5% → ✗；复核清单缺失 → pending；
   · 漏放：满 7 天窗口内事故 → ④ ✗；未满窗 → ④ tracking；
   · commit sha 去重（同 commit 取最新）+ 演练单排除；
   · 坏行/坏 JSON 容错（验收单/daily/incidents/台账/抽查 + JSONL 退路）；
-  · CLI 冒烟：退出码与 review_<ts>.json/md 落盘。
+  · CLI 冒烟：退出码与 review_<ts>.json/md 落盘；--legacy-v0-policy 透传。
 """
 import importlib.util
 import json
@@ -79,6 +83,7 @@ def _sheet_obj(sha: str, verdict: str = "PASS", gen: datetime | None = None, *,
             "commit": {"ok": True, "sha": sha, "author": "tester",
                        "date": _iso(gen), "subject": "test"},
             "evidence": {"baseline": base, "redteam": red},
+            "max_evidence_age_hours": 48.0,
             "evidence_scope": evidence_scope, "verdict": verdict, "reasons": [],
             "rollback_point": rollback or ("git revert %s" % sha[:12]),
             "closed_by": "老田（人工）", "read_only": True}
@@ -296,6 +301,86 @@ def test_misreject_review_missing_pending(tmp_path):
     assert len(it["detail"]["unreviewed"]) == 20
 
 
+def test_misreject_low_sample_manual_review_clean_ok(tmp_path):
+    """自然 REJECT<20：复核清单覆盖全部 REJECT 且 0 推翻 → ③ ✓（v1.1 口径）。"""
+    work = _work(tmp_path)
+    rejects = [_sha(0x7200 + i) for i in range(3)]
+    for i, sha in enumerate(rejects):
+        _add_sheet(work, sha, "REJECT", NOW - timedelta(hours=2 + i))
+    _write_json(work / "reject_review_20261030.json", {"reviews": [
+        {"sha": sha, "overturned": False, "reviewer": "老田"} for sha in rejects]})
+    _, rep = _run(tmp_path, work)
+    it = rep["items"][2]
+    assert it["status"] == "✓"
+    assert it["value"]["overturned"] == 0
+    assert it["value"]["reviewed"] == 3
+    assert it["detail"]["review_mode"] == "manual_per_sheet"
+    assert "逐单复核 0 推翻（清单 3 条）" in it["measured"]
+    md = Path(rep["report_md"]).read_text(encoding="utf-8")
+    assert "逐单人工复核（自然 REJECT<20）" in md
+
+
+def test_misreject_low_sample_drill_reject_reviewed_ok(tmp_path):
+    """真实 10-30 形态：自然 REJECT 0<20 + 演练 REJECT 1，复核清单覆盖 → ③ ✓。"""
+    work = _work(tmp_path)
+    sha = _sha(0x7300)
+    _add_sheet(work, sha, "REJECT", NOW - timedelta(hours=2))
+    _write_json(work / "drills" / "drill_ledger_a.json", {"drills": [
+        {"file": "acceptance_%s.json" % sha[:8], "verdict": "REJECT",
+         "commit": sha}]})
+    _write_json(work / "reject_review_20261030.json", {"reviews": [
+        {"file": "acceptance_%s.json" % sha[:8], "sha": sha,
+         "overturned": False, "reviewer": "老田"}]})
+    _, rep = _run(tmp_path, work)
+    it = rep["items"][2]
+    assert it["status"] == "✓"
+    assert it["value"]["natural_reject"] == 0
+    assert it["measured"] == "自然 REJECT 0<20；逐单复核 0 推翻（清单 1 条）"
+
+
+def test_misreject_low_sample_review_incomplete_pending(tmp_path):
+    """自然 REJECT<20 且复核清单缺项 → ③ pending。"""
+    work = _work(tmp_path)
+    rejects = [_sha(0x7400 + i) for i in range(2)]
+    for i, sha in enumerate(rejects):
+        _add_sheet(work, sha, "REJECT", NOW - timedelta(hours=2 + i))
+    _write_json(work / "reject_review_20261030.json", {"reviews": [
+        {"sha": rejects[0], "overturned": False}]})
+    _, rep = _run(tmp_path, work)
+    it = rep["items"][2]
+    assert it["status"] == "pending"
+    assert it["detail"]["reviewed"] == 1
+    assert len(it["detail"]["unreviewed"]) == 1
+    assert "清单不完整" in it["measured"]
+
+
+def test_misreject_low_sample_overturned_marks_fail(tmp_path):
+    """自然 REJECT<20 但复核有推翻 → ③ ✗（逐单口径要求 0 推翻）。"""
+    work = _work(tmp_path)
+    rejects = [_sha(0x7500 + i) for i in range(2)]
+    for i, sha in enumerate(rejects):
+        _add_sheet(work, sha, "REJECT", NOW - timedelta(hours=2 + i))
+    _write_json(work / "reject_review_20261030.json", {"reviews": [
+        {"sha": rejects[0], "overturned": False},
+        {"sha": rejects[1], "overturned": True}]})
+    _, rep = _run(tmp_path, work)
+    it = rep["items"][2]
+    assert it["status"] == "✗"
+    assert it["value"]["overturned"] == 1
+    assert rep["summary"]["overall_pass"] is False
+
+
+def test_misreject_no_reject_samples_pending(tmp_path):
+    """零 REJECT 样本：无可复核对象 → ③ pending。"""
+    work = _work(tmp_path)
+    _add_sheet(work, _sha(0x7600), "PASS", GEN_OLD)
+    _, rep = _run(tmp_path, work)
+    it = rep["items"][2]
+    assert it["status"] == "pending"
+    assert it["value"]["total_reject"] == 0
+    assert "无 REJECT 样本可复核" in it["measured"]
+
+
 # --------------------------------------------------------------------- ④
 
 def test_leakage_incident_marks_fail(tmp_path):
@@ -347,13 +432,73 @@ def test_evidence_missing_field_marks_fail(tmp_path):
         del obj["evidence"]["baseline"]["age_hours"]
 
     _add_sheet(work, sha, "PASS", GEN_OLD, mutate=_mutate)
-    _, rep = _run(tmp_path, work)
+    _, rep = _run(tmp_path, work, legacy_v0_policy="count")
     it = rep["items"][4]
     assert it["status"] == "✗"
     sample = it["detail"]["samples"][0]
     assert sample["complete"] is False
     assert "evidence.baseline.age_hours" in sample["missing"]
     assert sample["fresh"] is None
+
+
+def _legacy_v0_mutate(obj):
+    """模拟 v0 旧验收单：无 evidence、无 max_evidence_age_hours（旧工具不落年龄字段）。"""
+    obj["evidence"] = {}
+    obj.pop("max_evidence_age_hours", None)
+    obj["evidence_scope"] = None
+
+
+def test_legacy_v0_missing_age_fields_exempt_pending(tmp_path):
+    """缺证据年龄字段 → 默认 exempt 判 legacy、不计入⑤分母；无非 legacy → pending。"""
+    work = _work(tmp_path)
+    _add_sheet(work, _sha(0x4110), "PASS", GEN_OLD, mutate=_legacy_v0_mutate)
+    _, rep = _run(tmp_path, work)
+    it = rep["items"][4]
+    assert it["status"] == "pending"
+    assert it["detail"]["legacy_policy"] == "exempt"
+    assert it["detail"]["legacy_detected_count"] == 1
+    assert it["detail"]["legacy_excluded"]["count"] == 1
+    assert it["detail"]["legacy_excluded"]["files"] == ["acceptance_00004110.json"]
+    assert it["detail"]["total"] == 0
+    assert "无非 legacy" in it["measured"]
+    md = Path(rep["report_md"]).read_text(encoding="utf-8")
+    assert "legacy v0 豁免 1 单" in md
+
+
+def test_legacy_v0_exempt_item5_ok_and_count_old_behavior(tmp_path, capsys):
+    """2 张 v1 新单 + 2 张 v0 旧单：exempt → ⑤ ✓（只按新单判）；count → 旧行为 ✗。"""
+    work = _work(tmp_path)
+    for i in range(2):
+        _add_sheet(work, _sha(0x4200 + i), "PASS", GEN_OLD,
+                   baseline_age=1.0 + i, redteam_age=2.0)
+    for i in range(2):
+        _add_sheet(work, _sha(0x4210 + i), "PASS", GEN_OLD,
+                   mutate=_legacy_v0_mutate)
+    _, rep = _run(tmp_path, work)
+    it = rep["items"][4]
+    assert it["status"] == "✓"
+    assert it["value"]["total"] == 2
+    assert it["value"]["complete"] == 2
+    assert it["value"]["fresh"] == 2
+    assert it["value"]["legacy_excluded"] == 2
+    assert it["detail"]["legacy_detected_count"] == 2
+    assert len(it["detail"]["legacy_excluded"]["files"]) == 2
+    assert "legacy v0 豁免 2 单" in it["measured"]
+    md = Path(rep["report_md"]).read_text(encoding="utf-8")
+    assert "legacy v0 豁免 2 单" in md
+    # count = 旧行为（CLI --legacy-v0-policy 透传）：旧单计入分母 → ⑤ ✗
+    h = _load()
+    rc = h.main(["--repo-root", str(tmp_path), "--legacy-v0-policy", "count",
+                 "--json"])
+    data = json.loads(capsys.readouterr().out)
+    assert rc == 1
+    assert data["legacy_v0_policy"] == "count"
+    it5 = data["items"][4]
+    assert it5["status"] == "✗"
+    assert it5["detail"]["total"] == 4
+    assert it5["detail"]["complete_count"] == 2
+    assert it5["detail"]["legacy_excluded"]["count"] == 0
+    assert "count 旧口径" in it5["detail"]["note"]
 
 
 # --------------------------------------------------------------------- ⑥
