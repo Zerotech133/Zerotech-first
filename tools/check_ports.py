@@ -123,6 +123,9 @@ REGISTRY = {
     # 脱离 8734 门户页面路由；数据=portal/agent_ide_bundle.json 预烘只读。
     # 按需起停，同 8796 语义入 OPTIONAL_OFFLINE（strict 防抢占不判离线）。
     8103: "军团独立IDE(legion_ide/serve.py)",
+    # 2026-10-30 K-QUANT-20261030-OHENGINE：方案A OpenHands Agent Server（本地执行引擎）。
+    # 仅绑 127.0.0.1，venv 在 C:\项目\legion-openhands\.venv312；按需起停（strict 防抢占不判离线）。
+    8770: "OpenHands Agent Server(方案A执行引擎)",
 }
 
 
@@ -318,7 +321,7 @@ WHITELIST = ("system", "svchost", "clash", "todesk", "editor_sdk",
 # 卡片回调疑被 feishu_bot_ws 长连接替代；转按需语义，strict 仍防被抢）
 # 2026-10-14 K-STOCK-394：8787 Hermes WebUI 无 keepalive 链，start_hermes_bg.py
 # 幂等按需拉起（K271 配方），同 lark_card 按需语义入列，否则 strict 必挂。
-OPTIONAL_OFFLINE = {3001, 8030, 8093, 8096, 8099, 8101, 8103, 8787, 8796, 8798, 8899, 9104}  # 8099/8796/8798/8101/8103 加入：看门狗/HKCU 自启/会话级后台/评审按需实例/独立IDE，strict 防抢占不判离线（2026-10-22 老田裁端口；8798 于 2026-10-23 P8798 入列；8101 于 2026-10-23 REV 入列；8103 于 2026-10-26 IDE-STANDALONE 入列）
+OPTIONAL_OFFLINE = {3001, 8030, 8093, 8096, 8099, 8101, 8103, 8770, 8787, 8796, 8798, 8899, 9104}  # 8099/8796/8798/8101/8103/8770 加入：看门狗/HKCU 自启/会话级后台/评审按需实例/独立IDE/OpenHands执行引擎，strict 防抢占不判离线（2026-10-22 老田裁端口；8798 于 2026-10-23 P8798 入列；8101 于 2026-10-23 REV 入列；8103 于 2026-10-26 IDE-STANDALONE 入列；8770 于 2026-10-30 OHENGINE 入列）
 # 2026-10-16 数据仓止血：PG/Neo4j 容器按需启停，
 # strict 语义=防抢占不判离线；库内健康由 kg_check / freshness_report / xmap 水位各自监控。
 # 2026-10-16 二次勘误：5442 实为 quant-pg 容器口；5443 误建容器已删、条目移除。
