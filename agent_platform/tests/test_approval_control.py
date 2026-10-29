@@ -39,3 +39,10 @@ def test_self_approval_blocked(tmp_path):
     r = AC.handle_action(_payload("approval:approve", op="ou_owner"),
                          ledger=tmp_path / "a.jsonl", owner="ou_owner")
     assert not r["ok"] and r["error"] == "self_approval_blocked"
+
+
+def test_owner_ids_blocked(tmp_path):
+    r = AC.handle_action(_payload("approval:approve", op="ou_owner"),
+                         ledger=tmp_path / "a.jsonl",
+                         owner_ids=["ou_owner", "ou_other"])
+    assert not r["ok"] and r["error"] == "self_approval_blocked"

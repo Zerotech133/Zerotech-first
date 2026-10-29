@@ -11,7 +11,8 @@ import json
 import sys
 
 
-def build_card(task, summary, level="S2", evidence_hash="", evidence_url=""):
+def build_card(task, summary, level="S2", evidence_hash="", evidence_url="",
+               owner_ids=None):
     task = str(task or "").strip()
     summary = str(summary or "").strip()
     body = [
@@ -29,19 +30,19 @@ def build_card(task, summary, level="S2", evidence_hash="", evidence_url=""):
          "type": "primary_filled", "width": "fill",
          "behaviors": [{"type": "callback",
                         "value": {"tag": "approval:approve", "task": task,
-                                  "level": level, "evidence_hash": evidence_hash}}]},
+                                  "level": level, "evidence_hash": evidence_hash, "owner_ids": list(owner_ids or [])}}]},
         {"tag": "button",
          "text": {"tag": "plain_text", "content": "驳回"},
          "type": "default",
          "behaviors": [{"type": "callback",
                         "value": {"tag": "approval:reject", "task": task,
-                                  "level": level, "evidence_hash": evidence_hash}}]},
+                                  "level": level, "evidence_hash": evidence_hash, "owner_ids": list(owner_ids or [])}}]},
         {"tag": "button",
          "text": {"tag": "plain_text", "content": "转人工"},
          "type": "default",
          "behaviors": [{"type": "callback",
                         "value": {"tag": "approval:escalate", "task": task,
-                                  "level": level, "evidence_hash": evidence_hash}}]},
+                                  "level": level, "evidence_hash": evidence_hash, "owner_ids": list(owner_ids or [])}}]},
     ]
     body.append({"tag": "column_set", "columns": [
         {"tag": "column", "width": "auto", "elements": [b]} for b in buttons]})
@@ -63,9 +64,12 @@ def main(argv=None):
     ap.add_argument("--summary", default="")
     ap.add_argument("--level", default="S2")
     ap.add_argument("--evidence-hash", default="")
+    ap.add_argument("--owner-ids", default="")
     ap.add_argument("--out")
     args = ap.parse_args(argv)
-    card = build_card(args.task, args.summary, args.level, args.evidence_hash)
+    owner_ids = [x for x in str(getattr(args, "owner_ids", "") or "").split(",") if x]
+    card = build_card(args.task, args.summary, args.level, args.evidence_hash,
+                      owner_ids=owner_ids)
     txt = json.dumps(card, ensure_ascii=False, indent=2)
     if args.out:
         from pathlib import Path

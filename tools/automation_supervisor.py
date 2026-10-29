@@ -98,7 +98,8 @@ def run_checks(root=None, now=None):
          "ok": _port_open(8097)},
     ]
     red = (len(checks["L3_审计"]) > 0
-           or any(not x["ok"] for x in checks["L4_环境"]))
+           or any((not x["ok"]) or x.get("value") != 200
+                  for x in checks["L4_环境"]))
     return {"schema": "supervisor_dryrun/v1",
             "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
             "dry_run": True,

@@ -1296,7 +1296,9 @@ def _handle_approval_card(val, sender):
     allowed = str(os.environ.get("APPROVAL_OPERATORS", "")).strip()
     allowed_ops = {x for x in allowed.split(",") if x} or None
     payload = {"operator": {"open_id": sender}, "action": {"value": val}}
-    return approval_control.handle_action(payload, allowed_ops=allowed_ops)
+    return approval_control.handle_action(
+        payload, allowed_ops=allowed_ops,
+        owner_ids=val.get("owner_ids") if isinstance(val, dict) else None)
 
 
 def _handle_card(val, sender):
