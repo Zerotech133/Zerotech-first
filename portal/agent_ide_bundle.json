@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 01:23",
+ "generated": "2026-10-30 01:24",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -10,7 +10,7 @@
   "prompt_miss": [],
   "name_collisions": {},
   "workorders_doing": 24,
-  "workorders_review": 4
+  "workorders_review": 5
  },
  "workorders": [
   {
@@ -237,6 +237,15 @@
    "branch": "task/WO-SUPERVISOR-20261030",
    "created": "2026-10-30 00:23:29",
    "project": "general"
+  },
+  {
+   "id": "WO-ACAD-LCS1-REDEFINE-20261030",
+   "desc": "LCS-1 信号重定义新课题（A6 No-Go 后）：先改假设/算子口径，尤其 accumulate 阈值与数据依赖；小样本预注册→全市场验证；不在本轮 A6 调参。",
+   "status": "review",
+   "owner": "STRAT1",
+   "branch": "task/WO-ACAD-LCS1-REDEFINE-20261030",
+   "created": "2026-10-30 00:51:43",
+   "project": "quant"
   },
   {
    "id": "K-QUANT-20261030-IDECANCEL",
@@ -1568,7 +1577,14 @@
    ],
    "experience": "20 年从业经验（策略研究：可证伪假设与 LCS-1 图形推演）",
    "dept_name": "研究院",
-   "dept_cn_title": "太学"
+   "dept_cn_title": "太学",
+   "tasks": [
+    {
+     "id": "WO-ACAD-LCS1-REDEFINE-20261030",
+     "desc": "LCS-1 信号重定义新课题（A6 No-Go 后）：先改假设/算子口径，尤其 accumulate 阈值与数据依赖；小样本预注册→全市场验证；不在本轮 A6 调参。",
+     "status": "review"
+    }
+   ]
   },
   "BACK1": {
    "id": "BACK1",
