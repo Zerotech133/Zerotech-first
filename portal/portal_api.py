@@ -103,6 +103,7 @@ import api_zhuge_route  # WO-OS-09 诸葛亮建议引擎只读路由 /api/zhuge/
 import api_zhuge_adoption  # WO-LEGION-ZHUGE-ADOPTROUTE C3 建议采纳率只追加 /api/zhuge/adoption（2026-10-27）
 import api_os_goal      # OS-CLOSE-G0 目标/事项/成果 G0 骨架（/api/os/*，2026-10-24）
 from paper_data import paper_snapshot  # WO-INV-PAPER-UI 量化部 paper 只读数据口（2026-10-30）
+from pool_data import pool_snapshot  # WO-INV-POOL-UI 司马徽推荐池全池复盘数据口（2026-10-30）
 
 
 
@@ -4795,6 +4796,13 @@ color:#fff;font-size:13.5px;cursor:pointer}
             # M4-P5 投研绩效看板页（数据走 /api/perf/board 与 /api/perf/replay）
             self._html_file(os.path.join(
                 os.path.dirname(os.path.abspath(__file__)), "perf.html"))
+        elif path == "/api/acad1/pool":
+            # WO-INV-POOL-UI：ACAD1 推荐池全池复盘只读数据口
+            self._json(pool_snapshot())
+        elif path == "/acad1/pool":
+            # WO-INV-POOL-UI：ACAD1 推荐池全池复盘只读页
+            self._html_file(os.path.join(
+                os.path.dirname(os.path.abspath(__file__)), "acad1_pool.html"))
         elif path == "/api/quant/paper":
             # WO-INV-PAPER-UI：量化部 paper 组合只读数据口（不接实盘）
             self._json(paper_snapshot())
