@@ -170,6 +170,21 @@ _PROC_CACHE = {}
 
 
 
+def proc_start_age_min(pid, timeout=3.0):
+    """监听进程已运行分钟数；无法判定返回 None（strict 侧 fail-visible 处理）。
+
+    2026-10-30 P56：并行会话会临时拉起 python 监听（随机高端口，几分钟即退），
+    旧 strict 一遇就全家合并门 FAIL。按「启动 <N 分钟 = 瞬态」只告警不判负。
+    """
+    try:
+        import psutil
+
+        return (max(0.0, __import__("time").time() - psutil.Process(int(pid))
+                    .create_time()) / 60.0)
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def _prime_proc_names(pids, timeout=15):
     """批量预热 PID→进程名（tasklist 一次拿全，避免逐个 PowerShell 查询）。
 
@@ -351,6 +366,12 @@ OPTIONAL_OFFLINE |= {8795}
 def main():
     strict = "--strict" in sys.argv
     as_json = "--json" in sys.argv
+    transient_min = 30.0
+    if "--transient-min" in sys.argv:
+        try:
+            transient_min = float(sys.argv[sys.argv.index("--transient-min") + 1])
+        except (IndexError, ValueError):
+            transient_min = 30.0
     # --json 模式 stdout 只出纯 JSON（人读横幅关闭），供自动化直接解析
     say = (lambda *a, **k: None) if as_json else print
     say("== 注册端口在线状态 ==")
@@ -372,11 +393,18 @@ def main():
     _prime_proc_names([pid for p, pid in listen.items()
                        if 1024 < p <= 49151 and p not in REGISTRY])
     unknown = []
+    transient = []
     for p, pid in sorted(listen.items()):
         if not (1024 < p <= 49151) or p in REGISTRY:
             continue
         name = proc_name(pid)
         if any(w in name.lower() for w in WHITELIST):
+            continue
+        age = proc_start_age_min(pid)
+        if age is not None and age < transient_min:
+            transient.append((p, name, age))
+            say("  ⚠ %d 由 %s 监听——启动 %.1fm < %.0fm，判瞬态（strict 告警放行）"
+                % (p, name, age, transient_min))
             continue
         unknown.append((p, name))
     if unknown:
@@ -394,10 +422,10 @@ def main():
             say("  ⚠ %d %s（%s）" % (c["port"], c["kind"], c["detail"]))
     else:
         say("  无 ✓")
-    say("== 汇总：注册 %d 个，离线 %d（%s），未登记 %d，冲突 %d =="
+    say("== 汇总：注册 %d 个，离线 %d（%s），未登记 %d，瞬态监听 %d，冲突 %d =="
           % (len(REGISTRY), len(down),
              ",".join(map(str, down)) or "无", len(unknown),
-             len(conflicts)))
+             len(transient), len(conflicts)))
     hard_down = [p for p in down if p not in OPTIONAL_OFFLINE]
     if hard_down:
         say("  （在册服务离线 %d 个，仅提示不判负——strict 只拦未登记/冲突：%s）"
@@ -413,6 +441,9 @@ def main():
             "hard_offline": hard_down,
             "unknown": [{"port": p, "pid_name": name}
                         for p, name in unknown],
+            "unknown_transient": [{"port": p, "pid_name": name,
+                                   "age_min": round(age, 1)}
+                                  for p, name, age in transient],
             "conflicts": conflicts,
             "summary": {"registered_total": len(REGISTRY),
                         "offline": len(down),
