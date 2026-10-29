@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 03:06",
+ "generated": "2026-10-30 03:14",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 26,
+  "workorders_doing": 27,
   "workorders_review": 9
  },
  "workorders": [
@@ -326,6 +326,15 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-SEC-AUDIT-TASK-20261030",
    "created": "2026-10-30 02:44:43",
+   "project": "general"
+  },
+  {
+   "id": "WO-LEGION-PAGESHELL2-20261030",
+   "desc": "P1续：全量壳资产注入；组件视觉基线warn-only门；PageShell渐进模板",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-PAGESHELL2-20261030",
+   "created": "2026-10-30 03:09:38",
    "project": "general"
   }
  ],
@@ -7046,6 +7055,11 @@
      "id": "WO-SEC-AUDIT-TASK-20261030",
      "desc": "security_audit.ps1：py311 pip-audit(freeze)+py312 bandit，固定日志/status，任务可靠退出",
      "status": "review"
+    },
+    {
+     "id": "WO-LEGION-PAGESHELL2-20261030",
+     "desc": "P1续：全量壳资产注入；组件视觉基线warn-only门；PageShell渐进模板",
+     "status": "doing"
     }
    ]
   }
