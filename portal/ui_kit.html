@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>零界 UI Kit v0.1</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="/static/tokens.css">
+<link rel="stylesheet" href="/static/os_theme.css">
+<link rel="stylesheet" href="/static/ui/ui.css">
+<script src="/static/nav.js" defer></script>
+<script src="/static/ui/ui.js" defer></script>
+<style>
+  .kit-section { margin: 22px 0; }
+  .kit-caption { color: var(--ui-muted, var(--os-muted)); font-size: 11px; margin: 4px 0 10px; }
+  .kit-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+</style>
+</head>
+<body>
+<main class="ui-page">
+  <header class="ui-page-head">
+    <div>
+      <span class="ui-eyebrow">ZEROBOUND · UI KIT v0.1</span>
+      <h1>零界 UI 组件库</h1>
+      <p>无框架、渐进增强、可访问性优先。组件只负责表面，业务逻辑留在各页；颜色全部来自 tokens/os_theme。</p>
+    </div>
+    <div class="ui-actions">
+      <button class="ui-btn ui-btn--primary" type="button" data-ui-toast="UI Kit 已就绪">试一个 toast</button>
+      <button class="ui-btn" type="button" data-ui-dialog data-ui-dialog-title="组件抽屉" data-ui-dialog-body="这是无框架 drawer；支持 Esc、遮罩关闭与焦点归还。">打开 drawer</button>
+    </div>
+  </header>
+
+  <section class="ui-panel kit-section">
+    <h2>按钮 / 徽标</h2>
+    <div class="kit-row">
+      <button class="ui-btn ui-btn--primary" type="button">主按钮</button>
+      <button class="ui-btn" type="button">次按钮</button>
+      <button class="ui-btn ui-btn--ghost" type="button">幽灵</button>
+      <button class="ui-btn ui-btn--danger" type="button">危险</button>
+      <button class="ui-btn" type="button" disabled>禁用</button>
+      <span class="ui-badge">默认</span>
+      <span class="ui-badge ui-badge--ok">成功</span>
+      <span class="ui-badge ui-badge--warn">预警</span>
+      <span class="ui-badge ui-badge--err">失败</span>
+      <span class="ui-badge ui-badge--info">信息</span>
+    </div>
+  </section>
+
+  <section class="kit-section">
+    <h2>KPI / 卡片</h2>
+    <div class="ui-grid ui-grid--4">
+      <div class="ui-kpi"><span>P1 必看</span><b>1</b><small>立即核对</small></div>
+      <div class="ui-kpi"><span>P2 关注</span><b>4</b><small>今日留意</small></div>
+      <div class="ui-kpi"><span>待确认</span><b>5</b><small>人工决定</small></div>
+      <div class="ui-kpi"><span>研发在制</span><b>20</b><small>折叠展示</small></div>
+    </div>
+    <div class="ui-grid ui-grid--3" style="margin-top:12px">
+      <article class="ui-card"><span class="ui-badge ui-badge--info">只读</span><h3>数据地基</h3><p>卡片只承载摘要；下钻、证据和业务仍回原系统。</p><button class="ui-btn ui-btn--sm" type="button">下钻详情 →</button></article>
+      <article class="ui-card"><span class="ui-badge ui-badge--warn">待核</span><h3>今日结果</h3><p>缺任一回执字段只显示待核，不计完成。</p><button class="ui-btn ui-btn--sm" type="button">查看证据 →</button></article>
+      <article class="ui-card"><span class="ui-badge ui-badge--ok">在线</span><h3>能力目录</h3><p>接口可读不代表子源完整或业务健康。</p><button class="ui-btn ui-btn--sm" type="button">打开能力 →</button></article>
+    </div>
+  </section>
+
+  <section class="ui-panel kit-section" data-ui-tabs>
+    <h2>标签页 / 表格</h2>
+    <div class="ui-tabs" role="tablist" aria-label="示例标签">
+      <button class="ui-tab" type="button" role="tab" data-tab="a" id="tab-a" aria-controls="panel-a">概览</button>
+      <button class="ui-tab" type="button" role="tab" data-tab="b" id="tab-b" aria-controls="panel-b">明细</button>
+    </div>
+    <div data-tabpanel="a" id="panel-a" role="tabpanel" aria-labelledby="tab-a">
+      <p class="kit-caption">表格只做可读呈现；金额/比例用等宽字体。</p>
+      <table class="ui-table">
+        <thead><tr><th>任务</th><th>状态</th><th class="num">数值</th></tr></thead>
+        <tbody>
+          <tr><td>订阅同步</td><td><span class="ui-badge ui-badge--ok">正常</span></td><td class="num">1,204</td></tr>
+          <tr><td>数据锚</td><td><span class="ui-badge ui-badge--warn">待核</span></td><td class="num">2</td></tr>
+          <tr><td>推送中台</td><td><span class="ui-badge ui-badge--err">失败</span></td><td class="num">0</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div data-tabpanel="b" id="panel-b" role="tabpanel" aria-labelledby="tab-b" hidden>
+      <div class="ui-empty">示例空态：没有数据不等于零风险；请回原账本核对。</div>
+    </div>
+  </section>
+
+  <section class="ui-panel kit-section">
+    <h2>工具栏 / 状态</h2>
+    <div class="ui-toolbar">
+      <label class="ui-search"><span aria-hidden="true">⌕</span><input type="search" placeholder="搜索当前页…" aria-label="搜索示例"></label>
+      <button class="ui-btn ui-btn--sm" type="button">筛选</button>
+      <button class="ui-btn ui-btn--sm" type="button">折叠全部</button>
+    </div>
+    <div class="ui-grid ui-grid--3">
+      <div class="ui-loading"><div class="ui-skeleton"></div><div class="ui-skeleton" style="width:70%"></div></div>
+      <div class="ui-empty">空态：明确下一步，不伪造数据。</div>
+      <div class="ui-error">错误态：说明具体原因，不只说“失败”。</div>
+    </div>
+  </section>
+
+  <section class="ui-panel kit-section">
+    <h2>使用约束</h2>
+    <ul>
+      <li>禁用原始 hex / inline style；颜色走 tokens。</li>
+      <li>按钮必须有文字或 aria-label；触达 ≥ 40px（移动 44px）。</li>
+      <li>加载态用 skeleton，空态给下一步，错误态给原因。</li>
+      <li>UI Kit 只做基础原语；业务页优先复用，不复制样式。</li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>
