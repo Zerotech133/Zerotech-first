@@ -83,6 +83,21 @@ def main(argv=None) -> int:
     ap.add_argument("--dry-run", action="store_true", help="只跑测试不合并")
     args = ap.parse_args(argv)
 
+    # 2026-10-29 合并串行锁：同一时刻只允许一个 merge_gated 进入「测试门→合并」临界区
+    if not os.environ.get("AIOS_MERGE_LOCK_TOKEN"):
+        if str(HERE) not in sys.path:
+            sys.path.insert(0, str(HERE))
+        from merge_lock import acquire, release, held, ENV_TOKEN
+        _tok = acquire(cmd="merge_gated:%s" % args.tid,
+                       timeout=float(os.environ.get("AIOS_MERGE_LOCK_TIMEOUT", "1800")))
+        if not _tok:
+            print("MERGE_GATE LOCK BUSY：另一合并进行中 %s" % held())
+            emit("guard_fail", args.tid, "merge lock busy: %s" % held())
+            return 2
+        os.environ[ENV_TOKEN] = _tok
+        import atexit
+        atexit.register(release, _tok)
+
     files = branch_changed_files(args.tid)
     docs_only = is_docs_only(files)
     print("MERGE_GATE task=%s files=%d docs_only=%s log=%s" % (args.tid, len(files), docs_only, LOG))
@@ -94,6 +109,8 @@ def main(argv=None) -> int:
     if skip:
         why = "--skip-tests" if args.skip_tests else "纯文档/配置变更"
         print("MERGE_GATE 跳过测试：%s" % why)
+        if args.skip_tests:
+            emit("guard_fail", args.tid, "质量闸被 --skip-tests 绕过（须回单注明）")
     else:
         print("MERGE_GATE 跑测试：test_gate -Suite %s（portal+k_stock，约 4~5 分钟）..." % args.suite)
         rc = run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass",

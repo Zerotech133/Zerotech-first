@@ -1337,6 +1337,24 @@ def _auto_rebuild_ide_bundle(tid):
 
 
 def cmd_merge(tid, *flags):
+    # 2026-10-29 合并串行锁：直接调用 devtask merge 也串行化（父进程已持锁则复用）
+    if not os.environ.get("AIOS_MERGE_LOCK_TOKEN"):
+        try:
+            import sys as _sys
+            _tools = os.path.dirname(os.path.abspath(__file__))
+            if _tools not in _sys.path:
+                _sys.path.insert(0, _tools)
+            from merge_lock import acquire as _ml_acquire, release as _ml_release, ENV_TOKEN as _ML_ENV
+            _tok = _ml_acquire(cmd="devtask merge %s" % tid,
+                               timeout=float(os.environ.get("AIOS_MERGE_LOCK_TIMEOUT", "1800")))
+            if not _tok:
+                print("[merge-lock] 另一合并进行中，拒绝并发合并")
+                raise SystemExit(3)
+            os.environ[_ML_ENV] = _tok
+            import atexit as _atexit
+            _atexit.register(_ml_release, _tok)
+        except ImportError:
+            pass
     # K-STOCK-416：--l2-ack / --l2-reason 人工豁免通道（五要素审批协议）
     ack = "--l2-ack" in flags
     reason = ""

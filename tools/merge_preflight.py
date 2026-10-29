@@ -98,6 +98,23 @@ def dep_age_hint(files: list[str], runner=None):
 
 
 def main() -> int:
+    # 2026-10-29 合并串行锁：直连 git merge 的 hook 也需持锁（父进程已持锁则复用）
+    if not os.environ.get("AIOS_MERGE_LOCK_TOKEN"):
+        try:
+            import sys as _sys
+            _tools = os.path.dirname(os.path.abspath(__file__))
+            if _tools not in _sys.path:
+                _sys.path.insert(0, _tools)
+            from merge_lock import acquire as _ml_acquire, release as _ml_release, ENV_TOKEN as _ML_ENV
+            _tok = _ml_acquire(cmd="pre-merge-commit", timeout=0)
+            if not _tok:
+                print("[merge-gate] merge lock busy，拒绝并发合并")
+                return 1
+            os.environ[_ML_ENV] = _tok
+            import atexit as _atexit
+            _atexit.register(_ml_release, _tok)
+        except ImportError:
+            pass
     if os.environ.get("DEVTOOL_MERGE_GATE") == "0":
         print("[merge-gate] DEVTOOL_MERGE_GATE=0 → 显式跳过（回滚/紧急）")
         return 0
