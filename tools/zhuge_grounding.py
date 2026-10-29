@@ -69,6 +69,8 @@ def _rag_retrieve(question: str, limit: int) -> list[dict] | None:
         if tools_dir not in sys.path:
             sys.path.insert(0, tools_dir)
         import zhuge_rag  # noqa: E402
+        if not os.environ.get("PYTEST_CURRENT_TEST") and str(os.environ.get("ZHUGE_RAG_AUTO_REBUILD", "1")).strip().lower() not in ("0", "false", "off", "no"):
+            zhuge_rag.ensure_fresh(_root())
         hits = zhuge_rag.search(question, k=limit, root=_root())
         return hits or None
     except Exception:  # noqa: BLE001

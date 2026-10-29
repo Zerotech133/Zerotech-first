@@ -168,6 +168,29 @@ def _postings_for(index: dict):
     return postings, lens
 
 
+def ensure_fresh(root: Path | None = None) -> dict:
+    """索引不存在或落后于 docs/ 最新 mtime 时重建；返回状态（不抛）。"""
+    base = Path(root or _root())
+    idx = base / INDEX_REL
+    docs = base / "docs"
+    try:
+        latest = max((p.stat().st_mtime for p in docs.rglob("*.md")), default=0.0)
+    except OSError:
+        latest = 0.0
+    if idx.is_file():
+        try:
+            if idx.stat().st_mtime >= latest:
+                return {"ok": True, "rebuilt": False, "index": str(idx)}
+        except OSError:
+            pass
+    try:
+        built = build_index(base, out=idx)
+        return {"ok": True, "rebuilt": True, "index": built.get("index"),
+                "chunks": built.get("chunks")}
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "rebuilt": False, "error": "%s: %s" % (type(exc).__name__, exc)}
+
+
 def _load_index(root: Path | None = None, index: dict | None = None) -> dict:
     global _INDEX_CACHE
     if index is not None:
