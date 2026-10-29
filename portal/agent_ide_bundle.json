@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 02:30",
+ "generated": "2026-10-30 02:35",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -10,7 +10,7 @@
   "prompt_miss": [],
   "name_collisions": {},
   "workorders_doing": 27,
-  "workorders_review": 8
+  "workorders_review": 9
  },
  "workorders": [
   {
@@ -313,7 +313,7 @@
   {
    "id": "WO-HZ-POLICY-20261030",
    "desc": "v0验收单豁免+③复核口径补丁",
-   "status": "doing",
+   "status": "review",
    "owner": "DSH-Lead",
    "branch": "task/WO-HZ-POLICY-20261030",
    "created": "2026-10-30 02:29:05",
@@ -327,6 +327,15 @@
    "branch": "task/WO-GUANYU-P55-20261030",
    "created": "2026-10-30 02:29:53",
    "project": "general"
+  },
+  {
+   "id": "WO-ACAD-PROTO-20261030",
+   "desc": "ACAD1 原型先行：策略独立工作台（青萍样板）+ ACAD1选池日历 + 鲁肃判断台 三原型；5175无登录；先样例/标注真实缺口，评审后再接数据。",
+   "status": "doing",
+   "owner": "ACAD1",
+   "branch": "task/WO-ACAD-PROTO-20261030",
+   "created": "2026-10-30 02:33:20",
+   "project": "quant"
   }
  ],
  "coder_traces": [
@@ -1590,6 +1599,11 @@
     {
      "id": "WO-ACAD-DEPT-OPS-20261030",
      "desc": "部门AI分工与每日自动化：健康表/选池台账/日报；修 TodaysPicks 产品链；新增计划任务需 A0 L2 批。",
+     "status": "doing"
+    },
+    {
+     "id": "WO-ACAD-PROTO-20261030",
+     "desc": "ACAD1 原型先行：策略独立工作台（青萍样板）+ ACAD1选池日历 + 鲁肃判断台 三原型；5175无登录；先样例/标注真实缺口，评审后再接数据。",
      "status": "doing"
     }
    ]
@@ -3860,7 +3874,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 87,
+     "count": 91,
      "recent": [
       {
        "ts": "",
@@ -4005,7 +4019,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 87,
+     "count": 91,
      "recent": [
       {
        "ts": "",
@@ -4155,7 +4169,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 89,
+     "count": 93,
      "recent": [
       {
        "ts": "",
@@ -4306,7 +4320,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 89,
+     "count": 93,
      "recent": [
       {
        "ts": "",
@@ -4458,7 +4472,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 87,
+     "count": 91,
      "recent": [
       {
        "ts": "",
