@@ -126,14 +126,21 @@ def build_repairs(events, tasks, days=0, now=None):
     start = (now - timedelta(days=days)).strftime("%Y-%m-%d") if days else ""
     resolved, unresolved = [], []
     for e in events:
-        if e.get("kind") != "task_start" or MARKER not in str(e.get("detail") or ""):
+        if e.get("kind") != "task_start":
+            continue
+        detail = str(e.get("detail") or "")
+        old_agent = str(e.get("agent") or "").strip()
+        flags = ("owner=unknown-agent" in detail or "owner_degraded=1" in detail)
+        # 覆盖三类缺口：显式 attribution_missing 标记 / agent 不可归属 / detail 旧 owner 标记
+        if MARKER not in detail and old_agent not in UNOWNED and not flags:
             continue
         if start and str(e.get("day") or "") < start:
             continue
         agent, source = resolve_event(e, tasks)
         item = {"fingerprint": fingerprint(e), "ts": e.get("ts"),
                 "task": e.get("task"), "day": e.get("day"),
-                "old_agent": e.get("agent") or ""}
+                "old_agent": old_agent,
+                "missing_marker": MARKER in detail}
         if agent:
             item.update({"agent": agent, "source": source,
                          "resolved_at": now.strftime("%Y-%m-%d %H:%M:%S")})
@@ -148,6 +155,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description="归因缺口修复映射（只读+sidecar）")
     ap.add_argument("--days", type=int, default=0, help="窗口天数（0=全部）")
     ap.add_argument("--write", action="store_true", help="写 sidecar 映射（默认 dry-run）")
+    ap.add_argument("--dry-run", action="store_true", help="显式 dry-run（默认行为，兼容文档）")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--strict", action="store_true", help="有 unresolved 时 rc=1")
     args = ap.parse_args(argv)
