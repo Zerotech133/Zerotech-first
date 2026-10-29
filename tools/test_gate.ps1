@@ -2,11 +2,11 @@
 #
 # 用法（仓库任意目录）:
 #   powershell -NoProfile -ExecutionPolicy Bypass -File tools\test_gate.ps1 -Suite fast
-# -Suite: fast(portal+k_stock) | portal | kstock | agent | quant | all
+# -Suite: fast(portal+k_stock) | portal | kstock | agent | quant | tools | all
 # 退出码: 0=无新增失败(允许既存失败) | 1=有新增失败/收集错误 | 2=脚本错误
 # 产物:  C:\Temp\test_gate_<suite>_<ts>.log
 #
-# 判据: 本次 FAILED/ERROR 减去 tools/test_baseline.json 的 known_failures
+# 判据: 本次 FAILED/ERROR 减去 tools/test_baseline.json 的 known_failures（tools 套件供夜间/手动全量，不进 fast）
 #       得到"新增失败"; 新增=0 才放行。
 param(
     [ValidateSet('fast', 'portal', 'kstock', 'agent', 'quant', 'tools', 'all')]
