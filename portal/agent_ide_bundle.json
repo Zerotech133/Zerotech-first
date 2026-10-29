@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 24,
+  "workorders_doing": 25,
   "workorders_review": 5
  },
  "workorders": [
@@ -273,6 +273,15 @@
    "branch": "task/WO-P2-FIX-20261030",
    "created": "2026-10-30 01:00:46",
    "project": "general"
+  },
+  {
+   "id": "WO-INV-PAPER-UI-20261030",
+   "desc": "量化部 paper 前端页 /paper：NAV/现金/持仓/台账/hash-chain/风控限额只读展示 + /api/paper 数据口（新模块，无新增 Handler 方法）",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-INV-PAPER-UI-20261030",
+   "created": "2026-10-30 01:25:49",
+   "project": "portal"
   }
  ],
  "coder_traces": [
