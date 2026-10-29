@@ -120,13 +120,18 @@ def _resolve_project(pid):
                          p.get("project_id", "?") for p in _load_projects()) or "（无）"))
 
 
+def _attribution_agent():
+    """事件归因 agent：AGENT_NAME > DEVTOOL_AGENT > devtask。"""
+    return (os.environ.get("AGENT_NAME") or os.environ.get("DEVTOOL_AGENT")
+            or "devtask").strip()
+
+
 def _emit(kind, task, detail=""):
     """事件回流（K-STOCK-114c）：merge/guard 动作自动进平台事件层，失败不挡道。"""
     try:
         sys.path.insert(0, os.path.join(REPO, "tools"))
         from events import emit
-        emit(kind, task=task, agent=os.environ.get("DEVTOOL_AGENT", "devtask"),
-             detail=detail)
+        emit(kind, task=task, agent=_attribution_agent(), detail=detail)
     except Exception:  # noqa: BLE001  事件层永不阻塞调度器
         pass
     # 飞书卡尽力而为：合并→回执卡；守卫失败→告警卡（任一失败静默）
@@ -1817,11 +1822,33 @@ def cmd_sandbox(*args):
     return 0 if out.get("ok") else 1
 
 
+def _attribution_gate(argv):
+    """CLI `new` 强制署名（2026-10-29 归因整改）。
+
+    AGENT_NAME/DEVTOOL_AGENT 皆缺 → 拒绝建单（避免再产生 attribution_missing=1）；
+    例外显式 `--allow-unattributed`（仅迁移/应急，事件仍带 attribution_missing 标记）。
+    返回 (rc, 清理后的 argv)；rc!=0 表示拒绝。
+    """
+    if not argv or argv[0] != "new":
+        return 0, argv
+    rest = [x for x in argv if x != "--allow-unattributed"]
+    allow = len(rest) != len(argv)
+    if allow or os.environ.get("AGENT_NAME") or os.environ.get("DEVTOOL_AGENT"):
+        return 0, rest
+    print("[attribution] 拒绝建单：请先设置 AGENT_NAME 或 DEVTOOL_AGENT"
+          "（AGENTS §1 开发身份三环境变量）；应急可加 --allow-unattributed",
+          file=sys.stderr)
+    return 2, rest
+
+
 def main():
     a = sys.argv[1:]
     if not a:
         print(__doc__)
         return 0
+    rc, a = _attribution_gate(a)
+    if rc:
+        return rc
     c, rest = a[0], a[1:]
     return {"new": lambda: cmd_new(*rest),
             "list": lambda: cmd_list(*rest),

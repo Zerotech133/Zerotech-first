@@ -42,6 +42,8 @@ DEFAULT_OUT_DIR = os.path.join(REPO, "agent_platform", "data", "dev", "c6_daily"
 DEFAULT_DEV_SEATS = ("ARCH1", "DEV1", "DEV2", "DEV3", "DEV4", "DEV5", "DEV6",
                      "DEV7", "DEV8", "OPS1", "DOC1")
 UNOWNED_AGENTS = ("", "unknown-agent", "devtask", "unknown")
+# 2026-10-29 归因整改：只读修复映射（tools/attribution_repair.py 生成）
+REPAIRS = os.path.join(REPO, "agent_platform", "data", "dev", "attribution_repairs.jsonl")
 
 TARGET = {
     "dev_share_per_week": 5,
@@ -93,6 +95,29 @@ def _in_period(day_str, start_day, end_day):
     return bool(day_str) and start_day <= day_str <= end_day
 
 
+def _fingerprint(e):
+    import hashlib
+    raw = "|".join(str(e.get(k) or "") for k in ("ts", "kind", "task", "detail"))
+    return hashlib.sha1(raw.encode("utf-8")).hexdigest()[:16]
+
+
+def _load_repairs():
+    """fingerprint -> agent（只读修复映射；缺失时返回空 dict）。"""
+    out = {}
+    try:
+        with io.open(REPAIRS, "r", encoding="utf-8", errors="replace") as f:
+            for line in f:
+                try:
+                    r = json.loads(line)
+                except ValueError:
+                    continue
+                if r.get("fingerprint") and r.get("agent"):
+                    out[r["fingerprint"]] = r["agent"]
+    except OSError:
+        pass
+    return out
+
+
 def compute(day=None, days=7):
     today = day or date.today()
     start = today - timedelta(days=days - 1)
@@ -123,8 +148,14 @@ def compute(day=None, days=7):
     dev_starts = [e for e in starts if str(e.get("agent") or "") in seats]
     dev_merges = [e for e in merges if str(e.get("agent") or "") in seats]
 
+    repairs = _load_repairs()
+
     def owned(e):
         agent = str(e.get("agent") or "")
+        # 修复映射优先：历史缺口按任务 owner/detail owner/事件 agent 回填
+        rep = repairs.get(_fingerprint(e))
+        if rep and rep not in UNOWNED_AGENTS:
+            return True
         if agent in UNOWNED_AGENTS:
             return False
         detail = str(e.get("detail") or "")
@@ -133,8 +164,13 @@ def compute(day=None, days=7):
         return True
 
     owned_starts = [e for e in starts if owned(e)]
-    attribution_missing = sum(
+    attribution_missing_raw = sum(
         1 for e in starts if "attribution_missing=1" in str(e.get("detail") or ""))
+    attribution_repaired = sum(
+        1 for e in starts
+        if "attribution_missing=1" in str(e.get("detail") or "")
+        and (repairs.get(_fingerprint(e)) or "") not in UNOWNED_AGENTS)
+    attribution_missing = attribution_missing_raw - attribution_repaired
     dev_gate_warns = sum(
         1 for e in guards if "[dev-gate]" in str(e.get("detail") or ""))
 
@@ -179,6 +215,8 @@ def compute(day=None, days=7):
         "dev_tickets_recent": len(dev_tickets_recent),
         "dev_tickets_owned": sum(1 for _tid, t in dev_tickets_recent if ticket_owned(t)),
         "attribution_missing": attribution_missing,
+        "attribution_missing_raw": attribution_missing_raw,
+        "attribution_repaired": attribution_repaired,
         "dev_gate_warns": dev_gate_warns,
         "dev_tickets_with_acceptance": len(with_acceptance),
         "acceptance_coverage": ratio(len(with_acceptance), len(dev_tickets_recent)),
@@ -242,8 +280,9 @@ def render_md(data):
         "- 近 %d 天事件：task_start **%d**（dev %d）／merge_done **%d**（dev %d）"
         % (m["period"]["days"], m["task_start_total"], m["task_start_dev"],
            m["merge_done_total"], m["merge_done_dev"]),
-        "- 归因缺口 attribution_missing：**%d**；dev-gate 告警：**%d**"
-        % (m["attribution_missing"], m["dev_gate_warns"]),
+        "- 归因缺口 attribution_missing：**%d**（已修复 %d / 原始 %d）；dev-gate 告警：**%d**"
+        % (m["attribution_missing"], m["attribution_repaired"],
+           m["attribution_missing_raw"], m["dev_gate_warns"]),
         "",
         "## 三、doing（%d）" % len(m["tasks_doing"]),
         "",
