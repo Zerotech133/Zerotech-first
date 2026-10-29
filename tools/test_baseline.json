@@ -2,7 +2,10 @@
   "_note": "测试门禁既存失败/flaky 基线（GY-01，2026-10-27；2026-10-28 修订）。known_failures=任何环境都登记；env_failures=数据/环境依赖失败（含行情湖未更新到当日、worktree 无数据根），任何位置都登记但单独列出；flaky=顺序依赖。新增失败必须修或正式登记，不得直接加白。",
   "portal/tests": {
     "known_failures": [],
-    "flaky": []
+    "flaky": [
+      "portal/tests/test_minute_router_process_restart.py::test_minute_router_recovers_after_real_process_restart"
+    ],
+    "_flaky_note": "2026-10-29 fast 门实测：test_minute_router_process_restart 整套运行失败 1 次，隔离单跑 2/2 通过（真实进程重启类，受并行负载时序影响）→ 时序 flaky，登记跟踪；后续考虑缩短重启等待或 mock 进程重启。"
   },
   "k_stock/tests": {
     "known_failures": [
