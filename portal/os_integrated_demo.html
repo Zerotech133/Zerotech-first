@@ -20,7 +20,10 @@ footer{display:flex;align-items:center;gap:14px;font-size:10px;color:var(--dim);
 @media(max-width:1090px){.shell{min-width:0;padding-left:9px;padding-right:9px}.grid{grid-template-columns:1fr 1.15fr 1fr}.brand small{display:none}.domain{padding:7px 5px}.domain strong{font-size:11px}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
-<script src="/static/nav.js" defer></script><meta name=wb-shell content=adopted></head>
+<script src="/static/nav.js" defer></script><meta name=wb-shell content=adopted>
+<!-- OS-UI-UNIFY:theme -->
+<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
+</head>
 <body>
 <div class="shell">
 <header><div class="brand"><h1>老田的个人 <span>OS</span></h1><small>INTEGRATED COMMAND / REVIEW</small></div><div class="header-right"><span class="chip">独立评审稿 · 仅只读</span><span class="clock" id="clock">--</span></div></header>
@@ -102,5 +105,7 @@ let run=0;async function refresh(){const current=++run,keys=Object.keys(ENDPOINT
 function tick(){$('clock').textContent=new Date().toLocaleString('zh-CN',{hour12:false});}tick();setInterval(tick,1000);refresh();setInterval(refresh,60000);
 })();
 </script>
+<!-- OS-UI-UNIFY:drill -->
+<script defer src="/static/os_drill.js" data-os-unify="1"></script>
 </body>
 </html>

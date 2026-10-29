@@ -23,7 +23,10 @@
   .pill{display:inline-block;font-size:11px;padding:2px 8px;border-radius:10px;background:#e8f4f7;color:#0e7490;font-weight:700}
   .err{color:#b3402e;font-size:13px;white-space:pre-wrap}
 </style>
-<meta name=wb-shell content=adopted></head>
+<meta name=wb-shell content=adopted>
+<!-- OS-UI-UNIFY:theme -->
+<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
+</head>
 <body>
 <main class="wrap">
   <h1>零界 · 目标与事项</h1>
@@ -146,5 +149,7 @@ $('o-evidence').onclick = async () => { try{
 }catch(e){ showErr(e.message); } };
 loadGoals().catch(e=>showErr(e.message));
 </script>
+<!-- OS-UI-UNIFY:drill -->
+<script defer src="/static/os_drill.js" data-os-unify="1"></script>
 </body>
 </html>

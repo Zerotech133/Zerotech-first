@@ -71,7 +71,10 @@ tr.clickable{cursor:pointer}tr.clickable:hover td{background:var(--panel2)}
 .hidden{display:none}
 .err{background:#2a1512;border:1px solid #67221c;color:#ffa198;border-radius:8px;padding:10px 14px;margin:10px 0}
 </style>
-<script src="/static/nav.js" defer></script><meta name=wb-shell content=adopted></head>
+<script src="/static/nav.js" defer></script><meta name=wb-shell content=adopted>
+<!-- OS-UI-UNIFY:theme -->
+<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
+</head>
 <body>
 <div class="topbar">
   <div><h1>🗄 数据仓驾驶舱 <small>来源治理 · 今日动态 · 挖掘时间线 · 治理路线</small></h1>
@@ -301,5 +304,7 @@ function dlCSV(kind){
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
 load();
 </script>
+<!-- OS-UI-UNIFY:drill -->
+<script defer src="/static/os_drill.js" data-os-unify="1"></script>
 </body>
 </html>

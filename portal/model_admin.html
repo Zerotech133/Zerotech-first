@@ -51,7 +51,10 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .sec-title{font-size:15px;font-weight:600;margin:0 0 10px}
 #planBox{max-height:300px;overflow:auto}
 </style>
-<script src="/static/nav.js" defer></script></head>
+<script src="/static/nav.js" defer></script>
+<!-- OS-UI-UNIFY:theme -->
+<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
+</head>
 <body>
 <div class="wrap">
   <h1>军团模型管理台 <small>8097 · binding 主源 org.json</small></h1>
@@ -273,5 +276,7 @@ loadHealth(); loadAgents(); loadServices();
 setInterval(loadHealth, 30000);
 setInterval(loadServices, 30000);
 </script>
+<!-- OS-UI-UNIFY:drill -->
+<script defer src="/static/os_drill.js" data-os-unify="1"></script>
 </body>
 </html>

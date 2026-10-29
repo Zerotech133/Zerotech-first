@@ -79,7 +79,10 @@
   @media (max-width: 640px) { header { padding: 16px 20px 8px; } .topnav { padding: 8px 20px 0; } main { padding: 0 14px 40px; } }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 </style>
-<script src="/static/nav.js" defer></script></head>
+<script src="/static/nav.js" defer></script>
+<!-- OS-UI-UNIFY:theme -->
+<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
+</head>
 <body>
   <header>
     <div class="brand">
@@ -253,5 +256,7 @@
 </script>
 <script src="/static/cainiao.js" defer></script>
 <script src="/static/dataops_link.js" data-entity="tg:行情/数据同步" defer></script>
+<!-- OS-UI-UNIFY:drill -->
+<script defer src="/static/os_drill.js" data-os-unify="1"></script>
 </body>
 </html>

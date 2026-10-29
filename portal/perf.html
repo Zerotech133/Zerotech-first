@@ -42,7 +42,10 @@ tr:hover td{background:rgba(79,142,247,.05)}
 .chain{font-family:ui-monospace,Consolas,monospace;font-size:11.5px;line-height:1.9;word-break:break-all;background:var(--card,#1a1f27);border:1px solid var(--border,#2a3242);border-radius:9px;padding:9px 11px;margin:8px 0}
 .chain .arrow{color:#4f8ef7;font-weight:600;padding:0 4px}
 </style>
-<script src="/static/nav.js" defer></script><meta name=wb-shell content=adopted></head>
+<script src="/static/nav.js" defer></script><meta name=wb-shell content=adopted>
+<!-- OS-UI-UNIFY:theme -->
+<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
+</head>
 <body>
 <div class="wrap">
   <div class="head">
@@ -146,5 +149,7 @@ $('#ref').addEventListener('keydown', e => { if (e.key==='Enter') replay(); });
 load();
 </script>
 <script src="/static/dataops_link.js" data-entity="tg:策略扫描" defer></script>
+<!-- OS-UI-UNIFY:drill -->
+<script defer src="/static/os_drill.js" data-os-unify="1"></script>
 </body>
 </html>

@@ -18,7 +18,10 @@ main{max-width:1180px;margin:auto;padding:20px 22px 80px}
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#12303f;color:#fff;border-radius:10px;padding:9px 18px;font-size:13px;display:none;z-index:9}
 .foot{margin-top:18px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);padding-top:10px}
 @media(max-width:960px){.cols,.kpi{grid-template-columns:1fr}}
-</style><meta name=wb-shell content=adopted><link rel=stylesheet href=/static/page_shell.css><script src=/static/page_shell.js defer></script></head><body><header class="top"><div class="brand">零界 · 问题驾驶舱</div><div class="links"><a id="issues-back" href="/zero_proto.html#system">← 返回系统</a><a href="/zero_proto.html#system">回驾驶舱·系统</a></div></header><main>
+</style><meta name=wb-shell content=adopted><link rel=stylesheet href=/static/page_shell.css><script src=/static/page_shell.js defer></script>
+<!-- OS-UI-UNIFY:theme -->
+<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
+</head><body><header class="top"><div class="brand">零界 · 问题驾驶舱</div><div class="links"><a id="issues-back" href="/zero_proto.html#system">← 返回系统</a><a href="/zero_proto.html#system">回驾驶舱·系统</a></div></header><main>
 <div class="head"><h1>问题生命周期 · 标准化管理</h1><p>发现 → 认领 → 解决 → 清除归档（archived=账本保留可溯，永不物理删）· 每条带证据路径 · 席位可领单 · 未来智能体自运作的任务基座</p></div>
 <div class="kpi">
 <div class="c"><div class="n" style="color:var(--red)" id="k-p1">—</div><div class="t">P1 待决</div></div>
@@ -70,4 +73,6 @@ async function addIssue(){const t=$('#t').value.trim();if(!t){toast('写问题�
 try{await api('/api/issues',{act:'add',title:t,severity:$('#sev').value,board:$('#board').value,owner:$('#own').value,evidence:'前端登记'});
 $('#t').value='';toast('🆕 已登记（议会厅已记账）');load()}catch(e){toast('失败:'+e.message)}}
 load();setInterval(load,30000);
-</script></body></html>
+</script><!-- OS-UI-UNIFY:drill -->
+<script defer src="/static/os_drill.js" data-os-unify="1"></script>
+</body></html>

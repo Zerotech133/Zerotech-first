@@ -29,7 +29,10 @@
   .err{color:#b3402e;white-space:pre-wrap;font-size:13px}
   pre{background:#f7fafc;border:1px solid #e3ecf2;border-radius:8px;padding:10px;overflow:auto;font-size:12px}
 </style>
-<meta name=wb-shell content=adopted></head>
+<meta name=wb-shell content=adopted>
+<!-- OS-UI-UNIFY:theme -->
+<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
+</head>
 <body>
 <main class="wrap">
   <h1>软件面工作台 · G1b</h1>
@@ -153,5 +156,7 @@ $('b-accept').onclick=()=>{ actPost('/verdict',{decision:'accepted',feedback:$('
 $('b-rework').onclick=()=>{ const fb=$('feedback').value.trim(); if(!fb) return showErr('返工必须写一句修改意见'); actPost('/verdict',{decision:'changes_requested',feedback:fb}).then(()=>actPost('/rework',{feedback:fb})).then(load).catch(e=>showErr(e.message)); };
 const q=new URLSearchParams(location.search); if(q.get('item')){ $('iid').value=q.get('item'); load().catch(e=>showErr(e.message)); }
 </script>
+<!-- OS-UI-UNIFY:drill -->
+<script defer src="/static/os_drill.js" data-os-unify="1"></script>
 </body>
 </html>

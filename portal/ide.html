@@ -277,7 +277,10 @@ try{
   }
 }catch(e){}
 </script>
-<script src="/static/nav.js" defer></script></head>
+<script src="/static/nav.js" defer></script>
+<!-- OS-UI-UNIFY:theme -->
+<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
+</head>
 <body>
 <header>
   <h1>⌨ Agent IDE<small>GENOS AGENT WORKBENCH · 部门导航 · build 2026-10-29.5</small></h1>
@@ -1891,5 +1894,7 @@ fetch("/agent_ide_bundle.json", {cache:"no-store"}).then(r=>r.json()).then(d=>{
 }).catch(e=>{ document.getElementById("side").innerHTML = '<div class="dep">bundle 加载失败：'+e+'</div>'; });
 </script>
 <script src="/static/dataops_link.js" data-entity="tg:其他" defer></script>
+<!-- OS-UI-UNIFY:drill -->
+<script defer src="/static/os_drill.js" data-os-unify="1"></script>
 </body>
 </html>

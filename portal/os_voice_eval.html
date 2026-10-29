@@ -34,7 +34,10 @@
   .fail{color:#b3402e;font-weight:700;font-size:18px}
   .progress{font-size:13px;color:#0e7490;font-weight:700}
 </style>
-<meta name=wb-shell content=adopted></head>
+<meta name=wb-shell content=adopted>
+<!-- OS-UI-UNIFY:theme -->
+<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
+</head>
 <body>
 <main class="wrap">
   <h1>语音质量门槛 · 真人 10 条</h1>
@@ -225,5 +228,7 @@ $('b-copy').onclick=async()=>{ const t=JSON.stringify(window.__RESULT__||{},null
 $('b-again').onclick=()=>{ IDX=0; RESULTS=[]; $('summary').hidden=true; render(); };
 render(); checkAsr();
 </script>
+<!-- OS-UI-UNIFY:drill -->
+<script defer src="/static/os_drill.js" data-os-unify="1"></script>
 </body>
 </html>

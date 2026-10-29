@@ -39,6 +39,9 @@
   .v.BLOCKED,.v.FAIL{color:#b3402e}
   #err{color:#b3402e;font-size:13px;white-space:pre-wrap}
 </style>
+
+<!-- OS-UI-UNIFY:theme -->
+<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
 </head>
 <body>
 <main class="wrap">
@@ -331,5 +334,7 @@ $('txt').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault()
   else say('语音审批台就绪。请说「载入事项 202610250003」，或打开带 ?item= 的链接。');
 })();
 </script>
+<!-- OS-UI-UNIFY:drill -->
+<script defer src="/static/os_drill.js" data-os-unify="1"></script>
 </body>
 </html>

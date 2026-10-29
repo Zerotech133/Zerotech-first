@@ -100,7 +100,10 @@ a:hover{text-decoration:underline}
 </style>
 <style>/* 门户落位适配：nav.js 统一顶栏注入后让出高度，单屏铁律不变 */
 .wrap{height:calc(100vh - 48px)}</style>
-<script src="/static/nav.js" defer></script></head>
+<script src="/static/nav.js" defer></script>
+<!-- OS-UI-UNIFY:theme -->
+<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
+</head>
 <body>
 <div class="wrap">
 
@@ -254,5 +257,7 @@ a:hover{text-decoration:underline}
     d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 })();
 </script>
+<!-- OS-UI-UNIFY:drill -->
+<script defer src="/static/os_drill.js" data-os-unify="1"></script>
 </body>
 </html>

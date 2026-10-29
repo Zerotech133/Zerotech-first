@@ -143,6 +143,9 @@ tr:last-child td{border-bottom:none}
 @media(max-width:960px){.kpis{grid-template-columns:repeat(2,1fr)}
   .g-main,.g-low,.tempo-cols{grid-template-columns:1fr}}
 </style>
+
+<!-- OS-UI-UNIFY:theme -->
+<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
 </head>
 <body>
 <div class="wrap">
@@ -554,5 +557,7 @@ async function loadCoverage(){
   load();
 })();
 </script>
+<!-- OS-UI-UNIFY:drill -->
+<script defer src="/static/os_drill.js" data-os-unify="1"></script>
 </body>
 </html>

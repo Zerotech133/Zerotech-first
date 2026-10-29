@@ -41,6 +41,9 @@ td a:hover{text-decoration:underline}
 .backlink{font-size:11.5px;color:#8b949e}
 .backlink a{color:#58a6ff}
 </style>
+
+<!-- OS-UI-UNIFY:theme -->
+<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
 </head>
 <body>
 <div class="wrap">
@@ -124,5 +127,7 @@ $('#tbl').addEventListener('keydown',e=>{if(e.key==='Enter')load()});
 setTab('breaks');
 </script>
 <script src="/static/dataops_link.js" data-entity="pool:warehouse" defer></script>
+<!-- OS-UI-UNIFY:drill -->
+<script defer src="/static/os_drill.js" data-os-unify="1"></script>
 </body>
 </html>

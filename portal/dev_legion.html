@@ -25,6 +25,9 @@
   .ok{color:var(--ok)}.bad{color:var(--bad)}.na{color:var(--muted)}
   .task{font-size:12px;color:var(--muted);margin:2px 0}
 </style>
+
+<!-- OS-UI-UNIFY:theme -->
+<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
 </head>
 <body>
 <div class="wrap">
@@ -160,5 +163,7 @@ fetch("/api/dev/legion", {cache:"no-store"})
     $("meta").textContent = "只读 · 加载失败";
   });
 </script>
+<!-- OS-UI-UNIFY:drill -->
+<script defer src="/static/os_drill.js" data-os-unify="1"></script>
 </body>
 </html>

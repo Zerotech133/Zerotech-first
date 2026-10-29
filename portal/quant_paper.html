@@ -44,6 +44,9 @@ tr:hover td{background:rgba(88,166,255,.05)}
 </style>
 <script src="/static/nav.js" defer></script>
 <script src="/static/shortscreen.js" defer></script>
+
+<!-- OS-UI-UNIFY:theme -->
+<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
 </head>
 <body>
 <div class="wrap">
@@ -112,5 +115,7 @@ async function load(){
 document.getElementById('btn-refresh').addEventListener('click',load);
 load(); setInterval(load,30000);
 </script>
+<!-- OS-UI-UNIFY:drill -->
+<script defer src="/static/os_drill.js" data-os-unify="1"></script>
 </body>
 </html>

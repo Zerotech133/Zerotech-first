@@ -106,7 +106,10 @@
   .bpill { font-size: 10.5px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--text-dim); background: var(--bg-raised); }
   .bpill.hot { color: #e05656; border-color: rgba(224,86,86,.4); }
 </style>
-<script src="/static/nav.js" defer></script></head>
+<script src="/static/nav.js" defer></script>
+<!-- OS-UI-UNIFY:theme -->
+<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
+</head>
 <body>
 
 <div class="topbar">
@@ -514,5 +517,7 @@ Promise.all([
   setInterval(loadAdmission,120000);
 });
 </script>
+<!-- OS-UI-UNIFY:drill -->
+<script defer src="/static/os_drill.js" data-os-unify="1"></script>
 </body>
 </html>

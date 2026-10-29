@@ -30,6 +30,9 @@
   .err{color:#b3402e;white-space:pre-wrap;font-size:13px}
   pre{background:#f7fafc;border:1px solid #e3ecf2;border-radius:8px;padding:10px;overflow:auto;font-size:12px}
 </style>
+
+<!-- OS-UI-UNIFY:theme -->
+<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
 </head>
 <body>
 <main class="wrap">
@@ -159,5 +162,7 @@ const q=new URLSearchParams(location.search);
 if(q.get('item')){ $('iid').value=q.get('item'); ITEM=$('iid').value.trim(); loadItem(); }
 loadConsumers();
 </script>
+<!-- OS-UI-UNIFY:drill -->
+<script defer src="/static/os_drill.js" data-os-unify="1"></script>
 </body>
 </html>
