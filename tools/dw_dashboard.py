@@ -557,6 +557,20 @@ def load_approvals() -> dict:
             "latest": rows[-5:]}
 
 
+def load_sync() -> dict:
+    """手动/计划同步最近一次执行状态（work/data_sync/last.json）。"""
+    f = REPO / "work" / "data_sync" / "last.json"
+    if not f.exists():
+        return {"ok": None, "note": "暂无手动同步记录", "steps": [],
+                "how_to": "python tools/data_sync_manual.py"}
+    try:
+        d = json.loads(f.read_text(encoding="utf-8"))
+        d["how_to"] = d.get("how_to") or "python tools/data_sync_manual.py"
+        return d
+    except ValueError:
+        return {"ok": None, "note": "同步状态文件解析失败", "steps": []}
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--json", action="store_true")
@@ -614,6 +628,7 @@ def main(argv=None) -> int:
         "governance": [{"item": a, "status": b, "note": c, "date": d} for a, b, c, d in GOV_ITEMS],
         "roadmap": [{"phase": a, "status": b, "date": c, "note": d} for a, b, c, d in ROADMAP],
         "ops": {"backup": backup, "supervisor": sup, "approvals": approvals},
+        "sync": load_sync(),
         "layers": LAYER_ORDER, "status_order": STATUS_ORDER,
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)

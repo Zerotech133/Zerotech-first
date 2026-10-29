@@ -82,6 +82,7 @@ tr.clickable{cursor:pointer}tr.clickable:hover td{background:var(--panel2)}
     <button class="btn pri" onclick="dlJSON()">下载快照 JSON</button>
     <button class="btn" onclick="dlCSV('sources')">来源 CSV</button>
     <button class="btn" onclick="dlCSV('hypotheses')">台账 CSV</button>
+    <button class="btn" onclick="syncModal()">手动同步</button>
   </div>
 </div>
 <div id="err" class="err hidden"></div>
@@ -126,6 +127,7 @@ tr.clickable{cursor:pointer}tr.clickable:hover td{background:var(--panel2)}
 </div>
 
 <div id="tab-ops" class="hidden">
+  <div class="panel" style="margin-bottom:12px"><h3>手动同步更新数据（一键 L1）</h3><div id="opsSync"></div></div>
   <div class="grid2">
     <div class="panel"><h3>备份（BackupDaily）</h3><div id="opsBackup"></div></div>
     <div class="panel"><h3>运行健康</h3><div id="opsHealth"></div></div>
@@ -266,6 +268,14 @@ function renderMining(){
 }
 /* ===== 运维 ===== */
 function renderOps(){
+  const sy=SNAP.sync||{};
+  const okHtml=sy.ok===true?'<span class="badge b-done">✅ 成功</span>':(sy.ok===false?'<span class="badge b-pending">❌ 有失败步骤</span>':'<span class="badge b-idea">暂无记录</span>');
+  const rows=(sy.steps||[]).map(st=>'<tr><td>'+esc(st.desc||st.step)+'</td><td>'+(st.rc===0?'<span class="badge b-done">成功</span>':'<span class="badge b-pending">失败 rc='+esc(st.rc)+'</span>')+'</td><td class="num">'+esc(st.duration_s||0)+'s</td><td class="muted mono">'+esc((st.tail||[]).slice(-2).join(' / ').slice(0,160))+'</td></tr>').join('');
+  document.getElementById('opsSync').innerHTML=
+    '<div style="margin-bottom:8px">最近一次：'+esc(sy.finished_at||sy.note||'—')+' '+okHtml+'</div>'+
+    '<div class="muted" style="margin-bottom:8px">手动执行命令：<code class="mono">'+esc(sy.how_to||'python tools/data_sync_manual.py')+'</code> '
+    +'<button class="btn" onclick="copyCmd()">复制命令</button> <button class="btn" onclick="openModal(\'手动同步步骤\',syncHelp())">查看步骤说明</button></div>'+
+    ((sy.steps||[]).length?'<table><thead><tr><th>步骤</th><th>结果</th><th class="num">耗时</th><th>日志尾</th></tr></thead><tbody>'+rows+'</tbody></table>':'<div class="muted">暂无执行记录。运行上面命令后刷新页面即可看到结果。</div>');
   document.getElementById('opsBackup').innerHTML=backupTable();
   const c=SNAP.cockpit;
   document.getElementById('opsHealth').innerHTML='<table><tbody>'+
@@ -273,6 +283,12 @@ function renderOps(){
     row('最新备份',esc(c.backup_latest||'—'))+row('备份距今年数',''+(c.backup_age_hours||0)+' h')+
     row('今日审批',c.approvals_today+' 条')+row('今日新增来源',c.new_today+' 个')+'</tbody></table>';
 }
+function syncHelp(){
+  return '<div class="muted" style="margin-bottom:8px">手动同步只做「只读拉取 + 自身派生快照刷新」，不重启服务、不改生产库、不发布。</div>'+
+    '<table><tbody>'+[['Tushare 增量','tushare_sync.py --incremental --market all'],['六表守护','increment_guard.py'],['复权因子','start_adj_factor_sync.ps1'],['港股日线','tools/hk_r1_daily.py --append'],['公告增量','ann_history_sync.py --apply --limit 300'],['刷新快照','tools/dw_dashboard.py']].map(x=>row(x[0],'<code class="mono">'+esc(x[1])+'</code>')).join('')+'</tbody></table>';
+}
+function syncModal(){openModal('手动同步更新数据',syncHelp());}
+function copyCmd(){const c=(SNAP.sync||{}).how_to||'python tools/data_sync_manual.py';navigator.clipboard&&navigator.clipboard.writeText(c);openModal('已复制命令','<div class="mono">'+esc(c)+'</div><div class="muted" style="margin-top:8px">在仓库根目录执行；执行完刷新本页。</div>');}
 function render(){
   const c=SNAP.cockpit;
   document.getElementById('sub').textContent='catalog v'+(SNAP.catalog.version||'?')+' · '+SNAP.catalog.tables+' 表 · registry '+
