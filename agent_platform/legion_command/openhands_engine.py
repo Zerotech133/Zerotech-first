@@ -20,9 +20,10 @@ BASE_URL = os.environ.get("OPENHANDS_URL", "http://127.0.0.1:8770").rstrip("/")
 KEY_FILE = Path(os.environ.get("OPENHANDS_KEY_FILE", r"C:\项目\legion-openhands\.session_key"))
 LEGION_GATEWAY = os.environ.get("OPENHANDS_GATEWAY_URL", "http://127.0.0.1:8797/v1")
 REPO_ROOT = Path(os.environ.get("OPENHANDS_REPO", r"C:\项目\老田的AI助手")).resolve()
-WORKTREE_ROOT = REPO_ROOT / ".worktrees"
-DEFAULT_WORKDIR = Path(r"C:\项目\legion-openhands\workspace\project")
-LOCAL_ROOTS = (WORKTREE_ROOT, Path(r"C:\项目\legion-openhands\workspace"))
+# Windows 中文路径会被 OpenHands 工具参数编码成乱码；用 ASCII junction 映射。
+WORKTREE_ROOT = Path(os.environ.get("OPENHANDS_WORKTREE_ROOT", r"C:\legion-worktrees"))
+DEFAULT_WORKDIR = Path(r"C:\legion-openhands\workspace\project")
+LOCAL_ROOTS = (WORKTREE_ROOT, Path(r"C:\legion-openhands\workspace"))
 DEFAULT_TIMEOUT = 600
 TASK_RE = re.compile(r"^[A-Za-z0-9_.\-]{3,80}$")
 
@@ -65,23 +66,25 @@ def _req(path: str, method: str = "GET", body=None, timeout: int = 30):
 
 def _resolve_worktree(task: str = "", worktree: str = "") -> tuple[Path | None, dict | None]:
     """只允许军团 .worktrees/<TID> 或 OpenHands 本地 workspace 根。"""
+    # 不做 symlink/junction 解析：保留 ASCII 路径本身，避免 Windows 中文路径
+    # 进入 OpenHands 工具参数后变成乱码。安全校验用绝对路径字符串前缀。
     candidate = None
     if worktree:
         try:
-            candidate = Path(worktree).expanduser().resolve()
+            candidate = Path(worktree).expanduser().absolute()
         except OSError:
             return None, {"ok": False, "error": "bad_worktree"}
     elif task:
         task = str(task or "").strip()
         if not TASK_RE.match(task):
             return None, {"ok": False, "error": "bad_task_id"}
-        candidate = (WORKTREE_ROOT / task).resolve()
+        candidate = (WORKTREE_ROOT / task).absolute()
     else:
-        candidate = DEFAULT_WORKDIR.resolve()
+        candidate = DEFAULT_WORKDIR.absolute()
     allowed = False
     for root in LOCAL_ROOTS:
         try:
-            if candidate.is_relative_to(root.resolve()):
+            if candidate.is_relative_to(root.absolute()):
                 allowed = True
                 break
         except (OSError, ValueError):
