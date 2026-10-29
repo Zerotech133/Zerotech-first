@@ -128,6 +128,8 @@ def sync_card(card: dict, dr=None, dry_run: bool = False) -> dict:
             actions.append({"action": "decided", "id": rid, "status": target})
             if outcome == "accepted":
                 dr.update(rid, outcome="C1 结案 accepted：%s" % ((card.get("close_note") or "")[:400]))
+            # 决策/回填后重新取记录；否则 sync_card 返回的是决策前的 stale status。
+            existing = dr.show(rid).get("record") or existing
     return {"ok": True, "card": card_id, "id": rid, "status": (existing or {}).get("status"),
             "actions": actions}
 
