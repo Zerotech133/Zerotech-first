@@ -41,6 +41,8 @@ def _emit_event(summary: dict, emit_fn=None) -> None:
         emit_fn(
             kind="acceptance_done",
             task="HUANGZHONG-DAILY",
+            agent="HUANGZHONG",
+            ide="HUANGZHONG-DAILY",
             detail="verdict=%s commit=%s baseline_failed=%s redteam=%s report=%s"
             % (summary.get("verdict"), summary.get("commit"),
                summary.get("baseline_failed"), summary.get("redteam_rate"),
