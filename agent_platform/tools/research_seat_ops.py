@@ -464,6 +464,31 @@ def build_research_seat(root: Path, seat: str) -> tuple[str, dict]:
                "trigger": "SeatsWeekly"}
     return "\n".join(lines) + "\n", summary
 
+
+SEAT_STAT_IDS = ("COMM1", "INTEL1", "AI1", "PROD1")
+
+
+def _seat_work_stats(root: Path) -> list[dict]:
+    """4 席工单+产出台账：只读 tasks.json / ops/<seat>/*_brief.md。"""
+    tasks = _safe_json(root / TASKS_REL)
+    if not isinstance(tasks, dict):
+        tasks = {}
+    out = []
+    for seat in SEAT_STAT_IDS:
+        rows = [v for v in tasks.values() if isinstance(v, dict) and v.get("owner") == seat]
+        cnt = {"doing": 0, "done": 0, "review": 0, "aborted": 0}
+        for r in rows:
+            st = str(r.get("status") or "")
+            if st in cnt:
+                cnt[st] += 1
+        briefs = []
+        d = root / ACADEMY_REL / "ops" / seat.lower()
+        if d.is_dir():
+            briefs = [p.name for p in d.glob("*_brief.md")]
+        out.append({"seat": seat, "total": len(rows), **cnt,
+                    "briefs": len(briefs), "latest_brief": sorted(briefs)[-1] if briefs else ""})
+    return out
+
 def build_weekly(root: Path) -> tuple[str, dict]:
     s_text, s_sum = build_strat1(root)
     b_text, b_sum = build_back1(root)
@@ -494,6 +519,15 @@ def build_weekly(root: Path) -> tuple[str, dict]:
         "2. BACK1 收到回执后开跑并登记 status/go_no_go；",
         "3. STRAT1 补齐 LCS-1 策略 Spec，交 ACAD1 评审。",
     ]
+    seat_work = _seat_work_stats(root)
+    lines += ["", "## 四、4 席工单与产出（激活≠产出）",
+              "| 席位 | 工单总 | doing | done | review | aborted | 简报数 |",
+              "|---|---:|---:|---:|---:|---:|---:|"]
+    for x in seat_work:
+        lines.append("| %s | %d | %d | %d | %d | %d | %d |"
+                     % (x["seat"], x["total"], x["doing"], x["done"],
+                        x["review"], x["aborted"], x["briefs"]))
+    lines.append("- 口径：工单数只读 `.worktrees/tasks.json`（按 owner）；简报数=`ops/<seat>/*_brief.md`；激活/能力卡不计入产出。")
     extra_sums = {}
     for seat in ("comm1", "intel1", "ai1", "prod1"):
         text, sm = build_research_seat(root, seat)
@@ -504,7 +538,7 @@ def build_weekly(root: Path) -> tuple[str, dict]:
                   % (sm["topics"], len(sm["relevant"]), sm["trigger"])]
     summary = {"action": "weekly", "date": _today(), "strat1": s_sum,
                "back1": b_sum, "dispatch": b_sum.get("dispatch") or [],
-               "seats": extra_sums}
+               "seats": extra_sums, "seat_work": seat_work}
     return "\n".join(lines) + "\n", summary
 
 
