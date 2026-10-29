@@ -50,3 +50,11 @@ def test_restart_timeout_when_service_never_recovers(tmp_path):
     rep = m.restart(flag, apply=True, starter=starter,
                     health_fn=lambda u: {"ok": False}, timeout=6, sleep=lambda s: None)
     assert rep["ok"] is False and rep["error"] == "timeout"
+
+
+def test_probe_url_with_custom_base():
+    m = _load()
+    assert m.probe_url("http://127.0.0.1:8796/api/zhaoyun", "/api/hq/meeting/stats") == \
+        "http://127.0.0.1:8796/api/hq/meeting/stats"
+    assert m.probe_url("http://127.0.0.1:8899/health", "/api/x") == "http://127.0.0.1:8899/api/x"
+    assert m.probe_url("http://127.0.0.1:8899/health", "http://other/api") == "http://other/api"

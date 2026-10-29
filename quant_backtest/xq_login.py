@@ -9,7 +9,7 @@ config/xq_tokens.json（TokenPool 轮换自动生效）。
 用法（py311，pysnowball 所在解释器）：
   python xq_login.py --probe
       只打开首页 dump 登录入口候选元素 + 截图，不登录；
-  python xq_login.py --user 15071133950 --password xxx --name tok-u-150
+  python xq_login.py --user <phone> --password xxx --name tok-u-150
       登录 → 验活 → 灌池（同名替换）；
 选项：
   --headless   无头模式（默认 headful：登录风控更宽松、遇滑块可人工辅助）
