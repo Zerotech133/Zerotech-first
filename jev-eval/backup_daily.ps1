@@ -653,4 +653,11 @@ if ($SkipVaultAuto) {
         -Stamp $stamp -Upload ([bool]$VaultUploadOn) -DryRun ([bool]$VaultDryRunOn)
 }
 
+# ===== section 7 (2026-10-29 DSH-Lead, 老田批准): extra DB dumps =====
+# quant_meta(PG) + thunder_model(MySQL) 纳入每日备份；独立脚本+失败标记，不改变主流程退出码。
+try {
+    $extra = 'C:\Users\t\dw_ops\backup_extra_dbs.ps1'
+    if (Test-Path $extra) { & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $extra 2>&1 | Out-Null }
+} catch { }
+
 if ($script:Failed -gt 0) { exit 1 } else { if ($OffsiteRc -eq 0 -or $OffsiteRc -eq -1) { exit 0 } else { exit 1 } }
