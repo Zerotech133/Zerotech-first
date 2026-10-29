@@ -39,6 +39,7 @@ from legion_command.snapshot import build_snapshot  # noqa: E402
 from legion_command import hq_meeting  # noqa: E402
 from legion_command import hq_agenda  # noqa: E402
 from legion_command import hq_acceptance  # noqa: E402
+from legion_command import hq_stats  # noqa: E402
 import logging
 
 _STATIC = Path(__file__).resolve().parent / "static"
@@ -114,6 +115,17 @@ AGENT_BINDING = {
 _DEFAULT_BINDING = "ollama/qwen3.5:9b"
 # 平台级兜底降级档：席位没配 llm_fallback 时只降这一档（A0/AI1 等无链席位的旧行为）
 _DEFAULT_FALLBACK = _DEFAULT_BINDING
+# 会议场景绑定覆盖：治理席 ZHAOYUN 的正式绑定是 DSH 会话载体（deepseek-v4-pro），
+# 不适配同步 /api/chat；会议仅用本地模型发声，不改变正式治理席位绑定。
+MEETING_BINDING_OVERRIDES = {"ZHAOYUN": "ollama/qwen3.5:9b"}
+
+
+def resolve_meeting_binding(agent: str, platform_dir: Path | None = None) -> str:
+    """会议 purpose 的绑定解析：仅对覆盖表内席位替换，且不改 none/规则执行体。"""
+    orig = resolve_binding(agent, platform_dir)
+    if agent in MEETING_BINDING_OVERRIDES and orig != "none":
+        return MEETING_BINDING_OVERRIDES[agent]
+    return orig
 # 同一 stamp 指纹管两张索引：席位绑定（map）与席位降级链（fallbacks）
 _BINDING_CACHE = {"mtime": None, "map": {}, "fallbacks": {}}
 
@@ -446,6 +458,9 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/api/evolution":
             self._send_json(self._evolution())
+            return
+        if path == "/api/hq/meeting/stats":
+            self._send_json(hq_stats.board(HQ_MEETINGS_DIR))
             return
         if path == "/api/hq/meeting/acceptance/evidence":
             self._send_json(hq_acceptance.gather(
@@ -2005,7 +2020,10 @@ class Handler(BaseHTTPRequestHandler):
             if not agent or not agent.replace("_", "").isalnum():
                 self._send_json({"ok": False, "error": "bad_agent"}, 400)
                 return
-            binding = resolve_binding(agent)
+            purpose = str(req.get("purpose", "")).strip()
+            binding_orig = resolve_binding(agent)
+            meeting_override = purpose == "meeting" and agent in MEETING_BINDING_OVERRIDES
+            binding = (resolve_meeting_binding(agent) if meeting_override else binding_orig)
             if binding == "none":
                 # 规则执行体：编制上就没给它 LLM。不能兜底成 9b，
                 # 那会让一个「判例手册驱动的巡检哨」凭空开口说话。
@@ -2116,6 +2134,9 @@ class Handler(BaseHTTPRequestHandler):
             )
             env["agent"] = agent
             env["binding"] = env.get("data", {}).get("binding_resolved", binding)
+            if meeting_override:
+                env["meeting_override"] = True
+                env["binding_original"] = binding_orig
             self._send_json(env)
             return
         if path == "/api/hq/agenda/message":

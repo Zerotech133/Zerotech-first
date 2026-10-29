@@ -196,6 +196,13 @@
     </div>
     <div class="dfoot" style="margin-top:6px">仅记录 + 建任务申请：不自动执行、不代批 L2；订单仍待田丰派工。</div>
   </div>
+
+  <div class="panelbox hq">
+    <h3>会议看板（P2）<span class="muted" id="hqBoardState">加载中…</span></h3>
+    <div class="muted" id="hqBoardStats">—</div>
+    <div class="muted" id="hqBoardDrift" style="margin-top:6px"></div>
+    <div class="muted" id="hqBoardReplay" style="margin-top:6px"></div>
+  </div>
 </div>
 
 <script>
@@ -248,7 +255,7 @@ function chatLive(agentId, question, fallbackCb) {
   const timer = setTimeout(() => ctl.abort(), TIMEOUT_MS);
   gateRun(() => fetch('/api/chat', {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: ctl.signal,
-    body: JSON.stringify({ agent: agentId, system: buildSystem(agentId),
+    body: JSON.stringify({ agent: agentId, system: buildSystem(agentId), purpose: 'meeting',
       user: '会议主持（老田）问：' + question + '（只从你职能面回答，不知道就说需查证）' })
   }).then(r => r.json()).then(env => {
     clearTimeout(timer);
@@ -502,8 +509,33 @@ async function loadHqEvidence() {
   } catch (e) { document.getElementById('hqEvidence').textContent = '验收证据加载失败：' + e.message; }
 }
 
+
+// ---- 会议看板（P2：闭环率/跑偏/回放）----
+async function loadHqStats() {
+  try {
+    const r = await fetch('/api/hq/meeting/stats');
+    const env = await r.json();
+    if (!env.ok) throw new Error(env.error || '加载失败');
+    document.getElementById('hqBoardState').textContent = '已加载';
+    document.getElementById('hqBoardStats').textContent =
+      '会议 ' + env.total + '（' + JSON.stringify(env.by_type) + ' / ' + JSON.stringify(env.by_status) + '）' +
+      ' ｜ 决议 ' + env.decisions + ' ｜ 订单 ' + env.orders + '（已派 ' + env.dispatched + '）' +
+      ' ｜ 闭环率 ' + Math.round((env.closure_rate || 0) * 100) + '%';
+    const d = env.drift || {};
+    document.getElementById('hqBoardDrift').textContent =
+      '跑偏：草稿超24h ' + (d.draft_stale || 0) + ' ｜ 缺负责人 ' + (d.missing_owner || 0) +
+      ' ｜ 缺截止 ' + (d.missing_due || 0) + ' ｜ 订单未派 ' + (d.orders_pending || 0) +
+      ' ｜ 决议无订单 ' + (d.decisions_without_orders || 0);
+    document.getElementById('hqBoardReplay').textContent =
+      '回放：' + (env.replay || []).slice(0, 5).map(m => m.meeting_id + '(' + m.type + '/' + m.status + ')').join(' · ');
+  } catch (e) {
+    document.getElementById('hqBoardState').textContent = '看板加载失败：' + e.message;
+  }
+}
+
 renderTable();
 setTimeout(loadHqAgenda, 400);
+setTimeout(loadHqStats, 600);
 setTimeout(() => { add('HOST', '点左侧名册选人上桌，或直接点快捷议题开会。'); }, 300);
 </script>
 </body>
