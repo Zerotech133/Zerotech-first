@@ -138,8 +138,13 @@ def compute(day=None, days=7):
             dev_tickets.append((tid, t))
 
     events = _load_events(days)
-    starts = [e for e in events if e.get("kind") == "task_start"
-              and _in_period(e.get("day"), start_s, end_s)]
+    starts_all = [e for e in events if e.get("kind") == "task_start"
+                  and _in_period(e.get("day"), start_s, end_s)]
+    # 数据质量：CLI 参数被当任务 ID（如 "--help"）属无效事件，不计入归属率分母
+    invalid_starts = [e for e in starts_all
+                      if not str(e.get("task") or "").strip()
+                      or str(e.get("task") or "").startswith("-")]
+    starts = [e for e in starts_all if e not in invalid_starts]
     merges = [e for e in events if e.get("kind") == "merge_done"
               and _in_period(e.get("day"), start_s, end_s)]
     guards = [e for e in events if e.get("kind") == "guard_fail"
@@ -201,7 +206,9 @@ def compute(day=None, days=7):
     metrics = {
         "period": {"start": start_s, "end": end_s, "days": days},
         "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "task_start_total": len(starts),
+        "task_start_total": len(starts_all),
+        "task_start_valid": len(starts),
+        "task_start_invalid": len(invalid_starts),
         "task_start_dev": len(dev_starts),
         "dev_share_per_week": len(dev_starts),
         "merge_done_total": len(merges),

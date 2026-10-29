@@ -69,6 +69,21 @@ def test_c6_without_repairs(tmp_path, monkeypatch):
     assert m["attribution_repaired"] == 0 and m["ownership_rate"] == 0.0
 
 
+def test_c6_invalid_task_id_excluded(tmp_path, monkeypatch):
+    ev = tmp_path / "events.jsonl"
+    ev.write_text("\n".join(json.dumps(x, ensure_ascii=False) for x in
+                            [_event(task="T1"), _event(task="--help")]), encoding="utf-8")
+    tasks = tmp_path / "tasks.json"
+    tasks.write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(c6, "EVENTS", str(ev))
+    monkeypatch.setattr(c6, "TASKS", str(tasks))
+    monkeypatch.setattr(c6, "REPAIRS", str(tmp_path / "none.jsonl"))
+    m = c6.compute(day=date(2026, 10, 29), days=1)["metrics"]
+    assert m["task_start_total"] == 2
+    assert m["task_start_valid"] == 1
+    assert m["task_start_invalid"] == 1
+
+
 def test_devtask_attribution_gate(monkeypatch):
     monkeypatch.delenv("AGENT_NAME", raising=False)
     monkeypatch.delenv("DEVTOOL_AGENT", raising=False)
