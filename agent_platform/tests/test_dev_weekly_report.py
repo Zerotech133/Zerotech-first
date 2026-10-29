@@ -75,3 +75,18 @@ def test_cli_writes_out(tmp_path):
 
 def test_missing_tasks_file_is_empty(tmp_path):
     assert DWR.load_tasks(tmp_path / "nope.json") == {}
+
+
+def test_seat_exec_metric():
+    now2 = time.mktime(time.strptime("2026-10-29 10:00:00", "%Y-%m-%d %H:%M:%S"))
+    tasks = {
+        "T1": {"owner": "DEV1", "dept": "dev", "status": "done",
+               "created": "2026-10-28 10:00:00", "merged": "2026-10-28 11:00:00"},
+        "T2": {"owner": "DSH-Lead", "dept": "dev", "status": "done",
+               "created": "2026-10-28 12:00:00", "merged": "2026-10-28 13:00:00"},
+    }
+    m = DWR.compute(tasks, [], {"dev_seats": ["DEV1", "DEV5"]}, {}, now=now2)
+    assert m["dev_new_done"] == 2
+    assert m["dev_seat_exec_new"] == 1
+    assert m["dev_seat_exec_share_new"] == 0.5
+    assert "真席位执行率" in DWR.render_markdown(m)
