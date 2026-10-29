@@ -220,6 +220,35 @@ def load_other_sources() -> list[dict]:
     return rows
 
 
+REPORT_TITLES = [
+    ("H14", "H14 质量反向（质量陷阱规避）"),
+    ("H13", "H13 多因子复核（资金流+反转+市值+价值+质量）"),
+    ("H12", "H12 盈余方向事件研究"),
+    ("H11dir", "H11 盈余方向事件研究（旧版）"),
+    ("H11", "H11 三年公告事件研究"),
+    ("H10", "H10 数据质量敏感性（扰动框架）"),
+    ("H9_tradability", "H9 可交易性检验（缺口 vs 日内）"),
+    ("H9", "H9 全球指数领先滞后"),
+    ("H8", "H8 行业资金轮动（PIT 行业）"),
+    ("H7", "H7 财务因子分层"),
+    ("H6", "H6 JEV 决策归因"),
+    ("H5", "H5 舆情领先滞后"),
+    ("H4", "H4 资金流背离"),
+    ("H3", "H3 龙虎榜机构席位"),
+    ("H2", "H2 业绩预告漂移（PEAD）"),
+    ("H1", "H1 公告事件超额收益"),
+]
+
+
+def _report_title(name: str) -> str:
+    for key, zh in REPORT_TITLES:
+        if name.startswith(key):
+            return zh
+    if name.startswith("H7_factor_strat"):
+        return "H7 财务因子分层"
+    return "研究报告"
+
+
 def load_reports() -> list[dict]:
     rows = []
     for f in sorted((REPO / "research" / "reports").glob("*"), key=lambda x: -x.stat().st_mtime):
@@ -227,7 +256,9 @@ def load_reports() -> list[dict]:
             continue
         m = datetime.fromtimestamp(f.stat().st_mtime)
         prefix = f.name.split("_")[0]
-        rows.append({"name": f.name, "size_kb": round(f.stat().st_size / 1024, 1),
+        rows.append({"name": f.name, "title_zh": _report_title(f.name),
+                     "kind": "报告正文" if f.suffix == ".md" else "原始数据",
+                     "size_kb": round(f.stat().st_size / 1024, 1),
                      "date": m.strftime("%Y-%m-%d"), "time": m.strftime("%H:%M"),
                      "hid": prefix if prefix.startswith("H") else ""})
     return rows[:40]

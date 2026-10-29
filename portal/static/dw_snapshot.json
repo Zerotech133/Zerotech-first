@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-10-30T01:20:01+08:00",
+ "generated_at": "2026-10-30T01:40:50+08:00",
  "today": "2026-10-30",
  "catalog": {
   "version": 16,
@@ -24,9 +24,9 @@
   "sources_mining": 34,
   "sources_pending": 0,
   "coverage_pct": 39.1,
-  "new_today": 2,
-  "pilot_today": 2,
-  "merged_today": 3,
+  "new_today": 3,
+  "pilot_today": 3,
+  "merged_today": 6,
   "hypotheses": 14,
   "hypotheses_by_status": {
    "rejected": 10,
@@ -79,7 +79,7 @@
    }
   ],
   "backup_latest": "2026-10-29_0300",
-  "backup_age_hours": 25.3,
+  "backup_age_hours": 25.7,
   "supervisor_red": []
  },
  "sources": [
@@ -636,8 +636,8 @@
    "size_mb": 1.5,
    "size_h": "2 MB",
    "range": "000906_201501..000906_202610",
-   "last_update": "2026-10-29",
-   "today_new": 0,
+   "last_update": "2026-10-30",
+   "today_new": 2,
    "registered": true,
    "manifest": "closed",
    "date_status": "registered",
@@ -1210,11 +1210,11 @@
    "status": "done",
    "note": "24,211 文件",
    "files": 24211,
-   "size_mb": 1599.4,
+   "size_mb": 1599.5,
    "size_h": "1.6 GB",
    "range": "035420..ZZZOF",
    "last_update": "2026-10-30",
-   "today_new": 15706,
+   "today_new": 20077,
    "registered": true,
    "manifest": "closed",
    "date_status": "registered",
@@ -1269,8 +1269,8 @@
    "status": "in_progress",
    "note": "保留 365 天；历史不可回填",
    "files": 1,
-   "size_mb": 105.29,
-   "size_h": "105 MB",
+   "size_mb": 105.58,
+   "size_h": "106 MB",
    "range": "—",
    "last_update": "2026-10-30",
    "today_new": 1,
@@ -1370,17 +1370,36 @@
  ],
  "new_today_sources": [
   {
+   "name": "index_weight",
+   "label": "index_weight",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "数据已入库，尚未用于研究",
+   "files": 142,
+   "size_mb": 1.5,
+   "size_h": "2 MB",
+   "range": "000906_201501..000906_202610",
+   "last_update": "2026-10-30",
+   "today_new": 2,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "next_action": "数据已入库，尚未用于研究"
+  },
+  {
    "name": "us_daily",
    "label": "美股日线",
    "layer": "原始层",
    "status": "done",
    "note": "24,211 文件",
    "files": 24211,
-   "size_mb": 1599.4,
+   "size_mb": 1599.5,
    "size_h": "1.6 GB",
    "range": "035420..ZZZOF",
    "last_update": "2026-10-30",
-   "today_new": 15706,
+   "today_new": 20077,
    "registered": true,
    "manifest": "closed",
    "date_status": "registered",
@@ -1397,8 +1416,8 @@
    "status": "in_progress",
    "note": "保留 365 天；历史不可回填",
    "files": 1,
-   "size_mb": 105.29,
-   "size_h": "105 MB",
+   "size_mb": 105.58,
+   "size_h": "106 MB",
    "range": "—",
    "last_update": "2026-10-30",
    "today_new": 1,
@@ -1586,6 +1605,8 @@
  "reports": [
   {
    "name": "H13_multifactor_20261029.md",
+   "title_zh": "H13 多因子复核（资金流+反转+市值+价值+质量）",
+   "kind": "报告正文",
    "size_kb": 0.9,
    "date": "2026-10-29",
    "time": "23:26",
@@ -1593,6 +1614,8 @@
   },
   {
    "name": "H13_multifactor_20261029.json",
+   "title_zh": "H13 多因子复核（资金流+反转+市值+价值+质量）",
+   "kind": "原始数据",
    "size_kb": 1.1,
    "date": "2026-10-29",
    "time": "23:26",
@@ -1600,6 +1623,8 @@
   },
   {
    "name": "H10_quality_sensitivity_20261029.md",
+   "title_zh": "H10 数据质量敏感性（扰动框架）",
+   "kind": "报告正文",
    "size_kb": 1.7,
    "date": "2026-10-29",
    "time": "17:09",
@@ -1607,6 +1632,8 @@
   },
   {
    "name": "H10_quality_sensitivity_20261029.json",
+   "title_zh": "H10 数据质量敏感性（扰动框架）",
+   "kind": "原始数据",
    "size_kb": 2.9,
    "date": "2026-10-29",
    "time": "17:09",
@@ -1614,6 +1641,8 @@
   },
   {
    "name": "H9_tradability_20261029.md",
+   "title_zh": "H9 可交易性检验（缺口 vs 日内）",
+   "kind": "报告正文",
    "size_kb": 1.2,
    "date": "2026-10-29",
    "time": "16:28",
@@ -1621,6 +1650,8 @@
   },
   {
    "name": "H9_tradability_20261029.json",
+   "title_zh": "H9 可交易性检验（缺口 vs 日内）",
+   "kind": "原始数据",
    "size_kb": 7.2,
    "date": "2026-10-29",
    "time": "16:28",
@@ -1628,6 +1659,8 @@
   },
   {
    "name": "H9_global_leadlag_20261029.md",
+   "title_zh": "H9 全球指数领先滞后",
+   "kind": "报告正文",
    "size_kb": 1.1,
    "date": "2026-10-29",
    "time": "14:39",
@@ -1635,6 +1668,8 @@
   },
   {
    "name": "H9_global_leadlag_20261029.json",
+   "title_zh": "H9 全球指数领先滞后",
+   "kind": "原始数据",
    "size_kb": 15.4,
    "date": "2026-10-29",
    "time": "14:38",
@@ -1642,6 +1677,8 @@
   },
   {
    "name": "H8_industry_rotation_pit_20261029.md",
+   "title_zh": "H8 行业资金轮动（PIT 行业）",
+   "kind": "报告正文",
    "size_kb": 0.6,
    "date": "2026-10-29",
    "time": "14:16",
@@ -1649,6 +1686,8 @@
   },
   {
    "name": "H8_industry_rotation_pit_20261029.json",
+   "title_zh": "H8 行业资金轮动（PIT 行业）",
+   "kind": "原始数据",
    "size_kb": 0.6,
    "date": "2026-10-29",
    "time": "14:16",
@@ -1656,6 +1695,8 @@
   },
   {
    "name": "H14_quality_reversal_20261029.json",
+   "title_zh": "H14 质量反向（质量陷阱规避）",
+   "kind": "原始数据",
    "size_kb": 1.2,
    "date": "2026-10-29",
    "time": "09:35",
@@ -1663,6 +1704,8 @@
   },
   {
    "name": "H14_quality_reversal_20261029.md",
+   "title_zh": "H14 质量反向（质量陷阱规避）",
+   "kind": "报告正文",
    "size_kb": 0.9,
    "date": "2026-10-29",
    "time": "09:35",
@@ -1670,6 +1713,8 @@
   },
   {
    "name": "H7_factor_strat_20261029v_5y_20261029.md",
+   "title_zh": "H7 财务因子分层",
+   "kind": "报告正文",
    "size_kb": 0.8,
    "date": "2026-10-29",
    "time": "08:25",
@@ -1677,6 +1722,8 @@
   },
   {
    "name": "H7_factor_strat_20261029v_5y_20261029.json",
+   "title_zh": "H7 财务因子分层",
+   "kind": "原始数据",
    "size_kb": 1.8,
    "date": "2026-10-29",
    "time": "08:25",
@@ -1684,6 +1731,8 @@
   },
   {
    "name": "H7_factor_strat_20261029.md",
+   "title_zh": "H7 财务因子分层",
+   "kind": "报告正文",
    "size_kb": 0.8,
    "date": "2026-10-29",
    "time": "07:49",
@@ -1691,6 +1740,8 @@
   },
   {
    "name": "H7_factor_strat_20261029.json",
+   "title_zh": "H7 财务因子分层",
+   "kind": "原始数据",
    "size_kb": 1.8,
    "date": "2026-10-29",
    "time": "07:49",
@@ -1698,6 +1749,8 @@
   },
   {
    "name": "H3_dragon_tiger_inst_20261029.md",
+   "title_zh": "H3 龙虎榜机构席位",
+   "kind": "报告正文",
    "size_kb": 1.2,
    "date": "2026-10-29",
    "time": "07:36",
@@ -1705,6 +1758,8 @@
   },
   {
    "name": "H3_dragon_tiger_inst_20261029.json",
+   "title_zh": "H3 龙虎榜机构席位",
+   "kind": "原始数据",
    "size_kb": 2.0,
    "date": "2026-10-29",
    "time": "07:36",
@@ -1712,6 +1767,8 @@
   },
   {
    "name": "H2v2_earnings_surprise_pead_20261029.md",
+   "title_zh": "H2 业绩预告漂移（PEAD）",
+   "kind": "报告正文",
    "size_kb": 1.3,
    "date": "2026-10-29",
    "time": "07:31",
@@ -1719,6 +1776,8 @@
   },
   {
    "name": "H2v2_earnings_surprise_pead_20261029.json",
+   "title_zh": "H2 业绩预告漂移（PEAD）",
+   "kind": "原始数据",
    "size_kb": 3.8,
    "date": "2026-10-29",
    "time": "07:31",
@@ -1726,6 +1785,8 @@
   },
   {
    "name": "H4_flow_divergence_20261028.json",
+   "title_zh": "H4 资金流背离",
+   "kind": "原始数据",
    "size_kb": 1.6,
    "date": "2026-10-28",
    "time": "17:42",
@@ -1733,6 +1794,8 @@
   },
   {
    "name": "H4_flow_divergence_20261028.md",
+   "title_zh": "H4 资金流背离",
+   "kind": "报告正文",
    "size_kb": 1.2,
    "date": "2026-10-28",
    "time": "17:42",
@@ -1740,6 +1803,8 @@
   },
   {
    "name": "H11dir_earnings_direction_20261028.md",
+   "title_zh": "H11 盈余方向事件研究（旧版）",
+   "kind": "报告正文",
    "size_kb": 0.9,
    "date": "2026-10-28",
    "time": "17:30",
@@ -1747,6 +1812,8 @@
   },
   {
    "name": "H11dir_earnings_direction_20261028.json",
+   "title_zh": "H11 盈余方向事件研究（旧版）",
+   "kind": "原始数据",
    "size_kb": 1.5,
    "date": "2026-10-28",
    "time": "17:30",
@@ -1754,6 +1821,8 @@
   },
   {
    "name": "H6_jev_attribution_20261028.md",
+   "title_zh": "H6 JEV 决策归因",
+   "kind": "报告正文",
    "size_kb": 3.2,
    "date": "2026-10-28",
    "time": "17:13",
@@ -1761,6 +1830,8 @@
   },
   {
    "name": "H6_jev_attribution_20261028.json",
+   "title_zh": "H6 JEV 决策归因",
+   "kind": "原始数据",
    "size_kb": 8.8,
    "date": "2026-10-28",
    "time": "17:13",
@@ -1768,6 +1839,8 @@
   },
   {
    "name": "H2_pead_3y_20261028.json",
+   "title_zh": "H2 业绩预告漂移（PEAD）",
+   "kind": "原始数据",
    "size_kb": 2.4,
    "date": "2026-10-28",
    "time": "17:13",
@@ -1775,6 +1848,8 @@
   },
   {
    "name": "H2_pead_3y_20261028.md",
+   "title_zh": "H2 业绩预告漂移（PEAD）",
+   "kind": "报告正文",
    "size_kb": 1.2,
    "date": "2026-10-28",
    "time": "17:13",
@@ -1782,6 +1857,8 @@
   },
   {
    "name": "H11_announcement_car_3y_20261028.json",
+   "title_zh": "H11 三年公告事件研究",
+   "kind": "原始数据",
    "size_kb": 1.3,
    "date": "2026-10-28",
    "time": "17:13",
@@ -1789,6 +1866,8 @@
   },
   {
    "name": "H11_announcement_car_3y_20261028.md",
+   "title_zh": "H11 三年公告事件研究",
+   "kind": "报告正文",
    "size_kb": 0.9,
    "date": "2026-10-28",
    "time": "17:13",
@@ -1796,6 +1875,8 @@
   },
   {
    "name": "H1_announcement_car_v2_20261028.json",
+   "title_zh": "H1 公告事件超额收益",
+   "kind": "原始数据",
    "size_kb": 12.1,
    "date": "2026-10-28",
    "time": "10:52",
@@ -1803,6 +1884,8 @@
   },
   {
    "name": "H1_announcement_car_v2_20261028.md",
+   "title_zh": "H1 公告事件超额收益",
+   "kind": "报告正文",
    "size_kb": 2.4,
    "date": "2026-10-28",
    "time": "10:52",
@@ -1810,6 +1893,8 @@
   },
   {
    "name": "H1_announcement_car_20261028.md",
+   "title_zh": "H1 公告事件超额收益",
+   "kind": "报告正文",
    "size_kb": 2.9,
    "date": "2026-10-28",
    "time": "07:56",
@@ -1817,6 +1902,8 @@
   },
   {
    "name": "H1_announcement_car_20261028.json",
+   "title_zh": "H1 公告事件超额收益",
+   "kind": "原始数据",
    "size_kb": 6.5,
    "date": "2026-10-28",
    "time": "07:56",
@@ -1977,7 +2064,7 @@
    },
    {
     "id": "WO-ACAD-LCS1-REDEFINE-20261030",
-    "status": "doing",
+    "status": "review",
     "owner": "STRAT1",
     "desc": "LCS-1 信号重定义新课题（A6 No-Go 后）：先改假设/算子口径，尤其 accumulate 阈值与数据依赖；小样本预注册→全市场验证；不在本轮 A6 调参。"
    },
@@ -1994,34 +2081,16 @@
     "desc": "DATA1 冻结申请：AC-20261030-LCS1-REDEFINE 的 D3 news.db/ts_news + D4 ts_top_list/ts_top_inst；四字段+sha+as-of；deadline 11-03；未冻结前"
    },
    {
-    "id": "WO-MEETING-XSS-20261030",
-    "status": "doing",
-    "owner": "ZHAOYUN",
-    "desc": "meeting.html 动态文本转义（4处innerHTML防存储型XSS，保留显式HTML模板）"
-   },
-   {
-    "id": "WO-HZ-W1FORMAL-20261030",
+    "id": "WO-INV-POOL-COMBO-20261030",
     "status": "doing",
     "owner": "DSH-Lead",
-    "desc": "黄忠W1正式四件套提交"
+    "desc": "每日股票池→多角度分析→组合计划：watchlist 解析(聊天代码/xunyou/picks)+run_shadow --codes 动态池+portfolio_composer(买点/止损/目标/权重/回避)+CLI+测试"
    },
    {
-    "id": "WO-P2-FIX-20261030",
+    "id": "K-ORG-20261030-OFFSITECATCHUP",
     "status": "doing",
-    "owner": "DSH-Lead",
-    "desc": "P2 加固：approval_control 账本追加改为 O_APPEND 单次写（原子性）；automation_supervisor L1 stale 改为 created/最近事件时间取新值；补测试。不改变审批门/不自动动作。"
-   },
-   {
-    "id": "WO-GUANYU-P49-20261030",
-    "status": "doing",
-    "owner": "GUANYU",
-    "desc": "脏文件快速失败守卫"
-   },
-   {
-    "id": "WO-INV-PAPER-OBS-20261030",
-    "status": "doing",
-    "owner": "DSH-Lead",
-    "desc": "paper 上线前可观测：C6 日报增加 paper NAV/仓位/台账/hash-chain/kill 指标 + kill switch 演练测试"
+    "owner": "DSH·lead",
+    "desc": "异地备份补推器：新增 tools/offsite_catchup.ps1（幂等：探测 ssh aiosbackup 可达→对最近 N 天远端缺失的 tar 集/vault 依次调用 two push 脚本并校验 receipt；不可达则静默"
    }
   ],
   "doing_data": [
@@ -2051,7 +2120,7 @@
    },
    {
     "id": "WO-ACAD-LCS1-REDEFINE-20261030",
-    "status": "doing",
+    "status": "review",
     "owner": "STRAT1",
     "desc": "LCS-1 信号重定义新课题（A6 No-Go 后）：先改假设/算子口径，尤其 accumulate 阈值与数据依赖；小样本预注册→全市场验证；不在本轮 A6 调参。"
    },
@@ -2060,6 +2129,12 @@
     "status": "doing",
     "owner": "DATA1",
     "desc": "DATA1 冻结申请：AC-20261030-LCS1-REDEFINE 的 D3 news.db/ts_news + D4 ts_top_list/ts_top_inst；四字段+sha+as-of；deadline 11-03；未冻结前"
+   },
+   {
+    "id": "K-ORG-20261030-OFFSITECATCHUP",
+    "status": "doing",
+    "owner": "DSH·lead",
+    "desc": "异地备份补推器：新增 tools/offsite_catchup.ps1（幂等：探测 ssh aiosbackup 可达→对最近 N 天远端缺失的 tar 集/vault 依次调用 two push 脚本并校验 receipt；不可达则静默"
    }
   ],
   "today_pilot": [
@@ -2077,7 +2152,7 @@
    },
    {
     "id": "WO-ACAD-LCS1-REDEFINE-20261030",
-    "status": "doing",
+    "status": "review",
     "owner": "STRAT1",
     "desc": "LCS-1 信号重定义新课题（A6 No-Go 后）：先改假设/算子口径，尤其 accumulate 阈值与数据依赖；小样本预注册→全市场验证；不在本轮 A6 调参。"
    },
@@ -2094,40 +2169,22 @@
     "desc": "DATA1 冻结申请：AC-20261030-LCS1-REDEFINE 的 D3 news.db/ts_news + D4 ts_top_list/ts_top_inst；四字段+sha+as-of；deadline 11-03；未冻结前"
    },
    {
-    "id": "WO-MEETING-XSS-20261030",
-    "status": "doing",
-    "owner": "ZHAOYUN",
-    "desc": "meeting.html 动态文本转义（4处innerHTML防存储型XSS，保留显式HTML模板）"
-   },
-   {
-    "id": "WO-HZ-W1FORMAL-20261030",
+    "id": "WO-INV-POOL-COMBO-20261030",
     "status": "doing",
     "owner": "DSH-Lead",
-    "desc": "黄忠W1正式四件套提交"
+    "desc": "每日股票池→多角度分析→组合计划：watchlist 解析(聊天代码/xunyou/picks)+run_shadow --codes 动态池+portfolio_composer(买点/止损/目标/权重/回避)+CLI+测试"
    },
    {
-    "id": "WO-P2-FIX-20261030",
+    "id": "K-ORG-20261030-OFFSITECATCHUP",
     "status": "doing",
-    "owner": "DSH-Lead",
-    "desc": "P2 加固：approval_control 账本追加改为 O_APPEND 单次写（原子性）；automation_supervisor L1 stale 改为 created/最近事件时间取新值；补测试。不改变审批门/不自动动作。"
-   },
-   {
-    "id": "WO-GUANYU-P49-20261030",
-    "status": "doing",
-    "owner": "GUANYU",
-    "desc": "脏文件快速失败守卫"
-   },
-   {
-    "id": "WO-INV-PAPER-OBS-20261030",
-    "status": "doing",
-    "owner": "DSH-Lead",
-    "desc": "paper 上线前可观测：C6 日报增加 paper NAV/仓位/台账/hash-chain/kill 指标 + kill switch 演练测试"
+    "owner": "DSH·lead",
+    "desc": "异地备份补推器：新增 tools/offsite_catchup.ps1（幂等：探测 ssh aiosbackup 可达→对最近 N 天远端缺失的 tar 集/vault 依次调用 two push 脚本并校验 receipt；不可达则静默"
    }
   ],
   "today_pilot_data": [
    {
     "id": "WO-ACAD-LCS1-REDEFINE-20261030",
-    "status": "doing",
+    "status": "review",
     "owner": "STRAT1",
     "desc": "LCS-1 信号重定义新课题（A6 No-Go 后）：先改假设/算子口径，尤其 accumulate 阈值与数据依赖；小样本预注册→全市场验证；不在本轮 A6 调参。"
    },
@@ -2136,6 +2193,12 @@
     "status": "doing",
     "owner": "DATA1",
     "desc": "DATA1 冻结申请：AC-20261030-LCS1-REDEFINE 的 D3 news.db/ts_news + D4 ts_top_list/ts_top_inst；四字段+sha+as-of；deadline 11-03；未冻结前"
+   },
+   {
+    "id": "K-ORG-20261030-OFFSITECATCHUP",
+    "status": "doing",
+    "owner": "DSH·lead",
+    "desc": "异地备份补推器：新增 tools/offsite_catchup.ps1（幂等：探测 ssh aiosbackup 可达→对最近 N 天远端缺失的 tar 集/vault 依次调用 two push 脚本并校验 receipt；不可达则静默"
    }
   ],
   "today_merged": [
@@ -2248,6 +2311,12 @@
     "desc": "军团IDE写文件两阶段：preview diff→confirm；stale检测；exec success=exit0；前端确认UI+红绿"
    },
    {
+    "id": "WO-ACAD-LCS1-REDEFINE-20261030",
+    "status": "review",
+    "owner": "STRAT1",
+    "desc": "LCS-1 信号重定义新课题（A6 No-Go 后）：先改假设/算子口径，尤其 accumulate 阈值与数据依赖；小样本预注册→全市场验证；不在本轮 A6 调参。"
+   },
+   {
     "id": "WO-GUANYU-P44-20261030",
     "status": "done",
     "owner": "GUANYU",
@@ -2266,10 +2335,28 @@
     "desc": "数据仓可视化页：dw_snapshot 生成器 + portal/dw.html（来源治理/治理中/挖掘中/运维健康）"
    },
    {
+    "id": "WO-MEETING-XSS-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "meeting.html 动态文本转义（4处innerHTML防存储型XSS，保留显式HTML模板）"
+   },
+   {
     "id": "WO-HZ-MEET-20261030",
     "status": "done",
     "owner": "DSH-Lead",
     "desc": "会议侧：ZHAOYUN通道收口+验收会日更联动(P2)"
+   },
+   {
+    "id": "WO-HZ-W1FORMAL-20261030",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "黄忠W1正式四件套提交"
+   },
+   {
+    "id": "WO-P2-FIX-20261030",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "P2 加固：approval_control 账本追加改为 O_APPEND 单次写（原子性）；automation_supervisor L1 stale 改为 created/最近事件时间取新值；补测试。不改变审批门/不自动动作。"
    },
    {
     "id": "WO-HZ-HR-20261030",
@@ -2330,6 +2417,84 @@
     "status": "done",
     "owner": "GUANYU",
     "desc": "钩子锁识别+半合并兜底"
+   },
+   {
+    "id": "WO-GUANYU-P49-20261030",
+    "status": "done",
+    "owner": "GUANYU",
+    "desc": "脏文件快速失败守卫"
+   },
+   {
+    "id": "WO-INV-PAPER-OBS-20261030",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "paper 上线前可观测：C6 日报增加 paper NAV/仓位/台账/hash-chain/kill 指标 + kill switch 演练测试"
+   },
+   {
+    "id": "WO-ACAD-LCS1-PAGE-20261030",
+    "status": "done",
+    "owner": "STRAT1",
+    "desc": "LCS-1 课题页移动端修复：A6/数据冻结表窄屏卡片化，避免横切；仅前端。"
+   },
+   {
+    "id": "WO-FULLSTACK-GATES2-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "R0-R7全栈门表草案v0.9（映射现有门禁，待ARCH1拍板）"
+   },
+   {
+    "id": "WO-SEAT-ITER-KICK-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "能力迭代11席启动指令：kickoff_issued+回执格式+截止（P1-7）"
+   },
+   {
+    "id": "WO-INV-PAPER-UI-20261030",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "量化部 paper 前端页 /paper：NAV/现金/持仓/台账/hash-chain/风控限额只读展示 + /api/paper 数据口（新模块，无新增 Handler 方法）"
+   },
+   {
+    "id": "WO-GUANYU-P51-20261030",
+    "status": "done",
+    "owner": "GUANYU",
+    "desc": "合并后脏文件看板"
+   },
+   {
+    "id": "WO-ACAD-LCS1-PAGE-DETAIL-20261030",
+    "status": "done",
+    "owner": "STRAT1",
+    "desc": "LCS-1 课题页：表格行/时间线可点击查看详情（内联 modal，只读；移动端可用）。"
+   },
+   {
+    "id": "WO-HZ-CERT-V2-20261030",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "黄忠认证标准v2（D4/B）"
+   },
+   {
+    "id": "WO-HZ-ACCEPT-EVIDENCE-20261030",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "验收工具证据口径升级（D3/A）"
+   },
+   {
+    "id": "WO-GUANYU-P52-20261030",
+    "status": "done",
+    "owner": "GUANYU",
+    "desc": "看板输出验证"
+   },
+   {
+    "id": "WO-LEGION-ZHUGE-DIGEST-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "诸葛亮推送版面：晨报/晚报两期摘要器，P4 折叠，去内部ID，行动导向"
+   },
+   {
+    "id": "WO-ACAD-LCS1-PAGE-ZH-20261030",
+    "status": "done",
+    "owner": "STRAT1",
+    "desc": "LCS-1 课题页中文化：去英文/缩写，保留 LCS-1 品牌代号；降低后续商业化本地化成本。"
    }
   ],
   "today_merged_data": [
@@ -2338,6 +2503,12 @@
     "status": "done",
     "owner": "DSH-Lead",
     "desc": "D4-D5 M4/v1.1 试点 S2 卡片签字：试点脚本入库（dry-run/--send + critical 旁路）"
+   },
+   {
+    "id": "WO-ACAD-LCS1-REDEFINE-20261030",
+    "status": "review",
+    "owner": "STRAT1",
+    "desc": "LCS-1 信号重定义新课题（A6 No-Go 后）：先改假设/算子口径，尤其 accumulate 阈值与数据依赖；小样本预注册→全市场验证；不在本轮 A6 调参。"
    },
    {
     "id": "WO-DW-DASH2-20261030",
@@ -2350,13 +2521,25 @@
     "status": "done",
     "owner": "DSH-Lead",
     "desc": "数据仓驾驶舱 v2：可下钻 KPI/来源详情/今日动态/挖掘时间线/治理路线/下载"
+   },
+   {
+    "id": "WO-ACAD-LCS1-PAGE-20261030",
+    "status": "done",
+    "owner": "STRAT1",
+    "desc": "LCS-1 课题页移动端修复：A6/数据冻结表窄屏卡片化，避免横切；仅前端。"
+   },
+   {
+    "id": "WO-INV-PAPER-UI-20261030",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "量化部 paper 前端页 /paper：NAV/现金/持仓/台账/hash-chain/风控限额只读展示 + /api/paper 数据口（新模块，无新增 Handler 方法）"
    }
   ],
   "counts": {
-   "aborted": 88,
-   "done": 1192,
-   "review": 4,
-   "doing": 29
+   "aborted": 89,
+   "done": 1208,
+   "review": 5,
+   "doing": 25
   }
  },
  "governance": [
@@ -2555,11 +2738,11 @@
     }
    ],
    "receipt": "offsite_remote_receipt.txt",
-   "age_hours": 25.3
+   "age_hours": 25.7
   },
   "supervisor": {
    "red": [],
-   "generated_at": "2026-10-30T01:20:01"
+   "generated_at": "2026-10-30T01:40:50"
   },
   "approvals": {
    "count": 2,
