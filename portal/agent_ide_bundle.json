@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 02:35",
+ "generated": "2026-10-30 02:38",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -320,15 +320,6 @@
    "project": "general"
   },
   {
-   "id": "WO-GUANYU-P55-20261030",
-   "desc": "legacy登记",
-   "status": "doing",
-   "owner": "GUANYU",
-   "branch": "task/WO-GUANYU-P55-20261030",
-   "created": "2026-10-30 02:29:53",
-   "project": "general"
-  },
-  {
    "id": "WO-ACAD-PROTO-20261030",
    "desc": "ACAD1 原型先行：策略独立工作台（青萍样板）+ ACAD1选池日历 + 鲁肃判断台 三原型；5175无登录；先样例/标注真实缺口，评审后再接数据。",
    "status": "doing",
@@ -336,6 +327,15 @@
    "branch": "task/WO-ACAD-PROTO-20261030",
    "created": "2026-10-30 02:33:20",
    "project": "quant"
+  },
+  {
+   "id": "WO-LEGION-OS-TOOLS2-20261030",
+   "desc": "/os-board+量化/情报页：搜索+分区折叠+下钻推广",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-OS-TOOLS2-20261030",
+   "created": "2026-10-30 02:38:26",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -3874,7 +3874,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 91,
+     "count": 93,
      "recent": [
       {
        "ts": "",
@@ -4019,7 +4019,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 91,
+     "count": 93,
      "recent": [
       {
        "ts": "",
@@ -4169,7 +4169,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 93,
+     "count": 95,
      "recent": [
       {
        "ts": "",
@@ -4320,7 +4320,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 93,
+     "count": 94,
      "recent": [
       {
        "ts": "",
@@ -4472,7 +4472,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 91,
+     "count": 93,
      "recent": [
       {
        "ts": "",
@@ -6371,14 +6371,7 @@
    ],
    "experience": "30 年工程治理经验：漏洞分级与补丁流程、失败测试基线修复、编码规范与门禁落地、技术债清欠与重复功能合并；证据驱动、逐项闭环，只出报告与工单不自行合并，开发动作限独立 worktree 提交+跑测试并交 L2 人签。",
    "dept_name": "研究院",
-   "dept_cn_title": "太学",
-   "tasks": [
-    {
-     "id": "WO-GUANYU-P55-20261030",
-     "desc": "legacy登记",
-     "status": "doing"
-    }
-   ]
+   "dept_cn_title": "太学"
   },
   "HUANGZHONG": {
    "id": "HUANGZHONG",
@@ -7056,6 +7049,11 @@
     {
      "id": "WO-AUDIT-FIX-20261029",
      "desc": "审计修复：hq_stats双计数、hk_r1_daily台账表格插入+去重+锁、kg zip strict",
+     "status": "doing"
+    },
+    {
+     "id": "WO-LEGION-OS-TOOLS2-20261030",
+     "desc": "/os-board+量化/情报页：搜索+分区折叠+下钻推广",
      "status": "doing"
     }
    ]
