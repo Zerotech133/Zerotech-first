@@ -3,18 +3,14 @@
 
 纯搬运：原 Handler 方法体 self→h；零行为变化。
 """
-import json
 import os
 import sys
-import time
-import os as _os
 from api_common import (
     QBT_DIR,
     pill_nav,
     _BTSEL_TAG,
     _PILL, _PILL_ON,
-    CANDLE_CN,
-    _LABELS_FP, _CARD_FB_FP)
+    CANDLE_CN)
 import logging
 
 def _kg_ask_page(h):
@@ -318,6 +314,7 @@ def _kg_label_page(h):
            "<span id='st'></span></div>"
            "<div id='wrap'><canvas id='cv'></canvas></div>"
            "<div class='dim' id='tip'></div>")
+    from api_kg import _KG_LABEL_JS  # noqa: E402  (拆分后常量仍在 api_kg；惰性导入避免循环)
     htm += "<script>\n" + _KG_LABEL_JS + "</script></body></html>"
     h._html(htm)
 
@@ -496,6 +493,7 @@ def _kg_card_page(h):
                     "<li>%s</li>" % e(q.get("note") or "") for q in qj))
     for p in ("1d", "30m", "5m"):
         htm += _lvl_block(p, (cd.get("levels") or {}).get(p), code)
+    from api_kg import _KG_CARD_JS  # noqa: E402  (同上)
     htm += _KG_CARD_JS + "</body></html>"
     h._html(htm)
 

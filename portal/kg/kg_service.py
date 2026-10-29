@@ -2,15 +2,8 @@
 """kg 数据/写入 helper（label/card save+diff）（P4 api_kg 拆分第一批：自 api_kg.py 纯搬运，零行为变化）。"""
 import json
 import os
-import sys
 import time
-import os as _os
 from api_common import (
-    QBT_DIR,
-    pill_nav,
-    _BTSEL_TAG,
-    _PILL, _PILL_ON,
-    CANDLE_CN,
     _LABELS_FP, _CARD_FB_FP)
 import logging
 

@@ -22,7 +22,6 @@ import json
 import os
 import sys
 import time
-from datetime import datetime
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_LEDGER = os.path.join(HERE, "data", "shadow", "shadow_ledger.jsonl")

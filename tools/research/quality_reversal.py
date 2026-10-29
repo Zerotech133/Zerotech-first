@@ -37,7 +37,9 @@ def run(days: int = 1250, split: float = 0.6, cost_bps: int = 15) -> dict:
     industry = es.load_industry()
     mv = es.load_total_mv(dates)
     neutral = es.neutral_maps(dates, rets, market, industry, mode="industry_size", mv=mv)
-    t0 = time.time(); fina = fs.load_fina(dates); print("fina_load", len(fina), round(time.time()-t0,1), flush=True)
+    t0 = time.time()
+    fina = fs.load_fina(dates)
+    print("fina_load", len(fina), round(time.time()-t0,1), flush=True)
     cost_pct = 2 * cost_bps / 100.0
     rebal = []
     for i, d in enumerate(dates):
@@ -127,7 +129,6 @@ def run(days: int = 1250, split: float = 0.6, cost_bps: int = 15) -> dict:
                             "spread": round(fs.stats(hi_pe)["mean"] - fs.stats(lo_pe)["mean"], 4)
                             if hi_pe and lo_pe else None}
         if seg == "OOS":
-            wpe = w.get("high") or w.get("mid") or {}
             out["pass"] = bool(w and all(v["ls"] < -0.3 for v in w.values()))
     return out
 
