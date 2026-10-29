@@ -40,3 +40,12 @@ def test_healthy_green(tmp_path, monkeypatch):
     monkeypatch.setattr(S, "_port_open", lambda port, host="127.0.0.1": True)
     r = S.run_checks(tmp_path)
     assert r["red"] is False
+
+
+def test_http_500_is_red(tmp_path, monkeypatch):
+    (tmp_path / ".worktrees").mkdir()
+    (tmp_path / ".worktrees/tasks.json").write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(S, "_http", lambda url, timeout=3: 500)
+    monkeypatch.setattr(S, "_port_open", lambda port, host="127.0.0.1": True)
+    r = S.run_checks(tmp_path)
+    assert r["red"] is True

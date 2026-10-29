@@ -40,7 +40,8 @@ def _append(path, rec):
         f.write(json.dumps(rec, ensure_ascii=False) + "\n")
 
 
-def handle_action(payload, ledger=None, allowed_ops=None, owner=None, now=None):
+def handle_action(payload, ledger=None, allowed_ops=None, owner=None,
+                  owner_ids=None, now=None):
     """返回 {ok, action, task, error?, duplicate?}；不修改任何审批门。"""
     ledger = Path(ledger or LEDGER)
     now = now or time.time()
@@ -57,7 +58,10 @@ def handle_action(payload, ledger=None, allowed_ops=None, owner=None, now=None):
         return {"ok": False, "error": "unknown_action"}
     if not task:
         return {"ok": False, "error": "missing_task"}
-    if owner and op == str(owner):  # 简单自审防护（owner 用 open_id 或占位）
+    owners = {str(x) for x in (owner_ids or []) if str(x)}
+    if owner:
+        owners.add(str(owner))
+    if owners and op in owners:  # 自审防护：owner/owner_ids 用 open_id
         return {"ok": False, "error": "self_approval_blocked"}
     rows = _read_jsonl(ledger)
     for r in rows:

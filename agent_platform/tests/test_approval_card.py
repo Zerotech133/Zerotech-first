@@ -22,3 +22,10 @@ def test_card_structure():
     tagsv = {v["tag"] for v in values}
     assert {"approval:approve", "approval:reject", "approval:escalate"} <= tagsv
     assert all(v["task"] == "WO-TEST" for v in values)
+
+
+def test_owner_ids_passed():
+    card = C.build_card("WO-TEST", "s", owner_ids=["ou_owner"])
+    values = [b["elements"][0]["behaviors"][0]["value"]
+              for b in card["body"]["elements"][-1]["columns"]]
+    assert all(v["owner_ids"] == ["ou_owner"] for v in values)
