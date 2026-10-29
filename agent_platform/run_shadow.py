@@ -642,6 +642,15 @@ def main():
         ):  # 脚本内重试一次（Ollama 偶发超时；幂等不受影响，done 才跳过）
             try:
                 data_ctx = make_context(symbol)
+                try:
+                    # WO-INV-CHAIN-20261030：ST1 策略旁路（只读周记）接入 D1 数据段
+                    from strategy_alpha_bridge import render_strategy_context
+                    _st1 = render_strategy_context()
+                    if _st1:
+                        data_ctx["final_decision"] = (
+                            str(data_ctx.get("final_decision") or "") + _st1)
+                except Exception as _exc:  # noqa: BLE001  旁路失败不阻塞 alpha
+                    print("[warn] ST1 策略旁路读取失败（继续 alpha）：%s" % _exc)
                 t0 = time.time()
                 result = interp.run(symbol, data_ctx=data_ctx)
                 dec = parse_decision(result["decision"])
