@@ -10,6 +10,19 @@
 """
 from __future__ import annotations
 
+import re
+
+
+_PATH_RE = re.compile(r"[A-Za-z]:\\[^\s；;，,）)]+")
+_SECRET_WORD_RE = re.compile(r"(?i)(token|secret|password|api[_-]?key)")
+
+
+def _sanitize_desc(text):
+    """脱敏：绝对路径→[path]，敏感词→***（WIP desc 只用于内部展示）。"""
+    s = _PATH_RE.sub("[path]", str(text or ""))
+    s = _SECRET_WORD_RE.sub("***", s)
+    return s
+
 
 def build_wip(tasks, seat_ids):
     """按席位聚合在制任务（doing/review），按工单号排序。"""
@@ -22,7 +35,7 @@ def build_wip(tasks, seat_ids):
             if t.get("status") not in ("doing", "review"):
                 continue
             rows.append({"id": tid, "status": t.get("status", ""),
-                         "desc": (t.get("desc") or "")[:120]})
+                         "desc": _sanitize_desc((t.get("desc") or "")[:120])})
         if rows:
             out.append({"owner": sid, "tasks": sorted(rows, key=lambda r: r["id"])})
     return out

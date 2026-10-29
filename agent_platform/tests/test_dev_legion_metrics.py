@@ -105,3 +105,14 @@ def test_api_has_governance():
     p = A.build_payload(A.ROOT)
     assert isinstance(p.get("governance"), dict)
     assert "merge_approval_coverage" in p["governance"]
+
+
+def test_wip_desc_sanitized():
+    tasks = {"T": {"owner": "DEV1", "status": "doing",
+                   "desc": r"路径 C:\项目\x token=abc；secret 文本"}}
+    wip = G.build_wip(tasks, ["DEV1"])
+    desc = wip[0]["tasks"][0]["desc"]
+    assert r"C:\项目" not in desc
+    assert "token" not in desc.lower()
+    assert "secret" not in desc.lower()
+    assert "[path]" in desc and "***" in desc
