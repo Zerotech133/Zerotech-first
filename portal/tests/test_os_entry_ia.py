@@ -30,6 +30,7 @@ def test_kpis_and_work_search():
 
 def test_row_drill_and_no_duplicate_ids():
     assert "os-row-drill" in HTML
+    assert "foldSuggestions" in HTML and "os-fold" in HTML
     assert "下钻处理" in HTML
     import re
     ids = re.findall(r'id="([^"]+)"', HTML)
