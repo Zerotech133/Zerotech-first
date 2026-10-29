@@ -503,8 +503,29 @@ def test_no_external_sdk_imported():
         "combo_review",
         "__future__",
     }, f"生成器只应依赖 stdlib + 板块内模块，实际: {sorted(imported)}"
-    for mod in ("lark_oapi", "httpx", "aiohttp", "feishu"):
-        assert mod not in _sys.modules, f"生成器不应加载对外推送 SDK: {mod}"
+    # 2026-10-30 P53：改为干净子进程验证。
+    # 原实现检查当前进程 sys.modules，会被 pytest 同目录其它测试模块（如
+    # test_feishu_push 在收集期 import httpx）污染 → 假失败（known_failure 之一）。
+    import subprocess
+
+    code = (
+        "import sys;"
+        "sys.path.insert(0, %r);"
+        "import report_builder;"  # noqa: F401
+        "bad=[m for m in ('lark_oapi','httpx','aiohttp','feishu') "
+        "if m in sys.modules];"
+        "print(','.join(bad));"
+        "sys.exit(1 if bad else 0)"
+    ) % str(HERE / "paper")
+    r = subprocess.run(
+        [_sys.executable, "-c", code],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        timeout=120,
+    )
+    assert r.returncode == 0, (
+        "生成器加载了对外推送 SDK：%s%s"
+        % (r.stdout.strip(), (r.stderr or "")[-300:])
+    )
 
 
 # ---------- 验收⑤：输出永远不含实盘字段 ----------
