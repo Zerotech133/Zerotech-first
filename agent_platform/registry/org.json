@@ -177,7 +177,20 @@
             "note": "盯盘只观察/预警；所有上行仅走 QUANT_UPSTREAM_REPORT 单一上行路；不直连飞书/投研/交易所；三类动作权限恒 False"
           },
           "llm_binding": "ollama/qwen3.5:9b",
-          "binding_note": "改档 llm_binding→ollama/qwen3.5:9b（工单 WO-LEGION-S41 / 放行人 老田）：旧格式档案无 llm_binding 字段（实走默认 9b），显式登记为 9b，零行为变更"
+          "binding_note": "改档 llm_binding→ollama/qwen3.5:9b（工单 WO-LEGION-S41 / 放行人 老田）：旧格式档案无 llm_binding 字段（实走默认 9b），显式登记为 9b，零行为变更",
+          "cn_name": "许褚",
+          "analysis_type": "watch",
+          "memory_grants": {
+            "read": [
+              "domain/*",
+              "dept/invest/*",
+              "agent/WA1/*"
+            ],
+            "write": [
+              "agent/WA1/*",
+              "dept/invest/observation"
+            ]
+          }
         },
         {
           "agent_id": "QS1",
@@ -216,12 +229,25 @@
             "note": "受理后由量化交易层决定三路分发（飞书信息/投研研判/交易所观察）；W-Q1 建设中，本席位先挂名待模块落地"
           },
           "llm_binding": "none",
-          "binding_note": "改档 llm_binding→ollama/qwen3.5:9b（工单 WO-LEGION-S41 / 放行人 老田）：旧格式档案无 llm_binding 字段（实走默认 9b），显式登记为 9b，零行为变更；改档 llm_binding→none（工单 WO-LEGION-S43 / 放行人 老田）：履历 identity.ack_semantics 明写「受理回执=ACK，受理不等于授权、不等于研判确认」，工具仅 upstream_inbox_ack；按规则执行体口径显式 none，不再回落 9b"
+          "binding_note": "改档 llm_binding→ollama/qwen3.5:9b（工单 WO-LEGION-S41 / 放行人 老田）：旧格式档案无 llm_binding 字段（实走默认 9b），显式登记为 9b，零行为变更；改档 llm_binding→none（工单 WO-LEGION-S43 / 放行人 老田）：履历 identity.ack_semantics 明写「受理回执=ACK，受理不等于授权、不等于研判确认」，工具仅 upstream_inbox_ack；按规则执行体口径显式 none，不再回落 9b",
+          "cn_name": "司马懿",
+          "analysis_type": "upstream_receive",
+          "memory_grants": {
+            "read": [
+              "domain/*",
+              "dept/invest/*",
+              "agent/QS1/*"
+            ],
+            "write": [
+              "agent/QS1/*",
+              "dept/invest/ack"
+            ]
+          }
         },
         {
           "agent_id": "T1",
-          "role_profile": "aggressive_technical_analyst",
-          "analysis_type": "",
+          "role_profile": "t1_bull",
+          "analysis_type": "market_technical",
           "charter_detail": "激进多头技术面分析：趋势分析（均线/通道）、动能判断（MACD/RSI）、量价配合、支撑阻力位、成长股挖掘、产能与订单拐点识别",
           "llm_binding": "ollama/qwen3.5:9b",
           "binding_note": "由 org_enroll 补档（工单 WO-ORG-221 / 放行人 老田）",
@@ -231,15 +257,26 @@
             "events"
           ],
           "tools_note": "补档初始为空，按工单另行授予",
-          "memory_grants": [],
+          "memory_grants": {
+            "read": [
+              "domain/*",
+              "dept/invest/*",
+              "agent/T1/*"
+            ],
+            "write": [
+              "agent/T1/*",
+              "dept/invest/observation"
+            ]
+          },
           "grade": "E2",
           "grade_note": "补档初始档，待 KPI 观察后调整",
-          "attributes": {}
+          "attributes": {},
+          "cn_name": "庞统"
         },
         {
           "agent_id": "T2",
-          "role_profile": "conservative_technical_analyst",
-          "analysis_type": "",
+          "role_profile": "t2_bear",
+          "analysis_type": "market_technical",
           "charter_detail": "保守空头技术面分析：上方压力识别（前高/套牢盘）、顶背离、量价背离、破位风险、流动性冲击情景推演",
           "llm_binding": "ollama/qwen3.5:9b",
           "binding_note": "由 org_enroll 补档（工单 WO-ORG-221 / 放行人 老田）",
@@ -249,49 +286,84 @@
             "events"
           ],
           "tools_note": "补档初始为空，按工单另行授予",
-          "memory_grants": [],
+          "memory_grants": {
+            "read": [
+              "domain/*",
+              "dept/invest/*",
+              "agent/T2/*"
+            ],
+            "write": [
+              "agent/T2/*",
+              "dept/invest/observation"
+            ]
+          },
           "grade": "E2",
           "grade_note": "补档初始档，待 KPI 观察后调整",
-          "attributes": {}
+          "attributes": {},
+          "cn_name": "贾诩"
         },
         {
           "agent_id": "N1",
-          "role_profile": "sentiment_analyst",
-          "analysis_type": "",
+          "role_profile": "n1_sentiment",
+          "analysis_type": "news_event",
           "charter_detail": "情绪面分析：公告与事件冲击判读、行业政策风向、市场情绪指数、资金偏好、舆情热度、传闻降权",
           "llm_binding": "ollama/qwen3.5:9b",
           "binding_note": "由 org_enroll 补档（工单 WO-ORG-221 / 放行人 老田）",
           "tools": [
+            "events_for_stock",
             "kline_daily",
             "quote_snapshot"
           ],
           "tools_note": "补档初始为空，按工单另行授予",
-          "memory_grants": [],
+          "memory_grants": {
+            "read": [
+              "domain/*",
+              "dept/invest/*",
+              "agent/N1/*"
+            ],
+            "write": [
+              "agent/N1/*",
+              "dept/invest/observation"
+            ]
+          },
           "grade": "E2",
           "grade_note": "补档初始档，待 KPI 观察后调整",
-          "attributes": {}
+          "attributes": {},
+          "cn_name": "许劭"
         },
         {
           "agent_id": "F1",
-          "role_profile": "fundamental_analyst",
-          "analysis_type": "",
+          "role_profile": "f1_fundamental",
+          "analysis_type": "fundamental",
           "charter_detail": "基本面分析：营收与利润趋势、盈利质量（现金流/应收）、估值分位（PE/PB）、行业景气位判断",
           "llm_binding": "ollama/qwen3.5:9b",
           "binding_note": "由 org_enroll 补档（工单 WO-ORG-221 / 放行人 老田）",
           "tools": [
-            "quote_snapshot",
-            "make_context"
+            "datamart_read",
+            "make_context",
+            "quote_snapshot"
           ],
           "tools_note": "补档初始为空，按工单另行授予",
-          "memory_grants": [],
+          "memory_grants": {
+            "read": [
+              "domain/*",
+              "dept/invest/*",
+              "agent/F1/*"
+            ],
+            "write": [
+              "agent/F1/*",
+              "dept/invest/observation"
+            ]
+          },
           "grade": "E2",
           "grade_note": "补档初始档，待 KPI 观察后调整",
-          "attributes": {}
+          "attributes": {},
+          "cn_name": "荀彧"
         },
         {
           "agent_id": "D1",
-          "role_profile": "decision_chief",
-          "analysis_type": "",
+          "role_profile": "d1_decision",
+          "analysis_type": "final_decision",
           "charter_detail": "最终决策官：多方权衡裁决、五档推荐输出、置信度校准、辩论质量评估；汇总 T1/T2/N1/F1 四线分析出最终结论，须署名与可追溯",
           "llm_binding": "glm/glm-5.3",
           "binding_note": "由 org_enroll 补档（工单 WO-ORG-221 / 放行人 老田）",
@@ -301,14 +373,29 @@
             "events"
           ],
           "tools_note": "补档初始为空，按工单另行授予",
-          "memory_grants": [],
+          "memory_grants": {
+            "read": [
+              "domain/*",
+              "dept/invest/*",
+              "agent/D1/*",
+              "agent/T1/*",
+              "agent/T2/*",
+              "agent/N1/*",
+              "agent/F1/*"
+            ],
+            "write": [
+              "agent/D1/*",
+              "dept/invest/decision"
+            ]
+          },
           "grade": "E3",
           "grade_note": "补档初始档，待 KPI 观察后调整",
           "attributes": {},
           "llm_fallback": [
             "deepseek/deepseek-flash",
             "ollama/qwen3.5:9b"
-          ]
+          ],
+          "cn_name": "鲁肃"
         }
       ],
       "lead_appointed": {
