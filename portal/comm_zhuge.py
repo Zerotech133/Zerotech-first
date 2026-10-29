@@ -253,8 +253,6 @@ def _reflect_for(text, grounding):
                            memories=g.get("memory")) if mod else None
     except Exception:  # noqa: BLE001
         return None
-    except Exception:  # noqa: BLE001
-        return text
 
 
 def enabled():
