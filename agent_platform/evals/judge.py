@@ -65,13 +65,38 @@ def _consume() -> bool:
 
 
 def _parse(text: str) -> dict:
-    m = re.search(r"\{.*\}", str(text or ""), re.S)
+    raw = str(text or "")
+    m = re.search(r"\{.*\}", raw, re.S)
     if not m:
-        return {"ok": False, "error": "no_json_in_reply"}
+        score_m = re.search(r'"score"\s*:\s*([1-5])', raw)
+        if not score_m:
+            return {"ok": False, "error": "no_json_in_reply"}
+        rationale_m = re.search(r'"rationale"\s*:\s*"([^"]*)', raw)
+        return {
+            "ok": True,
+            "score": int(score_m.group(1)),
+            "rationale": (rationale_m.group(1) if rationale_m else "")[:300],
+            "flags": [],
+            "partial": True,
+            "note": "模型输出截断，仅提取已生成的 score/rationale",
+        }
     try:
         data = json.loads(m.group(0))
     except ValueError:
-        return {"ok": False, "error": "bad_json_in_reply"}
+        # 模型可能在 flags 数组中途被 max_tokens 截断；只从文本安全提取已生成的
+        # score/rationale，不补造 flags，也不把无 score 的文本当有效评审。
+        score_m = re.search(r'"score"\s*:\s*([1-5])', raw)
+        if not score_m:
+            return {"ok": False, "error": "bad_json_in_reply"}
+        rationale_m = re.search(r'"rationale"\s*:\s*"([^"]*)', raw)
+        return {
+            "ok": True,
+            "score": int(score_m.group(1)),
+            "rationale": (rationale_m.group(1) if rationale_m else "")[:300],
+            "flags": [],
+            "partial": True,
+            "note": "模型输出截断，仅提取已生成的 score/rationale",
+        }
     try:
         score = int(data.get("score"))
     except (TypeError, ValueError):
@@ -147,7 +172,7 @@ def judge_text(
             "raw": str(res.get("text") or "")[:300],
             "budget": budget(),
         }
-    return {
+    result = {
         "ok": True,
         "score": parsed["score"],
         "rationale": parsed["rationale"],
@@ -158,6 +183,10 @@ def judge_text(
         "budget": budget(),
         "judged_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
     }
+    if parsed.get("partial"):
+        result["partial"] = True
+        result["note"] = parsed.get("note")
+    return result
 
 
 def judge_latest(limit: int = 3, adapters: dict | None = None) -> dict:
