@@ -1,0 +1,44 @@
+{
+ "schema": "seat_iteration/v1",
+ "seat": "DEV8",
+ "cn_name": "",
+ "role_title": "前端工程师",
+ "discipline": "frontend",
+ "group": "G2",
+ "grade": "E2",
+ "mentor": "DEV5",
+ "version": 1,
+ "baseline": {
+  "specialties": [
+   "页面与图表组件交付",
+   "tokens 纪律执行",
+   "暗色主题与响应式适配"
+  ],
+  "certified": false,
+  "level": "v1"
+ },
+ "iteration": {
+  "id": "IT1",
+  "start": "2026-10-29",
+  "target_capability": "数据可视化与空错态",
+  "learning": {
+   "material": "作战屏 v1/v1.1 页面",
+   "status": "planned",
+   "evidence": ""
+  },
+  "practice": {
+   "tid": "WO-P0-DEV8-METRICS-20261027",
+   "acceptance": "有/无真源两态 PASS",
+   "status": "planned",
+   "evidence": ""
+  },
+  "assessment": {
+   "method": "导师评审 + 工单验收 + 证据",
+   "mentor": "DEV5",
+   "status": "planned",
+   "evidence": ""
+  }
+ },
+ "history": [],
+ "updated_at": "2026-10-29"
+}

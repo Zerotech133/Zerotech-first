@@ -1,0 +1,44 @@
+{
+ "schema": "seat_iteration/v1",
+ "seat": "DEV6",
+ "cn_name": "",
+ "role_title": "后端工程师",
+ "discipline": "backend",
+ "group": "G1",
+ "grade": "E2",
+ "mentor": "DEV1",
+ "version": 1,
+ "baseline": {
+  "specialties": [
+   "REST API 与服务端功能交付",
+   "数据处理与运维脚本",
+   "接口联调与灰度验证"
+  ],
+  "certified": false,
+  "level": "v1"
+ },
+ "iteration": {
+  "id": "IT1",
+  "start": "2026-10-29",
+  "target_capability": "数据管道与可观测",
+  "learning": {
+   "material": "dev_metrics_daily + 指标口径",
+   "status": "planned",
+   "evidence": ""
+  },
+  "practice": {
+   "tid": "WO-P0-DEV6-TRACE-20261027",
+   "acceptance": "验收 rc0 + 指标可解释",
+   "status": "planned",
+   "evidence": ""
+  },
+  "assessment": {
+   "method": "导师评审 + 工单验收 + 证据",
+   "mentor": "DEV1",
+   "status": "planned",
+   "evidence": ""
+  }
+ },
+ "history": [],
+ "updated_at": "2026-10-29"
+}

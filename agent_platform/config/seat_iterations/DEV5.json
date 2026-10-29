@@ -1,0 +1,45 @@
+{
+ "schema": "seat_iteration/v1",
+ "seat": "DEV5",
+ "cn_name": "",
+ "role_title": "前端工程师 · G2 组长",
+ "discipline": "frontend",
+ "group": "G2",
+ "grade": "E3",
+ "mentor": "ARCH1",
+ "version": 1,
+ "baseline": {
+  "specialties": [
+   "设计系统与 tokens 治理",
+   "门户/大屏版面架构",
+   "前端质量三关（语法/死引用/实测）",
+   "Demo 先行流程"
+  ],
+  "certified": false,
+  "level": "v1"
+ },
+ "iteration": {
+  "id": "IT1",
+  "start": "2026-10-29",
+  "target_capability": "前端设计 tokens 与组件规范",
+  "learning": {
+   "material": "tokens.css + unify_nav + 设计规范",
+   "status": "planned",
+   "evidence": ""
+  },
+  "practice": {
+   "tid": "WO-P0-DEV5-EVALCASES-20261027",
+   "acceptance": "三件套 PASS + 无自绘色",
+   "status": "planned",
+   "evidence": ""
+  },
+  "assessment": {
+   "method": "导师评审 + 工单验收 + 证据",
+   "mentor": "ARCH1",
+   "status": "planned",
+   "evidence": ""
+  }
+ },
+ "history": [],
+ "updated_at": "2026-10-29"
+}

@@ -1,0 +1,45 @@
+{
+ "schema": "seat_iteration/v1",
+ "seat": "ARCH1",
+ "cn_name": "曹操",
+ "role_title": "研发主官 · 架构师",
+ "discipline": "architecture",
+ "group": "",
+ "grade": "E3",
+ "mentor": "A0",
+ "version": 1,
+ "baseline": {
+  "specialties": [
+   "架构评审与技术选型",
+   "跨部门方案终审",
+   "ADR 决策记录治理",
+   "疑难技术攻关"
+  ],
+  "certified": false,
+  "level": "v1"
+ },
+ "iteration": {
+  "id": "IT1",
+  "start": "2026-10-29",
+  "target_capability": "研发计划拆解与验收标准",
+  "learning": {
+   "material": "总纲 §5/§6 + WBS 模板",
+   "status": "planned",
+   "evidence": ""
+  },
+  "practice": {
+   "tid": "待定（下一任务）",
+   "acceptance": "WBS 样例评审通过 + 计划可执行",
+   "status": "planned",
+   "evidence": ""
+  },
+  "assessment": {
+   "method": "导师评审 + 工单验收 + 证据",
+   "mentor": "A0",
+   "status": "planned",
+   "evidence": ""
+  }
+ },
+ "history": [],
+ "updated_at": "2026-10-29"
+}
