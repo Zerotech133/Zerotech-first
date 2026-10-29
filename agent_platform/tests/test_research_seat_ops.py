@@ -8,6 +8,7 @@
 import json
 import subprocess
 import sys
+from datetime import datetime, timedelta
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
@@ -240,6 +241,38 @@ def test_back1_dispatch_detected(tmp_path):
     assert suggested in text
     assert "BACK1" in text
     assert "pending=0 / dispatched=1" in text
+
+
+def test_back1_overdue_doing_escalation(tmp_path):
+    root = _mkroot(tmp_path)
+    wt = root / ".worktrees"
+    wt.mkdir()
+    old = (datetime.now() - timedelta(hours=30)).strftime("%Y-%m-%d %H:%M:%S")
+    new = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    (wt / "tasks.json").write_text(
+        json.dumps(
+            {
+                "WO-OLD": {"status": "doing", "owner": "DATA1", "created": old,
+                           "desc": "冻结回执"},
+                "WO-NEW": {"status": "doing", "owner": "BACK1", "created": new,
+                           "desc": "新单"},
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    proc = _run(root, "back1")
+    assert proc.returncode == 0, proc.stderr
+    brief = next(
+        (root / "agent_platform" / "data" / "academy" / "ops" / "back1").glob(
+            "*_brief.md"
+        )
+    )
+    text = _read(brief)
+    assert "超期 doing" in text
+    assert "WO-OLD" in text
+    assert "WO-NEW" not in text
+    assert "ESCALATE" in text
 
 
 def test_weekly_both(tmp_path):
