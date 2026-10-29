@@ -11,6 +11,8 @@ payload 关键结构（飞书卡片回调）：
 from __future__ import annotations
 
 import json
+import os
+import threading
 import time
 from pathlib import Path
 
@@ -33,11 +35,20 @@ def _read_jsonl(path):
     return rows
 
 
+_APPEND_LOCK = threading.Lock()
+
+
 def _append(path, rec):
+    """O_APPEND 单次写，避免多进程/线程交错半行。"""
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
-    with p.open("a", encoding="utf-8") as f:
-        f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    line = (json.dumps(rec, ensure_ascii=False) + "\n").encode("utf-8")
+    with _APPEND_LOCK:
+        fd = os.open(str(p), os.O_APPEND | os.O_CREAT | os.O_WRONLY, 0o644)
+        try:
+            os.write(fd, line)
+        finally:
+            os.close(fd)
 
 
 def handle_action(payload, ledger=None, allowed_ops=None, owner=None,

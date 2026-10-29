@@ -50,10 +50,35 @@ def _port_open(port, host="127.0.0.1"):
         s.close()
 
 
+def _task_event_times(root):
+    """从 dev_events.jsonl 取每单最近事件时间戳。"""
+    out = {}
+    path = Path(root) / "portal" / "data" / "dev_events.jsonl"
+    try:
+        lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return out
+    for line in lines:
+        try:
+            e = json.loads(line)
+        except Exception:  # noqa: BLE001
+            continue
+        task = str(e.get("task") or "")
+        stamp = str(e.get("ts") or e.get("day") or "")
+        try:
+            ts = time.mktime(time.strptime(stamp[:19], "%Y-%m-%d %H:%M:%S"))
+        except Exception:  # noqa: BLE001
+            continue
+        if task:
+            out[task] = max(out.get(task, 0), ts)
+    return out
+
+
 def run_checks(root=None, now=None):
     root = Path(root or ROOT)
     now = now or time.time()
     tasks = _load(root / ".worktrees/tasks.json", {})
+    last_ev = _task_event_times(root)
     checks = {"L1_回执": [], "L3_审计": [], "L4_环境": []}
     # L1：dev 在制超 24h 未更新（用 created 判断旧单）
     for tid, t in (tasks or {}).items():
@@ -68,6 +93,7 @@ def run_checks(root=None, now=None):
             ts = time.mktime(time.strptime(created[:19], "%Y-%m-%d %H:%M:%S"))
         except Exception:  # noqa: BLE001
             continue
+        ts = max(ts, last_ev.get(tid, 0))
         if now - ts > 86400:
             checks["L1_回执"].append({
                 "id": tid, "owner": t.get("owner"), "status": t.get("status"),
