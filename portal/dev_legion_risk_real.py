@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import statistics
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -52,8 +53,21 @@ def build_risk_real(root=None):
         return None
     out = {}
     as_of = ""
+
+    def _date_of(r):
+        d = r.get("date")
+        if isinstance(d, str) and d:
+            return d
+        ts = r.get("ts")
+        if isinstance(ts, (int, float)):
+            try:
+                return time.strftime("%Y-%m-%d", time.localtime(float(ts)))
+            except (ValueError, OSError, OverflowError):
+                return ""
+        return ""
+
     if shadow:
-        last_date = max(str(r.get("date") or r.get("ts") or "") for r in shadow)
+        last_date = max(_date_of(r) for r in shadow)
         status = {}
         for r in shadow:
             s = str(r.get("status") or "unknown")
