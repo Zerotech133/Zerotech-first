@@ -1553,6 +1553,40 @@ def _timed(name):
         _MERGE_TIMINGS.append((name, time.perf_counter() - t0))
 
 
+def _print_dirty_board(max_age_hours=4.0):
+    """合并成功后打印脏文件看板（P51，2026-10-30）。
+
+    目的：把「并行会话留下未提交文件」的 owner/年龄直接带到合并输出里，
+    减少停摆后的跨会话沟通成本。纯提示，不阻断；DEVTOOL_NO_DIRTY_BOARD=1 关闭。
+    """
+    if os.environ.get("DEVTOOL_NO_DIRTY_BOARD") == "1":
+        return
+    try:
+        tools_dir = os.path.dirname(os.path.abspath(__file__))
+        if tools_dir not in sys.path:
+            sys.path.insert(0, tools_dir)
+        import check_dirty as _cd
+        rows = _cd.build_rows()
+    except Exception:  # noqa: BLE001 —— 看板失败不影响合并
+        return
+    if not rows:
+        print("  [脏文件看板] 工作区干净（无未提交跟踪文件）")
+        return
+    overdue = [r for r in rows if (r.get("age_hours") or 0) > max_age_hours]
+    print("  [脏文件看板] %d 个未提交文件（>%.0fh %d 个）；owner≈文件最近提交者"
+          % (len(rows), max_age_hours, len(overdue)))
+    for r in rows[:8]:
+        age = r.get("age_hours") or 0
+        flag = "!" if age > max_age_hours else " "
+        print("    %s %5.1fh  %-46s owner≈%s"
+              % (flag, age, r.get("path"), r.get("owner_hint") or "?"))
+    if len(rows) > 8:
+        print("    … 其余 %d 个：python tools/check_dirty.py --strict"
+              % (len(rows) - 8))
+    if overdue:
+        print("  协议：>2h 提醒 owner；>4h 工单注明；>8h 升级 A0")
+
+
 def _print_merge_timings(tid):
     """打印并落盘分段耗时（供持续定位静态门开销）。"""
     if not _MERGE_TIMINGS:
@@ -1746,6 +1780,7 @@ def cmd_merge(tid, *flags):
     if t.get("worktree"):
         print("→ 分支已合并、工作区干净，可执行 `git worktree remove %s` 回收"
               % t["worktree"])
+    _print_dirty_board()
     _print_merge_timings(tid)
     return 0
 
