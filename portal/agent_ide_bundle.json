@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 01:21",
+ "generated": "2026-10-30 01:22",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 26,
+  "workorders_doing": 25,
   "workorders_review": 4
  },
  "workorders": [
@@ -273,15 +273,6 @@
    "branch": "task/WO-P2-FIX-20261030",
    "created": "2026-10-30 01:00:46",
    "project": "general"
-  },
-  {
-   "id": "WO-INV-PAPER-OBS-20261030",
-   "desc": "paper 上线前可观测：C6 日报增加 paper NAV/仓位/台账/hash-chain/kill 指标 + kill switch 演练测试",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-INV-PAPER-OBS-20261030",
-   "created": "2026-10-30 01:17:54",
-   "project": "portal"
   }
  ],
  "coder_traces": [
