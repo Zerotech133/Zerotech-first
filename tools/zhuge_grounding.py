@@ -50,9 +50,19 @@ def _keywords(question: str) -> list[str]:
     return terms[:40]
 
 
+def _rag_enabled() -> bool:
+    """RAG 开关：on/off/auto；auto 仅在本地索引存在时启用。"""
+    switch = os.environ.get("ZHUGE_RAG", "auto").strip().lower()
+    if switch in ("0", "false", "no", "off"):
+        return False
+    if switch in ("1", "true", "yes", "on"):
+        return True
+    return (_root() / "work" / "p1" / "rag" / "index.json").is_file()
+
+
 def _rag_retrieve(question: str, limit: int) -> list[dict] | None:
-    """ZHUGE_RAG=1 时优先 BM25；失败返回 None 由关键词兜底。"""
-    if os.environ.get("ZHUGE_RAG", "").strip().lower() not in ("1", "true", "yes", "on"):
+    """RAG on/auto 且索引可用时优先 BM25；失败返回 None 由关键词兜底。"""
+    if not _rag_enabled():
         return None
     try:
         tools_dir = str(Path(__file__).resolve().parent)
@@ -138,7 +148,7 @@ def _log_usage(question: str, sources: list[dict], elapsed_ms: float) -> None:
             "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
             "q_sha256_12": hashlib.sha256((question or "").encode("utf-8")).hexdigest()[:12],
             "q_chars": len(question or ""),
-            "rag_enabled": os.environ.get("ZHUGE_RAG", "").strip().lower() in ("1", "true", "yes", "on"),
+            "rag_enabled": _rag_enabled(),
             "source_count": len(sources),
             "source_paths": [s.get("path") for s in sources[:5]],
             "elapsed_ms": round(elapsed_ms, 1),
