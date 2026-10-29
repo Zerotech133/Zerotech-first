@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-29 10:29",
+ "generated": "2026-10-29 10:33",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 50,
+  "workorders_doing": 49,
   "workorders_review": 6
  },
  "workorders": [
@@ -507,15 +507,6 @@
    "branch": "task/WO-LCS1-HARNESS-MIN-20261029",
    "created": "2026-10-29 10:06:29",
    "project": "quant"
-  },
-  {
-   "id": "WO-APIKG-SPLIT4-20261029",
-   "desc": "api_kg页族第四批：canvas/canvas_v2迁移，目标≤1200行",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-APIKG-SPLIT4-20261029",
-   "created": "2026-10-29 10:26:40",
-   "project": "general"
   }
  ],
  "coder_traces": [
@@ -7194,11 +7185,6 @@
     {
      "id": "WO-HK-R1-AUTO2-20261029",
      "desc": "HK R1两周观察每日跑批脚本（dry-run默认/--append追加台账）—重建",
-     "status": "doing"
-    },
-    {
-     "id": "WO-APIKG-SPLIT4-20261029",
-     "desc": "api_kg页族第四批：canvas/canvas_v2迁移，目标≤1200行",
      "status": "doing"
     }
    ]
