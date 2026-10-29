@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 01:08",
+ "generated": "2026-10-30 01:10",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 31,
+  "workorders_doing": 32,
   "workorders_review": 4
  },
  "workorders": [
@@ -311,15 +311,6 @@
    "project": "general"
   },
   {
-   "id": "WO-GUANYU-P45-20261030",
-   "desc": "合并锁收窄",
-   "status": "doing",
-   "owner": "GUANYU",
-   "branch": "task/WO-GUANYU-P45-20261030",
-   "created": "2026-10-30 01:01:28",
-   "project": "general"
-  },
-  {
    "id": "WO-INV-PAPER-AUTO-20261030",
    "desc": "paper 自动跑：run_shadow 17:10 完成后内置调用 paper_daily（无新增计划任务/L2；rehearsal/隔离跳过；PAPER_AUTO=0 关闭）+测试",
    "status": "doing",
@@ -327,6 +318,24 @@
    "branch": "task/WO-INV-PAPER-AUTO-20261030",
    "created": "2026-10-30 01:06:44",
    "project": "portal"
+  },
+  {
+   "id": "WO-LEGION-JUDGE-TRUNC-20261030",
+   "desc": "LLM judge：截断输出安全提取 score/rationale；不伪造；补测试",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-JUDGE-TRUNC-20261030",
+   "created": "2026-10-30 01:08:53",
+   "project": "general"
+  },
+  {
+   "id": "WO-DW-COCKPIT-20261030",
+   "desc": "数据仓驾驶舱 v2：可下钻 KPI/来源详情/今日动态/挖掘时间线/治理路线/下载",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-DW-COCKPIT-20261030",
+   "created": "2026-10-30 01:10:10",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -6314,14 +6323,7 @@
    ],
    "experience": "30 年工程治理经验：漏洞分级与补丁流程、失败测试基线修复、编码规范与门禁落地、技术债清欠与重复功能合并；证据驱动、逐项闭环，只出报告与工单不自行合并，开发动作限独立 worktree 提交+跑测试并交 L2 人签。",
    "dept_name": "研究院",
-   "dept_cn_title": "太学",
-   "tasks": [
-    {
-     "id": "WO-GUANYU-P45-20261030",
-     "desc": "合并锁收窄",
-     "status": "doing"
-    }
-   ]
+   "dept_cn_title": "太学"
   },
   "HUANGZHONG": {
    "id": "HUANGZHONG",
@@ -6982,6 +6984,11 @@
     {
      "id": "WO-MEETING-XSS-20261030",
      "desc": "meeting.html 动态文本转义（4处innerHTML防存储型XSS，保留显式HTML模板）",
+     "status": "doing"
+    },
+    {
+     "id": "WO-LEGION-JUDGE-TRUNC-20261030",
+     "desc": "LLM judge：截断输出安全提取 score/rationale；不伪造；补测试",
      "status": "doing"
     }
    ]
