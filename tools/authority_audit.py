@@ -232,10 +232,11 @@ def render_html(m):
         "<tr><th>红线</th><th>当前值</th><th>状态</th></tr>",
         *rows,
         "</table>",
-        "<p class='muted'>决策数（ADR）：%s；dev 完成单 %s / 有署名 %s / 缺署名 %s / "
-        "自审自批 %s；ARCH1 指挥动作(7d) %s</p>"
+        "<p class='muted'>决策数（ADR）：%s；dev 完成单 %s / 有署名 %s / "
+        "新单缺署名 %s / 历史缺 %s / 自审自批 %s；ARCH1 指挥动作(7d) %s</p>"
         % (m["adr_count"], m["dev"]["done"], m["dev"]["approved"],
-           m["dev"]["missing"], m["dev"]["self_review"], m["arch1_actions_7d"]),
+           m["dev"]["missing"], m["dev"].get("historical_missing", 0),
+           m["dev"]["self_review"], m["arch1_actions_7d"]),
         "</body>",
         "</html>",
     ]
