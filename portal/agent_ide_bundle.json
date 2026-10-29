@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-29 23:58",
+ "generated": "2026-10-30 00:07",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,8 +9,8 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 22,
-  "workorders_review": 4
+  "workorders_doing": 23,
+  "workorders_review": 3
  },
  "workorders": [
   {
@@ -20,15 +20,6 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-REDTEAM-JUDGE-20261027",
    "created": "2026-10-27 15:02:40",
-   "project": "general"
-  },
-  {
-   "id": "WO-GUANYU-B4-20261027",
-   "desc": "B4机械修 [UNOWNED]",
-   "status": "review",
-   "owner": "DEV4",
-   "branch": "task/WO-GUANYU-B4-20261027",
-   "created": "2026-10-27 15:13:23",
    "project": "general"
   },
   {
@@ -246,6 +237,15 @@
    "branch": "task/K-QUANT-20261029-IDESTANDALONE",
    "created": "2026-10-29 23:35:43",
    "project": "quant"
+  },
+  {
+   "id": "WO-INV-STAFF-AUDIT-20261030",
+   "desc": "鲁肃军团人员就位/模型/能力配置审计与修复：8席 org profile 同步（cn_name/role_profile/analysis_type/memory/tools）、team_invest 工具与 fallback 对齐、补 n1_sentiment/quant_analyst prompts、新增 invest_staff_audit 审计器+测试",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-INV-STAFF-AUDIT-20261030",
+   "created": "2026-10-30 00:04:19",
+   "project": "portal"
   }
  ],
  "coder_traces": [
@@ -2768,14 +2768,7 @@
    ],
    "experience": "20 年回测与风控复核经验：BacktestEngine 执行、冻结判据下的 Go/No-Go 独立表态、结果登记 domain/backtest_registry；判据冻结期内不改判据是职业底线。",
    "dept_name": "研发部",
-   "dept_cn_title": "将作监",
-   "tasks": [
-    {
-     "id": "WO-GUANYU-B4-20261027",
-     "desc": "B4机械修 [UNOWNED]",
-     "status": "review"
-    }
-   ]
+   "dept_cn_title": "将作监"
   },
   "DEV5": {
    "id": "DEV5",
