@@ -383,15 +383,6 @@
    "project": "quant"
   },
   {
-   "id": "WO-GUANYU-P23B-20261029",
-   "desc": "flaky登记B [UNOWNED]",
-   "status": "doing",
-   "owner": "unknown-agent",
-   "branch": "task/WO-GUANYU-P23B-20261029",
-   "created": "2026-10-29 08:20:01",
-   "project": "general"
-  },
-  {
    "id": "WO-GUANYU-P21B-20261029",
    "desc": "lint修复B [UNOWNED]",
    "status": "doing",
@@ -408,6 +399,15 @@
    "branch": "task/WO-D1-OUTCOME-20261029",
    "created": "2026-10-29 08:20:32",
    "project": "portal"
+  },
+  {
+   "id": "WO-LEGION-MAPI-F601-20261029",
+   "desc": "m_api F601 收尾：ok 状态保留，发送计数改名 ok_count；补回归测试",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-MAPI-F601-20261029",
+   "created": "2026-10-29 08:21:31",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -7064,6 +7064,11 @@
     {
      "id": "WO-HQ-ACCEPT-RESTORE-20261029",
      "desc": "恢复 P1b 文件：auto-bundle chore 104ac8f95 误删 5 文件",
+     "status": "doing"
+    },
+    {
+     "id": "WO-LEGION-MAPI-F601-20261029",
+     "desc": "m_api F601 收尾：ok 状态保留，发送计数改名 ok_count；补回归测试",
      "status": "doing"
     }
    ]
