@@ -1,41 +1,39 @@
 {
- "_note": "测试门禁既存失败/flaky 基线（GY-01，2026-10-27；2026-10-28 修订）。known_failures=任何环境都登记；env_failures=数据/环境依赖失败（含行情湖未更新到当日、worktree 无数据根），任何位置都登记但单独列出；flaky=顺序依赖。新增失败必须修或正式登记，不得直接加白。",
- "portal/tests": {
-  "known_failures": [],
-  "flaky": []
- },
- "k_stock/tests": {
-  "known_failures": [
-   "k_stock/tests/test_report_builder.py::test_no_external_sdk_imported",
-   "k_stock/tests/test_riskguard_topics.py::test_markdown_renders_conclusion_and_groups"
-  ],
-  "flaky": [],
-  "env_failures": [
-   "k_stock/tests/test_datafeed_watchlist.py::TestLakeCode::test_mapping_hits_real_lake_files",
-   "k_stock/tests/test_datafeed_watchlist.py::TestWatchlistFromQuotes::test_prefix_codes_resurface_and_gb_skipped",
-   "k_stock/tests/test_paper_cli.py::test_mark_default_us_failure_is_nonzero_and_no_false_us_row",
-   "k_stock/tests/test_paper_cli.py::test_mark_all_real_engine_cash_only_accounts",
-   "k_stock/tests/test_period_summary.py::test_cn_accounts_normal"
-  ]
- },
- "agent_platform/tests": {
-  "known_failures": [],
-  "flaky": [
-   "agent_platform/tests/test_heartbeat.py::SafetyValveTests::test_bad_checked_at_rejected",
-   "agent_platform/tests/test_repair_lane.py::test_create_and_run_batch",
-   "agent_platform/tests/test_legion_command.py::test_minutes_bad_length_rejected",
-   "agent_platform/tests/test_monday_drill.py::test_read_only_no_side_effects",
-   "agent_platform/tests/test_sandbox.py::test_real_skill_verify_ok",
-   "agent_platform/tests/test_sign_tools.py::test_sign_verify_roundtrip",
-   "agent_platform/tests/test_devtask_owner_domain.py::TestIllegalOwnerDegraded::test_空owner判非法并降级",
-   "agent_platform/tests/test_legion_command.py::test_activity_mapping_covers_real_tasks",
-   "agent_platform/tests/test_legion_command.py::test_activity_maps_known_prefixes"
-  ],
-  "_flaky_note": "2026-10-27 全量实测已知 2 项顺序 flaky；2026-10-28 复测：minutes_bad_length/monday_read_only 单项通过全量失败已补；sandbox_real_skill_verify/sign_verify/owner_domain空owner/activity×2 均单项通过、全量失败，已补入 flaky（跟踪，回归时移除）。"
- },
- "quant_backtest/tests": {
-  "known_failures": [],
-  "flaky": [],
-  "note": "全量 >20min，建议夜间窗口跑；当前仅要求 0 收集错误"
- }
+  "_note": "测试门禁既存失败/flaky 基线（GY-01，2026-10-27；2026-10-28 修订）。known_failures=任何环境都登记；env_failures=数据/环境依赖失败（含行情湖未更新到当日、worktree 无数据根），任何位置都登记但单独列出；flaky=顺序依赖。新增失败必须修或正式登记，不得直接加白。",
+  "portal/tests": {
+    "known_failures": [],
+    "flaky": []
+  },
+  "k_stock/tests": {
+    "known_failures": [
+      "k_stock/tests/test_report_builder.py::test_no_external_sdk_imported",
+      "k_stock/tests/test_riskguard_topics.py::test_markdown_renders_conclusion_and_groups"
+    ],
+    "flaky": [],
+    "env_failures": [
+      "k_stock/tests/test_datafeed_watchlist.py::TestLakeCode::test_mapping_hits_real_lake_files",
+      "k_stock/tests/test_datafeed_watchlist.py::TestWatchlistFromQuotes::test_prefix_codes_resurface_and_gb_skipped",
+      "k_stock/tests/test_period_summary.py::test_cn_accounts_normal"
+    ]
+  },
+  "agent_platform/tests": {
+    "known_failures": [],
+    "flaky": [
+      "agent_platform/tests/test_heartbeat.py::SafetyValveTests::test_bad_checked_at_rejected",
+      "agent_platform/tests/test_repair_lane.py::test_create_and_run_batch",
+      "agent_platform/tests/test_legion_command.py::test_minutes_bad_length_rejected",
+      "agent_platform/tests/test_monday_drill.py::test_read_only_no_side_effects",
+      "agent_platform/tests/test_sandbox.py::test_real_skill_verify_ok",
+      "agent_platform/tests/test_sign_tools.py::test_sign_verify_roundtrip",
+      "agent_platform/tests/test_devtask_owner_domain.py::TestIllegalOwnerDegraded::test_空owner判非法并降级",
+      "agent_platform/tests/test_legion_command.py::test_activity_mapping_covers_real_tasks",
+      "agent_platform/tests/test_legion_command.py::test_activity_maps_known_prefixes"
+    ],
+    "_flaky_note": "2026-10-27 全量实测已知 2 项顺序 flaky；2026-10-28 复测：minutes_bad_length/monday_read_only 单项通过全量失败已补；sandbox_real_skill_verify/sign_verify/owner_domain空owner/activity×2 均单项通过、全量失败，已补入 flaky（跟踪，回归时移除）。"
+  },
+  "quant_backtest/tests": {
+    "known_failures": [],
+    "flaky": [],
+    "note": "全量 >20min，建议夜间窗口跑；当前仅要求 0 收集错误"
+  }
 }
