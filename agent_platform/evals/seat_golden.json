@@ -1,5 +1,5 @@
 {
-  "_note": "席位评测黄金集 v1（P0① WO-EVAL-SEATS-20261027）。每条=确定性检查（命令 rc/stdout 或文件存在/包含），零 LLM 调用、零副作用；先建基线，通过率稳定后再接入 seat_realness 第 6 维。",
+  "_note": "席位评测黄金集 v1（P0① WO-EVAL-SEATS-20261027）。每条=确定性检查（命令 rc/stdout 或文件存在/包含），零 LLM 调用、零副作用；先建基线，通过率稳定后再接入 seat_realness 第 6 维。 2026-10-29 P0：AI1 补 4 条诸葛亮专属用例，总计 30 条。",
   "schema": "seat_golden/v2",
   "updated": "2026-10-29",
   "seats": {
@@ -346,6 +346,67 @@
               "kind": "contains_all",
               "values": [
                 "5/5"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ai1-brief-engine",
+          "kind": "file",
+          "path": "portal/api_zhuge_brief.py",
+          "assertions": [
+            {
+              "kind": "contains_all",
+              "values": [
+                "SOURCES",
+                "build_brief",
+                "gaps",
+                "model_invoked"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ai1-c1-bridge",
+          "kind": "file",
+          "path": "tools/zhuge_c1_decisions.py",
+          "assertions": [
+            {
+              "kind": "contains_all",
+              "values": [
+                "sync_all",
+                "sync_card",
+                "source_card"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ai1-adoption-route",
+          "kind": "file",
+          "path": "portal/api_zhuge_adoption.py",
+          "assertions": [
+            {
+              "kind": "contains_all",
+              "values": [
+                "/api/zhuge/adoption",
+                "append_items",
+                "FIELDS"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ai1-adoption-harvest",
+          "kind": "file",
+          "path": "portal/harvest_adoption.py",
+          "assertions": [
+            {
+              "kind": "contains_all",
+              "values": [
+                "parse_entries",
+                "dedup_window",
+                "append_ledger"
               ]
             }
           ]
