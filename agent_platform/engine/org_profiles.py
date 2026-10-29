@@ -10,11 +10,15 @@
     回落到默认 9b —— 档案写的是云端强模型，会议层用的却是本地小模型，
     **档案与能力不符，且现场看不出**（S37 已立判例：编制造出的事实，展示层必须认）。
 
-档案可能登记在三处，优先级从高到低：
+档案可能登记在四处，优先级从高到低：
 
   1. `departments[].agent_profiles`（现行标准位置，org_enroll 写这里）
   2. `org.json` 顶层 `chief` 块（参谋长 A0，历史结构）
   3. `registry/team_*.json` 的 `agents[]`（各团队注册表，含 A0A）
+  4. `registry/profile_seats.json` 的 `seats[]`（**不占编 profile 席位**，如治理席 ZHAOYUN；
+     2026-10-30 WO-HZ-ZY-PROFILE-20261030 追加：治理席不进部门编制表，但其正式绑定
+     必须可被 resolve_binding 读到——否则「档案写着 DSH 载体、会议层回落 9b」现场看不出，
+     与 S37 判例「编制造出的事实，展示层必须认」同源）
 
 只读，不写任何真源。
 """
@@ -27,6 +31,7 @@ from pathlib import Path
 SRC_DEPT = "org.departments"
 SRC_CHIEF = "org.chief"
 SRC_TEAM = "team_file"
+SRC_PROFILE = "profile_seats"
 
 
 def profile_index(root: Path) -> dict:
@@ -92,6 +97,33 @@ def profile_index(root: Path) -> dict:
                     "registry/%s" % f.name,
                     cn=a.get("name") or "",
                 )
+
+    # 2026-10-30 WO-HZ-ZY-PROFILE-20261030：不占编 profile 席位（治理席等）。
+    # 放在部门/chief/team 之后（先到先得，不覆盖正式档案）：治理席在 org.json
+    # 编制表中无档案，但其正式绑定（如 ZHAOYUN=deepseek/deepseek-v4-pro）必须可解析。
+    if reg.exists():
+        _ps = reg / "profile_seats.json"
+        try:
+            _data = json.loads(_ps.read_text(encoding="utf-8"))
+        except (ValueError, OSError):
+            _data = {}
+        _seats = _data.get("seats") if isinstance(_data, dict) else None
+        if isinstance(_seats, dict):  # 容错 dict 写法（agent_id -> 档案），键补 agent_id
+            _seats = [
+                (dict(v, agent_id=v.get("agent_id") or k)
+                 if isinstance(v, dict) else None)
+                for k, v in _seats.items()
+            ]
+        for _seat in _seats or []:
+            if not isinstance(_seat, dict):
+                continue
+            put(
+                _seat.get("agent_id"),
+                _seat.get("llm_binding"),
+                SRC_PROFILE,
+                "registry/profile_seats.json",
+                cn=_seat.get("cn_name") or _seat.get("name") or "",
+            )
     return out
 
 
@@ -146,6 +178,41 @@ def fallbacks_index(root: Path) -> dict[str, list[str]]:
                 if token and token not in chain:
                     chain.append(token)
             out[aid] = chain
+
+    # 2026-10-30 WO-HZ-ZY-PROFILE-20261030：不占编 profile 席位也可声明 llm_fallback。
+    # 先到先得：部门档案已登记的席位不覆盖（部门表仍是主要真源）。
+    reg = root / "registry"
+    if reg.exists():
+        _ps = reg / "profile_seats.json"
+        try:
+            _data = json.loads(_ps.read_text(encoding="utf-8"))
+        except (ValueError, OSError):
+            _data = {}
+        _seats = _data.get("seats") if isinstance(_data, dict) else None
+        if isinstance(_seats, dict):  # 容错 dict 写法（agent_id -> 档案），键补 agent_id
+            _seats = [
+                (dict(v, agent_id=v.get("agent_id") or k)
+                 if isinstance(v, dict) else None)
+                for k, v in _seats.items()
+            ]
+        for _seat in _seats or []:
+            if not isinstance(_seat, dict):
+                continue
+            _aid = str(_seat.get("agent_id") or "")
+            if not _aid or _aid in out:
+                continue
+            _raw = _seat.get("llm_fallback")
+            if isinstance(_raw, str):
+                _raw = [_raw]
+            _chain: list[str] = []
+            if isinstance(_raw, (list, tuple)):
+                for _item in _raw:
+                    if not isinstance(_item, str):
+                        continue
+                    _tok = _item.strip()
+                    if _tok and _tok not in _chain:
+                        _chain.append(_tok)
+            out[_aid] = _chain
     return out
 
 
@@ -193,6 +260,8 @@ def source_paths(root: Path) -> list:
     paths = [reg / "org.json"]
     if reg.exists():
         paths.extend(sorted(reg.glob("team_*.json")))
+        # 2026-10-30：不占编 profile 席位档案也参与索引（改档需触发绑定缓存失效）
+        paths.append(reg / "profile_seats.json")
     return paths
 
 
