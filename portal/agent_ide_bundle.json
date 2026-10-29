@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 00:59",
+ "generated": "2026-10-30 01:02",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 27,
+  "workorders_doing": 32,
   "workorders_review": 4
  },
  "workorders": [
@@ -266,15 +266,6 @@
    "project": "quant"
   },
   {
-   "id": "WO-DW-DASH2-20261030",
-   "desc": "数据仓可视化页：dw_snapshot 生成器 + portal/dw.html（来源治理/治理中/挖掘中/运维健康）",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-DW-DASH2-20261030",
-   "created": "2026-10-30 00:57:04",
-   "project": "general"
-  },
-  {
    "id": "WO-ACAD-REDEFINE-FREEZE-20261030",
    "desc": "DATA1 冻结申请：AC-20261030-LCS1-REDEFINE 的 D3 news.db/ts_news + D4 ts_top_list/ts_top_inst；四字段+sha+as-of；deadline 11-03；未冻结前不做 L2/L3 结论。",
    "status": "doing",
@@ -290,6 +281,60 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-MEETING-XSS-20261030",
    "created": "2026-10-30 00:57:20",
+   "project": "general"
+  },
+  {
+   "id": "WO-HZ-MEET-20261030",
+   "desc": "会议侧：ZHAOYUN通道收口+验收会日更联动(P2)",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-HZ-MEET-20261030",
+   "created": "2026-10-30 01:00:21",
+   "project": "general"
+  },
+  {
+   "id": "WO-HZ-W1FORMAL-20261030",
+   "desc": "黄忠W1正式四件套提交",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-HZ-W1FORMAL-20261030",
+   "created": "2026-10-30 01:00:23",
+   "project": "general"
+  },
+  {
+   "id": "WO-P2-FIX-20261030",
+   "desc": "P2 加固：approval_control 账本追加改为 O_APPEND 单次写（原子性）；automation_supervisor L1 stale 改为 created/最近事件时间取新值；补测试。不改变审批门/不自动动作。",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-P2-FIX-20261030",
+   "created": "2026-10-30 01:00:46",
+   "project": "general"
+  },
+  {
+   "id": "WO-HZ-HR-20261030",
+   "desc": "HUANGZHONG HR补录：resume.yaml+一致性测试",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-HZ-HR-20261030",
+   "created": "2026-10-30 01:01:14",
+   "project": "general"
+  },
+  {
+   "id": "WO-GUANYU-P45-20261030",
+   "desc": "合并锁收窄",
+   "status": "doing",
+   "owner": "GUANYU",
+   "branch": "task/WO-GUANYU-P45-20261030",
+   "created": "2026-10-30 01:01:28",
+   "project": "general"
+  },
+  {
+   "id": "WO-LEGION-ZHUGE-P1X-20261030",
+   "desc": "诸葛亮P1：RAG 文档变更自动重建 + reflector 引用评分；记忆 lesson/preference 实写",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-ZHUGE-P1X-20261030",
+   "created": "2026-10-30 01:02:09",
    "project": "general"
   }
  ],
@@ -6278,7 +6323,14 @@
    ],
    "experience": "30 年工程治理经验：漏洞分级与补丁流程、失败测试基线修复、编码规范与门禁落地、技术债清欠与重复功能合并；证据驱动、逐项闭环，只出报告与工单不自行合并，开发动作限独立 worktree 提交+跑测试并交 L2 人签。",
    "dept_name": "研究院",
-   "dept_cn_title": "太学"
+   "dept_cn_title": "太学",
+   "tasks": [
+    {
+     "id": "WO-GUANYU-P45-20261030",
+     "desc": "合并锁收窄",
+     "status": "doing"
+    }
+   ]
   },
   "HUANGZHONG": {
    "id": "HUANGZHONG",
@@ -6939,6 +6991,11 @@
     {
      "id": "WO-MEETING-XSS-20261030",
      "desc": "meeting.html 动态文本转义（4处innerHTML防存储型XSS，保留显式HTML模板）",
+     "status": "doing"
+    },
+    {
+     "id": "WO-LEGION-ZHUGE-P1X-20261030",
+     "desc": "诸葛亮P1：RAG 文档变更自动重建 + reflector 引用评分；记忆 lesson/preference 实写",
      "status": "doing"
     }
    ]
