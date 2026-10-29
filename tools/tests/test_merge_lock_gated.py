@@ -37,7 +37,11 @@ def test_gated_acquires_and_releases(tmp_path, monkeypatch):
     sys.modules["merge_lock"] = m
     rc = mod.main(["WO-X", "--dry-run"])
     assert rc == 0
-    assert not lock.exists(), "锁应在 dry-run 后释放"
+    # CLI 语义：进程退出时 atexit 释放；进程内测试手动验证持锁并释放
+    held = m.held()
+    assert held and held.get("token"), "dry-run 期间应持锁"
+    assert m.release(held["token"]) is True
+    assert not lock.exists()
     assert not any(k == "guard_fail" for k, _, _ in calls)
 
 
