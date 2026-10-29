@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 32,
+  "workorders_doing": 31,
   "workorders_review": 4
  },
  "workorders": [
@@ -317,15 +317,6 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-LEGION-JUDGE-TRUNC-20261030",
    "created": "2026-10-30 01:08:53",
-   "project": "general"
-  },
-  {
-   "id": "WO-DW-COCKPIT-20261030",
-   "desc": "数据仓驾驶舱 v2：可下钻 KPI/来源详情/今日动态/挖掘时间线/治理路线/下载",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-DW-COCKPIT-20261030",
-   "created": "2026-10-30 01:10:10",
    "project": "general"
   },
   {
