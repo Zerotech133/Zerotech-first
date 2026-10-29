@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-10-30T02:36:01+08:00",
+ "generated_at": "2026-10-30T02:37:46+08:00",
  "today": "2026-10-30",
  "catalog": {
   "version": 16,
@@ -17,18 +17,7 @@
    "missing": 1
   }
  },
- "lagging_daily": [
-  {
-   "name": "express",
-   "label": "Tushare·业绩快报",
-   "lag": 9
-  },
-  {
-   "name": "forecast",
-   "label": "Tushare·业绩预告",
-   "lag": 6
-  }
- ],
+ "lagging_daily": [],
  "cockpit": {
   "sources_total": 66,
   "sources_done": 23,
@@ -421,7 +410,7 @@
    "label": "Tushare·业绩快报",
    "method": "接口同步",
    "layer": "接口同步",
-   "freshness_mode": "daily",
+   "freshness_mode": "event",
    "status": "done",
    "note": "3 年 5,947 行",
    "files": 4,
@@ -433,7 +422,7 @@
    "last_update": "2026-10-28",
    "latest_date": "20261021",
    "report_period": "",
-   "lag_days": 9,
+   "lag_days": null,
    "today_new": 0,
    "registered": true,
    "manifest": "closed",
@@ -481,7 +470,7 @@
    "label": "Tushare·业绩预告",
    "method": "接口同步",
    "layer": "接口同步",
-   "freshness_mode": "daily",
+   "freshness_mode": "event",
    "status": "done",
    "note": "3 年 21,196 行（含预告类型/幅度）",
    "files": 4,
@@ -493,7 +482,7 @@
    "last_update": "2026-10-28",
    "latest_date": "20261024",
    "report_period": "",
-   "lag_days": 6,
+   "lag_days": null,
    "today_new": 0,
    "registered": true,
    "manifest": "closed",
@@ -4573,7 +4562,7 @@
   },
   "supervisor": {
    "red": [],
-   "generated_at": "2026-10-30T02:36:01"
+   "generated_at": "2026-10-30T02:37:46"
   },
   "approvals": {
    "count": 2,

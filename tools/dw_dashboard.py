@@ -65,6 +65,7 @@ FRESHNESS_MODE = {
     "sf_month": "low_freq", "shibor": "low_freq", "shibor_lpr": "low_freq",
     "cb_basic": "low_freq", "cb_daily": "low_freq", "stock_company": "low_freq",
     "bak_basic": "low_freq", "index_weight": "low_freq", "sw_l1_member": "low_freq",
+    "forecast": "event", "express": "event",
     "us_daily": "unused", "sv_daily": "unused", "us_basic": "unused",
     "us_income": "unused", "us_balancesheet": "unused", "us_cashflow": "unused",
     "us_fina_indicator": "unused", "hk_basic": "unused",
