@@ -188,7 +188,7 @@ function drillCard(key){
   else if(key==='backup_latest'){title='备份详情';body=backupTable();}
   else if(key==='approvals_today'){title='审批台账（最近 5 条）';body=approvalsTable();}
   else if(key==='risks'){title='未完成治理项';body=risksTable();}
-  else if(key==='supervisor'){title='Supervisor 检查';body=supervisorTable();}
+  else if(key==='supervisor'){title='自动巡检详情';body=supervisorTable();}
   openModal(title,body);
 }
 function sourcesTable(list){return '<table><thead><tr><th>来源</th><th>层</th><th>状态</th><th>说明</th><th class="num">体积</th><th>最近更新</th></tr></thead><tbody>'+
@@ -203,7 +203,7 @@ function reportsTable(list){return '<table><thead><tr><th>报告</th><th>类型<
 function backupTable(){const b=SNAP.ops.backup;return '<div class="muted" style="margin-bottom:6px">最新代：'+esc(b.latest)+'（距今 '+(b.age_hours||0)+' 小时）</div><table><thead><tr><th>产物</th><th class="num">MB</th></tr></thead><tbody>'+(b.products||[]).map(p=>'<tr><td class="mono">'+esc(p.name)+'</td><td class="num">'+p.mb+'</td></tr>').join('')+'</tbody></table>';}
 function approvalsTable(){return '<table><thead><tr><th>时间</th><th>动作</th><th>任务</th><th>操作人</th></tr></thead><tbody>'+((SNAP.ops.approvals.latest||[]).map(a=>'<tr><td class="muted">'+esc(a.ts)+'</td><td>'+badge(a.action==='approve'?'backtested':'rejected',{approve:['b-done','批准'],reject:['b-rejected','驳回'],escalate:['b-idea','转人工']})+'</td><td>'+esc(a.task)+'</td><td class="mono">'+esc(a.operator)+'</td></tr>').join(''))+'</tbody></table>';}
 function risksTable(){const r=SNAP.cockpit.risks||[];return '<table><thead><tr><th>治理项</th><th>状态</th><th>说明</th></tr></thead><tbody>'+r.map(x=>'<tr><td><b>'+esc(x.item)+'</b></td><td>'+badge(x.status,GS)+'</td><td class="muted">'+esc(x.note)+'</td></tr>').join('')+'</tbody></table>';}
-function supervisorTable(){const s=SNAP.ops.supervisor;return '<div class="muted" style="margin-bottom:6px">generated_at: '+esc(s.generated_at||'—')+'</div>'+(s.checks?'<pre class="mono" style="white-space:pre-wrap">'+esc(JSON.stringify(s.checks,null,1))+'</pre>':'<div>无 checks 数据</div>');}
+function supervisorTable(){const s=SNAP.ops.supervisor;return '<div class="muted" style="margin-bottom:6px">生成时间：'+esc(s.generated_at||'—')+'</div>'+(s.checks?'<pre class="mono" style="white-space:pre-wrap">'+esc(JSON.stringify(s.checks,null,1))+'</pre>':'<div>无 checks 数据</div>');}
 function openModal(title,html){document.getElementById('modalBody').innerHTML='<h3>'+esc(title)+'</h3>'+html;document.getElementById('modal').classList.add('on');document.getElementById('mask').classList.add('on');}
 function closeModal(){document.getElementById('modal').classList.remove('on');document.getElementById('mask').classList.remove('on');}
 /* ===== 今日动态条 ===== */
