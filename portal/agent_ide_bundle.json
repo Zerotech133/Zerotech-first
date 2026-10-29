@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 02:03",
+ "generated": "2026-10-30 02:06",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,8 +9,8 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 26,
-  "workorders_review": 7
+  "workorders_doing": 28,
+  "workorders_review": 8
  },
  "workorders": [
   {
@@ -268,7 +268,7 @@
   {
    "id": "K-ORG-20261030-OFFSITECATCHUP",
    "desc": "异地备份补推器：新增 tools/offsite_catchup.ps1（幂等：探测 ssh aiosbackup 可达→对最近 N 天远端缺失的 tar 集/vault 依次调用 two push 脚本并校验 receipt；不可达则静默退出不告警风暴）；含 -DryRun/-ForceProbeFail 测试开关 [UNOWNED]",
-   "status": "doing",
+   "status": "review",
    "owner": "DSH·lead",
    "branch": "task/K-ORG-20261030-OFFSITECATCHUP",
    "created": "2026-10-30 01:40:43",
@@ -308,6 +308,33 @@
    "owner": "DSH-Lead",
    "branch": "task/WO-HZ-REVIEW-20261030",
    "created": "2026-10-30 02:03:03",
+   "project": "general"
+  },
+  {
+   "id": "WO-HZ-ZY-PROFILE-20261030",
+   "desc": "ZHAOYUN 正式绑定档案：profile_seats 注册表+绑定解析",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-HZ-ZY-PROFILE-20261030",
+   "created": "2026-10-30 02:05:05",
+   "project": "general"
+  },
+  {
+   "id": "WO-INV-RECOMMEND-POOL-20261030",
+   "desc": "司马徽(ACAD1)推荐池 M1：从 todays_picks+策略健康表生成每日推荐池(来源/层级/数据日/时效/状态)，池内逐票复盘队列+组合计划，测试",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-INV-RECOMMEND-POOL-20261030",
+   "created": "2026-10-30 02:05:17",
+   "project": "portal"
+  },
+  {
+   "id": "WO-GUANYU-P53-20261030",
+   "desc": "审计BUG修复",
+   "status": "doing",
+   "owner": "GUANYU",
+   "branch": "task/WO-GUANYU-P53-20261030",
+   "created": "2026-10-30 02:06:01",
    "project": "general"
   }
  ],
@@ -6322,7 +6349,14 @@
    ],
    "experience": "30 年工程治理经验：漏洞分级与补丁流程、失败测试基线修复、编码规范与门禁落地、技术债清欠与重复功能合并；证据驱动、逐项闭环，只出报告与工单不自行合并，开发动作限独立 worktree 提交+跑测试并交 L2 人签。",
    "dept_name": "研究院",
-   "dept_cn_title": "太学"
+   "dept_cn_title": "太学",
+   "tasks": [
+    {
+     "id": "WO-GUANYU-P53-20261030",
+     "desc": "审计BUG修复",
+     "status": "doing"
+    }
+   ]
   },
   "HUANGZHONG": {
    "id": "HUANGZHONG",
