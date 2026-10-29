@@ -40,7 +40,7 @@ EXPECTED_HANDLER_METHODS = [
     "_kg_page",
 ]
 EXPECTED_TOP_FUNCS = ["_kg_label_save", "_kg_label_diff", "_kg_card_fb_save"]
-LINE_CEILING = 1200  # 2026-10-29 拆分完成（5913→385）；锁定目标 ≤1,200，只减不增
+LINE_CEILING = 300  # 2026-10-30 拆分收尾（5913→97，JS 常量迁 kg_js）；上限 300，只减不增
 
 
 def test_handler_keeps_all_methods():
@@ -73,7 +73,7 @@ def test_page_renderers_return_str_and_have_doc():
 
 
 def test_file_line_ceiling():
-    """冻结守卫：api_kg.py 行数不得超过 6,000（只减不增）。"""
+    """冻结守卫：api_kg.py 行数不得超过 300（拆分收尾后只减不增）。"""
     src = (PORTAL / "api_kg.py").read_text(encoding="utf-8", errors="ignore")
     n = src.count("\n") + 1
     assert n <= LINE_CEILING, "api_kg.py %d 行 > 上限 %d（拆分守则：只减不增）" % (n, LINE_CEILING)
@@ -99,3 +99,28 @@ def test_module_import_has_no_heavy_side_effect():
             ):
                 offenders.append("%s:%d" % (f.value.id, sub.lineno))
     assert not offenders, "模块级网络调用：%s" % offenders
+
+
+def test_kg_modules_do_not_import_api_kg():
+    """架构守卫：portal/kg/* 不得反向 import api_kg（拆分后依赖单向 kg→api_kg 禁止）。"""
+    bad = []
+    for fp in sorted((PORTAL / "kg").glob("*.py")):
+        tree = ast.parse(fp.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom) and (node.module or "").split(".")[0] == "api_kg":
+                bad.append("%s:%d" % (fp.name, node.lineno))
+            elif isinstance(node, ast.Import):
+                for alias in node.names:
+                    if alias.name.split(".")[0] == "api_kg":
+                        bad.append("%s:%d" % (fp.name, node.lineno))
+    assert not bad, "kg 模块反向 import api_kg：%s" % bad
+
+
+def test_js_constants_moved_to_kg_js():
+    """收尾守卫：内嵌 JS 常量迁到 kg_js（api_kg 仅再导出，不再内联 300 行）。"""
+    from kg import kg_js
+
+    assert isinstance(kg_js._KG_LABEL_JS, str) and len(kg_js._KG_LABEL_JS) > 1000
+    assert isinstance(kg_js._KG_CARD_JS, str) and len(kg_js._KG_CARD_JS) > 100
+    assert api_kg._KG_LABEL_JS == kg_js._KG_LABEL_JS
+    assert api_kg._KG_CARD_JS == kg_js._KG_CARD_JS

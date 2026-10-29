@@ -314,7 +314,7 @@ def _kg_label_page(h):
            "<span id='st'></span></div>"
            "<div id='wrap'><canvas id='cv'></canvas></div>"
            "<div class='dim' id='tip'></div>")
-    from api_kg import _KG_LABEL_JS  # noqa: E402  (拆分后常量仍在 api_kg；惰性导入避免循环)
+    from kg.kg_js import _KG_LABEL_JS  # noqa: E402  (拆分收尾：常量已迁 kg_js)
     htm += "<script>\n" + _KG_LABEL_JS + "</script></body></html>"
     h._html(htm)
 
@@ -493,7 +493,7 @@ def _kg_card_page(h):
                     "<li>%s</li>" % e(q.get("note") or "") for q in qj))
     for p in ("1d", "30m", "5m"):
         htm += _lvl_block(p, (cd.get("levels") or {}).get(p), code)
-    from api_kg import _KG_CARD_JS  # noqa: E402  (同上)
+    from kg.kg_js import _KG_CARD_JS  # noqa: E402  (同上)
     htm += _KG_CARD_JS + "</body></html>"
     h._html(htm)
 
