@@ -296,4 +296,14 @@ def test_quant_alert_loader_offline() -> None:
         ]
         if rendered.get("expectedExternal"):
             expected.extend([("target", "_blank"), ("rel", "noopener")])
-        assert parser.anchors == [expected]
+        # 2026-10-30 P63：OS-UI 统一后 class 可能是 "ui-card scard" 等组合；
+        # 断言改为「期望的 class token 是实际 class 的子集」，其余属性精确相等。
+        assert len(parser.anchors) == 1, rendered
+        got_map = dict(parser.anchors[0])
+        for key, val in expected:
+            if key == "class":
+                got_tokens = set((got_map.get("class") or "").split())
+                want_tokens = set((val or "").split())
+                assert want_tokens <= got_tokens, (rendered, got_map)
+            else:
+                assert got_map.get(key) == val, (rendered, got_map)
