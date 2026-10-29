@@ -1,380 +1,380 @@
 {
-  "_meta": {
-    "what": "策略资产注册表——门户策略中心/首页组合区/导航的单一数据源",
-    "how_to_onboard": "上新流程（362 定稿）：① 策略市场选购（候选来源=live6 影子跑批结果+老田指名） ② 本文件上架一条（status 按验证进度标 shadow/tool/paused·零代码自动进卡墙） ③ 接入账本执行=开发任务（OWNED 专属面板或 exec-generic 通用接入）。上架必带 since 字段（YYYY-MM-DD）。",
-    "status_def": {
-      "live": "产线在跑，信号直达决策链",
-      "shadow": "影子验证中，只标注不拦截（记分卡看对账，达标才转正）",
-      "tool": "支撑工具/研究底座，不直接产信号",
-      "paused": "暂停跟踪"
-    },
-    "metrics_note": "metrics 为人工维护的记分卡要点；task 字段可留空，留空时不显示任务健康灯",
-    "promotion": {
-      "shadow_to_live": "满 60 交易日（自 since 起算）且 PF/回撤达标 → 提交老田拍板转正；材料模板复用 315 五臂表格式",
-      "since_def": "since=上架日期（YYYY-MM-DD），为 60 交易日考核起算依据",
-      "note": "策略自带更严转正判据时两者取严（如 jev-gate 的 FOCUS 前向收益判据）"
-    }
+ "_meta": {
+  "what": "策略资产注册表——门户策略中心/首页组合区/导航的单一数据源",
+  "how_to_onboard": "上新流程（362 定稿）：① 策略市场选购（候选来源=live6 影子跑批结果+老田指名） ② 本文件上架一条（status 按验证进度标 shadow/tool/paused·零代码自动进卡墙） ③ 接入账本执行=开发任务（OWNED 专属面板或 exec-generic 通用接入）。上架必带 since 字段（YYYY-MM-DD）。",
+  "status_def": {
+   "live": "产线在跑，信号直达决策链",
+   "shadow": "影子验证中，只标注不拦截（记分卡看对账，达标才转正）",
+   "tool": "支撑工具/研究底座，不直接产信号",
+   "paused": "暂停跟踪"
   },
-  "strategies": [
+  "metrics_note": "metrics 为人工维护的记分卡要点；task 字段可留空，留空时不显示任务健康灯",
+  "promotion": {
+   "shadow_to_live": "满 60 交易日（自 since 起算）且 PF/回撤达标 → 提交老田拍板转正；材料模板复用 315 五臂表格式",
+   "since_def": "since=上架日期（YYYY-MM-DD），为 60 交易日考核起算依据",
+   "note": "策略自带更严转正判据时两者取严（如 jev-gate 的 FOCUS 前向收益判据）"
+  }
+ },
+ "strategies": [
+  {
+   "id": "chanlun",
+   "name": "缠论三类买卖点",
+   "tagline": "结构化信号底座 · 每日 05:50 全市场扫描",
+   "status": "shadow",
+   "status_note": "影子验证中 · K33ShadowCheck 每周五对账",
+   "task": "ChanlunScan",
+   "href": "/bt-chanlun",
+   "badge": "信号",
+   "metrics": [
     {
-      "id": "chanlun",
-      "name": "缠论三类买卖点",
-      "tagline": "结构化信号底座 · 每日 05:50 全市场扫描",
-      "status": "shadow",
-      "status_note": "影子验证中 · K33ShadowCheck 每周五对账",
-      "task": "ChanlunScan",
-      "href": "/bt-chanlun",
-      "badge": "信号",
-      "metrics": [
-        {
-          "k": "验证",
-          "v": "影子模式，只标注不拦截"
-        },
-        {
-          "k": "节奏",
-          "v": "每日 05:50 自动扫描"
-        },
-        {
-          "k": "对账",
-          "v": "周五 08:00 影子对账"
-        }
-      ],
-      "since": "2026-10-07",
-      "persona": {
-        "name": "庞德公",
-        "hao": "鹿门",
-        "title": "缠论宗师"
-      }
+     "k": "验证",
+     "v": "影子模式，只标注不拦截"
     },
     {
-      "id": "double_knife",
-      "name": "量子双刀",
-      "tagline": "连续双日十字星+MACD 多头 · 八重过滤+Regime 四市况分层",
-      "status": "shadow",
-      "status_note": "研究态 · 未回测验证（T-20261009-009 结论前不构成选股依据）",
-      "task": "",
-      "href": "/qd/",
-      "badge": "信号",
-      "metrics": [
-        {
-          "k": "口径",
-          "v": "strict 八重 AND · Regime 趋势下行一票否决"
-        },
-        {
-          "k": "节奏",
-          "v": "每日 14:40 尾盘全市场扫描 → 14:55 执行窗口（5524 只）"
-        },
-        {
-          "k": "验证",
-          "v": "研究态 · 回测排队（限 10-25）"
-        }
-      ],
-      "since": "2026-10-09",
-      "persona": {
-        "name": "左慈",
-        "hao": "乌角",
-        "title": "量子双刀"
-      }
+     "k": "节奏",
+     "v": "每日 05:50 自动扫描"
     },
     {
-      "id": "ninedim",
-      "name": "九维选股漏斗",
-      "tagline": "RPS50>80 强势池 → 多维评分 ≥75 入警报池",
-      "status": "live",
-      "status_note": "K33 定稿 · 警报池随数据积累",
-      "task": "NineDimScan",
-      "href": "/bt-9dim",
-      "badge": "评分",
-      "metrics": [
-        {
-          "k": "门槛",
-          "v": "综合分 ≥75 入警报池"
-        },
-        {
-          "k": "节奏",
-          "v": "每日 06:40 快照"
-        },
-        {
-          "k": "口径",
-          "v": "全史分位 0=最强"
-        }
-      ],
-      "since": "2026-10-07",
-      "persona": {
-        "name": "陈群",
-        "hao": "长文",
-        "title": "九品中正"
-      }
-    },
-    {
-      "id": "weak",
-      "name": "弱于板块产线",
-      "tagline": "信号 2 · 扫描→建案→跟踪→复评→结案→归档 17 节全自动",
-      "status": "live",
-      "status_note": "三级节奏九任务 · 全链闭环",
-      "task": "WeakDailyHealth",
-      "href": "/bt-weak",
-      "badge": "案例",
-      "metrics": [
-        {
-          "k": "筛选",
-          "v": "r20 超额 ≤-5pp × 日均额 ≥2亿"
-        },
-        {
-          "k": "节奏",
-          "v": "日 15:30/35/55 · 周一 15:50 · 月 1 日×4"
-        },
-        {
-          "k": "纪律",
-          "v": "结案必给 A/B/C，B 类滚动建新案"
-        }
-      ],
-      "since": "2026-10-07",
-      "persona": {
-        "name": "高顺",
-        "hao": "陷阵",
-        "title": "逆风斥候"
-      }
-    },
-    {
-      "id": "linkage",
-      "name": "三线联动",
-      "tagline": "个股×板块×大盘归一化对比，五信号自动标注",
-      "status": "live",
-      "status_note": "weak 产线跟踪引擎同源",
-      "task": "",
-      "href": "/bt-linkage",
-      "badge": "联动",
-      "metrics": [
-        {
-          "k": "五信号",
-          "v": "抗跌/滞涨/共振底/孤军深入/三共振"
-        },
-        {
-          "k": "用法",
-          "v": "任意个股 ?code= 直达"
-        }
-      ],
-      "since": "2026-10-07",
-      "persona": {
-        "name": "阚泽",
-        "hao": "德润",
-        "title": "连环哨"
-      }
-    },
-    {
-      "id": "cross",
-      "name": "共振筛选",
-      "tagline": "多策略信号共振机会 · 每日扫描 TopN",
-      "status": "live",
-      "status_note": "盘前作战计划机会来源之一",
-      "task": "金融量化每日扫描",
-      "href": "/bt-cross",
-      "badge": "信号",
-      "metrics": [
-        {
-          "k": "节奏",
-          "v": "每日 16:00 扫描"
-        },
-        {
-          "k": "输出",
-          "v": "买入/观望 分级 TopN"
-        }
-      ],
-      "since": "2026-10-07",
-      "persona": {
-        "name": "庞统",
-        "hao": "凤雏",
-        "title": "连环计"
-      }
-    },
-    {
-      "id": "qpzm",
-      "name": "青萍之末",
-      "tagline": "微动前置信号 · 风起于青萍之末",
-      "status": "live",
-      "status_note": "量化中心策略池成员",
-      "task": "",
-      "href": "/bt-qpzm",
-      "badge": "信号",
-      "metrics": [
-        {
-          "k": "定位",
-          "v": "异动前置捕捉"
-        },
-        {
-          "k": "入口",
-          "v": "量化中心策略页"
-        }
-      ],
-      "since": "2026-10-07",
-      "persona": {
-        "name": "于吉",
-        "hao": "太平",
-        "title": "观风道人"
-      }
-    },
-    {
-      "id": "jev-gate",
-      "name": "Jev 信号复核门",
-      "tagline": "AI 五原子判断复核候选池 · 只判断不拥有系统",
-      "status": "shadow",
-      "status_note": "阶段 1 影子 · 规则 v2 待前向复现",
-      "task": "",
-      "ext": "http://localhost:5175",
-      "href": "/bt-jev",
-      "badge": "AI门",
-      "metrics": [
-        {
-          "k": "评测",
-          "v": "30 题 ×3 遍，准确率 93.3%"
-        },
-        {
-          "k": "转正判据",
-          "v": "FOCUS 前向收益 >+1pp 且 n≥30"
-        },
-        {
-          "k": "铁律",
-          "v": "影子期不拦截、不碰生产表"
-        }
-      ],
-      "since": "2026-10-07",
-      "persona": {
-        "name": "曹休",
-        "hao": "文烈",
-        "title": "守门校尉"
-      }
-    },
-    {
-      "id": "backtest",
-      "name": "回测量化中心",
-      "tagline": "策略池回测/寻优/信号/持仓账本",
-      "status": "tool",
-      "status_note": "验证底座 · 策略上岗前必过",
-      "task": "",
-      "href": "/bt",
-      "badge": "验证",
-      "metrics": [
-        {
-          "k": "产出",
-          "v": "报告/寻优榜/信号页/持仓账本"
-        },
-        {
-          "k": "价值",
-          "v": "策略资产的质量门"
-        }
-      ],
-      "persona": {
-        "name": "演武场"
-      }
-    },
-    {
-      "id": "zhice",
-      "name": "智策 OS v2",
-      "tagline": "四市场(CN/US/HK/CRYPTO)行情与调度 · 外部系统",
-      "status": "tool",
-      "status_note": "独立部署 · Jev 门数据源",
-      "task": "",
-      "ext": "http://localhost:5175",
-      "href": "",
-      "badge": "外部",
-      "metrics": [
-        {
-          "k": "行情",
-          "v": "分钟/日线全量入库"
-        },
-        {
-          "k": "桥",
-          "v": "FOCUS → QuantDinger 自选"
-        }
-      ],
-      "persona": {
-        "name": "锦囊匣"
-      }
-    },
-    {
-      "id": "quantdinger",
-      "name": "QuantDinger",
-      "tagline": "开源量化平台 · 回测/参数优化/模拟与实盘",
-      "status": "tool",
-      "status_note": "Docker 独立栈 · 无 A 股市场",
-      "task": "",
-      "ext": "http://localhost:8888",
-      "href": "",
-      "badge": "外部",
-      "metrics": [
-        {
-          "k": "定位",
-          "v": "港美股/Crypto 执行侧"
-        }
-      ],
-      "persona": {
-        "name": "听风鼎"
-      }
-    },
-    {
-      "id": "strong",
-      "name": "板块强弱对照",
-      "tagline": "强于板块领涨识别 · weak 镜像 · 强弱两只眼",
-      "status": "live",
-      "status_note": "阶段2b 推送链上线 · 每日 15:45 名单推送",
-      "task": "StrongEod",
-      "href": "",
-      "badge": "信号",
-      "metrics": [
-        {
-          "k": "口径",
-          "v": "250日超额 ≥+10pp × 板块成员 ≥5 × 日线多头"
-        },
-        {
-          "k": "分组",
-          "v": "板块领涨推卡 · 逆板块强势只进观察名单"
-        },
-        {
-          "k": "熔断",
-          "v": "同股每日最多推 1 次"
-        }
-      ],
-      "since": "2026-10-07",
-      "persona": {
-        "name": "孙策",
-        "hao": "伯符",
-        "title": "先登死士"
-      }
-    },
-    {
-      "id": "emotion",
-      "name": "打板情绪周期",
-      "tagline": "涨停/炸板/连板梯队日频面板 · 情绪三态与晋级率",
-      "status": "tool",
-      "status_note": "数据底座在产 · 268 交易日 · 信号规则待老田拍板",
-      "task": "",
-      "href": "",
-      "badge": "情绪",
-      "metrics": [
-        {
-          "k": "数据源",
-          "v": "limit_list_d 自算（不依赖打板套餐）"
-        },
-        {
-          "k": "产出",
-          "v": "ts_emotion_daily 268日 · ladder 3489行梯队"
-        },
-        {
-          "k": "指标",
-          "v": "封板率 / 晋级率 / 最高连板 / 封单额"
-        },
-        {
-          "k": "刷新",
-          "v": "每日 08:20 automation e10169ba"
-        }
-      ],
-      "since": "2026-10-15",
-      "persona": {
-        "name": "张角",
-        "hao": "大贤",
-        "title": "苍天已死"
-      }
+     "k": "对账",
+     "v": "周五 08:00 影子对账"
     }
-  ]
+   ],
+   "since": "2026-10-07",
+   "persona": {
+    "name": "庞德公",
+    "hao": "鹿门",
+    "title": "缠论宗师"
+   }
+  },
+  {
+   "id": "double_knife",
+   "name": "量子双刀",
+   "tagline": "连续双日十字星+MACD 多头 · 八重过滤+Regime 四市况分层",
+   "status": "shadow",
+   "status_note": "研究态 · 未回测验证（T-20261009-009 结论前不构成选股依据）",
+   "task": "",
+   "href": "/qd/",
+   "badge": "信号",
+   "metrics": [
+    {
+     "k": "口径",
+     "v": "strict 八重 AND · Regime 趋势下行一票否决"
+    },
+    {
+     "k": "节奏",
+     "v": "每日 14:40 尾盘全市场扫描 → 14:55 执行窗口（5524 只）"
+    },
+    {
+     "k": "验证",
+     "v": "研究态 · 回测排队（限 10-25）"
+    }
+   ],
+   "since": "2026-10-09",
+   "persona": {
+    "name": "左慈",
+    "hao": "乌角",
+    "title": "量子双刀"
+   }
+  },
+  {
+   "id": "ninedim",
+   "name": "九维选股漏斗",
+   "tagline": "RPS50>80 强势池 → 多维评分 ≥75 入警报池",
+   "status": "live",
+   "status_note": "K33 定稿 · 警报池随数据积累",
+   "task": "NineDimScan",
+   "href": "/bt-9dim",
+   "badge": "评分",
+   "metrics": [
+    {
+     "k": "门槛",
+     "v": "综合分 ≥75 入警报池"
+    },
+    {
+     "k": "节奏",
+     "v": "每日 06:40 快照"
+    },
+    {
+     "k": "口径",
+     "v": "全史分位 0=最强"
+    }
+   ],
+   "since": "2026-10-07",
+   "persona": {
+    "name": "陈群",
+    "hao": "长文",
+    "title": "九品中正"
+   }
+  },
+  {
+   "id": "weak",
+   "name": "弱于板块产线",
+   "tagline": "信号 2 · 扫描→建案→跟踪→复评→结案→归档 17 节全自动",
+   "status": "live",
+   "status_note": "三级节奏九任务 · 全链闭环",
+   "task": "WeakDailyHealth",
+   "href": "/bt-weak",
+   "badge": "案例",
+   "metrics": [
+    {
+     "k": "筛选",
+     "v": "r20 超额 ≤-5pp × 日均额 ≥2亿"
+    },
+    {
+     "k": "节奏",
+     "v": "日 15:30/35/55 · 周一 15:50 · 月 1 日×4"
+    },
+    {
+     "k": "纪律",
+     "v": "结案必给 A/B/C，B 类滚动建新案"
+    }
+   ],
+   "since": "2026-10-07",
+   "persona": {
+    "name": "高顺",
+    "hao": "陷阵",
+    "title": "逆风斥候"
+   }
+  },
+  {
+   "id": "linkage",
+   "name": "三线联动",
+   "tagline": "个股×板块×大盘归一化对比，五信号自动标注",
+   "status": "live",
+   "status_note": "weak 产线跟踪引擎同源",
+   "task": "",
+   "href": "/bt-linkage",
+   "badge": "联动",
+   "metrics": [
+    {
+     "k": "五信号",
+     "v": "抗跌/滞涨/共振底/孤军深入/三共振"
+    },
+    {
+     "k": "用法",
+     "v": "任意个股 ?code= 直达"
+    }
+   ],
+   "since": "2026-10-07",
+   "persona": {
+    "name": "阚泽",
+    "hao": "德润",
+    "title": "连环哨"
+   }
+  },
+  {
+   "id": "cross",
+   "name": "共振筛选",
+   "tagline": "多策略信号共振机会 · 每日扫描 TopN",
+   "status": "live",
+   "status_note": "登记任务名不存在；BtScan 16:00 rc=0 仅回测扫描，不覆盖 cross，待原产线补调度",
+   "task": "",
+   "href": "/bt-cross",
+   "badge": "信号",
+   "metrics": [
+    {
+     "k": "节奏",
+     "v": "每日 16:00 扫描"
+    },
+    {
+     "k": "输出",
+     "v": "买入/观望 分级 TopN"
+    }
+   ],
+   "since": "2026-10-07",
+   "persona": {
+    "name": "庞统",
+    "hao": "凤雏",
+    "title": "连环计"
+   }
+  },
+  {
+   "id": "qpzm",
+   "name": "青萍之末",
+   "tagline": "微动前置信号 · 风起于青萍之末",
+   "status": "live",
+   "status_note": "日批由 RpsDaily 归档（10-29 live picks=56；源健康 qpzm ok）；qpzm_backtest_report 为回测报告非日批",
+   "task": "RpsDaily",
+   "href": "/bt-qpzm",
+   "badge": "信号",
+   "metrics": [
+    {
+     "k": "定位",
+     "v": "异动前置捕捉"
+    },
+    {
+     "k": "入口",
+     "v": "量化中心策略页"
+    }
+   ],
+   "since": "2026-10-07",
+   "persona": {
+    "name": "于吉",
+    "hao": "太平",
+    "title": "观风道人"
+   }
+  },
+  {
+   "id": "jev-gate",
+   "name": "Jev 信号复核门",
+   "tagline": "AI 五原子判断复核候选池 · 只判断不拥有系统",
+   "status": "shadow",
+   "status_note": "阶段 1 影子 · 规则 v2 待前向复现",
+   "task": "",
+   "ext": "http://localhost:5175",
+   "href": "/bt-jev",
+   "badge": "AI门",
+   "metrics": [
+    {
+     "k": "评测",
+     "v": "30 题 ×3 遍，准确率 93.3%"
+    },
+    {
+     "k": "转正判据",
+     "v": "FOCUS 前向收益 >+1pp 且 n≥30"
+    },
+    {
+     "k": "铁律",
+     "v": "影子期不拦截、不碰生产表"
+    }
+   ],
+   "since": "2026-10-07",
+   "persona": {
+    "name": "曹休",
+    "hao": "文烈",
+    "title": "守门校尉"
+   }
+  },
+  {
+   "id": "backtest",
+   "name": "回测量化中心",
+   "tagline": "策略池回测/寻优/信号/持仓账本",
+   "status": "tool",
+   "status_note": "验证底座 · 策略上岗前必过",
+   "task": "",
+   "href": "/bt",
+   "badge": "验证",
+   "metrics": [
+    {
+     "k": "产出",
+     "v": "报告/寻优榜/信号页/持仓账本"
+    },
+    {
+     "k": "价值",
+     "v": "策略资产的质量门"
+    }
+   ],
+   "persona": {
+    "name": "演武场"
+   }
+  },
+  {
+   "id": "zhice",
+   "name": "智策 OS v2",
+   "tagline": "四市场(CN/US/HK/CRYPTO)行情与调度 · 外部系统",
+   "status": "tool",
+   "status_note": "独立部署 · Jev 门数据源",
+   "task": "",
+   "ext": "http://localhost:5175",
+   "href": "",
+   "badge": "外部",
+   "metrics": [
+    {
+     "k": "行情",
+     "v": "分钟/日线全量入库"
+    },
+    {
+     "k": "桥",
+     "v": "FOCUS → QuantDinger 自选"
+    }
+   ],
+   "persona": {
+    "name": "锦囊匣"
+   }
+  },
+  {
+   "id": "quantdinger",
+   "name": "QuantDinger",
+   "tagline": "开源量化平台 · 回测/参数优化/模拟与实盘",
+   "status": "tool",
+   "status_note": "Docker 独立栈 · 无 A 股市场",
+   "task": "",
+   "ext": "http://localhost:8888",
+   "href": "",
+   "badge": "外部",
+   "metrics": [
+    {
+     "k": "定位",
+     "v": "港美股/Crypto 执行侧"
+    }
+   ],
+   "persona": {
+    "name": "听风鼎"
+   }
+  },
+  {
+   "id": "strong",
+   "name": "板块强弱对照",
+   "tagline": "强于板块领涨识别 · weak 镜像 · 强弱两只眼",
+   "status": "live",
+   "status_note": "10-29 rc=3：板块锚 881019=2026-10-12 vs 个股锚 2026-10-29，freshness_guard 拦截；待板块数据刷新",
+   "task": "StrongEod",
+   "href": "",
+   "badge": "信号",
+   "metrics": [
+    {
+     "k": "口径",
+     "v": "250日超额 ≥+10pp × 板块成员 ≥5 × 日线多头"
+    },
+    {
+     "k": "分组",
+     "v": "板块领涨推卡 · 逆板块强势只进观察名单"
+    },
+    {
+     "k": "熔断",
+     "v": "同股每日最多推 1 次"
+    }
+   ],
+   "since": "2026-10-07",
+   "persona": {
+    "name": "孙策",
+    "hao": "伯符",
+    "title": "先登死士"
+   }
+  },
+  {
+   "id": "emotion",
+   "name": "打板情绪周期",
+   "tagline": "涨停/炸板/连板梯队日频面板 · 情绪三态与晋级率",
+   "status": "tool",
+   "status_note": "数据底座在产 · 268 交易日 · 信号规则待老田拍板",
+   "task": "",
+   "href": "",
+   "badge": "情绪",
+   "metrics": [
+    {
+     "k": "数据源",
+     "v": "limit_list_d 自算（不依赖打板套餐）"
+    },
+    {
+     "k": "产出",
+     "v": "ts_emotion_daily 268日 · ladder 3489行梯队"
+    },
+    {
+     "k": "指标",
+     "v": "封板率 / 晋级率 / 最高连板 / 封单额"
+    },
+    {
+     "k": "刷新",
+     "v": "每日 08:20 automation e10169ba"
+    }
+   ],
+   "since": "2026-10-15",
+   "persona": {
+    "name": "张角",
+    "hao": "大贤",
+    "title": "苍天已死"
+   }
+  }
+ ]
 }
