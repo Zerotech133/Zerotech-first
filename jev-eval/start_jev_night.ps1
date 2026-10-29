@@ -18,7 +18,7 @@ if ($env:JEV_NIGHT_MIN_BACKLOG) {
     $parsed = 0
     if ([int]::TryParse($env:JEV_NIGHT_MIN_BACKLOG, [ref]$parsed)) { $minBacklog = $parsed }
 }
-$pendingPy = 'C:ios	ools\jev_pending.py'
+  $pendingPy = 'C:\aios\tools\jev_pending.py'
 $pendingRaw = & $py -X utf8 -B $pendingPy 2>$null
 if ($LASTEXITCODE -eq 0 -and $pendingRaw) {
     $pending = 0
