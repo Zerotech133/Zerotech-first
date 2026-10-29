@@ -1398,7 +1398,7 @@ class Handler(BaseHTTPRequestHandler):
                     conv = subprocess.run(
                         [str(ffmpeg), "-y", "-i", str(src), "-ar", "16000",
                          "-ac", "1", "-f", "wav", str(wav)],
-                        capture_output=True, text=True, timeout=60)
+                        capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
                     if conv.returncode != 0 or not wav.exists():
                         self._send_json({"ok": False, "error": "audio_convert_failed",
                                          "detail": (conv.stderr or "")[-300:]}, 500)

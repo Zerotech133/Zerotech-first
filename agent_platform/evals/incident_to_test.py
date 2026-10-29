@@ -24,6 +24,8 @@ def _main_repo() -> Path:
             ["git", "-C", str(PLATFORM), "rev-parse", "--git-common-dir"],
             capture_output=True,
             text=True,
+    encoding="utf-8",
+    errors="replace",
             timeout=30,
         )
         if r.returncode == 0 and r.stdout.strip():

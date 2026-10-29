@@ -16,11 +16,16 @@
 from __future__ import annotations
 
 import argparse
+import os
 import json
 import sys
 import time
 from pathlib import Path
 import logging
+
+# Windows：默认 locale=GBK，子进程 text=True 未指定编码会解码崩；统一 UTF-8 模式（仅进程环境）。
+os.environ.setdefault("PYTHONUTF8", "1")
+os.environ.setdefault("PYTHONIOENCODING", "utf-8")
 
 try:  # Windows 管道输出统一 UTF-8（子进程 JSON/中文摘要防 cp936 解码失败）
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
