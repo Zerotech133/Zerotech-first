@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 01:35",
+ "generated": "2026-10-30 01:39",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -266,13 +266,13 @@
    "project": "quant"
   },
   {
-   "id": "WO-HZ-ACCEPT-EVIDENCE-20261030",
-   "desc": "验收工具证据口径升级（D3/A）",
+   "id": "WO-INV-POOL-COMBO-20261030",
+   "desc": "每日股票池→多角度分析→组合计划：watchlist 解析(聊天代码/xunyou/picks)+run_shadow --codes 动态池+portfolio_composer(买点/止损/目标/权重/回避)+CLI+测试",
    "status": "doing",
    "owner": "DSH-Lead",
-   "branch": "task/WO-HZ-ACCEPT-EVIDENCE-20261030",
-   "created": "2026-10-30 01:28:13",
-   "project": "general"
+   "branch": "task/WO-INV-POOL-COMBO-20261030",
+   "created": "2026-10-30 01:38:40",
+   "project": "portal"
   }
  ],
  "coder_traces": [
