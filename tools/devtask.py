@@ -522,47 +522,49 @@ def _tasks():
 
 
 @contextmanager
-def _tasks_file_lock(timeout_s=20.0, stale_s=120.0):
-    """tasks.json 读-改-写互斥（2026-10-30 P45）。
+def _tasks_file_lock(timeout_s=20.0):
+    """tasks.json 读-改-写互斥（2026-10-30 P45，Windows 原生字节锁）。
 
-    门禁并行后多会话可同时合并并各自 _save；原实现「读盘→合并→写盘」在
-    并发窗口内仍可能丢字段。用 O_EXCL 锁文件 + pid/stale 回收，拿不到锁
-    抛超时（fail-visible，不静默丢写）。
+    门禁并行后多会话可同时 merge 并各自 _save；原「读盘→合并→写盘」在并发
+    窗口内可能丢字段。改用 msvcrt.locking（锁定 1 字节）：进程退出/崩溃由 OS
+    自动释放，无 O_EXCL+unlink 的残留锁竞态（实证：Windows 上 unlink 会被
+    并发读句柄阻塞，导致锁永久残留、后来者超时）。
     """
+    os.makedirs(WT_DIR, exist_ok=True)
     path = os.path.join(WT_DIR, "tasks.json.lock")
     deadline = time.time() + timeout_s
     fd = None
     while True:
         try:
-            fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-            break
-        except FileExistsError:
+            fd = os.open(path, os.O_CREAT | os.O_RDWR)
+        except OSError:
+            fd = None
+        if fd is not None:
             try:
-                with open(path, encoding="utf-8") as f:
-                    meta = json.load(f)
-            except (OSError, ValueError):
-                meta = {}
-            pid = int(meta.get("pid") or 0)
-            age = time.time() - float(meta.get("ts") or 0)
-            if (pid and not _pid_alive(pid)) or age > stale_s:
+                os.lseek(fd, 0, os.SEEK_SET)
+                import msvcrt
+                msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
+                break
+            except OSError:
                 try:
-                    os.unlink(path)
-                    continue
+                    os.close(fd)
                 except OSError:
                     pass
-            if time.time() >= deadline:
-                raise TimeoutError("tasks.json 锁等待超时（%s）" % path)
-            time.sleep(0.05)
+                fd = None
+        if time.time() >= deadline:
+            raise TimeoutError("tasks.json 锁等待超时（%s）" % path)
+        time.sleep(0.02)
     try:
-        os.write(fd, json.dumps({"pid": os.getpid(), "ts": time.time()}).encode("utf-8"))
         yield
     finally:
         try:
-            os.close(fd)
+            import msvcrt
+            os.lseek(fd, 0, os.SEEK_SET)
+            msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
         except OSError:
             pass
         try:
-            os.unlink(path)
+            os.close(fd)
         except OSError:
             pass
 
