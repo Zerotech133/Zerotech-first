@@ -158,18 +158,48 @@ def test_no_args_uses_now():
     assert "现在该做什么" in r.stdout
 
 
-def test_read_only_no_side_effects():
-    before = snapshot(DATA)
+def test_read_only_no_side_effects(tmp_path):
+    """只读性：在 **隔离副本**（工具 + data 树）上跑 CLI，快照零变化。
+
+    WO-FLAKY-GUANYU-P36（2026-10-29）：原版快照真实 agent_platform/data 全树，
+    并行会话/平台常驻写入会制造与本 CLI 无关的假阳性（flaky）。改为复制
+    tools/monday_drill.py + data/ 到 tmp 后运行：任何相对路径写入都会落在副本，
+    可被快照捕获；真实 data 的只读性由 test_source_has_no_exec_or_write_path
+    （源码无写盘入口）保障。
+    """
+    import shutil
+
+    app_copy = tmp_path / "agent_platform"
+    (app_copy / "tools").mkdir(parents=True)
+    shutil.copy2(TOOL, app_copy / "tools" / "monday_drill.py")
+    shutil.copytree(DATA, app_copy / "data")
+    tool_copy = app_copy / "tools" / "monday_drill.py"
+
+    def run_copy(*args):
+        env = os.environ.copy()
+        env["PYTHONIOENCODING"] = "utf-8"
+        return subprocess.run(
+            [sys.executable, str(tool_copy), *args],
+            cwd=str(app_copy),
+            env=env,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=120,
+        )
+
+    before = snapshot(app_copy / "data")
     for args in (
         ("--list",),
         ("--json",),
         ("--at", "17:20"),
         ("--json", "--at", "17:25"),
     ):
-        r = run_cli(*args)
+        r = run_copy(*args)
         assert r.returncode == 0, r.stderr
-    after = snapshot(DATA)
-    assert before == after, "运行后 data/ 目录树发生变化（应为零写面）"
+    after = snapshot(app_copy / "data")
+    assert before == after, "运行后（隔离副本）data/ 目录树发生变化（应为零写面）"
 
 
 def test_source_has_no_exec_or_write_path():
