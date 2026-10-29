@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LCS-1 信号重定义 · 司马徽研究院</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<style>
+  :root{--wrap:1120px}
+  body{background:var(--bg-page,#0d1117);color:var(--text,#c9d1d9);font:14px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif;margin:0}
+  .wrap{max-width:var(--wrap);margin:0 auto;padding:24px 20px 64px}
+  h1{font-size:24px;color:var(--link,#58a6ff);margin:0 0 4px}
+  h2{font-size:17px;color:#3fd6c5;margin:30px 0 10px;border-left:3px solid #3fd6c5;padding-left:9px}
+  h3{font-size:14px;margin:16px 0 6px;color:var(--text,#e6edf3)}
+  .sub{color:var(--text-dim,#8b949e);font-size:12.5px}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 4px}
+  .chip{border:1px solid var(--border,#30363d);border-radius:20px;padding:4px 12px;font-size:12px;background:var(--bg-raised,#161b22)}
+  .chip.red{border-color:#f85149;color:#ff7b72}.chip.yellow{border-color:#d29922;color:#e3b341}.chip.green{border-color:#3fb950;color:#56d364}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:8px}
+  .card{border:1px solid var(--border,#30363d);border-radius:10px;background:var(--bg-raised,#161b22);padding:12px 14px}
+  .k{font-size:11px;color:var(--text-dim,#8b949e)}.v{font-size:18px;font-weight:650;margin-top:3px}
+  table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px}
+  th,td{border:1px solid var(--border,#30363d);padding:7px 10px;text-align:left;vertical-align:top}
+  th{background:#161b22;color:#8b949e;font-weight:600}
+  td.num{text-align:right;font-variant-numeric:tabular-nums}
+  .neg{color:#ff7b72}.pos{color:#56d364}
+  .box{border:1px solid var(--border,#30363d);border-radius:10px;padding:12px 14px;margin-top:8px;background:#101720}
+  .box p{margin:5px 0}
+  .timeline{list-style:none;padding:0;margin:8px 0 0}
+  .timeline li{border-left:2px solid #30363d;padding:0 0 14px 16px;position:relative}
+  .timeline li:before{content:"";width:9px;height:9px;border-radius:50%;background:#8b949e;position:absolute;left:-5.5px;top:5px}
+  .timeline li.done:before{background:#3fb950}.timeline li.doing:before{background:#d29922}.timeline li.todo:before{background:#484f58}
+  .tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:9px;margin-left:6px;background:#21262d;color:#8b949e}
+  .tag.done{background:#0f2e1b;color:#56d364}.tag.doing{background:#2b2f1a;color:#e3b341}.tag.todo{background:#21262d;color:#8b949e}
+  .foot{margin-top:30px;color:#8b949e;font-size:12px;border-top:1px solid #30363d;padding-top:12px}
+  a{color:#58a6ff;text-decoration:none}a:hover{text-decoration:underline}
+  @media(max-width:640px){.wrap{padding:16px 12px 48px}h1{font-size:20px}table{font-size:12px}th,td{padding:6px 7px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="sub">零界 · 司马徽研究院 / 研究课题</div>
+  <h1>LCS-1 信号重定义</h1>
+  <div class="sub">课题 AC-20261030-LCS1-REDEFINE ｜ STRAT1 · 负责 ｜ ACAD1 评审 ｜ 更新 2026-10-30</div>
+  <div class="chips">
+    <span class="chip yellow">A6：No-Go</span>
+    <span class="chip yellow">新课题：P1 归因中</span>
+    <span class="chip red">D3/D4：未冻结</span>
+    <span class="chip green">D1：已冻结</span>
+    <span class="chip">非自动交易 · 不承诺收益</span>
+  </div>
+
+  <h2>一、结论摘要</h2>
+  <div class="grid">
+    <div class="card"><div class="k">A6 全市场（runup）</div><div class="v neg">No-Go</div><div class="sub">样本外 5/10/20 日超额 +0.02% / +0.11% / +0.13%，胜率 44%~46%</div></div>
+    <div class="card"><div class="k">accumulate 信号</div><div class="v">in 61 / out 2</div><div class="sub">样本内 20 日 -7.29%，统计不可用</div></div>
+    <div class="card"><div class="k">新课题</div><div class="v">假设卡 PASS</div><div class="sub">ACAD1 评审：有条件通过，P1 可开</div></div>
+    <div class="card"><div class="k">下一步</div><div class="v">P1 归因</div><div class="sub">100 码 / 2 年；不调 A6、不硬救</div></div>
+  </div>
+
+  <h2>二、A6 全市场结果（L1-only）</h2>
+  <table>
+    <tr><th>窗口</th><th>假设</th><th class="num">信号</th><th class="num">5 日超额/胜率</th><th class="num">10 日</th><th class="num">20 日</th></tr>
+    <tr><td>in 2023-07-31~2025-06-30</td><td>runup</td><td class="num">168,725</td><td class="num">+0.023% / 41.2%</td><td class="num">+0.058% / 40.0%</td><td class="num">+0.186% / 39.5%</td></tr>
+    <tr><td>in 2023-07-31~2025-06-30</td><td>accumulate</td><td class="num">61</td><td class="num neg">-1.32% / 42.6%</td><td class="num neg">-2.85% / 44.3%</td><td class="num neg">-7.29% / 23.0%</td></tr>
+    <tr><td>out 2025-07-01~2026-10-16</td><td>runup</td><td class="num">31,769</td><td class="num">+0.020% / 45.7%</td><td class="num">+0.109% / 44.8%</td><td class="num">+0.127% / 44.0%</td></tr>
+    <tr><td>out 2025-07-01~2026-10-16</td><td>accumulate</td><td class="num">2</td><td class="num">样本不足</td><td class="num">—</td><td class="num">—</td></tr>
+  </table>
+  <div class="sub" style="margin-top:6px">结论：无成本后稳定优势；按预注册规则终止 A6，不进入组合回测、不调参救结果。</div>
+
+  <h2>三、accumulate 失效归因（待 P1 验证）</h2>
+  <div class="box">
+    <p><b>1. 阈值合取过严</b>：振幅&lt;25% ∧ 250日分位&lt;40% ∧ 量比≥3 日≥3 ∧ 箱底不破，联合命中率极低（2 年仅 61 个）。</p>
+    <p><b>2. 条件互斥/样本稀疏</b>：低位、低振幅、放量吸筹在样本期本身稀少。</p>
+    <p><b>3. 复权/量口径</b>：价格后复权、成交量原始；除权/停牌可能影响几何判据。</p>
+    <p><b>4. 缺 L2/L3 过滤</b>：仅图形无法区分吸筹与价值陷阱/诱多。</p>
+    <p><b>5. 时间尺度不匹配</b>：吸筹→兑现可能 &gt;20 日。</p>
+    <p><b>6. 样本不均衡</b>：n=61 不出收益结论，只做归因。</p>
+  </div>
+
+  <h2>四、新假设（H1/H0）</h2>
+  <div class="box">
+    <p><b>H1</b>：L1 宽候选 + L2 事件三态 + L3 席位三态过滤，样本外成本后正超额；至少一层有增量。</p>
+    <p><b>H0</b>：加入 L2/L3 后仍无成本后超额，或增量来自数据泄漏/样本选择；LCS-1 应终止。</p>
+    <p class="sub">可证伪：样本外超额≤0 或 CI 含 0；3 子区间≥2 为负；去掉 L2/L3 无显著下降；S3 对账&lt;99%。</p>
+  </div>
+
+  <h2>五、数据冻结与进度</h2>
+  <table>
+    <tr><th>数据</th><th>用途</th><th>状态</th></tr>
+    <tr><td>D1 tdx 日线/复权/基础</td><td>L1 价格/量</td><td class="pos">✅ 已冻结（sha d538a1be…fdc）</td></tr>
+    <tr><td>D3 news.db / ts_news</td><td>L2 事件</td><td class="neg">❌ 未冻结（DATA1 申请已提，deadline 11-03）</td></tr>
+    <tr><td>D4 ts_top_list / ts_top_inst</td><td>L3 席位</td><td class="neg">❌ 未冻结（同上）</td></tr>
+  </table>
+  <ul class="timeline">
+    <li class="done"><b>P0 假设卡</b><span class="tag done">done</span><br><span class="sub">ACAD1 评审 PASS（有条件）</span></li>
+    <li class="doing"><b>P1 归因</b><span class="tag doing">doing</span><br><span class="sub">100 码/2 年；单条件分解 + 复权对照；不出收益结论</span></li>
+    <li class="todo"><b>P2 数据冻结</b><span class="tag todo">blocked</span><br><span class="sub">D3/D4 四字段 + sha + as-of</span></li>
+    <li class="todo"><b>P3 小样本回测</b><span class="tag todo">blocked</span><br><span class="sub">预注册后开跑；样本内外分开 + S3≥99%</span></li>
+    <li class="todo"><b>P4 扩全市场 / 终止</b><span class="tag todo">pending</span><br><span class="sub">通过才扩；不通过终止，不硬救</span></li>
+  </ul>
+
+  <h2>六、边界</h2>
+  <div class="box">
+    <p>· A6 已 No-Go 关闭，不在本轮调参/重跑；</p>
+    <p>· 无 D3/D4 冻结不出 L2/L3 结论；</p>
+    <p>· 不构成投资建议、不接自动交易、不承诺收益；</p>
+    <p>· 研究结论须 ACAD1 评审，Go 仍须老田签。</p>
+  </div>
+
+  <div class="foot">
+    文档：<a href="/static/">返回静态页</a> ｜
+    <a href="/academy">研究院</a> ｜
+    数据来源：deliverables/2026-10-30_LCS1_A6_No-Go报告_v1.md、假设卡 v0.1、ACAD1 评审 v1。
+  </div>
+</div>
+</body>
+</html>
