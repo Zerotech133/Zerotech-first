@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-29 09:31",
+ "generated": "2026-10-29 10:06",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,19 +9,10 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 47,
+  "workorders_doing": 50,
   "workorders_review": 7
  },
  "workorders": [
-  {
-   "id": "WO-LCS1-FREEZE-20261027",
-   "desc": "LCS-1 数据冻结回执（DATA1 主责，ACAD1 请求单 WO-LEGION-LCS1-FREEZE-REQ-20261027 / 请求单 2026-10-27_DATA1_LCS1冻结回执请求单_v1）：按四字段写 freeze_receipts/AC-20261017-LCS1.json（data_version/sample_in/sample_out/cost_model+sha256+frozen_at+by），同步 backtests.jsonl 四字段；数据不足则出《冻结不可用报告》不伪造；deadline 2026-10-28 12:00；验收=research_seat_ops back1 显示 READY。非目标：不改数据根结构/不跑回测/不代签。回滚：git revert merge-commit。",
-   "status": "doing",
-   "owner": "DATA1",
-   "branch": "task/WO-LCS1-FREEZE-20261027",
-   "created": "2026-10-27 12:00:34",
-   "project": "quant"
-  },
   {
    "id": "WO-MCP-TOKEN-INJECT-20261027",
    "desc": "LegionOps 启动脚本从 SOPS 注入 TUSHARE_MCP_TOKEN（不落明文、不改计划任务）",
@@ -446,15 +437,6 @@
    "project": "quant"
   },
   {
-   "id": "WO-DEVTASK-MERGE-LOCK-20261029",
-   "desc": "devtask 合并锁：仓库级文件锁串行化 git merge（防并发 HEAD/index 竞争），带超时/陈旧锁回收/pid 校验；merge 段 try/finally 释放；补并发/陈旧锁单测",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-DEVTASK-MERGE-LOCK-20261029",
-   "created": "2026-10-29 09:24:02",
-   "project": "portal"
-  },
-  {
    "id": "WO-GUANYU-P26-20261029",
    "desc": "B1登记更新 [UNOWNED]",
    "status": "review",
@@ -498,6 +480,51 @@
    "branch": "task/WO-HK-R1-AUTO2-20261029",
    "created": "2026-10-29 09:31:13",
    "project": "general"
+  },
+  {
+   "id": "K-ORG-20261029-JEVGATEFIX",
+   "desc": "修复夜跑按需闸路径被转义破坏（BEL/TAB）+ 静态回归测试",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-ORG-20261029-JEVGATEFIX",
+   "created": "2026-10-29 09:37:09",
+   "project": "general"
+  },
+  {
+   "id": "K-QUANT-20261029-IDEHELLO",
+   "desc": "IDE简单问候无反应修复：needsTools门控，只有项目/文件/代码类请求才注入工具规则和自动上下文；你好走单次回复；测试",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-QUANT-20261029-IDEHELLO",
+   "created": "2026-10-29 09:38:08",
+   "project": "quant"
+  },
+  {
+   "id": "K-QUANT-20261029-IDEPOLISH",
+   "desc": "IDE显示收口：回复完成后气泡标题改 回复·耗时；简单Markdown粗体/行内代码渲染；测试",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-QUANT-20261029-IDEPOLISH",
+   "created": "2026-10-29 09:46:41",
+   "project": "quant"
+  },
+  {
+   "id": "WO-PLAN-DISPATCH-20261029",
+   "desc": "研发计划拆解与分派工具（补曹操拿计划→拆解→分到人半自动缺口）：tools/plan_dispatch.py 输入 WBS JSON（要素/owner/acceptance/deps/effort），校验 owner 合法/依赖无环/discipline 匹配/容量，--dry-run 生成 devtask+tianfeng 命令，--apply 执行；测试+说明。",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-PLAN-DISPATCH-20261029",
+   "created": "2026-10-29 09:49:03",
+   "project": "general"
+  },
+  {
+   "id": "K-QUANT-20261029-IDEHISTORY",
+   "desc": "IDE会话记忆：send携带最近8条历史消息；addMsg保存raw；双轮追问验证",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-QUANT-20261029-IDEHISTORY",
+   "created": "2026-10-29 10:05:29",
+   "project": "quant"
   }
  ],
  "coder_traces": [
@@ -2482,14 +2509,7 @@
    ],
    "experience": "20 年数据工程经验：实体映射、血缘三表、增量同步监护与特征湖 parquet 口径守护；数据口径不一致是最大事故源，口径守护是第一职责。",
    "dept_name": "数据智能部",
-   "dept_cn_title": "兰台",
-   "tasks": [
-    {
-     "id": "WO-LCS1-FREEZE-20261027",
-     "desc": "LCS-1 数据冻结回执（DATA1 主责，ACAD1 请求单 WO-LEGION-LCS1-FREEZE-REQ-20261027 / 请求单 2026-10-27_DATA1_LCS1冻结回执请求单_v1）：按四字段写 freeze_receipts/AC-20261017-LCS1.json（data_version/sample_in/sample_out/cost_model+sha256+frozen_at+by），同步 backtests.jsonl 四字段；数据不足则出《冻结不可用报告》不伪造；deadline 2026-10-28 12:00；验收=research_seat_ops back1 显示 READY。非目标：不改数据根结构/不跑回测/不代签。回滚：git revert merge-commit。",
-     "status": "doing"
-    }
-   ]
+   "dept_cn_title": "兰台"
   },
   "DEV1": {
    "id": "DEV1",
