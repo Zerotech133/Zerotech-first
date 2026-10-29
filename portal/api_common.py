@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """P4 批 0：portal 共享底座（helper+方案A+状态锁/常量+导航族+tp共享+_sched判色）。
 由批 0 施工脚本从 portal_api.py 结构边界剪切生成；唯一实例（锁/缓存单例）。
 消费方必须显式 import（import * 不导出下划线名）。
@@ -357,7 +357,8 @@ DOMAIN_NAV_GROUPS = {
     ),
     "ops": (
         ("🛰 数据运营", (
-            ("🎛 数据指挥台", "/dataops", "dataops"),)),
+            ("🎛 数据指挥台", "/dataops", "dataops"),
+            ("🗄 数据仓", "/dw.html", "dw"),)),
         ("🪖 军团", (
             ("🏛 组织架构 🚧", "/org", "org"),
             ("✅ 审批注册表", "/approvals", "approvals"),
