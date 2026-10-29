@@ -24,6 +24,7 @@ import json
 import os
 import re
 import socket
+from concurrent.futures import ThreadPoolExecutor
 import subprocess
 import sys
 import logging
@@ -134,6 +135,19 @@ def tcp_up(port, timeout=0.8):
         return False
 
 
+def tcp_up_many(ports, timeout=0.8, workers=24):
+    """并行探测多个端口（2026-10-29 P40：56 口串行 0.8s 超时 → 合并门每单多付 ~28s）。
+
+    返回 {port: bool}；探测顺序无关，输出仍按 ports 顺序渲染。
+    """
+    ports = list(ports)
+    if not ports:
+        return {}
+    with ThreadPoolExecutor(max_workers=min(workers, len(ports))) as ex:
+        results = list(ex.map(lambda p: tcp_up(p, timeout), ports))
+    return dict(zip(ports, results))
+
+
 def listening_ports():
     """netstat 解析本机 TCP LISTENING {port: pid}（IPv4/IPv6）。"""
     out = subprocess.run(["netstat", "-ano", "-p", "TCP"],
@@ -150,6 +164,35 @@ def listening_ports():
 
 
 _PROC_CACHE = {}
+
+
+
+def _prime_proc_names(pids, timeout=15):
+    """批量预热 PID→进程名（tasklist 一次拿全，避免逐个 PowerShell 查询）。
+
+    2026-10-29 P40：原 proc_name 对每个未登记监听 PID 起一次 PowerShell，
+    机器上第三方监听多时合并门要额外十几秒；tasklist 一次性解析即可。
+    """
+    todo = [int(p) for p in pids if int(p) not in _PROC_CACHE]
+    if not todo:
+        return
+    try:
+        out = subprocess.run(["tasklist", "/FO", "CSV", "/NH"],
+                             capture_output=True, text=True,
+                             encoding="gbk", errors="replace",
+                             timeout=timeout).stdout or ""
+    except (OSError, subprocess.TimeoutExpired):
+        return
+    import csv as _csv
+    for row in _csv.reader(out.splitlines()):
+        if len(row) < 2:
+            continue
+        try:
+            pid = int(row[1])
+        except (TypeError, ValueError):
+            continue
+        if pid in todo:
+            _PROC_CACHE[pid] = (row[0] or "").strip()
 
 
 def registry_duplicate_ports(path=None):
@@ -310,8 +353,9 @@ def main():
     say("== 注册端口在线状态 ==")
     down = []
     registered = []
+    up_map = tcp_up_many(sorted(REGISTRY))
     for p in sorted(REGISTRY):
-        up = tcp_up(p)
+        up = up_map[p]
         say("  %-5d %-5s %s%s" % (p, "✓在线" if up else "✗离线",
                                     REGISTRY[p],
                                     "（可离线）" if p in OPTIONAL_OFFLINE
@@ -322,6 +366,8 @@ def main():
             down.append(p)
     say("== 未登记监听（服务段 1024-49151，系统/第三方豁免）==")
     listen = listening_ports()
+    _prime_proc_names([pid for p, pid in listen.items()
+                       if 1024 < p <= 49151 and p not in REGISTRY])
     unknown = []
     for p, pid in sorted(listen.items()):
         if not (1024 < p <= 49151) or p in REGISTRY:
