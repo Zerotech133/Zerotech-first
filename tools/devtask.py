@@ -1385,7 +1385,10 @@ def _quality_gate(tid):
             tail = ((p.stdout or "") + (p.stderr or "")).strip().splitlines()[-6:]
             return False, "变更的 tools 测试未过 rc=%d：%s" % (
                 p.returncode, " | ".join(tail)[:300])
-    return True, "fast 门通过（%d 文件）" % len(files)
+    # 2026-10-30 P41：通知 pre-merge-commit 钩子跳过重复测试（此前内外各跑一遍，
+    # 每单白等 ~5 分钟）。必须只在真跑过且全过后置位；钩子侧仅认该变量。
+    os.environ["DEVTOOL_PREFLIGHT_DONE"] = "1"
+    return True, "fast 门通过（%d 文件，钩子将跳过重复测试）" % len(files)
 
 
 def cmd_merge(tid, *flags):

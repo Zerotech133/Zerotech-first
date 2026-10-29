@@ -98,6 +98,10 @@ def dep_age_hint(files: list[str], runner=None):
 
 
 def main() -> int:
+    # 2026-10-30 P41：devtask 内联质量闸已真跑并通过（同一进程链），跳过重复测试。
+    if os.environ.get("DEVTOOL_PREFLIGHT_DONE") == "1":
+        print("preflight: 内联质量闸已跑（跳过重复测试）")
+        return 0
     # 2026-10-29 合并串行锁：直连 git merge 的 hook 也需持锁（父进程已持锁则复用）
     if not os.environ.get("AIOS_MERGE_LOCK_TOKEN"):
         try:
