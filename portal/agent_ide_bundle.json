@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 03:14",
+ "generated": "2026-10-30 03:19",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 26,
+  "workorders_doing": 29,
   "workorders_review": 9
  },
  "workorders": [
@@ -326,6 +326,33 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-SEC-AUDIT-TASK-20261030",
    "created": "2026-10-30 02:44:43",
+   "project": "general"
+  },
+  {
+   "id": "K-QUANT-20261030-OHUI",
+   "desc": "IDE接入OpenHands执行入口：OH按钮+会话ID+适配器调用+过程状态",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-QUANT-20261030-OHUI",
+   "created": "2026-10-30 03:16:25",
+   "project": "quant"
+  },
+  {
+   "id": "WO-GUANYU-P57-20261030",
+   "desc": "api_kg拆分收尾",
+   "status": "doing",
+   "owner": "GUANYU",
+   "branch": "task/WO-GUANYU-P57-20261030",
+   "created": "2026-10-30 03:16:59",
+   "project": "general"
+  },
+  {
+   "id": "WO-SEC-BANDIT-FIX-20261030",
+   "desc": "bandit高危修复：B202 tar extractall filter=data + B324弱哈希加usedforsecurity=False（18处非安全用途）",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-SEC-BANDIT-FIX-20261030",
+   "created": "2026-10-30 03:17:11",
    "project": "general"
   }
  ],
@@ -6362,7 +6389,14 @@
    ],
    "experience": "30 年工程治理经验：漏洞分级与补丁流程、失败测试基线修复、编码规范与门禁落地、技术债清欠与重复功能合并；证据驱动、逐项闭环，只出报告与工单不自行合并，开发动作限独立 worktree 提交+跑测试并交 L2 人签。",
    "dept_name": "研究院",
-   "dept_cn_title": "太学"
+   "dept_cn_title": "太学",
+   "tasks": [
+    {
+     "id": "WO-GUANYU-P57-20261030",
+     "desc": "api_kg拆分收尾",
+     "status": "doing"
+    }
+   ]
   },
   "HUANGZHONG": {
    "id": "HUANGZHONG",
@@ -7046,6 +7080,11 @@
      "id": "WO-SEC-AUDIT-TASK-20261030",
      "desc": "security_audit.ps1：py311 pip-audit(freeze)+py312 bandit，固定日志/status，任务可靠退出",
      "status": "review"
+    },
+    {
+     "id": "WO-SEC-BANDIT-FIX-20261030",
+     "desc": "bandit高危修复：B202 tar extractall filter=data + B324弱哈希加usedforsecurity=False（18处非安全用途）",
+     "status": "doing"
     }
    ]
   }
