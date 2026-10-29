@@ -47,7 +47,7 @@ KNOWN_BRACKET = {
 
 def fingerprint(e):
     raw = "|".join(str(e.get(k) or "") for k in ("ts", "kind", "task", "detail"))
-    return hashlib.sha1(raw.encode("utf-8")).hexdigest()[:16]
+    return hashlib.sha1(raw.encode("utf-8"), usedforsecurity=False).hexdigest()[:16]
 
 
 def _valid(agent):

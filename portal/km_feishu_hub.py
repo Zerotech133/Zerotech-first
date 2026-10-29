@@ -146,7 +146,7 @@ def _walk_files(root, exts, max_files):
 
 def _snapshot_path(lib_name):
     return os.path.join(
-        SNAP_DIR, hashlib.md5(lib_name.encode("utf-8")).hexdigest() + ".json"
+        SNAP_DIR, hashlib.md5(lib_name.encode("utf-8"), usedforsecurity=False).hexdigest() + ".json"
     )
 
 

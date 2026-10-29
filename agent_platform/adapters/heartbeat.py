@@ -52,7 +52,7 @@ def validate_checked_at(v):
     try:
         time.strptime(v, "%Y-%m-%dT%H:%M")
     except ValueError:
-        raise HeartbeatError("checked_at=%r 非法日期时间" % (v,))
+        raise HeartbeatError("checked_at=%r 非法日期时间" % (v,)) from None
     return v
 
 
@@ -81,7 +81,7 @@ def validate_sample(sample):
 def heartbeat_key(source, checked_at):
     """幂等键：checked_at 分钟粒度 + source（同分钟同源=同键覆盖语义跳过）。"""
     raw = "%s|%s" % (checked_at, source)
-    return hashlib.sha1(raw.encode("utf-8")).hexdigest()[:16]
+    return hashlib.sha1(raw.encode("utf-8"), usedforsecurity=False).hexdigest()[:16]
 
 
 def resolve_root(root=None):
@@ -182,7 +182,7 @@ class FileProbe(HeartbeatProbe):
         try:
             j = json.loads(self.state_file.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, UnicodeDecodeError) as e:
-            raise HeartbeatError("状态文件非合法 JSON：%s" % str(e)[:120])
+            raise HeartbeatError("状态文件非合法 JSON：%s" % str(e)[:120]) from e
         if not isinstance(j, dict):
             raise HeartbeatError("状态文件顶层必须是 JSON 对象")
         if not isinstance(j.get("alive"), bool):

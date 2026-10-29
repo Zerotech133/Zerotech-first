@@ -105,7 +105,7 @@ import logging
 
 
 def _ticket_id(plan: dict, tid: str) -> str:
-    h = hashlib.sha1(str(plan.get("mission_id") or "M").encode()).hexdigest()[:6].upper()
+    h = hashlib.sha1(str(plan.get("mission_id") or "M").encode(), usedforsecurity=False).hexdigest()[:6].upper()
     return "K-MISSION-%s-%s" % (h, tid)
 
 

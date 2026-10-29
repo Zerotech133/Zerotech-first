@@ -101,7 +101,7 @@ def _in_period(day_str, start_day, end_day):
 def _fingerprint(e):
     import hashlib
     raw = "|".join(str(e.get(k) or "") for k in ("ts", "kind", "task", "detail"))
-    return hashlib.sha1(raw.encode("utf-8")).hexdigest()[:16]
+    return hashlib.sha1(raw.encode("utf-8"), usedforsecurity=False).hexdigest()[:16]
 
 
 def _load_repairs():

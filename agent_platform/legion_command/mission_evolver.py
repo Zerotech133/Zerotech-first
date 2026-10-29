@@ -167,7 +167,7 @@ def evolve() -> dict:
     payload = {
         "schema": "mission_experience_candidate/v1",
         "candidate_id": "cand-" + hashlib.sha1(
-            (time.time_ns().__str__() + str(len(records))).encode()).hexdigest()[:10],
+            (time.time_ns().__str__() + str(len(records))).encode(), usedforsecurity=False).hexdigest()[:10],
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
         "status": "candidate",
         "requires_signature": True,

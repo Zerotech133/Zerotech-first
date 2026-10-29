@@ -287,7 +287,7 @@ def classify(text):
 def _text_key(text):
     return hashlib.md5(
         "".join(str(text).split()).lower().encode("utf-8", "replace")
-    ).hexdigest()
+    , usedforsecurity=False).hexdigest()
 
 
 def _url_key(url):
@@ -295,7 +295,7 @@ def _url_key(url):
     norm = urllib.parse.urlunsplit(
         (p.scheme.lower(), p.netloc.lower(), p.path or "/", p.query, "")
     )  # fragment 不参键（同页不同锚=同内容）
-    return hashlib.md5(norm.encode("utf-8", "replace")).hexdigest()
+    return hashlib.md5(norm.encode("utf-8", "replace"), usedforsecurity=False).hexdigest()
 
 
 def minhash_sig(text):
@@ -310,7 +310,7 @@ def minhash_sig(text):
         sig.append(
             min(
                 int.from_bytes(
-                    hashlib.md5(salt + g.encode("utf-8", "replace")).digest()[:8], "big"
+                    hashlib.md5(salt + g.encode("utf-8", "replace"), usedforsecurity=False).digest()[:8], "big"
                 )
                 for g in grams
             )

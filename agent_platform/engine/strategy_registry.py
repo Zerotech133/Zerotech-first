@@ -225,7 +225,7 @@ def _ledger_path(root):
 def verdict_key(strategy_id, symbol, trade_date):
     """幂等键：strategy_id|symbol|trade_date（同键同值=幂等回放）。"""
     raw = "%s|%s|%s" % (strategy_id, symbol, trade_date)
-    return hashlib.sha1(raw.encode("utf-8")).hexdigest()[:16]
+    return hashlib.sha1(raw.encode("utf-8"), usedforsecurity=False).hexdigest()[:16]
 
 
 def record_verdicts(verdicts, root, trade_date, run_id=""):

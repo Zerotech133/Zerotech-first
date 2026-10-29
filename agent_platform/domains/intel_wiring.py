@@ -214,7 +214,7 @@ def _job_run_key(row: Dict) -> str:
     basis = "|".join(
         str(row.get(k, "")) for k in ("output_table", "job", "step", "started_at")
     )
-    return hashlib.sha1(basis.encode("utf-8")).hexdigest()[:8]
+    return hashlib.sha1(basis.encode("utf-8"), usedforsecurity=False).hexdigest()[:8]
 
 
 def _draft_for_break(root: Path, row: Dict, downstream: List[str], by: str) -> Dict:
