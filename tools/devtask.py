@@ -445,6 +445,29 @@ def _ocr_warn_gate(branch, worktree=""):
 
 
 
+def _visual_warn_gate(branch, worktree=""):
+    """组件视觉基线门（warn-only，第六道；绝不阻断合并）。
+
+    检查 UI Kit 资产/示例页/截图与 manifest hash 是否一致；若分支改了
+    UI Kit 但没更新基线，只打印告警。失败/缺 manifest 也放行。
+    """
+    try:
+        r = subprocess.run(
+            [sys.executable, os.path.join(REPO, "tools", "ui_visual_gate.py"),
+             "--branch", branch, "--warn-only", "--json"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
+        data = json.loads(r.stdout) if r.stdout.strip().startswith("{") else {}
+        warns = data.get("warnings") or []
+        if warns:
+            print("  %-8s ⚠ %s（warn-only，不阻断）"
+                  % ("组件视觉基线", "；".join(str(w) for w in warns[:3])))
+        else:
+            print("  %-8s ✓ 基线资产一致" % "组件视觉基线")
+    except Exception as exc:  # noqa: BLE001 - warn 门绝不阻断
+        print("  %-8s ? 检查失败（忽略，不阻断）：%s"
+              % ("组件视觉基线", str(exc)[:120]))
+
+
 def _git(*args, cwd=REPO):
     r = subprocess.run(["git"] + list(args), cwd=cwd, capture_output=True,
                        text=True, encoding="utf-8", errors="replace")
@@ -1705,6 +1728,8 @@ def cmd_merge(tid, *flags):
         _gitleaks_warn_gate(t["branch"], t.get("worktree"))
     with _timed("ocr_warn"):
         _ocr_warn_gate(t["branch"], t.get("worktree"))
+    with _timed("visual_warn"):
+        _visual_warn_gate(t["branch"], t.get("worktree"))
     # K-STOCK-416：L2 宿主机级危险操作门（代码强制层，判例 K-STOCK-413）
     _g0 = time.perf_counter()
     r = subprocess.run([sys.executable,

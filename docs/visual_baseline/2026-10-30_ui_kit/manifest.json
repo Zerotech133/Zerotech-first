@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "note": "零界 UI Kit v0.1 组件视觉基线；UI Kit 变更后更新此 manifest",
+  "files": {
+    "portal/static/ui/ui.css": "01734c5e071f040fdc716a264a3a719ac48ffd64316a03548957375f90adaaf1",
+    "portal/static/ui/ui.js": "6479df299cc9c041d69f16d700c281c3f968f5acc0a59bb0ab8d8eec31e5a922",
+    "portal/ui_kit.html": "cf56c325dd8d2e952b8e454f3bff483dce94e836e3feecdb080f9a8692df6001",
+    "docs/visual_baseline/2026-10-30_ui_kit/ui_kit_1440.png": "3465e308ac3e9d47a85fd5f24e9654a990f102bba3b24ff3df946df39ee9bd01",
+    "docs/visual_baseline/2026-10-30_ui_kit/ui_kit_390.png": "dfbb36af6527b3083f6f429b10f1d13e39ef0ed18f649b2bab134f17ec3595ab"
+  }
+}
