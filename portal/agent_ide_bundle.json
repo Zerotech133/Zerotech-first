@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 01:14",
+ "generated": "2026-10-30 01:16",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 31,
+  "workorders_doing": 30,
   "workorders_review": 4
  },
  "workorders": [
@@ -299,15 +299,6 @@
    "owner": "DSH-Lead",
    "branch": "task/WO-P2-FIX-20261030",
    "created": "2026-10-30 01:00:46",
-   "project": "general"
-  },
-  {
-   "id": "WO-HZ-HR-20261030",
-   "desc": "HUANGZHONG HR补录：resume.yaml+一致性测试",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-HZ-HR-20261030",
-   "created": "2026-10-30 01:01:14",
    "project": "general"
   },
   {
@@ -6365,9 +6356,31 @@
    "cn_name": "黄忠",
    "name": "黄忠",
    "role_cn": "交付验收总长",
-   "capabilities": [],
-   "skills": [],
-   "experience": "",
+   "capabilities": [
+    "验收判据设计",
+    "QualityGate 七检",
+    "测试失败基线",
+    "红队报告解读",
+    "回滚与证据链",
+    "只读权限边界",
+    "验收单判定（PASS/REJECT/OBSERVE）",
+    "修复车道只读复核",
+    "trace 观测",
+    "差异审查与 KPI 统计"
+   ],
+   "skills": [
+    "验收判据设计",
+    "QualityGate 七检",
+    "测试失败基线",
+    "红队报告解读",
+    "回滚与证据链",
+    "只读权限边界",
+    "验收单判定（PASS/REJECT/OBSERVE）",
+    "修复车道只读复核",
+    "trace 观测",
+    "差异审查与 KPI 统计"
+   ],
+   "experience": "指挥部老将·验收守门官（交付验收总长）",
    "dept_name": "研究院",
    "dept_cn_title": "太学"
   },
