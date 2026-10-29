@@ -21,6 +21,8 @@ from dev_legion_aggregate import (build_governance, build_metrics,
 from dev_legion_ai_card import build_ai_cards
 from dev_legion_quant_card import build_quant_cards
 from dev_legion_risk_card import build_risk_cards
+from dev_legion_quant_real import build_quant_real
+from dev_legion_risk_real import build_risk_real
 
 ROOT = Path(__file__).resolve().parents[1]
 ORG = ROOT / "agent_platform" / "registry" / "org.json"
@@ -128,6 +130,21 @@ def build_payload(root=ROOT):
         if _p.get("agent_id") == lead:
             lead_name = _seat(_p)["name"]
             break
+    # v1.1 可选真实聚合（无真源/无席位时不出现，v1 客户端无感）
+    ai_cards = build_ai_cards(org)
+    quant_cards = build_quant_cards(org)
+    risk_cards = build_risk_cards(org)
+    extensions = []
+    qreal = build_quant_real(root)
+    if qreal and quant_cards:
+        for _c in quant_cards:
+            _c["real"] = qreal
+        extensions.append("v1.1_quant_real")
+    rreal = build_risk_real(root)
+    if rreal and risk_cards:
+        for _c in risk_cards:
+            _c["real"] = rreal
+        extensions.append("v1.1_risk_real")
     return {
         "schema": "legion_screen_contract/v1",
         "readonly": True,
@@ -141,14 +158,15 @@ def build_payload(root=ROOT):
             "groups": groups,
         },
         "seats": seats,
-        "ai_cards": build_ai_cards(org),
-        "quant_cards": build_quant_cards(org),
-        "risk_cards": build_risk_cards(org),
+        "ai_cards": ai_cards,
+        "quant_cards": quant_cards,
+        "risk_cards": risk_cards,
         "work_in_progress": wip,
         "governance": build_governance(tasks if isinstance(tasks, dict) else {}),
         "metrics": metrics,
         "redlines": redlines,
         "sources": SOURCES,
+        "extensions": extensions,
         "errors": errors,
     }
 
