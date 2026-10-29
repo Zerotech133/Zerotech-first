@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-29 11:54",
+ "generated": "2026-10-29 12:04",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 47,
+  "workorders_doing": 48,
   "workorders_review": 6
  },
  "workorders": [
@@ -488,6 +488,15 @@
    "owner": "DSH-Lead",
    "branch": "task/K-QUANT-20261029-IDEHISTORY",
    "created": "2026-10-29 10:05:29",
+   "project": "quant"
+  },
+  {
+   "id": "WO-LCS1-A6-BACKTEST-20261029",
+   "desc": "A6-A L1-only 回测（按 2026-10-29 信号定义 v0.1）：tdx 适配 chart_hypothesis 五算子→候选池→事件研究5/10/20→组合回测（样本内预选/样本外验证）→S3≥99%→报告；不做 L2/L3，不做交易执行；deadline 2026-11-02。",
+   "status": "doing",
+   "owner": "BACK1",
+   "branch": "task/WO-LCS1-A6-BACKTEST-20261029",
+   "created": "2026-10-29 12:01:33",
    "project": "quant"
   }
  ],
@@ -1859,7 +1868,14 @@
    ],
    "experience": "20 年从业经验（回测研究：复现、样本外与成本压力测试）",
    "dept_name": "研究院",
-   "dept_cn_title": "太学"
+   "dept_cn_title": "太学",
+   "tasks": [
+    {
+     "id": "WO-LCS1-A6-BACKTEST-20261029",
+     "desc": "A6-A L1-only 回测（按 2026-10-29 信号定义 v0.1）：tdx 适配 chart_hypothesis 五算子→候选池→事件研究5/10/20→组合回测（样本内预选/样本外验证）→S3≥99%→报告；不做 L2/L3，不做交易执行；deadline 2026-11-02。",
+     "status": "doing"
+    }
+   ]
   },
   "COMM1": {
    "id": "COMM1",
