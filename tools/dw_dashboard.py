@@ -251,11 +251,22 @@ def load_sources(cat: dict) -> list[dict]:
         table = cat["tables"].get(d.name) or {}
         mb = _size_mb(d)
         rows_n = _parquet_rows(d, table.get("rows"))
-        # 最新数据日期：按日文件取最后一个 d_ 文件；否则用 catalog date 状态/mtime
+        # 最新数据日期：按日文件取最后一个 d_ 文件；财报类取「最新公告日」；否则用 catalog date 状态
         latest_date = ""
+        report_period = ""
+        if d.name in ("income", "balancesheet", "cashflow", "fina_indicator"):
+            try:
+                fr = json.loads((DATA / "tushare" / "_fin_freshness.json").read_text(encoding="utf-8"))
+                x = fr.get(d.name) or {}
+                latest_date = str(x.get("latest_ann_date") or "")
+                report_period = str(x.get("report_period") or "")
+                note = (note + "；最新公告日 " + (latest_date or "—") +
+                        ("，报告期 " + report_period[:4] + "-" + report_period[4:6] if report_period else ""))
+            except Exception:  # noqa: BLE001
+                pass
         if files and files[-1].stem.startswith("d_"):
             latest_date = files[-1].stem[2:]
-        elif files and table.get("date_col"):
+        elif files and table.get("date_col") and d.name not in ("income", "balancesheet", "cashflow", "fina_indicator"):
             try:
                 import pyarrow.parquet as pq
                 import pyarrow.compute as pc
@@ -271,6 +282,7 @@ def load_sources(cat: dict) -> list[dict]:
                      "size_h": _fmt_size(mb), "rows": rows_n,
                      "rows_h": ("%s 万" % round(rows_n / 10000, 1)) if rows_n and rows_n >= 10000 else (str(rows_n) if rows_n else "—"),
                      "range": range_s, "last_update": last_update, "latest_date": latest_date,
+                     "report_period": report_period,
                      "lag_days": lag, "today_new": today_new,
                      "registered": bool(table), "manifest": table.get("manifest_status") or "—",
                      "date_status": table.get("date_status") or "—",

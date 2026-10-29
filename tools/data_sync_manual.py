@@ -54,6 +54,11 @@ STEPS = {
                 "--apply", "--since", (datetime.now().replace(day=1)).strftime("%Y-%m-%d"), "--limit", "300"],
         "cwd": REPO, "timeout": 900,
     },
+    "fin": {
+        "desc": "财报补齐（按报告期拉全市场并合并，income/balance/cashflow/fina）",
+        "cmd": [PY312, "-X", "utf8", str(REPO / "tools" / "fin_report_sync.py"), "--period", _last_quarter_end()],
+        "cwd": REPO, "timeout": 2400,
+    },
     "snapshot": {
         "desc": "刷新驾驶舱快照（dw_snapshot.json）",
         "cmd": [PY312, "-X", "utf8", str(REPO / "tools" / "dw_dashboard.py")],
