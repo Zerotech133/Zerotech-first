@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-29 08:16",
+ "generated": "2026-10-29 08:17",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 35,
+  "workorders_doing": 34,
   "workorders_review": 7
  },
  "workorders": [
@@ -372,15 +372,6 @@
    "branch": "task/K-QUANT-20261029-IDETOOLS",
    "created": "2026-10-29 08:10:53",
    "project": "quant"
-  },
-  {
-   "id": "WO-GUANYU-P22-20261029",
-   "desc": "治理方案文档入主线 [UNOWNED]",
-   "status": "doing",
-   "owner": "unknown-agent",
-   "branch": "task/WO-GUANYU-P22-20261029",
-   "created": "2026-10-29 08:16:02",
-   "project": "general"
   },
   {
    "id": "WO-V11-IMPL-20261029",
