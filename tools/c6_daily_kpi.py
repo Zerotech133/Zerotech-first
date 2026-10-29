@@ -38,6 +38,9 @@ TASKS = os.path.join(REPO, ".worktrees", "tasks.json")
 EVENTS = os.path.join(REPO, "portal", "data", "dev_events.jsonl")
 ROUTING = os.path.join(REPO, "agent_platform", "config", "dev_routing_rules.json")
 DEFAULT_OUT_DIR = os.path.join(REPO, "agent_platform", "data", "dev", "c6_daily")
+PAPER_LEDGER = os.path.join(REPO, "agent_platform", "data", "paper", "paper_ledger.jsonl")
+PAPER_STATE = os.path.join(REPO, "agent_platform", "data", "paper", "state.json")
+PAPER_KILL = os.path.join(REPO, "agent_platform", "data", "paper", "KILL")
 
 DEFAULT_DEV_SEATS = ("ARCH1", "DEV1", "DEV2", "DEV3", "DEV4", "DEV5", "DEV6",
                      "DEV7", "DEV8", "OPS1", "DOC1")
@@ -116,6 +119,48 @@ def _load_repairs():
     except OSError:
         pass
     return out
+
+
+def _paper_snapshot():
+    """paper MVP 可观测快照：NAV/仓位/台账/hash-chain/kill。"""
+    state = _read_json(PAPER_STATE, {}) or {}
+    rows = []
+    if os.path.exists(PAPER_LEDGER):
+        with io.open(PAPER_LEDGER, "r", encoding="utf-8", errors="replace") as f:
+            for line in f:
+                try:
+                    rows.append(json.loads(line))
+                except ValueError:
+                    continue
+    chain_ok = True
+    prev = ""
+    for r in rows:
+        if r.get("prev_hash") != prev:
+            chain_ok = False
+            break
+        prev = r.get("hash") or ""
+    by_date = {}
+    blocked = reduced = 0
+    for r in rows:
+        d = str(r.get("date") or "")
+        by_date[d] = by_date.get(d, 0) + 1
+        if r.get("verdict") == "block":
+            blocked += 1
+        elif r.get("verdict") == "reduce":
+            reduced += 1
+    return {
+        "nav": state.get("nav"),
+        "cash_weight": state.get("cash_weight"),
+        "positions": len(state.get("positions") or {}),
+        "ledger_rows": len(rows),
+        "last_date": max(by_date) if by_date else "",
+        "decisions_by_date": by_date,
+        "blocked": blocked,
+        "reduced": reduced,
+        "hash_chain_ok": chain_ok,
+        "killed": os.path.exists(PAPER_KILL),
+        "mode": "paper",
+    }
 
 
 def compute(day=None, days=7):
@@ -242,6 +287,7 @@ def compute(day=None, days=7):
         "throughput_ge_8": len(dev_ticket_merges) >= TARGET["week_throughput"],
         "acceptance_ge_90pct": (metrics["acceptance_coverage"] or 0) >= TARGET["acceptance_coverage"],
     }
+    metrics["paper"] = _paper_snapshot()
     return {"targets": TARGET, "metrics": metrics, "verdict": verdict}
 
 
@@ -290,6 +336,14 @@ def render_md(data):
         "- 归因缺口 attribution_missing：**%d**（已修复 %d / 原始 %d）；dev-gate 告警：**%d**"
         % (m["attribution_missing"], m["attribution_repaired"],
            m["attribution_missing_raw"], m["dev_gate_warns"]),
+        "- paper（MVP）：NAV **%s**／现金 **%s**／持仓 **%d**／台账 **%d** 条（最后 %s）／"
+        "blocked %d/reduced %d／hash-chain **%s**／kill **%s**"
+        % (m["paper"].get("nav"), m["paper"].get("cash_weight"),
+           m["paper"].get("positions", 0), m["paper"].get("ledger_rows", 0),
+           m["paper"].get("last_date") or "—", m["paper"].get("blocked", 0),
+           m["paper"].get("reduced", 0),
+           "OK" if m["paper"].get("hash_chain_ok") else "BROKEN",
+           "ON" if m["paper"].get("killed") else "off"),
         "",
         "## 三、doing（%d）" % len(m["tasks_doing"]),
         "",
