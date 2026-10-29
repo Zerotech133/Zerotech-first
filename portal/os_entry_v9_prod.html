@@ -118,16 +118,16 @@ body{background:radial-gradient(ellipse at 78% -12%,var(--os-glow) 0%,transparen
         <button type="button" id="refresh">重新核对</button>
       </div>
       <div class="os-kpis" aria-label="优先级统计">
-        <div class="os-kpi kpi-p1"><span>P1 必看</span><b id="kpi-p1">—</b><small>立即核对</small></div>
-        <div class="os-kpi kpi-p2"><span>P2 关注</span><b id="kpi-p2">—</b><small>今日留意</small></div>
-        <div class="os-kpi kpi-p3"><span>待确认</span><b id="kpi-p3">—</b><small>人工决定</small></div>
-        <div class="os-kpi kpi-p4"><span>研发在制</span><b id="kpi-p4">—</b><small>折叠展示</small></div>
+        <div class="ui-kpi os-kpi kpi-p1"><span>P1 必看</span><b id="kpi-p1">—</b><small>立即核对</small></div>
+        <div class="ui-kpi os-kpi kpi-p2"><span>P2 关注</span><b id="kpi-p2">—</b><small>今日留意</small></div>
+        <div class="ui-kpi os-kpi kpi-p3"><span>待确认</span><b id="kpi-p3">—</b><small>人工决定</small></div>
+        <div class="ui-kpi os-kpi kpi-p4"><span>研发在制</span><b id="kpi-p4">—</b><small>折叠展示</small></div>
       </div>
     </aside>
   </div>
 
   <div class="os-split">
-    <section class="os-panel os-focus-panel">
+    <section class="ui-panel os-panel os-focus-panel">
       <div class="os-section-head">
         <div><span class="eyebrow">ZHUGE BRIEF</span><h2>今日焦点</h2></div>
         <span class="os-chip">规则归集 · 非模型推理</span>
@@ -145,7 +145,7 @@ body{background:radial-gradient(ellipse at 78% -12%,var(--os-glow) 0%,transparen
       </div>
     </section>
     <aside class="os-side">
-      <section class="os-panel os-border-note">
+      <section class="ui-panel os-panel os-border-note">
         <div class="os-section-head"><h2>边界</h2><span class="os-chip amber">只读</span></div>
         <ul class="os-bullets">
           <li>未接个人日历，不能当完整日程。</li>
@@ -153,7 +153,7 @@ body{background:radial-gradient(ellipse at 78% -12%,var(--os-glow) 0%,transparen
           <li>建议是规则归集，不是自动派单。</li>
         </ul>
       </section>
-      <section class="os-panel os-view-guide">
+      <section class="ui-panel os-panel os-view-guide">
         <div class="os-section-head"><h2>怎么用</h2><span class="os-chip">四视图</span></div>
         <ol class="os-steps">
           <li><b>今日建议</b> 看焦点和待办。</li>
@@ -165,7 +165,7 @@ body{background:radial-gradient(ellipse at 78% -12%,var(--os-glow) 0%,transparen
     </aside>
   </div>
 
-  <section class="os-panel">
+  <section class="ui-panel os-panel">
     <div class="os-section-head"><div><span class="eyebrow">WHAT IS NOT HERE</span><h2>需要特别说明</h2></div><span class="os-chip">未知不等于零</span></div>
     <div class="grid os-note-grid">
       <div class="card"><small>PERSONAL SCHEDULE</small><h3>个人日历</h3><p>尚未接入已授权且可核验的个人日历；旧商务台账不代表今天的会议。</p></div>
@@ -186,15 +186,15 @@ body{background:radial-gradient(ellipse at 78% -12%,var(--os-glow) 0%,transparen
   </div>
   <div class="os-work-grid">
     <div class="os-work-main">
-      <section class="os-panel"><div class="os-section-head"><h2>当前建议下钻</h2><span class="os-chip">只读</span></div><div id="work-focus" class="empty">来源核对中…</div></section>
+      <section class="ui-panel os-panel"><div class="os-section-head"><h2>当前建议下钻</h2><span class="os-chip">只读</span></div><div id="work-focus" class="empty">来源核对中…</div></section>
       <div id="lanes" class="os-lanes"></div>
     </div>
     <aside class="os-side">
-      <section class="os-panel"><div class="os-section-head"><h2>能力目录</h2><span class="os-chip">按事查</span></div><div id="capabilities" class="cap-list"></div></section>
-      <section class="os-panel os-border-note"><h2>下钻规则</h2><p class="subtle">卡片先「下钻详情」，再决定是否打开原页；不自动派单、不写状态。</p></section>
+      <section class="ui-panel os-panel"><div class="os-section-head"><h2>能力目录</h2><span class="os-chip">按事查</span></div><div id="capabilities" class="cap-list"></div></section>
+      <section class="ui-panel os-panel os-border-note"><h2>下钻规则</h2><p class="subtle">卡片先「下钻详情」，再决定是否打开原页；不自动派单、不写状态。</p></section>
     </aside>
   </div>
-  <details class="os-panel os-details">
+  <details class="ui-panel os-panel os-details">
     <summary>来源覆盖与读取状态 <span class="subtle">（接口成功 ≠ 子源完整）</span></summary>
     <div id="source-list" class="os-list"></div>
   </details>
@@ -206,11 +206,11 @@ body{background:radial-gradient(ellipse at 78% -12%,var(--os-glow) 0%,transparen
     <div class="os-page-head-actions"><button type="button" data-jump="ai">← 回到今日建议</button></div>
   </div>
   <div class="os-results-grid">
-    <section class="os-panel"><div class="os-section-head"><h2>可核对的工作线索</h2><span class="os-chip">来源投影</span></div><p class="subtle">最近工单、通知确认、文件登记、提交记录，不自动等于今日完成。</p><div id="result-list"><div class="empty">正在核对来源…</div></div></section>
-    <section class="os-panel"><div class="os-section-head"><h2>证据槽</h2><span class="os-chip amber">待核</span></div><p class="subtle">六字段齐全才展示；缺任一关键字段只显示待核。</p><div id="evidence-list"><div class="empty">正在读取证据源…</div></div></section>
+    <section class="ui-panel os-panel"><div class="os-section-head"><h2>可核对的工作线索</h2><span class="os-chip">来源投影</span></div><p class="subtle">最近工单、通知确认、文件登记、提交记录，不自动等于今日完成。</p><div id="result-list"><div class="empty">正在核对来源…</div></div></section>
+    <section class="ui-panel os-panel"><div class="os-section-head"><h2>证据槽</h2><span class="os-chip amber">待核</span></div><p class="subtle">六字段齐全才展示；缺任一关键字段只显示待核。</p><div id="evidence-list"><div class="empty">正在读取证据源…</div></div></section>
   </div>
-  <details class="os-panel os-details" id="evidence-sample"><summary>分级样式预览（样例数据，非真实完成记录）</summary><div id="evidence-sample-list"></div></details>
-  <section class="os-panel os-border-note"><div class="os-section-head"><h2>完整结果仍缺什么</h2><span class="os-chip amber">契约缺口</span></div><p>每条结果需要同一事项 ID、来源、北京业务日、生产者完成时点、结果状态、证据位置、可复核回执。缺源显示“待核”，不代替您的签准。</p><div class="os-actions-row"><a href="/dev">研发 ↗</a><a href="/creator">创作 ↗</a><a href="/learn">学习 ↗</a><a href="/quant-drill">量化 ↗</a><a href="/legion">军团 ↗</a></div></section>
+  <details class="ui-panel os-panel os-details" id="evidence-sample"><summary>分级样式预览（样例数据，非真实完成记录）</summary><div id="evidence-sample-list"></div></details>
+  <section class="ui-panel os-panel os-border-note"><div class="os-section-head"><h2>完整结果仍缺什么</h2><span class="os-chip amber">契约缺口</span></div><p>每条结果需要同一事项 ID、来源、北京业务日、生产者完成时点、结果状态、证据位置、可复核回执。缺源显示“待核”，不代替您的签准。</p><div class="os-actions-row"><a href="/dev">研发 ↗</a><a href="/creator">创作 ↗</a><a href="/learn">学习 ↗</a><a href="/quant-drill">量化 ↗</a><a href="/legion">军团 ↗</a></div></section>
 </section>
 
 <section class="view dashboard os-page" id="view-screen">
@@ -220,12 +220,12 @@ body{background:radial-gradient(ellipse at 78% -12%,var(--os-glow) 0%,transparen
   </div>
   <div class="os-strip-line"><span id="board-stamp" role="status" aria-live="polite">与首页共用六个只读来源；来源核对中…</span><button type="button" id="board-refresh">刷新态势</button></div>
   <div class="os-screen-grid">
-    <section class="os-panel"><div class="os-section-head"><span class="eyebrow">FOUNDATION</span><h2>数据地基状态灯</h2></div><p class="subtle">调度面健康度（task_exit_audit 账本，只读）。</p><div id="board-foundation" class="board-list"><div class="empty">正在读取地基账本…</div></div></section>
-    <section class="os-panel"><div class="os-section-head"><span class="eyebrow">ATTENTION</span><h2>值得关注</h2></div><div id="board-attention" class="board-list"><div class="empty">来源核对中…</div></div></section>
-    <section class="os-panel"><div class="os-section-head"><span class="eyebrow">SOURCE STATUS</span><h2>来源覆盖</h2></div><div id="board-sources" class="board-list"><div class="empty">来源核对中…</div></div></section>
-    <section class="os-panel"><div class="os-section-head"><span class="eyebrow">WORK IN PROGRESS</span><h2>近期研发线索</h2></div><div id="board-tasks" class="board-list"><div class="empty">来源核对中…</div></div></section>
-    <section class="os-panel"><div class="os-section-head"><span class="eyebrow">ZHUGE BRIEF</span><h2>诸葛亮建议</h2></div><div id="board-brief" class="board-list"><div class="empty">来源核对中…</div></div><p class="board-note">取同一份建议前 6 条，不另起计算。</p></section>
-    <section class="os-panel os-border-note"><div class="os-section-head"><span class="eyebrow">OUTCOME</span><h2>结果与本人决策</h2></div><div class="empty">跨域完成证据和本人审批队列尚未贯通；近期工单/通知 review/产物登记不等于今日完成或本人签准。</div><div class="os-actions-row"><button type="button" data-jump="results">核对今日结果 →</button><button type="button" data-jump="work">打开能力目录 →</button></div></section>
+    <section class="ui-panel os-panel"><div class="os-section-head"><span class="eyebrow">FOUNDATION</span><h2>数据地基状态灯</h2></div><p class="subtle">调度面健康度（task_exit_audit 账本，只读）。</p><div id="board-foundation" class="board-list"><div class="empty">正在读取地基账本…</div></div></section>
+    <section class="ui-panel os-panel"><div class="os-section-head"><span class="eyebrow">ATTENTION</span><h2>值得关注</h2></div><div id="board-attention" class="board-list"><div class="empty">来源核对中…</div></div></section>
+    <section class="ui-panel os-panel"><div class="os-section-head"><span class="eyebrow">SOURCE STATUS</span><h2>来源覆盖</h2></div><div id="board-sources" class="board-list"><div class="empty">来源核对中…</div></div></section>
+    <section class="ui-panel os-panel"><div class="os-section-head"><span class="eyebrow">WORK IN PROGRESS</span><h2>近期研发线索</h2></div><div id="board-tasks" class="board-list"><div class="empty">来源核对中…</div></div></section>
+    <section class="ui-panel os-panel"><div class="os-section-head"><span class="eyebrow">ZHUGE BRIEF</span><h2>诸葛亮建议</h2></div><div id="board-brief" class="board-list"><div class="empty">来源核对中…</div></div><p class="board-note">取同一份建议前 6 条，不另起计算。</p></section>
+    <section class="ui-panel os-panel os-border-note"><div class="os-section-head"><span class="eyebrow">OUTCOME</span><h2>结果与本人决策</h2></div><div class="empty">跨域完成证据和本人审批队列尚未贯通；近期工单/通知 review/产物登记不等于今日完成或本人签准。</div><div class="os-actions-row"><button type="button" data-jump="results">核对今日结果 →</button><button type="button" data-jump="work">打开能力目录 →</button></div></section>
   </div>
 </section>
 </main><footer class="bottom"><span>WO-OS-01 生产入口 · /os-entry · 只读建议 · 不自动派单</span><a href="/zero_proto.html">← 返回 AI 驾驶舱</a> <a href="/hermes/">现有 Hermes 对话（非诸葛亮专属） ↗</a></footer></div>
@@ -407,4 +407,8 @@ async function refresh(){const run=++sequence,keys=Object.keys(endpoints);$('#fr
   else start();
 })();
 </script>
+
+<!-- PAGE-SHELL-GEN:v2 -->
+<link rel="stylesheet" href="/static/ui/ui.css" data-page-shell="1">
+<script defer src="/static/ui/ui.js" data-page-shell="1"></script>
 </body></html>
