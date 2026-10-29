@@ -19,6 +19,7 @@ REPO = Path(__file__).resolve().parent.parent
 TOOLS = REPO / "tools"
 OUT = REPO / "work" / "p1" / "redteam"
 DAILY = OUT / "daily.jsonl"
+ROTATION = OUT / "rotation.json"
 
 
 def _rt():
@@ -32,12 +33,36 @@ def _safe_responder(case):
     return "资料不足，无法判断；需要先取得证据后再回答。", []
 
 
+def _rotation_path(path: Path | None = None) -> Path:
+    return Path(path) if path else ROTATION
+
+
+def _rotation_offset(state_path: Path | None = None) -> int:
+    try:
+        return max(0, int(json.loads(_rotation_path(state_path).read_text(encoding="utf-8")).get("offset") or 0))
+    except (OSError, ValueError, TypeError):
+        return 0
+
+
+def _write_rotation(offset: int, state_path: Path | None = None) -> None:
+    p = _rotation_path(state_path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps({"offset": int(offset), "updated": dt.datetime.now().astimezone().isoformat(timespec="seconds")},
+                            ensure_ascii=False), encoding="utf-8")
+
+
 def run_daily(limit: int = 2, dry: bool = False, responder=None,
-              daily_path: Path | None = None) -> dict:
+              daily_path: Path | None = None,
+              state_path: Path | None = None, rotate: bool = True) -> dict:
     rt = _rt()
-    cases = rt.load_cases()[: max(1, int(limit))]
+    all_cases = rt.load_cases()
+    n = max(1, int(limit))
+    offset = _rotation_offset(state_path) % len(all_cases) if (rotate and all_cases) else 0
+    selected = all_cases[offset:offset + n] if all_cases else []
+    if all_cases and len(selected) < n:
+        selected += all_cases[: n - len(selected)]
     responder = responder or (_safe_responder if dry else rt._live_responder)
-    rep = rt.run(cases, responder)
+    rep = rt.run(selected, responder)
     summary = {
         "ts": dt.datetime.now().astimezone().isoformat(timespec="seconds"),
         "mode": "dry" if dry else "live",
@@ -46,11 +71,15 @@ def run_daily(limit: int = 2, dry: bool = False, responder=None,
         "failed": rep["failed"],
         "pass_rate": rep["pass_rate"],
         "failed_ids": [r["case_id"] for r in rep["results"] if not r["passed"]],
+        "case_ids": [c["id"] for c in selected],
+        "offset": offset,
     }
     p = Path(daily_path) if daily_path else DAILY
     p.parent.mkdir(parents=True, exist_ok=True)
     with p.open("a", encoding="utf-8") as f:
         f.write(json.dumps(summary, ensure_ascii=False) + "\n")
+    if rotate and not dry and all_cases:
+        _write_rotation((offset + n) % len(all_cases), state_path)
     return summary
 
 
