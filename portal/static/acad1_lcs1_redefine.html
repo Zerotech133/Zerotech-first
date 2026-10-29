@@ -35,6 +35,29 @@
   .foot{margin-top:30px;color:#8b949e;font-size:12px;border-top:1px solid #30363d;padding-top:12px}
   a{color:#58a6ff;text-decoration:none}a:hover{text-decoration:underline}
   @media(max-width:640px){.wrap{padding:16px 12px 48px}h1{font-size:20px}table{font-size:12px}th,td{padding:6px 7px}}
+
+  .table-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .a6-table{min-width:760px}
+  .data-table{min-width:560px}
+  @media(max-width:760px){
+    .table-wrap{overflow:visible}
+    .a6-table,.data-table{min-width:0;border:0}
+    .a6-table thead,.data-table thead{display:none}
+    .a6-table tbody,.data-table tbody,.a6-table tr,.data-table tr,.a6-table td,.data-table td{display:block;width:100%}
+    .a6-table tr,.data-table tr{border:1px solid var(--border,#30363d);border-radius:9px;margin:10px 0;padding:4px 12px;background:#111820}
+    .a6-table td,.data-table td{border:0;border-bottom:1px solid #21262d;padding:8px 0;display:flex;justify-content:space-between;gap:14px;text-align:right;white-space:normal}
+    .a6-table td:last-child,.data-table td:last-child{border-bottom:0}
+    .a6-table td:before,.data-table td:before{color:#8b949e;font-size:11.5px;text-align:left;flex:0 0 auto;padding-right:8px}
+    .a6-table td:nth-child(1):before{content:"窗口"}
+    .a6-table td:nth-child(2):before{content:"假设"}
+    .a6-table td:nth-child(3):before{content:"信号数"}
+    .a6-table td:nth-child(4):before{content:"5日 超额/胜率"}
+    .a6-table td:nth-child(5):before{content:"10日 超额/胜率"}
+    .a6-table td:nth-child(6):before{content:"20日 超额/胜率"}
+    .data-table td:nth-child(1):before{content:"数据"}
+    .data-table td:nth-child(2):before{content:"用途"}
+    .data-table td:nth-child(3):before{content:"状态"}
+  }
 </style>
 </head>
 <body>
@@ -59,13 +82,13 @@
   </div>
 
   <h2>二、A6 全市场结果（L1-only）</h2>
-  <table>
+  <div class="table-wrap"><table class="a6-table">
     <tr><th>窗口</th><th>假设</th><th class="num">信号</th><th class="num">5 日超额/胜率</th><th class="num">10 日</th><th class="num">20 日</th></tr>
     <tr><td>in 2023-07-31~2025-06-30</td><td>runup</td><td class="num">168,725</td><td class="num">+0.023% / 41.2%</td><td class="num">+0.058% / 40.0%</td><td class="num">+0.186% / 39.5%</td></tr>
     <tr><td>in 2023-07-31~2025-06-30</td><td>accumulate</td><td class="num">61</td><td class="num neg">-1.32% / 42.6%</td><td class="num neg">-2.85% / 44.3%</td><td class="num neg">-7.29% / 23.0%</td></tr>
     <tr><td>out 2025-07-01~2026-10-16</td><td>runup</td><td class="num">31,769</td><td class="num">+0.020% / 45.7%</td><td class="num">+0.109% / 44.8%</td><td class="num">+0.127% / 44.0%</td></tr>
     <tr><td>out 2025-07-01~2026-10-16</td><td>accumulate</td><td class="num">2</td><td class="num">样本不足</td><td class="num">—</td><td class="num">—</td></tr>
-  </table>
+  </table></div>
   <div class="sub" style="margin-top:6px">结论：无成本后稳定优势；按预注册规则终止 A6，不进入组合回测、不调参救结果。</div>
 
   <h2>三、accumulate 失效归因（待 P1 验证）</h2>
@@ -86,12 +109,12 @@
   </div>
 
   <h2>五、数据冻结与进度</h2>
-  <table>
+  <div class="table-wrap"><table class="data-table">
     <tr><th>数据</th><th>用途</th><th>状态</th></tr>
     <tr><td>D1 tdx 日线/复权/基础</td><td>L1 价格/量</td><td class="pos">✅ 已冻结（sha d538a1be…fdc）</td></tr>
     <tr><td>D3 news.db / ts_news</td><td>L2 事件</td><td class="neg">❌ 未冻结（DATA1 申请已提，deadline 11-03）</td></tr>
     <tr><td>D4 ts_top_list / ts_top_inst</td><td>L3 席位</td><td class="neg">❌ 未冻结（同上）</td></tr>
-  </table>
+  </table></div>
   <ul class="timeline">
     <li class="done"><b>P0 假设卡</b><span class="tag done">done</span><br><span class="sub">ACAD1 评审 PASS（有条件）</span></li>
     <li class="doing"><b>P1 归因</b><span class="tag doing">doing</span><br><span class="sub">100 码/2 年；单条件分解 + 复权对照；不出收益结论</span></li>
