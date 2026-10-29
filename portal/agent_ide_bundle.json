@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 29,
+  "workorders_doing": 28,
   "workorders_review": 9
  },
  "workorders": [
@@ -317,15 +317,6 @@
    "owner": "GUANYU",
    "branch": "task/WO-GUANYU-P53-20261030",
    "created": "2026-10-30 02:06:01",
-   "project": "general"
-  },
-  {
-   "id": "WO-LEGION-OS-IA-20261030",
-   "desc": "/os-entry 四视图信息架构重排：焦点/KPI/工作域/结果证据/大屏",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-OS-IA-20261030",
-   "created": "2026-10-30 02:07:14",
    "project": "general"
   },
   {
@@ -4485,7 +4476,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 75,
+     "count": 76,
      "recent": [
       {
        "ts": "",
@@ -7069,11 +7060,6 @@
     {
      "id": "WO-AUDIT-FIX-20261029",
      "desc": "审计修复：hq_stats双计数、hk_r1_daily台账表格插入+去重+锁、kg zip strict",
-     "status": "doing"
-    },
-    {
-     "id": "WO-LEGION-OS-IA-20261030",
-     "desc": "/os-entry 四视图信息架构重排：焦点/KPI/工作域/结果证据/大屏",
      "status": "doing"
     },
     {
