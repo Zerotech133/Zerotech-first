@@ -1213,6 +1213,133 @@ WORKING_MEMORY["back1"] = """# 工作记忆索引 — BACK1 陆逊（量化回�
 """
 
 
+
+# ── COMM1 / INTEL1 / AI1 / PROD1 能力底座（2026-10-29 WO-ACAD-ACTIVATE4 B 方案）──
+# 只读工具授权见组织档；触发走已安装的 SeatsWeekly（research_seat_ops.py weekly），
+# 不新增 L2 计划任务。每项能力都映射仓内真实命令/文件。
+def _seat(seat, name, cn, duty, tools, caps, tasks=("SeatsWeekly",)):
+    home = os.path.join(REPO, "legion_agents", seat, "workspace")
+    HOMES[seat.lower()] = home
+    items = []
+    for c in caps:
+        c = dict(c)
+        c.setdefault("status", "ready")
+        c.setdefault("verified_scope", "static_tool")
+        c.setdefault("verified_at", "2026-10-29T08:30+08:00")
+        items.append(c)
+    items.append({
+        "name": "trigger-ops",
+        "what": "研究值守触发：周五 16:10 SeatsWeekly 共享周报（已安装任务，零新增 L2）",
+        "how": "agent_platform/tools/research_seat_ops.py weekly（SeatsWeekly 任务体；输出 ops/weekly）；如需每席独立日/周任务再走 L2",
+        "boundary": "共享周报不替代每席独立触发；要独立任务须另批 L2",
+        "status": "pending_wiring", "tasks": list(tasks), "installed": False,
+        "verified_scope": "shared_weekly_task", "verified_at": "2026-10-29T08:30+08:00",
+    })
+    CAPABILITIES[seat.lower()] = items
+    SEAT_TRIGGER_TASKS[seat.lower()] = tuple(tasks)
+    WORKING_MEMORY[seat.lower()] = (
+        "# 工作记忆索引 — %s %s（%s / 研究院）\n\n"
+        "## 职责\n%s\n\n"
+        "## 常读\n- 研究登记：agent_platform/data/academy/research_topics.json\n"
+        "- 评审/周报：agent_platform/tools/academy_ops.py review|weekly\n"
+        "- 只读证据：quant_backtest/agent_tools.py（%s）\n"
+        "- 触发：SeatsWeekly（周五 16:10，共享；独立任务需 L2）\n\n"
+        "## 纪律\n- 只读、可追溯；无证据不编造；不代签；不写数据根/交易链。\n"
+    ) % (seat, cn, duty, duty, "、".join(tools))
+
+
+def _caps_common(seat, tools):
+    return {"name": "evidence-readonly", "what": "证据采集与口径核验（只读）",
+            "how": "quant_backtest/agent_tools.py：" + "、".join(tools) + "（org 已授权）",
+            "boundary": "只读幂等；取不到=未取得，不编造；不写数据根", "status": "ready",
+            "verified_scope": "tool_grant", "verified_at": "2026-10-29T08:30+08:00"}
+
+
+_seat("COMM1", "commercialization_researcher", "马良",
+      "商业化研究员：算法商品/策略市场/对外服务/客户场景/交付边界/定价与试点",
+      ["datamart_read", "datamart_latest", "market_snapshot", "data_health", "stock_info", "recent_events"],
+      [
+       {"name": "commercial-model", "what": "商业模式卡：客户/价值/交付/成本/价格/合规边界",
+        "how": "读 agent_platform/data/academy/research_topics.json + deliverables 判例；模板见 agent_platform/tools/academy_ops.py review；产出落 deliverables/",
+        "boundary": "不把概念包装成收入结论；无客户/成本证据只出假设"},
+       {"name": "customer-scenario", "what": "客户场景与需求假设（可验证、可分层）",
+        "how": "读 agent_platform/data/academy/research_topics.json + agent_platform/tools/academy_ops.py review；客户画像与验证问题清单落 deliverables/",
+        "boundary": "未核验信息只作线索；不得冒充已访谈"},
+       {"name": "delivery-boundary", "what": "交付边界卡：可交付/不可交付/依赖/回滚",
+        "how": "读 deliverables 与 tools/devtask.py 工单；交付清单落 deliverables/",
+        "boundary": "不承诺未实现能力；L2 动作报批"},
+       {"name": "cost-price", "what": "成本与定价假设：费用/边际/价格敏感区间",
+        "how": "quant_backtest/fee_schedule.py + backtest.py 成本口径；产出假设卡",
+        "boundary": "成本口径须可复算；不得用单点样本外推"},
+       {"name": "pilot-plan", "what": "试点方案：范围/指标/验收/退出条件",
+        "how": "agent_platform/domains/academy_wiring.py 阶段 + deliverables 试点单；经 ACAD1 评审",
+        "boundary": "试点不等于产品化；未评审不对外"},
+       _caps_common("COMM1", ["datamart_read", "datamart_latest", "market_snapshot", "data_health", "stock_info", "recent_events"]),
+      ])
+
+_seat("INTEL1", "competitive_intelligence_researcher", "郭嘉",
+      "竞争情报研究员：行业/竞品/开源社区/政策/客户需求情报，事实-推断-线索分层",
+      ["market_snapshot", "data_health", "stock_info", "recent_events", "signal_precedents", "pool_rows"],
+      [
+       {"name": "intel-brief", "what": "情报简报：来源/时间/事实/推断/未知分层",
+        "how": "quant_backtest/agent_tools.py recent_events/signal_precedents + tools/events.py；简报落 deliverables/",
+        "boundary": "未核验消息只作线索；不把二手转述当事实"},
+       {"name": "competitor-matrix", "what": "竞品矩阵：能力/价格/渠道/证据等级",
+        "how": "读公开资料/仓库文档 + deliverables 判例；矩阵落 deliverables/",
+        "boundary": "必须标来源与时间；不编造竞品数据"},
+       {"name": "source-grading", "what": "来源分级：事实/佐证/证伪/存疑/未知",
+        "how": "按 org.research_language.evidence_states 标注；落简报",
+        "boundary": "无来源不得升级为事实"},
+       {"name": "impact-analysis", "what": "影响分析：对策略/产品/组织的机会与威胁",
+        "how": "读 research_topics + academy_wiring 阶段；输出影响清单",
+        "boundary": "影响判断标证据等级；不替代 A0 决策"},
+       _caps_common("INTEL1", ["market_snapshot", "data_health", "stock_info", "recent_events", "signal_precedents", "pool_rows"]),
+      ])
+
+_seat("AI1", "ai_methodology_researcher", "诸葛亮",
+      "AI方法论研究员：Agent能力/评测/Prompt/路由/知识反哺，须证据审查+版本+回滚",
+      ["datamart_read", "datamart_latest", "datamart_ready", "data_health", "recent_events", "signal_precedents"],
+      [
+       {"name": "methodology-capture", "what": "方法论提炼：从研究/执行经验抽取可复用规则（候选→验证→批准）",
+        "how": "agent_platform/tools/seat_eval.py + capability_self_audit.py + memory/store.py；产出落 deliverables/",
+        "boundary": "一次成功不升级通用规则；候选/已批准/已验证分层"},
+       {"name": "eval-design", "what": "评测设计：黄金集/断言/通过率口径",
+        "how": "agent_platform/evals/seat_golden.json + agent_platform/tools/seat_eval.py",
+        "boundary": "评测失败不得当通过；黄金集变更留痕"},
+       {"name": "prompt-change", "what": "Prompt变更提案：理由/对照/回滚点",
+        "how": "读 agent_platform/prompts/*；提案落 deliverables/，变更走工单",
+        "boundary": "不直接改生产 prompt；须对照评测"},
+       {"name": "routing-rule", "what": "路由规则提案：场景/模型/成本/回退",
+        "how": "读 agent_platform/registry 与 config/planner_paths.json；提案落 deliverables/",
+        "boundary": "不直接改生产路由；须回滚与对照"},
+       {"name": "knowledge-capture", "what": "知识入库：条目/来源/有效期/引用",
+        "how": "agent_platform/memory/store.py + tools/gen_docs_index.py",
+        "boundary": "不入未验证结论；不覆盖历史"},
+       _caps_common("AI1", ["datamart_read", "datamart_latest", "datamart_ready", "data_health", "recent_events", "signal_precedents"]),
+      ])
+
+_seat("PROD1", "strategy_product_manager", "产品经理",
+      "策略产品经理：需求定义/验收标准/试点设计/跨部门交付/产品指标",
+      ["market_snapshot", "data_health", "stock_info", "pool_rows", "paper_positions", "recent_events"],
+      [
+       {"name": "product-spec", "what": "产品定义：需求/场景/优先级/验收标准（可测）",
+        "how": "tools/spec_flow.py + deliverables/specs；对齐 docs/plans 判例",
+        "boundary": "不直接改生产；验收标准必须可测、可回滚"},
+       {"name": "acceptance-criteria", "what": "验收标准：通过/驳回判据、证据清单",
+        "how": "agent_platform/tools/seat_eval.py + tools/test_gate.ps1；验收单落 deliverables/",
+        "boundary": "不通过不签；不改写原始记录"},
+       {"name": "pilot-design", "what": "试点设计：范围/样本/指标/退出条件",
+        "how": "agent_platform/domains/academy_wiring.py 阶段 + deliverables 试点单；ACAD1 评审",
+        "boundary": "试点不等于产品化；未评审不对外"},
+       {"name": "cross-dept-delivery", "what": "跨部门交付：接口人/依赖/里程碑",
+        "how": "python tools/devtask.py new/list/merge + deliverables 交付清单",
+        "boundary": "L2 报批；每单有 owner/验收/回滚"},
+       {"name": "product-metrics", "what": "产品指标：使用/反馈/失败率/成本",
+        "how": "python tools/product_metrics.py report/feedback/list（本地聚合）",
+        "boundary": "不编造指标；反馈如实记录"},
+       _caps_common("PROD1", ["market_snapshot", "data_health", "stock_info", "pool_rows", "paper_positions", "recent_events"]),
+      ])
+
 def inject(dry_run: bool, seats=None) -> int:
     wrote, skipped = 0, 0
     targets = [s for s in (seats or list(HOMES)) if s in HOMES]
@@ -1290,7 +1417,7 @@ def inject(dry_run: bool, seats=None) -> int:
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description="席位能力底座注入器（tianfeng/zhaoyun/zhuge/data1/acad1/strat1/back1）")
+    ap = argparse.ArgumentParser(description="席位能力底座注入器（tianfeng/zhaoyun/zhuge/data1/acad1/strat1/back1/comm1/intel1/ai1/prod1）")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--apply", action="store_true")
     ap.add_argument("--seat", default=None,
