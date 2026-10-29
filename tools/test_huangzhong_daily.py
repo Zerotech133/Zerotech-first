@@ -90,6 +90,8 @@ def test_daily_emits_acceptance_done(tmp_path):
     ev = events[0]
     assert ev["kind"] == "acceptance_done"
     assert ev["task"] == "HUANGZHONG-DAILY"
+    assert ev["agent"] == "HUANGZHONG", ev
+    assert ev["ide"] == "HUANGZHONG-DAILY", ev
     detail = ev["detail"]
     for key in ("verdict=PASS", "commit=" + "a" * 12, "baseline_failed=0",
                 "redteam=1.0", "report=x.md"):

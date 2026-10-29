@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """D4–D5 试点：M4/v1.1 S2 签字卡（构建 + 可选发送，回调走 approval_control）。\n\n生产判例：签字卡须 critical=True（否则夜间 silent window 会静默丢弃——2026-10-30 00:39 实测）。
 
 默认 dry-run（只打印卡片摘要）。--send 经 portal/feishu_card_v2.send_card（bot DM）。
