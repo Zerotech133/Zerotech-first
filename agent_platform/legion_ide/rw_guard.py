@@ -202,25 +202,60 @@ def lock_info(worktree: Path) -> dict:
 
 
 def acquire_lock(worktree: Path, owner: str) -> dict:
+    """原子抢锁（O_CREAT|O_EXCL）；只清理明确的过期锁，避免 read-then-write 竞态。"""
     worktree = Path(worktree)
-    info = lock_info(worktree)
-    if info.get("locked") and info.get("owner") != owner:
-        return err(
-            "locked",
-            "工单已被占用（%s，%.0fs 前）"
-            % (info.get("owner"), info.get("age_s") or 0),
-            info,
-        )
-    rec = {
-        "owner": str(owner or ""),
-        "pid": os.getpid(),
-        "ts": time.time(),
-        "expires_in_s": LOCK_TTL_S,
-    }
-    tmp = _lock_path(worktree).with_suffix(".tmp")
-    tmp.write_text(json.dumps(rec, ensure_ascii=False), encoding="utf-8")
-    os.replace(tmp, _lock_path(worktree))
-    return {"ok": True, "lock": rec}
+    owner = str(owner or "").strip()
+    if not owner:
+        return err("owner_required", "缺少 owner 标识")
+    lock = _lock_path(worktree)
+    for _attempt in range(3):
+        info = lock_info(worktree)
+        if info.get("locked"):
+            if info.get("owner") == owner:
+                return {"ok": True, "lock": info, "reused": True}
+            return err(
+                "locked",
+                "工单已被占用（%s，%.0fs 前）"
+                % (info.get("owner"), info.get("age_s") or 0),
+                info,
+            )
+        rec = {
+            "owner": owner,
+            "pid": os.getpid(),
+            "ts": time.time(),
+            "expires_in_s": LOCK_TTL_S,
+        }
+        try:
+            fd = os.open(str(lock), os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+        except FileExistsError:
+            # 另一端刚建锁：重新判活，避免误删有效锁
+            race = lock_info(worktree)
+            if race.get("locked"):
+                if race.get("owner") == owner:
+                    return {"ok": True, "lock": race, "reused": True}
+                return err("locked", "工单已被占用（%s）" % race.get("owner"), race)
+            try:
+                lock.unlink()
+            except FileNotFoundError:
+                pass
+            except OSError as exc:
+                return err("lock_io", "锁文件不可清理：%s" % type(exc).__name__)
+            continue
+        except OSError as exc:
+            return err("lock_io", "锁文件不可创建：%s" % type(exc).__name__)
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                json.dump(rec, f, ensure_ascii=False)
+                f.flush()
+                os.fsync(f.fileno())
+        except OSError as exc:
+            try:
+                lock.unlink()
+            except OSError:
+                pass
+            return err("lock_io", "锁写入失败：%s" % type(exc).__name__)
+        return {"ok": True, "lock": rec}
+    return err("lock_race", "抢锁冲突，请重试")
 
 
 def release_lock(worktree: Path, owner: str) -> dict:
