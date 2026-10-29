@@ -461,6 +461,22 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({"ok": False, "error": "ide_fs_failed",
                                  "detail": "%s: %s" % (type(e).__name__, str(e)[:160])}, 500)
             return
+        if path == "/api/ide/context":
+            from urllib.parse import parse_qs
+            from legion_command import ide_context
+
+            qs = parse_qs(urlparse(self.path).query)
+            q = (qs.get("q") or [""])[0]
+            try:
+                budget = int((qs.get("budget") or ["8000"])[0])
+            except ValueError:
+                budget = 8000
+            try:
+                self._send_json(ide_context.build_context(q, budget))
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "context_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:160])}, 500)
+            return
         if path == "/api/snapshot":
             self._send_json(build_snapshot())
             return
