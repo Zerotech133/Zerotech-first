@@ -66,9 +66,11 @@ def _sell_plan(price):
             "sell_zone": [round(price * 0.99, 2), round(price * 1.01, 2)]}
 
 
-def compose(pool, decisions, limits=None, max_positions=MAX_POSITIONS, now=None):
+def compose(pool, decisions, limits=None, max_positions=MAX_POSITIONS, now=None,
+            analyses=None):
     limits = dict(DEFAULT_LIMITS, **(limits or {}))
     now = now or datetime.now()
+    analyses = analyses or {}
     decs = {}
     for k, v in (decisions or {}).items():
         decs[str(k).split(".")[0]] = v
@@ -83,7 +85,8 @@ def compose(pool, decisions, limits=None, max_positions=MAX_POSITIONS, now=None)
                "industry": _industry(item), "tier": item.get("tier") or "",
                "recommendation": rec, "confidence": conf, "price": price,
                "score": round(REC_WEIGHT.get(rec, 0.0) * conf, 4),
-               "parse_ok": bool(d.get("parse_ok")), "status": d.get("status")}
+               "parse_ok": bool(d.get("parse_ok")), "status": d.get("status"),
+               "analyses": (analyses or {}).get(code) or {}}
         if not d:
             row.update({"action": "pending_analysis", "weight": 0.0,
                         "note": "无当日分析结果；先跑 run_shadow --codes"})
@@ -182,6 +185,19 @@ def render_markdown(plan):
             L.append("- `%s` %s：%s（%s）%s" % (
                 r["code"], r["name"], r.get("recommendation") or "—",
                 r.get("note") or "", extra))
+    L.append("")
+    L.append("## 多角度明细")
+    for r in plan.get("rows") or []:
+        L.append("")
+        L.append("### `%s` %s（%s）" % (r["code"], r["name"], r["industry"]))
+        ana = r.get("analyses") or {}
+        for seat, label in (("T1", "T1 多头技术"), ("T2", "T2 空头/风险"),
+                            ("N1", "N1 情绪"), ("F1", "F1 基本面")):
+            if ana.get(seat):
+                L.append("- **%s**：%s" % (label, str(ana[seat]).replace("\n", " ")[:420]))
+        if r.get("recommendation"):
+            L.append("- **D1 裁决**：%s（confidence %.2f，价格 %s）" % (
+                r["recommendation"], r["confidence"], r.get("price")))
     L.append("")
     L.append("> 规则：单票≤10% / 行业≤30% / 总仓≤60%；买点=现价附近，止损-8%，目标+8%/+15%；"
              "仅为 paper 计划，不构成实盘指令。")
