@@ -42,6 +42,12 @@ body{background:radial-gradient(ellipse at 78% -12%,var(--os-glow) 0%,transparen
 .os-list .row small { color: var(--ui-muted); font-size: 11px; }
 .os-list .row .go { display: inline-block; margin-top: 5px; font-size: 12px; }
 .os-row-drill { margin-top: 7px; min-height: 30px; padding: 4px 9px; font-size: 12px; }
+.os-fold { margin-top: 10px; border-top: 1px solid var(--ui-line); padding-top: 8px; }
+.os-fold summary { cursor: pointer; color: var(--ui-muted); font-size: 12px; list-style: none; }
+.os-fold summary::-webkit-details-marker { display: none; }
+.os-fold summary::before { content: "▸ "; color: var(--ui-blue); }
+.os-fold[open] summary::before { content: "▾ "; }
+.os-fold-body { padding-top: 4px; }
 .os-bullets, .os-steps { margin: 0; padding-left: 18px; color: var(--ui-muted); font-size: 12px; }
 .os-bullets li, .os-steps li { margin: 5px 0; }
 .os-steps b { color: var(--ui-ink); }
@@ -339,11 +345,52 @@ async function refresh(){const run=++sequence,keys=Object.keys(endpoints);$('#fr
       if (node) node.textContent = rows.length ? String(counts[n]) : '—';
     });
   }
+  var folding = false;
+  function foldSuggestions() {
+    if (folding) return;
+    folding = true;
+    try {
+      var box = document.getElementById('suggestions');
+      if (!box) return;
+      var rows = Array.prototype.slice.call(box.children).filter(function (n) {
+        return n.classList && n.classList.contains('row');
+      });
+      var groups = {3: [], 4: []};
+      rows.forEach(function (row) {
+        var t = (row.querySelector('strong') || {}).textContent || '';
+        var m = t.match(/^P([34])/);
+        if (m) groups[+m[1]].push(row);
+      });
+      Object.keys(groups).forEach(function (k) {
+        var list = groups[k];
+        var d = box.querySelector('details[data-os-fold="' + k + '"]');
+        if (!list.length) { if (d) d.remove(); return; }
+        if (!d) {
+          d = document.createElement('details');
+          d.className = 'os-fold';
+          d.setAttribute('data-os-fold', k);
+          var summary = document.createElement('summary');
+          var body = document.createElement('div');
+          body.className = 'os-fold-body';
+          d.append(summary, body);
+          box.appendChild(d);
+        }
+        var label = k === '3' ? '待你确认' : '研发在制';
+        d.querySelector('summary').textContent = label + ' ' + list.length + ' 项（点击展开）';
+        var target = d.querySelector('.os-fold-body');
+        list.forEach(function (row) { target.appendChild(row); });
+      });
+    } finally {
+      folding = false;
+    }
+  }
   function start() {
     updateKpis();
+    foldSuggestions();
     var box = document.getElementById('suggestions');
     if (box && window.MutationObserver) {
-      new MutationObserver(updateKpis).observe(box, {childList: true, subtree: true});
+      new MutationObserver(function () { updateKpis(); foldSuggestions(); })
+        .observe(box, {childList: true, subtree: true});
     }
     var search = document.getElementById('work-search');
     if (search) {
