@@ -393,6 +393,8 @@ def build_ledger_row(
     source_status,
     latency_s,
     ts=None,
+    model=None,
+    fallback=None,
 ):
     """落账行构造（M5 刀 1：影子账本 schema 收口）。
 
@@ -422,6 +424,10 @@ def build_ledger_row(
         "degraded": (not parse_ok) or src_bad,
         "schema_version": "m5.v1",
         "latency_s": latency_s,
+        # 2026-10-29 outcome 台账：D1 声明绑定模型 + 本票是否 fallback/降级
+        # （fallback=None 表示旧调用方未提供，不伪造成 False）
+        "model": model,
+        "fallback": fallback,
     }
 
 
@@ -651,6 +657,8 @@ def main():
                 )  # K-STOCK-338：解析失败显式记录，不再静默吞成 {}
                 dec = dec or {}
                 price = quote_snapshot(symbol)["price"]
+                models = result.get("models") or {}
+                d1_status = (result.get("status") or {}).get("d1_decision")
                 row = build_ledger_row(
                     today,
                     symbol,
@@ -661,6 +669,8 @@ def main():
                     parse_ok,
                     result["status"],
                     round(time.time() - t0, 1),
+                    model=models.get("d1_decision"),
+                    fallback=(d1_status not in (None, "normal", "resumed")),
                 )  # M5 刀 1：schema_version+degraded 扩义
                 if not parse_ok:
                     print(
