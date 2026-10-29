@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 06:18",
+ "generated": "2026-10-30 06:36",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,8 +9,8 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 30,
-  "workorders_review": 7
+  "workorders_doing": 28,
+  "workorders_review": 9
  },
  "workorders": [
   {
@@ -320,18 +320,9 @@
    "project": "quant"
   },
   {
-   "id": "WO-INV-BJ-POOL-20261030",
-   "desc": "北交所符号修复(norm_symbol bj)+920378 复盘恢复+run_shadow 17:10 后自动池复盘(POOL_REVIEW_AUTO)+测试",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-INV-BJ-POOL-20261030",
-   "created": "2026-10-30 06:16:47",
-   "project": "portal"
-  },
-  {
    "id": "WO-GUANYU-P62-20261030",
    "desc": "lifecycle覆盖率审计",
-   "status": "doing",
+   "status": "review",
    "owner": "GUANYU",
    "branch": "task/WO-GUANYU-P62-20261030",
    "created": "2026-10-30 06:18:22",
@@ -340,11 +331,20 @@
   {
    "id": "K-QUANT-20261030-OH2",
    "desc": "OpenHands二期：原生会话worktree映射+事件流+模型映射；过程面板展示工具步骤",
-   "status": "doing",
+   "status": "review",
    "owner": "DSH-Lead",
    "branch": "task/K-QUANT-20261030-OH2",
    "created": "2026-10-30 06:18:46",
    "project": "quant"
+  },
+  {
+   "id": "WO-GUANYU-P63-20261030",
+   "desc": "修master测试回归",
+   "status": "doing",
+   "owner": "GUANYU",
+   "branch": "task/WO-GUANYU-P63-20261030",
+   "created": "2026-10-30 06:35:25",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -3883,7 +3883,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 105,
+     "count": 106,
      "recent": [
       {
        "ts": "",
@@ -4028,7 +4028,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 105,
+     "count": 106,
      "recent": [
       {
        "ts": "",
@@ -4481,7 +4481,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 105,
+     "count": 106,
      "recent": [
       {
        "ts": "",
@@ -6385,6 +6385,11 @@
     {
      "id": "WO-GUANYU-P62-20261030",
      "desc": "lifecycle覆盖率审计",
+     "status": "review"
+    },
+    {
+     "id": "WO-GUANYU-P63-20261030",
+     "desc": "修master测试回归",
      "status": "doing"
     }
    ]
