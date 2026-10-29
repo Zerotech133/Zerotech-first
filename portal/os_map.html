@@ -14,10 +14,7 @@ main{max-width:1220px;margin:auto;padding:20px 22px 80px}.sec{display:none}.sec.
 .foot{margin-top:20px;padding-top:10px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
 a{color:var(--blue);text-decoration:none}
 @media(max-width:960px){.grid,.kpi{grid-template-columns:1fr 1fr}}
-</style><meta name=wb-shell content=adopted><link rel=stylesheet href=/static/page_shell.css><script src=/static/page_shell.js defer></script>
-<!-- OS-UI-UNIFY:theme -->
-<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
-</head><body><header class="top"><div class="brand">零界 · OS 全板块作战图</div><a href="/zero_proto.html#system" style="font-size:12px;white-space:nowrap">← 返回系统</a><nav class="seg">
+</style><meta name=wb-shell content=adopted><link rel=stylesheet href=/static/page_shell.css><script src=/static/page_shell.js defer></script></head><body><header class="top"><div class="brand">零界 · OS 全板块作战图</div><a href="/zero_proto.html#system" style="font-size:12px;white-space:nowrap">← 返回系统</a><nav class="seg">
 <button class="on" data-s="map">总图</button><button data-s="done">已建成</button><button data-s="half">半成品</button><button data-s="todo">未做</button><button data-s="gran">数据颗粒度</button>
 </nav></header><main>
 
@@ -125,6 +122,9 @@ a{color:var(--blue);text-decoration:none}
 <p class="foot">OS 全板块作战图 v1 · 2026-10-23 21:30 · 盘点源：portal 58 页实测 + 8091 六端点 + 8798 五端点 · 与老田逐板块过图找问题用</p>
 </main><script>
 document.querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.seg button').forEach(x=>x.classList.remove('on'));b.classList.add('on');document.querySelectorAll('.sec').forEach(s=>s.classList.toggle('on',s.id==='s-'+b.dataset.s));window.scrollTo(0,0)}));
-</script><!-- OS-UI-UNIFY:drill -->
+</script>
+<!-- OS-UI-UNIFY:theme -->
+<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
+<!-- OS-UI-UNIFY:drill -->
 <script defer src="/static/os_drill.js" data-os-unify="1"></script>
 </body></html>

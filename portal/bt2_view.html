@@ -63,10 +63,7 @@ button:disabled{opacity:.5;cursor:default}
 .stl .ev .t{white-space:nowrap;font-weight:600;min-width:88px}
 .stl .ev .x{color:var(--tx2)}
 .h3s{font-size:13px;color:var(--tx);margin-bottom:4px}
-</style><script src="/static/nav.js" defer></script>
-<!-- OS-UI-UNIFY:theme -->
-<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
-</head><body>
+</style><script src="/static/nav.js" defer></script></head><body>
 <h1>回测框架 v2 <span class="tag">K-STOCK-295 · 票池可见 × 总仓位/补仓/清仓全可设</span></h1>
 <div class="sub">老田 10-13 口径：缠论≠当天满仓（选出股票<b>等机会</b>）；全市场扫描·一二三买全部入池·满足买点的交易。总仓位三档 / 信号有效期（补仓窗口）/ 失效离场（清仓）全部页面可设，改参数即改策略行为。</div>
 
@@ -421,6 +418,8 @@ document.getElementById("nl-go").onclick=async()=>{
 poll(); setInterval(poll,5000);
 </script>
 <script src="/static/dataops_link.js" data-entity="tg:策略扫描" defer></script>
+<!-- OS-UI-UNIFY:theme -->
+<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
 <!-- OS-UI-UNIFY:drill -->
 <script defer src="/static/os_drill.js" data-os-unify="1"></script>
 </body></html>

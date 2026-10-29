@@ -80,10 +80,7 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;font-size:12px;color:#
 .dot-stale{fill:var(--bad)}
 .b-stale{background:#2a1512;color:#ffa198}
 </style>
-<script src="/static/nav.js" defer></script><meta name=wb-shell content=adopted>
-<!-- OS-UI-UNIFY:theme -->
-<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
-</head>
+<script src="/static/nav.js" defer></script><meta name=wb-shell content=adopted></head>
 <body>
 <h1>🎛 数据运营指挥台 <small>采集动线 · 数据池 · 管道调度</small></h1>
 <div class="sub">Hermes 与调度系统消费入口：<code>GET /api/dataops/overview</code>（全量）· <code>?view=summary</code>（轻量）· 只读 · 60s 自动刷新 <span id="gen"></span></div>
@@ -447,6 +444,8 @@ async function openDrawer(nid){
 function closeDrawer(){ document.getElementById('drawer').classList.remove('open'); }
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeDrawer(); });
 </script>
+<!-- OS-UI-UNIFY:theme -->
+<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
 <!-- OS-UI-UNIFY:drill -->
 <script defer src="/static/os_drill.js" data-os-unify="1"></script>
 </body>

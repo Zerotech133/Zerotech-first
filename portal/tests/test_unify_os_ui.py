@@ -21,7 +21,7 @@ def test_inject_is_idempotent_and_marked():
     assert once.count("os_drill.js") == 1
     assert twice.count("os_theme.css") == 1
     assert U.LINK_MARK in once and U.SCRIPT_MARK in once
-    assert once.index("os_theme.css") < once.index("</head>")
+    assert once.index("os_theme.css") > once.index("</head>")
     assert once.index("os_drill.js") < once.index("</body>")
 
 

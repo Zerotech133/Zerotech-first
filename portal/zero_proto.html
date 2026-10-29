@@ -22,10 +22,7 @@ main{max-width:1120px;margin:auto;padding:22px 24px 80px}
 .foot{margin-top:22px;padding-top:12px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;display:flex;gap:14px}.foot a{color:var(--muted)}
 @media(max-width:900px){.g2,.g4,.caps,.summary-grid,.ability-grid,.intel-grid,.detail-grid,.more-grid,.flow{grid-template-columns:1fr 1fr}.seg{overflow-x:auto}}
 @media(max-width:600px){.summary-grid,.ability-grid,.intel-grid,.detail-grid,.more-grid,.flow{grid-template-columns:1fr}.top{padding:0 12px;gap:6px}.brand{font-size:16px}.seg{gap:0}.seg button{padding:6px 8px;font-size:12px;white-space:nowrap}main{padding:16px 14px 60px}.g2,.g4,.caps{grid-template-columns:1fr}.airow{display:grid;grid-template-columns:40px 1fr;gap:8px;align-items:center}.airow .ava{grid-area:1/1}.airow input{grid-area:1/2;font-size:14px}.airow .voice-button{grid-area:2/1/3/2;padding:12px}.airow #ai-go{grid-area:2/2/3/3;padding:12px}.aihero{padding:16px}.krow{display:grid;grid-template-columns:1fr auto;gap:2px 8px;align-items:center}.krow b{grid-area:1/1;min-width:0}.krow small{grid-area:2/1/3/3}.krow .pill{grid-area:1/2;justify-self:end}.foot{flex-wrap:wrap}}
-</style>
-<!-- OS-UI-UNIFY:theme -->
-<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
-</head><body><header class="top"><div class="brand">零界</div><nav class="seg" aria-label="板块">
+</style></head><body><header class="top"><div class="brand">零界</div><nav class="seg" aria-label="板块">
 <button class="on" data-s="home">首页</button><button data-s="council">会议指挥</button><button data-s="intelall">情报全谱</button><button data-s="domains">业务域</button><button data-s="product">产品建设</button><button data-s="system">系统</button>
 </nav></header><main>
 <div class="back-row" id="back-row"><button id="back-screen" type="button">← 返回上一页</button></div>
@@ -367,6 +364,9 @@ loadTech();setInterval(loadTech,300000);loadCt();
 loadEnv();setInterval(loadEnv,300000);
 loadIntel();setInterval(loadIntel,60000);
 load();setInterval(load,30000);
-</script><!-- OS-UI-UNIFY:drill -->
+</script>
+<!-- OS-UI-UNIFY:theme -->
+<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
+<!-- OS-UI-UNIFY:drill -->
 <script defer src="/static/os_drill.js" data-os-unify="1"></script>
 </body></html>

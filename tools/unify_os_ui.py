@@ -31,25 +31,26 @@ DEFAULT_DIRS = (
 
 
 def _strip_old(text: str) -> str:
-    text = re.sub(r"\s*<!--\s*OS-UI-UNIFY:[^>]*-->\s*", "\n", text, flags=re.I)
-    text = re.sub(r"\s*<link[^>]+os_theme\.css[^>]*>\s*", "\n", text, flags=re.I)
-    text = re.sub(r"\s*<script[^>]+os_drill\.js[^>]*>\s*</script>\s*", "\n", text, flags=re.I)
+    # 删掉注入块及其包裹换行，尽量恢复原始字节，避免 secret-scan 基线行号漂移。
+    text = re.sub(
+        r"\s*<!--\s*OS-UI-UNIFY:theme\s*-->\s*<link[^>]+os_theme\.css[^>]*>\s*",
+        "", text, flags=re.I)
+    text = re.sub(
+        r"\s*<!--\s*OS-UI-UNIFY:drill\s*-->\s*<script[^>]+os_drill\.js[^>]*>\s*</script>\s*",
+        "", text, flags=re.I)
     return text
 
 
 def inject(text: str) -> str:
     text = _strip_old(text)
-    head = re.search(r"</head\s*>", text, flags=re.I)
-    if not head:
-        raise ValueError("缺 </head>")
-    block = "\n%s\n%s\n" % (LINK_MARK, LINK)
-    text = text[:head.start()] + block + text[head.start():]
+    # 关键：只在文件末尾追加，不往 <head> 插，避免整体行号偏移触发
+    # secret-scan 基线误报（os_council 等 JS 敏感行号）。
+    block = "\n%s\n%s\n%s\n%s\n" % (LINK_MARK, LINK, SCRIPT_MARK, SCRIPT)
     body = re.search(r"</body\s*>", text, flags=re.I)
-    script = "%s\n%s\n" % (SCRIPT_MARK, SCRIPT)
     if body:
-        text = text[:body.start()] + script + text[body.start():]
+        text = text[:body.start()] + block + text[body.start():]
     else:
-        text = text.rstrip() + "\n" + script
+        text = text.rstrip() + "\n" + block
     return text
 
 

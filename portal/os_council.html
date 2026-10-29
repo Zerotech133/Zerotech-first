@@ -19,10 +19,7 @@ input,select,textarea{background:#fff;border:1px solid #c7d8e5;border-radius:9px
 .overlay{position:fixed;inset:0;background:#1e3348a8;z-index:8;display:none;align-items:center;justify-content:center;padding:20px}.overlay.show{display:flex}.modal{max-width:860px;width:100%;max-height:86vh;overflow:auto;background:#fff;border:1px solid #bcd8e2;box-shadow:0 16px 48px #1e33483b;border-radius:16px;padding:26px 30px}.modal h3{margin:0 0 6px;color:var(--blue)}.modal pre{white-space:pre-wrap;font:13px/1.7 "Microsoft YaHei",monospace;color:var(--ink);background:#f7fafc;border:1px solid var(--line);border-radius:10px;padding:16px}.modal .x{float:right;cursor:pointer;color:var(--muted);font-size:18px}
 @media(max-width:1080px){.layout{grid-template-columns:minmax(0,1fr) minmax(0,2fr)}.layout>.panel:last-child{grid-column:1/-1}.chatbox{height:580px;min-height:400px}}
 @media(max-width:680px){.shell{padding:0 14px 45px}.top{gap:8px;min-height:56px;flex-wrap:wrap;padding:8px 0}.brand{font-size:16px}.badge{display:none}.top .nav{margin-left:auto}.layout{grid-template-columns:minmax(0,1fr)}.layout>.panel:last-child{grid-column:auto}.panel{padding:14px}.chatbox{height:540px;min-height:360px}.natural-row{flex-wrap:wrap;padding:12px}.natural-row input{flex:1;min-width:0}.natural-tools{padding:4px 12px 12px}.natural-tools #top-hint{width:100%;margin-left:0}.crow{flex-wrap:wrap}.crow textarea{min-width:0}.tools .hint{margin-left:0;width:100%}.msg{max-width:94%}.modal{padding:18px}}
-</style>
-<!-- OS-UI-UNIFY:theme -->
-<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
-</head><body><div class="shell"><header class="top"><div class="brand">零界</div><span class="badge" id="theme-badge">会议指挥 · 议会厅</span>
+</style></head><body><div class="shell"><header class="top"><div class="brand">零界</div><span class="badge" id="theme-badge">会议指挥 · 议会厅</span>
 <select id="theme-sel" class="seat-sel" style="margin-left:8px" title="换肤（客户品牌化）"><option value="">皮肤…</option></select><div class="nav"><a href="/zero_proto.html#council">← 返回会议指挥</a></div></header>
 <h1>会议指挥 · 议会厅</h1>
 <p class="sub">先说一句话，再由系统引导议题讨论、定稿与任务跟进。预约登记不等于到点自动开会；图片目前仅存证，不会自动识别。交互桥 <span id="bridge" style="color:var(--muted)">检测中…</span></p>
@@ -189,6 +186,9 @@ if(th.product_name)document.title=th.product_name+' · 会议指挥'}catch(e){$(
 loadThemes();applyTheme();
 loadAll();setInterval(loadAll,30000);
 })();
-</script><!-- OS-UI-UNIFY:drill -->
+</script>
+<!-- OS-UI-UNIFY:theme -->
+<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
+<!-- OS-UI-UNIFY:drill -->
 <script defer src="/static/os_drill.js" data-os-unify="1"></script>
 </body></html>

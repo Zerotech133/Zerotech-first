@@ -61,10 +61,7 @@ a{color:var(--link)}
 </style>
 <script src="/static/nav.js" defer></script>
 <script src="/static/shortscreen.js" defer></script>
-<meta name=wb-shell content=adopted>
-<!-- OS-UI-UNIFY:theme -->
-<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
-</head>
+<meta name=wb-shell content=adopted></head>
 <body>
 <div class="wrap">
 <h1>📊 数据日报 <span class="sub">JEV 多维数据 · 情绪×次日实证 · 冲击力分层 · 漂移哨兵 · 管道体检 · 源 /api/daily/data</span></h1>
@@ -229,6 +226,8 @@ if (window.__EMBED__) { /* 公网快照模式：build_daily_data_public.py 注�
    .catch(function(e){el('metrics').innerHTML='<span class="err">/api/daily/data 不可达：'+esc(e)+'</span>'});
 }
 </script>
+<!-- OS-UI-UNIFY:theme -->
+<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
 <!-- OS-UI-UNIFY:drill -->
 <script defer src="/static/os_drill.js" data-os-unify="1"></script>
 </body>

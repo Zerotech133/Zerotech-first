@@ -33,10 +33,7 @@ tr.click:hover{background:var(--card2,#202735)}
 .mkt{font-size:10.5px;padding:1px 5px;border-radius:4px;background:rgba(255,255,255,.08);color:var(--text-dim,#8a93a6);margin-right:4px}
 @media (max-width:700px){th.h-xs,td.h-xs{display:none}.wrap{padding:10px 8px 40px}th,td{padding:6px 6px}}
 </style>
-<script src="/static/nav.js" defer></script><meta name=wb-shell content=adopted>
-<!-- OS-UI-UNIFY:theme -->
-<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
-</head>
+<script src="/static/nav.js" defer></script><meta name=wb-shell content=adopted></head>
 <body>
 <div class="wrap">
   <div class="head"><h1>💼 交易台账</h1><small id="ts">加载中…</small></div>
@@ -101,6 +98,8 @@ document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{document.querySelect
 fetch('data/ledger.json').then(r=>r.json()).then(d=>{LED=d;render();}).catch(()=>{document.getElementById('body').innerHTML='<div class="empty">台账数据加载失败（本地需 8734 入口 / 公网需访问码）</div>';});
 </script>
 <script src="/static/dataops_link.js" data-entity="ledger:riskguard" defer></script>
+<!-- OS-UI-UNIFY:theme -->
+<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
 <!-- OS-UI-UNIFY:drill -->
 <script defer src="/static/os_drill.js" data-os-unify="1"></script>
 </body>
