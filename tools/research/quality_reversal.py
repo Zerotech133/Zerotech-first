@@ -169,6 +169,7 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="H14 质量反向")
     ap.add_argument("--days", type=int, default=1250)
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--tag", default="", help="报告名后缀（区分窗口），如 3y/5y")
     args = ap.parse_args(argv)
     res = run(args.days)
     if not res.get("ok"):
@@ -176,8 +177,9 @@ def main(argv=None) -> int:
         return 2
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     day = datetime.now().strftime("%Y%m%d")
-    md = REPORT_DIR / ("H14_quality_reversal_%s.md" % day)
-    js = REPORT_DIR / ("H14_quality_reversal_%s.json" % day)
+    suffix = ("_" + args.tag) if args.tag else ""
+    md = REPORT_DIR / ("H14_quality_reversal_%s%s.md" % (day, suffix))
+    js = REPORT_DIR / ("H14_quality_reversal_%s%s.json" % (day, suffix))
     md.write_text(render(res), encoding="utf-8")
     js.write_text(json.dumps(res, ensure_ascii=False, indent=1), encoding="utf-8")
     print(json.dumps({"pass": res["pass"], "within_pe": res["within_pe"], "trap": res["trap"]},
