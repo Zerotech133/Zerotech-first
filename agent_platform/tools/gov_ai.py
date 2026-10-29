@@ -442,13 +442,21 @@ def validate_items(action: str, items: Any, payload: dict) -> dict:
         kept = {
             k: item.get(k) for k in (*spec["required"], *spec["optional"]) if k in item
         }
-        # 置信度
+        # 置信度：模型偶尔返回 high/medium/low 标签；归一为数值，非法值仍拒绝。
+        raw_conf = kept.get("confidence")
         try:
-            conf = float(kept.get("confidence"))
+            conf = float(raw_conf)
         except (TypeError, ValueError):
-            schema_ok = False
-            notes.append("%s confidence 非数值" % tag)
-            continue
+            label = str(raw_conf or "").strip().lower()
+            conf = {
+                "high": 0.9, "medium": 0.6, "low": 0.3, "unknown": 0.2,
+                "高": 0.9, "中": 0.6, "低": 0.3, "未知": 0.2,
+            }.get(label)
+            if conf is None:
+                schema_ok = False
+                notes.append("%s confidence 非数值" % tag)
+                continue
+            notes.append("%s confidence 标签 %s 已归一为 %.1f" % (tag, label, conf))
         if not 0.0 <= conf <= 1.0:
             schema_ok = False
             notes.append("%s confidence 越界" % tag)
