@@ -25,6 +25,7 @@ sys.path.insert(0, REPO)
 from agent_platform import (  # noqa: E402
     analysis_digest, portfolio_composer, recommendation_pool,
 )
+from agent_platform.engine import team_exec  # noqa: E402
 
 SHADOW = os.path.join(REPO, "agent_platform", "data", "shadow", "shadow_ledger.jsonl")
 REVIEW_DIR = os.path.join(REPO, "agent_platform", "data", "pool_review")
@@ -53,6 +54,22 @@ def review(day, pool, decisions, analyses=None, write=True):
     for item in pool.get("items") or []:
         code = str(item.get("code") or "")
         d = (decisions or {}).get(code) or {}
+        # 菜鸟节点详情：按 run_id 读取 node_exec（structured + 逐轮 debate_log）
+        detail = []
+        run_id = d.get("run_id")
+        if run_id:
+            for n in team_exec.read_run(run_id):
+                detail.append({
+                    "node_key": n.get("node_key"),
+                    "agent_id": n.get("agent_id"),
+                    "role": n.get("role"),
+                    "analysis_type": n.get("analysis_type"),
+                    "execution_mode": n.get("execution_mode"),
+                    "status": n.get("status"),
+                    "structured": n.get("structured") or {},
+                    "debate_log": n.get("debate_log") or [],
+                    "output": str(n.get("output") or "")[:2000],
+                })
         rec = {
             "date": day, "item_id": item.get("item_id"), "code": code,
             "name": item.get("name") or d.get("name") or "",
@@ -73,6 +90,7 @@ def review(day, pool, decisions, analyses=None, write=True):
                 else ("avoid" if str(d.get("recommendation") or "").upper() in ("SELL", "STRONG_SELL")
                       else "watch")),
             "analyses": analyses.get(code) or {},
+            "node_exec": detail,
         }
         records.append(rec)
     reviewed = sum(1 for r in records if r["decision_status"] == "done")

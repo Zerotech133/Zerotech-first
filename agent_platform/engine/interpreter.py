@@ -303,6 +303,17 @@ class Interpreter:
                     p, str(ctx["statements"][p])[:900]))
         if upstream:
             base += "\n[上游分析摘要]\n" + "\n".join(upstream) + "\n"
+        # 菜鸟 buildDebateInput：辩论节点注入全部分析师结构化摘要，再让模型逐条反驳。
+        if node.get("is_debate_node"):
+            analyst = []
+            for k, st in (ctx.get("structured") or {}).items():
+                if k == node.get("node_key") or k == node.get("debate_partner_key"):
+                    continue
+                if isinstance(st, dict) and st and not st.get("error"):
+                    analyst.append("### %s\n%s" % (
+                        k, json.dumps(st, ensure_ascii=False)[:900]))
+            if analyst:
+                base += "\n[分析师报告摘要]\n" + "\n".join(analyst) + "\n"
         # 决策节点与其它节点的输出契约不同：D1 的 system 要求「输出 JSON」，而旧实现
         # 给**所有**节点追加「3 句以内结论」——与 system 直接冲突，模型采信 user 时
         # 只写散文，parse_decision 拿不到 JSON（K-STOCK-338 偶发 parse_ok=false 的
@@ -374,20 +385,32 @@ class Interpreter:
 
         rounds = int(na.get("max_debate_rounds") or 2)
         sim, converged, collapsed = converge_state(a_text, b_text)
+        debate_log = []
         for r in range(1, rounds + 1):
             if converged:
                 break
+            a_input = self._build_user(na, ctx, extra=b_text)
+            b_input = self._build_user(nb, ctx, extra=a_text)
             try:
-                a_reb, st_a = self._chat(na, self._build_user(na, ctx, extra=b_text))
+                a_reb, st_a = self._chat(na, a_input)
             except Exception as e:  # noqa: BLE001
                 a_reb, st_a = "[降级] %s" % e, "degraded"
             try:
-                b_reb, st_b = self._chat(nb, self._build_user(nb, ctx, extra=a_reb))
+                b_reb, st_b = self._chat(nb, b_input)
             except Exception as e:  # noqa: BLE001
                 b_reb, st_b = "[降级] %s" % e, "degraded"
             self._emit_attempt(run_id, na, st_a, (time.time() - t0) * 1000)
             self._emit_attempt(run_id, nb, st_b, (time.time() - t0) * 1000)
             sim, converged, collapsed = converge_state(a_reb, b_reb)
+            debate_log.append({
+                "round": r,
+                "bull_input": a_input[-1200:],
+                "bear_input": b_input[-1200:],
+                "bull_output": a_reb,
+                "bear_output": b_reb,
+                "similarity": sim,
+                "terminated_early": bool(converged),
+            })
             self.cp.trace(
                 run_id,
                 na["node_key"],
@@ -436,6 +459,7 @@ class Interpreter:
                 similarity_=sim,
                 latency_ms=(time.time() - t0) * 1000,
                 structured=parse_structured(text),
+                debate_log=debate_log,
             )
         # 辩论对共享同一份合并结论，供 D1 汇总（parent 引用两节点）；collapsed 供 D1/评估者识别假收敛
         payload = {
@@ -461,6 +485,7 @@ class Interpreter:
         similarity_=None,
         latency_ms=None,
         structured=None,
+        debate_log=None,
     ):
         self.cp.save_node(
             run_id,
@@ -477,6 +502,7 @@ class Interpreter:
             team_exec.record(
                 run_id, node, phase, mode, status, latency_ms or 0,
                 input_text="", output_text=output, structured=structured or {},
+                debate_log=debate_log or [],
             )
         except Exception as exc:  # noqa: BLE001 执行账失败不阻塞
             logging.getLogger(__name__).warning("team_exec record failed: %s", exc)

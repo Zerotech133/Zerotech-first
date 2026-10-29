@@ -73,11 +73,36 @@ function num(x,d){return x==null?'—':Number(x).toLocaleString('zh-CN',{maximum
 function card(k,v,t){return '<div class="card"><div class="k">'+esc(k)+'</div><div class="v">'+v+'</div><div class="t">'+esc(t||'')+'</div></div>';}
 function actionBadge(a){const m={buy:'ok',watch:'warn',avoid:'err',pending_analysis:''};return '<span class="badge '+(m[a]||'')+'">'+esc(a)+'</span>';}
 function detailHtml(r){
-  const ana=r.analyses||{}; const labels={T1:'T1 多头技术',T2:'T2 空头/风险',N1:'N1 情绪',F1:'F1 基本面'};
+  const labels={T1:'T1 多头技术',T2:'T2 空头/风险',N1:'N1 情绪',F1:'F1 基本面'};
+  const nodes=r.node_exec||[];
   let h='';
-  for(const k of ['T1','T2','N1','F1']){ if(ana[k]) h+='<div><b>'+labels[k]+'：</b>'+esc(String(ana[k]).slice(0,420))+'</div>'; }
-  if(!h) h='<div>暂无多角色明细（可能尚未分析）</div>';
-  h+='<div class="mono">sources='+esc((r.sources||[]).join('+'))+' · data_date='+esc(r.data_date||'—')+' · risk='+esc((r.risk_flags||[]).join(','))+'</div>';
+  if(nodes.length){
+    h+='<div style="font-weight:700;margin-bottom:6px">节点执行明细（structured + 辩论逐轮）</div>';
+    for(const n of nodes){
+      const mode=n.execution_mode||'—';
+      h+='<div style="margin:8px 0;padding:8px;border:1px solid var(--gray-4);border-radius:8px">';
+      h+='<div><b>'+esc(n.agent_id||'')+' · '+esc(n.role||'')+'</b> <span class="badge">'+esc(n.analysis_type||'')+'</span> <span class="badge">'+esc(mode)+'</span></div>';
+      const st=n.structured||{};
+      const keys=Object.keys(st).filter(k=>k!=='error');
+      if(keys.length){
+        h+='<div style="margin-top:4px"><b>结构化结论：</b><div class="mono" style="white-space:pre-wrap;color:var(--gray-6)">'+esc(JSON.stringify(st,null,1).slice(0,1200))+'</div></div>';
+      }
+      for(const rd of (n.debate_log||[])){
+        h+='<div style="margin-top:6px"><b>第'+esc(rd.round)+'轮</b>（相似度 '+esc(rd.similarity==null?'—':Number(rd.similarity).toFixed(2))+(rd.terminated_early?' · 提前终止':'')+'）</div>';
+        h+='<div><b>多头：</b>'+esc(String(rd.bull_output||'').slice(0,320))+'</div>';
+        h+='<div><b>空头：</b>'+esc(String(rd.bear_output||'').slice(0,320))+'</div>';
+      }
+      if(!keys.length && !(n.debate_log||[]).length && n.output){
+        h+='<div>'+esc(String(n.output).slice(0,500))+'</div>';
+      }
+      h+='</div>';
+    }
+  }else{
+    const ana=r.analyses||{};
+    for(const k of ['T1','T2','N1','F1']){ if(ana[k]) h+='<div><b>'+labels[k]+'：</b>'+esc(String(ana[k]).slice(0,420))+'</div>'; }
+    if(!h) h='<div>暂无多角色明细（可能尚未分析或本次节点无 team_exec 记录）</div>';
+  }
+  h+='<div class="mono" style="margin-top:6px">sources='+esc((r.sources||[]).join('+'))+' · data_date='+esc(r.data_date||'—')+' · risk='+esc((r.risk_flags||[]).join(','))+'</div>';
   return h;
 }
 async function load(){

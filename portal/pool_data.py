@@ -61,6 +61,7 @@ def pool_snapshot(day=None):
             "decision_status": r.get("decision_status"),
             "action": r.get("action") or "pending_analysis",
             "analyses": r.get("analyses") or {},
+            "node_exec": r.get("node_exec") or [],
         })
     summary = review.get("summary") or {}
     if not summary:
