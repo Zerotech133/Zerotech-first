@@ -109,6 +109,15 @@ def main(argv=None) -> int:
     KG.open("a", encoding="utf-8").write(
         "fx_fill source=eastmoney pairs=%s dry=%s %s\n" % (
             ",".join(PAIRS), args.dry_run, datetime.now().astimezone().isoformat(timespec="seconds")))
+    try:
+        logf = REPO / "work" / "data_sync" / "fx_daily.log"
+        logf.parent.mkdir(parents=True, exist_ok=True)
+        logf.open("a", encoding="utf-8").write(
+            "%s fx_fill dry=%s results=%s\n" % (
+                datetime.now().astimezone().isoformat(timespec="seconds"), args.dry_run,
+                json.dumps(results, ensure_ascii=False)))
+    except Exception:  # noqa: BLE001
+        pass
     print(json.dumps(results, ensure_ascii=False, indent=1), flush=True)
     return 0
 
