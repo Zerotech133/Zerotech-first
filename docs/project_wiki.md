@@ -7,11 +7,11 @@
 
 | 顶层目录 | Python 模块数（codebase_intel scope） |
 |---|---:|
-| `agent_platform/` | 393 |
-| `portal/` | 365 |
-| `tools/` | 342 |
+| `agent_platform/` | 451 |
+| `portal/` | 376 |
+| `tools/` | 469 |
 
-codebase_intel 统计：模块 **1100** / 符号 **13359**。
+codebase_intel 统计：模块 **1296** / 符号 **14522**。
 
 ## 2. 核心模块（按路径）
 
@@ -44,6 +44,8 @@ codebase_intel 统计：模块 **1100** / 符号 **13359**。
 | `agent_platform/contracts/__init__.py` | 统一研究、决策与模拟执行契约。 |
 | `agent_platform/contracts/objects.py` | M1 统一对象模型补齐：WorkItem / Artifact / Approval。 |
 | `agent_platform/contracts/sim_market.py` | SIM_MARKET 只读数据契约。 |
+| `agent_platform/data/shadow/diff_ledger.py` | diff 影子账本基线快照与当前账本，输出当日新增行摘要 |
+| `agent_platform/decision_outcomes.py` | D1 决策 outcome 台账（只读 sidecar，2026-10-29 · 鲁肃复盘整改 #2）。 |
 | `agent_platform/domains/__init__.py` | M1 业务域写侧接线包。 |
 | `agent_platform/domains/academy_wiring.py` | M1 业务域写侧接线 · Academy（研究院）。 |
 | `agent_platform/domains/dev_wiring.py` | M1 软件开发域接线（域 #5）· TaskStore done 验收门。 |
@@ -114,16 +116,31 @@ codebase_intel 统计：模块 **1100** / 符号 **13359**。
 | `agent_platform/intel_inbox/test_intel_inbox.py` | 满宠每日情报收件箱受理席测试（全临时目录，零触碰真实 inbox/ledger）。 |
 | `agent_platform/legion_command/__init__.py` | — |
 | `agent_platform/legion_command/credential_catalog.py` | 统一凭据目录：JEV / 数据接口 / 飞书 等业务凭据的统一展示（只读，不复制明文）。 |
+| `agent_platform/legion_command/hq_acceptance.py` | 验收会证据聚合：测试基线 + 红队最新 + 黄忠最新验收单（只读，缺件 fail-visible）。 |
+| `agent_platform/legion_command/hq_agenda.py` | 会前议程 v1（P1）：收编 8798 议会厅的议题/留言/预约（只读）+ 留言追加。 |
+| `agent_platform/legion_command/hq_meeting.py` | 指挥部会议 v2（P0）：五席晨会/作战会/验收会 纪要 + 订单派单。 |
+| `agent_platform/legion_command/hq_stats.py` | 会议看板（P2）：闭环率/跑偏检测/回放（只读）。 |
+| `agent_platform/legion_command/ide_fs.py` | IDE 调试通道只读文件工具：list_dir / read_file / search。 |
 | `agent_platform/legion_command/intent.py` | 军团 OS · 席位意图卡契约（v1）——**现役实现（8796 /api/intent 唯一数据源）** |
 | `agent_platform/legion_command/keypool.py` | 三席多 Key 池（田丰/赵云/诸葛亮）— 存储/测试/切换/自动切换。 |
+| `agent_platform/legion_command/mcp_bridge.py` | Tushare MCP 工具桥（streamable-http JSON-RPC）。 |
+| `agent_platform/legion_command/mission_dispatch.py` | Mission Dispatcher（阶段1）：只做 dry-run 派工计划，不建 worktree、不改代码。 |
+| `agent_platform/legion_command/mission_evolver.py` | Mission 阶段3：结果采集 → 经验候选 → 策略建议。 |
+| `agent_platform/legion_command/mission_planner.py` | Mission Planner（阶段1）：一份文档 → 任务 DAG → plan.json。 |
+| `agent_platform/legion_command/mission_worker.py` | 阶段4-1 Worker：自动接单低风险任务，在 worktree 用 LLM 生成文件改动并提交。 |
+| `agent_platform/legion_command/model_allocator.py` | 任务感知模型分配：任务/角色 → 本地 / 云端 / GPT-6。 |
+| `agent_platform/legion_command/model_prefs.py` | 研发板块模型手动切换偏好：agent → model 别名。 |
+| `agent_platform/legion_command/planner_rules.py` | Planner rules from signed experience + A/B comparison. |
 | `agent_platform/legion_command/seat_router.py` | seat_router：模型别名 + 席位路由表 + 虚拟 Key（网关统一接入层）。 |
 | `agent_platform/legion_command/serve.py` | 军团指挥界面套件 HTTP 服务（WO-LEGION-S22）。 |
 | `agent_platform/legion_command/snapshot.py` | 军团指挥界面套件（WO-LEGION-S22）：快照聚合器。 |
 | `agent_platform/legion_command/tianfeng_view.py` | 田丰（A0）· 产品/研发席前端视图聚合（只读，供 8796 `/api/tianfeng`）。 |
 | `agent_platform/legion_command/zhaoyun_cap2.py` | 赵云能力二期：审批闭环 / 能力自检 / 模型路由 / 任务干预 / 记忆策展 / 使用留证。 |
+| `agent_platform/legion_command/zhaoyun_debate.py` | 辩论视图（zhaoyun 接口用）：子进程调 py312 tools/zhuge_debate.py（只读）。 |
 | `agent_platform/legion_command/zhaoyun_drill.py` | 赵云 · 能力下钻与调整请求（治理席，只读为主 + 请求型动作）。 |
 | `agent_platform/legion_command/zhaoyun_quant.py` | 量化只读视图（zhaoyun 页面/接口用）：调 py312 的 tools/quant_readonly.py（只读）。 |
 | `agent_platform/legion_command/zhaoyun_view.py` | 赵云 · 治理席前端视图聚合（只读，供 8796 `/api/zhaoyun`）。 |
+| `agent_platform/legion_command/zhaoyun_wargame.py` | 兵棋视图（zhaoyun 接口用）：子进程调 py312 tools/zhuge_wargame.py（只读）。 |
 | `agent_platform/legion_ide/__init__.py` | 军团 Agent IDE 独立形态（legion_ide）。 |
 | `agent_platform/legion_ide/exec_runner.py` | IDE 受控执行（R2）：命令白名单 + 超时/输出上限 + 环境净化。 |
 | `agent_platform/legion_ide/rw_guard.py` | IDE 可写/可执行 · 作用域 / 工单锁 / 会话 / 审计（R0 骨架，D1/D3/D4=A）。 |
@@ -166,6 +183,7 @@ codebase_intel 统计：模块 **1100** / 符号 **13359**。
 | `agent_platform/skills/governance-ai/scripts/verify.py` | verify: governance-ai（只读；由 build_skills.py 生成，勿手改） |
 | `agent_platform/skills/harness-runner/scripts/verify.py` | verify: harness-runner（只读；由 build_skills.py 生成，勿手改） |
 | `agent_platform/skills/health-card/scripts/verify.py` | verify: health-card（只读；由 build_skills.py 生成，勿手改） |
+| `agent_platform/skills/huangzhong/scripts/verify.py` | verify: 黄忠验收守门技能（只读；缺件 fail-visible）。 |
 | `agent_platform/skills/llm-deepseek/scripts/verify.py` | verify: llm-deepseek（只读；由 build_skills.py 生成，勿手改） |
 | `agent_platform/skills/lookahead-guard/scripts/verify.py` | verify: lookahead-guard（只读；由 build_skills.py 生成，勿手改） |
 | `agent_platform/skills/mutual-review/scripts/verify.py` | verify: mutual-review（只读；由 build_skills.py 生成，勿手改） |
@@ -180,13 +198,16 @@ codebase_intel 统计：模块 **1100** / 符号 **13359**。
 | `agent_platform/tests/test_a0_evidence_judge.py` | a0_evidence_judge 单测（K-QUANT-20261026-A0EVJ）。 |
 | `agent_platform/tests/test_a_phase_group_board.py` | A 阶段组级看板生成器测试（WO-A-STAGE-BOARD）。 |
 | `agent_platform/tests/test_academy_ops.py` | 研究院运营三件套测试（WO-LEGION-ACAD1-P0）。 |
+| `agent_platform/tests/test_academy_role_attrs.py` | 研究院角色属性一致性（2026-10-29 A，WO-ACAD-ROLE-ATTR-20261029）。 |
 | `agent_platform/tests/test_academy_wiring.py` | M1 Academy 域接线测试（离线 fixture）。 |
+| `agent_platform/tests/test_agent_sandbox.py` | Agent 沙箱/benchmark 测试（WO-AGENT-SANDBOX-20261027）。 |
 | `agent_platform/tests/test_anonymous_review.py` | WO-LEGION-S25 Z3 匿名横评测试。 |
 | `agent_platform/tests/test_approvals_registry.py` | M1-阶段二 Approval 注册表只读数据面测试（离线 fixture + 真实仓冒烟）。 |
 | `agent_platform/tests/test_approvals_store.py` | ApprovalStore 幂等契约测试（M0 契约补齐：同键异参拒绝）。 |
 | `agent_platform/tests/test_arch1_ops.py` | ARCH1 架构/技术债周巡检测试（WO-LEGION-ARCH1-PATROL）。 |
 | `agent_platform/tests/test_artifacts.py` | ArtifactStore 契约测试（M3-P1：统一产物登记仓）。 |
 | `agent_platform/tests/test_attribution_gap_report.py` | tools/attribution_gap_report.py 测试（WO-DRILL3-ATTRGAP）。 |
+| `agent_platform/tests/test_audit_20261028.py` | 2026-10-28 审计修复回归测试（WO-AUDIT-20261028-FIX）。 |
 | `agent_platform/tests/test_authority_audit.py` | authority_audit 测试（WO-AUTHORITY-C3）。 |
 | `agent_platform/tests/test_batch_strategy_drill.py` | 批量新增策略 Agent 的 SHADOW 零主链改动演练。 |
 | `agent_platform/tests/test_business_adapter.py` | M0 P5 业务域投影适配器测试（离线 fixture）。 |
@@ -198,12 +219,23 @@ codebase_intel 统计：模块 **1100** / 符号 **13359**。
 | `agent_platform/tests/test_contracts.py` | 统一 contracts 基础契约测试。 |
 | `agent_platform/tests/test_credential_trace.py` | adapters/credential_trace 交叉校验器单元测试（K-M1 审计补强）。 |
 | `agent_platform/tests/test_credential_trace_audit.py` | _audit_credential_trace 交叉校验测试（tmp 独立仓，不碰真库）。 |
+| `agent_platform/tests/test_d1_decision_strict.py` | D1 决策 strict JSON 契约测试（2026-10-29 · 鲁肃复盘整改）。 |
 | `agent_platform/tests/test_d1_json_contract.py` | 决策节点 JSON 契约 + LLM 生成元信息留存（10-17 隔离预演驱动的收口）。 |
+| `agent_platform/tests/test_data_lineage.py` | 数据血缘 MVP 测试（WO-DATA-LINEAGE-20261027）。 |
 | `agent_platform/tests/test_data_pipeline_probe.py` | data_pipeline_probe 测试（WO-SEAT-REAL-B2B）。 |
 | `agent_platform/tests/test_debate_roles.py` | 控辩审契约测试（V2 思路 2 并入 / K-ORG-166，2026-10-18 老田拍板）。 |
+| `agent_platform/tests/test_decision_outcomes.py` | D1 决策 outcome 台账单测（不联网）。 |
 | `agent_platform/tests/test_deepseek.py` | DeepSeek 客户端离线测试（WO-LEGION-LLMDEEPSEEK-20261026）。 |
 | `agent_platform/tests/test_demo_guard.py` | M5-P2 演示隔离安全阀测试（刀2 验收门）。 |
 | `agent_platform/tests/test_dev_gate_warn_report.py` | tools/dev_gate_warn_report.py 测试（WO-DRILL4-GATEWARN · 2026-10-27）。 |
+| `agent_platform/tests/test_dev_legion_ai_card.py` | LS-05 AI 席位卡测试。 |
+| `agent_platform/tests/test_dev_legion_api.py` | LS-03 只读 API 契约测试（研发军团作战屏 v1）。 |
+| `agent_platform/tests/test_dev_legion_metrics.py` | LS-04 聚合层测试：在制/指标/红线；与 API payload 一致性。 |
+| `agent_platform/tests/test_dev_legion_quant_card.py` | LS-06 量化席位卡测试。 |
+| `agent_platform/tests/test_dev_legion_real.py` | v1.1 真实量化聚合测试（LV-02/03/04）。 |
+| `agent_platform/tests/test_dev_legion_risk_card.py` | LS-07 回测/风控卡测试。 |
+| `agent_platform/tests/test_dev_legion_ui.py` | LS-08 前端框架测试：三件套/接口/区块/无自绘色值。 |
+| `agent_platform/tests/test_dev_metrics_daily.py` | dev_metrics_daily 测试（WO-P0-DEV8-METRICS）。 |
 | `agent_platform/tests/test_dev_orchestrator.py` | dev_orchestrator MVP 测试（WO-HARNESS-O12）。 |
 | `agent_platform/tests/test_dev_pitch_artifact_wiring.py` | M3-P2 dev/pitch 产线产物挂接测试（离线 fixture）。 |
 | `agent_platform/tests/test_dev_route_audit.py` | tools/dev_route_audit.py 回归测试（工单 WO-DRILL1-ROUTEAUDIT）。 |
@@ -213,6 +245,7 @@ codebase_intel 统计：模块 **1100** / 符号 **13359**。
 | `agent_platform/tests/test_devtask_contract.py` | O2 任务契约 2.0 测试（WO-HARNESS-O12）：devtask 可选字段落账与旧调用兼容。 |
 | `agent_platform/tests/test_devtask_dev_gate.py` | WO-LEGION-DEVEXEC-20261027 devtask 研发试点门（dev_owner_gate）回归测试。 |
 | `agent_platform/tests/test_devtask_owner_domain.py` | WO-TF-03 owner 落账校验回归测试（零生产写入）。 |
+| `agent_platform/tests/test_devtask_sandbox.py` | devtask sandbox 开关测试（WO-SANDBOX-WIRE-20261027）。 |
 | `agent_platform/tests/test_devtask_wiring.py` | M1 devtask 工单线接线测试（离线 fixture）。 |
 | `agent_platform/tests/test_diff_baseline.py` | diff_baseline 账本基线对比测试。 |
 | `agent_platform/tests/test_emp_numbering.py` | 员工编号契约（engine/emp_numbering.py）的守卫测试。 |
@@ -237,6 +270,11 @@ codebase_intel 统计：模块 **1100** / 符号 **13359**。
 | `agent_platform/tests/test_healthcheck_all.py` | test_healthcheck_all：聚合逻辑测试（不真跑五个工具）。 |
 | `agent_platform/tests/test_heartbeat.py` | Paper 引擎心跳适配器测试（Paperclip 心跳对接第一刀，B 路）。 |
 | `agent_platform/tests/test_hermes_ui_probe.py` | HERMES_UI 探活工具测试（WO-HERMES-UI-REAL）。 |
+| `agent_platform/tests/test_hq_acceptance.py` | 验收会证据 P1b 测试：gather/HTTP/纪要 acceptance 字段/前端标记。 |
+| `agent_platform/tests/test_hq_agenda.py` | 会前议程 P1 测试：收编只读/留言追加/HTTP 路由/前端标记。 |
+| `agent_platform/tests/test_hq_meeting.py` | 指挥部会议 v2 P0 测试：schema/校验/列表/派单/HTTP 路由/前端标记。 |
+| `agent_platform/tests/test_hq_p2.py` | 会议 P2 测试：看板统计/跑偏/回放、赵云会议绑定覆盖、HTTP、前端标记。 |
+| `agent_platform/tests/test_hq_reflux.py` | P1c 回流测试：会议事件/Phoenix trace/agenda 近事件/KINDS。 |
 | `agent_platform/tests/test_ide_enrich.py` | Agent IDE 组织架构富化测试（WO-IDE-ENRICH-20261026）。 |
 | `agent_platform/tests/test_ide_rw.py` | IDE 可写/可执行 R0+R1+R2 测试（D1-D4 全 A）。 |
 | `agent_platform/tests/test_idem_acceptance.py` | M0 P4 自动化验收：双轨接入 + 死信 + 人工恢复 + 崩溃窗口。 |
@@ -244,15 +282,19 @@ codebase_intel 统计：模块 **1100** / 符号 **13359**。
 | `agent_platform/tests/test_inbox_gateway_lifecycle.py` | OSLINK-P4 answered/delivered 生命周期测试（隔离树·待签）。 |
 | `agent_platform/tests/test_inbox_offline.py` | WO-FS-157: all effects isolated to system-temp synthetic tickets. |
 | `agent_platform/tests/test_intel_wiring.py` | intel_wiring（情报裁决域）测试。 |
+| `agent_platform/tests/test_interpreter_run_scope.py` | O6 P2b：engine Interpreter.run 的 run_scope + attempt 记录单测。 |
 | `agent_platform/tests/test_invest_wiring.py` | M1 Invest（股票投研）域接线测试（离线 fixture）。 |
 | `agent_platform/tests/test_judge.py` | LLM-as-judge 测试（WO-EVAL-JUDGE）。 |
 | `agent_platform/tests/test_keygen_script.py` | gen_principal_key.ps1 回归测试（WO-LEGION-KEYGENFIX-20261026）。 |
 | `agent_platform/tests/test_knowledge_wiring.py` | M2-P2 统一记忆入口测试。 |
 | `agent_platform/tests/test_legion_command.py` | WO-LEGION-S22 军团指挥界面套件测试：快照聚合 + HTTP 端点 + dispatch 走门面。 |
+| `agent_platform/tests/test_legion_command_run_scope.py` | O6 P2c：legion_command 请求级 run_scope 单测。 |
+| `agent_platform/tests/test_legion_contract.py` | LS-02 数据契约测试（M0 冻结前校验）：只读/字段/真源。 |
 | `agent_platform/tests/test_legion_ide.py` | 军团 Agent IDE 独立形态测试（WO-LEGION-IDE-STANDALONE-20261026）。 |
 | `agent_platform/tests/test_legion_intent_contract.py` | 意图卡契约（legion_command/intent.py）的仓库内守卫。 |
 | `agent_platform/tests/test_legion_litellm_route.py` | AUDIT-01 A-03 回归：legion_command/serve.py LiteLLM 子进程健壮性（全 mock）。 |
 | `agent_platform/tests/test_legion_meeting_backfill.py` | W42 晨会纪要第④段回填器 legion_meeting_backfill.py 离线测试。 |
+| `agent_platform/tests/test_legion_readiness.py` | legion_readiness 测试（合成最小 org/tasks）。 |
 | `agent_platform/tests/test_lineage_freshness.py` | lineage_freshness（P1-A 血缘新鲜度维度）测试。 |
 | `agent_platform/tests/test_list_rejects.py` | list_rejects 拒档只读浏览工具测试。 |
 | `agent_platform/tests/test_llm_routing.py` | MODEL_PROFILES 自动路由验收（10-18 llm.py 改造；10-27 B05 单轨化） |
@@ -276,10 +318,12 @@ codebase_intel 统计：模块 **1100** / 符号 **13359**。
 | `agent_platform/tests/test_monthly_report.py` | monthly_report.py（W37 月报生成器）测试集——三段勾稽 / 缺账本 INCONCLUSIVE / |
 | `agent_platform/tests/test_morning_review_backfill.py` | W42 晨会纪要回填器最小测试集（三态判定 / 出处锚存在性 / 缺数据不编造）。 |
 | `agent_platform/tests/test_name_uniqueness.py` | 名称唯一性 CI 测试（WO-NAME-UNIQ-20261027）。 |
+| `agent_platform/tests/test_network_policy.py` | 沙箱出口白名单策略测试（WO-SANDBOX-QUOTA-20261027）。 |
 | `agent_platform/tests/test_observe_point_review.py` | observe_point_review.py 单测（K-ORG 预约 2026-10-18 19:1x 机械化执行件）。 |
 | `agent_platform/tests/test_office_lark.py` | Office + 通知 outbox 测试（WO-OFFICE-LARK）。 |
 | `agent_platform/tests/test_openclaw_cli.py` | OpenClaw CLI 桥单测（2026-10-26 WO-LEGION-ZHUGE-8796OC）：解析/配置/参数，零网络。 |
 | `agent_platform/tests/test_org_audit.py` | WO-LEGION-S34 编制完整性审计测试。 |
+| `agent_platform/tests/test_org_chart.py` | org_chart 测试（WO-ORG-CHART）。 |
 | `agent_platform/tests/test_org_enroll.py` | WO-LEGION-S33 Agent 编制工具测试。 |
 | `agent_platform/tests/test_org_matrix_migration.py` | org 矩阵迁移测试（WO-ORG-MATRIX P2）：双写校验、幂等、冲突拒绝。 |
 | `agent_platform/tests/test_org_migrate.py` | WO-LEGION-S43 档案迁移测试。 |
@@ -303,18 +347,23 @@ codebase_intel 统计：模块 **1100** / 符号 **13359**。
 | `agent_platform/tests/test_repair_lane.py` | 修复车道测试（WO-GUANYU-LANE）。 |
 | `agent_platform/tests/test_replay_query.py` | M1 回放查询层测试（离线 fixture + 真实只读冒烟）。 |
 | `agent_platform/tests/test_replay_root_ledger_isolation.py` | Offline discovery test for cross-ledger replay(root) path isolation. |
+| `agent_platform/tests/test_research_fsm.py` | 研究流水线状态机测试（WO-RESEARCH-FSM-20261027）。 |
 | `agent_platform/tests/test_research_seat_ops.py` | 研究值守双席测试（WO-LEGION-ACAD1-P2）。 |
+| `agent_platform/tests/test_role_group_model.py` | 角色分工/分组适配模型测试（WO-ROLE-GROUP-MODEL）。 |
 | `agent_platform/tests/test_roster_d1_contract.py` | 真仓 roster → D1 JSON 契约锚点测试（f59a0738 集成面收口）。 |
 | `agent_platform/tests/test_run_shadow_guard.py` | 影子主链防拖死护栏测试（设计稿 §5.2 过渡缓解：单策略产出超时包裹）。 |
 | `agent_platform/tests/test_run_shadow_log_redirect.py` | run_shadow 日志重定向护栏测试（K-OPS-20261019-SHADOWFIX）。 |
 | `agent_platform/tests/test_run_strategy_shadow.py` | strategy_drill_cli CLI 契约测试（原名 run_strategy_shadow.py，拍板 02 更名去混淆）。 |
 | `agent_platform/tests/test_sandbox.py` | 沙箱验证测试（WO-SANDBOX-VERIFY）。 |
+| `agent_platform/tests/test_sandbox_quota.py` | 沙箱资源配额测试（WO-SANDBOX-QUOTA-20261027）。 |
 | `agent_platform/tests/test_scan_secrets.py` | scan_secrets 只读扫描器测试。 |
 | `agent_platform/tests/test_scan_secrets_timeout.py` | scan_secrets git_status_files 超时保护测试（审查 B4）。 |
 | `agent_platform/tests/test_seat_batch1.py` | 批次1 测试：A0 取数审计事件 + 全席 prompt 回滚标记（WO-SEAT-REAL-BATCH1）。 |
 | `agent_platform/tests/test_seat_eval.py` | 席位评测跑批器测试（WO-EVAL-SEATS-20261027）。 |
 | `agent_platform/tests/test_seat_fallback.py` | 席位级 fallback 链验收（WO-LEGION-DEVEXEC2-20261027）。 |
 | `agent_platform/tests/test_seat_heartbeat.py` | seat_heartbeat 测试（WO-SEAT-REAL-B2E）。全部 stub，不真实调用外部模型。 |
+| `agent_platform/tests/test_seat_iteration.py` | seat_iteration 测试（11 席迭代配置）。 |
+| `agent_platform/tests/test_seat_learning.py` | seat_learning 测试（WO-LEARNING-DEV7）。 |
 | `agent_platform/tests/test_seat_realness.py` | 席位真成员化审计器测试（WO-SEAT-REALSTD-20261026）。 |
 | `agent_platform/tests/test_service_probe.py` | service_probe 多目标探活测试（WO-SEAT-REAL-B2A）。 |
 | `agent_platform/tests/test_shadow_isolation.py` | run 路径隔离根与预演阀契约测试（M5 缺口收口）。 |
@@ -354,6 +403,9 @@ codebase_intel 统计：模块 **1100** / 符号 **13359**。
 | `agent_platform/tests/test_tools_exitcode_contract.py` | 只读工具「退出码契约」测试（subprocess 级，端到端锁定 CLI 语义）。 |
 | `agent_platform/tests/test_trace_cost.py` | trace_cost 单元测试（WO-TRACE-COST-20261027）。 |
 | `agent_platform/tests/test_trace_link.py` | M4-P1 trace_link 映射层测试。 |
+| `agent_platform/tests/test_trace_link_shadow_sync.py` | trace_link shadow-only 补链（replay_trace 锚点修复）契约。 |
+| `agent_platform/tests/test_trace_otel.py` | OTel→Phoenix 导出单测（fake urlopen，不联网）。 |
+| `agent_platform/tests/test_trace_run_id.py` | O6 P2a：trace.run_id 透传/迁移单测。 |
 | `agent_platform/tests/test_trace_store.py` | Trace 存储测试（WO-TRACE-OTEL）。 |
 | `agent_platform/tests/test_trace_usage.py` | LLM usage/成本留证测试（WO-TRACE-USAGE）。 |
 | `agent_platform/tests/test_unified_projection.py` | M1 统一投影聚合器测试（离线 fixture）。 |
@@ -363,10 +415,13 @@ codebase_intel 统计：模块 **1100** / 符号 **13359**。
 | `agent_platform/tests/test_weekly_report.py` | weekly_report.py（W36 周报生成器）最小测试集——W37 工位测试回填。 |
 | `agent_platform/tests/test_weekly_report_html.py` | tools/weekly_report_html.py 测试（WO-DRILL2-WEEKLYHTML）。 |
 | `agent_platform/tests/test_zhaoyun_cap2.py` | 赵云能力二期测试：审批闭环/干预建议/记忆策展/路由/自检/留证（WO-ZHAOYUN-CAP2）。 |
+| `agent_platform/tests/test_zhaoyun_debate.py` | 辩论接线单测。 |
 | `agent_platform/tests/test_zhaoyun_drill.py` | 赵云能力下钻模块测试（WO-ZHAOYUN-DRILL）。 |
 | `agent_platform/tests/test_zhaoyun_quant.py` | 量化只读 接口/页面 单测（runner 注入，不联网）。 |
 | `agent_platform/tests/test_zhaoyun_view.py` | 赵云 · 治理席前端页测试（WO-LEGION-ZHAOYUNPAGE-20261026 / ENH-20261026）。 |
+| `agent_platform/tests/test_zhaoyun_wargame.py` | 兵棋接线单测：视图函数 + 页面/路由标记。 |
 | `agent_platform/tools/academy_ops.py` | 研究院研究运营三件套（ACAD1 P0）：立项简报 / 评审清单 / 研究院周报 + 事件留痕。 |
+| `agent_platform/tools/agent_sandbox.py` | Agent 沙箱 + 内部 benchmark（P0⑧ · WO-AGENT-SANDBOX-20261027）。 |
 | `agent_platform/tools/arch1_ops.py` | ARCH1 架构/技术债周巡检（WO-LEGION-ARCH1-PATROL）。 |
 | `agent_platform/tools/build_skills.py` | 生成赵云 Agent Skills（14 能力卡 → SKILL.md + scripts/verify.py）。 |
 | `agent_platform/tools/capability_self_audit.py` | 能力自检（capability-self-audit）：核对 CAPABILITIES.json 与真实工具/新鲜度，漂移即报警。 |
@@ -375,6 +430,7 @@ codebase_intel 统计：模块 **1100** / 符号 **13359**。
 | `agent_platform/tools/check_trigger_chain.py` | check_trigger_chain：周一外部触发链前置自检（只读，fail-visible）。 |
 | `agent_platform/tools/closeout_round.py` | 日终收口轮（WO-LEGION-P0FIX-20261026 首版 · WO-LEGION-CLOCK-20261026 加固）。 |
 | `agent_platform/tools/council_review_client.py` | council_review_client.py — 议会厅席位复核客户端（甲案落地，2026-10-23）。 |
+| `agent_platform/tools/data_lineage.py` | 数据血缘 MVP（P0⑦ · WO-DATA-LINEAGE-20261027）。 |
 | `agent_platform/tools/data_pipeline_probe.py` | 数据管道只读自检工具（B2-b 情报/采集 7 席）。 |
 | `agent_platform/tools/diff_baseline.py` | diff_baseline：账本基线对比（观察点 FAIL 后取证第一步，只读，fail-visible）。 |
 | `agent_platform/tools/gov_ai.py` | GOVAI-1 地基：DeepSeek 进治理动作（异常归纳 / 治理建议 / 判例草稿）。 |
@@ -389,11 +445,13 @@ codebase_intel 统计：模块 **1100** / 符号 **13359**。
 | `agent_platform/tools/monday_drill.py` | monday_drill：周一观察点现场 SOP 的只读 dry-run 演练器（不执行任何命令）。 |
 | `agent_platform/tools/monthly_report.py` | monthly_report.py —— 军团月报生成器（W37，账本投影器，只读）。 |
 | `agent_platform/tools/morning_review_backfill.py` | morning_review_backfill.py —— 晨会纪要第④段回填器（W42，账本投影器，零自动定稿）。 |
+| `agent_platform/tools/network_policy_check.py` | 沙箱出口白名单策略校验/决策器（P0⑧ 增强 · WO-SANDBOX-QUOTA-20261027）。 |
 | `agent_platform/tools/office_doc.py` | Office 文档读写（零依赖优先）： |
 | `agent_platform/tools/osleg_http_probe.py` | OSLINK-W4 8795 军团网关隔离验收探针（K-QUANT-20261026-OSLEG-8795PREP）。 |
 | `agent_platform/tools/policy_check.py` | 策略单源决策器（P0③ · WO-POLICY-CODE-20261027）。 |
 | `agent_platform/tools/pre_observation.py` | pre_observation：周一 17:25 巡检前的「收编 → 判读 → 汇总」一键入口（T 工位）。 |
 | `agent_platform/tools/quality_gate.py` | 质量门自检工具（B2-d 研发/质量席）。 |
+| `agent_platform/tools/research_fsm.py` | 研究流水线显式状态机（P0⑥ · WO-RESEARCH-FSM-20261027）。 |
 | `agent_platform/tools/research_seat_ops.py` | 研究院研究值守双席（STRAT1 / BACK1）—— 策略假设值守 + 冻结/回测值守。 |
 | `agent_platform/tools/s0_cwd_variant_probe.py` | s0_cwd_variant_probe.py — 0x80070003 根因对照变体探针组。 |
 | `agent_platform/tools/scan_secrets.py` | 防泄漏只读凭据扫描器（scan_secrets）。 |
@@ -423,6 +481,7 @@ codebase_intel 统计：模块 **1100** / 符号 **13359**。
 | `portal/api_daily_data.py` | 数据日报聚合出口 mixin（K-ORG-183 M1，2026-10-18）。 |
 | `portal/api_data.py` | P4 批 1：数据域 Mixin（data_health/warehouse/sync 族 + Handler 方法壳）。 |
 | `portal/api_dataops.py` | 数据运营指挥台 /api/dataops/overview —— 采集动线 + 数据池 + 管道调度聚合视图。 |
+| `portal/api_dev_legion.py` | 研发军团作战屏 v1 · 只读 API（LS-03，2026-10-28）。 |
 | `portal/api_events.py` | R6 事件总线数据面（8091 侧 ingest/query，Gate 0 前置离线开发 M1 骨干）。 |
 | `portal/api_evolution.py` | 进化账本只读投影（驾驶舱·复盘舱数据面二期）。 |
 | `portal/api_execution.py` | R1 执行健康总线（联动层一期 T1，K-ORG-112 三层只读投影）。 |
@@ -478,6 +537,12 @@ codebase_intel 统计：模块 **1100** / 符号 **13359**。
 | `portal/contacts_store.py` | contacts_store.py — 商业关系库（客户/投资人/VP/文档档案）。 |
 | `portal/council_ops.py` | council_ops.py — 议会厅交互桥（v3，2026-10-23）。 |
 | `portal/dead_letter.py` | K-ORG-201 W38：送达死信账（dead_letters.jsonl）。 |
+| `portal/dev_legion_aggregate.py` | 研发军团作战屏 · 聚合层（LS-04，2026-10-28）。 |
+| `portal/dev_legion_ai_card.py` | 研发军团作战屏 · AI 席位卡数据（LS-05，2026-10-28）。 |
+| `portal/dev_legion_quant_card.py` | 研发军团作战屏 · 量化席位卡数据（LS-06，2026-10-28）。 |
+| `portal/dev_legion_quant_real.py` | 作战屏 v1.1 · 策略运行只读聚合（LV-02，2026-10-29）。 |
+| `portal/dev_legion_risk_card.py` | 研发军团作战屏 · 回测/风控卡数据（LS-07，2026-10-28）。 |
+| `portal/dev_legion_risk_real.py` | 作战屏 v1.1 · 影子/回测只读聚合（LV-03，2026-10-29）。 |
 | `portal/feed_extract.py` | 投喂正文抽取（P2 投喂补强，2026-10-26）。 |
 | `portal/feishu_acceptance.py` | 邓芝台 · W4 验收脚本（2026-10-24）。 |
 | `portal/feishu_app_pool.py` | 角色 → 飞书应用凭据池（W2 前置，2026-10-24）。 |
@@ -505,6 +570,9 @@ codebase_intel 统计：模块 **1100** / 符号 **13359**。
 | `portal/issues_store.py` | issues_store.py — OS 问题账本（问题生命周期管理：发现→认领→解决→清除归档）。 |
 | `portal/jev_card_action.py` | 盯盘预警卡片动作统一 handler（W3 清债：9104 老链迁移目标，2026-10-24）。 |
 | `portal/job_spec_registry.py` | Persistent, non-executable descriptors for minute execution sources. |
+| `portal/kg/__init__.py` | api_kg 拆分目录：kg_html / kg_service（第一批）。 |
+| `portal/kg/kg_html.py` | kg 页族 HTML 片段（resonance/net/overview）（P4 api_kg 拆分第一批：自 api_kg.py 纯搬运，零行为变化）。 |
+| `portal/kg/kg_service.py` | kg 数据/写入 helper（label/card save+diff）（P4 api_kg 拆分第一批：自 api_kg.py 纯搬运，零行为变化）。 |
 | `portal/kg_stock_query.py` | 轻量股票血缘查询脚本（供 Bot subprocess 调用）。 |
 | `portal/km_feishu_hub.py` | KM 知识库飞书联动枢纽（127.0.0.1:8099）。 |
 | `portal/legacy_telemetry.py` | 旧模板调用遥测（P3 观察期，2026-10-25）。 |
@@ -726,6 +794,7 @@ codebase_intel 统计：模块 **1100** / 符号 **13359**。
 | `portal/tests/test_api_backtest_minute.py` | Minute API integration tests with an import-time isolated JobSpec catalog. |
 | `portal/tests/test_api_intel_evidence.py` | — |
 | `portal/tests/test_api_intel_graph.py` | K-MDC-E2 tests: dossier endpoint — honest empty, candidate-only, traceable. |
+| `portal/tests/test_api_kg_contract.py` | api_kg 契约测试骨架（2026-10-28 首建，拆分前先钉住行为）。 |
 | `portal/tests/test_intel_dossier_skeleton.py` | K-INTEL-20261022-FE: offline skeleton contracts, without loading live sources. |
 | `portal/tests/test_intel_feishu_export.py` | K-MDC-E3 tests: window gate, digest honesty, four-account receipt. 全离线不真发. |
 | `portal/tests/test_intel_workbench_xq_link.py` | Offline regression for evidence-to-Xueqiu ticker links; no live source calls. |
@@ -804,9 +873,13 @@ codebase_intel 统计：模块 **1100** / 符号 **13359**。
 | `tools/c6_daily_kpi.py` | C6 指标日报生成器（只读、确定性、零 LLM）。 |
 | `tools/chart_hypothesis.py` | 漏斗层1：图形推演引擎（K-ORG-120 图先行·事佐证） |
 | `tools/check_deliverables_parity.py` | deliverables 双根一致性只读护栏（漂移门禁）。 |
+| `tools/check_dirty.py` | 脏文件看板/协议守卫（P0 #2，2026-10-28）。 |
 | `tools/check_format_args.py` | 格式串占位符 vs 参数数 AST 静态校验（W9 门禁，K-STOCK-393）。 |
+| `tools/check_import_boundaries.py` | 导入边界联动检查：业务模块的新增 import 必须仍落在对应单测白名单内。 |
 | `tools/check_name_uniqueness.py` | 名称唯一性 CI 规则（P3）——编制内一名一席、治理/虚拟席必须带席位限定。 |
+| `tools/check_portal_split.py` | portal 大文件拆分守卫（2026-10-28，守则 v1）。 |
 | `tools/check_ports.py` | 端口注册表守卫（K-STOCK-103）：治抢端口/私起服务。 |
+| `tools/check_syntax.py` | 语法门：一方文件编译检查（SyntaxError 阻断；SyntaxWarning 可按门禁策略阻断）。 |
 | `tools/chief_patrol.py` | chief_patrol — 田丰监督回路巡检器（K-ORG-026 批E1）。 |
 | `tools/cleanup_pytest_tmp.py` | pytest tmp 产物 TTL 清理（K275 根治：C 盘 62G pytest 泄漏） |
 | `tools/cn_fut_backtest.py` | cn_fut_backtest: 国内期货主力连续 × 放行策略 walk-forward 回测（F3b，K161-B/K163-C） |
@@ -820,6 +893,7 @@ codebase_intel 统计：模块 **1100** / 符号 **13359**。
 | `tools/cost_report.py` | — |
 | `tools/council_route.py` | council_route.py — 议会厅工作流路由器（2026-10-22）。 |
 | `tools/credential_catalog.py` | CLI：统一凭据目录（JEV/数据/飞书等，只读）。 |
+| `tools/credential_store.py` | 平台业务凭据库（Windows DPAPI）：Tushare/数据接口等 Key 加密存储。 |
 | `tools/daily_review.py` | 军团每日复盘引擎（K-ORG-122）：每个 Agent 每天回答三问 |
 | `tools/daily_subscription_job.py` | 订阅日跑编排入口（飞书中台 P3.9-lite · N-B 工位 · WO-FS-122 · 2026-10-20）。 |
 | `tools/datawarehouse/__init__.py` | DATA1 数据仓治理工具包（只读）。 |
@@ -828,26 +902,45 @@ codebase_intel 统计：模块 **1100** / 符号 **13359**。
 | `tools/datawarehouse/catalog_snapshot.py` | 目录快照：catalog（当前 v12）与来源资格 registry 一致性 + 物理漂移抽样（只读）。 |
 | `tools/datawarehouse/common.py` | 数据仓治理工具公共层（只读）。 |
 | `tools/datawarehouse/contract_export.py` | 数据契约生成器：catalog v12 六核心表 → ODCS v3 契约（datacontract-cli 可 lint）。 |
+| `tools/datawarehouse/db_health.py` | SQLite 健康检查（A4 制度化）：给 DW 周检提供 quick_check / journal / 空间 / 索引卫生。 |
 | `tools/datawarehouse/db_instance_probe.py` | 数据库实例只读探活：TCP 端口（不连库、不用凭据）。 |
 | `tools/datawarehouse/freshness_report.py` | 新鲜度报告：六表 prod_max（footer，不凭 mtime）+ 4 库停摆（只读 sqlite）。 |
+| `tools/datawarehouse/lifecycle.py` | 资产生命周期覆盖读取（catalog/registry/freshness 共用，fail-open）。 |
 | `tools/datawarehouse/lineage_impact.py` | 血缘影响分析（只读、静态）：catalog 表 → store → alias → 仓内消费方。 |
 | `tools/datawarehouse/manifest_check.py` | manifest 覆盖核对：4 个 `_manifest.json` 键 ∩ catalog 表名（只读）。 |
+| `tools/datawarehouse/manifest_repair.py` | manifest 修复工具：为 catalog 中 manifest_status=missing/open 的表补齐源清单条目。 |
+| `tools/datawarehouse/metadata_consistency.py` | 元数据一致性检查：catalog × registry × data_lifecycle × 物理 store。 |
 | `tools/datawarehouse/qualify_probe.py` | 来源资格取证探针（批次 1：tushare 深层表 26 张）。 |
 | `tools/datawarehouse/quality_test.py` | 确定性质量检查（只读）：表存在/空分片/分区重复/行数/主键抽样。 |
 | `tools/datawarehouse/registry_rebuild.py` | warehouse_registry v2 重建：按 catalog v12 全量对齐物理表资格台账。 |
 | `tools/datawarehouse/run_all.py` | 数据仓日检总入口：串起各只读工具 → 汇总 → 可选写观察记忆。 |
+| `tools/datawarehouse/staging_health.py` | staging 生命周期周检：tushare_staging 体积/沉淀/可回收候选（只读）。 |
 | `tools/datawarehouse/tests/test_ann_history_sync.py` | ann_history_sync 纯本地单测（不联网、不碰生产库）。 |
 | `tools/datawarehouse/tests/test_contracts.py` | contract_export 纯单测：类型映射/契约构建/check 语义（不读真实数据根）。 |
 | `tools/datawarehouse/tests/test_data_catalog.py` | 数据册 v2 校验：YAML 合法 / 条目数 / id 唯一 / 字段齐全 / 修正项落盘。 |
+| `tools/datawarehouse/tests/test_db_health.py` | db_health 单测：用临时 SQLite 验证 ok/warn/fail 三态（不依赖真实业务库）。 |
+| `tools/datawarehouse/tests/test_freshness_expectation.py` | freshness 期望模型（freq-aware）单测。 |
+| `tools/datawarehouse/tests/test_freshness_parse.py` | freshness_report._parse_day 单测（2026-10-28 BUG 修复回归）。 |
+| `tools/datawarehouse/tests/test_lifecycle.py` | lifecycle 覆盖单测。 |
+| `tools/datawarehouse/tests/test_manifest_repair.py` | manifest_repair 纯函数单测：扫描/清单路径/合并写入（临时目录夹具）。 |
+| `tools/datawarehouse/tests/test_metadata_consistency.py` | metadata_consistency 单测（临时 catalog/registry/lifecycle 夹具）。 |
+| `tools/datawarehouse/tests/test_otel_tracing.py` | otel_tracing 纯单测：默认关闭 no-op / 装饰器透传 / fail-open。 |
 | `tools/datawarehouse/tests/test_qualify_probe.py` | qualify_probe 单测：纯本地 fixture，不读真实数据仓/不联网/不写 registry。 |
+| `tools/datawarehouse/tests/test_staging_health.py` | staging_health 周检单测（临时目录 + 注入体积，避免真造大文件）。 |
+| `tools/datawarehouse/tests/test_staging_retention.py` | staging_health 保留窗口/陈旧锁单测（2026-10-28 增强）。 |
 | `tools/datawarehouse/tests/test_tools.py` | datawarehouse 工具层单测（纯本地，不依赖网络/真实数据仓/凭据）。 |
+| `tools/delivery_ledger.py` | 非研发部门交付台账（周度 CSV）：init / check / summary。 |
+| `tools/dep_age_check.py` | 依赖版本年龄检查（O8 P3b，warn-only，只读）。 |
 | `tools/dev_acceptance_audit.py` | 实现/验收分离审计（只读）：dev 单是否有独立验收人与验收命令。 |
 | `tools/dev_gate_warn_report.py` | 研发试点门（[dev-gate]）告警汇总（WO-DRILL4-GATEWARN · 2026-10-27）。 |
+| `tools/dev_legion_smoke.py` | 研发军团作战屏 v1 · 冒烟（LS-10，2026-10-28）。 |
+| `tools/dev_metrics_daily.py` | C6 每日指标（2026-10-27 WO-P0-DEV8-METRICS）。 |
 | `tools/dev_orchestrator.py` | 研发编排状态机 MVP（O1 · 2026-10-27 WO-HARNESS-O12）。 |
 | `tools/dev_route_audit.py` | 研发派工路由审计（只读工具，WO-DRILL1-ROUTEAUDIT）。 |
 | `tools/dev_weekly_report.py` | 研发部周报生成器（C5/C6 交付物 · 2026-10-27 WO-LEGION-P0WRAP）。 |
 | `tools/devtask.py` | devtask — 多 Agent 协作开发调度器（K-STOCK-104 方案丙）。 |
 | `tools/devtask_audit.py` | — |
+| `tools/diagnostics.py` | O7 Diagnostics：一键生成脱敏诊断包（zip）。 |
 | `tools/disk_ttl_cleanup.py` | disk_ttl_cleanup.py — 运行产物磁盘 TTL 清理（默认 dry-run） |
 | `tools/download_dflash2_hybrid.py` | DFlash2 模型多连接下载器（ModelScope 匿名限速 ~1MB/s，多连接可叠加提速） |
 | `tools/durable_workflow.py` | durable-workflow 最小版：持久步骤状态机（断点续跑/超时/重试）。 |
@@ -874,11 +967,15 @@ codebase_intel 统计：模块 **1100** / 符号 **13359**。
 | `tools/gen_council_data.py` | gen_council_data.py — 会议厅数据生成器（S-1b，2026-10-22）。 |
 | `tools/gen_data_manifest.py` | gen_data_manifest.py — 数据根轻量清单（只读，不复制任何数据）。 |
 | `tools/gen_docs_index.py` | DOCS_INDEX.md 的生成与校验工具。 |
+| `tools/gen_entrypoints.py` | 脚本入口登记表生成器（2026-10-28）。 |
 | `tools/gen_health_card.py` | gen_health_card.py — 治理健康卡（只读，零第三方依赖）。 |
 | `tools/gen_task_fixes.py` | 为 7 个"动作起不来"的计划任务生成修正版 XML（只读线上定义，只写工作区）。 |
 | `tools/gen_tianfeng_attr.py` | 生成田丰（A0）属性页：legion_command/static/tianfeng.html。 |
 | `tools/glm_retry_probe.py` | glm_retry_probe.py — GLM-5.3 额度探测（两阶段，外发最小化；审计 B M-03/S-01 收口）。 |
 | `tools/gov_ai_case_bridge.py` | GOVAI-3：AI 判例草稿 → Z4 待签 payload → 验签入库（人类签字门）。 |
+| `tools/huangzhong_accept.py` | 黄忠 · 验收守门官 v0（观察模式，**不阻断 merge**）。 |
+| `tools/huangzhong_daily.py` | 黄忠每日验收观察（观察模式）：跑验收单 → 记 daily.jsonl → 周报指标。 |
+| `tools/huangzhong_grade.py` | 黄忠 W1 四件套自动批改（Rubric 100 分，≥80 通过）。 |
 | `tools/idem_replay_verify.py` | M0 P4 事件回放验证（只读）。 |
 | `tools/init_subscription_db.py` | 订阅账本离线初始化工具（飞书中台 P3.8-lite · M-C / WO-FS-113）。 |
 | `tools/inspect_format_mismatch.py` | 对 check_format_args 的 MISMATCH 逐个打印完整源码段，人工定真假。 |
@@ -895,16 +992,23 @@ codebase_intel 统计：模块 **1100** / 符号 **13359**。
 | `tools/legion_meeting.py` | 军团晨会引擎 + 知识提炼器（LCS-2 四制一环） |
 | `tools/legion_meeting_room.py` | 议事厅（G2）：多轮会议消息 + 版本化白板的持久化。 |
 | `tools/legion_pulse.py` | 军团心跳模块（K-ORG-121 L1 · observe 账本补账） |
+| `tools/legion_readiness.py` | 曹操军团实战就绪审计（只读，2026-10-29 WO-LEGION-READY）。 |
 | `tools/legion_scheduler.py` | 军团排程调度器（K-ORG-122）：事先调度的机器化 |
 | `tools/legion_tri_party_meeting.py` | 三方会议阶段一：结构化会议、双观点、分歧与人工确认。 |
 | `tools/legion_worker.py` | 数字军团 Agent Worker（K-ORG-123）。 |
 | `tools/litellm_route.py` | LiteLLM 路由最小接入：Key 池 → Router（多 Key/多 provider/fallback/成本）。 |
+| `tools/log_rotate.py` | 日志轮转工具 v0（只读演示默认，--apply 才动手；不删除，仅归档+截断）。 |
 | `tools/mcp_ro_filesystem.py` | MCP 只读文件 server：list_dir / read_file / stat（根目录白名单，防路径穿越）。 |
 | `tools/mcp_ro_git.py` | MCP 只读 git server：status / log / diff（固定参数，无 shell，仓库白名单）。 |
 | `tools/mcp_ro_zhaoyun.py` | 赵云 MCP 只读工具 server（stdlib，复用 zhuge_mcp_server 的只读数据函数）。 |
 | `tools/mcp_security_check.py` | MCP 白名单安全自查（只读）：对齐 MCP Security Best Practices + ADR/安全策略。 |
 | `tools/memory_rag.py` | memory-rag 最小版：本地 hash-vector 索引 + 判例/文档召回（无外部 Key）。 |
+| `tools/merge_gated.py` | 合并质量闸（P0 #1，2026-10-28）：merge 前强制跑测试。 |
 | `tools/merge_parquet.py` | merge_parquet.py — 分片 parquet 的目录级合并（统一 schema + 流式写入）。 |
+| `tools/merge_preflight.py` | 合并前预检（pre-merge-commit 钩子用，2026-10-28 · P13）。 |
+| `tools/mission.py` | Mission MVP CLI：文档→plan；dry-run 派工；列表。 |
+| `tools/mission_evolve.py` | Mission 阶段3 CLI：采集/汇总/进化建议/候选/签字入库。 |
+| `tools/mission_worker.py` | Mission Worker CLI：自动接单低风险任务 → 在 worktree 写文件 → 语法检查 → commit。 |
 | `tools/model_route.py` | — |
 | `tools/morning_brief.py` | tools/morning_brief.py —— 晨会三件套生成器 v0（K-ORG-056） |
 | `tools/mutual_review_advice.py` | P2 异族互镜第 1 轮：本地 Qwen（非 DeepSeek 模型族）逐条复核最近 5 条 AI 治理建议。 |
@@ -912,6 +1016,7 @@ codebase_intel 统计：模块 **1100** / 符号 **13359**。
 | `tools/night_test_baseline.py` | 夜跑测试基线：分套件跑 pytest，保存基线 JSON；--check 对比上一次，新增失败即 rc=1。 |
 | `tools/notify_devops.py` | 开发指挥台 · 飞书卡型（K-STOCK-114 M2）——离屏遥控三卡。 |
 | `tools/ollama_rag_smoke.py` | 本地 Ollama/RAG 运行与 smoke 工具（K-STOCK-160）。 |
+| `tools/org_chart.py` | 研发部组织架构图生成/校验（2026-10-27 WO-ORG-CHART）。 |
 | `tools/org_registry_server.py` | 组织架构图注册服务（K-ORG-053 · 架构即注册表）。 |
 | `tools/org_supervision.py` | 组织监督判读脚本（K-ORG-063 · 055 计划 L2 治理线配套）。 |
 | `tools/os_goal_ref/os_gate_check.py` | OS 首版「单事项闭环」合同校验器 v1.0（WP0 参考实现，非生产代码） |
@@ -919,6 +1024,7 @@ codebase_intel 统计：模块 **1100** / 符号 **13359**。
 | `tools/os_goal_ref/os_samples.py` | 合成事件账本样本工厂 —— 给 os_gate_check 自测与演示用。 |
 | `tools/os_goal_ref/tests/test_os_gate_check.py` | os_gate_check 合同校验器回归测试（WP0 自测，全内存、不写盘）。 |
 | `tools/os_goal_ref/tests/test_os_goal_check.py` | v1.1「事业目标—事项—成果」三级关系校验器回归测试（全内存）。 |
+| `tools/otel_tracing.py` | OTEL 追踪助手（fail-open，默认关闭）：给关键链路加轻量 trace，不改变业务行为。 |
 | `tools/p0_eval_runner.py` | P0-4 确定性基线评测 runner（30 golden）。 |
 | `tools/p0_shadow_guard.py` | p0_shadow_guard.py — 诸葛亮能力底座 P0-5：最小护栏（shadow 模式）。 |
 | `tools/p0_trace.py` | p0_trace.py — 诸葛亮能力底座 P0-6：Phoenix 本地 tracing。 |
@@ -929,7 +1035,9 @@ codebase_intel 统计：模块 **1100** / 符号 **13359**。
 | `tools/p4_batch0_rehearsal.py` | P4 批 0 预演（K-STOCK-096）：在 git archive 副本里演练 api_common.py |
 | `tools/paper_bridge.py` | paper_bridge：pick_verdicts → paper.db 薄桥（K-STOCK-095，10-16 实弹）。 |
 | `tools/pg_robot_watchdog.py` | PG-Robot 看门狗（K-STOCK-302） |
+| `tools/phoenix_start.py` | Phoenix 幂等自启：健康检查→(在跑则退出0/不在跑则拉起并等健康)。 |
 | `tools/plan_staging_cleanup.py` | 生成 tushare_staging 清理清单（只读，不删任何东西）。 |
+| `tools/planner_experience.py` | Planner 经验规则 CLI：status / build-rules / ab。 |
 | `tools/pool_tradability_audit.py` | pool_tradability_audit: 候选池可成交性审计（mask-first 思想落地，arXiv 2507.07107 对照） |
 | `tools/portal_smoke.py` | 门户 8091 全路由只读冒烟自检（P4 基座拆分跨域回归固化）。 |
 | `tools/post_commit_event.py` | 跨 Windows/Git shell 的 post-commit 事件回流适配器。 |
@@ -951,17 +1059,40 @@ codebase_intel 统计：模块 **1100** / 符号 **13359**。
 | `tools/redteam_daily.py` | P2 红队定时化 v0：每日抽样 + 周报（不建计划任务，先提供可调度入口）。 |
 | `tools/refresh_curated.py` | 重建「整理层」tushare_curated（raw → curated）。 |
 | `tools/repo_map.py` | K-ORG-035/036 F2: 仓库地图（借 Aider RepoMap 范式，自研实现）。 |
+| `tools/req_lines_check.py` | O8 P2：分线 lock 快照校验（只读）。 |
+| `tools/research/ann_classify.py` | 公告分类 v2：columns_txt（官方类型）+ 标题关键词 双层规则。 |
+| `tools/research/dragon_tiger.py` | H3 龙虎榜机构席位跟单：机构净买入 → 未来 5/10 日收益（行业×规模中性 + OOS + 成本）。 |
+| `tools/research/event_study.py` | H1 公告事件研究：公告披露 → 次日/5 日市场调整超额（CAR）。 |
+| `tools/research/event_study2.py` | H11（3 年公告 CAR，行业中性）+ H2（PEAD，持有 5/10/20 日）研究工具。 |
+| `tools/research/factor_strat.py` | H7 财务因子分层：PIT 财务指标（价值/质量/成长）月度 IC 与五分位多空。 |
+| `tools/research/flow_divergence.py` | H4 资金流背离：moneyflow 净流入 × 当日涨跌 → 未来 5/10 日行业×规模中性收益。 |
+| `tools/research/h2v2_earnings_surprise.py` | H2 v2：真实盈余惊喜 → PEAD（公告后 5/10/20 日漂移）。 |
+| `tools/research/hypotheses.py` | 假设台账 CLI：research/hypotheses.db 的初始化/播种/查询/更新。 |
+| `tools/research/jev_attribution.py` | H6 JEV 决策归因：bias / event_type / playbook / regime × 收益与胜率。 |
+| `tools/research/quality_reversal.py` | H14 质量反向：高 ROE 跑输是否在估值分层内仍存在（剥离质量-估值交互）。 |
+| `tools/research/tests/test_ann_classify.py` | ann_classify 单测：columns_txt 优先、标题兜底、覆盖率口径。 |
+| `tools/research/tests/test_event_study.py` | event_study 纯函数单测（合成行情，不读真实数据）。 |
+| `tools/research/tests/test_event_study2.py` | event_study2 纯函数单测（行业中性映射 / stats / 分类调用）。 |
+| `tools/research/tests/test_event_study_promote.py` | event_study v2（晋级三关）纯函数单测：市值分组中性 + 成本后净 CAR 口径。 |
+| `tools/research/tests/test_hypotheses.py` | hypotheses 台账单测（临时 DB）。 |
+| `tools/research/tests/test_jev_attribution.py` | jev_attribution 单测（临时 sqlite 夹具；aw_decision 走外部不测）。 |
+| `tools/research/tests/test_review_fixes.py` | 代码审查补测：盈余方向解析 / 分位排名 / 边界。 |
+| `tools/research/weekly_review.py` | 研究周复盘：台账状态汇总 + 本周新增报告 + 四关进展（供周五例会）。 |
 | `tools/retro_brief.py` | R5 复盘回流生成器（联动层二期 R5）：计划任务「AgentRetrospectBrief」动作体。 |
 | `tools/riskguard_postmortem.py` | RiskGuard 误杀后验复算分析器 v0.1（K-ORG-113 · S3 备料·只读）。 |
+| `tools/role_group_model.py` | 研发军团角色分工与分组适配模型校验（2026-10-27 WO-ROLE-GROUP-MODEL）。 |
 | `tools/rotate_logs.py` | rotate_logs.py — 日志轮转 + 回收站保留（默认 dry-run，T7 轨道） |
 | `tools/rotate_quantdinger_keys_20261015.py` | quantdinger 密钥轮换（P0 收口 2026-10-15，用户拍板）。 |
 | `tools/ruff_ratchet.py` | ruff F/E9 棘轮：脏账只降不升（默认基线在 tools/ruff_baseline.json）。 |
+| `tools/run_contract_view.py` | O6 P1/P2d：从现有 traces.sqlite **只读派生** Run/Event 契约视图（支持任务级聚合）。 |
 | `tools/safe_delete.py` | safe_delete.py — 按 AGENTS §7 的要求删除：默认进回收站，永久删除需显式开关。 |
 | `tools/sandbox_verify.py` | sandbox-verification：临时 git worktree + 可选 venv + pytest 证据包。 |
 | `tools/scan_secrets.py` | scan_secrets — 防泄漏只读扫描器（pre-commit 闸门） |
 | `tools/scan_task_paths.py` | 扫全部已知计划任务的动作路径，找同一类"起不来"隐患（只读）。 |
 | `tools/seat_capability_inject.py` | seat_capability_inject.py — 席位能力底座注入器（2026-10-23 00:20；2026-10-26 TFSEAT：田丰补全 15 能力 + 15 技能卡；2026-10-27 ACAD1 P0/P1：+acad1/strat1/back1）。 |
 | `tools/seat_evidence_packet.py` | seat_evidence_packet.py — 田丰取数门面：确定性证据包生成器（零 LLM / 零网络 / 只读源）。 |
+| `tools/seat_iteration.py` | 曹操下属能力迭代体系（2026-10-29 WO-SEAT-ITER）。 |
+| `tools/seat_learning.py` | 单席位能力学习计划（2026-10-28 WO-LEARNING-DEV7）。 |
 | `tools/seat_memory_sync.py` | seat_memory_sync.py — 三席位三层记忆装配器（一次性注入工具，2026-10-22）。 |
 | `tools/seat_router.py` | CLI：席位路由/虚拟 Key 管理。 |
 | `tools/seat_system_audit.py` | seat_system_audit.py — 席位系统完整性审计（只读，2026-10-26）。 |
@@ -993,17 +1124,28 @@ codebase_intel 统计：模块 **1100** / 符号 **13359**。
 | `tools/test_audit_strategy_acceptance.py` | — |
 | `tools/test_audit_training_candidates.py` | — |
 | `tools/test_auditfix_regressions.py` | 审计 A 修复回归测试（K-QUANT-20261026-AUDITFIX）。 |
+| `tools/test_baseline.py` | 测试失败基线工具 v0：跑核心套件、记录基线、对比上次（不修改测试）。 |
 | `tools/test_browser_verify.py` | — |
 | `tools/test_check_ports_json.py` | check_ports.py 单测：JSON 契约 + 2026-10-26 strict 语义拆分回归。 |
 | `tools/test_codebase_intel.py` | — |
+| `tools/test_comm_zhuge_debate.py` | L5 辩论字段单测（fake 模块）。 |
 | `tools/test_comm_zhuge_grounding.py` | L5 comm_zhuge grounding 单测（P1-1）。 |
 | `tools/test_comm_zhuge_quant.py` | L5 量化资料注入单测（fake grounding/subprocess，不联网）。 |
+| `tools/test_comm_zhuge_wargame.py` | L5 兵棋字段单测（fake 模块，不联网）。 |
 | `tools/test_council_route.py` | test_council_route.py — 议会厅路由器测试。 |
 | `tools/test_credential_catalog.py` | — |
+| `tools/test_credential_catalog_local.py` | — |
+| `tools/test_credential_store.py` | — |
+| `tools/test_credential_store_harden.py` | 凭据库加固测试（WO-CRED-HARDEN-20261028）。 |
 | `tools/test_curated_keep_prev.py` | EXEC-R17 单测：refresh_curated.py 的 --keep-prev / --from-tmp / 缩水护栏。 |
 | `tools/test_d2_gates.py` | D2 门禁工具单测：ruff ratchet 解析/diff、夜跑基线解析/diff。 |
+| `tools/test_deep_shell.py` | 深屏骨架推广契约：/picks.html 静态接入 + /strategies 生成器接入。 |
+| `tools/test_delivery_ledger.py` | §6.2 交付台账工具单测。 |
+| `tools/test_dep_age_check.py` | O8 P3b 依赖年龄检查单测（不联网）。 |
 | `tools/test_dev_acceptance_audit.py` | O4 验收独立性审计单测。 |
 | `tools/test_devtask_tasks_save.py` | devtask._save 并发安全单测（K-QUANT-20261026-DEVTASKSAVE）。 |
+| `tools/test_diagnostics.py` | O7 diagnostics 单测（不依赖真实服务）。 |
+| `tools/test_dual_ui.py` | 双版本 UI 契约：浅色驾驶舱 6 导航/亮对话 + 深色深屏互链。 |
 | `tools/test_durable_workflow.py` | — |
 | `tools/test_e2e_run.py` | O5 E2E 运行器单测（不跑真实 e2e）。 |
 | `tools/test_eval_harness.py` | — |
@@ -1013,16 +1155,33 @@ codebase_intel 统计：模块 **1100** / 符号 **13359**。
 | `tools/test_extension_lint.py` | O3 扩展 manifest 校验器单测。 |
 | `tools/test_extension_manifest_audit.py` | O3-P2 对账工具单测。 |
 | `tools/test_glm_retry_probe.py` | glm_retry_probe 两阶段单测（K-QUANT-20261026-GLMPROBE2）。 |
+| `tools/test_grounding_guard.py` | — |
+| `tools/test_huangzhong_accept.py` | 黄忠验收工具单测（fake git/证据，不联网）。 |
+| `tools/test_huangzhong_daily.py` | 黄忠 W1 单测：样例文档在位 + 每日观察/周报工具。 |
+| `tools/test_huangzhong_grade.py` | 黄忠 W1 批改工具单测（临时提交目录，不联网）。 |
+| `tools/test_ide_fs.py` | — |
+| `tools/test_infra_2wk.py` | 工程基建 2 周项单测：日志轮转 + 测试基线工具。 |
 | `tools/test_jev_night_window.py` | jev_night 时间窗回归（K-ORG-20261025-JEVNIGHT）。 |
+| `tools/test_keypool_status.py` | — |
 | `tools/test_legion_tri_party_material_version.py` | 会议材料指纹和并发确认的离线反例。 |
 | `tools/test_legion_tri_party_meeting.py` | 三方会议阶段一离线测试：不触网、不启动服务、不创建工单。 |
 | `tools/test_legion_worker.py` | — |
 | `tools/test_litellm_route.py` | — |
 | `tools/test_mcp_security_check.py` | D4：MCP 安全自查工具单测。 |
 | `tools/test_memory_rag.py` | — |
+| `tools/test_mission_evolver.py` | — |
+| `tools/test_mission_evolver_quality.py` | — |
+| `tools/test_mission_mvp.py` | — |
+| `tools/test_mission_planner_exact.py` | — |
+| `tools/test_mission_worker.py` | — |
+| `tools/test_mission_worker_check_edge.py` | — |
+| `tools/test_mission_worker_cmd_guard.py` | — |
+| `tools/test_model_allocator.py` | — |
+| `tools/test_model_dialog_catalog.py` | — |
 | `tools/test_nav_skip_order.py` | skip link 必须在统一顶栏之前（真实 Tab 顺序回归）。 |
 | `tools/test_nav_syntax.py` | nav.js 生成物语法烟测（Node 可用时执行；避免浏览器整栏静默失效）。 |
 | `tools/test_night_batch_stall.py` | night_batch 无推进退避重试 + 2026-10-25 EXEC-R13 超时改造回归。 |
+| `tools/test_night_dep_age.py` | O8 P3c 夜跑 dep_age 段单测（不联网）。 |
 | `tools/test_ollama_lock_deadline.py` | OS-FIX-JEVLOCK-20261026：ollama_lock.tick 阻塞上限回归。 |
 | `tools/test_ollama_rag_smoke.py` | — |
 | `tools/test_os_entry_ui_state.py` | OS entry Week2 契约：tokens/状态模板/键盘入口。 |
@@ -1030,6 +1189,16 @@ codebase_intel 统计：模块 **1100** / 符号 **13359**。
 | `tools/test_p0_trace.py` | p0_trace 单测（P0-6）：离线、无 Phoenix 依赖。 |
 | `tools/test_p1_closed_loop.py` | 端到端闭环演练（合成数据、临时仓库；不碰生产账本）。 |
 | `tools/test_p1_rag_observe.py` | p1_rag_observe 单测（离线，临时 JSONL）。 |
+| `tools/test_page_shell.py` | W1 PageShell v1 契约。 |
+| `tools/test_page_shell_w4.py` | W4 PageShell adopted/redirect 契约。 |
+| `tools/test_paper_dual.py` | 模拟仓深色工作台与双版本 UI 规范的契约。 |
+| `tools/test_paper_simple.py` | P0 /paper 首屏减法契约。 |
+| `tools/test_phoenix_start.py` | Phoenix 自启幂等化单测（不联网、不真起进程）。 |
+| `tools/test_picks_simple.py` | P2 /picks 默认精简契约。 |
+| `tools/test_planner_map2.py` | — |
+| `tools/test_planner_paths_v3.py` | — |
+| `tools/test_planner_paths_v4.py` | — |
+| `tools/test_planner_rules.py` | — |
 | `tools/test_post_commit_event.py` | post-commit 事件适配器测试。 |
 | `tools/test_product_metrics.py` | — |
 | `tools/test_project_wiki.py` | project_wiki 生成器契约。 |
@@ -1037,17 +1206,26 @@ codebase_intel 统计：模块 **1100** / 符号 **13359**。
 | `tools/test_quant_redteam_ops.py` | P2 单测：量化只读（fake MCP）+ 红队定时（fake responder/临时账本）。 |
 | `tools/test_r2fix_guards.py` | K-QUANT-20261026-R2FIX：畸形上游输入守卫回归测试。 |
 | `tools/test_rebuild_academy_source_snapshot.py` | — |
+| `tools/test_req_lines_check.py` | O8 P2 分线 lock 校验器单测。 |
 | `tools/test_retro_brief.py` | R5 复盘回流生成器单测。 |
+| `tools/test_run_contract_view.py` | O6 P1 只读派生单测（不依赖真实 trace DB）。 |
+| `tools/test_run_contract_view_p2d.py` | O6 P2d：run_contract_view 任务级聚合单测。 |
 | `tools/test_sandbox_verify.py` | — |
 | `tools/test_seat_capability_inject.py` | 三席位能力/技能卡结构测试。 |
 | `tools/test_seat_evidence_packet.py` | seat_evidence_packet 单测（K-QUANT-20261026-TFEVID）。 |
 | `tools/test_seat_memory_sync.py` | test_seat_memory_sync.py — 三层记忆装配器测试。 |
 | `tools/test_seat_router.py` | — |
+| `tools/test_seat_router_ops.py` | — |
 | `tools/test_seat_system_audit.py` | test_seat_system_audit.py — 席位完整性审计工具测试。 |
 | `tools/test_seat_write_guard.py` | seat_write_guard 检测层单测（TFGUARD）。 |
 | `tools/test_security_gate.py` | — |
+| `tools/test_security_gate_iter.py` | — |
+| `tools/test_security_gate_vendor.py` | — |
 | `tools/test_spec_flow.py` | — |
+| `tools/test_strategies_simple.py` | P1 /strategies 分组折叠契约。 |
 | `tools/test_sync_pipeline_to_strategies.py` | sync_pipeline_to_strategies 单测：全 tmp_path 替身，禁碰真实 portal/strategies.json。 |
+| `tools/test_t2_manual.py` | — |
+| `tools/test_t2_manual2.py` | — |
 | `tools/test_tianfeng_dispatch.py` | tianfeng_dispatch 派工回执台账单测（TFEXEC）。 |
 | `tools/test_trace_chain.py` | shadow -> paper pending/fill -> performance 的离线追踪链验证。 |
 | `tools/test_trace_log.py` | — |
@@ -1055,12 +1233,17 @@ codebase_intel 统计：模块 **1100** / 符号 **13359**。
 | `tools/test_ui_palette.py` | Week3 命令面板/密度/键盘审计契约。 |
 | `tools/test_ui_ux_audit.py` | ui_ux_audit 单测（离线）。 |
 | `tools/test_ui_visual_baseline.py` | ui_visual_baseline 单测（不启动浏览器）。 |
+| `tools/test_weekly_dep_triage.py` | O8 P3d 依赖 triage 周报段单测（不联网）。 |
+| `tools/test_wip_check.py` | §6.2 WIP 检查单测。 |
+| `tools/test_worker_eligibility.py` | — |
+| `tools/test_worker_llm_parse.py` | — |
 | `tools/test_zhuge_brief_snapshot.py` | zhuge_brief_snapshot 单测（K-QUANT-20261026-ZHUGESNAP）。 |
 | `tools/test_zhuge_c1_decisions.py` | zhuge_c1_decisions 单测（C1 ↔ 决策记录，离线）。 |
 | `tools/test_zhuge_c3_decisions.py` | zhuge_c3_decisions 单测（C3 采纳 ↔ 决策记录，离线）。 |
 | `tools/test_zhuge_carrier_switch.py` | zhuge_carrier_switch.ps1 干跑用例（不联网、不改配置）。 |
 | `tools/test_zhuge_challenge.py` | zhuge_challenge 单测（WO-LEGION-ZHUGE-CHALLENGE-20261027 / C1）。 |
 | `tools/test_zhuge_challenge_model.py` | zhuge_challenge_model 单测（P2 真模型质询，2026-10-27）。 |
+| `tools/test_zhuge_debate.py` | P2 三席辩论单测（确定性，不联网）。 |
 | `tools/test_zhuge_decision_record.py` | zhuge_decision_record v0 单测（离线，临时仓库）。 |
 | `tools/test_zhuge_evidence.py` | zhuge_evidence 单测（P0-2/P0-3）。 |
 | `tools/test_zhuge_grounding.py` | zhuge_grounding 单测（P1-1）。离线：临时 docs + mock post。 |
@@ -1071,12 +1254,19 @@ codebase_intel 统计：模块 **1100** / 符号 **13359**。
 | `tools/test_zhuge_redact.py` | P1-8 修复单测：L5 输出内部路径脱敏。 |
 | `tools/test_zhuge_redteam.py` | P1-8 红队判定器离线单测（fake responder，不调模型）。 |
 | `tools/test_zhuge_suggestion_map.py` | 建议→决策映射 v1：决策记录 suggestion_ids + brief 精确 join（临时仓库）。 |
+| `tools/test_zhuge_wargame.py` | P2 兵棋单测（确定性，不联网）。 |
+| `tools/tests/test_academy_activation4.py` | B 激活 4 席：能力卡定义/触发/工具属性测试（2026-10-29）。 |
+| `tools/tests/test_agent_census_parse.py` | agent_census 时间解析：ISO 带时区/微秒不再 silent-except。 |
 | `tools/tests/test_agent_census_status.py` | 系统态势卡的纯函数测试（K-ORG-20261026-BOARD2）。 |
 | `tools/tests/test_agent_daily_on_demand.py` | on_demand 证据类型单测（K-ORG-20261026-AGENTHEALTH2）。 |
 | `tools/tests/test_agent_daily_port.py` | agent.daily 端口证据接线单测（K-ORG-20261026-AGENTHEALTH）。 |
+| `tools/tests/test_auto_rebuild_ide_bundle.py` | IDE bundle 收尾提交并发修复单测（2026-10-29）。 |
 | `tools/tests/test_batch_backlog_level.py` | batch_backlog 判级单测（K-ORG-20261026-BACKLOGDUTY）。 |
+| `tools/tests/test_check_dirty.py` | check_dirty 纯逻辑单测（2026-10-28，P15）。 |
+| `tools/tests/test_check_syntax.py` | check_syntax 单测（临时 repo 夹具，禁用缓存写入）。 |
 | `tools/tests/test_event_emit.py` | R6 产线侧 emit 配方单测（tools/event_emit.py）。 |
 | `tools/tests/test_hermes_push_health.py` | Hermes 推送健康判级单测（K-ORG-20261026-HERMESFIX）。 |
+| `tools/tests/test_import_boundaries.py` | 导入边界联动检查单测（临时模块/测试夹具）。 |
 | `tools/tests/test_jev_audit.py` | JEV 判读账本纯函数单测（K-DATA-20261026-JEVAUDIT）。 |
 | `tools/tests/test_jev_backfill_loop.py` | JEV 回填主循环控制函数单测（K-ORG-20261026-JEVLOOPTEST）。 |
 | `tools/tests/test_jev_calibration.py` | jev.calibration 健康卡检查单测（K-ORG-20261026-JEVCALHC）。 |
@@ -1084,6 +1274,8 @@ codebase_intel 统计：模块 **1100** / 符号 **13359**。
 | `tools/tests/test_jev_roles_daily.py` | jev_roles_daily 纯函数单测（K-ORG-20261026-JEVROLE）。 |
 | `tools/tests/test_killsvc_guard.py` | Hermes8787-KillSvc Gate 0 前置逻辑层单测（R7）。 |
 | `tools/tests/test_l2_guard_fp.py` | _l2_guard 误报修复回归（WO-GUANYU-L2FIX-20261027，2026-10-27）。 |
+| `tools/tests/test_merge_gated.py` | merge_gated 纯逻辑单测（2026-10-28，P7）。 |
+| `tools/tests/test_merge_preflight.py` | merge_preflight 纯逻辑单测（2026-10-28，P13；P3c 依赖提示）。 |
 | `tools/tests/test_ops_tools.py` | 四个运维工具的 pytest 契约测试（只新增测试，不改被测代码）。 |
 | `tools/tests/test_rate_freshness.py` | 利率新鲜度检查单测（K-DATA-20261026-SHIBOR）。 |
 | `tools/tests/test_scan_secrets_fp.py` | scan_secrets 误报修复回归（WO-GUANYU-SCANFIX-20261027，2026-10-27）。 |
@@ -1101,13 +1293,16 @@ codebase_intel 统计：模块 **1100** / 符号 **13359**。
 | `tools/validate_json.py` | JSON 写侧前置校验工具（M3-P5；tasks.json 损坏事故判例落地）。 |
 | `tools/verify_backups.py` | 只读备份校验器 —— 校验 <workspace>/_vault 下 MANIFEST.txt 与实体文件是否一致。 |
 | `tools/watchdog_probe_8093.py` | 8093 看门狗固定探针（K-ORG-114 · 哨薄壳化判例 K-STOCK-197~199）。 |
+| `tools/weekly_dep_triage.py` | O8 P3d：依赖 triage 周报段（只读、warn-only、不阻断）。 |
 | `tools/weekly_report_html.py` | 研发部周报 Markdown→HTML 渲染器（WO-DRILL2-WEEKLYHTML）。 |
+| `tools/wip_check.py` | 交付型席位 WIP 检查（只读 tasks.json + org.json）。 |
 | `tools/xsec_profile.py` | 三线交叉标准件 xsec_profile v1.0（总方案 B1 · K-ORG-119 路由注册工具） |
 | `tools/zhuge_brief_snapshot.py` | zhuge_brief_snapshot.py — 诸葛亮双锚取数：本地只读快照 /api/zhuge/brief。 |
 | `tools/zhuge_c1_decisions.py` | zhuge_c1_decisions.py — P1-4 与 C1 质询通道打通。 |
 | `tools/zhuge_c3_decisions.py` | zhuge_c3_decisions.py — C3 采纳信号 ↔ P1-4 决策记录。 |
 | `tools/zhuge_challenge.py` | zhuge_challenge.py — 诸葛亮质询通道离线 MVP（WO-LEGION-ZHUGE-CHALLENGE-20261027 / C1）。 |
 | `tools/zhuge_challenge_model.py` | zhuge_challenge_model.py — P2 真模型质询生成（可选、默认不启用）。 |
+| `tools/zhuge_debate.py` | 诸葛 P2 多智能体辩论 v0：三席结构化分歧（只读、不执行）。 |
 | `tools/zhuge_decision_record.py` | zhuge_decision_record.py — P1-4 结构化决策记录 v0（追加式 JSONL）。 |
 | `tools/zhuge_evidence.py` | zhuge_evidence.py — 诸葛亮能力底座 P0-2/P0-3：联网取证 + 证据 schema。 |
 | `tools/zhuge_grounding.py` | zhuge_grounding.py — P1-1：把本地资料（MCP docs 检索）接入诸葛亮回答，强制 [S#] 引用。 |
@@ -1117,6 +1312,7 @@ codebase_intel 统计：模块 **1100** / 符号 **13359**。
 | `tools/zhuge_rag.py` | zhuge_rag.py — P1-2 M1：诸葛亮 BM25 v0 检索（纯 stdlib，零依赖）。 |
 | `tools/zhuge_redteam.py` | 诸葛 P1-8：红队/对抗演练 v0（注入/越狱/幻觉）。 |
 | `tools/zhuge_reflector.py` | 诸葛 P1-7：自我反思/一致性 v0（确定性规则，零依赖）。 |
+| `tools/zhuge_wargame.py` | 诸葛 P2 兵棋 v0：三情景推演 + 敏感性 + 触发条件（只读、不执行）。 |
 
 ## 3. ADR 索引
 
@@ -1130,11 +1326,13 @@ codebase_intel 统计：模块 **1100** / 符号 **13359**。
 | [ADR-006-worktree-devtask-isolation.md](adr/ADR-006-worktree-devtask-isolation.md) | ADR-006：一单一事 + git worktree 隔离 |
 | [ADR-007-tool-matrix-single-source.md](adr/ADR-007-tool-matrix-single-source.md) | ADR-007：工具矩阵（tool_matrix）作为工具授权单一源 |
 | [ADR-008-seat-contract.md](adr/ADR-008-seat-contract.md) | ADR-008：席位契约（SOUL / SEAT_CARD / CAPABILITIES / 记忆） |
+| [ADR-009-dev-legion-screen-contract.md](adr/ADR-009-dev-legion-screen-contract.md) | ADR-009 研发军团作战屏 v1 数据契约（只读） |
 | [ADR-009-port-registry-entry.md](adr/ADR-009-port-registry-entry.md) | ADR-009：端口注册表为唯一真源，一切绑 127.0.0.1 |
 | [ADR-010-credentials-vault.md](adr/ADR-010-credentials-vault.md) | ADR-010：凭据集中到 `_vault`，密文副本 + token 仅环境注入 |
 | [ADR-011-data-roots.md](adr/ADR-011-data-roots.md) | ADR-011：唯一数据根 + 运行态根分离，`work` 根退役 |
 | [ADR-012-l2-five-elements.md](adr/ADR-012-l2-five-elements.md) | ADR-012：L2 动作五要素审批，沉默≠同意 |
 | [ADR-013-scope-and-docs-discipline.md](adr/ADR-013-scope-and-docs-discipline.md) | ADR-013：单机个人 OS 的范围边界与文档纪律 |
+| [ADR-014-agent-run-contract.md](adr/ADR-014-agent-run-contract.md) | ADR-014：Agent 运行契约 v1（run / event / conversation） |
 
 ## 4. 约定与入口
 
