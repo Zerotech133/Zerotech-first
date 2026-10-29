@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-29 12:47",
+ "generated": "2026-10-29 13:22",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 32,
+  "workorders_doing": 33,
   "workorders_review": 6
  },
  "workorders": [
@@ -354,6 +354,15 @@
    "branch": "task/K-QUANT-20261029-IDEFAIL",
    "created": "2026-10-29 12:17:31",
    "project": "quant"
+  },
+  {
+   "id": "WO-SEAT-METRIC-20261029",
+   "desc": "真席位执行率进周报：dev_weekly_report.compute 增 dev_new_done/dev_seat_exec_new/dev_seat_exec_share_new（block 后新单、owner 非 DSH-Lead 口径），周报加一行；补测试。不改门禁。",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-SEAT-METRIC-20261029",
+   "created": "2026-10-29 13:13:53",
+   "project": "general"
   }
  ],
  "coder_traces": [
