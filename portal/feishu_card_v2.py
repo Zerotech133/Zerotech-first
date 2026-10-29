@@ -234,7 +234,7 @@ def v3_audit_id(title):
 
     return hashlib.md5(
         ("%s|%s" % (title, time.time())).encode("utf-8", "replace")
-    ).hexdigest()[:4]
+    , usedforsecurity=False).hexdigest()[:4]
 
 
 def build_v3(

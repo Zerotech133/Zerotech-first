@@ -60,7 +60,7 @@ def main():
                    cwd=REPO, check=True)
     with tarfile.open(tar_path, encoding="utf-8",
                       errors="surrogateescape") as tf:
-        tf.extractall(tmp)
+        tf.extractall(tmp, filter="data")
     rep = os.path.join(tmp, "portal")
     print("副本：", tmp)
 

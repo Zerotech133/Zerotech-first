@@ -73,7 +73,7 @@ def _default_llm():
 
 
 def _md5(s):
-    return hashlib.md5((s or "").encode("utf-8", "replace")).hexdigest()
+    return hashlib.md5((s or "").encode("utf-8", "replace"), usedforsecurity=False).hexdigest()
 
 
 def _nums(s):

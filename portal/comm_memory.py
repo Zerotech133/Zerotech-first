@@ -40,7 +40,7 @@ def _base_dir():
 
 def _mask_key(open_id):
     """open_id 作文件名前先 md5（避免明文落到目录名，判例同留痕口径）。"""
-    return hashlib.md5((open_id or "").encode("utf-8", "replace")).hexdigest()
+    return hashlib.md5((open_id or "").encode("utf-8", "replace"), usedforsecurity=False).hexdigest()
 
 
 def _path_for(open_id):
@@ -48,7 +48,7 @@ def _path_for(open_id):
 
 
 def _md5(s):
-    return hashlib.md5((s or "").encode("utf-8", "replace")).hexdigest()
+    return hashlib.md5((s or "").encode("utf-8", "replace"), usedforsecurity=False).hexdigest()
 
 
 def remember(open_id, role, text, intent=None, code=None):

@@ -45,14 +45,14 @@ def _tokenize(text: str) -> list:
 def _vec(tokens: list, idf: dict) -> list:
     v = [0.0] * DIM
     for t in tokens:
-        idx = int(hashlib.md5(t.encode()).hexdigest(), 16) % DIM
+        idx = int(hashlib.md5(t.encode(), usedforsecurity=False).hexdigest(), 16) % DIM
         v[idx] += float(idf.get(t, 1.0))
     norm = math.sqrt(sum(x * x for x in v)) or 1.0
     return [x / norm for x in v]
 
 
 def _cos(a: list, b: list) -> float:
-    return float(sum(x * y for x, y in zip(a, b)))
+    return float(sum(x * y for x, y in zip(a, b, strict=False)))
 
 
 def _files(roots):

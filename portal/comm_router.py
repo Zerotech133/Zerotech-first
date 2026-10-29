@@ -243,7 +243,7 @@ def _parse_llm_json(raw):
     try:
         conf = float(conf)
     except (TypeError, ValueError):
-        raise ValueError("bad confidence: %r" % (conf,))
+        raise ValueError("bad confidence: %r" % (conf,)) from None
     conf = max(0.0, min(1.0, conf))
     ents = obj.get("entities") or {}
     if not isinstance(ents, dict):
@@ -401,7 +401,7 @@ def _write_trace(entry):
 
 
 def _md5(s):
-    return hashlib.md5((s or "").encode("utf-8", "replace")).hexdigest()
+    return hashlib.md5((s or "").encode("utf-8", "replace"), usedforsecurity=False).hexdigest()
 
 
 # ── 总入口：一条消息走完全链 ──────────────────────

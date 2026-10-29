@@ -245,7 +245,7 @@ def _oid_fp(open_id):
     去重语义不变（同客同档同阶段同天仍同键），但文件不再含身份明文。
     该文件此前从未落盘（checklist 19），故零迁移成本。
     """
-    return hashlib.md5((open_id or "").encode("utf-8", "replace")).hexdigest()[:16]
+    return hashlib.md5((open_id or "").encode("utf-8", "replace"), usedforsecurity=False).hexdigest()[:16]
 
 
 def sent_key(open_id, plan_id, stage, day):
