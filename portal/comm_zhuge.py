@@ -34,6 +34,7 @@ import json
 import os
 import re
 import shutil
+import functools
 import subprocess
 import sys
 import time
@@ -533,6 +534,56 @@ def _trim(text, max_chars):
     return cut
 
 
+def _guard_question(question: str):
+    """P0 注入护栏：规则命中才阻断；模块不可用 fail-open。"""
+    try:
+        from zhuge_guard import scan
+
+        return scan(question)
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _record_consult_trace(result: dict, started: float) -> None:
+    if os.environ.get("PYTEST_CURRENT_TEST"):
+        return
+    if str(os.environ.get("COMM_ZHUGE_TRACE", "1")).strip().lower() in ("0", "false", "off", "no"):
+        return
+    try:
+        from agent_platform.observability import trace
+
+        trace.record(
+            trace.trace_id(),
+            "zhuge.consult",
+            kind="llm",
+            start=started,
+            end=time.time(),
+            status="ok" if result.get("llm_ok") else "error",
+            attrs={
+                "mode": result.get("mode"),
+                "carrier": result.get("carrier"),
+                "relay": result.get("relay"),
+                "llm_ok": bool(result.get("llm_ok")),
+                "error": str(result.get("error") or "")[:120],
+                "chars": len(str(result.get("text") or "")),
+            },
+        )
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def _traced_consult(fn):
+    @functools.wraps(fn)
+    def wrapped(*args, **kwargs):
+        started = time.time()
+        result = fn(*args, **kwargs)
+        _record_consult_trace(result if isinstance(result, dict) else {}, started)
+        return result
+
+    return wrapped
+
+
+@_traced_consult
 def consult(question, open_id="", llm=None, timeout=None, max_chars=DEFAULT_MAX_CHARS):
     """→ {text, mode, carrier, relay, llm_ok, error}。
 
@@ -546,6 +597,16 @@ def consult(question, open_id="", llm=None, timeout=None, max_chars=DEFAULT_MAX_
     q = (question or "").strip()
     if not q:
         return {"text": None, "mode": None, "llm_ok": False, "error": "empty_question"}
+    guard = _guard_question(q)
+    if guard is not None and getattr(guard, "blocked", False):
+        return {
+            "text": None,
+            "mode": None,
+            "llm_ok": False,
+            "error": "guard_blocked",
+            "guard": {"risk": guard.risk, "hits": guard.hits, "note": guard.note},
+            "elapsed_ms": 0,
+        }
 
     t0 = time.time()
     grounding = _build_grounding(q)
