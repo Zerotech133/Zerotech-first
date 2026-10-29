@@ -264,8 +264,10 @@
     .main{grid-template-columns:44px 180px 6px 1fr 0 0}
     .dbg{display:none}
   }
-  /* standalone：独立窗口模式，隐藏门户导航 */
-  html[data-ide-standalone] .wb-nav{display:none!important}
+  /* standalone：独立窗口模式，隐藏门户导航 + page-shell 面包屑 */
+  html[data-ide-standalone] .wb-nav,
+  html[data-ide-standalone] .wb-shell-head,
+  html[data-ide-standalone] .wb-crumb{display:none!important}
   html[data-ide-standalone] body{padding-top:0!important}
 </style>
 <script>
