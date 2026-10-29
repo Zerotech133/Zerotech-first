@@ -18,12 +18,23 @@ import json
 import subprocess
 import time
 import urllib.request
+from urllib.parse import urlsplit
 from pathlib import Path
 
 HEALTH = "http://127.0.0.1:8796/api/zhaoyun"
 FLAG = Path(r"C:\Temp\LEGION_8796_RESTART.flag")
 TASK = "LegionOps"
 POLL_SEC = 5
+
+
+def probe_url(base: str, probe: str) -> str:
+    """把 /api/... 探针拼到 health URL 的 scheme+netloc 上（不依赖 /api/ 出现）。"""
+    if not probe.startswith("/"):
+        return probe
+    p = urlsplit(base)
+    if not p.scheme or not p.netloc:
+        return probe
+    return "%s://%s%s" % (p.scheme, p.netloc, probe)
 
 
 def health(url: str = HEALTH, timeout: float = 5) -> dict:
@@ -88,7 +99,7 @@ def restart(flag: Path = FLAG, task: str = TASK, url: str = HEALTH,
         # 可能在服务刚被杀死、尚未拉起时返回 ok=true + health=失败（假成功）。
         if last.get("ok") and not flag.exists():
             if probe:
-                pb = hp(url.split("/api/")[0] + probe if probe.startswith("/") else probe)
+                pb = hp(probe_url(url, probe))
                 if not pb.get("ok"):
                     return {"ok": False, "error": "probe_failed", "probe": pb,
                             "health": last}
