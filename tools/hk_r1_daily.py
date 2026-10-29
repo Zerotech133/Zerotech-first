@@ -82,6 +82,41 @@ def build_row(parsed: dict, lake: str) -> str:
                parsed.get("reconcile", "?"), note))
 
 
+TABLE_HEADER = "| 日期 | 湖最新 |"
+
+
+def insert_row(ledger: Path, row: str) -> dict:
+    """把一行写进台账「台账」表格（不是文件尾），同日重复则跳过；带文件锁。"""
+    ledger = Path(ledger)
+    date = row.split("|")[1].strip()
+    lock = ledger.with_suffix(".lock")
+    try:
+        from file_lock import acquire, release  # noqa: PLC0415
+    except ImportError:
+        acquire = release = None
+    tok = acquire(str(lock), "hk_r1_ledger", timeout=30) if acquire else None
+    try:
+        lines = ledger.read_text(encoding="utf-8").splitlines()
+        try:
+            hi = next(i for i, ln in enumerate(lines) if ln.startswith(TABLE_HEADER))
+        except StopIteration:
+            return {"ok": False, "error": "table_header_missing"}
+        end = hi + 2  # 跳过表头与分隔行
+        while end < len(lines) and lines[end].startswith("|"):
+            parts = lines[end].split("|")
+            if len(parts) > 1 and parts[1].strip() == date:
+                return {"ok": True, "skipped": True, "reason": "duplicate_date"}
+            end += 1
+        lines.insert(end, row)
+        tmp = ledger.with_suffix(".md.tmp")
+        tmp.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        tmp.replace(ledger)
+        return {"ok": True, "skipped": False}
+    finally:
+        if acquire and release and tok:
+            release(str(lock), tok)
+
+
 def run(append: bool = False, ledger: Path | None = None) -> dict:
     ledger = Path(ledger) if ledger else LEDGER
     cmds = [
@@ -115,9 +150,12 @@ def run(append: bool = False, ledger: Path | None = None) -> dict:
     if not ledger.exists():
         return {"ok": False, "error": "ledger_missing", "ledger": str(ledger),
                 "row": row, "log": str(log)}
-    with ledger.open("a", encoding="utf-8") as f:
-        f.write(row + "\n")
+    ins = insert_row(ledger, row)
+    if not ins.get("ok"):
+        return {"ok": False, "error": "ledger_write_failed", "detail": ins,
+                "row": row, "log": str(log)}
     return {"ok": True, "dry_run": False, "row": row, "parsed": parsed,
+            "skipped": ins.get("skipped", False),
             "log": str(log), "ledger": str(ledger)}
 
 
