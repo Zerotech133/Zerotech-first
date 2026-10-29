@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-29 21:14",
+ "generated": "2026-10-29 21:22",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -356,12 +356,12 @@
    "project": "quant"
   },
   {
-   "id": "WO-TOOLS-GATE-20261029",
-   "desc": "devtask内联质量闸补：本单变更tools测试在worktree内必跑（门禁盲区）",
+   "id": "WO-LEGION-GOVAI-CONF-20261029",
+   "desc": "治理AI confidence 标签兼容：high/medium/low 归一数值；补测试",
    "status": "doing",
    "owner": "ZHAOYUN",
-   "branch": "task/WO-TOOLS-GATE-20261029",
-   "created": "2026-10-29 21:00:53",
+   "branch": "task/WO-LEGION-GOVAI-CONF-20261029",
+   "created": "2026-10-29 21:16:24",
    "project": "general"
   }
  ],
@@ -7039,8 +7039,8 @@
      "status": "doing"
     },
     {
-     "id": "WO-TOOLS-GATE-20261029",
-     "desc": "devtask内联质量闸补：本单变更tools测试在worktree内必跑（门禁盲区）",
+     "id": "WO-LEGION-GOVAI-CONF-20261029",
+     "desc": "治理AI confidence 标签兼容：high/medium/low 归一数值；补测试",
      "status": "doing"
     }
    ]
