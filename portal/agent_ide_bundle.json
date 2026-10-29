@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 00:24",
+ "generated": "2026-10-30 00:30",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -257,12 +257,12 @@
    "project": "general"
   },
   {
-   "id": "WO-SUPERVISOR-20261030",
-   "desc": "D2-D3 试点：新增 tools/automation_supervisor.py（L1 回执/L3 审计/L4 健康 只读 dry-run，不自动重启/发布）+ portal/approval_control.py（S2 审批卡按钮回调校验与写 ledger 的纯函数，不接 live 事件）+ tools/approval_card.py（生成 Card2.0 审批卡 JSON）+ 测试/文档。",
+   "id": "WO-LEGION-ZHUGE-AUDIT-20261030",
+   "desc": "诸葛亮完整复盘修复：reflect 死代码 + harvest 有界日志；RAG 索引重建验证",
    "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-SUPERVISOR-20261030",
-   "created": "2026-10-30 00:23:29",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-ZHUGE-AUDIT-20261030",
+   "created": "2026-10-30 00:26:48",
    "project": "general"
   }
  ],
@@ -3747,7 +3747,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 69,
+     "count": 71,
      "recent": [
       {
        "ts": "",
@@ -3892,7 +3892,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 69,
+     "count": 71,
      "recent": [
       {
        "ts": "",
@@ -4042,7 +4042,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 69,
+     "count": 72,
      "recent": [
       {
        "ts": "",
@@ -4193,7 +4193,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 69,
+     "count": 72,
      "recent": [
       {
        "ts": "",
@@ -4345,7 +4345,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 69,
+     "count": 71,
      "recent": [
       {
        "ts": "",
@@ -6912,6 +6912,11 @@
     {
      "id": "WO-BOARD-AUDIT-FIX-20261030",
      "desc": "修 task_board_audit F401（sys 未用）",
+     "status": "doing"
+    },
+    {
+     "id": "WO-LEGION-ZHUGE-AUDIT-20261030",
+     "desc": "诸葛亮完整复盘修复：reflect 死代码 + harvest 有界日志；RAG 索引重建验证",
      "status": "doing"
     }
    ]
