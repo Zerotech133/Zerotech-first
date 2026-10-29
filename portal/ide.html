@@ -1375,7 +1375,7 @@ const IDE_TOOL_RULES = [
 
 async function fsTool(tool, args){
   const p = new URLSearchParams();
-  let url = "/api/ide/fs/";
+  let url = "http://127.0.0.1:8796/api/ide/fs/";
   if(tool === "list_dir"){ url += "list"; p.set("path", (args&&args.path)||"."); }
   else if(tool === "read_file"){ url += "read"; p.set("path", (args&&args.path)||""); }
   else if(tool === "search"){ url += "search"; p.set("q", (args&&args.query)||""); p.set("glob", (args&&args.glob)||""); }
