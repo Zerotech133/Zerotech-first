@@ -140,7 +140,11 @@ def _welch_t(a, b):
     v1 = sum((x - m1) ** 2 for x in a) / (len(a) - 1)
     v2 = sum((x - m2) ** 2 for x in b) / (len(b) - 1)
     den = v1 / len(a) + v2 / len(b)
-    if den <= 0:
+    # 2026-10-30 P53：零方差/浮点噪声方差退化保护。
+    # 原实现只用 den <= 0 兜底；常数序列的方差是浮点噪声（~1e-34），
+    # den 极小但 >0 → t 会放大到 1e15 级别（假"强显著"），导致常数样本
+    # 被判为规则级误杀证据。双方方差均 < 1e-20 视为无可估方差 → 不下结论。
+    if (v1 < 1e-20 and v2 < 1e-20) or den <= 1e-20:
         return None
     return (m1 - m2) / math.sqrt(den)
 
