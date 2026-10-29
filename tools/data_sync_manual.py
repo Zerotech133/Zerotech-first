@@ -64,6 +64,11 @@ STEPS = {
         "cmd": [PY312, "-X", "utf8", str(REPO / "tools" / "recent_data_fill.py"), "--days", "7"],
         "cwd": REPO, "timeout": 900,
     },
+    "fx": {
+        "desc": "汇率补齐（东财源：USDCNH/USDHKD 日线，幂等）",
+        "cmd": [PY312, "-X", "utf8", str(REPO / "tools" / "fx_fill.py")],
+        "cwd": REPO, "timeout": 900,
+    },
     "audit": {
         "desc": "真对齐审计（源侧 vs 本地逐日核对 + 缺行自动补齐 + 财报/事件型核对）",
         "cmd": [PY312, "-X", "utf8", str(REPO / "tools" / "data_lag_audit.py"), "--days", "10"],
