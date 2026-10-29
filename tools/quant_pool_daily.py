@@ -22,7 +22,7 @@ from datetime import date as _date
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, REPO)
-from agent_platform import portfolio_composer, watchlist  # noqa: E402
+from agent_platform import analysis_digest, portfolio_composer, watchlist  # noqa: E402
 
 SHADOW = os.path.join(REPO, "agent_platform", "data", "shadow", "shadow_ledger.jsonl")
 
@@ -77,7 +77,8 @@ def main(argv=None):
             print("[run-shadow] rc=%s（继续用已有决策）" % r.returncode,
                   file=sys.stderr)
     decisions = load_decisions(args.date, codes, shadow=args.shadow)
-    plan = portfolio_composer.compose(pool, decisions)
+    analyses = analysis_digest.latest_analyses(codes)
+    plan = portfolio_composer.compose(pool, decisions, analyses=analyses)
     if args.json:
         print(json.dumps(plan, ensure_ascii=False, indent=2))
     else:
