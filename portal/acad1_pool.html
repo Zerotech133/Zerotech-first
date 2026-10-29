@@ -39,7 +39,13 @@ tr.detail td{padding:10px 12px;font-size:12px;color:var(--gray-6);line-height:1.
 .meta{color:var(--gray-5);font-size:11.5px;margin:6px 2px}
 .note{color:var(--gray-5);font-size:11.5px;margin:10px 2px;line-height:1.8}
 .err{background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.4);border-radius:9px;padding:10px 12px;margin:10px 0;font-size:12.5px;color:var(--red-500)}
-@media(max-width:760px){.cards{grid-template-columns:repeat(2,1fr)}.wrap{padding:10px}}
+.debate-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+.debate-col{background:var(--gray-1);border:1px solid var(--gray-4);border-radius:7px;padding:7px 9px;font-size:12px;line-height:1.65}
+.debate-col.bull{border-color:var(--color-up-bd)}
+.debate-col.bull b{color:var(--color-up)}
+.debate-col.bear{border-color:var(--color-dn-bd)}
+.debate-col.bear b{color:var(--color-dn)}
+@media(max-width:760px){.cards{grid-template-columns:repeat(2,1fr)}.debate-grid{grid-template-columns:1fr}.wrap{padding:10px}}
 </style>
 <script src="/static/nav.js" defer></script>
 <script src="/static/shortscreen.js" defer></script>
@@ -88,9 +94,11 @@ function detailHtml(r){
         h+='<div style="margin-top:4px"><b>结构化结论：</b><div class="mono" style="white-space:pre-wrap;color:var(--gray-6)">'+esc(JSON.stringify(st,null,1).slice(0,1200))+'</div></div>';
       }
       for(const rd of (n.debate_log||[])){
-        h+='<div style="margin-top:6px"><b>第'+esc(rd.round)+'轮</b>（相似度 '+esc(rd.similarity==null?'—':Number(rd.similarity).toFixed(2))+(rd.terminated_early?' · 提前终止':'')+'）</div>';
-        h+='<div><b>多头：</b>'+esc(String(rd.bull_output||'').slice(0,320))+'</div>';
-        h+='<div><b>空头：</b>'+esc(String(rd.bear_output||'').slice(0,320))+'</div>';
+        h+='<div style="margin-top:8px"><b>第'+esc(rd.round)+'轮</b>（相似度 '+esc(rd.similarity==null?'—':Number(rd.similarity).toFixed(2))+(rd.terminated_early?' · 提前终止':'')+'）</div>';
+        h+='<div class="debate-grid">'+
+           '<div class="debate-col bull"><b>多头（bull）</b><div>'+esc(String(rd.bull_output||'').slice(0,500))+'</div></div>'+
+           '<div class="debate-col bear"><b>空头（bear）</b><div>'+esc(String(rd.bear_output||'').slice(0,500))+'</div></div>'+
+           '</div>';
       }
       if(!keys.length && !(n.debate_log||[]).length && n.output){
         h+='<div>'+esc(String(n.output).slice(0,500))+'</div>';
