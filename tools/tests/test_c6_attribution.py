@@ -2,7 +2,6 @@
 """C6 归因修复映射 + devtask 署名强制单测（2026-10-29）。"""
 import importlib.util
 import json
-import os
 from datetime import date
 from pathlib import Path
 

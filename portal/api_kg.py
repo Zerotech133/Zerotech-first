@@ -3,17 +3,11 @@
 Handler 壳经基座多继承并入（禁 import *）。拍板：D1(v1画布)/D2(net_html) 均留，纯搬运零删减。
 """
 import json
-import os
 import sys
-import time
 import os as _os
 from api_common import (
     QBT_DIR,
-    pill_nav,
-    _BTSEL_TAG,
-    _PILL, _PILL_ON,
-    CANDLE_CN,
-    _LABELS_FP, _CARD_FB_FP)
+    pill_nav)
 import logging
 # 拆分第一批：顶层 helper 实体在 kg/kg_service.py；此处保留同名薄壳（_mixin_integrity 方法集校验依赖模块级定义）。
 def _kg_label_save(*args, **kwargs):
