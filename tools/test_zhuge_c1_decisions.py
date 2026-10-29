@@ -78,7 +78,9 @@ def test_sync_accepted_decides_approved(monkeypatch, tmp_path):
     out2 = b.sync_all(ledger=ledger)
     assert out2["ok"] and out2["decided"] == 1
     from zhuge_decision_record import show
-    rec = show("DR-20261027-01")["record"]
+    row = out2["rows"][0]
+    assert row["status"] == "approved"
+    rec = show(row["id"])["record"]
     assert rec["status"] == "approved" and rec["decided_by"] == "田丰"
 
 
