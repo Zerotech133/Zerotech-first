@@ -401,15 +401,6 @@
    "project": "general"
   },
   {
-   "id": "WO-SEAT-AI1-FIRST-20261029",
-   "desc": "AI1 首单：4 席能力评测 golden 方案 v0.1——每席3条确定性用例+seat_golden schema扩展提案+5/5→6/6接线；交付 deliverables/2026-10-29_AI1_4席能力评测golden方案_v0.1.md；不依赖网络/秘密；ACAD1 评审；截止 10-30。",
-   "status": "doing",
-   "owner": "AI1",
-   "branch": "task/WO-SEAT-AI1-FIRST-20261029",
-   "created": "2026-10-29 08:44:05",
-   "project": "quant"
-  },
-  {
    "id": "WO-LEGION-READY-20261029",
    "desc": "曹操军团实战就绪审计（代码审计+修复+角色/能力卡/任务分派机制检查）：新增 tools/legion_readiness.py（角色覆盖/汇报链/能力卡/机制/真席位执行统计，生成 docs/dev/legion_readiness.md）；修复 authority_audit 看板历史缺署名展示、risk_real 日期兜底；测试。",
    "status": "doing",
@@ -452,6 +443,15 @@
    "owner": "DSH-Lead",
    "branch": "task/WO-SEAT-ITER-20261029",
    "created": "2026-10-29 09:10:32",
+   "project": "general"
+  },
+  {
+   "id": "WO-GUANYU-P25-20261029",
+   "desc": "dirty_watch落地 [UNOWNED]",
+   "status": "doing",
+   "owner": "unknown-agent",
+   "branch": "task/WO-GUANYU-P25-20261029",
+   "created": "2026-10-29 09:21:01",
    "project": "general"
   }
  ],
@@ -2059,14 +2059,7 @@
    ],
    "experience": "30 年从业经验（AI 方法论：Agent 能力、评测与知识反哺）",
    "dept_name": "研究院",
-   "dept_cn_title": "太学",
-   "tasks": [
-    {
-     "id": "WO-SEAT-AI1-FIRST-20261029",
-     "desc": "AI1 首单：4 席能力评测 golden 方案 v0.1——每席3条确定性用例+seat_golden schema扩展提案+5/5→6/6接线；交付 deliverables/2026-10-29_AI1_4席能力评测golden方案_v0.1.md；不依赖网络/秘密；ACAD1 评审；截止 10-30。",
-     "status": "doing"
-    }
-   ]
+   "dept_cn_title": "太学"
   },
   "PROD1": {
    "id": "PROD1",
