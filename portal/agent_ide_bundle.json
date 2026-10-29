@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-29 08:02",
+ "generated": "2026-10-29 08:03",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 33,
+  "workorders_doing": 32,
   "workorders_review": 7
  },
  "workorders": [
@@ -362,15 +362,6 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-LEGION-SECSCAN-20261029",
    "created": "2026-10-29 07:53:02",
-   "project": "general"
-  },
-  {
-   "id": "WO-GUANYU-P20-20261029",
-   "desc": "P0#3夹具化 [UNOWNED]",
-   "status": "doing",
-   "owner": "unknown-agent",
-   "branch": "task/WO-GUANYU-P20-20261029",
-   "created": "2026-10-29 07:56:28",
    "project": "general"
   }
  ],
