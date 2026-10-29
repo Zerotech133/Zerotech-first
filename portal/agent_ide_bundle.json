@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 02:29",
+ "generated": "2026-10-30 02:30",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 25,
+  "workorders_doing": 27,
   "workorders_review": 8
  },
  "workorders": [
@@ -309,6 +309,24 @@
    "branch": "task/WO-ACAD-DEPT-OPS-20261030",
    "created": "2026-10-30 02:12:54",
    "project": "quant"
+  },
+  {
+   "id": "WO-HZ-POLICY-20261030",
+   "desc": "v0验收单豁免+③复核口径补丁",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-HZ-POLICY-20261030",
+   "created": "2026-10-30 02:29:05",
+   "project": "general"
+  },
+  {
+   "id": "WO-GUANYU-P55-20261030",
+   "desc": "legacy登记",
+   "status": "doing",
+   "owner": "GUANYU",
+   "branch": "task/WO-GUANYU-P55-20261030",
+   "created": "2026-10-30 02:29:53",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -3842,7 +3860,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 86,
+     "count": 87,
      "recent": [
       {
        "ts": "",
@@ -3987,7 +4005,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 86,
+     "count": 87,
      "recent": [
       {
        "ts": "",
@@ -4137,7 +4155,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 88,
+     "count": 89,
      "recent": [
       {
        "ts": "",
@@ -4288,7 +4306,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 88,
+     "count": 89,
      "recent": [
       {
        "ts": "",
@@ -4440,7 +4458,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 86,
+     "count": 87,
      "recent": [
       {
        "ts": "",
@@ -6339,7 +6357,14 @@
    ],
    "experience": "30 年工程治理经验：漏洞分级与补丁流程、失败测试基线修复、编码规范与门禁落地、技术债清欠与重复功能合并；证据驱动、逐项闭环，只出报告与工单不自行合并，开发动作限独立 worktree 提交+跑测试并交 L2 人签。",
    "dept_name": "研究院",
-   "dept_cn_title": "太学"
+   "dept_cn_title": "太学",
+   "tasks": [
+    {
+     "id": "WO-GUANYU-P55-20261030",
+     "desc": "legacy登记",
+     "status": "doing"
+    }
+   ]
   },
   "HUANGZHONG": {
    "id": "HUANGZHONG",
