@@ -70,7 +70,9 @@ CANCELLED_EXIT = 3221225786
 # 0x41001 = 267009：上一轮实例仍在运行（IgnoreNew 并发保护），是正常态
 RUNNING_EXIT = 267009
 # 0x41306 = 267014：任务被强制终止（超时/手动结束/关机打断），不计服务失败
+# 0x40010004 = 1073807364：DBG_TERMINATE_PROCESS，Task Scheduler 终止，同样非业务失败
 TERMINATED_EXIT = 267014
+TERMINATED_EXITS = frozenset({267014, 1073807364})
 # 窗口对比（window_diff）里也按同一口径排除：非失败码不参与"新增/持续失败"差集。
 NON_FAILURE_RC = frozenset(
     {
@@ -80,7 +82,7 @@ NON_FAILURE_RC = frozenset(
         LAUNCHER_REFUSED_EXIT,
         CANCELLED_EXIT,
         RUNNING_EXIT,
-        TERMINATED_EXIT,
+        *TERMINATED_EXITS,
     }
 )
 
@@ -278,7 +280,7 @@ def scan(audit_family_only: bool = True) -> dict[str, Any]:
             cancelled.append(rec)
         elif code == RUNNING_EXIT:  # 0x41001 上一轮仍在跑（并发保护）：不是失败
             running.append(rec)
-        elif code == TERMINATED_EXIT:  # 0x41306 被强制终止：单列，不计失败
+        elif code in TERMINATED_EXITS:  # 0x41306/0x40010004 被强制终止：单列，不计失败
             terminated.append(rec)
         elif sem_hit is not None:
             # 2026-10-27 AUDIT-09：任务级 by-design 语义（发现告警/已知基线），不计 failed
@@ -387,7 +389,7 @@ def scan(audit_family_only: bool = True) -> dict[str, Any]:
         "0x800710E0 = 启动器已在运行/启动请求被拒（IgnoreNew），单列 launcher_refused；"
         "0xC000013A = 任务被取消/强杀，单列 cancelled——两者均非服务失败、不计 failed。"
         "0x41001 = 上一轮实例仍在运行（IgnoreNew 并发保护），单列 running；"
-        "0x41306 = 任务被强制终止（超时/手动结束/关机打断），单列 terminated——"
+        "0x41306/0x40010004 = 任务被强制终止（超时/手动结束/关机打断），单列 terminated——"
         "两者同样不计 failed（2026-10-25 实测：8 个 failed 里有 3 个属于这两类误计）。"
         "任务级 by-design 语义（2026-10-27 AUDIT-09 L-7）：KgChainWatchdog rc=1 ="
         "发现坏链 → 单列 alert_found；PytestWeekly rc=1 = k_stock 2 个既存失败的"
