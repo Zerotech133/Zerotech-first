@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 28,
+  "workorders_doing": 27,
   "workorders_review": 4
  },
  "workorders": [
@@ -263,15 +263,6 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-MEETING-XSS-20261030",
    "created": "2026-10-30 00:57:20",
-   "project": "general"
-  },
-  {
-   "id": "WO-HZ-W1FORMAL-20261030",
-   "desc": "黄忠W1正式四件套提交",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-HZ-W1FORMAL-20261030",
-   "created": "2026-10-30 01:00:23",
    "project": "general"
   },
   {
