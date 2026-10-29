@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-29 11:07",
+ "generated": "2026-10-29 11:47",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 48,
+  "workorders_doing": 49,
   "workorders_review": 6
  },
  "workorders": [
@@ -498,6 +498,15 @@
    "branch": "task/WO-LCS1-HARNESS-MIN-20261029",
    "created": "2026-10-29 10:06:29",
    "project": "quant"
+  },
+  {
+   "id": "WO-LEGION-ZHUGE-P1-20261029",
+   "desc": "诸葛亮 P1：RAG auto 启用 + decisions→memory seed + MCP 接入说明（本地注册）",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-ZHUGE-P1-20261029",
+   "created": "2026-10-29 11:46:56",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -7176,6 +7185,11 @@
     {
      "id": "WO-HK-R1-AUTO2-20261029",
      "desc": "HK R1两周观察每日跑批脚本（dry-run默认/--append追加台账）—重建",
+     "status": "doing"
+    },
+    {
+     "id": "WO-LEGION-ZHUGE-P1-20261029",
+     "desc": "诸葛亮 P1：RAG auto 启用 + decisions→memory seed + MCP 接入说明（本地注册）",
      "status": "doing"
     }
    ]
