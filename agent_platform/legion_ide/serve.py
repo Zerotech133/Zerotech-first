@@ -49,6 +49,19 @@ MAX_BODY = 1024 * 1024
 _JSON_CT = "application/json; charset=utf-8"
 _HTML_CT = "text/html; charset=utf-8"
 _EXEC_RESULTS: dict[str, dict] = {}
+_EXEC_RESULTS_TTL_S = 3600
+_EXEC_RESULTS_MAX = 100
+
+
+def _remember_exec(run_id: str, result: dict) -> None:
+    """内存执行结果只用于回执：限 TTL、限条数，避免长期运行泄漏。"""
+    now = time.time()
+    for key in [k for k, v in _EXEC_RESULTS.items()
+                if now - float(v.get("ts") or 0) > _EXEC_RESULTS_TTL_S]:
+        _EXEC_RESULTS.pop(key, None)
+    _EXEC_RESULTS[run_id] = {"ts": now, **result}
+    while len(_EXEC_RESULTS) > _EXEC_RESULTS_MAX:
+        _EXEC_RESULTS.pop(next(iter(_EXEC_RESULTS)))
 
 
 def _resource(path: Path) -> dict:
@@ -322,12 +335,14 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                     % (data.get("path"), "ok" if res.get("ok") else res.get("error")),
                 )
                 return self._json(200 if res.get("ok") else 400, res)
-            res = X.run(
-                wt, data.get("command"), int(data.get("timeout") or X.DEFAULT_TIMEOUT)
-            )
+            try:
+                timeout_s = int(data.get("timeout") or X.DEFAULT_TIMEOUT)
+            except (TypeError, ValueError):
+                timeout_s = X.DEFAULT_TIMEOUT
+            timeout_s = max(1, min(timeout_s, 600))
+            res = X.run(wt, data.get("command"), timeout_s)
             run_id = uuid.uuid4().hex[:12]
-            if res.get("ok"):
-                _EXEC_RESULTS[run_id] = {"ts": time.time(), **res}
+            _remember_exec(run_id, res)
             G.audit(
                 repo,
                 "code_observation",

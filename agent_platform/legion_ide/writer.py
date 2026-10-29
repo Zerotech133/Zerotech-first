@@ -47,14 +47,16 @@ def write_file(worktree: Path, rel: str, content: str) -> dict:
     if len(raw) > G.MAX_FILE_BYTES:
         return G.err("too_large", "内容超过 %d KB" % (G.MAX_FILE_BYTES // 1024))
     existed = path.is_file()
-    path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(path.name + ".tmp-ide")
     try:
+        path.parent.mkdir(parents=True, exist_ok=True)
         with open(tmp, "wb") as f:
             f.write(raw)
             f.flush()
             os.fsync(f.fileno())
         os.replace(tmp, path)
+    except OSError as exc:
+        return G.err("write_failed", "写入失败：%s" % type(exc).__name__)
     finally:
         try:
             tmp.unlink(missing_ok=True)
