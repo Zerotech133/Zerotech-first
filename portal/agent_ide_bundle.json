@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 03:19",
+ "generated": "2026-10-30 03:20",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -10,7 +10,7 @@
   "prompt_miss": [],
   "name_collisions": {},
   "workorders_doing": 29,
-  "workorders_review": 9
+  "workorders_review": 8
  },
  "workorders": [
   {
@@ -264,15 +264,6 @@
    "branch": "task/WO-ACAD-REDEFINE-FREEZE-20261030",
    "created": "2026-10-30 00:57:15",
    "project": "quant"
-  },
-  {
-   "id": "K-ORG-20261030-OFFSITECATCHUP",
-   "desc": "异地备份补推器：新增 tools/offsite_catchup.ps1（幂等：探测 ssh aiosbackup 可达→对最近 N 天远端缺失的 tar 集/vault 依次调用 two push 脚本并校验 receipt；不可达则静默退出不告警风暴）；含 -DryRun/-ForceProbeFail 测试开关 [UNOWNED]",
-   "status": "review",
-   "owner": "DSH·lead",
-   "branch": "task/K-ORG-20261030-OFFSITECATCHUP",
-   "created": "2026-10-30 01:40:43",
-   "project": "portal"
   },
   {
    "id": "K-QUANT-20261030-IDEOUTPUT",
