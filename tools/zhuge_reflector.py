@@ -23,6 +23,22 @@ def _shared_keywords(a: str, b: str, min_len: int = 2) -> list[str]:
     return out[:10]
 
 
+def citation_score(answer: str, sources: list | None = None) -> dict:
+    """确定性引用评分（0-100）：有效引用覆盖 + 密度；无资料来源返回 None。"""
+    if not sources:
+        return {"score": None, "reason": "no_sources", "cited": 0, "sources": 0}
+    text = str(answer or "")
+    cites = CITE_RE.findall(text)
+    unique = list(dict.fromkeys(cites))
+    valid = [c for c in unique if 1 <= int(c[2:-1]) <= len(sources)]
+    target = max(1, min(3, len(sources)))
+    coverage = min(1.0, len(valid) / target)
+    density = min(1.0, len(cites) / max(1, len(text) // 200))
+    score = round(100 * (0.7 * coverage + 0.3 * density))
+    return {"score": score, "reason": "ok", "cited": len(cites),
+            "unique": len(unique), "valid": len(valid), "sources": len(sources)}
+
+
 def reflect(answer: str, sources: list | None = None,
             memories: list | None = None, question: str = "") -> dict:
     text = (answer or "").strip()
@@ -34,6 +50,7 @@ def reflect(answer: str, sources: list | None = None,
     cites = CITE_RE.findall(text)
     checks["citation_count"] = len(cites)
     checks["has_sources"] = bool(sources)
+    checks["citation_score"] = citation_score(text, sources)
     if sources and not cites:
         issues.append({"code": "ungrounded_factual", "level": "high",
                        "detail": "有本地资料但答案未带 [S#] 引用"})
