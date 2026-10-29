@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 43,
+  "workorders_doing": 42,
   "workorders_review": 6
  },
  "workorders": [
@@ -443,15 +443,6 @@
    "owner": "DSH-Lead",
    "branch": "task/WO-SEAT-ITER-20261029",
    "created": "2026-10-29 09:10:32",
-   "project": "general"
-  },
-  {
-   "id": "WO-GUANYU-P25-20261029",
-   "desc": "dirty_watch落地 [UNOWNED]",
-   "status": "doing",
-   "owner": "unknown-agent",
-   "branch": "task/WO-GUANYU-P25-20261029",
-   "created": "2026-10-29 09:21:01",
    "project": "general"
   }
  ],
