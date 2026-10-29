@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-29 17:13",
+ "generated": "2026-10-29 17:34",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -3833,7 +3833,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 65,
+     "count": 69,
      "recent": [
       {
        "ts": "",
@@ -3974,7 +3974,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 65,
+     "count": 69,
      "recent": [
       {
        "ts": "",
@@ -4123,7 +4123,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 66,
+     "count": 69,
      "recent": [
       {
        "ts": "",
@@ -4272,7 +4272,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 66,
+     "count": 69,
      "recent": [
       {
        "ts": "",
@@ -4420,7 +4420,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 65,
+     "count": 69,
      "recent": [
       {
        "ts": "",
