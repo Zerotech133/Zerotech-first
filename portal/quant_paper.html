@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>量化部 paper 组合 · 零界</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<link rel="icon" href="data:,">
+<style>
+body{margin:0;font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--gray-0);color:var(--gray-7);font-size:14px}
+.wrap{max-width:1180px;margin:0 auto;padding:14px 14px 60px}
+.head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:8px 0 12px}
+.head h1{font-size:20px;margin:0}
+.head small{color:var(--gray-5);font-size:12px}
+.badge{display:inline-block;border:1px solid var(--gray-4);border-radius:6px;padding:1px 7px;font-size:11px;color:var(--gray-6)}
+.badge.ok{color:var(--color-ok);border-color:var(--grn-600)}
+.badge.warn{color:var(--color-warn);border-color:var(--ylw-500)}
+.badge.err{color:var(--red-500);border-color:var(--red-500)}
+.tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0}
+.btn{background:var(--gray-2);border:1px solid var(--gray-4);border-radius:7px;color:var(--gray-7);padding:5px 12px;font-size:12.5px;cursor:pointer}
+.btn:hover{border-color:var(--blu-500)}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
+.card{background:var(--gray-2);border:1px solid var(--gray-4);border-radius:9px;padding:9px 11px}
+.card .k{font-size:11.5px;color:var(--gray-5)}
+.card .v{font-size:22px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+.card .t{font-size:10.5px;color:var(--gray-5);margin-top:2px}
+.limits{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 4px}
+.limit{background:var(--gray-2);border:1px solid var(--gray-4);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--gray-6)}
+.limit b{color:var(--gray-7)}
+.sect{margin:16px 0 6px;font-size:14.5px;font-weight:700}
+.sect small{font-weight:400;color:var(--gray-5);font-size:11.5px;margin-left:8px}
+table{width:100%;border-collapse:collapse;background:var(--gray-2);border:1px solid var(--gray-4);border-radius:9px;overflow:hidden}
+th,td{padding:7px 9px;text-align:left;border-bottom:1px solid var(--gray-4);font-size:12.5px;vertical-align:top}
+th{color:var(--gray-5);font-weight:600;font-size:11.5px;white-space:nowrap;background:var(--gray-3)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(88,166,255,.05)}
+.mono{font-family:ui-monospace,Consolas,monospace;font-size:11px;color:var(--gray-5);word-break:break-all}
+.num{font-variant-numeric:tabular-nums}
+.empty{padding:26px;text-align:center;color:var(--gray-5);font-size:13px}
+.meta{color:var(--gray-5);font-size:11.5px;margin:6px 2px}
+.note{color:var(--gray-5);font-size:11.5px;margin:10px 2px;line-height:1.8}
+.err{background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.4);border-radius:9px;padding:10px 12px;margin:10px 0;font-size:12.5px;color:var(--red-500)}
+@media(max-width:760px){.cards{grid-template-columns:repeat(2,1fr)}.wrap{padding:10px}}
+</style>
+<script src="/static/nav.js" defer></script>
+<script src="/static/shortscreen.js" defer></script>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <h1>量化部 paper 组合</h1>
+    <span class="badge warn">paper / 不接实盘</span>
+    <small>只读 · 单票10% / 行业30% / 日回撤5%</small>
+  </div>
+  <div class="tools">
+    <button class="btn" id="btn-refresh">刷新</button>
+    <span class="meta" id="gen-at"></span>
+    <span class="meta" id="status"></span>
+  </div>
+  <div id="err"></div>
+  <div class="cards" id="cards"></div>
+  <div class="limits" id="limits"></div>
+
+  <div class="sect">当前纸面持仓 <small>weight 为目标权重；entry/last 为纸面价格</small></div>
+  <table><thead><tr><th>标的</th><th>行业</th><th>权重</th><th>入场价</th><th>最新价</th><th>更新</th></tr></thead>
+  <tbody id="positions"><tr><td colspan="6" class="empty">加载中…</td></tr></tbody></table>
+
+  <div class="sect">近期台账 <small>最新 30 条 · hash-chain 逐条衔接</small></div>
+  <table><thead><tr><th>日期</th><th>标的</th><th>建议</th><th>裁决</th><th>动作</th><th>权重</th><th>价格</th><th>风险</th><th>hash</th></tr></thead>
+  <tbody id="ledger"><tr><td colspan="9" class="empty">加载中…</td></tr></tbody></table>
+  <div class="note" id="foot">paper 台账仅为模拟记账，不代表真实成交/收益；`trading_permitted=false`。</div>
+</div>
+<script>
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function pct(x){return x==null?'—':(Number(x)*100).toFixed(1)+'%';}
+function num(x,d){return x==null?'—':Number(x).toLocaleString('zh-CN',{maximumFractionDigits:d==null?2:d});}
+function card(k,v,t){return '<div class="card"><div class="k">'+esc(k)+'</div><div class="v">'+v+'</div><div class="t">'+esc(t||'')+'</div></div>';}
+async function load(){
+  const err=document.getElementById('err'); err.innerHTML='';
+  try{
+    const r=await fetch('/api/quant/paper',{cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d=await r.json();
+    if(!d.ok) throw new Error(d.error||'bad payload');
+    document.getElementById('gen-at').textContent='更新：'+(d.generated_at||'—');
+    document.getElementById('status').innerHTML=
+      '<span class="badge '+(d.hash_chain_ok?'ok':'err')+'">hash-chain '+(d.hash_chain_ok?'OK':'BROKEN')+'</span> '+
+      '<span class="badge '+(d.killed?'err':'ok')+'">kill '+(d.killed?'ON':'off')+'</span> '+
+      '<span class="badge">台账 '+d.ledger_rows+' 条 / 最后 '+esc(d.last_date||'—')+'</span>';
+    const lim=d.limits||{};
+    document.getElementById('cards').innerHTML=
+      card('NAV',num(d.nav,4),'纸面净值')+
+      card('现金',pct(d.cash_weight),'cash weight')+
+      card('持仓',num(d.positions_count,0),'只')+
+      card('blocked / reduced',num(d.blocked,0)+' / '+num(d.reduced,0),'累计');
+    document.getElementById('limits').innerHTML=
+      '<div class="limit">单票上限 <b>'+pct(lim.single_name_max)+'</b></div>'+
+      '<div class="limit">行业上限 <b>'+pct(lim.industry_max)+'</b></div>'+
+      '<div class="limit">单日回撤 <b>'+pct(lim.daily_drawdown_max)+'</b></div>'+
+      '<div class="limit">min confidence <b>'+num(lim.min_confidence,2)+'</b></div>';
+    const pos=d.positions||[];
+    document.getElementById('positions').innerHTML=pos.length?pos.map(function(p){return '<tr><td><b>'+esc(p.symbol)+'</b></td><td>'+esc(p.industry||'—')+'</td><td class="num">'+pct(p.weight)+'</td><td class="num">'+num(p.entry_price,2)+'</td><td class="num">'+num(p.last_price,2)+'</td><td class="mono">'+esc(p.updated_at||'—')+'</td></tr>';}).join('')
+      :'<tr><td colspan="6" class="empty">当前空仓（无 BUY 信号或全部被风控/降级拦截）</td></tr>';
+    const rec=d.recent||[];
+    document.getElementById('ledger').innerHTML=rec.length?rec.map(function(r){return '<tr><td>'+esc(r.date)+'</td><td><b>'+esc(r.symbol)+'</b> '+esc(r.name||'')+'</td><td>'+esc(r.recommendation||'—')+' <span class="mono">'+num(r.confidence,2)+'</span></td><td>'+esc(r.verdict||'—')+'</td><td>'+esc(r.action||'—')+'</td><td class="num">'+pct(r.weight_before)+'→'+pct(r.weight_after)+'</td><td class="num">'+num(r.price,2)+'</td><td>'+esc(r.risk_level||'—')+'</td><td class="mono">'+esc(r.hash||'')+'</td></tr>';}).join('')
+      :'<tr><td colspan="9" class="empty">暂无台账</td></tr>';
+    document.getElementById('foot').textContent='paper 台账仅为模拟记账，不代表真实成交/收益；trading_permitted=false。';
+  }catch(e){
+    err.innerHTML='<div class="err">加载失败：'+esc(e.message||e)+'（页面只读，不影响 paper 主链）</div>';
+  }
+}
+document.getElementById('btn-refresh').addEventListener('click',load);
+load(); setInterval(load,30000);
+</script>
+</body>
+</html>

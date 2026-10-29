@@ -102,6 +102,7 @@ import api_intel_bus    # 情报总线唯一出口 mixin（六域→总线→量
 import api_zhuge_route  # WO-OS-09 诸葛亮建议引擎只读路由 /api/zhuge/brief（2026-10-21）
 import api_zhuge_adoption  # WO-LEGION-ZHUGE-ADOPTROUTE C3 建议采纳率只追加 /api/zhuge/adoption（2026-10-27）
 import api_os_goal      # OS-CLOSE-G0 目标/事项/成果 G0 骨架（/api/os/*，2026-10-24）
+from paper_data import paper_snapshot  # WO-INV-PAPER-UI 量化部 paper 只读数据口（2026-10-30）
 
 
 
@@ -4794,6 +4795,13 @@ color:#fff;font-size:13.5px;cursor:pointer}
             # M4-P5 投研绩效看板页（数据走 /api/perf/board 与 /api/perf/replay）
             self._html_file(os.path.join(
                 os.path.dirname(os.path.abspath(__file__)), "perf.html"))
+        elif path == "/api/quant/paper":
+            # WO-INV-PAPER-UI：量化部 paper 组合只读数据口（不接实盘）
+            self._json(paper_snapshot())
+        elif path == "/quant/paper":
+            # WO-INV-PAPER-UI：量化部 paper 组合只读页（不接实盘）
+            self._html_file(os.path.join(
+                os.path.dirname(os.path.abspath(__file__)), "quant_paper.html"))
         elif path == "/api/devops":
             # K-STOCK-113 开发指挥台数据口：dev_events.jsonl 只读投影
             self._json(self._devops_data())
