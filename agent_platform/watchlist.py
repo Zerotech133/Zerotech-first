@@ -44,12 +44,27 @@ def _item(code, name="", industry="", tier="", score=None, rationale="", source=
             "source": source}
 
 
+def _picks_meta():
+    """代码 → (name, industry)，来自 todays_picks（仅元数据回填）。"""
+    d = _read(PICKS)
+    out = {}
+    for s in d.get("stocks") or []:
+        code = normalize_code(s.get("code"))
+        if code:
+            out[code] = (s.get("name") or "", s.get("industry") or "")
+    return out
+
+
 def _from_xunyou(top=DEFAULT_TOP):
     d = _read(XUNYOU)
     rows = d.get("top") or []
+    meta = _picks_meta()
     out = []
     for r in rows[:top]:
-        out.append(_item(r.get("symbol"), score=r.get("score"), tier=r.get("tier"),
+        code = normalize_code(r.get("symbol"))
+        name, industry = meta.get(code, ("", ""))
+        out.append(_item(code, name=name, industry=industry,
+                         score=r.get("score"), tier=r.get("tier"),
                          rationale=r.get("rationale"), source="xunyou"))
     return out
 
@@ -87,10 +102,12 @@ def resolve_codes(codes=None, pool_file=None, source=None, top=DEFAULT_TOP):
     if codes:
         raw = codes if isinstance(codes, (list, tuple)) else re.split(r"[,;\s]+", str(codes))
         out = []
+        meta = _picks_meta()
         for c in raw:
             code = normalize_code(c)
             if code and code not in [x["code"] for x in out]:
-                out.append(_item(code, name="", source="manual"))
+                name, industry = meta.get(code, ("", ""))
+                out.append(_item(code, name=name, industry=industry, source="manual"))
         return out
     if pool_file:
         d = _read(pool_file)
