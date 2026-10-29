@@ -14,7 +14,7 @@ import json
 import os
 from datetime import datetime
 
-REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DEFAULT_DIR = os.path.join(REPO, "agent_platform", "data", "team_exec")
 SUMMARY_FILE = "summaries.jsonl"
 
