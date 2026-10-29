@@ -45,7 +45,7 @@ def test_restart_timeout_fail_visible(tmp_path):
     rep = m.restart(flag, apply=True,
                     starter=lambda t: {"ok": True, "rc": 0},
                     health_fn=lambda u: {"ok": False},
-                    timeout=31, sleep=lambda s: None)
+                    timeout=6, sleep=lambda s: None)
     assert rep["ok"] is False and rep["error"] == "timeout"
 
 

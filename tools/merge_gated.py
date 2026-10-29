@@ -124,6 +124,19 @@ def main(argv=None) -> int:
             return 1
         print("MERGE_GATE PASS：测试门通过")
 
+    # 2026-10-29 门禁盲区修补：tools/tests 全量 11min 不进 fast；
+    # 但本单若改了 tools 测试，必须在合并前跑这些文件（防止失败测试带病合入）。
+    changed_tools_tests = [f for f in files
+                           if f.startswith("tools/tests/test_") and f.endswith(".py")]
+    if changed_tools_tests and not args.skip_tests:
+        print("MERGE_GATE 追加检查：本单变更的 tools 测试 %d 个..." % len(changed_tools_tests))
+        _rc2 = run([sys.executable, "-m", "pytest", *changed_tools_tests,
+                    "-q", "--timeout=120", "-p", "no:cacheprovider"])
+        if _rc2 != 0:
+            print("MERGE_GATE FAIL：变更的 tools 测试未过（rc=%d），拒绝合并" % _rc2)
+            emit("guard_fail", args.tid, "changed tools tests failed rc=%d" % _rc2)
+            return 1
+
     if args.dry_run:
         print("MERGE_GATE DRY-RUN：不执行合并")
         return 0
