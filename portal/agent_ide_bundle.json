@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 02:25",
+ "generated": "2026-10-30 02:29",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 26,
+  "workorders_doing": 25,
   "workorders_review": 8
  },
  "workorders": [
@@ -309,15 +309,6 @@
    "branch": "task/WO-ACAD-DEPT-OPS-20261030",
    "created": "2026-10-30 02:12:54",
    "project": "quant"
-  },
-  {
-   "id": "WO-GUANYU-P54-20261030",
-   "desc": "元数据日报",
-   "status": "doing",
-   "owner": "GUANYU",
-   "branch": "task/WO-GUANYU-P54-20261030",
-   "created": "2026-10-30 02:24:58",
-   "project": "general"
   }
  ],
  "coder_traces": [
@@ -3851,7 +3842,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 84,
+     "count": 86,
      "recent": [
       {
        "ts": "",
@@ -3996,7 +3987,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 84,
+     "count": 86,
      "recent": [
       {
        "ts": "",
@@ -4146,7 +4137,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 86,
+     "count": 88,
      "recent": [
       {
        "ts": "",
@@ -4297,7 +4288,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 85,
+     "count": 88,
      "recent": [
       {
        "ts": "",
@@ -4449,7 +4440,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 84,
+     "count": 86,
      "recent": [
       {
        "ts": "",
@@ -6348,14 +6339,7 @@
    ],
    "experience": "30 年工程治理经验：漏洞分级与补丁流程、失败测试基线修复、编码规范与门禁落地、技术债清欠与重复功能合并；证据驱动、逐项闭环，只出报告与工单不自行合并，开发动作限独立 worktree 提交+跑测试并交 L2 人签。",
    "dept_name": "研究院",
-   "dept_cn_title": "太学",
-   "tasks": [
-    {
-     "id": "WO-GUANYU-P54-20261030",
-     "desc": "元数据日报",
-     "status": "doing"
-    }
-   ]
+   "dept_cn_title": "太学"
   },
   "HUANGZHONG": {
    "id": "HUANGZHONG",
