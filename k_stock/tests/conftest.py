@@ -5,8 +5,6 @@
 - frozen_lake：生成合成 parquet（日历基准票 + 若干标的），日期固定到 FROZEN_DAY；
 - 自动注入 KSTOCK_PAPER_NOW=FROZEN_DAY（与合成湖一致），测试因此与真实日期/真实湖解耦。
 """
-import datetime as _dt
-
 import pytest
 
 FROZEN_DAY = "20261027"
