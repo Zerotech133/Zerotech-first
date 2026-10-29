@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-29 21:22",
+ "generated": "2026-10-29 21:28",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 33,
+  "workorders_doing": 32,
   "workorders_review": 6
  },
  "workorders": [
@@ -354,15 +354,6 @@
    "branch": "task/K-QUANT-20261029-IDETIMEOUT",
    "created": "2026-10-29 21:00:38",
    "project": "quant"
-  },
-  {
-   "id": "WO-LEGION-GOVAI-CONF-20261029",
-   "desc": "治理AI confidence 标签兼容：high/medium/low 归一数值；补测试",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-GOVAI-CONF-20261029",
-   "created": "2026-10-29 21:16:24",
-   "project": "general"
   }
  ],
  "coder_traces": [
@@ -7036,11 +7027,6 @@
     {
      "id": "WO-MERGE-GATE-FIX2-20261029",
      "desc": "修 merge_gated 变更tools测试检查：在任务worktree里跑（master无该文件→rc4）",
-     "status": "doing"
-    },
-    {
-     "id": "WO-LEGION-GOVAI-CONF-20261029",
-     "desc": "治理AI confidence 标签兼容：high/medium/low 归一数值；补测试",
      "status": "doing"
     }
    ]
