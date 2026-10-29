@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """数据仓可视化快照生成器：source 治理 + 挖掘台账 + 运维健康。
 
 产出：
@@ -22,7 +22,7 @@ from pathlib import Path
 REPO = Path(r"C:\项目\老田的AI助手")
 DATA = REPO / "quant_backtest" / "data"
 PORTAL = REPO / "portal"
-OUT = PORTAL / "dw_snapshot.json"
+OUT = PORTAL / "static" / "dw_snapshot.json"
 PY = sys.executable
 
 # 数据源治理状态分类（人工维护：只列语义，不重复目录扫描）

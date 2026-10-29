@@ -1,0 +1,1206 @@
+{
+ "generated_at": "2026-10-30T01:03:12+08:00",
+ "catalog": {
+  "version": 16,
+  "tables": 253,
+  "manifest": {
+   "closed": 239,
+   "missing": 1,
+   "open": 1
+  },
+  "registry": {
+   "physical": 253,
+   "display": 92
+  },
+  "contracts": 6,
+  "qualification_unknown": 0
+ },
+ "sources": [
+  {
+   "name": ".git",
+   "label": ".git",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 5,
+   "size_mb": 0.0,
+   "manifest": "—",
+   "date_status": "—",
+   "registered": false
+  },
+  {
+   "name": "adj_factor",
+   "label": "adj_factor",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 8742,
+   "size_mb": 234.4,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "anns_d",
+   "label": "公告日数据",
+   "layer": "原始层",
+   "status": "done",
+   "note": "按日公告标题；H1/H11/H12 事件源",
+   "files": 1896,
+   "size_mb": 278.5,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "bak_basic",
+   "label": "bak_basic",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 5569,
+   "size_mb": 217.2,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "balancesheet",
+   "label": "Tushare 资产负债表",
+   "layer": "原始层",
+   "status": "done",
+   "note": "PIT 财报",
+   "files": 5569,
+   "size_mb": 575.9,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "cashflow",
+   "label": "Tushare 现金流",
+   "layer": "原始层",
+   "status": "done",
+   "note": "PIT 财报",
+   "files": 5569,
+   "size_mb": 424.7,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "cb_basic",
+   "label": "cb_basic",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 34,
+   "size_mb": 6.5,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "cb_daily",
+   "label": "cb_daily",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 1171,
+   "size_mb": 57.3,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "cyq_chips",
+   "label": "cyq_chips",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 23,
+   "size_mb": 0.2,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "cyq_perf",
+   "label": "cyq_perf",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 274,
+   "size_mb": 44.4,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "daily",
+   "label": "Tushare 日线",
+   "layer": "原始层",
+   "status": "done",
+   "note": "全市场日线，catalog/registry 已登记",
+   "files": 8742,
+   "size_mb": 960.8,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "daily_basic",
+   "label": "Tushare 每日指标",
+   "layer": "原始层",
+   "status": "done",
+   "note": "PE/PB/市值，契约已建",
+   "files": 923,
+   "size_mb": 587.1,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "etf_mins",
+   "label": "ETF 分钟线",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "数据存在，尚未挖掘",
+   "files": 760,
+   "size_mb": 91.6,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "express",
+   "label": "Tushare 业绩快报",
+   "layer": "原始层",
+   "status": "done",
+   "note": "3 年 5,947 行",
+   "files": 4,
+   "size_mb": 0.3,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "fina_indicator",
+   "label": "Tushare 财务指标",
+   "layer": "原始层",
+   "status": "done",
+   "note": "5,569 股票文件；PIT 可用；H7/H10/H14 已用",
+   "files": 5569,
+   "size_mb": 581.1,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "forecast",
+   "label": "Tushare 业绩预告",
+   "layer": "原始层",
+   "status": "done",
+   "note": "3 年 21,196 行（type+p_change）；H2v2 已用",
+   "files": 4,
+   "size_mb": 8.4,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "fx_daily",
+   "label": "Tushare 汇率",
+   "layer": "原始层",
+   "status": "in_progress",
+   "note": "FXCM 价格字段为空，需换源（P2）",
+   "files": 2,
+   "size_mb": 0.0,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "hk_balancesheet",
+   "label": "hk_balancesheet",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 2773,
+   "size_mb": 37.2,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "hk_basic",
+   "label": "hk_basic",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 34,
+   "size_mb": 7.6,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "hk_cashflow",
+   "label": "hk_cashflow",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 2787,
+   "size_mb": 31.1,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "hk_daily",
+   "label": "Tushare 港股日线",
+   "layer": "原始层",
+   "status": "in_progress",
+   "note": "726 日/152.7 万行；A/H 横截面研究待开",
+   "files": 726,
+   "size_mb": 66.6,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "hk_fina_indicator",
+   "label": "hk_fina_indicator",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 2787,
+   "size_mb": 181.5,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "hk_income",
+   "label": "hk_income",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 2785,
+   "size_mb": 27.2,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "idx_mins",
+   "label": "idx_mins",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 2020,
+   "size_mb": 397.0,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "income",
+   "label": "Tushare 利润表",
+   "layer": "原始层",
+   "status": "done",
+   "note": "PIT 财报",
+   "files": 5569,
+   "size_mb": 339.7,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "index_daily",
+   "label": "A 股指数日线",
+   "layer": "原始层",
+   "status": "done",
+   "note": "宽基指数；研究常用",
+   "files": 922,
+   "size_mb": 444.0,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "index_global",
+   "label": "全球指数",
+   "layer": "原始层",
+   "status": "done",
+   "note": "20 指数 2018+；H9 pilot + 可交易性已用",
+   "files": 20,
+   "size_mb": 2.6,
+   "manifest": "not_applicable",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "index_member_all",
+   "label": "申万行业历史成分",
+   "layer": "原始层",
+   "status": "done",
+   "note": "5,922 条 PIT 行业归属；H8/H14 已用",
+   "files": 1,
+   "size_mb": 0.1,
+   "manifest": "closed",
+   "date_status": "unknown",
+   "registered": true
+  },
+  {
+   "name": "index_weight",
+   "label": "index_weight",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 142,
+   "size_mb": 1.5,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "irm_qa_sh",
+   "label": "irm_qa_sh",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 2277,
+   "size_mb": 102.7,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "irm_qa_sh_probe",
+   "label": "irm_qa_sh_probe",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 1,
+   "size_mb": 1.0,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "irm_qa_sz",
+   "label": "irm_qa_sz",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 3250,
+   "size_mb": 199.4,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "irm_qa_sz_probe",
+   "label": "irm_qa_sz_probe",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 1,
+   "size_mb": 0.8,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "limit_list_d",
+   "label": "limit_list_d",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 275,
+   "size_mb": 5.4,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "major_news",
+   "label": "major_news",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 34,
+   "size_mb": 1.8,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "margin_detail",
+   "label": "margin_detail",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 922,
+   "size_mb": 195.4,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "moneyflow",
+   "label": "Tushare 资金流",
+   "layer": "原始层",
+   "status": "done",
+   "note": "3 年 923 文件；契约已建；H13 复核 no alpha",
+   "files": 923,
+   "size_mb": 573.1,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "news",
+   "label": "news",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 34,
+   "size_mb": 42.0,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "npr",
+   "label": "npr",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 34,
+   "size_mb": 43.7,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "quarantine_prod_overwrite",
+   "label": "quarantine_prod_overwrite",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 0,
+   "size_mb": 0.7,
+   "manifest": "missing",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "research_report",
+   "label": "research_report",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 34,
+   "size_mb": 17.3,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "sf_month",
+   "label": "sf_month",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 32,
+   "size_mb": 0.3,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "shibor",
+   "label": "Shibor 利率",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "数据存在，尚未挖",
+   "files": 1,
+   "size_mb": 0.1,
+   "manifest": "closed",
+   "date_status": "unknown",
+   "registered": true
+  },
+  {
+   "name": "shibor_lpr",
+   "label": "LPR 利率",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "数据存在，尚未挖",
+   "files": 33,
+   "size_mb": 0.3,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "stk_holdernumber",
+   "label": "stk_holdernumber",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 5570,
+   "size_mb": 24.2,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "stk_managers",
+   "label": "stk_managers",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 1,
+   "size_mb": 7.2,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "stk_mins",
+   "label": "stk_mins",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 33198,
+   "size_mb": 3453.0,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "stk_pledge",
+   "label": "stk_pledge",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 10,
+   "size_mb": 0.1,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "stock_basic",
+   "label": "stock_basic",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 34,
+   "size_mb": 8.8,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "stock_company",
+   "label": "stock_company",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 34,
+   "size_mb": 268.1,
+   "manifest": "closed",
+   "date_status": "not_applicable",
+   "registered": true
+  },
+  {
+   "name": "sw_classify_l1",
+   "label": "申万一级分类字典",
+   "layer": "原始层",
+   "status": "done",
+   "note": "31 个行业",
+   "files": 34,
+   "size_mb": 0.6,
+   "manifest": "closed",
+   "date_status": "not_applicable",
+   "registered": true
+  },
+  {
+   "name": "sw_l1_member",
+   "label": "sw_l1_member",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 31,
+   "size_mb": 0.2,
+   "manifest": "closed",
+   "date_status": "not_applicable",
+   "registered": true
+  },
+  {
+   "name": "sw_mins",
+   "label": "sw_mins",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 2170,
+   "size_mb": 494.6,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "top10_floatholders",
+   "label": "top10_floatholders",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 9,
+   "size_mb": 15.7,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "top10_holders",
+   "label": "top10_holders",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 9,
+   "size_mb": 16.3,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "top_inst",
+   "label": "Tushare 龙虎榜席位",
+   "layer": "原始层",
+   "status": "done",
+   "note": "3 年 760 日；H3 已用",
+   "files": 760,
+   "size_mb": 18.9,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "top_list",
+   "label": "Tushare 龙虎榜",
+   "layer": "原始层",
+   "status": "done",
+   "note": "3 年 760 日；H3 已用",
+   "files": 761,
+   "size_mb": 10.2,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "trade_cal",
+   "label": "trade_cal",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 8,
+   "size_mb": 4.5,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "us_balancesheet",
+   "label": "us_balancesheet",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 22303,
+   "size_mb": 111.1,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "us_basic",
+   "label": "us_basic",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 29,
+   "size_mb": 29.2,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "us_cashflow",
+   "label": "us_cashflow",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 21851,
+   "size_mb": 103.8,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "us_daily",
+   "label": "美股日线",
+   "layer": "原始层",
+   "status": "done",
+   "note": "24,211 股票文件；H9 未用（pilot 用指数）",
+   "files": 24211,
+   "size_mb": 1599.4,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "us_fina_indicator",
+   "label": "us_fina_indicator",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 23679,
+   "size_mb": 841.5,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "us_income",
+   "label": "us_income",
+   "layer": "原始层",
+   "status": "mining",
+   "note": "未分类（自动发现）",
+   "files": 23338,
+   "size_mb": 110.0,
+   "manifest": "closed",
+   "date_status": "registered",
+   "registered": true
+  },
+  {
+   "name": "news.db",
+   "label": "news.db（采集）",
+   "layer": "采集流",
+   "status": "in_progress",
+   "note": "保留 365 天；无法回填",
+   "files": null,
+   "size_mb": 105.03,
+   "manifest": "—",
+   "date_status": "—",
+   "registered": true
+  },
+  {
+   "name": "xueqiu_info.db",
+   "label": "雪球舆情库",
+   "layer": "采集流",
+   "status": "in_progress",
+   "note": "2012-2026，2021+ 稀疏",
+   "files": null,
+   "size_mb": 29.88,
+   "manifest": "—",
+   "date_status": "—",
+   "registered": true
+  },
+  {
+   "name": "jev_audit.db",
+   "label": "JEV 判定账本",
+   "layer": "研究库",
+   "status": "in_progress",
+   "note": "后验 6,658；companies 空 82%",
+   "files": null,
+   "size_mb": 20.73,
+   "manifest": "—",
+   "date_status": "—",
+   "registered": true
+  },
+  {
+   "name": "evidence_chain.db",
+   "label": "证据链",
+   "layer": "治理库",
+   "status": "done",
+   "note": "资格/取证",
+   "files": null,
+   "size_mb": 1.3,
+   "manifest": "—",
+   "date_status": "—",
+   "registered": true
+  }
+ ],
+ "governance": [
+  {
+   "item": "catalog/registry 一致性",
+   "status": "done",
+   "note": "v16 / 253 表 / sha 一致"
+  },
+  {
+   "item": "manifest 覆盖",
+   "status": "done",
+   "note": "closed 239 / not_applicable 12 / open 1 / missing 1"
+  },
+  {
+   "item": "数据契约（ODCS）",
+   "status": "in_progress",
+   "note": "6 份（daily/daily_basic/index_daily/adj_factor/margin_detail/moneyflow）；待扩到研究用表"
+  },
+  {
+   "item": "资格取证（qualification）",
+   "status": "in_progress",
+   "note": "以 evidence_chain/registry 为准；未全量覆盖"
+  },
+  {
+   "item": "display 展示登记",
+   "status": "in_progress",
+   "note": "92/253 展示名（门户/台账可读性）"
+  },
+  {
+   "item": "生命周期（lifecycle）",
+   "status": "in_progress",
+   "note": "data_lifecycle.yaml 9 条（xq_* planned + 1 deprecated）"
+  },
+  {
+   "item": "新鲜度（freshness）",
+   "status": "done",
+   "note": "daily 调度 + run_all 报告"
+  },
+  {
+   "item": "staging 生命周期",
+   "status": "done",
+   "note": "周检（retention 30d / 失效锁 7d）"
+  },
+  {
+   "item": "备份链（BackupDaily）",
+   "status": "done",
+   "note": "7 产物 + 异地 byte-identical + 新增 quant_meta/thunder_model（section 7）"
+  },
+  {
+   "item": "可重拉策略",
+   "status": "done",
+   "note": "_source_reclaim.json（11 类来源）"
+  },
+  {
+   "item": "汇率数据源缺失",
+   "status": "in_progress",
+   "note": "Tushare FXCM 价格全空 → 需换源（P2，不阻塞横截面）"
+  },
+  {
+   "item": "news 历史沉淀",
+   "status": "in_progress",
+   "note": "无法回填（API 深度 ≈1 周）→ 改长期采集+保留 365 天"
+  },
+  {
+   "item": "xq 近端抓取频率",
+   "status": "done",
+   "note": "单次 3 轮（240s 间隔）已上线；待 18:00 后看密度"
+  },
+  {
+   "item": "watchdog 单实例校验",
+   "status": "pending",
+   "note": "ws 重启后仍双实例（历史现象），建议互斥加固"
+  },
+  {
+   "item": "approval 回写 devtask/事件",
+   "status": "in_progress",
+   "note": "S2 台账已落 approvals.jsonl；devtask/事件回写待接"
+  }
+ ],
+ "mining": {
+  "hypotheses": [
+   {
+    "id": "H1",
+    "title": "公告类型的事件超额（CAR）",
+    "status": "rejected",
+    "question": "哪类公告在披露后 1/3/5 交易日有显著超额收益？",
+    "conclusion": "三关结论：IS +0.54% → OOS raw +0.02% → OOS 市值中性 -1.23% → 成本后净 -1.53%（t=-3.3,n=168）；IS 正向未通过样本外/中性/成本三关，判定 rejected（v1 正向疑为小盘+特定区间效应）；仅『其他』类通过但不可操作",
+    "evidence": "research/reports/H1_announcement_car_v2_20261028.md"
+   },
+   {
+    "id": "H10",
+    "title": "数据质量对回测结论的影响",
+    "status": "backtested",
+    "question": "剔除低可信度表后回测结论是否改变？",
+    "conclusion": "6类数据质量扰动（缺失/PIT错位/价格异常/幸存者/字段空/行业错分）对质量因子结论稳健性：OOS IC 全部保持负向（-0.024~-0.030，t<-5.5）→ 结论不翻转；最敏感=字段空30%（t 从-7.0→-5.6）、PIT错位会放大信号（前视风险）、价格异常/幸存者影响有限；门槛建议：字段完整率≥90%、严格PIT、价格清洗",
+    "evidence": "research/reports/H10_quality_sensitivity_20261029.md"
+   },
+   {
+    "id": "H11",
+    "title": "三年公告 CAR（行业+规模中性）",
+    "status": "rejected",
+    "question": "2023-2026 业绩预告在行业+规模中性后是否有可交易 CAR？",
+    "conclusion": "3 年/3.29 万可算事件：5 日 CAR IS -3.28%、OOS -0.52%（t=-6.77，未通过）；同日事件日敏感性 -0.77%（仍负）；负值主要来自 2024Q1 小盘崩盘区间+预告季节性，非可交易信号。数据发现：ann_history 仅 2026-02 起，3 年历史须用 anns_d 标题源",
+    "evidence": "research/reports/H11_announcement_car_3y_20261028.md"
+   },
+   {
+    "id": "H12",
+    "title": "盈余方向事件研究（预增/预盈 vs 预减/预亏）",
+    "status": "rejected",
+    "question": "方向可提取的业绩预告是否产生可交易多空差？",
+    "conclusion": "5,512 条方向可辨事件：预增/预盈 OOS -0.24%（t=-0.87）、预减/预亏 OOS -0.30%（t=-1.13）；多空差 IS +2.09% → OOS +0.07%（≈0，未覆盖 30bp 成本）→ 方向信号样本外衰减，rejected；需真实盈余惊喜幅度（forecast/express）才能做幅度型 PEAD",
+    "evidence": "research/reports/H11dir_earnings_direction_20261028.md"
+   },
+   {
+    "id": "H13",
+    "title": "资金流动量因子（净流入分位→未来收益）",
+    "status": "rejected",
+    "question": "净流入截面分位的正向 IC 能否构成可用因子（多空/组合）？",
+    "conclusion": "多因子合成（flow+反转+市值+价值+质量规避，月度调仓/成本后）：IS 多空 +3.13%(t=3.91)、OOS 仅 +0.44%(t=0.19) → 样本外无 alpha，单因子 OOS 亦弱；H13 rejected（多因子复核不通过）",
+    "evidence": "research/reports/H13_multifactor_20261029.md"
+   },
+   {
+    "id": "H14",
+    "title": "质量反向（高ROE跑输）规避候选",
+    "status": "backtested",
+    "question": "高 ROE 组合在 3/5 年 OOS 均显著跑输（IC -0.033~-0.038），是否可构造规避/低配规则？",
+    "conclusion": "估值分层内质量反向**成立**（负向规则）：5年窗口 62 调仓月/16.7万观测，OOS PE 三分位内 ROE Q5-Q1 全负（低/中/高 PE：-0.83/-1.35/-1.83）；高ROE+高PE 质量陷阱 OOS -0.60% vs 高ROE+低PE +0.57%（差 -1.17%，IS -3.37%）；3年窗口同向（差 -1.24%，hi组 -1.45%, t=-4.08）。结论：H7 负 IC 由估值交互驱动；可制定「高",
+    "evidence": "research/reports/H14_quality_reversal_20261029.md"
+   },
+   {
+    "id": "H2",
+    "title": "业绩预告/快报的 PEAD",
+    "status": "rejected",
+    "question": "盈余公告后是否存在持续漂移？",
+    "conclusion": "H2 v2（真实惊喜=forecast type×p_change，3年，IS阈值→OOS）：OOS 高惊喜组 20日 +2.99%(t=10.8)、低组 +3.68%(t=13.7)，多空差 -0.69%（5/10日同样为负）→ 无 PEAD，反而低惊喜组更强（反转）；两组整体正收益为窗口/样本选择特征，非漂移 alpha → rejected（维持）",
+    "evidence": "research/reports/H2v2_earnings_surprise_pead_20261029.md"
+   },
+   {
+    "id": "H3",
+    "title": "龙虎榜机构席位跟单",
+    "status": "rejected",
+    "question": "机构席位净买入是否预示次日/5 日超额？",
+    "conclusion": "3年48,688上榜样本：机构净买 OOS5 -1.17%(t=-6.96)、净卖 -2.02%(t=-11.78)、全部上榜同样显著负 → 跟单不可做（上榜后整体下跌，疑高位炒作退潮/风险信号）；相对多空差 +0.85%（净买少跌），可作规避/反向候选但非多头 alpha → rejected",
+    "evidence": "research/reports/H3_dragon_tiger_inst_20261029.md"
+   },
+   {
+    "id": "H4",
+    "title": "资金流与价格背离",
+    "status": "rejected",
+    "question": "量价/资金流背离是否预示反转？",
+    "conclusion": "3年1,576,764 OOS观测：背离组（高流入+当日跌）OOS 净 -0.85%（t=-13.5）→ 反转假设不成立；IC(净流入分位 vs 未来5日) IS 0.007 / OOS +0.0164(t=4.53) → 弱正向（动量而非反转）；高流入 vs 高流出 OOS 差 +0.23% < 30bp 成本 → 不可交易",
+    "evidence": "research/reports/H4_flow_divergence_20261028.md"
+   },
+   {
+    "id": "H5",
+    "title": "舆情情绪领先价格",
+    "status": "idea",
+    "question": "新闻/雪球情绪是否领先价格 1–2 小时？",
+    "conclusion": "",
+    "evidence": ""
+   },
+   {
+    "id": "H6",
+    "title": "JEV 决策归因",
+    "status": "backtested",
+    "question": "哪些 bias/playbook/regime 在系统性赚钱或亏钱？",
+    "conclusion": "回填管线健康：成熟且有代码行已填 94%（6658/7102）；总覆盖 7.5% 的瓶颈是 82% 行 companies 为空（上游抽取）；空公司行市场方向兜底准确率 50.2%（无 alpha）；aw_decision 10.6万条非零胜率 50.6%，SELL 组方向正确但样本小",
+    "evidence": "research/reports/H6_jev_attribution_20261028.md"
+   },
+   {
+    "id": "H7",
+    "title": "财务因子分层有效性",
+    "status": "rejected",
+    "question": "9 维财务因子在哪些市值/行业分层有效？",
+    "conclusion": "PIT 财务因子：价值/质量/成长均未通过（3年与5年一致）。5年复验：质量因子 OOS IC -0.0331(t=-2.11) 与3年 -0.0384(t=-2.1) 同向且显著 → 高ROE跑输是稳健负向异象（非噪声）；价值 5年 IC +0.017(t=0.82) 不稳定；成长 -0.014 弱负。rejected（不采纳为正向因子）；质量反向作为 H14 规避候选",
+    "evidence": "research/reports/H7_factor_strat_20261029v_5y_20261029.md"
+   },
+   {
+    "id": "H8",
+    "title": "行业资金轮动",
+    "status": "rejected",
+    "question": "行业资金流是否存在 3–5 日动量？",
+    "conclusion": "PIT 行业归属（index_member_all）复验：IS IC +0.056(t=1.83)、Q5−Q1 +5.62%(t=2.89)；OOS IC -0.002(t=-0.06)、Q5−Q1 +1.94%(t=0.98) → 样本内强、样本外消失，行业资金轮动无 OOS alpha → rejected（此前快照版 OOS IC +0.0165 的弱信号同样不稳健）",
+    "evidence": "research/reports/H8_industry_rotation_pit_20261029.md"
+   },
+   {
+    "id": "H9",
+    "title": "跨市场映射",
+    "status": "rejected",
+    "question": "美股/港股事件是否领先 A 股映射标的？",
+    "conclusion": "可交易性检验：外盘隔夜与 A 股开盘缺口 OOS corr 0.53–0.57(t=12–13)，但日内收益 corr ≈0/微负 → 信号在开盘价一次性吸收，开盘执行不可获利 → H9 作为交易 alpha rejected；保留「外盘→缺口」风控参考用途（非交易）",
+    "evidence": "research/reports/H9_tradability_20261029.md"
+   }
+  ],
+  "reports": [
+   {
+    "name": "H13_multifactor_20261029.md",
+    "size_kb": 0.9,
+    "mtime": "10-29 23:26"
+   },
+   {
+    "name": "H13_multifactor_20261029.json",
+    "size_kb": 1.1,
+    "mtime": "10-29 23:26"
+   },
+   {
+    "name": "H10_quality_sensitivity_20261029.md",
+    "size_kb": 1.7,
+    "mtime": "10-29 17:09"
+   },
+   {
+    "name": "H10_quality_sensitivity_20261029.json",
+    "size_kb": 2.9,
+    "mtime": "10-29 17:09"
+   },
+   {
+    "name": "H9_tradability_20261029.md",
+    "size_kb": 1.2,
+    "mtime": "10-29 16:28"
+   },
+   {
+    "name": "H9_tradability_20261029.json",
+    "size_kb": 7.2,
+    "mtime": "10-29 16:28"
+   },
+   {
+    "name": "H9_global_leadlag_20261029.md",
+    "size_kb": 1.1,
+    "mtime": "10-29 14:39"
+   },
+   {
+    "name": "H9_global_leadlag_20261029.json",
+    "size_kb": 15.4,
+    "mtime": "10-29 14:38"
+   },
+   {
+    "name": "H8_industry_rotation_pit_20261029.md",
+    "size_kb": 0.6,
+    "mtime": "10-29 14:16"
+   },
+   {
+    "name": "H8_industry_rotation_pit_20261029.json",
+    "size_kb": 0.6,
+    "mtime": "10-29 14:16"
+   },
+   {
+    "name": "H14_quality_reversal_20261029.json",
+    "size_kb": 1.2,
+    "mtime": "10-29 09:35"
+   },
+   {
+    "name": "H14_quality_reversal_20261029.md",
+    "size_kb": 0.9,
+    "mtime": "10-29 09:35"
+   },
+   {
+    "name": "H7_factor_strat_20261029v_5y_20261029.md",
+    "size_kb": 0.8,
+    "mtime": "10-29 08:25"
+   },
+   {
+    "name": "H7_factor_strat_20261029v_5y_20261029.json",
+    "size_kb": 1.8,
+    "mtime": "10-29 08:25"
+   },
+   {
+    "name": "H7_factor_strat_20261029.md",
+    "size_kb": 0.8,
+    "mtime": "10-29 07:49"
+   },
+   {
+    "name": "H7_factor_strat_20261029.json",
+    "size_kb": 1.8,
+    "mtime": "10-29 07:49"
+   },
+   {
+    "name": "H3_dragon_tiger_inst_20261029.md",
+    "size_kb": 1.2,
+    "mtime": "10-29 07:36"
+   },
+   {
+    "name": "H3_dragon_tiger_inst_20261029.json",
+    "size_kb": 2.0,
+    "mtime": "10-29 07:36"
+   },
+   {
+    "name": "H2v2_earnings_surprise_pead_20261029.md",
+    "size_kb": 1.3,
+    "mtime": "10-29 07:31"
+   },
+   {
+    "name": "H2v2_earnings_surprise_pead_20261029.json",
+    "size_kb": 3.8,
+    "mtime": "10-29 07:31"
+   }
+  ]
+ },
+ "ops": {
+  "backup": {
+   "latest": "2026-10-29_0300",
+   "products": [
+    {
+     "name": "jev_eval.tar.gz",
+     "mb": 4.0
+    },
+    {
+     "name": "neo4j_kg.tar.gz",
+     "mb": 436.0
+    },
+    {
+     "name": "quant_code.tar.gz",
+     "mb": 521.5
+    },
+    {
+     "name": "quant_data.tar.gz",
+     "mb": 386.7
+    },
+    {
+     "name": "jev_eval.tar.gz",
+     "mb": 4.0
+    },
+    {
+     "name": "neo4j_kg.tar.gz",
+     "mb": 436.0
+    },
+    {
+     "name": "quant_code.tar.gz",
+     "mb": 521.5
+    },
+    {
+     "name": "quant_data.tar.gz",
+     "mb": 386.7
+    },
+    {
+     "name": "zhice_db.sql.gz.enc",
+     "mb": 684.0
+    }
+   ],
+   "receipt": null
+  },
+  "supervisor": {
+   "red": [],
+   "generated_at": "2026-10-30T01:03:21"
+  },
+  "approvals": {
+   "count": 2,
+   "latest": [
+    {
+     "ts": "2026-10-30T00:48:38",
+     "schema": "approval/v1",
+     "task": "M4/v1.1 验收签字（试点）",
+     "action": "approve",
+     "operator": "ou_50a95455c7dffec1090ade400886d0d4",
+     "level": "S2",
+     "evidence_hash": "0e2cb4aff",
+     "source": "feishu_card",
+     "revocable": true
+    },
+    {
+     "ts": "2026-10-30T00:51:51",
+     "schema": "approval/v1",
+     "task": "M4/v1.1 正式验收签字",
+     "action": "approve",
+     "operator": "ou_50a95455c7dffec1090ade400886d0d4",
+     "level": "S2",
+     "evidence_hash": "0e2cb4aff",
+     "source": "feishu_card",
+     "revocable": true
+    }
+   ]
+  }
+ }
+}
