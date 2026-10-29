@@ -214,25 +214,67 @@ def _balanced_objects(text):
     return objs
 
 
-def parse_decision(text):
-    """从 D1 输出提取 JSON 决策；失败返回 None（评估时计为解析失败样本）"""
+DECISION_REQUIRED = ("recommendation", "confidence", "rationale", "l1_basis")
+
+
+def validate_decision(dec):
+    """D1 决策 JSON 严格契约校验；返回错误列表（空=合法）。
+
+    2026-10-29 报告「鲁肃复盘」：历史 29/64 决策输出不可解析、信心字段
+    缺失/越界会让 score/校准失真。本函数把「能解析」升级为「字段合法」：
+    recommendation 必须是六档枚举、confidence 必须是 0~1 数值、
+    rationale/l1_basis 必须非空。解析失败由 run_shadow 重试一次，
+    仍失败才落 parse_ok=false（不再静默当 0 信心）。
+    """
+    errs = []
+    if not isinstance(dec, dict):
+        return ["not-a-dict"]
+    rec = str(dec.get("recommendation") or "").strip().upper()
+    if rec not in REC_SCORE:
+        errs.append("recommendation 非法: %r" % dec.get("recommendation"))
     try:
-        for block in _balanced_objects(text):
-            j = json.loads(block)
-            if "recommendation" not in j:
-                continue  # 非决策对象（如解释段里的 JSON 引用）跳过
-            # K-ORG-129：score 连续化＝枚举基数 × confidence——
-            # 此前纯枚举（HOLD 恒 0、18/25 并列零）致 J2 Spearman 无分辨（B8）；
-            # HOLD 基数 0 保持中性（0×c 仍 0），confidence 解析失败按 0 容错不毒化
-            base = REC_SCORE.get(str(j.get("recommendation", "")).upper(), 0.0)
-            try:
-                conf = float(j.get("confidence") or 0.0)
-            except (TypeError, ValueError):
-                conf = 0.0
-            j["score"] = round(base * conf, 3)
-            return j
-    except json.JSONDecodeError:
+        conf = float(dec.get("confidence"))
+    except (TypeError, ValueError):
+        errs.append("confidence 非数值: %r" % dec.get("confidence"))
+    else:
+        if not (0.0 <= conf <= 1.0):
+            errs.append("confidence 越界: %r" % conf)
+    for k in ("rationale", "l1_basis"):
+        v = dec.get(k)
+        if not isinstance(v, str) or not v.strip():
+            errs.append("%s 缺失/为空" % k)
+    return errs
+
+
+def parse_decision(text):
+    """从 D1 输出提取并校验 JSON 决策；失败返回 None（计为解析失败样本）。
+
+    兼容：JSON 前后有散文、```json 围栏、多个对象（取第一个含 recommendation
+    且字段合法的对象）；嵌套花括号用计数法配平（K-ORG-137）。
+    严格：recommendation/confidence/rationale/l1_basis 不合法即跳过该对象。
+    """
+    if not isinstance(text, str) or not text.strip():
         return None
+    for block in _balanced_objects(text):
+        try:
+            j = json.loads(block)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(j, dict) or "recommendation" not in j:
+            continue  # 非决策对象（如解释段里的 JSON 引用）跳过
+        if validate_decision(j):
+            continue  # 结构不合法的候选对象，继续找下一个
+        rec = str(j.get("recommendation") or "").strip().upper()
+        try:
+            conf = float(j.get("confidence"))
+        except (TypeError, ValueError):
+            return None
+        # K-ORG-129：score 连续化＝枚举基数 × confidence；HOLD 基数 0 中性锚
+        base = REC_SCORE.get(rec, 0.0)
+        j["recommendation"] = rec
+        j["confidence"] = conf
+        j["score"] = round(base * conf, 3)
+        return j
     return None
 
 
@@ -597,6 +639,13 @@ def main():
                 t0 = time.time()
                 result = interp.run(symbol, data_ctx=data_ctx)
                 dec = parse_decision(result["decision"])
+                if dec is None and attempt == 1:
+                    # Strict JSON：解析/字段校验失败先重试一次（模型偶发不守格式）
+                    print(
+                        "[retry] %s D1 决策非合法 JSON/字段，重试一次（仅首次）" % symbol
+                    )
+                    time.sleep(1)
+                    continue
                 parse_ok = (
                     dec is not None
                 )  # K-STOCK-338：解析失败显式记录，不再静默吞成 {}
