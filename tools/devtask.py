@@ -1365,6 +1365,23 @@ def _is_merge_head_race(msg: str) -> bool:
     return any(k.lower() in m for k in MERGE_RACE_MARKERS)
 
 
+def _abort_half_merge():
+    """清理 git 半合并状态（MERGE_HEAD 存在说明 merge 已改索引但提交失败）。
+
+    2026-10-30 P48：钩子拒提交后 devtask 抛错会残留 MERGE_HEAD，后续所有
+    merge 都会失败，必须兜底 abort。
+    """
+    try:
+        if not os.path.exists(os.path.join(REPO, ".git", "MERGE_HEAD")):
+            return
+        _git("merge", "--abort")
+        print("[merge] 已清理半合并状态（merge --abort），可重跑")
+    except SystemExit:
+        pass
+    except OSError:
+        pass
+
+
 def _merge_with_retry(tid, branch, desc, tries=3, sleep_fn=None, git_fn=None,
                       emit_fn=None):
     """HEAD 竞态自动 abort+退避重试；真实冲突/其它错误立即抛出不重试。"""
@@ -1382,6 +1399,7 @@ def _merge_with_retry(tid, branch, desc, tries=3, sleep_fn=None, git_fn=None,
             last = e
             msg = str(e)
             if not _is_merge_head_race(msg):
+                _abort_half_merge()
                 raise
             # 清理半合并状态（含 index.lock 由 git 自行处理；无合并时 abort 报错忽略）
             try:
@@ -1651,6 +1669,9 @@ def cmd_merge(tid, *flags):
     _MERGE_TIMINGS.append(("锁等待", time.perf_counter() - _lk0))
     if lock is None:
         return 1
+    # 2026-10-30 P48：钩子 merge_preflight 也检查同一把锁；导出父锁 token 让它
+    # 识别"父进程已持锁"直接放行（否则钩子拒绝提交、git 留半合并状态）。
+    os.environ["AIOS_MERGE_LOCK_TOKEN"] = str(lock)
     try:
         _gm0 = time.perf_counter()
         _merge_with_retry(tid, t["branch"], t["desc"])
