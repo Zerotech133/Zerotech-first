@@ -56,7 +56,6 @@ def board(dirpath) -> dict:
                 drift["missing_owner"] += 1
             if not d.get("due"):
                 drift["missing_due"] += 1
-                drift["decisions_without_orders"] += 1 if not os_ else 0
         if ds and not os_:
             drift["decisions_without_orders"] += 1
         drift["orders_pending"] += sum(1 for o in os_ if not o.get("dispatch"))

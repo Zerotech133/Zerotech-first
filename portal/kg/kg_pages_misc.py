@@ -364,7 +364,7 @@ def _kg_card_page(h):
         rows = []
         sl = v.get("sig_labels") or []
         window = list(zip((v.get("signals_recent") or [])[-5:],
-                          sl[-5:]))
+                          sl[-5:], strict=False))
         for s, lab_txt in window:
             flags = (_flag(s.get("bei"), "背") + _flag(s.get("bei2"), "背2")
                      + _flag(s.get("mbei"), "m背") + _flag(s.get("tbe"), "趋")

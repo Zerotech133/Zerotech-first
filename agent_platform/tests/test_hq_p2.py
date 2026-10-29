@@ -39,6 +39,9 @@ def test_board_stats(tmp_path):
     assert rep["decisions"] == 2 and rep["orders"] == 1 and rep["dispatched"] == 1
     assert rep["closure_rate"] == 0.5
     assert rep["drift"]["missing_owner"] == 1
+    assert rep["drift"]["missing_due"] == 1
+    # 审计修复：决议无订单按会议计一次，不得因缺 due 再计一次（双计数）
+    assert rep["drift"]["decisions_without_orders"] == 1
     assert rep["drift"]["draft_stale"] >= 1
     assert len(rep["replay"]) == 2 and rep["replay"][0]["meeting_id"].startswith("hq-")
 
