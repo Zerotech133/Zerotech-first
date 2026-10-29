@@ -230,9 +230,9 @@ def _tool_module(name):
 
 
 def _plan_for(question):
-    """P1-6：COMM_ZHUGE_PLAN=1 时附加规划分解（默认关；模板规划零依赖）。"""
-    if str(os.environ.get("COMM_ZHUGE_PLAN", "0")).strip().lower() not in (
-            "1", "true", "yes", "on"):
+    """P1-6：默认附加规划分解（COMM_ZHUGE_PLAN=0 可关；模板规划零依赖）。"""
+    if str(os.environ.get("COMM_ZHUGE_PLAN", "1")).strip().lower() in (
+            "0", "false", "no", "off"):
         return None
     mod = _tool_module("zhuge_planner")
     try:
