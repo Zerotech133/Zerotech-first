@@ -64,6 +64,10 @@ def review(day, pool, decisions, analyses=None, write=True):
             "price": d.get("price_at_decision"),
             "parse_ok": bool(d.get("parse_ok")),
             "decision_status": d.get("status"),
+            "risk_level": (d.get("summary") or {}).get("risk_level"),
+            "target_price": (d.get("summary") or {}).get("target_price"),
+            "time_horizon": (d.get("summary") or {}).get("time_horizon"),
+            "execution_modes": (d.get("summary") or {}).get("execution_modes"),
             "action": "pending_analysis" if not d else (
                 "buy" if str(d.get("recommendation") or "").upper() in ("BUY", "STRONG_BUY")
                 else ("avoid" if str(d.get("recommendation") or "").upper() in ("SELL", "STRONG_SELL")

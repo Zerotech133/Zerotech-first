@@ -419,6 +419,7 @@ def build_ledger_row(
     ts=None,
     model=None,
     fallback=None,
+    summary=None,
 ):
     """落账行构造（M5 刀 1：影子账本 schema 收口）。
 
@@ -452,6 +453,8 @@ def build_ledger_row(
         # （fallback=None 表示旧调用方未提供，不伪造成 False）
         "model": model,
         "fallback": fallback,
+        # 菜鸟 createResultSummary：五档/置信/风险/目标/周期 + 执行统计
+        "summary": summary or {},
     }
 
 
@@ -706,6 +709,7 @@ def main():
                     round(time.time() - t0, 1),
                     model=models.get("d1_decision"),
                     fallback=(d1_status not in (None, "normal", "resumed")),
+                    summary=result.get("summary"),
                 )  # M5 刀 1：schema_version+degraded 扩义
                 if not parse_ok:
                     print(

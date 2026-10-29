@@ -25,6 +25,7 @@ sys.path.insert(0, str(sys_dir))
 
 from llm import similarity  # noqa: E402
 from team_schema import build_instruction, parse_structured  # noqa: E402
+import team_exec  # noqa: E402
 import logging
 
 SIM_CONVERGE = 0.8  # 菜鸟 bull/bear 辩论收敛阈值
@@ -182,7 +183,8 @@ class Interpreter:
     # ---------- 主流程（P2b：在 run_scope 内执行） ----------
     def _run_inner(self, stock, run_id, data_ctx=None):
         self.cp.start_run(run_id, stock)
-        ctx = {"stock": stock, "statements": {}, "status": {}, "data": data_ctx or {}}
+        ctx = {"stock": stock, "statements": {}, "status": {}, "data": data_ctx or {},
+               "structured": {}}
         layers = {}
         for a in self.team.agents:
             layers.setdefault(a["level"], []).append(a)
@@ -240,6 +242,21 @@ class Interpreter:
         decision = ctx["statements"].get("d1_decision") or ctx["statements"].get(
             final_key, ""
         )
+        # 菜鸟 createResultSummary + node_exec 执行账（落 agent_platform/data/team_exec）
+        try:
+            records = team_exec.read_run(run_id)
+            dec_obj = {}
+            if isinstance(decision, str) and decision.strip().startswith("{"):
+                try:
+                    dec_obj = json.loads(decision)
+                except ValueError:
+                    dec_obj = {}
+            summary = team_exec.build_summary(dec_obj, records, stock)
+            team_exec.write_summary(run_id, summary)
+        except Exception as exc:  # noqa: BLE001 摘要失败不阻塞决策
+            summary = {}
+            records = []
+            logging.getLogger(__name__).warning("team summary failed: %s", exc)
         self.cp.finish_run(run_id, status="done")
         return {
             "run_id": run_id,
@@ -247,6 +264,9 @@ class Interpreter:
             "decision": decision,
             "statements": ctx["statements"],
             "status": ctx["status"],
+            "summary": summary,
+            "structured": ctx.get("structured") or {},
+            "node_exec": records,
             # 2026-10-29 outcome 台账：声明绑定模型（按节点），供 run_shadow 落账
             "models": {a.get("node_key"): a.get("llm_binding") for a in self.team.agents},
         }
@@ -275,6 +295,19 @@ class Interpreter:
             base += "\n[数据]\n%s\n" % data
         if extra:
             base += "\n对方观点：\n%s\n" % extra
+        # 菜鸟 buildNodeInput：下游优先读父节点的结构化输出，缺失才退回全文。
+        parents = node.get("parent_node_keys") or []
+        upstream = []
+        for p in parents:
+            st = (ctx.get("structured") or {}).get(p)
+            if isinstance(st, dict) and st and not st.get("error"):
+                upstream.append("### %s\n%s" % (
+                    p, json.dumps(st, ensure_ascii=False)[:900]))
+            elif (ctx.get("statements") or {}).get(p):
+                upstream.append("### %s\n%s" % (
+                    p, str(ctx["statements"][p])[:900]))
+        if upstream:
+            base += "\n[上游分析摘要]\n" + "\n".join(upstream) + "\n"
         # 决策节点与其它节点的输出契约不同：D1 的 system 要求「输出 JSON」，而旧实现
         # 给**所有**节点追加「3 句以内结论」——与 system 直接冲突，模型采信 user 时
         # 只写散文，parse_decision 拿不到 JSON（K-STOCK-338 偶发 parse_ok=false 的
@@ -440,6 +473,18 @@ class Interpreter:
             node["agent_id"],
             {"output": output, "status": status, "structured": structured or {}},
         )
+        if structured:
+            ctx.setdefault("structured", {})[node["node_key"]] = structured
+        # 菜鸟 node_exec 执行账：normal/debate/degraded + duration/retry/structured
+        mode = "degraded" if status == "degraded" else (
+            "debate" if str(phase).startswith("debate") else "normal")
+        try:
+            team_exec.record(
+                run_id, node, phase, mode, status, latency_ms or 0,
+                input_text="", output_text=output, structured=structured or {},
+            )
+        except Exception as exc:  # noqa: BLE001 执行账失败不阻塞
+            logging.getLogger(__name__).warning("team_exec record failed: %s", exc)
         self.cp.trace(
             run_id,
             node["node_key"],
