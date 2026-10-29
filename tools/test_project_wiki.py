@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """project_wiki 生成器契约。"""
 import importlib.util
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
