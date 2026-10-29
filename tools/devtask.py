@@ -46,6 +46,7 @@ except Exception:  # noqa: BLE001 - non-TTY/old interpreter: ignore
     pass
 import tempfile
 import time
+from contextlib import contextmanager
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WT_DIR = os.path.join(REPO, ".worktrees")
@@ -1441,6 +1442,43 @@ def _quality_gate(tid):
     return True, "fast 门通过（%d 文件，钩子将跳过重复测试）" % len(files)
 
 
+_MERGE_TIMINGS = []
+
+
+@contextmanager
+def _timed(name):
+    """分段计时上下文（2026-10-30 P42：定位 merge 各门耗时）。"""
+    t0 = time.perf_counter()
+    try:
+        yield
+    finally:
+        _MERGE_TIMINGS.append((name, time.perf_counter() - t0))
+
+
+def _print_merge_timings(tid):
+    """打印并落盘分段耗时（供持续定位静态门开销）。"""
+    if not _MERGE_TIMINGS:
+        return
+    total = sum(v for _, v in _MERGE_TIMINGS)
+    print("== 分段耗时（段内合计 %.1fs）==" % total)
+    for name, sec in _MERGE_TIMINGS:
+        print("  %-16s %7.1fs" % (name, sec))
+    try:
+        import json as _json
+        out = {
+            "tid": tid,
+            "total_s": round(total, 1),
+            "segments": [{"name": n, "s": round(v, 2)} for n, v in _MERGE_TIMINGS],
+        }
+        fp = os.path.join(os.environ.get("TEMP", r"C:\Temp"),
+                          "devtask_merge_timing_%s.json" % tid)
+        with open(fp, "w", encoding="utf-8") as f:
+            _json.dump(out, f, ensure_ascii=False, indent=1)
+        print("  timing json → %s" % fp)
+    except OSError:
+        pass
+
+
 def cmd_merge(tid, *flags):
     # 2026-10-29 合并串行锁：直接调用 devtask merge 也串行化（父进程已持锁则复用）
     if not os.environ.get("AIOS_MERGE_LOCK_TOKEN"):
@@ -1504,8 +1542,10 @@ def cmd_merge(tid, *flags):
         _emit("guard_fail", tid, "分支无提交（master..%s=0），防呆拒绝合并，worktree 保留"
               % t["branch"])
         return 1
+    _MERGE_TIMINGS.clear()
     print("== 评审门 ==")
     for name, cmd in GATES:
+        _g0 = time.perf_counter()
         if callable(cmd):
             ok, out = cmd(t["branch"], t.get("worktree"))
         else:
@@ -1514,6 +1554,7 @@ def cmd_merge(tid, *flags):
                                env=GUARD_ENV)
             ok = r.returncode == 0
             out = (r.stdout or r.stderr).strip()
+        _MERGE_TIMINGS.append((name, time.perf_counter() - _g0))
         if ok:
             print("  %-8s ✓%s" % (name, ("  " + out) if out else ""))
             continue
@@ -1524,15 +1565,20 @@ def cmd_merge(tid, *flags):
         _save(tasks, changed=(tid,))
         _emit("guard_fail", tid, "门 %s 未过：%s" % (name, out[:120]))
         return 1
-    _security_warn_gate(t["branch"], t.get("worktree"))
-    _gitleaks_warn_gate(t["branch"], t.get("worktree"))
-    _ocr_warn_gate(t["branch"], t.get("worktree"))
+    with _timed("security_warn"):
+        _security_warn_gate(t["branch"], t.get("worktree"))
+    with _timed("gitleaks"):
+        _gitleaks_warn_gate(t["branch"], t.get("worktree"))
+    with _timed("ocr_warn"):
+        _ocr_warn_gate(t["branch"], t.get("worktree"))
     # K-STOCK-416：L2 宿主机级危险操作门（代码强制层，判例 K-STOCK-413）
+    _g0 = time.perf_counter()
     r = subprocess.run([sys.executable,
                         os.path.join(REPO, "tools", "_l2_guard.py"),
                         t["branch"]],
                        capture_output=True, text=True,
                        encoding="utf-8", errors="replace")
+    _MERGE_TIMINGS.append(("L2门", time.perf_counter() - _g0))
     if r.returncode == 0:
         print("  %-8s %s" % ("L2危险", "✓"))
     else:
@@ -1557,7 +1603,9 @@ def cmd_merge(tid, *flags):
             _save(tasks, changed=(tid,))
             _emit("guard_fail", tid, "L2 门未过（K-STOCK-416）：%s" % detail[:120])
             return 1
+    _qg0 = time.perf_counter()
     qg_ok, qg_detail = _quality_gate(tid)
+    _MERGE_TIMINGS.append(("质量闸", time.perf_counter() - _qg0))
     if qg_ok:
         print("  %-8s ✓ %s" % ("质量闸", qg_detail))
     else:
@@ -1567,11 +1615,15 @@ def cmd_merge(tid, *flags):
         _save(tasks, changed=(tid,))
         _emit("guard_fail", tid, "质量闸未过：%s" % qg_detail[:120])
         return 1
+    _lk0 = time.perf_counter()
     lock = _acquire_merge_lock(tid)
+    _MERGE_TIMINGS.append(("锁等待", time.perf_counter() - _lk0))
     if lock is None:
         return 1
     try:
+        _gm0 = time.perf_counter()
         _merge_with_retry(tid, t["branch"], t["desc"])
+        _MERGE_TIMINGS.append(("git merge(含钩子)", time.perf_counter() - _gm0))
         # 合并后不自动删除 worktree/分支：删除不可逆，只提示、留给人确认执行。
         t["status"] = "done"
         t["merged"] = time.strftime("%F %T")
@@ -1583,12 +1635,15 @@ def cmd_merge(tid, *flags):
             _emit("review_verdict", tid,
                   "approver=%s merged=1" % (t.get("approver") or "MISSING"))
         print("工单 %s 已合并 ✓（worktree 保留待人工回收）" % tid)
+        _bd0 = time.perf_counter()
         _auto_rebuild_ide_bundle(tid)
+        _MERGE_TIMINGS.append(("IDE bundle", time.perf_counter() - _bd0))
     finally:
         _release_merge_lock(lock)
     if t.get("worktree"):
         print("→ 分支已合并、工作区干净，可执行 `git worktree remove %s` 回收"
               % t["worktree"])
+    _print_merge_timings(tid)
     return 0
 
 
