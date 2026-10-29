@@ -1510,9 +1510,38 @@ def _handler_open_ids():
     return out
 
 
+# 2026-10-27 审计修复：内部只读汇总端点仅限本机（Hermes）或带 portal token；
+# 防止经 nginx 反代被局域网/公网直接读取（无页面令牌）。
+_PROTECTED_GET = {
+    "/api/m/score/core",
+    "/api/m/strategy/summary",
+    "/api/m/feed/summary",
+    "/api/m/customer/summary",
+}
+
+
+def _allow_internal(handler):
+    try:
+        local = getattr(handler, "_is_local_req", lambda: True)()
+    except Exception:  # noqa: BLE001
+        local = True
+    if local:
+        return True
+    auth = getattr(handler, "_check_portal_token", None)
+    if callable(auth):
+        try:
+            return bool(auth())
+        except Exception:  # noqa: BLE001
+            return False
+    return False
+
+
 def handle_get(handler, path, qs):
     try:
         q = _qs(qs)
+        if path in _PROTECTED_GET and not _allow_internal(handler):
+            handler._json({"ok": False, "error": "需要页面令牌或本机访问"}, 403)
+            return
         if path == "/api/m/health":
             s = m_contract.validate_all()
             handler._json(
