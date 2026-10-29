@@ -160,7 +160,7 @@ async function load(){
 const CARD_DEFS=[
   ['sources_total','数据来源',d=>String(d.cockpit.sources_total),'blue',d=>'已治理 '+d.cockpit.sources_done+' / 治理中 '+d.cockpit.sources_in_progress+' / 待挖掘 '+d.cockpit.sources_mining],
   ['new_today','今日新增',d=>String(d.cockpit.new_today),'green',d=>(d.new_today_sources||[]).map(s=>s.label).slice(0,3).join('、')||'暂无新增'],
-  ['pilot_today','今日试点',d=>String(d.cockpit.pilot_today),'purple',d=>'doing/review '+d.cockpit.pilot_today+' · 今日合并 '+d.cockpit.merged_today],
+  ['pilot_today','今日数据试点',d=>String(d.cockpit.pilot_today),'purple',d=>'数据相关 doing/review '+d.cockpit.pilot_today+' · 数据相关合并 '+d.cockpit.merged_today],
   ['coverage_pct','治理覆盖率',d=>d.cockpit.coverage_pct+'%','green',d=>'done '+d.cockpit.sources_done+'/'+d.cockpit.sources_total],
   ['hypotheses','挖掘台账',d=>String(d.cockpit.hypotheses),'blue',d=>'backtested '+(d.cockpit.hypotheses_by_status.backtested||0)+' / rejected '+(d.cockpit.hypotheses_by_status.rejected||0)+' / idea '+(d.cockpit.hypotheses_by_status.idea||0)],
   ['reports_today','今日报告',d=>String(d.cockpit.reports_today),'warn',d=>'累计 '+d.cockpit.reports_total+' 份'],
@@ -181,7 +181,7 @@ function drillCard(key){
   let title='',body='';
   if(key==='sources_total'){title='数据来源全清单';body=sourcesTable(SNAP.sources);}
   else if(key==='new_today'){title='今日新增数据源';body=(SNAP.new_today_sources||[]).length?sourcesTable(SNAP.new_today_sources):'<div class="muted">今日无新增来源（目录 mtime 判定）</div>';}
-  else if(key==='pilot_today'){title='今日试点/进行中任务';body=tasksTable((SNAP.tasks.today_pilot||[]).concat(SNAP.tasks.doing||[]).slice(0,40));}
+  else if(key==='pilot_today'){title='今日数据相关试点/进行中任务';body='<div class="muted" style="margin-bottom:8px">仅展示与数据仓/数据治理/挖掘相关的任务；其他线任务不计入。</div>'+tasksTable(SNAP.tasks.today_pilot_data||[]);}
   else if(key==='coverage_pct'){title='治理覆盖分解';body='<div class="muted" style="margin-bottom:8px">已治理 '+c.sources_done+' · 治理中 '+c.sources_in_progress+' · 待挖掘 '+c.sources_mining+' · 待办 '+c.sources_pending+'</div>'+statusBreakdown();}
   else if(key==='hypotheses'){title='挖掘台账统计';body=hypSummaryTable();}
   else if(key==='reports_today'){title='研究报告';body=reportsTable(SNAP.reports);}
@@ -210,7 +210,7 @@ function closeModal(){document.getElementById('modal').classList.remove('on');do
 function renderToday(){
   const c=SNAP.cockpit,ns=SNAP.new_today_sources||[];
   const chips=ns.map(s=>'<span class="chip" onclick="drillSource(\''+esc(s.name)+'\')">🆕 '+esc(s.label)+'</span>').join('');
-  const pilots=(SNAP.tasks.today_pilot||[]).slice(0,6).map(t=>'<span class="chip" onclick="openModal(\'试点任务\',tasksTable(['+JSON.stringify(t).replace(/"/g,'&quot;')+']))">🧪 '+esc(t.id)+'</span>').join('');
+  const pilots=(SNAP.tasks.today_pilot_data||[]).slice(0,6).map(t=>'<span class="chip" onclick="openModal(\'试点任务\',tasksTable(['+JSON.stringify(t).replace(/"/g,'&quot;')+']))">🧪 '+esc(t.id)+'</span>').join('');
   const reps=(SNAP.reports||[]).filter(r=>r.date===SNAP.today).slice(0,6).map(r=>'<span class="chip" onclick="openModal(\'报告详情\',reportsTable(['+JSON.stringify(r).replace(/"/g,'&quot;')+']))">📄 '+esc(r.name)+'</span>').join('');
   const apps=(SNAP.ops.approvals.latest||[]).filter(a=>String(a.ts||'').startsWith(SNAP.today)).map(a=>'<span class="chip">✅ '+esc(a.task)+'</span>').join('');
   document.getElementById('todayStrip').innerHTML=

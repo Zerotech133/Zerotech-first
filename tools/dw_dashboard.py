@@ -21,6 +21,19 @@ OUT = PORTAL / "static" / "dw_snapshot.json"
 PY = sys.executable
 TODAY = datetime.now().strftime("%Y-%m-%d")
 
+DATA_KEYWORDS = (
+    "数据", "data", "tushare", "catalog", "registry", "manifest", "仓库", "备份", "backup",
+    "postgres", "mysql", "sqlite", "staging", "元数据", "治理", "研究", "挖掘", "假设",
+    "因子", "contract", "lineage", "freshness", "qualify", "入库", "清洗", "质检",
+    "港股", "汇率", "db", "pg", "ann", "jes", "jev", "forecast", "top_list", "moneyflow",
+)
+
+
+def _data_related(t: dict) -> bool:
+    blend = ((t.get("id") or "") + " " + (t.get("desc") or "") + " " + (t.get("owner") or "")).lower()
+    return any(k.lower() in blend for k in DATA_KEYWORDS)
+
+
 CONTRACTS = {"daily", "daily_basic", "index_daily", "adj_factor", "margin_detail", "moneyflow"}
 SOURCE_HYP = {
     "daily": ["H1", "H2", "H3", "H4", "H7", "H8", "H9", "H11", "H12", "H13", "H14"],
@@ -231,6 +244,7 @@ def load_tasks() -> dict:
         return empty
     tasks = d.get("tasks", d)
     doing, pilot_today, merged_today, counts = [], [], [], {}
+    pilot_today_data, merged_today_data = [], []
     for tid, t in tasks.items():
         if not isinstance(t, dict):
             continue
@@ -244,9 +258,16 @@ def load_tasks() -> dict:
         created = t.get("created") or ""
         if st in ("doing", "review") and (created.startswith(TODAY) or merged.startswith(TODAY)):
             pilot_today.append(item)
+            if _data_related(t):
+                pilot_today_data.append(item)
         if merged.startswith(TODAY):
             merged_today.append(item)
-    return {"doing": doing[:30], "today_pilot": pilot_today, "today_merged": merged_today,
+            if _data_related(t):
+                merged_today_data.append(item)
+    return {"doing": doing[:60], "doing_data": [x for x in doing if _data_related(
+        next((tt for kk, tt in tasks.items() if kk == x["id"]), {}))][:30],
+            "today_pilot": pilot_today, "today_pilot_data": pilot_today_data,
+            "today_merged": merged_today, "today_merged_data": merged_today_data,
             "counts": counts}
 
 
@@ -336,8 +357,8 @@ def main(argv=None) -> int:
                     "sources_pending": status_cnt.get("pending", 0),
                     "coverage_pct": round(done * 100.0 / total, 1) if total else 0,
                     "new_today": sum(1 for s in sources if s.get("today_new")),
-                    "pilot_today": len(tasks["today_pilot"]),
-                    "merged_today": len(tasks["today_merged"]),
+                    "pilot_today": len(tasks["today_pilot_data"]),
+                    "merged_today": len(tasks["today_merged_data"]),
                     "hypotheses": len(hyps), "hypotheses_by_status": hyp_cnt,
                     "reports_total": len(reports),
                     "reports_today": sum(1 for r in reports if r["date"] == TODAY),
