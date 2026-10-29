@@ -35,19 +35,18 @@ KEEP_DAYS = 14
 # dump 半途失败仍判 OK，且 stderr 被吞；且 postgres/neo4j 容器 sh=dash
 # 不支持 pipefail。改为容器内纯 dump、宿主侧 gzip 收流（见 dump_one）。
 DUMPS = [
-    {"key": "cainiao_mysql", "container": "cainiao-mysql-local",
+    {"key": "cainiao_mysql", "container": "quant-cainiao-mysql",  # 2026-10-29 修正：旧名 cainiao-mysql-local 已不存在
      "cmd": 'mysqldump -uroot -p"$MYSQL_ROOT_PASSWORD" --single-transaction '
             '--all-databases --routines --triggers',
      "file": "cainiao_mysql_alldb.sql.gz", "must": True},
     {"key": "zhice_pg", "container": "zhice-db",
      "cmd": 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner',
      "file": "zhice_os_v2.sql.gz", "must": True},
-    {"key": "quantdinger_pg", "container": "quantdinger-db",
-     "cmd": 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner',
-     "file": "quantdinger.sql.gz", "must": True},
-    {"key": "nqs2_pg", "container": "newquantsystem_v2-postgres-1",
-     "cmd": 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner',
-     "file": "quant_system.sql.gz", "must": True},
+    # 2026-10-29 修正：quantdinger-db / newquantsystem_v2-postgres-1 两个旧容器已不存在，
+    # 现网 PG 为 quant-pg（承载 quant_meta 等库）→ 用 pg_dumpall 一次性覆盖全部库。
+    {"key": "quant_pg_alldb", "container": "quant-pg",
+     "cmd": 'pg_dumpall -U "$POSTGRES_USER"',
+     "file": "quant_pg_alldb.sql.gz", "must": True},
     # Neo4j community 在线 dump 不可用（需停库）——先尝试，失败记 PENDING 不算硬失败
     {"key": "kg_neo4j", "container": "neo4j-kg",
      "cmd": 'neo4j-admin database dump neo4j --to-stdout',
