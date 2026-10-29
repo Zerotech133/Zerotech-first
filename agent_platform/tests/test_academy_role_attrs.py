@@ -61,9 +61,9 @@ def test_team_formal_seven_and_reporting():
 
 
 def test_four_seats_no_capability_expansion():
-    """A 方案只修属性：4 席只保留 events 工具，不生成能力卡。"""
+    """A 方案只修属性：4 席保留 events 工具；能力扩展（后续批次）允许增量，但不得丢失 events。"""
     dep = _academy()
     profs = {p["agent_id"]: p for p in dep["agent_profiles"]}
     for aid in ("COMM1", "INTEL1", "AI1", "PROD1"):
-        assert profs[aid].get("tools") == ["events"]
-        assert not (ROOT.parent / "legion_agents" / aid / "workspace" / "skills" / "CAPABILITIES.json").exists()
+        tools = profs[aid].get("tools") or []
+        assert "events" in tools, "%s 丢失 events 工具: %s" % (aid, tools)

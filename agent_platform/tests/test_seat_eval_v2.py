@@ -47,5 +47,6 @@ def test_v2_schema_marker():
     assert data.get("schema") == "seat_golden/v2"
     for seat in FOUR:
         cases = data["seats"][seat]["cases"]
-        assert len(cases) == 3
+        assert len(cases) >= 3
+        assert len({c.get('id') for c in cases}) == len(cases)
         assert any(c.get("assertions") for c in cases)

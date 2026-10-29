@@ -12,7 +12,7 @@ GOLDEN = REPO / "agent_platform" / "evals" / "seat_golden.json"
 
 def _write_golden(path: Path) -> None:
     data = {
-        "schema": "seat_golden/v1",
+        "schema": "seat_golden/v2",
         "seats": {
             "T1": {
                 "label": "测试席",
@@ -78,7 +78,7 @@ def test_strict_exit_nonzero(tmp_path):
 
 def test_actual_golden_shape():
     data = json.loads(GOLDEN.read_text(encoding="utf-8"))
-    assert data["schema"] == "seat_golden/v1"
+    assert data["schema"] == "seat_golden/v2"
     seats = data["seats"]
     for seat in ("ACAD1", "STRAT1", "BACK1", "ARCH1"):
         assert seat in seats

@@ -67,6 +67,7 @@ def test_smoke_run_via_subprocess(tmp_path):
         capture_output=True,
         text=True,
         encoding="utf-8",
+        env={**__import__("os").environ, "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"},
         timeout=180,
     )
     assert r.returncode == 0, r.stderr[-400:]
