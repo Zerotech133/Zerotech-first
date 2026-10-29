@@ -506,6 +506,7 @@ def _provider_chat(
     timeout: int = 45,
     base_url: str = "",
     model: str = "",
+    max_tokens: int = 4000,
 ) -> dict:
     url = base_url or PROVIDER_URL.get(provider)
     if not url:
@@ -514,7 +515,7 @@ def _provider_chat(
         {
             "model": model or PROVIDER_MODEL.get(provider, ""),
             "messages": messages,
-            "max_tokens": 800,
+            "max_tokens": max(256, min(int(max_tokens or 4000), 16000)),
             "stream": False,
         }
     ).encode()
@@ -548,12 +549,13 @@ def _provider_chat(
         }
 
 
-def _local_openai_chat(messages: list, timeout: int = 60, model: str = "qwen3.5:9b") -> str:
+def _local_openai_chat(messages: list, timeout: int = 60, model: str = "qwen3.5:9b",
+                       max_tokens: int = 4000) -> str:
     body = json.dumps(
         {
             "model": model,
             "messages": messages,
-            "max_tokens": 800,
+            "max_tokens": max_tokens,
             "stream": False,
         }
     ).encode()
@@ -588,11 +590,12 @@ def _local_native_chat(messages: list, timeout: int = 90, model: str = "qwen3.5:
         return (data.get("message") or {}).get("content") or ""
 
 
-def _local_chat(messages: list, timeout: int = 60, model: str = "qwen3.5:9b") -> dict:
+def _local_chat(messages: list, timeout: int = 60, model: str = "qwen3.5:9b",
+                max_tokens: int = 4000) -> dict:
     err = ""
     try:
         _t = 180 if "35b" in str(model) else timeout
-        text = _local_openai_chat(messages, _t, model)
+        text = _local_openai_chat(messages, _t, model, max_tokens)
         if text.strip():
             return {"ok": True, "reply": text}
         err = "empty_content"
@@ -608,7 +611,7 @@ def _local_chat(messages: list, timeout: int = 60, model: str = "qwen3.5:9b") ->
 
 
 def auto_chat(messages: list, seats=None, allow_local: bool = True, local_model=None,
-              model_filter=None) -> dict:
+              model_filter=None, max_tokens: int = 4000) -> dict:
     """一个对话框，自动适配：田丰GLM Key → 赵云/诸葛亮 DeepSeek Key → 本地9B。"""
     if not isinstance(messages, list) or not messages:
         return {"ok": False, "error": "empty_messages"}
@@ -650,6 +653,7 @@ def auto_chat(messages: list, seats=None, allow_local: bool = True, local_model=
             messages,
             base_url=str(k.get("base_url") or ""),
             model=str(model_filter or k.get("model") or ""),
+            max_tokens=max_tokens,
         )
         if r.get("ok"):
             _log(d, seat, k.get("id"), k.get("id"), "auto_chat", "used")
@@ -691,7 +695,7 @@ def auto_chat(messages: list, seats=None, allow_local: bool = True, local_model=
     if not allow_local:
         return {"ok": False, "error": "all_channels_failed",
                 "detail": "no_cloud_key_and_local_disabled", "attempts": attempts}
-    lr = _local_chat(messages, model=str(local_model or "qwen3.5:9b"))
+    lr = _local_chat(messages, model=str(local_model or "qwen3.5:9b"), max_tokens=max_tokens)
     if lr.get("ok"):
         return {
             "ok": True,
