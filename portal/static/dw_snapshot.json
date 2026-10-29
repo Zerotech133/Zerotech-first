@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-10-30T03:17:38+08:00",
+ "generated_at": "2026-10-30T03:31:32+08:00",
  "today": "2026-10-30",
  "catalog": {
   "version": 16,
@@ -26,8 +26,8 @@
   "sources_pending": 0,
   "coverage_pct": 36.4,
   "new_today": 39,
-  "pilot_today": 6,
-  "merged_today": 10,
+  "pilot_today": 5,
+  "merged_today": 11,
   "hypotheses": 14,
   "hypotheses_by_status": {
    "rejected": 10,
@@ -75,7 +75,7 @@
    }
   ],
   "backup_latest": "2026-10-30_0300",
-  "backup_age_hours": 3.3,
+  "backup_age_hours": 3.5,
   "supervisor_red": []
  },
  "sources": [
@@ -139,8 +139,8 @@
    "audit": {
     "source_latest": "20261029",
     "local_latest": "20261029",
-    "verdict": "filled",
-    "filled": 10
+    "verdict": "aligned",
+    "filled": 0
    }
   },
   {
@@ -1823,13 +1823,13 @@
    "status": "in_progress",
    "note": "保留 365 天；历史不可回填（接口深度约 1 周）",
    "files": 1,
-   "size_mb": 106.0,
+   "size_mb": 106.19,
    "size_h": "106 MB",
-   "rows": 100932,
-   "rows_h": "100932",
+   "rows": 100959,
+   "rows_h": "100959",
    "range": "news.db",
    "last_update": "2026-10-30",
-   "latest_date": "2026-10-30 03:03",
+   "latest_date": "2026-10-30 03:19",
    "lag_days": 0,
    "today_new": 1,
    "registered": true,
@@ -1964,7 +1964,7 @@
    "files": 1,
    "size_mb": 8379,
    "size_h": "8.4 GB",
-   "rows": 15826955,
+   "rows": 15827130,
    "rows_h": "1582.7 万",
    "range": "2026-08-11 起（分钟线）",
    "last_update": "2026-10-30",
@@ -2073,8 +2073,8 @@
    "audit": {
     "source_latest": "20261029",
     "local_latest": "20261029",
-    "verdict": "filled",
-    "filled": 10
+    "verdict": "aligned",
+    "filled": 0
    }
   },
   {
@@ -3144,13 +3144,13 @@
    "status": "in_progress",
    "note": "保留 365 天；历史不可回填（接口深度约 1 周）",
    "files": 1,
-   "size_mb": 106.0,
+   "size_mb": 106.19,
    "size_h": "106 MB",
-   "rows": 100932,
-   "rows_h": "100932",
+   "rows": 100959,
+   "rows_h": "100959",
    "range": "news.db",
    "last_update": "2026-10-30",
-   "latest_date": "2026-10-30 03:03",
+   "latest_date": "2026-10-30 03:19",
    "lag_days": 0,
    "today_new": 1,
    "registered": true,
@@ -3843,12 +3843,6 @@
     "desc": "DATA1 冻结申请：AC-20261030-LCS1-REDEFINE 的 D3 news.db/ts_news + D4 ts_top_list/ts_top_inst；四字段+sha+as-of；deadline 11-03；未冻结前"
    },
    {
-    "id": "K-ORG-20261030-OFFSITECATCHUP",
-    "status": "review",
-    "owner": "DSH·lead",
-    "desc": "异地备份补推器：新增 tools/offsite_catchup.ps1（幂等：探测 ssh aiosbackup 可达→对最近 N 天远端缺失的 tar 集/vault 依次调用 two push 脚本并校验 receipt；不可达则静默"
-   },
-   {
     "id": "K-QUANT-20261030-IDEOUTPUT",
     "status": "review",
     "owner": "DSH-Lead",
@@ -3883,12 +3877,6 @@
     "status": "review",
     "owner": "ZHAOYUN",
     "desc": "security_audit.ps1：py311 pip-audit(freeze)+py312 bandit，固定日志/status，任务可靠退出"
-   },
-   {
-    "id": "WO-LEGION-PAGESHELL3-20261030",
-    "status": "doing",
-    "owner": "ZHAOYUN",
-    "desc": "壳资产收尾：补5页缺失、去5页重复nav.js"
    },
    {
     "id": "K-QUANT-20261030-OHUI",
@@ -3947,12 +3935,6 @@
     "desc": "DATA1 冻结申请：AC-20261030-LCS1-REDEFINE 的 D3 news.db/ts_news + D4 ts_top_list/ts_top_inst；四字段+sha+as-of；deadline 11-03；未冻结前"
    },
    {
-    "id": "K-ORG-20261030-OFFSITECATCHUP",
-    "status": "review",
-    "owner": "DSH·lead",
-    "desc": "异地备份补推器：新增 tools/offsite_catchup.ps1（幂等：探测 ssh aiosbackup 可达→对最近 N 天远端缺失的 tar 集/vault 依次调用 two push 脚本并校验 receipt；不可达则静默"
-   },
-   {
     "id": "WO-ACAD-BOARD-V2-20261030",
     "status": "review",
     "owner": "ACAD1",
@@ -4003,12 +3985,6 @@
     "desc": "DATA1 冻结申请：AC-20261030-LCS1-REDEFINE 的 D3 news.db/ts_news + D4 ts_top_list/ts_top_inst；四字段+sha+as-of；deadline 11-03；未冻结前"
    },
    {
-    "id": "K-ORG-20261030-OFFSITECATCHUP",
-    "status": "review",
-    "owner": "DSH·lead",
-    "desc": "异地备份补推器：新增 tools/offsite_catchup.ps1（幂等：探测 ssh aiosbackup 可达→对最近 N 天远端缺失的 tar 集/vault 依次调用 two push 脚本并校验 receipt；不可达则静默"
-   },
-   {
     "id": "K-QUANT-20261030-IDEOUTPUT",
     "status": "review",
     "owner": "DSH-Lead",
@@ -4045,12 +4021,6 @@
     "desc": "security_audit.ps1：py311 pip-audit(freeze)+py312 bandit，固定日志/status，任务可靠退出"
    },
    {
-    "id": "WO-LEGION-PAGESHELL3-20261030",
-    "status": "doing",
-    "owner": "ZHAOYUN",
-    "desc": "壳资产收尾：补5页缺失、去5页重复nav.js"
-   },
-   {
     "id": "K-QUANT-20261030-OHUI",
     "status": "doing",
     "owner": "DSH-Lead",
@@ -4081,12 +4051,6 @@
     "status": "doing",
     "owner": "DATA1",
     "desc": "DATA1 冻结申请：AC-20261030-LCS1-REDEFINE 的 D3 news.db/ts_news + D4 ts_top_list/ts_top_inst；四字段+sha+as-of；deadline 11-03；未冻结前"
-   },
-   {
-    "id": "K-ORG-20261030-OFFSITECATCHUP",
-    "status": "review",
-    "owner": "DSH·lead",
-    "desc": "异地备份补推器：新增 tools/offsite_catchup.ps1（幂等：探测 ssh aiosbackup 可达→对最近 N 天远端缺失的 tar 集/vault 依次调用 two push 脚本并校验 receipt；不可达则静默"
    },
    {
     "id": "WO-ACAD-BOARD-V2-20261030",
@@ -4409,6 +4373,12 @@
     "desc": "每日股票池→多角度分析→组合计划：watchlist 解析(聊天代码/xunyou/picks)+run_shadow --codes 动态池+portfolio_composer(买点/止损/目标/权重/回避)+CLI+测试"
    },
    {
+    "id": "K-ORG-20261030-OFFSITECATCHUP",
+    "status": "done",
+    "owner": "DSH·lead",
+    "desc": "异地备份补推器：新增 tools/offsite_catchup.ps1（幂等：探测 ssh aiosbackup 可达→对最近 N 天远端缺失的 tar 集/vault 依次调用 two push 脚本并校验 receipt；不可达则静默"
+   },
+   {
     "id": "WO-IDE-RW-TESTFIX-20261030",
     "status": "done",
     "owner": "DSH-Lead",
@@ -4587,6 +4557,12 @@
     "status": "done",
     "owner": "DSH-Lead",
     "desc": "菜鸟团队分析代码移植：StructuredOutputSchema/Parser(按 analysis_type 注入 JSON Schema+解析+Markdown分离)+interpreter 接入结构化输出落 checkpoint/m"
+   },
+   {
+    "id": "WO-LEGION-PAGESHELL3-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "壳资产收尾：补5页缺失、去5页重复nav.js"
    }
   ],
   "today_merged_data": [
@@ -4627,6 +4603,12 @@
     "desc": "量化部 paper 前端页 /paper：NAV/现金/持仓/台账/hash-chain/风控限额只读展示 + /api/paper 数据口（新模块，无新增 Handler 方法）"
    },
    {
+    "id": "K-ORG-20261030-OFFSITECATCHUP",
+    "status": "done",
+    "owner": "DSH·lead",
+    "desc": "异地备份补推器：新增 tools/offsite_catchup.ps1（幂等：探测 ssh aiosbackup 可达→对最近 N 天远端缺失的 tar 集/vault 依次调用 two push 脚本并校验 receipt；不可达则静默"
+   },
+   {
     "id": "WO-INV-POOL-META-20261030",
     "status": "done",
     "owner": "DSH-Lead",
@@ -4653,9 +4635,9 @@
   ],
   "counts": {
    "aborted": 89,
-   "done": 1241,
-   "review": 9,
-   "doing": 30
+   "done": 1243,
+   "review": 8,
+   "doing": 29
   }
  },
  "governance": [
@@ -4849,16 +4831,16 @@
      "mb": 427.7
     },
     {
-     "name": "zhice_db.sql.gz",
+     "name": "zhice_db.sql.gz.enc",
      "mb": 709.0
     }
    ],
    "receipt": null,
-   "age_hours": 3.3
+   "age_hours": 3.5
   },
   "supervisor": {
    "red": [],
-   "generated_at": "2026-10-30T03:17:38"
+   "generated_at": "2026-10-30T03:31:32"
   },
   "approvals": {
    "count": 2,
@@ -4952,7 +4934,7 @@
   "how_to": "python tools/data_sync_manual.py（或指定 --steps tushare,hk,snapshot）"
  },
  "audit": {
-  "generated_at": "2026-10-30T03:15:54+08:00",
+  "generated_at": "2026-10-30T03:25:09+08:00",
   "trading_days": [
    "20261016",
    "20261019",
@@ -5468,70 +5450,70 @@
     "store": "anns_d",
     "api": "anns_d",
     "checked_days": 10,
-    "filled": 10,
+    "filled": 0,
     "source_latest": "20261029",
     "local_latest": "20261029",
-    "verdict": "filled",
+    "verdict": "aligned",
     "checks": [
      {
       "date": "20261016",
       "source_rows": 6000,
-      "local_rows": 1339,
-      "action": "fill_partial"
+      "local_rows": 6000,
+      "action": "ok"
      },
      {
       "date": "20261019",
       "source_rows": 6000,
-      "local_rows": 299,
-      "action": "fill_partial"
+      "local_rows": 6000,
+      "action": "ok"
      },
      {
       "date": "20261020",
       "source_rows": 6000,
-      "local_rows": 1213,
-      "action": "fill_partial"
+      "local_rows": 6000,
+      "action": "ok"
      },
      {
       "date": "20261021",
       "source_rows": 6000,
-      "local_rows": 1200,
-      "action": "fill_partial"
+      "local_rows": 6000,
+      "action": "ok"
      },
      {
       "date": "20261022",
       "source_rows": 6000,
-      "local_rows": 1133,
-      "action": "fill_partial"
+      "local_rows": 6000,
+      "action": "ok"
      },
      {
       "date": "20261023",
       "source_rows": 6000,
-      "local_rows": 1784,
-      "action": "fill_partial"
+      "local_rows": 6000,
+      "action": "ok"
      },
      {
       "date": "20261026",
       "source_rows": 6000,
-      "local_rows": 1141,
-      "action": "fill_partial"
+      "local_rows": 6000,
+      "action": "ok"
      },
      {
       "date": "20261027",
       "source_rows": 6000,
-      "local_rows": 3459,
-      "action": "fill_partial"
+      "local_rows": 6000,
+      "action": "ok"
      },
      {
       "date": "20261028",
       "source_rows": 6000,
-      "local_rows": 4581,
-      "action": "fill_partial"
+      "local_rows": 6000,
+      "action": "ok"
      },
      {
       "date": "20261029",
       "source_rows": 6000,
-      "local_rows": 4663,
-      "action": "fill_partial"
+      "local_rows": 6000,
+      "action": "ok"
      }
     ]
    },
@@ -5584,18 +5566,22 @@
    "USDCNH": {
     "local_latest": "20261029",
     "local_close": 6.6568,
-    "source_latest": "",
-    "source_close": null,
-    "close_diff_pct": null,
-    "verdict": "gap"
+    "source": "ECB",
+    "source_date": "2026-10-29",
+    "source_rate": 6.6616,
+    "close_diff_pct": 0.072,
+    "tolerance_pct": 1.5,
+    "verdict": "aligned"
    },
    "USDHKD": {
     "local_latest": "20261029",
     "local_close": 7.8462,
-    "source_latest": "",
-    "source_close": null,
-    "close_diff_pct": null,
-    "verdict": "gap"
+    "source": "ECB",
+    "source_date": "2026-10-29",
+    "source_rate": 7.8464,
+    "close_diff_pct": 0.003,
+    "tolerance_pct": 0.5,
+    "verdict": "aligned"
    }
   },
   "events": {

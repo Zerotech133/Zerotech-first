@@ -180,53 +180,57 @@ def audit_financials(tok, dry: bool) -> dict:
     return out
 
 
-def audit_fx() -> dict:
-    """汇率：东财源 vs 本地（最新日期 + 收盘价差）。"""
+def audit_fx(repo: Path | None = None) -> dict:
+    """汇率核对：本地（东财主源）vs ECB（frankfurter 独立源）。
+
+    CNH 与 CNY 存在约 0.1%-0.5% 基差，容差 1.5%；HKD 容差 0.5%。
+    """
     import urllib.request as _u
-    secids = {"USDCNH": "133.USDCNH", "USDHKD": "119.USDHKD"}
+    base = repo or REPO
+    fx_dir = base / "quant_backtest" / "data" / "tushare" / "fx_daily"
+    pairs = {"USDCNH": ("USDCNH_FXCM.parquet", "CNY", 1.5),
+             "USDHKD": ("USDHKD_FXCM.parquet", "HKD", 0.5)}
+    # ECB 最新参考价（独立源）
+    ecb = {}
+    ecb_date = ""
+    try:
+        req = _u.Request("https://api.frankfurter.app/latest?from=USD&to=CNY,HKD",
+                         headers={"User-Agent": "Mozilla/5.0"})
+        d = json.loads(_u.urlopen(req, timeout=25).read().decode())
+        ecb_date = d.get("date") or ""
+        ecb = d.get("rates") or {}
+    except Exception:  # noqa: BLE001
+        ecb = {}
     out = {}
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0",
-               "Referer": "https://quote.eastmoney.com/"}
-    for code, secid in secids.items():
-        f = DATA / "fx_daily" / ("%s_FXCM.parquet" % code)
+    for code, (fname, ccy, tol) in pairs.items():
+        f = fx_dir / fname
         if not f.exists():
             out[code] = {"verdict": "missing_local"}
             continue
-        tb = pq.read_table(f, columns=["trade_date", "close"]).to_pylist()
-        ds = [str(r["trade_date"]) for r in tb]
-        local_latest = max(ds) if ds else ""
-        local_close = None
-        for r in tb:
-            if str(r["trade_date"]) == local_latest:
-                local_close = r["close"]
-                break
-        # 源侧最新（最近 10 天窗口内取最后一个有数据日）
-        src_latest, src_close = "", None
-        from datetime import timedelta
-        today = datetime.now()
-        for i in range(10):
-            dt = (today - timedelta(days=i)).strftime("%Y%m%d")
-            try:
-                url = ("https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=%s"
-                       "&fields1=f1,f2,f3&fields2=f51,f53&klt=101&fqt=1&beg=%s&end=%s"
-                       % (secid, dt, dt))
-                req = _u.Request(url, headers=headers)
-                d = json.loads(_u.urlopen(req, timeout=20).read().decode())
-                k = ((d.get("data") or {}).get("klines")) or []
-                if k:
-                    parts = k[-1].split(",")
-                    src_latest, src_close = parts[0].replace("-", ""), float(parts[1])
-                    break
-            except Exception:  # noqa: BLE001
-                pass
-            time.sleep(0.2)
+        rows = pq.read_table(f, columns=["trade_date", "close"]).to_pylist()
+        if not rows:
+            out[code] = {"verdict": "empty"}
+            continue
+        local_latest = max(str(r["trade_date"]) for r in rows)
+        local_close = next(float(r["close"]) for r in rows if str(r["trade_date"]) == local_latest)
+        src_rate = ecb.get(ccy)
         diff = None
-        if src_close and local_close:
-            diff = round(abs(src_close - float(local_close)) / src_close * 100, 3)
+        if src_rate:
+            diff = round(abs(float(src_rate) - local_close) / float(src_rate) * 100, 3)
+        verdict = "aligned"
+        if not src_rate:
+            verdict = "no_source"
+        elif diff is not None and diff > tol:
+            verdict = "gap"
+        elif ecb_date and local_latest < ecb_date.replace("-", "")[:8]:
+            # 本地落后 ECB 超过 2 个自然日 → 缺口
+            from datetime import datetime as _dt
+            lag = (_dt.strptime(ecb_date, "%Y-%m-%d") - _dt.strptime(local_latest, "%Y%m%d")).days
+            if lag > 2:
+                verdict = "gap"
         out[code] = {"local_latest": local_latest, "local_close": local_close,
-                     "source_latest": src_latest, "source_close": src_close,
-                     "close_diff_pct": diff,
-                     "verdict": "aligned" if src_latest and local_latest == src_latest and (diff is None or diff < 0.5) else "gap"}
+                     "source": "ECB", "source_date": ecb_date, "source_rate": src_rate,
+                     "close_diff_pct": diff, "tolerance_pct": tol, "verdict": verdict}
     return out
 
 
