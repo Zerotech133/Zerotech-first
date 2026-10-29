@@ -2564,7 +2564,7 @@
           "analysis_type": "ai_methodology_research",
           "charter_detail": "把成功研究提炼为标准、能力、评测和知识条目，推动 router、Prompt 与判例库经评审后更新；模型按老田 10-21 异族裁决走 ChatGPT 6.0（OpenClaw 载体）。2026-10-26 实况：载体通道已可用（agent-config primary=deepseek/deepseek-chat 中转·非GPT6，标签如实标 openclaw_cloud/relay）；GPT6 真身待跨境网络，恢复后自动回切 openclaw_gpt；密钥在 OpenClaw secret store（env 非前置）",
           "llm_binding": "openai/gpt-6.0",
-          "binding_note": "由 org_enroll 补档（工单 WO-ORG-220 / 放行人 老田）",
+          "binding_note": "由 org_enroll 补档（工单 WO-ORG-220 / 放行人 老田）；2026-10-29 老田拍板 A：GPT-6 恢复前正式接受 DeepSeek 中转（effective=deepseek/deepseek-chat；declared target 保留，恢复后自动回切）",
           "tools": [
             "events",
             "datamart_read",
