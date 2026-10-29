@@ -1,19 +1,8 @@
 # -*- coding: utf-8 -*-
 """kg 页族 canvas/canvas_v2（api_kg 拆分第四批，纯搬运 self→h）。"""
 
-import json
-import os
-import sys
-import time
-import os as _os
 from api_common import (
-    QBT_DIR,
-    pill_nav,
-    _BTSEL_TAG,
-    _PILL, _PILL_ON,
-    CANDLE_CN,
-    _LABELS_FP, _CARD_FB_FP)
-import logging
+    pill_nav)
 
 def _kg_canvas_v2_page(h):
     """K234 画布 v2：AntV G6 v5 重做（拖拽/力导向/右键编辑全内置）。

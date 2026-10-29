@@ -2,17 +2,11 @@
 """kg 页族 events/doc/battle（api_kg 拆分第三批，纯搬运 self→h）。"""
 
 import json
-import os
 import sys
-import time
 import os as _os
 from api_common import (
     QBT_DIR,
-    pill_nav,
-    _BTSEL_TAG,
-    _PILL, _PILL_ON,
-    CANDLE_CN,
-    _LABELS_FP, _CARD_FB_FP)
+    pill_nav)
 import logging
 
 def _kg_battle_page(h):
