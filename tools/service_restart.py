@@ -16,7 +16,6 @@ from __future__ import annotations
 import argparse
 import json
 import subprocess
-import sys
 import time
 import urllib.request
 from pathlib import Path
@@ -38,17 +37,25 @@ def health(url: str = HEALTH, timeout: float = 5) -> dict:
 
 
 def start_task(task: str, runner=None) -> dict:
+    # runner 注入（测试/自定义执行器）签名：runner(task) -> {"ok":bool}|CompletedProcess
+    if runner is not None:
+        try:
+            r = runner(task)
+        except Exception as e:  # noqa: BLE001
+            return {"ok": False, "error": "%s: %s" % (type(e).__name__, str(e)[:120])}
+        if isinstance(r, dict):
+            return r
+        return {"ok": getattr(r, "returncode", 1) == 0,
+                "rc": getattr(r, "returncode", None)}
     cmd = ["powershell", "-NoProfile", "-Command",
            "Start-ScheduledTask -TaskName '%s'" % task]
-    fn = runner or subprocess.run
     try:
-        p = fn(cmd, capture_output=True, text=True, encoding="utf-8",
-               errors="replace", timeout=60)
+        p = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8",
+                           errors="replace", timeout=60)
     except Exception as e:  # noqa: BLE001
         return {"ok": False, "error": "%s: %s" % (type(e).__name__, str(e)[:120])}
-    return {"ok": getattr(p, "returncode", 1) == 0,
-            "rc": getattr(p, "returncode", None),
-            "stderr": (getattr(p, "stderr", "") or "")[-200:]}
+    return {"ok": p.returncode == 0, "rc": p.returncode,
+            "stderr": (p.stderr or "")[-200:]}
 
 
 def check(flag: Path = FLAG, url: str = HEALTH) -> dict:
@@ -73,7 +80,7 @@ def restart(flag: Path = FLAG, task: str = TASK, url: str = HEALTH,
         return {"ok": False, "error": "task_start_failed", "detail": st,
                 "flag": str(flag)}
     hp = health_fn or (lambda u: health(u))
-    deadline = time.time() + max(30, timeout)
+    deadline = time.time() + max(5, timeout)
     seen_healthy = False
     last = {}
     while time.time() < deadline:
