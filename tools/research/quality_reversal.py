@@ -119,7 +119,8 @@ def run(days: int = 1250, split: float = 0.6, cost_bps: int = 15) -> dict:
             w[k] = {"n": len(v), "ls": round(l, 4)}
         out["within_pe"][seg] = w
         # 检验3：高 ROE × PE 分组的均值（Q5 ROE 内再按 PE 高低）
-        q5_vals = [x for x in sub if x[1] >= sorted(y[1] for y in sub)[int(len(sub) * 0.8)]]
+        roe_q5_th = sorted(y[1] for y in sub)[int(len(sub) * 0.8)]
+        q5_vals = [x for x in sub if x[1] >= roe_q5_th]
         hi_pe = [x[2] for x in q5_vals if x[0] >= pe_hi]
         lo_pe = [x[2] for x in q5_vals if x[0] <= pe_lo]
         out["trap"][seg] = {"hi_roe_hi_pe": fs.stats(hi_pe), "hi_roe_lo_pe": fs.stats(lo_pe),
