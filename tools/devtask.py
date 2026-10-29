@@ -1364,6 +1364,27 @@ def _quality_gate(tid):
                   "-Suite", "fast"], timeout=1800)
     if rc != 0:
         return False, "test_gate fast rc=%d（日志 %s）" % (rc, _mg.LOG)
+
+    # 2026-10-29 门禁盲区（实证：tools 测试失败仍被 fast 放行）：
+    # 本单变更了 tools/tests/test_*.py 时，在任务 worktree 内先跑过这些文件。
+    changed_tools_tests = [f for f in files
+                           if f.startswith("tools/tests/test_") and f.endswith(".py")]
+    if changed_tools_tests:
+        wt = os.path.join(REPO, ".worktrees", tid)
+        if not os.path.exists(os.path.join(wt, ".git")):
+            subprocess.run(["git", "-C", REPO, "worktree", "add", wt, "task/%s" % tid],
+                           capture_output=True, text=True, encoding="utf-8", errors="replace")
+        if not os.path.exists(os.path.join(wt, ".git")):
+            return False, "任务 worktree 不可用，无法运行变更的 tools 测试：%s" % wt
+        print("  质量闸   … 跑本单变更的 tools 测试（%d 个）" % len(changed_tools_tests))
+        p = subprocess.run([sys.executable, "-m", "pytest", *changed_tools_tests,
+                            "-q", "--timeout=120", "-p", "no:cacheprovider"],
+                           cwd=wt, capture_output=True, text=True,
+                           encoding="utf-8", errors="replace")
+        if p.returncode != 0:
+            tail = ((p.stdout or "") + (p.stderr or "")).strip().splitlines()[-6:]
+            return False, "变更的 tools 测试未过 rc=%d：%s" % (
+                p.returncode, " | ".join(tail)[:300])
     return True, "fast 门通过（%d 文件）" % len(files)
 
 
