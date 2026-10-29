@@ -810,6 +810,36 @@ def main():
         )
     push_failed_alert(failed_rows, today, parse_fail_rows)
     open_failed_task(failed_rows, today)
+    _paper_auto(today)
+
+
+def _paper_auto(today):
+    """17:10 shadow 完成后自动跑 paper_daily（无新增计划任务）。
+
+    - 默认开；PAPER_AUTO=0/off/false/no 关闭；
+    - rehearsal/隔离模式跳过（防脏写真 paper 台账）；
+    - 失败只告警，不回滚/不影响 shadow。
+    """
+    if os.environ.get("PAPER_AUTO", "1").strip().lower() in ("0", "off", "false", "no"):
+        print("[paper] auto skipped: PAPER_AUTO=off")
+        return
+    if globals().get("REHEARSAL"):
+        print("[paper] auto skipped: rehearsal")
+        return
+    try:
+        root = str(BASE.parent)
+        if root not in sys.path:
+            sys.path.insert(0, root)
+        from tools.paper_daily import run as _paper_run
+        res = _paper_run(day=today)
+        if res.get("killed"):
+            print("[paper] auto killed: %s" % res.get("reason"))
+        else:
+            print("[paper] auto %s: decisions=%s recorded=%s blocked=%s reduced=%s nav=%s cash=%s" % (
+                today, res.get("decisions"), res.get("recorded"), res.get("blocked"),
+                res.get("reduced"), res.get("nav"), res.get("cash_weight")))
+    except Exception as exc:  # noqa: BLE001  paper 失败不阻塞 shadow
+        print("[warn] paper auto failed（shadow 不受影响）：%s" % str(exc)[:160])
 
 
 if __name__ == "__main__":

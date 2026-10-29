@@ -94,3 +94,10 @@ def test_daily_end_to_end(tmp_path):
                      ledger_path=str(tmp_path / "l.jsonl"),
                      config=str(REPO / "agent_platform" / "paper" / "paper_config.json"))
     assert res2["recorded"] == 0
+
+
+def test_run_shadow_has_paper_auto_hook():
+    src = (REPO / "agent_platform" / "run_shadow.py").read_text(encoding="utf-8")
+    assert "_paper_auto(today)" in src
+    assert "PAPER_AUTO" in src and "rehearsal" in src
+
