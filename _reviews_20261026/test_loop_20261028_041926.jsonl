@@ -1,0 +1,4 @@
+﻿{"ts":"2026-10-28T04:20:20+08:00","round":1,"suite":"portal","rc":0,"new_failures":0,"log":"C:\\Users\\t\\AppData\\Local\\Temp\\test_loop_portal_r1_20261028_041926.log"}
+{"ts":"2026-10-28T04:22:27+08:00","round":1,"suite":"kstock","rc":0,"new_failures":0,"log":"C:\\Users\\t\\AppData\\Local\\Temp\\test_loop_kstock_r1_20261028_041926.log"}
+{"ts":"2026-10-28T04:23:42+08:00","round":2,"suite":"portal","rc":0,"new_failures":0,"log":"C:\\Users\\t\\AppData\\Local\\Temp\\test_loop_portal_r2_20261028_041926.log"}
+{"ts":"2026-10-28T04:25:37+08:00","round":2,"suite":"kstock","rc":0,"new_failures":0,"log":"C:\\Users\\t\\AppData\\Local\\Temp\\test_loop_kstock_r2_20261028_041926.log"}

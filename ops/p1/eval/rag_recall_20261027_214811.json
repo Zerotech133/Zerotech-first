@@ -1,0 +1,232 @@
+{
+  "generated_at": "2026-10-27 21:48:11",
+  "k": 3,
+  "total": 8,
+  "hits": 8,
+  "recall": 1.0,
+  "target": 0.8,
+  "target_met": true,
+  "avg_ms": 204.3,
+  "cases": [
+    {
+      "id": "F01",
+      "hit": true,
+      "recall_ms": 1624.5,
+      "expect": [
+        "8795",
+        "llm/chat",
+        "网关",
+        "gateway"
+      ],
+      "top": [
+        {
+          "path": "docs/audit/2026-10-27_诸葛亮基本能力缺口与开源方案_v1.md",
+          "line": 37,
+          "score": 44.9923
+        },
+        {
+          "path": "docs/audit/2026-10-27_诸葛亮基本能力缺口与开源方案_v1.md",
+          "line": 169,
+          "score": 36.183
+        },
+        {
+          "path": "docs/PROJECT_DOCUMENTATION_INDEX.md",
+          "line": 97,
+          "score": 31.7879
+        }
+      ]
+    },
+    {
+      "id": "F02",
+      "hit": true,
+      "recall_ms": 2.5,
+      "expect": [
+        "OpenClaw",
+        "载体",
+        "deepseek",
+        "openclaw"
+      ],
+      "top": [
+        {
+          "path": "docs/plans/2026-10-27_诸葛P1-2_LlamaIndexRAG方案_v0.md",
+          "line": 73,
+          "score": 55.7661
+        },
+        {
+          "path": "docs/ops/2026-10-27_诸葛P1-1_MCP证据接入L5与引用率.md",
+          "line": 25,
+          "score": 53.3985
+        },
+        {
+          "path": "docs/audit/2026-10-27_诸葛亮基本能力缺口与开源方案_v1.md",
+          "line": 1,
+          "score": 45.2566
+        }
+      ]
+    },
+    {
+      "id": "F03",
+      "hit": true,
+      "recall_ms": 2.0,
+      "expect": [
+        "cards.jsonl",
+        "质询",
+        "challenge"
+      ],
+      "top": [
+        {
+          "path": "docs/audit/2026-10-27_诸葛亮基本能力缺口与开源方案_v1.md",
+          "line": 169,
+          "score": 53.6854
+        },
+        {
+          "path": "docs/legion/2026-10-27_诸葛质询通道离线MVP.md",
+          "line": 1,
+          "score": 50.1983
+        },
+        {
+          "path": "docs/plans/2026-10-27_诸葛亮四议题执行记录_v1.md",
+          "line": 49,
+          "score": 46.9657
+        }
+      ]
+    },
+    {
+      "id": "F04",
+      "hit": true,
+      "recall_ms": 1.7,
+      "expect": [
+        "binding",
+        "llm/chat",
+        "请求体"
+      ],
+      "top": [
+        {
+          "path": "docs/ops/2026-10-27_诸葛P1-2-M1_BM25v0.md",
+          "line": 25,
+          "score": 150.604
+        },
+        {
+          "path": "docs/ops/2026-10-27_诸葛P1-2-M1启用与观察.md",
+          "line": 13,
+          "score": 107.1088
+        },
+        {
+          "path": "docs/plans/2026-10-21_军团对外接口契约_v1.md",
+          "line": 37,
+          "score": 43.1846
+        }
+      ]
+    },
+    {
+      "id": "F05",
+      "hit": true,
+      "recall_ms": 1.0,
+      "expect": [
+        "plans",
+        "沙盘",
+        "W5",
+        "快照"
+      ],
+      "top": [
+        {
+          "path": "docs/legion/2026-10-27_诸葛质询通道离线MVP.md",
+          "line": 301,
+          "score": 93.5373
+        },
+        {
+          "path": "docs/legion/2026-10-27_诸葛质询W5快照契约_待田丰对表.md",
+          "line": 1,
+          "score": 85.0374
+        },
+        {
+          "path": "docs/legion/2026-10-27_诸葛质询W5快照契约_待田丰对表.md",
+          "line": 25,
+          "score": 69.0903
+        }
+      ]
+    },
+    {
+      "id": "F06",
+      "hit": true,
+      "recall_ms": 0.5,
+      "expect": [
+        "zhugeliang-review",
+        "board",
+        "质询"
+      ],
+      "top": [
+        {
+          "path": "docs/legion/2026-10-18_田丰与诸葛亮双profile设计稿.md",
+          "line": 133,
+          "score": 64.7082
+        },
+        {
+          "path": "docs/legion/2026-10-27_诸葛质询通道离线MVP.md",
+          "line": 1,
+          "score": 54.4023
+        },
+        {
+          "path": "docs/legion/2026-10-18_军团M0骨架施工单.md",
+          "line": 49,
+          "score": 53.8368
+        }
+      ]
+    },
+    {
+      "id": "F07",
+      "hit": true,
+      "recall_ms": 1.0,
+      "expect": [
+        "tasks_read",
+        "MCP",
+        "只读工具"
+      ],
+      "top": [
+        {
+          "path": "docs/ops/2026-10-27_诸葛能力底座P0-1_MCP只读工具.md",
+          "line": 1,
+          "score": 75.1223
+        },
+        {
+          "path": "docs/ops/2026-10-27_诸葛能力底座P0-1_MCP只读工具.md",
+          "line": 37,
+          "score": 66.5784
+        },
+        {
+          "path": "docs/audit/2026-10-27_诸葛亮基本能力缺口与开源方案_v1.md",
+          "line": 157,
+          "score": 55.2199
+        }
+      ]
+    },
+    {
+      "id": "F08",
+      "hit": true,
+      "recall_ms": 1.0,
+      "expect": [
+        "P2",
+        "3 问",
+        "质询",
+        "真模型"
+      ],
+      "top": [
+        {
+          "path": "docs/legion/2026-10-27_诸葛质询通道离线MVP.md",
+          "line": 313,
+          "score": 103.9385
+        },
+        {
+          "path": "docs/ops/2026-10-27_诸葛C3C1_L2任务安装与验证.md",
+          "line": 61,
+          "score": 80.3674
+        },
+        {
+          "path": "docs/legion/2026-10-27_诸葛质询通道离线MVP.md",
+          "line": 13,
+          "score": 44.8018
+        }
+      ]
+    }
+  ]
+}

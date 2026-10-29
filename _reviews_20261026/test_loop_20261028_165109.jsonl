@@ -1,0 +1,2 @@
+﻿{"ts":"2026-10-28T16:52:42+08:00","round":1,"suite":"portal","rc":0,"new_failures":0,"log":"C:\\Users\\t\\AppData\\Local\\Temp\\test_loop_portal_r1_20261028_165109.log"}
+{"ts":"2026-10-28T16:54:28+08:00","round":1,"suite":"kstock","rc":1,"new_failures":2,"log":"C:\\Users\\t\\AppData\\Local\\Temp\\test_loop_kstock_r1_20261028_165109.log"}

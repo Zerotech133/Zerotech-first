@@ -1,0 +1,12 @@
+{
+ "schema": "planner_rules/v1",
+ "enabled": true,
+ "signed_by": [
+  "老田"
+ ],
+ "accepted_count": 1,
+ "rules": {
+  "require_checks": true
+ },
+ "updated_at": "2026-10-28T22:48:15+0800"
+}

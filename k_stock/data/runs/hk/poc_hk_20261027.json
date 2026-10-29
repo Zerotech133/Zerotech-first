@@ -1,0 +1,152 @@
+[
+ {
+  "stock": "03690.HK",
+  "asof": "2026-10-27T15:30:00",
+  "outputs": {
+   "D1": {
+    "action": "BUY",
+    "confidence": 0.514
+   }
+  }
+ },
+ {
+  "stock": "01810.HK",
+  "asof": "2026-10-27T15:30:00",
+  "outputs": {
+   "D1": {
+    "action": "BUY",
+    "confidence": 0.454
+   }
+  }
+ },
+ {
+  "stock": "01299.HK",
+  "asof": "2026-10-27T15:30:00",
+  "outputs": {
+   "D1": {
+    "action": "BUY",
+    "confidence": 0.415
+   }
+  }
+ },
+ {
+  "stock": "02828.HK",
+  "asof": "2026-10-27T15:30:00",
+  "outputs": {
+   "D1": {
+    "action": "HOLD",
+    "confidence": 0.251
+   }
+  }
+ },
+ {
+  "stock": "02800.HK",
+  "asof": "2026-10-27T15:30:00",
+  "outputs": {
+   "D1": {
+    "action": "HOLD",
+    "confidence": 0.217
+   }
+  }
+ },
+ {
+  "stock": "09988.HK",
+  "asof": "2026-10-27T15:30:00",
+  "outputs": {
+   "D1": {
+    "action": "HOLD",
+    "confidence": 0.0
+   }
+  }
+ },
+ {
+  "stock": "00700.HK",
+  "asof": "2026-10-27T15:30:00",
+  "outputs": {
+   "D1": {
+    "action": "HOLD",
+    "confidence": 0.0
+   }
+  }
+ },
+ {
+  "stock": "03033.HK",
+  "asof": "2026-10-27T15:30:00",
+  "outputs": {
+   "D1": {
+    "action": "HOLD",
+    "confidence": 0.0
+   }
+  }
+ },
+ {
+  "stock": "00005.HK",
+  "asof": "2026-10-27T15:30:00",
+  "outputs": {
+   "D1": {
+    "action": "HOLD",
+    "confidence": 0.0
+   }
+  }
+ },
+ {
+  "stock": "02269.HK",
+  "asof": "2026-10-27T15:30:00",
+  "outputs": {
+   "D1": {
+    "action": "HOLD",
+    "confidence": 0.0
+   }
+  }
+ },
+ {
+  "stock": "00981.HK",
+  "asof": "2026-10-27T15:30:00",
+  "outputs": {
+   "D1": {
+    "action": "HOLD",
+    "confidence": 0.0
+   }
+  }
+ },
+ {
+  "stock": "00100.HK",
+  "asof": "2026-10-27T15:30:00",
+  "outputs": {
+   "D1": {
+    "action": "HOLD",
+    "confidence": 0.0
+   }
+  }
+ },
+ {
+  "stock": "00992.HK",
+  "asof": "2026-10-27T15:30:00",
+  "outputs": {
+   "D1": {
+    "action": "HOLD",
+    "confidence": 0.0
+   }
+  }
+ },
+ {
+  "stock": "01347.HK",
+  "asof": "2026-10-27T15:30:00",
+  "outputs": {
+   "D1": {
+    "action": "HOLD",
+    "confidence": 0.0
+   }
+  }
+ },
+ {
+  "stock": "06869.HK",
+  "asof": "2026-10-27T15:30:00",
+  "outputs": {
+   "D1": {
+    "action": "HOLD",
+    "confidence": 0.0
+   }
+  }
+ }
+]
