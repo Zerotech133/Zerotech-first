@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 45,
+  "workorders_doing": 44,
   "workorders_review": 6
  },
  "workorders": [
@@ -426,15 +426,6 @@
    "branch": "task/WO-LEGION-READY-20261029",
    "created": "2026-10-29 08:44:09",
    "project": "general"
-  },
-  {
-   "id": "WO-SEAT-PROD1-FIRST-20261029",
-   "desc": "PROD1 首单：LCS-1 产品化需求与验收标准 v0.1——用户/场景/交付/可测验收/依赖/试点退出/风险；数据未冻结只出条件清单；交付 deliverables/2026-10-29_PROD1_LCS1产品化需求与验收_v0.1.md；ACAD1 评审；截止 10-30。",
-   "status": "doing",
-   "owner": "PROD1",
-   "branch": "task/WO-SEAT-PROD1-FIRST-20261029",
-   "created": "2026-10-29 08:44:12",
-   "project": "quant"
   },
   {
    "id": "WO-GUANYU-P24-20261029",
@@ -2170,14 +2161,7 @@
    ],
    "experience": "20 年从业经验（策略产品化：验收、试点与交付）",
    "dept_name": "研究院",
-   "dept_cn_title": "太学",
-   "tasks": [
-    {
-     "id": "WO-SEAT-PROD1-FIRST-20261029",
-     "desc": "PROD1 首单：LCS-1 产品化需求与验收标准 v0.1——用户/场景/交付/可测验收/依赖/试点退出/风险；数据未冻结只出条件清单；交付 deliverables/2026-10-29_PROD1_LCS1产品化需求与验收_v0.1.md；ACAD1 评审；截止 10-30。",
-     "status": "doing"
-    }
-   ]
+   "dept_cn_title": "太学"
   },
   "A0A": {
    "id": "A0A",
