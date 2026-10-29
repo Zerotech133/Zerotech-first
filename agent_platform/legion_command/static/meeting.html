@@ -302,11 +302,17 @@ const AGENTS = {
 const GROUPS = { zhong:'pick-zhong', quant:'pick-quant', risk:'pick-risk', acad:'pick-acad', intel:'pick-intel', ops:'pick-ops', dev:'pick-dev' };
 let picked = [];
 
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+
 Object.entries(AGENTS).forEach(([id, a]) => {
   const el = document.createElement('div');
   el.className = 'pa'; el.id = 'pk-' + id;
   el.onclick = () => toggle(id);
-  el.innerHTML = '<span class="m ' + a.c + '">' + a.av + '</span>' + a.nm;
+  el.innerHTML = '<span class="m ' + esc(a.c) + '">' + esc(a.av) + '</span>' + esc(a.nm);
   document.getElementById(GROUPS[a.grp]).appendChild(el);
 });
 
@@ -320,7 +326,7 @@ function toggle(id) {
 function renderTable() {
   const t = document.getElementById('table');
   t.innerHTML = '<div class="seat host"><div class="av c-h">田</div><div class="nm">老田 · 主持</div><div class="md">签准人</div></div>'
-    + picked.map(id => { const a = AGENTS[id]; return '<div class="seat" onclick="toggle(\'' + id + '\')"><div class="av ' + a.c + '">' + a.av + '</div><div class="nm">' + a.nm + '</div><div class="md">' + a.md + '</div><div class="x">点此请离</div></div>'; }).join('');
+    + picked.map(id => { const a = AGENTS[id]; return '<div class="seat" onclick="toggle(\'' + esc(id) + '\')"><div class="av ' + esc(a.c) + '">' + esc(a.av) + '</div><div class="nm">' + esc(a.nm) + '</div><div class="md">' + esc(a.md) + '</div><div class="x">点此请离</div></div>'; }).join('');
 }
 const chat = document.getElementById('chat');
 function ensureChat() { const e = chat.querySelector('.empty'); if (e) e.remove(); }
@@ -329,7 +335,7 @@ const SRC_CHIP = {
   degraded:'<span class="src s-deg">降级通道</span>',
   script:  '<span class="src s-script">演示台词</span>'
 };
-function add(id, text, src) {
+function add(id, text, src, isHtml) {
   ensureChat();
   const isHost = id === 'HOST';
   const a = isHost ? null : AGENTS[id];
@@ -340,7 +346,7 @@ function add(id, text, src) {
     d.innerHTML = '<div class="av2 c-h">田</div><div class="body"><div class="who">老田 · 董事长</div><div class="content"></div></div>';
     d.querySelector('.content').textContent = text;
   } else {
-    d.innerHTML = '<div class="av2 ' + a.c + '">' + a.av + '</div><div class="body"><div class="who">' + a.nm + ' · ' + a.md + chip + '</div>' + text + '</div>';
+    d.innerHTML = '<div class="av2 ' + esc(a.c) + '">' + esc(a.av) + '</div><div class="body"><div class="who">' + esc(a.nm) + ' · ' + esc(a.md) + chip + '</div>' + (isHtml ? text : esc(text)) + '</div>';
   }
   chat.appendChild(d); chat.scrollTop = chat.scrollHeight;
   MINUTES.push({ id: id, text: text, src: src || (isHost ? 'host' : 'script') });
@@ -353,7 +359,7 @@ function ask(i) {
   picked.forEach((id, k) => setTimeout(() => {
     chatLive(id, QT[i], () => add(id, AGENTS[id].line, 'script'));
   }, 400 + k * 260));
-  setTimeout(() => add('A0', '<b>汇总（演示模板）：</b>发言是否收齐及归口责任均待核；会终仅存档纪要，订单仍待派工。', 'script'), 500 + picked.length * 900 + 1500);
+  setTimeout(() => add('A0', '<b>汇总（演示模板）：</b>发言是否收齐及归口责任均待核；会终仅存档纪要，订单仍待派工。', 'script', true), 500 + picked.length * 900 + 1500);
 }
 function send() {
   const v = document.getElementById('say').value.trim(); if (!v) return;

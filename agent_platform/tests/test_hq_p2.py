@@ -62,7 +62,8 @@ def test_meeting_binding_override(monkeypatch):
 
 def test_frontend_markers():
     h = (WT / "agent_platform" / "legion_command" / "static" / "meeting.html").read_text(encoding="utf-8")
-    for key in ("purpose: 'meeting'", "/api/hq/meeting/stats", "hqBoardStats", "loadHqStats"):
+    for key in ("purpose: 'meeting'", "/api/hq/meeting/stats", "hqBoardStats", "loadHqStats",
+                "function esc(", "isHtml ? text : esc(text)"):
         assert key in h, key
 
 
