@@ -1291,7 +1291,22 @@ class Handler(BaseHTTPRequestHandler):
                     _chunk({"role": "assistant", "content": ""})
                     for i in range(0, len(reply), 32):
                         _chunk({"content": reply[i : i + 32]})
-                    _chunk({}, "stop")
+                    stream_tool_calls = res.get("tool_calls") or []
+                    if stream_tool_calls:
+                        for idx, tc in enumerate(stream_tool_calls):
+                            fn = tc.get("function") or {}
+                            _chunk({"tool_calls": [{
+                                "index": idx,
+                                "id": tc.get("id") or "call_dsh_%d_%d" % (created, idx),
+                                "type": tc.get("type") or "function",
+                                "function": {
+                                    "name": fn.get("name") or "",
+                                    "arguments": fn.get("arguments") or "{}",
+                                },
+                            }]})
+                        _chunk({}, "tool_calls")
+                    else:
+                        _chunk({}, "stop")
                     self.wfile.write(b"data: [DONE]\n\n")
                     self.wfile.flush()
                 except (BrokenPipeError, ConnectionResetError) as exc:
