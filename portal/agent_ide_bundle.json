@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-29 21:06",
+ "generated": "2026-10-29 21:13",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -347,15 +347,6 @@
    "project": "quant"
   },
   {
-   "id": "WO-LEGION-GOVAI-LEN2-20261029",
-   "desc": "治理AI length 复燃：gov_ai max_tokens 4096→8192（被并发回退），重跑两动作验证",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-GOVAI-LEN2-20261029",
-   "created": "2026-10-29 20:56:54",
-   "project": "general"
-  },
-  {
    "id": "K-QUANT-20261029-IDETIMEOUT",
    "desc": "IDE请求超时+重试：模型75s/文件工具15s；超时/5xx重试1次；过程面板显示重试；失败不等死",
    "status": "doing",
@@ -371,6 +362,15 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-TOOLS-GATE-20261029",
    "created": "2026-10-29 21:00:53",
+   "project": "general"
+  },
+  {
+   "id": "WO-GUANYU-P39-20261029",
+   "desc": "跳过路径验证",
+   "status": "doing",
+   "owner": "GUANYU",
+   "branch": "task/WO-GUANYU-P39-20261029",
+   "created": "2026-10-29 21:06:55",
    "project": "general"
   }
  ],
@@ -6359,7 +6359,14 @@
    ],
    "experience": "30 年工程治理经验：漏洞分级与补丁流程、失败测试基线修复、编码规范与门禁落地、技术债清欠与重复功能合并；证据驱动、逐项闭环，只出报告与工单不自行合并，开发动作限独立 worktree 提交+跑测试并交 L2 人签。",
    "dept_name": "研究院",
-   "dept_cn_title": "太学"
+   "dept_cn_title": "太学",
+   "tasks": [
+    {
+     "id": "WO-GUANYU-P39-20261029",
+     "desc": "跳过路径验证",
+     "status": "doing"
+    }
+   ]
   },
   "HUANGZHONG": {
    "id": "HUANGZHONG",
@@ -7045,11 +7052,6 @@
     {
      "id": "WO-MERGE-GATE-FIX2-20261029",
      "desc": "修 merge_gated 变更tools测试检查：在任务worktree里跑（master无该文件→rc4）",
-     "status": "doing"
-    },
-    {
-     "id": "WO-LEGION-GOVAI-LEN2-20261029",
-     "desc": "治理AI length 复燃：gov_ai max_tokens 4096→8192（被并发回退），重跑两动作验证",
      "status": "doing"
     },
     {
