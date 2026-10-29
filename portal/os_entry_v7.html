@@ -26,4 +26,9 @@ function navigate(name){history.replaceState(null,'','#'+name);view(name)}
 function plan(){const raw=$('#intent').value.trim();if(!raw){$('#intent').focus();return}const text=raw.slice(0,400);const hits=Object.entries(keywords).filter(([key,re])=>re.test(text)).map(([key])=>key);const picks=hits.length?hits:['团队'];const chosen=picks.map(key=>all.find(d=>d[0]===key)).filter(Boolean);$('#summary').textContent='您说：“'+text+'”';$('#understand').textContent=hits.length?'按关键词演示关联：'+chosen.map(d=>d[1]).join('、')+'。这不是模型理解结果。':'未命中演示分类；先在团队板块查看相关工作。具体归口仍待人工确认。';$('#domains').textContent=chosen.map(d=>d[1]+(d[3]?'（已有入口）':'（待接）')).join('、');const actions=$('#handoff-actions');actions.replaceChildren();chosen.forEach(d=>{if(!d[3])return;const a=document.createElement('a');a.href=d[3];a.textContent='查看'+d[1]+' →';actions.append(a)});const b=document.createElement('button');b.type='button';b.textContent='在工作平台定位 →';b.addEventListener('click',()=>navigate('work'));actions.append(b);$('#handoff').hidden=false;$('#work-focus').replaceChildren();const title=document.createElement('h2'),description=document.createElement('p');title.textContent='当前焦点 · 原型推演';description.textContent='输入目标：“'+text+'”；对应 '+chosen.map(d=>d[1]).join('、')+'。仅页面内定位，不代表已经派单或执行。';$('#work-focus').append(title,description);document.querySelectorAll('.card').forEach(el=>el.classList.toggle('selected',picks.includes(el.dataset.domain)));$('#handoff').scrollIntoView({behavior:'smooth',block:'nearest'})}
 renderCards();$('#plan').addEventListener('click',plan);document.querySelectorAll('[data-example]').forEach(el=>el.addEventListener('click',()=>{$('#intent').value=el.dataset.example;plan()}));document.querySelectorAll('.nav button').forEach(el=>el.addEventListener('click',()=>navigate(el.dataset.view)));window.addEventListener('hashchange',()=>view(location.hash.slice(1)));view(location.hash.slice(1));
 })();
-</script></body></html>
+</script>
+<!-- OS-UI-UNIFY:theme -->
+<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
+<!-- OS-UI-UNIFY:drill -->
+<script defer src="/static/os_drill.js" data-os-unify="1"></script>
+</body></html>

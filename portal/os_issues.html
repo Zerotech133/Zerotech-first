@@ -70,4 +70,9 @@ async function addIssue(){const t=$('#t').value.trim();if(!t){toast('写问题�
 try{await api('/api/issues',{act:'add',title:t,severity:$('#sev').value,board:$('#board').value,owner:$('#own').value,evidence:'前端登记'});
 $('#t').value='';toast('🆕 已登记（议会厅已记账）');load()}catch(e){toast('失败:'+e.message)}}
 load();setInterval(load,30000);
-</script></body></html>
+</script>
+<!-- OS-UI-UNIFY:theme -->
+<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
+<!-- OS-UI-UNIFY:drill -->
+<script defer src="/static/os_drill.js" data-os-unify="1"></script>
+</body></html>

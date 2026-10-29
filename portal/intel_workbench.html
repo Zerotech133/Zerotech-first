@@ -78,5 +78,9 @@ else{view.innerHTML=`<div class="eyebrow">${safe(group.number)} / ${safe(group.t
 document.title=`${item?item.name+' · ':group?group.name+' · ':''}情报工作台｜零界`;window.scrollTo(0,0)}
 function go(target){if(location.hash.slice(1)===target)render();else location.hash=target}document.addEventListener('click',e=>{const b=e.target.closest('button[data-go]');if(b)go(b.dataset.go);const row=e.target.closest('button[data-evidence]');if(row){selectedEvidence=Number(row.dataset.evidence);evidenceDetail()}});document.addEventListener('submit',e=>{if(e.target.id==='evidence-form'){e.preventDefault();loadEvidence()}});addEventListener('hashchange',render);render();
 </script>
+<!-- OS-UI-UNIFY:theme -->
+<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
+<!-- OS-UI-UNIFY:drill -->
+<script defer src="/static/os_drill.js" data-os-unify="1"></script>
 </body>
 </html>

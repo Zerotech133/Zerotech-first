@@ -98,5 +98,9 @@ document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{document.querySelect
 fetch('data/ledger.json').then(r=>r.json()).then(d=>{LED=d;render();}).catch(()=>{document.getElementById('body').innerHTML='<div class="empty">台账数据加载失败（本地需 8734 入口 / 公网需访问码）</div>';});
 </script>
 <script src="/static/dataops_link.js" data-entity="ledger:riskguard" defer></script>
+<!-- OS-UI-UNIFY:theme -->
+<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
+<!-- OS-UI-UNIFY:drill -->
+<script defer src="/static/os_drill.js" data-os-unify="1"></script>
 </body>
 </html>

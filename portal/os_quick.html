@@ -441,5 +441,9 @@ try{ const qs=new URLSearchParams(location.search); if(qs.get('text')==='1'){ TE
 if(TEXT_ONLY){ $('b-start').textContent='⌨️ 纯文字：在输入框写一句'; showTypePanel(); if(PREFILL && $('ask')){ $('ask').value=PREFILL; } setStatus(PREFILL?'已带入一句话，点“出卡”即可':'纯文字验收模式：写一句→出卡→按这个办→接受/改'); }
 checkAsr();
 </script>
+<!-- OS-UI-UNIFY:theme -->
+<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
+<!-- OS-UI-UNIFY:drill -->
+<script defer src="/static/os_drill.js" data-os-unify="1"></script>
 </body>
 </html>

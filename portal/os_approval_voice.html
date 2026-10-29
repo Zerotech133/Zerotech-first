@@ -38,8 +38,7 @@
   .v.PASS,.v.ISOLATED_ONLY,.v.CONTROLLED_L2_APPROVED{color:#227a4b}
   .v.BLOCKED,.v.FAIL{color:#b3402e}
   #err{color:#b3402e;font-size:13px;white-space:pre-wrap}
-</style>
-</head>
+</style></head>
 <body>
 <main class="wrap">
   <h1>语音审批台 · 说着走完全流程</h1>
@@ -331,5 +330,9 @@ $('txt').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault()
   else say('语音审批台就绪。请说「载入事项 202610250003」，或打开带 ?item= 的链接。');
 })();
 </script>
+<!-- OS-UI-UNIFY:theme -->
+<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
+<!-- OS-UI-UNIFY:drill -->
+<script defer src="/static/os_drill.js" data-os-unify="1"></script>
 </body>
 </html>

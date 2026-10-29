@@ -99,4 +99,9 @@ async function fetchFoundation(){try{const r=await get('/data/task_exit_audit/ta
 
 async function refresh(){const run=++sequence,keys=Object.keys(endpoints);$('#freshness').textContent='正在核对六个只读来源…';const responses=await Promise.allSettled(keys.map(k=>get(endpoints[k])));if(run!==sequence)return;const routeBrief=await fetchRouteBrief();if(run!==sequence)return;const evidencePayload=await fetchEvidence();if(run!==sequence)return;const foundationPayload=await fetchFoundation();if(run!==sequence)return;const raw={},states=keys.map((key,i)=>{const x=responses[i],ok=x.status==='fulfilled';raw[key]=ok?x.value:null;return{key,path:endpoints[key],ok,reason:ok?'接口可读不代表子源完整':String(x.reason&&x.reason.message||'未知错误')}});let projection=null;try{if(window.OSIntegratedProjection&&typeof window.OSIntegratedProjection.build==='function')projection=window.OSIntegratedProjection.build(raw,new Date())}catch(error){$('#freshness').textContent='投影失败：'+String(error&&error.message||error)}render(states,projection,raw,routeBrief,evidencePayload);renderFoundation(foundationPayload)}renderEvidencePending();if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',renderEvidenceSample,{once:true})}else{renderEvidenceSample()};$('#refresh').addEventListener('click',refresh);$('#board-refresh').addEventListener('click',refresh);refresh();
 })();
-</script><script src="/static/ui_palette.js" defer></script></body></html>
+</script><script src="/static/ui_palette.js" defer></script>
+<!-- OS-UI-UNIFY:theme -->
+<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
+<!-- OS-UI-UNIFY:drill -->
+<script defer src="/static/os_drill.js" data-os-unify="1"></script>
+</body></html>

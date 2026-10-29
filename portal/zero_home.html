@@ -111,4 +111,9 @@ const items=[];
 document.getElementById('k-items').textContent=items.length;
 document.getElementById('live-items').innerHTML=items.map(([c,t,s])=>'<div class="item"><span class="dot '+c+'"></span><div><b>'+t+'</b><small>'+s+'</small></div></div>').join('')||'<div class="item"><span class="dot y"></span><div><b>暂无事项</b><small>在议会厅一句话发起</small></div></div>'}
 loadLive();setInterval(loadLive,30000);
-</script></body></html>
+</script>
+<!-- OS-UI-UNIFY:theme -->
+<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
+<!-- OS-UI-UNIFY:drill -->
+<script defer src="/static/os_drill.js" data-os-unify="1"></script>
+</body></html>

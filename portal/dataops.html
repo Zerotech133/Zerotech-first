@@ -444,5 +444,9 @@ async function openDrawer(nid){
 function closeDrawer(){ document.getElementById('drawer').classList.remove('open'); }
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeDrawer(); });
 </script>
+<!-- OS-UI-UNIFY:theme -->
+<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
+<!-- OS-UI-UNIFY:drill -->
+<script defer src="/static/os_drill.js" data-os-unify="1"></script>
 </body>
 </html>

@@ -142,8 +142,7 @@ tr:last-child td{border-bottom:none}
   border:1px solid #67282a;border-radius:10px;background:#1a1013}
 @media(max-width:960px){.kpis{grid-template-columns:repeat(2,1fr)}
   .g-main,.g-low,.tempo-cols{grid-template-columns:1fr}}
-</style>
-</head>
+</style></head>
 <body>
 <div class="wrap">
   <header>
@@ -554,5 +553,9 @@ async function loadCoverage(){
   load();
 })();
 </script>
+<!-- OS-UI-UNIFY:theme -->
+<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
+<!-- OS-UI-UNIFY:drill -->
+<script defer src="/static/os_drill.js" data-os-unify="1"></script>
 </body>
 </html>

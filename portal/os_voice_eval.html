@@ -225,5 +225,9 @@ $('b-copy').onclick=async()=>{ const t=JSON.stringify(window.__RESULT__||{},null
 $('b-again').onclick=()=>{ IDX=0; RESULTS=[]; $('summary').hidden=true; render(); };
 render(); checkAsr();
 </script>
+<!-- OS-UI-UNIFY:theme -->
+<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
+<!-- OS-UI-UNIFY:drill -->
+<script defer src="/static/os_drill.js" data-os-unify="1"></script>
 </body>
 </html>

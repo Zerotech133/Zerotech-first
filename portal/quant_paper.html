@@ -43,8 +43,7 @@ tr:hover td{background:rgba(88,166,255,.05)}
 @media(max-width:760px){.cards{grid-template-columns:repeat(2,1fr)}.wrap{padding:10px}}
 </style>
 <script src="/static/nav.js" defer></script>
-<script src="/static/shortscreen.js" defer></script>
-</head>
+<script src="/static/shortscreen.js" defer></script></head>
 <body>
 <div class="wrap">
   <div class="head">
@@ -112,5 +111,9 @@ async function load(){
 document.getElementById('btn-refresh').addEventListener('click',load);
 load(); setInterval(load,30000);
 </script>
+<!-- OS-UI-UNIFY:theme -->
+<link rel="stylesheet" href="/static/os_theme.css" data-os-unify="1">
+<!-- OS-UI-UNIFY:drill -->
+<script defer src="/static/os_drill.js" data-os-unify="1"></script>
 </body>
 </html>
