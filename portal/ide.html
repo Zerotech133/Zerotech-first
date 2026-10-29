@@ -1461,7 +1461,9 @@ async function send(){
     let txt = "";
     let channel = "gateway";
     let finalText = "";
-    for(let round=0; round<4; round++){
+    const toolTrace = [];
+    for(let round=0; round<3; round++){
+      r1.el.innerHTML = "🔧 正在读取项目文件（第 "+(round+1)+" 轮）…";
       const r = await fetch("http://127.0.0.1:8796/v1/chat/completions", {
         method:"POST",
         headers:{"Content-Type":"application/json", "X-DSH-Agent":aid},
@@ -1477,15 +1479,41 @@ async function send(){
       const obsParts = [];
       for(const call of calls.slice(0, 6)){
         const obs = await fsTool(call.tool, call.args);
+        toolTrace.push({tool:call.tool, args:call.args||{}, ok:!!obs.ok,
+                        count:(obs.items||obs.hits||[]).length, error:obs.error||""});
         addLog("fs tool → "+call.tool+" "+JSON.stringify(call.args||{}).slice(0,160), "lg-b");
         obsParts.push("[工具结果 "+call.tool+" "+JSON.stringify(call.args||{})+"]\n" + JSON.stringify(obs).slice(0, 12000));
       }
       messages.push({role:"assistant",content:txt});
       messages.push({role:"user",content:obsParts.join("\n---\n") + "\n\n以上工具已执行。现在只输出最终自然语言答复，禁止再输出工具 JSON 或代码块。"});
-      if(round === 3) finalText = "";
     }
     if(!finalText || parseToolCalls(finalText).length){
-      finalText = "(工具已执行，模型未给出最终答复)";
+      // 工具轮次结束后再强制一次“只总结、不调工具”的收口请求
+      try{
+        r1.el.innerHTML = "🧾 工具读取完成，正在生成总结…";
+        const finalMessages = [
+          {role:"system", content:B.agents[aid].prompt + "\n\n[最终答复阶段] 禁止调用任何工具；只输出自然语言总结：读取了什么、关键发现、未读取范围、下一步建议。"},
+          ...messages.slice(1),
+          {role:"user", content:"工具读取阶段已结束。不要再输出 JSON；请直接总结已获得的信息，并明确说明受只读工具/轮次限制未能覆盖的内容。"}
+        ];
+        const fr = await fetch("http://127.0.0.1:8796/v1/chat/completions", {
+          method:"POST",
+          headers:{"Content-Type":"application/json", "X-DSH-Agent":aid},
+          body: JSON.stringify({ model: m, stream:false, messages: finalMessages })
+        });
+        const fd = await fr.json();
+        if(fr.ok){
+          const ft = (fd.choices&&fd.choices[0]&&fd.choices[0].message&&fd.choices[0].message.content)||"";
+          if(ft && !parseToolCalls(ft).length) finalText = ft;
+        }
+      }catch(e){}
+    }
+    if(!finalText || parseToolCalls(finalText).length){
+      const lines = toolTrace.map((x, i) =>
+        (i+1)+". "+x.tool+" "+JSON.stringify(x.args)+" → "+(x.ok ? ("ok"+(x.count?(" · "+x.count+" 项"):"")) : ("失败: "+x.error)));
+      finalText = "已执行 "+toolTrace.length+" 次只读文件操作，但没有在限定轮次内得到模型的自然语言总结。\n\n"
+        + "读取记录：\n" + (lines.length ? lines.join("\n") : "（无成功工具调用）")
+        + "\n\n这次请求范围是“所有研发计划和代码”，超出单次工具轮次上限；请缩小到具体目录或文件（例如 docs/ 或某个 .py 文件）。";
     }
     txt = finalText;
     const sec = ((Date.now()-t0)/1000).toFixed(1);
