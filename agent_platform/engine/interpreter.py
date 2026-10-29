@@ -246,6 +246,8 @@ class Interpreter:
             "decision": decision,
             "statements": ctx["statements"],
             "status": ctx["status"],
+            # 2026-10-29 outcome 台账：声明绑定模型（按节点），供 run_shadow 落账
+            "models": {a.get("node_key"): a.get("llm_binding") for a in self.team.agents},
         }
 
     # ---------- 调度 ----------
