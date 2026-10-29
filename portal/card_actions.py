@@ -36,6 +36,10 @@ _LOCK = threading.Lock()
 # kind: card=卡片按钮回调 / h5=H5 页面动作 / cmd=bot 文本指令 / legacy=直连未过闸
 # handler: 消费链路（描述性，非可调用——老链各自分发，仅 tune_* 走 dispatch）
 DEFAULT_ACTIONS = {
+    # S2 签字卡（D3）：value {"tag":"approval:approve|reject|escalate","task":...}
+    "approval_approve": ("签字 · 批准（S2）", "审批签字", "card", "bot ws → _handle_approval_card → approval_control"),
+    "approval_reject": ("签字 · 驳回", "审批签字", "card", "同上"),
+    "approval_escalate": ("签字 · 转人工/升级", "审批签字", "card", "同上"),
     # 调优闭环（v3 新链：value {"action_id":"tune_approve","req_id":...}）
     "tune_approve": (
         "审批 · 通过",

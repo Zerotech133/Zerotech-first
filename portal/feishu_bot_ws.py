@@ -1285,6 +1285,20 @@ def handle_cmd(text, message_id, open_id="", chat_type="p2p"):
 
 
 # ── ws 主程序 ───────────────────────────────────────────────
+def _handle_approval_card(val, sender):
+    """D3 接线：approval:* 卡片按钮 → approval_control.handle_action（只记账/回执）。
+
+    红线：不触发重启/发布/权限变更。白名单取环境变量 APPROVAL_OPERATORS
+    （逗号分隔 open_id）；未配置时记录全部操作人（pilot，审计可查）。
+    """
+    import approval_control
+
+    allowed = str(os.environ.get("APPROVAL_OPERATORS", "")).strip()
+    allowed_ops = {x for x in allowed.split(",") if x} or None
+    payload = {"operator": {"open_id": sender}, "action": {"value": val}}
+    return approval_control.handle_action(payload, allowed_ops=allowed_ops)
+
+
 def _handle_card(val, sender):
     """卡片动作执行体（线程侧）：tag 分发 + 回执。
     K-STOCK-137：lark_oapi ws 是 asyncio 单循环，on_card 若同步执行
@@ -1331,6 +1345,15 @@ def _handle_card(val, sender):
             log("card v3:%s ok=%s (sender=%s)" % (aid, ok, sender))
             return
         tag = val.get("tag", "")
+        if tag.startswith("approval:"):
+            res = _handle_approval_card(val, sender)
+            if res.get("ok"):
+                dup = "（重复点击已忽略）" if res.get("duplicate") else ""
+                send_text("✅ 审批已记录：%s %s%s" % (res.get("action"), res.get("task"), dup))
+            else:
+                send_text("❌ 审批未记录：%s" % str(res.get("error"))[:100])
+            log("card approval ok=%s action=%s" % (res.get("ok"), res.get("action")))
+            return
         if tag.startswith("dim:"):
             _, dim, code = tag.split(":", 2)
             f, _ = get_facts(code)
