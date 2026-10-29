@@ -330,6 +330,9 @@ def build_report(conn: sqlite3.Connection, band: float) -> dict:
 ASSESS_MIN_N = 1000
 ASSESS_BEAR_MAX_ACC = 0.53
 ASSESS_EDGE_PP = 0.02
+# 2026-10-29 PRICE-DEMOTE：事件类型样本门槛与低信号阈值（n>=100 且 acc<50% → low_signal）
+ASSESS_EVENT_MIN_N = 100
+ASSESS_EVENT_LOW_RATE = 0.50
 
 
 def assess_report(report: dict) -> dict:
@@ -355,6 +358,16 @@ def assess_report(report: dict) -> dict:
     bull_ok, bull_why = _usable(bull, ASSESS_MIN_N,
                                 (base_rate or 0.5) + ASSESS_EDGE_PP)
     bear_ok, bear_why = _usable(bear, ASSESS_MIN_N, ASSESS_BEAR_MAX_ACC)
+    # 事件类型可用性（2026-10-29 PRICE-DEMOTE；决策见 docs/plans 判定中台拍板文档）
+    event_flags = {}
+    for ev, sub in (report.get("by_event_type") or {}).items():
+        ev_n = int(sub.get("n") or 0)
+        ev_rate = sub.get("rate")
+        if ev_n < ASSESS_EVENT_MIN_N or ev_rate is None:
+            continue
+        if ev_rate < ASSESS_EVENT_LOW_RATE:
+            event_flags[ev] = {"n": ev_n, "accuracy": ev_rate, "use": "low_signal",
+                               "note": "方向准确率<50%，不作方向信号（价格类等噪声事件）"}
     return {
         "min_n": ASSESS_MIN_N,
         "edge_pp": ASSESS_EDGE_PP,
@@ -374,6 +387,8 @@ def assess_report(report: dict) -> dict:
                     "note": "neutral 仅作无方向判定；超出带宽者标记为高波动事件，不构成方向信号"},
         "confidence": {"decision_weight": False,
                        "note": "conf 分桶准确率非单调、corr(conf,hit)≈0：保留入账但退出决策权重"},
+        "event_types": event_flags,
+        "low_signal_event_types": sorted(event_flags),
     }
 
 
