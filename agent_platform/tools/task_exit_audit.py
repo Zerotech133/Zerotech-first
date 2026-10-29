@@ -101,6 +101,8 @@ TASK_RC_SEMANTICS: dict[tuple[str, int], tuple[str, str]] = {
     ("DeadlineWatch", 2): ("known_baseline", "设计内 pending(上游锚点未到，非脚本失败)"),
     ("x5-picks-publish-check", 2): ("known_baseline", "设计内线上滞后告警(DEPLOY_PENDING，非崩溃)"),
     ("ObservePointReviewOnce", 1): ("known_baseline", "一次性任务已过期(next_run 空，非当前失败)"),
+    # A3 已泄露凭据 canary：rc=1 = 仍命中旧指纹（接受风险期间的预期告警），不是脚本失败。
+    ("A3RotationCanary", 1): ("alert_found", "旧凭据指纹告警(by-design，非任务失败)"),
 }
 
 
