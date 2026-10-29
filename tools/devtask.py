@@ -1305,6 +1305,56 @@ def _release_merge_lock(path):
         return False
 
 
+MERGE_RACE_MARKERS = (
+    "cannot lock ref",
+    "update_ref failed",
+    "unable to update local ref",
+    "MERGE_HEAD exists",
+    "unmerged files",
+)
+
+
+def _is_merge_head_race(msg: str) -> bool:
+    """判断 git merge 失败是否属于并行会话 HEAD/index 竞态（可安全重试）。"""
+    m = (msg or "").lower()
+    return any(k.lower() in m for k in MERGE_RACE_MARKERS)
+
+
+def _merge_with_retry(tid, branch, desc, tries=3, sleep_fn=None, git_fn=None,
+                      emit_fn=None):
+    """HEAD 竞态自动 abort+退避重试；真实冲突/其它错误立即抛出不重试。"""
+    import time as _time
+    sleep_fn = sleep_fn or _time.sleep
+    git_fn = git_fn or _git
+    emit_fn = emit_fn or _emit
+    last = None
+    for i in range(1, max(1, tries) + 1):
+        try:
+            git_fn("merge", "--no-ff", branch, "-m",
+                   "merge task/%s: %s" % (tid, desc))
+            return True
+        except SystemExit as e:
+            last = e
+            msg = str(e)
+            if not _is_merge_head_race(msg):
+                raise
+            # 清理半合并状态（含 index.lock 由 git 自行处理；无合并时 abort 报错忽略）
+            try:
+                _git("merge", "--abort")
+            except SystemExit:
+                pass
+            if i < max(1, tries):
+                print("[merge-retry] 检测到 HEAD/index 竞态，%d/%d 重试（退避 %ds）"
+                      % (i, tries, 5 * i))
+                try:
+                    emit_fn("guard_fail", tid,
+                            "merge HEAD race，自动重试 %d/%d" % (i, tries))
+                except Exception:  # noqa: BLE001
+                    pass
+                sleep_fn(5 * i)
+    raise last if last else SystemExit("merge failed")
+
+
 def _auto_rebuild_ide_bundle(tid):
     """merge 后自动重建 portal/agent_ide_bundle.json（失败只告警，不影响合并）。"""
     try:
@@ -1521,8 +1571,7 @@ def cmd_merge(tid, *flags):
     if lock is None:
         return 1
     try:
-        _git("merge", "--no-ff", t["branch"], "-m",
-             "merge task/%s: %s" % (tid, t["desc"]))
+        _merge_with_retry(tid, t["branch"], t["desc"])
         # 合并后不自动删除 worktree/分支：删除不可逆，只提示、留给人确认执行。
         t["status"] = "done"
         t["merged"] = time.strftime("%F %T")
