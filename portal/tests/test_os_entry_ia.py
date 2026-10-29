@@ -42,3 +42,10 @@ def test_keeps_evidence_contract_hooks():
     assert "OSResultContract" in HTML
     assert "/static/os_zhuge_adapter.js" in HTML
     assert "/api/zhuge/brief" in HTML
+
+
+def test_zhice_entry_card():
+    assert "智策量化驾驶舱" in HTML
+    assert "127.0.0.1:5175" in HTML
+    assert "智策账户" in HTML
+    assert "a.target='_blank'" in HTML
