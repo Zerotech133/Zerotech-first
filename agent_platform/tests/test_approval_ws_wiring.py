@@ -2,9 +2,11 @@
 """D3 接线冒烟测试：ws 卡片 approval:* 分支 + 动作注册表登记。"""
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "portal"))
 WS = ROOT / "portal" / "feishu_bot_ws.py"
 CA = ROOT / "portal" / "card_actions.py"
 
@@ -27,7 +29,7 @@ def test_actions_registered():
 
 
 def test_approval_control_pure_contract():
-    import portal.approval_control as ac
+    import approval_control as ac
     tmp = Path(__file__).parent / "_tmp_approvals.jsonl"
     if tmp.exists():
         tmp.unlink()
