@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 04:39",
+ "generated": "2026-10-30 06:17",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 27,
+  "workorders_doing": 29,
   "workorders_review": 7
  },
  "workorders": [
@@ -318,6 +318,24 @@
    "branch": "task/K-QUANT-20261030-OHUI",
    "created": "2026-10-30 03:16:25",
    "project": "quant"
+  },
+  {
+   "id": "WO-LEGION-PAGESHELL4-20261030",
+   "desc": "P1：模板footer/视觉门update；quant/intel UI Kit组件化",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-PAGESHELL4-20261030",
+   "created": "2026-10-30 06:13:06",
+   "project": "general"
+  },
+  {
+   "id": "WO-INV-BJ-POOL-20261030",
+   "desc": "北交所符号修复(norm_symbol bj)+920378 复盘恢复+run_shadow 17:10 后自动池复盘(POOL_REVIEW_AUTO)+测试",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-INV-BJ-POOL-20261030",
+   "created": "2026-10-30 06:16:47",
+   "project": "portal"
   }
  ],
  "coder_traces": [
@@ -7031,6 +7049,11 @@
     {
      "id": "WO-AUDIT-FIX-20261029",
      "desc": "审计修复：hq_stats双计数、hk_r1_daily台账表格插入+去重+锁、kg zip strict",
+     "status": "doing"
+    },
+    {
+     "id": "WO-LEGION-PAGESHELL4-20261030",
+     "desc": "P1：模板footer/视觉门update；quant/intel UI Kit组件化",
      "status": "doing"
     }
    ]
