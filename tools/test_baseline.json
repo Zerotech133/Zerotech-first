@@ -29,12 +29,8 @@
       "agent_platform/tests/test_legion_command.py::test_activity_maps_known_prefixes"
     ],
     "_flaky_note": "2026-10-27 全量实测已知 2 项顺序 flaky；2026-10-28 复测：minutes_bad_length/monday_read_only 单项通过全量失败已补；sandbox_real_skill_verify/sign_verify/owner_domain空owner/activity×2 均单项通过、全量失败，已补入 flaky（跟踪，回归时移除）。",
-    "env_failures": [
-      "agent_platform/tests/test_skill_registry.py::test_audit_uses_registry_for_real_profile",
-      "agent_platform/tests/test_evals.py::test_builtins_all_pass",
-      "agent_platform/tests/test_evals.py::test_smoke_run_via_subprocess"
-    ],
-    "_env_note": "三条依赖用户级 Hermes 能力卡/技能执行环境（~/.hermes/profiles/zhaoyun/skills/CAPABILITIES.json 2026-10-27 生成、超 48h；smoke 中 cap.* 检查 9/13 失败）→ 需 Hermes 侧生成器刷新；生效后移出本清单。"
+    "env_failures": [],
+    "_env_note": "2026-10-29：赵云能力卡已保守刷新（generated_at=2026-10-29T14:23:44+08:00，audit ok/drift=0），原 3 条 env 登记已移除；若能力卡再陈旧（>48h）需重跑 tools/refresh_hermes_capabilities.py --apply。"
   },
   "quant_backtest/tests": {
     "known_failures": [],
