@@ -373,6 +373,7 @@ try{
       <textarea id="q" placeholder="给该 Agent 发一条测试消息…输入 @ 引用 Agent 或代码文件（🎙️ 本地语音）"></textarea>
       <button class="send" id="mic" title="本地语音输入（Windows 离线识别，不上传云端）" style="background:#1f2b3a;border:1px solid #33506f;border-radius:8px;padding:0 10px;color:#dbe8f5;cursor:pointer;margin-right:6px">🎙️</button>
       <button class="send" id="send" onclick="send()" disabled>发送</button>
+      <button class="send" id="stop" onclick="cancelSend()" style="display:none;background:#3a1f1f;border-color:#7a2a2e;color:#ffb0b0;margin-left:6px">停止</button>
     </div>
     <div class="dbg-note">经 nginx /ollama/ 反代直连本地 Ollama(11434) · 9b 约 10-60s · 此调试不发工单不落记忆 · 每Agent独立会话切人保留历史</div>
   </div>
@@ -1399,11 +1400,15 @@ const IDE_TOOL_RULES = [
   "不要声称无法访问项目文件夹；工具拒绝时说明路径超出只读范围。"
 ].join("\n");
 
-async function fetchJsonTimeout(url, opts, timeoutMs, retries, onRetry){
+async function fetchJsonTimeout(url, opts, timeoutMs, retries, onRetry, externalSignal){
   let lastErr = null;
   for(let attempt = 0; attempt <= retries; attempt++){
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+    if(externalSignal){
+      if(externalSignal.aborted){ ctrl.abort(); }
+      else externalSignal.addEventListener("abort", () => ctrl.abort(), {once:true});
+    }
     try{
       const r = await fetch(url, Object.assign({}, opts, {signal: ctrl.signal}));
       const d = await r.json();
@@ -1415,6 +1420,9 @@ async function fetchJsonTimeout(url, opts, timeoutMs, retries, onRetry){
       return {r, d};
     }catch(e){
       const timeout = e && e.name === "AbortError";
+      if(timeout && externalSignal && externalSignal.aborted){
+        throw new Error("用户已停止");
+      }
       lastErr = new Error(timeout ? ("请求超时（"+(timeoutMs/1000)+"s）") : (e && e.message ? e.message : String(e)));
       if(attempt < retries){
         if(onRetry) onRetry(attempt+1, timeout ? "超时" : lastErr.message);
@@ -1507,6 +1515,14 @@ function needsTools(raw){
   return false;
 }
 
+let CURRENT_ABORT = null;
+function cancelSend(){
+  if(CURRENT_ABORT){
+    CURRENT_ABORT.abort();
+    addLog("cancel → 用户停止当前请求", "lg-o");
+  }
+}
+
 async function send(){
   const raw = qbox.value.trim();
   if(!raw || !DBGCUR) return;
@@ -1517,6 +1533,8 @@ async function send(){
   qbox.value = "";
   addMsg("u", aid + " 的测试指令", esc(raw), raw);
   const btn = document.getElementById("send"); btn.disabled = true;
+  CURRENT_ABORT = new AbortController();
+  document.getElementById("stop").style.display = "";
   const r1 = addMsg("a", aid + "（"+model()+"）· 运行中…", "…");
   addLog("send → "+aid+" · model "+model()+" · "+raw.length+" 字", "lg-b");
   const t0 = Date.now();
@@ -1566,7 +1584,7 @@ async function send(){
       }, 75000, 1, (n, why) => {
         steps.push("模型请求"+why+" · 自动重试 "+n+"/1");
         renderProc("⏳ 请求超时/失败，重试中…");
-      });
+      }, CURRENT_ABORT.signal);
       if(!r.ok) throw new Error((d.error&&d.error.message)||("HTTP "+r.status));
       channel = d.x_channel || channel;
       txt = (d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content)||"";
@@ -1635,7 +1653,7 @@ async function send(){
         }, 60000, 1, (n, why) => {
           steps.push("总结请求"+why+" · 自动重试 "+n+"/1");
           renderProc("🧾 总结请求重试中…");
-        });
+        }, CURRENT_ABORT.signal);
         if(fr.ok){
           const ft = (fd.choices&&fd.choices[0]&&fd.choices[0].message&&fd.choices[0].message.content)||"";
           if(ft && !parseToolCalls(ft).length) finalText = ft;
@@ -1664,15 +1682,19 @@ async function send(){
     addLog("recv ← "+aid+" · "+sec+"s · "+m, "lg-g");
   }catch(e){
     const sec = ((Date.now()-t0)/1000).toFixed(1);
-    steps.push("请求失败："+(e && e.message ? e.message : "unknown"));
-    const html = procHtml(steps, "❌ 失败 · "+sec+"s")
-      + '<div style="margin-top:6px;color:#ffb0b0">' + esc(e && e.message ? e.message : "调用失败")
-      + '（检查 8796 或稍后重试）</div>';
+    const stopped = e && e.message === "用户已停止";
+    steps.push(stopped ? "用户停止" : "请求失败："+(e && e.message ? e.message : "unknown"));
+    const html = procHtml(steps, (stopped ? "⏹ 已停止 · " : "❌ 失败 · ")+sec+"s")
+      + (stopped ? "" : '<div style="margin-top:6px;color:#ffb0b0">' + esc(e && e.message ? e.message : "调用失败")
+      + '（检查 8796 或稍后重试）</div>');
     r1.el.innerHTML = html;
-    if(r1.whoEl) r1.whoEl.textContent = aid+" · ❌ 失败 · "+sec+"s";
-    if(r1.rec){ r1.rec.who = aid+" · ❌ 失败 · "+sec+"s"; r1.rec.html = html; r1.rec.raw = ""; sessSave(aid); }
-    addLog("FAIL "+aid+" · "+e.message, "lg-o");
+    if(r1.whoEl) r1.whoEl.textContent = aid+" · "+(stopped?"⏹ 已停止":"❌ 失败")+" · "+sec+"s";
+    if(r1.rec){ r1.rec.who = aid+" · "+(stopped?"⏹ 已停止":"❌ 失败")+" · "+sec+"s"; r1.rec.html = html; r1.rec.raw = ""; sessSave(aid); }
+    addLog((stopped?"STOP ":"FAIL ")+aid+" · "+e.message, stopped?"lg-o":"lg-o");
   }
+  CURRENT_ABORT = null;
+  const stopBtn = document.getElementById("stop");
+  if(stopBtn) stopBtn.style.display = "none";
   btn.disabled = false;
 }
 
