@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 25,
+  "workorders_doing": 24,
   "workorders_review": 5
  },
  "workorders": [
@@ -264,15 +264,6 @@
    "branch": "task/WO-ACAD-REDEFINE-FREEZE-20261030",
    "created": "2026-10-30 00:57:15",
    "project": "quant"
-  },
-  {
-   "id": "WO-P2-FIX-20261030",
-   "desc": "P2 加固：approval_control 账本追加改为 O_APPEND 单次写（原子性）；automation_supervisor L1 stale 改为 created/最近事件时间取新值；补测试。不改变审批门/不自动动作。",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-P2-FIX-20261030",
-   "created": "2026-10-30 01:00:46",
-   "project": "general"
   },
   {
    "id": "WO-INV-PAPER-UI-20261030",
