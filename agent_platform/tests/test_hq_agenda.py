@@ -39,6 +39,30 @@ def test_load_agenda_readonly(tmp_path):
 def test_load_agenda_missing_ok(tmp_path):
     rep = ag.load_agenda(tmp_path / "none")
     assert rep["ok"] and rep["topics"] == [] and rep["messages"] == []
+    assert rep["recent_events"] == []
+
+
+def test_recent_events_include_acceptance_done(tmp_path):
+    """日更验收联动（WO-HZ-MEET-20261030）：acceptance_done 进会前议程 recent_events，
+    非白名单 kind 仍被过滤。"""
+    d = tmp_path / "council"
+    _seed(d)
+    rows = [
+        {"ts": "t1", "kind": "merge_done", "task": "WO-A"},
+        {"ts": "t2", "kind": "acceptance_done", "task": "HUANGZHONG-DAILY",
+         "detail": "verdict=PASS commit=abc123"},
+        {"ts": "t3", "kind": "unknown_kind", "task": "NOISE"},
+    ]
+    (d / "dev_events.jsonl").write_text(
+        "\n".join(json.dumps(r, ensure_ascii=False) for r in rows) + "\n", encoding="utf-8")
+    rep = ag.load_agenda(d)
+    kinds = [e["kind"] for e in rep["recent_events"]]
+    assert "acceptance_done" in kinds
+    assert "merge_done" in kinds
+    assert "unknown_kind" not in kinds
+    assert rep["events_count"] == 2
+    acc = [e for e in rep["recent_events"] if e["kind"] == "acceptance_done"][0]
+    assert acc["task"] == "HUANGZHONG-DAILY"
 
 
 def test_append_message(tmp_path):

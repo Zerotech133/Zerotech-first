@@ -5,6 +5,8 @@
   事件类型 : task_start / commit / blocked / merge_done / guard_fail
              + dispatch / accept / review_verdict / patrol_verdict（K-ORG-027b 派单域）
              + research_intake / research_review / research_report（WO-LEGION-ACAD1-P0 研究院三件套）
+             + meeting_saved / meeting_dispatched（P1c 会议回流）
+             + acceptance_done（WO-HZ-MEET-20261030 黄忠日更验收联动）
   CLI 用法 :
     python tools/events.py emit --kind commit --task K-STOCK-113 --agent CodeBuddy --detail "xxx 完成"
     python tools/events.py today          # 今日汇总（JSON）
@@ -57,8 +59,9 @@ KINDS = ("task_start", "commit", "blocked", "merge_done", "guard_fail",
         "approval_request", "approval_verdict",  # K-ORG-054(G4)：确定因素直批通道——Agent 请批/田丰判读（灰度期全部抄送老田）
         "confirmation_verdict",  # 2026-10-19 议事厅判例：用户对会议材料的确认/退回——不是田丰直批，不得混入 approval_verdict 灰度统计
         "deviation_report",  # K-ORG-054(G3)：SEC2 方案级走形检查报告（对照方案条目→证据→判定→建议命令）
-        "research_intake", "research_review", "research_report",
-        "meeting_saved", "meeting_dispatched")  # P1c 会议回流  # WO-LEGION-ACAD1-P0：研究院立项/评审/周报三件套（ACAD1 触发+审计取证）
+        "research_intake", "research_review", "research_report",  # WO-LEGION-ACAD1-P0：研究院立项/评审/周报三件套（ACAD1 触发+审计取证）
+        "meeting_saved", "meeting_dispatched",  # P1c 会议回流
+        "acceptance_done")  # 黄忠日更验收联动（WO-HZ-MEET-20261030：日更验收单落事件层，验收会/日更两线收口）
 
 
 def emit(kind: str, task: str = "", agent: str = "", detail: str = "",
