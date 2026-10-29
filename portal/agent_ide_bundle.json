@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 00:54",
+ "generated": "2026-10-30 00:56",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 26,
+  "workorders_doing": 25,
   "workorders_review": 4
  },
  "workorders": [
@@ -273,15 +273,6 @@
    "branch": "task/K-QUANT-20261030-IDECANCEL",
    "created": "2026-10-30 00:51:51",
    "project": "quant"
-  },
-  {
-   "id": "WO-AUDIT-FIX-20261030",
-   "desc": "代码审计修复（D2-D3 新代码）：① automation_supervisor L4 red 只看端口，不判 HTTP 非200→修；② approval_control 自审阻断参数 owner 与 open_id 类型不一致→支持 owner_ids 集合；③ approval_card/D3 回调传递 owner_ids；补测试。",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-AUDIT-FIX-20261030",
-   "created": "2026-10-30 00:51:56",
-   "project": "general"
   }
  ],
  "coder_traces": [
