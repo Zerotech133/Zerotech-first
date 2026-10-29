@@ -308,6 +308,39 @@ def test_four_new_seats_brief(tmp_path):
         assert "无数据冻结/验收证据" in text
 
 
+def test_weekly_seat_work_metrics(tmp_path):
+    root = _mkroot(tmp_path)
+    wt = root / ".worktrees"
+    wt.mkdir()
+    (wt / "tasks.json").write_text(
+        json.dumps(
+            {
+                "T-COMM-1": {"status": "done", "owner": "COMM1"},
+                "T-COMM-2": {"status": "doing", "owner": "COMM1"},
+                "T-INTEL-1": {"status": "done", "owner": "INTEL1"},
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    ops = root / "agent_platform" / "data" / "academy" / "ops" / "comm1"
+    ops.mkdir(parents=True)
+    (ops / "2026-10-29_brief.md").write_text("brief", encoding="utf-8")
+    proc = _run(root, "weekly")
+    assert proc.returncode == 0, proc.stderr
+    text = _read(
+        next(
+            (root / "agent_platform" / "data" / "academy" / "ops" / "weekly").glob(
+                "*_weekly.md"
+            )
+        )
+    )
+    assert "4 席工单与产出" in text
+    assert "| COMM1 | 2 | 1 | 1 | 0 | 0 | 1 |" in text
+    assert "| INTEL1 | 1 | 0 | 1 | 0 | 0 | 0 |" in text
+    assert "| PROD1 | 0 | 0 | 0 | 0 | 0 | 0 |" in text
+
+
 def test_weekly_includes_four_new_seats(tmp_path):
     root = _mkroot(tmp_path)
     proc = _run(root, "weekly")
