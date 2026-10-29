@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 01:27",
+ "generated": "2026-10-30 01:29",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -275,21 +275,21 @@
    "project": "portal"
   },
   {
-   "id": "WO-GUANYU-P51-20261030",
-   "desc": "合并后脏文件看板",
-   "status": "doing",
-   "owner": "GUANYU",
-   "branch": "task/WO-GUANYU-P51-20261030",
-   "created": "2026-10-30 01:26:01",
-   "project": "general"
-  },
-  {
    "id": "WO-HZ-CERT-V2-20261030",
    "desc": "黄忠认证标准v2（D4/B）",
    "status": "doing",
    "owner": "DSH-Lead",
    "branch": "task/WO-HZ-CERT-V2-20261030",
    "created": "2026-10-30 01:27:29",
+   "project": "general"
+  },
+  {
+   "id": "WO-HZ-ACCEPT-EVIDENCE-20261030",
+   "desc": "验收工具证据口径升级（D3/A）",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-HZ-ACCEPT-EVIDENCE-20261030",
+   "created": "2026-10-30 01:28:13",
    "project": "general"
   }
  ],
@@ -6278,14 +6278,7 @@
    ],
    "experience": "30 年工程治理经验：漏洞分级与补丁流程、失败测试基线修复、编码规范与门禁落地、技术债清欠与重复功能合并；证据驱动、逐项闭环，只出报告与工单不自行合并，开发动作限独立 worktree 提交+跑测试并交 L2 人签。",
    "dept_name": "研究院",
-   "dept_cn_title": "太学",
-   "tasks": [
-    {
-     "id": "WO-GUANYU-P51-20261030",
-     "desc": "合并后脏文件看板",
-     "status": "doing"
-    }
-   ]
+   "dept_cn_title": "太学"
   },
   "HUANGZHONG": {
    "id": "HUANGZHONG",
