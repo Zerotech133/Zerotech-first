@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-29 10:13",
+ "generated": "2026-10-29 10:20",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -437,15 +437,6 @@
    "project": "general"
   },
   {
-   "id": "WO-LEGION-ZHUGE-FIX-20261029",
-   "desc": "诸葛亮 C1 决策：修复 sync_card 决策后返回 stale status；测试去日期硬编码",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-ZHUGE-FIX-20261029",
-   "created": "2026-10-29 09:28:56",
-   "project": "general"
-  },
-  {
    "id": "legion-1029093009",
    "desc": "[T1] 盘前 weak 池三线扫描 [UNOWNED]",
    "status": "doing",
@@ -525,6 +516,15 @@
    "branch": "task/WO-LCS1-HARNESS-MIN-20261029",
    "created": "2026-10-29 10:06:29",
    "project": "quant"
+  },
+  {
+   "id": "WO-APIKG-SPLIT3-20261029",
+   "desc": "api_kg页族第三批：events/doc/battle迁移",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-APIKG-SPLIT3-20261029",
+   "created": "2026-10-29 10:18:52",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -7201,13 +7201,13 @@
      "status": "doing"
     },
     {
-     "id": "WO-LEGION-ZHUGE-FIX-20261029",
-     "desc": "诸葛亮 C1 决策：修复 sync_card 决策后返回 stale status；测试去日期硬编码",
+     "id": "WO-HK-R1-AUTO2-20261029",
+     "desc": "HK R1两周观察每日跑批脚本（dry-run默认/--append追加台账）—重建",
      "status": "doing"
     },
     {
-     "id": "WO-HK-R1-AUTO2-20261029",
-     "desc": "HK R1两周观察每日跑批脚本（dry-run默认/--append追加台账）—重建",
+     "id": "WO-APIKG-SPLIT3-20261029",
+     "desc": "api_kg页族第三批：events/doc/battle迁移",
      "status": "doing"
     }
    ]
