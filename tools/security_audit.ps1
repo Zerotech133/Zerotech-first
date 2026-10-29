@@ -1,0 +1,29 @@
+# Security audit wrapper (weekly task): pip-audit (py311) + bandit (py312)
+# 说明：py312 解释器缺 venv 模块，pip-audit 2.x 无法直接跑；用 py311 的 pip-audit
+# 审计 py312 的依赖冻结清单（-r），bandit 仍用 py312 扫仓库代码。
+$ErrorActionPreference = 'Continue'
+$py312 = 'C:\项目\py312\python.exe'
+$py311 = 'C:\Program Files\Python311\python.exe'
+$log = 'C:\Temp\security_audit_latest.log'
+$status = 'C:\Temp\security_audit_status.json'
+$freeze = 'C:\Temp\py312_freeze.txt'
+$ts = Get-Date -Format s
+Remove-Item $log -ErrorAction SilentlyContinue
+"[security-audit] $ts" | Out-File $log -Encoding utf8
+try { & $py312 -m pip freeze -l > $freeze } catch { "freeze failed: $_" | Out-File $log -Append -Encoding utf8 }
+$r1 = 1
+if (Test-Path $freeze) {
+    & $py311 -m pip_audit -r $freeze *>> $log
+    $r1 = $LASTEXITCODE
+}
+& $py312 -m bandit -r 'C:\aios\agent_platform' 'C:\aios\portal' 'C:\aios\tools' -f json -o 'C:\Temp\bandit_latest.json' *>> $log
+$r2 = $LASTEXITCODE
+@{
+    ts = $ts
+    pip_audit_rc = $r1
+    bandit_rc = $r2
+    log = $log
+    freeze = $freeze
+    bandit_json = 'C:\Temp\bandit_latest.json'
+} | ConvertTo-Json | Out-File $status -Encoding utf8
+exit 0
