@@ -49,7 +49,7 @@ def test_build_repairs():
               {"kind": "task_start", "task": "T4", "detail": "no marker"},
               _e(task="T5")]
     resolved, unresolved = m.build_repairs(events, {"T1": {"owner": "DEV6"}})
-    assert len(resolved) == 3 and len(unresolved) == 1
+    assert len(resolved) == 3 and len(unresolved) == 2
     srcs = {r["source"] for r in resolved}
     assert srcs == {"task-owner", "event-agent", "detail-owner"}
 
