@@ -48,7 +48,8 @@ def read_log_lines() -> list[str]:
 
     try:
         r = subprocess.run(
-            ["docker", "logs", "ai-portal"],
+            # 有界读取：只取近 24h / 最多 5000 行，避免全量 docker logs 打爆内存。
+            ["docker", "logs", "--since", "24h", "--tail", "5000", "ai-portal"],
             capture_output=True,
             timeout=120,
             check=False,
