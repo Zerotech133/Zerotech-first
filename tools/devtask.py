@@ -1365,6 +1365,42 @@ def _is_merge_head_race(msg: str) -> bool:
     return any(k.lower() in m for k in MERGE_RACE_MARKERS)
 
 
+def _dirty_overlap_guard(tid, branch):
+    """脏文件快速失败（2026-10-30 P49）。
+
+    背景：并行会话在 master 工作区留下的未提交文件，若与本单改动路径重叠，
+    `git merge` 最后一步才报 "local changes would be overwritten"，此前静默
+    白跑全部测试门（历史实测 B4 因此停摆 17h+）。本守卫在门禁之前快速失败并
+    列出重叠文件，避免盲等。
+
+    返回 (ok, overlap_paths)。
+    """
+    try:
+        changed = set()
+        out = _git("diff", "--name-only", "master...%s" % branch)
+        for ln in (out or "").splitlines():
+            if ln.strip():
+                changed.add(ln.strip())
+        if not changed:
+            return True, []
+        st = subprocess.run(["git", "-C", REPO, "status", "--porcelain"],
+                            capture_output=True, text=True,
+                            encoding="utf-8", errors="replace")
+        if st.returncode != 0:
+            return True, []  # 状态不可得时不阻断（fail-open，仅此守卫）
+        dirty = set()
+        for ln in (st.stdout or "").splitlines():
+            if not ln.strip():
+                continue
+            path = ln[3:].strip().strip('"').replace("\\", "/")
+            if " -> " in path:  # rename：two-sided
+                path = path.split(" -> ")[-1].strip().strip('"')
+            dirty.add(path)
+        return (not (changed & dirty)), sorted(changed & dirty)
+    except SystemExit:
+        return True, []
+
+
 def _abort_half_merge():
     """清理 git 半合并状态（MERGE_HEAD 存在说明 merge 已改索引但提交失败）。
 
@@ -1592,6 +1628,21 @@ def cmd_merge(tid, *flags):
         return 1
     _MERGE_TIMINGS.clear()
     _MERGE_TIMINGS.append(("准备段(入口→评审门)", max(0.0, time.perf_counter() - _t_entry)))
+    _dirty_ok, _overlap = _dirty_overlap_guard(tid, t["branch"])
+    if not _dirty_ok:
+        print("== 评审门 ==")
+        print("  %-8s ✗ master 工作区有 %d 个未提交文件与本单改动重叠（并行会话 WIP）"
+              % ("脏文件", len(_overlap)))
+        for f in _overlap[:10]:
+            print("      - %s" % f)
+        print("  处置：① 等该文件 owner 提交/清理；② 窄单策略：从当前 master 另起分支并动态排除"
+              "这些文件；③ 禁止 checkout/覆盖他人 WIP。")
+        print("门未过，拒绝合并（快速失败，未进入测试门）。")
+        t["status"] = "review"
+        _save(tasks, changed=(tid,))
+        _emit("guard_fail", tid,
+              "脏文件冲突（%d 个，快速失败）：%s" % (len(_overlap), ",".join(_overlap[:5])))
+        return 1
     print("== 评审门 ==")
     for name, cmd in GATES:
         _g0 = time.perf_counter()
