@@ -62,12 +62,14 @@ def test_real_roster_d1_user_prompt_json_only():
     assert "3 句以内" not in u
 
 
-def test_real_roster_non_decision_keeps_brief_tail():
+def test_real_roster_non_decision_uses_structured_schema():
+    """菜鸟结构化输出移植：非决策节点追加 analysis_type JSON Schema，而非旧 3 句尾。"""
     team = Team(REGISTRY)
     t1 = team.by_node.get("t1_market") or team.by_agent.get("T1")
     assert t1 and t1["analysis_type"] != "final_decision"
     u = Interpreter._build_user(None, t1, CTX)
-    assert "3 句以内" in u
+    assert "输出格式要求" in u and "```json" in u
+    assert "3 句以内" not in u
 
 
 def test_appointment_yaml_stays_aligned():

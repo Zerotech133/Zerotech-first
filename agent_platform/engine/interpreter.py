@@ -24,6 +24,7 @@ import sys  # noqa: E402
 sys.path.insert(0, str(sys_dir))
 
 from llm import similarity  # noqa: E402
+from team_schema import build_instruction, parse_structured  # noqa: E402
 import logging
 
 SIM_CONVERGE = 0.8  # 菜鸟 bull/bear 辩论收敛阈值
@@ -283,6 +284,11 @@ class Interpreter:
                 base
                 + "\n请严格只输出一个 JSON 对象，不要任何解释文字、不要代码块围栏。"
             )
+        # 菜鸟团队分析移植：分析师/研究员追加按 analysis_type 的 JSON Schema 指令，
+        # 先写 Markdown 正文再在末尾输出 ```json``` 结构化块（不破坏 D1 严格 JSON）。
+        schema_instruction = build_instruction(node.get("analysis_type"))
+        if schema_instruction:
+            return base + schema_instruction
         return base + "\n请基于以上数据给出简要分析结论（3 句以内，引用具体数据）。"
 
     # ---------- 单节点 ----------
@@ -301,6 +307,7 @@ class Interpreter:
             output=text,
             status=status,
             latency_ms=(time.time() - t0) * 1000,
+            structured=parse_structured(text),
         )
         return node["node_key"], text, status
 
@@ -400,6 +407,7 @@ class Interpreter:
                 status=st,
                 similarity_=sim,
                 latency_ms=(time.time() - t0) * 1000,
+                structured=parse_structured(text),
             )
         # 辩论对共享同一份合并结论，供 D1 汇总（parent 引用两节点）；collapsed 供 D1/评估者识别假收敛
         payload = {
@@ -424,12 +432,13 @@ class Interpreter:
         status,
         similarity_=None,
         latency_ms=None,
+        structured=None,
     ):
         self.cp.save_node(
             run_id,
             node["node_key"],
             node["agent_id"],
-            {"output": output, "status": status},
+            {"output": output, "status": status, "structured": structured or {}},
         )
         self.cp.trace(
             run_id,
@@ -450,6 +459,7 @@ class Interpreter:
                     "phase": phase,
                     "output": output,
                     "status": status,
+                    "structured": structured or {},
                 },
             )
             if node.get("is_debate_node"):
@@ -461,6 +471,7 @@ class Interpreter:
                         "round": phase,
                         "output": output,
                         "status": status,
+                        "structured": structured or {},
                     },
                 )
         except Exception as exc:
