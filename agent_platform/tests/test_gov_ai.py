@@ -624,3 +624,20 @@ def test_validate_string_evidence_still_grounded():
     }
     r = G.validate_items("anomaly_digest", [item], payload)
     assert r["ok"] is False and r["grounding_ok"] is False
+
+
+def test_validate_normalizes_confidence_label():
+    item = dict(_VALID_ITEM)
+    item["confidence"] = "high"
+    r = G.validate_items("anomaly_digest", [item], _PAYLOAD)
+    assert r["ok"] is True
+    assert r["items"][0]["confidence"] == 0.9
+    assert any("confidence 标签" in n for n in r["notes"])
+
+
+def test_validate_rejects_unknown_confidence_label():
+    item = dict(_VALID_ITEM)
+    item["confidence"] = "certain"
+    r = G.validate_items("anomaly_digest", [item], _PAYLOAD)
+    assert r["ok"] is False
+    assert any("confidence 非数值" in n for n in r["notes"])
