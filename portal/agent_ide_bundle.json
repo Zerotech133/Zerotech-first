@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 02:19",
+ "generated": "2026-10-30 02:21",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -293,15 +293,6 @@
    "project": "quant"
   },
   {
-   "id": "WO-HZ-REVIEW-20261030",
-   "desc": "黄忠认证v2六条复核工具+11-04 dry-run",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-HZ-REVIEW-20261030",
-   "created": "2026-10-30 02:03:03",
-   "project": "general"
-  },
-  {
    "id": "WO-ACAD-STRAT-OPS-20261030",
    "desc": "策略运行监管：修 TodaysPicks/pick_details 断链、补每日健康表、明确量子双刀/共振未运行、ACAD1 总监管；不改策略逻辑/不擅自停启任务。",
    "status": "doing",
@@ -318,6 +309,15 @@
    "branch": "task/WO-ACAD-DEPT-OPS-20261030",
    "created": "2026-10-30 02:12:54",
    "project": "quant"
+  },
+  {
+   "id": "WO-LEGION-OS-IA3-20261030",
+   "desc": "修复 P3/P4 折叠二次触发删除 details；全量 .row 分组",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-OS-IA3-20261030",
+   "created": "2026-10-30 02:20:47",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -3851,7 +3851,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 79,
+     "count": 80,
      "recent": [
       {
        "ts": "",
@@ -3996,7 +3996,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 79,
+     "count": 80,
      "recent": [
       {
        "ts": "",
@@ -4146,7 +4146,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 81,
+     "count": 82,
      "recent": [
       {
        "ts": "",
@@ -4297,7 +4297,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 81,
+     "count": 82,
      "recent": [
       {
        "ts": "",
@@ -4449,7 +4449,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 79,
+     "count": 80,
      "recent": [
       {
        "ts": "",
@@ -7026,6 +7026,11 @@
     {
      "id": "WO-AUDIT-FIX-20261029",
      "desc": "审计修复：hq_stats双计数、hk_r1_daily台账表格插入+去重+锁、kg zip strict",
+     "status": "doing"
+    },
+    {
+     "id": "WO-LEGION-OS-IA3-20261030",
+     "desc": "修复 P3/P4 折叠二次触发删除 details；全量 .row 分组",
      "status": "doing"
     }
    ]
