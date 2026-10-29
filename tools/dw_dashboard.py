@@ -32,6 +32,14 @@ SOURCE_HYP = {
     "anns_d": ["H1", "H11", "H12"], "us_daily": ["H9"], "hk_daily": ["H9"],
     "fx_daily": ["H9"],
 }
+MINING = {
+    "etf_mins", "shibor", "shibor_lpr", "cyq_chips", "cyq_perf", "stk_mins", "idx_mins", "sw_mins",
+    "hk_balancesheet", "hk_cashflow", "hk_fina_indicator", "hk_income", "hk_basic",
+    "us_balancesheet", "us_cashflow", "us_fina_indicator", "us_income", "us_basic", "us_daily",
+    "index_weight", "irm_qa_sh", "irm_qa_sz", "major_news", "research_report", "sf_month",
+    "stk_pledge", "stk_holdernumber", "stk_managers", "stock_company", "top10_holders",
+    "top10_floatholders", "limit_list_d", "sw_l1_member", "npr", "news",
+}
 LAYER_ORDER = ["原始层", "采集流", "生产库", "研究库", "治理库"]
 STATUS_ORDER = ["done", "in_progress", "mining", "pending"]
 SOURCE_META = {
@@ -137,11 +145,15 @@ def load_sources(cat: dict) -> list[dict]:
     rows = []
     tdir = DATA / "tushare"
     for d in sorted(p for p in tdir.iterdir() if p.is_dir()):
+        if d.name.startswith(".") or any(k in d.name for k in ("probe", "quarantine", "bak_")):
+            continue
         meta = SOURCE_META.get(d.name)
         if meta:
             label, layer, status, note = meta
+        elif d.name in MINING:
+            label, layer, status, note = d.name, "原始层", "mining", "数据已入库，尚未用于研究"
         else:
-            label, layer, status, note = d.name, "原始层", "mining", "自动发现（未分类）"
+            label, layer, status, note = d.name, "原始层", "done", "已入库/已登记（catalog）"
         files = sorted(d.glob("*.parquet"))
         if files:
             files_n = len(files)
