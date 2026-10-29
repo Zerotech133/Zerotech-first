@@ -56,6 +56,9 @@
 
   <h2>红线状态</h2>
   <div id="redlines"></div>
+
+  <h2>治理红线</h2>
+  <div id="governance"></div>
 </div>
 <script>
 const $ = (id) => document.getElementById(id);
@@ -115,6 +118,14 @@ function render(d){
   ];
   $("metrics").innerHTML = kpis.map(k=>'<div class="card"><div class="sub">'+esc(k[0])+
     '</div><div class="kpi">'+esc(k[1])+'</div><div class="sub">'+esc(k[2])+'</div></div>').join("");
+  const g = d.governance || {};
+  const cov = (g.merge_approval_coverage == null) ? "—"
+      : (g.merge_approval_coverage * 100).toFixed(1) + "%";
+  const gcls = (g.approval_ok === true) ? "ok" : (g.approval_ok === false ? "bad" : "na");
+  $("governance").innerHTML = '<div class="row"><span>新单署名覆盖（block 后）</span>' +
+    '<span class="' + gcls + '">' + esc(cov) + ' · 新单 ' + esc(g.new_done == null ? "—" : g.new_done) +
+    ' / 缺 ' + esc(g.new_missing == null ? "—" : g.new_missing) +
+    ' · 历史缺 ' + esc(g.historical_missing == null ? "—" : g.historical_missing) + '</span></div>';
   const rl = d.redlines||[];
   $("redlines").innerHTML = rl.length ? rl.map(r=>{
     const cls = r.ok===true?"ok":(r.ok===false?"bad":"na");

@@ -18,10 +18,10 @@ def test_three_piece():
 def test_fetch_and_sections():
     assert 'fetch("/api/dev/legion"' in TXT
     for sid in ("groups", "seats", "ai", "quant", "risk",
-                "wip", "metrics", "redlines"):
+                "wip", "metrics", "redlines", "governance"):
         assert ("id=\"" + sid + "\"") in TXT
     for sec in ("组织架构", "AI 席位卡", "量化席位卡", "回测/风控卡",
-                "在制任务", "C6 指标", "红线状态"):
+                "在制任务", "C6 指标", "红线状态", "治理红线"):
         assert sec in TXT
 
 
