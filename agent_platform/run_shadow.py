@@ -61,6 +61,30 @@ if _CLI_ROOT:
 if "--rehearsal" in sys.argv:
     os.environ.setdefault("SHADOW_REHEARSAL", "1")
 
+
+def _watchlist_codes():
+    """2026-10-30 WO-INV-POOL-COMBO：可选动态池（--codes/--pool-file/--pool-source）。
+
+    无参数时保持原 BASKET，定时任务行为不变。
+    """
+    codes = _cli_opt("--codes")
+    pool = _cli_opt("--pool-file")
+    source = _cli_opt("--pool-source")
+    if not codes and not pool and not source:
+        return list(BASKET)
+    try:
+        from watchlist import resolve_codes
+        top = int(_cli_opt("--top") or 3)
+        rows = resolve_codes(codes=codes, pool_file=pool, source=source, top=top)
+        out = [r["code"] for r in rows if r.get("code")]
+        if out:
+            print("[watchlist] source=%s top=%d codes=%s" % (
+                source or ("file" if pool else "codes"), top, ",".join(out)))
+            return out
+    except Exception as exc:  # noqa: BLE001 池解析失败回退固定篮子，不阻塞
+        print("[warn] 动态池解析失败，回退 BASKET：%s" % str(exc)[:120])
+    return list(BASKET)
+
 # ---- 数据根注入（M5 缺口收口：run 路径此前无隔离根，无法预演）------------
 # 默认真仓 data/；设 SHADOW_DATA_ROOT 或 --root <dir> 即整体隔离。
 # 纪律：**所有存储路径都从 LEDGER 反推（_data_root()）**，不另立并列常量——
@@ -606,7 +630,9 @@ def main():
             else data_root / "idempotency" / "idempotency.db"
         ),
     )
-    for symbol in BASKET:
+    watchlist = _watchlist_codes()
+    print("[watchlist] symbols=%s" % ",".join(watchlist))
+    for symbol in watchlist:
         if already_done(today, symbol):
             print("[skip] %s 今日已入账" % symbol)
             continue
