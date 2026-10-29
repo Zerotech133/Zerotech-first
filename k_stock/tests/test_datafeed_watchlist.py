@@ -7,6 +7,7 @@ watchlist 恒空、07:05 主 PoC 聚合连续空跑（10-12/13/15 三日实证�
 """
 
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -32,12 +33,19 @@ class TestLakeCode(unittest.TestCase):
         self.assertIsNone(D._lake_code("hk00700"))  # 未支持市场
 
     def test_mapping_hits_real_lake_files(self):
-        for code in ("sz300750", "sh600519", "bj920028"):
-            lake = D._lake_code(code)
-            assert lake is not None
-            self.assertTrue(
-                D._code_to_file(lake).exists(), "湖缺文件: %s -> %s" % (code, lake)
-            )
+        # 夹具化（P0#3）：临时湖目录 + 三个空 parquet，脱离真实行情湖
+        with tempfile.TemporaryDirectory() as td:
+            lake_dir = Path(td)
+            for name in ("300750_SZ.parquet", "600519_SH.parquet", "920028_BJ.parquet"):
+                (lake_dir / name).write_bytes(b"PAR1")
+            with mock.patch.object(D, "ASHARE_DIR", lake_dir):
+                for code in ("sz300750", "sh600519", "bj920028"):
+                    lake = D._lake_code(code)
+                    assert lake is not None
+                    self.assertTrue(
+                        D._code_to_file(lake).exists(),
+                        "湖缺文件: %s -> %s" % (code, lake),
+                    )
 
 
 class TestWatchlistFromQuotes(unittest.TestCase):
@@ -49,12 +57,17 @@ class TestWatchlistFromQuotes(unittest.TestCase):
             ("sh600519", 4.8e9),
             ("bj920028", 1.0e9),
         ]
-        with mock.patch.object(D.sqlite3, "connect") as mc:
-            mc.return_value.__enter__ = mock.Mock()
-            con = mc.return_value
-            con.execute.return_value.fetchall.return_value = rows
-            con.close = mock.Mock()
-            out = D.watchlist_from_quotes(10)
+        with tempfile.TemporaryDirectory() as td:
+            lake_dir = Path(td)
+            for name in ("300750_SZ.parquet", "600519_SH.parquet", "920028_BJ.parquet"):
+                (lake_dir / name).write_bytes(b"PAR1")
+            with mock.patch.object(D, "ASHARE_DIR", lake_dir), \
+                    mock.patch.object(D.sqlite3, "connect") as mc:
+                mc.return_value.__enter__ = mock.Mock()
+                con = mc.return_value
+                con.execute.return_value.fetchall.return_value = rows
+                con.close = mock.Mock()
+                out = D.watchlist_from_quotes(10)
         self.assertEqual(out, ["300750.SZ", "600519.SH", "920028.BJ"])
 
     def test_all_unmappable_returns_empty(self):

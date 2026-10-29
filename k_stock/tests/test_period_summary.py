@@ -123,7 +123,8 @@ def env(tmp_path, monkeypatch):
 # ---------- cn_accounts 推导 ----------
 
 
-def test_cn_accounts_normal():
+def test_cn_accounts_normal(env):
+    # 夹具化（P0#3）：使用 tmp 订阅文件，不读真实 SUB_PATH
     assert ps.cn_accounts() == {"main", "chaser", "taishan"}
 
 
