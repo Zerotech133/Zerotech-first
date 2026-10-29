@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 02:21",
+ "generated": "2026-10-30 02:23",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -311,12 +311,12 @@
    "project": "quant"
   },
   {
-   "id": "WO-LEGION-OS-IA3-20261030",
-   "desc": "修复 P3/P4 折叠二次触发删除 details；全量 .row 分组",
+   "id": "WO-SEC-HYGIENE-20261030",
+   "desc": "P0-1落地：xq_login手机号占位+selftest allowlist+service_restart probe URL解析修复",
    "status": "doing",
    "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-OS-IA3-20261030",
-   "created": "2026-10-30 02:20:47",
+   "branch": "task/WO-SEC-HYGIENE-20261030",
+   "created": "2026-10-30 02:22:11",
    "project": "general"
   }
  ],
@@ -3851,7 +3851,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 80,
+     "count": 82,
      "recent": [
       {
        "ts": "",
@@ -3996,7 +3996,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 80,
+     "count": 82,
      "recent": [
       {
        "ts": "",
@@ -4146,7 +4146,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 82,
+     "count": 84,
      "recent": [
       {
        "ts": "",
@@ -4297,7 +4297,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 82,
+     "count": 84,
      "recent": [
       {
        "ts": "",
@@ -4449,7 +4449,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 80,
+     "count": 82,
      "recent": [
       {
        "ts": "",
@@ -7029,8 +7029,8 @@
      "status": "doing"
     },
     {
-     "id": "WO-LEGION-OS-IA3-20261030",
-     "desc": "修复 P3/P4 折叠二次触发删除 details；全量 .row 分组",
+     "id": "WO-SEC-HYGIENE-20261030",
+     "desc": "P0-1落地：xq_login手机号占位+selftest allowlist+service_restart probe URL解析修复",
      "status": "doing"
     }
    ]
