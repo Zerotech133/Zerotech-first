@@ -2512,7 +2512,13 @@
           "llm_binding": "ollama/qwen3.5:9b",
           "binding_note": "由 org_enroll 补档（工单 WO-ORG-220 / 放行人 老田）",
           "tools": [
-            "events"
+            "events",
+            "datamart_read",
+            "datamart_latest",
+            "market_snapshot",
+            "data_health",
+            "stock_info",
+            "recent_events"
           ],
           "tools_note": "补档初始为空，按工单另行授予",
           "memory_grants": [],
@@ -2532,7 +2538,13 @@
           "llm_binding": "ollama/qwen3.5:9b",
           "binding_note": "由 org_enroll 补档（工单 WO-ORG-220 / 放行人 老田）",
           "tools": [
-            "events"
+            "events",
+            "market_snapshot",
+            "data_health",
+            "stock_info",
+            "recent_events",
+            "signal_precedents",
+            "pool_rows"
           ],
           "tools_note": "补档初始为空，按工单另行授予",
           "memory_grants": [],
@@ -2554,7 +2566,13 @@
           "llm_binding": "openai/gpt-6.0",
           "binding_note": "由 org_enroll 补档（工单 WO-ORG-220 / 放行人 老田）",
           "tools": [
-            "events"
+            "events",
+            "datamart_read",
+            "datamart_latest",
+            "datamart_ready",
+            "data_health",
+            "recent_events",
+            "signal_precedents"
           ],
           "tools_note": "补档初始为空，按工单另行授予",
           "memory_grants": [],
@@ -2636,7 +2654,13 @@
           "llm_binding": "ollama/qwen3.5:9b",
           "binding_note": "由 org_enroll 补档（工单 WO-ORG-220 / 放行人 老田）",
           "tools": [
-            "events"
+            "events",
+            "market_snapshot",
+            "data_health",
+            "stock_info",
+            "pool_rows",
+            "paper_positions",
+            "recent_events"
           ],
           "tools_note": "补档初始为空，按工单另行授予",
           "memory_grants": [],

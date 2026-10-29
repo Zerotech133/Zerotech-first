@@ -291,6 +291,38 @@ def test_weekly_both(tmp_path):
     assert "WAITING_DATA1" in text
 
 
+def test_four_new_seats_brief(tmp_path):
+    for seat in ("comm1", "intel1", "ai1", "prod1"):
+        root = _mkroot(tmp_path / seat)
+        proc = _run(root, seat)
+        assert proc.returncode == 0, (seat, proc.stderr)
+        files = list(
+            (root / "agent_platform" / "data" / "academy" / "ops" / seat).glob(
+                "*_brief.md"
+            )
+        )
+        assert len(files) == 1, seat
+        text = _read(files[0])
+        assert seat.upper() in text
+        assert "SeatsWeekly" in text
+        assert "无数据冻结/验收证据" in text
+
+
+def test_weekly_includes_four_new_seats(tmp_path):
+    root = _mkroot(tmp_path)
+    proc = _run(root, "weekly")
+    assert proc.returncode == 0, proc.stderr
+    files = list(
+        (root / "agent_platform" / "data" / "academy" / "ops" / "weekly").glob(
+            "*_weekly.md"
+        )
+    )
+    assert len(files) == 1
+    text = _read(files[0])
+    for aid in ("COMM1", "INTEL1", "AI1", "PROD1"):
+        assert "## %s " % aid in text
+
+
 def test_dry_run_zero_write(tmp_path):
     root = _mkroot(tmp_path)
     proc = _run(root, "back1", "--dry-run")

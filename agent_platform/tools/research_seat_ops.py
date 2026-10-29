@@ -412,6 +412,58 @@ def build_back1(root: Path) -> tuple[str, dict]:
     return "\n".join(lines) + "\n", summary
 
 
+
+SEAT_META = {
+    "comm1": ("COMM1", "马良", "商业化研究员", "commercialization_lab",
+              ["商业模式卡/客户场景/交付边界/定价与试点", "不把概念包装成收入结论"]),
+    "intel1": ("INTEL1", "郭嘉", "竞争情报研究员", "market_intelligence_lab",
+               ["情报简报/竞品矩阵/来源分级/影响分析", "未核验消息只作线索"]),
+    "ai1": ("AI1", "诸葛亮", "AI方法论研究员", "data_ai_lab",
+            ["方法论提炼/评测设计/Prompt提案/路由提案/知识入库", "一次成功不升级通用规则"]),
+    "prod1": ("PROD1", "产品经理", "策略产品经理", "commercialization_lab",
+              ["产品定义/验收标准/试点设计/跨部门交付/产品指标", "不通过不签"]),
+}
+
+
+def build_research_seat(root: Path, seat: str) -> tuple[str, dict]:
+    """4 席通用研究值守简报：只读研究台账，不编造课题/数据。"""
+    aid, cn, role, direction, duties = SEAT_META[seat]
+    topics = _read_json(root / ACADEMY_REL / "research_topics.json") or []
+    if not isinstance(topics, list):
+        topics = []
+    relevant = [t for t in topics if str(t.get("direction") or "") == direction]
+    active = [t for t in topics if str(t.get("status") or "") not in ("closed", "decision")]
+    lines = [
+        "# %s %s 研究值守简报 %s" % (aid, cn, _today()),
+        "",
+        "> 生成：agent_platform/tools/research_seat_ops.py %s ｜ 只读研究台账 ｜ 责任：%s %s" % (seat, aid, role),
+        "",
+        "## 一、本院课题",
+        "- 在册课题：%d（其中本方向 %d）" % (len(topics), len(relevant)),
+        "- 未终态课题：%d" % len(active),
+    ]
+    if relevant:
+        for t in relevant[:5]:
+            lines.append("- %s｜%s｜%s" % (t.get("topic_id"), t.get("title"), t.get("status")))
+    else:
+        lines.append("- 本方向暂无在册课题；可向 ACAD1 提议立项（八字段 + 可证伪假设）。")
+    lines += [
+        "",
+        "## 二、本席职责动作",
+        "- " + duties[0],
+        "- " + duties[1],
+        "- 产出落 deliverables/ 或 agent_platform/data/academy/；阶段推进走 academy_wiring.py（不得跳级）。",
+        "",
+        "## 三、依赖与下一步",
+        "- 数据口径：DATA1；评审：ACAD1；联合评审：D1；裁决：A0/老田。",
+        "- 当前无独立计划任务：触发走 SeatsWeekly（周五 16:10）；独立日/周任务需另批 L2。",
+        "- 无数据冻结/验收证据时不得输出 Go 或产品化结论。",
+    ]
+    summary = {"action": seat, "date": _today(), "topics": len(topics),
+               "relevant": [t.get("topic_id") for t in relevant], "active": len(active),
+               "trigger": "SeatsWeekly"}
+    return "\n".join(lines) + "\n", summary
+
 def build_weekly(root: Path) -> tuple[str, dict]:
     s_text, s_sum = build_strat1(root)
     b_text, b_sum = build_back1(root)
@@ -442,8 +494,17 @@ def build_weekly(root: Path) -> tuple[str, dict]:
         "2. BACK1 收到回执后开跑并登记 status/go_no_go；",
         "3. STRAT1 补齐 LCS-1 策略 Spec，交 ACAD1 评审。",
     ]
+    extra_sums = {}
+    for seat in ("comm1", "intel1", "ai1", "prod1"):
+        text, sm = build_research_seat(root, seat)
+        extra_sums[seat] = sm
+        aid, cn = SEAT_META[seat][0], SEAT_META[seat][1]
+        lines += ["", "## %s %s 摘要" % (aid, cn),
+                  "- 在册课题：%d ｜ 本方向：%d ｜ 触发：%s"
+                  % (sm["topics"], len(sm["relevant"]), sm["trigger"])]
     summary = {"action": "weekly", "date": _today(), "strat1": s_sum,
-               "back1": b_sum, "dispatch": b_sum.get("dispatch") or []}
+               "back1": b_sum, "dispatch": b_sum.get("dispatch") or [],
+               "seats": extra_sums}
     return "\n".join(lines) + "\n", summary
 
 
@@ -461,7 +522,11 @@ def run(
     json_out: bool = False,
 ) -> dict:
     t0 = time.monotonic()
-    builders = {"strat1": build_strat1, "back1": build_back1, "weekly": build_weekly}
+    builders = {"strat1": build_strat1, "back1": build_back1, "weekly": build_weekly,
+                "comm1": lambda r: build_research_seat(r, "comm1"),
+                "intel1": lambda r: build_research_seat(r, "intel1"),
+                "ai1": lambda r: build_research_seat(r, "ai1"),
+                "prod1": lambda r: build_research_seat(r, "prod1")}
     text, summary = builders[action](root)
     out = _out_path(root, action)
     written = ""
@@ -476,12 +541,18 @@ def run(
             emits["BACK1"] = _emit(
                 root, "BACK1", "research_report weekly back1", no_emit
             )
+            for seat, aid in (("comm1", "COMM1"), ("intel1", "INTEL1"),
+                              ("ai1", "AI1"), ("prod1", "PROD1")):
+                emits[aid] = _emit(root, aid, "research_report weekly %s" % seat, no_emit)
         else:
-            agent = "STRAT1" if action == "strat1" else "BACK1"
+            agent = {"strat1": "STRAT1", "back1": "BACK1",
+                     "comm1": "COMM1", "intel1": "INTEL1",
+                     "ai1": "AI1", "prod1": "PROD1"}[action]
             emits[agent] = _emit(root, agent, "research_report %s" % action, no_emit)
     if not dry_run and _trace_record:
         try:
-            agent_map = {"strat1": "STRAT1", "back1": "BACK1", "weekly": "ACAD1"}
+            agent_map = {"strat1": "STRAT1", "back1": "BACK1", "weekly": "ACAD1",
+                             "comm1": "COMM1", "intel1": "INTEL1", "ai1": "AI1", "prod1": "PROD1"}
             _trace_record(
                 agent_map.get(action, "ACAD1"),
                 "research_%s" % action,
@@ -511,8 +582,8 @@ def run(
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description="研究院研究值守双席（STRAT1/BACK1）")
-    ap.add_argument("action", choices=("strat1", "back1", "weekly"))
+    ap = argparse.ArgumentParser(description="研究院研究值守（STRAT1/BACK1/COMM1/INTEL1/AI1/PROD1）")
+    ap.add_argument("action", choices=("strat1", "back1", "weekly", "comm1", "intel1", "ai1", "prod1"))
     ap.add_argument("--root", default=str(ROOT_DEFAULT))
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--no-emit", action="store_true")

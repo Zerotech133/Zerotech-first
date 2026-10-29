@@ -291,7 +291,13 @@
       "wait_all_complete": false,
       "llm_binding": "ollama/qwen3.5:9b",
       "tools": [
-        "events"
+        "events",
+        "datamart_read",
+        "datamart_latest",
+        "market_snapshot",
+        "data_health",
+        "stock_info",
+        "recent_events"
       ],
       "memory_grants": {
         "read": [
@@ -330,7 +336,13 @@
       "wait_all_complete": false,
       "llm_binding": "ollama/qwen3.5:9b",
       "tools": [
-        "events"
+        "events",
+        "market_snapshot",
+        "data_health",
+        "stock_info",
+        "recent_events",
+        "signal_precedents",
+        "pool_rows"
       ],
       "memory_grants": {
         "read": [
@@ -369,7 +381,13 @@
       "llm_binding": "openai/gpt-6.0",
       "binding_note": "【2026-10-26 B 案对齐】AI1=诸葛亮按 2026-10-21 10:51 老田异族编制裁决绑定 openai/gpt-6.0（OpenClaw 载体）；engine/router.py 已加异族固定路由/auto_assign 特例、engine/llm.py 已加 OpenAILLM（key 缺失抛错不降档）、legion_command/serve.py 已放行 openai 前缀；通道待 OPENAI_API_KEY。10-18 glm-5.3 为历史档（旧绑 9b 判死）。",
       "tools": [
-        "events"
+        "events",
+        "datamart_read",
+        "datamart_latest",
+        "datamart_ready",
+        "data_health",
+        "recent_events",
+        "signal_precedents"
       ],
       "memory_grants": {
         "read": [
@@ -408,7 +426,13 @@
       "wait_all_complete": false,
       "llm_binding": "ollama/qwen3.5:9b",
       "tools": [
-        "events"
+        "events",
+        "market_snapshot",
+        "data_health",
+        "stock_info",
+        "pool_rows",
+        "paper_positions",
+        "recent_events"
       ],
       "memory_grants": {
         "read": [
