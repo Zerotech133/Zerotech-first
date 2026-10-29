@@ -366,3 +366,19 @@ def test_23_zhuge_tag_honest():
     assert "deepseek/deepseek-chat" in cz.zhuge_tag(cloud)
     assert "非GPT6" in cz.zhuge_tag(cloud)
     assert "本地军师代理" in cz.zhuge_tag(local)
+
+
+def test_plan_attached_by_default(monkeypatch):
+    """P2：planner 默认开启，只返回 plan 字段，不改变问答/执行。"""
+    monkeypatch.setattr(cz, "enabled", lambda: True)
+    monkeypatch.setattr(cz, "_openclaw_available", lambda: (False, "no key"))
+
+    class _FakeLLM:
+        def chat(self, soul, prompt, model=None):
+            return "先取证，再定位根因，最后回归验证。", "normal"
+
+    r = cz.consult("数据库连接失败怎么排查", llm=_FakeLLM())
+    assert isinstance(r.get("plan"), dict)
+    assert r["plan"]["type"] == "diagnose"
+    assert r["plan"]["executable"] is False
+    assert r["text"]
