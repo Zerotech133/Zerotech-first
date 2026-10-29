@@ -12,6 +12,7 @@ import sys
 import urllib.request
 from collections import Counter
 from datetime import datetime
+import logging
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT_DIR = os.path.join(ROOT, "agent_platform", "data", "supervision")
@@ -155,7 +156,7 @@ def check_rules():
         for aid in ("QA1", "DEV1", "D1"):
             if aid in agents and "组织铁律" not in agent_coder._persona(aid):
                 problems.append("%s persona 未含铁律锚行（注入链断）" % aid)
-    except Exception as e:  # noqa: BLE001 体检自身异常不误报岗
+    except Exception as e:  # noqa: BLE001
         problems.append("persona 抽验失败: %s" % str(e)[:50])
     return n_rules, problems
 
@@ -351,8 +352,8 @@ def main(push=True):
         lines.append("- <font color='grey'>工单成本台账: %s</font>"
                      % cost_report.summary_line("近7天",
                                                 cost_report.usage_total(7)))
-    except ImportError:
-        pass  # cost_report 未部署环境降级（N7 fail-open）
+    except ImportError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/org_supervision.py", exc)
     lines.append("")
 
     # K-ORG-090/T4: 工具调用审计（observe 段）
@@ -462,10 +463,10 @@ def push_verdict_card(report, reds, yellows, statuses, ok_8093, full, total_agen
     try:
         here = os.path.dirname(os.path.abspath(__file__))
         sys.path.insert(0, os.path.join(here, "..", "portal"))
-        from feishu_card_v2 import send_card  # noqa: E402 复用凭证链（实测 SEND_OK 通道）
+        from feishu_card_v2 import send_card  # noqa: E402
         card = build_verdict_card(statuses, ok_8093, full, total_agents, reds, yellows)
         return send_card(card)
-    except Exception as e:  # noqa: BLE001 推送链任何异常都不阻断体检
+    except Exception as e:  # noqa: BLE001
         return False, repr(e)
 
 

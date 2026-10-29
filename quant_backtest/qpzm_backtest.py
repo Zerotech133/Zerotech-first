@@ -47,6 +47,7 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(HERE, "data", "ashare")
@@ -229,7 +230,7 @@ def _env_gate_via_gatekeeper(breadth, med, upfrac, ledger_fp=None):
                 }
             )
             seen.add(str(d))
-        except Exception as e:  # noqa: BLE001 账本失败不炸判定
+        except Exception as e:  # noqa: BLE001
             print("[env_gate] 判定账本写入失败 %s: %s" % (d, e), flush=True)
     return pd.Series(out, index=breadth.index, dtype=bool)
 
@@ -676,7 +677,6 @@ def run_backtest(args):
         in_win &= union >= int(args.start)
     if args.end:
         in_win &= union <= int(args.end)
-    win_index = union[in_win]
     holds = args.holds
     eligible = wide["eligible"]
 
@@ -1126,7 +1126,7 @@ def build_killed_payload(
     adm_mean = float(adm_ret.mean()) if len(adm_ret) else 0.0
     def_th = max(0.05, 2.0 * adm_mean)
 
-    br, md, uf = env_df["breadth"], env_df["med20"], env_df["upfrac"]
+    br, md, _uf = env_df["breadth"], env_df["med20"], env_df["upfrac"]
     veto_w = (buy_off & ~buy_on).loc[in_win]
     on_w = buy_on.loc[in_win]
     unf_t1 = wide["unfill"].shift(-1).fillna(False).loc[in_win]
@@ -1360,8 +1360,8 @@ def parse_args(argv=None):
 def main(argv=None):
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/qpzm_backtest.py", exc)
     args = parse_args(argv)
     report = run_backtest(args)
     atomic_write_json(args.out, report)

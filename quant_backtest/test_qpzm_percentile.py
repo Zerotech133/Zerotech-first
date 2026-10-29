@@ -19,6 +19,7 @@ import tempfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import rps_resonance as RR
+import logging
 
 
 def _write_batches(rows):
@@ -109,8 +110,8 @@ def test_history_fallback():
 if __name__ == "__main__":
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/test_qpzm_percentile.py", exc)
     test_percentile_edges()
     test_rolling_window()
     test_switch_off()

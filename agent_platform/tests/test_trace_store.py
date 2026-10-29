@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib.util
 import time
 from pathlib import Path
+import logging
 
 _WT = Path(__file__).resolve().parents[2]
 _spec = importlib.util.spec_from_file_location(
@@ -73,7 +74,7 @@ def test_span_error_status(tmp_path, monkeypatch):
     try:
         with TR.span("boom", "tool", trace=tid):
             raise RuntimeError("x")
-    except RuntimeError:
-        pass
+    except RuntimeError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/tests/test_trace_store.py", exc)
     tr = TR.get_trace(tid)
     assert tr["spans"][0]["status"] == "error"

@@ -47,7 +47,7 @@ sys.path.insert(0, HERE)
 
 import kg_schema as S  # noqa: E402
 from kg_client import KgClient  # noqa: E402
-import linreg  # noqa: E402  X3 血缘登记（best-effort，不阻断）
+import linreg  # noqa: E402
 
 TS_DIR = os.path.join(HERE, "data", "tushare")
 MINS_DIR = os.path.join(HERE, "data", "tushare", "stk_mins")
@@ -266,7 +266,7 @@ def _holder_feat():
     )
     df["holder_num_chg"] = df.groupby("ts_code")["holder_num"].pct_change()
     df.to_parquet(HOLDER_FEAT, index=False)
-    latest = df.dropna(subset=["holder_num_chg"])
+    df.dropna(subset=["holder_num_chg"])
     print(
         "特征 %s：%d 标的 × %d 期（%s~%s）"
         % (

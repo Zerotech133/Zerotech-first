@@ -8,6 +8,7 @@ import urllib.request as rq
 
 sys.path.insert(0, r"C:\项目\老田的AI助手\jev-eval")
 import backup_alert as BA
+import logging
 
 url, secret = BA.load_webhook()
 if not url:
@@ -46,8 +47,8 @@ except Exception as e:
     if hasattr(e, "read"):
         try:
             body_txt = e.read().decode("utf-8")
-        except Exception:
-            pass  # 豁免（C2批2）：错误响应体提取失败无碍，外层已打印 WEBHOOK_TEST_ERR 并 exit 1
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "jev-eval/webhook_probe.py", exc)
     print("WEBHOOK_TEST_ERR", str(e)[:200])
     print(body_txt)
     sys.exit(1)

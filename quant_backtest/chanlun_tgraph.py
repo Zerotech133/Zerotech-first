@@ -41,6 +41,7 @@ sys.path.insert(0, HERE)
 from chanlun_signal import analyze  # noqa: E402
 from chanlun_scan import _bars_from_parquet, _code_path, MIN_BARS, _idx_bars  # noqa: E402
 from chanlun_flow import regime_trend_at  # noqa: E402
+import logging
 
 PAPER = os.path.join(HERE, "data", "chanlun_paper.json")
 TGRAPH = os.path.join(HERE, "data", "semantica", "tgraph.jsonl")
@@ -287,8 +288,8 @@ def eval_upgrade(sig_type="1卖", tbe=True):
     idx = None
     try:
         idx = _idx_bars()
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/chanlun_tgraph.py", exc)
 
     def _reg(g):
         out = {"bull": [], "bear": [], "na": []}

@@ -24,7 +24,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from alias_probe import extract, fetch, norm, to_text  # noqa: E402  同一口径
+from alias_probe import extract, fetch, norm, to_text  # noqa: E402
 
 BASE = Path(__file__).resolve().parent
 REGISTRY = BASE / "registry.json"
@@ -40,7 +40,7 @@ DATE_TOKEN = re.compile(
 
 
 def last_ym(text: str) -> tuple[int, int] | None:
-    """取文本里最后一个日期 token 的年月。
+    r"""取文本里最后一个日期 token 的年月。
 
     必须按 token 匹配并加 (?!\d) 边界：早先的写法把 `2004-2025年` 里的 `20`
     当成月份吃掉，算出 262 个月这种离谱值，整份报告的严重程度全是错的。

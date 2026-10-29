@@ -93,6 +93,7 @@ import time
 import traceback
 from datetime import datetime
 from pathlib import Path
+import logging
 
 SCHEMA = "vault-verify/1"
 MANIFEST_NAME = "MANIFEST.txt"
@@ -162,8 +163,8 @@ def _reconfigure_streams() -> None:
         if reconfigure is not None:
             try:
                 reconfigure(encoding="utf-8", errors="replace")
-            except (OSError, ValueError):
-                pass
+            except (OSError, ValueError) as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "tools/verify_backups.py", exc)
 
 
 def default_root() -> Path:
@@ -194,8 +195,8 @@ def parse_manifest(path: Path) -> dict:
                         header_time = datetime.strptime(
                             m.group("ts"), "%Y-%m-%d %H:%M:%S"
                         ).astimezone()
-                    except ValueError:
-                        pass
+                    except ValueError as exc:
+                        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/verify_backups.py", exc)
                 continue
             m = LINE_RE.match(line)
             if not m:
@@ -1374,7 +1375,7 @@ def main(argv: list[str] | None = None) -> int:
     except KeyboardInterrupt:
         _p("ERROR: 被中断（KeyboardInterrupt）")
         return 2
-    except Exception as exc:  # noqa: BLE001 - 兜底成退出码 2，绝不假装通过
+    except Exception as exc:  # noqa: BLE001
         _p("ERROR: 未预期异常：%s: %s" % (type(exc).__name__, exc))
         traceback.print_exc(file=sys.stderr)
         if getattr(args, "json", False):

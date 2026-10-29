@@ -40,6 +40,7 @@ DISCLAIMER = "个人研究晨报·非投资建议"
 # K-STOCK-403：id 改由 push_targets 单一事实源按名解析
 sys.path.insert(0, NEWS_DIR)
 import push_targets  # noqa: E402
+import logging
 
 SYNC_GROUPS = [(n, push_targets.target_id(n) or "") for n in ("内部测试", "量化群")]
 
@@ -254,8 +255,8 @@ def build_sections():
         _sl = _score_line()
         if _sl:
             secs.append(_sl)
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/morning_report.py", exc)
     return secs
 
 
@@ -289,8 +290,8 @@ def build_card_payload(secs):
             ("💼 交易台账", _ledger, "primary"),
             ("📈 选股看板", _picks, "default"),
         ]
-    except Exception:
-        pass  # 按钮可选组件：域名模块不可用→纯分区卡照发
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/morning_report.py", exc)
     sys.path.insert(0, NEWS_DIR)
     from card_build import build_card
 
@@ -325,8 +326,8 @@ def build_card_payload(secs):
                 _fp.shadow_log("morning", _legacy, _uni)
             elif _send_new:
                 return _uni
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/morning_report.py", exc)
     return _legacy
 
 
@@ -365,8 +366,8 @@ def _send(text):
     finally:
         try:
             os.remove(tmp)
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/morning_report.py", exc)
 
 
 def main():

@@ -31,7 +31,7 @@ HERE = Path(__file__).resolve().parent
 if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
 
-import xq_ticker_normalize as xtn  # noqa: E402  (sys.path 先行)
+import xq_ticker_normalize as xtn  # noqa: E402
 
 DEFAULT_DB = HERE.parent / "data" / "xueqiu" / "xueqiu_info.db"
 

@@ -28,7 +28,8 @@ LARK_ROOT = os.path.join(
     os.path.expanduser("~"), ".trae-cn", "plugins", "trae-remote-official", "lark"
 )
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import push_targets  # noqa: E402  K-STOCK-403：收件人单一事实源
+import push_targets  # noqa: E402
+import logging
 
 USER_ID = push_targets.target_id("个人") or ""  # bot 应用域 open_id（apps[0] 视角）
 # D4（N8-2）user 应用域 open_id 参数化：env FEISHU_USER_ID_LARK 优先，
@@ -81,8 +82,8 @@ def _load_app_creds():
             aid, sec = apps[0].get("appId"), apps[0].get("appSecret")
             if aid and isinstance(sec, str):
                 return aid, sec
-    except Exception:
-        pass  # 豁免（C2批2）：凭证文件缺失→(None,None)，调用方以 SEND_FAIL no app creds 呈现
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/send_feishu.py", exc)
     return None, None
 
 
@@ -222,8 +223,8 @@ def _flow_record(ok, target):
         import push_flow
 
         push_flow.record(push_flow.infer_kind(), "lark-cli", target, 1, ok)
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/send_feishu.py", exc)
 
 
 def send_text(text, kind=None):

@@ -58,6 +58,7 @@ import json
 import os
 import sys
 from datetime import datetime, timedelta
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -482,8 +483,8 @@ def _analyze_sig(bars):
         return {}, []
     try:
         _enrich(bars, st)
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/chanlun_learn.py", exc)
     return st, st.get("signals") or []
 
 

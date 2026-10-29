@@ -97,7 +97,7 @@ def process_directory(
         except ExtractionError as exc:
             record["error"] = str(exc)
             print(f"    ✗ 失败：{exc}")
-        except Exception as exc:  # noqa: BLE001 —— 未预期异常也计入失败清单，不中断批次
+        except Exception as exc:  # noqa: BLE001
             record["error"] = f"未预期异常：{type(exc).__name__}: {exc}"
             print(f"    ✗ 未预期异常：{exc}")
         else:
@@ -113,7 +113,7 @@ def build_report(records: list[dict[str, Any]]) -> str:
     """汇总结果 → Markdown 质量报表。"""
     ok_records = [r for r in records if r["ok"]]
     fail_records = [r for r in records if not r["ok"]]
-    n = max(len(ok_records), 1)
+    max(len(ok_records), 1)
 
     def _avg(key: str) -> float:
         vals = [r[key] for r in ok_records if isinstance(r.get(key), (int, float))]

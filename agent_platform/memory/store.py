@@ -21,6 +21,7 @@ import re
 import sqlite3
 import time
 from pathlib import Path
+import logging
 
 PLATFORM = Path(__file__).resolve().parents[1]
 REPO = PLATFORM.parent
@@ -75,8 +76,8 @@ def connect(db: Path | None = None) -> sqlite3.Connection:
             "CREATE VIRTUAL TABLE IF NOT EXISTS memories_fts "
             "USING fts5(id UNINDEXED, cue, content)"
         )
-    except sqlite3.OperationalError:
-        pass
+    except sqlite3.OperationalError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/memory/store.py", exc)
     conn.commit()
     return conn
 
@@ -156,6 +157,18 @@ def add(
         else:
             # 旧版本进 history（append-only：原文保留，不覆盖；valid_to=now）
             old = dict(row)
+            tags_s = ",".join(tags or [])
+            if (old.get("cue") == cue and old.get("content") == content
+                    and (old.get("source") or "") == source
+                    and float(old.get("confidence") or 0) == float(confidence)
+                    and (old.get("tags") or "") == tags_s
+                    and (old.get("episode_id") or None) == ep
+                    and int(old.get("ttl_days") or 365) == int(ttl_days)
+                    and (old.get("layer") or layer) == layer):
+                return {"ok": True, "id": mid, "layer": old.get("layer") or layer,
+                        "version": int(old.get("version") or 1),
+                        "namespace": old.get("namespace") or ns,
+                        "episode_id": old.get("episode_id"), "unchanged": True}
             conn.execute(
                 "INSERT INTO memory_history(id,layer,namespace,scope,cue,content,source,"
                 "confidence,tags,created_at,valid_from,valid_to,version,episode_id,"
@@ -180,8 +193,8 @@ def add(
                 "INSERT INTO memories_fts(id,cue,content) VALUES(?,?,?)",
                 (mid, cue, content),
             )
-        except sqlite3.OperationalError:
-            pass
+        except sqlite3.OperationalError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/memory/store.py", exc)
         conn.commit()
         return {"ok": True, "id": mid, "layer": layer, "version": version,
                 "namespace": ns, "episode_id": ep}
@@ -356,8 +369,8 @@ def stats(db: Path | None = None) -> dict:
     ev = None
     try:
         ev = json.loads(EVAL_OUT.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        pass
+    except (OSError, ValueError) as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/memory/store.py", exc)
     return {
         "ok": True,
         "db": str(DB if db is None else db),
@@ -397,8 +410,8 @@ def prune(dry_run: bool = True, db: Path | None = None) -> dict:
                 conn.execute("DELETE FROM memories WHERE id=?", (it["id"],))
                 try:
                     conn.execute("DELETE FROM memories_fts WHERE id=?", (it["id"],))
-                except sqlite3.OperationalError:
-                    pass
+                except sqlite3.OperationalError as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/memory/store.py", exc)
             conn.commit()
         return {
             "ok": True,

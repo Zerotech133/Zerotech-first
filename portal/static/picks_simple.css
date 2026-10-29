@@ -1,0 +1,26 @@
+/* picks_simple.css — P2 /picks 默认精简：T1/T2 + 前 20 条。 */
+#p2-bar{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  margin:10px 0 4px;padding:8px 12px;
+  border:1px solid var(--dw-line,#2c4058);border-radius:10px;
+  background:rgba(15,28,46,.55);color:var(--dw-muted,#8fa8c0);font-size:11.5px;
+}
+#p2-bar b{color:var(--dw-ink,#eef5ff);font-weight:600;}
+#p2-bar button{
+  border:1px solid var(--dw-line,#2c4058);background:rgba(15,28,46,.7);
+  color:var(--dw-cyan,#6bd7e5);border-radius:7px;padding:4px 10px;
+  font-size:11.5px;cursor:pointer;
+}
+#p2-bar button:hover{border-color:rgba(107,215,229,.5);}
+#p2-bar .p2-note{color:var(--dw-muted,#8fa8c0);}
+
+/* P3：高级筛选抽屉（默认只留搜索） */
+#filters .p3-advanced{display:none!important;}
+#filters.p3-open .p3-advanced{display:inline-flex!important;}
+#filters.p3-open .fsep{display:inline-block!important;}
+.p3-filter-toggle{
+  border:1px solid var(--dw-line,#2c4058);background:rgba(15,28,46,.7);
+  color:var(--dw-cyan,#6bd7e5);border-radius:8px;padding:6px 12px;
+  font-size:11.5px;cursor:pointer;
+}
+.p3-filter-toggle:hover{border-color:rgba(107,215,229,.5);}

@@ -108,7 +108,7 @@ def walk_forward(close, grid, mode, bench_close=None, vol_target=None):
         sig = ma_signal(close, **best)
         tr_sh = _seg(close, sig, lo, tr_hi)["sharpe"]  # 普通口径样本内夏普
         mo = _seg(close, sig, tr_hi, te_hi, bench_close, vol_target)
-        mb = _seg(close, base_sig, tr_hi, te_hi, bench_close)
+        _seg(close, base_sig, tr_hi, te_hi, bench_close)
         net, _, pos = mt.run_vec(
             close.iloc[tr_hi:te_hi],
             sig.iloc[tr_hi:te_hi],

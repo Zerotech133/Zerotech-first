@@ -24,6 +24,7 @@ TOOLS = ROOT / "tools"
 if str(TOOLS) not in sys.path:
     sys.path.insert(0, str(TOOLS))
 import devtask  # noqa: E402
+import logging
 
 TASKS_PATH = ROOT / ".worktrees" / "tasks.json"
 EVENTS_PATH = ROOT / "portal" / "data" / "dev_events.jsonl"
@@ -67,8 +68,8 @@ def load_events(path=EVENTS_PATH):
                 rows.append(json.loads(line))
             except ValueError:
                 continue
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/dev_weekly_report.py", exc)
     return rows
 
 

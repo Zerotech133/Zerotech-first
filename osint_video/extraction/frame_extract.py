@@ -111,7 +111,7 @@ def extract_frames(
 
     try:
         import cv2  # 延迟导入：仅本模块需要
-        import numpy as np  # noqa: F401 —— cv2 依赖 numpy，提前给出清晰报错
+        import numpy as np  # noqa: F401
     except ImportError as exc:
         raise FrameExtractError(OPENCV_INSTALL_HINT) from exc
 

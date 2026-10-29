@@ -72,6 +72,7 @@ import time
 import urllib.request
 from datetime import datetime
 from pathlib import Path
+import logging
 
 HOST = "127.0.0.1"
 PORT = 11434
@@ -147,8 +148,8 @@ def log(msg: str) -> None:
         LOG_DIR.mkdir(parents=True, exist_ok=True)
         with GUARD_LOG.open("a", encoding="utf-8") as fh:
             fh.write(line + "\n")
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/tools/start_tuned_ollama.py", exc)
 
 
 def port_open(timeout: float = 2.0) -> bool:

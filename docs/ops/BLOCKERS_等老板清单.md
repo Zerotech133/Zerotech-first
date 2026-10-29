@@ -16,7 +16,7 @@
 | B-05 | home.html+8094 驾驶舱退役 | 四入口分裂 | ✅ 已拍板执行（2026-10-12） | 门户重排 K-STOCK-166 盘点 |
 | B-06 | webroot json 泄露面 | 9 个运行时 json 可被公网直读 | ⏳ 等 nginx 维护窗口 | 版面宪法 2026-10-12 |
 | B-07 | worktree/分支回收权限缺口 | 21 个 worktree、16 个分支拒收（非 UAC 会话无法删），仓治理不闭环 | ⏳ 等管理员会话 | WO-P0-CLOSE 2026-10-27 |
-| B-08 | Phoenix server 依赖冲突 | P0-6 观测只做 instrumentation，Phoenix 面板起不来 | ⏳ 等隔离 venv | 诸葛P0-6 2026-10-27 |
+| B-08 | Phoenix server 依赖冲突 | P0-6 观测只做 instrumentation，Phoenix 面板起不来 | ✅ 已起（.venvs/phoenix + arize-phoenix，6006/4317/4318 health=200，2026-10-27 17:15；自启需批准） | 诸葛P0-6 2026-10-27 |
 | B-09 | SECVAULT Phase 2 + token 轮换 | 生产代码仍直读明文凭据；Tushare 旧 token 按已暴露处理待轮换 | ⏳ 等老田/维护窗口 | SECVAULT 2026-10-27 |
 | B-10 | P1-1/P1-2 生效观察 | 8091 已重启（14:21），引用率 8/8=100% 已验；recall@3 观察窗口待跑 | 🟡 观察中 | WO-P0-CLOSE 2026-10-27 |
 

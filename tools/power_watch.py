@@ -43,6 +43,7 @@ import sys
 import tempfile
 import time
 from datetime import datetime, timedelta, timezone
+import logging
 
 DEFAULT_INTERVAL_S = 30.0
 DEFAULT_LOG = r"C:\Temp\power_watch.jsonl"
@@ -70,8 +71,8 @@ def setup_streams() -> None:
             continue
         try:
             reconfigure(encoding="utf-8", errors="replace")
-        except (OSError, ValueError):
-            pass
+        except (OSError, ValueError) as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "tools/power_watch.py", exc)
 
 
 def _warn(msg: str, once_key=None) -> None:
@@ -84,8 +85,8 @@ def _warn(msg: str, once_key=None) -> None:
     try:
         sys.stderr.write(f"[{stamp}] [power_watch] {msg}\n")
         sys.stderr.flush()
-    except (OSError, ValueError):
-        pass
+    except (OSError, ValueError) as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/power_watch.py", exc)
 
 
 class _ULong64(ctypes.Structure):
@@ -246,8 +247,8 @@ def emit_record(record: dict, log_path: str, echo_json: bool) -> bool:
         try:
             sys.stdout.write(json.dumps(record, ensure_ascii=True) + "\n")
             sys.stdout.flush()
-        except (OSError, ValueError):
-            pass
+        except (OSError, ValueError) as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "tools/power_watch.py", exc)
     try:
         with open(log_path, "a", encoding="utf-8", newline="\n") as fh:
             fh.write(line + "\n")
@@ -270,8 +271,8 @@ def _decode_output(raw: bytes) -> str:
     if raw[:2] in (b"\xff\xfe", b"\xfe\xff"):
         try:
             return raw.decode("utf-16")
-        except UnicodeDecodeError:
-            pass
+        except UnicodeDecodeError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "tools/power_watch.py", exc)
     for encoding in ("utf-8-sig", "mbcs", "utf-16-le"):
         try:
             return raw.decode(encoding)
@@ -440,8 +441,8 @@ def run(args) -> int:
         if pid_path:
             try:
                 os.remove(pid_path)
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "tools/power_watch.py", exc)
 
 
 def main(argv=None) -> int:

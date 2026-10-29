@@ -3,6 +3,7 @@
 import os
 
 from . import config
+import logging
 
 
 def _g(issues, passed, score):
@@ -30,8 +31,8 @@ def g1_data(snap):
                 b = date.fromisoformat(snap["last_trade_date"].replace("/", "-"))
                 if (b - a).days > 7:
                     issues.append("%s 数据滞后 %d 天" % (dom, (b - a).days))
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "analysis/gates.py", exc)
     passed = bool(cov_ok and not snap.get("required_missing"))
     return _g(issues, passed, cov)
 

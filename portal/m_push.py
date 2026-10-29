@@ -16,6 +16,7 @@ import json
 import os
 import time
 from datetime import datetime, timedelta
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -74,8 +75,8 @@ def _flow_stats():
                     fallback += c
                 kd = str(r.get("kind") or "?")
                 by_kind[kd] = by_kind.get(kd, 0) + c
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/m_push.py", exc)
     return {
         "today": today_n,
         "total24": total,

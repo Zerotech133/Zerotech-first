@@ -12,6 +12,7 @@ import subprocess
 import threading
 
 import pandas as pd
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DB_CFG = json.load(open(os.path.join(HERE, "config.json"), encoding="utf-8"))["db"]
@@ -30,8 +31,8 @@ def _db_password():
                 line = line.strip()
                 if line.startswith("ZHICE_DB_PASSWORD=") and not line.startswith("#"):
                     return line.split("=", 1)[1].strip()
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/data_loader.py", exc)
     return DB_CFG.get("password") or ""
 
 
@@ -147,8 +148,8 @@ def load_bars(market, symbols, start=None, end=None):
                 f.write(
                     "%s load_bars %s %r\n" % (_t.strftime("%m-%d %H:%M:%S"), market, _e)
                 )
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/data_loader.py", exc)
         cols, rows = _query_docker(sql, params)
 
     frames = {}

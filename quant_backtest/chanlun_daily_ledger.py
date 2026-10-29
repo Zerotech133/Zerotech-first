@@ -86,7 +86,7 @@ def regime_cap(day):
     if v >= m20v:
         return CAP_HIGH, "high", f"池指数≥MA20({m20v:.3f})"
     if v >= m60v:
-        return CAP_MID, "mid", f"MA60≤池指数<MA20"
+        return CAP_MID, "mid", "MA60≤池指数<MA20"
     return CAP_LOW, "low", f"池指数<MA60({m60v:.3f})"
 
 
@@ -153,14 +153,14 @@ for di, day in enumerate(cal_win):
     # 2) 影子信号（缠论 buy/sell，只记录）
     for s in sorted(sig_buy.get(day, set())):
         actions.append(
-            {"type": "sig_buy", "stock": s, "note": f"缠论买点确认（影子·不执行）"}
+            {"type": "sig_buy", "stock": s, "note": "缠论买点确认（影子·不执行）"}
         )
     for s in sorted(sig_sell.get(day, set())):
         actions.append(
             {
                 "type": "sig_sell",
                 "stock": s,
-                "note": f"缠论卖点信号（影子·不执行·269实测负edge）",
+                "note": "缠论卖点信号（影子·不执行·269实测负edge）",
             }
         )
     # 3) regime 判定（D-1 数据）→ 档位变化即调仓

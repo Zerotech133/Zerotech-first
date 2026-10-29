@@ -31,6 +31,7 @@ import uuid
 from contextvars import ContextVar
 from datetime import datetime
 from pathlib import Path
+import logging
 
 if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf8"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -84,8 +85,8 @@ def log(msg: str, level: str = "info", **fields) -> None:
                 encoding="utf-8",
             ) as f:
                 f.write(line + "\n")
-        except OSError:
-            pass  # 落盘失败不阻断主流程（stdout 仍有输出）
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "jev-eval/jev_common.py", exc)
 
 
 # ── 原子写 / 重试 / 优雅退出（原四文件逐份复制，P1-1 收敛） ──
@@ -99,8 +100,8 @@ def atomic_write_text(path: Path, data: str) -> None:
     except Exception:
         try:
             os.unlink(tmp)
-        except OSError:
-            pass  # 豁免（C2批2）：临时文件清理兜底，原异常随后 raise 不丢
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "jev-eval/jev_common.py", exc)
         raise
 
 
@@ -384,8 +385,8 @@ def db_rows(sql: str, params=None) -> list[tuple]:
                         rows = cur.fetchall()
                     _pg_ok("")
                     return rows
-                except Exception:  # noqa: BLE001
-                    pass  # 豁免（C2批2）：重试失败后 raise e 上抛，外层统一 log 降级
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "jev-eval/jev_common.py", exc)
             raise e
     except Exception as e:  # noqa: BLE001
         _pg_fail("")

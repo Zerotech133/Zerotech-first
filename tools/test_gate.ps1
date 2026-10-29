@@ -80,7 +80,9 @@ try {
             }
         }
         $knownList = @($known[$path])
-        if ($inWorktree -and $envKnown.ContainsKey($path)) { $knownList = @($knownList) + @($envKnown[$path]) }
+        # 2026-10-28：env_failures 不再仅限 worktree——数据/环境依赖（如行情湖未更新到
+        # 当日、worktree 无数据根）在主仓同样成立；仍单独打印，不掩盖真实新增失败。
+        if ($envKnown.ContainsKey($path)) { $knownList = @($knownList) + @($envKnown[$path]) }
         $flakyList = @($flaky[$path])
         if ($flakyList.Count -gt 0) { $knownList = @($knownList) + @($flakyList) }
         $new = @()

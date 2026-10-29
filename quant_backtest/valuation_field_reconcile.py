@@ -7,6 +7,7 @@ from typing import Any
 from pathlib import Path
 
 import pandas as pd
+import logging
 
 
 def _date_series(series: pd.Series) -> pd.Series:
@@ -180,8 +181,8 @@ def classify_valuation_null(row: Any) -> str:
                 and float(net_profit) <= 0
             ):
                 return "legal_null_loss"
-        except (TypeError, ValueError):
-            pass
+        except (TypeError, ValueError) as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/valuation_field_reconcile.py", exc)
     if suspended and pd.isna(turnover):
         return "legal_null_suspended"
     if pd.isna(market_cap) or pd.isna(pe) or pd.isna(turnover):

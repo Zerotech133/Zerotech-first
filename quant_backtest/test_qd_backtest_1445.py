@@ -265,7 +265,7 @@ def test_hfq_return_across_exdiv():
 
     qbt = importlib.import_module("qd_backtest_1445")
 
-    dates = np.array(["20260101", "20260102", "20260103"])
+    np.array(["20260101", "20260102", "20260103"])
     raw_close = np.array([100.0, 50.0, 50.2])
     factors = np.array([1.0, 2.0, 2.0])
     # 模拟 adj_series 的归一逻辑（末根=1）

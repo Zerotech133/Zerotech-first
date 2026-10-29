@@ -26,6 +26,7 @@ import datetime
 import json
 import os
 import re
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 STATION = os.path.dirname(HERE)
@@ -71,7 +72,7 @@ def load_open_days(path=None):
     try:
         with open(p, encoding="utf-8") as f:
             payload = json.load(f)
-    except Exception as exc:  # noqa: BLE001  fail-open：日历缺失/损坏不能弄死告警链
+    except Exception as exc:  # noqa: BLE001
         _warn("load %s failed: %s -> fallback weekday<5" % (p, str(exc)[:120]))
         _CACHE[p] = set()
         return set()
@@ -91,8 +92,8 @@ def _as_date(day):
     if isinstance(day, str) and _DATE_RE.match(day):
         try:
             return datetime.date.fromisoformat(day)
-        except ValueError:
-            pass
+        except ValueError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/trading_cal.py", exc)
     raise TypeError("expect datetime.date, got %s" % type(day).__name__)
 
 

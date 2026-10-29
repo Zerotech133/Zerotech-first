@@ -37,7 +37,7 @@ import re
 import sqlite3
 import sys
 import time
-from typing import Any, Dict, Generator, List, Optional, Sequence, Tuple
+from typing import Any, Dict, Generator, List, Optional, Sequence
 
 import psycopg2
 import psycopg2.extensions

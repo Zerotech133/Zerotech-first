@@ -20,6 +20,7 @@ import sys
 from datetime import datetime, timedelta, timezone
 
 import requests
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DB = os.path.join(HERE, "news.db")
@@ -324,8 +325,8 @@ def main():
                         tzinfo=CST
                     ) < timedelta(minutes=cooldown_min):
                         continue
-                except Exception:
-                    pass  # 豁免（C2批2）：冷却时间戳坏值→去重失效可能重发一次，不漏告警
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/quote_snapshot.py", exc)
             alerts.append(q)
             state.setdefault(q["code"], {})[direction] = stamp
 

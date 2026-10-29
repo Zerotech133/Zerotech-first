@@ -7,6 +7,7 @@ import threading
 import uuid
 from datetime import datetime, timedelta
 from pathlib import Path
+import logging
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_RUNTIME = ROOT / 'data' / 'runtime' / 'a9'
@@ -96,8 +97,8 @@ class A9Service:
                     event = json.loads(line)
                     if not isinstance(event, dict) or not all(k in event for k in ('ts', 'event', 'id')):
                         raise StoreError('提醒审计账本损坏')
-        except FileNotFoundError:
-            pass
+        except FileNotFoundError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "AI/111111/a9_supervision.py", exc)
         except (OSError, UnicodeError, json.JSONDecodeError) as exc:
             raise StoreError('提醒审计账本损坏或不可读') from exc
         return data

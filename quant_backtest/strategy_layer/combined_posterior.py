@@ -35,6 +35,7 @@ import json
 import os
 import sys
 from datetime import datetime
+import logging
 
 try:
     from strategy_layer.combined_verdicts import load_rows_file, normalize_rows
@@ -149,8 +150,8 @@ def _write_json_atomic(doc: dict, path: str) -> str:
         try:
             if os.path.exists(tmp):
                 os.remove(tmp)
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/strategy_layer/combined_posterior.py", exc)
         raise
     return path
 
@@ -219,7 +220,7 @@ def build_combined_posterior(
         if quote_fetcher is not None:
             try:
                 quote = quote_fetcher(sym, td)
-            except Exception:  # noqa: BLE001 — 单票行情异常不阻断整体
+            except Exception:  # noqa: BLE001
                 quote = None
         base = None
         if isinstance(quote, dict):

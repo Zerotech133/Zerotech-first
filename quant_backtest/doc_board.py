@@ -11,6 +11,7 @@ import os
 import subprocess
 
 import runner
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -158,8 +159,8 @@ def refresh(alerts_md=None):
     finally:
         try:
             os.remove(tmp)
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/doc_board.py", exc)
 
 
 if __name__ == "__main__":

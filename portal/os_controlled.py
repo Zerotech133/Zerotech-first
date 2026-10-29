@@ -505,7 +505,7 @@ def produce_controlled_artifact(
 # ---------------- 审计链 ----------------
 def chain_report_controlled(store: S.OsGoalStore, item_id: str) -> Dict[str, Any]:
     evs = _evs(store, item_id)
-    item = _item(store, item_id)
+    _item(store, item_id)
     grant = _find(evs, "grant.signed")
     wo = _find(evs, "workorder.formal")
     claim = _find(evs, "workorder.claimed")
@@ -806,7 +806,6 @@ def risk_verdict_with_approval(
             reasons.append("审批未通过：status=%s" % st["status"])
         else:
             req = st.get("request") or {}
-            dec = st.get("decision") or {}
             if req.get("action") != action:
                 reasons.append("审批动作与执行动作不一致")
             elif req.get("consumer_id") != consumer_id:

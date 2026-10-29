@@ -58,12 +58,13 @@ import subprocess
 import sys
 from datetime import date
 from pathlib import Path
+import logging
 
 try:  # Windows 控制台/子进程捕获统一 UTF-8，避免中文输出在 cp936 管道下解码失败
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-except Exception:  # noqa: BLE001 - 非 TTY/旧解释器忽略
-    pass
+except Exception as exc:
+    logging.getLogger(__name__).warning("silent-except %s: %s", "tools/gate3_verdict.py", exc)
 
 HERE = Path(__file__).resolve().parent
 DEFAULT_BASE = HERE.parent / "agent_platform"

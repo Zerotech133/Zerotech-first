@@ -1,0 +1,91 @@
+{
+ "schema": "seat_learning/v1",
+ "seat": "DEV7",
+ "cn_name": "姜维",
+ "mentor": "DEV1",
+ "mentor_cn": "马钧",
+ "role_title": "后端工程师（标准化交付）",
+ "discipline": "backend",
+ "group": "G1",
+ "grade": "E1",
+ "created_at": "2026-10-28",
+ "target_capabilities": [
+  "ruff/静态检查批量修复（F401/F841/F821 等）",
+  "pytest 回归与冒烟（分片、失败定位、证据采集）",
+  "devtask 工单契约（验收命令/边界/依赖/署名）",
+  "codebase_intel 代码定位与影响面分析"
+ ],
+ "gap_assessment": {
+  "current": [
+   "已能按工单执行标准化修改（批量/格式化）",
+   "能跑固定测试命令并回报结果"
+  ],
+  "gap": [
+   "对跨文件影响面判断需加强（依赖 codebase_intel）",
+   "对合并门/署名/验收标准的自主判断不足",
+   "冒烟脚本/失败归因仍依赖组长"
+  ]
+ },
+ "modules": [
+  {
+   "id": "L1",
+   "title": "岗位与契约（角色域/边界/验收）",
+   "source": "agent_platform/prompts/code_engineer.md",
+   "status": "learning",
+   "evidence": ""
+  },
+  {
+   "id": "L2",
+   "title": "代码定位与影响面（repo map/search/refs）",
+   "source": "tools/codebase_intel.py",
+   "status": "learning",
+   "evidence": ""
+  },
+  {
+   "id": "L3",
+   "title": "测试与回归（分片/失败定位/证据）",
+   "source": "agent_platform/tests",
+   "status": "planned",
+   "evidence": ""
+  },
+  {
+   "id": "L4",
+   "title": "质量门与路由规则（谁能派/怎么验收）",
+   "source": "docs/plans/2026-10-27_研发单路由规则_ARCH1优先_v1.md",
+   "status": "planned",
+   "evidence": ""
+  }
+ ],
+ "practice": [
+  {
+   "tid": "WO-RUFF-F401F821-20261027",
+   "purpose": "ruff 批量修复（T25 再平衡试点单）",
+   "status": "doing"
+  },
+  {
+   "tid": "WO-P0-DEV7-WIKI-20261027",
+   "purpose": "project wiki 生成器（工具/文档交付）",
+   "status": "doing"
+  },
+  {
+   "tid": "WO-LS10-SMOKE-20261027",
+   "purpose": "作战屏冒烟/回归（跨模块验证）",
+   "status": "doing"
+  }
+ ],
+ "assessment": {
+  "method": "导师 DEV1 评审 + 工单验收命令 rc=0 + QA1 抽样复核",
+  "status": "planned",
+  "evidence": ""
+ },
+ "mentor_note": "DEV1 任导师：每周 1 次 30min 评审；以 3 张实践单为考核载体；模块 done 必须有证据（命令输出/链接），不虚报。",
+ "updated_at": "2026-10-28",
+ "kickoff": {
+  "date": "2026-10-28",
+  "mentor": "DEV1",
+  "mentor_confirmed": false,
+  "l1_due": "2026-10-29",
+  "l2_due": "2026-10-30",
+  "package": "docs/dev/learning/DEV7_L1L2_start.md"
+ }
+}

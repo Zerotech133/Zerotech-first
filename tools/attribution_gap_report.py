@@ -28,12 +28,13 @@
 from __future__ import annotations
 
 import sys
+import logging
 
 try:  # 2026-10-26 K-ORG-20261026-ENCPROT: 非 UTF-8 控制台打印中文不再崩溃
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-except Exception:  # noqa: BLE001 - 非 TTY/旧解释器：忽略
-    pass
+except Exception as exc:
+    logging.getLogger(__name__).warning("silent-except %s: %s", "tools/attribution_gap_report.py", exc)
 
 import argparse  # noqa: E402
 import json  # noqa: E402
@@ -71,8 +72,8 @@ def default_events_path() -> Path:
             cand = common.resolve().parent / "portal" / "data" / "dev_events.jsonl"
             if cand.exists():
                 return cand
-    except Exception:  # noqa: BLE001 - 无 git/超时：退回本仓默认路径
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/attribution_gap_report.py", exc)
     return DEFAULT_EVENTS_PATH
 
 

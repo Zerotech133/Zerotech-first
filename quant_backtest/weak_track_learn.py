@@ -32,7 +32,8 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import weak_track_summary as wts  # noqa: E402  (parse_cases 唯一解析器)
+import weak_track_summary as wts  # noqa: E402
+import logging
 
 REP = os.path.join(os.path.dirname(HERE), "reports")
 CASES = os.path.join(REP, "weak_cases")
@@ -163,8 +164,8 @@ def build_learn(f):
                 if not l.lstrip().startswith("#")
             )
             return text.format(**f).rstrip("\n")
-        except (KeyError, IndexError, ValueError):
-            pass
+        except (KeyError, IndexError, ValueError) as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/weak_track_learn.py", exc)
     return (
         "🧠 [WEAK LEARN] 案例库复盘学习（§11）\n"
         "样本：{n} 例（{first_ts} ~ {last_ts}）｜规律门槛 {gate}\n"

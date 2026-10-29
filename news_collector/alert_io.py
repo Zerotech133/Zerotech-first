@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""告警链路 IO 原语（E1 alert_fail 可观测化）。
+r"""告警链路 IO 原语（E1 alert_fail 可观测化）。
 
 BOM 嗅探范式：读前 4 字节判定编码，杜绝 UTF-16 日志按 utf-8 读出乱码
 （实伤判例：PS 5.1 `2>` 重定向产物 C:\Temp\*_err.log 为 UTF-16LE）。
@@ -10,6 +10,7 @@ ASCII 状态日志范式：单行管道分隔、写前 ascii 消毒，对齐 K20
 import json
 import os
 import tempfile
+import logging
 
 
 def sniff_encoding(path):
@@ -51,6 +52,6 @@ def atomic_write_json(path, obj, indent=None):
     except Exception:
         try:
             os.unlink(tmp)
-        except OSError:
-            pass  # 豁免（C2批2）：临时文件清理兜底，原异常随后 raise 不丢
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/alert_io.py", exc)
         raise

@@ -325,7 +325,7 @@ def replay_index_tasks(
             continue
         try:
             adapter(task.resource_key, task.target)
-        except Exception as exc:  # noqa: BLE001 - worker must continue fan-out
+        except Exception as exc:  # noqa: BLE001
             message = str(exc)[:2000] or exc.__class__.__name__
             updated = update_index_task(
                 task.resource_key, task.target, "failed", message

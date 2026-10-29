@@ -96,7 +96,6 @@ class ItemProcessor:
         """
         if not isinstance(page, VideoPage):
             raise TypeError("page must be collectors.VideoPage")
-        metadata = page.metadata
         resource_key = self._resource_key(page)
         resource = self._resource(page, resource_key)
         units, evidence = self._records(page, resource_key)

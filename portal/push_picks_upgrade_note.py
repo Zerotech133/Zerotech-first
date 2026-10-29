@@ -13,7 +13,7 @@ sys.path.insert(0, HERE)
 from feishu_card_v2 import send_card, PORTAL_BASE, PORTAL_KEY  # noqa: E402
 
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "news_collector"))
-import push_targets  # noqa: E402  K-STOCK-403：收件人单一事实源
+import push_targets  # noqa: E402
 
 GROUP_CHAT_ID = push_targets.target_id("内部测试") or ""  # 家人群
 

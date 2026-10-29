@@ -20,6 +20,7 @@ from __future__ import annotations
 import importlib.util
 import os
 from pathlib import Path
+import logging
 
 DEFAULT_DB = (
     Path(__file__).resolve().parent.parent / "data" / "idempotency" / "idempotency.db"
@@ -73,7 +74,7 @@ class DualTrackHook:
                 payload=payload,
                 stale_seconds=self.stale_seconds,
             )
-        except Exception as exc:  # noqa: BLE001  fail-open 纪律
+        except Exception as exc:  # noqa: BLE001
             return self._fail_open(exc)
 
     def complete(
@@ -86,13 +87,13 @@ class DualTrackHook:
             return self._store_or_none().complete(
                 attempt_id, result_ref=result_ref, ok=ok, error=error
             )
-        except Exception as exc:  # noqa: BLE001  fail-open 纪律
+        except Exception as exc:  # noqa: BLE001
             return self._fail_open(exc)
 
     def close(self) -> None:
         if self._store is not None:
             try:
                 self._store.close()
-            except Exception:  # noqa: BLE001
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/engine/idem_hook.py", exc)
             self._store = None

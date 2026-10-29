@@ -69,7 +69,7 @@ def _collect_commits_all(day: str, runner=None) -> List[Dict[str, Any]]:
     """
     if runner is None:
 
-        def runner(argv):  # noqa: D401 - 默认实现
+        def runner(argv):  # noqa: D401
             proc = subprocess.run(
                 argv,
                 cwd=str(STATION),

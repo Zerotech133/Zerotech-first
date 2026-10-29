@@ -23,6 +23,7 @@ import os
 import re
 import sys
 import tempfile
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
@@ -37,8 +38,8 @@ try:
     from kg_build_cl1 import YOUZI as _YZ  # noqa: N813
 
     YOUZI = _YZ
-except Exception:  # pragma: no cover
-    pass
+except Exception as exc:
+    logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/seat_profile_daily.py", exc)
 
 
 def _youzi_tag(exalter):

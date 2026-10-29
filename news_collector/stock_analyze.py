@@ -21,6 +21,7 @@ import sqlite3
 import subprocess
 import sys
 from datetime import datetime, timedelta
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -546,7 +547,7 @@ def _mark_done(rid):
 def _list_rows(out="sa_poll.ndjson"):
     """record-list 一遍；返回 {rid: (股票, 状态文本)}。"""
     cfg = _cfg()
-    r = subprocess.run(
+    subprocess.run(
         [
             LARK,
             "base",
@@ -590,8 +591,8 @@ def _list_rows(out="sa_poll.ndjson"):
                     str(j.get("股票") or "").strip(),
                     st[0] if isinstance(st, list) and st else str(st or ""),
                 )
-    except OSError:
-        pass  # 豁免（C2批2）：副本文件未生成属常态（首次运行前）
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/stock_analyze.py", exc)
     return rows
 
 
@@ -691,8 +692,8 @@ def main():
         finally:
             try:
                 os.remove(os.path.join(HERE, "logs", "sa_poll.lock"))
-            except OSError:
-                pass  # 豁免（C2批2）：锁文件清理兜底，过期锁 600s 自愈
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/stock_analyze.py", exc)
     else:
         print(__doc__)
 

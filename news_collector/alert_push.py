@@ -22,6 +22,7 @@ import sys
 import time
 import urllib.request
 from datetime import datetime, timedelta, timezone
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 STATION = os.path.dirname(HERE)
@@ -59,7 +60,7 @@ SHANGHAI = timezone(timedelta(hours=8))
 # 仍然 stale，不会被洗绿。日历缺失时退回 weekday 口径，绝不阻断告警链。
 try:
     import trading_cal as _tcal
-except Exception:  # noqa: BLE001 - 告警链不能被日历依赖弄死
+except Exception:  # noqa: BLE001
     _tcal = None
 
 
@@ -297,8 +298,8 @@ def push_card_multi(card, qr_portal=None, targets=None, kind="daily:alert"):
             count=1,
             ok=any(v for k, v in results.items() if not k.startswith("_")),
         )
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/alert_push.py", exc)
     return results
 
 

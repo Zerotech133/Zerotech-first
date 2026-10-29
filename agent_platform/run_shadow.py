@@ -27,13 +27,13 @@ BASE = Path(__file__).parent
 sys.path.insert(0, str(BASE / "engine"))
 
 from checkpoints import Checkpointer  # noqa: E402
-from idem_hook import DualTrackHook  # noqa: E402  M0 P4 双轨幂等
+from idem_hook import DualTrackHook  # noqa: E402
 from interpreter import Interpreter, Team  # noqa: E402
 from llm import OllamaLLM  # noqa: E402
 from memory import MemoryStore  # noqa: E402
 from tools import make_context, quote_snapshot, kline_daily  # noqa: E402
-from regime_roster import dk_snapshot, enrich_row, bars_to_df  # noqa: E402  M4-P3 双刀阵容
-from strategy_runtime import run_strategy as _rt_run_strategy  # noqa: E402  拍板01 唯一口径
+from regime_roster import dk_snapshot, enrich_row, bars_to_df  # noqa: E402
+from strategy_runtime import run_strategy as _rt_run_strategy  # noqa: E402
 
 BASKET = [
     "600519",
@@ -69,6 +69,21 @@ if "--rehearsal" in sys.argv:
 REHEARSAL = os.environ.get("SHADOW_REHEARSAL") == "1"
 DATA_ROOT = Path(os.environ.get("SHADOW_DATA_ROOT") or (BASE / "data"))
 LEDGER = DATA_ROOT / "shadow" / "shadow_ledger.jsonl"
+
+def _trace_links_path():
+    """跟随 LEDGER 所在数据根，隔离根/测试 monkeypatch 不写真仓。"""
+    return Path(LEDGER).parent.parent / "trace" / "trace_links.jsonl"
+
+
+def _record_trace_link(row):
+    """影子落账后补 shadow-only 链；失败不影响主链（fail-open）。"""
+    try:
+        from adapters.trace_link import record_shadow_anchor
+
+        return record_shadow_anchor(row, path=_trace_links_path(), source="run_shadow")
+    except Exception as exc:  # noqa: BLE001
+        print("[warn] trace link 补登跳过：%s" % str(exc)[:120])
+        return None
 # K-ORG-129 / T-20261008-003（B8：全篮子 HOLD 使 J2 失效）：score 基数表——
 # 枚举档 × confidence 连续落账（见 parse_decision），HOLD=0 中性锚不动；
 # WATCH 新档 -0.5：L4 存疑观察＝弱负证据，低于 HOLD、高于 SELL，不再与 HOLD 同分
@@ -199,25 +214,67 @@ def _balanced_objects(text):
     return objs
 
 
-def parse_decision(text):
-    """从 D1 输出提取 JSON 决策；失败返回 None（评估时计为解析失败样本）"""
+DECISION_REQUIRED = ("recommendation", "confidence", "rationale", "l1_basis")
+
+
+def validate_decision(dec):
+    """D1 决策 JSON 严格契约校验；返回错误列表（空=合法）。
+
+    2026-10-29 报告「鲁肃复盘」：历史 29/64 决策输出不可解析、信心字段
+    缺失/越界会让 score/校准失真。本函数把「能解析」升级为「字段合法」：
+    recommendation 必须是六档枚举、confidence 必须是 0~1 数值、
+    rationale/l1_basis 必须非空。解析失败由 run_shadow 重试一次，
+    仍失败才落 parse_ok=false（不再静默当 0 信心）。
+    """
+    errs = []
+    if not isinstance(dec, dict):
+        return ["not-a-dict"]
+    rec = str(dec.get("recommendation") or "").strip().upper()
+    if rec not in REC_SCORE:
+        errs.append("recommendation 非法: %r" % dec.get("recommendation"))
     try:
-        for block in _balanced_objects(text):
-            j = json.loads(block)
-            if "recommendation" not in j:
-                continue  # 非决策对象（如解释段里的 JSON 引用）跳过
-            # K-ORG-129：score 连续化＝枚举基数 × confidence——
-            # 此前纯枚举（HOLD 恒 0、18/25 并列零）致 J2 Spearman 无分辨（B8）；
-            # HOLD 基数 0 保持中性（0×c 仍 0），confidence 解析失败按 0 容错不毒化
-            base = REC_SCORE.get(str(j.get("recommendation", "")).upper(), 0.0)
-            try:
-                conf = float(j.get("confidence") or 0.0)
-            except (TypeError, ValueError):
-                conf = 0.0
-            j["score"] = round(base * conf, 3)
-            return j
-    except json.JSONDecodeError:
+        conf = float(dec.get("confidence"))
+    except (TypeError, ValueError):
+        errs.append("confidence 非数值: %r" % dec.get("confidence"))
+    else:
+        if not (0.0 <= conf <= 1.0):
+            errs.append("confidence 越界: %r" % conf)
+    for k in ("rationale", "l1_basis"):
+        v = dec.get(k)
+        if not isinstance(v, str) or not v.strip():
+            errs.append("%s 缺失/为空" % k)
+    return errs
+
+
+def parse_decision(text):
+    """从 D1 输出提取并校验 JSON 决策；失败返回 None（计为解析失败样本）。
+
+    兼容：JSON 前后有散文、```json 围栏、多个对象（取第一个含 recommendation
+    且字段合法的对象）；嵌套花括号用计数法配平（K-ORG-137）。
+    严格：recommendation/confidence/rationale/l1_basis 不合法即跳过该对象。
+    """
+    if not isinstance(text, str) or not text.strip():
         return None
+    for block in _balanced_objects(text):
+        try:
+            j = json.loads(block)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(j, dict) or "recommendation" not in j:
+            continue  # 非决策对象（如解释段里的 JSON 引用）跳过
+        if validate_decision(j):
+            continue  # 结构不合法的候选对象，继续找下一个
+        rec = str(j.get("recommendation") or "").strip().upper()
+        try:
+            conf = float(j.get("confidence"))
+        except (TypeError, ValueError):
+            return None
+        # K-ORG-129：score 连续化＝枚举基数 × confidence；HOLD 基数 0 中性锚
+        base = REC_SCORE.get(rec, 0.0)
+        j["recommendation"] = rec
+        j["confidence"] = conf
+        j["score"] = round(base * conf, 3)
+        return j
     return None
 
 
@@ -391,7 +448,7 @@ def open_failed_task(failed_rows, today, store=None):
     if not failed_rows:
         return None
     try:
-        from tasks import TaskStore  # noqa: E402  engine path 已在顶部注入
+        from tasks import TaskStore  # noqa: E402
 
         ts = store or TaskStore(_data_root() / "org" / "tasks")
         title = "影子运行 failed 处置（%s）" % today
@@ -582,6 +639,13 @@ def main():
                 t0 = time.time()
                 result = interp.run(symbol, data_ctx=data_ctx)
                 dec = parse_decision(result["decision"])
+                if dec is None and attempt == 1:
+                    # Strict JSON：解析/字段校验失败先重试一次（模型偶发不守格式）
+                    print(
+                        "[retry] %s D1 决策非合法 JSON/字段，重试一次（仅首次）" % symbol
+                    )
+                    time.sleep(1)
+                    continue
                 parse_ok = (
                     dec is not None
                 )  # K-STOCK-338：解析失败显式记录，不再静默吞成 {}
@@ -666,7 +730,7 @@ def main():
                             % str(_se)[:120]
                         )
                 break
-            except Exception as e:  # noqa: BLE001  无人干预要求：失败入账不中断
+            except Exception as e:  # noqa: BLE001
                 row = {
                     "date": today,
                     "ts": time.time(),
@@ -693,6 +757,7 @@ def main():
                 file=sys.stderr,
             )
             return 3
+            _record_trace_link(row)
         if attempt_id:  # 双轨回写：done→completed；failed→允许下次死信后重试
             hook.complete(
                 attempt_id,

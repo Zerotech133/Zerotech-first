@@ -48,6 +48,7 @@ _REPO = Path(__file__).resolve().parent.parent
 # 门判解析复用（R1 判例：tools 侧经 portal sys.path 复用只读解析面）
 sys.path.insert(0, str(_REPO / "portal"))
 import api_gate  # noqa: E402
+import logging
 
 # TaskStore 开单底座（execution_watchdog / run_shadow 判例：
 # engine path 注入后 from tasks import TaskStore）
@@ -353,7 +354,7 @@ def open_p1_ticket(brief, tasks_dir=None):
     body = "复盘简报 P1 自动开单（R5 复盘回流，映射理由见正文）\n\n%s" \
         % brief["brief_text"]
     try:
-        from tasks import TaskStore  # noqa: E402  engine path 已注入
+        from tasks import TaskStore  # noqa: E402
         ts = TaskStore(Path(tasks_dir) if tasks_dir else TASKS_DIR)
         dup = [t for t in ts.ls(dept="dev") if t["title"] == title]
         if dup:
@@ -361,7 +362,7 @@ def open_p1_ticket(brief, tasks_dir=None):
         tid = ts.open("dev", title, body, "P1",
                       opened_by="system/retro-brief")
         return tid, "已开单（P1，dev 部门）"
-    except Exception as e:  # noqa: BLE001  开单 fail-open：不中断简报落盘
+    except Exception as e:  # noqa: BLE001
         return None, "开单异常（不中断简报落盘）: %s" % e
 
 
@@ -434,7 +435,7 @@ def main(argv=None):
             print("[dry-run] 简报/工单/run.log/last_run 四路径全未写"
                   "（零副作用）")
         return 0
-    except Exception as e:  # noqa: BLE001  自身异常 → exit 1（N1 可探）
+    except Exception as e:  # noqa: BLE001
         print("[retro] 生成器自身异常: %s" % e)
         if not dry:
             try:
@@ -442,8 +443,8 @@ def main(argv=None):
                                  "reason": str(e), "brief_date": None,
                                  "ticket": None})
                 _append_run_log("%s ERROR %s" % (ran_at, e))
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "tools/retro_brief.py", exc)
         return 1
 
 

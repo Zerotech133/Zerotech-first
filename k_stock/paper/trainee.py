@@ -41,6 +41,7 @@ sys.path.insert(0, str(HERE))
 
 from engine import PaperEngine, Reject  # noqa: E402
 from market import ParquetMarket  # noqa: E402
+import logging
 
 TRAINEE_DIR = HERE / "trainees"
 DATA_DIR = HERE.parent / "data"
@@ -171,8 +172,8 @@ def load_hires() -> dict:
         d = json.loads(HIRES_PATH.read_text(encoding="utf-8"))
         if isinstance(d, dict) and isinstance(d.get("hires"), list):
             return d
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/paper/trainee.py", exc)
     return {"hires": []}
 
 
@@ -327,8 +328,8 @@ def _tier_gate(prof: dict, eng: PaperEngine) -> str | None:
                         f"judge 门槛：最近评审 {jd.get('date')} 为 {grade} 级 "
                         f"< 要求 {jmin} 级（暂停加仓）"
                     )
-        except Exception:
-            pass  # 门槛判定失败不拦（与 judge 失败不阻塞闭环同口径）
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/paper/trainee.py", exc)
     return None
 
 

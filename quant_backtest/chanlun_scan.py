@@ -219,10 +219,10 @@ def _hfq_scale(bars, code):
 
 
 from chanlun_signal import analyze  # noqa: E402
-from chanlun_gray import enrich as _gray_enrich  # noqa: E402  v4 灰度层
+from chanlun_gray import enrich as _gray_enrich  # noqa: E402
 from chanlun_backtest import _dir_ret, TYPES  # noqa: E402
 from chanlun_flow import regime_at, aligned  # noqa: E402
-from chanlun_composite import judge_all as _comp_judge_all, RULES as _COMP_RULES  # noqa: E402  P9 复合叠加（影子预研）
+from chanlun_composite import judge_all as _comp_judge_all, RULES as _COMP_RULES  # noqa: E402
 
 
 # ── 基础工具 ──────────────────────────────────────────────
@@ -1811,7 +1811,7 @@ def _auto_overlays(row):
         _all = st.get("pivots") or []
         piv = [p for p in _all if float(p["zd"]) < px] or _all
         if piv:
-            zg, zd = float(piv[-1]["zg"]), float(piv[-1]["zd"])
+            zg, _zd = float(piv[-1]["zg"]), float(piv[-1]["zd"])
             if px > zg:
                 ovs.append((zg, "止损", "#f85149"))
             else:

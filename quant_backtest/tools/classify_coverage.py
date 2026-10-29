@@ -89,7 +89,7 @@ def build_snapshot() -> dict:
             snap["parse_ok_count"] = cur.fetchone()[0]
         finally:
             con.close()
-    except sqlite3.Error as e:  # noqa: BLE001 — 库级失败 fail-visible 记入快照
+    except sqlite3.Error as e:  # noqa: BLE001
         snap["error"] = "db read failed: %r" % e
     if snap["total"] > 0:
         snap["coverage_pct"] = round(100.0 * snap["classified"] / snap["total"], 1)

@@ -47,7 +47,8 @@ os.chdir(HERE)
 sys.path.insert(0, HERE)
 sys.path.insert(0, STATION)
 
-import portal_api as pa  # noqa: E402  （导入即完成全部 mixin 接线）
+import portal_api as pa  # noqa: E402
+import logging
 
 RESULTS = []          # (步骤名, ok, 详情)
 SERVER = None         # 全局引用，finally 清理用
@@ -111,8 +112,8 @@ def wait_ready(deadline_s=60):
             code, _ = http_req("/health", timeout=5)
             if code == 200:
                 return True
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/test_org_e2e.py", exc)
         time.sleep(0.3)
     return False
 

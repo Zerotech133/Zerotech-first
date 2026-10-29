@@ -56,7 +56,7 @@ def api_get(url: str) -> dict:
         try:
             with OPENER.open(req, timeout=15) as r:
                 return json.loads(r.read().decode("utf-8", "replace"))
-        except Exception as e:  # noqa: BLE001 - 网络抖动重试
+        except Exception as e:  # noqa: BLE001
             last = e
             time.sleep(0.5 * (2 ** i))
     raise RuntimeError("API 3 连败: %r" % (last,))
@@ -192,7 +192,7 @@ def main(argv: list[str] | None = None) -> int:
             n_new, n_rows = upsert(con, rows, pairs) if mode == "apply" else (0, len(rows))
             total_new += n_new
             total_rows += n_rows
-        except Exception as e:  # noqa: BLE001 - 单股失败不阻断
+        except Exception as e:  # noqa: BLE001
             fails.append(ts)
             log("FAIL %s: %r" % (ts, e))
         if i % 200 == 0 or i == len(uni):

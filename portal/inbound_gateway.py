@@ -248,7 +248,7 @@ def is_allowed(open_id):
         import notification_decision as nd
 
         laotian = nd._laotian_open_id() or ""
-    except Exception:  # noqa: BLE001  读不到授权源=拒绝（fail-closed）
+    except Exception:  # noqa: BLE001
         laotian = ""
     if laotian and oid == laotian:
         return True
@@ -929,7 +929,7 @@ def _zhuge_async_sink(open_id, question, zr, trace):
                 from comm_zhuge import zhuge_tag
 
                 tag = zhuge_tag(zr)
-            except Exception:  # noqa: BLE001 —— 标签失败不阻断补发
+            except Exception:  # noqa: BLE001
                 tag = "诸葛亮（本地军师代理）"
             md = "**军师研判 · %s**\n\n%s" % (tag, zr["text"])
         else:
@@ -948,7 +948,7 @@ def _zhuge_async_sink(open_id, question, zr, trace):
         )
         ok, why, mid = _send_card(card, open_id)
         log("军师异步补发 %s ok=%s why=%s mid=%s" % (trace[:8], ok, why, mid or "-"))
-    except Exception:  # noqa: BLE001 —— 补发失败不反噬消息主链
+    except Exception:  # noqa: BLE001
         log("军师异步补发异常 " + __import__("traceback").format_exc()[-200:])
 
 
@@ -1173,7 +1173,7 @@ def _subscription_guide_card(open_id=None):
             import comm_interest as _ci
 
             detail = _ci.guide_text(open_id)
-        except Exception as ex:  # noqa: BLE001 —— 降级通用文案并留痕
+        except Exception as ex:  # noqa: BLE001
             log("个性化引导卡降级（%s），回通用文案" % type(ex).__name__)
             detail = None
     if detail:
@@ -1297,7 +1297,7 @@ def handle_inbound(open_id, text, msg_id, chat_type="p2p"):
                 smart = _ci.smart_intake(
                     text, open_id, msg_id, async_sink=_zhuge_async_sink
                 )
-        except Exception as ex:  # noqa: BLE001 —— 降级必须留痕
+        except Exception as ex:  # noqa: BLE001
             log(
                 "智能接话层异常，降级澄清卡：%s: %s"
                 % (type(ex).__name__, str(ex)[:120])

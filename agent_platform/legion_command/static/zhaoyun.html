@@ -63,6 +63,12 @@
   .clickable:hover td { background: #0F2440; }
   input, select, button { background: #081321; color: #CFE3FF; border: 0.5px solid #1E3A5F; border-radius: 6px; padding: 3px 6px; font-family: inherit; font-size: 12px; }
   button { cursor: pointer; }
+
+    section.collapsed > :not(h2) { display: none; }
+    h2 .sec-toggle { margin-left: 8px; font-size: 11px; padding: 1px 8px; }
+    h2 { cursor: pointer; }
+    #fold-bar { margin: 6px 0; }
+    #sec-jump { margin-right: 8px; max-width: 320px; }
 </style>
 </head>
 <body>
@@ -127,6 +133,10 @@
 
   <section>
     <h2>MCP 工具 <span id="mcp-sub">—</span> <span>只读 server 白名单 · 探测/调用受控</span></h2>
+    <div id="mcp"></div>
+  </section>
+
+  <section>
     <h2>量化只读 <span id="quant-sub">tushare MCP</span></h2>
     <div class="row">
       <select id="quant-tool">
@@ -142,7 +152,29 @@
       <button onclick="quantQuery()">查询（只读）</button>
     </div>
     <div id="quant-out" class="muted">只读查询：不写库、不落 token；数据源 tushare-http MCP。</div>
-    <div id="mcp"></div>
+  </section>
+
+  <section>
+    <h2>兵棋推演 <span>三情景 · 敏感性 · 触发条件（只读，不执行）</span></h2>
+    <div class="row">
+      <input id="wg-question" placeholder="推演问题（如：加息周期下是否加仓成长股）" style="flex:2">
+      <input id="wg-code" placeholder="可选代码 000001.SZ" style="width:140px">
+      <button onclick="wargameRun()">推演</button>
+    </div>
+    <div class="row" style="margin-top:4px">
+      <input id="wg-vars" placeholder='可选变量 JSON：{"利率":{"base":3,"down":2,"up":4,"weight":0.4}}' style="flex:1">
+    </div>
+    <div id="wg-out" class="muted">规则推演 v0：给情景与触发条件，不预测点位、不执行交易。</div>
+  </section>
+
+  <section>
+    <h2>多智能体辩论 <span>三席结构化分歧（只读，不执行）</span></h2>
+    <div class="row">
+      <input id="db-question" placeholder="辩论问题（如：加息周期下是否加仓成长股）" style="flex:2">
+      <input id="db-code" placeholder="可选代码 000001.SZ" style="width:140px">
+      <button onclick="debateRun()">开辩</button>
+    </div>
+    <div id="db-out" class="muted">三席：进取/稳健/风控；输出分歧/共识/待补证据/决策提示。</div>
   </section>
 
   <section>
@@ -504,12 +536,13 @@ function loadDrill() {
     else {
       (mdl.seats || []).forEach((s) => kv(mb2, s.seat + '（' + (s.cn_name || '') + '）',
         (s.llm || '—') + (s.in_headcount ? ' · 编制' : ' · 不占编')));
-      kv(mb2, '候选模型', (mdl.candidate_models || []).join(' / '));
+      const labels = mdl.candidate_labels || {};
+      kv(mb2, '候选模型', (mdl.candidate_models || []).map((m) => labels[m] || m).join(' / '));
       const bar = el('div', 'row'); bar.style.marginTop = '6px';
       const selSeat = el('select'); selSeat.id = 'mdl-seat';
       (mdl.seats || []).forEach((s) => { const o = el('option', '', s.seat); o.value = s.seat; selSeat.appendChild(o); });
       const sel = el('select'); sel.id = 'mdl-model';
-      (mdl.candidate_models || []).forEach((m) => { const o = el('option', '', m); o.value = m; sel.appendChild(o); });
+      (mdl.candidate_models || []).forEach((m) => { const o = el('option', '', (labels[m] || m) + ' · ' + m); o.value = m; sel.appendChild(o); });
       const reason = el('input'); reason.id = 'mdl-reason';
       reason.placeholder = '变更原因'; reason.style.flex = '1';
       const btn = el('button', '', '提交模型变更申请');
@@ -551,6 +584,65 @@ function loadDrill() {
     });
   });
 }
+function _mkTable(out, headers, rows) {
+  var tbl = document.createElement('table'); tbl.className = 'tbl';
+  var tr = document.createElement('tr');
+  headers.forEach(function (x) { var th = document.createElement('th'); th.textContent = x; tr.appendChild(th); });
+  tbl.appendChild(tr);
+  rows.forEach(function (cells) {
+    var row = document.createElement('tr');
+    cells.forEach(function (c) { var td = document.createElement('td'); td.textContent = String(c == null ? '' : c); row.appendChild(td); });
+    tbl.appendChild(row);
+  });
+  out.appendChild(tbl);
+}
+function _mkMuted(out, text) {
+  var d = document.createElement('div'); d.className = 'muted'; d.textContent = text; out.appendChild(d);
+}
+
+async function debateRun() {
+  var out = document.getElementById('db-out');
+  out.textContent = '辩论中…';
+  var q = document.getElementById('db-question').value.trim();
+  if (!q) { out.textContent = '先填辩论问题'; return; }
+  var p = new URLSearchParams({ question: q });
+  var code = document.getElementById('db-code').value.trim();
+  if (code) p.set('code', code);
+  try {
+    var r = await fetch('/api/zhaoyun/debate?' + p.toString());
+    var d = await r.json();
+    if (!d.ok) { out.textContent = '辩论失败：' + (d.error || 'unknown'); return; }
+    out.replaceChildren();
+    _mkTable(out, ['席位', '立场', '论据'], (d.seats || []).map(function (s) { return [s.name, s.stance, s.argument]; }));
+    _mkMuted(out, '分歧：' + ((d.divergence || {}).dissent || []).join('；'));
+    _mkMuted(out, '决策提示：' + (d.decision_hint || ''));
+  } catch (e) { out.textContent = '辩论异常：' + e; }
+}
+
+async function wargameRun() {
+  var out = document.getElementById('wg-out');
+  out.textContent = '推演中…';
+  var q = document.getElementById('wg-question').value.trim();
+  if (!q) { out.textContent = '先填推演问题'; return; }
+  var p = new URLSearchParams({ question: q });
+  var code = document.getElementById('wg-code').value.trim();
+  var vars = document.getElementById('wg-vars').value.trim();
+  if (code) p.set('code', code);
+  if (vars) p.set('vars', vars);
+  try {
+    var r = await fetch('/api/zhaoyun/wargame?' + p.toString());
+    var d = await r.json();
+    if (!d.ok) { out.textContent = '推演失败：' + (d.error || 'unknown'); return; }
+    out.replaceChildren();
+    _mkTable(out, ['情景', '影响分', '判断'], (d.scenarios || []).map(function (s) { return [s.name, s.impact_score, s.impact]; }));
+    _mkMuted(out, '敏感性（降序）：' + (d.sensitivity || []).map(function (x) { return x.variable + '(' + x.contribution + ')'; }).join(' · '));
+    if ((d.triggers || []).length) { _mkMuted(out, '触发条件：' + d.triggers.join('；')); }
+    if (d.evidence && d.evidence.ok) {
+      _mkMuted(out, '证据：' + d.evidence.code + ' 近 ' + (d.evidence.rows || []).length + ' 日线（只读，不参与打分）');
+    }
+  } catch (e) { out.textContent = '推演异常：' + e; }
+}
+
 async function quantQuery() {
   var out = document.getElementById('quant-out');
   out.textContent = '查询中…';
@@ -571,12 +663,9 @@ async function quantQuery() {
     var rows = d.rows || [];
     if (!rows.length) { out.textContent = '（无数据）'; return; }
     var cols = Object.keys(rows[0]).slice(0, 8);
-    var html = '<table class="tbl"><tr>' + cols.map(function (c) { return '<th>' + c + '</th>'; }).join('') + '</tr>';
-    rows.slice(0, 20).forEach(function (row) {
-      html += '<tr>' + cols.map(function (c) { return '<td>' + String(row[c] == null ? '' : row[c]) + '</td>'; }).join('') + '</tr>';
-    });
-    html += '</table><div class="muted">共 ' + d.count + ' 行（只读）</div>';
-    out.innerHTML = html;
+    out.replaceChildren();
+    _mkTable(out, cols, rows.slice(0, 20).map(function (row) { return cols.map(function (c) { return row[c]; }); }));
+    _mkMuted(out, '共 ' + d.count + ' 行（只读）');
   } catch (e) { out.textContent = '查询异常：' + e; }
 }
 
@@ -940,6 +1029,70 @@ function submitRequest(kind, payload, reason, label) {
 $('refresh').onclick = load;
 load();
 setInterval(load, 60000);
+
+// 页面瘦身（2026-10-27）：每个 section 默认收起，点标题/按钮下钻展开。
+document.addEventListener('DOMContentLoaded', function () {
+  var main = document.querySelector('main');
+  if (!main) return;
+  // 2026-10-27：把 .grid 内的（角色与边界/运行状态）也纳入折叠，默认全收起
+  var secs = Array.prototype.slice.call(main.querySelectorAll(':scope > section, :scope > .grid > section'));
+  var bar = document.createElement('div');
+  bar.id = 'fold-bar'; bar.className = 'row';
+  var allFold = document.createElement('button'); allFold.textContent = '全部收起';
+  var allOpen = document.createElement('button'); allOpen.textContent = '全部展开';
+  bar.appendChild(allFold); bar.appendChild(allOpen);
+  main.insertBefore(bar, main.firstChild);
+  secs.forEach(function (s, i) {
+    s.classList.add('collapsed');
+    s.id = s.id || ('sec-' + i);
+    var h = s.querySelector('h2');
+    if (!h) return;
+    var t = document.createElement('button');
+    t.className = 'sec-toggle'; t.textContent = '展开 ▾';
+    t.onclick = function (e) { e.stopPropagation(); toggle(); };
+    h.appendChild(t);
+    h.onclick = function () { toggle(); };
+    function toggle() {
+      s.classList.toggle('collapsed');
+      t.textContent = s.classList.contains('collapsed') ? '展开 ▾' : '收起 ▴';
+    }
+  });
+  var jump = document.createElement('select');
+  jump.id = 'sec-jump';
+  var j0 = document.createElement('option'); j0.value = ''; j0.textContent = '跳转区块 ▾';
+  jump.appendChild(j0);
+  secs.forEach(function (s, i) {
+    var h = s.querySelector('h2'); if (!h) return;
+    var o = document.createElement('option'); o.value = String(i);
+    o.textContent = h.textContent.replace(/展开 ▾|收起 ▴/g, '').trim().slice(0, 40);
+    jump.appendChild(o);
+  });
+  jump.onchange = function () {
+    if (jump.value === '') return;
+    var i = +jump.value, s = secs[i];
+    s.classList.remove('collapsed');
+    var t = s.querySelector('.sec-toggle'); if (t) t.textContent = '收起 ▴';
+    s.scrollIntoView({ behavior: 'smooth' });
+    location.hash = 'sec-' + i;
+    jump.value = '';
+  };
+  bar.insertBefore(jump, bar.firstChild);
+
+  allFold.onclick = function () { secs.forEach(function (s) {
+    s.classList.add('collapsed');
+    var t = s.querySelector('.sec-toggle'); if (t) t.textContent = '展开 ▾';
+  }); };
+  allOpen.onclick = function () { secs.forEach(function (s) {
+    s.classList.remove('collapsed');
+    var t = s.querySelector('.sec-toggle'); if (t) t.textContent = '收起 ▴';
+  }); };
+  var m = /^#sec-(\d+)$/.exec(location.hash);
+  if (m) { var s = secs[+m[1]]; if (s) {
+    s.classList.remove('collapsed');
+    var t = s.querySelector('.sec-toggle'); if (t) t.textContent = '收起 ▴';
+    s.scrollIntoView();
+  } }
+});
 </script>
 </body>
 </html>

@@ -14,7 +14,6 @@ import glob
 import io
 import json
 import os
-import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 EXT_DIR = os.path.join(REPO, "extensions")

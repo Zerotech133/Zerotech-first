@@ -379,7 +379,6 @@ def sellpoint_page_html():
                      if c.get("tbe") is True else "")
         reason = (c.get("reason") or "").replace("。", "。 ")
         an = c.get("agent_name") or "legacy_cons"
-        method = c.get("method") or ""
         timing = c.get("timing")
         if timing:
             timing_txt = "%s%s" % (_esc(timing),
@@ -4937,6 +4936,34 @@ class Handler:  # Mixin 壳：经基座多继承并入
                 % (e(s.get("badge", "")), st[1], st[0], e(s["name"]),
                    e(s.get("tagline", "")), st[1], e(s.get("status_note", "")),
                    mets, "".join(links), task))
+        cards_by = {}
+        for _s, _c in zip(items, cards):
+            cards_by.setdefault(_s.get("status"), []).append(_c)
+        _group_meta = [
+            ("live", "✅ 实盘 · 在产", True),
+            ("shadow", "🟡 影子验证 · 只标注不拦截", False),
+            ("tool", "⚙️ 支撑工具", False),
+            ("paused", "⏸ 暂停", False),
+        ]
+        groups_html = ""
+        for _key, _title, _open in _group_meta:
+            _cards = "".join(cards_by.get(_key, []))
+            if not _cards:
+                continue
+            _count = len(cards_by.get(_key, []))
+            _head = ("<div class='strat-group-head'><h3>%s</h3>"
+                     "<span>%d 条</span></div>" % (_title, _count))
+            if _open:
+                groups_html += ("<section class='strat-group' data-status='%s'>%s"
+                                "<div class='dw-grid'>%s</div></section>"
+                                % (_key, _head, _cards))
+            else:
+                groups_html += ("<details class='strat-group' data-status='%s'>"
+                                "<summary>%s<span class='strat-open'>展开</span></summary>"
+                                "<div class='dw-grid'>%s</div></details>"
+                                % (_key, _head, _cards))
+        if not groups_html:
+            groups_html = "<div class='empty'>暂无策略资产</div>"
         nav = pill_nav("strategies")
         # K87 锦标赛交叉表：策略来源 × 六本账累计贡献（sids 汇总，
         # 数据 reports/trader_sim_eval.json；列序与 trader_sim.BOOKS 同步）
@@ -5001,29 +5028,35 @@ class Handler:  # Mixin 壳：经基座多继承并入
             "<!DOCTYPE html><html lang='zh-CN'><head><meta charset='utf-8'>"
             "<meta name='viewport' content='width=device-width,initial-scale=1'>"
             "<title>策略中心 · 零界</title>"
-            "<link rel='stylesheet' href='/static/tokens.css'></head>"
-            "<body style='background:var(--bg-page);color:var(--text);"
-            "font-family:\"Segoe UI\",\"Microsoft YaHei\",system-ui,sans-serif;"
-            "margin:0;padding:20px 22px 40px;max-width:var(--page-w)'>"
+            "<link rel='stylesheet' href='/static/tokens.css'>"
+            "<link rel='stylesheet' href='/static/deep_shell.css'></head>"
+            "<body class='dw-page strategies-page'>"
             + nav + _HERMES_FAB_HTML +
-            "<div style='display:flex;align-items:baseline;gap:14px;"
-            "flex-wrap:wrap'><div style='font-size:22px;font-weight:800'>"
-            "🎖 策略资产中心</div>"
-            "<div style='color:var(--text-dim);font-size:12.5px'>"
-            "策略即资产 · 注册表驱动 · 数据 %s</div></div>"
+            "<header class='dw-hero'><div class='dw-brand-block'>"
+            "<div class='dw-brand'><div class='dw-logo'>策</div><div>"
+            "<div class='dw-eyebrow'>STRATEGY ASSETS · 注册表驱动</div>"
+            "<h1 class='dw-title'>策略资产中心 <span>K-STOCK · STRATEGY REGISTRY</span></h1>"
+            "</div></div>"
+            "<p class='dw-lead'>策略即资产：状态、指标、入口与生命周期一页看全；数据快照 %s。</p>"
+            "<div class='dw-tags'><span class='dw-tag live'>注册表驱动</span>"
+            "<span class='dw-tag'>%d 条策略</span><span class='dw-tag warn'>影子验证 %d</span>"
+            "<span class='dw-tag'>实盘 %d</span></div></div>"
+            "<div class='dw-hero-side'><div class='dw-kpis'>"
+            "<div class='dw-kpi'><div class='k'>策略资产</div><div class='v'>%d</div></div>"
+            "<div class='dw-kpi'><div class='k'>实盘</div><div class='v'>%d</div></div>"
+            "<div class='dw-kpi'><div class='k'>影子验证</div><div class='v'>%d</div></div>"
+            "<div class='dw-kpi'><div class='k'>支撑工具</div><div class='v'>%d</div></div>"
+            "</div></div></header>"
+            "<div class='dw-context'><div class='dw-crumb'>零界 <span>/</span> 量化 <span>/</span> <b>策略资产中心</b></div>"
+            "<div class='dw-context-meta'><span class='dw-dot'></span> 注册表驱动 <span>·</span> 策略即资产</div></div>"
             "<div style='display:flex;align-items:center;flex-wrap:wrap;"
             "margin:14px 0 6px'>%s</div>"
             "<div style='color:var(--text-dim);font-size:12px;margin:4px 0 16px'>"
-            "合计 <b style='color:var(--text)'>%d</b> 条：实盘 %d · "
-            "影子验证 %d · 支撑工具 %d —— 每条策略都是一条产品线，"
-            "记分卡管生命周期。</div>"
-            "<div style='display:grid;gap:14px;grid-template-columns:"
-            "repeat(auto-fill,minmax(320px,1fr))'>%s</div>"
-            "<div style='background:var(--bg-surface);border:1px solid "
-            "var(--border);border-radius:12px;padding:16px 18px;"
-            "margin-top:22px'>"
-            "<div style='font-size:14px;font-weight:700;margin-bottom:8px'>"
-            "➕ 上新一条策略（三步，注册即上架）</div>"
+            "策略资产记分卡 · 状态与生命周期以注册表为准；"
+            "每条策略都是一条产品线。</div>"
+            "%s"
+            "<details class='strat-sop'><summary>➕ 上新一条策略（三步，注册即上架）</summary>"
+            "<div class='strat-sop-body'>"
             "<div style='font-size:12.5px;line-height:2;color:var(--text-dim)'>"
             "① <b style='color:var(--text)'>portal/strategies.json</b> 加一条："
             "id/名称/一句话价值/状态（live·shadow·tool·paused）/入口/记分卡要点"
@@ -5032,10 +5065,13 @@ class Handler:  # Mixin 壳：经基座多继承并入
             "<br>③ 计划任务上线（照 deploy_weak_*.ps1 模板）→ 进 "
             "<a href='/sys-health' style='color:var(--link)'>系统自检</a>守护"
             "<br><span style='color:var(--text-dim)'>状态约定：影子=只标注不"
-            "拦截，达标才转正（Jev 门判例：FOCUS 前向 &gt;+1pp 且 n≥30）</span>"
-            "</div></div></body></html>"
-            % (e(d["ts"]), band, len(items), n_live, n_shadow, n_tool,
-               "".join(cards))
+            "</div></details>"
+            "<footer class='dw-footer'><div class='dw-footer-left'>"
+            "<span class='dw-dot'></span><span>策略资产中心 · 注册表驱动 · 只读研究</span></div>"
+            "<div>门户 8734 · <a href='/strategies'>↻ 刷新</a></div></footer>"
+            "</body></html>"
+            % (e(d["ts"]), len(items), n_shadow, n_live, len(items), n_live,
+               n_shadow, n_tool, band, groups_html)
             + tourney_html)
         self._html(body)
     def _sa_page(self, q=""):
@@ -6084,7 +6120,7 @@ def _bt2_worker(jid, params):
             worker_params["transaction_policy"] = policy
         res, err = eng.run_job(worker_params, jid, progress=progress)
         if err:
-            text = str(err)
+            str(err)
             stable = _minute_error_code(err)
             _bt2_write_state(jid, status="dead", error=stable, error_code=stable, source_error=stable,
                              source_ref=params.get("source_ref"), source_availability="available",

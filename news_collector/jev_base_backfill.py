@@ -17,6 +17,7 @@ import os
 import subprocess
 import sys
 import time
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
@@ -57,8 +58,8 @@ def log(msg):
         os.makedirs(os.path.dirname(LOG), exist_ok=True)
         with open(LOG, "a", encoding="utf-8") as f:
             f.write(line + "\n")
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/jev_base_backfill.py", exc)
 
 
 def lark(args, timeout=120):

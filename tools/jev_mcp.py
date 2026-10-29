@@ -27,12 +27,13 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+import logging
 
 try:  # ENCPROT：非 UTF-8 控制台
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-except Exception:  # noqa: BLE001
-    pass
+except Exception as exc:
+    logging.getLogger(__name__).warning("silent-except %s: %s", "tools/jev_mcp.py", exc)
 
 SERVER_NAME = "jev-news"
 SERVER_VERSION = "1.0.0"
@@ -220,7 +221,7 @@ def _handle(req: dict) -> dict | None:
         args = params.get("arguments") or {}
         try:
             text = _call_tool(name, args)
-        except Exception as exc:  # noqa: BLE001 - 工具错误如实回传，不断连接
+        except Exception as exc:  # noqa: BLE001
             _log("tool %s error: %s" % (name, exc))
             return {"jsonrpc": "2.0", "id": rid, "result": {
                 "content": [{"type": "text", "text": str(exc)}], "isError": True}}
@@ -249,7 +250,7 @@ def main() -> int:
             continue
         try:
             resp = _handle(req)
-        except Exception as exc:  # noqa: BLE001 - 单条请求失败不退出
+        except Exception as exc:  # noqa: BLE001
             _log("handler error: %s" % exc)
             resp = {"jsonrpc": "2.0", "id": req.get("id") if isinstance(req, dict) else None,
                     "error": {"code": -32603, "message": "Internal error: %s" % exc}}

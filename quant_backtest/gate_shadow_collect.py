@@ -63,6 +63,7 @@ import json
 import os
 import sys
 import time
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -85,8 +86,8 @@ def _log(msg):
     try:
         with open(LOG, "a", encoding="utf-8") as f:
             f.write("%s %s\n" % (time.strftime("%Y-%m-%d %H:%M:%S"), msg))
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/gate_shadow_collect.py", exc)
 
 
 def _key(rec):
@@ -130,8 +131,8 @@ def _acquire_lock(timeout=30):
                 if time.time() - os.stat(LOCK).st_mtime > STALE_LOCK_SEC:
                     os.remove(LOCK)  # 陈旧锁回收
                     continue
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/gate_shadow_collect.py", exc)
             if time.time() >= deadline:
                 return False
             time.sleep(0.2)
@@ -140,8 +141,8 @@ def _acquire_lock(timeout=30):
 def _release_lock():
     try:
         os.remove(LOCK)
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/gate_shadow_collect.py", exc)
 
 
 # ── 数据源读取（全部只读；异常由调用方转 missing） ────────────
@@ -407,8 +408,8 @@ def _append(rows, out=SHADOW):
 def main(argv=None):
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/gate_shadow_collect.py", exc)
     ap = argparse.ArgumentParser(description="W5 环境闸门三档影子日采")
     ap.add_argument(
         "--strategies", default="qd,qpzm,cross", help="逗号分隔：qd,qpzm,cross"

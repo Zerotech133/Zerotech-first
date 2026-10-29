@@ -24,21 +24,32 @@ import sys
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+import pathlib
 from urllib.parse import urlparse
+from contextlib import nullcontext
 
 _PLATFORM = Path(__file__).resolve().parents[1]
 if str(_PLATFORM) not in sys.path:
     sys.path.insert(0, str(_PLATFORM))
 
-from gateway import inbox_gateway, llm_gateway  # noqa: E402  S21 门面复用
-from engine.org_profiles import fallbacks_index, profile_index, stamp  # noqa: E402  S41 统一取档口径
-from engine.openclaw_cli import agent_primary_model, is_relay, run as oc_run  # noqa: E402  OpenClaw 载体桥
+from gateway import inbox_gateway, llm_gateway  # noqa: E402, S21
+from engine.org_profiles import fallbacks_index, profile_index, stamp  # noqa: E402, S41
+from engine.openclaw_cli import agent_primary_model, is_relay, run as oc_run  # noqa: E402
 from legion_command.snapshot import build_snapshot  # noqa: E402
+from legion_command import hq_meeting  # noqa: E402
+from legion_command import hq_agenda  # noqa: E402
+from legion_command import hq_acceptance  # noqa: E402
+from legion_command import hq_stats  # noqa: E402
 import logging
 
 _STATIC = Path(__file__).resolve().parent / "static"
 # 作战会议室纪要落盘目录（模块级，测试可 monkeypatch 到 tmp）
 MEETINGS_DIR = _PLATFORM / "data" / "meetings" / "warroom"
+HQ_MEETINGS_DIR = _PLATFORM / "data" / "meetings" / "hq"
+COUNCIL_DATA = _PLATFORM.parent / "portal" / "data"
+_BASELINE_FILE = _PLATFORM / "data" / "test_baseline" / "latest.json"
+_REDTEAM_DIR = _PLATFORM.parent / "work" / "p1" / "redteam"
+_ACCEPTANCE_DIR = _PLATFORM.parent / "work" / "huangzhong"
 _KIND_MAP = {"work": "task_request", "trade": "task_request", "study": "question"}
 
 
@@ -104,6 +115,17 @@ AGENT_BINDING = {
 _DEFAULT_BINDING = "ollama/qwen3.5:9b"
 # 平台级兜底降级档：席位没配 llm_fallback 时只降这一档（A0/AI1 等无链席位的旧行为）
 _DEFAULT_FALLBACK = _DEFAULT_BINDING
+# 会议场景绑定覆盖：治理席 ZHAOYUN 的正式绑定是 DSH 会话载体（deepseek-v4-pro），
+# 不适配同步 /api/chat；会议仅用本地模型发声，不改变正式治理席位绑定。
+MEETING_BINDING_OVERRIDES = {"ZHAOYUN": "ollama/qwen3.5:9b"}
+
+
+def resolve_meeting_binding(agent: str, platform_dir: Path | None = None) -> str:
+    """会议 purpose 的绑定解析：仅对覆盖表内席位替换，且不改 none/规则执行体。"""
+    orig = resolve_binding(agent, platform_dir)
+    if agent in MEETING_BINDING_OVERRIDES and orig != "none":
+        return MEETING_BINDING_OVERRIDES[agent]
+    return orig
 # 同一 stamp 指纹管两张索引：席位绑定（map）与席位降级链（fallbacks）
 _BINDING_CACHE = {"mtime": None, "map": {}, "fallbacks": {}}
 
@@ -324,6 +346,10 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Headers",
+                         "Content-Type, Authorization, X-DSH-Agent, X-DSH-Task, X-DSH-Backend")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.end_headers()
         self.wfile.write(body)
 
@@ -341,7 +367,31 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         pass
 
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Headers",
+                         "Content-Type, Authorization, X-DSH-Agent, X-DSH-Task, X-DSH-Backend")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Max-Age", "600")
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
+    # ---------- O6 P2c：请求级 run 上下文 ----------
+    def _request_scope(self):
+        """每个 HTTP 请求一个 trace run；trace 不可用时降级为 nullcontext。"""
+        try:
+            from observability import trace as _tr
+
+            return _tr.run_scope()
+        except Exception:  # noqa: BLE001
+            return nullcontext()
+
     def do_GET(self):
+        with self._request_scope():
+            return self._do_GET_impl()
+
+    def _do_GET_impl(self):
         import re
 
         path = urlparse(self.path).path
@@ -357,12 +407,59 @@ class Handler(BaseHTTPRequestHandler):
             self._send_file(_STATIC / "tianfeng.html", "text/html; charset=utf-8")
             return
         if path in ("/keys", "/keys/", "/keys.html"):
-            # 三席多 Key 池页面
-            self._send_file(_STATIC / "keypool.html", "text/html; charset=utf-8")
+            # Phase A 收口：默认新页；KEYS_V2=0 或 ?v2=0 回滚旧页
+            try:
+                from urllib.parse import parse_qs
+                _q = parse_qs(urlparse(self.path).query)
+                _qv = (_q.get("v2") or [""])[0]
+                _on = (_qv == "1") if _qv in ("0", "1") else (os.environ.get("KEYS_V2", "1") == "1")
+            except Exception:
+                _on = False
+            _page = "keypool_v2.html" if _on else "keypool.html"
+            self._send_file(_STATIC / _page, "text/html; charset=utf-8")
+            return
+        if path == "/mission":
+            try:
+                from urllib.parse import parse_qs
+                _q = parse_qs(urlparse(self.path).query)
+                _qv = (_q.get("v2") or [""])[0]
+                _on = (_qv == "1") if _qv in ("0", "1") else (os.environ.get("KEYS_V2", "1") == "1")
+            except Exception:
+                _on = False
+            if _on and (_STATIC / "mission.html").exists():
+                self._send_file(_STATIC / "mission.html", "text/html; charset=utf-8")
+            else:
+                self._send_json({"ok": False, "error": "mission_page_disabled"}, 404)
             return
         m = re.match(r"^/static/([a-z_]+\.html)$", path)
         if m and re.fullmatch(r"[a-z_]+", m.group(1).rsplit(".", 1)[0]):
             self._send_file(_STATIC / m.group(1), "text/html; charset=utf-8")
+            return
+        if path.startswith("/api/ide/fs/"):
+            # IDE 调试通道只读文件工具；根目录/敏感路径限制在 ide_fs 内。
+            from urllib.parse import parse_qs
+            from legion_command import ide_fs
+
+            action = path.rsplit("/", 1)[-1]
+            qs = parse_qs(urlparse(self.path).query)
+            try:
+                if action == "list":
+                    res = ide_fs.list_dir((qs.get("path") or ["."])[0])
+                elif action == "read":
+                    res = ide_fs.read_file((qs.get("path") or [""])[0])
+                else:
+                    res = ide_fs.dispatch(action, {
+                        "path": (qs.get("path") or ["."])[0],
+                        "query": (qs.get("q") or [""])[0],
+                        "glob": (qs.get("glob") or [""])[0],
+                    })
+                self._send_json(res)
+            except ide_fs.FsError as e:
+                self._send_json({"ok": False, "error": e.code,
+                                 "detail": e.detail}, e.status)
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "ide_fs_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:160])}, 500)
             return
         if path == "/api/snapshot":
             self._send_json(build_snapshot())
@@ -387,6 +484,23 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/api/evolution":
             self._send_json(self._evolution())
+            return
+        if path == "/api/hq/meeting/stats":
+            self._send_json(hq_stats.board(HQ_MEETINGS_DIR))
+            return
+        if path == "/api/hq/meeting/acceptance/evidence":
+            self._send_json(hq_acceptance.gather(
+                _BASELINE_FILE, _REDTEAM_DIR, _ACCEPTANCE_DIR))
+            return
+        if path == "/api/hq/agenda":
+            self._send_json(hq_agenda.load_agenda(COUNCIL_DATA))
+            return
+        if path == "/api/hq/meeting/list":
+            self._send_json(hq_meeting.list_meetings(HQ_MEETINGS_DIR))
+            return
+        m_hq = re.fullmatch(r"/api/hq/meeting/(hq-\d{8}-\d{6})", path)
+        if m_hq:
+            self._send_json(hq_meeting.get_meeting(HQ_MEETINGS_DIR, m_hq.group(1)))
             return
         if path == "/api/meeting/list":
             self._send_json(self._meeting_list())
@@ -474,6 +588,9 @@ class Handler(BaseHTTPRequestHandler):
                         {"id": "gpt-6-sol", "object": "model", "owned_by": "relay"},
                         {"id": "strong", "object": "model", "owned_by": "gateway"},
                         {"id": "local", "object": "model", "owned_by": "gateway"},
+                        {"id": "local4", "object": "model", "owned_by": "gateway"},
+                        {"id": "local9", "object": "model", "owned_by": "gateway"},
+                        {"id": "local35", "object": "model", "owned_by": "gateway"},
                     ],
                 }
             )
@@ -512,8 +629,9 @@ class Handler(BaseHTTPRequestHandler):
                                                    "model": k.get("model")} for k in rk],
                                    "healthy": healthy}
                 out["keys_total"] = total_keys
-                if not rk:
+                if (not rk) or healthy == 0:
                     out["mode"] = "needs_admin_key"
+                    out["reason"] = "no_healthy_upstream_key"
             except Exception as e:  # noqa: BLE001
                 out["upstream"] = {"relay_configured": False,
                                    "error": "%s: %s" % (type(e).__name__, str(e)[:120])}
@@ -528,7 +646,7 @@ class Handler(BaseHTTPRequestHandler):
                 out["local"] = {"online": False, "present": False}
             try:
                 import json as _json
-                reg = _json.loads((REPO / "config" / "ai_registry.json").read_text(encoding="utf-8"))
+                reg = _json.loads((_PLATFORM.parent / "config" / "ai_registry.json").read_text(encoding="utf-8"))
                 out["agents"] = {"count": len(reg or [])}
             except Exception:  # noqa: BLE001
                 out["agents"] = {"count": 0}
@@ -540,11 +658,17 @@ class Handler(BaseHTTPRequestHandler):
                 import urllib.request as _u
                 with _u.urlopen("http://127.0.0.1:11434/api/tags", timeout=2) as r:
                     tags = json.loads(r.read().decode("utf-8", "replace"))
-                names = [m.get("name", "") for m in (tags.get("models") or [])]
-                hit = next((n for n in names if n.startswith("qwen3.5:9b")), "")
+                ms = []
+                for m in (tags.get("models") or []):
+                    n = m.get("name", "")
+                    if n.lower().startswith("bge"):
+                        continue
+                    ms.append({"name": n,
+                               "size_gb": round(float(m.get("size") or 0) / (1024 ** 3), 2)})
+                hit = next((m for m in ms if m["name"].startswith("qwen3.5:9b")), None)
                 out["local"] = {"online": True, "model": "qwen3.5:9b",
                                 "endpoint": "http://127.0.0.1:11434",
-                                "present": bool(hit), "models": names[:10]}
+                                "present": bool(hit), "models": ms}
             except Exception as e:  # noqa: BLE001
                 out["local"] = {"online": False, "model": "qwen3.5:9b",
                                 "endpoint": "http://127.0.0.1:11434",
@@ -565,6 +689,49 @@ class Handler(BaseHTTPRequestHandler):
                                      "error": "%s: %s" % (type(e).__name__, str(e)[:120])}
             self._send_json(out)
             return
+        if path == "/api/model/prefs":
+            try:
+                from legion_command import model_prefs
+                self._send_json(model_prefs.state())
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "model_prefs_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
+        if path == "/api/planner/status":
+            try:
+                from legion_command import planner_rules
+                self._send_json({"ok": True, "signed": planner_rules.signed_rules(),
+                                 "candidate": planner_rules.candidate_rules(),
+                                 "active": planner_rules.active_rules()})
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "planner_status_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
+        if path == "/api/mission/evolve":
+            try:
+                from legion_command import mission_evolver
+                self._send_json({"ok": True, "data": mission_evolver.evolve()})
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "mission_evolve_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
+        if path == "/api/mission/experience":
+            try:
+                from legion_command import mission_evolver
+                self._send_json({"ok": True, "latest": mission_evolver.load_latest(),
+                                 "candidates": mission_evolver.list_candidates()})
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "mission_experience_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
+        if path == "/api/mission/list":
+            try:
+                from legion_command import mission_planner
+                self._send_json({"ok": True, "items": mission_planner.list_missions()})
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "mission_list_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
         if path == "/api/credentials":
             try:
                 from legion_command import credential_catalog
@@ -573,10 +740,21 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({"ok": False, "error": "credential_catalog_failed",
                                  "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
             return
+        if path == "/api/mcp/tushare/tools":
+            try:
+                from legion_command import mcp_bridge
+                tools = mcp_bridge.list_tools()
+                self._send_json({"ok": True, "count": len(tools), "tools": tools})
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "mcp_tools_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
         if path == "/api/router/vk":
             try:
                 from legion_command import seat_router
-                self._send_json({"ok": True, "items": seat_router.list_vk()})
+                _cfg = seat_router.load_config()
+                self._send_json({"ok": True, "items": seat_router.list_vk(),
+                                 "aliases": sorted((_cfg.get("aliases") or {}).keys())})
             except Exception as e:  # noqa: BLE001
                 self._send_json({"ok": False, "error": "vk_list_failed",
                                  "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
@@ -655,6 +833,25 @@ class Handler(BaseHTTPRequestHandler):
                         start=(qs.get("start") or [""])[0],
                         end=(qs.get("end") or [""])[0],
                         limit=(qs.get("limit") or ["20"])[0]))
+                elif sub == "wargame":
+                    from urllib.parse import parse_qs
+
+                    from legion_command import zhaoyun_wargame as zw
+
+                    qs = parse_qs(urlparse(self.path).query)
+                    self._send_json(zw.wargame_view(
+                        question=(qs.get("question") or [""])[0],
+                        code=(qs.get("code") or [""])[0],
+                        vars_json=(qs.get("vars") or [""])[0]))
+                elif sub == "debate":
+                    from urllib.parse import parse_qs
+
+                    from legion_command import zhaoyun_debate as zd2
+
+                    qs = parse_qs(urlparse(self.path).query)
+                    self._send_json(zd2.debate_view(
+                        question=(qs.get("question") or [""])[0],
+                        code=(qs.get("code") or [""])[0]))
                 elif sub == "memory/v2":
                     sys.path.insert(0, str(_PLATFORM))
                     from memory import store as ms
@@ -885,6 +1082,10 @@ class Handler(BaseHTTPRequestHandler):
         }
 
     def do_POST(self):
+        with self._request_scope():
+            return self._do_POST_impl()
+
+    def _do_POST_impl(self):
         import json
 
         path = urlparse(self.path).path
@@ -972,10 +1173,47 @@ class Handler(BaseHTTPRequestHandler):
                                                "type": "auth_error"}},
                                     int(route.get("code") or 401))
                     return
+                _model_req = str(req.get("model") or "").strip()
+                _agent = str(self.headers.get("X-DSH-Agent") or route.get("owner")
+                             or req.get("agent") or "").strip()
+                _task = str(self.headers.get("X-DSH-Task") or req.get("task") or "").strip()
+                _alloc = None
+                _pref = "auto"
+                if _model_req in ("", "auto") and _agent:
+                    try:
+                        from legion_command import model_prefs
+                        _pref = model_prefs.get(_agent)
+                    except Exception:  # noqa: BLE001
+                        _pref = "auto"
+                if _pref and _pref != "auto":
+                    _pr = seat_router.resolve(_pref, _token)
+                    if _pr.get("ok"):
+                        route = _pr
+                        route["alias"] = _pref
+                        route["pref"] = _pref
+                if _model_req in ("", "auto") and (_pref in ("", "auto")):
+                    from legion_command import model_allocator
+                    _alloc = model_allocator.allocate(_agent, _task, messages)
+                    route["seats"] = list(_alloc.get("seats") or [])
+                    route["allow_local"] = bool(_alloc.get("allow_local", True))
+                    route["local_model"] = _alloc.get("local_model")
+                    route["alias"] = _alloc.get("tier")
+                    owner = route.get("owner")
+                    if owner and _alloc.get("tier") != "local" and owner not in route["seats"]:
+                        route["seats"] = [owner] + route["seats"]
                 from legion_command import keypool
 
                 res = keypool.auto_chat(messages, seats=route.get("seats") or [],
-                                        allow_local=bool(route.get("allow_local", True)))
+                                        allow_local=bool(route.get("allow_local", True)),
+                                        local_model=route.get("local_model") or None,
+                                        model_filter=route.get("model") or None)
+                if route.get("vk_id"):
+                    try:
+                        seat_router.record_usage(
+                            str(route["vk_id"]), ok=bool(res.get("ok")),
+                            model=str(route.get("model") or _model_req or route.get("alias") or ""))
+                    except Exception:
+                        pass
             except Exception as e:  # noqa: BLE001
                 res = {
                     "ok": False,
@@ -1055,7 +1293,9 @@ class Handler(BaseHTTPRequestHandler):
                     },
                     "x_channel": channel,
                     "x_alias": route.get("alias"),
-                    "x_vk_owner": route.get("owner"),
+                    "x_allocator": (_alloc or {}),
+                    "x_pref": (route.get("pref") or "auto"),
+                    "x_key_owner": route.get("owner"),
                     "x_attempts": res.get("attempts", []),
                 }
             )
@@ -1102,11 +1342,21 @@ class Handler(BaseHTTPRequestHandler):
                     item = seat_router.create_vk(
                         str(req.get("owner") or ""),
                         str(req.get("alias") or "auto"),
-                        req.get("allowed"))
+                        req.get("allowed"),
+                        quota=int(req.get("quota") or 0))
                     self._send_json({"ok": True, "item": item})
                     return
                 if act == "disable":
                     item = seat_router.disable_vk(str(req.get("id") or ""))
+                    self._send_json({"ok": True, "item": item})
+                    return
+                if act == "enable":
+                    item = seat_router.enable_vk(str(req.get("id") or ""))
+                    self._send_json({"ok": True, "item": item})
+                    return
+                if act == "quota":
+                    item = seat_router.set_quota(str(req.get("id") or ""),
+                                                 int(req.get("quota") or 0))
                     self._send_json({"ok": True, "item": item})
                     return
                 self._send_json({"ok": False, "error": "unknown_action"}, 400)
@@ -1118,6 +1368,260 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({"ok": False, "error": "vk_action_failed",
                                  "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
                 return
+        if path == "/api/stt":
+            try:
+                import base64
+                import tempfile
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 20 * 1024 * 1024:
+                    self._send_json({"ok": False, "error": "audio_too_large"}, 400)
+                    return
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+                audio_b64 = str(req.get("audio_b64") or "")
+                mime = str(req.get("mime") or "audio/webm")
+                if not audio_b64:
+                    self._send_json({"ok": False, "error": "empty_audio"}, 400)
+                    return
+                raw = base64.b64decode(audio_b64)
+                ext = ".webm" if "webm" in mime else (".ogg" if "ogg" in mime else ".wav")
+                repo = _PLATFORM.parent
+                ffmpeg = repo / "tools" / "ffmpeg" / "bin" / "ffmpeg.exe"
+                script = repo / "tools" / "stt_sapi.ps1"
+                if not ffmpeg.exists() or not script.exists():
+                    self._send_json({"ok": False, "error": "stt_engine_missing"}, 500)
+                    return
+                t0 = time.time()
+                with tempfile.TemporaryDirectory(prefix="dsh_stt_") as td:
+                    src = pathlib.Path(td) / ("audio" + ext)
+                    wav = pathlib.Path(td) / "audio16k.wav"
+                    src.write_bytes(raw)
+                    conv = subprocess.run(
+                        [str(ffmpeg), "-y", "-i", str(src), "-ar", "16000",
+                         "-ac", "1", "-f", "wav", str(wav)],
+                        capture_output=True, text=True, timeout=60)
+                    if conv.returncode != 0 or not wav.exists():
+                        self._send_json({"ok": False, "error": "audio_convert_failed",
+                                         "detail": (conv.stderr or "")[-300:]}, 500)
+                        return
+                    pr = subprocess.run(
+                        ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass",
+                         "-File", str(script), "-Wav", str(wav)],
+                        capture_output=True, text=True, encoding="utf-8",
+                        errors="replace", timeout=90)
+                    text = (pr.stdout or "").strip()
+                self._send_json({"ok": True, "text": text, "engine": "windows-sapi-zh-CN",
+                                 "seconds": round(time.time() - t0, 2)})
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "stt_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
+        if path == "/api/mission/promote":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 16 * 1024:
+                    self._send_json({"ok": False, "error": "bad_request"}, 400)
+                    return
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+                from legion_command import mission_evolver
+                out = mission_evolver.promote(str(req.get("candidate_id") or ""),
+                                              str(req.get("signed_by") or ""),
+                                              str(req.get("note") or ""))
+                self._send_json(out)
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "mission_promote_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
+        if path == "/api/mission/plan":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 2 * 1024 * 1024:
+                    self._send_json({"ok": False, "error": "doc_too_large"}, 400)
+                    return
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+                from legion_command import mission_planner
+                res = mission_planner.plan(str(req.get("name") or ""),
+                                           str(req.get("doc") or ""),
+                                           use_llm=bool(req.get("use_llm", True)))
+                self._send_json({"ok": bool(res.get("valid")), "plan": res})
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "mission_plan_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
+        if path == "/api/mission/dispatch":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 2 * 1024 * 1024:
+                    self._send_json({"ok": False, "error": "bad_request"}, 400)
+                    return
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+                from legion_command import mission_dispatch, mission_planner
+                plan = req.get("plan")
+                if not plan and req.get("mission_id"):
+                    plan = mission_planner.load_plan(str(req["mission_id"]))
+                if not plan:
+                    self._send_json({"ok": False, "error": "plan_required"}, 400)
+                    return
+                res = mission_dispatch.dispatch(plan, int(req.get("parallel") or 3),
+                                                create=bool(req.get("create", True)))
+                self._send_json(res)
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "mission_dispatch_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
+        if path == "/api/mcp/tushare/call":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 256 * 1024:
+                    self._send_json({"ok": False, "error": "bad_request"}, 400)
+                    return
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+                from legion_command import mcp_bridge
+                result = mcp_bridge.call_tool(str(req.get("tool") or ""),
+                                              req.get("args") if isinstance(req.get("args"), dict) else {})
+                self._send_json({"ok": True, "tool": req.get("tool"), "result": result})
+            except ValueError as e:
+                self._send_json({"ok": False, "error": str(e)[:200]}, 400)
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "mcp_call_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
+        if path == "/api/credentials/set":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 128 * 1024:
+                    self._send_json({"ok": False, "error": "bad_request"}, 400)
+                    return
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+                name = str(req.get("name") or "").strip()
+                secret = str(req.get("secret") or "").strip()
+                category = str(req.get("category") or "data").strip()
+                env = str(req.get("env") or "").strip()
+                import re as _re
+                if not _re.fullmatch(r"[A-Za-z0-9_.-]{2,64}", name):
+                    self._send_json({"ok": False, "error": "invalid_name"}, 400)
+                    return
+                if len(secret) < 6 or len(secret) > 4096:
+                    self._send_json({"ok": False, "error": "invalid_secret"}, 400)
+                    return
+                if env and not _re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]{1,63}", env):
+                    self._send_json({"ok": False, "error": "invalid_env"}, 400)
+                    return
+                # 服务解释器不一定有 pywin32；调用带 DPAPI 的 py312 子进程
+                _cs_path = _PLATFORM.parent / "tools" / "credential_store.py"
+                _py = _PLATFORM.parent.parent / "py312" / "python.exe"
+                if not _py.is_file():
+                    _py = Path(sys.executable)
+                _env = dict(os.environ)
+                _env["DSH_CREDENTIAL_VALUE"] = secret
+                _env["PYTHONIOENCODING"] = "utf-8"
+                _p = subprocess.run(
+                    [str(_py), "-X", "utf8", str(_cs_path), "set", name,
+                     "--category", category, "--env", env],
+                    capture_output=True, text=True, encoding="utf-8", errors="replace",
+                    env=_env, timeout=30,
+                )
+                if _p.returncode != 0:
+                    raise RuntimeError("credential_store rc=%s" % _p.returncode)
+                item = json.loads(_p.stdout)
+                self._send_json({"ok": True, "item": {k: v for k, v in item.items() if k != "secret"}})
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "credential_set_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
+        if path == "/api/planner/build-rules":
+            try:
+                from legion_command import planner_rules
+                self._send_json(planner_rules.build_rules())
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "planner_build_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
+        if path == "/api/planner/ab":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 2 * 1024 * 1024:
+                    self._send_json({"ok": False, "error": "bad_request"}, 400)
+                    return
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+                from legion_command import planner_rules
+                rep = planner_rules.ab_compare(str(req.get("doc") or ""),
+                                               str(req.get("name") or "A/B 对比"),
+                                               bool(req.get("use_signed", True)))
+                self._send_json({"ok": True, "report": rep})
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "planner_ab_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
+        if path == "/api/mission/worker":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 64 * 1024:
+                    self._send_json({"ok": False, "error": "bad_request"}, 400)
+                    return
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+                from legion_command import mission_worker
+                mid = str(req.get("mission_id") or "")
+                tid = str(req.get("task_id") or "")
+                dry = bool(req.get("dry_run", False))
+                if tid:
+                    res = mission_worker.run_task(mid, tid, dry)
+                else:
+                    res = mission_worker.poll(mid, int(req.get("limit") or 1), dry)
+                self._send_json(res)
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "mission_worker_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
+        if path == "/api/mission/advance":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 64 * 1024:
+                    self._send_json({"ok": False, "error": "bad_request"}, 400)
+                    return
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+                from legion_command import mission_dispatch
+                self._send_json(mission_dispatch.advance(str(req.get("mission_id") or "")))
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "mission_advance_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
+        if path == "/api/mission/dry-run":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 2 * 1024 * 1024:
+                    self._send_json({"ok": False, "error": "bad_request"}, 400)
+                    return
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+                from legion_command import mission_dispatch, mission_planner
+                plan = req.get("plan")
+                if not plan and req.get("mission_id"):
+                    plan = mission_planner.load_plan(str(req["mission_id"]))
+                if not plan:
+                    self._send_json({"ok": False, "error": "plan_required"}, 400)
+                    return
+                res = mission_dispatch.dry_run(plan, int(req.get("parallel") or 3))
+                self._send_json(res)
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "mission_dry_run_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
+        if path == "/api/model/prefs":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 16 * 1024:
+                    self._send_json({"ok": False, "error": "bad_request"}, 400)
+                    return
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+                from legion_command import model_prefs
+                out = model_prefs.set_pref(str(req.get("agent") or ""),
+                                           str(req.get("model") or ""))
+                self._send_json(out)
+            except ValueError as e:
+                self._send_json({"ok": False, "error": str(e)[:200]}, 400)
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "model_pref_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:200])}, 500)
+            return
         if path == "/api/keys/action":
             try:
                 length = int(self.headers.get("Content-Length") or 0)
@@ -1542,7 +2046,10 @@ class Handler(BaseHTTPRequestHandler):
             if not agent or not agent.replace("_", "").isalnum():
                 self._send_json({"ok": False, "error": "bad_agent"}, 400)
                 return
-            binding = resolve_binding(agent)
+            purpose = str(req.get("purpose", "")).strip()
+            binding_orig = resolve_binding(agent)
+            meeting_override = purpose == "meeting" and agent in MEETING_BINDING_OVERRIDES
+            binding = (resolve_meeting_binding(agent) if meeting_override else binding_orig)
             if binding == "none":
                 # 规则执行体：编制上就没给它 LLM。不能兜底成 9b，
                 # 那会让一个「判例手册驱动的巡检哨」凭空开口说话。
@@ -1653,7 +2160,46 @@ class Handler(BaseHTTPRequestHandler):
             )
             env["agent"] = agent
             env["binding"] = env.get("data", {}).get("binding_resolved", binding)
+            if meeting_override:
+                env["meeting_override"] = True
+                env["binding_original"] = binding_orig
             self._send_json(env)
+            return
+        if path == "/api/hq/agenda/message":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 64 * 1024:
+                    raise ValueError("bad length")
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+            except (ValueError, UnicodeDecodeError):
+                self._send_json({"ok": False, "error": "bad_request"}, 400)
+                return
+            code, env = hq_agenda.append_message(COUNCIL_DATA, req)
+            self._send_json(env, code)
+            return
+        if path == "/api/hq/meeting/save":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 512 * 1024:
+                    raise ValueError("bad length")
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+            except (ValueError, UnicodeDecodeError):
+                self._send_json({"ok": False, "error": "bad_request"}, 400)
+                return
+            code, env = hq_meeting.save_meeting(HQ_MEETINGS_DIR, req)
+            self._send_json(env, code)
+            return
+        if path == "/api/hq/meeting/dispatch":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 64 * 1024:
+                    raise ValueError("bad length")
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+            except (ValueError, UnicodeDecodeError):
+                self._send_json({"ok": False, "error": "bad_request"}, 400)
+                return
+            code, env = hq_meeting.dispatch_meeting(HQ_MEETINGS_DIR, req, inbox_gateway.submit)
+            self._send_json(env, code)
             return
         if path == "/api/meeting/minutes":
             # 会终纪要落盘：来源是客户端声明，不能据此认定为真模型回执。

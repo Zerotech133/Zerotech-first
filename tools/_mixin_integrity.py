@@ -13,6 +13,7 @@ import glob
 import json
 import os
 import sys
+import logging
 
 # 2026-10-25 B5/P1-07（审计 RC-04）：Windows 下 stdout 被管道重定向时默认按 GBK
 # 编码，本文件输出的 ❌/⚠️/✅ 会 UnicodeEncodeError 崩溃 → 评审门在干净 shell
@@ -20,8 +21,8 @@ import sys
 try:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-except (AttributeError, OSError):  # 非常规 stdout（如被替换的流）不致命
-    pass
+except (AttributeError, OSError) as exc:
+    logging.getLogger(__name__).warning("silent-except %s: %s", "tools/_mixin_integrity.py", exc)
 
 PORTAL = os.path.join(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__))), "portal")

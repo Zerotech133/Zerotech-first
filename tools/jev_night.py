@@ -39,6 +39,7 @@ import sys
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
+import logging
 
 ROOT = Path(__file__).resolve().parents[1]
 JEV = ROOT / "news_collector" / "jev_backfill.py"
@@ -136,8 +137,8 @@ def _try_acquire(path: Path) -> tuple[bool, dict]:
                 return False, meta
             try:
                 os.remove(path)
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "tools/jev_night.py", exc)
             continue
         except OSError as exc:
             # 锁目录不可写等意外：不因护栏故障拖死夜跑，降级为"无锁运行"并记录。
@@ -185,8 +186,8 @@ def touch_lock(lock_path: Path | None = None) -> None:
     """持锁心跳：仅 touch mtime（等待分片/每轮前后调用）。"""
     try:
         os.utime(_lock_path(lock_path), None)
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/jev_night.py", exc)
 
 
 def release_lock(lock_path: Path | None = None) -> None:
@@ -197,8 +198,8 @@ def release_lock(lock_path: Path | None = None) -> None:
         return
     try:
         os.remove(path)
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/jev_night.py", exc)
 
 
 def _tail_text(path: Path, max_bytes: int = 65536) -> str:
@@ -241,8 +242,8 @@ class Logger:
         try:
             with self.path.open("a", encoding="utf-8") as fh:
                 fh.write(line + "\n")
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "tools/jev_night.py", exc)
 
 
 def _hm(text: str) -> tuple[int, int]:
@@ -412,7 +413,12 @@ def main(argv=None) -> int:
         touch_lock()
 
         # ③ 循环 JEV 直到结束/清空/停止旗
+        # 2026-10-28 JEVSTOP：清零后若剩极少量"毒丸"（判读永远失败），旧逻辑会
+        # 27s/轮空转到 07:00；加「连续无进展」收工闸，避免整夜空耗 GPU。
         rounds = 0
+        stall = 0
+        STALL_MAX_LEFT = 5
+        STALL_ROUNDS = 3
         try:
             while datetime.now() < end:
                 if stop.exists():
@@ -429,6 +435,15 @@ def main(argv=None) -> int:
                 if rc != 0:
                     time.sleep(60)
                 touch_lock()
+                new_left = backlog()
+                if new_left is not None and new_left <= STALL_MAX_LEFT and new_left >= left:
+                    stall += 1
+                    if stall >= STALL_ROUNDS:
+                        log("STALL 剩余 %s 条连续 %d 轮无进展（疑似毒丸），提前收工"
+                            % (new_left, stall))
+                        break
+                else:
+                    stall = 0
         finally:
             left1 = backlog()
             resume_m3(log)

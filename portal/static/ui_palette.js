@@ -33,6 +33,25 @@
     { label: '打开军团', hint: '导航', run: function () { go('/legion'); } }
   ];
 
+  // W1：把 nav.js 暴露的 89 个入口全部加入命令面板（页面名/域分组）。
+  (function () {
+    try {
+      var nav = window.__WB_NAV;
+      if (!nav || !nav.sections || !nav.groups) return;
+      nav.sections.forEach(function (sec) {
+        (nav.groups[sec[0]] || []).forEach(function (g) {
+          (g[1] || []).forEach(function (it) {
+            COMMANDS.push({
+              label: it[0],
+              hint: '导航 · ' + (sec[1] || ''),
+              run: function () { go(it[1]); }
+            });
+          });
+        });
+      });
+    } catch (e) { /* 无 nav 数据时保持原命令 */ }
+  })();
+
   function build() {
     var overlay = document.createElement('div');
     overlay.className = 'wb-palette';

@@ -18,6 +18,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+import logging
 
 AP = Path(__file__).resolve().parent.parent
 TOOL = AP / "tools" / "monday_drill.py"
@@ -207,8 +208,8 @@ def test_run_command_always_refuses():
     ):
         try:
             md.run_command(cmd)
-        except md.ReadOnlyViolation:
-            pass
+        except md.ReadOnlyViolation as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/tests/test_monday_drill.py", exc)
         else:
             raise AssertionError("run_command 竟然执行了命令：%s" % cmd)
     # 常量被翻转也仍然拒绝（常量只是第一道闸）
@@ -216,8 +217,8 @@ def test_run_command_always_refuses():
     try:
         try:
             md.run_command("schtasks /run /tn AgentShadowDaily")
-        except md.ReadOnlyViolation:
-            pass
+        except md.ReadOnlyViolation as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/tests/test_monday_drill.py", exc)
         else:
             raise AssertionError("READ_ONLY=False 时 run_command 仍不应执行")
     finally:

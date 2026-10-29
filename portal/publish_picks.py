@@ -163,7 +163,7 @@ def check_online(rel, key):
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
     try:
         data = opener.open(req, timeout=30).read()
-    except Exception as e:  # noqa: BLE001 — 网络错误要归类成结论而不是崩
+    except Exception as e:  # noqa: BLE001
         return None, "线上拉取失败 %s: %s" % (rel, e)
     return hashlib.sha256(data).hexdigest(), None
 

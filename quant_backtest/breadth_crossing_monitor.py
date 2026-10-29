@@ -40,6 +40,7 @@ import os
 import sys
 import time
 from datetime import datetime
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -58,8 +59,8 @@ def _log(msg):
     try:
         with open(LOG, "a", encoding="utf-8") as f:
             f.write("%s %s\n" % (time.strftime("%Y-%m-%d %H:%M:%S"), msg))
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/breadth_crossing_monitor.py", exc)
 
 
 def load_series(fp=SERIES_FP):
@@ -319,8 +320,8 @@ def monitor_run(
 def main(argv=None):
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/breadth_crossing_monitor.py", exc)
     ap = argparse.ArgumentParser(description="宽度穿越监测器（45%确认/5日假穿越防护）")
     ap.add_argument("--series", default=SERIES_FP)
     ap.add_argument("--dry", action="store_true", help="只推演不写状态不推送")

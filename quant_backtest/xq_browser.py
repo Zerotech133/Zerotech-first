@@ -27,6 +27,7 @@ import asyncio
 import json
 import os
 import time
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CACHE_PATH = os.path.join(HERE, "config", "xq_browser_cookies.json")
@@ -123,8 +124,8 @@ def _harvest_live(
                     await page.goto(
                         HOME_URL, wait_until="commit", timeout=int(timeout_s * 1000)
                     )
-                except Exception:
-                    pass  # commit 已提交；reload 由窗口兜
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/xq_browser.py", exc)
                 await page.wait_for_timeout(CHALLENGE_WAIT_MS)
                 return await ctx.cookies()
             finally:

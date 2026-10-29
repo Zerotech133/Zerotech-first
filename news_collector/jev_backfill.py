@@ -47,6 +47,7 @@ from pathlib import Path
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import news_ai  # noqa: E402
+import logging
 
 ALERT_STATE = os.path.join(HERE, "logs", "alert_state.json")
 ALERT_COOLDOWN_S = 6 * 3600  # 同类告警 6 小时内不重发
@@ -167,8 +168,8 @@ def _alert_mark():
         os.makedirs(os.path.dirname(ALERT_STATE), exist_ok=True)
         with open(ALERT_STATE, "w", encoding="utf-8") as f:
             json.dump({"last_alert_ts": time.time()}, f)
-    except Exception:
-        pass  # 标记失败只影响节流，不影响主流程
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/jev_backfill.py", exc)
 
 
 def alert_backlog(left, judged, deadline_hit):
@@ -290,7 +291,7 @@ def main():
                 % (pref_skipped, len(items)),
                 flush=True,
             )
-        except Exception as exc:  # noqa: BLE001  粗筛异常 → 全量走 9B（fail-open）
+        except Exception as exc:  # noqa: BLE001
             print("BACKFILL prefilter DISABLED by error: %r" % (exc,), file=sys.stderr)
             pref_skipped = 0
 

@@ -87,7 +87,6 @@ def probe_all(routes: list[str]) -> dict:
 
 def main(argv: list[str]) -> int:
     check = "--check" in argv
-    do_probe = "--probe" in argv or "--probe-all" in argv
     data = extract_routes()
     if check:
         if not BASELINE.exists():

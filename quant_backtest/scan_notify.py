@@ -29,6 +29,7 @@ import sys
 import tempfile
 import time
 from datetime import datetime
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -96,8 +97,8 @@ def _today_rows():
                     "-", ""
                 ) == _today_dashed().replace("-", ""):
                     rows.append(r)
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/scan_notify.py", exc)
     return rows
 
 

@@ -70,7 +70,7 @@ class QpzmParquetFeeder:
             code = os.path.splitext(os.path.basename(fp))[0]
             try:
                 df = pd.read_parquet(fp, columns=["trade_date", "close", "pre_close"])
-            except Exception:  # noqa: BLE001 缺列/损坏票跳过
+            except Exception:  # noqa: BLE001
                 continue
             s = df.drop_duplicates("trade_date").set_index("trade_date").sort_index()
             if s.empty:

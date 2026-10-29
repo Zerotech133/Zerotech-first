@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import os
 import time
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 WORK = os.path.join(HERE, "work")
@@ -47,8 +48,8 @@ def _jsonl(path, limit=None):
                     rows.append(json.loads(line))
                 except ValueError:
                     continue
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/m_feed.py", exc)
     return rows[-limit:] if limit else rows
 
 
@@ -177,8 +178,8 @@ def _links_block(rows):
                         ),
                     )
                 )
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/m_feed.py", exc)
     if not lines:
         return {
             "type": "md",
@@ -195,7 +196,7 @@ def feed_payload(ticket=""):
     if ticket:
         return _detail(ticket)
     rows = _jsonl(TICKETS)
-    dedup = _jsonl(DEDUP)
+    _jsonl(DEDUP)
     today = time.strftime("%Y-%m-%d")
     n_today = sum(1 for r in rows if str(r.get("ts") or "").startswith(today))
     n_rej = sum(
@@ -208,7 +209,6 @@ def feed_payload(ticket=""):
 
     trows = []
     for r in rows[-20:][::-1]:
-        d = r.get("detail") or {}
         typ = ROUTE_CN.get(str(r.get("route") or ""), str(r.get("route") or "—"))
         ev = str(r.get("evidence") or "-")[:18]
         trows.append(

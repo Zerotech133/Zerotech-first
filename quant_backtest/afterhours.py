@@ -61,7 +61,7 @@ def index_close():
         if df is None or df.empty:
             return out
         df["d8"] = df["trade_date"].astype(str).str[:8]
-        nm = dict(_IDX)
+        dict(_IDX)
         for code, name in _IDX:
             r0 = df[(df["ts_code"] == code) & (df["d8"] == d0)]
             r1 = df[(df["ts_code"] == code) & (df["d8"] == d1)]
@@ -488,7 +488,7 @@ def write_page(d):
 
 def build_doc_md(d):
     """盘后复盘完整 markdown（飞书镜像文档用）。"""
-    sh, mo, ic = d["sh"], d["money"], d["ic"]
+    _sh, mo, ic = d["sh"], d["money"], d["ic"]
     L = [
         "# 🌇 盘后复盘 · %s" % ic.get("date", "—"),
         "",

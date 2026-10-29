@@ -28,12 +28,13 @@ import sqlite3
 import sys
 import time
 from pathlib import Path
+import logging
 
 try:  # ENCPROT 编码保护
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-except Exception:  # noqa: BLE001
-    pass
+except Exception as exc:
+    logging.getLogger(__name__).warning("silent-except %s: %s", "tools/jev_audit.py", exc)
 
 import pyarrow as pa
 import pyarrow.compute as pc
@@ -133,8 +134,8 @@ def load_judged(days: int) -> list[dict]:
         codes = []
         try:
             codes += [norm_ts_code(c) for c in (json.loads(stocks or "[]") or [])]
-        except ValueError:
-            pass
+        except ValueError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "tools/jev_audit.py", exc)
         codes += [norm_ts_code(c) for c in (j.get("companies") or [])]
         codes = sorted({c for c in codes if c})
         out.append({
@@ -228,8 +229,8 @@ def fill_posterior(conn: sqlite3.Connection, band: float) -> int:
     for r in rows:
         try:
             codes.update(json.loads(r[4] or "[]"))
-        except ValueError:
-            pass
+        except ValueError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "tools/jev_audit.py", exc)
     stock, bench = load_returns(dates, codes)
     now = dt.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     n = 0

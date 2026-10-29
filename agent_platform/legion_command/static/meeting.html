@@ -162,6 +162,47 @@
     <div class="dfoot" style="margin-top:8px">会终仅保存纪要，不触发派工；订单保持待派工。交易类指令永远先过 RiskGuard + 模拟盘验证。</div>
     <button class="btn amber" style="width:100%;margin-top:10px" onclick="endMeeting()">会终 · 保存纪要</button>
   </div>
+
+  <div class="panelbox hq">
+    <h3>指挥部会议（A 组 · 五席）<span class="muted" id="hqState">选模板载入</span></h3>
+    <div class="quick">
+      <button class="qk" onclick="hqPreset('morning')">晨会 · 15min</button>
+      <button class="qk" onclick="hqPreset('operation')">作战会 · 30-45min</button>
+      <button class="qk" onclick="hqPreset('acceptance')">验收/复盘会</button>
+    </div>
+    <div class="muted" id="hqAgenda">议程：点模板载入（五席固定上桌：田丰/诸葛亮/赵云/关羽/黄忠）</div>
+    <textarea id="hqDecision" placeholder="决议（一句话，可验收；仅记录，不自动执行）" style="width:100%;height:52px;margin-top:8px;background:#0F2440;color:#E6EDF5;border:0.5px solid #1E3A5F;border-radius:8px;padding:6px;box-sizing:border-box"></textarea>
+    <div style="display:flex;gap:6px;margin-top:6px">
+      <select id="hqOwner" style="flex:1;background:#0F2440;color:#E6EDF5;border:0.5px solid #1E3A5F;border-radius:8px;padding:5px">
+        <option value="A0">田丰</option><option value="AI1">诸葛亮</option>
+        <option value="ZHAOYUN">赵云</option><option value="GUANYU">关羽</option>
+        <option value="HUANGZHONG">黄忠</option>
+      </select>
+      <input id="hqDue" placeholder="截止 2026-11-01" style="flex:1;background:#0F2440;color:#E6EDF5;border:0.5px solid #1E3A5F;border-radius:8px;padding:5px">
+    </div>
+    <div class="muted" id="hqEvidence" style="margin-top:6px">验收证据：验收会模板自动载入基线/红队/验收单</div>
+    <select id="hqVerdict" style="width:100%;margin-top:6px;background:#0F2440;color:#E6EDF5;border:0.5px solid #1E3A5F;border-radius:8px;padding:5px">
+      <option value="OBSERVE">结论：观察（证据不足）</option>
+      <option value="PASS">结论：PASS（可放行）</option>
+      <option value="REJECT">结论：REJECT（退回）</option>
+    </select>
+    <button class="btn" style="width:100%;margin-top:8px" onclick="hqSave()">保存指挥部纪要</button>
+    <button class="btn amber" style="width:100%;margin-top:6px" onclick="hqDispatch()">决议派单（仅建任务申请）</button>
+    <div class="muted" id="hqPre" style="margin-top:8px">会前议题：加载中…</div>
+    <div style="display:flex;gap:6px;margin-top:6px">
+      <input id="hqTopic" placeholder="议题" style="flex:1;background:#0F2440;color:#E6EDF5;border:0.5px solid #1E3A5F;border-radius:8px;padding:5px;min-width:0">
+      <input id="hqMsg" placeholder="会前留言" style="flex:1;background:#0F2440;color:#E6EDF5;border:0.5px solid #1E3A5F;border-radius:8px;padding:5px;min-width:0">
+      <button class="btn" onclick="hqPostMsg()">留言</button>
+    </div>
+    <div class="dfoot" style="margin-top:6px">仅记录 + 建任务申请：不自动执行、不代批 L2；订单仍待田丰派工。</div>
+  </div>
+
+  <div class="panelbox hq">
+    <h3>会议看板（P2）<span class="muted" id="hqBoardState">加载中…</span></h3>
+    <div class="muted" id="hqBoardStats">—</div>
+    <div class="muted" id="hqBoardDrift" style="margin-top:6px"></div>
+    <div class="muted" id="hqBoardReplay" style="margin-top:6px"></div>
+  </div>
 </div>
 
 <script>
@@ -214,7 +255,7 @@ function chatLive(agentId, question, fallbackCb) {
   const timer = setTimeout(() => ctl.abort(), TIMEOUT_MS);
   gateRun(() => fetch('/api/chat', {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: ctl.signal,
-    body: JSON.stringify({ agent: agentId, system: buildSystem(agentId),
+    body: JSON.stringify({ agent: agentId, system: buildSystem(agentId), purpose: 'meeting',
       user: '会议主持（老田）问：' + question + '（只从你职能面回答，不知道就说需查证）' })
   }).then(r => r.json()).then(env => {
     clearTimeout(timer);
@@ -254,6 +295,9 @@ const AGENTS = {
   HERMES_UI:{nm:'邓芝桥', av:'邓', c:'c-g', md:'8787', grp:'ops', line:'通讯面：会议纪要可实时推飞书卡。' },
   DEV1:{ nm:'曹操', av:'曹', c:'c-b', md:'9b', grp:'dev', line:'研发面：凭单实施，无单不写码。工期一天内。' },
   DEV2:{ nm:'蒸馏席', av:'蒸', c:'c-b', md:'35b', grp:'dev', line:'数据面：可先离线蒸馏一版判据样本再上。' },
+  ZHAOYUN:{ nm:'赵云·治理', av:'云', c:'c-y', md:'glm-5.3', grp:'zhong', line:'治理面：审计/审批/记忆与评估飞轮，L2 不代批。' },
+  GUANYU:{ nm:'关羽·整治', av:'羽', c:'c-b', md:'deepseek-flash', grp:'zhong', line:'执行面：代码审计与系统整治，先根因后批量修复，带证据包。' },
+  HUANGZHONG:{ nm:'黄忠·验收', av:'忠', c:'c-t', md:'glm-5.3', grp:'zhong', line:'验收面：只验不改、只退不批；基线/红队不过即 REJECT，回滚点必须写。' },
 };
 const GROUPS = { zhong:'pick-zhong', quant:'pick-quant', risk:'pick-risk', acad:'pick-acad', intel:'pick-intel', ops:'pick-ops', dev:'pick-dev' };
 let picked = [];
@@ -353,7 +397,145 @@ async function endMeeting() {
     button.disabled = false;
   }
 }
+
+// ---- 指挥部会议 P0：五席预设 / 决议 / 派单 ----
+let HQ_TYPE = 'morning';
+let HQ_ID = '';
+const HQ_TITLE = { morning:'晨会', operation:'作战会', acceptance:'验收/复盘会' };
+const HQ_AGENDA = {
+  morning: [{item:'昨日决议跟进',owner:'A0',minutes:3},{item:'今日三优先',owner:'A0',minutes:4},
+            {item:'阻塞与风险',owner:'GUANYU',minutes:3},{item:'黄忠验收闸口',owner:'HUANGZHONG',minutes:3},
+            {item:'老田终裁',owner:'LAOTIAN',minutes:2}],
+  operation: [{item:'诸葛亮败因卡',owner:'AI1',minutes:5},{item:'各席证据陈述',owner:'ALL',minutes:12},
+              {item:'黄忠验收判据',owner:'HUANGZHONG',minutes:4},{item:'决议草案',owner:'A0',minutes:4},
+              {item:'老田终裁',owner:'LAOTIAN',minutes:3}],
+  acceptance: [{item:'基线/红队证据',owner:'HUANGZHONG',minutes:5},{item:'PASS/REJECT',owner:'HUANGZHONG',minutes:5},
+               {item:'拒绝理由与回滚点',owner:'GUANYU',minutes:5},{item:'赵云归档判例',owner:'ZHAOYUN',minutes:3},
+               {item:'改进项',owner:'A0',minutes:3}]
+};
+function hqPreset(kind) {
+  HQ_TYPE = kind;
+  picked = ['A0','AI1','ZHAOYUN','GUANYU','HUANGZHONG'];
+  document.querySelectorAll('.pa').forEach(x => x.classList.remove('on'));
+  picked.forEach(id => { const el = document.getElementById('pk-' + id); if (el) el.classList.add('on'); });
+  renderTable();
+  document.getElementById('hqState').textContent = HQ_TITLE[kind];
+  document.getElementById('hqAgenda').textContent = '议程：' + HQ_AGENDA[kind].map(a => a.item).join(' → ');
+  if (kind === 'acceptance') { loadHqEvidence(); }
+  add('HOST', '【指挥部' + HQ_TITLE[kind] + '】' + HQ_AGENDA[kind].map((a, i) => (i + 1) + '.' + a.item).join(' '), 'host');
+}
+async function hqSave() {
+  try {
+    const dec = document.getElementById('hqDecision').value.trim();
+    const body = {
+      type: HQ_TYPE,
+      attendees: picked.slice(),
+      agenda: HQ_AGENDA[HQ_TYPE],
+      transcript: MINUTES.slice(),
+      decisions: dec ? [{ decision: (HQ_TYPE === 'acceptance' ? '验收结论[' + document.getElementById('hqVerdict').value + ']：' + dec : dec),
+                          owner: document.getElementById('hqOwner').value,
+                          due: document.getElementById('hqDue').value.trim(),
+                          evidence: HQ_ID ? ['meeting:' + HQ_ID] : [] }] : [],
+      acceptance: (HQ_TYPE === 'acceptance' && HQ_EVIDENCE) ? [{ verdict: document.getElementById('hqVerdict').value,
+        commit: ((HQ_EVIDENCE.acceptance || {}).commit || ''), report: ((HQ_EVIDENCE.acceptance || {}).file || ''),
+        evidence: JSON.stringify({ baseline: HQ_EVIDENCE.baseline, redteam: HQ_EVIDENCE.redteam }).slice(0, 500) }] : [],
+    };
+    const r = await fetch('/api/hq/meeting/save', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+    const env = await r.json();
+    if (!r.ok || !env.ok) throw new Error(env.error || '保存失败');
+    HQ_ID = env.meeting_id;
+    add('HOST', '指挥部纪要已存：' + HQ_ID + '（决议 ' + (dec ? '1' : '0') + ' 条；仅记录，不自动执行、不代批 L2）', 'host');
+  } catch (e) { add('HOST', '指挥部纪要保存失败：' + e.message, 'host'); }
+}
+async function hqDispatch() {
+  try {
+    const dec = document.getElementById('hqDecision').value.trim();
+    if (!dec) { add('HOST', '先填写决议再派单。', 'host'); return; }
+    if (!HQ_ID) { await hqSave(); }
+    if (!HQ_ID) { return; }
+    const r = await fetch('/api/hq/meeting/dispatch', { method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ meeting_id: HQ_ID, title: dec, order_type: 'work', owner: document.getElementById('hqOwner').value }) });
+    const env = await r.json();
+    if (!r.ok || !env.ok) throw new Error(env.error || '派单失败');
+    add('HOST', '已生成任务申请（待田丰派工，未执行）：' + JSON.stringify(env.dispatch), 'host');
+  } catch (e) { add('HOST', '派单失败：' + e.message, 'host'); }
+}
+
+
+// ---- 会前议题（8798 收编只读 + 留言追加）----
+async function loadHqAgenda() {
+  try {
+    const r = await fetch('/api/hq/agenda');
+    const env = await r.json();
+    if (!env.ok) throw new Error(env.error || '加载失败');
+    const t3 = (env.topics || []).slice(-3).map(x => x.topic).filter(Boolean);
+    const m2 = (env.messages || []).slice(-2).map(x => (x.seat || '?') + '：' + (x.text || ''));
+    document.getElementById('hqPre').textContent =
+      '会前议题（议会厅收编只读）：' + (t3.length ? t3.join(' / ') : '暂无') +
+      (m2.length ? ' ｜ 最新留言：' + m2.join(' ; ') : '') +
+      ' ｜ 近事件 ' + (env.events_count || 0) + ' 条（merge/guard/会议）';
+  } catch (e) { document.getElementById('hqPre').textContent = '会前议题加载失败：' + e.message; }
+}
+async function hqPostMsg() {
+  const topic = document.getElementById('hqTopic').value.trim();
+  const text = document.getElementById('hqMsg').value.trim();
+  if (!topic || !text) { add('HOST', '议题和留言都要填。', 'host'); return; }
+  try {
+    const r = await fetch('/api/hq/agenda/message', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ topic: topic, text: text, seat: 'laotian', kind: 'hq' }) });
+    const env = await r.json();
+    if (!r.ok || !env.ok) throw new Error(env.error || '留言失败');
+    add('HOST', '会前留言已记录：' + topic, 'host');
+    document.getElementById('hqMsg').value = '';
+    loadHqAgenda();
+  } catch (e) { add('HOST', '留言失败：' + e.message, 'host'); }
+}
+
+
+// ---- 验收会证据（黄忠验收会接入）----
+let HQ_EVIDENCE = null;
+async function loadHqEvidence() {
+  try {
+    const r = await fetch('/api/hq/meeting/acceptance/evidence');
+    const env = await r.json();
+    if (!env.ok) throw new Error(env.error || '加载失败');
+    HQ_EVIDENCE = env;
+    const b = env.baseline || {}, rt = env.redteam || {}, ac = env.acceptance || {};
+    document.getElementById('hqEvidence').textContent =
+      '验收证据：基线 ' + (b.ok ? (b.passed + ' passed / ' + b.failed + ' failed') : (b.error || '缺')) +
+      ' ｜ 红队 ' + (rt.ok ? Math.round((rt.pass_rate || 0) * 100) + '%' : (rt.error || '缺')) +
+      ' ｜ 验收单 ' + (ac.ok ? ac.verdict + ' ' + (ac.file || '') : (ac.error || '缺'));
+    if (ac.ok && ac.verdict) { document.getElementById('hqVerdict').value = ac.verdict; }
+  } catch (e) { document.getElementById('hqEvidence').textContent = '验收证据加载失败：' + e.message; }
+}
+
+
+// ---- 会议看板（P2：闭环率/跑偏/回放）----
+async function loadHqStats() {
+  try {
+    const r = await fetch('/api/hq/meeting/stats');
+    const env = await r.json();
+    if (!env.ok) throw new Error(env.error || '加载失败');
+    document.getElementById('hqBoardState').textContent = '已加载';
+    document.getElementById('hqBoardStats').textContent =
+      '会议 ' + env.total + '（' + JSON.stringify(env.by_type) + ' / ' + JSON.stringify(env.by_status) + '）' +
+      ' ｜ 决议 ' + env.decisions + ' ｜ 订单 ' + env.orders + '（已派 ' + env.dispatched + '）' +
+      ' ｜ 闭环率 ' + Math.round((env.closure_rate || 0) * 100) + '%';
+    const d = env.drift || {};
+    document.getElementById('hqBoardDrift').textContent =
+      '跑偏：草稿超24h ' + (d.draft_stale || 0) + ' ｜ 缺负责人 ' + (d.missing_owner || 0) +
+      ' ｜ 缺截止 ' + (d.missing_due || 0) + ' ｜ 订单未派 ' + (d.orders_pending || 0) +
+      ' ｜ 决议无订单 ' + (d.decisions_without_orders || 0);
+    document.getElementById('hqBoardReplay').textContent =
+      '回放：' + (env.replay || []).slice(0, 5).map(m => m.meeting_id + '(' + m.type + '/' + m.status + ')').join(' · ');
+  } catch (e) {
+    document.getElementById('hqBoardState').textContent = '看板加载失败：' + e.message;
+  }
+}
+
 renderTable();
+setTimeout(loadHqAgenda, 400);
+setTimeout(loadHqStats, 600);
 setTimeout(() => { add('HOST', '点左侧名册选人上桌，或直接点快捷议题开会。'); }, 300);
 </script>
 </body>

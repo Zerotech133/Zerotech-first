@@ -50,6 +50,7 @@ from strong_track import (
     strong_verdict,
     trend_bull,
 )
+import logging
 
 POOL_SEGS = ("industry881", "industry_l1", "old_industry")
 PER_BLOCK_CAP = 20  # 单板块逐股评估默认上限（控制取数代价）
@@ -271,8 +272,8 @@ def main():
                     % prev.get("date")
                 )
                 return 0
-        except Exception:
-            pass  # 汇总文件损坏视为未扫，继续
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/strong_scan.py", exc)
 
     ok_g, msg, g_basis = freshness_guard()
     if not ok_g:

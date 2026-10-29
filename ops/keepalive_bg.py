@@ -17,6 +17,7 @@ import subprocess
 import sys
 import time
 from datetime import datetime
+import logging
 
 # K-STOCK-414：旧机 E:\ / Administrator 硬编码换机即死（守护一崩双服务连坐
 # 失守，2026-10-16 实测 8787/9899 双双下线）→ 全部按本文件位置/当前用户推导。
@@ -46,8 +47,8 @@ def log(msg: str) -> None:
     try:
         with open(LOG_KA, "a", encoding="utf-8") as f:
             f.write(line)
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "ops/keepalive_bg.py", exc)
     sys.stdout.write(line)
     sys.stdout.flush()
 

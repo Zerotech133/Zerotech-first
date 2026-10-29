@@ -61,6 +61,7 @@ sys.path.insert(0, HERE)
 
 from strong_scan import POOL_SEGS  # noqa: E402
 from strong_track import MIN_BLOCK_MEMBERS, STRONG_EX_TH  # noqa: E402
+import logging
 
 # ---- 研究参数（集中定义，产线化时对应 config 开关，见留痕方案节） ----
 TARGET_LO, TARGET_HI = 5, 20  # 名单厚度目标带：领涨个股数 5~20（推送可读性）
@@ -97,8 +98,8 @@ def log(msg):
             _LOG_FH = open(LOG_FP, "a", encoding="utf-8")
         _LOG_FH.write(line + "\n")
         _LOG_FH.flush()
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/tools/research/strong_threshold_calib.py", exc)
 
 
 def atomic_dump(obj, fp):
@@ -394,7 +395,7 @@ def main():
     gain = {vn: float(hit[vn] - hit["fixed"]) for vn in variants if vn != "fixed"}
     # ---- 判定 B：名单调优（T+20 板块相对超额均值，自适应不差于固定） ----
     t20 = {vn: (float(np.mean(v)) if v else None) for vn, v in t20_db.items()}
-    t20_med = {vn: (float(np.median(v)) if v else None) for vn, v in t20_db.items()}
+    {vn: (float(np.median(v)) if v else None) for vn, v in t20_db.items()}
     ok_a = {vn: bool(gain[vn] >= MIN_GAIN_PP) for vn in gain}
     ok_b = {
         vn: bool(

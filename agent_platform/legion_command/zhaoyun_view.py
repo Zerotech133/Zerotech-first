@@ -97,7 +97,7 @@ def _experience(experience_root: Optional[Path]) -> dict:
         from engine import experience_store as S
 
         summary = S.public_summary(root=experience_root, recent=_ALL_ENTRIES_LIMIT)
-    except Exception as exc:  # noqa: BLE001 —— 只读视图 fail-soft
+    except Exception as exc:  # noqa: BLE001
         return {
             "ok": False,
             "error": "%s: %s" % (type(exc).__name__, str(exc)[:160]),
@@ -125,7 +125,7 @@ def _load_gov_ai():
     tools = str(_TOOLS_DIR)
     if tools not in sys.path:
         sys.path.insert(0, tools)
-    import gov_ai  # noqa: WPS433 —— 惰性导入，避免拖慢/拖死 serve 启动
+    import gov_ai  # noqa: WPS433
 
     return gov_ai
 
@@ -147,7 +147,7 @@ def _gov_ai_health(platform: Path, now: float) -> dict:
             "age_hours": status.get("age_hours"),
             "consecutive_failures": status.get("consecutive_failures", 0),
         }
-    except Exception as exc:  # noqa: BLE001 —— 健康数据源坏掉不得拖垮整页
+    except Exception as exc:  # noqa: BLE001
         return {
             "level": "yellow",
             "detail": "不可用: %s: %s" % (type(exc).__name__, str(exc)[:160]),
@@ -337,7 +337,7 @@ def _pid_alive(pid) -> bool:
                 return bool(ok) and code.value == STILL_ACTIVE
             finally:
                 kernel32.CloseHandle(handle)
-        except Exception:  # noqa: BLE001 —— 探活失败按"未知/不在"处理，不阻塞视图
+        except Exception:  # noqa: BLE001
             return False
     try:
         os.kill(pid, 0)  # POSIX：0 = 仅检查存在，不投递信号

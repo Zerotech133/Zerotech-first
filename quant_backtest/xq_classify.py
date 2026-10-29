@@ -45,6 +45,7 @@ import traceback
 import urllib.request
 from datetime import datetime
 from pathlib import Path
+import logging
 
 if __package__:
     from .tools.xq_ticker_normalize import normalize_tickers
@@ -464,8 +465,8 @@ def log(msg: str) -> None:
     try:
         with _status_log_path().open("a", encoding="utf-8") as f:
             f.write(line + "\n")
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/xq_classify.py", exc)
     print(line)
 
 

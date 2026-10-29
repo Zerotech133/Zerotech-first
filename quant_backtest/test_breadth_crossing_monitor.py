@@ -42,7 +42,7 @@ def test_cross_up_and_confirm(tmp_path=None):
         ("20260109", 0.45),
     ]  # D5 满 5 日
     with tempfile.TemporaryDirectory() as tmp:
-        sfp = _series_fp(tmp, pairs)
+        _series_fp(tmp, pairs)
         ev1, st = bcm.advance(pairs[1:2], prev_br=pairs[0][1])  # 基准锚宽度
         kinds = [e["kind"] for e in ev1]
         assert kinds == ["CROSS_UP"], kinds

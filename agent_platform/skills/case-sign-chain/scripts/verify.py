@@ -6,6 +6,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+import logging
 
 HERE = Path(__file__).resolve()
 
@@ -24,8 +25,8 @@ def _main_repo():
             if not common.is_absolute():
                 common = (HERE.parent / common).resolve()
             return common.parent
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/skills/case-sign-chain/scripts/verify.py", exc)
     p = HERE.parent
     while p.name and not (p / "agent_platform").is_dir():
         p = p.parent

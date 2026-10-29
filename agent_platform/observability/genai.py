@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import os
 from contextlib import contextmanager, nullcontext
+import logging
 
 _TRUE = ("1", "true", "yes", "on")
 _TRACER = None
@@ -76,8 +77,8 @@ def llm_span(model="", provider="", operation="chat", extra=None):
         with tracer.start_as_current_span("chat %s" % (model or "llm"),
                                           attributes=attrs) as span:
             yield span
-    except Exception:  # noqa: BLE001 —— 可观测失败不得反噬业务
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/observability/genai.py", exc)
 
 
 class _InstrumentedLLM:

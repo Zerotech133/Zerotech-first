@@ -47,6 +47,7 @@ import os
 import subprocess
 from dataclasses import dataclass, field
 from typing import Any, Optional
+import logging
 
 # ── 常量 ──────────────────────────────────────────────────────────────
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -102,8 +103,8 @@ def _load_env_local() -> None:
                 key = key.strip()
                 if key.startswith("XMAP_PG_"):
                     os.environ.setdefault(key, val.strip())
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/strategy_layer/aggregator.py", exc)
 
 
 def _pg_connect():
@@ -333,7 +334,7 @@ def persist_combined(rows: list) -> bool:
     for writer in (_persist_psycopg2, _persist_docker_exec):
         try:
             return bool(writer(rows))
-        except Exception as exc:  # noqa: BLE001 — 兜底链路逐级降级
+        except Exception as exc:  # noqa: BLE001
             errs.append("%s: %s" % (writer.__name__, exc))
     # 全链失败：携带每一级的根因（QA-20261017：只留最后一级会吞掉
     # psycopg2 主路径的原始错误，排障时缺第一现场）
@@ -350,7 +351,7 @@ def _notify_persist_failure(trade_date: str, rows_count: int, error) -> None:
         from strategy_layer import alert_bridge  # noqa: 延迟 import
 
         alert_bridge.alert_persist_failure(trade_date, rows_count, error)
-    except Exception as exc:  # noqa: BLE001 — 告警观测层不能反噬
+    except Exception as exc:  # noqa: BLE001
         print("[aggregator][WARN] E1 告警链调用失败: %s" % str(exc)[:120])
 
 
@@ -376,7 +377,7 @@ class SignalAggregator:
         out = []
         try:
             ids = list(self.registry.enabled_ids() or [])
-        except Exception as exc:  # noqa: BLE001 — 注册表不可用按空集降级
+        except Exception as exc:  # noqa: BLE001
             print("[aggregator][WARN] registry.enabled_ids() 失败: %s" % exc)
             return []
         for sid in ids:
@@ -408,8 +409,8 @@ class SignalAggregator:
                 n = getter(sid)
                 if n is not None:
                     return max(int(n), 1)
-            except (TypeError, ValueError):
-                pass
+            except (TypeError, ValueError) as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/strategy_layer/aggregator.py", exc)
         n = getattr(adapter, "top_n", None)
         try:
             return max(int(n), 1) if n is not None else None
@@ -448,7 +449,7 @@ class SignalAggregator:
             sid = str(getattr(adapter, "strategy_id", "") or type(adapter).__name__)
             try:
                 signals = adapter.score(trade_date) or []
-            except Exception as exc:  # noqa: BLE001 — 降级≠失败
+            except Exception as exc:  # noqa: BLE001
                 print(
                     "[aggregator][DEGRADED] 策略 %s score(%s) 失败，"
                     "本轮计 0 贡献: %s" % (sid, trade_date, exc)
@@ -511,7 +512,7 @@ class SignalAggregator:
                 _notify_persist_failure(
                     trade_date, len(combined), "persist_combined 返回 False"
                 )
-        except Exception as exc:  # noqa: BLE001 — 写库失败不中断
+        except Exception as exc:  # noqa: BLE001
             print(
                 "[aggregator][WARN] signals_combined 写库异常，"
                 "内存结果照常返回（%d 行）: %s" % (len(combined), exc)
@@ -525,7 +526,7 @@ class SignalAggregator:
             from strategy_layer import evidence_intake
 
             evidence_intake.record_pool_intake(trade_date, result)
-        except Exception as exc:  # noqa: BLE001 — 证据链写入不反噬主链
+        except Exception as exc:  # noqa: BLE001
             print("[evidence-intake][WARN] 证据链入池调用失败: %s" % str(exc)[:120])
 
         return result

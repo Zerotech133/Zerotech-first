@@ -15,6 +15,7 @@ import json
 import subprocess
 import time
 from pathlib import Path
+import logging
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
@@ -59,8 +60,8 @@ def tail(n: int = 20, path: Path | None = None) -> list:
     for ln in lines[-max(1, n):]:
         try:
             out.append(json.loads(ln))
-        except ValueError:
-            pass
+        except ValueError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "tools/trace_log.py", exc)
     return out
 
 

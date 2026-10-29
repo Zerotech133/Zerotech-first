@@ -25,6 +25,7 @@ import sys
 from datetime import datetime
 
 import pandas as pd
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -121,8 +122,8 @@ def main():
     for p in olds[:-400]:
         try:
             os.remove(os.path.join(hist_dir, p))
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/kg_features.py", exc)
 
     if args.top:
         for col in [

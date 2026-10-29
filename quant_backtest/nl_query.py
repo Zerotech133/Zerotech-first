@@ -31,12 +31,13 @@ import sys
 import tempfile
 import time
 from datetime import datetime, timezone
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 # 2026-10-07 A/B 全量合并为单一权威版：kg_paths 仅 zerobound-kg（旧名 KGStockAnalysis）侧存在，
 # quant_backtest 产线无此模块 → ImportError 回落 HERE/data（两侧行为均不变）
 try:
-    import kg_paths  # noqa: E402  单一数据库指针
+    import kg_paths  # noqa: E402
 
     _data_root = kg_paths.get_data_root()
 except ImportError:
@@ -80,8 +81,8 @@ SYSTEM = """你是个人量化系统的数据查询助手，用提供的只读�
 
 try:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-except Exception:
-    pass
+except Exception as exc:
+    logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/nl_query.py", exc)
 
 
 def _today8():
@@ -259,8 +260,8 @@ def _cleanup(keep_days=7):
             p = os.path.join(CACHE_DIR, fn)
             if fn.endswith(".json") and os.path.getmtime(p) < cutoff:
                 os.remove(p)
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/nl_query.py", exc)
 
 
 # ── 主入口 ───────────────────────────────────────────────────
@@ -276,8 +277,8 @@ def answer(q, force=False):
                 d["cached"] = True
                 d["elapsed_s"] = round(time.time() - t0, 1)
                 return d
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/nl_query.py", exc)
     ans, calls = _run(q)
     degraded = not ans
     if degraded:

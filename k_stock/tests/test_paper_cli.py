@@ -168,7 +168,7 @@ def test_mark_default_still_covers_main_and_us_only(monkeypatch, tmp_path):
     assert selected == [(db, ["main", "us_qingping"])]
 
 
-def test_mark_default_us_failure_is_nonzero_and_no_false_us_row(tmp_path, monkeypatch):
+def test_mark_default_us_failure_is_nonzero_and_no_false_us_row(tmp_path, monkeypatch, frozen_lake):
     db = tmp_path / "paper.db"
     e = paper_cli.PaperEngine(db, paper_cli.ParquetMarket(), account="main")
     e.ensure_account("main")
@@ -304,7 +304,7 @@ def test_mark_selected_routes_markets_and_backs_up(tmp_path, monkeypatch):
         assert bak.execute("SELECT count(*) FROM account").fetchone()[0] == 3
 
 
-def test_mark_all_real_engine_cash_only_accounts(tmp_path):
+def test_mark_all_real_engine_cash_only_accounts(tmp_path, frozen_lake):
     db = tmp_path / "paper.db"
     engine = paper_cli.PaperEngine(db, paper_cli.ParquetMarket(), account="main")
     engine.ensure_account("main")
@@ -513,7 +513,6 @@ def test_market_valuation_day_cross_timezone_and_holidays():
 
 
 def test_mark_uses_checked_price_when_market_changes(tmp_path, monkeypatch):
-    db = tmp_path / "paper.db"
     seen = []
 
     class Market:

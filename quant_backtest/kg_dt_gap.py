@@ -47,6 +47,7 @@ import kg_schema as S
 import tdx_read as tdxr
 from kg_client import KgClient
 import linreg  # X3 血缘登记（best-effort，不阻断）
+import logging
 
 # ── 量化席位词表 v1（市场高共识，regex 匹配 ts_top_inst.exalter）──
 QUANT_SEATS = (
@@ -176,8 +177,8 @@ def _ts_token(env=None):
             for ln in fh:
                 if ln.startswith("XT_DATA_KEY="):
                     return ln.split("=", 1)[1].strip()
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/kg_dt_gap.py", exc)
     return ""
 
 

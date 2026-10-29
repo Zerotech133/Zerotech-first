@@ -16,6 +16,7 @@ from typing import Optional, Tuple
 # 让 trade_pool 能被 import
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from quant_mid import trade_pool as tp  # noqa: E402
+import logging
 
 BODY_CAP = 1 << 20  # 1MB
 
@@ -47,8 +48,8 @@ def _auth_ok(headers: dict) -> bool:
                 exp2 = sec.get(sk)
                 if exp2 and sent == exp2:
                     return True
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/quant_mid/api_routes.py", exc)
     return False
 
 
@@ -119,7 +120,7 @@ def handle(method: str, path: str, headers: dict, body: bytes = b"") -> Tuple[in
 
     try:
         return handler(method, path, headers, body)
-    except Exception as e:  # noqa: BLE001 — HTTP 层兜底
+    except Exception as e:  # noqa: BLE001
         return 500, {"ok": False, "error": str(e),
                      "handler": handler.__name__ if handler else None}
 
@@ -142,8 +143,8 @@ def _h_pending(m, p, h, b) -> Tuple[int, dict]:
             params = urllib.parse.parse_qs(q)
             if "limit" in params:
                 limit = max(1, min(1000, int(params["limit"][0])))
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/quant_mid/api_routes.py", exc)
     rows = tp.get_pending_research(limit=limit)
     return 200, {"ok": True, "count": len(rows), "items": rows}
 
@@ -157,8 +158,8 @@ def _h_active(m, p, h, b) -> Tuple[int, dict]:
             params = urllib.parse.parse_qs(q)
             if "limit" in params:
                 limit = max(1, min(2000, int(params["limit"][0])))
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/quant_mid/api_routes.py", exc)
     rows = tp.get_active_watch(limit=limit)
     return 200, {"ok": True, "count": len(rows), "items": rows}
 

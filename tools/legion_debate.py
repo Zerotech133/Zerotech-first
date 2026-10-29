@@ -131,7 +131,8 @@ def run(code: str, save: bool = True) -> dict:
 
 
 def render(r: dict) -> str:
-    fu = r["funnel"]; pr = fu.get("primary_hypothesis", {})
+    fu = r["funnel"]
+    pr = fu.get("primary_hypothesis", {})
     a = r["acts"]
     def brief(s, n=110):
         s = s.strip()

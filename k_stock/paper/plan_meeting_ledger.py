@@ -221,7 +221,7 @@ def add_plan_version(
         raise PlanLedgerError(
             "plan_invalid", f"plan 须为非空 dict（买卖点/仓位方案）: {plan!r}"
         )
-    eff = _parse_iso(effective_at, "plan_versions.effective_at")
+    _parse_iso(effective_at, "plan_versions.effective_at")
     if prev_version is not None:
         if not isinstance(prev_version, str) or not prev_version.strip():
             raise PlanLedgerError(

@@ -24,6 +24,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 import qpzm_backtest as qb  # noqa: E402
+import logging
 
 PASS = []
 
@@ -211,7 +212,7 @@ def test_missing_data_skip():
 
 
 def test_load_wide_eligibility(tmpdir):
-    import pyarrow  # noqa: F401  确认 parquet 依赖存在
+    import pyarrow  # noqa: F401
 
     d = os.path.join(tmpdir, "ash")
     os.makedirs(d, exist_ok=True)
@@ -295,7 +296,7 @@ def test_stock_positions_basic():
     check("positions int range 0-4", pos.between(0, 4).all() and pos.dtype.kind in "iu")
     check("uptrend late bars have longs>=1", int(pos.iloc[-1]) >= 1)
     flat = pd.Series(np.full(60, 10.0))  # RSI=50, 不触发
-    pos_f = qb.stock_positions(flat)
+    qb.stock_positions(flat)
     check(
         "flat series rsi bit 0 (rsi=50 never <30)", True
     )  # rsi 事件帧不触发，其余维随 ma/boll 判定，仅冒烟不崩溃
@@ -341,6 +342,6 @@ def main():
 if __name__ == "__main__":
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/test_qpzm_backtest.py", exc)
     sys.exit(main())

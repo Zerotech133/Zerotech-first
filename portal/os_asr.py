@@ -21,6 +21,7 @@ import threading
 import time
 import wave
 from typing import Any, Dict, Optional
+import logging
 
 os.environ.setdefault("OMP_NUM_THREADS", "1")
 os.environ.setdefault("MODELSCOPE_OFFLINE", "1")
@@ -96,8 +97,8 @@ def _load_model():
         import torch
 
         torch.set_num_threads(2)
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/os_asr.py", exc)
     try:
         from funasr import AutoModel
     except Exception as exc:
@@ -243,8 +244,8 @@ def selfcheck() -> Dict[str, Any]:
                     "=== %s selfcheck FAIL: %r broken=%s\n"
                     % (time.strftime("%F %T"), exc, _STATE.get("broken"))
                 )
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/os_asr.py", exc)
         return {
             "ok": False,
             "engine": "sensevoice_local",
@@ -264,8 +265,8 @@ def _startup_selfcheck() -> None:
             )
         if not res.get("ok"):
             recover()
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/os_asr.py", exc)
 
 
 def transcribe_wav(path: str, lang: str = "zh") -> str:
@@ -307,8 +308,8 @@ def transcribe_wav(path: str, lang: str = "zh") -> str:
                     "\n=== %s ===\n%s\n"
                     % (time.strftime("%F %T"), traceback.format_exc())
                 )
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/os_asr.py", exc)
         fails = int(_STATE.get("fails") or 0) + 1
         _STATE["fails"] = fails
         _STATE["error"] = "推理异常(第%s次): %s" % (fails, exc)

@@ -799,7 +799,7 @@ def run_debate(idea: str, rounds: int = 2) -> dict:
     if chair_id == "zhuge":
         # 2026-10-26 A2/C2：载体已可用（OpenClaw+DeepSeek 中转，非GPT6），
         # 但议会厅按既定策略仍规则代行（非模型表态），故如实标注"规则代行"。
-        conclusion = f"（诸葛亮·建议面代行·轮值主席·规则代行非模型）综合两轮：分歧焦点已明确，建议按'条件推进'收口——采纳田丰的落地三问作为前置条件，采纳赵云的隐私红线作为硬约束；执行方案由老田拍板。"
+        conclusion = "（诸葛亮·建议面代行·轮值主席·规则代行非模型）综合两轮：分歧焦点已明确，建议按'条件推进'收口——采纳田丰的落地三问作为前置条件，采纳赵云的隐私红线作为硬约束；执行方案由老田拍板。"
     # 投票（两席位对结论表态）
     votes = _ask_seats_parallel(
         {
@@ -900,22 +900,6 @@ def notify(title: str, body: str, deep_link: str = "") -> dict:
                 if a.get("appId", "").startswith("cli_aa3e4f1b")
             ),
             None,
-        )
-        news = (
-            json.load(
-                open(
-                    os.path.join(
-                        os.path.dirname(REPO),
-                        "..",
-                        "aios",
-                        "news_collector",
-                        "news_config.json",
-                    ),
-                    encoding="utf-8",
-                )
-            )
-            if False
-            else None
         )
         import sys as _sys
 

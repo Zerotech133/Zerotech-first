@@ -18,6 +18,7 @@ from datetime import datetime
 from pathlib import Path
 
 from playwright.sync_api import sync_playwright
+import logging
 
 REPO = Path(__file__).resolve().parents[1]
 PROFILE_DIR = REPO / "data" / "xueqiu" / "_headed_profile"
@@ -80,8 +81,8 @@ def detect_slider(page):
         for kw in ("安全验证", "拖动滑块", "请输入验证码", "请完成安全验证"):
             if kw in body:
                 return "页面含「%s」" % kw
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/tools/xq_user_timeline_probe.py", exc)
     return None
 
 
@@ -150,8 +151,8 @@ def parse_dom_timeline(page):
             m = [p for p in href.split("/") if p.isdigit()]
             if m:
                 sid = m[-1]
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/tools/xq_user_timeline_probe.py", exc)
         posts.append(
             {
                 "status_id": sid,
@@ -179,13 +180,13 @@ def wait_slider_or_die(page, ctx, out_dir, wait_sec=600, poll=5):
         time.sleep(poll)
         try:
             page.bring_to_front()
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/tools/xq_user_timeline_probe.py", exc)
         if detect_slider(page) is None:
             try:
                 page.screenshot(path=str(shot))
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/tools/xq_user_timeline_probe.py", exc)
             print("[%s] 滑块已解除（人工通过）。" % now_str())
             return True
     try:
@@ -245,8 +246,8 @@ def probe_user(ctx, uid, out_dir):
     finally:
         try:
             page.close()
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/tools/xq_user_timeline_probe.py", exc)
 
 
 def insert_db(posts, uid):

@@ -43,7 +43,7 @@ def cmdline_of(pid):
         if st:
             return None
         peb = pbi.PebBaseAddress
-        params_ptr = ctypes.c_void_p()
+        ctypes.c_void_p()
         if not read_mem(h, peb + 0x20, 8):
             return None
         raw = read_mem(h, peb + 0x20, 8)

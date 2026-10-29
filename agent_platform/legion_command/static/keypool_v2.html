@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 接入与 Key 管理 · 零界</title>
+<style>
+:root{--bg:#0b1220;--panel:#101b2b;--line:#1e334d;--fg:#e8f0f8;--dim:#7f9bb8;--purple:#bc8cff;--green:#39d98a;--red:#ff6b6b;--amber:#f5b94c;--blue:#58a6ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:13px/1.5 "Segoe UI","Microsoft YaHei",sans-serif}
+a{color:var(--blue);text-decoration:none}
+header{padding:18px 22px 10px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-size:22px;margin:0}h1 small{font-size:11px;color:var(--dim);font-weight:400;margin-left:8px}
+.sub{color:var(--dim);font-size:12px;margin-top:4px}
+.badges{display:flex;gap:8px;flex-wrap:wrap;margin:8px 22px 0}
+.badge{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 12px;min-width:150px}
+.badge .n{font-size:20px;font-weight:700}.badge .l{font-size:11px;color:var(--dim)}
+.badge.green .n{color:var(--green)}.badge.red .n{color:var(--red)}.badge.amber .n{color:var(--amber)}.badge.blue .n{color:var(--blue)}
+nav{display:flex;gap:4px;flex-wrap:wrap;padding:14px 22px 0;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:5}
+nav button{background:transparent;border:0;border-bottom:2px solid transparent;color:var(--dim);padding:8px 12px;font-size:13px;cursor:pointer}
+nav button.on{color:var(--fg);border-bottom-color:var(--purple)}
+main{padding:16px 22px 40px;max-width:1500px}
+.panel{display:none;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+.panel.on{display:block}
+.panel h2{font-size:15px;margin:0 0 10px}
+.muted{color:var(--dim);font-size:12px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.kpi{background:#0d1828;border:1px solid var(--line);border-radius:10px;padding:12px}
+.kpi .big{font-size:18px;font-weight:700;margin:4px 0}
+.btn{background:#16263b;border:1px solid #2b4a6d;border-radius:8px;color:var(--fg);padding:6px 10px;cursor:pointer}
+.btn.primary{background:#1d3a2e;border-color:#3f7f57;color:#d6f5e3}
+.btn.warn{background:#33251d;border-color:#7f5a3f;color:#ffe2c8}
+.pill{display:inline-block;border-radius:999px;padding:2px 8px;font-size:11px;border:1px solid var(--line);color:var(--dim)}
+.pill.ok{color:var(--green);border-color:#2b6b4b}.pill.bad{color:var(--red);border-color:#6b2b2b}.pill.warn{color:var(--amber);border-color:#6b552b}
+table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+a.btn-link{display:inline-block;background:#16263b;border:1px solid #2b4a6d;border-radius:8px;color:var(--fg);padding:6px 10px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-bottom:14px}
+.card{background:#0d1828;border:1px solid var(--line);border-radius:10px;padding:12px}
+.card h3{font-size:13px;margin:0 0 4px}.card .row{display:flex;justify-content:space-between;gap:6px;font-size:12px;margin:3px 0}
+.card .keys{font-size:11px;color:var(--dim);margin-top:6px}
+.card .actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+button.small{padding:3px 8px;font-size:11px}
+.drawer-mask{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:20}
+.drawer-mask.on{display:block}
+.drawer{position:fixed;top:0;right:-520px;width:min(520px,100vw);height:100vh;background:#0c1726;border-left:1px solid var(--line);z-index:21;transition:right .18s;overflow:auto;padding:18px}
+.drawer.on{right:0}
+.drawer h3{margin:0 0 4px}.drawer .field{margin:9px 0}.drawer label{display:block;font-size:11px;color:var(--dim);margin-bottom:3px}
+.drawer input,.drawer select{width:100%}
+.cred-form{background:#0d1828;border:1px solid var(--line);border-radius:9px;padding:12px;margin:8px 0;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.cred-form .field label{display:block;font-size:11px;color:var(--dim);margin-bottom:3px}
+.cred-form input,.cred-form select{width:100%;background:#081321;border:1px solid #1e3a5f;border-radius:7px;color:var(--fg);padding:6px 8px}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>AI 接入与 Key 管理<small>GENOS ACCESS CONSOLE</small></h1>
+    <div class="sub">平台上游、模型路由、AI 席位与虚拟 Key 的统一入口 · 默认只展示状态与入口</div>
+  </div>
+  <div class="muted" id="gen">加载中…</div>
+</header>
+
+<div class="badges">
+  <div class="badge green" id="b-up"><div class="n">—</div><div class="l">平台上游可用 Key</div></div>
+  <div class="badge blue" id="b-local"><div class="n">—</div><div class="l">本地模型在线</div></div>
+  <div class="badge blue" id="b-ai"><div class="n">—</div><div class="l">AI 席位</div></div>
+  <div class="badge red" id="b-bad"><div class="n">—</div><div class="l">异常 Key</div></div>
+</div>
+
+<nav id="tabs">
+  <button data-tab="overview" class="on">概览</button>
+  <button data-tab="routing">模型路由</button>
+  <button data-tab="seats">AI 席位</button>
+  <button data-tab="creds">接入与凭据</button>
+  <button data-tab="vk">虚拟 Key</button>
+  <button data-tab="logs">日志</button>
+  <button data-tab="mission">任务编排</button>
+</nav>
+
+<main>
+  <section class="panel on" id="tab-overview">
+    <h2>平台状态</h2>
+    <div class="kpis" id="overview-kpis"><div class="muted">加载中…</div></div>
+  </section>
+
+  <section class="panel" id="tab-routing">
+    <h2>模型路由（唯一可编辑入口）</h2>
+    <div class="muted" style="margin-bottom:8px">平台中转站与模型通道合并在此；其它位置只读引用。真 Key 不进前端。</div>
+    <div class="add" id="relay-presets" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+      <button class="btn small" data-rp="dashscope-plus">百炼 · qwen-plus</button>
+      <button class="btn small" data-rp="dashscope-max">百炼 · qwen3-max</button>
+      <button class="btn small" data-rp="tokenegate">中转站 GPT-6</button>
+      <button class="btn small" data-rp="custom">自定义</button>
+    </div>
+    <div class="add" style="display:flex;gap:8px;flex-wrap:wrap">
+      <input id="relay-url" placeholder="中转站 URL" style="min-width:300px" value="https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions">
+      <input id="relay-model" placeholder="模型" value="qwen-plus">
+      <input id="relay-key" type="password" placeholder="粘贴平台中转站 Key（加密存储，只回显掩码）">
+      <input id="relay-label" placeholder="标签（如 百炼主Key / 备1）" value="平台中转站主Key">
+      <button class="btn primary" id="relay-save">保存到平台中转站</button>
+    </div>
+    <div id="relay-status" class="muted" style="margin:10px 0">加载中…</div>
+    <h2 style="margin-top:16px">本地模型（只读）</h2>
+    <div id="local-models" class="muted">加载中…</div>
+  </section>
+
+  <section class="panel" id="tab-seats">
+    <h2>主力席位（指挥部）</h2>
+    <div class="muted" style="margin-bottom:10px">只展示状态与入口；Key 配置收进抽屉。</div>
+    <div class="cards" id="seat-main-cards"><div class="muted">加载中…</div></div>
+    <h2 style="margin-top:16px">部门负责人</h2>
+    <div class="muted" style="margin-bottom:8px">无 Key 席位置灰；点击「配置」打开抽屉。</div>
+    <div id="seat-table"><div class="muted">加载中…</div></div>
+  </section>
+  <section class="panel" id="tab-creds">
+    <h2>接入与凭据</h2>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px">
+      <div class="muted">真实密钥只进 Windows DPAPI 保险箱；页面只显示状态与掩码。</div>
+      <button class="btn primary" id="cred-add-btn">＋ 新增 / 轮换凭据</button>
+    </div>
+    <div class="cred-form" id="cred-form" style="display:none">
+      <div class="field"><label>名称（英文，如 my_api_key）</label><input id="cred-name" placeholder="my_api_key"></div>
+      <div class="field"><label>分类</label><select id="cred-cat"><option value="data">data</option><option value="cloud">cloud</option><option value="feishu">feishu</option><option value="jev">jev</option><option value="internal">internal</option><option value="messaging">messaging</option><option value="other">other</option></select></div>
+      <div class="field"><label>环境变量名（可选）</label><input id="cred-env" placeholder="MY_API_KEY"></div>
+      <div class="field"><label>密钥（不回显）</label><input id="cred-secret" type="password" placeholder="粘贴 Key / Token"></div>
+      <div style="display:flex;gap:8px"><button class="btn primary" id="cred-save">加密保存</button><button class="btn" id="cred-cancel">取消</button></div>
+    </div>
+    <div id="cred-filters" style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0"></div>
+    <div id="cred-table"><div class="muted">加载中…</div></div>
+  </section>
+
+  <section class="panel" id="tab-vk">
+    <h2>虚拟 Key</h2>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px">
+      <div class="muted">给 AI 用 vk- 接入；只显示掩码；配额=总请求上限，0=不限。</div>
+      <button class="btn primary" id="vk-add-btn">＋ 新建虚拟 Key</button>
+    </div>
+    <div class="cred-form" id="vk-form" style="display:none">
+      <div class="field"><label>归属 AI / 席位</label><input id="vk-owner" placeholder="如 DEV3 / ARCH1 / 外部助手"></div>
+      <div class="field"><label>默认别名</label><select id="vk-alias"></select></div>
+      <div class="field"><label>配额（总请求数，0 不限）</label><input id="vk-quota" type="number" min="0" value="0"></div>
+      <div style="display:flex;gap:8px;align-items:end"><button class="btn primary" id="vk-create">创建</button><button class="btn" id="vk-cancel">取消</button></div>
+    </div>
+    <div id="vk-token" class="muted"></div>
+    <div id="vk-table"><div class="muted">加载中…</div></div>
+  </section>
+
+  <section class="panel" id="tab-logs">
+    <h2>日志</h2>
+    <div class="muted">切换日志将支持筛选/分页；当前跳到旧版日志。</div>
+    <p><a class="btn-link" href="/keys?v2=0#log">打开旧版切换日志</a></p>
+  </section>
+
+  <section class="panel" id="tab-mission">
+    <h2>任务编排</h2>
+    <div class="muted">Mission 已迁到独立页面；Key 页只保留状态摘要与入口，避免误触真实派工。</div>
+    <div class="kpis" id="mission-summary" style="margin-top:10px"><div class="muted">加载中…</div></div>
+    <p style="margin-top:12px"><a class="btn-link" id="mission-link" href="/mission">前往 Mission（文档→DAG→派工）</a></p>
+  </section>
+</main>
+<div class="drawer-mask" id="drawer-mask" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <h3 id="drawer-title">配置席位</h3>
+  <div class="muted" id="drawer-sub"></div>
+  <div id="drawer-keys" style="margin:10px 0"></div>
+  <div class="field"><label>OpenAI 兼容 URL（自定义/部门席位）</label><input id="drawer-url" placeholder="https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"></div>
+  <div class="field"><label>模型</label><input id="drawer-model" placeholder="qwen-plus / deepseek-chat"></div>
+  <div class="field"><label>Key</label><input id="drawer-key" type="password" placeholder="粘贴 Key（加密存储，只回显掩码）"></div>
+  <div class="field"><label>标签</label><input id="drawer-label" placeholder="主Key/备1"></div>
+  <div class="field"><label>优先级</label><input id="drawer-priority" type="number" min="1" max="5" value="1"></div>
+  <div class="actions" style="display:flex;gap:8px;margin-top:10px">
+    <button class="btn primary" id="drawer-save">保存 Key</button>
+    <button class="btn" id="drawer-close" onclick="closeDrawer()">取消</button>
+  </div>
+</div>
+
+
+<script>
+const TABS=["overview","routing","seats","creds","vk","logs","mission"];
+function setTab(name, push){
+  if(!TABS.includes(name)) name="overview";
+  document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on", b.dataset.tab===name));
+  document.querySelectorAll("main .panel").forEach(p=>p.classList.toggle("on", p.id==="tab-"+name));
+  if(push!==false){
+    const q=new URLSearchParams(location.search);
+    q.set("tab",name);
+    history.replaceState(null,"", "?"+q.toString());
+  }
+}
+document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
+(function(){
+  const hash=location.hash||"";
+  const v2=location.search.includes("v2=1")?"?v2=1":"";
+  if(hash==="#mission"||hash==="#mission-section"){ location.replace("/mission"+v2); return; }
+  const tabMap={"#logs":"logs","#log":"logs","#relay-hero":"routing","#main":"seats","#vk-section":"vk","#cred-section":"creds"};
+  if(tabMap[hash]){
+    const q=new URLSearchParams(location.search);
+    q.set("tab",tabMap[hash]);
+    history.replaceState(null,"","?"+q.toString());
+    setTab(tabMap[hash],false);
+    return;
+  }
+  const q=new URLSearchParams(location.search);
+  setTab(q.get("tab")||"overview", false);
+  if(document.getElementById("mission-link")) document.getElementById("mission-link").href="/mission"+v2;
+})();
+
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+let KEYSTATE=null, DRAWER_SEAT=null;
+const MAIN_SEATS=["tianfeng","zhaoyun","zhuge","guanyu","HUANGZHONG"];
+function seatStatus(s){
+  if(s&&s.status){
+    const n=s.available_count||0, t=s.total_count||0;
+    const cls=s.status==="available"?"ok":s.status==="invalid"?"bad":s.status==="throttled"?"warn":"";
+    return {label:s.status==="available"?(s.partial?"部分可用 "+n+"/"+t:"可用 "+n+"/"+t):s.status==="throttled"?"限流/降级 "+n+"/"+t:s.status==="invalid"?"失效 0/"+t:"未配置",cls,n: n};
+  }
+  const keys=(s&&s.keys)||[];
+  if(!keys.length) return {label:"未配置",cls:"",n:0};
+  const ok=keys.filter(k=>k.status==="healthy").length;
+  if(ok) return {label:"可用 "+ok+"/"+keys.length,cls:"ok",n:ok};
+  return {label:"失效/降级",cls:"bad",n:0};
+}
+function testedText(s){return s&&s.last_tested_at?esc(String(s.last_tested_at).replace("T"," ").slice(0,19)):"未测试";}
+function keyRows(keys){
+  return (keys||[]).map(k=>'<div class="row"><span>'+esc(k.masked||"***")+' <span class="muted">'+esc(k.model||"")+'</span></span><span><span class="pill '+seatStatus({keys:[k]}).cls+'">'+esc(k.status||"")+'</span></span></div>').join("");
+}
+function mainCard(id,s){
+  const st=seatStatus(s);
+  return '<div class="card"><h3>'+esc(s.cn||id)+' <span class="muted">'+esc(id)+'</span></h3>'+
+    '<div class="row"><span>状态</span><span class="pill '+st.cls+'">'+st.label+'</span></div>'+
+    '<div class="row"><span>最近测试</span><span class="muted">'+testedText(s)+'</span></div>'+
+    '<div class="row"><span>绑定</span><span class="muted">'+esc(s.provider||"")+' · '+esc(s.binding||"")+'</span></div>'+
+    '<div class="keys">'+(keyRows(s.keys)||'<span class="muted">暂无 Key</span>')+'</div>'+
+    '<div class="actions"><button class="btn small" onclick="openDrawer(\''+id+'\')">管理 Key</button></div></div>';
+}
+function seatRow(id,s){
+  const st=seatStatus(s);
+  const model=(s.keys||[])[0]?.model||s.binding||"—";
+  return '<tr'+(st.n?'':' style="opacity:.55"')+'><td>'+esc(s.cn||id)+'<br><span class="muted">'+esc(id)+'</span></td><td>'+esc(id)+'</td><td><span class="pill '+st.cls+'">'+st.label+'</span></td><td class="muted">'+testedText(s)+'</td><td>'+esc(model)+'</td><td><button class="btn small" onclick="openDrawer(\''+id+'\')">配置</button></td></tr>';
+}
+async function loadSeats(){
+  try{
+    const v=await fetch("/api/keys/state",{cache:"no-store"}).then(r=>r.json());
+    KEYSTATE=v; const seats=v.seats||{};
+    const main=MAIN_SEATS.map(id=>({id,s:seats[id]})).filter(x=>x.s);
+    document.getElementById("seat-main-cards").innerHTML=main.map(x=>mainCard(x.id,x.s)).join("")||'<div class="muted">主力席位不可用</div>';
+    const extras=Object.entries(seats).filter(([id])=>id!=="relay"&&!MAIN_SEATS.includes(id));
+    let h='<table><thead><tr><th>席位</th><th>ID</th><th>Key 状态</th><th>最近测试</th><th>主力模型</th><th>操作</th></tr></thead><tbody>';
+    for(const [id,s] of extras) h+=seatRow(id,s);
+    document.getElementById("seat-table").innerHTML=h+'</tbody></table>'+(extras.length?'':'<div class="muted">暂无部门负责人席位</div>');
+  }catch(e){document.getElementById("seat-table").innerHTML='<div class="muted">读取失败：'+e.message+'</div>'}
+}
+function openDrawer(id){
+  const s=(KEYSTATE&&KEYSTATE.seats||{})[id]; if(!s)return;
+  DRAWER_SEAT=id;
+  document.getElementById("drawer-title").textContent=(s.cn||id)+" · Key 配置";
+  document.getElementById("drawer-sub").textContent=id+" · "+(s.provider||"custom")+" · "+(s.binding||"");
+  document.getElementById("drawer-url").value=(s.keys||[])[0]?.base_url||"";
+  document.getElementById("drawer-model").value=(s.keys||[])[0]?.model||"";
+  document.getElementById("drawer-key").value="";
+  document.getElementById("drawer-label").value="";
+  document.getElementById("drawer-priority").value=((s.keys||[]).length+1);
+  let h='<table><thead><tr><th>Key</th><th>状态</th><th>操作</th></tr></thead><tbody>';
+  for(const k of (s.keys||[])) h+='<tr><td>'+esc(k.masked)+'<br><span class="muted">'+esc(k.model||"")+'</span></td><td>'+esc(k.status)+'</td><td><button class="btn small" onclick="testKey(\''+id+'\',\''+k.id+'\')">测试</button> <button class="btn small" onclick="deleteKey(\''+id+'\',\''+k.id+'\')">删除</button></td></tr>';
+  document.getElementById("drawer-keys").innerHTML=(s.keys||[]).length?h+'</tbody></table>':'<div class="muted">暂无 Key</div>';
+  document.getElementById("drawer-mask").classList.add("on");
+  document.getElementById("drawer").classList.add("on");
+}
+function closeDrawer(){
+  document.getElementById("drawer-mask").classList.remove("on");
+  document.getElementById("drawer").classList.remove("on");
+  DRAWER_SEAT=null;
+}
+async function saveDrawer(){
+  if(!DRAWER_SEAT)return;
+  const secret=document.getElementById("drawer-key").value.trim();
+  if(!secret){alert("请粘贴 Key");return}
+  const body={action:"add",seat:DRAWER_SEAT,secret,label:document.getElementById("drawer-label").value.trim(),priority:Number(document.getElementById("drawer-priority").value)||1};
+  const url=document.getElementById("drawer-url").value.trim(), model=document.getElementById("drawer-model").value.trim();
+  if(url)body.base_url=url; if(model)body.model=model;
+  const r=await fetch("/api/keys/action",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  const j=await r.json(); if(!j.ok){alert("保存失败："+(j.error||"unknown"));return}
+  document.getElementById("drawer-key").value="";
+  await loadSeats(); openDrawer(DRAWER_SEAT);
+}
+async function testKey(seat,id){
+  const r=await fetch("/api/keys/action",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"test",seat,key_id:id})});
+  const j=await r.json(); alert(j.ok?"测试完成："+((j.test||{}).status||""):"测试失败："+(j.error||""));
+  await loadSeats(); openDrawer(seat);
+}
+async function deleteKey(seat,id){
+  if(!confirm("删除该 Key？"))return;
+  const r=await fetch("/api/keys/action",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"delete",seat,key_id:id})});
+  const j=await r.json(); if(!j.ok){alert("失败："+(j.error||""));return}
+  await loadSeats(); openDrawer(seat);
+}
+document.getElementById("drawer-save").onclick=saveDrawer;
+loadSeats(); setInterval(loadSeats,30000);
+const RELAY_PRESETS={
+  "dashscope-plus":{url:"https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",model:"qwen-plus",label:"百炼主Key"},
+  "dashscope-max":{url:"https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",model:"qwen3-max",label:"百炼 qwen3-max"},
+  "tokenegate":{url:"https://tokenegate.com/v1/chat/completions",model:"gpt-6-sol",label:"中转站 GPT-6"},
+  "custom":{url:"",model:"",label:"自定义"}
+};
+document.querySelectorAll("#relay-presets button").forEach(b=>b.onclick=()=>{
+  const p=RELAY_PRESETS[b.dataset.rp]||RELAY_PRESETS.custom;
+  document.getElementById("relay-url").value=p.url;
+  document.getElementById("relay-model").value=p.model;
+  document.getElementById("relay-label").value=p.label;
+});
+async function loadRouting(){
+  try{
+    const [ks,ms]=await Promise.all([
+      fetch("/api/keys/state",{cache:"no-store"}).then(r=>r.json()),
+      fetch("/api/models/status",{cache:"no-store"}).then(r=>r.json())
+    ]);
+    const relay=(ks.seats||{}).relay||{}; const keys=relay.keys||[];
+    let h='<table><thead><tr><th>Key</th><th>模型</th><th>状态</th><th>优先级</th><th>操作</th></tr></thead><tbody>';
+    for(const k of keys) h+='<tr><td>'+esc(k.masked)+'</td><td>'+esc(k.model||"")+'</td><td><span class="pill '+seatStatus({keys:[k]}).cls+'">'+esc(k.status)+'</span></td><td>'+esc(k.priority||1)+'</td><td><button class="btn small" onclick="testRelayKey(\''+k.id+'\')">测试</button></td></tr>';
+    document.getElementById("relay-status").innerHTML='<div class="muted" style="margin-bottom:6px">当前平台中转站 · '+keys.length+' 条 Key</div>'+(keys.length?h+'</tbody></table>':'<div class="muted">暂未配置平台中转站 Key</div>');
+    const local=(ms.local&&ms.local.models)||[]; const on=ms.local&&ms.local.online;
+    document.getElementById("local-models").innerHTML=on?local.map(m=>'<span class="pill ok">'+esc(m.name)+'</span>').join(" "):'<span class="pill bad">Ollama 离线</span>';
+  }catch(e){document.getElementById("relay-status").innerHTML='<div class="muted">读取失败：'+e.message+'</div>';document.getElementById("local-models").textContent="读取失败"}
+}
+async function saveRelay(){
+  const secret=document.getElementById("relay-key").value.trim();
+  if(!secret){alert("请粘贴平台中转站 Key");return}
+  const body={action:"add",seat:"relay",secret,base_url:document.getElementById("relay-url").value.trim(),model:document.getElementById("relay-model").value.trim(),label:document.getElementById("relay-label").value.trim(),priority:1};
+  const r=await fetch("/api/keys/action",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  const j=await r.json(); if(!j.ok){alert("保存失败："+(j.error||"unknown"));return}
+  document.getElementById("relay-key").value=""; await loadRouting(); alert("已保存到平台中转站（掩码只回显）");
+}
+async function testRelayKey(id){
+  const r=await fetch("/api/keys/action",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"test",seat:"relay",key_id:id})});
+  const j=await r.json(); alert(j.ok?"测试完成："+((j.test||{}).status||""):"测试失败："+(j.error||"")); await loadRouting();
+}
+document.getElementById("relay-save").onclick=saveRelay;
+loadRouting(); setInterval(loadRouting,30000);
+let CRED_DATA=null, CRED_CAT="all";
+function renderCreds(){
+  if(!CRED_DATA)return;
+  const cats=["all"].concat([...new Set((CRED_DATA.items||[]).map(x=>x.category).filter(Boolean))].sort());
+  document.getElementById("cred-filters").innerHTML=cats.map(c=>'<button class="btn small" style="'+(CRED_CAT===c?'border-color:#bc8cff;color:#e5d4ff':'')+'" onclick="setCredCat(\''+c+'\')">'+(c==="all"?"全部":c)+'</button>').join("");
+  const rows=(CRED_DATA.items||[]).filter(x=>CRED_CAT==="all"||x.category===CRED_CAT);
+  let h='<table><thead><tr><th>名称</th><th>分类</th><th>环境变量</th><th>状态</th><th>加密</th><th>更新</th></tr></thead><tbody>';
+  for(const x of rows) h+='<tr><td>'+esc(x.name)+'</td><td>'+esc(x.category)+'</td><td><code>'+esc(x.env||"—")+'</code></td><td><span class="pill '+(x.status==="ok"?"ok":x.status==="missing"?"bad":"warn")+'">'+esc(x.status)+'</span></td><td>'+(x.encrypted?"🔒 是":"明文")+'</td><td class="muted">'+esc((x.updated||"").slice(0,19))+'</td></tr>';
+  document.getElementById("cred-table").innerHTML=h+'</tbody></table>';
+}
+function setCredCat(c){CRED_CAT=c;renderCreds();}
+async function loadCreds(){
+  try{CRED_DATA=await fetch("/api/credentials",{cache:"no-store"}).then(r=>r.json());renderCreds();}
+  catch(e){document.getElementById("cred-table").innerHTML='<div class="muted">读取失败：'+e.message+'</div>'}
+}
+loadCreds(); setInterval(loadCreds,60000);
+function toggleCredForm(show){
+  const f=document.getElementById("cred-form");
+  f.style.display=show?"grid":"none";
+  if(show)document.getElementById("cred-name").focus();
+}
+document.getElementById("cred-add-btn").onclick=()=>toggleCredForm(document.getElementById("cred-form").style.display==="none");
+document.getElementById("cred-cancel").onclick=()=>toggleCredForm(false);
+async function saveCred(){
+  const name=document.getElementById("cred-name").value.trim();
+  const secret=document.getElementById("cred-secret").value.trim();
+  const category=document.getElementById("cred-cat").value;
+  const env=document.getElementById("cred-env").value.trim();
+  if(!name||!secret){alert("名称和密钥必填");return}
+  const btn=document.getElementById("cred-save"); btn.disabled=true; btn.textContent="加密保存中…";
+  try{
+    const r=await fetch("/api/credentials/set",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name,category,env,secret})});
+    const j=await r.json();
+    if(!j.ok){alert("保存失败："+(j.error||"unknown"));return}
+    document.getElementById("cred-secret").value="";
+    document.getElementById("cred-name").value="";
+    document.getElementById("cred-env").value="";
+    toggleCredForm(false); CRED_CAT="all"; await loadCreds();
+  }catch(e){alert("保存失败："+e.message)}
+  finally{btn.disabled=false;btn.textContent="加密保存";}
+}
+document.getElementById("cred-save").onclick=saveCred;
+async function loadOverview(){
+  try{
+    const [ks,ms,vk] = await Promise.all([
+      fetch("/api/keys/state",{cache:"no-store"}).then(r=>r.json()),
+      fetch("/api/models/status",{cache:"no-store"}).then(r=>r.json()),
+      fetch("/api/router/vk",{cache:"no-store"}).then(r=>r.json())
+    ]);
+    const seats=Object.entries(ks.seats||{});
+    const relay=(ks.seats||{}).relay||{};
+    const relayKeys=relay.keys||[];
+    const healthyRelay=relayKeys.filter(k=>k.status==="healthy").length;
+    const allKeys=seats.flatMap(([sid,s])=>(s.keys||[]).map(k=>({sid,...k})));
+    const badKeys=allKeys.filter(k=>["invalid","quota","degraded"].includes(k.status)).length;
+    const local=(ms.local&&ms.local.models)||[];
+    const localOnline=ms.local&&ms.local.online;
+    const aiSeats=seats.filter(([sid])=>sid!=="relay").length;
+    const set=(id,n,cls)=>{const el=document.getElementById(id); if(!el)return; el.querySelector(".n").textContent=n; if(cls){el.classList.remove("green","red","amber","blue"); el.classList.add(cls);}};
+    set("b-up", healthyRelay+"/"+relayKeys.length, healthyRelay>0?"green":"red");
+    set("b-local", (localOnline?local.length:0)+" 在线", localOnline?"blue":"red");
+    set("b-ai", aiSeats, "blue");
+    set("b-bad", badKeys, badKeys?"red":"green");
+    document.getElementById("overview-kpis").innerHTML=[
+      ["平台上游", healthyRelay+" / "+relayKeys.length+" 可用", healthyRelay?"正常":"需要管理员处理"],
+      ["本地模型", localOnline?local.map(m=>m.name).join(" · "):"离线", localOnline?"在线":"Ollama 不可达"],
+      ["AI 席位", aiSeats+" 个（含指挥部/部门负责人）", "统一走 8796 网关"],
+      ["虚拟 Key", ((vk.items||[]).length)+" 个", "AI 接入使用 vk-，不接触真 Key"],
+      ["异常 Key", badKeys+" 条", badKeys?"需在模型路由中处理":"无"]
+    ].map(([t,v,s])=>'<div class="kpi"><div class="muted">'+t+'</div><div class="big">'+v+'</div><div class="muted">'+s+'</div></div>').join("");
+    document.getElementById("gen").textContent="状态已加载 · "+new Date().toLocaleTimeString();
+  }catch(e){
+    document.getElementById("overview-kpis").innerHTML='<div class="muted">读取失败：'+e.message+'</div>';
+    document.getElementById("gen").textContent="读取失败";
+  }
+}
+let VK_DATA={items:[],aliases:[]};
+function renderVK(){
+  const items=VK_DATA.items||[];
+  const sel=document.getElementById("vk-alias");
+  if(sel && !sel.options.length){
+    (VK_DATA.aliases||[]).forEach(a=>{const o=document.createElement("option");o.value=a;o.textContent=a;sel.appendChild(o);});
+  }
+  let h='<table><thead><tr><th>归属</th><th>掩码</th><th>别名</th><th>状态</th><th>配额</th><th>已用</th><th>最近使用</th><th>操作</th></tr></thead><tbody>';
+  for(const v of items){
+    const u=v.usage||{}; const q=Number(v.quota||0); const used=Number(u.requests||0);
+    const quota=q?(used+"/"+q):"不限";
+    h+='<tr><td>'+esc(v.owner)+'</td><td><code>'+esc(v.masked)+'</code></td><td>'+esc(v.alias)+'</td>'+
+      '<td><span class="pill '+(v.enabled?"ok":"bad")+'">'+(v.enabled?"启用":"停用")+'</span></td>'+
+      '<td>'+quota+'</td><td>'+used+' <span class="muted">(✓'+Number(u.success||0)+' ✗'+Number(u.fail||0)+')</span></td>'+
+      '<td class="muted">'+esc((v.last_used||"—").slice(0,19))+'</td>'+
+      '<td><button class="btn small" onclick="vkAction(\''+v.id+'\',\''+(v.enabled?"disable":"enable")+'\')">'+(v.enabled?"停用":"启用")+'</button> '+
+      '<button class="btn small" onclick="vkQuota(\''+v.id+'\','+q+')">配额</button></td></tr>';
+  }
+  document.getElementById("vk-table").innerHTML=items.length?h+'</tbody></table>':'<div class="muted">暂无虚拟 Key，点右上角新建</div>';
+}
+async function loadVK(){
+  try{
+    const j=await fetch("/api/router/vk",{cache:"no-store"}).then(r=>r.json());
+    VK_DATA={items:j.items||[],aliases:j.aliases||[]}; renderVK();
+  }catch(e){document.getElementById("vk-table").innerHTML='<div class="muted">读取失败：'+e.message+'</div>'}
+}
+function toggleVKForm(show){
+  document.getElementById("vk-form").style.display=show?"grid":"none";
+  if(show)document.getElementById("vk-owner").focus();
+}
+document.getElementById("vk-add-btn").onclick=()=>toggleVKForm(document.getElementById("vk-form").style.display==="none");
+document.getElementById("vk-cancel").onclick=()=>toggleVKForm(false);
+async function createVK(){
+  const owner=document.getElementById("vk-owner").value.trim();
+  const alias=document.getElementById("vk-alias").value||"auto";
+  const quota=Number(document.getElementById("vk-quota").value)||0;
+  if(!owner){alert("归属必填");return}
+  const r=await fetch("/api/router/vk",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"create",owner,alias,quota})});
+  const j=await r.json(); if(!j.ok){alert("创建失败："+(j.error||""));return}
+  document.getElementById("vk-token").innerHTML='<div class="kpi" style="margin:8px 0"><div class="muted">新虚拟 Key 只显示一次，请立即复制</div><pre style="white-space:pre-wrap;margin:6px 0">'+esc(j.item.token)+'</pre><div class="muted">归属 '+esc(j.item.owner)+' · 别名 '+esc(j.item.alias)+'</div></div>';
+  document.getElementById("vk-owner").value=""; toggleVKForm(false); await loadVK();
+}
+document.getElementById("vk-create").onclick=createVK;
+async function vkAction(id,act){
+  if(act==="disable"&&!confirm("停用该虚拟 Key？"))return;
+  const r=await fetch("/api/router/vk",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:act,id})});
+  const j=await r.json(); if(!j.ok){alert("操作失败："+(j.error||""));return}
+  await loadVK();
+}
+async function vkQuota(id,cur){
+  const v=prompt("配额（总请求数，0=不限）",String(cur||0)); if(v===null)return;
+  const r=await fetch("/api/router/vk",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"quota",id,quota:Number(v)||0})});
+  const j=await r.json(); if(!j.ok){alert("失败："+(j.error||""));return}
+  await loadVK();
+}
+loadVK(); setInterval(loadVK,30000);
+async function loadMissionSummary(){
+  try{
+    const j=await fetch("/api/mission/list",{cache:"no-store"}).then(r=>r.json());
+    const rows=j.items||[];
+    document.getElementById("mission-summary").innerHTML=
+      '<div class="kpi"><div class="muted">Mission 总数</div><div class="n" style="font-size:18px;font-weight:700">'+rows.length+'</div></div>'+
+      '<div class="kpi"><div class="muted">最近 Mission</div><div style="font-size:12px;margin-top:4px">'+(rows.length?rows[rows.length-1].mission_id:"暂无")+'</div></div>'+
+      '<div class="kpi"><div class="muted">说明</div><div style="font-size:12px;margin-top:4px">真实派工/自动评审门已迁出本页</div></div>';
+  }catch(e){document.getElementById("mission-summary").innerHTML='<div class="muted">Mission 状态读取失败</div>'}
+}
+loadOverview(); setInterval(loadOverview,30000);
+loadMissionSummary(); setInterval(loadMissionSummary,30000);
+</script>
+</body>
+</html>

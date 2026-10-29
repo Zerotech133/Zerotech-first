@@ -26,6 +26,7 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+import logging
 
 KNOWN_TASK = r"\QuantWatchdog"          # 每分钟跑一次，长期存在
 TASKS_DIR = Path(r"C:\Windows\System32\Tasks")
@@ -71,8 +72,8 @@ def check_schtasks_csv() -> dict:
             try:
                 int(cells[6])
                 parsed += 1
-            except ValueError:
-                pass
+            except ValueError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "tools/selftest_detectors.py", exc)
     ok = rc == 0 and total > 0 and parsed == total
     return {
         "name": "schtasks_csv",
@@ -93,8 +94,8 @@ def check_event_exit_mapping() -> dict:
                 continue
             try:
                 last[cells[1].strip().lstrip("\\")] = int(cells[6])
-            except ValueError:
-                pass
+            except ValueError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "tools/selftest_detectors.py", exc)
     rc2, xml = _run(["wevtutil", "qe", LOG, "/q:*[System[(EventID=201)]]", "/f:xml"])
     latest: dict[str, tuple[str, int]] = {}
     for block in xml.split("<Event ")[1:]:

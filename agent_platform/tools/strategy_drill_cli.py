@@ -7,6 +7,7 @@ import json
 from collections.abc import Mapping
 from pathlib import Path
 import sys
+import logging
 
 
 ENGINE = Path(__file__).resolve().parents[1] / "engine"
@@ -16,8 +17,8 @@ if str(ENGINE) not in sys.path:
 try:  # Windows 管道输出统一 UTF-8（CLI 契约测试解码防 cp936 失败）
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-except Exception:  # noqa: BLE001
-    pass
+except Exception as exc:
+    logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/tools/strategy_drill_cli.py", exc)
 
 from shadow_strategy_runner import SHADOW_MODE, run_shadow_validation  # noqa: E402
 

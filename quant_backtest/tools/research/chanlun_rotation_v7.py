@@ -101,7 +101,7 @@ if USE_HFQ:
         flush=True,
     )
 else:
-    print(f"[HFQ][WARN] use_hfq=false, 不复权口径(与产线不符), 仅作对照", flush=True)
+    print("[HFQ][WARN] use_hfq=false, 不复权口径(与产线不符), 仅作对照", flush=True)
 
 # ---------- 池等权指数 + regime（与 v6c 一致）----------
 idx_ret = {}

@@ -17,6 +17,7 @@
 """
 import sys
 import datetime
+import logging
 
 TASK_NAME = "XueqiuReportVerify"
 WRAPPER = r"C:\项目\老田的AI助手\quant_backtest\start_verify_report.ps1"
@@ -31,8 +32,8 @@ def register() -> int:
     try:
         folder.DeleteTask(TASK_NAME, 0)
         print("[reg] existing task removed")
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/register_verify_task.py", exc)
     td = sched.NewTask(0)
     td.RegistrationInfo.Description = ("Xueqiu intel daily report verification 19:05 "
                                        "(auto-acceptance of XueqiuDailyReport output)")

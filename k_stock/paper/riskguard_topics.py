@@ -45,6 +45,7 @@ import math
 import os
 from collections import defaultdict
 from pathlib import Path
+import logging
 
 # ── 契约常量（与 -016 契约 §六 逐字一致）─────────────────────────────
 RECORD_REQUIRED = ("ts", "rule_id", "rule_version", "decision", "posterior_return")
@@ -177,8 +178,8 @@ def default_daily_dir() -> Path:
             root = (json.load(f) or {}).get("data_root") or ""
         if root:
             return Path(root) / "tdx" / "ts_daily"
-    except (OSError, ValueError):
-        pass
+    except (OSError, ValueError) as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/paper/riskguard_topics.py", exc)
     return local
 
 

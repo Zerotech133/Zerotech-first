@@ -30,7 +30,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import sentiment_backtest as sbt  # noqa: E402  (复用其 run/_write_json)
+import sentiment_backtest as sbt  # noqa: E402
 
 RESULT = os.path.join(HERE, "data", "jev_decay.json")
 DIRS = {"bull": 1.0, "bear": -1.0}

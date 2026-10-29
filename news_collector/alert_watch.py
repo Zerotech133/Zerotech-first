@@ -27,6 +27,7 @@ import time
 import urllib.request
 
 import trading_cal  # 同目录模块：脚本运行时脚本目录在 sys.path；测试亦插入 HERE
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 STATION = os.path.dirname(HERE)
@@ -102,7 +103,7 @@ def _write_heartbeat(rc, upstream_ok, routes_count, note):
         with open(tmp, "w", encoding="utf-8") as f:
             json.dump(payload, f, ensure_ascii=False)
         os.replace(tmp, HEARTBEAT_PATH)
-    except Exception as exc:  # noqa: BLE001  心跳写失败不得影响主流程
+    except Exception as exc:  # noqa: BLE001
         print("ALERT_WATCH_WARN heartbeat write %s" % str(exc)[:100])
     return payload
 
@@ -295,8 +296,8 @@ def main():
                 level="bad",
                 footer="AI工作站 · 阈值监听（每 30 分钟比对）· 不构成投资建议",
             )
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/alert_watch.py", exc)
         try:
             tres = alert_push.push_card_multi(card, targets=targets)
         except Exception as exc:
@@ -349,7 +350,7 @@ if __name__ == "__main__":
         _rc = main()
     except SystemExit:
         raise
-    except Exception as _exc:  # noqa: BLE001  崩溃也要留下"本体在跑"的证据
+    except Exception as _exc:  # noqa: BLE001
         _write_heartbeat(1, False, 0, "exception: %s" % str(_exc)[:120])
         raise
     sys.exit(_rc)

@@ -22,6 +22,7 @@ sys.path.insert(0, HERE)
 
 import db
 import cross_poll
+import logging
 
 POOL_JSONL = os.path.join(HERE, "data", "chanlun_pool.jsonl")
 
@@ -35,8 +36,8 @@ def test_row_count():
             try:
                 json.loads(line)
                 jsonl_count += 1
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/test_sqlite_migration.py", exc)
     conn = db.get_conn()
     try:
         sqlite_count = db.pool_count(conn)
@@ -61,8 +62,8 @@ def test_field_spot_check():
         for line in f:
             try:
                 jsonl_rows.append(json.loads(line))
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/test_sqlite_migration.py", exc)
     samples = random.sample(jsonl_rows, min(10, len(jsonl_rows)))
     conn = db.get_conn()
     ok = True

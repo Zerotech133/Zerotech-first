@@ -141,7 +141,7 @@ class OfflineConsumptionGateTests(unittest.TestCase):
     def test_missing_authority_never_falls_back_to_embedded_proof(self) -> None:
         event = _event("A")
         event["proof"] = SyntheticAuthority()
-        self.assert_closed(self.evaluate(event, None), "SOURCE_UNVERIFIED", "EVALUATION_TIME")
+        self.assert_closed(self.evaluate(event, None), "SOURCE_UNVERIFIED", "AUTHORITY_UNAVAILABLE")
 
     def test_missing_and_raising_resolver_fail_closed(self) -> None:
         self.assert_closed(self.evaluate(_event("A"), object()), "SOURCE_UNVERIFIED", "AUTHORITY_UNAVAILABLE")

@@ -28,6 +28,7 @@ import threading
 import time
 from datetime import datetime
 from pathlib import Path
+import logging
 
 # ── 常量与模块级状态 ──────────────────────────────────────────────────────
 
@@ -117,7 +118,7 @@ def _build_payload():
     for cfg in tasks_cfg:
         try:
             entries.append(classify(cfg, rows.get(cfg["name"]), now))
-        except Exception as e:  # noqa: BLE001  单行坏不拖垮整卡
+        except Exception as e:  # noqa: BLE001
             entries.append({
                 "name": cfg.get("name", "?"),
                 "expected_cadence": "?", "last_run": None,
@@ -173,7 +174,7 @@ def _refresh_background():
         with _LOCK:
             _CACHE["ts"] = time.monotonic()
             _CACHE["data"] = payload
-    except Exception as e:  # noqa: BLE001  fail-open：后台失败不冒泡
+    except Exception as e:  # noqa: BLE001
         sys.stderr.write(
             "[api_execution] 后台刷新失败(前台返回旧缓存不受影响): "
             "%s: %s\n" % (type(e).__name__, e))
@@ -356,7 +357,7 @@ def poll_tasks(names, force=False):
     try:
         rows = _ps_query(names)
         return rows, True, None, int((time.monotonic() - t0) * 1000)
-    except Exception as e:  # noqa: BLE001  fail-visible：失败如实上报
+    except Exception as e:  # noqa: BLE001
         return {}, False, "%s: %s" % (type(e).__name__, e), int(
             (time.monotonic() - t0) * 1000)
 
@@ -388,8 +389,8 @@ def _log_state(cfg):
         try:
             if lp.is_file():
                 log_mtime = _fmt_mtime(lp.stat().st_mtime)
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_execution.py", exc)
     fs = cfg.get("fail_scan") or {}
     fs_log = fs.get("log")
     pattern = fs.get("pattern")
@@ -404,8 +405,8 @@ def _log_state(cfg):
                               errors="replace") as f:
                         tail = f.readlines()[-500:]
                     fail_scan_hit = any(pattern in ln for ln in tail)
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_execution.py", exc)
     return log_mtime, fail_scan_hit
 
 
@@ -585,7 +586,7 @@ class Handler:
         force = "force=1" in (qs or "").lower() or "force=true" in (qs or "").lower()
         try:
             payload = build_execution_health(force=force)
-        except Exception as e:  # noqa: BLE001  兜底 fail-visible
+        except Exception as e:  # noqa: BLE001
             payload = {
                 "read_only": True,
                 "generated_at": datetime.now().isoformat(timespec="seconds"),

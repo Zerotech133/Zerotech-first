@@ -11,7 +11,7 @@ sys.path.insert(0, str(HERE.parent / "paper"))
 
 import meetings_conductor as cond  # noqa: E402
 import meeting  # noqa: E402
-import plan_review  # noqa: E402  # K-STOCK-163：conductor 经同模块做意图摘要增强
+import plan_review  # noqa: E402
 import pytest  # noqa: E402
 
 

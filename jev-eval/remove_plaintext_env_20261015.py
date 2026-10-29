@@ -30,7 +30,7 @@ def main():
             shutil.copy2(fp, dst)
             print("backup -> %s" % dst)
 
-    buf = ctypes.create_unicode_buffer("\0".join(TARGETS) + "\0\0")
+    ctypes.create_unicode_buffer("\0".join(TARGETS) + "\0\0")
 
     class SHFILEOPSTRUCTW(ctypes.Structure):
         _fields_ = [

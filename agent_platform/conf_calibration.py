@@ -15,6 +15,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
+import logging
 
 BASE = Path(__file__).parent
 LEDGER = BASE / "data" / "shadow" / "shadow_ledger.jsonl"
@@ -32,8 +33,8 @@ def load_ledger():
         for line in LEDGER.read_text(encoding="utf-8").splitlines():
             try:
                 rows.append(json.loads(line))
-            except json.JSONDecodeError:
-                pass
+            except json.JSONDecodeError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/conf_calibration.py", exc)
     return [
         r
         for r in rows

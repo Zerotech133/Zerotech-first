@@ -37,6 +37,7 @@ if _QUANT_BT not in sys.path:
     sys.path.insert(0, _QUANT_BT)
 
 from strategy_layer import Registry, bootstrap_default_adapters  # noqa: E402
+import logging
 
 # ── 常量（影子期参数，判据预注册防事后调参）────────────────────────────
 ALPHA = 0.3  # EWMA 新数据权重
@@ -175,7 +176,7 @@ def next_day_return(
 
         tbl = pq.read_table(path, columns=["trade_date", "close"])
         df = tbl.to_pandas()
-    except Exception:  # noqa: BLE001 — 单票数据坏不拖垮整体
+    except Exception:  # noqa: BLE001
         return None
     if df.empty:
         return None
@@ -208,8 +209,8 @@ def _load_env_local() -> None:
                     k = k.strip()
                     if k.startswith("XMAP_PG_"):
                         os.environ.setdefault(k, v.strip())
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/strategy_layer/weight_updater.py", exc)
 
 
 def _pg_connect():
@@ -273,7 +274,7 @@ def fetch_feedback(weeks: int) -> List[Dict[str, str]]:
         finally:
             conn.close()
         return rows
-    except Exception:  # noqa: BLE001 — 兜底路径
+    except Exception:  # noqa: BLE001
         out = []
         for line in _psql_exec(sql).splitlines():
             parts = line.split("\t")
@@ -309,7 +310,7 @@ def fetch_signals(weeks: int) -> List[Dict[str, Any]]:
                 raw = [(str(r[0]), str(r[1]), r[2]) for r in cur.fetchall()]
         finally:
             conn.close()
-    except Exception:  # noqa: BLE001 — 兜底路径
+    except Exception:  # noqa: BLE001
         raw = []
         for line in _psql_exec(sql).splitlines():
             parts = line.split("\t")

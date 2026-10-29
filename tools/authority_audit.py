@@ -25,6 +25,7 @@ TOOLS = ROOT / "tools"
 if str(TOOLS) not in sys.path:
     sys.path.insert(0, str(TOOLS))
 import devtask  # noqa: E402
+import logging
 
 TASKS = ROOT / ".worktrees" / "tasks.json"
 EVENTS = ROOT / "portal" / "data" / "dev_events.jsonl"
@@ -34,6 +35,9 @@ HTML_OUT = ROOT / "docs" / "dev" / "authority_board.html"
 MD_OUT = ROOT / "work" / "authority" / "authority_audit.md"
 E3_SEATS = ("ARCH1", "DEV1", "DEV5", "OPS1")
 CMD_KINDS = ("task_start", "review_verdict", "approval_verdict", "dispatch")
+# block 生效时点（2026-10-27 老田批，合并缺署名拒收）；
+# charter 明确"历史已 done 单不追改"，故署名覆盖红线只看新单。
+HISTORICAL_CUTOFF = "2026-10-27T16:00"
 
 
 def load_json(path, default=None):
@@ -70,8 +74,8 @@ def load_events(path=EVENTS):
                 rows.append(json.loads(line))
             except ValueError:
                 continue
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/authority_audit.py", exc)
     return rows
 
 
@@ -98,14 +102,22 @@ def compute(tasks, events, charter, adr_files=(), now=None):
     missing = [r for r in dev_done if not r["approver"]]
     self_review = [r for r in dev_done
                    if r["approver"] and r["approver"].upper() == r["owner"].upper()]
+
+    def _stamp(r):
+        return str(r.get("created") or r.get("merged") or "").replace(" ", "T")[:16]
+
+    new_done = [r for r in dev_done if _stamp(r) >= HISTORICAL_CUTOFF]
+    new_missing = [r for r in new_done if not r["approver"]]
+    hist_done = [r for r in dev_done if _stamp(r) < HISTORICAL_CUTOFF]
+    hist_missing = [r for r in hist_done if not r["approver"]]
     recent = [r for r in rows if r["created"][:10] >= cut]
     recent_legal = 0
     for r in recent:
         try:
             if devtask._owner_check(r["owner"])[0] is True:
                 recent_legal += 1
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "tools/authority_audit.py", exc)
     arch1_actions = sum(
         1 for e in events
         if str(e.get("day") or e.get("ts") or "")[:10] >= cut
@@ -135,8 +147,9 @@ def compute(tasks, events, charter, adr_files=(), now=None):
     red.append({"id": "arch1_command_actions_7d", "value": arch1_actions,
                 "ok": arch1_actions >= 3})
     red.append({"id": "merge_approval_coverage",
-                "value": (round(len(approved) / len(dev_done), 4) if dev_done else None),
-                "ok": len(missing) == 0})
+                "value": (round((len(new_done) - len(new_missing)) / len(new_done), 4)
+                          if new_done else None),
+                "ok": len(new_missing) == 0})
     red.append({"id": "self_review_self_approve", "value": len(self_review),
                 "ok": len(self_review) == 0})
     red.append({"id": "adr_or_decision_records", "value": len(list(adr_files)),
@@ -154,8 +167,11 @@ def compute(tasks, events, charter, adr_files=(), now=None):
                     "approver": approval.get("approver"),
                     "alternates": approval.get("alternates")},
         "dev": {"total": len(dev), "done": len(dev_done),
-                "approved": len(approved), "missing": len(missing),
-                "self_review": len(self_review)},
+                "approved": len(approved), "missing": len(new_missing),
+                "self_review": len(self_review),
+                "new_done": len(new_done), "new_missing": len(new_missing),
+                "historical_done": len(hist_done),
+                "historical_missing": len(hist_missing)},
         "recent": {"total": len(recent), "legal": recent_legal},
         "arch1_actions_7d": arch1_actions,
         "e3": e3,
@@ -175,10 +191,10 @@ def render_md(m):
     for r in m["red_lines"]:
         st = "✅" if r["ok"] is True else ("❌" if r["ok"] is False else "🟡 人工")
         lines.append("| %s | %s | %s |" % (r["id"], r["value"], st))
-    lines += ["", "## 合并署名", "",
-              "- dev 完成单：%d；有署名：%d；缺署名：%d；自审自批：%d"
+    lines += ["", "## 合并署名（新单口径：block 生效后；历史 done 不追改）", "",
+              "- dev 完成单：%d；有署名：%d；新单缺署名：%d；历史缺署名：%d；自审自批：%d"
               % (m["dev"]["done"], m["dev"]["approved"], m["dev"]["missing"],
-                 m["dev"]["self_review"]),
+                 m["dev"].get("historical_missing", 0), m["dev"]["self_review"]),
               "- ADR/决策记录：%d" % m["adr_count"]]
     return "\n".join(lines) + "\n"
 

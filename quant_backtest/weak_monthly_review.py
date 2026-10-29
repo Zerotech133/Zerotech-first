@@ -29,6 +29,7 @@ import glob
 import json
 import os
 import sys
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPORTS = os.path.abspath(os.path.join(HERE, "..", "reports"))
@@ -128,8 +129,8 @@ def collect(month):
                     if lo <= str(q.get("detect_date", ""))[:10] < hi:
                         new_sigs += 1
                         new_codes.add(str(q.get("code", "?")))
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/weak_monthly_review.py", exc)
 
     trig_rows = trig_codes = 0
     trig_type = {"超额收敛": 0, "池内新信号": 0, "两者皆触": 0, "其他": 0}

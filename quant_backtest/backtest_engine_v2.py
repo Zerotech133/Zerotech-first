@@ -212,6 +212,7 @@ def regime_of(day):
 # ============================================================
 sys.path.insert(0, os.path.join(BASE, "quant_backtest"))
 from chanlun_signal import analyze as chan_analyze  # noqa: E402
+import logging
 
 WARMUP = 250
 SELL_TYPES = {"1卖", "2卖", "3卖"}
@@ -343,8 +344,8 @@ def calc_chanlun_signals(d0, d1, progress=None, buy_filter="all"):
             open(cache_fp, "w", encoding="utf-8"),
             ensure_ascii=False,
         )
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/backtest_engine_v2.py", exc)
     return (
         sig_buy,
         sig_sell,
@@ -540,7 +541,7 @@ def calc_dknife_signals_market(d0, d1, progress=None, profile="relaxed", hist_st
     snap = pd.read_parquet(snap_fp)
     days = sorted(snap.trade_date.unique())
     cover = [d for d in days if d0 <= d <= d1]
-    missing = [d for d in days if d0 <= d <= d1]  # 全部可得日中的窗内日
+    [d for d in days if d0 <= d <= d1]  # 全部可得日中的窗内日
     if not cover:
         return (
             None,
@@ -1373,8 +1374,8 @@ def _run_minute_store_job(params: dict, job_id: str, progress=None):
             if temporary is not None:
                 try:
                     os.unlink(temporary)
-                except FileNotFoundError:
-                    pass
+                except FileNotFoundError as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/backtest_engine_v2.py", exc)
         return payload, None
     except Exception as exc:
         return None, repr(exc)

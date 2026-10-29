@@ -15,6 +15,7 @@ import time
 import urllib.request
 from datetime import datetime
 from pathlib import Path
+import logging
 
 HOME = Path.home() / ".hermes" / "profiles" / "tianfeng"
 
@@ -52,8 +53,8 @@ def _pid(port: int) -> str:
                 and parts[3] == "LISTENING"
             ):
                 return parts[4]
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/legion_command/tianfeng_view.py", exc)
     return "—"
 
 
@@ -106,8 +107,8 @@ def _toolsets() -> list:
         cfg = yaml.safe_load(text) or {}
         tools = (cfg.get("platform_toolsets") or {}).get("cli") or []
         return [str(x) for x in tools if str(x).strip()]
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/legion_command/tianfeng_view.py", exc)
     out, in_ts = [], False
     for ln in text.splitlines():
         s = ln.strip()
@@ -250,8 +251,8 @@ def build_view(platform: Path) -> dict:
                         "next": "老田后台加白名单或开通 application:application:patch 后自动加",
                     }
                 )
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/legion_command/tianfeng_view.py", exc)
     else:
         blockers.append(
             {
@@ -377,8 +378,8 @@ def build_view(platform: Path) -> dict:
             if ln.startswith("# "):
                 soul_title = ln[2:].strip()
                 break
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/legion_command/tianfeng_view.py", exc)
     guard = _load(repo / "agent_platform" / "registry" / "tianfeng_guard.json", {})
     guard_desc = "allow_repo=%d / deny_repo=%d / exec_confirm=%d（检测层，非强制）" % (
         len(guard.get("allow_repo_prefixes") or []),

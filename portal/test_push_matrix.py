@@ -11,6 +11,7 @@ if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
 
 import push_matrix as pm  # noqa: E402
+import logging
 
 
 class TestDst:
@@ -175,5 +176,5 @@ class TestLoad:
         try:
             pm.load_matrix(p)
             assert False, "should raise"
-        except json.JSONDecodeError:
-            pass
+        except json.JSONDecodeError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/test_push_matrix.py", exc)

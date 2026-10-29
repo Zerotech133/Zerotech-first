@@ -13,7 +13,8 @@ sys.path.insert(0, HERE)
 from feishu_card_v2 import send_card, PORTAL_BASE, PORTAL_KEY, m_url  # noqa: E402
 
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "news_collector"))
-import push_targets  # noqa: E402  K-STOCK-403：收件人单一事实源
+import push_targets  # noqa: E402
+import logging
 
 GROUP_CHAT_ID = push_targets.target_id("内部测试") or ""  # 家人群
 BASE = PORTAL_BASE  # K-STOCK-305：域名/访问码收敛到 feishu_card_v2 单点维护
@@ -38,8 +39,8 @@ def build_card():
             _d = json.load(f)
         snap_run = str(_d.get("scan_run_date") or snap_run)
         snap_basis = str(_d.get("trade_basis") or snap_basis)
-    except Exception:
-        pass  # 读不到不外溢，用默认口径
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/push_picks_public_link.py", exc)
     usage = (
         "**入口一（推荐）**：点下方「带访问码直达」按钮，自动带码进入\n\n"
         "**入口二**：打开 %s ，输入访问码\n\n"

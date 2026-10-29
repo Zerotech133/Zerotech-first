@@ -21,6 +21,7 @@ import json
 import sys
 import time
 from pathlib import Path
+import logging
 
 PLATFORM = Path(__file__).resolve().parents[1]
 REPO = PLATFORM.parent
@@ -206,8 +207,8 @@ def _record_llm(
             status="ok" if ok else "error",
             attrs=attrs,
         )
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/tools/model_router.py", exc)
 
 
 def _log_usage(capability: str, purpose: str, model: str, ok: bool) -> None:
@@ -222,8 +223,8 @@ def _log_usage(capability: str, purpose: str, model: str, ok: bool) -> None:
         }
         with open(USAGE_LOG, "a", encoding="utf-8") as f:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/tools/model_router.py", exc)
 
 
 def usage_summary(limit: int = 20) -> dict:
@@ -235,6 +236,6 @@ def usage_summary(limit: int = 20) -> dict:
                 rows.append(json.loads(ln))
             except ValueError:
                 continue
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/tools/model_router.py", exc)
     return {"ok": True, "count": len(rows), "items": rows}

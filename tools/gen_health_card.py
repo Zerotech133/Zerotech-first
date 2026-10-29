@@ -555,6 +555,16 @@ def collect_task_audit(
     if summary is not None:
         result["summary_generated_at"] = summary.get("generated_at")
 
+    # 2026-10-28 OS-FIX-L1-AUDIT：canonical 摘要已按任务级语义把 DeadlineWatch/x5/
+    # PytestWeekly/ObservePoint 等单列 known_baseline（不计 failed）；健康卡若继续
+    # 从 ledger 重算会把它们再当失败（实测 9 vs 5）。这里消费摘要语义名单。
+    _summary_semantic_skip: set[str] = set()
+    if isinstance(summary, dict) and summary.get("canonical", True) is not False:
+        for _key in ("known_baseline_tasks", "alert_found_tasks"):
+            for _item in summary.get(_key) or []:
+                if isinstance(_item, dict) and _item.get("name"):
+                    _summary_semantic_skip.add(str(_item["name"]))
+
     ledger_path = audit_root / LEDGER_NAME
     if not ledger_path.is_file():
         result["reason"] = f"账本不存在: {ledger_path}"
@@ -637,6 +647,8 @@ def collect_task_audit(
             if (state_key == "disabled" or code in (0, NEVER_RUN_CODE)
                     or code in NON_FAILURE_TASK_CODES):
                 continue
+            if str(rec.get("name") or "?") in _summary_semantic_skip:
+                continue
             names.add(str(rec.get("name") or "?"))
         return names
 
@@ -683,6 +695,8 @@ def collect_task_audit(
             never_run += 1
             continue
         if code in NON_FAILURE_TASK_CODES:  # 跑批中/被终止/取消/上游拒跑：单列不计失败
+            continue
+        if name in _summary_semantic_skip:  # 任务级 by-design（known_baseline/alert_found）
             continue
 
         # 与 task_exit_audit 同口径：非 0、非 267011、非 Disabled 即失败
@@ -2052,7 +2066,7 @@ def _read_parquet_column(
     """
     try:
         import pyarrow.parquet as parquet  # 惰性：仅本组检查需要
-    except Exception as exc:  # noqa: BLE001 - 失败原因要原样进 detail
+    except Exception as exc:  # noqa: BLE001
         return None, "pyarrow 不可用（%s），无法读 parquet 单列" % _short_exc(exc)
     try:
         schema = parquet.read_schema(str(path))
@@ -2170,7 +2184,7 @@ def collect_shibor_lpr_freshness(
         block.update(reason="shibor.parquet / 原始层 shibor / shibor_lpr 均缺失",
                      status="missing", level="yellow")
         return block
-    except Exception as exc:  # noqa: BLE001 - fail-visible：不拖垮整卡
+    except Exception as exc:  # noqa: BLE001
         block.update(reason="检查异常：%s" % _short_exc(exc),
                      status="error", level="yellow")
         return block
@@ -6166,7 +6180,7 @@ def _evaluate(card: dict[str, Any]) -> tuple[list[dict[str, str]], str, list[str
         _hp = _collect_hermes_push()
         _hp_level, _hp_detail = _hermes_push_level(_hp)
         add("hermes.push", _hp_level, _hp_detail)
-    except Exception as _exc:  # noqa: BLE001  fail-visible 但不拖垮整张卡
+    except Exception as _exc:  # noqa: BLE001
         add("hermes.push", "yellow", "Hermes 推送健康检查异常：%r" % (_exc,))
 
     # ---------------------------------------------------------------------------
@@ -6188,7 +6202,7 @@ def _evaluate(card: dict[str, Any]) -> tuple[list[dict[str, str]], str, list[str
         _gd = str(_gobj.get("detail") or "治理 AI 健康检查无输出")
         add("governance.ai_advice", _gl if _gl in ("green", "yellow", "red") else "yellow",
             _gd[:300])
-    except Exception as _exc:  # noqa: BLE001  fail-visible 但不拖垮整张卡
+    except Exception as _exc:  # noqa: BLE001
         add("governance.ai_advice", "yellow", "治理 AI 健康检查未运行：%r" % (_exc,))
 
     # ---------------------------------------------------------------------------
@@ -6216,7 +6230,7 @@ def _evaluate(card: dict[str, Any]) -> tuple[list[dict[str, str]], str, list[str
             _el = "yellow"
             _ed = "经验库 %d 条中 verified %d（存在未验签）" % (_total, _verified)
         add("governance.experience_library", _el, _ed[:300])
-    except Exception as _exc:  # noqa: BLE001  fail-visible 但不拖垮整张卡
+    except Exception as _exc:  # noqa: BLE001
         add("governance.experience_library", "yellow",
             "经验库消费检查未运行：%r" % (_exc,))
 

@@ -1,0 +1,184 @@
+﻿/* deep_shell.css — 零界深屏骨架 v1（双版本·深色侧）
+   适用：/paper（参照）、/picks.html、/strategies 等专业工作台。
+   原则：只提供 shell / 页面头 / 上下文条 / 页脚与通用主题变量；业务内容样式由各页保留。 */
+
+body.dw-page{
+  --dw-bg:#080e19;
+  --dw-bg-2:#0b1522;
+  --dw-surface:#0f1c2e;
+  --dw-raised:#14263a;
+  --dw-line:#2c4058;
+  --dw-line-soft:#203348;
+  --dw-ink:#eef5ff;
+  --dw-muted:#8fa8c0;
+  --dw-cyan:#6bd7e5;
+  --dw-amber:#e5c07b;
+  --dw-red:#ff8d85;
+  --dw-green:#64d6a0;
+  --bg-page:var(--dw-bg);
+  --bg-surface:var(--dw-surface);
+  --bg-raised:var(--dw-raised);
+  --border:var(--dw-line);
+  --border-weak:var(--dw-line-soft);
+  --text:var(--dw-ink);
+  --text-dim:var(--dw-muted);
+  --link:var(--dw-cyan);
+  margin:0;min-height:100vh;color:var(--dw-ink);
+  background:
+    radial-gradient(ellipse at 72% -10%, #14324c 0%, transparent 46%),
+    radial-gradient(ellipse at 8% 8%, #0f2537 0%, transparent 34%),
+    var(--dw-bg);
+  font:13.5px/1.6 "Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+}
+body.dw-page *{box-sizing:border-box;}
+body.dw-page a{color:inherit;}
+body.dw-page :focus-visible{outline:2px solid var(--dw-cyan);outline-offset:2px;}
+body.dw-page ::selection{background:rgba(107,215,229,.25);}
+
+.dw-shell{max-width:1360px;margin:0 auto;padding:0 28px 54px;}
+
+/* 页面头 */
+.dw-hero{
+  max-width:1360px;margin:0 auto;padding:22px 28px 8px;
+  display:grid;grid-template-columns:minmax(0,1.1fr) auto;gap:22px;align-items:start;
+}
+.dw-brand-block{min-width:0;}
+.dw-brand{display:flex;align-items:center;gap:12px;}
+.dw-logo{
+  width:44px;height:44px;border-radius:13px;display:grid;place-items:center;
+  font-size:20px;font-weight:800;color:#eaffff;
+  background:linear-gradient(135deg,#0e7490,#155e75 70%);
+  border:1px solid rgba(107,215,229,.35);
+  box-shadow:0 0 0 4px rgba(107,215,229,.06);
+}
+.dw-eyebrow{font-size:10px;letter-spacing:.2em;color:var(--dw-cyan);font-weight:700;}
+.dw-title{margin:3px 0 0;font-size:29px;line-height:1.2;letter-spacing:.01em;color:var(--dw-ink);font-weight:800;}
+.dw-title span{font-size:10.5px;letter-spacing:.1em;color:var(--dw-muted);font-weight:500;margin-left:8px;}
+.dw-lead{color:var(--dw-muted);font-size:12.5px;margin:9px 0 0;max-width:720px;}
+.dw-tags{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px;}
+.dw-tag{font-size:10.5px;color:var(--dw-muted);border:1px solid var(--dw-line);border-radius:999px;padding:3px 9px;background:rgba(15,28,46,.6);}
+.dw-tag.live{color:var(--dw-cyan);border-color:rgba(107,215,229,.35);background:rgba(107,215,229,.08);}
+.dw-tag.warn{color:var(--dw-amber);border-color:rgba(229,192,123,.35);background:rgba(229,192,123,.07);}
+
+/* 右侧 KPI / 时钟 */
+.dw-hero-side{display:flex;flex-direction:column;align-items:flex-end;gap:8px;min-width:180px;}
+.dw-clock{font:600 14px/1.4 Consolas,"Microsoft YaHei",monospace;color:var(--dw-cyan);}
+.dw-side-note{font-size:10.5px;color:var(--dw-muted);text-align:right;line-height:1.7;}
+.dw-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;width:100%;max-width:680px;}
+.dw-kpi{background:linear-gradient(150deg,rgba(20,38,58,.95),rgba(15,28,46,.95));border:1px solid var(--dw-line);border-radius:12px;padding:10px 12px;min-width:0;}
+.dw-kpi .k{font-size:10px;color:var(--dw-muted);letter-spacing:.05em;margin-bottom:4px;white-space:nowrap;}
+.dw-kpi .v{font:700 18px/1.25 Consolas,"Microsoft YaHei",monospace;color:var(--dw-ink);white-space:nowrap;}
+
+/* 快捷导航 + 上下文 */
+.dw-quick{max-width:1360px;margin:0 auto;padding:10px 28px 0;display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+.dw-pill{display:inline-flex;align-items:center;gap:4px;padding:6px 11px;border:1px solid var(--dw-line);border-radius:8px;background:rgba(15,28,46,.55);color:var(--dw-muted);text-decoration:none;font-size:12px;line-height:1;}
+.dw-pill:hover{color:var(--dw-ink);border-color:rgba(107,215,229,.45);}
+.dw-pill.on{color:var(--dw-cyan);border-color:rgba(107,215,229,.4);background:rgba(107,215,229,.08);font-weight:600;}
+.dw-sep{width:1px;height:16px;background:var(--dw-line-soft);margin:0 3px;}
+.dw-context{max-width:1360px;margin:0 auto;padding:9px 28px 0;display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--dw-muted);font-size:11px;flex-wrap:wrap;}
+.dw-crumb{display:flex;align-items:center;gap:7px;}
+.dw-crumb b{color:var(--dw-ink);font-weight:600;}
+.dw-crumb span{color:var(--dw-line);}
+.dw-context-meta{display:flex;align-items:center;gap:6px;}
+.dw-dot{width:6px;height:6px;border-radius:50%;background:var(--dw-green);box-shadow:0 0 0 3px rgba(100,214,160,.1);}
+
+/* 页脚 */
+.dw-footer{
+  max-width:1360px;margin:26px auto 0;padding:14px 28px 0;
+  border-top:1px solid var(--dw-line-soft);
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  color:var(--dw-muted);font-size:10.5px;
+}
+.dw-footer a{color:var(--dw-cyan);text-decoration:none;}
+.dw-footer .dw-footer-left{display:flex;align-items:center;gap:8px;}
+
+/* 通用内容容器 */
+.dw-content{max-width:1360px;margin:0 auto;padding:18px 28px 0;}
+
+/* ── /picks.html 页面适配 ─────────────────────────────── */
+body.picks-page main{max-width:1360px;margin:0 auto;padding:0 28px 40px;}
+body.picks-page header.dw-hero{padding-top:22px;}
+body.picks-page .topnav{display:none;} /* 改用 dw-quick 统一入口，避免双导航 */
+body.picks-page .vitals{
+  margin-top:16px;background:linear-gradient(150deg,rgba(20,38,58,.92),rgba(15,28,46,.96));
+  border:1px solid var(--dw-line);border-radius:14px;padding:14px 18px;color:var(--dw-muted);
+}
+body.picks-page .vitals b{color:var(--dw-ink);}
+body.picks-page .mdistro{background:rgba(15,28,46,.8);border:1px solid var(--dw-line);border-radius:12px;}
+body.picks-page .strats{grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin-top:14px;}
+body.picks-page .scard{background:linear-gradient(155deg,rgba(20,38,58,.9),rgba(15,28,46,.95));border:1px solid var(--dw-line);border-radius:12px;}
+body.picks-page .scard:hover{border-color:rgba(107,215,229,.45);}
+body.picks-page .scard.sel{border-color:var(--dw-cyan);box-shadow:0 0 0 1px rgba(107,215,229,.25);}
+body.picks-page .filters{
+  position:sticky;top:52px;z-index:20;margin:16px 0 10px;padding:7px;
+  background:rgba(8,14,25,.92);border:1px solid var(--dw-line);border-radius:12px;
+  backdrop-filter:blur(12px);box-shadow:0 12px 28px rgba(0,0,0,.26);
+}
+body.picks-page .fbtn{background:transparent;border:1px solid transparent;border-radius:8px;color:var(--dw-muted);padding:6px 11px;}
+body.picks-page .fbtn.on{background:var(--dw-cyan);border-color:var(--dw-cyan);color:#04222a;font-weight:700;}
+body.picks-page .filters .fsep{background:var(--dw-line-soft);}
+body.picks-page .lhead{background:rgba(8,14,25,.55);color:var(--dw-muted);border:1px solid var(--dw-line);border-bottom:0;border-radius:10px 10px 0 0;font-size:10.5px;}
+body.picks-page .lrow{background:rgba(15,28,46,.55);border-color:var(--dw-line-soft);}
+body.picks-page .lrow:hover{background:rgba(107,215,229,.05);}
+body.picks-page #list{border:1px solid var(--dw-line);border-top:0;border-radius:0 0 10px 10px;overflow:hidden;}
+body.picks-page .more{color:var(--dw-cyan);}
+body.picks-page .xy,body.picks-page .detail{background:rgba(15,28,46,.7);border:1px solid var(--dw-line);border-radius:12px;}
+body.picks-page .foot{color:var(--dw-muted);}
+
+/* ── /strategies 动态页适配 ───────────────────────────── */
+body.strategies-page .dw-content{padding-top:16px;}
+body.strategies-page .dw-grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));}
+body.strategies-page .dw-panel{background:rgba(15,28,46,.7);border:1px solid var(--dw-line);border-radius:12px;padding:16px 18px;}
+
+/* 响应式 */
+@media (max-width:1180px){
+  .dw-hero{grid-template-columns:1fr;gap:12px;}
+  .dw-hero-side{align-items:flex-start;}
+  .dw-kpis{max-width:none;}
+  body.picks-page .strats{grid-template-columns:repeat(3,minmax(0,1fr));}
+}
+@media (max-width:900px){
+  .dw-shell,.dw-hero,.dw-quick,.dw-context,.dw-footer,.dw-content,body.picks-page main{padding-left:18px;padding-right:18px;}
+  .dw-kpis{grid-template-columns:repeat(2,minmax(0,1fr));}
+  body.picks-page .strats{grid-template-columns:repeat(2,minmax(0,1fr));}
+  body.picks-page .filters{top:48px;}
+}
+@media (max-width:620px){
+  .dw-shell,.dw-hero,.dw-quick,.dw-context,.dw-footer,.dw-content,body.picks-page main{padding-left:14px;padding-right:14px;}
+  .dw-title{font-size:23px;}
+  .dw-context{display:none;}
+  body.picks-page .strats{grid-template-columns:1fr 1fr;}
+  body.picks-page .filters{position:static;overflow-x:auto;flex-wrap:nowrap;}
+  .dw-footer{display:block;}
+}
+@media (prefers-reduced-motion:reduce){
+  body.dw-page *{animation:none!important;transition:none!important;}
+}
+
+/* ── /strategies P1：实盘默认展开，影子/支撑折叠，SOP 折叠 ── */
+.strategies-page .strat-group{margin:0 0 14px;}
+.strategies-page .strat-group-head{display:flex;align-items:baseline;gap:8px;margin:0 0 8px;}
+.strategies-page .strat-group-head h3{font-size:14px;margin:0;color:var(--dw-ink);}
+.strategies-page .strat-group-head span{font-size:11px;color:var(--dw-muted);}
+.strategies-page details.strat-group{
+  border:1px solid var(--dw-line);border-radius:12px;
+  background:rgba(15,28,46,.5);padding:10px 14px;margin-bottom:10px;
+}
+.strategies-page details.strat-group summary{
+  cursor:pointer;font-size:13px;font-weight:600;color:var(--dw-muted);
+  list-style:none;display:flex;align-items:center;gap:8px;
+}
+.strategies-page details.strat-group summary::-webkit-details-marker{display:none;}
+.strategies-page details.strat-group summary::before{content:"▸";color:var(--dw-cyan);}
+.strategies-page details.strat-group[open] summary::before{content:"▾";}
+.strategies-page details.strat-group summary .strat-open{margin-left:auto;font-size:10.5px;color:var(--dw-cyan);}
+.strategies-page details.strat-group[open] summary{margin-bottom:10px;color:var(--dw-ink);}
+.strategies-page .strat-sop{
+  border:1px solid var(--dw-line);border-radius:12px;
+  background:rgba(15,28,46,.5);padding:10px 14px;margin-top:16px;
+}
+.strategies-page .strat-sop summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--dw-muted);}
+.strategies-page .strat-sop summary:hover{color:var(--dw-cyan);}
+.strategies-page .strat-sop-body{padding-top:10px;}
+/* P3：/strategies 页面快捷条与全局导航重复，隐藏（面包屑/全局导航仍可达） */
+body.strategies-page > div[style*="justify-content:space-between"][style*="margin:0 0 18px"]{display:none!important;}

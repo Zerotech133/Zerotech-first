@@ -36,6 +36,7 @@ _REPO = Path(__file__).resolve().parent.parent
 # 复用 R1 采集器（一份轮询逻辑两个消费方）：portal 在 _REPO 下
 sys.path.insert(0, str(_REPO / "portal"))
 import api_execution  # noqa: E402
+import logging
 
 # TaskStore 开单底座（run_shadow.open_failed_task 同款先例）：
 # engine path 注入后 from tasks import TaskStore
@@ -110,8 +111,8 @@ def push_feishu(text):
     finally:
         try:
             Path(tmp).unlink(missing_ok=True)
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "tools/execution_watchdog.py", exc)
 
 
 # ── 自动开单（org 工单账本） ──────────────────────────────────────────────
@@ -127,7 +128,7 @@ def open_ticket(name, body, today):
     """
     title = "计划任务失败必响：%s（%s）" % (name, today)
     try:
-        from tasks import TaskStore  # noqa: E402  engine path 已注入
+        from tasks import TaskStore  # noqa: E402
         ts = TaskStore(_REPO / "agent_platform" / "data" / "org" / "tasks")
         dup = [t for t in ts.ls(dept="dev") if t["title"] == title]
         if dup:
@@ -135,7 +136,7 @@ def open_ticket(name, body, today):
         tid = ts.open("dev", title, body, "P0",
                       opened_by="system/execution-watchdog", p0=True)
         return tid, "已开单（P0 直入 doing）"
-    except Exception as e:  # noqa: BLE001  开单 fail-open：不中断推送
+    except Exception as e:  # noqa: BLE001
         return None, "开单异常（不中断推送）: %s" % e
 
 
@@ -299,13 +300,13 @@ def main(argv=None):
             print("[dry-run] 心跳/节流状态未写（零副作用），本轮汇总："
                   "将响 %d · 节流跳过 %d" % (len(alerted), len(skipped)))
         return exit_code
-    except Exception as e:  # noqa: BLE001  自身异常 → exit 1（N1 可探）
+    except Exception as e:  # noqa: BLE001
         print("[exwd] 巡检自身异常: %s" % e)
         try:
             if not dry:
                 _write_last_run(ran_at, 1, [{"error": str(e)}], skipped)
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "tools/execution_watchdog.py", exc)
         return 1
 
 

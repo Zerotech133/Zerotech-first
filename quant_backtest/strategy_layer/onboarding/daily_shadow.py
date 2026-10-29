@@ -71,6 +71,7 @@ from strategy_layer.onboarding import shadow_collect  # noqa: E402
 from strategy_layer.onboarding.classic_adapter import (  # noqa: E402
     ClassicStrategyAdapter,
 )
+import logging
 
 # ---------------------------------------------------------------------- #
 # 常量（影子池定案 2026-10-18 拍板：扩容至 327 只活跃标的冻结快照）
@@ -331,8 +332,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
         sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/strategy_layer/onboarding/daily_shadow.py", exc)
     ap = argparse.ArgumentParser(description="S4 影子期每日采集编排（classic 四策略）")
     ap.add_argument(
         "--date", default=None, help="采集交易日 YYYYMMDD（缺省=上一交易日，T+1 口径）"

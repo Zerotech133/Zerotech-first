@@ -12,6 +12,7 @@ import os
 import shutil
 import sys
 import time
+import logging
 
 BASE = os.path.join(os.environ.get("TEMP", r"C:\Users\Administrator\AppData\Local\Temp"),
                     "pytest-of-Administrator")
@@ -40,8 +41,8 @@ def main(dry: bool):
                 for f in fns:
                     try:
                         size += os.path.getsize(os.path.join(dp, f))
-                    except OSError:
-                        pass
+                    except OSError as exc:
+                        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/cleanup_pytest_tmp.py", exc)
         else:
             size = os.path.getsize(p)
         age_h = (now - mt) / 3600

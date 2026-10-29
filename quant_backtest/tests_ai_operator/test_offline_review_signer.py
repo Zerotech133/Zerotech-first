@@ -19,6 +19,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from ai_operator.contracts import utc_now
+import logging
 
 
 class OfflineSignerTests(unittest.TestCase):
@@ -163,8 +164,8 @@ class OfflineSignerTests(unittest.TestCase):
         if existed:
             try:
                 probe.unlink()
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/tests_ai_operator/test_offline_review_signer.py", exc)
         return existed
 
     def test_private_permissions_failure_happens_before_secret_write(self):

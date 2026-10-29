@@ -18,7 +18,6 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from datetime import date
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -26,7 +25,7 @@ sys.path.insert(0, str(HERE))
 
 from engine import PaperEngine, Reject  # noqa: E402
 from market import ParquetMarket  # noqa: E402
-from trainee import stop_dist_for, _newest_ai_run  # noqa: E402  P-5 止损档案化
+from trainee import stop_dist_for, _newest_ai_run  # noqa: E402
 
 DATA_DIR = HERE.parent / "data"
 DEFAULT_DB = DATA_DIR / "paper.db"
@@ -34,6 +33,35 @@ DEFAULT_DB = DATA_DIR / "paper.db"
 # US 账本止损距离：P-5 起档案化（trainees/us_qingping.json params.stop_dist_pct），
 # 本常量降级为档案缺失时的回退默认（8% 成本锚定，K-STOCK-045c 原值）。
 US_STOP_DIST = 0.08
+
+
+def _env_now(env_key: str = "KSTOCK_PAPER_NOW"):
+    """测试可注入时钟（P0 #3，2026-10-28）：未设 env 时=真实北京时间。
+
+    支持：8 位日期 YYYYMMDD（当日 15:00，盘后视角，Asia/Shanghai）；
+    ISO 8601（无时区按北京时间补齐）；非法值回退真实时钟。
+    仅影响"今天/目标日"判定，不改变交易语义。
+    """
+    import os
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    bj = ZoneInfo("Asia/Shanghai")
+    raw = (os.environ.get(env_key) or "").strip()
+    if not raw:
+        return datetime.now(bj)
+    if len(raw) == 8 and raw.isdigit():
+        return datetime(int(raw[:4]), int(raw[4:6]), int(raw[6:8]), 15, 0, tzinfo=bj)
+    try:
+        dt = datetime.fromisoformat(raw)
+    except ValueError:
+        return datetime.now(bj)
+    return dt if dt.tzinfo is not None else dt.replace(tzinfo=bj)
+
+
+def _env_today(fmt: str = "%Y%m%d", env_key: str = "KSTOCK_PAPER_NOW") -> str:
+    """_env_now() 的日期字符串形式（供 date.today() 替换点使用）。"""
+    return _env_now(env_key).strftime(fmt)
 
 
 def _stop_dist_of(aid: str) -> float:
@@ -382,10 +410,10 @@ def _expected_mark_day(aid: str, now=None) -> str:
 
     market, zone, _ = _mark_market(aid)
     try:
-        bj = ZoneInfo("Asia/Shanghai")
+        ZoneInfo("Asia/Shanghai")
         local = ZoneInfo(zone)
         if now is None:
-            now = datetime.now(bj)
+            now = _env_now()
         if now.tzinfo is None or now.utcoffset() is None:
             raise Reject("快照时钟必须带时区")
         at = now.astimezone(local)
@@ -465,11 +493,10 @@ def _mark_selected(args, db: Path, accounts: list[str]) -> int:
     if not accounts:
         print("❌ 无已开户账户，未生成任何快照", file=sys.stderr)
         return 1
-    from datetime import datetime
-    from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+    from zoneinfo import ZoneInfoNotFoundError
 
     try:
-        captured = datetime.now(ZoneInfo("Asia/Shanghai"))
+        captured = _env_now()
     except ZoneInfoNotFoundError as ex:
         print(f"❌ 缺北京时间数据库: {ex}", file=sys.stderr)
         return 1
@@ -510,7 +537,7 @@ def _mark_selected(args, db: Path, accounts: list[str]) -> int:
                 f"总资产 {r['total']:,.2f} 仓位 {r['pos_pct']:.1%} "
                 f"待撮合 {r['pending']}"
             )
-        except Exception as ex:  # noqa: BLE001 - 逐账户报错，完整尝试后返回非零
+        except Exception as ex:  # noqa: BLE001
             failed.append(aid)
             print(f"❌ [{aid}] 快照失败: {ex}", file=sys.stderr)
         finally:
@@ -685,7 +712,7 @@ def _resolve_plan_date(e, spec, asof=None) -> str:
     注意 _next_td_impl 盘前（hhmm<0930）含当日 ⇒ 必须传盘后 19 字符 ISO
     才能取到「严格之后」的交易日（与 AsOfMarket 同一范式）。"""
     if spec.lower() == "d2":
-        asof = asof or date.today().strftime("%Y%m%d")
+        asof = asof or _env_today()
         base = f"{asof[:4]}-{asof[4:6]}-{asof[6:8]}T15:00:00"  # 盘后视角
         d1 = e.market.next_trading_day(base)
         if d1 is None:

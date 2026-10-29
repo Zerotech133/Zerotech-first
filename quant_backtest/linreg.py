@@ -113,7 +113,7 @@ class JobRun:
     def _silent(self, where, fn, *a, **kw):
         try:
             return fn(*a, **kw)
-        except Exception as e:  # noqa: BLE001 — best-effort 纪律
+        except Exception as e:  # noqa: BLE001
             _log_err(where, e)
             try:
                 if self._conn:

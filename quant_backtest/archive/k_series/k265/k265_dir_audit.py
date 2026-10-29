@@ -36,7 +36,7 @@ def infer_sides(reason):
     for cl in clauses:
         tags = P_TAG.findall(cl)
         if len(tags) >= 2:
-            names = {side: name for name, side in tags}
+            {side: name for name, side in tags}
             # R1: 向 X(A) ... 供应 → supplier = X 的对面
             m = re.search(r"[向给][^，]{0,16}" + P_TAG.pattern + r"[^，]{0,12}(供应|供货|销售|交付|输送)", cl)
             if m:

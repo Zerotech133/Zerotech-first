@@ -72,6 +72,7 @@ import re
 import sys
 from datetime import datetime
 from pathlib import Path
+import logging
 
 # ---------------------------------------------------------------------------
 # 常量与契约
@@ -253,8 +254,8 @@ def resolve_tasks_ledger(root: Path) -> Path | None:
         from _repo_paths import repo_root as _main_root  # noqa: E402
 
         candidates.append(Path(_main_root(root)) / ".worktrees" / "tasks.json")
-    except Exception:  # noqa: BLE001 —— 解析失败不阻塞，候选列表继续
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/zhuge_challenge.py", exc)
     for c in candidates:
         if c.is_file():
             return c
@@ -332,14 +333,14 @@ def load_whitelist(path, parser: str = "auto") -> dict:
     used = "pyyaml"
     if parser in ("auto", "pyyaml"):
         try:
-            import yaml  # noqa: PLC0415 —— 延迟导入，缺库走 fallback
+            import yaml  # noqa: PLC0415
 
             data = yaml.safe_load(text)
         except ImportError:
             if parser == "pyyaml":
                 raise WhitelistError("PyYAML 不可用且指定了 --whitelist-parser pyyaml")
             data = None
-        except Exception:  # noqa: BLE001 —— YAML 语法错误：auto 走 fallback 并显式标注
+        except Exception:  # noqa: BLE001
             data = None
     if data is None:
         data = _minimal_parse_whitelist(text)
@@ -774,8 +775,8 @@ def append_events(path, events: list[dict]) -> None:
         fh.flush()
         try:
             os.fsync(fh.fileno())
-        except OSError:  # 某些文件系统不支持 fsync；不掩盖，仅不阻塞
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "tools/zhuge_challenge.py", exc)
 
 
 def _find_event(events: list, card_id: str, kind: str, key_field: str, key: str) -> dict | None:
@@ -876,7 +877,7 @@ def cmd_emit(args) -> int:
             from zhuge_challenge_model import generate_questions as _gen_model
             model_qs, info = _gen_model(
                 snap["items"], max_questions=min(3, len(snap["items"])))
-        except Exception as exc:  # noqa: BLE001 —— 模型失败不反噬主链
+        except Exception as exc:  # noqa: BLE001
             model_qs, info = None, {"mode": "real3",
                                     "error": "%s: %s" % (type(exc).__name__, str(exc)[:120])}
         if model_qs:
@@ -1134,10 +1135,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--json", action="store_true", help="JSON 输出（机器可读）")
     sub = p.add_subparsers(dest="command", required=True)
 
-    c = sub.add_parser("check", help="校验三件套②白名单（只读）"); _add_json_flag(c)
+    c = sub.add_parser("check", help="校验三件套②白名单（只读）")
+    _add_json_flag(c)
     c.set_defaults(func=cmd_check)
 
-    s = sub.add_parser("snapshot", help="生成/查看计划快照（不联网）"); _add_json_flag(s)
+    s = sub.add_parser("snapshot", help="生成/查看计划快照（不联网）")
+    _add_json_flag(s)
     s.add_argument("--snapshot", default=None, help="快照 JSON 文件路径")
     s.add_argument("--auto-snapshot", action="store_true",
                    help="自动扫描沙盘仓 plans/ 最新可用快照（W5；无可用回落 tasks）")
@@ -1149,7 +1152,8 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--out", default=None, help="把归一快照写入该 JSON 文件（不得写沙盘仓）")
     s.set_defaults(func=cmd_snapshot)
 
-    e = sub.add_parser("emit", help="生成质询卡（open）"); _add_json_flag(e)
+    e = sub.add_parser("emit", help="生成质询卡（open）")
+    _add_json_flag(e)
     e.add_argument("--snapshot", default=None, help="快照 JSON 文件路径")
     e.add_argument("--auto-snapshot", action="store_true",
                    help="自动扫描沙盘仓 plans/ 最新可用快照（W5；无可用回落 tasks）")
@@ -1169,7 +1173,8 @@ def build_parser() -> argparse.ArgumentParser:
     e.add_argument("--dry-run", action="store_true", help="只算不写")
     e.set_defaults(func=cmd_emit)
 
-    r = sub.add_parser("respond", help="田丰响应/整改（open→answered）"); _add_json_flag(r)
+    r = sub.add_parser("respond", help="田丰响应/整改（open→answered）")
+    _add_json_flag(r)
     r.add_argument("--card-id", required=True)
     r.add_argument("--by", required=True, help="响应人")
     r.add_argument("--note", required=True, help="响应/整改留痕")
@@ -1177,7 +1182,8 @@ def build_parser() -> argparse.ArgumentParser:
     r.add_argument("--dry-run", action="store_true")
     r.set_defaults(func=cmd_respond)
 
-    cl = sub.add_parser("close", help="结案（answered→closed；须响应后才可结案）"); _add_json_flag(cl)
+    cl = sub.add_parser("close", help="结案（answered→closed；须响应后才可结案）")
+    _add_json_flag(cl)
     cl.add_argument("--card-id", required=True)
     cl.add_argument("--outcome", required=True, choices=list(DECISIONS))
     cl.add_argument("--by", required=True, help="结案人（本 MVP 不代签）")
@@ -1185,11 +1191,13 @@ def build_parser() -> argparse.ArgumentParser:
     cl.add_argument("--dry-run", action="store_true")
     cl.set_defaults(func=cmd_close)
 
-    ls = sub.add_parser("list", help="列出卡片（可按状态过滤）"); _add_json_flag(ls)
+    ls = sub.add_parser("list", help="列出卡片（可按状态过滤）")
+    _add_json_flag(ls)
     ls.add_argument("--status", default=None, help="open/answered/closed")
     ls.set_defaults(func=cmd_list)
 
-    sh = sub.add_parser("show", help="查看单卡与历史事件"); _add_json_flag(sh)
+    sh = sub.add_parser("show", help="查看单卡与历史事件")
+    _add_json_flag(sh)
     sh.add_argument("--card-id", required=True)
     sh.set_defaults(func=cmd_show)
     return p
@@ -1209,8 +1217,8 @@ def main(argv=None) -> int:
                     sys.path.insert(0, tools_dir)
                 from zhuge_c1_decisions import sync_all
                 sync_all()
-            except Exception:  # noqa: BLE001 —— 同步失败不反噬 C1 主链
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "tools/zhuge_challenge.py", exc)
         return rc
     except ZhugeError as exc:
         payload = {"ok": False, "command": getattr(args, "command", None),

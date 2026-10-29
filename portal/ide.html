@@ -25,11 +25,16 @@
     padding:6px 12px;border-radius:8px;background:var(--panel)}
 
   /* ── 工作区切换器（K-STOCK-346）── */
-  .wsbar{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
-  .wsbtn{font-size:11.5px;padding:5px 11px;border-radius:8px;border:1px solid var(--line);
+  .wsbar{display:flex;gap:5px;align-items:center;flex-wrap:nowrap;overflow-x:auto;max-width:100%;white-space:nowrap;scrollbar-width:thin;padding-bottom:2px}
+  .wsbtn{flex:0 0 auto;font-size:11.5px;padding:5px 11px;border-radius:8px;border:1px solid var(--line);
     background:var(--panel);color:var(--dim);cursor:pointer;user-select:none}
   .wsbtn:hover{color:var(--fg);border-color:var(--dim)}
   .wsbtn.on{color:var(--fg);border-color:var(--purple);background:rgba(188,140,255,.13)}
+  /* K-QUANT-20261028-IDEENVALL：全量开发环境选择器 */
+  .env-sel{background:var(--panel2);border:1px solid var(--line);color:var(--fg);font-size:11.5px;
+    border-radius:7px;padding:4px 8px;max-width:360px;cursor:pointer}
+  .env-sel:hover,.env-sel:focus{border-color:var(--purple);outline:none}
+  .env-label{font-size:11px;color:var(--dim2);white-space:nowrap}
 
   /* ── 五区 grid（342 设计稿）：活动栏 | 侧栏 | 编辑器 | 调试台 / 底部面板 ── */
   .main{flex:1;display:grid;min-height:0;
@@ -161,6 +166,28 @@
   .dbg-ctl select{background:var(--panel2);border:1px solid var(--line);color:var(--fg);font-size:11px;
     border-radius:7px;padding:3px 6px}
   .dbg-ctl .hint{font-size:10.5px;color:var(--dim2)}
+  /* K-QUANT-20261028-IDEMODELS3：全模型可下滑选择 + 在线状态 */
+  .model-pick{position:relative;flex:none}
+  .model-btn{background:var(--panel2);border:1px solid var(--line);color:var(--fg);font-size:11px;
+    border-radius:7px;padding:4px 9px;display:flex;align-items:center;gap:7px;cursor:pointer;white-space:nowrap}
+  .model-btn:hover{border-color:var(--blue)}
+  .model-btn .m-dot{width:7px;height:7px;border-radius:50%;background:var(--dim2);flex:none}
+  .model-btn .m-dot.on{background:var(--green,#39d98a);box-shadow:0 0 5px rgba(57,217,138,.6)}
+  .model-btn .m-dot.warn{background:var(--amber,#f5b94c)}
+  .model-btn .m-dot.off{background:var(--red,#ff6b6b)}
+  .model-menu{position:absolute;bottom:100%;left:0;margin-bottom:5px;width:360px;max-height:350px;overflow-y:auto;
+    background:var(--panel2);border:1px solid var(--line);border-radius:9px;box-shadow:0 -6px 22px rgba(0,0,0,.5);
+    z-index:30;display:none;padding:4px}
+  .model-menu.on{display:block}
+  .model-menu .mg{font-size:10px;color:var(--dim2);padding:6px 8px 3px;letter-spacing:.06em}
+  .model-menu .mi{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:6px;cursor:pointer;font-size:11.5px}
+  .model-menu .mi:hover,.model-menu .mi.on{background:rgba(88,166,255,.13)}
+  .model-menu .mi .mi-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .model-menu .mi .mi-sub{font-size:10px;color:var(--dim2);margin-left:6px}
+  .model-menu .mi .mi-st{font-size:10px;padding:1px 6px;border-radius:999px;border:1px solid var(--line);color:var(--dim2);flex:none}
+  .model-menu .mi .mi-st.ok{color:#8ff0bd;border-color:#2b6b4b}
+  .model-menu .mi .mi-st.warn{color:#ffd58a;border-color:#6b552b}
+  .model-menu .mi .mi-st.off{color:#ffb0b0;border-color:#6b2b2b}
   .at-menu{position:absolute;bottom:100%;left:14px;right:110px;background:var(--panel2);border:1px solid var(--line);
     border-radius:9px;max-height:210px;overflow:auto;z-index:20;display:none;box-shadow:0 -4px 16px rgba(0,0,0,.4)}
   .at-menu .am{display:flex;gap:8px;align-items:center;font-size:12px;padding:6px 10px;cursor:pointer}
@@ -213,6 +240,24 @@
   .card .cid{font-family:Consolas,monospace;color:var(--fg)}
   .card .co{color:var(--dim2);font-size:10.5px;margin-top:2px}
 
+  /* MCP 工具面板 */
+  .mcp-mask{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:60;display:none}
+  .mcp-mask.on{display:block}
+  .mcp-panel{position:fixed;right:24px;top:70px;bottom:24px;width:min(720px,90vw);background:#0c1726;
+    border:1px solid var(--line);border-radius:12px;z-index:61;display:none;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.6)}
+  .mcp-panel.on{display:flex}
+  .mcp-head{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .mcp-head b{font-size:13px}.mcp-head .muted{font-size:10.5px;color:var(--dim2)}
+  .mcp-head button{margin-left:auto}
+  .mcp-body{display:grid;grid-template-columns:240px 1fr;gap:0;min-height:0;flex:1}
+  .mcp-list{border-right:1px solid var(--line);overflow:auto;padding:8px}
+  .mcp-list input{width:100%;margin-bottom:6px}
+  .mcp-item{padding:5px 7px;border-radius:6px;cursor:pointer;font-size:11px;color:var(--dim)}
+  .mcp-item:hover,.mcp-item.on{background:rgba(88,166,255,.13);color:var(--fg)}
+  .mcp-item code{font-size:10.5px;color:var(--blue)}
+  .mcp-main{display:flex;flex-direction:column;padding:10px;min-height:0;overflow:auto}
+  .mcp-main textarea{width:100%;min-height:110px;background:#081321;border:1px solid #1e3a5f;border-radius:7px;color:var(--fg);padding:7px;font-family:Consolas,monospace}
+  .mcp-main pre{background:#0d1828;border:1px solid var(--line);border-radius:8px;padding:8px;white-space:pre-wrap;font-size:11px;max-height:40vh;overflow:auto}
   @media (max-width:1180px){
     .main{grid-template-columns:44px 180px 6px 1fr 0 0}
     .dbg{display:none}
@@ -221,7 +266,7 @@
 <script src="/static/nav.js" defer></script></head>
 <body>
 <header>
-  <h1>⌨ Agent IDE<small>GENOS AGENT WORKBENCH · 多工作区</small></h1>
+  <h1>⌨ Agent IDE<small>GENOS AGENT WORKBENCH · 部门导航</small></h1>
   <div class="wsbar" id="wsbar"></div>
   <div class="wsbar" id="projbar" style="display:none"></div>
   <select id="me" class="mesel" onchange="setMe(this.value)" title="身份视角：以某 Agent 的视角看工单与组织"></select>
@@ -264,15 +309,54 @@
     <div class="target" id="dbg-target">未选择 Agent</div>
     <div class="chat" id="chat"></div>
     <div class="dbg-ctl">
-      <select id="model" title="调试推理模型">
-        <option value="qwen3.5:9b">qwen3.5:9b</option>
-        <option value="qwen3.5:4b">qwen3.5:4b（快）</option>
+      <div class="model-pick" id="model-pick">
+        <button class="model-btn" id="model-btn" title="调试推理模型：本地 / 智谱 / DeepSeek / 中转 GPT-6 全部可选">
+          <span class="m-dot" id="model-dot"></span><span id="model-btn-text">qwen3.5:9b（本地默认）</span><span style="color:var(--dim2)">▾</span>
+        </button>
+        <div class="model-menu" id="model-menu"></div>
+      </div>
+      <select id="model" hidden tabindex="-1" aria-hidden="true">
+        <option value="auto">auto · 智能分配</option>
+        <option value="strong">strong · 强模型</option>
+        <option value="local">local · 本地自动</option>
+        <option value="local4">qwen3.5:4b（本地轻量）</option>
+        <option value="local9" selected>qwen3.5:9b（本地默认）</option>
+        <option value="local35">qwen3.6:35b-a3b（本地复杂）</option>
+        <option value="zhipu">智谱自动（GLM-4-Flash）</option>
+        <option value="glm-4-flash">智谱 GLM-4-Flash</option>
+        <option value="glm-5.3">智谱 GLM-5.3</option>
+        <option value="glm-5">智谱 GLM-5</option>
+        <option value="deepseek">DeepSeek 自动</option>
+        <option value="deepseek-chat">DeepSeek Chat</option>
+        <option value="deepseek-v4-pro">DeepSeek V4 Pro</option>
+        <option value="deepseek-flash">DeepSeek Flash</option>
+        <option value="qwen-plus">通义千问 Plus</option>
+        <option value="qwen3-max">通义千问 3 Max</option>
+        <option value="gpt6">中转 GPT-6</option>
+        <option value="gpt-6-sol">中转 GPT-6 Sol</option>
       </select>
+      <button class="model-btn" id="mcp-btn" title="Tushare MCP 工具：258 个数据接口" style="margin-left:4px">
+        ◆ MCP <span id="mcp-count" style="color:var(--dim2)">…</span>
+      </button>
       <span class="hint">消息里 @ 选择 Agent / 代码文件作为上下文</span>
     </div>
     <div class="inputbar">
+      <div class="mcp-mask" id="mcp-mask" onclick="mcpClose()"></div>
+      <div class="mcp-panel" id="mcp-panel">
+        <div class="mcp-head"><b>◆ Tushare MCP 工具</b><span class="muted" id="mcp-meta">加载中…</span><button class="btn small" onclick="mcpClose()">关闭</button></div>
+        <div class="mcp-body">
+          <div class="mcp-list"><input id="mcp-search" placeholder="搜索工具（stock_basic/daily/...）" oninput="mcpRenderList()"><div id="mcp-tools"></div></div>
+          <div class="mcp-main">
+            <div class="muted" id="mcp-desc">选择左侧工具；参数为 JSON。</div>
+            <textarea id="mcp-args" spellcheck="false">{}</textarea>
+            <div style="display:flex;gap:8px;margin:7px 0"><button class="btn primary" id="mcp-run">执行工具</button><span class="muted" id="mcp-status"></span></div>
+            <pre id="mcp-result">等待执行…</pre>
+          </div>
+        </div>
+      </div>
       <div class="at-menu" id="atmenu"></div>
-      <textarea id="q" placeholder="给该 Agent 发一条测试消息…输入 @ 引用 Agent 或代码文件"></textarea>
+      <textarea id="q" placeholder="给该 Agent 发一条测试消息…输入 @ 引用 Agent 或代码文件（🎙️ 本地语音）"></textarea>
+      <button class="send" id="mic" title="本地语音输入（Windows 离线识别，不上传云端）" style="background:#1f2b3a;border:1px solid #33506f;border-radius:8px;padding:0 10px;color:#dbe8f5;cursor:pointer;margin-right:6px">🎙️</button>
       <button class="send" id="send" onclick="send()" disabled>发送</button>
     </div>
     <div class="dbg-note">经 nginx /ollama/ 反代直连本地 Ollama(11434) · 9b 约 10-60s · 此调试不发工单不落记忆 · 每Agent独立会话切人保留历史</div>
@@ -321,6 +405,7 @@ function wsAgents(){   // 当前工作区成员 Set；null=全部不过滤
 /* ═══ 项目线（K-ORG-057：工作区内二级维度，不另开工作区）═══
    键位：ide-proj@<ws> · 过滤面=工单视图/看板/轨迹（k_id 前缀归线）· 会话按 agent 键不切线 */
 let PROJ = "all";
+let ENV = "all";               // 开发环境：all / line:<id> / dept:<id> / stream:<prefix>
 function wsDeptId(){
   if(WS==="all" || !B) return null;
   const d = B.departments.find(x=>x.name===WS);
@@ -333,35 +418,98 @@ function wsProjects(){
     .sort((a,b)=>(a.status==="active"?0:1)-(b.status==="active"?0:1));
 }
 function curProj(){ return PROJ==="all" ? null : (B.projects||[]).find(p=>p.project_id===PROJ) || null; }
+function envStreamPrefix(){
+  return ENV.indexOf("stream:")===0 ? ENV.slice(7) : "";
+}
+function envLabel(){
+  if(ENV==="all") return "全部开发环境";
+  if(ENV.indexOf("line:")===0){
+    const p=(B.projects||[]).find(x=>x.project_id===ENV.slice(5));
+    return "项目线 · "+(p?p.name:ENV.slice(5));
+  }
+  if(ENV.indexOf("dept:")===0){
+    const d=(B.departments||[]).find(x=>x.id===ENV.slice(5));
+    return "项目部门 · "+(d?d.name:ENV.slice(5));
+  }
+  if(ENV.indexOf("stream:")===0) return "工单流 · "+ENV.slice(7);
+  return "全部开发环境";
+}
+function envStreams(){
+  const m={};
+  (B.workorders||[]).forEach(w=>{
+    const id=String(w.id||"");
+    const parts=id.split("-");
+    if(parts.length<2) return;
+    let p="";
+    if(/^WO-/.test(id) || /^K-/.test(id)) p=parts.slice(0,2).join("-");
+    else return;
+    m[p]=(m[p]||0)+1;
+  });
+  return Object.entries(m).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));
+}
 function renderProjBar(){
   const el = document.getElementById("projbar");
-  const ps = wsProjects();
-  if(!ps.length){ el.innerHTML=""; el.style.display="none"; return; }
+  if(!B){ el.style.display="none"; return; }
+  if(ENV.indexOf("line:")===0) PROJ = ENV.slice(5);
+  const lines = ((B.projects||[]).slice()).sort((a,b)=>(a.status==="active"?0:1)-(b.status==="active"?0:1));
+  const depts = projDepts(), streams = envStreams();
+  if(!lines.length && !depts.length && !streams.length){ el.innerHTML=""; el.style.display="none"; return; }
   el.style.display="flex";
-  const cur = curProj();
-  let h = '<span style="font-size:11px;color:var(--dim2);align-self:center;margin-right:2px">项目线</span>';
-  h += '<span class="wsbtn'+(PROJ==="all"?' on':'')+'" onclick="setProj(\'all\')">全部</span>';
-  ps.forEach(p=>{
-    const off = p.status!=="active";
-    h += '<span class="wsbtn'+(PROJ===p.project_id?' on':'')+'"'+(off?' style="opacity:.45"':'')
-      + ' onclick="setProj('+q(p.project_id)+')"'
-      + ' title="'+esc(p.name)+' · '+esc(p.k_prefix)+' 前缀归线'+(off?' · 已归档':'')+'">'
-      + esc(p.name)+(off?'（结项）':'')+'</span>';
-  });
+  let h = '<span class="env-label">开发环境</span><select id="env-select" class="env-sel" title="所有与开发有关的项目/环境；数据驱动，新增项目自动出现">';
+  h += '<option value="all">全部开发环境（项目线+项目部门+工单流）</option>';
+  if(lines.length){
+    h += '<optgroup label="项目线（工单前缀）">';
+    lines.forEach(p=>{ h += '<option value="line:'+esc(p.project_id)+'">'+esc(p.name)+' · '+esc(p.k_prefix||p.project_id)+(p.status!=="active"?'（结项）':'')+'</option>'; });
+    h += '</optgroup>';
+  }
+  if(depts.length){
+    h += '<optgroup label="研发项目部门">';
+    depts.forEach(d=>{ h += '<option value="dept:'+esc(d.id)+'">'+esc(d.name)+'</option>'; });
+    h += '</optgroup>';
+  }
+  if(streams.length){
+    h += '<optgroup label="工单开发流（按工单前缀）">';
+    streams.forEach(([p,n])=>{ h += '<option value="stream:'+esc(p)+'">'+esc(p)+' · '+n+' 张工单</option>'; });
+    h += '</optgroup>';
+  }
+  h += '</select>';
   el.innerHTML = h;
+  const sel = document.getElementById("env-select");
+  const values = Array.from(sel.options).map(o=>o.value);
+  if(!values.includes(ENV)) ENV = "all";
+  sel.value = ENV;
+  sel.onchange = ()=>setEnv(sel.value);
+}
+function setEnv(v){
+  ENV = v || "all";
+  wsSet("ide-env", ENV);
+  if(ENV.indexOf("line:")===0){
+    PROJ = ENV.slice(5);
+    wsSet("ide-proj", PROJ);
+    renderProjBar(); renderSide(); renderTabs(); renderTab();
+  }else if(ENV.indexOf("dept:")===0){
+    PROJ = "all"; wsSet("ide-proj", "all");
+    const d=(B.departments||[]).find(x=>x.id===ENV.slice(5));
+    if(d && d.name!==WS){ setWs(d.name); }
+    else { renderProjBar(); renderSide(); renderTabs(); renderTab(); }
+  }else{
+    PROJ = "all"; wsSet("ide-proj", "all");
+    renderProjBar(); renderSide(); renderTabs(); renderTab();
+  }
+  addLog("开发环境 → "+envLabel(), "lg-b");
 }
 function setProj(pid){
-  if(pid===PROJ) return;
-  PROJ = pid;
-  wsSet("ide-proj", pid);
-  renderProjBar(); renderSide(); renderTabs(); renderTab();
-  addLog("项目线 → "+(pid==="all"?"全部":pid), "lg-b");
+  setEnv(pid==="all" ? "all" : "line:"+pid);
 }
-function projMatchK(kPrefix, kId){   // k_id 前缀归线（K-ORG-057）
+function projMatchK(kPrefix, kId){   // k_id 前缀归线 + 工单流
+  const sp = envStreamPrefix();
+  if(sp) return String(kId||"").indexOf(sp)===0;
   if(!curProj() || !kPrefix) return true;
   return String(kId||"").indexOf(kPrefix)===0;
 }
-function projMatch(p){   // 工单 project 字段过滤
+function projMatch(p){   // 项目线 / 工单流过滤
+  const sp = envStreamPrefix();
+  if(sp) return String(p.id||"").indexOf(sp)===0;
   const c = curProj();
   if(!c) return true;
   return (p.project||"general")===c.project_id
@@ -429,23 +577,21 @@ function panelToggle(){
 const WS_ICONS = ["🅰","🅱","🅲","🅳","🅴","🅵"];
 function renderWs(){
   const el = document.getElementById("wsbar");
-  const pds = projDepts();
-  let h = '<span class="wsbtn'+(WS==="all"?' on':'')+'" onclick="setWs(\'all\')" title="聚合视图（全部部门）">🌐 全部</span>';
-  if(pds.length > 5){
-    /* K-ORG-057：工作区 >5 个折叠为下拉（防 8+ 部门按钮挤爆顶栏） */
-    const cur = pds.find(d=>d.name===WS);
-    h += '<select class="mesel" style="width:auto" onchange="setWs(this.value)" title="选择工作区（项目部）">'
-      + '<option value="" disabled'+(cur?'':' selected')+'>选择工作区…</option>'
-      + pds.map(d=>'<option value="'+esc(d.name)+'"'+(WS===d.name?' selected':'')+'>'+esc(d.name)+'</option>').join('')
-      + '</select>';
-    if(cur) h += '<span class="wsbtn on">'+(WS_ICONS[pds.indexOf(cur)]||"▫")+' '+esc(WS)+'</span>';
-  } else {
-    pds.forEach((d,i)=>{
-      h += '<span class="wsbtn'+(WS===d.name?' on':'')+'" onclick="setWs('+q(d.name)+')"'
-        + ' title="'+esc((d.agents||[]).join(' / '))+'">'+(WS_ICONS[i]||"▫")+' '+esc(d.name)+'</span>';
-    });
-  }
+  const depts = (B && B.departments) || [];
+  let h = '<span class="wsbtn'+(WS==="all"?' on':'')+'" onclick="setWs(\'all\')" title="聚合视图（全部部门）">🌐 全部部门</span>';
+  h += '<span class="wsbtn" onclick="showHQ()" title="指挥部：田丰 / 赵云 / 诸葛亮 / 关羽 / 黄忠">🎖 指挥部</span>';
+  depts.forEach((d,i)=>{
+    const icon = d.type==="project" ? (WS_ICONS[i]||"▫")
+      : (d.type==="chief" ? "🧭" : (d.type==="func" ? "🏛" : "▫"));
+    const brief = (d.agents||[]).slice(0,6).join(" / ") + ((d.agents||[]).length>6?" …":"");
+    h += '<span class="wsbtn'+(WS===d.name?' on':'')+'" onclick="setWs('+q(d.name)+')"'
+      + ' title="'+esc(d.name)+' · '+esc(brief)+'">'+icon+' '+esc(d.name)+'</span>';
+  });
   el.innerHTML = h;
+}
+function showHQ(){
+  setWs("all");
+  setTimeout(()=>{const el=document.getElementById("hq-section"); if(el) el.scrollIntoView({block:"start"});},300);
 }
 function setWs(name){
   if(name===WS || !B) return;
@@ -460,7 +606,7 @@ function setWs(name){
   document.getElementById("dbg-target").textContent = "未选择 Agent";
   document.getElementById("send").disabled = true;
   renderWs(); renderProjBar(); renderAct(); renderSide(); renderTabs(); renderTab(); renderSess(); pRender();
-  addLog("工作区 → "+(name==="all"?"全部":name), "lg-b");
+  addLog("部门 → "+(name==="all"?"全部部门":name), "lg-b");
 }
 
 /* ═══ ① 活动栏 + ② 侧栏四视图 ═══ */
@@ -484,6 +630,11 @@ function renderSide(){
   const star = id => (ME===id ? ' <span style="color:var(--orange)">★我</span>' : '');  // 348 身份视角
   if(VIEW==="org"){
     if(WS==="all"){
+      if(B.command_hq && (B.command_hq.members||[]).length){
+        h += '<div class="s-t" id="hq-section">🎖 指挥部</div>';
+        for(const id of B.command_hq.members){ const a=B.agents[id]; if(!a) continue;
+          h += sideItem("agent", id, a.grade, id, esc(a.role_label||a.role_profile)+star(id)); }
+      }
       const chief = B.departments.filter(d=>d.type==="chief");
       const func = B.departments.filter(d=>d.type==="func"), proj = B.departments.filter(d=>d.type==="project");
       if(chief.length){
@@ -680,7 +831,10 @@ function rAgent(c, id, noDbg){
     + '<div class="blk"><h3>身份 · 组织架构</h3><div class="kv">'
     + '<div class="k">姓名 / 席位</div><div class="v"><b>'+esc(nm||'—')+'</b> <code>'+esc(CUR.id)+'</code></div>'
     + '<div class="k">岗位</div><div class="v">'+esc(roleCn||CUR.role_profile)+' <code>'+esc(CUR.role_profile)+'</code></div>'
+    + (CUR.discipline ? '<div class="k">工程域</div><div class="v"><code>'+esc(CUR.discipline)+'</code>'+(CUR.role_title?' · '+esc(CUR.role_title):'')+'</div>' : '')
     + '<div class="k">部门</div><div class="v">'+esc(CUR.dept_name||CUR.dept||'')+(CUR.dept_cn_title?' · '+esc(CUR.dept_cn_title):'')+'</div>'
+    + (CUR.group ? '<div class="k">组</div><div class="v">'+esc(CUR.group)+(CUR.org_role?' · '+esc(CUR.org_role):'')+'</div>' : '')
+    + (CUR.report_to ? '<div class="k">汇报线</div><div class="v">→ '+esc(CUR.report_to)+'</div>' : '')
     + (CUR.seat_note ? '<div class="k">身份说明</div><div class="v">'+esc(CUR.seat_note)+'</div>' : '')
     + (CUR.home_page ? '<div class="k">治理页</div><div class="v"><code>'+esc(CUR.home_page)+'</code></div>' : '')
     + (caps.length ? '<div class="k">专长能力</div><div class="v">'+capsHtml+'</div>' : '')
@@ -863,8 +1017,19 @@ function dbgSelect(id){
   if(!CUR) return;
   DBGCUR = CUR;
   wsSetJSON("ide-dbg", id);
+  const bind = agentBindAlias(id);
+  const saved = localStorage.getItem(agentModelKey(id));
+  const want = (saved && MODEL_OPTS.some(o=>o.v===saved)) ? saved : bind;
+  if(want && model()!==want){
+    AGENT_BINDING_APPLY = true;
+    try{ setModel(want); }finally{ AGENT_BINDING_APPLY = false; }
+  }
+  const cur = model();
+  const deviate = !!(bind && cur !== bind);
   document.getElementById("dbg-target").innerHTML =
-    '调试目标 <b>'+CUR.id+'</b>（'+esc(CUR.role_profile)+'）· 工作区 <b>'+esc(WS==="all"?"全部":WS)+'</b> · 模型 <b>'+esc(model())+'</b>'
+    '调试目标 <b>'+CUR.id+'</b>（'+esc(CUR.role_profile)+'）· 工作区 <b>'+esc(WS==="all"?"全部":WS)+'</b>'
+    + ' · 绑定 <b>'+esc(CUR.llm||"—")+'</b> · 当前 <b>'+esc(cur)+'</b>'
+    + (deviate?' <span class="lg-o">⚠ 当前模型偏离绑定</span>':'')
     + '<div class="sysinfo">system = 人设 prompt 全文（'+CUR.prompt.length+' 字符，已装载）· 会话历史 '+sessLoad(id).length+' 条</div>';
   document.getElementById("send").disabled = false;
   renderChatSession(id);
@@ -895,10 +1060,195 @@ function sessClear(id, ev){
   if(DBGCUR && DBGCUR.id===id) document.getElementById("chat").innerHTML = "";
   renderSess();
 }
-function model(){ return document.getElementById("model").value; }
+
+let _micRec=null, _micChunks=[];
+async function toggleMic(){
+  const btn=document.getElementById("mic");
+  if(_micRec && _micRec.state==="recording"){
+    btn.textContent="⏳"; _micRec.stop(); return;
+  }
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    _micChunks=[];
+    const rec=new MediaRecorder(stream);
+    _micRec=rec;
+    rec.ondataavailable=e=>{if(e.data&&e.data.size)_micChunks.push(e.data)};
+    rec.onstop=async()=>{
+      stream.getTracks().forEach(t=>t.stop());
+      _micRec=null; btn.textContent="🎙️";
+      try{
+        const blob=new Blob(_micChunks,{type:rec.mimeType||"audio/webm"});
+        const b64=await new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.onerror=rej;fr.readAsDataURL(blob)});
+        const r=await fetch("http://127.0.0.1:8796/api/stt",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({audio_b64:String(b64).split(",")[1]||"",mime:blob.type||"audio/webm"})});
+        const d=await r.json();
+        if(d.ok && (d.text||"").trim()){
+          const q=document.getElementById("q");
+          q.value=(q.value?q.value+" ":"")+d.text.trim(); q.focus();
+          addLog("🎙️ 本地语音："+d.text.trim(),"lg-g");
+        }else{
+          addLog("🎙️ 本地识别为空/失败："+((d&&d.error)||"unknown"),"lg-r");
+        }
+      }catch(e){ addLog("🎙️ 语音上传失败："+e.message,"lg-r"); }
+    };
+    rec.start();
+    btn.textContent="⏹ 录音中";
+  }catch(e){ alert("无法访问麦克风："+e.message); }
+}
+document.getElementById("mic").onclick=toggleMic;
+
+function model(){ const el=document.getElementById("model"); return (el&&el.value)||"local9"; }
+let AGENT_BINDING_APPLY = false;
 document.getElementById("model").addEventListener("change", ()=>{
-  if(DBGCUR) dbgSelect(DBGCUR.id);
+  if(AGENT_BINDING_APPLY) return;
+  if(DBGCUR){ localStorage.setItem(agentModelKey(DBGCUR.id), model()); dbgSelect(DBGCUR.id); }
 });
+
+/* K-QUANT-20261028-IDEMODELS3：全模型选择器（可下滑 + 在线/降级/离线） */
+const MODEL_OPTS = [
+  {v:"auto", label:"auto · 智能分配", group:"通用", sub:"网关按任务自动选", kind:"auto"},
+  {v:"strong", label:"strong · 强模型", group:"通用", sub:"云端优先，不允许本地兜底", kind:"strong"},
+  {v:"local", label:"local · 本地自动", group:"通用", sub:"Ollama 本地模型", kind:"local"},
+  {v:"local4", label:"qwen3.5:4b", group:"本地", sub:"轻量 · 3.1GB", kind:"local", lm:"qwen3.5:4b"},
+  {v:"local9", label:"qwen3.5:9b", group:"本地", sub:"默认 · 6.1GB", kind:"local", lm:"qwen3.5:9b"},
+  {v:"local35", label:"qwen3.6:35b-a3b", group:"本地", sub:"复杂 · 21GB", kind:"local", lm:"qwen3.6:35b-a3b"},
+  {v:"zhipu", label:"智谱自动（GLM-4-Flash）", group:"智谱", sub:"tianfeng 席位 · 自动选 Key", kind:"zhipu"},
+  {v:"glm-4-flash", label:"智谱 GLM-4-Flash", group:"智谱", sub:"具体模型 · tianfeng", kind:"model", model:"glm-4-flash"},
+  {v:"glm-5.3", label:"智谱 GLM-5.3", group:"智谱", sub:"具体模型 · relay 健康 Key", kind:"model", model:"glm-5.3"},
+  {v:"glm-5", label:"智谱 GLM-5", group:"智谱", sub:"具体模型 · relay（当前限流）", kind:"model", model:"glm-5"},
+  {v:"deepseek", label:"DeepSeek 自动", group:"DeepSeek", sub:"zhaoyun / zhuge 席位", kind:"deepseek"},
+  {v:"deepseek-chat", label:"DeepSeek Chat", group:"DeepSeek", sub:"具体模型 · zhaoyun / zhuge", kind:"deepseek"},
+  {v:"deepseek-v4-pro", label:"DeepSeek V4 Pro", group:"DeepSeek", sub:"具体模型 · relay", kind:"model", model:"deepseek-v4-pro"},
+  {v:"deepseek-flash", label:"DeepSeek Flash", group:"DeepSeek", sub:"具体模型 · relay", kind:"model", model:"deepseek-flash"},
+  {v:"qwen-plus", label:"通义千问 Plus", group:"百炼 / 中转", sub:"具体模型 · relay（当前失效）", kind:"model", model:"qwen-plus"},
+  {v:"qwen3-max", label:"通义千问 3 Max", group:"百炼 / 中转", sub:"具体模型 · relay（当前失效）", kind:"model", model:"qwen3-max"},
+  {v:"gpt6", label:"中转 GPT-6", group:"中转", sub:"relay 席位 · 统一网关", kind:"relay"},
+  {v:"gpt-6-sol", label:"中转 GPT-6 Sol", group:"中转", sub:"具体模型 · relay", kind:"model", model:"gpt-6-sol"},
+];
+function agentBindAlias(id){
+  const a = B && B.agents && B.agents[id];
+  if(!a || !a.llm) return "";
+  const tail = String(a.llm).split("/").pop().replace(/[（(].*$/, "").trim();
+  const localMap = {"qwen3.5:4b":"local4","qwen3.5:9b":"local9",
+                    "qwen3.6:35b-a3b":"local35"};
+  const v = localMap[tail] || tail;
+  return MODEL_OPTS.some(o=>o.v===v) ? v : "";
+}
+function agentModelKey(id){ return "ide-agent-model@"+WS+"@"+id; }
+let MODEL_STATUS={};
+function modelStatusOf(o){
+  const ks=MODEL_STATUS.keys||{}, ms=MODEL_STATUS.models||{};
+  if(o.kind==="local"){
+    const on=!!(ms.local&&ms.local.online);
+    if(!o.lm) return on?["ok","在线"]:["off","离线"];
+    const present=on && ((ms.local.models||[]).some(m=>m.name===o.lm));
+    return present?["ok","在线"]:["off","离线"];
+  }
+  if(o.kind==="model"){
+    const keys=Object.values(ks.seats||{}).flatMap(s=>s.keys||[])
+      .filter(k=>String(k.model||"").trim()===o.model);
+    if(keys.some(k=>k.status==="healthy"))return["ok","在线"];
+    if(keys.some(k=>["degraded","quota"].includes(k.status)))return["warn","降级"];
+    return["off","不在线"];
+  }
+  if(o.kind==="zhipu"){
+    const st=((ks.seats||{}).tianfeng||{}).status;
+    return st==="available"?["ok","在线"]:st==="throttled"?["warn","降级"]:["off","不在线"];
+  }
+  if(o.kind==="deepseek"){
+    const a=((ks.seats||{}).zhaoyun||{}).status, b=((ks.seats||{}).zhuge||{}).status;
+    return (a==="available"||b==="available")?["ok","在线"]:(a==="throttled"||b==="throttled")?["warn","降级"]:["off","不在线"];
+  }
+  if(o.kind==="relay"){
+    const keys=((ks.seats||{}).relay||{}).keys||[];
+    const want=o.v==="gpt6"?"gpt-6-sol":o.v;
+    const hit=keys.filter(k=>String(k.model||"").indexOf(want)===0||String(k.model||"")===want);
+    if(hit.some(k=>k.status==="healthy"))return["ok","在线"];
+    if(hit.some(k=>["degraded","quota"].includes(k.status)))return["warn","降级"];
+    return["off","不在线"];
+  }
+  return["ok","自动"];
+}
+function renderModelMenu(){
+  const menu=document.getElementById("model-menu");
+  if(!menu)return;
+  const cur=model(); let last="";
+  let h="";
+  for(const o of MODEL_OPTS){
+    if(o.group!==last){ h+='<div class="mg">'+esc(o.group)+'</div>'; last=o.group; }
+    const [cls,txt]=modelStatusOf(o);
+    h+='<div class="mi'+(o.v===cur?' on':'')+'" data-model="'+o.v+'" title="'+esc(o.label)+' · '+esc(o.sub)+'">'+
+       '<span class="mi-name">'+esc(o.label)+'<span class="mi-sub">'+esc(o.sub)+'</span></span>'+
+       '<span class="mi-st '+cls+'">'+txt+'</span></div>';
+  }
+  menu.innerHTML=h;
+  menu.querySelectorAll('.mi').forEach(el=>el.onclick=()=>{ setModel(el.dataset.model); menu.classList.remove("on"); });
+}
+function setModel(v){
+  const sel=document.getElementById("model");
+  if(!MODEL_OPTS.some(o=>o.v===v))v="local9";
+  sel.value=v; localStorage.setItem("ide-model",v);
+  const o=MODEL_OPTS.find(x=>x.v===v);
+  document.getElementById("model-btn-text").textContent=o?o.label:v;
+  const [cls,txt]=modelStatusOf(o||{});
+  const dot=document.getElementById("model-dot");
+  dot.className="m-dot "+(cls==="ok"?"on":cls==="warn"?"warn":"off");
+  document.getElementById("model-btn").title="当前模型："+(o?o.label:v)+" · "+txt;
+  renderModelMenu();
+  sel.dispatchEvent(new Event("change",{bubbles:true}));
+}
+/* Tushare MCP 工具面板 */
+let MCP_TOOLS=[], MCP_PICK=null;
+async function mcpLoad(){
+  try{
+    const j=await fetch("http://127.0.0.1:8796/api/mcp/tushare/tools",{cache:"no-store"}).then(r=>r.json());
+    if(!j.ok)throw new Error(j.error||"mcp_failed");
+    MCP_TOOLS=j.tools||[];
+    document.getElementById("mcp-count").textContent=String(j.count||MCP_TOOLS.length);
+    document.getElementById("mcp-meta").textContent=(j.count||MCP_TOOLS.length)+" 个工具 · Tushare 只读";
+    mcpRenderList();
+  }catch(e){document.getElementById("mcp-count").textContent="—";document.getElementById("mcp-meta").textContent="MCP 不可用："+e.message}
+}
+function mcpRenderList(){
+  const q=(document.getElementById("mcp-search").value||"").toLowerCase();
+  const rows=MCP_TOOLS.filter(t=>!q||t.name.toLowerCase().includes(q)||String(t.description||"").toLowerCase().includes(q));
+  document.getElementById("mcp-tools").innerHTML=rows.map(t=>'<div class="mcp-item'+(MCP_PICK===t.name?' on':'')+'" onclick="mcpSelect(\''+t.name+'\')" title="'+esc(t.description||"")+'"><code>'+esc(t.name)+'</code></div>').join("")||'<div class="muted">无匹配</div>';
+}
+function mcpSelect(name){
+  MCP_PICK=name; const t=MCP_TOOLS.find(x=>x.name===name)||{};
+  document.getElementById("mcp-desc").textContent=(t.description||name);
+  document.getElementById("mcp-args").value="{}";
+  mcpRenderList();
+}
+function mcpOpen(){document.getElementById("mcp-mask").classList.add("on");document.getElementById("mcp-panel").classList.add("on");if(!MCP_TOOLS.length)mcpLoad();}
+function mcpClose(){document.getElementById("mcp-mask").classList.remove("on");document.getElementById("mcp-panel").classList.remove("on");}
+document.getElementById("mcp-btn").onclick=mcpOpen;
+document.getElementById("mcp-run").onclick=async()=>{
+  if(!MCP_PICK){document.getElementById("mcp-status").textContent="先选工具";return}
+  let args={};
+  try{args=JSON.parse(document.getElementById("mcp-args").value||"{}")}catch(e){document.getElementById("mcp-status").textContent="参数不是合法 JSON";return}
+  const st=document.getElementById("mcp-status");st.textContent="执行中…";
+  try{
+    const j=await fetch("http://127.0.0.1:8796/api/mcp/tushare/call",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({tool:MCP_PICK,args})}).then(r=>r.json());
+    st.textContent=j.ok?"完成":"失败";
+    document.getElementById("mcp-result").textContent=j.ok?JSON.stringify(j.result,null,2):("错误："+(j.error||"")+"\n"+(j.detail||""));
+  }catch(e){st.textContent="请求失败";document.getElementById("mcp-result").textContent=String(e)}
+};
+mcpLoad();
+async function loadModelPicker(){
+  try{
+    const [ks,ms]=await Promise.all([
+      fetch("http://127.0.0.1:8796/api/keys/state",{cache:"no-store"}).then(r=>r.json()),
+      fetch("http://127.0.0.1:8796/api/models/status",{cache:"no-store"}).then(r=>r.json())
+    ]);
+    MODEL_STATUS={keys:ks,models:ms};
+  }catch(e){ MODEL_STATUS={}; }
+  renderModelMenu();
+  const saved=localStorage.getItem("ide-model")||"local9";
+  setModel(MODEL_OPTS.some(o=>o.v===saved)?saved:"local9");
+}
+document.getElementById("model-btn").onclick=(e)=>{ e.stopPropagation(); document.getElementById("model-menu").classList.toggle("on"); };
+document.addEventListener("click",(e)=>{ const m=document.getElementById("model-menu"); if(m&&!m.contains(e.target)&&e.target.id!=="model-btn")m.classList.remove("on"); });
+loadModelPicker(); setInterval(loadModelPicker,60000);
 
 function addMsg(cls, who, html){
   const c = document.getElementById("chat");
@@ -1014,6 +1364,56 @@ function atContext(msg){
   return ctx.length ? ctx.join("\n---\n")+"\n\n=== 用户消息 ===\n"+msg : msg;
 }
 
+const IDE_TOOL_RULES = [
+  "[IDE 只读文件工具]",
+  "你可以使用三个只读工具（由 IDE 后端执行，限制在项目根目录）：",
+  'list_dir({"path":"."})、read_file({"path":"..."})、search({"query":"...","glob":"*.py"})。',
+  '需要读取项目文件时，只输出一个 JSON 代码块：{"tool":"read_file","args":{"path":"..."}}。',
+  "IDE 会返回工具结果，然后你继续回答；不要声称无法访问项目文件夹。",
+  "工具拒绝时说明路径超出只读范围。最终回答必须是自然语言。"
+].join("\n");
+
+async function fsTool(tool, args){
+  const p = new URLSearchParams();
+  let url = "/api/ide/fs/";
+  if(tool === "list_dir"){ url += "list"; p.set("path", (args&&args.path)||"."); }
+  else if(tool === "read_file"){ url += "read"; p.set("path", (args&&args.path)||""); }
+  else if(tool === "search"){ url += "search"; p.set("q", (args&&args.query)||""); p.set("glob", (args&&args.glob)||""); }
+  else return {ok:false, error:"unknown_tool"};
+  const r = await fetch(url + "?" + p.toString(), {cache:"no-store"});
+  return await r.json();
+}
+
+function parseToolCall(text){
+  const src = String(text||"");
+  let raw = "";
+  const fenced = src.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/i);
+  if(fenced) raw = fenced[1];
+  else {
+    const a = src.indexOf("{"), b = src.lastIndexOf("}");
+    if(a >= 0 && b > a) raw = src.slice(a, b+1);
+  }
+  if(!raw || raw.length > 2000) return null;
+  try{
+    const d = JSON.parse(raw);
+    if(d && ["list_dir","read_file","search"].includes(d.tool) && d.args && typeof d.args === "object") return d;
+  }catch(e){}
+  return null;
+}
+
+async function autoProjectContext(raw){
+  if(!/项目文件夹|项目目录|目录|文件夹|项目结构|研发计划|读取项目/.test(raw)) return "";
+  try{
+    const j = await fsTool("list_dir", {path:"."});
+    if(!j.ok) return "";
+    const dirs = (j.items||[]).filter(x=>x.type==="dir").map(x=>x.path);
+    const files = (j.items||[]).filter(x=>x.type==="file").map(x=>x.path);
+    return "[IDE 只读项目清单 · 根目录]\n目录: " + dirs.join(", ")
+      + "\n根文件: " + files.join(", ")
+      + "\n如需具体文件，请输出 read_file 工具调用。";
+  }catch(e){ return ""; }
+}
+
 async function send(){
   const raw = qbox.value.trim();
   if(!raw || !DBGCUR) return;
@@ -1025,22 +1425,41 @@ async function send(){
   addLog("send → "+aid+" · model "+model()+" · "+raw.length+" 字", "lg-b");
   const t0 = Date.now();
   try{
-    const r = await fetch("/ollama/api/chat", {
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ model: model(), stream:false, think:false,
-        options:{num_ctx:8192},
-        messages:[{role:"system",content:B.agents[aid].prompt},{role:"user",content:atContext(raw)}] })
-    });
-    if(!r.ok) throw new Error("HTTP "+r.status);
-    const d = await r.json();
-    const txt = (d.message&&d.message.content)||"(空响应)";
+    const m = model();
+    let userContent = atContext(raw);
+    const autoCtx = await autoProjectContext(raw);
+    if(autoCtx) userContent = autoCtx + "\n\n=== 用户消息 ===\n" + userContent;
+    const messages = [
+      {role:"system",content:B.agents[aid].prompt + "\n\n" + IDE_TOOL_RULES},
+      {role:"user",content:userContent}
+    ];
+    let txt = "";
+    let channel = "gateway";
+    for(let round=0; round<3; round++){
+      const r = await fetch("http://127.0.0.1:8796/v1/chat/completions", {
+        method:"POST",
+        headers:{"Content-Type":"application/json", "X-DSH-Agent":aid},
+        body: JSON.stringify({ model: m, stream:false, messages })
+      });
+      const d = await r.json();
+      if(!r.ok) throw new Error((d.error&&d.error.message)||("HTTP "+r.status));
+      channel = d.x_channel || channel;
+      txt = (d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content)||"";
+      const call = parseToolCall(txt);
+      if(!call) break;
+      addLog("fs tool → "+call.tool+" "+JSON.stringify(call.args||{}).slice(0,180), "lg-b");
+      const obs = await fsTool(call.tool, call.args);
+      messages.push({role:"assistant",content:txt});
+      messages.push({role:"user",content:"[只读工具结果 "+call.tool+"]\n"+JSON.stringify(obs).slice(0,12000)+"\n请基于结果继续回答。"});
+      if(round === 2) txt = "(工具已执行，模型未给出最终答复)";
+    }
     const sec = ((Date.now()-t0)/1000).toFixed(1);
-    const html = evTable(txt) + '<span style="color:var(--dim2);font-size:10.5px">── '+sec+'s · eval '+((d.eval_count||0)+" tok")+' ──</span>';
+    const html = evTable(txt || "(空响应)") + '<span style="color:var(--dim2);font-size:10.5px">── '+sec+'s · '+esc(m)+' · '+esc(channel)+' ──</span>';
     r1.el.innerHTML = html;
     if(r1.rec){ r1.rec.html = html; sessSave(aid); }
-    addLog("recv ← "+aid+" · "+sec+"s · eval "+(d.eval_count||0)+" tok", "lg-g");
+    addLog("recv ← "+aid+" · "+sec+"s · "+m, "lg-g");
   }catch(e){
-    const html = "❌ 调用失败："+esc(e.message)+"（检查本地 Ollama 是否在跑 / nginx /ollama/ 反代）";
+    const html = "❌ 调用失败："+esc(e.message)+"（检查 8796 网关是否在跑）";
     r1.el.innerHTML = html;
     if(r1.rec){ r1.rec.html = html; sessSave(aid); }
     addLog("FAIL "+aid+" · "+e.message, "lg-o");
@@ -1220,7 +1639,7 @@ fetch("/agent_ide_bundle.json", {cache:"no-store"}).then(r=>r.json()).then(d=>{
     + '<span>prompt 覆盖 <b style="color:var(--green)">'+B.stats.prompt_ok+'/'+B.stats.agents+'</b></span>'
     + '<span>工单 <b style="color:var(--green)">'+(B.stats.workorders_doing||0)+'</b> doing / <b style="color:var(--amber,#d29922)">'+(B.stats.workorders_review||0)+'</b> review</span>';
   document.getElementById("gen").textContent = "bundle " + B.generated;
-  renderMe(); renderWs(); PROJ = wsGet("ide-proj") || "all"; renderProjBar(); renderAct(); renderSide(); renderTabs(); renderTab(); renderSess(); pRender();
+  renderMe(); renderWs(); PROJ = wsGet("ide-proj") || "all"; ENV = wsGet("ide-env") || "all"; renderProjBar(); renderAct(); renderSide(); renderTabs(); renderTab(); renderSess(); pRender();
   if(SPLIT.on) renderSplit();
   addLog("bundle 加载完成 · agents "+B.stats.agents+" · code_files "+((B.code_files||[]).length)+" 件 · 工单 "+(B.stats.workorders_doing||0)+" doing · 工作区 "+(WS==="all"?"全部":WS), "lg-g");
   if(B.a0_daily) addLog("A0 日报快照 "+B.a0_daily.date+" · 点评 "+(B.a0_review?B.a0_review.date:"无"));

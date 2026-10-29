@@ -6,6 +6,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import sandbox_verify as S  # noqa: E402
+import logging
 
 
 def _git(repo, *args):
@@ -33,5 +34,5 @@ def test_sandbox_requires_tests():
     try:
         S.run([], repo=HERE.parent)
         assert False
-    except ValueError:
-        pass
+    except ValueError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/test_sandbox_verify.py", exc)

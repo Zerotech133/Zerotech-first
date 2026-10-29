@@ -18,6 +18,7 @@ import sys
 import time
 import urllib.request
 from datetime import datetime
+import logging
 
 PORT = 8094
 TASK = "AI工作站零界驾驶舱8094"
@@ -33,8 +34,8 @@ def log(msg):
     try:
         with open(LOG, "a", encoding="utf-8") as f:
             f.write(line)
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "ops/keepalive_8094.py", exc)
     print(line, end="")
 
 

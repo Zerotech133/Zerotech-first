@@ -957,7 +957,7 @@ def validate_plan(plan, *, current_baseline, current_registry):
         or roots.get(plan["source"]) != plan["resource"]
     ):
         raise ValueError("unsupported: 执行仓根未获资格")
-    registered = _registry(current_registry)
+    _registry(current_registry)
     catalog = {"tables": {}}
     for table, state in current_baseline.get("tables", {}).items():
         if not isinstance(state, dict):

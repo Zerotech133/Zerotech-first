@@ -93,7 +93,6 @@ def pit_select(D, universe="all", warmup=250):
             if i < 60:
                 skip_short += 1
                 continue
-            prev = dates[i - 1]
             sig_now = sigset(to_bars(df_full.iloc[max(0, i + 1 - warmup) : i + 1]))
             sig_prev = sigset(to_bars(df_full.iloc[max(0, i - warmup) : i]))
             new = sig_now - sig_prev
@@ -146,7 +145,6 @@ def check_239(D):
         if D not in dates:
             continue
         i = dates.index(D)
-        prev = dates[i - 1]
         fh = {
             (str(s["dt"]), s["type"])
             for s in ((chan_analyze(to_bars(df_full)) or {}).get("signals") or [])

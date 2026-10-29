@@ -17,6 +17,7 @@ from api_common import (
     _TP_JS,
     _TP_MKT,
     _tp_row)
+import logging
 
 
 BRIDGE_SCAN_TASKS = {"chanlun": "ChanlunScan", "weak": "WeakScan",
@@ -288,8 +289,8 @@ def bridge_actions_index():
                 except Exception:
                     continue
                 idx[r.get("prop_ts") or ""] = r
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_bridge.py", exc)
     return idx
 
 
@@ -313,8 +314,8 @@ def bridge_act(cmd, text=""):
                         continue
                     if r.get("ts") == key:
                         prop = r
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_bridge.py", exc)
         if prop is None:
             return {"ok": False, "msg": "备忘录不存在（ts=%s）" % key}
         if act == "note" and not (text or "").strip():
@@ -376,8 +377,8 @@ def bridge_act_desc(cmd, text=""):
                         continue
                     if r.get("ts") == key:
                         prop = r
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_bridge.py", exc)
         if prop is None:
             return None
         memo = prop.get("memo") or {}

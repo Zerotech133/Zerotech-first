@@ -119,7 +119,6 @@ def simulate(use_regime=True, use_sell_signal=True, use_stop=True, stop_pct=STOP
     cash, pos = 1.0, {}
     pending_init = set(books)  # 初始建仓名单：有数据即进
     equity, trades, inv_hist = [], [], []
-    trim_state = False
     n_trim = n_refill = 0
     SLOT0 = CAP_HIGH / len(books)  # 初始等权槽位（满配下每只 ~1.05%）
     for di, day in enumerate(cal):
@@ -167,7 +166,6 @@ def simulate(use_regime=True, use_sell_signal=True, use_stop=True, stop_pct=STOP
                 if p["val"] < 0.0005 * eqv:
                     cash += p["val"] * (1 - COST)
                     del pos[s]
-            trim_state = True
             n_trim += 1
         # 进场：初始名单（有数据即进）+ 新买点名单；容量允许即进（永不禁开仓）
         want_in = {s for s in pending_init if s in row_idx and day in row_idx[s].index}
@@ -207,7 +205,6 @@ def simulate(use_regime=True, use_sell_signal=True, use_stop=True, stop_pct=STOP
                     p["val"] += amt * (1 - COST)
                     p["cost"] += amt * (1 - COST)
             if add_total > 0.005:
-                trim_state = False
                 n_refill += 1
         eqv = cash + sum(p["val"] for p in pos.values())
         equity.append(

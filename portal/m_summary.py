@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import os
 import time
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 WORK = os.path.join(HERE, "work")
@@ -124,8 +125,8 @@ def customer_summary():
         age_s = None
         try:
             age_s = int(time.time() - os.path.getmtime(hb))
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/m_summary.py", exc)
         return {
             "ok": True,
             "roles": roles,

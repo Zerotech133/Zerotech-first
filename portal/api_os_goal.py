@@ -23,6 +23,7 @@ import json
 import os
 import re
 from typing import Any, Dict, Optional, Tuple
+import logging
 
 try:
     import os_goal_contract as C
@@ -158,8 +159,8 @@ def handle_get(store: S.OsGoalStore, path: str,
         import os_asr
         try:
             os_asr.ensure_preload()
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_os_goal.py", exc)
         return 200, {"ok": True, **os_asr.engine_status()}
     m = QK_DRAFT_RE.match(path)
     if m:
@@ -392,8 +393,8 @@ def _handle_quick(store, path, body):
         finally:
             try:
                 _os.unlink(tmp)
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_os_goal.py", exc)
         return 200, {"ok": True, "text": text, "engine": "sensevoice_local"}
     if path == "/api/os/asr/status":
         import os_asr
@@ -499,8 +500,8 @@ class Handler:
             self.end_headers()
             try:
                 self.wfile.write(body)
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_os_goal.py", exc)
             return
         status, payload = handle_get(self._os_goal_store(), path, qs)
         self._json(payload, status)

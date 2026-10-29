@@ -59,14 +59,15 @@ def _os_unlock(fd):
     if _msvcrt is not None:
         try:
             _msvcrt.locking(fd, _msvcrt.LK_UNLCK, 1)
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/push_matrix_send.py", exc)
     else:
         _fcntl.flock(fd, _fcntl.LOCK_UN)
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import push_matrix  # noqa: E402  轨道A 解析器（REPO/load_matrix/is_quiet/resolve_windows）
+import push_matrix  # noqa: E402
+import logging
 
 MKT_CN = {
     "cn": "A股",
@@ -249,8 +250,8 @@ def _read_log() -> list:
         data = json.loads(LOG_JSON.read_text(encoding="utf-8"))
         if isinstance(data, list):
             rows = [r for r in data if isinstance(r, dict)]
-    except (OSError, ValueError):
-        pass
+    except (OSError, ValueError) as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/push_matrix_send.py", exc)
     try:
         with open(LOG_JSONL, encoding="utf-8") as f:
             for line in f:
@@ -263,8 +264,8 @@ def _read_log() -> list:
                     continue  # 半行（进程中断）跳过不阻塞频控
                 if isinstance(r, dict):
                     rows.append(r)
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/push_matrix_send.py", exc)
     return rows
 
 
@@ -528,7 +529,7 @@ def main(argv=None) -> int:
             matrix_path=Path(a.matrix) if a.matrix else None,
             subs_path=Path(a.subs) if a.subs else None,
         )
-    except Exception as e:  # noqa: BLE001  fail-visible：错误退出码 1
+    except Exception as e:  # noqa: BLE001
         print("FAIL %s" % e)
         return 1
     print(json.dumps(res, ensure_ascii=False))

@@ -259,7 +259,7 @@ def eval_sample(n=100, seed=7):
             continue
         if anchors:
             texts_with_anchor += 1
-        amap = {_norm(a["name"]): a for a in anchors}
+        {_norm(a["name"]): a for a in anchors}
         a_names = {_norm(a["name"]) for a in anchors}
         llm_set = set(llm)
         tp += len(a_names & llm_set)

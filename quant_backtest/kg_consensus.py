@@ -82,7 +82,7 @@ def query(theme):
     """共识矩阵：标的 × 派系 verdict + 共识度聚合（与用户矩阵同构）。"""
     cli = KgClient(retry=1)
     with cli._session() as s:
-        schools = [
+        [
             r["n"]
             for r in s.run("MATCH (c:Commentator) RETURN c.name AS n ORDER BY n").data()
         ]

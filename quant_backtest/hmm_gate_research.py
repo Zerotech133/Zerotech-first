@@ -597,7 +597,7 @@ def main():
 
     # ---- 自动结论 ----
     hard45 = next(r for r in rows if r["name"] == "硬阈值 breadth<45")
-    filt = next(r for r in rows if r["type"] == "hmm_filtered")
+    next(r for r in rows if r["type"] == "hmm_filtered")
     hyst = next(r for r in rows if r["type"] == "hmm_hysteresis")
     ov45 = next(o for o in overlap if o["threshold"] == 45.0)
     lines.append("## 5. 结论\n")
@@ -632,8 +632,8 @@ def main():
         f"但软闸门本期只进出一次，频次优势部分来自状态过稀（{hyst['blocked']['n']} 天），不能直接外推。"
     )
     lines.append(
-        f"6. **建议**：研究线上 HMM 软闸门值得继续（K=3、加宽度动量特征、迟滞 0.6/0.4），"
-        f"下一步做滚动拟合（防全样本信息泄露）与 2021-2022 等更早行情的外推验证，再考虑与硬阈值并联（仅在最极端状态加险）而非替换。"
+        "6. **建议**：研究线上 HMM 软闸门值得继续（K=3、加宽度动量特征、迟滞 0.6/0.4），"
+        "下一步做滚动拟合（防全样本信息泄露）与 2021-2022 等更早行情的外推验证，再考虑与硬阈值并联（仅在最极端状态加险）而非替换。"
     )
     lines.append("\n## 6. 局限\n")
     lines.append(

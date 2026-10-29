@@ -42,6 +42,7 @@ import os
 import sys
 import time
 from pathlib import Path
+import logging
 
 HERE = Path(__file__).resolve()
 ROOT_DEFAULT = HERE.parents[2]
@@ -140,6 +141,33 @@ def _dispatch_tracking(root: Path) -> list[dict]:
             "owner": hit_owner or str(req.get("owner") or ""),
         })
     return out
+
+
+def _overdue_doing(root: Path, hours: int = 24) -> list[dict]:
+    """doing 超过 N 小时未完成 → 自动升级清单（只读 tasks.json，不写）。"""
+    tasks = _safe_json(root / TASKS_REL)
+    if not isinstance(tasks, dict):
+        return []
+    now = dt.datetime.now()
+    out = []
+    for tid, t in tasks.items():
+        if not isinstance(t, dict) or t.get("status") != "doing":
+            continue
+        created = str(t.get("created") or "").strip()
+        try:
+            born = dt.datetime.strptime(created, "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            continue
+        age_h = (now - born).total_seconds() / 3600.0
+        if age_h < hours:
+            continue
+        out.append({
+            "tid": str(tid),
+            "owner": str(t.get("owner") or ""),
+            "age_h": round(age_h, 1),
+            "desc": str(t.get("desc") or "")[:60],
+        })
+    return sorted(out, key=lambda x: x["age_h"], reverse=True)
 
 
 def _write_atomic(path: Path, text: str) -> None:
@@ -359,6 +387,19 @@ def build_back1(root: Path) -> tuple[str, dict]:
             "## 三、结论",
             "- **WAITING_DATA1**：数据未冻结，BACK1 拒跑回测（研究纪律：无冻结不回测）。",
         ]
+    overdue = _overdue_doing(root)
+    if overdue:
+        lines += [
+            "",
+            "## 四、超期 doing（>24h，自动升级 A0/ARCH1）",
+            "| 工单 | owner | 停留小时 | 摘要 |",
+            "|---|---|---:|---|",
+        ]
+        for o in overdue[:10]:
+            lines.append("| %s | %s | %.1f | %s |"
+                         % (o["tid"], o["owner"] or "-", o["age_h"], o["desc"]))
+        lines.append("- **ESCALATE**：%d 单 doing 超 24h，需 A0/ARCH1 今日处置（关单/改派/缩范围）。"
+                     % len(overdue))
     summary = {
         "action": "back1",
         "date": _today(),
@@ -366,6 +407,7 @@ def build_back1(root: Path) -> tuple[str, dict]:
         "ready": [r["topic_id"] for r in ready],
         "waiting": [r["topic_id"] for r in waiting],
         "dispatch": dispatch,
+        "overdue_doing": overdue,
     }
     return "\n".join(lines) + "\n", summary
 
@@ -448,8 +490,8 @@ def run(
                 root=root,
                 detail="written=%s emits=%s" % (written, {k: v.get("ok") for k, v in emits.items()}),
             )
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/tools/research_seat_ops.py", exc)
     result = {
         "action": action,
         "dry_run": bool(dry_run),

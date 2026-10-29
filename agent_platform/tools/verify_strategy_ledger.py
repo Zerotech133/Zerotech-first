@@ -58,7 +58,7 @@ _AGENT_PLATFORM = Path(__file__).resolve().parents[1]
 if str(_AGENT_PLATFORM) not in sys.path:
     sys.path.insert(0, str(_AGENT_PLATFORM))
 
-from engine.strategy_registry import verdict_key  # noqa: E402  只读复用（见独立性边界）
+from engine.strategy_registry import verdict_key  # noqa: E402
 
 STRATEGY_LEDGER_REL = ("strategy", "strategy_runs.jsonl")
 SHADOW_LEDGER_REL = ("shadow", "shadow_ledger.jsonl")

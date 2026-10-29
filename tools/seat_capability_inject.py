@@ -594,7 +594,7 @@ description: 新 AI 快速接入：一条命令生成虚拟 Key、配置片段�
 4. 所有 AI 只连 `http://127.0.0.1:8796/v1`；真 Key 只在 Key 池。
 5. 注册表：`config/ai_registry.json`（不含明文 token）。
 """,
-        "credential-catalog": """---
+        "credential-catalog": r"""---
 name: credential-catalog
 description: 统一凭据目录：JEV/数据接口/飞书等密钥的来源、加密状态、更新和轮换入口；只读不取明文。
 ---

@@ -14,6 +14,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
 from legion_pulse import heartbeat, recent
+import logging
 
 ORG = ROOT / "agent_platform" / "registry" / "org.json"
 HR = ROOT / "agent_platform" / "hr"
@@ -25,8 +26,8 @@ def my_tasks(aid: str) -> tuple:
     t = {}
     try:
         t = json.loads((WORKTREES / "tasks.json").read_text(encoding="utf-8"))
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/daily_review.py", exc)
     mine_open, mine_done_recent = [], []
     for k, v in t.items():
         if not isinstance(v, dict):
@@ -61,9 +62,10 @@ def member_review(aid: str) -> dict:
     try:
         for ln in (HR / aid / "resume.yaml").read_text(encoding="utf-8").splitlines():
             if ln.startswith("skills:"):
-                skill_line = ln.split(":", 1)[1].strip()[:80]; break
-    except Exception:
-        pass
+                skill_line = ln.split(":", 1)[1].strip()[:80]
+                break
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/daily_review.py", exc)
     has_task = bool(tasks_open or acts)
     return {
         "agent_id": aid, "has_task": has_task,

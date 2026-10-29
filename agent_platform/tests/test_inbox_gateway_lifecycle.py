@@ -18,6 +18,7 @@ _PLATFORM = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_PLATFORM))
 
 from gateway import inbox_gateway  # noqa: E402
+import logging
 
 
 @pytest.fixture()
@@ -320,8 +321,8 @@ def test_submit_concurrent_windows_spawn_processes(store, tmp_path):
         for ef in err_handles:
             try:
                 ef.close()
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/tests/test_inbox_gateway_lifecycle.py", exc)
     errs = "\n".join(
         (tmp_path / ("err%d.log" % i)).read_text(encoding="utf-8", errors="replace")
         for i in range(len(procs))

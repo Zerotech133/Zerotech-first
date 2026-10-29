@@ -9,6 +9,7 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+import logging
 
 # K-ORG-080/N7: 成本台账接入——cost_report 为新文件, 旧环境可能没有, ImportError 兜底
 try:
@@ -32,8 +33,8 @@ def _main_root():
                 # (判例: 主仓返回 '../.git', 用 here.parent 拼会解析到盘根 E:\)
                 p = (here / common).resolve()
             return p.parent
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/e2e_report.py", exc)
     root = here.parent.parent
     if (root / "data" / "e2e").is_dir():
         return root

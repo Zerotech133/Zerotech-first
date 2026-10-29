@@ -116,7 +116,7 @@ def fetch(
             if not data:
                 return []  # secid 无效 / 该周期无数据
             return data.get("klines") or []
-        except Exception as e:  # noqa: BLE001 - 网络层一律退避重试
+        except Exception as e:  # noqa: BLE001
             last = "%s %s" % (type(e).__name__, str(e)[:60])
             time.sleep(min(2.0 * (2**a), 40.0))
     print("    [warn] %s beg=%s lmt=%d 最终失败：%s" % (secid, beg, lmt, last))

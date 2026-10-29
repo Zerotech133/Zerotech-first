@@ -25,7 +25,7 @@ FIX = tempfile.mkdtemp(prefix="intelbus_")
 os.environ["AIOS_ROOT"] = FIX
 os.environ["INTEL_BUS_EVENTS_PATH"] = os.path.join(FIX, "events.jsonl")
 
-import api_intel_bus as bus  # noqa: E402  必须在 env 注入后导入
+import api_intel_bus as bus  # noqa: E402
 
 NOW = datetime.now()
 SINCE_TS = (NOW - timedelta(hours=1)).strftime("%Y-%m-%d %H:%M")

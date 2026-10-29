@@ -34,6 +34,7 @@ sys.path.insert(0, HERE)
 # 复用 P-C nl_query 的本地 FC 范式（_llm 已含 think=false+temp0+剥思考块）
 from nl_query import _llm, _coerce, _atomic_json, _today8, TOOL_MSG_MAX, MAX_ROUNDS
 from agent_tools import call as T
+import logging
 
 CACHE_DIR = os.path.join(HERE, "data", "nlmulti")
 
@@ -157,8 +158,8 @@ SYNTH_SYSTEM = """你是综合 agent。下面是用户原问句和各 specialist
 
 try:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-except Exception:
-    pass
+except Exception as exc:
+    logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/multi_agent.py", exc)
 
 
 def _schema_subset(tool_names):
@@ -252,8 +253,8 @@ def _router(q):
                 sub_q = (item.get("sub_q") or "").strip()
                 if to in SPECIALISTS and sub_q:
                     plan.append((to, sub_q))
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/multi_agent.py", exc)
     if not plan:
         plan = [(name, q) for name in SPECIALISTS]  # 降级全跑
     return plan, t
@@ -289,8 +290,8 @@ def _cleanup_cache(keep_days=7):
             p = os.path.join(CACHE_DIR, fn)
             if fn.endswith(".json") and os.path.getmtime(p) < cutoff:
                 os.remove(p)
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/multi_agent.py", exc)
 
 
 # ── 主入口 ─────────────────────────────────────────────────────
@@ -309,8 +310,8 @@ def answer(q, force=False, read_only=False):
                 d["cached"] = True
                 d["elapsed_s"] = round(time.time() - t0, 1)
                 return d
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/multi_agent.py", exc)
 
     # read_only：缓存未命中不触发 LLM（页面加载零算力口径）
     if read_only:

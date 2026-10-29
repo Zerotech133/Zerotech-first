@@ -30,6 +30,7 @@ import re
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+import logging
 
 REPO = Path(os.environ.get("AIOS_ROOT", "C:/aios"))
 GUOJIA_DIR = REPO / "news_collector" / "data" / "guojia"
@@ -106,7 +107,7 @@ def _drill_rows():
                     continue
                 try:
                     v = json.loads(ln)
-                except Exception:  # noqa: BLE001  坏行容错口径同对账端
+                except Exception:  # noqa: BLE001
                     continue
                 v.setdefault("title", None)
                 if not isinstance(v.get("ents"), list):
@@ -167,8 +168,8 @@ def _sector_maps():
         if isinstance(data, dict):
             rps = {s.get("sector"): s.get("rps50")
                    for s in (data.get("sectors") or []) if s.get("sector")}
-    except Exception:  # noqa: BLE001  板块词典降级（fail-soft，页面安全）
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_guojia.py", exc)
     maps = {"code2sec": code2sec, "sec2mem": sec2mem, "name2code": name2code,
             "code2name": code2name, "rps": rps}
     _SEC_CACHE.update({"maps": maps, "ts": now})

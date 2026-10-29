@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+
+import pytest
+pytest.importorskip("jieba")
+# ^ 可选依赖守护：缺 jieba 时跳过而非收集报错（2026-10-28）
 """tests/test_xq_daily_report_panels.py — WO-QT-20261020-077 面板拆分单测
 
 当前热度（current_panel，仅当日发布/时点可证）与历史回溯（ingested_panel

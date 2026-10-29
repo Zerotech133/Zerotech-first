@@ -13,6 +13,7 @@ import json
 import statistics
 from collections import Counter
 from pathlib import Path
+import logging
 
 ROOT = Path(__file__).resolve().parent
 REPORT_DIR = ROOT / "reports"
@@ -40,8 +41,8 @@ def _log_run(event: str, detail: dict) -> None:
         }
         with RUN_LOG.open("a", encoding="utf-8") as fh:
             fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
-    except OSError:
-        pass  # 留痕失败不阻断探针主流程
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/a4_market_coverage_probe.py", exc)
 
 
 def scan_pool(path: Path) -> dict:

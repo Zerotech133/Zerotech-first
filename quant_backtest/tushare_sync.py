@@ -26,6 +26,7 @@ import time
 
 import pandas as pd
 import requests
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "data", "tushare")
@@ -685,8 +686,8 @@ def incr_mins(m, market, dryrun=False):
                     df = pull_paged("hk_hold", {"trade_date": d}, 4200)
                     if not df.empty:
                         hk.update(df["ts_code"].dropna().tolist())
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/tushare_sync.py", exc)
         if hk:
             tables.append(("hk_mins", sorted(hk), 8000, False, "16:00:00"))
 
@@ -721,14 +722,13 @@ def incremental(m, market="cn", dryrun=False):
         save_full("trade_cal", cal, m)
         open_days = sorted(cal[cal["is_open"] == 1]["cal_date"].astype(str).tolist())
     else:
-        m_cal = load_manifest()
+        load_manifest()
         calp = sorted(glob.glob(os.path.join(OUT, "trade_cal", "part_*.parquet")))
         cal = pd.concat([pd.read_parquet(p, columns=["cal_date", "is_open"])
                          for p in calp]) if calp else pd.DataFrame()
         open_days = sorted(cal[cal["is_open"] == 1]["cal_date"].astype(str).tolist()) \
             if not cal.empty else []
     past = [d for d in open_days if d <= today_s]
-    last_open = past[-1] if past else today_s
 
     # 2) 浅表全量覆盖（数据小）
     shallow_tbls = [

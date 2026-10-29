@@ -34,8 +34,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 QBT = os.path.normpath(os.path.join(HERE, "..", "quant_backtest"))
 sys.path.insert(0, HERE)
 sys.path.insert(0, QBT)
-import sentiment_backtest as sbt  # noqa: E402  (复用 run/_load_samples 链)
-import datamart  # noqa: E402  (补查 vol/high/low/open)
+import sentiment_backtest as sbt  # noqa: E402
+import datamart  # noqa: E402
+import logging
 
 RESULT = os.path.join(HERE, "data", "jev_resonance.json")
 DIRS = {"bull": 1.0, "bear": -1.0}
@@ -124,8 +125,8 @@ def main():
                 v = float(df["vol"].iat[i])
                 if v > 0:
                     vol.setdefault(code, {})[d8] = v
-            except Exception:
-                pass  # 豁免（C2批2）：坏值行跳过，正常容错
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/jev_resonance.py", exc)
             for bucket, col in (
                 (hi, "high"),
                 (lo, "low"),
@@ -134,8 +135,8 @@ def main():
             ):
                 try:
                     bucket.setdefault(code, {})[d8] = float(df[col].iat[i])
-                except Exception:
-                    pass  # 豁免（C2批2）：坏值行跳过，正常容错
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/jev_resonance.py", exc)
     tds = [t for t in sbt._trade_days() if t <= end]
 
     enriched = []

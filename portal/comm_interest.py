@@ -220,7 +220,7 @@ def _default_subscribed_lookup(open_ids):
                 subs = s.get("subscriptions") or []
                 end = (subs[-1].get("end") or "")[:10] if subs else None
                 out[oid] = {"subscribed": bool(subs), "end": end}
-            except Exception:  # noqa: BLE001 —— 账本故障按未订阅处理
+            except Exception:  # noqa: BLE001
                 out[oid] = {"subscribed": False, "end": None}
     except Exception:  # noqa: BLE001
         for oid in open_ids:

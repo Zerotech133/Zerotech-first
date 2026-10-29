@@ -1190,8 +1190,11 @@ def _auto_rebuild_ide_bundle(tid):
             return
         subprocess.run(["git", "-C", REPO, "add", "portal/agent_ide_bundle.json"],
                        capture_output=True, text=True)
+        # 2026-10-29 WO-BUG-RESTORE：限定 pathspec，防止把索引中其他旧内容
+        # 一并提交（判例 e9a4e3476 把 6 个修复文件回退）。
         c = subprocess.run(["git", "-C", REPO, "commit", "-m",
-                            "chore(ide): auto rebuild agent_ide_bundle after merge %s" % tid],
+                            "chore(ide): auto rebuild agent_ide_bundle after merge %s" % tid,
+                            "--", "portal/agent_ide_bundle.json"],
                            capture_output=True, text=True, encoding="utf-8",
                            errors="replace")
         if c.returncode == 0:
@@ -1645,6 +1648,44 @@ def cmd_prune(*args):
     return rc
 
 
+def cmd_sandbox(*args):
+    """devtask sandbox --cmd ...：在 Docker 沙箱执行命令（只读仓库/network none）。
+
+    P0⑧ 收口（WO-SANDBOX-WIRE-20261027）：不改变现有 devtask 命令行为，只提供 opt-in 开关。
+    """
+    import argparse
+
+    ap = argparse.ArgumentParser(prog="devtask.py sandbox",
+                                 description="Docker 沙箱执行（仓库只读/network none）")
+    ap.add_argument("--cmd", required=True, help="容器内 shell 命令")
+    ap.add_argument("--image", default="")
+    ap.add_argument("--network", default="none", choices=["none", "bridge"])
+    ap.add_argument("--timeout", type=int, default=120)
+    ap.add_argument("--memory", default="512m", help="容器内存上限（默认 512m）")
+    ap.add_argument("--cpus", default="1.0", help="CPU 配额（默认 1.0 核）")
+    ap.add_argument("--pids-limit", type=int, default=256, help="进程数上限（默认 256）")
+    ap.add_argument("--dry-run", action="store_true")
+    a = ap.parse_args(list(args))
+
+    tools_dir = os.path.join(REPO, "agent_platform", "tools")
+    if tools_dir not in sys.path:
+        sys.path.insert(0, tools_dir)
+    try:
+        from agent_sandbox import DEFAULT_IMAGE, run_cmd
+    except Exception as exc:  # noqa: BLE001
+        print(json.dumps({"ok": False, "error": "agent_sandbox_import_failed: %s" % exc},
+                         ensure_ascii=False))
+        return 2
+    if a.network == "bridge":
+        print("[warn] --network bridge 会放开容器网络；出口白名单未实现，仅限临时排障",
+              file=sys.stderr)
+    out = run_cmd(a.cmd, image=a.image or DEFAULT_IMAGE, network=a.network,
+                  timeout=a.timeout, dry_run=a.dry_run,
+                  memory=a.memory, cpus=a.cpus, pids_limit=a.pids_limit)
+    print(json.dumps(out, ensure_ascii=False, indent=1))
+    return 0 if out.get("ok") else 1
+
+
 def main():
     a = sys.argv[1:]
     if not a:
@@ -1657,6 +1698,7 @@ def main():
             "merge": lambda: cmd_merge(*rest),
             "drop": lambda: cmd_drop(*rest),
             "prune": lambda: cmd_prune(*rest),
+            "sandbox": lambda: cmd_sandbox(*rest),
             "board": cmd_board}[c]()
 
 

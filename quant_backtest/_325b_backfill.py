@@ -18,7 +18,7 @@ import time
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-import tushare_sync as T  # noqa: E402  复用 token/ts_call/pull_mins_month
+import tushare_sync as T  # noqa: E402
 import market_scan  # noqa: E402
 
 MONTHS = ["202606", "202607", "202608", "202609", "202610"]

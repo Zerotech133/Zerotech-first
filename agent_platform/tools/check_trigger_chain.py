@@ -89,6 +89,7 @@ import xml.etree.ElementTree as ET
 from datetime import date
 from pathlib import Path
 from typing import List, Optional, Tuple
+import logging
 
 #: 模块级日期注入点（2026-10-20，WO-TF-04）：判「今日」用此值，默认运行当天。
 #: 沿用仓内既有约定 agent_platform/observe_point_review.py:26 的同名 TODAY，
@@ -647,8 +648,8 @@ def _watchdog_trace(process_probe, aw_stack_log: Optional[Path]) -> str:
                 if pulls:
                     return "watch-daemon 拉起留痕：%s" % _clip(pulls[-1].strip(), 60)
             return "watch-daemon 无留痕（AgentWatchdog 已知损坏待修，非本链阻塞——M6 判例 7.4）"
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/tools/check_trigger_chain.py", exc)
     return "watch-daemon 留痕不可探"
 
 
@@ -801,7 +802,7 @@ def check_e_code_importable(repo_root: Path) -> Tuple[str, str]:
             fails.append(
                 "%s 顶层导入超时 %ds（疑模块级阻塞）" % (name, CODE_IMPORT_TIMEOUT_S)
             )
-        except Exception as exc:  # noqa: BLE001  fail-visible
+        except Exception as exc:  # noqa: BLE001
             fails.append("%s 导入探测自身异常：%r" % (name, exc))
 
     if fails:

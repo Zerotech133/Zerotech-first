@@ -19,6 +19,7 @@ import math
 import re
 import time
 from pathlib import Path
+import logging
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
@@ -108,8 +109,8 @@ def index(roots=None, index_path: Path | None = None) -> dict:
     old = {}
     try:
         old = json.loads(p.read_text(encoding="utf-8")).get("files", {})
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/memory_rag.py", exc)
     t0 = time.time()
     files, chunks = {}, []
     for f, rel in _files(roots):

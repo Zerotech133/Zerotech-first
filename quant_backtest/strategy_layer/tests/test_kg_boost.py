@@ -179,7 +179,7 @@ class TestConfidence:
         c5 热度变 0 → 置信度 0.4 而非 0.5），故断言 0.5 即证明
         走的是 parquet Concept pagerank 分位主路径。
         """
-        drv = FakeDriver(main_rows=[_stock_row("600519.SH", 3, ["c5"])], heat_rows=[])
+        FakeDriver(main_rows=[_stock_row("600519.SH", 3, ["c5"])], heat_rows=[])
         sig = self._sig_for(tmp_path, ["c5"])
         assert sig.confidence == 0.5  # 1 个高分概念（c5 分位 100）
 

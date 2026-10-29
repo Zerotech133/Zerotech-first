@@ -32,6 +32,7 @@ import sys
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+import logging
 
 CST = timezone(timedelta(hours=8))
 
@@ -48,8 +49,8 @@ def parse_ts(s) -> datetime | None:
         return None
     try:
         return datetime.fromisoformat(t.replace("Z", "+00:00"))
-    except ValueError:
-        pass
+    except ValueError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/block_triage.py", exc)
     for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%Y-%m-%d"):
         try:
             return datetime.strptime(t[:19], fmt)
@@ -593,7 +594,7 @@ def main(argv=None) -> int:
 
     try:
         result, ok = analyze(args)
-    except Exception as e:  # noqa: BLE001  任何异常都不裸崩
+    except Exception as e:  # noqa: BLE001
         print("closed on failure: 分析器异常 %r" % e, file=sys.stderr)
         return 2
 

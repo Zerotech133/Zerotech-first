@@ -51,6 +51,7 @@ from stock_council import (
     _view_run,
     _vote_verdict,
 )
+import logging
 
 SIM_PROPOSALS = os.path.join(REPORTS, "council_sim_proposals.jsonl")
 SCORE = os.path.join(REPORTS, "council_sim_score.json")
@@ -347,8 +348,8 @@ def _jl(fp):
                     out.append(json.loads(line))
                 except Exception:
                     continue
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/council_sim.py", exc)
     return out
 
 
@@ -620,8 +621,8 @@ def compare():
 if __name__ == "__main__":
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/council_sim.py", exc)
     ap = argparse.ArgumentParser(description="K69 模拟投委会（预演层）")
     ap.add_argument("--code", help="单票预演（可逗号分隔多票）")
     ap.add_argument("--force", action="store_true", help="同日同票重演")

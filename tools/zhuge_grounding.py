@@ -18,6 +18,7 @@ import sys
 import time
 import urllib.request
 from pathlib import Path
+import logging
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 MAX_DOC_FILES = 5000
@@ -144,8 +145,8 @@ def _log_usage(question: str, sources: list[dict], elapsed_ms: float) -> None:
         }
         with open(path, "a", encoding="utf-8", newline="\n") as fh:
             fh.write(json.dumps(row, ensure_ascii=False) + "\n")
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/zhuge_grounding.py", exc)
 
 
 def build_grounding(question: str, limit: int = 3) -> dict:

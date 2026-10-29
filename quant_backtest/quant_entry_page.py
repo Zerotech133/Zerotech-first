@@ -32,6 +32,7 @@ import json
 import os
 import sys
 from datetime import datetime, timedelta, timezone
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -235,8 +236,8 @@ def us_pool_stats():
                     c = o.get("code") or o.get("symbol")
                     if c:
                         codes.add(c)
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/quant_entry_page.py", exc)
     except Exception:
         return None
     return {"rows": n, "codes": len(codes), "mtime": mtime}

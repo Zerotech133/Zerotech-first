@@ -2199,7 +2199,7 @@ function ckPush(i){
             # 止盈：30 分钟级别（小级别定量）
             m = _struct("30m")
             if m:
-                mb, mpv, _ = m[0], m[1][-1], m[2]
+                _mb, mpv, _ = m[0], m[1][-1], m[2]
                 mzg, mzd = float(mpv["zg"]), float(mpv["zd"])
                 mh = mzg - mzd
                 out["mzg"], out["mzd"] = round(mzg, 2), round(mzd, 2)

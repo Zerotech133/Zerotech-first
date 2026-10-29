@@ -17,6 +17,7 @@ if HERE not in sys.path:
 
 import comm_intake as ci  # noqa: E402
 import comm_memory as mem  # noqa: E402
+import logging
 
 
 @pytest.fixture
@@ -38,8 +39,8 @@ def env(tmp_path, monkeypatch):
         from gateway import inbox_gateway as _ig
 
         _ig.set_store(tmp_path / "bridge_inbox")
-    except Exception:  # noqa: BLE001 —— 无 agent_platform 路径时跳过（不静默改判）
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/test_comm_intake.py", exc)
     monkeypatch.delenv("COMM_INTENT_ENABLED", raising=False)
     return tmp_path
 

@@ -16,6 +16,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 
 import api_legion_ops_v2 as ops
 import legion_meeting_room as mr
+import logging
 
 TOKEN = "livetest-room-token"
 ops._load_token = lambda: TOKEN
@@ -46,8 +47,8 @@ def req(path, headers=None, data=None):
         body = e.read().decode("utf-8")
         try:
             body = json.loads(body)
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal/test_legion_room_api_live.py", exc)
         return e.code, dict(e.headers), body
 
 

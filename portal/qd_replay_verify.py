@@ -17,6 +17,7 @@ import pandas as pd
 
 sys.path.insert(0, r"C:\项目\老田的AI助手\agent_platform\engine")
 from quant_double_knife import quant_double_knife  # noqa: E402
+import logging
 
 DIR = r"C:\项目\老田的AI助手\quant_backtest\data\ashare"
 T1, T2 = "20260929", "20260930"  # T2=回放样本日, T1=其前一交易日
@@ -96,8 +97,8 @@ for code in s1:
     try:
         ret = (closes[code][T3] / closes[code][T2] - 1) * 100
         post.append((code, round(ret, 2)))
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/qd_replay_verify.py", exc)
 if post:
     avg = sum(r for _, r in post) / len(post)
     win = sum(1 for _, r in post if r > 0)

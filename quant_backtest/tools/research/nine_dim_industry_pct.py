@@ -76,9 +76,9 @@ import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import nine_dim as nd  # noqa: E402  规则点表单一来源（只读）
-import nine_dim_backtest as nb  # noqa: E402  复用 _fina_asof（只读）
-import db  # noqa: E402  fina SQLite 读层（只读）
+import nine_dim as nd  # noqa: E402
+import nine_dim_backtest as nb  # noqa: E402
+import db  # noqa: E402
 
 REPLAY = os.path.join(HERE, "data", "nine_dim_replay.jsonl")
 STAGING = os.path.join(HERE, "data", "tushare_staging")
@@ -708,7 +708,6 @@ def main():
     g80_i = stats([r for r in thinned if (r["_v"]["ind"] or 0) >= 80])
     _hhm, ok_m = two_halves(rows, "mkt", 75)
     _hhi, ok_i = two_halves(rows, "ind", 75)
-    switch = False
     if g85_m and g85_i and g85_m["n"] >= 10 and g85_m["avg"] < 0:
         gain = (abs(g85_i["avg"]) - abs(g85_m["avg"])) / abs(g85_m["avg"])
         ap(
@@ -716,7 +715,6 @@ def main():
             "%+.0f%%，阈值 +20%%）"
             % (g85_m["n"], g85_m["avg"], g85_i["n"], g85_i["avg"], 100 * gain)
         )
-        switch = gain >= 0.20 and ok_m and ok_i
     else:
         ap(
             "- ≥85 段样本不足（mkt n=%s，ind n=%s，n<10 灰显），任务判定"

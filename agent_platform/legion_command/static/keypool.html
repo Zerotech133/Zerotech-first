@@ -29,13 +29,7 @@ td{padding:5px 4px;border-bottom:.5px dashed #16304F;vertical-align:top}
 <header><div><h1>三席多 Key 池</h1><div class="sub">田丰 · 赵云 · 诸葛亮｜手动录 Key（4–5）｜额度耗尽自动切换｜仅页面/日志告警</div></div>
 <div><button onclick="load()">刷新</button></div></header>
 <div class="banner" id="banner"></div>
-<section class="log" id="smart-card" style="margin:16px 22px 0">
-<h2>智能托管（默认 · 小白无需设置）</h2>
-<div id="smart-status" class="muted">读取中…</div>
-<div class="muted" style="margin-top:8px">你只需要用 AI，不需要给每个 AI 配 Key。平台会自动把请求分配给可用的中转站/强模型/本地模型；只有管理员或需要固定模型的人，才点开下面的「高级设置」手动调整。</div>
-</section>
-<details id="adv-config" style="margin:14px 22px 0">
-<summary style="cursor:pointer;color:#9fc3e8;font-size:13px;padding:8px 0">管理员 / 高级设置（可选）：平台中转站、模型通道、各 AI 手动 Key</summary>
+<div class="muted" id="alloc-banner" style="margin:14px 22px 0;font-size:13px">智能分配：平台会按任务自动选择本地模型 / 云端模型 / 中转站 GPT-6；所有 AI 卡片保留，可手动覆盖。</div>
 <section class="log" id="relay-hero" style="margin:16px 22px 0">
 <h2>平台中转站（主入口 · 所有 AI 共用）</h2>
 <div class="muted" style="margin-bottom:8px">先配平台中转站；下方席位卡只做路由适配。所有 AI 通过 8796 网关统一使用这里的 Key。</div>
@@ -59,9 +53,42 @@ td{padding:5px 4px;border-bottom:.5px dashed #16304F;vertical-align:top}
 <div id="modelch" style="display:flex;gap:12px;flex-wrap:wrap"></div>
 </section>
 <main id="main"></main>
-</details>
+<section class="log" id="rd-switch" style="margin:0 22px 20px">
+<h2>研发板块 · 模型手动切换（所有模型可选）</h2>
+<div class="muted" style="margin-bottom:8px">研发部每个成员可单独钉选模型；选择后该 AI 的 auto 请求优先用此模型。覆盖范围：自动 / 本地 4B/9B/35B / 智谱 / DeepSeek / 中转 GPT-6。</div>
+<div id="rd-list" class="muted">加载中…</div>
+</section>
+<section class="log" id="mission-section" style="margin:0 22px 20px">
+<h2>Mission · 文档 → 任务 DAG（Dry-run 派工）</h2>
+<div class="muted" style="margin-bottom:8px">上传/粘贴一份文档，生成任务 DAG；Dry-run 只展示派工计划，不建 worktree、不改代码。</div>
+<div class="add">
+  <input id="mission-name" placeholder="任务名称（如 数据接口重构）">
+  <input id="mission-file" type="file" accept=".md,.txt" style="color:#9fc3e8">
+</div>
+<textarea id="mission-doc" rows="6" placeholder="把文档内容粘贴到这里，或选择 .md/.txt 文件…" style="width:100%;background:#081321;border:.5px solid #1E3A5F;border-radius:8px;color:#E8F0F8;padding:8px;font-family:inherit;margin-top:8px"></textarea>
+<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+  <button id="mission-plan-btn">生成计划（LLM，失败回退规则）</button>
+  <button id="mission-dry-btn">Dry-run 派工</button>
+  <button id="mission-real-btn" style="background:#2a1f3a;border:1px solid #7b4db3;border-radius:8px;color:#e5d4ff;padding:6px 10px;cursor:pointer">真实派工（建 worktree）</button>
+  <button id="mission-advance-btn">推进（自动评审门）</button>
+  <button id="mission-evolve-btn">采集结果 · 进化建议</button>
+  <button id="mission-worker-btn" style="background:#1f3326;border:1px solid #3f7f57;border-radius:8px;color:#d6f5e3;padding:6px 10px;cursor:pointer">Worker 自动接单（低风险）</button>
+  <button id="planner-ab-btn">Planner A/B</button>
+  <span id="mission-status" class="muted" style="align-self:center"></span>
+</div>
+<div id="mission-result" style="margin-top:10px"></div>
+</section>
 <section class="log" id="cred-section" style="margin:0 22px 20px">
 <h2>统一凭据（JEV / 数据接口 / 飞书）<span class="muted" style="font-size:11px">只读目录 · 真源 _vault（age 加密）· 不显示密钥</span></h2>
+<div style="margin-bottom:8px"><label class="muted" style="font-size:12px">类别筛选：
+<select id="cred-cat-filter" style="background:#081321;border:1px solid #1E3A5F;border-radius:8px;color:#E8F0F8;padding:4px 8px">
+<option value="">全部</option>
+<option value="data">data</option>
+<option value="jev">jev</option>
+<option value="feishu">feishu</option>
+<option value="internal">internal</option>
+<option value="messaging">messaging</option>
+</select></label></div>
 <div id="cred-list"></div>
 </section>
 <section class="log" id="vk-section" style="margin:0 22px 20px">
@@ -173,16 +200,23 @@ async function createVK(){
   document.getElementById('vk-token').textContent='新 Key（只显示一次）：'+v.item.token;
   loadVK();
 }
+let CRED_CACHE=null;
+function renderCreds(){
+  const v=CRED_CACHE, box=document.getElementById('cred-list');
+  if(!v||!v.items){box.innerHTML='<div class="muted">目录不可用</div>';return}
+  const cat=(document.getElementById('cred-cat-filter')||{}).value||'';
+  const items=cat?v.items.filter(x=>x.category===cat):v.items;
+  let h='<table><thead><tr><th>类别</th><th>名称</th><th>环境变量</th><th>加密</th><th>状态</th><th>更新时间</th><th>轮换入口</th></tr></thead><tbody>';
+  for(const x of items){h+='<tr><td>'+x.category+'</td><td>'+x.name+'</td><td>'+(x.env||'')+'</td><td>'+(x.encrypted?'是':'明文/缺失')+'</td><td>'+x.status+'</td><td>'+(x.updated||'')+'</td><td class="muted">'+(x.rotate||'')+'</td></tr>'}
+  box.innerHTML=h+'</tbody></table>'+(cat?'<div class="muted" style="margin-top:6px">筛选：'+cat+' · '+items.length+' 条</div>':'');
+}
 async function loadCreds(){
   try{
     const r=await fetch('/api/credentials',{cache:'no-store'}); const v=await r.json();
-    const box=document.getElementById('cred-list');
-    if(!v.items){box.innerHTML='<div class="muted">目录不可用</div>';return}
-    let h='<table><thead><tr><th>类别</th><th>名称</th><th>环境变量</th><th>加密</th><th>状态</th><th>更新时间</th><th>轮换入口</th></tr></thead><tbody>';
-    for(const x of v.items){h+='<tr><td>'+x.category+'</td><td>'+x.name+'</td><td>'+(x.env||'')+'</td><td>'+(x.encrypted?'是':'明文/缺失')+'</td><td>'+x.status+'</td><td>'+(x.updated||'')+'</td><td class="muted">'+(x.rotate||'')+'</td></tr>'}
-    box.innerHTML=h+'</tbody></table>';
+    CRED_CACHE=v; renderCreds();
   }catch(e){document.getElementById('cred-list').innerHTML='<div class="muted">加载失败：'+e.message+'</div>'}
 }
+document.getElementById('cred-cat-filter').addEventListener('change',renderCreds);
 loadCreds(); setInterval(loadCreds,60000);
 async function disableVK(id){
   if(!confirm('禁用虚拟 Key '+id+'？'))return;
@@ -234,14 +268,16 @@ async function loadModelCh(){
   try{
     const r=await fetch('/api/models/status',{cache:'no-store'}); const v=await r.json();
     const L=v.local||{}, G=v.relay_gpt6||{};
-    const lc=L.online?('在线'+(L.present?' · 已就绪':' · 模型未拉取')):('离线：'+(L.error||''));
+    const lc=L.online?('在线'+(L.present?' · 默认 9B 已就绪':' · 模型未拉取')):('离线：'+(L.error||''));
+    const mods=(L.models||[]).map(m=>m.name+' ('+m.size_gb+'GB)').join(' ｜ ')||'未读取到';
     const gc=G.configured?('已配置 · '+((G.keys||[]).map(k=>k.masked+'['+k.status+']').join(','))):'未配置 Key（需在平台中转站填中转站 Key）';
     box.innerHTML=
-      '<div class="card" style="min-width:340px;flex:1"><h2>本地模型 · qwen3.5:9b</h2>'
-      +'<div class="meta">'+lc+'</div><div class="meta">端点 '+ (L.endpoint||'http://127.0.0.1:11434') +' · 无需 Key · 免费/离线可用</div>'
-      +'<div class="meta">网关别名：<b>local</b>；请求 model=local 即走本地</div></div>'
+      '<div class="card" style="min-width:420px;flex:1"><h2>本地模型 · 分层自动选择</h2>'
+      +'<div class="meta">'+lc+'</div><div class="meta">'+mods+'</div>'
+      +'<div class="meta">简单→<b>qwen3.5:4b</b> ｜ 默认→<b>qwen3.5:9b</b> ｜ 复杂兜底→<b>qwen3.6:35b-a3b</b></div>'
+      +'<div class="meta">手动别名：<b>local4</b> / <b>local9</b> / <b>local35</b> / <b>local</b></div></div>'
       +'<div class="card" style="min-width:340px;flex:1"><h2>中转站 GPT-6 · gpt-6-sol</h2>'
-      +'<div class="meta">'+gc+'</div><div class="meta">端点由平台中转站决定 · 需要中转站 Key</div>'
+      +'<div class="meta">'+gc+'</div><div class="meta">需要中转站 Key · 端点由平台中转站决定</div>'
       +'<div class="meta">网关别名：<b>gpt6</b> / <b>gpt-6-sol</b></div>'
       +'<button id="gpt6-config">去配置 GPT-6</button></div>';
     const btn=document.getElementById('gpt6-config');
@@ -250,20 +286,143 @@ async function loadModelCh(){
 }
 loadModelCh(); setInterval(loadModelCh,30000);
 
-
-async function loadSmart(){
+async function loadPrefs(){
   try{
-    const r=await fetch('/api/auto/status',{cache:'no-store'}); const v=await r.json();
-    const up=v.upstream||{}; const loc=v.local||{}; const n=(v.agents||{}).count||0;
-    const rel=(up.relay_keys||[]).map(k=>k.masked+'['+k.status+']').join(', ')||'未配置';
-    const mode=v.mode==='smart'?'✅ 智能分配已开启':'⚠️ 等待管理员配置平台中转站 Key';
-    document.getElementById('smart-status').innerHTML=
-      '<div><b>'+mode+'</b></div>'
-      +'<div>平台上游：'+rel+' ｜ 本地模型：'+(loc.online?'在线':'离线')+(loc.present?' · qwen3.5:9b':'')+' ｜ 已托管 AI：'+n+'</div>'
-      +'<div>分配策略：'+(v.routing||{}).auto+'</div>';
-  }catch(e){document.getElementById('smart-status').textContent='状态读取失败：'+e.message}
+    const r=await fetch('/api/model/prefs',{cache:'no-store'}); const v=await r.json();
+    const box=document.getElementById('rd-list'); if(!v.ok){box.textContent='读取失败';return}
+    const opts=(v.models||[]).map(m=>'<option value="'+m.id+'">'+m.label+'</option>').join('');
+    let h='<table><thead><tr><th>研发成员</th><th>当前模型</th><th>状态</th></tr></thead><tbody>';
+    for(const a of (v.agents||[])){
+      const cur=(v.prefs||{})[a.id]||'auto';
+      h+='<tr><td>'+a.name+'</td><td><select data-agent="'+a.id+'">'+opts+'</select></td><td class="muted" id="pref-'+a.id+'">'+cur+'</td></tr>';
+    }
+    box.innerHTML=h+'</tbody></table>';
+    box.querySelectorAll('select[data-agent]').forEach(sel=>{
+      sel.value=(v.prefs||{})[sel.dataset.agent]||'auto';
+      sel.onchange=async()=>{
+        const r2=await fetch('/api/model/prefs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agent:sel.dataset.agent,model:sel.value})});
+        const j=await r2.json(); const st=document.getElementById('pref-'+sel.dataset.agent);
+        if(j.ok){st.textContent=j.model;st.className='ok'}else{st.textContent='失败';st.className='bad'}
+      };
+    });
+  }catch(e){document.getElementById('rd-list').textContent='读取失败：'+e.message}
 }
-loadSmart(); setInterval(loadSmart,30000);
+loadPrefs(); setInterval(loadPrefs,60000);
+
+
+let MISSION_PLAN = null;
+document.getElementById("mission-file").onchange = async (ev)=>{
+  const f=(ev.target.files||[])[0]; if(!f) return;
+  document.getElementById("mission-doc").value = await f.text();
+  if(!document.getElementById("mission-name").value) document.getElementById("mission-name").value = f.name.replace(/\.[^.]+$/,"");
+};
+async function missionPlan(){
+  const name=document.getElementById("mission-name").value.trim()||"未命名任务";
+  const doc=document.getElementById("mission-doc").value.trim();
+  if(!doc){alert("请先粘贴文档或选文件");return}
+  const st=document.getElementById("mission-status"); st.textContent="规划中（强模型）…";
+  const r=await fetch("/api/mission/plan",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name,doc,use_llm:true})});
+  const j=await r.json(); st.textContent="";
+  if(!j.ok){st.textContent="规划失败："+(j.error||"unknown");return}
+  MISSION_PLAN=j.plan;
+  let h='<div class="muted">mission '+MISSION_PLAN.mission_id+' · source '+MISSION_PLAN.source+' · tasks '+MISSION_PLAN.tasks.length+' · valid '+MISSION_PLAN.valid+'</div>';
+  h+='<table><thead><tr><th>ID</th><th>标题</th><th>Owner</th><th>依赖</th><th>写作用域</th><th>验收</th></tr></thead><tbody>';
+  for(const t of MISSION_PLAN.tasks){
+    h+='<tr><td>'+t.id+'</td><td>'+t.title+'</td><td>'+t.owner+'</td><td>'+((t.deps||[]).join(","))+'</td><td>'+((t.write_scope||[]).join(", "))+'</td><td>'+((t.acceptance||[]).join(" / "))+'</td></tr>';
+  }
+  document.getElementById("mission-result").innerHTML=h+'</tbody></table>';
+}
+async function missionDry(){
+  if(!MISSION_PLAN){alert("先生成计划");return}
+  const st=document.getElementById("mission-status"); st.textContent="dry-run 中…";
+  const r=await fetch("/api/mission/dry-run",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({plan:MISSION_PLAN,parallel:3})});
+  const j=await r.json(); st.textContent="";
+  if(!j.ok){document.getElementById("mission-result").innerHTML='<div class="muted">dry-run 失败：'+(j.error||"")+'</div>';return}
+  let h='<div class="muted">dry-run · order '+j.order.join(" → ")+' · waves '+JSON.stringify(j.waves)+' · conflicts '+j.conflicts.length+'</div>';
+  h+='<table><thead><tr><th>#</th><th>任务</th><th>Owner</th><th>Ticket</th><th>命令</th></tr></thead><tbody>';
+  for(const r of j.rows){h+='<tr><td>'+r.step+'</td><td>'+r.task_id+' '+r.title+'</td><td>'+r.owner+'</td><td>'+r.ticket_id+'</td><td class="muted">'+r.command+'</td></tr>'}
+  document.getElementById("mission-result").innerHTML=h+'</tbody></table>';
+}
+document.getElementById("mission-plan-btn").onclick=missionPlan;
+document.getElementById("mission-dry-btn").onclick=missionDry;
+
+
+function renderMissionState(st){
+  if(!st){return}
+  let h='<div class="muted" style="margin-top:8px">mission '+st.mission_id+' · parallel '+st.parallel_limit+' · updated '+(st.updated_at||'')+'</div>';
+  h+='<table><thead><tr><th>任务</th><th>状态</th><th>Owner</th><th>Ticket</th><th>依赖</th><th>最近错误/评审</th></tr></thead><tbody>';
+  for(const [tid,t] of Object.entries(st.tasks||{})){
+    h+='<tr><td>'+tid+' '+t.title+'</td><td>'+t.status+'</td><td>'+t.owner+'</td><td>'+(t.ticket_id||'')+'</td><td>'+((t.deps||[]).join(','))+'</td><td class="muted">'+((t.last_error||t.gate_detail||t.create_detail||'')+'').slice(0,160)+'</td></tr>';
+  }
+  document.getElementById('mission-result').innerHTML=h+'</tbody></table>';
+}
+async function missionReal(){
+  if(!MISSION_PLAN){alert('先生成计划');return}
+  if(!confirm('真实派工会创建工单和 worktree（会写 .worktrees/）。继续？'))return;
+  const st=document.getElementById('mission-status'); st.textContent='真实派工中…';
+  const r=await fetch('/api/mission/dispatch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan:MISSION_PLAN,parallel:3,create:true})});
+  const j=await r.json(); st.textContent='';
+  if(!j.ok){document.getElementById('mission-result').innerHTML='<div class="muted">派工失败：'+(j.error||'')+'</div>';return}
+  renderMissionState(j.state);
+  addLog('Mission 真实派工：created '+(j.created||[]).join(','),'lg-b');
+}
+async function missionAdvance(){
+  const mid=(MISSION_PLAN&&MISSION_PLAN.mission_id)||'';
+  if(!mid){alert('先生成计划');return}
+  const st=document.getElementById('mission-status'); st.textContent='推进中（检测提交 + 评审门）…';
+  const r=await fetch('/api/mission/advance',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mission_id:mid})});
+  const j=await r.json(); st.textContent='';
+  if(!j.ok){document.getElementById('mission-result').innerHTML='<div class="muted">推进失败：'+(j.error||'')+'</div>';return}
+  renderMissionState(j.state);
+  addLog('Mission 推进：merged '+(j.merged||[]).join(',')+' failed '+(j.failed||[]).join(','),'lg-b');
+}
+document.getElementById('mission-real-btn').onclick=missionReal;
+document.getElementById('mission-advance-btn').onclick=missionAdvance;
+
+
+async function missionEvolve(){
+  const st=document.getElementById('mission-status'); st.textContent='采集结果并生成经验候选…';
+  const r=await fetch('/api/mission/evolve',{cache:'no-store'});
+  const j=await r.json(); st.textContent='';
+  if(!j.ok){document.getElementById('mission-result').innerHTML='<div class="muted">进化失败：'+(j.error||'')+'</div>';return}
+  const d=j.data, m=d.metrics||{};
+  let h='<div class="muted">candidate '+d.candidate_id+' · status '+d.status+' · 需签字 '+(d.requires_signature?'是':'否')+'</div>';
+  h+='<div class="muted">missions '+m.missions+' · tasks '+m.tasks+' · done '+m.done+' · gate_failed '+m.gate_failed+' · 通过率 '+(m.gate_pass_rate==null?'-':(m.gate_pass_rate*100).toFixed(1)+'%')+' · 冲突 '+m.conflicts+'</div>';
+  h+='<table><thead><tr><th>建议</th><th>优先级</th><th>证据</th><th>动作</th></tr></thead><tbody>';
+  for(const x of (d.suggestions||[])){h+='<tr><td>'+x.id+'</td><td>'+x.priority+'</td><td>'+x.evidence+'</td><td>'+x.action+'</td></tr>'}
+  document.getElementById('mission-result').innerHTML=h+'</tbody></table><div class="muted" style="margin-top:6px">未签字不入经验库；签字走 CLI tools/mission_evolve.py promote --signed-by ...</div>';
+}
+document.getElementById('mission-evolve-btn').onclick=missionEvolve;
+
+
+async function missionWorker(){
+  const mid=(MISSION_PLAN&&MISSION_PLAN.mission_id)||'';
+  if(!mid){alert('先生成计划');return}
+  if(!confirm('Worker 将在当前 mission 的 worktree 里自动写文件并提交（仅页面/文档/静态低风险范围）。继续？'))return;
+  const st=document.getElementById('mission-status'); st.textContent='Worker 接单并写码中…';
+  const r=await fetch('/api/mission/worker',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mission_id:mid,limit:1,dry_run:false})});
+  const j=await r.json(); st.textContent='';
+  document.getElementById('mission-result').innerHTML='<pre class="muted" style="white-space:pre-wrap">'+JSON.stringify(j,null,1)+'</pre>';
+  addLog('Mission Worker：'+(j.ok?'ok':'failed'), 'lg-b');
+}
+document.getElementById('mission-worker-btn').onclick=missionWorker;
+
+
+async function plannerAB(){
+  const doc=document.getElementById('mission-doc').value.trim();
+  const name=document.getElementById('mission-name').value.trim()||'A/B 对比';
+  if(!doc){alert('请先粘贴文档');return}
+  const st=document.getElementById('mission-status'); st.textContent='A/B 对比中（baseline vs rules）…';
+  const r=await fetch('/api/planner/ab',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({doc,name,use_signed:true})});
+  const j=await r.json(); st.textContent='';
+  if(!j.ok){document.getElementById('mission-result').innerHTML='<div class="muted">A/B 失败：'+(j.error||'')+'</div>';return}
+  const d=j.report, b=d.baseline||{}, c=d.candidate||{};
+  let h='<div class="muted">rules='+d.rules_source+' · signed='+d.rules_signed+' · '+d.note+'</div>';
+  h+='<table><thead><tr><th>指标</th><th>baseline</th><th>rules</th><th>delta</th></tr></thead><tbody>';
+  for(const k of ['tasks','checks','acceptance','conflicts']) h+='<tr><td>'+k+'</td><td>'+b[k]+'</td><td>'+c[k]+'</td><td>'+((c[k]||0)-(b[k]||0))+'</td></tr>';
+  document.getElementById('mission-result').innerHTML=h+'</tbody></table>';
+}
+document.getElementById('planner-ab-btn').onclick=plannerAB;
 
 load();setInterval(load,30000);
 setInterval(loadVK,30000);

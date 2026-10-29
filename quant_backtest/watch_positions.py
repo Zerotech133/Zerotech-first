@@ -21,7 +21,8 @@ from datetime import datetime, timedelta, timezone
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-import runner  # noqa: E402  复用 _load_ledger/build_card/push_feishu/CFG
+import runner  # noqa: E402
+import logging
 
 CST = timezone(timedelta(hours=8))
 STATE_PATH = os.path.join(HERE, "pos_alert_state.json")
@@ -116,8 +117,8 @@ def _drill_reasons(rows, terms, cap=3):
         if stocks:
             try:
                 tagged = bool(set(json.loads(stocks)) & terms)
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/watch_positions.py", exc)
         if tagged or any(term_in(t, title) for t in terms):
             out.append((ts, title))
         if len(out) >= cap:
@@ -257,8 +258,8 @@ def main():
                     tzinfo=CST
                 ) < timedelta(minutes=cooldown_min):
                     continue  # 冷却内同票同方向不重复
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/watch_positions.py", exc)
         alerts.append((e, q, pnl))
         state.setdefault(key, {})[d] = now.strftime("%Y-%m-%d %H:%M:%S")
 
@@ -327,8 +328,8 @@ def main():
             ]
             + lines
         )
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/watch_positions.py", exc)
     card = _build_alert_card(
         lines, len(alerts), len(open_), stamp, cooldown_min, len(kw_ranked)
     )

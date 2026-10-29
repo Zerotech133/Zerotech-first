@@ -17,6 +17,7 @@ import os
 import time
 
 import dead_letter
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 WORK = os.path.join(HERE, "work")
@@ -38,8 +39,8 @@ def _save_state(st):
         os.makedirs(WORK, exist_ok=True)
         with open(STATE, "w", encoding="utf-8") as f:
             json.dump(st, f, ensure_ascii=False, indent=1)
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/redeliver.py", exc)
 
 
 def _parse_ts(ts):

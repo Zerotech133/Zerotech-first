@@ -676,7 +676,7 @@ def _lark_client():
 
 
 def reply_card(card, message_id):
-    from feishu_card_v2 import send_card  # noqa: F401  通道复用
+    from feishu_card_v2 import send_card  # noqa: F401
 
     # K-STOCK-141：类名实为 ReplyMessageRequestBody（原 ReplyMessageBody
     # 在已装 lark_oapi 中不存在，import 即炸→卡片回复从未送达）
@@ -1753,7 +1753,7 @@ def main():
                         log("redeliver patrol %s" % _rr)
                 except Exception:  # noqa: BLE001
                     log("redeliver error " + traceback.format_exc()[-160:])
-            except Exception:  # noqa: BLE001 —— 巡视异常不得打死线程
+            except Exception:  # noqa: BLE001
                 log("派单巡视异常 " + traceback.format_exc()[-200:])
 
     if str(os.environ.get("COMM_DISPATCH_PATROL", "1")).strip().lower() in (

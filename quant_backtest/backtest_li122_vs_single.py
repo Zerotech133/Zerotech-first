@@ -34,6 +34,7 @@ import datamart  # noqa: E402
 from chanlun_signal import analyze as sig_analyze  # noqa: E402
 from chanlun_li122 import judge  # noqa: E402
 from chanlun_data import _bucket_label, TZ_CN  # noqa: E402
+import logging
 
 # ── 回测参数（口径常量，改动即换口径，报告须同步） ──────────────
 DATA_START = "20260401"  # 1min 读取起点（30m 结构预热）
@@ -210,8 +211,8 @@ def collect(code):
                     "B_D_30F_5F": judge(s, bars30, bars5, "B_D_30F_5F")["ok"],
                 }
             )
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/backtest_li122_vs_single.py", exc)
     return out
 
 

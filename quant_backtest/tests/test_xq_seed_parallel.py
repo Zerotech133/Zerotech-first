@@ -74,7 +74,7 @@ def test_load_state_defaults(tmp_path):
 
 def test_main_done_short_circuits(tmp_path, monkeypatch):
     monkeypatch.setattr(P, "BASE_DIR", str(tmp_path))
-    p = P.paths_for("A")
+    P.paths_for("A")
     (tmp_path / "seed_auto_state_A.json").write_text(
         json.dumps({"done": True}), encoding="utf-8")
     called = {"collect": 0}

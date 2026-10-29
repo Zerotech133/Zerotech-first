@@ -14,6 +14,7 @@ import secrets
 import time
 import uuid
 from pathlib import Path
+import logging
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent
@@ -39,8 +40,8 @@ def load_config(path: Path | None = None) -> dict:
         d = json.loads(p.read_text(encoding="utf-8"))
         if isinstance(d, dict) and d.get("aliases"):
             return d
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/legion_command/seat_router.py", exc)
     return json.loads(json.dumps(DEFAULT_CONFIG))
 
 
@@ -66,7 +67,7 @@ def _hash(token: str) -> str:
 
 
 def create_vk(owner: str, alias: str = "auto", allowed=None,
-              path: Path | None = None) -> dict:
+              path: Path | None = None, quota: int = 0) -> dict:
     owner = str(owner or "").strip()
     if not owner:
         raise ValueError("owner 必填")
@@ -82,7 +83,9 @@ def create_vk(owner: str, alias: str = "auto", allowed=None,
     item = {"schema": "virtual_key/v1", "id": "vk-" + uuid.uuid4().hex[:8],
             "owner": owner, "alias": alias, "allowed": allowed,
             "token_sha256": _hash(token), "created": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
-            "enabled": True, "last_used": None, "masked": token[:6] + "***" + token[-4:]}
+            "enabled": True, "last_used": None, "quota": max(0, int(quota or 0)),
+            "usage": {"requests": 0, "success": 0, "fail": 0},
+            "masked": token[:6] + "***" + token[-4:]}
     rows.append(item)
     _save_vk(rows, path)
     out = dict(item)
@@ -92,8 +95,7 @@ def create_vk(owner: str, alias: str = "auto", allowed=None,
 
 
 def list_vk(path: Path | None = None) -> list:
-    rows = _load_vk(path)
-    return [{k: v for k, v in r.items() if k != "token_sha256"} for r in rows]
+    return [_public_vk(r) for r in _load_vk(path)]
 
 
 def disable_vk(vk_id: str, path: Path | None = None) -> dict:
@@ -102,10 +104,55 @@ def disable_vk(vk_id: str, path: Path | None = None) -> dict:
         if r.get("id") == vk_id:
             r["enabled"] = False
             _save_vk(rows, path)
-            out = dict(r)
-            out.pop("token_sha256", None)
-            return out
+            return _public_vk(r)
     raise ValueError("virtual key not found: %s" % vk_id)
+
+
+def _public_vk(row: dict) -> dict:
+    out = {k: v for k, v in row.items() if k != "token_sha256"}
+    out.setdefault("quota", 0)
+    u = out.get("usage") or {}
+    out["usage"] = {"requests": int(u.get("requests") or 0),
+                    "success": int(u.get("success") or 0),
+                    "fail": int(u.get("fail") or 0)}
+    out["remaining"] = (max(0, int(out["quota"]) - out["usage"]["requests"])
+                        if int(out["quota"]) else None)
+    return out
+
+
+def _update_vk(vk_id: str, path: Path | None, mutate) -> dict:
+    rows = _load_vk(path)
+    for r in rows:
+        if r.get("id") == vk_id:
+            mutate(r)
+            _save_vk(rows, path)
+            return _public_vk(r)
+    raise ValueError("virtual key not found: %s" % vk_id)
+
+
+def enable_vk(vk_id: str, path: Path | None = None) -> dict:
+    return _update_vk(vk_id, path, lambda r: r.__setitem__("enabled", True))
+
+
+def set_quota(vk_id: str, quota: int, path: Path | None = None) -> dict:
+    q = max(0, int(quota or 0))
+    return _update_vk(vk_id, path, lambda r: r.__setitem__("quota", q))
+
+
+def record_usage(vk_id: str, ok: bool | None = None, model: str = "",
+                 path: Path | None = None) -> dict:
+    """记录一次网关调用；不存明文 token。"""
+    def _mut(r):
+        u = r.setdefault("usage", {"requests": 0, "success": 0, "fail": 0})
+        u["requests"] = int(u.get("requests") or 0) + 1
+        if ok is True:
+            u["success"] = int(u.get("success") or 0) + 1
+        elif ok is False:
+            u["fail"] = int(u.get("fail") or 0) + 1
+        r["last_used"] = time.strftime("%Y-%m-%dT%H:%M:%S%z")
+        if model:
+            r["last_model"] = str(model)[:80]
+    return _update_vk(vk_id, path, _mut)
 
 
 def _match_vk(token: str, path: Path | None = None):
@@ -133,6 +180,10 @@ def resolve(model: str = "", token: str = "", path: Path | None = None) -> dict:
         vk = _match_vk(token, path)
         if not vk:
             return {"ok": False, "error": "invalid_or_disabled_virtual_key", "code": 401}
+        _q = int(vk.get("quota") or 0)
+        _used = int((vk.get("usage") or {}).get("requests") or 0)
+        if _q and _used >= _q:
+            return {"ok": False, "error": "virtual_key_quota_exceeded", "code": 429}
     req = str(model or "").strip()
     if req and req not in aliases:
         # 非别名：按虚拟 Key 默认别名处理（模型名由上游 provider 决定）
@@ -154,6 +205,8 @@ def resolve(model: str = "", token: str = "", path: Path | None = None) -> dict:
         seats = [owner] + seats
     return {"ok": True, "alias": alias,
             "seats": seats,
+            "model": str(spec.get("model") or ""),
             "allow_local": bool(spec.get("allow_local", True)),
+            "local_model": spec.get("local_model") or "",
             "owner": (vk or {}).get("owner"),
             "vk_id": (vk or {}).get("id")}

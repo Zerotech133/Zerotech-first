@@ -22,6 +22,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
+import logging
 
 PLATFORM = Path(__file__).resolve().parent.parent / "agent_platform"
 HB_LEDGER = PLATFORM / "data" / "heartbeat" / "heartbeat.jsonl"
@@ -34,8 +35,8 @@ def _load_state():
     if BRIDGE_STATE.exists():
         try:
             return json.loads(BRIDGE_STATE.read_text(encoding="utf-8"))
-        except (ValueError, OSError):
-            pass  # 坏状态文件 fail-visible：当作零消费重新对账
+        except (ValueError, OSError) as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "tools/legion_heartbeat_bridge.py", exc)
     return {"consumed": 0}
 
 

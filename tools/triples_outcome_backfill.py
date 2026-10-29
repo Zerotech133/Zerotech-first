@@ -17,6 +17,7 @@ from datetime import datetime, timedelta
 
 sys.stdout.reconfigure(encoding='utf-8')
 import tushare as ts
+import logging
 
 
 def _get_token():
@@ -39,8 +40,8 @@ def _get_token():
                         return v
                 except OSError:
                     continue
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/triples_outcome_backfill.py", exc)
     return None
 
 
@@ -61,8 +62,8 @@ def load_jsonl(path):
                 if line:
                     try:
                         rows.append(json.loads(line))
-                    except Exception:
-                        pass
+                    except Exception as exc:
+                        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/triples_outcome_backfill.py", exc)
     return rows
 
 

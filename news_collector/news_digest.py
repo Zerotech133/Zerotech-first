@@ -37,6 +37,7 @@ SIGNAL_TOP = 4
 
 sys.path.insert(0, HERE)
 from card_build import build_card3, push_card  # noqa: E402
+import logging
 
 
 def log(msg):
@@ -71,8 +72,8 @@ def record_flow(ok, kind="daily:news_digest"):
         import push_flow
 
         push_flow.record(kind=kind, channel="feishu", target="个人", count=1, ok=ok)
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/news_digest.py", exc)
 
 
 def _picks_url():
@@ -297,8 +298,8 @@ def push_card_flow(db, since, day, n_total, sec_blocks, hit_rows, dry):
             buttons=buttons,
             level="info",
         )
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/news_digest.py", exc)
     if dry:
         print(json.dumps(card, ensure_ascii=False, indent=1)[:4000])
         return True

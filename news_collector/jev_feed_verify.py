@@ -40,6 +40,7 @@ sys.path.insert(0, HERE)
 from alert_io import append_ascii_log, sniff_read_text  # noqa: E402
 import push_targets  # noqa: E402
 from feishu_client import send_msg  # noqa: E402
+import logging
 
 DB = os.path.join(HERE, "news.db")
 TASK = "JevFeed-Daily"
@@ -92,8 +93,8 @@ def task_info(task):
     if rc:
         try:
             info["last_result"] = int(rc.group(1), 0)
-        except ValueError:
-            pass
+        except ValueError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/jev_feed_verify.py", exc)
     if st:
         info["state"] = st.group(1).strip()
     if info["last_run"] is None or info["last_result"] is None:
@@ -106,8 +107,8 @@ def task_info(task):
                 info["last_result"] = int(j.get("rc") or 0)
             if not info["state"]:
                 info["state"] = str(j.get("st") or "")
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/jev_feed_verify.py", exc)
     return info
 
 

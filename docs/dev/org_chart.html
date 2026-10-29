@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang='zh-CN'>
+<head>
+<meta charset='utf-8'>
+<title>研发部组织架构</title>
+<link rel='stylesheet' href='/static/tokens.css'>
+<script src='/static/nav.js' defer></script>
+<style>
+body{background:var(--bg,#0d1117);color:var(--fg,#e6edf3;font-family:'Segoe UI','Microsoft YaHei',sans-serif;padding:24px}
+h1{font-size:20px}h3{margin:4px 0 8px;font-size:14px;color:#8b949e}
+.top{max-width:980px;margin:0 auto}
+.node{display:inline-block;border:1px solid var(--border,#30363d);border-radius:8px;padding:6px 10px;margin:4px;background:var(--panel,#161b22);font-size:12px}
+.node span{color:#8b949e;margin-left:6px}
+.group{border:1px dashed var(--border,#30363d);border-radius:10px;padding:10px;margin:12px 0}
+.lead{margin:6px 0}.members{margin-left:12px}
+.dashed{color:#8b949e;font-size:12px;margin:6px 0}
+ul{font-size:12px;color:#c9d1d9}
+</style>
+</head>
+<body>
+<div class='top'>
+<h1>研发部组织架构 · 将作监</h1>
+<p class='node'><b>老田</b><span>人类所有权 / L2 最终批准</span></p>
+<div>└─ <div class='node'><b>A0 田丰</b><span></span><span>研发总负责人</span></div></div>
+<div><div class='dashed'>A0A 董允（交付协调 0.5，虚线汇报 → ARCH1）</div></div>
+<p class='node'><b>ARCH1 曹操</b><span>研发部主官 · 架构终审 · L1_dev_max</span></p>
+<h3>G1 / G2</h3>
+<div class='group'><h3>G1 后端/AI/平台组</h3><div class='lead'><div class='node'><b>DEV1 马钧</b><span>后端工程师 · G1 组长</span></div></div><div class='members'><div class='node'><b>DEV6 胡昭</b><span>后端工程师</span></div><div class='node'><b>DEV7 姜维</b><span>后端工程师（标准化交付）</span></div><div class='node'><b>DEV2 刘晔</b><span>AI/模型工程师</span></div><div class='node'><b>OPS1 王基</b><span>运维/SRE 工程师</span></div></div></div>
+<div class='group'><h3>G2 前端/量化/文档组</h3><div class='lead'><div class='node'><b>DEV5 邓艾</b><span>前端工程师 · G2 组长</span></div></div><div class='members'><div class='node'><b>DEV8 郝昭</b><span>前端工程师</span></div><div class='node'><b>DEV3 蒋济</b><span>量化策略工程师</span></div><div class='node'><b>DEV4 杜预</b><span>回测/风控工程师</span></div><div class='node'><b>DOC1 陈寿</b><span>技术文档工程师</span></div></div></div>
+<h3>独立线（不占研发指挥链）</h3>
+<ul><li>QA1 质量门（质量工程部）</li><li>关羽 GUANYU 代码审计（洁净评审）</li><li>赵云 ZHAOYUN 治理席（不占编、只产建议）</li></ul>
+<h3>项目矩阵（不改变行政归属）</h3>
+<ul><li><b>DEV1 马钧</b>：proj_data(data_dev)</li><li><b>DEV2 刘晔</b>：proj_next(next_version_dev)</li><li><b>DEV3 蒋济</b>：proj_backtest(backtest_dev)</li><li><b>DEV4 杜预</b>：proj_backtest(backtest_dev)</li><li><b>ARCH1 曹操</b>：proj_next(next_version_arch)</li></ul>
+<p class='dashed'>矩阵任务按项目部门派单，行政归属/考核仍在研发部→组；不得绕过组长/ARCH1。</p>
+</div>
+</body>
+</html>

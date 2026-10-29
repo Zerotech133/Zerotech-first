@@ -69,7 +69,7 @@ def _four(signals_by_date=None, raise_names=()):
     return out
 
 
-_FWD = lambda symbol, td: {5: 1.0, 20: 2.0}  # noqa: E731 注入式前向收益
+_FWD = lambda symbol, td: {5: 1.0, 20: 2.0}  # noqa: E731
 
 
 # ---------------------------------------------------------------------- #

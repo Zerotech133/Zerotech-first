@@ -201,7 +201,7 @@ def run(dryrun=False):
     # 游资词表（用于 OCCUPIED_BY 投影）
     print("[2/3] 游资词表匹配 + TradeAction 构建…")
     sys.path.insert(0, HERE)
-    import kg_build_cl1  # noqa: E402 —— 复用游资词表
+    import kg_build_cl1  # noqa: E402
 
     seat2hm = {}
     for name, pats, _ in kg_build_cl1.YOUZI:

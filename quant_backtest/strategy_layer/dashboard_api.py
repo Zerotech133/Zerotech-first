@@ -202,7 +202,7 @@ def _load_registry() -> Any:
     #    fresh 进程 Registry() 无注册适配器时 enabled_ids 为空，bootstrap
     #    幂等注册 kg_boost/chan_monitor；失败静默回落 JSON 兜底）
     try:
-        from strategy_layer.adapter import Registry  # noqa: PLC0415 — 延迟 import
+        from strategy_layer.adapter import Registry  # noqa: PLC0415
 
         if not _BOOTSTRAP_DONE["flag"]:
             try:
@@ -243,11 +243,11 @@ def _load_registry() -> Any:
                 got = reg.get(sid)
                 if got is not None and not isinstance(got, (str, int)):
                     meta = getattr(got, "meta", None) or {}
-            except Exception:  # noqa: BLE001 — meta 缺失不影响面板
+            except Exception:  # noqa: BLE001
                 meta = {}
             try:
                 tn = top_n_fn(sid) if callable(top_n_fn) else None
-            except Exception:  # noqa: BLE001 — top_n 缺失不阻断
+            except Exception:  # noqa: BLE001
                 tn = None
             out.append(
                 {
@@ -463,7 +463,7 @@ def signals_payload(date: str = "") -> tuple:
         return ({"ok": False, "error": "date 需为 YYYYMMDD 八位数字"}, 400)
     try:
         rows = _query_signals_db(d)
-    except Exception as exc:  # noqa: BLE001 — 图/库不可用降级 JSON 报错
+    except Exception as exc:  # noqa: BLE001
         return ({"ok": False, "error": str(exc)[:200]}, 503)
     return (
         {
@@ -539,7 +539,7 @@ def register_feedback(body: Any) -> tuple:
             )
     try:
         _write_feedback_db(row)
-    except Exception as exc:  # noqa: BLE001 — 库不可用降级 JSON 报错
+    except Exception as exc:  # noqa: BLE001
         return ({"ok": False, "error": str(exc)[:200]}, 503)
     return (
         {"ok": True, "ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "feedback": row},
@@ -641,7 +641,7 @@ def _apply_adjust_to_registry(sid: str, enabled: Any, weight: Any, top_n: Any) -
             registry.set_top_n(sid, None if top_n is None else int(top_n))
     except (TypeError, ValueError):
         return (None, ({"ok": False, "error": "weight/top_n 需为数字"}, 400))
-    except Exception as exc:  # noqa: BLE001 — 写回失败降级报错
+    except Exception as exc:  # noqa: BLE001
         return (None, ({"ok": False, "error": str(exc)[:200]}, 500))
     return (
         {
@@ -735,7 +735,7 @@ def create_proposal(body: Any) -> tuple:
         registry = _open_registry()
         if sid not in registry.list_ids():
             return ({"ok": False, "error": "策略未注册: %s" % sid}, 404)
-    except Exception as exc:  # noqa: BLE001 — 引导失败降级报错
+    except Exception as exc:  # noqa: BLE001
         return ({"ok": False, "error": str(exc)[:200]}, 500)
     proposal = {
         "id": time.strftime("%Y%m%d%H%M%S") + "-" + uuid.uuid4().hex[:6],
@@ -749,7 +749,7 @@ def create_proposal(body: Any) -> tuple:
             items = _load_proposals()
             items.append(proposal)
             _save_proposals(items)
-    except Exception as exc:  # noqa: BLE001 — 落盘失败降级报错
+    except Exception as exc:  # noqa: BLE001
         return ({"ok": False, "error": "提案写入失败: %s" % str(exc)[:150]}, 500)
     return (
         {
@@ -869,7 +869,7 @@ def confirm_proposal(body: Any) -> tuple:
                 prop["applied_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
         try:
             _save_proposals(items)
-        except Exception as exc:  # noqa: BLE001 — 状态写回失败降级报错
+        except Exception as exc:  # noqa: BLE001
             return (
                 {"ok": False, "error": "提案状态写回失败: %s" % str(exc)[:150]},
                 500,
@@ -984,7 +984,7 @@ def health_payload() -> dict:
             probe = _probe_http if mode == "http" else _probe_tcp
             entry["latency_ms"] = probe(entry["port"], timeout)
             entry["ok"] = True
-        except Exception as exc:  # noqa: BLE001 — 单项失败不阻塞整体
+        except Exception as exc:  # noqa: BLE001
             entry["err"] = (str(exc).strip() or exc.__class__.__name__)[:120]
         checks.append(entry)
     checks.append(
@@ -1229,7 +1229,7 @@ def sixring_payload() -> dict:
         t0 = time.perf_counter()
         try:
             ring = dict(g[fn_name]())
-        except Exception as exc:  # noqa: BLE001 — 单环缺源降级标灰
+        except Exception as exc:  # noqa: BLE001
             ring = {
                 "available": False,
                 "value": None,
@@ -1261,7 +1261,7 @@ def regime_payload() -> dict:
         import regime_center
 
         snap = regime_center.latest_snapshot(out_dir=REGIME_DIR)
-    except Exception as exc:  # noqa: BLE001 — 缺源降级标灰，不放大为 5xx
+    except Exception as exc:  # noqa: BLE001
         err = (str(exc).strip() or exc.__class__.__name__)[:200]
 
     ms = int((time.perf_counter() - t0) * 1000)
@@ -1365,7 +1365,7 @@ def _admission_risk_gate_inputs() -> dict:
         from strategy_layer.risk_bridge import risk_context
 
         ctx = risk_context()
-    except Exception:  # noqa: BLE001 — 风控桥缺源降级标灰
+    except Exception:  # noqa: BLE001
         return {"shadow_block": None, "hard_block": None, "score": None, "reason": None}
     if not ctx.get("available"):
         return {"shadow_block": None, "hard_block": None, "score": None, "reason": None}
@@ -1411,7 +1411,7 @@ def _admission_regime_inputs() -> dict:
     }
     try:
         snap = _admission_latest_snapshot()
-    except Exception:  # noqa: BLE001 — 缺快照降级，不放大为 5xx
+    except Exception:  # noqa: BLE001
         return out
     if not isinstance(snap, dict):
         return out
@@ -1530,7 +1530,7 @@ def register_routes(server_or_app: Any) -> Any:
     orig_get = handler_cls.__dict__.get("do_GET")
     orig_post = handler_cls.__dict__.get("do_POST")
 
-    def do_GET(self):  # noqa: N802 — http.server 协议方法名
+    def do_GET(self):  # noqa: N802
         u = urlparse(self.path)
         if u.path in ("/pipeline", "/manage"):
             try:
@@ -1552,7 +1552,7 @@ def register_routes(server_or_app: Any) -> Any:
         if u.path == "/api/risk":
             try:
                 payload, code = risk_payload()
-            except Exception as exc:  # noqa: BLE001 — 桥失败降级
+            except Exception as exc:  # noqa: BLE001
                 payload = {
                     "ok": True,
                     "risk": {"available": False, "error": str(exc)[:200]},
@@ -1718,7 +1718,7 @@ def register_routes(server_or_app: Any) -> Any:
             return orig_post(self)
         return _send_json(self, {"ok": False, "error": "只读服务不接受该 POST"}, 405)
 
-    def do_OPTIONS(self):  # noqa: N802 — CORS 预检（只读 GET 面）
+    def do_OPTIONS(self):  # noqa: N802
         self.send_response(204)
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")

@@ -24,6 +24,7 @@ import urllib.error
 import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+import logging
 
 BASE = Path(__file__).resolve().parent
 REGISTRY = BASE / "registry.json"
@@ -53,8 +54,8 @@ def fetch(url: str, attempts: int = 3) -> str | None:
         except urllib.error.HTTPError as exc:
             if exc.code < 500:
                 return None
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "data_sources/cnopendata/alias_probe.py", exc)
         if i < attempts - 1:
             time.sleep(2.0 * (i + 1))
     return None

@@ -78,8 +78,8 @@ def load_names() -> dict[str, str]:
         for aid, nm in _re2.findall(
                 r'"agent_id"\s*:\s*"([^"]+)"[^{}]{0,200}?"cn_name"\s*:\s*"([^"]+)"', text):
             names.setdefault(aid, nm)
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/agent_census.py", exc)
     names.setdefault("LUSU1", "阚泽")
     return names
 
@@ -126,12 +126,18 @@ def load_roster() -> dict[str, dict]:
 
 
 def _parse_ts(value) -> float | None:
-    """兼容三种时间：ISO 字符串 / epoch 浮点字符串 / epoch 数字。"""
+    """兼容 ISO 字符串（含时区/微秒）/ epoch 浮点字符串 / epoch 数字。"""
     if value is None:
         return None
     text = str(value).strip()
     if not text:
         return None
+    # 优先 fromisoformat：支持 2026-10-28T22:51:13Z / +08:00 / 微秒；
+    # 旧实现先 float，ISO 会刷 silent-except，且带时区时固定格式解析失败。
+    try:
+        return datetime.fromisoformat(text.replace("Z", "+00:00")).timestamp()
+    except ValueError:
+        pass
     try:
         num = float(text)
         if num > 1e9:            # epoch 秒
@@ -177,8 +183,8 @@ def load_events(now: float) -> dict[str, dict]:
                     if entry["last_work_ts"] is None or ts > entry["last_work_ts"]:
                         entry["last_work_ts"] = ts
                         entry["last_work_action"] = action
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/agent_census.py", exc)
     return out
 
 
@@ -336,7 +342,7 @@ def _daily_rollup(rows: list) -> dict:
     try:
         import agent_daily as daily  # 同目录，避免两处判定漂移
         dcard = daily.build(None)
-    except Exception as exc:  # noqa: BLE001 - 任何失败都不能让看板整体挂掉
+    except Exception as exc:  # noqa: BLE001
         return {"available": False, "reason": "%s: %s" % (type(exc).__name__, exc)}
     if dcard.get("error"):
         return {"available": False, "reason": dcard["error"]}
@@ -410,6 +416,7 @@ def render(card: dict, top: int) -> None:
 # 所以收进首页顶部，随 30 分钟刷新自动更新。全部只读；任一数据源缺失 → 该卡降级"不可用"。
 
 import os  # 系统态势四卡需要读 TEMP
+import logging
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 _VAULT_DIR = _REPO_ROOT.parent / "_vault"
 # 运行日志统一落 C:\Temp（运维约定）；TEMP 指向用户临时目录，不能替代。
@@ -446,7 +453,7 @@ def _status_task() -> dict:
         return {"ok": True, "failed": int(j.get("failed") or 0),
                 "names": [f.get("name") for f in fails[:3]],
                 "age_h": _age_hours_from_iso(j.get("generated_at"))}
-    except Exception as exc:  # noqa: BLE001  fail-open：卡片降级
+    except Exception as exc:  # noqa: BLE001
         return {"ok": False, "err": type(exc).__name__}
 
 
@@ -600,7 +607,7 @@ def write_html(card: dict, path: Path) -> None:
 
     try:
         _sys_html = render_system_status(collect_system_status())
-    except Exception as _exc:  # noqa: BLE001  系统卡渲染失败不能拖垮看板
+    except Exception as _exc:  # noqa: BLE001
         _sys_html = '<section class="sysgrid"><h2>系统态势</h2><div class="sysrow">' \
                     '<div class="syscard mute"><div class="systitle">采集失败</div>' \
                     '<div class="sysbig">?</div></div></div></section>'
@@ -715,7 +722,7 @@ def write_html(card: dict, path: Path) -> None:
                 ('<ul class="manuallist">%s</ul>' % man_li) if man_li else ""))
 
     doc = """<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">
-<title>零界 · 智能体点名册</title>
+<meta name=wb-shell content=adopted><title>零界 · 智能体点名册</title>
 <style>
 :root{--bg:#f5f6f8;--card:#fff;--line:#e3e6ea;--txt:#1b2430;--sub:#6b7684;
 --work:#12805c;--debt:#c0392b;--idle:#b7791f;--silent:#9aa4b1}

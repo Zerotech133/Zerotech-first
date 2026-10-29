@@ -59,7 +59,8 @@ def test_capability_summary_linkage(tmp_path, monkeypatch):
     card0 = sms.build_card("zhaoyun")
     assert isinstance(card0["capabilities_summary"], str) and "未注入" in card0["capabilities_summary"]
     # 注入后并摘要
-    skills = tmp_path / "skills"; skills.mkdir(parents=True)
+    skills = tmp_path / "skills"
+    skills.mkdir(parents=True)
     (skills / "CAPABILITIES.json").write_text(json.dumps({
         "total": 2, "ready": 1, "pending_key": 1, "pending_wiring": 0,
         "capabilities": [{"name": "aa", "status": "ready"}, {"name": "bb", "status": "pending_key"}],

@@ -35,6 +35,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import common  # noqa: E402
+import logging
 
 # ---- 常量：v2 自动补登口径 -------------------------------------------------
 TZ_CN = timezone(timedelta(hours=8))
@@ -171,6 +172,24 @@ def build_payload(catalog: dict, old: dict) -> dict:
         physical.append(make_new_entry(table, tables[table]))
         added.append(table)
 
+    # 生命周期覆盖：planned/deprecated 不计入 unknown 资格欠账
+    life_counts: dict[str, int] = {}
+    try:
+        import lifecycle  # noqa: WPS433
+        for e in physical:
+            names = [str(t) for t in (e.get("physical_tables") or []) if t]
+            for table in names:
+                status = lifecycle.status_for(table)
+                if status in ("planned", "deprecated"):
+                    e["qualification_status"] = status
+                    e["unsupported_reason"] = lifecycle.reason_for(table) or ("资产状态：%s" % status)
+                    e["evidence_basis"] = "data_lifecycle.yaml（2026-10-28）"
+                    e["pending_fields"] = []
+                    life_counts[status] = life_counts.get(status, 0) + 1
+                    break
+    except Exception:  # noqa: BLE001
+        life_counts = {}
+
     limitations = list(old.get("limitations") or [])
     for line in LIMITATIONS_V2:
         if line not in limitations:
@@ -205,6 +224,7 @@ def build_payload(catalog: dict, old: dict) -> dict:
         "new_catalog_sha256": cat_sha,
         "new_generated_at": gen_at,
         "sha_match_before": bool(old.get("catalog_sha256") and old.get("catalog_sha256") == cat_sha),
+        "lifecycle_counts": life_counts,
     }
     return {"registry": payload, "stats": stats}
 
@@ -233,8 +253,8 @@ def atomic_write(payload: dict) -> None:
         if tmp.exists():
             try:
                 tmp.unlink()
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "tools/datawarehouse/registry_rebuild.py", exc)
 
 
 def verify_written(expect: dict) -> dict:

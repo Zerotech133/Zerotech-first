@@ -16,6 +16,7 @@ import datetime
 import json
 import os
 import sys
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -176,6 +177,6 @@ def _reject(req_id, operator_open_id):
             card=str(req_id)[:60],
             result="rejected_by_laotian",
         )
-    except Exception:
-        pass  # 审计失败不拦驳回主链路
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/approval_card.py", exc)
     return True, "已驳回（决策不再执行）"

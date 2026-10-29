@@ -29,7 +29,8 @@ sys.path.insert(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "news_collector"
     ),
 )
-import push_targets  # noqa: E402  K-STOCK-403：收件人单一事实源
+import push_targets  # noqa: E402
+import logging
 
 DEFAULT_USER_ID = push_targets.target_id("个人") or ""
 # group alert (family group, bot cli_aa3e4f1b58f85cdd is a member so it can
@@ -151,8 +152,8 @@ def load_app_creds():
             # 20261016换机：appSecret 非 str（1.0.5+ 外置引用 dict）即不可用
             if aid and isinstance(sec, str):
                 return aid, sec
-    except Exception:
-        pass  # 豁免（C2批2）：lark-cli 凭证文件缺失属常态（计划任务无注入），返回 None 走外部兜底
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "jev-eval/backup_alert.py", exc)
     return None, None
 
 
@@ -321,8 +322,8 @@ def main():
                 break
             except Exception:
                 continue
-    except Exception:
-        pass  # 豁免（C2批2）：stdout 非 JSON → ok=False，错误内容随 ALERT_FAIL 打印，未掩盖
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "jev-eval/backup_alert.py", exc)
     if ok:
         print("ALERT_OK")
         sys.exit(0)

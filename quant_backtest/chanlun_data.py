@@ -27,6 +27,7 @@ import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
+import logging
 
 try:
     from bar_dto import BarQuery
@@ -67,8 +68,8 @@ def _token():
             for line in f:
                 if line.startswith("TUSHARE_TOKEN="):
                     return line.strip().split("=", 1)[1]
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/chanlun_data.py", exc)
     return ""
 
 
@@ -577,15 +578,15 @@ def load_kline(
                     bars, tag = _ts_mins(sym, ts_freq, days, limit)
                     if bars:
                         return ok(bars, tag)
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/chanlun_data.py", exc)
             elif market == "CRYPTO":
                 try:
                     bars = _binance(sym, bn_intv, limit)
                     if bars:
                         return ok(bars, "币安公共K线")
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/chanlun_data.py", exc)
             bars = _minute_resample(market, sym, period, limit)
             if bars:
                 return ok(bars, "zhice-db v2_bar_minute 重采样")

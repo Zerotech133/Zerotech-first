@@ -34,6 +34,7 @@ POOL_SRC = os.path.join(BASE, "k_stock", "data", "poc_adapter_chanlun_20261012.j
 OUT = os.path.join(BASE, "quant_backtest", "chanlun_rotation_v6b_result.json")
 sys.path.insert(0, os.path.join(BASE, "quant_backtest"))
 from chanlun_signal import analyze as chan_analyze  # noqa: E402
+import logging
 
 D0 = "20231010"  # 3 年回测（数据自 2023-04，预热 6 个月）
 WARMUP = 250
@@ -189,7 +190,6 @@ def simulate(use_regime=True):
                 nav_peak[s] = max(nav_peak.get(s, ac), float(ac))
             val = sum(t["val"] for t in p["tr"])
             cost = sum(t["cost"] for t in p["tr"])
-            basis = cost
             price_ret = val / cost - 1 if cost else 0
             exit_how = None
             if any(
@@ -351,8 +351,8 @@ def stats(equity, trades, inv, label):
     for t in closed:
         try:
             hold.append(cal.index(t["exit_day"]) - cal.index(t["entry_day"]))
-        except ValueError:
-            pass
+        except ValueError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/chanlun_rotation_v6.py", exc)
     r = {
         "label": label,
         "total_return_pct": round(total * 100, 2),

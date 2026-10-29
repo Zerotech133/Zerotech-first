@@ -18,6 +18,7 @@ import re
 import sys
 import time
 import pathlib
+import logging
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # 工单真源固定在主仓（worktree 里跑 bundle 时也能看到主任务板）
@@ -155,8 +156,8 @@ def memory_digest(agent_id, max_recent=8):
                 e = json.loads(l)
                 recent.append({"ts": e.get("ts", ""), "event": e.get("event", ""),
                                "desc": (e.get("desc", "") or "")[:200]})
-            except Exception:  # noqa: BLE001
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "tools/build_agent_ide_bundle.py", exc)
         ns[kind] = {"count": len(lines), "recent": recent}
     return ns or None
 
@@ -286,6 +287,13 @@ def main():
                     "team_desc": d.get("description", ""),
                     # K-ORG-054: 属性透传（从业经验/擅长/知识库）；缺省按年限档自动推导
                     "attributes": a.get("attributes") or _default_attributes(a),
+                    # 2026-10-27 WO-ROLE-GROUP-MODEL：角色分工（工程域/中文岗位名）
+                    "discipline": a.get("discipline", ""),
+                    "role_title": a.get("role_title", ""),
+                    # 2026-10-27 WO-ORG-CHART：组织架构显式字段
+                    "group": a.get("group", ""),
+                    "org_role": a.get("org_role", ""),
+                    "report_to": a.get("report_to", ""),
                 }
         else:
             for aid in ids:
@@ -323,6 +331,11 @@ def main():
                 "team_desc": d.get("description") or d.get("charter", ""),
                 "attributes": prof.get("attributes") or {},
                 "entry_source": "org_profiles",  # 与 team 文件落卡区分（排查用）
+                "discipline": prof.get("discipline", ""),
+                "role_title": prof.get("role_title", ""),
+                "group": prof.get("group", ""),
+                "org_role": prof.get("org_role", ""),
+                "report_to": prof.get("report_to", ""),
             }
             new_ids.append(aid)
         if new_ids:
@@ -374,6 +387,17 @@ def main():
         if (not re.search(r"[\u4e00-\u9fff]", card["role_cn"] or "")
                 and re.search(r"[\u4e00-\u9fff]", hr.get("name") or "")):
             card["role_cn"] = hr["name"]
+        # 2026-10-27 WO-ROLE-GROUP-MODEL：真源 role_title/discipline 优先于岗位 slug
+        if not card.get("discipline"):
+            card["discipline"] = prof.get("discipline", "")
+        if not card.get("role_title"):
+            card["role_title"] = prof.get("role_title", "")
+        if card.get("role_title"):
+            card["role_cn"] = card["role_title"]
+        # 组织架构字段（A0A 等非 team_dev 席也补齐）
+        for _k in ("group", "org_role", "report_to"):
+            if not card.get(_k):
+                card[_k] = prof.get(_k, "")
         if aid == "A0":
             card["role_cn"] = "产品经理+研发（全在性）"
         card["capabilities"] = list(caps)
@@ -587,6 +611,7 @@ def main():
         "a0_daily": a0_daily,      # 最近一期 A0 日报（只读快照）
         "a0_review": a0_review,    # 最近一期 A0 点评（只读快照）
         "departments": departments,
+        "command_hq": org.get("command_hq") or {},
         "projects": projects,  # K-ORG-057 项目线（IDE 工作区内 chips）
         "agents": agents,
     }

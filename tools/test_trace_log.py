@@ -5,6 +5,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import trace_log as T  # noqa: E402
+import logging
 
 
 def test_record_and_tail(tmp_path):
@@ -23,8 +24,8 @@ def test_error_status(tmp_path):
     try:
         with T.span("tool", "boom", path=p):
             raise RuntimeError("x")
-    except RuntimeError:
-        pass
+    except RuntimeError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/test_trace_log.py", exc)
     rows = T.tail(5, p)
     assert rows[-1]["status"] == "error"
 

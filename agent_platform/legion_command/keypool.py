@@ -19,6 +19,7 @@ import urllib.error
 import urllib.request
 import uuid
 from pathlib import Path
+import logging
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent  # agent_platform/legion_command -> repo root
@@ -104,8 +105,8 @@ def _fernet():
             FERNET_KEY.write_bytes(Fernet.generate_key())
             try:
                 os.chmod(FERNET_KEY, 0o600)
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/legion_command/keypool.py", exc)
         return Fernet(FERNET_KEY.read_bytes())
     except Exception:
         return None
@@ -137,8 +138,8 @@ def _load() -> dict:
             d.setdefault("policy", dict(POLICY))
             d.setdefault("log", [])
             return d
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/legion_command/keypool.py", exc)
     return _default()
 
 
@@ -253,6 +254,29 @@ def auto_switch(d: dict, seat: str, reason: str) -> dict:
     return {"ok": True, "active_key_id": new, "from": old, "reason": reason}
 
 
+def _seat_summary(keys: list) -> dict:
+    """统一四态：available / throttled / invalid / unconfigured。"""
+    total = len(keys)
+    available = sum(1 for k in keys if k.get("status") == "healthy")
+    invalid = sum(1 for k in keys if k.get("status") == "invalid")
+    if total == 0:
+        status = "unconfigured"
+    elif available:
+        status = "available"
+    elif invalid == total:
+        status = "invalid"
+    else:
+        status = "throttled"
+    tested = [str(k.get("last_checked")) for k in keys if k.get("last_checked")]
+    return {
+        "status": status,
+        "available_count": available,
+        "total_count": total,
+        "partial": bool(available and available < total),
+        "last_tested_at": max(tested) if tested else None,
+    }
+
+
 def state() -> dict:
     d = _load()
     out = {
@@ -283,6 +307,7 @@ def state() -> dict:
                     "last_error": k.get("last_error"),
                 }
             )
+        summary = _seat_summary(keys)
         out["seats"][sid] = {
             "cn": meta["cn"],
             "provider": meta["provider"],
@@ -290,6 +315,11 @@ def state() -> dict:
             "auto_switch": bool(s.get("auto_switch", True)),
             "active_key_id": s.get("active_key_id"),
             "degraded": bool(s.get("degraded")),
+            "status": summary["status"],
+            "available_count": summary["available_count"],
+            "total_count": summary["total_count"],
+            "partial": summary["partial"],
+            "last_tested_at": summary["last_tested_at"],
             "keys": keys,
             "extra": sid not in SEATS,
         }
@@ -449,6 +479,26 @@ def _active_secret(d: dict, seat: str):
         return k, None
 
 
+def _model_secret(d: dict, seat: str, want: str):
+    """按具体模型名选 Key（healthy 优先），用于 glm-5.3/deepseek-v4-pro 等精确模型。"""
+    want = str(want or "").strip()
+    if not want:
+        return None, None
+    rank = {"healthy": 0, "degraded": 1, "quota": 2, "invalid": 3}
+    cands = [
+        k for k in d.get("keys", [])
+        if k.get("seat") == seat and k.get("enabled", True)
+        and str(k.get("model") or "").strip() == want
+    ]
+    cands.sort(key=lambda k: (rank.get(str(k.get("status")), 9), int(k.get("priority") or 99)))
+    for k in cands:
+        try:
+            return k, _decrypt(k.get("secret_enc") or "")
+        except Exception:
+            continue
+    return None, None
+
+
 def _provider_chat(
     provider: str,
     secret: str,
@@ -498,10 +548,10 @@ def _provider_chat(
         }
 
 
-def _local_openai_chat(messages: list, timeout: int = 60) -> str:
+def _local_openai_chat(messages: list, timeout: int = 60, model: str = "qwen3.5:9b") -> str:
     body = json.dumps(
         {
-            "model": "qwen3.5:9b",
+            "model": model,
             "messages": messages,
             "max_tokens": 800,
             "stream": False,
@@ -520,11 +570,11 @@ def _local_openai_chat(messages: list, timeout: int = 60) -> str:
         ) or ""
 
 
-def _local_native_chat(messages: list, timeout: int = 90) -> str:
+def _local_native_chat(messages: list, timeout: int = 90, model: str = "qwen3.5:9b") -> str:
     # 思考型模型（qwen3.5:9b）会在 reasoning 里吃满 token 导致 content 为空；
     # 原生 /api/chat + think=false 可关闭思考，直接拿最终回答。
     body = json.dumps(
-        {"model": "qwen3.5:9b", "messages": messages, "stream": False, "think": False},
+        {"model": model, "messages": messages, "stream": False, "think": False},
         ensure_ascii=False,
     ).encode()
     req = urllib.request.Request(
@@ -538,17 +588,18 @@ def _local_native_chat(messages: list, timeout: int = 90) -> str:
         return (data.get("message") or {}).get("content") or ""
 
 
-def _local_chat(messages: list, timeout: int = 60) -> dict:
+def _local_chat(messages: list, timeout: int = 60, model: str = "qwen3.5:9b") -> dict:
     err = ""
     try:
-        text = _local_openai_chat(messages, timeout)
+        _t = 180 if "35b" in str(model) else timeout
+        text = _local_openai_chat(messages, _t, model)
         if text.strip():
             return {"ok": True, "reply": text}
         err = "empty_content"
     except Exception as e:  # noqa: BLE001
         err = "%s: %s" % (type(e).__name__, str(e)[:160])
     try:
-        text = _local_native_chat(messages, max(timeout, 90))
+        text = _local_native_chat(messages, (240 if "35b" in str(model) else max(timeout, 90)), model)
         if text.strip():
             return {"ok": True, "reply": text}
         return {"ok": False, "error": "local_empty_content"}
@@ -556,7 +607,8 @@ def _local_chat(messages: list, timeout: int = 60) -> dict:
         return {"ok": False, "error": "%s; fallback=%s" % (err, str(e)[:160])}
 
 
-def auto_chat(messages: list, seats=None, allow_local: bool = True) -> dict:
+def auto_chat(messages: list, seats=None, allow_local: bool = True, local_model=None,
+              model_filter=None) -> dict:
     """一个对话框，自动适配：田丰GLM Key → 赵云/诸葛亮 DeepSeek Key → 本地9B。"""
     if not isinstance(messages, list) or not messages:
         return {"ok": False, "error": "empty_messages"}
@@ -570,13 +622,16 @@ def auto_chat(messages: list, seats=None, allow_local: bool = True) -> dict:
     attempts = []
     order = list(seats) if seats else ["relay", "tianfeng", "zhaoyun", "zhuge"]
     for seat in order:
-        k, secret = _active_secret(d, seat)
+        if model_filter:
+            k, secret = _model_secret(d, seat, str(model_filter))
+        else:
+            k, secret = _active_secret(d, seat)
         if not k:
             attempts.append(
                 {
                     "seat": seat,
                     "channel": _meta(seat).get("provider", "custom"),
-                    "result": "no_active_key",
+                    "result": ("model_not_configured:%s" % model_filter) if model_filter else "no_active_key",
                 }
             )
             continue
@@ -594,7 +649,7 @@ def auto_chat(messages: list, seats=None, allow_local: bool = True) -> dict:
             secret,
             messages,
             base_url=str(k.get("base_url") or ""),
-            model=str(k.get("model") or ""),
+            model=str(model_filter or k.get("model") or ""),
         )
         if r.get("ok"):
             _log(d, seat, k.get("id"), k.get("id"), "auto_chat", "used")
@@ -636,7 +691,7 @@ def auto_chat(messages: list, seats=None, allow_local: bool = True) -> dict:
     if not allow_local:
         return {"ok": False, "error": "all_channels_failed",
                 "detail": "no_cloud_key_and_local_disabled", "attempts": attempts}
-    lr = _local_chat(messages)
+    lr = _local_chat(messages, model=str(local_model or "qwen3.5:9b"))
     if lr.get("ok"):
         return {
             "ok": True,

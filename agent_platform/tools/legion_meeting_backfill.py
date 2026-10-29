@@ -37,7 +37,7 @@ TOOLS = ROOT / "tools"
 if str(TOOLS) not in sys.path:
     sys.path.insert(0, str(TOOLS))
 
-from validate_json import check_tasks_doc  # noqa: E402  WARN 判据唯一权威，禁重写
+from validate_json import check_tasks_doc  # noqa: E402
 
 # 禁创作语汇清单（grep 机审口径继承 W36 施工单）。作用对象=生成的草稿全文；
 # 命中即拒载，拒载行不复述命中词，保证草稿全文 grep 本清单零命中。

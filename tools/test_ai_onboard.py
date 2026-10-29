@@ -7,6 +7,7 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent / "agent_platform"))
 import ai_onboard as A  # noqa: E402
 from legion_command import seat_router as R  # noqa: E402
+import logging
 
 
 def _setup(tmp_path):
@@ -27,8 +28,8 @@ def test_add_list_disable(tmp_path):
     try:
         A.add("new-agent", "auto")
         assert False
-    except ValueError:
-        pass
+    except ValueError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/test_ai_onboard.py", exc)
     A.disable("new-agent")
     assert A.list_agents()[0]["status"] == "disabled"
 

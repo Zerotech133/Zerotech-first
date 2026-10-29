@@ -1082,7 +1082,7 @@ def _snapshot_count(env) -> int:
 
 def test_readonly_connection_rejects_write(env):
     """连接确为 mode=ro：直接对该连接写入被 sqlite 拒绝（证明只读真生效）。"""
-    post = _feed(env, count=30)
+    _feed(env, count=30)
     p = env["snapshot_db"].resolve()
     con = sqlite3.connect(f"file:{p.as_posix()}?mode=ro", uri=True)
     try:

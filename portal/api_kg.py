@@ -3603,7 +3603,7 @@ nodeClick=function(id){if(linkFrom){
                 ("", "总经理 %s" % e(b.get("manager") or "—")),
                 ("", "员工 %s" % _fmt(b.get("employees"))),
                 ("", "注册资本 %s 万" % _fmt(b.get("reg_capital")))))
-        n_ev = len(d.get("hist", {}).get("day_events") or [])
+        len(d.get("hist", {}).get("day_events") or [])
         head = (
             "<div class='sec'><h2>🏢 公司本体全景 · %s <span class='dim' "
             "style='font-weight:400;font-size:13px'>%s</span></h2>"
@@ -5092,7 +5092,7 @@ window.addEventListener('resize', function(){chart.resize();});
         e = _h.escape
         payload = _json.dumps(ov, ensure_ascii=False,
                               separators=(",", ":"))
-        max_w = max([l["w"] for l in ov.get("links") or []] or [1])
+        max([l["w"] for l in ov.get("links") or []] or [1])
         head = (
             "<div class='sec' id='kgovsec'><h2>🧭 集团总览（先看结构，再"
             "下钻）</h2>"

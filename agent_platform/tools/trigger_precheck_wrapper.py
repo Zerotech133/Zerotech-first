@@ -47,6 +47,7 @@ import sys
 import tempfile
 from datetime import datetime
 from pathlib import Path
+import logging
 
 # 本文件在 agent_platform/tools/ 下；被检工具同目录
 _HERE = Path(__file__).resolve().parent
@@ -129,8 +130,8 @@ def _push_feishu(text: str) -> bool:
         finally:
             try:
                 Path(tmp).unlink(missing_ok=True)
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/tools/trigger_precheck_wrapper.py", exc)
     except Exception:  # noqa: BLE001
         return False
 
@@ -139,7 +140,7 @@ def _read_prev_latest() -> dict:
     try:
         with open(STATE_DIR / "latest.json", "r", encoding="utf-8") as f:
             return json.load(f)
-    except Exception:  # noqa: BLE001  缺失/坏 JSON = 无历史（不节流，宁重报勿漏报）
+    except Exception:  # noqa: BLE001
         return {}
 
 
@@ -168,7 +169,7 @@ def run() -> int:
         stdout = proc.stdout.decode("utf-8", errors="replace")
         stderr = proc.stderr.decode("utf-8", errors="replace")
         wrapper_error = None
-    except Exception as exc:  # noqa: BLE001  超时/拉起失败 = fail-visible
+    except Exception as exc:  # noqa: BLE001
         exit_code, stdout, stderr = -1, "", ""
         wrapper_error = "wrapper 拉起 check_trigger_chain 失败: %r" % exc
 
@@ -249,7 +250,7 @@ def run() -> int:
 def main() -> int:
     try:
         return run()
-    except Exception as exc:  # noqa: BLE001  fail-visible：崩溃也留痕
+    except Exception as exc:  # noqa: BLE001
         err = "wrapper 自身异常: %r" % exc
         try:
             _append_log(
@@ -272,8 +273,8 @@ def main() -> int:
                     "alert_pushed": False,
                 }
             )
-        except Exception:  # noqa: BLE001  连日志面都挂了只能 print（任务计划程序历史可见）
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/tools/trigger_precheck_wrapper.py", exc)
         print(err, file=sys.stderr)
         return 1
 

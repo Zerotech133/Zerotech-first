@@ -39,6 +39,7 @@ OUT_DIR = os.environ.get("FEISHU_CONSOLE_OUT") or os.path.join(
 )
 
 import feishu_registry as fr  # noqa: E402
+import logging
 
 
 def _read_json(path, default=None):
@@ -88,8 +89,8 @@ def _load_annotations(path=None):
                     continue
                 if isinstance(d, dict):
                     rows.append(d)
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/feishu_console.py", exc)
     return rows
 
 
@@ -263,8 +264,8 @@ def collect():
     try:
         with open(task_log, encoding="utf-8", errors="replace") as f:
             task_tail = "".join(f.readlines()[-6:]).strip()
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/feishu_console.py", exc)
 
     # 3) 一致性检查
     checks = []

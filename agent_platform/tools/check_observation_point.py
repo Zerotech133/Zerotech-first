@@ -56,7 +56,7 @@ if str(_AGENT_PLATFORM) not in sys.path:
 if str(_TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(_TOOLS_DIR))
 
-from verify_strategy_ledger import verify  # noqa: E402  同目录复用三方对账
+from verify_strategy_ledger import verify  # noqa: E402
 
 # 判据 a：last_run.log 成功标记行前缀（run_shadow.py:414/428 原样输出）
 LAST_RUN_SUCCESS_PREFIX = "[strategy] "
@@ -82,7 +82,7 @@ def _read_text_safe(path: Path) -> Optional[str]:
         if not path.exists():
             return None
         return path.read_text(encoding="utf-8", errors="replace")
-    except Exception as exc:  # noqa: BLE001  fail-visible：异常透出为不可读
+    except Exception as exc:  # noqa: BLE001
         return ".__unreadable__(%s)" % str(exc)[:80]
 
 
@@ -210,7 +210,7 @@ def check_e_verdict_reconcile(root: Path):
     """e) verdict_key 三方对账（复用 verify_strategy_ledger.verify）。"""
     try:
         rep = verify(root)
-    except Exception as exc:  # noqa: BLE001  fail-visible：对账工具自身异常必须可见
+    except Exception as exc:  # noqa: BLE001
         return FAIL, "verify_strategy_ledger 调用异常（%s）" % str(exc)[:100]
     if rep["neutral"]:
         return PENDING, "strategy_runs 空账本中性，三项对账待首跑后实检"

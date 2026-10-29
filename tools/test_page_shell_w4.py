@@ -1,0 +1,26 @@
+# -*- coding: utf-8 -*-
+"""W4 PageShell adopted/redirect 契约。"""
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+JS = ROOT / "portal" / "static" / "page_shell.js"
+MANIFEST = ROOT / "portal" / "static" / "page_shell_migration.json"
+
+
+def test_adopted_contract():
+    s = JS.read_text(encoding="utf-8")
+    assert "isAdopted" in s
+    assert "adoptedHead" in s
+    assert "已收编" in s
+    assert "wb-adopted-chip" in s
+
+
+def test_migration_manifest_w4():
+    import json
+    data = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    for x in ["/home.html","/quant.html","/flow.html","/ops.html","/academy.html","/dataops.html","/capability.html","/perf.html","/ledger.html","/data_guojia.html","/data_daily.html","/market_strategy.html","/stock_analysis.html","/news_intel.html","/org.html","/watch_admin_page.html","/os.html","/os_quick.html","/os_map.html","/agent_board.html","/approvals.html","/os_goal.html","/os_issues.html","/os_software.html","/os_personal.html"]:
+        assert x in data["adopted"]
+    assert data["redirects"]["/picks_index.html"] == "/picks.html"
+    assert len(data["adopted"]) >= 31
+    for x in ["/os_room_preview.html", "/os_voice_eval.html", "/os_demo.html", "/os_integrated_demo.html"]:
+        assert x in data["adopted"]

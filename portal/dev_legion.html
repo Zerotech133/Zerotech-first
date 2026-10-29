@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>研发军团作战屏 v1</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<script src="/static/nav.js" defer></script>
+<script src="/static/shortscreen.js" defer></script>
+<style>
+  body{background:var(--bg);color:var(--fg);font-family:"Segoe UI","Microsoft YaHei",sans-serif;margin:0}
+  .wrap{max-width:1200px;margin:0 auto;padding:20px 16px 48px}
+  .hero{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;margin-bottom:14px}
+  .hero h1{font-size:20px;margin:0}
+  .muted{color:var(--muted);font-size:12px}
+  .banner{border:1px solid var(--warn);border-radius:8px;padding:8px 12px;margin:10px 0;font-size:13px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+  .card{border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:var(--panel)}
+  .card b{font-size:14px}.card .sub{color:var(--muted);font-size:12px;margin-top:2px}
+  .pill{display:inline-block;border:1px solid var(--border);border-radius:999px;padding:1px 8px;font-size:11px;color:var(--muted);margin-right:4px}
+  .group{border:1px dashed var(--border);border-radius:10px;padding:10px;margin:10px 0}
+  .group h3{margin:0 0 8px;font-size:13px;color:var(--muted)}
+  .row{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid var(--border);padding:5px 0;font-size:13px}
+  .kpi{font-size:22px;font-weight:600}
+  .ok{color:var(--ok)}.bad{color:var(--bad)}.na{color:var(--muted)}
+  .task{font-size:12px;color:var(--muted);margin:2px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <h1>研发军团作战屏 v1</h1>
+    <span class="muted" id="meta">载入中…</span>
+  </div>
+  <div class="banner" id="banner" style="display:none"></div>
+
+  <h2>组织架构</h2>
+  <div class="muted" id="dept"></div>
+  <div id="groups"></div>
+  <div class="grid" id="seats"></div>
+
+  <h2>AI 席位卡</h2>
+  <div class="grid" id="ai"></div>
+
+  <h2>量化席位卡</h2>
+  <div class="grid" id="quant"></div>
+
+  <h2>回测/风控卡</h2>
+  <div class="grid" id="risk"></div>
+
+  <h2>在制任务</h2>
+  <div id="wip"></div>
+
+  <h2>C6 指标</h2>
+  <div class="grid" id="metrics"></div>
+
+  <h2>红线状态</h2>
+  <div id="redlines"></div>
+
+  <h2>治理红线</h2>
+  <div id="governance"></div>
+</div>
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (v) => String(v == null ? "" : v).replace(/[&<>"']/g,
+  (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const ROLE_CN = {backend:"后端",frontend:"前端",ai:"AI/模型",quant:"量化",
+  devops:"运维",docs:"文档",architecture:"架构"};
+
+function card(s){
+  return '<div class="card"><b>'+esc(s.id)+' '+esc(s.name||"")+'</b>'+
+    '<div class="sub">'+esc(s.role_title||s.role_profile||"")+'</div>'+
+    '<div class="sub"><span class="pill">'+esc(ROLE_CN[s.discipline]||s.discipline||"—")+'</span>'+
+    '<span class="pill">'+esc(s.group||"—")+'</span>'+
+    '<span class="pill">'+esc(s.grade||"—")+'</span></div>'+
+    '<div class="sub">模型 '+esc(s.model||"—")+' · 汇报 → '+esc(s.report_to||"—")+'</div></div>';
+}
+
+function render(d){
+  const meta = (d.generated_at||"") + " · 只读 · 数据源 " + (d.sources||[]).length + " 个";
+  $("meta").textContent = meta;
+  if(d.errors && d.errors.length){
+    $("banner").style.display="block";
+    $("banner").textContent = "⚠ 部分数据源不可用：" + d.errors.join("；");
+  }
+  const dept = d.department || {};
+  $("dept").textContent = (dept.name||"研发部") + " · 主官 " +
+    (dept.lead_name ? dept.lead_name + "（" + dept.lead + "）" : dept.lead||"—") +
+    " · 副手 " + (dept.deputy||"—");
+  $("groups").innerHTML = (dept.groups||[]).map(g=>
+    '<div class="group"><h3>'+esc(g.id)+" "+esc(g.name)+" · 组长 "+esc(g.lead)+"</h3>"+
+    '<div class="muted">组员：'+esc((g.members||[]).join("、"))+'</div></div>').join("");
+  $("seats").innerHTML = (d.seats||[]).map(card).join("");
+  const realText = (r) => {
+    const x = r.real; if (!x || !x.metrics) return "";
+    const m = x.metrics, bits = [];
+    if (m.strategies != null) bits.push("策略" + m.strategies);
+    if (m.runs_window != null) bits.push("近" + (m.window_days || 7) + "天" + m.runs_window);
+    if (m.stance) bits.push("多" + m.stance.buy + "/空" + m.stance.sell + "/中" + m.stance.hold);
+    if (m.shadow) bits.push("影子" + m.shadow.rows + "条/" + (m.shadow.last_date || "—"));
+    if (m.shadow && m.shadow.degraded_rate != null)
+      bits.push("降级" + (m.shadow.degraded_rate * 100).toFixed(1) + "%");
+    if (m.backtests) bits.push("回测" + m.backtests.total +
+      " Go:" + (m.backtests.go_no_go?.go ?? "—") +
+      " No:" + (m.backtests.go_no_go?.no ?? "—") +
+      " Pend:" + (m.backtests.go_no_go?.pending ?? "—"));
+    return bits.length ? '<div class="sub">真实 · ' + esc(x.as_of || "—") + ' · ' +
+      bits.map(esc).join(" · ") + '</div>' : "";
+  };
+  const mini = (rows, fields) => (rows || []).map(r =>
+    '<div class="card"><b>' + esc(r.id) + ' ' + esc(r.name || "") + '</b>' +
+    '<div class="sub">' + esc(r.role_title || "") + '</div>' +
+    fields.map(f => '<div class="sub">' + esc(f[0]) + '：' +
+      esc(r[f[1]] == null ? "—" : r[f[1]]) + '</div>').join("") + realText(r) + '</div>').join("");
+  $("ai").innerHTML = mini(d.ai_cards,
+    [["模型", "model"], ["档位", "grade"], ["评估", "eval_status"]]);
+  $("quant").innerHTML = mini(d.quant_cards,
+    [["模型", "model"], ["策略", "strategy_status"], ["注册", "registry_status"]]);
+  $("risk").innerHTML = mini(d.risk_cards,
+    [["Go-No-Go", "go_no_go_status"], ["判据冻结", "criterion_freeze_status"]]);
+  const wip = d.work_in_progress||[];
+  $("wip").innerHTML = wip.length ? wip.map(w=>
+    '<div class="group"><h3>'+esc(w.owner)+'（'+((w.tasks||[]).length)+'）</h3>'+
+    (w.tasks||[]).map(t=>'<div class="row"><span>'+esc(t.id)+'</span><span class="muted">'+
+      esc(t.status)+'</span></div>').join("")+'</div>').join("")
+    : '<div class="muted">无在制任务</div>';
+  const m = d.metrics||{};
+  const kpis = [
+    ["dev 近排单", m.dev_tasks_recent, ""],
+    ["归属率", m.owner_legal_rate_recent==null?"—":(m.owner_legal_rate_recent*100).toFixed(1)+"%", "≥85%"],
+    ["验证覆盖", m.verification_rate==null?"—":(m.verification_rate*100).toFixed(1)+"%", "≥90%"],
+    ["E3 触发", m.e3_trigger||"—", "4/4"],
+    ["前置 p50", m.dev_leadtime_p50_min==null?"—":m.dev_leadtime_p50_min+"min", ""]
+  ];
+  $("metrics").innerHTML = kpis.map(k=>'<div class="card"><div class="sub">'+esc(k[0])+
+    '</div><div class="kpi">'+esc(k[1])+'</div><div class="sub">'+esc(k[2])+'</div></div>').join("");
+  const g = d.governance || {};
+  const cov = (g.merge_approval_coverage == null) ? "—"
+      : (g.merge_approval_coverage * 100).toFixed(1) + "%";
+  const gcls = (g.approval_ok === true) ? "ok" : (g.approval_ok === false ? "bad" : "na");
+  $("governance").innerHTML = '<div class="row"><span>新单署名覆盖（block 后）</span>' +
+    '<span class="' + gcls + '">' + esc(cov) + ' · 新单 ' + esc(g.new_done == null ? "—" : g.new_done) +
+    ' / 缺 ' + esc(g.new_missing == null ? "—" : g.new_missing) +
+    ' · 历史缺 ' + esc(g.historical_missing == null ? "—" : g.historical_missing) + '</span></div>';
+  const rl = d.redlines||[];
+  $("redlines").innerHTML = rl.length ? rl.map(r=>{
+    const cls = r.ok===true?"ok":(r.ok===false?"bad":"na");
+    const txt = r.ok===true?"✅":(r.ok===false?"❌":"🟡 人工");
+    return '<div class="row"><span>'+esc(r.id)+'</span><span class="'+cls+'">'+
+      txt+' · '+esc(r.value==null?"—":r.value)+'</span></div>';
+  }).join("") : '<div class="muted">无红线数据</div>';
+}
+
+fetch("/api/dev/legion", {cache:"no-store"})
+  .then(r => r.ok ? r.json() : Promise.reject(new Error("HTTP "+r.status)))
+  .then(render)
+  .catch(e => {
+    $("banner").style.display="block";
+    $("banner").textContent = "接口不可用：" + e.message + "（需门户重启/部署）";
+    $("meta").textContent = "只读 · 加载失败";
+  });
+</script>
+</body>
+</html>

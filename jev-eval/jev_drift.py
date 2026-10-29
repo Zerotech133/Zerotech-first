@@ -32,7 +32,7 @@ from datetime import datetime, timedelta, timezone
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import jev_common as jc  # noqa: E402  (db_run/db_rows/log 复用，DB 失败自动降级 docker psql)
+import jev_common as jc  # noqa: E402
 
 NEWS_DB = os.path.join(HERE, "..", "news_collector", "news.db")
 CST = timezone(timedelta(hours=8))
@@ -219,7 +219,7 @@ def _insert_alert(dim, js, p, q, n_cur, n_base, now, dry):
             (_alert_id(dim, now), "WARN", title, message, "OPEN", now.isoformat()),
         )
         jc.log("漂移告警已入 v2_alert", level="info", dim=dim, js=round(js, 3))
-    except Exception as e:  # noqa: BLE001  豁免（C2批2）：DB 写入失败不阻断
+    except Exception as e:  # noqa: BLE001
         jc.log("漂移告警入库失败: %s" % str(e)[:100], level="warn", dim=dim)
 
 

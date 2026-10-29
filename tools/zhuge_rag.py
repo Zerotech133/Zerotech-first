@@ -116,9 +116,24 @@ def build_index(root: Path | None = None, out: Path | None = None,
         total_len += len(chunk["tokens"])
         for term in set(chunk["tokens"]):
             df[term] = df.get(term, 0) + 1
+    postings: dict = {}
+    lens: list[int] = []
+    for ci, chunk in enumerate(chunks):
+        toks = chunk.get("tokens") or []
+        lens.append(len(toks))
+        tf: dict = {}
+        for term in toks:
+            tf[term] = tf.get(term, 0) + 1
+        for term, f in tf.items():
+            postings.setdefault(term, []).append([ci, f])
     index = {"built_at": _now(), "chunk_count": len(chunks),
              "avg_len": (total_len / len(chunks)) if chunks else 0,
-             "df": df, "chunks": chunks, "dirs": list(dirs)}
+             "df": df, "chunks": chunks, "dirs": list(dirs),
+             "postings": postings, "lens": lens}
+    # 2026-10-27 索引瘦身：postings/lens 已持久化，chunks.tokens 不再写盘（可大幅降低加载延迟）
+    for chunk in chunks:
+        chunk.pop("tokens", None)
+    index["tokens_omitted"] = True
     out_path = Path(out) if out else (_root() / INDEX_REL)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(index, ensure_ascii=False), encoding="utf-8")
@@ -127,6 +142,30 @@ def build_index(root: Path | None = None, out: Path | None = None,
 
 
 _INDEX_CACHE: dict = {"key": None, "index": None}
+
+
+_POSTINGS: dict = {"key": None, "postings": None, "lens": None}
+
+
+def _postings_for(index: dict):
+    """(term -> [(chunk_idx, tf)]) 倒排 + 长度表；索引内已持久化则直接用。"""
+    if isinstance(index.get("postings"), dict) and isinstance(index.get("lens"), list):
+        return index["postings"], index["lens"]
+    key = (id(index), len(index.get("chunks") or []), index.get("built_at"))
+    if _POSTINGS.get("key") == key:
+        return _POSTINGS["postings"], _POSTINGS["lens"]
+    postings: dict = {}
+    lens: list[int] = []
+    for ci, chunk in enumerate(index.get("chunks") or []):
+        toks = chunk.get("tokens") or []
+        lens.append(len(toks))
+        tf: dict = {}
+        for term in toks:
+            tf[term] = tf.get(term, 0) + 1
+        for term, f in tf.items():
+            postings.setdefault(term, []).append((ci, f))
+    _POSTINGS.update(key=key, postings=postings, lens=lens)
+    return postings, lens
 
 
 def _load_index(root: Path | None = None, index: dict | None = None) -> dict:
@@ -166,28 +205,18 @@ def _bm25(query: str, index: dict, k: int) -> list[dict]:
     avg_len = index.get("avg_len") or 1.0
     n = len(chunks)
     q_unique = list(dict.fromkeys(q_terms))
-    scored = []
-    for chunk in chunks:
-        tokens = chunk.get("tokens") or []
-        if not tokens:
-            continue
-        tf: dict[str, int] = {}
-        for term in tokens:
-            if term in q_unique:
-                tf[term] = tf.get(term, 0) + 1
-        if not tf:
-            continue
-        dl = len(tokens)
-        score = 0.0
-        for term, freq in tf.items():
-            idf = math.log(1 + (n - df.get(term, 0) + 0.5) / (df.get(term, 0) + 0.5))
-            score += idf * (freq * (K1 + 1)) / (
+    postings, lens = _postings_for(index)
+    scores: dict[int, float] = {}
+    for term in q_unique:
+        idf = math.log(1 + (n - df.get(term, 0) + 0.5) / (df.get(term, 0) + 0.5))
+        for ci, freq in postings.get(term, []):
+            dl = lens[ci] or 1
+            scores[ci] = scores.get(ci, 0.0) + idf * (freq * (K1 + 1)) / (
                 freq + K1 * (1 - B + B * dl / avg_len))
-        if score > 0:
-            scored.append((score, chunk))
-    scored.sort(key=lambda x: -x[0])
+    ranked = sorted(scores.items(), key=lambda x: -x[1])
     out = []
-    for i, (score, chunk) in enumerate(scored[:max(1, k)], 1):
+    for i, (ci, score) in enumerate(ranked[:max(1, k)], 1):
+        chunk = chunks[ci]
         out.append({"id": "S%d" % i, "path": chunk["path"], "line": chunk["line"],
                     "title": chunk.get("title") or "", "snippet": chunk["text"][:240],
                     "score": round(score, 4)})

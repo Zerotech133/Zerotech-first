@@ -30,9 +30,10 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import weak_track_watch as ww  # noqa: E402  (§12 巡检)
-import weak_track_audit as wa  # noqa: E402  (§13 审计)
-import weak_track_close as wc  # noqa: E402  (_load/_case_name)
+import weak_track_watch as ww  # noqa: E402
+import weak_track_audit as wa  # noqa: E402
+import weak_track_close as wc  # noqa: E402
+import logging
 
 TPL = os.path.join(HERE, "weak_track_weekly_tpl.txt")
 STATE = os.path.join(HERE, "weak_weekly_state.json")
@@ -126,8 +127,8 @@ def _trend_text(closed_total, open_bad, closed_bad):
             d_a = closed_bad - int(prev.get("closed_bad", closed_bad))
             fmt = lambda d: ("+%d" % d) if d > 0 else str(d)  # noqa: E731
             return "结案 %s｜巡检异常 %s｜审计异常 %s" % (fmt(d_c), fmt(d_o), fmt(d_a))
-        except (OSError, ValueError):
-            pass
+        except (OSError, ValueError) as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/weak_track_weekly.py", exc)
     return "首期无环比"
 
 
@@ -182,8 +183,8 @@ def build_weekly(f):
                 if not l.lstrip().startswith("#")
             )
             return re.sub(r"\n{3,}", "\n\n", text.format(**f).rstrip("\n"))
-        except (KeyError, IndexError, ValueError):
-            pass
+        except (KeyError, IndexError, ValueError) as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/weak_track_weekly.py", exc)
     return re.sub(
         r"\n{3,}",
         "\n\n",

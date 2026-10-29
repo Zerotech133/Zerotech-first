@@ -45,6 +45,7 @@ import pandas as pd
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import qpzm_backtest as anchor  # 只读复用锚的纯计算层
+import logging
 
 REPORTS = anchor.REPORTS
 OUT_JSON = os.path.join(REPORTS, "qpzm_jev_weight_audit_20261014.json")
@@ -530,8 +531,8 @@ def main():
     global HOLDS, UNFILL, JEV_META
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/tools/research/qpzm_jev_weight_audit.py", exc)
     t0 = time.time()
     holds = [5, 10, 20]
     HOLDS = holds

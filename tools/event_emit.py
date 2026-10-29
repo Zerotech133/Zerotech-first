@@ -28,6 +28,7 @@ import urllib.error
 import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+import logging
 
 HERE = Path(__file__).resolve().parent
 _REPO_ROOT = HERE.parent
@@ -87,8 +88,8 @@ def _outbox_current(outbox_dir):
     try:
         with open(cur, "r", encoding="utf-8", errors="replace") as fh:
             n = sum(1 for ln in fh if ln.strip())
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/event_emit.py", exc)
     if n >= OUTBOX_FILE_CAP:
         cur = outbox_dir / ("outbox_%s_%s.jsonl"
                             % (today, datetime.now(TZ_CST).strftime("%H%M%S")))
@@ -199,13 +200,13 @@ def flush_outbox(hub=HUB_DEFAULT, timeout=3.0, outbox_dir=None, _post=None):
                 if 200 <= status < 300:
                     flushed += 1
                     continue
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "tools/event_emit.py", exc)
             survivors.append(ln.rstrip("\n"))
             kept += 1
         try:
             with open(f, "w", encoding="utf-8") as fh:
                 fh.write("\n".join(survivors) + ("\n" if survivors else ""))
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "tools/event_emit.py", exc)
     return {"ok": True, "flushed": flushed, "kept": kept, "error": None}

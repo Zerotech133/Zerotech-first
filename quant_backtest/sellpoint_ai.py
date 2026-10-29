@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""SellPoint AI 卖点研判域 · 影子信息层（K208 落地 K207-C 四件套①②）。
+r"""SellPoint AI 卖点研判域 · 影子信息层（K208 落地 K207-C 四件套①②）。
 
 口径：缠论标准卖点（1卖=趋势背驰 / 2卖=次高点 / 3卖=中枢破坏，引擎
 chanlun_bi 已产出）。研判卡只做信息层——不拦截、不改信号/推送/入池口径
@@ -38,6 +38,7 @@ import tempfile
 import time
 import urllib.request
 from datetime import datetime, timedelta, timezone
+import logging
 
 if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf8"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -160,8 +161,8 @@ def _load_json(path, default):
         try:
             with io.open(path, encoding="utf-8") as f:
                 return json.load(f)
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/sellpoint_ai.py", exc)
     return default
 
 
@@ -364,7 +365,7 @@ def _parse(out, actions=None):
     """三行标签解析 + 白名单动词校验。返回 (强度, 动作, 理由, 风险, ok)。
     actions 传入 agent 白名单（缺省用全集 ACTIONS）。"""
     actions = actions or ACTIONS
-    strength = action = reason = risk = ""
+    strength = action = risk = ""
     for ln in (out or "").splitlines():
         s = ln.strip()
         if s.startswith("强度:"):
@@ -404,8 +405,8 @@ def make_card(r, paper_row, agent):
             )
             gen_ms += int((time.time() - t0) * 1000)
             strength, action, reason, risk, ok = _parse(out, agent["actions"])
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/sellpoint_ai.py", exc)
     card = {
         "market": r.get("market", "CN"),
         "code": r.get("code"),

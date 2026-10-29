@@ -1,0 +1,332 @@
+{
+ "schema": "planner_paths/v5",
+ "note": "文档路由/关键词 → 精确文件；planner fallback 用它生成 write_scope，require_checks 再逐文件挂 file_exists",
+ "routes": {
+  "/keys": {
+   "frontend": [
+    "agent_platform/legion_command/static/keypool_v2.html"
+   ],
+   "backend": [
+    "agent_platform/legion_command/credential_catalog.py",
+    "agent_platform/legion_command/serve.py",
+    "agent_platform/legion_command/seat_router.py"
+   ]
+  },
+  "/mission": {
+   "frontend": [
+    "agent_platform/legion_command/static/mission.html"
+   ],
+   "backend": [
+    "agent_platform/legion_command/mission_planner.py",
+    "agent_platform/legion_command/mission_dispatch.py"
+   ]
+  },
+  "/ide": {
+   "frontend": [
+    "portal/ide.html"
+   ],
+   "backend": [
+    "tools/build_agent_ide_bundle.py"
+   ]
+  },
+  "/legion": {
+   "frontend": [
+    "portal/legion.html"
+   ],
+   "backend": [
+    "portal/api_legion_ops_v2.py"
+   ]
+  },
+  "/council": {
+   "frontend": [
+    "portal/os_council.html"
+   ],
+   "backend": [
+    "portal/council_ops.py"
+   ]
+  },
+  "/picks": {
+   "frontend": [
+    "portal/picks.html"
+   ],
+   "backend": [
+    "portal/build_todays_picks.py"
+   ]
+  },
+  "/org": {
+   "frontend": [
+    "portal/org.html"
+   ],
+   "backend": []
+  },
+  "/devops": {
+   "frontend": [
+    "portal/dev.html"
+   ],
+   "backend": [
+    "portal/api_dev_legion.py"
+   ]
+  },
+  "/os": {
+   "frontend": [
+    "portal/os.html"
+   ],
+   "backend": []
+  },
+  "/academy": {
+   "frontend": [
+    "portal/academy.html"
+   ],
+   "backend": []
+  },
+  "/learn": {
+   "frontend": [
+    "portal/learn.html"
+   ],
+   "backend": []
+  },
+  "/paper": {
+   "frontend": [
+    "portal/paper.html"
+   ],
+   "backend": []
+  },
+  "/market": {
+   "frontend": [
+    "portal/market.html"
+   ],
+   "backend": []
+  },
+  "/market-strategy": {
+   "frontend": [
+    "portal/market_strategy.html"
+   ],
+   "backend": []
+  },
+  "/screen": {
+   "frontend": [
+    "portal/screen.html"
+   ],
+   "backend": []
+  },
+  "/stack": {
+   "frontend": [
+    "portal/stack.html"
+   ],
+   "backend": []
+  },
+  "/creator": {
+   "frontend": [
+    "portal/creator.html"
+   ],
+   "backend": []
+  },
+  "/approvals": {
+   "frontend": [
+    "portal/approvals.html"
+   ],
+   "backend": []
+  },
+  "/audit": {
+   "frontend": [
+    "portal/audit.html"
+   ],
+   "backend": []
+  },
+  "/perf": {
+   "frontend": [
+    "portal/perf.html"
+   ],
+   "backend": []
+  },
+  "/ledger": {
+   "frontend": [
+    "portal/ledger.html"
+   ],
+   "backend": []
+  },
+  "/dataops": {
+   "frontend": [
+    "portal/dataops.html"
+   ],
+   "backend": [
+    "portal/api_dataops.py"
+   ]
+  },
+  "/notify": {
+   "frontend": [
+    "portal/notify_command.html"
+   ],
+   "backend": []
+  },
+  "/home": {
+   "frontend": [
+    "portal/home.html"
+   ],
+   "backend": []
+  },
+  "/zero": {
+   "frontend": [
+    "portal/zero_home.html"
+   ],
+   "backend": []
+  },
+  "/api/credentials": {
+   "frontend": [],
+   "backend": [
+    "agent_platform/legion_command/serve.py",
+    "agent_platform/legion_command/credential_catalog.py"
+   ]
+  },
+  "/api/router/vk": {
+   "frontend": [],
+   "backend": [
+    "agent_platform/legion_command/serve.py",
+    "agent_platform/legion_command/seat_router.py"
+   ]
+  },
+  "/api/mcp/tushare": {
+   "frontend": [],
+   "backend": [
+    "agent_platform/legion_command/serve.py",
+    "agent_platform/legion_command/mcp_bridge.py"
+   ]
+  },
+  "/api/mission": {
+   "frontend": [],
+   "backend": [
+    "agent_platform/legion_command/serve.py",
+    "agent_platform/legion_command/mission_planner.py",
+    "agent_platform/legion_command/mission_dispatch.py",
+    "agent_platform/legion_command/mission_worker.py"
+   ]
+  },
+  "/api/keys": {
+   "frontend": [],
+   "backend": [
+    "agent_platform/legion_command/serve.py",
+    "agent_platform/legion_command/keypool.py"
+   ]
+  },
+  "/api/models": {
+   "frontend": [],
+   "backend": [
+    "agent_platform/legion_command/serve.py",
+    "agent_platform/legion_command/keypool.py"
+   ]
+  },
+  "/api/kg/lineage": {
+   "frontend": [],
+   "backend": [
+    "portal/api_lineage.py"
+   ]
+  },
+  "/api/kg": {
+   "frontend": [],
+   "backend": [
+    "portal/api_lineage.py",
+    "portal/api_misc.py"
+   ]
+  },
+  "/api/dataops/overview": {
+   "frontend": [
+    "portal/dataops.html"
+   ],
+   "backend": [
+    "portal/api_dataops.py"
+   ]
+  },
+  "/api/dataops/map": {
+   "frontend": [
+    "portal/dataops.html"
+   ],
+   "backend": [
+    "portal/api_dataops.py"
+   ]
+  },
+  "/api/dataops/entity": {
+   "frontend": [
+    "portal/dataops.html"
+   ],
+   "backend": [
+    "portal/api_dataops.py"
+   ]
+  },
+  "/api/dataops": {
+   "frontend": [
+    "portal/dataops.html"
+   ],
+   "backend": [
+    "portal/api_dataops.py"
+   ]
+  }
+ },
+ "keywords": {
+  "凭据": {
+   "backend": [
+    "agent_platform/legion_command/credential_catalog.py"
+   ]
+  },
+  "key池": {
+   "backend": [
+    "agent_platform/legion_command/keypool.py"
+   ]
+  },
+  "虚拟key": {
+   "backend": [
+    "agent_platform/legion_command/seat_router.py"
+   ]
+  },
+  "mcp": {
+   "backend": [
+    "agent_platform/legion_command/mcp_bridge.py"
+   ]
+  },
+  "worker": {
+   "backend": [
+    "agent_platform/legion_command/mission_worker.py"
+   ]
+  },
+  "planner": {
+   "backend": [
+    "agent_platform/legion_command/mission_planner.py"
+   ]
+  },
+  "评审门": {
+   "backend": [
+    "tools/devtask.py"
+   ]
+  },
+  "模型路由": {
+   "backend": [
+    "config/seat_routing.json",
+    "agent_platform/legion_command/seat_router.py"
+   ]
+  },
+  "语音": {
+   "frontend": [
+    "portal/ide.html"
+   ],
+   "backend": [
+    "tools/stt_sapi.ps1"
+   ]
+  },
+  "密钥": {
+   "backend": [
+    "agent_platform/legion_command/keypool.py",
+    "agent_platform/legion_command/serve.py"
+   ]
+  },
+  "派工": {
+   "backend": [
+    "agent_platform/legion_command/mission_dispatch.py"
+   ]
+  },
+  "任务编排": {
+   "backend": [
+    "agent_platform/legion_command/mission_planner.py",
+    "agent_platform/legion_command/mission_dispatch.py"
+   ]
+  }
+ }
+}

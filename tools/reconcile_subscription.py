@@ -90,7 +90,7 @@ _PORTAL_DIR = _REPO_ROOT / "portal"
 if str(_PORTAL_DIR) not in sys.path:
     sys.path.insert(0, str(_PORTAL_DIR))
 
-import subscription_store as _store  # noqa: E402  （仅取 _db_path，不调用写接口）
+import subscription_store as _store  # noqa: E402
 
 __all__ = ["reconcile", "render_human", "main", "TABLES", "PAID_STATUSES"]
 

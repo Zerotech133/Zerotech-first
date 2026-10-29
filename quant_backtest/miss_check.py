@@ -314,7 +314,7 @@ def run(now=None):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("cmd", nargs="?", default="run")
-    a = ap.parse_args()
+    ap.parse_args()
     run()
 
 

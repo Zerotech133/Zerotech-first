@@ -59,10 +59,11 @@ for _p in (str(_REPO_ROOT / "portal"), str(_HERE)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-import reconcile_subscription  # noqa: E402  （只 import 复用，不修改）
-import renewal_reminder as rr  # noqa: E402  （只 import 复用，不修改）
-import renewal_state as rs  # noqa: E402  （只 import 复用，不修改）
-import subscription_store as store  # noqa: E402  （只 import 复用，禁止修改）
+import reconcile_subscription  # noqa: E402
+import renewal_reminder as rr  # noqa: E402
+import renewal_state as rs  # noqa: E402
+import subscription_store as store  # noqa: E402
+import logging
 
 __all__ = ["IsolationError", "resolve_paths", "run_all", "main", "STEP_NAMES"]
 
@@ -143,8 +144,8 @@ def resolve_paths(args):
             raise IsolationError("%s 指向真实默认路径 %s，拒绝运行" % (label, real))
         try:
             p.relative_to(_REAL_WORK_DIR)
-        except ValueError:
-            pass
+        except ValueError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "tools/subscription_smoke.py", exc)
         else:
             raise IsolationError(
                 "%s 落在真实运行目录 %s 内，拒绝运行" % (label, _REAL_WORK_DIR))

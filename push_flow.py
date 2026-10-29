@@ -18,6 +18,7 @@ import json
 import os
 import sys
 import threading
+import logging
 
 FLOW_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                          "portal", "work", "push_flow.jsonl")
@@ -57,8 +58,8 @@ def record(kind, channel, target, count=1, ok=True, tenant="default",
                 os.write(fd, data)
             finally:
                 os.close(fd)
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "push_flow.py", exc)
 
 
 def infer_kind():
@@ -104,8 +105,8 @@ def stats(days=7):
                 if d == today.isoformat():
                     k = r.get("kind", "?")
                     today_by_kind[k] = today_by_kind.get(k, 0) + c
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "push_flow.py", exc)
     seq = [(today - dt.timedelta(days=days - 1 - i)).isoformat()
            for i in range(days)]
     return {"by_day": [{"date": d, "count": by_day.get(d, 0)} for d in seq],

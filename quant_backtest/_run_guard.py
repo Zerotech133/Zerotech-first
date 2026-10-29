@@ -76,7 +76,6 @@ def run_guarded(
     tag = "[%s run_guard]" % label if label else "[run_guard]"
     fd = log_fh.fileno()
     rc, used = None, 0
-    killed_final = False
     for attempt in range(1, attempts + 1):
         used = attempt
         log_fh.write(

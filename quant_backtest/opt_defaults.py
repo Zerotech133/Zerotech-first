@@ -22,10 +22,11 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 import backtest  # noqa: E402
-import metrics as mt  # noqa: E402  (纪律门折窗评估，walk_forward 同源)
-import runner  # noqa: E402  (复用 CFG/resolve_watchlist/NEWS_DIR/push_feishu)
+import metrics as mt  # noqa: E402
+import runner  # noqa: E402
 import strategies as strat  # noqa: E402
 from data_loader import load_bars  # noqa: E402
+import logging
 
 # 纪律门口径（与 walk_forward.py 对齐）
 GATE_TRAIN_N = 252
@@ -274,8 +275,8 @@ def main():
     if a.apply:
         try:
             runner.write_opt_page(frames)  # 调参后顺带刷新寻优榜单页
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/opt_defaults.py", exc)
 
     if a.push and changed:
         lines = [

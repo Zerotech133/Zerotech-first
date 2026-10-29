@@ -12,6 +12,7 @@ sys.path.insert(0, str(HERE / ".." / "paper"))
 
 import minutes  # noqa: E402
 from minutes import Reject, inbox, list_minutes, send  # noqa: E402
+import logging
 
 
 def _setup(tmp: Path):
@@ -53,14 +54,14 @@ def test_invalid_channel_reject():
             try:
                 send("bull_desk", "post_close", "复盘", channel=ch)
                 raise AssertionError(f"通道 {ch!r} 应被拒")
-            except Reject:
-                pass
+            except Reject as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/tests/test_minutes.py", exc)
         # 档案声明通道之外也应拒（trader 在声明内，feishu 不在）
         try:
             send("bull_desk", "post_close", "复盘", channel="feishu")
             raise AssertionError("未声明通道应被拒")
-        except Reject:
-            pass
+        except Reject as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/tests/test_minutes.py", exc)
         assert list_minutes() == []  # 拒后不留账
     print("PASS test_invalid_channel_reject")
 
@@ -79,7 +80,7 @@ def test_trader_feed_append():
 def test_feishu_fail_closed():
     with tempfile.TemporaryDirectory() as tmp:
         _setup(Path(tmp))
-        (mdir := Path(tmp) / "managers" / "bull_desk.json").write_text(
+        (Path(tmp) / "managers" / "bull_desk.json").write_text(
             json.dumps(
                 {
                     "id": "bull_desk",

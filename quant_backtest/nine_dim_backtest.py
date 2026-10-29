@@ -47,9 +47,9 @@ import pandas as pd
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import nine_dim as nd  # noqa: E402  单一规则来源
+import nine_dim as nd  # noqa: E402
 import rps_resonance as rps  # noqa: E402
-import db  # noqa: E402  SQLite 数据层（Phase 2）
+import db  # noqa: E402
 from nine_dim_source_snapshot import (  # noqa: E402
     ApiRecordStore,
     SourceSnapshot,

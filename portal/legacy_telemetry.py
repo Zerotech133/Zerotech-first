@@ -12,6 +12,7 @@ import datetime
 import inspect
 import json
 import os
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 LOG_PATH = os.path.join(HERE, "data", "push_legacy_calls.jsonl")
@@ -34,5 +35,5 @@ def hit(tag, log_path=None):
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "a", encoding="utf-8") as f:
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
-    except Exception:  # noqa: BLE001 —— 遥测失败不得反噬发卡
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/legacy_telemetry.py", exc)

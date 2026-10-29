@@ -25,6 +25,7 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DB = os.path.join(HERE, "news.db")
@@ -262,10 +263,17 @@ def _find_cli():
     return None
 
 
+UPLOAD_ERROR = ""
+
+
 def upload_key():
-    """PNG → lark-cli 上传 → image_key（失败 None）。"""
+    """PNG → lark-cli 上传 → image_key（失败 None，原因写 UPLOAD_ERROR）。"""
+    global UPLOAD_ERROR
+    UPLOAD_ERROR = ""
     exe = _find_cli()
     if not exe:
+        UPLOAD_ERROR = "lark-cli not found"
+        print("JEV_CHART upload: %s" % UPLOAD_ERROR)
         return None
     try:
         for who in (
@@ -290,15 +298,26 @@ def upload_key():
                 encoding="utf-8",
                 timeout=60,
             )
+            if r.returncode != 0:
+                detail = (r.stderr or r.stdout or "").strip().replace("\n", " ")[:200]
+                UPLOAD_ERROR = "%s rc=%d %s" % (who, r.returncode, detail)
+                print("JEV_CHART upload %s failed: %s" % (who, detail))
+                continue
             data = json.loads(r.stdout or "{}")
             if data.get("ok") is False:
+                UPLOAD_ERROR = "%s ok=false %s" % (who, str(data.get("error") or data)[:200])
+                print("JEV_CHART upload %s rejected: %s" % (who, UPLOAD_ERROR))
                 continue
             key = (data.get("data") or {}).get("image_key") or data.get("image_key")
             if key:
                 return key
+            UPLOAD_ERROR = "%s no image_key" % who
+            print("JEV_CHART upload %s: no image_key" % who)
         return None
-    except Exception:
-        return None  # 豁免（C2批2）：图片上传失败自动省略（卡片无图推送），长尾留待批3
+    except Exception as exc:  # noqa: BLE001
+        UPLOAD_ERROR = "%s: %s" % (type(exc).__name__, str(exc)[:200])
+        print("JEV_CHART upload ERR %s" % UPLOAD_ERROR)
+        return None
 
 
 def _lark(args, timeout=90):
@@ -621,8 +640,8 @@ def refresh_doc(now, items):
     finally:
         try:
             os.remove(tmp)
-        except OSError:
-            pass  # 豁免（C2批2）：临时文件清理兜底
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/news_jev_chart.py", exc)
 
 
 def _card_btns(doc_url, base_url):
@@ -719,8 +738,8 @@ def push(key, n_total, n_day, now, doc_url=None, base_url=None):
                 )
             )
             union = _own.get("union_id") or union
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/news_jev_chart.py", exc)
         ok, why = send_msg(
             json.dumps(card, ensure_ascii=False),
             "interactive",
@@ -768,7 +787,7 @@ def main():
         print("JEV_CHART base sync ERR %s" % str(e)[:100])
     key = upload_key()
     if not key:
-        print("JEV_CHART UPLOAD_FAIL")
+        print("JEV_CHART UPLOAD_FAIL: %s" % (UPLOAD_ERROR or "unknown"))
         return
     ok = push(key, len(items), day_n, now, doc_url, base_url)
     try:  # 微信渠道（企微机器人，未配置自动跳过）

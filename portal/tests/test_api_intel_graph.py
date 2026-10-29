@@ -16,7 +16,7 @@ def test_dossier_returns_candidate_only_with_traceable_keys():
     g = build_view(limit=60)
     stats = g.stats()
     assert stats["edges"] > 0 and stats["stocks"] > 0
-    some_stock = next(iter(g._by_stock))  # noqa: SLF001 — 测试取任一有边票码
+    some_stock = next(iter(g._by_stock))  # noqa: SLF001
     d = g.dossier(some_stock)
     assert d["verdict"] == "candidate_only" and d["total_edges"] >= 1
     for e in d["edges"]:

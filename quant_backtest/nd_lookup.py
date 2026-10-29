@@ -23,7 +23,8 @@ SNAP = os.path.join(DATA, "nine_dim_scores.json")
 HIST = os.path.join(DATA, "nine_dim_history.jsonl")
 
 
-from codes import normalize_code as _norm  # noqa: E402  P1-2 统一代码归一（北交所 8/4/92 开头 → .BJ）
+from codes import normalize_code as _norm  # noqa: E402
+import logging
 
 
 def _ind_of(code):
@@ -35,8 +36,8 @@ def _ind_of(code):
             return str(sb.iloc[0].get("industry") or ""), str(
                 sb.iloc[0].get("name") or ""
             )
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/nd_lookup.py", exc)
     return "", ""
 
 

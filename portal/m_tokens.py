@@ -21,6 +21,7 @@ import json
 import os
 import secrets
 import time
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SECRET_FILE = os.environ.get("M_LINK_SECRET_FILE") or os.path.join(
@@ -49,8 +50,8 @@ def load_secret(path=None):
             sec = f.read().strip()
         if len(sec) >= 32:
             return sec.encode("ascii")
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/m_tokens.py", exc)
     sec = secrets.token_hex(32)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="ascii") as f:

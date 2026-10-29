@@ -28,6 +28,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
+import logging
 
 HOST = "http://127.0.0.1:11434"
 MODELS = ["qwen3.5:4b", "qwen3.5:9b", "qwen3.6:35b-a3b"]
@@ -78,8 +79,8 @@ def _loaded_ctx() -> dict[str, int]:
 def _unload(model: str) -> None:
     try:
         subprocess.run(["ollama", "stop", model], capture_output=True, timeout=60, check=False)
-    except (OSError, subprocess.TimeoutExpired):
-        pass
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/probe_llm_capability.py", exc)
 
 
 def probe(model: str, timeout: int) -> dict:

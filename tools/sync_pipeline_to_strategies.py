@@ -18,6 +18,7 @@ import json
 import os
 import re
 import sys
+import logging
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_STRATEGIES = os.path.join(REPO_ROOT, "portal", "strategies.json")
@@ -107,8 +108,8 @@ def atomic_write_json(path, data):
         if os.path.exists(tmp):
             try:
                 os.remove(tmp)
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "tools/sync_pipeline_to_strategies.py", exc)
 
 
 def main(argv=None):

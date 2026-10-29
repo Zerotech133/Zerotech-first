@@ -1,0 +1,82 @@
+{
+ "ok": true,
+ "mode": "h11dir",
+ "window": {
+  "start": "20230802",
+  "end": "20261027",
+  "trading_days": 782,
+  "split_date": "20250711"
+ },
+ "neutral_mode": "industry_size",
+ "event_shift": 1,
+ "cost_bps_per_side": 15,
+ "cost_pct_roundtrip": 0.3,
+ "events_used": 5512,
+ "focus": "earnings",
+ "class_coverage": {},
+ "result": {
+  "5": {
+   "is": {
+    "n": 3709,
+    "mean": -4.0213,
+    "median": -2.1028,
+    "win_rate": 0.3823,
+    "t": -21.91,
+    "std": 11.1769
+   },
+   "oos": {
+    "n": 1803,
+    "mean": -0.271,
+    "median": 0.0834,
+    "win_rate": 0.5042,
+    "t": -1.42,
+    "std": 8.1217
+   },
+   "pass": false,
+   "pos": {
+    "is": {
+     "n": 2036,
+     "mean": -3.0767,
+     "median": -1.7447,
+     "win_rate": 0.3988,
+     "t": -13.8,
+     "std": 10.0627
+    },
+    "oos": {
+     "n": 892,
+     "mean": -0.2366,
+     "median": -0.1596,
+     "win_rate": 0.4899,
+     "t": -0.87,
+     "std": 8.1291
+    }
+   },
+   "neg": {
+    "is": {
+     "n": 1673,
+     "mean": -5.1709,
+     "median": -2.7072,
+     "win_rate": 0.3622,
+     "t": -17.19,
+     "std": 12.304
+    },
+    "oos": {
+     "n": 911,
+     "mean": -0.3047,
+     "median": 0.3229,
+     "win_rate": 0.5181,
+     "t": -1.13,
+     "std": 8.1187
+    }
+   },
+   "ls_is": 2.0942,
+   "ls_oos": 0.0681
+  }
+ },
+ "industry_coverage": {
+  "stocks_with_industry": 5575,
+  "stocks_total": 5577,
+  "industries": 111
+ },
+ "generated_at": "2026-10-28T17:28:34+08:00"
+}

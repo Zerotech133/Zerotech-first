@@ -33,6 +33,7 @@ import pandas as pd
 from pathlib import Path
 
 from warehouse_read_guard import PublicationPending, guarded_read, read_resources
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "data", "tdx")
@@ -310,8 +311,8 @@ if __name__ == "__main__":
                     conn = sqlite3.connect(INFO_DB)
                     try:
                         n = conn.execute("SELECT COUNT(*) FROM %s" % t).fetchone()[0]
-                    except sqlite3.OperationalError:
-                        pass
+                    except sqlite3.OperationalError as exc:
+                        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/tdx_read.py", exc)
                     conn.close()
                 print("%-22s %-6s %-10s" % (t, "Y", "%d rows" % n))
             else:

@@ -308,7 +308,7 @@ class TestMountSafety(unittest.TestCase):
 
     def test_mount_try_except_semantics(self):
         """挂载点式包裹：collector 内部炸也不影响产线调用方"""
-        with tempfile.TemporaryDirectory() as td:
+        with tempfile.TemporaryDirectory():
             orig = gsc.collect_run
 
             def _boom(*a, **k):

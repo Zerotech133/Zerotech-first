@@ -32,6 +32,8 @@
 - **一单一事、单据先行**：无任务单不写码。
 - 每个 Agent 在**独立 git worktree** 干活：`python tools/devtask.py new <TID> <一句话>`——自动建 `.worktrees/<TID>/` + 分支 `task/<TID>`。禁止在 master 直接开发。
 - 完工合并必须过评审门：`python tools/devtask.py merge <TID>`（内置评审门四道：Mixin 方法集/导航统一/端口注册/明文凭据，门不过不合并）。
+- **合并默认走质量闸（P0 #1，2026-10-28）**：`python tools/merge_gated.py <TID>` —— 先跑 `test_gate -Suite fast`（portal+k_stock，新增失败即拒绝合并），再执行 devtask merge；纯文档/配置单（`docs/`、`deliverables/`、`portal/static/`、`agent_platform/skills/` 下的 .md/.json/.css/.js 等）自动跳过测试。原生 `devtask.py merge` 仍可用，但仅限回滚/紧急，且需在回单注明「绕过质量闸」。
+- **合并钩子（第二道，2026-10-28）**：`powershell -NoProfile -ExecutionPolicy Bypass -File tools\install_merge_hook.ps1` 安装 git `pre-merge-commit` 钩子 → 任何 `git merge`/`devtask merge` 在生成合并提交前自动跑 `tools/merge_preflight.py`（纯文档单放行，其余跑 `test_gate -Suite fast`，新增失败即中止合并）。绕过：`DEVTOOL_MERGE_GATE=0`（仅回滚/紧急，回单注明"绕过质量闸"）。
 - **共享数据根互斥（2026-10-17 立章）**：对数据根（`quant_backtest/data` 等 KG_DATA_ROOT 指向目录）做结构性操作（还原/迁移/清理/换根/重建 catalog）前，**必须先读 `C:\Temp\kg_sync_task.log` 尾部**确认无其他会话的进行中操作；操作完成后**必须补记该日志**。违反=评审门拒绝合并。（教训：2026-10-17 KGDataRoot 17.7GB 因两会话同时「清理 vs 还原」反复拉锯一上午）
 
 ## 4. 任务单纪律
@@ -49,6 +51,7 @@
 | 导航统一 | `python tools/unify_nav.py --check` | 手写导航/数据漂移 |
 | 端口注册 | `python tools/check_ports.py --strict` | 抢端口/私起服务 |
 | 明文凭据 | `devtask.py merge` 内置 `_secret_scan_gate`（`tools/scan_secrets.py`） | 未豁免明文凭据入库 |
+| **测试门（P0 #1）** | `python tools/merge_gated.py <TID>`（merge 前跑 `test_gate -Suite fast`，新增失败即拒） | 带失败测试合入主区 |
 
 ## 6. 受训与记忆（怎么让 Agent 越用越准）
 

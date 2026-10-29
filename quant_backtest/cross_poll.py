@@ -44,6 +44,7 @@ import json
 import os
 import time
 from datetime import datetime, timedelta, timezone
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(HERE, "data")
@@ -120,8 +121,8 @@ def _load_jsonl(path):
                     out.append(json.loads(line))
                 except Exception:
                     continue
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/cross_poll.py", exc)
     return out
 
 
@@ -259,8 +260,8 @@ def _src_chanlun_load():
                 return rows
         finally:
             conn.close()
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/cross_poll.py", exc)
     return _load_jsonl(os.path.join(DATA, "chanlun_pool.jsonl"))
 
 

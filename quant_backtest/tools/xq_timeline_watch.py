@@ -35,6 +35,7 @@ import sys
 import time
 from collections import Counter
 from datetime import datetime
+import logging
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # 出处：xq_daily_report.py:29 DB_RO（同一库，此处独立只读连接）
@@ -110,8 +111,8 @@ def collect_crawl(day, now):
                         if crawl_line.startswith("exit="):
                             try:
                                 crawl_rc = int(crawl_line.split()[0][5:])
-                            except ValueError:
-                                pass
+                            except ValueError as exc:
+                                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/tools/xq_timeline_watch.py", exc)
         if crawl_rc is not None and crawl_rc != 0:
             return _item(
                 "crawl",

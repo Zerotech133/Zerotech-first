@@ -29,6 +29,20 @@ from datetime import datetime, timedelta
 import pandas as pd
 import logging
 
+# 生命周期覆盖（planned/deprecated）：真源 agent_platform/catalogs/data_lifecycle.yaml
+_LIFECYCLE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tools", "datawarehouse")
+
+
+def _lifecycle_module():
+    try:
+        import sys
+        if _LIFECYCLE_DIR not in sys.path:
+            sys.path.insert(0, _LIFECYCLE_DIR)
+        import lifecycle  # noqa: WPS433
+        return lifecycle
+    except Exception:  # noqa: BLE001
+        return None
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "data", "catalog.json")
 
@@ -1393,8 +1407,23 @@ def build(data_root=None, out_path=None):
     except (OSError, ValueError) as exc:
         logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/build_catalog.py", exc)
     intel = _register_intel_tables()
-    tables.update(intel)
+    # 真数据优先：主扫描已产出的条目（xq_status/xq_hot_post 等有 sqlite 实表）
+    # 不被 intel 占位注册覆盖（2026-10-28 manifest 收尾）。
+    tables.update({k: v for k, v in intel.items() if k not in tables})
     tables.update(EXTERNAL_TABLES)  # 章程 §3：外部库表（PG 等）并入目录
+    # 生命周期覆盖：planned/deprecated 写入 catalog，供 registry/freshness 消费
+    _lc = _lifecycle_module()
+    if _lc is not None:
+        for _name, _e in tables.items():
+            _status = _lc.status_for(_name)
+            if _status != "active":
+                _e["lifecycle"] = _status
+                _e["lifecycle_reason"] = _lc.reason_for(_name)
+    # 无源清单声明的表（如 guba_posts：无 manifest 概念）→ not_applicable，
+    # 避免把「不适用」误报成 missing（2026-10-28 manifest 收尾）。
+    for _e in tables.values():
+        if not _e.get("manifest") and _e.get("manifest_status") in ("missing", "open"):
+            _e["manifest_status"] = "not_applicable"
     # 验证体系：全表统一推导 verification_status（此前 222 表全 unknown，
     # catalog 仅有登记没有可信度判定——2026-10-17 治理补齐）
     stale_before = (datetime.now() - timedelta(days=7)).strftime("%Y%m%d")
@@ -1414,7 +1443,11 @@ def build(data_root=None, out_path=None):
             "[catalog] 警告：freq 不在枚举 %s 内：%s"
             % ("/".join(FREQ_ENUM), ", ".join(_bad_freq))
         )
-    version = prev_version + 1 if set(tables) != prev_tables else max(prev_version, 1)
+    _override = os.environ.get("CATALOG_VERSION_OVERRIDE", "").strip()
+    if _override.isdigit():
+        version = int(_override)  # 显式版本（治理批次用，如 v13）
+    else:
+        version = prev_version + 1 if set(tables) != prev_tables else max(prev_version, 1)
     _changelog(
         prev_tables,
         tables,

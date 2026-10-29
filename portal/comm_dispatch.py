@@ -65,7 +65,7 @@ def enabled():
         import comm_flags
 
         return comm_flags.get("dispatch")
-    except Exception:  # noqa: BLE001 —— 读不到按关，fail-closed
+    except Exception:  # noqa: BLE001
         return str(os.environ.get("COMM_DISPATCH_ENABLED", "0")).strip().lower() in (
             "1",
             "true",
@@ -115,7 +115,7 @@ def dispatch(intent_result, open_id, msg_id="", deadline_min=None):
         env = _inbox().submit(
             kind_for(intent), payload, source=SOURCE, idempotency_key=idem
         )
-    except Exception as ex:  # noqa: BLE001 —— 投递失败必须让调用方知道
+    except Exception as ex:  # noqa: BLE001
         return {
             "ok": False,
             "reason": "submit_exception",

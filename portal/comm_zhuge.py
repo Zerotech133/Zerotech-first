@@ -38,6 +38,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+import logging
 
 DEFAULT_TIMEOUT = 30
 DEFAULT_MAX_CHARS = 600
@@ -160,8 +161,8 @@ def _sanitize_citations(text, sources):
         if mod is not None:
             try:
                 out = mod.ensure_citations(out, sources)
-            except Exception:  # noqa: BLE001
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "portal/comm_zhuge.py", exc)
     return out
 
 
@@ -175,7 +176,7 @@ def _apply_citations(text, grounding):
         return _sanitize_citations(
             mod.ensure_citations(text, grounding["sources"]),
             grounding["sources"])
-    except Exception:  # noqa: BLE001  引用兜底失败不阻断主链
+    except Exception:  # noqa: BLE001
         return _sanitize_citations(text, grounding["sources"])
 
 
@@ -190,6 +191,30 @@ def _redact(text):
     if not text:
         return text
     return _INTERNAL_PATH_RE.sub("[内部路径]", text)
+
+
+def _wargame_for(question):
+    """P2 兵棋：COMM_ZHUGE_WARGAME=1 时附加三情景推演（默认关；只读）。"""
+    if str(os.environ.get("COMM_ZHUGE_WARGAME", "0")).strip().lower() not in (
+            "1", "true", "yes", "on"):
+        return None
+    try:
+        mod = _tool_module("zhuge_wargame")
+        return mod.wargame(question) if mod else None
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _debate_for(question):
+    """P2 三席辩论：COMM_ZHUGE_DEBATE=1 时附加（默认关；只读）。"""
+    if str(os.environ.get("COMM_ZHUGE_DEBATE", "0")).strip().lower() not in (
+            "1", "true", "yes", "on"):
+        return None
+    try:
+        mod = _tool_module("zhuge_debate")
+        return mod.debate(question) if mod else None
+    except Exception:  # noqa: BLE001
+        return None
 
 
 def _tool_module(name):
@@ -355,8 +380,8 @@ def _openclaw_prompt(question, grounding=None):
         if mod is not None:
             try:
                 return mod.grounded_prompt(q, grounding, soul=soul)
-            except Exception:  # noqa: BLE001
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "portal/comm_zhuge.py", exc)
     return (
         soul
         + " 用户咨询："
@@ -549,6 +574,8 @@ def consult(question, open_id="", llm=None, timeout=None, max_chars=DEFAULT_MAX_
                 "sources": grounding.get("sources") if grounding else [],
                 "grounded": bool(grounding and grounding.get("sources")),
                 "plan": _plan_for(q),
+                "debate": _debate_for(q),
+                "wargame": _wargame_for(q),
                 "reflection": _reflect_for(_trim(raw, max_chars), grounding),
                 "elapsed_ms": int((time.time() - t0) * 1000),
             }
@@ -568,7 +595,7 @@ def consult(question, open_id="", llm=None, timeout=None, max_chars=DEFAULT_MAX_
         raw, status = llm.chat(
             ZHUGE_SOUL, _local_grounded_prompt(q, grounding), model="qwen3.5:9b"
         )
-    except Exception as ex:  # noqa: BLE001 —— 降级必须留因
+    except Exception as ex:  # noqa: BLE001
         return {
             "text": None,
             "mode": None,

@@ -187,6 +187,66 @@ def collect_shadow_anchors(ledger: Optional[Path] = None) -> List[Dict]:
         )
     return anchors
 
+def record_shadow_anchor(
+    row: Dict,
+    store: Optional[LinkStore] = None,
+    path: Optional[Path] = None,
+    source: str = "run_shadow",
+) -> Dict:
+    """run_shadow 落账后补一条 shadow-only 锚点链。
+
+    perf 后验可能滞后，但最新 run 必须可 replay；shadow-only 链先登记，
+    后续 perf_ledger 再补 shadow+perf 链（append-only 两条链）。
+    非法行返回 skipped，不抛。
+    """
+    if not isinstance(row, dict) or row.get("status") != "done":
+        return {"status": "skipped", "reason": "not done"}
+    run_id = str(row.get("run_id") or "").strip()
+    symbol = str(row.get("symbol") or "").strip()
+    trade_date = str(row.get("date") or "").strip()[:10]
+    if not (run_id and symbol and trade_date):
+        return {"status": "skipped", "reason": "missing anchor fields"}
+    store = store or LinkStore(path)
+    return store.record(
+        {"shadow": {"run_id": run_id, "symbol": symbol, "trade_date": trade_date}},
+        source=source,
+    )
+
+
+def sync_shadow_links(
+    ledger: Optional[Path] = None,
+    path: Optional[Path] = None,
+    store: Optional[LinkStore] = None,
+) -> Dict:
+    """把影子账本中已有 done 行补登为 shadow-only 链（幂等，可重复跑）。"""
+    store = store or LinkStore(path)
+    recorded = replayed = skipped = 0
+    findings = []
+    for anchor in collect_shadow_anchors(ledger):
+        try:
+            res = record_shadow_anchor(
+                {
+                    "status": "done",
+                    "run_id": anchor["run_id"],
+                    "symbol": anchor["symbol"],
+                    "date": anchor["trade_date"],
+                },
+                store=store,
+                source="sync_shadow",
+            )
+            status = res.get("status")
+            if status == "recorded":
+                recorded += 1
+            elif status == "replayed":
+                replayed += 1
+            else:
+                skipped += 1
+        except ValueError as exc:
+            findings.append(str(exc))
+            skipped += 1
+    return {"recorded": recorded, "replayed": replayed, "skipped": skipped, "findings": findings}
+
+
 
 # ---------------------------------------------------------------- 回放
 

@@ -20,6 +20,7 @@ import os
 import sys
 import tempfile
 from datetime import datetime
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 JEV_DIR = os.path.join(os.path.dirname(HERE), "jev-eval")
@@ -31,7 +32,7 @@ ACTIONS = ("jev_ack", "jev_ignore")
 def _jev_common():
     if JEV_DIR not in sys.path:
         sys.path.insert(0, JEV_DIR)
-    import jev_common as jc  # noqa: WPS433（函数内 import：避免未装 psycopg2 的进程导入失败）
+    import jev_common as jc  # noqa: WPS433
 
     return jc
 
@@ -44,8 +45,8 @@ def _push_owner_open_id():
             for t in json.load(f).get("push_targets") or []:
                 if t.get("name") == "个人" and t.get("id"):
                     return str(t["id"]).strip()
-    except (OSError, ValueError):
-        pass
+    except (OSError, ValueError) as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/jev_card_action.py", exc)
     return ""
 
 

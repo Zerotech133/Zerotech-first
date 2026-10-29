@@ -26,6 +26,7 @@ from legion_meeting_room import (RoomError, create_room, load_room, list_rooms,
                                  post_message, board_add_card, board_update_card,
                                  board_resolve_card)
 from api_legion_ops import build_roster, build_feed, build_tasks  # v3 H2 路由用
+import logging
 
 ORG = ROOT / "agent_platform" / "registry" / "org.json"
 HR = ROOT / "agent_platform" / "hr"
@@ -104,12 +105,11 @@ def _hr_of(aid: str) -> dict:
         return out
     try:
         for line in (d / "resume.yaml").read_text(encoding="utf-8").splitlines():
-            mm = None
             s = line.strip()
             if s.startswith("name:"): out["name"] = s.split(":", 1)[1].strip()
             elif s.startswith("kind:"): out["kind"] = s.split(":", 1)[1].strip()
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_legion_ops_v2.py", exc)
     try:
         txt = (d / "appointment.yaml").read_text(encoding="utf-8").strip()
         if txt.startswith("{"):
@@ -126,8 +126,8 @@ def _hr_of(aid: str) -> dict:
         out.update({"rank": a.get("rank"), "title": a.get("title"), "dept": a.get("dept"),
                     "mode": a.get("mode", ""), "onboarded": a.get("onboarded", ""),
                     "endpoint": a.get("endpoint", "")})
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "portal/api_legion_ops_v2.py", exc)
     return out
 
 
@@ -149,15 +149,19 @@ def _resume_editable(aid: str) -> dict:
     for ln in lines:
         s = ln.strip()
         if s.startswith("experience:"):
-            section = "experience"; buf = []
+            section = "experience"
+            buf = []
         elif s.startswith("skills:"):
-            section = "skills"; buf = [s]
+            section = "skills"
+            buf = [s]
         elif s.startswith("self_statement:"):
-            section = "self_statement"; buf = [s]
+            section = "self_statement"
+            buf = [s]
         elif section == "experience" and s.startswith("- "):
             buf.append(s)
         elif section in ("experience", "skills", "self_statement") and s and not s.startswith("- ") and ":" in s and not s.startswith(("experience", "skills", "self_statement")):
-            flush(section, buf); section = None
+            flush(section, buf)
+            section = None
     flush(section, buf)
     if isinstance(out["skills"], list):
         out["skills"] = ", ".join(str(x) for x in out["skills"])

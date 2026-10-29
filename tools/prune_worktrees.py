@@ -27,6 +27,7 @@ import datetime as dt
 import subprocess
 import sys
 from pathlib import Path
+import logging
 
 REPO = Path(__file__).resolve().parent.parent
 
@@ -85,8 +86,8 @@ def classify(wt: Path, main_branch: str, days: float) -> dict:
         try:
             when = dt.datetime.fromisoformat(last)
             idle_days = round((dt.datetime.now(when.tzinfo) - when).total_seconds() / 86400.0, 1)
-        except ValueError:
-            pass
+        except ValueError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "tools/prune_worktrees.py", exc)
     prunable = (dirty == 0 and ahead == 0
                 and idle_days is not None and idle_days >= days)
     return {"path": wt, "head": head, "dirty": dirty, "ahead": ahead,

@@ -26,12 +26,13 @@ import os
 import sys
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlsplit
+import logging
 
 try:  # Windows 控制台 GBK 兜底
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
-except Exception:
-    pass
+except Exception as exc:
+    logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/xmap_sync.py", exc)
 
 import psycopg2
 import psycopg2.extras
@@ -75,8 +76,8 @@ def _load_env_local_pg_password():
             if line.startswith("XMAP_PG_PASSWORD=") and not line.startswith("#"):
                 os.environ["XMAP_PG_PASSWORD"] = line.split("=", 1)[1].strip()
                 return
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/xmap_sync.py", exc)
 
 
 def pg_connect():
@@ -371,8 +372,8 @@ def _load_env_local_dsn():
             ):
                 os.environ["CAINIAO_MYSQL_DSN"] = line.split("=", 1)[1].strip()
                 return
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/xmap_sync.py", exc)
 
 
 def parse_dsn(dsn):
@@ -810,14 +811,14 @@ def cmd_mock_test(_args):
                 cur.execute(f"DROP SCHEMA IF EXISTS {schema} CASCADE")
             conn.commit()
             print(f"[cleanup] 已 drop schema {schema}")
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/xmap_sync.py", exc)
         sys.exit(1)
     finally:
         try:
             conn.close()
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/xmap_sync.py", exc)
     # 正常收尾：清理测试数据
     try:
         conn2 = pg_connect()

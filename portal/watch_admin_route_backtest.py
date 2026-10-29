@@ -261,7 +261,7 @@ def _build_last_backtest_facets(query: Dict[str, Any]) -> Dict[str, Any]:
 
     try:
         data: Dict[str, Any] = _read_json_file(LAST_BACKTEST_PATH)
-    except Exception as exc:  # noqa: BLE001 - 读取异常需 fail-visible
+    except Exception as exc:  # noqa: BLE001
         return {
             "verified": False,
             "error_code": "read_error",
@@ -419,7 +419,7 @@ def _build_rotation_compare() -> Dict[str, Any]:
             continue
         try:
             loaded[key] = _read_json_file(path)
-        except Exception as exc:  # noqa: BLE001 - 读取异常需 fail-visible
+        except Exception as exc:  # noqa: BLE001
             errors[key] = "read_error:%s" % exc
 
     rows: List[Dict[str, Any]] = []

@@ -41,7 +41,7 @@ def lake_amounts(code):
 
     坑: 湖是 tushare daily 不复权口径，但 amount 是实际成交额，与复权
     无关——可与腾讯 qfq 实时 bar 直接拼接。"""
-    import pandas as pd  # noqa: F401  顶部不 import：让 --help 也不依赖 venv
+    import pandas as pd  # noqa: F401
 
     if code in _LAKE_AMOUNT:
         return _LAKE_AMOUNT[code]
@@ -68,7 +68,7 @@ def merge_amount(d, lake):
     降级：湖缺失 / 湖末根错日（≠实时序列前一日）/ 历史日期未全覆盖
     → 全序列退回近似（旧行为）。
     返回 (pd.Series, used_lake: bool)。"""
-    import pandas as pd  # noqa: F401  顶部不 import：让 --help 也不依赖 venv
+    import pandas as pd  # noqa: F401
 
     approx = d["vol"] * d["close"] / 1000.0
     if not lake:
@@ -413,7 +413,7 @@ def intraday_recheck(candidates):
     时间戳校验，错日=切下家；全源失败显式跳过留 note（不假绿）。
     返回 (tail_signals, tail_checked, tail_note)
     """
-    import pandas as pd  # noqa: F401  scan_one 依赖由调用方保证
+    import pandas as pd  # noqa: F401
 
     today = datetime.now().strftime("%Y%m%d")
     multi = bool(_load_cfg().get("qd_multi_source", True))
@@ -607,6 +607,6 @@ def main():
 
 
 if __name__ == "__main__":
-    import pandas as pd  # noqa: E402  顶部不 import：让 --help 也不依赖 venv
+    import pandas as pd  # noqa: E402
 
     main()

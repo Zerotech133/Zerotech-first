@@ -24,6 +24,7 @@ HOME = Path.home() / ".hermes" / "profiles" / "tianfeng"
 # 注意：线上页面已改为动态 API（/api/tianfeng）。本脚本只生成静态参考快照，
 # 默认写 work/，不要覆盖 static/tianfeng.html（除非显式 TIANFENG_ATTR_OUT 指定）。
 import os  # noqa: E402
+import logging
 
 OUT = Path(os.environ.get("TIANFENG_ATTR_OUT",
                           str(REPO / "work" / "tianfeng_attr_static.html")))
@@ -56,8 +57,8 @@ def port_pid(port: int):
             parts = line.split()
             if len(parts) >= 5 and parts[1].endswith(":%d" % port) and parts[3] == "LISTENING":
                 return parts[4]
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/gen_tianfeng_attr.py", exc)
     return "—"
 
 

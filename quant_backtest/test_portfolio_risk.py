@@ -188,7 +188,7 @@ class TestRunExitsIntegration(unittest.TestCase):
     def test_t8b_trailing_exit(self):
         """T8b 移动止盈集成：高浮盈仓回撤 5% 平仓，不重建。"""
         led, ac = _mk_led_ac([_pos(entry_px=10.0, hi_px=20.0)])
-        exits = _run(led, ac, {"TEST.SZ": 18.99})
+        _run(led, ac, {"TEST.SZ": 18.99})
         self.assertEqual(len(ac["closed"]), 1)
         rec = ac["closed"][0]
         self.assertEqual(rec["reason"], "移动止盈(回撤5%)")
@@ -198,7 +198,7 @@ class TestRunExitsIntegration(unittest.TestCase):
     def test_t8c_rps_exit_rebuild(self):
         """T8c rps骤降集成：环境预警类 rebuild=True（随闸门语义）。"""
         led, ac = _mk_led_ac([_pos(last_rps=90.0)])
-        exits = _run(led, ac, {"TEST.SZ": 10.5}, rps_map={"TEST.SZ": 74.0})
+        _run(led, ac, {"TEST.SZ": 10.5}, rps_map={"TEST.SZ": 74.0})
         self.assertEqual(len(ac["closed"]), 1)
         rec = ac["closed"][0]
         self.assertEqual(rec["reason"], "rps骤降")
@@ -215,7 +215,7 @@ class TestRunExitsIntegration(unittest.TestCase):
     def test_t9_signal_flip_unchanged(self):
         """T9 现有信号翻空行为不变：reason=信号翻空、无 rebuild 标记。"""
         led, ac = _mk_led_ac([_pos()])
-        exits = _run(led, ac, {"TEST.SZ": 10.5}, action_map={"TEST.SZ": "回避"})
+        _run(led, ac, {"TEST.SZ": 10.5}, action_map={"TEST.SZ": "回避"})
         self.assertEqual(len(ac["closed"]), 1)
         rec = ac["closed"][0]
         self.assertEqual(rec["reason"], "信号翻空")
@@ -226,7 +226,7 @@ class TestRunExitsIntegration(unittest.TestCase):
         led, ac = _mk_led_ac([_pos(hi_px=10.0, last_rps=90.0)])
         ac["gate_mark"] = "2026-10-06"  # 预置计数：闸门已连续收紧 5 日
         led["gate_days"] = {"CN": 5}
-        exits = _run(led, ac, {"TEST.SZ": 9.5}, rps_map={"TEST.SZ": 70.0})
+        _run(led, ac, {"TEST.SZ": 9.5}, rps_map={"TEST.SZ": 70.0})
         self.assertEqual(len(ac["closed"]), 1)
         rec = ac["closed"][0]
         self.assertTrue(rec["reason"].startswith("环境闸门"))

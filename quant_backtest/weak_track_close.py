@@ -38,8 +38,8 @@ def _load(fp):
         for line in f:
             try:
                 rows.append(json.loads(line.lstrip("\ufeff")))
-            except Exception:
-                pass
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/weak_track_close.py", exc)
     return rows
 
 
@@ -67,8 +67,8 @@ def _case_name(c6):
             if line.startswith("| 标的 |"):
                 cell = line.split("|")[2].strip()  # "| 标的 | 万凯新材 301216.SZ |"
                 return cell.split()[0] if cell else ""
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/weak_track_close.py", exc)
     return ""
 
 
@@ -85,8 +85,8 @@ def close_fields(rows, ctype, note, arch, ncase=""):
     chg = ""  # 区间涨跌幅
     try:
         chg = "%+.1f%%" % ((float(r1["px"]) / float(r0["px"]) - 1) * 100)
-    except (KeyError, TypeError, ValueError, ZeroDivisionError):
-        pass
+    except (KeyError, TypeError, ValueError, ZeroDivisionError) as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/weak_track_close.py", exc)
     exd = ""  # 超额250变化+方向
     try:
         e0, e1 = float(r0["ex250"]), float(r1["ex250"])
@@ -96,8 +96,8 @@ def close_fields(rows, ctype, note, arch, ncase=""):
             else ("持平" if e1 == e0 else ("收敛" if abs(e1) < abs(e0) else "走扩"))
         )
         exd = "%+.1fpp·%s" % (e1 - e0, tag)
-    except (KeyError, TypeError, ValueError):
-        pass
+    except (KeyError, TypeError, ValueError) as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/weak_track_close.py", exc)
     revf = _review_file(c6)
     hist = [
         "%s %s" % (str(t.get("ts", "?"))[5:10], "；".join(t["trig"])) for t in trigs
@@ -143,8 +143,8 @@ def build_close(rows, ctype, note, arch, ncase=""):
                 if ncase:  # B 类滚动新案行（空则不占行）
                     text += "\n" + ncase
                 return text
-            except (KeyError, IndexError, ValueError):
-                pass
+            except (KeyError, IndexError, ValueError) as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/weak_track_close.py", exc)
     return (
         "🏁 [WEAK TRACK CLOSE] {code} {name} 结案（{ctype}）\n"
         "立案 {first} → 结案 {last}（跟踪 {n}）\n"
@@ -155,7 +155,8 @@ def build_close(rows, ctype, note, arch, ncase=""):
     ).format(**f) + (("\n" + ncase) if ncase else "")
 
 
-from codes import normalize_code as _norm  # noqa: E402  P1-2 统一代码归一（北交所 8/4/92 开头 → .BJ）
+from codes import normalize_code as _norm  # noqa: E402
+import logging
 
 
 def write_archive(f, msg, rows, arch):

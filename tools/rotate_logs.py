@@ -87,12 +87,13 @@ from collections import Counter
 from ctypes import wintypes
 from datetime import datetime, timedelta
 from pathlib import Path
+import logging
 
 try:  # Windows 控制台/管道统一按 UTF-8 输出
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-except (AttributeError, OSError):  # pragma: no cover
-    pass
+except (AttributeError, OSError) as exc:
+    logging.getLogger(__name__).warning("silent-except %s: %s", "tools/rotate_logs.py", exc)
 
 TOOL_NAME = "rotate_logs"
 SCHEMA = "rotate_logs/v1"
@@ -501,8 +502,8 @@ def _nuke_on_delete() -> bool | None:
                             r"\Explorer\BitBucket") as key:
             value, _ = winreg.QueryValueEx(key, "NukeOnDelete")
             result = bool(value)
-    except OSError:
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/rotate_logs.py", exc)
     guid = _volume_guid()
     if guid:
         try:
@@ -514,8 +515,8 @@ def _nuke_on_delete() -> bool | None:
                 value, _ = winreg.QueryValueEx(key, "NukeOnDelete")
                 if value:
                     result = True
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "tools/rotate_logs.py", exc)
     return result
 
 
@@ -758,8 +759,8 @@ def classify_file(path: Path, params: dict, now: datetime) -> dict:
         if path.is_symlink():
             record.update(reason="symlink", detail="不跟随符号链接")
             return record
-    except OSError:  # pragma: no cover
-        pass
+    except OSError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "tools/rotate_logs.py", exc)
     if not statmod.S_ISREG(st.st_mode):
         record.update(reason="not_regular", detail="不是普通文件")
         return record

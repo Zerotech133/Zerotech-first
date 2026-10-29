@@ -364,7 +364,7 @@ class DeliveryLedgerTests(unittest.TestCase):
     def test_unknown_occupies_third_daily_slot_after_midnight(self) -> None:
         third = self.register(2)
         fourth = self.register(3)
-        first = self.claim(lease=timedelta(seconds=1))
+        self.claim(lease=timedelta(seconds=1))
         self.assertIsNotNone(self.claim(*self.register(1)))
         third_claim = self.claim(*third)
         self.assertIsNotNone(third_claim)

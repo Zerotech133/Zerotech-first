@@ -49,6 +49,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pandas as pd
+import logging
 
 BASE = Path(__file__).resolve().parent
 OPEN_DIR = BASE / "open"
@@ -184,8 +185,8 @@ def _norm_prov(value: object) -> str:
     try:
         if pd.isna(value):
             return ""
-    except (TypeError, ValueError):   # 数组类取值不适用标量判空
-        pass
+    except (TypeError, ValueError) as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "data_sources/cnopendata/ingest_open.py", exc)
     return _WS_RE.sub("", str(value)).strip()
 
 
@@ -216,7 +217,7 @@ def _czyx_prov_values() -> list[str]:
                 continue
             try:
                 frames = read_frames(path)
-            except Exception:  # noqa: BLE001  单文件坏了不该毁掉映射来源
+            except Exception:  # noqa: BLE001
                 continue
             for _label, frame, _note in frames:
                 values.extend(_prov_values_from_frame(clean(frame)))

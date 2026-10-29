@@ -35,6 +35,7 @@ sys.path.insert(0, str(BASE / "engine"))
 
 from llm import LLMError, NovaMaxLLM, OllamaLLM  # noqa: E402
 from org_profiles import profile_index  # noqa: E402
+import logging
 
 PERSONA = BASE / "prompts" / "a0_chief.md"
 COMPARE_PERSONA = BASE / "prompts" / "a0_compare.md"  # K-ORG-120 成对判读人设
@@ -56,8 +57,8 @@ def _glm_key():
             zk = _json.loads(p.read_text(encoding="utf-8")).get("zhipu_key", "")
             if zk:
                 return zk
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/a0_agent.py", exc)
     return os.environ.get("GLM_API_KEY", "")
 
 
@@ -174,8 +175,8 @@ def chief_model():
         binding = profile_index(BASE).get("A0", {}).get("llm_binding")
         if isinstance(binding, str) and binding.strip():
             return binding.strip()
-    except (OSError, ValueError, TypeError, AttributeError):
-        pass
+    except (OSError, ValueError, TypeError, AttributeError) as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/a0_agent.py", exc)
     return "ollama/qwen3.5:9b"
 
 
@@ -280,8 +281,8 @@ def parse_json_block(text):
 
     try:
         return json.loads(text.strip()), None
-    except json.JSONDecodeError:
-        pass
+    except json.JSONDecodeError as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/a0_agent.py", exc)
     m = _re.search(r"\{.*\}", text, _re.S)
     if not m:
         return None, "输出中找不到合法 JSON（无 {...} 块）"

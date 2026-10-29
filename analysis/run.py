@@ -13,6 +13,7 @@ import time
 
 from . import __version__, config, db, events as events_mod, extras as extras_mod, features as feat_mod
 from . import gates, publish, render, snapshot, verdict as verdict_mod, views as views_mod
+import logging
 
 
 def _log(msg, logf):
@@ -21,8 +22,8 @@ def _log(msg, logf):
     try:
         logf.write(line + "\n")
         logf.flush()
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "analysis/run.py", exc)
 
 
 def _analysis_json(ctx, artifacts=None):

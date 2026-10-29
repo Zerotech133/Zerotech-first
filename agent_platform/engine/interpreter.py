@@ -14,6 +14,8 @@ import json
 import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import nullcontext
+import contextvars
 from pathlib import Path
 
 sys_dir = Path(__file__).parent
@@ -22,6 +24,7 @@ import sys  # noqa: E402
 sys.path.insert(0, str(sys_dir))
 
 from llm import similarity  # noqa: E402
+import logging
 
 SIM_CONVERGE = 0.8  # 菜鸟 bull/bear 辩论收敛阈值
 
@@ -137,9 +140,46 @@ class Interpreter:
         self.memory = memory
         self.cp = checkpointer
 
+    # ---------- O6 P2b：run 上下文 + attempt 记录 ----------
+    def _run_scope(self, run_id):
+        """把一次 Interpreter.run 包进 trace run 上下文；不可用时降级为 nullcontext。"""
+        try:
+            from observability import trace as _tr
+
+            return _tr.run_scope(str(run_id))
+        except Exception:  # noqa: BLE001
+            return nullcontext()
+
+    def _emit_attempt(self, run_id, node, status, latency_ms):
+        """把一次 LLM 调用尝试记为同一 run 的 attempt（不含密钥/大参数）。"""
+        try:
+            from observability import trace as _tr
+
+            _tr.record(
+                _tr.trace_id(),
+                "llm.attempt",
+                "llm",
+                status="ok" if str(status) in ("normal", "ok", "success", "succeeded") else "error",
+                attrs={
+                    "zhaoyun.node_key": str(node.get("node_key") or ""),
+                    "zhaoyun.agent_id": str(node.get("agent_id") or ""),
+                    "gen_ai.request.model": str(node.get("llm_binding") or ""),
+                    "zhaoyun.status": str(status or ""),
+                    "zhaoyun.latency_ms": round(float(latency_ms or 0), 1),
+                },
+                run_id=str(run_id),
+            )
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/engine/interpreter.py", exc)
+
     # ---------- 主流程 ----------
     def run(self, stock, run_id=None, data_ctx=None):
         run_id = run_id or uuid.uuid4().hex[:12]
+        with self._run_scope(run_id):
+            return self._run_inner(stock, run_id, data_ctx)
+
+    # ---------- 主流程（P2b：在 run_scope 内执行） ----------
+    def _run_inner(self, stock, run_id, data_ctx=None):
         self.cp.start_run(run_id, stock)
         ctx = {"stock": stock, "statements": {}, "status": {}, "data": data_ctx or {}}
         layers = {}
@@ -179,10 +219,12 @@ class Interpreter:
                         jobs.append(("single", n, None))
 
                 with ThreadPoolExecutor(max_workers=max(len(jobs), 1)) as ex:
-                    futures = [
-                        ex.submit(self._dispatch, kind, a, b, ctx, run_id)
-                        for kind, a, b in jobs
-                    ]
+                    futures = []
+                    for kind, a, b in jobs:
+                        cv = contextvars.copy_context()
+                        futures.append(
+                            ex.submit(cv.run, self._dispatch, kind, a, b, ctx, run_id)
+                        )
                     for fut in futures:
                         for node_key, text, status in fut.result():
                             ctx["statements"][node_key] = text
@@ -248,6 +290,7 @@ class Interpreter:
             text, status = self._chat(node, self._build_user(node, ctx))
         except Exception as e:  # noqa: BLE001
             text, status = "[降级] LLM 不可用（%s），按中性规则处理" % e, "degraded"
+        self._emit_attempt(run_id, node, status, (time.time() - t0) * 1000)
         self._record(
             node,
             ctx,
@@ -271,6 +314,8 @@ class Interpreter:
             b_text, st_b = self._chat(nb, self._build_user(nb, ctx))
         except Exception as e:  # noqa: BLE001
             b_text, st_b = "[降级] 空头 LLM 不可用：%s" % e, "degraded"
+        self._emit_attempt(run_id, na, st_a, (time.time() - t0) * 1000)
+        self._emit_attempt(run_id, nb, st_b, (time.time() - t0) * 1000)
         self.cp.trace(
             run_id,
             na["node_key"],
@@ -303,6 +348,8 @@ class Interpreter:
                 b_reb, st_b = self._chat(nb, self._build_user(nb, ctx, extra=a_reb))
             except Exception as e:  # noqa: BLE001
                 b_reb, st_b = "[降级] %s" % e, "degraded"
+            self._emit_attempt(run_id, na, st_a, (time.time() - t0) * 1000)
+            self._emit_attempt(run_id, nb, st_b, (time.time() - t0) * 1000)
             sim, converged, collapsed = converge_state(a_reb, b_reb)
             self.cp.trace(
                 run_id,
@@ -414,5 +461,5 @@ class Interpreter:
                         "status": status,
                     },
                 )
-        except Exception:  # noqa: BLE001  RBAC 拒绝不阻断主流程（但 smoke 会单测它）
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/engine/interpreter.py", exc)

@@ -41,6 +41,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))  # 项目根，import xq_classify
 import xq_classify  # noqa: E402
+import logging
 
 # 本任务自有产物根（lock/sprint log），对齐 2026-10-18 拍板「定时任务产物
 # 统一落 <任务名> 目录」，与 wrapper 日志同处 automation_runs/XueqiuBackfillSprint。
@@ -76,8 +77,8 @@ def slog(msg: str) -> None:
         with SPRINT_LOG.open("a", encoding="utf-8") as f:
             f.write(safe + "\n")
         print(safe)
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/tools/backfill_sprint.py", exc)
 
 
 # ---------------------------------------------------------------- window
@@ -193,8 +194,8 @@ def release_lock(path: Path = LOCK_PATH) -> None:
     if lock_is_ours(path):
         try:
             path.unlink()
-        except OSError:
-            pass
+        except OSError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/tools/backfill_sprint.py", exc)
 
 
 # ---------------------------------------------------------------- yield

@@ -84,7 +84,7 @@ def _call_with_timeout(fn, seconds, *args, **kwargs):
     def _run():
         try:
             box["ok"], box["val"] = True, fn(*args, **kwargs)
-        except Exception as e:  # noqa: BLE001 - 探针需吞一切异常
+        except Exception as e:  # noqa: BLE001
             box["ok"], box["val"] = False, e
 
     t = threading.Thread(target=_run, daemon=True)
@@ -290,7 +290,6 @@ def probe_akshare(limit=20):
         )
     samples, notes, errs = {}, [], []
     for sym, label in SAMPLES:
-        code = sym[2:]  # sh600519 → 600519
         try:
             rows = _call_with_timeout(_akshare_daily, 30, ak, sym, limit)
             samples[sym] = rows

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""alert_fail 发送结果可观测化包装器（E1）。
+r"""alert_fail 发送结果可观测化包装器（E1）。
 
 背景三实伤：
     1. launcher 直调 quant_backtest/alert_fail.py 且 1>$null 2>$null，
@@ -23,6 +23,7 @@ import tempfile
 import time
 
 from alert_io import append_ascii_log, sniff_encoding, sniff_read_text
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUTBOX = os.path.join(HERE, "outbox")
@@ -183,8 +184,8 @@ def main(argv=None):
         if norm_log and os.path.isfile(norm_log):
             try:
                 os.unlink(norm_log)
-            except OSError:
-                pass  # 豁免（C2批2）：临时错误日志清理兜底，发送结果已落 alert_send.log
+            except OSError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/alert_fail_wrap.py", exc)
     try:
         action = handle_send_result(
             pending_path(task),

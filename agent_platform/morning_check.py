@@ -19,6 +19,7 @@ import subprocess
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
+import logging
 
 BASE = Path(__file__).parent
 SHADOW = BASE / "data" / "shadow"
@@ -62,8 +63,8 @@ def main():
                 r = json.loads(line)
                 if r.get("date") == d:
                     rows.append(r)
-            except json.JSONDecodeError:
-                pass
+            except json.JSONDecodeError as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/morning_check.py", exc)
     done = [r for r in rows if r.get("status") == "done"]
     failed = [r for r in rows if r.get("status") == "failed"]
     deg = [r for r in done if r.get("degraded")]

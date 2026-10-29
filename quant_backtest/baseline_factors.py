@@ -21,12 +21,12 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 import time
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import logging
 
 HERE = Path(__file__).resolve()
 REPO = HERE.parents[1]  # quant_backtest/
@@ -106,8 +106,8 @@ def load_panel(data_root: Path = DATA_ROOT, start: str = "", end: str = "",
             df = df.merge(basic, on=["ts_code", "trade_date"], how="left")
             if df["turnover_rate"].notna().mean() >= 0.5:
                 diag["turnover_source"] = "ts_daily_basic.turnover_rate"
-        except SystemExit:
-            pass
+        except SystemExit as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/baseline_factors.py", exc)
     diag["load_seconds"] = round(time.time() - t0, 2)
     return df, diag
 
@@ -123,7 +123,6 @@ def compute_factors(df: pd.DataFrame, turnover_source: str = "proxy_amount20") -
     """输入长表（含 adj_close/adj_open/vol/amount[/turnover_rate]），返回加因子的表。"""
     df = df.sort_values(["ts_code", "trade_date"]).copy()
     g = df.groupby("ts_code", sort=False)
-    c = df["adj_close"]
     for n in (5, 10, 20, 60):
         df["MOM%d" % n] = g["adj_close"].transform(lambda s, n=n: s / s.shift(n) - 1)
     df["MA_DEV20"] = g["adj_close"].transform(lambda s: s / s.rolling(20, min_periods=20).mean() - 1)

@@ -241,7 +241,7 @@ class DuckLake:
             self.con.execute(
                 f"CREATE VIEW {name} AS SELECT * FROM read_parquet('{glob_expr}')"
             )
-        except Exception as exc:  # noqa: BLE001 -- 任何单表失败都不应中断整体构建
+        except Exception as exc:  # noqa: BLE001
             self.skipped.append(SkipEntry(name, "table", f"CREATE VIEW 失败: {exc}"))
             return
 

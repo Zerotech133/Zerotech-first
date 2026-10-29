@@ -20,12 +20,13 @@ import json
 import sys
 import time
 from pathlib import Path
+import logging
 
 try:  # Windows 管道输出统一 UTF-8（子进程 JSON/中文摘要防 cp936 解码失败）
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-except Exception:  # noqa: BLE001
-    pass
+except Exception as exc:
+    logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/evals/run_evals.py", exc)
 
 PLATFORM = Path(__file__).resolve().parents[1]
 REPO = PLATFORM.parent

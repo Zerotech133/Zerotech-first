@@ -280,7 +280,7 @@ def test_failed_delivery_is_not_recorded_and_retryable(tmp_path, monkeypatch) ->
 def test_report_up_exception_propagates_and_leaves_no_record(
         tmp_path, monkeypatch) -> None:
     """report_up 抛异常：异常上抛（不吞），去重账与问题单均不留送达痕。"""
-    bus = make_bus(tmp_path)
+    make_bus(tmp_path)
     tf = make_tianfeng()
     iid = intake(tf, "模拟阻断：投递异常（模拟数据）")["issue_id"]
 

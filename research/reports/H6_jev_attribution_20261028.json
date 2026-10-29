@@ -1,0 +1,536 @@
+{
+ "audit": {
+  "ok": true,
+  "total_rows": 88750,
+  "labeled_rows": 6658,
+  "overall": {
+   "ret": {
+    "n": 6658,
+    "mean": 0.1891,
+    "win_rate": 0.4869
+   },
+   "excess": {
+    "n": 6658,
+    "mean": 0.3351,
+    "win_rate": 0.5221
+   },
+   "hit_rate": 0.6134
+  },
+  "by_bias": [
+   {
+    "key": "neutral",
+    "n": 3040,
+    "ret": {
+     "n": 3040,
+     "mean": 0.2173,
+     "win_rate": 0.4806
+    },
+    "excess": {
+     "n": 3040,
+     "mean": 0.2774,
+     "win_rate": 0.4984
+    },
+    "hit_rate": 0.6836
+   },
+   {
+    "key": "bull",
+    "n": 2903,
+    "ret": {
+     "n": 2903,
+     "mean": 0.2766,
+     "win_rate": 0.5002
+    },
+    "excess": {
+     "n": 2903,
+     "mean": 0.5375,
+     "win_rate": 0.5601
+    },
+    "hit_rate": 0.5601
+   },
+   {
+    "key": "bear",
+    "n": 715,
+    "ret": {
+     "n": 715,
+     "mean": -0.286,
+     "win_rate": 0.4601
+    },
+    "excess": {
+     "n": 715,
+     "mean": -0.2415,
+     "win_rate": 0.4685
+    },
+    "hit_rate": 0.5315
+   }
+  ],
+  "by_event_type": [
+   {
+    "key": "other",
+    "n": 2990,
+    "ret": {
+     "n": 2990,
+     "mean": 0.2292,
+     "win_rate": 0.5037
+    },
+    "excess": {
+     "n": 2990,
+     "mean": 0.3412,
+     "win_rate": 0.5431
+    },
+    "hit_rate": 0.6281
+   },
+   {
+    "key": "equity",
+    "n": 1133,
+    "ret": {
+     "n": 1133,
+     "mean": 0.5428,
+     "win_rate": 0.4784
+    },
+    "excess": {
+     "n": 1133,
+     "mean": 0.7224,
+     "win_rate": 0.4969
+    },
+    "hit_rate": 0.6637
+   },
+   {
+    "key": "earnings",
+    "n": 885,
+    "ret": {
+     "n": 885,
+     "mean": 0.419,
+     "win_rate": 0.5186
+    },
+    "excess": {
+     "n": 885,
+     "mean": 0.4123,
+     "win_rate": 0.5175
+    },
+    "hit_rate": 0.6124
+   },
+   {
+    "key": "policy",
+    "n": 394,
+    "ret": {
+     "n": 394,
+     "mean": -0.1989,
+     "win_rate": 0.4619
+    },
+    "excess": {
+     "n": 394,
+     "mean": 0.0328,
+     "win_rate": 0.5279
+    },
+    "hit_rate": 0.5457
+   },
+   {
+    "key": "supply",
+    "n": 357,
+    "ret": {
+     "n": 357,
+     "mean": -0.3544,
+     "win_rate": 0.4342
+    },
+    "excess": {
+     "n": 357,
+     "mean": 0.1164,
+     "win_rate": 0.5294
+    },
+    "hit_rate": 0.5826
+   },
+   {
+    "key": "price",
+    "n": 357,
+    "ret": {
+     "n": 357,
+     "mean": -0.1473,
+     "win_rate": 0.4818
+    },
+    "excess": {
+     "n": 357,
+     "mean": 0.0108,
+     "win_rate": 0.4958
+    },
+    "hit_rate": 0.5014
+   },
+   {
+    "key": "tech",
+    "n": 189,
+    "ret": {
+     "n": 189,
+     "mean": -0.2542,
+     "win_rate": 0.418
+    },
+    "excess": {
+     "n": 189,
+     "mean": 0.3124,
+     "win_rate": 0.5397
+    },
+    "hit_rate": 0.5503
+   },
+   {
+    "key": "risk",
+    "n": 160,
+    "ret": {
+     "n": 160,
+     "mean": -0.3675,
+     "win_rate": 0.4313
+    },
+    "excess": {
+     "n": 160,
+     "mean": -0.4568,
+     "win_rate": 0.4125
+    },
+    "hit_rate": 0.575
+   },
+   {
+    "key": "demand",
+    "n": 67,
+    "ret": {
+     "n": 67,
+     "mean": 0.0407,
+     "win_rate": 0.3881
+    },
+    "excess": {
+     "n": 67,
+     "mean": 0.5501,
+     "win_rate": 0.5821
+    },
+    "hit_rate": 0.597
+   },
+   {
+    "key": "credit",
+    "n": 54,
+    "ret": {
+     "n": 54,
+     "mean": -0.6152,
+     "win_rate": 0.3333
+    },
+    "excess": {
+     "n": 54,
+     "mean": -0.4468,
+     "win_rate": 0.3704
+    },
+    "hit_rate": 0.7593
+   },
+   {
+    "key": "trade",
+    "n": 36,
+    "ret": {
+     "n": 36,
+     "mean": -0.5136,
+     "win_rate": 0.3611
+    },
+    "excess": {
+     "n": 36,
+     "mean": -0.2011,
+     "win_rate": 0.3333
+    },
+    "hit_rate": 0.4444
+   },
+   {
+    "key": "macro",
+    "n": 25,
+    "ret": {
+     "n": 25,
+     "mean": 1.6967,
+     "win_rate": 0.76
+    },
+    "excess": {
+     "n": 25,
+     "mean": 0.5871,
+     "win_rate": 0.6
+    },
+    "hit_rate": 0.52
+   },
+   {
+    "key": "ma",
+    "n": 6,
+    "ret": {
+     "n": 6,
+     "mean": -6.1352,
+     "win_rate": 0.1667
+    },
+    "excess": {
+     "n": 6,
+     "mean": -5.2093,
+     "win_rate": 0.1667
+    },
+    "hit_rate": 0.1667
+   },
+   {
+    "key": "geo",
+    "n": 5,
+    "ret": {
+     "n": 5,
+     "mean": -0.8564,
+     "win_rate": 0.2
+    },
+    "excess": {
+     "n": 5,
+     "mean": -1.1322,
+     "win_rate": 0.4
+    },
+    "hit_rate": 0.6
+   }
+  ],
+  "by_source": [
+   {
+    "key": "announcement",
+    "n": 1689,
+    "ret": {
+     "n": 1689,
+     "mean": 0.1005,
+     "win_rate": 0.4452
+    },
+    "excess": {
+     "n": 1689,
+     "mean": 0.4821,
+     "win_rate": 0.521
+    },
+    "hit_rate": 0.6554
+   },
+   {
+    "key": "sina",
+    "n": 1492,
+    "ret": {
+     "n": 1492,
+     "mean": -0.0605,
+     "win_rate": 0.4631
+    },
+    "excess": {
+     "n": 1492,
+     "mean": 0.2887,
+     "win_rate": 0.5208
+    },
+    "hit_rate": 0.5965
+   },
+   {
+    "key": "eastmoney",
+    "n": 1114,
+    "ret": {
+     "n": 1114,
+     "mean": -0.0174,
+     "win_rate": 0.4677
+    },
+    "excess": {
+     "n": 1114,
+     "mean": 0.3835,
+     "win_rate": 0.57
+    },
+    "hit_rate": 0.5745
+   },
+   {
+    "key": "xd_notice",
+    "n": 1057,
+    "ret": {
+     "n": 1057,
+     "mean": 0.737,
+     "win_rate": 0.5799
+    },
+    "excess": {
+     "n": 1057,
+     "mean": -0.014,
+     "win_rate": 0.4541
+    },
+    "hit_rate": 0.667
+   },
+   {
+    "key": "xd_news",
+    "n": 464,
+    "ret": {
+     "n": 464,
+     "mean": 0.929,
+     "win_rate": 0.556
+    },
+    "excess": {
+     "n": 464,
+     "mean": 0.7228,
+     "win_rate": 0.5302
+    },
+    "hit_rate": 0.5409
+   },
+   {
+    "key": "chinanews",
+    "n": 294,
+    "ret": {
+     "n": 294,
+     "mean": -0.1125,
+     "win_rate": 0.4796
+    },
+    "excess": {
+     "n": 294,
+     "mean": 0.2185,
+     "win_rate": 0.5578
+    },
+    "hit_rate": 0.5714
+   },
+   {
+    "key": "wallstreetcn",
+    "n": 286,
+    "ret": {
+     "n": 286,
+     "mean": 0.2087,
+     "win_rate": 0.5035
+    },
+    "excess": {
+     "n": 286,
+     "mean": 0.3727,
+     "win_rate": 0.5245
+    },
+    "hit_rate": 0.5559
+   },
+   {
+    "key": "report",
+    "n": 156,
+    "ret": {
+     "n": 156,
+     "mean": -0.0812,
+     "win_rate": 0.4808
+    },
+    "excess": {
+     "n": 156,
+     "mean": 0.2994,
+     "win_rate": 0.5705
+    },
+    "hit_rate": 0.6026
+   },
+   {
+    "key": "survey",
+    "n": 87,
+    "ret": {
+     "n": 87,
+     "mean": -0.3647,
+     "win_rate": 0.3793
+    },
+    "excess": {
+     "n": 87,
+     "mean": 0.2658,
+     "win_rate": 0.5172
+    },
+    "hit_rate": 0.7241
+   },
+   {
+    "key": "world",
+    "n": 15,
+    "ret": {
+     "n": 15,
+     "mean": 0.1729,
+     "win_rate": 0.7333
+    },
+    "excess": {
+     "n": 15,
+     "mean": -0.6231,
+     "win_rate": 0.4
+    },
+    "hit_rate": 0.2
+   },
+   {
+    "key": "govpolicy",
+    "n": 4,
+    "ret": {
+     "n": 4,
+     "mean": 1.0195,
+     "win_rate": 0.75
+    },
+    "excess": {
+     "n": 4,
+     "mean": 1.6912,
+     "win_rate": 1.0
+    },
+    "hit_rate": 1.0
+   }
+  ]
+ },
+ "aw_decision": {
+  "ok": true,
+  "overall": {
+   "total": 106245,
+   "labeled": 106245,
+   "mean": 0.000275,
+   "win_rate_all": 0.4835,
+   "zero_count": 4659,
+   "mean_nonzero": 0.000288,
+   "win_rate_nonzero": 0.5057
+  },
+  "by_action": [
+   {
+    "key": "WAIT",
+    "n": 80399,
+    "mean": 0.00023,
+    "win_rate_all": 0.4913,
+    "mean_nonzero": 0.00024,
+    "win_rate_nonzero": 0.5119
+   },
+   {
+    "key": "HOLD",
+    "n": 24621,
+    "mean": 0.000479,
+    "win_rate_all": 0.4604,
+    "mean_nonzero": 0.000508,
+    "win_rate_nonzero": 0.4882
+   },
+   {
+    "key": "SELL",
+    "n": 1225,
+    "mean": -0.000887,
+    "win_rate_all": 0.4351,
+    "mean_nonzero": -0.000907,
+    "win_rate_nonzero": 0.4449
+   }
+  ],
+  "by_playbook": [
+   {
+    "key": "-",
+    "n": 106245,
+    "mean": 0.000275,
+    "win_rate_all": 0.4835,
+    "mean_nonzero": 0.000288,
+    "win_rate_nonzero": 0.5057
+   }
+  ],
+  "by_regime": [
+   {
+    "key": "false",
+    "n": 106245,
+    "mean": 0.000275,
+    "win_rate_all": 0.4835,
+    "mean_nonzero": 0.000288,
+    "win_rate_nonzero": 0.5057
+   }
+  ],
+  "by_status": [
+   {
+    "key": "BACKTEST_SEEDED",
+    "n": 106245,
+    "mean": 0.000275,
+    "win_rate_all": 0.4835,
+    "mean_nonzero": 0.000288,
+    "win_rate_nonzero": 0.5057
+   }
+  ],
+  "_market_fallback": {
+   "ok": true,
+   "bench_days": 920,
+   "rows_total": 72961,
+   "rows_scored": 61070,
+   "coverage_pct": 83.7,
+   "direction_accuracy": 0.5024,
+   "by_bias": {
+    "bull": {
+     "n": 21914,
+     "hit_rate": 0.3079
+    },
+    "neutral": {
+     "n": 23143,
+     "hit_rate": 0.5572
+    },
+    "bear": {
+     "n": 16013,
+     "hit_rate": 0.6893
+    }
+   }
+  }
+ }
+}

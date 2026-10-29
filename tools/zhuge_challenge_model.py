@@ -20,7 +20,13 @@ PLATFORM = REPO / "agent_platform"
 if str(PLATFORM) not in sys.path:
     sys.path.insert(0, str(PLATFORM))
 
-from engine.openclaw_cli import run as oc_run  # noqa: E402
+def oc_run(agent, prompt, timeout=120):
+    """惰性导入 OpenClaw 载体；测试可 monkeypatch；避免 pytest 收集期 engine 名冲突。"""
+    try:
+        from engine.openclaw_cli import run as _run
+    except ImportError:
+        from agent_platform.engine.openclaw_cli import run as _run
+    return _run(agent, prompt, timeout=timeout)
 
 MODEL_AGENT = "zhuge"
 MAX_MODEL_QUESTIONS = 3
@@ -54,7 +60,7 @@ def generate_questions(items, max_questions=MAX_MODEL_QUESTIONS, timeout=120,
     prompt = build_prompt(items, cap)
     try:
         text, err = oc_run(agent, prompt, timeout=timeout)
-    except Exception as exc:  # noqa: BLE001 —— 失败必须降级，不反噬主链
+    except Exception as exc:  # noqa: BLE001
         return None, {"mode": "real3", "agent": agent,
                       "error": "%s: %s" % (type(exc).__name__, str(exc)[:120])}
     if not text:

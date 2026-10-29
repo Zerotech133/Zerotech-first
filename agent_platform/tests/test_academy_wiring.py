@@ -81,6 +81,35 @@ class AcademyWiringTests(unittest.TestCase):
             )
         )[0]
 
+    def test_move_by_non_owner_rejected_zero_write(self):
+        """2026-10-29 复盘整改：阶段推进 by 必须等于 worker_plan 责任席。"""
+        raw = self._read_topic()
+        raw["worker_plan"]["stages"] = [
+            {"stage": "hypothesis", "agent": "STRAT1"},
+            {"stage": "evidence", "agent": "DATA1"},
+        ]
+        path = self.root / "agent_platform/data/academy/research_topics.json"
+        path.write_text(json.dumps([raw], ensure_ascii=False, indent=2), encoding="utf-8")
+        with self.assertRaises(aw.AcademyWiringError):
+            aw.move_stage(self.root, "AC-20261017-LCS1", "hypothesis", by="ACAD1")
+        self.assertEqual(self._read_topic()["status"], "intake")
+
+    def test_move_by_owner_allowed(self):
+        raw = self._read_topic()
+        raw["worker_plan"]["stages"] = [{"stage": "hypothesis", "agent": "STRAT1"}]
+        path = self.root / "agent_platform/data/academy/research_topics.json"
+        path.write_text(json.dumps([raw], ensure_ascii=False, indent=2), encoding="utf-8")
+        topic = aw.move_stage(
+            self.root, "AC-20261017-LCS1", "hypothesis", by="STRAT1", note="spec draft"
+        )
+        self.assertEqual(topic["status"], "hypothesis")
+        self.assertEqual(topic["history"][-1]["by"], "STRAT1")
+
+    def test_move_without_stage_plan_keeps_legacy(self):
+        """无 worker_plan（旧数据）保持兼容，不误伤历史课题。"""
+        aw.move_stage(self.root, "AC-20261017-LCS1", "hypothesis", by="ACAD1")
+        self.assertEqual(self._read_topic()["status"], "hypothesis")
+
     # ------------------------------------------------------------------
     def test_projection_stage_native_and_index(self):
         items = aw.project_workitems(self.root)

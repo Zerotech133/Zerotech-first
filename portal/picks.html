@@ -6,6 +6,8 @@
 <title>今日选股总览 · 零界</title>
 <link rel="stylesheet" href="/static/tokens.css">
 <link rel="stylesheet" href="/static/page_common.css">
+<link href="/static/deep_shell.css" rel="stylesheet"/>
+<link href="/static/picks_simple.css" rel="stylesheet"/>
 <link rel="icon" href="data:,">
 <!--
   今日选股聚合页（门户层 · 全策略强制扫描产物）
@@ -200,11 +202,34 @@
   }
 </style>
 <script src="/static/nav.js" defer></script></head>
-<body>
-<header>
-  <h1>今日选股总览 <span class="sub">QUANT PICKS · 全策略强制扫描</span></h1>
-  <div class="clock num" id="clock"></div>
+<body class="dw-page picks-page">
+<header class="dw-hero">
+  <div class="dw-brand-block">
+    <div class="dw-brand">
+      <div class="dw-logo">选</div>
+      <div>
+        <div class="dw-eyebrow">QUANT PICKS · 全策略强制扫描</div>
+        <h1 class="dw-title">今日选股总览 <span>QUANT PICKS</span></h1>
+      </div>
+    </div>
+    <p class="dw-lead">全策略强制扫描产物：T1/T2/T3 分层、策略标签、拥挤警报与个股下钻，都在同一张选股工作台。</p>
+    <div class="dw-tags"><span class="dw-tag live">强制扫描</span><span class="dw-tag">只读研究</span><span class="dw-tag">纸面信号</span><span class="dw-tag warn">非投资建议</span></div>
+  </div>
+  <div class="dw-hero-side">
+    <div class="clock num dw-clock" id="clock"></div>
+    <div class="dw-side-note">数据源：todays_picks.json<br>每日全策略扫描 · 盘中按需刷新</div>
+  </div>
 </header>
+<nav class="dw-quick" aria-label="选股快捷导航">
+  <a class="dw-pill" href="/zero_proto.html">🧭 AI 驾驶舱</a>
+  <span class="dw-sep" aria-hidden="true"></span>
+  <a class="dw-pill on" href="/picks.html" aria-current="page">🎯 今日选股</a>
+  <a class="dw-pill" href="/quant-drill">🎯 量化驾驶舱</a>
+</nav>
+<div class="dw-context">
+  <div class="dw-crumb">零界 <span>/</span> 量化 <span>/</span> <b>今日选股</b></div>
+  <div class="dw-context-meta"><span class="dw-dot"></span> 全策略强制扫描 <span>·</span> 数据基准以页面时钟为准</div>
+</div>
 <nav class="topnav">
   <a class="pill" href="/">🏠 首页</a>
   <a class="pill on" href="/picks.html">🎯 今日选股</a>
@@ -255,6 +280,10 @@
 
   <div class="foot" id="foot"></div>
 </main>
+<footer class="dw-footer">
+  <div class="dw-footer-left"><span class="dw-dot" aria-hidden="true"></span><span>今日选股 · 全策略强制扫描 · 只读研究，不构成投资建议</span></div>
+  <div>数据源：portal/data/todays_picks.json · <a href="/picks.html">↻ 刷新</a></div>
+</footer>
 <script>
 let DATA=null, FILTER_T="", FILTER_M="", FILTER_S="", Q="", LIMIT=120, SORT="tier", VERDICTS=null;
 const $=s=>document.querySelector(s);
@@ -867,5 +896,6 @@ try{
 </script>
 <script src="/static/cainiao.js" defer></script>
 <script src="/static/dataops_link.js" data-entity="page:picks" defer></script>
+<script src="/static/picks_simple.js" defer></script>
 </body>
 </html>

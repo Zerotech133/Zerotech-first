@@ -47,6 +47,7 @@ from collections import defaultdict
 
 import numpy as np
 import pandas as pd
+import logging
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -113,7 +114,7 @@ def _shift1(v):
 
 
 def build_signals_cross():
-    import scipy.stats  # noqa: F401  确认依赖
+    import scipy.stats  # noqa: F401
 
     cache = os.path.join(os.environ.get("TEMP", "/tmp"), "cross_grid_cache_npz.npz")
     z = np.load(cache, allow_pickle=True)
@@ -351,8 +352,8 @@ def build_signals_qpzm():
     try:
         b_chk = float(env_df.loc[np.int64(20251009), "breadth"])
         log("qpzm 自校验：env breadth@20251009=%.3f（报告锚 0.45）" % b_chk)
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/portfolio_sim_20261014.py", exc)
     buy_np = buy.to_numpy()
     sc_np = score.to_numpy(dtype=np.float32)
     dates = [str(int(x)) for x in wide["dates"]]

@@ -343,16 +343,20 @@ def model_view(platform: Path) -> dict:
                 "in_headcount": aid != "ZHAOYUN",
             }
         )
+    try:
+        from legion_command import model_prefs as _mp
+        catalog = list(_mp.MODELS)
+    except Exception:  # noqa: BLE001
+        catalog = []
+    candidates = [str(m.get("id")) for m in catalog if m.get("id")]
+    labels = {str(m.get("id")): str(m.get("label") or m.get("id")) for m in catalog}
     return {
         "ok": True,
         "generated_at": _now(),
         "seats": rows,
         "known_models": known,
-        "candidate_models": [
-            "deepseek/deepseek-flash",
-            "deepseek/deepseek-v4-pro",
-            "ollama/qwen3.5:9b",
-        ],
+        "candidate_models": candidates,
+        "candidate_labels": labels,
         "note": "模型信息只读；切换模型须提交申请→老田审批→改 org/bundle 真源",
     }
 

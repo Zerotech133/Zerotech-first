@@ -24,7 +24,7 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 
-from tests.conftest import PROJECT_ROOT  # noqa: E402  （rootdir 下以包路径导入）
+from tests.conftest import PROJECT_ROOT  # noqa: E402
 
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))

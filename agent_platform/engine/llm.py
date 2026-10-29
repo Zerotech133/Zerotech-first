@@ -36,6 +36,7 @@ import json
 import os
 import time
 import urllib.request
+import logging
 
 # ---- 模型自动路由表（10-18 调优：按模型名自动配置，调用方零感知）----
 # num_predict：35b 重岗（A0 判读/日报长文）需长输出；9b 判读位 400 够用（JSON/短评）
@@ -374,8 +375,8 @@ class GLMCloudLLM:
                 zk = json.loads(p.read_text(encoding="utf-8")).get("zhipu_key", "")
                 if zk:
                     return zk
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/engine/llm.py", exc)
         import os
 
         return os.environ.get("GLM_API_KEY", "")
@@ -502,7 +503,7 @@ class DeepSeekLLM:
                 retries=self.retries,
                 transport=self.transport,
             )
-        except Exception as exc:  # noqa: BLE001 —— 任何构造失败都必须显式抛错
+        except Exception as exc:  # noqa: BLE001
             raise LLMError("deepseek 客户端不可用：%s——云端席位不静默降档" % exc)
         return self._client
 
@@ -522,7 +523,7 @@ class DeepSeekLLM:
             full = client.chat_full(messages, model=model, **opts)
         except mod.DeepSeekError as exc:
             raise LLMError("deepseek 通道调用失败：%s——云端席位不静默降档" % exc)
-        except Exception as exc:  # noqa: BLE001 —— transport 异常也要归一
+        except Exception as exc:  # noqa: BLE001
             raise LLMError(
                 "deepseek 通道调用失败：%s: %s——云端席位不静默降档"
                 % (type(exc).__name__, exc)
@@ -595,7 +596,7 @@ class OpenClawLLM:
         prompt = self.compose_prompt(system, user)
         try:
             oc = _openclaw_module()
-        except Exception as exc:  # noqa: BLE001 —— 载体桥缺失也必须抛 LLMError
+        except Exception as exc:  # noqa: BLE001
             raise LLMError("openclaw_cli 不可用：%s——异族席位不静默降档" % exc)
         carrier = oc.agent_primary_model(self.agent)
         self.last_meta = {

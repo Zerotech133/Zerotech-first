@@ -22,7 +22,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
 
-import hmm_gate_research as hgr  # noqa: E402  纯 numpy，无新增依赖
+import hmm_gate_research as hgr  # noqa: E402
 
 SERIES_FP = hgr.BREADTH_JSON
 WINDOW = 504  # 滚动两年（W8 口径"滚动拟合攒影子"）

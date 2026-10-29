@@ -14,6 +14,7 @@ GLM_API_KEY 环境变量；探针实测 glm-5.3/5.3-flash/4-flash 全通，标�
 import json
 import os
 import urllib.request
+import logging
 
 # S2 乙方案路由默认值（环境变量可覆盖；标准端点对 5.3 系 429，故默认 coding 端点）
 GLM_OFFICIAL_BASE = os.environ.get(
@@ -110,8 +111,8 @@ class LLMClient:
             except ImportError:
                 import llm_cost
             llm_cost.record_cost(self.account, binding, int(pt), int(ct))
-        except Exception:
-            pass
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/kstock/llm.py", exc)
 
     @staticmethod
     def _mock(messages):

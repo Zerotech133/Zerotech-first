@@ -7,6 +7,7 @@ import os
 import random
 import sys
 from collections import Counter
+import logging
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 SHADOW = os.path.join(BASE, "data", "k266_docs", "structure_shadow.jsonl")
@@ -16,8 +17,8 @@ with open(SHADOW, encoding="utf-8") as f:
     for line in f:
         try:
             rows.append(json.loads(line))
-        except ValueError:
-            pass
+        except ValueError as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/k266_m3_report.py", exc)
 
 ok = [r for r in rows if r.get("raw_ok")]
 err = [r for r in rows if not r.get("raw_ok")]
