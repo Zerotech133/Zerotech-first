@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 00:48",
+ "generated": "2026-10-30 00:50",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 26,
+  "workorders_doing": 25,
   "workorders_review": 4
  },
  "workorders": [
@@ -273,15 +273,6 @@
    "branch": "task/WO-GUANYU-P43-20261030",
    "created": "2026-10-30 00:42:37",
    "project": "general"
-  },
-  {
-   "id": "K-QUANT-20261030-IDEPREVIEW",
-   "desc": "军团IDE写文件两阶段：preview diff→confirm；stale检测；exec success=exit0；前端确认UI+红绿",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-QUANT-20261030-IDEPREVIEW",
-   "created": "2026-10-30 00:43:37",
-   "project": "quant"
   }
  ],
  "coder_traces": [
