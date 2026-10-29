@@ -1019,7 +1019,8 @@ function dbgSelect(id){
   wsSetJSON("ide-dbg", id);
   const bind = agentBindAlias(id);
   const saved = localStorage.getItem(agentModelKey(id));
-  const want = (saved && MODEL_OPTS.some(o=>o.v===saved)) ? saved : bind;
+  // 有绑定则强制优先绑定；无绑定才沿用该 Agent 的手动记忆
+  const want = bind || ((saved && MODEL_OPTS.some(o=>o.v===saved)) ? saved : "");
   if(want && model()!==want){
     AGENT_BINDING_APPLY = true;
     try{ setModel(want); }finally{ AGENT_BINDING_APPLY = false; }
@@ -1368,9 +1369,9 @@ const IDE_TOOL_RULES = [
   "[IDE 只读文件工具]",
   "你可以使用三个只读工具（由 IDE 后端执行，限制在项目根目录）：",
   'list_dir({"path":"."})、read_file({"path":"..."})、search({"query":"...","glob":"*.py"})。',
-  '需要读取项目文件时，只输出一个 JSON 代码块：{"tool":"read_file","args":{"path":"..."}}。',
-  "IDE 会返回工具结果，然后你继续回答；不要声称无法访问项目文件夹。",
-  "工具拒绝时说明路径超出只读范围。最终回答必须是自然语言。"
+  '需要读取项目文件时，输出 JSON 代码块：{"tool":"read_file","args":{"path":"..."}}；一次可以输出多个工具调用。',
+  "IDE 会执行全部工具并返回结果；收到结果后必须给最终自然语言答复，不要重复输出工具 JSON。",
+  "不要声称无法访问项目文件夹；工具拒绝时说明路径超出只读范围。"
 ].join("\n");
 
 async function fsTool(tool, args){
@@ -1384,21 +1385,45 @@ async function fsTool(tool, args){
   return await r.json();
 }
 
-function parseToolCall(text){
+function parseToolCalls(text){
   const src = String(text||"");
-  let raw = "";
-  const fenced = src.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/i);
-  if(fenced) raw = fenced[1];
-  else {
-    const a = src.indexOf("{"), b = src.lastIndexOf("}");
-    if(a >= 0 && b > a) raw = src.slice(a, b+1);
+  const raws = [];
+  const fenceRe = /```(?:json)?\s*([\s\S]*?)```/gi;
+  let fm;
+  while((fm = fenceRe.exec(src))){
+    raws.push(fm[1]);
   }
-  if(!raw || raw.length > 2000) return null;
-  try{
-    const d = JSON.parse(raw);
-    if(d && ["list_dir","read_file","search"].includes(d.tool) && d.args && typeof d.args === "object") return d;
-  }catch(e){}
-  return null;
+  // 无代码块时扫描每个平衡 JSON 对象，支持一次多个工具调用
+  for(let i=0; i<src.length; i++){
+    if(src[i] !== "{") continue;
+    let depth = 0, inStr = false, esc = false, end = -1;
+    for(let j=i; j<src.length; j++){
+      const ch = src[j];
+      if(inStr){
+        if(esc){ esc=false; }
+        else if(ch === "\\"){ esc=true; }
+        else if(ch === '"'){ inStr=false; }
+      } else if(ch === '"'){ inStr=true; }
+      else if(ch === "{"){ depth++; }
+      else if(ch === "}"){
+        depth--;
+        if(depth === 0){ end=j; break; }
+      }
+    }
+    if(end > i){ raws.push(src.slice(i, end+1)); i = end; }
+  }
+  const out = [], seen = new Set();
+  for(const raw of raws){
+    if(!raw || raw.length > 3000) continue;
+    try{
+      const d = JSON.parse(raw);
+      if(d && ["list_dir","read_file","search"].includes(d.tool) && d.args && typeof d.args === "object"){
+        const key = JSON.stringify(d);
+        if(!seen.has(key)){ seen.add(key); out.push(d); }
+      }
+    }catch(e){}
+  }
+  return out;
 }
 
 async function autoProjectContext(raw){
@@ -1435,7 +1460,8 @@ async function send(){
     ];
     let txt = "";
     let channel = "gateway";
-    for(let round=0; round<3; round++){
+    let finalText = "";
+    for(let round=0; round<4; round++){
       const r = await fetch("http://127.0.0.1:8796/v1/chat/completions", {
         method:"POST",
         headers:{"Content-Type":"application/json", "X-DSH-Agent":aid},
@@ -1445,14 +1471,23 @@ async function send(){
       if(!r.ok) throw new Error((d.error&&d.error.message)||("HTTP "+r.status));
       channel = d.x_channel || channel;
       txt = (d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content)||"";
-      const call = parseToolCall(txt);
-      if(!call) break;
-      addLog("fs tool → "+call.tool+" "+JSON.stringify(call.args||{}).slice(0,180), "lg-b");
-      const obs = await fsTool(call.tool, call.args);
+      const calls = parseToolCalls(txt);
+      if(!calls.length){ finalText = txt; break; }
+      addLog("fs tools → "+calls.length+" 个 · "+calls.map(c=>c.tool).join(","), "lg-b");
+      const obsParts = [];
+      for(const call of calls.slice(0, 6)){
+        const obs = await fsTool(call.tool, call.args);
+        addLog("fs tool → "+call.tool+" "+JSON.stringify(call.args||{}).slice(0,160), "lg-b");
+        obsParts.push("[工具结果 "+call.tool+" "+JSON.stringify(call.args||{})+"]\n" + JSON.stringify(obs).slice(0, 12000));
+      }
       messages.push({role:"assistant",content:txt});
-      messages.push({role:"user",content:"[只读工具结果 "+call.tool+"]\n"+JSON.stringify(obs).slice(0,12000)+"\n请基于结果继续回答。"});
-      if(round === 2) txt = "(工具已执行，模型未给出最终答复)";
+      messages.push({role:"user",content:obsParts.join("\n---\n") + "\n\n以上工具已执行。现在只输出最终自然语言答复，禁止再输出工具 JSON 或代码块。"});
+      if(round === 3) finalText = "";
     }
+    if(!finalText || parseToolCalls(finalText).length){
+      finalText = "(工具已执行，模型未给出最终答复)";
+    }
+    txt = finalText;
     const sec = ((Date.now()-t0)/1000).toFixed(1);
     const html = evTable(txt || "(空响应)") + '<span style="color:var(--dim2);font-size:10.5px">── '+sec+'s · '+esc(m)+' · '+esc(channel)+' ──</span>';
     r1.el.innerHTML = html;
