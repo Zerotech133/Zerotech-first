@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 01:42",
+ "generated": "2026-10-30 01:49",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 24,
+  "workorders_doing": 25,
   "workorders_review": 5
  },
  "workorders": [
@@ -272,6 +272,15 @@
    "owner": "DSH·lead",
    "branch": "task/K-ORG-20261030-OFFSITECATCHUP",
    "created": "2026-10-30 01:40:43",
+   "project": "portal"
+  },
+  {
+   "id": "WO-INV-POOL-META-20261030",
+   "desc": "股票池元数据补齐：xunyou/manual 代码按 todays_picks 回填 name/industry，组合计划显示行业+行业上限生效",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-INV-POOL-META-20261030",
+   "created": "2026-10-30 01:46:57",
    "project": "portal"
   }
  ],
@@ -3777,7 +3786,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 71,
+     "count": 74,
      "recent": [
       {
        "ts": "",
@@ -3922,7 +3931,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 71,
+     "count": 74,
      "recent": [
       {
        "ts": "",
@@ -4072,7 +4081,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 72,
+     "count": 75,
      "recent": [
       {
        "ts": "",
@@ -4223,7 +4232,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 72,
+     "count": 75,
      "recent": [
       {
        "ts": "",
@@ -4375,7 +4384,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 71,
+     "count": 74,
      "recent": [
       {
        "ts": "",
