@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-29 23:43",
+ "generated": "2026-10-29 23:50",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 24,
+  "workorders_doing": 23,
   "workorders_review": 4
  },
  "workorders": [
@@ -246,15 +246,6 @@
    "branch": "task/WO-GUANYU-P40-20261029",
    "created": "2026-10-29 23:23:53",
    "project": "general"
-  },
-  {
-   "id": "WO-ACAD-STRATEGY-TAKEOVER-20261029",
-   "desc": "策略接管：13 条策阅资产纳入 ACAD1 治理；先修 StrongEod rc=3、cross 任务缺失、qpzm 日批未确认；建组合台账+RACI+月度评审；不改策略逻辑、不擅自停/启任务。deadline 2026-11-05。",
-   "status": "doing",
-   "owner": "ACAD1",
-   "branch": "task/WO-ACAD-STRATEGY-TAKEOVER-20261029",
-   "created": "2026-10-29 23:31:16",
-   "project": "quant"
   },
   {
    "id": "K-QUANT-20261029-IDESTANDALONE",
@@ -1472,14 +1463,7 @@
    ],
    "experience": "30 年从业经验（研究院院长：审题立项与评审统筹）",
    "dept_name": "研究院",
-   "dept_cn_title": "太学",
-   "tasks": [
-    {
-     "id": "WO-ACAD-STRATEGY-TAKEOVER-20261029",
-     "desc": "策略接管：13 条策阅资产纳入 ACAD1 治理；先修 StrongEod rc=3、cross 任务缺失、qpzm 日批未确认；建组合台账+RACI+月度评审；不改策略逻辑、不擅自停/启任务。deadline 2026-11-05。",
-     "status": "doing"
-    }
-   ]
+   "dept_cn_title": "太学"
   },
   "STRAT1": {
    "id": "STRAT1",
