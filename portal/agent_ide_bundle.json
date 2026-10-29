@@ -10,7 +10,7 @@
   "prompt_miss": [],
   "name_collisions": {},
   "workorders_doing": 50,
-  "workorders_review": 7
+  "workorders_review": 6
  },
  "workorders": [
   {
@@ -426,15 +426,6 @@
    "branch": "task/K-QUANT-20261029-IDELOOP2",
    "created": "2026-10-29 09:23:44",
    "project": "quant"
-  },
-  {
-   "id": "WO-GUANYU-P26-20261029",
-   "desc": "B1登记更新 [UNOWNED]",
-   "status": "review",
-   "owner": "unknown-agent",
-   "branch": "task/WO-GUANYU-P26-20261029",
-   "created": "2026-10-29 09:26:24",
-   "project": "general"
   },
   {
    "id": "legion-1029093009",
