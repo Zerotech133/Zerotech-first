@@ -171,3 +171,22 @@ def test_missing_registry_exit_2(tmp_path):
     proc = _run(tmp_path, "intake")
     assert proc.returncode == 2
     assert "research_topics.json missing" in proc.stdout
+
+
+def test_review_includes_strategy_portfolio(tmp_path):
+    root = _mkroot(tmp_path)
+    academy = root / "agent_platform" / "data" / "academy"
+    (academy / "strategy_portfolio.json").write_text(json.dumps({
+        "schema": "academy_strategy_portfolio/v1",
+        "strategies": [
+            {"id": "qpzm", "name": "青萍之末", "health": "green", "health_evidence": "RpsDaily rc=0"},
+            {"id": "strong", "name": "板块强弱", "health": "red", "health_evidence": "rc=3"},
+        ],
+    }, ensure_ascii=False), encoding="utf-8")
+    proc = _run(root, "review")
+    assert proc.returncode == 0, proc.stderr
+    files = list((academy / "reviews").glob("*_review.md"))
+    text = files[0].read_text(encoding="utf-8")
+    assert "策略组合" in text
+    assert "strong" in text
+    assert "待处理" in text and "rc=3" in text

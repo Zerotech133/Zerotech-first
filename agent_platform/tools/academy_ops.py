@@ -36,6 +36,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve()
 ROOT_DEFAULT = HERE.parents[2]  # agent_platform/tools/academy_ops.py -> repo root
 ACADEMY_REL = Path("agent_platform") / "data" / "academy"
+STRATEGY_PORTFOLIO_REL = ACADEMY_REL / "strategy_portfolio.json"
 EVENTS_REL = Path("portal") / "data" / "dev_events.jsonl"
 NEW_KINDS = ("research_intake", "research_review", "research_report")
 STAGES = (
@@ -226,6 +227,39 @@ def build_intake(root: Path) -> tuple[str, dict]:
     return "\n".join(lines) + "\n", summary
 
 
+def _strategy_portfolio(root: Path) -> dict:
+    """ACAD1 策略组合台账（运行时数据；缺失时返回空，不阻塞评审）。"""
+    try:
+        return json.loads((root / STRATEGY_PORTFOLIO_REL).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def _strategy_portfolio_section(root: Path) -> list[str]:
+    data = _strategy_portfolio(root)
+    items = data.get("strategies") or []
+    lines = ["", "## 三、策略组合（ACAD1 接管台账）"]
+    if not items:
+        lines.append("- 台账缺失：`agent_platform/data/academy/strategy_portfolio.json`（先建台账再评审）")
+        return lines
+    counts = {}
+    for it in items:
+        counts[str(it.get("health") or "unknown")] = counts.get(str(it.get("health") or "unknown"), 0) + 1
+    lines.append("- 在册：**%d** 条 ｜ 健康分布：%s" % (
+        len(items), "、".join("%s=%d" % (k, v) for k, v in sorted(counts.items()))))
+    bad = [it for it in items if str(it.get("health")) in ("yellow", "red")]
+    if bad:
+        lines.append("- 待处理：")
+        for it in bad:
+            lines.append("  - **%s %s**（%s）：%s" % (
+                it.get("id"), it.get("name"), it.get("health"),
+                it.get("health_evidence") or "无证据"))
+    else:
+        lines.append("- 无 yellow/red 项（仍需逐条核对运行证据）")
+    lines.append("- 纪律：shadow→live 需 60 交易日 + ACAD1 评审 + 老田签；live 暂停由 ACAD1 提议。")
+    return lines
+
+
 def build_review(root: Path) -> tuple[str, dict]:
     topics = _topics(root)
     counts = _topic_counts(topics)
@@ -285,9 +319,10 @@ def build_review(root: Path) -> tuple[str, dict]:
             "- 关闭判据：`data_version`/`sample_in`/`sample_out`/`cost_model` 四字段全部登记且可追溯，"
             "DATA1 出冻结回执后，BACK1 才能执行回测并登记 `status`/`go_no_go`。"
         )
+    lines += _strategy_portfolio_section(root)
     lines += [
         "",
-        "## 三、评审检查表（逐项必须给证据）",
+        "## 四、评审检查表（逐项必须给证据）",
         "- [ ] 数据冻结：data_version / sample_in / sample_out 已登记且可追溯；",
         "- [ ] 可复现：同一输入重跑结果一致（附命令/产物）；",
         "- [ ] 可证伪：假设与否定条件写明，证据分级（事实/佐证/证伪/存疑/未知）；",
@@ -306,6 +341,9 @@ def build_review(root: Path) -> tuple[str, dict]:
             "total": len(bts),
             "frozen": len([b for b in bts if not _freeze_missing(b)]),
             "unfrozen": [b.get("topic_id") for b in bts if _freeze_missing(b)],
+        },
+        "strategy_portfolio": {
+            "total": len(_strategy_portfolio(root).get("strategies") or []),
         },
     }
     return "\n".join(lines) + "\n", summary
