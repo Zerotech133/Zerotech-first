@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 00:16",
+ "generated": "2026-10-30 00:19",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 25,
+  "workorders_doing": 26,
   "workorders_review": 3
  },
  "workorders": [
@@ -248,15 +248,6 @@
    "project": "quant"
   },
   {
-   "id": "WO-LEGION-A3ALERT-20261030",
-   "desc": "task_exit_audit：A3RotationCanary rc=1 登记 alert_found（旧凭据指纹告警，非任务失败）",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-A3ALERT-20261030",
-   "created": "2026-10-30 00:14:10",
-   "project": "general"
-  },
-  {
    "id": "WO-GUANYU-P42-20261030",
    "desc": "merge分段计时",
    "status": "doing",
@@ -264,6 +255,24 @@
    "branch": "task/WO-GUANYU-P42-20261030",
    "created": "2026-10-30 00:15:08",
    "project": "general"
+  },
+  {
+   "id": "WO-BOARD-AUDIT2-20261030",
+   "desc": "任务板对账只读工具：已合并未关单/无分支/未合并/无worktree 分类（每日09:30用）",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-BOARD-AUDIT2-20261030",
+   "created": "2026-10-30 00:16:45",
+   "project": "general"
+  },
+  {
+   "id": "WO-INV-CHAIN-20261030",
+   "desc": "量化交易部联调：ST1 策略旁路接入 alpha(D1 context)+WA1→QS1 上报/ACK 链工具+QS1 探针识别 ACK+测试",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-INV-CHAIN-20261030",
+   "created": "2026-10-30 00:18:31",
+   "project": "portal"
   }
  ],
  "coder_traces": [
@@ -6908,8 +6917,8 @@
      "status": "doing"
     },
     {
-     "id": "WO-LEGION-A3ALERT-20261030",
-     "desc": "task_exit_audit：A3RotationCanary rc=1 登记 alert_found（旧凭据指纹告警，非任务失败）",
+     "id": "WO-BOARD-AUDIT2-20261030",
+     "desc": "任务板对账只读工具：已合并未关单/无分支/未合并/无worktree 分类（每日09:30用）",
      "status": "doing"
     }
    ]
