@@ -264,7 +264,17 @@
     .main{grid-template-columns:44px 180px 6px 1fr 0 0}
     .dbg{display:none}
   }
+  /* standalone：独立窗口模式，隐藏门户导航 */
+  html[data-ide-standalone] .wb-nav{display:none!important}
+  html[data-ide-standalone] body{padding-top:0!important}
 </style>
+<script>
+try{
+  if(new URLSearchParams(location.search).get("standalone") === "1"){
+    document.documentElement.setAttribute("data-ide-standalone", "1");
+  }
+}catch(e){}
+</script>
 <script src="/static/nav.js" defer></script></head>
 <body>
 <header>
@@ -276,6 +286,7 @@
   <div class="hd-right">
     <span style="font-size:11px;color:var(--dim2);align-self:center;cursor:pointer" onclick="palOpen()" title="快捷键 Ctrl+P">⌕ Ctrl+P 搜索</span>
     <span style="font-size:11px;color:var(--dim2);align-self:center" id="gen">bundle 生成于 —</span>
+    <button onclick="openStandalone()" style="background:#13233a;border:1px solid #2b4b70;color:#cfe3ff;border-radius:6px;padding:4px 9px;font-size:11px;cursor:pointer" title="在独立无浏览器导航的窗口中打开">⧉ 独立窗口</button>
     <a href="/sandbox">研发沙盘</a>
     <a href="/index.html">← 门户</a>
   </div>
@@ -1827,6 +1838,11 @@ document.addEventListener("keydown", e=>{
 loadTabs();
 VIEW = wsGet("ide-view") || "org";
 splitRestore();   // 348：分屏状态恢复（渲染在 bundle 加载后补内容）
+
+function openStandalone(){
+  const w = window.open("/ide?standalone=1", "legion-ide-window", "popup=yes,width=1600,height=1000");
+  if(w) w.focus();
+}
 
 fetch("/agent_ide_bundle.json", {cache:"no-store"}).then(r=>r.json()).then(d=>{
   B = d;
