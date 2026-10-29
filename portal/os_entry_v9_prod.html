@@ -352,9 +352,7 @@ async function refresh(){const run=++sequence,keys=Object.keys(endpoints);$('#fr
     try {
       var box = document.getElementById('suggestions');
       if (!box) return;
-      var rows = Array.prototype.slice.call(box.children).filter(function (n) {
-        return n.classList && n.classList.contains('row');
-      });
+      var rows = Array.prototype.slice.call(box.querySelectorAll('.row'));
       var groups = {3: [], 4: []};
       rows.forEach(function (row) {
         var t = (row.querySelector('strong') || {}).textContent || '';
@@ -364,7 +362,7 @@ async function refresh(){const run=++sequence,keys=Object.keys(endpoints);$('#fr
       Object.keys(groups).forEach(function (k) {
         var list = groups[k];
         var d = box.querySelector('details[data-os-fold="' + k + '"]');
-        if (!list.length) { if (d) d.remove(); return; }
+        if (!list.length) { if (d && !d.querySelector('.row')) d.remove(); return; }
         if (!d) {
           d = document.createElement('details');
           d.className = 'os-fold';
@@ -378,7 +376,7 @@ async function refresh(){const run=++sequence,keys=Object.keys(endpoints);$('#fr
         var label = k === '3' ? '待你确认' : '研发在制';
         d.querySelector('summary').textContent = label + ' ' + list.length + ' 项（点击展开）';
         var target = d.querySelector('.os-fold-body');
-        list.forEach(function (row) { target.appendChild(row); });
+        list.forEach(function (row) { if (row.parentNode !== target) target.appendChild(row); });
       });
     } finally {
       folding = false;
