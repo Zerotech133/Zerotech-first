@@ -48,13 +48,15 @@
     <div class="row">
       <button id="btnScope">刷新范围</button>
       <button id="btnRead">读取</button>
-      <button class="primary" id="btnWrite">保存（需锁）</button>
+      <button class="primary" id="btnWrite">预览变更（需锁）</button>
+      <button class="primary" id="btnConfirm" style="display:none">确认写入</button>
+      <button id="btnCancelPreview" style="display:none">取消预览</button>
       <button id="btnLock">获取锁</button>
       <button class="danger" id="btnUnlock">释放锁</button>
     </div>
     <div class="status" id="writeStatus"></div>
     <textarea id="content" placeholder="文件内容（UTF-8，≤1MB）"></textarea>
-    <label>diff（保存后显示）</label>
+    <label>diff（预览/确认后显示）</label>
     <pre id="diff">—</pre>
   </section>
   <section>
@@ -103,17 +105,36 @@ async function refreshScope() {
   if (!d.items.length) { const o = document.createElement('option'); o.value = ''; o.textContent = '（无可写 worktree）'; sel.appendChild(o); }
   status($('writeStatus'), '可写工单：' + d.items.length, 'ok');
 }
+let PREVIEW = null;
+function clearPreview() {
+  PREVIEW = null;
+  $('btnConfirm').style.display = 'none';
+  $('btnCancelPreview').style.display = 'none';
+  $('btnWrite').style.display = '';
+}
 async function readFile() {
   const d = await api('POST', '/api/ide/read', body({ path: $('path').value.trim() }));
   if (!d.ok) { status($('writeStatus'), '读取失败：' + (d.message || d.error), 'bad'); return; }
   $('content').value = d.content;
+  clearPreview();
   status($('writeStatus'), '已读取 ' + d.path + '（' + d.bytes + 'B）', 'ok');
 }
-async function writeFile() {
-  const d = await api('POST', '/api/ide/write', body({ path: $('path').value.trim(), content: $('content').value }));
-  if (!d.ok) { status($('writeStatus'), '保存失败：' + (d.message || d.error), 'bad'); return; }
-  status($('writeStatus'), '已保存 ' + d.path + '（' + d.bytes + 'B' + (d.created ? '，新建' : '') + '）', 'ok');
-  $('diff').textContent = (d.diff && d.diff.stat) ? d.diff.stat : '（无 diff；未跟踪文件用 git status 看）';
+async function previewFile() {
+  const d = await api('POST', '/api/ide/write/preview', body({ path: $('path').value.trim(), content: $('content').value }));
+  if (!d.ok) { status($('writeStatus'), '预览失败：' + (d.message || d.error), 'bad'); return; }
+  PREVIEW = d;
+  $('diff').textContent = d.diff || '（无差异）';
+  $('btnWrite').style.display = 'none';
+  $('btnConfirm').style.display = '';
+  $('btnCancelPreview').style.display = '';
+  status($('writeStatus'), '预览就绪：' + d.path + ' · ' + (d.diff_truncated ? 'diff 已截断' : '请确认写入'), 'warn');
+}
+async function confirmFile() {
+  if (!PREVIEW) { status($('writeStatus'), '没有待确认的预览', 'warn'); return; }
+  const d = await api('POST', '/api/ide/write/confirm', body({ preview_id: PREVIEW.preview_id }));
+  if (!d.ok) { status($('writeStatus'), '确认失败：' + (d.message || d.error), 'bad'); return; }
+  status($('writeStatus'), '已写入 ' + d.path + '（' + d.bytes + 'B' + (d.created ? '，新建' : '') + '）', 'ok');
+  clearPreview();
 }
 async function lock() {
   const d = await api('POST', '/api/ide/lock', body());
@@ -130,7 +151,8 @@ async function unlock() {
 async function runCmd() {
   const d = await api('POST', '/api/ide/exec', body({ command: $('cmd').value.trim() }));
   if (!d.ok) { status($('execStatus'), '执行被拒：' + (d.message || d.error), 'bad'); $('output').textContent = d.detail ? JSON.stringify(d.detail, null, 1) : '—'; return; }
-  status($('execStatus'), 'exit=' + d.exit_code + ' · ' + d.duration_ms + 'ms · run=' + d.run_id, d.exit_code === 0 ? 'ok' : 'warn');
+  const success = (typeof d.success === 'boolean') ? d.success : (d.exit_code === 0);
+  status($('execStatus'), (success ? '✅ success' : '❌ failed') + ' · exit=' + d.exit_code + ' · ' + d.duration_ms + 'ms · run=' + d.run_id, success ? 'ok' : 'bad');
   $('output').textContent = (d.output || '（无输出）') + (d.truncated ? '\n[输出已截断]' : '');
 }
 async function showAudit() {
@@ -142,12 +164,14 @@ async function showAudit() {
 }
 $('btnScope').onclick = refreshScope;
 $('btnRead').onclick = readFile;
-$('btnWrite').onclick = writeFile;
+$('btnWrite').onclick = previewFile;
+$('btnConfirm').onclick = confirmFile;
+$('btnCancelPreview').onclick = clearPreview;
 $('btnLock').onclick = lock;
 $('btnUnlock').onclick = unlock;
 $('btnExec').onclick = runCmd;
 $('btnAudit').onclick = showAudit;
-$('task').onchange = () => { $('lockchip').innerHTML = '锁 <b>—</b>'; };
+$('task').onchange = () => { $('lockchip').innerHTML = '锁 <b>—</b>'; clearPreview(); };
 (async () => {
   const h = await api('GET', '/api/health');
   $('rwchip').innerHTML = '开关 <b class="' + (h.rw_enabled ? '' : 'warn') + '">' + (h.rw_enabled ? 'ON（可写）' : 'OFF（只读）') + '</b>';

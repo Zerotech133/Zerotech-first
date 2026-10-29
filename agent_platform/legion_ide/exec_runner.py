@@ -183,6 +183,7 @@ def run(worktree: Path, command: str, timeout: int = DEFAULT_TIMEOUT) -> dict:
     truncated = len(out) > MAX_OUTPUT
     return {
         "ok": True,
+        "success": proc.returncode == 0,
         "exit_code": proc.returncode,
         "output": out[:MAX_OUTPUT],
         "truncated": truncated,
