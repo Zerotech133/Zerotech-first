@@ -521,47 +521,89 @@ def _tasks():
     return {}
 
 
+@contextmanager
+def _tasks_file_lock(timeout_s=20.0, stale_s=120.0):
+    """tasks.json 读-改-写互斥（2026-10-30 P45）。
+
+    门禁并行后多会话可同时合并并各自 _save；原实现「读盘→合并→写盘」在
+    并发窗口内仍可能丢字段。用 O_EXCL 锁文件 + pid/stale 回收，拿不到锁
+    抛超时（fail-visible，不静默丢写）。
+    """
+    path = os.path.join(WT_DIR, "tasks.json.lock")
+    deadline = time.time() + timeout_s
+    fd = None
+    while True:
+        try:
+            fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            break
+        except FileExistsError:
+            try:
+                with open(path, encoding="utf-8") as f:
+                    meta = json.load(f)
+            except (OSError, ValueError):
+                meta = {}
+            pid = int(meta.get("pid") or 0)
+            age = time.time() - float(meta.get("ts") or 0)
+            if (pid and not _pid_alive(pid)) or age > stale_s:
+                try:
+                    os.unlink(path)
+                    continue
+                except OSError:
+                    pass
+            if time.time() >= deadline:
+                raise TimeoutError("tasks.json 锁等待超时（%s）" % path)
+            time.sleep(0.05)
+    try:
+        os.write(fd, json.dumps({"pid": os.getpid(), "ts": time.time()}).encode("utf-8"))
+        yield
+    finally:
+        try:
+            os.close(fd)
+        except OSError:
+            pass
+        try:
+            os.unlink(path)
+        except OSError:
+            pass
+
+
 def _save(tasks, *, drop_keys=(), changed=None):
     """原子保存并保留并发进程已登记的工单。
 
-    ``new``/``review``/``merge`` 都是「读→改→写」短命 CLI；若另一进程
-    在本进程读完后先写入新工单，直接覆盖会丢单。保存时把磁盘上较新的
-    键合并回来，显式 drop_keys 才允许删除（原子替换防半文件）。
-
-    ``changed``：本进程实际改动的键集合。只把这些键从 ``tasks`` 写入磁盘，
-    避免整包覆盖把并发进程刚更新的其它工单状态回滚（2026-10-26 并发漂移
-    修复：实证 TFSEAT/OSLEG-CH2/CHDOC 已 merge 但状态被并发写回 doing）。
-    ``changed=None`` 保留旧的整包覆盖语义（兼容内部调用）。
+    ``changed``：本进程实际改动的键集合；只写这些键（见 2026-10-26 并发漂移修复）。
+    ``changed=None`` 保留整包覆盖语义（兼容内部调用）。
+    2026-10-30 P45：读-改-写整段加文件名锁（门禁并行后多会话同时 merge/_save）。
     """
     os.makedirs(WT_DIR, exist_ok=True)
-    current = {}
-    if os.path.exists(TASKS):
+    with _tasks_file_lock():
+        current = {}
+        if os.path.exists(TASKS):
+            try:
+                current = _load_tasks_json()
+            except (OSError, ValueError):
+                current = {}
+        merged = dict(current)
+        if changed is None:
+            merged.update(tasks)
+        else:
+            for key in changed:
+                if key in tasks:
+                    merged[key] = tasks[key]
+                else:
+                    merged.pop(key, None)
+        for key in drop_keys:
+            merged.pop(key, None)
+        fd, tmp = tempfile.mkstemp(prefix="tasks.", suffix=".tmp", dir=WT_DIR)
         try:
-            current = _load_tasks_json()
-        except (OSError, ValueError):
-            current = {}
-    merged = dict(current)
-    if changed is None:
-        merged.update(tasks)
-    else:
-        for key in changed:
-            if key in tasks:
-                merged[key] = tasks[key]
-            else:
-                merged.pop(key, None)
-    for key in drop_keys:
-        merged.pop(key, None)
-    fd, tmp = tempfile.mkstemp(prefix="tasks.", suffix=".tmp", dir=WT_DIR)
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as f:
-            json.dump(merged, f, ensure_ascii=False, indent=1)
-            f.write("\n")
-            f.flush()
-            os.fsync(f.fileno())
-        os.replace(tmp, TASKS)
-    finally:
-        if os.path.exists(tmp):
-            os.unlink(tmp)
+            with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as f:
+                json.dump(merged, f, ensure_ascii=False, indent=1)
+                f.write("\n")
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(tmp, TASKS)
+        finally:
+            if os.path.exists(tmp):
+                os.unlink(tmp)
 
 
 _EV_RE = re.compile(r"#ev:(commit|file|trace):([^\s，。；,;]+)")
@@ -1481,29 +1523,9 @@ def _print_merge_timings(tid):
 
 def cmd_merge(tid, *flags):
     _t_entry = time.perf_counter()
-    _lock_wait = 0.0
-    # 2026-10-29 合并串行锁：直接调用 devtask merge 也串行化（父进程已持锁则复用）
-    if not os.environ.get("AIOS_MERGE_LOCK_TOKEN"):
-        _lw0 = time.perf_counter()
-        try:
-            import sys as _sys
-            _tools = os.path.dirname(os.path.abspath(__file__))
-            if _tools not in _sys.path:
-                _sys.path.insert(0, _tools)
-            from merge_lock import acquire as _ml_acquire, release as _ml_release, ENV_TOKEN as _ML_ENV
-            _tok = _ml_acquire(cmd="devtask merge %s" % tid,
-                               timeout=float(os.environ.get("AIOS_MERGE_LOCK_TIMEOUT", "1800")))
-            if not _tok:
-                print("[merge-lock] 另一合并进行中，拒绝并发合并")
-                raise SystemExit(3)
-            os.environ[_ML_ENV] = _tok
-            _lock_wait = time.perf_counter() - _lw0
-            if _lock_wait >= 1.0:
-                print("[merge-lock] 等待串行锁 %.1fs（其他会话合并排队）" % _lock_wait)
-            import atexit as _atexit
-            _atexit.register(_ml_release, _tok)
-        except ImportError:
-            pass
+    # 2026-10-30 P45：门禁（静态门/质量闸）在 worktree/分支上运行、不写 master，
+    # 不再全程持合并锁 → 多会话门禁可并行；串行锁仅覆盖 git merge 提交临界区
+    # （见 _acquire_merge_lock + _merge_with_retry，防 HEAD/index 竞争）。
     # K-STOCK-416：--l2-ack / --l2-reason 人工豁免通道（五要素审批协议）
     ack = "--l2-ack" in flags
     reason = ""
@@ -1549,8 +1571,7 @@ def cmd_merge(tid, *flags):
               % t["branch"])
         return 1
     _MERGE_TIMINGS.clear()
-    _MERGE_TIMINGS.append(("串行锁等待", _lock_wait))
-    _MERGE_TIMINGS.append(("准备段(其余)", max(0.0, time.perf_counter() - _t_entry - _lock_wait)))
+    _MERGE_TIMINGS.append(("准备段(入口→评审门)", max(0.0, time.perf_counter() - _t_entry)))
     print("== 评审门 ==")
     for name, cmd in GATES:
         _g0 = time.perf_counter()
