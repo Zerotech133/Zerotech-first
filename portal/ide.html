@@ -1017,8 +1017,19 @@ function dbgSelect(id){
   if(!CUR) return;
   DBGCUR = CUR;
   wsSetJSON("ide-dbg", id);
+  const bind = agentBindAlias(id);
+  const saved = localStorage.getItem(agentModelKey(id));
+  const want = (saved && MODEL_OPTS.some(o=>o.v===saved)) ? saved : bind;
+  if(want && model()!==want){
+    AGENT_BINDING_APPLY = true;
+    try{ setModel(want); }finally{ AGENT_BINDING_APPLY = false; }
+  }
+  const cur = model();
+  const deviate = !!(bind && cur !== bind);
   document.getElementById("dbg-target").innerHTML =
-    '调试目标 <b>'+CUR.id+'</b>（'+esc(CUR.role_profile)+'）· 工作区 <b>'+esc(WS==="all"?"全部":WS)+'</b> · 模型 <b>'+esc(model())+'</b>'
+    '调试目标 <b>'+CUR.id+'</b>（'+esc(CUR.role_profile)+'）· 工作区 <b>'+esc(WS==="all"?"全部":WS)+'</b>'
+    + ' · 绑定 <b>'+esc(CUR.llm||"—")+'</b> · 当前 <b>'+esc(cur)+'</b>'
+    + (deviate?' <span class="lg-o">⚠ 当前模型偏离绑定</span>':'')
     + '<div class="sysinfo">system = 人设 prompt 全文（'+CUR.prompt.length+' 字符，已装载）· 会话历史 '+sessLoad(id).length+' 条</div>';
   document.getElementById("send").disabled = false;
   renderChatSession(id);
@@ -1086,8 +1097,10 @@ async function toggleMic(){
 document.getElementById("mic").onclick=toggleMic;
 
 function model(){ const el=document.getElementById("model"); return (el&&el.value)||"local9"; }
+let AGENT_BINDING_APPLY = false;
 document.getElementById("model").addEventListener("change", ()=>{
-  if(DBGCUR) dbgSelect(DBGCUR.id);
+  if(AGENT_BINDING_APPLY) return;
+  if(DBGCUR){ localStorage.setItem(agentModelKey(DBGCUR.id), model()); dbgSelect(DBGCUR.id); }
 });
 
 /* K-QUANT-20261028-IDEMODELS3：全模型选择器（可下滑 + 在线/降级/离线） */
@@ -1111,6 +1124,16 @@ const MODEL_OPTS = [
   {v:"gpt6", label:"中转 GPT-6", group:"中转", sub:"relay 席位 · 统一网关", kind:"relay"},
   {v:"gpt-6-sol", label:"中转 GPT-6 Sol", group:"中转", sub:"具体模型 · relay", kind:"model", model:"gpt-6-sol"},
 ];
+function agentBindAlias(id){
+  const a = B && B.agents && B.agents[id];
+  if(!a || !a.llm) return "";
+  const tail = String(a.llm).split("/").pop().replace(/[（(].*$/, "").trim();
+  const localMap = {"qwen3.5:4b":"local4","qwen3.5:9b":"local9",
+                    "qwen3.6:35b-a3b":"local35"};
+  const v = localMap[tail] || tail;
+  return MODEL_OPTS.some(o=>o.v===v) ? v : "";
+}
+function agentModelKey(id){ return "ide-agent-model@"+WS+"@"+id; }
 let MODEL_STATUS={};
 function modelStatusOf(o){
   const ks=MODEL_STATUS.keys||{}, ms=MODEL_STATUS.models||{};
@@ -1341,6 +1364,56 @@ function atContext(msg){
   return ctx.length ? ctx.join("\n---\n")+"\n\n=== 用户消息 ===\n"+msg : msg;
 }
 
+const IDE_TOOL_RULES = [
+  "[IDE 只读文件工具]",
+  "你可以使用三个只读工具（由 IDE 后端执行，限制在项目根目录）：",
+  'list_dir({"path":"."})、read_file({"path":"..."})、search({"query":"...","glob":"*.py"})。',
+  '需要读取项目文件时，只输出一个 JSON 代码块：{"tool":"read_file","args":{"path":"..."}}。',
+  "IDE 会返回工具结果，然后你继续回答；不要声称无法访问项目文件夹。",
+  "工具拒绝时说明路径超出只读范围。最终回答必须是自然语言。"
+].join("\n");
+
+async function fsTool(tool, args){
+  const p = new URLSearchParams();
+  let url = "/api/ide/fs/";
+  if(tool === "list_dir"){ url += "list"; p.set("path", (args&&args.path)||"."); }
+  else if(tool === "read_file"){ url += "read"; p.set("path", (args&&args.path)||""); }
+  else if(tool === "search"){ url += "search"; p.set("q", (args&&args.query)||""); p.set("glob", (args&&args.glob)||""); }
+  else return {ok:false, error:"unknown_tool"};
+  const r = await fetch(url + "?" + p.toString(), {cache:"no-store"});
+  return await r.json();
+}
+
+function parseToolCall(text){
+  const src = String(text||"");
+  let raw = "";
+  const fenced = src.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/i);
+  if(fenced) raw = fenced[1];
+  else {
+    const a = src.indexOf("{"), b = src.lastIndexOf("}");
+    if(a >= 0 && b > a) raw = src.slice(a, b+1);
+  }
+  if(!raw || raw.length > 2000) return null;
+  try{
+    const d = JSON.parse(raw);
+    if(d && ["list_dir","read_file","search"].includes(d.tool) && d.args && typeof d.args === "object") return d;
+  }catch(e){}
+  return null;
+}
+
+async function autoProjectContext(raw){
+  if(!/项目文件夹|项目目录|目录|文件夹|项目结构|研发计划|读取项目/.test(raw)) return "";
+  try{
+    const j = await fsTool("list_dir", {path:"."});
+    if(!j.ok) return "";
+    const dirs = (j.items||[]).filter(x=>x.type==="dir").map(x=>x.path);
+    const files = (j.items||[]).filter(x=>x.type==="file").map(x=>x.path);
+    return "[IDE 只读项目清单 · 根目录]\n目录: " + dirs.join(", ")
+      + "\n根文件: " + files.join(", ")
+      + "\n如需具体文件，请输出 read_file 工具调用。";
+  }catch(e){ return ""; }
+}
+
 async function send(){
   const raw = qbox.value.trim();
   if(!raw || !DBGCUR) return;
@@ -1353,17 +1426,35 @@ async function send(){
   const t0 = Date.now();
   try{
     const m = model();
-    const r = await fetch("http://127.0.0.1:8796/v1/chat/completions", {
-      method:"POST",
-      headers:{"Content-Type":"application/json", "X-DSH-Agent":aid},
-      body: JSON.stringify({ model: m, stream:false,
-        messages:[{role:"system",content:B.agents[aid].prompt},{role:"user",content:atContext(raw)}] })
-    });
-    const d = await r.json();
-    if(!r.ok) throw new Error((d.error&&d.error.message)||("HTTP "+r.status));
-    const txt = (d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content)||"(空响应)";
+    let userContent = atContext(raw);
+    const autoCtx = await autoProjectContext(raw);
+    if(autoCtx) userContent = autoCtx + "\n\n=== 用户消息 ===\n" + userContent;
+    const messages = [
+      {role:"system",content:B.agents[aid].prompt + "\n\n" + IDE_TOOL_RULES},
+      {role:"user",content:userContent}
+    ];
+    let txt = "";
+    let channel = "gateway";
+    for(let round=0; round<3; round++){
+      const r = await fetch("http://127.0.0.1:8796/v1/chat/completions", {
+        method:"POST",
+        headers:{"Content-Type":"application/json", "X-DSH-Agent":aid},
+        body: JSON.stringify({ model: m, stream:false, messages })
+      });
+      const d = await r.json();
+      if(!r.ok) throw new Error((d.error&&d.error.message)||("HTTP "+r.status));
+      channel = d.x_channel || channel;
+      txt = (d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content)||"";
+      const call = parseToolCall(txt);
+      if(!call) break;
+      addLog("fs tool → "+call.tool+" "+JSON.stringify(call.args||{}).slice(0,180), "lg-b");
+      const obs = await fsTool(call.tool, call.args);
+      messages.push({role:"assistant",content:txt});
+      messages.push({role:"user",content:"[只读工具结果 "+call.tool+"]\n"+JSON.stringify(obs).slice(0,12000)+"\n请基于结果继续回答。"});
+      if(round === 2) txt = "(工具已执行，模型未给出最终答复)";
+    }
     const sec = ((Date.now()-t0)/1000).toFixed(1);
-    const html = evTable(txt) + '<span style="color:var(--dim2);font-size:10.5px">── '+sec+'s · '+esc(m)+' · '+(d.x_channel||"gateway")+' ──</span>';
+    const html = evTable(txt || "(空响应)") + '<span style="color:var(--dim2);font-size:10.5px">── '+sec+'s · '+esc(m)+' · '+esc(channel)+' ──</span>';
     r1.el.innerHTML = html;
     if(r1.rec){ r1.rec.html = html; sessSave(aid); }
     addLog("recv ← "+aid+" · "+sec+"s · "+m, "lg-g");

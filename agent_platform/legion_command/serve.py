@@ -435,6 +435,32 @@ class Handler(BaseHTTPRequestHandler):
         if m and re.fullmatch(r"[a-z_]+", m.group(1).rsplit(".", 1)[0]):
             self._send_file(_STATIC / m.group(1), "text/html; charset=utf-8")
             return
+        if path.startswith("/api/ide/fs/"):
+            # IDE 调试通道只读文件工具；根目录/敏感路径限制在 ide_fs 内。
+            from urllib.parse import parse_qs
+            from legion_command import ide_fs
+
+            action = path.rsplit("/", 1)[-1]
+            qs = parse_qs(urlparse(self.path).query)
+            try:
+                if action == "list":
+                    res = ide_fs.list_dir((qs.get("path") or ["."])[0])
+                elif action == "read":
+                    res = ide_fs.read_file((qs.get("path") or [""])[0])
+                else:
+                    res = ide_fs.dispatch(action, {
+                        "path": (qs.get("path") or ["."])[0],
+                        "query": (qs.get("q") or [""])[0],
+                        "glob": (qs.get("glob") or [""])[0],
+                    })
+                self._send_json(res)
+            except ide_fs.FsError as e:
+                self._send_json({"ok": False, "error": e.code,
+                                 "detail": e.detail}, e.status)
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "ide_fs_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:160])}, 500)
+            return
         if path == "/api/snapshot":
             self._send_json(build_snapshot())
             return
