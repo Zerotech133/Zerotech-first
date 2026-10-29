@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-29 08:41",
+ "generated": "2026-10-29 09:14",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,8 +9,8 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 40,
-  "workorders_review": 7
+  "workorders_doing": 48,
+  "workorders_review": 6
  },
  "workorders": [
   {
@@ -110,15 +110,6 @@
    "owner": "DEV6",
    "branch": "task/WO-P0-DEV6-TRACE-20261027",
    "created": "2026-10-27 16:51:03",
-   "project": "general"
-  },
-  {
-   "id": "WO-P0-DEV7-WIKI-20261027",
-   "desc": "P0 派工周-4（DEV7）：O5 project wiki 生成器——tools/project_wiki.py 用 codebase_intel 生成 docs/project_wiki.md（仓库地图/ADR 索引/约定），--check 校验；验收=生成物存在且 --check rc0",
-   "status": "review",
-   "owner": "DEV7",
-   "branch": "task/WO-P0-DEV7-WIKI-20261027",
-   "created": "2026-10-27 16:51:10",
    "project": "general"
   },
   {
@@ -419,21 +410,93 @@
    "project": "general"
   },
   {
-   "id": "WO-DEVTASK-IDE-RACE-20261029",
-   "desc": "devtask merge 后 IDE bundle 收尾提交改为只提交 bundle 路径（git commit -- portal/agent_ide_bundle.json），避免提交并发会话暂存改动/误删刚合入文件；补路径隔离测试",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-DEVTASK-IDE-RACE-20261029",
-   "created": "2026-10-29 08:39:22",
-   "project": "portal"
-  },
-  {
    "id": "WO-APIKG-SPLIT2-20261029",
    "desc": "api_kg页族第二批：misc页(ask/lexicon/flow/label/card/shadow/map/company/page)迁移",
    "status": "doing",
    "owner": "ZHAOYUN",
    "branch": "task/WO-APIKG-SPLIT2-20261029",
    "created": "2026-10-29 08:40:16",
+   "project": "general"
+  },
+  {
+   "id": "WO-SEAT-INTEL1-FIRST-20261029",
+   "desc": "INTEL1 首单：图形先行策略情报简报 v0.1——≥5来源带时间/URL、竞品/开源/政策、事实/推断/线索/未知分层；交付 deliverables/2026-10-29_INTEL1_图形先行策略情报简报_v0.1.md；不编造情报；ACAD1 评审；截止 10-30。",
+   "status": "doing",
+   "owner": "INTEL1",
+   "branch": "task/WO-SEAT-INTEL1-FIRST-20261029",
+   "created": "2026-10-29 08:43:58",
+   "project": "quant"
+  },
+  {
+   "id": "WO-SEAT-AI1-FIRST-20261029",
+   "desc": "AI1 首单：4 席能力评测 golden 方案 v0.1——每席3条确定性用例+seat_golden schema扩展提案+5/5→6/6接线；交付 deliverables/2026-10-29_AI1_4席能力评测golden方案_v0.1.md；不依赖网络/秘密；ACAD1 评审；截止 10-30。",
+   "status": "doing",
+   "owner": "AI1",
+   "branch": "task/WO-SEAT-AI1-FIRST-20261029",
+   "created": "2026-10-29 08:44:05",
+   "project": "quant"
+  },
+  {
+   "id": "WO-LEGION-READY-20261029",
+   "desc": "曹操军团实战就绪审计（代码审计+修复+角色/能力卡/任务分派机制检查）：新增 tools/legion_readiness.py（角色覆盖/汇报链/能力卡/机制/真席位执行统计，生成 docs/dev/legion_readiness.md）；修复 authority_audit 看板历史缺署名展示、risk_real 日期兜底；测试。",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-LEGION-READY-20261029",
+   "created": "2026-10-29 08:44:09",
+   "project": "general"
+  },
+  {
+   "id": "WO-SEAT-PROD1-FIRST-20261029",
+   "desc": "PROD1 首单：LCS-1 产品化需求与验收标准 v0.1——用户/场景/交付/可测验收/依赖/试点退出/风险；数据未冻结只出条件清单；交付 deliverables/2026-10-29_PROD1_LCS1产品化需求与验收_v0.1.md；ACAD1 评审；截止 10-30。",
+   "status": "doing",
+   "owner": "PROD1",
+   "branch": "task/WO-SEAT-PROD1-FIRST-20261029",
+   "created": "2026-10-29 08:44:12",
+   "project": "quant"
+  },
+  {
+   "id": "WO-GUANYU-P24-20261029",
+   "desc": "L2批准单+数据副本登记 [UNOWNED]",
+   "status": "doing",
+   "owner": "unknown-agent",
+   "branch": "task/WO-GUANYU-P24-20261029",
+   "created": "2026-10-29 08:46:03",
+   "project": "general"
+  },
+  {
+   "id": "WO-GUANYU-P24B-20261029",
+   "desc": "批准单入主线B [UNOWNED]",
+   "status": "doing",
+   "owner": "unknown-agent",
+   "branch": "task/WO-GUANYU-P24B-20261029",
+   "created": "2026-10-29 08:47:01",
+   "project": "general"
+  },
+  {
+   "id": "K-ORG-20261029-JUDGEHUB",
+   "desc": "判定中台 P0 三项契约拍板 + P1 准备：price 降级标记、夜跑按需闸（backlog<500 自动跳过）",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-ORG-20261029-JUDGEHUB",
+   "created": "2026-10-29 08:52:00",
+   "project": "general"
+  },
+  {
+   "id": "K-QUANT-20261029-IDELOOP",
+   "desc": "IDE工具循环修复：A0始终优先绑定模型；支持一次多个工具调用；工具后强制最终答复；不把原始JSON当答复；测试",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-QUANT-20261029-IDELOOP",
+   "created": "2026-10-29 09:08:38",
+   "project": "quant"
+  },
+  {
+   "id": "WO-SEAT-ITER-20261029",
+   "desc": "曹操下属能力迭代体系：每席一条能力迭代（v1 基线→学习→实践→评估→v2），生成 agent_platform/config/seat_iterations/<SEAT>.json（11 席）+ tools/seat_iteration.py（init/status/check/--out）+ docs/dev/capability_iterations.md + 测试。",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-SEAT-ITER-20261029",
+   "created": "2026-10-29 09:10:32",
    "project": "general"
   }
  ],
@@ -1962,7 +2025,14 @@
    ],
    "experience": "20 年从业经验（竞争情报：行业、竞品与外部证据分级）",
    "dept_name": "研究院",
-   "dept_cn_title": "太学"
+   "dept_cn_title": "太学",
+   "tasks": [
+    {
+     "id": "WO-SEAT-INTEL1-FIRST-20261029",
+     "desc": "INTEL1 首单：图形先行策略情报简报 v0.1——≥5来源带时间/URL、竞品/开源/政策、事实/推断/线索/未知分层；交付 deliverables/2026-10-29_INTEL1_图形先行策略情报简报_v0.1.md；不编造情报；ACAD1 评审；截止 10-30。",
+     "status": "doing"
+    }
+   ]
   },
   "AI1": {
    "id": "AI1",
@@ -2041,7 +2111,14 @@
    ],
    "experience": "30 年从业经验（AI 方法论：Agent 能力、评测与知识反哺）",
    "dept_name": "研究院",
-   "dept_cn_title": "太学"
+   "dept_cn_title": "太学",
+   "tasks": [
+    {
+     "id": "WO-SEAT-AI1-FIRST-20261029",
+     "desc": "AI1 首单：4 席能力评测 golden 方案 v0.1——每席3条确定性用例+seat_golden schema扩展提案+5/5→6/6接线；交付 deliverables/2026-10-29_AI1_4席能力评测golden方案_v0.1.md；不依赖网络/秘密；ACAD1 评审；截止 10-30。",
+     "status": "doing"
+    }
+   ]
   },
   "PROD1": {
    "id": "PROD1",
@@ -2120,7 +2197,14 @@
    ],
    "experience": "20 年从业经验（策略产品化：验收、试点与交付）",
    "dept_name": "研究院",
-   "dept_cn_title": "太学"
+   "dept_cn_title": "太学",
+   "tasks": [
+    {
+     "id": "WO-SEAT-PROD1-FIRST-20261029",
+     "desc": "PROD1 首单：LCS-1 产品化需求与验收标准 v0.1——用户/场景/交付/可测验收/依赖/试点退出/风险；数据未冻结只出条件清单；交付 deliverables/2026-10-29_PROD1_LCS1产品化需求与验收_v0.1.md；ACAD1 评审；截止 10-30。",
+     "status": "doing"
+    }
+   ]
   },
   "A0A": {
    "id": "A0A",
@@ -3683,14 +3767,7 @@
    ],
    "experience": "10 年后端标准执行经验：批量修改、格式化重构、依赖升级等标准化工程任务，产出严格走 E2+ 复核闭环。",
    "dept_name": "研发部",
-   "dept_cn_title": "将作监",
-   "tasks": [
-    {
-     "id": "WO-P0-DEV7-WIKI-20261027",
-     "desc": "P0 派工周-4（DEV7）：O5 project wiki 生成器——tools/project_wiki.py 用 codebase_intel 生成 docs/project_wiki.md（仓库地图/ADR 索引/约定），--check 校验；验收=生成物存在且 --check rc0",
-     "status": "review"
-    }
-   ]
+   "dept_cn_title": "将作监"
   },
   "DEV8": {
    "id": "DEV8",
