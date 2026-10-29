@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-29 08:17",
+ "generated": "2026-10-29 08:21",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 34,
+  "workorders_doing": 37,
   "workorders_review": 7
  },
  "workorders": [
@@ -248,15 +248,6 @@
    "project": "quant"
   },
   {
-   "id": "WO-D1JSON-STRICT-20261029",
-   "desc": "D1 决策 strict JSON：解析器字段校验（recommendation 枚举/confidence 0-1/rationale/l1_basis）+ 解析失败脚本内重试一次 + D1 prompt 只输出 JSON + 单测",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-D1JSON-STRICT-20261029",
-   "created": "2026-10-29 07:29:31",
-   "project": "portal"
-  },
-  {
    "id": "WO-H2V2-20261029",
    "desc": "H2 v2(L1)：真实盈余惊喜(forecast type×p_change) PEAD 检验，行业×规模中性+OOS+成本",
    "status": "doing",
@@ -365,15 +356,6 @@
    "project": "general"
   },
   {
-   "id": "K-QUANT-20261029-IDETOOLS",
-   "desc": "IDE产品修复A+B：Agent模型绑定/偏离提示；只读文件工具API list_dir/read_file/search（项目根限制、禁敏感路径）；前端接入；测试",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-QUANT-20261029-IDETOOLS",
-   "created": "2026-10-29 08:10:53",
-   "project": "quant"
-  },
-  {
    "id": "WO-V11-IMPL-20261029",
    "desc": "v1.1 实施（按立项书 M1/M2）：策略运行/影子/回测只读聚合（聚合-only、白名单、k>=5 掩码、不读标的/价格/理由）；API 可选 real 字段（只增不改）；页面展示 as-of/来源；文档+测试。",
    "status": "doing",
@@ -381,6 +363,51 @@
    "branch": "task/WO-V11-IMPL-20261029",
    "created": "2026-10-29 08:16:37",
    "project": "general"
+  },
+  {
+   "id": "WO-GUANYU-P23-20261029",
+   "desc": "portal flaky登记 [UNOWNED]",
+   "status": "doing",
+   "owner": "unknown-agent",
+   "branch": "task/WO-GUANYU-P23-20261029",
+   "created": "2026-10-29 08:18:21",
+   "project": "general"
+  },
+  {
+   "id": "WO-ACAD-ACTIVATE4-20261029",
+   "desc": "B 激活 4 席（COMM1/INTEL1/AI1/PROD1）：能力卡/只读工具/值守输出/SeatsWeekly 共享触发（不新增 L2 计划任务）/prompt 更新/seat_realness 5维；补测试。",
+   "status": "doing",
+   "owner": "ACAD1",
+   "branch": "task/WO-ACAD-ACTIVATE4-20261029",
+   "created": "2026-10-29 08:19:31",
+   "project": "quant"
+  },
+  {
+   "id": "WO-GUANYU-P23B-20261029",
+   "desc": "flaky登记B [UNOWNED]",
+   "status": "doing",
+   "owner": "unknown-agent",
+   "branch": "task/WO-GUANYU-P23B-20261029",
+   "created": "2026-10-29 08:20:01",
+   "project": "general"
+  },
+  {
+   "id": "WO-GUANYU-P21B-20261029",
+   "desc": "lint修复B [UNOWNED]",
+   "status": "doing",
+   "owner": "unknown-agent",
+   "branch": "task/WO-GUANYU-P21B-20261029",
+   "created": "2026-10-29 08:20:06",
+   "project": "general"
+  },
+  {
+   "id": "WO-D1-OUTCOME-20261029",
+   "desc": "D1 outcome 台账：影子账本补 model/fallback 元信息（interpreter/run_shadow）+ 只读 sidecar decision_outcomes.jsonl（ts/model/fallback/next_day_return/hit/run_id）+ 周报段（覆盖率/命中率/Brier/WATCH占比/时延P95）+ 单测",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-D1-OUTCOME-20261029",
+   "created": "2026-10-29 08:20:32",
+   "project": "portal"
   }
  ],
  "coder_traces": [
@@ -1582,7 +1609,14 @@
    ],
    "experience": "30 年从业经验（研究院院长：审题立项与评审统筹）",
    "dept_name": "研究院",
-   "dept_cn_title": "太学"
+   "dept_cn_title": "太学",
+   "tasks": [
+    {
+     "id": "WO-ACAD-ACTIVATE4-20261029",
+     "desc": "B 激活 4 席（COMM1/INTEL1/AI1/PROD1）：能力卡/只读工具/值守输出/SeatsWeekly 共享触发（不新增 L2 计划任务）/prompt 更新/seat_realness 5维；补测试。",
+     "status": "doing"
+    }
+   ]
   },
   "STRAT1": {
    "id": "STRAT1",
