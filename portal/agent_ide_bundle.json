@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 02:14",
+ "generated": "2026-10-30 02:16",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -329,15 +329,6 @@
    "project": "quant"
   },
   {
-   "id": "WO-RESTART-HEALTHFIX-20261030",
-   "desc": "修service_restart假成功：返回时要求当前health ok并复查probe后健康；test_gate注释补tools",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-RESTART-HEALTHFIX-20261030",
-   "created": "2026-10-30 02:11:21",
-   "project": "general"
-  },
-  {
    "id": "WO-ACAD-DEPT-OPS-20261030",
    "desc": "部门AI分工与每日自动化：健康表/选池台账/日报；修 TodaysPicks 产品链；新增计划任务需 A0 L2 批。",
    "status": "doing",
@@ -345,6 +336,15 @@
    "branch": "task/WO-ACAD-DEPT-OPS-20261030",
    "created": "2026-10-30 02:12:54",
    "project": "quant"
+  },
+  {
+   "id": "WO-LEGION-OS-IA2-20261030",
+   "desc": "今日焦点折叠 P3/P4，避免 20 条研发在制刷屏；保留 KPI",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-OS-IA2-20261030",
+   "created": "2026-10-30 02:15:12",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -3878,7 +3878,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 76,
+     "count": 77,
      "recent": [
       {
        "ts": "",
@@ -4023,7 +4023,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 76,
+     "count": 77,
      "recent": [
       {
        "ts": "",
@@ -4173,7 +4173,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 77,
+     "count": 79,
      "recent": [
       {
        "ts": "",
@@ -4324,7 +4324,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 77,
+     "count": 79,
      "recent": [
       {
        "ts": "",
@@ -4476,7 +4476,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 76,
+     "count": 77,
      "recent": [
       {
        "ts": "",
@@ -7063,8 +7063,8 @@
      "status": "doing"
     },
     {
-     "id": "WO-RESTART-HEALTHFIX-20261030",
-     "desc": "修service_restart假成功：返回时要求当前health ok并复查probe后健康；test_gate注释补tools",
+     "id": "WO-LEGION-OS-IA2-20261030",
+     "desc": "今日焦点折叠 P3/P4，避免 20 条研发在制刷屏；保留 KPI",
      "status": "doing"
     }
    ]
