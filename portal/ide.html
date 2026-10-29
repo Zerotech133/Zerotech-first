@@ -1285,6 +1285,25 @@ function addMsg(cls, who, html, raw=""){
 function fmtInline(s){
   return esc(s).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/`([^`]+)`/g, "<code>$1</code>");
 }
+function fmtBlock(line){
+  const s = String(line || "");
+  const h = s.match(/^(#{1,6})\s+(.*)$/);
+  if(h){
+    const size = h[1].length <= 2 ? "15px" : "13px";
+    return '<div style="font-weight:700;font-size:'+size+';margin:8px 0 3px">'+fmtInline(h[2])+'</div>';
+  }
+  const li = s.match(/^\s*[-*]\s+(.*)$/);
+  if(li) return '<div style="margin:2px 0 2px 12px">• '+fmtInline(li[1])+'</div>';
+  return fmtInline(s);
+}
+function looksIncomplete(s){
+  const t = String(s || "").trim();
+  if(!t) return true;
+  if(t.length < 40) return true;
+  if(/(\*\*|##+|`|\|)\s*$/.test(t)) return true;
+  if(/[：:—\-]\s*$/.test(t)) return true;
+  return false;
+}
 function procHtml(steps, status){
   const lis = (steps||[]).map(x => "<li>"+esc(x)+"</li>").join("");
   return '<div style="border:1px solid #1E3A5F;border-radius:7px;padding:6px 8px;margin-bottom:6px;background:#0a1625">'
@@ -1313,7 +1332,7 @@ function evTable(txt){
   for(const line of lines){
     const s = line.trim();
     if(s.startsWith("|") && s.endsWith("|") && s.length>2){ if(!tbl) tbl=[]; tbl.push(s); }
-    else { flush(); out += fmtInline(line)+"\n"; }
+    else { flush(); out += fmtBlock(line)+"\n"; }
   }
   flush();
   return out;
@@ -1587,7 +1606,7 @@ async function send(){
       const {r, d} = await fetchJsonTimeout("http://127.0.0.1:8796/v1/chat/completions", {
         method:"POST",
         headers:{"Content-Type":"application/json", "X-DSH-Agent":aid},
-        body: JSON.stringify({ model: m, stream:false, messages })
+        body: JSON.stringify({ model: m, stream:false, max_tokens: 4000, messages })
       }, 75000, 1, (n, why) => {
         steps.push("模型请求"+why+" · 自动重试 "+n+"/1");
         renderProc("⏳ 请求超时/失败，重试中…");
@@ -1656,7 +1675,7 @@ async function send(){
         const {r: fr, d: fd} = await fetchJsonTimeout("http://127.0.0.1:8796/v1/chat/completions", {
           method:"POST",
           headers:{"Content-Type":"application/json", "X-DSH-Agent":aid},
-          body: JSON.stringify({ model: m, stream:false, messages: finalMessages })
+          body: JSON.stringify({ model: m, stream:false, max_tokens: 4000, messages: finalMessages })
         }, 60000, 1, (n, why) => {
           steps.push("总结请求"+why+" · 自动重试 "+n+"/1");
           renderProc("🧾 总结请求重试中…");
@@ -1666,6 +1685,32 @@ async function send(){
           if(ft && !parseToolCalls(ft).length) finalText = ft;
         }
       }catch(e){ steps.push("总结请求失败："+(e && e.message ? e.message : "unknown")); }
+    }
+    if(useTools && finalText && looksIncomplete(finalText)){
+      partial = true;
+      steps.push("检测到答复截断 · 重试完整输出");
+      renderProc("🔁 答复不完整，正在重试…");
+      try{
+        const retryMsgs = [
+          ...messages,
+          {role:"assistant", content: finalText},
+          {role:"user", content:"上一条答复明显被截断（缺少正文/收尾）。请完整重写最终结论：结论、依据、风险、下一步；不要只给标题，不要输出 JSON。"}
+        ];
+        const {r: rr, d: rd} = await fetchJsonTimeout("http://127.0.0.1:8796/v1/chat/completions", {
+          method:"POST",
+          headers:{"Content-Type":"application/json", "X-DSH-Agent":aid},
+          body: JSON.stringify({ model: m, stream:false, max_tokens: 4000, messages: retryMsgs })
+        }, 60000, 1, (n, why) => { steps.push("截断重试"+why+" · "+n+"/1"); }, CURRENT_ABORT.signal);
+        const ft = rr.ok ? ((rd.choices&&rd.choices[0]&&rd.choices[0].message&&rd.choices[0].message.content)||"") : "";
+        if(ft && !parseToolCalls(ft).length && !looksIncomplete(ft)){
+          finalText = ft;
+          partial = false;
+          steps.push("重试成功 · 已补全答复");
+        } else if(ft && ft.length > finalText.length){
+          finalText = ft;
+        }
+      }catch(e){ steps.push("截断重试失败："+(e && e.message ? e.message : "unknown")); }
+      if(looksIncomplete(finalText)) partial = true;
     }
     if(!finalText || parseToolCalls(finalText).length){
       partial = true;

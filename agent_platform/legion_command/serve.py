@@ -1219,10 +1219,16 @@ class Handler(BaseHTTPRequestHandler):
                         route["seats"] = [owner] + route["seats"]
                 from legion_command import keypool
 
+                try:
+                    _max_tokens = int(req.get("max_tokens") or 4000)
+                except (TypeError, ValueError):
+                    _max_tokens = 4000
+                _max_tokens = max(256, min(_max_tokens, 16000))
                 res = keypool.auto_chat(messages, seats=route.get("seats") or [],
                                         allow_local=bool(route.get("allow_local", True)),
                                         local_model=route.get("local_model") or None,
-                                        model_filter=route.get("model") or None)
+                                        model_filter=route.get("model") or None,
+                                        max_tokens=_max_tokens)
                 if route.get("vk_id"):
                     try:
                         seat_router.record_usage(
