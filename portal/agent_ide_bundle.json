@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-29 13:38",
+ "generated": "2026-10-29 14:22",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 33,
+  "workorders_doing": 34,
   "workorders_review": 6
  },
  "workorders": [
@@ -362,6 +362,15 @@
    "owner": "DSH-Lead",
    "branch": "task/WO-SEAT-METRIC-20261029",
    "created": "2026-10-29 13:13:53",
+   "project": "general"
+  },
+  {
+   "id": "WO-H8PIT-20261029",
+   "desc": "H8 PIT 行业轮动复验(L1)：index_member_all 历史归属 + 周度资金流 z-score + OOS",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-H8PIT-20261029",
+   "created": "2026-10-29 14:16:07",
    "project": "general"
   }
  ],
