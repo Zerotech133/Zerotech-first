@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 04:36",
+ "generated": "2026-10-30 04:37",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -320,12 +320,12 @@
    "project": "quant"
   },
   {
-   "id": "WO-GUANYU-P60-20261030",
-   "desc": "入口归档第一轮",
+   "id": "WO-SEC-AUDIT-FIX-20261030",
+   "desc": "security_audit.ps1 canonical修复：freeze过滤editable + pip-audit阻塞note（与C:\\Temp运行版对齐）",
    "status": "doing",
-   "owner": "GUANYU",
-   "branch": "task/WO-GUANYU-P60-20261030",
-   "created": "2026-10-30 04:21:34",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-SEC-AUDIT-FIX-20261030",
+   "created": "2026-10-30 04:36:44",
    "project": "general"
   }
  ],
@@ -6362,14 +6362,7 @@
    ],
    "experience": "30 年工程治理经验：漏洞分级与补丁流程、失败测试基线修复、编码规范与门禁落地、技术债清欠与重复功能合并；证据驱动、逐项闭环，只出报告与工单不自行合并，开发动作限独立 worktree 提交+跑测试并交 L2 人签。",
    "dept_name": "研究院",
-   "dept_cn_title": "太学",
-   "tasks": [
-    {
-     "id": "WO-GUANYU-P60-20261030",
-     "desc": "入口归档第一轮",
-     "status": "doing"
-    }
-   ]
+   "dept_cn_title": "太学"
   },
   "HUANGZHONG": {
    "id": "HUANGZHONG",
@@ -7047,6 +7040,11 @@
     {
      "id": "WO-AUDIT-FIX-20261029",
      "desc": "审计修复：hq_stats双计数、hk_r1_daily台账表格插入+去重+锁、kg zip strict",
+     "status": "doing"
+    },
+    {
+     "id": "WO-SEC-AUDIT-FIX-20261030",
+     "desc": "security_audit.ps1 canonical修复：freeze过滤editable + pip-audit阻塞note（与C:\\Temp运行版对齐）",
      "status": "doing"
     }
    ]
