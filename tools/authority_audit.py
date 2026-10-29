@@ -99,7 +99,6 @@ def compute(tasks, events, charter, adr_files=(), now=None):
     dev = [r for r in rows if r["dept"] == "dev"]
     dev_done = [r for r in dev if r["status"] == "done" and r["merged"]]
     approved = [r for r in dev_done if r["approver"]]
-    missing = [r for r in dev_done if not r["approver"]]
     self_review = [r for r in dev_done
                    if r["approver"] and r["approver"].upper() == r["owner"].upper()]
 
