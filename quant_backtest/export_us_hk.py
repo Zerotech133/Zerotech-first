@@ -244,5 +244,24 @@ if __name__ == "__main__":
     ap.add_argument("--batch", type=int, default=200)
     ap.add_argument("--force", action="store_true")
     args = ap.parse_args()
-    export_market(args.market, args.batch, args.force)
-    write_active(args.market)
+
+    # 2026-10-29 并发导出治理：同一市场同刻只允许一个导出进程，
+    # 避免 write_active 的 `_active.json.tmp` 原子替换在 WinError 32 下被跳过。
+    tools_dir = str(Path(HERE).parent / "tools")
+    if tools_dir not in sys.path:
+        sys.path.insert(0, tools_dir)
+    import file_lock  # noqa: PLC0415
+
+    out_dir = Path(HERE) / "data" / args.market.lower()
+    lock = out_dir / ".export.lock"
+    timeout = float(os.environ.get("EXPORT_LOCK_TIMEOUT", "600"))
+    tok = file_lock.acquire(lock, "export_us_hk:%s" % args.market, timeout=timeout)
+    if not tok:
+        print("[export-lock] busy: %s（另一导出进程持锁，等待 %.0fs 超时）"
+              % (file_lock.held(lock), timeout))
+        sys.exit(2)
+    try:
+        export_market(args.market, args.batch, args.force)
+        write_active(args.market)
+    finally:
+        file_lock.release(lock, tok)
