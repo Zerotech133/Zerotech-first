@@ -841,6 +841,7 @@ def main():
     push_failed_alert(failed_rows, today, parse_fail_rows)
     open_failed_task(failed_rows, today)
     _paper_auto(today)
+    _pool_review_auto(today)
 
 
 def _paper_auto(today):
@@ -870,6 +871,38 @@ def _paper_auto(today):
                 res.get("reduced"), res.get("nav"), res.get("cash_weight")))
     except Exception as exc:  # noqa: BLE001  paper 失败不阻塞 shadow
         print("[warn] paper auto failed（shadow 不受影响）：%s" % str(exc)[:160])
+
+
+def _pool_review_auto(today):
+    """17:10 shadow 后自动做 ACAD1 推荐池全池复盘（无新增计划任务）。
+
+    - 默认开；POOL_REVIEW_AUTO=0/off/false/no 关闭；
+    - 只做“池构建+已有决策复盘”，不额外跑 LLM；未分析票保持 pending；
+    - rehearsal/隔离跳过；失败不阻塞 shadow。
+    """
+    if os.environ.get("POOL_REVIEW_AUTO", "1").strip().lower() in ("0", "off", "false", "no"):
+        print("[pool] auto skipped: POOL_REVIEW_AUTO=off")
+        return
+    if globals().get("REHEARSAL"):
+        print("[pool] auto skipped: rehearsal")
+        return
+    try:
+        root = str(BASE.parent)
+        if root not in sys.path:
+            sys.path.insert(0, root)
+        from agent_platform import recommendation_pool, analysis_digest
+        from tools.pool_review_daily import review as _review, load_decisions as _load_dec
+        pool = recommendation_pool.build_pool(day=today)
+        codes = [str(x.get("code")) for x in pool.get("items") or []]
+        decisions = _load_dec(today, set(codes))
+        analyses = analysis_digest.latest_analyses(codes)
+        res = _review(today, pool, decisions, analyses)
+        s = res.get("summary") or {}
+        print("[pool] auto %s: total=%s reviewed=%s pending=%s actions=%s" % (
+            today, s.get("pool_total"), s.get("reviewed"), s.get("pending"),
+            s.get("by_action")))
+    except Exception as exc:  # noqa: BLE001 池复盘失败不阻塞 shadow
+        print("[warn] pool review auto failed（shadow 不受影响）：%s" % str(exc)[:160])
 
 
 if __name__ == "__main__":

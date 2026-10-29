@@ -15,8 +15,12 @@ _op = urllib.request.build_opener(urllib.request.ProxyHandler({}))  # 绕系统�
 
 
 def norm_symbol(code):
-    """600519 → sh600519；000001/300750 → sz000001"""
-    code = code.strip().lower().replace("sh", "").replace("sz", "")
+    """600519→sh600519；000001/300750→sz000001；920378/8xxxxx/4xxxxx→bj920378"""
+    code = str(code or "").strip().lower()
+    for p in ("sh", "sz", "bj", "."):
+        code = code.replace(p, "")
+    if code.startswith(("4", "8", "92")):
+        return "bj" + code
     return ("sh" if code[0] == "6" else "sz") + code
 
 
