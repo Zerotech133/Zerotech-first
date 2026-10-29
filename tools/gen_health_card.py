@@ -3333,11 +3333,20 @@ TASK_LAUNCH_RECENT_MINUTES = 30.0  # 判级只看最近这么久（窗口总量�
 TASK_LAUNCH_EXIT_CODE_MAX = 0xFFFF
 # PowerShell 的 `-File` 指向不存在的脚本时返回 -196608（= 0xFFFD0000）。
 TASK_LAUNCH_POWERSHELL_MISSING = {-196608, 4294770688}
+# 0x800710E0 = 任务已在运行/启动请求被拒；schtasks 可能返回有符号负数，
+# 必须按无符号形态归一后再比对（否则同一码被误报为“未知返回码”）。
+TASK_LAUNCH_ALREADY_RUNNING = {2147946720, -2147020576}
+# Windows/Office/OneDrive 等系统任务不属于平台健康面；不得混入未知码统计。
+TASK_LAUNCH_SYSTEM_PREFIXES = (
+    "microsoft\\windows\\", "microsoft\\office\\", "microsoftedge",
+    "onedrive", "microsoft\\",
+)
 # 调度器自身的状态码，不是任务失败。
 TASK_LAUNCH_SCHED_STATES = {
     267009: "任务正在运行",
     267011: "任务尚未运行",
     267014: "任务被强制终止",
+    1073807364: "任务被终止(0x40010004)",
 }
 
 # 2026-10-23：本采集器已改为读 `schtasks` 的 Last Result，
@@ -3417,7 +3426,17 @@ def collect_task_launch_failures() -> dict[str, Any]:
         except ValueError:
             continue
         scanned += 1
+        low_name = name.lower()
+        if any(low_name.startswith(p) for p in TASK_LAUNCH_SYSTEM_PREFIXES):
+            continue
         if code == 0:
+            continue
+        code_u = code & 0xFFFFFFFF if code < 0 else code
+        if code_u in TASK_LAUNCH_ALREADY_RUNNING or code in TASK_LAUNCH_ALREADY_RUNNING:
+            item = {"task": name, "code": code, "status": status,
+                    "last_run": last_run_text, "minutes_ago": None,
+                    "count": 1, "recovered": False, "recent": 0,
+                    "meaning": "任务已在运行/启动请求被拒（非失败）"}
             continue
         minutes_ago = None
         try:
