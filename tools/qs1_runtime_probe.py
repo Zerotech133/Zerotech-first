@@ -29,6 +29,7 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 EVENTS = os.path.join(REPO, "portal", "data", "dev_events.jsonl")
 TASKS = os.path.join(REPO, ".worktrees", "tasks.json")
 ORG = os.path.join(REPO, "agent_platform", "registry", "org.json")
+ACKED = os.path.join(REPO, "agent_platform", "data", "quant_upstream", "acked")
 SEAT = "QS1"
 
 
@@ -55,9 +56,26 @@ def _parse_ts(v):
         return None
 
 
-def probe(events, tasks, now=None, days=7):
+def _recent_acks(acked_dir, start):
+    """只读统计 acked/*.json 中窗口内的受理回执数（无目录=0）。"""
+    if not acked_dir or not os.path.isdir(acked_dir):
+        return 0
+    n = 0
+    for name in os.listdir(acked_dir):
+        if not name.endswith(".json"):
+            continue
+        try:
+            if datetime.fromtimestamp(os.path.getmtime(os.path.join(acked_dir, name))) >= start:
+                n += 1
+        except OSError:
+            continue
+    return n
+
+
+def probe(events, tasks, now=None, days=7, acked_dir=None):
     now = now or datetime.now()
     start = now - timedelta(days=days)
+    acks = _recent_acks(acked_dir, start)
     qs_events = [e for e in events if str(e.get("agent") or "") == SEAT]
     recent = [e for e in qs_events
               if (_parse_ts(e.get("ts")) or datetime.min) >= start]
@@ -67,7 +85,10 @@ def probe(events, tasks, now=None, days=7):
              and v.get("status") == "doing"]
     ok_patrol = [e for e in recent if e.get("kind") == "patrol_verdict"
                  and "ok=True" in str(e.get("detail") or "")]
-    if ok_patrol:
+    if acks:
+        status = "active"
+        reason = "近 %d 天有 %d 份受理 ACK（WA1→QS1 链已跑）" % (days, acks)
+    elif ok_patrol:
         status = "active"
         reason = "近 %d 天有 QS1 patrol_verdict ok=True" % days
     elif recent:
@@ -78,6 +99,7 @@ def probe(events, tasks, now=None, days=7):
         reason = "近 %d 天无 QS1 事件；llm=none 运行席按 standby 管理" % days
     return {"seat": SEAT, "status": status, "reason": reason,
             "last_event": last, "recent_events": len(recent),
+            "recent_acks": acks,
             "doing_tasks": doing, "days": days,
             "mode": "runtime-no-llm", "checked_at": now.strftime("%Y-%m-%d %H:%M:%S")}
 
@@ -107,7 +129,8 @@ def main(argv=None):
     if SEAT not in agents:
         print("[qs1] %s 不在 org 编制" % SEAT, file=sys.stderr)
         return 2
-    result = probe(_load_jsonl(EVENTS), _load_jsonl_tasks(), days=args.days)
+    result = probe(_load_jsonl(EVENTS), _load_jsonl_tasks(), days=args.days,
+                   acked_dir=ACKED)
     if args.emit:
         emit_result(result)
         result["emitted"] = True
