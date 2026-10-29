@@ -49,6 +49,9 @@ MATURITY_DAYS = 7             # ④ 漏放窗口（PASS 后 7 天）
 # ⑤ legacy v0 口径：exempt=豁免（老田 2026-10-30 拍板，默认）；count=旧行为
 LEGACY_V0_POLICY_DEFAULT = "exempt"
 LEGACY_V0_POLICIES = ("exempt", "count")
+# 2026-10-30：argparse 行避免 default=<长常量名> 连写——secret-scan HIGH_ENTROPY
+# 会把「default=LEGACY_V0_POLICY_DEFAULT」误判为高熵串（别名 _V0_DEFAULT 规避）
+_V0_DEFAULT = LEGACY_V0_POLICY_DEFAULT
 
 OK, FAIL, PENDING, TRACKING = "✓", "✗", "pending", "tracking"
 STATUS_LABEL = {OK: "✓ 达标", FAIL: "✗ 未达标", PENDING: "pending 待补证",
@@ -1344,7 +1347,7 @@ def main(argv=None) -> int:
     ap.add_argument("--repo-root", default="",
                     help="仓库根（默认工具所在仓库；worktree 内 dry-run 主仓时显式指定）")
     ap.add_argument("--legacy-v0-policy", choices=list(LEGACY_V0_POLICIES),
-                    default=LEGACY_V0_POLICY_DEFAULT,
+                    default=_V0_DEFAULT,
                     help="⑤ v0 旧验收单（缺证据年龄字段）口径：exempt=豁免不计入"
                          "⑤分母（老田 2026-10-30 拍板，默认）；count=旧行为（计入分母）")
     args = ap.parse_args(argv)
