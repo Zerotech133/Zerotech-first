@@ -1480,8 +1480,11 @@ def _print_merge_timings(tid):
 
 
 def cmd_merge(tid, *flags):
+    _t_entry = time.perf_counter()
+    _lock_wait = 0.0
     # 2026-10-29 合并串行锁：直接调用 devtask merge 也串行化（父进程已持锁则复用）
     if not os.environ.get("AIOS_MERGE_LOCK_TOKEN"):
+        _lw0 = time.perf_counter()
         try:
             import sys as _sys
             _tools = os.path.dirname(os.path.abspath(__file__))
@@ -1494,6 +1497,9 @@ def cmd_merge(tid, *flags):
                 print("[merge-lock] 另一合并进行中，拒绝并发合并")
                 raise SystemExit(3)
             os.environ[_ML_ENV] = _tok
+            _lock_wait = time.perf_counter() - _lw0
+            if _lock_wait >= 1.0:
+                print("[merge-lock] 等待串行锁 %.1fs（其他会话合并排队）" % _lock_wait)
             import atexit as _atexit
             _atexit.register(_ml_release, _tok)
         except ImportError:
@@ -1543,6 +1549,8 @@ def cmd_merge(tid, *flags):
               % t["branch"])
         return 1
     _MERGE_TIMINGS.clear()
+    _MERGE_TIMINGS.append(("串行锁等待", _lock_wait))
+    _MERGE_TIMINGS.append(("准备段(其余)", max(0.0, time.perf_counter() - _t_entry - _lock_wait)))
     print("== 评审门 ==")
     for name, cmd in GATES:
         _g0 = time.perf_counter()
