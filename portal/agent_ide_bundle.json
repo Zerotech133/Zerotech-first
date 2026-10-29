@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-29 12:35",
+ "generated": "2026-10-29 12:38",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 49,
+  "workorders_doing": 43,
   "workorders_review": 6
  },
  "workorders": [
@@ -203,15 +203,6 @@
    "project": "general"
   },
   {
-   "id": "WO-CODEREW2-20261029",
-   "desc": "代码审查补丁2(L1)：earn_direction 补扭亏/首亏（修复 review 测试失败）",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-CODEREW2-20261029",
-   "created": "2026-10-29 05:12:16",
-   "project": "general"
-  },
-  {
    "id": "K-QUANT-20261029-T2MANUAL2",
    "desc": "T2人工规则收紧：.py/.ps1/后端任务强制worker_eligible=false；测试/api/kg T2待人工",
    "status": "doing",
@@ -230,30 +221,12 @@
    "project": "quant"
   },
   {
-   "id": "WO-H2V2-20261029",
-   "desc": "H2 v2(L1)：真实盈余惊喜(forecast type×p_change) PEAD 检验，行业×规模中性+OOS+成本",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-H2V2-20261029",
-   "created": "2026-10-29 07:29:56",
-   "project": "general"
-  },
-  {
    "id": "WO-AUDIT-NEWCOVERAGE-20261029",
    "desc": "审计口径修复：authority_audit 的 merge_approval_coverage 当前把 block 前历史 done 计入分母（53.49% 假红）。按 charter历史已 done 单不追改改为新单口径（2026-10-27 16:00 后创建），历史缺失单独列；补测试。",
    "status": "doing",
    "owner": "DSH-Lead",
    "branch": "task/WO-AUDIT-NEWCOVERAGE-20261029",
    "created": "2026-10-29 07:30:27",
-   "project": "general"
-  },
-  {
-   "id": "WO-H3-20261029",
-   "desc": "H3 龙虎榜机构席位跟单(L1)：3年 top_list/top_inst → 机构净买/净卖未来5/10日中性收益+OOS+成本",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-H3-20261029",
-   "created": "2026-10-29 07:34:03",
    "project": "general"
   },
   {
@@ -311,15 +284,6 @@
    "project": "general"
   },
   {
-   "id": "WO-H7-20261029",
-   "desc": "H7 财务因子分层(L1)：PIT fina_indicator+daily_basic，价值/质量/成长 月度IC+五分位多空，OOS+成本",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-H7-20261029",
-   "created": "2026-10-29 07:44:45",
-   "project": "general"
-  },
-  {
    "id": "WO-LS16-GOVRED-20261029",
    "desc": "作战屏接治理审计红：API 增可选 governance 字段（新单署名覆盖 100%/历史缺署名/approval_ok，口径同 authority_audit T32 修复）；页面增治理红线区；补测试。契约 v1 字段只增不改。",
    "status": "doing",
@@ -363,24 +327,6 @@
    "branch": "task/K-QUANT-20261029-IDETOOLS2",
    "created": "2026-10-29 08:22:17",
    "project": "quant"
-  },
-  {
-   "id": "WO-H7B-20261029",
-   "desc": "H7B 财务因子 5 年复验(L1)：质量因子反向是否稳定",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-H7B-20261029",
-   "created": "2026-10-29 08:23:49",
-   "project": "general"
-  },
-  {
-   "id": "WO-H14-20261029",
-   "desc": "H14 质量反向(L1)：PE 分层内检验高ROE跑输是否稳健（5年/月度/OOS/成本）",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-H14-20261029",
-   "created": "2026-10-29 08:27:56",
-   "project": "general"
   },
   {
    "id": "WO-LEGION-READY-20261029",
