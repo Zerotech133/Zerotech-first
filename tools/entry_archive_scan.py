@@ -36,7 +36,9 @@ SKIP_DIRS = {".git", "__pycache__", ".worktrees", "node_modules", ".venv",
              "backups", ".mypy_cache", ".pytest_cache"}
 SKIP_PREFIX = ("quant_backtest/data", "agent_platform/data",
                "docs/visual_baseline", "outputs/", "work/",
-               "deliverables/", "docs/audit/_archive", "backup/")
+               "deliverables/", "docs/audit/_archive", "backup/",
+               "zerobound-kg", "CowAgent", "bin", "_vault", "video",
+               "installs", "node_modules")
 # 清单/索引类文件：内容含全量路径（会伪造“被引用”），不作为引用源
 INVENTORY_SKIP_NAMES = ("agent_ide_bundle.json", "entrypoints_v1.tsv",
                         "catalog.json", "warehouse_registry.json")
@@ -45,10 +47,10 @@ MAX_FILE = 2 * 1024 * 1024
 
 
 def iter_files(root=REPO):
-    for dirpath, dirnames, filenames in _walk(root):
+    for dirpath, dirnames, filenames in _walk(Path(root)):
         for fn in filenames:
             p = Path(dirpath) / fn
-            rel = p.relative_to(root).as_posix()
+            rel = p.relative_to(REPO).as_posix()
             yield p, rel
 
 
@@ -69,12 +71,21 @@ def _walk(root):
         yield dirpath, dirnames, filenames
 
 
-def build_index():
-    """一次遍历：拼接代码/配置文本 + AST 收集 import 模块名。"""
+def build_index(roots=None):
+    """一次遍历：拼接代码/配置文本 + AST 收集 import 模块名。
+
+    roots 为空=全仓（测试用）；生产调用传入口所属顶层目录，避免外链巨树。
+    """
     chunks = []
     imported = set()
     file_count = 0
-    for p, rel in iter_files():
+    iterables = []
+    if roots:
+        for r in roots:
+            iterables.extend(iter_files(REPO / r))
+    else:
+        iterables.extend(iter_files())
+    for p, rel in iterables:
         try:
             if p.stat().st_size > MAX_FILE:
                 continue
@@ -125,7 +136,8 @@ def main(argv=None) -> int:
         if rel and (REPO / rel).exists():
             entries.append(rel)
             types[rel] = et
-    text, imported, files = build_index()
+    # 默认全仓（SKIP_PREFIX 已排除巨树/数据根）；如需只扫入口顶层目录可传 roots。
+    text, imported, files = build_index(None)
     sched = scheduled_text()
     lower_text = text  # 已统一正斜杠
     results = []
