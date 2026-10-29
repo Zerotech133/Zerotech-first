@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-29 11:47",
+ "generated": "2026-10-29 11:50",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -491,21 +491,21 @@
    "project": "quant"
   },
   {
-   "id": "WO-LCS1-HARNESS-MIN-20261029",
-   "desc": "A6 前置：LCS-1 最小 harness（A1 dry-run/A2 可复现/A4 manifest 骨架，不做 A6 交易结论）；DATA1 A 冻结已 READY（sha d538…）；owner BACK1，ARCH1 复核；deadline 10-31；不写数据根。",
-   "status": "doing",
-   "owner": "BACK1",
-   "branch": "task/WO-LCS1-HARNESS-MIN-20261029",
-   "created": "2026-10-29 10:06:29",
-   "project": "quant"
-  },
-  {
    "id": "WO-LEGION-ZHUGE-P1-20261029",
    "desc": "诸葛亮 P1：RAG auto 启用 + decisions→memory seed + MCP 接入说明（本地注册）",
    "status": "doing",
    "owner": "ZHAOYUN",
    "branch": "task/WO-LEGION-ZHUGE-P1-20261029",
    "created": "2026-10-29 11:46:56",
+   "project": "general"
+  },
+  {
+   "id": "WO-GUANYU-P28-20261029",
+   "desc": "B4备份覆盖修复",
+   "status": "doing",
+   "owner": "GUANYU",
+   "branch": "task/WO-GUANYU-P28-20261029",
+   "created": "2026-10-29 11:47:48",
    "project": "general"
   }
  ],
@@ -1877,14 +1877,7 @@
    ],
    "experience": "20 年从业经验（回测研究：复现、样本外与成本压力测试）",
    "dept_name": "研究院",
-   "dept_cn_title": "太学",
-   "tasks": [
-    {
-     "id": "WO-LCS1-HARNESS-MIN-20261029",
-     "desc": "A6 前置：LCS-1 最小 harness（A1 dry-run/A2 可复现/A4 manifest 骨架，不做 A6 交易结论）；DATA1 A 冻结已 READY（sha d538…）；owner BACK1，ARCH1 复核；deadline 10-31；不写数据根。",
-     "status": "doing"
-    }
-   ]
+   "dept_cn_title": "太学"
   },
   "COMM1": {
    "id": "COMM1",
@@ -6504,7 +6497,14 @@
    ],
    "experience": "30 年工程治理经验：漏洞分级与补丁流程、失败测试基线修复、编码规范与门禁落地、技术债清欠与重复功能合并；证据驱动、逐项闭环，只出报告与工单不自行合并，开发动作限独立 worktree 提交+跑测试并交 L2 人签。",
    "dept_name": "研究院",
-   "dept_cn_title": "太学"
+   "dept_cn_title": "太学",
+   "tasks": [
+    {
+     "id": "WO-GUANYU-P28-20261029",
+     "desc": "B4备份覆盖修复",
+     "status": "doing"
+    }
+   ]
   },
   "HUANGZHONG": {
    "id": "HUANGZHONG",
