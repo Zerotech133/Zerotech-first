@@ -59,26 +59,78 @@
     });
   }
 
+  var PREF_KEY = 'os_page_fold_v1:' + location.pathname;
+
+  function prefKeys() {
+    try {
+      var raw = window.localStorage.getItem(PREF_KEY);
+      var data = raw ? JSON.parse(raw) : null;
+      return new Set(Array.isArray(data && data.collapsed) ? data.collapsed : []);
+    } catch (e) {
+      return new Set();
+    }
+  }
+
+  function blockKey(block, idx) {
+    var h = headingOf(block);
+    var t = h ? (h.textContent || '').replace(/折叠|展开/g, '').trim().slice(0, 48) : '';
+    return String(idx) + ':' + t;
+  }
+
+  function savePref() {
+    try {
+      var keys = [];
+      document.querySelectorAll('.os-tool-block.os-tool-collapsed').forEach(function (b) {
+        if (b.dataset.osFoldKey) keys.push(b.dataset.osFoldKey);
+      });
+      window.localStorage.setItem(PREF_KEY, JSON.stringify({collapsed: keys, savedAt: Date.now()}));
+    } catch (e) { /* localStorage 不可用则退化为会话内 */ }
+  }
+
+  function applyPref() {
+    var keys = prefKeys();
+    document.querySelectorAll('.os-tool-block').forEach(function (b) {
+      if (!b.dataset.osFoldKey) return;
+      var closed = keys.has(b.dataset.osFoldKey);
+      b.classList.toggle('os-tool-collapsed', closed);
+      var t = b.querySelector(':scope > .os-tool-head .os-tool-toggle');
+      if (t) { t.textContent = closed ? '展开' : '折叠'; t.setAttribute('aria-expanded', String(!closed)); }
+    });
+  }
+
+  function resetPref() {
+    try { window.localStorage.removeItem(PREF_KEY); } catch (e) { /* ignore */ }
+    document.querySelectorAll('.os-tool-block').forEach(function (b) {
+      b.classList.remove('os-tool-collapsed');
+      var t = b.querySelector(':scope > .os-tool-head .os-tool-toggle');
+      if (t) { t.textContent = '折叠'; t.setAttribute('aria-expanded', 'true'); }
+    });
+  }
+
   function mark() {
-    candidates().forEach(function (block) {
+    candidates().forEach(function (block, idx) {
       if (block.dataset.osToolBlock === '1') return;
       block.dataset.osToolBlock = '1';
       block.classList.add('os-tool-block');
+      block.dataset.osFoldKey = blockKey(block, idx);
       var h = headingOf(block);
       h.dataset.osHeading = '1';
       h.classList.add('os-tool-head');
       var btn = el('button', 'os-tool-toggle', '折叠');
       btn.type = 'button';
       btn.setAttribute('aria-label', '折叠/展开本分区');
+      btn.setAttribute('aria-expanded', 'true');
       btn.addEventListener('click', function (e) {
         e.preventDefault();
         e.stopPropagation();
         var closed = block.classList.toggle('os-tool-collapsed');
         btn.textContent = closed ? '展开' : '折叠';
         btn.setAttribute('aria-expanded', String(!closed));
+        savePref();
       });
       h.appendChild(btn);
     });
+    applyPref();
   }
 
   function toolbar() {
@@ -99,12 +151,15 @@
     var unfold = el('button', 'os-tools-btn', '展开全部');
     fold.type = 'button';
     unfold.type = 'button';
+    var reset = el('button', 'os-tools-btn', '重置折叠偏好');
+    reset.type = 'button';
     fold.addEventListener('click', function () {
       document.querySelectorAll('.os-tool-block').forEach(function (b) {
         b.classList.add('os-tool-collapsed');
         var t = b.querySelector(':scope > .os-tool-head .os-tool-toggle');
         if (t) { t.textContent = '展开'; t.setAttribute('aria-expanded', 'false'); }
       });
+      savePref();
     });
     unfold.addEventListener('click', function () {
       document.querySelectorAll('.os-tool-block').forEach(function (b) {
@@ -112,7 +167,9 @@
         var t = b.querySelector(':scope > .os-tool-head .os-tool-toggle');
         if (t) { t.textContent = '折叠'; t.setAttribute('aria-expanded', 'true'); }
       });
+      savePref();
     });
+    reset.addEventListener('click', resetPref);
     input.addEventListener('input', function () {
       var q = (input.value || '').trim().toLowerCase();
       var blocks = Array.prototype.slice.call(document.querySelectorAll('.os-tool-block'));
@@ -134,7 +191,7 @@
       });
       count.textContent = q ? ('命中 ' + hit + ' 个区块') : '输入以过滤';
     });
-    bar.append(label, count, fold, unfold);
+    bar.append(label, count, fold, unfold, reset);
     var r = root();
     r.insertBefore(bar, r.firstChild);
     return bar;

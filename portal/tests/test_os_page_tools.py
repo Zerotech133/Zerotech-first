@@ -17,6 +17,7 @@ def test_assets_have_features():
     assert ".os-page-tools" in CSS and ".os-tool-collapsed" in CSS
     assert "normalizeBoard" in JS and "os-tool-block" in JS
     assert "折叠全部分区" in JS and "os-tools-count" in JS
+    assert "localStorage" in JS and "重置折叠偏好" in JS
 
 
 def test_targets_injected_once():
