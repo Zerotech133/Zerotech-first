@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-10-30T03:31:32+08:00",
+ "generated_at": "2026-10-30T06:44:43+08:00",
  "today": "2026-10-30",
  "catalog": {
   "version": 16,
@@ -26,16 +26,16 @@
   "sources_pending": 0,
   "coverage_pct": 36.4,
   "new_today": 39,
-  "pilot_today": 5,
-  "merged_today": 11,
-  "hypotheses": 14,
+  "pilot_today": 4,
+  "merged_today": 13,
+  "hypotheses": 15,
   "hypotheses_by_status": {
    "rejected": 10,
-   "backtested": 3,
+   "backtested": 4,
    "idea": 1
   },
-  "reports_total": 34,
-  "reports_today": 0,
+  "reports_total": 36,
+  "reports_today": 2,
   "approvals_today": 2,
   "risks": [
    {
@@ -75,7 +75,7 @@
    }
   ],
   "backup_latest": "2026-10-30_0300",
-  "backup_age_hours": 3.5,
+  "backup_age_hours": 6.7,
   "supervisor_red": []
  },
  "sources": [
@@ -90,8 +90,8 @@
    "files": 8743,
    "size_mb": 234.5,
    "size_h": "234 MB",
-   "rows": 4262196,
-   "rows_h": "426.2 万",
+   "rows": 4267777,
+   "rows_h": "426.8 万",
    "range": "19910102..20261029",
    "last_update": "2026-10-30",
    "latest_date": "20261029",
@@ -330,8 +330,8 @@
    "files": 8743,
    "size_mb": 961.1,
    "size_h": "961 MB",
-   "rows": 4237377,
-   "rows_h": "423.7 万",
+   "rows": 4242947,
+   "rows_h": "424.3 万",
    "range": "19910102..20261029",
    "last_update": "2026-10-30",
    "latest_date": "20261029",
@@ -375,8 +375,8 @@
    "files": 924,
    "size_mb": 587.7,
    "size_h": "588 MB",
-   "rows": 4946234,
-   "rows_h": "494.6 万",
+   "rows": 4951804,
+   "rows_h": "495.2 万",
    "range": "20230103..20261029",
    "last_update": "2026-10-30",
    "latest_date": "20261029",
@@ -549,9 +549,9 @@
    "rows_h": "5415",
    "range": "USDCNH_FXCM..USDHKD_FXCM",
    "last_update": "2026-10-30",
-   "latest_date": "20261029",
+   "latest_date": "20261030",
    "report_period": "",
-   "lag_days": 1,
+   "lag_days": 0,
    "today_new": 2,
    "registered": true,
    "manifest": "closed",
@@ -805,8 +805,8 @@
    "files": 924,
    "size_mb": 444.9,
    "size_h": "445 MB",
-   "rows": 9503637,
-   "rows_h": "950.4 万",
+   "rows": 9523510,
+   "rows_h": "952.4 万",
    "range": "20230103..20261029",
    "last_update": "2026-10-30",
    "latest_date": "20261029",
@@ -1042,8 +1042,8 @@
    "files": 923,
    "size_mb": 195.6,
    "size_h": "196 MB",
-   "rows": 3662265,
-   "rows_h": "366.2 万",
+   "rows": 3666750,
+   "rows_h": "366.7 万",
    "range": "20230103..20261028",
    "last_update": "2026-10-30",
    "latest_date": "20261028",
@@ -1069,8 +1069,8 @@
    "files": 924,
    "size_mb": 573.8,
    "size_h": "574 MB",
-   "rows": 4728322,
-   "rows_h": "472.8 万",
+   "rows": 4733899,
+   "rows_h": "473.4 万",
    "range": "20230103..20261029",
    "last_update": "2026-10-30",
    "latest_date": "20261029",
@@ -1823,13 +1823,13 @@
    "status": "in_progress",
    "note": "保留 365 天；历史不可回填（接口深度约 1 周）",
    "files": 1,
-   "size_mb": 106.19,
-   "size_h": "106 MB",
-   "rows": 100959,
-   "rows_h": "100959",
+   "size_mb": 107.08,
+   "size_h": "107 MB",
+   "rows": 101431,
+   "rows_h": "101431",
    "range": "news.db",
    "last_update": "2026-10-30",
-   "latest_date": "2026-10-30 03:19",
+   "latest_date": "2026-10-30 06:35",
    "lag_days": 0,
    "today_new": 1,
    "registered": true,
@@ -1964,8 +1964,8 @@
    "files": 1,
    "size_mb": 8379,
    "size_h": "8.4 GB",
-   "rows": 15827130,
-   "rows_h": "1582.7 万",
+   "rows": 15834725,
+   "rows_h": "1583.5 万",
    "range": "2026-08-11 起（分钟线）",
    "last_update": "2026-10-30",
    "latest_date": "2026-10-29",
@@ -2024,8 +2024,8 @@
    "files": 8743,
    "size_mb": 234.5,
    "size_h": "234 MB",
-   "rows": 4262196,
-   "rows_h": "426.2 万",
+   "rows": 4267777,
+   "rows_h": "426.8 万",
    "range": "19910102..20261029",
    "last_update": "2026-10-30",
    "latest_date": "20261029",
@@ -2210,8 +2210,8 @@
    "files": 8743,
    "size_mb": 961.1,
    "size_h": "961 MB",
-   "rows": 4237377,
-   "rows_h": "423.7 万",
+   "rows": 4242947,
+   "rows_h": "424.3 万",
    "range": "19910102..20261029",
    "last_update": "2026-10-30",
    "latest_date": "20261029",
@@ -2255,8 +2255,8 @@
    "files": 924,
    "size_mb": 587.7,
    "size_h": "588 MB",
-   "rows": 4946234,
-   "rows_h": "494.6 万",
+   "rows": 4951804,
+   "rows_h": "495.2 万",
    "range": "20230103..20261029",
    "last_update": "2026-10-30",
    "latest_date": "20261029",
@@ -2359,9 +2359,9 @@
    "rows_h": "5415",
    "range": "USDCNH_FXCM..USDHKD_FXCM",
    "last_update": "2026-10-30",
-   "latest_date": "20261029",
+   "latest_date": "20261030",
    "report_period": "",
-   "lag_days": 1,
+   "lag_days": 0,
    "today_new": 2,
    "registered": true,
    "manifest": "closed",
@@ -2507,8 +2507,8 @@
    "files": 924,
    "size_mb": 444.9,
    "size_h": "445 MB",
-   "rows": 9503637,
-   "rows_h": "950.4 万",
+   "rows": 9523510,
+   "rows_h": "952.4 万",
    "range": "20230103..20261029",
    "last_update": "2026-10-30",
    "latest_date": "20261029",
@@ -2660,8 +2660,8 @@
    "files": 923,
    "size_mb": 195.6,
    "size_h": "196 MB",
-   "rows": 3662265,
-   "rows_h": "366.2 万",
+   "rows": 3666750,
+   "rows_h": "366.7 万",
    "range": "20230103..20261028",
    "last_update": "2026-10-30",
    "latest_date": "20261028",
@@ -2687,8 +2687,8 @@
    "files": 924,
    "size_mb": 573.8,
    "size_h": "574 MB",
-   "rows": 4728322,
-   "rows_h": "472.8 万",
+   "rows": 4733899,
+   "rows_h": "473.4 万",
    "range": "20230103..20261029",
    "last_update": "2026-10-30",
    "latest_date": "20261029",
@@ -3144,13 +3144,13 @@
    "status": "in_progress",
    "note": "保留 365 天；历史不可回填（接口深度约 1 周）",
    "files": 1,
-   "size_mb": 106.19,
-   "size_h": "106 MB",
-   "rows": 100959,
-   "rows_h": "100959",
+   "size_mb": 107.08,
+   "size_h": "107 MB",
+   "rows": 101431,
+   "rows_h": "101431",
    "range": "news.db",
    "last_update": "2026-10-30",
-   "latest_date": "2026-10-30 03:19",
+   "latest_date": "2026-10-30 06:35",
    "lag_days": 0,
    "today_new": 1,
    "registered": true,
@@ -3268,6 +3268,18 @@
    "updated_at": "2026-10-29T09:38:05"
   },
   {
+   "id": "H15",
+   "title": "A/H 溢价收敛（汇率换算后）",
+   "status": "backtested",
+   "question": "A/H 溢价水平（z-score）能否预测未来相对收益（收敛）？",
+   "data_sources": "daily+hk_daily+fx_daily(东财 USDCNH/USDHKD 2010-2026)+stock_basic+hk_basic",
+   "method": "名称配对156对（收益相关≥0.3）；溢价=A/(H×HKDCNY)-1；60日z；T收盘信号T+1收盘执行；5/20日远期相对收益；IS 2023-09-18..2025-06-30 / OOS 2025-07-01..2026-10-29；成本0.3%/次",
+   "conclusion": "A/H 溢价收敛 OOS IC t=-11.77",
+   "evidence": "research/reports/AH_premium_20261030.md",
+   "created_at": "2026-10-30T06:27:51",
+   "updated_at": "2026-10-30T06:27:51"
+  },
+  {
    "id": "H2",
    "title": "业绩预告/快报的 PEAD",
    "status": "rejected",
@@ -3365,6 +3377,24 @@
   }
  ],
  "reports": [
+  {
+   "name": "AH_premium_20261030.md",
+   "title_zh": "研究报告",
+   "kind": "报告正文",
+   "size_kb": 0.9,
+   "date": "2026-10-30",
+   "time": "06:36",
+   "hid": ""
+  },
+  {
+   "name": "AH_premium_20261030.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 1.8,
+   "date": "2026-10-30",
+   "time": "06:36",
+   "hid": ""
+  },
   {
    "name": "H13_multifactor_20261029.md",
    "title_zh": "H13 多因子复核（资金流+反转+市值+价值+质量）",
@@ -3873,28 +3903,22 @@
     "desc": "ACAD1 原型先行：策略独立工作台（青萍样板）+ ACAD1选池日历 + 鲁肃判断台 三原型；5175无登录；先样例/标注真实缺口，评审后再接数据。"
    },
    {
-    "id": "WO-SEC-AUDIT-TASK-20261030",
-    "status": "review",
-    "owner": "ZHAOYUN",
-    "desc": "security_audit.ps1：py311 pip-audit(freeze)+py312 bandit，固定日志/status，任务可靠退出"
-   },
-   {
     "id": "K-QUANT-20261030-OHUI",
     "status": "doing",
     "owner": "DSH-Lead",
     "desc": "IDE接入OpenHands执行入口：OH按钮+会话ID+适配器调用+过程状态"
    },
    {
-    "id": "WO-GUANYU-P57-20261030",
-    "status": "doing",
+    "id": "WO-GUANYU-P62-20261030",
+    "status": "review",
     "owner": "GUANYU",
-    "desc": "api_kg拆分收尾"
+    "desc": "lifecycle覆盖率审计"
    },
    {
-    "id": "WO-SEC-BANDIT-FIX-20261030",
-    "status": "doing",
-    "owner": "ZHAOYUN",
-    "desc": "bandit高危修复：B202 tar extractall filter=data + B324弱哈希加usedforsecurity=False（18处非安全用途）"
+    "id": "K-QUANT-20261030-OH2",
+    "status": "review",
+    "owner": "DSH-Lead",
+    "desc": "OpenHands二期：原生会话worktree映射+事件流+模型映射；过程面板展示工具步骤"
    }
   ],
   "doing_data": [
@@ -3945,12 +3969,6 @@
     "status": "doing",
     "owner": "ACAD1",
     "desc": "ACAD1 原型先行：策略独立工作台（青萍样板）+ ACAD1选池日历 + 鲁肃判断台 三原型；5175无登录；先样例/标注真实缺口，评审后再接数据。"
-   },
-   {
-    "id": "WO-SEC-BANDIT-FIX-20261030",
-    "status": "doing",
-    "owner": "ZHAOYUN",
-    "desc": "bandit高危修复：B202 tar extractall filter=data + B324弱哈希加usedforsecurity=False（18处非安全用途）"
    }
   ],
   "today_pilot": [
@@ -4015,28 +4033,22 @@
     "desc": "ACAD1 原型先行：策略独立工作台（青萍样板）+ ACAD1选池日历 + 鲁肃判断台 三原型；5175无登录；先样例/标注真实缺口，评审后再接数据。"
    },
    {
-    "id": "WO-SEC-AUDIT-TASK-20261030",
-    "status": "review",
-    "owner": "ZHAOYUN",
-    "desc": "security_audit.ps1：py311 pip-audit(freeze)+py312 bandit，固定日志/status，任务可靠退出"
-   },
-   {
     "id": "K-QUANT-20261030-OHUI",
     "status": "doing",
     "owner": "DSH-Lead",
     "desc": "IDE接入OpenHands执行入口：OH按钮+会话ID+适配器调用+过程状态"
    },
    {
-    "id": "WO-GUANYU-P57-20261030",
-    "status": "doing",
+    "id": "WO-GUANYU-P62-20261030",
+    "status": "review",
     "owner": "GUANYU",
-    "desc": "api_kg拆分收尾"
+    "desc": "lifecycle覆盖率审计"
    },
    {
-    "id": "WO-SEC-BANDIT-FIX-20261030",
-    "status": "doing",
-    "owner": "ZHAOYUN",
-    "desc": "bandit高危修复：B202 tar extractall filter=data + B324弱哈希加usedforsecurity=False（18处非安全用途）"
+    "id": "K-QUANT-20261030-OH2",
+    "status": "review",
+    "owner": "DSH-Lead",
+    "desc": "OpenHands二期：原生会话worktree映射+事件流+模型映射；过程面板展示工具步骤"
    }
   ],
   "today_pilot_data": [
@@ -4063,12 +4075,6 @@
     "status": "doing",
     "owner": "ACAD1",
     "desc": "ACAD1 原型先行：策略独立工作台（青萍样板）+ ACAD1选池日历 + 鲁肃判断台 三原型；5175无登录；先样例/标注真实缺口，评审后再接数据。"
-   },
-   {
-    "id": "WO-SEC-BANDIT-FIX-20261030",
-    "status": "doing",
-    "owner": "ZHAOYUN",
-    "desc": "bandit高危修复：B202 tar extractall filter=data + B324弱哈希加usedforsecurity=False（18处非安全用途）"
    }
   ],
   "today_merged": [
@@ -4523,6 +4529,12 @@
     "desc": "方案A：OpenHands执行引擎接入；网关tools/tool_calls透传；适配器+健康检查；端到端任务测试"
    },
    {
+    "id": "WO-SEC-AUDIT-TASK-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "security_audit.ps1：py311 pip-audit(freeze)+py312 bandit，固定日志/status，任务可靠退出"
+   },
+   {
     "id": "WO-HZ-COVERAGE-20261030",
     "status": "done",
     "owner": "DSH-Lead",
@@ -4563,6 +4575,84 @@
     "status": "done",
     "owner": "ZHAOYUN",
     "desc": "壳资产收尾：补5页缺失、去5页重复nav.js"
+   },
+   {
+    "id": "WO-GUANYU-P57-20261030",
+    "status": "done",
+    "owner": "GUANYU",
+    "desc": "api_kg拆分收尾"
+   },
+   {
+    "id": "WO-SEC-BANDIT-FIX-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "bandit高危修复：B202 tar extractall filter=data + B324弱哈希加usedforsecurity=False（18处非安全用途）"
+   },
+   {
+    "id": "WO-INV-TEAM-ENGINE2-20261030",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "菜鸟引擎二期：createResultSummary落表+node_exec执行账(normal/debate/degraded/debate_log/duration)+父节点结构化摘要注入+run_shadow/pool review复"
+   },
+   {
+    "id": "WO-GUANYU-P58-20261030",
+    "status": "done",
+    "owner": "GUANYU",
+    "desc": "api_backtest拆分方案"
+   },
+   {
+    "id": "WO-GUANYU-P59-20261030",
+    "status": "done",
+    "owner": "GUANYU",
+    "desc": "依赖锁与安全审计"
+   },
+   {
+    "id": "WO-GUANYU-P60-20261030",
+    "status": "done",
+    "owner": "GUANYU",
+    "desc": "入口归档第一轮"
+   },
+   {
+    "id": "WO-SEC-AUDIT-FIX-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "security_audit.ps1 canonical修复：freeze过滤editable + pip-audit阻塞note（与C:\\Temp运行版对齐）"
+   },
+   {
+    "id": "WO-INV-BJ-EMPTY-20261030",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "北交所/无K线标的 make_context 空数组 IndexError 修复：bars 空时 fail-visible ValueError，补测试（920378 池票复盘不再裸 IndexError）"
+   },
+   {
+    "id": "WO-LEGION-PAGESHELL4-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "P1：模板footer/视觉门update；quant/intel UI Kit组件化"
+   },
+   {
+    "id": "WO-GUANYU-P61-20261030",
+    "status": "done",
+    "owner": "GUANYU",
+    "desc": "api_backtest契约B0"
+   },
+   {
+    "id": "WO-INV-BJ-POOL-20261030",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "北交所符号修复(norm_symbol bj)+920378 复盘恢复+run_shadow 17:10 后自动池复盘(POOL_REVIEW_AUTO)+测试"
+   },
+   {
+    "id": "WO-AH-FX-20261030",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "A/H溢价研究（汇率+港股日线151对）+ fx加入例行同步"
+   },
+   {
+    "id": "WO-GUANYU-P63-20261030",
+    "status": "done",
+    "owner": "GUANYU",
+    "desc": "修master测试回归"
    }
   ],
   "today_merged_data": [
@@ -4631,13 +4721,25 @@
     "status": "done",
     "owner": "DSH-Lead",
     "desc": "司马徽推荐池前端页 /acad1_pool.html：31只全池复盘（D1裁决/多角度明细/来源/时效）+ /api/acad1/pool 数据口"
+   },
+   {
+    "id": "WO-SEC-BANDIT-FIX-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "bandit高危修复：B202 tar extractall filter=data + B324弱哈希加usedforsecurity=False（18处非安全用途）"
+   },
+   {
+    "id": "WO-AH-FX-20261030",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "A/H溢价研究（汇率+港股日线151对）+ fx加入例行同步"
    }
   ],
   "counts": {
    "aborted": 89,
-   "done": 1243,
-   "review": 8,
-   "doing": 29
+   "done": 1257,
+   "review": 9,
+   "doing": 27
   }
  },
  "governance": [
@@ -4835,12 +4937,12 @@
      "mb": 709.0
     }
    ],
-   "receipt": null,
-   "age_hours": 3.5
+   "receipt": "offsite_remote_receipt.txt",
+   "age_hours": 6.7
   },
   "supervisor": {
    "red": [],
-   "generated_at": "2026-10-30T03:31:32"
+   "generated_at": "2026-10-30T06:44:43"
   },
   "approvals": {
    "count": 2,
