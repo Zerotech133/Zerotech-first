@@ -80,3 +80,8 @@ portal/backtest/bt_api.py       # JSON API 方法（_sa_results/_sa_start/_algo_
 - 套路来源：`docs/plans/2026-10-28_api_kg拆分方案_v1.md` §七（5913→97 行收尾记录）
 - 守则：`docs/plans/2026-10-28_portal大文件拆分守则_v1.md`
 - 守卫：`tools/check_portal_split.py`、`portal/tests/test_api_kg_contract.py`（可复制为 api_backtest 契约模板）
+
+## 八、B0 完成记录（2026-10-30，P61）
+
+- 新增 portal/tests/test_api_backtest_contract.py（5 条）：Handler 20 方法快照/可调用、17 个外部导入符号、行数上限 6,395（只减不增）、AST 方法集漂移守卫；
+- 实测 5/5 绿；后续 B1-B5 每批合并后**必须下调 LINE_CEILING**（拆分期契约哨兵）。
