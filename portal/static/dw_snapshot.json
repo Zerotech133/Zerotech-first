@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-10-30T02:58:27+08:00",
+ "generated_at": "2026-10-30T03:17:38+08:00",
  "today": "2026-10-30",
  "catalog": {
   "version": 16,
@@ -20,14 +20,14 @@
  "lagging_daily": [],
  "cockpit": {
   "sources_total": 66,
-  "sources_done": 23,
-  "sources_in_progress": 6,
+  "sources_done": 24,
+  "sources_in_progress": 5,
   "sources_mining": 37,
   "sources_pending": 0,
-  "coverage_pct": 34.8,
-  "new_today": 38,
+  "coverage_pct": 36.4,
+  "new_today": 39,
   "pilot_today": 6,
-  "merged_today": 9,
+  "merged_today": 10,
   "hypotheses": 14,
   "hypotheses_by_status": {
    "rejected": 10,
@@ -59,11 +59,6 @@
     "note": "data_lifecycle.yaml 9 条"
    },
    {
-    "item": "汇率数据源缺失",
-    "status": "in_progress",
-    "note": "Tushare FXCM 价格空 → 换源(P2)"
-   },
-   {
     "item": "news 历史沉淀",
     "status": "in_progress",
     "note": "不可回填→长期采集+保留365天"
@@ -79,8 +74,8 @@
     "note": "approvals.jsonl 已落；回写待接"
    }
   ],
-  "backup_latest": "2026-10-29_0300",
-  "backup_age_hours": 27.0,
+  "backup_latest": "2026-10-30_0300",
+  "backup_age_hours": 3.3,
   "supervisor_red": []
  },
  "sources": [
@@ -120,8 +115,8 @@
    "status": "done",
    "note": "按日公告标题",
    "files": 1897,
-   "size_mb": 278.7,
-   "size_h": "279 MB",
+   "size_mb": 279.9,
+   "size_h": "280 MB",
    "rows": 12291398,
    "rows_h": "1229.1 万",
    "range": "20190102..20261030",
@@ -129,7 +124,7 @@
    "latest_date": "20261030",
    "report_period": "",
    "lag_days": 0,
-   "today_new": 7,
+   "today_new": 11,
    "registered": true,
    "manifest": "closed",
    "date_status": "registered",
@@ -140,7 +135,13 @@
     "H12"
    ],
    "gap_note": "",
-   "next_action": "—"
+   "next_action": "—",
+   "audit": {
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "filled",
+    "filled": 10
+   }
   },
   {
    "name": "balancesheet",
@@ -535,23 +536,23 @@
   },
   {
    "name": "fx_daily",
-   "label": "Tushare·汇率",
+   "label": "汇率·USDCNH/USDHKD（东财源）",
    "method": "接口同步",
    "layer": "接口同步",
    "freshness_mode": "daily",
-   "status": "in_progress",
-   "note": "FXCM 价格字段为空，需换源",
+   "status": "done",
+   "note": "已换源东财：USDCNH 4,211 行 / USDHKD 4,383 行（2010–2026）",
    "files": 2,
-   "size_mb": 0.0,
+   "size_mb": 0.1,
    "size_h": "0 MB",
    "rows": 5415,
    "rows_h": "5415",
    "range": "USDCNH_FXCM..USDHKD_FXCM",
-   "last_update": "2026-10-29",
-   "latest_date": "20261028",
+   "last_update": "2026-10-30",
+   "latest_date": "20261029",
    "report_period": "",
-   "lag_days": 2,
-   "today_new": 0,
+   "lag_days": 1,
+   "today_new": 2,
    "registered": true,
    "manifest": "closed",
    "date_status": "registered",
@@ -560,7 +561,7 @@
     "H9"
    ],
    "gap_note": "",
-   "next_action": "FXCM 价格字段为空，需换源"
+   "next_action": "—"
   },
   {
    "name": "hk_balancesheet",
@@ -1824,11 +1825,11 @@
    "files": 1,
    "size_mb": 106.0,
    "size_h": "106 MB",
-   "rows": 100907,
-   "rows_h": "100907",
+   "rows": 100932,
+   "rows_h": "100932",
    "range": "news.db",
    "last_update": "2026-10-30",
-   "latest_date": "2026-10-30 02:46",
+   "latest_date": "2026-10-30 03:03",
    "lag_days": 0,
    "today_new": 1,
    "registered": true,
@@ -1963,8 +1964,8 @@
    "files": 1,
    "size_mb": 8379,
    "size_h": "8.4 GB",
-   "rows": 15826240,
-   "rows_h": "1582.6 万",
+   "rows": 15826955,
+   "rows_h": "1582.7 万",
    "range": "2026-08-11 起（分钟线）",
    "last_update": "2026-10-30",
    "latest_date": "2026-10-29",
@@ -2048,8 +2049,8 @@
    "status": "done",
    "note": "按日公告标题",
    "files": 1897,
-   "size_mb": 278.7,
-   "size_h": "279 MB",
+   "size_mb": 279.9,
+   "size_h": "280 MB",
    "rows": 12291398,
    "rows_h": "1229.1 万",
    "range": "20190102..20261030",
@@ -2057,7 +2058,7 @@
    "latest_date": "20261030",
    "report_period": "",
    "lag_days": 0,
-   "today_new": 7,
+   "today_new": 11,
    "registered": true,
    "manifest": "closed",
    "date_status": "registered",
@@ -2068,7 +2069,13 @@
     "H12"
    ],
    "gap_note": "",
-   "next_action": "—"
+   "next_action": "—",
+   "audit": {
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "filled",
+    "filled": 10
+   }
   },
   {
    "name": "balancesheet",
@@ -2336,6 +2343,35 @@
     "local_latest": "20261030",
     "verdict": "aligned"
    }
+  },
+  {
+   "name": "fx_daily",
+   "label": "汇率·USDCNH/USDHKD（东财源）",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "daily",
+   "status": "done",
+   "note": "已换源东财：USDCNH 4,211 行 / USDHKD 4,383 行（2010–2026）",
+   "files": 2,
+   "size_mb": 0.1,
+   "size_h": "0 MB",
+   "rows": 5415,
+   "rows_h": "5415",
+   "range": "USDCNH_FXCM..USDHKD_FXCM",
+   "last_update": "2026-10-30",
+   "latest_date": "20261029",
+   "report_period": "",
+   "lag_days": 1,
+   "today_new": 2,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [
+    "H9"
+   ],
+   "gap_note": "",
+   "next_action": "—"
   },
   {
    "name": "hk_basic",
@@ -3110,11 +3146,11 @@
    "files": 1,
    "size_mb": 106.0,
    "size_h": "106 MB",
-   "rows": 100907,
-   "rows_h": "100907",
+   "rows": 100932,
+   "rows_h": "100932",
    "range": "news.db",
    "last_update": "2026-10-30",
-   "latest_date": "2026-10-30 02:46",
+   "latest_date": "2026-10-30 03:03",
    "lag_days": 0,
    "today_new": 1,
    "registered": true,
@@ -3843,28 +3879,34 @@
     "desc": "ACAD1 原型先行：策略独立工作台（青萍样板）+ ACAD1选池日历 + 鲁肃判断台 三原型；5175无登录；先样例/标注真实缺口，评审后再接数据。"
    },
    {
-    "id": "WO-GUANYU-P56-20261030",
-    "status": "review",
-    "owner": "GUANYU",
-    "desc": "X5轮换批准单"
-   },
-   {
     "id": "WO-SEC-AUDIT-TASK-20261030",
     "status": "review",
     "owner": "ZHAOYUN",
     "desc": "security_audit.ps1：py311 pip-audit(freeze)+py312 bandit，固定日志/status，任务可靠退出"
    },
    {
-    "id": "WO-LEGION-UI-KIT-20261030",
+    "id": "WO-LEGION-PAGESHELL3-20261030",
     "status": "doing",
     "owner": "ZHAOYUN",
-    "desc": "零界UI能力基座：开源对标、组件库、UI Kit页与全项目重规划"
+    "desc": "壳资产收尾：补5页缺失、去5页重复nav.js"
    },
    {
-    "id": "WO-INV-POOL-UI-20261030",
+    "id": "K-QUANT-20261030-OHUI",
     "status": "doing",
     "owner": "DSH-Lead",
-    "desc": "司马徽推荐池前端页 /acad1_pool.html：31只全池复盘（D1裁决/多角度明细/来源/时效）+ /api/acad1/pool 数据口"
+    "desc": "IDE接入OpenHands执行入口：OH按钮+会话ID+适配器调用+过程状态"
+   },
+   {
+    "id": "WO-GUANYU-P57-20261030",
+    "status": "doing",
+    "owner": "GUANYU",
+    "desc": "api_kg拆分收尾"
+   },
+   {
+    "id": "WO-SEC-BANDIT-FIX-20261030",
+    "status": "doing",
+    "owner": "ZHAOYUN",
+    "desc": "bandit高危修复：B202 tar extractall filter=data + B324弱哈希加usedforsecurity=False（18处非安全用途）"
    }
   ],
   "doing_data": [
@@ -3923,10 +3965,10 @@
     "desc": "ACAD1 原型先行：策略独立工作台（青萍样板）+ ACAD1选池日历 + 鲁肃判断台 三原型；5175无登录；先样例/标注真实缺口，评审后再接数据。"
    },
    {
-    "id": "WO-INV-POOL-UI-20261030",
+    "id": "WO-SEC-BANDIT-FIX-20261030",
     "status": "doing",
-    "owner": "DSH-Lead",
-    "desc": "司马徽推荐池前端页 /acad1_pool.html：31只全池复盘（D1裁决/多角度明细/来源/时效）+ /api/acad1/pool 数据口"
+    "owner": "ZHAOYUN",
+    "desc": "bandit高危修复：B202 tar extractall filter=data + B324弱哈希加usedforsecurity=False（18处非安全用途）"
    }
   ],
   "today_pilot": [
@@ -3997,28 +4039,34 @@
     "desc": "ACAD1 原型先行：策略独立工作台（青萍样板）+ ACAD1选池日历 + 鲁肃判断台 三原型；5175无登录；先样例/标注真实缺口，评审后再接数据。"
    },
    {
-    "id": "WO-GUANYU-P56-20261030",
-    "status": "review",
-    "owner": "GUANYU",
-    "desc": "X5轮换批准单"
-   },
-   {
     "id": "WO-SEC-AUDIT-TASK-20261030",
     "status": "review",
     "owner": "ZHAOYUN",
     "desc": "security_audit.ps1：py311 pip-audit(freeze)+py312 bandit，固定日志/status，任务可靠退出"
    },
    {
-    "id": "WO-LEGION-UI-KIT-20261030",
+    "id": "WO-LEGION-PAGESHELL3-20261030",
     "status": "doing",
     "owner": "ZHAOYUN",
-    "desc": "零界UI能力基座：开源对标、组件库、UI Kit页与全项目重规划"
+    "desc": "壳资产收尾：补5页缺失、去5页重复nav.js"
    },
    {
-    "id": "WO-INV-POOL-UI-20261030",
+    "id": "K-QUANT-20261030-OHUI",
     "status": "doing",
     "owner": "DSH-Lead",
-    "desc": "司马徽推荐池前端页 /acad1_pool.html：31只全池复盘（D1裁决/多角度明细/来源/时效）+ /api/acad1/pool 数据口"
+    "desc": "IDE接入OpenHands执行入口：OH按钮+会话ID+适配器调用+过程状态"
+   },
+   {
+    "id": "WO-GUANYU-P57-20261030",
+    "status": "doing",
+    "owner": "GUANYU",
+    "desc": "api_kg拆分收尾"
+   },
+   {
+    "id": "WO-SEC-BANDIT-FIX-20261030",
+    "status": "doing",
+    "owner": "ZHAOYUN",
+    "desc": "bandit高危修复：B202 tar extractall filter=data + B324弱哈希加usedforsecurity=False（18处非安全用途）"
    }
   ],
   "today_pilot_data": [
@@ -4053,10 +4101,10 @@
     "desc": "ACAD1 原型先行：策略独立工作台（青萍样板）+ ACAD1选池日历 + 鲁肃判断台 三原型；5175无登录；先样例/标注真实缺口，评审后再接数据。"
    },
    {
-    "id": "WO-INV-POOL-UI-20261030",
+    "id": "WO-SEC-BANDIT-FIX-20261030",
     "status": "doing",
-    "owner": "DSH-Lead",
-    "desc": "司马徽推荐池前端页 /acad1_pool.html：31只全池复盘（D1裁决/多角度明细/来源/时效）+ /api/acad1/pool 数据口"
+    "owner": "ZHAOYUN",
+    "desc": "bandit高危修复：B202 tar extractall filter=data + B324弱哈希加usedforsecurity=False（18处非安全用途）"
    }
   ],
   "today_merged": [
@@ -4493,6 +4541,12 @@
     "desc": "折叠 MutationObserver 自激修复：summary 文本变化才写"
    },
    {
+    "id": "WO-GUANYU-P56-20261030",
+    "status": "done",
+    "owner": "GUANYU",
+    "desc": "X5轮换批准单"
+   },
+   {
     "id": "K-QUANT-20261030-OHENGINE",
     "status": "done",
     "owner": "DSH-Lead",
@@ -4503,6 +4557,36 @@
     "status": "done",
     "owner": "DSH-Lead",
     "desc": "11-04 runbook 更新：覆盖率提频每小时+证据刷新排程+满窗核对"
+   },
+   {
+    "id": "WO-LEGION-UI-KIT-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "零界UI能力基座：开源对标、组件库、UI Kit页与全项目重规划"
+   },
+   {
+    "id": "WO-INV-POOL-UI-20261030",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "司马徽推荐池前端页 /acad1_pool.html：31只全池复盘（D1裁决/多角度明细/来源/时效）+ /api/acad1/pool 数据口"
+   },
+   {
+    "id": "WO-LEGION-PAGESHELL-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "P1：PageShell生成器+模板；UI Kit接入/os-entry与/os-board"
+   },
+   {
+    "id": "WO-LEGION-PAGESHELL2-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "P1续：全量壳资产注入；组件视觉基线warn-only门；PageShell渐进模板"
+   },
+   {
+    "id": "WO-INV-CAINIAO-PORT-20261030",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "菜鸟团队分析代码移植：StructuredOutputSchema/Parser(按 analysis_type 注入 JSON Schema+解析+Markdown分离)+interpreter 接入结构化输出落 checkpoint/m"
    }
   ],
   "today_merged_data": [
@@ -4559,13 +4643,19 @@
     "status": "done",
     "owner": "GUANYU",
     "desc": "元数据日报"
+   },
+   {
+    "id": "WO-INV-POOL-UI-20261030",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "司马徽推荐池前端页 /acad1_pool.html：31只全池复盘（D1裁决/多角度明细/来源/时效）+ /api/acad1/pool 数据口"
    }
   ],
   "counts": {
    "aborted": 89,
-   "done": 1235,
-   "review": 10,
-   "doing": 28
+   "done": 1241,
+   "review": 9,
+   "doing": 30
   }
  },
  "governance": [
@@ -4631,9 +4721,9 @@
   },
   {
    "item": "汇率数据源缺失",
-   "status": "in_progress",
-   "note": "Tushare FXCM 价格空 → 换源(P2)",
-   "date": "2026-10-29"
+   "status": "done",
+   "note": "已换源东财（USDCNH 4,211 / USDHKD 4,383 行，2010–2026）",
+   "date": "2026-10-30"
   },
   {
    "item": "news 历史沉淀",
@@ -4724,7 +4814,7 @@
  ],
  "ops": {
   "backup": {
-   "latest": "2026-10-29_0300",
+   "latest": "2026-10-30_0300",
    "products": [
     {
      "name": "jev_eval.tar.gz",
@@ -4732,15 +4822,15 @@
     },
     {
      "name": "neo4j_kg.tar.gz",
-     "mb": 436.0
+     "mb": 412.4
     },
     {
      "name": "quant_code.tar.gz",
-     "mb": 521.5
+     "mb": 524.2
     },
     {
      "name": "quant_data.tar.gz",
-     "mb": 386.7
+     "mb": 427.7
     },
     {
      "name": "jev_eval.tar.gz",
@@ -4748,27 +4838,27 @@
     },
     {
      "name": "neo4j_kg.tar.gz",
-     "mb": 436.0
+     "mb": 412.4
     },
     {
      "name": "quant_code.tar.gz",
-     "mb": 521.5
+     "mb": 524.2
     },
     {
      "name": "quant_data.tar.gz",
-     "mb": 386.7
+     "mb": 427.7
     },
     {
-     "name": "zhice_db.sql.gz.enc",
-     "mb": 684.0
+     "name": "zhice_db.sql.gz",
+     "mb": 709.0
     }
    ],
-   "receipt": "offsite_remote_receipt.txt",
-   "age_hours": 27.0
+   "receipt": null,
+   "age_hours": 3.3
   },
   "supervisor": {
    "red": [],
-   "generated_at": "2026-10-30T02:58:27"
+   "generated_at": "2026-10-30T03:17:38"
   },
   "approvals": {
    "count": 2,
@@ -4862,7 +4952,7 @@
   "how_to": "python tools/data_sync_manual.py（或指定 --steps tushare,hk,snapshot）"
  },
  "audit": {
-  "generated_at": "2026-10-30T02:55:26+08:00",
+  "generated_at": "2026-10-30T03:15:54+08:00",
   "trading_days": [
    "20261016",
    "20261019",
@@ -5374,6 +5464,77 @@
      }
     ]
    },
+   "anns_d": {
+    "store": "anns_d",
+    "api": "anns_d",
+    "checked_days": 10,
+    "filled": 10,
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "filled",
+    "checks": [
+     {
+      "date": "20261016",
+      "source_rows": 6000,
+      "local_rows": 1339,
+      "action": "fill_partial"
+     },
+     {
+      "date": "20261019",
+      "source_rows": 6000,
+      "local_rows": 299,
+      "action": "fill_partial"
+     },
+     {
+      "date": "20261020",
+      "source_rows": 6000,
+      "local_rows": 1213,
+      "action": "fill_partial"
+     },
+     {
+      "date": "20261021",
+      "source_rows": 6000,
+      "local_rows": 1200,
+      "action": "fill_partial"
+     },
+     {
+      "date": "20261022",
+      "source_rows": 6000,
+      "local_rows": 1133,
+      "action": "fill_partial"
+     },
+     {
+      "date": "20261023",
+      "source_rows": 6000,
+      "local_rows": 1784,
+      "action": "fill_partial"
+     },
+     {
+      "date": "20261026",
+      "source_rows": 6000,
+      "local_rows": 1141,
+      "action": "fill_partial"
+     },
+     {
+      "date": "20261027",
+      "source_rows": 6000,
+      "local_rows": 3459,
+      "action": "fill_partial"
+     },
+     {
+      "date": "20261028",
+      "source_rows": 6000,
+      "local_rows": 4581,
+      "action": "fill_partial"
+     },
+     {
+      "date": "20261029",
+      "source_rows": 6000,
+      "local_rows": 4663,
+      "action": "fill_partial"
+     }
+    ]
+   },
    "index_global": {
     "store": "index_global",
     "codes": 20,
@@ -5417,6 +5578,24 @@
     "sample_with_q3": 270,
     "coverage_pct": 90.0,
     "verdict": "aligned"
+   }
+  },
+  "fx": {
+   "USDCNH": {
+    "local_latest": "20261029",
+    "local_close": 6.6568,
+    "source_latest": "",
+    "source_close": null,
+    "close_diff_pct": null,
+    "verdict": "gap"
+   },
+   "USDHKD": {
+    "local_latest": "20261029",
+    "local_close": 7.8462,
+    "source_latest": "",
+    "source_close": null,
+    "close_diff_pct": null,
+    "verdict": "gap"
    }
   },
   "events": {

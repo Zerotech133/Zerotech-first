@@ -273,13 +273,14 @@ function renderOps(){
   const au=SNAP.audit||{stores:{},financials:{},events:{}};
   const srows=Object.entries(au.stores||{}).map(([k,v])=>'<tr><td><b>'+esc(k)+'</b></td><td class="muted">'+esc(v.source_latest||'—')+'</td><td class="muted">'+esc(v.local_latest||'—')+'</td><td>'+(v.verdict==='aligned'?'<span class="badge b-done">✅ 对齐</span>':(v.verdict==='filled'?'<span class="badge b-in_progress">🔧 已补 '+esc(v.filled||0)+' 日</span>':'<span class="badge b-pending">⚠ '+esc(v.verdict||'')+'</span>'))+'</td></tr>').join('');
   const frows=Object.entries(au.financials||{}).map(([k,v])=>'<tr><td><b>'+esc(k)+'</b></td><td class="num">'+esc(v.source_codes||v.source_rows)+'</td><td class="muted">'+esc(v.source_latest_ann||'—')+'</td><td>'+(v.verdict==='aligned'?'<span class="badge b-done">✅ 对齐</span>':'<span class="badge b-pending">⚠</span>')+'</td></tr>').join('');
+  const fxrows=Object.entries(au.fx||{}).map(([k,v])=>'<tr><td><b>'+esc(k)+'</b></td><td class="muted">'+esc(v.local_latest||'—')+'</td><td class="muted">'+esc(v.source_latest||'—')+'</td><td class="num">'+esc(v.close_diff_pct==null?'—':v.close_diff_pct+'%')+'</td><td>'+(v.verdict==='aligned'?'<span class="badge b-done">✅ 对齐</span>':'<span class="badge b-pending">⚠</span>')+'</td></tr>').join('');
   const erows=Object.entries(au.events||{}).map(([k,v])=>'<tr><td><b>'+esc(k)+'</b></td><td class="muted">'+esc(v.local_latest||'—')+'</td><td class="muted">'+esc(v.source_latest||'—')+'</td><td>'+(v.verdict==='aligned'?'<span class="badge b-done">✅ 对齐</span>':'<span class="badge b-pending">⚠</span>')+'</td></tr>').join('');
   document.getElementById('opsAudit').innerHTML=
     '<div style="margin-bottom:10px"><b>日频表（近 10 个交易日逐日核对）</b></div>'+
     '<table><thead><tr><th>来源</th><th>源侧最新</th><th>本地最新</th><th>结果</th></tr></thead><tbody>'+srows+'</tbody></table>'+
     '<div style="margin:12px 0 6px"><b>财报（按报告期，源侧股票数 vs 本地）</b></div>'+
     '<table><thead><tr><th>表</th><th class="num">源侧股票数</th><th>源侧最新公告日</th><th>结果</th></tr></thead><tbody>'+frows+'</tbody></table>'+
-    '<div style="margin:12px 0 6px"><b>事件型（公告日扫描近 30 天）</b></div>'+
+    '<div style="margin:12px 0 6px"><b>汇率（东财源 vs 本地）</b></div>'+'<table><thead><tr><th>序列</th><th>本地最新</th><th>源侧最新</th><th class="num">收盘价差</th><th>结果</th></tr></thead><tbody>'+fxrows+'</tbody></table>'+'<div style="margin:12px 0 6px"><b>事件型（公告日扫描近 30 天）</b></div>'+
     '<table><thead><tr><th>来源</th><th>本地最新公告</th><th>源侧最新公告</th><th>结果</th></tr></thead><tbody>'+erows+'</tbody></table>';
   const sy=SNAP.sync||{};
   const okHtml=sy.ok===true?'<span class="badge b-done">✅ 成功</span>':(sy.ok===false?'<span class="badge b-pending">❌ 有失败步骤</span>':'<span class="badge b-idea">暂无记录</span>');

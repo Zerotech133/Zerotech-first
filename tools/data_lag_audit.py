@@ -37,6 +37,7 @@ BY_DATE = {
     "top_inst": ("top_inst", "trade_date,ts_code,exalter,side,buy,sell,net_buy,reason"),
     "limit_list_d": ("limit_list_d", "ts_code,trade_date,limit,amount,limit_amount,fd_amount"),
     "hk_daily": ("hk_daily", "ts_code,trade_date,open,high,low,close,pre_close,change,pct_chg,vol,amount"),
+    "anns_d": ("anns_d", "ann_date,ts_code,name,title,url"),
 }
 
 
@@ -179,6 +180,56 @@ def audit_financials(tok, dry: bool) -> dict:
     return out
 
 
+def audit_fx() -> dict:
+    """汇率：东财源 vs 本地（最新日期 + 收盘价差）。"""
+    import urllib.request as _u
+    secids = {"USDCNH": "133.USDCNH", "USDHKD": "119.USDHKD"}
+    out = {}
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0",
+               "Referer": "https://quote.eastmoney.com/"}
+    for code, secid in secids.items():
+        f = DATA / "fx_daily" / ("%s_FXCM.parquet" % code)
+        if not f.exists():
+            out[code] = {"verdict": "missing_local"}
+            continue
+        tb = pq.read_table(f, columns=["trade_date", "close"]).to_pylist()
+        ds = [str(r["trade_date"]) for r in tb]
+        local_latest = max(ds) if ds else ""
+        local_close = None
+        for r in tb:
+            if str(r["trade_date"]) == local_latest:
+                local_close = r["close"]
+                break
+        # 源侧最新（最近 10 天窗口内取最后一个有数据日）
+        src_latest, src_close = "", None
+        from datetime import timedelta
+        today = datetime.now()
+        for i in range(10):
+            dt = (today - timedelta(days=i)).strftime("%Y%m%d")
+            try:
+                url = ("https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=%s"
+                       "&fields1=f1,f2,f3&fields2=f51,f53&klt=101&fqt=1&beg=%s&end=%s"
+                       % (secid, dt, dt))
+                req = _u.Request(url, headers=headers)
+                d = json.loads(_u.urlopen(req, timeout=20).read().decode())
+                k = ((d.get("data") or {}).get("klines")) or []
+                if k:
+                    parts = k[-1].split(",")
+                    src_latest, src_close = parts[0].replace("-", ""), float(parts[1])
+                    break
+            except Exception:  # noqa: BLE001
+                pass
+            time.sleep(0.2)
+        diff = None
+        if src_close and local_close:
+            diff = round(abs(src_close - float(local_close)) / src_close * 100, 3)
+        out[code] = {"local_latest": local_latest, "local_close": local_close,
+                     "source_latest": src_latest, "source_close": src_close,
+                     "close_diff_pct": diff,
+                     "verdict": "aligned" if src_latest and local_latest == src_latest and (diff is None or diff < 0.5) else "gap"}
+    return out
+
+
 def scan_events(tok, store: str, api: str) -> dict:
     """事件型：扫描最近 30 天源侧公告，确认本地最新是否为源侧最新。"""
     from datetime import timedelta
@@ -232,6 +283,10 @@ def main(argv=None) -> int:
     report["stores"]["index_global"] = r
     print("%-14s updated_rows=%d verdict=%s" % ("index_global", r["new_rows"], r["verdict"]), flush=True)
     report["financials"] = audit_financials(tok, args.dry_run)
+    report["fx"] = audit_fx()
+    for k, v in report["fx"].items():
+        print("%-8s local=%s source=%s diff=%s verdict=%s" %
+              (k, v.get("local_latest"), v.get("source_latest"), v.get("close_diff_pct"), v.get("verdict")), flush=True)
     report["events"] = {}
     for store, api in (("forecast", "forecast_vip"), ("express", "express_vip")):
         ev = scan_events(tok, store, api)
