@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 01:02",
+ "generated": "2026-10-30 01:05",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 32,
+  "workorders_doing": 31,
   "workorders_review": 4
  },
  "workorders": [
@@ -237,15 +237,6 @@
    "branch": "task/WO-SUPERVISOR-20261030",
    "created": "2026-10-30 00:23:29",
    "project": "general"
-  },
-  {
-   "id": "WO-INV-PAPER-MVP-20261030",
-   "desc": "量化部 paper 上线 MVP：risk_gate（单票10%/行业30%/日回撤5%）+ paper_book 纸面账本(hash-chain/kill switch)+ paper_daily CLI+测试",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-INV-PAPER-MVP-20261030",
-   "created": "2026-10-30 00:36:38",
-   "project": "portal"
   },
   {
    "id": "WO-ACAD-LCS1-REDEFINE-20261030",
