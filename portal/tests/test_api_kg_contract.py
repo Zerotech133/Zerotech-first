@@ -40,7 +40,7 @@ EXPECTED_HANDLER_METHODS = [
     "_kg_page",
 ]
 EXPECTED_TOP_FUNCS = ["_kg_label_save", "_kg_label_diff", "_kg_card_fb_save"]
-LINE_CEILING = 6000  # 冻结：只减不增；拆分目标 ≤1,200（见 docs/plans/2026-10-28_api_kg拆分方案_v1.md）
+LINE_CEILING = 1200  # 2026-10-29 拆分完成（5913→385）；锁定目标 ≤1,200，只减不增
 
 
 def test_handler_keeps_all_methods():
