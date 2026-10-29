@@ -1569,7 +1569,7 @@ async function sendOpenHands(raw){
   const t0 = Date.now();
   try{
     const cid = localStorage.getItem("ohconv-" + aid) || "";
-    const {r, d} = await fetchJsonTimeout("http://127.0.0.1:8796/api/ide/openhands/chat", {
+    const {r, d} = await fetchJsonTimeout("/openhands/api/ide/openhands/chat", {
       method:"POST", headers:{"Content-Type":"application/json"},
       body: JSON.stringify({message: raw, conversation_id: cid, timeout: 900})
     }, 900000, 0, null, CURRENT_ABORT.signal);

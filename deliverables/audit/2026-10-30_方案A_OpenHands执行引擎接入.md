@@ -1,7 +1,7 @@
 # 方案 A：OpenHands 作为执行引擎
 
 - 日期：2026-10-30
-- 状态：**MVP 已跑通**；IDE 入口已加，待 8796 换血后启用
+- 状态：**MVP 已跑通并在浏览器实测**；同源入口 `/openhands/` 已接 8734
 - 范围：OpenHands Agent Server + 军团网关 + IDE 入口
 
 ## 架构
@@ -10,7 +10,9 @@
 浏览器 8734 /ide
    │  OH 模式
    ▼
-军团网关 8796 /api/ide/openhands/chat
+同源 /openhands/（nginx 反向代理，重写路径）
+   ▼
+适配网关 127.0.0.1:8797（legion_command 临时实例）
    │  HTTP + session key（本机 loopback）
    ▼
 OpenHands Agent Server 127.0.0.1:8770
@@ -19,7 +21,7 @@ OpenHands Agent Server 127.0.0.1:8770
 OpenHands LLM profile: openhands_legion_gateway
    │  OpenAI 兼容
    ▼
-军团网关 8796 /v1/chat/completions
+军团网关 /v1/chat/completions（临时实例 8797，正式为 8796）
    │  模型/Key/路由
    ▼
 DeepSeek / 其他 provider
@@ -96,11 +98,15 @@ GET  /api/ide/openhands/conversation?id=
 4) 适配器 POST /api/ide/openhands/chat
    → {"ok":true,"reply":"done","duration_ms":33707,"engine":"openhands"}
    → 文件 ROUTE_OK.txt 实际写入
+5) 浏览器 8734/ide 点 OH → 发送任务
+   → A0 · OpenHands · ✅ 12.1s
+   → UI_OK.txt 实际写入
+   → 控制台零错误
 ```
 
 ## 已知限制
 
-1. **8796 需要重启换血**：当前 8796 是 Session0 旧进程，无法从当前会话停止；需在管理员终端重启，或由系统计划任务重启。
+1. **8796 旧进程换血未完成**：当前用 8797 临时适配网关 + nginx `/openhands/` 绕过；正式收口时应重启 8796 并把前端地址切回 `/api/ide/openhands/chat`。8797 只是同代码实例，数据面无差别。
 2. OpenHands 当前工作区是独立目录：
 
 ```text
