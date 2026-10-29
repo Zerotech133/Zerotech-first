@@ -21,3 +21,11 @@ def test_os_board_uses_ui_kit():
     assert "/static/ui/ui.css" in s and "/static/ui/ui.js" in s
     assert 'class="ui-card acard"' in s
     assert 'class="ui-kpi tile"' in s
+
+
+def test_quant_and_intel_use_ui_kit():
+    q = _text('quant.html')
+    assert 'ui-kpi kpi' in q and 'ui-card scard' in q
+    i = _text('intel_workbench.html')
+    assert 'ui-card quick' in i and 'ui-panel panel' in i
+    assert 'ui-btn ui-btn--primary' in i

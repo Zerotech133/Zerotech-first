@@ -102,3 +102,11 @@
 @media (prefers-reduced-motion: reduce) {
   .ui-btn, .ui-toast, .ui-skeleton { animation: none !important; transition: none !important; }
 }
+
+.ui-page-footer {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  flex-wrap: wrap; margin-top: 28px; padding: 14px 0 4px;
+  border-top: 1px solid var(--ui-line, var(--os-line));
+  color: var(--ui-muted, var(--os-muted)); font-size: 11.5px;
+}
+.ui-page-footer a { color: var(--ui-blue, var(--os-blue)); text-decoration: none; }

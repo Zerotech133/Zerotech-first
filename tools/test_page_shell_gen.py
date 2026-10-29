@@ -18,6 +18,7 @@ def test_template_exists_with_placeholders():
     assert "/static/tokens.css" in t
     assert "/static/ui/ui.css" in t
     assert "/static/ui/ui.js" in t
+    assert "ui-page-footer" in t
 
 
 def test_inject_is_idempotent(tmp_path, monkeypatch):
