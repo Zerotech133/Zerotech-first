@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-29 09:19",
+ "generated": "2026-10-29 09:21",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 44,
+  "workorders_doing": 43,
   "workorders_review": 6
  },
  "workorders": [
@@ -399,15 +399,6 @@
    "branch": "task/WO-APIKG-SPLIT2-20261029",
    "created": "2026-10-29 08:40:16",
    "project": "general"
-  },
-  {
-   "id": "WO-SEAT-INTEL1-FIRST-20261029",
-   "desc": "INTEL1 首单：图形先行策略情报简报 v0.1——≥5来源带时间/URL、竞品/开源/政策、事实/推断/线索/未知分层；交付 deliverables/2026-10-29_INTEL1_图形先行策略情报简报_v0.1.md；不编造情报；ACAD1 评审；截止 10-30。",
-   "status": "doing",
-   "owner": "INTEL1",
-   "branch": "task/WO-SEAT-INTEL1-FIRST-20261029",
-   "created": "2026-10-29 08:43:58",
-   "project": "quant"
   },
   {
    "id": "WO-SEAT-AI1-FIRST-20261029",
@@ -1989,14 +1980,7 @@
    ],
    "experience": "20 年从业经验（竞争情报：行业、竞品与外部证据分级）",
    "dept_name": "研究院",
-   "dept_cn_title": "太学",
-   "tasks": [
-    {
-     "id": "WO-SEAT-INTEL1-FIRST-20261029",
-     "desc": "INTEL1 首单：图形先行策略情报简报 v0.1——≥5来源带时间/URL、竞品/开源/政策、事实/推断/线索/未知分层；交付 deliverables/2026-10-29_INTEL1_图形先行策略情报简报_v0.1.md；不编造情报；ACAD1 评审；截止 10-30。",
-     "status": "doing"
-    }
-   ]
+   "dept_cn_title": "太学"
   },
   "AI1": {
    "id": "AI1",
