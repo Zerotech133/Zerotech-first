@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>数据仓 · 来源治理与挖掘 · 零界</title>
+<link rel="stylesheet" href="/static/nav.css">
+<style>
+:root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2333;--bd:#2d333b;--fg:#e6edf3;--dim:#8b949e;
+      --acc:#58a6ff;--ok:#3fb950;--warn:#d29922;--bad:#f85149;--purple:#bc8cff;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.6 "Microsoft YaHei",system-ui,sans-serif;padding:24px}
+h1{font-size:22px;margin:0 0 4px} h1 small{color:var(--dim);font-size:13px;font-weight:normal}
+.sub{color:var(--dim);font-size:12px;margin-bottom:18px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:18px}
+.card{background:var(--panel);border:1px solid var(--bd);border-radius:8px;padding:12px 14px}
+.card .k{color:var(--dim);font-size:12px}.card .v{font-size:24px;font-weight:700;margin-top:2px}
+.card .v.blue{color:var(--acc)}.card .v.green{color:var(--ok)}.card .v.warn{color:var(--warn)}.card .v.red{color:var(--bad)}
+.card .s{color:var(--dim);font-size:11px;margin-top:2px}
+.tabs{display:flex;gap:8px;margin:6px 0 14px;flex-wrap:wrap}
+.tabs button{background:var(--panel);border:1px solid var(--bd);color:var(--fg);padding:7px 18px;
+  border-radius:8px;cursor:pointer;font-size:14px;font-weight:600}
+.tabs button.on{background:#1f6feb;border-color:#1f6feb;color:#fff}
+table{width:100%;border-collapse:collapse;background:var(--panel);border-radius:8px;overflow:hidden}
+th,td{padding:8px 10px;border-bottom:1px solid var(--bd);text-align:left;font-size:13px;vertical-align:top}
+th{background:var(--panel2);color:var(--dim);font-weight:600;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+.badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;font-weight:600;white-space:nowrap}
+.b-done{background:#12261e;color:var(--ok)} .b-in_progress{background:#122642;color:var(--acc)}
+.b-mining{background:#2a2410;color:var(--warn)} .b-pending{background:#2a1512;color:#ffa198}
+.b-backtested{background:#12261e;color:var(--ok)} .b-rejected{background:#2a1512;color:#ffa198}
+.b-idea{background:#2a2410;color:var(--warn)}
+.filters{display:flex;gap:8px;margin:0 0 10px;flex-wrap:wrap;align-items:center}
+.filters input,.filters select{background:var(--panel);border:1px solid var(--bd);color:var(--fg);
+  border-radius:7px;padding:6px 10px;font-size:13px}
+.muted{color:var(--dim)} .num{font-variant-numeric:tabular-nums;text-align:right}
+.foot{margin-top:22px;color:var(--dim);font-size:12px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.btn{background:var(--panel);border:1px solid var(--bd);color:var(--acc);border-radius:7px;padding:6px 12px;cursor:pointer;font-size:13px}
+.btn:hover{background:var(--panel2)}
+.mono{font-family:Consolas,monospace;font-size:12px;color:#9aa4b2}
+.err{background:#2a1512;border:1px solid #67221c;color:#ffa198;border-radius:8px;padding:10px 14px;margin:10px 0}
+.hidden{display:none}
+</style>
+<script src="/static/nav.js" defer></script><meta name=wb-shell content=adopted></head>
+<body>
+<h1>🗄 数据仓 <small>来源治理 · 治理中 · 挖掘中 · 运维健康</small></h1>
+<div class="sub" id="sub">加载中…</div>
+<div id="err" class="err hidden"></div>
+
+<div class="cards" id="cards"></div>
+
+<div class="tabs" id="tabs">
+  <button data-tab="sources" class="on">来源治理</button>
+  <button data-tab="governance">治理进度</button>
+  <button data-tab="mining">挖掘台账</button>
+  <button data-tab="reports">研究产出</button>
+  <button data-tab="ops">运维健康</button>
+</div>
+
+<div id="tab-sources">
+  <div class="filters">
+    <select id="fLayer"><option value="">全部层</option></select>
+    <select id="fStatus"><option value="">全部状态</option>
+      <option value="done">✅ 已治理</option><option value="in_progress">🔧 治理中</option>
+      <option value="mining">⛏ 待挖掘</option><option value="pending">⏳ 待办</option></select>
+    <input id="fSearch" placeholder="搜索名称/备注…" style="min-width:220px">
+  </div>
+  <table><thead><tr><th>来源</th><th>层</th><th>状态</th><th>说明</th><th class="num">文件数</th>
+    <th class="num">体积 MB</th><th>登记(catalog)</th><th>manifest</th></tr></thead><tbody id="tbSources"></tbody></table>
+</div>
+
+<div id="tab-governance" class="hidden">
+  <table><thead><tr><th>治理项</th><th>状态</th><th>说明</th></tr></thead><tbody id="tbGov"></tbody></table>
+</div>
+
+<div id="tab-mining" class="hidden">
+  <table><thead><tr><th>ID</th><th>状态</th><th>假设</th><th>结论</th><th>证据</th></tr></thead><tbody id="tbHyp"></tbody></table>
+</div>
+
+<div id="tab-reports" class="hidden">
+  <table><thead><tr><th>报告</th><th class="num">大小 KB</th><th>时间</th></tr></thead><tbody id="tbRep"></tbody></table>
+</div>
+
+<div id="tab-ops" class="hidden">
+  <div id="opsBox"></div>
+</div>
+
+<div class="foot"><span id="gen"></span><span><button class="btn" onclick="load()">刷新</button></span></div>
+
+<script>
+const ST={done:['b-done','✅ 已治理'],in_progress:['b-in_progress','🔧 治理中'],
+  mining:['b-mining','⛏ 待挖掘'],pending:['b-pending','⏳ 待办']};
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
+function badge(s){const x=ST[s]||['b-in_progress',esc(s)];return '<span class="badge '+x[0]+'">'+x[1]+'</span>';}
+let SNAP=null;
+async function load(){
+  try{
+    const r=await fetch('/dw_snapshot.json?ts='+Date.now(),{cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    SNAP=await r.json(); render(); document.getElementById('err').classList.add('hidden');
+  }catch(e){
+    const el=document.getElementById('err'); el.classList.remove('hidden');
+    el.textContent='快照加载失败：'+e.message+'（先生成 tools/dw_dashboard.py 快照）';
+  }
+}
+function render(){
+  const c=SNAP.catalog;
+  const hCounts={}; (SNAP.mining.hypotheses||[]).forEach(x=>hCounts[x.status]=(hCounts[x.status]||0)+1);
+  const src=SNAP.sources||[];
+  const cnt={done:0,in_progress:0,mining:0,pending:0}; src.forEach(s=>cnt[s.status]=(cnt[s.status]||0)+1);
+  document.getElementById('sub').textContent='catalog v'+c.version+' · '+c.tables+' 表 · registry '+c.registry.physical+' 物理/'+c.registry.display+' 展示 · 契约 '+c.contracts+' 份 · 快照 '+SNAP.generated_at;
+  const o=SNAP.ops||{};
+  document.getElementById('cards').innerHTML=[
+    ['catalog 表数',c.tables,'blue','v'+c.version+' · registry '+c.registry.physical],
+    ['数据源',src.length,'blue','已治理 '+cnt.done+' / 治理中 '+cnt.in_progress+' / 待挖掘 '+cnt.mining],
+    ['契约 ODCS',c.contracts,'warn','覆盖研究用表扩展中'],
+    ['资格未知',c.qualification_unknown,'warn','evidence/qualify 覆盖待扩'],
+    ['研究台账',(SNAP.mining.hypotheses||[]).length,'green','backtested '+(hCounts.backtested||0)+' / rejected '+(hCounts.rejected||0)+' / idea '+(hCounts.idea||0)],
+    ['最新备份',(o.backup||{}).latest||'—','green',((o.backup||{}).products||[]).length+' 产物'],
+    ['审批台账',(o.approvals||{}).count||0,'purple','S2 approvals.jsonl'],
+    ['Supervisor',((o.supervisor||{}).red||[]).length?((o.supervisor||{}).red||[]).join(','):'全绿','green','L1/L3/L4 dry-run']
+  ].map(x=>'<div class="card"><div class="k">'+esc(x[0])+'</div><div class="v '+x[2]+'">'+esc(x[1])+'</div><div class="s">'+esc(x[3]||'')+'</div></div>').join('');
+  const layers=[...new Set(src.map(s=>s.layer))].sort();
+  const sel=document.getElementById('fLayer');
+  if(sel.options.length===1) layers.forEach(l=>sel.add(new Option(l,l)));
+  const fs=document.getElementById('fSearch').value.trim().toLowerCase();
+  const fl=sel.value, fst=document.getElementById('fStatus').value;
+  const rows=src.filter(s=>(!fl||s.layer===fl)&&(!fst||s.status===fst)&&
+    (!fs||(s.name+' '+s.label+' '+s.note).toLowerCase().includes(fs)));
+  document.getElementById('tbSources').innerHTML=rows.map(s=>'<tr><td><b>'+esc(s.label)+'</b><div class="mono">'+esc(s.name)+'</div></td>'+
+    '<td>'+esc(s.layer)+'</td><td>'+badge(s.status)+'</td><td class="muted">'+esc(s.note)+'</td>'+
+    '<td class="num">'+(s.files==null?'—':s.files)+'</td><td class="num">'+(s.size_mb==null?'—':s.size_mb)+'</td>'+
+    '<td>'+(s.registered?'✅':'❌')+'</td><td class="mono">'+esc(s.manifest)+'</td></tr>').join('');
+  const GST={done:['b-done','✅ 完成'],in_progress:['b-in_progress','🔧 进行中'],pending:['b-pending','⏳ 待办']};
+  document.getElementById('tbGov').innerHTML=(SNAP.governance||[]).map(g=>{
+    const x=GST[g.status]||['b-in_progress',esc(g.status)];
+    return '<tr><td><b>'+esc(g.item)+'</b></td><td><span class="badge '+x[0]+'">'+x[1]+'</span></td><td class="muted">'+esc(g.note)+'</td></tr>';
+  }).join('');
+  const HS={backtested:['b-backtested','✅ backtested'],rejected:['b-rejected','❌ rejected'],
+    idea:['b-idea','💡 idea'],in_progress:['b-in_progress','🔧 in_progress'],validated:['b-backtested','✅ validated']};
+  document.getElementById('tbHyp').innerHTML=(SNAP.mining.hypotheses||[]).map(h=>{
+    const x=HS[h.status]||['b-in_progress',esc(h.status)];
+    return '<tr><td><b>'+esc(h.id)+'</b></td><td><span class="badge '+x[0]+'">'+x[1]+'</span></td>'+
+      '<td>'+esc(h.title)+(h.question?'<div class="muted">'+esc(h.question)+'</div>':'')+'</td>'+
+      '<td class="muted">'+esc(h.conclusion||'—')+'</td><td class="mono">'+esc(h.evidence||'—')+'</td></tr>';
+  }).join('');
+  document.getElementById('tbRep').innerHTML=(SNAP.mining.reports||[]).map(r=>'<tr><td class="mono">'+esc(r.name)+'</td>'+
+    '<td class="num">'+r.size_kb+'</td><td class="muted">'+esc(r.mtime)+'</td></tr>').join('');
+  const b=o.backup||{};
+  document.getElementById('opsBox').innerHTML=
+    '<h2 style="font-size:15px;color:var(--acc);border-bottom:1px solid var(--bd);padding-bottom:6px;margin:10px 0">备份（BackupDaily）</h2>'+
+    '<table><thead><tr><th>代</th><th>产物</th><th class="num">MB</th></tr></thead><tbody>'+
+    '<tr><td>'+esc(b.latest||'—')+'</td><td>'+esc((b.products||[]).map(x=>x.name).join(' / ')||'—')+'</td>'+
+    '<td class="num">'+esc((b.products||[]).map(x=>x.mb).join(' / ')||'—')+'</td></tr></tbody></table>'+
+    '<h2 style="font-size:15px;color:var(--acc);border-bottom:1px solid var(--bd);padding-bottom:6px;margin:18px 0 10px">运行健康</h2>'+
+    '<table><thead><tr><th>检查</th><th>结果</th></tr></thead><tbody>'+
+    '<tr><td>Supervisor L1/L3/L4</td><td>'+((o.supervisor||{}).red||[]).length?'<span class="badge b-pending">red</span>':'<span class="badge b-done">全绿</span>'+'</td></tr>'+
+    '<tr><td>最新审批</td><td class="mono">'+esc(JSON.stringify(((o.approvals||{}).latest||[]).slice(-1)[0]||{}).slice(0,180))+'</td></tr>'+
+    '</tbody></table>';
+  document.getElementById('gen').textContent='快照生成：'+SNAP.generated_at+'（数据源 tools/dw_dashboard.py）';
+}
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x===b));
+  ['sources','governance','mining','reports','ops'].forEach(t=>
+    document.getElementById('tab-'+t).classList.toggle('hidden',t!==b.dataset.tab));
+});
+['fLayer','fStatus','fSearch'].forEach(id=>{
+  const el=document.getElementById(id); if(!el) return;
+  el.addEventListener(el.tagName==='INPUT'?'input':'change',()=>{if(SNAP)render();});
+});
+load();
+</script>
+</body>
+</html>
