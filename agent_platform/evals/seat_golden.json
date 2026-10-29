@@ -1,7 +1,7 @@
 {
   "_note": "席位评测黄金集 v1（P0① WO-EVAL-SEATS-20261027）。每条=确定性检查（命令 rc/stdout 或文件存在/包含），零 LLM 调用、零副作用；先建基线，通过率稳定后再接入 seat_realness 第 6 维。",
-  "schema": "seat_golden/v1",
-  "updated": "2026-10-27",
+  "schema": "seat_golden/v2",
+  "updated": "2026-10-29",
   "seats": {
     "ACAD1": {
       "label": "研究院院长·司马徽",
@@ -181,6 +181,228 @@
           "contains": [
             "dry_run",
             "network"
+          ]
+        }
+      ]
+    },
+    "COMM1": {
+      "label": "商业化研究员·马良",
+      "cases": [
+        {
+          "id": "comm1-card-sections",
+          "kind": "file",
+          "path": "deliverables/2026-10-29_COMM1_LCS1商业化假设卡_v0.1.md",
+          "assertions": [
+            {
+              "kind": "contains_all",
+              "values": [
+                "客户",
+                "交付",
+                "成本",
+                "价格",
+                "合规"
+              ]
+            },
+            {
+              "kind": "not_contains_any",
+              "values": [
+                "保证收益",
+                "稳赚"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "comm1-evidence-marks",
+          "kind": "file",
+          "path": "deliverables/2026-10-29_COMM1_LCS1商业化假设卡_v0.1.md",
+          "assertions": [
+            {
+              "kind": "contains_all",
+              "values": [
+                "事实",
+                "推断",
+                "未知"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "comm1-cost-assumption",
+          "kind": "file",
+          "path": "deliverables/2026-10-29_COMM1_LCS1商业化假设卡_v0.1.md",
+          "assertions": [
+            {
+              "kind": "contains_all",
+              "values": [
+                "成本",
+                "假设"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "INTEL1": {
+      "label": "竞争情报研究员·郭嘉",
+      "cases": [
+        {
+          "id": "intel-sources",
+          "kind": "file",
+          "path": "deliverables/2026-10-29_INTEL1_图形先行策略情报简报_v0.1.md",
+          "assertions": [
+            {
+              "kind": "min_urls",
+              "count": 5
+            },
+            {
+              "kind": "contains_all",
+              "values": [
+                "来源",
+                "时间"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "intel-layers",
+          "kind": "file",
+          "path": "deliverables/2026-10-29_INTEL1_图形先行策略情报简报_v0.1.md",
+          "assertions": [
+            {
+              "kind": "contains_all",
+              "values": [
+                "事实",
+                "推断",
+                "线索",
+                "未知"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "intel-impact",
+          "kind": "file",
+          "path": "deliverables/2026-10-29_INTEL1_图形先行策略情报简报_v0.1.md",
+          "assertions": [
+            {
+              "kind": "contains_all",
+              "values": [
+                "影响",
+                "LCS-1"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "AI1": {
+      "label": "AI方法论研究员·诸葛亮",
+      "cases": [
+        {
+          "id": "ai1-golden-design",
+          "kind": "file",
+          "path": "deliverables/2026-10-29_AI1_4席能力评测golden方案_v0.1.md",
+          "assertions": [
+            {
+              "kind": "contains_all",
+              "values": [
+                "golden",
+                "用例",
+                "断言",
+                "6/6"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ai1-schema",
+          "kind": "file",
+          "path": "deliverables/2026-10-29_AI1_4席能力评测golden方案_v0.1.md",
+          "assertions": [
+            {
+              "kind": "contains_all",
+              "values": [
+                "seat_golden",
+                "seat_eval",
+                "schema"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ai1-no-fake-pass",
+          "kind": "file",
+          "path": "deliverables/2026-10-29_AI1_4席能力评测golden方案_v0.1.md",
+          "assertions": [
+            {
+              "kind": "not_contains_any",
+              "values": [
+                "保证通过",
+                "已全面通过"
+              ]
+            },
+            {
+              "kind": "contains_all",
+              "values": [
+                "5/5"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "PROD1": {
+      "label": "策略产品经理·产品经理",
+      "cases": [
+        {
+          "id": "prod1-acceptance",
+          "kind": "file",
+          "path": "deliverables/2026-10-29_PROD1_LCS1产品化需求与验收_v0.1.md",
+          "assertions": [
+            {
+              "kind": "contains_all",
+              "values": [
+                "验收",
+                "A1",
+                "A8"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "prod1-no-freeze-go",
+          "kind": "file",
+          "path": "deliverables/2026-10-29_PROD1_LCS1产品化需求与验收_v0.1.md",
+          "assertions": [
+            {
+              "kind": "contains_all",
+              "values": [
+                "数据未冻结",
+                "No-Go"
+              ]
+            },
+            {
+              "kind": "not_contains_any",
+              "values": [
+                "保证收益"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "prod1-rollback",
+          "kind": "file",
+          "path": "deliverables/2026-10-29_PROD1_LCS1产品化需求与验收_v0.1.md",
+          "assertions": [
+            {
+              "kind": "contains_all",
+              "values": [
+                "回滚",
+                "退出条件",
+                "风险"
+              ]
+            }
           ]
         }
       ]

@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -34,6 +35,31 @@ def _read_json(path: Path):
         raise SystemExit(2)
 
 
+
+def _assertion_failures(text: str, assertions: list[dict]) -> list[str]:
+    """schema v2 断言执行器：contains_all / not_contains_any / regex / min_urls。"""
+    failures = []
+    for a in assertions or []:
+        kind = a.get("kind")
+        if kind == "contains_all":
+            missing = [str(x) for x in (a.get("values") or []) if str(x) not in text]
+            if missing:
+                failures.append("contains_all missing=%s" % missing)
+        elif kind == "not_contains_any":
+            hits = [str(x) for x in (a.get("values") or []) if str(x) in text]
+            if hits:
+                failures.append("forbidden=%s" % hits)
+        elif kind == "regex":
+            if not re.search(str(a.get("pattern") or ""), text):
+                failures.append("regex miss=%s" % a.get("pattern"))
+        elif kind == "min_urls":
+            n = len(re.findall(r"https?://[^\s)\]|]+", text))
+            if n < int(a.get("count", 1)):
+                failures.append("urls=%d<%s" % (n, a.get("count")))
+        else:
+            failures.append("unknown assertion=%s" % kind)
+    return failures
+
 def _run_case(case: dict, root: Path) -> dict:
     cid = case.get("id") or "?"
     kind = case.get("kind")
@@ -46,10 +72,13 @@ def _run_case(case: dict, root: Path) -> dict:
             out = (r.stdout or "") + "\n" + (r.stderr or "")
             ok = r.returncode == int(case.get("expect_rc", 0))
             missing = [s for s in case.get("contains", []) if s not in out]
-            ok = ok and not missing
+            fails = _assertion_failures(out, case.get("assertions") or [])
+            ok = ok and not missing and not fails
             detail = "rc=%s" % r.returncode
             if missing:
                 detail += " missing=%s" % missing
+            if fails:
+                detail += " assertions=%s" % fails
             return {"id": cid, "kind": kind, "ok": bool(ok), "detail": detail}
         if kind == "file":
             p = (root / case.get("path", "")).resolve()
@@ -61,6 +90,12 @@ def _run_case(case: dict, root: Path) -> dict:
                 if needle not in text:
                     ok = False
                     detail += " missing_contains=%s" % needle
+            if ok and case.get("assertions"):
+                text = p.read_text(encoding="utf-8", errors="replace")
+                fails = _assertion_failures(text, case.get("assertions") or [])
+                if fails:
+                    ok = False
+                    detail += " assertions=%s" % fails
             return {"id": cid, "kind": kind, "ok": bool(ok), "detail": detail}
         return {"id": cid, "kind": kind, "ok": False, "detail": "unknown kind"}
     except subprocess.TimeoutExpired:
