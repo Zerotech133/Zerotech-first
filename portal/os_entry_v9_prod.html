@@ -374,7 +374,9 @@ async function refresh(){const run=++sequence,keys=Object.keys(endpoints);$('#fr
           box.appendChild(d);
         }
         var label = k === '3' ? '待你确认' : '研发在制';
-        d.querySelector('summary').textContent = label + ' ' + list.length + ' 项（点击展开）';
+        var summaryNode = d.querySelector('summary');
+        var summaryText = label + ' ' + list.length + ' 项（点击展开）';
+        if (summaryNode && summaryNode.textContent !== summaryText) summaryNode.textContent = summaryText;
         var target = d.querySelector('.os-fold-body');
         list.forEach(function (row) { if (row.parentNode !== target) target.appendChild(row); });
       });
