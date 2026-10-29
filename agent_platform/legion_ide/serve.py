@@ -51,6 +51,18 @@ _HTML_CT = "text/html; charset=utf-8"
 _EXEC_RESULTS: dict[str, dict] = {}
 _EXEC_RESULTS_TTL_S = 3600
 _EXEC_RESULTS_MAX = 100
+_PREVIEWS: dict[str, dict] = {}
+_PREVIEW_TTL_S = 600
+_PREVIEW_MAX = 20
+
+
+def _prune_previews() -> None:
+    now = time.time()
+    for key in [k for k, v in _PREVIEWS.items()
+                if now - float(v.get("ts") or 0) > _PREVIEW_TTL_S]:
+        _PREVIEWS.pop(key, None)
+    while len(_PREVIEWS) > _PREVIEW_MAX:
+        _PREVIEWS.pop(next(iter(_PREVIEWS)))
 
 
 def _remember_exec(run_id: str, result: dict) -> None:
@@ -285,6 +297,8 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
             if path not in (
                 "/api/ide/read",
                 "/api/ide/write",
+                "/api/ide/write/preview",
+                "/api/ide/write/confirm",
                 "/api/ide/exec",
                 "/api/ide/lock",
             ):
@@ -325,16 +339,45 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
             if locked:
                 return self._json(409, locked)
             if path == "/api/ide/write":
-                res = W.write_file(wt, data.get("path"), data.get("content", ""))
-                G.audit(
-                    repo,
-                    "code_action",
-                    data.get("task"),
-                    owner,
-                    "write %s -> %s"
-                    % (data.get("path"), "ok" if res.get("ok") else res.get("error")),
-                )
-                return self._json(200 if res.get("ok") else 400, res)
+                return self._json(400, G.err(
+                    "write_requires_preview",
+                    "写文件已改为两阶段：先 /api/ide/write/preview，再 /api/ide/write/confirm",
+                ))
+            if path == "/api/ide/write/preview":
+                res = W.preview_file(wt, data.get("path"), data.get("content", ""))
+                if not res.get("ok"):
+                    return self._json(400, res)
+                _prune_previews()
+                preview_id = uuid.uuid4().hex
+                _PREVIEWS[preview_id] = {
+                    "ts": time.time(),
+                    "task": str(data.get("task") or ""),
+                    "owner": owner,
+                    "path": res["path"],
+                    "content": data.get("content", ""),
+                    "old_sha256": res["old_sha256"],
+                }
+                _prune_previews()
+                G.audit(repo, "code_action", data.get("task"), owner,
+                        "preview %s +%dB" % (res["path"], res["bytes"]))
+                return self._json(200, {**res, "preview_id": preview_id,
+                                        "expires_in_s": _PREVIEW_TTL_S})
+            if path == "/api/ide/write/confirm":
+                preview_id = str(data.get("preview_id") or "").strip()
+                pending = _PREVIEWS.get(preview_id)
+                if not pending:
+                    return self._json(400, G.err("preview_missing", "预览不存在或已过期"))
+                if (pending.get("owner") != owner
+                        or pending.get("task") != str(data.get("task") or "")):
+                    return self._json(409, G.err("preview_owner_mismatch", "预览不属于当前工单/会话"))
+                res = W.write_file(wt, pending["path"], pending["content"],
+                                   expected_sha256=pending["old_sha256"])
+                if not res.get("ok"):
+                    return self._json(409 if res.get("error") == "stale_preview" else 400, res)
+                _PREVIEWS.pop(preview_id, None)
+                G.audit(repo, "code_action", data.get("task"), owner,
+                        "confirm %s -> ok" % pending["path"])
+                return self._json(200, {**res, "confirmed": True})
             try:
                 timeout_s = int(data.get("timeout") or X.DEFAULT_TIMEOUT)
             except (TypeError, ValueError):
