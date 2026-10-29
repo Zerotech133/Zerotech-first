@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-10-30T02:12:20+08:00",
+ "generated_at": "2026-10-30T02:13:07+08:00",
  "today": "2026-10-30",
  "catalog": {
   "version": 16,
@@ -1761,7 +1761,7 @@
    "files": 1,
    "size_mb": 8379,
    "size_h": "8.4 GB",
-   "rows": 15824547,
+   "rows": 15824729,
    "rows_h": "1582.5 万",
    "range": "2026-08-11 起（分钟线）",
    "last_update": "2026-10-30",
@@ -3305,6 +3305,12 @@
     "status": "doing",
     "owner": "ZHAOYUN",
     "desc": "修service_restart假成功：返回时要求当前health ok并复查probe后健康；test_gate注释补tools"
+   },
+   {
+    "id": "WO-ACAD-DEPT-OPS-20261030",
+    "status": "doing",
+    "owner": "ACAD1",
+    "desc": "部门AI分工与每日自动化：健康表/选池台账/日报；修 TodaysPicks 产品链；新增计划任务需 A0 L2 批。"
    }
   ],
   "doing_data": [
@@ -3447,6 +3453,12 @@
     "status": "doing",
     "owner": "ZHAOYUN",
     "desc": "修service_restart假成功：返回时要求当前health ok并复查probe后健康；test_gate注释补tools"
+   },
+   {
+    "id": "WO-ACAD-DEPT-OPS-20261030",
+    "status": "doing",
+    "owner": "ACAD1",
+    "desc": "部门AI分工与每日自动化：健康表/选池台账/日报；修 TodaysPicks 产品链；新增计划任务需 A0 L2 批。"
    }
   ],
   "today_pilot_data": [
@@ -3879,7 +3891,7 @@
    "aborted": 89,
    "done": 1217,
    "review": 10,
-   "doing": 28
+   "doing": 29
   }
  },
  "governance": [
@@ -4082,7 +4094,7 @@
   },
   "supervisor": {
    "red": [],
-   "generated_at": "2026-10-30T02:12:20"
+   "generated_at": "2026-10-30T02:13:07"
   },
   "approvals": {
    "count": 2,
@@ -4114,10 +4126,66 @@
   }
  },
  "sync": {
-  "ok": null,
-  "note": "暂无手动同步记录",
-  "steps": [],
-  "how_to": "python tools/data_sync_manual.py"
+  "started_at": "2026-10-30T02:08:00+08:00",
+  "finished_at": "2026-10-30T02:12:20+08:00",
+  "ok": true,
+  "failed": [],
+  "steps": [
+   {
+    "step": "guard",
+    "desc": "六表增量守护（increment_guard，补齐最近交易窗口）",
+    "rc": 0,
+    "duration_s": 9.4,
+    "tail": [
+     "[manifest] margin_detail: +1 单元 +4485 行 → file=d_20261028.parquet rows=3666750",
+     "[manifest] index_daily: +2 单元 +19873 行 → file=d_20261029.parquet rows=9523510",
+     "[manifest] moneyflow: +1 单元 +5577 行 → file=d_20261029.parquet rows=4733899",
+     "[git] manifest 无变更",
+     "[done] status=OK passed=7 held=0",
+     "[report] work/increment_guard_20261030T020800.json"
+    ]
+   },
+   {
+    "step": "hk",
+    "desc": "港股日线导出（HK R1 Daily --append）",
+    "rc": 0,
+    "duration_s": 17.3,
+    "tail": [
+     "  \"snap_reconcile\": \"OK\"",
+     " },",
+     " \"skipped\": false,",
+     " \"log\": \"C:\\\\项目\\\\_reviews_20261026\\\\hk_r1_logs\\\\hk_r1_20261030_020809.log\",",
+     " \"ledger\": \"C:\\\\项目\\\\_reviews_20261026\\\\hk_r1_observation_v1.md\"",
+     "}"
+    ]
+   },
+   {
+    "step": "ann",
+    "desc": "公告近月增量回填（ann_history_sync --apply）",
+    "rc": 0,
+    "duration_s": 205.6,
+    "tail": [
+     "[02:08:26] START mode=apply since=2026-10-01 universe=300 db=C:\\项目\\zerobound-kg\\data\\ann_history\\ann_history.db",
+     "[02:08:27] BEFORE {'ann': 493448, 'ann_stock': 493491, 'date_min': '2026-02-01', 'date_max': '2026-10-27'}",
+     "[02:10:47] PROGRESS 200/300 rows=1176 new=814 fails=0 ETA=1.2min",
+     "[02:11:52] PROGRESS 300/300 rows=1715 new=1192 fails=0 ETA=0.0min",
+     "[02:11:52] AFTER {'ann': 494044, 'ann_stock': 494087, 'date_min': '2026-02-01', 'date_max': '2026-10-30'}",
+     "[02:11:52] DONE mode=apply rows=1715 new=1192 fails=0 elapsed=205.1s"
+    ]
+   },
+   {
+    "step": "snapshot",
+    "desc": "刷新驾驶舱快照（dw_snapshot.json）",
+    "rc": 0,
+    "duration_s": 28.5,
+    "tail": [
+     "snapshot: C:\\项目\\老田的AI助手\\portal\\static\\dw_snapshot.json size= 118932",
+     "cockpit: {\"sources_total\": 66, \"sources_done\": 23, \"sources_in_progress\": 6, \"sources_mining\": 37, \"sources_pending\": 0, \"coverage_pct\": 34.8, \"new_today\": 30, \"pilot_today\": 4, \"merged_today\": 8, \"hypotheses\": 14, \"hypotheses_by_status\": {\"rejected\": 10, \"backtested\": 3, \"idea\": 1}, \"reports_total\": 34, \"re"
+    ]
+   }
+  ],
+  "log": "C:\\项目\\老田的AI助手\\work\\data_sync\\sync_20261030_020800.log",
+  "how_to": "python tools/data_sync_manual.py（或指定 --steps tushare,hk,snapshot）"
  },
  "layers": [
   "原始层",
