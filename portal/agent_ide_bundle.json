@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 01:10",
+ "generated": "2026-10-30 01:13",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 32,
+  "workorders_doing": 35,
   "workorders_review": 4
  },
  "workorders": [
@@ -336,6 +336,33 @@
    "branch": "task/WO-DW-COCKPIT-20261030",
    "created": "2026-10-30 01:10:10",
    "project": "general"
+  },
+  {
+   "id": "WO-GUANYU-P46-20261030",
+   "desc": "并行合并验证P46",
+   "status": "doing",
+   "owner": "GUANYU",
+   "branch": "task/WO-GUANYU-P46-20261030",
+   "created": "2026-10-30 01:11:09",
+   "project": "general"
+  },
+  {
+   "id": "WO-GUANYU-P47-20261030",
+   "desc": "并行合并验证P47",
+   "status": "doing",
+   "owner": "GUANYU",
+   "branch": "task/WO-GUANYU-P47-20261030",
+   "created": "2026-10-30 01:11:16",
+   "project": "general"
+  },
+  {
+   "id": "K-QUANT-20261030-IDECONTEXT",
+   "desc": "IDE上下文引擎：repo map+词法检索+token预算压缩；8796 API；IDE自动注入；测试",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-QUANT-20261030-IDECONTEXT",
+   "created": "2026-10-30 01:11:58",
+   "project": "quant"
   }
  ],
  "coder_traces": [
@@ -6323,7 +6350,19 @@
    ],
    "experience": "30 年工程治理经验：漏洞分级与补丁流程、失败测试基线修复、编码规范与门禁落地、技术债清欠与重复功能合并；证据驱动、逐项闭环，只出报告与工单不自行合并，开发动作限独立 worktree 提交+跑测试并交 L2 人签。",
    "dept_name": "研究院",
-   "dept_cn_title": "太学"
+   "dept_cn_title": "太学",
+   "tasks": [
+    {
+     "id": "WO-GUANYU-P46-20261030",
+     "desc": "并行合并验证P46",
+     "status": "doing"
+    },
+    {
+     "id": "WO-GUANYU-P47-20261030",
+     "desc": "并行合并验证P47",
+     "status": "doing"
+    }
+   ]
   },
   "HUANGZHONG": {
    "id": "HUANGZHONG",
