@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 00:36",
+ "generated": "2026-10-30 00:39",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 25,
+  "workorders_doing": 26,
   "workorders_review": 3
  },
  "workorders": [
@@ -257,13 +257,22 @@
    "project": "general"
   },
   {
-   "id": "K-QUANT-20261030-IDEAUDIT",
-   "desc": "军团IDE代码审计修复：原子工单锁；执行结果TTL上限；exec超时夹逼；写文件异常兜底；回归测试+开源对标报告",
+   "id": "WO-INV-PAPER-MVP-20261030",
+   "desc": "量化部 paper 上线 MVP：risk_gate（单票10%/行业30%/日回撤5%）+ paper_book 纸面账本(hash-chain/kill switch)+ paper_daily CLI+测试",
    "status": "doing",
    "owner": "DSH-Lead",
-   "branch": "task/K-QUANT-20261030-IDEAUDIT",
-   "created": "2026-10-30 00:31:02",
-   "project": "quant"
+   "branch": "task/WO-INV-PAPER-MVP-20261030",
+   "created": "2026-10-30 00:36:38",
+   "project": "portal"
+  },
+  {
+   "id": "WO-LEGION-GOLDEN50-20261030",
+   "desc": "诸葛亮 golden 30→50：AI1 补 20 条模块契约，27/27 通过",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-GOLDEN50-20261030",
+   "created": "2026-10-30 00:38:15",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -6912,6 +6921,11 @@
     {
      "id": "WO-BOARD-AUDIT-FIX-20261030",
      "desc": "修 task_board_audit F401（sys 未用）",
+     "status": "doing"
+    },
+    {
+     "id": "WO-LEGION-GOLDEN50-20261030",
+     "desc": "诸葛亮 golden 30→50：AI1 补 20 条模块契约，27/27 通过",
      "status": "doing"
     }
    ]
