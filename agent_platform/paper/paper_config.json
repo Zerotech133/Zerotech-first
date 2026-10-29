@@ -1,0 +1,25 @@
+{
+  "_note": "量化部 paper MVP 风控配置（2026-10-30）：单票10%/行业30%/单日回撤5%；仅纸面，不接实盘。",
+  "limits": {
+    "single_name_max": 0.10,
+    "industry_max": 0.30,
+    "daily_drawdown_max": 0.05,
+    "min_confidence": 0.5
+  },
+  "targets": {
+    "STRONG_BUY": 0.10,
+    "BUY": 0.05,
+    "HOLD": 0.0,
+    "WATCH": 0.0,
+    "SELL": 0.0,
+    "STRONG_SELL": 0.0
+  },
+  "industries": {
+    "600519": "白酒",
+    "000858": "白酒",
+    "601318": "保险",
+    "300750": "电池",
+    "600036": "银行"
+  },
+  "unknown_industry": "未分类"
+}
