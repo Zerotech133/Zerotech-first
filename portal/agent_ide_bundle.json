@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 02:00",
+ "generated": "2026-10-30 02:03",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 25,
+  "workorders_doing": 26,
   "workorders_review": 8
  },
  "workorders": [
@@ -293,15 +293,6 @@
    "project": "general"
   },
   {
-   "id": "WO-NIGHTLY-TOOLS-20261030",
-   "desc": "test_gate 增 tools 套件（夜间全量用；不进fast/all）：ValidateSet/paths/switch+baseline键",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-NIGHTLY-TOOLS-20261030",
-   "created": "2026-10-30 01:51:32",
-   "project": "general"
-  },
-  {
    "id": "WO-ACAD-BOARD-V2-20261030",
    "desc": "策阅板块重整 v2：策略发现→推荐池→鲁肃(D1)军团判断 单流程；架构/数据契约/页面；只读，不接下单。",
    "status": "review",
@@ -309,6 +300,24 @@
    "branch": "task/WO-ACAD-BOARD-V2-20261030",
    "created": "2026-10-30 01:54:51",
    "project": "quant"
+  },
+  {
+   "id": "WO-HZ-HYGIENE-20261030",
+   "desc": "黄忠遗留清理：DEV7 resume/BOM×2/acceptance_done 归因",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-HZ-HYGIENE-20261030",
+   "created": "2026-10-30 02:02:22",
+   "project": "general"
+  },
+  {
+   "id": "WO-HZ-REVIEW-20261030",
+   "desc": "黄忠认证v2六条复核工具+11-04 dry-run",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-HZ-REVIEW-20261030",
+   "created": "2026-10-30 02:03:03",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -7006,11 +7015,6 @@
      "id": "WO-LEGION-OS-UI-UNIFY-20261030",
      "desc": "全站OS UI统一：共享主题+全局下钻/返回，批量注入全部portal页面",
      "status": "review"
-    },
-    {
-     "id": "WO-NIGHTLY-TOOLS-20261030",
-     "desc": "test_gate 增 tools 套件（夜间全量用；不进fast/all）：ValidateSet/paths/switch+baseline键",
-     "status": "doing"
     }
    ]
   }
