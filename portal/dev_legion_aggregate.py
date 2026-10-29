@@ -80,3 +80,34 @@ def build_redlines(metrics):
         {"id": "merge_approval_coverage", "value": None, "ok": None},
         {"id": "self_review", "value": None, "ok": None},
     ]
+
+# 与 tools/authority_audit.py 同口径：block 生效（2026-10-27 16:00）后新单，
+# 历史 done 不追改（charter 明确）。
+HISTORICAL_CUTOFF = "2026-10-27T16:00"
+
+
+def build_governance(tasks, cutoff=HISTORICAL_CUTOFF):
+    """dev 单署名覆盖（新单口径）+ 历史缺署名计数，供作战屏看治理红。"""
+    rows = []
+    for tid, t in (tasks or {}).items():
+        if not isinstance(t, dict) or (t.get("dept") or "").lower() != "dev":
+            continue
+        if t.get("status") != "done" or not t.get("merged"):
+            continue
+        stamp = str(t.get("created") or t.get("merged") or "").replace(" ", "T")[:16]
+        rows.append({"id": tid, "stamp": stamp,
+                     "approver": (t.get("approver") or "").strip()})
+    new = [r for r in rows if r["stamp"] >= cutoff]
+    new_missing = [r for r in new if not r["approver"]]
+    hist = [r for r in rows if r["stamp"] < cutoff]
+    hist_missing = [r for r in hist if not r["approver"]]
+    return {
+        "merge_approval_coverage": (round((len(new) - len(new_missing)) / len(new), 4)
+                                    if new else None),
+        "new_done": len(new),
+        "new_missing": len(new_missing),
+        "historical_done": len(hist),
+        "historical_missing": len(hist_missing),
+        "approval_ok": (None if not new else not new_missing),
+        "cutoff": cutoff,
+    }

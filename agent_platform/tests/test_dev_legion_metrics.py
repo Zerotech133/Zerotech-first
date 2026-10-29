@@ -81,3 +81,27 @@ def test_api_uses_aggregation():
     # API payload 与聚合层同源（有 daily 时指标一致）
     m = G.build_metrics({"metrics": {}, "window_days": 7})
     assert set(p["metrics"]) == set(m)
+
+
+def test_governance_new_vs_historical():
+    tasks = {
+        "T-NEW-OK": {"dept": "dev", "status": "done", "merged": "2026-10-28 10:00",
+                     "created": "2026-10-28 09:00", "approver": "ARCH1"},
+        "T-NEW-MISS": {"dept": "dev", "status": "done", "merged": "2026-10-28 11:00",
+                       "created": "2026-10-28 10:00"},
+        "T-HIST": {"dept": "dev", "status": "done", "merged": "2026-10-27 15:00",
+                   "created": "2026-10-27 14:00"},
+        "T-OTHER": {"dept": "quant", "status": "done", "merged": "2026-10-28 12:00"},
+    }
+    g = G.build_governance(tasks)
+    assert g["new_done"] == 2
+    assert g["new_missing"] == 1
+    assert g["historical_missing"] == 1
+    assert g["merge_approval_coverage"] == 0.5
+    assert g["approval_ok"] is False
+
+
+def test_api_has_governance():
+    p = A.build_payload(A.ROOT)
+    assert isinstance(p.get("governance"), dict)
+    assert "merge_approval_coverage" in p["governance"]

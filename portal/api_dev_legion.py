@@ -16,8 +16,8 @@ import json
 import time
 from pathlib import Path
 
-from dev_legion_aggregate import (build_metrics, build_redlines,
-                                  build_wip)
+from dev_legion_aggregate import (build_governance, build_metrics,
+                                  build_redlines, build_wip)
 from dev_legion_ai_card import build_ai_cards
 from dev_legion_quant_card import build_quant_cards
 from dev_legion_risk_card import build_risk_cards
@@ -145,6 +145,7 @@ def build_payload(root=ROOT):
         "quant_cards": build_quant_cards(org),
         "risk_cards": build_risk_cards(org),
         "work_in_progress": wip,
+        "governance": build_governance(tasks if isinstance(tasks, dict) else {}),
         "metrics": metrics,
         "redlines": redlines,
         "sources": SOURCES,
