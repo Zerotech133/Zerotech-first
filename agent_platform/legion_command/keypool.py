@@ -507,18 +507,23 @@ def _provider_chat(
     base_url: str = "",
     model: str = "",
     max_tokens: int = 4000,
+    tools=None,
+    tool_choice=None,
 ) -> dict:
     url = base_url or PROVIDER_URL.get(provider)
     if not url:
         return {"ok": False, "error": "provider_not_supported"}
-    body = json.dumps(
-        {
-            "model": model or PROVIDER_MODEL.get(provider, ""),
-            "messages": messages,
-            "max_tokens": max(256, min(int(max_tokens or 4000), 16000)),
-            "stream": False,
-        }
-    ).encode()
+    payload = {
+        "model": model or PROVIDER_MODEL.get(provider, ""),
+        "messages": messages,
+        "max_tokens": max(256, min(int(max_tokens or 4000), 16000)),
+        "stream": False,
+    }
+    if tools:
+        payload["tools"] = tools
+    if tool_choice is not None:
+        payload["tool_choice"] = tool_choice
+    body = json.dumps(payload).encode()
     req = urllib.request.Request(
         url,
         data=body,
@@ -531,10 +536,16 @@ def _provider_chat(
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             data = json.loads(r.read().decode("utf-8", "replace"))
-            reply = ((data.get("choices") or [{}])[0].get("message") or {}).get(
-                "content"
-            ) or ""
-            return {"ok": True, "reply": reply}
+            choice = (data.get("choices") or [{}])[0] or {}
+            message = choice.get("message") or {}
+            reply = message.get("content") or ""
+            return {
+                "ok": True,
+                "reply": reply,
+                "tool_calls": message.get("tool_calls") or [],
+                "finish_reason": choice.get("finish_reason"),
+                "raw": message,
+            }
     except urllib.error.HTTPError as e:
         try:
             msg = e.read(300).decode("utf-8", "replace")
@@ -611,16 +622,18 @@ def _local_chat(messages: list, timeout: int = 60, model: str = "qwen3.5:9b",
 
 
 def auto_chat(messages: list, seats=None, allow_local: bool = True, local_model=None,
-              model_filter=None, max_tokens: int = 4000) -> dict:
+              model_filter=None, max_tokens: int = 4000, tools=None,
+              tool_choice=None) -> dict:
     """一个对话框，自动适配：田丰GLM Key → 赵云/诸葛亮 DeepSeek Key → 本地9B。"""
     if not isinstance(messages, list) or not messages:
         return {"ok": False, "error": "empty_messages"}
     messages = [
         m
         for m in messages
-        if isinstance(m, dict) and m.get("role") and m.get("content")
+        if isinstance(m, dict) and m.get("role")
+        and (m.get("content") or m.get("tool_calls") or m.get("role") == "tool")
     ]
-    messages = messages[-20:]
+    messages = messages[-40:]
     d = _load()
     attempts = []
     order = list(seats) if seats else ["relay", "tianfeng", "zhaoyun", "zhuge"]
@@ -654,6 +667,8 @@ def auto_chat(messages: list, seats=None, allow_local: bool = True, local_model=
             base_url=str(k.get("base_url") or ""),
             model=str(model_filter or k.get("model") or ""),
             max_tokens=max_tokens,
+            tools=tools,
+            tool_choice=tool_choice,
         )
         if r.get("ok"):
             _log(d, seat, k.get("id"), k.get("id"), "auto_chat", "used")
@@ -661,6 +676,8 @@ def auto_chat(messages: list, seats=None, allow_local: bool = True, local_model=
             return {
                 "ok": True,
                 "reply": r.get("reply", ""),
+                "tool_calls": r.get("tool_calls") or [],
+                "finish_reason": r.get("finish_reason"),
                 "channel": (
                     "relay/custom"
                     if _meta(seat).get("provider", "custom") == "custom"

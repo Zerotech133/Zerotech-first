@@ -1228,7 +1228,9 @@ class Handler(BaseHTTPRequestHandler):
                                         allow_local=bool(route.get("allow_local", True)),
                                         local_model=route.get("local_model") or None,
                                         model_filter=route.get("model") or None,
-                                        max_tokens=_max_tokens)
+                                        max_tokens=_max_tokens,
+                                        tools=req.get("tools") or None,
+                                        tool_choice=req.get("tool_choice"))
                 if route.get("vk_id"):
                     try:
                         seat_router.record_usage(
@@ -1295,6 +1297,10 @@ class Handler(BaseHTTPRequestHandler):
                 except (BrokenPipeError, ConnectionResetError) as exc:
                     logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/legion_command/serve.py", exc)
                 return
+            tool_calls = res.get("tool_calls") or []
+            message = {"role": "assistant", "content": reply}
+            if tool_calls:
+                message["tool_calls"] = tool_calls
             self._send_json(
                 {
                     "id": "chatcmpl-dsh-%s" % int(time.time() * 1000),
@@ -1304,8 +1310,9 @@ class Handler(BaseHTTPRequestHandler):
                     "choices": [
                         {
                             "index": 0,
-                            "message": {"role": "assistant", "content": reply},
-                            "finish_reason": "stop",
+                            "message": message,
+                            "finish_reason": res.get("finish_reason")
+                            or ("tool_calls" if tool_calls else "stop"),
                         }
                     ],
                     "usage": {
