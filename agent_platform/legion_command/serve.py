@@ -485,7 +485,8 @@ class Handler(BaseHTTPRequestHandler):
             from urllib.parse import parse_qs
             from legion_command import openhands_engine
             qs = parse_qs(urlparse(self.path).query)
-            self._send_json(openhands_engine.events((qs.get("id") or [""])[0]))
+            cid = (qs.get("id") or [""])[0]
+            self._send_json({"ok": bool(cid), "events": openhands_engine.events(cid)})
             return
         if path == "/api/snapshot":
             self._send_json(build_snapshot())
@@ -1132,6 +1133,9 @@ class Handler(BaseHTTPRequestHandler):
                 str(req.get("message") or ""),
                 str(req.get("conversation_id") or ""),
                 int(req.get("timeout") or 600),
+                task=str(req.get("task") or ""),
+                worktree=str(req.get("worktree") or ""),
+                model=str(req.get("model") or "deepseek-flash"),
             )
             self._send_json(res, 200 if res.get("ok") else 502)
             return

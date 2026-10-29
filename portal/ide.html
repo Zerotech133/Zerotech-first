@@ -371,6 +371,7 @@ try{
       </div>
       <div class="at-menu" id="atmenu"></div>
       <textarea id="q" placeholder="给该 Agent 发一条测试消息…输入 @ 引用 Agent 或代码文件（🎙️ 本地语音）"></textarea>
+      <input id="ohtask" placeholder="工单ID（OH 模式可选，映射 .worktrees/<TID>）" style="display:none;width:220px;padding:7px 9px;border-radius:8px;border:1px solid #2f6f7a;background:#0b1a22;color:#dbe8f5;font-size:12px;margin-top:4px">
       <button class="send" id="mic" title="本地语音输入（Windows 离线识别，不上传云端）" style="background:#1f2b3a;border:1px solid #33506f;border-radius:8px;padding:0 10px;color:#dbe8f5;cursor:pointer;margin-right:6px">🎙️</button>
       <button class="send" id="send" onclick="send()" disabled>发送</button>
       <button class="send" id="stop" onclick="cancelSend()" style="display:none;background:#3a1f1f;border-color:#7a2a2e;color:#ffb0b0;margin-left:6px">停止</button>
@@ -1556,6 +1557,8 @@ function toggleOH(){
   localStorage.setItem("oh-mode", OH_MODE ? "1" : "0");
   const b = document.getElementById("oh");
   if(b){ b.textContent = OH_MODE ? "OH ON" : "OH"; b.style.background = OH_MODE ? "#163f2f" : "#1f2f3a"; }
+  const t = document.getElementById("ohtask");
+  if(t) t.style.display = OH_MODE ? "" : "none";
   addLog("OpenHands 模式 " + (OH_MODE ? "ON" : "OFF"), "lg-b");
 }
 async function sendOpenHands(raw){
@@ -1569,19 +1572,23 @@ async function sendOpenHands(raw){
   const t0 = Date.now();
   try{
     const cid = localStorage.getItem("ohconv-" + aid) || "";
+    const ohTask = (document.getElementById("ohtask")?.value || "").trim();
     const {r, d} = await fetchJsonTimeout("/openhands/api/ide/openhands/chat", {
       method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({message: raw, conversation_id: cid, timeout: 900})
+      body: JSON.stringify({message: raw, conversation_id: cid, timeout: 900,
+                            task: ohTask, model: model()})
     }, 900000, 0, null, CURRENT_ABORT.signal);
     if(!r.ok || !d.ok) throw new Error((d && (d.detail || d.error)) || ("HTTP " + r.status));
     if(d.conversation_id) localStorage.setItem("ohconv-" + aid, d.conversation_id);
     const sec = ((Date.now()-t0)/1000).toFixed(1);
     const steps = [
       "OpenHands runtime 已接收任务",
-      "模型经军团网关：" + (d.model || "deepseek-flash"),
-      "工具循环完成 · " + (d.duration_ms || 0) + "ms",
-      d.conversation_id ? ("会话 " + d.conversation_id.slice(0,8)) : "会话已结束"
+      "worktree：" + (d.worktree || "default"),
+      "模型：" + (d.model || "deepseek-flash"),
+      "工具循环完成 · " + (d.duration_ms || 0) + "ms"
     ];
+    for(const ev of (d.events || []).slice(-12)) steps.push((ev.kind || "event") + " · " + (ev.summary || ""));
+    if(d.conversation_id) steps.push("会话 " + d.conversation_id.slice(0,8));
     const html = procHtml(steps, "✅ OpenHands 完成 · " + sec + "s")
       + '<div style="margin-top:6px">' + evTable(d.reply || "(空响应)") + '</div>';
     r1.el.innerHTML = html;
@@ -1990,6 +1997,8 @@ fetch("/agent_ide_bundle.json", {cache:"no-store"}).then(r=>r.json()).then(d=>{
   if(lastDbg && B.agents[lastDbg]) dbgSelect(lastDbg);   // 恢复上次调试目标+会话
   const ohb = document.getElementById("oh");
   if(ohb && OH_MODE){ ohb.textContent = "OH ON"; ohb.style.background = "#163f2f"; }
+  const oht = document.getElementById("ohtask");
+  if(oht && OH_MODE) oht.style.display = "";
 }).catch(e=>{ document.getElementById("side").innerHTML = '<div class="dep">bundle 加载失败：'+e+'</div>'; });
 </script>
 <script src="/static/dataops_link.js" data-entity="tg:其他" defer></script>
