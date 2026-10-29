@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-29 09:26",
+ "generated": "2026-10-29 09:31",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,8 +9,8 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 45,
-  "workorders_review": 6
+  "workorders_doing": 47,
+  "workorders_review": 7
  },
  "workorders": [
   {
@@ -437,15 +437,6 @@
    "project": "general"
   },
   {
-   "id": "WO-ACAD-GOLDEN4-20261029",
-   "desc": "按 AI1 方案落 4 席 golden：seat_golden 加 COMM1/INTEL1/AI1/PROD1 各3条确定性断言（schema v2：contains_all/not_contains_any/regex/min_urls）；seat_eval 兼容 v2 断言执行器；测试；目标 4 席 seat_realness --with-eval 6/6。",
-   "status": "doing",
-   "owner": "AI1",
-   "branch": "task/WO-ACAD-GOLDEN4-20261029",
-   "created": "2026-10-29 09:23:21",
-   "project": "quant"
-  },
-  {
    "id": "K-QUANT-20261029-IDELOOP2",
    "desc": "IDE工具循环收口：进度提示；工具结束强制最终自然语言；仍失败则基于工具轨迹兜底总结，不再显示未给出最终答复；测试",
    "status": "doing",
@@ -466,10 +457,46 @@
   {
    "id": "WO-GUANYU-P26-20261029",
    "desc": "B1登记更新 [UNOWNED]",
-   "status": "doing",
+   "status": "review",
    "owner": "unknown-agent",
    "branch": "task/WO-GUANYU-P26-20261029",
    "created": "2026-10-29 09:26:24",
+   "project": "general"
+  },
+  {
+   "id": "WO-LEGION-ZHUGE-FIX-20261029",
+   "desc": "诸葛亮 C1 决策：修复 sync_card 决策后返回 stale status；测试去日期硬编码",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-ZHUGE-FIX-20261029",
+   "created": "2026-10-29 09:28:56",
+   "project": "general"
+  },
+  {
+   "id": "legion-1029093009",
+   "desc": "[T1] 盘前 weak 池三线扫描 [UNOWNED]",
+   "status": "doing",
+   "owner": "unknown-agent",
+   "branch": "task/legion-1029093009",
+   "created": "2026-10-29 09:30:28",
+   "project": "general"
+  },
+  {
+   "id": "WO-READY-F841-20261029",
+   "desc": "交接回执检查发现 F841 未清零：其中 tools/legion_readiness.py `leads` 未使用（本批引入）。删除该变量并跑 readiness 测试；其余 2 处 research 旧债由 F841 单承接（不冒领）。",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-READY-F841-20261029",
+   "created": "2026-10-29 09:30:35",
+   "project": "general"
+  },
+  {
+   "id": "WO-HK-R1-AUTO2-20261029",
+   "desc": "HK R1两周观察每日跑批脚本（dry-run默认/--append追加台账）—重建",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-HK-R1-AUTO2-20261029",
+   "created": "2026-10-29 09:31:13",
    "project": "general"
   }
  ],
@@ -2077,14 +2104,7 @@
    ],
    "experience": "30 年从业经验（AI 方法论：Agent 能力、评测与知识反哺）",
    "dept_name": "研究院",
-   "dept_cn_title": "太学",
-   "tasks": [
-    {
-     "id": "WO-ACAD-GOLDEN4-20261029",
-     "desc": "按 AI1 方案落 4 席 golden：seat_golden 加 COMM1/INTEL1/AI1/PROD1 各3条确定性断言（schema v2：contains_all/not_contains_any/regex/min_urls）；seat_eval 兼容 v2 断言执行器；测试；目标 4 席 seat_realness --with-eval 6/6。",
-     "status": "doing"
-    }
-   ]
+   "dept_cn_title": "太学"
   },
   "PROD1": {
    "id": "PROD1",
@@ -7156,6 +7176,16 @@
     {
      "id": "WO-APIKG-SPLIT2-20261029",
      "desc": "api_kg页族第二批：misc页(ask/lexicon/flow/label/card/shadow/map/company/page)迁移",
+     "status": "doing"
+    },
+    {
+     "id": "WO-LEGION-ZHUGE-FIX-20261029",
+     "desc": "诸葛亮 C1 决策：修复 sync_card 决策后返回 stale status；测试去日期硬编码",
+     "status": "doing"
+    },
+    {
+     "id": "WO-HK-R1-AUTO2-20261029",
+     "desc": "HK R1两周观察每日跑批脚本（dry-run默认/--append追加台账）—重建",
      "status": "doing"
     }
    ]
