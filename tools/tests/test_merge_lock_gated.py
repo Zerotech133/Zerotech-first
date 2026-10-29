@@ -1,21 +1,10 @@
 # -*- coding: utf-8 -*-
-"""merge_gated 锁接线单测（不跑真实测试门，干跑验证获取/释放/忙碌拒绝）。"""
+"""merge_gated 兼容预检器单测（P37 后真实闸门在 devtask merge；此处只测预检语义）。"""
 import importlib.util
 import sys
 from pathlib import Path
 
 TOOLS = Path(__file__).resolve().parents[1]
-LOCK_TOOL = TOOLS / "merge_lock.py"
-
-
-def _load_lock(tmp_path, monkeypatch):
-    spec = importlib.util.spec_from_file_location("merge_lock_g", LOCK_TOOL)
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    lock = tmp_path / "aios_merge.lock"
-    monkeypatch.setattr(mod, "LOCK", lock)
-    monkeypatch.delenv(mod.ENV_TOKEN, raising=False)
-    return mod, lock
 
 
 def _load_gated(monkeypatch):
@@ -31,27 +20,11 @@ def _load_gated(monkeypatch):
     return mod, calls
 
 
-def test_gated_acquires_and_releases(tmp_path, monkeypatch):
-    m, lock = _load_lock(tmp_path, monkeypatch)
+def test_dry_run_no_merge_no_lock_no_audit(tmp_path, monkeypatch):
+    """兼容层 dry-run：只打印分类，不合并、不持锁、无审计事件。"""
     mod, calls = _load_gated(monkeypatch)
-    sys.modules["merge_lock"] = m
+    lock = tmp_path / "aios_merge.lock"
     rc = mod.main(["WO-X", "--dry-run"])
     assert rc == 0
-    # CLI 语义：进程退出时 atexit 释放；进程内测试手动验证持锁并释放
-    held = m.held()
-    assert held and held.get("token"), "dry-run 期间应持锁"
-    assert m.release(held["token"]) is True
     assert not lock.exists()
     assert not any(k == "guard_fail" for k, _, _ in calls)
-
-
-def test_gated_lock_busy_rejects(tmp_path, monkeypatch):
-    m, lock = _load_lock(tmp_path, monkeypatch)
-    assert m.acquire("holder", timeout=0)
-    mod, calls = _load_gated(monkeypatch)
-    sys.modules["merge_lock"] = m
-    monkeypatch.setenv("AIOS_MERGE_LOCK_TIMEOUT", "0")
-    rc = mod.main(["WO-Y", "--dry-run"])
-    assert rc == 2
-    assert any(k == "guard_fail" for k, _, _ in calls)
-    assert m.release(m.held()["token"]) is True

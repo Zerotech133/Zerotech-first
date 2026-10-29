@@ -1,41 +1,46 @@
 {
-  "_note": "测试门禁既存失败/flaky 基线（GY-01，2026-10-27；2026-10-28 修订）。known_failures=任何环境都登记；env_failures=数据/环境依赖失败（含行情湖未更新到当日、worktree 无数据根），任何位置都登记但单独列出；flaky=顺序依赖。新增失败必须修或正式登记，不得直接加白。",
-  "portal/tests": {
-    "known_failures": [],
-    "flaky": [
-      "portal/tests/test_minute_router_process_restart.py::test_minute_router_recovers_after_real_process_restart"
-    ],
-    "_flaky_note": "2026-10-29 fast 门实测：test_minute_router_process_restart 整套运行失败 1 次，隔离单跑 2/2 通过（真实进程重启类，受并行负载时序影响）→ 时序 flaky，登记跟踪；后续考虑缩短重启等待或 mock 进程重启。"
-  },
-  "k_stock/tests": {
-    "known_failures": [
-      "k_stock/tests/test_report_builder.py::test_no_external_sdk_imported",
-      "k_stock/tests/test_riskguard_topics.py::test_markdown_renders_conclusion_and_groups"
-    ],
-    "flaky": [],
-    "env_failures": []
-  },
-  "agent_platform/tests": {
-    "known_failures": [],
-    "flaky": [
-      "agent_platform/tests/test_heartbeat.py::SafetyValveTests::test_bad_checked_at_rejected",
-      "agent_platform/tests/test_repair_lane.py::test_create_and_run_batch",
-      "agent_platform/tests/test_legion_command.py::test_minutes_bad_length_rejected",
-      "agent_platform/tests/test_monday_drill.py::test_read_only_no_side_effects",
-      "agent_platform/tests/test_sandbox.py::test_real_skill_verify_ok",
-      "agent_platform/tests/test_sign_tools.py::test_sign_verify_roundtrip",
-      "agent_platform/tests/test_devtask_owner_domain.py::TestIllegalOwnerDegraded::test_空owner判非法并降级",
-      "agent_platform/tests/test_legion_command.py::test_activity_mapping_covers_real_tasks",
-      "agent_platform/tests/test_legion_command.py::test_activity_maps_known_prefixes",
-      "agent_platform/tests/test_closeout_round.py::test_if_changed_skips_duplicate"
-    ],
-    "_flaky_note": "2026-10-29 复验证据：agent 全量 3 轮（gate+run1+run2）中 run2 仅 closeout test_if_changed_skips_duplicate 失败 1 次；该用例隔离 3/3 通过（tmp_path+stub_ledger 全夹具）→ 判为顺序/环境 flaky，登记跟踪。原 9 条 flaky 在本轮 3 轮全量中均未复现（保留观察）。复验工具：python tools/flaky_probe.py --suite agent --runs 2；规则：连续 7 轮（或 2 周）0 复现 → 移出基线；新 flaky 必须附复现证据与隔离结果。",
-    "env_failures": [],
-    "_env_note": "2026-10-29：赵云能力卡已保守刷新（generated_at=2026-10-29T14:23:44+08:00，audit ok/drift=0），原 3 条 env 登记已移除；若能力卡再陈旧（>48h）需重跑 tools/refresh_hermes_capabilities.py --apply。"
-  },
-  "quant_backtest/tests": {
-    "known_failures": [],
-    "flaky": [],
-    "note": "全量 >20min，建议夜间窗口跑；当前仅要求 0 收集错误"
-  }
+ "_note": "测试门禁既存失败/flaky 基线（GY-01，2026-10-27；2026-10-28 修订）。known_failures=任何环境都登记；env_failures=数据/环境依赖失败（含行情湖未更新到当日、worktree 无数据根），任何位置都登记但单独列出；flaky=顺序依赖。新增失败必须修或正式登记，不得直接加白。",
+ "portal/tests": {
+  "known_failures": [],
+  "flaky": [
+   "portal/tests/test_minute_router_process_restart.py::test_minute_router_recovers_after_real_process_restart"
+  ],
+  "_flaky_note": "2026-10-29 fast 门实测：test_minute_router_process_restart 整套运行失败 1 次，隔离单跑 2/2 通过（真实进程重启类，受并行负载时序影响）→ 时序 flaky，登记跟踪；后续考虑缩短重启等待或 mock 进程重启。"
+ },
+ "k_stock/tests": {
+  "known_failures": [
+   "k_stock/tests/test_report_builder.py::test_no_external_sdk_imported",
+   "k_stock/tests/test_riskguard_topics.py::test_markdown_renders_conclusion_and_groups"
+  ],
+  "flaky": [],
+  "env_failures": []
+ },
+ "agent_platform/tests": {
+  "known_failures": [],
+  "flaky": [
+   "agent_platform/tests/test_heartbeat.py::SafetyValveTests::test_bad_checked_at_rejected",
+   "agent_platform/tests/test_repair_lane.py::test_create_and_run_batch",
+   "agent_platform/tests/test_legion_command.py::test_minutes_bad_length_rejected",
+   "agent_platform/tests/test_monday_drill.py::test_read_only_no_side_effects",
+   "agent_platform/tests/test_sandbox.py::test_real_skill_verify_ok",
+   "agent_platform/tests/test_sign_tools.py::test_sign_verify_roundtrip",
+   "agent_platform/tests/test_devtask_owner_domain.py::TestIllegalOwnerDegraded::test_空owner判非法并降级",
+   "agent_platform/tests/test_legion_command.py::test_activity_mapping_covers_real_tasks",
+   "agent_platform/tests/test_legion_command.py::test_activity_maps_known_prefixes",
+   "agent_platform/tests/test_closeout_round.py::test_if_changed_skips_duplicate"
+  ],
+  "_flaky_note": "2026-10-29 复验证据：agent 全量 3 轮（gate+run1+run2）中 run2 仅 closeout test_if_changed_skips_duplicate 失败 1 次；该用例隔离 3/3 通过（tmp_path+stub_ledger 全夹具）→ 判为顺序/环境 flaky，登记跟踪。原 9 条 flaky 在本轮 3 轮全量中均未复现（保留观察）。复验工具：python tools/flaky_probe.py --suite agent --runs 2；规则：连续 7 轮（或 2 周）0 复现 → 移出基线；新 flaky 必须附复现证据与隔离结果。",
+  "env_failures": [],
+  "_env_note": "2026-10-29：赵云能力卡已保守刷新（generated_at=2026-10-29T14:23:44+08:00，audit ok/drift=0），原 3 条 env 登记已移除；若能力卡再陈旧（>48h）需重跑 tools/refresh_hermes_capabilities.py --apply。"
+ },
+ "quant_backtest/tests": {
+  "known_failures": [],
+  "flaky": [],
+  "note": "全量 >20min，建议夜间窗口跑；当前仅要求 0 收集错误"
+ },
+ "tools/tests": {
+  "known_failures": [],
+  "env_failures": [],
+  "flaky": []
+ }
 }

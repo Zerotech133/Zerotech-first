@@ -9,7 +9,7 @@
 # 判据: 本次 FAILED/ERROR 减去 tools/test_baseline.json 的 known_failures
 #       得到"新增失败"; 新增=0 才放行。
 param(
-    [ValidateSet('fast', 'portal', 'kstock', 'agent', 'quant', 'all')]
+    [ValidateSet('fast', 'portal', 'kstock', 'agent', 'quant', 'tools', 'all')]
     [string]$Suite = 'fast',
     [int]$PytestTimeout = 120
 )
@@ -45,12 +45,14 @@ switch ($Suite) {
     'kstock' { $suites = @('kstock') }
     'agent'  { $suites = @('agent') }
     'quant'  { $suites = @('quant') }
+    'tools'  { $suites = @('tools') }
     'all'    { $suites = @('portal', 'kstock', 'agent', 'quant') }
     default  { Write-Host "[ERR] 未知 Suite: $Suite"; exit 2 }
 }
 $paths = @{
     'portal' = 'portal/tests'; 'kstock' = 'k_stock/tests'
     'agent'  = 'agent_platform/tests'; 'quant' = 'quant_backtest/tests'
+    'tools'  = 'tools/tests'
 }
 
 $newFailures = 0

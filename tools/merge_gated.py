@@ -54,7 +54,8 @@ def is_docs_only(files: list[str]) -> bool:
     for f in files:
         if not f.endswith(DOC_SUFFIX):
             return False
-        if not f.startswith(DOC_PREFIX) and "/" not in f:
+        # 2026-10-30 审计修复：非白名单前缀不得跳过测试（防 docs_only 误判绕过质量闸）
+        if not f.startswith(DOC_PREFIX):
             return False
     return True
 
