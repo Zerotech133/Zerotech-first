@@ -70,6 +70,35 @@ def _recommendation(card: dict) -> str:
             "本记录只做结构化决策留痕，不派单、不执行。")
 
 
+def _remember_decision(record: dict) -> None:
+    """C1 已结案决策写长期记忆：默认开，失败 fail-open，去重靠记忆模块。"""
+    if str(os.environ.get("ZHUGE_MEMORY_AUTOWRITE", "1")).strip().lower() in (
+            "0", "false", "no", "off"):
+        return
+    if str(record.get("status") or "").lower() not in ("approved", "implemented"):
+        return
+    title = str(record.get("title") or "").strip()
+    rec_text = str(record.get("recommendation") or "").strip()
+    if not title or not rec_text:
+        return
+    try:
+        tools = _tools_dir()
+        if tools not in sys.path:
+            sys.path.insert(0, tools)
+        import zhuge_memory
+
+        zhuge_memory.remember(
+            "decision",
+            "%s：%s" % (title[:120], rec_text[:500]),
+            tags=[str(record.get("id") or ""), str(record.get("source_card") or ""), "c1"],
+            source="c1_decision",
+            confidence="high" if record.get("decided_by") else "medium",
+        )
+    except Exception as exc:  # noqa: BLE001
+        logging.getLogger(__name__).warning("silent-except %s: %s",
+                                            "tools/zhuge_c1_decisions.py", exc)
+
+
 def _find_existing(dr, card_id: str) -> dict | None:
     rows = [r for r in dr._fold(dr._load_events()).values()
             if r.get("source_card") == card_id]
@@ -130,6 +159,8 @@ def sync_card(card: dict, dr=None, dry_run: bool = False) -> dict:
                 dr.update(rid, outcome="C1 结案 accepted：%s" % ((card.get("close_note") or "")[:400]))
             # 决策/回填后重新取记录；否则 sync_card 返回的是决策前的 stale status。
             existing = dr.show(rid).get("record") or existing
+            if existing:
+                _remember_decision(existing)
     return {"ok": True, "card": card_id, "id": rid, "status": (existing or {}).get("status"),
             "actions": actions}
 
