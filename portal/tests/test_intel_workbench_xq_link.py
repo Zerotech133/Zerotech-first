@@ -26,8 +26,10 @@ def test_xq_link_uses_bare_six_digit_code(symbol, expected, tmp_path):
         pytest.skip("node runtime unavailable for DOM-free JS regression")
     html = PAGE.read_text(encoding="utf-8")
     scripts = re.findall(r"<script(?:\s[^>]*)?>([\s\S]*?)</script>", html)
-    assert len(scripts) == 2 and not scripts[0]
-    js = scripts[1]
+    # 页头/页尾注入的无关 <script> 不算；取包含主逻辑的那一段
+    main = [s for s in scripts if "const groups=" in s or "function evidenceDetail(" in s]
+    assert len(main) == 1, "main evidence script must be unique"
+    js = main[0]
     # Extract the actual production function, rather than reimplementing normalization.
     match = re.search(
         r"function evidenceDetail\(\)\{.*?(?=\nfunction evidenceResults\()", js, re.S
