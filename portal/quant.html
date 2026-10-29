@@ -218,12 +218,12 @@
         <div class="sec-note" id="kpi-ts">加载中…</div>
       </div>
       <div class="kpi-strip">
-        <div class="kpi"><span class="lb">盘面倾向 <span id="k-regime-src" style="letter-spacing:0"></span></span><span class="vl" id="k-verdict">—</span><span class="sb" id="k-verdict-sub">共振机会 — 只</span><span class="sb" id="k-gate" style="color:var(--text-dim)">市场闸 — · 加载中</span></div>
-        <div class="kpi"><span class="lb">策略资产</span><a href="/strategies" style="text-decoration:none;color:inherit"><span class="vl num" id="k-strat">—</span><span class="sb" id="k-strat-sub">策略中心 →</span></a></div>
-        <div class="kpi"><span class="lb">在案跟踪</span><a href="/bt-weak" style="text-decoration:none;color:inherit"><span class="vl num" id="k-weak">—</span><span class="sb">weak 产线 · 案例库 →</span></a></div>
-        <div class="kpi"><span class="lb">今日情报</span><a href="/intel" style="text-decoration:none;color:inherit"><span class="vl num" id="k-news">—</span><span class="sb" id="k-news-sub">—</span></a></div>
-        <div class="kpi"><span class="lb">今日预警</span><a href="/bt-signals" style="text-decoration:none;color:inherit"><span class="vl num" id="k-alerts">—</span><span class="sb">速览清单见下方 →</span></a><span class="sb num" id="k-sig" style="display:none"></span></div>
-        <div class="kpi"><span class="lb">模拟仓</span><a href="/paper" style="text-decoration:none;color:inherit"><span class="vl num" id="k-paper">—</span><span class="sb" id="k-paper-sub">四账本 →</span></a></div>
+        <div class="ui-kpi kpi"><span class="lb">盘面倾向 <span id="k-regime-src" style="letter-spacing:0"></span></span><span class="vl" id="k-verdict">—</span><span class="sb" id="k-verdict-sub">共振机会 — 只</span><span class="sb" id="k-gate" style="color:var(--text-dim)">市场闸 — · 加载中</span></div>
+        <div class="ui-kpi kpi"><span class="lb">策略资产</span><a href="/strategies" style="text-decoration:none;color:inherit"><span class="vl num" id="k-strat">—</span><span class="sb" id="k-strat-sub">策略中心 →</span></a></div>
+        <div class="ui-kpi kpi"><span class="lb">在案跟踪</span><a href="/bt-weak" style="text-decoration:none;color:inherit"><span class="vl num" id="k-weak">—</span><span class="sb">weak 产线 · 案例库 →</span></a></div>
+        <div class="ui-kpi kpi"><span class="lb">今日情报</span><a href="/intel" style="text-decoration:none;color:inherit"><span class="vl num" id="k-news">—</span><span class="sb" id="k-news-sub">—</span></a></div>
+        <div class="ui-kpi kpi"><span class="lb">今日预警</span><a href="/bt-signals" style="text-decoration:none;color:inherit"><span class="vl num" id="k-alerts">—</span><span class="sb">速览清单见下方 →</span></a><span class="sb num" id="k-sig" style="display:none"></span></div>
+        <div class="ui-kpi kpi"><span class="lb">模拟仓</span><a href="/paper" style="text-decoration:none;color:inherit"><span class="vl num" id="k-paper">—</span><span class="sb" id="k-paper-sub">四账本 →</span></a></div>
       </div>
     </div>
 
@@ -277,7 +277,7 @@
       <div class="wall-note" id="wall-hint" style="display:none"></div>
       <div class="wall-line" id="wall-committee" style="display:none"></div>
       <div class="strat-grid" id="wall-grid">
-        <div class="scard" style="cursor:default"><div class="top"><span class="dim" style="font-size:12px">加载中…</span></div></div>
+        <div class="ui-card scard" style="cursor:default"><div class="top"><span class="dim" style="font-size:12px">加载中…</span></div></div>
       </div>
     </div>
 
@@ -287,7 +287,7 @@
         <a class="sec-note" href="/strategies" style="text-decoration:none">记分卡全景 →</a>
       </div>
       <div class="strat-grid" id="strat-grid">
-        <div class="scard" style="cursor:default"><div class="top"><span class="dim" style="font-size:12px">加载中…</span></div></div>
+        <div class="ui-card scard" style="cursor:default"><div class="top"><span class="dim" style="font-size:12px">加载中…</span></div></div>
       </div>
     </div>
 
@@ -606,7 +606,7 @@
         const ext = s.ext && !s.href && href !== '#' ? ' target="_blank" rel="noopener"' : '';
         const m1 = (s.metrics && s.metrics[0]) ? (s.metrics[0].k + ' ' + s.metrics[0].v) : '';
         const status = Object.prototype.hasOwnProperty.call(ST_CN, s.status) ? s.status : 'paused';
-        return '<a class="scard" href="' + esc(href) + '"' + ext + '>' +
+        return '<a class="ui-card scard" href="' + esc(href) + '"' + ext + '>' +
           "<div class='top'><span class='sdot " + status + "'></span>" +
           "<span class='nm'>" + esc(s.name) + "</span>" +
           "<span class='bdg'>" + esc(s.badge || '') + "·" + ST_CN[status] + "</span></div>" +

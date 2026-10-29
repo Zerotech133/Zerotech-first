@@ -83,9 +83,23 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="组件视觉基线 warn-only 门")
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--warn-only", action="store_true")
+    ap.add_argument("--update", action="store_true", help="按当前资产/截图重写 manifest")
     ap.add_argument("--branch", default="")
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args(argv)
+    if args.update:
+        data = {"version": 1,
+                "note": "零界 UI Kit 组件视觉基线；UI Kit 变更后运行 --update 同步",
+                "files": {}}
+        for rel in ASSETS + SHOTS:
+            fp = REPO / rel
+            data["files"][rel] = sha256(fp) if fp.is_file() else None
+        MANIFEST.parent.mkdir(parents=True, exist_ok=True)
+        MANIFEST.write_text(__import__("json").dumps(data, ensure_ascii=False, indent=2) + "\n",
+                            encoding="utf-8", newline="\n")
+        print(json.dumps({"ok": True, "updated": str(MANIFEST), "files": data["files"]},
+                         ensure_ascii=False, indent=1))
+        return 0
     out = check(args.branch or None)
     if args.json:
         print(json.dumps(out, ensure_ascii=False, indent=1))
