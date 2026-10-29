@@ -1,7 +1,7 @@
 {
-  "_note": "席位评测黄金集 v1（P0① WO-EVAL-SEATS-20261027）。每条=确定性检查（命令 rc/stdout 或文件存在/包含），零 LLM 调用、零副作用；先建基线，通过率稳定后再接入 seat_realness 第 6 维。 2026-10-29 P0：AI1 补 4 条诸葛亮专属用例，总计 30 条。",
+  "_note": "席位评测黄金集 v1（P0① WO-EVAL-SEATS-20261027）。每条=确定性检查（命令 rc/stdout 或文件存在/包含），零 LLM 调用、零副作用；先建基线，通过率稳定后再接入 seat_realness 第 6 维。 2026-10-29 P0：AI1 补 4 条诸葛亮专属用例，总计 30 条。 2026-10-30 扩展：AI1 补 20 条模块契约，golden 30→50。",
   "schema": "seat_golden/v2",
-  "updated": "2026-10-29",
+  "updated": "2026-10-30",
   "seats": {
     "ACAD1": {
       "label": "研究院院长·司马徽",
@@ -407,6 +407,305 @@
                 "parse_entries",
                 "dedup_window",
                 "append_ledger"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ai1-guard",
+          "kind": "file",
+          "path": "portal/zhuge_guard.py",
+          "assertions": [
+            {
+              "kind": "contains_all",
+              "values": [
+                "_BLOCK_PATTERNS",
+                "def scan",
+                "blocked"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ai1-guard-comm",
+          "kind": "file",
+          "path": "portal/comm_zhuge.py",
+          "assertions": [
+            {
+              "kind": "contains_all",
+              "values": [
+                "_guard_question",
+                "guard_blocked",
+                "_tool_context"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ai1-memory",
+          "kind": "file",
+          "path": "tools/zhuge_memory.py",
+          "assertions": [
+            {
+              "kind": "contains_all",
+              "values": [
+                "def remember",
+                "def recall",
+                "STORE_REL"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ai1-memory-seed",
+          "kind": "file",
+          "path": "tools/zhuge_memory_seed.py",
+          "assertions": [
+            {
+              "kind": "contains_all",
+              "values": [
+                "def candidates",
+                "approved",
+                "--apply"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ai1-tool-router",
+          "kind": "file",
+          "path": "tools/zhuge_tool_router.py",
+          "assertions": [
+            {
+              "kind": "contains_all",
+              "values": [
+                "def detect",
+                "def route",
+                "web_fetch"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ai1-mcp-server",
+          "kind": "file",
+          "path": "tools/zhuge_mcp_server.py",
+          "assertions": [
+            {
+              "kind": "contains_all",
+              "values": [
+                "FastMCP",
+                "web_fetch_tool",
+                "evidence_check_tool"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ai1-planner",
+          "kind": "file",
+          "path": "tools/zhuge_planner.py",
+          "assertions": [
+            {
+              "kind": "contains_all",
+              "values": [
+                "def build_plan",
+                "executable",
+                "read_only"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ai1-reflector",
+          "kind": "file",
+          "path": "tools/zhuge_reflector.py",
+          "assertions": [
+            {
+              "kind": "contains_all",
+              "values": [
+                "def reflect",
+                "uncertainty"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ai1-redteam",
+          "kind": "file",
+          "path": "tools/zhuge_redteam.py",
+          "assertions": [
+            {
+              "kind": "contains_all",
+              "values": [
+                "def load_cases",
+                "def judge",
+                "failed"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ai1-redteam-rotation",
+          "kind": "file",
+          "path": "tools/redteam_daily.py",
+          "assertions": [
+            {
+              "kind": "contains_all",
+              "values": [
+                "def run_daily",
+                "rotation",
+                "case_ids"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ai1-rag",
+          "kind": "file",
+          "path": "tools/zhuge_rag.py",
+          "assertions": [
+            {
+              "kind": "contains_all",
+              "values": [
+                "def build_index",
+                "def search",
+                "_INDEX_CACHE"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ai1-grounding",
+          "kind": "file",
+          "path": "tools/zhuge_grounding.py",
+          "assertions": [
+            {
+              "kind": "contains_all",
+              "values": [
+                "_rag_enabled",
+                "def retrieve",
+                "memory"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ai1-brief-push",
+          "kind": "file",
+          "path": "tools/zhuge_brief_push.py",
+          "assertions": [
+            {
+              "kind": "contains_all",
+              "values": [
+                "def latest_snapshot",
+                "def load_text",
+                "dry-run"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ai1-morning",
+          "kind": "file",
+          "path": "portal/zhuge_morning.py",
+          "assertions": [
+            {
+              "kind": "contains_all",
+              "values": [
+                "build_brief",
+                "dry_run",
+                "zhuge_brief"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ai1-decision-record",
+          "kind": "file",
+          "path": "tools/zhuge_decision_record.py",
+          "assertions": [
+            {
+              "kind": "contains_all",
+              "values": [
+                "def show",
+                "def decide",
+                "idem_key"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ai1-challenge",
+          "kind": "file",
+          "path": "tools/zhuge_challenge.py",
+          "assertions": [
+            {
+              "kind": "contains_all",
+              "values": [
+                "def load_ledger",
+                "emit",
+                "real3"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ai1-evidence",
+          "kind": "file",
+          "path": "tools/zhuge_evidence.py",
+          "assertions": [
+            {
+              "kind": "contains_all",
+              "values": [
+                "def fetch_url",
+                "def validate_claims",
+                "source_tier"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ai1-debate",
+          "kind": "file",
+          "path": "tools/zhuge_debate.py",
+          "assertions": [
+            {
+              "kind": "contains_all",
+              "values": [
+                "QJ1",
+                "WJ1",
+                "FK1"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ai1-wargame",
+          "kind": "file",
+          "path": "tools/zhuge_wargame.py",
+          "assertions": [
+            {
+              "kind": "contains_all",
+              "values": [
+                "def wargame",
+                "scenarios",
+                "三情景"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ai1-c1-memory",
+          "kind": "file",
+          "path": "tools/zhuge_c1_decisions.py",
+          "assertions": [
+            {
+              "kind": "contains_all",
+              "values": [
+                "_remember_decision",
+                "ZHUGE_MEMORY_AUTOWRITE",
+                "decision"
               ]
             }
           ]
