@@ -1,0 +1,211 @@
+{
+ "schema": "acad1_pool_calendar/v1",
+ "generated_at": "2026-10-30T02:01:20+08:00",
+ "pool_kind": "candidate_history",
+ "selection_note": "当前为历史候选池（策略汇总）；ACAD1 每日选池记录尚未接入，选池数暂不单列。",
+ "days": [
+  {
+   "date": "2026-10-09",
+   "total": 766,
+   "tiers": {
+    "T1": 2,
+    "T2": 181,
+    "T3": 583
+   },
+   "by_strategy": {
+    "strong": 419,
+    "ninedim": 288,
+    "chanlun": 76,
+    "weak": 51,
+    "qpzm": 25
+   },
+   "file": "todays_20261009.json"
+  },
+  {
+   "date": "2026-10-12",
+   "total": 789,
+   "tiers": {
+    "T1": 3,
+    "T2": 142,
+    "T3": 644
+   },
+   "by_strategy": {
+    "strong": 388,
+    "ninedim": 245,
+    "chanlun": 171,
+    "weak": 46,
+    "qpzm": 25
+   },
+   "file": "todays_20261012.json"
+  },
+  {
+   "date": "2026-10-13",
+   "total": 714,
+   "tiers": {
+    "T1": 2,
+    "T2": 156,
+    "T3": 556
+   },
+   "by_strategy": {
+    "strong": 388,
+    "ninedim": 261,
+    "chanlun": 84,
+    "weak": 46,
+    "qpzm": 25
+   },
+   "file": "todays_20261013.json"
+  },
+  {
+   "date": "2026-10-14",
+   "total": 748,
+   "tiers": {
+    "T2": 137,
+    "T3": 611
+   },
+   "by_strategy": {
+    "strong": 388,
+    "ninedim": 251,
+    "chanlun": 119,
+    "weak": 46,
+    "qpzm": 25
+   },
+   "file": "todays_20261014.json"
+  },
+  {
+   "date": "2026-10-16",
+   "total": 796,
+   "tiers": {
+    "T2": 130,
+    "T3": 666
+   },
+   "by_strategy": {
+    "strong": 388,
+    "ninedim": 241,
+    "chanlun": 164,
+    "weak": 46,
+    "qpzm": 25
+   },
+   "file": "todays_20261016.json"
+  },
+  {
+   "date": "2026-10-19",
+   "total": 390,
+   "tiers": {
+    "T2": 14,
+    "T3": 376
+   },
+   "by_strategy": {
+    "ninedim": 241,
+    "weak": 122,
+    "chanlun": 28,
+    "qpzm": 25
+   },
+   "file": "todays_20261019.json"
+  },
+  {
+   "date": "2026-10-20",
+   "total": 491,
+   "tiers": {
+    "T2": 36,
+    "T3": 455
+   },
+   "by_strategy": {
+    "ninedim": 217,
+    "chanlun": 147,
+    "weak": 122,
+    "qpzm": 25
+   },
+   "file": "todays_20261020.json"
+  },
+  {
+   "date": "2026-10-21",
+   "total": 418,
+   "tiers": {
+    "T2": 11,
+    "T3": 407
+   },
+   "by_strategy": {
+    "ninedim": 221,
+    "weak": 122,
+    "chanlun": 60,
+    "qpzm": 25
+   },
+   "file": "todays_20261021.json"
+  },
+  {
+   "date": "2026-10-22",
+   "total": 453,
+   "tiers": {
+    "T2": 61,
+    "T3": 392
+   },
+   "by_strategy": {
+    "ninedim": 232,
+    "weak": 122,
+    "chanlun": 86,
+    "qpzm": 25
+   },
+   "file": "todays_20261022.json"
+  },
+  {
+   "date": "2026-10-23",
+   "total": 492,
+   "tiers": {
+    "T2": 8,
+    "T3": 484
+   },
+   "by_strategy": {
+    "ninedim": 336,
+    "weak": 122,
+    "qpzm": 25,
+    "chanlun": 21
+   },
+   "file": "todays_20261023.json"
+  },
+  {
+   "date": "2026-10-26",
+   "total": 580,
+   "tiers": {
+    "T2": 27,
+    "T3": 553
+   },
+   "by_strategy": {
+    "ninedim": 284,
+    "weak": 190,
+    "chanlun": 100,
+    "qpzm": 25
+   },
+   "file": "todays_20261026.json"
+  },
+  {
+   "date": "2026-10-27",
+   "total": 531,
+   "tiers": {
+    "T2": 31,
+    "T3": 500
+   },
+   "by_strategy": {
+    "ninedim": 273,
+    "weak": 190,
+    "chanlun": 60,
+    "qpzm": 25
+   },
+   "file": "todays_20261027.json"
+  },
+  {
+   "date": "2026-10-28",
+   "total": 531,
+   "tiers": {
+    "T2": 31,
+    "T3": 500
+   },
+   "by_strategy": {
+    "ninedim": 273,
+    "weak": 190,
+    "chanlun": 60,
+    "qpzm": 25
+   },
+   "file": "todays_20261028.json"
+  }
+ ]
+}

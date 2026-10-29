@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>股票池日历 · 司马徽军团</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<style>
+  :root{--wrap:1180px}
+  body{background:var(--bg-page,#0d1117);color:var(--text,#c9d1d9);font:14px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif;margin:0}
+  .wrap{max-width:var(--wrap);margin:0 auto;padding:22px 18px 54px}
+  h1{font-size:23px;color:var(--link,#58a6ff);margin:0 0 4px}
+  .sub{color:#8b949e;font-size:12.5px}
+  .banner{border:1px solid #d29922;background:#2b2412;color:#e3b341;border-radius:9px;padding:9px 12px;margin:12px 0;font-size:12.5px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:14px 0}
+  .card{border:1px solid #30363d;border-radius:10px;background:#111820;padding:11px 13px}
+  .k{font-size:11.5px;color:#8b949e}.v{font-size:23px;font-weight:700;margin-top:2px}
+  .toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:16px 0 8px}
+  .toolbar h2{font-size:16px;color:#3fd6c5;margin:0}
+  .btn{background:#161b22;color:#c9d1d9;border:1px solid #30363d;border-radius:7px;padding:5px 11px;font-size:12px;cursor:pointer}
+  .btn:hover{border-color:#58a6ff}
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+  .dow{font-size:11.5px;color:#8b949e;text-align:center;padding:4px 0}
+  .cell{min-height:104px;border:1px solid #30363d;border-radius:8px;background:#0f1722;padding:7px 8px;cursor:pointer;display:flex;flex-direction:column;gap:3px}
+  .cell.empty{background:transparent;border-color:transparent;cursor:default}
+  .cell.has:hover{border-color:#58a6ff;background:#132033}
+  .dnum{font-size:12px;color:#8b949e;display:flex;justify-content:space-between;align-items:center}
+  .dnum b{font-size:15px;color:#e6edf3}
+  .total{font-size:19px;font-weight:700;color:#58a6ff}
+  .sline{font-size:11px;color:#8b949e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pill{display:inline-block;font-size:10.5px;border-radius:8px;padding:0 6px;margin-right:3px;background:#21262d;color:#8b949e}
+  .pill.t2{background:#2b2412;color:#e3b341}.pill.t3{background:#161b22;color:#8b949e}
+  .modal{display:none;position:fixed;inset:0;z-index:99;background:rgba(0,0,0,.62);align-items:center;justify-content:center;padding:16px}
+  .modal.open{display:flex}
+  .mc{width:min(680px,100%);max-height:86vh;overflow:auto;background:#0f1722;border:1px solid #30363d;border-radius:12px;padding:14px 16px}
+  .mh{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid #30363d;padding-bottom:8px;margin-bottom:10px}
+  .mh h3{margin:0;font-size:16px}.mh button{background:#21262d;border:1px solid #30363d;color:#c9d1d9;border-radius:6px;padding:3px 9px;cursor:pointer}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px}
+  th,td{border:1px solid #30363d;padding:6px 9px;text-align:left}th{background:#161b22;color:#8b949e}
+  td.n{text-align:right;font-variant-numeric:tabular-nums}
+  .foot{margin-top:24px;border-top:1px solid #30363d;padding-top:10px;color:#8b949e;font-size:12px}
+  a{color:#58a6ff;text-decoration:none}a:hover{text-decoration:underline}
+  @media(max-width:760px){.wrap{padding:16px 10px 42px}.cal{gap:4px}.cell{min-height:82px;padding:5px 6px}.total{font-size:16px}.sline{font-size:10px}.toolbar h2{font-size:15px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="sub">零界 · 司马徽军团 · 股票池</div>
+  <h1>股票池日历</h1>
+  <div class="sub">按天看池子规模与策略来源；点某一天看各策略选了多少。</div>
+  <div class="banner">当前记录为<b>历史候选池（策略汇总）</b>；ACAD1 每日选池记录尚未接入，页面暂不把候选数当“司马徽选池数”。</div>
+
+  <div class="cards">
+    <div class="card"><div class="k">有记录天数</div><div class="v" id="stat_days">—</div></div>
+    <div class="card"><div class="k">日均候选池</div><div class="v" id="stat_avg">—</div></div>
+    <div class="card"><div class="k">最大单日池</div><div class="v" id="stat_max">—</div></div>
+    <div class="card"><div class="k">主要策略来源</div><div class="v" id="stat_src" style="font-size:15px">—</div></div>
+  </div>
+
+  <div class="toolbar">
+    <h2 id="month_label">—</h2>
+    <div><button class="btn" onclick="moveMonth(-1)">← 上个月</button> <button class="btn" onclick="moveMonth(1)">下个月 →</button></div>
+  </div>
+  <div class="cal" id="cal"></div>
+
+  <div class="foot">
+    数据：portal/data/picks_history（每日候选池归档）｜ 当前为只读原型；ACAD1 选池记录接入后，将单列“司马徽选中数/策略来源”。
+  </div>
+
+  <div id="modal" class="modal" role="dialog" aria-modal="true">
+    <div class="mc">
+      <div class="mh"><h3 id="mt">当日池子</h3><button onclick="closeM()">关闭</button></div>
+      <div id="mb"></div>
+    </div>
+  </div>
+</div>
+<script>
+const NAME={chanlun:'缠论',qpzm:'青萍之末',strong:'板块强弱',weak:'弱于板块',ninedim:'九维',cross:'共振筛选',linkage:'三线联动',sig4:'四策略',jev:'事件复核'};
+const DOW=['一','二','三','四','五','六','日'];
+let DATA=[], BY={}, cur=null;
+
+function fmtDate(d){const p=d.split('-');return p[0]+'年'+(+p[1])+'月'+(+p[2])+'日'}
+function fmtShort(d){const p=d.split('-');return (+p[1])+'月'+(+p[2])+'日'}
+function srcName(k){return NAME[k]||k}
+function totalBySource(day){return Object.entries(day.by_strategy||{}).sort((a,b)=>b[1]-a[1])}
+
+async function load(){
+  const r=await fetch('/static/acad1_pool_calendar_data.json',{cache:'no-store'});
+  const j=await r.json();
+  DATA=j.days||[]; BY={}; DATA.forEach(d=>BY[d.date]=d);
+  const totals=DATA.map(d=>d.total);
+  document.getElementById('stat_days').textContent=DATA.length;
+  document.getElementById('stat_avg').textContent=DATA.length?Math.round(totals.reduce((a,b)=>a+b,0)/DATA.length):0;
+  const max=DATA.reduce((a,b)=>a.total>=b.total?a:b,{total:0,date:''});
+  document.getElementById('stat_max').textContent=max.total+(max.date?'（'+fmtShort(max.date)+'）':'');
+  const agg={}; DATA.forEach(d=>Object.entries(d.by_strategy||{}).forEach(([k,v])=>agg[k]=(agg[k]||0)+v));
+  document.getElementById('stat_src').textContent=Object.entries(agg).sort((a,b)=>b[1]-a[1]).slice(0,2).map(x=>srcName(x[0])+' '+x[1]).join(' · ')||'—';
+  const ds=DATA.map(d=>d.date).sort();
+  cur=ds.length?ds[ds.length-1].slice(0,7):new Date().toISOString().slice(0,7);
+  render();
+}
+function moveMonth(n){if(!cur)return;const [y,m]=cur.split('-').map(Number);const d=new Date(y,m-1+n,1);cur=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');render()}
+function render(){
+  document.getElementById('month_label').textContent=cur.replace('-','年')+'月';
+  const [y,m]=cur.split('-').map(Number);const first=new Date(y,m-1,1);const days=new Date(y,m,0).getDate();
+  const lead=(first.getDay()+6)%7; // Monday first
+  let h='';DOW.forEach(x=>h+='<div class="dow">'+x+'</div>');
+  for(let i=0;i<lead;i++)h+='<div class="cell empty"></div>';
+  for(let d=1;d<=days;d++){
+    const ds=cur+'-'+String(d).padStart(2,'0');const rec=BY[ds];
+    if(rec){
+      const top=totalBySource(rec).slice(0,2).map(x=>srcName(x[0])+' '+x[1]).join(' · ');
+      h+='<div class="cell has" data-date="'+ds+'"><div class="dnum"><b>'+d+'</b><span>'+rec.total+'</span></div><div class="total">'+rec.total+' 只</div><div class="sline">'+top+'</div></div>';
+    }else{
+      h+='<div class="cell"><div class="dnum"><b>'+d+'</b><span>—</span></div><div class="sline" style="margin-top:6px">无记录</div></div>';
+    }
+  }
+  document.getElementById('cal').innerHTML=h;
+}
+function openDay(ds){
+  const r=BY[ds];if(!r)return;
+  const rows=totalBySource(r).map(x=>'<tr><td>'+srcName(x[0])+'</td><td class="n">'+x[1]+'</td></tr>').join('');
+  const tiers=Object.entries(r.tiers||{}).map(x=>'<span class="pill '+(x[0]==='T2'?'t2':'t3')+'">'+x[0]+' '+x[1]+'</span>').join(' ');
+  document.getElementById('mt').textContent=fmtDate(ds)+' · 候选池';
+  document.getElementById('mb').innerHTML='<p>当日候选：<b>'+r.total+' 只</b> ｜ '+tiers+'</p><table><tr><th>策略来源</th><th>命中股票数</th></tr>'+rows+'</table><p class="sub" style="margin-top:8px">口径：同一股票被多个策略命中会在各策略分别计数；当前为历史候选池，ACAD1 选池数待接入。</p>';
+  document.getElementById('modal').classList.add('open');
+}
+function closeM(){document.getElementById('modal').classList.remove('open')}
+document.addEventListener('click',e=>{
+  const c=e.target.closest('.cell.has');if(c){openDay(c.getAttribute('data-date'))}
+  if(e.target.id==='modal')closeM();
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeM()});
+load().catch(e=>{document.getElementById('cal').innerHTML='<div class="banner">数据加载失败：'+e+'</div>'});
+</script>
+</body>
+</html>
