@@ -197,3 +197,5 @@ footer, .footer, .bottom { border-color: var(--ui-line); color: var(--ui-muted);
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+[hidden] { display: none !important; }
