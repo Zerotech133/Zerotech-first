@@ -227,8 +227,8 @@ def main(argv=None) -> int:
         return 2
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     day = datetime.now().strftime("%Y%m%d")
-    md = REPORT_DIR / ("H7_factor_strat_%s.md" % day)
-    js = REPORT_DIR / ("H7_factor_strat_%s.json" % day)
+    md = REPORT_DIR / ("H7_factor_strat_%sv_5y_%s.md" % (day, day))
+    js = REPORT_DIR / ("H7_factor_strat_%sv_5y_%s.json" % (day, day))
     md.write_text(render(res), encoding="utf-8")
     js.write_text(json.dumps(res, ensure_ascii=False, indent=1), encoding="utf-8")
     if args.json:
