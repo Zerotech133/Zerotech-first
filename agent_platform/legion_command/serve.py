@@ -477,6 +477,16 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({"ok": False, "error": "context_failed",
                                  "detail": "%s: %s" % (type(e).__name__, str(e)[:160])}, 500)
             return
+        if path == "/api/ide/openhands/health":
+            from legion_command import openhands_engine
+            self._send_json(openhands_engine.health())
+            return
+        if path == "/api/ide/openhands/conversation":
+            from urllib.parse import parse_qs
+            from legion_command import openhands_engine
+            qs = parse_qs(urlparse(self.path).query)
+            self._send_json(openhands_engine.events((qs.get("id") or [""])[0]))
+            return
         if path == "/api/snapshot":
             self._send_json(build_snapshot())
             return
@@ -1105,6 +1115,26 @@ class Handler(BaseHTTPRequestHandler):
         import json
 
         path = urlparse(self.path).path
+        if path == "/api/ide/openhands/chat":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 256 * 1024:
+                    raise ValueError("bad_length")
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+            except (ValueError, UnicodeDecodeError):
+                self._send_json({"ok": False, "error": "bad_json"}, 400)
+                return
+            if not isinstance(req, dict):
+                self._send_json({"ok": False, "error": "bad_body"}, 400)
+                return
+            from legion_command import openhands_engine
+            res = openhands_engine.chat(
+                str(req.get("message") or ""),
+                str(req.get("conversation_id") or ""),
+                int(req.get("timeout") or 600),
+            )
+            self._send_json(res, 200 if res.get("ok") else 502)
+            return
         if path == "/v1/chat/completions":
             try:
                 length = int(self.headers.get("Content-Length") or 0)
