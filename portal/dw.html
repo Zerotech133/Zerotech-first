@@ -75,7 +75,8 @@ tr.clickable{cursor:pointer}tr.clickable:hover td{background:var(--panel2)}
 <body>
 <div class="topbar">
   <div><h1>🗄 数据仓驾驶舱 <small>来源治理 · 今日动态 · 挖掘时间线 · 治理路线</small></h1>
-  <div class="sub" id="sub">加载中…</div></div>
+  <div class="sub" id="sub">加载中…</div>
+<div class="strip" id="legend" style="font-size:12px;color:var(--dim)"><b>接入方式口径</b>：接口同步＝按交易日/股票从 Tushare 接口拉取；爬虫采集＝新闻/雪球页面抓取；本地库＝SQLite 落盘库；容器库＝PostgreSQL/MySQL 容器库；文件导入＝PDF/人工导入。「条数」为数据行数（万/条）；「滞后」＝最新数据日期距今天数（越红越滞后）。</div></div>
   <div class="btns">
     <button class="btn" onclick="load()">刷新</button>
     <button class="btn pri" onclick="dlJSON()">下载快照 JSON</button>
@@ -98,14 +99,14 @@ tr.clickable{cursor:pointer}tr.clickable:hover td{background:var(--panel2)}
 <div id="tab-sources">
   <div class="filters">
     <select id="fLayer"><option value="">全部层</option></select>
+    <select id="fMethod"><option value="">全部接入方式</option><option>接口同步</option><option>爬虫采集</option><option>本地库</option><option>容器库</option><option>文件导入</option></select>
     <select id="fStatus"><option value="">全部状态</option>
       <option value="done">✅ 已治理</option><option value="in_progress">🔧 治理中</option>
       <option value="mining">⛏ 待挖掘</option><option value="pending">⏳ 待办</option></select>
     <input id="fSearch" placeholder="搜索名称/备注…" style="min-width:200px">
     <span class="muted" id="srcCount"></span>
   </div>
-  <table><thead><tr><th>来源</th><th>层</th><th>状态</th><th>说明</th><th class="num">文件/体积</th>
-    <th>数据范围</th><th>最近更新</th><th>契约</th><th>关联假设</th></tr></thead><tbody id="tbSources"></tbody></table>
+  <table><thead><tr><th>来源（中文名）</th><th>接入方式</th><th>状态</th><th class="num">条数</th><th>最新数据</th><th class="num">滞后</th><th>说明 / 缺口</th><th>最近更新</th><th>契约</th><th>关联假设</th></tr></thead><tbody id="tbSources"></tbody></table>
 </div>
 
 <div id="tab-roadmap" class="hidden">
@@ -158,7 +159,7 @@ async function load(){
 }
 /* ===== KPI cards 可下钻 ===== */
 const CARD_DEFS=[
-  ['sources_total','数据来源',d=>String(d.cockpit.sources_total),'blue',d=>'已治理 '+d.cockpit.sources_done+' / 治理中 '+d.cockpit.sources_in_progress+' / 待挖掘 '+d.cockpit.sources_mining],
+  ['sources_total','数据来源',d=>String(d.cockpit.sources_total),'blue',d=>{const mc=d.method_counts||{};return '接口 '+ (mc['接口同步']||0)+' · 爬虫 '+(mc['爬虫采集']||0)+' · 本地库 '+(mc['本地库']||0)+' · 容器库 '+(mc['容器库']||0);}],
   ['new_today','今日新增',d=>String(d.cockpit.new_today),'green',d=>(d.new_today_sources||[]).map(s=>s.label).slice(0,3).join('、')||'暂无新增'],
   ['pilot_today','今日数据试点',d=>String(d.cockpit.pilot_today),'purple',d=>'数据相关 doing/review '+d.cockpit.pilot_today+' · 数据相关合并 '+d.cockpit.merged_today],
   ['coverage_pct','治理覆盖率',d=>d.cockpit.coverage_pct+'%','green',d=>'done '+d.cockpit.sources_done+'/'+d.cockpit.sources_total],
@@ -224,16 +225,11 @@ function renderSources(){
   if(sel.options.length===1) levels(layers).forEach(l=>sel.add(new Option(l,l)));
   function levels(a){return a;}
   const fs=document.getElementById('fSearch').value.trim().toLowerCase();
-  const fl=sel.value,fst=document.getElementById('fStatus').value;
-  const rows=(SNAP.sources||[]).filter(s=>(!fl||s.layer===fl)&&(!fst||s.status===fst)&&
+  const fl=sel.value,fst=document.getElementById('fStatus').value;const fme=document.getElementById('fMethod').value;
+  const rows=(SNAP.sources||[]).filter(s=>(!fl||s.layer===fl)&&(!fst||s.status===fst)&&(!fme||s.method===fme)&&
     (!fs||(s.name+' '+s.label+' '+s.note).toLowerCase().includes(fs)));
   document.getElementById('srcCount').textContent='共 '+rows.length+' 个来源';
-  document.getElementById('tbSources').innerHTML=rows.map(s=>'<tr class="clickable" data-src="'+esc(s.name)+'">'+
-    '<td><b>'+esc(s.label)+'</b><div class="mono">'+esc(s.name)+'</div></td><td>'+esc(s.layer)+'</td>'+
-    '<td>'+badge(s.status)+'</td><td class="muted">'+esc(s.note)+'</td>'+
-    '<td class="num">'+(s.files==null?'—':s.files)+' / '+esc(s.size_h)+'</td>'+
-    '<td class="num">'+esc(s.range||'—')+'</td><td class="muted">'+esc(s.last_update||'—')+'</td>'+
-    '<td>'+(s.contract?'✅':'—')+'</td><td class="mono">'+esc((s.hypothesis_ids||[]).join(' '))+'</td></tr>').join('');
+  document.getElementById('tbSources').innerHTML=rows.map(s=>{const lag=s.lag_days;const lagHtml=lag==null?'<span class="muted">—</span>':('<span class="'+(lag>7?'':'')+'" style="font-weight:600;color:'+(lag>7?'#f85149':lag>2?'#d29922':'#3fb950')+'">'+lag+' 天</span>');const gap=s.gap_note?('<div class="muted">⚠ '+esc(s.gap_note)+'</div>'):'';return '<tr class="clickable" data-src="'+esc(s.name)+'">'+'<td><b>'+esc(s.label)+'</b><div class="mono">'+esc(s.name)+'</div></td>'+'<td><span class="badge b-in_progress">'+esc(s.method||'—')+'</span></td>'+'<td>'+badge(s.status)+'</td>'+'<td class="num">'+esc(s.rows_h||'—')+'</td>'+'<td class="muted">'+esc(s.latest_date||'—')+'</td>'+'<td class="num">'+lagHtml+'</td>'+'<td class="muted">'+esc(s.note)+gap+'</td>'+'<td class="muted">'+esc(s.last_update||'—')+'</td>'+'<td>'+(s.contract?'✅':'—')+'</td><td class="mono">'+esc((s.hypothesis_ids||[]).join(' '))+'</td></tr>';}).join('');
   document.querySelectorAll('#tbSources tr[data-src]').forEach(tr=>tr.onclick=()=>drillSource(tr.dataset.src));
 }
 function drillSource(name){
@@ -241,11 +237,11 @@ function drillSource(name){
   if(!s){return;}
   const hyps=(s.hypothesis_ids||[]).map(id=>{const h=(SNAP.hypotheses||[]).find(x=>x.id===id);return h?('<span class="chip" onclick="drillHyp(\''+id+'\')">'+id+' '+esc(h.status)+'</span>'):id;}).join('');
   const body='<table><tbody>'+
-    row('标签',s.label)+row('目录/库',s.name)+row('层',s.layer)+row('状态',badge(s.status))+
-    row('说明',s.note)+row('文件数',s.files)+row('体积',s.size_h)+row('数据范围',s.range||'—')+
+    row('标签',s.label)+row('目录/库',s.name)+row('层',esc(s.layer))+row('接入方式','<span class="badge b-in_progress">'+esc(s.method||'—')+'</span>')+row('状态',badge(s.status))+row('条数',esc(s.rows_h||'—'))+
+    row('说明',s.note)+row('文件数',s.files)+row('体积',s.size_h)+row('数据范围',esc(s.range||'—'))+row('最新数据',esc(s.latest_date||'—'))+row('滞后',s.lag_days==null?'—':(s.lag_days+' 天'))+
     row('最近更新',s.last_update||'—')+row('catalog 登记',s.registered?'✅':'❌')+
     row('manifest',s.manifest)+row('契约',s.contract?'✅':'\u2014')+
-    row('一日新增文件',s.today_new||0)+row('关联假设',hyps||'\u2014')+row('下一步',s.next_action||'\u2014')+'</tbody></table>';
+    row('一日新增文件',s.today_new||0)+row('关联假设',hyps||'\u2014')+row('缺口/覆盖',s.gap_note?('<span style="color:#d29922">⚠ '+esc(s.gap_note)+'</span>'):'—')+row('下一步',s.next_action||'\u2014')+'</tbody></table>';
   openModal('来源详情 · '+s.label,body);
 }
 function row(k,v){return '<tr><th style="width:130px">'+esc(k)+'</th><td>'+v+'</td></tr>';}
@@ -290,7 +286,7 @@ document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x===b));
   ['sources','roadmap','mining','ops'].forEach(t=>document.getElementById('tab-'+t).classList.toggle('hidden',t!==b.dataset.tab));
 });
-['fLayer','fStatus','fSearch'].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener(el.tagName==='INPUT'?'input':'change',()=>{if(SNAP)renderSources();});});
+['fLayer','fStatus','fMethod','fSearch'].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener(el.tagName==='INPUT'?'input':'change',()=>{if(SNAP)renderSources();});});
 function dl(name,text){const a=document.createElement('a');a.href='data:text/plain;charset=utf-8,'+encodeURIComponent(text);a.download=name;a.click();}
 function dlJSON(){dl('dw_snapshot_'+SNAP.today+'.json',JSON.stringify(SNAP,null,1));}
 function dlCSV(kind){
