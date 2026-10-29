@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-"""验收会证据 P1b 测试：gather/HTTP/纪要 acceptance 字段/前端标记。"""
+"""验收会证据 P1b 测试：gather/HTTP/纪要 acceptance 字段/前端标记 + 日更验收联动。"""
+import datetime as dt
 import json
 import sys
 import threading
@@ -30,18 +31,79 @@ def _seed(tmp_path):
     return base, rt, ac
 
 
+def _daily_rows():
+    """近 7 天 3 条（PASS/REJECT/OBSERVE）+ 1 条窗口外 PASS，latest=最近一条 OBSERVE。"""
+    now = dt.datetime.now().astimezone()
+    return now, [
+        {"ts": (now - dt.timedelta(days=3)).isoformat(timespec="seconds"),
+         "commit": "a" * 12, "verdict": "PASS", "baseline_failed": 0,
+         "redteam_rate": 1.0, "report": "x.md"},
+        {"ts": (now - dt.timedelta(days=2)).isoformat(timespec="seconds"),
+         "commit": "b" * 12, "verdict": "REJECT", "baseline_failed": 2,
+         "redteam_rate": 0.5, "report": "y.md"},
+        {"ts": (now - dt.timedelta(days=1)).isoformat(timespec="seconds"),
+         "commit": "c" * 12, "verdict": "OBSERVE", "baseline_failed": 0,
+         "redteam_rate": 1.0, "report": "z.md"},
+        {"ts": (now - dt.timedelta(days=30)).isoformat(timespec="seconds"),
+         "commit": "old" * 4, "verdict": "PASS", "baseline_failed": 0,
+         "redteam_rate": 1.0, "report": "old.md"},
+    ]
+
+
 def test_gather_ok(tmp_path):
     base, rt, ac = _seed(tmp_path)
     rep = ha.gather(base, rt, ac)
     assert rep["ok"] and rep["baseline"]["failed"] == 0
     assert rep["redteam"]["pass_rate"] == 1.0
     assert rep["acceptance"]["verdict"] == "PASS"
+    # 缺日更文件：daily 块 fail-visible，但既有字段与 warnings 语义不变
+    assert rep["daily"] == {"ok": False, "error": "daily_missing"}
+    assert not any("日更" in w for w in rep["warnings"])
 
 
 def test_gather_missing_fail_visible(tmp_path):
     rep = ha.gather(tmp_path / "n.json", tmp_path / "n_rt", tmp_path / "n_ac")
     assert rep["ok"] and rep["warnings"]
     assert rep["baseline"]["ok"] is False and rep["redteam"]["ok"] is False
+    # 日更缺失只标 ok=False，绝不进 warnings 硬失败
+    assert rep["daily"] == {"ok": False, "error": "daily_missing"}
+    assert not any("日更" in w for w in rep["warnings"])
+
+
+def test_gather_daily_present(tmp_path):
+    """日更验收联动：近 7 天 runs/计数 + latest（窗口外行只进 latest 候选不影响计数）。"""
+    base, rt, ac = _seed(tmp_path)
+    now, rows = _daily_rows()
+    (ac / "daily.jsonl").write_text(
+        "\n".join(json.dumps(r, ensure_ascii=False) for r in rows) + "\n", encoding="utf-8")
+    rep = ha.gather(base, rt, ac)
+    daily = rep["daily"]
+    assert daily["ok"] is True
+    assert daily["window_days"] == 7
+    assert daily["runs"] == 3
+    assert daily["counts"] == {"PASS": 1, "REJECT": 1, "OBSERVE": 1}
+    assert daily["latest"]["verdict"] == "OBSERVE"
+    assert daily["latest"]["commit"] == "c" * 12
+    assert daily["latest"]["ts"] == rows[2]["ts"]
+    assert not any("日更" in w for w in rep["warnings"])
+
+
+def test_gather_daily_tolerates_bad_lines(tmp_path):
+    """daily.jsonl 坏行/无 ts 行跳过，不把整块打成不可用。"""
+    base, rt, ac = _seed(tmp_path)
+    now = dt.datetime.now().astimezone()
+    lines = [
+        "not-json-at-all",
+        json.dumps({"verdict": "PASS"}),  # 无 ts：不计数、不参与 latest
+        json.dumps({"ts": now.isoformat(timespec="seconds"), "verdict": "PASS",
+                    "commit": "d" * 12, "baseline_failed": 0, "redteam_rate": 1.0,
+                    "report": "d.md"}),
+    ]
+    (ac / "daily.jsonl").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    daily = ha.gather(base, rt, ac)["daily"]
+    assert daily["ok"] is True
+    assert daily["runs"] == 1 and daily["counts"]["PASS"] == 1
+    assert daily["latest"]["commit"] == "d" * 12
 
 
 def test_meeting_saves_acceptance(tmp_path):

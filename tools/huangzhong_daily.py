@@ -24,7 +24,34 @@ def _accept_fn():
     return hz.accept
 
 
-def run_daily(commit: str = "HEAD", accept_fn=None, out_dir: Path | None = None) -> dict:
+def _emit_event(summary: dict, emit_fn=None) -> None:
+    """日更验收单落事件层（WO-HZ-MEET-20261030 黄忠日更验收联动）。
+
+    emit_fn 可注入（测试用 fake，不写真实事件文件）；缺省惰性 import
+    tools/events.py 的 emit——不在模块导入期拉起事件层。事件层**不是**主流程
+    依赖：任何异常一律吞掉（fail-open），日更验收单必须先落盘、结果必须先返回，
+    不得因事件层故障而中断或失败。
+    """
+    try:
+        if emit_fn is None:
+            if str(TOOLS) not in sys.path:
+                sys.path.insert(0, str(TOOLS))
+            import events as _events
+            emit_fn = _events.emit
+        emit_fn(
+            kind="acceptance_done",
+            task="HUANGZHONG-DAILY",
+            detail="verdict=%s commit=%s baseline_failed=%s redteam=%s report=%s"
+            % (summary.get("verdict"), summary.get("commit"),
+               summary.get("baseline_failed"), summary.get("redteam_rate"),
+               summary.get("report")),
+        )
+    except Exception:  # noqa: BLE001  fail-open：事件层永不影响日更主流程
+        pass
+
+
+def run_daily(commit: str = "HEAD", accept_fn=None, out_dir: Path | None = None,
+              emit_fn=None) -> dict:
     accept = accept_fn or _accept_fn()
     rep = accept(commit)
     summary = {
@@ -41,6 +68,8 @@ def run_daily(commit: str = "HEAD", accept_fn=None, out_dir: Path | None = None)
     out.mkdir(parents=True, exist_ok=True)
     with (out / "daily.jsonl").open("a", encoding="utf-8") as f:
         f.write(json.dumps(summary, ensure_ascii=False) + "\n")
+    # 先落盘再发事件：事件层失败不回滚、不影响返回值（fail-open）
+    _emit_event(summary, emit_fn)
     return summary
 
 

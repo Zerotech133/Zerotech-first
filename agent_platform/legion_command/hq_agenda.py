@@ -53,9 +53,11 @@ def load_agenda(dirpath) -> dict:
             archives = 0
     recent_events = []
     try:
+        # acceptance_done = 黄忠日更验收联动（WO-HZ-MEET-20261030）：会前议程可见
+        # 「今天验收单出了什么结论」，与 merge_done/guard_fail 同列。
         for row in _read_jsonl(d / "dev_events.jsonl", 400):
             if row.get("kind") in ("merge_done", "guard_fail", "meeting_saved",
-                                   "meeting_dispatched"):
+                                   "meeting_dispatched", "acceptance_done"):
                 recent_events.append(row)
     except OSError:
         recent_events = []
