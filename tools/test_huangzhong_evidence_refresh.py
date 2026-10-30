@@ -44,7 +44,7 @@ def test_refresh_ok_order_backup_and_logs(tmp_path):
 
     rep = R.refresh(root=root, log_dir=tmp_path / "logs", runner=runner)
     assert rep["ok"] is True
-    assert [("test_baseline.py" in c) for c in calls] == [True, False]
+    assert [any("test_baseline.py" in x for x in c) for c in calls] == [True, False]
     assert (root / "agent_platform" / "data" / "test_baseline" / "latest_prev.json").is_file()
     assert (tmp_path / "logs" / "huangzhong_baseline_refresh.log").is_file()
     assert (tmp_path / "logs" / "huangzhong_redteam_refresh.log").is_file()
