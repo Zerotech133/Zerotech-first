@@ -10,8 +10,11 @@
       "role": "bull",
       "analysis_type": "market_technical",
       "node_key": "t1_market",
-      "parent_node_keys": [],
-      "level": 1,
+      "parent_node_keys": [
+        "n1_news",
+        "f1_fundamental"
+      ],
+      "level": 2,
       "is_parallel": true,
       "wait_all_complete": true,
       "is_debate_node": true,
@@ -79,8 +82,11 @@
       "role": "bear",
       "analysis_type": "market_technical",
       "node_key": "t2_market",
-      "parent_node_keys": [],
-      "level": 1,
+      "parent_node_keys": [
+        "n1_news",
+        "f1_fundamental"
+      ],
+      "level": 2,
       "is_parallel": true,
       "wait_all_complete": true,
       "is_debate_node": true,
@@ -278,7 +284,7 @@
         "n1_news",
         "f1_fundamental"
       ],
-      "level": 2,
+      "level": 3,
       "is_parallel": false,
       "wait_all_complete": true,
       "is_debate_node": false,

@@ -309,6 +309,8 @@ class Interpreter:
             for k, st in (ctx.get("structured") or {}).items():
                 if k == node.get("node_key") or k == node.get("debate_partner_key"):
                     continue
+                if k in parents:
+                    continue  # 已在上游摘要注入，避免重复
                 if isinstance(st, dict) and st and not st.get("error"):
                     analyst.append("### %s\n%s" % (
                         k, json.dumps(st, ensure_ascii=False)[:900]))
