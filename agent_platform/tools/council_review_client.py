@@ -14,7 +14,10 @@ from __future__ import annotations
 import argparse
 import json
 import urllib.request
-from tools.safe_urlopen import safe_urlopen
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包/仓库根导入时
+    from tools.safe_urlopen import safe_urlopen
 
 BASE = "http://127.0.0.1:8787"
 TIMEOUT_START = 120

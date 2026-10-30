@@ -38,7 +38,10 @@ sys.path.insert(0, str(REPO))
 import xq_classify as xq  # noqa: E402
 
 try:
-    from tools.safe_urlopen import safe_urlopen
+    try:
+        from safe_urlopen import safe_urlopen
+    except ImportError:  # 作为包/仓库根导入时
+        from tools.safe_urlopen import safe_urlopen
 except ImportError:  # 作为脚本直接运行时
     from safe_urlopen import safe_urlopen
 

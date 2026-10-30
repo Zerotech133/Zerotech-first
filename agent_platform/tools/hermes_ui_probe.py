@@ -26,7 +26,10 @@ import time
 import urllib.error
 import urllib.request
 from pathlib import Path
-from tools.safe_urlopen import safe_urlopen
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包/仓库根导入时
+    from tools.safe_urlopen import safe_urlopen
 
 PLATFORM = Path(__file__).resolve().parents[1]
 REPO = PLATFORM.parent
