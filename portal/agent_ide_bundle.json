@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 17:44",
+ "generated": "2026-10-30 17:53",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,8 +9,8 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 28,
-  "workorders_review": 10
+  "workorders_doing": 26,
+  "workorders_review": 11
  },
  "workorders": [
   {
@@ -320,15 +320,6 @@
    "project": "general"
   },
   {
-   "id": "K-QUANT-20261030-LDETEST",
-   "desc": "LDE HTTP endpoint tests: tree/lock/read/write/git/exec/security",
-   "status": "review",
-   "owner": "DSH-Lead",
-   "branch": "task/K-QUANT-20261030-LDETEST",
-   "created": "2026-10-30 17:37:26",
-   "project": "quant"
-  },
-  {
    "id": "WO-ZHAOYUN-KPI-20261030",
    "desc": "P1治理KPI端点：GET /api/governance/kpi（只读聚合）+测试",
    "status": "review",
@@ -340,7 +331,7 @@
   {
    "id": "K-STOCK-ANALYSIS-P2-3-20261030",
    "desc": "P2.3 计费运营：账单生成/导出、续费提醒、试用→付费漏斗（基于usage+audit）+CLI+测试",
-   "status": "doing",
+   "status": "review",
    "owner": "DSH-Lead",
    "branch": "task/K-STOCK-ANALYSIS-P2-3-20261030",
    "created": "2026-10-30 17:41:13",
@@ -349,7 +340,7 @@
   {
    "id": "WO-KB-GOV-20261030",
    "desc": "语料库治理可视化：kb_corpus stats 增治理徽章 + 血缘清单 yaml + 页面展示",
-   "status": "doing",
+   "status": "review",
    "owner": "DSH-Lead",
    "branch": "task/WO-KB-GOV-20261030",
    "created": "2026-10-30 17:42:46",
@@ -3936,7 +3927,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 110,
+     "count": 111,
      "recent": [
       {
        "ts": "",
@@ -4081,7 +4072,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 110,
+     "count": 111,
      "recent": [
       {
        "ts": "",
@@ -4231,7 +4222,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 112,
+     "count": 113,
      "recent": [
       {
        "ts": "",
@@ -4382,7 +4373,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 112,
+     "count": 113,
      "recent": [
       {
        "ts": "",
@@ -4534,7 +4525,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 110,
+     "count": 111,
      "recent": [
       {
        "ts": "",
