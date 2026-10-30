@@ -4,6 +4,8 @@
 用法：
   python tools/_mixin_integrity.py --baseline   # 首跑/重建基线（写 portal/mixin_baseline.json）
   python tools/_mixin_integrity.py --check      # 校验：基座+各 api_*.py Mixin 方法并集 == 基线
+  python tools/_mixin_integrity.py --check --root <worktree>
+                                               # 分支感知：扫描指定 worktree（评审门用）
 
 原理：搬代码不改逻辑 ⇒ Handler 方法名集合（含模块级函数可选）搬前搬后必须零 diff。
 探针盲区（--probe-all 52 条打不全 112 方法）由此补上：多一个少一个都拒收。
@@ -24,10 +26,18 @@ try:
 except (AttributeError, OSError) as exc:
     logging.getLogger(__name__).warning("silent-except %s: %s", "tools/_mixin_integrity.py", exc)
 
-PORTAL = os.path.join(os.path.dirname(os.path.dirname(
-    os.path.abspath(__file__))), "portal")
+_DEFAULT_REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PORTAL = os.path.join(_DEFAULT_REPO, "portal")
 MAIN = os.path.join(PORTAL, "portal_api.py")
 BASELINE = os.path.join(PORTAL, "mixin_baseline.json")
+
+
+def _apply_root(root):
+    """2026-10-30 P103：把扫描根切到分支 worktree（评审门分支感知）。"""
+    global PORTAL, MAIN, BASELINE
+    PORTAL = os.path.join(root, "portal")
+    MAIN = os.path.join(PORTAL, "portal_api.py")
+    BASELINE = os.path.join(PORTAL, "mixin_baseline.json")
 
 # 2026-10-25 B6/P1-08（审计 RC-06）：「只改不扩」拒收闸。此前 --check 只拦
 # 「丢失」不拦「新增」→ 基线停在 10-12 的 121/98 而代码已 185/381 仍 rc=0。
@@ -67,7 +77,16 @@ def collect():
 
 
 def main():
-    mode = sys.argv[1] if len(sys.argv) > 1 else "--check"
+    argv = sys.argv[1:]
+    root = ""
+    if "--root" in argv:
+        i = argv.index("--root")
+        if i + 1 < len(argv):
+            root = argv[i + 1]
+            del argv[i:i + 2]
+    if root:
+        _apply_root(root)
+    mode = argv[0] if argv else "--check"
     hs, fs = collect()
     if mode == "--baseline":
         json.dump({"handlers": sorted(hs), "funcs": sorted(fs)},
