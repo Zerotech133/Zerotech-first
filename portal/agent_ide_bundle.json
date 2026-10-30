@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 19:24",
+ "generated": "2026-10-30 19:25",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 27,
+  "workorders_doing": 28,
   "workorders_review": 10
  },
  "workorders": [
@@ -338,12 +338,21 @@
    "project": "general"
   },
   {
-   "id": "WO-ZHAOYUN-UIUX-B2-20261030",
-   "desc": "W2-B2：cap2 13面板统一降级+聚合提示（单文件）",
+   "id": "WO-WARROOM-FALLBACK-20261030",
+   "desc": "作战台静态兜底更新为当前 watch armed=5，避免 live 到达前短暂显示旧31",
    "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-ZHAOYUN-UIUX-B2-20261030",
-   "created": "2026-10-30 19:21:48",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-WARROOM-FALLBACK-20261030",
+   "created": "2026-10-30 19:24:18",
+   "project": "portal"
+  },
+  {
+   "id": "WO-GUANYU-P85-20261030",
+   "desc": "h21误报豁免登记",
+   "status": "doing",
+   "owner": "GUANYU",
+   "branch": "task/WO-GUANYU-P85-20261030",
+   "created": "2026-10-30 19:24:28",
    "project": "general"
   }
  ],
@@ -6647,6 +6656,11 @@
      "id": "WO-GUANYU-P84-20261030",
      "desc": "ruff零告警清理",
      "status": "review"
+    },
+    {
+     "id": "WO-GUANYU-P85-20261030",
+     "desc": "h21误报豁免登记",
+     "status": "doing"
     }
    ]
   },
@@ -7311,11 +7325,6 @@
     {
      "id": "WO-LEGION-OIDC-PATH-20261030",
      "desc": "OIDC配置路径对齐实际vault",
-     "status": "doing"
-    },
-    {
-     "id": "WO-ZHAOYUN-UIUX-B2-20261030",
-     "desc": "W2-B2：cap2 13面板统一降级+聚合提示（单文件）",
      "status": "doing"
     }
    ]
