@@ -48,6 +48,17 @@ def apply_policy(dec, bundle, run_id="", date=""):
     else:
         checks.append({"rule": "policy_gate", "pass": True, "detail": "ok"})
 
+    # 模型自出 WATCH 时也必须写清原因，不允许黑箱 WATCH
+    if watch_reason is None and _rec(d) == "WATCH":
+        if bundle and bundle.l4_status in ("missing", "unresolved"):
+            watch_reason = ("upstream_l4_missing" if bundle.l4_status == "missing"
+                            else "l4_unresolved")
+        elif not bundle or not bundle.is_sufficient():
+            watch_reason = "no_evidence"
+        else:
+            watch_reason = "model_watch"
+        checks.append({"rule": "watch_reason", "pass": True, "detail": watch_reason})
+
     d["confidence_raw"] = conf
     return {
         "decision": d,
