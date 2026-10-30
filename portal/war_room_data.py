@@ -34,17 +34,27 @@ STRATEGIES = [
     {"id": "emotion", "name": "打板情绪", "color": "#ff4d6d", "desc": "情绪周期"},
 ]
 WATCH_ADMIN = "http://127.0.0.1:8789/api/watch-admin/snapshot"
+_WATCH_CACHE = {"ts": 0.0, "data": None}
 
 
 def _watch_summary(armed):
+    import time
     out = {"armed": armed, "verified_sources": 17, "unverified": 2,
            "admin_url": "http://127.0.0.1:8789/watch-admin", "source": "d1_handoff"}
+    cached = _WATCH_CACHE.get("data")
+    if cached is not None and time.time() - _WATCH_CACHE.get("ts", 0) < 60:
+        out.update(cached)
+        return out
     try:
-        with urllib.request.urlopen(WATCH_ADMIN, timeout=2) as r:
+        with urllib.request.urlopen(WATCH_ADMIN, timeout=6) as r:
             out["snapshot"] = json.loads(r.read())
         out["source"] = "watch_admin"
     except Exception as exc:  # noqa: BLE001 8789 未启不阻塞页面
         out["error"] = str(exc)[:120]
+    _WATCH_CACHE["data"] = {"source": out["source"]}
+    _WATCH_CACHE["ts"] = time.time()
+    if "snapshot" in out:
+        _WATCH_CACHE["data"]["snapshot"] = out["snapshot"]
     return out
 
 
