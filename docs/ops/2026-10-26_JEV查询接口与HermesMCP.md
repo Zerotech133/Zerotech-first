@@ -113,6 +113,9 @@ Hermes 话术：
 由现有 `alert_forward.ps1` 转发飞书。默认 dry-run，不注册任务、不主动外发。
 上线自动调度（建议每小时，且仅交易时段）需老田 L2 批准。
 
+**2026-10-30 21:30 更新（用户批准方案 B）**：已挂入 `JevBackfill` 小时轮 wrapper 尾部：
+每轮判读后执行 `jev_risk_alert.py --hours 2 --emit-outbox`（仅写 `risk_alerts.jsonl`，**不外发**飞书/Hermes 推送）；日志特征 `P2.5 risk outbox exit=0`。
+
 ## 十二、2026-10-30 增量事件流（`since` / `cursor`，2026-10-31 重启后生效）
 
 `GET /api/jev/query?since=2026-10-30%2010:00:00&limit=200`：
