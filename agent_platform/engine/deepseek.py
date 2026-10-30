@@ -26,6 +26,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 from typing import Any, Callable, Optional
+from tools.safe_urlopen import safe_urlopen
 
 DEFAULT_BASE_URL = "https://api.deepseek.com"
 DEFAULT_MODEL = "deepseek-flash"
@@ -92,7 +93,7 @@ def _http_request(
 ) -> tuple[int, str]:
     req = urllib.request.Request(url, data=data, headers=headers, method=method)
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
+        with safe_urlopen(req, timeout=timeout) as r:
             return int(getattr(r, "status", 200)), r.read().decode("utf-8", "replace")
     except urllib.error.HTTPError as exc:
         return int(exc.code), exc.read().decode("utf-8", "replace")

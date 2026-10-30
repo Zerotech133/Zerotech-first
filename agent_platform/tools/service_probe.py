@@ -24,6 +24,7 @@ import time
 import urllib.error
 import urllib.request
 from pathlib import Path
+from tools.safe_urlopen import safe_urlopen
 
 PLATFORM = Path(__file__).resolve().parents[1]
 REPO = PLATFORM.parent
@@ -51,7 +52,7 @@ def load_targets(config: Path) -> list:
 def _http(url: str, timeout: float) -> dict:
     t0 = time.time()
     try:
-        with urllib.request.urlopen(url, timeout=timeout) as r:
+        with safe_urlopen(url, timeout=timeout) as r:
             body = r.read(65536)
             return {
                 "ok": 200 <= r.status < 400,
