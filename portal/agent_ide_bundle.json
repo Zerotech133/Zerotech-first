@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 15:02",
+ "generated": "2026-10-30 15:03",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,8 +9,8 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 27,
-  "workorders_review": 8
+  "workorders_doing": 28,
+  "workorders_review": 7
  },
  "workorders": [
   {
@@ -284,15 +284,6 @@
    "project": "quant"
   },
   {
-   "id": "WO-KB-PAGE-20261030",
-   "desc": "语料知识库门户页：api_kb_corpus 只读接口 + kb_corpus.html（检索/问答/引用）",
-   "status": "review",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-KB-PAGE-20261030",
-   "created": "2026-10-30 14:57:41",
-   "project": "general"
-  },
-  {
    "id": "WO-SEC-AUDIT-V2-20261030",
    "desc": "夜间安全审计基线切v2：security_audit.ps1 \\ 指向 bandit_baseline_v2.json，避免并发覆盖导致误报HIGH。",
    "status": "doing",
@@ -327,6 +318,15 @@
    "branch": "task/K-ORG-20261030-LOCKYIELD",
    "created": "2026-10-30 15:01:51",
    "project": "general"
+  },
+  {
+   "id": "K-STOCK-ANALYSIS-P0T-20261030",
+   "desc": "修龙虎榜单位bug：seat_net_wan 把元当万元（600337显示155亿），改用 net_buy/1e4 + 单测",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-STOCK-ANALYSIS-P0T-20261030",
+   "created": "2026-10-30 15:03:09",
+   "project": "quant"
   }
  ],
  "coder_traces": [
