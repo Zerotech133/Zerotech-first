@@ -17,9 +17,13 @@ def test_norm_ts_code():
     assert ja.norm_ts_code("000001") == "000001.SZ"
     assert ja.norm_ts_code("300750") == "300750.SZ"
     assert ja.norm_ts_code("830799") == "830799.BJ"
-    assert ja.norm_ts_code("600000.SH") is None
+    assert ja.norm_ts_code("920001") == "920001.BJ"          # 北交所新段
+    assert ja.norm_ts_code("600000.SH") == "600000.SH"      # BATCH1：收后缀
+    assert ja.norm_ts_code("000001.SZ") == "000001.SZ"
+    assert ja.norm_ts_code("688411.SH") == "688411.SH"
     assert ja.norm_ts_code("") is None
     assert ja.norm_ts_code("12345") is None
+    assert ja.norm_ts_code("ABC") is None
 
 
 def test_next_trade_day():
