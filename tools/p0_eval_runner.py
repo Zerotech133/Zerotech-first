@@ -84,10 +84,12 @@ def judge(case, text):
     for bad in checks.get("must_not") or []:
         if _has_unnegated(text or "", bad):
             reasons.append("forbidden:%s" % bad)
-    if checks.get("citation_required") and not CITATION_RE.search(text or ""):
-        reasons.append("citation_missing")
     any_of = checks.get("any_of") or []
     refusal = any(h in text for h in STRONG_REFUSAL)
+    # 拒绝/不确定的回答没有“来源”是正确行为，不应被 citation_required 误判。
+    if (checks.get("citation_required") and not refusal
+            and not CITATION_RE.search(text or "")):
+        reasons.append("citation_missing")
     if any_of:
         if not any(k.lower() in low for k in any_of) and not refusal:
             reasons.append("no_expected_keyword")
