@@ -40,7 +40,6 @@ def test_last_night_splits_on_gap():
 
 def test_cli_entry_present():
     from pathlib import Path as _P
-    src = _P(__file__).with_name("test_jev_night_summary.py").parents[0]
     import jev_night_summary as _ns
     code = _P(_ns.__file__).read_text(encoding="utf-8")
     assert 'if __name__ == "__main__":' in code

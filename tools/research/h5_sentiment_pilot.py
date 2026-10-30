@@ -17,7 +17,6 @@ import glob
 import json
 import sqlite3
 import sys
-from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 
@@ -133,7 +132,6 @@ def main() -> int:
     dates = sorted(allpx["trade_date"].unique())
     idx = {d: i for i, d in enumerate(dates)}
     close = allpx.pivot_table(index="trade_date", columns="ts_code", values="close")
-    pct = allpx.pivot_table(index="trade_date", columns="ts_code", values="pct_chg")
     mkt = allpx.groupby("trade_date")["pct_chg"].mean() / 100.0
     mkt_cum = (1 + mkt.fillna(0)).cumprod()
 

@@ -36,7 +36,7 @@ def _repo(tmp_path, monkeypatch):
 
 
 def test_auto_worktree_diff_commit(tmp_path, monkeypatch):
-    repo = _repo(tmp_path, monkeypatch)
+    _repo(tmp_path, monkeypatch)
     ready = W.ensure_worktree("T-1")
     assert ready["ok"] and Path(ready["worktree"]).is_dir()
     wt = Path(ready["worktree"])

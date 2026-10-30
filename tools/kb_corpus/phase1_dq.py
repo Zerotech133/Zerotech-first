@@ -76,7 +76,6 @@ def main() -> int:
             miss = s.isna() | (s.astype(str).str.strip().isin(("", "None", "nan", "0")))
             dq["missing"][col] = round(float(miss.mean()) * 100, 2)
     # parent 合法性
-    seen = defaultdict(set)
     for vid, cid in zip(c["video_id"].values[:0], c["comment_id"].values[:0]):
         pass
     # 为控制内存：按 video 分组检查（抽 200 个 video）

@@ -12,7 +12,6 @@ paper-only；人工确认是硬门：
 """
 from __future__ import annotations
 
-import hashlib
 import io
 import json
 import os

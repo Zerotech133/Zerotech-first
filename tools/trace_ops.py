@@ -9,13 +9,11 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import time
 import urllib.error
 import urllib.request
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
-from statistics import median
 
 ROOT = Path(__file__).resolve().parents[1]
 BASE = os.environ.get("PHOENIX_BASE", "http://127.0.0.1:6006").rstrip("/")

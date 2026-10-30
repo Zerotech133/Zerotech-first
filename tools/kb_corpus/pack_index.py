@@ -9,7 +9,6 @@
 from __future__ import annotations
 
 import json
-import struct
 import sys
 from array import array
 from datetime import datetime

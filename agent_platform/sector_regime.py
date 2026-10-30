@@ -131,7 +131,6 @@ def load_relative_strength(bars_by_code, lookback=20):
     daily = _read_sector_daily(set(mapping.values()))
     if daily is None or daily.empty:
         return {}, {"relative_covered": 0, "reason": "no_daily"}
-    import pandas as pd
     out = {}
     covered = 0
     for code, bars in bars_by_code.items():

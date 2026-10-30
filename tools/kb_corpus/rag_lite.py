@@ -173,7 +173,7 @@ def report() -> int:
     path.write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
     L = ["# P4-lite · 本地检索问答验证报告", "",
          f"- 索引：{IDX}；embedding={EMBED_MODEL}；生成={CHAT_MODEL}；top_k={TOP_K}",
-         f"- 知识源：pilot 100 视频（标题+描述+高赞评论），来自 core_quant 过滤后的语料", "",
+         "- 知识源：pilot 100 视频（标题+描述+高赞评论），来自 core_quant 过滤后的语料", "",
          "| # | 问题 | 检索 top1 score | 回答摘要 | 引用 |", "|---|---|---|---|---|"]
     for i, r in enumerate(out, 1):
         srcs = " ".join(s["sid"] + ":" + s["video_id"] for s in r["sources"][:3])

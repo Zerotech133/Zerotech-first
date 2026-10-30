@@ -108,7 +108,6 @@ def main() -> int:
     mkt_cum = (1 + mkt.fillna(0)).cumprod()
     dates = list(close.index)
     idx = {d: i for i, d in enumerate(dates)}
-    rel = close.div(close.shift(1)) - 1  # 日收益（%）
 
     obs = []
     for r in ev2.itertuples():

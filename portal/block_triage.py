@@ -194,7 +194,7 @@ def collect(root_override: str | None):
         os.environ["AIOS_ROOT"] = root_override
     if str(PORTAL_DIR) not in sys.path:
         sys.path.insert(0, str(PORTAL_DIR))
-    import api_notify  # noqa: import 即用，不起服务不触网
+    import api_notify  # noqa: F401  # 导入即用（模块 import 副作用），不起服务不触网
 
     errors: list = []
     decisions = api_notify.decision_items(errors)

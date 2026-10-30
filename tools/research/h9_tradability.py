@@ -84,7 +84,6 @@ def main() -> int:
     res = {"ok": True, "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
            "cost_pct": COST * 100, "pairs": {}, "tradable_long": {}}
     a_days_all = sorted({d for c in a for d in a[c]})
-    split = int(len(a_days_all) * 0.6)
     for gcode, gmap in g.items():
         for acode, aname in A_IDX.items():
             amap = a[acode]
@@ -92,7 +91,6 @@ def main() -> int:
             for i, d in enumerate(a_days_all):
                 if d not in amap or i == 0:
                     continue
-                prev = a_days_all[i - 1]
                 us = [gmap[x] for x in sorted(gmap) if x < d]
                 if not us:
                     continue
