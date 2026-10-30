@@ -88,3 +88,65 @@ def test_fmt_calibration_gate_and_low_signal():
     assert "门控通过=False" in text
     assert "20261023" in text
     assert "低信号事件" in text
+
+
+# ── 2026-10-30 JEVHERMES：jev_digest / jev_risk ──────────────────────
+_CAL = {
+    "data_through": "20261029", "stale_trade_days": 1, "n_trade_days": 13,
+    "directional": {"n": 9793, "rate": 0.521, "baseline_all_bull": {"rate": 0.471}},
+    "assessment": {
+        "directional": {"edge_vs_baseline": 0.05, "gate_pass": False},
+        "low_signal_event_types": ["price"],
+    },
+}
+_DATA = {
+    "window_hours": 24, "schema_version": "jev.v2",
+    "summary_window": {"total": 10, "bull": 4, "bear": 3, "neutral": 3},
+    "items": [
+        {"ts": "2026-10-30 14:00:00", "bias": "bear", "bias_cn": "利空",
+         "impact": "high", "impact_cn": "高", "title": "某公司被立案调查",
+         "event_cn": "风险", "codes": ["600519"], "conf": 0.95,
+         "horizon": "days", "low_signal": False,
+         "posterior": {"excess": -0.02, "hit": 1}},
+        {"ts": "2026-10-30 15:00:00", "bias": "bull", "bias_cn": "利多",
+         "impact": "medium", "impact_cn": "中", "title": "中标大单",
+         "event_cn": "其他", "codes": [], "conf": 0.6,
+         "horizon": "unknown", "low_signal": False, "posterior": None},
+    ],
+}
+
+
+def test_fmt_digest_contents():
+    text = mcp._fmt_digest(_DATA, _CAL, "all", 8)
+    assert "JEV 摘要" in text and "schema=jev.v2" in text
+    assert "校准" in text and "门控=False" in text and "20261029" in text
+    assert "低信号事件" in text and "price" in text
+    assert "某公司被立案调查" in text and "后验" in text and "周期=days" in text
+
+
+def test_digest_dispatch_and_validation(monkeypatch):
+    seen = {}
+
+    def fake_http(path, params):
+        seen.update(params)
+        return _DATA
+
+    monkeypatch.setattr(mcp, "_http_get_json", fake_http)
+    monkeypatch.setattr(mcp, "_load_calibration", lambda: _CAL)
+    r = _call("jev_digest", {"hours": 24, "focus": "risk", "top": 5})
+    assert "isError" in r["result"] and r["result"]["isError"] is False
+    assert seen.get("bias") == "bear" and seen.get("with_posterior") == "1"
+    # 参数校验
+    assert _call("jev_digest", {"focus": "long"})["error"]["code"] == -32602
+    assert _call("jev_digest", {"top": 99})["error"]["code"] == -32602
+    assert _call("jev_digest", {"bogus": 1})["error"]["code"] == -32602
+    # jev_risk 默认 hours=24/top=10，bias=bear
+    r2 = _call("jev_risk", {})
+    assert r2["result"]["isError"] is False and seen.get("bias") == "bear"
+    assert _call("jev_risk", {"focus": "all"})["error"]["code"] == -32602
+
+
+def test_tools_list_contains_digest_risk():
+    r = mcp._handle({"jsonrpc": "2.0", "id": 1, "method": "tools/list"})
+    names = {t["name"] for t in r["result"]["tools"]}
+    assert {"jev_query", "jev_calibration", "jev_digest", "jev_risk"} <= names

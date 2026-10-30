@@ -90,6 +90,38 @@ TOOLS = [
         ),
         "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
     },
+    {
+        "name": "jev_digest",
+        "description": (
+            "JEV 一站式摘要（推荐优先使用）：一次返回 近N小时多空统计 + Top 重点/风险条目"
+            "（含后验） + 校准状态 + 数据质量告警。用于回答『今天有什么值得注意的利好/利空』"
+            "『JEV 当前是否可信』，避免多次调用 jev_query。"
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "hours": {"type": "integer", "description": "时间窗小时数，默认 24，范围 1-720"},
+                "focus": {"type": "string", "enum": ["all", "risk", "bull", "bear"],
+                          "description": "重点方向：all=全部重点 / risk=仅利空 / bull / bear（默认 all）"},
+                "top": {"type": "integer", "description": "Top 条目数，默认 8，范围 1-20"},
+            },
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "jev_risk",
+        "description": (
+            "JEV 风险速报：近N小时高影响利空事件 Top N（含 T+1 后验），用于盘前/盘中风险扫描。"
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "hours": {"type": "integer", "description": "时间窗小时数，默认 24，范围 1-720"},
+                "top": {"type": "integer", "description": "Top 条目数，默认 10，范围 1-20"},
+            },
+            "additionalProperties": False,
+        },
+    },
 ]
 
 
@@ -209,6 +241,70 @@ def _fmt_calibration(cal: dict) -> str:
     return "\n".join(lines)
 
 
+def _load_calibration() -> dict:
+    try:
+        with open(CALIB_PATH, "r", encoding="utf-8") as fh:
+            return json.load(fh)
+    except OSError as exc:
+        raise RuntimeError(
+            "校准报告不存在：%s（%s）。修复：等 JevDriftDaily 07:10 P4 生成，"
+            "或手动 python -B tools/jev_audit.py --days 45" % (CALIB_PATH, exc))
+    except ValueError as exc:
+        raise RuntimeError("校准报告 JSON 损坏：%s（%s）" % (CALIB_PATH, exc))
+
+
+def _fmt_digest(data: dict, cal: dict, focus: str, top: int) -> str:
+    """一站式摘要：多空统计 + Top 重点/风险条目 + 校准 + 数据质量。"""
+    sw = data.get("summary_window") or {}
+    a = (cal or {}).get("assessment") or {}
+    d = (cal or {}).get("directional") or {}
+    dd = a.get("directional") or {}
+    lines = [
+        "JEV 摘要（近 %s 小时，schema=%s）" % (
+            data.get("window_hours"), data.get("schema_version") or "jev.v2"),
+        "窗口：已判 %s 条（利多 %s / 利空 %s / 中性 %s）｜焦点=%s｜数据截至 %s（落后 %s 交易日）" % (
+            sw.get("total", 0), sw.get("bull", 0), sw.get("bear", 0), sw.get("neutral", 0),
+            focus, (cal or {}).get("data_through"), (cal or {}).get("stale_trade_days")),
+        "校准：方向类 n=%s 准确率 %s%% vs 基线 %s%%（增量 %s pp）｜门控=%s｜覆盖 %s 交易日" % (
+            d.get("n"), round((d.get("rate") or 0) * 100, 1),
+            round(((d.get("baseline_all_bull") or {}).get("rate") or 0) * 100, 1),
+            round((dd.get("edge_vs_baseline") or 0) * 100, 1), dd.get("gate_pass"),
+            (cal or {}).get("n_trade_days")),
+    ]
+    low = a.get("low_signal_event_types") or data.get("low_signal_event_types") or []
+    if low:
+        lines.append("数据质量：低信号事件 %s（不参与方向信号，仅参考）" % "、".join(low))
+    items = data.get("items") or []
+    impact_w = {"high": 3, "medium": 2, "low": 1}
+    items = sorted(items, key=lambda it: (
+        impact_w.get(it.get("impact") or "", 1) * 10 + float(it.get("conf") or 0)),
+        reverse=True)
+    lines.append("")
+    lines.append("Top %d 重点条目：" % min(top, len(items)) if items else "（窗口内无匹配条目）")
+    for it in items[:top]:
+        bits = ["%s [%s·%s]" % (str(it.get("ts") or "")[5:16],
+                               it.get("bias_cn") or it.get("bias"),
+                               it.get("impact_cn") or it.get("impact") or "-")]
+        bits.append(it.get("title") or "")
+        ev = it.get("event_cn") or it.get("event_type")
+        if ev:
+            bits.append("（%s）" % ev)
+        if it.get("codes"):
+            bits.append(" 关联:" + ",".join(it["codes"][:4]))
+        if it.get("conf") is not None:
+            bits.append(" conf=%s" % it.get("conf"))
+        if it.get("horizon") and it.get("horizon") != "unknown":
+            bits.append(" 周期=%s" % it.get("horizon"))
+        post = it.get("posterior")
+        if post:
+            bits.append(" 后验:超额=%s hit=%s" % (post.get("excess"), post.get("hit")))
+        lines.append("- " + "".join(str(b) for b in bits))
+    if focus == "risk" or focus == "bear":
+        lines.append("")
+        lines.append("提示：可继续用 jev_query code=<6位代码> hours=168 with_posterior=true 查个股历史。")
+    return "\n".join(lines)
+
+
 def _call_tool(name: str, args: dict) -> str:
     if not isinstance(args, dict):
         raise _InvalidParams("arguments 必须是对象")
@@ -246,17 +342,30 @@ def _call_tool(name: str, args: dict) -> str:
     if name == "jev_calibration":
         if args:
             raise _InvalidParams("jev_calibration 不接受参数")
-        try:
-            with open(CALIB_PATH, "r", encoding="utf-8") as fh:
-                cal = json.load(fh)
-        except OSError as exc:
-            raise RuntimeError(
-                "校准报告不存在：%s（%s）。修复：等 JevDriftDaily 07:10 P4 生成，"
-                "或手动 python -B tools/jev_audit.py --days 45" % (CALIB_PATH, exc))
-        except ValueError as exc:
-            raise RuntimeError("校准报告 JSON 损坏：%s（%s）" % (CALIB_PATH, exc))
-        return _fmt_calibration(cal)
-    raise _InvalidParams("未知工具：%s（可用：jev_query / jev_calibration）" % (name,))
+        return _fmt_calibration(_load_calibration())
+    if name in ("jev_digest", "jev_risk"):
+        allowed = {"hours", "top"} | ({"focus"} if name == "jev_digest" else set())
+        unknown = set(args) - allowed
+        if unknown:
+            raise _InvalidParams("未知参数：%s（可用：%s）"
+                                 % (",".join(sorted(unknown)), ",".join(sorted(allowed))))
+        hours = _as_int(args.get("hours", 24), "hours", 1, 720)
+        top = _as_int(args.get("top", 10 if name == "jev_risk" else 8), "top", 1, 20)
+        focus = "risk" if name == "jev_risk" else str(args.get("focus") or "all").strip().lower()
+        if focus not in ("all", "risk", "bull", "bear"):
+            raise _InvalidParams("focus 非法：%s（可选 all/risk/bull/bear）" % focus)
+        params: dict[str, str] = {"hours": str(hours), "limit": str(max(50, top * 4))}
+        if focus == "risk":
+            params["bias"] = "bear"
+        elif focus == "bull":
+            params["bias"] = "bull"
+        elif focus == "bear":
+            params["bias"] = "bear"
+        params["with_posterior"] = "1"
+        data = _http_get_json("/api/jev/query", params)
+        return _fmt_digest(data, _load_calibration(), focus, top)
+    raise _InvalidParams("未知工具：%s（可用：jev_query / jev_calibration / jev_digest / jev_risk）"
+                         % (name,))
 
 
 def _as_int(value, name: str, lo: int, hi: int) -> int:
