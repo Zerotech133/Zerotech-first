@@ -22,6 +22,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import os
 import secrets
 import threading
 import time
@@ -40,7 +41,10 @@ SESSION_TTL_SECONDS = 3600
 MAX_BODY = 64 * 1024
 MAX_LOGIN_FAILS = 5
 LOGIN_WINDOW_SECONDS = 300
-ZHICE_BASE = __import__("os").environ.get("ZHICE_BASE_URL", "http://127.0.0.1:8102").rstrip("/")
+ZHICE_BASE = os.environ.get("ZHICE_BASE_URL", "http://127.0.0.1:8102").rstrip("/")
+# 本地管理员（2026-10-30 老田要求）：凭据只存 vault 的 PBKDF2 哈希，不入库。
+ADMIN_FILE = os.environ.get("ZB_LOCAL_ADMIN_FILE", r"C:\项目\_vault\secrets\zb_admin.env")
+ADMIN_PBKDF2_ITER = 260000
 
 _sessions: Dict[str, Dict[str, Any]] = {}
 _lock = threading.Lock()
@@ -189,6 +193,51 @@ def _zhice_login(username: str, password: str) -> Dict[str, Any]:
     return {"user_id": str(me["user_id"]), "token": token, "role": str(me.get("role") or "")}
 
 
+def _admin_cfg() -> Dict[str, str]:
+    """本地管理员配置：环境变量优先，其次 vault 文件；只存哈希。"""
+    cfg: Dict[str, str] = {}
+    try:
+        with open(ADMIN_FILE, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                k, v = line.split("=", 1)
+                cfg[k.strip()] = v.strip()
+    except OSError:
+        pass
+    for key in ("ZB_ADMIN_USERNAME", "ZB_ADMIN_SALT", "ZB_ADMIN_HASH"):
+        if os.environ.get(key):
+            cfg[key] = str(os.environ[key])
+    if not all(cfg.get(k) for k in ("ZB_ADMIN_USERNAME", "ZB_ADMIN_SALT", "ZB_ADMIN_HASH")):
+        return {}
+    return cfg
+
+
+def _local_admin_password_ok(username: str, password: str) -> bool:
+    cfg = _admin_cfg()
+    if not cfg or not hmac.compare_digest(
+            str(username or "").encode("utf-8"),
+            cfg["ZB_ADMIN_USERNAME"].encode("utf-8")):
+        return False
+    try:
+        salt = bytes.fromhex(cfg["ZB_ADMIN_SALT"])
+        calc = hashlib.pbkdf2_hmac(
+            "sha256", str(password or "").encode("utf-8"), salt,
+            ADMIN_PBKDF2_ITER).hex()
+    except ValueError:
+        return False
+    return hmac.compare_digest(calc, cfg["ZB_ADMIN_HASH"].lower())
+
+
+def _local_admin_ctx() -> Optional[Dict[str, Any]]:
+    try:
+        import identity_registry as reg
+        return reg.resolve("zero_bound:owner")
+    except (OSError, ValueError, TypeError, KeyError):
+        return None
+
+
 def _rate_limited(ip: str, username: str) -> bool:
     key = "%s:%s" % (ip, username.lower())
     now = time.time()
@@ -267,6 +316,24 @@ def login(handler) -> None:
     ip = _client_ip(handler)
     if _rate_limited(ip, username):
         _json_safe(handler, {"ok": False, "error": "too_many_attempts"}, 429)
+        return
+    admin_cfg = _admin_cfg()
+    if admin_cfg and hmac.compare_digest(
+            username.encode("utf-8"),
+            admin_cfg["ZB_ADMIN_USERNAME"].encode("utf-8")):
+        if not _local_admin_password_ok(username, password):
+            _record_fail(ip, username)
+            _json_safe(handler, {"ok": False, "error": "invalid_credentials"}, 401)
+            return
+        ctx = _local_admin_ctx()
+        if ctx is None:
+            _json_safe(handler, {"ok": False, "error": "identity_registry_unavailable"}, 503)
+            return
+        _clear_fails(ip, username)
+        sid = STORE.create(ctx["sub"], ctx, "", idp="local-admin")
+        _json_safe(handler, {"ok": True, "sub": ctx["sub"], "local_admin": True,
+                             "expires_in": SESSION_TTL_SECONDS},
+                   set_cookie=_cookie_header_value(sid))
         return
     try:
         ident = _zhice_login(username, password)
