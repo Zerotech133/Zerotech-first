@@ -239,3 +239,11 @@ python -m analysis.curated_update --auto --dry-run  # 只看计划
 ### 数据勘误（P0T，2026-10-30）
 
 - 龙虎榜 `seat_net_wan` 修复：tushare `top_inst.net_buy/buy/sell` 单位为**元**，原实现直接当万元输出（600337 出现"155 亿"级错误）；现统一 `��/1e4` 转万元，并优先用 `net_buy` 字段。
+
+### 事件旧类别清洗（P0U，2026-10-30）
+
+```bash
+python -m analysis.reclass --dry-run     # 看差异（旧类别 → 当前规则类别）
+python -m analysis.reclass --apply       # 落库（自动备份 DB；保留 reviewed/category_final）
+```
+- 用途：清掉历史规则残留（如 2026-09 重整投资协议仍标"退市/ST"），避免报告事件表误导。
