@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 19:47",
+ "generated": "2026-10-30 19:52",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 26,
+  "workorders_doing": 28,
   "workorders_review": 9
  },
  "workorders": [
@@ -326,6 +326,24 @@
    "owner": "DSH-Lead",
    "branch": "task/K-ORG-20261030-JEVARCH2",
    "created": "2026-10-30 18:47:29",
+   "project": "general"
+  },
+  {
+   "id": "K-QUANT-20261030-IDEDEEP2",
+   "desc": "IDE deep2: persistent content-addressed undo + identity role mapping",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-QUANT-20261030-IDEDEEP2",
+   "created": "2026-10-30 19:51:32",
+   "project": "quant"
+  },
+  {
+   "id": "K-ORG-20261030-JEVREVIEWLOOP",
+   "desc": "P1 零侵入：低置信 review 闭环工具（抽样→人工标注→回灌评测集→一致率报告）",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-ORG-20261030-JEVREVIEWLOOP",
+   "created": "2026-10-30 19:51:49",
    "project": "general"
   }
  ],
