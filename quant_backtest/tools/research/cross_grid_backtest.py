@@ -50,7 +50,7 @@ sys.path.insert(0, HERE)
 LOG_FP = (
     "C:/Temp/cross_grid.log"
     if os.path.isdir("C:/Temp")
-    else os.path.join(os.environ.get("TEMP", "/tmp"), "cross_grid.log")
+    else os.path.join(os.environ.get("TEMP", "/tmp"), "cross_grid.log")  # nosec B108 - 固定日志文件名
 )
 
 # ── 网格与常量 ──────────────────────────────────────────────
@@ -105,7 +105,7 @@ def build_matrices(d0_warm="20230401"):
     import numpy as np
     import pandas as pd
 
-    cache = os.path.join(os.environ.get("TEMP", "/tmp"), "cross_grid_cache_npz.npz")
+    cache = os.path.join(os.environ.get("TEMP", "/tmp"), "cross_grid_cache_npz.npz")  # nosec B108 - 固定缓存文件名
     cal_fp = os.path.join(HERE, "data", "ashare", "000001_SZ.parquet")
     cal = (
         pd.read_parquet(cal_fp, columns=["trade_date"])["trade_date"]

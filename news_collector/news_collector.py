@@ -339,7 +339,7 @@ def fetch_world(size):
         try:
             r = requests.get(url, headers=UA, timeout=12)
             r.raise_for_status()
-            root = ET.fromstring(r.content)
+            root = ET.fromstring(r.content)  # nosec B314 - RSS 固定源，非任意用户输入
             items = root.findall(".//item") or root.findall(".//%sentry" % atom)
             got = 0
             for it in items:
@@ -467,7 +467,7 @@ def fetch_chinanews(size):
         try:
             r = requests.get(url, headers=UA, timeout=12)
             r.raise_for_status()
-            root = ET.fromstring(r.content)
+            root = ET.fromstring(r.content)  # nosec B314 - RSS 固定源，非任意用户输入
             got = 0
             for it in root.findall(".//item"):
                 title = (it.findtext("title") or "").strip()
