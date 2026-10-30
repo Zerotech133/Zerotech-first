@@ -2558,6 +2558,11 @@ color:#fff;font-size:13.5px;cursor:pointer}
         if path.startswith('/api/os/'):
             self._os_goal_post(path)
             return
+        if path.startswith('/api/jev/review/'):
+            # 2026-10-30 K-JEV-20261030-QUEUEUI：低置信复核裁决写回
+            import api_jev_review
+            api_jev_review.handle_post(self, path)
+            return
         if path.startswith('/api/analysis/'):
             # K-STOCK-ANALYSIS-P0C2 个股分析入队（独立文件 api_analysis.py）
             import api_analysis
@@ -3121,6 +3126,11 @@ color:#fff;font-size:13.5px;cursor:pointer}
             # 只挂 GET；写方法由 do_POST/do_OPTIONS 统一处理，不在此开写口。
             import api_zhice_bff
             api_zhice_bff.handle_get(self, path, qs)
+            return
+        if path.startswith('/api/jev/review/'):
+            # 2026-10-30 K-JEV-20261030-QUEUEUI：低置信复核只读列表/汇总
+            import api_jev_review
+            api_jev_review.handle_get(self, path, qs)
             return
         if path.startswith('/api/jev/'):
             # 2026-10-26 JEVAPI：JEV 判定只读查询（独立文件 api_jev.py；Hermes MCP 消费）

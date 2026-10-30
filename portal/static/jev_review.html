@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>JEV 低置信复核 · 零界</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<script src="/static/nav.js" defer></script>
+<style>
+:root{color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:radial-gradient(circle at 80% -20%,var(--bg-surface),transparent 46%),var(--bg-page);color:var(--text);font:14px/1.6 var(--font-ui)}
+a{color:var(--link)}
+.main{max-width:var(--page-w);margin:auto;padding:22px clamp(14px,3vw,28px) 48px}
+.eyebrow{font:700 11px var(--font-mono);letter-spacing:.18em;color:var(--color-ok);margin:6px 0 8px}
+h1{font-size:clamp(24px,3.2vw,34px);letter-spacing:-.02em;margin:0 0 8px}
+.lead{color:var(--text-dim);font-size:13px;line-height:1.8;max-width:800px;margin:0}
+.kpis{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}
+.kpi{flex:1 1 150px;border:1px solid var(--border);border-radius:var(--r-m);background:var(--bg-raised);padding:10px 14px}
+.kpi small{display:block;color:var(--text-dim);font-size:11px;margin-bottom:4px}
+.kpi b{font:700 22px var(--font-mono)}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:14px 0;padding:10px;border:1px solid var(--border);border-radius:var(--r-m);background:var(--bg-surface)}
+.toolbar label{font-size:11px;color:var(--text-dim);display:flex;gap:5px;align-items:center}
+select,input,button{font:12px var(--font-ui);color:var(--text);background:var(--bg-raised);border:1px solid var(--border);border-radius:var(--r-s);padding:5px 8px}
+button{cursor:pointer}
+button:hover{border-color:var(--link);color:var(--link)}
+button.primary{border-color:var(--color-ok);color:var(--color-ok)}
+button.bad{border-color:var(--color-err);color:var(--color-err)}
+.table-wrap{border:1px solid var(--border);border-radius:var(--r-m);overflow:auto;background:var(--bg-surface)}
+table{width:100%;border-collapse:collapse;min-width:980px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:top;font-size:12px}
+th{position:sticky;top:0;background:var(--bg-raised);color:var(--text-dim);font:600 11px var(--font-mono);z-index:1}
+tr:hover td{background:var(--bg-raised)}
+.conf{font:700 13px var(--font-mono);color:var(--color-warn)}
+.bias{font:600 11px var(--font-mono);padding:2px 6px;border:1px solid var(--border);border-radius:var(--r-pill);white-space:nowrap}
+.bias.bull{color:var(--color-ok)}.bias.bear{color:var(--color-err)}.bias.neutral{color:var(--text-dim)}
+.title{max-width:520px;line-height:1.55}
+.id{font:10px var(--font-mono);color:var(--text-dim);word-break:break-all}
+.actions{display:flex;gap:5px;flex-wrap:wrap}
+.actions button{padding:4px 7px;font-size:11px}
+.status{font-size:12px;color:var(--text-dim);min-height:20px;margin:6px 0 0}
+.empty{padding:30px;text-align:center;color:var(--text-dim)}
+.pager{display:flex;gap:8px;align-items:center;margin-top:12px;font-size:12px;color:var(--text-dim)}
+.tip{margin-top:14px;border:1px solid var(--border);border-left:3px solid var(--color-warn);border-radius:var(--r-s);padding:9px 12px;font-size:12px;color:var(--text-dim);line-height:1.7}
+@media(max-width:640px){.main{padding-top:14px}.kpi{flex:1 1 44%}}
+</style>
+</head>
+<body>
+<div class="main">
+  <div class="eyebrow">JEV · LOW CONFIDENCE REVIEW</div>
+  <h1>低置信复核工作台</h1>
+  <p class="lead">只处理 <code>jev_review_queue</code>：按置信度升序，人工裁决后写回 reviewer / reviewed_at / decision。不改 JEV 判定、不触发回填。</p>
+
+  <div class="kpis" id="kpis">
+    <div class="kpi"><small>待复核 pending</small><b id="k-pending">—</b></div>
+    <div class="kpi"><small>已复核 resolved</small><b id="k-resolved">—</b></div>
+    <div class="kpi"><small>队列总量</small><b id="k-total">—</b></div>
+    <div class="kpi"><small>当前列表</small><b id="k-list">—</b></div>
+  </div>
+
+  <div class="toolbar">
+    <label>状态 <select id="f-status"><option value="pending">pending</option><option value="resolved">resolved</option><option value="all">all</option></select></label>
+    <label>方向 <select id="f-bias"><option value="">全部</option><option value="bull">bull</option><option value="bear">bear</option><option value="neutral">neutral</option></select></label>
+    <label>排序 <select id="f-sort"><option value="conf_asc">conf 升序</option><option value="conf_desc">conf 降序</option><option value="queued_desc">最新入队</option></select></label>
+    <label>reviewer <input id="f-reviewer" value="老田" style="width:90px"></label>
+    <button id="refresh" class="primary">刷新</button>
+    <span class="status" id="status">加载中…</span>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th style="width:64px">conf</th><th style="width:70px">bias</th><th>标题</th><th style="width:190px">id</th><th style="width:210px">裁决</th></tr></thead>
+      <tbody id="rows"><tr><td colspan="5" class="empty">加载中…</td></tr></tbody>
+    </table>
+  </div>
+  <div class="pager">
+    <button id="prev">上一页</button><span id="page">0 / 0</span><button id="next">下一页</button>
+    <span>每页 100 条</span>
+  </div>
+  <div class="tip">裁决口径：<b>正确</b>=维持原判；<b>错误</b>=方向不可信；<b>不确定</b>=信息不足。全部写回队列，不覆盖 news.jev 原值。</div>
+</div>
+<script>
+const PAGE=100;
+let offset=0, last=null;
+const $=(s)=>document.querySelector(s);
+const esc=(v)=>String(v??"").replace(/[&<>"']/g,(c)=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function status(text,bad){const el=$("#status");el.textContent=text;el.style.color=bad?"var(--color-err)":"var(--text-dim)";}
+async function api(url,opt){const r=await fetch(url,Object.assign({credentials:"same-origin"},opt||{}));let d={};try{d=await r.json()}catch(e){}if(!r.ok)throw new Error(d.message||d.error||("HTTP "+r.status));return d;}
+async function load(){
+  status("加载中…");
+  const q=new URLSearchParams({status:$("#f-status").value,bias:$("#f-bias").value,sort:$("#f-sort").value,limit:String(PAGE),offset:String(offset)});
+  try{
+    const d=await api("/api/jev/review/queue?"+q.toString());
+    last=d;
+    $("#k-pending").textContent=d.summary.pending;
+    $("#k-resolved").textContent=d.summary.resolved;
+    $("#k-total").textContent=d.summary.total;
+    $("#k-list").textContent=d.returned;
+    const rows=$("#rows");
+    rows.innerHTML="";
+    if(!d.items.length){rows.innerHTML='<tr><td colspan="5" class="empty">没有待处理条目</td></tr>';}
+    d.items.forEach((it)=>{
+      const tr=document.createElement("tr");
+      tr.innerHTML=`<td><span class="conf">${Number(it.conf).toFixed(2)}</span></td>
+        <td><span class="bias ${esc(it.bias)}">${esc(it.bias||"")}</span></td>
+        <td class="title">${esc(it.title||"")}</td>
+        <td class="id">${esc(it.id)}</td>
+        <td class="actions"></td>`;
+      const actions=tr.querySelector(".actions");
+      if(it.status==="pending"){
+        [["correct","正确","primary"],["wrong","错误","bad"],["uncertain","不确定",""]].forEach(([dec,label,cls])=>{
+          const b=document.createElement("button");b.textContent=label;b.className=cls;b.onclick=()=>resolve(it,dec);actions.appendChild(b);
+        });
+      }else{
+        actions.textContent=`${it.decision||""} · ${it.reviewer||""}`;
+      }
+      rows.appendChild(tr);
+    });
+    const pages=Math.max(1,Math.ceil(d.total/PAGE));
+    $("#page").textContent=`${Math.floor(offset/PAGE)+1} / ${pages}`;
+    $("#prev").disabled=offset<=0;
+    $("#next").disabled=offset+PAGE>=d.total;
+    status(`已加载 ${d.returned}/${d.total}`);
+  }catch(e){status("加载失败："+e.message,true);}
+}
+async function resolve(it,decision){
+  const reviewer=($("#f-reviewer").value||"").trim();
+  if(!reviewer){status("先填 reviewer",true);return;}
+  const note=window.prompt("备注（可空）：","")||"";
+  try{
+    const r=await api("/api/jev/review/resolve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:it.id,decision,reviewer,note})});
+    if(!r.ok)throw new Error(r.error||"失败");
+    status(`已裁决 ${it.id} → ${decision} · ${r.item.reviewed_at||""}`);
+    await load();
+  }catch(e){status("裁决失败："+e.message,true);}
+}
+$("#refresh").onclick=()=>{offset=0;load();};
+$("#prev").onclick=()=>{offset=Math.max(0,offset-PAGE);load();};
+$("#next").onclick=()=>{offset+=PAGE;load();};
+["f-status","f-bias","f-sort"].forEach(id=>$("#"+id).onchange=()=>{offset=0;load();});
+load();
+</script>
+</body>
+</html>
