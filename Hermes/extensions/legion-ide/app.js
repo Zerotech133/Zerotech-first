@@ -1506,6 +1506,7 @@ async function loadDiff(task) {
   const $ = (s) => document.querySelector(s);
   let panel = null;
   let timer = null;
+  let zrEnabled = false;
 
   function style() {
     if ($("#zr-style")) return;
@@ -1554,6 +1555,7 @@ async function loadDiff(task) {
   }
 
   function loadDiff() {
+    if (!zrEnabled) return;
     const tx = $("#zr-diff");
     const cur = ($("#lde-diff") && $("#lde-diff").textContent || "").trim();
     if (!cur || cur === "—") {
@@ -1582,16 +1584,25 @@ async function loadDiff(task) {
     try {
       const r = await fetch("/api/zhuge/review/status", { credentials: "include" });
       const d = await r.json();
-      $("#zr-status").textContent = d.enabled
-        ? ("可用 · " + (d.model || "unknown") + " · " + (d.carrier || ""))
-        : "复核未启用（后端 ZHUGE_IDE_REVIEW=off）";
-      loadDiff();
+      zrEnabled = Boolean(d.enabled);
+      const sub = $("#zr-submit");
+      const load = $("#zr-load");
+      if (sub) sub.disabled = !zrEnabled;
+      if (load) load.disabled = !zrEnabled;
+      if (zrEnabled) {
+        $("#zr-status").textContent =
+          "可用 · " + (d.model || "unknown") + " · " + (d.carrier || "");
+        loadDiff();
+      } else {
+        $("#zr-status").textContent = "复核未启用（后端 ZHUGE_IDE_REVIEW=off）";
+      }
     } catch (e) {
       $("#zr-status").textContent = "状态读取失败：" + e.message;
     }
   }
 
   async function submit() {
+    if (!zrEnabled) { $("#zr-status").textContent = "复核未启用"; return; }
     const task = taskId();
     const diff = String($("#zr-diff").value || "").trim();
     if (!task) { $("#zr-status").textContent = "先选工单"; return; }
