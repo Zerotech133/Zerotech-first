@@ -224,3 +224,14 @@ python -m analysis.event_backtest --universe 500 --out "C:\项目\deliverables\2
 - 结果（验证段 2024-2026）：净超额 +0.11%/月（t=0.45），毛超额 +0.31%（t=1.28）；2022-2023 净 -0.32%（t=-1.64）；
 - 分类型：重组并购 +0.48%（t=1.2）、股权激励负、经营订单 ~0、减持增持 -0.11%；
 - **判定：未通过**（要求 val t>1.5 且 s2≥-0.2）→ 按约定 **A 收口**：分析平台定位为研究/风控解释工具，停止策略研发。
+
+### curated 行情表日更（P0S，2026-10-30）
+
+```bash
+python -m analysis.curated_update --auto            # 自动补 daily/daily_basic/moneyflow 缺失交易日
+python -m analysis.curated_update --auto --dry-run  # 只看计划
+```
+
+- 仅 append-only：只追加旧表没有的 (ts_code, trade_date)，**不删除/不改历史行**（修掉全局去重误删教训）；
+- 计划口径：只补 trade_cal 已收盘交易日，默认 18:00 后才纳入当日数据；有缺失但补数为 0 → 退出码 1（供定时任务告警）；
+- 定位：供 L2 定时任务调用（计划任务变更需人类批准）；日常也可手动补数。
