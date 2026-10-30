@@ -24,7 +24,7 @@ import pyarrow.parquet as pq
 REPO = Path(r"C:\项目\老田的AI助手")
 DATA = REPO / "quant_backtest" / "data" / "tushare"
 WINDOW = 60
-RECENT_FILES = 130
+RECENT_FILES = 330
 
 
 def _norm(name: str) -> str:
@@ -91,6 +91,14 @@ def main(argv=None) -> int:
     mean = prem.rolling(WINDOW, min_periods=40).mean()
     std = prem.rolling(WINDOW, min_periods=40).std()
     z = (prem - mean) / std
+    # 溢价离散度 regime（PIT：过去 250 日滚动分位，避免前视）
+    disp = prem.std(axis=1)
+    rank = disp.rolling(250, min_periods=120).rank(pct=True)
+    disp_now = float(disp.iloc[-1]) if len(disp) else None
+    rank_now = float(rank.iloc[-1]) if len(rank) and pd.notna(rank.iloc[-1]) else None
+    regime = "unknown"
+    if rank_now is not None:
+        regime = "high" if rank_now >= 0.5 else "low"
     last = z.dropna(how="all").iloc[-1]
     latest_date = str(last.name)
     lvl = prem.iloc[-1]
@@ -105,6 +113,10 @@ def main(argv=None) -> int:
     low = out[-12:][::-1]
     sig = {"generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
            "date": latest_date, "pairs": len(out), "window": WINDOW,
+           "dispersion": {"value": disp_now, "rank_250d": rank_now, "regime": regime},
+           "gate": {"rule": "高离散 regime(rank>=0.5) 才输出强信号；低离散仅观察",
+                    "active": regime == "high"},
+           "strength": "strong" if regime == "high" else ("weak" if regime == "low" else "unknown"),
            "high_premium_z": high, "low_premium_z": low,
            "median_premium_pct": round(float(lvl.median()) * 100, 2) if len(lvl) else None,
            "note": "高 z=溢价处 60 日高位（A 相对贵，收敛方向：空 A/多 H）；低 z 反之。仅信号不做交易。"}
@@ -114,6 +126,11 @@ def main(argv=None) -> int:
     js.write_text(json.dumps(sig, ensure_ascii=False, indent=1), encoding="utf-8")
     md = outdir / ("ah_signal_%s.md" % latest_date.replace("-", ""))
     lines = ["# A/H 溢价监控信号 · %s" % latest_date, "",
+             "**离散度 regime：%s**（rank250=%.2f；%s）" % (
+                 {"high": "高离散", "low": "低离散", "unknown": "未知"}.get(regime, regime),
+                 (rank_now if rank_now is not None else -1),
+                 "✅ 强信号门槛已满足" if sig["gate"]["active"] else "⚠ 低离散，仅观察/降权"),
+             "",
              "配对 %d 对；60 日 z；中位溢价 %.2f%%" % (sig["pairs"], sig["median_premium_pct"] or 0), "",
              "## 高溢价（A 相对贵，收敛方向 空A/多H）", "| 名称 | 溢价 | z |", "|---|---|---|"]
     lines += ["| %s | %.2f%% | %.2f |" % (x["name"], x["premium"], x["z"]) for x in high]
@@ -121,8 +138,18 @@ def main(argv=None) -> int:
     lines += ["| %s | %.2f%% | %.2f |" % (x["name"], x["premium"], x["z"]) for x in low]
     lines += ["", "> 仅研究信号，不构成交易指令；做空可行性（融券/借券）需另评估。"]
     md.write_text("\n".join(lines), encoding="utf-8")
-    print(json.dumps({"date": latest_date, "pairs": len(out), "json": str(js), "md": str(md),
-                      "top": high[:3], "bottom": low[:3]}, ensure_ascii=False, indent=1), flush=True)
+    summary = {"date": latest_date, "pairs": len(out), "regime": regime, "rank": rank_now,
+               "strength": sig["strength"], "json": str(js), "md": str(md),
+               "top": high[:3], "bottom": low[:3]}
+    try:
+        logf = REPO / "work" / "data_sync" / "ah_monitor.log"
+        logf.parent.mkdir(parents=True, exist_ok=True)
+        logf.open("a", encoding="utf-8").write(
+            datetime.now().astimezone().isoformat(timespec="seconds") + " " +
+            json.dumps(summary, ensure_ascii=False) + "\n")
+    except Exception:  # noqa: BLE001
+        pass
+    print(json.dumps(summary, ensure_ascii=False, indent=1), flush=True)
     return 0
 
 
