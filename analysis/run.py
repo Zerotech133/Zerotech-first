@@ -42,7 +42,7 @@ def _analysis_json(ctx, artifacts=None):
                                           "required_missing": snap.get("required_missing")},
         "events": [{k: e.get(k) for k in ("event_id", "date", "category", "title", "url", "summary", "confidence", "reviewed")} | {"source_id": "ev:" + e["event_id"]} for e in ev[:60]],
         "features": feat, "views": ctx.get("views") or {"channels": [], "issues": ["未运行"]},
-        "verdict": {k: vd.get(k) for k in ("rating", "confidence", "horizon", "thesis", "key_signals", "triggers",
+        "verdict": {k: vd.get(k) for k in ("rating", "confidence", "horizon", "thesis", "key_signals", "triggers", "score", "score_v2", "score_detail", "nonrecurring",
                                           "invalidations", "position_note", "disclaimer")},
         "scenarios": vd.get("scenarios"), "levels": vd.get("levels"), "risks": [{"title": r, "detail": r} for r in vd.get("risks", [])],
         "watch": vd.get("watch"), "sources": sources, "checks": checks,
