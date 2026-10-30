@@ -2,7 +2,7 @@
 
 - 日期：2026-10-30
 - 工单：`WO-LEGION-PHASEB-L2-20261030`
-- 状态：**待批，未创建容器、未改代码、未占端口**
+- 状态：**B0 已执行（2026-10-30 13:02）；未初始化管理员、未切换登录**
 - 前置：Phase A auth-gateway 已上线；Phase A 密码桥仍可用，作为回退
 - 目标：用 Pocket ID（passkey/OIDC）替换人工登录的密码桥，**不替换**只读 BFF 的智策服务账号
 
@@ -24,7 +24,7 @@ B3 稳定 2 周后关闭人工密码桥
 ### 端口
 
 - 默认 `1411`（当前 **未监听**，registry 未登记）
-- 绑定 `127.0.0.1:1411`，不暴露局域网
+- 绑定 `127.0.0.1:1411`，不暴露局域网；`APP_URL` 必须用 `localhost`（WebAuthn RPID 不接受 IP）
 - 若 1411 被占用，改用 `tools/devtask.py port pocket-id` 分配并同提交登记
 
 ### 数据/密钥
@@ -67,13 +67,38 @@ docker run -d --name zerobound-pocket-id --restart unless-stopped `
 2. 关闭开放注册（`ALLOW_USER_SIGNUPS=disabled`，UI 配置）；
 3. 创建 OIDC client：
    - Name：`zero-bound-bff`
-   - Callback：`http://127.0.0.1:8734/api/auth/oidc/callback`
+   - Callback：`http://localhost:8734/api/auth/oidc/callback`
    - Grant：Authorization Code + PKCE
    - 保存 client secret 到 `C:\aios\_vault\pocket-id\secrets\zero_bound_client.env`（不打印）
 4. 验证 discovery：
 
 ```powershell
 Invoke-WebRequest http://127.0.0.1:1411/.well-known/openid-configuration
+```
+
+## 2.1 B0 执行记录（2026-10-30 13:02）
+
+- 镜像：`ghcr.io/pocket-id/pocket-id:v2.19.1`，digest `sha256:f085157f...ab5`；
+- 容器：`zerobound-pocket-id`，`Up (healthy)`，`127.0.0.1:1411->1411/tcp`；
+- 首次用 `APP_URL=http://127.0.0.1:1411` 启动失败：
+  - `field 'RPID' is not a valid domain string: the value must be a domain and not an IP address`
+  - 改为 `APP_URL=http://localhost:1411` 后正常；
+- 数据：`C:\aios\_vault\pocket-id\data`（SQLite）；
+- 密钥：`C:\aios\_vault\pocket-id\secrets\encryption_key`（只读挂载，未回显）；
+- discovery：
+  - `GET http://localhost:1411/.well-known/openid-configuration` → 200
+  - issuer `http://localhost:1411`
+  - authorization `/authorize`，token `/api/oidc/token`
+- UI：`http://localhost:1411/` → 200；
+- **未创建管理员、未注册 passkey、未创建 OIDC client、未切换登录**；
+- 端口 1411 已登记到 `tools/check_ports.py`（strict rc=0）。
+
+验证命令：
+
+```powershell
+docker ps --filter name=zerobound-pocket-id
+Invoke-WebRequest http://localhost:1411/.well-known/openid-configuration
+Invoke-WebRequest http://localhost:1411/
 ```
 
 ## 3. B1：auth-gateway OIDC 客户端
@@ -168,8 +193,8 @@ B1/B2：
 
 ## 9. 五要素摘要
 
-- **命令全文**：§2 启动命令 + §4 切换步骤；
-- **影响面**：新增 1411 容器；登录入口切换；不碰交易；
+- **命令全文**：§2 启动命令（B0 已执行，APP_URL=localhost）+ §4 切换步骤；
+- **影响面**：1411 容器已起（B0，healthy）；登录入口未切换；不碰交易；
 - **不可逆点**：仅加密密钥丢失/数据删除；容器可回滚；
 - **替代**：继续 Phase A 密码桥 / Zitadel / 无 SSO；
 - **回滚**：§7，保留数据与密码桥代码。
