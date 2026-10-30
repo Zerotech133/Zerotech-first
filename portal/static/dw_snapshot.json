@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-10-30T12:36:59+08:00",
+ "generated_at": "2026-10-30T12:44:49+08:00",
  "today": "2026-10-30",
  "catalog": {
   "version": 17,
@@ -28,14 +28,14 @@
   "new_today": 47,
   "pilot_today": 4,
   "merged_today": 18,
-  "hypotheses": 18,
+  "hypotheses": 19,
   "hypotheses_by_status": {
-   "rejected": 11,
+   "rejected": 12,
    "backtested": 6,
    "in_progress": 1
   },
   "reports_total": 40,
-  "reports_today": 14,
+  "reports_today": 16,
   "approvals_today": 3,
   "risks": [
    {
@@ -75,7 +75,7 @@
    }
   ],
   "backup_latest": "2026-10-30_0300",
-  "backup_age_hours": 12.6,
+  "backup_age_hours": 12.7,
   "supervisor_red": []
  },
  "sources": [
@@ -2018,8 +2018,8 @@
    "files": 1,
    "size_mb": 8379,
    "size_h": "8.4 GB",
-   "rows": 16005440,
-   "rows_h": "1600.5 万",
+   "rows": 16005810,
+   "rows_h": "1600.6 万",
    "range": "2026-08-11 起（分钟线）",
    "last_update": "2026-10-30",
    "latest_date": "2026-10-30",
@@ -3595,6 +3595,18 @@
    "updated_at": "2026-10-30T11:10:00"
   },
   {
+   "id": "H19",
+   "title": "公告标题情绪（关键词极性）→ 短期收益",
+   "status": "rejected",
+   "question": "公告标题正/负面关键词是否伴随/领先短期收益？",
+   "data_sources": "anns_d（2019-2026 标题）+ daily",
+   "method": "关键词极性（单极性）；T+1 入场；1/3/5/10/20 日相对等权市场 CAR；成本30bp；IS≤2023/OOS≥2024",
+   "conclusion": "事件 255772；OOS 5日 正面 t=19.45 / 负面 t=20.24 → rejected",
+   "evidence": "research/reports/H19_announcement_sentiment_20261030.md",
+   "created_at": "2026-10-30T12:44:21",
+   "updated_at": "2026-10-30T12:44:21"
+  },
+  {
    "id": "H2",
    "title": "业绩预告/快报的 PEAD",
    "status": "rejected",
@@ -3692,6 +3704,24 @@
   }
  ],
  "reports": [
+  {
+   "name": "H19_announcement_sentiment_20261030.json",
+   "title_zh": "H1 公告事件超额收益",
+   "kind": "原始数据",
+   "size_kb": 4.3,
+   "date": "2026-10-30",
+   "time": "12:44",
+   "hid": "H19"
+  },
+  {
+   "name": "H19_announcement_sentiment_20261030.md",
+   "title_zh": "H1 公告事件超额收益",
+   "kind": "报告正文",
+   "size_kb": 1.9,
+   "date": "2026-10-30",
+   "time": "12:44",
+   "hid": "H19"
+  },
   {
    "name": "H5_sentiment_pilot_20261030.json",
    "title_zh": "H5 舆情领先滞后",
@@ -4033,24 +4063,6 @@
    "date": "2026-10-28",
    "time": "17:30",
    "hid": "H11dir"
-  },
-  {
-   "name": "H6_jev_attribution_20261028.md",
-   "title_zh": "H6 JEV 决策归因",
-   "kind": "报告正文",
-   "size_kb": 3.2,
-   "date": "2026-10-28",
-   "time": "17:13",
-   "hid": "H6"
-  },
-  {
-   "name": "H6_jev_attribution_20261028.json",
-   "title_zh": "H6 JEV 决策归因",
-   "kind": "原始数据",
-   "size_kb": 8.8,
-   "date": "2026-10-28",
-   "time": "17:13",
-   "hid": "H6"
   }
  ],
  "tasks": {
@@ -4260,34 +4272,40 @@
     "desc": "bandit批3窄单D：不含agent_ide_bundle的干净改动集"
    },
    {
-    "id": "WO-BOT-CONFIRM-20261030",
-    "status": "doing",
-    "owner": "DSH-Lead",
-    "desc": "盯盘触发→人工确认→TR1模拟执行端到端：confirmation core+CLI+飞书卡payload+portal确认页/API+kill switch+测试"
-   },
-   {
-    "id": "WO-LEGION-AUTHREQUEST-DOCS-20261030",
-    "status": "review",
-    "owner": "ZHAOYUN",
-    "desc": "auth_request 上线记录 + 配置回归测试"
-   },
-   {
-    "id": "WO-BANDIT-MEDIUM4A-20261030",
-    "status": "doing",
-    "owner": "ZHAOYUN",
-    "desc": "bandit批4A：B310剩余45处分诊——动态URL接safe_urlopen，固定内部URL加nosec理由；不改行为，复扫B310收敛。"
-   },
-   {
     "id": "WO-BANDIT-MEDIUM4B-20261030",
     "status": "doing",
     "owner": "ZHAOYUN",
     "desc": "bandit批4B：B608剩余73处动态SQL表/列名allowlist/白名单+测试；值参数不拼接，复扫收敛。"
    },
    {
-    "id": "WO-BANDIT-BASELINE2-20261030",
+    "id": "K-ORG-20261030-JEVSAFE",
+    "status": "review",
+    "owner": "DSH-Lead",
+    "desc": "修复判读 2 个 P1：event_type 归一化 KeyError 整轮崩溃、resample 单票假高置信 0.8；补单条异常隔离"
+   },
+   {
+    "id": "WO-BANDIT-BASELINE-ENC-20261030",
     "status": "review",
     "owner": "ZHAOYUN",
-    "desc": "基线修正：bandit_baseline.json改计数格式 + wrapper加regression字段"
+    "desc": "bandit基线编码修复：baseline json 转 ASCII 转义，避免Windows GBK读取失败；夜间复扫可用。"
+   },
+   {
+    "id": "K-STOCK-ANALYSIS-P0N-20261030",
+    "status": "review",
+    "owner": "DSH-Lead",
+    "desc": "评级打分 v2：质量30/成长20/估值20/趋势15/事件15（100分制）+ 五维分解 + 评级分位映射"
+   },
+   {
+    "id": "WO-LEGION-PHASEB-L2-20261030",
+    "status": "review",
+    "owner": "ZHAOYUN",
+    "desc": "Phase B L2待批：Pocket ID 部署 + OIDC 替换密码桥"
+   },
+   {
+    "id": "K-ORG-20261030-BOMFIX",
+    "status": "doing",
+    "owner": "DSH-Lead",
+    "desc": "救援修复：portal/tests/test_minute_router_isolated.py 首字节 BOM(U+FEFF) 导致语法门阻塞全仓合并"
    }
   ],
   "doing_data": [
@@ -4438,34 +4456,40 @@
     "desc": "bandit批3窄单D：不含agent_ide_bundle的干净改动集"
    },
    {
-    "id": "WO-BOT-CONFIRM-20261030",
-    "status": "doing",
-    "owner": "DSH-Lead",
-    "desc": "盯盘触发→人工确认→TR1模拟执行端到端：confirmation core+CLI+飞书卡payload+portal确认页/API+kill switch+测试"
-   },
-   {
-    "id": "WO-LEGION-AUTHREQUEST-DOCS-20261030",
-    "status": "review",
-    "owner": "ZHAOYUN",
-    "desc": "auth_request 上线记录 + 配置回归测试"
-   },
-   {
-    "id": "WO-BANDIT-MEDIUM4A-20261030",
-    "status": "doing",
-    "owner": "ZHAOYUN",
-    "desc": "bandit批4A：B310剩余45处分诊——动态URL接safe_urlopen，固定内部URL加nosec理由；不改行为，复扫B310收敛。"
-   },
-   {
     "id": "WO-BANDIT-MEDIUM4B-20261030",
     "status": "doing",
     "owner": "ZHAOYUN",
     "desc": "bandit批4B：B608剩余73处动态SQL表/列名allowlist/白名单+测试；值参数不拼接，复扫收敛。"
    },
    {
-    "id": "WO-BANDIT-BASELINE2-20261030",
+    "id": "K-ORG-20261030-JEVSAFE",
+    "status": "review",
+    "owner": "DSH-Lead",
+    "desc": "修复判读 2 个 P1：event_type 归一化 KeyError 整轮崩溃、resample 单票假高置信 0.8；补单条异常隔离"
+   },
+   {
+    "id": "WO-BANDIT-BASELINE-ENC-20261030",
     "status": "review",
     "owner": "ZHAOYUN",
-    "desc": "基线修正：bandit_baseline.json改计数格式 + wrapper加regression字段"
+    "desc": "bandit基线编码修复：baseline json 转 ASCII 转义，避免Windows GBK读取失败；夜间复扫可用。"
+   },
+   {
+    "id": "K-STOCK-ANALYSIS-P0N-20261030",
+    "status": "review",
+    "owner": "DSH-Lead",
+    "desc": "评级打分 v2：质量30/成长20/估值20/趋势15/事件15（100分制）+ 五维分解 + 评级分位映射"
+   },
+   {
+    "id": "WO-LEGION-PHASEB-L2-20261030",
+    "status": "review",
+    "owner": "ZHAOYUN",
+    "desc": "Phase B L2待批：Pocket ID 部署 + OIDC 替换密码桥"
+   },
+   {
+    "id": "K-ORG-20261030-BOMFIX",
+    "status": "doing",
+    "owner": "DSH-Lead",
+    "desc": "救援修复：portal/tests/test_minute_router_isolated.py 首字节 BOM(U+FEFF) 导致语法门阻塞全仓合并"
    }
   ],
   "today_pilot_data": [
@@ -5408,10 +5432,34 @@
     "desc": "auth_request 302 丢失8734端口：absolute_redirect off"
    },
    {
+    "id": "WO-BOT-CONFIRM-20261030",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "盯盘触发→人工确认→TR1模拟执行端到端：confirmation core+CLI+飞书卡payload+portal确认页/API+kill switch+测试"
+   },
+   {
+    "id": "WO-LEGION-AUTHREQUEST-DOCS-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "auth_request 上线记录 + 配置回归测试"
+   },
+   {
     "id": "K-ORG-20261030-JEVAUDIT2",
     "status": "done",
     "owner": "DSH-Lead",
     "desc": "JEV 复盘+代码审计+Bug复核+计划进度对照（10-26 审计建议闭环盘点）"
+   },
+   {
+    "id": "WO-BANDIT-MEDIUM4A-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "bandit批4A：B310剩余45处分诊——动态URL接safe_urlopen，固定内部URL加nosec理由；不改行为，复扫B310收敛。"
+   },
+   {
+    "id": "WO-BANDIT-BASELINE2-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "基线修正：bandit_baseline.json改计数格式 + wrapper加regression字段"
    }
   ],
   "today_merged_data": [
@@ -5526,9 +5574,9 @@
   ],
   "counts": {
    "aborted": 93,
-   "done": 1317,
-   "doing": 29,
-   "review": 10
+   "done": 1321,
+   "doing": 28,
+   "review": 12
   }
  },
  "governance": [
@@ -5727,7 +5775,7 @@
     }
    ],
    "receipt": "offsite_remote_receipt.txt",
-   "age_hours": 12.6
+   "age_hours": 12.7
   },
   "supervisor": {
    "red": [],
