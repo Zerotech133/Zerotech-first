@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 28,
+  "workorders_doing": 27,
   "workorders_review": 7
  },
  "workorders": [
@@ -318,15 +318,6 @@
    "branch": "task/WO-BANDIT-MEDIUM4A2-20261030",
    "created": "2026-10-30 12:50:51",
    "project": "quant"
-  },
-  {
-   "id": "K-ORG-20261030-JEVAUDIT3",
-   "desc": "JEV 三路深审附录归档：判读核心/调度运维/数据接口 完整结论与修复批次",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-ORG-20261030-JEVAUDIT3",
-   "created": "2026-10-30 12:51:58",
-   "project": "general"
   }
  ],
  "coder_traces": [
