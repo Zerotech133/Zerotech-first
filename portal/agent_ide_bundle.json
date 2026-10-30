@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 23:12",
+ "generated": "2026-10-30 23:16",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -10,7 +10,7 @@
   "prompt_miss": [],
   "name_collisions": {},
   "workorders_doing": 31,
-  "workorders_review": 11
+  "workorders_review": 10
  },
  "workorders": [
   {
@@ -381,15 +381,6 @@
    "branch": "task/WO-PICKCHAIN-VERDICTS-FIX-20261030",
    "created": "2026-10-30 22:08:57",
    "project": "quant"
-  },
-  {
-   "id": "WO-GUANYU-P99-20261030",
-   "desc": "账本一致性+入日巡+入口",
-   "status": "review",
-   "owner": "GUANYU",
-   "branch": "task/WO-GUANYU-P99-20261030",
-   "created": "2026-10-30 23:07:38",
-   "project": "general"
   }
  ],
  "coder_traces": [
@@ -6693,14 +6684,7 @@
    ],
    "experience": "30 年工程治理经验：漏洞分级与补丁流程、失败测试基线修复、编码规范与门禁落地、技术债清欠与重复功能合并；证据驱动、逐项闭环，只出报告与工单不自行合并，开发动作限独立 worktree 提交+跑测试并交 L2 人签。",
    "dept_name": "研究院",
-   "dept_cn_title": "太学",
-   "tasks": [
-    {
-     "id": "WO-GUANYU-P99-20261030",
-     "desc": "账本一致性+入日巡+入口",
-     "status": "review"
-    }
-   ]
+   "dept_cn_title": "太学"
   },
   "HUANGZHONG": {
    "id": "HUANGZHONG",
