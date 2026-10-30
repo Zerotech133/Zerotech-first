@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 33,
+  "workorders_doing": 32,
   "workorders_review": 11
  },
  "workorders": [
@@ -389,15 +389,6 @@
    "owner": "GUANYU",
    "branch": "task/WO-GUANYU-P101-20261030",
    "created": "2026-10-30 23:22:26",
-   "project": "general"
-  },
-  {
-   "id": "WO-GUANYU-P108-20261031",
-   "desc": "A5 B1页面族拆分",
-   "status": "doing",
-   "owner": "GUANYU",
-   "branch": "task/WO-GUANYU-P108-20261031",
-   "created": "2026-10-31 01:24:55",
    "project": "general"
   },
   {
@@ -6717,11 +6708,6 @@
      "id": "WO-GUANYU-P101-20261030",
      "desc": "基线同步186",
      "status": "review"
-    },
-    {
-     "id": "WO-GUANYU-P108-20261031",
-     "desc": "A5 B1页面族拆分",
-     "status": "doing"
     }
    ]
   },
