@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 15:29",
+ "generated": "2026-10-30 15:36",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 25,
+  "workorders_doing": 26,
   "workorders_review": 6
  },
  "workorders": [
@@ -291,6 +291,15 @@
    "branch": "task/WO-GUANYU-P78-20261030",
    "created": "2026-10-30 15:23:28",
    "project": "general"
+  },
+  {
+   "id": "K-STOCK-ANALYSIS-P0V-20261030",
+   "desc": "个股分析独立板块：顶级导航SECTIONS新增stock板块+工作台页升级(英雄区/watchlist/方法口径)+/api/analysis/watchlist",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-STOCK-ANALYSIS-P0V-20261030",
+   "created": "2026-10-30 15:33:43",
+   "project": "quant"
   }
  ],
  "coder_traces": [
