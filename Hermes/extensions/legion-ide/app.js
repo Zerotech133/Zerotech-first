@@ -59,6 +59,11 @@
             <button class="legion-ide-close" id="legion-ide-close" aria-label="关闭">×</button>
           </header>
           <div class="legion-ide-body">
+            <div class="legion-ide-agents-head">
+              <span>Agent</span>
+              <span id="legion-ide-agent-count" class="legion-ide-status"></span>
+            </div>
+            <div id="legion-ide-agents" class="legion-ide-agents">加载中…</div>
             <div class="legion-ide-row">
               <label>工单</label>
               <select id="legion-ide-task"><option value="">（加载中…）</option></select>
@@ -71,6 +76,11 @@
               </select>
             </div>
             <textarea id="legion-ide-message" placeholder="描述要改的内容，例如：修复 xxx 并跑测试"></textarea>
+            <div class="legion-ide-actions">
+              <button id="legion-ide-context">取上下文</button>
+              <span id="legion-ide-context-status" class="legion-ide-status"></span>
+            </div>
+            <pre id="legion-ide-context-preview" style="display:none"></pre>
             <div class="legion-ide-actions">
               <button id="legion-ide-start" class="primary">开始执行</button>
               <button id="legion-ide-stop" disabled>停止</button>
@@ -120,6 +130,7 @@
     main.appendChild(host);
     bindPanel();
     loadTasks();
+    loadAgents();
     return true;
   }
 
@@ -171,6 +182,7 @@
     document.body.appendChild(wrap.firstElementChild);
     bindPanel();
     loadTasks();
+    loadAgents();
   }
 
   function closePanel() {
@@ -222,7 +234,96 @@
     }
   }
 
-  async function loadDiff(task) {
+  let AGENTS = [];
+let SELECTED_AGENT = "";
+
+function selectAgent(id) {
+  const a = AGENTS.find((x) => x.id === id);
+  if (!a) return;
+  SELECTED_AGENT = a.id;
+  localStorage.setItem("legion-ide-agent", a.id);
+  const box = $("#legion-ide-agents");
+  if (box) {
+    box.querySelectorAll("[data-agent]").forEach((n) => {
+      n.classList.toggle("on", n.dataset.agent === a.id);
+    });
+  }
+  const modelSel = $("#legion-ide-model");
+  if (modelSel && a.llm) {
+    const val = String(a.llm);
+    if (![...modelSel.options].some((o) => o.value === val)) {
+      const o = document.createElement("option");
+      o.value = val; o.textContent = val;
+      modelSel.appendChild(o);
+    }
+    modelSel.value = val;
+  }
+}
+
+async function loadAgents() {
+  const box = $("#legion-ide-agents");
+  const cnt = $("#legion-ide-agent-count");
+  if (!box) return;
+  try {
+    let d;
+    try {
+      const r = await fetch("/agent_ide_bundle.json", { cache: "no-store" });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      d = await r.json();
+    } catch (e1) {
+      // 8787 直连页拿不到 8734 的 bundle；走 8796 同源 API
+      const ar = await api("/api/ide/agents");
+      d = { agents: Object.fromEntries((ar.agents || []).map((a) => [a.id, a])) };
+    }
+    AGENTS = Array.isArray(d.agents)
+      ? d.agents.filter((a) => a && a.id)
+      : Object.values(d.agents || {}).filter((a) => a && a.id);
+    AGENTS.sort((a, b) => String(a.id).localeCompare(String(b.id)));
+    if (!AGENTS.length) throw new Error("empty agents");
+    const models = [...new Set(AGENTS.map((a) => a.llm).filter(Boolean))];
+    const modelSel = $("#legion-ide-model");
+    if (modelSel && models.length) {
+      modelSel.innerHTML = models.map((m) => `<option value="${esc(m)}">${esc(m)}</option>`).join("");
+    }
+    box.innerHTML = AGENTS.map((a) => {
+      const role = a.role_cn || a.role_title || a.role_profile || a.dept || "";
+      return `<button class="legion-ide-agent" data-agent="${esc(a.id)}" title="${esc(role)}">`
+        + `<b>${esc(a.cn_name || a.name || a.id)}</b>`
+        + `<span>${esc(a.id)} · ${esc(a.llm || "")}</span></button>`;
+    }).join("");
+    box.querySelectorAll("[data-agent]").forEach((n) => {
+      n.addEventListener("click", () => selectAgent(n.dataset.agent));
+    });
+    if (cnt) cnt.textContent = AGENTS.length + " agents";
+    const saved = localStorage.getItem("legion-ide-agent");
+    selectAgent(saved && AGENTS.some((a) => a.id === saved) ? saved : (AGENTS.find((a) => a.id === "A0") || AGENTS[0]).id);
+  } catch (e) {
+    box.textContent = "Agent 列表不可用：" + e.message;
+    if (cnt) cnt.textContent = "offline";
+  }
+}
+
+async function loadContext() {
+  const q = ($("#legion-ide-message")?.value || "").trim();
+  const st = $("#legion-ide-context-status");
+  const pre = $("#legion-ide-context-preview");
+  if (!q) { if (st) st.textContent = "先输入任务"; return; }
+  if (st) st.textContent = "检索中…";
+  try {
+    const d = await api("/api/ide/context?q=" + encodeURIComponent(q) + "&budget=6000");
+    if (pre) {
+      pre.style.display = "";
+      const syms = (d.symbols || []).map((s) => "- " + s.kind + " " + s.path + ":" + s.line + " " + s.name);
+      pre.textContent = "context " + (d.chars || 0) + " chars · symbols " + ((d.symbols || []).length)
+        + "\n" + syms.join("\n") + "\n\n" + (d.context || "");
+    }
+    if (st) st.textContent = "已取上下文";
+  } catch (e) {
+    if (st) st.textContent = "上下文失败：" + e.message;
+  }
+}
+
+async function loadDiff(task) {
     if (!task) return;
     const wrap = $("#legion-ide-diff-wrap");
     const pre = $("#legion-ide-diff");
@@ -282,6 +383,13 @@
     }
   }
 
+  function ohModelName(m) {
+    // 平台别名 glm/glm-5.3 → 网关实际模型名 glm-5.3；
+    // 老 8796 进程不认带 provider 前缀的模型名。
+    const s = String(m || "").trim();
+    return s.includes("/") ? s.split("/").pop() : s;
+  }
+
   async function start() {
     const task = $("#legion-ide-task").value;
     const message = $("#legion-ide-message").value.trim();
@@ -296,7 +404,7 @@
     try {
       const d = await api("/api/ide/openhands/start", {
         method: "POST",
-        body: JSON.stringify({ message, task, model }),
+        body: JSON.stringify({ message, task, model: ohModelName(model), agent: SELECTED_AGENT }),
       });
       state.cid = d.conversation_id;
       state.task = task;
@@ -361,6 +469,7 @@
     $("#legion-ide-approve").onclick = () => respond(true);
     $("#legion-ide-reject").onclick = () => respond(false);
     $("#legion-ide-commit").onclick = commit;
+    $("#legion-ide-context").onclick = loadContext;
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape" && $("#legion-ide-overlay")) closePanel();
     });
@@ -372,3 +481,4 @@
     buildLauncher();
   }
 })();
+

@@ -1,4 +1,4 @@
-﻿# 军团 IDE · Hermes 扩展
+# 军团 IDE · Hermes 扩展
 
 方式 A：作为 Hermes WebUI 扩展运行，不修改 Hermes 核心。
 
@@ -48,6 +48,9 @@ msedge.exe --app=http://127.0.0.1:8734/hermes/
 
 ## 功能
 
+- Agent 卡片（63 个，来自 `/agent_ide_bundle.json` 或 `/api/ide/agents`）
+- 点击 Agent 自动切换模型
+- 取上下文（AST symbols）
 - 工单下拉（来自 `/api/ide/openhands/tasks`）
 - 模型选择
 - 开始/停止 OpenHands

@@ -1,4 +1,4 @@
-/* 军团 IDE · Hermes 扩展样式（独立前缀，避免污染 Hermes） */
+﻿/* 军团 IDE · Hermes 扩展样式（独立前缀，避免污染 Hermes） */
 #legion-ide-launch {
   position: fixed;
   right: 18px;
@@ -81,6 +81,25 @@ main.main.showing-legionide > #mainInsights { display: none !important; }
   cursor: pointer; line-height: 1;
 }
 .legion-ide-body { padding: 12px 15px; overflow: auto; display: flex; flex-direction: column; gap: 10px; }
+.legion-ide-agents-head {
+  display: flex; align-items: center; justify-content: space-between;
+  color: #5a7190; font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
+}
+.legion-ide-agents {
+  display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px;
+}
+.legion-ide-agent {
+  flex: 0 0 auto; min-width: 112px; max-width: 150px;
+  background: #0b1a22; border: 1px solid #1e3a5f; border-radius: 8px;
+  color: #b9c9da; padding: 7px 9px; text-align: left; cursor: pointer;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.legion-ide-agent b { color: #dbe8f5; font-size: 12px; font-weight: 500; }
+.legion-ide-agent span { color: #5a7190; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.legion-ide-agent.on { border-color: #2f8f6a; background: #163f2f; }
+.legion-ide-agent.on b { color: #9fe3c0; }
+#legion-ide-context-preview { max-height: 160px; }
+#mainLegionIde .legion-ide-agents { max-height: 74px; }
 .legion-ide-row { display: flex; align-items: center; gap: 8px; }
 .legion-ide-row label { color: #5a7190; font-size: 11px; width: 38px; }
 .legion-ide-row select {
@@ -122,3 +141,4 @@ main.main.showing-legionide > #mainInsights { display: none !important; }
   .legion-ide-panel { width: 100vw; height: 100vh; border-radius: 0; }
   .legion-ide-overlay { padding: 0; }
 }
+

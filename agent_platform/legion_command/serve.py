@@ -461,6 +461,18 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({"ok": False, "error": "ide_fs_failed",
                                  "detail": "%s: %s" % (type(e).__name__, str(e)[:160])}, 500)
             return
+        if path == "/api/ide/agents":
+            import json as _json
+            bundle = Path(__file__).resolve().parents[2] / "portal" / "agent_ide_bundle.json"
+            try:
+                data = _json.loads(bundle.read_text(encoding="utf-8"))
+                agents = list((data.get("agents") or {}).values())
+                self._send_json({"ok": True, "agents": agents,
+                                 "generated": data.get("generated")})
+            except (OSError, ValueError) as e:
+                self._send_json({"ok": False, "error": "bundle_unavailable",
+                                 "detail": type(e).__name__}, 503)
+            return
         if path == "/api/ide/context":
             from urllib.parse import parse_qs
             from legion_command import ide_context

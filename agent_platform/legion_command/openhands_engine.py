@@ -205,11 +205,22 @@ def _resolve_worktree(task: str = "", worktree: str = ""):
     return host, container, None
 
 
+_PROVIDER_PREFIXES = (
+    "openai/", "anthropic/", "azure/", "ollama/", "google/", "gemini/",
+    "bedrock/", "groq/", "mistral/", "cohere/", "together/", "fireworks/",
+    "openrouter/",
+)
+
+
 def _llm(model: str) -> dict:
     alias = str(model or "deepseek-flash").strip()
     if alias.startswith("openhands_"):
         alias = alias[len("openhands_"):]
-    if "/" not in alias:
+    # 平台模型别名（如 glm/glm-5.3）会被 OpenHands 当作 provider。
+    # 对非真 provider 前缀，剥成网关实际模型名（glm-5.3），再走 openai/。
+    if "/" in alias and not alias.startswith(_PROVIDER_PREFIXES):
+        alias = alias.rsplit("/", 1)[-1]
+    if not alias.startswith(_PROVIDER_PREFIXES):
         alias = "openai/" + alias
     return {"model": alias, "api_key": "legion-local", "base_url": LEGION_GATEWAY}
 
