@@ -481,6 +481,10 @@ class Handler(BaseHTTPRequestHandler):
             from legion_command import openhands_engine
             self._send_json(openhands_engine.health())
             return
+        if path == "/api/ide/openhands/tasks":
+            from legion_command import ide_worktree
+            self._send_json({"ok": True, "tasks": ide_worktree.list_tasks()})
+            return
         if path == "/api/ide/openhands/conversation":
             from urllib.parse import parse_qs
             from legion_command import openhands_engine
@@ -1138,6 +1142,26 @@ class Handler(BaseHTTPRequestHandler):
                 model=str(req.get("model") or "deepseek-flash"),
             )
             self._send_json(res, 200 if res.get("ok") else 502)
+            return
+        if path in ("/api/ide/openhands/diff", "/api/ide/openhands/commit"):
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 64 * 1024:
+                    raise ValueError("bad_length")
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+            except (ValueError, UnicodeDecodeError):
+                self._send_json({"ok": False, "error": "bad_json"}, 400)
+                return
+            if not isinstance(req, dict):
+                self._send_json({"ok": False, "error": "bad_body"}, 400)
+                return
+            from legion_command import ide_worktree
+            task = str(req.get("task") or "").strip()
+            if path.endswith("/diff"):
+                res = ide_worktree.diff(task)
+            else:
+                res = ide_worktree.commit(task, str(req.get("message") or ""))
+            self._send_json(res, 200 if res.get("ok") else 400)
             return
         if path == "/v1/chat/completions":
             try:
