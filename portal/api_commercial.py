@@ -44,6 +44,8 @@ def _expected_token():
     if t:
         return t.strip()
     try:
+        if ROOT not in sys.path:
+            sys.path.insert(0, ROOT)
         from commercial import tenants as _t
         p = os.path.join(_t.BASE, "admin.token")
         if os.path.exists(p):
