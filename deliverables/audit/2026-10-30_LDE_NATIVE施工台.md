@@ -97,8 +97,28 @@ tree root → agent_platform → legion_command
 → commit 0b013fbf / a92088dfe
 ```
 
-## 7. 待办
+## 7. P2：Agent prompt / 技能
 
-1. Agent prompt/技能面板编辑（P2）
-2. LDE 面板 8787 直连兼容（当前主入口 8734）
-3. exec 命令白名单按需扩容
+Agent 详情新增：
+
+- 「在 LDE 编辑 prompt」
+  - 取 bundle 的 `prompt_file`
+  - 切换 LDE 施工台并自动填入路径
+  - 可直接读取/编辑/预览/确认写
+- 「复制技能」
+  - 技能列表复制到剪贴板
+
+实测：
+
+```text
+A0 田丰
+prompt_file = agent_platform/prompts/a0_chief.md
+在 LDE 打开 → 已读取 2712B
+复制技能 → 产品定义与验收标准 / 架构/接口契约设计 / ...
+```
+
+## 8. 待办
+
+1. LDE 面板 8787 直连兼容（当前主入口 8734）
+2. exec 命令白名单按需扩容
+3. Agent prompt 的版本/来源提示（当前写 worktree）

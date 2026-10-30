@@ -190,6 +190,12 @@ main.main.showing-legionlde > #mainLegionIde { display: none !important; }
 .legion-ide-detail-name span { color: #5a7190; margin-left: 6px; }
 .legion-ide-detail-sec { margin: 3px 0; line-height: 1.5; }
 .legion-ide-detail-sec em { color: #5a7190; font-style: normal; margin-right: 6px; }
+.legion-ide-detail-actions { display: flex; gap: 6px; margin-top: 6px; }
+.legion-ide-detail-actions button {
+  background: #0f2440; color: #9fe3ee; border: 1px solid #1e3a5f;
+  border-radius: 6px; padding: 4px 8px; cursor: pointer; font-size: 10px;
+}
+.legion-ide-detail-actions button:disabled { opacity: .4; cursor: default; }
 .legion-ide-prompt { margin-top: 5px; }
 .legion-ide-prompt summary { color: #9fd0ff; cursor: pointer; }
 .legion-ide-prompt pre {

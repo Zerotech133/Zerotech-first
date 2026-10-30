@@ -735,7 +735,43 @@ function renderAgentDetail(a) {
   if (a.prompt) {
     rows.push(`<details class="legion-ide-prompt"><summary>prompt (${a.prompt.length} 字)</summary><pre>${esc(a.prompt)}</pre></details>`);
   }
+  rows.push('<div class="legion-ide-detail-actions"><button id="legion-ide-edit-prompt">在 LDE 编辑 prompt</button>'
+    + '<button id="legion-ide-copy-skills">复制技能</button></div>');
   box.innerHTML = rows.join("");
+  const promptBtn = box.querySelector("#legion-ide-edit-prompt");
+  if (promptBtn) {
+    promptBtn.disabled = !(a.prompt_file || a.prompt);
+    promptBtn.onclick = () => openPromptInLde(a.prompt_file || "", a);
+  }
+  const copyBtn = box.querySelector("#legion-ide-copy-skills");
+  if (copyBtn) {
+    copyBtn.onclick = () => copyText((a.skills || []).join("\n") || (a.prompt || ""), "技能已复制");
+  }
+}
+
+async function openPromptInLde(path, agent) {
+  showLdePanel();
+  await new Promise((r) => setTimeout(r, 500));
+  const taskSel = $("#lde-task");
+  if (taskSel && !taskSel.value && taskSel.options.length) taskSel.value = taskSel.options[0].value;
+  const p = $("#lde-path");
+  if (!p) return;
+  p.value = path || ("agent_platform/prompts/" + String(agent && agent.id || "a0").toLowerCase() + ".md");
+  const ta = $("#lde-content");
+  if (ta && agent && agent.prompt && !path) ta.value = agent.prompt;
+  if (path) ldeRead();
+  else ldeStatus("已填入 prompt 路径，可按读取/编辑", "warn");
+}
+
+async function copyText(text, okMsg) {
+  try {
+    await navigator.clipboard.writeText(String(text || ""));
+    const st = $("#legion-ide-snippet-status");
+    if (st) st.textContent = okMsg || "已复制";
+  } catch (e) {
+    const st = $("#legion-ide-snippet-status");
+    if (st) st.textContent = "复制失败：" + e.message;
+  }
 }
 
 function selectAgent(id) {

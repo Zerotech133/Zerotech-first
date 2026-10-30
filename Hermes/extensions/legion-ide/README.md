@@ -62,6 +62,8 @@ msedge.exe --app=http://127.0.0.1:8734/hermes/
 - 文件读取 + 编辑
 - 预览 diff → 确认写入
 - 逐文件 git diff / add / commit
+- Agent prompt 一键在 LDE 打开编辑
+- Agent 技能列表复制
 - 白名单 exec
 - code_action / code_observation 审计
 
