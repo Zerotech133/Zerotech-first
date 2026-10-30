@@ -49,3 +49,13 @@ def test_wrong_token_noop(tmp_path, monkeypatch):
     tok = m.acquire(lock, "a")
     assert m.release(lock, "other") is False
     assert m.release(lock, tok) is True
+
+def test_dead_owner_reclaimed_immediately(tmp_path, monkeypatch):
+    """2026-10-30 P82：持有者进程已死 → 锁立即回收（不等 stale_sec 30min）。"""
+    m = _load(monkeypatch)
+    lock = tmp_path / ".export.lock"
+    lock.write_text(json.dumps({"pid": 99999999, "token": "dead"}), encoding="utf-8")
+    fresh = time.time() - 5  # mtime 很新（<stale_sec），只有死 PID 判定能回收
+    os.utime(lock, (fresh, fresh))
+    tok = m.acquire(lock, "new", timeout=0, stale_sec=60)
+    assert tok and m.held(lock)["token"] == tok
