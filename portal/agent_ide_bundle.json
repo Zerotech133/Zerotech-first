@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 14:28",
+ "generated": "2026-10-30 14:33",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 26,
+  "workorders_doing": 28,
   "workorders_review": 7
  },
  "workorders": [
@@ -308,6 +308,24 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-BANDIT-4BFINAL-20261030",
    "created": "2026-10-30 13:24:16",
+   "project": "quant"
+  },
+  {
+   "id": "WO-METHODS-20261030",
+   "desc": "首批交易手法：趋势回踩/放量突破/超跌反弹 规则引擎+paper历史回放+注册 trading_methods；合成K线单测",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-METHODS-20261030",
+   "created": "2026-10-30 14:29:01",
+   "project": "portal"
+  },
+  {
+   "id": "K-STOCK-ANALYSIS-P0S-20261030",
+   "desc": "curated日更工具：daily/daily_basic/moneyflow 自动补缺交易日（append-only+校验+日志），供 L2 定时任务调用",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-STOCK-ANALYSIS-P0S-20261030",
+   "created": "2026-10-30 14:31:16",
    "project": "quant"
   }
  ],
