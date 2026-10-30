@@ -413,6 +413,83 @@ def chat(message: str, conversation_id: str = "", timeout: int = DEFAULT_TIMEOUT
 _RUNS: dict[str, dict] = {}
 TERMINAL = {"finished", "error", "stuck", "cancelled", "paused"}
 
+# IDE Session 服务端持久化：跨浏览器 / PWA 共用一份历史。
+SESSIONS_FILE = Path(os.environ.get(
+    "LEGION_IDE_SESSIONS_FILE",
+    str(Path(__file__).resolve().parents[2] / "work" / "legion_ide_sessions.json"),
+))
+_SESSION_LOCK = threading.Lock()
+_SESSION_SAVED_AT: dict[str, float] = {}
+
+
+def _session_rows() -> list[dict]:
+    try:
+        data = json.loads(SESSIONS_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    rows = data.get("sessions") if isinstance(data, dict) else data
+    return list(rows) if isinstance(rows, list) else []
+
+
+def save_session(record: dict) -> None:
+    cid = str(record.get("cid") or "").strip()
+    if not cid:
+        return
+    with _SESSION_LOCK:
+        rows = _session_rows()
+        prev = next((r for r in rows if str(r.get("cid")) == cid), {})
+        row = dict(prev)
+        row.update({k: v for k, v in record.items() if v is not None})
+        row["cid"] = cid
+        row["updated"] = float(row.get("updated") or time.time())
+        if "title" in row:
+            row["title"] = str(row["title"])[:300]
+        if "reply" in row:
+            row["reply"] = str(row["reply"])[:8000]
+        row["status"] = str(row.get("status") or "running")[:40]
+        rows = [r for r in rows if str(r.get("cid")) != cid]
+        rows.insert(0, row)
+        try:
+            SESSIONS_FILE.parent.mkdir(parents=True, exist_ok=True)
+            tmp = SESSIONS_FILE.with_suffix(".tmp")
+            tmp.write_text(json.dumps({"sessions": rows[:50]}, ensure_ascii=False, indent=2),
+                           encoding="utf-8")
+            os.replace(tmp, SESSIONS_FILE)
+        except OSError:
+            pass
+        _SESSION_SAVED_AT[cid] = time.time()
+
+
+def sessions(limit: int = 30) -> list[dict]:
+    with _SESSION_LOCK:
+        rows = _session_rows()
+    try:
+        limit = max(1, min(int(limit), 100))
+    except ValueError:
+        limit = 30
+    return rows[:limit]
+
+
+def delete_session(cid: str) -> bool:
+    cid = str(cid or "").strip()
+    if not cid:
+        return False
+    with _SESSION_LOCK:
+        rows = _session_rows()
+        kept = [r for r in rows if str(r.get("cid")) != cid]
+        if len(kept) == len(rows):
+            return False
+        try:
+            SESSIONS_FILE.parent.mkdir(parents=True, exist_ok=True)
+            tmp = SESSIONS_FILE.with_suffix(".tmp")
+            tmp.write_text(json.dumps({"sessions": kept}, ensure_ascii=False, indent=2),
+                           encoding="utf-8")
+            os.replace(tmp, SESSIONS_FILE)
+        except OSError:
+            return False
+    _SESSION_SAVED_AT.pop(cid, None)
+    return True
+
 
 def _release_run(cid: str) -> None:
     run = _RUNS.pop(cid, None)
@@ -425,7 +502,8 @@ def _release_run(cid: str) -> None:
 
 
 def start(message: str, conversation_id: str = "", task: str = "",
-          worktree: str = "", model: str = "deepseek-flash") -> dict:
+          worktree: str = "", model: str = "deepseek-flash",
+          agent: str = "") -> dict:
     message = str(message or "").strip()
     if not message:
         return {"ok": False, "error": "empty_message"}
@@ -461,7 +539,13 @@ def start(message: str, conversation_id: str = "", task: str = "",
             if err:
                 raise RuntimeError(err.get("error") or "run_failed")
         _RUNS[cid] = {"task": task, "owner": owner, "host": str(host_wd),
-                      "container": container_wd, "started": time.time()}
+                      "container": container_wd, "started": time.time(),
+                      "agent": str(agent or ""), "model": str(model or "")}
+        save_session({
+            "cid": cid, "task": task, "agent": str(agent or ""),
+            "model": str(model or ""), "title": message[:300],
+            "status": "running", "reply": "",
+        })
         return {"ok": True, "conversation_id": cid, "task": task,
                 "worktree": str(host_wd), "container_worktree": container_wd,
                 "model": _llm(model)["model"], "status": "running",
@@ -524,6 +608,16 @@ def status(cid: str) -> dict:
                 pending = "" if auto.get("ok") else str(last.get("summary") or "")
             else:
                 pending = str(last.get("summary") or "")
+    now = time.time()
+    if (status_now in TERMINAL or status_now == "waiting_for_confirmation"
+            or now - _SESSION_SAVED_AT.get(cid, 0.0) >= 4.0):
+        rec = {"cid": cid, "status": status_now or "running"}
+        for key in ("task", "agent", "model"):
+            if run.get(key):
+                rec[key] = run[key]
+        if reply:
+            rec["reply"] = reply
+        save_session(rec)
     return {"ok": True, "conversation_id": cid, "status": status_now,
             "events": evs, "reply": reply, "pending_action": pending,
             "task": run.get("task") or "",

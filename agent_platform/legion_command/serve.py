@@ -503,6 +503,16 @@ class Handler(BaseHTTPRequestHandler):
             from legion_command import ide_worktree
             self._send_json({"ok": True, "tasks": ide_worktree.list_tasks()})
             return
+        if path == "/api/ide/openhands/sessions":
+            from urllib.parse import parse_qs
+            from legion_command import openhands_engine
+            qs = parse_qs(urlparse(self.path).query)
+            try:
+                limit = int((qs.get("limit") or ["30"])[0])
+            except ValueError:
+                limit = 30
+            self._send_json({"ok": True, "sessions": openhands_engine.sessions(limit)})
+            return
         if path == "/api/ide/openhands/conversation":
             from urllib.parse import parse_qs
             from legion_command import openhands_engine
@@ -1195,7 +1205,8 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json(res, 200 if res.get("ok") else 502)
             return
         if path in ("/api/ide/openhands/start", "/api/ide/openhands/interrupt",
-                    "/api/ide/openhands/respond"):
+                    "/api/ide/openhands/respond",
+                    "/api/ide/openhands/sessions/delete"):
             try:
                 length = int(self.headers.get("Content-Length") or 0)
                 if length <= 0 or length > 64 * 1024:
@@ -1215,9 +1226,13 @@ class Handler(BaseHTTPRequestHandler):
                     task=str(req.get("task") or ""),
                     worktree=str(req.get("worktree") or ""),
                     model=str(req.get("model") or "deepseek-flash"),
+                    agent=str(req.get("agent") or ""),
                 )
             elif path.endswith("/interrupt"):
                 res = openhands_engine.interrupt(str(req.get("conversation_id") or ""))
+            elif path.endswith("/sessions/delete"):
+                cid = str(req.get("cid") or req.get("conversation_id") or "")
+                res = {"ok": openhands_engine.delete_session(cid), "cid": cid}
             else:
                 res = openhands_engine.respond(
                     str(req.get("conversation_id") or ""),

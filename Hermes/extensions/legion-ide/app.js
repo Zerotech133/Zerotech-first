@@ -265,16 +265,37 @@
   let AGENTS = [];
 let SELECTED_AGENT = "";
 const SESSIONS_KEY = "legion-ide-sessions-v1";
+let SESSIONS = [];
 
 function readSessions() {
+  if (SESSIONS.length) return SESSIONS;
   try {
     const v = JSON.parse(localStorage.getItem(SESSIONS_KEY) || "[]");
     return Array.isArray(v) ? v : [];
   } catch (e) { return []; }
 }
 
+async function loadServerSessions() {
+  try {
+    const d = await api("/api/ide/openhands/sessions?limit=30");
+    const local = readSessions();
+    const map = new Map();
+    [...local, ...(d.sessions || [])].forEach((s) => {
+      if (!s || !s.cid) return;
+      const old = map.get(s.cid);
+      map.set(s.cid, Object.assign({}, old || {}, s));
+    });
+    SESSIONS = [...map.values()]
+      .sort((a, b) => Number(b.updated || 0) - Number(a.updated || 0))
+      .slice(0, 20);
+    writeSessions(SESSIONS);
+    renderSessions();
+  } catch (e) { /* 旧 8796 没有 sessions API，保留本地历史 */ }
+}
+
 function writeSessions(list) {
-  try { localStorage.setItem(SESSIONS_KEY, JSON.stringify(list.slice(0, 20))); } catch (e) {}
+  SESSIONS = list.slice(0, 20);
+  try { localStorage.setItem(SESSIONS_KEY, JSON.stringify(SESSIONS)); } catch (e) {}
 }
 
 function upsertSession(patch) {
@@ -289,6 +310,9 @@ function upsertSession(patch) {
 
 function removeSession(cid) {
   writeSessions(readSessions().filter((s) => s.cid !== cid));
+  api("/api/ide/openhands/sessions/delete", {
+    method: "POST", body: JSON.stringify({ cid }),
+  }).catch(() => {});
   if (state.cid === cid) newSession();
   renderSessions();
 }
@@ -757,6 +781,7 @@ async function loadDiff(task) {
     $("#legion-ide-snippet-insert").onclick = insertSnippet;
     $("#legion-ide-old-pick").onclick = openOldPicker;
     renderSessions();
+    loadServerSessions();
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape" && $("#legion-ide-overlay")) closePanel();
     });

@@ -2113,10 +2113,22 @@ fetch("/agent_ide_bundle.json", {cache:"no-store"}).then(r=>r.json()).then(d=>{
 <script>
 (function () {
   if (!new URLSearchParams(location.search).has("legion_pick")) return;
+  window.__legionPickReady = true;
   let last = "";
+  let lastSel = "";
+  function readSelection() {
+    let raw = "";
+    const ae = document.activeElement;
+    if (ae && (ae.tagName === "TEXTAREA" || ae.tagName === "INPUT")
+        && typeof ae.selectionStart === "number" && ae.selectionEnd > ae.selectionStart) {
+      raw = String(ae.value || "").slice(ae.selectionStart, ae.selectionEnd);
+    } else {
+      raw = window.getSelection ? String(window.getSelection()) : "";
+    }
+    return raw.trim();
+  }
   function send() {
-    const sel = window.getSelection ? String(window.getSelection()) : "";
-    const text = sel.trim();
+    const text = readSelection() || lastSel;
     if (!text || text === last) return;
     last = text;
     try {
@@ -2125,8 +2137,27 @@ fetch("/agent_ide_bundle.json", {cache:"no-store"}).then(r=>r.json()).then(d=>{
       }
     } catch (e) {}
   }
-  document.addEventListener("mouseup", () => setTimeout(send, 0), true);
-  document.addEventListener("keyup", () => setTimeout(send, 0), true);
+  // 旧 IDE 的 mouseup 会 removeAllRanges；在清空前抓住最后一次非空选区。
+  try {
+    const proto = window.Selection && window.Selection.prototype;
+    if (proto && proto.removeAllRanges) {
+      const origRemove = proto.removeAllRanges;
+      proto.removeAllRanges = function () {
+        const t = this.toString ? this.toString().trim() : "";
+        if (t) lastSel = t;
+        return origRemove.apply(this, arguments);
+      };
+    }
+  } catch (e) {}
+  document.addEventListener("selectionchange", () => {
+    const t = readSelection();
+    if (t) lastSel = t;
+  }, true);
+  // 旧 IDE 会在 mouseup 里清空 selection，捕获阶段 + selectionchange 兜底。
+  window.addEventListener("mouseup", send, true);
+  window.addEventListener("keyup", send, true);
+  document.addEventListener("mouseup", send, true);
+  document.addEventListener("keyup", send, true);
 })();
 </script>
 </body>
