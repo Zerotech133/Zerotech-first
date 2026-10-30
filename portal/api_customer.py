@@ -319,13 +319,20 @@ def handle_post(handler, path):
             return _json(handler, {"ok": False, "error": "服务端未配置许可密钥"}, 500)
         if ROOT not in sys.path:
             sys.path.insert(0, ROOT)
-        from commercial import audit as audit_mod, growth as growth_mod, license as lic, tenants
+        from commercial import audit as audit_mod, growth as growth_mod, invite as invite_mod, license as lic, tenants
+        inv_code = str(body.get("invite") or "").strip().upper()
         tid = "trial-" + secrets.token_hex(3)
+        channel = "direct"
+        if inv_code:
+            ok_inv, channel, err_inv = invite_mod.redeem(inv_code, tid)
+            if not ok_inv:
+                return _json(handler, {"ok": False, "error": "邀请码无效：" + err_inv}, 400)
         key = lic.issue(tid, plan="pro", expires=time.time() + 7 * 86400, seats=1, secret=_secret())
         tenants.add_tenant(tid, name=company or name, plan="pro", license_key=key)
         audit_mod.append("trial_started", tenant=tid, actor="growth",
-                         detail={"ref": "landing", "has_company": bool(company)})
-        growth_mod.record("trial", ref="landing", detail={"tenant": tid})
+                         detail={"ref": "landing", "has_company": bool(company),
+                                 "channel": channel, "invite": inv_code})
+        growth_mod.record("trial", ref="landing", detail={"tenant": tid, "channel": channel})
         return _json(handler, {"ok": True, "tenant": tid, "license": key,
                                "plan": "pro", "days": 7, "customer_url": "/customer.html"})
 
