@@ -86,3 +86,36 @@ def test_prefilter_jev_payload_shape():
 
 def test_prefilter_jev_returns_none_for_keep():
     assert pf.prefilter_jev("公司业绩预增 50%", "announcement") is None
+
+# ── 2026-10-30 BATCH4：误杀回归 + 回退判定 ─────────────────────────────
+def test_audited_false_kills_now_keep():
+    for title in (
+        "中金公司A股放量跌停！换股股东“浮亏26%割肉”系误读",
+        "开盘涨停！000678，6连板！",
+        "据报道，美国宽带服务商 Brightspeed 最早可能在12月申请破产",
+        "上海拟立法推动自动驾驶进出租车：智能驾驶概念股异动 大众交通盘中涨停后开板",
+        "美国10年期国债收益率下行8.5个基点",
+    ):
+        d = pf.decide(title)
+        assert d["decision"] == "keep", (title, d)
+
+
+def test_routine_broadcast_still_skips():
+    for title in (
+        "收盘：沪指涨 0.8% 报 3120 点，成交额 8500 亿元",
+        "美三大指数集体收涨，纳指涨 1.2%",
+    ):
+        assert pf.decide(title)["decision"] == "skip", title
+
+
+def test_stock_code_guard_keeps():
+    # 含 6 位个股代码 → 不接受例行 skip（防误杀个股事件）
+    d = pf.decide("午盘播报：600519 涨 1.2%，白酒板块走强")
+    assert d["decision"] == "keep"
+
+
+def test_is_prefilter_judgment():
+    assert pf.is_prefilter_judgment('{"src": "prefilter", "bias": "neutral"}') is True
+    assert pf.is_prefilter_judgment('{"src": "local", "bias": "bull"}') is False
+    assert pf.is_prefilter_judgment("not-json") is False
+    assert pf.is_prefilter_judgment("") is False

@@ -37,6 +37,9 @@ DIRECTIONAL_PATTERNS = [
     r"降息|加息|降准|上调|下调|补贴|关税|制裁|出口管制|获批|批准|试点|放开|收紧",
     # 分红/回报
     r"分红|派息|送转|特别股息",
+    # 2026-10-30 BATCH4：补齐审计发现的误杀方向词（原缺 → 破产/涨停/跌停被判中性）
+    r"破产|重整|清算|涨停|跌停|连板|封板|开板|暴涨|暴跌|大涨|大跌|闪崩",
+    r"净流入|净流出|收益率|申购|赎回|解禁|质押|爆仓|平仓",
 ]
 
 # ── 例行/中性模式（命中即候选 skip；仍需先确认无方向性词）────────────────
@@ -126,7 +129,18 @@ def decide(title: str, source: str = "", stocks: list | None = None) -> dict[str
             "matched": d,
             "source": source,
         }
+    # 2026-10-30 BATCH4：标题出现 6 位个股代码时，不接受「例行/行情」skip
+    # （实证误杀："开盘涨停！000678，6连板！"）。
+    has_stock_code = bool(re.search(r"(?<!\d)\d{6}(?!\d)", text))
     n = neutral_hit(text)
+    if n and has_stock_code:
+        return {
+            "decision": "keep",
+            "reason": "含个股代码（保守保留，防误杀）",
+            "bias_hint": None,
+            "matched": n,
+            "source": source,
+        }
     if n:
         return {
             "decision": "skip",
@@ -169,3 +183,15 @@ def prefilter_jev(title: str, source: str = "") -> dict[str, Any] | None:
         "reason": "规则粗筛：%s（%s）" % (r["reason"], r["matched"] or "-"),
         "meter": {"ms": 0, "model": "prefilter", "src": "prefilter"},
     }
+
+
+def is_prefilter_judgment(jev_text: str) -> bool:
+    """该 JEV JSON 是否由预筛规则写入（src=prefilter），用于回退工具。"""
+    import json as _json
+
+    try:
+        d = _json.loads(jev_text or "{}")
+    except (TypeError, ValueError):
+        return False
+    return isinstance(d, dict) and str(d.get("src") or "") == "prefilter"
+

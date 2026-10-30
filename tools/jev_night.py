@@ -366,9 +366,11 @@ def run_jev(batch: int, deadline: int, log: Logger) -> tuple[int, str]:
             [PY, "-X", "utf8", "-B", str(JEV), "--batch", str(batch),
              "--deadline", str(deadline), "--alert-threshold", ALERT_THRESHOLD],
             cwd=str(ROOT / "news_collector"), capture_output=True,
-            timeout=deadline + 300)
+            # 2026-10-30 BATCH4：子进程先 acquire(wait_s=900) 再记 t0，
+            # 父超时仅 +300 可能在子进程自报 deadline 前硬杀（丢最后一组/留锁）。
+            timeout=deadline + 600)
     except subprocess.TimeoutExpired:
-        return 124, "TIMEOUT(%ss)" % (deadline + 300)
+        return 124, "TIMEOUT(%ss)" % (deadline + 600)
     tail_lines = ((proc.stdout or b"") + (proc.stderr or b"")).decode(
         "utf-8", "replace").strip().splitlines()
     tail = tail_lines[-1] if tail_lines else ""

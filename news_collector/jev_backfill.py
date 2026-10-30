@@ -117,7 +117,7 @@ def _should_skip_lease_yield(paused: bool, disabled: bool) -> bool:
     return bool(paused) and not bool(disabled)
 
 
-def _judge_batch_sleep(items, sleep_s: float) -> dict:
+def _judge_batch_sleep(items, sleep_s: float, deadline_ts=None) -> dict:
     """news_ai.jev_judge_batch() 的等价循环，仅把 0.8s 换成可配置 sleep_s。
 
     与 news_ai 版逐行对齐：8 条上限、条间 sleep、失败重试一次、成功才收录。
@@ -125,6 +125,10 @@ def _judge_batch_sleep(items, sleep_s: float) -> dict:
     """
     out = {}
     for i, it in enumerate(items[:_JEV_BATCH_MAX]):
+        # 2026-10-30 BATCH4：组内逐条检查 deadline —— 旧实现只在每组 8 条前检查，
+        # 单条最坏（云 25s+本地 2×60s+resample 2×60s+reason 45s）可让一轮超 1800s。
+        if deadline_ts is not None and time.time() >= deadline_ts:
+            break
         if i and sleep_s > 0:
             time.sleep(sleep_s)
         # 2026-10-30 JEVSAFE：单条异常隔离——旧实现任一异常（如 event_type
@@ -315,7 +319,7 @@ def main():
         if args.deadline and (time.time() - t0) >= args.deadline:
             deadline_hit = 1
             break
-        judges = _judge_batch_sleep(items[i : i + 8], item_sleep)
+        judges = _judge_batch_sleep(items[i : i + 8], item_sleep, deadline_ts)
         written = 0
         try:
             for nid, j in judges.items():
@@ -338,6 +342,9 @@ def main():
             continue
         judged += written
         dup_skip += len(judges) - written
+        if deadline_ts is not None and time.time() >= deadline_ts:
+            deadline_hit = 1
+            break
         # 云侧故障短路：连续 3 组（24 条）全军覆没即收工。背景：typesafe
         # systemone 451 自 10-09 09:18 起持续，旧逻辑每轮空转 25-30 分钟
         # （451 立即返回+0.8s 间隔+二次重试）还占 ollama 锁。空判恢复即

@@ -144,3 +144,19 @@ def test_alert_throttle(tmp_path, monkeypatch):
     assert jb._alert_ok(throttle=True) is False     # 刚发过 → 节流
     state.write_text('{"last_alert_ts": 0}', encoding="utf-8")
     assert jb._alert_ok(throttle=True) is True      # 冷却已过
+
+
+def test_judge_batch_sleep_honours_deadline(monkeypatch):
+    import time as _time
+    import jev_backfill as jb
+    calls = {"n": 0}
+
+    def fake_judge(*a, **k):
+        calls["n"] += 1
+        return {"bias": "bull", "conf": 0.9}
+
+    monkeypatch.setattr(jb.news_ai, "jev_judge_one", fake_judge)
+    items = [{"id": "n%d" % i, "title": "t", "stocks": []} for i in range(8)]
+    out = jb._judge_batch_sleep(items, sleep_s=0, deadline_ts=_time.time() - 1)
+    assert out == {}
+    assert calls["n"] == 0

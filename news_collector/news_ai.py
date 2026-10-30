@@ -598,7 +598,8 @@ def jev_judge_one_local(title, stocks, timeout=60):
         '{"bias":"bull|bear|neutral","conf":0.0到1.0,'
         '"scope":"cn|hk|us|commodity|crypto|fx|macro",'
         '"event_type":"<事件类别枚举>","impact":"low|medium|high",'
-        '"companies":["相关A股代码"]}，不要输出其他内容。'
+        '"companies":["相关A股代码"],"reason":"30字内判断依据（只写依据本身）"}，'
+        "不要输出其他内容。"
         "scope 枚举（资产/市场范围）：cn A股、hk 港股、us 美股、commodity 商品、"
         "crypto 加密、fx 外汇、macro 宏观（无法确定时填空字符串，不要猜）。"
         "event_type 枚举：earnings业绩/policy政策/rate利率/trade贸易/supply供给/"
@@ -621,8 +622,9 @@ def jev_judge_one_local(title, stocks, timeout=60):
                 "think": False,
                 "format": "json",
                 # 2026-10-28 JEVTRUNC: 80 token 对「长公司名单」类快讯会截断 JSON
-                # （Unterminated string char~157 → 永久毒丸）；JSON 输出上限 ~220 token。
-                "options": {"temperature": 0.1, "num_predict": 220},
+                # （Unterminated string char~157 → 永久毒丸）。
+                # 2026-10-30 BATCH4: reason 并入同一次输出（省一次模型调用）→ 预算 260。
+                "options": {"temperature": 0.1, "num_predict": 260},
             },
             timeout=timeout,
         )
@@ -679,7 +681,10 @@ def jev_judge_one_local(title, stocks, timeout=60):
         "model": _model,
         "src": "local",
     }
-    d["reason"] = jev_reason(title, d["bias_cn"], d["scope_cn"])
+    # 2026-10-30 BATCH4：reason 已由同一次判定调用返回（prompt 含 reason 字段）；
+    # 只有模型漏给时才回落单独调用（旧行为每条多一次本地模型调用，实测中位 3.0s/条）。
+    _reason = str(j.get("reason") or "").strip()[:60]
+    d["reason"] = _reason or jev_reason(title, d["bias_cn"], d["scope_cn"])
     return d
 
 
