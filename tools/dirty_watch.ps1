@@ -39,8 +39,37 @@ try {
         $overCount = -1
     }
     if ($rc -eq 1 -and $overCount -gt 0) {
-        Write-Log ("WARN 超阈值跟踪脏文件 {0} 个（>{1}h）：{2}" -f $overCount, $MaxAgeHours, ($overPaths -join '; '))
-        & python "$repo\tools\events.py" emit --kind patrol_verdict --task 'DIRTY_WATCH_2H' --agent GUANYU --ide DSH-GUANYU --model deepseek-flash --detail ("脏文件巡检告警：{0} 个跟踪脏文件 >{1}h：{2}" -f $overCount, $MaxAgeHours, ($overPaths -join ', ')) | Out-Null
+        # 2026-10-30 P67：同一文件 24h 内只告警一次（重复告警降噪）；状态文件放 LogDir。
+        $stateFile = Join-Path $LogDir 'dirty_watch_state.json'
+        $state = @{}
+        if (Test-Path -LiteralPath $stateFile) {
+            try {
+                $objS = Get-Content -LiteralPath $stateFile -Raw -Encoding UTF8 | ConvertFrom-Json
+                foreach ($prop in $objS.PSObject.Properties) { $state[$prop.Name] = [string]$prop.Value }
+            } catch { $state = @{} }
+        }
+        $now = Get-Date
+        $newPaths = @()
+        foreach ($p in $overPaths) {
+            $last = $state[$p]
+            $isNew = $true
+            if ($last) {
+                try { $isNew = (($now - [datetime]::Parse($last)).TotalHours -ge 24) } catch { $isNew = $true }
+            }
+            if ($isNew) { $newPaths += $p; $state[$p] = $now.ToString('o') }
+        }
+        # 状态文件只保留 7 天内记录，避免无限增长
+        $prune = @{}
+        foreach ($k in $state.Keys) {
+            try { if (($now - [datetime]::Parse($state[$k])).TotalDays -lt 7) { $prune[$k] = $state[$k] } } catch { }
+        }
+        try { ($prune | ConvertTo-Json -Compress) | Set-Content -LiteralPath $stateFile -Encoding UTF8 } catch { }
+        if ($newPaths.Count -eq 0) {
+            Write-Log ("OK 超阈值 {0} 个均在 24h 内已告警（去重，无新增）" -f $overCount)
+            exit 0
+        }
+        Write-Log ("WARN 超阈值跟踪脏文件 {0} 个（>{1}h；24h 去重后新增 {2}）：{3}" -f $overCount, $MaxAgeHours, $newPaths.Count, ($newPaths -join '; '))
+        & python "$repo\tools\events.py" emit --kind patrol_verdict --task 'DIRTY_WATCH_2H' --agent GUANYU --ide DSH-GUANYU --model deepseek-flash --detail ("脏文件巡检告警：超阈值 {0} 个（24h 新增 {1}）>{2}h：{3}" -f $overCount, $newPaths.Count, $MaxAgeHours, ($newPaths -join ', ')) | Out-Null
         exit 0
     }
     if ($rc -ne 0 -and $rc -ne 1) {
