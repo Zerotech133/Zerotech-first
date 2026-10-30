@@ -53,6 +53,9 @@ RATINGS = ["买入", "观察偏多", "观察", "事件观察", "回避"]
 # G1 数据质量门：80% 为硬门槛（低于即不通过），90% 为目标（80-90 区间标黄告警）
 COVERAGE_MIN = 80
 COVERAGE_TARGET = 90
+# P0N 打分 v2：五维权重（合计 1.0）与评级分档（P0O 回测后按分位校准）
+SCORE_WEIGHTS = {"quality": 0.30, "growth": 0.20, "valuation": 0.20, "trend": 0.15, "event": 0.15}
+SCORE_CUTS = {"buy": 82, "observe_up": 68, "observe": 50, "avoid": 32}
 SPECIAL_TAGS = {
     "ST": "ST/*ST（风险警示）", "TUI": "退市风险", "TINGPAI": "停牌",
     "CHONGZHENG": "重整/预重整", "ZHONGZU": "重组/并购",

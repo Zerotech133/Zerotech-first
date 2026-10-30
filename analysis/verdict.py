@@ -3,7 +3,9 @@ import logging
 """S5 结论层：规则引擎（评级/情景/关键位/风险/观察清单）。
 
 原则：评级只做研究口径；所有结论都要能在 features/events 中找到依据。
+P0N：评级由 scoring.score_v2 五维 100 分制决定（叙事层保留原有 reasons/risks）。
 """
+from . import scoring
 
 
 def _num(x):
@@ -241,6 +243,17 @@ def build_verdict(snap, feat, events):
     except Exception as exc:
         logging.getLogger(__name__).warning("silent-except %s: %s", "analysis/verdict.py", exc)
 
+    # P0N：打分 v2（五维 100 分制）——评级/置信度以分数为准；事件观察覆盖优先保留
+    sv = scoring.score_v2(snap, feat, tags=tags, events=events)
+    if rating != "事件观察":
+        rating, horizon = sv["rating"], sv["horizon"]
+    score = sv["total"]
+    conf = min(conf_cap, sv["confidence"])
+    signals.append("打分 %.1f/100（质量 %.0f/成长 %.0f/估值 %.0f/趋势 %.0f/事件 %.0f）"
+                   % (sv["total"], sv["factors"]["quality"], sv["factors"]["growth"],
+                      sv["factors"]["valuation"], sv["factors"]["trend"], sv["factors"]["event"]))
+    signals[:] = signals[:6]
+
     # 关键位
     levels = list(tech.get("levels") or [])
     pivots = []
@@ -289,14 +302,14 @@ def build_verdict(snap, feat, events):
         thesis += "。主要风险：" + "；".join(risks[:3])
 
     verdict = {
-        "rating": rating, "confidence": round(min(conf_cap, max(0.35, 0.45 + abs(score) * 0.08)), 2),
+        "rating": rating, "confidence": round(conf, 2),
         "horizon": horizon, "thesis": thesis,
         "key_signals": signals[:6], "reasons": reasons[:8],
         "triggers": ["季报/预告验证业绩", "放量突破 250 日高或回踩 MA20 企稳"],
         "invalidations": ["跌破 60 日低", "出现监管立案/退市风险", "核心逻辑被证伪"],
         "levels": levels, "scenarios": scen, "risks": risks[:10], "watch": watch,
         "nonrecurring": nr or None,
-        "score": round(score, 2),
+        "score": score, "score_v2": sv["total"], "score_detail": sv,
         "disclaimer": "研究分析，不构成投资建议",
     }
     return verdict

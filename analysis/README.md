@@ -171,3 +171,11 @@ analysis/
 - **估值历史分位**：`valuation.ps_pct_hist / pe_pct_hist / pb_pct_hist / hist_temp`（近 5 年，样本≥120）；报告/H5 增加「PS 历史分位（近5年）」「估值历史温度」。
 - **数据时效门禁**：`snapshot.data_lag = {last_trade_date, today, calendar_days, trade_days}`；G1 对 `trade_days>=1` 告警（不否决），评级层 `trade_days>=3` 置信度上限 0.5。
 - 评级层：PS 历史分位 ≤25 加 0.3、≥85 减 0.4，并进 key_signals。
+
+### 评级打分 v2（P0N，2026-10-30）
+
+- 五维 100 分制：`quality 30 / growth 20 / valuation 20 / trend 15 / event 15`（`config.SCORE_WEIGHTS`）；
+- 质量=ROE/毛利率/OCF÷净利/负债 + 非经常性惩罚（占比≥50% 扣 20 分、亏损封顶 40）；
+- 成长=营收同比+净利（有非经常性时用扣非同比）+预告；估值=同业分位+自身 5 年分位+历史温度；趋势=均线/250日分位/20日动量/主力资金；事件=ST/退市/重整/问询诉讼/减持质押 + 回购预增；
+- 评级由总分映射（`config.SCORE_CUTS`，P0O 回测后校准）：≥82 买入 / ≥68 观察偏多 / ≥50 观察 / ≥32 观察（偏弱）/ <32 回避；ST/退市/重整仍走事件观察覆盖；
+- `verdict.score` 改为 0-100（原规则分退役）；报告/H5 增加「五维分解」；P0O 回测将按分档校准权重与阈值。

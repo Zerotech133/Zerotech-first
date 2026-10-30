@@ -39,14 +39,19 @@ class TestNonRecurring(unittest.TestCase):
     def test_score_penalty_and_risk(self):
         plain = verdict.build_verdict(SNAP, make_feat(), [])
         flagged = verdict.build_verdict(SNAP, make_feat(NR), [])
-        # -1.0 盈利加分抵消 + -0.3 预增给分被抑制
-        self.assertAlmostEqual(plain["score"] - flagged["score"], 1.3, places=1)
+        # P0N：100 分制，非经常性同时压质量分与成长分（并抑制预增加分）
+        self.assertGreater(plain["score"], flagged["score"])
+        self.assertGreaterEqual(plain["score"] - flagged["score"], 5)
         self.assertTrue(any("非经常性" in r or "扣非" in r for r in flagged["risks"]),
                         flagged["risks"])
         self.assertTrue(any("非经常性" in s for s in flagged["key_signals"]), flagged["key_signals"])
         self.assertIn("非经常性损益", flagged["thesis"])
         self.assertIsNotNone(flagged.get("nonrecurring"))
         self.assertEqual(flagged["nonrecurring"]["profit_dedt_yi"], 0.70)
+        # 五维分解存在且质量分被压
+        self.assertIn("factors", flagged.get("score_detail") or {})
+        self.assertLess(flagged["score_detail"]["factors"]["quality"],
+                        plain["score_detail"]["factors"]["quality"])
 
     def test_forecast_bonus_gated(self):
         # 预增给分在有非经常性时被抑制
