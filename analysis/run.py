@@ -59,6 +59,20 @@ def run(code, as_of=None, no_llm=False, with_legion=False, skip_events=False, ma
     t0 = time.time()
     _log("analysis v%s start code=%s as_of=%s" % (__version__, code, as_of or "auto"), logf)
 
+    # P2.1 商业控制（默认 open 模式零影响）：license 校验 + 报告配额扣减 + 租户隔离目录
+    tenant_ctx = None
+    tenant_root = None
+    commercial_i = None
+    if (os.environ.get("COMMERCIAL_MODE") or "open").strip().lower() == "commercial":
+        from commercial import integration as commercial_i
+        try:
+            tenant_ctx = commercial_i.ensure(metric="reports_month")
+            tenant_root = commercial_i.deliver_root()
+            _log("commercial tenant=%s plan=%s" % (tenant_ctx["tenant"], tenant_ctx["plan"]), logf)
+        except Exception as e:
+            _log("commercial blocked: %s" % e, logf)
+            raise
+
     # 自动 as_of：该股票最新交易日
     if not as_of:
         import pandas as pd
@@ -107,6 +121,7 @@ def run(code, as_of=None, no_llm=False, with_legion=False, skip_events=False, ma
     meta = {"code": code, "name": name, "as_of": as_of, "intraday": None, "run_id": run_id,
             "schema_version": "1.0", "generated_at": time.strftime("%F %T"), "trigger": "user",
             "versions": {"pipeline": __version__, "prompt": config.PROMPT_VERSION}}
+    meta["tenant"] = tenant_ctx["tenant"] if tenant_ctx else None
     now = time.strftime("%F %T")
     ctx = {"meta": meta, "snapshot": snap, "features": feat, "events": ev, "verdict": vd, "views": views,
            "now": now, "intraday": None}
@@ -132,8 +147,10 @@ def run(code, as_of=None, no_llm=False, with_legion=False, skip_events=False, ma
 
     dest = publish.archive(code, name, as_of, {"report": arts["report"], "h5": arts["h5"],
                                                "manifest": arts["manifest"], "charts": arts["charts"],
-                                               "rating": vd["rating"]}, outdir)
+                                               "rating": vd["rating"]}, outdir, root=tenant_root)
     _log("归档 %s" % dest, logf)
+    if tenant_ctx and commercial_i is not None:
+        commercial_i.audit_report(run_id, dest, vd["rating"])
     pushed = {"ok": False}
     if push:
         pushed = publish.feishu_push(dest, code, name, vd["rating"], vd["thesis"])
