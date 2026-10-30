@@ -12,13 +12,28 @@ import hmac
 import json
 import logging
 import os
+import re
+import threading
+import time
 
-from api_common import STATION, data_freshness_bg, pill_nav
+from api_common import ROOT, STATION, data_freshness_bg, pill_nav
 
 try:  # 与 portal_api 原样一致的导入兜底（包内/脚本两种入口）
     from safe_urlopen import safe_urlopen
 except ImportError:  # pragma: no cover
     from portal.safe_urlopen import safe_urlopen
+
+
+
+# ── 健康/观测共享状态（B2b 从 portal_api 移入；_lock 与 portal_api 共享同一对象）──
+_lock = threading.Lock()
+_hcache = {"t": 0.0, "data": None}
+_jcache = {"t": 0.0, "data": None}
+_JEV_PORTS = [("gate", 9101), ("review", 9102), ("qd bridge", 9103),
+              ("card", 9104)]
+_JEV_LOG = os.path.join(ROOT, "..", "jev-eval", "logs", "jev-stack.log")
+_JEV_DLQ = os.path.join(ROOT, "..", "jev-eval",
+                        "push_dead_letter.jsonl")
 
 
 class Handler:  # Mixin 壳：经基座多继承并入
@@ -163,6 +178,244 @@ class Handler:  # Mixin 壳：经基座多继承并入
         self._json({"ok": ok, "text": text, "operator": operator}, 200 if ok else 400)
 
 
+    def _api_health(self):
+        """P1 总览门户健康聚合（JSON）：七口探活（端口判活=判例3 正源）
+        + PID 侧写（netstat，S4U 下 Win32_Process 不可信）+ 五守护任务
+        schtasks 状态。60s TTL 缓存，探测全部线程池并发。"""
+        import socket as _sk
+        import subprocess as _sp
+        from concurrent.futures import ThreadPoolExecutor
+
+        with _lock:
+            if (_hcache["data"] is not None
+                    and time.time() - _hcache["t"] <= 60):
+                self._json(_hcache["data"])
+                return
+
+        def probe(spec):
+            name, port, http_path = spec[:3]
+            optional = bool(spec[3]) if len(spec) > 3 else False
+            t0 = time.time()
+            try:
+                if http_path:
+                    ok = safe_urlopen("http://127.0.0.1:%d%s"
+                                    % (port, http_path),
+                                    timeout=2.5).status == 200
+                else:
+                    s = _sk.create_connection(("127.0.0.1", port),
+                                              timeout=2)
+                    s.close()
+                    ok = True
+            except Exception:
+                ok = False
+            return {"name": name, "port": port, "ok": ok,
+                    "optional": optional,
+                    "ms": int((time.time() - t0) * 1000)}
+
+        # W3 清债（2026-10-25）：9104 card 已按 W3 回执退役（按需拉起，
+        # OPTIONAL_OFFLINE）；不再作为整体健康阻断，仅保留观测位。
+        _spec = [("portal api", 8091, "/health"),
+                 ("push hub", 8097, None),
+                 ("hermes", 8787, None),
+                 ("gate", 9101, None),
+                 ("review", 9102, None),
+                 ("qd bridge", 9103, None),
+                 ("card", 9104, None, True)]
+        with ThreadPoolExecutor(max_workers=7) as _ex:
+            services = list(_ex.map(probe, _spec))
+
+        # PID 侧写：一次 netstat 全量滤七口（judge 判例3：S4U 会话
+        # Win32_Process born/CommandLine 查询 DENIED，端口侧写唯一可信）
+        # ⚠️ Hidden 会话链路判例：subprocess.run+text 对 netstat 偶发
+        # stdout=None（TypeError 被吞）；Popen+bytes+容错解码稳定。
+        def _run_bytes(argv):
+            try:
+                p = _sp.Popen(argv, stdout=_sp.PIPE, stderr=_sp.PIPE)
+                so, _ = p.communicate(timeout=10)
+                # 中文系统 netstat/schtasks 输出为 OEM 936(GBK)；
+                # utf-8 解码会毁掉中文列名（「上次结果」→乱码→pick 失配）
+                return (so or b"").decode("gbk", "replace")
+            except Exception:
+                return ""
+
+        pid_by_port = {}
+        for ln in _run_bytes(["netstat", "-ano", "-p", "tcp"]).splitlines():
+            m = re.match(r"\s*TCP\s+\S+:(\d+)\s+\S+\s+LISTENING\s+(\d+)",
+                         ln)
+            if m:
+                pid_by_port.setdefault(int(m.group(1)),
+                                       int(m.group(2)))
+        for s in services:
+            s["pid"] = pid_by_port.get(s["port"])
+
+        # 五守护任务单查并行（csv /v 单任务输出小；中文系统列名本地化，
+        # 用子串双名兼容，拿不到的字段置 "?" 不阻塞主流程）
+        _TASKS = ["JevStack", "JevBackfill", "JevFeed-Daily",
+                  "TushareSync", "HermesWebUI-Guard"]
+
+        def task_one(tn):
+            info = {"name": tn, "state": "?", "last_result": "?",
+                    "last_run": "?", "next_run": "?"}
+            try:
+                import csv as _csv
+                import io as _io
+                out = _run_bytes(["schtasks", "/query", "/tn", "\\" + tn,
+                                  "/fo", "csv", "/v"])
+                lines = [x for x in out.splitlines() if x.strip()]
+                if len(lines) >= 2:
+                    rows = list(_csv.reader(_io.StringIO("\n".join(lines))))
+                    d = dict(zip(rows[0], rows[1]))
+
+                    def pick(*keys):
+                        for k in keys:
+                            for hk in d:
+                                if k in hk:
+                                    return d[hk]
+                        return "?"
+
+                    # schtasks /v 双语列名（服务会话中文/交互会话英文，
+                    # 实测抓取 2026-10-17）：Status=「模式」(值:就绪)；
+                    # 「登录状态」=Logon Mode、「计划任务状态」=Enabled——
+                    # 勿用「状态」子串（撞「登录状态」→显示交互方式/后台方式）
+                    info.update({
+                        "state": pick("Status", "模式"),
+                        "last_result": pick("Last Result", "上次结果"),
+                        "last_run": pick("Last Run Time", "上次运行时间"),
+                        "next_run": pick("Next Run Time", "下次运行时间"),
+                    })
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "portal_api.py", exc)
+            return info
+
+        with ThreadPoolExecutor(max_workers=5) as _ex:
+            tasks = list(_ex.map(task_one, _TASKS))
+
+        data = {"ok": all(s["ok"] or s.get("optional") for s in services),
+                "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+                "services": services, "tasks": tasks}
+        with _lock:
+            _hcache["t"] = time.time()
+            _hcache["data"] = data
+        self._json(data)
+
+    def _api_jev_stack(self):
+        """P2 四件套观测页聚合（JSON）：四服务探活+PID+业务指标
+        （/metrics 解析 jev_db_queries/jev_calls + created 算存活）、
+        jev-stack.log 换血时间轴（尾 40 行）、死信队列统计+最近样本。
+        30s TTL。"""
+        import socket as _sk
+        from concurrent.futures import ThreadPoolExecutor
+
+        with _lock:
+            if (_jcache["data"] is not None
+                    and time.time() - _jcache["t"] <= 30):
+                self._json(_jcache["data"])
+                return
+
+        def _sub_out(argv):
+            import subprocess as _sp
+            try:
+                p = _sp.Popen(argv, stdout=_sp.PIPE, stderr=_sp.PIPE)
+                so, _ = p.communicate(timeout=10)
+                return (so or b"").decode("gbk", "replace")
+            except Exception:
+                return ""
+
+        # PID 侧写（判例3：端口判活唯一可信）
+        pid_by_port = {}
+        for ln in _sub_out(["netstat", "-ano", "-p", "tcp"]).splitlines():
+            m = re.match(r"\s*TCP\s+\S+:(\d+)\s+\S+\s+LISTENING\s+(\d+)",
+                         ln)
+            if m:
+                pid_by_port.setdefault(int(m.group(1)),
+                                       int(m.group(2)))
+
+        def probe(svc):
+            name, port = svc
+            out = {"name": name, "port": port, "up": False,
+                   "pid": pid_by_port.get(port), "metrics": {}}
+            try:
+                s = _sk.create_connection(("127.0.0.1", port), timeout=2)
+                s.close()
+                out["up"] = True
+            except Exception:
+                return out
+            try:
+                body = safe_urlopen("http://127.0.0.1:%d/metrics" % port,
+                                  timeout=4).read().decode("utf-8",
+                                                           "replace")
+                met = out["metrics"]
+                for ln in body.splitlines():
+                    m2 = re.match(r'^(jev_db_queries_total|jev_calls_total)'
+                                  r'\{[^}]*ok="(\d)"\}\s+([\d.eE+]+)', ln)
+                    if m2:
+                        key = ("db_ok" if m2.group(1).startswith("jev_db")
+                               else "call_ok") if m2.group(2) == "1" else (
+                          "db_err" if m2.group(1).startswith("jev_db")
+                          else "call_err")
+                        met[key] = float(m2.group(3))
+                    m3 = re.match(r'^jev_db_queries_created\{[^}]*ok="1"\}'
+                                  r'\s+([\d.eE+]+)', ln)
+                    if m3:
+                        # created 时间戳 = 进程业务起点 → 存活时长
+                        alive = time.time() - float(m3.group(1))
+                        if alive > 0:
+                            met["alive_s"] = int(alive)
+            except Exception as exc:
+                logging.getLogger(__name__).warning("silent-except %s: %s", "portal_api.py", exc)
+            return out
+
+        with ThreadPoolExecutor(max_workers=4) as _ex:
+            services = list(_ex.map(probe, _JEV_PORTS))
+
+        # 换血时间轴（尾 40 行）
+        restarts = []
+        try:
+            with open(_JEV_LOG, encoding="utf-8", errors="replace") as f:
+                tail = f.readlines()[-40:]
+            for ln in tail:
+                m4 = re.match(r"\[([\d\- :]+)\]\s+(force-restart:.+|"
+                              r"pulled up:.+)", ln.strip())
+                if m4:
+                    kind = ("blood" if "force-restart" in m4.group(2)
+                            else "pull")
+                    restarts.append({"ts": m4.group(1), "kind": kind,
+                                     "detail": m4.group(2)})
+            restarts.reverse()  # 最新在前
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal_api.py", exc)
+
+        # 死信队列：总数 + 最近 8 条（err 截断，防大 JSON）
+        dlq = {"count": 0, "recent": []}
+        try:
+            with open(_JEV_DLQ, encoding="utf-8", errors="replace") as f:
+                lines = [x for x in f if x.strip()]
+            dlq["count"] = len(lines)
+            for ln in lines[-8:]:
+                try:
+                    d = json.loads(ln)
+                    dlq["recent"].append({
+                        "ts": d.get("ts", ""),
+                        "level": d.get("level", ""),
+                        "title": d.get("title", "")[:40],
+                        "urgent_p": (d.get("verdict") or {}
+                                     ).get("urgent_p"),
+                        "reason": d.get("reason", ""),
+                        "final": d.get("final", False),
+                        "err": (d.get("err") or "")[:120]})
+                except Exception as exc:
+                    logging.getLogger(__name__).warning("silent-except %s: %s", "portal_api.py", exc)
+            dlq["recent"].reverse()
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "portal_api.py", exc)
+
+        data = {"ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+                "services": services, "restarts": restarts, "dlq": dlq}
+        with _lock:
+            _jcache["t"] = time.time()
+            _jcache["data"] = data
+        self._json(data)
+
 def _freshness_warmup():
     """K56-B1 启动预热：后台线程算一次 freshness（冷算 ~100s），
     驾驶舱/数据仓首个访问者不再等冷启动。"""
@@ -228,4 +481,3 @@ def mask_open_id(open_id):
     if s:
         return s[:2] + "**"
     return "**"
-
