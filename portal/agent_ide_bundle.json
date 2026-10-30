@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 16:08",
+ "generated": "2026-10-30 16:12",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 27,
+  "workorders_doing": 26,
   "workorders_review": 7
  },
  "workorders": [
@@ -299,15 +299,6 @@
    "owner": "GUANYU",
    "branch": "task/WO-GUANYU-P79-20261030",
    "created": "2026-10-30 16:04:08",
-   "project": "general"
-  },
-  {
-   "id": "WO-LEGION-MEMORY-DEFAULT-20261030",
-   "desc": "memory默认值改为关闭（对齐策略v0）",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-MEMORY-DEFAULT-20261030",
-   "created": "2026-10-30 16:06:24",
    "project": "general"
   },
   {
@@ -7045,14 +7036,7 @@
    ],
    "entry_source": "virtual_governance",
    "seat_note": "profile 角色，不占编（D5-C）；与 R2 风控席（org 编制·保守风控哨）是不同 id，报表按 id 区分。",
-   "home_page": "http://127.0.0.1:8796/zhaoyun",
-   "tasks": [
-    {
-     "id": "WO-LEGION-MEMORY-DEFAULT-20261030",
-     "desc": "memory默认值改为关闭（对齐策略v0）",
-     "status": "doing"
-    }
-   ]
+   "home_page": "http://127.0.0.1:8796/zhaoyun"
   }
  }
 }
