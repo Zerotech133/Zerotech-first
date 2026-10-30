@@ -108,6 +108,20 @@ def diff(task: str, max_chars: int = 60000) -> dict:
                  if line.startswith("?? ")]
     files = [line[3:] for line in st["out"].splitlines() if line.strip()]
     text = body["out"]
+    # untracked 不在 git diff 里；把新文件内容作为 synthetic diff 展示。
+    for rel in untracked[:20]:
+        p = wt / rel
+        try:
+            if not p.is_file() or p.stat().st_size > 200_000:
+                continue
+            content = p.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        text += "\n=== new file: %s ===\n" % rel
+        lines = content.splitlines()
+        text += "\n".join("+" + line for line in lines[:200])
+        if len(lines) > 200:
+            text += "\n+...（新文件已截断）"
     return {
         "ok": True,
         "task": task,
