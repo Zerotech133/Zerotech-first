@@ -449,6 +449,7 @@ let BANNER_RETRY = null;
 function errorText(e) {
   const s = String(e && e.message ? e.message : e || '未知错误');
   if (/Failed to fetch|NetworkError|Load failed/i.test(s)) return '网络不可达';
+  if (/Unexpected token|not valid JSON|JSON\.parse/i.test(s)) return '响应不是 JSON（可能被 404/代理页面拦截）';
   return s.slice(0, 160);
 }
 function showBanner(msg, opts) {
@@ -517,12 +518,12 @@ function load() {
 fetch('/api/zhaoyun')
     .then((r) => r.json())
     .then((v) => {
-      if (!v.ok) { showBanner('视图不可用：' + (v.error || 'unknown') + ' ' + (v.detail || '')); return; }
+      if (!v.ok) { showBanner('视图不可用：' + (v.error || 'unknown') + ' ' + (v.detail || ''), { retry: load }); return; }
       render(v);
       loadDrill();
       loadCap2();
     })
-    .catch((e) => showBanner('端点不可达：' + e));
+    .catch((e) => showBanner('端点不可达：' + errorText(e), { retry: load }));
 }
 function jget(url) { return fetch(url).then((r) => r.json()); }
 function kv(box, k, v) {
