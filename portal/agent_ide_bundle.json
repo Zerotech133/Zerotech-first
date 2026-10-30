@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-31 04:59",
+ "generated": "2026-10-31 05:22",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 31,
+  "workorders_doing": 32,
   "workorders_review": 12
  },
  "workorders": [
@@ -398,6 +398,15 @@
    "owner": "DSH-Lead",
    "branch": "task/WO-D1-L4BOOTSTRAP-20261031",
    "created": "2026-10-31 01:31:46",
+   "project": "general"
+  },
+  {
+   "id": "OS-FIX-AUDIT-20261031",
+   "desc": "审计修复：runner.py 子进程 utf-8 解码 errors=replace（修 KG-QuantMorning UnicodeDecodeError 噪声）；task_exit_audit 补 0x40010004 非失败语义",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/OS-FIX-AUDIT-20261031",
+   "created": "2026-10-31 05:18:31",
    "project": "general"
   }
  ],
