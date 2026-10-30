@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>模拟交易人工确认 · 零界</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<script src="/static/nav.js" defer></script>
+<script src="/static/shortscreen.js" defer></script>
+<style>
+body{background:var(--bg);color:var(--ink);font-family:var(--font-ui)}
+.wrap{max-width:1080px;margin:0 auto;padding:18px 16px 60px}
+h1{font-size:20px;margin:8px 0 4px}
+.sub{color:var(--gray-5);font-size:12.5px;margin-bottom:14px}
+.cards{display:grid;gap:10px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:4px 0}
+.sym{font-weight:700;font-size:15px}
+.badge{font-size:11px;padding:2px 8px;border-radius:999px;background:var(--gray-1);border:1px solid var(--line)}
+.buy{color:var(--color-up);border-color:var(--color-up-bd)}
+.sell{color:var(--color-dn);border-color:var(--color-dn-bd)}
+.mono{font-family:ui-monospace,Consolas,monospace;font-size:11.5px;color:var(--gray-6);word-break:break-all}
+.btn{border:1px solid var(--line);background:var(--gray-1);color:var(--ink);border-radius:8px;padding:7px 14px;font-size:13px;cursor:pointer}
+.btn.ok{border-color:var(--color-up-bd);color:var(--color-up)}
+.btn.no{border-color:var(--color-dn-bd);color:var(--color-dn)}
+.note{font-size:11.5px;color:var(--gray-5);line-height:1.7;margin-top:10px}
+.empty{padding:24px;text-align:center;color:var(--gray-5)}
+#msg{font-size:12px;color:var(--gray-5);margin:8px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>模拟交易 · 人工确认</h1>
+  <div class="sub">D1 鲁肃 · TR1 周瑜执行 · paper-only（不接实盘）</div>
+  <div id="msg"></div>
+  <div id="cards" class="cards"><div class="empty">加载中…</div></div>
+  <div class="note">批准后进入风控门 + 模拟账本；拒绝不执行；KILL 开关生效时一律不执行。超时不自动下单。</div>
+</div>
+<script>
+const $=s=>document.querySelector(s);
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+async function load(){
+  const r=await fetch('/api/sim/confirmations?status=pending',{cache:'no-store'});
+  const d=await r.json();
+  const box=$('#cards');
+  if(!d.ok){box.innerHTML='<div class="empty">'+esc(d.error||'读取失败')+'</div>';return;}
+  $('#msg').textContent='待确认 '+d.count+' 条 · '+(d.trading_permitted?'':'paper-only');
+  if(!d.count){box.innerHTML='<div class="empty">当前没有待确认的盯盘触发</div>';return;}
+  box.innerHTML=d.items.map(it=>{
+    const act=esc(it.action), cls=act==='BUY'?'buy':(act==='SELL'?'sell':'');
+    return '<div class="card">'+
+      '<div class="row"><span class="sym">'+esc(it.symbol)+' '+esc(it.name||'')+'</span>'+
+      '<span class="badge '+cls+'">'+act+'</span><span class="badge">'+esc(it.status)+'</span></div>'+
+      '<div class="row">价格 <b>'+esc(it.price==null?'待定':it.price)+'</b> · 止损 '+esc(it.stop==null?'—':it.stop)+
+      ' · 置信 '+esc(it.confidence)+' · 来源 '+esc(it.source||'—')+'</div>'+
+      '<div class="mono">'+esc(it.reason||'')+' · '+esc(it.confirmation_id)+'</div>'+
+      '<div class="row" style="margin-top:8px">'+
+        '<button class="btn ok" data-id="'+esc(it.confirmation_id)+'" data-act="approve">批准</button>'+
+        '<button class="btn no" data-id="'+esc(it.confirmation_id)+'" data-act="reject">拒绝</button></div>'+
+      '</div>';
+  }).join('');
+  box.querySelectorAll('button[data-id]').forEach(b=>b.addEventListener('click',()=>act(b.dataset.id,b.dataset.act)));
+}
+async function act(id,action){
+  $('#msg').textContent='提交中…';
+  const r=await fetch('/api/sim/confirm',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({confirmation_id:id,action:action,by:'老田'})});
+  const d=await r.json();
+  $('#msg').textContent=d.ok?('已'+ (action==='approve'?'批准':'拒绝') +'：'+(d.item&&d.item.status||'')):('失败：'+(d.error||''));
+  await load();
+}
+load();
+</script>
+</body>
+</html>

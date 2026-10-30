@@ -196,6 +196,7 @@ _MUTATION_POSTS = frozenset((
     "/api/project/register",  # K-ORG-190 项目线立案（pending_a0_confirm 暂存+审计）
     "/api/agent/update",      # K-ORG-190 Agent 属性/模型编辑（改 org.json+审计）
     "/api/agent/learn",       # K-ORG-190 学习环（LLM 提炼→knowledge jsonl+审计）
+    "/api/sim/confirm",       # WO-BOT-CONFIRM 人工确认（approve/reject；paper-only）
 ))
 
 # C1a（研发计划 v2）：GET 形式但触发后台动作/子进程的端点——比照变更类
@@ -2584,6 +2585,11 @@ color:#fff;font-size:13.5px;cursor:pointer}
                             f"{_WRITE_MAX_PER_MIN} 次"}, 429)
                 return
         try:
+            if path == "/api/sim/confirm":
+                # WO-BOT-CONFIRM：人工确认 approve/reject（paper-only，执行走 trading_bot_flow）
+                import sim_confirm
+                sim_confirm.handle_post(self)
+                return
             if path == "/chanlun-anno":
                 # K77 缠论图手工标注增删（body 已在 _chanlun_anno 读）
                 self._chanlun_anno(self.path.split("?", 1)[1]
@@ -4830,6 +4836,14 @@ color:#fff;font-size:13.5px;cursor:pointer}
             # WO-INV-PAPER-UI：量化部 paper 组合只读页（不接实盘）
             self._html_file(os.path.join(
                 os.path.dirname(os.path.abspath(__file__)), "quant_paper.html"))
+        elif path == "/api/sim/confirmations":
+            # WO-BOT-CONFIRM：盯盘触发→人工确认待办（paper-only）
+            import sim_confirm
+            self._json(sim_confirm.list_payload(self.path.split("status=")[-1]
+                                                if "status=" in self.path else "pending"))
+        elif path in ("/sim/confirm", "/sim_confirm"):
+            self._html_file(os.path.join(
+                os.path.dirname(os.path.abspath(__file__)), "sim_confirm.html"))
         elif path == "/api/devops":
             # K-STOCK-113 开发指挥台数据口：dev_events.jsonl 只读投影
             self._json(self._devops_data())
