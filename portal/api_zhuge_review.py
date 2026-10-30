@@ -75,6 +75,10 @@ def handle_post(handler) -> None:
 
 def handle_get(handler, path: str) -> None:
     if path == "/api/zhuge/review/status":
+        # P1 安全：status 也不得未登录可读（此前 8734 无 cookie 200）
+        if not _authorized(handler):
+            _json(handler, {"ok": False, "error": "unauthorized"}, 403)
+            return
         _json(handler, {"ok": True, **zhuge_review.status()}, 200)
         return
     if not zhuge_review.enabled():
