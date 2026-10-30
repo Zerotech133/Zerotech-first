@@ -6,6 +6,7 @@
   {
    "agent_id": "ZHAOYUN",
    "cn_name": "赵云",
+   "display_name": "赵云·治理",
    "role": "治理席（治理/审计/审批；不占编）",
    "llm_binding": "deepseek/deepseek-v4-pro",
    "llm_fallback": ["ollama/qwen3.5:9b"],

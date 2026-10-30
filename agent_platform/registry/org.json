@@ -3522,6 +3522,8 @@
         {
           "agent_id": "R1",
           "role_profile": "risk_aggressive_sentinel",
+          "cn_name": "甘宁",
+          "display_name": "甘宁·风控R1",
           "charter_detail": "激进风控哨=锦帆百骑劫营，险中求胜；激进线信号触发与越限警示",
           "llm_binding": "ollama/qwen3.5:9b",
           "tools": [
@@ -3562,6 +3564,8 @@
         {
           "agent_id": "R2",
           "role_profile": "risk_conservative_sentinel",
+          "cn_name": "赵云",
+          "display_name": "赵云·风控R2",
           "charter_detail": "保守风控哨=子龙一身是胆稳字当头；保守线止损与回撤守门",
           "llm_binding": "ollama/qwen3.5:9b",
           "tools": [
@@ -3602,6 +3606,8 @@
         {
           "agent_id": "R3",
           "role_profile": "risk_arbiter",
+          "cn_name": "陆逊",
+          "display_name": "陆逊·风控R3",
           "charter_detail": "风控仲裁=书生拜帅平衡诸将一锤定音；双线分歧裁决与拦截复盘归口（R3 事件风险蒸馏复盘线）",
           "llm_binding": "ollama/qwen3.5:9b",
           "tools": [
