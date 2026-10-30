@@ -233,7 +233,8 @@ function submitRecruit() {
     }
     const pl = env.plan;
     // 第二步：校验通过才投编制工单
-    fetch('/api/dispatch', { method:'POST', headers:{'Content-Type':'application/json'},
+    fetch('/api/zhaoyun/write-token').then(r => r.json()).then(j => { window.__DSH_TOKEN = (j && j.token) || ''; }).catch(() => {});
+    fetch('/api/dispatch', { method:'POST', headers:{'Content-Type':'application/json','X-DSH-Token': window.__DSH_TOKEN || ''},
       body: JSON.stringify({ type:'work', title:'编制申请：' + dept + ' · ' + name + '（' + aid + '）',
         attendees: [], note: '职责：' + duty + '；模型：' + model + '；理由：' + why }) })
     .then(r => r.json()).then(d => {

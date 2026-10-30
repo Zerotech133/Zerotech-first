@@ -436,7 +436,9 @@ function render(v) {
   $('foot-time').textContent = '生成于 ' + (v.generated_at || '—') + ' · 每 60s 自动刷新';
 }
 function load() {
-  fetch('/api/zhaoyun')
+  let WRITE_TOKEN = '';
+fetch('/api/zhaoyun/write-token').then((r) => r.json()).then((j) => { WRITE_TOKEN = (j && j.token) || ''; }).catch(() => {});
+fetch('/api/zhaoyun')
     .then((r) => r.json())
     .then((v) => {
       if (!v.ok) { showBanner('视图不可用：' + (v.error || 'unknown') + ' ' + (v.detail || '')); return; }
@@ -880,7 +882,7 @@ function repairTriage() {
 }
 function repairRun(id) {
   fetch('/api/zhaoyun/repair/run', { method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'X-DSH-Token': WRITE_TOKEN },
     body: JSON.stringify({ batch_id: id }) })
     .then((r) => r.json()).then((j) => {
       if (j.ok) alert('批次验证通过：' + id);
@@ -958,7 +960,7 @@ function memSearch() {
 }
 function memIngest() {
   fetch('/api/zhaoyun/memory/ingest', { method: 'POST',
-    headers: { 'Content-Type': 'application/json' }, body: '{}' })
+    headers: { 'Content-Type': 'application/json', 'X-DSH-Token': WRITE_TOKEN }, body: '{}' })
     .then((r) => r.json()).then((j) => {
       if (j.ok) {
         alert('摄取完成：semantic+' + ((j.experience || {}).added || 0) +
@@ -984,7 +986,7 @@ function runEvals() {
   const btn = box.querySelector('button');
   if (btn) { btn.disabled = true; btn.textContent = '运行中…'; }
   fetch('/api/zhaoyun/evals/run', { method: 'POST',
-    headers: { 'Content-Type': 'application/json' }, body: '{}' })
+    headers: { 'Content-Type': 'application/json', 'X-DSH-Token': WRITE_TOKEN }, body: '{}' })
     .then((r) => r.json()).then((j) => {
       if (j.ok) {
         alert('评估完成：' + ((j.session || {}).passed) + '/' + ((j.session || {}).total) + ' 通过');
@@ -1008,7 +1010,7 @@ function approveRequest(id, decision, signer) {
   const word = decision === 'approve' ? '批准' : '拒绝';
   if (!confirm('确认' + word + '请求 ' + id + '？')) return;
   fetch('/api/zhaoyun/approve', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'X-DSH-Token': WRITE_TOKEN },
     body: JSON.stringify({ id: id, decision: decision, signer: signer })
   }).then((r) => r.json()).then((j) => {
     if (j.ok) {
@@ -1019,7 +1021,7 @@ function approveRequest(id, decision, signer) {
 }
 function submitRequest(kind, payload, reason, label) {
   fetch('/api/zhaoyun/request', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'X-DSH-Token': WRITE_TOKEN },
     body: JSON.stringify({ kind: kind, payload: payload, reason: reason })
   }).then((r) => r.json()).then((j) => {
     if (j.ok) { alert('已登记请求 ' + j.request.id + '（待老田审批，不会自动生效）'); loadDrill(); }
