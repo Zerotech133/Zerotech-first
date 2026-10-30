@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 13:50",
+ "generated": "2026-10-30 13:53",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -311,13 +311,13 @@
    "project": "quant"
   },
   {
-   "id": "WO-BOT-FLOW-20261030",
-   "desc": "按老田口径重梳交易机器人流程：ACAD1司马徽选股入池→D1投研报告→盯盘池内异动通知→人工确认→TR1周瑜执行；更新 orchestration/契约/报告",
+   "id": "K-STOCK-ANALYSIS-P0R-20261030",
+   "desc": "P0R 事件驱动+估值分位组合：事件研究(按类别超额/t值)+事件×估值组合回测(2019-23训练/24-26验证)",
    "status": "doing",
    "owner": "DSH-Lead",
-   "branch": "task/WO-BOT-FLOW-20261030",
-   "created": "2026-10-30 13:49:56",
-   "project": "portal"
+   "branch": "task/K-STOCK-ANALYSIS-P0R-20261030",
+   "created": "2026-10-30 13:53:28",
+   "project": "quant"
   }
  ],
  "coder_traces": [
