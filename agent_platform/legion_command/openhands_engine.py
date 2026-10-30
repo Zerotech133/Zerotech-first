@@ -28,7 +28,28 @@ except ImportError:  # 作为包导入时
 
 # 方案 A 第二阶段：默认走 Docker sandbox（Linux 容器内执行工具，绕开 Windows
 # FileEditor 挂起；worktree 通过 C:\legion-worktrees -> /workspaces 绑定挂载）。
-BASE_URL = os.environ.get("OPENHANDS_SANDBOX_URL", "http://127.0.0.1:8771").rstrip("/")
+def _resolve_sandbox_base() -> str:
+    explicit = str(os.environ.get("OPENHANDS_SANDBOX_URL") or "").strip()
+    if explicit:
+        return explicit.rstrip("/")
+    # 默认 loopback（旧）；若不可达，尝试 Docker 容器 IP（B2 去 host publish）
+    import subprocess
+    try:
+        r = subprocess.run(
+            ["docker", "inspect", "-f",
+             "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}",
+             SANDBOX_CONTAINER],
+            capture_output=True, text=True, timeout=5,
+        )
+        ip = (r.stdout or "").strip()
+        if r.returncode == 0 and ip:
+            return "http://%s:8000" % ip
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return "http://127.0.0.1:8771"
+
+
+BASE_URL = _resolve_sandbox_base()
 HOST_BASE_URL = os.environ.get("OPENHANDS_HOST_URL", "http://127.0.0.1:8770").rstrip("/")
 KEY_FILE = Path(os.environ.get("OPENHANDS_KEY_FILE", r"C:\项目\legion-openhands\.session_key"))
 # 容器内访问宿主机网关；容器外测试可覆盖为 127.0.0.1。
