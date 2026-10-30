@@ -39,6 +39,7 @@ import time
 import urllib.request
 from datetime import datetime, timedelta, timezone
 import logging
+from tools.safe_urlopen import safe_urlopen
 
 if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf8"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -357,7 +358,7 @@ def _llm(prompt):
         headers={"Content-Type": "application/json"},
         method="POST",
     )
-    with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+    with safe_safe_urlopen(req, timeout=TIMEOUT) as resp:
         return json.loads(resp.read()).get("message", {}).get("content", "")
 
 

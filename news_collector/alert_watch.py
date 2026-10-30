@@ -28,6 +28,7 @@ import urllib.request
 
 import trading_cal  # 同目录模块：脚本运行时脚本目录在 sys.path；测试亦插入 HERE
 import logging
+from tools.safe_urlopen import safe_urlopen
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 STATION = os.path.dirname(HERE)
@@ -172,7 +173,7 @@ def main():
         return 0
     today = time.strftime("%Y-%m-%d")
     try:
-        with urllib.request.urlopen(ALERTS_URL, timeout=90) as r:
+        with safe_safe_urlopen(ALERTS_URL, timeout=90) as r:
             res = json.loads(r.read().decode("utf-8"))
     except Exception as e:
         print("ALERT_WATCH_WARN portal fetch %s" % str(e)[:100])

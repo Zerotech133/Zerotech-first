@@ -38,6 +38,7 @@ import time
 import urllib.request
 from datetime import datetime, timedelta, timezone
 import logging
+from tools.safe_urlopen import safe_urlopen
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 STATION = os.path.dirname(HERE)
@@ -316,7 +317,7 @@ def _sub_stock_report(sub, mode):
         return None
     url = "%s/api/analyst-report?c=%s" % (PORTAL_API, code)
     try:
-        with urllib.request.urlopen(url, timeout=90) as r:
+        with safe_safe_urlopen(url, timeout=90) as r:
             rep = json.loads(r.read().decode("utf-8"))
     except Exception as e:
         return (
@@ -503,7 +504,7 @@ def _fresh_time(value, minutes=15):
 def _sub_alert_signal(sub, mode):
     """只展示有可信来源的聚合速览变化，不将卡片计数称作买卖点。"""
     try:
-        with urllib.request.urlopen(ALERT_URL, timeout=90) as r:
+        with safe_safe_urlopen(ALERT_URL, timeout=90) as r:
             res = json.loads(r.read().decode("utf-8"))
     except Exception:
         return None

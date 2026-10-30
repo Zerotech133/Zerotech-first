@@ -40,6 +40,7 @@ REPO = HERE.parent
 sys.path.insert(0, str(REPO))
 
 import xq_classify as xq  # noqa: E402
+from tools.safe_urlopen import safe_urlopen
 
 DB_PATH = xq.DB_PATH
 DEFAULT_OUT = (
@@ -176,7 +177,7 @@ def http_sender(url: str, payload: dict, timeout: float) -> dict:
         data=json.dumps(payload).encode("utf-8"),
         headers={"Content-Type": "application/json"},
     )
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
+    with safe_safe_urlopen(req, timeout=timeout) as resp:
         return json.loads(resp.read())
 
 
