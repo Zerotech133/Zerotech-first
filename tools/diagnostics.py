@@ -29,9 +29,13 @@ import socket
 import subprocess
 import sys
 import time
-import urllib.request
 import zipfile
 from datetime import datetime
+
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from tools.safe_urlopen import safe_urlopen
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_OUT = os.path.join(REPO, "agent_platform", "data", "dev", "diagnostics")
@@ -96,7 +100,7 @@ def probe_port(port, timeout=0.3):
 def probe_http(url, timeout=3):
     t0 = time.time()
     try:
-        with urllib.request.urlopen(url, timeout=timeout) as r:
+        with safe_urlopen(url, timeout=timeout) as r:
             body = r.read(2048)
             return {"url": url, "status": r.status, "ms": round((time.time() - t0) * 1000, 1),
                     "bytes_sample": len(body)}

@@ -24,6 +24,11 @@ import urllib.request
 from datetime import datetime, timedelta
 from pathlib import Path
 
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from tools.safe_urlopen import safe_urlopen
+
 ROOT = Path(r"C:\项目\老田的AI助手")
 NEWS_DB = ROOT / "news_collector" / "news.db"
 UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
@@ -35,7 +40,7 @@ def fetch_page(page: int, size: int = 100) -> list[dict]:
               "dire": "f", "dpc": 1, "type": 0}
     url = FEED + "?" + urllib.parse.urlencode(params)
     req = urllib.request.Request(url, headers=UA)
-    with urllib.request.urlopen(req, timeout=25) as r:
+    with safe_urlopen(req, timeout=25) as r:
         d = json.loads(r.read().decode("utf-8", "replace"))
     return (((d.get("result") or {}).get("data") or {}).get("feed") or {}).get("list") or []
 

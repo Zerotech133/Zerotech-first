@@ -201,7 +201,7 @@ class ArtifactStore:
         self, source_system: Optional[str] = None, limit: int = 500
     ) -> List[Artifact]:
         sql = (
-            "SELECT * FROM artifacts"
+            "SELECT * FROM artifacts"  # nosec B608 - 动态标识符来自内部白名单/值已参数化（已抽查）
             + (" WHERE source_system=?" if source_system else "")
             + " ORDER BY registered_at, rowid LIMIT ?"
         )

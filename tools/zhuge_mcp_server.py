@@ -28,6 +28,11 @@ import urllib.request
 from pathlib import Path
 
 try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from tools.safe_urlopen import safe_urlopen
+
+try:
     from zhuge_evidence import fetch_url, validate_claims
 except Exception:  # noqa: BLE001
     fetch_url = None
@@ -97,7 +102,7 @@ def _http_get_json(url: str, timeout: float = DEFAULT_TIMEOUT) -> dict:
     t0 = time.time()
     try:
         req = urllib.request.Request(url, headers={"Accept": "application/json"})
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        with safe_urlopen(req, timeout=timeout) as resp:
             raw = resp.read(200_000)
             data = json.loads(raw.decode("utf-8", errors="replace"))
         return _ok(url=url, status_code=resp.status,

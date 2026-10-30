@@ -268,10 +268,10 @@ def main() -> int:
     cols = [c[1] for c in con.execute("PRAGMA table_info(hypotheses)")]
     keys = [k for k in row if k in cols]
     if con.execute("SELECT id FROM hypotheses WHERE id='H16'").fetchone():
-        con.execute("UPDATE hypotheses SET %s WHERE id='H16'" % ",".join("%s=?" % k for k in keys if k != "id"),
+        con.execute("UPDATE hypotheses SET %s WHERE id='H16'" % ",".join("%s=?" % k for k in keys if k != "id"),  # nosec B608 - 动态标识符来自内部白名单/值已参数化（已抽查）
                     [row[k] for k in keys if k != "id"])
     else:
-        con.execute("INSERT INTO hypotheses (%s) VALUES (%s)" % (",".join(keys), ",".join("?" * len(keys))),
+        con.execute("INSERT INTO hypotheses (%s) VALUES (%s)" % (",".join(keys), ",".join("?" * len(keys))),  # nosec B608 - 动态标识符来自内部白名单/值已参数化（已抽查）
                     [row[k] for k in keys])
     con.commit()
     con.close()

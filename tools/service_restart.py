@@ -17,9 +17,13 @@ import argparse
 import json
 import subprocess
 import time
-import urllib.request
 from urllib.parse import urlsplit
 from pathlib import Path
+
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from tools.safe_urlopen import safe_urlopen
 
 HEALTH = "http://127.0.0.1:8796/api/zhaoyun"
 FLAG = Path(r"C:\Temp\LEGION_8796_RESTART.flag")
@@ -39,7 +43,7 @@ def probe_url(base: str, probe: str) -> str:
 
 def health(url: str = HEALTH, timeout: float = 5) -> dict:
     try:
-        with urllib.request.urlopen(url, timeout=timeout) as r:
+        with safe_urlopen(url, timeout=timeout) as r:
             body = r.read(400).decode("utf-8", errors="replace")
             return {"ok": 200 <= int(getattr(r, "status", 0)) < 300,
                     "status": getattr(r, "status", None), "body": body[:200]}

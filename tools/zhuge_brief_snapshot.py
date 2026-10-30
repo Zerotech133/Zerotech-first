@@ -14,11 +14,15 @@ import argparse
 import json
 import sys
 import time
-import urllib.request
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _repo_paths import repo_root  # noqa: E402
+
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from tools.safe_urlopen import safe_urlopen
 
 REPO = repo_root(Path(__file__))
 DEFAULT_URL = "http://127.0.0.1:8091/api/zhuge/brief"
@@ -28,7 +32,7 @@ DEFAULT_OUT = REPO / "work" / "seat_brief_zhuge"
 def fetch(url: str, timeout: int = 30) -> dict:
     """只读拉取本机接口；失败如实返回 ok=False，不抛穿。"""
     try:
-        with urllib.request.urlopen(url, timeout=timeout) as resp:
+        with safe_urlopen(url, timeout=timeout) as resp:
             raw = resp.read().decode("utf-8", "replace")
             return {"ok": True, "http": resp.status, "payload": json.loads(raw)}
     except Exception as exc:  # noqa: BLE001

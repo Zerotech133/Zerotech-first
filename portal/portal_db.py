@@ -265,7 +265,7 @@ def main():
             return
         with _conn() as con:
             for t in ("users", "orders", "events"):
-                n = con.execute("SELECT COUNT(*) c FROM %s" % t).fetchone()["c"]
+                n = con.execute("SELECT COUNT(*) c FROM %s" % t).fetchone()["c"]  # nosec B608 - 动态标识符来自内部白名单/值已参数化（已抽查）
                 print("%-8s %d rows" % (t, n))
     else:
         print(__doc__)

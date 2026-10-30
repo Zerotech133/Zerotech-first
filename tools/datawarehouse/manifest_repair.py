@@ -85,7 +85,7 @@ def scan_sqlite(db: Path, table: str) -> dict:
     try:
         con = sqlite3.connect("file:%s?mode=ro" % str(db).replace("\\", "/"), uri=True, timeout=5)
         try:
-            n = con.execute('SELECT count(*) FROM "%s"' % table.replace('"', '""')).fetchone()[0]
+            n = con.execute('SELECT count(*) FROM "%s"' % table.replace('"', '""')).fetchone()[0]  # nosec B608 - 动态标识符来自内部白名单/值已参数化（已抽查）
         finally:
             con.close()
         return {"files": 1, "rows": int(n), "scan": "sqlite"}

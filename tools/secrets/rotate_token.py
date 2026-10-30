@@ -21,6 +21,11 @@ import sys
 from pathlib import Path
 import logging
 
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from tools.safe_urlopen import safe_urlopen
+
 HERE = Path(__file__).resolve()
 SECRETS_DIR = HERE.parent
 REPO = HERE.parents[2]
@@ -51,7 +56,7 @@ def validate_online(token: str, timeout: int = 20) -> tuple[bool, str]:
                        "params": {"exchange": "SSE"}, "fields": "cal_date"}).encode()
     req = urllib.request.Request(API, data=body, headers={"Content-Type": "application/json"})
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
+        with safe_urlopen(req, timeout=timeout) as r:
             d = json.loads(r.read().decode("utf-8", "replace"))
     except Exception as e:  # noqa: BLE001
         return False, "网络失败: " + type(e).__name__

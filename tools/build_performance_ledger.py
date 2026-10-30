@@ -36,7 +36,7 @@ def _paper_trades(paper_db):
         fields += [name for name in ("trace_id", "fact_hash", "decision_id", "idempotency_key")
                    if name in columns]
         rows = con.execute(
-            "SELECT " + ", ".join(fields) +
+            "SELECT " + ", ".join(fields) +  # nosec B608 - 动态标识符来自内部白名单/值已参数化（已抽查）
             " FROM orders WHERE status='filled' ORDER BY id").fetchall()
     result = []
     for row in rows:

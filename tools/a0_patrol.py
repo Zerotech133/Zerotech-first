@@ -22,6 +22,11 @@ sys.path.insert(0, str(ROOT / "tools"))
 from legion_pulse import heartbeat, recent
 import logging
 
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from tools.safe_urlopen import safe_urlopen
+
 ORG = ROOT / "agent_platform" / "registry" / "org.json"
 HR = ROOT / "agent_platform" / "hr"
 
@@ -113,7 +118,7 @@ def llm_brief(report: dict) -> str:
                            "options": {"num_predict": 60}}).encode()
         req = urllib.request.Request("http://127.0.0.1:11434/api/generate", data=body,
                                      headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=120) as r:
+        with safe_urlopen(req, timeout=120) as r:
             return json.loads(r.read())["response"].strip()[:80]
     except Exception as e:
         return f"(LLM 判读不可用: {type(e).__name__})"

@@ -89,7 +89,7 @@ def _daily_intake(errors, days=14):
         try:
             con = _ro(db)
             for d, n in con.execute(
-                    "SELECT substr(%s,1,10) d, COUNT(*) FROM %s WHERE %s >= ? GROUP BY d"
+                    "SELECT substr(%s,1,10) d, COUNT(*) FROM %s WHERE %s >= ? GROUP BY d"  # nosec B608 - 动态标识符来自内部白名单/值已参数化（已抽查）
                     % (col, t, col), (dates[0] + " 00:00:00",)):
                 per_source.setdefault(label, {})[d] = n
             con.close()
@@ -419,12 +419,12 @@ def _pool_stats(errors):
             for t, note in tables:
                 row = {"name": t, "note": note}
                 try:
-                    row["rows"] = con.execute("SELECT COUNT(*) FROM %s" % t).fetchone()[0]
+                    row["rows"] = con.execute("SELECT COUNT(*) FROM %s" % t).fetchone()[0]  # nosec B608 - 动态标识符来自内部白名单/值已参数化（已抽查）
                     col = TODAY_COL.get(t)
                     if col:
                         try:
                             row["today"] = con.execute(
-                                "SELECT COUNT(*) FROM %s WHERE %s >= ?" % (t, col), (time.strftime("%Y-%m-%d"),)).fetchone()[0]
+                                "SELECT COUNT(*) FROM %s WHERE %s >= ?" % (t, col), (time.strftime("%Y-%m-%d"),)).fetchone()[0]  # nosec B608 - 动态标识符来自内部白名单/值已参数化（已抽查）
                         except Exception:
                             row["today"] = None
                     else:

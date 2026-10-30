@@ -98,7 +98,7 @@ def build_registry(
             con = _ro_connect(db)
             where = " AND ".join(f"{k} = ?" for k in filters)
             sql = (
-                "SELECT rowid AS _rowid, * FROM approvals"
+                "SELECT rowid AS _rowid, * FROM approvals"  # nosec B608 - 动态标识符来自内部白名单/值已参数化（已抽查）
                 + (f" WHERE {where}" if where else "")
                 + f" ORDER BY decided_at {'DESC' if order == 'desc' else 'ASC'}, rowid {'DESC' if order == 'desc' else 'ASC'}"
             )

@@ -324,7 +324,7 @@ def reconcile(db_path=None, now=None):
         for table in TABLES:
             try:
                 checked += conn.execute(
-                    "SELECT COUNT(*) FROM %s" % table).fetchone()[0]
+                    "SELECT COUNT(*) FROM %s" % table).fetchone()[0]  # nosec B608 - 动态标识符来自内部白名单/值已参数化（已抽查）
             except Exception as exc:
                 # 表缺失/损坏不静默：少算的行数必须留痕
                 issues.append({

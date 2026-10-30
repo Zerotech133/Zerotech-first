@@ -24,6 +24,11 @@ from pathlib import Path
 import pyarrow as pa
 import pyarrow.parquet as pq
 
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from tools.safe_urlopen import safe_urlopen
+
 REPO = Path(r"C:\项目\老田的AI助手")
 DATA = REPO / "quant_backtest" / "data" / "tushare"
 OUT = REPO / "work" / "research"
@@ -42,7 +47,7 @@ def call(tok: str, api: str, params: dict, fields: str) -> dict:
     body = json.dumps({"api_name": api, "token": tok, "params": params, "fields": fields}).encode()
     req = urllib.request.Request("http://api.tushare.pro", data=body,
                                  headers={"Content-Type": "application/json"}, method="POST")
-    d = json.loads(urllib.request.urlopen(req, timeout=90).read().decode())
+    d = json.loads(safe_urlopen(req, timeout=90).read().decode())
     data = d.get("data") or {}
     return {"code": d.get("code"), "msg": (d.get("msg") or "")[:120],
             "fields": data.get("fields") or [], "items": data.get("items") or []}

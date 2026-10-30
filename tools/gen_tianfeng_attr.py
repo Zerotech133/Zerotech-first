@@ -11,7 +11,6 @@ import json
 import subprocess
 import sys
 import time
-import urllib.request
 from pathlib import Path
 
 sys.stdout.reconfigure(encoding="utf-8")
@@ -25,6 +24,11 @@ HOME = Path.home() / ".hermes" / "profiles" / "tianfeng"
 # 默认写 work/，不要覆盖 static/tianfeng.html（除非显式 TIANFENG_ATTR_OUT 指定）。
 import os  # noqa: E402
 import logging
+
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from tools.safe_urlopen import safe_urlopen
 
 OUT = Path(os.environ.get("TIANFENG_ATTR_OUT",
                           str(REPO / "work" / "tianfeng_attr_static.html")))
@@ -43,7 +47,7 @@ def load_json(path: Path, default):
 
 def http_health(url: str, timeout=3):
     try:
-        with urllib.request.urlopen(url, timeout=timeout) as r:
+        with safe_urlopen(url, timeout=timeout) as r:
             return r.status
     except Exception:
         return None

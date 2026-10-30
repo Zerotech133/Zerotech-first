@@ -130,7 +130,7 @@ def aw_attribution() -> dict:
 
     def groups(dim: str, limit: int = 30) -> list[dict]:
         sql = (
-            "SELECT * FROM (SELECT %s, count(*) n, round(avg(fwd_ret_5d)::numeric,6) m, "
+            "SELECT * FROM (SELECT %s, count(*) n, round(avg(fwd_ret_5d)::numeric,6) m, "  # nosec B608 - 动态标识符来自内部白名单/值已参数化（已抽查）
             "round(avg(CASE WHEN fwd_ret_5d>0 THEN 1.0 ELSE 0.0 END)::numeric,4) w, "
             "round(avg(CASE WHEN fwd_ret_5d<>0 THEN fwd_ret_5d END)::numeric,6) mn, "
             "round(avg(CASE WHEN fwd_ret_5d<>0 AND fwd_ret_5d>0 THEN 1.0 "

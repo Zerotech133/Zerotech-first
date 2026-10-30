@@ -20,11 +20,15 @@ import base64
 import hashlib
 import json
 import time
-import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
 import websocket
+
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from tools.safe_urlopen import safe_urlopen
 
 VIEWPORTS = (("desktop", 1440, 1200, False), ("mobile", 375, 900, True))
 
@@ -43,7 +47,7 @@ def main(argv=None) -> int:
     out = Path(args.out_dir)
     out.mkdir(parents=True, exist_ok=True)
 
-    tabs = json.load(urllib.request.urlopen(
+    tabs = json.load(safe_urlopen(
         "http://127.0.0.1:%d/json" % args.port))
     tab = next((t for t in tabs if t.get("type") == "page"
                 and t.get("url", "").startswith(args.url.split("?")[0])), None)

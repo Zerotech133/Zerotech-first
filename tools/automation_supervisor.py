@@ -16,8 +16,12 @@ import json
 import socket
 import sys
 import time
-import urllib.request
 from pathlib import Path
+
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from tools.safe_urlopen import safe_urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
 TASKS = ROOT / ".worktrees" / "tasks.json"
@@ -35,7 +39,7 @@ def _load(path, default=None):
 
 def _http(url, timeout=3):
     try:
-        with urllib.request.urlopen(url, timeout=timeout) as r:
+        with safe_urlopen(url, timeout=timeout) as r:
             return r.status
     except Exception as e:  # noqa: BLE001
         return "ERR:" + type(e).__name__

@@ -23,6 +23,11 @@ from datetime import datetime, timezone, timedelta
 from html.parser import HTMLParser
 import logging
 
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from tools.safe_urlopen import safe_urlopen
+
 USER_AGENT = "ZhugeCapability/0.1 (+read-only research; local)"
 MAX_BYTES = 400_000
 DEFAULT_MAX_CHARS = 4000
@@ -165,7 +170,7 @@ def fetch_url(url: str, max_chars: int = DEFAULT_MAX_CHARS, timeout: float = 10.
             "Accept": "text/html,application/xhtml+xml,text/plain;q=0.9,*/*;q=0.5",
             "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
         })
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        with safe_urlopen(req, timeout=timeout) as resp:
             raw = resp.read(MAX_BYTES)
             status = getattr(resp, "status", None)
             final_url = resp.geturl()

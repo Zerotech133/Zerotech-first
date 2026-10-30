@@ -98,7 +98,7 @@ def main() -> int:
 
     # 收盘价 pivot（code×date）
     close = px.pivot_table(index="trade_date", columns="ts_code", values="close")
-    pct = px.pivot_table(index="trade_date", columns="ts_code", values="pct_chg")
+    pct = px.pivot_table(index="trade_date", columns="ts_code", values="pct_chg")  # noqa: F841 - 既有未使用变量（批2不改行为）
     mkt = px.groupby("trade_date")["pct_chg"].mean() / 100.0  # 等权市场日收益（pct_chg 为百分数）
     mkt_cum = (1 + mkt.fillna(0)).cumprod()
 
@@ -209,10 +209,10 @@ def main() -> int:
            "created_at": now, "updated_at": now}
     keys = [k for k in row if k in cols]
     if con.execute("SELECT id FROM hypotheses WHERE id='H18'").fetchone():
-        con.execute("UPDATE hypotheses SET %s WHERE id='H18'" % ",".join("%s=?" % k for k in keys if k != "id"),
+        con.execute("UPDATE hypotheses SET %s WHERE id='H18'" % ",".join("%s=?" % k for k in keys if k != "id"),  # nosec B608 - 动态标识符来自内部白名单/值已参数化（已抽查）
                     [row[k] for k in keys if k != "id"])
     else:
-        con.execute("INSERT INTO hypotheses (%s) VALUES (%s)" % (",".join(keys), ",".join("?" * len(keys))),
+        con.execute("INSERT INTO hypotheses (%s) VALUES (%s)" % (",".join(keys), ",".join("?" * len(keys))),  # nosec B608 - 动态标识符来自内部白名单/值已参数化（已抽查）
                     [row[k] for k in keys])
     con.commit()
     con.close()

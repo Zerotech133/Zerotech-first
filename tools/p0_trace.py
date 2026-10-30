@@ -20,6 +20,11 @@ import os
 import time
 import urllib.request
 
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from tools.safe_urlopen import safe_urlopen
+
 DEFAULT_ENDPOINT = "http://127.0.0.1:8795/llm/chat"
 DEFAULT_PHOENIX = "http://127.0.0.1:6006/v1/traces"
 DEFAULT_SYSTEM = "你是诸葛亮（AI1），反向军师，零执行权。"
@@ -79,7 +84,7 @@ def http_chat(binding: str, system: str, user: str, endpoint: str = DEFAULT_ENDP
                                  headers={"Content-Type": "application/json; charset=utf-8"})
     t0 = time.time()
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        with safe_urlopen(req, timeout=timeout) as resp:
             payload = json.loads(resp.read().decode("utf-8"))
         return {"ok": bool(payload.get("ok")), "data": payload.get("data") or {},
                 "elapsed_ms": round((time.time() - t0) * 1000, 1),
