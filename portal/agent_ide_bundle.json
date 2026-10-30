@@ -9,8 +9,8 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 27,
-  "workorders_review": 9
+  "workorders_doing": 30,
+  "workorders_review": 8
  },
  "workorders": [
   {
@@ -329,13 +329,31 @@
    "project": "quant"
   },
   {
-   "id": "WO-BANDIT-BASELINE2-20261030",
-   "desc": "基线修正：bandit_baseline.json改计数格式 + wrapper加regression字段",
-   "status": "review",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-BANDIT-BASELINE2-20261030",
-   "created": "2026-10-30 12:36:50",
+   "id": "K-ORG-20261030-JEVSAFE",
+   "desc": "修复判读 2 个 P1：event_type 归一化 KeyError 整轮崩溃、resample 单票假高置信 0.8；补单条异常隔离",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-ORG-20261030-JEVSAFE",
+   "created": "2026-10-30 12:39:16",
    "project": "general"
+  },
+  {
+   "id": "WO-BANDIT-BASELINE-ENC-20261030",
+   "desc": "bandit基线编码修复：baseline json 转 ASCII 转义，避免Windows GBK读取失败；夜间复扫可用。",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-BANDIT-BASELINE-ENC-20261030",
+   "created": "2026-10-30 12:39:23",
+   "project": "quant"
+  },
+  {
+   "id": "K-STOCK-ANALYSIS-P0N-20261030",
+   "desc": "评级打分 v2：质量30/成长20/估值20/趋势15/事件15（100分制）+ 五维分解 + 评级分位映射",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-STOCK-ANALYSIS-P0N-20261030",
+   "created": "2026-10-30 12:39:44",
+   "project": "quant"
   }
  ],
  "coder_traces": [
@@ -7042,9 +7060,9 @@
      "status": "doing"
     },
     {
-     "id": "WO-BANDIT-BASELINE2-20261030",
-     "desc": "基线修正：bandit_baseline.json改计数格式 + wrapper加regression字段",
-     "status": "review"
+     "id": "WO-BANDIT-BASELINE-ENC-20261030",
+     "desc": "bandit基线编码修复：baseline json 转 ASCII 转义，避免Windows GBK读取失败；夜间复扫可用。",
+     "status": "doing"
     }
    ]
   }
