@@ -185,3 +185,11 @@ def test_callback_unmapped(subject):
     auth_oidc.callback(cb, "code=abc&state=" + state)
     assert cb.status == 403
     assert b"identity_not_mapped" in cb.wfile.getvalue()
+
+
+def test_safe_next_rejects_open_redirect_and_headers():
+    assert auth_oidc._safe_next("/os-board") == "/os-board"
+    assert auth_oidc._safe_next("/os-board?x=1") == "/os-board?x=1"
+    for bad in ("//evil.example", "/\\evil.example", "/\r\nSet-Cookie: x=1",
+                "http://evil.example/", "/\t/evil.example"):
+        assert auth_oidc._safe_next(bad) == "/os-entry", bad

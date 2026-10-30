@@ -41,7 +41,22 @@ def test_login_honors_next_redirect():
     html = (PORTAL / "login.html").read_text(encoding="utf-8")
     assert "URLSearchParams(location.search)" in html
     assert "location.replace(next)" in html
-    assert "cand.charAt(1) !== '/'" in html
+    assert "safeNext" in html
+    assert "u.origin !== location.origin" in html
+
+
+def test_login_public_link_not_protected():
+    html = (PORTAL / "login.html").read_text(encoding="utf-8")
+    assert 'href="/intel"' in html
+    assert 'href="/os-entry"' not in html
+
+
+def test_nginx_static_auth_bypass_redirects():
+    conf = (PORTAL / "nginx.conf").read_text(encoding="utf-8")
+    for name in ("os_entry", "os", "model_admin", "approvals"):
+        assert name in conf
+    assert "return 302 /os-entry;" in conf
+    assert "return 302 /os-board;" in conf
 
 
 def test_login_oidc_entry():

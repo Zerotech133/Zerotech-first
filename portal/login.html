@@ -44,7 +44,7 @@
       <label class="auth-field"><span>密码</span><input id="password" name="password" type="password" autocomplete="current-password" required></label>
       <div class="auth-actions">
         <button id="login-btn" class="ui-btn ui-btn--primary" type="submit">登录</button>
-        <a href="/os-entry">先看看工作台 →</a>
+        <a href="/intel">先看看情报台 →</a>
       </div>
     </form>
     <div id="oidc-entry" class="auth-oidc" hidden>
@@ -60,8 +60,17 @@
 (function () {
   'use strict';
   var form = document.getElementById('login-form');
+  function safeNext(raw) {
+    var cand = (raw || '').trim();
+    if (!cand || cand.charAt(0) !== '/' || cand.charAt(1) === '/' || /[\\\x00-\x1f\x7f]/.test(cand)) return '/os-entry';
+    try {
+      var u = new URL(cand, location.origin);
+      if (u.origin !== location.origin) return '/os-entry';
+      return u.pathname + u.search + u.hash;
+    } catch (e) { return '/os-entry'; }
+  }
   var next = '/os-entry';
-  try { var cand = new URLSearchParams(location.search).get('next') || ''; if (cand && cand.charAt(0) === '/' && cand.charAt(1) !== '/') next = cand; } catch (e) {}
+  try { next = safeNext(new URLSearchParams(location.search).get('next') || ''); } catch (e) {}
   var msg = document.getElementById('login-msg');
   var btn = document.getElementById('login-btn');
   function say(text, ok) { msg.textContent = text; msg.setAttribute('data-kind', ok ? 'ok' : 'err'); }

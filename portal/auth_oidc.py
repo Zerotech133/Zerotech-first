@@ -60,10 +60,19 @@ def _b64url(data: bytes) -> str:
 
 
 def _safe_next(value: str) -> str:
+    """只允许同源绝对路径；拒绝 //、反斜杠、控制字符、scheme/netloc。"""
     value = (value or "").strip()
-    if value.startswith("/") and not value.startswith("//") and "\\" not in value:
-        return value
-    return "/os-entry"
+    if not value.startswith("/") or value.startswith("//"):
+        return "/os-entry"
+    if any(ord(ch) < 0x20 or ord(ch) == 0x7F or ch == "\\" for ch in value):
+        return "/os-entry"
+    try:
+        parts = urllib.parse.urlsplit(value)
+    except ValueError:
+        return "/os-entry"
+    if parts.scheme or parts.netloc or parts.path.startswith("//"):
+        return "/os-entry"
+    return value
 
 
 def _load_credentials() -> None:
@@ -126,6 +135,8 @@ def _post_form(url: str, data: Dict[str, str]) -> Tuple[int, Any]:
 
 
 def _redirect(handler, url: str, set_cookie: str = "") -> None:
+    if not isinstance(url, str) or any(ch in url for ch in ("\r", "\n")):
+        url = "/os-entry"
     handler.send_response(302)
     handler.send_header("Location", url)
     if set_cookie:
