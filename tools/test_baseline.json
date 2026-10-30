@@ -5,7 +5,7 @@
     "flaky": [
       "portal/tests/test_minute_router_process_restart.py::test_minute_router_recovers_after_real_process_restart"
     ],
-    "_flaky_note": "2026-10-29 fast 门实测：test_minute_router_process_restart 整套运行失败 1 次，隔离单跑 2/2 通过（真实进程重启类，受并行负载时序影响）→ 时序 flaky，登记跟踪；后续考虑缩短重启等待或 mock 进程重启。 2026-10-30 P63：test_minute_router_isolated 真实进程重启用例在 fast 全量并发下失败 1 次、隔离单跑通过（4.1s）→ 登记 flaky 跟踪（与既有 test_minute_router_process_restart 同类）。 2026-10-30 P76：test_minute_router_isolated 全量 3/3 稳定失败，根因=用例顶部要求 api_backtest 未导入（设计上独立进程），全量套件其他测试先导入 → 假红；已改为全量环境自动子进程隔离重跑，并从 flaky 基线淘汰。test_minute_router_process_restart 今日复用探针 3/3 通过，保留观察（未满 7 轮）。"
+    "_flaky_note": "2026-10-29 fast 门实测：test_minute_router_process_restart 整套运行失败 1 次，隔离单跑 2/2 通过（真实进程重启类，受并行负载时序影响）→ 时序 flaky，登记跟踪；后续考虑缩短重启等待或 mock 进程重启。 2026-10-30 P63：test_minute_router_isolated 真实进程重启用例在 fast 全量并发下失败 1 次、隔离单跑通过（4.1s）→ 登记 flaky 跟踪（与既有 test_minute_router_process_restart 同类）。 2026-10-30 P76：test_minute_router_isolated 全量 3/3 稳定失败，根因=用例顶部要求 api_backtest 未导入（设计上独立进程），全量套件其他测试先导入 → 假红；已改为全量环境自动子进程隔离重跑，并从 flaky 基线淘汰。test_minute_router_process_restart 今日复用探针 3/3 通过，保留观察（未满 7 轮）。 2026-10-30 P80 最终复验：portal 7 轮探针 run3 复现 1 次（test_minute_router_process_restart，1/7 ≈14% 套件级复现率；其余 6 轮 0 失败，未登记失败 0）→ 仍为 flaky，保留跟踪；需连续 7 轮 0 复现才可淘汰。"
   },
   "k_stock/tests": {
     "known_failures": [],
