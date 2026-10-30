@@ -16,7 +16,7 @@ import auth_oidc
 
 RUNTIME_FILE = Path(os.environ.get(
     "OIDC_RUNTIME_FILE",
-    r"C:\aios\_vault\pocket-id\secrets\oidc_runtime.env",
+    r"C:\项目\_vault\pocket-id\secrets\oidc_runtime.env",
 ))
 
 

@@ -43,7 +43,7 @@ REDIRECT_URI = (os.environ.get("OIDC_REDIRECT_URI")
 SCOPES = (os.environ.get("OIDC_SCOPES") or "openid profile email").strip()
 CRED_FILE = Path(os.environ.get(
     "OIDC_CREDENTIALS_FILE",
-    r"C:\aios\_vault\pocket-id\secrets\zero_bound_client.env",
+    r"C:\项目\_vault\pocket-id\secrets\zero_bound_client.env",
 ))
 STATE_TTL = 600
 OIDC_STATE_COOKIE = "zb_oidc_state"
