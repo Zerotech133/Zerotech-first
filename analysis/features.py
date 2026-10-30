@@ -125,12 +125,23 @@ def build_features(snap):
                 val["hist_days"] = int(len(db))
         except Exception as exc:
             logging.getLogger(__name__).warning("silent-except %s: %s", "analysis/features.py", exc)
-    # 同业（申万一级成分股：sw_l1_member.con_code + sw_classify_l1.industry_name）
+    # 同业（P0Q：优先申万二级同行业成分——比一级更可比；回退申万一级/旧表）
     ind = snap.get("industry") or {}
     l1_name = ind.get("l1_name")
     val["industry"] = l1_name
+    val["industry_l2"] = ind.get("l2_name")
+    val["industry_source"] = ind.get("match")
     peer_codes = []
-    if l1_name:
+    l2_code = ind.get("l2_code")
+    if l2_code:
+        try:
+            from . import industry as sw_industry
+            peer_codes = sw_industry.l2_peers(l2_code, snap["code"])
+            if len(peer_codes) >= 3:
+                val["peer_level"] = "L2:" + str(ind.get("l2_name"))
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "analysis/features.py", exc)
+    if not peer_codes and l1_name:
         try:
             cls = pd.read_parquet(os.path.join(config.CURATED, "sw_classify_l1.parquet"))
             mem = pd.read_parquet(os.path.join(config.CURATED, "sw_l1_member.parquet"))
@@ -140,6 +151,7 @@ def build_features(snap):
                 mem = mem[mem["index_code"].isin(idx)]
                 mem = mem[mem.get("is_new", "Y") == "Y"] if "is_new" in mem.columns else mem
                 peer_codes = [c for c in mem["con_code"].tolist() if c != snap["code"]][:60]
+                val["peer_level"] = "L1:" + str(l1_name)
         except Exception as exc:
             logging.getLogger(__name__).warning("silent-except %s: %s", "analysis/features.py", exc)
     if peer_codes:
