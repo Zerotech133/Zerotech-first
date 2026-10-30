@@ -30,6 +30,7 @@ from typing import Optional
 
 IDENTITY = {
     "name": "赵云",
+    "display_name": "赵云·治理",
     "seat": "ZHAOYUN（治理席）",
     "role": "治理面：扫描/收口/健康卡/AI 归纳建议/判例沉淀",
     "compilation": "profile 角色，不占 org.json 编制（D5-C）",
