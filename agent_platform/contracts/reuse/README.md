@@ -10,6 +10,9 @@
 | 身份上下文 | `identity_context.schema.json` | `examples/identity_context.example.json` |
 | 对话会话 | `conversation.schema.json` | `examples/conversation.example.json` |
 | 选股输出 | `selection_contract.schema.json` | `examples/selection_contract.example.json` |
+| 登录会话 | `session_context.schema.json` | `examples/session_context.example.json` |
+| Token Exchange 请求 | `token_exchange_request.schema.json` | `examples/token_exchange_request.example.json` |
+| Token Exchange 响应 | `token_exchange_response.schema.json` | `examples/token_exchange_response.example.json` |
 
 ## 边界
 
@@ -17,7 +20,9 @@
 - `IdentityContext` 只描述调用者，不替代服务端 RBAC；
 - `Conversation` 禁止放 token/密码/密钥；
 - `SelectionContract` 的 `pool` 只是候选结果，不是交易指令；
-- 任何写操作仍回智策/菜鸟各自授权链路。
+- 任何写操作仍回智策/菜鸟各自授权链路；
+- SessionContext / Token Exchange 是**认证面**，与只读 BFF 分离；access_token 只回受信 BFF，不进浏览器 localStorage；
+- `identity_context` 中的 roles/permissions 是描述，不是授权。
 
 ## 来源映射
 
@@ -30,5 +35,5 @@
 ## 校验
 
 ```bash
-python -m pytest portal/tests/test_zhice_bff_contracts.py -q
+python -m pytest portal/tests/test_zhice_bff_contracts.py portal/tests/test_auth_contracts.py -q
 ```

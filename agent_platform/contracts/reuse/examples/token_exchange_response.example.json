@@ -1,0 +1,15 @@
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIs...example.access.token...",
+  "issued_token_type": "urn:ietf:params:oauth:token-type:access_token",
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "scope": "quant.readonly research.readonly",
+  "identity_context": {
+    "sub": "zero_bound:owner",
+    "actor_type": "member",
+    "source": "zero_bound",
+    "roles": ["ADMIN"],
+    "permissions": ["view", "research", "trade"],
+    "owner_scope": "global"
+  }
+}

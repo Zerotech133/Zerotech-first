@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://zerobound.local/contracts/token_exchange_request.schema.json",
+  "title": "TokenExchangeRequest",
+  "description": "RFC 8693 token exchange 请求（零界 auth-gateway）；不传明文密码。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["grant_type", "subject_token", "subject_token_type", "audience"],
+  "properties": {
+    "grant_type": {"const": "urn:ietf:params:oauth:grant-type:token-exchange"},
+    "subject_token": {"type": "string", "minLength": 16, "maxLength": 16384},
+    "subject_token_type": {
+      "type": "string",
+      "enum": [
+        "urn:ietf:params:oauth:token-type:id_token",
+        "urn:ietf:params:oauth:token-type:access_token",
+        "urn:ietf:params:oauth:token-type:jwt"
+      ]
+    },
+    "requested_token_type": {
+      "type": "string",
+      "enum": ["urn:ietf:params:oauth:token-type:access_token"]
+    },
+    "audience": {"type": "string", "minLength": 1, "maxLength": 128, "description": "如 zero_bound / zhice"},
+    "scope": {"type": "string", "maxLength": 512},
+    "actor_token": {"type": "string", "maxLength": 16384},
+    "actor_token_type": {"type": "string", "maxLength": 128},
+    "client_id": {"type": "string", "maxLength": 128}
+  }
+}
