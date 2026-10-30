@@ -1,4 +1,4 @@
-#requires -Version 5.1
+﻿#requires -Version 5.1
 <#
 .SYNOPSIS
   军团 Agent IDE · 独立形态启动器（start/stop/status/app）
