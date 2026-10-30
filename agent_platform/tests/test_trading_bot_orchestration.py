@@ -38,9 +38,13 @@ def test_watch_layer_exists():
     d = _j(REG)
     assert d["watch_layer"]["business_role"].startswith("WA1")
     assert "WATCH_TOWER" in d["watch_layer"]["middle_platform"]
-    projects = {p["project_id"] for p in _j(PROJECTS)["projects"]}
+    projects = {p["project_id"]: p for p in _j(PROJECTS)["projects"]}
     assert d["watch_layer"]["engineering_project"].startswith("watchbot")
     assert "watchbot" in projects
+    # 2026-10-30 检查结论：三层均为离线契约/仅登记，实时入口未启用
+    assert projects["watchbot"]["runtime_status"] == "offline_contract"
+    assert projects["watchbot"]["live_entry"] is False
+    assert d["watch_runtime"]["enabled_live"] is False
 
 
 def test_human_gate_present():
