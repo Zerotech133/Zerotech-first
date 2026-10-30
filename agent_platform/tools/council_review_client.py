@@ -11,13 +11,6 @@ POST /api/chat/start → GET /api/chat/stream（SSE）。
 
 from __future__ import annotations
 
-try:  # Phase B1: 8787 密码认证后自动带 hermes_session
-    import sys as _sys
-    from pathlib import Path as _P
-    _sys.path.insert(0, str(_P(__file__).resolve().parents[2]))
-    from agent_platform.legion_command.hermes_auth import auth_urlopen as safe_urlopen  # noqa: E402
-except Exception:  # noqa: BLE001
-    pass
 
 
 import argparse
@@ -34,6 +27,15 @@ try:
     from safe_urlopen import safe_urlopen
 except ImportError:  # 作为包/仓库根导入时
     from tools.safe_urlopen import safe_urlopen
+
+
+try:  # Phase B1: 8787 密码认证后自动带 hermes_session
+    import sys as _sys
+    from pathlib import Path as _P
+    _sys.path.insert(0, str(_P(__file__).resolve().parents[2]))
+    from agent_platform.legion_command.hermes_auth import auth_urlopen as safe_urlopen  # noqa: E402
+except Exception:  # noqa: BLE001
+    pass
 
 BASE = "http://127.0.0.1:8787"
 TIMEOUT_START = 120
