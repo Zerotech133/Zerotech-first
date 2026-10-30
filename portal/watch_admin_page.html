@@ -275,6 +275,22 @@ footer{margin-top:34px;padding-top:14px;border-top:1px solid var(--line);font-si
 
 <!-- PAGE-SHELL-GEN:v2 -->
 <link rel="stylesheet" href="/static/tokens.css" data-page-shell="1">
+<style data-consistency="2026-10-30">
+  /* WO-UI-OPS：把 watch_admin 自定义 navy/cyan 映射为全站 tokens */
+  :root{
+    --navy:var(--bg-page); --navy2:var(--bg-surface); --navy3:var(--bg-raised);
+    --cyan:var(--accent); --cyan-d:var(--blu-600);
+    --amber:var(--color-warn); --amber-d:var(--color-warn);
+    --ink:var(--text); --sub:var(--text-dim); --line:var(--border);
+    --ok:var(--color-ok); --wait:var(--color-warn); --no:var(--color-err);
+    --chip:var(--bg-raised);
+  }
+  body{background:var(--bg-page);color:var(--text)}
+  header{border-bottom-color:var(--border)}
+  .zone,.card{background:var(--bg-surface)}
+  .toolbar select{background:var(--bg-raised);color:var(--text)}
+  .toolbar .btn{background:var(--blu-600);color:#fff}
+</style>
 <link rel="stylesheet" href="/static/ui/ui.css" data-page-shell="1">
 <script defer src="/static/ui/ui.js" data-page-shell="1"></script>
 </body>
