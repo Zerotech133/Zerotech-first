@@ -27,10 +27,12 @@
       empty.value = "";
       empty.textContent = "不指定工单";
       taskSel.appendChild(empty);
-      rows.forEach(function (t) {
+      rows.slice().sort(function (a, b) { return Number(b.exists) - Number(a.exists); }).forEach(function (t) {
         const o = document.createElement("option");
         o.value = t.task;
-        o.textContent = t.task + " · " + (t.project || "-") + " · " + (t.desc || "");
+        o.dataset.exists = t.exists ? "1" : "0";
+        o.textContent = t.task + " · " + (t.status || "-") + " · [" +
+          (t.exists ? "复用已有" : "将新建 worktree") + "] · " + (t.desc || "");
         taskSel.appendChild(o);
       });
     } catch (_) {}
@@ -54,6 +56,10 @@
   async function runA0(text) {
     const ta = document.getElementById("msg");
     const task = taskSel ? String(taskSel.value || "") : "";
+    if (task && taskSel && taskSel.selectedOptions && taskSel.selectedOptions[0] &&
+        taskSel.selectedOptions[0].dataset.exists === "0") {
+      if (!window.confirm("工单 " + task + " 当前没有 worktree，将新建 task/" + task + "，确认继续？")) return;
+    }
     if (ta) {
       ta.value = "";
       ta.dispatchEvent(new Event("input", { bubbles: true }));
