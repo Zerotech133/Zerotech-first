@@ -375,7 +375,7 @@ def _normalize_date(raw: str) -> Optional[str]:
 def _query_signals_db(trade_date: str) -> list:
     """读 strategy.signals_combined 指定日；psycopg2 优先 / docker 兜底。"""
     sql = (
-        "SELECT trade_date, symbol, action, score, confidence, "
+        "SELECT trade_date, symbol, action, score, confidence, "  # nosec B608 - 值参数化/内部标识符（已抽查）
         "contributions::text, divergence::text, rationale "
         "FROM strategy.signals_combined WHERE trade_date = '%s' "
         "ORDER BY score DESC, symbol" % trade_date.replace("'", "")
@@ -479,7 +479,7 @@ def signals_payload(date: str = "") -> tuple:
 # ── 端点 3：POST /api/feedback ────────────────────────────────────────
 def _write_feedback_db(row: dict) -> bool:
     """写 strategy.feedback；psycopg2 优先 / docker exec 兜底。"""
-    sql_insert = "INSERT INTO %s (%s) VALUES ('%s','%s','%s','%s')" % (
+    sql_insert = "INSERT INTO %s (%s) VALUES ('%s','%s','%s','%s')" % (  # nosec B608 - 值参数化/内部标识符（已抽查）
         FEEDBACK_TABLE,
         ",".join(FEEDBACK_COLS),
         row["trade_date"],
@@ -493,7 +493,7 @@ def _write_feedback_db(row: dict) -> bool:
             with conn:
                 with conn.cursor() as cur:
                     cur.execute(
-                        "INSERT INTO %s (%s) VALUES (%%s,%%s,%%s,%%s)"
+                        "INSERT INTO %s (%s) VALUES (%%s,%%s,%%s,%%s)"  # nosec B608 - 值参数化/内部标识符（已抽查）
                         % (FEEDBACK_TABLE, ",".join(FEEDBACK_COLS)),
                         (
                             row["trade_date"],

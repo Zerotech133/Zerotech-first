@@ -39,7 +39,7 @@ def _ta_id(seat_name, ts_code, trade_date, side):
 
     格式: ta:{md5_seat[:8]}:{ts_code}:{trade_date}:{side}
     """
-    h = hashlib.md5(seat_name.encode("utf-8")).hexdigest()[:8]
+    h = hashlib.md5(seat_name.encode("utf-8"), usedforsecurity=False).hexdigest()[:8]
     return f"ta:{h}:{ts_code}:{trade_date}:{side}"
 
 

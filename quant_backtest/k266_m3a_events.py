@@ -107,7 +107,7 @@ for ts, r, e in events:
     st[s_how] += 1
     st[o_how] += 1
     key = (s_sec or s_raw, o_sec or o_raw, e.get("rel") or "", r.get("direction") or "")
-    eid = hashlib.md5(("|".join(map(str, key))).encode("utf-8")).hexdigest()[:12]
+    eid = hashlib.md5(("|".join(map(str, key))).encode("utf-8"), usedforsecurity=False).hexdigest()[:12]
     b = buckets.get(key)
     if b and ts - b["ts_last"] <= timedelta(hours=1):
         b["n"] += 1

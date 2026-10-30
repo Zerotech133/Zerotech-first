@@ -201,7 +201,7 @@ class MemoryStore:
         if not limit:
             return []
         rows = self._conn.execute(
-            "SELECT l.*, e.event_json FROM lessons l JOIN events e ON e.event_id=l.event_id WHERE "
+            "SELECT l.*, e.event_json FROM lessons l JOIN events e ON e.event_id=l.event_id WHERE "  # nosec B608 - 值参数化/内部标识符（已抽查）
             + self._available_sql() + " AND e.environment=? ORDER BY l.available_at DESC, l.lesson_id ASC",
             (instant, instant, instant, query["environment"]),
         )
@@ -230,7 +230,7 @@ class MemoryStore:
         instant = normalize_time(as_of) if as_of is not None else utc_now()
         with self._transaction(write=False):
             def count(table):
-                return self._conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+                return self._conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]  # nosec B608 - 值参数化/内部标识符（已抽查）
 
             result = {
                 "events": count("events"),
@@ -238,7 +238,7 @@ class MemoryStore:
                 "events_by_environment": dict(self._conn.execute("SELECT environment, COUNT(*) FROM events GROUP BY environment ORDER BY environment")),
                 "lessons": count("lessons"),
                 "recallable_lessons": self._conn.execute(
-                    "SELECT COUNT(*) FROM lessons l JOIN events e ON e.event_id=l.event_id WHERE " + self._available_sql(),
+                    "SELECT COUNT(*) FROM lessons l JOIN events e ON e.event_id=l.event_id WHERE " + self._available_sql(),  # nosec B608 - 值参数化/内部标识符（已抽查）
                     (instant, instant, instant),
                 ).fetchone()[0],
                 "import_errors": count("import_errors"),

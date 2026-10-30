@@ -168,7 +168,7 @@ def _log(msg):
 
 def trial_id(strategy, config_fingerprint):
     raw = "%s|%s" % (strategy, config_fingerprint)
-    return hashlib.sha1(raw.encode("utf-8")).hexdigest()[:16]
+    return hashlib.sha1(raw.encode("utf-8"), usedforsecurity=False).hexdigest()[:16]
 
 
 def _acquire_lock(timeout=30):

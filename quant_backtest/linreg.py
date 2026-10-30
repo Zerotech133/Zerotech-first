@@ -208,7 +208,7 @@ class JobRun:
         if not self._conn:
             return None
         payload = json.dumps(columns, ensure_ascii=False, sort_keys=True)
-        h = hashlib.sha1(payload.encode("utf-8")).hexdigest()
+        h = hashlib.sha1(payload.encode("utf-8"), usedforsecurity=False).hexdigest()
 
         def _do():
             row = self._q(

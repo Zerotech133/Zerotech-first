@@ -213,7 +213,7 @@ def guard_alert(
     text = "\n".join(lines)
     key = (
         "guard_"
-        + hashlib.sha1(("%s|%s" % (task, reason)).encode("utf-8")).hexdigest()[:16]
+        + hashlib.sha1(("%s|%s" % (task, reason)).encode("utf-8"), usedforsecurity=False).hexdigest()[:16]
     )
     return alert_once(key, text, send=send, state_path=state_path, now=now)
 

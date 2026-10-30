@@ -156,7 +156,7 @@ def get_tat(app_id=None, app_secret=None, *, use_cache=True):
         headers={"Content-Type": "application/json"},
     )
     try:
-        with safe_safe_urlopen(req, timeout=15) as r:
+        with safe_urlopen(req, timeout=15) as r:
             tok = json.loads(r.read().decode("utf-8")).get("tenant_access_token")
     except Exception as e:
         # 2026-10-16 审计：token 获取失败原全静默（调用方只见
@@ -327,7 +327,7 @@ def _hub_send(
             data=body,
             headers={"Content-Type": "application/json", "X-Push-Hub-Key": key},
         )
-        with safe_safe_urlopen(rq, timeout=timeout) as r:
+        with safe_urlopen(rq, timeout=timeout) as r:
             resp = json.loads(r.read().decode("utf-8"))
         if resp.get("ok"):
             mid = resp.get("message_id")
@@ -501,7 +501,7 @@ def _agent_webhook_send(
                 "X-Push-From": "hub-gate-agent-dispatch",
             },
         )
-        with safe_safe_urlopen(rq, timeout=15) as r:
+        with safe_urlopen(rq, timeout=15) as r:
             resp = json.loads(r.read().decode("utf-8"))
         ok = (
             bool(resp.get("ok"))
@@ -720,7 +720,7 @@ def verify_message(message_id, app_id=None, app_secret=None):
             OPEN + "/im/v1/messages/" + urllib.parse.quote(str(message_id), safe=""),
             headers={"Authorization": "Bearer " + tok},
         )
-        with safe_safe_urlopen(rq, timeout=5) as r:
+        with safe_urlopen(rq, timeout=5) as r:
             resp = json.loads(r.read().decode("utf-8"))
         return resp.get("code") == 0
     except Exception:
@@ -761,7 +761,7 @@ def upload_image(
         },
     )
     try:
-        with safe_safe_urlopen(req, timeout=60) as r:
+        with safe_urlopen(req, timeout=60) as r:
             resp = json.loads(r.read().decode("utf-8"))
         if resp.get("code") == 0:
             return (resp.get("data") or {}).get("image_key")

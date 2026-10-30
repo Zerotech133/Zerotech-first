@@ -376,7 +376,7 @@ def fetch_world(size):
                     or it.findtext(atom + "content")
                     or ""
                 )
-                hid = hashlib.md5(("%s|%s" % (name, guid)).encode("utf-8")).hexdigest()[
+                hid = hashlib.md5(("%s|%s" % (name, guid)).encode("utf-8"), usedforsecurity=False).hexdigest()[
                     :16
                 ]
                 out.append(
@@ -488,7 +488,7 @@ def fetch_chinanews(size):
                     except Exception:
                         ts = ""
                 desc = strip_html(it.findtext("description") or "")
-                hid = hashlib.md5(guid.encode("utf-8")).hexdigest()[:16]
+                hid = hashlib.md5(guid.encode("utf-8"), usedforsecurity=False).hexdigest()[:16]
                 out.append(
                     {
                         "id": "cns:%s:%s" % (tag, hid),

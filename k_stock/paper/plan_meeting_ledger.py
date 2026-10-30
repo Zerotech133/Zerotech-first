@@ -278,7 +278,7 @@ def as_of_plan(
     ensure_table(con)
     at = _parse_iso(at_time, "at_time")
     rows = con.execute(
-        "SELECT * FROM plan_versions WHERE combo_id=? AND stock=?"
+        "SELECT * FROM plan_versions WHERE combo_id=? AND stock=?"  # nosec B608 - 值参数化/内部标识符（已抽查）
         + (" AND risk_profile=?" if risk_profile else ""),
         (combo_id, stock, risk_profile) if risk_profile else (combo_id, stock),
     ).fetchall()

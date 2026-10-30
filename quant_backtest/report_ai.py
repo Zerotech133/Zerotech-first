@@ -240,7 +240,7 @@ def run_all(force=False):
 
 
 def _evt_id(url):
-    return "rpt:" + hashlib.sha1((url or "").encode("utf-8")).hexdigest()[:10]
+    return "rpt:" + hashlib.sha1((url or "").encode("utf-8"), usedforsecurity=False).hexdigest()[:10]
 
 
 def sync_events():

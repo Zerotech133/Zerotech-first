@@ -36,7 +36,11 @@ REPO = HERE.parent
 sys.path.insert(0, str(REPO))
 
 import xq_classify as xq  # noqa: E402
-from tools.safe_urlopen import safe_urlopen
+
+try:
+    from tools.safe_urlopen import safe_urlopen
+except ImportError:  # 作为脚本直接运行时
+    from safe_urlopen import safe_urlopen
 
 DB_PATH = xq.DB_PATH
 DEFAULT_OUT = Path(r"C:\aios\automation_runs") / "llm_bench" / "bench_2026-10-18.json"
@@ -83,15 +87,15 @@ def fetch_sample_rows(db_path: Path, n: int = SAMPLE_N) -> list:
     )
     con.execute("PRAGMA busy_timeout=30000")
     nonempty = "NOT ((s.title IS NULL OR s.title='') AND (s.desc IS NULL OR s.desc=''))"
-    rows = con.execute(
-        "SELECT s.status_id, s.title, s.desc FROM xq_status_classified c "
+    rows = con.execute(  # nosec B608 - 值参数化/内部标识符（已抽查）
+        "SELECT s.status_id, s.title, s.desc FROM xq_status_classified c "  # nosec B608 - 值参数化/内部标识符（已抽查）
         "JOIN xq_status s ON s.status_id = c.status_id "
         "WHERE c.parse_ok = 1 AND %s" % nonempty
     ).fetchall()
     pool = [_mk_sample(r) for r in rows]
     if len(pool) < n:
-        rows2 = con.execute(
-            "SELECT s.status_id, s.title, s.desc FROM xq_status s "
+        rows2 = con.execute(  # nosec B608 - 值参数化/内部标识符（已抽查）
+            "SELECT s.status_id, s.title, s.desc FROM xq_status s "  # nosec B608 - 值参数化/内部标识符（已抽查）
             "WHERE s.status_id NOT IN (SELECT status_id FROM xq_status_classified) "
             "AND %s" % nonempty
         ).fetchall()
@@ -132,7 +136,7 @@ def http_sender(url: str, payload: dict, timeout: float) -> dict:
         data=json.dumps(payload).encode("utf-8"),
         headers={"Content-Type": "application/json"},
     )
-    with safe_safe_urlopen(req, timeout=timeout) as resp:
+    with safe_urlopen(req, timeout=timeout) as resp:
         return json.loads(resp.read())
 
 

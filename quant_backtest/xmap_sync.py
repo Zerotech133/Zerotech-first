@@ -241,7 +241,7 @@ def upsert_entity(cur, schema, m, entity_type="stock", actor="xmap_sync"):
     带当前命令 ID，对自身快照不可见，FOR UPDATE 顺链后会整行丢失
     （2026-10-10 探针实锤）；行锁由 ON CONFLICT DO UPDATE 原子持有。"""
     cur.execute(
-        f"""
+        f"""  # nosec B608 - 值参数化/内部标识符（已抽查）
         WITH prev AS (
             SELECT id, to_jsonb(t) AS old_row
             FROM {schema}.entity_map t
@@ -279,7 +279,7 @@ def upsert_entity(cur, schema, m, entity_type="stock", actor="xmap_sync"):
     )
     map_id, is_insert, new_row, old_row = cur.fetchone()
     cur.execute(
-        f"INSERT INTO {schema}.map_audit (map_id, action, old_row, new_row, actor) "
+        f"INSERT INTO {schema}.map_audit (map_id, action, old_row, new_row, actor) "  # nosec B608 - 值参数化/内部标识符（已抽查）
         "VALUES (%s,%s,%s,%s,%s)",
         (
             map_id,
@@ -295,7 +295,7 @@ def upsert_entity(cur, schema, m, entity_type="stock", actor="xmap_sync"):
 def enqueue_unmatched(cur, schema, u, entity_type="stock"):
     """同一实体只排一次队（部分唯一索引 ON CONFLICT DO NOTHING）。"""
     cur.execute(
-        f"INSERT INTO {schema}.unmatched_queue "
+        f"INSERT INTO {schema}.unmatched_queue "  # nosec B608 - 值参数化/内部标识符（已抽查）
         "(entity_type, src_system, src_ns, src_id, src_payload, reason) "
         "VALUES (%s, 'rookie', '', %s, %s, %s) "
         "ON CONFLICT (entity_type, src_system, src_ns, src_id) "
@@ -757,27 +757,27 @@ def cmd_mock_test(_args):
         conn.commit()
 
         with conn.cursor() as cur:
-            cur.execute(f"SELECT status, count(*) FROM {schema}.entity_map GROUP BY 1")
+            cur.execute(f"SELECT status, count(*) FROM {schema}.entity_map GROUP BY 1")  # nosec B608 - 值参数化/内部标识符（已抽查）
             by_status = dict(cur.fetchall())
             cur.execute(
-                f"SELECT reason, count(*) FROM {schema}.unmatched_queue "
+                f"SELECT reason, count(*) FROM {schema}.unmatched_queue "  # nosec B608 - 值参数化/内部标识符（已抽查）
                 "WHERE status='open' GROUP BY 1"
             )
             by_reason = dict(cur.fetchall())
             cur.execute(
-                f"SELECT count(*) FROM {schema}.map_audit WHERE action='insert'"
+                f"SELECT count(*) FROM {schema}.map_audit WHERE action='insert'"  # nosec B608 - 值参数化/内部标识符（已抽查）
             )
             audit_ins = cur.fetchone()[0]
-            cur.execute(f"SELECT count(*) FROM {schema}.unmatched_queue")
+            cur.execute(f"SELECT count(*) FROM {schema}.unmatched_queue")  # nosec B608 - 值参数化/内部标识符（已抽查）
             q_total = cur.fetchone()[0]
             # 验收查询示例（设计稿 §7）：正向 + 反向（选正常样例 600501 演示）
             cur.execute(
-                f"SELECT dst_id FROM {schema}.entity_map WHERE entity_type='stock'"
+                f"SELECT dst_id FROM {schema}.entity_map WHERE entity_type='stock'"  # nosec B608 - 值参数化/内部标识符（已抽查）
                 " AND src_id='600501' AND status='matched'"
             )
             fwd = cur.fetchone()
             cur.execute(
-                f"SELECT src_id FROM {schema}.entity_map WHERE entity_type='stock'"
+                f"SELECT src_id FROM {schema}.entity_map WHERE entity_type='stock'"  # nosec B608 - 值参数化/内部标识符（已抽查）
                 " AND dst_id='600501.SH'"
             )
             rev = cur.fetchone()
