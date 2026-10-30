@@ -3100,6 +3100,11 @@ color:#fff;font-size:13.5px;cursor:pointer}
         if path.startswith('/api/os/'):
             self._os_goal_get(path, qs)
             return
+        if path.startswith('/api/kb_corpus/'):
+            # 语料知识库只读入口（独立文件 api_kb_corpus.py，2026-10-30）
+            import api_kb_corpus
+            api_kb_corpus.handle_get(self, path, qs)
+            return
         if path.startswith('/api/analysis/'):
             # K-STOCK-ANALYSIS-P0C2 个股分析只读入口（独立文件 api_analysis.py）
             import api_analysis
