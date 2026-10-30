@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """P2 单测：量化只读（fake MCP）+ 红队定时（fake responder/临时账本）。"""
+import datetime as dt
 import importlib.util
 import json
 import sys
@@ -75,7 +76,14 @@ def test_redteam_daily_appends(tmp_path):
 def test_redteam_weekly_aggregates(tmp_path):
     daily = tmp_path / "daily.jsonl"
     rd.run_daily(limit=2, dry=True, daily_path=daily)
+    with daily.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps({
+            "ts": dt.datetime.now().astimezone().isoformat(timespec="seconds"),
+            "mode": "live", "total": 2, "passed": 2, "failed": 0,
+            "pass_rate": 1.0, "failed_ids": [], "case_ids": ["L1", "L2"],
+        }, ensure_ascii=False) + "\n")
     rep = rd.weekly(days=7, daily_path=daily, out_dir=tmp_path)
+    assert rep["runs_live"] == 1 and rep["runs_dry"] == 1
     assert rep["runs"] == 1 and rep["total_cases"] == 2
     assert rep["pass_rate"] == 1.0
     assert Path(rep["report"]).exists()
