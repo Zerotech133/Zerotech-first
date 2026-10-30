@@ -80,7 +80,8 @@ class SessionStore:
         self._data: Dict[str, Dict[str, Any]] = {}
         self._lock = threading.Lock()
 
-    def create(self, sub: str, identity_context: Dict[str, Any], zhice_token: str) -> str:
+    def create(self, sub: str, identity_context: Dict[str, Any], zhice_token: str,
+               idp: str = "zhice", amr: list | None = None) -> str:
         sid = secrets.token_urlsafe(32)
         now = _now()
         csrf = secrets.token_urlsafe(24)
@@ -95,6 +96,8 @@ class SessionStore:
             "expires_at": _iso(now + timedelta(seconds=self.ttl)),
             "_csrf": csrf,
             "zhice_token": zhice_token,
+            "idp": idp,
+            "amr": list(amr or ["pwd"]),
         }
         with self._lock:
             self._purge_locked()
@@ -221,11 +224,11 @@ def _session_payload(rec: Dict[str, Any]) -> Dict[str, Any]:
     session = {
         "session_id": rec["session_id"],
         "sub": rec["sub"],
-        "idp": "zhice",
+        "idp": rec.get("idp", "zhice"),
         "auth_time": rec["auth_time"],
         "issued_at": rec["issued_at"],
         "expires_at": rec["expires_at"],
-        "amr": ["pwd"],
+        "amr": rec.get("amr", ["pwd"]),
         "read_only": True,
         "identity_context": ctx,
         "csrf_token_hash": rec["csrf_hash"],
@@ -310,6 +313,10 @@ def status(handler) -> None:
 
 
 def handle_get(handler, path: str) -> None:
+    if path.startswith("/api/auth/oidc/"):
+        import auth_oidc
+        auth_oidc.handle_get(handler, path)
+        return
     if path in ("/api/auth/me", "/api/bff/identity/me"):
         me(handler)
         return
