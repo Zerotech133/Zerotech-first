@@ -46,6 +46,39 @@ if (Test-Path $flag8796) {
     Start-Sleep -Seconds 2
 }
 
+function Ensure8796 {
+    # Port-up is not enough: old builds can hold 8796 while missing
+    # /api/ide/openhands/sessions or /stream. Probe a feature endpoint first.
+    $up = Test-NetConnection -ComputerName 127.0.0.1 -Port 8796 -WarningAction SilentlyContinue -InformationLevel Quiet
+    if ($up) {
+        try {
+            $probe = Invoke-RestMethod 'http://127.0.0.1:8796/api/ide/openhands/sessions?limit=1' -TimeoutSec 3
+            if ($probe.ok) {
+                Write-Output '[OK] port 8796 latest (sessions probe)'
+                return
+            }
+        } catch {
+            Write-Output '[WARN] 8796 stale build; restarting'
+        }
+        $c = Get-NetTCPConnection -LocalPort 8796 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($c) {
+            Stop-Process -Id $c.OwningProcess -Force -ErrorAction SilentlyContinue
+            Start-Sleep -Seconds 2
+        }
+    }
+    Start-Process -FilePath $pyLegion -ArgumentList '-X','utf8',"$root\agent_platform\legion_command\serve.py" `
+        -WorkingDirectory $root -WindowStyle Hidden `
+        -RedirectStandardOutput 'C:\Temp\legion_command_8796.log' -RedirectStandardError 'C:\Temp\legion_command_8796.log.err'
+    Start-Sleep -Seconds 6
+    try {
+        $probe = Invoke-RestMethod 'http://127.0.0.1:8796/api/ide/openhands/sessions?limit=1' -TimeoutSec 5
+        if ($probe.ok) { Write-Output '[OK] port 8796 started latest' }
+        else { Write-Output '[FAIL] 8796 sessions probe' }
+    } catch {
+        Write-Output '[FAIL] 8796 start/probe'
+    }
+}
+
 Ensure 8093 'tools\org_registry_server.py' 'org_registry_8093.log'
 Ensure 8096 'portal\api_legion_ops_v2.py' 'legion_ops_api.log'
-Ensure 8796 'agent_platform\legion_command\serve.py' 'legion_command_8796.log' $pyLegion
+Ensure8796
