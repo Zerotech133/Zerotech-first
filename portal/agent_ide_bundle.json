@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 12:53",
+ "generated": "2026-10-30 12:59",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 27,
+  "workorders_doing": 28,
   "workorders_review": 7
  },
  "workorders": [
@@ -311,13 +311,22 @@
    "project": "quant"
   },
   {
-   "id": "K-STOCK-ANALYSIS-P0O-20261030",
-   "desc": "评级回测引擎：2019-2026 月频五维打分→评级→20/60日超额/胜率/IC，校准SCORE_CUTS；analysis.json 补 score 字段",
+   "id": "WO-WATCH-TRIGGER-20261030",
+   "desc": "watch trigger adapter：watch_dispatch selection/evidence+signal→trading_bot_flow pending；缺 symbol/price fail-closed；watchbot/WATCH_TOWER 标记离线契约层；5测试",
    "status": "doing",
    "owner": "DSH-Lead",
-   "branch": "task/K-STOCK-ANALYSIS-P0O-20261030",
-   "created": "2026-10-30 12:53:11",
-   "project": "quant"
+   "branch": "task/WO-WATCH-TRIGGER-20261030",
+   "created": "2026-10-30 12:55:34",
+   "project": "portal"
+  },
+  {
+   "id": "WO-WATCH-ADMIN-20261030",
+   "desc": "watch_admin 换口 8789+注册启动；8098 /api/models 超时放宽到6s使 zone2 模型源可验证；补源矩阵",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-WATCH-ADMIN-20261030",
+   "created": "2026-10-30 12:58:34",
+   "project": "portal"
   }
  ],
  "coder_traces": [
