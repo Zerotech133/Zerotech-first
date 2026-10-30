@@ -1655,7 +1655,7 @@ async function loadDiff(task) {
     b.textContent = "⚔ 诸葛复核";
     b.onclick = open;
     // LDE 面板懒加载，不能依赖 #lde-lock 在扩展初始化时已存在。
-    b.style.cssText = "position:fixed;right:18px;bottom:18px;z-index:99997;" +
+    b.style.cssText = "position:fixed;left:18px;bottom:18px;z-index:99997;" +
       "padding:6px 10px;border-radius:999px;border:1px solid #6b5a2a;" +
       "background:#2a2416;color:#ffd98a;font-size:12px;cursor:pointer;" +
       "box-shadow:0 2px 8px rgba(0,0,0,.4)";
