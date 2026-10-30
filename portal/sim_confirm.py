@@ -42,7 +42,8 @@ def handle_post(handler):
         return
     try:
         rec = flow.decide(cid, action, by=body.get("by") or "老田",
-                          note=body.get("note") or "", price=body.get("price"))
+                          note=body.get("note") or "", price=body.get("price"),
+                          profile=body.get("profile"))
     except (OSError, ValueError, KeyError) as exc:
         handler._json({"ok": False, "error": str(exc)}, 400)
         return

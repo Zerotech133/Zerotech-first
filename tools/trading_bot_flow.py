@@ -30,6 +30,7 @@ def main(argv=None):
     p.add_argument("--price", type=float)
     p.add_argument("--stop", type=float)
     p.add_argument("--confidence", type=float, default=0.6)
+    p.add_argument("--profile", default="balanced", choices=["aggressive", "balanced", "conservative"])
     p.add_argument("--reason", default="盯盘触发")
     p.add_argument("--source", default="WA1")
     p.add_argument("--report-id", default="")
@@ -48,6 +49,7 @@ def main(argv=None):
     p.add_argument("--state")
     p.add_argument("--ledger")
     p.add_argument("--config")
+    p.add_argument("--profile", default=None, choices=["aggressive", "balanced", "conservative"])
 
     p = sub.add_parser("reject")
     p.add_argument("confirmation_id")
@@ -63,7 +65,7 @@ def main(argv=None):
         r = flow.create_confirmation(
             args.symbol, args.name, args.action, args.price, args.stop,
             confidence=args.confidence, reason=args.reason, source=args.source,
-            source_report_id=args.report_id)
+            source_report_id=args.report_id, profile=args.profile)
         _print({"status": "pending", "confirmation_id": r["confirmation_id"],
                 "symbol": r["symbol"], "action": r["action"]})
         return 0
@@ -76,7 +78,8 @@ def main(argv=None):
         return 0
     if args.cmd == "approve":
         r = flow.decide(args.confirmation_id, "approve", by=args.by, note=args.note,
-                        price=args.price, paper_state_path=args.state,
+                        price=args.price, profile=args.profile,
+                        paper_state_path=args.state,
                         paper_ledger_path=args.ledger, paper_config_path=args.config)
         _print({"status": r["status"], "confirmation_id": r["confirmation_id"],
                 "execution": r.get("execution")})

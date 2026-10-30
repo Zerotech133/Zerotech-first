@@ -73,6 +73,17 @@ def test_duplicate_report_idempotent(tmp_path):
     assert len(flow.list_confirmations(data_dir=p["data_dir"])) == 1
 
 
+def test_human_selects_profile(tmp_path):
+    p = _paths(tmp_path)
+    c = _confirm(tmp_path)
+    assert c["profile"] == "balanced"
+    out = flow.decide(c["confirmation_id"], "approve", by="老田", profile="conservative",
+                      data_dir=p["data_dir"], paper_state_path=p["paper_state_path"],
+                      paper_ledger_path=p["paper_ledger_path"])
+    assert out["status"] == "executed"
+    assert out["profile"] == "conservative" and out["profile_label"] == "保守"
+
+
 def test_feishu_card_payload(tmp_path):
     c = _confirm(tmp_path)
     card = flow.build_feishu_card(c)

@@ -25,6 +25,12 @@ CONFIRM_DIR = os.path.join(DATA_DIR, "confirmations")
 CARD_DIR = os.path.join(DATA_DIR, "cards")
 AUDIT = os.path.join(DATA_DIR, "audit.jsonl")
 
+PROFILES = {
+    "aggressive": "激进",
+    "balanced": "平衡",
+    "conservative": "保守",
+}
+
 try:
     from .paper import paper_book, risk_gate
 except ImportError:  # 直接按路径加载/脚本运行
@@ -87,11 +93,18 @@ def _find_by_report(report_id, data_dir=None):
 
 def create_confirmation(symbol, name="", action="BUY", price=None, stop=None,
                         target=None, confidence=0.6, reason="", source="WA1",
-                        source_report_id="", data_dir=None):
-    """盯盘触发→pending 人工确认；幂等：同 report_id 返回已有记录。"""
+                        source_report_id="", profile="balanced", data_dir=None):
+    """盯盘触发→pending 人工确认；幂等：同 report_id 返回已有记录。
+
+    profile：组合风格（aggressive/balanced/conservative），由人确认时最终定；
+    paper 阶段只记录人的选择，不改变风控阈值（风控仍由 risk_gate 统一）。
+    """
     action = str(action or "BUY").upper()
     if action not in ("BUY", "SELL", "WATCH"):
         raise ValueError("action 必须是 BUY/SELL/WATCH")
+    profile = str(profile or "balanced").lower()
+    if profile not in PROFILES:
+        raise ValueError("profile 必须是 %s" % "/".join(PROFILES))
     if source_report_id:
         old = _find_by_report(source_report_id, data_dir)
         if old:
@@ -109,6 +122,8 @@ def create_confirmation(symbol, name="", action="BUY", price=None, stop=None,
         "stop": float(stop) if stop is not None else None,
         "target": float(target) if target is not None else None,
         "confidence": float(confidence) if confidence is not None else 0.0,
+        "profile": profile,
+        "profile_label": PROFILES[profile],
         "reason": reason or "",
         "source": source or "WA1",
         "source_report_id": source_report_id or "",
@@ -154,6 +169,7 @@ def build_feishu_card(rec):
         "动作：**%s**" % action,
         "价格：%s" % (rec.get("price") if rec.get("price") is not None else "市价/待定"),
         "止损：%s" % (rec.get("stop") if rec.get("stop") is not None else "未填"),
+        "组合风格：**%s**（确认时可改）" % rec.get("profile_label", "平衡"),
         "理由：%s" % (rec.get("reason") or "—"),
         "来源：%s %s" % (rec.get("source") or "—", rec.get("source_report_id") or ""),
         "确认号：%s" % cid,
@@ -186,15 +202,21 @@ def save_card(rec, data_dir=None):
 
 
 def decide(confirmation_id, decision, by="老田", note="", price=None,
-           paper_state_path=None, paper_ledger_path=None, paper_config_path=None,
-           data_dir=None):
-    """人工裁决；approve 才执行 paper_book。返回更新后的确认记录。"""
+           profile=None, paper_state_path=None, paper_ledger_path=None,
+           paper_config_path=None, data_dir=None):
+    """人工裁决；approve 才执行 paper_book。profile 可在此刻由人选定组合风格。"""
     decision = str(decision or "").lower()
     if decision not in ("approve", "reject"):
         raise ValueError("decision 必须是 approve/reject")
     rec = _load(confirmation_id, data_dir)
     if rec.get("status") != "pending":
         return rec  # 幂等：已裁决不再重复执行
+    if profile:
+        p = str(profile).lower()
+        if p not in PROFILES:
+            raise ValueError("profile 必须是 %s" % "/".join(PROFILES))
+        rec["profile"] = p
+        rec["profile_label"] = PROFILES[p]
     if decision == "reject":
         rec.update({"status": "rejected", "decision": "reject", "decided_by": by,
                     "decided_at": _now(), "note": note,

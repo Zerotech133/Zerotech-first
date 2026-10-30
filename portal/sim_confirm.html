@@ -53,6 +53,10 @@ async function load(){
       '<span class="badge '+cls+'">'+act+'</span><span class="badge">'+esc(it.status)+'</span></div>'+
       '<div class="row">价格 <b>'+esc(it.price==null?'待定':it.price)+'</b> · 止损 '+esc(it.stop==null?'—':it.stop)+
       ' · 置信 '+esc(it.confidence)+' · 来源 '+esc(it.source||'—')+'</div>'+
+      '<div class="row">组合风格 <b>'+esc(it.profile_label||'平衡')+'</b> '+
+      '<select data-profile="'+esc(it.confirmation_id)+'">'+
+        '<option value="aggressive">激进</option><option value="balanced" selected>平衡</option><option value="conservative">保守</option></select>'+
+      '</div>'+
       '<div class="mono">'+esc(it.reason||'')+' · '+esc(it.confirmation_id)+'</div>'+
       '<div class="row" style="margin-top:8px">'+
         '<button class="btn ok" data-id="'+esc(it.confirmation_id)+'" data-act="approve">批准</button>'+
@@ -63,18 +67,20 @@ async function load(){
 }
 async function act(id,action){
   $('#msg').textContent='提交中…';
+  const sel=document.querySelector('select[data-profile="'+id+'"]');
+  const profile=sel?sel.value:'balanced';
   const headers={'Content-Type':'application/json'};
   const tok=sessionStorage.getItem('botConfirmToken');
   if(tok) headers['X-Portal-Token']=tok;
   let r=await fetch('/api/sim/confirm',{method:'POST',headers:headers,
-    body:JSON.stringify({confirmation_id:id,action:action,by:'老田'})});
+    body:JSON.stringify({confirmation_id:id,action:action,by:'老田',profile:profile})});
   if(r.status===403){
     const t=(prompt('LAN 访问需要门户 token（PORTAL_API_TOKEN 或 C:/Temp/portal_api_token 内容）。仅存本页会话。')||'').trim();
     if(!t){ $('#msg').textContent='已取消（未带门户 token）'; return; }
     sessionStorage.setItem('botConfirmToken',t);
     headers['X-Portal-Token']=t;
     r=await fetch('/api/sim/confirm',{method:'POST',headers:headers,
-      body:JSON.stringify({confirmation_id:id,action:action,by:'老田'})});
+      body:JSON.stringify({confirmation_id:id,action:action,by:'老田',profile:profile})});
   }
   const d=await r.json();
   $('#msg').textContent=d.ok?('已'+ (action==='approve'?'批准':'拒绝') +'：'+(d.item&&d.item.status||'')):('失败：'+(d.error||''));
