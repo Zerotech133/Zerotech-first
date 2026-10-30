@@ -73,9 +73,9 @@ a{color:var(--blue);text-decoration:none}.app{max-width:1500px;margin:0 auto;pad
       </div>
     </div>
     <div class="overview" id="overview-cards">
-      <div class="ov" style="--c:#d6a94a" data-go="pool"><div class="k">① 股票池 · 多策略</div><b id="ov-pool">31</b><small>缠论 31 / 九维 3 / 其他策略在册</small><div class="go">→</div></div>
-      <div class="ov" style="--c:#58a6ff" data-go="research"><div class="k">② D1 投研</div><b id="ov-research">31</b><small>已研究 31 / 可买 0 / 盯盘 31</small><div class="go">→</div></div>
-      <div class="ov" style="--c:#3fb9a6" data-go="watch"><div class="k">③ 盯盘</div><b id="ov-watch">31</b><small>盯盘队列 / 8789 管理台</small><div class="go">→</div></div>
+      <div class="ov" style="--c:#d6a94a" data-go="pool"><div class="k">① 股票池 · 多策略</div><b id="ov-pool">31</b><small id="ov-pool-sub">缠论 31 / 九维 3 / 其他策略在册</small><div class="go">→</div></div>
+      <div class="ov" style="--c:#58a6ff" data-go="research"><div class="k">② D1 投研</div><b id="ov-research">31</b><small id="ov-research-sub">已研究 31 / 可买 0 / 盯盘 31</small><div class="go">→</div></div>
+      <div class="ov" style="--c:#3fb9a6" data-go="watch"><div class="k">③ 盯盘</div><b id="ov-watch">31</b><small id="ov-watch-sub">盯盘队列 / 8789 管理台</small><div class="go">→</div></div>
       <div class="ov" style="--c:#bc8cff" data-go="paper"><div class="k">④ 模拟交易</div><b id="ov-paper">NAV 1.0</b><small>quant paper + K-STOCK 沙盘</small><div class="go">→</div></div>
     </div>
 
@@ -83,7 +83,7 @@ a{color:var(--blue);text-decoration:none}.app{max-width:1500px;margin:0 auto;pad
     <div class="strategies" id="overview-strategies"></div>
     <div class="grid2" style="margin-top:12px">
       <div class="panel plat" style="--c:#58a6ff">
-        <div class="head" style="display:flex;justify-content:space-between"><h3>D1 投研 · 池内研判</h3><span class="tag" style="font-size:10.5px;border:1px solid var(--line);border-radius:999px;padding:2px 8px;color:var(--muted)">31/31 已研究</span></div>
+        <div class="head" style="display:flex;justify-content:space-between"><h3>D1 投研 · 池内研判</h3><span class="tag" style="font-size:10.5px;border:1px solid var(--line);border-radius:999px;padding:2px 8px;color:var(--muted)" id="ov-d1-badge">31/31 已研究</span></div>
         <div class="desc">T1 多头 vs T2 空头；N1/F1 输入；D1 裁决；买点/止损/止盈交盯盘。</div>
         <div class="kvs"><div class="kv"><small>可买</small><b id="ov-research-buy">0</b></div><div class="kv"><small>盯盘</small><b id="ov-research-watch">31</b></div><div class="kv"><small>回避</small><b id="ov-research-avoid">0</b></div><div class="kv"><small>待研究</small><b id="ov-research-pending">0</b></div></div>
         <div style="margin-top:10px"><a class="btn" id="ov-link-d1" target="_blank">打开 D1 投研 →</a></div>
@@ -189,6 +189,9 @@ function init(){
   const os=$('#overview-strategies'); if(os){os.innerHTML=(DATA.strategies||[]).map(s=>{const n=DATA.strategy_counts[s.id]||0;return '<div class=\"strat\" style=\"--c:'+s.color+'\"><div class=\"n\">'+esc(s.name)+'</div><b>'+n+'</b><small>'+esc(s.desc)+'</small></div>';}).join('');}
   const ds=DATA.d1_summary||{}; const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
   set('ov-research-buy',ds.can_buy??0); set('ov-research-watch',ds.armed_watch??0); set('ov-research-avoid',ds.avoid??0); set('ov-research-pending',ds.pending_research??0);
+  set('ov-research-sub','已研究 '+(ds.analyzed??0)+' / 可买 '+(ds.can_buy??0)+' / 盯盘 '+(ds.armed_watch??0));
+  set('ov-pool-sub','缠论 '+(DATA.strategy_counts?.chanlun||0)+' / 九维 '+(DATA.strategy_counts?.ninedim||0)+' / 其他策略在册');
+  set('ov-d1-badge',(ds.analyzed??0)+'/'+(ds.total??0)+' 已研究');
   set('ov-paper-nav',(DATA.paper.nav??1).toFixed(2)); set('ov-paper-rows',DATA.paper.ledger_rows??0); set('ov-paper-hash',DATA.paper.hash_chain_ok?'OK':'BROKEN');
   ['ov-link-d1','ov-link-paper','link-d1','link-watch','link-qpaper','link-lpaper','link-confirm'].forEach(id=>{const map={'ov-link-d1':'d1','ov-link-paper':'quant_paper','link-d1':'d1','link-watch':'watch_admin','link-qpaper':'quant_paper','link-lpaper':'legacy_paper','link-confirm':'confirm'};const el=document.getElementById(id);if(el&&DATA.links[map[id]])el.href=DATA.links[map[id]];});
   const qs=new URLSearchParams(location.search); if(qs.get('view')) show(qs.get('view'));
