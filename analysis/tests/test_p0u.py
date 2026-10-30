@@ -14,7 +14,7 @@ from analysis import reclass  # noqa: E402
 
 class TestReclass(unittest.TestCase):
     def setUp(self):
-        self.td = tempfile.TemporaryDirectory()
+        self.td = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         self.db = os.path.join(self.td.name, "t.db")
         c = reclass._connect(self.db)
         rows = [
