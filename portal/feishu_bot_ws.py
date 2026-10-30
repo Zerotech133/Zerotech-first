@@ -117,13 +117,14 @@ def _ws_guard():
 
 # ── L2 引擎接合 ─────────────────────────────────────────────
 def _portal_shim():
+    import api_common
     import portal_api
     import portal_report
 
     class _P:
         _chanlun_sl_tp = staticmethod(portal_api.Handler._chanlun_sl_tp)
-        _stock_chip_summary = staticmethod(portal_api._stock_chip_summary)
-        _stock_sector_rows = staticmethod(portal_api._stock_sector_rows)
+        _stock_chip_summary = staticmethod(api_common._stock_chip_summary)
+        _stock_sector_rows = staticmethod(api_common._stock_sector_rows)
 
     return _P(), portal_report
 
