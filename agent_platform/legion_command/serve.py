@@ -1228,6 +1228,13 @@ class Handler(BaseHTTPRequestHandler):
         with self._request_scope():
             return self._do_POST_impl()
 
+    def _oh_denied(self):
+        try:
+            from legion_command import oh_auth
+            return oh_auth.authorize(dict(self.headers))
+        except Exception as exc:  # noqa: BLE001
+            return {"ok": False, "error": "oh_auth_error", "message": str(exc)[:160]}
+
     def _do_POST_impl(self):
         import json
 
@@ -1245,6 +1252,10 @@ class Handler(BaseHTTPRequestHandler):
                 return
             if not isinstance(req, dict):
                 self._send_json({"ok": False, "error": "bad_body"}, 400)
+                return
+            denied = self._oh_denied()
+            if denied:
+                self._send_json(denied, 403)
                 return
             from legion_command import openhands_engine
             res = openhands_engine.chat(
@@ -1269,6 +1280,10 @@ class Handler(BaseHTTPRequestHandler):
             if not isinstance(req, dict):
                 self._send_json({"ok": False, "error": "bad_body"}, 400)
                 return
+            denied = self._oh_denied()
+            if denied:
+                self._send_json(denied, 403)
+                return
             from legion_command import hermes_orchestrator
             res = hermes_orchestrator.orchestrate(
                 str(req.get("message") or ""),
@@ -1291,6 +1306,10 @@ class Handler(BaseHTTPRequestHandler):
                 return
             if not isinstance(req, dict):
                 self._send_json({"ok": False, "error": "bad_body"}, 400)
+                return
+            denied = self._oh_denied()
+            if denied:
+                self._send_json(denied, 403)
                 return
             from legion_command import openhands_engine
             if path.endswith("/start"):
@@ -1327,6 +1346,11 @@ class Handler(BaseHTTPRequestHandler):
             if not isinstance(req, dict):
                 self._send_json({"ok": False, "error": "bad_body"}, 400)
                 return
+            if path.endswith("/commit"):
+                denied = self._oh_denied()
+                if denied:
+                    self._send_json(denied, 403)
+                    return
             from legion_command import ide_worktree
             task = str(req.get("task") or "").strip()
             if path.endswith("/diff"):
