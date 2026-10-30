@@ -36,7 +36,7 @@ class EvidenceBundle:
     input_degraded: str = ""
 
     @classmethod
-    def from_context(cls, symbol, name, ctx, now=None):
+    def from_context(cls, symbol, name, ctx, now=None, l4=None):
         now = now or time.time()
         as_of = time.strftime("%Y-%m-%dT%H:%M:%S%z", time.localtime(now))
         refs = []
@@ -54,6 +54,11 @@ class EvidenceBundle:
                 freshness_s=0,
             ))
         l4_status, l4_source = _detect_l4(texts)
+        if isinstance(l4, dict):
+            status = str(l4.get("status") or "").strip().lower()
+            l4_status = status if status in ("established", "unresolved", "missing", "unknown") else "unknown"
+            l4_source = str(l4.get("source") or "") + (
+                ":" + str(l4.get("as_of")) if l4.get("as_of") else "")
         bundle = cls(symbol=str(symbol), name=str(name or ""), refs=refs,
                      l4_status=l4_status, l4_source=l4_source)
         if not bundle.is_sufficient():
