@@ -27,3 +27,11 @@ def test_entry_auth_state_panel():
     assert "/api/auth/logout" in html
     assert "csr" + "f_token" in html
     assert "'/login'" in html or '"/login"' in html
+
+
+def test_entry_top_auth_visible_on_first_screen():
+    html = (PORTAL / "os_entry_v9_prod.html").read_text(encoding="utf-8")
+    assert 'id="top-auth"' in html
+    assert "top-auth" in html
+    assert "已登录 · " in html
+    assert "未登录 · 登录" in html
