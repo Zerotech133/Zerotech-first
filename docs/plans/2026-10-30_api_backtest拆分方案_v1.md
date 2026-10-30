@@ -119,3 +119,29 @@ portal/backtest/bt_api.py       # JSON API 方法（_sa_results/_sa_start/_algo_
   （pages_a 2,520 行 >1,200 属建议项 WARN，随 B6 收口再拆）。
 
 阶段进度：B0 ✅ / B1 ✅ / B2 ✅ / B3 ✅；剩余 Handler 约 1,100 行（页面 B 族 + JSON API）→ B4/B5 → B6 收口 ≤300 行。
+
+## 十二、B4+B5+B6 完成记录（2026-10-30，P71 —— 收口达成）
+
+- **api_backtest.py 2,447 → 285 行**（-2,162）；契约上限最终 **285**（原冻结 6,395，累计 -95.5%）；**B6 目标 ≤300 达成**；
+- 新模块：
+  - `portal/api_backtest_pages_b.py`（1,730 行，7 个页面方法：weak/cross/nine_dim/algo_market/fin/strategies/sa）；
+  - `portal/api_backtest_json_api.py`（65 行，3 个 JSON API：sa_result/sa_start/algo_activate）；
+  - `portal/api_backtest_jobs.py`（519 行，16 个作业/状态辅助函数 + 常量：custom/cbt/pulse/sa_worker/hist/strategies/get_backtest）；
+- Handler 现为 **20 个懒委托方法**（方法签名/行为不变）；api_backtest 保留再导出（含 datetime/json/os/_read_json 兼容绑定）；
+- 门禁同步：mixin 基线显式重建；契约上限 285；
+- 验证：契约 5/5；portal **347 passed**（1 known flaky）；分钟测试 98 passed；ruff 净；mixin 零 diff；`check_portal_split` PASS。
+
+### 最终模块分布
+
+| 模块 | 行数 | 职责 |
+|---|---:|---|
+| `api_backtest.py` | **285** | 出口（Handler 20 委托 + 再导出） |
+| `api_backtest_pages_a.py` | 2,520 | 页面 A 族（10 方法） |
+| `api_backtest_pages_b.py` | 1,730 | 页面 B 族（7 方法） |
+| `api_backtest_jobs.py` | 519 | 作业/状态辅助（16 函数） |
+| `api_backtest_minute.py` | 450 | minute 框架 |
+| `api_backtest_bt2.py` | 776 | bt2 回测/我的策略 |
+| `api_backtest_pages_html.py` | 375 | 页面 HTML builder |
+| `api_backtest_json_api.py` | 65 | JSON API |
+
+残项：`api_backtest_pages_a/b` 单文件 >1,200（建议项 WARN，非阻塞）→ 可作后续 B7 拆分（按页面族再分 3-4 个 ≤1,200 模块）。
