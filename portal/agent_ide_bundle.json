@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 19:34",
+ "generated": "2026-10-30 19:35",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 30,
+  "workorders_doing": 29,
   "workorders_review": 9
  },
  "workorders": [
@@ -327,15 +327,6 @@
    "branch": "task/K-ORG-20261030-JEVARCH2",
    "created": "2026-10-30 18:47:29",
    "project": "general"
-  },
-  {
-   "id": "K-QUANT-20261030-IDEDEEP",
-   "desc": "IDE deep: persistent LDE sessions, owner bound to auth sub, undo persistence",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-QUANT-20261030-IDEDEEP",
-   "created": "2026-10-30 19:29:04",
-   "project": "quant"
   },
   {
    "id": "WO-LEGION-W1AUTH-20261030",
