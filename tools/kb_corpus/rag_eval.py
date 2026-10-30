@@ -78,7 +78,6 @@ def tokenize(s: str) -> list[str]:
         else:
             out.append(t)
     # 中文 bigram（粗分词）
-    chars = "".join(TOKEN_RE.findall(s.lower())) if False else None
     zh = "".join(ch for ch in s.lower() if "\u4e00" <= ch <= "\u9fff")
     out.extend(zh[i:i + 2] for i in range(len(zh) - 1))
     return out

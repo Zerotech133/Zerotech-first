@@ -95,7 +95,7 @@ def main() -> int:
     dates = es.trading_dates(args.days + 30)
     rets, market = es.load_returns(dates)
     dates = [d for d in dates if d in rets]
-    industry = es.load_industry()
+    es.load_industry()  # 预热行业数据缓存（返回值此处不用）
     mv = {}
     pe = {}
     base_db = DATA / "tushare" / "daily_basic"
@@ -131,7 +131,7 @@ def main() -> int:
                 arr.pop(0)
             flow20[d] = flow20.get(d, {})
             flow20[d][c] = sum(arr)
-    pit = load_pit_industry()
+    load_pit_industry()  # 预热行业 PIT 数据（当前分支不使用返回值）
     cost = 0.003
     split_idx = int(len(dates) * 0.6)
     rebal = []
@@ -157,7 +157,6 @@ def main() -> int:
                 if r is None:
                     ok = False
                     break
-                ic = ind_at(pit, c, T)
                 mkt = market.get(dd, 0.0)
                 # 行业均值近似：用全市场为基准 + 行业虚拟（简化：用市场，交叉中性在 factor 层用 rank）
                 n = mkt

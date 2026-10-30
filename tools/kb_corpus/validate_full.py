@@ -51,7 +51,6 @@ def main(argv=None) -> int:
                  "source": docs[i].get("source"), "kind": docs[i].get("kind")} for i in idx]
         out.append({"question": q, "top1": hits[0]["score"], "hits": hits})
         print(q, "top1=", hits[0]["score"], "|", hits[0]["title"][:40], flush=True)
-    kw = [0] * 0
     rep = {"packed": str(p), "rows": int(mat.shape[0]), "dim": int(mat.shape[1]),
            "load_seconds": round(time.time() - t0, 1), "results": out}
     (KB / "90_报告" / "full_index_validate.json").write_text(json.dumps(rep, ensure_ascii=False, indent=1), encoding="utf-8")

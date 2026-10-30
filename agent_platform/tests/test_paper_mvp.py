@@ -65,7 +65,6 @@ def test_drawdown_blocks_buy_but_allows_sell():
 
 
 def test_book_hash_chain_and_idempotent(tmp_path):
-    state_path = tmp_path / "state.json"
     ledger = tmp_path / "ledger.jsonl"
     state = book.empty_state()
     d = _dec(recommendation="STRONG_BUY", confidence=0.9)

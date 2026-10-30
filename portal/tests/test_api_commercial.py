@@ -2,7 +2,6 @@
 """P2.5: 商业化接口网关 token 测试。"""
 import os
 import sys
-import tempfile
 import unittest
 
 WT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

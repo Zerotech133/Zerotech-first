@@ -175,7 +175,6 @@ def main() -> int:
     prem_med = prem.median(axis=1).reindex(mf.index)
     fwd20 = (prem_med.shift(-21) - prem_med.shift(-1))
     ts = pd.DataFrame({"south5": south5, "fwd_prem_chg": fwd20}).dropna()
-    ts_is = ts[ts.index <= IS_END]
     ts_oos = ts[ts.index > IS_END]
     corr_all = float(ts["south5"].corr(ts["fwd_prem_chg"], method="spearman")) if len(ts) > 30 else None
     corr_oos = float(ts_oos["south5"].corr(ts_oos["fwd_prem_chg"], method="spearman")) if len(ts_oos) > 20 else None

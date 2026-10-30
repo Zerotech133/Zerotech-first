@@ -17,7 +17,6 @@ import io
 import json
 import os
 import re
-import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ORG = os.path.join(REPO, "agent_platform", "registry", "org.json")

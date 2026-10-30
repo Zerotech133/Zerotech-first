@@ -111,7 +111,6 @@ def main() -> int:
             if len(gg) < 10:
                 continue
             hi_p = gg[gg["prem_rank"] >= 0.67]
-            lo_p = gg[gg["prem_rank"] <= 0.33]
             hi_h = hi_p[hi_p["dr_rank"] >= 0.67]
             lo_h = hi_p[hi_p["dr_rank"] <= 0.33]
             # 假设组：高溢价 & 高持仓增

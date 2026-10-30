@@ -2,7 +2,6 @@
 """task_board_stale：分类与安全 apply（只处理 branch_missing 且 owner 白名单）。"""
 import datetime as dt
 import json
-import sys
 from pathlib import Path
 
 import importlib.util
