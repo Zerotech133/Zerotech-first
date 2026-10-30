@@ -43,8 +43,9 @@ def build_item(item, rec, plan_row=None, shadow=None):
     can_buy = bool(done and recommendation in ("BUY", "STRONG_BUY") and price)
     watch_trigger = plan.get("watch_trigger") or (
         {"pullback": round(price * 0.97, 2), "breakout": round(price * 1.02, 2)} if price else None)
-    buy_zone = plan.get("buy_zone") or (
-        [round(price * 0.98, 2), round(price * 1.01, 2)] if price else None)
+    # WATCH/无买点时不得显示“买点区间”；只在可买时给买点。
+    buy_zone = (plan.get("buy_zone") or
+                ([round(price * 0.98, 2), round(price * 1.01, 2)] if price else None)) if can_buy else None
     stop = _f(plan.get("stop_loss")) or (round(price * 0.92, 2) if price else None)
     target1 = _f(plan.get("target1")) or (round(price * 1.08, 2) if price else None)
     target2 = _f(plan.get("target2")) or (round(price * 1.15, 2) if price else None)
