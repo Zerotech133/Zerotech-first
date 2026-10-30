@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 19:32",
+ "generated": "2026-10-30 19:33",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 30,
+  "workorders_doing": 29,
   "workorders_review": 9
  },
  "workorders": [
@@ -326,15 +326,6 @@
    "owner": "DSH-Lead",
    "branch": "task/K-ORG-20261030-JEVARCH2",
    "created": "2026-10-30 18:47:29",
-   "project": "general"
-  },
-  {
-   "id": "K-ORG-20261030-JEVV2",
-   "desc": "契约v2：判定补 horizon/prob 字段（向后兼容）、账本列、契约文档、测试",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-ORG-20261030-JEVV2",
-   "created": "2026-10-30 19:26:55",
    "project": "general"
   },
   {
