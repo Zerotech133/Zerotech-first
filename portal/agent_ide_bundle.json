@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 11:45",
+ "generated": "2026-10-30 11:47",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 25,
+  "workorders_doing": 26,
   "workorders_review": 6
  },
  "workorders": [
@@ -291,6 +291,15 @@
    "branch": "task/K-QUANT-20261030-OHLOOP-TEST",
    "created": "2026-10-30 09:19:23",
    "project": "quant"
+  },
+  {
+   "id": "WO-SIM-EXCHANGE-20261030",
+   "desc": "模拟交易所项目盘点与鲁肃版对齐：全量资产清单(legacy/quant/SIM_MARKET)、单一真源、D1归属与TR1周瑜主管建议、注册表+测试",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-SIM-EXCHANGE-20261030",
+   "created": "2026-10-30 11:47:07",
+   "project": "portal"
   }
  ],
  "coder_traces": [
