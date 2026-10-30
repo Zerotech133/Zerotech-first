@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 17:54",
+ "generated": "2026-10-30 17:59",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,8 +9,8 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 26,
-  "workorders_review": 10
+  "workorders_doing": 27,
+  "workorders_review": 9
  },
  "workorders": [
   {
@@ -329,13 +329,13 @@
    "project": "general"
   },
   {
-   "id": "K-STOCK-ANALYSIS-P2-3-20261030",
-   "desc": "P2.3 计费运营：账单生成/导出、续费提醒、试用→付费漏斗（基于usage+audit）+CLI+测试",
-   "status": "review",
+   "id": "WO-KLINE-LOCAL-20261030",
+   "desc": "行情工具 kline_daily 加本地 ashare parquet 回退（Tencent 501 时仍可研究）；补齐 top5 失败 2 只；测试",
+   "status": "doing",
    "owner": "DSH-Lead",
-   "branch": "task/K-STOCK-ANALYSIS-P2-3-20261030",
-   "created": "2026-10-30 17:41:13",
-   "project": "quant"
+   "branch": "task/WO-KLINE-LOCAL-20261030",
+   "created": "2026-10-30 17:55:39",
+   "project": "portal"
   }
  ],
  "coder_traces": [
@@ -4516,7 +4516,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 111,
+     "count": 112,
      "recent": [
       {
        "ts": "",
