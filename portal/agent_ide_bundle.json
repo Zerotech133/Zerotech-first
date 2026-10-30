@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 09:18",
+ "generated": "2026-10-30 10:11",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 27,
+  "workorders_doing": 28,
   "workorders_review": 8
  },
  "workorders": [
@@ -326,6 +326,15 @@
    "owner": "DSH-Lead",
    "branch": "task/K-QUANT-20261030-OH2",
    "created": "2026-10-30 06:18:46",
+   "project": "quant"
+  },
+  {
+   "id": "K-QUANT-20261030-OHLOOP-TEST",
+   "desc": "OH闭环测试：自动worktree/diff/确认提交",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-QUANT-20261030-OHLOOP-TEST",
+   "created": "2026-10-30 09:19:23",
    "project": "quant"
   }
  ],
