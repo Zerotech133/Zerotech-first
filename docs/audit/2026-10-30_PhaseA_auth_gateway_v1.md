@@ -74,6 +74,15 @@ python tools/auth_gateway_smoke.py
 - 用 vault 内 `zero_bff` 服务账号登录（只读映射）；
 - 输出 login/me/logout 状态与 `sub`，不打印密码/token/sid。
 
+## 5.1 上线记录（2026-10-30 11:46）
+
+- 8091 受控重启：`43064 → 29816`（任务 `/End` → 重启标记 → 启动任务；冷启动冒烟通过）；
+- 8734 同源 smoke：`login 200 sub=zero_bound:bff / me 200 / logout 200`；
+- 未登录访问 `/api/bff/identity/me` → 401；
+- 登录响应只有 `ok/sub/expires_in`，无 token；
+- `Set-Cookie` 含 `HttpOnly` + `SameSite=Lax`；
+- `/api/bff/overview`、`/api/bff/identity/actors` 仍 200，只读 BFF 不受影响。
+
 ## 6. 已知限制
 
 - 无登录 UI（当前 API 级）；下一步可加 `/login` UI Kit 页面；
