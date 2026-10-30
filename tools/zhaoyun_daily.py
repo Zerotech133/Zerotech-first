@@ -226,7 +226,13 @@ def collect() -> dict:
 
 def render_report(d: dict) -> str:
     b = d.get("board") or {}
-    counts = {k: (len(v) if isinstance(v, list) else v) for k, v in b.items() if k != "ok"}
+    summary = b.get("summary") or {}
+    counts = {k: summary.get(k) for k in
+              ("merged_but_open", "branch_missing", "ahead_unmerged")}
+    for _k in list(counts):
+        if counts[_k] is None and isinstance(b.get(_k), list):
+            counts[_k] = len(b.get(_k))
+    counts["open_tasks"] = b.get("open_tasks", (d.get("tasks") or {}).get("total"))
     health = d.get("health") or {}
     sev = d.get("bandit") or {}
     osv = d.get("osv") or {}
@@ -242,8 +248,9 @@ def render_report(d: dict) -> str:
         "| 开单总数 | %s |" % (d.get("tasks") or {}).get("total"),
         "| 状态分布 | %s |" % json.dumps((d.get("tasks") or {}).get("by_status") or {}, ensure_ascii=False),
     ]
-    for k in ("merged_but_open", "branch_missing", "ahead_unmerged", "worktree_missing", "worktree_dirty"):
-        if k in counts:
+    lines.append("| 待处理开单 | %s |" % counts.get("open_tasks"))
+    for k in ("merged_but_open", "branch_missing", "ahead_unmerged"):
+        if counts.get(k) is not None:
             lines.append("| %s | %s |" % (k, counts[k]))
     lines += [
         "",

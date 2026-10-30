@@ -36,29 +36,32 @@ def classify(tasks: dict, board: dict, now: dt.datetime | None = None,
     owners = owners or DEFAULT_OWNERS
     rows = []
 
-    for tid in (board.get("branch_missing") or []):
+    items = board.get("rows") or []
+    if not items:  # 兼容旧结构（分类->tid 列表）
+        for cat in ("branch_missing", "merged_but_open", "ahead_unmerged"):
+            for tid in board.get(cat) or []:
+                items.append({"tid": tid, "category": cat})
+    for it in items:
+        tid = it.get("tid") or it.get("task")
+        if not tid:
+            continue
         v = tasks.get(tid) or {}
-        rows.append({
-            "task": tid, "owner": v.get("owner"), "status": v.get("status"),
-            "age_days": _age_days(v.get("created"), now),
-            "kind": "branch_missing",
-            "action": "abort" if str(v.get("status")) in ("doing", "review") else "close",
-            "safe": v.get("owner") in owners,
-        })
-    for tid in (board.get("merged_but_open") or []):
-        v = tasks.get(tid) or {}
-        rows.append({
-            "task": tid, "owner": v.get("owner"), "status": v.get("status"),
-            "age_days": _age_days(v.get("created"), now),
-            "kind": "merged_but_open", "action": "close", "safe": False,
-        })
-    for tid in (board.get("ahead_unmerged") or []):
-        v = tasks.get(tid) or {}
-        rows.append({
-            "task": tid, "owner": v.get("owner"), "status": v.get("status"),
-            "age_days": _age_days(v.get("created"), now),
-            "kind": "ahead_unmerged", "action": "review", "safe": False,
-        })
+        kind = it.get("category") or it.get("kind") or "unknown"
+        owner = it.get("owner") or v.get("owner")
+        status = it.get("status") or v.get("status")
+        if kind == "branch_missing":
+            action = "abort" if str(status) in ("doing", "review") else "close"
+            safe = owner in owners
+        elif kind == "merged_but_open":
+            action, safe = "close", False
+        elif kind == "ahead_unmerged":
+            action, safe = "review", False
+        else:
+            action, safe = "check", False
+        rows.append({"task": tid, "owner": owner, "status": status,
+                     "age_days": _age_days(v.get("created"), now),
+                     "kind": kind, "action": action, "safe": safe})
+
     seen = {r["task"] for r in rows}
     for tid, v in tasks.items():
         if tid in seen:
