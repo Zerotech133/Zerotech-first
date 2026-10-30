@@ -592,6 +592,17 @@ def load_approvals() -> dict:
             "latest": rows[-5:]}
 
 
+def load_ah_signal() -> dict:
+    """最近一次 A/H 溢价监控信号（work/research/ah_signal_*.json）。"""
+    files = sorted((REPO / "work" / "research").glob("ah_signal_*.json"))
+    if not files:
+        return {}
+    try:
+        return json.loads(files[-1].read_text(encoding="utf-8"))
+    except ValueError:
+        return {}
+
+
 def load_audit() -> dict:
     f = REPO / "work" / "data_sync" / "audit_latest.json"
     if not f.exists():
@@ -694,6 +705,7 @@ def main(argv=None) -> int:
         "roadmap": [{"phase": a, "status": b, "date": c, "note": d} for a, b, c, d in ROADMAP],
         "ops": {"backup": backup, "supervisor": sup, "approvals": approvals},
         "sync": load_sync(),
+        "ah_signal": load_ah_signal(),
         "audit": audit,
         "layers": LAYER_ORDER, "status_order": STATUS_ORDER,
     }

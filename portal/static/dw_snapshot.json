@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-10-30T06:44:43+08:00",
+ "generated_at": "2026-10-30T10:14:26+08:00",
  "today": "2026-10-30",
  "catalog": {
   "version": 16,
@@ -25,17 +25,17 @@
   "sources_mining": 37,
   "sources_pending": 0,
   "coverage_pct": 36.4,
-  "new_today": 39,
+  "new_today": 43,
   "pilot_today": 4,
-  "merged_today": 13,
-  "hypotheses": 15,
+  "merged_today": 14,
+  "hypotheses": 18,
   "hypotheses_by_status": {
    "rejected": 10,
-   "backtested": 4,
-   "idea": 1
+   "backtested": 5,
+   "idea": 3
   },
-  "reports_total": 36,
-  "reports_today": 2,
+  "reports_total": 40,
+  "reports_today": 6,
   "approvals_today": 2,
   "risks": [
    {
@@ -75,7 +75,7 @@
    }
   ],
   "backup_latest": "2026-10-30_0300",
-  "backup_age_hours": 6.7,
+  "backup_age_hours": 10.2,
   "supervisor_red": []
  },
  "sources": [
@@ -300,17 +300,17 @@
    "freshness_mode": "low_freq",
    "status": "mining",
    "note": "已入库，未用于研究",
-   "files": 274,
-   "size_mb": 44.4,
+   "files": 275,
+   "size_mb": 44.5,
    "size_h": "44 MB",
    "rows": 1508210,
    "rows_h": "150.8 万",
-   "range": "20250901..20261026",
-   "last_update": "2026-10-27",
-   "latest_date": "20261026",
+   "range": "20250901..20261029",
+   "last_update": "2026-10-30",
+   "latest_date": "20261029",
    "report_period": "",
    "lag_days": null,
-   "today_new": 0,
+   "today_new": 1,
    "registered": true,
    "manifest": "closed",
    "date_status": "registered",
@@ -979,17 +979,17 @@
    "freshness_mode": "daily",
    "status": "mining",
    "note": "已入库，未用于研究",
-   "files": 280,
+   "files": 281,
    "size_mb": 5.4,
    "size_h": "5 MB",
    "rows": 28859,
    "rows_h": "2.9 万",
-   "range": "20250901..20261029",
+   "range": "20250901..20261030",
    "last_update": "2026-10-30",
-   "latest_date": "20261029",
+   "latest_date": "20261030",
    "report_period": "",
-   "lag_days": 1,
-   "today_new": 10,
+   "lag_days": 0,
+   "today_new": 11,
    "registered": true,
    "manifest": "closed",
    "date_status": "registered",
@@ -1264,17 +1264,17 @@
    "freshness_mode": "low_freq",
    "status": "mining",
    "note": "已入库，未用于研究",
-   "files": 5570,
-   "size_mb": 24.2,
+   "files": 5572,
+   "size_mb": 24.3,
    "size_h": "24 MB",
-   "rows": 478811,
-   "rows_h": "47.9 万",
+   "rows": 454675,
+   "rows_h": "45.5 万",
    "range": "000001_SZ..920992_BJ",
-   "last_update": "2026-10-27",
+   "last_update": "2026-10-30",
    "latest_date": "20260814",
    "report_period": "",
    "lag_days": null,
-   "today_new": 0,
+   "today_new": 1170,
    "registered": true,
    "manifest": "closed",
    "date_status": "registered",
@@ -1823,13 +1823,13 @@
    "status": "in_progress",
    "note": "保留 365 天；历史不可回填（接口深度约 1 周）",
    "files": 1,
-   "size_mb": 107.08,
-   "size_h": "107 MB",
-   "rows": 101431,
-   "rows_h": "101431",
+   "size_mb": 107.89,
+   "size_h": "108 MB",
+   "rows": 102145,
+   "rows_h": "102145",
    "range": "news.db",
    "last_update": "2026-10-30",
-   "latest_date": "2026-10-30 06:35",
+   "latest_date": "2026-10-30 10:03",
    "lag_days": 0,
    "today_new": 1,
    "registered": true,
@@ -1880,15 +1880,15 @@
    "status": "in_progress",
    "note": "判定账本；后验/company 覆盖不足（见缺口）",
    "files": 1,
-   "size_mb": 20.73,
-   "size_h": "21 MB",
-   "rows": 93104,
-   "rows_h": "93104",
+   "size_mb": 22.45,
+   "size_h": "22 MB",
+   "rows": 101190,
+   "rows_h": "101190",
    "range": "jev_audit.db",
-   "last_update": "2026-10-29",
-   "latest_date": "2026-10-29 08:03",
+   "last_update": "2026-10-30",
+   "latest_date": "2026-10-30 06:49",
    "lag_days": 0,
-   "today_new": 0,
+   "today_new": 1,
    "registered": true,
    "manifest": "—",
    "date_status": "—",
@@ -1896,7 +1896,7 @@
    "hypothesis_ids": [
     "H6"
    ],
-   "gap_note": "判定 93104 条 / 有后验 6659 条（7.2%）/ companies 空 75348 条（81%）",
+   "gap_note": "判定 101190 条 / 有后验 6659 条（6.6%）/ companies 空 79752 条（79%）",
    "next_action": "判定账本；后验/company 覆盖不足（见缺口）"
   },
   {
@@ -1937,15 +1937,15 @@
    "status": "done",
    "note": "资格/取证底账",
    "files": 1,
-   "size_mb": 1.3,
+   "size_mb": 1.36,
    "size_h": "1 MB",
    "rows": null,
    "rows_h": "—",
    "range": "evidence_chain.db",
-   "last_update": "2026-10-29",
+   "last_update": "2026-10-30",
    "latest_date": "",
    "lag_days": null,
-   "today_new": 0,
+   "today_new": 1,
    "registered": true,
    "manifest": "—",
    "date_status": "—",
@@ -1964,12 +1964,12 @@
    "files": 1,
    "size_mb": 8379,
    "size_h": "8.4 GB",
-   "rows": 15834725,
-   "rows_h": "1583.5 万",
+   "rows": 15895349,
+   "rows_h": "1589.5 万",
    "range": "2026-08-11 起（分钟线）",
    "last_update": "2026-10-30",
-   "latest_date": "2026-10-29",
-   "lag_days": 1,
+   "latest_date": "2026-10-30",
+   "lag_days": 0,
    "today_new": 0,
    "registered": true,
    "manifest": "—",
@@ -2191,6 +2191,33 @@
    "report_period": "",
    "lag_days": null,
    "today_new": 214,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
+   "name": "cyq_perf",
+   "label": "Tushare·筹码胜率",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "low_freq",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 275,
+   "size_mb": 44.5,
+   "size_h": "44 MB",
+   "rows": 1508210,
+   "rows_h": "150.8 万",
+   "range": "20250901..20261029",
+   "last_update": "2026-10-30",
+   "latest_date": "20261029",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 1,
    "registered": true,
    "manifest": "closed",
    "date_status": "registered",
@@ -2597,17 +2624,17 @@
    "freshness_mode": "daily",
    "status": "mining",
    "note": "已入库，未用于研究",
-   "files": 280,
+   "files": 281,
    "size_mb": 5.4,
    "size_h": "5 MB",
    "rows": 28859,
    "rows_h": "2.9 万",
-   "range": "20250901..20261029",
+   "range": "20250901..20261030",
    "last_update": "2026-10-30",
-   "latest_date": "20261029",
+   "latest_date": "20261030",
    "report_period": "",
-   "lag_days": 1,
-   "today_new": 10,
+   "lag_days": 0,
+   "today_new": 11,
    "registered": true,
    "manifest": "closed",
    "date_status": "registered",
@@ -2839,6 +2866,33 @@
    "report_period": "",
    "lag_days": null,
    "today_new": 1,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
+   "name": "stk_holdernumber",
+   "label": "Tushare·股东户数",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "low_freq",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 5572,
+   "size_mb": 24.3,
+   "size_h": "24 MB",
+   "rows": 454675,
+   "rows_h": "45.5 万",
+   "range": "000001_SZ..920992_BJ",
+   "last_update": "2026-10-30",
+   "latest_date": "20260814",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 1170,
    "registered": true,
    "manifest": "closed",
    "date_status": "registered",
@@ -3144,13 +3198,13 @@
    "status": "in_progress",
    "note": "保留 365 天；历史不可回填（接口深度约 1 周）",
    "files": 1,
-   "size_mb": 107.08,
-   "size_h": "107 MB",
-   "rows": 101431,
-   "rows_h": "101431",
+   "size_mb": 107.89,
+   "size_h": "108 MB",
+   "rows": 102145,
+   "rows_h": "102145",
    "range": "news.db",
    "last_update": "2026-10-30",
-   "latest_date": "2026-10-30 06:35",
+   "latest_date": "2026-10-30 10:03",
    "lag_days": 0,
    "today_new": 1,
    "registered": true,
@@ -3163,6 +3217,34 @@
    ],
    "gap_note": "仅约 1 个月历史；历史无法回填",
    "next_action": "保留 365 天；历史不可回填（接口深度约 1 周）"
+  },
+  {
+   "name": "jev_audit.db",
+   "label": "JEV判定账本·本地库(SQLite)",
+   "method": "本地库",
+   "layer": "本地库",
+   "freshness_mode": "daily",
+   "status": "in_progress",
+   "note": "判定账本；后验/company 覆盖不足（见缺口）",
+   "files": 1,
+   "size_mb": 22.45,
+   "size_h": "22 MB",
+   "rows": 101190,
+   "rows_h": "101190",
+   "range": "jev_audit.db",
+   "last_update": "2026-10-30",
+   "latest_date": "2026-10-30 06:49",
+   "lag_days": 0,
+   "today_new": 1,
+   "registered": true,
+   "manifest": "—",
+   "date_status": "—",
+   "contract": false,
+   "hypothesis_ids": [
+    "H6"
+   ],
+   "gap_note": "判定 101190 条 / 有后验 6659 条（6.6%）/ companies 空 79752 条（79%）",
+   "next_action": "判定账本；后验/company 覆盖不足（见缺口）"
   },
   {
    "name": "ann_history.db",
@@ -3192,6 +3274,32 @@
    ],
    "gap_note": "仅 2026-02 起（历史公告需用 anns_d 标题源）",
    "next_action": "49 万条（2026-02 起）"
+  },
+  {
+   "name": "evidence_chain.db",
+   "label": "证据链·本地库(SQLite)",
+   "method": "本地库",
+   "layer": "本地库",
+   "freshness_mode": "daily",
+   "status": "done",
+   "note": "资格/取证底账",
+   "files": 1,
+   "size_mb": 1.36,
+   "size_h": "1 MB",
+   "rows": null,
+   "rows_h": "—",
+   "range": "evidence_chain.db",
+   "last_update": "2026-10-30",
+   "latest_date": "",
+   "lag_days": null,
+   "today_new": 1,
+   "registered": true,
+   "manifest": "—",
+   "date_status": "—",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "—"
   }
  ],
  "hypotheses": [
@@ -3278,6 +3386,42 @@
    "evidence": "research/reports/AH_premium_20261030.md",
    "created_at": "2026-10-30T06:27:51",
    "updated_at": "2026-10-30T06:27:51"
+  },
+  {
+   "id": "H16",
+   "title": "A/H 溢价收敛的横截面结构（行业/市值/流动性）",
+   "status": "backtested",
+   "question": "H15 的 A/H 收敛 alpha 集中在哪些行业/市值/流动性分组？",
+   "data_sources": "daily+hk_daily+fx_daily+daily_basic+index_member_all",
+   "method": "H15 同口径；20 日远期相对收益；行业(SW L1)/市值三分位/换手三分位/溢价离散度分层；OOS 2025-07 起；成本0.3%",
+   "conclusion": "全样本 OOS IC t=-11.77；分层见报告",
+   "evidence": "research/reports/H16_ah_strat_20261030.md",
+   "created_at": "2026-10-30T09:21:05",
+   "updated_at": "2026-10-30T09:21:05"
+  },
+  {
+   "id": "H17",
+   "title": "港股通南向资金对 H 股折价的领先性",
+   "status": "idea",
+   "question": "南向资金净流入是否领先 A/H 溢价收敛？",
+   "data_sources": "港股通资金流（需补 Tushare hk 通数据）+ hk_daily + fx + A/H 配对",
+   "method": "计划：日频南向净流入/持仓变化 → 分组 H 股 → 与溢价 z 的领先滞后检验；IS/OOS 同 H15",
+   "conclusion": "待研究（例会决定优先级）",
+   "evidence": "",
+   "created_at": "2026-10-30T10:25:00",
+   "updated_at": "2026-10-30T10:25:00"
+  },
+  {
+   "id": "H18",
+   "title": "业绩预告修订动量（预增→预减反转）",
+   "status": "idea",
+   "question": "同一公司业绩预告前后修正（type/幅度变化）是否产生可交易动量/反转？",
+   "data_sources": "forecast（2023+，已补齐）+ daily + fina_indicator",
+   "method": "计划：匹配同一公司同一年度多次预告 → 修订方向 → 事件研究（5/10/20 日）→ 成本后",
+   "conclusion": "待研究（例会决定优先级）",
+   "evidence": "",
+   "created_at": "2026-10-30T10:25:00",
+   "updated_at": "2026-10-30T10:25:00"
   },
   {
    "id": "H2",
@@ -3377,6 +3521,42 @@
   }
  ],
  "reports": [
+  {
+   "name": "H16_ah_strat_20261030.md",
+   "title_zh": "H1 公告事件超额收益",
+   "kind": "报告正文",
+   "size_kb": 1.2,
+   "date": "2026-10-30",
+   "time": "09:21",
+   "hid": "H16"
+  },
+  {
+   "name": "H16_ah_strat_20261030.json",
+   "title_zh": "H1 公告事件超额收益",
+   "kind": "原始数据",
+   "size_kb": 6.9,
+   "date": "2026-10-30",
+   "time": "09:21",
+   "hid": "H16"
+  },
+  {
+   "name": "AH_premium_shortable_20261030.md",
+   "title_zh": "研究报告",
+   "kind": "报告正文",
+   "size_kb": 0.5,
+   "date": "2026-10-30",
+   "time": "07:44",
+   "hid": ""
+  },
+  {
+   "name": "AH_premium_shortable_20261030.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 1.6,
+   "date": "2026-10-30",
+   "time": "07:44",
+   "hid": ""
+  },
   {
    "name": "AH_premium_20261030.md",
    "title_zh": "研究报告",
@@ -3909,16 +4089,28 @@
     "desc": "IDE接入OpenHands执行入口：OH按钮+会话ID+适配器调用+过程状态"
    },
    {
-    "id": "WO-GUANYU-P62-20261030",
-    "status": "review",
-    "owner": "GUANYU",
-    "desc": "lifecycle覆盖率审计"
-   },
-   {
     "id": "K-QUANT-20261030-OH2",
     "status": "review",
     "owner": "DSH-Lead",
     "desc": "OpenHands二期：原生会话worktree映射+事件流+模型映射；过程面板展示工具步骤"
+   },
+   {
+    "id": "K-QUANT-20261030-OHLOOP-TEST",
+    "status": "doing",
+    "owner": "DSH-Lead",
+    "desc": "OH闭环测试：自动worktree/diff/确认提交"
+   },
+   {
+    "id": "K-QUANT-20261030-OHLIVE",
+    "status": "doing",
+    "owner": "DSH-Lead",
+    "desc": "OH实时事件+停止+工单执行锁；异步start/status/interrupt；浏览器实测"
+   },
+   {
+    "id": "WO-LEGION-TRIPART-DRILL-20261030",
+    "status": "doing",
+    "owner": "ZHAOYUN",
+    "desc": "三系统面板指标下钻：评分快照历史分布（BFF端点+静态兜底）"
    }
   ],
   "doing_data": [
@@ -4039,16 +4231,28 @@
     "desc": "IDE接入OpenHands执行入口：OH按钮+会话ID+适配器调用+过程状态"
    },
    {
-    "id": "WO-GUANYU-P62-20261030",
-    "status": "review",
-    "owner": "GUANYU",
-    "desc": "lifecycle覆盖率审计"
-   },
-   {
     "id": "K-QUANT-20261030-OH2",
     "status": "review",
     "owner": "DSH-Lead",
     "desc": "OpenHands二期：原生会话worktree映射+事件流+模型映射；过程面板展示工具步骤"
+   },
+   {
+    "id": "K-QUANT-20261030-OHLOOP-TEST",
+    "status": "doing",
+    "owner": "DSH-Lead",
+    "desc": "OH闭环测试：自动worktree/diff/确认提交"
+   },
+   {
+    "id": "K-QUANT-20261030-OHLIVE",
+    "status": "doing",
+    "owner": "DSH-Lead",
+    "desc": "OH实时事件+停止+工单执行锁；异步start/status/interrupt；浏览器实测"
+   },
+   {
+    "id": "WO-LEGION-TRIPART-DRILL-20261030",
+    "status": "doing",
+    "owner": "ZHAOYUN",
+    "desc": "三系统面板指标下钻：评分快照历史分布（BFF端点+静态兜底）"
    }
   ],
   "today_pilot_data": [
@@ -4643,6 +4847,12 @@
     "desc": "北交所符号修复(norm_symbol bj)+920378 复盘恢复+run_shadow 17:10 后自动池复盘(POOL_REVIEW_AUTO)+测试"
    },
    {
+    "id": "WO-GUANYU-P62-20261030",
+    "status": "done",
+    "owner": "GUANYU",
+    "desc": "lifecycle覆盖率审计"
+   },
+   {
     "id": "WO-AH-FX-20261030",
     "status": "done",
     "owner": "DSH-Lead",
@@ -4653,6 +4863,78 @@
     "status": "done",
     "owner": "GUANYU",
     "desc": "修master测试回归"
+   },
+   {
+    "id": "WO-INV-DEBATE-DETAIL-20261030",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "多空辩论细节复制：debate 输入注入全部分析师结构化摘要+逐轮 debate_log 落 node_exec；池复盘/前端展开显示每票各角色 structured、多空逐轮论据（不再粗摘要）"
+   },
+   {
+    "id": "WO-GUANYU-P64-20261030",
+    "status": "done",
+    "owner": "GUANYU",
+    "desc": "P2-1归档分派包"
+   },
+   {
+    "id": "WO-INV-DEBATE-UI-20261030",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "辩论详情前端分栏：debate_log bull/bear 双列展示+移动端折叠；17:10 检查提醒更新"
+   },
+   {
+    "id": "WO-LEGION-ZHICE-INTEG-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "零界×智策整合：量化驾驶舱入口 + 开源架构方案"
+   },
+   {
+    "id": "WO-GUANYU-P65-20261030",
+    "status": "done",
+    "owner": "GUANYU",
+    "desc": "OCR门噪声评估"
+   },
+   {
+    "id": "WO-GUANYU-P66-20261030",
+    "status": "done",
+    "owner": "GUANYU",
+    "desc": "lifecycle批量包"
+   },
+   {
+    "id": "WO-LEGION-TRIPART-BFF-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "三系统：菜鸟只读统计 + Identity/Conversation/Selection schema + 零界只读BFF"
+   },
+   {
+    "id": "K-QUANT-20261030-OHLOOP",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "OH闭环：自动worktree/diff/确认提交/sandbox自愈；测试+浏览器实测"
+   },
+   {
+    "id": "WO-LEGION-TRIPART-BFF2-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "BFF 上线文档与只读证据更新"
+   },
+   {
+    "id": "WO-INV-TOPOLOGY-20261030",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "团队拓扑对齐菜鸟/TradingAgents：N1/F1 分析师(level1)→T1/T2 多空辩论(level2)→D1 终审(level3)；辩论先拿到情绪/基本面结构化摘要；测试"
+   },
+   {
+    "id": "WO-LEGION-TRIPART-PANEL-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "/os-entry 三系统只读面板（菜鸟快照/智策健康/服务账号轮换提示）"
+   },
+   {
+    "id": "WO-INV-TOPOLOGY-GUARD-20261030",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "拓扑防回退测试：锁定 N1/F1 level1、T1/T2 level2 辩论、D1 level3 与 parent 关系；Team 加载校验"
    }
   ],
   "today_merged_data": [
@@ -4733,13 +5015,19 @@
     "status": "done",
     "owner": "DSH-Lead",
     "desc": "A/H溢价研究（汇率+港股日线151对）+ fx加入例行同步"
+   },
+   {
+    "id": "K-QUANT-20261030-OHLOOP",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "OH闭环：自动worktree/diff/确认提交/sandbox自愈；测试+浏览器实测"
    }
   ],
   "counts": {
    "aborted": 89,
-   "done": 1257,
-   "review": 9,
-   "doing": 27
+   "done": 1270,
+   "review": 8,
+   "doing": 30
   }
  },
  "governance": [
@@ -4938,11 +5226,11 @@
     }
    ],
    "receipt": "offsite_remote_receipt.txt",
-   "age_hours": 6.7
+   "age_hours": 10.2
   },
   "supervisor": {
    "red": [],
-   "generated_at": "2026-10-30T06:44:43"
+   "generated_at": "2026-10-30T10:14:26"
   },
   "approvals": {
    "count": 2,
@@ -5034,6 +5322,148 @@
   ],
   "log": "C:\\项目\\老田的AI助手\\work\\data_sync\\sync_20261030_020800.log",
   "how_to": "python tools/data_sync_manual.py（或指定 --steps tushare,hk,snapshot）"
+ },
+ "ah_signal": {
+  "generated_at": "2026-10-30T10:11:43+08:00",
+  "date": "20261029",
+  "pairs": 152,
+  "window": 60,
+  "dispersion": {
+   "value": 0.7580621697791818,
+   "rank_250d": 0.98,
+   "regime": "high"
+  },
+  "gate": {
+   "rule": "高离散 regime(rank>=0.5) 才输出强信号；低离散仅观察",
+   "active": true
+  },
+  "strength": "strong",
+  "high_premium_z": [
+   {
+    "name": "青岛银行",
+    "premium": 50.37,
+    "z": 4.24
+   },
+   {
+    "name": "蓝思科技",
+    "premium": 125.36,
+    "z": 3.36
+   },
+   {
+    "name": "光大证券",
+    "premium": 149.25,
+    "z": 3.32
+   },
+   {
+    "name": "中集集团",
+    "premium": 53.69,
+    "z": 3.29
+   },
+   {
+    "name": "申万宏源",
+    "premium": 139.61,
+    "z": 3.27
+   },
+   {
+    "name": "美的集团",
+    "premium": 10.24,
+    "z": 3.24
+   },
+   {
+    "name": "交通银行",
+    "premium": 18.87,
+    "z": 3.12
+   },
+   {
+    "name": "宁德时代",
+    "premium": -20.33,
+    "z": 3.09
+   },
+   {
+    "name": "邮储银行",
+    "premium": 22.52,
+    "z": 3.06
+   },
+   {
+    "name": "中芯国际",
+    "premium": 164.69,
+    "z": 2.95
+   },
+   {
+    "name": "招商证券",
+    "premium": 51.97,
+    "z": 2.93
+   },
+   {
+    "name": "安克创新",
+    "premium": 40.0,
+    "z": 2.91
+   }
+  ],
+  "low_premium_z": [
+   {
+    "name": "药明康德",
+    "premium": -11.9,
+    "z": -1.94
+   },
+   {
+    "name": "大唐发电",
+    "premium": 117.63,
+    "z": -1.48
+   },
+   {
+    "name": "百济神州",
+    "premium": 34.52,
+    "z": -1.29
+   },
+   {
+    "name": "中远海能",
+    "premium": 28.3,
+    "z": -1.27
+   },
+   {
+    "name": "金隅集团",
+    "premium": 166.39,
+    "z": -0.97
+   },
+   {
+    "name": "复旦张江",
+    "premium": 255.22,
+    "z": -0.91
+   },
+   {
+    "name": "华新建材",
+    "premium": 71.64,
+    "z": -0.74
+   },
+   {
+    "name": "荣昌生物",
+    "premium": 74.13,
+    "z": -0.73
+   },
+   {
+    "name": "滨化股份",
+    "premium": 126.94,
+    "z": -0.72
+   },
+   {
+    "name": "君正股份",
+    "premium": 58.5,
+    "z": -0.71
+   },
+   {
+    "name": "广发证券",
+    "premium": 37.17,
+    "z": -0.65
+   },
+   {
+    "name": "龙源电力",
+    "premium": 230.23,
+    "z": -0.42
+   }
+  ],
+  "median_premium_pct": 72.17,
+  "note": "高 z=溢价处 60 日高位（A 相对贵，收敛方向：空 A/多 H）；低 z 反之。仅信号不做交易。"
  },
  "audit": {
   "generated_at": "2026-10-30T03:25:09+08:00",

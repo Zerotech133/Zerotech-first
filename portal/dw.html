@@ -118,6 +118,7 @@ tr.clickable{cursor:pointer}tr.clickable:hover td{background:var(--panel2)}
 </div>
 
 <div id="tab-mining" class="hidden">
+  <div class="panel" style="margin-bottom:12px"><h3>A/H 溢价监控信号（每日 15:30）</h3><div id="ahSignal"></div></div>
   <div class="grid2">
     <div class="panel"><h3>假设时间线（按创建/更新，点击看详情）</h3><div class="tl" id="hypTl"></div></div>
     <div class="panel"><h3>研究产出（最近 40 份）</h3><div id="repList" style="max-height:520px;overflow:auto"></div></div>
@@ -263,6 +264,19 @@ function renderGov(){
 }
 /* ===== 挖掘 ===== */
 function renderMining(){
+  const ah=SNAP.ah_signal||{};
+  if(ah.date){
+    const reg=ah.dispersion||{}, gate=ah.gate||{};
+    const regTxt={'high':'🔴 高离散（强信号）','low':'🟡 低离散（仅观察）','unknown':'⚪ 未知'}[reg.regime]||reg.regime;
+    const rows=(ah.high_premium_z||[]).slice(0,6).map(x=>'<tr><td>'+esc(x.name)+'</td><td class="num">'+x.premium+'%</td><td class="num">'+x.z+'</td><td class="muted">空A/多H 方向</td></tr>').join('');
+    const lows=(ah.low_premium_z||[]).slice(0,4).map(x=>'<tr><td>'+esc(x.name)+'</td><td class="num">'+x.premium+'%</td><td class="num">'+x.z+'</td><td class="muted">多A/空H 方向</td></tr>').join('');
+    document.getElementById('ahSignal').innerHTML=
+      '<div style="margin-bottom:6px">'+esc(ah.date)+' · 配对 '+ah.pairs+' 对 · 中位溢价 '+ah.median_premium_pct+'% · 离散度 rank='+(reg.rank_250d==null?'—':reg.rank_250d)+' · '+regTxt+' · <b>strength='+esc(ah.strength||'')+'</b></div>'+
+      '<table><thead><tr><th>高溢价（A 相对贵）</th><th class="num">溢价</th><th class="num">z</th><th>方向</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+      '<div class="muted" style="margin:8px 0 4px">低溢价（A 相对便宜）：'+esc((ah.low_premium_z||[]).slice(0,4).map(x=>x.name+' '+x.z).join('、'))+'</div>';
+  } else {
+    document.getElementById('ahSignal').innerHTML='<div class="muted">暂无信号（运行 tools/research/ah_monitor.py）</div>';
+  }
   const hs=SNAP.hypotheses||[];
   document.getElementById('hypTl').innerHTML=hs.map(h=>'<div class="tl-item '+esc(h.status)+'" onclick="drillHyp(\''+h.id+'\')"><div class="tl-date">'+esc(h.created_at||'—')+' · '+badge(h.status,HS)+'</div><div class="tl-t">'+esc(h.id)+' '+esc(h.title)+'</div><div class="tl-n">'+esc((h.conclusion||h.question||'').slice(0,110))+'</div></div>').join('');
   document.getElementById('repList').innerHTML='<table><thead><tr><th>报告（中文名）</th><th>类型</th><th class="num">大小</th><th>日期</th></tr></thead><tbody>'+(SNAP.reports||[]).map(r=>'<tr class="clickable" onclick="openModal(\'报告 · '+esc(r.title_zh||r.name)+'\',reportsTable(['+JSON.stringify(r).replace(/"/g,'&quot;')+']))"><td><b>'+esc(r.title_zh||'研究报告')+'</b><div class="mono">'+esc(r.name)+'</div></td><td class="muted">'+esc(r.kind||'')+'</td><td class="num">'+r.size_kb+'KB</td><td class="muted">'+esc(r.date)+'</td></tr>').join('')+'</tbody></table>';
