@@ -260,6 +260,23 @@ $('#pool-reset').addEventListener('click',()=>{$('#pool-source').value='';$('#po
 $('#mask').addEventListener('click',closeDrawer);$('#close').addEventListener('click',closeDrawer);$('#d-close2').addEventListener('click',closeDrawer);
 $('#d-arm').addEventListener('click',()=>{toast('已交盯盘（原型演示）');closeDrawer();});
 init();
+/* 实时数据：优先 /api/war-room/snapshot；失败时用页面内静态快照兜底 */
+(async function loadLive(){
+  try {
+    const r = await fetch('/api/war-room/snapshot', {cache:'no-store'});
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    if (d && d.ok) {
+      DATA = Object.assign({}, DATA, d);
+      init();
+      const el = document.getElementById('data-date');
+      if (el) el.textContent = (d.data_date || d.date || '') + ' · live';
+    }
+  } catch (e) {
+    const el = document.getElementById('data-date');
+    if (el) el.textContent = (DATA.data_date || DATA.date || '') + ' · snapshot';
+  }
+})();
 </script>
 </body>
 </html>
