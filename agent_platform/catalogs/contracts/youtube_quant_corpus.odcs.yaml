@@ -1,0 +1,111 @@
+apiVersion: v3.0.2
+kind: DataContract
+id: zerobond.youtube_quant_corpus
+name: youtube_quant_corpus
+version: 1.0.0
+status: draft
+description:
+  purpose: YouTube 量化频道公开语料（100 频道 / 45,881 视频 / 1.4M 评论）及其派生知识层
+  limitations: 公开可访问快照，不包含视频/音频/字幕正文（P3 待补）；作者与 PII 已哈希/脱敏；仅内部研究，不得再分发
+domain: research
+dataProduct: zerobond-youtube-quant-corpus
+team:
+- username: dsh@local
+  name: DSH-Lead
+  role: data steward
+servers:
+- server: local-corpus
+  type: local
+  path: C:/项目/知识库
+  format: parquet+jsonl
+schema:
+- name: videos
+  physicalName: 10_规范化/videos.parquet
+  logicalType: object
+  properties:
+  - name: video_id
+    logicalType: string
+    required: true
+    primaryKey: true
+  - name: channel_id
+    logicalType: string
+    required: true
+  - name: title
+    logicalType: string
+  - name: description
+    logicalType: string
+  - name: upload_date
+    logicalType: string
+  - name: duration
+    logicalType: number
+  - name: view_count
+    logicalType: number
+  - name: like_count
+    logicalType: number
+  - name: comment_count
+    logicalType: number
+  - name: language
+    logicalType: string
+  - name: collected_at
+    logicalType: string
+    required: true
+  quality:
+  - rule: video_id 唯一且非空
+  - rule: channel_id 非空（channel_map 45,790 条）
+  - rule: 行数 45,827（P1 回执口径）
+- name: comments
+  physicalName: 20_清洗/comments_clean/part-*.parquet
+  logicalType: object
+  properties:
+  - name: video_id
+    logicalType: string
+    required: true
+    primaryKey: true
+  - name: comment_id
+    logicalType: string
+    required: true
+    primaryKey: true
+  - name: parent
+    logicalType: string
+  - name: text
+    logicalType: string
+    required: true
+  - name: author_hash
+    logicalType: string
+    description: sha256 前 16 位（PII 最小化）
+  - name: like_count
+    logicalType: number
+  - name: published_at
+    logicalType: string
+  - name: collected_at
+    logicalType: string
+    required: true
+  - name: pii_masked
+    logicalType: boolean
+  quality:
+  - rule: (video_id, comment_id) 唯一
+  - rule: 保留率 94.21%（1,245,368 / 1,321,892）
+  - rule: PII 命中 1,596 已脱敏
+- name: knowledge_units
+  physicalName: 30_知识单元/knowledge_units.jsonl
+  logicalType: object
+  status: planned
+  properties:
+  - name: video_id
+    logicalType: string
+    required: true
+    primaryKey: true
+  - name: concept
+    logicalType: string
+  - name: claim
+    logicalType: string
+    required: true
+  - name: evidence
+    logicalType: string
+  - name: source
+    logicalType: string
+  - name: confidence
+    logicalType: string
+  quality:
+  - rule: 每条知识单元必须带 video_id（可追溯）
+  - rule: P3 转写网络恢复后生成

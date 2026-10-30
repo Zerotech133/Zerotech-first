@@ -490,6 +490,17 @@ $CGot = 0
 $CCodeDrift = $LiveTreeDrift
 Test-ArchiveCount "quant_code.tar.gz" $CGot $CExpect $CCodeDrift | Out-Null
 
+# ---------------- 1f. knowledge corpus derived layers (2026-10-30 Phase6) ----------------
+# 只备份派生层 + 原始包 sha256 清单（不备份 2.7GB 原始 ZIP）；脚本内含保留 3 套与失败 flag。
+$kbPy = 'C:\Program Files\Python311\python.exe'
+$kbScript = 'C:\aios\jev-eval\backup_kb_corpus.py'
+if ((Test-Path $kbPy) -and (Test-Path $kbScript)) {
+    & $kbPy $kbScript 1>> 'C:\Temp\kb_corpus_backup_out.log' 2>> 'C:\Temp\kb_corpus_backup_err.log'
+    if ($LASTEXITCODE -ne 0) {
+        ('KB_CORPUS_BACKUP_FAILED ' + (Get-Date -Format s)) | Out-File 'C:\Temp\KB_CORPUS_BACKUP_FAILED.flag' -Append -Encoding utf8
+    }
+}
+
 # ---------------- 2. gzip integrity check on all archives ----------------
 foreach ($f in @(Get-ChildItem $DayDir -Filter "*.gz")) {
     if (Test-Gzip $f.FullName) { LogOk ("GZIP " + $f.Name) } else { LogFail ("GZIP " + $f.Name) }
