@@ -83,6 +83,39 @@ def _norm_roles(roles) -> list:
     return out
 
 
+LOCAL_TOKEN_ENV = "IDE_LOCAL_TOKEN"
+LOCAL_TOKEN_FILE_ENV = "IDE_LOCAL_TOKEN_FILE"
+
+
+def local_token() -> str:
+    """A1 本地准入 token：未配置返回空串（默认关，不改变现状）。"""
+    v = str(os.environ.get(LOCAL_TOKEN_ENV) or "").strip()
+    if v:
+        return v
+    path = str(os.environ.get(LOCAL_TOKEN_FILE_ENV) or "").strip()
+    if path:
+        try:
+            return Path(path).read_text(encoding="utf-8").strip()
+        except OSError:
+            return ""
+    return ""
+
+
+def _local_token_denied(headers: dict, info: dict):
+    """仅对 local_fallback（本机无门户 identity）会话强制 token；有 identity 的走 roles。"""
+    tok = local_token()
+    if not tok:
+        return None
+    if str((info or {}).get("role_source") or "") != "local_fallback":
+        return None
+    presented = str(headers.get("X-IDE-Token") or "").strip()
+    if not presented:
+        presented = str(parse_cookies(headers.get("Cookie") or "").get("ide_local_token") or "").strip()
+    if presented and secrets.compare_digest(presented, tok):
+        return None
+    return err("local_token_required", "本机直连已启用本地准入：写/执行需带 X-IDE-Token（或 /rw?token=... 种 cookie）")
+
+
 def _role_denied(info: dict, required_roles=None):
     if not required_roles:
         return None
@@ -275,11 +308,13 @@ def check_access(headers: dict, token=None, required_roles=None) -> Optional[dic
         if cookie.get("ide_session") != token:
             return err("no_session", "缺少有效 IDE 会话（请从 /rw 页面进入）")
         info = _SESSIONS.get(_token_key(token)) or {}
-        return _role_denied(info, required_roles)
+        denied = _role_denied(info, required_roles)
+        return denied or _local_token_denied(headers, info)
     info = session_info(headers)
     if not info:
         return err("no_session", "缺少有效 IDE 会话（请从 /rw 页面进入）")
-    return _role_denied(info, required_roles)
+    denied = _role_denied(info, required_roles)
+    return denied or _local_token_denied(headers, info)
 
 
 def _tasks_file(repo: Path) -> Path:
