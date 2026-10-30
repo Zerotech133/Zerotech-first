@@ -1205,12 +1205,27 @@ async function loadDiff(task) {
     $("#legion-ide-reply-wrap").style.display = "none";
     $("#legion-ide-diff-wrap").style.display = "none";
     $("#legion-ide-confirm-wrap").style.display = "none";
-    $("#legion-ide-events").textContent = "启动中…";
+    $("#legion-ide-events").textContent = "A0/Hermes 编排中…";
     try {
-      const d = await api("/api/ide/openhands/start", {
+      // 方案 1：Hermes 先规划/决定是否执行，OH 只负责执行。
+      const d = await api("/api/ide/orchestrate", {
         method: "POST",
         body: JSON.stringify({ message, task, model: ohModelName(model), agent: SELECTED_AGENT }),
       });
+      if (!d.ok) throw new Error(d.error || d.detail || "orchestrate_failed");
+      if (d.plan) {
+        $("#legion-ide-reply").textContent = "A0/席位计划：\n" + d.plan;
+        $("#legion-ide-reply-wrap").style.display = "";
+      }
+      if (d.mode === "answer" || !d.conversation_id) {
+        state.cid = "";
+        state.baseSteps = ["A0 判断：无需执行", "binding：" + (d.binding || "—")];
+        renderEvents();
+        status("A0 已答复，未执行", "ok");
+        $("#legion-ide-start").disabled = false;
+        $("#legion-ide-stop").disabled = true;
+        return;
+      }
       state.cid = d.conversation_id;
       state.task = task;
       upsertSession({
@@ -1218,14 +1233,15 @@ async function loadDiff(task) {
         title: message.slice(0, 80), status: "running",
       });
       state.baseSteps = [
+        "A0 编排：" + (d.agent_name || d.agent || "—") + " · " + (d.binding || "—"),
         "worktree：" + (d.worktree || "default"),
         "模型：" + (d.model || model),
       ];
       renderEvents();
-      status("运行中…", "run");
+      status("A0 已计划，OH 执行中…", "run");
       startStream(state.cid);
     } catch (e) {
-      status("启动失败：" + e.message, "bad");
+      status("编排/启动失败：" + e.message, "bad");
       $("#legion-ide-start").disabled = false;
       $("#legion-ide-stop").disabled = true;
     }
