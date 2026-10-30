@@ -9,7 +9,7 @@
 # 判据: 本次 FAILED/ERROR 减去 tools/test_baseline.json 的 known_failures（tools 套件供夜间/手动全量，不进 fast）
 #       得到"新增失败"; 新增=0 才放行。
 param(
-    [ValidateSet('fast', 'portal', 'kstock', 'agent', 'quant', 'tools', 'all')]
+    [ValidateSet('fast', 'portal', 'kstock', 'ide', 'agent', 'quant', 'tools', 'all')]
     [string]$Suite = 'fast',
     [int]$PytestTimeout = 120
 )
@@ -40,19 +40,22 @@ if (Test-Path -LiteralPath $baselinePath) {
 
 $suites = @()
 switch ($Suite) {
-    'fast'   { $suites = @('portal', 'kstock') }
+    # 2026-10-30 P1：LDE HTTP 契约进 fast 门（单独文件，不拖入整个 agent 套件）
+    'fast'   { $suites = @('portal', 'kstock', 'ide') }
     'portal' { $suites = @('portal') }
     'kstock' { $suites = @('kstock') }
+    'ide'    { $suites = @('ide') }
     'agent'  { $suites = @('agent') }
     'quant'  { $suites = @('quant') }
     'tools'  { $suites = @('tools') }
-    'all'    { $suites = @('portal', 'kstock', 'agent', 'quant') }
+    'all'    { $suites = @('portal', 'kstock', 'agent', 'quant', 'ide') }
     default  { Write-Host "[ERR] 未知 Suite: $Suite"; exit 2 }
 }
 $paths = @{
     'portal' = 'portal/tests'; 'kstock' = 'k_stock/tests'
     'agent'  = 'agent_platform/tests'; 'quant' = 'quant_backtest/tests'
     'tools'  = 'tools/tests'
+    'ide'    = 'agent_platform/tests/test_legion_ide_http.py'
 }
 
 $newFailures = 0
