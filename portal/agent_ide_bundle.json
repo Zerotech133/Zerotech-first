@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 15:19",
+ "generated": "2026-10-30 15:25",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,8 +9,8 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 24,
-  "workorders_review": 6
+  "workorders_doing": 26,
+  "workorders_review": 7
  },
  "workorders": [
   {
@@ -282,6 +282,33 @@
    "branch": "task/K-QUANT-20261030-OHLOOP-TEST",
    "created": "2026-10-30 09:19:23",
    "project": "quant"
+  },
+  {
+   "id": "WO-GUANYU-P78-20261030",
+   "desc": "agent测试收集修复",
+   "status": "doing",
+   "owner": "GUANYU",
+   "branch": "task/WO-GUANYU-P78-20261030",
+   "created": "2026-10-30 15:23:28",
+   "project": "general"
+  },
+  {
+   "id": "WO-KB-FULLIDX-20261030",
+   "desc": "全量语料索引合并与验证脚本：shards→packed_full + 检索验证（供 16:05 收尾）",
+   "status": "review",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-KB-FULLIDX-20261030",
+   "created": "2026-10-30 15:23:39",
+   "project": "general"
+  },
+  {
+   "id": "WO-LEGION-P0-6-OTLP-20261030",
+   "desc": "P0-6 Phoenix OTLP HTTP回退+验收",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-P0-6-OTLP-20261030",
+   "created": "2026-10-30 15:24:27",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -791,6 +818,13 @@
    "lines": 84,
    "truncated": false,
    "content": "# -*- coding: utf-8 -*-\n\"\"\"辩论回放 CLI（K-STOCK-007）：lineage 人工抽查工具，三判据 J3 的配套\n\n用法：\n    python replay.py <run_id>            # 各节点结论\n    python replay.py <run_id> --trace    # 加 trace 时间线（每轮发言/相似度/延迟）\n\"\"\"\n\nimport argparse\nimport json\nimport sqlite3\nimport sys\nfrom pathlib import Path\n\nBASE = Path(__file__).parent\nDB = BASE / \"data\" / \"checkpoints.db\"\n\n\ndef main():\n    ap = argparse.ArgumentParser(description=\"投研部辩论回放\")\n    ap.add_argument(\"run_id\", help=\"账本里的 run_id（如 e1d80bc78cfb）\")\n    ap.add_argument(\"--trace\", action=\"store_true\", help=\"输出 trace 时间线\")\n    args = ap.parse_args()\n\n    if not DB.exists():\n        print(\"无 checkpoint 库：%s\" % DB)\n        sys.exit(1)\n    conn = sqlite3.connect(str(DB), check_same_thread=False)\n\n    run = conn.execute(\n        \"SELECT stock, status, started_at, finished_at FROM runs WHERE run_id=?\",\n        (args.run_id,),\n    ).fetchone()\n    if not run:\n        print(\"run_id 不存在：%s\" % args.run_id)\n        sys.exit(1)\n    stock, status, t0, t1 = run\n    dur = (\"%.1fs\" % (t1 - t0)) if t1 else \"未结束\"\n    print(\"=\" * 62)\n    print(\"run %s | 标的 %s | 状态 %s | 耗时 %s\" % (args.run_id, stock, status, dur))\n    print(\"=\" * 62)\n\n    for nk, aid, sj in conn.execute(\n        \"SELECT node_key, agent_id, state_json FROM checkpoints \"\n        \"WHERE run_id=? ORDER BY node_key\",\n        (args.run_id,),\n    ):\n        st = json.loads(sj)\n        body = st.get(\"merged\") or st.get(\"output\", \"\")\n        meta = \"\"\n        if \"rounds\" in st:\n            meta = \"（辩论 %s 轮，末轮相似度 %s）\" % (st[\"rounds\"], st.get(\"sim\"))\n        print(\"\\n[%s] %s %s\" % (aid, nk, meta))\n        print(\"  \" + body[:500].replace(\"\\n\", \" \"))\n\n    if args.trace:\n        print(\"\\n\" + \"=\" * 62)\n        print(\"trace 时间线：\")\n        rows = conn.execute(\n            \"SELECT agent_id, phase, round, similarity, status, latency_ms, output \"\n            \"FROM traces WHERE run_id=? ORDER BY ts\",\n            (args.run_id,),\n        ).fetchall()\n        for aid, ph, rd, sim, st, lat, out in rows:\n            simtxt = (\" sim=%.2f\" % sim) if sim is not None else \"\"\n            print(\n                \"[%s] %-16s r%s%s (%s, %.0fms): %s\"\n                % (\n                    aid,\n                    ph,\n                    rd,\n                    simtxt,\n                    st,\n                    lat or 0,\n                    (out or \"\")[:110].replace(\"\\n\", \" \"),\n                )\n            )\n        if not rows:\n            print(\"  （该 run 无 trace 记录）\")\n\n\nif __name__ == \"__main__\":\n    main()\n"
+  },
+  {
+   "path": "agent_platform/research_plan.py",
+   "size": 4745,
+   "lines": 122,
+   "truncated": false,
+   "content": "# -*- coding: utf-8 -*-\n\"\"\"D1 投研工作台数据合同（2026-10-30 WO-D1-RESEARCH）。\n\n边界：股票由 ACAD1 策略池提供；D1 只做池内研究/研判/建仓计划，不管理策略。\n输出每票：看多/看空论据、D1 结论、可买性、买点、止盈/止损、盯盘交棒状态。\n\"\"\"\nfrom __future__ import annotations\n\n\ndef _f(v, default=None):\n    try:\n        x = float(v)\n        return x if x > 0 else default\n    except (TypeError, ValueError):\n        return default\n\n\ndef _analysis(rec, key):\n    return ((rec or {}).get(\"analyses\") or {}).get(key) or \"\"\n\n\ndef _shadow_info(shadow):\n    s = (shadow or {}).get(\"summary\") or {}\n    return {\n        \"risk_level\": s.get(\"risk_level\") or (shadow or {}).get(\"risk_level\"),\n        \"time_horizon\": s.get(\"time_horizon\"),\n        \"rationale\": s.get(\"rationale\") or (shadow or {}).get(\"rationale\"),\n        \"l1_basis\": s.get(\"l1_basis\") or (shadow or {}).get(\"l1_basis\"),\n        \"execution_modes\": s.get(\"execution_modes\"),\n        \"target_price\": s.get(\"target_price\"),\n    }\n\n\ndef build_item(item, rec, plan_row=None, shadow=None):\n    item = item or {}\n    rec = rec or {}\n    plan = plan_row or {}\n    price = _f(rec.get(\"price\")) or _f(plan.get(\"price\")) or _f((shadow or {}).get(\"price_at_decision\"))\n    recommendation = str(rec.get(\"recommendation\") or plan.get(\"recommendation\") or \"\").upper()\n    confidence = _f(rec.get(\"confidence\"))\n    status = rec.get(\"decision_status\") or (shadow or {}).get(\"status\")\n    done = status == \"done\"\n    can_buy = bool(done and recommendation in (\"BUY\", \"STRONG_BUY\") and price)\n    watch_trigger = plan.get(\"watch_trigger\") or (\n        {\"pullback\": round(price * 0.97, 2), \"breakout\": round(price * 1.02, 2)} if price else None)\n    buy_zone = plan.get(\"buy_zone\") or (\n        [round(price * 0.98, 2), round(price * 1.01, 2)] if price else None)\n    stop = _f(plan.get(\"stop_loss\")) or (round(price * 0.92, 2) if price else None)\n    target1 = _f(plan.get(\"target1\")) or (round(price * 1.08, 2) if price else None)\n    target2 = _f(plan.get(\"target2\")) or (round(price * 1.15, 2) if price else None)\n    rr = round((target1 - price) / (price - stop), 2) if (price and target1 and stop and price > stop) else None\n\n    if not done:\n        action = \"pending_research\"\n        handoff = {\"to\": \"D1\", \"status\": \"pending\", \"note\": \"等待投研分析完成\"}\n    elif can_buy:\n        action = \"buy_ready\"\n        handoff = {\"to\": \"TR1\", \"status\": \"ready\",\n                   \"gate\": \"外部用户需人工确认；内部运行走 auto（paper）\",\n                   \"buy_zone\": buy_zone, \"stop_loss\": stop}\n    elif recommendation in (\"SELL\", \"STRONG_SELL\"):\n        action = \"avoid\"\n        handoff = {\"to\": \"none\", \"status\": \"no_trade\", \"note\": \"空头/回避\"}\n    else:\n        action = \"watch_trigger\"\n        handoff = {\"to\": \"WA1/WATCH_TOWER/watchbot\", \"status\": \"armed\",\n                   \"condition\": \"盯盘触发后通知交易\", \"watch_trigger\": watch_trigger}\n\n    info = _shadow_info(shadow)\n    return {\n        \"code\": str(item.get(\"code\") or \"\"),\n        \"name\": item.get(\"name\") or \"\",\n        \"industry\": item.get(\"industry\") or \"\",\n        \"tier\": item.get(\"tier\") or \"\",\n        \"sources\": item.get(\"sources\") or [],\n        \"data_date\": item.get(\"data_date\") or \"\",\n        \"stale\": bool(item.get(\"stale\")),\n        \"recommendation\": recommendation,\n        \"confidence\": confidence,\n        \"decision_status\": status,\n        \"price\": price,\n        \"can_buy\": can_buy,\n        \"action\": action,\n        \"buy_zone\": buy_zone,\n        \"stop_loss\": stop,\n        \"target1\": target1,\n        \"target2\": target2,\n        \"risk_reward\": rr,\n        \"watch_trigger\": watch_trigger,\n        \"handoff\": handoff,\n        \"bull\": _analysis(rec, \"T1\"),\n        \"bear\": _analysis(rec, \"T2\"),\n        \"sentiment\": _analysis(rec, \"N1\"),\n        \"fundamental\": _analysis(rec, \"F1\"),\n        \"rationale\": info[\"rationale\"],\n        \"l1_basis\": info[\"l1_basis\"],\n        \"risk_level\": info[\"risk_level\"],\n        \"time_horizon\": info[\"time_horizon\"],\n        \"node_exec\": rec.get(\"node_exec\") or [],\n        \"strategy_owner\": \"ACAD1\",\n        \"research_owner\": \"D1\",\n    }\n\n\ndef summarize(items):\n    items = items or []\n    counts = {\"total\": len(items)}\n    for a in (\"buy_ready\", \"watch_trigger\", \"avoid\", \"pending_research\"):\n        counts[a] = sum(1 for x in items if x.get(\"action\") == a)\n    counts[\"can_buy\"] = sum(1 for x in items if x.get(\"can_buy\"))\n    counts[\"analyzed\"] = sum(1 for x in items if x.get(\"decision_status\") == \"done\")\n    counts[\"armed_watch\"] = sum(1 for x in items if x.get(\"handoff\", {}).get(\"status\") == \"armed\")\n    return counts\n\n\ndef build_snapshot(items):\n    items = list(items or [])\n    return {\"items\": items, \"summary\": summarize(items),\n            \"strategy_owner\": \"ACAD1\", \"research_owner\": \"D1\",\n            \"trading_permitted\": False,\n            \"note\": \"策略由 ACAD1 池提供；D1 只做池内研究/建仓计划，不管理策略。\"}\n"
   },
   {
    "path": "agent_platform/router.py",
@@ -6347,7 +6381,14 @@
    ],
    "experience": "30 年工程治理经验：漏洞分级与补丁流程、失败测试基线修复、编码规范与门禁落地、技术债清欠与重复功能合并；证据驱动、逐项闭环，只出报告与工单不自行合并，开发动作限独立 worktree 提交+跑测试并交 L2 人签。",
    "dept_name": "研究院",
-   "dept_cn_title": "太学"
+   "dept_cn_title": "太学",
+   "tasks": [
+    {
+     "id": "WO-GUANYU-P78-20261030",
+     "desc": "agent测试收集修复",
+     "status": "doing"
+    }
+   ]
   },
   "HUANGZHONG": {
    "id": "HUANGZHONG",
@@ -6995,7 +7036,14 @@
    ],
    "entry_source": "virtual_governance",
    "seat_note": "profile 角色，不占编（D5-C）；与 R2 风控席（org 编制·保守风控哨）是不同 id，报表按 id 区分。",
-   "home_page": "http://127.0.0.1:8796/zhaoyun"
+   "home_page": "http://127.0.0.1:8796/zhaoyun",
+   "tasks": [
+    {
+     "id": "WO-LEGION-P0-6-OTLP-20261030",
+     "desc": "P0-6 Phoenix OTLP HTTP回退+验收",
+     "status": "doing"
+    }
+   ]
   }
  }
 }
