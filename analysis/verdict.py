@@ -78,6 +78,16 @@ def build_verdict(snap, feat, events):
             score -= 0.6
             risks.append("PS 高于同业（%.1f 分位）" % pct)
         signals.append("PS 同业分位 %.1f" % pct)
+    # P0M：自身历史分位（近5年）——避免行业分类偏差把估值判断带偏
+    hp = _num(val.get("ps_pct_hist"))
+    if hp is not None:
+        signals.append("PS 历史分位 %.0f%%（近5年）" % hp)
+        if hp <= 25:
+            score += 0.3
+            reasons.append("PS 处近 5 年低位（%.0f 分位）" % hp)
+        elif hp >= 85:
+            score -= 0.4
+            risks.append("PS 处近 5 年高位（%.0f 分位）" % hp)
 
     # 技术
     price, ma20, ma60 = _num(tech.get("price")), _num(tech.get("ma20")), _num(tech.get("ma60"))
@@ -129,6 +139,15 @@ def build_verdict(snap, feat, events):
         signals.append("重整程序推进中")
     if len([e for e in events if e["category"] in ("问询/监管", "诉讼", "退市/ST")]) >= 2:
         risks.append("近期存在监管/诉讼/退市类负面事件")
+
+    # P0M：数据时效惩罚（行情落后多个交易日 → 置信度下调）
+    conf_cap = 0.85
+    lag_days = (snap.get("data_lag") or {}).get("trade_days")
+    if lag_days is not None and lag_days >= 3:
+        risks.append("数据时效差：行情落后 %d 个交易日，置信度下调" % lag_days)
+        conf_cap = 0.5
+    elif lag_days is not None and lag_days >= 1:
+        signals.append("数据时效：行情落后 %d 个交易日" % lag_days)
 
     # 评级
     if "退市风险" in tags or "重整" in tags:
@@ -270,7 +289,7 @@ def build_verdict(snap, feat, events):
         thesis += "。主要风险：" + "；".join(risks[:3])
 
     verdict = {
-        "rating": rating, "confidence": round(min(0.85, max(0.35, 0.45 + abs(score) * 0.08)), 2),
+        "rating": rating, "confidence": round(min(conf_cap, max(0.35, 0.45 + abs(score) * 0.08)), 2),
         "horizon": horizon, "thesis": thesis,
         "key_signals": signals[:6], "reasons": reasons[:8],
         "triggers": ["季报/预告验证业绩", "放量突破 250 日高或回踩 MA20 企稳"],

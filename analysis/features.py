@@ -108,6 +108,23 @@ def build_features(snap):
             val[k] = _f(row.get(src))
         if db["trade_date"].max() < snap["last_trade_date"]:
             val["stale_days_note"] = "daily_basic 落后于行情"
+        # P0M：估值自身历史分位（近 5 年，样本 ≥120）——同业分位的补充口径
+        try:
+            h = db.tail(1250)
+            for key, col, cur in (("pe_pct_hist", "pe_ttm", val.get("pe_ttm")),
+                                  ("pb_pct_hist", "pb", val.get("pb")),
+                                  ("ps_pct_hist", "ps_ttm", val.get("ps_ttm"))):
+                if col in h.columns and cur is not None:
+                    vals = pd.to_numeric(h[col], errors="coerce").dropna().tolist()
+                    if len(vals) >= 120:
+                        val[key] = round(sum(1 for v in vals if v <= cur) / len(vals) * 100, 1)
+            hs = [val.get(k) for k in ("pe_pct_hist", "pb_pct_hist", "ps_pct_hist")
+                  if val.get(k) is not None]
+            if hs:
+                val["hist_temp"] = round(sum(hs) / len(hs), 1)
+                val["hist_days"] = int(len(db))
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "analysis/features.py", exc)
     # 同业（申万一级成分股：sw_l1_member.con_code + sw_classify_l1.industry_name）
     ind = snap.get("industry") or {}
     l1_name = ind.get("l1_name")

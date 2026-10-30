@@ -164,3 +164,10 @@ analysis/
 ├── schema/stock_analysis.schema.json  # 产物 schema
 └── templates/      # H5 CSS/JS 模板
 ```
+
+### 分析方法优化（P0M，2026-10-30）
+
+- **行业映射纠偏**：优先 `stock_basic.industry` 名称匹配申万分类（L2/L3 命中后按 `industry_code/index_code` 上溯 L1），回退 `sw_l1_member`；`snapshot.industry.match` 标注来源（stock_basic / sw_l1_member）。
+- **估值历史分位**：`valuation.ps_pct_hist / pe_pct_hist / pb_pct_hist / hist_temp`（近 5 年，样本≥120）；报告/H5 增加「PS 历史分位（近5年）」「估值历史温度」。
+- **数据时效门禁**：`snapshot.data_lag = {last_trade_date, today, calendar_days, trade_days}`；G1 对 `trade_days>=1` 告警（不否决），评级层 `trade_days>=3` 置信度上限 0.5。
+- 评级层：PS 历史分位 ≤25 加 0.3、≥85 减 0.4，并进 key_signals。
