@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 19:10",
+ "generated": "2026-10-30 19:11",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 28,
+  "workorders_doing": 27,
   "workorders_review": 9
  },
  "workorders": [
@@ -336,15 +336,6 @@
    "branch": "task/WO-GUANYU-P82-20261030",
    "created": "2026-10-30 19:05:16",
    "project": "general"
-  },
-  {
-   "id": "WO-WARROOM-LIVE-WATCH-20261030",
-   "desc": "作战台 watch 摘要：8789 快照 4.2s 超过2s超时；改为6s+60s缓存，首屏可拿到真实盯盘数据",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-WARROOM-LIVE-WATCH-20261030",
-   "created": "2026-10-30 19:06:29",
-   "project": "portal"
   }
  ],
  "coder_traces": [
