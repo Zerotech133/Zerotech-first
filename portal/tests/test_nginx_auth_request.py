@@ -35,15 +35,15 @@ def test_relative_redirect():
 
 def test_five_pages_protected():
     s = _text()
-    # 2026-10-30 P0：页面 + IDE 数据面（/lde/ /openhands/）统一认证
-    # 5 页 + /ide + bundle + /hermes/ + /lde/ + /openhands/
-    assert s.count("auth_request /_auth_guard;") == len(PROTECTED) + 5
+    # 2026-10-30 P0：页面 + IDE 数据面（/lde/ /openhands/ /extensions/）统一认证
+    # 5 页 + /ide + bundle + /hermes/ + /lde/ + /openhands/ + /extensions/
+    assert s.count("auth_request /_auth_guard;") >= len(PROTECTED) + 6
     for p in PROTECTED + ("/ide", "/agent_ide_bundle.json"):
         m = re.search(r"location = " + re.escape(p) + r" \{(.*?)\n    \}", s, re.S)
         assert m, p
         assert "auth_request /_auth_guard;" in m.group(1), p
         assert "error_page 401 = @login_required;" in m.group(1), p
-    for prefix in ("/hermes/", "/lde/", "/openhands/"):
+    for prefix in ("/hermes/", "/lde/", "/openhands/", "/extensions/"):
         m = re.search(r"location \^~ " + re.escape(prefix) + r" \{(.*?)\n    \}", s, re.S)
         assert m, prefix
         assert "auth_request /_auth_guard;" in m.group(1), prefix
