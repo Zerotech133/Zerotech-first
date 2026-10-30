@@ -1,10 +1,10 @@
 {
- "generated_at": "2026-10-30T12:33:38",
+ "generated_at": "2026-10-30T12:37:01",
  "scope": "agent_platform,portal,tools,quant_backtest,k_stock,news_collector (excl tests/.venv/worktrees/archive)",
  "counts": {
   "HIGH": 18,
   "MEDIUM": 124,
   "LOW": 1351
  },
- "note": "bandit 基线计数；wrapper 在夜间任务中与本次扫描对比，HIGH>0 或 MEDIUM>基线即告警"
+ "note": "bandit 基线计数；夜间任务对比，HIGH/MEDIUM 超基线告警"
 }
