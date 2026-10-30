@@ -94,3 +94,12 @@ def test_model_watch_gets_reason():
     out2 = DP.apply_policy({"recommendation": "WATCH", "confidence": 0.55}, b2,
                            run_id="r1", date="2026-10-31")
     assert out2["watch_reason"] == "model_watch"
+
+
+def test_established_allows_direction():
+    """只有 L4=established 且证据充分，BUY/SELL 才不被规则门压掉。"""
+    b = EB.EvidenceBundle.from_context("600519", "x", _ctx())
+    out = DP.apply_policy({"recommendation": "BUY", "confidence": 0.72}, b,
+                          run_id="r1", date="2026-10-31")
+    assert out["decision"]["recommendation"] == "BUY"
+    assert out["watch_reason"] is None
