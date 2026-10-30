@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 29,
+  "workorders_doing": 28,
   "workorders_review": 9
  },
  "workorders": [
@@ -345,15 +345,6 @@
    "branch": "task/WO-WARROOM-LIVE-WATCH-20261030",
    "created": "2026-10-30 19:06:29",
    "project": "portal"
-  },
-  {
-   "id": "WO-ZHAOYUN-UIUX-W2-20261030",
-   "desc": "W2错误处理审查+统一Banner方案（文档，未改代码）",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-ZHAOYUN-UIUX-W2-20261030",
-   "created": "2026-10-30 19:09:23",
-   "project": "general"
   }
  ],
  "coder_traces": [
@@ -7320,11 +7311,6 @@
     {
      "id": "WO-LEGION-OIDC-PATH-20261030",
      "desc": "OIDC配置路径对齐实际vault",
-     "status": "doing"
-    },
-    {
-     "id": "WO-ZHAOYUN-UIUX-W2-20261030",
-     "desc": "W2错误处理审查+统一Banner方案（文档，未改代码）",
      "status": "doing"
     }
    ]
