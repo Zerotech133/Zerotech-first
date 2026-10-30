@@ -94,8 +94,8 @@ def compose(pool, decisions, limits=None, max_positions=MAX_POSITIONS, now=None,
             row.update({"action": "pending_analysis", "weight": 0.0,
                         "note": "分析未完成/解析失败"})
         elif rec in ("SELL", "STRONG_SELL") and price:
-            row.update(_sell_plan(price)); row.update({"weight": 0.0,
-                                                       "note": "空头信号，不组合"})
+            row.update(_sell_plan(price))
+            row.update({"weight": 0.0, "note": "空头信号，不组合"})
         elif rec in ("WATCH", "HOLD") and price:
             row.update(_watch_plan(price, rec, limits))
             row.update({"weight": 0.0, "note": "暂不建仓，等触发价"})

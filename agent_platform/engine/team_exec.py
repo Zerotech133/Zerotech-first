@@ -106,7 +106,9 @@ def build_summary(decision, records, stock=None):
     rec = str(d.get("recommendation") or "").upper()
     risk = d.get("risk_level")
     if not risk:
-        if rec in ("SELL", "STRONG_SELL") or (conf is not None and conf < 0.5):
+        if not rec and conf is None:
+            risk = "UNKNOWN"  # 无决策/无置信时不冒充 LOW
+        elif rec in ("SELL", "STRONG_SELL") or (conf is not None and conf < 0.5):
             risk = "HIGH"
         elif conf is not None and conf < 0.7:
             risk = "MEDIUM"
