@@ -66,7 +66,7 @@ try {
 # ── 3. 原子更新 plain + 重跑 DPAPI 迁移 ───────────────────
 # W1-2（2026-10-14）：jev-gate.env.ps1 已 stub 化（优先 .enc DPAPI、缺失回退
 # plain 明文）。更新目标改为 plain 明文副本，成功后重跑 migrate_env_dpapi.py
-# 重建 .enc 并校验。回滚：还原 rotate_tushare_token.ps1.bak_20261014。
+# 重建 .enc 并校验。回滚：从 C:\Temp\jev-eval_archive_20261030\ 取 rotate_tushare_token.ps1.bak_20261014。
 $StubFile = "$PSScriptRoot\jev-gate.env.ps1"   # stub（重启段加载用）
 $EnvFile  = "$PSScriptRoot\jev-gate.env.plain.ps1"   # 更新目标（明文副本）
 if (-not (Test-Path $EnvFile)) { Write-Error "找不到 $EnvFile"; exit 1 }
