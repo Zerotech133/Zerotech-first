@@ -55,3 +55,42 @@ def test_replay_injected_kline():
     assert "volume_breakout" in out["methods"]
     assert out["methods"]["volume_breakout"]["codes"] == 1
     assert out["per_code"]["600519"]["bars"] == len(bars)
+
+
+def test_costs_reduce_net_return():
+    bars = _bars([10.0] * 25 + [10.8, 10.9, 11.0, 10.7, 10.5, 10.4, 10.2, 10.0, 9.8],
+                 [1000] * 25 + [3000] + [1200] * 8,
+                 [10.2] * 25 + [10.9] + [11.1] * 8)
+    gross = tm.simulate("volume_breakout", bars)
+    net = tm.simulate("volume_breakout", bars, costs=tm.DEFAULT_COSTS)
+    if gross["trades"] and net["trades"]:
+        assert net["trades"][0]["return_pct"] < gross["trades"][0]["return_pct"]
+        assert net["trades"][0]["cost_pct"] > 0
+
+
+def test_market_regime_and_filter():
+    idx = _bars([10.0 + i * 0.05 for i in range(30)])
+    regime = tm.market_regime(idx)
+    assert regime and any(regime.values())
+    bars = _bars([10.0] * 25 + [10.8, 10.9, 11.0, 10.7, 10.5, 10.4, 10.2, 10.0, 9.8],
+                 [1000] * 25 + [3000] + [1200] * 8,
+                 [10.2] * 25 + [10.9] + [11.1] * 8)
+    # 全部日期 regime=false → 不交易
+    false_map = {str(b[0]): False for b in bars}
+    assert tm.simulate("volume_breakout", bars, regime_by_date=false_map)["stats"]["trades"] == 0
+
+
+def test_portfolio_caps_and_nav():
+    bars = _bars([10.0] * 25 + [10.8, 10.9, 11.0, 10.7, 10.5, 10.4, 10.2, 10.0, 9.8],
+                 [1000] * 25 + [3000] + [1200] * 8,
+                 [10.2] * 25 + [10.9] + [11.1] * 8)
+    r = tm.simulate("volume_breakout", bars)
+    trades = r["trades"]
+    if trades:
+        stats = tm.portfolio_stats({"A": trades, "B": trades},
+                                   {"A": bars, "B": bars},
+                                   costs=tm.DEFAULT_COSTS, limits={"single_max": 0.10, "total_max": 0.20})
+        assert stats["limits"]["single_max"] == 0.10
+        assert stats["limits"]["total_max"] == 0.20
+        assert stats["nav_end"] <= 1.2  # 总仓上限 20%，不杠杆
+        assert stats["max_drawdown_pct"] <= 0
