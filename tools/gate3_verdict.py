@@ -34,7 +34,7 @@
 三项字段检查从 SKIP 转为实检。本工具同样按此规则输出，并在汇总里
 显式标注当前处于哪一态，避免人拿着「7/7」去找「11/11」的差异。
 
-`--skip-tasks` 会让任务三项不入账（本工具 4/8 项，巡检仍是 7/11 项）。
+`--skip-tasks` 会让任务三项不入账（本工具 8 项，巡检仍是 11 项）。
 交叉核对因此不能拿裸项数硬比：必须从巡检基数里扣掉被跳过的项数再比，
 否则同一份账本会被读成「7 vs 4 不一致」的假 FAIL。
 
@@ -159,9 +159,9 @@ def judge_ledger(rows, today, is_monday):
     failed_today = [r for r in rows
                     if r.get("date") == latest and r.get("status") != "done"]
     syms = {r.get("symbol") for r in todays}
-    # 与巡检 _basket_complete 同口径：行数 >= 篮子数 且 不同标的数 == 篮子数
-    # （比 `== BASKET_N` 更严：4 标的 + 1 重复行不得判齐备）
-    ok_basket = len(todays) >= BASKET_N and len(syms) == BASKET_N
+    # 与巡检 _basket_complete 同口径：至少覆盖 BASKET_N 个不同标的；
+    # 动态池当日可大于最小篮子。
+    ok_basket = len(todays) >= BASKET_N and len(syms) >= BASKET_N
     check("最新交易日 %s done 行数=%d（预期 %d）" % (latest, len(todays), BASKET_N),
           ok_basket,
           "不同标的 %d 个；当日非 done %d 票%s" % (

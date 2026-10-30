@@ -66,6 +66,8 @@ DK_FIELDS = (
 
 RESULTS = []
 _LOG_HANDLE = None
+_ORIG_STDOUT = None
+_ORIG_STDERR = None
 
 
 def _ran_today(last):
@@ -113,9 +115,10 @@ def _basket_complete(todays):
     重复行（run_shadow 双跑），等待会正常结束而断言判 FAIL，且 FAIL 文案
     与真正的失败无法区分。
     标的集合校验则比 `==` 更严：4 个标的 + 1 条重复（共 5 行）旧实现会 PASS。
+    2026-10-30 动态池：当日票数可大于 BASKET_N，门只要「至少覆盖最小篮子」。
     """
     return (
-        len(todays) >= BASKET_N and len({r.get("symbol") for r in todays}) == BASKET_N
+        len(todays) >= BASKET_N and len({r.get("symbol") for r in todays}) >= BASKET_N
     )
 
 
@@ -170,7 +173,13 @@ class _Tee:
 
 
 def _close_log():
-    global _LOG_HANDLE
+    global _LOG_HANDLE, _ORIG_STDOUT, _ORIG_STDERR
+    # 先恢复原始流，再关日志；否则解释器 finalize 时会 flush 已关闭的
+    # _Tee 日志句柄，Windows 下表现为进程退出码 120（巡检已 PASS 但任务红）。
+    if _ORIG_STDOUT is not None:
+        sys.stdout = _ORIG_STDOUT
+    if _ORIG_STDERR is not None:
+        sys.stderr = _ORIG_STDERR
     try:
         if _LOG_HANDLE is not None and not _LOG_HANDLE.closed:
             _LOG_HANDLE.flush()
@@ -186,13 +195,14 @@ def _tee_log():
     `1> log 2>&1` 不会被任何 shell 解释，只会变成脚本的普通参数——
     任务照跑、退出码照出，但**日志永不落盘**，观察点门失去证据链。
     """
-    global _LOG_HANDLE
+    global _LOG_HANDLE, _ORIG_STDOUT, _ORIG_STDERR
     try:
         LOG.parent.mkdir(parents=True, exist_ok=True)
         _LOG_HANDLE = open(LOG, "a", encoding="utf-8")
     except Exception:  # noqa: BLE001
         _LOG_HANDLE = None
         return
+    _ORIG_STDOUT, _ORIG_STDERR = sys.stdout, sys.stderr
     sys.stdout = _Tee(sys.stdout, _LOG_HANDLE)
     sys.stderr = _Tee(sys.stderr, _LOG_HANDLE)
     atexit.register(_close_log)
@@ -407,6 +417,13 @@ def main():
             # 首跑未发生时字段三项无从验收，显式跳过
             print("[SKIP] schema_version/dk/degraded 三项（待首跑后验收）")
         else:
+            # 2026-10-30：首跑已发生后仍把这一项计入核心判据，和
+            # gate3_verdict 的 11 项口径保持一致；否则交叉核对会永远少 1 项。
+            check(
+                "影子首跑已发生（最新交易日 > %s）" % LAST_V0_DAY,
+                True,
+                "最新=%s" % latest,
+            )
             todays = [
                 r for r in rows if r.get("date") == latest and r.get("status") == "done"
             ]
