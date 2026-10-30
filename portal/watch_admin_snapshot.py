@@ -76,7 +76,8 @@ MODEL_ADMIN_HOST = os.environ.get("MODEL_ADMIN_HOST", "127.0.0.1")
 MODEL_ADMIN_PORT = int(os.environ.get("MODEL_ADMIN_PORT", "8098"))
 
 # Read-only GET timeout (seconds) — bounded so build() never hangs.
-_HTTP_TIMEOUT = 3.0
+# 2026-10-30 WO-WATCH-ADMIN：8098 /api/models 实测 4s（Ollama 列表），3s 会误报超时。
+_HTTP_TIMEOUT = 6.0
 
 
 # --------------------------------------------------------------------------- #
