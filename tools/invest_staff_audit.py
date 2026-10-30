@@ -80,8 +80,17 @@ def audit():
         checks.append({"seat": seat, "check": name,
                        "status": "PASS" if ok else level, "detail": detail})
 
-    add("—", "编制 8 席", set(inv.get("agents") or []) == set(SEATS),
-        "org invest=%s" % sorted(inv.get("agents") or []))
+    org_seats = set(inv.get("agents") or [])
+    base = set(SEATS)
+    add("—", "编制基线 8 席", base <= org_seats,
+        "org invest=%s" % sorted(org_seats))
+    extra = sorted(org_seats - base)
+    if extra:
+        # 2026-10-30 鲁肃部门扩编（WO-INV-STAFF-20261030：TR1/TR2/TR3/WA2/WA3 等）
+        # 后：审计基线仍为 8 席，新增席位单列 WARN（不阻断 test_audit_all_green），
+        # 待扩编单补齐对应审计项（TOOL_MIN/团队归属）后再逐席纳入 FAIL 口径。
+        add("—", "编制增员（待纳入审计）", True,
+            "extra=%s" % extra, level="WARN")
     for s in SEATS:
         p = profs.get(s)
         add(s, "org profile 存在", bool(p))

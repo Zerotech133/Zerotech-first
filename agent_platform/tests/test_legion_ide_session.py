@@ -27,7 +27,10 @@ def test_session_survives_restart(tmp_path, monkeypatch):
     _reset()
     info = G.session_info(h)
     assert info["owner"] == "zero_bound:test"
-    assert info["roles"] == []
+    # 2026-10-30 P0-2（WO-LEGION-IDE-P0-2-SEC-20261030）：写/执行角色门引入
+    # LOCAL_DEVELOPER 兜底角色（本地无 identity roles 时），会话 roles 不再为空；
+    # 旧断言 == [] 属契约变更前口径，已漂移。
+    assert info["roles"] == ["LOCAL_DEVELOPER"]
 
 
 def test_auth_roles_mapping(monkeypatch, tmp_path):
