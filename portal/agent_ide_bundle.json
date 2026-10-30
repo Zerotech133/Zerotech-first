@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 15:55",
+ "generated": "2026-10-30 15:57",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -293,15 +293,6 @@
    "project": "general"
   },
   {
-   "id": "K-ORG-20261030-PREFILTEREVAL",
-   "desc": "prefilter 灰度评估：用已判数据计算误杀率（替代人工标注集），产出数据版报告与启用建议",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-ORG-20261030-PREFILTEREVAL",
-   "created": "2026-10-30 15:50:24",
-   "project": "general"
-  },
-  {
    "id": "WO-TOOLS-SAFEIMPORT-20261030",
    "desc": "修复tools树from tools.safe_urlopen被安装包遮蔽（service_restart等36文件）",
    "status": "doing",
@@ -309,6 +300,15 @@
    "branch": "task/WO-TOOLS-SAFEIMPORT-20261030",
    "created": "2026-10-30 15:55:16",
    "project": "general"
+  },
+  {
+   "id": "WO-PICKCHAIN-FIX-20261030",
+   "desc": "选股产品链修复：build_pick_details/feishu_bot_ws 的 _stock_chip_summary/_stock_sector_rows 改从 api_common 取，修 AttributeError。",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-PICKCHAIN-FIX-20261030",
+   "created": "2026-10-30 15:56:47",
+   "project": "quant"
   }
  ],
  "coder_traces": [
@@ -7041,6 +7041,11 @@
     {
      "id": "WO-TOOLS-SAFEIMPORT-20261030",
      "desc": "修复tools树from tools.safe_urlopen被安装包遮蔽（service_restart等36文件）",
+     "status": "doing"
+    },
+    {
+     "id": "WO-PICKCHAIN-FIX-20261030",
+     "desc": "选股产品链修复：build_pick_details/feishu_bot_ws 的 _stock_chip_summary/_stock_sector_rows 改从 api_common 取，修 AttributeError。",
      "status": "doing"
     }
    ]
