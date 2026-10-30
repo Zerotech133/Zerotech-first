@@ -115,6 +115,20 @@ def patrol() -> dict:
               {"idle": len(idle_real), "overdue": len(overdue), "escalations": len(escalations)})
     for es in escalations:
         heartbeat(es["to_lead"], "escalated", es["msg"][:80], {"from": "A0"})
+    # 2026-10-30 P99：ACAD1 研究账本一致性（只读；失败不阻塞巡察）
+    try:
+        import academy_ledger_check as _alc
+        _led = _alc.run()
+        report["academy_ledger"] = {
+            "ok": _led["ok"],
+            "errors": len(_led["errors"]),
+            "warnings": len(_led["warnings"]),
+            "queued_stale": _led["stats"]["queued_stale"],
+            "by_stage": _led["stats"]["by_stage"],
+        }
+    except Exception as _e:  # noqa: BLE001
+        report["academy_ledger"] = {"ok": False, "error": type(_e).__name__}
+
     return report
 
 
