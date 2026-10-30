@@ -63,8 +63,19 @@ async function load(){
 }
 async function act(id,action){
   $('#msg').textContent='提交中…';
-  const r=await fetch('/api/sim/confirm',{method:'POST',headers:{'Content-Type':'application/json'},
+  const headers={'Content-Type':'application/json'};
+  const tok=sessionStorage.getItem('botConfirmToken');
+  if(tok) headers['X-Portal-Token']=tok;
+  let r=await fetch('/api/sim/confirm',{method:'POST',headers:headers,
     body:JSON.stringify({confirmation_id:id,action:action,by:'老田'})});
+  if(r.status===403){
+    const t=(prompt('LAN 访问需要门户 token（PORTAL_API_TOKEN 或 C:/Temp/portal_api_token 内容）。仅存本页会话。')||'').trim();
+    if(!t){ $('#msg').textContent='已取消（未带门户 token）'; return; }
+    sessionStorage.setItem('botConfirmToken',t);
+    headers['X-Portal-Token']=t;
+    r=await fetch('/api/sim/confirm',{method:'POST',headers:headers,
+      body:JSON.stringify({confirmation_id:id,action:action,by:'老田'})});
+  }
   const d=await r.json();
   $('#msg').textContent=d.ok?('已'+ (action==='approve'?'批准':'拒绝') +'：'+(d.item&&d.item.status||'')):('失败：'+(d.error||''));
   await load();
