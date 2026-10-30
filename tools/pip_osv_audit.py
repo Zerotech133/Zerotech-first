@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""依赖漏洞审计兜底：PYPI 冻结清单 → OSV batch API。
+r"""依赖漏洞审计兜底：PYPI 冻结清单 → OSV batch API。
 
 用法：
     python tools/pip_osv_audit.py -r C:\Temp\py312_freeze.txt --out C:\Temp\pip_osv_report.json
