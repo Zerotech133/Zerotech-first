@@ -60,3 +60,17 @@ def test_get_status(monkeypatch):
     h = H()
     api.handle_get(h, "/api/zhuge/review/status")
     assert h.status == 200 and h.payload["model"] == "m"
+
+
+def test_status_requires_auth(monkeypatch):
+    monkeypatch.delenv("ZHUGE_IDE_REVIEW_ALLOW_ANONYMOUS", raising=False)
+    h = H()
+    api.handle_get(h, "/api/zhuge/review/status")
+    assert h.status == 403
+
+
+def test_status_anonymous_flag_allows(monkeypatch):
+    monkeypatch.setenv("ZHUGE_IDE_REVIEW_ALLOW_ANONYMOUS", "1")
+    h = H()
+    api.handle_get(h, "/api/zhuge/review/status")
+    assert h.status == 200
