@@ -55,7 +55,13 @@ $paths = @{
     'portal' = 'portal/tests'; 'kstock' = 'k_stock/tests'
     'agent'  = 'agent_platform/tests'; 'quant' = 'quant_backtest/tests'
     'tools'  = 'tools/tests'
-    'ide'    = 'agent_platform/tests/test_legion_ide_http.py'
+    'ide'    = @(
+        'agent_platform/tests/test_legion_ide_http.py',
+        'agent_platform/tests/test_hermes_orchestrator.py',
+        'agent_platform/tests/test_legion_ide_session.py',
+        'agent_platform/tests/test_legion_ide_undo_store.py',
+        'agent_platform/tests/test_ide_extension_e2e.py'
+    )
 }
 
 $newFailures = 0
@@ -64,10 +70,10 @@ Push-Location -LiteralPath $repo
 try {
     foreach ($s in $suites) {
         $name = $s
-        $path = $paths[$name]
+        $targets = @($paths[$name])
         $log = Join-Path $env:TEMP "test_gate_${name}_$ts.log"
-        Write-Host "===== [$name] $path ====="
-        python -m pytest $path -q --timeout=$PytestTimeout -p no:cacheprovider *> $log
+        Write-Host "===== [$name] $($targets -join ' ') ====="
+        python -m pytest @targets -q --timeout=$PytestTimeout -p no:cacheprovider *> $log
         $rc = $LASTEXITCODE
         $rcBad = ($rc -ne 0 -and $rc -ne 1)
         if ($rcBad) {
@@ -84,12 +90,14 @@ try {
                 $failed += $f.Trim()
             }
         }
-        $knownList = @($known[$path])
+        $knownList = @()
         # 2026-10-28：env_failures 不再仅限 worktree——数据/环境依赖（如行情湖未更新到
         # 当日、worktree 无数据根）在主仓同样成立；仍单独打印，不掩盖真实新增失败。
-        if ($envKnown.ContainsKey($path)) { $knownList = @($knownList) + @($envKnown[$path]) }
-        $flakyList = @($flaky[$path])
-        if ($flakyList.Count -gt 0) { $knownList = @($knownList) + @($flakyList) }
+        foreach ($t in $targets) {
+            $knownList += @($known[$t])
+            if ($envKnown.ContainsKey($t)) { $knownList += @($envKnown[$t]) }
+            $knownList += @($flaky[$t])
+        }
         $new = @()
         foreach ($f in $failed) { if ($knownList -notcontains $f) { $new += $f } }
         $newFailures += $new.Count
