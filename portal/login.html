@@ -83,7 +83,7 @@
   var oidcEntry = document.getElementById('oidc-entry');
   var oidcLink = document.getElementById('oidc-login');
   fetch('/api/auth/oidc/status', {cache: 'no-store'}).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
-    if (d && d.ready && d.mode !== 'off') {
+    if (d && d.ready && d.mode === 'on') {
       oidcLink.href = '/api/auth/oidc/start?next=' + encodeURIComponent(next);
       oidcEntry.hidden = false;
     }

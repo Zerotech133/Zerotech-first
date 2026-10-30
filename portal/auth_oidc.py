@@ -46,6 +46,8 @@ CRED_FILE = Path(os.environ.get(
     r"C:\aios\_vault\pocket-id\secrets\zero_bound_client.env",
 ))
 STATE_TTL = 600
+OIDC_STATE_COOKIE = "zb_oidc_state"
+VALID_MODES = ("off", "shadow", "on")
 _states: Dict[str, Dict[str, Any]] = {}
 _discovery_cache: Dict[str, Tuple[float, Dict[str, Any]]] = {}
 _jwks_cache: Dict[str, Tuple[float, list]] = {}
@@ -53,6 +55,24 @@ _jwks_cache: Dict[str, Tuple[float, list]] = {}
 
 def _now() -> float:
     return time.time()
+
+
+def _mode() -> str:
+    value = (MODE or "off").strip().lower()
+    return value if value in VALID_MODES else "off"
+
+
+def _state_cookie(value: str, max_age: int = STATE_TTL) -> str:
+    return "%s=%s; Path=/api/auth/oidc; HttpOnly; SameSite=Lax; Max-Age=%d" % (
+        OIDC_STATE_COOKIE, value, max_age)
+
+
+def _cookie_value(handler, name: str) -> str:
+    for part in (gw._cookie_header(handler) or "").split(";"):
+        k, _, v = part.strip().partition("=")
+        if k == name:
+            return v.strip()
+    return ""
 
 
 def _b64url(data: bytes) -> str:
@@ -134,13 +154,16 @@ def _post_form(url: str, data: Dict[str, str]) -> Tuple[int, Any]:
         return 0, None
 
 
-def _redirect(handler, url: str, set_cookie: str = "") -> None:
+def _redirect(handler, url: str, set_cookie: str = "",
+              set_cookies: list | None = None) -> None:
     if not isinstance(url, str) or any(ch in url for ch in ("\r", "\n")):
         url = "/os-entry"
     handler.send_response(302)
     handler.send_header("Location", url)
-    if set_cookie:
-        handler.send_header("Set-Cookie", set_cookie)
+    cookies = set_cookies if set_cookies is not None else ([set_cookie] if set_cookie else [])
+    for cookie in cookies:
+        if cookie:
+            handler.send_header("Set-Cookie", cookie)
     handler.send_header("Cache-Control", "no-store")
     handler.send_header("Content-Length", "0")
     handler.end_headers()
@@ -151,18 +174,25 @@ def _error(handler, code: int, reason: str) -> None:
 
 
 def status() -> Dict[str, Any]:
+    mode = _mode()
+    if mode == "on":
+        entry = "oidc_available"
+    elif mode == "shadow":
+        entry = "shadow_only"
+    else:
+        entry = "unchanged (Phase A password bridge)"
     return {
         "ok": True,
-        "mode": MODE,
+        "mode": mode,
         "issuer": ISSUER,
         "redirect_uri": REDIRECT_URI,
         "ready": _ready(),
-        "login_entry": "unchanged (Phase A password bridge)" if MODE == "off" else "oidc_available",
+        "login_entry": entry,
     }
 
 
 def start(handler, query: str = "") -> None:
-    if MODE == "off":
+    if _mode() == "off":
         _error(handler, 404, "oidc_disabled")
         return
     if not _ready():
@@ -181,9 +211,11 @@ def start(handler, query: str = "") -> None:
     now = _now()
     for k in [k for k, v in _states.items() if now - v["created"] > STATE_TTL]:
         _states.pop(k, None)
+    binding = secrets.token_urlsafe(32)
     _states[state] = {
         "nonce": nonce, "verifier": verifier, "next": next_path,
         "created": now, "issuer": ISSUER,
+        "binding_hash": hashlib.sha256(binding.encode("ascii")).hexdigest(),
     }
     params = {
         "response_type": "code",
@@ -195,7 +227,8 @@ def start(handler, query: str = "") -> None:
         "code_challenge": challenge,
         "code_challenge_method": "S256",
     }
-    _redirect(handler, disc["authorization_endpoint"] + "?" + urllib.parse.urlencode(params))
+    _redirect(handler, disc["authorization_endpoint"] + "?" + urllib.parse.urlencode(params),
+              set_cookie=_state_cookie(binding))
 
 
 def _get_jwks(disc: Dict[str, Any]) -> list:
@@ -236,7 +269,7 @@ def _verify_id_token(id_token: str, disc: Dict[str, Any], expected_nonce: str) -
 
 
 def callback(handler, query: str = "") -> None:
-    if MODE == "off":
+    if _mode() == "off":
         _error(handler, 404, "oidc_disabled")
         return
     q = urllib.parse.parse_qs(query or "")
@@ -251,6 +284,13 @@ def callback(handler, query: str = "") -> None:
         return
     if _now() - rec["created"] > STATE_TTL:
         _error(handler, 400, "oidc_state_expired")
+        return
+    binding = _cookie_value(handler, OIDC_STATE_COOKIE)
+    expected = rec.get("binding_hash") or ""
+    if (not binding or not expected
+            or not secrets.compare_digest(
+                hashlib.sha256(binding.encode("ascii")).hexdigest(), expected)):
+        _error(handler, 400, "oidc_state_binding_invalid")
         return
     disc = _discovery()
     if not disc or not disc.get("token_endpoint"):
@@ -270,8 +310,8 @@ def callback(handler, query: str = "") -> None:
         return
     try:
         claims = _verify_id_token(str(tok["id_token"]), disc, rec["nonce"])
-    except Exception as exc:  # noqa: BLE001
-        _error(handler, 401, "oidc_id_token_invalid:%s" % type(exc).__name__)
+    except Exception:  # noqa: BLE001
+        _error(handler, 401, "oidc_id_token_invalid")
         return
     sub = str(claims.get("sub") or "")
     if not sub:
@@ -280,8 +320,9 @@ def callback(handler, query: str = "") -> None:
     try:
         import identity_registry as reg
         ctx = reg.resolve_oidc(ISSUER, sub)
-    except Exception:
-        ctx = None
+    except (OSError, ValueError, TypeError, KeyError):
+        _error(handler, 503, "identity_registry_unavailable")
+        return
     if ctx is None:
         _error(handler, 403, "identity_not_mapped")
         return
@@ -289,7 +330,7 @@ def callback(handler, query: str = "") -> None:
     sid = gw.STORE.create(ctx["sub"], ctx, str(tok.get("access_token") or ""),
                           idp="pocket_id", amr=amr)
     _redirect(handler, rec.get("next") or "/os-entry",
-              set_cookie=gw._cookie_header_value(sid))
+              set_cookies=[gw._cookie_header_value(sid), _state_cookie("", 0)])
 
 
 def handle_get(handler, path: str) -> None:
