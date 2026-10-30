@@ -50,6 +50,35 @@ def _shadow_latest(day):
     return latest
 
 
+
+
+def _team_snapshot():
+    """D1 部门编制：投研会 5 席 + 盯盘组 + 交易组 + 观察席。"""
+    org = _read(os.path.join(REPO, "agent_platform", "registry", "org.json"), {}) or {}
+    invest = next((d for d in org.get("departments") or []
+                   if d.get("dept") == "invest"), {})
+    prof = {p.get("agent_id"): p for p in invest.get("agent_profiles") or []}
+    meeting = _read(os.path.join(REPO, "agent_platform", "registry",
+                                 "d1_meeting.json"), {}) or {}
+
+    def row(aid):
+        p = prof.get(aid) or {}
+        name = p.get("cn_name") or (p.get("persona") or {}).get("name") or aid
+        return {"agent_id": aid, "name": name,
+                "role": p.get("role_profile") or "",
+                "reports_to": p.get("reports_to") or "",
+                "team_role": p.get("team_role") or ""}
+
+    return {
+        "core": [row(x) for x in ("T1", "T2", "N1", "F1")],
+        "chair": row("D1"),
+        "watch": [row(x) for x in ("WA1", "WA2", "WA3")],
+        "trading": [row(x) for x in ("TR1", "TR2", "TR3")],
+        "observer": [row(x) for x in ("ST1", "QS1")],
+        "meeting": meeting,
+    }
+
+
 def d1_snapshot(day=None):
     snap = pool_data.pool_snapshot(day)
     day = snap.get("date") or day
@@ -74,6 +103,9 @@ def d1_snapshot(day=None):
         built = research_plan.build_item(item, rec, plan_rows.get(code), shadows.get(code))
         items.append(built)
     out = research_plan.build_snapshot(items)
+    out["team"] = _team_snapshot()
+    out["watch_methods"] = _read(os.path.join(REPO, "agent_platform", "registry",
+                                     "watch_methods.json"), {})
     out.update({
         "ok": True,
         "mode": "d1_research",

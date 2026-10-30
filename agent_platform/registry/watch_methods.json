@@ -1,0 +1,38 @@
+{
+  "_note": "盯盘组方法注册（2026-10-30 WO-INV-STAFF）。盯盘不是只有一种盯法；WA1 组长 + WA2/WA3 分工，WATCH_TOWER 中台仲裁。",
+  "owner": "WA1",
+  "owner_name": "许褚",
+  "arbiter": "WATCH_TOWER",
+  "methods": [
+    {
+      "id": "price_structure",
+      "name": "价格/结构触发",
+      "seat": "WA1",
+      "desc": "回踩/突破/止损/缠论结构",
+      "handoff": "QUANT_UPSTREAM_REPORT"
+    },
+    {
+      "id": "orderflow_volume",
+      "name": "盘口/量能异动",
+      "seat": "WA2",
+      "desc": "量比、大单、换手、盘口异动",
+      "handoff": "QUANT_UPSTREAM_REPORT"
+    },
+    {
+      "id": "event_sentiment",
+      "name": "事件/情绪异动",
+      "seat": "WA3",
+      "desc": "公告、新闻、情绪、板块事件",
+      "handoff": "QUANT_UPSTREAM_REPORT"
+    },
+    {
+      "id": "chan_structure",
+      "name": "缠论结构盯盘",
+      "seat": "ST1",
+      "desc": "缠论买卖点/背驰复核（观察位）",
+      "handoff": "观察"
+    }
+  ],
+  "arbitration": "WATCH_TOWER 朱然：多方法冲突仲裁，不执行",
+  "scope": "仅 ACAD1 股票池；不扫全市场、不下单"
+}

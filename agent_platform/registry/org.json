@@ -74,15 +74,19 @@
         "ST1",
         "WA1",
         "QS1",
-        "TR1"
+        "TR1",
+        "WA2",
+        "WA3",
+        "TR2",
+        "TR3"
       ],
       "teams": [
         "alpha",
         "strategy",
         "sim_exchange"
       ],
-      "source": "菜鸟 ai_team_role 独立（K-STOCK-004，2026-10-08 老田拍板） | K-ORG-189 量化交易部扩编：产品规划v1已立「量化交易部（现投研部扩编）」判例，本部即其现役实体——name 归一「量化交易部」（dept=invest 键不动零迁移）+ teams 加 strategy + 缠论分析师 ST1 注册（承接 TR1 charter 预留，影子铁律只读） | 2026-10-30 WO-SIM-EXCHANGE-ORG：TR1 周瑜由 trading 部调入 D1，任模拟交易所主管",
-      "lead_duty": "部门监督：每日汇总成员进度报 A0；成员工单超期 24h 内催办（K-ORG-122）；QS1 负责签收 WA1 的 QUANT_UPSTREAM_REPORT 并出具 agent 级 ACK（K-ORG-191）；TR1 任模拟交易所主管，负责模拟订单/撮合/账本/对账/日结（2026-10-30 老田批准调入 D1）",
+      "source": "菜鸟 ai_team_role 独立（K-STOCK-004，2026-10-08 老田拍板） | K-ORG-189 量化交易部扩编：产品规划v1已立「量化交易部（现投研部扩编）」判例，本部即其现役实体——name 归一「量化交易部」（dept=invest 键不动零迁移）+ teams 加 strategy + 缠论分析师 ST1 注册（承接 TR1 charter 预留，影子铁律只读） | 2026-10-30 WO-SIM-EXCHANGE-ORG：TR1 周瑜由 trading 部调入 D1，任模拟交易所主管 | 2026-10-30 WO-INV-STAFF：扩编盯盘组 WA2/WA3、交易组 TR2/TR3；D1 投研会 5 席表决。",
+      "lead_duty": "部门监督：每日汇总成员进度报 A0；成员工单超期 24h 内催办（K-ORG-122）；QS1 负责签收 WA1 的 QUANT_UPSTREAM_REPORT 并出具 agent 级 ACK（K-ORG-191）；TR1 任模拟交易所主管，负责模拟订单/撮合/账本/对账/日结（2026-10-30 老田批准调入 D1）；D1 主持投研会，T1/T2/N1/F1 投票，D1 最终表决；盯盘组 WA1 统管 WA2/WA3；交易组 TR1 统管 TR2/TR3。",
       "cn_title": "谋略府",
       "agent_profiles": [
         {
@@ -139,7 +143,9 @@
               "danger": "deny"
             }
           },
-          "cn_name": "程昱"
+          "cn_name": "程昱",
+          "team_role": "strategy_observer",
+          "reports_to": "D1"
         },
         {
           "agent_id": "WA1",
@@ -192,7 +198,9 @@
               "agent/WA1/*",
               "dept/invest/observation"
             ]
-          }
+          },
+          "team_role": "watch_lead",
+          "reports_to": "D1"
         },
         {
           "agent_id": "QS1",
@@ -244,7 +252,9 @@
               "agent/QS1/*",
               "dept/invest/ack"
             ]
-          }
+          },
+          "team_role": "upstream_receiver",
+          "reports_to": "D1"
         },
         {
           "agent_id": "T1",
@@ -397,10 +407,16 @@
             "deepseek/deepseek-flash",
             "ollama/qwen3.5:9b"
           ],
-          "cn_name": "鲁肃"
+          "cn_name": "鲁肃",
+          "team_role": "decision_chair",
+          "reports_to": "A0",
+          "meeting_chair": true,
+          "meeting": "D1投研会：T1/T2/N1/F1 投票，D1 主席裁决/最终表决"
         },
         {
           "agent_id": "TR1",
+          "cn_name": "周瑜",
+          "persona": {"name": "周瑜", "dept": "量化交易部"},
           "role_profile": "trade_executor",
           "charter_detail": "模拟交易所主管（D1 下属）：消费 D1 裁决与策略产出→模拟订单/撮合/账本/权益/对账；成交/滑点写 dept/invest/feedback→复盘数据供 ST1；只做模拟执行，不碰实盘。",
           "llm_binding": "ollama/qwen3.5:9b",
@@ -452,6 +468,219 @@
             "模拟订单受理与撮合",
             "模拟账本/权益/对账",
             "模拟盘验收与日结"
+          ],
+          "team_role": "trade_lead"
+        },
+        {
+          "agent_id": "WA2",
+          "role_profile": "watch_monitor",
+          "analysis_type": "watch",
+          "charter_detail": "盯盘组·盘口量能执行体：监控池内量比/大单/异动，发现异常按 QUANT_UPSTREAM_REPORT 上报；不执行交易。",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "binding_note": "2026-10-30 WO-INV-STAFF：鲁肃部门扩编，默认本地 9b；只读/paper 纪律不变",
+          "tools": [
+            "quote_snapshot",
+            "events"
+          ],
+          "memory_grants": {
+            "read": [
+              "domain/*",
+              "dept/invest/*",
+              "agent/WA2/*"
+            ],
+            "write": [
+              "agent/WA2/*",
+              "dept/invest/observation"
+            ]
+          },
+          "grade": "E1",
+          "grade_note": "2026-10-30 鲁肃部门扩编：盘口/量能盯盘（orderflow_volume）",
+          "reports_to": "WA1",
+          "team_role": "watch",
+          "scope": "盘口/量能盯盘（orderflow_volume）",
+          "cn_name": "张郃",
+          "persona": {
+            "name": "张郃",
+            "dept": "量化交易部"
+          },
+          "constraints": {
+            "execute": [],
+            "danger": "deny",
+            "note": "paper/只读边界；不接实盘、不越权下单"
+          },
+          "kind": "watch_upstream_reporter",
+          "identity": {
+            "agent_role": "WATCH",
+            "registry_ref": "registry:org:invest:WA2",
+            "upstream_route": "QUANT_UPSTREAM_REPORT",
+            "report_kinds": [
+              "ANOMALY",
+              "HEALTH"
+            ]
+          },
+          "skills": [
+            {
+              "id": "watch_upstream_report",
+              "kind": "tool",
+              "enabled": true
+            }
+          ]
+        },
+        {
+          "agent_id": "WA3",
+          "role_profile": "watch_monitor",
+          "analysis_type": "watch",
+          "charter_detail": "盯盘组·事件情绪执行体：监控池内公告/新闻/情绪异动，发现异常按 QUANT_UPSTREAM_REPORT 上报；不执行交易。",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "binding_note": "2026-10-30 WO-INV-STAFF：鲁肃部门扩编，默认本地 9b；只读/paper 纪律不变",
+          "tools": [
+            "events",
+            "quote_snapshot"
+          ],
+          "memory_grants": {
+            "read": [
+              "domain/*",
+              "dept/invest/*",
+              "agent/WA3/*"
+            ],
+            "write": [
+              "agent/WA3/*",
+              "dept/invest/observation"
+            ]
+          },
+          "grade": "E1",
+          "grade_note": "2026-10-30 鲁肃部门扩编：事件/情绪盯盘（event_sentiment）",
+          "reports_to": "WA1",
+          "team_role": "watch",
+          "scope": "事件/情绪盯盘（event_sentiment）",
+          "cn_name": "太史慈",
+          "persona": {
+            "name": "太史慈",
+            "dept": "量化交易部"
+          },
+          "constraints": {
+            "execute": [],
+            "danger": "deny",
+            "note": "paper/只读边界；不接实盘、不越权下单"
+          },
+          "kind": "watch_upstream_reporter",
+          "identity": {
+            "agent_role": "WATCH",
+            "registry_ref": "registry:org:invest:WA3",
+            "upstream_route": "QUANT_UPSTREAM_REPORT",
+            "report_kinds": [
+              "ANOMALY",
+              "HEALTH"
+            ]
+          },
+          "skills": [
+            {
+              "id": "watch_upstream_report",
+              "kind": "tool",
+              "enabled": true
+            }
+          ]
+        },
+        {
+          "agent_id": "TR2",
+          "role_profile": "trade_executor",
+          "analysis_type": "trade_execution",
+          "charter_detail": "交易组·执行交易员：按 D1 计划/盯盘触发/人工确认执行 A 股模拟单，记账、对账、回写 feedback；不研判。",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "binding_note": "2026-10-30 WO-INV-STAFF：鲁肃部门扩编，默认本地 9b；只读/paper 纪律不变",
+          "tools": [
+            "paper_bridge",
+            "events"
+          ],
+          "memory_grants": {
+            "read": [
+              "domain/*",
+              "dept/invest/*",
+              "agent/TR2/*"
+            ],
+            "write": [
+              "agent/TR2/*",
+              "dept/invest/feedback",
+              "dept/invest/simulation"
+            ]
+          },
+          "grade": "E1",
+          "grade_note": "2026-10-30 鲁肃部门扩编：A股模拟执行（a_share_execution）",
+          "reports_to": "TR1",
+          "team_role": "trade",
+          "scope": "A股模拟执行（a_share_execution）",
+          "cn_name": "徐盛",
+          "persona": {
+            "name": "徐盛",
+            "dept": "量化交易部"
+          },
+          "constraints": {
+            "execute": [],
+            "danger": "deny",
+            "note": "paper/只读边界；不接实盘、不越权下单"
+          },
+          "skills": [
+            {
+              "id": "paper_bridge",
+              "kind": "tool",
+              "enabled": true
+            },
+            {
+              "id": "events",
+              "kind": "tool",
+              "enabled": true
+            }
+          ]
+        },
+        {
+          "agent_id": "TR3",
+          "role_profile": "trade_executor",
+          "analysis_type": "trade_execution",
+          "charter_detail": "交易组·执行交易员：负责 ETF/跨品种模拟执行、对账与风控复核；不研判、不越权。",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "binding_note": "2026-10-30 WO-INV-STAFF：鲁肃部门扩编，默认本地 9b；只读/paper 纪律不变",
+          "tools": [
+            "paper_bridge",
+            "events"
+          ],
+          "memory_grants": {
+            "read": [
+              "domain/*",
+              "dept/invest/*",
+              "agent/TR3/*"
+            ],
+            "write": [
+              "agent/TR3/*",
+              "dept/invest/feedback",
+              "dept/invest/simulation"
+            ]
+          },
+          "grade": "E1",
+          "grade_note": "2026-10-30 鲁肃部门扩编：ETF/对账风控执行（etf_reconcile）",
+          "reports_to": "TR1",
+          "team_role": "trade",
+          "scope": "ETF/对账风控执行（etf_reconcile）",
+          "cn_name": "丁奉",
+          "persona": {
+            "name": "丁奉",
+            "dept": "量化交易部"
+          },
+          "constraints": {
+            "execute": [],
+            "danger": "deny",
+            "note": "paper/只读边界；不接实盘、不越权下单"
+          },
+          "skills": [
+            {
+              "id": "paper_bridge",
+              "kind": "tool",
+              "enabled": true
+            },
+            {
+              "id": "events",
+              "kind": "tool",
+              "enabled": true
+            }
           ]
         }
       ],

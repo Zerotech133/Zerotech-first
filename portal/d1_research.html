@@ -14,6 +14,11 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font-ui)}
 h1{font-size:21px;margin:4px 0}
 .sub{color:var(--gray-5);font-size:12.5px;line-height:1.7}
 .banner{background:rgba(210,153,34,.08);border:1px solid rgba(210,153,34,.35);border-radius:9px;padding:8px 12px;font-size:12px;margin:10px 0}
+.team{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
+.tg{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:9px 11px}
+.tg b{display:block;font-size:12px;margin-bottom:3px}.tg small{color:var(--gray-5);font-size:10.5px;line-height:1.6}
+.tg .who{color:var(--gray-6);font-size:11.5px;line-height:1.7}
+@media(max-width:900px){.team{grid-template-columns:1fr 1fr}}
 .cards{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:10px 0}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:9px 11px}
 .card b{display:block;font-size:19px}
@@ -48,6 +53,7 @@ tr.detail td{padding:10px 12px}
     <div><button id="refresh">刷新</button></div>
   </div>
   <div class="banner"><b>边界：</b>策略与股票由 <b>ACAD1 司马徽</b> 上游池提供；D1 鲁肃只做<b>池内研究</b>，不管理策略、不选股。研究完成后买点/止损交盯盘，盯盘触发后交 TR1。</div>
+  <div id="team" class="team"></div>
   <div id="msg" class="sub"></div>
   <div class="cards" id="cards"></div>
   <div class="toolbar">
@@ -102,6 +108,8 @@ function render(){
   let items=(DATA.items||[]).filter(x=>(!fa||x.action===fa)&&(!ft||x.tier===ft)&&(!kw||x.code.includes(kw)||String(x.name).includes(kw)));
   $('#rows').innerHTML=items.length?items.map(row).join(''):'<tr><td colspan="9" class="empty">没有匹配的股票</td></tr>';
   document.querySelectorAll('tr.r').forEach(tr=>tr.addEventListener('click',()=>{const d=document.getElementById('d-'+tr.dataset.code); if(d) d.style.display=d.style.display==='table-row'?'none':'table-row';}));
+  const tm=DATA.team||{}; const group=(title,arr)=>'<div class="tg"><b>'+esc(title)+'</b><div class="who">'+(arr||[]).map(x=>esc(x.name||x.agent_id)+' <small>'+esc(x.agent_id)+'</small>').join('<br>')+'</div></div>';
+  $('#team').innerHTML=group('D1 投研会 · 5席（主席）',[tm.chair].concat(tm.core||[]))+group('盯盘组',tm.watch||[])+group('交易组',tm.trading||[])+group('观察/接口',tm.observer||[]);
   const s=DATA.summary||{};
   $('#cards').innerHTML=[['池内股票',s.total],['已研究',s.analyzed],['可买',s.can_buy],['盯盘触发',s.armed_watch],['回避',s.avoid],['待研究',s.pending_research]]
     .map(([k,v])=>'<div class="card"><b>'+esc(v==null?'—':v)+'</b><small>'+esc(k)+'</small></div>').join('');

@@ -311,5 +311,43 @@
       "regime": "mean_reversion",
       "paper_only": true
     }
-  ]
+  ],
+  "staffing": {
+    "research": {
+      "lead": "D1",
+      "voters": [
+        "T1",
+        "T2",
+        "N1",
+        "F1"
+      ],
+      "observer": [
+        "ST1",
+        "QS1"
+      ],
+      "meeting": "D1投研会"
+    },
+    "watch": {
+      "lead": "WA1",
+      "members": [
+        "WA2",
+        "WA3"
+      ],
+      "arbiter": "WATCH_TOWER",
+      "methods": [
+        "price_structure",
+        "orderflow_volume",
+        "event_sentiment",
+        "chan_structure"
+      ]
+    },
+    "trading": {
+      "lead": "TR1",
+      "members": [
+        "TR2",
+        "TR3"
+      ],
+      "mode": "team"
+    }
+  }
 }
