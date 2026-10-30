@@ -46,7 +46,62 @@ _ALL_ENTRIES_LIMIT = 2000
 _TOOLS_DIR = Path(__file__).resolve().parents[1] / "tools"
 
 # 待签 payload 默认扫描根（只读；测试通过 build_view(sign_requests_root=...) 注入 tmp 目录）
-DEFAULT_SIGN_REQUESTS_ROOT = Path(r"C:\项目\_vault\sign_requests")
+DEFAULT_SIGN_REQUESTS_ROOT = Path(r"C:\\项目\\_vault\\sign_requests")  # 兼容常量；运行时用 _sign_root()
+# 配置真源：registry 提供 display_name；路径支持环境变量覆盖（默认值保持兼容）
+_REGISTRY_DIR = Path(__file__).resolve().parents[1] / "registry"
+_DEFAULT_PROFILE = Path.home() / ".hermes" / "profiles" / "zhaoyun"
+_DEFAULT_SIGN_ROOT = Path(r"C:\项目\_vault\sign_requests")
+_DEFAULT_KEEPALIVE = Path(r"C:\Temp\governance_keepalive.log")
+
+
+def _env_path(name: str, default: Path) -> Path:
+    val = os.environ.get(name)
+    return Path(val) if val else default
+
+
+def _profile_dir() -> Path:
+    return _env_path("ZHAOYUN_PROFILE_DIR", _DEFAULT_PROFILE)
+
+
+def _sign_root() -> Path:
+    return _env_path("ZHAOYUN_SIGN_REQUESTS_ROOT", _DEFAULT_SIGN_ROOT)
+
+
+def _keepalive_path() -> Path:
+    return _env_path("ZHAOYUN_KEEPALIVE_LOG", _DEFAULT_KEEPALIVE)
+
+
+def _fail_log_path() -> Path:
+    return _env_path("ZHAOYUN_VIEW_FAIL_LOG", Path(r"C:\Temp\zhaoyun_view_failures.jsonl"))
+
+
+def _log_fail(source: str, exc: BaseException) -> None:
+    """结构化失败日志（JSONL）：数据源降级必须留痕，不许静默。"""
+    try:
+        fp = _fail_log_path()
+        fp.parent.mkdir(parents=True, exist_ok=True)
+        rec = {
+            "ts": dt.datetime.now().astimezone().isoformat(timespec="seconds"),
+            "source": source,
+            "error": "%s: %s" % (type(exc).__name__, str(exc)[:200]),
+        }
+        with fp.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    except OSError:
+        pass
+
+
+def _registry_display_name() -> str:
+    try:
+        data = _read_json(_REGISTRY_DIR / "profile_seats.json") or {}
+        for seat in data.get("seats") or []:
+            if seat.get("agent_id") == "ZHAOYUN" and seat.get("display_name"):
+                return str(seat["display_name"])
+    except Exception:  # noqa: BLE001
+        pass
+    return str(IDENTITY.get("display_name") or "赵云·治理")
+
+
 _PAYLOAD_SUFFIX = ".payload.json"
 
 
@@ -99,6 +154,7 @@ def _experience(experience_root: Optional[Path]) -> dict:
 
         summary = S.public_summary(root=experience_root, recent=_ALL_ENTRIES_LIMIT)
     except Exception as exc:  # noqa: BLE001
+        _log_fail("experience", exc)
         return {
             "ok": False,
             "error": "%s: %s" % (type(exc).__name__, str(exc)[:160]),
@@ -149,6 +205,7 @@ def _gov_ai_health(platform: Path, now: float) -> dict:
             "consecutive_failures": status.get("consecutive_failures", 0),
         }
     except Exception as exc:  # noqa: BLE001
+        _log_fail("gov_ai_health", exc)
         return {
             "level": "yellow",
             "detail": "不可用: %s: %s" % (type(exc).__name__, str(exc)[:160]),
@@ -228,7 +285,7 @@ def _pending_signatures(root: Optional[Path]) -> dict:
     注入点：root 默认真实 `C:\\项目\\_vault\\sign_requests`，测试传 tmp 目录。
     归档目录（任一上级目录名以 `_` 开头）不催签，只记 `archived_pending` 供审计。
     """
-    base = Path(root) if root is not None else DEFAULT_SIGN_REQUESTS_ROOT
+    base = Path(root) if root is not None else _sign_root()
     out = {
         "ok": True,
         "root": str(base),
@@ -362,7 +419,8 @@ def _clock(platform: Path) -> dict:
         import governance_clock as GC  # noqa: WPS433
 
         anchors = list(GC.parse_anchors(GC.DEFAULT_ANCHORS))
-    except Exception:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001
+        _log_fail("governance_clock", exc)
         anchors = None
     return {
         "pid": pid,
@@ -375,7 +433,7 @@ def _clock(platform: Path) -> dict:
 
 
 def _keepalive() -> dict:
-    log = Path(r"C:\Temp\governance_keepalive.log")
+    log = _keepalive_path()
     try:
         lines = log.read_text(encoding="utf-8", errors="replace").strip().splitlines()
     except OSError:
@@ -400,9 +458,7 @@ def build_view(
     （默认仍是真实路径）；now 用于确定性判级（测试传固定时刻）。
     """
     platform = Path(platform)
-    profile = (
-        Path(profile) if profile else Path.home() / ".hermes" / "profiles" / "zhaoyun"
-    )
+    profile = Path(profile) if profile else _profile_dir()
     now_ts = float(now if now is not None else time.time())
     caps = _capabilities(profile)
     exp = _experience(experience_root)
@@ -416,7 +472,8 @@ def build_view(
         "generated_at": dt.datetime.fromtimestamp(now_ts)
         .astimezone()
         .isoformat(timespec="seconds"),
-        "identity": IDENTITY,
+        "identity": {**IDENTITY, "display_name": _registry_display_name()},
+        "failure_log": str(_fail_log_path()),
         "capabilities": caps,
         "experience": exp,
         "advice": advice,
