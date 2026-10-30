@@ -97,3 +97,12 @@ portal/backtest/bt_api.py       # JSON API 方法（_sa_results/_sa_start/_algo_
 - 验证：契约 5/5、portal 339 passed（1 known flaky）、ruff 净、`check_portal_split` PASS、mixin 零 diff。
 
 后续：B2 页面 HTML builder（fut/sellpoint 等，L44-420）→ B3/B4 页面渲染 → B5 JSON API → B6 收口至 ≤300 行。
+
+## 十、B2 完成记录（2026-10-30，P69）
+
+- **api_backtest.py 5,248 → 4,890 行**（-358）；契约上限同步下调至 4,890；
+- 新模块：`portal/api_backtest_pages_html.py`（~375 行，`fut_page_html` / `sellpoint_page_html` 纯搬）；
+- 两函数为 HTML 字符串构造，仅依赖 `os` + `api_common.STATION/log_exc`；api_backtest 再导出兼容（portal_api 导入不变）；
+- 验证：契约 5/5、分钟测试 98 passed、portal 339 passed（1 known flaky）、ruff 净、mixin 零 diff、`check_portal_split` PASS。
+
+阶段进度：B0 ✅ / B1 ✅ / B2 ✅；下一步 B3（页面渲染方法：report/ind/lhb/seat/stock 等）。
