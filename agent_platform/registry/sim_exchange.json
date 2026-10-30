@@ -1,5 +1,5 @@
 {
-  "_note": "模拟交易所项目归属注册表（2026-10-30 WO-SIM-EXCHANGE-20261030）。只读清单；不改既有 paper 链，不接真实交易所。manager 为建议任命，待老田确认后改 org.json/team_trading.json。",
+  "_note": "模拟交易所项目归属注册表（2026-10-30 WO-SIM-EXCHANGE-ORG）。owner=D1 鲁肃，manager=TR1 周瑜（已批准调入 D1）。不改既有 paper 链，不接真实交易所。",
   "project_id": "SIM-EXCHANGE",
   "project_name": "模拟交易所",
   "owner_dept": "invest",
@@ -8,7 +8,7 @@
   "manager": "TR1",
   "manager_name": "周瑜",
   "manager_title": "模拟交易所主管（交易执行）",
-  "manager_status": "proposed_pending_org_approval",
+  "manager_status": "approved",
   "manager_scope": [
     "模拟订单受理与撮合",
     "模拟账本/权益快照/对账",
@@ -47,7 +47,7 @@
         "/api/paper_stop",
         "/api/paper_direct_open"
       ],
-      "current_owner": "TR1/trading",
+      "current_owner": "TR1/D1（模拟交易所主管）",
       "role": "K-STOCK 训练沙盘、人工测试、多账户/trainee/combo",
       "automation": "WorkBuddy automation 07:05（settle→exec→check-stops→mark）",
       "notes": "SQLite 四表+账户扩展；订单/持仓/权益/止损；不碰真钱"
@@ -61,8 +61,10 @@
       "entry": "tools/paper_daily.py",
       "ledger": "agent_platform/data/paper/paper_ledger.jsonl",
       "page": "portal/quant_paper.html",
-      "api": ["/api/quant/paper"],
-      "current_owner": "unassigned（DSH 交付）",
+      "api": [
+        "/api/quant/paper"
+      ],
+      "current_owner": "D1（TR1 执行/记账）",
       "role": "D1 官方模拟执行账：risk_gate + hash-chain + 17:10 自动",
       "automation": "run_shadow 17:10 → _paper_auto",
       "notes": "risk_gate 单票10%/行业30%/日回撤5%；PAPER_KILL 开关；trading_permitted=false"
@@ -103,10 +105,11 @@
     "no_prefill_from_watch_or_dispatch": true
   },
   "open_items": [
-    "老田确认 manager：TR1 周瑜（建议，划入 D1）或 QS1 司马懿（现有部属）",
-    "确认后改 org.json/team_trading.json 并补 approval 记录",
     "legacy /paper 与 /quant/paper 页面加统一归属标识，避免双账混淆",
     "C6/paper 指标统一从 quant paper 取，legacy 仅作训练数据",
-    "W-Q3 执行 Adapter 仍按原专项审批，不随本次归属调整解禁"
-  ]
+    "W-Q3 执行 Adapter 仍按原专项审批，不随本次归属调整解禁",
+    "legacy /paper 是否降级为只读训练沙盘（待老田确认）"
+  ],
+  "manager_approved_at": "2026-10-30",
+  "manager_approved_by": "老田"
 }

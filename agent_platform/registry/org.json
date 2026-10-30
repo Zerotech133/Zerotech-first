@@ -1,5 +1,5 @@
 {
-  "_note": "GenOS 组织架构注册表（K-ORG-001 设计 / K-STOCK-004 落地 / K-ORG-015 扩编 / K-ORG-017 研发部 v2 / K-ORG-018 矩阵制：职能中心 + 项目部门 A/B/C 并行 / K-ORG-019 完整开发团队 / K-ORG-020 职级梯队：E3·30年档坐镇-E2·20年档主力-E1·10年档执行，同方向多名开发）。本注册表即 GenOS（个人 OS）的代码开发组织层——全部代码开发收编于此。source: 菜鸟 ai_team_role 独立。运行时校验由 engine/interpreter.py 启动时执行。项目部门 type=project：跨职能抽人组队，交付完 status 改 archived 归建（K-ORG-018 §3）。 | K-ORG-024 27满编：marketing 激活(MKT1) + legal 新设(LEG1直属参谋长) | K-ORG-189 量化交易部扩编（老田 10-18 拍板，设计=docs/plans/2026-10-18_缠论专属学习环设计_K-ORG-185.md）：现投研部 name 归一「量化交易部」（dept=invest 不动零迁移）+ teams 加 strategy + 缠论分析师 ST1 注册（承接 TR1 charter「策略部 ST1 预留」，glm-5.3 判读/理论输出，影子铁律只读）",
+  "_note": "GenOS 组织架构注册表（K-ORG-001 设计 / K-STOCK-004 落地 / K-ORG-015 扩编 / K-ORG-017 研发部 v2 / K-ORG-018 矩阵制：职能中心 + 项目部门 A/B/C 并行 / K-ORG-019 完整开发团队 / K-ORG-020 职级梯队：E3·30年档坐镇-E2·20年档主力-E1·10年档执行，同方向多名开发）。本注册表即 GenOS（个人 OS）的代码开发组织层——全部代码开发收编于此。source: 菜鸟 ai_team_role 独立。运行时校验由 engine/interpreter.py 启动时执行。项目部门 type=project：跨职能抽人组队，交付完 status 改 archived 归建（K-ORG-018 §3）。 | K-ORG-024 27满编：marketing 激活(MKT1) + legal 新设(LEG1直属参谋长) | K-ORG-189 量化交易部扩编（老田 10-18 拍板，设计=docs/plans/2026-10-18_缠论专属学习环设计_K-ORG-185.md）：现投研部 name 归一「量化交易部」（dept=invest 不动零迁移）+ teams 加 strategy + 缠论分析师 ST1 注册（承接 TR1 charter「策略部 ST1 预留」，glm-5.3 判读/理论输出，影子铁律只读） | 2026-10-30：交易部并入 D1，TR1 任模拟交易所主管",
   "org": "laotian_ai",
   "host": "GenOS",
   "host_note": "K-ORG-019 老田拍板：GenOS=个人 OS 宿主（门户 8080/指挥大屏/组织架构页为其门面），代码开发部分全部收编于本 org——任何新开发需求=在本注册表加岗或加项目部门，不改平台。",
@@ -73,14 +73,16 @@
         "D1",
         "ST1",
         "WA1",
-        "QS1"
+        "QS1",
+        "TR1"
       ],
       "teams": [
         "alpha",
-        "strategy"
+        "strategy",
+        "sim_exchange"
       ],
-      "source": "菜鸟 ai_team_role 独立（K-STOCK-004，2026-10-08 老田拍板） | K-ORG-189 量化交易部扩编：产品规划v1已立「量化交易部（现投研部扩编）」判例，本部即其现役实体——name 归一「量化交易部」（dept=invest 键不动零迁移）+ teams 加 strategy + 缠论分析师 ST1 注册（承接 TR1 charter 预留，影子铁律只读）",
-      "lead_duty": "部门监督：每日汇总成员进度报 A0；成员工单超期 24h 内催办（K-ORG-122）；QS1 负责签收 WA1 的 QUANT_UPSTREAM_REPORT 并出具 agent 级 ACK（K-ORG-191）",
+      "source": "菜鸟 ai_team_role 独立（K-STOCK-004，2026-10-08 老田拍板） | K-ORG-189 量化交易部扩编：产品规划v1已立「量化交易部（现投研部扩编）」判例，本部即其现役实体——name 归一「量化交易部」（dept=invest 键不动零迁移）+ teams 加 strategy + 缠论分析师 ST1 注册（承接 TR1 charter 预留，影子铁律只读） | 2026-10-30 WO-SIM-EXCHANGE-ORG：TR1 周瑜由 trading 部调入 D1，任模拟交易所主管",
+      "lead_duty": "部门监督：每日汇总成员进度报 A0；成员工单超期 24h 内催办（K-ORG-122）；QS1 负责签收 WA1 的 QUANT_UPSTREAM_REPORT 并出具 agent 级 ACK（K-ORG-191）；TR1 任模拟交易所主管，负责模拟订单/撮合/账本/对账/日结（2026-10-30 老田批准调入 D1）",
       "cn_title": "谋略府",
       "agent_profiles": [
         {
@@ -396,6 +398,61 @@
             "ollama/qwen3.5:9b"
           ],
           "cn_name": "鲁肃"
+        },
+        {
+          "agent_id": "TR1",
+          "role_profile": "trade_executor",
+          "charter_detail": "模拟交易所主管（D1 下属）：消费 D1 裁决与策略产出→模拟订单/撮合/账本/权益/对账；成交/滑点写 dept/invest/feedback→复盘数据供 ST1；只做模拟执行，不碰实盘。",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "binding_note": "10-18 修幽灵绑定：qwen3.5:4b 本地库未下载（10-08 起即 404 幽灵），执行员降级三态兜底掩盖了故障——改绑 9b（已验证可用），4b 落位下载后再评估回切",
+          "tools": [
+            "paper_bridge",
+            "events"
+          ],
+          "memory_grants": {
+            "read": [
+              "domain/*",
+              "dept/invest/*",
+              "dept/trading/*",
+              "agent/TR1/*"
+            ],
+            "write": [
+              "agent/TR1/*",
+              "dept/invest/feedback",
+              "dept/invest/simulation"
+            ]
+          },
+          "grade": "E1",
+          "grade_note": "10年档：轻量执行位",
+          "attributes": {
+            "knowledge": [
+              "金融专业知识库.md"
+            ],
+            "experience": "10 年交易执行经验：策略信号到订单的执行链路、paper 链下单、成交与滑点数据回写复盘；轻量执行位，只做执行不做判断。",
+            "specialties": [
+              "订单执行与 paper 链下单",
+              "成交/滑点数据回写",
+              "执行复盘数据整理"
+            ],
+            "tools_allowed": {
+              "read": [
+                "reports/**",
+                "data/**",
+                "docs/**"
+              ],
+              "write": [],
+              "execute": [],
+              "danger": "deny"
+            }
+          },
+          "dept": "invest",
+          "reports_to": "D1",
+          "manager_title": "模拟交易所主管（交易执行）",
+          "manager_scope": [
+            "模拟订单受理与撮合",
+            "模拟账本/权益/对账",
+            "模拟盘验收与日结"
+          ]
         }
       ],
       "lead_appointed": {
@@ -1297,72 +1354,18 @@
     {
       "dept": "trading",
       "name": "交易部",
-      "lead": "TR1",
-      "status": "active",
+      "lead": null,
+      "status": "merged_into_invest",
       "charter": "执行策略产出→模拟仓下单→成交/滑点写 feedback（K-ORG-015 实例化，影子模式）",
-      "agents": [
-        "TR1"
-      ],
-      "agent_profiles": [
-        {
-          "agent_id": "TR1",
-          "role_profile": "trade_executor",
-          "charter_detail": "交易执行员：消费策略产出→paper 链下单→成交/滑点写 agent/TR1/feedback→复盘数据供策略部 ST1（预留）",
-          "llm_binding": "ollama/qwen3.5:9b",
-          "binding_note": "10-18 修幽灵绑定：qwen3.5:4b 本地库未下载（10-08 起即 404 幽灵），执行员降级三态兜底掩盖了故障——改绑 9b（已验证可用），4b 落位下载后再评估回切",
-          "tools": [
-            "paper_bridge",
-            "events"
-          ],
-          "memory_grants": {
-            "read": [
-              "domain/*",
-              "dept/trading/*",
-              "dept/invest/decision",
-              "agent/TR1/*"
-            ],
-            "write": [
-              "agent/TR1/*",
-              "dept/trading/feedback"
-            ]
-          },
-          "grade": "E1",
-          "grade_note": "10年档：轻量执行位",
-          "attributes": {
-            "knowledge": [
-              "金融专业知识库.md"
-            ],
-            "experience": "10 年交易执行经验：策略信号到订单的执行链路、paper 链下单、成交与滑点数据回写复盘；轻量执行位，只做执行不做判断。",
-            "specialties": [
-              "订单执行与 paper 链下单",
-              "成交/滑点数据回写",
-              "执行复盘数据整理"
-            ],
-            "tools_allowed": {
-              "read": [
-                "reports/**",
-                "data/**",
-                "docs/**"
-              ],
-              "write": [],
-              "execute": [],
-              "danger": "deny"
-            }
-          }
-        }
-      ],
+      "agents": [],
+      "agent_profiles": [],
       "source": "K-ORG-001 组织设计，2026-10-13 K-ORG-015 实例化（影子模式：仅登记+feedback 通道，enforce 下单仍走既有 paper 链不变）",
       "lead_duty": "部门监督：每日汇总成员进度报 A0；成员工单超期 24h 内催办（K-ORG-122）",
       "cn_title": "先登营",
-      "lead_appointed": {
-        "at": "2026-10-24T03:39:00+08:00",
-        "from": null,
-        "to": "TR1",
-        "cross_dept": false,
-        "cross_note": "",
-        "ticket": "WO-LEGION-S46",
-        "signed_by": "老田"
-      }
+      "lead_appointed": null,
+      "merged_into": "invest",
+      "merged_at": "2026-10-30",
+      "merged_note": "交易部整建制并入量化交易部（D1）；TR1 周瑜任模拟交易所主管"
     },
     {
       "dept": "data",

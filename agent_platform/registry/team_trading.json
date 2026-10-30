@@ -1,72 +1,75 @@
 {
- "_note": "交易部注册表（K-ORG-015 实例化，影子模式）。TR1 常驻执行岗：消费策略产出→paper 链下单→feedback 回写。schema 对齐 team_invest.json 以复用 interpreter 校验；enforce 下单仍走既有 paper 链不变（K-ORG-015 影子纪律）。",
- "team": "tradeexec",
- "dept": "trading",
- "description": "交易部执行岗：交易执行员",
- "agents": [
-  {
-   "agent_id": "TR1",
-   "role_profile": "trade_executor",
-   "analysis_type": "trade_execution",
-   "node_key": "tr1_exec",
-   "parent_node_keys": [],
-   "level": 1,
-   "is_parallel": true,
-   "wait_all_complete": false,
-   "llm_binding": "ollama/qwen3.5:9b",
-   "binding_note": "10-18 修幽灵绑定：qwen3.5:4b 本地库未下载（10-08 起即 404 幽灵，降级三态兜底掩盖故障），改绑 9b；4b 落位下载后再评估回切",
-   "tools": [
-    "paper_bridge",
-    "events"
-   ],
-   "memory_grants": {
-    "read": [
-     "domain/*",
-     "dept/trading/*",
-     "dept/invest/decision",
-     "agent/TR1/*"
-    ],
-    "write": [
-     "agent/TR1/*",
-     "dept/trading/feedback"
-    ]
-   },
-   "grade": "E1",
-   "grade_note": "10年档：轻量执行位",
-   "charter_detail": "交易执行员：消费策略产出→paper 链下单→成交/滑点写 agent/TR1/feedback→复盘数据供策略部 ST1（预留）",
-   "attributes": {
-    "knowledge": [
-     "金融专业知识库.md"
-    ],
-    "experience": "10 年交易执行经验：策略信号到订单的执行链路、paper 链下单、成交与滑点数据回写复盘；轻量执行位，只做执行不做判断。",
-    "specialties": [
-     "订单执行与 paper 链下单",
-     "成交/滑点数据回写",
-     "执行复盘数据整理"
-    ],
-    "tools_allowed": {
-     "read": [
-      "reports/**",
-      "data/**",
-      "docs/**"
-     ],
-     "write": [],
-     "execute": [],
-     "danger": "deny"
-    }
-   },
-   "skills": [
+  "_note": "2026-10-30 WO-SIM-EXCHANGE-ORG：交易部并入 D1；TR1 周瑜调入量化交易部，任模拟交易所主管。保留 team_trading.json 文件名以兼容旧引用；schema 继续对齐 team_invest.json。影子纪律不变：paper 链执行，不接实盘。",
+  "team": "sim_exchange",
+  "dept": "invest",
+  "description": "模拟交易所（D1 鲁肃下属）：TR1 周瑜任主管",
+  "agents": [
     {
-     "id": "paper_bridge",
-     "kind": "tool",
-     "enabled": true
-    },
-    {
-     "id": "events",
-     "kind": "tool",
-     "enabled": true
+      "agent_id": "TR1",
+      "role_profile": "trade_executor",
+      "analysis_type": "trade_execution",
+      "node_key": "tr1_exec",
+      "parent_node_keys": [],
+      "level": 1,
+      "is_parallel": true,
+      "wait_all_complete": false,
+      "llm_binding": "ollama/qwen3.5:9b",
+      "binding_note": "10-18 修幽灵绑定：qwen3.5:4b 本地库未下载（10-08 起即 404 幽灵，降级三态兜底掩盖故障），改绑 9b；4b 落位下载后再评估回切",
+      "tools": [
+        "paper_bridge",
+        "events"
+      ],
+      "memory_grants": {
+        "read": [
+          "domain/*",
+          "dept/invest/*",
+          "dept/trading/*",
+          "agent/TR1/*"
+        ],
+        "write": [
+          "agent/TR1/*",
+          "dept/invest/feedback",
+          "dept/invest/simulation"
+        ]
+      },
+      "grade": "E1",
+      "grade_note": "10年档：轻量执行位",
+      "charter_detail": "模拟交易所主管（D1 下属）：消费 D1 裁决与策略产出→模拟订单/撮合/账本/权益/对账；成交/滑点写 dept/invest/feedback→复盘数据供 ST1；只做模拟执行，不碰实盘。",
+      "attributes": {
+        "knowledge": [
+          "金融专业知识库.md"
+        ],
+        "experience": "10 年交易执行经验：策略信号到订单的执行链路、paper 链下单、成交与滑点数据回写复盘；轻量执行位，只做执行不做判断。",
+        "specialties": [
+          "订单执行与 paper 链下单",
+          "成交/滑点数据回写",
+          "执行复盘数据整理"
+        ],
+        "tools_allowed": {
+          "read": [
+            "reports/**",
+            "data/**",
+            "docs/**"
+          ],
+          "write": [],
+          "execute": [],
+          "danger": "deny"
+        }
+      },
+      "skills": [
+        {
+          "id": "paper_bridge",
+          "kind": "tool",
+          "enabled": true
+        },
+        {
+          "id": "events",
+          "kind": "tool",
+          "enabled": true
+        }
+      ],
+      "reports_to": "D1",
+      "manager_title": "模拟交易所主管（交易执行）"
     }
-   ]
-  }
- ]
+  ]
 }
