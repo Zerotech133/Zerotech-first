@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 17:21",
+ "generated": "2026-10-30 17:23",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 27,
+  "workorders_doing": 26,
   "workorders_review": 8
  },
  "workorders": [
@@ -317,15 +317,6 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-LEGION-OIDC-HARDEN-20261030",
    "created": "2026-10-30 17:17:21",
-   "project": "general"
-  },
-  {
-   "id": "WO-ZHAOYUN-P1-DAILY-20261030",
-   "desc": "P1机制化：zhaoyun_daily治理日报+deliverables/INDEX自动索引+deadlines台账",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-ZHAOYUN-P1-DAILY-20261030",
-   "created": "2026-10-30 17:17:44",
    "project": "general"
   }
  ],
@@ -3909,7 +3900,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 108,
+     "count": 109,
      "recent": [
       {
        "ts": "",
@@ -4054,7 +4045,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 108,
+     "count": 109,
      "recent": [
       {
        "ts": "",
@@ -7286,11 +7277,6 @@
     {
      "id": "WO-LEGION-OIDC-HARDEN-20261030",
      "desc": "OIDC硬化：state绑定+MODE关闸+registry错误",
-     "status": "doing"
-    },
-    {
-     "id": "WO-ZHAOYUN-P1-DAILY-20261030",
-     "desc": "P1机制化：zhaoyun_daily治理日报+deliverables/INDEX自动索引+deadlines台账",
      "status": "doing"
     }
    ]
