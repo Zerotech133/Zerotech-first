@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 18:21",
+ "generated": "2026-10-30 18:22",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,8 +9,8 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 28,
-  "workorders_review": 8
+  "workorders_doing": 27,
+  "workorders_review": 9
  },
  "workorders": [
   {
@@ -320,15 +320,6 @@
    "project": "general"
   },
   {
-   "id": "K-ORG-20261030-NIGHTSUM3",
-   "desc": "夜跑摘要：日志行 180 字符截断导致 pref_keep 缺失，正则改可选字段",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-ORG-20261030-NIGHTSUM3",
-   "created": "2026-10-30 18:17:59",
-   "project": "general"
-  },
-  {
    "id": "WO-ZHAOYUN-P2-20261030",
    "desc": "P2：视图registry化配置+结构化失败日志+任务板stale清理工具",
    "status": "doing",
@@ -336,6 +327,15 @@
    "branch": "task/WO-ZHAOYUN-P2-20261030",
    "created": "2026-10-30 18:19:16",
    "project": "general"
+  },
+  {
+   "id": "WO-WARROOM-DATA-20261030",
+   "desc": "作战台原型页数据刷新到当前 D1 快照（19/5/14）并保持 tokens/nav 风格；截图更新",
+   "status": "review",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-WARROOM-DATA-20261030",
+   "created": "2026-10-30 18:22:15",
+   "project": "portal"
   }
  ],
  "coder_traces": [
