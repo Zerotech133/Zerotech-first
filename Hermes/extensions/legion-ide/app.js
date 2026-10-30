@@ -174,7 +174,7 @@
     return true;
   }
 
-  const LDE_OWNER = "hermes-lde";
+  let LDE_OWNER = "hermes-lde";
   const LDE_BASE = (location.port === "8734") ? "/lde" : "http://127.0.0.1:8734/lde";
   let LDE_PREVIEW = null;
 
@@ -466,10 +466,19 @@
     return true;
   }
 
+  async function ldeSession() {
+    try {
+      const r = await fetch(LDE_BASE + "/api/ide/session", { credentials: "include" });
+      const d = await r.json();
+      if (d && d.owner) LDE_OWNER = d.owner;
+    } catch (e) { /* 保持降级：后续请求会返回 no_session */ }
+  }
+
   async function ldeInit() {
     try {
-      // 先访问 /rw 种 ide_session cookie，再调受保护 API
+      // 先访问 /rw 种 ide_session cookie，再取服务端绑定的 owner
       await fetch(LDE_BASE + "/rw", { credentials: "include" });
+      await ldeSession();
       await ldeScope();
       await ldeTree(".");
       await ldeLockInfo();

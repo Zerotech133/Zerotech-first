@@ -70,8 +70,20 @@ def _cookie(base):
     return headers["Set-Cookie"].split(";")[0]
 
 
+_LAST_OWNER = ""
+
+
 def _hdr(base):
-    return {"Cookie": _cookie(base), "Origin": base}
+    global _LAST_OWNER
+    h = {"Cookie": _cookie(base), "Origin": base}
+    status, _h, body = _req(base, "GET", "/api/ide/session", headers=h)
+    assert status == 200, body
+    _LAST_OWNER = json.loads(body)["owner"]
+    return h
+
+
+def _owner():
+    return _LAST_OWNER
 
 
 # ---------------------------------------------------------------- 开关 / 作用域
@@ -334,14 +346,15 @@ def test_http_write_requires_lock(tmp_path, monkeypatch):
     repo, _wt = make_repo(tmp_path)
     httpd, base = _serve(repo, monkeypatch)
     try:
+        h = _hdr(base)
         payload = {
             "task": "T-BOOT",
-            "owner": "o1",
+            "owner": _owner(),
             "path": "agent_platform/pkg/a.py",
             "content": "x = 2\n",
         }
         status, _h, body = _req(
-            base, "POST", "/api/ide/write", body=payload, headers=_hdr(base)
+            base, "POST", "/api/ide/write", body=payload, headers=h
         )
         assert status == 409 and json.loads(body)["error"] == "lock_required"
     finally:
@@ -363,13 +376,13 @@ def test_http_lock_then_preview_confirm_write_ok(tmp_path, monkeypatch):
             base,
             "POST",
             "/api/ide/lock",
-            body={"task": "T-BOOT", "owner": "o1"},
+            body={"task": "T-BOOT", "owner": _owner()},
             headers=h,
         )
         assert status == 200
         payload = {
             "task": "T-BOOT",
-            "owner": "o1",
+            "owner": _owner(),
             "path": "agent_platform/pkg/a.py",
             "content": "x = 3\n",
         }
@@ -389,7 +402,7 @@ def test_http_lock_then_preview_confirm_write_ok(tmp_path, monkeypatch):
             "/api/ide/write/confirm",
             body={
                 "task": "T-BOOT",
-                "owner": "o1",
+                "owner": _owner(),
                 "preview_id": data["preview_id"],
             },
             headers=h,
@@ -412,14 +425,14 @@ def test_http_exec_denied_by_whitelist(tmp_path, monkeypatch):
             base,
             "POST",
             "/api/ide/lock",
-            body={"task": "T-BOOT", "owner": "o1"},
+            body={"task": "T-BOOT", "owner": _owner()},
             headers=h,
         )
         status, _h, body = _req(
             base,
             "POST",
             "/api/ide/exec",
-            body={"task": "T-BOOT", "owner": "o1", "command": "dir"},
+            body={"task": "T-BOOT", "owner": _owner(), "command": "dir"},
             headers=h,
         )
         assert status == 400 and json.loads(body)["error"] == "denied"
@@ -437,7 +450,7 @@ def test_http_audit_reads_events(tmp_path, monkeypatch):
             base,
             "POST",
             "/api/ide/lock",
-            body={"task": "T-BOOT", "owner": "o1"},
+            body={"task": "T-BOOT", "owner": _owner()},
             headers=h,
         )
         _req(
@@ -482,3 +495,4 @@ def test_launcher_supports_enable_write():
     ps1 = Path(__file__).resolve().parents[2] / "ops" / "start_legion_ide.ps1"
     text = ps1.read_text(encoding="utf-8-sig")
     assert "EnableWrite" in text and "IDE_RW" in text
+

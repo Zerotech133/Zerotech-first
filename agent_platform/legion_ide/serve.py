@@ -195,11 +195,14 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                 extra_headers,
             )
 
-        def _html(self, body: bytes) -> None:
-            cookie = (
-                "ide_session=%s; HttpOnly; SameSite=Strict; Path=/" % G.session_token()
-            )
-            self._send(200, body, _HTML_CT, [("Set-Cookie", cookie)])
+        def _html(self, body: bytes, session_token: str | None = None) -> None:
+            headers = []
+            if session_token:
+                headers.append(("Set-Cookie", (
+                    "ide_session=%s; HttpOnly; SameSite=Strict; Path=/"
+                    % session_token
+                )))
+            self._send(200, body, _HTML_CT, headers)
 
         def _body_json(self):
             try:
@@ -219,12 +222,17 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
             return G.check_access(dict(self.headers))
 
         def _owner_or_err(self, data: dict):
-            owner = str(
+            expected = G.session_owner(dict(self.headers))
+            if not expected:
+                return None, G.err("no_session", "缺少有效 IDE 会话")
+            supplied = str(
                 data.get("owner") or self.headers.get("X-IDE-Owner") or ""
             ).strip()
-            if not owner:
-                return None, G.err("owner_required", "缺少 owner 标识")
-            return owner, None
+            if supplied and supplied != expected:
+                return None, G.err(
+                    "owner_mismatch", "owner 与会话身份不一致（禁止自报）"
+                )
+            return expected, None
 
         def _lock_required(self, wt: Path, owner: str):
             info = G.lock_info(wt)
@@ -246,7 +254,8 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                 page = static_dir / "ide_rw.html"
                 if not page.is_file():
                     return self._json(503, {"ok": False, "error": "rw_page_missing"})
-                return self._html(page.read_bytes())
+                token, _owner = G.new_session()
+                return self._html(page.read_bytes(), token)
             if path == "/agent_ide_bundle.json":
                 bundle = (
                     Path(bundle_path)
@@ -268,6 +277,15 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                 )
             if path == "/favicon.ico":
                 return self._send(204, b"", "image/x-icon")
+            if path == "/api/ide/session":
+                info = G.session_info(dict(self.headers))
+                if not info:
+                    return self._json(403, G.err("no_session", "缺少有效 IDE 会话"))
+                return self._json(200, {
+                    "ok": True,
+                    "owner": info.get("owner") or "",
+                    "created": info.get("created") or 0,
+                })
             if path == "/api/ide/scope":
                 denied = self._rw_denied()
                 if denied:
@@ -369,7 +387,9 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
         def _reject_code(self, error: dict) -> int:
             return (
                 403
-                if error.get("error") in ("rw_disabled", "no_session", "bad_origin")
+                if error.get("error") in (
+                    "rw_disabled", "no_session", "bad_origin", "owner_mismatch",
+                )
                 else 400
             )
 
@@ -408,7 +428,7 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                 return self._json(200 if res.get("ok") else 400, res)
             owner, error = self._owner_or_err(data)
             if error:
-                return self._json(400, error)
+                return self._json(self._reject_code(error), error)
             if path == "/api/ide/lock":
                 res = G.acquire_lock(wt, owner)
                 G.audit(

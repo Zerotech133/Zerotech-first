@@ -46,6 +46,7 @@ def _fixture(tmp_path: Path):
 class Client:
     def __init__(self, port):
         self.base = "http://127.0.0.1:%d" % port
+        self.owner = ""
         import http.cookiejar
         self.jar = http.cookiejar.CookieJar()
         self.opener = urllib.request.build_opener(
@@ -72,6 +73,9 @@ def _serve(repo, monkeypatch):
     c = Client(httpd.server_port)
     with c.opener.open(c.base + "/rw", timeout=5) as r:
         assert r.status == 200
+    st, d = c.req("/api/ide/session")
+    assert st == 200 and d["owner"]
+    c.owner = d["owner"]
     return httpd, c
 
 
@@ -86,7 +90,7 @@ def test_session_scope_tree_read(tmp_path, monkeypatch):
         st, d = c.req("/api/ide/tree?task=T123&path=agent_platform")
         assert st == 200 and d["items"][0]["name"] == "foo.py"
         st, d = c.req("/api/ide/read", "POST",
-                      {"task": "T123", "owner": "pytest", "path": "agent_platform/foo.py"})
+                      {"task": "T123", "owner": c.owner, "path": "agent_platform/foo.py"})
         assert st == 200 and d["content"].replace("\r\n", "\n") == "x = 1\n"
     finally:
         httpd.shutdown()
@@ -97,13 +101,13 @@ def test_lock_visible_and_exclusive(tmp_path, monkeypatch):
     repo, _wt = _fixture(tmp_path)
     httpd, c = _serve(repo, monkeypatch)
     try:
-        st, d = c.req("/api/ide/lock", "POST", {"task": "T123", "owner": "a"})
+        st, d = c.req("/api/ide/lock", "POST", {"task": "T123", "owner": c.owner})
         assert st == 200 and d["ok"]
         st, d = c.req("/api/ide/lock?task=T123")
-        assert st == 200 and d["locked"] is True and d["owner"] == "a"
-        st, d = c.req("/api/ide/lock", "POST", {"task": "T123", "owner": "b"})
-        assert st == 409 and d["error"] == "locked"
-        st, d = c.req("/api/ide/lock?task=T123&owner=a", "DELETE")
+        assert st == 200 and d["locked"] is True and d["owner"] == c.owner
+        st, d = c.req("/api/ide/lock", "POST", {"task": "T123", "owner": "someone-else"})
+        assert st == 403 and d["error"] == "owner_mismatch"
+        st, d = c.req("/api/ide/lock?task=T123&owner=" + c.owner + "", "DELETE")
         assert st == 200 and d["ok"]
     finally:
         httpd.shutdown()
@@ -114,32 +118,32 @@ def test_write_preview_confirm_and_git_exec(tmp_path, monkeypatch):
     repo, wt = _fixture(tmp_path)
     httpd, c = _serve(repo, monkeypatch)
     try:
-        st, d = c.req("/api/ide/lock", "POST", {"task": "T123", "owner": "pytest"})
+        st, d = c.req("/api/ide/lock", "POST", {"task": "T123", "owner": c.owner})
         assert st == 200
         st, d = c.req("/api/ide/write/preview", "POST", {
-            "task": "T123", "owner": "pytest", "path": "agent_platform/foo.py",
+            "task": "T123", "owner": c.owner, "path": "agent_platform/foo.py",
             "content": "x = 2\n"})
         assert st == 200 and d["preview_id"] and d["diff"]
         st, d = c.req("/api/ide/write/confirm", "POST", {
-            "task": "T123", "owner": "pytest", "preview_id": d["preview_id"]})
+            "task": "T123", "owner": c.owner, "preview_id": d["preview_id"]})
         assert st == 200 and d["ok"]
         assert (wt / "agent_platform" / "foo.py").read_text(encoding="utf-8") == "x = 2\n"
 
         st, d = c.req("/api/ide/git", "POST", {
-            "task": "T123", "owner": "pytest", "action": "diff",
+            "task": "T123", "owner": c.owner, "action": "diff",
             "path": "agent_platform/foo.py"})
         assert st == 200 and d["ok"]
         st, d = c.req("/api/ide/git", "POST", {
-            "task": "T123", "owner": "pytest", "action": "add",
+            "task": "T123", "owner": c.owner, "action": "add",
             "path": "agent_platform/foo.py"})
         assert st == 200 and d["ok"]
         st, d = c.req("/api/ide/git", "POST", {
-            "task": "T123", "owner": "pytest", "action": "commit", "message": "test",
+            "task": "T123", "owner": c.owner, "action": "commit", "message": "test",
             "path": "agent_platform/foo.py"})
         assert st == 200 and d["ok"]
 
         st, d = c.req("/api/ide/exec", "POST", {
-            "task": "T123", "owner": "pytest",
+            "task": "T123", "owner": c.owner,
             "command": "git status -s -- agent_platform/foo.py"})
         assert st == 200 and d["success"] is True
     finally:
@@ -153,10 +157,10 @@ def test_security_rejects_no_session_bad_origin_and_escape(tmp_path, monkeypatch
     try:
         st, d = c.req("/api/ide/tree?task=T123&path=..")
         assert st == 400 and d["ok"] is False
-        st, d = c.req("/api/ide/lock", "POST", {"task": "T123", "owner": "pytest"})
+        st, d = c.req("/api/ide/lock", "POST", {"task": "T123", "owner": c.owner})
         assert st == 200
         st, d = c.req("/api/ide/write/preview", "POST", {
-            "task": "T123", "owner": "pytest", "path": "../../outside.py",
+            "task": "T123", "owner": c.owner, "path": "../../outside.py",
             "content": "x"})
         assert st == 400
         # 错误 Origin 必须拒绝
@@ -171,4 +175,5 @@ def test_security_rejects_no_session_bad_origin_and_escape(tmp_path, monkeypatch
     finally:
         httpd.shutdown()
         httpd.server_close()
+
 
