@@ -1,0 +1,60 @@
+{
+  "conversation_id": "conv_20261030_0001",
+  "actor_id": "zhice:u_1001",
+  "role_id": "analyst_team",
+  "model_id": "deepseek-v3",
+  "title": "示例：今日持仓复盘",
+  "status": "active",
+  "created_at": "2026-10-30T08:00:00+08:00",
+  "updated_at": "2026-10-30T08:02:00+08:00",
+  "context": {
+    "market": "CN",
+    "read_only": true
+  },
+  "messages": [
+    {
+      "message_id": "msg_1",
+      "role": "user",
+      "content": "复盘今日持仓，只看不改。",
+      "content_type": "text",
+      "created_at": "2026-10-30T08:00:00+08:00"
+    },
+    {
+      "message_id": "msg_2",
+      "parent_id": "msg_1",
+      "role": "assistant",
+      "content": "已读取持仓与行情，生成本地复盘草稿；未执行任何写操作。",
+      "content_type": "markdown",
+      "references": [
+        {
+          "source_id": "zhice:positions",
+          "path": "/api/v1/positions",
+          "title": "持仓快照",
+          "score": 1.0
+        }
+      ],
+      "tool_calls": [
+        {
+          "name": "positions.read",
+          "arguments": {"read_only": true},
+          "read_only": true,
+          "status": "ok",
+          "result_summary": "返回 3 个持仓"
+        }
+      ],
+      "usage": {
+        "input_tokens": 512,
+        "output_tokens": 128,
+        "cost": 0.0003,
+        "currency": "CNY"
+      },
+      "created_at": "2026-10-30T08:02:00+08:00"
+    }
+  ],
+  "usage": {
+    "input_tokens": 512,
+    "output_tokens": 128,
+    "cost": 0.0003,
+    "currency": "CNY"
+  }
+}

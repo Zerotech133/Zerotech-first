@@ -3091,6 +3091,12 @@ color:#fff;font-size:13.5px;cursor:pointer}
             import api_analysis
             api_analysis.handle_get(self, path, qs)
             return
+        if path.startswith('/api/bff/'):
+            # 三系统只读 BFF（2026-10-30）：智策健康 + 菜鸟只读统计 + 契约入口。
+            # 只挂 GET；写方法由 do_POST/do_OPTIONS 统一处理，不在此开写口。
+            import api_zhice_bff
+            api_zhice_bff.handle_get(self, path, qs)
+            return
         if path.startswith('/api/jev/'):
             # 2026-10-26 JEVAPI：JEV 判定只读查询（独立文件 api_jev.py；Hermes MCP 消费）
             import api_jev

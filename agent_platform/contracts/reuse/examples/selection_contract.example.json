@@ -1,0 +1,48 @@
+{
+  "contract_id": "sel_20261030_0001",
+  "strategy_id": "strategy_42",
+  "strategy_name": "示例多因子策略",
+  "mode": "HYBRID",
+  "as_of": "2026-10-30T08:00:00+08:00",
+  "source": {
+    "system": "cainiao",
+    "service": "rookie",
+    "version": "v1",
+    "task_id": "task_123"
+  },
+  "universe": {
+    "type": "full_a",
+    "exclude_st": true,
+    "exclude_new_days": 30
+  },
+  "selection_model": {
+    "model_id": "model_7",
+    "model_type": "COMPOSITE",
+    "top_n": 10,
+    "factors": ["momentum_20d", "quality_roe", "valuation_pe"],
+    "filters": ["amount_gt_1e8"],
+    "ranking": "score_desc"
+  },
+  "score_task": {
+    "task_id": "score_456",
+    "status": "completed",
+    "engine": "six_dim"
+  },
+  "pool": [
+    {
+      "code": "600000.SH",
+      "name": "示例股份",
+      "rank": 1,
+      "score": 86.5,
+      "weight": 0.2,
+      "signal_strength": "strong",
+      "target_price": 12.3,
+      "reason": "多因子排名靠前",
+      "factor_detail": {"momentum_20d": 0.12}
+    }
+  ],
+  "provenance": {
+    "readonly": true,
+    "data_as_of": "2026-10-29T15:00:00+08:00"
+  }
+}

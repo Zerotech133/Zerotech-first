@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://zerobound.local/contracts/conversation.schema.json",
+  "title": "Conversation",
+  "description": "统一对话会话契约（参考菜鸟 AiChatConversation/Message；零界实现 Python 版）。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["conversation_id", "actor_id", "status", "created_at", "updated_at", "messages"],
+  "properties": {
+    "conversation_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "actor_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "role_id": {"type": ["string", "null"], "maxLength": 128},
+    "model_id": {"type": ["string", "null"], "maxLength": 128},
+    "title": {"type": "string", "maxLength": 200},
+    "status": {"type": "string", "enum": ["active", "archived"]},
+    "created_at": {"type": "string", "format": "date-time"},
+    "updated_at": {"type": "string", "format": "date-time"},
+    "context": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "允许的上下文（不含密钥/密码）"
+    },
+    "messages": {"type": "array", "items": {"$ref": "#/$defs/message"}},
+    "usage": {"$ref": "#/$defs/usage"}
+  },
+  "$defs": {
+    "reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_id"],
+      "properties": {
+        "source_id": {"type": "string"},
+        "path": {"type": "string"},
+        "title": {"type": "string"},
+        "snippet": {"type": "string", "maxLength": 2000},
+        "score": {"type": "number"}
+      }
+    },
+    "web_page": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["url"],
+      "properties": {
+        "url": {"type": "string", "format": "uri"},
+        "title": {"type": "string"},
+        "snippet": {"type": "string", "maxLength": 2000},
+        "fetched_at": {"type": "string", "format": "date-time"}
+      }
+    },
+    "attachment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {"type": "string"},
+        "uri": {"type": "string"},
+        "mime": {"type": "string"},
+        "size": {"type": "integer", "minimum": 0}
+      }
+    },
+    "tool_call": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "read_only", "status"],
+      "properties": {
+        "name": {"type": "string"},
+        "arguments": {"type": "object", "additionalProperties": true},
+        "read_only": {"type": "boolean"},
+        "status": {"type": "string", "enum": ["ok", "error", "denied"]},
+        "result_summary": {"type": "string", "maxLength": 2000}
+      }
+    },
+    "message": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["message_id", "role", "content", "created_at"],
+      "properties": {
+        "message_id": {"type": "string"},
+        "parent_id": {"type": ["string", "null"]},
+        "role": {"type": "string", "enum": ["system", "user", "assistant", "tool"]},
+        "content": {"type": "string"},
+        "content_type": {"type": "string", "enum": ["text", "markdown", "json"]},
+        "references": {"type": "array", "items": {"$ref": "#/$defs/reference"}},
+        "web_pages": {"type": "array", "items": {"$ref": "#/$defs/web_page"}},
+        "attachments": {"type": "array", "items": {"$ref": "#/$defs/attachment"}},
+        "tool_calls": {"type": "array", "items": {"$ref": "#/$defs/tool_call"}},
+        "usage": {"$ref": "#/$defs/usage"},
+        "created_at": {"type": "string", "format": "date-time"}
+      }
+    },
+    "usage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "input_tokens": {"type": "integer", "minimum": 0},
+        "output_tokens": {"type": "integer", "minimum": 0},
+        "cost": {"type": "number", "minimum": 0},
+        "currency": {"type": "string", "maxLength": 8}
+      }
+    }
+  }
+}
