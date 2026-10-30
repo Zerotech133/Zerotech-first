@@ -15,6 +15,7 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if REPO not in sys.path:
     sys.path.insert(0, REPO)
 from agent_platform import watch_trigger_adapter as adapter  # noqa: E402
+from agent_platform import trading_bot_flow as flow  # noqa: E402
 
 SIGNAL_POOL = os.path.join(REPO, "quant_backtest", "data", "signal_pool.jsonl")
 CHANLUN_POOL = os.path.join(REPO, "quant_backtest", "data", "chanlun_pool.jsonl")
@@ -117,7 +118,8 @@ def candidates(signal_pool=None, chanlun_path=None, day=None, max_age_days=0):
 
 
 def run(signal_pool=None, chanlun_path=None, day=None, max_age_days=0,
-        dry_run=False, limit=None, data_dir=None):
+        dry_run=False, limit=None, data_dir=None, auto=False,
+        paper_state_path=None, paper_ledger_path=None, paper_config_path=None):
     ok, skipped = candidates(signal_pool, chanlun_path, day, max_age_days)
     if limit:
         ok = ok[:int(limit)]
@@ -126,8 +128,18 @@ def run(signal_pool=None, chanlun_path=None, day=None, max_age_days=0,
         if dry_run:
             created.append({"dry_run": True, **item["signal"]})
             continue
-        rec = adapter.trigger(item["signal"], selection=item["selection"],
+        signal = dict(item["signal"])
+        if auto:
+            signal["audience"] = "internal"
+        rec = adapter.trigger(signal, selection=item["selection"],
                               evidence=item["evidence"], data_dir=data_dir)
+        if auto:
+            rec = flow.auto_execute(rec["confirmation_id"], by="SYSTEM:TR1",
+                                    note="内部策略自动执行",
+                                    paper_state_path=paper_state_path,
+                                    paper_ledger_path=paper_ledger_path,
+                                    paper_config_path=paper_config_path,
+                                    data_dir=data_dir)
         created.append({"confirmation_id": rec["confirmation_id"],
                         "symbol": rec["symbol"], "action": rec["action"],
                         "status": rec["status"]})

@@ -93,7 +93,7 @@ def _find_by_report(report_id, data_dir=None):
 
 def create_confirmation(symbol, name="", action="BUY", price=None, stop=None,
                         target=None, confidence=0.6, reason="", source="WA1",
-                        source_report_id="", profile="balanced", data_dir=None):
+                        source_report_id="", profile="balanced", audience="external_user", data_dir=None):
     """盯盘触发→pending 人工确认；幂等：同 report_id 返回已有记录。
 
     profile：组合风格（aggressive/balanced/conservative），由人确认时最终定；
@@ -105,6 +105,9 @@ def create_confirmation(symbol, name="", action="BUY", price=None, stop=None,
     profile = str(profile or "balanced").lower()
     if profile not in PROFILES:
         raise ValueError("profile 必须是 %s" % "/".join(PROFILES))
+    audience = str(audience or "external_user")
+    if audience not in ("internal", "external_user"):
+        raise ValueError("audience 必须是 internal/external_user")
     if source_report_id:
         old = _find_by_report(source_report_id, data_dir)
         if old:
@@ -114,7 +117,8 @@ def create_confirmation(symbol, name="", action="BUY", price=None, stop=None,
         "schema": "trading_bot_confirmation/v1",
         "confirmation_id": cid,
         "status": "pending",
-        "human_gate": True,
+        "audience": audience,
+        "human_gate": audience != "internal",
         "symbol": str(symbol),
         "name": name or "",
         "action": action,
@@ -137,7 +141,8 @@ def create_confirmation(symbol, name="", action="BUY", price=None, stop=None,
     }
     _atomic_json(_confirm_path(cid, data_dir), rec)
     _audit({"event": "confirmation_created", "confirmation_id": cid,
-            "symbol": rec["symbol"], "action": action, "at": rec["created_at"]},
+            "symbol": rec["symbol"], "action": action, "audience": audience,
+            "at": rec["created_at"]},
            data_dir)
     return rec
 
@@ -203,14 +208,23 @@ def save_card(rec, data_dir=None):
 
 def decide(confirmation_id, decision, by="老田", note="", price=None,
            profile=None, paper_state_path=None, paper_ledger_path=None,
-           paper_config_path=None, data_dir=None):
-    """人工裁决；approve 才执行 paper_book。profile 可在此刻由人选定组合风格。"""
+           paper_config_path=None, data_dir=None, mode="manual"):
+    """裁决；manual=人工，auto=内部策略自动（仅 internal audience）。"""
     decision = str(decision or "").lower()
     if decision not in ("approve", "reject"):
         raise ValueError("decision 必须是 approve/reject")
     rec = _load(confirmation_id, data_dir)
     if rec.get("status") != "pending":
         return rec  # 幂等：已裁决不再重复执行
+    auto = str(mode or "manual").lower() == "auto"
+    if auto:
+        if rec.get("audience") != "internal":
+            raise ValueError("内部自动执行仅限 internal 确认；外部测试需人工确认")
+        if decision != "approve":
+            raise ValueError("auto 模式只接受 approve")
+        decision_value = "auto"
+    else:
+        decision_value = decision
     if profile:
         p = str(profile).lower()
         if p not in PROFILES:
@@ -223,21 +237,22 @@ def decide(confirmation_id, decision, by="老田", note="", price=None,
                     "trading_permitted": False})
         _atomic_json(_confirm_path(confirmation_id, data_dir), rec)
         _audit({"event": "confirmation_rejected", "confirmation_id": confirmation_id,
-                "by": by, "at": rec["decided_at"]}, data_dir)
+                "by": by, "mode": "manual", "at": rec["decided_at"]}, data_dir)
         return rec
 
     if paper_book.kill_switch_on():
-        rec.update({"status": "killed", "decision": "approve", "decided_by": by,
+        rec.update({"status": "killed", "decision": decision_value, "decided_by": by,
                     "decided_at": _now(), "note": note or "KILL switch on",
                     "trading_permitted": False})
         _atomic_json(_confirm_path(confirmation_id, data_dir), rec)
         _audit({"event": "confirmation_killed", "confirmation_id": confirmation_id,
-                "by": by, "at": rec["decided_at"]}, data_dir)
+                "by": by, "mode": "auto" if auto else "manual",
+                "at": rec["decided_at"]}, data_dir)
         return rec
 
     px = float(price) if price is not None else rec.get("price")
     if px is None:
-        rec.update({"status": "blocked", "decision": "approve", "decided_by": by,
+        rec.update({"status": "blocked", "decision": decision_value, "decided_by": by,
                     "decided_at": _now(), "note": "价格缺失，无法模拟执行",
                     "trading_permitted": False})
         _atomic_json(_confirm_path(confirmation_id, data_dir), rec)
@@ -255,7 +270,7 @@ def decide(confirmation_id, decision, by="老田", note="", price=None,
     }
     gate = risk_gate.evaluate(d, state=state, cfg=cfg)
     if gate.get("verdict") == "block":
-        rec.update({"status": "blocked", "decision": "approve", "decided_by": by,
+        rec.update({"status": "blocked", "decision": decision_value, "decided_by": by,
                     "decided_at": _now(), "note": note, "gate": gate,
                     "trading_permitted": False})
         _atomic_json(_confirm_path(confirmation_id, data_dir), rec)
@@ -269,7 +284,7 @@ def decide(confirmation_id, decision, by="老田", note="", price=None,
     result = paper_book.apply_decision(d, gate, state, day, ledger_path=ledger, seen=seen)
     if not result.get("duplicate"):
         paper_book.save_state(state, paper_state_path)
-    rec.update({"status": "executed", "decision": "approve", "decided_by": by,
+    rec.update({"status": "executed", "decision": decision_value, "decided_by": by,
                 "decided_at": _now(), "note": note, "gate": gate,
                 "execution": {"date": day, "duplicate": bool(result.get("duplicate")),
                               "ledger": result.get("record"),
@@ -277,9 +292,16 @@ def decide(confirmation_id, decision, by="老田", note="", price=None,
                 "trading_permitted": False})
     _atomic_json(_confirm_path(confirmation_id, data_dir), rec)
     _audit({"event": "confirmation_executed", "confirmation_id": confirmation_id,
-            "by": by, "symbol": rec.get("symbol"), "action": action,
+            "by": by, "mode": "auto" if auto else "manual",
+            "symbol": rec.get("symbol"), "action": action,
             "duplicate": bool(result.get("duplicate")), "at": rec["decided_at"]}, data_dir)
     return rec
+
+
+
+def auto_execute(confirmation_id, by="SYSTEM:TR1", note="内部策略自动执行", **kwargs):
+    """内部策略路径：不走人工门，直接风控+paper_book；仅 internal 确认。"""
+    return decide(confirmation_id, "approve", by=by, note=note, mode="auto", **kwargs)
 
 
 def trigger_from_watch(report, **kwargs):

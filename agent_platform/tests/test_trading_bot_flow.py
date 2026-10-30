@@ -84,6 +84,33 @@ def test_human_selects_profile(tmp_path):
     assert out["profile"] == "conservative" and out["profile_label"] == "保守"
 
 
+def test_internal_auto_bypasses_human(tmp_path):
+    p = _paths(tmp_path)
+    rec = flow.create_confirmation(
+        symbol="600519", name="茅台", action="BUY", price=100.0,
+        confidence=0.8, source="WA1", audience="internal", data_dir=p["data_dir"])
+    assert rec["human_gate"] is False and rec["audience"] == "internal"
+    out = flow.auto_execute(rec["confirmation_id"], by="SYSTEM:TR1",
+                            data_dir=p["data_dir"],
+                            paper_state_path=p["paper_state_path"],
+                            paper_ledger_path=p["paper_ledger_path"])
+    assert out["status"] == "executed" and out["decision"] == "auto"
+    assert Path(p["paper_ledger_path"]).exists()
+
+
+def test_external_confirmation_cannot_auto_execute(tmp_path):
+    p = _paths(tmp_path)
+    rec = _confirm(tmp_path)  # 默认 external_user
+    try:
+        flow.auto_execute(rec["confirmation_id"], data_dir=p["data_dir"],
+                          paper_state_path=p["paper_state_path"],
+                          paper_ledger_path=p["paper_ledger_path"])
+        assert False, "external 不应被 auto_execute 绕过"
+    except ValueError as exc:
+        assert "external" in str(exc) or "internal" in str(exc)
+    assert rec["status"] == "pending"
+
+
 def test_feishu_card_payload(tmp_path):
     c = _confirm(tmp_path)
     card = flow.build_feishu_card(c)

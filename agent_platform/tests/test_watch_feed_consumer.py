@@ -60,3 +60,13 @@ def test_run_creates_pending_only_and_idempotent(tmp_path):
     assert len(list((tmp_path / "bot" / "confirmations").glob("*.json"))) == 1
     # 无 paper 执行
     assert not (tmp_path / "ledger.jsonl").exists()
+
+
+def test_run_auto_internal_executes_paper(tmp_path):
+    sig, chan = _files(tmp_path)
+    bot = str(tmp_path / "bot")
+    res = feed.run(sig, chan, day="2026-10-21", data_dir=bot, auto=True,
+                   paper_state_path=str(tmp_path / "state.json"),
+                   paper_ledger_path=str(tmp_path / "ledger.jsonl"))
+    assert res["created"][0]["status"] == "executed"
+    assert (tmp_path / "ledger.jsonl").exists()

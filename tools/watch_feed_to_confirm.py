@@ -21,9 +21,16 @@ def main(argv=None):
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--data-dir", default=None)
+    ap.add_argument("--auto", action="store_true",
+                    help="内部运行：不走人工门，按策略直接 paper 执行")
+    ap.add_argument("--state", default=None)
+    ap.add_argument("--ledger", default=None)
+    ap.add_argument("--config", default=None)
     args = ap.parse_args(argv)
     res = feed.run(args.signals, args.chanlun, args.day, args.max_age_days,
-                   args.dry_run, args.limit, args.data_dir)
+                   args.dry_run, args.limit, args.data_dir, auto=args.auto,
+                   paper_state_path=args.state, paper_ledger_path=args.ledger,
+                   paper_config_path=args.config)
     print(json.dumps(res, ensure_ascii=False, indent=2))
     return 0
 
