@@ -139,3 +139,7 @@ def main(argv=None) -> int:
     if a.md:
         Path(a.md).write_text(render_md(rounds, summary), encoding="utf-8")
     return 0 if rounds else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
