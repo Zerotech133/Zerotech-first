@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 18:17",
+ "generated": "2026-10-30 18:20",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 28,
+  "workorders_doing": 29,
   "workorders_review": 8
  },
  "workorders": [
@@ -320,15 +320,6 @@
    "project": "general"
   },
   {
-   "id": "K-STOCK-ANALYSIS-P2-4C-20261030",
-   "desc": "P2.4C 客户分析子进程加固：输出落文件（避免管道/会话限制）+错误回传+可配 ANALYSIS_PY",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-STOCK-ANALYSIS-P2-4C-20261030",
-   "created": "2026-10-30 18:16:01",
-   "project": "quant"
-  },
-  {
    "id": "WO-UI-CONSISTENT-20261030",
    "desc": "页面风格统一：D1投研页修复 tokens 变量(dark)；作战台挂 tokens/nav/shortscreen；两页顶栏/卡片/表格风格一致",
    "status": "doing",
@@ -336,6 +327,24 @@
    "branch": "task/WO-UI-CONSISTENT-20261030",
    "created": "2026-10-30 18:16:34",
    "project": "portal"
+  },
+  {
+   "id": "K-ORG-20261030-NIGHTSUM3",
+   "desc": "夜跑摘要：日志行 180 字符截断导致 pref_keep 缺失，正则改可选字段",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-ORG-20261030-NIGHTSUM3",
+   "created": "2026-10-30 18:17:59",
+   "project": "general"
+  },
+  {
+   "id": "WO-ZHAOYUN-P2-20261030",
+   "desc": "P2：视图registry化配置+结构化失败日志+任务板stale清理工具",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-ZHAOYUN-P2-20261030",
+   "created": "2026-10-30 18:19:16",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -7295,6 +7304,11 @@
     {
      "id": "WO-LEGION-OIDC-PATH-20261030",
      "desc": "OIDC配置路径对齐实际vault",
+     "status": "doing"
+    },
+    {
+     "id": "WO-ZHAOYUN-P2-20261030",
+     "desc": "P2：视图registry化配置+结构化失败日志+任务板stale清理工具",
      "status": "doing"
     }
    ]
