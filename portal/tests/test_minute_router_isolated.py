@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """Exercise the actual portal HTTP router with an isolated minute JobSpec root.
 
 Run this module alone in a fresh Python process. No production port, catalog,
