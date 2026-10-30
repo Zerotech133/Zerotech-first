@@ -1,0 +1,112 @@
+{
+  "_note": "模拟交易所项目归属注册表（2026-10-30 WO-SIM-EXCHANGE-20261030）。只读清单；不改既有 paper 链，不接真实交易所。manager 为建议任命，待老田确认后改 org.json/team_trading.json。",
+  "project_id": "SIM-EXCHANGE",
+  "project_name": "模拟交易所",
+  "owner_dept": "invest",
+  "owner": "D1",
+  "owner_name": "鲁肃",
+  "manager": "TR1",
+  "manager_name": "周瑜",
+  "manager_title": "模拟交易所主管（交易执行）",
+  "manager_status": "proposed_pending_org_approval",
+  "manager_scope": [
+    "模拟订单受理与撮合",
+    "模拟账本/权益快照/对账",
+    "模拟盘验收与日结",
+    "与 D1 终审、WA1 盯盘、QS1 受理分发的接口"
+  ],
+  "alternatives": [
+    {
+      "agent": "QS1",
+      "name": "司马懿",
+      "role": "模拟交易所受理/记账主管（若要求必须用鲁肃现有部属）",
+      "note": "QS1 现为上行受理席、runtime 无 LLM；做主管需补执行权限与工具，不建议直接兼管撮合"
+    }
+  ],
+  "single_source_of_truth": {
+    "official_daily_ledger": "agent_platform/data/paper/paper_ledger.jsonl",
+    "official_page": "/quant/paper",
+    "legacy_ledger": "k_stock/data/paper.db",
+    "legacy_page": "/paper",
+    "rule": "D1 日常模拟执行以 quant paper 为准；K-STOCK legacy paper 仅作训练/人工测试沙盘，两账不得合并统计或互相预填"
+  },
+  "assets": [
+    {
+      "id": "legacy_ks_paper",
+      "name": "K-STOCK 模拟仓（legacy）",
+      "kind": "legacy_paper",
+      "status": "live",
+      "path": "k_stock/paper",
+      "entry": "k_stock/paper/cli.py",
+      "ledger": "k_stock/data/paper.db",
+      "page": "portal/paper.html",
+      "api": [
+        "/api/paper_status",
+        "/api/paper_history",
+        "/api/paper_order",
+        "/api/paper_stop",
+        "/api/paper_direct_open"
+      ],
+      "current_owner": "TR1/trading",
+      "role": "K-STOCK 训练沙盘、人工测试、多账户/trainee/combo",
+      "automation": "WorkBuddy automation 07:05（settle→exec→check-stops→mark）",
+      "notes": "SQLite 四表+账户扩展；订单/持仓/权益/止损；不碰真钱"
+    },
+    {
+      "id": "quant_paper_mvp",
+      "name": "量化部 paper MVP",
+      "kind": "quant_paper",
+      "status": "live",
+      "path": "agent_platform/paper",
+      "entry": "tools/paper_daily.py",
+      "ledger": "agent_platform/data/paper/paper_ledger.jsonl",
+      "page": "portal/quant_paper.html",
+      "api": ["/api/quant/paper"],
+      "current_owner": "unassigned（DSH 交付）",
+      "role": "D1 官方模拟执行账：risk_gate + hash-chain + 17:10 自动",
+      "automation": "run_shadow 17:10 → _paper_auto",
+      "notes": "risk_gate 单票10%/行业30%/日回撤5%；PAPER_KILL 开关；trading_permitted=false"
+    },
+    {
+      "id": "sim_market_contract",
+      "name": "SIM_MARKET 只读契约/适配器（W-Q3）",
+      "kind": "sim_contract",
+      "status": "readonly",
+      "path": "agent_platform/contracts/sim_market.py",
+      "adapter": "agent_platform/adapters/sim_market_readonly.py",
+      "tests": [
+        "agent_platform/tests/test_sim_market_contract.py",
+        "agent_platform/tests/test_sim_market_readonly.py"
+      ],
+      "role": "W-Q3 模拟市场快照/只读策略适配器；无执行器、无账本写入",
+      "notes": "28 tests pass；执行 Adapter 需接口确权+专项审批，当前禁用"
+    },
+    {
+      "id": "chanlun_paper_data",
+      "name": "缠论模拟池数据",
+      "kind": "dataset",
+      "status": "live",
+      "path": "quant_backtest/data/chanlun_paper.json",
+      "related": [
+        "quant_backtest/data/chanlun_paper_hk.json",
+        "quant_backtest/data/chanlun_paper_us.json"
+      ],
+      "role": "K-STOCK/缠论全市场扫描池的模拟数据源",
+      "notes": "数据 2.7MB+；只作为输入，不是账本"
+    }
+  ],
+  "boundaries": {
+    "real_trading": false,
+    "real_exchange_adapter": "disabled",
+    "execution_ledger_write_trigger": "only actual simulated order/fill action",
+    "shadow_ledger_is_not_execution_ledger": true,
+    "no_prefill_from_watch_or_dispatch": true
+  },
+  "open_items": [
+    "老田确认 manager：TR1 周瑜（建议，划入 D1）或 QS1 司马懿（现有部属）",
+    "确认后改 org.json/team_trading.json 并补 approval 记录",
+    "legacy /paper 与 /quant/paper 页面加统一归属标识，避免双账混淆",
+    "C6/paper 指标统一从 quant paper 取，legacy 仅作训练数据",
+    "W-Q3 执行 Adapter 仍按原专项审批，不随本次归属调整解禁"
+  ]
+}
