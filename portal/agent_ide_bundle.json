@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 18:26",
+ "generated": "2026-10-30 18:28",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -338,15 +338,6 @@
    "project": "general"
   },
   {
-   "id": "K-STOCK-ANALYSIS-P3-20261030",
-   "desc": "P3 增长运营MVP：试用落地页+案例库+支持流程+转化跟踪(api_customer/trial+growth+2页面+文档)",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-STOCK-ANALYSIS-P3-20261030",
-   "created": "2026-10-30 18:22:55",
-   "project": "quant"
-  },
-  {
    "id": "K-QUANT-20261030-IDEHARDEN",
    "desc": "IDE P0 hardening: LegionOps guard, LDE owner binding, IDE route auth",
    "status": "doing",
@@ -354,6 +345,15 @@
    "branch": "task/K-QUANT-20261030-IDEHARDEN",
    "created": "2026-10-30 18:25:07",
    "project": "quant"
+  },
+  {
+   "id": "K-ORG-20261030-JEVSUM",
+   "desc": "JEV 全线资产与项目总结（代码/文档/数据/调度/服务/指标/交付/未闭环）",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-ORG-20261030-JEVSUM",
+   "created": "2026-10-30 18:28:15",
+   "project": "general"
   }
  ],
  "coder_traces": [
