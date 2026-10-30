@@ -6,7 +6,7 @@
       Δ = 本次极性 − 上次极性；>0 改善，<0 恶化；同时记录幅度中值变化。
 检验：修订公告后 T+1 收盘入场，5/10/20 日相对等权市场的 CAR；IS 2023-2024 / OOS 2025-2026；
       成本 30bp；对比「改善 vs 恶化」两组。
-产出：research/reports/H18_forecast_revision_20261030.{md,json}；H18 写 hypotheses.db。
+产出：research/reports/H18_forecast_revision_<日期>.{md,json}；H18 写 hypotheses.db。
 """
 from __future__ import annotations
 
