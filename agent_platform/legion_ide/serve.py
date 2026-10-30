@@ -422,6 +422,7 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                 "/api/ide/lock",
                 "/api/ide/git",
                 "/api/ide/undo",
+                "/api/ide/test",
             ):
                 return self._json(
                     404, {"ok": False, "error": "not_found", "path": path}
@@ -431,9 +432,9 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                 return self._json(400, error)
             # Phase A：能力令牌先于 worktree 解析（避免无 cap 探测任务/先报 worktree）
             if path in ("/api/ide/write/preview", "/api/ide/write/confirm",
-                        "/api/ide/undo", "/api/ide/exec"):
+                        "/api/ide/undo", "/api/ide/exec", "/api/ide/test"):
                 _ct = str(data.get("task") or "")
-                _scope = ("ide:exec:" if path == "/api/ide/exec" else "ide:write:") + _ct
+                _scope = ("ide:exec:" if path in ("/api/ide/exec", "/api/ide/test") else "ide:write:") + _ct
                 cap_err = G.check_cap(dict(self.headers), _scope, _ct)
                 if cap_err:
                     return self._json(403, cap_err)
@@ -595,6 +596,39 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                         "undo %s -> ok" % rel)
                 return self._json(200, {**res, "undone": True,
                                         "restored_sha256": res.get("sha256")})
+            if path == "/api/ide/test":
+                _ttask = str(data.get("task") or "")
+                _cmd = str(data.get("command") or "python -m pytest -q .")
+                try:
+                    _to = int(data.get("timeout") or X.DEFAULT_TIMEOUT)
+                except (TypeError, ValueError):
+                    _to = X.DEFAULT_TIMEOUT
+                _to = max(1, min(_to, 600))
+                _res = X.run(wt, _cmd, _to)
+                _ok = bool(_res.get("ok") and _res.get("success"))
+                _out = str(_res.get("output") or _res.get("stdout") or "")[:20000]
+                _run_id = "task-" + _ttask + "-" + uuid.uuid4().hex[:8]
+                try:
+                    from legion_command import evidence as _EV
+                    _EV.new_run(_run_id, task=_ttask, agent="LDE", kind="test")
+                    _EV.append(_run_id, "test_result", {
+                        "ok": _ok, "exit_code": _res.get("exit_code"),
+                        "command": _cmd[:500],
+                        "output_sha256": __import__("hashlib").sha256(
+                            _out.encode("utf-8", "replace")).hexdigest(),
+                        "output_tail": _out[-4000:],
+                    })
+                    _EV.finalize(_run_id, mode="test", ok=_ok,
+                                 task=_ttask, run_id=_run_id)
+                except Exception:  # noqa: BLE001
+                    pass
+                G.audit(repo, "code_observation", _ttask, owner,
+                        "test %s -> %s" % (_cmd[:80], "ok" if _ok else "fail"))
+                return self._json(200 if _ok else 400, {
+                    "ok": _ok, "success": _ok, "exit_code": _res.get("exit_code"),
+                    "error": _res.get("error"), "evidence_run_id": _run_id,
+                    "output_tail": _out[-4000:],
+                })
             _etask = str(data.get("task") or "")
             cap_err = G.check_cap(dict(self.headers), "ide:exec:" + _etask, _etask)
             if cap_err:
