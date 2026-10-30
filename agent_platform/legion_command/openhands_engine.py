@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import os
 import re
+from contextlib import contextmanager
 import subprocess
 import threading
 import time
@@ -419,7 +420,56 @@ SESSIONS_FILE = Path(os.environ.get(
     str(Path(__file__).resolve().parents[2] / "work" / "legion_ide_sessions.json"),
 ))
 _SESSION_LOCK = threading.Lock()
+_SESSION_FILE_LOCK = SESSIONS_FILE.with_suffix(SESSIONS_FILE.suffix + ".lock")
 _SESSION_SAVED_AT: dict[str, float] = {}
+
+
+def _session_file_lock():
+    """跨进程文件锁：多 8796 实例/多浏览器并发写 sessions 时防丢行。"""
+    SESSIONS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        fd = os.open(str(_SESSION_FILE_LOCK), os.O_CREAT | os.O_RDWR, 0o600)
+    except OSError:
+        return None
+    if os.name == "nt":
+        import msvcrt
+        deadline = time.time() + 5.0
+        while time.time() < deadline:
+            try:
+                msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
+                return fd
+            except OSError:
+                time.sleep(0.05)
+        os.close(fd)
+        return None
+    return fd
+
+
+def _session_file_unlock(fd) -> None:
+    if fd is None:
+        return
+    try:
+        if os.name == "nt":
+            import msvcrt
+            try:
+                os.lseek(fd, 0, os.SEEK_SET)
+                msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
+            except OSError:
+                pass
+    finally:
+        try:
+            os.close(fd)
+        except OSError:
+            pass
+
+
+@contextmanager
+def _session_file_guard():
+    fd = _session_file_lock()
+    try:
+        yield
+    finally:
+        _session_file_unlock(fd)
 
 
 def _session_rows() -> list[dict]:
@@ -435,7 +485,7 @@ def save_session(record: dict) -> None:
     cid = str(record.get("cid") or "").strip()
     if not cid:
         return
-    with _SESSION_LOCK:
+    with _SESSION_LOCK, _session_file_guard():
         rows = _session_rows()
         prev = next((r for r in rows if str(r.get("cid")) == cid), {})
         row = dict(prev)
@@ -461,7 +511,7 @@ def save_session(record: dict) -> None:
 
 
 def sessions(limit: int = 30) -> list[dict]:
-    with _SESSION_LOCK:
+    with _SESSION_LOCK, _session_file_guard():
         rows = _session_rows()
     try:
         limit = max(1, min(int(limit), 100))
@@ -474,7 +524,7 @@ def delete_session(cid: str) -> bool:
     cid = str(cid or "").strip()
     if not cid:
         return False
-    with _SESSION_LOCK:
+    with _SESSION_LOCK, _session_file_guard():
         rows = _session_rows()
         kept = [r for r in rows if str(r.get("cid")) != cid]
         if len(kept) == len(rows):

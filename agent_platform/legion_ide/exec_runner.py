@@ -74,8 +74,23 @@ def _validate_tokens(worktree: Path, tokens: list[str]) -> dict:
         sub = tokens[1]
         rest = tokens[2:]
         if sub == "status":
-            if rest and any(a not in ("-s", "--short", "--porcelain") for a in rest):
-                return _err("denied", "git status 仅允许 -s/--short/--porcelain")
+            flags = {"-s", "--short", "--porcelain"}
+            paths = []
+            i = 0
+            while i < len(rest):
+                a = rest[i]
+                if a in flags:
+                    i += 1
+                    continue
+                if a == "--":
+                    paths = rest[i + 1:]
+                    break
+                return _err(
+                    "denied",
+                    "git status 仅允许 -s/--short/--porcelain 与 -- <path>",
+                )
+            if any(not _inside(wt, p) for p in paths):
+                return _err("denied", "git status 路径越出 worktree")
             return {"ok": True, "argv": ["git", "-C", str(wt), "status", *rest]}
         if sub == "diff":
             paths = []

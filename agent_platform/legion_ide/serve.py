@@ -315,6 +315,16 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                         "size": entry.stat().st_size if entry.is_file() else 0,
                     })
                 return self._json(200, {"ok": True, "path": rel, "items": items})
+            if path == "/api/ide/lock":
+                denied = self._rw_denied()
+                if denied:
+                    return self._json(403, denied)
+                task = (parse_qs(parsed.query).get("task") or [""])[0].strip()
+                wt, error = G.resolve_worktree(repo, task)
+                if error:
+                    return self._json(400, error)
+                return self._json(200, {"ok": True, "task": task,
+                                        **G.lock_info(wt)})
             if path == "/api/ide/audit":
                 denied = self._rw_denied()
                 if denied:

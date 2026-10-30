@@ -268,6 +268,29 @@
     }
   }
 
+  async function ldeLockInfo() {
+    const chip = $("#lde-lockchip");
+    const sel = $("#lde-task");
+    if (!chip || !sel || !sel.value) return;
+    try {
+      const q = new URLSearchParams({ task: sel.value });
+      const d = await ldeApi("/api/ide/lock?" + q.toString());
+      if (d.locked) {
+        chip.textContent = "锁 " + (d.owner || "?") + " · " + Math.round(d.age_s || 0) + "s";
+        chip.title = d.stale ? "锁已过期，可重新获取" : "锁被占用，等待释放或 TTL 过期";
+      } else if (d.stale) {
+        chip.textContent = "锁 已过期";
+        chip.title = "过期锁，可直接获取";
+      } else {
+        chip.textContent = "锁 —";
+        chip.title = "当前无锁";
+      }
+    } catch (e) {
+      chip.textContent = "锁 读取失败";
+      chip.title = e.message;
+    }
+  }
+
   function ldeBody(extra) {
     const sel = $("#lde-task");
     return Object.assign({ task: sel ? sel.value : "", owner: LDE_OWNER }, extra || {});
@@ -326,9 +349,12 @@
   async function ldeLock() {
     try {
       await ldeApi("/api/ide/lock", { method: "POST", body: JSON.stringify(ldeBody()) });
-      $("#lde-lockchip").textContent = "锁 已持有";
+      await ldeLockInfo();
       ldeStatus("已获取工单锁（owner=" + LDE_OWNER + "）", "ok");
-    } catch (e) { ldeStatus("取锁失败：" + e.message, "warn"); }
+    } catch (e) {
+      ldeStatus("取锁失败：" + e.message, "warn");
+      ldeLockInfo();
+    }
   }
 
   async function ldeUnlock() {
@@ -336,7 +362,7 @@
       const sel = $("#lde-task");
       const q = new URLSearchParams({ task: sel ? sel.value : "", owner: LDE_OWNER });
       await ldeApi("/api/ide/lock?" + q.toString(), { method: "DELETE" });
-      $("#lde-lockchip").textContent = "锁 —";
+      await ldeLockInfo();
       ldeStatus("已释放锁", "ok");
     } catch (e) { ldeStatus("释放失败：" + e.message, "bad"); }
   }
@@ -446,6 +472,7 @@
       await fetch(LDE_BASE + "/rw", { credentials: "include" });
       await ldeScope();
       await ldeTree(".");
+      await ldeLockInfo();
       ldeStatus("就绪", "ok");
     } catch (e) {
       ldeStatus("LDE 不可用：" + e.message, "bad");
@@ -477,8 +504,8 @@
       $("#lde-confirm").style.display = "none";
       $("#lde-cancel-preview").style.display = "none";
       $("#lde-preview").style.display = "";
-      $("#lde-lockchip").textContent = "锁 —";
       ldeTree(".");
+      ldeLockInfo();
     };
   }
 
