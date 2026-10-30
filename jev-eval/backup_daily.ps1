@@ -501,6 +501,14 @@ if ((Test-Path $kbPy) -and (Test-Path $kbScript)) {
     }
 }
 
+# ---------------- 1g. Phase3 transcription network probe (2026-10-30) ----------------
+# 每日探测 YouTube 可达性；可达则自动跑试点转写+蒸馏（p3_fetch_subs / p3_distill）。
+$p3py = 'C:\Program Files\Python311\python.exe'
+$p3script = 'C:\aios\tools\kb_corpus\p3_probe.py'
+if ((Test-Path $p3py) -and (Test-Path $p3script)) {
+    & $p3py $p3script 1>> 'C:\Temp\kb_p3_probe_out.log' 2>> 'C:\Temp\kb_p3_probe_err.log'
+}
+
 # ---------------- 2. gzip integrity check on all archives ----------------
 foreach ($f in @(Get-ChildItem $DayDir -Filter "*.gz")) {
     if (Test-Gzip $f.FullName) { LogOk ("GZIP " + $f.Name) } else { LogFail ("GZIP " + $f.Name) }
