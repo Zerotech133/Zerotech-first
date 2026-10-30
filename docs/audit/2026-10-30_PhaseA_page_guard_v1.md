@@ -78,6 +78,19 @@
 3. 评估 401/回跳循环；
 4. 或改用 nginx `auth_request /api/auth/guard`（服务端真保护）。
 
+## 5.1 上线记录（2026-10-30 12:12）
+
+- 8091 受控重启：`29816 → 43740`；
+- `/api/auth/guard` 游客 → 401；登录后 → 200；
+- `/os-board` 横幅：
+  - 游客：`未登录 · 游客只读 / 去登录 →`
+  - 登录：`已登录 · 零界只读 BFF · VIEWER · 只读 / 只读会话`
+- “去登录”URL 带 `next=/os-board`；登录成功回跳 `/os-board`（登录页已支持安全 next）；
+- Playwright 实测无 pageerror；
+- 截图：
+  - `docs/visual_baseline/2026-10-30_page_guard/osboard_guest.png`
+  - `docs/visual_baseline/2026-10-30_page_guard/osboard_authed.png`
+
 ## 6. 验证
 
 - 12 tests passed（guard 401/200、页面接入、脚本无 localStorage/token）；
