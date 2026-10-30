@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 11:24",
+ "generated": "2026-10-30 11:26",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 27,
+  "workorders_doing": 26,
   "workorders_review": 6
  },
  "workorders": [
@@ -291,15 +291,6 @@
    "branch": "task/K-QUANT-20261030-OHLOOP-TEST",
    "created": "2026-10-30 09:19:23",
    "project": "quant"
-  },
-  {
-   "id": "WO-GUANYU-P69-20261030",
-   "desc": "api_backtest B2拆分",
-   "status": "doing",
-   "owner": "GUANYU",
-   "branch": "task/WO-GUANYU-P69-20261030",
-   "created": "2026-10-30 11:19:19",
-   "project": "general"
   },
   {
    "id": "WO-AUDIT-RECENT-20261030",
@@ -6344,14 +6335,7 @@
    ],
    "experience": "30 年工程治理经验：漏洞分级与补丁流程、失败测试基线修复、编码规范与门禁落地、技术债清欠与重复功能合并；证据驱动、逐项闭环，只出报告与工单不自行合并，开发动作限独立 worktree 提交+跑测试并交 L2 人签。",
    "dept_name": "研究院",
-   "dept_cn_title": "太学",
-   "tasks": [
-    {
-     "id": "WO-GUANYU-P69-20261030",
-     "desc": "api_backtest B2拆分",
-     "status": "doing"
-    }
-   ]
+   "dept_cn_title": "太学"
   },
   "HUANGZHONG": {
    "id": "HUANGZHONG",
