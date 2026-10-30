@@ -28,7 +28,10 @@ import websocket
 try:
     from safe_urlopen import safe_urlopen
 except ImportError:  # 作为包导入时
-    from tools.safe_urlopen import safe_urlopen
+    try:
+        from safe_urlopen import safe_urlopen
+    except ImportError:  # 作为包/仓库根导入时
+        from tools.safe_urlopen import safe_urlopen
 
 VIEWPORTS = (("desktop", 1440, 1200, False), ("mobile", 375, 900, True))
 

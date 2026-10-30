@@ -23,7 +23,10 @@ import urllib.request
 try:
     from safe_urlopen import safe_urlopen
 except ImportError:  # 作为包导入时
-    from tools.safe_urlopen import safe_urlopen
+    try:
+        from safe_urlopen import safe_urlopen
+    except ImportError:  # 作为包/仓库根导入时
+        from tools.safe_urlopen import safe_urlopen
 
 DEFAULT_ENDPOINT = "http://127.0.0.1:8795/llm/chat"
 DEFAULT_PHOENIX = "http://127.0.0.1:6006/v1/traces"

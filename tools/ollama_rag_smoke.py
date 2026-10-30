@@ -30,7 +30,10 @@ from typing import Any
 try:
     from safe_urlopen import safe_urlopen
 except ImportError:  # 作为包导入时
-    from tools.safe_urlopen import safe_urlopen
+    try:
+        from safe_urlopen import safe_urlopen
+    except ImportError:  # 作为包/仓库根导入时
+        from tools.safe_urlopen import safe_urlopen
 
 SUPPORTED_SUFFIXES = {".txt", ".md", ".markdown"}
 DEFAULT_OLLAMA_URL = "http://127.0.0.1:11434"

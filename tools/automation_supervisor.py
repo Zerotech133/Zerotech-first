@@ -21,7 +21,10 @@ from pathlib import Path
 try:
     from safe_urlopen import safe_urlopen
 except ImportError:  # 作为包导入时
-    from tools.safe_urlopen import safe_urlopen
+    try:
+        from safe_urlopen import safe_urlopen
+    except ImportError:  # 作为包/仓库根导入时
+        from tools.safe_urlopen import safe_urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
 TASKS = ROOT / ".worktrees" / "tasks.json"
