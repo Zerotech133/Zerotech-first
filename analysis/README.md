@@ -116,6 +116,12 @@ python -m analysis.prereview --code 600337.SH --out C:\项目\deliverables\2026-
 - **不写复核状态**；人工确认后按 CSV 里的 `event_id` 用 `review --approve/--reject` 或门户 `/sa` 页点选入库；
 - 规则补全（同一提交）：`MATERIAL` 去掉 `审计`（避免审计委员会类程序文件混入）；`EVENT_RULES` 增加「治理/程序」类别；重整优先于退市/ST。
 
+### 非经常性损益识别（P0L，2026-10-30）
+
+- 特征层：`fundamental.nonrecurring = {profit_dedt_yi, extra_item_yi, ratio, dt_yoy, dedt_ratio}`（来自 `fina_indicator.profit_dedt/extra_item/dt_netprofit_yoy`，仅当 fina 与 income 最新期一致才采信）；
+- 评级层：`ratio ≥ 0.5` 且 `|extra_item| ≥ 0.5 亿` → 判定"利润含大额非经常性损益"：抵消盈利加分（-1.0）、抑制业绩预告预增加分（不再 +0.3）、风险提示扣非与主场，`verdict.nonrecurring` 随报告输出；
+- 报告/H5：财务表新增「扣非归母净利 / 非经常性损益（占归母比） / 扣非净利同比」三行。
+
 ### G1 覆盖率目标（P0J，诸葛亮裁示）
 
 - `config.COVERAGE_MIN=80`（硬门槛，低于即不通过）、`config.COVERAGE_TARGET=90`（目标，80-90 区间标黄告警但不否决）；

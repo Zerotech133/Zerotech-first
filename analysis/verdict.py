@@ -48,6 +48,26 @@ def build_verdict(snap, feat, events):
         elif gm < 20:
             score -= 0.3
 
+    # P0L：非经常性损益识别——一次性收益不得抬高评级
+    nr = fnd.get("nonrecurring") or {}
+    nr_ratio = _num(nr.get("ratio"))
+    nr_extra = _num(nr.get("extra_item_yi"))
+    big_nr = (nr_ratio is not None and nr_ratio >= 0.5
+              and (nr_extra is None or abs(nr_extra) >= 0.5))
+    if big_nr:
+        score -= 1.0  # 抵消上面"盈利 +1.0"的口径污染
+        reasons[:] = [r for r in reasons if not r.startswith("最新报告期盈利")]
+        if np_ is not None and np_ > 0:
+            reasons.append("利润主要来自非经常性损益（%.2f 亿，占归母 %.0f%%）"
+                           % (nr_extra or 0, nr_ratio * 100))
+        if nr.get("profit_dedt_yi") is not None:
+            risks.append("扣非净利仅 %.2f 亿，盈利质量不支撑头条利润" % nr["profit_dedt_yi"])
+        if nr.get("dt_yoy") is not None and nr["dt_yoy"] < 0:
+            risks.append("扣非净利同比 %.1f%%，主业未改善" % nr["dt_yoy"])
+        signals.append("非经常性损益占比 %.0f%%（一次性）" % (nr_ratio * 100))
+    elif nr.get("profit_dedt_yi") is not None:
+        signals.append("扣非净利 %.2f 亿" % nr["profit_dedt_yi"])
+
     # 估值
     pct = _num(val.get("peer_percentile"))
     if pct is not None:
@@ -156,7 +176,8 @@ def build_verdict(snap, feat, events):
         t = fc.get("type") or ""
         if any(k in t for k in ("预增", "扭亏", "略增")):
             signals.append("业绩预告：%s（%s）" % (t, fc.get("summary", "")))
-            score += 0.3
+            if not big_nr:
+                score += 0.3
         elif any(k in t for k in ("续亏", "预亏", "首亏", "略减")):
             risks.append("业绩预告：%s（%s）" % (t, fc.get("summary", "")))
     lhb = ex.get("lhb")
@@ -255,6 +276,7 @@ def build_verdict(snap, feat, events):
         "triggers": ["季报/预告验证业绩", "放量突破 250 日高或回踩 MA20 企稳"],
         "invalidations": ["跌破 60 日低", "出现监管立案/退市风险", "核心逻辑被证伪"],
         "levels": levels, "scenarios": scen, "risks": risks[:10], "watch": watch,
+        "nonrecurring": nr or None,
         "score": round(score, 2),
         "disclaimer": "研究分析，不构成投资建议",
     }

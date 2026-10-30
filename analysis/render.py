@@ -190,6 +190,13 @@ def build_report(ctx):
     A("| 营收 TTM | %s 亿元 |" % _fmt(fnd.get("revenue_ttm_yi")))
     A("| 营收同比 | %s%% |" % _fmt(fnd.get("revenue_yoy")))
     A("| 净利同比 | %s%% |" % _fmt(fnd.get("net_profit_yoy")))
+    _nr = fnd.get("nonrecurring") or {}
+    if _nr.get("profit_dedt_yi") is not None:
+        A("| 扣非归母净利 | %s 亿元 |" % _fmt(_nr["profit_dedt_yi"]))
+    if _nr.get("extra_item_yi") is not None:
+        A("| 非经常性损益 | %s 亿元（占归母 %s%%） |" % (_fmt(_nr["extra_item_yi"]), _fmt(round((_nr.get("ratio") or 0) * 100, 1))))
+    if _nr.get("dt_yoy") is not None:
+        A("| 扣非净利同比 | %s%% |" % _fmt(_nr["dt_yoy"]))
     A("| 毛利率 | %s%% |" % _fmt(fnd.get("gross_margin")))
     A("| 资产负债率 | %s%% |" % _fmt(fnd.get("debt_ratio")))
     A("| 归母净资产 | %s 亿元 |" % _fmt(fnd.get("net_assets_yi")))
@@ -351,9 +358,13 @@ def build_h5(ctx, outdir):
              ("最新报告期", _fmt(fnd.get("latest_end"))),
              ("营收", "%s 亿元" % _fmt(fnd.get("revenue_latest_yi"))),
              ("归母净利", "%s 亿元" % _fmt(fnd.get("net_profit_latest_yi"))),
+             ("扣非净利", "%s 亿元" % _fmt((fnd.get("nonrecurring") or {}).get("profit_dedt_yi"))),
+             ("非经常性损益", "%s 亿元（占 %s%%）" % (
+                 _fmt((fnd.get("nonrecurring") or {}).get("extra_item_yi")),
+                 _fmt(round(((fnd.get("nonrecurring") or {}).get("ratio") or 0) * 100, 1)))),
              ("营收 TTM", "%s 亿元" % _fmt(fnd.get("revenue_ttm_yi"))),
              ("毛利率", "%s%%" % _fmt(fnd.get("gross_margin"))),
-             ("资产负债率", "%s%%" % _fmt(fnd.get("debt_ratio")))], "业绩是慢变量，决定估值中枢。"),
+             ("资产负债率", "%s%%" % _fmt(fnd.get("debt_ratio")))], "业绩是慢变量，决定估值中枢；扣非口径优先。"),
         ("j3", "📈", "技术面：250 日分位 %s%%" % _fmt(tech.get("pct_rank_250d")),
          "20 日 %s%% / 60 日 %s%%" % (_fmt(tech.get("ret_20d")), _fmt(tech.get("ret_60d"))), [
              ("现价", _fmt(tech.get("price"))), ("MA20", _fmt(tech.get("ma20"))), ("MA60", _fmt(tech.get("ma60"))),
@@ -401,11 +412,16 @@ def build_h5(ctx, outdir):
     tabs = [
         {"id": "fin", "name": "财务", "rows": kv([
             ("最新报告期", _fmt(fnd.get("latest_end"))), ("营收", "%s 亿" % _fmt(fnd.get("revenue_latest_yi"))),
-            ("归母净利", "%s 亿" % _fmt(fnd.get("net_profit_latest_yi"))), ("营收 TTM", "%s 亿" % _fmt(fnd.get("revenue_ttm_yi"))),
+            ("归母净利", "%s 亿" % _fmt(fnd.get("net_profit_latest_yi"))),
+            ("扣非净利", "%s 亿" % _fmt((fnd.get("nonrecurring") or {}).get("profit_dedt_yi"))),
+            ("非经常性损益", "%s 亿（占 %s%%）" % (
+                _fmt((fnd.get("nonrecurring") or {}).get("extra_item_yi")),
+                _fmt(round(((fnd.get("nonrecurring") or {}).get("ratio") or 0) * 100, 1)))),
+            ("营收 TTM", "%s 亿" % _fmt(fnd.get("revenue_ttm_yi"))),
             ("营收同比", "%s%%" % _fmt(fnd.get("revenue_yoy"))), ("毛利率", "%s%%" % _fmt(fnd.get("gross_margin"))),
             ("资产负债率", "%s%%" % _fmt(fnd.get("debt_ratio"))), ("净资产", "%s 亿" % _fmt(fnd.get("net_assets_yi"))),
             ("合同负债", "%s 亿" % _fmt(fnd.get("contract_liab_yi"))), ("经营现金流(年)", "%s 亿" % _fmt(fnd.get("ocf_annual_yi")))]),
-         "read": "财务数据来自最新报告期；TTM 为最近年报+最新中报-上年中报。", "chart": "fin", "cap": "图：营收与净利"},
+         "read": "财务数据来自最新报告期；扣非口径优先。TTM 为最近年报+最新中报-上年中报。", "chart": "fin", "cap": "图：营收与净利"},
         {"id": "value", "name": "估值", "rows": kv([
             ("PE(TTM)", _fmt(val.get("pe_ttm"))), ("PB", _fmt(val.get("pb"))), ("PS(TTM)", _fmt(val.get("ps_ttm"))),
             ("同业 PS 中位", _fmt(val.get("peer_ps_median"))), ("同业 PS 分位", _fmt(val.get("peer_percentile"))),
