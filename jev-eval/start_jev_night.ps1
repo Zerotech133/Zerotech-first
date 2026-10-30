@@ -6,6 +6,9 @@
 # must NOT start a night run (old code logged "run as usual" and misfired).
 $ErrorActionPreference = 'Continue'
 $env:JEV_ITEM_SLEEP_S = '0'
+# 2026-10-30 PREFILTERON (user approved): safe prefilter - routine governance
+# templates only; measured false-kill 1.0% of skips, signal capture 100%.
+$env:JEV_PREFILTER = 'safe'
 $env:PYTHONUTF8 = '1'
 $log = 'C:\Temp\jev_night_task.log'
 $py = 'C:\Program Files\Python311\python.exe'

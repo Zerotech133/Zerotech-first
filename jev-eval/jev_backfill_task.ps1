@@ -14,6 +14,8 @@ function W([string]$m) {
 try {
     try { [Console]::OutputEncoding = [Text.Encoding]::UTF8 } catch {}
     W 'P0 start'
+    # 2026-10-30 PREFILTERON (user approved): safe prefilter for hourly rounds.
+    $env:JEV_PREFILTER = 'safe'
     # 2026-10-27 JEVHOURLY: night-window guard. During 21:50-07:00 the night run owns
     # the shared ollama_batch lock; the :00 hourly run was contending and cost night
     # round R16 a skipped round (2026-10-27 04:07-04:22). Pause flag == night window.
