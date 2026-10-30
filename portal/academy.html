@@ -162,6 +162,8 @@
   #lt-academy .ac-value-row > span:last-child { text-align:right; min-width:0; overflow-wrap:anywhere; }
   @media(max-width:640px) { .academy-workspace { padding:0 14px; margin-top:18px; } }
   @media(max-width:580px) { #lt-academy .ac-top { padding-right:17px; } }
+  .ac-concept-note{margin:10px 14px;padding:8px 12px;border:0.5px solid var(--a-line);border-left:3px solid var(--a-blue);background:var(--a-panel);color:var(--a-sub);font-size:12px;border-radius:6px}
+  .ac-concept-note a{color:var(--a-blue)}
 </style>
 <script src="/static/nav.js" defer></script>
 <script src="/static/shortscreen.js" defer></script><meta name=wb-shell content=adopted></head>
@@ -344,6 +346,7 @@
 @media(max-width:580px){#lt-academy .ac-nav-label{display:none}#lt-academy .ac-market-grid,#lt-academy .ac-config-grid{grid-template-columns:1fr}#lt-academy .ac-ai-message{grid-template-columns:1fr;gap:6px}#lt-academy .ac-net-node{padding:12px 6px}#lt-academy .ac-net-node strong{font-size:12px}#lt-academy .ac-output-list li{flex-direction:column;gap:3px}#lt-academy .ac-output-list small{text-align:left}}
 </style>
 <div id="lt-academy" aria-label="智能体学院交互原型">
+  <div class="ac-concept-note" role="note">概念页 · 展示产品方向与结构，真实课题台账见 <a href="/legion">军团大屏 /legion</a>（司马徽研究院）</div>
   <div class="ac-shell">
     <aside class="ac-side">
       <div class="ac-brand"><span class="ac-seal" aria-hidden="true">院</span><div><strong>智能体学院</strong><small>AI 工作站 / 学院</small></div></div>
