@@ -456,13 +456,23 @@ class H(BaseHTTPRequestHandler):
         got = (self.headers.get("X-Portal-Token") or "").strip()
         return bool(got) and hmac.compare_digest(got, token)
 
+    def _write_context_ok(self):
+        """浏览器写上下文守卫（2026-10-30 P0 安全）：跨站 Origin/Referer 一律拒绝。
+
+        经 nginx 反代时本机浏览器会带 Origin=http://127.0.0.1:8734；跨站 CSRF
+        表单/fetch 的 Origin 是攻击者站点，必须在进入 IP/token 放行前被拒。
+        非浏览器客户端（无 Origin/Sec-Fetch-Site/Referer）返回 True，继续走
+        authz_ip_allowed / token 判据。
+        """
+        return write_context_allowed(
+            self.headers.get("Origin") or "",
+            self.headers.get("Sec-Fetch-Site") or "",
+            self.headers.get("Referer") or "",
+        )
+
     def _authorized_mutation(self):
-        """写鉴权：先校验浏览器写上下文（跨站 Origin/Referer 拒绝，防 CSRF），
-        再按本机可信域/token 判定。上下文守卫内联，不新增 Handler 方法（只改不扩）。"""
-        if not write_context_allowed(
-                self.headers.get("Origin") or "",
-                self.headers.get("Sec-Fetch-Site") or "",
-                self.headers.get("Referer") or ""):
+        """写鉴权：先校验浏览器写上下文（防 CSRF），再按本机可信域/token 判定。"""
+        if not self._write_context_ok():
             return False
         return authz_ip_allowed(self._client_ip()) or self._token_ok()
 
