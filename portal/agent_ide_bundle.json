@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 21:23",
+ "generated": "2026-10-30 21:26",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -10,7 +10,7 @@
   "prompt_miss": [],
   "name_collisions": {},
   "workorders_doing": 28,
-  "workorders_review": 10
+  "workorders_review": 9
  },
  "workorders": [
   {
@@ -344,15 +344,6 @@
    "owner": "DSH-Lead",
    "branch": "task/K-QUANT-20261030-HERMESMAIN",
    "created": "2026-10-30 21:14:03",
-   "project": "quant"
-  },
-  {
-   "id": "K-QUANT-20261030-HERMESDEV",
-   "desc": "Hermes mainchat: task picker, A0 context injection, run_id event log",
-   "status": "review",
-   "owner": "DSH-Lead",
-   "branch": "task/K-QUANT-20261030-HERMESDEV",
-   "created": "2026-10-30 21:19:44",
    "project": "quant"
   }
  ],
