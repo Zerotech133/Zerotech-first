@@ -1149,7 +1149,8 @@ class Handler(BaseHTTPRequestHandler):
             )
             self._send_json(res, 200 if res.get("ok") else 502)
             return
-        if path in ("/api/ide/openhands/start", "/api/ide/openhands/interrupt"):
+        if path in ("/api/ide/openhands/start", "/api/ide/openhands/interrupt",
+                    "/api/ide/openhands/respond"):
             try:
                 length = int(self.headers.get("Content-Length") or 0)
                 if length <= 0 or length > 64 * 1024:
@@ -1170,8 +1171,14 @@ class Handler(BaseHTTPRequestHandler):
                     worktree=str(req.get("worktree") or ""),
                     model=str(req.get("model") or "deepseek-flash"),
                 )
-            else:
+            elif path.endswith("/interrupt"):
                 res = openhands_engine.interrupt(str(req.get("conversation_id") or ""))
+            else:
+                res = openhands_engine.respond(
+                    str(req.get("conversation_id") or ""),
+                    bool(req.get("accept")),
+                    str(req.get("reason") or ""),
+                )
             self._send_json(res, 200 if res.get("ok") else 409)
             return
         if path in ("/api/ide/openhands/diff", "/api/ide/openhands/commit"):

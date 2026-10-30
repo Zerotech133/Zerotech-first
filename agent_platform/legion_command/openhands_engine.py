@@ -12,6 +12,7 @@ import json
 import os
 import re
 import subprocess
+import threading
 import time
 import urllib.error
 import urllib.request
@@ -97,6 +98,35 @@ def ensure_sandbox(timeout: int = 60) -> dict:
         return {"ok": True, "started": True, "container": SANDBOX_CONTAINER}
     return {"ok": False, "error": "sandbox_unhealthy",
             "container": SANDBOX_CONTAINER}
+
+
+_WATCH_LOCK = threading.Lock()
+_WATCH_STARTED = False
+
+
+def _sandbox_watch_loop() -> None:
+    while True:
+        try:
+            if not _wait_health(2):
+                ensure_sandbox(timeout=60)
+        except Exception:  # noqa: BLE001
+            pass
+        time.sleep(60)
+
+
+def start_watchdog() -> dict:
+    """网关内健康守护：容器挂掉后最多 60s 自动拉起。"""
+    global _WATCH_STARTED
+    if os.environ.get("OH_SANDBOX_WATCH", "1") == "0":
+        return {"ok": False, "watching": False, "reason": "disabled"}
+    with _WATCH_LOCK:
+        if _WATCH_STARTED:
+            return {"ok": True, "watching": True, "started": False}
+        t = threading.Thread(target=_sandbox_watch_loop, name="oh-sandbox-watch",
+                             daemon=True)
+        t.start()
+        _WATCH_STARTED = True
+        return {"ok": True, "watching": True, "started": True}
 
 
 def _key() -> str:
@@ -199,6 +229,9 @@ def _start(message: str, container_workdir: str, model: str,
         "agent_settings": {"llm": _llm(model)},
         "max_iterations": max(1, min(int(max_iterations or 60), 100)),
         "stuck_detection": True,
+        # 所有 shell 命令逐条确认；文件编辑由 status() 自动放行，避免噪音。
+        "confirmation_policy": {"kind": "AlwaysConfirm"},
+        "security_analyzer": {"kind": "PolicyRailSecurityAnalyzer"},
     }
     _r, d = _req("/api/conversations", method="POST", body=body, timeout=120)
     if not d or not d.get("id"):
@@ -287,18 +320,24 @@ def events(cid: str, limit: int = 60) -> list[dict]:
             continue
         summary = _summary(e)
         if summary:
+            action = e.get("action") if isinstance(e.get("action"), dict) else {}
             out.append({"kind": e.get("kind"), "source": e.get("source"),
-                        "summary": summary, "id": e.get("id")})
+                        "summary": summary, "id": e.get("id"),
+                        "tool": str(e.get("tool_name") or ""),
+                        "action_kind": str(action.get("kind") or ""),
+                        "command": str(action.get("command") or "")})
     return out[-limit:]
 
 
 def health() -> dict:
+    watch = start_watchdog()
     _r, data = _req("/health", timeout=5)
     if data.get("status") == "ok":
         return {"ok": True, "base_url": BASE_URL, "mode": "docker-sandbox",
                 "worktree_root": str(WORKTREE_ROOT),
-                "container_root": CONTAINER_WORKTREE_ROOT}
-    return {"ok": False, "base_url": BASE_URL,
+                "container_root": CONTAINER_WORKTREE_ROOT,
+                "watchdog": watch}
+    return {"ok": False, "base_url": BASE_URL, "watchdog": watch,
             **{k: v for k, v in (data or {}).items() if k != "ok"}}
 
 
@@ -373,6 +412,7 @@ def start(message: str, conversation_id: str = "", task: str = "",
     message = str(message or "").strip()
     if not message:
         return {"ok": False, "error": "empty_message"}
+    start_watchdog()
     task = str(task or "").strip()
     owner = "oh-" + uuid.uuid4().hex[:12]
     locked = False
@@ -417,6 +457,26 @@ def start(message: str, conversation_id: str = "", task: str = "",
                 "detail": "%s: %s" % (type(e).__name__, str(e)[:300])}
 
 
+_SAFE_HEADS = {"cat", "ls", "pwd", "head", "tail", "wc", "echo", "which", "type"}
+_DANGER_TOKENS = ("rm ", "mv ", "cp ", "chmod", "chown", "curl ", "wget ",
+                  "git commit", "git push", "pip install", "npm install",
+                  ">", ">>", "del ", "format ", "shutdown", "taskkill")
+
+
+def _safe_terminal(cmd: str) -> bool:
+    s = str(cmd or "").strip().lower()
+    if not s or any(tok in s for tok in _DANGER_TOKENS):
+        return False
+    parts = s.split()
+    head = parts[0]
+    if head in _SAFE_HEADS:
+        return True
+    if head == "git" and len(parts) > 1 and parts[1] in (
+            "status", "diff", "log", "show", "branch"):
+        return True
+    return False
+
+
 def status(cid: str) -> dict:
     cid = str(cid or "").strip()
     if not cid:
@@ -428,11 +488,27 @@ def status(cid: str) -> dict:
     evs = events(cid)
     run = _RUNS.get(cid) or {}
     reply = ""
+    pending = ""
     if status_now in TERMINAL:
         reply = _final(cid)
         _release_run(cid)
+    elif status_now == "waiting_for_confirmation":
+        actions = [e for e in evs if e.get("kind") == "ActionEvent"]
+        if actions:
+            last = actions[-1]
+            tool = str(last.get("tool") or "")
+            cmd = str(last.get("command") or "")
+            if tool in ("file_editor", "task_tracker") or (
+                    tool == "terminal" and _safe_terminal(cmd)):
+                # 文件编辑/只读 shell 自动批准；危险 shell 必须人工确认。
+                auto = respond(cid, True, "auto approve safe action")
+                if auto.get("ok"):
+                    status_now = "running"
+                pending = "" if auto.get("ok") else str(last.get("summary") or "")
+            else:
+                pending = str(last.get("summary") or "")
     return {"ok": True, "conversation_id": cid, "status": status_now,
-            "events": evs, "reply": reply,
+            "events": evs, "reply": reply, "pending_action": pending,
             "task": run.get("task") or "",
             "worktree": run.get("host") or "",
             "terminal": status_now in TERMINAL}
@@ -448,3 +524,20 @@ def interrupt(cid: str) -> dict:
     st = status(cid)
     return {"ok": True, "conversation_id": cid,
             "status": st.get("status") or "paused"}
+
+
+def respond(cid: str, accept: bool, reason: str = "") -> dict:
+    cid = str(cid or "").strip()
+    if not cid:
+        return {"ok": False, "error": "conversation_id_required"}
+    body = {"accept": bool(accept),
+            "reason": str(reason or ("用户批准" if accept else "用户拒绝"))[:300]}
+    _r, d = _req(
+        "/api/conversations/%s/events/respond_to_confirmation" % cid,
+        method="POST", body=body, timeout=60,
+    )
+    if _r is None:
+        return d
+    st = status(cid)
+    return {"ok": True, "conversation_id": cid, "accept": bool(accept),
+            "status": st.get("status") or "running"}

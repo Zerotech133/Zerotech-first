@@ -1547,6 +1547,8 @@ let CURRENT_ABORT = null;
 function cancelSend(){
   if(OH_ACTIVE_CID){
     const cid = OH_ACTIVE_CID;
+    OH_PENDING_CID = "";
+    if(OH_CONFIRM_RESOLVE){ const r = OH_CONFIRM_RESOLVE; OH_CONFIRM_RESOLVE = null; r(); }
     addLog("cancel → 停止 OpenHands " + cid.slice(0,8), "lg-o");
     fetchJsonTimeout("/openhands/api/ide/openhands/interrupt", {
       method:"POST", headers:{"Content-Type":"application/json"},
@@ -1571,7 +1573,21 @@ function toggleOH(){
   addLog("OpenHands 模式 " + (OH_MODE ? "ON" : "OFF"), "lg-b");
 }
 let OH_ACTIVE_CID = "";
+let OH_PENDING_CID = "";
+let OH_CONFIRM_RESOLVE = null;
 function sleepMs(ms){ return new Promise(res => setTimeout(res, ms)); }
+async function respondOH(accept){
+  const cid = OH_PENDING_CID;
+  if(!cid) return;
+  OH_PENDING_CID = "";
+  try{
+    await fetchJsonTimeout("/openhands/api/ide/openhands/respond", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({conversation_id: cid, accept: !!accept})
+    }, 30000, 0);
+  }catch(e){ addLog("OH respond 失败 " + (e && e.message), "lg-o"); }
+  if(OH_CONFIRM_RESOLVE){ const r = OH_CONFIRM_RESOLVE; OH_CONFIRM_RESOLVE = null; r(); }
+}
 async function sendOpenHands(raw){
   const aid = DBGCUR.id;
   qbox.value = "";
@@ -1607,6 +1623,16 @@ async function sendOpenHands(raw){
       const steps = baseSteps.slice();
       for(const ev of lastEvents.slice(-14)) steps.push((ev.kind || "event") + " · " + (ev.summary || ""));
       steps.push("会话 " + (cid || "").slice(0,8));
+      if(d.status === "waiting_for_confirmation"){
+        OH_PENDING_CID = cid;
+        const warn = '<div style="margin-top:6px;color:#EF9F27;font-size:12px">⚠ 等待人工确认：'+esc(d.pending_action || "高风险动作")+'</div>'
+          + '<button onclick="respondOH(true)" style="margin-top:6px;background:#163f2f;border:1px solid #2f8f6a;color:#9fe3c0;border-radius:6px;padding:5px 10px;cursor:pointer">批准执行</button>'
+          + '<button onclick="respondOH(false)" style="margin-top:6px;margin-left:8px;background:#3a1f1f;border:1px solid #7a2a2e;color:#ffb0b0;border-radius:6px;padding:5px 10px;cursor:pointer">拒绝</button>';
+        r1.el.innerHTML = procHtml(steps, "⚠ 等待确认") + warn;
+        if(r1.whoEl) r1.whoEl.textContent = aid + " · OpenHands · 等待确认";
+        await new Promise(resolve => { OH_CONFIRM_RESOLVE = resolve; });
+        continue;
+      }
       r1.el.innerHTML = procHtml(steps, "⏳ 运行中… " + lastEvents.length + " 条事件");
       if(r1.whoEl) r1.whoEl.textContent = aid + " · OpenHands · 运行中…";
       if(d.terminal){ finalState = d; break; }
