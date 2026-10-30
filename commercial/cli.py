@@ -4,7 +4,7 @@ import argparse
 import json
 import time
 
-from . import audit, license as lic, plans, quota, tenants
+from . import audit, billing, license as lic, plans, quota, tenants
 
 
 def main(argv=None) -> int:
@@ -34,6 +34,19 @@ def main(argv=None) -> int:
     p.add_argument("--metric", default="reports_month", choices=list(plans.METRICS))
     p.add_argument("--consume", type=int, default=0)
     p.add_argument("--plan", default="pro", choices=list(plans.PLANS))
+
+    p = sub.add_parser("billing", help="生成某租户账单")
+    p.add_argument("--tenant", required=True)
+    p.add_argument("--month", default="")
+
+    p = sub.add_parser("invoice-export", help="导出全部租户账单（CSV/JSON+MD）")
+    p.add_argument("--out", required=True)
+    p.add_argument("--month", default="")
+
+    p = sub.add_parser("renewals", help="续费提醒（即将到期/已过期）")
+    p.add_argument("--days", type=int, default=30)
+
+    sub.add_parser("funnel", help="试用→付费漏斗")
 
     p = sub.add_parser("audit-tail", help="查看审计")
     p.add_argument("-n", type=int, default=20)
@@ -80,6 +93,23 @@ def main(argv=None) -> int:
             audit.append("quota_exceeded", tenant=a.tenant, result="deny", detail={"error": str(e)})
             print(json.dumps({"ok": False, "error": str(e)}, ensure_ascii=False))
             return 1
+    if a.cmd == "billing":
+        inv = billing.invoice(a.tenant, a.month or None)
+        audit.append("invoice_generated", tenant=a.tenant, detail={"month": inv["month"], "total": inv["total"]})
+        print(json.dumps({"ok": True, "invoice": inv}, ensure_ascii=False))
+        return 0
+    if a.cmd == "invoice-export":
+        r = billing.export_invoices(a.out, a.month or None)
+        audit.append("invoice_export", detail={"month": r["month"], "count": r["count"]})
+        print(json.dumps({"ok": True, **r}, ensure_ascii=False))
+        return 0
+    if a.cmd == "renewals":
+        rows = billing.renewals(a.days)
+        print(json.dumps({"ok": True, "within_days": a.days, "rows": rows}, ensure_ascii=False, indent=1))
+        return 0
+    if a.cmd == "funnel":
+        print(json.dumps({"ok": True, **billing.funnel()}, ensure_ascii=False))
+        return 0
     if a.cmd == "audit-tail":
         print(json.dumps(audit.tail(a.n, tenant=a.tenant or None), ensure_ascii=False, indent=1))
         return 0
