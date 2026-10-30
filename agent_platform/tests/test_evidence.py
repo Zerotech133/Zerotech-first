@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """Phase C evidence artifact 测试。"""
 import importlib.util
-import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -21,9 +20,9 @@ def test_new_append_finalize(monkeypatch, tmp_path):
     m = _load()
     m.new_run("run-x", task="T1", agent="A0")
     m.append("run-x", "hermes_plan", {"plan": "p"})
-    rec = m.finalize("run-x", mode="answer")
+    m.finalize("run-x", mode="answer")
     data = m.get("run-x")
-    assert data is not None and data["ok"] if False else data
+    assert data is not None
     assert data["run_id"] == "run-x" and data["task"] == "T1"
     assert data["mode"] == "answer"
     assert len(data["events"]) == 1

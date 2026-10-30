@@ -19,6 +19,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import xq_classify as xc
 
 
+@pytest.fixture(autouse=True)
+def _no_ollama_lock(monkeypatch):
+    """审计修复（2026-10-31）：run() 单测不依赖全局 ollama 锁。
+
+    并行会话（JEV/M3）持锁时，xc.run 的 acquire 默认等待 120s 会触发 pytest-timeout
+    → quant suite rc=1；本文件用例只验证 run 的 SQL/收行语义，锁不参与。
+    """
+    monkeypatch.setenv("XQ_OLLAMA_LOCK", "0")
+
+
 @pytest.fixture()
 def tmp_db(monkeypatch, tmp_path):
     """临时库 + 隔离日志路径；返回 (db_path, lines)。lines 收集 log() 输出。"""

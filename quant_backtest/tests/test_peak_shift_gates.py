@@ -84,6 +84,9 @@ def test_gate1_wait_expired_skips_round(monkeypatch, logs):
 def test_gate1_run_short_circuits_when_gate_blocks(monkeypatch):
     """run() 集成：闸门拦截时不连库直接 rc=0（下一轮调度自愈）。"""
     monkeypatch.setenv("XQ_PEAK_SHIFT", "1")
+    # 审计修复（2026-10-31）：本用例只验证闸门短路，不应依赖全局 ollama 锁；
+    # 并行会话持锁时 acquire 会等满 120s，触发 pytest-timeout -> suite rc=1。
+    monkeypatch.setenv("XQ_OLLAMA_LOCK", "0")
     monkeypatch.setattr(xc, "peak_shift_gate", lambda **kw: False)
 
     def _no_db(*a, **kw):
