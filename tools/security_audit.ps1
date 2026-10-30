@@ -39,7 +39,17 @@ $base = 'C:\aios\tools\bandit_baseline.json'
 if (Test-Path $base) {
     try {
         $b = Get-Content $base -Raw | ConvertFrom-Json
-        $reg = ($counts['HIGH'] -gt [int]$b.counts.HIGH) -or ($counts['MEDIUM'] -gt [int]$b.counts.MEDIUM)
+        $bh = 0; $bm = 0
+        if ($b.counts) {
+            $bh = [int]$b.counts.HIGH; $bm = [int]$b.counts.MEDIUM
+        } elseif ($b.results) {
+            foreach ($x in $b.results) {
+                $sev = [string]$x.issue_severity
+                if ($sev -eq 'HIGH') { $bh = $bh + 1 }
+                elseif ($sev -eq 'MEDIUM') { $bm = $bm + 1 }
+            }
+        }
+        $reg = ($counts['HIGH'] -gt $bh) -or ($counts['MEDIUM'] -gt $bm)
     } catch { "baseline parse failed: $_" | Out-File $log -Append -Encoding utf8 }
 }
 @{
