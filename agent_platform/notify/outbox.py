@@ -16,6 +16,7 @@ import time
 import urllib.request
 import uuid
 from pathlib import Path
+from tools.safe_urlopen import safe_urlopen
 
 PLATFORM = Path(__file__).resolve().parents[1]
 REPO = PLATFORM.parent
@@ -108,7 +109,7 @@ def send(mid: str, timeout: float = 10.0) -> dict:
             headers={"Content-Type": "application/json"},
             method="POST",
         )
-        with urllib.request.urlopen(req, timeout=max(1.0, min(timeout, 30.0))) as r:
+        with safe_urlopen(req, timeout=max(1.0, min(timeout, 30.0))) as r:
             body = r.read(2000).decode("utf-8", errors="replace")
         rec.update({"status": "sent", "sent_at": _now(), "response": body[:500]})
         p.write_text(json.dumps(rec, ensure_ascii=False, indent=1), encoding="utf-8")

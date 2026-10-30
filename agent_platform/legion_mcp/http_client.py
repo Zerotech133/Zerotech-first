@@ -13,6 +13,7 @@ import json
 import os
 import urllib.request
 import logging
+from tools.safe_urlopen import safe_urlopen
 
 PROTOCOL_VERSION = "2025-06-18"
 UA = "zhaoyun-mcp-http/1.0"
@@ -91,7 +92,7 @@ class MCPHttpClient:
             method="POST",
         )
         try:
-            with urllib.request.urlopen(req, timeout=self.timeout) as r:
+            with safe_urlopen(req, timeout=self.timeout) as r:
                 raw = r.read(2_000_000).decode("utf-8", errors="replace")
                 ct = r.headers.get("Content-Type") or ""
                 sid = r.headers.get("Mcp-Session-Id") or ""

@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import json
 import urllib.request
+from tools.safe_urlopen import safe_urlopen
 
 BASE = "http://127.0.0.1:8787"
 TIMEOUT_START = 120
@@ -30,7 +31,7 @@ def _post(path: str, payload: dict, profile: str) -> dict:
         },
         method="POST",
     )
-    with urllib.request.urlopen(req, timeout=TIMEOUT_START) as r:
+    with safe_urlopen(req, timeout=TIMEOUT_START) as r:
         return json.loads(r.read().decode("utf-8"))
 
 
@@ -53,7 +54,7 @@ def seat_review(
     )
     chunks: list[str] = []
     current_event = ""
-    with urllib.request.urlopen(req, timeout=TIMEOUT_STREAM) as r:
+    with safe_urlopen(req, timeout=TIMEOUT_STREAM) as r:
         for raw in r:
             line = raw.decode("utf-8", errors="replace").rstrip("\n")
             if line.startswith("event:"):

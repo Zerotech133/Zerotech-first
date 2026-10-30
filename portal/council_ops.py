@@ -33,6 +33,10 @@ import uuid
 import urllib.parse
 from http.cookies import CookieError, SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:
+    from portal.safe_urlopen import safe_urlopen
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.normpath(os.path.join(HERE, ".."))  # portal 的上级 = 老田的AI助手
@@ -661,7 +665,7 @@ def _seat_say(profile: str, question: str, timeout: int = 100) -> str:
                 },
                 method="POST",
             )
-            with _ur.urlopen(req, timeout=timeout) as r:
+            with safe_urlopen(req, timeout=timeout) as r:
                 return json.loads(r.read().decode("utf-8"))
 
         ses = _post("/api/session/new", {"name": "council-auto"})
@@ -675,7 +679,7 @@ def _seat_say(profile: str, question: str, timeout: int = 100) -> str:
             headers={"Cookie": f"hermes_profile={profile}"},
         )
         chunks, ev = [], ""
-        with _ur.urlopen(req, timeout=timeout) as r:
+        with safe_urlopen(req, timeout=timeout) as r:
             for raw in r:
                 line = raw.decode("utf-8", errors="replace").rstrip("\n")
                 if line.startswith("event:"):
@@ -958,7 +962,7 @@ def notify(title: str, body: str, deep_link: str = "") -> dict:
                 },
                 method="POST",
             )
-            with _ur.urlopen(req, timeout=15) as r:
+            with safe_urlopen(req, timeout=15) as r:
                 d = json.loads(r.read().decode("utf-8"))
                 rec["sent"] = d.get("code") == 0
                 rec["channel"] = "feishu-openapi"

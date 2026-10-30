@@ -23,6 +23,7 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 import logging
+from tools.safe_urlopen import safe_urlopen
 
 PLATFORM = Path(__file__).resolve().parents[1]
 REPO = PLATFORM.parent
@@ -188,7 +189,7 @@ def _http_get(url: str) -> str:
             "Accept": "text/html,application/json;q=0.9,*/*;q=0.8",
         },
     )
-    with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
+    with safe_urlopen(req, timeout=TIMEOUT) as r:
         raw = r.read(MAX_BYTES + 1)
         ctype = (r.headers.get("Content-Type") or "").lower()
     if len(raw) > MAX_BYTES:

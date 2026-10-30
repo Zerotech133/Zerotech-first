@@ -38,6 +38,7 @@ from legion_ide import rw_guard as G  # noqa: E402
 from legion_ide import writer as W  # noqa: E402
 from legion_ide import exec_runner as X  # noqa: E402
 import logging
+from tools.safe_urlopen import safe_urlopen
 
 VERSION = "2.0"
 DEFAULT_HOST = "127.0.0.1"
@@ -125,7 +126,7 @@ def _portal_alive(url: str, timeout: float = 0.6) -> bool:
     base = url.rstrip("/")
     for path in ("/api/health", "/"):
         try:
-            with urllib.request.urlopen(base + path, timeout=timeout) as r:
+            with safe_urlopen(base + path, timeout=timeout) as r:
                 return 200 <= r.status < 500
         except urllib.error.HTTPError:
             return True
@@ -431,7 +432,7 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                 method="POST",
             )
             try:
-                with urllib.request.urlopen(req, timeout=180) as r:
+                with safe_urlopen(req, timeout=180) as r:
                     return self._send(r.status, r.read(), _JSON_CT)
             except urllib.error.HTTPError as exc:
                 return self._send(exc.code, exc.read(), _JSON_CT)

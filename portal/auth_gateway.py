@@ -29,6 +29,10 @@ import urllib.error
 import urllib.request
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional, Tuple
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:
+    from portal.safe_urlopen import safe_urlopen
 
 BEIJING = timezone(timedelta(hours=8))
 COOKIE_NAME = "zb_session"
@@ -161,7 +165,7 @@ def _http_json(url: str, payload: Optional[dict] = None, token: str = "", timeou
         headers["Authorization"] = "Bearer " + token
     req = urllib.request.Request(url, headers=headers, data=data, method=method)
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        with safe_urlopen(req, timeout=timeout) as resp:
             return resp.status, json.loads(resp.read().decode("utf-8", "replace"))
     except urllib.error.HTTPError as exc:
         return exc.code, None

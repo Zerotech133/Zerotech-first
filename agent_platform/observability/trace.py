@@ -21,6 +21,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from pathlib import Path
 import logging
+from tools.safe_urlopen import safe_urlopen
 
 PLATFORM = Path(__file__).resolve().parents[1]
 REPO = PLATFORM.parent
@@ -113,7 +114,7 @@ def export_span(trace, sid, parent, name, kind, start, end, status, attrs) -> di
         req = urllib.request.Request(
             url, data=body, method="POST",
             headers={"Content-Type": "application/x-protobuf"})
-        with urllib.request.urlopen(req, timeout=2) as resp:  # noqa: S310
+        with safe_urlopen(req, timeout=2) as resp:  # noqa: S310
             return {"ok": 200 <= int(resp.status) < 300, "status": int(resp.status)}
     except Exception as e:  # noqa: BLE001
         return {"ok": False, "error": "%s: %s" % (type(e).__name__, str(e)[:120])}

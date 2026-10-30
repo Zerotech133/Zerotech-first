@@ -27,6 +27,7 @@ from pathlib import Path
 from urllib import error as urlerror
 from urllib import request as urlrequest
 import logging
+from tools.safe_urlopen import safe_urlopen
 
 REPO = Path(__file__).resolve().parents[2]
 PLATFORM = REPO / "agent_platform"
@@ -128,7 +129,7 @@ def _http_json(method: str, url: str, body=None, timeout: int = 10):
         headers["Content-Type"] = "application/json"
     req = urlrequest.Request(url, data=data, headers=headers, method=method)
     try:
-        with urlrequest.urlopen(req, timeout=timeout) as resp:
+        with safe_urlopen(req, timeout=timeout) as resp:
             return resp.status, json.loads(resp.read().decode("utf-8"))
     except urlerror.HTTPError as exc:  # 4xx/5xx 也要拿 body 取证
         try:
