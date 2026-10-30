@@ -19,7 +19,7 @@ from __future__ import annotations
 import glob
 import json
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import numpy as np
@@ -30,7 +30,8 @@ REPO = Path(r"C:\项目\老田的AI助手")
 DATA = REPO / "quant_backtest" / "data" / "tushare"
 OUT = REPO / "research" / "reports"
 SHADOW_DIR = REPO / "work" / "research" / "h14_shadow"
-START, END = "20210722", "20261029"
+START = "20210722"
+END = (datetime.now() - timedelta(days=1)).strftime("%Y%m%d")  # 动态：每日运行都能覆盖到最新交易日
 COST = 0.003          # 30bp/次换手（按单边换手近似）
 TRAP_CAP = 0.05
 MIN_LIST_DAYS = 60

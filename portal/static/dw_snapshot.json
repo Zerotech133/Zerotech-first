@@ -1,17 +1,17 @@
 {
- "generated_at": "2026-10-30T10:14:26+08:00",
+ "generated_at": "2026-10-30T12:36:59+08:00",
  "today": "2026-10-30",
  "catalog": {
-  "version": 16,
-  "tables": 253,
+  "version": 17,
+  "tables": 255,
   "registry": {
-   "physical": 253,
+   "physical": 255,
    "display": 92
   },
-  "contracts": 6,
+  "contracts": 8,
   "qualification_unknown": 0,
   "manifest": {
-   "closed": 239,
+   "closed": 241,
    "not_applicable": 12,
    "open": 1,
    "missing": 1
@@ -19,24 +19,24 @@
  },
  "lagging_daily": [],
  "cockpit": {
-  "sources_total": 66,
-  "sources_done": 24,
+  "sources_total": 68,
+  "sources_done": 26,
   "sources_in_progress": 5,
   "sources_mining": 37,
   "sources_pending": 0,
-  "coverage_pct": 36.4,
-  "new_today": 43,
+  "coverage_pct": 38.2,
+  "new_today": 47,
   "pilot_today": 4,
-  "merged_today": 14,
+  "merged_today": 18,
   "hypotheses": 18,
   "hypotheses_by_status": {
-   "rejected": 10,
-   "backtested": 5,
-   "idea": 3
+   "rejected": 11,
+   "backtested": 6,
+   "in_progress": 1
   },
   "reports_total": 40,
-  "reports_today": 6,
-  "approvals_today": 2,
+  "reports_today": 14,
+  "approvals_today": 3,
   "risks": [
    {
     "item": "数据契约（ODCS）",
@@ -75,7 +75,7 @@
    }
   ],
   "backup_latest": "2026-10-30_0300",
-  "backup_age_hours": 10.2,
+  "backup_age_hours": 12.6,
   "supervisor_red": []
  },
  "sources": [
@@ -279,11 +279,11 @@
    "rows": 76374,
    "rows_h": "7.6 万",
    "range": "000002_SZ..688356_SH",
-   "last_update": "2026-10-29",
+   "last_update": "2026-10-30",
    "latest_date": "20260930",
    "report_period": "",
    "lag_days": null,
-   "today_new": 0,
+   "today_new": 4,
    "registered": true,
    "manifest": "closed",
    "date_status": "registered",
@@ -512,11 +512,11 @@
    "rows": 21196,
    "rows_h": "2.1 万",
    "range": "p0001..p0004",
-   "last_update": "2026-10-28",
-   "latest_date": "20261024",
+   "last_update": "2026-10-30",
+   "latest_date": "20261030",
    "report_period": "",
    "lag_days": null,
-   "today_new": 0,
+   "today_new": 1,
    "registered": true,
    "manifest": "closed",
    "date_status": "registered",
@@ -705,6 +705,33 @@
    "hypothesis_ids": [],
    "gap_note": "",
    "next_action": "已入库，未用于研究"
+  },
+  {
+   "name": "hk_hold",
+   "label": "港股通持股明细",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "daily",
+   "status": "done",
+   "note": "891 个交易日（2023-01~2026-10），约 1,000 只/日",
+   "files": 891,
+   "size_mb": 66.6,
+   "size_h": "67 MB",
+   "rows": 1961173,
+   "rows_h": "196.1 万",
+   "range": "20230103..20261029",
+   "last_update": "2026-10-30",
+   "latest_date": "20261029",
+   "report_period": "",
+   "lag_days": 1,
+   "today_new": 891,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "—"
   },
   {
    "name": "hk_income",
@@ -1093,6 +1120,33 @@
     "verdict": "aligned",
     "filled": 0
    }
+  },
+  {
+   "name": "moneyflow_hsgt",
+   "label": "沪深港通资金流（南向/北向）",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "daily",
+   "status": "done",
+   "note": "895 日（2023-01-03~2026-10-29），分片拉全",
+   "files": 1,
+   "size_mb": 0.1,
+   "size_h": "0 MB",
+   "rows": 895,
+   "rows_h": "895",
+   "range": "moneyflow_hsgt..moneyflow_hsgt",
+   "last_update": "2026-10-30",
+   "latest_date": "20261029",
+   "report_period": "",
+   "lag_days": 1,
+   "today_new": 1,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "—"
   },
   {
    "name": "news",
@@ -1823,13 +1877,13 @@
    "status": "in_progress",
    "note": "保留 365 天；历史不可回填（接口深度约 1 周）",
    "files": 1,
-   "size_mb": 107.89,
-   "size_h": "108 MB",
-   "rows": 102145,
-   "rows_h": "102145",
+   "size_mb": 108.54,
+   "size_h": "109 MB",
+   "rows": 102643,
+   "rows_h": "102643",
    "range": "news.db",
    "last_update": "2026-10-30",
-   "latest_date": "2026-10-30 10:03",
+   "latest_date": "2026-10-30 12:33",
    "lag_days": 0,
    "today_new": 1,
    "registered": true,
@@ -1964,8 +2018,8 @@
    "files": 1,
    "size_mb": 8379,
    "size_h": "8.4 GB",
-   "rows": 15895349,
-   "rows_h": "1589.5 万",
+   "rows": 16005440,
+   "rows_h": "1600.5 万",
    "range": "2026-08-11 起（分钟线）",
    "last_update": "2026-10-30",
    "latest_date": "2026-10-30",
@@ -2006,7 +2060,7 @@
   }
  ],
  "method_counts": {
-  "接口同步": 59,
+  "接口同步": 61,
   "爬虫采集": 2,
   "本地库": 3,
   "容器库": 2,
@@ -2200,6 +2254,33 @@
    "next_action": "已入库，未用于研究"
   },
   {
+   "name": "cyq_chips",
+   "label": "Tushare·筹码分布",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "low_freq",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 23,
+   "size_mb": 0.2,
+   "size_h": "0 MB",
+   "rows": 76374,
+   "rows_h": "7.6 万",
+   "range": "000002_SZ..688356_SH",
+   "last_update": "2026-10-30",
+   "latest_date": "20260930",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 4,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
    "name": "cyq_perf",
    "label": "Tushare·筹码胜率",
    "method": "接口同步",
@@ -2372,6 +2453,42 @@
    }
   },
   {
+   "name": "forecast",
+   "label": "Tushare·业绩预告",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "event",
+   "status": "done",
+   "note": "3 年 21,196 行（含预告类型/幅度）",
+   "files": 4,
+   "size_mb": 8.4,
+   "size_h": "8 MB",
+   "rows": 21196,
+   "rows_h": "2.1 万",
+   "range": "p0001..p0004",
+   "last_update": "2026-10-30",
+   "latest_date": "20261030",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 1,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [
+    "H2",
+    "H11",
+    "H12"
+   ],
+   "gap_note": "",
+   "next_action": "—",
+   "audit": {
+    "source_latest": "20261024",
+    "local_latest": "20261024",
+    "verdict": "aligned"
+   }
+  },
+  {
    "name": "fx_daily",
    "label": "汇率·USDCNH/USDHKD（东财源）",
    "method": "接口同步",
@@ -2461,6 +2578,33 @@
     "verdict": "aligned",
     "filled": 0
    }
+  },
+  {
+   "name": "hk_hold",
+   "label": "港股通持股明细",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "daily",
+   "status": "done",
+   "note": "891 个交易日（2023-01~2026-10），约 1,000 只/日",
+   "files": 891,
+   "size_mb": 66.6,
+   "size_h": "67 MB",
+   "rows": 1961173,
+   "rows_h": "196.1 万",
+   "range": "20230103..20261029",
+   "last_update": "2026-10-30",
+   "latest_date": "20261029",
+   "report_period": "",
+   "lag_days": 1,
+   "today_new": 891,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "—"
   },
   {
    "name": "idx_mins",
@@ -2738,6 +2882,33 @@
     "verdict": "aligned",
     "filled": 0
    }
+  },
+  {
+   "name": "moneyflow_hsgt",
+   "label": "沪深港通资金流（南向/北向）",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "daily",
+   "status": "done",
+   "note": "895 日（2023-01-03~2026-10-29），分片拉全",
+   "files": 1,
+   "size_mb": 0.1,
+   "size_h": "0 MB",
+   "rows": 895,
+   "rows_h": "895",
+   "range": "moneyflow_hsgt..moneyflow_hsgt",
+   "last_update": "2026-10-30",
+   "latest_date": "20261029",
+   "report_period": "",
+   "lag_days": 1,
+   "today_new": 1,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "—"
   },
   {
    "name": "news",
@@ -3198,13 +3369,13 @@
    "status": "in_progress",
    "note": "保留 365 天；历史不可回填（接口深度约 1 周）",
    "files": 1,
-   "size_mb": 107.89,
-   "size_h": "108 MB",
-   "rows": 102145,
-   "rows_h": "102145",
+   "size_mb": 108.54,
+   "size_h": "109 MB",
+   "rows": 102643,
+   "rows_h": "102643",
    "range": "news.db",
    "last_update": "2026-10-30",
-   "latest_date": "2026-10-30 10:03",
+   "latest_date": "2026-10-30 12:33",
    "lag_days": 0,
    "today_new": 1,
    "registered": true,
@@ -3370,10 +3541,10 @@
    "question": "高 ROE 组合在 3/5 年 OOS 均显著跑输（IC -0.033~-0.038），是否可构造规避/低配规则？",
    "data_sources": "tushare fina_indicator + daily_basic + daily（PIT，2019-2026）",
    "method": "月度调仓；质量因子五分位；OOS 12-24 月；行业×规模中性；成本30bp；稳健性（3/5年、按市值/行业分组）",
-   "conclusion": "估值分层内质量反向**成立**（负向规则）：5年窗口 62 调仓月/16.7万观测，OOS PE 三分位内 ROE Q5-Q1 全负（低/中/高 PE：-0.83/-1.35/-1.83）；高ROE+高PE 质量陷阱 OOS -0.60% vs 高ROE+低PE +0.57%（差 -1.17%，IS -3.37%）；3年窗口同向（差 -1.24%，hi组 -1.45%, t=-4.08）。结论：H7 负 IC 由估值交互驱动；可制定「高ROE+高估值低配/规避」风控规则（待例会议决）",
+   "conclusion": "估值分层内质量反向**成立**（负向规则）：5年窗口 62 调仓月/16.7万观测，OOS PE 三分位内 ROE Q5-Q1 全负（低/中/高 PE：-0.83/-1.35/-1.83）；高ROE+高PE 质量陷阱 OOS -0.60% vs 高ROE+低PE +0.57%（差 -1.17%，IS -3.37%）；3年窗口同向（差 -1.24%，hi组 -1.45%, t=-4.08）。结论：H7 负 IC 由估值交互驱动；可制定「高ROE+高估值低配/规避」风控规则（待例会议决）；影子盘（A）已初始化：46 月回测约束版年化 -5.13% vs 无约束 -6.31%，回撤 -36.85% vs -38.37%；决策（2026-10-30 确认）：选 A（组合层陷阱组权重上限 5%），验收门槛确认=影子≥3次调仓/回撤≤无约束/夏普不劣/年化降幅≤0.5pct/权重执行≤5.5%；每月1",
    "evidence": "research/reports/H14_quality_reversal_20261029.md",
    "created_at": "2026-10-29T08:24:58",
-   "updated_at": "2026-10-29T09:38:05"
+   "updated_at": "2026-10-30T11:25:00"
   },
   {
    "id": "H15",
@@ -3402,26 +3573,26 @@
   {
    "id": "H17",
    "title": "港股通南向资金对 H 股折价的领先性",
-   "status": "idea",
+   "status": "rejected",
    "question": "南向资金净流入是否领先 A/H 溢价收敛？",
    "data_sources": "港股通资金流（需补 Tushare hk 通数据）+ hk_daily + fx + A/H 配对",
    "method": "计划：日频南向净流入/持仓变化 → 分组 H 股 → 与溢价 z 的领先滞后检验；IS/OOS 同 H15",
-   "conclusion": "待研究（例会决定优先级）",
-   "evidence": "",
+   "conclusion": "南向持股 5 日变化→20 日溢价变化 OOS t=1.57；时间序列 Spearman=0.5349929418894936；状态 rejected",
+   "evidence": "research/reports/H17_hsgt_leadlag_20261030.md",
    "created_at": "2026-10-30T10:25:00",
-   "updated_at": "2026-10-30T10:25:00"
+   "updated_at": "2026-10-30T11:24:18"
   },
   {
    "id": "H18",
-   "title": "业绩预告修订动量（预增→预减反转）",
-   "status": "idea",
-   "question": "同一公司业绩预告前后修正（type/幅度变化）是否产生可交易动量/反转？",
-   "data_sources": "forecast（2023+，已补齐）+ daily + fina_indicator",
-   "method": "计划：匹配同一公司同一年度多次预告 → 修订方向 → 事件研究（5/10/20 日）→ 成本后",
-   "conclusion": "待研究（例会决定优先级）",
-   "evidence": "",
-   "created_at": "2026-10-30T10:25:00",
-   "updated_at": "2026-10-30T10:25:00"
+   "title": "业绩预告修订动量（同公司同报告期二次公告）",
+   "status": "backtested",
+   "question": "同一公司同报告期的预告修订（类型/幅度变化）是否产生可交易动量？",
+   "data_sources": "forecast(2023-2026)+daily",
+   "method": "同 ts_code+end_date 第 2 次及以后 ann_date=修订；type 极性 Δ；T+1 入场；5/10/20 日相对等权市场 CAR；成本30bp；IS2023-24/OOS2025-26",
+   "conclusion": "修订事件 493；OOS 20日 改善组 {'n': 61, 'mean_pct': -2.915, 't': -2.0} / 恶化组 {'n': 185, 'mean_pct': -3.04, 't': -3.06}；解读：改善/恶化修订后 CAR 均为负（恶化组 OOS -3.04%, t=-3.06 更差），价差 +0.84% 但不足以做多改善组 → 仅作「恶化修订后短期规避」风控信号，容量极小（493 事件）",
+   "evidence": "research/reports/H18_forecast_revision_20261030.md",
+   "created_at": "2026-10-30T11:02:38",
+   "updated_at": "2026-10-30T11:10:00"
   },
   {
    "id": "H2",
@@ -3462,14 +3633,14 @@
   {
    "id": "H5",
    "title": "舆情情绪领先价格",
-   "status": "idea",
+   "status": "in_progress",
    "question": "新闻/雪球情绪是否领先价格 1–2 小时？",
    "data_sources": "news.db + xueqiu_info.db + zhice minute",
    "method": "lead-lag 互相关 + 事件窗口",
-   "conclusion": "",
-   "evidence": "",
+   "conclusion": "pilot 完成（64 帖/75 观测）：bullish 1日 {'n': 20, 'mean_pct': -0.851, 't': -1.65}、bearish 1日 {'n': 5}；**数据不足**（xq 分类情绪 2026-09 前每月<20 条、news 仅 1 个月），保持 in_progress 数据积累，2027-02 前后重评",
+   "evidence": "research/reports/H5_sentiment_pilot_20261030.md",
    "created_at": "2026-10-28T07:54:22",
-   "updated_at": "2026-10-28T07:54:22"
+   "updated_at": "2026-10-30T12:19:26"
   },
   {
    "id": "H6",
@@ -3521,6 +3692,78 @@
   }
  ],
  "reports": [
+  {
+   "name": "H5_sentiment_pilot_20261030.json",
+   "title_zh": "H5 舆情领先滞后",
+   "kind": "原始数据",
+   "size_kb": 0.6,
+   "date": "2026-10-30",
+   "time": "12:19",
+   "hid": "H5"
+  },
+  {
+   "name": "H5_sentiment_pilot_20261030.md",
+   "title_zh": "H5 舆情领先滞后",
+   "kind": "报告正文",
+   "size_kb": 1.3,
+   "date": "2026-10-30",
+   "time": "12:19",
+   "hid": "H5"
+  },
+  {
+   "name": "H17_hsgt_leadlag_20261030.json",
+   "title_zh": "H1 公告事件超额收益",
+   "kind": "原始数据",
+   "size_kb": 1.0,
+   "date": "2026-10-30",
+   "time": "11:24",
+   "hid": "H17"
+  },
+  {
+   "name": "H17_hsgt_leadlag_20261030.md",
+   "title_zh": "H1 公告事件超额收益",
+   "kind": "报告正文",
+   "size_kb": 0.8,
+   "date": "2026-10-30",
+   "time": "11:24",
+   "hid": "H17"
+  },
+  {
+   "name": "H18_forecast_revision_20261030.md",
+   "title_zh": "H1 公告事件超额收益",
+   "kind": "报告正文",
+   "size_kb": 0.9,
+   "date": "2026-10-30",
+   "time": "11:02",
+   "hid": "H18"
+  },
+  {
+   "name": "H18_forecast_revision_20261030.json",
+   "title_zh": "H1 公告事件超额收益",
+   "kind": "原始数据",
+   "size_kb": 1.9,
+   "date": "2026-10-30",
+   "time": "11:02",
+   "hid": "H18"
+  },
+  {
+   "name": "H14_shadow_20261030.json",
+   "title_zh": "H14 质量反向（质量陷阱规避）",
+   "kind": "原始数据",
+   "size_kb": 184.9,
+   "date": "2026-10-30",
+   "time": "10:24",
+   "hid": "H14"
+  },
+  {
+   "name": "H14_shadow_20261030.md",
+   "title_zh": "H14 质量反向（质量陷阱规避）",
+   "kind": "报告正文",
+   "size_kb": 1.5,
+   "date": "2026-10-30",
+   "time": "10:24",
+   "hid": "H14"
+  },
   {
    "name": "H16_ah_strat_20261030.md",
    "title_zh": "H1 公告事件超额收益",
@@ -3808,112 +4051,10 @@
    "date": "2026-10-28",
    "time": "17:13",
    "hid": "H6"
-  },
-  {
-   "name": "H2_pead_3y_20261028.json",
-   "title_zh": "H2 业绩预告漂移（PEAD）",
-   "kind": "原始数据",
-   "size_kb": 2.4,
-   "date": "2026-10-28",
-   "time": "17:13",
-   "hid": "H2"
-  },
-  {
-   "name": "H2_pead_3y_20261028.md",
-   "title_zh": "H2 业绩预告漂移（PEAD）",
-   "kind": "报告正文",
-   "size_kb": 1.2,
-   "date": "2026-10-28",
-   "time": "17:13",
-   "hid": "H2"
-  },
-  {
-   "name": "H11_announcement_car_3y_20261028.json",
-   "title_zh": "H11 三年公告事件研究",
-   "kind": "原始数据",
-   "size_kb": 1.3,
-   "date": "2026-10-28",
-   "time": "17:13",
-   "hid": "H11"
-  },
-  {
-   "name": "H11_announcement_car_3y_20261028.md",
-   "title_zh": "H11 三年公告事件研究",
-   "kind": "报告正文",
-   "size_kb": 0.9,
-   "date": "2026-10-28",
-   "time": "17:13",
-   "hid": "H11"
-  },
-  {
-   "name": "H1_announcement_car_v2_20261028.json",
-   "title_zh": "H1 公告事件超额收益",
-   "kind": "原始数据",
-   "size_kb": 12.1,
-   "date": "2026-10-28",
-   "time": "10:52",
-   "hid": "H1"
-  },
-  {
-   "name": "H1_announcement_car_v2_20261028.md",
-   "title_zh": "H1 公告事件超额收益",
-   "kind": "报告正文",
-   "size_kb": 2.4,
-   "date": "2026-10-28",
-   "time": "10:52",
-   "hid": "H1"
-  },
-  {
-   "name": "H1_announcement_car_20261028.md",
-   "title_zh": "H1 公告事件超额收益",
-   "kind": "报告正文",
-   "size_kb": 2.9,
-   "date": "2026-10-28",
-   "time": "07:56",
-   "hid": "H1"
-  },
-  {
-   "name": "H1_announcement_car_20261028.json",
-   "title_zh": "H1 公告事件超额收益",
-   "kind": "原始数据",
-   "size_kb": 6.5,
-   "date": "2026-10-28",
-   "time": "07:56",
-   "hid": "H1"
   }
  ],
  "tasks": {
   "doing": [
-   {
-    "id": "WO-REDTEAM-JUDGE-20261027",
-    "status": "review",
-    "owner": "ZHAOYUN",
-    "desc": "红队判定器修复：'系统提示词'主题词误报为泄露，改为只判实际内容指纹"
-   },
-   {
-    "id": "WO-PHOENIX-ISOLATED-20261027",
-    "status": "doing",
-    "owner": "ZHAOYUN",
-    "desc": "B-08 Phoenix隔离venv：安装/端口登记/起服务/health验证"
-   },
-   {
-    "id": "WO-TESTPATHS-ADJUST-20261028",
-    "status": "review",
-    "owner": "ZHAOYUN",
-    "desc": "testpaths 注释与行对齐：quant 收集已修但默认不纳入（CI 预算待确认）"
-   },
-   {
-    "id": "WO-LEGION-HEALTHCARD-20261028",
-    "status": "doing",
-    "owner": "ZHAOYUN",
-    "desc": "健康卡 task_audit 口径：应用 task_exit_audit by-design 语义（alert_found/known_baseline），failed 9→5 降假红"
-   },
-   {
-    "id": "WO-LEGION-CENSUS2-20261028",
-    "status": "doing",
-    "owner": "ZHAOYUN",
-    "desc": "agent_census 时间解析二次落地：fromisoformat 优先，消除 ISO silent-except；不改变口径"
-   },
    {
     "id": "WO-GUANYU-P19-20261029",
     "status": "doing",
@@ -4101,16 +4242,52 @@
     "desc": "OH闭环测试：自动worktree/diff/确认提交"
    },
    {
-    "id": "K-QUANT-20261030-OHLIVE",
-    "status": "doing",
-    "owner": "DSH-Lead",
-    "desc": "OH实时事件+停止+工单执行锁；异步start/status/interrupt；浏览器实测"
-   },
-   {
-    "id": "WO-LEGION-TRIPART-DRILL-20261030",
+    "id": "WO-BANDIT-MEDIUM3B-20261030",
     "status": "doing",
     "owner": "ZHAOYUN",
-    "desc": "三系统面板指标下钻：评分快照历史分布（BFF端点+静态兜底）"
+    "desc": "bandit批3窄单：排除他人WIP两文件后的portal/legion safe helper接入"
+   },
+   {
+    "id": "WO-BANDIT-MEDIUM3C-20261030",
+    "status": "review",
+    "owner": "ZHAOYUN",
+    "desc": "bandit批3窄单C：仅复制与master脏文件无重叠的改动"
+   },
+   {
+    "id": "WO-BANDIT-MEDIUM3D-20261030",
+    "status": "review",
+    "owner": "ZHAOYUN",
+    "desc": "bandit批3窄单D：不含agent_ide_bundle的干净改动集"
+   },
+   {
+    "id": "WO-BOT-CONFIRM-20261030",
+    "status": "doing",
+    "owner": "DSH-Lead",
+    "desc": "盯盘触发→人工确认→TR1模拟执行端到端：confirmation core+CLI+飞书卡payload+portal确认页/API+kill switch+测试"
+   },
+   {
+    "id": "WO-LEGION-AUTHREQUEST-DOCS-20261030",
+    "status": "review",
+    "owner": "ZHAOYUN",
+    "desc": "auth_request 上线记录 + 配置回归测试"
+   },
+   {
+    "id": "WO-BANDIT-MEDIUM4A-20261030",
+    "status": "doing",
+    "owner": "ZHAOYUN",
+    "desc": "bandit批4A：B310剩余45处分诊——动态URL接safe_urlopen，固定内部URL加nosec理由；不改行为，复扫B310收敛。"
+   },
+   {
+    "id": "WO-BANDIT-MEDIUM4B-20261030",
+    "status": "doing",
+    "owner": "ZHAOYUN",
+    "desc": "bandit批4B：B608剩余73处动态SQL表/列名allowlist/白名单+测试；值参数不拼接，复扫收敛。"
+   },
+   {
+    "id": "WO-BANDIT-BASELINE2-20261030",
+    "status": "review",
+    "owner": "ZHAOYUN",
+    "desc": "基线修正：bandit_baseline.json改计数格式 + wrapper加regression字段"
    }
   ],
   "doing_data": [
@@ -4243,16 +4420,52 @@
     "desc": "OH闭环测试：自动worktree/diff/确认提交"
    },
    {
-    "id": "K-QUANT-20261030-OHLIVE",
-    "status": "doing",
-    "owner": "DSH-Lead",
-    "desc": "OH实时事件+停止+工单执行锁；异步start/status/interrupt；浏览器实测"
-   },
-   {
-    "id": "WO-LEGION-TRIPART-DRILL-20261030",
+    "id": "WO-BANDIT-MEDIUM3B-20261030",
     "status": "doing",
     "owner": "ZHAOYUN",
-    "desc": "三系统面板指标下钻：评分快照历史分布（BFF端点+静态兜底）"
+    "desc": "bandit批3窄单：排除他人WIP两文件后的portal/legion safe helper接入"
+   },
+   {
+    "id": "WO-BANDIT-MEDIUM3C-20261030",
+    "status": "review",
+    "owner": "ZHAOYUN",
+    "desc": "bandit批3窄单C：仅复制与master脏文件无重叠的改动"
+   },
+   {
+    "id": "WO-BANDIT-MEDIUM3D-20261030",
+    "status": "review",
+    "owner": "ZHAOYUN",
+    "desc": "bandit批3窄单D：不含agent_ide_bundle的干净改动集"
+   },
+   {
+    "id": "WO-BOT-CONFIRM-20261030",
+    "status": "doing",
+    "owner": "DSH-Lead",
+    "desc": "盯盘触发→人工确认→TR1模拟执行端到端：confirmation core+CLI+飞书卡payload+portal确认页/API+kill switch+测试"
+   },
+   {
+    "id": "WO-LEGION-AUTHREQUEST-DOCS-20261030",
+    "status": "review",
+    "owner": "ZHAOYUN",
+    "desc": "auth_request 上线记录 + 配置回归测试"
+   },
+   {
+    "id": "WO-BANDIT-MEDIUM4A-20261030",
+    "status": "doing",
+    "owner": "ZHAOYUN",
+    "desc": "bandit批4A：B310剩余45处分诊——动态URL接safe_urlopen，固定内部URL加nosec理由；不改行为，复扫B310收敛。"
+   },
+   {
+    "id": "WO-BANDIT-MEDIUM4B-20261030",
+    "status": "doing",
+    "owner": "ZHAOYUN",
+    "desc": "bandit批4B：B608剩余73处动态SQL表/列名allowlist/白名单+测试；值参数不拼接，复扫收敛。"
+   },
+   {
+    "id": "WO-BANDIT-BASELINE2-20261030",
+    "status": "review",
+    "owner": "ZHAOYUN",
+    "desc": "基线修正：bandit_baseline.json改计数格式 + wrapper加regression字段"
    }
   ],
   "today_pilot_data": [
@@ -4935,6 +5148,270 @@
     "status": "done",
     "owner": "DSH-Lead",
     "desc": "拓扑防回退测试：锁定 N1/F1 level1、T1/T2 level2 辩论、D1 level3 与 parent 关系；Team 加载校验"
+   },
+   {
+    "id": "K-QUANT-20261030-OHLIVE",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "OH实时事件+停止+工单执行锁；异步start/status/interrupt；浏览器实测"
+   },
+   {
+    "id": "WO-LEGION-TRIPART-DRILL-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "三系统面板指标下钻：评分快照历史分布（BFF端点+静态兜底）"
+   },
+   {
+    "id": "WO-LEGION-TRIPART-DRILL2-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "下钻静态兜底改到 /static（/data 未暴露）"
+   },
+   {
+    "id": "K-STOCK-ANALYSIS-P0L-20261030",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "非经常性损益识别：扣非口径入特征/评级（一次性收益不计加分）+ 报告扣非行"
+   },
+   {
+    "id": "K-QUANT-20261030-OHAST",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "上下文引擎AST符号索引：函数/类/方法检索；并入context API；测试"
+   },
+   {
+    "id": "WO-LEGION-GATE-INCIDENT-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "质量闸死锁与一次性绕过记录（证据归档）"
+   },
+   {
+    "id": "WO-GUANYU-P67-20261030",
+    "status": "done",
+    "owner": "GUANYU",
+    "desc": "巡检去重+7天升级"
+   },
+   {
+    "id": "WO-LEGION-GATE-BRANCH-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "质量闸改为分支/worktree级运行，消除master失败死锁"
+   },
+   {
+    "id": "WO-GUANYU-P68-20261030",
+    "status": "done",
+    "owner": "GUANYU",
+    "desc": "api_backtest B1拆分"
+   },
+   {
+    "id": "WO-LEGION-GATE-BRANCH-EVID-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "补充分支级闸自检结果与证据"
+   },
+   {
+    "id": "WO-BANDIT-MEDIUM-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "bandit MEDIUM分诊批1：B323 SSL降级/B102 exec/B104 0.0.0.0/B314 XML 加nosec说明，其余B608/B310出分诊报告"
+   },
+   {
+    "id": "WO-LEGION-BFF-LIVE-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "记录 BFF score-distribution 动态端点受控上线"
+   },
+   {
+    "id": "WO-GUANYU-P69-20261030",
+    "status": "done",
+    "owner": "GUANYU",
+    "desc": "api_backtest B2拆分"
+   },
+   {
+    "id": "WO-LEGION-P3-IDENTITY-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "P3 IdentityContext 注册表/解析器：零界 owner+Agent、智策账号、菜鸟四层actor"
+   },
+   {
+    "id": "WO-AUDIT-RECENT-20261030",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "近期代码审计修复：team_schema/composer 风格、recommendation_pool 健康未知策略误入池+日期基准、team_exec 无决策 risk=LOW 误判；补测"
+   },
+   {
+    "id": "WO-GUANYU-P70-20261030",
+    "status": "done",
+    "owner": "GUANYU",
+    "desc": "api_backtest B3拆分"
+   },
+   {
+    "id": "WO-LEGION-P3-LIVE-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "P3 identity endpoints 上线记录"
+   },
+   {
+    "id": "WO-INV-AUTO-FIX-20261030",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "修复17:10自动钩子导入：engine/tools.py 占用 tools 包名导致 tools.paper_daily/pool_review_daily 导入失败；改按路径加载模块，补测"
+   },
+   {
+    "id": "WO-LEGION-P3-OIDC-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "P3 后半段：BFF会话桥 + OIDC/token exchange 方案与契约"
+   },
+   {
+    "id": "WO-BANDIT-MEDIUM2-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "bandit批2：safe_urlopen助手+试点接入(采集器)、B608动态SQL标注allowlist/参数化说明"
+   },
+   {
+    "id": "WO-GUANYU-P71-20261030",
+    "status": "done",
+    "owner": "GUANYU",
+    "desc": "api_backtest B4B5拆分"
+   },
+   {
+    "id": "WO-LEGION-AUTHGW-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "Phase A auth-gateway：session store/登录/登出/identity me"
+   },
+   {
+    "id": "WO-LEGION-AUTHGW-LIVE-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "Phase A auth-gateway 上线记录"
+   },
+   {
+    "id": "WO-SIM-EXCHANGE-20261030",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "模拟交易所项目盘点与鲁肃版对齐：全量资产清单(legacy/quant/SIM_MARKET)、单一真源、D1归属与TR1周瑜主管建议、注册表+测试"
+   },
+   {
+    "id": "WO-BANDIT-MEDIUM3-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "bandit批3：B108/B102/B104少量说明+全量复扫确认MEDIUM剩余，并入夜间基线；不改变行为。"
+   },
+   {
+    "id": "WO-LEGION-LOGINUI-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "/login UI + /os-entry 登录态显示"
+   },
+   {
+    "id": "WO-LEGION-LOGINUI2-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "/os-entry 顶栏登录态 + 登出验证"
+   },
+   {
+    "id": "WO-LEGION-LOGINUI3-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "登录UI文案/截图/上线记录"
+   },
+   {
+    "id": "WO-SIM-EXCHANGE-ORG-20261030",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "TR1 周瑜调入 D1：org.json 迁移(投资部新增 TR1、trading dept 合并标记)、team_trading/sim_exchange/claude_agents/HR 对齐、测试+质量闸"
+   },
+   {
+    "id": "WO-GUANYU-P72-20261030",
+    "status": "done",
+    "owner": "GUANYU",
+    "desc": "lifecycle archived四态"
+   },
+   {
+    "id": "WO-LEGION-AUTHGUARD-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "登录态页面保护/权限提示（软保护）+ /api/auth/guard"
+   },
+   {
+    "id": "WO-BANDIT-BASELINE-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "bandit夜间基线接入：security_audit.ps1 全量目录 + -b tools/bandit_baseline.json，HIGH 基线不重复报、新增HIGH仍报。"
+   },
+   {
+    "id": "WO-GUANYU-P73-20261030",
+    "status": "done",
+    "owner": "GUANYU",
+    "desc": "修复staging保留门回归"
+   },
+   {
+    "id": "WO-LEGION-LOGINNEXT-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "登录页支持 next 回跳"
+   },
+   {
+    "id": "WO-BANDIT-ANNOT-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "bandit说明：B108固定TEMP缓存/日志、B314 RSS固定源XML解析加nosec理由；不改行为。"
+   },
+   {
+    "id": "WO-LEGION-AUTHGUARD-EVID-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "页面保护截图/上线记录"
+   },
+   {
+    "id": "WO-TRADING-BOT-20261030",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "交易机器人多角色组方案：ACAD1选股→D1研判/建仓→WA1许褚+WATCH_TOWER+watchbot盯盘→TR1执行，保留人工审批/接管接口；机器可读orchestration+测试"
+   },
+   {
+    "id": "WO-GUANYU-P74-20261030",
+    "status": "done",
+    "owner": "GUANYU",
+    "desc": "恢复CIGATES三道门"
+   },
+   {
+    "id": "WO-LEGION-AUTHREQUEST-L2-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "L2待批：5页 nginx auth_request 真保护"
+   },
+   {
+    "id": "WO-LEGION-AUTHREQUEST-APPLY-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "5页 nginx auth_request 真保护执行"
+   },
+   {
+    "id": "WO-GUANYU-P75-20261030",
+    "status": "done",
+    "owner": "GUANYU",
+    "desc": "B7页面模块拆分"
+   },
+   {
+    "id": "K-STOCK-ANALYSIS-P0M-20261030",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "分析方法优化：行业映射纠偏（stock_basic→申万父链）+ 估值历史分位 + 数据时效门禁 + 评级用历史温度"
+   },
+   {
+    "id": "WO-LEGION-AUTHREQUEST-FIX-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "auth_request 302 丢失8734端口：absolute_redirect off"
+   },
+   {
+    "id": "K-ORG-20261030-JEVAUDIT2",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "JEV 复盘+代码审计+Bug复核+计划进度对照（10-26 审计建议闭环盘点）"
    }
   ],
   "today_merged_data": [
@@ -5021,13 +5498,37 @@
     "status": "done",
     "owner": "DSH-Lead",
     "desc": "OH闭环：自动worktree/diff/确认提交/sandbox自愈；测试+浏览器实测"
+   },
+   {
+    "id": "WO-LEGION-TRIPART-DRILL2-20261030",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "下钻静态兜底改到 /static（/data 未暴露）"
+   },
+   {
+    "id": "WO-GUANYU-P73-20261030",
+    "status": "done",
+    "owner": "GUANYU",
+    "desc": "修复staging保留门回归"
+   },
+   {
+    "id": "K-STOCK-ANALYSIS-P0M-20261030",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "分析方法优化：行业映射纠偏（stock_basic→申万父链）+ 估值历史分位 + 数据时效门禁 + 评级用历史温度"
+   },
+   {
+    "id": "K-ORG-20261030-JEVAUDIT2",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "JEV 复盘+代码审计+Bug复核+计划进度对照（10-26 审计建议闭环盘点）"
    }
   ],
   "counts": {
-   "aborted": 89,
-   "done": 1270,
-   "review": 8,
-   "doing": 30
+   "aborted": 93,
+   "done": 1317,
+   "doing": 29,
+   "review": 10
   }
  },
  "governance": [
@@ -5226,15 +5727,15 @@
     }
    ],
    "receipt": "offsite_remote_receipt.txt",
-   "age_hours": 10.2
+   "age_hours": 12.6
   },
   "supervisor": {
    "red": [],
-   "generated_at": "2026-10-30T10:14:26"
+   "generated_at": null
   },
   "approvals": {
-   "count": 2,
-   "today": 2,
+   "count": 3,
+   "today": 3,
    "latest": [
     {
      "ts": "2026-10-30T00:48:38",
@@ -5257,6 +5758,18 @@
      "evidence_hash": "0e2cb4aff",
      "source": "feishu_card",
      "revocable": true
+    },
+    {
+     "ts": "2026-10-30T10:17:10",
+     "schema": "approval/v1",
+     "task": "M4/v1.1",
+     "action": "annotate",
+     "operator": "DSH-Lead",
+     "note": "2026-10-30 00:48/00:51 两条 approve 为早期/试点点击，缺 QA1/GUANYU/VERIFY1 三方签字，不构成 M4 正式验收；M4 仍待 10-31 正式签字",
+     "refs": [
+      "2026-10-30T00:48:38",
+      "2026-10-30T00:51:51"
+     ]
     }
    ]
   }

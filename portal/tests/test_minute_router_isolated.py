@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Exercise the actual portal HTTP router with an isolated minute JobSpec root.
 
 Run this module alone in a fresh Python process. No production port, catalog,
@@ -139,6 +139,9 @@ def test_real_minute_router_start_worker_result_and_cold_restart(
         monkeypatch.setattr(job_spec_registry, "JobSpecRegistry", GuardedRegistry)
         portal_api = importlib.import_module("portal_api")
         api = importlib.import_module("api_backtest")
+        # split B1 后 worker 线程在 api_backtest_bt2 模块内启动，补丁必须打在
+        # 该模块的全局名上（只改 api_backtest 再导出的副本不会影响线程目标）。
+        bt2 = importlib.import_module("api_backtest_bt2")
         monkeypatch.setattr(portal_api, "_ACCESS_LOG", str(sandbox / "portal_access.log"))
         assert Path(api._JOB_SPEC_REGISTRY.catalog_path).resolve() == catalog
         assert api._JOB_SPEC_REGISTRY.descriptors() == {}
@@ -153,7 +156,7 @@ def test_real_minute_router_start_worker_result_and_cold_restart(
             limit_provider=lambda *args: {"known": True},
         )
         assert catalog.exists()
-        real_worker = api._bt2_worker
+        real_worker = bt2._bt2_worker
 
         def tracked_worker(job_id: str, params: dict) -> None:
             try:
@@ -164,7 +167,8 @@ def test_real_minute_router_start_worker_result_and_cold_restart(
             finally:
                 worker_done.set()
 
-        monkeypatch.setattr(api, "_bt2_worker", tracked_worker)
+        monkeypatch.setattr(bt2, "_bt2_worker", tracked_worker)
+        monkeypatch.setattr(api, "_bt2_worker", tracked_worker, raising=False)
         server, server_thread, port = _serve(portal_api)
         # The bounded d0/d1 query enforces closed bars; make as-of explicit so
         # both observed fixture bars remain visible without weakening that gate.
@@ -261,6 +265,10 @@ def test_real_minute_router_start_worker_result_and_cold_restart(
         # application instance over the same isolated persisted catalog/state.
         del sys.modules["portal_api"]
         del sys.modules["api_backtest"]
+        # 冷启动必须同时丢弃 bt2 模块：分钟源注册表是进程内存态，
+        # 若 bt2 仍被 sys.modules 缓存，cold reimport 会错误地保持 available。
+        sys.modules.pop("api_backtest_bt2", None)
+        sys.modules.pop("api_backtest_minute", None)  # 分钟源注册表/锁所在模块，需一并重建
         cold_portal = importlib.import_module("portal_api")
         cold_api = importlib.import_module("api_backtest")
         monkeypatch.setattr(cold_portal, "_ACCESS_LOG", str(sandbox / "portal_access.log"))

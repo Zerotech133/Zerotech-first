@@ -1,0 +1,51 @@
+apiVersion: v3.0.2
+kind: DataContract
+id: zerobond.moneyflow_hsgt
+name: moneyflow_hsgt
+version: 1.0.0
+status: draft
+description:
+  purpose: 沪深港通资金流向（南向/北向净额，H17 研究数据）
+  limitations: Tushare moneyflow_hsgt；按区间分片拉取（单次 300 行上限已处理）；交易日为准
+domain: quant
+dataProduct: zerobond-datawarehouse
+team:
+- username: data1@open-metadata.org
+  name: DATA1 张松
+  role: data steward
+servers:
+- server: local-datawarehouse
+  type: local
+  path: tushare/moneyflow_hsgt
+  format: parquet
+schema:
+- name: moneyflow_hsgt
+  physicalName: tushare/moneyflow_hsgt
+  logicalType: object
+  properties:
+  - name: trade_date
+    logicalType: string
+    physicalType: string
+    required: true
+    primaryKey: true
+  - name: ggt_ss
+    logicalType: string
+    physicalType: string
+  - name: ggt_sz
+    logicalType: string
+    physicalType: string
+  - name: hgt
+    logicalType: string
+    physicalType: string
+  - name: sgt
+    logicalType: string
+    physicalType: string
+  - name: north_money
+    logicalType: string
+    physicalType: string
+  - name: south_money
+    logicalType: string
+    physicalType: string
+quality:
+  freshness: 每日（交易日 T+1 可用）
+  completeness: 2023-01-03 起（895 个交易日）

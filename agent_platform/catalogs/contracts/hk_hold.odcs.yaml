@@ -1,0 +1,53 @@
+apiVersion: v3.0.2
+kind: DataContract
+id: zerobond.hk_hold
+name: hk_hold
+version: 1.0.0
+status: draft
+description:
+  purpose: 港股通持股明细（H 股通持股量/占比，H17 研究数据）
+  limitations: Tushare hk_hold；按交易日拉取；交易日数据来自港交所披露
+domain: quant
+dataProduct: zerobond-datawarehouse
+team:
+- username: data1@open-metadata.org
+  name: DATA1 张松
+  role: data steward
+servers:
+- server: local-datawarehouse
+  type: local
+  path: tushare/hk_hold
+  format: parquet
+schema:
+- name: hk_hold
+  physicalName: tushare/hk_hold
+  logicalType: object
+  properties:
+  - name: code
+    logicalType: string
+    physicalType: string
+  - name: trade_date
+    logicalType: string
+    physicalType: string
+    required: true
+    primaryKey: true
+  - name: ts_code
+    logicalType: string
+    physicalType: string
+    required: true
+    primaryKey: true
+  - name: name
+    logicalType: string
+    physicalType: string
+  - name: vol
+    logicalType: double
+    physicalType: double
+  - name: ratio
+    logicalType: double
+    physicalType: double
+  - name: exchange
+    logicalType: string
+    physicalType: string
+quality:
+  freshness: 每日（交易日 T+1 可用）
+  completeness: 2023-01-03 起（891 个交易日，33 个节假日空日）
