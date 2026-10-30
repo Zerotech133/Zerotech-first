@@ -51,6 +51,9 @@
 | 导航统一 | `python tools/unify_nav.py --check` | 手写导航/数据漂移 |
 | 端口注册 | `python tools/check_ports.py --strict` | 抢端口/私起服务 |
 | 明文凭据 | `devtask.py merge` 内置 `_secret_scan_gate`（`tools/scan_secrets.py`） | 未豁免明文凭据入库 |
+| 语法门（2026-10-30 恢复） | `_syntax_gate` → `tools/check_syntax.py --fail-on-warning`（缓存后 ~0.4s） | 语法错误/警告入库 |
+| 导入边界（2026-10-30 恢复） | `_import_boundary_gate` → `tools/check_import_boundaries.py` | 业务 import 越界（osleg 类回归） |
+| 元数据一致性（2026-10-30 恢复） | `_metadata_gate` → `tools/datawarehouse/metadata_consistency.py`（已知数据线待办豁免） | catalog×registry×lifecycle×store 漂移 |
 | **测试门（P0 #1）** | `python tools/merge_gated.py <TID>`（merge 前跑 `test_gate -Suite fast`，新增失败即拒） | 带失败测试合入主区 |
 
 ## 6. 受训与记忆（怎么让 Agent 越用越准）
