@@ -8,7 +8,20 @@
 <script src="/static/nav.js" defer></script>
 <script src="/static/shortscreen.js" defer></script>
 <style>
-body{background:var(--bg);color:var(--ink);font-family:var(--font-ui)}
+:root{
+  /* 统一全站语义：页面变量映射到 tokens.css，禁止自绘配色 */
+  --bg: var(--bg-page);
+  --ink: var(--text);
+  --panel: var(--bg-surface);
+  --panel2: var(--bg-raised);
+  --line: var(--border);
+  --warn: var(--color-warn);
+  --gold: var(--color-warn);
+  --gold2: var(--color-warn);
+  --muted: var(--text-dim);
+  --dim: var(--text-dim);
+}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-ui);color-scheme:dark}
 .wrap{max-width:1280px;margin:0 auto;padding:18px 16px 60px}
 .head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
 h1{font-size:21px;margin:4px 0}
