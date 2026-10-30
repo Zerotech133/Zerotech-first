@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import functools
 import json
 import os
 import re
@@ -77,6 +78,46 @@ STATUS_LOG = LOG_DIR / "xq_classify_status.log"
 # the current worker id, not an import-time snapshot.
 _WORKER_ID = ""
 _WORKER_ID_RE = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
+
+# 2026-10-30 JEV P1：与 JEV/M3 共用 ollama_batch 锁，避免抢同一模型。
+try:
+    import ollama_lock  # noqa: E402
+except ImportError:  # 作为包导入 / cwd 不在仓根
+    _repo_root = str(Path(__file__).resolve().parents[1])
+    if _repo_root not in sys.path:
+        sys.path.insert(0, _repo_root)
+    import ollama_lock  # noqa: E402
+
+
+def _xq_lock_enabled() -> bool:
+    return os.environ.get("XQ_OLLAMA_LOCK", "1").strip().lower() not in (
+        "0", "false", "no", "off")
+
+
+def _xq_lock_wait_s() -> int:
+    try:
+        return max(1, int(os.environ.get("XQ_OLLAMA_LOCK_WAIT_S", "120")))
+    except (TypeError, ValueError):
+        return 120
+
+
+def _with_ollama_lock(fn):
+    """批处理入口统一拿租约；抢不到本轮让位（不阻塞调度）。"""
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        if not _xq_lock_enabled():
+            return fn(*args, **kwargs)
+        if not ollama_lock.acquire("xq_classify", wait_s=_xq_lock_wait_s()):
+            log("OLLAMA-LOCK yield: xq_classify 本轮让位（JEV/M3 持有）")
+            return 0
+        try:
+            return fn(*args, **kwargs)
+        finally:
+            try:
+                ollama_lock.release()
+            except Exception as exc:  # noqa: BLE001
+                log("OLLAMA-LOCK release FAIL: %s" % str(exc)[:100])
+    return wrapper
 
 MODEL = "qwen3.5:9b"
 PROMPT_VERSION = "v1.3"  # v1.3：+ad/edu 出口、tech 定义收紧（实效检验揪出广告污染 98 条，老田拍板 2026-10-18）
@@ -558,6 +599,11 @@ def classify_one(con: sqlite3.Connection, row: tuple) -> bool:
         # 防御：老版客户端/模型把思考块写进 content 时剥离
         answer = re.sub(r"<think>.*?</think>", "", answer, flags=re.S).strip()
         dt = time.time() - t0
+        if _xq_lock_enabled():
+            try:
+                ollama_lock.heartbeat()
+            except Exception:
+                pass
     except Exception as e:
         log("HARD-FAIL %s: %s" % (status_id, str(e)[:120]))
         return False
@@ -659,6 +705,7 @@ def classify_one(con: sqlite3.Connection, row: tuple) -> bool:
     return True
 
 
+@_with_ollama_lock
 def recontent_run(limit: int) -> int:
     """v1.2 存量补标：对已分类但 content_type 为空的行重跑 LLM 只补内容形态列。
 
@@ -744,6 +791,7 @@ def recontent_run(limit: int) -> int:
     return rc
 
 
+@_with_ollama_lock
 def retry_degraded(limit: int) -> int:
     """v1.4 DEGRADED 行重标通道：parse_ok=0（LLM 输出截断/不可解析）的行
     既有 run() 的 NOT IN 幂等够不着（已落账过），此通道单独捞回重跑。
@@ -874,6 +922,7 @@ def build_pending_query(order: str = "asc", segment: str = "") -> str:
     return sql
 
 
+@_with_ollama_lock
 def run(limit: int, order: str = "asc", segment: str = "") -> int:
     """Consume one round of pending rows (v1.7: + order/segment knobs).
 
