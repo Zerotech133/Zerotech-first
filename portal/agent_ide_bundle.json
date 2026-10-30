@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 23:44",
+ "generated": "2026-10-30 23:45",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -392,21 +392,21 @@
    "project": "general"
   },
   {
-   "id": "WO-LEGION-IDE-E2E-20261030",
-   "desc": "E2E：A0控制面板+P0-4 picker browser harness(headless Edge)",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-IDE-E2E-20261030",
-   "created": "2026-10-30 23:39:54",
-   "project": "general"
-  },
-  {
    "id": "WO-GUANYU-P103-20261030",
    "desc": "mixin门分支感知+探针",
    "status": "doing",
    "owner": "GUANYU",
    "branch": "task/WO-GUANYU-P103-20261030",
    "created": "2026-10-30 23:40:56",
+   "project": "general"
+  },
+  {
+   "id": "WO-D1-EVIDENCE-FIX-20261030",
+   "desc": "修复 WO-D1-EVIDENCE 落账 bug：EvidenceRef 无 to_dict 导致 run_shadow 账本 JSON 序列化失败；补 to_dict + 序列化测试。",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-D1-EVIDENCE-FIX-20261030",
+   "created": "2026-10-30 23:45:02",
    "project": "general"
   }
  ],
@@ -7396,11 +7396,6 @@
     {
      "id": "WO-PICKCHAIN-VERDICTS-FIX-20261030",
      "desc": "选股产品链 verdicts 异常修复：py312 build_pick_verdicts 0xC0000005 访问冲突、py311 长跑无输出；先定位 pandas/tdx 依赖，再加超时/分片/日志；不阻塞 11-02 试运行。",
-     "status": "doing"
-    },
-    {
-     "id": "WO-LEGION-IDE-E2E-20261030",
-     "desc": "E2E：A0控制面板+P0-4 picker browser harness(headless Edge)",
      "status": "doing"
     }
    ]
