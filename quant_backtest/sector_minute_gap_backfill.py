@@ -10,10 +10,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 from urllib.parse import urlencode
-from urllib.request import urlopen
 
 import pandas as pd
-from tools.safe_urlopen import safe_urlopen
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包/仓库根导入时
+    from tools.safe_urlopen import safe_urlopen
 
 
 REMOTE = "http://rookie.xtcloud-tech.com:48088/api/data/table/tdx_sector_min"

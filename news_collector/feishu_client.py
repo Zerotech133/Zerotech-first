@@ -24,7 +24,10 @@ import urllib.parse
 import urllib.request
 import urllib.error
 import logging
-from tools.safe_urlopen import safe_urlopen
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包/仓库根导入时
+    from tools.safe_urlopen import safe_urlopen
 
 OPEN = "https://open.feishu.cn/open-apis"
 

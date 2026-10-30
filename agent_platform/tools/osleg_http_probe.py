@@ -27,7 +27,10 @@ from pathlib import Path
 from urllib import error as urlerror
 from urllib import request as urlrequest
 import logging
-from tools.safe_urlopen import safe_urlopen
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包/仓库根导入时
+    from tools.safe_urlopen import safe_urlopen
 
 REPO = Path(__file__).resolve().parents[2]
 PLATFORM = REPO / "agent_platform"

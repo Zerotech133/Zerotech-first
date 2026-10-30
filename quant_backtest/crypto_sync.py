@@ -13,7 +13,10 @@ import os
 import time
 
 import pandas as pd
-from tools.safe_urlopen import safe_urlopen
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包/仓库根导入时
+    from tools.safe_urlopen import safe_urlopen
 
 DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "crypto")
 # K-mig (10-16): 本机直连 api.binance.com 不可达（GFW），改用官方行情专用镜像

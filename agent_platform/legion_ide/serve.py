@@ -44,7 +44,10 @@ import logging
 # 常规包），WMI 启动又没有 PYTHONPATH。这里按文件路径直接加载仓库内的
 # safe_urlopen，保证 8103 独立启动不依赖调用方环境。
 try:
-    from tools.safe_urlopen import safe_urlopen
+    try:
+        from safe_urlopen import safe_urlopen
+    except ImportError:  # 作为包/仓库根导入时
+        from tools.safe_urlopen import safe_urlopen
 except ImportError:  # pragma: no cover - 仅在异常环境触发
     import importlib.util as _ilu
     _safe_path = Path(__file__).resolve().parents[2] / "tools" / "safe_urlopen.py"
@@ -274,7 +277,7 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                 if error:
                     return self._json(400, error)
                 if rel in ("", ".", "/"):
-                    base = wt
+                    base = wt  # noqa: F841 - 既有未使用变量
                     names = list(G.ALLOWED_TOP)
                     items = []
                     for name in names:

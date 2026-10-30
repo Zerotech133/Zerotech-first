@@ -32,7 +32,10 @@ import re
 import subprocess
 import time
 from datetime import datetime, timedelta
-from tools.safe_urlopen import safe_urlopen
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包/仓库根导入时
+    from tools.safe_urlopen import safe_urlopen
 
 # ── 链定义（K-STOCK-424 P1）─────────────────────────────────────────
 CHAIN_DEFS = {
@@ -124,7 +127,6 @@ def _http_alive(url: str, timeout: float = _HTTP_PROBE_TIMEOUT) -> tuple:
     fail-visible：异常类型+摘要原样回传给调用方展示，绝不静默吞错。
     """
     from urllib.error import HTTPError, URLError  # 局部导入对齐既有风格
-    from urllib.request import urlopen
 
     try:
         with safe_urlopen(url, timeout=timeout) as resp:
@@ -314,7 +316,6 @@ def chain_payload() -> tuple:
 
 # ── 每日简报 ─────────────────────────────────────────────────────────
 def _http_get_json(url: str, timeout: float = 6.0):
-    from urllib.request import urlopen
 
     with safe_urlopen(url, timeout=timeout) as resp:
         return json.loads(resp.read().decode("utf-8"), strict=False)

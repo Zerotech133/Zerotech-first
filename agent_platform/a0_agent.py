@@ -36,7 +36,10 @@ sys.path.insert(0, str(BASE / "engine"))
 from llm import LLMError, NovaMaxLLM, OllamaLLM  # noqa: E402
 from org_profiles import profile_index  # noqa: E402
 import logging
-from tools.safe_urlopen import safe_urlopen
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包/仓库根导入时
+    from tools.safe_urlopen import safe_urlopen
 
 PERSONA = BASE / "prompts" / "a0_chief.md"
 COMPARE_PERSONA = BASE / "prompts" / "a0_compare.md"  # K-ORG-120 成对判读人设
