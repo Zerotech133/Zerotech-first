@@ -1386,10 +1386,34 @@ async function loadDiff(task) {
   let on = false;
   try { on = localStorage.getItem(KEY) === "1"; } catch (_) {}
   let busy = false;
+  let taskSel = null;
+
+  function base() {
+    return location.port === "8787" ? "http://127.0.0.1:8796" : "/openhands";
+  }
 
   function endpoint() {
-    return (location.port === "8787" ? "http://127.0.0.1:8796" : "/openhands")
-      + "/api/ide/orchestrate";
+    return base() + "/api/ide/orchestrate";
+  }
+
+  async function loadTasks() {
+    if (!taskSel) return;
+    try {
+      const r = await fetch(base() + "/api/ide/tasks", { credentials: "include" });
+      const d = await r.json();
+      const rows = (d && d.tasks) || [];
+      taskSel.innerHTML = "";
+      const empty = document.createElement("option");
+      empty.value = "";
+      empty.textContent = "不指定工单";
+      taskSel.appendChild(empty);
+      rows.forEach(function (t) {
+        const o = document.createElement("option");
+        o.value = t.task;
+        o.textContent = t.task + " · " + (t.project || "-") + " · " + (t.desc || "");
+        taskSel.appendChild(o);
+      });
+    } catch (_) {}
   }
 
   function pushMsg(role, content) {
@@ -1409,6 +1433,7 @@ async function loadDiff(task) {
 
   async function runA0(text) {
     const ta = document.getElementById("msg");
+    const task = taskSel ? String(taskSel.value || "") : "";
     if (ta) {
       ta.value = "";
       ta.dispatchEvent(new Event("input", { bubbles: true }));
@@ -1427,7 +1452,7 @@ async function loadDiff(task) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ message: text, task: "", agent: "A0" }),
+        body: JSON.stringify({ message: text, task: task, agent: "A0" }),
       });
       const d = await r.json().catch(() => ({}));
       let out;
@@ -1435,8 +1460,10 @@ async function loadDiff(task) {
       else if (d.mode === "answer") out = d.plan || "（A0 未返回计划）";
       else if (d.mode === "executed") {
         out = "A0 已规划并启动 OH 执行：\n" + (d.plan || "") +
-          "\n\n会话：" + (d.conversation_id || "—");
+          "\n\n工单：" + (d.task || task || "—") +
+          "\n会话：" + (d.conversation_id || "—");
       } else out = d.plan || d.error || "A0 已处理";
+      if (d.run_id) out += "\n\nrun：" + d.run_id;
       placeholder.content = out;
       if (typeof renderMessages === "function") renderMessages();
     } catch (e) {
@@ -1492,7 +1519,14 @@ async function loadDiff(task) {
       paint(btn);
     };
     paint(btn);
+    taskSel = document.createElement("select");
+    taskSel.id = "a0-main-task";
+    taskSel.title = "A0 开发工单（OH 使用对应 worktree）";
+    taskSel.style.cssText = "margin-right:6px;max-width:230px;padding:3px 6px;border-radius:6px;" +
+      "border:1px solid #555;background:#1b1b1b;color:inherit;font-size:12px;";
+    footer.prepend(taskSel);
     footer.prepend(btn);
+    loadTasks();
     document.addEventListener("click", onClick, true);
     document.addEventListener("keydown", onKey, true);
   }
