@@ -67,6 +67,9 @@ CORS_ALLOWED_ORIGINS = ("http://localhost:8080", "http://127.0.0.1:8080")
 LOCAL_IPS = ("127.0.0.1", "::1", "::ffff:127.0.0.1", "172.17.0.1")
 
 
+from legion_write_guard import write_context_allowed
+
+
 def authz_ip_allowed(client_ip: str) -> bool:
     """纯函数：来源 IP 是否属本机可信域（可测试的最小鉴权判据）。"""
     return (client_ip or "").strip() in LOCAL_IPS
@@ -453,9 +456,24 @@ class H(BaseHTTPRequestHandler):
         got = (self.headers.get("X-Portal-Token") or "").strip()
         return bool(got) and hmac.compare_digest(got, token)
 
+    def _write_context_ok(self):
+        """浏览器写上下文守卫（2026-10-30 P0 安全）：跨站 Origin/Referer 一律拒绝。
+
+        经 nginx 反代时本机浏览器会带 Origin=http://127.0.0.1:8734；跨站 CSRF
+        表单/fetch 的 Origin 是攻击者站点，必须在进入 IP/token 放行前被拒。
+        非浏览器客户端（无 Origin/Sec-Fetch-Site/Referer）返回 True，继续走
+        authz_ip_allowed / token 判据。
+        """
+        return write_context_allowed(
+            self.headers.get("Origin") or "",
+            self.headers.get("Sec-Fetch-Site") or "",
+            self.headers.get("Referer") or "",
+        )
+
     def _authorized_mutation(self):
-        """写鉴权：本机直连（127.0.0.1/::1）放行——本机等价于能读 token 文件；
-        其余来源必须持匹配 token。"""
+        """写鉴权：先校验浏览器写上下文，再按本机可信域/token 判定。"""
+        if not self._write_context_ok():
+            return False
         return authz_ip_allowed(self._client_ip()) or self._token_ok()
 
     def _authorized_private_read(self):
