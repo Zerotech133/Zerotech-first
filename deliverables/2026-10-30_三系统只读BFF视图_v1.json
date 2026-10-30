@@ -1,13 +1,13 @@
 {
   "ok": true,
   "mode": "read_only",
-  "as_of": "2026-10-30T08:26:16+08:00",
+  "as_of": "2026-10-30T09:18:11+08:00",
   "sources": {
     "cainiao": {
       "ok": true,
       "mode": "read_only",
       "source": "cainiao_mysql:thunder_model",
-      "as_of": "2026-10-30T08:26:16+08:00",
+      "as_of": "2026-10-30T09:17:58+08:00",
       "db": {
         "host": "127.0.0.1",
         "port": 3307,
@@ -54,13 +54,13 @@
         "real_orders": 0,
         "monitor_snapshots": 0
       },
-      "cached": false
+      "cached": true
     },
     "zhice": {
       "ok": true,
       "mode": "read_only",
       "source": "zhice_api",
-      "as_of": "2026-10-30T08:26:16+08:00",
+      "as_of": "2026-10-30T09:18:11+08:00",
       "data": {
         "status": "ok",
         "app": "zhice-os-v2",
