@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 20:26",
+ "generated": "2026-10-30 20:27",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -347,13 +347,13 @@
    "project": "general"
   },
   {
-   "id": "WO-GUANYU-P88-20261030",
-   "desc": "关羽线复盘",
+   "id": "WO-LEGION-ACAD1-HERMES2-20261030",
+   "desc": "Hermes静态路由只允许字母文件名：acad1.html→acad.html，修iframe引用；验证8796页面可开。",
    "status": "doing",
-   "owner": "GUANYU",
-   "branch": "task/WO-GUANYU-P88-20261030",
-   "created": "2026-10-30 20:26:01",
-   "project": "general"
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-ACAD1-HERMES2-20261030",
+   "created": "2026-10-30 20:27:29",
+   "project": "quant"
   }
  ],
  "coder_traces": [
@@ -6650,14 +6650,7 @@
    ],
    "experience": "30 年工程治理经验：漏洞分级与补丁流程、失败测试基线修复、编码规范与门禁落地、技术债清欠与重复功能合并；证据驱动、逐项闭环，只出报告与工单不自行合并，开发动作限独立 worktree 提交+跑测试并交 L2 人签。",
    "dept_name": "研究院",
-   "dept_cn_title": "太学",
-   "tasks": [
-    {
-     "id": "WO-GUANYU-P88-20261030",
-     "desc": "关羽线复盘",
-     "status": "doing"
-    }
-   ]
+   "dept_cn_title": "太学"
   },
   "HUANGZHONG": {
    "id": "HUANGZHONG",
@@ -7325,6 +7318,11 @@
     {
      "id": "WO-LEGION-W1T1C-20261030",
      "desc": "W1-3c T1/T2-only 4b两轮",
+     "status": "doing"
+    },
+    {
+     "id": "WO-LEGION-ACAD1-HERMES2-20261030",
+     "desc": "Hermes静态路由只允许字母文件名：acad1.html→acad.html，修iframe引用；验证8796页面可开。",
      "status": "doing"
     }
    ]
