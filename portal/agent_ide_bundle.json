@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 11:43",
+ "generated": "2026-10-30 11:45",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 26,
+  "workorders_doing": 25,
   "workorders_review": 6
  },
  "workorders": [
@@ -291,15 +291,6 @@
    "branch": "task/K-QUANT-20261030-OHLOOP-TEST",
    "created": "2026-10-30 09:19:23",
    "project": "quant"
-  },
-  {
-   "id": "WO-LEGION-AUTHGW-20261030",
-   "desc": "Phase A auth-gateway：session store/登录/登出/identity me",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-AUTHGW-20261030",
-   "created": "2026-10-30 11:42:04",
-   "project": "general"
   }
  ],
  "coder_traces": [
@@ -6988,11 +6979,6 @@
     {
      "id": "WO-AUDIT-FIX-20261029",
      "desc": "审计修复：hq_stats双计数、hk_r1_daily台账表格插入+去重+锁、kg zip strict",
-     "status": "doing"
-    },
-    {
-     "id": "WO-LEGION-AUTHGW-20261030",
-     "desc": "Phase A auth-gateway：session store/登录/登出/identity me",
      "status": "doing"
     }
    ]
