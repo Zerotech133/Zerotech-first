@@ -18,6 +18,8 @@ import re
 import secrets
 import sys
 import time
+import urllib.error
+import urllib.request
 from pathlib import Path
 from typing import Optional
 import logging
@@ -54,8 +56,10 @@ BLOCKED_SUFFIX = {
 TASK_RE = re.compile(r"^[A-Za-z0-9_.\-]{3,80}$")
 
 _SESSION_TOKEN = secrets.token_urlsafe(24)  # 兼容旧单 token 测试/调用
-_SESSION_TTL_S = 24 * 3600
+_SESSION_TTL_S = 3600
 _SESSIONS: dict[str, dict] = {}
+_SESSIONS_LOADED = False
+_STATE_ENV = "LEGION_IDE_STATE_DIR"
 
 
 def rw_enabled(env: Optional[dict] = None) -> bool:
@@ -67,30 +71,111 @@ def session_token() -> str:
     return _SESSION_TOKEN
 
 
+def _state_dir() -> Optional[Path]:
+    raw = str(os.environ.get(_STATE_ENV) or "").strip()
+    return Path(raw) if raw else None
+
+
+def _sessions_file() -> Optional[Path]:
+    d = _state_dir()
+    return (d / "sessions.json") if d else None
+
+
+def _token_key(token: str) -> str:
+    """落盘只存 token 的 sha256，不写原始 cookie。"""
+    return hashlib.sha256(str(token or "").encode("utf-8")).hexdigest()
+
+
+def _load_sessions() -> None:
+    global _SESSIONS_LOADED
+    if _SESSIONS_LOADED:
+        return
+    _SESSIONS_LOADED = True
+    p = _sessions_file()
+    if not p or not p.is_file():
+        return
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+        for key, rec in (data.get("sessions") or {}).items():
+            if isinstance(rec, dict) and rec.get("owner"):
+                _SESSIONS[str(key)] = {"owner": str(rec["owner"]),
+                                       "created": float(rec.get("created") or 0)}
+    except (OSError, ValueError, TypeError):
+        return
+
+
+def _save_sessions() -> None:
+    p = _sessions_file()
+    if not p:
+        return
+    try:
+        p.parent.mkdir(parents=True, exist_ok=True)
+        tmp = p.with_suffix(".tmp")
+        tmp.write_text(json.dumps(
+            {"sessions": _SESSIONS}, ensure_ascii=False, indent=2),
+            encoding="utf-8")
+        os.replace(tmp, p)
+    except OSError:
+        pass
+
+
 def _prune_sessions(now: float | None = None) -> None:
     now = time.time() if now is None else now
-    for tok in [k for k, v in _SESSIONS.items()
-                if now - float(v.get("created") or 0) > _SESSION_TTL_S]:
+    stale = [k for k, v in _SESSIONS.items()
+             if now - float(v.get("created") or 0) > _SESSION_TTL_S]
+    for tok in stale:
         _SESSIONS.pop(tok, None)
+    if stale:
+        _save_sessions()
 
 
-def new_session(owner: str = "") -> tuple[str, str]:
-    """下发独立会话：token 只进 HttpOnly cookie，owner 由服务端绑定。"""
+def auth_owner(headers: dict) -> str:
+    """从 Phase A auth cookie 解析登录用户 sub（zb_session）。"""
+    cookie = parse_cookies(headers.get("Cookie") or "")
+    raw = cookie.get("zb_session") or ""
+    if not raw:
+        return ""
+    try:
+        req = urllib.request.Request(
+            "http://127.0.0.1:8091/api/auth/me",
+            headers={"Cookie": "zb_session=" + raw},
+        )
+        # 本机探测必须绕过系统代理
+        opener = urllib.request.build_opener(
+            urllib.request.ProxyHandler({}))
+        with opener.open(req, timeout=2) as resp:
+            data = json.loads(resp.read().decode("utf-8", "replace"))
+        sess = data.get("session") or data
+        return str(sess.get("sub") or "").strip()
+    except (OSError, ValueError, urllib.error.URLError):
+        return ""
+
+
+def new_session(owner: str = "", headers: dict | None = None) -> tuple[str, str]:
+    """下发独立会话：token 只进 HttpOnly cookie，owner 绑定登录 sub。"""
+    _load_sessions()
     _prune_sessions()
     token = secrets.token_urlsafe(24)
-    owner = str(owner or "").strip() or ("lde-" + token[:10])
-    _SESSIONS[token] = {"owner": owner, "created": time.time()}
+    owner = str(owner or "").strip()
+    if not owner and headers:
+        owner = auth_owner(headers)
+    owner = owner or ("lde-" + token[:10])
+    _SESSIONS[_token_key(token)] = {"owner": owner, "created": time.time()}
+    _save_sessions()
     return token, owner
 
 
 def session_info(headers: dict) -> Optional[dict]:
+    _load_sessions()
     cookie = parse_cookies(headers.get("Cookie") or "")
     token = cookie.get("ide_session") or ""
-    info = _SESSIONS.get(token)
+    key = _token_key(token)
+    info = _SESSIONS.get(key)
     if not info:
         return None
     if time.time() - float(info.get("created") or 0) > _SESSION_TTL_S:
-        _SESSIONS.pop(token, None)
+        _SESSIONS.pop(key, None)
+        _save_sessions()
         return None
     return {"token": token, **info}
 

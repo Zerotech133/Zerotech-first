@@ -266,7 +266,7 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                 page = static_dir / "ide_rw.html"
                 if not page.is_file():
                     return self._json(503, {"ok": False, "error": "rw_page_missing"})
-                token, _owner = G.new_session()
+                token, _owner = G.new_session(headers=dict(self.headers))
                 return self._html(page.read_bytes(), token)
             if path == "/agent_ide_bundle.json":
                 bundle = (
@@ -662,11 +662,15 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--portal", default=DEFAULT_PORTAL)
     ap.add_argument("--bundle", default="")
     ap.add_argument("--health", action="store_true")
+    ap.add_argument("--state-dir", default="",
+                    help="LDE session/undo 持久化目录（默认空=纯内存，测试友好）")
     ap.add_argument(
         "--rw", action="store_true", help="开启受控写/执行（等价 IDE_RW=on；默认只读）"
     )
     ap.add_argument("-v", "--verbose", action="store_true")
     args = ap.parse_args(argv)
+    if args.state_dir:
+        os.environ["LEGION_IDE_STATE_DIR"] = args.state_dir
     if args.rw:
         # WMI 拉起不继承调用方 env（实测教训）：显式参数比环境变量可靠
         os.environ[G.RW_ENV] = "on"

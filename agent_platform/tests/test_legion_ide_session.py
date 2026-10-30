@@ -1,0 +1,46 @@
+# -*- coding: utf-8 -*-
+"""LDE 会话持久化/owner 绑定回归（K-QUANT-20261030-IDEDEEP）。"""
+import sys
+from pathlib import Path
+
+_ROOT = Path(__file__).resolve().parents[1]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from legion_ide import rw_guard as G  # noqa: E402
+
+
+def _reset():
+    G._SESSIONS.clear()
+    G._SESSIONS_LOADED = False
+
+
+def test_session_survives_restart(tmp_path, monkeypatch):
+    monkeypatch.setenv("LEGION_IDE_STATE_DIR", str(tmp_path))
+    _reset()
+    token, owner = G.new_session("zero_bound:test")
+    assert owner == "zero_bound:test"
+    h = {"Cookie": "ide_session=" + token}
+    assert G.session_info(h)["owner"] == "zero_bound:test"
+
+    # 模拟 8103 重启：内存清空，从磁盘恢复
+    _reset()
+    assert G.session_info(h)["owner"] == "zero_bound:test"
+
+
+def test_token_not_stored_in_plaintext(tmp_path, monkeypatch):
+    monkeypatch.setenv("LEGION_IDE_STATE_DIR", str(tmp_path))
+    _reset()
+    token, _owner = G.new_session("u")
+    raw = (tmp_path / "sessions.json").read_text(encoding="utf-8")
+    assert token not in raw
+    assert "u" in raw
+
+
+def test_owner_mismatch_helper(tmp_path, monkeypatch):
+    monkeypatch.setenv("LEGION_IDE_STATE_DIR", str(tmp_path))
+    _reset()
+    token, owner = G.new_session("owner-a")
+    h = {"Cookie": "ide_session=" + token}
+    assert G.session_owner(h) == owner
+    assert G.session_owner({"Cookie": "ide_session=bad"}) == ""
