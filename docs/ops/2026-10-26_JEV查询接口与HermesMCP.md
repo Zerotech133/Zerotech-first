@@ -76,3 +76,21 @@ curl "http://127.0.0.1:8091/api/jev/query?hours=168&code=600519&with_posterior=1
 
 注意：Hermes 的 MCP 工具默认 deferred，直接 `tool_call` 会报 unknown tool name；
 若模型先说"未找到工具"，让它先执行第 1 步 tool_search 再重试。
+
+## 十、2026-10-30 增强：`jev_digest` / `jev_risk`（Hermes 优先用这两个）
+
+为减少 Hermes 小模型的多步调用，新增两个一站式工具（同一 MCP server，无需改 Hermes 配置）：
+
+| 工具 | 参数 | 返回 |
+|---|---|---|
+| `jev_digest` | `hours`(1-720, 默认24)、`focus`(all/risk/bull/bear)、`top`(1-20, 默认8) | 多空统计 + Top 重点条目（含后验/周期）+ 校准状态 + 数据质量告警（低信号事件/数据落后） |
+| `jev_risk` | `hours`(默认24)、`top`(默认10) | 近N小时高影响利空 Top N（含 T+1 后验） |
+
+Hermes 话术：
+1. `tool_search`：`{"queries": ["jev"]}`（deferred 工具必须先搜）
+2. `tool_call`：`{"name": "jev_digest", "arguments": {"hours": 24, "focus": "risk", "top": 8}}`
+   → 一句摘要：今天风险事件 + JEV 当前可信度（校准/数据质量）
+3. 追问个股：`jev_query {"code": "600519", "hours": 168, "with_posterior": true}`
+
+边界：仍为只读；不写库、不推送；`jev_digest` 会显式披露数据落后与低信号事件，避免把"低信号"当方向。
+
