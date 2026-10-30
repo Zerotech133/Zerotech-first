@@ -1,0 +1,117 @@
+{
+  "_note": "交易机器人多角色组编排（2026-10-30 WO-TRADING-BOT-20261030）。paper-only；阶段顺序=选股→研判/建仓→盯盘→人工确认→模拟执行→复盘。人工接口必须保留，任何 BUY/SELL/新标的/超阈值都先过人工门。",
+  "bot_id": "TRADING-BOT",
+  "bot_name": "量化交易机器人（多角色组）",
+  "owner": "D1",
+  "owner_name": "鲁肃",
+  "manager": "TR1",
+  "manager_name": "周瑜",
+  "status": "paper_only",
+  "trading_permitted": false,
+  "real_exchange_adapter": "disabled",
+  "stages": [
+    {
+      "id": "select",
+      "name": "选股",
+      "owner": "ACAD1",
+      "owner_name": "司马徽",
+      "project": "acad1-recommendation-pool",
+      "input": "全市场扫描/策略发现",
+      "output": "ACAD1 推荐池（T1/T2 核心池）",
+      "mode": "daily",
+      "human_gate": false
+    },
+    {
+      "id": "research",
+      "name": "看多看空研判",
+      "owner": "D1",
+      "owner_name": "鲁肃",
+      "members": ["T1", "T2", "N1", "F1", "ST1"],
+      "input": "ACAD1 推荐池",
+      "output": "D1 五档裁决 + T1/T2 多空辩论 + N1/F1 结构化摘要",
+      "mode": "daily",
+      "human_gate": false
+    },
+    {
+      "id": "plan",
+      "name": "建仓计划",
+      "owner": "D1",
+      "members": ["T1", "T2", "ST1", "QS1"],
+      "input": "D1 裁决 + 技术/情绪/基本面",
+      "output": "建仓/加仓/止损计划（含触发价）",
+      "mode": "daily",
+      "human_gate": false
+    },
+    {
+      "id": "watch",
+      "name": "盯盘",
+      "owner": "WA1",
+      "owner_name": "许褚",
+      "platform": "WATCH_TOWER",
+      "platform_owner_name": "朱然",
+      "engineering_project": "watchbot",
+      "input": "建仓计划触发价/止损价/异常条件",
+      "output": "QUANT_UPSTREAM_REPORT（ANOMALY/HEALTH）",
+      "mode": "realtime",
+      "human_gate": false
+    },
+    {
+      "id": "human_confirm",
+      "name": "人工确认",
+      "owner": "HUMAN",
+      "owner_name": "老田",
+      "input": "建仓计划 + 盯盘触发",
+      "output": "批准/拒绝/改价/挂起",
+      "mode": "on_trigger",
+      "human_gate": true
+    },
+    {
+      "id": "execute",
+      "name": "模拟交易执行",
+      "owner": "TR1",
+      "owner_name": "周瑜",
+      "input": "人工确认后的订单",
+      "output": "quant paper 台账（hash-chain）",
+      "mode": "on_trigger",
+      "human_gate": false
+    },
+    {
+      "id": "review",
+      "name": "复盘",
+      "owner": "D1",
+      "members": ["TR1", "ST1", "WA1"],
+      "input": "执行账/盯盘事件",
+      "output": "feedback + T+5 归因",
+      "mode": "daily",
+      "human_gate": false
+    }
+  ],
+  "watch_layer": {
+    "business_role": "WA1 许褚（盯盘营）",
+    "middle_platform": "WATCH_TOWER 朱然（盯盘中台）",
+    "engineering_project": "watchbot 盯盘机器人（K-PUSH / DEV2）",
+    "boundary": "WA1 只观察/预警，不执行；WATCH_TOWER 只做方法仲裁/容量/归因；watchbot 只做 quant_engine+推送链"
+  },
+  "human_interface": {
+    "required_for": ["BUY", "SELL", "新标的", "加仓", "单票超限", "总仓超限", "人工接管"],
+    "methods": ["portal_confirm", "feishu_card", "cli_approve"],
+    "timeout_action": "expire_to_watch",
+    "human_can": ["pause", "resume", "kill", "override_price", "reject"],
+    "kill_switch": "PAPER_KILL env 或 agent_platform/data/paper/KILL 文件",
+    "audit": "dev_events + decision_audit + paper ledger",
+    "note": "未来接真实交易所时，人工门默认强制；paper 阶段可配置自动通过，但保留入口"
+  },
+  "handoffs": [
+    {"from": "select", "to": "research", "contract": "recommendation_pool/latest.json"},
+    {"from": "research", "to": "plan", "contract": "team_invest decision + structured"},
+    {"from": "plan", "to": "watch", "contract": "watch_plan/触发价+止损价"},
+    {"from": "watch", "to": "human_confirm", "contract": "QUANT_UPSTREAM_REPORT"},
+    {"from": "human_confirm", "to": "execute", "contract": "approved_order"},
+    {"from": "execute", "to": "review", "contract": "paper_ledger.jsonl"}
+  ],
+  "open_items": [
+    "人工确认卡片的 portal/飞书入口与超时策略落地",
+    "盯盘触发→人工确认→TR1 执行的端到端联调",
+    "legacy /paper 与 quant paper 的职责边界（待老田确认）"
+  ]
+}
