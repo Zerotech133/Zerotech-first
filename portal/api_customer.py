@@ -27,8 +27,6 @@ CODE_RE = re.compile(r"^(60[0-9]{4}|68[0-9]{4}|00[0-9]{4}|30[0-9]{4}|8[0-9]{6})\
 RUN_RE = re.compile(r"^[A-Za-z0-9_\-]{6,80}$")
 import rate_limit  # noqa: E402
 
-_JOBS = {}
-_JOBS_LOCK = threading.Lock()
 JOB_TTL = 3600
 
 
@@ -41,26 +39,22 @@ def _client_ip(handler):
 
 def _job_new(tenant, code):
     jid = "job-" + secrets.token_hex(4)
-    with _JOBS_LOCK:
-        _JOBS[jid] = {"tenant": tenant, "code": code, "status": "queued",
-                      "created": time.time(), "result": None, "error": None}
+    job_store.create(jid, tenant, code)
     return jid
 
 
 def _job_set(jid, **kw):
-    with _JOBS_LOCK:
-        if jid in _JOBS:
-            _JOBS[jid].update(kw)
+    job_store.update(jid, **kw)
 
 
 def _job_get(tenant, jid):
-    with _JOBS_LOCK:
-        j = _JOBS.get(jid)
-        if not j or j.get("tenant") != tenant:
-            return None
-        if time.time() - j.get("created", 0) > JOB_TTL:
-            return None
-        return dict(j)
+    j = job_store.get(tenant, jid)
+    if not j:
+        return None
+    if j["status"] in ("queued", "running") and time.time() - (j.get("created") or 0) > JOB_STALE_SEC:
+        job_store.mark_stale(tenant=tenant, max_running_sec=JOB_STALE_SEC)
+        j = job_store.get(tenant, jid)
+    return j
 
 
 def _run_job(job_id, tenant, license_key, code):
@@ -107,6 +101,11 @@ def _run_job(job_id, tenant, license_key, code):
     except Exception as e:
         _job_set(job_id, status="failed", error=str(e)[:300])
 TOKEN_TTL = 8 * 3600
+if ROOT not in sys.path:
+    sys.path.insert(0, ROOT)
+from commercial import job_store  # noqa: E402
+
+JOB_STALE_SEC = 900
 
 
 def _json(handler, obj, status=200):
