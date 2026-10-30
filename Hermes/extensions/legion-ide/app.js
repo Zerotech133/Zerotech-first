@@ -1316,3 +1316,61 @@ async function loadDiff(task) {
 })();
 
 
+
+
+/* ===== 司马徽研究院 · Hermes 扩展入口（2026-10-30） ===== */
+(function () {
+  if (window.__acad1ExtLoaded) return;
+  window.__acad1ExtLoaded = true;
+  const BASE = "http://127.0.0.1:8102/api/v1";
+  const PAGE = "http://127.0.0.1:5175/cn/replay?tab=selection";
+
+  function el(tag, cls, text) {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+
+  function openPanel() {
+    let p = document.getElementById("acad1-panel");
+    if (p) { p.style.display = "flex"; return; }
+    p = el("div", "acad1-overlay"); p.id = "acad1-panel";
+    const box = el("div", "acad1-box");
+    const head = el("div", "acad1-head");
+    const title = el("b", null, "司马徽研究院 · 选股中台");
+    const close = el("button", "acad1-close", "×");
+    close.onclick = () => { p.style.display = "none"; };
+    head.append(title, close);
+    const sum = el("div", "acad1-sum", "摘要加载中…");
+    sum.id = "acad1-summary";
+    const frame = el("iframe", "acad1-frame");
+    frame.src = PAGE;
+    box.append(head, sum, frame);
+    p.append(box);
+    document.body.appendChild(p);
+    fetch(BASE + "/selection-public/summary")
+      .then(r => r.json())
+      .then(d => {
+        const x = (d && d.data) || {};
+        sum.textContent = "数据日 " + (x.data_date || "—") +
+          " · 日报 " + (x.report_total || 0) +
+          " · 候选池 " + (x.pool_total || 0) +
+          " · 共振 " + (x.resonance || 0) +
+          " · 反馈 用" + (x.used || 0) + "/不用" + (x.rejected || 0) +
+          " · 督导 " + (x.supervision_total || 0);
+      })
+      .catch(() => { sum.textContent = "摘要不可用；页面内查看研究台"; });
+  }
+
+  function build() {
+    if (document.getElementById("acad1-btn")) return;
+    const btn = el("button", "acad1-btn", "司马徽");
+    btn.id = "acad1-btn";
+    btn.title = "司马徽研究院 · 选股中台";
+    btn.onclick = openPanel;
+    document.body.appendChild(btn);
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", build);
+  else build();
+})();
