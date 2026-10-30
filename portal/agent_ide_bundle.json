@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 17:13",
+ "generated": "2026-10-30 17:14",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 27,
+  "workorders_doing": 26,
   "workorders_review": 8
  },
  "workorders": [
@@ -309,15 +309,6 @@
    "branch": "task/WO-LEGION-AUDIT-LOGINLINK-20261030",
    "created": "2026-10-30 16:41:37",
    "project": "general"
-  },
-  {
-   "id": "K-JEV-20261030-QUEUEUI",
-   "desc": "JEV low-confidence review workbench: list/filter/sort, first 100 manual review, resolve writes back",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-JEV-20261030-QUEUEUI",
-   "created": "2026-10-30 17:09:05",
-   "project": "quant"
   },
   {
    "id": "WO-ZHAOYUN-IDENTITY-20261030",
@@ -3909,7 +3900,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 106,
+     "count": 107,
      "recent": [
       {
        "ts": "",
@@ -4054,7 +4045,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 106,
+     "count": 107,
      "recent": [
       {
        "ts": "",
