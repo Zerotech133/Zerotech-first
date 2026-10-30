@@ -68,7 +68,8 @@ def push_feishu(text, card=False):
     if card:
         args.append("interactive")
     r = subprocess.run(
-        args, capture_output=True, text=True, encoding="utf-8", timeout=60
+        args, capture_output=True, text=True, encoding="utf-8",
+        errors="replace", timeout=60
     )
     out = (r.stdout or "").strip()
     if out.startswith("SEND_OK"):
