@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 29,
+  "workorders_doing": 28,
   "workorders_review": 8
  },
  "workorders": [
@@ -335,15 +335,6 @@
    "owner": "DSH-Lead",
    "branch": "task/WO-KB-RAG-20261030",
    "created": "2026-10-30 13:56:07",
-   "project": "general"
-  },
-  {
-   "id": "K-ORG-20261030-JEVL2",
-   "desc": "L2 五项计划任务变更执行记录（用户批准 2026-10-30）：Verify 22:30/JevNight 补跑+重试/Backup 单 07:45/删 JevStack/DayBatch 补跑",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-ORG-20261030-JEVL2",
-   "created": "2026-10-30 13:57:10",
    "project": "general"
   }
  ],
