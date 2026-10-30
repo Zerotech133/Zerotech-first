@@ -26,6 +26,10 @@
   .auth-msg[data-kind="ok"] { color: var(--os-blue, #4f8ef7); }
   .auth-links { margin-top: 18px; font-size: 12px; color: var(--os-muted, #8a93a6); }
   .auth-links a { color: var(--os-blue, #4f8ef7); }
+  .auth-oidc { margin-top: 18px; }
+  .auth-or { display: flex; align-items: center; gap: 10px; color: var(--os-muted, #8a93a6); font-size: 11px; margin: 16px 0 12px; }
+  .auth-or::before, .auth-or::after { content: ""; height: 1px; flex: 1; background: var(--os-line, #2a3242); }
+  .auth-oidc .ui-btn { width: 100%; text-align: center; }
   @media (max-width: 590px) { .auth-wrap { padding-top: 46px; } .auth-card { padding: 22px; } }
 </style>
 </head>
@@ -34,7 +38,7 @@
   <section class="ui-panel auth-card" aria-labelledby="auth-title">
     <div class="auth-eyebrow">AUTH · ZERO BOUND</div>
     <h1 id="auth-title">登录零界</h1>
-    <p>使用智策账号登录。零界只创建只读会话，不保存密码、不向浏览器下发智策 token。</p>
+    <p>使用智策账号密码登录，或使用 Pocket ID passkey 登录。零界只创建只读会话，不保存密码、不向浏览器下发智策 token。</p>
     <form id="login-form" novalidate>
       <label class="auth-field"><span>用户名</span><input id="username" name="username" autocomplete="username" required></label>
       <label class="auth-field"><span>密码</span><input id="password" name="password" type="password" autocomplete="current-password" required></label>
@@ -43,6 +47,11 @@
         <a href="/os-entry">先看看工作台 →</a>
       </div>
     </form>
+    <div id="oidc-entry" class="auth-oidc" hidden>
+      <div class="auth-or"><span>或</span></div>
+      <a id="oidc-login" class="ui-btn ui-btn--ghost" href="/api/auth/oidc/start?next=/os-entry">使用 Pocket ID 登录</a>
+      <p class="auth-links">Pocket ID 使用 passkey；没有 passkey 时继续用上方智策账号密码。</p>
+    </div>
     <p id="login-msg" class="auth-msg" role="status" aria-live="polite"></p>
     <p class="auth-links">登录态仅内存保存，8091 重启或 1 小时后失效。账号由智策管理，零界不保存密码。</p>
   </section>
@@ -62,6 +71,14 @@
     too_many_attempts: '尝试次数过多，请 5 分钟后再试。',
     unauthorized: '登录态已失效，请重新登录。'
   };
+  var oidcEntry = document.getElementById('oidc-entry');
+  var oidcLink = document.getElementById('oidc-login');
+  fetch('/api/auth/oidc/status', {cache: 'no-store'}).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+    if (d && d.ready && d.mode !== 'off') {
+      oidcLink.href = '/api/auth/oidc/start?next=' + encodeURIComponent(next);
+      oidcEntry.hidden = false;
+    }
+  }).catch(function () {});
   fetch('/api/bff/identity/me', {cache: 'no-store'}).then(function (r) {
     if (!r.ok) return null;
     return r.json();
