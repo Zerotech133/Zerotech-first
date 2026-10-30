@@ -9,8 +9,8 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 29,
-  "workorders_review": 9
+  "workorders_doing": 27,
+  "workorders_review": 10
  },
  "workorders": [
   {
@@ -331,7 +331,7 @@
   {
    "id": "WO-LEGION-W1AUTH-20261030",
    "desc": "W1-1 IDE认证边界修复",
-   "status": "doing",
+   "status": "review",
    "owner": "ZHAOYUN",
    "branch": "task/WO-LEGION-W1AUTH-20261030",
    "created": "2026-10-30 19:31:11",
@@ -344,15 +344,6 @@
    "owner": "DSH-Lead",
    "branch": "task/K-ORG-20261030-JEVEVAL",
    "created": "2026-10-30 19:34:08",
-   "project": "general"
-  },
-  {
-   "id": "WO-GUANYU-P86-20261030",
-   "desc": "清理与债务台账",
-   "status": "doing",
-   "owner": "GUANYU",
-   "branch": "task/WO-GUANYU-P86-20261030",
-   "created": "2026-10-30 19:34:39",
    "project": "general"
   }
  ],
@@ -6650,14 +6641,7 @@
    ],
    "experience": "30 年工程治理经验：漏洞分级与补丁流程、失败测试基线修复、编码规范与门禁落地、技术债清欠与重复功能合并；证据驱动、逐项闭环，只出报告与工单不自行合并，开发动作限独立 worktree 提交+跑测试并交 L2 人签。",
    "dept_name": "研究院",
-   "dept_cn_title": "太学",
-   "tasks": [
-    {
-     "id": "WO-GUANYU-P86-20261030",
-     "desc": "清理与债务台账",
-     "status": "doing"
-    }
-   ]
+   "dept_cn_title": "太学"
   },
   "HUANGZHONG": {
    "id": "HUANGZHONG",
@@ -7325,7 +7309,7 @@
     {
      "id": "WO-LEGION-W1AUTH-20261030",
      "desc": "W1-1 IDE认证边界修复",
-     "status": "doing"
+     "status": "review"
     }
    ]
   }
