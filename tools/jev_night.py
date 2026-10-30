@@ -292,17 +292,30 @@ def backlog() -> int:
 
 
 def m3_pids() -> list[int]:
+    out = []
     try:
         proc = subprocess.run(["powershell", "-NoProfile", "-Command", PS_LIST_M3],
                               capture_output=True, text=True, timeout=60)
+        for line in (proc.stdout or "").splitlines():
+            line = line.strip()
+            if line.isdigit():
+                out.append(int(line))
     except (OSError, subprocess.TimeoutExpired):
-        return []
-    out = []
-    for line in (proc.stdout or "").splitlines():
-        line = line.strip()
-        if line.isdigit():
-            out.append(int(line))
-    return out
+        pass
+    # 2026-10-30 NIGHTFALL：S4U 进程 CommandLine 可能为 null，按命令行找不到 M3；
+    # 从 ollama_batch.lock 反查 holder，必须是 k266/m3 且存活才纳入。
+    try:
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
+        import ollama_lock
+        info = ollama_lock.holder_info()
+        purpose = str(info.get("purpose") or "").lower()
+        pid = int(info.get("pid") or 0)
+        if info.get("alive") and pid and ("k266" in purpose or "m3" in purpose):
+            out.append(pid)
+    except Exception:  # noqa: BLE001
+        pass
+    return sorted(set(out))
 
 
 def pause_m3(log: Logger, dry_run: bool = False, owner: str = "jev_night") -> int:
