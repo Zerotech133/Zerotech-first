@@ -1,0 +1,31 @@
+{
+ "generated_at": "2026-10-30T17:56:09+08:00",
+ "verify": {
+  "zips": 948,
+  "hash_ok": 948,
+  "hash_bad": 0,
+  "snapshots": 103032
+ },
+ "normalized": {
+  "videos": 45827,
+  "comments": 1321892,
+  "channels": 101
+ },
+ "cleaned": {
+  "kept": 1245368,
+  "retention_pct": 94.21,
+  "pii_masked": 1596
+ },
+ "index_full": {
+  "rows": 62401,
+  "dim": 1024
+ },
+ "backup": {
+  "stamp": "20261030_173913",
+  "result": "OK",
+  "files": 1099,
+  "bytes": 1361046375
+ },
+ "catalog_registered": true,
+ "lineage_manifest": "agent_platform/catalogs/youtube_quant_corpus_lineage.yaml"
+}

@@ -61,6 +61,12 @@ function renderGov(g){
   parts.push(pill(g.catalog_registered?'目录已登记':'目录未登记', !!g.catalog_registered));
   document.getElementById('gov').innerHTML=parts.join('');
 }
+async function loadGovStatic(){
+  try{
+    const r=await fetch('/static/kb_corpus_gov.json?ts='+Date.now(),{cache:'no-store'});
+    if(r.ok){ const g=await r.json(); renderGov(g||{}); }
+  }catch(e){}
+}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
 async function loadStats(){
   try{
@@ -68,6 +74,7 @@ async function loadStats(){
     if(d.ok){
       document.getElementById('stats').textContent='索引 '+d.rows+' chunks · dim '+d.dim+' · 更新 '+d.generated_at+' · embedding='+d.embed_model+' · chat='+d.chat_model;
       renderGov(d.governance||{});
+      loadGovStatic();
     }
   }catch(e){ document.getElementById('stats').textContent='统计加载失败'; }
 }

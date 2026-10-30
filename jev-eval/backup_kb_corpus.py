@@ -117,6 +117,13 @@ def main(argv=None) -> int:
         for old in sets[:-KEEP]:
             shutil.rmtree(old, ignore_errors=True)
             log("pruned %s" % old.name)
+        # 刷新门户治理状态 JSON（零重启方案）
+        try:
+            import subprocess
+            subprocess.run([sys.executable, str(Path(r"C:/项目/老田的AI助手/tools/kb_corpus/gov_status.py"))],
+                           timeout=120, check=False)
+        except Exception:  # noqa: BLE001
+            pass
         print(json.dumps({"result": "OK", "files": total_files, "bytes": total_bytes, "dest": str(dest)},
                          ensure_ascii=False, indent=1))
         return 0
