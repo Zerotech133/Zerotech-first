@@ -35,12 +35,16 @@ def test_relative_redirect():
 
 def test_five_pages_protected():
     s = _text()
-    assert s.count("auth_request /_auth_guard;") == len(PROTECTED)
-    for p in PROTECTED:
+    # 2026-10-30 P0：IDE 两个入口也纳入统一认证（五页 + /ide + /hermes/）
+    assert s.count("auth_request /_auth_guard;") == len(PROTECTED) + 2
+    for p in PROTECTED + ("/ide",):
         m = re.search(r"location = " + re.escape(p) + r" \{(.*?)\n    \}", s, re.S)
         assert m, p
         assert "auth_request /_auth_guard;" in m.group(1), p
         assert "error_page 401 = @login_required;" in m.group(1), p
+    m = re.search(r"location \^~ /hermes/ \{(.*?)\n    \}", s, re.S)
+    assert m and "auth_request /_auth_guard;" in m.group(1)
+    assert "error_page 401 = @login_required;" in m.group(1)
 
 
 def test_login_not_protected():

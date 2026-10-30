@@ -53,7 +53,9 @@ BLOCKED_SUFFIX = {
 }
 TASK_RE = re.compile(r"^[A-Za-z0-9_.\-]{3,80}$")
 
-_SESSION_TOKEN = secrets.token_urlsafe(24)
+_SESSION_TOKEN = secrets.token_urlsafe(24)  # 兼容旧单 token 测试/调用
+_SESSION_TTL_S = 24 * 3600
+_SESSIONS: dict[str, dict] = {}
 
 
 def rw_enabled(env: Optional[dict] = None) -> bool:
@@ -63,6 +65,39 @@ def rw_enabled(env: Optional[dict] = None) -> bool:
 
 def session_token() -> str:
     return _SESSION_TOKEN
+
+
+def _prune_sessions(now: float | None = None) -> None:
+    now = time.time() if now is None else now
+    for tok in [k for k, v in _SESSIONS.items()
+                if now - float(v.get("created") or 0) > _SESSION_TTL_S]:
+        _SESSIONS.pop(tok, None)
+
+
+def new_session(owner: str = "") -> tuple[str, str]:
+    """下发独立会话：token 只进 HttpOnly cookie，owner 由服务端绑定。"""
+    _prune_sessions()
+    token = secrets.token_urlsafe(24)
+    owner = str(owner or "").strip() or ("lde-" + token[:10])
+    _SESSIONS[token] = {"owner": owner, "created": time.time()}
+    return token, owner
+
+
+def session_info(headers: dict) -> Optional[dict]:
+    cookie = parse_cookies(headers.get("Cookie") or "")
+    token = cookie.get("ide_session") or ""
+    info = _SESSIONS.get(token)
+    if not info:
+        return None
+    if time.time() - float(info.get("created") or 0) > _SESSION_TTL_S:
+        _SESSIONS.pop(token, None)
+        return None
+    return {"token": token, **info}
+
+
+def session_owner(headers: dict) -> str:
+    info = session_info(headers)
+    return str(info.get("owner") or "") if info else ""
 
 
 def err(code: str, message: str, detail=None) -> dict:
@@ -82,8 +117,7 @@ def parse_cookies(header: str) -> dict:
 
 
 def check_access(headers: dict, token=None) -> Optional[dict]:
-    """同源 + 会话 cookie 校验；返回 None=通过，否则错误 dict。"""
-    token = token or _SESSION_TOKEN
+    """同源 + 服务端会话校验；token 参数仅保留旧测试显式 token 兼容。"""
     origin = str(headers.get("Origin") or "").strip()
     if origin:
         m = re.match(r"^https?://(127\.0\.0\.1|localhost)(:\d+)?/?$", origin)
@@ -92,7 +126,11 @@ def check_access(headers: dict, token=None) -> Optional[dict]:
                 "bad_origin", "只接受本机同源请求（Origin 非 127.0.0.1/localhost）"
             )
     cookie = parse_cookies(headers.get("Cookie") or "")
-    if cookie.get("ide_session") != token:
+    if token is not None:
+        if cookie.get("ide_session") != token:
+            return err("no_session", "缺少有效 IDE 会话（请从 /rw 页面进入）")
+        return None
+    if not session_info(headers):
         return err("no_session", "缺少有效 IDE 会话（请从 /rw 页面进入）")
     return None
 

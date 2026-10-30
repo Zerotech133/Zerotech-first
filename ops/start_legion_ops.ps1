@@ -79,6 +79,46 @@ function Ensure8796 {
     }
 }
 
+function Send-IdeGuardAlert([string]$Message) {
+    $line = (Get-Date -Format 'yyyy-MM-dd HH:mm:ss') + ' ' + $Message
+    $line | Out-File 'C:\Temp\legion_ops_guard.log' -Append -Encoding utf8 -ErrorAction SilentlyContinue
+    $code = "import sys; sys.path.insert(0, r'C:\aios\news_collector'); import news_ai; news_ai.push_message('[IDE-GUARD] " + $Message.Replace("'", " ") + "')"
+    try {
+        Start-Process -FilePath $py -ArgumentList @('-X', 'utf8', '-c', $code) -WindowStyle Hidden -ErrorAction SilentlyContinue
+    } catch { }
+}
+
+function Ensure8103Write {
+    # P0: 8103 may be alive but started without -EnableWrite (rw=false).
+    # Probe both liveness and rw_enabled; restart with -EnableWrite on failure.
+    $h = $null
+    try { $h = Invoke-RestMethod 'http://127.0.0.1:8103/api/health' -TimeoutSec 5 } catch { }
+    if ($h -and $h.rw_enabled -eq $true) {
+        Write-Output '[OK] port 8103 rw=true'
+        return
+    }
+    if (-not $h) {
+        Send-IdeGuardAlert '8103 down; attempting start with write enabled'
+        & powershell -NoProfile -ExecutionPolicy Bypass -File 'C:\aios\ops\start_legion_ide.ps1' -Action start -EnableWrite | Out-Null
+    } else {
+        Send-IdeGuardAlert '8103 alive but rw=false; restarting with -EnableWrite'
+        & powershell -NoProfile -ExecutionPolicy Bypass -File 'C:\aios\ops\start_legion_ide.ps1' -Action stop | Out-Null
+        Start-Sleep -Seconds 2
+        & powershell -NoProfile -ExecutionPolicy Bypass -File 'C:\aios\ops\start_legion_ide.ps1' -Action start -EnableWrite | Out-Null
+    }
+    Start-Sleep -Seconds 5
+    $h2 = $null
+    try { $h2 = Invoke-RestMethod 'http://127.0.0.1:8103/api/health' -TimeoutSec 5 } catch { }
+    if ($h2 -and $h2.rw_enabled -eq $true) {
+        Write-Output '[OK] port 8103 recovered rw=true'
+        Send-IdeGuardAlert '8103 recovered rw=true'
+    } else {
+        Write-Output '[FAIL] 8103 rw guard recovery failed'
+        Send-IdeGuardAlert '8103 rw guard recovery FAILED'
+    }
+}
+
 Ensure 8093 'tools\org_registry_server.py' 'org_registry_8093.log'
 Ensure 8096 'portal\api_legion_ops_v2.py' 'legion_ops_api.log'
 Ensure8796
+Ensure8103Write
