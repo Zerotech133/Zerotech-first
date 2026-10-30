@@ -17,3 +17,9 @@
 - 任何假设结论必须过四关（时点可知/样本外/成本后/容量），否则只能标 backtested；
 - **rejected 也算产出**：写清失败原因，防止重复研究；
 - 进入 validated 必须同时满足：OOS 显著 + 成本后为正 + 通过容量评估。
+
+### 统计修正纪律（2026-10-30 判例，强制）
+- **低频信号 × 多日持有**（如周频信号 × 20 日收益、月频 × 60 日）默认存在重叠，普通 t 值虚高；
+- 必须至少做一种修正：**非重叠抽样**（每持有期长度取 1 期，多个偏移分别算并报保守值）或 **block bootstrap**（块长 ≥ 持有期），二者都过才可标 backtested；
+- 工具：`tools/research/stat_utils.py`（`non_overlap_t` / `block_bootstrap_p` / `overlap_aware_verdict`）；
+- 判例：H22（前视 1 日，已修）、H23（周频×20日重叠，修正后 t 1.25 未过 2 → rejected）。

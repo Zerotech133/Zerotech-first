@@ -48,3 +48,13 @@ C:\项目\py312\python.exe tools/research/jev_attribution.py --json
 H1 公告事件 CAR、H2 PEAD、H3 龙虎榜席位、H4 资金流背离、H5 舆情 lead-lag、H6 JEV 决策归因、H7 财务因子分层、H8 行业轮动、H9 跨市场映射、H10 数据质量对回测影响。
 
 > 第一批执行：**H1（数据→信号）+ H6（决策→改进）**，见 2026-10-28 的报告。
+
+
+## 六、统计修正纪律（2026-10-30 判例）
+
+> 四关之外的第 0 关：**统计口径是否正确**。
+
+- 低频信号 × 多日持有 → 重叠，普通 t 虚高；必须用非重叠抽样或 block bootstrap；
+- 两种修正都通过（非重叠均值 t≥2 且 bootstrap p<0.05）才允许进四关；
+- 工具：`tools/research/stat_utils.py`；
+- 判例：H22 前视（已修）、H23 重叠（修正后 rejected）。
