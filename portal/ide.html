@@ -1595,6 +1595,7 @@ async function sendOpenHands(raw){
     if(r1.whoEl) r1.whoEl.textContent = aid + " · OpenHands · ✅ " + sec + "s";
     if(r1.rec){ r1.rec.who = aid + " · OpenHands"; r1.rec.html = html; r1.rec.raw = d.reply || ""; sessSave(aid); }
     addLog("OpenHands ← " + aid + " · " + sec + "s", "lg-g");
+    if(ohTask) attachOHDiff(ohTask, r1, html, aid);
   }catch(e){
     const sec = ((Date.now()-t0)/1000).toFixed(1);
     const stopped = e && e.message === "用户已停止";
@@ -1608,6 +1609,48 @@ async function sendOpenHands(raw){
   const stopBtn = document.getElementById("stop");
   if(stopBtn) stopBtn.style.display = "none";
   btn.disabled = false;
+}
+
+let OH_DIFF = null;
+async function attachOHDiff(task, r1, baseHtml, aid){
+  try{
+    const {d} = await fetchJsonTimeout("/openhands/api/ide/openhands/diff", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({task})
+    }, 30000, 1);
+    if(!d.ok || !d.has_changes) return;
+    OH_DIFF = d;
+    const files = (d.files || []).slice(0, 20).map(x => "• " + x).join("<br>");
+    const html = baseHtml
+      + '<div style="margin-top:8px;border-top:1px solid #1E3A5F;padding-top:6px">'
+      + '<div style="font-size:11px;color:#9fd0ff">工单 '+esc(task)+' · '+esc(d.branch||"")+' · 变更 '+((d.files||[]).length)+' 文件</div>'
+      + '<div style="font-size:10.5px;color:#8fa8c0;margin:3px 0">'+files+'</div>'
+      + '<pre style="max-height:220px;overflow:auto;background:#081321;border:0.5px solid #1E3A5F;border-radius:6px;padding:6px;font-size:10px;color:#b9c9da">'+esc((d.diff||"（无 diff）").slice(0,12000))+'</pre>'
+      + '<button onclick="commitOH()" style="background:#163f2f;border:1px solid #2f8f6a;color:#9fe3c0;border-radius:6px;padding:5px 10px;cursor:pointer">确认提交到工单</button>'
+      + '<span id="ohcommit" style="font-size:11px;color:#8fa8c0;margin-left:8px"></span>'
+      + '</div>';
+    r1.el.innerHTML = html;
+    if(r1.rec){ r1.rec.html = html; sessSave(aid); }
+  }catch(e){ addLog("OH diff 失败 "+ (e&&e.message), "lg-o"); }
+}
+async function commitOH(){
+  if(!OH_DIFF) return;
+  const task = OH_DIFF.task;
+  const msg = "OpenHands 执行结果 · " + task;
+  const el = document.getElementById("ohcommit");
+  if(el) el.textContent = "提交中…";
+  try{
+    const {d} = await fetchJsonTimeout("/openhands/api/ide/openhands/commit", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({task, message: msg})
+    }, 60000, 1);
+    if(!d.ok) throw new Error(d.detail || d.error || "commit_failed");
+    if(el) el.textContent = "✅ 已提交 " + (d.commit||"");
+    addLog("OH commit ← "+task+" · "+d.commit, "lg-g");
+    OH_DIFF = null;
+  }catch(e){
+    if(el) el.textContent = "❌ " + (e && e.message ? e.message : "提交失败");
+  }
 }
 
 async function send(){

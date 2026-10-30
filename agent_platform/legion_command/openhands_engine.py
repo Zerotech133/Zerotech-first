@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import subprocess
 import time
 import urllib.error
 import urllib.request
@@ -33,6 +34,68 @@ DEFAULT_CONTAINER_WORKDIR = CONTAINER_WORKTREE_ROOT + "/_default"
 LOCAL_ROOTS = (WORKTREE_ROOT, Path(r"C:\legion-oh-worktrees"))
 DEFAULT_TIMEOUT = 600
 TASK_RE = re.compile(r"^[A-Za-z0-9_.\-]{3,80}$")
+SANDBOX_CONTAINER = os.environ.get("OH_SANDBOX_CONTAINER", "legion-openhands-sandbox")
+SANDBOX_IMAGE = os.environ.get(
+    "OH_SANDBOX_IMAGE", "ghcr.io/openhands/agent-server:latest-python"
+)
+SANDBOX_PORT = "8771"
+
+
+def _wait_health(timeout: int = 60, base: str | None = None) -> bool:
+    base = (base or BASE_URL).rstrip("/")
+    deadline = time.time() + max(5, timeout)
+    while time.time() < deadline:
+        try:
+            with urllib.request.urlopen(base + "/health", timeout=2) as r:
+                data = json.loads(r.read().decode("utf-8", "replace"))
+                if data.get("status") == "ok":
+                    return True
+        except (urllib.error.URLError, OSError, ValueError):
+            pass
+        time.sleep(1)
+    return False
+
+
+def ensure_sandbox(timeout: int = 60) -> dict:
+    """自愈：8771 不通时尝试 docker start / docker run，最后等 health。"""
+    if _wait_health(2):
+        return {"ok": True, "started": False, "container": SANDBOX_CONTAINER}
+    key = _key()
+    secret = ""
+    try:
+        secret = Path(r"C:\项目\legion-openhands\.secret_key").read_text(
+            encoding="utf-8-sig").strip()
+    except OSError:
+        pass
+    if not key:
+        return {"ok": False, "error": "sandbox_key_missing"}
+    run = subprocess.run(
+        ["docker", "inspect", "-f", "{{.State.Running}}", SANDBOX_CONTAINER],
+        capture_output=True, text=True, timeout=20,
+    )
+    if run.returncode == 0:
+        if run.stdout.strip().lower() != "true":
+            subprocess.run(["docker", "start", SANDBOX_CONTAINER],
+                           capture_output=True, text=True, timeout=60)
+    else:
+        args = [
+            "docker", "run", "-d", "--name", SANDBOX_CONTAINER,
+            "--memory", "4g", "--memory-swap", "4g", "--cpus", "2",
+            "-p", "127.0.0.1:%s:8000" % SANDBOX_PORT,
+            "-v", r"C:\legion-worktrees:/workspaces",
+            "-e", "OH_SESSION_API_KEYS_0=" + key,
+        ]
+        if secret:
+            args += ["-e", "OH_SECRET_KEY=" + secret]
+        args += [
+            "-e", "OH_ENABLE_VNC=0", "-e", "OH_ENABLE_VSCODE=0",
+            "-e", "OH_PRELOAD_TOOLS=0", SANDBOX_IMAGE,
+        ]
+        subprocess.run(args, capture_output=True, text=True, timeout=120)
+    if _wait_health(timeout):
+        return {"ok": True, "started": True, "container": SANDBOX_CONTAINER}
+    return {"ok": False, "error": "sandbox_unhealthy",
+            "container": SANDBOX_CONTAINER}
 
 
 def _key() -> str:
@@ -88,7 +151,11 @@ def _resolve_worktree(task: str = "", worktree: str = ""):
         task = str(task or "").strip()
         if not TASK_RE.match(task):
             return None, None, {"ok": False, "error": "bad_task_id"}
-        host = (WORKTREE_ROOT / task).absolute()
+        from legion_command import ide_worktree
+        ready = ide_worktree.ensure_worktree(task)
+        if not ready.get("ok"):
+            return None, None, ready
+        host = Path(ready["worktree"]).absolute()
     else:
         host = DEFAULT_HOST_WORKDIR.absolute()
 
@@ -239,6 +306,9 @@ def chat(message: str, conversation_id: str = "", timeout: int = DEFAULT_TIMEOUT
     message = str(message or "").strip()
     if not message:
         return {"ok": False, "error": "empty_message"}
+    sandbox = ensure_sandbox()
+    if not sandbox.get("ok"):
+        return sandbox
     host_wd, container_wd, error = _resolve_worktree(task=task, worktree=worktree)
     if error:
         return error
