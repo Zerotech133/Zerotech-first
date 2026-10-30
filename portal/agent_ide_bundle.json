@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 18:06",
+ "generated": "2026-10-30 18:07",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -329,13 +329,13 @@
    "project": "general"
   },
   {
-   "id": "K-STOCK-ANALYSIS-P2-4-20261030",
-   "desc": "P2.4 客户门户MVP：/customer.html+api_customer(登录/分析/报告下载/历史)，license+租户+配额",
+   "id": "WO-LEGION-EVALTRACE-20261030",
+   "desc": "评估闸门+trace运营化工具",
    "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-STOCK-ANALYSIS-P2-4-20261030",
-   "created": "2026-10-30 18:01:26",
-   "project": "quant"
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-EVALTRACE-20261030",
+   "created": "2026-10-30 18:07:19",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -3918,7 +3918,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 112,
+     "count": 113,
      "recent": [
       {
        "ts": "",
@@ -4063,7 +4063,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 112,
+     "count": 113,
      "recent": [
       {
        "ts": "",
@@ -7301,6 +7301,11 @@
      "id": "WO-ZHAOYUN-KPI-20261030",
      "desc": "P1治理KPI端点：GET /api/governance/kpi（只读聚合）+测试",
      "status": "review"
+    },
+    {
+     "id": "WO-LEGION-EVALTRACE-20261030",
+     "desc": "评估闸门+trace运营化工具",
+     "status": "doing"
     }
    ]
   }
