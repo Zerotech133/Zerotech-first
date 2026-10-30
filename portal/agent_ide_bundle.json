@@ -10,7 +10,7 @@
   "prompt_miss": [],
   "name_collisions": {},
   "workorders_doing": 29,
-  "workorders_review": 9
+  "workorders_review": 8
  },
  "workorders": [
   {
@@ -317,15 +317,6 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-LEGION-OIDC-PATH-20261030",
    "created": "2026-10-30 17:25:25",
-   "project": "general"
-  },
-  {
-   "id": "WO-ZHAOYUN-P2-20261030",
-   "desc": "P2：视图registry化配置+结构化失败日志+任务板stale清理工具",
-   "status": "review",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-ZHAOYUN-P2-20261030",
-   "created": "2026-10-30 18:19:16",
    "project": "general"
   },
   {
@@ -7314,11 +7305,6 @@
      "id": "WO-LEGION-OIDC-PATH-20261030",
      "desc": "OIDC配置路径对齐实际vault",
      "status": "doing"
-    },
-    {
-     "id": "WO-ZHAOYUN-P2-20261030",
-     "desc": "P2：视图registry化配置+结构化失败日志+任务板stale清理工具",
-     "status": "review"
     },
     {
      "id": "WO-LEGION-TRACECITE-20261030",
