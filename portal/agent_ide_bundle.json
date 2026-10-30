@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 15:07",
+ "generated": "2026-10-30 15:08",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,8 +9,8 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 26,
-  "workorders_review": 7
+  "workorders_doing": 27,
+  "workorders_review": 6
  },
  "workorders": [
   {
@@ -284,15 +284,6 @@
    "project": "quant"
   },
   {
-   "id": "WO-PIPAUDIT-OSV-20261030",
-   "desc": "依赖审计兜底：OSV批量查询脚本+测试，SecurityAuditWeekly接入OSV结果",
-   "status": "review",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-PIPAUDIT-OSV-20261030",
-   "created": "2026-10-30 15:00:01",
-   "project": "general"
-  },
-  {
    "id": "WO-LEGION-P2-V1-20261030",
    "desc": "P2 v1 两周试跑：只读周任务包装器+计划任务",
    "status": "doing",
@@ -309,6 +300,15 @@
    "branch": "task/WO-GUANYU-P77-20261030",
    "created": "2026-10-30 15:06:41",
    "project": "general"
+  },
+  {
+   "id": "K-STOCK-ANALYSIS-P0U-20261030",
+   "desc": "事件旧类别清洗：按当前规则重算 category（保留 reviewed/category_final），CLI+单测+生产清洗",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-STOCK-ANALYSIS-P0U-20261030",
+   "created": "2026-10-30 15:08:01",
+   "project": "quant"
   }
  ],
  "coder_traces": [
@@ -7031,11 +7031,6 @@
    "seat_note": "profile 角色，不占编（D5-C）；与 R2 风控席（org 编制·保守风控哨）是不同 id，报表按 id 区分。",
    "home_page": "http://127.0.0.1:8796/zhaoyun",
    "tasks": [
-    {
-     "id": "WO-PIPAUDIT-OSV-20261030",
-     "desc": "依赖审计兜底：OSV批量查询脚本+测试，SecurityAuditWeekly接入OSV结果",
-     "status": "review"
-    },
     {
      "id": "WO-LEGION-P2-V1-20261030",
      "desc": "P2 v1 两周试跑：只读周任务包装器+计划任务",
