@@ -220,7 +220,7 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
         def _rw_denied(self):
             if not G.rw_enabled():
                 return G.err("rw_disabled", "IDE_RW=off：写/执行未开启（只读模式）")
-            return G.check_access(dict(self.headers))
+            return G.check_access(dict(self.headers), required_roles=G.write_roles())
 
         def _owner_or_err(self, data: dict):
             expected = G.session_owner(dict(self.headers))

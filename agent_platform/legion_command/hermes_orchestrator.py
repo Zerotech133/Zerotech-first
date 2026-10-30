@@ -22,6 +22,10 @@ import uuid
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
+try:  # P0-2: 出网脱敏（同包优先；兼容以 legion_command 顶层导入）
+    from .redact_outbound import redact as _redact, log_outbound as _log_outbound
+except ImportError:  # pragma: no cover
+    from legion_command.redact_outbound import redact as _redact, log_outbound as _log_outbound
 BUNDLE = REPO / "portal" / "agent_ide_bundle.json"
 TASKS_FILE = REPO / ".worktrees" / "tasks.json"
 RUN_DIR = Path(os.environ.get(
@@ -62,12 +66,16 @@ def task_context(task: str) -> str:
     row = _task_row(task)
     if not row:
         return "工单：%s（台账未找到，按用户输入执行）" % task
+    desc = str(row.get("desc") or "")[:800]
+    rd = _redact(desc)
+    if rd.get("hits"):
+        _log_outbound("a0_task_desc", task, "hermes_chat", rd)
     parts = [
         "工单：%s" % task,
         "状态：%s" % (row.get("status") or "unknown"),
         "项目：%s" % (row.get("project") or "-"),
         "owner：%s" % (row.get("owner") or "-"),
-        "描述：%s" % str(row.get("desc") or "")[:800],
+        "描述：%s" % rd["text"],
     ]
     return "\n".join(parts)
 
@@ -191,6 +199,10 @@ def orchestrate(message: str, task: str = "", model: str = "",
     if not prompt:
         return {"ok": False, "error": "agent_prompt_missing", "agent": agent}
     run_id = "run-" + uuid.uuid4().hex[:12]
+    _msg_rd = _redact(message)
+    if _msg_rd.get("hits"):
+        _log_outbound("a0_user_message", task or run_id, "hermes_chat", _msg_rd)
+        message = _msg_rd["text"]
     ctx = task_context(task)
     _event(run_id, "orchestrate_start", {
         "agent": agent, "task": task, "model": model,
