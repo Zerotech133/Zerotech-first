@@ -83,3 +83,11 @@ def test_eta_red_unaffected_by_exempt(monkeypatch):
 def test_unavailable_is_red(monkeypatch):
     monkeypatch.delenv(hc.BACKLOG_DAYTIME_EXEMPT_ENV, raising=False)
     assert hc._batch_backlog_level({"available": False}, now=DAY)[0] == "red"
+
+
+def test_zero_backlog_is_green(monkeypatch):
+    # 2026-10-30 BATCH1：两队列积压都为 0 时判绿（旧逻辑 eta=None → 黄）
+    monkeypatch.delenv(hc.BACKLOG_DAYTIME_EXEMPT_ENV, raising=False)
+    bl = _bl(jev_delta=0, jev_left=0, xq_left=0)
+    level, detail = hc._batch_backlog_level(bl, now=DAY)
+    assert level == "green", detail

@@ -5313,16 +5313,30 @@ def _batch_backlog_level(bl: dict[str, Any],
         return "red", "连续 %d 轮 rc=124；" % streak + detail
     if streak == 1:
         return "yellow", "最近 1 轮 rc=124；" + detail
+    jev_bl = bl.get("jev_backlog")
+    if jev_bl is None:
+        jev_bl = bl.get("jev_left")
+    xq_bl = bl.get("xq_backlog")
+    if xq_bl is None:
+        xq_bl = bl.get("xq_left")
+    try:
+        jev_n = int(jev_bl or 0)
+        xq_n = int(xq_bl or 0)
+    except (TypeError, ValueError):
+        jev_n = xq_n = 0
+    if jev_n == 0 and xq_n == 0:
+        return "green", "两队列积压均为 0；" + detail
     eta = bl.get("eta_hours")
     if eta is None:
-        return "yellow", "无净下降，预计清完不可计算；" + detail
+        return "yellow", "积压 %d/%d 且预计清完不可计算（容量未知）；" % (
+            jev_n, xq_n) + detail
     if eta > BATCH_ETA_RED_HOURS:
         return "red", "预计清完 %.1fh > %.0fh；" % (eta, BATCH_ETA_RED_HOURS) + detail
     if eta > BATCH_ETA_YELLOW_HOURS:
         return ("yellow",
                 "预计清完 %.1fh > %.0fh；" % (eta, BATCH_ETA_YELLOW_HOURS) + detail)
     age = bl.get("log_age_min")
-    if age is not None and age > BATCH_STALE_YELLOW_MIN:
+    if age is not None and age > BATCH_STALE_YELLOW_MIN and (jev_n + xq_n) > 0:
         return "yellow", "日志 %.0f 分钟无新轮次（可能已收工/失联）；" % age + detail
     return "green", detail
 
@@ -5549,6 +5563,8 @@ def collect_ai_error_rate(repo_root: Path, now: dt.datetime | None = None) -> di
     cutoff = now - dt.timedelta(minutes=AI_ERROR_WINDOW_MINUTES)
     total = ok = client_err = server_err = client_abort = 0
     used = None
+    first_when = None
+    last_when = None
     for path in candidates:
         try:
             if not path.exists():
@@ -5584,6 +5600,8 @@ def collect_ai_error_rate(repo_root: Path, now: dt.datetime | None = None) -> di
             status = int(match.group(7))
             hits += 1
             total += 1
+            first_when = when if first_when is None else min(first_when, when)
+            last_when = when if last_when is None else max(last_when, when)
             if 200 <= status < 400:
                 ok += 1
             elif 400 <= status < 500:
@@ -5607,15 +5625,19 @@ def collect_ai_error_rate(repo_root: Path, now: dt.datetime | None = None) -> di
     if total == 0:
         result.update(available=True, source=used, total=0, ok=0,
                       client_errors=0, server_errors=0, client_aborts=0,
-                      ratio=0.0)
+                      ratio=0.0, covered_minutes=0.0)
         return result
     # 失败率只算「客户端错误 + 真服务端错误」；client_aborts 是调用方自己超时走了。
     bad = client_err + server_err
+    covered = None
+    if first_when is not None and last_when is not None:
+        covered = round((last_when - first_when).total_seconds() / 60.0, 1)
     result.update(
         available=True, source=used, total=total, ok=ok,
         client_errors=client_err, server_errors=server_err,
         client_aborts=client_abort,
         ratio=round(bad / total, 4),
+        covered_minutes=covered,
     )
     return result
 
@@ -5629,6 +5651,9 @@ def _ai_error_detail(err: dict[str, Any]) -> str:
         % (AI_ERROR_WINDOW_MINUTES, total, err.get("ok") or 0,
            err.get("client_errors") or 0, err.get("server_errors") or 0),
     ]
+    covered = err.get("covered_minutes")
+    if covered is not None and covered < AI_ERROR_WINDOW_MINUTES - 5:
+        bits.append("日志尾部仅覆盖 %.1f 分钟（8MB 截断，早段请求不可见）" % covered)
     client_aborts = err.get("client_aborts") or 0
     if client_aborts:
         bits.append("客户端主动断连 %d（不计失败率，原 500 口径）" % client_aborts)
@@ -5741,7 +5766,11 @@ def collect_jev_calibration(repo_root: Path | None = None) -> dict[str, Any]:
                            "baseline_bull": None, "edge_vs_baseline": None,
                            "band_pct": None, "neutral_hit": None,
                            "neutral_highvol": None, "bear_usable": None,
-                           "bull_usable": None, "conf_decision_weight": None}
+                           "bull_usable": None, "conf_decision_weight": None,
+                           "data_through": None, "latest_trade_day": None,
+                           "stale_trade_days": None, "n_days": None,
+                           "wilson_lower": None, "wilson_lower_gt_baseline": None,
+                           "gate_pass": None, "low_signal_event_types": []}
     try:
         raw = path.read_text(encoding="utf-8")
     except OSError as exc:
@@ -5769,6 +5798,17 @@ def collect_jev_calibration(repo_root: Path | None = None) -> dict[str, Any]:
         bear_usable=(a.get("bear") or {}).get("usable"),
         bull_usable=(a.get("bull") or {}).get("usable"),
         conf_decision_weight=(a.get("confidence") or {}).get("decision_weight"),
+        data_through=data.get("data_through"),
+        latest_trade_day=data.get("latest_trade_day"),
+        stale_trade_days=data.get("stale_trade_days"),
+        n_days=data.get("n_trade_days"),
+        wilson_lower=(a.get("directional") or {}).get("wilson95_lower"),
+        wilson_lower_gt_baseline=(
+            (a.get("directional") or {}).get("wilson95_lower") is not None
+            and ((a.get("directional") or {}).get("wilson95_lower")
+                 > ((d.get("baseline_all_bull") or {}).get("rate") or 1.0))),
+        gate_pass=(a.get("directional") or {}).get("gate_pass"),
+        low_signal_event_types=(a.get("low_signal_event_types") or []),
     )
     return out
 
@@ -5794,18 +5834,44 @@ def _jev_calibration_level(cal: dict[str, Any]) -> tuple[str, str]:
         bits.append("bear 仅风险标签")
     if cal.get("conf_decision_weight") is False:
         bits.append("conf 不入决策")
+    nd = cal.get("n_days")
+    if nd is not None:
+        bits.append("覆盖 %d 个交易日" % nd)
+    dth = cal.get("data_through")
+    if dth:
+        bits.append("数据截至 %s%s" % (
+            dth, "（落后 %s 个交易日）" % cal.get("stale_trade_days")
+            if cal.get("stale_trade_days") else ""))
+    low = cal.get("low_signal_event_types") or []
+    if low:
+        bits.append("低信号事件：%s" % "、".join(low))
     detail = "；".join(bits)
     if n == 0:
         return "yellow", "账本尚无后验样本（T+1 数据未回填）；" + detail
     if n < JEV_CALIB_MIN_SAMPLES:
         return "yellow", "样本不足（%d < %d 条）；" % (n, JEV_CALIB_MIN_SAMPLES) + detail
-    if rate is not None and rate < JEV_CALIB_RED_RATE:
+    stale = cal.get("stale_trade_days")
+    if stale is not None and stale > 1:
+        return "yellow", "校准数据落后 %d 个交易日（data_through=%s）；" % (
+            stale, dth) + detail
+    if rate is not None and base is not None and rate < base - 0.05:
+        return "red", "方向准确率 %.1f%% 显著低于基线 %.1f%%（模型退化）；" % (
+            rate * 100, base * 100) + detail
+    if rate is not None and base is None and rate < JEV_CALIB_RED_RATE:
         return "red", "方向准确率低于 %.0f%%（模型退化）；" % (JEV_CALIB_RED_RATE * 100) + detail
-    edge = cal.get("edge_vs_baseline")
-    if edge is not None and edge >= JEV_CALIB_EDGE_PP:
-        return "green", "相对基线有增量（+%.1fpp）；" % (edge * 100) + detail
-    return "yellow", "无显著增量 edge（+%.1fpp < %.0fpp 门槛）；" % (
-        (edge or 0) * 100, JEV_CALIB_EDGE_PP * 100) + detail
+    gate = cal.get("gate_pass")
+    if gate is True:
+        return "green", "通过门控（edge +%.1fpp、Wilson 下界 %.3f > 基线、%d 个交易日）；" % (
+            (cal.get("edge_vs_baseline") or 0) * 100,
+            cal.get("wilson_lower") or 0.0, nd or 0) + detail
+    if gate is None and (cal.get("edge_vs_baseline") or 0) >= JEV_CALIB_EDGE_PP:
+        return "green", "相对基线有增量（+%.1fpp）；" % (
+            (cal.get("edge_vs_baseline") or 0) * 100) + detail
+    if cal.get("wilson_lower") is not None and cal.get("wilson_lower_gt_baseline") is False:
+        return "yellow", "edge 未过门控（Wilson 下界 %.3f ≤ 基线）；" % (
+            cal.get("wilson_lower") or 0.0) + detail
+    return "yellow", "无显著增量 edge（+%.1fpp < %.0fpp 门槛或交易日不足）；" % (
+        (cal.get("edge_vs_baseline") or 0) * 100, JEV_CALIB_EDGE_PP * 100) + detail
 
 
 def collect_agent_daily(repo_root: Path) -> dict[str, Any]:
@@ -6048,7 +6114,12 @@ def _evaluate(card: dict[str, Any]) -> tuple[list[dict[str, str]], str, list[str
                 if level == "red" and isinstance(age, (int, float)):
                     detail = "备份已 %.1fh 未更新且落后：%s" % (age, detail)
                 add("backup.catchup", level, detail)
-            # status == unknown：故意不新增 check。该项计 null，不误判绿。
+            else:
+                add("backup.catchup", "yellow",
+                    "无法判定备份追平情况（catchup status=%s）：%s"
+                    % (catchup.get("status") or "unknown",
+                       str(catchup.get("reason") or catchup.get("error")
+                           or "无 bundle/仓目录缺失")))
 
     data_drift = (card.get("data") or {}).get("root_drift") or {}
     if not data_drift:
@@ -6336,6 +6407,10 @@ def _evaluate(card: dict[str, Any]) -> tuple[list[dict[str, str]], str, list[str
         elif client_aborts > 0:
             add("ai.error_rate", "yellow",
                 detail + "（仅客户端主动断连，不计失败率；建议核对调用方超时设置）")
+        elif (err.get("covered_minutes") is not None
+              and err["covered_minutes"] < AI_ERROR_WINDOW_MINUTES - 5):
+            add("ai.error_rate", "yellow",
+                detail + "（窗口覆盖不足，不判绿）")
         else:
             add("ai.error_rate", "green", detail)
 

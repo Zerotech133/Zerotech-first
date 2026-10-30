@@ -74,3 +74,45 @@ def test_level_no_edge_is_yellow(tmp_path):
     _write_latest(tmp_path, _report())
     level, detail = hc._jev_calibration_level(hc.collect_jev_calibration(tmp_path))
     assert level == "yellow" and "无显著增量" in detail
+# ── 2026-10-30 BATCH1：门控/数据新鲜度/相对基线红 ──────────────────────
+def _b1_report(**over):
+    base = {
+        "generated_at": "2026-10-30T07:10:00", "data_through": "20261030",
+        "latest_trade_day": "20261030", "stale_trade_days": 0, "n_trade_days": 20,
+        "directional": {"n": 3619, "rate": 0.554, "baseline_all_bull": {"n": 3619, "rate": 0.542}},
+        "assessment": {"directional": {"n": 3619, "accuracy": 0.554,
+                                       "edge_vs_baseline": 0.012,
+                                       "wilson95_lower": 0.538, "gate_pass": True},
+                       "neutral": {"band_pct": 2.5, "band_hit_rate": 0.684,
+                                   "highvol_share": 0.316},
+                       "bear": {"usable": False}, "bull": {"usable": False},
+                       "confidence": {"decision_weight": False},
+                       "low_signal_event_types": ["price"]},
+    }
+    base.update(over)
+    return base
+
+
+def test_gate_pass_required_for_green(tmp_path):
+    _write_latest(tmp_path, _b1_report())
+    cal = hc.collect_jev_calibration(tmp_path)
+    level, detail = hc._jev_calibration_level(cal)
+    assert level == "green", detail
+    assert "20" in detail and "price" in detail
+
+
+def test_stale_calibration_is_yellow(tmp_path):
+    _write_latest(tmp_path, _b1_report(stale_trade_days=4, data_through="20261024"))
+    cal = hc.collect_jev_calibration(tmp_path)
+    level, detail = hc._jev_calibration_level(cal)
+    assert level == "yellow" and "落后" in detail
+
+
+def test_relative_baseline_red(tmp_path):
+    rep = _b1_report()
+    rep["directional"]["rate"] = 0.46
+    rep["assessment"]["directional"]["gate_pass"] = False
+    _write_latest(tmp_path, rep)
+    cal = hc.collect_jev_calibration(tmp_path)
+    level, detail = hc._jev_calibration_level(cal)
+    assert level == "red" and "基线" in detail
