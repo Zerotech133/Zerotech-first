@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 27,
+  "workorders_doing": 26,
   "workorders_review": 7
  },
  "workorders": [
@@ -309,15 +309,6 @@
    "branch": "task/WO-WATCH-FEED-20261030",
    "created": "2026-10-30 13:17:47",
    "project": "portal"
-  },
-  {
-   "id": "K-ORG-20261030-STALEFIX",
-   "desc": "修正 data_through 落后天数口径：只计已实现交易日至今日，不用日历最大日期",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-ORG-20261030-STALEFIX",
-   "created": "2026-10-30 13:18:03",
-   "project": "general"
   }
  ],
  "coder_traces": [
