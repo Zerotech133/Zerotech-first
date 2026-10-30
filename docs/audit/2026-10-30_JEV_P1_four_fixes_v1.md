@@ -69,3 +69,34 @@ news_collector/test_jev_p1_fixes.py → 4 passed
 3. `python news_collector/jev_review_queue.py --build --limit 200000`；
 4. 下一次 `JevBackfill` 自动使用动态 batch；
 5. 回退：`XQ_OLLAMA_LOCK=0`、`--batch 500`、删表/列需人工（列保留不影响旧代码）。
+
+## 7. 生产落地（2026-10-30 16:21）
+
+```text
+python news_collector/jev_schema.py
+→ added model/judged_at/attempt/last_error
+→ 自动备份 news_collector/backups/news.db.20261030_162144.bak
+
+python news_collector/jev_review_queue.py --build --limit 200000
+→ scanned 102899 / added 10523
+--status
+→ total 10523 / pending 10523
+→ bull 5151 / neutral 3117 / bear 2255
+```
+
+生产库：
+
+```text
+news rows 103751
+queue rows 10523
+schema last 4 columns: model, judged_at, attempt, last_error
+```
+
+质量门：
+
+```text
+devtask merge K-JEV-20261030-P1 → 通过
+fast gate 首跑失败=worktree 0 字节 news.db 测试产物；
+移走该空库后通过（非代码失败）。
+```
+
