@@ -284,15 +284,6 @@
    "project": "quant"
   },
   {
-   "id": "WO-SEC-AUDIT-V2-20261030",
-   "desc": "夜间安全审计基线切v2：security_audit.ps1 \\ 指向 bandit_baseline_v2.json，避免并发覆盖导致误报HIGH。",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-SEC-AUDIT-V2-20261030",
-   "created": "2026-10-30 14:59:52",
-   "project": "quant"
-  },
-  {
    "id": "WO-PIPAUDIT-OSV-20261030",
    "desc": "依赖审计兜底：OSV批量查询脚本+测试，SecurityAuditWeekly接入OSV结果",
    "status": "review",
@@ -327,6 +318,15 @@
    "branch": "task/K-STOCK-ANALYSIS-P0T-20261030",
    "created": "2026-10-30 15:03:09",
    "project": "quant"
+  },
+  {
+   "id": "WO-LEGION-P2-V1-20261030",
+   "desc": "P2 v1 两周试跑：只读周任务包装器+计划任务",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-P2-V1-20261030",
+   "created": "2026-10-30 15:03:39",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -7036,14 +7036,14 @@
    "home_page": "http://127.0.0.1:8796/zhaoyun",
    "tasks": [
     {
-     "id": "WO-SEC-AUDIT-V2-20261030",
-     "desc": "夜间安全审计基线切v2：security_audit.ps1 \\ 指向 bandit_baseline_v2.json，避免并发覆盖导致误报HIGH。",
-     "status": "doing"
-    },
-    {
      "id": "WO-PIPAUDIT-OSV-20261030",
      "desc": "依赖审计兜底：OSV批量查询脚本+测试，SecurityAuditWeekly接入OSV结果",
      "status": "review"
+    },
+    {
+     "id": "WO-LEGION-P2-V1-20261030",
+     "desc": "P2 v1 两周试跑：只读周任务包装器+计划任务",
+     "status": "doing"
     }
    ]
   }
