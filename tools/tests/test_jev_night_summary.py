@@ -44,3 +44,12 @@ def test_cli_entry_present():
     import jev_night_summary as _ns
     code = _P(_ns.__file__).read_text(encoding="utf-8")
     assert 'if __name__ == "__main__":' in code
+
+
+def test_truncated_line_without_pref_keep():
+    line = ("[2026-10-29 23:05:30]   JEV rc=0 1510s BACKFILL judged=592/600 "
+            "left=4649 1510.0s deadline_hit=1 alerted=0 cloud_fail=0 "
+            "item_sleep=0.00 lease_yield=skip dup_skip=0 pref_skip=0 pref")
+    rounds = ns.parse_rounds(line)
+    assert len(rounds) == 1
+    assert rounds[0]["judged"] == 592 and rounds[0]["pref_skip"] == 0
