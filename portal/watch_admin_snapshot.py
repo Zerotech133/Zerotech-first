@@ -633,11 +633,6 @@ class WatchAdminAggregator:
                   "conflict": "escalate_divergence",
                   "combo_key": "agent_id × model_id × combo_version → run_id"},
             source="M0 契约冻结（研发计划评审稿 V1）", verified=True))
-        sources.append(_source(
-            "runtime_voting", state="unknown", source_mode="computed",
-            error_code="no_runtime_feed",
-            note=("运行时投票/分歧上报无实时供源接入（本页只读、不连运行体）→ SOURCE_UNVERIFIED。"),
-            data=None, source="运行时投票源（未接入）", verified=False))
         # 2026-10-30 WO-WATCH-ADMIN：运行期决策流水（真实文件源；非投票）。
         rows, rerr = self._read_runtime_decisions()
         if rows:
@@ -920,10 +915,6 @@ class WatchAdminAggregator:
                 data=None, source="k_stock/paper/combo_review.compare_portfolios",
                 verified=False, realm="simulation_paper"))
 
-        sources.append(_source(
-            "posterior_metrics", state="unknown", source_mode="computed", error_code="not_wired",
-            note=("后验指标（夏普/胜率/回撤/ROI 排名）需结算后验配对，尚未接入 → SOURCE_UNVERIFIED。"),
-            data=None, source="结算后验（未接入）", verified=False))
         # 2026-10-30 WO-WATCH-ADMIN：从运行期决策流水计算可复核的后验统计（胜率/均值）。
         rows, rerr = self._read_runtime_decisions()
         closes = [r for r in rows or [] if r.get("t") == "close"
