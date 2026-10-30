@@ -70,10 +70,12 @@ def _hermes_health() -> dict:
         "8771_openhands": _http_ok("http://127.0.0.1:8771/health"),
         "8103_lde": _port_open(8103),
     }
+    production = {k: v for k, v in checks.items() if k != "8788_next"}
     return {
         "checks": checks,
-        "ok": all(checks.values()),
-        "note": "8788 next 由 HermesWebUI-Next-Guard(Disabled) 管理；生产入口=8787（邓芝·飞书通讯中枢）",
+        "ok": all(production.values()),
+        "next_expected_off": not checks["8788_next"],
+        "note": "8788 next 由 HermesWebUI-Next-Guard(Disabled) 管理、预期关闭；ok 仅按生产组件判定",
     }
 
 
