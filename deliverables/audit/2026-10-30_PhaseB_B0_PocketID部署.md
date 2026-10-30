@@ -18,12 +18,25 @@ restart:   unless-stopped
 数据/密钥（只记录路径，不回显内容）：
 
 ```text
-C:\aios\_vault\pocket-id\data
-C:\aios\_vault\pocket-id\secrets\encryption_key
+C:\项目\_vault\pocket-id\data
+C:\项目\_vault\pocket-id\secrets\encryption_key
 ```
 
 `encryption_key` 已生成并挂载到容器
 `/run/secrets/pocket_id_key`；丢失不可恢复，需备份 vault。
+
+### 2.0 审计 P0 修正（2026-10-30）
+
+最初使用 `C:\aios\_vault\pocket-id`，而 `C:\aios` 是仓库 junction，
+密钥实际落进 repo 工作区，`git status` 出现 `?? _vault/pocket-id/`。
+
+已处理：
+
+- 停容器 → 迁移到 repo 外 `C:\项目\_vault\pocket-id`；
+- 按新路径重建容器（healthy / discovery 200）；
+- `.gitignore` 增加 `_vault/pocket-id/` 防再犯；
+- `git ls-files _vault/pocket-id/*` 为空；
+- `git log --all -- _vault/pocket-id/*` 无历史命中。
 
 ## 2. 与方案 v1 的差异
 

@@ -314,3 +314,10 @@ bin/SECVAULT-TOOLS.json
 !research/hypotheses.db
 !research/reports/
 !research/reports/**
+
+# ===== 2026-10-30 审计 P0：repo junction 下的敏感/运行态目录防误提交 =====
+# C:\aios 是仓库 junction；Pocket ID 密钥/数据必须放 repo 外 C:\项目\_vault\pocket-id。
+# 此垫条防止未来再写回 repo 时被 git add。
+_vault/pocket-id/
+# team_exec 运行态输出（agent_platform.agent_platform.data 旧路径）
+agent_platform/agent_platform/data/
