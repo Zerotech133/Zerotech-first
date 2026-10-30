@@ -58,7 +58,7 @@ def _secret():
         return s
     try:
         if os.path.exists(SECRET_FILE):
-            return open(SECRET_FILE, encoding="utf-8").read().strip()
+            return open(SECRET_FILE, encoding="utf-8-sig").read().strip()
     except Exception:
         pass
     return ""
@@ -209,6 +209,8 @@ def handle_post(handler, path):
 
 def handle_get(handler, path, qs):
     q = _qs(qs)
+    if path == "/api/customer/health":
+        return _json(handler, {"ok": True, "configured": bool(_secret()), "home": HOME})
     d = verify_token(q.get("token", ""))
     if not d:
         return _json(handler, {"ok": False, "error": "未登录或会话过期"}, 401)
