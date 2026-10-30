@@ -149,6 +149,17 @@ def parse_review(text: str) -> dict:
     return {"verdict": verdict, "findings": findings, "questions": questions}
 
 
+_SHELL_SAFE = str.maketrans({
+    "|": "／", "&": "＆", "<": "＜", ">": "＞",
+    "^": "＾", "%": "％", "!": "！",
+})
+
+
+def _shell_safe(text: str) -> str:
+    """OpenClaw 在 Windows 经 .CMD 启动，prompt 里的 cmd 元字符会被解释。"""
+    return str(text or "").translate(_SHELL_SAFE)
+
+
 def _default_consult(prompt: str, timeout: int = 90) -> dict:
     """复核专用通道：不走 consult 的 grounding/tools，避免把 diff 里的
     `$h` 之类当 URL，也避免额外工具上下文污染 JSON。
@@ -159,7 +170,7 @@ def _default_consult(prompt: str, timeout: int = 90) -> dict:
     ready, why = c._openclaw_available()
     if not ready:
         return {"text": None, "llm_ok": False, "error": "openclaw_unavailable: %s" % why}
-    raw, err = c._run_openclaw(prompt, timeout=timeout)
+    raw, err = c._run_openclaw(_shell_safe(prompt), timeout=timeout)
     if not raw:
         return {"text": None, "llm_ok": False, "error": "openclaw_review_failed: %s" % err}
     model = c.OPENCLAW_MODEL or c._openclaw_agent_model() or "agent-config"
@@ -184,6 +195,8 @@ def _run(review_id: str, payload: dict, consult_fn) -> None:
             "sources": (res or {}).get("sources") or [],
             **parsed,
         }
+        if not (res or {}).get("llm_ok"):
+            out["error"] = (res or {}).get("error") or "review_channel_failed"
     except Exception as exc:  # noqa: BLE001
         out = {"ok": False, "review_id": review_id, "status": "error",
                "read_only": True, "verdict": "degraded",
