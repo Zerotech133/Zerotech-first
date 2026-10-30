@@ -160,3 +160,12 @@ yz-substrate `refill(posterior_map={"jev.bias": fn})` 直接读取，**双方不
 - 账本：`dec_audit` 新增 `horizon`、`prob` 列（SQLite 自动迁移）；`latest.json` 可按 horizon 分组评估。
 - 弃用策略（v2 起）：字段变更先改本契约；删除字段需提前 ≥20 个交易日公告，且服务端在弃用窗口内双写。
 
+### 服务出口版本字段（2026-10-30 JEVCONTRACTVER）
+
+| 出口 | 版本字段 | v2 新增字段 |
+|---|---|---|
+| `/api/jev/query` | `schema_version="jev.v2"` | items 增加 `horizon` / `prob` |
+| MCP `jev_query` | 文本头部 `schema=jev.v2` | 同上（items 透传） |
+| 校准报告 `latest.json` | `jev_schema="v2"` | 后续可按 horizon 分组评估 |
+| 判定 JSON（news.db.jev） | 字段 `horizon`/`prob`（同时保留 `bias_probs` 副本） | — |
+

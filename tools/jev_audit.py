@@ -440,6 +440,7 @@ def build_report(conn: sqlite3.Connection, band: float) -> dict:
         })
     report = {
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "jev_schema": "v2",  # 2026-10-30 JEVCONTRACTVER：契约版本随报告落盘
         "scope": {"band_pct": band, "bench": BENCH_CODE,
                   "return_def": "T+1 close pct_chg mean; excess vs bench"},
         "judged_total": judged_total,

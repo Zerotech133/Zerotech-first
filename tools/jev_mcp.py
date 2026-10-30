@@ -131,9 +131,10 @@ def _http_get_json(path: str, params: dict[str, str]) -> dict:
 def _fmt_query(data: dict) -> str:
     sw = data.get("summary_window") or {}
     lines = [
-        "JEV 查询（近 %s 小时）：窗口内已判 %s 条（利多 %s / 利空 %s / 中性 %s），"
+        "JEV 查询（近 %s 小时，schema=%s）：窗口内已判 %s 条（利多 %s / 利空 %s / 中性 %s），"
         "本次返回 %s 条%s"
-        % (data.get("window_hours"), sw.get("total", 0), sw.get("bull", 0),
+        % (data.get("window_hours"), data.get("schema_version") or "jev.v2",
+           sw.get("total", 0), sw.get("bull", 0),
            sw.get("bear", 0), sw.get("neutral", 0), data.get("returned", 0),
            "（含 T+1 后验）" if data.get("posterior_band_pct") is not None else ""),
     ]
