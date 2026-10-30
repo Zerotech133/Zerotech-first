@@ -481,9 +481,12 @@ class Handler(BaseHTTPRequestHandler):
             else:
                 self._send_json({"ok": False, "error": "mission_page_disabled"}, 404)
             return
-        m = re.match(r"^/static/([a-z_]+\.html)$", path)
-        if m and re.fullmatch(r"[a-z_]+", m.group(1).rsplit(".", 1)[0]):
-            self._send_file(_STATIC / m.group(1), "text/html; charset=utf-8")
+        m = re.match(r"^/static/([a-z0-9_-]+\.(html|css|js))$", path)
+        if m and re.fullmatch(r"[a-z0-9_-]+", m.group(1).rsplit(".", 1)[0]):
+            _ct = {"html": "text/html; charset=utf-8",
+                   "css": "text/css; charset=utf-8",
+                   "js": "application/javascript; charset=utf-8"}[m.group(2)]
+            self._send_file(_STATIC / m.group(1), _ct)
             return
         if path.startswith("/api/ide/fs/"):
             # IDE 调试通道只读文件工具；根目录/敏感路径限制在 ide_fs 内。

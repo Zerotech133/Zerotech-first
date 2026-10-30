@@ -3,81 +3,82 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="/static/legion-tokens.css">
 <title>赵云 · 治理席</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #060F1D; font-family: -apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif; color: #E8F0F8; min-height: 100vh; }
-  header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 22px; border-bottom: 0.5px solid #1E3A5F; flex-wrap: wrap; }
+  body { background: var(--legion-bg); font-family: -apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif; color: var(--legion-text); min-height: 100vh; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 22px; border-bottom: 0.5px solid var(--legion-line); flex-wrap: wrap; }
   .brand { display: flex; align-items: center; gap: 10px; }
-  .avatar { width: 34px; height: 34px; border-radius: 10px; background: #0F2440; border: 1px solid #1D9E75; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  .avatar { width: 34px; height: 34px; border-radius: 10px; background: var(--legion-panel); border: 1px solid var(--legion-ok-strong); display: flex; align-items: center; justify-content: center; font-size: 16px; }
   h1 { font-size: 17px; font-weight: 500; }
-  .sub { font-size: 11.5px; color: #8FA8C0; }
+  .sub { font-size: 11.5px; color: var(--legion-text-dim); }
   .chips { display: flex; gap: 8px; flex-wrap: wrap; }
-  .chip { font-size: 11.5px; padding: 6px 10px; border-radius: 999px; border: 0.5px solid #1E3A5F; color: #8FA8C0; }
-  .chip b { color: #4FD1A5; font-weight: 500; }
-  .chip.warn b { color: #EF9F27; }
-  .chip.bad b { color: #E24B4A; }
-  .chip.good b { color: #4FD1A5; }
+  .chip { font-size: 11.5px; padding: 6px 10px; border-radius: 999px; border: 0.5px solid var(--legion-line); color: var(--legion-text-dim); }
+  .chip b { color: var(--legion-ok); font-weight: 500; }
+  .chip.warn b { color: var(--legion-warn); }
+  .chip.bad b { color: var(--legion-err); }
+  .chip.good b { color: var(--legion-ok); }
   main { padding: 18px 22px 26px; display: flex; flex-direction: column; gap: 14px; }
   .grid { display: grid; grid-template-columns: 1.15fr 1fr; gap: 14px; }
   @media (max-width: 980px) { .grid { grid-template-columns: 1fr; } }
-  section { background: #0A1626; border: 0.5px solid #1E3A5F; border-radius: 12px; padding: 14px 16px; }
-  section h2 { font-size: 13px; font-weight: 500; color: #E8F0F8; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
-  section h2 span { color: #5A7190; font-size: 11px; font-weight: 400; }
-  .row { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 0.5px dashed #16304F; font-size: 12.5px; }
+  section { background: var(--legion-panel-2); border: 0.5px solid var(--legion-line); border-radius: 12px; padding: 14px 16px; }
+  section h2 { font-size: 13px; font-weight: 500; color: var(--legion-text); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  section h2 span { color: var(--legion-text-muted); font-size: 11px; font-weight: 400; }
+  .row { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 0.5px dashed var(--legion-line-strong); font-size: 12.5px; }
   .row:last-child { border-bottom: 0; }
-  .row .k { color: #8FA8C0; flex: 0 0 auto; }
-  .row .v { color: #E8F0F8; text-align: right; word-break: break-all; }
+  .row .k { color: var(--legion-text-dim); flex: 0 0 auto; }
+  .row .v { color: var(--legion-text); text-align: right; word-break: break-all; }
   table { width: 100%; border-collapse: collapse; font-size: 12px; }
-  th { text-align: left; color: #5A7190; font-weight: 400; padding: 6px 6px; border-bottom: 0.5px solid #1E3A5F; }
-  td { padding: 6px 6px; border-bottom: 0.5px dashed #16304F; vertical-align: top; }
+  th { text-align: left; color: var(--legion-text-muted); font-weight: 400; padding: 6px 6px; border-bottom: 0.5px solid var(--legion-line); }
+  td { padding: 6px 6px; border-bottom: 0.5px dashed var(--legion-line-strong); vertical-align: top; }
   tr:last-child td { border-bottom: 0; }
-  .pill { display: inline-block; font-size: 10.5px; padding: 2px 8px; border-radius: 999px; border: 0.5px solid #1E3A5F; color: #8FA8C0; }
-  .pill.ok { color: #4FD1A5; border-color: #1D9E75; background: #0F2440; }
-  .pill.pend { color: #EF9F27; border-color: #7A5A1E; }
-  .muted { color: #5A7190; font-size: 11px; }
+  .pill { display: inline-block; font-size: 10.5px; padding: 2px 8px; border-radius: 999px; border: 0.5px solid var(--legion-line); color: var(--legion-text-dim); }
+  .pill.ok { color: var(--legion-ok); border-color: var(--legion-ok-strong); background: var(--legion-panel); }
+  .pill.pend { color: var(--legion-warn); border-color: var(--color-warn-bd-2); }
+  .muted { color: var(--legion-text-muted); font-size: 11px; }
   .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
   @media (max-width: 980px) { .cards { grid-template-columns: 1fr; } }
-  .card { background: #081321; border: 0.5px solid #1E3A5F; border-radius: 10px; padding: 10px 12px; }
-  .card h3 { font-size: 12px; font-weight: 500; color: #8FA8C0; margin-bottom: 6px; }
-  .card .big { font-size: 18px; color: #4FD1A5; }
-  .item { font-size: 12px; padding: 6px 0; border-bottom: 0.5px dashed #16304F; }
+  .card { background: var(--legion-bg-deep); border: 0.5px solid var(--legion-line); border-radius: 10px; padding: 10px 12px; }
+  .card h3 { font-size: 12px; font-weight: 500; color: var(--legion-text-dim); margin-bottom: 6px; }
+  .card .big { font-size: 18px; color: var(--legion-ok); }
+  .item { font-size: 12px; padding: 6px 0; border-bottom: 0.5px dashed var(--legion-line-strong); }
   .item:last-child { border-bottom: 0; }
-  .item .t { color: #E8F0F8; }
-  .item .m { color: #5A7190; font-size: 10.5px; margin-top: 3px; }
+  .item .t { color: var(--legion-text); }
+  .item .m { color: var(--legion-text-muted); font-size: 10.5px; margin-top: 3px; }
   .anchor { display: flex; flex-wrap: wrap; gap: 8px; }
-  .anchor span { font-size: 11.5px; padding: 5px 9px; border: 0.5px solid #1E3A5F; border-radius: 8px; color: #8FA8C0; }
-  .banner { display: none; margin: 0 22px; padding: 10px 14px; border-radius: 10px; background: #2A1214; border: 0.5px solid #7A2A2E; color: #F3B5B4; font-size: 12px; }
+  .anchor span { font-size: 11.5px; padding: 5px 9px; border: 0.5px solid var(--legion-line); border-radius: 8px; color: var(--legion-text-dim); }
+  .banner { display: none; margin: 0 22px; padding: 10px 14px; border-radius: 10px; background: var(--color-err-bg); border: 0.5px solid var(--color-err-bd); color: var(--color-err-text); font-size: 12px; }
 .banner[hidden] { display: none !important; }
-.banner.error { background: #2A1214; border-color: #7A2A2E; color: #F3B5B4; }
-.banner.warn { background: #2A2412; border-color: #7A6A2A; color: #F3DDB4; }
-.banner.info { background: #12202A; border-color: #2A5A7A; color: #B4D9F3; }
+.banner.error { background: var(--color-err-bg); border-color: var(--color-err-bd); color: var(--color-err-text); }
+.banner.warn { background: var(--color-warn-bg); border-color: var(--color-warn-bd); color: var(--color-warn-text); }
+.banner.info { background: var(--color-info-bg); border-color: var(--color-info-bd); color: var(--color-info-text); }
 .banner .banner-btn { margin-left: 8px; background: transparent; color: inherit; border: 0.5px solid currentColor; border-radius: 6px; padding: 2px 8px; cursor: pointer; font-size: 12px; }
 .banner .banner-btn:hover { opacity: .8; }
 .toasts { position: fixed; right: 18px; bottom: 18px; display: flex; flex-direction: column; gap: 8px; z-index: 9999; max-width: 420px; }
-.toast { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 10px; background: #2A1214; border: 0.5px solid #7A2A2E; color: #F3B5B4; font-size: 12px; box-shadow: 0 6px 24px rgba(0,0,0,.35); }
-.toast.warn { background: #2A2412; border-color: #7A6A2A; color: #F3DDB4; }
-.toast.info { background: #12202A; border-color: #2A5A7A; color: #B4D9F3; }
+.toast { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 10px; background: var(--color-err-bg); border: 0.5px solid var(--color-err-bd); color: var(--color-err-text); font-size: 12px; box-shadow: 0 6px 24px rgba(0,0,0,.35); }
+.toast.warn { background: var(--color-warn-bg); border-color: var(--color-warn-bd); color: var(--color-warn-text); }
+.toast.info { background: var(--color-info-bg); border-color: var(--color-info-bd); color: var(--color-info-text); }
 .toast .toast-msg { flex: 1; word-break: break-word; }
 .toast .toast-btn { background: transparent; color: inherit; border: 0.5px solid currentColor; border-radius: 6px; padding: 2px 8px; cursor: pointer; font-size: 12px; }
-.toast .toast-btn:focus-visible { outline: 2px solid #4FD1A5; outline-offset: 2px; }
-.banner .banner-btn:focus-visible, .panel-retry:focus-visible { outline: 2px solid #4FD1A5; outline-offset: 2px; }
-.panel-retry { margin-left: 8px; background: transparent; color: #8FA8C0; border: 0.5px solid #1E3A5F; border-radius: 6px; padding: 1px 8px; cursor: pointer; font-size: 11.5px; }
+.toast .toast-btn:focus-visible { outline: 2px solid var(--legion-ok); outline-offset: 2px; }
+.banner .banner-btn:focus-visible, .panel-retry:focus-visible { outline: 2px solid var(--legion-ok); outline-offset: 2px; }
+.panel-retry { margin-left: 8px; background: transparent; color: var(--legion-text-dim); border: 0.5px solid var(--legion-line); border-radius: 6px; padding: 1px 8px; cursor: pointer; font-size: 11.5px; }
 
-  .pending { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 10px 14px; border-radius: 10px; background: #0A1626; border: 0.5px solid #1E3A5F; color: #8FA8C0; font-size: 12.5px; }
+  .pending { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 10px 14px; border-radius: 10px; background: var(--legion-panel-2); border: 0.5px solid var(--legion-line); color: var(--legion-text-dim); font-size: 12.5px; }
   .pending b { font-weight: 500; }
-  .pending.ok { color: #4FD1A5; border-color: #1D9E75; background: #0F2440; }
-  .pending.warn { color: #F5D08A; border-color: #7A5A1E; background: #2A1F0C; }
-  .pending.bad { color: #F3B5B4; border-color: #7A2A2E; background: #2A1214; }
+  .pending.ok { color: var(--legion-ok); border-color: var(--legion-ok-strong); background: var(--legion-panel); }
+  .pending.warn { color: var(--legion-warn-accent); border-color: var(--color-warn-bd-2); background: var(--color-warn-bg-2); }
+  .pending.bad { color: var(--color-err-text); border-color: var(--color-err-bd); background: var(--color-err-bg); }
   .exp-scroll { max-height: 360px; overflow-y: auto; }
-  .exp-scroll thead th { position: sticky; top: 0; background: #0A1626; }
-  .exp-scroll td.id { color: #8FA8C0; white-space: nowrap; }
-  footer { margin-top: auto; padding: 10px 22px 16px; border-top: 0.5px solid #1E3A5F; color: #5A7190; font-size: 11px; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
-  button.refresh { border: 0.5px solid #1E3A5F; background: none; color: #8FA8C0; font-size: 12px; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-family: inherit; }
-  button.refresh:hover { color: #E8F0F8; }
+  .exp-scroll thead th { position: sticky; top: 0; background: var(--legion-panel-2); }
+  .exp-scroll td.id { color: var(--legion-text-dim); white-space: nowrap; }
+  footer { margin-top: auto; padding: 10px 22px 16px; border-top: 0.5px solid var(--legion-line); color: var(--legion-text-muted); font-size: 11px; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  button.refresh { border: 0.5px solid var(--legion-line); background: none; color: var(--legion-text-dim); font-size: 12px; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-family: inherit; }
+  button.refresh:hover { color: var(--legion-text); }
   .clickable { cursor: pointer; }
-  .clickable:hover td { background: #0F2440; }
-  input, select, button { background: #081321; color: #CFE3FF; border: 0.5px solid #1E3A5F; border-radius: 6px; padding: 3px 6px; font-family: inherit; font-size: 12px; }
+  .clickable:hover td { background: var(--legion-panel); }
+  input, select, button { background: var(--legion-bg-deep); color: var(--legion-text-strong); border: 0.5px solid var(--legion-line); border-radius: 6px; padding: 3px 6px; font-family: inherit; font-size: 12px; }
   button { cursor: pointer; }
 
     section.collapsed > :not(h2) { display: none; }
