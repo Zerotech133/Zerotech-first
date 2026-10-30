@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 19:23",
+ "generated": "2026-10-30 19:24",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 28,
+  "workorders_doing": 27,
   "workorders_review": 10
  },
  "workorders": [
@@ -344,15 +344,6 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-ZHAOYUN-UIUX-B2-20261030",
    "created": "2026-10-30 19:21:48",
-   "project": "general"
-  },
-  {
-   "id": "WO-LEGION-RDPLAN-20261030",
-   "desc": "IDE/Hermes/诸葛亮四周研发计划",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-RDPLAN-20261030",
-   "created": "2026-10-30 19:22:58",
    "project": "general"
   }
  ],
@@ -7325,11 +7316,6 @@
     {
      "id": "WO-ZHAOYUN-UIUX-B2-20261030",
      "desc": "W2-B2：cap2 13面板统一降级+聚合提示（单文件）",
-     "status": "doing"
-    },
-    {
-     "id": "WO-LEGION-RDPLAN-20261030",
-     "desc": "IDE/Hermes/诸葛亮四周研发计划",
      "status": "doing"
     }
    ]
