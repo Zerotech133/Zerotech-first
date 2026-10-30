@@ -75,3 +75,39 @@ def test_promote_rollback(tmp_path):
     assert m.status(root)["current"]["version"] == "v2"
     m.rollback_to(root, v1)
     assert m.status(root)["current"]["version"] == "v1"
+
+
+def _nested(repo):
+    h = repo / "Hermes/hermes-webui-next"
+    h.mkdir(parents=True)
+    _git(h, "init")
+    _git(h, "config", "user.email", "t@t")
+    _git(h, "config", "user.name", "t")
+    (h / "ok.py").write_text("x = 1\n", encoding="utf-8")
+    _git(h, "add", "-A")
+    _git(h, "commit", "-m", "base")
+    return h
+
+
+def test_build_blocks_dirty_baseline(tmp_path):
+    m = _load()
+    repo = _repo(tmp_path)
+    h = _nested(repo)
+    (h / "dirty.py").write_text("y = 2\n", encoding="utf-8")
+    st = m.baseline_status(repo)
+    assert st["ok"] is False and st["dirty"] is True
+    try:
+        m.build(repo=repo, release_root=tmp_path / "out")
+        raise AssertionError("should block dirty baseline")
+    except RuntimeError:
+        pass
+    res = m.build(repo=repo, release_root=tmp_path / "out", version="v-allow",
+                  allow_dirty_baseline=True)
+    assert "hermes_baseline" in res["manifest"]
+
+
+def test_baseline_absent_is_ok(tmp_path):
+    m = _load()
+    repo = _repo(tmp_path)
+    st = m.baseline_status(repo)
+    assert st["ok"] is True and st["exists"] is False

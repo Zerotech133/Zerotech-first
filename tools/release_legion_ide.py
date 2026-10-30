@@ -30,6 +30,7 @@ REPO = Path(__file__).resolve().parents[1]
 SOURCE_REL = Path("Hermes/extensions/legion-ide")
 FILES = ["app.js", "app.css", "a0-mainchat.js", "README.md"]
 DEFAULT_RELEASE_ROOT = Path(r"C:\项目\_vault\legion_ide\release\legion-ide")
+BASELINE_REL = Path("Hermes/hermes-webui-next")
 
 
 def _run(args, cwd=None):
@@ -56,8 +57,40 @@ def sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def baseline_status(repo: Path = REPO) -> dict:
+    """Hermes 基线仓（hermes-webui-next）状态：clean / upstream / head / dirty 文件。"""
+    h = Path(repo) / BASELINE_REL
+    if not (h / ".git").exists():
+        return {"exists": False, "ok": True, "dirty": False, "files": [],
+                "upstream": False, "head": "", "note": "baseline repo absent"}
+    try:
+        files = [x for x in _run(["git", "status", "--porcelain"], h).splitlines() if x.strip()]
+        remotes = [x for x in _run(["git", "remote"], h).splitlines() if x.strip()]
+        head = _run(["git", "rev-parse", "--short", "HEAD"], h).strip()
+    except RuntimeError as e:
+        return {"exists": True, "ok": False, "dirty": True, "files": [],
+                "upstream": False, "head": "", "note": str(e)[:200]}
+    upstream = "upstream" in remotes
+    return {"exists": True, "ok": (not files) and upstream, "dirty": bool(files),
+            "files": files[:20], "upstream": upstream, "remotes": remotes,
+            "head": head, "note": "" if (not files and upstream) else "baseline dirty or no upstream remote"}
+
+
+def require_clean_baseline(repo: Path = REPO) -> dict:
+    st = baseline_status(repo)
+    if not st["ok"]:
+        raise RuntimeError("Hermes 基线不干净/无 upstream，拒绝发布：%s；files=%s"
+                           % (st["note"], st.get("files")))
+    return st
+
+
 def build(repo: Path = REPO, release_root: Path = DEFAULT_RELEASE_ROOT,
-          commit: str = "HEAD", version: str | None = None) -> dict:
+          commit: str = "HEAD", version: str | None = None,
+          allow_dirty_baseline: bool = False) -> dict:
+    baseline = baseline_status(repo)
+    if not allow_dirty_baseline and not baseline["ok"]:
+        raise RuntimeError("Hermes 基线不干净/无 upstream，拒绝发布：%s；files=%s"
+                           % (baseline["note"], baseline.get("files")))
     commit_hash = git_head(repo)
     if commit == "HEAD":
         commit = commit_hash
@@ -71,6 +104,7 @@ def build(repo: Path = REPO, release_root: Path = DEFAULT_RELEASE_ROOT,
         "commit": commit,
         "built_at": dt.datetime.now().astimezone().isoformat(timespec="seconds"),
         "source_rel": SOURCE_REL.as_posix(),
+        "hermes_baseline": baseline,
         "files": {},
     }
     for name in FILES:
@@ -145,6 +179,8 @@ def main(argv=None) -> int:
     ap.add_argument("--build", action="store_true")
     ap.add_argument("--version", default="")
     ap.add_argument("--commit", default="HEAD")
+    ap.add_argument("--verify-baseline", action="store_true")
+    ap.add_argument("--allow-dirty-baseline", action="store_true")
     ap.add_argument("--verify-dir", default="")
     ap.add_argument("--verify-http", default="")
     ap.add_argument("--base", default="http://127.0.0.1:8787/extensions")
@@ -154,8 +190,12 @@ def main(argv=None) -> int:
     args = ap.parse_args(argv)
     root = Path(args.release_root)
     try:
+        if args.verify_baseline:
+            print(json.dumps({"ok": True, "baseline": baseline_status()}, ensure_ascii=False, indent=1))
+            return 0
         if args.build:
-            res = build(release_root=root, commit=args.commit, version=args.version or None)
+            res = build(release_root=root, commit=args.commit, version=args.version or None,
+                        allow_dirty_baseline=args.allow_dirty_baseline)
             print(json.dumps({"ok": True, "dir": res["dir"], "version": res["manifest"]["version"],
                               "commit": res["manifest"]["commit"]}, ensure_ascii=False))
             return 0
