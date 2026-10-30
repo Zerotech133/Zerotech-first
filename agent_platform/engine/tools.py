@@ -8,7 +8,9 @@
 - Tushare token 在 jev-eval/rotate_tushare_token.ps1 体系内，接入后可切主源
 """
 
+import glob
 import json
+import os
 import urllib.request
 
 _op = urllib.request.build_opener(urllib.request.ProxyHandler({}))  # 绕系统代理直连
@@ -24,6 +26,38 @@ def norm_symbol(code):
     return ("sh" if code[0] == "6" else "sz") + code
 
 
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+LOCAL_KLINE_DIR = os.path.join(REPO_ROOT, "quant_backtest", "data", "ashare")
+
+
+def _local_kline(code, n=30):
+    """本地 ashare parquet 回退（Tencent 501 时用）；返回与 kline_daily 同形。"""
+    try:
+        import pandas as pd
+    except ImportError:
+        return []
+    bare = str(code or "").strip().lower()
+    for p in ("sh", "sz", "bj", "."):
+        bare = bare.replace(p, "")
+    suffix = "SH" if bare.startswith("6") else ("BJ" if bare.startswith(("4", "8", "92")) else "SZ")
+    files = glob.glob(os.path.join(LOCAL_KLINE_DIR, "%s_%s.parquet" % (bare, suffix)))
+    if not files:
+        return []
+    try:
+        df = pd.read_parquet(files[0])
+        df = df.sort_values("trade_date").tail(int(n))
+    except Exception:  # noqa: BLE001
+        return []
+    out = []
+    for _, r in df.iterrows():
+        d = str(r["trade_date"])
+        if len(d) == 8:
+            d = "%s-%s-%s" % (d[:4], d[4:6], d[6:])
+        out.append([d, float(r["open"]), float(r["close"]), float(r["high"]),
+                    float(r["low"]), float(r["volume"])])
+    return out
+
+
 def kline_daily(code, n=30):
     """前复权日 K：[[date, open, close, high, low, vol, ...], ...]"""
     s = norm_symbol(code)
@@ -31,11 +65,16 @@ def kline_daily(code, n=30):
         s,
         n,
     )
-    with _op.open(u, timeout=10) as r:
-        d = json.load(r)
-    node = d["data"][s]
-    return node.get("qfqday") or node.get("day") or []
-
+    try:
+        with _op.open(u, timeout=10) as r:
+            d = json.load(r)
+        node = d["data"][s]
+        bars = node.get("qfqday") or node.get("day") or []
+        if bars:
+            return bars
+    except Exception:  # noqa: BLE001
+        pass
+    return _local_kline(code, n)
 
 def quote_snapshot(code):
     """快照：name/price/change_pct/turnover/PE/PB/总市值(亿)"""
