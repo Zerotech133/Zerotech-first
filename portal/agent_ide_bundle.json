@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 27,
+  "workorders_doing": 26,
   "workorders_review": 7
  },
  "workorders": [
@@ -308,15 +308,6 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-BANDIT-4BFINAL-20261030",
    "created": "2026-10-30 13:24:16",
-   "project": "quant"
-  },
-  {
-   "id": "WO-BANDIT-4BFINAL2-20261030",
-   "desc": "bandit收尾：B608剩余6处——固定表/内部列加nosec理由、历史tmp回收、HTML误报基线。",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-BANDIT-4BFINAL2-20261030",
-   "created": "2026-10-30 13:41:29",
    "project": "quant"
   }
  ],
@@ -7025,11 +7016,6 @@
     {
      "id": "WO-BANDIT-4BFINAL-20261030",
      "desc": "bandit收敛收口：新增HIGH B324改usedforsecurity=False；portal/auth_oidc B310接safe_urlopen；复扫确认HIGH=0。",
-     "status": "doing"
-    },
-    {
-     "id": "WO-BANDIT-4BFINAL2-20261030",
-     "desc": "bandit收尾：B608剩余6处——固定表/内部列加nosec理由、历史tmp回收、HTML误报基线。",
      "status": "doing"
     }
    ]
