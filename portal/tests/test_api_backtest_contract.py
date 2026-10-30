@@ -65,7 +65,7 @@ EXPECTED_TOP_SYMBOLS = [
     "_pulse_ago",
 ]
 
-LINE_CEILING = 2447  # 2026-10-30 B3 完成（4890→2447，页面 A 族方法迁出）；只减不增
+LINE_CEILING = 285  # 2026-10-30 B6 收口完成（730→285，作业辅助迁出）；只减不增
 
 
 def test_handler_keeps_all_methods():
