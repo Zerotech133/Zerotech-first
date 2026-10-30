@@ -84,8 +84,15 @@ def build(snap):
                 ti["trade_date"] = ti["trade_date"].astype(str)
                 ir = ti[(ti["ts_code"] == code) & (ti["trade_date"] >= c90)]
                 if len(ir):
-                    net = (ir["buy"].fillna(0) - ir["sell"].fillna(0)).sum() if "buy" in ir else None
-                    out["lhb"]["seat_net_wan"] = round(float(net), 1) if net is not None else None
+                    # P0T：tushare 的 buy/sell/net_buy 单位是「元」，对外字段是「万元」，必须 /1e4
+                    if "net_buy" in ir.columns:
+                        net_yuan = float(pd.to_numeric(ir["net_buy"], errors="coerce").fillna(0).sum())
+                    elif "buy" in ir.columns and "sell" in ir.columns:
+                        net_yuan = float((pd.to_numeric(ir["buy"], errors="coerce").fillna(0)
+                                          - pd.to_numeric(ir["sell"], errors="coerce").fillna(0)).sum())
+                    else:
+                        net_yuan = None
+                    out["lhb"]["seat_net_wan"] = round(net_yuan / 1e4, 1) if net_yuan is not None else None
                     out["lhb"]["seats"] = int(len(ir))
 
     # ---- 股东行为 ----
