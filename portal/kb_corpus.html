@@ -33,6 +33,10 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;color:#79c0ff;font-siz
 <body>
 <h1>📚 语料知识库 <small>YouTube 量化频道语料 · 本地检索问答</small></h1>
 <div class="sub" id="stats">加载中…</div>
+<div class="panel" id="govPanel" style="padding:10px 16px">
+  <div style="font-size:12px;color:var(--dim);margin-bottom:6px">数据治理状态</div>
+  <div id="gov" class="row" style="gap:8px"></div>
+</div>
 
 <div class="panel">
   <div class="row"><textarea id="q" placeholder="提问，例如：如何避免回测过拟合？walk-forward 验证怎么做？交易成本和滑点如何影响策略？"></textarea></div>
@@ -46,11 +50,25 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;color:#79c0ff;font-siz
 <div class="foot">数据：100 频道 YouTube 量化语料（标题/描述/评论）；原始包只读；PII 已脱敏。仅研究用途。</div>
 
 <script>
+function pill(txt, ok){ return '<span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:12px;border:1px solid '+(ok?'#1f6feb':'#d29922')+';background:'+(ok?'#122642':'#2a2210')+';color:'+(ok?'#79c0ff':'#d29922')+'">'+txt+'</span>'; }
+function renderGov(g){
+  const v=g.verify||{}, n=g.normalized||{}, c=g.cleaned||{}, f=g.index_full||{}, b=g.backup||{};
+  const parts=[];
+  parts.push(pill('校验 '+(v.hash_ok||0)+'/'+(v.zips||0)+' SHA256', v.hash_bad===0));
+  parts.push(pill('清洗保留 '+(c.retention_pct||'—')+'%', (c.retention_pct||0)>=90));
+  parts.push(pill('索引 '+(f.rows||'—')+' docs', (f.rows||0)>0));
+  parts.push(pill('备份 '+(b.result||'—')+' '+(b.files||'—')+' 文件', b.result==='OK'));
+  parts.push(pill(g.catalog_registered?'目录已登记':'目录未登记', !!g.catalog_registered));
+  document.getElementById('gov').innerHTML=parts.join('');
+}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
 async function loadStats(){
   try{
     const r=await fetch('/api/kb_corpus/stats',{cache:'no-store'}); const d=await r.json();
-    if(d.ok){ document.getElementById('stats').textContent='索引 '+d.rows+' chunks · dim '+d.dim+' · 更新 '+d.generated_at+' · embedding='+d.embed_model+' · chat='+d.chat_model; }
+    if(d.ok){
+      document.getElementById('stats').textContent='索引 '+d.rows+' chunks · dim '+d.dim+' · 更新 '+d.generated_at+' · embedding='+d.embed_model+' · chat='+d.chat_model;
+      renderGov(d.governance||{});
+    }
   }catch(e){ document.getElementById('stats').textContent='统计加载失败'; }
 }
 async function ask(){

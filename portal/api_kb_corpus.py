@@ -84,6 +84,55 @@ def _answer(question: str) -> dict:
                          "score": h["score"], "text": h["text"][:300]} for i, h in enumerate(hits)]}
 
 
+KB_ROOT = Path(r"C:\项目\知识库")
+REPORT = KB_ROOT / "90_报告"
+VAULT = Path(r"C:\项目\_vault\kb_corpus")
+
+
+def _read_json(p: Path):
+    try:
+        return json.loads(p.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _governance() -> dict:
+    """治理状态汇总（只读报告文件；失败字段置 None，不阻断问答）。"""
+    p0 = _read_json(REPORT / "p0_verify_report.json") or {}
+    p1 = _read_json(REPORT / "p1_export_report.json") or {}
+    p2 = _read_json(REPORT / "p2_clean_report.json") or {}
+    full = _read_json(KB_ROOT / "50_RAG" / "packed_full" / "meta.json") or {}
+    backups = []
+    try:
+        backups = sorted([d for d in VAULT.iterdir() if d.is_dir()], key=lambda x: x.name)
+    except Exception:  # noqa: BLE001
+        backups = []
+    latest = None
+    if backups:
+        rec = _read_json(backups[-1] / "receipt.json") or {}
+        latest = {"stamp": backups[-1].name, "result": rec.get("result"),
+                  "files": rec.get("total_files"), "bytes": rec.get("total_bytes")}
+    catalog_registered = False
+    try:
+        cat = Path(r"C:\项目\老田的AI助手\agent_platform\catalogs\data_catalog.yaml").read_text(encoding="utf-8")
+        catalog_registered = "youtube_quant_corpus" in cat
+    except Exception:  # noqa: BLE001
+        catalog_registered = False
+    c = p0.get("counts") or {}
+    return {
+        "verify": {"zips": c.get("zips"), "hash_ok": c.get("hash_ok"), "hash_bad": c.get("hash_bad"),
+                   "snapshots": c.get("snapshots")},
+        "normalized": {"videos": p1.get("videos"), "comments": p1.get("comments"),
+                       "channels": p1.get("channels")},
+        "cleaned": {"kept": p2.get("kept"), "retention_pct": p2.get("retention_pct"),
+                    "pii_masked": p2.get("pii")},
+        "index_full": {"rows": full.get("rows"), "dim": full.get("dim")},
+        "backup": latest,
+        "catalog_registered": catalog_registered,
+        "lineage_manifest": "agent_platform/catalogs/youtube_quant_corpus_lineage.yaml",
+    }
+
+
 def handle_get(handler, path: str, qs: str) -> None:
     try:
         if path == "/api/kb_corpus/stats":
@@ -91,7 +140,8 @@ def handle_get(handler, path: str, qs: str) -> None:
             handler._json({"ok": True, "rows": meta.get("rows"), "dim": meta.get("dim"),
                            "generated_at": meta.get("generated_at"),
                            "index": "youtube_quant_corpus/50_RAG",
-                           "embed_model": EMBED_MODEL, "chat_model": CHAT_MODEL})
+                           "embed_model": EMBED_MODEL, "chat_model": CHAT_MODEL,
+                           "governance": _governance()})
             return
         if path == "/api/kb_corpus/ask":
             q = (urllib.parse.parse_qs(qs or "").get("q") or [""])[0].strip()
