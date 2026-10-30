@@ -1518,7 +1518,7 @@ async function autoProjectContext(raw){
   if(!/项目文件夹|项目目录|目录|文件夹|项目结构|研发计划|读取项目|代码|文件/.test(raw)) return "";
   try{
     const {d} = await fetchJsonTimeout(
-      "http://127.0.0.1:8796/api/ide/context?q=" + encodeURIComponent(raw) + "&budget=8000",
+      "/openhands/api/ide/context?q=" + encodeURIComponent(raw) + "&budget=8000",
       {cache:"no-store"}, 15000, 1);
     if(d && d.ok && d.context) return d.context;
   }catch(e){}
