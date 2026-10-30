@@ -430,6 +430,14 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
             data, error = self._body_json()
             if error:
                 return self._json(400, error)
+            # Phase A：能力令牌先于 worktree 解析（避免无 cap 探测任务/先报 worktree）
+            if path in ("/api/ide/write/preview", "/api/ide/write/confirm",
+                        "/api/ide/undo", "/api/ide/exec"):
+                _ct = str(data.get("task") or "")
+                _scope = ("ide:exec:" if path == "/api/ide/exec" else "ide:write:") + _ct
+                cap_err = G.check_cap(dict(self.headers), _scope, _ct)
+                if cap_err:
+                    return self._json(403, cap_err)
             wt, error = self._ctx(data)
             if error:
                 return self._json(self._reject_code(error), error)
