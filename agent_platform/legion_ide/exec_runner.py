@@ -22,6 +22,11 @@ import sys
 import time
 from pathlib import Path
 
+try:
+    from . import exec_sandbox as S
+except ImportError:  # 直接以脚本目录导入
+    import exec_sandbox as S
+
 MAX_OUTPUT = 256 * 1024
 DEFAULT_TIMEOUT = 120
 SHELL_META = (";", "&", "|", ">", "<", "`", "$(", "\n", "\r")
@@ -178,13 +183,10 @@ def run(worktree: Path, command: str, timeout: int = DEFAULT_TIMEOUT) -> dict:
     argv = check["argv"]
     t0 = time.time()
     try:
-        proc = subprocess.run(
+        # 2026-10-30 P0：Job Object 进程树隔离（超时整树终止；非 Windows fail-soft）。
+        proc = S.run(
             argv,
             cwd=str(worktree),
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
             timeout=max(1, int(timeout)),
             env=_clean_env(Path(worktree)),
         )
@@ -204,4 +206,5 @@ def run(worktree: Path, command: str, timeout: int = DEFAULT_TIMEOUT) -> dict:
         "truncated": truncated,
         "duration_ms": int((time.time() - t0) * 1000),
         "command": command,
+        "isolation": getattr(proc, "isolation", "subprocess"),
     }

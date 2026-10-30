@@ -257,7 +257,7 @@ def test_exec_run_ok(monkeypatch, tmp_path):
         stdout = "ok\n"
         stderr = ""
 
-    monkeypatch.setattr(X.subprocess, "run", lambda *a, **k: P())
+    monkeypatch.setattr(X.S, "run", lambda *a, **k: P())
     res = X.run(wt, "git status")
     assert res["ok"] and res["exit_code"] == 0 and "ok" in res["output"]
 
@@ -268,7 +268,7 @@ def test_exec_timeout(monkeypatch, tmp_path):
     def boom(*a, **k):
         raise subprocess.TimeoutExpired(cmd="git", timeout=1)
 
-    monkeypatch.setattr(X.subprocess, "run", boom)
+    monkeypatch.setattr(X.S, "run", boom)
     res = X.run(wt, "git status", timeout=1)
     assert res["ok"] is False and res["error"] == "timeout"
 
