@@ -67,6 +67,8 @@ class Client:
 
 def _serve(repo, monkeypatch):
     monkeypatch.setenv("IDE_RW", "on")
+    # 审计修复 2026-10-31：测试隔离宿主 cap key（否则 write/preview 403）
+    monkeypatch.setenv("LEGION_CAP_KEY_FILE", str(Path(repo) / "no_such_cap.key"))
     httpd = L.create_server("127.0.0.1", 0, repo=repo,
                             portal_url="http://127.0.0.1:59999", bundle_path=None)
     threading.Thread(target=httpd.serve_forever, daemon=True).start()
