@@ -42,3 +42,12 @@ def test_login_honors_next_redirect():
     assert "URLSearchParams(location.search)" in html
     assert "location.replace(next)" in html
     assert "cand.charAt(1) !== '/'" in html
+
+
+def test_login_oidc_entry():
+    html = (PORTAL / "login.html").read_text(encoding="utf-8")
+    assert 'id="oidc-entry"' in html
+    assert 'id="oidc-login"' in html
+    assert "/api/auth/oidc/status" in html
+    assert "/api/auth/oidc/start?next=" in html
+    assert "Pocket ID" in html
