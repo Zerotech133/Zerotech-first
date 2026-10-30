@@ -49,6 +49,30 @@ def _handler_methods(source: str):
     return {}
 
 
+def table_exact_routes(path) -> list:
+    """解析 portal/route_table.py 的 _GET_EXACT_* 字典键（B4a 表化后路由仍在）。"""
+    p = Path(path)
+    if not p.is_file():
+        return []
+    try:
+        tree = ast.parse(p.read_text(encoding="utf-8"))
+    except (OSError, SyntaxError):
+        return []
+    routes = []
+    for node in tree.body:
+        if not isinstance(node, ast.Assign) or len(node.targets) != 1:
+            continue
+        t = node.targets[0]
+        if not (isinstance(t, ast.Name) and t.id.startswith("_GET_EXACT_")):
+            continue
+        if not isinstance(node.value, ast.Dict):
+            continue
+        for k in node.value.keys:
+            if isinstance(k, ast.Constant) and isinstance(k.value, str):
+                routes.append(k.value)
+    return routes
+
+
 def extract_routes(source: str) -> dict:
     """纯函数：从源码提取路由清单。
 
@@ -154,6 +178,16 @@ def main(argv=None) -> int:
         print("source 不存在: %s" % src_path, file=sys.stderr)
         return 1
     inv = extract_routes(src_path.read_text(encoding="utf-8"))
+    # B4a：把 route_table.py 中已表化的 GET exact 路由并入清单（否则会误报"丢失路由"）
+    _tbl = src_path.parent / "route_table.py"
+    if _tbl.is_file():
+        have = {x["route"] for x in inv["GET"]["exact"]}
+        for route in table_exact_routes(_tbl):
+            if route not in have:
+                inv["GET"]["exact"].append({"route": route, "kind": "exact", "line": 0})
+                have.add(route)
+        inv["GET"]["exact"].sort(key=lambda x: x["route"])
+        inv["total"] = sum(len(inv[m][k]) for m in ("GET", "POST") for k in ("exact", "prefix"))
     sigs = signatures(inv)
 
     if args.write_baseline:
