@@ -22,7 +22,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PY = sys.executable or "python"
-DEFAULT_LOG_DIR = Path(os.environ.get("TEMP") or r"C:\Temp")
+# 日志固定落 C:\Temp（与仓库长跑落盘约定一致；%TEMP% 因用户环境而异，不便于巡检/归档）。
+# 需要时用 HUANGZHONG_REFRESH_LOG_DIR 覆盖（测试/迁移用）。
+DEFAULT_LOG_DIR = Path(os.environ.get("HUANGZHONG_REFRESH_LOG_DIR") or r"C:\Temp")
 
 
 def _run(cmd: list[str], cwd: Path, runner=None) -> dict:
