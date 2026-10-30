@@ -291,6 +291,15 @@ def me(handler) -> None:
     _json_safe(handler, _session_payload(rec))
 
 
+def guard(handler) -> None:
+    """供 nginx auth_request 使用：有效 session → 200；否则 401。只读。"""
+    rec = STORE.get(_cookie_value(handler))
+    if not rec:
+        _json_safe(handler, {"ok": False, "error": "unauthorized"}, 401)
+        return
+    _json_safe(handler, {"ok": True, "sub": rec["sub"], "read_only": True})
+
+
 def status(handler) -> None:
     rec = STORE.get(_cookie_value(handler))
     _json_safe(handler, {"ok": True, "authenticated": bool(rec), "sub": rec["sub"] if rec else None})
@@ -302,6 +311,9 @@ def handle_get(handler, path: str) -> None:
         return
     if path == "/api/auth/status":
         status(handler)
+        return
+    if path == "/api/auth/guard":
+        guard(handler)
         return
     _json_safe(handler, {"ok": False, "error": "not_found"}, 404)
 
