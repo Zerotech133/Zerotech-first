@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 20:52",
+ "generated": "2026-10-30 20:59",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 27,
+  "workorders_doing": 29,
   "workorders_review": 9
  },
  "workorders": [
@@ -336,6 +336,24 @@
    "branch": "task/K-ORG-20261030-LOCALADMIN",
    "created": "2026-10-30 20:51:00",
    "project": "portal"
+  },
+  {
+   "id": "WO-ZHAOYUN-UIUX-B3-20261030",
+   "desc": "W2-B3：12处动作alert→toast（单文件+回归检查）",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-ZHAOYUN-UIUX-B3-20261030",
+   "created": "2026-10-30 20:56:12",
+   "project": "general"
+  },
+  {
+   "id": "WO-GUANYU-P91-20261030",
+   "desc": "ACAD1零重启接入工单",
+   "status": "doing",
+   "owner": "GUANYU",
+   "branch": "task/WO-GUANYU-P91-20261030",
+   "created": "2026-10-30 20:57:48",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -6639,7 +6657,14 @@
    ],
    "experience": "30 年工程治理经验：漏洞分级与补丁流程、失败测试基线修复、编码规范与门禁落地、技术债清欠与重复功能合并；证据驱动、逐项闭环，只出报告与工单不自行合并，开发动作限独立 worktree 提交+跑测试并交 L2 人签。",
    "dept_name": "研究院",
-   "dept_cn_title": "太学"
+   "dept_cn_title": "太学",
+   "tasks": [
+    {
+     "id": "WO-GUANYU-P91-20261030",
+     "desc": "ACAD1零重启接入工单",
+     "status": "doing"
+    }
+   ]
   },
   "HUANGZHONG": {
    "id": "HUANGZHONG",
@@ -7302,6 +7327,11 @@
     {
      "id": "WO-LEGION-OIDC-PATH-20261030",
      "desc": "OIDC配置路径对齐实际vault",
+     "status": "doing"
+    },
+    {
+     "id": "WO-ZHAOYUN-UIUX-B3-20261030",
+     "desc": "W2-B3：12处动作alert→toast（单文件+回归检查）",
      "status": "doing"
     }
    ]
