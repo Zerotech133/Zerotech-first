@@ -37,6 +37,8 @@ except Exception as exc:
 import psycopg2
 import psycopg2.extras
 
+from tools.sql_guard import safe_identifier
+
 # ── 常量 ──────────────────────────────────────────────────────────────
 MAIN_SCHEMA = "xmap"
 TEST_SCHEMA = "xmap_test"
@@ -165,6 +167,7 @@ CREATE TABLE IF NOT EXISTS {s}.sync_watermark (
 
 
 def create_objects(cur, schema):
+    schema = safe_identifier(schema, {"xmap", "xmap_test"}, "schema")
     cur.execute(DDL_TEMPLATE.format(s=schema))
 
 
@@ -233,6 +236,7 @@ def align_rows(rows, securities):
 
 # ── 写库：entity_map upsert + map_audit 记账 ──────────────────────────
 def upsert_entity(cur, schema, m, entity_type="stock", actor="xmap_sync"):
+    schema = safe_identifier(schema, {"xmap", "xmap_test"}, "schema")
     """原子 upsert（复盘 A2）：单条 CTE 完成「读旧行 → INSERT ON CONFLICT
     DO UPDATE → 取回新行」，消除先 SELECT 后 UPDATE 的并发竞态窗口；
     audit 记账行为与原实现逐字段一致（insert/update 双动作 + old/new 留痕）。
@@ -240,14 +244,13 @@ def upsert_entity(cur, schema, m, entity_type="stock", actor="xmap_sync"):
     注意：不可在此再加 FOR UPDATE——同一语句内 ON CONFLICT 改过的元组
     带当前命令 ID，对自身快照不可见，FOR UPDATE 顺链后会整行丢失
     （2026-10-10 探针实锤）；行锁由 ON CONFLICT DO UPDATE 原子持有。"""
-    cur.execute(
-        f"""  # nosec B608 - 值参数化/内部标识符（已抽查）
+    sql = """
         WITH prev AS (
             SELECT id, to_jsonb(t) AS old_row
-            FROM {schema}.entity_map t
+            FROM __SCHEMA__.entity_map t
             WHERE entity_type=%s AND src_system=%s AND src_ns=%s AND src_id=%s
         ), up AS (
-            INSERT INTO {schema}.entity_map
+            INSERT INTO __SCHEMA__.entity_map
                 (entity_type, src_system, src_ns, src_id, dst_system, dst_ns,
                  dst_id, match_method, confidence, status, src_payload)
             VALUES (%s, 'rookie', '', %s, 'lingjie', '', %s, %s, %s, %s, %s)
@@ -262,7 +265,10 @@ def upsert_entity(cur, schema, m, entity_type="stock", actor="xmap_sync"):
         )
         SELECT up.id, up.is_insert, up.new_row, prev.old_row
         FROM up LEFT JOIN prev ON true
-        """,
+        """
+    sql = sql.replace("__SCHEMA__", schema)
+    cur.execute(
+        sql,
         (
             entity_type,
             "rookie",
