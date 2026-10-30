@@ -97,13 +97,13 @@
     "methods": ["portal_confirm", "feishu_card", "cli_approve"],
     "timeout_action": "expire_to_watch",
     "human_can": ["pause", "resume", "kill", "override_price", "reject"],
+    "profile_selection": "人工确认时选择：aggressive 激进 / balanced 平衡 / conservative 保守",
     "kill_switch": "PAPER_KILL env 或 agent_platform/data/paper/KILL 文件",
     "audit": "dev_events + decision_audit + paper ledger",
     "note": "未来接真实交易所时，人工门默认强制；paper 阶段可配置自动通过，但保留入口"
   },
   "handoffs": [
-    {"from": "select", "to": "research", "contract": "recommendation_pool/latest.json"},
-    {"from": "research", "to": "plan", "contract": "team_invest decision + structured"},
+    {"from": "select", "to": "research", "contract": "recommendation_pool/latest.json"},    {"from": "research", "to": "plan", "contract": "team_invest decision + structured"},
     {"from": "plan", "to": "watch", "contract": "watch_plan/触发价+止损价"},
     {"from": "watch", "to": "human_confirm", "contract": "QUANT_UPSTREAM_REPORT"},
     {"from": "human_confirm", "to": "execute", "contract": "approved_order"},
