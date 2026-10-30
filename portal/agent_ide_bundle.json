@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 27,
+  "workorders_doing": 26,
   "workorders_review": 7
  },
  "workorders": [
@@ -290,15 +290,6 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-PIPAUDIT-OSV-20261030",
    "created": "2026-10-30 15:00:01",
-   "project": "general"
-  },
-  {
-   "id": "K-ORG-20261030-LOCKYIELD",
-   "desc": "锁所有权丢失时：若持锁方是 M3 立即让位（避免 hourly 反复重抢拖慢）",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-ORG-20261030-LOCKYIELD",
-   "created": "2026-10-30 15:01:51",
    "project": "general"
   },
   {
