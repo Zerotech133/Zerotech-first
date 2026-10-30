@@ -260,6 +260,22 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                 page = static_dir / "ide_rw.html"
                 if not page.is_file():
                     return self._json(503, {"ok": False, "error": "rw_page_missing"})
+                # v6 P0b：页面本身也不做匿名直连入口；需本地 token 或门户身份
+                _lt = G.local_token()
+                if _lt:
+                    from urllib.parse import parse_qs as _pq
+                    _qs = _pq(urlparse(self.path).query)
+                    _provided = str((_qs.get("token") or [""])[0] or "").strip()
+                    if not _provided:
+                        _provided = str(G.parse_cookies(self.headers.get("Cookie") or "").get("ide_local_token") or "").strip()
+                    if not _provided:
+                        _provided = str(self.headers.get("X-IDE-Token") or "").strip()
+                    _identity = G.auth_identity(dict(self.headers))
+                    if _provided != _lt and not _identity.get("sub"):
+                        return self._json(401, G.err(
+                            "local_token_required",
+                            "直连 /rw 需本地 token（/rw?token=...）或门户登录",
+                        ))
                 token, _owner = G.new_session(headers=dict(self.headers))
                 # A1：带 ?token=... 或 X-IDE-Token 时种 ide_local_token cookie（启用本地准入后写/执行需要）
                 qs = parse_qs(urlparse(self.path).query)

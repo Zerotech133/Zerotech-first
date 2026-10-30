@@ -59,6 +59,24 @@ def _cap_token():
     return m
 
 
+def _hermes_ok(headers: dict) -> bool:
+    """8787 直连场景：Hermes 密码会话本身是有效凭证；经 /api/auth/status 校验。"""
+    sid = _cookie(headers, "hermes_session")
+    if not sid:
+        return False
+    try:
+        req = urllib.request.Request(
+            "http://127.0.0.1:8787/api/auth/status",
+            headers={"Cookie": "hermes_session=" + sid},
+        )
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        with opener.open(req, timeout=2) as r:
+            data = json.loads(r.read().decode("utf-8", "replace"))
+        return bool(data.get("logged_in") or data.get("trusted_auth_enabled"))
+    except (OSError, ValueError, urllib.error.URLError):
+        return False
+
+
 def _cap_ok(headers: dict) -> bool:
     token = str(headers.get("X-ZB-Cap") or "").strip() or _cookie(headers, "zbcap")
     if not token:
@@ -83,7 +101,7 @@ def authorize(headers: dict):
     """返回 None=放行；否则返回 err dict。"""
     if not enabled():
         return None
-    if _portal_ok(headers) or _cap_ok(headers):
+    if _portal_ok(headers) or _cap_ok(headers) or _hermes_ok(headers):
         return None
     return {"ok": False, "error": "oh_auth_required",
             "message": "OH 写/执行需要门户登录 session 或 run:execute 能力令牌"}
