@@ -1250,6 +1250,27 @@ class Handler(BaseHTTPRequestHandler):
             )
             self._send_json(res, 200 if res.get("ok") else 502)
             return
+        if path == "/api/ide/orchestrate":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 64 * 1024:
+                    raise ValueError("bad_length")
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+            except (ValueError, UnicodeDecodeError):
+                self._send_json({"ok": False, "error": "bad_json"}, 400)
+                return
+            if not isinstance(req, dict):
+                self._send_json({"ok": False, "error": "bad_body"}, 400)
+                return
+            from legion_command import hermes_orchestrator
+            res = hermes_orchestrator.orchestrate(
+                str(req.get("message") or ""),
+                task=str(req.get("task") or ""),
+                model=str(req.get("model") or ""),
+                agent=str(req.get("agent") or ""),
+            )
+            self._send_json(res, 200 if res.get("ok") else 502)
+            return
         if path in ("/api/ide/openhands/start", "/api/ide/openhands/interrupt",
                     "/api/ide/openhands/respond",
                     "/api/ide/openhands/sessions/delete"):
