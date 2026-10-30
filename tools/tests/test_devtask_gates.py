@@ -19,8 +19,9 @@ def test_cigates_gates_registered():
     assert names[-3:] == ["语法门", "导入边界", "元数据一致性"]
 
 
-def test_metadata_known_warn_only_contains_registry_sha():
-    assert "registry_catalog_sha_mismatch" in devtask.KNOWN_META_WARN_ONLY
+def test_metadata_known_warn_only_empty_after_registry_rebuild():
+    """2026-10-30 P77：数据线已重建 registry，已知告警豁免应清空（元数据门全阻断）。"""
+    assert devtask.KNOWN_META_WARN_ONLY == set()
 
 
 def test_gate_callables_have_expected_signature():

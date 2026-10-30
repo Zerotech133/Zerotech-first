@@ -306,7 +306,8 @@ def _ui_audit_gate(branch, worktree=""):
     except Exception as exc:  # noqa: BLE001 —— 审计异常不得反噬合并
         return True, "审计异常（不阻断）：%s" % str(exc)[:120]
 
-KNOWN_META_WARN_ONLY = {"registry_catalog_sha_mismatch"}  # 数据线 registry 重建后移除
+# 2026-10-30 P77：数据线已重建 registry（metadata code=0），移除已知告警豁免 → 元数据门全阻断。
+KNOWN_META_WARN_ONLY: set[str] = set()
 
 
 def _syntax_gate(branch, worktree=""):
@@ -352,6 +353,7 @@ def _metadata_gate(branch, worktree=""):
         issues = [str(x) for x in (d.get("issues") or [])]
         known = [x for x in issues if x in KNOWN_META_WARN_ONLY]
         blocking = [x for x in issues if x not in KNOWN_META_WARN_ONLY]
+        # 2026-10-30 P77 起 KNOWN_META_WARN_ONLY 为空 → 任何 issue 均阻断。
         if r.returncode == 0:
             return True, detail
         if known and not blocking:
