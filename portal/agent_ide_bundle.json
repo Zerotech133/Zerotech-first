@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 17:01",
+ "generated": "2026-10-30 17:03",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -10,7 +10,7 @@
   "prompt_miss": [],
   "name_collisions": {},
   "workorders_doing": 27,
-  "workorders_review": 9
+  "workorders_review": 8
  },
  "workorders": [
   {
@@ -309,15 +309,6 @@
    "branch": "task/WO-LEGION-AUDIT-LOGINLINK-20261030",
    "created": "2026-10-30 16:41:37",
    "project": "general"
-  },
-  {
-   "id": "K-STOCK-ANALYSIS-P2-20261030",
-   "desc": "P2 商业化底座：license签发/校验(HMAC)、租户隔离目录、配额计费、审计日志、CLI+测试",
-   "status": "review",
-   "owner": "DSH-Lead",
-   "branch": "task/K-STOCK-ANALYSIS-P2-20261030",
-   "created": "2026-10-30 16:56:03",
-   "project": "quant"
   },
   {
    "id": "WO-LEGION-AUDIT-P2FIX-20261030",
