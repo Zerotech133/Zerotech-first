@@ -5,7 +5,9 @@
 """
 from __future__ import annotations
 
+import ast
 import re
+import time
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
@@ -82,6 +84,105 @@ def repo_map() -> dict:
             "dirs": dict(sorted(dirs.items(), key=lambda kv: -kv[1]))}
 
 
+_SYMBOL_CACHE: dict[tuple[str, float], list[dict]] = {}
+_SYMBOL_CACHE_TS = 0.0
+_SYMBOL_CACHE_TTL = 120.0
+
+
+def _file_symbols(p: Path, rel: str, mtime: float) -> list[dict]:
+    key = (rel, mtime)
+    cached = _SYMBOL_CACHE.get(key)
+    if cached is not None:
+        return cached
+    try:
+        text = p.read_text(encoding="utf-8", errors="replace")
+        tree = ast.parse(text, filename=rel)
+    except (OSError, SyntaxError, ValueError):
+        _SYMBOL_CACHE[key] = []
+        return []
+    out = []
+
+    def add(node, prefix=""):
+        name = prefix + getattr(node, "name", "")
+        if not name:
+            return
+        kind = "class" if isinstance(node, ast.ClassDef) else "function"
+        out.append({"path": rel, "name": name, "kind": kind,
+                    "line": int(getattr(node, "lineno", 0))})
+
+    for node in tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            add(node)
+        elif isinstance(node, ast.ClassDef):
+            add(node)
+            for sub in node.body:
+                if isinstance(sub, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    add(sub, node.name + ".")
+    _SYMBOL_CACHE[key] = out
+    return out
+
+
+def symbol_index(limit_files: int = 2500) -> dict:
+    global _SYMBOL_CACHE_TS
+    now = time.time()
+    if now - _SYMBOL_CACHE_TS > _SYMBOL_CACHE_TTL:
+        _SYMBOL_CACHE.clear()
+        _SYMBOL_CACHE_TS = now
+    symbols = []
+    files = 0
+    for p, rel, _size in _iter_files():
+        if p.suffix.lower() != ".py":
+            continue
+        files += 1
+        if files > limit_files or len(symbols) > 20000:
+            break
+        try:
+            mtime = p.stat().st_mtime
+        except OSError:
+            continue
+        symbols.extend(_file_symbols(p, rel, mtime))
+    return {"files": files, "symbols": len(symbols), "items": symbols}
+
+
+def search_symbols(query: str, limit: int = 20) -> list[dict]:
+    """先按查询词预筛文件，再只解析命中文件，避免全仓 AST 扫描。"""
+    ts = _terms(query)
+    if not ts:
+        return []
+    hits = []
+    scanned = 0
+    for p, rel, _size in _iter_files():
+        if p.suffix.lower() != ".py":
+            continue
+        try:
+            text = p.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        low = text.lower()
+        if not any(t in low for t in ts):
+            continue
+        scanned += 1
+        if scanned > 200:
+            break
+        try:
+            mtime = p.stat().st_mtime
+        except OSError:
+            continue
+        for sym in _file_symbols(p, rel, mtime):
+            name = str(sym.get("name") or "").lower()
+            path = str(sym.get("path") or "").lower()
+            score = 0
+            for t in ts:
+                if t in name:
+                    score += 10
+                if t in path:
+                    score += 2
+            if score:
+                hits.append({**sym, "score": score})
+    hits.sort(key=lambda h: (-h["score"], h["line"]))
+    return hits[: max(1, min(int(limit), 50))]
+
+
 def search(query: str, limit: int = 12) -> list[dict]:
     ts = _terms(query)
     if not ts:
@@ -115,12 +216,24 @@ def build_context(query: str, budget_chars: int = 8000) -> dict:
     budget_chars = max(1000, min(int(budget_chars or 8000), 30000))
     m = repo_map()
     hits = search(query, 12)
+    syms = search_symbols(query, 12)
     head = ("[IDE repo map]\n"
             "根目录: " + ", ".join("%s(%d)" % (k, v) for k, v in m["dirs"].items())
             + "\n文件 %d 个 / %.1f KB\n" % (m["files"], m["bytes"] / 1024.0))
     parts = [head]
     used = len(head)
     omitted = 0
+    if syms:
+        sym_lines = ["\n[Python symbols · AST]"]
+        for s in syms:
+            sym_lines.append("- %s %s:%s %s" % (s.get("kind"), s.get("path"),
+                                                 s.get("line"), s.get("name")))
+        block = "\n".join(sym_lines) + "\n"
+        if used + len(block) <= budget_chars:
+            parts.append(block)
+            used += len(block)
+        else:
+            omitted += 1
     for h in hits:
         block = "\n### %s (score=%d, line=%d)\n%s\n" % (
             h["path"], h["score"], h["line"], h["snippet"])
@@ -133,5 +246,6 @@ def build_context(query: str, budget_chars: int = 8000) -> dict:
         parts.append("\n[context compressed] 另有 %d 个命中因预算省略；如需请指定文件。\n" % omitted)
     context = "".join(parts)
     return {"ok": True, "query": str(query or ""), "repo": m, "hits": hits,
+            "symbols": syms,
             "context": context, "chars": len(context), "budget": budget_chars,
             "truncated": omitted > 0 or len(context) > budget_chars}
