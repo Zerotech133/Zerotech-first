@@ -99,7 +99,10 @@
               <div class="legion-ide-row">
                 <input id="legion-ide-snippet-path" placeholder="文件路径，例如 agent_platform/foo.py">
                 <button id="legion-ide-snippet-load">读取</button>
+                <button id="legion-ide-snippet-browse">浏览</button>
               </div>
+              <div id="legion-ide-snippet-cwd" class="legion-ide-snippet-cwd">.</div>
+              <div id="legion-ide-snippet-files" class="legion-ide-snippet-files"></div>
               <textarea id="legion-ide-snippet-text" readonly placeholder="读取文件后，用鼠标选中要引用的代码"></textarea>
               <div class="legion-ide-actions">
                 <button id="legion-ide-snippet-insert">插入选中</button>
@@ -489,6 +492,44 @@ async function loadSnippet() {
   }
 }
 
+async function browseFiles(path) {
+  const cwdEl = $("#legion-ide-snippet-cwd");
+  const listEl = $("#legion-ide-snippet-files");
+  const info = $("#legion-ide-snippet-info");
+  if (!listEl) return;
+  const p = String(path || ".").trim() || ".";
+  if (info) info.textContent = "读取目录…";
+  try {
+    const d = await api("/api/ide/fs/list?path=" + encodeURIComponent(p));
+    const items = (d.items || []).slice().sort((a, b) => {
+      if (a.type !== b.type) return a.type === "dir" ? -1 : 1;
+      return String(a.name).localeCompare(String(b.name));
+    });
+    if (cwdEl) cwdEl.textContent = p;
+    listEl.innerHTML = "";
+    if (p !== ".") {
+      const up = el("button", "legion-ide-file dir", "..");
+      up.addEventListener("click", () => browseFiles(p.split("/").slice(0, -1).join("/") || "."));
+      listEl.appendChild(up);
+    }
+    items.forEach((it) => {
+      const b = el("button", "legion-ide-file " + (it.type === "dir" ? "dir" : "file"),
+        (it.type === "dir" ? "📁 " : "📄 ") + it.name);
+      b.title = it.path;
+      b.addEventListener("click", () => {
+        if (it.type === "dir") { browseFiles(it.path); return; }
+        const pe = $("#legion-ide-snippet-path");
+        if (pe) pe.value = it.path;
+        loadSnippet();
+      });
+      listEl.appendChild(b);
+    });
+    if (info) info.textContent = items.length + " 项";
+  } catch (e) {
+    if (info) info.textContent = "目录失败：" + e.message;
+  }
+}
+
 function insertSnippet() {
   const ta = $("#legion-ide-snippet-text");
   const info = $("#legion-ide-snippet-info");
@@ -712,6 +753,7 @@ async function loadDiff(task) {
     $("#legion-ide-context").onclick = loadContext;
     $("#legion-ide-new-session").onclick = newSession;
     $("#legion-ide-snippet-load").onclick = loadSnippet;
+    $("#legion-ide-snippet-browse").onclick = () => browseFiles($("#legion-ide-snippet-path").value || ".");
     $("#legion-ide-snippet-insert").onclick = insertSnippet;
     $("#legion-ide-old-pick").onclick = openOldPicker;
     renderSessions();
