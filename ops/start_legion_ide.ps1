@@ -27,7 +27,8 @@ param(
     [string]$LogFile = "C:\Temp\legion_ide_launcher.log",
     [string]$Bundle = "",
     [switch]$EnableWrite,
-    [string]$LocalTokenFile = ""
+    [string]$LocalTokenFile = "",
+    [switch]$EnableCap
 )
 
 function Write-LaunchLog([string]$Message) {
@@ -84,6 +85,7 @@ switch ($Action) {
         if ($bundlePath) { $cmd += ' --bundle "' + $bundlePath + '"' }
         if ($EnableWrite) { $cmd += ' --rw' }   # WMI 不继承 env：显式传参
         if ($LocalTokenFile) { $cmd += ' --local-token-file "' + $LocalTokenFile + '"' }
+        if ($EnableCap) { $cmd += ' --cap-enabled' }
         try {
             $r = Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{
                 CommandLine = $cmd; CurrentDirectory = $Repo
@@ -103,6 +105,7 @@ switch ($Action) {
         if ($bundlePath) { $argsList += @("--bundle", "`"$bundlePath`"") }
         if ($EnableWrite) { $argsList += @("--rw") }   # WMI 不继承 env：显式传参
         if ($LocalTokenFile) { $argsList += @("--local-token-file", "`"$LocalTokenFile`"") }
+        if ($EnableCap) { $argsList += @("--cap-enabled") }
         Start-Process -FilePath $Python -ArgumentList $argsList `
             -WorkingDirectory $Repo -WindowStyle Hidden
         Write-LaunchLog "STARTED legion-ide (Start-Process fallback) port=$Port bundle=$bundlePath IDE_RW=$($env:IDE_RW)"
