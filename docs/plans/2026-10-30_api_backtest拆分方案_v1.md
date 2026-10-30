@@ -106,3 +106,16 @@ portal/backtest/bt_api.py       # JSON API 方法（_sa_results/_sa_start/_algo_
 - 验证：契约 5/5、分钟测试 98 passed、portal 339 passed（1 known flaky）、ruff 净、mixin 零 diff、`check_portal_split` PASS。
 
 阶段进度：B0 ✅ / B1 ✅ / B2 ✅；下一步 B3（页面渲染方法：report/ind/lhb/seat/stock 等）。
+
+## 十一、B3 完成记录（2026-10-30，P70）
+
+- **api_backtest.py 4,890 → 2,447 行（-2,443）**；契约上限同步下调至 2,447；
+- 新模块：`portal/api_backtest_pages_a.py`（2,520 行）——10 个页面方法纯移动：
+  `_bt_sectors/_bt_report_page/_bt_ind_drill_page/_bt_lhb_page/_bt_seat_page/_bt_stock_page/_bt_stock_form/_bt_jev/_bt_brief/_bt_news`；
+- Handler 保留同名**委托方法**（懒导入 `api_backtest_pages_a`，方法体零改动、签名首参 `self` 不变）；
+  依赖仅 api_common + api_backtest 的 `_bt_jev_news/_bt_resolve`（运行时导入，无循环）；
+- 门禁同步：契约上限 2,447；mixin 基线显式重建（funcs 424→435；handlers 185 不变）；
+- 验证：契约 5/5；portal **347 passed**（1 known flaky）；ruff 净；mixin 零 diff；`check_portal_split` PASS
+  （pages_a 2,520 行 >1,200 属建议项 WARN，随 B6 收口再拆）。
+
+阶段进度：B0 ✅ / B1 ✅ / B2 ✅ / B3 ✅；剩余 Handler 约 1,100 行（页面 B 族 + JSON API）→ B4/B5 → B6 收口 ≤300 行。
