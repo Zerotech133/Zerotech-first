@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 19:38",
+ "generated": "2026-10-30 19:39",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,8 +9,8 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 26,
-  "workorders_review": 10
+  "workorders_doing": 27,
+  "workorders_review": 9
  },
  "workorders": [
   {
@@ -329,12 +329,12 @@
    "project": "general"
   },
   {
-   "id": "WO-LEGION-W1AUTH-20261030",
-   "desc": "W1-1 IDE认证边界修复",
-   "status": "review",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-W1AUTH-20261030",
-   "created": "2026-10-30 19:31:11",
+   "id": "K-ORG-20261030-JEVCONTRACTVER",
+   "desc": "契约版本化：latest.json/API/MCP 响应带 schema 版本与 v2 字段，契约文档补出口约定",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-ORG-20261030-JEVCONTRACTVER",
+   "created": "2026-10-30 19:38:47",
    "project": "general"
   }
  ],
@@ -7296,11 +7296,6 @@
      "id": "WO-LEGION-OIDC-PATH-20261030",
      "desc": "OIDC配置路径对齐实际vault",
      "status": "doing"
-    },
-    {
-     "id": "WO-LEGION-W1AUTH-20261030",
-     "desc": "W1-1 IDE认证边界修复",
-     "status": "review"
     }
    ]
   }
