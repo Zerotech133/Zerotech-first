@@ -197,15 +197,15 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
             )
 
         def _html(self, body: bytes, session_token: str | None = None,
-                  extra_cookie: str = "") -> None:
+                  extra_cookies: list | None = None) -> None:
             headers = []
             if session_token:
                 headers.append(("Set-Cookie", (
                     "ide_session=%s; HttpOnly; SameSite=Strict; Path=/"
                     % session_token
                 )))
-            if extra_cookie:
-                headers.append(("Set-Cookie", extra_cookie))
+            for c in extra_cookies or []:
+                headers.append(("Set-Cookie", c))
             self._send(200, body, _HTML_CT, headers)
 
         def _body_json(self):
@@ -265,13 +265,12 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                 hdr = str(self.headers.get("X-IDE-Token") or "").strip()
                 lt = G.local_token()
                 cap_want = str((qs.get("cap") or [""])[0] or "").strip()
-                extra = ""
+                extras = []
                 if lt and (want == lt or hdr == lt):
-                    extra = ("ide_local_token=%s; HttpOnly; SameSite=Strict; Path=/" % lt)
+                    extras.append("ide_local_token=%s; HttpOnly; SameSite=Strict; Path=/" % lt)
                 if cap_want:
-                    extra = (extra + " " if extra else "") + (
-                        "zbcap=" + cap_want + "; HttpOnly; SameSite=Strict; Path=/")
-                return self._html(page.read_bytes(), token, extra)
+                    extras.append("zbcap=" + cap_want + "; HttpOnly; SameSite=Strict; Path=/")
+                return self._html(page.read_bytes(), token, extras)
             if path == "/agent_ide_bundle.json":
                 bundle = (
                     Path(bundle_path)
@@ -430,6 +429,14 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
             data, error = self._body_json()
             if error:
                 return self._json(400, error)
+            # Phase A：能力令牌先于 worktree 解析（避免无 cap 探测任务/先报 worktree）
+            if path in ("/api/ide/write/preview", "/api/ide/write/confirm",
+                        "/api/ide/undo", "/api/ide/exec"):
+                _ct = str(data.get("task") or "")
+                _scope = ("ide:exec:" if path == "/api/ide/exec" else "ide:write:") + _ct
+                cap_err = G.check_cap(dict(self.headers), _scope, _ct)
+                if cap_err:
+                    return self._json(403, cap_err)
             wt, error = self._ctx(data)
             if error:
                 return self._json(self._reject_code(error), error)
@@ -678,6 +685,7 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="军团 Agent IDE · 独立形态服务 v2")
     ap.add_argument("--host", default=DEFAULT_HOST)
     ap.add_argument("--local-token-file", default="")
+    ap.add_argument("--cap-enabled", action="store_true")
     ap.add_argument("--port", type=int, default=DEFAULT_PORT)
     ap.add_argument("--repo", default=str(REPO))
     ap.add_argument("--portal", default=DEFAULT_PORTAL)
@@ -692,6 +700,8 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
     if getattr(args, "local_token_file", ""):
         os.environ["IDE_LOCAL_TOKEN_FILE"] = str(args.local_token_file)
+    if getattr(args, "cap_enabled", False):
+        os.environ["LEGION_CAP_ENABLED"] = "1"
     if args.state_dir:
         os.environ["LEGION_IDE_STATE_DIR"] = args.state_dir
     if args.rw:
