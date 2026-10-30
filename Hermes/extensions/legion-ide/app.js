@@ -34,6 +34,7 @@
     btn.title = "军团 IDE · OpenHands 工单执行";
     document.body.appendChild(btn);
     btn.addEventListener("click", openPanel);
+    addNavButtons();
   }
 
   let state = {
@@ -99,7 +100,71 @@
       </div>`;
   }
 
+  const MAIN_CLASSES = ['settings', 'skills', 'memory', 'tasks', 'workspaces',
+    'profiles', 'insights', 'legionide'];
+
+  function ensureNativePanel() {
+    const main = document.querySelector('main.main');
+    if (!main) return false;
+    if ($("#mainLegionIde")) return true;
+    const host = document.createElement('section');
+    host.id = 'mainLegionIde';
+    host.className = 'main-view legion-ide-main';
+    const wrap = el('div', 'legion-ide-native-host');
+    const tmp = document.createElement('div');
+    tmp.innerHTML = panelHtml();
+    const panel = tmp.querySelector('.legion-ide-panel');
+    if (!panel) return false;
+    wrap.appendChild(panel);
+    host.appendChild(wrap);
+    main.appendChild(host);
+    bindPanel();
+    loadTasks();
+    return true;
+  }
+
+  function showNativePanel() {
+    if (!ensureNativePanel()) return false;
+    const main = document.querySelector('main.main');
+    MAIN_CLASSES.forEach((c) => main.classList.remove('showing-' + c));
+    main.classList.add('showing-legionide');
+    document.querySelectorAll('[data-panel]').forEach((t) => {
+      t.classList.toggle('active', t.dataset.panel === 'legionide');
+    });
+    return true;
+  }
+
+  function addNavButton(container, cls, label) {
+    if (!container || container.querySelector('[data-panel="legionide"]')) return;
+    const b = el('button', cls);
+    b.dataset.panel = 'legionide';
+    b.title = label;
+    b.setAttribute('aria-label', label);
+    b.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 3.5 20.5 9.5 12 18l-6 2 2-6 6.5-6.5z"/><path d="M3 21h18"/></svg>';
+    if (cls.indexOf('nav-tab') >= 0 && cls.indexOf('rail-btn') < 0) {
+      b.dataset.label = label;
+    }
+    b.addEventListener('click', (e) => { e.preventDefault(); showNativePanel(); });
+    const anchor = container.querySelector('.rail-spacer') ||
+      container.querySelector('[data-panel="settings"]');
+    if (anchor) container.insertBefore(b, anchor);
+    else container.appendChild(b);
+  }
+
+  function addNavButtons() {
+    addNavButton(document.querySelector('.rail'), 'rail-btn nav-tab', '军团 IDE');
+    addNavButton(document.querySelector('.sidebar-nav'), 'nav-tab', '军团 IDE');
+    // 点回 Hermes 内置导航时，退出军团 IDE 主视图
+    document.addEventListener('click', (e) => {
+      const t = e.target && e.target.closest ? e.target.closest('[data-panel]') : null;
+      if (!t || t.dataset.panel === 'legionide') return;
+      const main = document.querySelector('main.main');
+      if (main) main.classList.remove('showing-legionide');
+    }, true);
+  }
+
   function openPanel() {
+    if (showNativePanel()) return;
     if ($("#legion-ide-overlay")) return;
     const wrap = el("div");
     wrap.innerHTML = panelHtml();
@@ -110,6 +175,11 @@
 
   function closePanel() {
     if (state.timer) { clearTimeout(state.timer); state.timer = null; }
+    const main = document.querySelector('main.main');
+    if (main && main.classList.contains('showing-legionide')) {
+      main.classList.remove('showing-legionide');
+      if (typeof switchPanel === 'function') switchPanel('chat');
+    }
     const ov = $("#legion-ide-overlay");
     if (ov) ov.remove();
   }

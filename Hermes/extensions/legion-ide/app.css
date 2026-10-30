@@ -15,6 +15,34 @@
 }
 #legion-ide-launch:hover { border-color: #4fd1a5; color: #c9fff2; }
 
+/* 原生主视图（不遮罩，占用 Hermes main） */
+main.main > #mainLegionIde { display: none !important; }
+main.main.showing-legionide > #mainLegionIde { display: flex !important; }
+main.main.showing-legionide > #mainChat,
+main.main.showing-legionide > #mainSettings,
+main.main.showing-legionide > #mainSkills,
+main.main.showing-legionide > #mainMemory,
+main.main.showing-legionide > #mainTasks,
+main.main.showing-legionide > #mainWorkspaces,
+main.main.showing-legionide > #mainProfiles,
+main.main.showing-legionide > #mainInsights { display: none !important; }
+.legion-ide-native-host {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 14px 18px;
+  box-sizing: border-box;
+}
+#mainLegionIde .legion-ide-panel {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  border-radius: 10px;
+  box-shadow: none;
+}
+#mainLegionIde .legion-ide-head { border-radius: 10px 10px 0 0; }
+
 .legion-ide-overlay {
   position: fixed;
   inset: 0;

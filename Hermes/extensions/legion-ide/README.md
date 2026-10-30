@@ -24,6 +24,28 @@ http://127.0.0.1:8788/
 在 `Hermes/start_hermes_bg.py` 的 env 中加同样三项，然后重启 Hermes 8787。  
 **不要直接覆盖核心 static 文件**；本扩展只用官方 `/extensions/` 注入面。
 
+## 原生 panel
+
+- Hermes rail / sidebar 新增「军团 IDE」入口
+- 点击进入 `#mainLegionIde` 主视图，不是遮罩
+- Chat 与军团 IDE 可正常互切
+- 右下角悬浮按钮保留为 fallback
+
+## PWA 桌面入口
+
+```text
+C:\Users\t\Desktop\零界Hermes（PWA）.lnk
+```
+
+目标：
+
+```text
+msedge.exe --app=http://127.0.0.1:8734/hermes/
+  --user-data-dir=%LOCALAPPDATA%\LegionHermes\EdgeProfile
+```
+
+8734 的 `/extensions/` 已加 nginx 同源反代到 8787。
+
 ## 功能
 
 - 工单下拉（来自 `/api/ide/openhands/tasks`）
