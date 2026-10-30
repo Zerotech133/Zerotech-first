@@ -41,7 +41,6 @@ def test_prefilter_and_schema():
     assert s["level"] == "PASS"
     s2 = h.check_judge_schema([bad])
     assert s2["level"] == "WARN"          # 迁移期（0 覆盖）默认 WARN
-    monkeypatch = None
     import os
     os.environ["JEV_EVAL_STRICT_SCHEMA"] = "1"
     try:
