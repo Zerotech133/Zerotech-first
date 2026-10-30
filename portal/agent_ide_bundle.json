@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 14:41",
+ "generated": "2026-10-30 14:43",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 27,
+  "workorders_doing": 28,
   "workorders_review": 7
  },
  "workorders": [
@@ -311,13 +311,22 @@
    "project": "quant"
   },
   {
-   "id": "WO-BANDIT-BASELINE-PROTECT-20261030",
-   "desc": "安全基线防覆盖：新建 bandit_baseline_v2.json（18HIGH+3B608误报），security_audit.ps1 改用v2并设PYTHONUTF8=1。",
+   "id": "WO-LEGION-OIDC-LOGINPATH-20261030",
+   "desc": "登录页 OIDC 入口：打通路径，保留密码桥",
    "status": "doing",
    "owner": "ZHAOYUN",
-   "branch": "task/WO-BANDIT-BASELINE-PROTECT-20261030",
-   "created": "2026-10-30 14:40:54",
-   "project": "quant"
+   "branch": "task/WO-LEGION-OIDC-LOGINPATH-20261030",
+   "created": "2026-10-30 14:41:17",
+   "project": "general"
+  },
+  {
+   "id": "WO-METHODS-LOCAL-20261030",
+   "desc": "回放数据源本地 ashare parquet 回退（Tencent 501 时）；auto/local/network 数据源；重跑约束回放",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-METHODS-LOCAL-20261030",
+   "created": "2026-10-30 14:42:04",
+   "project": "portal"
   }
  ],
  "coder_traces": [
@@ -7035,8 +7044,8 @@
      "status": "doing"
     },
     {
-     "id": "WO-BANDIT-BASELINE-PROTECT-20261030",
-     "desc": "安全基线防覆盖：新建 bandit_baseline_v2.json（18HIGH+3B608误报），security_audit.ps1 改用v2并设PYTHONUTF8=1。",
+     "id": "WO-LEGION-OIDC-LOGINPATH-20261030",
+     "desc": "登录页 OIDC 入口：打通路径，保留密码桥",
      "status": "doing"
     }
    ]
