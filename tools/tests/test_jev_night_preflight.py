@@ -28,3 +28,10 @@ def test_summarize():
     s = pf.summarize(checks)
     assert s["overall"] == "FAIL" and s["fails"] == ["b"]
     assert pf.summarize([{"name": "a", "ok": True, "detail": ""}])["overall"] == "PASS"
+
+
+def test_cli_entry_present():
+    import jev_night_preflight as _pf
+    from pathlib import Path as _P
+    code = _P(_pf.__file__).read_text(encoding="utf-8")
+    assert 'if __name__ == "__main__":' in code
