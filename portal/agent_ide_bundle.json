@@ -10,7 +10,7 @@
   "prompt_miss": [],
   "name_collisions": {},
   "workorders_doing": 32,
-  "workorders_review": 12
+  "workorders_review": 11
  },
  "workorders": [
   {
@@ -389,15 +389,6 @@
    "owner": "GUANYU",
    "branch": "task/WO-GUANYU-P101-20261030",
    "created": "2026-10-30 23:22:26",
-   "project": "general"
-  },
-  {
-   "id": "WO-D1-L4BOOTSTRAP-20261031",
-   "desc": "L4 首版保守 bootstrap：新增 data/xsec/l4_status.json（当前篮子 status=unresolved，source=bootstrap/no_l4_source，不伪造 established）+ 测试 L4=established 时 policy 才允许 BUY/SELL；ACAD1 后续替换真值。",
-   "status": "review",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-D1-L4BOOTSTRAP-20261031",
-   "created": "2026-10-31 01:31:46",
    "project": "general"
   },
   {
