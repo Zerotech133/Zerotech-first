@@ -206,8 +206,15 @@ def tick(purpose, lease_s=None, yield_s=None, wait_s=None, max_tries=6,
     started = time.time()
     if not _owns_lock():
         # 2026-10-30 BATCH2：锁已丢失（被接管/文件被删）——重新抢，不能假装持有。
+        holder = str((_read_lock() or {}).get("purpose") or "")
         logging.getLogger(__name__).warning(
-            "ollama_lock: tick 发现锁所有权丢失，尝试重新抢锁 purpose=%s", purpose)
+            "ollama_lock: tick 发现锁所有权丢失（holder=%s），purpose=%s", holder or "?", purpose)
+        # 2026-10-30 LOCKYIELD：白天 M3 优先级更高——持锁方是 M3 时直接让位，
+        # 不要反复重抢（14:00 轮实测：3 次重抢把 judged 从 232 拖到 110）。
+        if holder.startswith("k266") or "m3" in holder.lower():
+            logging.getLogger(__name__).info(
+                "ollama_lock: 让位给 %s（本次轮次收工）", holder)
+            return False
         wait = TICK_WAIT_S if wait_s is None else max(0.0, wait_s)
         budget = _tick_budget_s(deadline_ts, started)
         if budget <= 0:
