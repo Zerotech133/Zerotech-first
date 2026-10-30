@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 18:12",
+ "generated": "2026-10-30 18:13",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -329,13 +329,13 @@
    "project": "general"
   },
   {
-   "id": "K-STOCK-ANALYSIS-P2-4B-20261030",
-   "desc": "P2.4B 客户门户修复：health 免 token、secret 文件去 BOM",
+   "id": "K-ORG-20261030-NIGHTSUM2",
+   "desc": "夜跑摘要 CLI 入口补齐（漏 __main__ 块）+ CLI 实测",
    "status": "doing",
    "owner": "DSH-Lead",
-   "branch": "task/K-STOCK-ANALYSIS-P2-4B-20261030",
-   "created": "2026-10-30 18:08:34",
-   "project": "quant"
+   "branch": "task/K-ORG-20261030-NIGHTSUM2",
+   "created": "2026-10-30 18:12:44",
+   "project": "general"
   }
  ],
  "coder_traces": [
