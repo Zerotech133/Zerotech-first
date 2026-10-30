@@ -83,6 +83,10 @@ TOOLS = [
 ]
 
 
+class _InvalidParams(Exception):
+    """tools/call 参数非法 → JSON-RPC -32602（不把 Python 异常原文抛给模型）。"""
+
+
 def _log(msg: str) -> None:
     print("[jev-mcp] " + str(msg), file=sys.stderr, flush=True)
 
@@ -118,11 +122,14 @@ def _fmt_query(data: dict) -> str:
     sw = data.get("summary_window") or {}
     lines = [
         "JEV 查询（近 %s 小时）：窗口内已判 %s 条（利多 %s / 利空 %s / 中性 %s），"
-        "匹配 %s 条%s"
+        "本次返回 %s 条%s"
         % (data.get("window_hours"), sw.get("total", 0), sw.get("bull", 0),
            sw.get("bear", 0), sw.get("neutral", 0), data.get("returned", 0),
            "（含 T+1 后验）" if data.get("posterior_band_pct") is not None else ""),
     ]
+    low_types = data.get("low_signal_event_types") or []
+    if low_types:
+        lines.append("低信号事件（不参与方向信号，仅作参考）：%s" % "、".join(low_types))
     items = data.get("items") or []
     for it in items[:15]:
         bits = ["%s [%s]" % (str(it.get("ts") or "")[5:16], it.get("bias_cn") or it.get("bias"))]
@@ -137,6 +144,8 @@ def _fmt_query(data: dict) -> str:
         conf = it.get("conf")
         if conf is not None:
             bits.append(" conf=%s" % conf)
+        if it.get("low_signal"):
+            bits.append(" [低信号事件]")
         post = it.get("posterior")
         if post:
             bits.append(" 后验:T+1超额=%s hit=%s" % (post.get("excess"), post.get("hit")))
@@ -175,24 +184,57 @@ def _fmt_calibration(cal: dict) -> str:
     conf = a.get("confidence") or {}
     lines.append("conf 入决策权重=%s（%s）"
                  % (conf.get("decision_weight"), conf.get("note")))
+    d_d = a.get("directional") or {}
+    gate = d_d.get("gate_pass")
+    if gate is not None:
+        lines.append("门控通过=%s（条件：edge≥2pp 且 Wilson 下界>基线 且 ≥20 交易日；"
+                     "当前 n_days=%s、Wilson下界=%s、data_through=%s、落后=%s 交易日）"
+                     % (gate, (cal or {}).get("n_trade_days"),
+                        d_d.get("wilson95_lower"), (cal or {}).get("data_through"),
+                        (cal or {}).get("stale_trade_days")))
+    low = (a.get("low_signal_event_types") or [])
+    if low:
+        lines.append("低信号事件（不参与方向信号）：%s" % "、".join(low))
     return "\n".join(lines)
 
 
 def _call_tool(name: str, args: dict) -> str:
+    if not isinstance(args, dict):
+        raise _InvalidParams("arguments 必须是对象")
     if name == "jev_query":
+        allowed = {"hours", "bias", "code", "event_type", "with_posterior", "limit"}
+        unknown = set(args) - allowed
+        if unknown:
+            raise _InvalidParams("未知参数：%s（可用：%s）"
+                                 % (",".join(sorted(unknown)), ",".join(sorted(allowed))))
         params: dict[str, str] = {}
         if args.get("hours") is not None:
-            params["hours"] = str(int(args["hours"]))
+            params["hours"] = str(_as_int(args["hours"], "hours", 1, 720))
         if args.get("limit") is not None:
-            params["limit"] = str(int(args["limit"]))
-        for key in ("bias", "code", "event_type"):
+            params["limit"] = str(_as_int(args["limit"], "limit", 1, 200))
+        for key, valid in (("bias", ("bull", "bear", "neutral")),
+                           ("event_type", None)):
             val = args.get(key)
             if val:
-                params[key] = str(val)
+                text = str(val).strip()
+                for token in [x.strip() for x in text.split(",") if x.strip()]:
+                    if valid is not None and token not in valid:
+                        raise _InvalidParams("%s 非法：%s（可选 %s）"
+                                             % (key, token, "/".join(valid)))
+                params[key] = text
+        if args.get("code"):
+            code = str(args["code"]).strip()
+            if not (code.isdigit() and len(code) == 6):
+                raise _InvalidParams("code 非法：需 6 位 A 股代码（如 600519）: %r" % (code,))
+            params["code"] = code
         if args.get("with_posterior"):
+            if not isinstance(args["with_posterior"], bool):
+                raise _InvalidParams("with_posterior 必须是布尔值")
             params["with_posterior"] = "1"
         return _fmt_query(_http_get_json("/api/jev/query", params))
     if name == "jev_calibration":
+        if args:
+            raise _InvalidParams("jev_calibration 不接受参数")
         try:
             with open(CALIB_PATH, "r", encoding="utf-8") as fh:
                 cal = json.load(fh)
@@ -203,7 +245,17 @@ def _call_tool(name: str, args: dict) -> str:
         except ValueError as exc:
             raise RuntimeError("校准报告 JSON 损坏：%s（%s）" % (CALIB_PATH, exc))
         return _fmt_calibration(cal)
-    raise ValueError("未知工具：%s" % name)
+    raise _InvalidParams("未知工具：%s（可用：jev_query / jev_calibration）" % (name,))
+
+
+def _as_int(value, name: str, lo: int, hi: int) -> int:
+    try:
+        val = int(value)
+    except (TypeError, ValueError):
+        raise _InvalidParams("%s 必须是整数: %r" % (name, value))
+    if val < lo or val > hi:
+        raise _InvalidParams("%s 超出范围 [%d, %d]: %d" % (name, lo, hi, val))
+    return val
 
 
 def _handle(req: dict) -> dict | None:
@@ -226,6 +278,9 @@ def _handle(req: dict) -> dict | None:
         args = params.get("arguments") or {}
         try:
             text = _call_tool(name, args)
+        except _InvalidParams as exc:
+            return {"jsonrpc": "2.0", "id": rid,
+                    "error": {"code": -32602, "message": str(exc)}}
         except Exception as exc:  # noqa: BLE001
             _log("tool %s error: %s" % (name, exc))
             return {"jsonrpc": "2.0", "id": rid, "result": {
