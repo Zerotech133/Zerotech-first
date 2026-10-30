@@ -2,7 +2,7 @@
 
 - 日期：2026-10-30
 - 工单：`WO-LEGION-AUTHREQUEST-L2-20261030`
-- 状态：**待批，未改线上 nginx**
+- 状态：**已批准并执行（2026-10-30 12:24）**；上线记录见 §7。
 - 前置：Phase A auth-gateway 已上线；`/api/auth/guard` 已验证 401/200；nginx 已带 `--with-http_auth_request_module`（实测 nginx 1.31.7）
 
 ## 1. 目标
@@ -148,9 +148,9 @@ docker exec ai-portal nginx -s reload
 ## 4. 审批
 
 - 级别：**L2**
-- 需要：老田明确批准上述 5 页与配置；
-- 未批准前**不修改线上 nginx**，仅保留本待批包；
-- 批准后执行 §3.1，并在工单/STATUS 记录结果。
+- 批准：老田已明确选择「5 页全保护（推荐）」；
+- 执行：2026-10-30 12:24 完成 §3.1；
+- 结果：5 页未登录 302，登录后 200；详见 §7。
 
 ## 5. 验收
 
@@ -188,3 +188,53 @@ curl.exe -I http://127.0.0.1:8734/api/bff/overview
 | 8091 不可达导致 500 | 不绕过；监控 auth-gateway 健康 |
 | `next` 丢 query | 5 页当前无 query；后续再补 |
 | 配置错误 | `nginx -t` 失败不 reload；备份可回滚 |
+
+## 7. 上线记录（2026-10-30 12:24-12:32）
+
+### 执行
+
+1. 备份配置：`C:\Temp\nginx.conf.pre-authrequest.bak`（来自 `94c4081`，不含 auth_request，含 `/login` 路由）；
+2. 合入 5 页 auth_request（commit `a0b08b3e`）；
+3. 首次 `nginx -t` **失败**：`unknown directive "﻿#"`——配置文件带 UTF-8 BOM；
+4. 热修去 BOM（commit `60800c44`）后 `nginx -t` 通过；
+5. reload 后发现未登录 302 为 `http://127.0.0.1/login`（丢 8734）：容器内端口 80 导致绝对跳转；
+6. 修复：`location @login_required { absolute_redirect off; ... }`（commit `c6efe3c5`）；
+7. 再次 `nginx -t` 通过并 reload。
+
+### 验收结果
+
+```text
+未登录：
+/os-entry  302 /login?next=/os-entry
+/os-board  302 /login?next=/os-board
+/devops    302 /login?next=/devops
+/model_admin 302 /login?next=/model_admin
+/approvals 302 /login?next=/approvals
+/login     200
+/intel     200
+/api/bff/overview 200
+```
+
+登录（zero_bff 服务账号）后：
+
+```text
+/os-entry /os-board /devops /model_admin /approvals 全部 200
+```
+
+浏览器实测：
+
+- 未登录打开 `/os-board` → `/login?next=/os-board`；
+- 登录成功回 `/os-board`；
+- 顶部横幅显示“已登录 · 零界只读 BFF · VIEWER · 只读”；
+- 无 pageerror。
+
+### 回归测试
+
+`portal/tests/test_nginx_auth_request.py`：
+
+- 配置无 BOM；
+- `_auth_guard` internal + Cookie 透传；
+- `absolute_redirect off` + 相对 `/login?next=$uri`；
+- 5 页均有 `auth_request` / `error_page`；
+- `/login` 未被保护；
+- `/quant`、`/intel`、`/api/` 未被锁。
