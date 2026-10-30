@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-10-18",
+  "updated": "2026-10-31",
   "note": "R1 执行健康总线白名单（manifest 即白名单：只投影本清单任务，系统其余任务不在投影面）。cadence/grace 为 2026-10-18 Get-ScheduledTask 逐条实测回填值（核对表见 docs/runbooks 联动层一期验收演练）。宽限缺省=cadence*0.5；周末/登录触发类显式放宽。断点7 收口（2026-10-18）：分散日志统一入总线心跳——有明确成败日志语义的任务一律配 fail_scan={log,pattern,window_hours}（window_hours=(cadence+grace)/60 推导），由 /api/execution/health 聚合为 fail_scan_hit 进 R3 必响。；判例：fail_scan 仅适用单次覆写型日志，append-only 多块日志禁用 tail 子串口径（T-015 误报 2026-10-18）",
   "tasks": [
     {
@@ -186,6 +186,22 @@
       },
       "enabled": true,
       "note": "R5 复盘回流（2026-10-18 登记，每日 18:05）；简报 append-only 落 automation_runs/retro_brief/briefs/；fail_scan 探 last_run.json exit=1（断点7 收口 2026-10-18）"
+    },
+    {
+      "name": "HuangzhongDaily",
+      "cadence_minutes": 30,
+      "grace_minutes": 30,
+      "log_path": "work/huangzhong/daily.jsonl",
+      "enabled": true,
+      "note": "R1 白名单（2026-10-31 黄忠×Hermes 底层结合）：每 30 分钟验收（:15/:45，观察模式不阻断）；daily.jsonl 为 append-only 多块日志，按判例 T-20261018-015 不配 fail_scan（如需告警由 acceptance_done/verdict 事件驱动）"
+    },
+    {
+      "name": "HuangzhongEvidenceRefresh",
+      "cadence_minutes": 1440,
+      "grace_minutes": 4320,
+      "log_path": "C:/Temp/huangzhong_evidence_refresh_status.log",
+      "enabled": true,
+      "note": "R1 白名单（2026-10-31 黄忠×Hermes 底层结合）：每日 20:00 基线+红队证据刷新；status.log 为 append-only JSONL，不配 fail_scan"
     }
   ]
 }
