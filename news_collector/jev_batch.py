@@ -44,7 +44,7 @@ def median_item_s(path: Path | None = None) -> float:
             v = float(s.get("item_s") or 0)
         except (TypeError, ValueError, AttributeError):
             continue
-        if 0.05 <= v <= 120:
+        if 0.5 <= v <= 120:
             vals.append(v)
     return float(statistics.median(vals)) if vals else DEFAULT_ITEM_S
 
@@ -71,7 +71,9 @@ def record_run(elapsed_s: float, judged: int, remaining: int, batch: int,
     p = path or metrics_path()
     data = _load(p)
     samples = list(data.get("samples") or [])
-    if judged > 0 and elapsed_s > 0:
+    # 样本质量门槛：少于 20 条（锁被抢/提前收工）不写入基准，避免把
+    # 测试/异常样本带进下一轮 batch。
+    if judged >= 20 and elapsed_s > 0:
         samples.append({
             "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
             "item_s": round(float(elapsed_s) / judged, 4),
