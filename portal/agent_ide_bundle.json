@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 14:03",
+ "generated": "2026-10-30 14:04",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 28,
+  "workorders_doing": 27,
   "workorders_review": 8
  },
  "workorders": [
@@ -308,15 +308,6 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-BANDIT-4BFINAL-20261030",
    "created": "2026-10-30 13:24:16",
-   "project": "quant"
-  },
-  {
-   "id": "K-STOCK-ANALYSIS-P0R-20261030",
-   "desc": "P0R 事件驱动+估值分位组合：事件研究(按类别超额/t值)+事件×估值组合回测(2019-23训练/24-26验证)",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-STOCK-ANALYSIS-P0R-20261030",
-   "created": "2026-10-30 13:53:28",
    "project": "quant"
   },
   {
