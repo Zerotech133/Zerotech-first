@@ -24,6 +24,7 @@ METHODS = {
         "holding_days": [1, 10],
         "regime": "trend_up",
         "paper_only": True,
+        "trail_pct": 0.05, "take_profit_atr": 3.0,
     },
     "volume_breakout": {
         "id": "volume_breakout",
@@ -35,6 +36,7 @@ METHODS = {
         "holding_days": [1, 10],
         "regime": "trend_up/breakout",
         "paper_only": True,
+        "trail_pct": 0.06, "take_profit_atr": 3.0,
     },
     "oversold_rebound": {
         "id": "oversold_rebound",
@@ -46,6 +48,7 @@ METHODS = {
         "holding_days": [1, 3],
         "regime": "mean_reversion",
         "paper_only": True,
+        "trail_pct": 0.03, "take_profit_atr": 2.0,
     },
 }
 
@@ -188,7 +191,21 @@ def simulate(method_id, bars, regime_by_date=None, costs=None):
         exit_index = None
         exit_price = None
         reason = ""
+        peak_close = entry_price
+        base_atr = indicators(bars[: entry_index + 1]).get("atr14")
+        trail = float(METHODS[method_id].get("trail_pct", 0.05) or 0.05)
+        tp_atr = float(METHODS[method_id].get("take_profit_atr", 3.0) or 0.0)
         for j in range(entry_index + 1, min(entry_index + max_hold + 1, len(bars))):
+            ind_j = indicators(bars[: j + 1])
+            close_j = ind_j.get("close") or entry_price
+            high_j = _f(bars[j][3])
+            if tp_atr and base_atr and high_j >= entry_price + tp_atr * base_atr:
+                exit_index, exit_price, reason = j, entry_price + tp_atr * base_atr, "take_profit_atr"
+                break
+            peak_close = max(peak_close, close_j)
+            if close_j <= peak_close * (1.0 - trail):
+                exit_index, exit_price, reason = j, close_j, "trailing_stop"
+                break
             should, px, why = exit_reason(method_id, bars[: j + 1], entry_price, j)
             if should and px and px > 0:
                 exit_index, exit_price, reason = j, px, why
@@ -400,7 +417,7 @@ def portfolio_stats(trades_by_code, bars_by_code, costs=None, limits=None):
 
 def replay_with_constraints(codes, days=250, methods=None, kline_fn=None,
                             index_kline_fn=None, costs=None, limits=None,
-                            index_code="sh000001"):
+                            index_code="sh000001", sector_regime_by_code=None):
     """带费用/滑点/仓位约束/大盘 regime 的批量回放；返回每手法组合统计。"""
     if kline_fn is None:
         kline_fn = auto_kline
@@ -426,7 +443,15 @@ def replay_with_constraints(codes, days=250, methods=None, kline_fn=None,
     for m in methods:
         trades_by_code = {}
         for code, bars in bars_by_code.items():
-            r = simulate(m, bars, regime_by_date=regime if m in REGIME_METHODS else None,
+            reg = regime
+            if sector_regime_by_code and code in sector_regime_by_code:
+                try:
+                    from agent_platform import sector_regime as _sr
+                    reg = _sr.combined(reg, sector_regime_by_code.get(code) or {})
+                except Exception:  # noqa: BLE001
+                    reg = regime
+            pass_reg = reg if m in REGIME_METHODS else None
+            r = simulate(m, bars, regime_by_date=pass_reg,
                          costs=costs or DEFAULT_COSTS)
             if r["trades"]:
                 trades_by_code[code] = r["trades"]

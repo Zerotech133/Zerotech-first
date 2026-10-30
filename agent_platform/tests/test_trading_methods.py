@@ -94,3 +94,24 @@ def test_portfolio_caps_and_nav():
         assert stats["limits"]["total_max"] == 0.20
         assert stats["nav_end"] <= 1.2  # 总仓上限 20%，不杠杆
         assert stats["max_drawdown_pct"] <= 0
+
+
+def test_trailing_stop_exit():
+    # 突破入场后冲高再回落 8%，应触发移动止盈/ATR 目标
+    closes = [10.0] * 25 + [10.8, 11.5, 12.0, 12.2, 11.0, 10.8]
+    highs = [10.2] * 25 + [10.9, 11.6, 12.1, 12.3, 11.1, 10.9]
+    bars = _bars(closes, [1000] * 25 + [3000] + [1200] * 5, highs)
+    r = tm.simulate("volume_breakout", bars)
+    assert r["trades"], "应至少有一笔交易"
+    reasons = {t["reason"] for t in r["trades"]}
+    assert reasons & {"trailing_stop", "take_profit_atr", "max_hold", "stop_atr"}
+
+
+def test_sector_regime_combined():
+    from agent_platform import sector_regime as sr
+    market = {"2026-01-01": True, "2026-01-02": False}
+    sec = {"2026-01-02": True, "2026-01-03": False}
+    out = sr.combined(market, sec)
+    assert out["2026-01-01"] is True   # 板块缺失→大盘
+    assert out["2026-01-02"] is True   # 板块有值优先
+    assert out["2026-01-03"] is False
