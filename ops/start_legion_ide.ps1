@@ -1,4 +1,4 @@
-﻿#requires -Version 5.1
+#requires -Version 5.1
 <#
 .SYNOPSIS
   军团 Agent IDE · 独立形态启动器（start/stop/status/app）
@@ -77,7 +77,9 @@ switch ($Action) {
         # 写/执行开关：默认 off；-EnableWrite 才 on（受控写/白名单执行）
         $env:IDE_RW = if ($EnableWrite) { "on" } else { "off" }
         $bundlePath = Resolve-BundlePath
-        $cmd = '"' + $Python + '" "' + $serve + '" --port ' + $Port
+        $stateDir = 'C:\项目\_vault\legion_ide'
+        if (-not (Test-Path -LiteralPath $stateDir)) { New-Item -ItemType Directory -Force -Path $stateDir | Out-Null }
+        $cmd = '"' + $Python + '" "' + $serve + '" --port ' + $Port + ' --state-dir "' + $stateDir + '"'
         if ($bundlePath) { $cmd += ' --bundle "' + $bundlePath + '"' }
         if ($EnableWrite) { $cmd += ' --rw' }   # WMI 不继承 env：显式传参
         try {
@@ -95,7 +97,7 @@ switch ($Action) {
         } catch {
             Write-LaunchLog "WARN WMI error: $($_.Exception.Message); fallback"
         }
-        $argsList = @("`"$serve`"", "--port", "$Port")
+        $argsList = @("`"$serve`"", "--port", "$Port", "--state-dir", "`"$stateDir`"")
         if ($bundlePath) { $argsList += @("--bundle", "`"$bundlePath`"") }
         if ($EnableWrite) { $argsList += @("--rw") }   # WMI 不继承 env：显式传参
         Start-Process -FilePath $Python -ArgumentList $argsList `
