@@ -39,6 +39,17 @@
   .tk { background:#0e1626; border:1px solid var(--line); border-radius:6px; padding:6px 8px; margin-bottom:6px; font-size:12px; }
   .tk b { color:var(--yellow); }
   .legend { margin-top:10px; color:var(--dim); font-size:11px; }
+
+.ac-workbench{margin:10px 0;padding:8px;border:1px solid #1e2b45;border-radius:8px;background:#0b1424}
+.ac-line{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:4px 0}
+.ac-workbench select,.ac-workbench input{background:#0d1524;color:inherit;border:1px solid #1e2b45;border-radius:6px;padding:5px 7px;font:inherit;font-size:12px}
+.ac-workbench input{flex:1;min-width:180px}
+.ac-hint{color:var(--dim);font-size:11px;margin-top:4px;line-height:1.5}
+.ac-primary{background:var(--blue);color:#fff;border:0;border-radius:6px;padding:5px 10px;cursor:pointer}
+.ac-create{margin-top:8px}
+.ac-create summary{cursor:pointer;color:var(--blue);font-size:12px}
+.ac-form{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.ac-form textarea{grid-column:1/-1;min-height:44px;resize:vertical;background:#0d1524;color:inherit;border:1px solid #1e2b45;border-radius:6px;padding:5px 7px;font:inherit;font-size:12px}
 </style>
 <script src="/static/nav.js" defer></script></head>
 <body>
@@ -59,7 +70,52 @@
     <div class="panel" style="margin-top:14px"><h2>🤝 今日复盘速览（三问）</h2><div class="feed" id="review-drawer" style="max-height:140px">—</div></div>
     <div class="panel" style="margin-top:14px"><h2>⚖️ 三方会议（A0 田丰 · AI1 诸葛亮）</h2><div class="feed" id="tri-party-meetings" style="max-height:260px">加载中…</div></div>
     <div class="panel" style="margin-top:14px"><h2>🏛 议事厅（多轮会议 · 白板）</h2><div style="margin:4px 0 8px"><button onclick="createRoomDialog()" style="background:var(--blue);color:#fff;border:0;border-radius:6px;padding:6px 12px;cursor:pointer">＋ 新建议题</button><span style="color:var(--dim);font-size:11px;margin-left:8px">席位：老田 USER · 田丰 A0 · 诸葛亮 AI1（发言为人工代录属性，非模型自动写入；白板 decision 卡不等于审批）</span></div><div class="feed" id="room-list" style="max-height:220px">加载中…</div></div>
-    <div class="panel" style="margin-top:14px"><h2>🎓 研究院课题台账</h2><div class="feed" id="academy-topics" style="max-height:180px">加载中…</div></div>
+    <div class="panel" style="margin-top:14px"><h2>🎓 研究院课题台账</h2><div class="feed" id="academy-topics" style="max-height:180px">加载中…</div>
+      <div class="ac-workbench">
+        <div class="ac-line">
+          <select id="ac-topic"></select>
+          <select id="ac-stage">
+            <option value="hypothesis">hypothesis 假设</option>
+            <option value="evidence">evidence 证据</option>
+            <option value="validation">validation 验证</option>
+            <option value="review">review 评审</option>
+            <option value="joint_review">joint_review 联评</option>
+          </select>
+          <input id="ac-note" placeholder="推进说明 / 证据缺口（落 history）">
+          <button id="ac-advance" class="ac-primary">推进阶段</button>
+        </div>
+        <div class="ac-line">
+          <select id="ac-decision">
+            <option value="">（不裁决）</option>
+            <option>Go</option><option>No-Go</option><option>补证</option>
+            <option>试点</option><option>产品化</option><option>入库</option><option>终止</option>
+          </select>
+          <input id="ac-dec-note" placeholder="裁决说明（老田口径 / 依据）">
+          <button id="ac-decide" class="ac-primary">裁决（decision）</button>
+          <span id="ac-result" class="ac-hint"></span>
+        </div>
+        <div class="ac-hint">写入走 /legion-api POST（同源、需登录）。推进=改阶段；裁决=推进到 decision 并写 decision 字段（署名 laotian，请老田本人操作）。</div>
+      </div>
+      <details class="ac-create">
+        <summary>＋ 立项（登记新课题）</summary>
+        <div class="ac-form">
+          <input id="ac-new-title" placeholder="课题标题">
+          <input id="ac-new-owner" placeholder="owner（如 STRAT1）">
+          <input id="ac-new-direction" placeholder="direction（如 strategy_lab）">
+          <input id="ac-new-sponsor" placeholder="sponsor（如 D1）">
+          <input id="ac-new-next-owner" placeholder="下一步责任人（如 DATA1）">
+          <input id="ac-new-next-deadline" placeholder="下一步截止（2026-11-03T18:00:00+08:00）">
+          <textarea id="ac-new-question" placeholder="question 研究问题（必填）"></textarea>
+          <textarea id="ac-new-object" placeholder="object 研究对象（必填）"></textarea>
+          <textarea id="ac-new-hypothesis" placeholder="hypothesis 可证伪假设（必填）"></textarea>
+          <textarea id="ac-new-scope" placeholder="evidence_scope 证据范围（必填）"></textarea>
+          <textarea id="ac-new-method" placeholder="method 方法（必填）"></textarea>
+          <textarea id="ac-new-action" placeholder="action 行动（必填）"></textarea>
+          <textarea id="ac-new-risks" placeholder="risks 风险（必填）"></textarea>
+          <button id="ac-create-btn" class="ac-primary">登记课题</button>
+        </div>
+      </details>
+    </div>
     <div class="panel" style="margin-top:14px"><h2>工单泳道</h2>
       <div class="lanes">
         <div class="lane"><h3>DOING</h3><div id="lane-doing">—</div></div>
@@ -362,6 +418,7 @@ async function loadAcademyTopics(){  try{
     const box = document.getElementById("academy-topics");
     if (!box) return;
     box.innerHTML = (d.topics||[]).map(t => `<div class="row"><span class="who" style="width:125px">${t.topic_id}</span><span class="what"><b>${t.title}</b>｜${t.status}｜负责人 ${t.owner}</span></div>`).join("") || "<div style='color:var(--dim)'>暂无课题</div>";
+    if (typeof acadFillTopics === "function") acadFillTopics(d.topics || []);
   }catch(e){ const box=document.getElementById("academy-topics"); if(box) box.textContent="课题台账不可达"; }
 }
 async function loadReviews(){
@@ -402,5 +459,62 @@ async function reviewTk(tid){
 <link rel="stylesheet" href="/static/tokens.css" data-page-shell="1">
 <link rel="stylesheet" href="/static/ui/ui.css" data-page-shell="1">
 <script defer src="/static/ui/ui.js" data-page-shell="1"></script>
+<script>
+(function(){
+  const q = (id) => document.getElementById(id);
+  function result(msg, ok){ const n = q('ac-result'); if(!n) return; n.textContent = msg; n.style.color = ok ? 'var(--green)' : 'var(--red)'; }
+  function fillTopics(topics){
+    const sel = q('ac-topic'); if(!sel) return;
+    const keep = sel.value;
+    sel.innerHTML = (topics||[]).map(t => `<option value="${t.topic_id}">${t.topic_id} · ${t.status}</option>`).join('');
+    if (keep && Array.from(sel.options).some(o => o.value === keep)) sel.value = keep;
+  }
+  async function post(body){
+    const base = (typeof API2 !== 'undefined') ? API2 : '/legion-api';
+    const r = await fetch(`${base}/api/legion/academy/topics`, {
+      method: 'POST', credentials: 'same-origin',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body)
+    });
+    let d = {}; try { d = await r.json(); } catch(e) {}
+    if (!r.ok || d.ok === false) throw new Error(d.err || ('HTTP ' + r.status));
+    return d;
+  }
+  async function advance(decide){
+    try{
+      const tid = q('ac-topic').value;
+      const stage = decide ? 'decision' : q('ac-stage').value;
+      const decision = decide ? q('ac-decision').value.trim() : '';
+      const note = (decide ? q('ac-dec-note').value : q('ac-note').value).trim();
+      if (!tid) throw new Error('先选课题');
+      if (decide && !decision) throw new Error('先选裁决值');
+      await post({op:'advance', topic_id: tid, stage: stage, by: decide ? 'laotian' : 'ACAD1', note: note, decision: decision});
+      result((decide ? '裁决已记录：' : '已推进：') + tid + ' → ' + stage + (decision ? ' / ' + decision : ''), true);
+      if (typeof loadAcademyTopics === 'function') loadAcademyTopics();
+    }catch(e){ result('失败：' + e.message, false); }
+  }
+  async function create(){
+    try{
+      const v = (id) => ((q(id) && q(id).value) || '').trim();
+      await post({op:'create', title: v('ac-new-title'), owner: v('ac-new-owner'), direction: v('ac-new-direction'),
+        sponsor: v('ac-new-sponsor'), question: v('ac-new-question'), object: v('ac-new-object'),
+        hypothesis: v('ac-new-hypothesis'), evidence_scope: v('ac-new-scope'), method: v('ac-new-method'),
+        action: v('ac-new-action'), risks: v('ac-new-risks'),
+        next_action_owner: v('ac-new-next-owner'), next_deadline: v('ac-new-next-deadline'), status: 'intake'});
+      result('已登记新课题', true);
+      if (typeof loadAcademyTopics === 'function') loadAcademyTopics();
+    }catch(e){ result('失败：' + e.message, false); }
+  }
+  window.acadFillTopics = fillTopics;
+  function bind(){
+    const a = q('ac-advance'), d = q('ac-decide'), c = q('ac-create-btn');
+    if (a) a.onclick = () => advance(false);
+    if (d) d.onclick = () => advance(true);
+    if (c) c.onclick = create;
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind); else bind();
+  if (typeof loadAcademyTopics === 'function') loadAcademyTopics();
+})();
+</script>
 </body>
 </html>
