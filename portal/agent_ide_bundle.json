@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 18:20",
+ "generated": "2026-10-30 18:21",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 29,
+  "workorders_doing": 28,
   "workorders_review": 8
  },
  "workorders": [
@@ -318,15 +318,6 @@
    "branch": "task/WO-LEGION-OIDC-PATH-20261030",
    "created": "2026-10-30 17:25:25",
    "project": "general"
-  },
-  {
-   "id": "WO-UI-CONSISTENT-20261030",
-   "desc": "页面风格统一：D1投研页修复 tokens 变量(dark)；作战台挂 tokens/nav/shortscreen；两页顶栏/卡片/表格风格一致",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-UI-CONSISTENT-20261030",
-   "created": "2026-10-30 18:16:34",
-   "project": "portal"
   },
   {
    "id": "K-ORG-20261030-NIGHTSUM3",
