@@ -167,7 +167,8 @@ def test_all_edges_carry_question_not_fact_words():
             assert e.question and e.question.strip()
             for banned in ("坐实", "确认是", "即为", "事实证明"):
                 assert banned not in e.question
-            # 调查问句模板只适用于真候选; 截断/群体告示是可见性通知而非问句
-            # （top_inst_trunc / top_inst_group），按语义豁免而非放软红线。
+            # 调查问句模板只适用于真候选; 截断告示(top_inst_trunc)是可见性
+            # 通知而非问句——E2FIX 后席位边按票可查, 该告示随之进入断言面,
+            # 旧代理("是否/须")对它误报, 按语义豁免而非放软红线.
             if not e.basis.startswith(("top_inst_trunc:", "top_inst_group:")):
                 assert "是否" in e.question or "须" in e.question
