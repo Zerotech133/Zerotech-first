@@ -492,6 +492,12 @@ class Handler(BaseHTTPRequestHandler):
             cid = (qs.get("id") or [""])[0]
             self._send_json({"ok": bool(cid), "events": openhands_engine.events(cid)})
             return
+        if path == "/api/ide/openhands/status":
+            from urllib.parse import parse_qs
+            from legion_command import openhands_engine
+            qs = parse_qs(urlparse(self.path).query)
+            self._send_json(openhands_engine.status((qs.get("id") or [""])[0]))
+            return
         if path == "/api/snapshot":
             self._send_json(build_snapshot())
             return
@@ -1142,6 +1148,31 @@ class Handler(BaseHTTPRequestHandler):
                 model=str(req.get("model") or "deepseek-flash"),
             )
             self._send_json(res, 200 if res.get("ok") else 502)
+            return
+        if path in ("/api/ide/openhands/start", "/api/ide/openhands/interrupt"):
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 64 * 1024:
+                    raise ValueError("bad_length")
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+            except (ValueError, UnicodeDecodeError):
+                self._send_json({"ok": False, "error": "bad_json"}, 400)
+                return
+            if not isinstance(req, dict):
+                self._send_json({"ok": False, "error": "bad_body"}, 400)
+                return
+            from legion_command import openhands_engine
+            if path.endswith("/start"):
+                res = openhands_engine.start(
+                    str(req.get("message") or ""),
+                    str(req.get("conversation_id") or ""),
+                    task=str(req.get("task") or ""),
+                    worktree=str(req.get("worktree") or ""),
+                    model=str(req.get("model") or "deepseek-flash"),
+                )
+            else:
+                res = openhands_engine.interrupt(str(req.get("conversation_id") or ""))
+            self._send_json(res, 200 if res.get("ok") else 409)
             return
         if path in ("/api/ide/openhands/diff", "/api/ide/openhands/commit"):
             try:

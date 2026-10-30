@@ -10,8 +10,10 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
+import time
 from pathlib import Path
 
 REPO = Path(r"C:\项目\老田的AI助手")
@@ -157,3 +159,83 @@ def commit(task: str, message: str = "") -> dict:
     sha = _run(["git", "-C", str(wt), "rev-parse", "--short", "HEAD"])["out"]
     return {"ok": True, "task": task, "commit": sha, "message": msg,
             "worktree": str(wt)}
+
+
+# ── 工单执行锁（OH 并发保护；锁文件放 worktree 根外，避免被 git add）──
+LOCK_DIR = WORKTREE_ROOT / ".oh-locks"
+LOCK_TTL_S = 30 * 60
+
+
+def _lock_path(task: str) -> Path:
+    return LOCK_DIR / (task + ".lock")
+
+
+def _lock_info(task: str) -> dict:
+    try:
+        data = json.loads(_lock_path(task).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {"locked": False}
+    ts = float(data.get("ts") or 0)
+    age = time.time() - ts
+    return {"locked": age <= LOCK_TTL_S, "stale": age > LOCK_TTL_S,
+            "owner": str(data.get("owner") or ""), "age_s": age}
+
+
+def acquire_oh_lock(task: str, owner: str) -> dict:
+    if not TASK_RE.match(str(task or "")):
+        return {"ok": False, "error": "bad_task_id"}
+    owner = str(owner or "").strip()
+    if not owner:
+        return {"ok": False, "error": "owner_required"}
+    LOCK_DIR.mkdir(parents=True, exist_ok=True)
+    path = _lock_path(task)
+    for _ in range(3):
+        info = _lock_info(task)
+        if info.get("locked"):
+            if info.get("owner") == owner:
+                return {"ok": True, "lock": info, "reused": True}
+            return {"ok": False, "error": "oh_lock_busy",
+                    "detail": "owner=%s age=%.0fs" % (info.get("owner"), info.get("age_s") or 0)}
+        rec = {"owner": owner, "pid": os.getpid(), "ts": time.time(),
+               "task": task}
+        try:
+            fd = os.open(str(path), os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+        except FileExistsError:
+            # 另一请求刚建锁；若有效则拒绝，否则清掉过期锁重试
+            race = _lock_info(task)
+            if race.get("locked"):
+                return {"ok": False, "error": "oh_lock_busy",
+                        "detail": "owner=%s" % race.get("owner")}
+            try:
+                path.unlink()
+            except OSError:
+                pass
+            continue
+        except OSError as exc:
+            return {"ok": False, "error": "oh_lock_io",
+                    "detail": type(exc).__name__}
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(rec, f, ensure_ascii=False)
+            f.flush()
+            os.fsync(f.fileno())
+        return {"ok": True, "lock": rec}
+    return {"ok": False, "error": "oh_lock_race"}
+
+
+def release_oh_lock(task: str, owner: str) -> dict:
+    path = _lock_path(task)
+    info = _lock_info(task)
+    if not info.get("locked"):
+        return {"ok": True, "released": False}
+    if info.get("owner") != owner:
+        return {"ok": False, "error": "oh_lock_owner_mismatch"}
+    try:
+        path.unlink()
+        return {"ok": True, "released": True}
+    except OSError as exc:
+        return {"ok": False, "error": "oh_lock_io",
+                "detail": type(exc).__name__}
+
+
+def oh_lock_info(task: str) -> dict:
+    return _lock_info(task)
