@@ -301,3 +301,12 @@ main.main.showing-legionlde > #mainLegionIde { display: none !important; }
   .legion-ide-overlay { padding: 0; }
 }
 
+
+
+.acad1-btn{position:fixed;right:18px;bottom:80px;z-index:99998;background:#0F2440;color:#4FD1A5;border:0.5px solid #1D9E75;border-radius:9px;padding:9px 14px;font-size:13px;cursor:pointer;font-family:inherit}
+.acad1-overlay{position:fixed;inset:0;z-index:99999;background:rgba(3,10,20,.78);display:flex;align-items:center;justify-content:center}
+.acad1-box{width:min(1280px,94vw);height:min(860px,90vh);background:#071426;border:0.5px solid #1E3A5F;border-radius:12px;display:flex;flex-direction:column;overflow:hidden}
+.acad1-head{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:0.5px solid #1E3A5F;color:#E8F0F8;font-size:13px}
+.acad1-close{background:none;border:0;color:#8FA8C0;font-size:20px;cursor:pointer}
+.acad1-sum{padding:8px 14px;color:#8FA8C0;font-size:12px;border-bottom:0.5px solid #1E3A5F}
+.acad1-frame{flex:1;width:100%;border:0;background:#fff}
