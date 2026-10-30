@@ -32,7 +32,15 @@ def _resolve_sandbox_base() -> str:
     explicit = str(os.environ.get("OPENHANDS_SANDBOX_URL") or "").strip()
     if explicit:
         return explicit.rstrip("/")
-    # 默认 loopback（旧）；若不可达，尝试 Docker 容器 IP（B2 去 host publish）
+    import urllib.request
+    # 1) 优先 loopback（Docker Desktop 下 host 不可达未 publish 的容器 IP）
+    try:
+        with urllib.request.urlopen("http://127.0.0.1:8771/health", timeout=1.5) as r:
+            if r.status == 200:
+                return "http://127.0.0.1:8771"
+    except Exception:  # noqa: BLE001
+        pass
+    # 2) 回退：Docker 容器 IP（在支持 host->bridge 的环境可用）
     import subprocess
     try:
         r = subprocess.run(
