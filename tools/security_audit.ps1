@@ -13,9 +13,21 @@ Remove-Item $log -ErrorAction SilentlyContinue
 "[security-audit] $ts" | Out-File $log -Encoding utf8
 try { & $py312 -m pip freeze -l | Where-Object { $_ -notmatch "^-e |^#|^@ " -and $_ -match "==" } | Set-Content $freeze -Encoding utf8 } catch { "freeze failed: $_" | Out-File $log -Append -Encoding utf8 }
 $r1 = 1
+$osv_rc = -1
+$osv_vulns = -1
 if (Test-Path $freeze) {
     & $py311 -m pip_audit -r $freeze *>> $log
     $r1 = $LASTEXITCODE
+}
+if ($r1 -ne 0 -and (Test-Path $freeze)) {
+    & $py312 'C:\aios\tools\pip_osv_audit.py' -r $freeze --out 'C:\Temp\pip_osv_report.json' *>> $log
+    $osv_rc = $LASTEXITCODE
+    if (Test-Path 'C:\Temp\pip_osv_report.json') {
+        try {
+            $osv = Get-Content 'C:\Temp\pip_osv_report.json' -Raw | ConvertFrom-Json
+            $osv_vulns = [int]$osv.vulnerable_packages
+        } catch { "osv parse failed: $_" | Out-File $log -Append -Encoding utf8 }
+    }
 }
 Push-Location 'C:\aios'
 & $py312 -m bandit -r agent_platform portal tools quant_backtest k_stock news_collector `
@@ -56,6 +68,8 @@ if (Test-Path $base) {
 @{
     ts = $ts
     pip_audit_rc = $r1
+    pip_osv_rc = $osv_rc
+    pip_osv_vulnerable = $osv_vulns
     bandit_rc = $r2
     bandit_high = $counts['HIGH']
     bandit_medium = $counts['MEDIUM']
