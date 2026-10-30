@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 19:35",
+ "generated": "2026-10-30 19:38",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 27,
+  "workorders_doing": 26,
   "workorders_review": 10
  },
  "workorders": [
@@ -335,15 +335,6 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-LEGION-W1AUTH-20261030",
    "created": "2026-10-30 19:31:11",
-   "project": "general"
-  },
-  {
-   "id": "K-ORG-20261030-JEVEVAL",
-   "desc": "P0：JEV-Eval 评测门（校准/预筛误杀/JEV schema/OOS 集/账本一致性，离线+CI 可用）",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-ORG-20261030-JEVEVAL",
-   "created": "2026-10-30 19:34:08",
    "project": "general"
   }
  ],
