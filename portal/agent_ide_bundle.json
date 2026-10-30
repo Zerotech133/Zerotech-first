@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 17:33",
+ "generated": "2026-10-30 17:34",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 29,
+  "workorders_doing": 28,
   "workorders_review": 8
  },
  "workorders": [
@@ -317,15 +317,6 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-LEGION-OIDC-PATH-20261030",
    "created": "2026-10-30 17:25:25",
-   "project": "general"
-  },
-  {
-   "id": "WO-ZHAOYUN-P1-FIX2-20261030",
-   "desc": "日报质量门日志兼容UTF-16/BOM读取",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-ZHAOYUN-P1-FIX2-20261030",
-   "created": "2026-10-30 17:29:49",
    "project": "general"
   },
   {
@@ -7304,11 +7295,6 @@
     {
      "id": "WO-LEGION-OIDC-PATH-20261030",
      "desc": "OIDC配置路径对齐实际vault",
-     "status": "doing"
-    },
-    {
-     "id": "WO-ZHAOYUN-P1-FIX2-20261030",
-     "desc": "日报质量门日志兼容UTF-16/BOM读取",
      "status": "doing"
     }
    ]
