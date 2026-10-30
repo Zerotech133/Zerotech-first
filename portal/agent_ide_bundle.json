@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 14:39",
+ "generated": "2026-10-30 14:40",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 28,
+  "workorders_doing": 27,
   "workorders_review": 7
  },
  "workorders": [
@@ -309,15 +309,6 @@
    "branch": "task/WO-BANDIT-4BFINAL-20261030",
    "created": "2026-10-30 13:24:16",
    "project": "quant"
-  },
-  {
-   "id": "WO-KB-RAG2-20261030",
-   "desc": "RAG chat 稳定性修复：qwen3.5 thinking 模型 think=false + 超时/输出限制",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-KB-RAG2-20261030",
-   "created": "2026-10-30 14:36:47",
-   "project": "general"
   },
   {
    "id": "WO-METHODS-COST-20261030",
