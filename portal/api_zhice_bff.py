@@ -44,6 +44,14 @@ CAINIAO_PW_FILE = Path(
 )
 ZHICE_BASE = os.environ.get("ZHICE_BASE_URL", "http://127.0.0.1:8102").rstrip("/")
 ZHICE_TOKEN = os.environ.get("ZHICE_SERVICE_TOKEN", "").strip()
+ZHICE_USERNAME = os.environ.get("ZHICE_SERVICE_USERNAME", "").strip()
+ZHICE_PASSWORD_FILE = Path(
+    os.environ.get(
+        "ZHICE_SERVICE_CREDENTIALS_FILE",
+        r"C:\项目\_vault\secrets\zhice\bff_service.env",
+    )
+)
+_zhice_token_cache: Dict[str, Any] = {"token": "", "until": 0.0}
 
 CACHE_TTL = 30.0
 _stats_cache: Dict[str, Any] = {"at": 0.0, "payload": None}
@@ -65,12 +73,75 @@ def _fail(reason: str, **extra: Any) -> Dict[str, Any]:
     return out
 
 
-def _http_json(url: str, timeout: float = 4.0, token: str = "") -> Tuple[bool, Any]:
-    """GET JSON；网络错误不抛，交调用方转 fail-visible。"""
+def _read_env_file(path: Path) -> Dict[str, str]:
+    """读 KEY=VALUE 凭据文件；文件不存在返回空。不打印内容。"""
+    out: Dict[str, str] = {}
+    try:
+        for line in path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            out[key.strip()] = value.strip()
+    except OSError:
+        pass
+    return out
+
+
+def _service_credentials() -> Tuple[str, str]:
+    username = ZHICE_USERNAME
+    password = os.environ.get("ZHICE_SERVICE_PASSWORD", "").strip()
+    if not (username and password):
+        vals = _read_env_file(ZHICE_PASSWORD_FILE)
+        username = username or vals.get("ZHICE_SERVICE_USERNAME", "")
+        password = password or vals.get("ZHICE_SERVICE_PASSWORD", "")
+    return username, password
+
+
+def _zhice_login() -> str:
+    """服务账号登录换 1h token；模块内缓存 50 分钟。只在服务端使用。"""
+    username, password = _service_credentials()
+    if not (username and password):
+        return ""
+    ok, data = _http_json(
+        ZHICE_BASE + "/api/v1/auth/login",
+        timeout=5.0,
+        payload={"username": username, "password": password},
+    )
+    if not ok or not isinstance(data, dict):
+        return ""
+    token = str(data.get("token") or "")
+    if token:
+        _zhice_token_cache["token"] = token
+        _zhice_token_cache["until"] = time.time() + 3000
+    return token
+
+
+def _zhice_token() -> str:
+    if ZHICE_TOKEN:
+        return ZHICE_TOKEN
+    if _zhice_token_cache["token"] and time.time() < _zhice_token_cache["until"]:
+        return _zhice_token_cache["token"]
+    return _zhice_login()
+
+
+def _http_json(
+    url: str,
+    timeout: float = 4.0,
+    token: str = "",
+    payload: Dict[str, Any] | None = None,
+) -> Tuple[bool, Any]:
+    """GET/POST JSON；网络错误不抛，交调用方转 fail-visible。"""
     headers = {"Accept": "application/json"}
+    data = None
+    method = "GET"
+    if payload is not None:
+        data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        headers["Content-Type"] = "application/json"
+        method = "POST"
     if token:
         headers["Authorization"] = "Bearer " + token
-    req = urllib.request.Request(url, headers=headers, method="GET")
+    req = urllib.request.Request(url, headers=headers, data=data, method=method)
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             body = resp.read()
@@ -253,7 +324,10 @@ def zhice_get(path: str) -> Dict[str, Any]:
     }
     if path not in allowed:
         return _fail("path_not_allowed", source="zhice_api")
-    ok, data = _http_json(ZHICE_BASE + path, token=ZHICE_TOKEN)
+    token = _zhice_token()
+    if not token:
+        return _fail("zhice_auth_required", source="zhice_api", path=path)
+    ok, data = _http_json(ZHICE_BASE + path, token=token)
     if not ok:
         text = str(data)
         if "401" in text or "403" in text or "unauthorized" in text.lower():
