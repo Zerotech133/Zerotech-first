@@ -35,6 +35,7 @@ def main(argv=None):
     ap.add_argument("--source", default="auto", choices=["auto", "local", "network"])
     ap.add_argument("--sector", dest="sector", action="store_true", default=True)
     ap.add_argument("--no-sector", dest="sector", action="store_false")
+    ap.add_argument("--classic-exit", action="store_true", help="关闭移动止盈/ATR目标，用于对比")
     ap.add_argument("--commission", type=float, default=tm.DEFAULT_COSTS["commission"])
     ap.add_argument("--stamp", type=float, default=tm.DEFAULT_COSTS["stamp"])
     ap.add_argument("--slippage", type=float, default=tm.DEFAULT_COSTS["slippage"])
@@ -66,7 +67,8 @@ def main(argv=None):
     res = tm.replay_with_constraints(codes, days=args.days, methods=methods,
                                      kline_fn=kfn, index_kline_fn=kfn,
                                      costs=costs, limits=limits, index_code=args.index,
-                                     sector_regime_by_code=sector_map)
+                                     sector_regime_by_code=sector_map,
+                                     exit_opt=not args.classic_exit)
     res["sector"] = sector_meta
     os.makedirs(OUT_DIR, exist_ok=True)
     path = args.out or os.path.join(OUT_DIR, "replay_net_%s.json" % date.today().isoformat())

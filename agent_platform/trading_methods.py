@@ -167,7 +167,7 @@ def exit_reason(method_id, bars, entry_price, entry_index):
     return False, None, ""
 
 
-def simulate(method_id, bars, regime_by_date=None, costs=None):
+def simulate(method_id, bars, regime_by_date=None, costs=None, exit_opt=True):
     """单标的 paper 回放；regime_by_date 为 None 时不过滤；costs 计入往返成本。"""
     if method_id not in METHODS:
         raise ValueError("unknown method: %s" % method_id)
@@ -199,13 +199,14 @@ def simulate(method_id, bars, regime_by_date=None, costs=None):
             ind_j = indicators(bars[: j + 1])
             close_j = ind_j.get("close") or entry_price
             high_j = _f(bars[j][3])
-            if tp_atr and base_atr and high_j >= entry_price + tp_atr * base_atr:
-                exit_index, exit_price, reason = j, entry_price + tp_atr * base_atr, "take_profit_atr"
-                break
-            peak_close = max(peak_close, close_j)
-            if close_j <= peak_close * (1.0 - trail):
-                exit_index, exit_price, reason = j, close_j, "trailing_stop"
-                break
+            if exit_opt:
+                if tp_atr and base_atr and high_j >= entry_price + tp_atr * base_atr:
+                    exit_index, exit_price, reason = j, entry_price + tp_atr * base_atr, "take_profit_atr"
+                    break
+                peak_close = max(peak_close, close_j)
+                if close_j <= peak_close * (1.0 - trail):
+                    exit_index, exit_price, reason = j, close_j, "trailing_stop"
+                    break
             should, px, why = exit_reason(method_id, bars[: j + 1], entry_price, j)
             if should and px and px > 0:
                 exit_index, exit_price, reason = j, px, why
@@ -417,7 +418,8 @@ def portfolio_stats(trades_by_code, bars_by_code, costs=None, limits=None):
 
 def replay_with_constraints(codes, days=250, methods=None, kline_fn=None,
                             index_kline_fn=None, costs=None, limits=None,
-                            index_code="sh000001", sector_regime_by_code=None):
+                            index_code="sh000001", sector_regime_by_code=None,
+                            exit_opt=True):
     """带费用/滑点/仓位约束/大盘 regime 的批量回放；返回每手法组合统计。"""
     if kline_fn is None:
         kline_fn = auto_kline
@@ -452,7 +454,7 @@ def replay_with_constraints(codes, days=250, methods=None, kline_fn=None,
                     reg = regime
             pass_reg = reg if m in REGIME_METHODS else None
             r = simulate(m, bars, regime_by_date=pass_reg,
-                         costs=costs or DEFAULT_COSTS)
+                         costs=costs or DEFAULT_COSTS, exit_opt=exit_opt)
             if r["trades"]:
                 trades_by_code[code] = r["trades"]
         out["methods"][m] = portfolio_stats(trades_by_code, bars_by_code,
