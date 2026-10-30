@@ -4,7 +4,7 @@ import argparse
 import json
 import time
 
-from . import audit, billing, license as lic, plans, quota, tenants
+from . import audit, billing, growth, license as lic, plans, quota, tenants
 
 
 def main(argv=None) -> int:
@@ -47,6 +47,8 @@ def main(argv=None) -> int:
     p.add_argument("--days", type=int, default=30)
 
     sub.add_parser("funnel", help="试用→付费漏斗")
+
+    sub.add_parser("growth", help="增长漏斗报表（试用/访问/转化）")
 
     p = sub.add_parser("audit-tail", help="查看审计")
     p.add_argument("-n", type=int, default=20)
@@ -106,6 +108,9 @@ def main(argv=None) -> int:
     if a.cmd == "renewals":
         rows = billing.renewals(a.days)
         print(json.dumps({"ok": True, "within_days": a.days, "rows": rows}, ensure_ascii=False, indent=1))
+        return 0
+    if a.cmd == "growth":
+        print(json.dumps({"ok": True, **growth.report()}, ensure_ascii=False, indent=1))
         return 0
     if a.cmd == "funnel":
         print(json.dumps({"ok": True, **billing.funnel()}, ensure_ascii=False))

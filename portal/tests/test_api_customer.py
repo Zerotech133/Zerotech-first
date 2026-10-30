@@ -8,9 +8,9 @@ import tempfile
 import unittest
 
 WT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-ROOT = r"C:\项目\老田的AI助手"
-sys.path.insert(0, ROOT)
+ROOT = WT
 sys.path.insert(0, os.path.join(WT, "portal"))
+sys.path.insert(0, WT)
 
 import api_customer  # noqa: E402
 
@@ -94,6 +94,29 @@ class TestCustomerApi(unittest.TestCase):
         h = Stub({"token": "bad", "code": "600337.SH"})
         api_customer.handle_post(h, "/api/customer/analyze")
         self.assertEqual(h.status, 401)
+
+    def test_trial_flow(self):
+        h = Stub({"name": "测试研究员", "contact": "test@example.com", "company": "Demo基金"})
+        api_customer.handle_post(h, "/api/customer/trial")
+        self.assertEqual(h.status, 200)
+        self.assertTrue(h.obj["ok"])
+        self.assertTrue(h.obj["tenant"].startswith("trial-"))
+        # license 可用同一 secret 校验
+        from commercial import license as lic
+        l = lic.verify(h.obj["license"], secret=SECRET)
+        self.assertEqual(l.tenant, h.obj["tenant"])
+        self.assertEqual(l.plan, "pro")
+
+    def test_trial_requires_contact(self):
+        h = Stub({"name": "x"})
+        api_customer.handle_post(h, "/api/customer/trial")
+        self.assertEqual(h.status, 400)
+
+    def test_track(self):
+        h = Stub({"event": "view", "ref": "landing"})
+        api_customer.handle_post(h, "/api/customer/track")
+        self.assertEqual(h.status, 200)
+        self.assertTrue(h.obj["ok"])
 
     def test_report_path_traversal(self):
         self.assertIsNone(api_customer._report_path("acme", "../x", "md"))
