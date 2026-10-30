@@ -138,7 +138,7 @@ def sqlite_latest(db: Path, sql: str):
 def expected_lag(table: str, entry: dict | None = None) -> int | None:
     """按频率给期望滞后（自然日）：D=2 / W=10 / M=45 / Q=120 / A=400。
 
-    返回 None 表示跳过检查（lifecycle=planned/deprecated、deprecated=True、
+    返回 None 表示跳过检查（lifecycle=planned/deprecated/archived、deprecated=True、
     static_no_date=True 或 freq 未知）。
     """
     try:
