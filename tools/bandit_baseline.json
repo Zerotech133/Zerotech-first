@@ -1,10 +1,384 @@
 {
- "generated_at": "2026-10-30T12:33:38",
+ "schema": "bandit-baseline",
+ "generated_at": "2026-10-30",
  "scope": "agent_platform,portal,tools,quant_backtest,k_stock,news_collector (excl tests/.venv/worktrees/archive)",
- "counts": {
-  "HIGH": 18,
-  "MEDIUM": 124,
-  "LOW": 1351
- },
- "note": "bandit 基线计数；wrapper 在夜间任务中与本次扫描对比，HIGH>0 或 MEDIUM>基线即告警"
+ "results": [
+  {
+   "code": "74     \"\"\"\u5e42\u7b49\u4e3b\u952e\uff1axd:<kind>:md5(url|title) \u524d 12 \u4f4d\uff08\u5bf9\u9f50 sina:5115033 \u98ce\u683c\uff09\u3002\"\"\"\n75     h = hashlib.md5((url or title or \"\").encode(\"utf-8\")).hexdigest()[:12]\n76     return \"xd:%s:%s\" % (kind, h)\n",
+   "col_offset": 8,
+   "end_col_offset": 57,
+   "filename": "news_collector\\jev_feed.py",
+   "issue_confidence": "HIGH",
+   "issue_cwe": {
+    "id": 327,
+    "link": "https://cwe.mitre.org/data/definitions/327.html"
+   },
+   "issue_severity": "HIGH",
+   "issue_text": "Use of weak MD5 hash for security. Consider usedforsecurity=False",
+   "line_number": 75,
+   "line_range": [
+    75
+   ],
+   "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b324_hashlib.html",
+   "test_id": "B324",
+   "test_name": "hashlib"
+  },
+  {
+   "code": "378                 )\n379                 hid = hashlib.md5((\"%s|%s\" % (name, guid)).encode(\"utf-8\")).hexdigest()[\n380                     :16\n",
+   "col_offset": 22,
+   "end_col_offset": 75,
+   "filename": "news_collector\\news_collector.py",
+   "issue_confidence": "HIGH",
+   "issue_cwe": {
+    "id": 327,
+    "link": "https://cwe.mitre.org/data/definitions/327.html"
+   },
+   "issue_severity": "HIGH",
+   "issue_text": "Use of weak MD5 hash for security. Consider usedforsecurity=False",
+   "line_number": 379,
+   "line_range": [
+    379
+   ],
+   "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b324_hashlib.html",
+   "test_id": "B324",
+   "test_name": "hashlib"
+  },
+  {
+   "code": "490                 desc = strip_html(it.findtext(\"description\") or \"\")\n491                 hid = hashlib.md5(guid.encode(\"utf-8\")).hexdigest()[:16]\n492                 out.append(\n",
+   "col_offset": 22,
+   "end_col_offset": 55,
+   "filename": "news_collector\\news_collector.py",
+   "issue_confidence": "HIGH",
+   "issue_cwe": {
+    "id": 327,
+    "link": "https://cwe.mitre.org/data/definitions/327.html"
+   },
+   "issue_severity": "HIGH",
+   "issue_text": "Use of weak MD5 hash for security. Consider usedforsecurity=False",
+   "line_number": 491,
+   "line_range": [
+    491
+   ],
+   "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b324_hashlib.html",
+   "test_id": "B324",
+   "test_name": "hashlib"
+  },
+  {
+   "code": "86                     \"base64\": base64.b64encode(data).decode(),\n87                     \"md5\": hashlib.md5(data).hexdigest(),\n88                 },\n",
+   "col_offset": 27,
+   "end_col_offset": 44,
+   "filename": "news_collector\\send_wecom.py",
+   "issue_confidence": "HIGH",
+   "issue_cwe": {
+    "id": 327,
+    "link": "https://cwe.mitre.org/data/definitions/327.html"
+   },
+   "issue_severity": "HIGH",
+   "issue_text": "Use of weak MD5 hash for security. Consider usedforsecurity=False",
+   "line_number": 87,
+   "line_range": [
+    87
+   ],
+   "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b324_hashlib.html",
+   "test_id": "B324",
+   "test_name": "hashlib"
+  },
+  {
+   "code": "41     \"\"\"\n42     h = hashlib.md5(seat_name.encode(\"utf-8\")).hexdigest()[:8]\n43     return f\"ta:{h}:{ts_code}:{trade_date}:{side}\"\n",
+   "col_offset": 8,
+   "end_col_offset": 46,
+   "filename": "quant_backtest\\_build_spatial.py",
+   "issue_confidence": "HIGH",
+   "issue_cwe": {
+    "id": 327,
+    "link": "https://cwe.mitre.org/data/definitions/327.html"
+   },
+   "issue_severity": "HIGH",
+   "issue_text": "Use of weak MD5 hash for security. Consider usedforsecurity=False",
+   "line_number": 42,
+   "line_range": [
+    42
+   ],
+   "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b324_hashlib.html",
+   "test_id": "B324",
+   "test_name": "hashlib"
+  },
+  {
+   "code": "170 def _sha1(s):\n171     return hashlib.sha1(s.encode(\"utf-8\")).hexdigest()[:16]\n172 \n",
+   "col_offset": 11,
+   "end_col_offset": 42,
+   "filename": "quant_backtest\\chanlun_learn.py",
+   "issue_confidence": "HIGH",
+   "issue_cwe": {
+    "id": 327,
+    "link": "https://cwe.mitre.org/data/definitions/327.html"
+   },
+   "issue_severity": "HIGH",
+   "issue_text": "Use of weak SHA1 hash for security. Consider usedforsecurity=False",
+   "line_number": 171,
+   "line_range": [
+    171
+   ],
+   "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b324_hashlib.html",
+   "test_id": "B324",
+   "test_name": "hashlib"
+  },
+  {
+   "code": "795 def _sha1_json(row):\n796     return hashlib.sha1(\n797         json.dumps(\n798             {k: v for k, v in row.items() if k not in (\"as_of\",)},\n799             sort_keys=True,\n800             ensure_ascii=False,\n801         ).encode(\"utf-8\")\n802     ).hexdigest()[:16]\n803 \n",
+   "col_offset": 11,
+   "end_col_offset": 5,
+   "filename": "quant_backtest\\chanlun_learn.py",
+   "issue_confidence": "HIGH",
+   "issue_cwe": {
+    "id": 327,
+    "link": "https://cwe.mitre.org/data/definitions/327.html"
+   },
+   "issue_severity": "HIGH",
+   "issue_text": "Use of weak SHA1 hash for security. Consider usedforsecurity=False",
+   "line_number": 796,
+   "line_range": [
+    796,
+    797,
+    798,
+    799,
+    800,
+    801,
+    802
+   ],
+   "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b324_hashlib.html",
+   "test_id": "B324",
+   "test_name": "hashlib"
+  },
+  {
+   "code": "59         eid = \"ev:nt:%s:%s\" % (\n60             an or hashlib.md5((nd + title).encode(\"utf-8\")).hexdigest()[:12],\n61             code,\n",
+   "col_offset": 18,
+   "end_col_offset": 59,
+   "filename": "quant_backtest\\distill_pool.py",
+   "issue_confidence": "HIGH",
+   "issue_cwe": {
+    "id": 327,
+    "link": "https://cwe.mitre.org/data/definitions/327.html"
+   },
+   "issue_severity": "HIGH",
+   "issue_text": "Use of weak MD5 hash for security. Consider usedforsecurity=False",
+   "line_number": 60,
+   "line_range": [
+    60
+   ],
+   "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b324_hashlib.html",
+   "test_id": "B324",
+   "test_name": "hashlib"
+  },
+  {
+   "code": "312         eid = \"ev:nt:%s:%s\" % (\n313             an or hashlib.md5((nd + title).encode(\"utf-8\")).hexdigest()[:12],\n314             code,\n",
+   "col_offset": 18,
+   "end_col_offset": 59,
+   "filename": "quant_backtest\\event_graph.py",
+   "issue_confidence": "HIGH",
+   "issue_cwe": {
+    "id": 327,
+    "link": "https://cwe.mitre.org/data/definitions/327.html"
+   },
+   "issue_severity": "HIGH",
+   "issue_text": "Use of weak MD5 hash for security. Consider usedforsecurity=False",
+   "line_number": 313,
+   "line_range": [
+    313
+   ],
+   "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b324_hashlib.html",
+   "test_id": "B324",
+   "test_name": "hashlib"
+  },
+  {
+   "code": "215         \"guard_\"\n216         + hashlib.sha1((\"%s|%s\" % (task, reason)).encode(\"utf-8\")).hexdigest()[:16]\n217     )\n",
+   "col_offset": 10,
+   "end_col_offset": 66,
+   "filename": "quant_backtest\\guard_alert.py",
+   "issue_confidence": "HIGH",
+   "issue_cwe": {
+    "id": 327,
+    "link": "https://cwe.mitre.org/data/definitions/327.html"
+   },
+   "issue_severity": "HIGH",
+   "issue_text": "Use of weak SHA1 hash for security. Consider usedforsecurity=False",
+   "line_number": 216,
+   "line_range": [
+    216
+   ],
+   "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b324_hashlib.html",
+   "test_id": "B324",
+   "test_name": "hashlib"
+  },
+  {
+   "code": "109     key = (s_sec or s_raw, o_sec or o_raw, e.get(\"rel\") or \"\", r.get(\"direction\") or \"\")\n110     eid = hashlib.md5((\"|\".join(map(str, key))).encode(\"utf-8\")).hexdigest()[:12]\n111     b = buckets.get(key)\n",
+   "col_offset": 10,
+   "end_col_offset": 64,
+   "filename": "quant_backtest\\k266_m3a_events.py",
+   "issue_confidence": "HIGH",
+   "issue_cwe": {
+    "id": 327,
+    "link": "https://cwe.mitre.org/data/definitions/327.html"
+   },
+   "issue_severity": "HIGH",
+   "issue_text": "Use of weak MD5 hash for security. Consider usedforsecurity=False",
+   "line_number": 110,
+   "line_range": [
+    110
+   ],
+   "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b324_hashlib.html",
+   "test_id": "B324",
+   "test_name": "hashlib"
+  },
+  {
+   "code": "210         payload = json.dumps(columns, ensure_ascii=False, sort_keys=True)\n211         h = hashlib.sha1(payload.encode(\"utf-8\")).hexdigest()\n212 \n",
+   "col_offset": 12,
+   "end_col_offset": 49,
+   "filename": "quant_backtest\\linreg.py",
+   "issue_confidence": "HIGH",
+   "issue_cwe": {
+    "id": 327,
+    "link": "https://cwe.mitre.org/data/definitions/327.html"
+   },
+   "issue_severity": "HIGH",
+   "issue_text": "Use of weak SHA1 hash for security. Consider usedforsecurity=False",
+   "line_number": 211,
+   "line_range": [
+    211
+   ],
+   "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b324_hashlib.html",
+   "test_id": "B324",
+   "test_name": "hashlib"
+  },
+  {
+   "code": "281 def _cache_path(q):\n282     h = hashlib.md5(q.encode(\"utf-8\")).hexdigest()[:12]\n283     return os.path.join(CACHE_DIR, \"%s_%s.json\" % (h, _today8()))\n",
+   "col_offset": 8,
+   "end_col_offset": 38,
+   "filename": "quant_backtest\\multi_agent.py",
+   "issue_confidence": "HIGH",
+   "issue_cwe": {
+    "id": 327,
+    "link": "https://cwe.mitre.org/data/definitions/327.html"
+   },
+   "issue_severity": "HIGH",
+   "issue_text": "Use of weak MD5 hash for security. Consider usedforsecurity=False",
+   "line_number": 282,
+   "line_range": [
+    282
+   ],
+   "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b324_hashlib.html",
+   "test_id": "B324",
+   "test_name": "hashlib"
+  },
+  {
+   "code": "243 def _cache_path(q):\n244     h = hashlib.md5(q.encode(\"utf-8\")).hexdigest()[:12]\n245     return os.path.join(CACHE_DIR, \"%s_%s.json\" % (h, _today8()))\n",
+   "col_offset": 8,
+   "end_col_offset": 38,
+   "filename": "quant_backtest\\nl_query.py",
+   "issue_confidence": "HIGH",
+   "issue_cwe": {
+    "id": 327,
+    "link": "https://cwe.mitre.org/data/definitions/327.html"
+   },
+   "issue_severity": "HIGH",
+   "issue_text": "Use of weak MD5 hash for security. Consider usedforsecurity=False",
+   "line_number": 244,
+   "line_range": [
+    244
+   ],
+   "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b324_hashlib.html",
+   "test_id": "B324",
+   "test_name": "hashlib"
+  },
+  {
+   "code": "242 def _evt_id(url):\n243     return \"rpt:\" + hashlib.sha1((url or \"\").encode(\"utf-8\")).hexdigest()[:10]\n244 \n",
+   "col_offset": 20,
+   "end_col_offset": 61,
+   "filename": "quant_backtest\\report_ai.py",
+   "issue_confidence": "HIGH",
+   "issue_cwe": {
+    "id": 327,
+    "link": "https://cwe.mitre.org/data/definitions/327.html"
+   },
+   "issue_severity": "HIGH",
+   "issue_text": "Use of weak SHA1 hash for security. Consider usedforsecurity=False",
+   "line_number": 243,
+   "line_range": [
+    243
+   ],
+   "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b324_hashlib.html",
+   "test_id": "B324",
+   "test_name": "hashlib"
+  },
+  {
+   "code": "109     }\n110     return hashlib.md5(\n111         json.dumps(core, sort_keys=True, ensure_ascii=False).encode(\"utf-8\")\n112     ).hexdigest()[:12]\n113 \n",
+   "col_offset": 11,
+   "end_col_offset": 5,
+   "filename": "quant_backtest\\research_agent.py",
+   "issue_confidence": "HIGH",
+   "issue_cwe": {
+    "id": 327,
+    "link": "https://cwe.mitre.org/data/definitions/327.html"
+   },
+   "issue_severity": "HIGH",
+   "issue_text": "Use of weak MD5 hash for security. Consider usedforsecurity=False",
+   "line_number": 110,
+   "line_range": [
+    110,
+    111,
+    112
+   ],
+   "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b324_hashlib.html",
+   "test_id": "B324",
+   "test_name": "hashlib"
+  },
+  {
+   "code": "62         cmd,\n63         shell=True,\n64         capture_output=True,\n65         text=True,\n66         encoding=\"utf-8\",\n67         errors=\"replace\",\n68         cwd=REPO,\n69         timeout=timeout,\n70     )\n71     return r.stdout.strip(), r.returncode\n72 \n73 \n",
+   "col_offset": 8,
+   "end_col_offset": 5,
+   "filename": "quant_backtest\\tools\\d1_s1_precheck.py",
+   "issue_confidence": "HIGH",
+   "issue_cwe": {
+    "id": 78,
+    "link": "https://cwe.mitre.org/data/definitions/78.html"
+   },
+   "issue_severity": "HIGH",
+   "issue_text": "subprocess call with shell=True identified, security issue.",
+   "line_number": 63,
+   "line_range": [
+    61,
+    62,
+    63,
+    64,
+    65,
+    66,
+    67,
+    68,
+    69,
+    70
+   ],
+   "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b602_subprocess_popen_with_shell_equals_true.html",
+   "test_id": "B602",
+   "test_name": "subprocess_popen_with_shell_equals_true"
+  },
+  {
+   "code": "170     raw = \"%s|%s\" % (strategy, config_fingerprint)\n171     return hashlib.sha1(raw.encode(\"utf-8\")).hexdigest()[:16]\n172 \n",
+   "col_offset": 11,
+   "end_col_offset": 44,
+   "filename": "quant_backtest\\trial_ledger.py",
+   "issue_confidence": "HIGH",
+   "issue_cwe": {
+    "id": 327,
+    "link": "https://cwe.mitre.org/data/definitions/327.html"
+   },
+   "issue_severity": "HIGH",
+   "issue_text": "Use of weak SHA1 hash for security. Consider usedforsecurity=False",
+   "line_number": 171,
+   "line_range": [
+    171
+   ],
+   "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b324_hashlib.html",
+   "test_id": "B324",
+   "test_name": "hashlib"
+  }
+ ]
 }
