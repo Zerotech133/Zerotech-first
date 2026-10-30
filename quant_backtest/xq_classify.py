@@ -46,6 +46,7 @@ import urllib.request
 from datetime import datetime
 from pathlib import Path
 import logging
+from tools.safe_urlopen import safe_urlopen
 
 if __package__:
     from .tools.xq_ticker_normalize import normalize_tickers
@@ -549,7 +550,7 @@ def classify_one(con: sqlite3.Connection, row: tuple) -> bool:
     )
     try:
         t0 = time.time()
-        resp = urllib.request.urlopen(req, timeout=TIMEOUT_SEC)
+        resp = safe_safe_urlopen(req, timeout=TIMEOUT_SEC)
         answer = json.loads(resp.read())["message"]["content"].strip()
         # 防御：老版客户端/模型把思考块写进 content 时剥离
         answer = re.sub(r"<think>.*?</think>", "", answer, flags=re.S).strip()
@@ -694,7 +695,7 @@ def recontent_run(limit: int) -> int:
             OLLAMA_URL, data=payload, headers={"Content-Type": "application/json"}
         )
         try:
-            resp = urllib.request.urlopen(req, timeout=TIMEOUT_SEC)
+            resp = safe_safe_urlopen(req, timeout=TIMEOUT_SEC)
             answer = json.loads(resp.read())["message"]["content"].strip()
             answer = re.sub(r"<think>.*?</think>", "", answer, flags=re.S).strip()
         except Exception as e:

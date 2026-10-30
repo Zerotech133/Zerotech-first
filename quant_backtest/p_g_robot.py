@@ -40,6 +40,7 @@ from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor
 from urllib.request import Request, urlopen
 import logging
+from tools.safe_urlopen import safe_urlopen
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -132,7 +133,7 @@ def _get_tat():
     body = json.dumps({"app_id": app_id, "app_secret": app_secret}).encode("utf-8")
     req = Request("https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal",
                   data=body, headers={"Content-Type": "application/json"})
-    d = json.loads(urlopen(req, timeout=15).read().decode("utf-8"))
+    d = json.loads(safe_urlopen(req, timeout=15).read().decode("utf-8"))
     # 显式校验（不用 assert：python -O 下 assert 失效属 fail-open）
     if d.get("code") != 0:
         raise RuntimeError("tat_fail: %s"

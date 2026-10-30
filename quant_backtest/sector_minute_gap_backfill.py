@@ -13,6 +13,7 @@ from urllib.parse import urlencode
 from urllib.request import urlopen
 
 import pandas as pd
+from tools.safe_urlopen import safe_urlopen
 
 
 REMOTE = "http://rookie.xtcloud-tech.com:48088/api/data/table/tdx_sector_min"
@@ -114,7 +115,7 @@ def _params(code: str, trade_date: str, offset: int = 0) -> dict[str, Any]:
 
 def _request(params: Mapping[str, Any]) -> Mapping[str, Any]:
     url = REMOTE + "?" + urlencode(params)
-    with urlopen(url, timeout=60) as response:
+    with safe_urlopen(url, timeout=60) as response:
         return json.loads(response.read().decode("utf-8"))
 
 

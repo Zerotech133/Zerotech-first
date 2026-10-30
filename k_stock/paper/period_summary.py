@@ -35,6 +35,7 @@ sys.path.insert(0, str(HERE))
 
 from judge import _connect, LLM_MODEL, OLLAMA  # noqa: E402
 import logging
+from tools.safe_urlopen import safe_urlopen
 
 # 组合→trader 映射数据文件（portal/subscriptions.py 的存储层）。
 SUB_PATH = HERE.parent.parent / "portal" / "data" / "strategy_subscriptions.json"
@@ -246,7 +247,7 @@ def _llm_next_steps(out: dict) -> list:
         req = urllib.request.Request(
             OLLAMA, data=body, headers={"Content-Type": "application/json"}
         )
-        d = json.loads(urllib.request.urlopen(req, timeout=120).read().decode("utf-8"))
+        d = json.loads(safe_safe_urlopen(req, timeout=120).read().decode("utf-8"))
         msg = d.get("message", {}).get("content", "")
         if "</think>" in msg:
             msg = msg.split("</think>", 1)[1]

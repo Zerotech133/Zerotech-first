@@ -24,11 +24,12 @@ import urllib.parse
 import urllib.request
 import urllib.error
 import logging
+from tools.safe_urlopen import safe_urlopen
 
 OPEN = "https://open.feishu.cn/open-apis"
 
 # W3 清债（2026-10-24）：OpenAPI 直发可重试错误集合与可注入的 HTTP 打开器（单测用）
-_HTTP_OPEN = urllib.request.urlopen
+_HTTP_OPEN = safe_urlopen
 _RETRY_HTTP_STATUS = {429, 500, 502, 503, 504}
 # 频控(99991400) 与 token 失效类(9999166x)：退避重试；token 类先强制刷新
 _RETRY_BIZ_CODES = {99991400, 99991661, 99991663, 99991664, 99991668}
@@ -155,7 +156,7 @@ def get_tat(app_id=None, app_secret=None, *, use_cache=True):
         headers={"Content-Type": "application/json"},
     )
     try:
-        with urllib.request.urlopen(req, timeout=15) as r:
+        with safe_safe_urlopen(req, timeout=15) as r:
             tok = json.loads(r.read().decode("utf-8")).get("tenant_access_token")
     except Exception as e:
         # 2026-10-16 审计：token 获取失败原全静默（调用方只见
@@ -326,7 +327,7 @@ def _hub_send(
             data=body,
             headers={"Content-Type": "application/json", "X-Push-Hub-Key": key},
         )
-        with urllib.request.urlopen(rq, timeout=timeout) as r:
+        with safe_safe_urlopen(rq, timeout=timeout) as r:
             resp = json.loads(r.read().decode("utf-8"))
         if resp.get("ok"):
             mid = resp.get("message_id")
@@ -500,7 +501,7 @@ def _agent_webhook_send(
                 "X-Push-From": "hub-gate-agent-dispatch",
             },
         )
-        with urllib.request.urlopen(rq, timeout=15) as r:
+        with safe_safe_urlopen(rq, timeout=15) as r:
             resp = json.loads(r.read().decode("utf-8"))
         ok = (
             bool(resp.get("ok"))
@@ -719,7 +720,7 @@ def verify_message(message_id, app_id=None, app_secret=None):
             OPEN + "/im/v1/messages/" + urllib.parse.quote(str(message_id), safe=""),
             headers={"Authorization": "Bearer " + tok},
         )
-        with urllib.request.urlopen(rq, timeout=5) as r:
+        with safe_safe_urlopen(rq, timeout=5) as r:
             resp = json.loads(r.read().decode("utf-8"))
         return resp.get("code") == 0
     except Exception:
@@ -760,7 +761,7 @@ def upload_image(
         },
     )
     try:
-        with urllib.request.urlopen(req, timeout=60) as r:
+        with safe_safe_urlopen(req, timeout=60) as r:
             resp = json.loads(r.read().decode("utf-8"))
         if resp.get("code") == 0:
             return (resp.get("data") or {}).get("image_key")

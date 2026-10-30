@@ -32,6 +32,7 @@ import re
 import subprocess
 import time
 from datetime import datetime, timedelta
+from tools.safe_urlopen import safe_urlopen
 
 # ── 链定义（K-STOCK-424 P1）─────────────────────────────────────────
 CHAIN_DEFS = {
@@ -126,7 +127,7 @@ def _http_alive(url: str, timeout: float = _HTTP_PROBE_TIMEOUT) -> tuple:
     from urllib.request import urlopen
 
     try:
-        with urlopen(url, timeout=timeout) as resp:
+        with safe_urlopen(url, timeout=timeout) as resp:
             code = resp.getcode()
         if 200 <= code < 300:
             return True, "HTTP %d" % code
@@ -315,7 +316,7 @@ def chain_payload() -> tuple:
 def _http_get_json(url: str, timeout: float = 6.0):
     from urllib.request import urlopen
 
-    with urlopen(url, timeout=timeout) as resp:
+    with safe_urlopen(url, timeout=timeout) as resp:
         return json.loads(resp.read().decode("utf-8"), strict=False)
 
 

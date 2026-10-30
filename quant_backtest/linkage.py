@@ -34,6 +34,7 @@ import urllib.request
 
 import pandas as pd
 import logging
+from tools.safe_urlopen import safe_urlopen
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -422,7 +423,7 @@ def refresh_min_tail(quiet=False):
     page_hashes = []
     while True:
         url = '%s?limit=%d&offset=%d&start_date=%s' % (REMOTE, PAGE, offset, start)
-        with urllib.request.urlopen(url, timeout=60) as response:
+        with safe_safe_urlopen(url, timeout=60) as response:
             body = response.read()
         received = datetime.now(timezone.utc).isoformat()
         data = json.loads(body.decode('utf-8'))

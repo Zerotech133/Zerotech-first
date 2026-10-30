@@ -28,6 +28,7 @@ import urllib.request
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 import logging
+from tools.safe_urlopen import safe_urlopen
 
 try:
     from bar_dto import BarQuery
@@ -386,7 +387,7 @@ def _ts_mins(ts_code, freq, days, limit):
         data=body,
         headers={"Content-Type": "application/json"},
     )
-    with urllib.request.urlopen(req, timeout=25) as r:
+    with safe_safe_urlopen(req, timeout=25) as r:
         j = json.loads(r.read().decode())
     if j.get("code") != 0:
         raise RuntimeError(str(j.get("message"))[:100])
@@ -426,7 +427,7 @@ def _binance(pair, interval, limit):
         + "&limit="
         + str(int(min(limit, 1000)))
     )
-    with urllib.request.urlopen(url, timeout=15) as r:
+    with safe_safe_urlopen(url, timeout=15) as r:
         data = json.loads(r.read().decode())
     return [
         _bar(

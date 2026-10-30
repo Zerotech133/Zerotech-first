@@ -14,6 +14,7 @@ import time
 import urllib.request
 
 import pandas as pd
+from tools.safe_urlopen import safe_urlopen
 
 DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "crypto")
 # K-mig (10-16): 本机直连 api.binance.com 不可达（GFW），改用官方行情专用镜像
@@ -30,7 +31,7 @@ def _kl(sym, start_ms):
         + "&startTime="
         + str(start_ms)
     )
-    with urllib.request.urlopen(url, timeout=20) as r:
+    with safe_safe_urlopen(url, timeout=20) as r:
         return json.loads(r.read().decode())
 
 
