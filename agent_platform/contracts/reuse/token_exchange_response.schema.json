@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://zerobound.local/contracts/token_exchange_response.schema.json",
+  "title": "TokenExchangeResponse",
+  "description": "RFC 8693 token exchange 响应；access_token 只回给受信 BFF，不进浏览器 localStorage。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["access_token", "issued_token_type", "token_type", "expires_in"],
+  "properties": {
+    "access_token": {"type": "string", "minLength": 16},
+    "issued_token_type": {"type": "string", "enum": ["urn:ietf:params:oauth:token-type:access_token"]},
+    "token_type": {"type": "string", "enum": ["Bearer", "N_A"]},
+    "expires_in": {"type": "integer", "minimum": 60, "maximum": 3600},
+    "scope": {"type": "string", "maxLength": 512},
+    "identity_context": {
+      "type": "object",
+      "required": ["sub", "actor_type", "source", "roles", "permissions", "owner_scope"],
+      "additionalProperties": true
+    },
+    "act": {
+      "type": "object",
+      "description": "RFC 8693 actor claim；无代理/代操作时省略",
+      "additionalProperties": true
+    }
+  }
+}

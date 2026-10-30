@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://zerobound.local/contracts/session_context.schema.json",
+  "title": "SessionContext",
+  "description": "零界登录会话（BFF 服务端会话，浏览器只见 HttpOnly cookie）；只读描述，不授权。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["session_id", "sub", "idp", "auth_time", "issued_at", "expires_at", "amr", "identity_context", "read_only"],
+  "properties": {
+    "session_id": {"type": "string", "minLength": 16, "maxLength": 128, "description": "不透明服务端会话 ID；不写 token/密码"},
+    "sub": {"type": "string", "minLength": 1, "maxLength": 128},
+    "idp": {"type": "string", "enum": ["zhice", "pocket_id", "zitadel", "local_dev"]},
+    "auth_time": {"type": "string", "format": "date-time"},
+    "issued_at": {"type": "string", "format": "date-time"},
+    "expires_at": {"type": "string", "format": "date-time"},
+    "amr": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "enum": ["pwd", "mfa", "passkey", "sso"]}
+    },
+    "read_only": {"type": "boolean"},
+    "identity_context": {
+      "type": "object",
+      "required": ["sub", "actor_type", "source", "roles", "permissions", "owner_scope", "issued_at"],
+      "properties": {
+        "sub": {"type": "string"},
+        "actor_type": {"type": "string", "enum": ["admin", "member", "qmt_client", "strategy_collaborator", "agent"]},
+        "source": {"type": "string", "enum": ["zero_bound", "zhice", "cainiao"]},
+        "roles": {"type": "array", "items": {"type": "string"}},
+        "permissions": {"type": "array", "items": {"type": "string"}},
+        "owner_scope": {"type": "string", "enum": ["own", "strategy", "tenant", "global"]},
+        "issued_at": {"type": "string", "format": "date-time"},
+        "attributes": {"type": "object", "additionalProperties": true}
+      },
+      "additionalProperties": true
+    },
+    "csrf_token_hash": {"type": ["string", "null"], "maxLength": 128, "description": "只存哈希，不存原文"},
+    "source_ids": {"type": "object", "additionalProperties": {"type": ["string", "null"]}},
+    "attributes": {"type": "object", "additionalProperties": true}
+  }
+}

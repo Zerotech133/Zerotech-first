@@ -1,0 +1,31 @@
+{
+  "session_id": "sess_3f5d2c1b9a8e7d6c5b4a39281706f5e4",
+  "sub": "zero_bound:owner",
+  "idp": "zhice",
+  "auth_time": "2026-10-30T11:30:00+08:00",
+  "issued_at": "2026-10-30T11:30:00+08:00",
+  "expires_at": "2026-10-30T12:30:00+08:00",
+  "amr": ["pwd"],
+  "read_only": true,
+  "csrf_token_hash": null,
+  "source_ids": {
+    "zhice_user_id": "u-96d51f4d9b7a2826"
+  },
+  "identity_context": {
+    "sub": "zero_bound:owner",
+    "actor_type": "member",
+    "source": "zero_bound",
+    "roles": ["ADMIN"],
+    "permissions": ["view", "manage_own", "trade", "approve", "research", "risk", "admin"],
+    "owner_scope": "global",
+    "issued_at": "2026-10-30T11:30:00+08:00",
+    "attributes": {
+      "mapping_status": "partial",
+      "note": "example only; not an authorization decision"
+    }
+  },
+  "attributes": {
+    "bff_version": "v1",
+    "read_only": true
+  }
+}
