@@ -24,6 +24,18 @@ def _b64(p):
     return base64.b64encode(open(p, "rb").read()).decode()
 
 
+def _j5_rows(vd):
+    """P0N：结论卡五维分解行。"""
+    rows = [("评级", vd["rating"]), ("评分", _fmt(vd.get("score")))]
+    f = (vd.get("score_detail") or {}).get("factors") or {}
+    if f:
+        rows.append(("质量/成长", "%d / %d" % (f.get("quality", 0), f.get("growth", 0))))
+        rows.append(("估值/趋势", "%d / %d" % (f.get("valuation", 0), f.get("trend", 0))))
+        rows.append(("事件", "%d" % f.get("event", 0)))
+    rows += [("触发", "；".join(vd["triggers"])), ("失效", "；".join(vd["invalidations"]))]
+    return rows
+
+
 def chart_price(snap, events, outdir):
     daily = snap["raw"].get("quote")
     if daily is None or not len(daily):
@@ -163,7 +175,13 @@ def build_report(ctx):
     A("| 项 | 值 |")
     A("|---|---|")
     A("| 评级 | %s |" % vd["rating"])
-    A("| 综合评分（规则） | %s |" % vd.get("score"))
+    A("| 综合评分（100分制） | %s |" % vd.get("score"))
+    _sd = vd.get("score_detail") or {}
+    _f = _sd.get("factors") or {}
+    if _f:
+        A("| 五维分解 | 质量 %.0f ｜ 成长 %.0f ｜ 估值 %.0f ｜ 趋势 %.0f ｜ 事件 %.0f |"
+          % (_f.get("quality", 0), _f.get("growth", 0), _f.get("valuation", 0),
+             _f.get("trend", 0), _f.get("event", 0)))
     A("| 触发条件 | %s |" % "；".join(vd["triggers"]))
     A("| 失效条件 | %s |" % "；".join(vd["invalidations"]))
     A("")
@@ -388,8 +406,7 @@ def build_h5(ctx, outdir):
              ("获利盘", "%s%%" % _fmt(feat.get("chips", {}).get("winner_rate"))),
              ("平均成本", _fmt(feat.get("chips", {}).get("avg_cost")))], "资金是情绪的温度计。"),
         ("j5", "🎯", "结论：%s" % vd["rating"], "置信度 %.2f ｜ %s" % (vd["confidence"], vd["horizon"]),
-         [("评级", vd["rating"]), ("评分", _fmt(vd.get("score"))),
-          ("触发", "；".join(vd["triggers"])), ("失效", "；".join(vd["invalidations"]))], vd["thesis"]),
+         _j5_rows(vd), vd["thesis"]),
     ]
     for jid, icon, title, sub, rows, read in jrows:
         judgments.append({"id": jid, "icon": icon, "title": title, "sub": sub,
