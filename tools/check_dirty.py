@@ -69,7 +69,17 @@ def classify(code: str) -> str:
     return "other"
 
 
-def build_rows(include_untracked: bool = False) -> list[dict]:
+ESCALATE_HOURS = 168.0  # 2026-10-30 P67：>7 天长期脏文件自动升级（协议 v1.1）
+
+
+def escalate_flag(age_hours, escalate_hours: float = ESCALATE_HOURS) -> bool:
+    """长期脏文件标记：age > escalate_hours（0/None 关闭）。纯函数便于测试。"""
+    return bool(age_hours is not None and escalate_hours
+                and age_hours > escalate_hours)
+
+
+def build_rows(include_untracked: bool = False,
+               escalate_hours: float = ESCALATE_HOURS) -> list[dict]:
     now = time.time()
     rows = []
     for code, path in git_status():
@@ -84,6 +94,7 @@ def build_rows(include_untracked: bool = False) -> list[dict]:
         rows.append({
             "path": path, "code": code, "kind": kind, "age_hours": age_h,
             "owner_hint": last_author(path), "known_wip": known,
+            "escalate": escalate_flag(age_h, escalate_hours),
         })
     rows.sort(key=lambda r: (r["age_hours"] is None, -(r["age_hours"] or 0)))
     return rows
@@ -95,10 +106,12 @@ def main(argv=None) -> int:
     ap.add_argument("--strict", action="store_true", help="超时脏文件 → exit 1")
     ap.add_argument("--max-age-hours", type=float, default=4.0)
     ap.add_argument("--include-untracked", action="store_true")
+    ap.add_argument("--escalate-hours", type=float, default=ESCALATE_HOURS,
+                    help="长期脏文件升级阈值（默认 168h=7天；0=关闭）")
     args = ap.parse_args(argv)
 
     try:
-        rows = build_rows(args.include_untracked)
+        rows = build_rows(args.include_untracked, args.escalate_hours)
     except RuntimeError as exc:
         print("DIRTY CHECK ERROR:", exc)
         return 2
@@ -106,16 +119,21 @@ def main(argv=None) -> int:
     tracked = [r for r in rows if r["kind"] != "untracked"]
     over = [r for r in tracked if (r["age_hours"] or 0) > args.max_age_hours and not r["known_wip"]]
     known_over = [r for r in tracked if (r["age_hours"] or 0) > args.max_age_hours and r["known_wip"]]
+    escalated = [r for r in tracked if r.get("escalate") and not r["known_wip"]]
 
     if args.json:
         print(json.dumps({"rows": rows, "over": over, "known_over": known_over,
-                          "max_age_hours": args.max_age_hours}, ensure_ascii=False, indent=1))
+                          "escalated": escalated, "max_age_hours": args.max_age_hours,
+                          "escalate_hours": args.escalate_hours},
+                         ensure_ascii=False, indent=1))
     else:
         print("DIRTY BOARD：跟踪脏文件 %d 个，未跟踪 %d 个（阈值 %.1fh）"
               % (len(tracked), len(rows) - len(tracked), args.max_age_hours))
         for r in rows:
             flag = "超过" if (r["age_hours"] or 0) > args.max_age_hours else "  "
             tag = " [WIP登记]" if r["known_wip"] else ""
+            if r.get("escalate"):
+                tag += " [升级>A0]"
             print("  %s %6.1fh %-9s %s%s   owner≈%s"
                   % (flag, r["age_hours"] or -1, r["kind"], r["path"], tag, r["owner_hint"]))
         if over:
@@ -126,7 +144,12 @@ def main(argv=None) -> int:
             print("\n已登记的并行 WIP %d 个（只提示）：" % len(known_over))
             for r in known_over:
                 print("  - %s (%.1fh)" % (r["path"], r["age_hours"]))
-        print("\n协议：脏文件 >2h 提醒 owner；>4h 需在工单注明；>8h 升级 A0。纯文档单/被占文件用窄单策略。")
+        if escalated:
+            print("\n长期脏文件 %d 个（>%.0fh，升级 A0 跟踪；owner 需 7 天内处置或转 KNOWN_WIP 带到期日）："
+                  % (len(escalated), args.escalate_hours))
+            for r in escalated:
+                print("  - 🔴 %s (%.1fh) owner≈%s" % (r["path"], r["age_hours"], r["owner_hint"]))
+        print("\n协议：脏文件 >2h 提醒 owner；>4h 需在工单注明；>8h 升级 A0；>168h（7天）自动升级长期 WIP。")
 
     if args.strict and over:
         return 1
