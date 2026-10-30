@@ -60,8 +60,15 @@ def summarize(spans: list, match: str = "llm") -> dict:
     lat = [x for x in (_latency_ms(s) for s in spans) if x is not None]
     names = Counter(str(s.get("name") or "?") for s in spans)
     errors = 0
+    degraded = 0
+    reasons = Counter()
     for s in spans:
         attrs = s.get("attributes") or {}
+        if isinstance(attrs, dict):
+            if str(attrs.get("zhaoyun.status")).lower() == "degraded":
+                degraded += 1
+            if attrs.get("zhaoyun.reason"):
+                reasons[str(attrs["zhaoyun.reason"])] += 1
         if s.get("status_code") == "ERROR":
             errors += 1
         elif isinstance(attrs, dict) and str(attrs.get("llm.ok")).lower() == "false":
@@ -78,6 +85,9 @@ def summarize(spans: list, match: str = "llm") -> dict:
         "count": len(spans),
         "errors": errors,
         "error_rate": round(errors / len(spans), 4) if spans else None,
+        "degraded": degraded,
+        "degraded_rate": round(degraded / len(spans), 4) if spans else None,
+        "degraded_reasons": dict(reasons.most_common(10)),
         "latency_ms": {"p50": pct(50), "p95": pct(95), "max": round(max(lat), 1) if lat else None},
         "spans": dict(names.most_common(10)),
     }
@@ -91,6 +101,10 @@ def check(summary: dict, max_error_rate: float = 0.05) -> dict:
     if summary.get("error_rate") is not None and summary["error_rate"] > max_error_rate:
         alerts.append({"severity": "high", "code": "error_rate_high",
                        "value": summary["error_rate"], "message": "span 错误率过高"})
+    if summary.get("degraded_rate") is not None and summary["degraded_rate"] > 0.2:
+        alerts.append({"severity": "medium", "code": "degraded_rate_high",
+                       "value": summary["degraded_rate"],
+                       "message": "span 降级率过高：看 degraded_reasons（length/exception）"})
     return {"ok": not alerts, "alerts": alerts}
 
 

@@ -18,10 +18,14 @@ def test_summarize_and_check():
         {"name": "zhuge.llm.chat", "start_time": "2026-10-30T10:00:00+00:00",
          "end_time": "2026-10-30T10:00:03+00:00", "status_code": "ERROR",
          "attributes": {"llm.ok": False}},
+        {"name": "llm.attempt", "start_time": "2026-10-30T10:00:00+00:00",
+         "end_time": "2026-10-30T10:00:01+00:00", "status_code": "ERROR",
+         "attributes": {"zhaoyun.status": "degraded", "zhaoyun.reason": "length"}},
     ]
     s = t.summarize(spans)
-    assert s["count"] == 2 and s["errors"] == 1
-    assert s["error_rate"] == 0.5
+    assert s["count"] == 3 and s["errors"] == 2
+    assert s["degraded"] == 1
+    assert s["degraded_reasons"] == {"length": 1}
     assert s["latency_ms"]["p50"] == 1000.0
     assert t.check(s)["ok"] is False
 

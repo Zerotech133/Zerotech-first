@@ -152,7 +152,13 @@ class Interpreter:
         except Exception:  # noqa: BLE001
             return nullcontext()
 
-    def _emit_attempt(self, run_id, node, status, latency_ms):
+    def _attempt_reason(self, exc=None):
+        if exc is not None:
+            return type(exc).__name__
+        meta = getattr(self.llm, "last_meta", None) or {}
+        return str(meta.get("done_reason") or "")
+
+    def _emit_attempt(self, run_id, node, status, latency_ms, reason=""):
         """把一次 LLM 调用尝试记为同一 run 的 attempt（不含密钥/大参数）。"""
         try:
             from observability import trace as _tr
@@ -168,6 +174,7 @@ class Interpreter:
                     "gen_ai.request.model": str(node.get("llm_binding") or ""),
                     "zhaoyun.status": str(status or ""),
                     "zhaoyun.latency_ms": round(float(latency_ms or 0), 1),
+                    "zhaoyun.reason": str(reason or ""),
                 },
                 run_id=str(run_id),
             )
@@ -335,11 +342,14 @@ class Interpreter:
     # ---------- 单节点 ----------
     def _single(self, node, ctx, run_id):
         t0 = time.time()
+        exc = None
         try:
             text, status = self._chat(node, self._build_user(node, ctx))
         except Exception as e:  # noqa: BLE001
+            exc = e
             text, status = "[降级] LLM 不可用（%s），按中性规则处理" % e, "degraded"
-        self._emit_attempt(run_id, node, status, (time.time() - t0) * 1000)
+        self._emit_attempt(run_id, node, status, (time.time() - t0) * 1000,
+                           reason=self._attempt_reason(exc))
         self._record(
             node,
             ctx,
@@ -356,16 +366,21 @@ class Interpreter:
     def _debate(self, na, nb, ctx, run_id):
         t0 = time.time()
         # 开场陈词（各自独立）
+        exc_a = exc_b = None
         try:
             a_text, st_a = self._chat(na, self._build_user(na, ctx))
         except Exception as e:  # noqa: BLE001
+            exc_a = e
             a_text, st_a = "[降级] 多头 LLM 不可用：%s" % e, "degraded"
         try:
             b_text, st_b = self._chat(nb, self._build_user(nb, ctx))
         except Exception as e:  # noqa: BLE001
+            exc_b = e
             b_text, st_b = "[降级] 空头 LLM 不可用：%s" % e, "degraded"
-        self._emit_attempt(run_id, na, st_a, (time.time() - t0) * 1000)
-        self._emit_attempt(run_id, nb, st_b, (time.time() - t0) * 1000)
+        self._emit_attempt(run_id, na, st_a, (time.time() - t0) * 1000,
+                           reason=self._attempt_reason(exc_a))
+        self._emit_attempt(run_id, nb, st_b, (time.time() - t0) * 1000,
+                           reason=self._attempt_reason(exc_b))
         self.cp.trace(
             run_id,
             na["node_key"],
