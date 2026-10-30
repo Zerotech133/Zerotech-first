@@ -229,6 +229,21 @@ def alert_backlog(left, judged, deadline_hit):
         return False
 
 
+def _m3_active_skip(lock_mod) -> bool:
+    """M3 持有且存活则 True；JEV_SKIP_IF_M3=0 关闭（夜跑/排障用）。"""
+    if os.environ.get("JEV_SKIP_IF_M3", "1").strip().lower() in (
+            "0", "false", "no", "off"):
+        return False
+    try:
+        info = lock_mod.holder_info()
+    except Exception:  # noqa: BLE001
+        return False
+    if not info.get("alive"):
+        return False
+    purpose = str(info.get("purpose") or "").lower()
+    return "k266" in purpose or "m3" in purpose
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument(
@@ -268,6 +283,16 @@ def main():
         sys.path.insert(0, _root)
     import atexit
     import ollama_lock
+    # 2026-10-30 M3SKIP：M3 活跃时小时轮直接让位，不再“抢到再丢/只判 8 条”。
+    # 夜跑可设 JEV_SKIP_IF_M3=0 保留原竞争行为（由 jev_night 显式设置）。
+    if _m3_active_skip(ollama_lock):
+        info = ollama_lock.holder_info()
+        print(
+            "BACKFILL skip: m3_active holder=%s pid=%s alive=%s"
+            % (info.get("purpose"), info.get("pid"), info.get("alive")),
+            flush=True,
+        )
+        return
 
     atexit.register(ollama_lock.release)
     if not ollama_lock.acquire(

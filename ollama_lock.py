@@ -172,6 +172,19 @@ def _read_lock():
         return {}
 
 
+def holder_info():
+    """只读探测当前持锁者（不抢锁）：{purpose,pid,ts,alive}。"""
+    d = _read_lock()
+    if not isinstance(d, dict):
+        return {}
+    try:
+        pid = int(d.get("pid") or 0)
+    except (TypeError, ValueError):
+        pid = 0
+    return {"purpose": str(d.get("purpose") or ""), "pid": pid,
+            "ts": d.get("ts"), "alive": bool(pid and _alive(pid))}
+
+
 def held_seconds():
     """本进程已连续持锁秒数；没持锁返回 0。"""
     d = _read_lock()
