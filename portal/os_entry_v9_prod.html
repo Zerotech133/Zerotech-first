@@ -598,7 +598,7 @@ async function refresh(){const run=++sequence,keys=Object.keys(endpoints);$('#fr
     var d = null;
     try { var r = await fetch('/api/bff/cainiao/score-distribution', {cache: 'no-store'}); if (r.ok) d = await r.json(); } catch (e) {}
     if (!d || !d.ok) {
-      try { var r2 = await fetch('/data/bff_score_distribution.json', {cache: 'no-store'}); if (r2.ok) d = await r2.json(); } catch (e2) {}
+      try { var r2 = await fetch('/static/bff_score_distribution.json', {cache: 'no-store'}); if (r2.ok) d = await r2.json(); } catch (e2) {}
     }
     if (!d || !d.ok) { openDrawer('评分快照历史分布', [el('p', null, '分布不可用；未做推断。')]); return; }
     openDrawer('评分快照历史分布', scoreNodes(d));

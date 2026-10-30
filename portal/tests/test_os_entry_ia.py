@@ -64,4 +64,4 @@ def test_tri_metric_drilldowns():
     assert 'data-tri-drill="users"' in HTML
     assert 'tri-drawer' in HTML
     assert '/api/bff/cainiao/score-distribution' in HTML
-    assert '/data/bff_score_distribution.json' in HTML
+    assert '/static/bff_score_distribution.json' in HTML

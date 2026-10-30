@@ -2,13 +2,13 @@
 """生成菜鸟评分快照历史分布（只读）。
 
 用途：8091 尚未重启到带 BFF 分布端点的版本时，/os-entry 下钻用
-`portal/data/bff_score_distribution.json` 同源静态快照兜底。
+`portal/static/bff_score_distribution.json` 同源静态快照兜底。
 
 只读：START TRANSACTION READ ONLY；只发 SELECT；不打印数据库密码。
 
 用法：
   python tools/gen_bff_score_distribution.py
-  python tools/gen_bff_score_distribution.py --out portal/data/bff_score_distribution.json
+  python tools/gen_bff_score_distribution.py --out portal/static/bff_score_distribution.json
 """
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ from pathlib import Path
 
 BEIJING = timezone(timedelta(hours=8))
 REPO = Path(__file__).resolve().parent.parent
-DEFAULT_OUT = REPO / "portal" / "data" / "bff_score_distribution.json"
+DEFAULT_OUT = REPO / "portal" / "static" / "bff_score_distribution.json"
 PW_FILE = Path(
     os.environ.get(
         "CAINIAO_DB_PASSWORD_FILE",

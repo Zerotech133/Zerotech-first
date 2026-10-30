@@ -1,0 +1,143 @@
+{
+  "ok": true,
+  "mode": "read_only",
+  "source": "cainiao_mysql:thunder_model",
+  "kind": "score_distribution",
+  "generated_at": "2026-10-30T10:13:50+08:00",
+  "latest_business_at": "2026-04-14 10:21:32",
+  "stale": true,
+  "note": "历史快照；非实时。仅统计评分快照，不含交易指令。",
+  "daily": [
+    {
+      "date": "2026-03-13",
+      "count": 1,
+      "avg_score": 35.0
+    },
+    {
+      "date": "2026-03-16",
+      "count": 1101,
+      "avg_score": 43.55
+    },
+    {
+      "date": "2026-03-17",
+      "count": 284,
+      "avg_score": 35.97
+    },
+    {
+      "date": "2026-03-18",
+      "count": 3792,
+      "avg_score": 41.82
+    },
+    {
+      "date": "2026-03-19",
+      "count": 4007,
+      "avg_score": 51.86
+    },
+    {
+      "date": "2026-03-20",
+      "count": 621,
+      "avg_score": 45.44
+    },
+    {
+      "date": "2026-03-23",
+      "count": 672,
+      "avg_score": 43.57
+    },
+    {
+      "date": "2026-03-24",
+      "count": 1224,
+      "avg_score": 44.88
+    },
+    {
+      "date": "2026-03-25",
+      "count": 1350,
+      "avg_score": 49.72
+    },
+    {
+      "date": "2026-03-26",
+      "count": 895,
+      "avg_score": 45.96
+    },
+    {
+      "date": "2026-03-27",
+      "count": 1593,
+      "avg_score": 44.68
+    },
+    {
+      "date": "2026-03-30",
+      "count": 1562,
+      "avg_score": 46.13
+    },
+    {
+      "date": "2026-03-31",
+      "count": 1406,
+      "avg_score": 48.16
+    },
+    {
+      "date": "2026-04-01",
+      "count": 1450,
+      "avg_score": 49.78
+    },
+    {
+      "date": "2026-04-02",
+      "count": 1450,
+      "avg_score": 48.89
+    },
+    {
+      "date": "2026-04-03",
+      "count": 348,
+      "avg_score": 46.57
+    },
+    {
+      "date": "2026-04-08",
+      "count": 1000,
+      "avg_score": 45.83
+    },
+    {
+      "date": "2026-04-09",
+      "count": 1397,
+      "avg_score": 51.21
+    },
+    {
+      "date": "2026-04-10",
+      "count": 1361,
+      "avg_score": 50.94
+    },
+    {
+      "date": "2026-04-13",
+      "count": 1434,
+      "avg_score": 49.57
+    },
+    {
+      "date": "2026-04-14",
+      "count": 304,
+      "avg_score": 49.75
+    }
+  ],
+  "buckets": [
+    {
+      "range": "0-59",
+      "count": 19280
+    },
+    {
+      "range": "60-69",
+      "count": 2973
+    },
+    {
+      "range": "70-79",
+      "count": 2300
+    },
+    {
+      "range": "80-89",
+      "count": 1235
+    },
+    {
+      "range": "90-100",
+      "count": 1464
+    }
+  ],
+  "recommendations": {
+    "total": 1606,
+    "latest_at": "2026-02-27 20:08:08"
+  }
+}
