@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 18:29",
+ "generated": "2026-10-30 18:31",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 27,
+  "workorders_doing": 29,
   "workorders_review": 8
  },
  "workorders": [
@@ -327,6 +327,24 @@
    "branch": "task/K-QUANT-20261030-IDEHARDEN",
    "created": "2026-10-30 18:25:07",
    "project": "quant"
+  },
+  {
+   "id": "WO-ZHAOYUN-P2-FIX-20261030",
+   "desc": "P2修正：stale工具/日报适配task_board_audit rows+summary结构",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-ZHAOYUN-P2-FIX-20261030",
+   "created": "2026-10-30 18:29:36",
+   "project": "general"
+  },
+  {
+   "id": "WO-WARROOM-LIVE-20261030",
+   "desc": "作战台对接实时数据：/api/war-room/snapshot 聚合 D1/池/paper/人工确认/盯盘；前端优先 fetch，静态快照兜底；页面统一 tokens/nav",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-WARROOM-LIVE-20261030",
+   "created": "2026-10-30 18:30:58",
+   "project": "portal"
   }
  ],
  "coder_traces": [
@@ -7286,6 +7304,11 @@
     {
      "id": "WO-LEGION-OIDC-PATH-20261030",
      "desc": "OIDC配置路径对齐实际vault",
+     "status": "doing"
+    },
+    {
+     "id": "WO-ZHAOYUN-P2-FIX-20261030",
+     "desc": "P2修正：stale工具/日报适配task_board_audit rows+summary结构",
      "status": "doing"
     }
    ]
