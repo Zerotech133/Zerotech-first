@@ -24,6 +24,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -58,6 +59,9 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CALIB_PATH = os.environ.get(
     "JEV_CALIB_PATH",
     os.path.join(REPO_ROOT, "agent_platform", "data", "jev_audit", "latest.json"))
+FEEDBACK_PATH = _Path(os.environ.get(
+    "JEV_FEEDBACK_PATH",
+    r"C:\aios\agent_platform\data\jev_audit\review_feedback.jsonl"))
 
 _HTTP_TIMEOUT = 20
 
@@ -119,6 +123,25 @@ TOOLS = [
                 "hours": {"type": "integer", "description": "时间窗小时数，默认 24，范围 1-720"},
                 "top": {"type": "integer", "description": "Top 条目数，默认 10，范围 1-20"},
             },
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "jev_feedback",
+        "description": (
+            "提交对某条 JEV 判定的存疑/纠正（写入 review 反馈集，供人工复核后回灌 JEV-Eval）。"
+            "用于『这条判断我不认同/有补充证据』，不会直接改判定。"
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "news_id": {"type": "string", "description": "JEV 条目 id（jev_query 返回的 id）"},
+                "note": {"type": "string", "description": "质疑/纠正说明，1-500 字"},
+                "suggested_bias": {"type": "string", "enum": ["bull", "bear", "neutral"],
+                                   "description": "可选：建议的正确方向"},
+                "labeler": {"type": "string", "description": "提交者标识，默认 hermes"},
+            },
+            "required": ["news_id", "note"],
             "additionalProperties": False,
         },
     },
@@ -364,8 +387,42 @@ def _call_tool(name: str, args: dict) -> str:
         params["with_posterior"] = "1"
         data = _http_get_json("/api/jev/query", params)
         return _fmt_digest(data, _load_calibration(), focus, top)
-    raise _InvalidParams("未知工具：%s（可用：jev_query / jev_calibration / jev_digest / jev_risk）"
-                         % (name,))
+    if name == "jev_feedback":
+        allowed = {"news_id", "note", "suggested_bias", "labeler"}
+        unknown = set(args) - allowed
+        if unknown:
+            raise _InvalidParams("未知参数：%s（可用：%s）"
+                                 % (",".join(sorted(unknown)), ",".join(sorted(allowed))))
+        news_id = str(args.get("news_id") or "").strip()
+        if not news_id:
+            raise _InvalidParams("news_id 必填且非空")
+        note = str(args.get("note") or "").strip()
+        if not (1 <= len(note) <= 500):
+            raise _InvalidParams("note 必填，长度 1-500 字")
+        sb = str(args.get("suggested_bias") or "").strip().lower()
+        if sb and sb not in ("bull", "bear", "neutral"):
+            raise _InvalidParams("suggested_bias 非法：%s（可选 bull/bear/neutral）" % sb)
+        labeler = str(args.get("labeler") or "hermes").strip()[:40]
+        rec = {"news_id": news_id, "note": note, "suggested_bias": sb or None,
+               "labeler": labeler, "ts": time.strftime("%Y-%m-%dT%H:%M:%S")}
+        FEEDBACK_PATH.parent.mkdir(parents=True, exist_ok=True)
+        existing = set()
+        if FEEDBACK_PATH.exists():
+            for line in FEEDBACK_PATH.read_text(encoding="utf-8").splitlines():
+                try:
+                    r = json.loads(line)
+                    existing.add((r.get("news_id"), r.get("note")))
+                except ValueError:
+                    continue
+        if (news_id, note) in existing:
+            return "反馈已存在（同 news_id+说明），已跳过；等待人工复核后会回灌 JEV-Eval。"
+        with FEEDBACK_PATH.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
+        return ("已记录反馈：%s（%s）。文件：%s；等待人工复核后回灌 JEV-Eval。"
+                % (news_id, note[:40], FEEDBACK_PATH))
+    raise _InvalidParams(
+        "未知工具：%s（可用：jev_query / jev_calibration / jev_digest / jev_risk / jev_feedback）"
+        % (name,))
 
 
 def _as_int(value, name: str, lo: int, hi: int) -> int:

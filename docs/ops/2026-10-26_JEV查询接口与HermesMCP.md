@@ -94,3 +94,22 @@ Hermes 话术：
 
 边界：仍为只读；不写库、不推送；`jev_digest` 会显式披露数据落后与低信号事件，避免把"低信号"当方向。
 
+## 十一、2026-10-30 新增：`jev_feedback` + Hermes 默认工作流 + 风险告警桥
+
+### 11.1 `jev_feedback`（写入反馈集，不直接改判定）
+参数：`news_id`（必填）、`note`（1-500 字，必填）、`suggested_bias`（可选 bull/bear/neutral）、`labeler`（默认 hermes）。
+落点：`agent_platform/data/jev_audit/review_feedback.jsonl`（append-only，同 news_id+说明幂等跳过）。
+人工复核后由 `tools/jev_review_loop.py` 回灌为评测标注。
+
+### 11.2 Hermes 默认工作流（提示词/能力卡建议）
+- **盘前**：`jev_digest {"hours": 12, "focus": "risk", "top": 8}` → 风险清单 + JEV 可信度；
+- **盘中**：`jev_risk {"hours": 2, "top": 5}` → 突发利空；追问个股 `jev_query {"code": "...", "hours": 168, "with_posterior": true}`；
+- **盘后复盘**：`jev_calibration {}` 看校准/数据落后；对可疑条目 `jev_feedback` 留痕；
+- 纪律：JEV 输出必须同时引用「校准/低信号/数据落后」信息，不得把低信号事件当方向信号。
+
+### 11.3 风险告警桥（工具就绪，自动推送待批准）
+`tools/jev_risk_alert.py`：扫描近 N 小时 bias=bear、impact=high、conf≥0.8（排除低信号），
+去重后写 `risk_alerts.jsonl`；`--emit-flag` 可写 `jev-eval/alerts/JEV_RISK_<ts>.flag`
+由现有 `alert_forward.ps1` 转发飞书。默认 dry-run，不注册任务、不主动外发。
+上线自动调度（建议每小时，且仅交易时段）需老田 L2 批准。
+
