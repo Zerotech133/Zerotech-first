@@ -83,9 +83,20 @@ python tools/auth_gateway_smoke.py
 - `Set-Cookie` 含 `HttpOnly` + `SameSite=Lax`；
 - `/api/bff/overview`、`/api/bff/identity/actors` 仍 200，只读 BFF 不受影响。
 
+## 5.2 登录 UI 上线（2026-10-30 11:56）
+
+- `/login` 新增 UI Kit 登录页；nginx 精确路由 `location = /login` 已 `nginx -t` + reload；
+- 登录成功 → `/os-entry`；
+- `/os-entry` 顶栏显示「已登录 · 零界只读 BFF」；工作平台面板显示身份/角色/过期；
+- 登出 → 顶栏「未登录 · 登录」；
+- Playwright 实测 login → me → logout 全通，无 pageerror；
+- 截图：
+  - `docs/visual_baseline/2026-10-30_login_ui/login_1440.png`
+  - `docs/visual_baseline/2026-10-30_login_ui/entry_logged_in_1440.png`
+
 ## 6. 已知限制
 
-- 无登录 UI（当前 API 级）；下一步可加 `/login` UI Kit 页面；
+- 登录 UI 已加；后续可把登录态接入页面保护/权限提示；
 - 内存 session：8091 重启需重新登录；
 - 未启用 HTTPS/Secure cookie；
 - 仅支持智策已映射账号；菜鸟无本机认证；
