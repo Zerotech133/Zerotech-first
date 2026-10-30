@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 22:08",
+ "generated": "2026-10-30 22:09",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -374,13 +374,13 @@
    "project": "quant"
   },
   {
-   "id": "WO-GUANYU-P95-20261030",
-   "desc": "L2-A执行回执",
+   "id": "WO-PICKCHAIN-VERDICTS-FIX-20261030",
+   "desc": "选股产品链 verdicts 异常修复：py312 build_pick_verdicts 0xC0000005 访问冲突、py311 长跑无输出；先定位 pandas/tdx 依赖，再加超时/分片/日志；不阻塞 11-02 试运行。",
    "status": "doing",
-   "owner": "GUANYU",
-   "branch": "task/WO-GUANYU-P95-20261030",
-   "created": "2026-10-30 22:07:48",
-   "project": "general"
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-PICKCHAIN-VERDICTS-FIX-20261030",
+   "created": "2026-10-30 22:08:57",
+   "project": "quant"
   }
  ],
  "coder_traces": [
@@ -6684,14 +6684,7 @@
    ],
    "experience": "30 年工程治理经验：漏洞分级与补丁流程、失败测试基线修复、编码规范与门禁落地、技术债清欠与重复功能合并；证据驱动、逐项闭环，只出报告与工单不自行合并，开发动作限独立 worktree 提交+跑测试并交 L2 人签。",
    "dept_name": "研究院",
-   "dept_cn_title": "太学",
-   "tasks": [
-    {
-     "id": "WO-GUANYU-P95-20261030",
-     "desc": "L2-A执行回执",
-     "status": "doing"
-    }
-   ]
+   "dept_cn_title": "太学"
   },
   "HUANGZHONG": {
    "id": "HUANGZHONG",
@@ -7360,6 +7353,11 @@
      "id": "WO-HERMES-CSP-SELF-20261030",
      "desc": "用户批准：Hermes CSP frame-ancestors none→self、X-Frame-Options DENY→SAMEORIGIN，允许同源 iframe 挂 5175 研究台；更新对应断言。",
      "status": "review"
+    },
+    {
+     "id": "WO-PICKCHAIN-VERDICTS-FIX-20261030",
+     "desc": "选股产品链 verdicts 异常修复：py312 build_pick_verdicts 0xC0000005 访问冲突、py311 长跑无输出；先定位 pandas/tdx 依赖，再加超时/分片/日志；不阻塞 11-02 试运行。",
+     "status": "doing"
     }
    ]
   }
