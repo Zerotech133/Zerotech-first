@@ -58,7 +58,31 @@ def init_tracer(force: bool = False):
         return _TRACER
     except Exception as exc:  # noqa: BLE001
         _INIT_ERROR = "phoenix unavailable: %s: %s" % (type(exc).__name__, str(exc)[:160])
-    # 回退：OpenTelemetry SDK + console exporter（P0-6 验证 span 生成；不写远端）
+    # 回退 1：标准 OTLP HTTP exporter（phoenix.otel 缺失时仍把 span 送到 Phoenix）
+    try:
+        from opentelemetry import trace as otel_trace
+        from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+        from opentelemetry.sdk.resources import Resource
+        from opentelemetry.sdk.trace import TracerProvider
+        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+        endpoint = os.environ.get("PHOENIX_ENDPOINT", DEFAULT_PHOENIX)
+        project = os.environ.get("PHOENIX_PROJECT", "zhuge-p0")
+        exporter = OTLPSpanExporter(
+            endpoint=endpoint,
+            headers={"x-phoenix-project-name": project},
+        )
+        provider = TracerProvider(
+            resource=Resource.create({"service.name": "zhuge-p0"})
+        )
+        provider.add_span_processor(SimpleSpanProcessor(exporter))
+        otel_trace.set_tracer_provider(provider)
+        _TRACER = provider.get_tracer("zhuge-p0-otlp")
+        _INIT_ERROR += " | using otlp http fallback"
+        return _TRACER
+    except Exception as exc:  # noqa: BLE001
+        _INIT_ERROR += " | otlp fallback failed: %s: %s" % (
+            type(exc).__name__, str(exc)[:120])
+    # 回退 2：OpenTelemetry SDK + console exporter（仅证明 span 生成；不写远端）
     try:
         from opentelemetry import trace as otel_trace
         from opentelemetry.sdk.trace import TracerProvider
