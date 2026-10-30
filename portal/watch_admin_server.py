@@ -27,7 +27,7 @@ import os
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse, parse_qs, unquote
 
 _HERE = Path(__file__).resolve().parent
 if str(_HERE) not in sys.path:
