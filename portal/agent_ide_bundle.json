@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 29,
+  "workorders_doing": 28,
   "workorders_review": 8
  },
  "workorders": [
@@ -336,15 +336,6 @@
    "branch": "task/K-QUANT-20261030-IDEHARDEN",
    "created": "2026-10-30 18:25:07",
    "project": "quant"
-  },
-  {
-   "id": "K-ORG-20261030-JEVSUM",
-   "desc": "JEV 全线资产与项目总结（代码/文档/数据/调度/服务/指标/交付/未闭环）",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-ORG-20261030-JEVSUM",
-   "created": "2026-10-30 18:28:15",
-   "project": "general"
   }
  ],
  "coder_traces": [
