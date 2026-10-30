@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>D1 投研工作台 · 股票池内研究 · 零界</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<script src="/static/nav.js" defer></script>
+<script src="/static/shortscreen.js" defer></script>
+<style>
+body{background:var(--bg);color:var(--ink);font-family:var(--font-ui)}
+.wrap{max-width:1280px;margin:0 auto;padding:18px 16px 60px}
+.head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+h1{font-size:21px;margin:4px 0}
+.sub{color:var(--gray-5);font-size:12.5px;line-height:1.7}
+.banner{background:rgba(210,153,34,.08);border:1px solid rgba(210,153,34,.35);border-radius:9px;padding:8px 12px;font-size:12px;margin:10px 0}
+.cards{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:10px 0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:9px 11px}
+.card b{display:block;font-size:19px}
+.card small{color:var(--gray-5);font-size:11px}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+select,button{border:1px solid var(--line);background:var(--gray-1);color:var(--ink);border-radius:8px;padding:6px 10px;font-size:12.5px}
+table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:12.5px}
+th,td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{color:var(--gray-5);font-weight:600;font-size:11.5px;background:var(--gray-1)}
+tr.detail{display:none;background:var(--gray-1)}
+tr.detail td{padding:10px 12px}
+.badge{display:inline-block;font-size:11px;padding:2px 7px;border-radius:999px;border:1px solid var(--line);background:var(--gray-1)}
+.buy{color:var(--color-up);border-color:var(--color-up-bd)}
+.avoid{color:var(--color-dn);border-color:var(--color-dn-bd)}
+.watch{color:var(--warn)}
+.mono{font-family:ui-monospace,Consolas,monospace;font-size:11.5px;color:var(--gray-6);word-break:break-all}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px}
+.box.bull{border-color:var(--color-up-bd)} .box.bear{border-color:var(--color-dn-bd)}
+.note{color:var(--gray-5);font-size:11.5px;line-height:1.7}
+.empty{padding:26px;text-align:center;color:var(--gray-5)}
+@media(max-width:900px){.cards{grid-template-columns:repeat(3,1fr)}.cols{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <div>
+      <h1>D1 投研工作台</h1>
+      <div class="sub">股票池内研究 · 看多/看空/买点/止盈止损/交盯盘 · paper-only</div>
+    </div>
+    <div><button id="refresh">刷新</button></div>
+  </div>
+  <div class="banner"><b>边界：</b>策略与股票由 <b>ACAD1 司马徽</b> 上游池提供；D1 鲁肃只做<b>池内研究</b>，不管理策略、不选股。研究完成后买点/止损交盯盘，盯盘触发后交 TR1。</div>
+  <div id="msg" class="sub"></div>
+  <div class="cards" id="cards"></div>
+  <div class="toolbar">
+    <select id="f-action"><option value="">全部动作</option><option value="buy_ready">可买</option><option value="watch_trigger">盯盘触发</option><option value="avoid">回避</option><option value="pending_research">待研究</option></select>
+    <select id="f-tier"><option value="">全部档位</option><option value="T1">T1</option><option value="T2">T2</option></select>
+    <input id="f-kw" placeholder="代码/名称" style="border:1px solid var(--line);background:var(--gray-1);color:var(--ink);border-radius:8px;padding:6px 10px;font-size:12.5px">
+  </div>
+  <table>
+    <thead><tr><th>代码/名称</th><th>档位</th><th>结论</th><th>置信</th><th>可买</th><th>买点</th><th>止损</th><th>止盈</th><th>盯盘/交棒</th></tr></thead>
+    <tbody id="rows"><tr><td colspan="9" class="empty">加载中…</td></tr></tbody>
+  </table>
+  <div class="note" style="margin-top:10px">点击行展开：T1/T2 多空、N1/F1、D1 rationale、买点/止损/止盈与交棒状态。数据来自 ACAD1 池 + 当日池复盘 + D1 影子账。</div>
+</div>
+<script>
+const $=s=>document.querySelector(s);
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+let DATA={items:[],summary:{}};
+function fm(v){return v==null?'—':Number(v).toFixed(2);}
+function badge(x){
+  const a=x.action; if(a==='buy_ready') return '<span class="badge buy">可买</span>';
+  if(a==='avoid') return '<span class="badge avoid">回避</span>';
+  if(a==='watch_trigger') return '<span class="badge watch">盯盘</span>';
+  return '<span class="badge">待研究</span>';
+}
+function row(x){
+  const p=x.price, tr=x.watch_trigger||{};
+  const buy=x.buy_zone?x.buy_zone.map(fm).join(' ~ '):('回踩 '+fm(tr.pullback)+' / 突破 '+fm(tr.breakout));
+  const hand=x.handoff||{};
+  return '<tr class="r" data-code="'+esc(x.code)+'">'+
+    '<td><b>'+esc(x.code)+'</b> '+esc(x.name)+'<div class="mono">'+esc((x.sources||[]).join('+'))+'</div></td>'+
+    '<td>'+esc(x.tier||'—')+'</td><td>'+esc(x.recommendation||'—')+'</td><td>'+esc(x.confidence==null?'—':x.confidence)+'</td>'+
+    '<td>'+badge(x)+'</td><td>'+esc(buy)+'</td><td>'+fm(x.stop_loss)+'</td><td>'+fm(x.target1)+' / '+fm(x.target2)+'</td>'+
+    '<td>'+esc(hand.status||'—')+'<div class="mono">'+esc(hand.to||'')+'</div></td></tr>'+
+    '<tr class="detail" id="d-'+esc(x.code)+'"><td colspan="9">'+detail(x)+'</td></tr>';
+}
+function detail(x){
+  const h=x.handoff||{};
+  return '<div class="cols">'+
+    '<div class="box bull"><b>多头（T1）</b><div>'+esc((x.bull||'—').slice(0,900))+'</div></div>'+
+    '<div class="box bear"><b>空头（T2）</b><div>'+esc((x.bear||'—').slice(0,900))+'</div></div></div>'+
+    '<div class="cols" style="margin-top:8px">'+
+    '<div class="box"><b>N1 情绪</b><div>'+esc((x.sentiment||'—').slice(0,500))+'</div></div>'+
+    '<div class="box"><b>F1 基本面</b><div>'+esc((x.fundamental||'—').slice(0,500))+'</div></div></div>'+
+    '<div class="box" style="margin-top:8px"><b>D1 结论</b><div>'+esc(x.rationale||'—')+'</div>'+
+    '<div class="mono">L1: '+esc(x.l1_basis||'—')+' · risk='+esc(x.risk_level||'—')+' · horizon='+esc(x.time_horizon||'—')+'</div></div>'+
+    '<div class="box" style="margin-top:8px"><b>建仓/交棒</b><div>买点 '+(x.buy_zone?esc(x.buy_zone.map(fm).join(' ~ ')):'—')+
+    ' · 止损 '+fm(x.stop_loss)+' · 止盈 '+fm(x.target1)+'/'+fm(x.target2)+' · 盈亏比 '+esc(x.risk_reward==null?'—':x.risk_reward)+
+    '</div><div class="mono">交棒：'+esc(h.to||'—')+' / '+esc(h.status||'—')+' '+esc(h.condition||h.note||'')+'</div></div>';
+}
+function render(){
+  const fa=$('#f-action').value, ft=$('#f-tier').value, kw=$('#f-kw').value.trim();
+  let items=(DATA.items||[]).filter(x=>(!fa||x.action===fa)&&(!ft||x.tier===ft)&&(!kw||x.code.includes(kw)||String(x.name).includes(kw)));
+  $('#rows').innerHTML=items.length?items.map(row).join(''):'<tr><td colspan="9" class="empty">没有匹配的股票</td></tr>';
+  document.querySelectorAll('tr.r').forEach(tr=>tr.addEventListener('click',()=>{const d=document.getElementById('d-'+tr.dataset.code); if(d) d.style.display=d.style.display==='table-row'?'none':'table-row';}));
+  const s=DATA.summary||{};
+  $('#cards').innerHTML=[['池内股票',s.total],['已研究',s.analyzed],['可买',s.can_buy],['盯盘触发',s.armed_watch],['回避',s.avoid],['待研究',s.pending_research]]
+    .map(([k,v])=>'<div class="card"><b>'+esc(v==null?'—':v)+'</b><small>'+esc(k)+'</small></div>').join('');
+  $('#msg').textContent=(DATA.date?('数据日 '+DATA.date+' · '):'')+(DATA.note||'');
+}
+async function load(){
+  try{
+    const r=await fetch('/api/d1/research',{cache:'no-store'}); const d=await r.json();
+    if(!d.ok) throw new Error(d.error||'读取失败'); DATA=d; render();
+  }catch(e){ $('#msg').textContent='加载失败：'+e.message; }
+}
+$('#refresh').addEventListener('click',load); ['#f-action','#f-tier','#f-kw'].forEach(s=>$(s).addEventListener('input',render));
+load();
+</script>
+</body>
+</html>

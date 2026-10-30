@@ -4841,6 +4841,13 @@ color:#fff;font-size:13.5px;cursor:pointer}
             # WO-INV-PAPER-UI：量化部 paper 组合只读页（不接实盘）
             self._html_file(os.path.join(
                 os.path.dirname(os.path.abspath(__file__)), "quant_paper.html"))
+        elif path == "/api/d1/research":
+            # WO-D1-RESEARCH：D1 投研工作台只读数据口（池内研究，不管理策略）
+            import d1_data
+            self._json(d1_data.d1_snapshot())
+        elif path in ("/d1/research", "/d1_research.html"):
+            self._html_file(os.path.join(
+                os.path.dirname(os.path.abspath(__file__)), "d1_research.html"))
         elif path == "/api/sim/confirmations":
             # WO-BOT-CONFIRM：盯盘触发→人工确认待办（paper-only）
             import sim_confirm
