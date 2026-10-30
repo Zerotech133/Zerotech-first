@@ -48,6 +48,15 @@
   .anchor { display: flex; flex-wrap: wrap; gap: 8px; }
   .anchor span { font-size: 11.5px; padding: 5px 9px; border: 0.5px solid #1E3A5F; border-radius: 8px; color: #8FA8C0; }
   .banner { display: none; margin: 0 22px; padding: 10px 14px; border-radius: 10px; background: #2A1214; border: 0.5px solid #7A2A2E; color: #F3B5B4; font-size: 12px; }
+.banner[hidden] { display: none !important; }
+.banner.error { background: #2A1214; border-color: #7A2A2E; color: #F3B5B4; }
+.banner.warn { background: #2A2412; border-color: #7A6A2A; color: #F3DDB4; }
+.banner.info { background: #12202A; border-color: #2A5A7A; color: #B4D9F3; }
+.banner .banner-btn { margin-left: 8px; background: transparent; color: inherit; border: 0.5px solid currentColor; border-radius: 6px; padding: 2px 8px; cursor: pointer; font-size: 12px; }
+.banner .banner-btn:hover { opacity: .8; }
+.banner .banner-btn:focus-visible, .panel-retry:focus-visible { outline: 2px solid #4FD1A5; outline-offset: 2px; }
+.panel-retry { margin-left: 8px; background: transparent; color: #8FA8C0; border: 0.5px solid #1E3A5F; border-radius: 6px; padding: 1px 8px; cursor: pointer; font-size: 11.5px; }
+
   .pending { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 10px 14px; border-radius: 10px; background: #0A1626; border: 0.5px solid #1E3A5F; color: #8FA8C0; font-size: 12.5px; }
   .pending b { font-weight: 500; }
   .pending.ok { color: #4FD1A5; border-color: #1D9E75; background: #0F2440; }
@@ -83,7 +92,7 @@
   <div class="chips" id="chips"></div>
   <button class="refresh" id="refresh">刷新</button>
 </header>
-<div class="banner" id="banner"></div>
+<div class="banner" id="banner" role="alert" aria-live="polite" hidden><span id="banner-msg"></span><button id="banner-retry" class="banner-btn" hidden>重试</button><button id="banner-close" class="banner-btn" aria-label="关闭提示">×</button></div>
 <main>
   <div class="pending" id="pending"></div>
 
@@ -301,7 +310,7 @@ function statusRow(box, k, v) {
   box.appendChild(row);
 }
 function render(v) {
-  $('banner').style.display = 'none';
+  if (WRITE_TOKEN) hideBanner();
   const idn = v.identity || {};
   const idBox = $('identity'); idBox.replaceChildren();
   [['定位', idn.role], ['编制', idn.compilation], ['纪律', idn.boundary],
@@ -435,9 +444,66 @@ function render(v) {
 
   $('foot-time').textContent = '生成于 ' + (v.generated_at || '—') + ' · 每 60s 自动刷新';
 }
+let WRITE_TOKEN = '';
+let BANNER_RETRY = null;
+function errorText(e) {
+  const s = String(e && e.message ? e.message : e || '未知错误');
+  if (/Failed to fetch|NetworkError|Load failed/i.test(s)) return '网络不可达';
+  return s.slice(0, 160);
+}
+function showBanner(msg, opts) {
+  opts = opts || {};
+  const b = $('banner');
+  $('banner-msg').textContent = msg;
+  b.className = 'banner ' + (opts.level || 'error');
+  b.hidden = false;
+  BANNER_RETRY = opts.retry || null;
+  const rb = $('banner-retry');
+  rb.hidden = !BANNER_RETRY;
+  rb.onclick = () => { if (BANNER_RETRY) { const f = BANNER_RETRY; hideBanner(); f(); } };
+}
+function hideBanner() {
+  const b = $('banner');
+  b.hidden = true;
+  BANNER_RETRY = null;
+}
+function initWriteToken() {
+  return fetch('/api/zhaoyun/write-token')
+    .then((r) => r.json())
+    .then((j) => {
+      WRITE_TOKEN = (j && j.token) || '';
+      if (!WRITE_TOKEN) throw new Error('token 为空');
+      const b = $('banner');
+      if (!b.hidden && ($('banner-msg').textContent || '').indexOf('写保护') === 0) hideBanner();
+      return WRITE_TOKEN;
+    })
+    .catch((e) => {
+      WRITE_TOKEN = '';
+      showBanner('写保护未就绪：审批/发送/运行等写操作已禁用（' + errorText(e) + '）', { level: 'error', retry: initWriteToken });
+      return '';
+    });
+}
+function requireWriteToken() {
+  if (!WRITE_TOKEN) {
+    showBanner('写保护未就绪：请先重试获取 token 再执行写操作', { level: 'error', retry: initWriteToken });
+    return false;
+  }
+  return true;
+}
+function safeJget(url) {
+  return fetch(url)
+    .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .catch((e) => ({ ok: false, __error: errorText(e), __url: url }));
+}
+function renderPanelError(box, label, data) {
+  box.replaceChildren();
+  const row = el('div', 'muted', '⚠ ' + label + '加载失败' + (data && data.__error ? '：' + data.__error : ''));
+  const btn = el('button', 'panel-retry', '重试');
+  btn.onclick = loadDrill;
+  row.appendChild(btn);
+  box.appendChild(row);
+}
 function load() {
-  let WRITE_TOKEN = '';
-fetch('/api/zhaoyun/write-token').then((r) => r.json()).then((j) => { WRITE_TOKEN = (j && j.token) || ''; }).catch(() => {});
 fetch('/api/zhaoyun')
     .then((r) => r.json())
     .then((v) => {
@@ -490,13 +556,15 @@ function openDrill(name) {
 }
 function loadDrill() {
   Promise.all([
-    jget('/api/zhaoyun/tasks').catch(() => ({ ok: false })),
-    jget('/api/zhaoyun/memory').catch(() => ({ ok: false })),
-    jget('/api/zhaoyun/model').catch(() => ({ ok: false })),
-    jget('/api/zhaoyun/requests').catch(() => ({ ok: false })),
+    safeJget('/api/zhaoyun/tasks'),
+    safeJget('/api/zhaoyun/memory'),
+    safeJget('/api/zhaoyun/model'),
+    safeJget('/api/zhaoyun/requests'),
   ]).then(([tasks, mem, mdl, reqs]) => {
+    const _failed = [tasks, mem, mdl, reqs].filter((x) => x && x.ok === false).length;
+    if (_failed) showBanner('部分下钻数据不可用（' + _failed + ' 项），其余数据正常显示', { level: 'warn', retry: loadDrill });
     const tb = $('tasks'); tb.replaceChildren();
-    if (!tasks.ok) tb.appendChild(el('div', 'muted', '任务账本不可用'));
+    if (!tasks.ok) { renderPanelError(tb, '任务账本', tasks); }
     else {
       $('task-sub').textContent = 'doing ' + tasks.counts.doing + ' · review ' +
         tasks.counts.review + ' · 偏差 ' + tasks.counts.deviations;
@@ -510,7 +578,7 @@ function loadDrill() {
       });
     }
     const mb = $('mem'); mb.replaceChildren();
-    if (!mem.ok) mb.appendChild(el('div', 'muted', '记忆库不可用'));
+    if (!mem.ok) { renderPanelError(mb, '记忆库', mem); }
     else {
       $('mem-sub').textContent = '共 ' + mem.entries_total + ' 条 · 隔离区 ' + mem.quarantined_total;
       (mem.items || []).slice(-30).reverse().forEach((e) => {
@@ -534,7 +602,7 @@ function loadDrill() {
       bar.appendChild(reason); bar.appendChild(btn); mb.appendChild(bar);
     }
     const mb2 = $('model'); mb2.replaceChildren();
-    if (!mdl.ok) mb2.appendChild(el('div', 'muted', '模型信息不可用'));
+    if (!mdl.ok) { renderPanelError(mb2, '模型信息', mdl); }
     else {
       (mdl.seats || []).forEach((s) => kv(mb2, s.seat + '（' + (s.cn_name || '') + '）',
         (s.llm || '—') + (s.in_headcount ? ' · 编制' : ' · 不占编')));
@@ -570,7 +638,9 @@ function loadDrill() {
     };
     f.appendChild(lb);
     const rl = $('req-list'); rl.replaceChildren();
-    rl.appendChild(el('div', 'muted', '待批请求：' + ((reqs && reqs.pending) || 0) +
+    if (!reqs.ok) {
+      renderPanelError(rl, '待批请求', reqs);
+    } else rl.appendChild(el('div', 'muted', '待批请求：' + ((reqs && reqs.pending) || 0) +
       ' 条（人工审批=控制权，Agent 不得代批；批准后落可逆文件，不自动改 org/bundle/CAPABILITIES）'));
     ((reqs && reqs.items) || []).filter((r) => r.status === 'pending_human').slice(0, 10).forEach((r) => {
       const row = el('div', 'row');
@@ -872,6 +942,7 @@ function loadCap2() {
   });
 }
 function repairTriage() {
+  if (!requireWriteToken()) return;
   fetch('/api/zhaoyun/repair/triage', { method: 'POST',
     headers: { 'Content-Type': 'application/json' }, body: '{}' })
     .then((r) => r.json()).then((j) => {
@@ -881,6 +952,7 @@ function repairTriage() {
     }).catch((e) => alert('Triage 失败：' + e));
 }
 function repairRun(id) {
+  if (!requireWriteToken()) return;
   fetch('/api/zhaoyun/repair/run', { method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-DSH-Token': WRITE_TOKEN },
     body: JSON.stringify({ batch_id: id }) })
@@ -891,6 +963,7 @@ function repairRun(id) {
     }).catch((e) => alert('批次运行失败：' + e));
 }
 function researchFetch() {
+  if (!requireWriteToken()) return;
   const url = (($('rs-url') || {}).value || '').trim();
   if (!url) { alert('请输入 URL'); return; }
   fetch('/api/zhaoyun/research/fetch', { method: 'POST',
@@ -912,6 +985,7 @@ function researchFetch() {
     }).catch((e) => alert('取证失败：' + e));
 }
 function notifyTest() {
+  if (!requireWriteToken()) return;
   fetch('/api/zhaoyun/outbox', { method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ title: '赵云测试通知', body: 'outbox 冒烟（不会真发，除非配置 webhook）' }) })
@@ -921,6 +995,7 @@ function notifyTest() {
     }).catch((e) => alert('入队失败：' + e));
 }
 function cardGen() {
+  if (!requireWriteToken()) return;
   const rid = prompt('输入审批请求 ID（ZYREQ-...）');
   if (!rid) return;
   fetch('/api/zhaoyun/approval-card', { method: 'POST',
@@ -932,6 +1007,7 @@ function cardGen() {
     }).catch((e) => alert('生成失败：' + e));
 }
 function sandboxVerify() {
+  if (!requireWriteToken()) return;
   const skill = ($('sbx-skill') || {}).value || '';
   const timeout = parseInt(($('sbx-timeout') || {}).value || '120', 10);
   if (!skill) { alert('无可用技能'); return; }
@@ -945,6 +1021,7 @@ function sandboxVerify() {
     }).catch((e) => alert('沙箱调用失败：' + e));
 }
 function memSearch() {
+  if (!requireWriteToken()) return;
   const q = ($('mem-q') || {}).value ? $('mem-q').value.trim() : '';
   if (!q) { alert('请输入检索词'); return; }
   fetch('/api/zhaoyun/memory/search', { method: 'POST',
@@ -959,6 +1036,7 @@ function memSearch() {
     }).catch((e) => alert('检索失败：' + e));
 }
 function memIngest() {
+  if (!requireWriteToken()) return;
   fetch('/api/zhaoyun/memory/ingest', { method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-DSH-Token': WRITE_TOKEN }, body: '{}' })
     .then((r) => r.json()).then((j) => {
@@ -971,6 +1049,7 @@ function memIngest() {
     }).catch((e) => alert('摄取失败：' + e));
 }
 function probeMcp() {
+  if (!requireWriteToken()) return;
   fetch('/api/zhaoyun/mcp/probe', { method: 'POST',
     headers: { 'Content-Type': 'application/json' }, body: '{}' })
     .then((r) => r.json()).then((j) => {
@@ -982,6 +1061,7 @@ function probeMcp() {
     }).catch((e) => alert('MCP 探测失败：' + e));
 }
 function runEvals() {
+  if (!requireWriteToken()) return;
   const box = $('evals');
   const btn = box.querySelector('button');
   if (btn) { btn.disabled = true; btn.textContent = '运行中…'; }
@@ -1006,6 +1086,7 @@ function showTrace(id) {
   });
 }
 function approveRequest(id, decision, signer) {
+  if (!requireWriteToken()) return;
   if (!signer) { alert('请填写审批人'); return; }
   const word = decision === 'approve' ? '批准' : '拒绝';
   if (!confirm('确认' + word + '请求 ' + id + '？')) return;
@@ -1020,6 +1101,7 @@ function approveRequest(id, decision, signer) {
   }).catch((e) => alert('失败：' + e));
 }
 function submitRequest(kind, payload, reason, label) {
+  if (!requireWriteToken()) return;
   fetch('/api/zhaoyun/request', {
     method: 'POST', headers: { 'Content-Type': 'application/json', 'X-DSH-Token': WRITE_TOKEN },
     body: JSON.stringify({ kind: kind, payload: payload, reason: reason })
@@ -1028,8 +1110,10 @@ function submitRequest(kind, payload, reason, label) {
     else alert('提交失败：' + (j.error || '') + (j.allowed ? (' 允许：' + j.allowed.join(',')) : ''));
   }).catch((e) => alert('提交失败：' + e));
 }
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('banner').hidden) hideBanner(); });
+if ($('banner-close')) $('banner-close').onclick = hideBanner;
 $('refresh').onclick = load;
-load();
+initWriteToken().then(load);
 setInterval(load, 60000);
 
 // 页面瘦身（2026-10-27）：每个 section 默认收起，点标题/按钮下钻展开。
