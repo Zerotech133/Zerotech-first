@@ -59,6 +59,21 @@ class TestAnalysisApi(unittest.TestCase):
         self.assertEqual(h.status, 200)
         self.assertIn("codes", h.obj)
 
+    def test_commercial_plans(self):
+        import api_commercial
+        h = Stub()
+        api_commercial.handle_get(h, "/api/commercial/plans", "")
+        self.assertEqual(h.status, 200)
+        self.assertIn("plans", h.obj)
+        self.assertIn("pro", h.obj["plans"])
+
+    def test_commercial_health(self):
+        import api_commercial
+        h = Stub()
+        api_commercial.handle_get(h, "/api/commercial/health", "")
+        self.assertEqual(h.status, 200)
+        self.assertIn("mode", h.obj)
+
     def test_unknown(self):
         h = Stub()
         api_analysis.handle_get(h, "/api/analysis/nope", "")

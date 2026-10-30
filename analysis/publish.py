@@ -8,9 +8,9 @@ import time
 from . import config
 
 
-def archive(code, name, as_of, artifacts, outdir):
+def archive(code, name, as_of, artifacts, outdir, root=None):
     folder = "%s_%s_%s" % (as_of, code.replace(".", "_"), name)
-    dest = os.path.join(config.DELIVER_ROOT, folder)
+    dest = os.path.join(root or config.DELIVER_ROOT, folder)
     os.makedirs(dest, exist_ok=True)
     for k in ("report", "h5", "manifest"):
         p = artifacts.get(k)
@@ -22,7 +22,7 @@ def archive(code, name, as_of, artifacts, outdir):
         if p and os.path.exists(p):
             shutil.copy2(p, chan)
     # INDEX 追加
-    idx = os.path.join(config.DELIVER_ROOT, "ANALYSIS_INDEX.md")
+    idx = os.path.join(root or config.DELIVER_ROOT, "ANALYSIS_INDEX.md")
     line = "- %s ｜ %s %s ｜ 评级 %s ｜ %s\n" % (time.strftime("%F %T"), code, name,
                                                artifacts.get("rating", ""), folder)
     if not os.path.exists(idx):

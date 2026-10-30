@@ -3115,6 +3115,11 @@ color:#fff;font-size:13.5px;cursor:pointer}
             import api_analysis
             api_analysis.handle_get(self, path, qs)
             return
+        if path.startswith('/api/commercial/'):
+            # P2.1 商业化只读入口（套餐/租户/用量/审计/健康，独立文件 api_commercial.py）
+            import api_commercial
+            api_commercial.handle_get(self, path, qs)
+            return
         if path == '/api/bff/identity/me' or path.startswith('/api/auth/'):
             # Phase A auth-gateway（2026-10-30）：登录态 / 登出 / 当前 SessionContext。
             # 与只读 BFF 分离；认证端点单独模块，不混入 /api/bff/ 只读面。
