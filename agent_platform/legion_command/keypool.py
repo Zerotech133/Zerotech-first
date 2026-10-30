@@ -21,6 +21,12 @@ import uuid
 from pathlib import Path
 import logging
 
+try:
+    from safe_http import safe_urlopen
+except ImportError:  # 作为包导入时
+    from legion_command.safe_http import safe_urlopen
+
+
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent  # agent_platform/legion_command -> repo root
 DATA_DIR = REPO / "work" / "keypool"
@@ -206,7 +212,7 @@ def _provider_test(
         },
     )
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
+        with safe_urlopen(req, timeout=timeout) as r:
             r.read(200)
             return {"status": "healthy", "http": r.status, "detail": "ok"}
     except urllib.error.HTTPError as e:
@@ -534,7 +540,7 @@ def _provider_chat(
         },
     )
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
+        with safe_urlopen(req, timeout=timeout) as r:
             data = json.loads(r.read().decode("utf-8", "replace"))
             choice = (data.get("choices") or [{}])[0] or {}
             message = choice.get("message") or {}
@@ -576,7 +582,7 @@ def _local_openai_chat(messages: list, timeout: int = 60, model: str = "qwen3.5:
         method="POST",
         headers={"Content-Type": "application/json"},
     )
-    with urllib.request.urlopen(req, timeout=timeout) as r:
+    with safe_urlopen(req, timeout=timeout) as r:
         data = json.loads(r.read().decode("utf-8", "replace"))
         return ((data.get("choices") or [{}])[0].get("message") or {}).get(
             "content"
@@ -596,7 +602,7 @@ def _local_native_chat(messages: list, timeout: int = 90, model: str = "qwen3.5:
         method="POST",
         headers={"Content-Type": "application/json"},
     )
-    with urllib.request.urlopen(req, timeout=timeout) as r:
+    with safe_urlopen(req, timeout=timeout) as r:
         data = json.loads(r.read().decode("utf-8", "replace"))
         return (data.get("message") or {}).get("content") or ""
 

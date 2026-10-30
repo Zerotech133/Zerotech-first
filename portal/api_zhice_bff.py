@@ -28,6 +28,12 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Tuple
 
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from portal.safe_urlopen import safe_urlopen
+
+
 BEIJING = timezone(timedelta(hours=8))
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
@@ -144,7 +150,7 @@ def _http_json(
         headers["Authorization"] = "Bearer " + token
     req = urllib.request.Request(url, headers=headers, data=data, method=method)
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        with safe_urlopen(req, timeout=timeout) as resp:
             body = resp.read()
             return True, json.loads(body.decode("utf-8", "replace"))
     except (urllib.error.URLError, TimeoutError, OSError, ValueError) as exc:

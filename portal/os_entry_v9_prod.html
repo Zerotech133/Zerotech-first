@@ -94,10 +94,6 @@ body{background:radial-gradient(ellipse at 78% -12%,var(--os-glow) 0%,transparen
 .tri-hist-note { margin: 10px 0 0; color: var(--ui-amber); font-size: 11px; }
 .tri-drawer-sec { margin: 14px 0 0; padding-top: 10px; border-top: 1px solid var(--ui-line); }
 .tri-drawer-sec h3 { margin: 0 0 6px; font-size: 13px; color: var(--ui-ink); }
-.auth-state-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.auth-state-row b { font-size: 13px; }
-.auth-state-row small { color: var(--ui-muted); font-size: 11px; }
-.auth-state-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
 @media (max-width: 980px) {
   .os-hero, .os-split, .os-work-grid, .os-results-grid { grid-template-columns: 1fr; }
   .os-screen-grid { grid-template-columns: 1fr; }
@@ -197,14 +193,6 @@ body{background:radial-gradient(ellipse at 78% -12%,var(--os-glow) 0%,transparen
     <label class="os-search"><span aria-hidden="true">⌕</span><input id="work-search" type="search" placeholder="过滤领域 / 能力（如 量化、情报、系统）" autocomplete="off"></label>
     <span class="os-toolbar-hint">只筛当前页文本，不发起新请求</span>
   </div>
-  <section class="ui-panel os-panel" id="auth-state-panel" aria-labelledby="auth-state-title" style="margin:16px 0 0">
-    <div class="os-section-head">
-      <div><span class="eyebrow">SESSION · AUTH GATEWAY</span><h2 id="auth-state-title">登录态</h2></div>
-      <span class="os-chip" id="auth-state-chip">检查中</span>
-    </div>
-    <div id="auth-state-body" class="os-list"><div class="empty">正在检查登录态…</div></div>
-    <div class="os-actions-row" id="auth-state-actions"></div>
-  </section>
   <section class="ui-panel os-panel" id="tri-readonly" aria-labelledby="tri-title" style="margin:16px 0">
     <div class="os-section-head">
       <div><span class="eyebrow">READ-ONLY · 3 SYSTEMS</span><h2 id="tri-title">三系统只读</h2></div>
@@ -622,56 +610,6 @@ async function refresh(){const run=++sequence,keys=Object.keys(endpoints);$('#fr
     var kind = node.getAttribute('data-tri-drill');
     if (kind === 'scores') openScore(); else openStatic(kind);
   });
-})();
-</script>
-<script>
-(function () {
-  'use strict';
-  var body = document.getElementById('auth-state-body');
-  var chip = document.getElementById('auth-state-chip');
-  var actions = document.getElementById('auth-state-actions');
-  var csrf = '';
-  function row(label, value, note) {
-    var d = document.createElement('div'); d.className = 'row auth-state-row';
-    var left = document.createElement('div');
-    left.append(createStrong(label + ' · ' + value), createP(note));
-    d.append(left); return d;
-  }
-  function createStrong(t) { var n = document.createElement('b'); n.textContent = t; return n; }
-  function createP(t) { var n = document.createElement('p'); n.textContent = t; return n; }
-  function link(href, text, cls) { var a = document.createElement('a'); a.href = href; a.textContent = text; if (cls) a.className = cls; return a; }
-  function renderLoggedIn(d) {
-    var s = d.session || {}; var c = s.identity_context || {};
-    chip.textContent = '已登录'; chip.className = 'os-chip';
-    body.replaceChildren();
-    body.append(row('身份', c.display_name || s.sub, 'sub：' + s.sub));
-    body.append(row('角色', (c.roles || []).join(' / ') || '—', 'scope：' + (c.owner_scope || '—') + ' · 只读会话'));
-    body.append(row('过期', String(s.expires_at || '—'), '内存 session；8091 重启后需重新登录'));
-    actions.replaceChildren();
-    var out = document.createElement('button'); out.type = 'button'; out.className = 'ui-btn ui-btn--ghost'; out.textContent = '退出登录';
-    out.addEventListener('click', function () { logout(); });
-    actions.append(out);
-  }
-  function renderLoggedOut() {
-    chip.textContent = '未登录'; chip.className = 'os-chip amber';
-    body.replaceChildren();
-    body.append(row('状态', '未登录', '登录后可查看 SessionContext / IdentityContext'));
-    actions.replaceChildren();
-    actions.append(link('/login', '去登录 →'));
-  }
-  function logout() {
-    fetch('/api/auth/logout', {method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRF-Token': csrf}, body: '{}'})
-      .then(function (r) { return r.json().catch(function () { return {}; }); })
-      .then(function (d) { if (d && d.ok) location.reload(); else renderLoggedOut(); })
-      .catch(function () { renderLoggedOut(); });
-  }
-  fetch('/api/bff/identity/me', {cache: 'no-store'}).then(function (r) {
-    if (r.status === 401) return null;
-    return r.json();
-  }).then(function (d) {
-    if (d && d.session) { csrf = d.csrf_token || ''; renderLoggedIn(d); }
-    else renderLoggedOut();
-  }).catch(function () { renderLoggedOut(); });
 })();
 </script>
 </body></html>

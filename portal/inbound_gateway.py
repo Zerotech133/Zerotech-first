@@ -40,6 +40,12 @@ import urllib.request
 from datetime import datetime
 import logging
 
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from portal.safe_urlopen import safe_urlopen
+
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 
@@ -334,7 +340,7 @@ def _detect_embed_model():
     if _EMBED_CACHE["model"] and now - _EMBED_CACHE["ts"] < 300:
         return _EMBED_CACHE["model"]
     try:
-        with urllib.request.urlopen("http://127.0.0.1:11434/api/tags", timeout=3) as r:
+        with safe_urlopen("http://127.0.0.1:11434/api/tags", timeout=3) as r:
             models = json.loads(r.read().decode()).get("models") or []
         for m in models:
             name = str(m.get("name") or "")
@@ -378,7 +384,7 @@ def embedding_sig(text):
                 data=json.dumps({"model": model, "prompt": t[:6000]}).encode("utf-8"),
                 headers={"Content-Type": "application/json"},
             )
-            with urllib.request.urlopen(req, timeout=8) as r:
+            with safe_urlopen(req, timeout=8) as r:
                 vec = json.loads(r.read().decode()).get("embedding") or []
             if vec:
                 return {
@@ -443,7 +449,7 @@ def _http_get(url, timeout=15, max_bytes=_SNAP_MAX, headers=None):
     if headers:
         h.update(headers)
     req = urllib.request.Request(url, headers=h)
-    with urllib.request.urlopen(req, timeout=timeout) as r:
+    with safe_urlopen(req, timeout=timeout) as r:
         return r.read(max_bytes + 1)
 
 
@@ -456,7 +462,7 @@ def _ingest_links(urls):
             data=body,
             headers={"Content-Type": "application/json"},
         )
-        with urllib.request.urlopen(req, timeout=10) as r:
+        with safe_urlopen(req, timeout=10) as r:
             doc = json.loads(r.read().decode("utf-8", "replace"))
         if doc.get("code") != 0:
             return {"ok": False, "why": str(doc.get("message"))[:120], "accepted": 0}
@@ -1089,7 +1095,7 @@ SUBSCRIPTION_GATE_MODE = "observe"
 def _load_is_entitled():
     """按 FC-B 契约加载 subscription_store.is_entitled；失败返回 None。"""
     try:
-        from subscription_store import is_entitled  # noqa: 延迟导入
+        from subscription_store import is_entitled  # 延迟导入
 
         return is_entitled
     except Exception:

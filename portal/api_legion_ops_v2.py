@@ -28,6 +28,12 @@ from legion_meeting_room import (RoomError, create_room, load_room, list_rooms,
 from api_legion_ops import build_roster, build_feed, build_tasks  # v3 H2 路由用
 import logging
 
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from portal.safe_urlopen import safe_urlopen
+
+
 ORG = ROOT / "agent_platform" / "registry" / "org.json"
 HR = ROOT / "agent_platform" / "hr"
 WORKTREES = ROOT / ".worktrees"
@@ -273,7 +279,7 @@ def dispatch(payload: dict) -> dict:
     try:
         req = urllib.request.Request("http://127.0.0.1:8093/api/task/create", data=body,
                                      headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=30) as r:
+        with safe_urlopen(req, timeout=30) as r:
             res = json.loads(r.read())
     except Exception as e:
         heartbeat("LEGION_OPS", "dispatch_fail", f"{aid} 派工失败: {type(e).__name__}")

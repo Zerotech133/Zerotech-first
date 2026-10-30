@@ -33,6 +33,12 @@ import time
 import urllib.error
 import urllib.request
 
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from portal.safe_urlopen import safe_urlopen
+
+
 API = "https://api.cloudflare.com/client/v4"
 HERE = os.path.dirname(os.path.abspath(__file__))
 CF_EXE = os.path.join(os.path.dirname(HERE), "bin", "cloudflared.exe")
@@ -48,7 +54,7 @@ def _req(method, path, token, body=None):
         data = json.dumps(body).encode()
     req = urllib.request.Request(API + path, data=data, headers=headers, method=method)
     try:
-        with urllib.request.urlopen(req, timeout=30) as r:
+        with safe_urlopen(req, timeout=30) as r:
             return r.status, json.loads(r.read().decode())
     except urllib.error.HTTPError as e:
         try:
@@ -219,7 +225,7 @@ def wait_health(hostname, tries=20):
     for i in range(tries):
         time.sleep(3)
         try:
-            with urllib.request.urlopen(url, timeout=15) as r:
+            with safe_urlopen(url, timeout=15) as r:
                 if r.status == 200:
                     print("OK health 200:", url)
                     return True

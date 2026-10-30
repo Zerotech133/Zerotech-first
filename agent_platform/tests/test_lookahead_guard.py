@@ -83,7 +83,7 @@ def test_depth_limit_prevents_runaway():
     "path",
     [
         "C:/data/.grader/rules.py",
-        "/tmp/answers.csv",
+        "/tmp/answers.csv",  # nosec B108 - 测试夹具/docker参数/字符串常量（已核实）
         "/opt/ground_truth.json",
         "/data/holdout/20261020.parquet",
         "/data/labels.csv",

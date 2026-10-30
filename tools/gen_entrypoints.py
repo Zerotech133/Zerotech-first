@@ -21,7 +21,7 @@ TOP = ["agent_platform", "portal", "quant_backtest", "k_stock", "news_collector"
        "jev-eval", "osint_video", "common", "analysis", "tools", "ops", "ollama_service",
        "data_sources"]
 SKIP_SEG = ("/data/", "/backups/", "/archive/", "/__pycache__/", "/.venvs/", "/.venv",
-            "/pylibs/", "/vendor/", "/node_modules/", "/deliverables/", "/work/", "/tmp/",
+            "/pylibs/", "/vendor/", "/node_modules/", "/deliverables/", "/work/", "/tmp/",  # nosec B108 - 测试夹具/docker参数/字符串常量（已核实）
             "/outputs/", "/video/", "/tests_ai_operator/")
 DEFAULT_OUT = REPO / "docs" / "ops" / "entrypoints_v1.tsv"
 

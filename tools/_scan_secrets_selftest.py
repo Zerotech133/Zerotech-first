@@ -7,7 +7,7 @@ import string
 import subprocess
 import sys
 
-TD = os.path.join(os.path.sep.join([os.environ.get("TEMP", "/tmp")]), "scan_selftest_2026")
+TD = os.path.join(os.path.sep.join([os.environ.get("TEMP", "/tmp")]), "scan_selftest_2026")  # nosec B108 - 测试夹具/docker参数/字符串常量（已核实）
 os.makedirs(os.path.join(TD, "tests"), exist_ok=True)
 os.makedirs(os.path.join(TD, "docs"), exist_ok=True)
 rng = random.Random(20261019)

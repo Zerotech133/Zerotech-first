@@ -20,6 +20,12 @@ import sys
 import urllib.request
 from datetime import datetime
 
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from portal.safe_urlopen import safe_urlopen
+
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 NC = os.path.join(ROOT, "news_collector")
@@ -38,7 +44,7 @@ TIMEOUT = 60
 def fetch(period="day"):
     url = "%s/api/hermes/junjiyi/report?period=%s" % (BASE, period)
     try:
-        with urllib.request.urlopen(url, timeout=TIMEOUT) as r:
+        with safe_urlopen(url, timeout=TIMEOUT) as r:
             d = json.loads(r.read().decode("utf-8", "replace"))
         return d
     except Exception as e:  # noqa: BLE001
@@ -89,7 +95,7 @@ def send_card(period, md):
             ).encode(),
             headers={"Content-Type": "application/json"},
         )
-        with urllib.request.urlopen(req, timeout=20) as r:
+        with safe_urlopen(req, timeout=20) as r:
             tok = json.loads(r.read().decode()).get("tenant_access_token")
         if not tok:
             return False, "token 获取失败"
@@ -136,7 +142,7 @@ def send_card(period, md):
                 "Content-Type": "application/json",
             },
         )
-        with urllib.request.urlopen(req, timeout=25) as r:
+        with safe_urlopen(req, timeout=25) as r:
             res = json.loads(r.read().decode())
         return res.get("code") == 0, str(
             (res.get("data") or {}).get("message_id") or res.get("msg")

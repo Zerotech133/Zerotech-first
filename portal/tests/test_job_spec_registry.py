@@ -72,7 +72,7 @@ def test_expired_descriptor_is_rejected(tmp_path):
 @pytest.mark.parametrize(
     "value",
     [
-        "/tmp/private",
+        "/tmp/private",  # nosec B108 - 测试夹具/docker参数/字符串常量（已核实）
         "C:\\\\secret\\data",
         "file:///etc/passwd",
         "postgresql://user:pass@host/db",

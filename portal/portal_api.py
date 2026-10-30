@@ -492,6 +492,12 @@ def _sub_status_key_ok(got_key):
 import os as _os
 import threading as _th
 import logging
+
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from portal.safe_urlopen import safe_urlopen
+
 # PORTAL_NO_WARMUP=1：跳过启动预热（测试环境用——真实 datamart.read
 # 冷算 ~100s，会与测试的 sys.modules 补丁窗口产生线程竞态）。
 if _os.environ.get("PORTAL_NO_WARMUP") != "1":
@@ -794,7 +800,6 @@ class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler,
         schtasks 状态。60s TTL 缓存，探测全部线程池并发。"""
         import socket as _sk
         import subprocess as _sp
-        import urllib.request as _u
         from concurrent.futures import ThreadPoolExecutor
 
         with _lock:
@@ -809,7 +814,7 @@ class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler,
             t0 = time.time()
             try:
                 if http_path:
-                    ok = _u.urlopen("http://127.0.0.1:%d%s"
+                    ok = safe_urlopen("http://127.0.0.1:%d%s"
                                     % (port, http_path),
                                     timeout=2.5).status == 200
                 else:
@@ -915,7 +920,6 @@ class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler,
         jev-stack.log 换血时间轴（尾 40 行）、死信队列统计+最近样本。
         30s TTL。"""
         import socket as _sk
-        import urllib.request as _u
         from concurrent.futures import ThreadPoolExecutor
 
         with _lock:
@@ -953,7 +957,7 @@ class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler,
             except Exception:
                 return out
             try:
-                body = _u.urlopen("http://127.0.0.1:%d/metrics" % port,
+                body = safe_urlopen("http://127.0.0.1:%d/metrics" % port,
                                   timeout=4).read().decode("utf-8",
                                                            "replace")
                 met = out["metrics"]
@@ -1848,11 +1852,10 @@ function _nlForce(){_wait('强制重算中…（绕过缓存，约 10-30s）');
         """系统自检页：服务实时探活 + ops/health_latest.json 夜间快照。"""
         import html as _html
         import socket as _sk
-        import urllib.request as _u
 
         def http_ok(url):
             try:
-                return _u.urlopen(url, timeout=2.5).status == 200
+                return safe_urlopen(url, timeout=2.5).status == 200
             except Exception:
                 return False
 

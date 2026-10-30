@@ -12,6 +12,12 @@ import os
 import time
 import urllib.request
 
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from portal.safe_urlopen import safe_urlopen
+
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 STORE = os.path.join(HERE, "data", "weather_latest.json")
 CITIES = [
@@ -28,7 +34,7 @@ def refresh() -> dict:
         try:
             url = "https://wttr.in/%s?format=j1" % urllib.request.quote(city)
             req = urllib.request.Request(url, headers={"User-Agent": UA})
-            with urllib.request.urlopen(req, timeout=20) as r:
+            with safe_urlopen(req, timeout=20) as r:
                 d = json.loads(r.read().decode("utf-8"))
             cur = (d.get("current_condition") or [{}])[0]
             out["cities"][city] = {

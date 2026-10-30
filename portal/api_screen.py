@@ -22,6 +22,12 @@ from api_common import (
     _fmt_pct, _TP_JS, build_alerts, _council_stats, _pool_bear_news,
     data_freshness_bg)
 
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from portal.safe_urlopen import safe_urlopen
+
+
 
 def _chips_data(q, d, x=None):
     """个股筹码分布瀑布（S5）：cyq_chips 单日按需 + parquet 缓存。
@@ -711,11 +717,10 @@ def build_screen():
     #    ② 数据链最新锚点距今 ③ 调度时刻表（前端算下一班倒计时） ──
     def _probe_ops():
         import socket as _sk
-        import urllib.request as _u
 
         def http_ok(url):
             try:
-                return _u.urlopen(url, timeout=2.5).status == 200
+                return safe_urlopen(url, timeout=2.5).status == 200
             except Exception:
                 return False
 
