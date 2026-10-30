@@ -22,6 +22,7 @@ import json
 import os
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -424,6 +425,23 @@ def build_overview() -> Dict[str, Any]:
             "zhice": zhice_health(),
         },
         "contracts": CONTRACTS,
+        "identity": _identity_summary(),
+    }
+
+
+def _identity_summary() -> Dict[str, Any]:
+    try:
+        import identity_registry as reg
+        actors = reg.list_actors()
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "reason": "identity_registry_error:%s" % type(exc).__name__, "actors": []}
+    return {
+        "ok": True,
+        "mode": "read_only",
+        "actors_total": len(actors),
+        "verified": sum(1 for a in actors if a.get("mapping_status") == "verified"),
+        "partial": sum(1 for a in actors if a.get("mapping_status") == "partial"),
+        "actors": actors,
     }
 
 
@@ -446,6 +464,31 @@ def handle_get(handler: Any, path: str, query: str = "") -> None:
         return
     if path == "/api/bff/contracts":
         handler._json(contracts())
+        return
+    if path == "/api/bff/identity/actors":
+        try:
+            import identity_registry as reg
+            handler._json({"ok": True, "mode": "read_only", "as_of": _now(),
+                           "actors": reg.list_actors()})
+        except Exception as exc:  # noqa: BLE001
+            handler._json({"ok": False, "reason": "identity_registry_error:%s" % type(exc).__name__}, 500)
+        return
+    if path == "/api/bff/identity/context":
+        q = urllib.parse.parse_qs(query or "")
+        sub = (q.get("sub") or [""])[0].strip()
+        source = (q.get("source") or [""])[0].strip()
+        source_id = (q.get("id") or [""])[0].strip()
+        try:
+            import identity_registry as reg
+            ctx = reg.resolve(sub) if sub else (reg.resolve_source(source, source_id) if source and source_id else None)
+        except Exception as exc:  # noqa: BLE001
+            handler._json({"ok": False, "reason": "identity_registry_error:%s" % type(exc).__name__}, 500)
+            return
+        if ctx is None:
+            handler._json({"ok": False, "reason": "identity_not_found", "mode": "read_only",
+                           "query": {"sub": sub, "source": source, "id": source_id}}, 404)
+            return
+        handler._json({"ok": True, "mode": "read_only", "as_of": _now(), "identity": ctx})
         return
     if path in ("/api/bff/zhice/market/overview", "/api/bff/zhice/market/regime", "/api/bff/zhice/strategies"):
         api_path = {
