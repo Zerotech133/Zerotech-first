@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 15:10",
+ "generated": "2026-10-30 15:11",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 27,
+  "workorders_doing": 28,
   "workorders_review": 6
  },
  "workorders": [
@@ -284,15 +284,6 @@
    "project": "quant"
   },
   {
-   "id": "WO-GUANYU-P77-20261030",
-   "desc": "收口日报+解除元数据豁免",
-   "status": "doing",
-   "owner": "GUANYU",
-   "branch": "task/WO-GUANYU-P77-20261030",
-   "created": "2026-10-30 15:06:41",
-   "project": "general"
-  },
-  {
    "id": "K-STOCK-ANALYSIS-P0U-20261030",
    "desc": "事件旧类别清洗：按当前规则重算 category（保留 reviewed/category_final），CLI+单测+生产清洗",
    "status": "doing",
@@ -309,6 +300,24 @@
    "branch": "task/K-ORG-20261030-TRACELINK",
    "created": "2026-10-30 15:09:04",
    "project": "general"
+  },
+  {
+   "id": "WO-LEGION-P2-V1-FIX-20261030",
+   "desc": "P2任务首跑修复：子进程UTF8",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-P2-V1-FIX-20261030",
+   "created": "2026-10-30 15:10:35",
+   "project": "general"
+  },
+  {
+   "id": "WO-METHODS-RS-20261030",
+   "desc": "板块regime增强：个股20日相对行业指数强弱过滤（解决行业指数全程上行导致过滤无效）；回放对比+测试",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-METHODS-RS-20261030",
+   "created": "2026-10-30 15:11:03",
+   "project": "portal"
   }
  ],
  "coder_traces": [
@@ -6374,14 +6383,7 @@
    ],
    "experience": "30 年工程治理经验：漏洞分级与补丁流程、失败测试基线修复、编码规范与门禁落地、技术债清欠与重复功能合并；证据驱动、逐项闭环，只出报告与工单不自行合并，开发动作限独立 worktree 提交+跑测试并交 L2 人签。",
    "dept_name": "研究院",
-   "dept_cn_title": "太学",
-   "tasks": [
-    {
-     "id": "WO-GUANYU-P77-20261030",
-     "desc": "收口日报+解除元数据豁免",
-     "status": "doing"
-    }
-   ]
+   "dept_cn_title": "太学"
   },
   "HUANGZHONG": {
    "id": "HUANGZHONG",
@@ -7029,7 +7031,14 @@
    ],
    "entry_source": "virtual_governance",
    "seat_note": "profile 角色，不占编（D5-C）；与 R2 风控席（org 编制·保守风控哨）是不同 id，报表按 id 区分。",
-   "home_page": "http://127.0.0.1:8796/zhaoyun"
+   "home_page": "http://127.0.0.1:8796/zhaoyun",
+   "tasks": [
+    {
+     "id": "WO-LEGION-P2-V1-FIX-20261030",
+     "desc": "P2任务首跑修复：子进程UTF8",
+     "status": "doing"
+    }
+   ]
   }
  }
 }
