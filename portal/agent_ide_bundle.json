@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-31 02:21",
+ "generated": "2026-10-31 02:26",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 32,
+  "workorders_doing": 31,
   "workorders_review": 12
  },
  "workorders": [
@@ -398,15 +398,6 @@
    "owner": "DSH-Lead",
    "branch": "task/WO-D1-L4BOOTSTRAP-20261031",
    "created": "2026-10-31 01:31:46",
-   "project": "general"
-  },
-  {
-   "id": "WO-LEGION-PHASEB-CLIENT-20261031",
-   "desc": "B1：Hermes密码认证客户端+8787调用方适配+OH容器IP解析+测试(flag默认关)",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-PHASEB-CLIENT-20261031",
-   "created": "2026-10-31 02:20:45",
    "project": "general"
   }
  ],
@@ -7391,11 +7382,6 @@
     {
      "id": "WO-PICKCHAIN-VERDICTS-FIX-20261030",
      "desc": "选股产品链 verdicts 异常修复：py312 build_pick_verdicts 0xC0000005 访问冲突、py311 长跑无输出；先定位 pandas/tdx 依赖，再加超时/分片/日志；不阻塞 11-02 试运行。",
-     "status": "doing"
-    },
-    {
-     "id": "WO-LEGION-PHASEB-CLIENT-20261031",
-     "desc": "B1：Hermes密码认证客户端+8787调用方适配+OH容器IP解析+测试(flag默认关)",
      "status": "doing"
     }
    ]
