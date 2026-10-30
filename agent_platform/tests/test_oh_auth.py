@@ -45,6 +45,13 @@ def test_valid_cap_allows(monkeypatch, tmp_path):
     assert m.authorize({"X-ZB-Cap": tok}) is None
 
 
+def test_hermes_session_monkeypatched(monkeypatch):
+    monkeypatch.delenv("OH_BROKER_AUTH", raising=False)
+    m = _load()
+    monkeypatch.setattr(m, "_hermes_ok", lambda headers: True)
+    assert m.authorize({}) is None
+
+
 def test_portal_identity_monkeypatched(monkeypatch):
     monkeypatch.delenv("OH_BROKER_AUTH", raising=False)
     m = _load()
