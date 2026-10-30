@@ -1508,11 +1508,26 @@ def _auto_rebuild_ide_bundle(tid):
         print("  IDE bundle   ⚠ 重建异常（不阻断）：%s" % str(e)[:160])
 
 
+def _gate_script_for(tid):
+    """返回任务 worktree 内的 test_gate.ps1；缺失返回空串。
+
+    2026-10-30 branch-gate：质量闸必须在**待合并分支/worktree**跑。
+    旧实现固定跑 REPO 根（master）→ master 上一旦有失败测试，新分支即使修好
+    也会被旧失败挡住，形成“修不了也合不了”的死锁。
+    """
+    wt = os.path.join(WT_DIR, tid)
+    if not os.path.isdir(wt):
+        return ""
+    script = os.path.join(wt, "tools", "test_gate.ps1")
+    return script if os.path.isfile(script) else ""
+
+
 def _quality_gate(tid):
     """合并前测试门（P0#1 内联，2026-10-29 WO-GUANYU-P37）。
 
-    口径同 tools/merge_gated.py：纯文档/配置变更跳过，其余跑
+    口径同 tools/merge_gated.py：纯文档/配置变更跳过，其余在**任务 worktree**跑
     `tools/test_gate.ps1 -Suite fast`（portal+k_stock），新增失败即拒绝。
+    （2026-10-30：从 master 级改为分支级，防既有失败死锁。）
     显式绕过：DEVTOOL_MERGE_GATE=0（仅回滚/紧急，回单注明"绕过质量闸"）。
     """
     if os.environ.get("DEVTOOL_MERGE_GATE") == "0":
@@ -1530,9 +1545,12 @@ def _quality_gate(tid):
         return False, "改动文件计算异常：%r" % exc
     if _mg.is_docs_only(files):
         return True, "纯文档/配置变更（跳过测试）"
-    print("  质量闸   … 跑 test_gate -Suite fast（portal+k_stock，约 4~5 分钟）")
+    gate_script = _gate_script_for(tid)
+    if not gate_script:
+        return False, "任务 worktree 不可用（缺 tools/test_gate.ps1），拒绝在 master 上跑分支级闸"
+    print("  质量闸   … 在任务 worktree 跑 test_gate -Suite fast（分支级，约 4~5 分钟）")
     rc = _mg.run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass",
-                  "-File", os.path.join(REPO, "tools", "test_gate.ps1"),
+                  "-File", gate_script,
                   "-Suite", "fast"], timeout=1800)
     if rc != 0:
         return False, "test_gate fast rc=%d（日志 %s）" % (rc, _mg.LOG)
@@ -1542,7 +1560,7 @@ def _quality_gate(tid):
     changed_tools_tests = [f for f in files
                            if f.startswith("tools/tests/test_") and f.endswith(".py")]
     if changed_tools_tests:
-        wt = os.path.join(REPO, ".worktrees", tid)
+        wt = os.path.join(WT_DIR, tid)
         if not os.path.exists(os.path.join(wt, ".git")):
             subprocess.run(["git", "-C", REPO, "worktree", "add", wt, "task/%s" % tid],
                            capture_output=True, text=True, encoding="utf-8", errors="replace")
