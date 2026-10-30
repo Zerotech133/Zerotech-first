@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 20:34",
+ "generated": "2026-10-30 20:37",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 28,
+  "workorders_doing": 27,
   "workorders_review": 9
  },
  "workorders": [
@@ -326,15 +326,6 @@
    "owner": "DSH-Lead",
    "branch": "task/K-ORG-20261030-JEVARCH2",
    "created": "2026-10-30 18:47:29",
-   "project": "general"
-  },
-  {
-   "id": "K-ORG-20261030-JEVALERT",
-   "desc": "P1 零侵入：JEV 风险告警桥（高影响 bear→去重 outbox/flag）+ MCP jev_feedback + Hermes 工作流文档",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-ORG-20261030-JEVALERT",
-   "created": "2026-10-30 20:31:36",
    "project": "general"
   },
   {
