@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
-"""curated 行情表日更工具（P0S）：daily / daily_basic / moneyflow 自动补缺交易日。
+"""curated 行情表日更工具（P0S）：日更补缺交易日（daily/daily_basic/moneyflow/index_daily）。
+
+2026-10-30 IDXDAILY：加入 index_daily。背景：TushareSync 只更新 per-code 缓存、curated
+单文件表滞后；原先 daily 三表有日更，但 **index_daily 只在全量重建时刷新**，导致
+index_daily 冻结在 10-23、沪深300 基准缺失 10-24 起所有交易日 → JEV 后验/校准无法推进。
 
 背景：TushareSync 每晚只更新 per-code 缓存，curated 单文件表会滞后（实测 10-23→10-29）。
 本工具只做 **append-only**：按交易日把缺失行情补进 curated 单文件；不删除、不改历史行。
@@ -23,7 +27,7 @@ import pandas as pd
 from . import config
 
 CURATED = os.environ.get("ANALYSIS_CURATED_OVERRIDE") or config.CURATED
-TABLES = ["daily", "daily_basic", "moneyflow"]
+TABLES = ["daily", "daily_basic", "moneyflow", "index_daily"]
 KEY = ["ts_code", "trade_date"]
 
 
