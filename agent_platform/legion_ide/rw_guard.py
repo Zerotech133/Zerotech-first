@@ -101,6 +101,41 @@ def local_token() -> str:
     return ""
 
 
+_CAP_MOD = None
+
+
+def _cap():
+    global _CAP_MOD
+    if _CAP_MOD is not None:
+        return _CAP_MOD
+    import importlib.util
+    p = Path(__file__).resolve().parent / "cap_token.py"
+    spec = importlib.util.spec_from_file_location("legion_cap_token", p)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    _CAP_MOD = mod
+    return mod
+
+
+def check_cap(headers: dict, scope: str, task: str = ""):
+    """Phase A：local_fallback 会话的写/执行要求能力令牌（cap key 未配置则不启用）。"""
+    info = session_info(headers)
+    if not info or str(info.get("role_source") or "") != "local_fallback":
+        return None
+    cap = _cap()
+    if not cap.enabled():
+        return None
+    token = str(headers.get("X-ZB-Cap") or "").strip()
+    if not token:
+        token = str(parse_cookies(headers.get("Cookie") or "").get("zbcap") or "").strip()
+    res = cap.verify(token, required_scope=str(scope or ""), task=str(task or ""))
+    if res.get("ok"):
+        return None
+    return err(res.get("error") or "cap_invalid",
+               "写/执行需要有效能力令牌（scope=%s task=%s）" % (scope, task),
+               res.get("detail"))
+
+
 def _local_token_denied(headers: dict, info: dict):
     """仅对 local_fallback（本机无门户 identity）会话强制 token；有 identity 的走 roles。"""
     tok = local_token()

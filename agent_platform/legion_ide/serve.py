@@ -264,9 +264,13 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                 want = str((qs.get("token") or [""])[0] or "").strip()
                 hdr = str(self.headers.get("X-IDE-Token") or "").strip()
                 lt = G.local_token()
+                cap_want = str((qs.get("cap") or [""])[0] or "").strip()
                 extra = ""
                 if lt and (want == lt or hdr == lt):
                     extra = ("ide_local_token=%s; HttpOnly; SameSite=Strict; Path=/" % lt)
+                if cap_want:
+                    extra = (extra + " " if extra else "") + (
+                        "zbcap=" + cap_want + "; HttpOnly; SameSite=Strict; Path=/")
                 return self._html(page.read_bytes(), token, extra)
             if path == "/agent_ide_bundle.json":
                 bundle = (
@@ -502,6 +506,11 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                     "写文件已改为两阶段：先 /api/ide/write/preview，再 /api/ide/write/confirm",
                 ))
             if path == "/api/ide/write/preview":
+                cap_err = G.check_cap(dict(self.headers),
+                                      "ide:write:" + str(data.get("task") or ""),
+                                      str(data.get("task") or ""))
+                if cap_err:
+                    return self._json(403, cap_err)
                 res = W.preview_file(wt, data.get("path"), data.get("content", ""))
                 if not res.get("ok"):
                     return self._json(400, res)
@@ -531,6 +540,10 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
             if path == "/api/ide/write/confirm":
                 preview_id = str(data.get("preview_id") or "").strip()
                 pending = _PREVIEWS.get(preview_id)
+                _ctask = str((pending or {}).get("task") or data.get("task") or "")
+                cap_err = G.check_cap(dict(self.headers), "ide:write:" + _ctask, _ctask)
+                if cap_err:
+                    return self._json(403, cap_err)
                 if not pending:
                     return self._json(400, G.err("preview_missing", "预览不存在或已过期"))
                 if (pending.get("owner") != owner
@@ -555,6 +568,9 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
             if path == "/api/ide/undo":
                 rel = str(data.get("path") or "").strip()
                 task = str(data.get("task") or "")
+                cap_err = G.check_cap(dict(self.headers), "ide:write:" + task, task)
+                if cap_err:
+                    return self._json(403, cap_err)
                 rec = U.get(task, rel)
                 if not rec:
                     return self._json(404, G.err("undo_missing", "没有可撤销的写入"))
@@ -572,6 +588,10 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                         "undo %s -> ok" % rel)
                 return self._json(200, {**res, "undone": True,
                                         "restored_sha256": res.get("sha256")})
+            _etask = str(data.get("task") or "")
+            cap_err = G.check_cap(dict(self.headers), "ide:exec:" + _etask, _etask)
+            if cap_err:
+                return self._json(403, cap_err)
             try:
                 timeout_s = int(data.get("timeout") or X.DEFAULT_TIMEOUT)
             except (TypeError, ValueError):

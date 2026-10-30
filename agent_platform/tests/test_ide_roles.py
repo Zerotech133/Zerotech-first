@@ -72,3 +72,31 @@ def test_local_token_file(monkeypatch, tmp_path):
     token, _ = m.new_session(headers={})
     hdr = {"Cookie": "ide_session=" + token, "X-IDE-Token": "file-token-xyz"}
     assert m.check_access(hdr, required_roles=m.write_roles()) is None
+
+
+def test_check_cap_required_and_scope(monkeypatch, tmp_path):
+    key = tmp_path / "cap.key"; key.write_bytes(b"z" * 32)
+    monkeypatch.setenv("LEGION_IDE_STATE_DIR", str(tmp_path / "state"))
+    monkeypatch.setenv("LEGION_CAP_KEY_FILE", str(key))
+    monkeypatch.delenv("IDE_LOCAL_TOKEN", raising=False)
+    m = _load()
+    token, _ = m.new_session(headers={})
+    hdr = {"Cookie": "ide_session=" + token}
+    err = m.check_cap(hdr, "ide:write:T1", "T1")
+    assert err and err.get("error") == "cap_required"
+    cap = m._cap().issue(["ide:write:T1"], task="T1", path=key)
+    ok = {"Cookie": "ide_session=" + token, "X-ZB-Cap": cap}
+    assert m.check_cap(ok, "ide:write:T1", "T1") is None
+    wrong = {"Cookie": "ide_session=" + token, "X-ZB-Cap": cap}
+    assert m.check_cap(wrong, "ide:write:T2", "T2")["error"] == "cap_scope"
+
+
+def test_check_cap_skips_identity_sessions(monkeypatch, tmp_path):
+    key = tmp_path / "cap.key"; key.write_bytes(b"q" * 32)
+    monkeypatch.setenv("LEGION_IDE_STATE_DIR", str(tmp_path / "state"))
+    monkeypatch.setenv("LEGION_CAP_KEY_FILE", str(key))
+    m = _load()
+    token, _ = m.new_session(headers={})
+    m._SESSIONS[m._token_key(token)]["role_source"] = "identity"
+    hdr = {"Cookie": "ide_session=" + token}
+    assert m.check_cap(hdr, "ide:write:T1", "T1") is None
