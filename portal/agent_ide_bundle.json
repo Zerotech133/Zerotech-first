@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 19:01",
+ "generated": "2026-10-30 19:06",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 26,
+  "workorders_doing": 29,
   "workorders_review": 9
  },
  "workorders": [
@@ -326,6 +326,33 @@
    "owner": "DSH-Lead",
    "branch": "task/K-ORG-20261030-JEVARCH2",
    "created": "2026-10-30 18:47:29",
+   "project": "general"
+  },
+  {
+   "id": "K-ORG-20261030-PREFLIGHT2",
+   "desc": "补 preflight __main__ 入口 + CLI 实测",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-ORG-20261030-PREFLIGHT2",
+   "created": "2026-10-30 19:03:39",
+   "project": "general"
+  },
+  {
+   "id": "K-STOCK-ANALYSIS-P3-1-20261030",
+   "desc": "P3.1增长增强：邀请码/渠道归因(trial+growth)+跟进计划(邮件/飞书文案)+案例库扩充+测试",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-STOCK-ANALYSIS-P3-1-20261030",
+   "created": "2026-10-30 19:04:31",
+   "project": "quant"
+  },
+  {
+   "id": "WO-GUANYU-P82-20261030",
+   "desc": "R1导出性能修复",
+   "status": "doing",
+   "owner": "GUANYU",
+   "branch": "task/WO-GUANYU-P82-20261030",
+   "created": "2026-10-30 19:05:16",
    "project": "general"
   }
  ],
@@ -6623,7 +6650,14 @@
    ],
    "experience": "30 年工程治理经验：漏洞分级与补丁流程、失败测试基线修复、编码规范与门禁落地、技术债清欠与重复功能合并；证据驱动、逐项闭环，只出报告与工单不自行合并，开发动作限独立 worktree 提交+跑测试并交 L2 人签。",
    "dept_name": "研究院",
-   "dept_cn_title": "太学"
+   "dept_cn_title": "太学",
+   "tasks": [
+    {
+     "id": "WO-GUANYU-P82-20261030",
+     "desc": "R1导出性能修复",
+     "status": "doing"
+    }
+   ]
   },
   "HUANGZHONG": {
    "id": "HUANGZHONG",
