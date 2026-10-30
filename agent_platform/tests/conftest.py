@@ -12,6 +12,13 @@ pytest 默认 prepend 模式会把测试目录/agent_platform 插到 sys.path �
 """
 import sys
 from pathlib import Path
+# safe_path=true 时脚本目录不入 sys.path：把本树根加入 path（helper 同目录）
+import sys as _sys
+from pathlib import Path as _Path
+for _p in _Path(__file__).resolve().parents:
+    if (_p / "safe_urlopen.py").exists():
+        _sys.path.insert(0, str(_p))
+        break
 
 ROOT = Path(__file__).resolve().parents[2]  # 仓库根
 if str(ROOT) not in sys.path:

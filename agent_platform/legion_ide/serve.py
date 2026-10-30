@@ -39,6 +39,13 @@ from legion_ide import rw_guard as G  # noqa: E402
 from legion_ide import writer as W  # noqa: E402
 from legion_ide import exec_runner as X  # noqa: E402
 import logging
+# safe_path=true 时脚本目录不入 sys.path：把本树根加入 path（helper 同目录）
+import sys as _sys
+from pathlib import Path as _Path
+for _p in _Path(__file__).resolve().parents:
+    if (_p / "safe_urlopen.py").exists():
+        _sys.path.insert(0, str(_p))
+        break
 
 # tools 在部分 Python 环境会被 zhice 的常规 tools 包遮蔽（namespace 包不敌
 # 常规包），WMI 启动又没有 PYTHONPATH。这里按文件路径直接加载仓库内的
