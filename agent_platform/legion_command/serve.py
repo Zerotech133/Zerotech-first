@@ -437,6 +437,14 @@ class Handler(BaseHTTPRequestHandler):
                 return
             self._send_json({"ok": True, "token": WRITE_TOKEN})
             return
+        if path == "/api/governance/kpi":
+            try:
+                from legion_command import governance_kpi as _gk
+                self._send_json(_gk.collect())
+            except Exception as exc:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "kpi_failed",
+                                 "detail": "%s: %s" % (type(exc).__name__, str(exc)[:200])}, 500)
+            return
         if path == "/" or path == "/index.html":
             self._send_file(_STATIC / "index.html", "text/html; charset=utf-8")
             return
