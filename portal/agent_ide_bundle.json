@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 21:57",
+ "generated": "2026-10-30 22:02",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 30,
+  "workorders_doing": 32,
   "workorders_review": 10
  },
  "workorders": [
@@ -372,6 +372,24 @@
    "branch": "task/K-JEV-20261030-NIGHTFALL",
    "created": "2026-10-30 21:42:42",
    "project": "quant"
+  },
+  {
+   "id": "WO-GUANYU-P94-20261030",
+   "desc": "L2-A CSP放行5175",
+   "status": "doing",
+   "owner": "GUANYU",
+   "branch": "task/WO-GUANYU-P94-20261030",
+   "created": "2026-10-30 22:00:07",
+   "project": "general"
+  },
+  {
+   "id": "WO-ZHAOYUN-W1-TOKENS-20261030",
+   "desc": "W1方案A：legion-tokens.css品牌/状态token层+zhaoyun.html 87处hex替换",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-ZHAOYUN-W1-TOKENS-20261030",
+   "created": "2026-10-30 22:01:49",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -6675,7 +6693,14 @@
    ],
    "experience": "30 年工程治理经验：漏洞分级与补丁流程、失败测试基线修复、编码规范与门禁落地、技术债清欠与重复功能合并；证据驱动、逐项闭环，只出报告与工单不自行合并，开发动作限独立 worktree 提交+跑测试并交 L2 人签。",
    "dept_name": "研究院",
-   "dept_cn_title": "太学"
+   "dept_cn_title": "太学",
+   "tasks": [
+    {
+     "id": "WO-GUANYU-P94-20261030",
+     "desc": "L2-A CSP放行5175",
+     "status": "doing"
+    }
+   ]
   },
   "HUANGZHONG": {
    "id": "HUANGZHONG",
@@ -7344,6 +7369,11 @@
      "id": "WO-HERMES-CSP-SELF-20261030",
      "desc": "用户批准：Hermes CSP frame-ancestors none→self、X-Frame-Options DENY→SAMEORIGIN，允许同源 iframe 挂 5175 研究台；更新对应断言。",
      "status": "review"
+    },
+    {
+     "id": "WO-ZHAOYUN-W1-TOKENS-20261030",
+     "desc": "W1方案A：legion-tokens.css品牌/状态token层+zhaoyun.html 87处hex替换",
+     "status": "doing"
     }
    ]
   }
