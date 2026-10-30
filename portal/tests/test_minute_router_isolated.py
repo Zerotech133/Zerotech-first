@@ -8,6 +8,8 @@ from datetime import date, datetime, timezone
 import hashlib
 import http.client
 import importlib
+import os
+import subprocess
 import json
 from pathlib import Path
 import sys
@@ -88,12 +90,31 @@ def _stop(server: object, thread: threading.Thread) -> None:
     assert not thread.is_alive()
 
 
+def _rerun_in_fresh_process() -> None:
+    """全量套件内：本用例要求独立解释器，自动在干净子进程重跑自身并透传结果。"""
+    env = dict(os.environ)
+    env.pop("PYTEST_CURRENT_TEST", None)
+    env["PORTAL_NO_WARMUP"] = "1"
+    result = subprocess.run(
+        [sys.executable, "-m", "pytest", str(Path(__file__)), "-q",
+         "-p", "no:cacheprovider", "--timeout=180"],
+        cwd=str(REPO), capture_output=True, text=True, encoding="utf-8",
+        errors="replace", timeout=300, env=env)
+    assert result.returncode == 0, (
+        "隔离子进程运行失败：\n" + (result.stdout or result.stderr or "")[-3000:])
+
+
 def test_real_minute_router_start_worker_result_and_cold_restart(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Verify real POST/GET HTTP statuses and disk-backed cold-start recovery."""
     # A fresh process is mandatory: portal_api imports the backtest module by
     # name, so an already imported production registry cannot be safely reused.
+    # 全量套件下（其他测试已 import api_backtest）→ 自动在子进程隔离重跑自身，
+    # 避免把“设计上的进程隔离要求”误报成 flaky/失败（2026-10-30 P76）。
+    if "api_backtest" in sys.modules or "portal_api" in sys.modules:
+        _rerun_in_fresh_process()
+        return
     assert "api_backtest" not in sys.modules
     assert "portal_api" not in sys.modules
     original_paths = list(sys.path)
