@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 26,
+  "workorders_doing": 25,
   "workorders_review": 8
  },
  "workorders": [
@@ -308,15 +308,6 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-LEGION-AUDIT-LOGINLINK-20261030",
    "created": "2026-10-30 16:41:37",
-   "project": "general"
-  },
-  {
-   "id": "WO-LEGION-OIDC-HARDEN-20261030",
-   "desc": "OIDC硬化：state绑定+MODE关闸+registry错误",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-OIDC-HARDEN-20261030",
-   "created": "2026-10-30 17:17:21",
    "project": "general"
   }
  ],
@@ -7273,11 +7264,6 @@
      "id": "WO-LEGION-AUDIT-LOGINLINK-20261030",
      "desc": "修复登录页返回受保护页死循环",
      "status": "review"
-    },
-    {
-     "id": "WO-LEGION-OIDC-HARDEN-20261030",
-     "desc": "OIDC硬化：state绑定+MODE关闸+registry错误",
-     "status": "doing"
     }
    ]
   }
