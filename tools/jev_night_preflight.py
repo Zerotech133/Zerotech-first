@@ -194,3 +194,7 @@ def main(argv=None) -> int:
         print("[%s] %-12s %s" % ("PASS" if c["ok"] else "FAIL", c["name"], c["detail"]),
               file=sys.stderr)
     return 0 if not summary["fails"] else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
