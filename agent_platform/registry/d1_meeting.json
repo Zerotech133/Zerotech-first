@@ -1,0 +1,20 @@
+{
+  "_note": "D1 投研会（2026-10-30 WO-INV-STAFF）。四个分析席投票，D1 主席最终表决；输出 D1 五档裁决。",
+  "meeting_id": "D1-INVESTMENT-COMMITTEE",
+  "chair": "D1",
+  "chair_name": "鲁肃",
+  "voters": [
+    "T1",
+    "T2",
+    "N1",
+    "F1"
+  ],
+  "observer": [
+    "ST1",
+    "QS1"
+  ],
+  "quorum": 5,
+  "vote_rule": "多数票；T1/T2 对立时 N1/F1 佐证；D1 主席最终表决/否决",
+  "cadence": "daily",
+  "output": "D1 final_decision + rationale + l1_basis"
+}
