@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 19:14",
+ "generated": "2026-10-30 19:17",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -338,15 +338,6 @@
    "project": "general"
   },
   {
-   "id": "WO-WATCHADMIN-STATIC-20261030",
-   "desc": "watch_admin 8789 增加 /static/ 托管（tokens/nav/ui），修复页面白底/无样式；与全站视觉一致",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-WATCHADMIN-STATIC-20261030",
-   "created": "2026-10-30 19:13:04",
-   "project": "portal"
-  },
-  {
    "id": "K-STOCK-ANALYSIS-P2-6-20261030",
    "desc": "P2.6 生产化加固：分析任务持久化(SQLite，重启不丢)+多实例限流(SQLite滑窗可选后端)+测试",
    "status": "doing",
@@ -354,6 +345,15 @@
    "branch": "task/K-STOCK-ANALYSIS-P2-6-20261030",
    "created": "2026-10-30 19:13:21",
    "project": "quant"
+  },
+  {
+   "id": "WO-GUANYU-P84-20261030",
+   "desc": "ruff零告警清理",
+   "status": "doing",
+   "owner": "GUANYU",
+   "branch": "task/WO-GUANYU-P84-20261030",
+   "created": "2026-10-30 19:14:33",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -6650,7 +6650,14 @@
    ],
    "experience": "30 年工程治理经验：漏洞分级与补丁流程、失败测试基线修复、编码规范与门禁落地、技术债清欠与重复功能合并；证据驱动、逐项闭环，只出报告与工单不自行合并，开发动作限独立 worktree 提交+跑测试并交 L2 人签。",
    "dept_name": "研究院",
-   "dept_cn_title": "太学"
+   "dept_cn_title": "太学",
+   "tasks": [
+    {
+     "id": "WO-GUANYU-P84-20261030",
+     "desc": "ruff零告警清理",
+     "status": "doing"
+    }
+   ]
   },
   "HUANGZHONG": {
    "id": "HUANGZHONG",
