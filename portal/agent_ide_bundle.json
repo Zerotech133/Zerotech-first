@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 19:57",
+ "generated": "2026-10-30 20:00",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 29,
+  "workorders_doing": 28,
   "workorders_review": 9
  },
  "workorders": [
@@ -338,22 +338,13 @@
    "project": "quant"
   },
   {
-   "id": "WO-LEGION-W1T1-20261030",
-   "desc": "W1-3真实T1/T2 JSON-first复验",
+   "id": "WO-LEGION-W1T1-EVID-20261030",
+   "desc": "W1-3真实prompt AB记录",
    "status": "doing",
    "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-W1T1-20261030",
-   "created": "2026-10-30 19:53:06",
+   "branch": "task/WO-LEGION-W1T1-EVID-20261030",
+   "created": "2026-10-30 19:58:36",
    "project": "general"
-  },
-  {
-   "id": "WO-XQ-CLASSIFY-TASK-20261030",
-   "desc": "新增 XueqiuClassify 每日18:30包装脚本（老田已批准计划任务）；xq_classify --limit500 最新优先；日志/失败告警；不接实盘",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-XQ-CLASSIFY-TASK-20261030",
-   "created": "2026-10-30 19:55:17",
-   "project": "portal"
   }
  ],
  "coder_traces": [
@@ -7316,8 +7307,8 @@
      "status": "doing"
     },
     {
-     "id": "WO-LEGION-W1T1-20261030",
-     "desc": "W1-3真实T1/T2 JSON-first复验",
+     "id": "WO-LEGION-W1T1-EVID-20261030",
+     "desc": "W1-3真实prompt AB记录",
      "status": "doing"
     }
    ]
