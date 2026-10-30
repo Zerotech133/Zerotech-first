@@ -138,7 +138,10 @@ def audit(root: Path) -> dict:
         for i in ids:
             seat_depts.setdefault(i, []).append(dept)
 
-        if not profs and not matrix_ids:
+        # 2026-10-30 P79：空部门（无名单席位）不算零档案部门——
+        # 原条件漏了 ids，会把 agents=[] 的空壳部门误报 DEPT_NO_PROFILE
+        # （trading 部门迁移后为空即触发 test_org_audit 假红）。
+        if ids and not profs and not matrix_ids:
             findings.append(
                 {
                     "code": "DEPT_NO_PROFILE",
