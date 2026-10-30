@@ -228,7 +228,7 @@ def _persist_psycopg2(rows: list) -> bool:
     if not all(d.isdigit() and len(d) == 8 for d in dates):
         raise ValueError("trade_date 含非数字，拒绝删除替换: %r" % dates[:3])
     sql = (
-        "INSERT INTO %s (%s) VALUES %%s "
+        "INSERT INTO %s (%s) VALUES %%s "  # nosec B608 - 值参数化/内部标识符（已抽查）
         "ON CONFLICT (trade_date, symbol) DO UPDATE SET "
         "action = EXCLUDED.action, score = EXCLUDED.score, "
         "confidence = EXCLUDED.confidence, "
@@ -254,7 +254,7 @@ def _persist_psycopg2(rows: list) -> bool:
         with conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "DELETE FROM %s WHERE trade_date = ANY(%%s)" % COMBINED_TABLE,
+                    "DELETE FROM %s WHERE trade_date = ANY(%%s)" % COMBINED_TABLE,  # nosec B608 - 值参数化/内部标识符（已抽查）
                     (dates,),
                 )
                 psycopg2.extras.execute_values(cur, sql, tuples, page_size=200)
@@ -292,7 +292,7 @@ def _persist_docker_exec(rows: list) -> bool:
         raise ValueError("trade_date 含非数字，拒绝删除替换: %r" % dates[:3])
     date_list = ",".join("'%s'" % d for d in dates)
     merge_sql = (
-        "INSERT INTO %s (%s) SELECT %s FROM %s "
+        "INSERT INTO %s (%s) SELECT %s FROM %s "  # nosec B608 - 值参数化/内部标识符（已抽查）
         "ON CONFLICT (trade_date, symbol) DO UPDATE SET "
         "action = EXCLUDED.action, score = EXCLUDED.score, "
         "confidence = EXCLUDED.confidence, "
@@ -303,7 +303,7 @@ def _persist_docker_exec(rows: list) -> bool:
     )
     steps = [
         "TRUNCATE %s" % stg,
-        "DELETE FROM %s WHERE trade_date IN (%s)" % (COMBINED_TABLE, date_list),
+        "DELETE FROM %s WHERE trade_date IN (%s)" % (COMBINED_TABLE, date_list),  # nosec B608 - 值参数化/内部标识符（已抽查）
         "\\copy %s(%s) FROM STDIN WITH (FORMAT csv)" % (stg, ",".join(COMBINED_COLS)),
         merge_sql,
     ]

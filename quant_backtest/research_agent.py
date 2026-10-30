@@ -109,7 +109,7 @@ def _fp(facts):
     }
     return hashlib.md5(
         json.dumps(core, sort_keys=True, ensure_ascii=False).encode("utf-8")
-    ).hexdigest()[:12]
+    , usedforsecurity=False).hexdigest()[:12]
 
 
 def _cleanup(keep_days=7):

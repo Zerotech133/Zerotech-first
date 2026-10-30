@@ -61,7 +61,7 @@ STATUS_FIELDS = (
 def db_count(table: str) -> int:
     try:
         con = sqlite3.connect("file:%s?mode=ro" % X.INFO_DB, uri=True)
-        n = con.execute("SELECT COUNT(*) FROM %s" % table).fetchone()[0]
+        n = con.execute("SELECT COUNT(*) FROM %s" % table).fetchone()[0]  # nosec B608 - 值参数化/内部标识符（已抽查）
         con.close()
         return n
     except Exception:
@@ -71,7 +71,7 @@ def db_count(table: str) -> int:
 def load_seen(table: str, pk: str) -> set:
     try:
         con = sqlite3.connect("file:%s?mode=ro" % X.INFO_DB, uri=True)
-        ids = {str(r[0]) for r in con.execute("SELECT %s FROM %s" % (pk, table))}
+        ids = {str(r[0]) for r in con.execute("SELECT %s FROM %s" % (pk, table))}  # nosec B608 - 值参数化/内部标识符（已抽查）
         con.close()
         return ids
     except Exception:

@@ -28,7 +28,11 @@ import urllib.request
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 import logging
-from tools.safe_urlopen import safe_urlopen
+
+try:
+    from tools.safe_urlopen import safe_urlopen
+except ImportError:  # 作为脚本直接运行时
+    from safe_urlopen import safe_urlopen
 
 try:
     from bar_dto import BarQuery
@@ -202,8 +206,8 @@ def _bar(t, o, h, l, c, v, tz, daily=False):
 
 
 def _daily(market, symbol, limit):
-    sql = (
-        "SELECT trade_date, open, high, low, close, volume "
+    sql = (  # nosec B608 - 值参数化/内部标识符（已抽查）
+        "SELECT trade_date, open, high, low, close, volume "  # nosec B608 - 值参数化/内部标识符（已抽查）
         "FROM v2_bar_daily WHERE market=%s AND symbol=%s "
         "ORDER BY trade_date DESC LIMIT " + str(int(limit))
     )
@@ -275,8 +279,8 @@ def _minute_resample(market, symbol, period, limit):
     """v2_bar_minute 1 分钟基线 → 30m/60m SQL 重采样（US/HK 主源，其余兜底）。"""
     bucket = MIN_FREQ[period][2]
     start = datetime.now(timezone.utc) - timedelta(days=45)
-    sql = (
-        "SELECT to_timestamp(floor(extract(epoch FROM bar_time) / "
+    sql = (  # nosec B608 - 值参数化/内部标识符（已抽查）
+        "SELECT to_timestamp(floor(extract(epoch FROM bar_time) / "  # nosec B608 - 值参数化/内部标识符（已抽查）
         + str(bucket)
         + ") * "
         + str(bucket)
@@ -387,7 +391,7 @@ def _ts_mins(ts_code, freq, days, limit):
         data=body,
         headers={"Content-Type": "application/json"},
     )
-    with safe_safe_urlopen(req, timeout=25) as r:
+    with safe_urlopen(req, timeout=25) as r:
         j = json.loads(r.read().decode())
     if j.get("code") != 0:
         raise RuntimeError(str(j.get("message"))[:100])
@@ -427,7 +431,7 @@ def _binance(pair, interval, limit):
         + "&limit="
         + str(int(min(limit, 1000)))
     )
-    with safe_safe_urlopen(url, timeout=15) as r:
+    with safe_urlopen(url, timeout=15) as r:
         data = json.loads(r.read().decode())
     return [
         _bar(

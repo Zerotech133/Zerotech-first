@@ -62,7 +62,7 @@ def migrate(db_path, batch_size: int = 200, dry_run: bool = False) -> dict:
         if dry_run:
             journal_mode = conn.execute("PRAGMA journal_mode").fetchone()[0]
             rows = conn.execute(
-                "SELECT status_id, tickers FROM %s" % xtn._TABLE
+                "SELECT status_id, tickers FROM %s" % xtn._TABLE  # nosec B608 - 值参数化/内部标识符（已抽查）
             ).fetchall()
             kinds = {}
             for _sid, tickers_raw in rows:

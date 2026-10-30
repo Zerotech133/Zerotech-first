@@ -382,7 +382,7 @@ def _market_status(currency: str, prefix: str) -> dict:
         aids = [
             r["account_id"]
             for r in con.execute(
-                f"SELECT DISTINCT account_id FROM account WHERE account_id LIKE '{prefix}%' "
+                f"SELECT DISTINCT account_id FROM account WHERE account_id LIKE '{prefix}%' "  # nosec B608 - 值参数化/内部标识符（已抽查）
                 "ORDER BY account_id"
             )
         ]

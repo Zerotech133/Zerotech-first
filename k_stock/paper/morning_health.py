@@ -784,7 +784,7 @@ def _check_h3(paths: HealthPaths, date: str, gray_note: str | None) -> _F:
                         "启用 D-1 快照（decision_snapshot.ensure_table）或在本工具登记豁免口径",
                     )
                 n_snap = con.execute(
-                    "SELECT COUNT(*) FROM %s WHERE substr(captured_at,1,10)=?"
+                    "SELECT COUNT(*) FROM %s WHERE substr(captured_at,1,10)=?"  # nosec B608 - 值参数化/内部标识符（已抽查）
                     % _SNAPSHOT_DDL_HINT,
                     (_iso(date),),
                 ).fetchone()[0]

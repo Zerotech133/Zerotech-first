@@ -87,7 +87,10 @@ import urllib.error
 import urllib.request
 from datetime import date, datetime
 from pathlib import Path
-from tools.safe_urlopen import safe_urlopen
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为 k_stock 包导入时
+    from k_stock.paper.safe_urlopen import safe_urlopen
 
 PUSH_SCHEMA_VERSION = 1
 
@@ -898,7 +901,7 @@ def _webhook_post(
         headers={"Content-Type": "application/json"},
     )
     try:
-        with safe_safe_urlopen(req, timeout=timeout) as resp:
+        with safe_urlopen(req, timeout=timeout) as resp:
             payload = resp.read().decode("utf-8", "replace")
     except (urllib.error.URLError, OSError, ValueError) as e:
         raise PushError(

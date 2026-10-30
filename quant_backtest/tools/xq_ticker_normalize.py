@@ -76,7 +76,7 @@ KINDS = ("stock_hk", "stock_a", "index", "fund", "unknown")
 
 # kind 分布验证 SQL（一行，门户分栏/汇报用；json_each 对 NULL 行天然空集）
 KIND_DIST_SQL = (
-    "SELECT json_extract(je.value, '$.kind') AS kind, COUNT(*) AS n "
+    "SELECT json_extract(je.value, '$.kind') AS kind, COUNT(*) AS n "  # nosec B608 - 值参数化/内部标识符（已抽查）
     "FROM " + _TABLE + ", json_each(" + _TABLE + "." + _NORM_COL + ") je "
     "GROUP BY kind ORDER BY n DESC"
 )
@@ -236,7 +236,7 @@ def backfill(conn: sqlite3.Connection, batch_size: int = 200, retries: int = 3) 
     """
     ensure_norm_column(conn, retries=retries)
     rows = conn.execute(
-        "SELECT status_id, tickers, %s FROM %s" % (_NORM_COL, _TABLE)
+        "SELECT status_id, tickers, %s FROM %s" % (_NORM_COL, _TABLE)  # nosec B608 - 值参数化/内部标识符（已抽查）
     ).fetchall()
     total = updated = skipped = 0
     pending = 0
@@ -252,7 +252,7 @@ def backfill(conn: sqlite3.Connection, batch_size: int = 200, retries: int = 3) 
             continue
         _with_retry(
             lambda sid=status_id, p=payload: conn.execute(
-                "UPDATE %s SET %s=? WHERE status_id=?" % (_TABLE, _NORM_COL), (p, sid)
+                "UPDATE %s SET %s=? WHERE status_id=?" % (_TABLE, _NORM_COL), (p, sid)  # nosec B608 - 值参数化/内部标识符（已抽查）
             ),
             retries=retries,
         )

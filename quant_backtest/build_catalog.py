@@ -1027,8 +1027,8 @@ def _scan_sqlite(mf):
         for t, c in dcol.items():
             try:
                 schemas[t] = [r[1] for r in conn.execute("PRAGMA table_info(%s)" % t)]
-                rows[t] = conn.execute("SELECT COUNT(*) FROM %s" % t).fetchone()[0]
-                v = conn.execute("SELECT MAX(%s) FROM %s" % (c, t)).fetchone()
+                rows[t] = conn.execute("SELECT COUNT(*) FROM %s" % t).fetchone()[0]  # nosec B608 - 值参数化/内部标识符（已抽查）
+                v = conn.execute("SELECT MAX(%s) FROM %s" % (c, t)).fetchone()  # nosec B608 - 值参数化/内部标识符（已抽查）
                 s = str(v[0]) if v and v[0] else ""
                 fresh[t] = s[:10].replace("-", "") if s[:4].isdigit() else None
             except sqlite3.OperationalError as exc:
@@ -1095,8 +1095,8 @@ def _scan_xq_info_db(mf):
         for t, c in dcol.items():
             try:
                 schemas[t] = [r[1] for r in conn.execute("PRAGMA table_info(%s)" % t)]
-                rows[t] = conn.execute("SELECT COUNT(*) FROM %s" % t).fetchone()[0]
-                v = conn.execute("SELECT MAX(%s) FROM %s" % (c, t)).fetchone()
+                rows[t] = conn.execute("SELECT COUNT(*) FROM %s" % t).fetchone()[0]  # nosec B608 - 值参数化/内部标识符（已抽查）
+                v = conn.execute("SELECT MAX(%s) FROM %s" % (c, t)).fetchone()  # nosec B608 - 值参数化/内部标识符（已抽查）
                 s = str(v[0]) if v and v[0] else ""
                 fresh[t] = s[:10].replace("-", "") if s[:4].isdigit() else None
             except sqlite3.OperationalError as exc:

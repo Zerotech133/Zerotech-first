@@ -168,7 +168,7 @@ def _load_close(code, data_dir=DATA_DIR):
 
 # ── 账本 IO（perf_ledger 范式） ─────────────────────────────
 def _sha1(s):
-    return hashlib.sha1(s.encode("utf-8")).hexdigest()[:16]
+    return hashlib.sha1(s.encode("utf-8"), usedforsecurity=False).hexdigest()[:16]
 
 
 def _sig_id(code, sig_type, dt):
@@ -799,7 +799,7 @@ def _sha1_json(row):
             sort_keys=True,
             ensure_ascii=False,
         ).encode("utf-8")
-    ).hexdigest()[:16]
+    , usedforsecurity=False).hexdigest()[:16]
 
 
 def _verdict(st, baseline_win):

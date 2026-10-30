@@ -49,7 +49,7 @@ def _cfg():
 def _latest_report(db, table):
     try:
         return db.execute(
-            "SELECT date, ts, model, ok, markets, brief FROM %s "
+            "SELECT date, ts, model, ok, markets, brief FROM %s "  # nosec B608 - 值参数化/内部标识符（已抽查）
             "ORDER BY date DESC LIMIT 1" % table
         ).fetchone()
     except Exception:

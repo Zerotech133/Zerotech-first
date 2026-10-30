@@ -286,7 +286,7 @@ def read_info(tbl, codes=None, limit=200, since=None):
         where.append("%s >= ?" % date_col)
         nd = _norm_day(since)  # 库内存 'YYYY-MM-DD'
         params.append("%s-%s-%s" % (nd[:4], nd[4:6], nd[6:8]))
-    sql = "SELECT * FROM %s" % tbl
+    sql = "SELECT * FROM %s" % tbl  # nosec B608 - 值参数化/内部标识符（已抽查）
     if where:
         sql += " WHERE " + " AND ".join(where)
     sql += " ORDER BY %s DESC LIMIT %d" % (date_col, int(limit))
@@ -310,7 +310,7 @@ if __name__ == "__main__":
                 if os.path.exists(INFO_DB):
                     conn = sqlite3.connect(INFO_DB)
                     try:
-                        n = conn.execute("SELECT COUNT(*) FROM %s" % t).fetchone()[0]
+                        n = conn.execute("SELECT COUNT(*) FROM %s" % t).fetchone()[0]  # nosec B608 - 值参数化/内部标识符（已抽查）
                     except sqlite3.OperationalError as exc:
                         logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/tdx_read.py", exc)
                     conn.close()

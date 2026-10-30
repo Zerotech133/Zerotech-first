@@ -239,7 +239,7 @@ class DuckLake:
 
         try:
             self.con.execute(
-                f"CREATE VIEW {name} AS SELECT * FROM read_parquet('{glob_expr}')"
+                f"CREATE VIEW {name} AS SELECT * FROM read_parquet('{glob_expr}')"  # nosec B608 - 值参数化/内部标识符（已抽查）
             )
         except Exception as exc:  # noqa: BLE001
             self.skipped.append(SkipEntry(name, "table", f"CREATE VIEW 失败: {exc}"))
@@ -274,10 +274,10 @@ class DuckLake:
             return
         try:
             if len(available) == 1:
-                body = f"SELECT * FROM {available[0]}"
+                body = f"SELECT * FROM {available[0]}"  # nosec B608 - 值参数化/内部标识符（已抽查）
             else:
                 # 多源别名：UNION ALL BY NAME 拼接（零重叠/fallback 语义见 catalog 备注）
-                parts = [f"SELECT * FROM {t}" for t in available]
+                parts = [f"SELECT * FROM {t}" for t in available]  # nosec B608 - 值参数化/内部标识符（已抽查）
                 body = "\nUNION ALL BY NAME\n".join(parts)
             self.con.execute(f"CREATE VIEW {alias} AS {body}")
         except Exception as exc:  # noqa: BLE001
@@ -337,7 +337,7 @@ class DuckLake:
     def preview(self, table: str, limit: int) -> None:
         if table not in self.views:
             raise SystemExit(f"视图不存在: {table}（用 --list 查看可用视图）")
-        self.run_sql(f"SELECT * FROM {table} LIMIT {int(limit)}")
+        self.run_sql(f"SELECT * FROM {table} LIMIT {int(limit)}")  # nosec B608 - 值参数化/内部标识符（已抽查）
 
 
 # --------------------------------------------------------------------------

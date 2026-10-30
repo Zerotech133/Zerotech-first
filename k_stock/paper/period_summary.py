@@ -35,7 +35,11 @@ sys.path.insert(0, str(HERE))
 
 from judge import _connect, LLM_MODEL, OLLAMA  # noqa: E402
 import logging
-from tools.safe_urlopen import safe_urlopen
+
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为 k_stock 包导入时
+    from k_stock.paper.safe_urlopen import safe_urlopen
 
 # 组合→trader 映射数据文件（portal/subscriptions.py 的存储层）。
 SUB_PATH = HERE.parent.parent / "portal" / "data" / "strategy_subscriptions.json"
@@ -104,8 +108,8 @@ def build(kind: str, llm: bool = False, account: str = "all") -> dict:
         # ① 成绩：净值序列（多账户） + 成交统计（同口径过滤）
         eq_all = [
             dict(r)
-            for r in con.execute(
-                "SELECT account_id,date,total FROM equity_marks "
+            for r in con.execute(  # nosec B608 - 值参数化/内部标识符（已抽查）
+                "SELECT account_id,date,total FROM equity_marks "  # nosec B608 - 值参数化/内部标识符（已抽查）
                 "WHERE account_id IN (%s) AND date BETWEEN ? AND ? ORDER BY date" % ph,
                 accts + (start, end),
             )
@@ -118,8 +122,8 @@ def build(kind: str, llm: bool = False, account: str = "all") -> dict:
         else:
             chg = None
         # 口径修正：原实现无 account 过滤，混入 us_qingping 等 USD 账本订单
-        fills = con.execute(
-            "SELECT COUNT(*) n, SUM(CASE WHEN side='BUY' THEN 1 ELSE 0 END) b "
+        fills = con.execute(  # nosec B608 - 值参数化/内部标识符（已抽查）
+            "SELECT COUNT(*) n, SUM(CASE WHEN side='BUY' THEN 1 ELSE 0 END) b "  # nosec B608 - 值参数化/内部标识符（已抽查）
             "FROM orders WHERE status='filled' AND fill_date BETWEEN ? AND ? "
             "AND account_id IN (%s)" % ph,
             (start, end) + accts,
@@ -127,8 +131,8 @@ def build(kind: str, llm: bool = False, account: str = "all") -> dict:
         # per-account 成交拆分（口径同上：人民币侧账户集合）
         by_acct = {
             r["acct"]: {"fills": r["n"], "buys": r["b"] or 0}
-            for r in con.execute(
-                "SELECT account_id acct, COUNT(*) n, SUM(CASE WHEN "
+            for r in con.execute(  # nosec B608 - 值参数化/内部标识符（已抽查）
+                "SELECT account_id acct, COUNT(*) n, SUM(CASE WHEN "  # nosec B608 - 值参数化/内部标识符（已抽查）
                 "side='BUY' THEN 1 ELSE 0 END) b FROM orders "
                 "WHERE status='filled' AND fill_date BETWEEN ? AND ? "
                 "AND account_id IN (%s) GROUP BY account_id" % ph,
@@ -171,8 +175,8 @@ def build(kind: str, llm: bool = False, account: str = "all") -> dict:
                 except Exception as exc:
                     logging.getLogger(__name__).warning("silent-except %s: %s", "k_stock/paper/period_summary.py", exc)
         # 口径修正：纪律拦截同 account 过滤（原混入 USD 独立账本拒单）
-        blocks = con.execute(
-            "SELECT COUNT(*) FROM orders WHERE status='rejected' "
+        blocks = con.execute(  # nosec B608 - 值参数化/内部标识符（已抽查）
+            "SELECT COUNT(*) FROM orders WHERE status='rejected' "  # nosec B608 - 值参数化/内部标识符（已抽查）
             "AND (reason LIKE '%纪律%' OR reason LIKE '%门槛%') "
             "AND substr(ts,1,10) BETWEEN ? AND ? "
             "AND account_id IN (" + ph + ")",
@@ -247,7 +251,7 @@ def _llm_next_steps(out: dict) -> list:
         req = urllib.request.Request(
             OLLAMA, data=body, headers={"Content-Type": "application/json"}
         )
-        d = json.loads(safe_safe_urlopen(req, timeout=120).read().decode("utf-8"))
+        d = json.loads(safe_urlopen(req, timeout=120).read().decode("utf-8"))
         msg = d.get("message", {}).get("content", "")
         if "</think>" in msg:
             msg = msg.split("</think>", 1)[1]

@@ -84,7 +84,7 @@ def send_image(png_path):
                 "msgtype": "image",
                 "image": {
                     "base64": base64.b64encode(data).decode(),
-                    "md5": hashlib.md5(data).hexdigest(),
+                    "md5": hashlib.md5(data, usedforsecurity=False).hexdigest(),
                 },
             }
         )

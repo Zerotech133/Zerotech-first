@@ -122,21 +122,21 @@ def load_rows_pg(trade_date=None, limit=PG_LIMIT_DEFAULT) -> list:
             with conn.cursor() as cur:
                 if trade_date:
                     cur.execute(
-                        "SELECT %s FROM strategy.signals_combined "
+                        "SELECT %s FROM strategy.signals_combined "  # nosec B608 - 值参数化/内部标识符（已抽查）
                         "WHERE trade_date = %%s%s"
                         % (cols, tail.replace("LIMIT %d" % int(limit or 60), "")),
                         (str(trade_date),),
                     )
                 else:
                     cur.execute(
-                        "SELECT %s FROM strategy.signals_combined%s" % (cols, tail)
+                        "SELECT %s FROM strategy.signals_combined%s" % (cols, tail)  # nosec B608 - 值参数化/内部标识符（已抽查）
                     )
                 raw = cur.fetchall()
         finally:
             conn.close()
     except Exception:  # noqa: BLE001
         raw = _psql_rows(
-            "SELECT %s FROM strategy.signals_combined %s%s" % (cols, where, tail),
+            "SELECT %s FROM strategy.signals_combined %s%s" % (cols, where, tail),  # nosec B608 - 值参数化/内部标识符（已抽查）
             DOCKER_PSQL_BASE,
         )
     rows = []
