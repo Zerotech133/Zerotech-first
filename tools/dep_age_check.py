@@ -30,6 +30,11 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from tools.safe_urlopen import safe_urlopen
+
 REPO = Path(__file__).resolve().parents[1]
 DEFAULT_PATHS = [
     REPO / "requirements" / "lines" / "system_py311_full.lock",
@@ -90,7 +95,7 @@ def parse_file(path: Path) -> list[tuple[str, str]]:
 def fetch_pypi_release_time(name: str, version: str, timeout: float = 10.0) -> datetime | None:
     """返回该版本最早文件的发布时间；版本不存在返回 None。"""
     url = "https://pypi.org/pypi/%s/json" % urllib.parse.quote(normalize_name(name))
-    with urllib.request.urlopen(url, timeout=timeout) as r:
+    with safe_urlopen(url, timeout=timeout) as r:
         data = json.load(r)
     files = ((data.get("releases") or {}).get(str(version)) or [])
     times = []

@@ -11,8 +11,12 @@ import json
 import subprocess
 import sys
 import time
-import urllib.request
 from pathlib import Path
+
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from tools.safe_urlopen import safe_urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
 PHOENIX = ROOT / ".venvs" / "phoenix" / "Scripts" / "phoenix.exe"
@@ -22,7 +26,7 @@ LOG = Path(r"C:\Temp\phoenix_autostart.log")
 
 def health_ok(url: str = HEALTH_URL, timeout: float = 3.0) -> bool:
     try:
-        with urllib.request.urlopen(url, timeout=timeout) as r:
+        with safe_urlopen(url, timeout=timeout) as r:
             return 200 <= int(getattr(r, "status", 0)) < 300
     except Exception:  # noqa: BLE001
         return False

@@ -20,6 +20,11 @@ import urllib.request
 from pathlib import Path
 import logging
 
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from tools.safe_urlopen import safe_urlopen
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 MAX_DOC_FILES = 5000
 DEFAULT_ENDPOINT = "http://127.0.0.1:8795/llm/chat"
@@ -223,7 +228,7 @@ def _post_chat(endpoint: str, binding: str, system: str, user: str, timeout: flo
                       ensure_ascii=False).encode("utf-8")
     req = urllib.request.Request(endpoint, data=body, method="POST",
                                  headers={"Content-Type": "application/json; charset=utf-8"})
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
+    with safe_urlopen(req, timeout=timeout) as resp:
         payload = json.loads(resp.read().decode("utf-8"))
     data = payload.get("data") or {}
     return {"ok": bool(payload.get("ok")), "text": data.get("text") or "",

@@ -16,6 +16,11 @@ import time
 from pathlib import Path
 import logging
 
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from tools.safe_urlopen import safe_urlopen
+
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
 GOLDEN = REPO / "eval" / "golden_tasks.json"
@@ -40,7 +45,7 @@ def _local_native(messages: list, timeout: int = 180) -> str:
                        "stream": False, "think": False}, ensure_ascii=False).encode()
     req = urllib.request.Request("http://127.0.0.1:11434/api/chat", data=body,
                                  method="POST", headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
+    with safe_urlopen(req, timeout=timeout) as r:
         return ((json.loads(r.read().decode("utf-8", "replace")).get("message")) or {}).get("content") or ""
 
 
@@ -78,7 +83,7 @@ def _post(url: str, body: dict, timeout: int = 120) -> dict:
     import urllib.request
     req = urllib.request.Request(url, data=json.dumps(body).encode(),
                                  method="POST", headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
+    with safe_urlopen(req, timeout=timeout) as r:
         return json.loads(r.read().decode("utf-8", "replace"))
 
 

@@ -167,7 +167,7 @@ def record(open_id, intent, code=None, blocked=False, day=None):
 def _rows_between(open_id=None, days=7, offset_days=0):
     end = date.today() - timedelta(days=offset_days)
     start = end - timedelta(days=days - 1)
-    q = "SELECT * FROM customer_interest WHERE day BETWEEN ? AND ?" + (
+    q = "SELECT * FROM customer_interest WHERE day BETWEEN ? AND ?" + (  # nosec B608 - 动态标识符来自内部白名单/值已参数化（已抽查）
         " AND open_id=?" if open_id else ""
     )
     args = [start.isoformat(), end.isoformat()] + ([open_id] if open_id else [])

@@ -30,6 +30,11 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import logging
 
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from tools.safe_urlopen import safe_urlopen
+
 HERE = Path(__file__).resolve().parent
 _REPO_ROOT = HERE.parent
 
@@ -74,7 +79,7 @@ def _post_json(url, body, timeout):
     req = urllib.request.Request(
         url, data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
         headers={"Content-Type": "application/json"}, method="POST")
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
+    with safe_urlopen(req, timeout=timeout) as resp:
         return resp.status, json.loads(resp.read().decode("utf-8"))
 
 

@@ -20,8 +20,12 @@ import hashlib
 import json
 import subprocess
 import sys
-import urllib.request
 from pathlib import Path
+
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from tools.safe_urlopen import safe_urlopen
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent
@@ -67,7 +71,7 @@ def check_token_masked():
 def check_mcp_http(timeout=3.0):
     url = "http://127.0.0.1:8796/api/zhaoyun/mcp"
     try:
-        with urllib.request.urlopen(url, timeout=timeout) as r:
+        with safe_urlopen(url, timeout=timeout) as r:
             body = r.read().decode("utf-8", errors="replace")
         data = json.loads(body)
         items = data.get("servers") or data.get("items") or []

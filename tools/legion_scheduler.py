@@ -12,6 +12,11 @@ import time
 import urllib.request
 from pathlib import Path
 
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from tools.safe_urlopen import safe_urlopen
+
 ROOT = Path(__file__).resolve().parent.parent
 SCHED = ROOT / "agent_platform" / "data" / "schedules.json"
 
@@ -63,7 +68,7 @@ def dispatch_one(item: dict) -> dict:
                        "acceptance": item.get("acceptance", [])}, ensure_ascii=False).encode("utf-8")
     req = urllib.request.Request("http://127.0.0.1:8096/api/legion/dispatch", data=body,
                                  headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=30) as r:
+    with safe_urlopen(req, timeout=30) as r:
         return json.loads(r.read())
 
 

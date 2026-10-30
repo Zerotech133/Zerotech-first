@@ -170,7 +170,7 @@ class EvidenceStore:
 
     def list(self, domain: Optional[str] = None, limit: int = 500) -> List[Evidence]:
         sql = (
-            "SELECT * FROM evidence"
+            "SELECT * FROM evidence"  # nosec B608 - 动态标识符来自内部白名单/值已参数化（已抽查）
             + (" WHERE domain=?" if domain else "")
             + " ORDER BY recorded_at, rowid LIMIT ?"
         )

@@ -24,6 +24,11 @@ from pathlib import Path
 import pyarrow as pa
 import pyarrow.parquet as pq
 
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from tools.safe_urlopen import safe_urlopen
+
 REPO = Path(r"C:\项目\老田的AI助手")
 DATA = REPO / "quant_backtest" / "data" / "tushare"
 WORK = REPO / "work" / "data_sync"
@@ -54,7 +59,7 @@ def call(tok: str, api: str, params: dict, fields: str) -> dict:
     body = json.dumps({"api_name": api, "token": tok, "params": params, "fields": fields}).encode()
     req = urllib.request.Request("http://api.tushare.pro", data=body,
                                  headers={"Content-Type": "application/json"}, method="POST")
-    d = json.loads(urllib.request.urlopen(req, timeout=120).read().decode())
+    d = json.loads(safe_urlopen(req, timeout=120).read().decode())
     return {"code": d.get("code"), "msg": (d.get("msg") or "")[:120],
             "fields": (d.get("data") or {}).get("fields") or [],
             "items": (d.get("data") or {}).get("items") or []}
@@ -196,7 +201,7 @@ def audit_fx(repo: Path | None = None) -> dict:
     try:
         req = _u.Request("https://api.frankfurter.app/latest?from=USD&to=CNY,HKD",
                          headers={"User-Agent": "Mozilla/5.0"})
-        d = json.loads(_u.urlopen(req, timeout=25).read().decode())
+        d = json.loads(safe_urlopen(req, timeout=25).read().decode())
         ecb_date = d.get("date") or ""
         ecb = d.get("rates") or {}
     except Exception:  # noqa: BLE001

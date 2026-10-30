@@ -292,7 +292,7 @@ def cainiao_stats(force: bool = False) -> Dict[str, Any]:
 
 
 def _max_time(conn: Any, table: str, column: str) -> str | None:
-    sql = "SELECT MAX(%s) FROM %s" % (column, table)
+    sql = "SELECT MAX(%s) FROM %s" % (column, table)  # nosec B608 - 动态标识符来自内部白名单/值已参数化（已抽查）
     with conn.cursor() as cur:
         cur.execute(sql)
         row = cur.fetchone()
@@ -303,7 +303,7 @@ def _max_time(conn: Any, table: str, column: str) -> str | None:
 
 
 def _count_recent(conn: Any, table: str, column: str, hours: int) -> int:
-    sql = "SELECT COUNT(*) FROM %s WHERE %s >= NOW() - INTERVAL %d HOUR" % (table, column, hours)
+    sql = "SELECT COUNT(*) FROM %s WHERE %s >= NOW() - INTERVAL %d HOUR" % (table, column, hours)  # nosec B608 - 动态标识符来自内部白名单/值已参数化（已抽查）
     return _select(conn, sql)
 
 

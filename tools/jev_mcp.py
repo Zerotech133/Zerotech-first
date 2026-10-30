@@ -29,6 +29,11 @@ import urllib.parse
 import urllib.request
 import logging
 
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from tools.safe_urlopen import safe_urlopen
+
 try:  # ENCPROT：非 UTF-8 控制台
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
@@ -91,7 +96,7 @@ def _http_get_json(path: str, params: dict[str, str]) -> dict:
     url = API_BASE + path + ("?" + qs if qs else "")
     req = urllib.request.Request(url, headers={"Accept": "application/json"})
     try:
-        with urllib.request.urlopen(req, timeout=_HTTP_TIMEOUT) as resp:
+        with safe_urlopen(req, timeout=_HTTP_TIMEOUT) as resp:
             raw = resp.read().decode("utf-8", "replace")
     except urllib.error.HTTPError as exc:
         body = exc.read().decode("utf-8", "replace")[:300]

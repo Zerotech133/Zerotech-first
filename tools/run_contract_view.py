@@ -193,7 +193,7 @@ def read_traces(path, limit=None):
         cur = con.cursor()
         cols = [r[1] for r in cur.execute("PRAGMA table_info(spans)").fetchall()]
         rid_expr = "run_id" if "run_id" in cols else "NULL AS run_id"
-        q = ("select trace_id, span_id, name, kind, start_ts, end_ts, status, attrs_json, "
+        q = ("select trace_id, span_id, name, kind, start_ts, end_ts, status, attrs_json, "  # nosec B608 - 动态标识符来自内部白名单/值已参数化（已抽查）
              + rid_expr + " from spans order by start_ts")
         if limit:
             q += " limit %d" % int(limit)

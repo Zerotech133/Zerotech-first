@@ -14,6 +14,11 @@ import re
 import urllib.request
 from pathlib import Path
 
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from tools.safe_urlopen import safe_urlopen
+
 REPO = Path(r"C:\项目\老田的AI助手")
 ADVICE_ROOT = REPO / "agent_platform" / "data" / "governance_ai" / "advice"
 REVIEW_ROOT = Path(r"C:\项目\_vault\reviews")
@@ -73,7 +78,7 @@ def _ask(item: dict, timeout: int = 300) -> dict:
     req = urllib.request.Request(
         OLLAMA, data=json.dumps(payload).encode("utf-8"),
         headers={"Content-Type": "application/json"}, method="POST")
-    with urllib.request.urlopen(req, timeout=timeout) as r:
+    with safe_urlopen(req, timeout=timeout) as r:
         body = json.loads(r.read().decode("utf-8"))
     msg = body.get("message") or {}
     obj = _json_from_text(msg.get("content") or "") or \

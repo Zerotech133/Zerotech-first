@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import subprocess
 import sys
 import time
 import urllib.request
@@ -24,6 +23,11 @@ from pathlib import Path
 
 import pyarrow as pa
 import pyarrow.parquet as pq
+
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from tools.safe_urlopen import safe_urlopen
 
 REPO = Path(r"C:\项目\老田的AI助手")
 DATA = REPO / "quant_backtest" / "data" / "tushare" / "fx_daily"
@@ -44,7 +48,7 @@ def _em_get(url: str) -> dict:
     for attempt in range(6):
         try:
             req = urllib.request.Request(url, headers=HEADERS)
-            return json.loads(urllib.request.urlopen(req, timeout=40).read().decode())
+            return json.loads(safe_urlopen(req, timeout=40).read().decode())
         except Exception as e:  # noqa: BLE001
             last = e
             time.sleep(2.5 + 1.5 * attempt)
@@ -69,7 +73,7 @@ def _ecb_range(days: int) -> dict:
     url = "https://api.frankfurter.app/%s..%s?from=USD&to=CNY,HKD" % (
         beg.strftime("%Y-%m-%d"), end.strftime("%Y-%m-%d"))
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-    d = json.loads(urllib.request.urlopen(req, timeout=30).read().decode())
+    d = json.loads(safe_urlopen(req, timeout=30).read().decode())
     return {dt.replace("-", ""): rates for dt, rates in (d.get("rates") or {}).items()}
 
 

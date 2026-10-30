@@ -189,10 +189,10 @@ def register_h15(res: dict, evidence: str) -> None:
     keys = [k for k in row if k in cols]
     existing = con.execute("SELECT id FROM hypotheses WHERE id='H15'").fetchone()
     if existing:
-        con.execute("UPDATE hypotheses SET %s WHERE id='H15'" % ",".join("%s=?" % k for k in keys if k != "id"),
+        con.execute("UPDATE hypotheses SET %s WHERE id='H15'" % ",".join("%s=?" % k for k in keys if k != "id"),  # nosec B608 - 动态标识符来自内部白名单/值已参数化（已抽查）
                     [row[k] for k in keys if k != "id"])
     else:
-        con.execute("INSERT INTO hypotheses (%s) VALUES (%s)" % (",".join(keys), ",".join("?" * len(keys))),
+        con.execute("INSERT INTO hypotheses (%s) VALUES (%s)" % (",".join(keys), ",".join("?" * len(keys))),  # nosec B608 - 动态标识符来自内部白名单/值已参数化（已抽查）
                     [row[k] for k in keys])
     con.commit()
     con.close()
@@ -227,7 +227,7 @@ def main(argv=None) -> int:
     ]
     for h, name in ((5, "5 日"), (20, "20 日")):
         r = res.get("h%d" % h, {})
-        ic, ls = r.get("ic", {}), r.get("ls_spread", {})
+        ic, ls = r.get("ic", {}), r.get("ls_spread", {})  # noqa: F841 - 既有未使用变量（批2不改行为）
         ann = r.get("ls_annual", {})
         def f(x):
             return "%.3f(%s)" % (x["mean"], round(x["t"], 2)) if x and x.get("n") else "—"

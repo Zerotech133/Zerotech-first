@@ -72,7 +72,7 @@ def make_db(root, rows):
     con = sqlite3.connect(root / "portal" / "work" / "notification_decisions.sqlite3")
     con.execute("CREATE TABLE decisions (%s)" % ",".join("%s TEXT" % c for c in COLS))
     con.executemany(
-        "INSERT INTO decisions VALUES (%s)" % ",".join("?" * len(COLS)),
+        "INSERT INTO decisions VALUES (%s)" % ",".join("?" * len(COLS)),  # nosec B608 - 动态标识符来自内部白名单/值已参数化（已抽查）
         [tuple(r.get(c, "") for c in COLS) for r in rows],
     )
     con.commit()

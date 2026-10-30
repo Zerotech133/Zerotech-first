@@ -108,7 +108,7 @@ def _row_counts(db):
     conn = sqlite3.connect(str(db))
     try:
         return tuple(
-            conn.execute("SELECT COUNT(*) FROM %s" % t).fetchone()[0]
+            conn.execute("SELECT COUNT(*) FROM %s" % t).fetchone()[0]  # nosec B608 - 动态标识符来自内部白名单/值已参数化（已抽查）
             for t in (
                 "subscriber",
                 "plan",

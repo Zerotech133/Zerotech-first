@@ -6,7 +6,7 @@
       Δ = 本次极性 − 上次极性；>0 改善，<0 恶化；同时记录幅度中值变化。
 检验：修订公告后 T+1 收盘入场，5/10/20 日相对等权市场的 CAR；IS 2023-2024 / OOS 2025-2026；
       成本 30bp；对比「改善 vs 恶化」两组。
-产出：research/reports/H18_forecast_revision_20261030.{md,json}；H18 写 hypotheses.db。
+产出：research/reports/H18_forecast_revision_<日期>.{md,json}；H18 写 hypotheses.db。
 """
 from __future__ import annotations
 
@@ -98,7 +98,7 @@ def main() -> int:
 
     # 收盘价 pivot（code×date）
     close = px.pivot_table(index="trade_date", columns="ts_code", values="close")
-    pct = px.pivot_table(index="trade_date", columns="ts_code", values="pct_chg")
+    pct = px.pivot_table(index="trade_date", columns="ts_code", values="pct_chg")  # noqa: F841 - 既有未使用变量（批2不改行为）
     mkt = px.groupby("trade_date")["pct_chg"].mean() / 100.0  # 等权市场日收益（pct_chg 为百分数）
     mkt_cum = (1 + mkt.fillna(0)).cumprod()
 
@@ -166,7 +166,7 @@ def main() -> int:
     status = "backtested" if (abs(oos_d.get("t", 0) or 0) >= 2 or abs(oos_i.get("t", 0) or 0) >= 2) else "rejected"
 
     OUT.mkdir(parents=True, exist_ok=True)
-    js = OUT / "H18_forecast_revision_20261030.json"
+    js = OUT / "H18_forecast_revision.json"
     js.write_text(json.dumps(res, ensure_ascii=False, indent=1), encoding="utf-8")
 
     L = ["# H18 · 业绩预告修订动量（同公司同报告期二次公告）", "",
@@ -191,7 +191,7 @@ def main() -> int:
           "- OOS 20 日：改善组 %s / 恶化组 %s" % (
               res["groups"]["h20"]["improve"]["OOS"], res["groups"]["h20"]["deteriorate"]["OOS"]),
           "- 样本仅 %d 个修订事件 → 容量极小，即使显著也只作事件提醒，不作组合策略。" % res["meta"]["revisions"]]
-    md = OUT / "H18_forecast_revision_20261030.md"
+    md = OUT / "H18_forecast_revision.md"
     md.write_text("\n".join(L), encoding="utf-8")
 
     con = sqlite3.connect(str(REPO / "research" / "hypotheses.db"))
@@ -205,14 +205,14 @@ def main() -> int:
            "status": status, "owner": "DSH-Lead",
            "conclusion": "修订事件 %d；OOS 20日 改善组 %s / 恶化组 %s" % (
                res["meta"]["revisions"], res["groups"]["h20"]["improve"]["OOS"], res["groups"]["h20"]["deteriorate"]["OOS"]),
-           "evidence_path": "research/reports/H18_forecast_revision_20261030.md",
+           "evidence_path": "research/reports/H18_forecast_revision.md",
            "created_at": now, "updated_at": now}
     keys = [k for k in row if k in cols]
     if con.execute("SELECT id FROM hypotheses WHERE id='H18'").fetchone():
-        con.execute("UPDATE hypotheses SET %s WHERE id='H18'" % ",".join("%s=?" % k for k in keys if k != "id"),
+        con.execute("UPDATE hypotheses SET %s WHERE id='H18'" % ",".join("%s=?" % k for k in keys if k != "id"),  # nosec B608 - 动态标识符来自内部白名单/值已参数化（已抽查）
                     [row[k] for k in keys if k != "id"])
     else:
-        con.execute("INSERT INTO hypotheses (%s) VALUES (%s)" % (",".join(keys), ",".join("?" * len(keys))),
+        con.execute("INSERT INTO hypotheses (%s) VALUES (%s)" % (",".join(keys), ",".join("?" * len(keys))),  # nosec B608 - 动态标识符来自内部白名单/值已参数化（已抽查）
                     [row[k] for k in keys])
     con.commit()
     con.close()

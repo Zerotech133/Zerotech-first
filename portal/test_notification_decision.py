@@ -124,7 +124,7 @@ def test_announcement_approval_invalidated_by_change(isolated, monkeypatch, fiel
     approval = {k: announcement[k] for k in ("id", "content", "target_name", "send_at")}
     assert nd.approve({**approval, "target_id": "oc_mock", "operator": "人工审批员"}, caller="admin_ui")["ok"]
     with nd._db() as db:
-        db.execute("UPDATE decisions SET %s=? WHERE id=?" % field, (value, announcement["id"]))
+        db.execute("UPDATE decisions SET %s=? WHERE id=?" % field, (value, announcement["id"]))  # nosec B608 - 动态标识符来自内部白名单/值已参数化（已抽查）
     assert nd.recent()["decisions"][0]["approval_state"] == "pending"
     monkeypatch.setenv("PUSH_DECISION_EXECUTE", "1")
     assert not nd.execute(announcement["id"], lambda _: pytest.fail("审批失效不可发送"))["ok"]

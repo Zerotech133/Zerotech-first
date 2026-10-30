@@ -30,6 +30,11 @@ import sys
 import time
 import urllib.request
 
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from tools.safe_urlopen import safe_urlopen
+
 # K-ORG-080/N8：轨迹目录与 agent_coder.py:440 TRACE_DIR 同源
 TRACE_DIR = os.path.join(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__))), "shadow", "coder_traces")
@@ -132,7 +137,7 @@ def call_ollama(prompt, timeout):
     req = urllib.request.Request(
         GATEWAY, data=json.dumps(payload).encode(),
         headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
+    with safe_urlopen(req, timeout=timeout) as resp:
         d = json.load(resp)
     return (d.get("message") or {}).get("content", "")
 
@@ -202,7 +207,7 @@ def main():
     # fail-open：网关不可达 → 提示退出 0（不炸不重试风暴）
     # 探活用 api/tags（轻量）；chat 冷启动慢，不拿它探活
     try:
-        urllib.request.urlopen(GATEWAY_PING, timeout=10).read(64)
+        safe_urlopen(GATEWAY_PING, timeout=10).read(64)
     except Exception as e:
         print("[trace_critic] Ollama 网关 %s 不可达（%s）——跳过本轮打分，退出 0"
               % (GATEWAY_PING, str(e)[:120]))

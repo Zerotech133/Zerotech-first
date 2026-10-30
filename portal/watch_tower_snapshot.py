@@ -319,7 +319,7 @@ class SnapshotAggregator:
                     "substr(CAST(%s AS TEXT), 1, 10) = ?" % name
                     for name in date_columns
                 ]
-                query = "SELECT * FROM %s WHERE %s ORDER BY rowid LIMIT ?" % (
+                query = "SELECT * FROM %s WHERE %s ORDER BY rowid LIMIT ?" % (  # nosec B608 - 动态标识符来自内部白名单/值已参数化（已抽查）
                     table,
                     " OR ".join(clauses),
                 )

@@ -26,6 +26,11 @@ from pathlib import Path
 import pyarrow as pa
 import pyarrow.parquet as pq
 
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from tools.safe_urlopen import safe_urlopen
+
 ROOT = Path(r"C:\项目\老田的AI助手")
 DATA = ROOT / "quant_backtest" / "data"
 KG_LOG = Path(r"C:\Temp\kg_sync_task.log")
@@ -64,7 +69,7 @@ def call(token: str, api: str, params: dict, fields: str) -> dict:
     body = json.dumps({"api_name": api, "token": token, "params": params, "fields": fields}).encode()
     req = urllib.request.Request(URL, data=body, headers={"Content-Type": "application/json"}, method="POST")
     try:
-        with urllib.request.urlopen(req, timeout=30) as r:
+        with safe_urlopen(req, timeout=30) as r:
             d = json.loads(r.read().decode("utf-8"))
         return {"code": d.get("code"), "msg": (d.get("msg") or "")[:200],
                 "fields": (d.get("data") or {}).get("fields") or [],

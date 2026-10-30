@@ -27,6 +27,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from tools.safe_urlopen import safe_urlopen
+
 SUPPORTED_SUFFIXES = {".txt", ".md", ".markdown"}
 DEFAULT_OLLAMA_URL = "http://127.0.0.1:11434"
 DEFAULT_WEB_URL = "http://127.0.0.1:8899"
@@ -215,7 +220,7 @@ def _http_json(url: str, payload: dict[str, Any] | None = None, timeout: float =
     request = urllib.request.Request(url, data=data, method="POST" if data is not None else "GET")
     if data is not None:
         request.add_header("Content-Type", "application/json")
-    with urllib.request.urlopen(request, timeout=timeout) as response:
+    with safe_urlopen(request, timeout=timeout) as response:
         body = response.read()
         return response.status, json.loads(body.decode("utf-8")) if body else None
 
@@ -312,7 +317,7 @@ def _run_smoke(args: argparse.Namespace, root: Path, docs_dir: Path, index_path:
 def _live_get(url: str) -> dict[str, Any]:
     request = urllib.request.Request(url, method="GET")
     try:
-        with urllib.request.urlopen(request, timeout=10) as response:
+        with safe_urlopen(request, timeout=10) as response:
             raw = response.read()
             content_type = response.headers.get_content_type()
             body = None
@@ -332,7 +337,7 @@ def _live_rag(web_url: str, question: str) -> dict[str, Any]:
     request = urllib.request.Request(web_url + "/api/rag", data=json.dumps({"message": question, "top_k": 1}, ensure_ascii=False).encode(), method="POST")
     request.add_header("Content-Type", "application/json")
     try:
-        with urllib.request.urlopen(request, timeout=180) as response:
+        with safe_urlopen(request, timeout=180) as response:
             lines = [json.loads(line.decode("utf-8")) for line in response if line.strip()]
         kinds = ["sources" if "sources" in row else "done" if row.get("done") else "message" for row in lines]
         return {"ok": response.status == 200 and "sources" in kinds and "done" in kinds, "status": response.status, "events": kinds}

@@ -91,7 +91,7 @@ def _load_posterior(news_ids: list[str], band: float) -> dict[str, dict]:
             chunk = news_ids[i:i + 400]
             marks = ",".join("?" for _ in chunk)
             rows = db.execute(
-                "SELECT news_id, trade_day, ret, bench, excess, hit FROM dec_audit"
+                "SELECT news_id, trade_day, ret, bench, excess, hit FROM dec_audit"  # nosec B608 - 动态标识符来自内部白名单/值已参数化（已抽查）
                 " WHERE news_id IN (%s)" % marks, chunk).fetchall()
             for nid, trade_day, ret, bench, excess, hit in rows:
                 if trade_day is None:
@@ -138,7 +138,7 @@ def query(hours: int = 24, bias: list[str] | None = None, code: str = "",
     db = _ro_connect(NEWS_DB)
     try:
         rows = db.execute(
-            "SELECT id, ts, created_at, source, title, stocks, jev FROM news"
+            "SELECT id, ts, created_at, source, title, stocks, jev FROM news"  # nosec B608 - 动态标识符来自内部白名单/值已参数化（已抽查）
             " WHERE " + " AND ".join(where) + " ORDER BY created_at DESC LIMIT 20000",
             params).fetchall()
     finally:

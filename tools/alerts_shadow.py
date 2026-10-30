@@ -30,6 +30,11 @@ import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import logging
 
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from tools.safe_urlopen import safe_urlopen
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 STATION = os.path.dirname(HERE)
 PORT_DEFAULT = 8001
@@ -54,7 +59,7 @@ def _fetch_source():
     entry = {"ts": now, "ok": False, "alerts": None, "err": None}
     try:
         req = urllib.request.Request(SOURCE_URL, headers={"User-Agent": "alerts-shadow/1"})
-        with urllib.request.urlopen(req, timeout=5) as r:
+        with safe_urlopen(req, timeout=5) as r:
             entry["alerts"] = json.loads(r.read().decode("utf-8"))
         entry["ok"] = True
     except Exception as e:

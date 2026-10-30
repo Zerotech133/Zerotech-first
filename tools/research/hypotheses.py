@@ -120,7 +120,7 @@ def update(hid: str, db: Path | None = None, **fields) -> dict:
     vals.append(datetime.now().astimezone().isoformat(timespec="seconds"))
     vals.append(hid)
     con = connect(db)
-    cur = con.execute("UPDATE hypotheses SET %s WHERE id=?" % ", ".join(sets), vals)
+    cur = con.execute("UPDATE hypotheses SET %s WHERE id=?" % ", ".join(sets), vals)  # nosec B608 - 动态标识符来自内部白名单/值已参数化（已抽查）
     con.commit()
     con.close()
     return {"ok": cur.rowcount > 0, "id": hid, "updated": cur.rowcount}

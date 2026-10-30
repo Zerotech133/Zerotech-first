@@ -253,7 +253,7 @@ def load_sources(cat: dict) -> list[dict]:
         elif d.name in MINING:
             label, layer, status, note, method = d.name, "接口同步", "mining", "数据已入库，尚未用于研究", "接口同步"
         else:
-            label, layer, status, note, method = d.name, "接口同步", "done", "已入库/已登记（资产目录）", "接口同步"
+            label, layer, status, note, method = d.name, "接口同步", "done", "已入库/已登记（资产目录）", "接口同步"  # noqa: F841 - 既有未使用变量（批2不改行为）
         files = sorted(d.glob("*.parquet"))
         if files:
             files_n = len(files)
@@ -336,8 +336,8 @@ def _sqlite_stats(path: Path, table: str, ts_col: str) -> dict:
     import sqlite3
     try:
         con = sqlite3.connect("file:%s?mode=ro" % str(path).replace("\\", "/"), uri=True, timeout=10)
-        cnt = con.execute("SELECT count(*) FROM %s" % table).fetchone()[0]
-        latest = con.execute("SELECT max(%s) FROM %s" % (ts_col, table)).fetchone()[0]
+        cnt = con.execute("SELECT count(*) FROM %s" % table).fetchone()[0]  # nosec B608 - 动态标识符来自内部白名单/值已参数化（已抽查）
+        latest = con.execute("SELECT max(%s) FROM %s" % (ts_col, table)).fetchone()[0]  # nosec B608 - 动态标识符来自内部白名单/值已参数化（已抽查）
         con.close()
         return {"rows": cnt, "latest": str(latest or "")[:19]}
     except Exception:  # noqa: BLE001

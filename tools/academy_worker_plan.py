@@ -6,6 +6,11 @@ import re
 import urllib.request
 from pathlib import Path
 
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from tools.safe_urlopen import safe_urlopen
+
 ROOT = Path(__file__).resolve().parent.parent
 TOPICS = ROOT / "agent_platform" / "data" / "academy" / "research_topics.json"
 
@@ -65,7 +70,7 @@ def main():
     if args.dispatch:
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         req = urllib.request.Request("http://127.0.0.1:8096/api/legion/dispatch", data=body, headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=30) as response:
+        with safe_urlopen(req, timeout=30) as response:
             print(response.read().decode("utf-8"))
 
 

@@ -15,6 +15,11 @@ import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from tools.safe_urlopen import safe_urlopen
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_CASES = REPO_ROOT / "ops" / "p0" / "eval" / "golden_cases.jsonl"
 DEFAULT_ENDPOINT = "http://127.0.0.1:8795/llm/chat"
@@ -40,7 +45,7 @@ def ask(endpoint, binding, system, user, timeout):
     req = urllib.request.Request(endpoint, data=body, method="POST",
                                  headers={"Content-Type": "application/json; charset=utf-8"})
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        with safe_urlopen(req, timeout=timeout) as resp:
             payload = json.loads(resp.read().decode("utf-8"))
     except Exception as exc:  # noqa: BLE001
         return {"ok": False, "text": "", "error": "%s: %s" % (type(exc).__name__, exc)}
