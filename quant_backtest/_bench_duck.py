@@ -146,12 +146,13 @@ ETF_TCOL = next(c for c in etf_cols if "date" in c or "time" in c)
 
 
 def q4_duck() -> str:
-    rows = CON.execute(f"""
+    rows = CON.execute(
+        """
         SELECT ts_code, count(*) AS bars, max(close) AS max_close
         FROM etf_mins
-        WHERE substr(CAST({ETF_TCOL} AS VARCHAR), 1, 7) = '2026-10'
+        WHERE substr(CAST(__ETF_TCOL__ AS VARCHAR), 1, 7) = '2026-10'
         GROUP BY 1 ORDER BY 1 LIMIT 1000
-    """).fetchall()
+    """.replace("__ETF_TCOL__", ETF_TCOL)).fetchall()
     return f"{len(rows)} codes, bars={sum(r[1] for r in rows)}"
 
 
