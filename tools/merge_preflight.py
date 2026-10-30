@@ -98,6 +98,15 @@ def dep_age_hint(files: list[str], runner=None):
 
 
 def main() -> int:
+    # 2026-10-31 P110：主仓 core.bare 自愈守卫（hook 直连 git merge 前）。
+    try:
+        sys.path.insert(0, str(HERE))
+        from git_worktree_guard import ensure_worktree
+        if not ensure_worktree(REPO):
+            print("preflight: 主仓 core.bare 异常且修复失败 → 拒绝合并")
+            return 1
+    except Exception as exc:  # noqa: BLE001
+        print("preflight: core.bare 守卫不可用（跳过）：%s" % exc)
     # 2026-10-30 P41：devtask 内联质量闸已真跑并通过（同一进程链），跳过重复测试。
     if os.environ.get("DEVTOOL_PREFLIGHT_DONE") == "1":
         print("preflight: 内联质量闸已跑（跳过重复测试）")

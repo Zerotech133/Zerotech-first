@@ -1780,6 +1780,16 @@ def _print_merge_timings(tid):
 
 def cmd_merge(tid, *flags):
     _t_entry = time.perf_counter()
+    # 2026-10-31 P110：主仓 core.bare 自愈守卫。外部误改 core.bare=true 会让
+    # git worktree merge 报 "must be run in a work tree"，先修复再走门禁。
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from git_worktree_guard import ensure_worktree as _ensure_wt
+        if not _ensure_wt():
+            print("❌ 主仓 core.bare 异常且自动修复失败，拒绝合并")
+            return 1
+    except Exception as _e:  # noqa: BLE001
+        print("[warn] core.bare 守卫不可用（跳过）：%s" % _e)
     # 2026-10-30 P45：门禁（静态门/质量闸）在 worktree/分支上运行、不写 master，
     # 不再全程持合并锁 → 多会话门禁可并行；串行锁仅覆盖 git merge 提交临界区
     # （见 _acquire_merge_lock + _merge_with_retry，防 HEAD/index 竞争）。
