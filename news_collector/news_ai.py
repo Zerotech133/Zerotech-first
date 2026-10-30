@@ -323,6 +323,53 @@ _IMPACTS = ("low", "medium", "high")
 _IMPACT_CN = {"low": "低", "medium": "中", "high": "高"}
 
 
+_HORIZONS = ("intraday", "days", "weeks", "long", "unknown")
+
+
+def _default_prob(bias, conf) -> dict:
+    """v2 契约：缺 probabilities 时按 bias/conf 兜底成三概率分布（和=1）。
+
+    bias=bull → bull=conf, bear=neutral=(1-conf)/2；其余类推。
+    非数字/NaN 先退化到 0.5（与 conf 校验同口径）。
+    """
+    try:
+        p = float(conf)
+        if not math.isfinite(p):
+            p = 0.5
+    except (TypeError, ValueError):
+        p = 0.5
+    p = min(max(p, 0.0), 1.0)
+    rest = round((1.0 - p) / 2.0, 3)
+    if bias == "bull":
+        return {"bull": round(p, 3), "bear": rest, "neutral": rest}
+    if bias == "bear":
+        return {"bull": rest, "bear": round(p, 3), "neutral": rest}
+    return {"bull": rest, "bear": rest, "neutral": round(p, 3)}
+
+
+def _validate_prob(raw, bias, conf) -> dict:
+    """v2 契约：probabilities 规范化（bull/bear/neutral，有限数，clamp，归一）。
+
+    接受 d["prob"] 或旧云侧 d["bias_probs"]。缺 key/全零/非法 → 走 _default_prob。
+    """
+    if not isinstance(raw, dict):
+        return _default_prob(bias, conf)
+    out = {}
+    for k in ("bull", "bear", "neutral"):
+        v = raw.get(k)
+        if isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(float(v)):
+            return _default_prob(bias, conf)
+        out[k] = min(max(float(v), 0.0), 1.0)
+    s = sum(out.values())
+    if s <= 0:
+        return _default_prob(bias, conf)
+    if abs(s - 1.0) > 0.02:
+        out = {k: round(v / s, 3) for k, v in out.items()}
+    else:
+        out = {k: round(v, 3) for k, v in out.items()}
+    return out
+
+
 def _validate_jev(d):
     """K-ORG-159（M8）：JEV 判定 schema 校验（借鉴 Instructor/Outlines
     结构化校验哲学）。
@@ -360,6 +407,11 @@ def _validate_jev(d):
         if re.match(r"^\d{6}$", str(c)):
             companies.append(str(c))
     d["companies"] = companies
+    # 2026-10-30 JEVV2 契约 v2：时间跨度 + 三概率分布（缺省可修复，不阻断判定）
+    hz = str(d.get("horizon") or "unknown").strip().lower()
+    d["horizon"] = hz if hz in _HORIZONS else "unknown"
+    d["prob"] = _validate_prob(d.get("prob") or d.get("bias_probs"), bias, d["conf"])
+    d["bias_probs"] = dict(d["prob"])  # 兼容旧消费方（云侧原字段名）
     return d
 
 
@@ -530,6 +582,7 @@ def _jev_judge_one_cloud(title, stocks, timeout=15):
             "model": "jev-latest",
             "src": "cloud",
         }
+        d["horizon"] = "unknown"  # 云端 schema 暂缺，契约 v2 允许 unknown
         d["reason"] = jev_reason(title, _BIAS_CN[bias], _SCOPE_CN.get(scope, scope))
         return d
     except Exception as e:
@@ -598,7 +651,9 @@ def jev_judge_one_local(title, stocks, timeout=60):
         '{"bias":"bull|bear|neutral","conf":0.0到1.0,'
         '"scope":"cn|hk|us|commodity|crypto|fx|macro",'
         '"event_type":"<事件类别枚举>","impact":"low|medium|high",'
-        '"companies":["相关A股代码"],"reason":"30字内判断依据（只写依据本身）"}，'
+        '"companies":["相关A股代码"],"reason":"30字内判断依据（只写依据本身）",'
+        '"horizon":"intraday|days|weeks|long",'
+        '"prob":{"bull":0.0,"bear":0.0,"neutral":0.0}}，'
         "不要输出其他内容。"
         "scope 枚举（资产/市场范围）：cn A股、hk 港股、us 美股、commodity 商品、"
         "crypto 加密、fx 外汇、macro 宏观（无法确定时填空字符串，不要猜）。"
@@ -624,7 +679,8 @@ def jev_judge_one_local(title, stocks, timeout=60):
                 # 2026-10-28 JEVTRUNC: 80 token 对「长公司名单」类快讯会截断 JSON
                 # （Unterminated string char~157 → 永久毒丸）。
                 # 2026-10-30 BATCH4: reason 并入同一次输出（省一次模型调用）→ 预算 260。
-                "options": {"temperature": 0.1, "num_predict": 260},
+                # 2026-10-30 JEVV2: 契约 v2 再加 horizon/prob → 预算 320（防 JSON 截断）。
+                "options": {"temperature": 0.1, "num_predict": 320},
             },
             timeout=timeout,
         )
@@ -674,8 +730,11 @@ def jev_judge_one_local(title, stocks, timeout=60):
         "impact": j["impact"],
         "impact_cn": _IMPACT_CN[j["impact"]],
         "companies": j["companies"],
+        "horizon": j.get("horizon", "unknown"),
+        "prob": j.get("prob") or {},
         "src": "local",
     }
+    d["bias_probs"] = dict(d["prob"])  # 契约 v2：旧字段名兼容副本
     d["meter"] = {
         "ms": int((time.time() - _t0) * 1000),
         "model": _model,

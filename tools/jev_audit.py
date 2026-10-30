@@ -148,8 +148,10 @@ def load_judged(days: int) -> list[dict]:
             "codes": codes, "bias": j.get("bias"),
             "conf": float(j.get("conf") or 0.0),
             "event_type": j.get("event_type") or "unknown",
-            "model": str((j.get("meter") or {}).get("model") or "unknown"),
+                "model": str((j.get("meter") or {}).get("model") or "unknown"),
             "prompt_version": str((j.get("meter") or {}).get("prompt") or "unknown"),
+            "horizon": str(j.get("horizon") or "unknown"),
+            "prob": json.dumps(j.get("prob") or {}, ensure_ascii=False, sort_keys=True),
         })
     return out
 
@@ -186,6 +188,7 @@ CREATE TABLE IF NOT EXISTS dec_audit (
     ts TEXT, created_at TEXT, trade_day TEXT, source TEXT,
     bias TEXT, conf REAL, event_type TEXT, companies TEXT,
     model TEXT, prompt_version TEXT,
+    horizon TEXT, prob TEXT,
     ret REAL, bench REAL, excess REAL, hit INTEGER,
     posterior_at TEXT, updated_at TEXT
 );
@@ -201,6 +204,11 @@ def open_db() -> sqlite3.Connection:
     cols = {row[1] for row in conn.execute("PRAGMA table_info(dec_audit)")}
     if "created_at" not in cols:
         conn.execute("ALTER TABLE dec_audit ADD COLUMN created_at TEXT")
+    # 2026-10-30 JEVV2：契约 v2 字段（horizon/prob）落账本，便于按时间跨度分组评估
+    if "horizon" not in cols:
+        conn.execute("ALTER TABLE dec_audit ADD COLUMN horizon TEXT")
+    if "prob" not in cols:
+        conn.execute("ALTER TABLE dec_audit ADD COLUMN prob TEXT")
     conn.commit()
     return conn
 
@@ -237,17 +245,20 @@ def upsert_judged(conn: sqlite3.Connection, rows: list[dict], opens: list[str]) 
                 " posterior_at=NULL WHERE news_id=?", (r["news_id"],))
         conn.execute(
             "INSERT INTO dec_audit(news_id, ts, created_at, trade_day, source, bias, conf,"
-            " event_type, companies, model, prompt_version, updated_at)"
-            " VALUES(?,?,?,?,?,?,?,?,?,?,?,?)"
+            " event_type, companies, model, prompt_version, horizon, prob, updated_at)"
+            " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
             " ON CONFLICT(news_id) DO UPDATE SET"
             " ts=excluded.ts, created_at=excluded.created_at,"
             " trade_day=excluded.trade_day, source=excluded.source,"
             " bias=excluded.bias, conf=excluded.conf, event_type=excluded.event_type,"
             " companies=excluded.companies, model=excluded.model,"
-            " prompt_version=excluded.prompt_version, updated_at=excluded.updated_at",
+            " prompt_version=excluded.prompt_version, horizon=excluded.horizon,"
+            " prob=excluded.prob, updated_at=excluded.updated_at",
             (r["news_id"], r["ts"], r.get("created_at") or "", trade_day, r["source"],
              r["bias"], r["conf"], r["event_type"], companies, r["model"],
-             r["prompt_version"], now))
+             r["prompt_version"], r.get("horizon") or "unknown",
+             (r.get("prob") if isinstance(r.get("prob"), str)
+              else json.dumps(r.get("prob") or {}, ensure_ascii=False, sort_keys=True)), now))
         n += 1
     conn.commit()
     return n
