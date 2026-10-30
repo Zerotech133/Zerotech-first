@@ -166,7 +166,7 @@ def main() -> int:
     status = "backtested" if (abs(oos_d.get("t", 0) or 0) >= 2 or abs(oos_i.get("t", 0) or 0) >= 2) else "rejected"
 
     OUT.mkdir(parents=True, exist_ok=True)
-    js = OUT / "H18_forecast_revision_20261030.json"
+    js = OUT / "H18_forecast_revision.json"
     js.write_text(json.dumps(res, ensure_ascii=False, indent=1), encoding="utf-8")
 
     L = ["# H18 · 业绩预告修订动量（同公司同报告期二次公告）", "",
@@ -191,7 +191,7 @@ def main() -> int:
           "- OOS 20 日：改善组 %s / 恶化组 %s" % (
               res["groups"]["h20"]["improve"]["OOS"], res["groups"]["h20"]["deteriorate"]["OOS"]),
           "- 样本仅 %d 个修订事件 → 容量极小，即使显著也只作事件提醒，不作组合策略。" % res["meta"]["revisions"]]
-    md = OUT / "H18_forecast_revision_20261030.md"
+    md = OUT / "H18_forecast_revision.md"
     md.write_text("\n".join(L), encoding="utf-8")
 
     con = sqlite3.connect(str(REPO / "research" / "hypotheses.db"))
@@ -205,7 +205,7 @@ def main() -> int:
            "status": status, "owner": "DSH-Lead",
            "conclusion": "修订事件 %d；OOS 20日 改善组 %s / 恶化组 %s" % (
                res["meta"]["revisions"], res["groups"]["h20"]["improve"]["OOS"], res["groups"]["h20"]["deteriorate"]["OOS"]),
-           "evidence_path": "research/reports/H18_forecast_revision_20261030.md",
+           "evidence_path": "research/reports/H18_forecast_revision.md",
            "created_at": now, "updated_at": now}
     keys = [k for k in row if k in cols]
     if con.execute("SELECT id FROM hypotheses WHERE id='H18'").fetchone():
