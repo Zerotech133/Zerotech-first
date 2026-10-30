@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 15:38",
+ "generated": "2026-10-30 15:50",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 25,
+  "workorders_doing": 26,
   "workorders_review": 7
  },
  "workorders": [
@@ -300,6 +300,15 @@
    "branch": "task/WO-KB-P3PREP-20261030",
    "created": "2026-10-30 15:36:34",
    "project": "general"
+  },
+  {
+   "id": "WO-D1-RESEARCH-FIX-20261030",
+   "desc": "D1工作台/原型修正：WATCH 不显示虚假买点区间，只显示盯盘触发；BUY才给买点区间",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-D1-RESEARCH-FIX-20261030",
+   "created": "2026-10-30 15:49:51",
+   "project": "portal"
   }
  ],
  "coder_traces": [
