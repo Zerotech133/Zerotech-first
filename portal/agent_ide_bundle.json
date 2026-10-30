@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 13:28",
+ "generated": "2026-10-30 13:31",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -10,7 +10,7 @@
   "prompt_miss": [],
   "name_collisions": {},
   "workorders_doing": 26,
-  "workorders_review": 8
+  "workorders_review": 7
  },
  "workorders": [
   {
@@ -309,15 +309,6 @@
    "branch": "task/WO-BANDIT-4BFINAL-20261030",
    "created": "2026-10-30 13:24:16",
    "project": "quant"
-  },
-  {
-   "id": "K-ORG-20261030-BATCH3",
-   "desc": "批次3 健康卡可信度收尾：MCP 参数校验(-32602)/计数措辞/低信号消费；健康卡已在批次1落地",
-   "status": "review",
-   "owner": "DSH-Lead",
-   "branch": "task/K-ORG-20261030-BATCH3",
-   "created": "2026-10-30 13:25:20",
-   "project": "general"
   }
  ],
  "coder_traces": [
