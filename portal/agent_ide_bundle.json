@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 20:37",
+ "generated": "2026-10-30 20:38",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 27,
+  "workorders_doing": 26,
   "workorders_review": 9
  },
  "workorders": [
@@ -327,15 +327,6 @@
    "branch": "task/K-ORG-20261030-JEVARCH2",
    "created": "2026-10-30 18:47:29",
    "project": "general"
-  },
-  {
-   "id": "K-QUANT-20261030-HERMESORCH",
-   "desc": "Hermes orchestrator: A0 plan via /api/chat then OH executor",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-QUANT-20261030-HERMESORCH",
-   "created": "2026-10-30 20:34:04",
-   "project": "quant"
   }
  ],
  "coder_traces": [
