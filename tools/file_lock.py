@@ -20,6 +20,28 @@ ENV_TOKEN = "AIOS_FILE_LOCK_TOKEN"
 STALE_SEC = 30 * 60
 
 
+def _pid_alive(pid) -> bool:
+    """持有者进程是否存活（2026-10-30 P82：死 PID 锁立即回收，不再等 30min）。"""
+    try:
+        pid = int(pid)
+    except (TypeError, ValueError):
+        return False
+    if pid <= 0:
+        return False
+    try:
+        import psutil  # noqa: PLC0415
+    except ImportError:
+        try:
+            os.kill(pid, 0)
+            return True
+        except OSError:
+            return False
+    try:
+        return psutil.pid_exists(pid)
+    except Exception:  # noqa: BLE001
+        return True
+
+
 def _read(path: Path) -> dict:
     try:
         d = json.loads(path.read_text(encoding="utf-8"))
@@ -41,6 +63,16 @@ def acquire(lock: Path, cmd: str = "", timeout: float = 0,
         try:
             fd = os.open(str(lock), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
         except FileExistsError:
+            info = _read(lock)
+            owner = info.get("pid")
+            if owner is not None and not _pid_alive(owner):
+                stale = lock.with_name(lock.name + ".stale.%d" % int(time.time()))
+                try:
+                    os.replace(lock, stale)
+                    print("[file-lock] 死 PID 锁已回收: pid=%s -> %s" % (owner, stale))
+                    continue
+                except OSError:
+                    pass
             try:
                 age = time.time() - lock.stat().st_mtime
             except OSError:

@@ -5,9 +5,12 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import os
 import re
 import subprocess
 import sys
+
+CMD_TIMEOUT = int(os.environ.get("HK_R1_CMD_TIMEOUT", "600"))
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
@@ -22,7 +25,7 @@ EQ_RE = re.compile(
 SNAP_RE = re.compile(r"快照\s*(\d{4}-\d{2}-\d{2}):.*?待撮合\s*(\d+).*?对账\s*(OK|FAIL)")
 
 
-def _run(cmd: list[str], timeout: int = 600) -> dict:
+def _run(cmd: list[str], timeout: int = CMD_TIMEOUT) -> dict:
     r = subprocess.run(cmd, cwd=str(REPO), capture_output=True, text=True,
                        encoding="utf-8", errors="replace", timeout=timeout)
     return {"cmd": cmd, "rc": r.returncode, "out": r.stdout or "", "err": r.stderr or ""}
@@ -135,7 +138,14 @@ def run(append: bool = False, ledger: Path | None = None) -> dict:
     log = logs / ("hk_r1_%s.log" % stamp)
     outs = []
     for c in cmds:
-        r = _run(c)
+        try:
+            r = _run(c)
+        except subprocess.TimeoutExpired:
+            with log.open("a", encoding="utf-8") as f:
+                f.write("$ %s\n[TIMEOUT >%ds]\n" % (" ".join(c), CMD_TIMEOUT))
+            return {"ok": False, "error": "command_timeout",
+                    "command": " ".join(c), "timeout_sec": CMD_TIMEOUT,
+                    "log": str(log)}
         outs.append(r)
         with log.open("a", encoding="utf-8") as f:
             f.write("$ %s\n[rc=%s]\n%s\n%s\n" % (" ".join(c), r["rc"], r["out"], r["err"]))

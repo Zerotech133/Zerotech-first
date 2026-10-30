@@ -55,6 +55,8 @@ def _direct_conn():
             user=DB_CFG["user"],
             password=_db_password(),
             dbname=DB_CFG["dbname"],
+            # 2026-10-30 P82：无超时的 connect 在 DB 抖动时会永久阻塞（R1 18:30 卡死根因之一）
+            connect_timeout=float(os.environ.get("ZHICE_DB_CONNECT_TIMEOUT", "5")),
         )
         c.autocommit = True
         _tls.conn = c

@@ -107,6 +107,47 @@ def _topup_symbol(market, symbol, fn, db_max):
     return "upd"
 
 
+def _topup_batch(market, out_dir, topup):
+    """批量增量（2026-10-30 P82）：一次 DB 查询拉本批全部缺口，再逐只合并写盘。
+
+    原实现逐只 `_topup_symbol` → 每只一次 DB 往返（含 docker 回退 ~0.5-1s），
+    3416 只时可 >600s（R1 18:30 任务因此卡死）。本函数把 DB 往返降为 每批 1 次。
+    """
+    import pandas as pd
+
+    syms = [s for s, _ in topup]
+    mins = [pd.to_datetime(m) for _, m in topup]
+    start = (min(mins) + pd.Timedelta(days=1)).strftime("%Y%m%d")
+    try:
+        frames = dl.load_bars(market, syms, start=start)
+    except Exception as e:  # noqa: BLE001
+        print("  topup batch 失败(%d 只): %s" % (len(syms), str(e)[:100]))
+        return 0, 0, len(syms)
+    upd = skip = fail = 0
+    for s, m in topup:
+        try:
+            df = frames.get(s)
+            if df is None or df.empty:
+                skip += 1
+                continue
+            out = _align_schema(df, s, market)
+            out = out[out["trade_date"] > m]
+            if out.empty:
+                skip += 1
+                continue
+            fn = _fname(out_dir, s)
+            old = pd.read_parquet(fn)
+            merged = (pd.concat([old, out], ignore_index=True)
+                      .drop_duplicates(subset=["trade_date"], keep="last")
+                      .sort_values("trade_date"))
+            merged.to_parquet(fn, index=False)
+            upd += 1
+        except Exception as e:  # noqa: BLE001
+            print("  %s 批量增量失败: %s" % (s, str(e)[:80]))
+            fail += 1
+    return upd, skip, fail
+
+
 def export_market(market, batch=200, force=False):
     """导出指定市场全部标的到 data/{market}/（目录不存在自动创建）。"""
     out_dir = Path(HERE) / "data" / market.lower()
@@ -148,16 +189,11 @@ def export_market(market, batch=200, force=False):
                         topup.append((s, db_max))
                     else:
                         skip += 1
-        for s, m in topup:
-            try:
-                r = _topup_symbol(market, s, _fname(out_dir, s), m)
-                if r == "upd":
-                    upd += 1
-                else:
-                    skip += 1
-            except Exception as e:
-                print("  %s 增量失败: %s" % (s, e))
-                fail += 1
+        if topup:
+            b_upd, b_skip, b_fail = _topup_batch(market, out_dir, topup)
+            upd += b_upd
+            skip += b_skip
+            fail += b_fail
         if not todo and not redo:
             continue
         load_syms = list(todo) + list(redo)
