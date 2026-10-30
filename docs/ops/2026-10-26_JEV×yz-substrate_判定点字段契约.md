@@ -141,3 +141,22 @@ yz-substrate `refill(posterior_map={"jev.bias": fn})` 直接读取，**双方不
 
 配套落地：`assessment.low_signal_event_types`（price n=342/acc=48.8% 标记低信号）；夜跑按需闸
 （`JEV_NIGHT_MIN_BACKLOG` 默认 500，pending 低于阈值跳过夜跑，日常流入交小时轮）。
+
+## 附：契约 v2（2026-10-30 JEVV2）— 时间跨度与概率分布
+
+| 版本 | 日期 | 变化 | 兼容性 |
+|---|---|---|---|
+| v1 | 2026-10-26 | bias/conf/scope/event_type/impact/companies/reason | — |
+| **v2** | 2026-10-30 | 新增 `horizon`（intraday/days/weeks/long/unknown）与 `prob`（bull/bear/neutral 三概率，和=1） | **向后兼容**：老消费方可忽略新字段；判定 JSON 中同时保留 `bias_probs` 旧字段名（=prob 副本） |
+
+### 新增字段定义
+
+| 字段 | 类型 | 枚举/约束 | 说明 |
+|---|---|---|---|
+| `horizon` | string | `intraday` / `days` / `weeks` / `long` / `unknown` | 影响的时间跨度（论文 arXiv:2607.28496 验证其独立于情绪的预测价值） |
+| `prob` | object | `{bull:0-1, bear:0-1, neutral:0-1}`，和≈1 | 三概率分布；用于分歧/拥挤度哨兵与校准（替代单一 conf） |
+
+- 缺省策略：本地判定由模型输出；云端 schema 暂缺时 `horizon=unknown`、`prob` 由 bias/conf 兜底生成（`bull=conf`，其余均分）。
+- 账本：`dec_audit` 新增 `horizon`、`prob` 列（SQLite 自动迁移）；`latest.json` 可按 horizon 分组评估。
+- 弃用策略（v2 起）：字段变更先改本契约；删除字段需提前 ≥20 个交易日公告，且服务端在弃用窗口内双写。
+
