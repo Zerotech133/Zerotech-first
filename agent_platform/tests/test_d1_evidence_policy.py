@@ -82,3 +82,15 @@ def test_ref_serializable():
     b = EB.EvidenceBundle.from_context("600519", "贵州茅台", _ctx())
     json.dumps([r.to_dict() for r in b.refs])  # 不抛=可落账
     assert b.refs[0].to_dict()["source"] in ("market_technical", "fundamental")
+
+
+def test_model_watch_gets_reason():
+    b = EB.EvidenceBundle.from_context("600519", "x", _ctx(l4="L4=存疑观察"))
+    out = DP.apply_policy({"recommendation": "WATCH", "confidence": 0.55}, b,
+                          run_id="r1", date="2026-10-31")
+    assert out["watch_reason"] == "l4_unresolved"
+
+    b2 = EB.EvidenceBundle.from_context("600519", "x", _ctx())
+    out2 = DP.apply_policy({"recommendation": "WATCH", "confidence": 0.55}, b2,
+                           run_id="r1", date="2026-10-31")
+    assert out2["watch_reason"] == "model_watch"
