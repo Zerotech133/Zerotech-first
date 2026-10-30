@@ -172,6 +172,17 @@ env.update({
     "HERMES_WEBUI_CSP_FRAME_EXTRA": "http://127.0.0.1:5175",
     "NO_PROXY": "localhost,127.0.0.1",
 })
+# Phase B2：可选密码认证（文件存在才启用；不存在=保持现状）
+_PW_FILE = os.environ.get(
+    "HERMES_WEBUI_PASSWORD_FILE",
+    r"C:\项目\_vault\legion_ide\hermes_webui_password",
+)
+try:
+    _pw = open(_PW_FILE, "r", encoding="utf-8-sig").read().strip()
+    if _pw:
+        env["HERMES_WEBUI_PASSWORD"] = _pw
+except OSError:
+    pass
 # 2026-10-16 判例：交互会话 PATH 前置了 WorkBuddy 3.13/PortableGit，
 # server 启动后 spawn 子进程会拿到坏解释器而静默死。守护链环境必须
 # 以系统 PATH 为底重建，剔除注入项。
