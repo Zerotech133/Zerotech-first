@@ -125,6 +125,11 @@ _DEFAULT_FALLBACK = _DEFAULT_BINDING
 # 不适配同步 /api/chat；会议仅用本地模型发声，不改变正式治理席位绑定。
 MEETING_BINDING_OVERRIDES = {"ZHAOYUN": "ollama/qwen3.5:9b"}
 
+# P0 写接口防护（2026-10-30）：同源校验 + 浏览器写请求 token。
+# 非浏览器本地客户端（无 Origin：curl/测试）保持兼容；浏览器跨源一律拒绝。
+WRITE_TOKEN = __import__("secrets").token_urlsafe(32)
+
+
 
 def resolve_meeting_binding(agent: str, platform_dir: Path | None = None) -> str:
     """会议 purpose 的绑定解析：仅对覆盖表内席位替换，且不改 none/规则执行体。"""
@@ -344,6 +349,31 @@ def _litellm_route(prompt: str) -> tuple[dict, int]:
 class Handler(BaseHTTPRequestHandler):
     server_version = "legion-command/1.0"
 
+    def _origin_allowed(self):
+        """同源判定：Origin 缺省（非浏览器）放行；浏览器必须与本服务 Host 同源。"""
+        origin = (self.headers.get("Origin") or "").strip()
+        if not origin:
+            return True
+        host = (self.headers.get("Host") or "").strip()
+        if not host:
+            return False
+        return origin in ("http://" + host, "https://" + host)
+
+    def _write_guard(self, path):
+        """所有 8796 写路径统一守卫：跨源拒绝；浏览器同源写必须带 X-DSH-Token。"""
+        guarded = path == "/api/dispatch" or path.startswith("/api/zhaoyun/")
+        if not guarded:
+            return True
+        if not self._origin_allowed():
+            self._send_json({"ok": False, "error": "forbidden_origin"}, 403)
+            return False
+        origin = (self.headers.get("Origin") or "").strip()
+        token = (self.headers.get("X-DSH-Token") or "").strip()
+        if origin and token != WRITE_TOKEN:
+            self._send_json({"ok": False, "error": "invalid_write_token"}, 403)
+            return False
+        return True
+
     def _send_json(self, obj, status=200):
         import json
 
@@ -401,6 +431,12 @@ class Handler(BaseHTTPRequestHandler):
         import re
 
         path = urlparse(self.path).path
+        if path == "/api/zhaoyun/write-token":
+            if not self._origin_allowed():
+                self._send_json({"ok": False, "error": "forbidden_origin"}, 403)
+                return
+            self._send_json({"ok": True, "token": WRITE_TOKEN})
+            return
         if path == "/" or path == "/index.html":
             self._send_file(_STATIC / "index.html", "text/html; charset=utf-8")
             return
@@ -1181,6 +1217,8 @@ class Handler(BaseHTTPRequestHandler):
         import json
 
         path = urlparse(self.path).path
+        if not self._write_guard(path):
+            return
         if path == "/api/ide/openhands/chat":
             try:
                 length = int(self.headers.get("Content-Length") or 0)
