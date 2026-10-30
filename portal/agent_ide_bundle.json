@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 15:59",
+ "generated": "2026-10-30 16:01",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 25,
+  "workorders_doing": 26,
   "workorders_review": 6
  },
  "workorders": [
@@ -284,13 +284,22 @@
    "project": "quant"
   },
   {
-   "id": "WO-PICKCHAIN-FIX-20261030",
-   "desc": "选股产品链修复：build_pick_details/feishu_bot_ws 的 _stock_chip_summary/_stock_sector_rows 改从 api_common 取，修 AttributeError。",
+   "id": "WO-LEGION-M2-CANARY-20261030",
+   "desc": "M2 观察 canary + memory默认值冲突记录",
    "status": "doing",
    "owner": "ZHAOYUN",
-   "branch": "task/WO-PICKCHAIN-FIX-20261030",
-   "created": "2026-10-30 15:56:47",
-   "project": "quant"
+   "branch": "task/WO-LEGION-M2-CANARY-20261030",
+   "created": "2026-10-30 16:00:58",
+   "project": "general"
+  },
+  {
+   "id": "WO-SAFEPATH-BOOTSTRAP-20261030",
+   "desc": "修复py312 safe_path下tools脚本本地safe_urlopen导入失效（路径自举）",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-SAFEPATH-BOOTSTRAP-20261030",
+   "created": "2026-10-30 16:01:03",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -7014,8 +7023,13 @@
    "home_page": "http://127.0.0.1:8796/zhaoyun",
    "tasks": [
     {
-     "id": "WO-PICKCHAIN-FIX-20261030",
-     "desc": "选股产品链修复：build_pick_details/feishu_bot_ws 的 _stock_chip_summary/_stock_sector_rows 改从 api_common 取，修 AttributeError。",
+     "id": "WO-LEGION-M2-CANARY-20261030",
+     "desc": "M2 观察 canary + memory默认值冲突记录",
+     "status": "doing"
+    },
+    {
+     "id": "WO-SAFEPATH-BOOTSTRAP-20261030",
+     "desc": "修复py312 safe_path下tools脚本本地safe_urlopen导入失效（路径自举）",
      "status": "doing"
     }
    ]
