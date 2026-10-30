@@ -46,6 +46,7 @@ REGISTRY = {
     3000: "Open WebUI(Docker)",
     3001: "图谱studio(学习仓)",
     5175: "智策OS前端(zhice)",
+    1411: "Pocket ID(OIDC,Docker,2026-10-30 B0)",
     8102: "智策OS API(zhice)",
     8030: "llamacpp 35b(手动)",
     8787: "Hermes WebUI",
