@@ -115,3 +115,13 @@ def test_sector_regime_combined():
     assert out["2026-01-01"] is True   # 板块缺失→大盘
     assert out["2026-01-02"] is True   # 板块有值优先
     assert out["2026-01-03"] is False
+
+
+def test_combine_all_and_relative_meta():
+    from agent_platform import sector_regime as sr
+    a = {"2026-01-01": True, "2026-01-02": True}
+    b = {"2026-01-02": False, "2026-01-03": True}
+    out = sr.combine_all(a, b)
+    assert out["2026-01-01"] is True
+    assert out["2026-01-02"] is False
+    assert out["2026-01-03"] is True

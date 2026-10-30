@@ -419,7 +419,7 @@ def portfolio_stats(trades_by_code, bars_by_code, costs=None, limits=None):
 def replay_with_constraints(codes, days=250, methods=None, kline_fn=None,
                             index_kline_fn=None, costs=None, limits=None,
                             index_code="sh000001", sector_regime_by_code=None,
-                            exit_opt=True):
+                            exit_opt=True, relative_strength=False):
     """带费用/滑点/仓位约束/大盘 regime 的批量回放；返回每手法组合统计。"""
     if kline_fn is None:
         kline_fn = auto_kline
@@ -439,6 +439,14 @@ def replay_with_constraints(codes, days=250, methods=None, kline_fn=None,
     except Exception:  # noqa: BLE001
         index_bars = []
     regime = market_regime(index_bars)
+    relative = {}
+    rel_meta = {}
+    if relative_strength:
+        try:
+            from agent_platform import sector_regime as _sr
+            relative, rel_meta = _sr.load_relative_strength(bars_by_code)
+        except Exception as exc:  # noqa: BLE001
+            rel_meta = {"relative_covered": 0, "reason": str(exc)[:120]}
     out = {"days": days, "codes": len(bars_by_code), "regime_days": len(regime),
            "index_code": index_code, "costs": costs or DEFAULT_COSTS,
            "limits": limits or DEFAULT_LIMITS, "methods": {}}
@@ -446,12 +454,14 @@ def replay_with_constraints(codes, days=250, methods=None, kline_fn=None,
         trades_by_code = {}
         for code, bars in bars_by_code.items():
             reg = regime
-            if sector_regime_by_code and code in sector_regime_by_code:
-                try:
-                    from agent_platform import sector_regime as _sr
+            try:
+                from agent_platform import sector_regime as _sr
+                if sector_regime_by_code and code in sector_regime_by_code:
                     reg = _sr.combined(reg, sector_regime_by_code.get(code) or {})
-                except Exception:  # noqa: BLE001
-                    reg = regime
+                if relative and code in relative:
+                    reg = _sr.combine_all(reg, relative.get(code) or {})
+            except Exception:  # noqa: BLE001
+                reg = regime
             pass_reg = reg if m in REGIME_METHODS else None
             r = simulate(m, bars, regime_by_date=pass_reg,
                          costs=costs or DEFAULT_COSTS, exit_opt=exit_opt)
@@ -460,5 +470,6 @@ def replay_with_constraints(codes, days=250, methods=None, kline_fn=None,
         out["methods"][m] = portfolio_stats(trades_by_code, bars_by_code,
                                             costs=costs, limits=limits)
         out["methods"][m]["regime_filter"] = m in REGIME_METHODS
+    out["relative"] = rel_meta
     return out
 

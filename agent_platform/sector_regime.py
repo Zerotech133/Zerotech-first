@@ -102,3 +102,78 @@ def combined(market_regime, sector_map):
         return dict(market_regime)
     dates = set(market_regime) | set(sector_map)
     return {d: sector_map.get(d, market_regime.get(d, True)) for d in dates}
+
+
+def _read_sector_daily(sector_codes):
+    try:
+        import pandas as pd
+    except ImportError:
+        return None
+    try:
+        frames = []
+        for f in _files(THS_DAILY):
+            df = pd.read_parquet(f, columns=["ts_code", "trade_date", "close"])
+            frames.append(df[df["ts_code"].isin(sector_codes)])
+        return pd.concat(frames, ignore_index=True) if frames else None
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def load_relative_strength(bars_by_code, lookback=20):
+    """个股相对行业指数强弱：date → bool（个股20日收益 > 行业20日收益）。
+
+    输入 bars_by_code 为 {code: [[date,open,close,...], ...]}；缺行业映射/数据返回空。
+    """
+    codes = list((bars_by_code or {}).keys())
+    mapping = load_map(codes)
+    if not mapping:
+        return {}, {"relative_covered": 0, "reason": "no_map"}
+    daily = _read_sector_daily(set(mapping.values()))
+    if daily is None or daily.empty:
+        return {}, {"relative_covered": 0, "reason": "no_daily"}
+    import pandas as pd
+    out = {}
+    covered = 0
+    for code, bars in bars_by_code.items():
+        sector = mapping.get(str(code)[:6])
+        if not sector or not bars or len(bars) < lookback + 1:
+            continue
+        sub = daily[daily["ts_code"] == sector].sort_values("trade_date")
+        if sub.empty:
+            continue
+        sec = {str(r["trade_date"]): float(r["close"]) for _, r in sub.iterrows()}
+        sec_dates = sorted(sec)
+        stock = {str(b[0]): float(b[2]) for b in bars}
+        dates = sorted(stock)
+        reg = {}
+        for i in range(lookback, len(dates)):
+            d = dates[i]
+            prev = dates[i - lookback]
+            # 行业取 <= 当日 的最近收盘
+            cand = [x for x in sec_dates if x <= d]
+            cand_prev = [x for x in sec_dates if x <= prev]
+            if not cand or not cand_prev:
+                continue
+            sc_now, sc_prev = sec[cand[-1]], sec[cand_prev[-1]]
+            if sc_prev <= 0 or stock[prev] <= 0:
+                continue
+            reg[d] = (stock[d] / stock[prev] - 1.0) > (sc_now / sc_prev - 1.0)
+        if reg:
+            out[str(code)] = reg
+            covered += 1
+    return out, {"relative_covered": covered}
+
+
+def combine_all(*maps):
+    """多 regime 日期级 AND；缺失的 map 不参与（不误杀）。"""
+    maps = [m for m in maps if m]
+    if not maps:
+        return {}
+    dates = set()
+    for m in maps:
+        dates.update(m.keys())
+    out = {}
+    for d in dates:
+        vals = [m.get(d) for m in maps if d in m]
+        out[d] = all(vals) if vals else True
+    return out
