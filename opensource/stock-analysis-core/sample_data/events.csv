@@ -1,0 +1,5 @@
+code,date,category,title,source
+SAMPLE001,20250415,业绩,示例事件：定期报告披露,synthetic://demo
+SAMPLE001,20250720,回购,示例事件：回购进展公告,synthetic://demo
+SAMPLE002,20250415,诉讼,示例事件：定期报告披露,synthetic://demo
+SAMPLE002,20250720,回购,示例事件：回购进展公告,synthetic://demo
