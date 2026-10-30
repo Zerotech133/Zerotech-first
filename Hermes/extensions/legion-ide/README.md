@@ -56,6 +56,7 @@ msedge.exe --app=http://127.0.0.1:8734/hermes/
 - 原生文件浏览器：目录下钻 / 点文件读取
 - 代码片段注入：文件读取 + 鼠标选区
 - 旧 IDE 选中桥（`?standalone=1&legion_pick=1`）
+- 剪贴板引用兜底（复制旧 IDE 内容 → 一键插入）
 - 取上下文（AST symbols）
 - 工单下拉（来自 `/api/ide/openhands/tasks`）
 - 模型选择

@@ -92,6 +92,7 @@
             <pre id="legion-ide-context-preview" style="display:none"></pre>
             <div class="legion-ide-actions">
               <button id="legion-ide-old-pick">旧 IDE 选中</button>
+              <button id="legion-ide-clip">剪贴板引用</button>
               <span id="legion-ide-snippet-status" class="legion-ide-status"></span>
             </div>
             <details id="legion-ide-snippet" class="legion-ide-snippet">
@@ -567,6 +568,25 @@ function insertSnippet() {
   if (info) info.textContent = "已插入选中代码";
 }
 
+async function pasteClipboard() {
+  const st = $("#legion-ide-snippet-status");
+  try {
+    if (!navigator.clipboard || !navigator.clipboard.readText) {
+      if (st) st.textContent = "浏览器不支持剪贴板读取";
+      return;
+    }
+    const text = await navigator.clipboard.readText();
+    if (!String(text || "").trim()) {
+      if (st) st.textContent = "剪贴板为空";
+      return;
+    }
+    appendSelection(text, "剪贴板选中");
+    if (st) st.textContent = "已从剪贴板插入";
+  } catch (e) {
+    if (st) st.textContent = "剪贴板失败：" + e.message;
+  }
+}
+
 function openOldPicker() {
   try {
     const w = window.open("http://127.0.0.1:8734/ide?standalone=1&legion_pick=1",
@@ -780,6 +800,7 @@ async function loadDiff(task) {
     $("#legion-ide-snippet-browse").onclick = () => browseFiles($("#legion-ide-snippet-path").value || ".");
     $("#legion-ide-snippet-insert").onclick = insertSnippet;
     $("#legion-ide-old-pick").onclick = openOldPicker;
+    $("#legion-ide-clip").onclick = pasteClipboard;
     renderSessions();
     loadServerSessions();
     document.addEventListener("keydown", (e) => {
