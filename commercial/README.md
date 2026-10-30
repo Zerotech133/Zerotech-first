@@ -38,7 +38,7 @@ python -m commercial.cli audit-tail -n 20
 | `COMMERCIAL_HOME` | `C:\项目\commercial` | 商业数据根（DB/租户目录/审计） |
 | `COMMERCIAL_DB` | `<HOME>/commercial.db` | 租户/用量 SQLite |
 | `COMMERCIAL_AUDIT` | `<HOME>/audit/audit.jsonl` | 审计日志 |
-| `COMMERCIAL_LICENSE_SECRET` | 开发默认值（仅测试） | license 签名密钥（必须替换） |
+| `COMMERCIAL_LICENSE_SECRET` | **无默认，必须设置** | license 签名密钥（≥32 字符，生产务必保管好） |
 
 ## 与业务集成（下一步）
 
