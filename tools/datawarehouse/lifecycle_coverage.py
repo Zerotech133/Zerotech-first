@@ -34,7 +34,7 @@ def _table_entry(name: str, entry) -> dict:
     return {"_invalid": True}
 
 
-def audit(catalog_path=None) -> dict:
+def audit(catalog_path=None, require_explicit_pct: float = 0.0) -> dict:
     cat_path = Path(str(catalog_path)) if catalog_path else Path(str(common.CATALOG))
     cat = json.loads(cat_path.read_text(encoding="utf-8"))
     tables = cat.get("tables") or {}
@@ -61,6 +61,13 @@ def audit(catalog_path=None) -> dict:
             by_domain[domain]["missing"] += 1
     total = len(tables)
     covered = sum(dist[k] for k in VALID)
+    # 口径修正（2026-10-30 P66）：data_lifecycle.yaml 明确「active 是默认，无需显式登记」，
+    # 因此未登记 ≠ 未分类；有效覆盖 = 显式(planned/deprecated/archived) + 隐式 active。
+    implicit_active = dist.get("missing", 0)
+    invalid_count = sum(v for k, v in dist.items() if k.startswith("invalid:"))
+    effective = covered + implicit_active
+    require_ok = (require_explicit_pct <= 0
+                  or (round(covered * 100.0 / total, 1) if total else 0.0) >= require_explicit_pct)
     return {
         "tool": "lifecycle_coverage",
         "catalog": str(cat_path),
@@ -68,6 +75,11 @@ def audit(catalog_path=None) -> dict:
         "total": total,
         "covered": covered,
         "coverage_pct": round(covered * 100.0 / total, 1) if total else 0.0,
+        "implicit_active": implicit_active,
+        "effective_coverage_pct": round(effective * 100.0 / total, 1) if total else 0.0,
+        "invalid_count": invalid_count,
+        "require_explicit_pct": require_explicit_pct,
+        "require_ok": require_ok,
         "distribution": dict(dist),
         "missing": sorted(missing),
         "invalid": sorted(invalid),
@@ -78,16 +90,22 @@ def audit(catalog_path=None) -> dict:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="catalog lifecycle 覆盖率审计（只读）")
     ap.add_argument("--json", action="store_true")
-    ap.add_argument("--check", action="store_true", help="覆盖率<100%% → exit 1")
+    ap.add_argument("--check", action="store_true",
+                    help="非法 lifecycle 值 → exit 1（active 隐式默认，不算缺失）")
+    ap.add_argument("--require-explicit", type=float, default=0.0,
+                    help="可选：要求显式登记比例 ≥ 该百分数（默认 0=不要求）")
+    ap.add_argument("--catalog", default="", help="只读覆盖 catalog 路径（测试/审计用）")
     ap.add_argument("--list-missing", type=int, default=0, help="列出前 N 个缺失表")
     args = ap.parse_args(argv)
 
-    rep = audit()
+    rep = audit(catalog_path=(args.catalog or None),
+                require_explicit_pct=args.require_explicit)
     if args.json:
         print(json.dumps(rep, ensure_ascii=False, indent=1))
     else:
-        print("lifecycle 覆盖 %d/%d（%.1f%%）分布=%s"
+        print("lifecycle 显式覆盖 %d/%d（%.1f%%），隐式 active %d，有效覆盖 %.1f%%；分布=%s"
               % (rep["covered"], rep["total"], rep["coverage_pct"],
+                 rep["implicit_active"], rep["effective_coverage_pct"],
                  json.dumps(rep["distribution"], ensure_ascii=False)))
         print("按数据域（缺失/总数）：")
         for d, v in rep["by_domain"].items():
@@ -97,9 +115,10 @@ def main(argv=None) -> int:
             print("缺失样例（前 %d）：" % args.list_missing)
             for n in rep["missing"][: args.list_missing]:
                 print("  - %s" % n)
-    if args.check and rep["coverage_pct"] < 100.0:
-        print("CHECK FAIL：lifecycle 覆盖率 %.1f%% < 100%%" % rep["coverage_pct"],
-              file=sys.stderr)
+    if args.check and (rep["invalid_count"] > 0 or not rep["require_ok"]):
+        print("CHECK FAIL：非法值 %d；显式比例 %.1f%%（要求 ≥%.1f%%）"
+              % (rep["invalid_count"], rep["coverage_pct"],
+                 rep["require_explicit_pct"]), file=sys.stderr)
         return 1
     return 0
 
