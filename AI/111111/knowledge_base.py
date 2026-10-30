@@ -50,14 +50,19 @@ class KnowledgeBase:
             p for p in target.rglob("*") if p.is_file() and p.suffix.lower() in {".txt", ".md", ".markdown"})
         return {str(item): item.read_text(encoding="utf-8") for item in files}
 
-    def _embed(self, texts):
+    def _embed(self, texts, batch_size=32):
+        """批量向量化：Ollama /api/embed 单次批量过大会返回 400，分批调用后拼接。"""
         if not texts:
             return []
-        result = self.client.embed(model=self.embed_model, input=texts)
-        vectors = result.get("embeddings") if isinstance(result, dict) else None
-        if vectors is None and isinstance(result, dict):
-            vectors = [result.get("embedding", [])]
-        return vectors or []
+        out = []
+        for start in range(0, len(texts), batch_size):
+            batch = list(texts[start:start + batch_size])
+            result = self.client.embed(model=self.embed_model, input=batch)
+            vectors = result.get("embeddings") if isinstance(result, dict) else None
+            if vectors is None and isinstance(result, dict):
+                vectors = [result.get("embedding", [])]
+            out.extend(vectors or [])
+        return out
 
     @staticmethod
     def _document_hash(text):
