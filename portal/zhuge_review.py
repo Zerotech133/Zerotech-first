@@ -150,8 +150,22 @@ def parse_review(text: str) -> dict:
 
 
 def _default_consult(prompt: str, timeout: int = 90) -> dict:
-    import comm_zhuge
-    return comm_zhuge.consult(prompt, timeout=timeout, max_chars=12000)
+    """复核专用通道：不走 consult 的 grounding/tools，避免把 diff 里的
+    `$h` 之类当 URL，也避免额外工具上下文污染 JSON。
+
+    直接调用 OpenClaw agent；失败显式返回 llm_ok=False，由上层标 degraded。
+    """
+    import comm_zhuge as c
+    ready, why = c._openclaw_available()
+    if not ready:
+        return {"text": None, "llm_ok": False, "error": "openclaw_unavailable: %s" % why}
+    raw, err = c._run_openclaw(prompt, timeout=timeout)
+    if not raw:
+        return {"text": None, "llm_ok": False, "error": "openclaw_review_failed: %s" % err}
+    model = c.OPENCLAW_MODEL or c._openclaw_agent_model() or "agent-config"
+    return {"text": raw, "llm_ok": True,
+            "mode": "openclaw_gpt" if "gpt-6" in model.lower() else "openclaw_cloud",
+            "carrier": model, "relay": "gpt-6" not in model.lower(), "sources": []}
 
 
 def _run(review_id: str, payload: dict, consult_fn) -> None:
