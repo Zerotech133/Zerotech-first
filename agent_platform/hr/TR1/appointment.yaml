@@ -1,7 +1,7 @@
 {
   "agent_id": "TR1",
-  "dept": "trading",
-  "title": "交易部执行岗：交易执行员",
+  "dept": "invest",
+  "title": "模拟交易所主管（D1 下属）：交易执行",
   "rank": "E1",
   "tools_allowed": {
     "read": [],
@@ -10,7 +10,7 @@
   },
   "onboarded": "2026-10-08（补办登记 2026-10-16）",
   "approvals": {
-    "chief": "A0",
+    "chief": "D1",
     "human": "laotian"
   }
 }

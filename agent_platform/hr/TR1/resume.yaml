@@ -10,8 +10,8 @@ education:
     source: claude_agents.json 岗卡 + org_rules.md（K-ORG-087 T1）
     graduated: 2026-10
 experience:
-  - org: 数字军团
-    role: 交易部执行岗：交易执行员
+  - org: 量化交易部（D1）
+    role: 模拟交易所主管（D1 下属）：交易执行
     span: 2026.10~
     kpi: 存量补办（K-ORG-117 一批；工作经历详见 agent__TR1__decision.jsonl）
 skills: ['订单执行', '模拟仓验收', '止损纪律']
