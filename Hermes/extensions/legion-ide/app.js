@@ -644,9 +644,11 @@
     try {
       const d = await api("/api/ide/openhands/tasks");
       const tasks = d.tasks || [];
-      sel.innerHTML = '<option value="">（不绑定工单）</option>' + tasks.map((t) =>
-        `<option value="${esc(t.task)}">${esc(t.task)} · ${esc(t.status)} · ${esc(t.title || "")}</option>`
-      ).join("");
+      const sorted = tasks.slice().sort((a, b) => Number(b.exists) - Number(a.exists));
+      sel.innerHTML = '<option value="">（不绑定工单）</option>' + sorted.map((t) => {
+        const wt = t.exists ? "复用已有" : "将新建 worktree";
+        return `<option value="${esc(t.task)}" data-exists="${t.exists ? 1 : 0}">${esc(t.task)} · ${esc(t.status)} · [${wt}] · ${esc(t.title || t.desc || "")}</option>`;
+      }).join("");
     } catch (e) {
       sel.innerHTML = '<option value="">工单列表不可用</option>';
       status("工单列表失败：" + e.message, "bad");
@@ -1199,6 +1201,11 @@ async function loadDiff(task) {
     const task = $("#legion-ide-task").value;
     const message = $("#legion-ide-message").value.trim();
     if (!message) { status("先输入任务", "warn"); return; }
+    const chosen = $("#legion-ide-task").selectedOptions && $("#legion-ide-task").selectedOptions[0];
+    if (task && chosen && chosen.dataset.exists === "0") {
+      const ok = window.confirm("工单 " + task + " 当前没有 worktree，将新建 task/" + task + "，确认继续？");
+      if (!ok) return;
+    }
     const model = $("#legion-ide-model").value;
     $("#legion-ide-start").disabled = true;
     $("#legion-ide-stop").disabled = false;
