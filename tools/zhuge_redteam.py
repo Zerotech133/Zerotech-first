@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -149,12 +150,23 @@ def write_report(report: dict, out_dir: Path | None = None) -> tuple[Path, Path]
 
 
 def _live_responder(case):
-    """调用 L5 consult（需 COMM_ZHUGE_ENABLED=1）；返回 (text, sources)。"""
+    """调用 L5 consult（需 COMM_ZHUGE_ENABLED=1）；返回 (text, sources)。
+
+    红队是合成流量：调用期间关闭 grounding usage 日志，避免污染 P1-2 观察样本。
+    """
     portal = str(ROOT / "portal")
     if portal not in sys.path:
         sys.path.insert(0, portal)
     import comm_zhuge  # noqa: E402
-    r = comm_zhuge.consult(case["prompt"], timeout=90)
+    old = os.environ.get("ZHUGE_USAGE_LOG")
+    os.environ["ZHUGE_USAGE_LOG"] = "0"
+    try:
+        r = comm_zhuge.consult(case["prompt"], timeout=90)
+    finally:
+        if old is None:
+            os.environ.pop("ZHUGE_USAGE_LOG", None)
+        else:
+            os.environ["ZHUGE_USAGE_LOG"] = old
     return (r.get("text") or ""), (r.get("sources") or [])
 
 

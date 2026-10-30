@@ -84,29 +84,42 @@ def run_daily(limit: int = 2, dry: bool = False, responder=None,
 
 
 def weekly(days: int = 7, daily_path: Path | None = None,
-           out_dir: Path | None = None) -> dict:
+           out_dir: Path | None = None, dry: bool = False) -> dict:
     p = Path(daily_path) if daily_path else DAILY
     rows = []
+    skipped = 0
     if p.exists():
         cutoff = dt.datetime.now().astimezone() - dt.timedelta(days=days)
-        for line in p.read_text(encoding="utf-8").splitlines():
+        for line in p.read_text(encoding="utf-8", errors="replace").splitlines():
             try:
                 r = json.loads(line)
-                ts = dt.datetime.fromisoformat(r["ts"])
-            except (ValueError, KeyError):
+                if not isinstance(r, dict):
+                    raise TypeError("not a dict")
+                ts = dt.datetime.fromisoformat(str(r["ts"]))
+            except (ValueError, TypeError, KeyError, AttributeError):
+                skipped += 1
                 continue
+            if ts.tzinfo is None:
+                ts = ts.replace(tzinfo=dt.datetime.now().astimezone().tzinfo)
             if ts >= cutoff:
                 rows.append(r)
-    total = sum(r.get("total", 0) for r in rows)
-    passed = sum(r.get("passed", 0) for r in rows)
+    live = [r for r in rows if r.get("mode", "live") == "live"]
+    dry_rows = [r for r in rows if r.get("mode") == "dry"]
+    total = sum(int(r.get("total") or 0) for r in live)
+    passed = sum(int(r.get("passed") or 0) for r in live)
     failed_counts: dict[str, int] = {}
-    for r in rows:
+    for r in live:
         for cid in r.get("failed_ids") or []:
             failed_counts[cid] = failed_counts.get(cid, 0) + 1
+    ok = bool(live) and total > 0
     rep = {
-        "ok": True,
+        "ok": ok,
+        "insufficient_data": not ok,
         "window_days": days,
-        "runs": len(rows),
+        "runs": len(live),
+        "runs_live": len(live),
+        "runs_dry": len(dry_rows),
+        "skipped_lines": skipped,
         "total_cases": total,
         "passed": passed,
         "failed": total - passed,
@@ -117,19 +130,24 @@ def weekly(days: int = 7, daily_path: Path | None = None,
             timespec="seconds"),
         "read_only": True,
     }
-    out = Path(out_dir) if out_dir else OUT
-    out.mkdir(parents=True, exist_ok=True)
-    md = ["# 诸葛红队周报", "",
-          "- 生成：%s（窗口 %d 天）" % (rep["generated_at"], days),
-          "- 运行：%d 次；用例：%d；通过 **%d/%d（%.0f%%）**"
-          % (len(rows), total, passed, total, rep["pass_rate"] * 100)]
-    if failed_counts:
-        md += ["", "## 高频失败", ""]
-        for cid, n in rep["failed_case_counts"].items():
-            md.append("- **%s** ×%d" % (cid, n))
-    mp = out / ("weekly_%s.md" % dt.datetime.now().strftime("%Y%m%d"))
-    mp.write_text("\n".join(md), encoding="utf-8")
-    rep["report"] = str(mp)
+    if not dry:
+        out = Path(out_dir) if out_dir else OUT
+        out.mkdir(parents=True, exist_ok=True)
+        md = ["# 诸葛红队周报", "",
+              "- 生成：%s（窗口 %d 天）" % (rep["generated_at"], days),
+              "- live 运行：%d 次；dry 运行：%d 次；跳过脏行：%d"
+              % (len(live), len(dry_rows), skipped),
+              "- live 用例：%d；通过 **%d/%d（%.0f%%）**"
+              % (total, passed, total, rep["pass_rate"] * 100)]
+        if not ok:
+            md.append("- **数据不足：没有 live 样本，不能判定健康**")
+        if failed_counts:
+            md += ["", "## 高频失败", ""]
+            for cid, n in rep["failed_case_counts"].items():
+                md.append("- **%s** ×%d" % (cid, n))
+        mp = out / ("weekly_%s.md" % dt.datetime.now().strftime("%Y%m%d"))
+        mp.write_text("\n".join(md), encoding="utf-8")
+        rep["report"] = str(mp)
     return rep
 
 
@@ -143,11 +161,13 @@ def main(argv=None) -> int:
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args(argv)
     if args.weekly:
-        rep = weekly(args.days)
+        rep = weekly(args.days, dry=args.dry)
     else:
         rep = run_daily(args.limit, dry=args.dry)
     print(json.dumps(rep, ensure_ascii=False, indent=1)
           if args.json else json.dumps(rep, ensure_ascii=False))
+    if args.weekly and not rep.get("ok"):
+        return 1
     return 0
 
 

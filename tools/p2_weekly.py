@@ -106,6 +106,7 @@ def main(argv: list[str] | None = None) -> int:
     planner = _parse(planner_raw["stdout"])
     digest = _digest(patrol, red, planner)
     ok = all(x["rc"] == 0 for x in (patrol_raw, red_raw, planner_raw))
+    ok = ok and bool(red and red.get("ok", True))
 
     if not args.dry_run:
         (outdir / "patrol.json").write_text(
