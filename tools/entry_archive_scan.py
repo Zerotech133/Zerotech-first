@@ -56,9 +56,16 @@ def iter_files(root=REPO):
 
 def _walk(root):
     import os
+    root = Path(root)
+    repo_root = REPO
     for dirpath, dirnames, filenames in os.walk(root, onerror=lambda e: None):
         dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
-        rel = Path(dirpath).relative_to(root).as_posix()
+        # 2026-10-30 P65（OCR 发现）：SKIP_PREFIX 必须相对**仓库根**判定；
+        # 原实现相对 walk root，子根扫描（如 agent_platform）时 data/... 会漏进语料。
+        try:
+            rel = Path(dirpath).resolve().relative_to(repo_root.resolve()).as_posix()
+        except ValueError:
+            rel = Path(dirpath).relative_to(root).as_posix()
         if rel != "." and any(rel == p.rstrip("/") or rel.startswith(p) for p in SKIP_PREFIX):
             continue
         # 测试目录/测试文件不算“生产引用”（import 只证明被测试覆盖）
@@ -79,13 +86,12 @@ def build_index(roots=None):
     chunks = []
     imported = set()
     file_count = 0
-    iterables = []
+    import itertools
     if roots:
-        for r in roots:
-            iterables.extend(iter_files(REPO / r))
+        it = itertools.chain.from_iterable(iter_files(REPO / r) for r in roots)
     else:
-        iterables.extend(iter_files())
-    for p, rel in iterables:
+        it = iter_files()
+    for p, rel in it:
         try:
             if p.stat().st_size > MAX_FILE:
                 continue
