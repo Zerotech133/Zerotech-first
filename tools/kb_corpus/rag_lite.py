@@ -21,6 +21,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import pyarrow.parquet as pq
+from tools.safe_urlopen import safe_urlopen
 
 KB = Path(r"C:\项目\知识库")
 D = KB / "10_规范化"
@@ -52,7 +53,7 @@ QUESTIONS = [
 def post(path: str, body: dict, timeout=600):
     req = urllib.request.Request(OLLAMA + path, data=json.dumps(body).encode(),
                                  headers={"Content-Type": "application/json"}, method="POST")
-    return json.loads(urllib.request.urlopen(req, timeout=timeout).read().decode())
+    return json.loads(safe_urlopen(req, timeout=timeout).read().decode())
 
 
 def embed(text: str) -> list[float]:

@@ -29,6 +29,10 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
 import auth_gateway as gw
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:
+    from portal.safe_urlopen import safe_urlopen
 
 MODE = (os.environ.get("AUTH_OIDC_MODE") or "off").strip().lower()
 ISSUER = (os.environ.get("OIDC_ISSUER") or "http://localhost:1411").rstrip("/")
@@ -86,7 +90,7 @@ def _ready() -> bool:
 def _http_json(url: str, timeout: float = 8.0) -> Tuple[int, Any]:
     req = urllib.request.Request(url, headers={"Accept": "application/json"})
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        with safe_urlopen(req, timeout=timeout) as resp:
             return resp.status, json.loads(resp.read().decode("utf-8", "replace"))
     except urllib.error.HTTPError as exc:
         return exc.code, None
@@ -113,7 +117,7 @@ def _post_form(url: str, data: Dict[str, str]) -> Tuple[int, Any]:
         headers={"Content-Type": "application/x-www-form-urlencoded", "Accept": "application/json"},
     )
     try:
-        with urllib.request.urlopen(req, timeout=12) as resp:
+        with safe_urlopen(req, timeout=12) as resp:
             return resp.status, json.loads(resp.read().decode("utf-8", "replace"))
     except urllib.error.HTTPError as exc:
         return exc.code, None
