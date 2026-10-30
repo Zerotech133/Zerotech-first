@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 18:31",
+ "generated": "2026-10-30 18:34",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,8 +9,8 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 29,
-  "workorders_review": 8
+  "workorders_doing": 27,
+  "workorders_review": 9
  },
  "workorders": [
   {
@@ -322,20 +322,11 @@
   {
    "id": "K-QUANT-20261030-IDEHARDEN",
    "desc": "IDE P0 hardening: LegionOps guard, LDE owner binding, IDE route auth",
-   "status": "doing",
+   "status": "review",
    "owner": "DSH-Lead",
    "branch": "task/K-QUANT-20261030-IDEHARDEN",
    "created": "2026-10-30 18:25:07",
    "project": "quant"
-  },
-  {
-   "id": "WO-ZHAOYUN-P2-FIX-20261030",
-   "desc": "P2修正：stale工具/日报适配task_board_audit rows+summary结构",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-ZHAOYUN-P2-FIX-20261030",
-   "created": "2026-10-30 18:29:36",
-   "project": "general"
   },
   {
    "id": "WO-WARROOM-LIVE-20261030",
@@ -7304,11 +7295,6 @@
     {
      "id": "WO-LEGION-OIDC-PATH-20261030",
      "desc": "OIDC配置路径对齐实际vault",
-     "status": "doing"
-    },
-    {
-     "id": "WO-ZHAOYUN-P2-FIX-20261030",
-     "desc": "P2修正：stale工具/日报适配task_board_audit rows+summary结构",
      "status": "doing"
     }
    ]
