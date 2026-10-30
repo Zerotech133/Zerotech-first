@@ -844,6 +844,21 @@ def main():
     _pool_review_auto(today)
 
 
+def _load_repo_tool(name):
+    """按路径加载仓根 tools/<name>.py。
+
+    不能 `from tools...`：engine 目录在 sys.path 且 engine/tools.py 已占用
+    `tools` 模块名，`tools` 不是包（2026-10-30 17:10 自动钩子失联根因）。
+    """
+    import importlib.util
+    root = str(BASE.parent)
+    path = os.path.join(root, "tools", name + ".py")
+    spec = importlib.util.spec_from_file_location("_auto_" + name, path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
 def _paper_auto(today):
     """17:10 shadow 完成后自动跑 paper_daily（无新增计划任务）。
 
@@ -861,8 +876,8 @@ def _paper_auto(today):
         root = str(BASE.parent)
         if root not in sys.path:
             sys.path.insert(0, root)
-        from tools.paper_daily import run as _paper_run
-        res = _paper_run(day=today)
+        _paper_mod = _load_repo_tool("paper_daily")
+        res = _paper_mod.run(day=today)
         if res.get("killed"):
             print("[paper] auto killed: %s" % res.get("reason"))
         else:
@@ -891,12 +906,12 @@ def _pool_review_auto(today):
         if root not in sys.path:
             sys.path.insert(0, root)
         from agent_platform import recommendation_pool, analysis_digest
-        from tools.pool_review_daily import review as _review, load_decisions as _load_dec
+        _pool_mod = _load_repo_tool("pool_review_daily")
         pool = recommendation_pool.build_pool(day=today)
         codes = [str(x.get("code")) for x in pool.get("items") or []]
-        decisions = _load_dec(today, set(codes))
+        decisions = _pool_mod.load_decisions(today, set(codes))
         analyses = analysis_digest.latest_analyses(codes)
-        res = _review(today, pool, decisions, analyses)
+        res = _pool_mod.review(today, pool, decisions, analyses)
         s = res.get("summary") or {}
         print("[pool] auto %s: total=%s reviewed=%s pending=%s actions=%s" % (
             today, s.get("pool_total"), s.get("reviewed"), s.get("pending"),
