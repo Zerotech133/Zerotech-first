@@ -109,7 +109,7 @@ def test_cainiao_live_stats_if_available():
 
 
 def test_score_distribution_artifact():
-    data = json.loads((ROOT / "portal" / "data" / "bff_score_distribution.json").read_text(encoding="utf-8"))
+    data = json.loads((ROOT / "portal" / "static" / "bff_score_distribution.json").read_text(encoding="utf-8"))
     assert data["ok"] is True and data["mode"] == "read_only"
     assert len(data["daily"]) > 0 and len(data["buckets"]) == 5
     assert data["stale"] is True
