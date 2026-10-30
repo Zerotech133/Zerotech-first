@@ -118,6 +118,20 @@ class TestCustomerApi(unittest.TestCase):
         self.assertEqual(h.status, 200)
         self.assertTrue(h.obj["ok"])
 
+    def test_async_job_flow(self):
+        from unittest import mock
+        token = api_customer.issue_token("acme", self.key)
+        with mock.patch.object(api_customer, "_run_job", lambda *a: None):
+            h = Stub({"token": token, "code": "600337.SH"})
+            api_customer.handle_post(h, "/api/customer/analyze_async")
+        self.assertEqual(h.status, 200)
+        self.assertTrue(h.obj["ok"])
+        job_id = h.obj["job_id"]
+        j = Stub()
+        api_customer.handle_get(j, "/api/customer/job", "id=%s&token=%s" % (job_id, token))
+        self.assertEqual(j.status, 200)
+        self.assertIn(j.obj["job"]["status"], ("queued", "running"))
+
     def test_report_path_traversal(self):
         self.assertIsNone(api_customer._report_path("acme", "../x", "md"))
         self.assertIsNone(api_customer._report_path("acme", "notexist_123", "md"))
