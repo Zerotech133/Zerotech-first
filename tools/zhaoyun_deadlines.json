@@ -1,0 +1,48 @@
+{
+ "schema": "zhaoyun_deadlines/v1",
+ "note": "赵云治理截止台账（文件化，避免会话提醒丢失）；tools/zhaoyun_daily.py 每日检查并写入日报。",
+ "items": [
+  {
+   "id": "T19",
+   "title": "T19 差异确认 / A0 回执",
+   "due": "2026-10-31T09:00:00+08:00",
+   "owner": "A0",
+   "note": "未回则升级治理例会 blocker（不代建单）"
+  },
+  {
+   "id": "M4",
+   "title": "M4 三方签字（QA1/GUANYU/VERIFY1）",
+   "due": "2026-10-31T09:30:00+08:00",
+   "owner": "QA1/GUANYU/VERIFY1",
+   "note": "材料包已备；不代签"
+  },
+  {
+   "id": "ARCH1",
+   "title": "ARCH1 拍板：R0–R7 门表 + v1.1 批文",
+   "due": "2026-11-01T09:30:00+08:00",
+   "owner": "ARCH1",
+   "note": "回执到位后门表转 v1.0"
+  },
+  {
+   "id": "CAP11",
+   "title": "11 席能力迭代确认",
+   "due": "2026-11-03T09:30:00+08:00",
+   "owner": "11 席",
+   "note": "0/11 确认；按回执更新为 in_progress"
+  },
+  {
+   "id": "R1",
+   "title": "HK R1 每日观察",
+   "recurring": "daily@18:30",
+   "owner": "ZHAOYUN",
+   "note": "18:35 台账核验"
+  },
+  {
+   "id": "L131",
+   "title": "L131 Key/口令轮换",
+   "recurring": "blocked@supplier G1-G3",
+   "owner": "老田/供应商",
+   "note": "供应商 403，等窗口"
+  }
+ ]
+}
