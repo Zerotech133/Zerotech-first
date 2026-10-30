@@ -78,6 +78,13 @@ def list_tasks(limit: int = 100) -> list:
         data = json.loads(TASKS_FILE.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return []
+    # OH 的 worktree 根是 C:\legion-worktrees（不是仓库内 .worktrees）；
+    # 以 ide_worktree.WORKTREE_ROOT 为准，避免选择器展示错误路径。
+    try:
+        from legion_command import ide_worktree
+        worktree_root = Path(ide_worktree.WORKTREE_ROOT)
+    except (ImportError, AttributeError):
+        worktree_root = REPO / ".worktrees"
     out = []
     for tid, row in (data or {}).items():
         if not isinstance(row, dict):
@@ -85,12 +92,14 @@ def list_tasks(limit: int = 100) -> list:
         status = str(row.get("status") or "")
         if status not in ("doing", "review", "in_progress"):
             continue
+        wt = worktree_root / str(tid)
         out.append({
             "task": str(tid),
             "desc": str(row.get("desc") or "")[:120],
             "status": status,
             "project": str(row.get("project") or ""),
-            "worktree": str(REPO / ".worktrees" / str(tid)),
+            "worktree": str(wt),
+            "exists": wt.is_dir(),
         })
     out.sort(key=lambda x: x["task"], reverse=True)
     return out[:max(1, min(int(limit or 100), 300))]
