@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 19:18",
+ "generated": "2026-10-30 19:20",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -338,13 +338,13 @@
    "project": "general"
   },
   {
-   "id": "WO-LEGION-HERMES-FORK-AUDIT-20261030",
-   "desc": "Hermes二开合理性评估",
+   "id": "WO-WATCHADMIN-STATIC-FIX-20261030",
+   "desc": "修复 watch_admin 静态路由 unquote 未导入（NameError）",
    "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-HERMES-FORK-AUDIT-20261030",
-   "created": "2026-10-30 19:18:34",
-   "project": "general"
+   "owner": "DSH-Lead",
+   "branch": "task/WO-WATCHADMIN-STATIC-FIX-20261030",
+   "created": "2026-10-30 19:18:59",
+   "project": "portal"
   }
  ],
  "coder_traces": [
@@ -7311,11 +7311,6 @@
     {
      "id": "WO-LEGION-OIDC-PATH-20261030",
      "desc": "OIDC配置路径对齐实际vault",
-     "status": "doing"
-    },
-    {
-     "id": "WO-LEGION-HERMES-FORK-AUDIT-20261030",
-     "desc": "Hermes二开合理性评估",
      "status": "doing"
     }
    ]
