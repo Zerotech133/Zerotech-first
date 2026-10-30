@@ -22,6 +22,7 @@ from typing import Any
 
 import json
 import importlib
+import mimetypes
 import os
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -95,6 +96,23 @@ class _Handler(BaseHTTPRequestHandler):
                 self._send_html(200, PAGE_FILE.read_text(encoding="utf-8"))
             else:
                 self._send(404, {"error": "page_not_found", "path": str(PAGE_FILE)})
+            return
+
+        # 2026-10-30 WO-WATCHADMIN-STATIC：托管 /static/（tokens/nav/ui）
+        if path.startswith("/static/"):
+            rel = unquote(path[len("/static/"):])
+            base = (_HERE / "static").resolve()
+            target = (base / rel).resolve()
+            try:
+                target.relative_to(base)
+            except ValueError:
+                self._send(403, {"error": "forbidden"})
+                return
+            if target.is_file():
+                ctype = mimetypes.guess_type(str(target))[0] or "application/octet-stream"
+                self._send(200, target.read_bytes(), ctype)
+            else:
+                self._send(404, {"error": "not_found", "path": rel})
             return
 
         if path == "/api/watch-admin/snapshot":
