@@ -38,7 +38,7 @@ def main(argv=None) -> int:
             skipped += 1
             continue
         try:
-            rows = [json.loads(x) for x in jf.read_text(encoding="utf-8").splitlines() if x.strip()]
+            rows = [json.loads(x) for x in jf.read_text(encoding="utf-8").split("\n") if x.strip()]
             arr = np.load(npy)
         except (OSError, ValueError, json.JSONDecodeError):
             skipped += 1
