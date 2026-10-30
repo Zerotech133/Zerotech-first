@@ -26,6 +26,10 @@ try:  # P0-2: 出网脱敏（同包优先；兼容以 legion_command 顶层导�
     from .redact_outbound import redact as _redact, log_outbound as _log_outbound
 except ImportError:  # pragma: no cover
     from legion_command.redact_outbound import redact as _redact, log_outbound as _log_outbound
+try:  # Phase C: evidence artifact
+    from . import evidence as _evidence
+except ImportError:  # pragma: no cover
+    from legion_command import evidence as _evidence
 BUNDLE = REPO / "portal" / "agent_ide_bundle.json"
 TASKS_FILE = REPO / ".worktrees" / "tasks.json"
 RUN_DIR = Path(os.environ.get(
@@ -199,6 +203,10 @@ def orchestrate(message: str, task: str = "", model: str = "",
     if not prompt:
         return {"ok": False, "error": "agent_prompt_missing", "agent": agent}
     run_id = "run-" + uuid.uuid4().hex[:12]
+    try:
+        _evidence.new_run(run_id, task=task, agent=agent)
+    except Exception:  # noqa: BLE001
+        pass
     _msg_rd = _redact(message)
     if _msg_rd.get("hits"):
         _log_outbound("a0_user_message", task or run_id, "hermes_chat", _msg_rd)
@@ -232,9 +240,20 @@ def orchestrate(message: str, task: str = "", model: str = "",
         "binding": base["binding"], "need_execute": plan["need_execute"],
         "plan": plan["plan"],
     })
+    try:
+        _evidence.append(run_id, "hermes_plan", {
+            "binding": base["binding"], "need_execute": plan["need_execute"],
+            "plan": plan["plan"],
+        })
+    except Exception:  # noqa: BLE001
+        pass
     if not plan["need_execute"]:
         base["mode"] = "answer"
         _event(run_id, "run_end", {"mode": "answer"})
+        try:
+            _evidence.finalize(run_id, mode="answer", binding=base["binding"])
+        except Exception:  # noqa: BLE001
+            pass
         return base
     from legion_command import openhands_engine as OH
     composed = (
@@ -253,5 +272,14 @@ def orchestrate(message: str, task: str = "", model: str = "",
         "worktree": res.get("worktree"), "error": res.get("error"),
         "detail": res.get("detail"),
     })
+    try:
+        _evidence.append(run_id, "oh_start", {
+            "ok": bool(res.get("ok")), "cid": res.get("conversation_id"),
+            "worktree": res.get("worktree"),
+        })
+        _evidence.finalize(run_id, mode=base["mode"], binding=base["binding"],
+                           conversation_id=res.get("conversation_id") or "")
+    except Exception:  # noqa: BLE001
+        pass
     _event(run_id, "run_end", {"mode": base["mode"]})
     return base

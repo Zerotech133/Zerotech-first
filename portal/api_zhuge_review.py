@@ -69,6 +69,15 @@ def handle_post(handler) -> None:
     except (UnicodeDecodeError, ValueError):
         _json(handler, {"ok": False, "error": "bad_json"}, 400)
         return
+    if isinstance(payload, dict) and str(payload.get("action") or "") == "adopt":
+        out = zhuge_review.adopt(
+            str(payload.get("review_id") or ""),
+            str(payload.get("decision") or ""),
+            str(payload.get("note") or ""),
+            str(payload.get("actor") or ""),
+        )
+        _json(handler, out, 200 if out.get("ok") else 400)
+        return
     status, out = zhuge_review.start_review(payload)
     _json(handler, out, status)
 

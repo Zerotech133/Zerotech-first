@@ -21,6 +21,7 @@ import re
 import threading
 import time
 import uuid
+from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
@@ -35,6 +36,52 @@ FEATURE_ENV = "ZHUGE_IDE_REVIEW"
 _JOBS: dict[str, dict] = {}
 _CACHE: dict[str, tuple[float, dict]] = {}
 _LOCK = threading.Lock()
+_RATE: list[float] = []
+_RATE_LOCK = threading.Lock()
+RATE_MAX = 3
+RATE_WINDOW_S = 60
+ADOPTION_PATH = Path(os.environ.get(
+    "ZHUGE_ADOPTION_PATH", r"C:\项目\_vault\legion_ide\zhuge_adoption.jsonl"))
+DECISIONS = ("accept", "ignore", "fixed")
+
+
+def _rate_ok() -> bool:
+    now = time.time()
+    with _RATE_LOCK:
+        _RATE[:] = [x for x in _RATE if now - x < RATE_WINDOW_S]
+        if len(_RATE) >= RATE_MAX:
+            return False
+        _RATE.append(now)
+        return True
+
+
+def adopt(review_id: str, decision: str, note: str = "", actor: str = "") -> dict:
+    review_id = str(review_id or "").strip()
+    decision = str(decision or "").strip().lower()
+    if decision not in DECISIONS:
+        return {"ok": False, "error": "bad_decision"}
+    _prune()
+    with _LOCK:
+        job = _JOBS.get(review_id)
+    if not job:
+        return {"ok": False, "error": "review_not_found"}
+    row = {
+        "ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+        "review_id": review_id,
+        "decision": decision,
+        "note": str(note or "")[:500],
+        "actor": str(actor or "")[:120],
+        "key": job.get("key") or "",
+    }
+    try:
+        ADOPTION_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with ADOPTION_PATH.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+    except OSError:
+        return {"ok": False, "error": "ledger_write_failed"}
+    with _LOCK:
+        job["adoption"] = row
+    return {"ok": True, "review_id": review_id, "decision": decision}
 _EXECUTOR = ThreadPoolExecutor(max_workers=1, thread_name_prefix="zhuge-review")
 _JSON_RE = re.compile(r"\{.*\}", re.S)
 
@@ -258,6 +305,9 @@ def _run(review_id: str, payload: dict, consult_fn) -> None:
 def start_review(payload: Any, consult_fn=None) -> tuple[int, dict]:
     if not enabled():
         return 404, {"ok": False, "error": "zhuge_review_disabled"}
+    if not _rate_ok():
+        return 429, {"ok": False, "error": "rate_limited",
+                     "limit": RATE_MAX, "window_s": RATE_WINDOW_S}
     try:
         p = validate(payload)
     except ValueError as exc:
@@ -272,7 +322,8 @@ def start_review(payload: Any, consult_fn=None) -> tuple[int, dict]:
     with _LOCK:
         _JOBS[rid] = {"ts": time.time(), "payload": None, "key": key}
     _EXECUTOR.submit(_run, rid, p, consult_fn or _default_consult)
-    return 202, {"ok": True, "review_id": rid, "status": "pending"}
+    return 202, {"ok": True, "review_id": rid, "status": "pending",
+                 "watch_only": not bool(str(payload.get("artifact_run_id") or "").strip())}
 
 
 def get_review(review_id: str) -> dict:
