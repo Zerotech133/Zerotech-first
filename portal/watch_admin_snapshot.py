@@ -774,16 +774,42 @@ class WatchAdminAggregator:
                   "semantics": "受理=agent 级 ACK（AgentAck）；受理≠授权≠研判确认"},
             source=str(self.registry_dir / "org.json"), verified=bool(ack)))
 
-        # 实时 ACK 状态：无持久化/无可查询端点（route_outbox.py 内存态/离线）→ 仅契约
-        sources.append(_source(
-            "upstream_ack_live", state="unknown", source_mode="computed",
-            error_code="contract_only",
-            note=("实时 ACK 状态：route_outbox.py（RouteReceipt/ActiveAckPort）为内存态/离线"
-                      "（No send, no trade, no persistence root；production_permitted=False），"
-                      "无持久化、无可查询端点。故实时 ACK 状态仅契约、不可查 → SOURCE_UNVERIFIED/仅契约。"),
-            data={"queryable": False, "persistence": False,
-                  "blocks": ["飞书真实下发", "GAP-4", "051 时序缺口", "真实通知", "交易"]},
-            source="上行链路（仅契约，无可查询端点）", verified=False))
+        # 实时 ACK 状态（2026-10-30 WO-WATCH-ACK）：先读 quant_upstream/acked 回执；
+        # 无真实回执时仍显式 contract_only（不伪造“已接 live”）。
+        acked_dir = self.agent_platform_data / "quant_upstream" / "acked"
+        ledger_path = self.agent_platform_data / "quant_upstream" / "accept_ledger.jsonl"
+        receipts: List[Dict[str, Any]] = []
+        try:
+            if acked_dir.is_dir():
+                for p in sorted(acked_dir.glob("*.json"))[-8:]:
+                    rec, _ = self._read_json(p)
+                    if isinstance(rec, dict):
+                        receipts.append({"file": p.name,
+                                         "receipt_id": rec.get("receipt_id"),
+                                         "report_id": rec.get("report_id"),
+                                         "accepted_at": rec.get("accepted_at"),
+                                         "trading_permitted": rec.get("trading_permitted")})
+        except OSError:
+            receipts = []
+        if receipts:
+            sources.append(_source(
+                "upstream_ack_live", state="healthy", source_mode="file", error_code=None,
+                note=("quant_upstream/acked 已存在真实回执：读取 receipt_id/report_id/accepted_at；"
+                      "受理≠授权，trading_permitted 恒 False。"),
+                data={"count": len(receipts), "recent": receipts,
+                      "ledger": str(ledger_path),
+                      "ledger_exists": ledger_path.exists()},
+                source=str(acked_dir), verified=True))
+        else:
+            sources.append(_source(
+                "upstream_ack_live", state="unknown", source_mode="computed",
+                error_code="contract_only",
+                note=("实时 ACK 状态：quant_upstream/acked 暂无真实回执；route_outbox.py 为内存态/离线"
+                      "（无持久化、无可查询端点）。读取器已就位，WA1 首条 inbox/acked 落盘后自动 verified。"),
+                data={"queryable": False, "persistence": False,
+                      "acked_dir": str(acked_dir), "contract_reader": True,
+                      "blocks": ["飞书真实下发", "GAP-4", "051 时序缺口", "真实通知", "交易"]},
+                source=str(acked_dir), verified=False))
 
         # 塔台健康（SnapshotAggregator 代理，M2 修正#5：仅作 tower-health/replay 上下文）
         snap = self._snapshot(None)
