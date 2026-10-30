@@ -150,3 +150,34 @@ def test_tools_list_contains_digest_risk():
     r = mcp._handle({"jsonrpc": "2.0", "id": 1, "method": "tools/list"})
     names = {t["name"] for t in r["result"]["tools"]}
     assert {"jev_query", "jev_calibration", "jev_digest", "jev_risk"} <= names
+
+
+# ── 2026-10-30 JEVALERT：jev_feedback ────────────────────────────────
+def test_feedback_writes_and_idempotent(tmp_path, monkeypatch):
+    fb = tmp_path / "feedback.jsonl"
+    monkeypatch.setattr(mcp, "FEEDBACK_PATH", fb)
+    r = _call("jev_feedback", {"news_id": "sina:1", "note": "这条应为中性",
+                               "suggested_bias": "neutral"})
+    assert r["result"]["isError"] is False and "已记录反馈" in r["result"]["content"][0]["text"]
+    assert len(fb.read_text(encoding="utf-8").splitlines()) == 1
+    # 幂等：同内容重复提交不再写
+    r2 = _call("jev_feedback", {"news_id": "sina:1", "note": "这条应为中性"})
+    assert "已存在" in r2["result"]["content"][0]["text"]
+    assert len(fb.read_text(encoding="utf-8").splitlines()) == 1
+
+
+def test_feedback_validation(tmp_path, monkeypatch):
+    monkeypatch.setattr(mcp, "FEEDBACK_PATH", tmp_path / "f.jsonl")
+    assert _call("jev_feedback", {"note": "x"})["error"]["code"] == -32602
+    assert _call("jev_feedback", {"news_id": "a"})["error"]["code"] == -32602
+    assert _call("jev_feedback", {"news_id": "a", "note": "x" * 501})["error"]["code"] == -32602
+    assert _call("jev_feedback", {"news_id": "a", "note": "x",
+                                  "suggested_bias": "strong_buy"})["error"]["code"] == -32602
+    assert _call("jev_feedback", {"news_id": "a", "note": "x", "bogus": 1})["error"]["code"] == -32602
+
+
+def test_tools_list_contains_feedback():
+    r = mcp._handle({"jsonrpc": "2.0", "id": 1, "method": "tools/list"})
+    names = {t["name"] for t in r["result"]["tools"]}
+    assert "jev_feedback" in names
+
