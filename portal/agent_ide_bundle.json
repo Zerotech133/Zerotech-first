@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 21:26",
+ "generated": "2026-10-30 21:30",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,8 +9,8 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 28,
-  "workorders_review": 9
+  "workorders_doing": 29,
+  "workorders_review": 10
  },
  "workorders": [
   {
@@ -344,6 +344,24 @@
    "owner": "DSH-Lead",
    "branch": "task/K-QUANT-20261030-HERMESMAIN",
    "created": "2026-10-30 21:14:03",
+   "project": "quant"
+  },
+  {
+   "id": "K-ORG-20261030-JEVALERTB",
+   "desc": "风险桥 B 落地：小时轮后扫描写本地 outbox（--emit-outbox，不外发），+静态测试",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-ORG-20261030-JEVALERTB",
+   "created": "2026-10-30 21:26:49",
+   "project": "general"
+  },
+  {
+   "id": "WO-HERMES-CSP-SELF-20261030",
+   "desc": "用户批准：Hermes CSP frame-ancestors none→self、X-Frame-Options DENY→SAMEORIGIN，允许同源 iframe 挂 5175 研究台；更新对应断言。",
+   "status": "review",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-HERMES-CSP-SELF-20261030",
+   "created": "2026-10-30 21:30:19",
    "project": "quant"
   }
  ],
@@ -7312,6 +7330,11 @@
      "id": "WO-LEGION-OIDC-PATH-20261030",
      "desc": "OIDC配置路径对齐实际vault",
      "status": "doing"
+    },
+    {
+     "id": "WO-HERMES-CSP-SELF-20261030",
+     "desc": "用户批准：Hermes CSP frame-ancestors none→self、X-Frame-Options DENY→SAMEORIGIN，允许同源 iframe 挂 5175 研究台；更新对应断言。",
+     "status": "review"
     }
    ]
   }
