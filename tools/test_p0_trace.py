@@ -15,9 +15,17 @@ import p0_trace as t  # noqa: E402
 class FakeCtx:
     def __init__(self):
         self.attrs = {}
+        self.status = None
+        self.exceptions = []
 
     def set_attribute(self, key, value):
         self.attrs[key] = value
+
+    def set_status(self, status):
+        self.status = status
+
+    def record_exception(self, exc):
+        self.exceptions.append(exc)
 
 
 class FakeTracer:
@@ -81,3 +89,20 @@ def test_init_tracer_disabled(monkeypatch):
     monkeypatch.setattr(t, "_TRACER", None)
     monkeypatch.delenv("PHOENIX_TRACE", raising=False)
     assert t.init_tracer() is None
+
+
+def test_traced_chat_marks_error_span(monkeypatch):
+    monkeypatch.setattr(t, "http_chat", lambda *a, **k: {
+        "ok": False, "data": {}, "elapsed_ms": 5.0, "error": "TimeoutError: down"})
+    tracer = FakeTracer()
+    res = t.traced_chat("ollama/x", "hi", tracer=tracer)
+    assert res["ok"] is False
+    _, attrs = tracer.spans[0]
+    assert attrs.status is not None
+    assert attrs.exceptions
+
+
+def test_main_returns_nonzero_on_failure(monkeypatch):
+    monkeypatch.setattr(t, "traced_chat", lambda *a, **k: {
+        "ok": False, "data": {}, "elapsed_ms": 1.0, "error": "down"})
+    assert t.main([]) == 1
