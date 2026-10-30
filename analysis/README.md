@@ -189,3 +189,11 @@ python -m analysis.backtest --universe 300 --out "C:\项目\deliverables\2026-10
 - 月频：市值前 N（默认 300，剔除 BJ、要求 2018 前有行情）× 92 个月（2019-01~2026-08），五维打分 v2（事件维度无历史→中性 50），财报按 `ann_date` 截止防未来函数；
 - 输出：总分分位、固定分档/当月分位映射的 20/60 日超额与胜率、Spearman IC、分因子 IC、`SCORE_CUTS` 校准建议；
 - 2026-10-30 首跑结论：IC 0.011（弱）、分档无单调性、quality/growth/trend 因子 IC≈0，仅 valuation +0.024 → **暂不按建议分档上线**，待 P0P 做权重/频率/股票池实验后再校准。
+
+### 行业数据地基（P0Q，2026-10-30）
+
+- 数据源：tushare `index_classify`（L1/L2/L3，511 条）+ `index_member_all`（逐 L1 拉当前成分，5,922 只，is_new=Y）；
+- 缓存：`work/analysis/cache/sw/{classify,member}.parquet`（不改 curated 数据仓）；
+- 刷新/自检：`python -m analysis.industry --refresh` / `--check`；
+- `snapshot.industry` 现返回 **L1/L2/L3 + tushare_sw 标注**；同业改成**申万二级（L2）同行业**（比一级更可比），回退一级/旧表；
+- 效果（300308）：行业=通信/通信设备（原"电力设备"），同业=新易盛/长飞/天孚，PS 同业分位 **95.1 → 25.0**。
