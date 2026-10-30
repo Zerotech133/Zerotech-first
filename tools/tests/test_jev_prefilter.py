@@ -119,3 +119,33 @@ def test_is_prefilter_judgment():
     assert pf.is_prefilter_judgment('{"src": "local", "bias": "bull"}') is False
     assert pf.is_prefilter_judgment("not-json") is False
     assert pf.is_prefilter_judgment("") is False
+
+
+# ── 2026-10-30 PREFILTEREVAL：SAFE 模式（只 skip routine 治理模板）──────
+def test_safe_mode_skips_routine_governance():
+    for title in (
+        "第六届董事会第十次会议决议公告",
+        "独立董事候选人声明",
+        "关于修订公司章程的公告",
+        "关于召开 2026 年第二次临时股东大会的通知",
+        "2026 年第三季度报告披露提示性公告",
+    ):
+        d = pf.decide(title, mode="safe")
+        assert d["decision"] == "skip", (title, d)
+
+
+def test_safe_mode_keeps_market_and_directional():
+    for title in (
+        "收盘：沪指涨 0.8% 报 3120 点，成交额 8500 亿元",
+        "开盘涨停！000678，6连板！",
+        "中金公司A股放量跌停！",
+        "据报道，某宽带服务商申请破产",
+    ):
+        d = pf.decide(title, mode="safe")
+        assert d["decision"] == "keep", (title, d)
+
+
+def test_aggressive_vs_safe_skip_volume():
+    t = "收盘：沪指涨 0.8% 报 3120 点，成交额 8500 亿元"
+    assert pf.decide(t, mode="aggressive")["decision"] == "skip"
+    assert pf.decide(t, mode="safe")["decision"] == "keep"
