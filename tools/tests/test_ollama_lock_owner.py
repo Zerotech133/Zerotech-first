@@ -61,3 +61,12 @@ def test_tick_reacquires_when_ownership_lost(tmp_path, monkeypatch):
     monkeypatch.setattr(ol, "LEASE_S", 600)
     assert ol.tick("test", lease_s=600) is True
     assert json.loads(p.read_text(encoding="utf-8"))["pid"] == os.getpid()
+
+
+def test_tick_yields_when_m3_holds_lock(tmp_path, monkeypatch):
+    # 锁被 M3（即使 pid 已死）持有：hourly 应立即让位，不反复重抢
+    p = _lock(tmp_path, 999999, purpose="k266_m3")
+    monkeypatch.setattr(ol, "LOCK_PATH", str(p))
+    monkeypatch.setattr(ol, "LEASE_S", 600)
+    assert ol.tick("test", lease_s=600) is False
+    assert json.loads(p.read_text(encoding="utf-8"))["pid"] == 999999  # 未被改写
