@@ -1,0 +1,44 @@
+# -*- coding: utf-8 -*-
+"""语料库五级血缘清单（Phase6 补：正式血缘登记，文件式，待并入 lineage DB）。"""
+nodes:
+- id: kb_raw_zip
+  layer: raw
+  path: C:/项目/知识库/01_数据分包
+  desc: 948 ZIP 原始交付包（sha256 校验 948/948）
+- id: kb_normalized
+  layer: normalized
+  path: C:/项目/知识库/10_规范化
+  desc: videos 45,827 / comments 1,321,892 / channel_map 45,790（官方读取器口径）
+- id: kb_cleaned
+  layer: cleaned
+  path: C:/项目/知识库/20_清洗/comments_clean
+  desc: 保留 94.21%（1,245,368/1,321,892），PII 1,596 已脱敏
+- id: kb_index
+  layer: index
+  path: C:/项目/知识库/40_索引/full
+  desc: 62,401 docs embedding（bge-m3, dim1024）
+- id: kb_rag
+  layer: served
+  path: C:/项目/知识库/50_RAG
+  desc: rag_index_corpus（4,926 chunks 门户）+ packed_full（62,401 rows 研究）
+edges:
+- from: kb_raw_zip
+  to: kb_normalized
+  op: tools/kb_corpus/export.py
+  schema: [video_id, channel_id, title, description, collected_at]
+- from: kb_normalized
+  to: kb_cleaned
+  op: tools/kb_corpus/p2_clean.py
+  schema: [video_id, comment_id, text, author_hash, pii_masked]
+- from: kb_cleaned
+  to: kb_index
+  op: tools/kb_corpus/build_full_index.py
+  schema: [doc_id, text, embedding]
+- from: kb_index
+  to: kb_rag
+  op: tools/kb_corpus/merge_full_index.py + build_rag_index.py
+  schema: [source, text, embedding]
+backup:
+  op: jev-eval/backup_kb_corpus.py
+  covers: [kb_normalized, kb_cleaned, kb_index, kb_rag]
+  raw_policy: 原始 ZIP 不复制，仅备份 948 条 sha256 清单（归交付方）

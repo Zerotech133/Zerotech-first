@@ -53,7 +53,10 @@ def init_tracer(force: bool = False):
     """
     global _TRACER, _INIT_ERROR
     if _TRACER is not None:
-        return _TRACER or None
+        if not force or _TRACER:
+            return _TRACER or None
+        _TRACER = None
+        _INIT_ERROR = None
     if not force and not (_truthy("PHOENIX_TRACE") or _truthy("OTEL_TRACE")):
         _TRACER = False
         return None
@@ -149,6 +152,13 @@ def traced_chat(binding: str, user: str, system: str = DEFAULT_SYSTEM,
         span.set_attribute("llm.ok", bool(result.get("ok")))
         if result.get("error"):
             span.set_attribute("llm.error", str(result["error"])[:300])
+        if not result.get("ok"):
+            try:
+                from opentelemetry.trace import Status, StatusCode
+                span.set_status(Status(StatusCode.ERROR, str(result.get("error") or "llm_error")[:200]))
+                span.record_exception(Exception(str(result.get("error") or "llm_error")))
+            except Exception:
+                pass
         return result
 
 
@@ -177,7 +187,7 @@ def main(argv=None) -> int:
         return _selftest()
     result = traced_chat(args.binding, args.user)
     print(json.dumps(result, ensure_ascii=False))
-    return 0
+    return 0 if result.get("ok") else 1
 
 
 if __name__ == "__main__":
