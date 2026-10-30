@@ -46,6 +46,25 @@ msedge.exe --app=http://127.0.0.1:8734/hermes/
 
 8734 的 `/extensions/` 已加 nginx 同源反代到 8787。
 
+## LDE 施工台
+
+原生 nav「LDE 施工台」：
+
+```text
+8734 /lde/ → 8103
+```
+
+能力：
+
+- 作用域/工单选择
+- 工单锁 acquire/release
+- 文件读取 + 编辑
+- 预览 diff → 确认写入
+- 白名单 exec
+- code_action / code_observation 审计
+
+只支持通过 8734 使用（8103 需要同源 `ide_session` cookie）。
+
 ## 功能
 
 - Agent 卡片（63 个，来自 `/agent_ide_bundle.json` 或 `/api/ide/agents`）

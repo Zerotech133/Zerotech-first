@@ -1,4 +1,4 @@
-/* 军团 IDE · Hermes 扩展 panel（方式 A 原型） */
+﻿/* 军团 IDE · Hermes 扩展 panel（方式 A 原型） */
 (function () {
   if (window.__legionIdeExtensionLoaded) return;
   window.__legionIdeExtensionLoaded = true;
@@ -140,7 +140,7 @@
   }
 
   const MAIN_CLASSES = ['settings', 'skills', 'memory', 'tasks', 'workspaces',
-    'profiles', 'insights', 'legionide'];
+    'profiles', 'insights', 'legionide', 'legionlde'];
 
   function ensureNativePanel() {
     const main = document.querySelector('main.main');
@@ -174,6 +174,270 @@
     return true;
   }
 
+  const LDE_OWNER = "hermes-lde";
+  const LDE_BASE = (location.port === "8734") ? "/lde" : "http://127.0.0.1:8734/lde";
+  let LDE_PREVIEW = null;
+
+  function ldeStatus(text, kind) {
+    const n = $("#lde-status");
+    if (!n) return;
+    n.textContent = text;
+    n.className = "lde-status " + (kind || "");
+  }
+
+  async function ldeApi(path, opts) {
+    const o = Object.assign({ credentials: "include", headers: {} }, opts || {});
+    if (o.body !== undefined) {
+      o.headers = Object.assign({ "Content-Type": "application/json" }, o.headers);
+    }
+    const r = await fetch(LDE_BASE + path, o);
+    let d = {};
+    try { d = await r.json(); } catch (e) { d = { ok: false, error: "bad_response" }; }
+    if (!r.ok || d.ok === false) throw new Error(d.message || d.error || ("HTTP " + r.status));
+    return d;
+  }
+
+  async function ldeScope() {
+    const sel = $("#lde-task");
+    if (!sel) return;
+    ldeStatus("读取可写范围…");
+    try {
+      const d = await ldeApi("/api/ide/scope");
+      const items = d.items || [];
+      const keep = sel.value;
+      sel.innerHTML = items.length
+        ? items.map((it) => `<option value="${esc(it.task)}">${esc(it.task)} · ${esc(it.status)}</option>`).join("")
+        : '<option value="">（无可写 worktree）</option>';
+      if (keep && items.some((it) => it.task === keep)) sel.value = keep;
+      ldeStatus("可写工单 " + items.length + " 个", items.length ? "ok" : "warn");
+    } catch (e) {
+      ldeStatus("范围不可用：" + e.message, "bad");
+    }
+  }
+
+  function ldeBody(extra) {
+    const sel = $("#lde-task");
+    return Object.assign({ task: sel ? sel.value : "", owner: LDE_OWNER }, extra || {});
+  }
+
+  async function ldeRead() {
+    const p = $("#lde-path");
+    const ta = $("#lde-content");
+    if (!p || !ta) return;
+    try {
+      const d = await ldeApi("/api/ide/read", {
+        method: "POST", body: JSON.stringify(ldeBody({ path: p.value.trim() })),
+      });
+      ta.value = d.content || "";
+      LDE_PREVIEW = null;
+      $("#lde-confirm").style.display = "none";
+      $("#lde-cancel-preview").style.display = "none";
+      $("#lde-preview").style.display = "";
+      $("#lde-diff").textContent = "—";
+      ldeStatus("已读取 " + d.path + " · " + d.bytes + "B", "ok");
+    } catch (e) { ldeStatus("读取失败：" + e.message, "bad"); }
+  }
+
+  async function ldePreview() {
+    const p = $("#lde-path");
+    const ta = $("#lde-content");
+    if (!p || !ta) return;
+    try {
+      const d = await ldeApi("/api/ide/write/preview", {
+        method: "POST",
+        body: JSON.stringify(ldeBody({ path: p.value.trim(), content: ta.value })),
+      });
+      LDE_PREVIEW = d;
+      $("#lde-diff").textContent = d.diff || "（无差异）";
+      $("#lde-preview").style.display = "none";
+      $("#lde-confirm").style.display = "";
+      $("#lde-cancel-preview").style.display = "";
+      ldeStatus("预览就绪：" + d.path + (d.diff_truncated ? " · diff 已截断" : " · 请确认写入"), "warn");
+    } catch (e) { ldeStatus("预览失败：" + e.message, "bad"); }
+  }
+
+  async function ldeConfirm() {
+    if (!LDE_PREVIEW) { ldeStatus("没有待确认的预览", "warn"); return; }
+    try {
+      const d = await ldeApi("/api/ide/write/confirm", {
+        method: "POST", body: JSON.stringify(ldeBody({ preview_id: LDE_PREVIEW.preview_id })),
+      });
+      ldeStatus("已写入 " + d.path + " · " + d.bytes + "B" + (d.created ? " · 新建" : ""), "ok");
+      LDE_PREVIEW = null;
+      $("#lde-confirm").style.display = "none";
+      $("#lde-cancel-preview").style.display = "none";
+      $("#lde-preview").style.display = "";
+    } catch (e) { ldeStatus("确认失败：" + e.message, "bad"); }
+  }
+
+  async function ldeLock() {
+    try {
+      await ldeApi("/api/ide/lock", { method: "POST", body: JSON.stringify(ldeBody()) });
+      $("#lde-lockchip").textContent = "锁 已持有";
+      ldeStatus("已获取工单锁（owner=" + LDE_OWNER + "）", "ok");
+    } catch (e) { ldeStatus("取锁失败：" + e.message, "warn"); }
+  }
+
+  async function ldeUnlock() {
+    try {
+      const sel = $("#lde-task");
+      const q = new URLSearchParams({ task: sel ? sel.value : "", owner: LDE_OWNER });
+      await ldeApi("/api/ide/lock?" + q.toString(), { method: "DELETE" });
+      $("#lde-lockchip").textContent = "锁 —";
+      ldeStatus("已释放锁", "ok");
+    } catch (e) { ldeStatus("释放失败：" + e.message, "bad"); }
+  }
+
+  async function ldeExec() {
+    const cmd = $("#lde-cmd");
+    const out = $("#lde-output");
+    if (!cmd || !out) return;
+    try {
+      const d = await ldeApi("/api/ide/exec", {
+        method: "POST", body: JSON.stringify(ldeBody({ command: cmd.value.trim() })),
+      });
+      const success = (typeof d.success === "boolean") ? d.success : (d.exit_code === 0);
+      ldeStatus((success ? "✅ success" : "❌ failed") + " · exit=" + d.exit_code + " · " + d.duration_ms + "ms", success ? "ok" : "bad");
+      out.textContent = (d.output || "（无输出）") + (d.truncated ? "\n[输出已截断]" : "");
+    } catch (e) {
+      ldeStatus("执行被拒：" + e.message, "bad");
+      out.textContent = "—";
+    }
+  }
+
+  async function ldeAudit() {
+    const out = $("#lde-audit-out");
+    if (!out) return;
+    try {
+      const sel = $("#lde-task");
+      const q = new URLSearchParams({ task: sel ? sel.value : "" });
+      const d = await ldeApi("/api/ide/audit?" + q.toString());
+      out.textContent = (d.events || []).length
+        ? d.events.map((e) => e.ts + "  " + e.kind + "  " + e.detail).join("\n")
+        : "（本单暂无 code_action / code_observation）";
+    } catch (e) { ldeStatus("审计不可用：" + e.message, "bad"); }
+  }
+
+  function ldeHtml() {
+    return `
+      <section id="mainLegionLde" class="main-view legion-lde-view">
+        <header class="lde-head">
+          <div><b>LDE 施工台</b><span>文件写 / 锁 / 白名单执行 / 审计</span></div>
+          <span id="lde-status" class="lde-status">初始化…</span>
+        </header>
+        <div class="lde-body">
+          <div class="lde-left">
+            <div class="lde-row">
+              <label>工单</label>
+              <select id="lde-task"></select>
+              <button id="lde-refresh">刷新范围</button>
+              <span id="lde-lockchip" class="lde-lockchip">锁 —</span>
+              <button id="lde-lock">获取锁</button>
+              <button id="lde-unlock">释放</button>
+            </div>
+            <div class="lde-row">
+              <input id="lde-path" placeholder="文件相对路径，例如 agent_platform/foo.py">
+              <button id="lde-read">读取</button>
+            </div>
+            <textarea id="lde-content" spellcheck="false" placeholder="文件内容（UTF-8）"></textarea>
+            <div class="lde-actions">
+              <button id="lde-preview" class="primary">预览变更</button>
+              <button id="lde-confirm" class="primary" style="display:none">确认写入</button>
+              <button id="lde-cancel-preview" style="display:none">取消预览</button>
+            </div>
+            <div class="lde-label">diff</div>
+            <pre id="lde-diff">—</pre>
+          </div>
+          <div class="lde-right">
+            <div class="lde-label">白名单执行</div>
+            <div class="lde-row">
+              <input id="lde-cmd" placeholder="git status -s / python -m pytest ...">
+              <button id="lde-exec" class="primary">执行</button>
+            </div>
+            <pre id="lde-output">—</pre>
+            <div class="lde-actions"><button id="lde-audit">本单审计</button></div>
+            <div class="lde-label">审计</div>
+            <pre id="lde-audit-out" class="lde-audit">—</pre>
+          </div>
+        </div>
+      </section>`;
+  }
+
+  function ensureLdePanel() {
+    const main = document.querySelector('main.main');
+    if (!main) return false;
+    if ($("#mainLegionLde")) return true;
+    const host = document.createElement('section');
+    host.className = 'main-view';
+    host.innerHTML = ldeHtml();
+    main.appendChild(host.firstElementChild);
+    bindLde();
+    ldeInit();
+    return true;
+  }
+
+  async function ldeInit() {
+    try {
+      // 先访问 /rw 种 ide_session cookie，再调受保护 API
+      await fetch(LDE_BASE + "/rw", { credentials: "include" });
+      await ldeScope();
+      ldeStatus("就绪", "ok");
+    } catch (e) {
+      ldeStatus("LDE 不可用：" + e.message, "bad");
+    }
+  }
+
+  function bindLde() {
+    $("#lde-refresh").onclick = ldeScope;
+    $("#lde-read").onclick = ldeRead;
+    $("#lde-preview").onclick = ldePreview;
+    $("#lde-confirm").onclick = ldeConfirm;
+    $("#lde-cancel-preview").onclick = () => {
+      LDE_PREVIEW = null;
+      $("#lde-preview").style.display = "";
+      $("#lde-confirm").style.display = "none";
+      $("#lde-cancel-preview").style.display = "none";
+      $("#lde-diff").textContent = "—";
+    };
+    $("#lde-lock").onclick = ldeLock;
+    $("#lde-unlock").onclick = ldeUnlock;
+    $("#lde-exec").onclick = ldeExec;
+    $("#lde-audit").onclick = ldeAudit;
+    $("#lde-task").onchange = () => {
+      LDE_PREVIEW = null;
+      $("#lde-confirm").style.display = "none";
+      $("#lde-cancel-preview").style.display = "none";
+      $("#lde-preview").style.display = "";
+      $("#lde-lockchip").textContent = "锁 —";
+    };
+  }
+
+  function showLdePanel() {
+    if (!ensureLdePanel()) return false;
+    const main = document.querySelector('main.main');
+    MAIN_CLASSES.forEach((c) => main.classList.remove('showing-' + c));
+    main.classList.add('showing-legionlde');
+    document.querySelectorAll('[data-panel]').forEach((t) => {
+      t.classList.toggle('active', t.dataset.panel === 'legionlde');
+    });
+    return true;
+  }
+
+  function addLdeNavButton(container, cls, label) {
+    if (!container || container.querySelector('[data-panel="legionlde"]')) return;
+    const b = el('button', cls);
+    b.dataset.panel = 'legionlde';
+    b.title = label;
+    b.setAttribute('aria-label', label);
+    b.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>';
+    if (cls.indexOf('nav-tab') >= 0 && cls.indexOf('rail-btn') < 0) b.dataset.label = label;
+    b.addEventListener('click', (e) => { e.preventDefault(); showLdePanel(); });
+    const anchor = container.querySelector('.rail-spacer') ||
+      container.querySelector('[data-panel="settings"]');
+    if (anchor) container.insertBefore(b, anchor);
+    else container.appendChild(b);
+  }
+
   function addNavButton(container, cls, label) {
     if (!container || container.querySelector('[data-panel="legionide"]')) return;
     const b = el('button', cls);
@@ -194,12 +458,16 @@
   function addNavButtons() {
     addNavButton(document.querySelector('.rail'), 'rail-btn nav-tab', '军团 IDE');
     addNavButton(document.querySelector('.sidebar-nav'), 'nav-tab', '军团 IDE');
-    // 点回 Hermes 内置导航时，退出军团 IDE 主视图
+    addLdeNavButton(document.querySelector('.rail'), 'rail-btn nav-tab', 'LDE 施工台');
+    addLdeNavButton(document.querySelector('.sidebar-nav'), 'nav-tab', 'LDE 施工台');
+    // 点回 Hermes 内置导航时，退出军团 IDE / LDE 主视图
     document.addEventListener('click', (e) => {
       const t = e.target && e.target.closest ? e.target.closest('[data-panel]') : null;
-      if (!t || t.dataset.panel === 'legionide') return;
+      if (!t) return;
       const main = document.querySelector('main.main');
-      if (main) main.classList.remove('showing-legionide');
+      if (!main) return;
+      if (t.dataset.panel !== 'legionide') main.classList.remove('showing-legionide');
+      if (t.dataset.panel !== 'legionlde') main.classList.remove('showing-legionlde');
     }, true);
   }
 
@@ -872,4 +1140,5 @@ async function loadDiff(task) {
     buildLauncher();
   }
 })();
+
 

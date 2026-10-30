@@ -43,6 +43,69 @@ main.main.showing-legionide > #mainInsights { display: none !important; }
 }
 #mainLegionIde .legion-ide-head { border-radius: 10px 10px 0 0; }
 
+/* LDE 施工台（原生） */
+main.main > #mainLegionLde { display: none !important; }
+main.main.showing-legionlde > #mainLegionLde { display: flex !important; }
+main.main.showing-legionlde > #mainChat,
+main.main.showing-legionlde > #mainSettings,
+main.main.showing-legionlde > #mainSkills,
+main.main.showing-legionlde > #mainMemory,
+main.main.showing-legionlde > #mainTasks,
+main.main.showing-legionlde > #mainWorkspaces,
+main.main.showing-legionlde > #mainProfiles,
+main.main.showing-legionlde > #mainInsights,
+main.main.showing-legionlde > #mainLegionIde { display: none !important; }
+.legion-lde-view {
+  flex: 1; min-height: 0; flex-direction: column;
+  padding: 14px 18px; box-sizing: border-box;
+  background: #081321; color: #dbe8f5;
+  font-family: "Microsoft YaHei", system-ui, sans-serif;
+}
+.lde-head {
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid #1e3a5f; padding-bottom: 8px; margin-bottom: 10px;
+}
+.lde-head b { color: #9fe3ee; font-size: 15px; margin-right: 8px; }
+.lde-head span { color: #5a7190; font-size: 11px; }
+.lde-status.ok { color: #4fd1a5; }
+.lde-status.warn { color: #ef9f27; }
+.lde-status.bad { color: #e24b4a; }
+.lde-body { display: flex; gap: 12px; flex: 1; min-height: 0; }
+.lde-left { flex: 1.25; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.lde-right { flex: .75; min-width: 260px; display: flex; flex-direction: column; gap: 6px; }
+.lde-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.lde-row label { color: #5a7190; font-size: 11px; }
+.lde-row input, .lde-row select {
+  flex: 1; min-width: 120px; background: #0b1a22; color: #dbe8f5;
+  border: 1px solid #1e3a5f; border-radius: 6px; padding: 5px 7px; font-size: 11px;
+}
+.lde-row button, .lde-actions button {
+  background: #0f2440; color: #dbe8f5; border: 1px solid #1e3a5f;
+  border-radius: 6px; padding: 4px 9px; cursor: pointer; font-size: 11px;
+}
+.lde-row button.primary, .lde-actions button.primary {
+  background: #163f2f; border-color: #2f8f6a; color: #9fe3c0;
+}
+.lde-lockchip { color: #5a7190; font-size: 10px; }
+#lde-content {
+  flex: 1; min-height: 260px; resize: vertical; box-sizing: border-box;
+  background: #060f1d; color: #b9c9da; border: 1px solid #1e3a5f;
+  border-radius: 8px; padding: 8px; font: 11px/1.5 Consolas, monospace;
+}
+.lde-label { color: #5a7190; font-size: 11px; margin-top: 4px; }
+#lde-diff, #lde-output, #lde-audit {
+  max-height: 230px; overflow: auto; margin: 0; padding: 7px;
+  background: #060f1d; border: 1px solid #12283f; border-radius: 6px;
+  color: #b9c9da; font: 11px/1.45 Consolas, monospace;
+  white-space: pre-wrap; word-break: break-word;
+}
+#lde-cmd { min-width: 150px; }
+.lde-audit { flex: 1; }
+@media (max-width: 900px) {
+  .lde-body { flex-direction: column; }
+  .lde-right { min-width: 0; }
+}
+
 .legion-ide-overlay {
   position: fixed;
   inset: 0;

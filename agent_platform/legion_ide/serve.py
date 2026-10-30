@@ -38,7 +38,19 @@ from legion_ide import rw_guard as G  # noqa: E402
 from legion_ide import writer as W  # noqa: E402
 from legion_ide import exec_runner as X  # noqa: E402
 import logging
-from tools.safe_urlopen import safe_urlopen
+
+# tools 在部分 Python 环境会被 zhice 的常规 tools 包遮蔽（namespace 包不敌
+# 常规包），WMI 启动又没有 PYTHONPATH。这里按文件路径直接加载仓库内的
+# safe_urlopen，保证 8103 独立启动不依赖调用方环境。
+try:
+    from tools.safe_urlopen import safe_urlopen
+except ImportError:  # pragma: no cover - 仅在异常环境触发
+    import importlib.util as _ilu
+    _safe_path = Path(__file__).resolve().parents[2] / "tools" / "safe_urlopen.py"
+    _spec = _ilu.spec_from_file_location("legion_safe_urlopen", _safe_path)
+    _mod = _ilu.module_from_spec(_spec)
+    _spec.loader.exec_module(_mod)
+    safe_urlopen = _mod.safe_urlopen
 
 VERSION = "2.0"
 DEFAULT_HOST = "127.0.0.1"
