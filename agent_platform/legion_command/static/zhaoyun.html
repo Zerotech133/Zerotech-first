@@ -54,6 +54,13 @@
 .banner.info { background: #12202A; border-color: #2A5A7A; color: #B4D9F3; }
 .banner .banner-btn { margin-left: 8px; background: transparent; color: inherit; border: 0.5px solid currentColor; border-radius: 6px; padding: 2px 8px; cursor: pointer; font-size: 12px; }
 .banner .banner-btn:hover { opacity: .8; }
+.toasts { position: fixed; right: 18px; bottom: 18px; display: flex; flex-direction: column; gap: 8px; z-index: 9999; max-width: 420px; }
+.toast { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 10px; background: #2A1214; border: 0.5px solid #7A2A2E; color: #F3B5B4; font-size: 12px; box-shadow: 0 6px 24px rgba(0,0,0,.35); }
+.toast.warn { background: #2A2412; border-color: #7A6A2A; color: #F3DDB4; }
+.toast.info { background: #12202A; border-color: #2A5A7A; color: #B4D9F3; }
+.toast .toast-msg { flex: 1; word-break: break-word; }
+.toast .toast-btn { background: transparent; color: inherit; border: 0.5px solid currentColor; border-radius: 6px; padding: 2px 8px; cursor: pointer; font-size: 12px; }
+.toast .toast-btn:focus-visible { outline: 2px solid #4FD1A5; outline-offset: 2px; }
 .banner .banner-btn:focus-visible, .panel-retry:focus-visible { outline: 2px solid #4FD1A5; outline-offset: 2px; }
 .panel-retry { margin-left: 8px; background: transparent; color: #8FA8C0; border: 0.5px solid #1E3A5F; border-radius: 6px; padding: 1px 8px; cursor: pointer; font-size: 11.5px; }
 
@@ -93,6 +100,7 @@
   <button class="refresh" id="refresh">刷新</button>
 </header>
 <div class="banner" id="banner" role="alert" aria-live="polite" hidden><span id="banner-msg"></span><button id="banner-retry" class="banner-btn" hidden>重试</button><button id="banner-close" class="banner-btn" aria-label="关闭提示">×</button></div>
+<div id="toasts" class="toasts" role="status" aria-live="polite"></div>
 <main>
   <div class="pending" id="pending"></div>
 
@@ -463,6 +471,28 @@ function showBanner(msg, opts) {
   rb.hidden = !BANNER_RETRY;
   rb.onclick = () => { if (BANNER_RETRY) { const f = BANNER_RETRY; hideBanner(); f(); } };
 }
+function showToast(msg, opts) {
+  opts = opts || {};
+  const box = $('toasts');
+  const t = el('div', 'toast ' + (opts.level || 'error'));
+  t.appendChild(el('span', 'toast-msg', msg));
+  if (opts.retry) {
+    const b = el('button', 'toast-btn', '重试');
+    b.onclick = () => { if (t.parentNode) box.removeChild(t); opts.retry(); };
+    t.appendChild(b);
+  }
+  const c = el('button', 'toast-btn', '×');
+  c.setAttribute('aria-label', '关闭提示');
+  c.onclick = () => { if (t.parentNode) box.removeChild(t); };
+  t.appendChild(c);
+  box.appendChild(t);
+  if (opts.duration !== 0) setTimeout(() => { if (t.parentNode) box.removeChild(t); }, opts.duration || 8000);
+  return t;
+}
+function toastError(action, e, retry) {
+  return showToast(action + '：' + errorText(e), { level: 'error', retry: retry });
+}
+
 function hideBanner() {
   const b = $('banner');
   b.hidden = true;
@@ -963,8 +993,8 @@ function repairTriage() {
     .then((r) => r.json()).then((j) => {
       if (j.ok) { alert('Triage 完成：found=' + j.found + ' new=' + j.new_batches +
         ' pending=' + j.pending); loadCap2(); }
-      else alert('Triage 失败：' + (j.error || ''));
-    }).catch((e) => alert('Triage 失败：' + e));
+      else showToast('Triage 失败：' + (j.error || ''), { level: 'error', retry: repairTriage });
+    }).catch((e) => toastError('Triage 失败', e, repairTriage));
 }
 function repairRun(id) {
   if (!requireWriteToken()) return;
@@ -973,9 +1003,9 @@ function repairRun(id) {
     body: JSON.stringify({ batch_id: id }) })
     .then((r) => r.json()).then((j) => {
       if (j.ok) alert('批次验证通过：' + id);
-      else alert('批次验证失败：' + id + ' · ' + (j.error || ''));
+      else showToast('批次验证失败：' + id + ' · ' + (j.error || ''), { level: 'error', retry: () => repairRun(id) });
       loadCap2();
-    }).catch((e) => alert('批次运行失败：' + e));
+    }).catch((e) => toastError('批次运行失败', e, () => repairRun(id)));
 }
 function researchFetch() {
   if (!requireWriteToken()) return;
@@ -997,7 +1027,7 @@ function researchFetch() {
         ' · ' + j.fetched_at));
       box.appendChild(el('div', 'muted', (j.excerpt || '').slice(0, 400)));
       loadCap2();
-    }).catch((e) => alert('取证失败：' + e));
+    }).catch((e) => toastError('取证失败', e, researchFetch));
 }
 function notifyTest() {
   if (!requireWriteToken()) return;
@@ -1006,8 +1036,8 @@ function notifyTest() {
     body: JSON.stringify({ title: '赵云测试通知', body: 'outbox 冒烟（不会真发，除非配置 webhook）' }) })
     .then((r) => r.json()).then((j) => {
       if (j.ok) { alert('已入 outbox：' + j.message.id + (j.webhook_configured ? '（将发送）' : '（未配置 webhook，只排队）')); loadCap2(); }
-      else alert('入队失败：' + (j.error || ''));
-    }).catch((e) => alert('入队失败：' + e));
+      else showToast('入队失败：' + (j.error || ''), { level: 'error', retry: notifyTest });
+    }).catch((e) => toastError('入队失败', e, notifyTest));
 }
 function cardGen() {
   if (!requireWriteToken()) return;
@@ -1018,8 +1048,8 @@ function cardGen() {
     body: JSON.stringify({ request_id: rid }) })
     .then((r) => r.json()).then((j) => {
       if (j.ok) { alert('审批卡片已生成并入 outbox：' + j.message.id); loadCap2(); }
-      else alert('生成失败：' + (j.error || ''));
-    }).catch((e) => alert('生成失败：' + e));
+      else showToast('生成失败：' + (j.error || ''), { level: 'error', retry: cardGen });
+    }).catch((e) => toastError('生成失败', e, cardGen));
 }
 function sandboxVerify() {
   if (!requireWriteToken()) return;
@@ -1031,9 +1061,9 @@ function sandboxVerify() {
     body: JSON.stringify({ skill: skill, timeout: timeout }) })
     .then((r) => r.json()).then((j) => {
       if (j.ok) alert('沙箱验证通过：' + skill + ' · ' + (j.duration_ms || 0) + 'ms');
-      else alert('沙箱验证失败：' + skill + ' · ' + (j.error || ('rc=' + j.rc)));
+      else showToast('沙箱验证失败：' + skill + ' · ' + (j.error || ('rc=' + j.rc)), { level: 'error', retry: sandboxVerify });
       loadCap2();
-    }).catch((e) => alert('沙箱调用失败：' + e));
+    }).catch((e) => toastError('沙箱调用失败', e, sandboxVerify));
 }
 function memSearch() {
   if (!requireWriteToken()) return;
@@ -1048,7 +1078,7 @@ function memSearch() {
       box.appendChild(el('div', 'muted', '检索「' + q + '」：' + j.count + ' 条（fts=' + j.used_fts + '）'));
       (j.items || []).forEach((it) => box.appendChild(el('div', 'muted',
         '• [' + it.layer + '] ' + it.cue + ' · score ' + it.score + (it.fts_hit ? ' · fts' : ''))));
-    }).catch((e) => alert('检索失败：' + e));
+    }).catch((e) => toastError('检索失败', e, memSearch));
 }
 function memIngest() {
   if (!requireWriteToken()) return;
@@ -1060,8 +1090,8 @@ function memIngest() {
           ' procedural+' + ((j.skills || {}).added || 0) +
           ((j.eval && j.eval.ok) ? (' · hit@3 ' + j.eval['hit@3'] + '/' + j.eval.total) : ''));
         loadCap2();
-      } else alert('摄取失败：' + (j.error || ''));
-    }).catch((e) => alert('摄取失败：' + e));
+      } else showToast('摄取失败：' + (j.error || ''), { level: 'error', retry: memIngest });
+    }).catch((e) => toastError('摄取失败', e, memIngest));
 }
 function probeMcp() {
   if (!requireWriteToken()) return;
@@ -1072,8 +1102,8 @@ function probeMcp() {
         const names = (j.servers || []).map((s) => s.name + ':' + (s.tools || []).length);
         alert('MCP 探测完成：' + names.join(' / '));
         loadCap2();
-      } else alert('MCP 探测失败：' + (j.error || ''));
-    }).catch((e) => alert('MCP 探测失败：' + e));
+      } else showToast('MCP 探测失败：' + (j.error || ''), { level: 'error', retry: probeMcp });
+    }).catch((e) => toastError('MCP 探测失败', e, probeMcp));
 }
 function runEvals() {
   if (!requireWriteToken()) return;
@@ -1086,8 +1116,8 @@ function runEvals() {
       if (j.ok) {
         alert('评估完成：' + ((j.session || {}).passed) + '/' + ((j.session || {}).total) + ' 通过');
         loadCap2();
-      } else alert('评估失败：' + (j.error || ''));
-    }).catch((e) => alert('评估失败：' + e));
+      } else showToast('评估失败：' + (j.error || ''), { level: 'error', retry: runEvals });
+    }).catch((e) => toastError('评估失败', e, runEvals));
 }
 function showTrace(id) {
   jget('/api/zhaoyun/trace/' + encodeURIComponent(id)).then((v) => {
@@ -1112,8 +1142,8 @@ function approveRequest(id, decision, signer) {
     if (j.ok) {
       alert('已' + word + '：' + id + ((j.request && j.request.applied) ? '（已落盘执行）' : ''));
       loadDrill(); loadCap2();
-    } else alert('失败：' + (j.error || ''));
-  }).catch((e) => alert('失败：' + e));
+    } else showToast('审批失败：' + (j.error || ''), { level: 'error', retry: () => approveRequest(id, decision, signer) });
+  }).catch((e) => toastError('审批失败', e, () => approveRequest(id, decision, signer)));
 }
 function submitRequest(kind, payload, reason, label) {
   if (!requireWriteToken()) return;
@@ -1122,8 +1152,8 @@ function submitRequest(kind, payload, reason, label) {
     body: JSON.stringify({ kind: kind, payload: payload, reason: reason })
   }).then((r) => r.json()).then((j) => {
     if (j.ok) { alert('已登记请求 ' + j.request.id + '（待老田审批，不会自动生效）'); loadDrill(); }
-    else alert('提交失败：' + (j.error || '') + (j.allowed ? (' 允许：' + j.allowed.join(',')) : ''));
-  }).catch((e) => alert('提交失败：' + e));
+    else showToast('提交失败：' + (j.error || '') + (j.allowed ? (' 允许：' + j.allowed.join(',')) : ''), { level: 'error', retry: () => submitRequest(kind, payload, reason, label) });
+  }).catch((e) => toastError('提交失败', e, () => submitRequest(kind, payload, reason, label)));
 }
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('banner').hidden) hideBanner(); });
 if ($('banner-close')) $('banner-close').onclick = hideBanner;
