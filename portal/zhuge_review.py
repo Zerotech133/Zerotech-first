@@ -305,9 +305,6 @@ def _run(review_id: str, payload: dict, consult_fn) -> None:
 def start_review(payload: Any, consult_fn=None) -> tuple[int, dict]:
     if not enabled():
         return 404, {"ok": False, "error": "zhuge_review_disabled"}
-    if not _rate_ok():
-        return 429, {"ok": False, "error": "rate_limited",
-                     "limit": RATE_MAX, "window_s": RATE_WINDOW_S}
     try:
         p = validate(payload)
     except ValueError as exc:
@@ -318,6 +315,9 @@ def start_review(payload: Any, consult_fn=None) -> tuple[int, dict]:
         hit = _CACHE.get(key)
         if hit and time.time() - hit[0] <= CACHE_TTL_S:
             return 200, {**hit[1], "cached": True}
+    if not _rate_ok():
+        return 429, {"ok": False, "error": "rate_limited",
+                     "limit": RATE_MAX, "window_s": RATE_WINDOW_S}
     rid = "zr-" + uuid.uuid4().hex[:12]
     with _LOCK:
         _JOBS[rid] = {"ts": time.time(), "payload": None, "key": key}
