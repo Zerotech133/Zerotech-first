@@ -41,6 +41,14 @@ def _mcp_call(name, arguments=None, timeout=None):
         stderr=subprocess.PIPE, text=True, encoding="utf-8")
     try:
         out, err = p.communicate(payload, timeout=timeout or _TIMEOUT)
+    except subprocess.TimeoutExpired:
+        # 超时必须 kill + 回收，避免 run_shadow 长跑积累僵尸子进程
+        p.kill()
+        try:
+            p.communicate(timeout=2)
+        except Exception:  # noqa: BLE001
+            pass
+        raise
     finally:
         if p.poll() is None:
             p.kill()

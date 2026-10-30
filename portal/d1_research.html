@@ -121,7 +121,7 @@ function render(){
   let items=(DATA.items||[]).filter(x=>(!fa||x.action===fa)&&(!ft||x.tier===ft)&&(!kw||x.code.includes(kw)||String(x.name).includes(kw)));
   $('#rows').innerHTML=items.length?items.map(row).join(''):'<tr><td colspan="9" class="empty">没有匹配的股票</td></tr>';
   document.querySelectorAll('tr.r').forEach(tr=>tr.addEventListener('click',()=>{const d=document.getElementById('d-'+tr.dataset.code); if(d) d.style.display=d.style.display==='table-row'?'none':'table-row';}));
-  const tm=DATA.team||{}; const group=(title,arr)=>'<div class="tg"><b>'+esc(title)+'</b><div class="who">'+(arr||[]).map(x=>esc(x.name||x.agent_id)+' <small>'+esc(x.agent_id)+'</small>').join('<br>')+'</div></div>';
+  const tm=DATA.team||{}; const group=(title,arr)=>'<div class="tg"><b>'+esc(title)+'</b><div class="who">'+(arr||[]).filter(Boolean).map(x=>esc(x.name||x.agent_id)+' <small>'+esc(x.agent_id)+'</small>').join('<br>')+'</div></div>';
   $('#team').innerHTML=group('D1 投研会 · 5席（主席）',[tm.chair].concat(tm.core||[]))+group('盯盘组',tm.watch||[])+group('交易组',tm.trading||[])+group('观察/接口',tm.observer||[]);
   const s=DATA.summary||{};
   $('#cards').innerHTML=[['池内股票',s.total],['已研究',s.analyzed],['可买',s.can_buy],['盯盘触发',s.armed_watch],['回避',s.avoid],['待研究',s.pending_research]]
