@@ -4,7 +4,7 @@ import argparse
 import json
 import time
 
-from . import audit, billing, growth, license as lic, plans, quota, tenants
+from . import audit, billing, followup, growth, invite, license as lic, plans, quota, tenants
 
 
 def main(argv=None) -> int:
@@ -49,6 +49,15 @@ def main(argv=None) -> int:
     sub.add_parser("funnel", help="试用→付费漏斗")
 
     sub.add_parser("growth", help="增长漏斗报表（试用/访问/转化）")
+
+    p = sub.add_parser("invite-gen", help="生成邀请码（渠道归因）")
+    p.add_argument("--channel", default="direct")
+    p.add_argument("--uses", type=int, default=1)
+
+    sub.add_parser("invite-list", help="邀请码列表/渠道统计")
+
+    p = sub.add_parser("followup", help="试用客户跟进计划（D+1/D+5/D+7）")
+    p.add_argument("--out", default="")
 
     p = sub.add_parser("audit-tail", help="查看审计")
     p.add_argument("-n", type=int, default=20)
@@ -108,6 +117,21 @@ def main(argv=None) -> int:
     if a.cmd == "renewals":
         rows = billing.renewals(a.days)
         print(json.dumps({"ok": True, "within_days": a.days, "rows": rows}, ensure_ascii=False, indent=1))
+        return 0
+    if a.cmd == "invite-gen":
+        r = invite.create(a.channel, a.uses)
+        audit.append("invite_gen", actor="growth", detail={"channel": r["channel"], "uses": r["max_uses"]})
+        print(json.dumps({"ok": True, **r}, ensure_ascii=False))
+        return 0
+    if a.cmd == "invite-list":
+        print(json.dumps({"ok": True, "invites": invite.list_invites(),
+                          "channels": invite.channels()}, ensure_ascii=False, indent=1))
+        return 0
+    if a.cmd == "followup":
+        if a.out:
+            print(json.dumps({"ok": True, **followup.export(a.out)}, ensure_ascii=False))
+        else:
+            print(json.dumps({"ok": True, "items": followup.plan()}, ensure_ascii=False, indent=1))
         return 0
     if a.cmd == "growth":
         print(json.dumps({"ok": True, **growth.report()}, ensure_ascii=False, indent=1))

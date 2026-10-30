@@ -18,6 +18,7 @@ def record(event: str, ref: str = "", detail: Dict[str, Any] | None = None) -> D
 def report(path: str | None = None) -> Dict[str, Any]:
     rows = audit.tail(100000, path=path)
     views: Dict[str, int] = {}
+    channels: Dict[str, int] = {}
     trial_tenants = set()
     report_tenants = set()
     paid_tenants = set()
@@ -31,6 +32,8 @@ def report(path: str | None = None) -> Dict[str, Any]:
             t = r.get("tenant") or detail.get("tenant")
             if t:
                 trial_tenants.add(t)
+            ch = str(detail.get("channel") or "direct")
+            channels[ch] = channels.get(ch, 0) + 1
         elif action == "report_generated":
             if r.get("tenant"):
                 report_tenants.add(r.get("tenant"))
@@ -42,6 +45,7 @@ def report(path: str | None = None) -> Dict[str, Any]:
     n_paid = len(trial_tenants & paid_tenants)
     return {
         "views": views,
+        "channels": channels,
         "view_total": sum(views.values()),
         "trials": n_trial,
         "trial_active": n_active,

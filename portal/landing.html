@@ -66,6 +66,7 @@
       <div><label>姓名/称呼</label><input id="tName" placeholder="例如 王研究员"></div>
       <div><label>联系邮箱或手机</label><input id="tContact" placeholder="用于回访"></div>
       <div><label>机构/团队（可选）</label><input id="tCompany" placeholder="例如 XX 资管"></div>
+      <div><label>邀请码（可选）</label><input id="tInvite" placeholder="ZB-XXXX"></div>
     </div>
     <button id="trialBtn">生成试用账号</button>
     <span id="trialMsg" class="muted" style="margin-left:10px"></span>
@@ -83,12 +84,13 @@
 <script>
 (function(){
   var $ = function(id){ return document.getElementById(id); };
+  try { var q = new URLSearchParams(location.search); if(q.get('invite')) $('tInvite').value = q.get('invite'); } catch(e) {}
   $('trialBtn').addEventListener('click', function(){
-    var name = $('tName').value.trim(), contact = $('tContact').value.trim(), company = $('tCompany').value.trim();
+    var name = $('tName').value.trim(), contact = $('tContact').value.trim(), company = $('tCompany').value.trim(), invite = $('tInvite').value.trim();
     if(!name || !contact){ $('trialMsg').className='muted'; $('trialMsg').textContent='请填写称呼与联系方式'; return; }
     $('trialBtn').disabled = true; $('trialMsg').textContent = '生成中…';
     fetch('/api/customer/trial', {method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({name:name, contact:contact, company:company})})
+      body: JSON.stringify({name:name, contact:contact, company:company, invite:invite})})
       .then(function(r){ return r.json(); }).then(function(j){
         $('trialBtn').disabled = false;
         if(!j.ok){ $('trialMsg').className='muted'; $('trialMsg').textContent = j.error || '生成失败'; return; }
