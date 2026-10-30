@@ -2,7 +2,6 @@
 """路由表草案生成器单测 + 与 B0 路由基线一致性测试（A5 B4/B5，2026-10-31）。"""
 import importlib.util
 import json
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -61,7 +60,7 @@ def _baseline_routes():
 def test_draft_covers_baseline_routes():
     """草案必须覆盖 B0 基线的全部 exact/prefix 路由（一致性回归）。"""
     src = (ROOT / "portal" / "portal_api.py").read_text(encoding="utf-8")
-    rep = m.build_draft(src)
+    rep = m.build_draft(src, ROOT / "portal" / "route_table.py")
     assert rep["ok"]
     draft = set()
     for e in rep["entries"]:
@@ -75,7 +74,7 @@ def test_draft_covers_baseline_routes():
 
 def test_draft_stats_sane():
     src = (ROOT / "portal" / "portal_api.py").read_text(encoding="utf-8")
-    rep = m.build_draft(src)
+    rep = m.build_draft(src, ROOT / "portal" / "route_table.py")
     st = rep["stats"]
     assert st["if_branches"] >= 150
     assert st["exact_routes"] >= 150

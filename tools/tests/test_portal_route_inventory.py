@@ -2,7 +2,6 @@
 """portal_route_inventory 单测（A5 B0，2026-10-31）。"""
 import importlib.util
 import json
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]

@@ -40,7 +40,7 @@ def test_alerts_missing_unhealthy_and_card_count_do_not_trigger(monkeypatch):
         def read(self):
             return json.dumps(payload).encode("utf-8")
 
-    monkeypatch.setattr(subscribe.urllib.request, "urlopen", lambda *args, **kwargs: Response())
+    monkeypatch.setattr(subscribe, "safe_urlopen", lambda *args, **kwargs: Response())
     assert subscribe._sub_alert_signal({}, "intraday") is None
     payload["source_health"] = {"version": 1, "checked_at": stamp(),
                                 "sources": {name: {"status": "ok", "as_of": stamp()}
@@ -81,7 +81,7 @@ def test_alerts_reject_boolean_version_and_empty_nonzero_mixture(monkeypatch):
         def read(self):
             return json.dumps(payload).encode("utf-8")
 
-    monkeypatch.setattr(subscribe.urllib.request, "urlopen", lambda *args, **kwargs: Response())
+    monkeypatch.setattr(subscribe, "safe_urlopen", lambda *args, **kwargs: Response())
     assert subscribe._sub_alert_signal({}, "intraday") is not None
     payload["source_health"]["version"] = True
     assert subscribe._sub_alert_signal({}, "intraday") is None

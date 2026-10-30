@@ -20,7 +20,6 @@ from __future__ import annotations
 import argparse
 import ast
 import json
-import re
 import sys
 import time
 from pathlib import Path
@@ -121,7 +120,7 @@ def _parse_if_chain(node: ast.If, method: str, source: str, entries: list) -> No
         _parse_if_chain(orelse[0], method, source, entries)
 
 
-def build_draft(source: str) -> dict:
+def build_draft(source: str, table_path=None) -> dict:
     tree = ast.parse(source)
     cls = None
     for n in tree.body:
@@ -149,6 +148,26 @@ def build_draft(source: str) -> dict:
                             "predicates": preds,
                             "handler": _find_handler(node.body),
                             "n_route": len(preds)})
+    # B4a 后：route_table.py 中的 _GET_EXACT_* 字典键也算 GET exact 路由（否则基线覆盖误报）
+    if table_path:
+        tp = Path(table_path)
+        if tp.is_file():
+            ttree = ast.parse(tp.read_text(encoding="utf-8"))
+            for node in ttree.body:
+                if not (isinstance(node, ast.Assign) and len(node.targets) == 1):
+                    continue
+                t = node.targets[0]
+                if not (isinstance(t, ast.Name) and t.id.startswith("_GET_EXACT_")):
+                    continue
+                if not isinstance(node.value, ast.Dict):
+                    continue
+                for k, v in zip(node.value.keys, node.value.values):
+                    if isinstance(k, ast.Constant) and isinstance(k.value, str):
+                        h = v.value if isinstance(v, ast.Constant) and isinstance(v.value, str) else ""
+                        entries.append({"method": "GET", "line": 0,
+                                        "predicates": [{"route": k.value, "kind": "exact"}],
+                                        "handler": ("self." + h) if h else "",
+                                        "n_route": 1})
     exact = sum(1 for e in entries for p in e["predicates"] if p["kind"] == "exact")
     prefix = sum(1 for e in entries for p in e["predicates"] if p["kind"] == "prefix")
     has_handler = sum(1 for e in entries if e["handler"])
@@ -210,7 +229,7 @@ def main(argv=None) -> int:
     if not src.is_file():
         print("source 不存在: %s" % src, file=sys.stderr)
         return 1
-    rep = build_draft(src.read_text(encoding="utf-8"))
+    rep = build_draft(src.read_text(encoding="utf-8"), src.parent / "route_table.py")
     if not rep.get("ok"):
         print("ERROR:", rep.get("error"), file=sys.stderr)
         return 1

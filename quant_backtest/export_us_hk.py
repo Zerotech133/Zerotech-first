@@ -108,35 +108,55 @@ def _topup_symbol(market, symbol, fn, db_max):
 
 
 def _topup_batch(market, out_dir, topup):
-    """批量增量（2026-10-30 P82）：一次 DB 查询拉本批全部缺口，再逐只合并写盘。
+    """批量增量（2026-10-30 P82；2026-10-31 审计修复起点语义）。
 
-    原实现逐只 `_topup_symbol` → 每只一次 DB 往返（含 docker 回退 ~0.5-1s），
-    3416 只时可 >600s（R1 18:30 任务因此卡死）。本函数把 DB 往返降为 每批 1 次。
+    原实现逐只 `_topup_symbol` → 每只一次 DB 往返（docker 回退 ~0.5-1s），
+    3416 只时可 >600s（R1 卡死）。本函数把 DB 往返降为 每批 1 次。
+
+    修复（2026-10-31）：起点必须取**本地 o_max+1**（而非 db_max+1）。
+    db_max 是库内最新日期（正是要补的数据），用 db_max+1 查询永远为空
+    → 尾部缺口永久补不上（test_export_us_hk_head_gap 抓出）。
     """
     import pandas as pd
 
-    syms = [s for s, _ in topup]
-    mins = [pd.to_datetime(m) for _, m in topup]
-    start = (min(mins) + pd.Timedelta(days=1)).strftime("%Y%m%d")
+    items = []  # (symbol, fn, old_df, old_max)
+    skip = fail = 0
+    for s, db_max in topup:
+        try:
+            fn = _fname(out_dir, s)
+            old = pd.read_parquet(fn)
+            old_max = str(old["trade_date"].max()).replace("-", "")[:8]
+            if old_max >= db_max:
+                skip += 1          # 已追平（防御：调用方已判过）
+                continue
+            items.append((s, fn, old, old_max))
+        except Exception as e:  # noqa: BLE001
+            print("  %s 批量增量读旧失败: %s" % (s, str(e)[:80]))
+            fail += 1
+    if not items:
+        return 0, skip, fail
+
+    syms = [s for s, _, _, _ in items]
+    start = (pd.to_datetime(min(o for _, _, _, o in items))
+             + pd.Timedelta(days=1)).strftime("%Y%m%d")
     try:
         frames = dl.load_bars(market, syms, start=start)
     except Exception as e:  # noqa: BLE001
         print("  topup batch 失败(%d 只): %s" % (len(syms), str(e)[:100]))
-        return 0, 0, len(syms)
-    upd = skip = fail = 0
-    for s, m in topup:
+        return 0, skip, fail + len(syms)
+
+    upd = 0
+    for s, fn, old, old_max in items:
         try:
             df = frames.get(s)
             if df is None or df.empty:
                 skip += 1
                 continue
             out = _align_schema(df, s, market)
-            out = out[out["trade_date"] > m]
+            out = out[out["trade_date"] > old_max]
             if out.empty:
                 skip += 1
                 continue
-            fn = _fname(out_dir, s)
-            old = pd.read_parquet(fn)
             merged = (pd.concat([old, out], ignore_index=True)
                       .drop_duplicates(subset=["trade_date"], keep="last")
                       .sort_values("trade_date"))

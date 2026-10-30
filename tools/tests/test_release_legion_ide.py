@@ -2,7 +2,6 @@
 """release_legion_ide：从 HEAD 构建/校验/指针回滚（不依赖生产）。"""
 import json
 import subprocess
-import sys
 from pathlib import Path
 
 import importlib.util
