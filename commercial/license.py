@@ -21,7 +21,6 @@ from typing import Any, Dict, List, Optional
 
 VERSION = "1"
 PREFIX = "SAC1"
-DEFAULT_SECRET = "dev-secret-change-me-in-production"
 
 
 class LicenseError(Exception):
@@ -29,7 +28,10 @@ class LicenseError(Exception):
 
 
 def _secret(secret: Optional[str] = None) -> str:
-    return secret or os.environ.get("COMMERCIAL_LICENSE_SECRET") or DEFAULT_SECRET
+    s = secret or os.environ.get("COMMERCIAL_LICENSE_SECRET")
+    if not s:
+        raise LicenseError("未配置 COMMERCIAL_LICENSE_SECRET（签发/校验 license 必须设置）")
+    return s
 
 
 def _b64(data: bytes) -> str:
