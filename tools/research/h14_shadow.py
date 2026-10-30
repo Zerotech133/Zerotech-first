@@ -211,6 +211,43 @@ def main() -> int:
     print("shadow:", shadow_file, "n=", shadow["n_holdings"],
           "trap_w_c=%.1f%%" % (shadow["trap_weight_constrained"] * 100), flush=True)
 
+    # 滚动评估：用上一期 shadow 持仓计算已实现收益（约束 vs 无约束）
+    prev_files = sorted(SHADOW_DIR.glob("shadow_*.json"))
+    evals = []
+    if len(prev_files) >= 2:
+        prev = json.loads(prev_files[-2].read_text(encoding="utf-8"))
+        prev_sig = prev.get("signal_date")
+        cur = shadow
+        cur_sig = cur.get("signal_date")
+        if prev_sig and cur_sig and prev_sig in monthly and cur_sig in monthly:
+            px0 = monthly[prev_sig].set_index("ts_code")["close"]
+            px1 = monthly[cur_sig].set_index("ts_code")["close"]
+            holds = prev.get("holdings") or []
+            r = []
+            wu = []
+            wc = []
+            for h in holds:
+                code = h["ts_code"]
+                if code in px0.index and code in px1.index and px0[code] and px1[code]:
+                    ret = px1[code] / px0[code] - 1.0
+                    r.append(ret)
+                    wu.append(h["w_unconstrained"])
+                    wc.append(h["w_constrained"])
+            if r:
+                import numpy as _np
+                r = _np.array(r); wu = _np.array(wu); wc = _np.array(wc)
+                ev = {"from": prev_sig, "to": cur_sig, "n": int(len(r)),
+                      "ret_unconstrained": round(float(_np.dot(wu, r)) * 100, 3),
+                      "ret_constrained": round(float(_np.dot(wc, r)) * 100, 3)}
+                ev["diff_pct"] = round(ev["ret_constrained"] - ev["ret_unconstrained"], 3)
+                evals.append(ev)
+    if evals:
+        evalf = SHADOW_DIR / "eval.jsonl"
+        with evalf.open("a", encoding="utf-8") as f:
+            for e in evals:
+                f.write(json.dumps(e, ensure_ascii=False) + "\n")
+        print("rolling eval:", evals[-1], flush=True)
+
     # 报告
     OUT.mkdir(parents=True, exist_ok=True)
     stamp = "20261030"
@@ -233,12 +270,27 @@ def main() -> int:
          "- 前 10 大持仓：" + "、".join("%s(%.2f%%)" % (r["name"], r["w_constrained"] * 100)
                                        for r in shadow["holdings"][:10]),
          "- 明细：`work/research/h14_shadow/shadow_%s.json`" % last_dt[:6], "",
+         "## 滚动评估（上一期 → 本期）",
+         ("- " + "；".join("%s→%s 约束 %.2f%% vs 无约束 %.2f%%（差 %+.2fpct）" % (
+             e["from"], e["to"], e["ret_constrained"], e["ret_unconstrained"], e["diff_pct"])
+             for e in (evals[-3:] if evals else []))) if evals else "- 首期，暂无滚动评估（下期起自动记录：work/research/h14_shadow/eval.jsonl）",
+         "",
          "## 结论（初版）",
          "- 约束组回测：%s；相对无约束 %s" % (fmt(mc), "回撤/夏普对比见上表"),
          "- 影子盘已初始化，后续每月末自动生成新一期持仓（可在例会评估）。",
          "- 局限：ST 判定用当前名称（非历史 PIT）；成本用 30bp 近似；行业市值中性未在影子层再施加。"]
     md = OUT / ("H14_shadow_%s.md" % stamp)
     md.write_text("\n".join(L), encoding="utf-8")
+    try:
+        logf = REPO / "work" / "data_sync" / "h14_shadow.log"
+        logf.parent.mkdir(parents=True, exist_ok=True)
+        logf.open("a", encoding="utf-8").write(json.dumps({
+            "ts": datetime.now().astimezone().isoformat(timespec="seconds"),
+            "signal_date": last_dt, "n": shadow["n_holdings"],
+            "trap_c": shadow["trap_weight_constrained"], "cmp": comparison, "evals": evals,
+        }, ensure_ascii=False) + "\n")
+    except Exception:  # noqa: BLE001
+        pass
     print("report:", md, flush=True)
     return 0
 
