@@ -123,6 +123,8 @@ def check_cap(headers: dict, scope: str, task: str = ""):
     if not info or str(info.get("role_source") or "") != "local_fallback":
         return None
     cap = _cap()
+    if os.environ.get("LEGION_CAP_ENABLED", "").strip() != "1":
+        return None
     if not cap.enabled():
         return None
     token = str(headers.get("X-ZB-Cap") or "").strip()

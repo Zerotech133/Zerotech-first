@@ -78,6 +78,7 @@ def test_check_cap_required_and_scope(monkeypatch, tmp_path):
     key = tmp_path / "cap.key"; key.write_bytes(b"z" * 32)
     monkeypatch.setenv("LEGION_IDE_STATE_DIR", str(tmp_path / "state"))
     monkeypatch.setenv("LEGION_CAP_KEY_FILE", str(key))
+    monkeypatch.setenv("LEGION_CAP_ENABLED", "1")
     monkeypatch.delenv("IDE_LOCAL_TOKEN", raising=False)
     m = _load()
     token, _ = m.new_session(headers={})
@@ -95,6 +96,7 @@ def test_check_cap_skips_identity_sessions(monkeypatch, tmp_path):
     key = tmp_path / "cap.key"; key.write_bytes(b"q" * 32)
     monkeypatch.setenv("LEGION_IDE_STATE_DIR", str(tmp_path / "state"))
     monkeypatch.setenv("LEGION_CAP_KEY_FILE", str(key))
+    monkeypatch.setenv("LEGION_CAP_ENABLED", "1")
     m = _load()
     token, _ = m.new_session(headers={})
     m._SESSIONS[m._token_key(token)]["role_source"] = "identity"
