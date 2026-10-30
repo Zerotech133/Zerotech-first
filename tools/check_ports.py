@@ -132,6 +132,9 @@ REGISTRY = {
     # 绑定 127.0.0.1；/workspaces 挂载 C:\legion-worktrees。
     8771: "OpenHands Docker Sandbox(容器执行引擎)",
     # 2026-10-30 HERMESPANEL：8799 过渡网关已退役，OH 闭环 API 回到 8796。
+    # 2026-10-30 WO-WATCH-ADMIN：盯盘只读管理台（watch_admin_server.py）。
+    # 8796 已注册给军团指挥台，watch_admin 换 8789；按需起停、只读、不写业务。
+    8789: "watch_admin 盯盘只读管理台(M2/M3)",
 }
 
 

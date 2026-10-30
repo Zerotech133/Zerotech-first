@@ -22,6 +22,7 @@ from typing import Any
 
 import json
 import importlib
+import os
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -39,7 +40,8 @@ from watch_admin_snapshot import (  # noqa: E402
 
 
 HOST = "127.0.0.1"
-PORT = 8796
+# 2026-10-30 WO-WATCH-ADMIN：8796 已注册给军团指挥台，watch_admin 换 8789。
+PORT = int(os.environ.get("WATCH_ADMIN_PORT", "8789"))
 PAGE_FILE = _HERE / "watch_admin_page.html"
 # Parallel-built, isolated feature modules (each owns its own file; no shared edits).
 # They expose API_ROUTES (path -> callable(query)->dict) and/or HTML_ROUTES (path -> str).
