@@ -104,6 +104,8 @@ def model_loaded() -> tuple[bool, str]:
 
 
 def warm_model() -> tuple[bool, str]:
+    import time as _time
+    t0 = _time.time()
     try:
         req = urllib.request.Request(
             OLLAMA + "/api/generate",
@@ -113,7 +115,10 @@ def warm_model() -> tuple[bool, str]:
             headers={"Content-Type": "application/json"})
         with urllib.request.urlopen(req, timeout=120) as r:
             r.read()
-        return True, "预热完成（keep_alive=10h）"
+        dt = _time.time() - t0
+        # 2026-10-30 PREFLIGHT3：预热耗时反映 Ollama 队列争用（正常 <10s；>60s 说明被并发挤爆）
+        status = "预热完成（keep_alive=10h）" if dt < 30 else "预热完成但偏慢（Ollama 队列可能被占用）"
+        return True, "%s，耗时 %.1fs" % (status, dt)
     except Exception as exc:  # noqa: BLE001
         return False, "预热失败: %s" % str(exc)[:100]
 
