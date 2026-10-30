@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 22:55",
+ "generated": "2026-10-30 22:58",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -383,12 +383,12 @@
    "project": "quant"
   },
   {
-   "id": "WO-LEGION-IDE-P0-0-SWITCH-20261030",
-   "desc": "P0-0切换：launcher扩展目录指向release current（老田批准L2）",
+   "id": "WO-GUANYU-P97-20261030",
+   "desc": "司马徽运营态复核",
    "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-IDE-P0-0-SWITCH-20261030",
-   "created": "2026-10-30 22:54:39",
+   "owner": "GUANYU",
+   "branch": "task/WO-GUANYU-P97-20261030",
+   "created": "2026-10-30 22:58:08",
    "project": "general"
   }
  ],
@@ -6693,7 +6693,14 @@
    ],
    "experience": "30 年工程治理经验：漏洞分级与补丁流程、失败测试基线修复、编码规范与门禁落地、技术债清欠与重复功能合并；证据驱动、逐项闭环，只出报告与工单不自行合并，开发动作限独立 worktree 提交+跑测试并交 L2 人签。",
    "dept_name": "研究院",
-   "dept_cn_title": "太学"
+   "dept_cn_title": "太学",
+   "tasks": [
+    {
+     "id": "WO-GUANYU-P97-20261030",
+     "desc": "司马徽运营态复核",
+     "status": "doing"
+    }
+   ]
   },
   "HUANGZHONG": {
    "id": "HUANGZHONG",
@@ -7366,11 +7373,6 @@
     {
      "id": "WO-PICKCHAIN-VERDICTS-FIX-20261030",
      "desc": "选股产品链 verdicts 异常修复：py312 build_pick_verdicts 0xC0000005 访问冲突、py311 长跑无输出；先定位 pandas/tdx 依赖，再加超时/分片/日志；不阻塞 11-02 试运行。",
-     "status": "doing"
-    },
-    {
-     "id": "WO-LEGION-IDE-P0-0-SWITCH-20261030",
-     "desc": "P0-0切换：launcher扩展目录指向release current（老田批准L2）",
      "status": "doing"
     }
    ]
