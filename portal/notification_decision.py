@@ -14,6 +14,12 @@ import urllib.request
 import uuid
 from datetime import datetime, timedelta, timezone
 
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from portal.safe_urlopen import safe_urlopen
+
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 DB_PATH = os.path.join(HERE, "work", "notification_decisions.sqlite3")
@@ -754,7 +760,7 @@ def group_info():
                 request = urllib.request.Request(
                     url, headers={"Authorization": "Bearer " + token}
                 )
-                with urllib.request.urlopen(request, timeout=5) as response:
+                with safe_urlopen(request, timeout=5) as response:
                     data = json.loads(response.read().decode("utf-8"))
                 if data.get("code") != 0:
                     info["reason"] = (
@@ -782,7 +788,7 @@ def group_info():
                                 members_url,
                                 headers={"Authorization": "Bearer " + token},
                             )
-                            with urllib.request.urlopen(
+                            with safe_urlopen(
                                 members_req, timeout=5
                             ) as response:
                                 members = json.loads(response.read().decode("utf-8"))

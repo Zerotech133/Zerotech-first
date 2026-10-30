@@ -18,6 +18,12 @@ import time
 from pathlib import Path
 import logging
 
+try:
+    from safe_http import safe_urlopen
+except ImportError:  # 作为包导入时
+    from legion_command.safe_http import safe_urlopen
+
+
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent
 MISSIONS = REPO / "work" / "missions"
@@ -240,7 +246,7 @@ def _call_llm(ctx: dict) -> dict:
                                          headers={"Content-Type": "application/json",
                                                   "X-DSH-Task": "coding",
                                                   "X-DSH-Agent": str((ctx["task"].get("owner") or "DEV5"))})
-            with urllib.request.urlopen(req, timeout=240) as r:
+            with safe_urlopen(req, timeout=240) as r:
                 data = json.loads(r.read().decode("utf-8", "replace"))
             text = ((data.get("choices") or [{}])[0].get("message") or {}).get("content") or ""
             if not str(text).strip():

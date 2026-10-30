@@ -17,9 +17,14 @@ import html as _html
 import json
 import os
 import time
-import urllib.request
 from html.parser import HTMLParser
 import logging
+
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from portal.safe_urlopen import safe_urlopen
+
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -69,7 +74,7 @@ def _html_text(path, limit=1400, ttl=180):
         return hit[1]
     txt = ""
     try:
-        with urllib.request.urlopen(LOCAL + path, timeout=20) as r:
+        with safe_urlopen(LOCAL + path, timeout=20) as r:
             raw = r.read().decode("utf-8", "replace")
         p = _TextExtractor()
         p.feed(raw)

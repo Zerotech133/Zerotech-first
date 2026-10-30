@@ -12,6 +12,12 @@ import time
 import urllib.request
 from pathlib import Path
 
+try:
+    from safe_http import safe_urlopen
+except ImportError:  # 作为包导入时
+    from legion_command.safe_http import safe_urlopen
+
+
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent
 CONFIG = REPO / ".mcp.local.json"
@@ -37,7 +43,7 @@ def _rpc(method: str, params: dict, timeout: int = 60) -> dict:
         "Content-Type": "application/json",
         "Accept": "application/json, text/event-stream",
     })
-    with urllib.request.urlopen(req, timeout=timeout) as r:
+    with safe_urlopen(req, timeout=timeout) as r:
         raw = r.read().decode("utf-8", "replace")
     data = None
     if raw.lstrip().startswith("{"):

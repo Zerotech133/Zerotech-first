@@ -13,6 +13,12 @@ import sys
 import time
 import urllib.request
 
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from portal.safe_urlopen import safe_urlopen
+
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 LEDGER = os.path.join(HERE, "data", "tech_feed.jsonl")
 UA = "Mozilla/5.0 (compatible; ZeroOS-TechBot/0.1)"
@@ -23,14 +29,14 @@ ARXIV = "http://export.arxiv.org/api/query?search_query=cat:cs.AI&sortBy=submitt
 def _fetch(url: str, timeout: int = 25) -> str:
     req = urllib.request.Request(url, headers={"User-Agent": UA})
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
+        with safe_urlopen(req, timeout=timeout) as r:
             return r.read().decode("utf-8", errors="replace")
     except urllib.error.URLError as e:
         if "CERTIFICATE" not in str(e):
             raise
         import ssl
 
-        with urllib.request.urlopen(
+        with safe_urlopen(
             req, timeout=timeout, context=ssl._create_unverified_context()  # nosec B323 - 同上，只读公开源
         ) as r:
             return r.read().decode("utf-8", errors="replace")

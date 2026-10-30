@@ -37,6 +37,12 @@ import urllib.request
 from datetime import datetime, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from portal.safe_urlopen import safe_urlopen
+
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 STATION = os.path.dirname(HERE)
 WORK = os.path.join(HERE, "work")
@@ -417,7 +423,7 @@ def source_health():
     for name, port in SOURCES:
         ok = False
         try:
-            with urllib.request.urlopen(
+            with safe_urlopen(
                 "http://127.0.0.1:%d/health" % port, timeout=1.5
             ) as r:
                 ok = bool(json.loads(r.read().decode("utf-8")).get("ok"))

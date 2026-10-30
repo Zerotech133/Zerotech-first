@@ -201,7 +201,7 @@ def _selftest() -> int:
         ("grader key", dict(payload={"verdict": "BUY", "note": "ok"}), True),
         ("split key", dict(payload={"holdout": True}), True),
         ("leak path", dict(paths=["C:/data/.grader/rules.py"]), True),
-        ("answers file", dict(paths=["/tmp/answers.csv"]), True),
+        ("answers file", dict(paths=["/tmp/answers.csv"]), True),  # nosec B108 - 测试夹具/docker参数/字符串常量（已核实）
         (
             "clean",
             dict(columns=["code", "close", "volume"], paths=["/data/daily.csv"]),

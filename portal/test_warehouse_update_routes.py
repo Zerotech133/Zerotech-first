@@ -21,7 +21,7 @@ def handler(methods):
         "_rate_hit": lambda key, max_per_min: False,
         "_WRITE_MAX_PER_MIN": 12,
     }
-    exec(
+    exec(  # nosec B102 - 测试隔离加载 portal_api（无外部输入）
         compile(
             ast.fix_missing_locations(
                 ast.Module(

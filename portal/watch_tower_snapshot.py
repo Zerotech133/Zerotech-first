@@ -16,9 +16,14 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 from urllib.error import HTTPError, URLError
-from urllib.request import Request, urlopen
+from urllib.request import Request
 
 from watch_tower_linkage import LinkageReader
+
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from portal.safe_urlopen import safe_urlopen
 
 
 SCHEMA = "watch_tower.snapshot.v1"
@@ -188,7 +193,7 @@ class SnapshotAggregator:
         started = time.perf_counter()
         try:
             request = Request(url, headers={"Accept": "application/json"}, method="GET")
-            with urlopen(request, timeout=0.8) as response:
+            with safe_urlopen(request, timeout=0.8) as response:
                 body = response.read(MAX_BODY_BYTES + 1)
                 if len(body) > MAX_BODY_BYTES:
                     return _source(

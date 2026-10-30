@@ -288,7 +288,7 @@ def _isolated_dispatch(
         "_WRITE_MAX_PER_MIN": 12,
         "_rate_hit": rate_hit,
     }
-    exec(compile(module, str(PORTAL_DIR / "portal_api.py"), "exec"), namespace)
+    exec(compile(module, str(PORTAL_DIR / "portal_api.py"), "exec"), namespace)  # nosec B102 - 测试隔离加载 portal_api（无外部输入）
     return namespace["isolated_do_post"], mutations, rate_calls
 
 
