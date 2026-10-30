@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 20:41",
+ "generated": "2026-10-30 20:46",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 26,
+  "workorders_doing": 27,
   "workorders_review": 9
  },
  "workorders": [
@@ -326,6 +326,15 @@
    "owner": "DSH-Lead",
    "branch": "task/K-ORG-20261030-JEVARCH2",
    "created": "2026-10-30 18:47:29",
+   "project": "general"
+  },
+  {
+   "id": "WO-GUANYU-P90-20261030",
+   "desc": "计划台账与对账",
+   "status": "doing",
+   "owner": "GUANYU",
+   "branch": "task/WO-GUANYU-P90-20261030",
+   "created": "2026-10-30 20:43:48",
    "project": "general"
   }
  ],
@@ -6630,7 +6639,14 @@
    ],
    "experience": "30 年工程治理经验：漏洞分级与补丁流程、失败测试基线修复、编码规范与门禁落地、技术债清欠与重复功能合并；证据驱动、逐项闭环，只出报告与工单不自行合并，开发动作限独立 worktree 提交+跑测试并交 L2 人签。",
    "dept_name": "研究院",
-   "dept_cn_title": "太学"
+   "dept_cn_title": "太学",
+   "tasks": [
+    {
+     "id": "WO-GUANYU-P90-20261030",
+     "desc": "计划台账与对账",
+     "status": "doing"
+    }
+   ]
   },
   "HUANGZHONG": {
    "id": "HUANGZHONG",
