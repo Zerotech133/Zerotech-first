@@ -48,6 +48,17 @@ try {
     } else {
         W ('P4 jev_audit SKIP: not found ' + $auditPy)
     }
+    # P5 (2026-10-30 JEVROTATE): jev-eval/logs 轮转（gate/card/review/qdbridge）。
+    # jev_common 每条日志独立 open/append/close -> 外部重命名安全；保留 14 天，gzip 回收。
+    # 失败不阻塞、不改本任务退出码（只留痕）。
+    $rotPy = Join-Path (Split-Path $PSScriptRoot -Parent) 'tools\rotate_logs.py'
+    if (Test-Path -LiteralPath $rotPy) {
+        $rotOut = & $py -X utf8 -B $rotPy --execute --gzip --active-guard-min 1 --keep-days 14 2>&1
+        W ('P5 rotate_logs exit=' + $LASTEXITCODE + ' out=' + (($rotOut | Select-Object -Last 2) -join ' | '))
+    } else {
+        W ('P5 rotate_logs SKIP: not found ' + $rotPy)
+    }
+
     exit $code
 } catch {
     try { W ('ERR ' + $_.Exception.Message) } catch {}
