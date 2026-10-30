@@ -79,7 +79,25 @@ GET /hermes/ → 200 且包含 /extensions/app.js
 | PWA 独立窗口 | ✅ 已打开 |
 | Tauri | 暂停，不再主攻 |
 
-## 仍待
+## 8799 → 8796 收口
 
-- 8799 → 8796：仍受 8796 Session0 旧进程阻塞，需管理员停 29228
-- 生产 8787 后续重启会保持扩展（启动器已固化 env）
+已完成：
+
+- 8796 旧进程退出后，启动最新代码 8796（pid=39808）
+- nginx `/openhands/` 从 8799 改回 8796
+- 8799 已停止并从端口注册表移除
+- 扩展 API base 从 8799 改为 8796
+- Hermes 原生 panel 通过 8796 完成 E2E
+
+最终验证：
+
+```text
+GET /openhands/api/ide/openhands/tasks → 200
+Hermes panel → OH 执行 → ✅ 完成
+宿主 worktree 文件存在
+8799 DOWN
+```
+
+## 生产 8787
+
+启动器已固化扩展 env；后续重启会继续加载「军团 IDE」panel。

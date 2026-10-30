@@ -3,7 +3,7 @@
   if (window.__legionIdeExtensionLoaded) return;
   window.__legionIdeExtensionLoaded = true;
 
-  const OH_BASE = window.LEGION_OH_BASE || "http://127.0.0.1:8799";
+  const OH_BASE = window.LEGION_OH_BASE || "http://127.0.0.1:8796";
   const $ = (sel, root) => (root || document).querySelector(sel);
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",

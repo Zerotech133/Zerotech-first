@@ -1,4 +1,4 @@
-# 军团 IDE · Hermes 扩展
+﻿# 军团 IDE · Hermes 扩展
 
 方式 A：作为 Hermes WebUI 扩展运行，不修改 Hermes 核心。
 
@@ -61,7 +61,7 @@ msedge.exe --app=http://127.0.0.1:8734/hermes/
 默认：
 
 ```text
-http://127.0.0.1:8799
+http://127.0.0.1:8796
 ```
 
 可在页面加载前覆盖：
@@ -80,3 +80,4 @@ Hermes 8788 → 右下角按钮 → panel
 → ✅ 完成
 → 宿主 worktree 出现 HERMES_PANEL_OK.txt
 ```
+
