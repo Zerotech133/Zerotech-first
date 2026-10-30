@@ -165,7 +165,7 @@ env.update({
     "HERMES_WEBUI_PORT": "8787",
     "HERMES_WEBUI_STATE_DIR": r"C:\项目\老田的AI助手\Hermes\webui-state",
     # 军团 IDE 扩展（官方 /extensions/ 注入面，不改核心 static）
-    "HERMES_WEBUI_EXTENSION_DIR": r"C:\项目\老田的AI助手\Hermes\extensions\legion-ide",
+    "HERMES_WEBUI_EXTENSION_DIR": r"C:\项目\_vault\legion_ide\release\legion-ide\current",
     "HERMES_WEBUI_EXTENSION_SCRIPT_URLS": "/extensions/app.js,/extensions/a0-mainchat.js",
     "HERMES_WEBUI_EXTENSION_STYLESHEET_URLS": "/extensions/app.css",
     # L2-A（2026-10-30 老田批准）：允许本页 iframe 内嵌本机 Zhice 研究台（仅 loopback 5175）
