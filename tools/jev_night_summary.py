@@ -22,7 +22,7 @@ LOG = Path(r"C:\Temp\jev_night.log")
 ROUND_RE = re.compile(
     r"^\[(?P<ts>[^\]]+)\]\s+JEV rc=(?P<rc>-?\d+) (?P<elapsed>\d+)s BACKFILL "
     r"judged=(?P<judged>\d+)/(?P<target>\d+) left=(?P<left>\d+)"
-    r".*?pref_skip=(?P<pref_skip>\d+).*?pref_keep=(?P<pref_keep>\d+)")
+    r"(?:.*?pref_skip=(?P<pref_skip>\d+))?(?:.*?pref_keep=(?P<pref_keep>\d+))?")
 END_RE = re.compile(r"^\[(?P<ts>[^\]]+)\]\s+END 轮数=(?P<rounds>\d+)")
 START_RE = re.compile(r"^\[(?P<ts>[^\]]+)\].*?(?:NIGHT|夜跑).*(?:start|开始|启动)", re.I)
 
@@ -45,8 +45,8 @@ def parse_rounds(text: str) -> list[dict]:
             "target": int(d["target"]),
             "left": int(d["left"]),
             "rate_per_h": round(judged / elapsed * 3600, 1),
-            "pref_skip": int(d["pref_skip"]),
-            "pref_keep": int(d["pref_keep"]),
+            "pref_skip": int(d["pref_skip"] or 0),
+            "pref_keep": int(d["pref_keep"] or 0),
         })
     return out
 
