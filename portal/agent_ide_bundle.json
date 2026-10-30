@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 21:04",
+ "generated": "2026-10-30 21:23",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,8 +9,8 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 27,
-  "workorders_review": 9
+  "workorders_doing": 28,
+  "workorders_review": 10
  },
  "workorders": [
   {
@@ -336,6 +336,24 @@
    "branch": "task/K-ORG-20261030-LOCALADMIN",
    "created": "2026-10-30 20:51:00",
    "project": "portal"
+  },
+  {
+   "id": "K-QUANT-20261030-HERMESMAIN",
+   "desc": "A0 mainchat mode in Hermes composer (client-side orchestrator)",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-QUANT-20261030-HERMESMAIN",
+   "created": "2026-10-30 21:14:03",
+   "project": "quant"
+  },
+  {
+   "id": "K-QUANT-20261030-HERMESDEV",
+   "desc": "Hermes mainchat: task picker, A0 context injection, run_id event log",
+   "status": "review",
+   "owner": "DSH-Lead",
+   "branch": "task/K-QUANT-20261030-HERMESDEV",
+   "created": "2026-10-30 21:19:44",
+   "project": "quant"
   }
  ],
  "coder_traces": [
