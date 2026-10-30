@@ -310,7 +310,7 @@ function statusRow(box, k, v) {
   box.appendChild(row);
 }
 function render(v) {
-  hideBanner();
+  if (WRITE_TOKEN) hideBanner();
   const idn = v.identity || {};
   const idBox = $('identity'); idBox.replaceChildren();
   [['定位', idn.role], ['编制', idn.compilation], ['纪律', idn.boundary],
@@ -473,6 +473,8 @@ function initWriteToken() {
     .then((j) => {
       WRITE_TOKEN = (j && j.token) || '';
       if (!WRITE_TOKEN) throw new Error('token 为空');
+      const b = $('banner');
+      if (!b.hidden && ($('banner-msg').textContent || '').indexOf('写保护') === 0) hideBanner();
       return WRITE_TOKEN;
     })
     .catch((e) => {
