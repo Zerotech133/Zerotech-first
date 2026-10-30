@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 19:20",
+ "generated": "2026-10-30 19:22",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,8 +9,8 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 28,
-  "workorders_review": 9
+  "workorders_doing": 27,
+  "workorders_review": 10
  },
  "workorders": [
   {
@@ -331,20 +331,20 @@
   {
    "id": "WO-GUANYU-P84-20261030",
    "desc": "ruff零告警清理",
-   "status": "doing",
+   "status": "review",
    "owner": "GUANYU",
    "branch": "task/WO-GUANYU-P84-20261030",
    "created": "2026-10-30 19:14:33",
    "project": "general"
   },
   {
-   "id": "WO-WATCHADMIN-STATIC-FIX-20261030",
-   "desc": "修复 watch_admin 静态路由 unquote 未导入（NameError）",
+   "id": "WO-ZHAOYUN-UIUX-B2-20261030",
+   "desc": "W2-B2：cap2 13面板统一降级+聚合提示（单文件）",
    "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-WATCHADMIN-STATIC-FIX-20261030",
-   "created": "2026-10-30 19:18:59",
-   "project": "portal"
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-ZHAOYUN-UIUX-B2-20261030",
+   "created": "2026-10-30 19:21:48",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -6646,7 +6646,7 @@
     {
      "id": "WO-GUANYU-P84-20261030",
      "desc": "ruff零告警清理",
-     "status": "doing"
+     "status": "review"
     }
    ]
   },
@@ -7311,6 +7311,11 @@
     {
      "id": "WO-LEGION-OIDC-PATH-20261030",
      "desc": "OIDC配置路径对齐实际vault",
+     "status": "doing"
+    },
+    {
+     "id": "WO-ZHAOYUN-UIUX-B2-20261030",
+     "desc": "W2-B2：cap2 13面板统一降级+聚合提示（单文件）",
      "status": "doing"
     }
    ]
