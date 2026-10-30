@@ -740,6 +740,9 @@ def incremental(m, market="cn", dryrun=False):
         ("npr", "npr", {}, 500),
         # monetary_policy 权限被收紧（2026-09-28），替换为 LPR 利率
         ("shibor_lpr", "shibor_lpr", {}, 2000),
+        # 2026-10-31 OS-FIX-SHIBOR：shibor 日频只进了 batch_shallow（:288），
+        # 漏进日增量清单 → 10-26 后停在 20261023（8 天断更）；此处补齐。
+        ("shibor", "shibor", {}, 5000),
         # 社融月度（tushare 接口名为 sf_month，cn_sf 不存在）
         ("sf_month", "sf_month", {}, 2000),
     ]
