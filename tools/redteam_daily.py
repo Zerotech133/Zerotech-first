@@ -122,7 +122,7 @@ def weekly(days: int = 7, daily_path: Path | None = None,
     md = ["# 诸葛红队周报", "",
           "- 生成：%s（窗口 %d 天）" % (rep["generated_at"], days),
           "- 运行：%d 次；用例：%d；通过 **%d/%d（%.0f%%）**"
-          % (rows and len(rows), total, passed, total, rep["pass_rate"] * 100)]
+          % (len(rows), total, passed, total, rep["pass_rate"] * 100)]
     if failed_counts:
         md += ["", "## 高频失败", ""]
         for cid, n in rep["failed_case_counts"].items():
