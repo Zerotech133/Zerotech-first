@@ -34,6 +34,7 @@ from memory import MemoryStore  # noqa: E402
 from tools import make_context, quote_snapshot, kline_daily  # noqa: E402
 from evidence_bundle import EvidenceBundle  # noqa: E402
 from decision_policy import apply_policy  # noqa: E402
+from l4_provider import load_l4  # noqa: E402
 from regime_roster import dk_snapshot, enrich_row, bars_to_df  # noqa: E402
 from strategy_runtime import run_strategy as _rt_run_strategy  # noqa: E402
 
@@ -694,7 +695,8 @@ def main():
                     print("[warn] ST1 策略旁路读取失败（继续 alpha）：%s" % _exc)
                 # 2026-10-30 三原则：无 EvidenceBundle 不许调 D1
                 bundle = EvidenceBundle.from_context(
-                    symbol, data_ctx.get("name", ""), data_ctx)
+                    symbol, data_ctx.get("name", ""), data_ctx,
+                    l4=load_l4(symbol))
                 if not bundle.is_sufficient():
                     raise RuntimeError("evidence_insufficient: %s" % bundle.input_degraded)
                 t0 = time.time()
