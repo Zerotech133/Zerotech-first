@@ -182,19 +182,32 @@ def handle_post(handler, path):
             "COMMERCIAL_HOME": HOME,
             "ANALYSIS_WORK": _workdir(d["t"]),
         })
+        py = os.environ.get("ANALYSIS_PY") or sys.executable
+        if not os.path.exists(py) and os.path.exists(r"C:\Program Files\Python311\python.exe"):
+            py = r"C:\Program Files\Python311\python.exe"
+        logdir = _workdir(d["t"])
+        out_log = os.path.join(logdir, "last_run.out.log")
+        err_log = os.path.join(logdir, "last_run.err.log")
         try:
-            p = subprocess.run([sys.executable, "-X", "utf8", "-m", "analysis.run",
-                                "--code", code, "--no-llm"],
-                               cwd=ROOT, env=env, capture_output=True, text=True, timeout=240)
+            with open(out_log, "w", encoding="utf-8") as fo, open(err_log, "w", encoding="utf-8") as fe:
+                p = subprocess.run([py, "-X", "utf8", "-m", "analysis.run",
+                                    "--code", code, "--no-llm"],
+                                   cwd=ROOT, env=env, stdout=fo, stderr=fe, timeout=240)
         except subprocess.TimeoutExpired:
             return _json(handler, {"ok": False, "error": "分析超时"}, 504)
+        try:
+            stdout = open(out_log, encoding="utf-8").read()
+            stderr = open(err_log, encoding="utf-8").read()
+        except Exception:
+            stdout, stderr = "", ""
         out = ""
-        for line in (p.stdout or "").strip().splitlines()[::-1]:
+        for line in stdout.strip().splitlines()[::-1]:
             if line.startswith("{"):
                 out = line
                 break
         if p.returncode != 0 or not out:
-            return _json(handler, {"ok": False, "error": "分析失败", "stderr": (p.stderr or "")[-300:]}, 500)
+            return _json(handler, {"ok": False, "error": "分析失败", "rc": p.returncode,
+                                   "stderr": stderr[-400:]}, 500)
         try:
             r = json.loads(out)
         except Exception:
