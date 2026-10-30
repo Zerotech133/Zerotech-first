@@ -50,6 +50,20 @@ def _run(cmd, timeout=30) -> str:
         return ""
 
 
+def _read_text_any(path: Path) -> str:
+    """读日志/文本：兼容 UTF-8(BOM)、UTF-16LE/BE（PowerShell Out-File 产物）。"""
+    try:
+        raw = Path(path).read_bytes()
+    except OSError:
+        return ""
+    for enc in ("utf-8-sig", "utf-16"):
+        try:
+            return raw.decode(enc)
+        except (UnicodeDecodeError, ValueError):
+            continue
+    return raw.decode("utf-8", errors="replace")
+
+
 def _http_ok(url: str, timeout=3) -> bool:
     try:
         with urllib.request.urlopen(url, timeout=timeout) as r:
@@ -195,7 +209,7 @@ def collect() -> dict:
     gate = "未知"
     for lp in gate_logs:
         try:
-            txt = Path(lp).read_text(encoding="utf-8", errors="replace")
+            txt = _read_text_any(Path(lp))
         except OSError:
             continue
         if "GATE PASS" in txt:
