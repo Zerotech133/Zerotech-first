@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 17:37",
+ "generated": "2026-10-30 17:43",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,8 +9,8 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 28,
-  "workorders_review": 8
+  "workorders_doing": 29,
+  "workorders_review": 9
  },
  "workorders": [
   {
@@ -329,12 +329,30 @@
    "project": "quant"
   },
   {
-   "id": "WO-LEGION-AUDIT3-FIX-20261030",
-   "desc": "审计修复：p0_trace失败态+RAG索引原子写",
-   "status": "doing",
+   "id": "WO-ZHAOYUN-KPI-20261030",
+   "desc": "P1治理KPI端点：GET /api/governance/kpi（只读聚合）+测试",
+   "status": "review",
    "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-AUDIT3-FIX-20261030",
-   "created": "2026-10-30 17:37:29",
+   "branch": "task/WO-ZHAOYUN-KPI-20261030",
+   "created": "2026-10-30 17:37:50",
+   "project": "general"
+  },
+  {
+   "id": "K-STOCK-ANALYSIS-P2-3-20261030",
+   "desc": "P2.3 计费运营：账单生成/导出、续费提醒、试用→付费漏斗（基于usage+audit）+CLI+测试",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-STOCK-ANALYSIS-P2-3-20261030",
+   "created": "2026-10-30 17:41:13",
+   "project": "quant"
+  },
+  {
+   "id": "WO-KB-GOV-20261030",
+   "desc": "语料库治理可视化：kb_corpus stats 增治理徽章 + 血缘清单 yaml + 页面展示",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-KB-GOV-20261030",
+   "created": "2026-10-30 17:42:46",
    "project": "general"
   }
  ],
@@ -3918,7 +3936,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 109,
+     "count": 110,
      "recent": [
       {
        "ts": "",
@@ -4063,7 +4081,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 109,
+     "count": 110,
      "recent": [
       {
        "ts": "",
@@ -4213,7 +4231,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 110,
+     "count": 112,
      "recent": [
       {
        "ts": "",
@@ -4364,7 +4382,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 110,
+     "count": 112,
      "recent": [
       {
        "ts": "",
@@ -4516,7 +4534,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 109,
+     "count": 110,
      "recent": [
       {
        "ts": "",
@@ -7298,9 +7316,9 @@
      "status": "doing"
     },
     {
-     "id": "WO-LEGION-AUDIT3-FIX-20261030",
-     "desc": "审计修复：p0_trace失败态+RAG索引原子写",
-     "status": "doing"
+     "id": "WO-ZHAOYUN-KPI-20261030",
+     "desc": "P1治理KPI端点：GET /api/governance/kpi（只读聚合）+测试",
+     "status": "review"
     }
    ]
   }
