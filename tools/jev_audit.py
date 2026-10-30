@@ -406,10 +406,14 @@ def build_report(conn: sqlite3.Connection, band: float) -> dict:
     except Exception:  # noqa: BLE001 - 报告不因行情文件缺失失败，标 null
         opens = []
     data_through = max((r[5] for r in rows if r[5]), default=None)
-    latest_trade_day = opens[-1] if opens else None
+    # 2026-10-30 STALEFIX：不能用交易日历的最大日期（日历含未来，会把"落后"算成 293）。
+    # 只统计「已实现」交易日：<= 今天的最后一个开市日。
+    today_day = dt.date.today().strftime("%Y%m%d")
+    realized = [d for d in opens if d <= today_day]
+    latest_trade_day = realized[-1] if realized else None
     stale_trade_days = None
     if data_through and latest_trade_day:
-        stale_trade_days = sum(1 for d in opens if d > data_through)
+        stale_trade_days = sum(1 for d in opens if data_through < d <= latest_trade_day)
     by_trade_day = []
     for day in sorted({r[5] for r in rows if r[5]}):
         sub = [r for r in rows if r[5] == day]
