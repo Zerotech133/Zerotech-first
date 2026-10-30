@@ -101,6 +101,7 @@ import api_news_intel   # K-ORG-207 新闻情报台三栏聚合出口（速报/�
 import api_intel_bus    # 情报总线唯一出口 mixin（六域→总线→量化/飞书双路径 2026-10-19）
 import api_zhuge_route  # WO-OS-09 诸葛亮建议引擎只读路由 /api/zhuge/brief（2026-10-21）
 import api_zhuge_adoption  # WO-LEGION-ZHUGE-ADOPTROUTE C3 建议采纳率只追加 /api/zhuge/adoption（2026-10-27）
+import api_zhuge_review  # WO-LEGION-ZHUGE-REVIEW-P0 诸葛亮 IDE 只读复核 API（2026-10-30）
 import api_os_goal      # OS-CLOSE-G0 目标/事项/成果 G0 骨架（/api/os/*，2026-10-24）
 from paper_data import paper_snapshot  # WO-INV-PAPER-UI 量化部 paper 只读数据口（2026-10-30）
 from pool_data import pool_snapshot  # WO-INV-POOL-UI 司马徽推荐池全池复盘数据口（2026-10-30）
@@ -2545,6 +2546,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
     def do_POST(self):
         """v2.5：标注保存（首个 POST 端点，其余页面均为只读 GET）。"""
         path = self.path.split("?", 1)[0]
+        if path == '/api/zhuge/review':
+            # P0：只读复核（默认关；模块内校验门户 session/大小/feature flag）
+            api_zhuge_review.handle_post(self)
+            return
         # P1 移动端 /m 家族（2026-10-25）：POST 早分支（m_api.py 独立文件）。
         if path.startswith('/api/m/'):
             import m_api
@@ -3090,6 +3095,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
         raw = self.path
         path = raw.split("?", 1)[0]
         qs = raw.split("?", 1)[1] if "?" in raw else ""
+        if path == '/api/zhuge/review/status' or path.startswith('/api/zhuge/review/'):
+            # P0：只读复核状态/结果（模块内校验 feature flag/session）
+            api_zhuge_review.handle_get(self, path)
+            return
         if path == '/api/dev/legion':
             # 2026-10-28 LS-03：研发军团作战屏只读 API（独立文件 api_dev_legion.py）
             import api_dev_legion
