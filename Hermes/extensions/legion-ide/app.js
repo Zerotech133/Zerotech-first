@@ -1344,12 +1344,9 @@ async function loadDiff(task) {
     head.append(title, close);
     const sum = el("div", "acad1-sum", "摘要加载中…");
     sum.id = "acad1-summary";
-    const note = el("div", "acad1-sum", "Hermes CSP 禁止 iframe；用新窗口打开研究台（摘要仍在本卡）。");
-    const open = el("a", "acad1-open", "打开司马徽研究台 ↗");
-    open.href = PAGE; open.target = "_blank"; open.rel = "noopener";
-    const body = el("div", "acad1-body");
-    body.append(note, open);
-    box.append(head, sum, body);
+    const frame = el("iframe", "acad1-frame");
+    frame.src = "/extensions/zhice/index.html#/cn/replay?tab=selection";
+    box.append(head, sum, frame);
     p.append(box);
     document.body.appendChild(p);
     fetch(BASE + "/selection-public/summary")
@@ -1500,4 +1497,170 @@ async function loadDiff(task) {
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", build);
   } else build();
+})();
+
+/* 诸葛亮只读复核面板（P0，feature flag 由后端 /api/zhuge/review/status 控制） */
+(function () {
+  if (window.__zhugeReviewLoaded) return;
+  window.__zhugeReviewLoaded = true;
+  const $ = (s) => document.querySelector(s);
+  let panel = null;
+  let timer = null;
+
+  function style() {
+    if ($("#zr-style")) return;
+    const s = document.createElement("style");
+    s.id = "zr-style";
+    s.textContent = `
+      #zr-review-btn{margin-left:6px;padding:4px 8px;border-radius:999px;border:1px solid #6b5a2a;background:#2a2416;color:#ffd98a;font-size:12px;cursor:pointer}
+      #zr-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99998;display:none}
+      #zr-panel{position:fixed;right:18px;top:60px;width:min(520px,92vw);max-height:82vh;overflow:auto;background:#151515;color:#eee;border:1px solid #444;border-radius:10px;z-index:99999;padding:14px;display:none;font-size:13px}
+      #zr-panel h3{margin:0 0 8px;font-size:15px;color:#ffd98a}
+      #zr-panel textarea{width:100%;height:120px;background:#0d0d0d;color:#ddd;border:1px solid #333;border-radius:6px;padding:6px;font:12px/1.4 monospace}
+      #zr-panel button{margin-top:6px;padding:5px 10px;border-radius:6px;border:1px solid #555;background:#222;color:#eee;cursor:pointer}
+      #zr-status{color:#aaa;margin:6px 0}
+      .zr-finding{border-left:3px solid #c6a15b;padding:4px 8px;margin:6px 0;background:#1d1d1d}
+      .zr-finding b{color:#ffd98a}
+    `;
+    document.head.appendChild(s);
+  }
+
+  function ensurePanel() {
+    if (panel) return panel;
+    style();
+    const ov = document.createElement("div");
+    ov.id = "zr-overlay";
+    ov.onclick = () => { ov.style.display = "none"; panel.style.display = "none"; };
+    const p = document.createElement("div");
+    p.id = "zr-panel";
+    p.innerHTML = `<h3>⚔ 诸葛亮 · 只读复核</h3>
+      <div>任务：<span id="zr-task">—</span></div>
+      <div id="zr-status">读取中…</div>
+      <textarea id="zr-diff" placeholder="自动读取 LDE diff；为空时请先点「文件 diff」"></textarea>
+      <button id="zr-load">读取 diff</button>
+      <button id="zr-submit">提交复核</button>
+      <div id="zr-result"></div>`;
+    document.body.appendChild(ov);
+    document.body.appendChild(p);
+    panel = p;
+    $("#zr-load").onclick = loadDiff;
+    $("#zr-submit").onclick = submit;
+    return p;
+  }
+
+  function taskId() {
+    const sel = $("#lde-task");
+    return sel ? String(sel.value || "").trim() : "";
+  }
+
+  function loadDiff() {
+    const tx = $("#zr-diff");
+    const cur = ($("#lde-diff") && $("#lde-diff").textContent || "").trim();
+    if (!cur || cur === "—") {
+      $("#zr-status").textContent = "没有读到 diff：先在 LDE 点「文件 diff」";
+      return;
+    }
+    tx.value = cur.slice(0, 64000);
+    $("#zr-status").textContent = "diff 已载入，长度 " + tx.value.length;
+  }
+
+  function parseFiles(diff) {
+    const out = [];
+    String(diff || "").split("\n").forEach((l) => {
+      const m = l.match(/^\+\+\+ b\/(.+)$/);
+      if (m && !out.includes(m[1])) out.push(m[1]);
+    });
+    return out.slice(0, 100);
+  }
+
+  async function open() {
+    ensurePanel();
+    $("#zr-overlay").style.display = "block";
+    panel.style.display = "block";
+    $("#zr-task").textContent = taskId() || "（未选工单）";
+    $("#zr-result").textContent = "";
+    try {
+      const r = await fetch("/api/zhuge/review/status", { credentials: "include" });
+      const d = await r.json();
+      $("#zr-status").textContent = d.enabled
+        ? ("可用 · " + (d.model || "unknown") + " · " + (d.carrier || ""))
+        : "复核未启用（后端 ZHUGE_IDE_REVIEW=off）";
+      loadDiff();
+    } catch (e) {
+      $("#zr-status").textContent = "状态读取失败：" + e.message;
+    }
+  }
+
+  async function submit() {
+    const task = taskId();
+    const diff = String($("#zr-diff").value || "").trim();
+    if (!task) { $("#zr-status").textContent = "先选工单"; return; }
+    if (!diff) { $("#zr-status").textContent = "先读取或粘贴 diff"; return; }
+    $("#zr-result").textContent = "提交中…";
+    $("#zr-status").textContent = "复核中（DeepSeek 约 30–60s）…";
+    try {
+      const r = await fetch("/api/zhuge/review", {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          task_id: task, diff: diff, changed_files: parseFiles(diff),
+          test_result: {}, context: { goal: task, acceptance: [] },
+        }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || ("HTTP " + r.status));
+      poll(d.review_id);
+    } catch (e) {
+      $("#zr-status").textContent = "提交失败：" + e.message;
+    }
+  }
+
+  function poll(rid) {
+    if (timer) clearInterval(timer);
+    timer = setInterval(async () => {
+      try {
+        const r = await fetch("/api/zhuge/review/" + encodeURIComponent(rid), { credentials: "include" });
+        const d = await r.json();
+        if (d.status === "pending") return;
+        clearInterval(timer); timer = null;
+        $("#zr-status").textContent = "完成 · " + (d.verdict || d.status) + " · " + (d.model || "");
+        const box = $("#zr-result");
+        box.innerHTML = "";
+        (d.findings || []).forEach((f) => {
+          const n = document.createElement("div");
+          n.className = "zr-finding";
+          n.innerHTML = `<b>${escapeHtml(f.severity || "P2")}</b> ${escapeHtml(f.file || "")}:${f.line || 0}<br>` +
+            `${escapeHtml(f.claim || "")}<br><small>${escapeHtml(f.evidence || "")}</small>`;
+          box.appendChild(n);
+        });
+        if (!(d.findings || []).length) box.textContent = "无 findings";
+      } catch (e) {
+        clearInterval(timer); timer = null;
+        $("#zr-status").textContent = "查询失败：" + e.message;
+      }
+    }, 2000);
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+    }[c]));
+  }
+
+  function mount() {
+    if ($("#zr-review-btn")) return;
+    const anchor = $("#lde-lock") || $("#lde-refresh");
+    if (!anchor || !anchor.parentElement) return;
+    const b = document.createElement("button");
+    b.id = "zr-review-btn";
+    b.type = "button";
+    b.textContent = "⚔ 诸葛复核";
+    b.onclick = open;
+    anchor.parentElement.appendChild(b);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", mount);
+  } else mount();
+  setTimeout(mount, 1500);
 })();
