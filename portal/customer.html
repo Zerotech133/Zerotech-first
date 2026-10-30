@@ -133,18 +133,33 @@
   function run(){
     var code = $('code').value.trim().toUpperCase();
     if(!code){ $('runMsg').textContent='请输入股票代码'; return; }
-    $('runBtn').disabled = true; $('runMsg').className='muted'; $('runMsg').textContent = '分析中（约 15-30 秒）…';
-    api('/api/customer/analyze', {method:'POST', body:{token:token, code:code}}).then(function(r){
-      $('runBtn').disabled = false;
-      if(!r.ok){ $('runMsg').className='err'; $('runMsg').textContent = errMsg(r); return; }
-      $('runMsg').className='ok'; $('runMsg').textContent = '完成：' + code;
-      $('result').classList.remove('hide');
-      $('rRating').textContent = '评级 ' + (r.rating || '—');
-      $('rMeta').textContent = ' 覆盖 ' + (r.coverage||'—') + '% ｜ 用时 ' + (r.elapsed||'—') + 's';
-      $('rMd').href = r.report_url + '&token=' + encodeURIComponent(token);
-      $('rH5').href = r.h5_url + '&token=' + encodeURIComponent(token);
-      if(r.usage) renderQuota(r.usage);
-      loadHistory();
+    $('runBtn').disabled = true; $('runMsg').className='muted'; $('runMsg').textContent = '已提交分析任务（排队中）…';
+    api('/api/customer/analyze_async', {method:'POST', body:{token:token, code:code}}).then(function(r){
+      if(!r.ok){ $('runBtn').disabled = false; $('runMsg').className='err'; $('runMsg').textContent = errMsg(r); return; }
+      var jobId = r.job_id, tries = 0;
+      (function poll(){
+        tries++;
+        api('/api/customer/job?id=' + encodeURIComponent(jobId) + '&token=' + encodeURIComponent(token)).then(function(j){
+          if(!j.ok){ $('runBtn').disabled=false; $('runMsg').className='err'; $('runMsg').textContent = errMsg(j); return; }
+          var st = j.job.status;
+          if(st === 'queued' || st === 'running'){
+            $('runMsg').textContent = '分析中…（' + st + '，约 15-30 秒）';
+            if(tries < 90){ setTimeout(poll, 2000); }
+            else { $('runBtn').disabled=false; $('runMsg').textContent='超时，请稍后在历史中查看'; loadHistory(); }
+            return;
+          }
+          $('runBtn').disabled = false;
+          if(st !== 'done'){ $('runMsg').className='err'; $('runMsg').textContent = '分析失败：' + (j.job.error || ''); return; }
+          var x = j.job.result;
+          $('runMsg').className='ok'; $('runMsg').textContent = '完成：' + code;
+          $('result').classList.remove('hide');
+          $('rRating').textContent = '评级 ' + (x.rating || '—');
+          $('rMeta').textContent = ' 覆盖 ' + (x.coverage||'—') + '% ｜ 用时 ' + (x.elapsed||'—') + 's';
+          $('rMd').href = x.report_url + '&token=' + encodeURIComponent(token);
+          $('rH5').href = x.h5_url + '&token=' + encodeURIComponent(token);
+          loadHistory();
+        }).catch(function(){ $('runBtn').disabled=false; $('runMsg').className='err'; $('runMsg').textContent='网络错误'; });
+      })();
     }).catch(function(){ $('runBtn').disabled=false; $('runMsg').className='err'; $('runMsg').textContent='网络错误'; });
   }
 

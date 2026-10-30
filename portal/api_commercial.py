@@ -7,7 +7,7 @@ import json
 import os
 import sys
 
-ROOT = r"C:\项目\老田的AI助手"
+ROOT = os.environ.get("ANALYSIS_ROOT") or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def _json(handler, obj, status=200):
@@ -39,15 +39,38 @@ def _commercial():
             "quota": quota, "tenants": tenants}
 
 
+def _expected_token():
+    t = os.environ.get("COMMERCIAL_ADMIN_TOKEN")
+    if t:
+        return t.strip()
+    try:
+        from commercial import tenants as _t
+        p = os.path.join(_t.BASE, "admin.token")
+        if os.path.exists(p):
+            return open(p, encoding="utf-8-sig").read().strip()
+    except Exception:
+        pass
+    return ""
+
+
 def handle_get(handler, path, qs):
     q = _qs(qs)
+    exp = _expected_token()
+    if exp:
+        got = ""
+        try:
+            got = str(handler.headers.get("X-Commercial-Token") or "")
+        except Exception:
+            got = ""
+        if got != exp:
+            return _json(handler, {"ok": False, "error": "需要 X-Commercial-Token（商业接口网关鉴权）"}, 401)
     try:
         m = _commercial()
     except Exception as e:
         return _json(handler, {"ok": False, "error": "commercial 模块不可用: " + str(e)[:120]}, 500)
 
     if path == "/api/commercial/health":
-        return _json(handler, {"ok": True, **m["integration"].health()})
+        return _json(handler, {"ok": True, **m["integration"].health(), "gateway_token": bool(_expected_token())})
 
     if path == "/api/commercial/plans":
         return _json(handler, {"ok": True, "mode": m["integration"].mode(), "plans": m["plans"].PLANS})

@@ -16,6 +16,7 @@ import os
 import re
 import secrets
 import subprocess
+import threading
 import sys
 import time
 
@@ -24,6 +25,87 @@ HOME = os.environ.get("COMMERCIAL_HOME") or r"C:\项目\commercial"
 SECRET_FILE = os.path.join(HOME, "secret.key")
 CODE_RE = re.compile(r"^(60[0-9]{4}|68[0-9]{4}|00[0-9]{4}|30[0-9]{4}|8[0-9]{6})\.(SH|SZ|BJ)$")
 RUN_RE = re.compile(r"^[A-Za-z0-9_\-]{6,80}$")
+import rate_limit  # noqa: E402
+
+_JOBS = {}
+_JOBS_LOCK = threading.Lock()
+JOB_TTL = 3600
+
+
+def _client_ip(handler):
+    try:
+        return handler.client_address[0]
+    except Exception:
+        return "unknown"
+
+
+def _job_new(tenant, code):
+    jid = "job-" + secrets.token_hex(4)
+    with _JOBS_LOCK:
+        _JOBS[jid] = {"tenant": tenant, "code": code, "status": "queued",
+                      "created": time.time(), "result": None, "error": None}
+    return jid
+
+
+def _job_set(jid, **kw):
+    with _JOBS_LOCK:
+        if jid in _JOBS:
+            _JOBS[jid].update(kw)
+
+
+def _job_get(tenant, jid):
+    with _JOBS_LOCK:
+        j = _JOBS.get(jid)
+        if not j or j.get("tenant") != tenant:
+            return None
+        if time.time() - j.get("created", 0) > JOB_TTL:
+            return None
+        return dict(j)
+
+
+def _run_job(job_id, tenant, license_key, code):
+    _job_set(job_id, status="running")
+    try:
+        env = os.environ.copy()
+        env.update({
+            "PYTHONIOENCODING": "utf-8",
+            "COMMERCIAL_MODE": "commercial",
+            "COMMERCIAL_TENANT": tenant,
+            "COMMERCIAL_LICENSE_KEY": license_key,
+            "COMMERCIAL_LICENSE_SECRET": _secret(),
+            "COMMERCIAL_HOME": HOME,
+            "ANALYSIS_WORK": _workdir(tenant),
+        })
+        py = os.environ.get("ANALYSIS_PY") or sys.executable
+        if not os.path.exists(py) and os.path.exists(r"C:\Program Files\Python311\python.exe"):
+            py = r"C:\Program Files\Python311\python.exe"
+        logdir = _workdir(tenant)
+        out_log = os.path.join(logdir, "last_run.out.log")
+        err_log = os.path.join(logdir, "last_run.err.log")
+        with open(out_log, "w", encoding="utf-8") as fo, open(err_log, "w", encoding="utf-8") as fe:
+            p = subprocess.run([py, "-X", "utf8", "-m", "analysis.run", "--code", code, "--no-llm"],
+                               cwd=ROOT, env=env, stdout=fo, stderr=fe, timeout=240)
+        stdout = open(out_log, encoding="utf-8").read()
+        stderr = open(err_log, encoding="utf-8").read()
+        out = ""
+        for line in stdout.strip().splitlines()[::-1]:
+            if line.startswith("{"):
+                out = line
+                break
+        if p.returncode != 0 or not out:
+            _job_set(job_id, status="failed", error=stderr[-400:] or "分析失败")
+            return
+        r = json.loads(out)
+        _job_set(job_id, status="done", result={
+            "run_id": r.get("run_id"), "rating": r.get("rating"),
+            "coverage": r.get("coverage"), "elapsed": r.get("elapsed"),
+            "report_url": "/api/customer/report?run_id=%s&format=md" % r.get("run_id"),
+            "h5_url": "/api/customer/report?run_id=%s&format=h5" % r.get("run_id"),
+        })
+    except subprocess.TimeoutExpired:
+        _job_set(job_id, status="failed", error="分析超时")
+    except Exception as e:
+        _job_set(job_id, status="failed", error=str(e)[:300])
 TOKEN_TTL = 8 * 3600
 
 
@@ -126,7 +208,10 @@ def _report_path(tenant: str, run_id: str, fmt: str):
 
 
 def handle_post(handler, path):
+    ip = _client_ip(handler)
     if path == "/api/customer/login":
+        if not rate_limit.LOGIN.allow(ip):
+            return _json(handler, {"ok": False, "error": "请求过于频繁，请稍后再试"}, 429)
         try:
             body = _body(handler)
         except Exception:
@@ -219,6 +304,8 @@ def handle_post(handler, path):
                                "h5_url": "/api/customer/report?run_id=%s&format=h5" % r.get("run_id"),
                                "usage": quota.usage_report(d["t"], plan=l.plan)})
     if path == "/api/customer/trial":
+        if not rate_limit.TRIAL.allow(ip):
+            return _json(handler, {"ok": False, "error": "请求过于频繁，请稍后再试"}, 429)
         try:
             body = _body(handler)
         except Exception:
@@ -243,6 +330,8 @@ def handle_post(handler, path):
                                "plan": "pro", "days": 7, "customer_url": "/customer.html"})
 
     if path == "/api/customer/track":
+        if not rate_limit.TRACK.allow(ip):
+            return _json(handler, {"ok": False, "error": "请求过于频繁"}, 429)
         try:
             body = _body(handler)
         except Exception:
@@ -255,6 +344,30 @@ def handle_post(handler, path):
         except ValueError as e:
             return _json(handler, {"ok": False, "error": str(e)}, 400)
         return _json(handler, {"ok": True})
+    if path == "/api/customer/analyze_async":
+        try:
+            body = _body(handler)
+        except Exception:
+            return _json(handler, {"ok": False, "error": "bad json"}, 400)
+        d = verify_token(str(body.get("token") or ""))
+        if not d:
+            return _json(handler, {"ok": False, "error": "未登录或会话过期"}, 401)
+        if not rate_limit.ANALYZE.allow(d["t"]):
+            return _json(handler, {"ok": False, "error": "分析请求过于频繁（5 次/分钟）"}, 429)
+        code = str(body.get("code") or "").strip().upper()
+        if not CODE_RE.match(code):
+            return _json(handler, {"ok": False, "error": "代码格式不正确（如 600337.SH）"}, 400)
+        try:
+            l = _verify_license(d["l"])
+        except Exception as e:
+            return _json(handler, {"ok": False, "error": "license 失效: " + str(e)[:100]}, 401)
+        from commercial import quota
+        if quota.remaining(d["t"], "reports_month", plan=l.plan) <= 0:
+            return _json(handler, {"ok": False, "error": "本月报告配额已用完（%s）" % l.plan}, 429)
+        jid = _job_new(d["t"], code)
+        threading.Thread(target=_run_job, args=(jid, d["t"], d["l"], code), daemon=True).start()
+        return _json(handler, {"ok": True, "job_id": jid, "status": "queued"})
+
     return _json(handler, {"ok": False, "error": "unknown customer post: " + path}, 404)
 
 
@@ -284,6 +397,13 @@ def handle_get(handler, path, qs):
         except Exception:
             pass
         return _json(handler, {"ok": True, "rows": rows[::-1]})
+    if path == "/api/customer/job":
+        if not rate_limit.JOB.allow(tenant):
+            return _json(handler, {"ok": False, "error": "请求过于频繁"}, 429)
+        j = _job_get(tenant, q.get("id", ""))
+        if not j:
+            return _json(handler, {"ok": False, "error": "任务不存在或已过期"}, 404)
+        return _json(handler, {"ok": True, "job": {k: j[k] for k in ("status", "result", "error")}})
     if path == "/api/customer/report":
         run_id = q.get("run_id", "")
         fmt = (q.get("format") or "md").lower()
