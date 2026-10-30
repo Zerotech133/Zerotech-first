@@ -2,7 +2,7 @@
 """资产生命周期覆盖读取（catalog/registry/freshness 共用，fail-open）。
 
 真源：`agent_platform/catalogs/data_lifecycle.yaml`（手工维护，2026-10-28 建立）。
-- planned / deprecated 的资产不计入资格欠账（registry）与新鲜度告警（freshness）；
+- planned / deprecated / archived 的资产不计入资格欠账（registry）与新鲜度告警（freshness）；
 - 读失败一律返回空覆盖（不阻断任何主流程）。
 """
 from __future__ import annotations
@@ -12,7 +12,8 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 OVERRIDES = REPO / "agent_platform" / "catalogs" / "data_lifecycle.yaml"
-SKIP_STATUSES = ("planned", "deprecated")
+VALID_STATUSES = ("active", "planned", "deprecated", "archived")
+SKIP_STATUSES = ("planned", "deprecated", "archived")
 
 
 @lru_cache(maxsize=1)
@@ -30,10 +31,10 @@ def _load() -> dict:
 
 
 def status_for(table: str) -> str:
-    """返回 planned/deprecated/active。"""
+    """返回 planned/deprecated/archived/active（未知值归一 active）。"""
     rec = (_load()["tables"].get(table) or {})
     status = str(rec.get("lifecycle") or "active").strip().lower()
-    return status if status in ("planned", "deprecated", "active") else "active"
+    return status if status in VALID_STATUSES else "active"
 
 
 def reason_for(table: str) -> str:
@@ -41,7 +42,7 @@ def reason_for(table: str) -> str:
 
 
 def skipped(table: str) -> bool:
-    """planned/deprecated → True（资格/新鲜度检查应跳过）。"""
+    """planned/deprecated/archived → True（资格/新鲜度检查应跳过）。"""
     return status_for(table) in SKIP_STATUSES
 
 

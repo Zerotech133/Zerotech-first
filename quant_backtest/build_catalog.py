@@ -29,7 +29,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 import logging
 
-# 生命周期覆盖（planned/deprecated）：真源 agent_platform/catalogs/data_lifecycle.yaml
+# 生命周期覆盖（planned/deprecated/archived）：真源 agent_platform/catalogs/data_lifecycle.yaml
 _LIFECYCLE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tools", "datawarehouse")
 
 

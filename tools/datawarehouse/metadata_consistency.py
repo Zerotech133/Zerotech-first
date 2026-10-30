@@ -3,10 +3,10 @@
 
 检查项（阻断级）：
 1. catalog 版本/表结构可读；registry catalog_sha256 与 catalog 实算一致、计数一致；
-2. catalog 声明的本地 store（非 pg://）必须存在 **除非** lifecycle=planned/deprecated；
-3. placeholder_empty 资产必须带 lifecycle=planned/deprecated（否则视为登记错误）；
+2. catalog 声明的本地 store（非 pg://）必须存在 **除非** lifecycle=planned/deprecated/archived；
+3. placeholder_empty 资产必须带 lifecycle=planned/deprecated/archived（否则视为登记错误）；
 4. manifest_status=missing/open 的表必须声明 manifest 路径或归生命周期（否则登记错误）；
-5. registry 资格：lifecycle=planned/deprecated 的表 qualification_status 必须一致（不参与 unknown 欠账）。
+5. registry 资格：lifecycle=planned/deprecated/archived 的表 qualification_status 必须一致（不参与 unknown 欠账）。
 告警级：lifecycle 覆盖表中的未知表名、not_applicable 之外的空 manifest 等。
 
 用法：python tools/datawarehouse/metadata_consistency.py [--json]
@@ -28,7 +28,7 @@ try:
 except Exception:  # noqa: BLE001
     lifecycle = None
 
-SKIP_LIFECYCLE = ("planned", "deprecated")
+SKIP_LIFECYCLE = ("planned", "deprecated", "archived")
 
 
 def sha256_file(p: Path) -> str:

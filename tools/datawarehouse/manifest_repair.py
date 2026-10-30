@@ -10,7 +10,7 @@ manifest_status=missing，影响 readiness 与治理台账。
 2. 扫描 store 的 parquet 文件，统计 files / rows（footer num_rows，带上限）；
 3. `--apply` 把 `{done: true, rows, files, updated_at, repaired_by}` 合并进对应
    `_manifest.json`（先备份 `.bak-<ts>`，原子写），并补记 kg_sync_task.log；
-4. lifecycle=planned/deprecated 的表跳过（由 data_lifecycle.yaml 治理）。
+4. lifecycle=planned/deprecated/archived 的表跳过（由 data_lifecycle.yaml 治理）。
 
 用法：
   python tools/datawarehouse/manifest_repair.py --json            # 只读报告（默认）

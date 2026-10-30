@@ -172,7 +172,7 @@ def build_payload(catalog: dict, old: dict) -> dict:
         physical.append(make_new_entry(table, tables[table]))
         added.append(table)
 
-    # 生命周期覆盖：planned/deprecated 不计入 unknown 资格欠账
+    # 生命周期覆盖：planned/deprecated/archived 不计入 unknown 资格欠账
     life_counts: dict[str, int] = {}
     try:
         import lifecycle  # noqa: WPS433
@@ -180,7 +180,7 @@ def build_payload(catalog: dict, old: dict) -> dict:
             names = [str(t) for t in (e.get("physical_tables") or []) if t]
             for table in names:
                 status = lifecycle.status_for(table)
-                if status in ("planned", "deprecated"):
+                if status in ("planned", "deprecated", "archived"):
                     e["qualification_status"] = status
                     e["unsupported_reason"] = lifecycle.reason_for(table) or ("资产状态：%s" % status)
                     e["evidence_basis"] = "data_lifecycle.yaml（2026-10-28）"
