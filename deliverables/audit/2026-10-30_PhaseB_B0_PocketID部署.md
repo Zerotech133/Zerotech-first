@@ -47,6 +47,33 @@ http://localhost:1411
 
 不要用 `127.0.0.1` 作为 passkey 域。
 
+## 2.1 首次管理员入口（重要）
+
+Pocket ID v2.19.1 首次创建管理员**不走根路径**：
+
+```text
+http://localhost:1411/          → 登录页（没有注册入口）
+http://localhost:1411/setup     → 302 /signup/setup → 注册表单
+```
+
+根因：
+
+- 数据库 `users=0`
+- `allowUserSignups=disabled` 是默认配置，不是故障
+- `/setup` 只在“首个账号不存在”时可用
+- `/api/users/me` 401、`/api/application-images/logo?default=false` 404 都是未登录/未设 logo 的正常响应
+
+正确操作：
+
+```text
+http://localhost:1411/setup
+→ 填用户名/邮箱/名/姓
+→ 注册
+→ Add Passkey（Windows Hello）
+```
+
+不要用 `http://127.0.0.1:1411/setup` 注册 passkey，RPID 是 `localhost`。
+
 ## 3. 验收
 
 ```text
