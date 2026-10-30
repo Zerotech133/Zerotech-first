@@ -61,3 +61,17 @@ def test_collect_missing_sources_is_fail_soft(tmp_path):
     assert kpi["board"]["total"] == 0
     assert kpi["bandit"] is None and kpi["osv"] is None
     assert kpi["worktrees"] is None
+
+
+def test_hermes_health_section(monkeypatch, tmp_path):
+    import datetime as dt
+    monkeypatch.setattr(gk, "_hermes_health", lambda: {
+        "ok": False, "checks": {"8787_webui": True, "8788_next": False}, "note": "t"})
+    kpi = gk.collect(repo=tmp_path, tmp=tmp_path,
+                     now=dt.datetime(2026, 10, 30, 20, 0, 0), health={"8796": True})
+    assert kpi["hermes"]["checks"]["8787_webui"] is True
+    assert kpi["hermes"]["checks"]["8788_next"] is False
+
+
+def test_port_open_closed_port():
+    assert gk._port_open(9) is False

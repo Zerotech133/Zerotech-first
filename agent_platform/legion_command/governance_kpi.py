@@ -52,6 +52,31 @@ def _http_ok(url: str, timeout: float = 1.5) -> bool:
         return False
 
 
+def _port_open(port: int, timeout: float = 0.8) -> bool:
+    import socket
+    try:
+        with socket.create_connection(("127.0.0.1", port), timeout=timeout):
+            return True
+    except OSError:
+        return False
+
+
+def _hermes_health() -> dict:
+    """Hermes 运行域只读健康（8787 WebUI / 8788 next / 8093 OrgRegistry / 8771 OpenHands / 8103 LDE）。"""
+    checks = {
+        "8787_webui": _http_ok("http://127.0.0.1:8787/"),
+        "8788_next": _port_open(8788),
+        "8093_org_registry": _http_ok("http://127.0.0.1:8093/"),
+        "8771_openhands": _http_ok("http://127.0.0.1:8771/health"),
+        "8103_lde": _port_open(8103),
+    }
+    return {
+        "checks": checks,
+        "ok": all(checks.values()),
+        "note": "8788 next 由 HermesWebUI-Next-Guard(Disabled) 管理；生产入口=8787（邓芝·飞书通讯中枢）",
+    }
+
+
 def _gate_status(tmp: Path) -> str:
     logs = sorted(
         set(glob.glob(str(tmp / "test_gate_*_*.log")) + glob.glob(str(tmp / "gate_after_*.log"))
@@ -144,5 +169,6 @@ def collect(repo: Path | None = None, tmp: Path | None = None,
         "bandit": bandit,
         "osv": osv_summary,
         "deadlines": _deadlines(repo, now),
+        "hermes": _hermes_health(),
         "note": "只读 KPI 聚合；数据源不可用时字段为 null/UNKNOWN，不猜测",
     }
