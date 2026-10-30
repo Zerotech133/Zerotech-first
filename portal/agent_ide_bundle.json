@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 12:33",
+ "generated": "2026-10-30 12:34",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 31,
+  "workorders_doing": 30,
   "workorders_review": 8
  },
  "workorders": [
@@ -335,15 +335,6 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-LEGION-AUTHREQUEST-DOCS-20261030",
    "created": "2026-10-30 12:32:33",
-   "project": "general"
-  },
-  {
-   "id": "K-ORG-20261030-JEVAUDIT2",
-   "desc": "JEV 复盘+代码审计+Bug复核+计划进度对照（10-26 审计建议闭环盘点）",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-ORG-20261030-JEVAUDIT2",
-   "created": "2026-10-30 12:32:53",
    "project": "general"
   },
   {
