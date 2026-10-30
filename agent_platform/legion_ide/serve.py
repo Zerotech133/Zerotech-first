@@ -249,6 +249,8 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
         def do_GET(self):
             parsed = urlparse(self.path)
             path = parsed.path
+            if path == "/health":
+                path = "/api/health"  # 便捷别名（监控统一）
             if path in ("/", "/ide.html"):
                 ide = repo / "portal" / "ide.html"
                 if not ide.is_file():

@@ -85,7 +85,14 @@
       });
       const d = await r.json().catch(() => ({}));
       let out;
-      if (!d.ok) out = "A0 编排失败：" + (d.error || d.detail || ("HTTP " + r.status));
+      if (!d.ok) {
+        if (d.error === "oh_auth_required" || r.status === 403) {
+          out = "直连模式只读：当前页面未带门户 session，A0 可规划但不可执行。\n" +
+            "请从 8734 /hermes/ 登录后使用（或为本次执行提供 run:execute cap）。";
+        } else {
+          out = "A0 编排失败：" + (d.error || d.detail || ("HTTP " + r.status));
+        }
+      }
       else if (d.mode === "answer") out = d.plan || "（A0 未返回计划）";
       else if (d.mode === "executed") {
         out = "A0 已规划并启动 OH 执行：\n" + (d.plan || "") +
@@ -190,7 +197,11 @@
         if (wrap) wrap.style.display = "none";
         setTimeout(ctrlRefresh, 800);
       } else if (act === "ide") {
-        window.open("http://127.0.0.1:8103/rw", "_blank");
+        // v6：不再直连 8103（无认证旁路）；走同源 /lde 或 8734 登录入口
+        const ideUrl = (location.port === "8787")
+          ? "http://127.0.0.1:8734/lde/rw"
+          : location.origin + "/lde/rw";
+        window.open(ideUrl, "_blank");
       } else if (act === "close") {
         ctrlStopPolling();
         const card = ctrlEl("a0-ctrl");

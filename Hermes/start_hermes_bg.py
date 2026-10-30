@@ -182,7 +182,13 @@ try:
     if _pw:
         env["HERMES_WEBUI_PASSWORD"] = _pw
 except OSError:
-    pass
+    _pw = ""
+# 生产 fail-closed：默认要求认证；密码缺失/读失败拒绝拉起（回滚显式 HERMES_AUTH_REQUIRED=0）
+_AUTH_REQUIRED = str(os.environ.get("HERMES_AUTH_REQUIRED", "1")).strip().lower() \
+    not in ("0", "off", "false", "no")
+if _AUTH_REQUIRED and not env.get("HERMES_WEBUI_PASSWORD"):
+    _log("[FATAL] HERMES_AUTH_REQUIRED=1 but password file missing/unreadable: %s" % _PW_FILE)
+    sys.exit(2)
 # 2026-10-16 判例：交互会话 PATH 前置了 WorkBuddy 3.13/PortableGit，
 # server 启动后 spawn 子进程会拿到坏解释器而静默死。守护链环境必须
 # 以系统 PATH 为底重建，剔除注入项。
