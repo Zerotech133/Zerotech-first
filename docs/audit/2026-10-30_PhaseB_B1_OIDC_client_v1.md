@@ -83,3 +83,19 @@ B2：
 4. 老田注册 passkey，取 sub，写 `identity_registry` 的 `idp_sub/idp_issuer`；
 5. `AUTH_OIDC_MODE=shadow` 验证 → `on` 切换登录页；
 6. 密码桥保留 2 周回退。
+
+
+## 8. 上线记录（2026-10-30 13:16）
+
+- 8091 受控重启：46760 → 48652；健康 200；
+- GET /api/auth/oidc/status → 200：
+  - mode=off
+  - 
+eady=false（尚无 client 凭据）
+  - login_entry=unchanged (Phase A password bridge)
+- GET /api/auth/oidc/start → 404 oidc_disabled；
+- GET /api/auth/oidc/callback → 404 oidc_disabled；
+- Phase A 密码登录仍 200（zero_bff smoke）；
+- /api/bff/identity/me 未登录 401；
+- Pocket ID B0 仍 healthy，discovery 200；
+- **未切换登录入口、未创建 client/passkey**。
