@@ -164,13 +164,24 @@ def make_context(code):
             vol_ratio,
         )
     )
-    return {
+    out = {
         "market_technical": market,
         "fundamental": fundamental,
         "news_event": sentiment,
         "final_decision": final,
         "name": q["name"],
     }
+    # 2026-10-30 WO-D1-HERMES-BRIDGE：追加 Hermes stock-data 只读补充；
+    # fail-open、带缓存、D1_HERMES_BRIDGE=0 可关闭，不参与编排/裁决。
+    try:
+        from agent_platform.hermes_bridge import context_text as _hermes_text
+        extra = _hermes_text(code)
+        if extra:
+            for _k in ("market_technical", "fundamental", "news_event", "final_decision"):
+                out[_k] = out[_k] + "\n\n[Hermes stock-data 只读补充]\n" + extra
+    except Exception:  # noqa: BLE001 数据桥失败不影响主链
+        pass
+    return out
 
 
 if __name__ == "__main__":
