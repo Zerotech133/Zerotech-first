@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 29,
+  "workorders_doing": 28,
   "workorders_review": 9
  },
  "workorders": [
@@ -344,15 +344,6 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-ZHAOYUN-UIUX-B3-20261030",
    "created": "2026-10-30 20:56:12",
-   "project": "general"
-  },
-  {
-   "id": "WO-GUANYU-P91-20261030",
-   "desc": "ACAD1零重启接入工单",
-   "status": "doing",
-   "owner": "GUANYU",
-   "branch": "task/WO-GUANYU-P91-20261030",
-   "created": "2026-10-30 20:57:48",
    "project": "general"
   }
  ],
@@ -6657,14 +6648,7 @@
    ],
    "experience": "30 年工程治理经验：漏洞分级与补丁流程、失败测试基线修复、编码规范与门禁落地、技术债清欠与重复功能合并；证据驱动、逐项闭环，只出报告与工单不自行合并，开发动作限独立 worktree 提交+跑测试并交 L2 人签。",
    "dept_name": "研究院",
-   "dept_cn_title": "太学",
-   "tasks": [
-    {
-     "id": "WO-GUANYU-P91-20261030",
-     "desc": "ACAD1零重启接入工单",
-     "status": "doing"
-    }
-   ]
+   "dept_cn_title": "太学"
   },
   "HUANGZHONG": {
    "id": "HUANGZHONG",
