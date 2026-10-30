@@ -31,6 +31,12 @@ import time
 import urllib.request
 import logging
 
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from portal.safe_urlopen import safe_urlopen
+
+
 __all__ = [
     "api_org",
     "api_meta",
@@ -855,7 +861,7 @@ def _llm_distill(base_url, doc):
         headers={"Content-Type": "application/json"},
         method="POST",
     )
-    with urllib.request.urlopen(req, timeout=LEARN_TIMEOUT) as resp:
+    with safe_urlopen(req, timeout=LEARN_TIMEOUT) as resp:
         data = json.loads(resp.read().decode("utf-8"))
     digest = str(data.get("response") or "").strip()
     if not digest:

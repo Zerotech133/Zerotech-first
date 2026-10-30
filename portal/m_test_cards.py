@@ -24,6 +24,12 @@ import sys
 import time
 import urllib.request
 
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from portal.safe_urlopen import safe_urlopen
+
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
@@ -63,7 +69,7 @@ def _token(app):
         ).encode(),
         headers={"Content-Type": "application/json"},
     )
-    with urllib.request.urlopen(req, timeout=20) as r:
+    with safe_urlopen(req, timeout=20) as r:
         return json.loads(r.read().decode())["tenant_access_token"]
 
 
@@ -86,7 +92,7 @@ def _send(token, receive_id, receive_type, card, retries=3):
                     "Content-Type": "application/json",
                 },
             )
-            with urllib.request.urlopen(req, timeout=25) as r:
+            with safe_urlopen(req, timeout=25) as r:
                 res = json.loads(r.read().decode())
             return (res.get("data") or {}).get("message_id") or "?"
         except Exception as e:  # noqa: BLE001

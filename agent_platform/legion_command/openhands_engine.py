@@ -19,6 +19,12 @@ import urllib.request
 import uuid
 from pathlib import Path
 
+try:
+    from safe_http import safe_urlopen
+except ImportError:  # 作为包导入时
+    from legion_command.safe_http import safe_urlopen
+
+
 # 方案 A 第二阶段：默认走 Docker sandbox（Linux 容器内执行工具，绕开 Windows
 # FileEditor 挂起；worktree 通过 C:\legion-worktrees -> /workspaces 绑定挂载）。
 BASE_URL = os.environ.get("OPENHANDS_SANDBOX_URL", "http://127.0.0.1:8771").rstrip("/")
@@ -48,7 +54,7 @@ def _wait_health(timeout: int = 60, base: str | None = None) -> bool:
     deadline = time.time() + max(5, timeout)
     while time.time() < deadline:
         try:
-            with urllib.request.urlopen(base + "/health", timeout=2) as r:
+            with safe_urlopen(base + "/health", timeout=2) as r:
                 data = json.loads(r.read().decode("utf-8", "replace"))
                 if data.get("status") == "ok":
                     return True
@@ -150,7 +156,7 @@ def _req(path: str, method: str = "GET", body=None, timeout: int = 30):
         },
     )
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
+        with safe_urlopen(req, timeout=timeout) as r:
             raw = r.read().decode("utf-8", "replace")
             return r, (json.loads(raw) if raw.strip() else {})
     except urllib.error.HTTPError as e:
@@ -280,7 +286,7 @@ def _final(cid: str) -> str:
 
 def _summary(e: dict) -> str | None:
     kind = str(e.get("kind") or "")
-    source = str(e.get("source") or "")
+    source = str(e.get("source") or "")  # noqa: F841 - 既有未使用变量（批3不改行为）
     if kind == "ActionEvent":
         action = e.get("action") or {}
         if not isinstance(action, dict):

@@ -77,7 +77,7 @@ def portal(monkeypatch):
         "log_exc": lambda _: None,
         "_tp_row": lambda *_a, **_k: "",
     }
-    exec(
+    exec(  # nosec B102 - 测试隔离加载 portal_api（无外部输入）
         compile(
             ast.fix_missing_locations(ast.Module(body=nodes, type_ignores=[])),
             str(here / "portal_api.py"),

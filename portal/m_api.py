@@ -41,6 +41,12 @@ if HERE not in sys.path:
 import m_contract  # noqa: E402
 import m_tokens  # noqa: E402
 
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from portal.safe_urlopen import safe_urlopen
+
+
 
 class ApiError(Exception):
     def __init__(self, message, status=400):
@@ -585,7 +591,7 @@ def _local_get(path, timeout=15):
 
     url = "http://127.0.0.1:8091" + path
     try:
-        with urllib.request.urlopen(url, timeout=timeout) as r:
+        with safe_urlopen(url, timeout=timeout) as r:
             return r.status, json.loads(r.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
         try:
@@ -1352,7 +1358,7 @@ def _feishu_app_token():
         ).encode(),
         headers={"Content-Type": "application/json"},
     )
-    with urllib.request.urlopen(req, timeout=15) as r:
+    with safe_urlopen(req, timeout=15) as r:
         d = json.loads(r.read().decode())
     if d.get("code") != 0:
         raise ApiError("获取 app_access_token 失败：%s" % d.get("msg"), 502)
@@ -1441,7 +1447,7 @@ def auth_exchange(handler, body):
             "Authorization": "Bearer " + app_token,
         },
     )
-    with urllib.request.urlopen(req, timeout=15) as r:
+    with safe_urlopen(req, timeout=15) as r:
         d = json.loads(r.read().decode())
     if d.get("code") != 0 or not (d.get("data") or {}).get("open_id"):
         raise ApiError("换取用户身份失败：%s" % d.get("msg"), 502)

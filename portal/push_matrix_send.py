@@ -69,6 +69,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import push_matrix  # noqa: E402
 import logging
 
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from portal.safe_urlopen import safe_urlopen
+
+
 MKT_CN = {
     "cn": "A股",
     "hk": "港股",
@@ -315,7 +321,7 @@ def _default_poster(url, payload, key) -> dict:
     )
     req.add_header("Content-Type", "application/json; charset=utf-8")
     req.add_header("X-Push-Hub-Key", key)
-    with urllib.request.urlopen(req, timeout=10) as r:
+    with safe_urlopen(req, timeout=10) as r:
         return json.loads(r.read().decode("utf-8"))
 
 

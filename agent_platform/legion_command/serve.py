@@ -42,6 +42,12 @@ from legion_command import hq_acceptance  # noqa: E402
 from legion_command import hq_stats  # noqa: E402
 import logging
 
+try:
+    from safe_http import safe_urlopen
+except ImportError:  # 作为包导入时
+    from legion_command.safe_http import safe_urlopen
+
+
 _STATIC = Path(__file__).resolve().parent / "static"
 # 作战会议室纪要落盘目录（模块级，测试可 monkeypatch 到 tmp）
 MEETINGS_DIR = _PLATFORM / "data" / "meetings" / "warroom"
@@ -673,8 +679,7 @@ class Handler(BaseHTTPRequestHandler):
                 out["upstream"] = {"relay_configured": False,
                                    "error": "%s: %s" % (type(e).__name__, str(e)[:120])}
             try:
-                import urllib.request as _u
-                with _u.urlopen("http://127.0.0.1:11434/api/tags", timeout=2) as r:
+                with safe_urlopen("http://127.0.0.1:11434/api/tags", timeout=2) as r:
                     tags = json.loads(r.read().decode("utf-8", "replace"))
                 names = [m.get("name", "") for m in (tags.get("models") or [])]
                 out["local"] = {"online": True,
@@ -692,8 +697,7 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/models/status":
             out = {"ok": True, "local": {}, "relay_gpt6": {}}
             try:
-                import urllib.request as _u
-                with _u.urlopen("http://127.0.0.1:11434/api/tags", timeout=2) as r:
+                with safe_urlopen("http://127.0.0.1:11434/api/tags", timeout=2) as r:
                     tags = json.loads(r.read().decode("utf-8", "replace"))
                 ms = []
                 for m in (tags.get("models") or []):

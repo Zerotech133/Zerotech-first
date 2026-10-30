@@ -19,6 +19,12 @@ import sys
 import time
 import urllib.request
 
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from portal.safe_urlopen import safe_urlopen
+
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 LEDGER = os.path.join(HERE, "data", "policy_feed.jsonl")
 UA = "Mozilla/5.0 (compatible; ZeroOS-PolicyBot/0.1; +personal intel dashboard)"
@@ -37,13 +43,13 @@ def _fetch(url: str, timeout: int = 20) -> str:
     # 本机代理(59403)自签链会拦公网证书——公开只读页降级为未验证上下文；
     # 仅用于无凭据 GET，绝不用于带认证请求。若直连环境应恢复验证。
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
+        with safe_urlopen(req, timeout=timeout) as r:
             raw = r.read()
     except urllib.error.URLError as e:
         if "CERTIFICATE" not in str(e):
             raise
         ctx = ssl._create_unverified_context()  # nosec B323 - 仅 CERTIFICATE 失败时公网只读 GET 降级，无凭据
-        with urllib.request.urlopen(req, timeout=timeout, context=ctx) as r:
+        with safe_urlopen(req, timeout=timeout, context=ctx) as r:
             raw = r.read()
     for enc in ("utf-8", "gb18030"):
         try:

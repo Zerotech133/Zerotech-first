@@ -33,6 +33,12 @@ import urllib.request
 import uuid
 import logging
 
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包导入时
+    from portal.safe_urlopen import safe_urlopen
+
+
 # ── 限额（宁可早拒，不要让 2 分钟的音频卡住 WS 主链）──────────────
 MAX_DURATION_MS = 120_000
 MAX_BYTES = 10 * 1024 * 1024
@@ -139,7 +145,7 @@ def _openai_transcribe(path: str, cfg: dict) -> str:
         },
     )
     try:
-        with urllib.request.urlopen(
+        with safe_urlopen(
             req, timeout=int(cfg.get("timeout") or DEFAULT_TIMEOUT)
         ) as r:
             payload = json.loads(r.read().decode("utf-8", "replace") or "{}")

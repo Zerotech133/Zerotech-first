@@ -35,7 +35,7 @@ SECURITY_FLAGS = [
     "--cap-drop", "ALL",
     "--security-opt", "no-new-privileges",
     "--read-only",
-    "--tmpfs", "/tmp:rw,noexec,nosuid,size=64m",
+    "--tmpfs", "/tmp:rw,noexec,nosuid,size=64m",  # nosec B108 - 测试夹具/docker参数/字符串常量（已核实）
 ]
 
 

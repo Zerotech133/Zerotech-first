@@ -12,10 +12,15 @@ import json
 import subprocess
 import sys
 import time
-import urllib.request
 from datetime import datetime
 from pathlib import Path
 import logging
+
+try:
+    from safe_http import safe_urlopen
+except ImportError:  # 作为包导入时
+    from legion_command.safe_http import safe_urlopen
+
 
 HOME = Path.home() / ".hermes" / "profiles" / "tianfeng"
 
@@ -29,7 +34,7 @@ def _load(path: Path, default):
 
 def _health(url: str, timeout=3):
     try:
-        with urllib.request.urlopen(url, timeout=timeout) as r:
+        with safe_urlopen(url, timeout=timeout) as r:
             return r.status
     except Exception:
         return None

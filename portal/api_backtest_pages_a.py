@@ -2424,7 +2424,7 @@ def _bt_brief(self):
                              ("📊 收盘复盘", "ai_reviews")):
                 try:
                     r = db.execute(
-                        "SELECT ts, model, ok, brief FROM %s "
+                        "SELECT ts, model, ok, brief FROM %s "  # nosec B608 - 内部白名单标识符/值已参数化（已复核）
                         "ORDER BY ts DESC LIMIT 1" % tbl).fetchone()
                 except Exception:
                     r = None
