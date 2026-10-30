@@ -55,6 +55,9 @@ def strategy_health(portfolio=None):
 def healthy_sources(health):
     ok = set()
     for sid, h in (health or {}).items():
+        # 只有明确 green/yellow 的策略才可进池；未知健康状态不猜“健康”
+        if h.get("health") not in ("green", "yellow"):
+            continue
         if h.get("health") in BLOCK_HEALTH:
             continue
         if h.get("launch_status") in ("maintenance", "no_go"):
@@ -79,7 +82,8 @@ def build_pool(day=None, picks_path=None, portfolio_path=None, tiers=DEFAULT_TIE
     allowed = healthy_sources(health)
     data_date = str(picks.get("scan_run_date") or picks.get("trade_basis") or "")[:10]
     dd = _date(data_date) or _date(day)
-    fresh_days = (date.today() - dd).days if dd else None
+    base_day = _date(day) or date.today()
+    fresh_days = (base_day - dd).days if dd else None
     expiry = (dd + timedelta(days=EXPIRY_DAYS)).isoformat() if dd else ""
     stale = bool(fresh_days is not None and fresh_days > 1)
 

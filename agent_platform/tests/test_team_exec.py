@@ -37,6 +37,12 @@ def test_build_summary():
     assert s["target_price"] == [10, 11]
 
 
+def test_summary_no_decision_risk_unknown():
+    s = exec_mod.build_summary({}, [{"execution_mode": "normal"}], stock="600519")
+    assert s["recommendation"] is None and s["confidence"] is None
+    assert s["risk_level"] == "UNKNOWN"  # 无决策不冒充 LOW
+
+
 def test_record_and_read(tmp_path, monkeypatch):
     monkeypatch.setenv("TEAM_EXEC_DIR", str(tmp_path))
     node = {"node_key": "t1_market", "agent_id": "T1", "role_profile": "t1_bull",

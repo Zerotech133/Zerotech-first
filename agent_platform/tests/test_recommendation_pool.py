@@ -29,6 +29,8 @@ def _picks(tmp_path):
              "sources": [{"s": "ninedim", "score": 90}, {"s": "strong"}]},
             {"code": "000858.SZ", "name": "五粮液", "tier": "T2", "n_hit": 1,
              "sources": [{"s": "strong"}]},
+            {"code": "601318.SH", "name": "平安", "tier": "T2", "n_hit": 1,
+             "sources": [{"s": "unknownstrat"}]},
             {"code": "300324.SZ", "name": "旋极", "tier": "T3", "n_hit": 1,
              "sources": [{"s": "ninedim"}]},
         ]}), encoding="utf-8")
@@ -40,6 +42,7 @@ def _portfolio(tmp_path):
     p.write_text(json.dumps({"strategies": [
         {"id": "ninedim", "health": "green", "status": "live", "launch_status": "launch_ready"},
         {"id": "strong", "health": "red", "status": "live", "launch_status": "launch_ready"},
+        {"id": "unknownstrat", "health": None, "status": "live", "launch_status": None},
     ]}), encoding="utf-8")
     return p
 
@@ -51,6 +54,16 @@ def test_build_pool_health_filter(tmp_path):
     assert pool["items"][0]["sources"] == ["ninedim"]
     assert pool["counts"]["total"] == 1
     assert "strong" in pool["excluded"]["red_or_maintenance"]
+    # 未知健康状态不得被猜成“健康”
+    assert "unknownstrat" in pool["excluded"]["red_or_maintenance"]
+
+
+def test_freshness_uses_requested_day_not_today(tmp_path):
+    pool = pool_mod.build_pool(day="2026-11-05", picks_path=str(_picks(tmp_path)),
+                               portfolio_path=str(_portfolio(tmp_path)), write=False)
+    assert pool["data_date"] == "2026-10-30"
+    assert pool["freshness_days"] == 6
+    assert pool["stale"] is True
 
 
 def test_review_pending_and_selected(tmp_path):

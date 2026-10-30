@@ -26,7 +26,7 @@ sys.path.insert(0, str(sys_dir))
 from llm import similarity  # noqa: E402
 from team_schema import build_instruction, parse_structured  # noqa: E402
 import team_exec  # noqa: E402
-import logging
+import logging  # noqa: E402
 
 SIM_CONVERGE = 0.8  # 菜鸟 bull/bear 辩论收敛阈值
 

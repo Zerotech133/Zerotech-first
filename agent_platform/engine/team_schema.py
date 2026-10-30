@@ -88,18 +88,28 @@ def _strip_line_comments(text):
     while i < len(text):
         c = text[i]
         if esc:
-            out.append(c); esc = False; i += 1; continue
+            out.append(c)
+            esc = False
+            i += 1
+            continue
         if c == "\\" and in_str:
-            out.append(c); esc = True; i += 1; continue
+            out.append(c)
+            esc = True
+            i += 1
+            continue
         if c == '"':
-            in_str = not in_str; out.append(c); i += 1; continue
+            in_str = not in_str
+            out.append(c)
+            i += 1
+            continue
         if not in_str and c == "/" and i + 1 < len(text) and text[i + 1] == "/":
             while i < len(text) and text[i] != "\n":
                 i += 1
             if i < len(text):
                 out.append("\n")
             continue
-        out.append(c); i += 1
+        out.append(c)
+        i += 1
     return "".join(out)
 
 
