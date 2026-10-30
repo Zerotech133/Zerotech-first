@@ -495,6 +495,16 @@ function safeJget(url) {
     .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
     .catch((e) => ({ ok: false, __error: errorText(e), __url: url }));
 }
+let CAP2_FAILS = 0;
+let CAP2_LAST_ERR = '';
+function cap2Get(url) {
+  return jget(url).catch((e) => {
+    CAP2_FAILS += 1;
+    if (!CAP2_LAST_ERR) CAP2_LAST_ERR = errorText(e);
+    return null;
+  });
+}
+
 function renderPanelError(box, label, data) {
   box.replaceChildren();
   const row = el('div', 'muted', '⚠ ' + label + '加载失败' + (data && data.__error ? '：' + data.__error : ''));
@@ -742,20 +752,22 @@ async function quantQuery() {
 }
 
 function loadCap2() {
+  CAP2_FAILS = 0;
+  CAP2_LAST_ERR = '';
   Promise.all([
-    jget('/api/zhaoyun/selfaudit').catch(() => null),
-    jget('/api/zhaoyun/routing').catch(() => null),
-    jget('/api/zhaoyun/interventions').catch(() => null),
-    jget('/api/zhaoyun/memory/curation').catch(() => null),
-    jget('/api/zhaoyun/skills').catch(() => null),
-    jget('/api/zhaoyun/traces').catch(() => null),
-    jget('/api/zhaoyun/evals').catch(() => null),
-    jget('/api/zhaoyun/mcp').catch(() => null),
-    jget('/api/zhaoyun/memory/v2').catch(() => null),
-    jget('/api/zhaoyun/sandbox').catch(() => null),
-    jget('/api/zhaoyun/outbox').catch(() => null),
-    jget('/api/zhaoyun/research').catch(() => null),
-    jget('/api/zhaoyun/repair').catch(() => null),
+    cap2Get('/api/zhaoyun/selfaudit'),
+    cap2Get('/api/zhaoyun/routing'),
+    cap2Get('/api/zhaoyun/interventions'),
+    cap2Get('/api/zhaoyun/memory/curation'),
+    cap2Get('/api/zhaoyun/skills'),
+    cap2Get('/api/zhaoyun/traces'),
+    cap2Get('/api/zhaoyun/evals'),
+    cap2Get('/api/zhaoyun/mcp'),
+    cap2Get('/api/zhaoyun/memory/v2'),
+    cap2Get('/api/zhaoyun/sandbox'),
+    cap2Get('/api/zhaoyun/outbox'),
+    cap2Get('/api/zhaoyun/research'),
+    cap2Get('/api/zhaoyun/repair'),
   ]).then(([audit, routing, iv, cur, sk, trc, ev, mcp, mem2, sbx, ob, rs, rp]) => {
     const ab = $('selfaudit'); ab.replaceChildren();
     if (!audit || audit.error) {
@@ -940,6 +952,8 @@ function loadCap2() {
       });
     } else rpBox.appendChild(el('div', 'muted', '修复车道不可用'));
   });
+
+  if (CAP2_FAILS) showBanner('部分能力面板不可用（' + CAP2_FAILS + ' 项）：' + (CAP2_LAST_ERR || '请求失败'), { level: 'warn', retry: loadCap2 });
 }
 function repairTriage() {
   if (!requireWriteToken()) return;
