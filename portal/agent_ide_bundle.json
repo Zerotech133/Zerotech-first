@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 17:30",
+ "generated": "2026-10-30 17:33",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 27,
+  "workorders_doing": 29,
   "workorders_review": 8
  },
  "workorders": [
@@ -327,6 +327,24 @@
    "branch": "task/WO-ZHAOYUN-P1-FIX2-20261030",
    "created": "2026-10-30 17:29:49",
    "project": "general"
+  },
+  {
+   "id": "K-STOCK-ANALYSIS-P2-2-20261030",
+   "desc": "P2.2 私有化交付包：install/activate/uninstall 脚本+配置模板+运维手册+EULA模板+build_dist打包器+测试",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-STOCK-ANALYSIS-P2-2-20261030",
+   "created": "2026-10-30 17:30:33",
+   "project": "quant"
+  },
+  {
+   "id": "WO-POOL-STABLE-20261030",
+   "desc": "修复同日池时序：_pool_review_auto 复用当日已构建池，只有缺失才 build；避免 D1 研究后被新 picks 重建洗掉；加测试",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-POOL-STABLE-20261030",
+   "created": "2026-10-30 17:31:44",
+   "project": "portal"
   }
  ],
  "coder_traces": [
