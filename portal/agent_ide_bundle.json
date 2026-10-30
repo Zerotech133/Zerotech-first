@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 11:01",
+ "generated": "2026-10-30 11:11",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,55 +9,10 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 29,
-  "workorders_review": 8
+  "workorders_doing": 25,
+  "workorders_review": 6
  },
  "workorders": [
-  {
-   "id": "WO-REDTEAM-JUDGE-20261027",
-   "desc": "红队判定器修复：'系统提示词'主题词误报为泄露，改为只判实际内容指纹",
-   "status": "review",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-REDTEAM-JUDGE-20261027",
-   "created": "2026-10-27 15:02:40",
-   "project": "general"
-  },
-  {
-   "id": "WO-PHOENIX-ISOLATED-20261027",
-   "desc": "B-08 Phoenix隔离venv：安装/端口登记/起服务/health验证",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-PHOENIX-ISOLATED-20261027",
-   "created": "2026-10-27 16:42:40",
-   "project": "general"
-  },
-  {
-   "id": "WO-TESTPATHS-ADJUST-20261028",
-   "desc": "testpaths 注释与行对齐：quant 收集已修但默认不纳入（CI 预算待确认）",
-   "status": "review",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-TESTPATHS-ADJUST-20261028",
-   "created": "2026-10-28 05:24:43",
-   "project": "general"
-  },
-  {
-   "id": "WO-LEGION-HEALTHCARD-20261028",
-   "desc": "健康卡 task_audit 口径：应用 task_exit_audit by-design 语义（alert_found/known_baseline），failed 9→5 降假红",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-HEALTHCARD-20261028",
-   "created": "2026-10-28 17:59:15",
-   "project": "general"
-  },
-  {
-   "id": "WO-LEGION-CENSUS2-20261028",
-   "desc": "agent_census 时间解析二次落地：fromisoformat 优先，消除 ISO silent-except；不改变口径",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-CENSUS2-20261028",
-   "created": "2026-10-28 23:25:44",
-   "project": "general"
-  },
   {
    "id": "WO-GUANYU-P19-20261029",
    "desc": "ruff收尾E702F401 [UNOWNED]",
@@ -336,15 +291,6 @@
    "branch": "task/K-QUANT-20261030-OHLOOP-TEST",
    "created": "2026-10-30 09:19:23",
    "project": "quant"
-  },
-  {
-   "id": "WO-GUANYU-P68-20261030",
-   "desc": "api_backtest B1拆分",
-   "status": "doing",
-   "owner": "GUANYU",
-   "branch": "task/WO-GUANYU-P68-20261030",
-   "created": "2026-10-30 10:59:37",
-   "project": "general"
   }
  ],
  "coder_traces": [
@@ -6380,14 +6326,7 @@
    ],
    "experience": "30 年工程治理经验：漏洞分级与补丁流程、失败测试基线修复、编码规范与门禁落地、技术债清欠与重复功能合并；证据驱动、逐项闭环，只出报告与工单不自行合并，开发动作限独立 worktree 提交+跑测试并交 L2 人签。",
    "dept_name": "研究院",
-   "dept_cn_title": "太学",
-   "tasks": [
-    {
-     "id": "WO-GUANYU-P68-20261030",
-     "desc": "api_backtest B1拆分",
-     "status": "doing"
-    }
-   ]
+   "dept_cn_title": "太学"
   },
   "HUANGZHONG": {
    "id": "HUANGZHONG",
@@ -7037,31 +6976,6 @@
    "seat_note": "profile 角色，不占编（D5-C）；与 R2 风控席（org 编制·保守风控哨）是不同 id，报表按 id 区分。",
    "home_page": "http://127.0.0.1:8796/zhaoyun",
    "tasks": [
-    {
-     "id": "WO-REDTEAM-JUDGE-20261027",
-     "desc": "红队判定器修复：'系统提示词'主题词误报为泄露，改为只判实际内容指纹",
-     "status": "review"
-    },
-    {
-     "id": "WO-PHOENIX-ISOLATED-20261027",
-     "desc": "B-08 Phoenix隔离venv：安装/端口登记/起服务/health验证",
-     "status": "doing"
-    },
-    {
-     "id": "WO-TESTPATHS-ADJUST-20261028",
-     "desc": "testpaths 注释与行对齐：quant 收集已修但默认不纳入（CI 预算待确认）",
-     "status": "review"
-    },
-    {
-     "id": "WO-LEGION-HEALTHCARD-20261028",
-     "desc": "健康卡 task_audit 口径：应用 task_exit_audit by-design 语义（alert_found/known_baseline），failed 9→5 降假红",
-     "status": "doing"
-    },
-    {
-     "id": "WO-LEGION-CENSUS2-20261028",
-     "desc": "agent_census 时间解析二次落地：fromisoformat 优先，消除 ISO silent-except；不改变口径",
-     "status": "doing"
-    },
     {
      "id": "WO-AUDIT-FIX-20261029",
      "desc": "审计修复：hq_stats双计数、hk_r1_daily台账表格插入+去重+锁、kg zip strict",
