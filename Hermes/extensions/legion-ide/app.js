@@ -64,6 +64,15 @@
               <span id="legion-ide-agent-count" class="legion-ide-status"></span>
             </div>
             <div id="legion-ide-agents" class="legion-ide-agents">加载中…</div>
+            <details id="legion-ide-agent-detail" class="legion-ide-agent-detail" open>
+              <summary>Agent 详情</summary>
+              <div id="legion-ide-agent-detail-body">选择 Agent</div>
+            </details>
+            <div class="legion-ide-session-head">
+              <span>历史会话</span>
+              <button id="legion-ide-new-session">新会话</button>
+            </div>
+            <div id="legion-ide-sessions" class="legion-ide-sessions">—</div>
             <div class="legion-ide-row">
               <label>工单</label>
               <select id="legion-ide-task"><option value="">（加载中…）</option></select>
@@ -236,6 +245,115 @@
 
   let AGENTS = [];
 let SELECTED_AGENT = "";
+const SESSIONS_KEY = "legion-ide-sessions-v1";
+
+function readSessions() {
+  try {
+    const v = JSON.parse(localStorage.getItem(SESSIONS_KEY) || "[]");
+    return Array.isArray(v) ? v : [];
+  } catch (e) { return []; }
+}
+
+function writeSessions(list) {
+  try { localStorage.setItem(SESSIONS_KEY, JSON.stringify(list.slice(0, 20))); } catch (e) {}
+}
+
+function upsertSession(patch) {
+  if (!patch || !patch.cid) return;
+  const list = readSessions();
+  const i = list.findIndex((s) => s.cid === patch.cid);
+  const row = Object.assign({ updated: Date.now() }, i >= 0 ? list[i] : {}, patch);
+  if (i >= 0) list[i] = row; else list.unshift(row);
+  writeSessions(list);
+  renderSessions();
+}
+
+function removeSession(cid) {
+  writeSessions(readSessions().filter((s) => s.cid !== cid));
+  if (state.cid === cid) newSession();
+  renderSessions();
+}
+
+function renderSessions() {
+  const box = $("#legion-ide-sessions");
+  if (!box) return;
+  const list = readSessions();
+  if (!list.length) { box.textContent = "—"; return; }
+  box.innerHTML = list.map((s) => {
+    const title = s.title || s.task || s.cid.slice(0, 8);
+    const st = s.status || "?";
+    return `<button class="legion-ide-session" data-cid="${esc(s.cid)}" title="${esc(title)}">`
+      + `<b>${esc(title)}</b><span>${esc(s.agent || "A0")} · ${esc(st)}</span>`
+      + `<i data-del="${esc(s.cid)}" title="删除">×</i></button>`;
+  }).join("");
+  box.querySelectorAll(".legion-ide-session").forEach((n) => {
+    n.addEventListener("click", (e) => {
+      if (e.target && e.target.dataset && e.target.dataset.del) {
+        e.stopPropagation();
+        removeSession(e.target.dataset.del);
+        return;
+      }
+      const s = readSessions().find((x) => x.cid === n.dataset.cid);
+      if (s) loadSession(s);
+    });
+  });
+}
+
+function newSession() {
+  if (state.timer) { clearTimeout(state.timer); state.timer = null; }
+  state.cid = ""; state.events = []; state.pending = false; state.task = "";
+  const ev = $("#legion-ide-events"); if (ev) ev.textContent = "—";
+  const rp = $("#legion-ide-reply-wrap"); if (rp) rp.style.display = "none";
+  const df = $("#legion-ide-diff-wrap"); if (df) df.style.display = "none";
+  const cf = $("#legion-ide-confirm-wrap"); if (cf) cf.style.display = "none";
+  const st = $("#legion-ide-status"); if (st) { st.textContent = "就绪"; st.className = "legion-ide-status"; }
+  const start = $("#legion-ide-start"); if (start) start.disabled = false;
+  const stop = $("#legion-ide-stop"); if (stop) stop.disabled = true;
+}
+
+function loadSession(s) {
+  if (!s || !s.cid) return;
+  newSession();
+  state.cid = s.cid;
+  state.task = s.task || "";
+  const taskSel = $("#legion-ide-task");
+  if (taskSel && s.task) taskSel.value = s.task;
+  if (s.agent) selectAgent(s.agent);
+  if (s.model) {
+    const ms = $("#legion-ide-model");
+    if (ms) {
+      if (![...ms.options].some((o) => o.value === s.model)) {
+        const o = document.createElement("option");
+        o.value = s.model; o.textContent = s.model;
+        ms.appendChild(o);
+      }
+      ms.value = s.model;
+    }
+  }
+  const msg = $("#legion-ide-message");
+  if (msg && s.title) msg.value = s.title;
+  status("恢复会话…", "run");
+  const stop = $("#legion-ide-stop"); if (stop) stop.disabled = false;
+  schedulePoll();
+}
+
+function renderAgentDetail(a) {
+  const box = $("#legion-ide-agent-detail-body");
+  if (!box) return;
+  if (!a) { box.textContent = "选择 Agent"; return; }
+  const rows = [];
+  rows.push(`<div class="legion-ide-detail-name"><b>${esc(a.cn_name || a.name || a.id)}</b> <span>${esc(a.id)} · ${esc(a.grade || "")}</span></div>`);
+  if (a.charter) rows.push(`<div class="legion-ide-detail-sec"><em>职责</em>${esc(a.charter)}</div>`);
+  if (a.role_profile) rows.push(`<div class="legion-ide-detail-sec"><em>角色</em>${esc(a.role_profile)}</div>`);
+  if (a.llm) rows.push(`<div class="legion-ide-detail-sec"><em>模型</em>${esc(a.llm)}</div>`);
+  if (Array.isArray(a.tools) && a.tools.length) rows.push(`<div class="legion-ide-detail-sec"><em>工具</em>${a.tools.map(esc).join(" · ")}</div>`);
+  if (Array.isArray(a.skills) && a.skills.length) rows.push(`<div class="legion-ide-detail-sec"><em>技能</em>${a.skills.map(esc).join(" · ")}</div>`);
+  if (a.experience) rows.push(`<div class="legion-ide-detail-sec"><em>经验</em>${esc(a.experience)}</div>`);
+  if (a.prompt) {
+    rows.push(`<details class="legion-ide-prompt"><summary>prompt (${a.prompt.length} 字)</summary><pre>${esc(a.prompt)}</pre></details>`);
+  }
+  box.innerHTML = rows.join("");
+}
 
 function selectAgent(id) {
   const a = AGENTS.find((x) => x.id === id);
@@ -248,6 +366,7 @@ function selectAgent(id) {
       n.classList.toggle("on", n.dataset.agent === a.id);
     });
   }
+  renderAgentDetail(a);
   const modelSel = $("#legion-ide-model");
   if (modelSel && a.llm) {
     const val = String(a.llm);
@@ -354,6 +473,7 @@ async function loadDiff(task) {
       const d = await api("/api/ide/openhands/status?id=" + encodeURIComponent(state.cid));
       state.events = d.events || [];
       renderEvents();
+      upsertSession({ cid: state.cid, status: d.status || "running" });
       if (d.status === "waiting_for_confirmation") {
         state.pending = true;
         $("#legion-ide-confirm-wrap").style.display = "";
@@ -368,6 +488,7 @@ async function loadDiff(task) {
         const st = d.status;
         status(st === "finished" ? "✅ 完成" : ("⏹/❌ " + st), st === "finished" ? "ok" : "warn");
         if (d.reply) renderReply(d.reply);
+        upsertSession({ cid: state.cid, status: st, reply: d.reply || "" });
         $("#legion-ide-stop").disabled = true;
         $("#legion-ide-start").disabled = false;
         state.cid = "";
@@ -408,6 +529,10 @@ async function loadDiff(task) {
       });
       state.cid = d.conversation_id;
       state.task = task;
+      upsertSession({
+        cid: state.cid, task, agent: SELECTED_AGENT, model,
+        title: message.slice(0, 80), status: "running",
+      });
       state.baseSteps = [
         "worktree：" + (d.worktree || "default"),
         "模型：" + (d.model || model),
@@ -470,6 +595,8 @@ async function loadDiff(task) {
     $("#legion-ide-reject").onclick = () => respond(false);
     $("#legion-ide-commit").onclick = commit;
     $("#legion-ide-context").onclick = loadContext;
+    $("#legion-ide-new-session").onclick = newSession;
+    renderSessions();
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape" && $("#legion-ide-overlay")) closePanel();
     });

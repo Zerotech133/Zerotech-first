@@ -50,6 +50,8 @@ msedge.exe --app=http://127.0.0.1:8734/hermes/
 
 - Agent 卡片（63 个，来自 `/agent_ide_bundle.json` 或 `/api/ide/agents`）
 - 点击 Agent 自动切换模型
+- Agent 详情：职责/工具/技能/prompt
+- 历史会话列表：恢复 / 删除 / 新会话
 - 取上下文（AST symbols）
 - 工单下拉（来自 `/api/ide/openhands/tasks`）
 - 模型选择
