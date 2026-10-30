@@ -497,7 +497,65 @@ function appendSelection(text, label) {
     + "[" + label + "]\n" + fence + "\n" + t + "\n" + fence + "\n";
   msg.focus();
   const st = $("#legion-ide-snippet-status");
-  if (st) st.textContent = "已插入 " + t.split("\n").length + " 行";
+  if (st) st.textContent = "已插入 " + t.split("\n").length + " 行，正在补上下文…";
+  enrichSelectionContext(t, label).catch(() => {});
+}
+
+function _selectionPath(label) {
+  const m = String(label || "").match(/([A-Za-z0-9_./-]+\.(?:py|js|html|css|md|json|ps1|bat|toml|yaml|yml))/);
+  return m ? m[1] : "";
+}
+
+function _diffNearFile(diff, path, limit) {
+  const text = String(diff || "");
+  if (!path) return "";
+  const needle = "diff --git a/" + path + " ";
+  let i = text.indexOf(needle);
+  if (i < 0) i = text.indexOf("diff --git a/" + path + "\n");
+  if (i < 0) return "";
+  let j = text.indexOf("\ndiff --git ", i + 1);
+  const part = text.slice(i, j > 0 ? j : i + 2200);
+  return part.length > (limit || 1800) ? part.slice(0, limit || 1800) + "\n…" : part;
+}
+
+async function enrichSelectionContext(text, label) {
+  const msg = $("#legion-ide-message");
+  const st = $("#legion-ide-snippet-status");
+  if (!msg) return;
+  const q = String(text || "").replace(/\s+/g, " ").slice(0, 600);
+  if (!q) return;
+  let block = "";
+  try {
+    const ctx = await api("/api/ide/context?q=" + encodeURIComponent(q) + "&budget=2500");
+    const syms = (ctx.symbols || []).slice(0, 6);
+    if (syms.length) {
+      block += "\n[自动上下文 · AST]\n" + syms.map((s) =>
+        "- " + s.kind + " " + s.path + ":" + s.line + " " + s.name).join("\n");
+    }
+  } catch (e) {}
+  const task = $("#legion-ide-task") && $("#legion-ide-task").value;
+  const path = _selectionPath(label);
+  if (task && path) {
+    try {
+      const dd = await api("/api/ide/openhands/diff", {
+        method: "POST", body: JSON.stringify({ task }),
+      });
+      let part = _diffNearFile(dd.diff, path, 1600);
+      let diffLabel = path;
+      if (!part && dd.has_changes && dd.diff) {
+        // 选中文件不在本单 diff 里时，注入工单变更摘要作为邻近上下文。
+        part = String(dd.diff).slice(0, 1200);
+        diffLabel = "工单变更";
+      }
+      if (part) block += "\n[邻近 diff · " + diffLabel + "]\n```diff\n" + part + "\n```";
+    } catch (e) {}
+  }
+  if (!block) {
+    if (st) st.textContent = "已插入（无额外上下文命中）";
+    return;
+  }
+  msg.value = msg.value.trimEnd() + "\n" + block + "\n";
+  if (st) st.textContent = "已插入并自动补充上下文";
 }
 
 async function loadSnippet() {

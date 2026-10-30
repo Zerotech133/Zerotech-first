@@ -55,6 +55,7 @@ msedge.exe --app=http://127.0.0.1:8734/hermes/
 - SSE 实时事件（失败自动回退轮询）
 - 原生文件浏览器：目录下钻 / 点文件读取
 - 代码片段注入：文件读取 + 鼠标选区
+- 段落级自动上下文：AST symbol + 邻近 diff
 - 旧 IDE 选中桥（`?standalone=1&legion_pick=1`）
 - 剪贴板引用兜底（复制旧 IDE 内容 → 一键插入）
 - 取上下文（AST symbols）
