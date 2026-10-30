@@ -189,3 +189,10 @@ python -m analysis.backtest --universe 300 --out "C:\项目\deliverables\2026-10
 - 月频：市值前 N（默认 300，剔除 BJ、要求 2018 前有行情）× 92 个月（2019-01~2026-08），五维打分 v2（事件维度无历史→中性 50），财报按 `ann_date` 截止防未来函数；
 - 输出：总分分位、固定分档/当月分位映射的 20/60 日超额与胜率、Spearman IC、分因子 IC、`SCORE_CUTS` 校准建议；
 - 2026-10-30 首跑结论：IC 0.011（弱）、分档无单调性、quality/growth/trend 因子 IC≈0，仅 valuation +0.024 → **暂不按建议分档上线**，待 P0P 做权重/频率/股票池实验后再校准。
+
+### 策略实验网格（P0P，2026-10-30）
+
+- `python -m analysis.backtest --universe 300` 默认在基线之外跑 6 个变体：`base / val_heavy / val_only / equal / qg_only / trend_rev`；
+- 评估：2019-2023 训练、2024-2026 验证的 IC / 验证 IC 胜率 / Top-Bottom 分位差 / 季频（3/6/9/12 月末 60 日）IC；
+- 判定：`val IC>0.02 且 top_bottom>0 且 买入/观察偏多 val 超额>0` 才算通过；
+- 2026-10-30 首跑结论：**6 个变体全部未通过**（最好 trend_rev val IC 0.0232 但 top_bottom -0.43；val_heavy 季频 IC 0.0312 但验证段 0.0182；val_only 训练 0.0723→验证 0.0061 过拟合）→ 评分仅作解释框架，不作选股信号。

@@ -100,6 +100,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--universe", type=int, default=300)
     ap.add_argument("--out", default=r"C:\项目\deliverables\2026-10-30_评级回测")
+    ap.add_argument("--no-variants", action="store_true", help="只跑基线，不跑 P0P 实验网格")
     a = ap.parse_args()
     t0 = time.time()
 
@@ -197,7 +198,132 @@ def main():
     print("[score] evaluated rows =", len(df), "elapsed=%.0fs" % (time.time() - t0), flush=True)
     res = analyze(df)
     outp = write_out(res, df, a.out)
+    if not a.no_variants:
+        vres = evaluate_variants(df)
+        vout = write_variants(vres, a.out)
+        outp["variants"] = vout
+        print("[variants] verdict:", json.dumps(vres["verdict"], ensure_ascii=False), flush=True)
     print(json.dumps({"out": outp, "summary": res["summary"]}, ensure_ascii=False, indent=1)[:2000], flush=True)
+
+
+VARIANTS = {
+    "base": {"quality": .30, "growth": .20, "valuation": .20, "trend": .15, "event": .15},
+    "val_heavy": {"quality": .15, "growth": .15, "valuation": .45, "trend": .10, "event": .15},
+    "val_only": {"valuation": 1.0},
+    "equal": {"quality": .2, "growth": .2, "valuation": .2, "trend": .2, "event": .2},
+    "qg_only": {"quality": .5, "growth": .5},
+    "trend_rev": {"quality": .30, "growth": .20, "valuation": .20, "trend": .15,
+                  "event": .15, "_trend_rev": True},
+}
+
+
+def _variant_total(df, w):
+    f = df.copy()
+    if w.get("_trend_rev"):
+        f["trend"] = 100.0 - pd.to_numeric(f["trend"], errors="coerce").fillna(50.0)
+    tot = 0.0
+    wsum = 0.0
+    for k, wk in w.items():
+        if k.startswith("_") or k not in f.columns:
+            continue
+        tot = tot + pd.to_numeric(f[k], errors="coerce").fillna(50.0) * wk
+        wsum += wk
+    return tot / wsum if wsum else pd.Series([50.0] * len(df), index=df.index)
+
+
+def _period_stats(df):
+    valid = df.dropna(subset=["ex20"])
+    ics, spreads = [], []
+    for dt, sub in valid.groupby("date"):
+        if len(sub) < 30:
+            continue
+        ic = sub[["total", "ex20"]].corr(method="spearman").iloc[0, 1]
+        if pd.notna(ic):
+            ics.append(float(ic))
+        q = sub["total"].quantile([0.9, 0.1])
+        top = sub[sub["total"] >= q.iloc[0]]["ex20"].mean()
+        bot = sub[sub["total"] <= q.iloc[1]]["ex20"].mean()
+        if pd.notna(top) and pd.notna(bot):
+            spreads.append(float(top - bot))
+    return {"n": int(len(valid)),
+            "ic": round(float(np.mean(ics)), 4) if ics else None,
+            "ic_win": round(float(np.mean([1 if x > 0 else 0 for x in ics])) * 100, 1) if ics else None,
+            "top_bottom": round(float(np.mean(spreads)) * 100, 2) if spreads else None}
+
+
+def evaluate_variants(df):
+    df = df.copy()
+    df["period"] = np.where(df["date"] < "20240101", "train", "val")
+    out = {}
+    for name, w in VARIANTS.items():
+        d = df.copy()
+        d["total"] = _variant_total(d, w)
+        row = {}
+        for p in ("train", "val"):
+            sub = d[d["period"] == p].copy()
+            st = _period_stats(sub)
+            sub2 = sub.dropna(subset=["ex20"])
+            sub2["rating"] = sub2["total"].map(
+                lambda t: "买入" if t >= config.SCORE_CUTS["buy"]
+                else ("观察偏多" if t >= config.SCORE_CUTS["observe_up"]
+                      else ("观察" if t >= config.SCORE_CUTS["avoid"] else "回避")))
+            g = sub2.groupby("rating")["ex20"].agg(["count", "mean"])
+            st["by_rating"] = {k: {"n": int(v["count"]), "ex20": round(float(v["mean"]) * 100, 2)}
+                               for k, v in g.iterrows()}
+            row[p] = st
+        dq = d[d["date"].str[4:6].isin(["03", "06", "09", "12"])].dropna(subset=["ex60"])
+        ics = []
+        for dt, sub in dq.groupby("date"):
+            if len(sub) < 30:
+                continue
+            ic = sub[["total", "ex60"]].corr(method="spearman").iloc[0, 1]
+            if pd.notna(ic):
+                ics.append(float(ic))
+        row["quarterly_ic60"] = round(float(np.mean(ics)), 4) if ics else None
+        out[name] = row
+    best, best_ic = None, -9
+    for name, r in out.items():
+        v = r.get("val") or {}
+        if v.get("ic") is not None and v["ic"] > best_ic:
+            best_ic, best = v["ic"], name
+    val = (out.get(best) or {}).get("val") or {}
+    by = val.get("by_rating") or {}
+    buy = max([by.get(k, {}).get("ex20") for k in ("买入", "观察偏多") if by.get(k, {}).get("ex20") is not None]
+              or [-9])
+    passed = bool((val.get("ic") or 0) > 0.02 and (val.get("top_bottom") or 0) > 0 and buy > 0)
+    return {"variants": out, "best": best,
+            "verdict": {"best_variant": best, "val_ic": val.get("ic"),
+                        "val_top_bottom": val.get("top_bottom"), "val_buy_ex20": buy,
+                        "criterion": "val IC>0.02 且 top_bottom>0 且 买入/观察偏多 val 超额>0",
+                        "passed": passed},
+            "note": "事件维度无历史→固定中性50；样本=当前市值前N；不含成本；季频=3/6/9/12月末60日收益"}
+
+
+def write_variants(vres, outdir):
+    os.makedirs(outdir, exist_ok=True)
+    day = time.strftime("%Y%m%d")
+    jp = os.path.join(outdir, "variants_%s.json" % day)
+    json.dump(vres, open(jp, "w", encoding="utf-8"), ensure_ascii=False, indent=1, default=str)
+    md = ["# P0P 策略实验（权重/因子/频率）· %s" % time.strftime("%F %T"), "",
+          "> " + vres["note"], "",
+          "## 实验对比（训练 2019-2023 / 验证 2024-2026）", "",
+          "| 变体 | 训练IC | 验证IC | 验证IC胜率% | 验证Top-Bottom% | 季频IC(60d) |",
+          "|---|---|---|---|---|---|"]
+    for name, r in vres["variants"].items():
+        tr, va = r.get("train") or {}, r.get("val") or {}
+        md.append("| %s | %s | %s | %s | %s | %s |" % (
+            name, tr.get("ic"), va.get("ic"), va.get("ic_win"),
+            va.get("top_bottom"), r.get("quarterly_ic60")))
+    v = vres["verdict"]
+    md += ["", "## 判定", "", "```", json.dumps(v, ensure_ascii=False), "```"]
+    md += ["", "## 各变体验证段评级组超额（20日）", ""]
+    for name, r in vres["variants"].items():
+        by = ((r.get("val") or {}).get("by_rating")) or {}
+        md.append("- **%s**: %s" % (name, ", ".join("%s n=%s ex20=%s%%" % (k, x["n"], x["ex20"])
+                                                    for k, x in by.items())))
+    mp = os.path.join(outdir, "variants_%s.md" % day)
+    open(mp, "w", encoding="utf-8").write("\n".join(md))
+    return {"json": jp, "md": mp}
 
 
 def _v(x):
