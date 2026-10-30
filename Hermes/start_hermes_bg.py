@@ -166,7 +166,7 @@ env.update({
     "HERMES_WEBUI_STATE_DIR": r"C:\项目\老田的AI助手\Hermes\webui-state",
     # 军团 IDE 扩展（官方 /extensions/ 注入面，不改核心 static）
     "HERMES_WEBUI_EXTENSION_DIR": r"C:\项目\老田的AI助手\Hermes\extensions\legion-ide",
-    "HERMES_WEBUI_EXTENSION_SCRIPT_URLS": "/extensions/app.js",
+    "HERMES_WEBUI_EXTENSION_SCRIPT_URLS": "/extensions/app.js,/extensions/a0-mainchat.js",
     "HERMES_WEBUI_EXTENSION_STYLESHEET_URLS": "/extensions/app.css",
     "NO_PROXY": "localhost,127.0.0.1",
 })
