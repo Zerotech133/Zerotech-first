@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>零界个股分析 · 案例库</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<style>
+  :root{--bg:#0e1116;--panel:#161b22;--line:#27303b;--txt:#e8edf4;--muted:#8d99a8;--blue:#4da3ff;--green:#38c172;--red:#ff5c5c}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.7 "Segoe UI",system-ui,sans-serif}
+  .wrap{max-width:1040px;margin:0 auto;padding:28px 16px 70px}
+  header{display:flex;justify-content:space-between;align-items:center}
+  header b{font-size:19px}.tag{font-size:11px;border:1px solid var(--blue);color:var(--blue);border-radius:999px;padding:2px 8px;margin-left:8px}
+  nav a{color:var(--blue);text-decoration:none;margin-left:14px;font-size:13px}
+  h1{font-size:26px;margin:26px 0 6px}
+  .sub{color:var(--muted);margin:0 0 22px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .card h3{margin:0 0 6px;font-size:16px}
+  .badge{display:inline-block;font-size:11.5px;border-radius:999px;padding:1px 8px;border:1px solid var(--line);color:var(--muted);margin-right:6px}
+  .num{color:var(--blue);font-weight:700}
+  .risk{color:var(--red)} .ok{color:var(--green)}
+  .card p{color:var(--muted);font-size:13px;margin:8px 0}
+  .links a{color:var(--blue);font-size:13px;margin-right:12px;text-decoration:none}
+  footer{margin-top:30px;color:var(--muted);font-size:11.5px}
+  .wb-nav{display:none !important}
+</style>
+</head>
+<body>
+<script src="/static/nav.js" defer></script>
+<div class="wrap">
+  <header>
+    <div><b>零界 · 个股分析</b><span class="tag">案例库</span></div>
+    <nav><a href="/landing.html">试用</a><a href="/customer.html">客户登录</a><a href="/docs/customer/SUPPORT.md">支持</a></nav>
+  </header>
+
+  <h1>真实案例：不同的股票，不同的问法</h1>
+  <p class="sub">同一套流水线，输出"看得懂、可追溯、带边界"的研究结论。以下为截至 2026-10-29 的公开示例（研究分析，不构成投资建议）。</p>
+
+  <div class="grid">
+    <div class="card">
+      <h3>ST美克（600337.SH）<span class="badge">事件观察</span></h3>
+      <p>ST + 预重整 + 控股股东合并重整的二元事件。系统给出：净资产 <span class="num">0.91 亿</span>、负债率 <span class="num">97.55%</span>、H1 归母 <span class="risk">-5.01 亿</span>，PS 自身 5 年分位 <span class="num">94.7%</span>；评级"事件观察"，并列出退市风险路径与 3 个跟踪节点。</p>
+      <div class="links">
+        <a href="/api/analysis/h5?run_id=600337SH-20261029-151722" target="_blank">H5 全景</a>
+        <a href="/api/analysis/report?run_id=600337SH-20261029-151722" target="_blank">报告</a>
+      </div>
+    </div>
+    <div class="card">
+      <h3>五洲新春（603667.SH）<span class="badge">观察</span></h3>
+      <p>表面高增长、实则一次性收益：归母净利 <span class="num">9.83 亿（+898%）</span>，但扣非仅 <span class="num">0.70 亿（-22.9%）</span>，非经常性损益 <span class="risk">9.12 亿</span>（洛轴股份重估）。系统用扣非口径与"非经常性权重"提示盈利质量风险。</p>
+      <div class="links">
+        <a href="/api/analysis/h5?run_id=603667SH-20261029-171654" target="_blank">H5 全景</a>
+        <a href="/api/analysis/report?run_id=603667SH-20261029-171654" target="_blank">报告</a>
+      </div>
+    </div>
+    <div class="card">
+      <h3>安恒信息（688023.SH）<span class="badge">观察</span></h3>
+      <p>长期亏损的网络安全公司：质量维度弱，但估值处历史低位（PS 分位低）、趋势与事件中性。系统不"讲故事"，只给五维分解（质量/成长/估值/趋势/事件）与同业 L2 对比，帮助研究者自己下判断。</p>
+      <div class="links">
+        <a href="/api/analysis/h5?run_id=688023SH-20261029-142252" target="_blank">H5 全景</a>
+        <a href="/api/analysis/report?run_id=688023SH-20261029-142252" target="_blank">报告</a>
+      </div>
+    </div>
+    <div class="card">
+      <h3>事件库与复核（方法论）</h3>
+      <p>101 条公告事件全部经"AI 预审 + 人工复核"（通过/驳回可追溯），类别覆盖重整、诉讼、回购、业绩、质押等；报告在事件表标注 ✓/✗，避免把程序性公告当投研线索。</p>
+      <div class="links"><a href="/landing.html">了解产品</a><a href="/docs/customer/SUPPORT.md">支持流程</a></div>
+    </div>
+  </div>
+
+  <footer>零界 · 个股分析 ｜ 研究分析，不构成投资建议 ｜ 案例数据截至 2026-10-29</footer>
+</div>
+</body>
+</html>

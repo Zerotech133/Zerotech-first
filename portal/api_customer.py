@@ -14,11 +14,12 @@ import hmac
 import json
 import os
 import re
+import secrets
 import subprocess
 import sys
 import time
 
-ROOT = r"C:\项目\老田的AI助手"
+ROOT = os.environ.get("ANALYSIS_ROOT") or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HOME = os.environ.get("COMMERCIAL_HOME") or r"C:\项目\commercial"
 SECRET_FILE = os.path.join(HOME, "secret.key")
 CODE_RE = re.compile(r"^(60[0-9]{4}|68[0-9]{4}|00[0-9]{4}|30[0-9]{4}|8[0-9]{6})\.(SH|SZ|BJ)$")
@@ -217,6 +218,43 @@ def handle_post(handler, path):
                                "report_url": "/api/customer/report?run_id=%s&format=md" % r.get("run_id"),
                                "h5_url": "/api/customer/report?run_id=%s&format=h5" % r.get("run_id"),
                                "usage": quota.usage_report(d["t"], plan=l.plan)})
+    if path == "/api/customer/trial":
+        try:
+            body = _body(handler)
+        except Exception:
+            return _json(handler, {"ok": False, "error": "bad json"}, 400)
+        name = str(body.get("name") or "").strip()
+        contact = str(body.get("contact") or "").strip()
+        company = str(body.get("company") or "").strip()
+        if not name or not contact:
+            return _json(handler, {"ok": False, "error": "请填写称呼与联系方式"}, 400)
+        if not _secret():
+            return _json(handler, {"ok": False, "error": "服务端未配置许可密钥"}, 500)
+        if ROOT not in sys.path:
+            sys.path.insert(0, ROOT)
+        from commercial import audit as audit_mod, growth as growth_mod, license as lic, tenants
+        tid = "trial-" + secrets.token_hex(3)
+        key = lic.issue(tid, plan="pro", expires=time.time() + 7 * 86400, seats=1, secret=_secret())
+        tenants.add_tenant(tid, name=company or name, plan="pro", license_key=key)
+        audit_mod.append("trial_started", tenant=tid, actor="growth",
+                         detail={"ref": "landing", "has_company": bool(company)})
+        growth_mod.record("trial", ref="landing", detail={"tenant": tid})
+        return _json(handler, {"ok": True, "tenant": tid, "license": key,
+                               "plan": "pro", "days": 7, "customer_url": "/customer.html"})
+
+    if path == "/api/customer/track":
+        try:
+            body = _body(handler)
+        except Exception:
+            return _json(handler, {"ok": False, "error": "bad json"}, 400)
+        if ROOT not in sys.path:
+            sys.path.insert(0, ROOT)
+        from commercial import growth as growth_mod
+        try:
+            growth_mod.record(str(body.get("event") or "view"), ref=str(body.get("ref") or ""))
+        except ValueError as e:
+            return _json(handler, {"ok": False, "error": str(e)}, 400)
+        return _json(handler, {"ok": True})
     return _json(handler, {"ok": False, "error": "unknown customer post: " + path}, 404)
 
 
