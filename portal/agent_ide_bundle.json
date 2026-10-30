@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 28,
+  "workorders_doing": 27,
   "workorders_review": 8
  },
  "workorders": [
@@ -317,15 +317,6 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-LEGION-OIDC-PATH-20261030",
    "created": "2026-10-30 17:25:25",
-   "project": "general"
-  },
-  {
-   "id": "WO-LEGION-EVALTRACE-20261030",
-   "desc": "评估闸门+trace运营化工具",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-EVALTRACE-20261030",
-   "created": "2026-10-30 18:07:19",
    "project": "general"
   },
   {
@@ -7295,11 +7286,6 @@
     {
      "id": "WO-LEGION-OIDC-PATH-20261030",
      "desc": "OIDC配置路径对齐实际vault",
-     "status": "doing"
-    },
-    {
-     "id": "WO-LEGION-EVALTRACE-20261030",
-     "desc": "评估闸门+trace运营化工具",
      "status": "doing"
     }
    ]
