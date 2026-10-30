@@ -4848,6 +4848,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
         elif path in ("/d1/research", "/d1_research.html"):
             self._html_file(os.path.join(
                 os.path.dirname(os.path.abspath(__file__)), "d1_research.html"))
+        elif path in ("/d1/war-room", "/d1_war_room.html"):
+            # WO-WARROOM-UI：量化作战台整合版（策略池/投研/盯盘/模拟交易）
+            self._html_file(os.path.join(
+                os.path.dirname(os.path.abspath(__file__)), "d1_war_room.html"))
         elif path == "/api/sim/confirmations":
             # WO-BOT-CONFIRM：盯盘触发→人工确认待办（paper-only）
             import sim_confirm
