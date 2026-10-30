@@ -18,17 +18,22 @@ class _OllamaClient:
     def __init__(self, host="http://127.0.0.1:11434"):
         self.host = host.rstrip("/")
 
-    def _post(self, endpoint, payload):
+    def _post(self, endpoint, payload, timeout=120):
         request = Request(self.host + endpoint, data=json.dumps(payload).encode(),
                           headers={"Content-Type": "application/json"})
-        with urlopen(request, timeout=120) as response:
+        with urlopen(request, timeout=timeout) as response:
             return json.loads(response.read().decode("utf-8"))
 
     def embed(self, model, input):
         return self._post("/api/embed", {"model": model, "input": input})
 
-    def chat(self, model, messages):
-        return self._post("/api/chat", {"model": model, "messages": messages, "stream": False})
+    def chat(self, model, messages, timeout=300):
+        # 本地 qwen3.5 为 thinking 模型：默认会先输出大段 thinking 导致读超时/正文为空。
+        # 显式关闭思考（think=false），并限制输出长度，保证 RAG 答案可稳定返回。
+        return self._post("/api/chat", {
+            "model": model, "messages": messages, "stream": False, "think": False,
+            "options": {"num_predict": 500, "temperature": 0.2},
+        }, timeout=timeout)
 
 
 class KnowledgeBase:
