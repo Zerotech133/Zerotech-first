@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-31 05:30",
+ "generated": "2026-10-31 05:38",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -392,13 +392,13 @@
    "project": "general"
   },
   {
-   "id": "WO-GUANYU-P116-20261031",
-   "desc": "审计BUG修复ruff清理",
+   "id": "WO-AUDIT-FIX-20261031",
+   "desc": "代码审计修复：D1 data None字段回退、D1页 team 空值鲁棒、hermes_bridge 超时回收子进程；加测试；输出审计复盘",
    "status": "doing",
-   "owner": "GUANYU",
-   "branch": "task/WO-GUANYU-P116-20261031",
-   "created": "2026-10-31 05:25:59",
-   "project": "general"
+   "owner": "DSH-Lead",
+   "branch": "task/WO-AUDIT-FIX-20261031",
+   "created": "2026-10-31 05:34:56",
+   "project": "portal"
   }
  ],
  "coder_traces": [
@@ -6708,11 +6708,6 @@
      "id": "WO-GUANYU-P101-20261030",
      "desc": "基线同步186",
      "status": "review"
-    },
-    {
-     "id": "WO-GUANYU-P116-20261031",
-     "desc": "审计BUG修复ruff清理",
-     "status": "doing"
     }
    ]
   },
