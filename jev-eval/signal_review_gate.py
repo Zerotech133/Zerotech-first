@@ -201,22 +201,41 @@ def probe_ann_source() -> None:
 
 
 def tushare_anns(ts_code: str, lookback: int = ANN_LOOKBACK_DAYS) -> list[str]:
-    """Tushare anns_d 拉个股公告标题（近 lookback 天）。需要 2000+ 积分权限。"""
-    import tushare as ts  # zhice venv 里有；外部跑需 pip install tushare
+    """Tushare anns_d 拉个股公告标题（近 lookback 天）。需要 2000+ 积分权限。
 
-    pro = ts.pro_api(TUSHARE_TOKEN)
+    2026-10-30 R5 修复：改用裸 HTTP 调用。tushare 包 `ts.pro_api(token)` 会把
+    「40203 无接口权限」误报为「您的token不对」（判例见 quant_backtest/fetch_stock_names.py），
+    导致公告源被误判为 token 失效；裸调同 token 可拿到真实错误码（如 40203 权限不足）。
+    """
+    import requests
+
     end = date.today()
     start = end - timedelta(days=lookback)
-    df = pro.anns_d(
-        ts_code=ts_code,
-        start_date=start.strftime("%Y%m%d"),
-        end_date=end.strftime("%Y%m%d"),
-        src="沪深京",
+    body = {
+        "api_name": "anns_d",
+        "token": TUSHARE_TOKEN,
+        "params": {
+            "ts_code": ts_code,
+            "start_date": start.strftime("%Y%m%d"),
+            "end_date": end.strftime("%Y%m%d"),
+            "src": "沪深京",
+        },
+        "fields": "ts_code,ann_date,title",
+    }
+    r = requests.post(
+        "https://api.tushare.pro", json=body, timeout=20,
+        proxies={"http": None, "https": None},
     )
-    titles = (
-        df["title"].astype(str).tolist() if df is not None and "title" in df else []
-    )
-    return titles[:15]
+    d = r.json()
+    if d.get("code") != 0:
+        raise RuntimeError(
+            "anns_d 失败 code=%s: %s" % (d.get("code"), str(d.get("msg"))[:100])
+        )
+    data = d.get("data") or {}
+    items = data.get("items") or []
+    fields = data.get("fields") or []
+    idx = fields.index("title") if "title" in fields else 2
+    return [str(row[idx]) for row in items][:15]
 
 
 def build_state(cand: dict, held: list[str], anns: list[str] | None) -> str:

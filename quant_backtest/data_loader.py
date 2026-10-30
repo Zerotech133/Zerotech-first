@@ -19,18 +19,26 @@ DB_CFG = json.load(open(os.path.join(HERE, "config.json"), encoding="utf-8"))["d
 
 
 def _db_password():
-    """ZHICE_DB_PASSWORD 回落链：env → 同目录 .env.local（2026-10-16 审计：
-    从 config.json 明文迁出，模式对齐 linreg._lineage_password）。"""
+    """ZHICE_DB_PASSWORD 回落链：env → 本目录 .env.local →
+    zhice 活部署 .env.local 的 V2_DB_PASSWORD（防轮换多副本漂移，
+    对齐 kg_schema._load_neo4j_password 模式）→ config.json。"""
     pwd = os.environ.get("ZHICE_DB_PASSWORD", "").strip()
     if pwd:
         return pwd
-    p = os.path.join(HERE, ".env.local")
-    if os.path.isfile(p):
+    candidates = [
+        (os.path.join(HERE, ".env.local"), "ZHICE_DB_PASSWORD"),
+        (r"C:\项目\zhice-os-v2-windows-20260920\code\.env.local", "V2_DB_PASSWORD"),
+    ]
+    for path, key in candidates:
+        if not os.path.isfile(path):
+            continue
         try:
-            for line in open(p, encoding="utf-8"):
+            for line in open(path, encoding="utf-8"):
                 line = line.strip()
-                if line.startswith("ZHICE_DB_PASSWORD=") and not line.startswith("#"):
-                    return line.split("=", 1)[1].strip()
+                if line.startswith(key + "=") and not line.startswith("#"):
+                    val = line.split("=", 1)[1].strip()
+                    if val:
+                        return val
         except OSError as exc:
             logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/data_loader.py", exc)
     return DB_CFG.get("password") or ""
@@ -56,7 +64,9 @@ def _direct_conn():
             password=_db_password(),
             dbname=DB_CFG["dbname"],
             # 2026-10-30 P82：无超时的 connect 在 DB 抖动时会永久阻塞（R1 18:30 卡死根因之一）
-            connect_timeout=float(os.environ.get("ZHICE_DB_CONNECT_TIMEOUT", "5")),
+            # 2026-10-30 R5 修复：psycopg2 的 connect_timeout 只接受整数；此前传
+            # float("5.0") 会报 invalid integer value "5.0"（db_direct_err.log 45,922 条根因）。
+            connect_timeout=int(float(os.environ.get("ZHICE_DB_CONNECT_TIMEOUT", "5"))),
         )
         c.autocommit = True
         _tls.conn = c
