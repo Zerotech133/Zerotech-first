@@ -25,7 +25,20 @@ def test_session_survives_restart(tmp_path, monkeypatch):
 
     # 模拟 8103 重启：内存清空，从磁盘恢复
     _reset()
-    assert G.session_info(h)["owner"] == "zero_bound:test"
+    info = G.session_info(h)
+    assert info["owner"] == "zero_bound:test"
+    assert info["roles"] == []
+
+
+def test_auth_roles_mapping(monkeypatch, tmp_path):
+    monkeypatch.setenv("LEGION_IDE_STATE_DIR", str(tmp_path))
+    _reset()
+    monkeypatch.setattr(G, "auth_identity", lambda h: {
+        "sub": "zero_bound:owner", "roles": ["ADMIN"]})
+    token, owner = G.new_session(headers={"Cookie": "zb_session=x"})
+    assert owner == "zero_bound:owner"
+    info = G.session_info({"Cookie": "ide_session=" + token})
+    assert info["roles"] == ["ADMIN"]
 
 
 def test_token_not_stored_in_plaintext(tmp_path, monkeypatch):

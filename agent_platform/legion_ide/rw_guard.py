@@ -98,8 +98,11 @@ def _load_sessions() -> None:
         data = json.loads(p.read_text(encoding="utf-8"))
         for key, rec in (data.get("sessions") or {}).items():
             if isinstance(rec, dict) and rec.get("owner"):
-                _SESSIONS[str(key)] = {"owner": str(rec["owner"]),
-                                       "created": float(rec.get("created") or 0)}
+                _SESSIONS[str(key)] = {
+                    "owner": str(rec["owner"]),
+                    "roles": list(rec.get("roles") or []),
+                    "created": float(rec.get("created") or 0),
+                }
     except (OSError, ValueError, TypeError):
         return
 
@@ -129,26 +132,34 @@ def _prune_sessions(now: float | None = None) -> None:
         _save_sessions()
 
 
-def auth_owner(headers: dict) -> str:
-    """从 Phase A auth cookie 解析登录用户 sub（zb_session）。"""
+def auth_identity(headers: dict) -> dict:
+    """从 Phase A auth cookie 解析 sub + identity roles。"""
     cookie = parse_cookies(headers.get("Cookie") or "")
     raw = cookie.get("zb_session") or ""
     if not raw:
-        return ""
+        return {}
     try:
         req = urllib.request.Request(
-            "http://127.0.0.1:8091/api/auth/me",
+            "http://127.0.0.1:8091/api/bff/identity/me",
             headers={"Cookie": "zb_session=" + raw},
         )
-        # 本机探测必须绕过系统代理
         opener = urllib.request.build_opener(
             urllib.request.ProxyHandler({}))
         with opener.open(req, timeout=2) as resp:
             data = json.loads(resp.read().decode("utf-8", "replace"))
         sess = data.get("session") or data
-        return str(sess.get("sub") or "").strip()
+        ic = sess.get("identity_context") or data.get("identity_context") or {}
+        roles = sess.get("roles") or ic.get("roles") or []
+        return {
+            "sub": str(sess.get("sub") or "").strip(),
+            "roles": [str(r) for r in roles if r],
+        }
     except (OSError, ValueError, urllib.error.URLError):
-        return ""
+        return {}
+
+
+def auth_owner(headers: dict) -> str:
+    return str(auth_identity(headers).get("sub") or "")
 
 
 def new_session(owner: str = "", headers: dict | None = None) -> tuple[str, str]:
@@ -156,11 +167,13 @@ def new_session(owner: str = "", headers: dict | None = None) -> tuple[str, str]
     _load_sessions()
     _prune_sessions()
     token = secrets.token_urlsafe(24)
-    owner = str(owner or "").strip()
-    if not owner and headers:
-        owner = auth_owner(headers)
+    identity = auth_identity(headers) if headers and not owner else {}
+    owner = str(owner or identity.get("sub") or "").strip()
+    roles = list(identity.get("roles") or [])
     owner = owner or ("lde-" + token[:10])
-    _SESSIONS[_token_key(token)] = {"owner": owner, "created": time.time()}
+    _SESSIONS[_token_key(token)] = {
+        "owner": owner, "roles": roles, "created": time.time(),
+    }
     _save_sessions()
     return token, owner
 
@@ -177,7 +190,7 @@ def session_info(headers: dict) -> Optional[dict]:
         _SESSIONS.pop(key, None)
         _save_sessions()
         return None
-    return {"token": token, **info}
+    return {"token": token, "roles": list(info.get("roles") or []), **info}
 
 
 def session_owner(headers: dict) -> str:
