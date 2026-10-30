@@ -2,7 +2,7 @@
 
 - 日期：2026-10-30
 - 工单：`WO-LEGION-POCKETID-B3-OWNER-20261030`
-- 状态：**shadow 保持；真实登录入口未切换**
+- 状态：**shadow 保持；owner 复验通过；真实设备 passkey 仍待老田补**
 - 前置：B2 虚拟 passkey shadow 联调通过
 
 ## 1. 变更
@@ -42,18 +42,47 @@ docker exec zerobound-pocket-id /app/pocket-id one-time-access-token tianfeng
 
 打开一次性链接 → 账户页 → 添加通行密钥；完成后需再复验一次，再决定 `/login` 切换窗口。
 
-## 3. 验证计划
+## 3. 验证结果（2026-10-30 14:30）
+
+实际执行：
 
 ```text
-GET /api/auth/oidc/status → mode=shadow, ready=true
-OTP 添加软件 passkey → 清 cookie → OIDC start
-→ Pocket ID passkey → callback
-→ /api/bff/identity/me
-   sub=zero_bound:owner
-   roles=["ADMIN"]
-   idp=pocket_id
-   amr=["phr"]
+OTP 添加软件 passkey
+→ 清 Pocket ID cookie
+→ /api/auth/oidc/start?next=/os-entry
+→ Pocket ID passkey
+→ callback
+→ /os-entry
 ```
+
+`/api/bff/identity/me`：
+
+```json
+{
+  "ok": true,
+  "mode": "session",
+  "session": {
+    "sub": "zero_bound:owner",
+    "idp": "pocket_id",
+    "amr": ["phr"],
+    "read_only": true,
+    "identity_context": {"roles": ["ADMIN"]}
+  }
+}
+```
+
+确认：
+
+- `sub=zero_bound:owner`，不是 test actor；
+- `roles=["ADMIN"]`；
+- `amr=["phr"]`（软件 passkey，不是密码/OTP）；
+- `/login` 仍密码桥（`#password` 存在、无 Pocket ID 按钮）；
+- `zero_bound:oidc_test` 已从 registry 删除；
+- Pocket ID client 已收紧到用户组 `zero-bound-owners`。
+
+截图：`docs/visual_baseline/2026-10-30_oidc_b3/b3_owner_identity.png`
+
+**仍未完成**：真实设备 passkey。当前 `amr=phr` 来自 Playwright 虚拟 authenticator；真实 passkey 需老田本人在账户页添加。
 
 ## 4. 回滚
 
