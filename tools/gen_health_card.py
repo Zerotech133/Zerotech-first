@@ -5870,8 +5870,12 @@ def _jev_calibration_level(cal: dict[str, Any]) -> tuple[str, str]:
     if cal.get("wilson_lower") is not None and cal.get("wilson_lower_gt_baseline") is False:
         return "yellow", "edge 未过门控（Wilson 下界 %.3f ≤ 基线）；" % (
             cal.get("wilson_lower") or 0.0) + detail
+    edge_pp = (cal.get("edge_vs_baseline") or 0) * 100
+    if edge_pp >= JEV_CALIB_EDGE_PP * 100 and (nd or 0) < 20:
+        return "yellow", "edge +%.1fpp 已达标，但交易日不足（%s < 20，继续积累）；" % (
+            edge_pp, nd or 0) + detail
     return "yellow", "无显著增量 edge（+%.1fpp < %.0fpp 门槛或交易日不足）；" % (
-        (cal.get("edge_vs_baseline") or 0) * 100, JEV_CALIB_EDGE_PP * 100) + detail
+        edge_pp, JEV_CALIB_EDGE_PP * 100) + detail
 
 
 def collect_agent_daily(repo_root: Path) -> dict[str, Any]:

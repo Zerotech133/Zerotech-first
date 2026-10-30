@@ -116,3 +116,16 @@ def test_relative_baseline_red(tmp_path):
     cal = hc.collect_jev_calibration(tmp_path)
     level, detail = hc._jev_calibration_level(cal)
     assert level == "red" and "基线" in detail
+
+
+def test_edge_ok_but_days_short_yellow(tmp_path):
+    rep = _b1_report()
+    rep["n_trade_days"] = 13
+    rep["directional"]["rate"] = 0.60          # edge = +5.6pp ≥ 2pp
+    rep["assessment"]["directional"]["edge_vs_baseline"] = 0.056
+    rep["assessment"]["directional"]["wilson95_lower"] = 0.575   # > 基线 0.542
+    rep["assessment"]["directional"]["gate_pass"] = False        # 仅天数不足
+    _write_latest(tmp_path, rep)
+    cal = hc.collect_jev_calibration(tmp_path)
+    level, detail = hc._jev_calibration_level(cal)
+    assert level == "yellow" and "交易日不足" in detail
