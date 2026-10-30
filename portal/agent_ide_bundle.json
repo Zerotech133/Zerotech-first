@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 21:41",
+ "generated": "2026-10-30 21:46",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -365,13 +365,13 @@
    "project": "quant"
   },
   {
-   "id": "WO-LEGION-ZHUGE-REVIEW-P0-20261030",
-   "desc": "P0诸葛亮IDE复核API",
+   "id": "K-JEV-20261030-NIGHTFALL",
+   "desc": "Night JEV pauses M3 by lock holder fallback when CommandLine null",
    "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-ZHUGE-REVIEW-P0-20261030",
-   "created": "2026-10-30 21:39:41",
-   "project": "general"
+   "owner": "DSH-Lead",
+   "branch": "task/K-JEV-20261030-NIGHTFALL",
+   "created": "2026-10-30 21:42:42",
+   "project": "quant"
   }
  ],
  "coder_traces": [
@@ -7344,11 +7344,6 @@
      "id": "WO-HERMES-CSP-SELF-20261030",
      "desc": "用户批准：Hermes CSP frame-ancestors none→self、X-Frame-Options DENY→SAMEORIGIN，允许同源 iframe 挂 5175 研究台；更新对应断言。",
      "status": "review"
-    },
-    {
-     "id": "WO-LEGION-ZHUGE-REVIEW-P0-20261030",
-     "desc": "P0诸葛亮IDE复核API",
-     "status": "doing"
     }
    ]
   }
