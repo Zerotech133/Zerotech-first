@@ -21,6 +21,11 @@ def g1_data(snap):
     elif cov < config.COVERAGE_TARGET:
         # 诸葛亮裁示（2026-10-26）：目标 90%，80-90 区间标黄告警、不直接否决
         issues.append("覆盖率 %.1f%% < 目标 %d%%（告警，不否决）" % (cov, config.COVERAGE_TARGET))
+    # P0M：数据时效告警（不否决，但评级置信度会下调）
+    lag = snap.get("data_lag") or {}
+    if lag.get("trade_days") is not None and lag["trade_days"] >= 1:
+        issues.append("行情数据落后 %d 个交易日（as_of %s，今日 %s）"
+                      % (lag["trade_days"], lag.get("last_trade_date"), lag.get("today")))
     # 时效：仅对状态 ok 的域检查（missing 已显式标 N/A，不误报滞后）
     for dom in ("chips", "margin"):
         d = snap["domains"].get(dom) or {}

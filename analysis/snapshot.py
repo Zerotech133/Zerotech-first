@@ -36,6 +36,62 @@ def _ymd(d):
     return str(d).replace("-", "")
 
 
+def _map_industry(code, basic_industry, mem, cls):
+    """P0M：行业映射纠偏（返回 {index_code,l1_name,match,level}）。
+
+    优先用 stock_basic.industry 名称匹配申万分类（L2/L3 命中后沿 parent_code 上溯到 L1）；
+    匹配不到才回退 sw_l1_member（历史数据存在陈旧映射，如 300308 被标成电力设备）。
+    注意：sw_classify_l1.parent_code 存的是 industry_code（如 730000），不是 index_code，
+    因此上溯时按 industry_code / index_code 两列都尝试。
+    """
+    out = {}
+    try:
+        if cls is None or not len(cls):
+            return out
+        name_col = "industry_name"
+        has_level = "level" in cls.columns
+
+        def _find_parent(parent):
+            for col in ("industry_code", "index_code"):
+                if col in cls.columns:
+                    pr = cls[cls[col].astype(str) == str(parent)]
+                    if len(pr):
+                        return pr.iloc[0]
+            return None
+
+        if basic_industry and name_col in cls.columns:
+            cand = cls[cls[name_col].astype(str) == str(basic_industry)]
+            if len(cand):
+                row = cand.iloc[0]
+                ic = str(row.get("index_code"))
+                if has_level and str(row.get("level")) == "L1":
+                    return {"index_code": ic, "l1_name": str(row[name_col]), "match": "stock_basic", "level": "L1"}
+                parent = row.get("parent_code")
+                seen = set()
+                while parent is not None and str(parent) not in ("0", "nan", "None", "") and str(parent) not in seen:
+                    seen.add(str(parent))
+                    prow = _find_parent(parent)
+                    if prow is None:
+                        break
+                    if has_level and str(prow.get("level")) == "L1":
+                        return {"index_code": str(prow["index_code"]), "l1_name": str(prow[name_col]),
+                                "match": "stock_basic", "level": "L1"}
+                    parent = prow.get("parent_code")
+        if mem is not None and len(mem) and "con_code" in mem.columns:
+            hit = mem[mem["con_code"] == code]
+            if len(hit):
+                ic = str(hit["index_code"].iloc[0])
+                lv1 = cls[cls["level"].astype(str) == "L1"] if has_level else cls
+                row = lv1[lv1["index_code"].astype(str) == ic] if "index_code" in lv1.columns else lv1.iloc[0:0]
+                if len(row):
+                    return {"index_code": ic, "l1_name": str(row[name_col].iloc[0]),
+                            "match": "sw_l1_member", "level": "L1"}
+                return {"index_code": ic, "l1_name": ic, "match": "sw_l1_member", "level": "?"}
+    except Exception as exc:  # noqa: BLE001
+        logging.getLogger(__name__).warning("silent-except %s: %s", "analysis/snapshot.py", exc)
+    return out
+
+
 def trade_cal_last():
     p = _q("trade_cal")
     if not os.path.exists(p):
@@ -161,22 +217,27 @@ def load_snapshot(code, as_of):
         hn["end_date"] = hn["end_date"].astype(str)
     snap["holder_num"] = hn.sort_values("end_date").tail(6).to_dict("records") if hn is not None else []
 
-    # 行业（sw_l1_member 的列是 con_code；经 sw_classify_l1 映射出行业名）
+    # 行业（P0M 纠偏：stock_basic.industry → 申万父链 L1；回退 sw_l1_member）
     snap["industry"] = {}
     try:
         mem = pd.read_parquet(os.path.join(config.CURATED, "sw_l1_member.parquet"))
         cls = pd.read_parquet(os.path.join(config.CURATED, "sw_classify_l1.parquet"))
-        lv1 = cls[cls.get("level").astype(str) == "L1"] if "level" in cls.columns else cls
-        hit = mem[mem["con_code"] == code]
-        if len(hit) and len(lv1):
-            ic = hit["index_code"].iloc[0]
-            row = lv1[lv1["index_code"] == ic]
-            name_l1 = row["industry_name"].iloc[0] if len(row) else ic
-            snap["industry"] = {"index_code": ic, "l1_name": name_l1}
+        basic_ind = None
+        try:
+            sb = _read("stock_basic", code, cols=["ts_code", "industry"])
+            if sb is not None and len(sb):
+                basic_ind = str(sb["industry"].iloc[0])
+        except Exception:  # noqa: BLE001
+            basic_ind = None
+        m = _map_industry(code, basic_ind, mem, cls)
+        if m:
+            m["basic_industry"] = basic_ind
+            snap["industry"] = m
     except Exception as exc:
         logging.getLogger(__name__).warning("silent-except %s: %s", "analysis/snapshot.py", exc)
     snap["domains"]["industry"] = {"as_of": None, "rows": 0 if not snap["industry"] else 1,
-                                   "status": "ok" if snap["industry"] else "missing", "source": "sw_l1_member"}
+                                   "status": "ok" if snap["industry"] else "missing",
+                                   "source": (snap["industry"] or {}).get("match") or "none"}
 
     # 研报
     rr = _read("research_report", code)
@@ -210,6 +271,21 @@ def load_snapshot(code, as_of):
     snap["required_missing"] = [k for k in req if snap["domains"].get(k, {}).get("status") == "missing"]
     snap["name"] = name
     snap["last_trade_date"] = _latest_date(daily)
+
+    # P0M：数据时效（落后几个交易日）——供 G1 告警与评级置信度下调
+    snap["data_lag"] = {}
+    try:
+        from datetime import date
+        last8 = _ymd(snap["last_trade_date"])
+        today8 = _ymd(date.today().isoformat())
+        cal = pd.read_parquet(_q("trade_cal"))
+        open_days = cal[cal["is_open"] == 1]["cal_date"].astype(str)
+        trade_gap = int(((open_days > last8) & (open_days < today8)).sum())
+        cd = (date.today() - date.fromisoformat(str(snap["last_trade_date"]).replace("/", "-"))).days
+        snap["data_lag"] = {"last_trade_date": snap["last_trade_date"], "today": today8,
+                            "calendar_days": cd, "trade_days": trade_gap}
+    except Exception as exc:  # noqa: BLE001
+        logging.getLogger(__name__).warning("silent-except %s: %s", "analysis/snapshot.py", exc)
 
     # 数据域时效修正：老数据（如非两融标的的 margin）标为 missing/N/A，而不是"滞后"误报
     def _age_days(d8):

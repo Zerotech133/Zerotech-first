@@ -219,8 +219,15 @@ def build_report(ctx):
     A("| PE(TTM) | %s |" % _fmt(val.get("pe_ttm")))
     A("| PB | %s |" % _fmt(val.get("pb")))
     A("| PS(TTM) | %s |" % _fmt(val.get("ps_ttm")))
+    if val.get("ps_pct_hist") is not None:
+        A("| PS 历史分位（近5年） | %s%% |" % _fmt(val.get("ps_pct_hist")))
+    if val.get("hist_temp") is not None:
+        A("| 估值历史温度（PE/PB/PS 均值） | %s%% |" % _fmt(val.get("hist_temp")))
     A("| 同业 PS 中位 | %s |" % _fmt(val.get("peer_ps_median")))
     A("| 同业 PS 分位 | %s |" % _fmt(val.get("peer_percentile")))
+    _lag = (snap.get("data_lag") or {})
+    if _lag.get("trade_days"):
+        A("| 数据时效 | as-of %s，落后 %d 个交易日（告警） |" % (snap.get("as_of"), _lag["trade_days"]))
     A("")
     if feat.get("peers"):
         A("| 同业样本 | PS(TTM) | 市值(亿) |")
@@ -351,8 +358,10 @@ def build_h5(ctx, outdir):
              ("市值", "%s 亿元" % _fmt(val.get("market_cap_yi"))),
              ("PE(TTM)", _fmt(val.get("pe_ttm"))), ("PB", _fmt(val.get("pb"))),
              ("PS(TTM)", _fmt(val.get("ps_ttm"))),
+             ("PS 历史分位（近5年）", "%s%%" % _fmt(val.get("ps_pct_hist"))),
+             ("估值历史温度", "%s%%" % _fmt(val.get("hist_temp"))),
              ("同业 PS 中位", _fmt(val.get("peer_ps_median"))),
-             ("同业 PS 分位", _fmt(val.get("peer_percentile")))], "估值只是结果，需结合盈利与事件判断。"),
+             ("同业 PS 分位", _fmt(val.get("peer_percentile")))], "估值只是结果，需结合盈利与事件判断；同业分位与自身历史分位互为参照。"),
         ("j2", "📊", "业绩：%s" % ("亏损" if (fnd.get("net_profit_latest_yi") or 0) < 0 else "盈利"),
          "营收同比 %s%%" % _fmt(fnd.get("revenue_yoy")), [
              ("最新报告期", _fmt(fnd.get("latest_end"))),
