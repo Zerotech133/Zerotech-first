@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 12:52",
+ "generated": "2026-10-30 12:53",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -311,12 +311,12 @@
    "project": "quant"
   },
   {
-   "id": "WO-BANDIT-MEDIUM4A2-20261030",
-   "desc": "bandit批4A-2：B310剩余30处 news_collector/k_stock/quant_backtest 接safe_urlopen或固定URL说明；复扫B310收敛。",
+   "id": "K-STOCK-ANALYSIS-P0O-20261030",
+   "desc": "评级回测引擎：2019-2026 月频五维打分→评级→20/60日超额/胜率/IC，校准SCORE_CUTS；analysis.json 补 score 字段",
    "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-BANDIT-MEDIUM4A2-20261030",
-   "created": "2026-10-30 12:50:51",
+   "owner": "DSH-Lead",
+   "branch": "task/K-STOCK-ANALYSIS-P0O-20261030",
+   "created": "2026-10-30 12:53:11",
    "project": "quant"
   }
  ],
@@ -7012,11 +7012,6 @@
      "id": "WO-BANDIT-BASELINE-ENC-20261030",
      "desc": "bandit基线编码修复：baseline json 转 ASCII 转义，避免Windows GBK读取失败；夜间复扫可用。",
      "status": "review"
-    },
-    {
-     "id": "WO-BANDIT-MEDIUM4A2-20261030",
-     "desc": "bandit批4A-2：B310剩余30处 news_collector/k_stock/quant_backtest 接safe_urlopen或固定URL说明；复扫B310收敛。",
-     "status": "doing"
     }
    ]
   }
