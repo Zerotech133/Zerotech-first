@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 18:52",
+ "generated": "2026-10-30 18:53",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 28,
+  "workorders_doing": 27,
   "workorders_review": 9
  },
  "workorders": [
@@ -335,15 +335,6 @@
    "owner": "DSH-Lead",
    "branch": "task/K-ORG-20261030-JEVARCH2",
    "created": "2026-10-30 18:47:29",
-   "project": "general"
-  },
-  {
-   "id": "K-ORG-20261030-JEVROTATE",
-   "desc": "接线日志轮转：jev_drift_task.ps1 P5 调 tools/rotate_logs.py（每日07:10，保留14天，gzip回收）；+静态测试",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-ORG-20261030-JEVROTATE",
-   "created": "2026-10-30 18:49:34",
    "project": "general"
   }
  ],
