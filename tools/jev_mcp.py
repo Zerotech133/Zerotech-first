@@ -82,6 +82,8 @@ TOOLS = [
                 "event_type": {"type": "string", "description": "事件类型过滤，逗号分隔：policy/earnings/price/equity/supply/tech/risk/other"},
                 "with_posterior": {"type": "boolean", "description": "true=联查 T+1 后验（命中/超额收益）"},
                 "limit": {"type": "integer", "description": "返回条数上限，默认 50，最大 200"},
+                "since": {"type": "string",
+                          "description": "增量游标（可选）：'YYYY-MM-DD HH:MM:SS' 或 ISO8601；返回该时间之后的条目（升序），响应 cursor 供下一次传入"},
             },
             "additionalProperties": False,
         },
@@ -332,7 +334,7 @@ def _call_tool(name: str, args: dict) -> str:
     if not isinstance(args, dict):
         raise _InvalidParams("arguments 必须是对象")
     if name == "jev_query":
-        allowed = {"hours", "bias", "code", "event_type", "with_posterior", "limit"}
+        allowed = {"hours", "bias", "code", "event_type", "with_posterior", "limit", "since"}
         unknown = set(args) - allowed
         if unknown:
             raise _InvalidParams("未知参数：%s（可用：%s）"
@@ -357,6 +359,11 @@ def _call_tool(name: str, args: dict) -> str:
             if not (code.isdigit() and len(code) == 6):
                 raise _InvalidParams("code 非法：需 6 位 A 股代码（如 600519）: %r" % (code,))
             params["code"] = code
+        if args.get("since"):
+            since_text = str(args["since"]).strip()
+            if len(since_text) < 10 or not since_text[:4].isdigit():
+                raise _InvalidParams("since 格式非法：需 'YYYY-MM-DD HH:MM:SS' 或 ISO8601")
+            params["since"] = since_text
         if args.get("with_posterior"):
             if not isinstance(args["with_posterior"], bool):
                 raise _InvalidParams("with_posterior 必须是布尔值")

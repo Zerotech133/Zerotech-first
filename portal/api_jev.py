@@ -147,10 +147,23 @@ def _load_posterior(news_ids: list[str], band: float) -> dict[str, dict]:
     return out
 
 
+def _normalize_since(raw: str) -> str:
+    """增量游标校验：接受 'YYYY-MM-DD HH:MM:SS' / ISO 'T' 格式，返回标准格式。"""
+    text = str(raw or "").strip()
+    if not text:
+        return ""
+    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S"):
+        try:
+            return dt.datetime.strptime(text, fmt).strftime("%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            continue
+    raise ValueError("since 格式非法：需 'YYYY-MM-DD HH:MM:SS' 或 ISO8601（如 2026-10-30T10:00:00）")
+
+
 def query(hours: int = 24, bias: list[str] | None = None, code: str = "",
           event_type: list[str] | None = None, with_posterior: bool = False,
           limit: int = DEFAULT_LIMIT, band: float | None = None,
-          now: dt.datetime | None = None) -> dict:
+          now: dt.datetime | None = None, since: str = "") -> dict:
     """核心查询（纯读；可被单测直接调用，路径由模块常量决定可 monkeypatch）。
 
     2026-10-30 BATCH1 修复：旧实现 `LIMIT 20000` 后 `total=len(matched)`：
@@ -171,7 +184,10 @@ def query(hours: int = 24, bias: list[str] | None = None, code: str = "",
         raise RuntimeError("news.db 不存在：%s" % NEWS_DB)
 
     now = now or dt.datetime.now()
-    since = (now - dt.timedelta(hours=hours)).strftime("%Y-%m-%d %H:%M:%S")
+    cursor_since = _normalize_since(since)
+    # since 提供时按增量游标查询（created_at 升序，便于游标翻页）；否则按 hours 时间窗。
+    since = cursor_since or (now - dt.timedelta(hours=hours)).strftime("%Y-%m-%d %H:%M:%S")
+    incremental = bool(cursor_since)
     code6 = _code_filter(code) if code else ""
     latest_band, low_signal = _latest_meta()
     band = latest_band if band is None else band
@@ -203,7 +219,8 @@ def query(hours: int = 24, bias: list[str] | None = None, code: str = "",
         rows = db.execute(
             "SELECT id, ts, created_at, source, title, stocks, jev FROM news"  # nosec B608
             " WHERE " + " AND ".join(items_where)
-            + " ORDER BY created_at DESC LIMIT ?",
+            + (" ORDER BY created_at ASC LIMIT ?" if incremental
+               else " ORDER BY created_at DESC LIMIT ?"),
             items_params + [limit]).fetchall()
         window_counts = {"total": 0, "bull": 0, "bear": 0, "neutral": 0}
         for b in VALID_BIAS:
@@ -269,11 +286,17 @@ def query(hours: int = 24, bias: list[str] | None = None, code: str = "",
         for m in matched:
             m["posterior"] = None
 
+    cursor_out = ""
+    if incremental:
+        cursor_out = max((m.get("collected_at") or "" for m in matched), default="") or cursor_since
     return {
         "ok": True,
         "schema_version": "jev.v2",  # 2026-10-30 JEVCONTRACTVER：契约版本
         "generated_at": now.strftime("%Y-%m-%dT%H:%M:%S"),
         "window_hours": hours,
+        "since": cursor_since or None,
+        "cursor": cursor_out or None,
+        "cursor_mode": "created_at_inclusive (dedup by id; pass cursor as next since)" if incremental else None,
         "filters": {"bias": bias, "code": code6, "event_type": event_type or [],
                     "with_posterior": bool(with_posterior), "limit": limit},
         "summary_window": window_counts,
@@ -298,6 +321,7 @@ def handle_get(handler, path: str, qs_raw: str) -> None:
             event_type=_as_list(qs, "event_type"),
             with_posterior=_as_bool(qs, "with_posterior"),
             limit=limit,
+            since=(qs.get("since") or [""])[-1],
         )
     except ValueError as exc:
         handler._json({"ok": False, "error": "invalid_params", "message": str(exc)}, 400)

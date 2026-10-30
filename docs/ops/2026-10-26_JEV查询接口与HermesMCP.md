@@ -113,3 +113,12 @@ Hermes 话术：
 由现有 `alert_forward.ps1` 转发飞书。默认 dry-run，不注册任务、不主动外发。
 上线自动调度（建议每小时，且仅交易时段）需老田 L2 批准。
 
+## 十二、2026-10-30 增量事件流（`since` / `cursor`，2026-10-31 重启后生效）
+
+`GET /api/jev/query?since=2026-10-30%2010:00:00&limit=200`：
+- `since`：增量游标（`YYYY-MM-DD HH:MM:SS` 或 ISO8601）；提供时按 `created_at >= since` 升序返回；
+- 响应新增：`since`、`cursor`（本页最大 collected_at）、`cursor_mode`；
+- 翻页：下一次把 `cursor` 作为 `since` 传入；边界同秒条目会重复，按 `id` 去重即可（`created_at_inclusive`）；
+- 兼容：不传 `since` 时行为与旧版完全一致（按 `hours` 时间窗）。
+MCP `jev_query` 已支持 `since` 参数透传。
+
