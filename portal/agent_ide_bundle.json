@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 15:06",
+ "generated": "2026-10-30 15:07",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -293,21 +293,21 @@
    "project": "general"
   },
   {
-   "id": "K-STOCK-ANALYSIS-P0T-20261030",
-   "desc": "修龙虎榜单位bug：seat_net_wan 把元当万元（600337显示155亿），改用 net_buy/1e4 + 单测",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-STOCK-ANALYSIS-P0T-20261030",
-   "created": "2026-10-30 15:03:09",
-   "project": "quant"
-  },
-  {
    "id": "WO-LEGION-P2-V1-20261030",
    "desc": "P2 v1 两周试跑：只读周任务包装器+计划任务",
    "status": "doing",
    "owner": "ZHAOYUN",
    "branch": "task/WO-LEGION-P2-V1-20261030",
    "created": "2026-10-30 15:03:39",
+   "project": "general"
+  },
+  {
+   "id": "WO-GUANYU-P77-20261030",
+   "desc": "收口日报+解除元数据豁免",
+   "status": "doing",
+   "owner": "GUANYU",
+   "branch": "task/WO-GUANYU-P77-20261030",
+   "created": "2026-10-30 15:06:41",
    "project": "general"
   }
  ],
@@ -6374,7 +6374,14 @@
    ],
    "experience": "30 年工程治理经验：漏洞分级与补丁流程、失败测试基线修复、编码规范与门禁落地、技术债清欠与重复功能合并；证据驱动、逐项闭环，只出报告与工单不自行合并，开发动作限独立 worktree 提交+跑测试并交 L2 人签。",
    "dept_name": "研究院",
-   "dept_cn_title": "太学"
+   "dept_cn_title": "太学",
+   "tasks": [
+    {
+     "id": "WO-GUANYU-P77-20261030",
+     "desc": "收口日报+解除元数据豁免",
+     "status": "doing"
+    }
+   ]
   },
   "HUANGZHONG": {
    "id": "HUANGZHONG",
