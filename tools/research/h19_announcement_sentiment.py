@@ -233,10 +233,10 @@ def main() -> int:
            "created_at": now, "updated_at": now}
     keys = [k for k in row if k in cols]
     if con.execute("SELECT id FROM hypotheses WHERE id='H19'").fetchone():
-        con.execute("UPDATE hypotheses SET %s WHERE id='H19'" % ",".join("%s=?" % k for k in keys if k != "id"),
+        con.execute("UPDATE hypotheses SET %s WHERE id='H19'" % ",".join("%s=?" % k for k in keys if k != "id"),  # nosec B608 - 键来自固定 cols allowlist
                     [row[k] for k in keys if k != "id"])
     else:
-        con.execute("INSERT INTO hypotheses (%s) VALUES (%s)" % (",".join(keys), ",".join("?" * len(keys))),
+        con.execute("INSERT INTO hypotheses (%s) VALUES (%s)" % (",".join(keys), ",".join("?" * len(keys))),  # nosec B608 - 键来自固定 cols allowlist
                     [row[k] for k in keys])
     con.commit()
     con.close()

@@ -504,10 +504,10 @@ class DeliveryLedger:
                 return None
             markers = ",".join("?" for _ in states)
             changed = db.execute(
-                f"""UPDATE delivery_targets
+                """UPDATE delivery_targets
                 SET state='CLAIMED', attempt_id=?, route=?, receipt_id=NULL,
                     trace_id=?, claimed_at=?, expires_at=?, updated_at=?
-                WHERE event_key=? AND target_key=? AND state IN ({markers})""",
+                WHERE event_key=? AND target_key=? AND state IN (__MARKERS__)""".replace("__MARKERS__", markers),
                 (
                     attempt,
                     route,
