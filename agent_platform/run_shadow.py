@@ -32,6 +32,8 @@ from interpreter import Interpreter, Team  # noqa: E402
 from llm import OllamaLLM  # noqa: E402
 from memory import MemoryStore  # noqa: E402
 from tools import make_context, quote_snapshot, kline_daily  # noqa: E402
+from evidence_bundle import EvidenceBundle  # noqa: E402
+from decision_policy import apply_policy  # noqa: E402
 from regime_roster import dk_snapshot, enrich_row, bars_to_df  # noqa: E402
 from strategy_runtime import run_strategy as _rt_run_strategy  # noqa: E402
 
@@ -420,6 +422,8 @@ def build_ledger_row(
     model=None,
     fallback=None,
     summary=None,
+    bundle=None,
+    policy=None,
 ):
     """落账行构造（M5 刀 1：影子账本 schema 收口）。
 
@@ -455,6 +459,14 @@ def build_ledger_row(
         "fallback": fallback,
         # 菜鸟 createResultSummary：五档/置信/风险/目标/周期 + 执行统计
         "summary": summary or {},
+        # 2026-10-30 证据/规则门（旧行无此键，向后兼容）
+        "decision_id": (policy or {}).get("decision_id"),
+        "watch_reason": (policy or {}).get("watch_reason"),
+        "confidence_raw": dec.get("confidence_raw", dec.get("confidence")),
+        "evidence_refs": ([r.to_dict() if hasattr(r, "to_dict") else r
+                           for r in (bundle.refs if bundle else [])]),
+        "policy_checks": (policy or {}).get("policy_checks", []),
+        "evidence_sufficient": bool(bundle.is_sufficient()) if bundle else False,
     }
 
 
@@ -680,6 +692,11 @@ def main():
                             str(data_ctx.get("final_decision") or "") + _st1)
                 except Exception as _exc:  # noqa: BLE001  旁路失败不阻塞 alpha
                     print("[warn] ST1 策略旁路读取失败（继续 alpha）：%s" % _exc)
+                # 2026-10-30 三原则：无 EvidenceBundle 不许调 D1
+                bundle = EvidenceBundle.from_context(
+                    symbol, data_ctx.get("name", ""), data_ctx)
+                if not bundle.is_sufficient():
+                    raise RuntimeError("evidence_insufficient: %s" % bundle.input_degraded)
                 t0 = time.time()
                 result = interp.run(symbol, data_ctx=data_ctx)
                 dec = parse_decision(result["decision"])
@@ -694,6 +711,9 @@ def main():
                     dec is not None
                 )  # K-STOCK-338：解析失败显式记录，不再静默吞成 {}
                 dec = dec or {}
+                # 规则门外置：L4/证据/置信度不让 LLM 自己判
+                policy = apply_policy(dec, bundle, run_id=result.get("run_id", ""), date=today)
+                dec = policy["decision"]
                 price = quote_snapshot(symbol)["price"]
                 models = result.get("models") or {}
                 d1_status = (result.get("status") or {}).get("d1_decision")
@@ -710,6 +730,8 @@ def main():
                     model=models.get("d1_decision"),
                     fallback=(d1_status not in (None, "normal", "resumed")),
                     summary=result.get("summary"),
+                    bundle=bundle,
+                    policy=policy,
                 )  # M5 刀 1：schema_version+degraded 扩义
                 if not parse_ok:
                     print(
