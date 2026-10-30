@@ -32,6 +32,7 @@ def main(argv=None):
     ap.add_argument("--days", type=int, default=250)
     ap.add_argument("--methods", default=",".join(tm.METHODS))
     ap.add_argument("--index", default="sh000001")
+    ap.add_argument("--source", default="auto", choices=["auto", "local", "network"])
     ap.add_argument("--commission", type=float, default=tm.DEFAULT_COSTS["commission"])
     ap.add_argument("--stamp", type=float, default=tm.DEFAULT_COSTS["stamp"])
     ap.add_argument("--slippage", type=float, default=tm.DEFAULT_COSTS["slippage"])
@@ -43,7 +44,18 @@ def main(argv=None):
     methods = [x for x in args.methods.split(",") if x]
     costs = {"commission": args.commission, "stamp": args.stamp, "slippage": args.slippage}
     limits = {"single_max": args.single_max, "total_max": args.total_max}
+    if args.source == "local":
+        kfn = tm.local_kline
+    elif args.source == "network":
+        def kfn(code, n):
+            import sys as _s
+            _s.path.insert(0, os.path.join(REPO, "agent_platform", "engine"))
+            from tools import kline_daily as _k
+            return _k(code, n)
+    else:
+        kfn = tm.auto_kline
     res = tm.replay_with_constraints(codes, days=args.days, methods=methods,
+                                     kline_fn=kfn, index_kline_fn=kfn,
                                      costs=costs, limits=limits, index_code=args.index)
     os.makedirs(OUT_DIR, exist_ok=True)
     path = args.out or os.path.join(OUT_DIR, "replay_net_%s.json" % date.today().isoformat())

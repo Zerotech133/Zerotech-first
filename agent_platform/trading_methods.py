@@ -269,6 +269,53 @@ def replay(codes, days=250, methods=None, kline_fn=None):
     return out
 
 
+
+def local_kline(code, days=250):
+    """本地 ashare parquet 回退（系统 Python 有 pandas 时）；无文件返回 []。"""
+    import os
+    code = str(code or "").strip().lower()
+    digits = "".join(ch for ch in code if ch.isdigit())
+    if len(digits) < 6:
+        return []
+    digits = digits[:6]
+    suffix = "SH" if (code.startswith("sh") or digits.startswith(("6", "9"))) else "SZ"
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                        "..", "quant_backtest", "data", "ashare",
+                        "%s_%s.parquet" % (digits, suffix))
+    path = os.path.abspath(path)
+    if not os.path.exists(path):
+        return []
+    try:
+        import pandas as pd
+        df = pd.read_parquet(path)
+        df = df.sort_values("trade_date").tail(int(days))
+        bars = []
+        for _, r in df.iterrows():
+            ds = str(r["trade_date"])
+            ds = "%s-%s-%s" % (ds[:4], ds[4:6], ds[6:8]) if len(ds) == 8 else ds
+            bars.append([ds, float(r["open"]), float(r["close"]), float(r["high"]),
+                         float(r["low"]), float(r["volume"])])
+        return bars
+    except Exception:  # noqa: BLE001 缺 pandas/文件坏 → 返回空
+        return []
+
+
+def auto_kline(code, days=250):
+    """先网络（Tencent），失败/空则本地 parquet。"""
+    try:
+        import os
+        import sys
+        base = os.path.dirname(os.path.abspath(__file__))
+        sys.path.insert(0, os.path.join(base, "engine"))
+        from tools import kline_daily as _net  # noqa: E402
+        bars = _net(code, days)
+        if bars:
+            return bars
+    except Exception:  # noqa: BLE001
+        pass
+    return local_kline(code, days)
+
+
 def market_regime(index_bars, ma=20):
     """大盘 regime：date → bool（收盘>MA20 且 MA20 不向下）。指数不足返回空。"""
     if not index_bars or len(index_bars) < ma + 2:
@@ -356,11 +403,7 @@ def replay_with_constraints(codes, days=250, methods=None, kline_fn=None,
                             index_code="sh000001"):
     """带费用/滑点/仓位约束/大盘 regime 的批量回放；返回每手法组合统计。"""
     if kline_fn is None:
-        import os
-        import sys
-        base = os.path.dirname(os.path.abspath(__file__))
-        sys.path.insert(0, os.path.join(base, "engine"))
-        from tools import kline_daily as kline_fn  # noqa: E402
+        kline_fn = auto_kline
     if index_kline_fn is None:
         index_kline_fn = kline_fn
     methods = methods or list(METHODS)
