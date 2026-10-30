@@ -65,6 +65,8 @@ env.update({
     "HERMES_WEBUI_EXTENSION_DIR": r"C:\项目\老田的AI助手\Hermes\extensions\legion-ide",
     "HERMES_WEBUI_EXTENSION_SCRIPT_URLS": "/extensions/app.js",
     "HERMES_WEBUI_EXTENSION_STYLESHEET_URLS": "/extensions/app.css",
+    # L2-A（2026-10-30 老田批准）：允许本页 iframe 内嵌本机 Zhice 研究台（仅 loopback 5175）
+    "HERMES_WEBUI_CSP_FRAME_EXTRA": "http://127.0.0.1:5175",
     "NO_PROXY": "localhost,127.0.0.1",
 })
 _sysroot = os.environ.get("SystemRoot", r"C:\Windows")

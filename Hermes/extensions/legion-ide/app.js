@@ -1345,7 +1345,7 @@ async function loadDiff(task) {
     const sum = el("div", "acad1-sum", "摘要加载中…");
     sum.id = "acad1-summary";
     const frame = el("iframe", "acad1-frame");
-    frame.src = "/extensions/zhice/index.html#/cn/replay?tab=selection";
+    frame.src = PAGE;  // L2-A：CSP 已放行 5175，直接嵌研究台原站
     box.append(head, sum, frame);
     p.append(box);
     document.body.appendChild(p);
