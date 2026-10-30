@@ -81,7 +81,7 @@ REPORTS = os.path.join(HERE, "reports")
 LOG_FP = (
     "C:/Temp/strong_calib.log"
     if os.path.isdir("C:/Temp")
-    else os.path.join(os.environ.get("TEMP", "/tmp"), "strong_calib.log")
+    else os.path.join(os.environ.get("TEMP", "/tmp"), "strong_calib.log")  # nosec B108 - 固定日志文件名
 )
 # 注意：Windows 原生 Python 不认 Git Bash 的 /c/Temp 写法，须用 C:/Temp
 
