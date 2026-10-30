@@ -127,9 +127,16 @@ def _judge_batch_sleep(items, sleep_s: float) -> dict:
     for i, it in enumerate(items[:_JEV_BATCH_MAX]):
         if i and sleep_s > 0:
             time.sleep(sleep_s)
-        j = news_ai.jev_judge_one(it.get("title") or "", it.get("stocks") or [])
-        if j is None:
+        # 2026-10-30 JEVSAFE：单条异常隔离——旧实现任一异常（如 event_type
+        # 归一化 KeyError）会中断整组并让整轮 backfill 崩溃，坏行永远重来。
+        try:
             j = news_ai.jev_judge_one(it.get("title") or "", it.get("stocks") or [])
+            if j is None:
+                j = news_ai.jev_judge_one(it.get("title") or "", it.get("stocks") or [])
+        except Exception as exc:  # noqa: BLE001
+            print("BACKFILL item FAIL id=%s %r（单条隔离，跳过）"
+                  % (it.get("id"), exc), file=sys.stderr, flush=True)
+            continue
         if j:
             out[it["id"]] = j
     return out
