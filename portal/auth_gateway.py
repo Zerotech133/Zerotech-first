@@ -315,6 +315,11 @@ def status(handler) -> None:
 def handle_get(handler, path: str) -> None:
     if path.startswith("/api/auth/oidc/"):
         import auth_oidc
+        try:
+            import auth_oidc_runtime
+            auth_oidc_runtime.apply()
+        except Exception:
+            pass
         auth_oidc.handle_get(handler, path)
         return
     if path in ("/api/auth/me", "/api/bff/identity/me"):
