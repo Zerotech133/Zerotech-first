@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 15:16",
+ "generated": "2026-10-30 15:17",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 26,
+  "workorders_doing": 25,
   "workorders_review": 7
  },
  "workorders": [
@@ -299,15 +299,6 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-LEGION-P2-V1-EVID-20261030",
    "created": "2026-10-30 15:15:43",
-   "project": "general"
-  },
-  {
-   "id": "WO-LEGION-P2-V1-EVID2-20261030",
-   "desc": "P2 v1 首跑记录/状态收口2",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-P2-V1-EVID2-20261030",
-   "created": "2026-10-30 15:16:10",
    "project": "general"
   }
  ],
@@ -7033,11 +7024,6 @@
      "id": "WO-LEGION-P2-V1-EVID-20261030",
      "desc": "P2 v1 首跑记录/状态收口",
      "status": "review"
-    },
-    {
-     "id": "WO-LEGION-P2-V1-EVID2-20261030",
-     "desc": "P2 v1 首跑记录/状态收口2",
-     "status": "doing"
     }
    ]
   }
