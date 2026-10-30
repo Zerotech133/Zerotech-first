@@ -51,10 +51,21 @@ def test_decision_node_asks_for_json_only():
     assert "3 句以内" not in u
 
 
-def test_non_decision_node_keeps_brief_tail():
-    u = interp_mod.Interpreter._build_user(None, T1_NODE, CTX)
-    assert "3 句以内" in u
-    assert "严格只输出一个 JSON" not in u
+def test_non_decision_node_uses_schema_instruction_or_brief_tail():
+    """现行契约（2026-10 菜鸟团队分析移植后）：
+
+    - 有 analysis_type JSON Schema 指令的非决策节点 → 追加「先正文后 ```json```」指令；
+    - 无 schema 指令的类型 → 保留旧「3 句以内」简要结论尾句；
+    - 两者都不得出现决策节点专用的「严格只输出一个 JSON」。
+    """
+    u_analyst = interp_mod.Interpreter._build_user(None, T1_NODE, CTX)  # market_technical
+    assert "输出格式要求" in u_analyst and "JSON" in u_analyst
+    assert "严格只输出一个 JSON" not in u_analyst
+
+    plain_node = dict(T1_NODE, analysis_type="unknown_type_xyz")
+    u_plain = interp_mod.Interpreter._build_user(None, plain_node, CTX)
+    assert "3 句以内" in u_plain
+    assert "严格只输出一个 JSON" not in u_plain
 
 
 # ---------------------------------------------------------------- 契约 2

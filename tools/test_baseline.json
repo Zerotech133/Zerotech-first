@@ -15,10 +15,7 @@
   },
   "agent_platform/tests": {
     "known_failures": [
-      "agent_platform/tests/test_d1_json_contract.py::test_non_decision_node_keeps_brief_tail",
-      "agent_platform/tests/test_invest_staff_audit.py::test_audit_all_green",
-      "agent_platform/tests/test_org_audit.py::test_audit_detects_depts_without_profile",
-      "agent_platform/tests/test_zhaoyun_view.py::test_build_view_full"
+      "agent_platform/tests/test_invest_staff_audit.py::test_audit_all_green"
     ],
     "flaky": [
       "agent_platform/tests/test_heartbeat.py::SafetyValveTests::test_bad_checked_at_rejected",
@@ -31,9 +28,10 @@
       "agent_platform/tests/test_legion_command.py::test_activity_mapping_covers_real_tasks",
       "agent_platform/tests/test_legion_command.py::test_activity_maps_known_prefixes",
       "agent_platform/tests/test_closeout_round.py::test_if_changed_skips_duplicate",
-      "agent_platform/tests/test_legion_ide_audit.py::test_acquire_lock_is_exclusive"
+      "agent_platform/tests/test_legion_ide_audit.py::test_acquire_lock_is_exclusive",
+      "agent_platform/tests/test_zhaoyun_view.py::test_build_view_full"
     ],
-    "_flaky_note": "2026-10-29 复验证据：agent 全量 3 轮（gate+run1+run2）中 run2 仅 closeout test_if_changed_skips_duplicate 失败 1 次；该用例隔离 3/3 通过（tmp_path+stub_ledger 全夹具）→ 判为顺序/环境 flaky，登记跟踪。原 9 条 flaky 在本轮 3 轮全量中均未复现（保留观察）。复验工具：python tools/flaky_probe.py --suite agent --runs 2；规则：连续 7 轮（或 2 周）0 复现 → 移出基线；新 flaky 必须附复现证据与隔离结果。 2026-10-30 P78：test_legion_ide_audit::test_acquire_lock_is_exclusive 在 agent 全量 2 轮中 1 次失败（run1），master/worktree 隔离单跑均通过 → 锁竞争/顺序 flaky，登记跟踪（未满 7 轮）。",
+    "_flaky_note": "2026-10-29 复验证据：agent 全量 3 轮（gate+run1+run2）中 run2 仅 closeout test_if_changed_skips_duplicate 失败 1 次；该用例隔离 3/3 通过（tmp_path+stub_ledger 全夹具）→ 判为顺序/环境 flaky，登记跟踪。原 9 条 flaky 在本轮 3 轮全量中均未复现（保留观察）。复验工具：python tools/flaky_probe.py --suite agent --runs 2；规则：连续 7 轮（或 2 周）0 复现 → 移出基线；新 flaky 必须附复现证据与隔离结果。 2026-10-30 P78：test_legion_ide_audit::test_acquire_lock_is_exclusive 在 agent 全量 2 轮中 1 次失败（run1），master/worktree 隔离单跑均通过 → 锁竞争/顺序 flaky，登记跟踪（未满 7 轮）。 2026-10-30 P79：test_zhaoyun_view::test_build_view_full 从 known 转 flaky——全量套件 3 轮中 1 次失败、2 次通过，隔离单跑 3/3 通过 → 顺序/数据状态 flaky，登记跟踪。",
     "env_failures": [
       "agent_platform/tests/test_evidence_collect.py::CollectTests::test_real_repo_read_only",
       "agent_platform/tests/test_legion_intent_contract.py::test_readonly_sources_untouched",
@@ -42,7 +40,7 @@
       "agent_platform/tests/test_approvals_registry.py::ApprovalsRegistryTests::test_real_repo_smoke"
     ],
     "_env_note": "2026-10-29：赵云能力卡已保守刷新（generated_at=2026-10-29T14:23:44+08:00，audit ok/drift=0），原 3 条 env 登记已移除；若能力卡再陈旧（>48h）需重跑 tools/refresh_hermes_capabilities.py --apply。 2026-10-30 P78：agent 套件收集错误修复后（conftest 仓库根 sys.path 守卫），4 条 real_repo_read_only 类用例在 worktree 失败、master 通过（worktree 无 agent_platform/data 与 .worktrees/tasks.json 等未跟踪运行时数据）→ 登记 env_failures。 2026-10-30 P78 补充：test_approvals_registry::test_real_repo_smoke 在 worktree 全量 2/2 失败、master 隔离通过（worktree 缺 agent_platform/data 运行时数据）→ env_failures。",
-    "_known_note": "2026-10-30 P78：4 条 master 复现的 agent 线失败（非本线代码）已正式登记 known_failures，owner=agent/军团线，要求 2026-11-06 前修复或转 env；证据：worktree 与 master 均失败，含 test_d1_json_contract 提示词断言漂移 / test_invest_staff_audit / test_org_audit / test_zhaoyun_view。"
+    "_known_note": "2026-10-30 P78：4 条 master 复现的 agent 线失败（非本线代码）已正式登记 known_failures，owner=agent/军团线，要求 2026-11-06 前修复或转 env；证据：worktree 与 master 均失败，含 test_d1_json_contract 提示词断言漂移 / test_invest_staff_audit / test_org_audit / test_zhaoyun_view。 2026-10-30 P79：已修复 d1_json_contract（测试对齐双分支契约）与 org_audit（空部门误判 DEPT_NO_PROFILE 的代码 bug），两条从 known 移除；invest_staff_audit 保留 known（org invest 9 席含 TR1 vs 审计器 SEATS=8，属 agent 线编制迁移待确认）。 2026-10-30 P79 复核：known 仅剩 invest_staff_audit（org invest 9 席含 TR1 vs 审计器 SEATS=8，属 agent 线编制迁移待确认；owner=agent/军团线，due 2026-11-06）。"
   },
   "quant_backtest/tests": {
     "known_failures": [],
