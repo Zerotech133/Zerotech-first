@@ -19,13 +19,37 @@ if (Test-Path $freeze) {
 Push-Location 'C:\aios'
 & $py312 -m bandit -r agent_platform portal tools quant_backtest k_stock news_collector `
     -x '.venv,venv,node_modules,worktrees,archive,__pycache__,tests,test_' `
-    -b 'tools/bandit_baseline.json' -f json -o 'C:\Temp\bandit_latest.json' *>> $log
+    -f json -o 'C:\Temp\bandit_latest.json' *>> $log
 $r2 = $LASTEXITCODE
 Pop-Location
+
+$counts = @{ HIGH = 0; MEDIUM = 0; LOW = 0 }
+$bjson = 'C:\Temp\bandit_latest.json'
+if (Test-Path $bjson) {
+    try {
+        $bd = Get-Content $bjson -Raw | ConvertFrom-Json
+        foreach ($x in $bd.results) {
+            $sev = [string]$x.issue_severity
+            if ($counts.ContainsKey($sev)) { $counts[$sev] = $counts[$sev] + 1 }
+        }
+    } catch { "bandit result parse failed: $_" | Out-File $log -Append -Encoding utf8 }
+}
+$reg = $false
+$base = 'C:\aios\tools\bandit_baseline.json'
+if (Test-Path $base) {
+    try {
+        $b = Get-Content $base -Raw | ConvertFrom-Json
+        $reg = ($counts['HIGH'] -gt [int]$b.counts.HIGH) -or ($counts['MEDIUM'] -gt [int]$b.counts.MEDIUM)
+    } catch { "baseline parse failed: $_" | Out-File $log -Append -Encoding utf8 }
+}
 @{
     ts = $ts
     pip_audit_rc = $r1
     bandit_rc = $r2
+    bandit_high = $counts['HIGH']
+    bandit_medium = $counts['MEDIUM']
+    bandit_low = $counts['LOW']
+    bandit_regression = $reg
     log = $log
     freeze = $freeze
     bandit_json = 'C:\Temp\bandit_latest.json'
