@@ -256,6 +256,8 @@ def query(hours: int = 24, bias: list[str] | None = None, code: str = "",
             "impact": j.get("impact") or "", "impact_cn": j.get("impact_cn") or "",
             "companies": companies, "codes": stock_codes,
             "reason": (j.get("reason") or "")[:200],
+            "horizon": j.get("horizon") or "unknown",
+            "prob": j.get("prob") or {},
         })
     if with_posterior:
         if not os.path.exists(AUDIT_DB):
@@ -269,6 +271,7 @@ def query(hours: int = 24, bias: list[str] | None = None, code: str = "",
 
     return {
         "ok": True,
+        "schema_version": "jev.v2",  # 2026-10-30 JEVCONTRACTVER：契约版本
         "generated_at": now.strftime("%Y-%m-%dT%H:%M:%S"),
         "window_hours": hours,
         "filters": {"bias": bias, "code": code6, "event_type": event_type or [],
