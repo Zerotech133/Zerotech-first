@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 18:49",
+ "generated": "2026-10-30 18:51",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -338,15 +338,6 @@
    "project": "general"
   },
   {
-   "id": "K-STOCK-ANALYSIS-P2-5B-20261030",
-   "desc": "P2.5B 网关token修复：_expected_token 先加 sys.path 再 import commercial（文件 token 未生效）",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-STOCK-ANALYSIS-P2-5B-20261030",
-   "created": "2026-10-30 18:47:49",
-   "project": "quant"
-  },
-  {
    "id": "WO-UI-OPS-20261030",
    "desc": "模拟确认页修复 tokens 变量；watch_admin 覆盖为平台 tokens 调色；与D1/作战台风格统一",
    "status": "doing",
@@ -354,6 +345,15 @@
    "branch": "task/WO-UI-OPS-20261030",
    "created": "2026-10-30 18:48:09",
    "project": "portal"
+  },
+  {
+   "id": "K-ORG-20261030-JEVROTATE",
+   "desc": "接线日志轮转：jev_drift_task.ps1 P5 调 tools/rotate_logs.py（每日07:10，保留14天，gzip回收）；+静态测试",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-ORG-20261030-JEVROTATE",
+   "created": "2026-10-30 18:49:34",
+   "project": "general"
   }
  ],
  "coder_traces": [
