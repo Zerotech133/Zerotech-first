@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 14:45",
+ "generated": "2026-10-30 14:50",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 26,
+  "workorders_doing": 29,
   "workorders_review": 8
  },
  "workorders": [
@@ -318,6 +318,33 @@
    "branch": "task/WO-SEC-B310-LAST-20261030",
    "created": "2026-10-30 14:44:59",
    "project": "quant"
+  },
+  {
+   "id": "WO-GUANYU-P76-20261030",
+   "desc": "flaky淘汰执行",
+   "status": "doing",
+   "owner": "GUANYU",
+   "branch": "task/WO-GUANYU-P76-20261030",
+   "created": "2026-10-30 14:46:27",
+   "project": "general"
+  },
+  {
+   "id": "WO-SAFEHTTP-IMPORTS-20261030",
+   "desc": "审计修复：news/quant/agent 树 safe_urlopen 本地helper+回退导入（防脚本运行ImportError）",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-SAFEHTTP-IMPORTS-20261030",
+   "created": "2026-10-30 14:47:00",
+   "project": "general"
+  },
+  {
+   "id": "K-ORG-20261030-IDXDAILY",
+   "desc": "数据线：curated_update 日更补 index_daily（JEV 基准 10-24 起缺失，校准门控被冻结）",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-ORG-20261030-IDXDAILY",
+   "created": "2026-10-30 14:48:37",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -6369,7 +6396,14 @@
    ],
    "experience": "30 年工程治理经验：漏洞分级与补丁流程、失败测试基线修复、编码规范与门禁落地、技术债清欠与重复功能合并；证据驱动、逐项闭环，只出报告与工单不自行合并，开发动作限独立 worktree 提交+跑测试并交 L2 人签。",
    "dept_name": "研究院",
-   "dept_cn_title": "太学"
+   "dept_cn_title": "太学",
+   "tasks": [
+    {
+     "id": "WO-GUANYU-P76-20261030",
+     "desc": "flaky淘汰执行",
+     "status": "doing"
+    }
+   ]
   },
   "HUANGZHONG": {
    "id": "HUANGZHONG",
@@ -7038,6 +7072,11 @@
      "id": "WO-SEC-B310-LAST-20261030",
      "desc": "B310最后1处：tools/kb_corpus/build_full_index.py 接 safe_urlopen；复扫确认MEDIUM=0/B310=0。",
      "status": "review"
+    },
+    {
+     "id": "WO-SAFEHTTP-IMPORTS-20261030",
+     "desc": "审计修复：news/quant/agent 树 safe_urlopen 本地helper+回退导入（防脚本运行ImportError）",
+     "status": "doing"
     }
    ]
   }
