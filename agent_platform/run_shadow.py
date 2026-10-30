@@ -806,7 +806,9 @@ def main():
                 file=sys.stderr,
             )
             return 3
-            _record_trace_link(row)
+        # 2026-10-30 TRACELINK：原调用被放在 except 的 return 之后（死代码），
+        # 导致 trace_links 从未由 run_shadow 写入；10-28 的 links 是手工补丁。
+        _record_trace_link(row)
         if attempt_id:  # 双轨回写：done→completed；failed→允许下次死信后重试
             hook.complete(
                 attempt_id,
