@@ -2,6 +2,7 @@
 # 说明：py312 解释器缺 venv 模块，pip-audit 2.x 无法直接跑；用 py311 的 pip-audit
 # 审计 py312 的依赖冻结清单（-r），bandit 仍用 py312 扫仓库代码。
 $ErrorActionPreference = 'Continue'
+$env:PYTHONUTF8 = '1'
 $py312 = 'C:\项目\py312\python.exe'
 $py311 = 'C:\Program Files\Python311\python.exe'
 $log = 'C:\Temp\security_audit_latest.log'
