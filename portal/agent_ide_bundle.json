@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 28,
+  "workorders_doing": 27,
   "workorders_review": 9
  },
  "workorders": [
@@ -336,15 +336,6 @@
    "branch": "task/K-QUANT-20261030-IDEDEEP2",
    "created": "2026-10-30 19:51:32",
    "project": "quant"
-  },
-  {
-   "id": "WO-LEGION-W1T1-EVID-20261030",
-   "desc": "W1-3真实prompt AB记录",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-W1T1-EVID-20261030",
-   "created": "2026-10-30 19:58:36",
-   "project": "general"
   }
  ],
  "coder_traces": [
@@ -7304,11 +7295,6 @@
     {
      "id": "WO-LEGION-OIDC-PATH-20261030",
      "desc": "OIDC配置路径对齐实际vault",
-     "status": "doing"
-    },
-    {
-     "id": "WO-LEGION-W1T1-EVID-20261030",
-     "desc": "W1-3真实prompt AB记录",
      "status": "doing"
     }
    ]
