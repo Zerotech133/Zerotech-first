@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-31 03:30",
+ "generated": "2026-10-31 03:46",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 31,
+  "workorders_doing": 32,
   "workorders_review": 12
  },
  "workorders": [
@@ -398,6 +398,15 @@
    "owner": "DSH-Lead",
    "branch": "task/WO-D1-L4BOOTSTRAP-20261031",
    "created": "2026-10-31 01:31:46",
+   "project": "general"
+  },
+  {
+   "id": "WO-GUANYU-P114-20261031",
+   "desc": "A5 B4B5路由表化设计",
+   "status": "doing",
+   "owner": "GUANYU",
+   "branch": "task/WO-GUANYU-P114-20261031",
+   "created": "2026-10-31 03:44:44",
    "project": "general"
   }
  ],
@@ -6708,6 +6717,11 @@
      "id": "WO-GUANYU-P101-20261030",
      "desc": "基线同步186",
      "status": "review"
+    },
+    {
+     "id": "WO-GUANYU-P114-20261031",
+     "desc": "A5 B4B5路由表化设计",
+     "status": "doing"
     }
    ]
   },
