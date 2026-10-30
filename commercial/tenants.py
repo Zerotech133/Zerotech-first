@@ -74,3 +74,10 @@ def tenant_dir(tenant_id: str, base: Optional[str] = None) -> str:
     root = os.path.join(base or BASE, "tenants", tenant_id)
     os.makedirs(root, exist_ok=True)
     return root
+
+
+def raw_license(tenant_id: str, db: Optional[str] = None) -> str:
+    """内部使用：返回原始 license key（不要对外输出/打印）。"""
+    c = _db(db)
+    r = c.execute("SELECT license_key FROM tenants WHERE id=?", (tenant_id,)).fetchone()
+    return (r[0] or "") if r else ""
