@@ -58,6 +58,41 @@ def _prune() -> None:
             _JOBS.pop(next(iter(_JOBS)), None)
 
 
+
+
+def _redactor():
+    """加载本地出网脱敏工具（不依赖 sys.path 的 tools 包）。"""
+    import importlib.util
+    from pathlib import Path as _P
+    p = _P(__file__).resolve().parents[1] / "agent_platform" / "legion_command" / "redact_outbound.py"
+    spec = importlib.util.spec_from_file_location("_zb_redact_outbound", p)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _redact_obj(obj, redact_fn):
+    hits = []
+    if isinstance(obj, str):
+        r = redact_fn(obj)
+        hits.extend(r.get("hits") or [])
+        return r["text"], hits
+    if isinstance(obj, list):
+        out = []
+        for x in obj:
+            v, h = _redact_obj(x, redact_fn)
+            out.append(v)
+            hits.extend(h)
+        return out, hits
+    if isinstance(obj, dict):
+        out = {}
+        for k, x in obj.items():
+            v, h = _redact_obj(x, redact_fn)
+            out[k] = v
+            hits.extend(h)
+        return out, hits
+    return obj, hits
+
 def validate(payload: Any) -> dict:
     if not isinstance(payload, dict):
         raise ValueError("payload 须为对象")
@@ -79,8 +114,19 @@ def validate(payload: Any) -> dict:
     ctx = payload.get("context") or {}
     if not isinstance(ctx, dict):
         raise ValueError("context 须为对象")
-    return {"task_id": task_id[:120], "diff": diff, "changed_files": files,
-            "test_result": test, "context": ctx}
+    # P0-2：出网前脱敏（L3 命中拒绝复核；L2 脱敏后继续；flag 仍关）
+    rmod = _redactor()
+    diff_rd = rmod.redact(diff, block=True)
+    if diff_rd.get("blocked"):
+        raise ValueError("diff 含敏感信息（L3），已拒绝复核")
+    test_rd, test_hits = _redact_obj(test, rmod.redact)
+    ctx_rd, ctx_hits = _redact_obj(ctx, rmod.redact)
+    if diff_rd.get("hits") or test_hits or ctx_hits:
+        rmod.log_outbound("zhuge_review", task_id, "openclaw", diff_rd)
+    return {"task_id": task_id[:120], "diff": diff_rd["text"], "changed_files": files,
+            "test_result": test_rd, "context": ctx_rd,
+            "redaction": {"diff": diff_rd.get("hits") or [],
+                          "test": test_hits, "context": ctx_hits}}
 
 
 def build_prompt(p: dict) -> str:

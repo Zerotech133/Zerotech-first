@@ -55,6 +55,44 @@ BLOCKED_SUFFIX = {
 }
 TASK_RE = re.compile(r"^[A-Za-z0-9_.\-]{3,80}$")
 
+# P0-2：写/执行角色门（identity roles 来自 8091；本地无 identity 时给 LOCAL_DEVELOPER）
+LOCAL_ROLE = "LOCAL_DEVELOPER"
+DEFAULT_WRITE_ROLES = frozenset({
+    "LOCAL_DEVELOPER", "DEVELOPER", "EDITOR", "OWNER", "ADMIN",
+    "ARCH1", "G1", "G2", "LEAD", "MAINTAINER",
+})
+ROLES_ENV = "IDE_WRITE_ROLES"
+
+
+def write_roles(env: Optional[dict] = None) -> set:
+    env = os.environ if env is None else env
+    roles = set(DEFAULT_WRITE_ROLES)
+    for x in str(env.get(ROLES_ENV) or "").split(","):
+        x = x.strip().upper()
+        if x:
+            roles.add(x)
+    return roles
+
+
+def _norm_roles(roles) -> list:
+    out = []
+    for r in roles or []:
+        r = str(r).strip().upper()
+        if r and r not in out:
+            out.append(r)
+    return out
+
+
+def _role_denied(info: dict, required_roles=None):
+    if not required_roles:
+        return None
+    req = {str(r).strip().upper() for r in required_roles if str(r).strip()}
+    have = set(_norm_roles((info or {}).get("roles") or []))
+    if not (have & req):
+        return err("role_forbidden", "当前会话角色无权写/执行（roles=%s）" % ",".join(sorted(have) or ["-"]),
+                   {"roles": sorted(have), "required": sorted(req)})
+    return None
+
 _SESSION_TOKEN = secrets.token_urlsafe(24)  # 兼容旧单 token 测试/调用
 _SESSION_TTL_S = 3600
 _SESSIONS: dict[str, dict] = {}
@@ -169,10 +207,19 @@ def new_session(owner: str = "", headers: dict | None = None) -> tuple[str, str]
     token = secrets.token_urlsafe(24)
     identity = auth_identity(headers) if headers and not owner else {}
     owner = str(owner or identity.get("sub") or "").strip()
-    roles = list(identity.get("roles") or [])
+    roles = _norm_roles(identity.get("roles") or [])
+    if identity and not roles:
+        role_source = "identity_no_roles"
+    elif identity:
+        role_source = "identity"
+    else:
+        # 本机直接 /rw（无门户 identity）：显式本地开发者角色，仍受同源+cookie约束
+        roles = [LOCAL_ROLE]
+        role_source = "local_fallback"
     owner = owner or ("lde-" + token[:10])
     _SESSIONS[_token_key(token)] = {
-        "owner": owner, "roles": roles, "created": time.time(),
+        "owner": owner, "roles": roles, "role_source": role_source,
+        "created": time.time(),
     }
     _save_sessions()
     return token, owner
@@ -214,8 +261,8 @@ def parse_cookies(header: str) -> dict:
     return out
 
 
-def check_access(headers: dict, token=None) -> Optional[dict]:
-    """同源 + 服务端会话校验；token 参数仅保留旧测试显式 token 兼容。"""
+def check_access(headers: dict, token=None, required_roles=None) -> Optional[dict]:
+    """同源 + 服务端会话校验；required_roles 非空时强制角色门。"""
     origin = str(headers.get("Origin") or "").strip()
     if origin:
         m = re.match(r"^https?://(127\.0\.0\.1|localhost)(:\d+)?/?$", origin)
@@ -227,10 +274,12 @@ def check_access(headers: dict, token=None) -> Optional[dict]:
     if token is not None:
         if cookie.get("ide_session") != token:
             return err("no_session", "缺少有效 IDE 会话（请从 /rw 页面进入）")
-        return None
-    if not session_info(headers):
+        info = _SESSIONS.get(_token_key(token)) or {}
+        return _role_denied(info, required_roles)
+    info = session_info(headers)
+    if not info:
         return err("no_session", "缺少有效 IDE 会话（请从 /rw 页面进入）")
-    return None
+    return _role_denied(info, required_roles)
 
 
 def _tasks_file(repo: Path) -> Path:
