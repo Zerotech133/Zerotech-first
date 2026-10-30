@@ -74,7 +74,14 @@ tr.clickable{cursor:pointer}tr.clickable:hover td{background:var(--panel2)}
 <script src="/static/nav.js" defer></script><meta name=wb-shell content=adopted></head>
 <body>
 <div class="topbar">
-  <div><h1>🗄 数据仓驾驶舱 <small>来源治理 · 今日动态 · 挖掘时间线 · 治理路线</small></h1>
+  <div class="panel" id="kbCorpusCard" style="border:1px solid #2d333b;border-radius:10px;padding:12px 16px;margin-bottom:14px;background:#161b22">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+    <div><b>📚 语料知识库</b> <span style="color:#8b949e;font-size:12px">YouTube 量化频道语料 2.7GB · 948 包 · 45,827 视频 · 全量索引 62,401 docs</span></div>
+    <a href="/kb_corpus.html" style="color:#58a6ff;font-size:13px;text-decoration:none">检索问答 →</a>
+  </div>
+  <div id="kbGovPills" style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;font-size:12px;color:#8b949e">治理状态加载中…</div>
+</div>
+<div><h1>🗄 数据仓驾驶舱 <small>来源治理 · 今日动态 · 挖掘时间线 · 治理路线</small></h1>
   <div class="sub" id="sub">加载中…</div>
 <div class="strip" id="legend" style="font-size:12px;color:var(--dim)"><b>接入方式口径</b>：接口同步＝按交易日/股票从 Tushare 接口拉取；爬虫采集＝新闻/雪球页面抓取；本地库＝SQLite 落盘库；容器库＝PostgreSQL/MySQL 容器库；文件导入＝PDF/人工导入。「条数」为数据行数（万/条）；「滞后」＝最新数据日期距今天数（越红越滞后）。</div></div>
   <div class="btns">
@@ -344,6 +351,24 @@ function dlCSV(kind){
 }
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
 load();
+</script>
+<script>
+(async function loadKbGov(){
+  try{
+    const r=await fetch('/static/kb_corpus_gov.json?ts='+Date.now(),{cache:'no-store'});
+    if(!r.ok) return;
+    const g=await r.json();
+    const v=g.verify||{}, c=g.cleaned||{}, b=g.backup||{}, f=g.index_full||{};
+    const pill=(t,ok)=>'<span style="padding:2px 9px;border-radius:10px;border:1px solid '+(ok?'#1f6feb':'#d29922')+';color:'+(ok?'#79c0ff':'#d29922')+'">'+t+'</span>';
+    document.getElementById('kbGovPills').innerHTML=[
+      pill('校验 '+(v.hash_ok||0)+'/'+(v.zips||0), v.hash_bad===0),
+      pill('清洗 '+(c.retention_pct||'—')+'%', (c.retention_pct||0)>=90),
+      pill('索引 '+(f.rows||'—')+' docs', (f.rows||0)>0),
+      pill('备份 '+(b.result||'—'), b.result==='OK'),
+      pill(g.catalog_registered?'目录已登记':'目录未登记', !!g.catalog_registered)
+    ].join('');
+  }catch(e){}
+})();
 </script>
 </body>
 </html>
