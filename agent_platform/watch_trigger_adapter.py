@@ -108,6 +108,7 @@ def build_payload(signal, selection=None, evidence=None, report=None, profile="b
         "source": "WATCH_TOWER",
         "source_report_id": report_id,
         "profile": profile,
+        "audience": signal.get("audience") or "external_user",
     }
 
 
@@ -120,5 +121,6 @@ def trigger(signal, selection=None, evidence=None, report=None,
         price=payload["price"], stop=payload["stop"], target=payload["target"],
         confidence=payload["confidence"], reason=payload["reason"],
         source=payload["source"], source_report_id=payload["source_report_id"],
-        profile=payload["profile"], data_dir=data_dir,
+        profile=payload["profile"], audience=payload["audience"],
+        data_dir=data_dir,
     )

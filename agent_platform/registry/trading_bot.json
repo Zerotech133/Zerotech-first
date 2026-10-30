@@ -1,5 +1,5 @@
 {
-  "_note": "交易机器人多角色组编排（2026-10-30 WO-BOT-FLOW-20261030 按老田口径重梳）。主链：司马徽(ACAD1)选股入池 → 鲁肃(D1)投研团队分析研判出投研报告 → 盯盘团队在股票池内发现异动并通知 → 人工确认门（保留）→ 周瑜(TR1)模拟执行 → 复盘。paper-only；人工接口必须保留。",
+  "_note": "交易机器人多角色组编排（WO-BOT-AUTO 2026-10-30）。内部运行：按交易手法自动执行，无人工门；外部用户测试：人工确认门（批准/拒绝/改价/挂起/接管）。paper-only。",
   "bot_id": "TRADING-BOT",
   "bot_name": "量化交易机器人（多角色组）",
   "owner": "D1",
@@ -78,7 +78,11 @@
       "output": "批准/拒绝/改价/挂起/接管",
       "mode": "on_trigger",
       "human_gate": true,
-      "note": "paper 阶段可配置，但接口必须保留；未来实盘强制。"
+      "note": "仅外部测试/真实交易需要；内部 auto 路径跳过此门。",
+      "applies_to": [
+        "external_test"
+      ],
+      "internal_bypass": true
     },
     {
       "id": "execute",
@@ -138,7 +142,7 @@
     "profile_selection": "人工确认时选择：aggressive 激进 / balanced 平衡 / conservative 保守",
     "kill_switch": "PAPER_KILL env 或 agent_platform/data/paper/KILL 文件",
     "audit": "dev_events + decision_audit + paper ledger",
-    "note": "保留未来人工接口：BUY/SELL/新标的/加仓/超阈值必须人工确认；paper 阶段可配置自动，但接口与审计不删除；真实交易强制人工门。"
+    "note": "人工门保留给外部测试/真实交易；内部运行按 trading_methods 自动执行（paper）。"
   },
   "handoffs": [
     {
@@ -195,5 +199,75 @@
     "owner": "D1",
     "artifact": "team_exec/<run_id>_summary.json + pool_review/<date>.json",
     "content": "T1/T2 多空辩论、N1 情绪、F1 基本面、D1 五档裁决/建仓计划"
-  }
+  },
+  "execution_paths": {
+    "internal_auto": {
+      "enabled": true,
+      "audience": "internal",
+      "human_gate": false,
+      "executor": "TR1",
+      "mode": "auto",
+      "note": "我们自己运转：按投研计划选交易手法直接模拟执行，人工门不拦内部路径。"
+    },
+    "external_test": {
+      "enabled": true,
+      "audience": "external_user",
+      "human_gate": true,
+      "actions": [
+        "approve",
+        "reject",
+        "override_price",
+        "hold",
+        "takeover"
+      ],
+      "note": "其他用户测试：必须人工确认后才执行。"
+    }
+  },
+  "trading_methods": [
+    {
+      "id": "steady",
+      "name": "稳健",
+      "source": "k_stock/paper/combos.json#combo_wenjian",
+      "persona": "conservative",
+      "conf_floor": 0.7,
+      "max_pos_pct": 0.15
+    },
+    {
+      "id": "neutral",
+      "name": "中性",
+      "source": "k_stock/paper/combos.json#combo_zhongxing",
+      "persona": "neutral",
+      "conf_floor": 0.6,
+      "max_pos_pct": 0.2
+    },
+    {
+      "id": "aggressive",
+      "name": "激进",
+      "source": "k_stock/paper/combos.json#combo_jijin",
+      "persona": "aggressive",
+      "conf_floor": 0.5,
+      "max_pos_pct": 0.3
+    },
+    {
+      "id": "chaser",
+      "name": "趋势型",
+      "source": "k_stock/paper/trainees/chaser.json",
+      "persona": "trend",
+      "status": "live"
+    },
+    {
+      "id": "gunner",
+      "name": "短线型",
+      "source": "k_stock/paper/trainees/gunner.json",
+      "persona": "short_term",
+      "status": "design"
+    },
+    {
+      "id": "taishan",
+      "name": "防守型",
+      "source": "k_stock/paper/trainees/taishan.json",
+      "persona": "defensive",
+      "status": "training"
+    }
+  ]
 }
