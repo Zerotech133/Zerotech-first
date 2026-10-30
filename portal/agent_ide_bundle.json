@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 15:27",
+ "generated": "2026-10-30 15:29",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 26,
+  "workorders_doing": 25,
   "workorders_review": 6
  },
  "workorders": [
@@ -290,15 +290,6 @@
    "owner": "GUANYU",
    "branch": "task/WO-GUANYU-P78-20261030",
    "created": "2026-10-30 15:23:28",
-   "project": "general"
-  },
-  {
-   "id": "WO-LEGION-P0-6-OTLP-20261030",
-   "desc": "P0-6 Phoenix OTLP HTTP回退+验收",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-P0-6-OTLP-20261030",
-   "created": "2026-10-30 15:24:27",
    "project": "general"
   }
  ],
@@ -7027,14 +7018,7 @@
    ],
    "entry_source": "virtual_governance",
    "seat_note": "profile 角色，不占编（D5-C）；与 R2 风控席（org 编制·保守风控哨）是不同 id，报表按 id 区分。",
-   "home_page": "http://127.0.0.1:8796/zhaoyun",
-   "tasks": [
-    {
-     "id": "WO-LEGION-P0-6-OTLP-20261030",
-     "desc": "P0-6 Phoenix OTLP HTTP回退+验收",
-     "status": "doing"
-    }
-   ]
+   "home_page": "http://127.0.0.1:8796/zhaoyun"
   }
  }
 }
