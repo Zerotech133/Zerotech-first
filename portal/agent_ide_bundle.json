@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 18:41",
+ "generated": "2026-10-30 18:43",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,8 +9,8 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 29,
-  "workorders_review": 9
+  "workorders_doing": 30,
+  "workorders_review": 8
  },
  "workorders": [
   {
@@ -320,15 +320,6 @@
    "project": "general"
   },
   {
-   "id": "K-QUANT-20261030-IDEHARDEN",
-   "desc": "IDE P0 hardening: LegionOps guard, LDE owner binding, IDE route auth",
-   "status": "review",
-   "owner": "DSH-Lead",
-   "branch": "task/K-QUANT-20261030-IDEHARDEN",
-   "created": "2026-10-30 18:25:07",
-   "project": "quant"
-  },
-  {
    "id": "WO-WARROOM-LIVE-20261030",
    "desc": "作战台对接实时数据：/api/war-room/snapshot 聚合 D1/池/paper/人工确认/盯盘；前端优先 fetch，静态快照兜底；页面统一 tokens/nav",
    "status": "doing",
@@ -353,6 +344,15 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-LEGION-T1AB-20261030",
    "created": "2026-10-30 18:41:51",
+   "project": "general"
+  },
+  {
+   "id": "K-ORG-20261030-JEVARCH",
+   "desc": "归档 jev-eval 杂物：跟踪笔记入 docs/archive，本地 .bak 移仓外保留，更新失效引用注释",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-ORG-20261030-JEVARCH",
+   "created": "2026-10-30 18:42:53",
    "project": "general"
   }
  ],
@@ -4382,7 +4382,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 115,
+     "count": 116,
      "recent": [
       {
        "ts": "",
