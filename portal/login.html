@@ -51,6 +51,8 @@
 (function () {
   'use strict';
   var form = document.getElementById('login-form');
+  var next = '/os-entry';
+  try { var cand = new URLSearchParams(location.search).get('next') || ''; if (cand && cand.charAt(0) === '/' && cand.charAt(1) !== '/') next = cand; } catch (e) {}
   var msg = document.getElementById('login-msg');
   var btn = document.getElementById('login-btn');
   function say(text, ok) { msg.textContent = text; msg.setAttribute('data-kind', ok ? 'ok' : 'err'); }
@@ -84,7 +86,7 @@
     }).then(function (x) {
       if (x.status === 200 && x.body.ok) {
         say('登录成功，正在返回工作台…', true);
-        location.replace('/os-entry');
+        location.replace(next);
         return;
       }
       say(errors[x.body.error] || '登录失败，请稍后重试。', false);

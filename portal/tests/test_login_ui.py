@@ -35,3 +35,10 @@ def test_entry_top_auth_visible_on_first_screen():
     assert "top-auth" in html
     assert "已登录 · " in html
     assert "未登录 · 登录" in html
+
+
+def test_login_honors_next_redirect():
+    html = (PORTAL / "login.html").read_text(encoding="utf-8")
+    assert "URLSearchParams(location.search)" in html
+    assert "location.replace(next)" in html
+    assert "cand.charAt(1) !== '/'" in html
