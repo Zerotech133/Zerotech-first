@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 18:54",
+ "generated": "2026-10-30 19:00",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 26,
+  "workorders_doing": 27,
   "workorders_review": 9
  },
  "workorders": [
@@ -326,6 +326,15 @@
    "owner": "DSH-Lead",
    "branch": "task/K-ORG-20261030-JEVARCH2",
    "created": "2026-10-30 18:47:29",
+   "project": "general"
+  },
+  {
+   "id": "K-ORG-20261030-PREFLIGHT",
+   "desc": "夜跑前置检查工具：待判/计划任务/M3/锁/9B/磁盘/wrapper env，一次输出 PASS/WARN/FAIL；--warm 预热",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-ORG-20261030-PREFLIGHT",
+   "created": "2026-10-30 18:56:38",
    "project": "general"
   }
  ],
