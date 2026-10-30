@@ -346,6 +346,20 @@
     } catch (e) { ldeStatus("确认失败：" + e.message, "bad"); }
   }
 
+  async function ldeUndo() {
+    const p = $("#lde-path");
+    if (!p || !p.value.trim()) { ldeStatus("先选择/填写文件路径", "warn"); return; }
+    try {
+      const d = await ldeApi("/api/ide/undo", {
+        method: "POST",
+        body: JSON.stringify(ldeBody({ path: p.value.trim() })),
+      });
+      ldeStatus("已撤销写入：" + d.path, "ok");
+      $("#lde-diff").textContent = "已撤销到写入前内容";
+      await ldeRead();
+    } catch (e) { ldeStatus("撤销失败：" + e.message, "warn"); }
+  }
+
   async function ldeLock() {
     try {
       await ldeApi("/api/ide/lock", { method: "POST", body: JSON.stringify(ldeBody()) });
@@ -429,6 +443,7 @@
               <button id="lde-preview" class="primary">预览变更</button>
               <button id="lde-confirm" class="primary" style="display:none">确认写入</button>
               <button id="lde-cancel-preview" style="display:none">取消预览</button>
+              <button id="lde-undo" title="撤销最近一次确认写入（内存快照 10 分钟）">撤销上次写入</button>
             </div>
             <div class="lde-label">diff</div>
             <pre id="lde-diff">—</pre>
@@ -505,6 +520,7 @@
     $("#lde-exec").onclick = ldeExec;
     $("#lde-audit").onclick = ldeAudit;
     $("#lde-tree-root").onclick = () => ldeTree(".");
+    $("#lde-undo").onclick = ldeUndo;
     $("#lde-git-diff").onclick = () => ldeGit("diff");
     $("#lde-git-add").onclick = () => ldeGit("add");
     $("#lde-git-commit").onclick = () => ldeGit("commit");

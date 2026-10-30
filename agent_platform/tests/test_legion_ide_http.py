@@ -146,6 +146,13 @@ def test_write_preview_confirm_and_git_exec(tmp_path, monkeypatch):
             "task": "T123", "owner": c.owner,
             "command": "git status -s -- agent_platform/foo.py"})
         assert st == 200 and d["success"] is True
+
+        # P1 checkpoint/undo：撤销刚才的确认写入，恢复写入前内容
+        st, d = c.req("/api/ide/undo", "POST", {
+            "task": "T123", "owner": c.owner, "path": "agent_platform/foo.py"})
+        assert st == 200 and d["undone"] is True
+        assert (wt / "agent_platform" / "foo.py").read_text(
+            encoding="utf-8").replace("\r\n", "\n") == "x = 1\n"
     finally:
         httpd.shutdown()
         httpd.server_close()

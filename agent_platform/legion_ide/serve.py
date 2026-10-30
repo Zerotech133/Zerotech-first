@@ -78,6 +78,9 @@ _EXEC_RESULTS_MAX = 100
 _PREVIEWS: dict[str, dict] = {}
 _PREVIEW_TTL_S = 600
 _PREVIEW_MAX = 20
+_UNDO: dict[tuple, dict] = {}
+_UNDO_TTL_S = 600
+_UNDO_MAX = 20
 
 
 def _prune_previews() -> None:
@@ -87,6 +90,15 @@ def _prune_previews() -> None:
         _PREVIEWS.pop(key, None)
     while len(_PREVIEWS) > _PREVIEW_MAX:
         _PREVIEWS.pop(next(iter(_PREVIEWS)))
+
+
+def _prune_undo() -> None:
+    now = time.time()
+    for key in [k for k, v in _UNDO.items()
+                if now - float(v.get("ts") or 0) > _UNDO_TTL_S]:
+        _UNDO.pop(key, None)
+    while len(_UNDO) > _UNDO_MAX:
+        _UNDO.pop(next(iter(_UNDO)))
 
 
 def _remember_exec(run_id: str, result: dict) -> None:
@@ -405,6 +417,7 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                 "/api/ide/exec",
                 "/api/ide/lock",
                 "/api/ide/git",
+                "/api/ide/undo",
             ):
                 return self._json(
                     404, {"ok": False, "error": "not_found", "path": path}
@@ -493,6 +506,11 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                     return self._json(400, res)
                 _prune_previews()
                 preview_id = uuid.uuid4().hex
+                old_content = None
+                if not res.get("created"):
+                    _old = W.read_file(wt, res["path"])
+                    if _old.get("ok"):
+                        old_content = _old.get("content")
                 _PREVIEWS[preview_id] = {
                     "ts": time.time(),
                     "task": str(data.get("task") or ""),
@@ -500,6 +518,9 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                     "path": res["path"],
                     "content": data.get("content", ""),
                     "old_sha256": res["old_sha256"],
+                    "old_content": old_content,
+                    "new_sha256": res.get("new_sha256"),
+                    "created": bool(res.get("created")),
                 }
                 _prune_previews()
                 G.audit(repo, "code_action", data.get("task"), owner,
@@ -518,10 +539,39 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                                    expected_sha256=pending["old_sha256"])
                 if not res.get("ok"):
                     return self._json(409 if res.get("error") == "stale_preview" else 400, res)
+                if (not pending.get("created")
+                        and pending.get("old_content") is not None):
+                    _prune_undo()
+                    _UNDO[(pending["task"], pending["path"])] = {
+                        "ts": time.time(),
+                        "old_content": pending["old_content"],
+                        "new_sha256": res.get("sha256") or pending.get("new_sha256"),
+                        "owner": owner,
+                    }
                 _PREVIEWS.pop(preview_id, None)
                 G.audit(repo, "code_action", data.get("task"), owner,
                         "confirm %s -> ok" % pending["path"])
                 return self._json(200, {**res, "confirmed": True})
+            if path == "/api/ide/undo":
+                rel = str(data.get("path") or "").strip()
+                key = (str(data.get("task") or ""), rel)
+                rec = _UNDO.get(key)
+                if not rec:
+                    return self._json(404, G.err("undo_missing", "没有可撤销的写入"))
+                current = W.read_file(wt, rel)
+                if not current.get("ok"):
+                    return self._json(400, current)
+                if current.get("sha256") != rec.get("new_sha256"):
+                    _UNDO.pop(key, None)
+                    return self._json(409, G.err("undo_stale", "文件已被再次修改，拒绝回滚"))
+                res = W.write_file(wt, rel, rec["old_content"])
+                if not res.get("ok"):
+                    return self._json(400, res)
+                _UNDO.pop(key, None)
+                G.audit(repo, "code_action", data.get("task"), owner,
+                        "undo %s -> ok" % rel)
+                return self._json(200, {**res, "undone": True,
+                                        "restored_sha256": res.get("sha256")})
             try:
                 timeout_s = int(data.get("timeout") or X.DEFAULT_TIMEOUT)
             except (TypeError, ValueError):
