@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 17:05",
+ "generated": "2026-10-30 17:07",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -311,15 +311,6 @@
    "project": "general"
   },
   {
-   "id": "WO-ZHAOYUN-WRITEAUTH-20261030",
-   "desc": "P0安全：8796写接口同源校验+token；zhaoyun/map前端适配；CSRF回归测试",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-ZHAOYUN-WRITEAUTH-20261030",
-   "created": "2026-10-30 16:59:31",
-   "project": "general"
-  },
-  {
    "id": "K-STOCK-ANALYSIS-P2B-20261030",
    "desc": "P2 文档修正：license 密钥无默认值（必须设 COMMERCIAL_LICENSE_SECRET）",
    "status": "review",
@@ -327,6 +318,15 @@
    "branch": "task/K-STOCK-ANALYSIS-P2B-20261030",
    "created": "2026-10-30 17:03:52",
    "project": "quant"
+  },
+  {
+   "id": "WO-LEGION-AUDIT-P2TEST-20261030",
+   "desc": "P2周报live-only口径测试更新",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-AUDIT-P2TEST-20261030",
+   "created": "2026-10-30 17:06:03",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -7284,8 +7284,8 @@
      "status": "review"
     },
     {
-     "id": "WO-ZHAOYUN-WRITEAUTH-20261030",
-     "desc": "P0安全：8796写接口同源校验+token；zhaoyun/map前端适配；CSRF回归测试",
+     "id": "WO-LEGION-AUDIT-P2TEST-20261030",
+     "desc": "P2周报live-only口径测试更新",
      "status": "doing"
     }
    ]
