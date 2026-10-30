@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 26,
+  "workorders_doing": 25,
   "workorders_review": 6
  },
  "workorders": [
@@ -282,15 +282,6 @@
    "branch": "task/K-QUANT-20261030-OHLOOP-TEST",
    "created": "2026-10-30 09:19:23",
    "project": "quant"
-  },
-  {
-   "id": "WO-TOOLS-SAFEIMPORT-20261030",
-   "desc": "修复tools树from tools.safe_urlopen被安装包遮蔽（service_restart等36文件）",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-TOOLS-SAFEIMPORT-20261030",
-   "created": "2026-10-30 15:55:16",
-   "project": "general"
   },
   {
    "id": "WO-PICKCHAIN-FIX-20261030",
@@ -7022,11 +7013,6 @@
    "seat_note": "profile 角色，不占编（D5-C）；与 R2 风控席（org 编制·保守风控哨）是不同 id，报表按 id 区分。",
    "home_page": "http://127.0.0.1:8796/zhaoyun",
    "tasks": [
-    {
-     "id": "WO-TOOLS-SAFEIMPORT-20261030",
-     "desc": "修复tools树from tools.safe_urlopen被安装包遮蔽（service_restart等36文件）",
-     "status": "doing"
-    },
     {
      "id": "WO-PICKCHAIN-FIX-20261030",
      "desc": "选股产品链修复：build_pick_details/feishu_bot_ws 的 _stock_chip_summary/_stock_sector_rows 改从 api_common 取，修 AttributeError。",
