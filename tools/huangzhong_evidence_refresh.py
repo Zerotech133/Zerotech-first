@@ -21,9 +21,6 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-BASELINE_DIR = ROOT / "agent_platform" / "data" / "test_baseline"
-LATEST = BASELINE_DIR / "latest.json"
-PREV = BASELINE_DIR / "latest_prev.json"
 PY = sys.executable or "python"
 DEFAULT_LOG_DIR = Path(os.environ.get("TEMP") or r"C:\Temp")
 
@@ -44,9 +41,10 @@ def _run(cmd: list[str], cwd: Path, runner=None) -> dict:
             "seconds": round(time.perf_counter() - t0, 2)}
 
 
-def _current_baseline_summary() -> dict:
+def _current_baseline_summary(root: Path) -> dict:
+    p = Path(root) / "agent_platform" / "data" / "test_baseline" / "latest.json"
     try:
-        d = json.loads(LATEST.read_text(encoding="utf-8"))
+        d = json.loads(p.read_text(encoding="utf-8"))
         return {"generated_at": d.get("generated_at"),
                 "summary": d.get("summary")}
     except (OSError, ValueError):
@@ -90,7 +88,7 @@ def refresh(root: Path | None = None, log_dir: Path | None = None,
         "baseline_rc": base["rc"], "redteam_rc": rt["rc"],
         "baseline_seconds": base["seconds"], "redteam_seconds": rt["seconds"],
         "backup_ok": backup_ok,
-        "evidence": _current_baseline_summary(),
+        "evidence": _current_baseline_summary(root),
     }
     status["ok"] = (base["rc"] == 0 and rt["rc"] == 0)
     with (log_dir / "huangzhong_evidence_refresh_status.log").open(
