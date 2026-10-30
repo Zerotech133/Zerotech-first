@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 20:51",
+ "generated": "2026-10-30 20:52",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 28,
+  "workorders_doing": 27,
   "workorders_review": 9
  },
  "workorders": [
@@ -326,15 +326,6 @@
    "owner": "DSH-Lead",
    "branch": "task/K-ORG-20261030-JEVARCH2",
    "created": "2026-10-30 18:47:29",
-   "project": "general"
-  },
-  {
-   "id": "K-ORG-20261030-JEVSTREAM",
-   "desc": "增量事件流 API：query 支持 since/cursor（created_at 游标，ASC 分页），MCP jev_query 透传；代码先合，明午重启生效",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-ORG-20261030-JEVSTREAM",
-   "created": "2026-10-30 20:48:37",
    "project": "general"
   },
   {
