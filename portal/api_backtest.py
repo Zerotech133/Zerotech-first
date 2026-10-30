@@ -129,61 +129,61 @@ class Handler:  # Mixin 壳：经基座多继承并入
 
     def _bt_sectors(self, *args, **kwargs):
         """委托 api_backtest_pages_a（拆分 B3，纯移动）。"""
-        from api_backtest_pages_a import _bt_sectors as _impl
+        from api_backtest_pages_a1 import _bt_sectors as _impl
         return _impl(self, *args, **kwargs)
 
 
     def _bt_report_page(self, *args, **kwargs):
         """委托 api_backtest_pages_a（拆分 B3，纯移动）。"""
-        from api_backtest_pages_a import _bt_report_page as _impl
+        from api_backtest_pages_a1 import _bt_report_page as _impl
         return _impl(self, *args, **kwargs)
 
 
     def _bt_ind_drill_page(self, *args, **kwargs):
         """委托 api_backtest_pages_a（拆分 B3，纯移动）。"""
-        from api_backtest_pages_a import _bt_ind_drill_page as _impl
+        from api_backtest_pages_a1 import _bt_ind_drill_page as _impl
         return _impl(self, *args, **kwargs)
 
 
     def _bt_lhb_page(self, *args, **kwargs):
         """委托 api_backtest_pages_a（拆分 B3，纯移动）。"""
-        from api_backtest_pages_a import _bt_lhb_page as _impl
+        from api_backtest_pages_a1 import _bt_lhb_page as _impl
         return _impl(self, *args, **kwargs)
 
 
     def _bt_seat_page(self, *args, **kwargs):
         """委托 api_backtest_pages_a（拆分 B3，纯移动）。"""
-        from api_backtest_pages_a import _bt_seat_page as _impl
+        from api_backtest_pages_a2 import _bt_seat_page as _impl
         return _impl(self, *args, **kwargs)
 
 
     def _bt_stock_page(self, *args, **kwargs):
         """委托 api_backtest_pages_a（拆分 B3，纯移动）。"""
-        from api_backtest_pages_a import _bt_stock_page as _impl
+        from api_backtest_pages_stock import _bt_stock_page as _impl
         return _impl(self, *args, **kwargs)
 
 
     def _bt_stock_form(self, *args, **kwargs):
         """委托 api_backtest_pages_a（拆分 B3，纯移动）。"""
-        from api_backtest_pages_a import _bt_stock_form as _impl
+        from api_backtest_pages_stock import _bt_stock_form as _impl
         return _impl(self, *args, **kwargs)
 
 
     def _bt_jev(self, *args, **kwargs):
         """委托 api_backtest_pages_a（拆分 B3，纯移动）。"""
-        from api_backtest_pages_a import _bt_jev as _impl
+        from api_backtest_pages_a2 import _bt_jev as _impl
         return _impl(self, *args, **kwargs)
 
 
     def _bt_brief(self, *args, **kwargs):
         """委托 api_backtest_pages_a（拆分 B3，纯移动）。"""
-        from api_backtest_pages_a import _bt_brief as _impl
+        from api_backtest_pages_a2 import _bt_brief as _impl
         return _impl(self, *args, **kwargs)
 
 
     def _bt_news(self, *args, **kwargs):
         """委托 api_backtest_pages_a（拆分 B3，纯移动）。"""
-        from api_backtest_pages_a import _bt_news as _impl
+        from api_backtest_pages_a2 import _bt_news as _impl
         return _impl(self, *args, **kwargs)
     def _sa_result(self, *args, **kwargs):
         """委托 api_backtest_json_api（拆分 B4/B5，纯移动）。"""
@@ -195,21 +195,21 @@ class Handler:  # Mixin 壳：经基座多继承并入
         return _impl(self, *args, **kwargs)
     def _weak_cases_page(self, *args, **kwargs):
         """委托 api_backtest_pages_b（拆分 B4/B5，纯移动）。"""
-        from api_backtest_pages_b import _weak_cases_page as _impl
+        from api_backtest_pages_b1 import _weak_cases_page as _impl
         return _impl(self, *args, **kwargs)
     # ── 策略集市 · 多策略共振看板（L1 发现层，全下钻） ──
     def _cross_page(self, *args, **kwargs):
         """委托 api_backtest_pages_b（拆分 B4/B5，纯移动）。"""
-        from api_backtest_pages_b import _cross_page as _impl
+        from api_backtest_pages_b1 import _cross_page as _impl
         return _impl(self, *args, **kwargs)
     # ── L2 策略工作台：九维量化选股（影子评分，纯门户不推送） ──
     def _nine_dim_page(self, *args, **kwargs):
         """委托 api_backtest_pages_b（拆分 B4/B5，纯移动）。"""
-        from api_backtest_pages_b import _nine_dim_page as _impl
+        from api_backtest_pages_b1 import _nine_dim_page as _impl
         return _impl(self, *args, **kwargs)
     def _algo_market_page(self, *args, **kwargs):
         """委托 api_backtest_pages_b（拆分 B4/B5，纯移动）。"""
-        from api_backtest_pages_b import _algo_market_page as _impl
+        from api_backtest_pages_b1 import _algo_market_page as _impl
         return _impl(self, *args, **kwargs)
     def _algo_activate(self, *args, **kwargs):
         """委托 api_backtest_json_api（拆分 B4/B5，纯移动）。"""
@@ -217,15 +217,15 @@ class Handler:  # Mixin 壳：经基座多继承并入
         return _impl(self, *args, **kwargs)
     def _fin_page(self, *args, **kwargs):
         """委托 api_backtest_pages_b（拆分 B4/B5，纯移动）。"""
-        from api_backtest_pages_b import _fin_page as _impl
+        from api_backtest_pages_b2 import _fin_page as _impl
         return _impl(self, *args, **kwargs)
     def _strategies_page(self, *args, **kwargs):
         """委托 api_backtest_pages_b（拆分 B4/B5，纯移动）。"""
-        from api_backtest_pages_b import _strategies_page as _impl
+        from api_backtest_pages_b2 import _strategies_page as _impl
         return _impl(self, *args, **kwargs)
     def _sa_page(self, *args, **kwargs):
         """委托 api_backtest_pages_b（拆分 B4/B5，纯移动）。"""
-        from api_backtest_pages_b import _sa_page as _impl
+        from api_backtest_pages_b2 import _sa_page as _impl
         return _impl(self, *args, **kwargs)
 
 

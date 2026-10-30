@@ -24,11 +24,13 @@ PORTAL_API_BUDGET = 5200
 NEW_FILE_LIMIT = 1200
 # 冻结名单：基线行数（2026-10-28 实测），只减不增
 FROZEN = {
-    "api_backtest.py": 6135,
+    "api_backtest.py": 285,          # 2026-10-30 拆分 B0-B6 收口后收紧（6,395→285）
     "api_kg.py": 5841,
     "api_misc.py": 2710,
     "api_chanlun_pages.py": 2328,
     "api_portfolio.py": 2322,
+    # 2026-10-30 B7：_bt_stock_page 单函数页 1,300+ 行，拆分成本>收益，登记冻结（只减不增）
+    "api_backtest_pages_stock.py": 1346,
 }
 
 
