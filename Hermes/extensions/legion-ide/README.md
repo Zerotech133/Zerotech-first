@@ -1,0 +1,60 @@
+# 军团 IDE · Hermes 扩展
+
+方式 A：作为 Hermes WebUI 扩展运行，不修改 Hermes 核心。
+
+## 启用（8788 原型）
+
+```powershell
+$env:HERMES_WEBUI_EXTENSION_DIR='C:\aios\Hermes\extensions\legion-ide'
+$env:HERMES_WEBUI_EXTENSION_SCRIPT_URLS='/extensions/app.js'
+$env:HERMES_WEBUI_EXTENSION_STYLESHEET_URLS='/extensions/app.css'
+python C:\aios\Hermes\start_hermes_next.py
+```
+
+打开：
+
+```text
+http://127.0.0.1:8788/
+```
+
+右下角出现「⚔ 军团 IDE」按钮。
+
+## 生产 8787
+
+在 `Hermes/start_hermes_bg.py` 的 env 中加同样三项，然后重启 Hermes 8787。  
+**不要直接覆盖核心 static 文件**；本扩展只用官方 `/extensions/` 注入面。
+
+## 功能
+
+- 工单下拉（来自 `/api/ide/openhands/tasks`）
+- 模型选择
+- 开始/停止 OpenHands
+- 实时 Action/Observation
+- 危险命令「批准/拒绝」
+- 最终答复
+- diff + 确认提交到工单
+
+## API 地址
+
+默认：
+
+```text
+http://127.0.0.1:8799
+```
+
+可在页面加载前覆盖：
+
+```html
+<script>window.LEGION_OH_BASE = "http://127.0.0.1:8796";</script>
+```
+
+## 实测
+
+```text
+Hermes 8788 → 右下角按钮 → panel
+任务：Create HERMES_PANEL_OK.txt
+→ OH 事件显示
+→ 危险 shell 等待确认 → 批准
+→ ✅ 完成
+→ 宿主 worktree 出现 HERMES_PANEL_OK.txt
+```

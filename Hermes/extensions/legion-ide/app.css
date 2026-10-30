@@ -1,0 +1,96 @@
+/* 军团 IDE · Hermes 扩展样式（独立前缀，避免污染 Hermes） */
+#legion-ide-launch {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 2147483000;
+  background: #0f2440;
+  color: #9fe3ee;
+  border: 1px solid #2f6f7a;
+  border-radius: 10px;
+  padding: 9px 14px;
+  font: 13px/1.2 "Microsoft YaHei", system-ui, sans-serif;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .35);
+}
+#legion-ide-launch:hover { border-color: #4fd1a5; color: #c9fff2; }
+
+.legion-ide-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483001;
+  background: rgba(2, 8, 16, .72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+}
+.legion-ide-panel {
+  width: min(980px, 96vw);
+  height: min(820px, 92vh);
+  background: #081321;
+  color: #dbe8f5;
+  border: 1px solid #1e3a5f;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, .55);
+  font-family: "Microsoft YaHei", system-ui, sans-serif;
+}
+.legion-ide-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  border-bottom: 1px solid #1e3a5f;
+  background: #0a1626;
+}
+.legion-ide-head b { color: #9fe3ee; font-size: 14px; }
+.legion-ide-sub { color: #5a7190; font-size: 11px; margin-left: 8px; }
+.legion-ide-close {
+  background: none; border: 0; color: #8fa8c0; font-size: 22px;
+  cursor: pointer; line-height: 1;
+}
+.legion-ide-body { padding: 12px 15px; overflow: auto; display: flex; flex-direction: column; gap: 10px; }
+.legion-ide-row { display: flex; align-items: center; gap: 8px; }
+.legion-ide-row label { color: #5a7190; font-size: 11px; width: 38px; }
+.legion-ide-row select {
+  flex: 1; background: #0b1a22; color: #dbe8f5; border: 1px solid #1e3a5f;
+  border-radius: 7px; padding: 6px 8px; font-size: 12px;
+}
+#legion-ide-message {
+  width: 100%; min-height: 74px; resize: vertical; background: #0b1a22;
+  color: #dbe8f5; border: 1px solid #1e3a5f; border-radius: 8px;
+  padding: 8px 10px; font: 13px/1.45 "Microsoft YaHei", system-ui, sans-serif;
+  box-sizing: border-box;
+}
+.legion-ide-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.legion-ide-actions button, .legion-ide-section button {
+  background: #0f2440; color: #dbe8f5; border: 1px solid #1e3a5f;
+  border-radius: 7px; padding: 6px 12px; cursor: pointer; font-size: 12px;
+}
+.legion-ide-actions button.primary, .legion-ide-section button.primary {
+  border-color: #2f8f6a; color: #9fe3c0; background: #163f2f;
+}
+.legion-ide-actions button:disabled { opacity: .45; cursor: default; }
+.legion-ide-status { color: #8fa8c0; font-size: 11px; }
+.legion-ide-status.ok { color: #4fd1a5; }
+.legion-ide-status.warn { color: #ef9f27; }
+.legion-ide-status.bad { color: #e24b4a; }
+.legion-ide-status.run { color: #9fe3ee; }
+.legion-ide-section { border-top: 1px solid #12283f; padding-top: 8px; }
+.legion-ide-label { color: #5a7190; font-size: 11px; margin-bottom: 4px; }
+.legion-ide-events { max-height: 230px; overflow: auto; font-size: 11px; line-height: 1.5; color: #b9c9da; white-space: pre-wrap; word-break: break-word; }
+.legion-ide-ev { padding: 2px 0; border-bottom: 1px dotted #12283f; }
+.legion-ide-ev span { color: #9fd0ff; margin-right: 6px; }
+.legion-ide-section pre {
+  max-height: 220px; overflow: auto; background: #060f1d; border: 1px solid #1e3a5f;
+  border-radius: 7px; padding: 8px; font: 11px/1.45 Consolas, monospace;
+  color: #b9c9da; white-space: pre-wrap; word-break: break-word; margin: 4px 0;
+}
+#legion-ide-confirm-wrap { color: #ef9f27; }
+@media (max-width: 720px) {
+  .legion-ide-panel { width: 100vw; height: 100vh; border-radius: 0; }
+  .legion-ide-overlay { padding: 0; }
+}
