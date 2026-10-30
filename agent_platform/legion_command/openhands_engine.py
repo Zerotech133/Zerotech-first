@@ -15,6 +15,7 @@ import subprocess
 import time
 import urllib.error
 import urllib.request
+import uuid
 from pathlib import Path
 
 # 方案 A 第二阶段：默认走 Docker sandbox（Linux 容器内执行工具，绕开 Windows
@@ -350,3 +351,100 @@ def chat(message: str, conversation_id: str = "", timeout: int = DEFAULT_TIMEOUT
         "model": _llm(model)["model"],
         "events": evs,
     }
+
+
+# ── OHLIVE：异步 start / status / interrupt ─────────────────────────
+_RUNS: dict[str, dict] = {}
+TERMINAL = {"finished", "error", "stuck", "cancelled", "paused"}
+
+
+def _release_run(cid: str) -> None:
+    run = _RUNS.pop(cid, None)
+    if not run:
+        return
+    task = run.get("task") or ""
+    if task:
+        from legion_command import ide_worktree
+        ide_worktree.release_oh_lock(task, run.get("owner") or "")
+
+
+def start(message: str, conversation_id: str = "", task: str = "",
+          worktree: str = "", model: str = "deepseek-flash") -> dict:
+    message = str(message or "").strip()
+    if not message:
+        return {"ok": False, "error": "empty_message"}
+    task = str(task or "").strip()
+    owner = "oh-" + uuid.uuid4().hex[:12]
+    locked = False
+    if task:
+        from legion_command import ide_worktree
+        lock = ide_worktree.acquire_oh_lock(task, owner)
+        if not lock.get("ok"):
+            return lock
+        locked = True
+    try:
+        sandbox = ensure_sandbox()
+        if not sandbox.get("ok"):
+            raise RuntimeError(sandbox.get("error") or "sandbox_unhealthy")
+        host_wd, container_wd, error = _resolve_worktree(task=task, worktree=worktree)
+        if error:
+            raise RuntimeError(error.get("error") or "worktree_error")
+        cid = str(conversation_id or "").strip()
+        if not cid:
+            cid, error = _start(message, container_wd, model)
+            if error:
+                raise RuntimeError(error.get("error") or "conversation_create_failed")
+        else:
+            err = _send(cid, message)
+            if err:
+                raise RuntimeError(err.get("error") or "send_failed")
+        state, _ = _conversation(cid)
+        if str(state.get("execution_status") or "") not in ("running", "waiting_for_confirmation"):
+            err = _run(cid)
+            if err:
+                raise RuntimeError(err.get("error") or "run_failed")
+        _RUNS[cid] = {"task": task, "owner": owner, "host": str(host_wd),
+                      "container": container_wd, "started": time.time()}
+        return {"ok": True, "conversation_id": cid, "task": task,
+                "worktree": str(host_wd), "container_worktree": container_wd,
+                "model": _llm(model)["model"], "status": "running",
+                "lock_owner": owner if locked else ""}
+    except Exception as e:  # noqa: BLE001
+        if locked:
+            from legion_command import ide_worktree
+            ide_worktree.release_oh_lock(task, owner)
+        return {"ok": False, "error": "oh_start_failed",
+                "detail": "%s: %s" % (type(e).__name__, str(e)[:300])}
+
+
+def status(cid: str) -> dict:
+    cid = str(cid or "").strip()
+    if not cid:
+        return {"ok": False, "error": "conversation_id_required"}
+    state, error = _conversation(cid)
+    if error:
+        return error
+    status_now = str(state.get("execution_status") or "")
+    evs = events(cid)
+    run = _RUNS.get(cid) or {}
+    reply = ""
+    if status_now in TERMINAL:
+        reply = _final(cid)
+        _release_run(cid)
+    return {"ok": True, "conversation_id": cid, "status": status_now,
+            "events": evs, "reply": reply,
+            "task": run.get("task") or "",
+            "worktree": run.get("host") or "",
+            "terminal": status_now in TERMINAL}
+
+
+def interrupt(cid: str) -> dict:
+    cid = str(cid or "").strip()
+    if not cid:
+        return {"ok": False, "error": "conversation_id_required"}
+    _r, d = _req("/api/conversations/%s/interrupt" % cid, method="POST", timeout=30)
+    if _r is None:
+        return d
+    st = status(cid)
+    return {"ok": True, "conversation_id": cid,
+            "status": st.get("status") or "paused"}

@@ -1545,6 +1545,15 @@ function needsTools(raw){
 
 let CURRENT_ABORT = null;
 function cancelSend(){
+  if(OH_ACTIVE_CID){
+    const cid = OH_ACTIVE_CID;
+    addLog("cancel → 停止 OpenHands " + cid.slice(0,8), "lg-o");
+    fetchJsonTimeout("/openhands/api/ide/openhands/interrupt", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({conversation_id: cid})
+    }, 30000, 0).catch(()=>{});
+    return;
+  }
   if(CURRENT_ABORT){
     CURRENT_ABORT.abort();
     addLog("cancel → 用户停止当前请求", "lg-o");
@@ -1561,6 +1570,8 @@ function toggleOH(){
   if(t) t.style.display = OH_MODE ? "" : "none";
   addLog("OpenHands 模式 " + (OH_MODE ? "ON" : "OFF"), "lg-b");
 }
+let OH_ACTIVE_CID = "";
+function sleepMs(ms){ return new Promise(res => setTimeout(res, ms)); }
 async function sendOpenHands(raw){
   const aid = DBGCUR.id;
   qbox.value = "";
@@ -1568,43 +1579,61 @@ async function sendOpenHands(raw){
   const btn = document.getElementById("send"); btn.disabled = true;
   CURRENT_ABORT = new AbortController();
   document.getElementById("stop").style.display = "";
-  const r1 = addMsg("a", aid + " · OpenHands 执行引擎 · 运行中…", "…");
+  const r1 = addMsg("a", aid + " · OpenHands 执行引擎 · 启动中…", "…");
   const t0 = Date.now();
+  const ohTask = (document.getElementById("ohtask")?.value || "").trim();
   try{
-    const cid = localStorage.getItem("ohconv-" + aid) || "";
-    const ohTask = (document.getElementById("ohtask")?.value || "").trim();
-    const {r, d} = await fetchJsonTimeout("/openhands/api/ide/openhands/chat", {
+    const prevCid = localStorage.getItem("ohconv-" + aid) || "";
+    const started = await fetchJsonTimeout("/openhands/api/ide/openhands/start", {
       method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({message: raw, conversation_id: cid, timeout: 900,
-                            task: ohTask, model: model()})
-    }, 900000, 0, null, CURRENT_ABORT.signal);
-    if(!r.ok || !d.ok) throw new Error((d && (d.detail || d.error)) || ("HTTP " + r.status));
-    if(d.conversation_id) localStorage.setItem("ohconv-" + aid, d.conversation_id);
-    const sec = ((Date.now()-t0)/1000).toFixed(1);
-    const steps = [
-      "OpenHands runtime 已接收任务",
-      "worktree：" + (d.worktree || "default"),
-      "模型：" + (d.model || "deepseek-flash"),
-      "工具循环完成 · " + (d.duration_ms || 0) + "ms"
+      body: JSON.stringify({message: raw, conversation_id: prevCid, task: ohTask, model: model()})
+    }, 120000, 0, null, CURRENT_ABORT.signal);
+    if(!started.r.ok || !started.d.ok) throw new Error(started.d.detail || started.d.error || "start_failed");
+    const cid = started.d.conversation_id;
+    OH_ACTIVE_CID = cid;
+    if(cid) localStorage.setItem("ohconv-" + aid, cid);
+    const baseSteps = [
+      "OpenHands runtime 已启动",
+      "worktree：" + (started.d.worktree || "default"),
+      "模型：" + (started.d.model || "deepseek-flash")
     ];
-    for(const ev of (d.events || []).slice(-12)) steps.push((ev.kind || "event") + " · " + (ev.summary || ""));
-    if(d.conversation_id) steps.push("会话 " + d.conversation_id.slice(0,8));
-    const html = procHtml(steps, "✅ OpenHands 完成 · " + sec + "s")
-      + '<div style="margin-top:6px">' + evTable(d.reply || "(空响应)") + '</div>';
+    let finalState = null, lastEvents = [];
+    while(true){
+      await sleepMs(1200);
+      const {r, d} = await fetchJsonTimeout("/openhands/api/ide/openhands/status?id=" + encodeURIComponent(cid),
+        {cache:"no-store"}, 30000, 1, null, CURRENT_ABORT.signal);
+      if(!r.ok || !d.ok) throw new Error(d.detail || d.error || "status_failed");
+      lastEvents = d.events || [];
+      const steps = baseSteps.slice();
+      for(const ev of lastEvents.slice(-14)) steps.push((ev.kind || "event") + " · " + (ev.summary || ""));
+      steps.push("会话 " + (cid || "").slice(0,8));
+      r1.el.innerHTML = procHtml(steps, "⏳ 运行中… " + lastEvents.length + " 条事件");
+      if(r1.whoEl) r1.whoEl.textContent = aid + " · OpenHands · 运行中…";
+      if(d.terminal){ finalState = d; break; }
+    }
+    const sec = ((Date.now()-t0)/1000).toFixed(1);
+    const statusNow = finalState.status || "finished";
+    const stopped = ["paused", "cancelled"].includes(statusNow);
+    const ok = statusNow === "finished";
+    const steps = baseSteps.concat((finalState.events || lastEvents).slice(-14).map(ev => (ev.kind || "event") + " · " + (ev.summary || "")));
+    const statusText = stopped ? ("⏹ 已停止 · " + sec + "s")
+      : (ok ? ("✅ OpenHands 完成 · " + sec + "s") : ("❌ OpenHands " + statusNow + " · " + sec + "s"));
+    const html = procHtml(steps, statusText)
+      + (ok ? '<div style="margin-top:6px">' + evTable(finalState.reply || "(空响应)") + '</div>' : "");
     r1.el.innerHTML = html;
-    if(r1.whoEl) r1.whoEl.textContent = aid + " · OpenHands · ✅ " + sec + "s";
-    if(r1.rec){ r1.rec.who = aid + " · OpenHands"; r1.rec.html = html; r1.rec.raw = d.reply || ""; sessSave(aid); }
-    addLog("OpenHands ← " + aid + " · " + sec + "s", "lg-g");
-    if(ohTask) attachOHDiff(ohTask, r1, html, aid);
+    if(r1.whoEl) r1.whoEl.textContent = aid + " · OpenHands · " + statusText;
+    if(r1.rec){ r1.rec.who = aid + " · OpenHands"; r1.rec.html = html; r1.rec.raw = finalState.reply || ""; sessSave(aid); }
+    addLog("OpenHands ← " + aid + " · " + statusText, "lg-g");
+    if(ok && ohTask) attachOHDiff(ohTask, r1, html, aid);
   }catch(e){
     const sec = ((Date.now()-t0)/1000).toFixed(1);
-    const stopped = e && e.message === "用户已停止";
     const html = procHtml(["OpenHands 执行失败", e && e.message ? e.message : "unknown"],
-      (stopped ? "⏹ 已停止 · " : "❌ OpenHands 失败 · ") + sec + "s");
+      "❌ OpenHands 失败 · " + sec + "s");
     r1.el.innerHTML = html;
-    if(r1.whoEl) r1.whoEl.textContent = aid + " · OpenHands · " + (stopped ? "已停止" : "失败");
+    if(r1.whoEl) r1.whoEl.textContent = aid + " · OpenHands · 失败";
     addLog("OpenHands FAIL " + aid + " · " + (e && e.message), "lg-o");
   }
+  OH_ACTIVE_CID = "";
   CURRENT_ABORT = null;
   const stopBtn = document.getElementById("stop");
   if(stopBtn) stopBtn.style.display = "none";
