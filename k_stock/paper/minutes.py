@@ -20,7 +20,10 @@ import urllib.request
 from datetime import datetime
 from pathlib import Path
 import logging
-from tools.safe_urlopen import safe_urlopen
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为 k_stock 包导入时
+    from k_stock.paper.safe_urlopen import safe_urlopen
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
@@ -129,7 +132,7 @@ def _deliver_feishu(record: dict) -> bool:
         req = urllib.request.Request(
             url, data=payload, headers={"Content-Type": "application/json"}
         )
-        with safe_safe_urlopen(req, timeout=10) as resp:
+        with safe_urlopen(req, timeout=10) as resp:
             return resp.status == 200
     except Exception as e:  # fail-closed：网络失败不抛，只记原因
         record["meta"]["error"] = f"feishu 投递失败: {e}"

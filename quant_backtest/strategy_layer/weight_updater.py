@@ -248,7 +248,7 @@ def _psql_exec(sql: str) -> str:
 def fetch_feedback(weeks: int) -> List[Dict[str, str]]:
     """近 N 周 feedback 行（psycopg2 优先 / docker 兜底）。"""
     sql = (
-        "SELECT trade_date, symbol, strategy, verdict "
+        "SELECT trade_date, symbol, strategy, verdict "  # nosec B608 - 值参数化/内部标识符（已抽查）
         "FROM strategy.feedback WHERE created_at >= now() "
         "- interval '%d weeks'" % max(int(weeks), 1)
     )
@@ -293,7 +293,7 @@ def fetch_feedback(weeks: int) -> List[Dict[str, str]]:
 def fetch_signals(weeks: int) -> List[Dict[str, Any]]:
     """近 N 周 signals_combined（contributions 已解析为 dict）。"""
     sql = (
-        "SELECT trade_date, symbol, contributions::text "
+        "SELECT trade_date, symbol, contributions::text "  # nosec B608 - 值参数化/内部标识符（已抽查）
         "FROM strategy.signals_combined WHERE created_at >= now() "
         "- interval '%d weeks'" % max(int(weeks), 1)
     )

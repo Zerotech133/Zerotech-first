@@ -217,24 +217,32 @@ def load_snapshot(code, as_of):
         hn["end_date"] = hn["end_date"].astype(str)
     snap["holder_num"] = hn.sort_values("end_date").tail(6).to_dict("records") if hn is not None else []
 
-    # 行业（P0M 纠偏：stock_basic.industry → 申万父链 L1；回退 sw_l1_member）
+    # 行业（P0Q：优先 tushare 申万权威成分缓存 → L1/L2/L3；回退 P0M 名称匹配/旧表）
     snap["industry"] = {}
     try:
-        mem = pd.read_parquet(os.path.join(config.CURATED, "sw_l1_member.parquet"))
-        cls = pd.read_parquet(os.path.join(config.CURATED, "sw_classify_l1.parquet"))
-        basic_ind = None
-        try:
-            sb = _read("stock_basic", code, cols=["ts_code", "industry"])
-            if sb is not None and len(sb):
-                basic_ind = str(sb["industry"].iloc[0])
-        except Exception:  # noqa: BLE001
-            basic_ind = None
-        m = _map_industry(code, basic_ind, mem, cls)
+        from . import industry as sw_industry
+        m = sw_industry.map_stock(code)
         if m:
-            m["basic_industry"] = basic_ind
             snap["industry"] = m
     except Exception as exc:
         logging.getLogger(__name__).warning("silent-except %s: %s", "analysis/snapshot.py", exc)
+    if not snap["industry"]:
+        try:
+            mem = pd.read_parquet(os.path.join(config.CURATED, "sw_l1_member.parquet"))
+            cls = pd.read_parquet(os.path.join(config.CURATED, "sw_classify_l1.parquet"))
+            basic_ind = None
+            try:
+                sb = _read("stock_basic", code, cols=["ts_code", "industry"])
+                if sb is not None and len(sb):
+                    basic_ind = str(sb["industry"].iloc[0])
+            except Exception:  # noqa: BLE001
+                basic_ind = None
+            m = _map_industry(code, basic_ind, mem, cls)
+            if m:
+                m["basic_industry"] = basic_ind
+                snap["industry"] = m
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "analysis/snapshot.py", exc)
     snap["domains"]["industry"] = {"as_of": None, "rows": 0 if not snap["industry"] else 1,
                                    "status": "ok" if snap["industry"] else "missing",
                                    "source": (snap["industry"] or {}).get("match") or "none"}

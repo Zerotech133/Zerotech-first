@@ -411,7 +411,7 @@ def _scan_tdx_info_db(path):
         for tbl, dc in date_col.items():
             try:
                 n, latest = db.execute(
-                    "SELECT COUNT(*), MAX(%s) FROM %s" % (dc, tbl)).fetchone()
+                    "SELECT COUNT(*), MAX(%s) FROM %s" % (dc, tbl)).fetchone()  # nosec B608 - 值参数化/内部标识符（已抽查）
                 out.append({"asset": cn[tbl], "table": tbl, "rows": n or 0,
                             "latest": str(latest)[:10] if latest else None,
                             "path": path, 'latest_kind': 'business_date', 'size_mb': None})

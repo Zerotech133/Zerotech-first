@@ -103,6 +103,21 @@ def resolve(sub: str, registry: Dict[str, Any] | None = None) -> Dict[str, Any] 
     return None
 
 
+def resolve_oidc(issuer: str, subject: str,
+                 registry: Dict[str, Any] | None = None) -> Dict[str, Any] | None:
+    """按 OIDC issuer + sub 反查 actor；只认 verified 链接。"""
+    reg = registry or load_registry()
+    for a in reg["actors"]:
+        if a.get("idp_issuer") == issuer and a.get("idp_sub") == subject:
+            return build_context(a)
+        for link in a.get("links", []):
+            if (link.get("system") in ("pocket_id", "oidc")
+                    and link.get("source_id") == subject
+                    and link.get("status") == "verified"):
+                return build_context(a)
+    return None
+
+
 def resolve_source(source: str, source_id: str,
                    registry: Dict[str, Any] | None = None) -> Dict[str, Any] | None:
     """按来源系统 + 外部 ID 反查 actor（只认 verified 链接）。"""

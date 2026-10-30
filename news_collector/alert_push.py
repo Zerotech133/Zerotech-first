@@ -20,7 +20,6 @@ import os
 import re
 import sys
 import time
-import urllib.request
 from datetime import datetime, timedelta, timezone
 import logging
 from tools.safe_urlopen import safe_urlopen
@@ -112,7 +111,7 @@ IDX_CODES = [("sh000001", "上证"), ("sz399001", "深成"), ("sz399006", "创�
 
 def fetch_alerts():
     """通道 1：门户常驻进程聚合（cross_poll 60s 缓存已热）。"""
-    with safe_safe_urlopen(ALERTS_URL, timeout=90) as r:
+    with safe_urlopen(ALERTS_URL, timeout=90) as r:
         return json.loads(r.read().decode("utf-8"))
 
 

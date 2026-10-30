@@ -358,7 +358,7 @@ def _llm(prompt):
         headers={"Content-Type": "application/json"},
         method="POST",
     )
-    with safe_safe_urlopen(req, timeout=TIMEOUT) as resp:
+    with safe_urlopen(req, timeout=TIMEOUT) as resp:
         return json.loads(resp.read()).get("message", {}).get("content", "")
 
 

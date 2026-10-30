@@ -74,7 +74,7 @@ _BARE_6 = re.compile(r"\d{6}$")
 
 # 只读验证 SQL（一行，迁移后分布汇报用）
 SYMBOL_DIST_SQL = (
-    "SELECT CASE WHEN " + SYMBOL_COL + " IS NULL THEN 'NULL' "
+    "SELECT CASE WHEN " + SYMBOL_COL + " IS NULL THEN 'NULL' "  # nosec B608 - 值参数化/内部标识符（已抽查）
     "WHEN " + SYMBOL_COL + " GLOB '[0-9][0-9][0-9][0-9][0-9]' "
     "  THEN 'hk_bare' ELSE 'prefixed' END AS bucket, COUNT(*) AS n "
     "FROM " + TABLE + " GROUP BY bucket"
@@ -278,19 +278,19 @@ def migrate(
                 cl_source = "norm_tickers"
                 cl_rows = dict(
                     conn.execute(
-                        "SELECT status_id, norm_tickers FROM %s" % CLASSIFIED_TABLE
+                        "SELECT status_id, norm_tickers FROM %s" % CLASSIFIED_TABLE  # nosec B608 - 值参数化/内部标识符（已抽查）
                     )
                 )
             elif "tickers" in cl_cols:
                 cl_source = "tickers"
                 cl_rows = dict(
-                    conn.execute("SELECT status_id, tickers FROM %s" % CLASSIFIED_TABLE)
+                    conn.execute("SELECT status_id, tickers FROM %s" % CLASSIFIED_TABLE)  # nosec B608 - 值参数化/内部标识符（已抽查）
                 )
 
         sql_plan = ["ALTER TABLE %s ADD COLUMN %s TEXT" % (TABLE, SYMBOL_COL)]
         total = backfillable = ambiguous = null_left = 0
         from_marker = from_classified = 0
-        rows = conn.execute("SELECT status_id, title, desc FROM %s" % TABLE).fetchall()
+        rows = conn.execute("SELECT status_id, title, desc FROM %s" % TABLE).fetchall()  # nosec B608 - 值参数化/内部标识符（已抽查）
 
         updates = []
         for status_id, title, desc in rows:
@@ -340,7 +340,7 @@ def migrate(
             dict()
             if added
             else dict(
-                conn.execute("SELECT status_id, %s FROM %s" % (SYMBOL_COL, TABLE))
+                conn.execute("SELECT status_id, %s FROM %s" % (SYMBOL_COL, TABLE))  # nosec B608 - 值参数化/内部标识符（已抽查）
             )
         )
         updated = skipped = 0
@@ -351,7 +351,7 @@ def migrate(
                 continue
             _with_retry(
                 lambda sid=status_id, s=sym: conn.execute(
-                    "UPDATE %s SET %s=? WHERE status_id=?" % (TABLE, SYMBOL_COL),
+                    "UPDATE %s SET %s=? WHERE status_id=?" % (TABLE, SYMBOL_COL),  # nosec B608 - 值参数化/内部标识符（已抽查）
                     (s, sid),
                 )
             )

@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+import re
 import os
 import sqlite3
 from urllib.parse import parse_qs
@@ -47,8 +48,47 @@ def _ro_connect(path: str) -> sqlite3.Connection:
 
 
 def _norm_code(raw) -> str:
+    """宽松提取 6 位代码（用于从 stocks/companies 里取值；非法返回空串）。"""
     s = "".join(ch for ch in str(raw or "") if ch.isdigit())
     return s[:6] if len(s) >= 6 else ""
+
+
+def _code_filter(raw) -> str:
+    """查询过滤用：6 位 A 股代码，可选 .SH/.SZ/.BJ 后缀，否则 400。"""
+    m = re.match(r"^(\d{6})(?:\.(SH|SZ|BJ))?$", str(raw or "").strip().upper())
+    if not m:
+        raise ValueError("code 非法：需 6 位 A 股代码（可带 .SH/.SZ/.BJ 后缀）: %r" % (raw,))
+    return m.group(1)
+
+
+_META_CACHE: dict = {"mtime": None, "band": BAND_DEFAULT, "low_signal": frozenset()}
+
+
+def _latest_meta() -> tuple[float, frozenset[str]]:
+    """读 latest.json 的 neutral 带宽与低信号事件类型（60s mtime 缓存）。"""
+    try:
+        st = os.stat(LATEST_CALIB)
+    except OSError:
+        return BAND_DEFAULT, frozenset()
+    if _META_CACHE["mtime"] == st.st_mtime:
+        return _META_CACHE["band"], _META_CACHE["low_signal"]
+    band, low = BAND_DEFAULT, frozenset()
+    try:
+        with open(LATEST_CALIB, encoding="utf-8") as fh:
+            data = json.load(fh)
+        a = data.get("assessment") or {}
+        band = ((a.get("neutral") or {}).get("band_pct")) or BAND_DEFAULT
+        low = frozenset(a.get("low_signal_event_types") or [])
+    except (OSError, ValueError):
+        pass
+    _META_CACHE.update(mtime=st.st_mtime, band=band, low_signal=low)
+    return band, low
+
+
+def _jev_like(field: str, value: str) -> tuple[str, list]:
+    """JSON 文本 LIKE 片段：兼容 json.dumps 默认分隔符与紧凑分隔符两种历史写法。"""
+    return ("(jev LIKE ? OR jev LIKE ?)",
+            ['%%"%s": "%s"%%' % (field, value), '%%"%s":"%s"%%' % (field, value)])
 
 
 def _as_int(qs: dict, key: str, default: int, lo: int, hi: int) -> int:
@@ -97,7 +137,8 @@ def _load_posterior(news_ids: list[str], band: float) -> dict[str, dict]:
                 if trade_day is None:
                     continue
                 item = {"trade_day": trade_day, "ret": ret, "bench": bench,
-                        "excess": excess, "hit": bool(hit)}
+                        "excess": excess,
+                        "hit": None if hit is None else bool(hit)}
                 if excess is not None:
                     item["highvol"] = abs(excess) > band
                 out[str(nid)] = item
@@ -108,9 +149,15 @@ def _load_posterior(news_ids: list[str], band: float) -> dict[str, dict]:
 
 def query(hours: int = 24, bias: list[str] | None = None, code: str = "",
           event_type: list[str] | None = None, with_posterior: bool = False,
-          limit: int = DEFAULT_LIMIT, band: float = BAND_DEFAULT,
+          limit: int = DEFAULT_LIMIT, band: float | None = None,
           now: dt.datetime | None = None) -> dict:
-    """核心查询（纯读；可被单测直接调用，路径由模块常量决定可 monkeypatch）。"""
+    """核心查询（纯读；可被单测直接调用，路径由模块常量决定可 monkeypatch）。
+
+    2026-10-30 BATCH1 修复：旧实现 `LIMIT 20000` 后 `total=len(matched)`：
+    - total 被 limit 截断（hours=168&limit=1 → total=1，而真实 32,087）；
+    - summary_window 只统计前 2 万行（30 天窗口 93,811 行 → 报 20,000）。
+    现改为：计数走 SQL（bias/event 用 JSON LIKE 双分隔符兼容），items 单独 LIMIT。
+    """
     if hours < MIN_HOURS or hours > MAX_HOURS:
         raise ValueError("hours 超出范围 [%d, %d]: %d" % (MIN_HOURS, MAX_HOURS, hours))
     if limit < 1:
@@ -125,26 +172,50 @@ def query(hours: int = 24, bias: list[str] | None = None, code: str = "",
 
     now = now or dt.datetime.now()
     since = (now - dt.timedelta(hours=hours)).strftime("%Y-%m-%d %H:%M:%S")
-    code6 = _norm_code(code) if code else ""
+    code6 = _code_filter(code) if code else ""
+    latest_band, low_signal = _latest_meta()
+    band = latest_band if band is None else band
 
     # 2026-10-26 JEVAPI2：窗口/排序用「采集时间 created_at」——新闻 ts 常是
     # 发布日（如次日 00:00 的公告），按 ts 会漏掉今天抓到的条目或混入未来项。
-    where = ["jev IS NOT NULL", "jev<>''", "created_at IS NOT NULL", "created_at>=?"]
-    params: list = [since]
+    base_where = ["jev IS NOT NULL", "jev<>''", "created_at IS NOT NULL", "created_at>=?"]
+    base_params: list = [since]
     if code6:
-        where.append("(stocks LIKE ? OR jev LIKE ?)")
-        params += ["%" + code6 + "%", "%" + code6 + "%"]
+        base_where.append("(stocks LIKE ? OR jev LIKE ?)")
+        base_params += ["%" + code6 + "%", "%" + code6 + "%"]
+
+    items_where = list(base_where)
+    items_params = list(base_params)
+    for b in bias:
+        frag, frag_params = _jev_like("bias", b)
+        items_where.append(frag)
+        items_params += frag_params
+    for ev in event_type or []:
+        frag, frag_params = _jev_like("event_type", ev)
+        items_where.append(frag)
+        items_params += frag_params
 
     db = _ro_connect(NEWS_DB)
     try:
+        total = int(db.execute(
+            "SELECT count(*) FROM news WHERE " + " AND ".join(items_where),  # nosec B608
+            items_params).fetchone()[0] or 0)
         rows = db.execute(
-            "SELECT id, ts, created_at, source, title, stocks, jev FROM news"  # nosec B608 - 动态标识符来自内部白名单/值已参数化（已抽查）
-            " WHERE " + " AND ".join(where) + " ORDER BY created_at DESC LIMIT 20000",
-            params).fetchall()
+            "SELECT id, ts, created_at, source, title, stocks, jev FROM news"  # nosec B608
+            " WHERE " + " AND ".join(items_where)
+            + " ORDER BY created_at DESC LIMIT ?",
+            items_params + [limit]).fetchall()
+        window_counts = {"total": 0, "bull": 0, "bear": 0, "neutral": 0}
+        for b in VALID_BIAS:
+            frag, frag_params = _jev_like("bias", b)
+            cnt = int(db.execute(
+                "SELECT count(*) FROM news WHERE " + " AND ".join(base_where + [frag]),  # nosec B608
+                base_params + frag_params).fetchone()[0] or 0)
+            window_counts[b] = cnt
+            window_counts["total"] += cnt
     finally:
         db.close()
 
-    window_counts = {"total": 0, "bull": 0, "bear": 0, "neutral": 0}
     matched: list[dict] = []
     for nid, ts, created_at, source, title, stocks, jev in rows:
         try:
@@ -156,13 +227,7 @@ def query(hours: int = 24, bias: list[str] | None = None, code: str = "",
         b = j.get("bias")
         if b not in VALID_BIAS:
             continue
-        window_counts["total"] += 1
-        window_counts[b] += 1
-        if bias and b not in bias:
-            continue
         ev = j.get("event_type") or "unknown"
-        if event_type and ev not in event_type:
-            continue
         companies = [c for c in (j.get("companies") or []) if c]
         stock_codes = []
         try:
@@ -179,8 +244,6 @@ def query(hours: int = 24, bias: list[str] | None = None, code: str = "",
         stock_codes = sorted(set(stock_codes))
         if code6 and code6 not in stock_codes:
             continue
-        if len(matched) >= limit:
-            continue  # 窗口统计继续累计，只是不再收集
         matched.append({
             "id": str(nid), "ts": str(ts), "collected_at": str(created_at or ""),
             "source": str(source or ""),
@@ -189,11 +252,14 @@ def query(hours: int = 24, bias: list[str] | None = None, code: str = "",
             "conf": j.get("conf"),
             "scope": j.get("scope") or "",
             "event_type": ev, "event_cn": j.get("event_cn") or "",
+            "low_signal": ev in low_signal,
             "impact": j.get("impact") or "", "impact_cn": j.get("impact_cn") or "",
             "companies": companies, "codes": stock_codes,
             "reason": (j.get("reason") or "")[:200],
         })
     if with_posterior:
+        if not os.path.exists(AUDIT_DB):
+            raise RuntimeError("后验账本不存在：%s" % AUDIT_DB)
         post = _load_posterior([m["id"] for m in matched], band)
         for m in matched:
             m["posterior"] = post.get(m["id"])
@@ -208,9 +274,10 @@ def query(hours: int = 24, bias: list[str] | None = None, code: str = "",
         "filters": {"bias": bias, "code": code6, "event_type": event_type or [],
                     "with_posterior": bool(with_posterior), "limit": limit},
         "summary_window": window_counts,
-        "total": len(matched),
+        "total": total,
         "returned": len(matched),
         "posterior_band_pct": band if with_posterior else None,
+        "low_signal_event_types": sorted(low_signal),
         "items": matched,
     }
 

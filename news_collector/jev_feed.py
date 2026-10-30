@@ -72,7 +72,7 @@ def _in_night_window(now=None):
 
 def _xd_id(kind, url, title):
     """幂等主键：xd:<kind>:md5(url|title) 前 12 位（对齐 sina:5115033 风格）。"""
-    h = hashlib.md5((url or title or "").encode("utf-8")).hexdigest()[:12]
+    h = hashlib.md5((url or title or "").encode("utf-8"), usedforsecurity=False).hexdigest()[:12]
     return "xd:%s:%s" % (kind, h)
 
 

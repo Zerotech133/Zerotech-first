@@ -294,7 +294,7 @@ class PaperEngine:
                 "stop_price REAL,PRIMARY KEY(account_id,stock))"
             )
             self.con.execute(
-                "INSERT OR IGNORE INTO positions(account_id,stock,qty,avg_cost,updated_at,"
+                "INSERT OR IGNORE INTO positions(account_id,stock,qty,avg_cost,updated_at,"  # nosec B608 - 值参数化/内部标识符（已抽查）
                 "strategy,stop_price) "
                 "SELECT 'main',stock,qty,avg_cost,updated_at,"
                 f"{('strategy' if has_strat else chr(39) + 'manual' + chr(39))},"
@@ -335,7 +335,7 @@ class PaperEngine:
                 "strategy TEXT NOT NULL DEFAULT 'manual',PRIMARY KEY(date,account_id,stock))"
             )
             self.con.execute(
-                "INSERT OR IGNORE INTO positions_snapshot(date,account_id,stock,qty,avg_cost,"
+                "INSERT OR IGNORE INTO positions_snapshot(date,account_id,stock,qty,avg_cost,"  # nosec B608 - 值参数化/内部标识符（已抽查）
                 "last,market_value,pnl,available,strategy) "
                 "SELECT date,'main',stock,qty,avg_cost,last,market_value,pnl,available,"
                 f"{('strategy' if has_strat else chr(39) + 'manual' + chr(39))} "
@@ -400,7 +400,7 @@ class PaperEngine:
             "equity_marks",
             "positions_snapshot",
         ):
-            self.con.execute(f"DELETE FROM {t} WHERE account_id=?", (aid,))
+            self.con.execute(f"DELETE FROM {t} WHERE account_id=?", (aid,))  # nosec B608 - 值参数化/内部标识符（已抽查）
         self.con.execute("DELETE FROM account WHERE account_id=?", (aid,))
         self.con.commit()
         acc = self.ensure_account(aid)

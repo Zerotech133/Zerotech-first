@@ -310,7 +310,7 @@ def _seed_notice(wm_date, notice_days):
             max_date = nd
         an = _an_id(r.get("url"), title)
         eid = "ev:nt:%s:%s" % (
-            an or hashlib.md5((nd + title).encode("utf-8")).hexdigest()[:12],
+            an or hashlib.md5((nd + title).encode("utf-8"), usedforsecurity=False).hexdigest()[:12],
             code,
         )
         bias, tag = _rule_judge(title)

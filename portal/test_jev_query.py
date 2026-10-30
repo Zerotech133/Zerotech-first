@@ -203,3 +203,56 @@ def test_handle_get_ok(dbs):
     assert h.status is None or h.status == 200
     assert h.payload["ok"] is True
     assert all(i["bias"] == "bull" for i in h.payload["items"])
+
+
+# ── 2026-10-30 BATCH1：计数/参数/低信号/空后验回归 ──────────────────────
+def test_total_not_truncated_by_limit(dbs):
+    r = api_jev.query(hours=24, limit=1, now=NOW)
+    assert r["returned"] == 1
+    assert r["total"] == 3            # 旧实现 total=len(matched)=1
+    assert r["summary_window"]["total"] == 3
+
+
+def test_invalid_code_raises(dbs):
+    for bad in ("abc", "6005199", "600519.SHX"):
+        with pytest.raises(ValueError):
+            api_jev.query(hours=24, code=bad, now=NOW)
+
+
+def test_code_with_suffix_accepted(dbs):
+    r = api_jev.query(hours=24, code="600519.SH", now=NOW)
+    assert [i["id"] for i in r["items"]] == ["n1"]
+
+
+def test_low_signal_consumed_from_latest(dbs, tmp_path, monkeypatch):
+    latest = tmp_path / "latest.json"
+    latest.write_text(json.dumps({
+        "generated_at": "2026-10-30T07:10:00",
+        "assessment": {"neutral": {"band_pct": 2.5},
+                       "low_signal_event_types": ["policy"]},
+    }), encoding="utf-8")
+    monkeypatch.setattr(api_jev, "LATEST_CALIB", str(latest))
+    monkeypatch.setattr(api_jev, "_META_CACHE", {"mtime": None, "band": 2.5,
+                                                 "low_signal": frozenset()})
+    r = api_jev.query(hours=24, now=NOW)
+    assert r["low_signal_event_types"] == ["policy"]
+    by_id = {i["id"]: i for i in r["items"]}
+    assert by_id["n2"]["low_signal"] is True
+    assert by_id["n1"]["low_signal"] is False
+
+
+def test_posterior_hit_null_preserved(dbs):
+    audit = dbs / "agent_platform" / "data" / "jev_audit" / "jev_audit.db"
+    a = sqlite3.connect(str(audit))
+    a.execute("UPDATE dec_audit SET hit=NULL WHERE news_id='n3'")
+    a.commit()
+    a.close()
+    r = api_jev.query(hours=24, with_posterior=True, now=NOW)
+    by_id = {i["id"]: i for i in r["items"]}
+    assert by_id["n3"]["posterior"]["hit"] is None
+
+
+def test_posterior_missing_db_raises(dbs, monkeypatch):
+    monkeypatch.setattr(api_jev, "AUDIT_DB", str(dbs / "no_such_audit.db"))
+    with pytest.raises(RuntimeError):
+        api_jev.query(hours=24, with_posterior=True, now=NOW)

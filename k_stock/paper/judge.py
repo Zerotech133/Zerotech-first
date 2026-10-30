@@ -31,7 +31,10 @@ from collections import Counter
 from datetime import datetime
 from pathlib import Path
 import logging
-from tools.safe_urlopen import safe_urlopen
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为 k_stock 包导入时
+    from k_stock.paper.safe_urlopen import safe_urlopen
 
 DB = Path(__file__).resolve().parent.parent / "data" / "paper.db"
 OUT_DIR = Path(__file__).resolve().parent.parent / "data" / "judge_reviews"
@@ -269,7 +272,7 @@ def _narrate(review: dict) -> str | None:
         req = urllib.request.Request(
             OLLAMA, data=body, headers={"Content-Type": "application/json"}
         )
-        raw = safe_safe_urlopen(req, timeout=120).read().decode("utf-8")
+        raw = safe_urlopen(req, timeout=120).read().decode("utf-8")
         d = json.loads(raw)
         # 077w M2 后半：成本记账（本地 Ollama 单价 0，仍记调用量；失败不阻塞）
         try:
@@ -413,7 +416,7 @@ def _meeting_narrate(out: dict) -> str | None:
         req = urllib.request.Request(
             OLLAMA, data=body, headers={"Content-Type": "application/json"}
         )
-        raw = safe_safe_urlopen(req, timeout=120).read().decode("utf-8")
+        raw = safe_urlopen(req, timeout=120).read().decode("utf-8")
         d = json.loads(raw)
         try:
             try:

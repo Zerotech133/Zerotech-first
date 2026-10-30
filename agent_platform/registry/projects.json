@@ -1,45 +1,48 @@
 {
- "updated": "2026-10-14",
- "note": "K-ORG-057 项目线注册表：项目线=工作区内二级维度（不另开工作区），k_prefix 即 K 编号前缀天然判别器。立项=在此注册（org 图部门卡+子项目表单同构落盘）；结项=status=archived（chips 置灰不删）。三问必答：ws(部门)×project(项目线)×me(身份)。",
- "projects": [
-  {
-   "project_id": "quant",
-   "dept": "dev",
-   "name": "量化双刀",
-   "k_prefix": "K-STOCK",
-   "members": [
-    "DEV1",
-    "DEV5",
-    "QA2"
-   ],
-   "charter": "Scanner→Screener→Signal 流水线 + 合流主线（L1）",
-   "status": "active",
-   "source": "K-ORG-057 种子：既有 K-STOCK 线收编"
-  },
-  {
-   "project_id": "watchbot",
-   "dept": "dev",
-   "name": "盯盘机器人",
-   "k_prefix": "K-PUSH",
-   "members": [
-    "DEV2"
-   ],
-   "charter": "盯盘 quant_engine + 推送链（订阅/飞书/告警转发）",
-   "status": "active",
-   "source": "K-ORG-057 种子：既有 K-PUSH 线收编"
-  },
-  {
-   "project_id": "portal",
-   "dept": "dev",
-   "name": "AI 门户与组织平台",
-   "k_prefix": "K-ORG",
-   "members": [
-    "DEV3",
-    "SEC1"
-   ],
-   "charter": "portal/IDE/org 图/agent_platform 平台本体",
-   "status": "active",
-   "source": "K-ORG-057 种子：既有 K-ORG 线收编"
-  }
- ]
+  "updated": "2026-10-14",
+  "note": "K-ORG-057 项目线注册表：项目线=工作区内二级维度（不另开工作区），k_prefix 即 K 编号前缀天然判别器。立项=在此注册（org 图部门卡+子项目表单同构落盘）；结项=status=archived（chips 置灰不删）。三问必答：ws(部门)×project(项目线)×me(身份)。",
+  "projects": [
+    {
+      "project_id": "quant",
+      "dept": "dev",
+      "name": "量化双刀",
+      "k_prefix": "K-STOCK",
+      "members": [
+        "DEV1",
+        "DEV5",
+        "QA2"
+      ],
+      "charter": "Scanner→Screener→Signal 流水线 + 合流主线（L1）",
+      "status": "active",
+      "source": "K-ORG-057 种子：既有 K-STOCK 线收编"
+    },
+    {
+      "project_id": "watchbot",
+      "dept": "dev",
+      "name": "盯盘机器人",
+      "k_prefix": "K-PUSH",
+      "members": [
+        "DEV2"
+      ],
+      "charter": "盯盘 quant_engine + 推送链（订阅/飞书/告警转发）",
+      "status": "active",
+      "source": "K-ORG-057 种子：既有 K-PUSH 线收编",
+      "runtime_status": "offline_contract",
+      "live_entry": false,
+      "runtime_note": "2026-10-30 检查：仅项目登记，未发现运行服务/计划任务；实际行情轮询由 QuantWatch 承担。"
+    },
+    {
+      "project_id": "portal",
+      "dept": "dev",
+      "name": "AI 门户与组织平台",
+      "k_prefix": "K-ORG",
+      "members": [
+        "DEV3",
+        "SEC1"
+      ],
+      "charter": "portal/IDE/org 图/agent_platform 平台本体",
+      "status": "active",
+      "source": "K-ORG-057 种子：既有 K-ORG 线收编"
+    }
+  ]
 }

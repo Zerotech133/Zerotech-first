@@ -60,7 +60,7 @@ def git(*a, timeout=240):
 def sh(cmd, timeout=240):
     r = subprocess.run(
         cmd,
-        shell=True,
+        shell=True,  # nosec B602 - 内部预检脚本命令（cmd 由本文件构造，非外部输入）
         capture_output=True,
         text=True,
         encoding="utf-8",

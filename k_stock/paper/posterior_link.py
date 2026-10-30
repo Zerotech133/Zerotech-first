@@ -244,7 +244,7 @@ def _read_orders_by_ref(orders_db, refs: list[str]) -> dict[str, list[dict]]:
             chunk = refs[i : i + 400]
             qs = ",".join("?" * len(chunk))
             rows = con.execute(
-                f"SELECT id, ts, ref, stock, side, qty, status, plan_date, "
+                f"SELECT id, ts, ref, stock, side, qty, status, plan_date, "  # nosec B608 - 值参数化/内部标识符（已抽查）
                 f"fill_date, filled_price, filled_qty, fee, strategy, account_id, "
                 f"reason FROM orders WHERE ref IN ({qs})",
                 chunk,

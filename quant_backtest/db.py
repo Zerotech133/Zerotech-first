@@ -345,7 +345,7 @@ def nd_rc_missing(conn, codes):
         chunk = codes[i : i + 500]
         ph = ",".join("?" * len(chunk))
         for r in conn.execute(
-            "SELECT code FROM nine_dim_rc WHERE code IN (%s)" % ph, chunk
+            "SELECT code FROM nine_dim_rc WHERE code IN (%s)" % ph, chunk  # nosec B608 - 值参数化/内部标识符（已抽查）
         ):
             present.add(r["code"])
     return [c for c in codes if c not in present]
@@ -453,7 +453,7 @@ def nd_fina_need(conn, codes, cutoff_iso):
         chunk = codes[i : i + 500]
         ph = ",".join("?" * len(chunk))
         for r in conn.execute(
-            "SELECT code FROM nine_dim_fina WHERE code IN (%s) AND fetched_at>=?" % ph,
+            "SELECT code FROM nine_dim_fina WHERE code IN (%s) AND fetched_at>=?" % ph,  # nosec B608 - 值参数化/内部标识符（已抽查）
             chunk + [cutoff_iso],
         ):
             fresh.add(r["code"])
@@ -573,7 +573,7 @@ def nd_fc_missing(conn, codes):
         chunk = codes[i : i + 500]
         ph = ",".join("?" * len(chunk))
         for r in conn.execute(
-            "SELECT code FROM nine_dim_fc WHERE code IN (%s)" % ph, chunk
+            "SELECT code FROM nine_dim_fc WHERE code IN (%s)" % ph, chunk  # nosec B608 - 值参数化/内部标识符（已抽查）
         ):
             present.add(r["code"])
     return [c for c in codes if c not in present]

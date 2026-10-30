@@ -280,7 +280,7 @@ def _sqlite_latest_date(tbl):
     dcol = DATE_COL_SQLITE[tbl]
     try:
         conn = sqlite3.connect(INFO_DB, timeout=30)
-        v = conn.execute("SELECT MAX(%s) FROM %s" % (dcol, tbl)).fetchone()[0]
+        v = conn.execute("SELECT MAX(%s) FROM %s" % (dcol, tbl)).fetchone()[0]  # nosec B608 - 值参数化/内部标识符（已抽查）
         conn.close()
         return str(v).replace("-", "")[:8] if v else None
     except sqlite3.OperationalError:
@@ -416,7 +416,7 @@ def status():
         conn = sqlite3.connect(INFO_DB)
         for t in SQLITE_TABLES:
             try:
-                n = conn.execute("SELECT COUNT(*) FROM %s" % t).fetchone()[0]
+                n = conn.execute("SELECT COUNT(*) FROM %s" % t).fetchone()[0]  # nosec B608 - 值参数化/内部标识符（已抽查）
                 print("tdx_info.db %-14s %d rows" % (t, n))
             except sqlite3.OperationalError as exc:
                 logging.getLogger(__name__).warning("silent-except %s: %s", "quant_backtest/tdx_sync.py", exc)

@@ -11,7 +11,6 @@ data/crypto/<PAIR>_USDT.parquet 续拉：binance 1d klines → tushare 风格列
 import json
 import os
 import time
-import urllib.request
 
 import pandas as pd
 from tools.safe_urlopen import safe_urlopen
@@ -31,7 +30,7 @@ def _kl(sym, start_ms):
         + "&startTime="
         + str(start_ms)
     )
-    with safe_safe_urlopen(url, timeout=20) as r:
+    with safe_urlopen(url, timeout=20) as r:
         return json.loads(r.read().decode())
 
 

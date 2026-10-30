@@ -241,7 +241,7 @@ def _fallback(calls):
 
 # ── 缓存（问句 md5 + 当日日期，--force 跳过，7 天滚动清理） ──
 def _cache_path(q):
-    h = hashlib.md5(q.encode("utf-8")).hexdigest()[:12]
+    h = hashlib.md5(q.encode("utf-8"), usedforsecurity=False).hexdigest()[:12]
     return os.path.join(CACHE_DIR, "%s_%s.json" % (h, _today8()))
 
 
