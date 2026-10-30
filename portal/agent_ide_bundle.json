@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 16:49",
+ "generated": "2026-10-30 16:57",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,8 +9,8 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 25,
-  "workorders_review": 8
+  "workorders_doing": 27,
+  "workorders_review": 9
  },
  "workorders": [
   {
@@ -309,6 +309,33 @@
    "branch": "task/WO-LEGION-AUDIT-LOGINLINK-20261030",
    "created": "2026-10-30 16:41:37",
    "project": "general"
+  },
+  {
+   "id": "WO-GUANYU-P80-20261030",
+   "desc": "flaky7轮复验",
+   "status": "doing",
+   "owner": "GUANYU",
+   "branch": "task/WO-GUANYU-P80-20261030",
+   "created": "2026-10-30 16:53:08",
+   "project": "general"
+  },
+  {
+   "id": "WO-INV-STAFF-20261030",
+   "desc": "鲁肃部门扩编：D1投研会5席表决机制；盯盘组WA1/WA2/WA3三种盯法；交易组TR1主管+TR2/TR3执行；org/team/watch_methods/D1页人员展示+测试",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-INV-STAFF-20261030",
+   "created": "2026-10-30 16:53:54",
+   "project": "portal"
+  },
+  {
+   "id": "K-STOCK-ANALYSIS-P2-20261030",
+   "desc": "P2 商业化底座：license签发/校验(HMAC)、租户隔离目录、配额计费、审计日志、CLI+测试",
+   "status": "review",
+   "owner": "DSH-Lead",
+   "branch": "task/K-STOCK-ANALYSIS-P2-20261030",
+   "created": "2026-10-30 16:56:03",
+   "project": "quant"
   }
  ],
  "coder_traces": [
@@ -6381,7 +6408,14 @@
    ],
    "experience": "30 年工程治理经验：漏洞分级与补丁流程、失败测试基线修复、编码规范与门禁落地、技术债清欠与重复功能合并；证据驱动、逐项闭环，只出报告与工单不自行合并，开发动作限独立 worktree 提交+跑测试并交 L2 人签。",
    "dept_name": "研究院",
-   "dept_cn_title": "太学"
+   "dept_cn_title": "太学",
+   "tasks": [
+    {
+     "id": "WO-GUANYU-P80-20261030",
+     "desc": "flaky7轮复验",
+     "status": "doing"
+    }
+   ]
   },
   "HUANGZHONG": {
    "id": "HUANGZHONG",
