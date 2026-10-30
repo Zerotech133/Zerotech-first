@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 18:46",
+ "generated": "2026-10-30 18:49",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,8 +9,8 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 27,
-  "workorders_review": 8
+  "workorders_doing": 29,
+  "workorders_review": 9
  },
  "workorders": [
   {
@@ -327,6 +327,33 @@
    "branch": "task/WO-LEGION-T1AB-20261030",
    "created": "2026-10-30 18:41:51",
    "project": "general"
+  },
+  {
+   "id": "K-ORG-20261030-JEVARCH2",
+   "desc": "补：rotate_tushare_token 回滚注释指向仓外档案",
+   "status": "review",
+   "owner": "DSH-Lead",
+   "branch": "task/K-ORG-20261030-JEVARCH2",
+   "created": "2026-10-30 18:47:29",
+   "project": "general"
+  },
+  {
+   "id": "K-STOCK-ANALYSIS-P2-5B-20261030",
+   "desc": "P2.5B 网关token修复：_expected_token 先加 sys.path 再 import commercial（文件 token 未生效）",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-STOCK-ANALYSIS-P2-5B-20261030",
+   "created": "2026-10-30 18:47:49",
+   "project": "quant"
+  },
+  {
+   "id": "WO-UI-OPS-20261030",
+   "desc": "模拟确认页修复 tokens 变量；watch_admin 覆盖为平台 tokens 调色；与D1/作战台风格统一",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-UI-OPS-20261030",
+   "created": "2026-10-30 18:48:09",
+   "project": "portal"
   }
  ],
  "coder_traces": [
