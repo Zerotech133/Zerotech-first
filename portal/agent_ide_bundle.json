@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 12:17",
+ "generated": "2026-10-30 12:19",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 28,
+  "workorders_doing": 27,
   "workorders_review": 7
  },
  "workorders": [
@@ -309,15 +309,6 @@
    "branch": "task/WO-BANDIT-MEDIUM3C-20261030",
    "created": "2026-10-30 11:55:00",
    "project": "general"
-  },
-  {
-   "id": "WO-TRADING-BOT-20261030",
-   "desc": "交易机器人多角色组方案：ACAD1选股→D1研判/建仓→WA1许褚+WATCH_TOWER+watchbot盯盘→TR1执行，保留人工审批/接管接口；机器可读orchestration+测试",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-TRADING-BOT-20261030",
-   "created": "2026-10-30 12:16:24",
-   "project": "portal"
   },
   {
    "id": "WO-GUANYU-P74-20261030",
