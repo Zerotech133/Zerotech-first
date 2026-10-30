@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 19:42",
+ "generated": "2026-10-30 19:44",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 28,
+  "workorders_doing": 27,
   "workorders_review": 9
  },
  "workorders": [
@@ -326,15 +326,6 @@
    "owner": "DSH-Lead",
    "branch": "task/K-ORG-20261030-JEVARCH2",
    "created": "2026-10-30 18:47:29",
-   "project": "general"
-  },
-  {
-   "id": "WO-LEGION-W1AUTH2-20261030",
-   "desc": "W1-1补：/ide.html 相对跳转",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-W1AUTH2-20261030",
-   "created": "2026-10-30 19:40:03",
    "project": "general"
   },
   {
@@ -7311,11 +7302,6 @@
     {
      "id": "WO-LEGION-OIDC-PATH-20261030",
      "desc": "OIDC配置路径对齐实际vault",
-     "status": "doing"
-    },
-    {
-     "id": "WO-LEGION-W1AUTH2-20261030",
-     "desc": "W1-1补：/ide.html 相对跳转",
      "status": "doing"
     }
    ]
