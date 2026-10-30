@@ -2546,6 +2546,11 @@ color:#fff;font-size:13.5px;cursor:pointer}
             import m_api
             m_api.handle_post(self, path)
             return
+        if path.startswith('/api/auth/'):
+            # Phase A auth-gateway：登录/登出；不要求 X-Portal-Token（登录即认证）。
+            import auth_gateway
+            auth_gateway.handle_post(self, path)
+            return
         if path.startswith('/api/os/'):
             self._os_goal_post(path)
             return
@@ -3090,6 +3095,12 @@ color:#fff;font-size:13.5px;cursor:pointer}
             # K-STOCK-ANALYSIS-P0C2 个股分析只读入口（独立文件 api_analysis.py）
             import api_analysis
             api_analysis.handle_get(self, path, qs)
+            return
+        if path == '/api/bff/identity/me' or path.startswith('/api/auth/'):
+            # Phase A auth-gateway（2026-10-30）：登录态 / 登出 / 当前 SessionContext。
+            # 与只读 BFF 分离；认证端点单独模块，不混入 /api/bff/ 只读面。
+            import auth_gateway
+            auth_gateway.handle_get(self, path)
             return
         if path.startswith('/api/bff/'):
             # 三系统只读 BFF（2026-10-30）：智策健康 + 菜鸟只读统计 + 契约入口。
