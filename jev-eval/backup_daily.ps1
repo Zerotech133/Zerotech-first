@@ -45,7 +45,7 @@
 # DEVIATION NOTE (K269 v9 authority rule): new machine has no
 # HKLM:\SOFTWARE\AIStation\BackupDeploy registry key and no git - this
 # on-disk file is now the source of truth until registry push is rebuilt.
-# v10 original preserved as backup_daily.ps1.v10.bak; swap recorded in
+# v10 original preserved at C:\Temp\jev-eval_archive_20261030\backup_daily.ps1.v10.bak; swap recorded in
 # .workbuddy/memory/MEMORY.md. AES key regenerated for this machine
 # (old-machine .enc are not readable here and are not carried over).
 # v10 (OPS-1009): quant_db "empty" incident root-caused - quant_system db is
