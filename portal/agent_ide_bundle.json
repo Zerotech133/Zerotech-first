@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 18:34",
+ "generated": "2026-10-30 18:41",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 27,
+  "workorders_doing": 29,
   "workorders_review": 9
  },
  "workorders": [
@@ -336,6 +336,24 @@
    "branch": "task/WO-WARROOM-LIVE-20261030",
    "created": "2026-10-30 18:30:58",
    "project": "portal"
+  },
+  {
+   "id": "K-STOCK-ANALYSIS-P2-5-20261030",
+   "desc": "P2.4生产化：API限流+分析异步队列(job轮询)+商业化接口网关token+HTTPS/域名执行清单",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-STOCK-ANALYSIS-P2-5-20261030",
+   "created": "2026-10-30 18:40:10",
+   "project": "quant"
+  },
+  {
+   "id": "WO-LEGION-T1AB-20261030",
+   "desc": "T1/T2 num_predict契约A/B",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-T1AB-20261030",
+   "created": "2026-10-30 18:41:51",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -4213,7 +4231,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 115,
+     "count": 116,
      "recent": [
       {
        "ts": "",
@@ -7295,6 +7313,11 @@
     {
      "id": "WO-LEGION-OIDC-PATH-20261030",
      "desc": "OIDC配置路径对齐实际vault",
+     "status": "doing"
+    },
+    {
+     "id": "WO-LEGION-T1AB-20261030",
+     "desc": "T1/T2 num_predict契约A/B",
      "status": "doing"
     }
    ]
