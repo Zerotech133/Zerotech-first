@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 16:05",
+ "generated": "2026-10-30 16:08",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 26,
+  "workorders_doing": 27,
   "workorders_review": 7
  },
  "workorders": [
@@ -302,13 +302,22 @@
    "project": "general"
   },
   {
-   "id": "K-ORG-20261030-PREFILTERON",
-   "desc": "开启 JEV_PREFILTER=safe（用户批准）：night/hourly/DayBatch 三入口注入环境变量，含回滚说明",
+   "id": "WO-LEGION-MEMORY-DEFAULT-20261030",
+   "desc": "memory默认值改为关闭（对齐策略v0）",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-MEMORY-DEFAULT-20261030",
+   "created": "2026-10-30 16:06:24",
+   "project": "general"
+  },
+  {
+   "id": "K-JEV-20261030-P1",
+   "desc": "JEV P1 four fixes: schema metadata, dynamic batch, xq ollama lock, low-confidence review queue",
    "status": "doing",
    "owner": "DSH-Lead",
-   "branch": "task/K-ORG-20261030-PREFILTERON",
-   "created": "2026-10-30 16:05:41",
-   "project": "general"
+   "branch": "task/K-JEV-20261030-P1",
+   "created": "2026-10-30 16:06:25",
+   "project": "quant"
   }
  ],
  "coder_traces": [
@@ -7036,7 +7045,14 @@
    ],
    "entry_source": "virtual_governance",
    "seat_note": "profile 角色，不占编（D5-C）；与 R2 风控席（org 编制·保守风控哨）是不同 id，报表按 id 区分。",
-   "home_page": "http://127.0.0.1:8796/zhaoyun"
+   "home_page": "http://127.0.0.1:8796/zhaoyun",
+   "tasks": [
+    {
+     "id": "WO-LEGION-MEMORY-DEFAULT-20261030",
+     "desc": "memory默认值改为关闭（对齐策略v0）",
+     "status": "doing"
+    }
+   ]
   }
  }
 }
