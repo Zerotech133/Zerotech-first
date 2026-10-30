@@ -136,7 +136,9 @@ def build_index(root: Path | None = None, out: Path | None = None,
     index["tokens_omitted"] = True
     out_path = Path(out) if out else (_root() / INDEX_REL)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps(index, ensure_ascii=False), encoding="utf-8")
+    tmp_path = out_path.with_name(out_path.name + ".tmp")
+    tmp_path.write_text(json.dumps(index, ensure_ascii=False), encoding="utf-8")
+    os.replace(tmp_path, out_path)
     return {"ok": True, "chunks": len(chunks), "index": str(out_path),
             "built_at": index["built_at"]}
 
