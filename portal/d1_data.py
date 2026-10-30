@@ -79,6 +79,19 @@ def _team_snapshot():
     }
 
 
+def _merge_record(rec, item):
+    """池复盘记录缺值/显式 None 时回退到池 item；空 analyses 也回退。"""
+    rec = dict(rec or {})
+    item = item or {}
+    for f in ("analyses", "node_exec"):
+        if not rec.get(f):
+            rec[f] = item.get(f) or ({} if f == "analyses" else [])
+    for f in ("decision_status", "recommendation", "confidence", "price", "action"):
+        if rec.get(f) is None:
+            rec[f] = item.get(f)
+    return rec
+
+
 def d1_snapshot(day=None):
     snap = pool_data.pool_snapshot(day)
     day = snap.get("date") or day
@@ -93,13 +106,7 @@ def d1_snapshot(day=None):
         # 复盘记录里带 analyses/node_exec 的原始记录
         rec = next((r for r in (review.get("records") or [])
                     if str(r.get("code")) == code), {}) or item
-        rec = dict(rec)
-        rec.setdefault("analyses", item.get("analyses") or {})
-        rec.setdefault("node_exec", item.get("node_exec") or [])
-        rec.setdefault("decision_status", item.get("decision_status"))
-        rec.setdefault("recommendation", item.get("recommendation"))
-        rec.setdefault("confidence", item.get("confidence"))
-        rec.setdefault("price", item.get("price"))
+        rec = _merge_record(rec, item)
         built = research_plan.build_item(item, rec, plan_rows.get(code), shadows.get(code))
         items.append(built)
     out = research_plan.build_snapshot(items)
