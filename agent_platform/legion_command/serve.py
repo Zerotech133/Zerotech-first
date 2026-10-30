@@ -510,6 +510,35 @@ class Handler(BaseHTTPRequestHandler):
             cid = (qs.get("id") or [""])[0]
             self._send_json({"ok": bool(cid), "events": openhands_engine.events(cid)})
             return
+        if path == "/api/ide/openhands/stream":
+            import json as _json
+            import time as _time
+            from urllib.parse import parse_qs
+            from legion_command import openhands_engine
+            qs = parse_qs(urlparse(self.path).query)
+            cid = (qs.get("id") or [""])[0]
+            if not cid:
+                self._send_json({"ok": False, "error": "conversation_id_required"}, 400)
+                return
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream; charset=utf-8")
+            self.send_header("Cache-Control", "no-cache")
+            self.send_header("Connection", "keep-alive")
+            self.send_header("X-Accel-Buffering", "no")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            try:
+                while True:
+                    d = openhands_engine.status(cid)
+                    payload = _json.dumps(d, ensure_ascii=False)
+                    self.wfile.write(("event: status\ndata: " + payload + "\n\n").encode("utf-8"))
+                    self.wfile.flush()
+                    if d.get("terminal") or d.get("ok") is False:
+                        break
+                    _time.sleep(0.8)
+            except (BrokenPipeError, ConnectionResetError, OSError):
+                pass
+            return
         if path == "/api/ide/openhands/status":
             from urllib.parse import parse_qs
             from legion_command import openhands_engine

@@ -52,6 +52,9 @@ msedge.exe --app=http://127.0.0.1:8734/hermes/
 - 点击 Agent 自动切换模型
 - Agent 详情：职责/工具/技能/prompt
 - 历史会话列表：恢复 / 删除 / 新会话
+- SSE 实时事件（失败自动回退轮询）
+- 代码片段注入：文件读取 + 鼠标选区
+- 旧 IDE 选中桥（`?standalone=1&legion_pick=1`）
 - 取上下文（AST symbols）
 - 工单下拉（来自 `/api/ide/openhands/tasks`）
 - 模型选择

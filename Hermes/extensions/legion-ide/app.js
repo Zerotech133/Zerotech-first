@@ -91,6 +91,22 @@
             </div>
             <pre id="legion-ide-context-preview" style="display:none"></pre>
             <div class="legion-ide-actions">
+              <button id="legion-ide-old-pick">旧 IDE 选中</button>
+              <span id="legion-ide-snippet-status" class="legion-ide-status"></span>
+            </div>
+            <details id="legion-ide-snippet" class="legion-ide-snippet">
+              <summary>引用代码片段</summary>
+              <div class="legion-ide-row">
+                <input id="legion-ide-snippet-path" placeholder="文件路径，例如 agent_platform/foo.py">
+                <button id="legion-ide-snippet-load">读取</button>
+              </div>
+              <textarea id="legion-ide-snippet-text" readonly placeholder="读取文件后，用鼠标选中要引用的代码"></textarea>
+              <div class="legion-ide-actions">
+                <button id="legion-ide-snippet-insert">插入选中</button>
+                <span id="legion-ide-snippet-info" class="legion-ide-status"></span>
+              </div>
+            </details>
+            <div class="legion-ide-actions">
               <button id="legion-ide-start" class="primary">开始执行</button>
               <button id="legion-ide-stop" disabled>停止</button>
               <span id="legion-ide-status" class="legion-ide-status">就绪</span>
@@ -300,6 +316,7 @@ function renderSessions() {
 }
 
 function newSession() {
+  stopStream();
   if (state.timer) { clearTimeout(state.timer); state.timer = null; }
   state.cid = ""; state.events = []; state.pending = false; state.task = "";
   const ev = $("#legion-ide-events"); if (ev) ev.textContent = "—";
@@ -334,7 +351,7 @@ function loadSession(s) {
   if (msg && s.title) msg.value = s.title;
   status("恢复会话…", "run");
   const stop = $("#legion-ide-stop"); if (stop) stop.disabled = false;
-  schedulePoll();
+  startStream(state.cid);
 }
 
 function renderAgentDetail(a) {
@@ -442,6 +459,68 @@ async function loadContext() {
   }
 }
 
+function appendSelection(text, label) {
+  const t = String(text || "").replace(/\r\n/g, "\n").trim();
+  if (!t) return;
+  const msg = $("#legion-ide-message");
+  if (!msg) return;
+  const fence = t.includes("```") ? "````" : "```";
+  msg.value = (msg.value ? msg.value.trimEnd() + "\n\n" : "")
+    + "[" + label + "]\n" + fence + "\n" + t + "\n" + fence + "\n";
+  msg.focus();
+  const st = $("#legion-ide-snippet-status");
+  if (st) st.textContent = "已插入 " + t.split("\n").length + " 行";
+}
+
+async function loadSnippet() {
+  const pathEl = $("#legion-ide-snippet-path");
+  const ta = $("#legion-ide-snippet-text");
+  const info = $("#legion-ide-snippet-info");
+  const path = (pathEl && pathEl.value || "").trim();
+  if (!path) { if (info) info.textContent = "先填文件路径"; return; }
+  if (info) info.textContent = "读取中…";
+  try {
+    const d = await api("/api/ide/fs/read?path=" + encodeURIComponent(path));
+    const text = d.content != null ? d.content : (d.text != null ? d.text : "");
+    if (ta) ta.value = String(text);
+    if (info) info.textContent = "已读取 " + String(text).split("\n").length + " 行";
+  } catch (e) {
+    if (info) info.textContent = "读取失败：" + e.message;
+  }
+}
+
+function insertSnippet() {
+  const ta = $("#legion-ide-snippet-text");
+  const info = $("#legion-ide-snippet-info");
+  if (!ta) return;
+  const s = ta.selectionStart, e = ta.selectionEnd;
+  if (e <= s) { if (info) info.textContent = "先用鼠标选中代码"; return; }
+  const text = ta.value.slice(s, e);
+  const startLine = ta.value.slice(0, s).split("\n").length;
+  const endLine = startLine + text.split("\n").length - 1;
+  appendSelection(text, "代码片段 " + ($("#legion-ide-snippet-path").value || "") + ":" + startLine + "-" + endLine);
+  if (info) info.textContent = "已插入选中代码";
+}
+
+function openOldPicker() {
+  try {
+    const w = window.open("http://127.0.0.1:8734/ide?standalone=1&legion_pick=1",
+      "legion-ide-old-picker", "width=1280,height=900");
+    if (!w) {
+      const st = $("#legion-ide-snippet-status");
+      if (st) st.textContent = "弹窗被拦截";
+    }
+  } catch (e) {}
+}
+
+window.addEventListener("message", (e) => {
+  if (!/^http:\/\/127\.0\.0\.1:8734$/.test(String(e.origin || ""))) return;
+  const d = e.data || {};
+  if (d.type === "legion-ide-selection" && d.text) {
+    appendSelection(d.text, "旧 IDE 选中");
+  }
+});
+
 async function loadDiff(task) {
     if (!task) return;
     const wrap = $("#legion-ide-diff-wrap");
@@ -466,41 +545,77 @@ async function loadDiff(task) {
     state.timer = setTimeout(poll, 1200);
   }
 
+  let OH_STREAM = null;
+
+  function stopStream() {
+    if (OH_STREAM) {
+      try { OH_STREAM.close(); } catch (e) {}
+      OH_STREAM = null;
+    }
+  }
+
+  function applyStatus(d, usePoll) {
+    state.events = d.events || [];
+    renderEvents();
+    upsertSession({ cid: state.cid, status: d.status || "running" });
+    if (d.status === "waiting_for_confirmation") {
+      state.pending = true;
+      $("#legion-ide-confirm-wrap").style.display = "";
+      $("#legion-ide-pending").textContent = "⚠ 等待确认：" + (d.pending_action || "");
+      status("等待人工确认", "warn");
+    } else {
+      state.pending = false;
+      $("#legion-ide-confirm-wrap").style.display = "none";
+      status("运行中… " + state.events.length + " 事件", "run");
+    }
+    if (d.terminal) {
+      const st = d.status;
+      status(st === "finished" ? "✅ 完成" : ("⏹/❌ " + st), st === "finished" ? "ok" : "warn");
+      if (d.reply) renderReply(d.reply);
+      upsertSession({ cid: state.cid, status: st, reply: d.reply || "" });
+      $("#legion-ide-stop").disabled = true;
+      $("#legion-ide-start").disabled = false;
+      if (st === "finished") loadDiff($("#legion-ide-task").value);
+      state.cid = "";
+      stopStream();
+      return;
+    }
+    if (usePoll) schedulePoll();
+  }
+
   async function poll() {
     if (!state.cid || state.pollBusy) return;
     state.pollBusy = true;
     try {
       const d = await api("/api/ide/openhands/status?id=" + encodeURIComponent(state.cid));
-      state.events = d.events || [];
-      renderEvents();
-      upsertSession({ cid: state.cid, status: d.status || "running" });
-      if (d.status === "waiting_for_confirmation") {
-        state.pending = true;
-        $("#legion-ide-confirm-wrap").style.display = "";
-        $("#legion-ide-pending").textContent = "⚠ 等待确认：" + (d.pending_action || "");
-        status("等待人工确认", "warn");
-      } else {
-        state.pending = false;
-        $("#legion-ide-confirm-wrap").style.display = "none";
-        status("运行中… " + state.events.length + " 事件", "run");
-      }
-      if (d.terminal) {
-        const st = d.status;
-        status(st === "finished" ? "✅ 完成" : ("⏹/❌ " + st), st === "finished" ? "ok" : "warn");
-        if (d.reply) renderReply(d.reply);
-        upsertSession({ cid: state.cid, status: st, reply: d.reply || "" });
-        $("#legion-ide-stop").disabled = true;
-        $("#legion-ide-start").disabled = false;
-        state.cid = "";
-        if (st === "finished") loadDiff($("#legion-ide-task").value);
-        return;
-      }
-      schedulePoll();
+      applyStatus(d, true);
     } catch (e) {
       status("状态失败：" + e.message, "bad");
       schedulePoll();
     } finally {
       state.pollBusy = false;
+    }
+  }
+
+  function startStream(cid) {
+    stopStream();
+    if (!cid || typeof EventSource === "undefined") { schedulePoll(); return; }
+    try {
+      const es = new EventSource(OH_BASE + "/api/ide/openhands/stream?id=" + encodeURIComponent(cid));
+      OH_STREAM = es;
+      es.addEventListener("status", (ev) => {
+        try {
+          const d = JSON.parse(ev.data);
+          applyStatus(d, false);
+          if (d.terminal || d.ok === false) stopStream();
+        } catch (e) { /* ignore malformed frame */ }
+      });
+      es.onerror = () => {
+        stopStream();
+        if (state.cid) schedulePoll();
+      };
+    } catch (e) {
+      schedulePoll();
     }
   }
 
@@ -539,7 +654,7 @@ async function loadDiff(task) {
       ];
       renderEvents();
       status("运行中…", "run");
-      schedulePoll();
+      startStream(state.cid);
     } catch (e) {
       status("启动失败：" + e.message, "bad");
       $("#legion-ide-start").disabled = false;
@@ -554,7 +669,7 @@ async function loadDiff(task) {
         method: "POST", body: JSON.stringify({ conversation_id: state.cid }),
       });
       status("停止中…", "warn");
-      schedulePoll();
+      startStream(state.cid);
     } catch (e) { status("停止失败：" + e.message, "bad"); }
   }
 
@@ -568,7 +683,7 @@ async function loadDiff(task) {
       state.pending = false;
       $("#legion-ide-confirm-wrap").style.display = "none";
       status(accept ? "已批准，继续…" : "已拒绝", "run");
-      schedulePoll();
+      startStream(state.cid);
     } catch (e) { status("审批失败：" + e.message, "bad"); }
   }
 
@@ -596,6 +711,9 @@ async function loadDiff(task) {
     $("#legion-ide-commit").onclick = commit;
     $("#legion-ide-context").onclick = loadContext;
     $("#legion-ide-new-session").onclick = newSession;
+    $("#legion-ide-snippet-load").onclick = loadSnippet;
+    $("#legion-ide-snippet-insert").onclick = insertSnippet;
+    $("#legion-ide-old-pick").onclick = openOldPicker;
     renderSessions();
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape" && $("#legion-ide-overlay")) closePanel();

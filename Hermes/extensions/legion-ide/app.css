@@ -141,6 +141,26 @@ main.main.showing-legionide > #mainInsights { display: none !important; }
 }
 .legion-ide-session i:hover { color: #e24b4a; }
 .legion-ide-session:hover { border-color: #2f8f6a; }
+.legion-ide-snippet {
+  border: 1px solid #1e3a5f; border-radius: 8px; background: #0b1a22;
+  padding: 6px 9px; font-size: 11px;
+}
+.legion-ide-snippet summary { cursor: pointer; color: #9fd0ff; }
+.legion-ide-snippet .legion-ide-row { margin-top: 6px; }
+.legion-ide-snippet input {
+  flex: 1; background: #081321; color: #dbe8f5; border: 1px solid #1e3a5f;
+  border-radius: 6px; padding: 5px 7px; font-size: 11px;
+}
+.legion-ide-snippet button {
+  background: #0f2440; color: #9fe3ee; border: 1px solid #1e3a5f;
+  border-radius: 6px; padding: 4px 8px; cursor: pointer; font-size: 11px;
+}
+#legion-ide-snippet-text {
+  width: 100%; min-height: 130px; margin-top: 6px; box-sizing: border-box;
+  background: #060f1d; color: #b9c9da; border: 1px solid #12283f;
+  border-radius: 6px; padding: 7px; font: 11px/1.45 Consolas, monospace;
+  resize: vertical;
+}
 .legion-ide-row { display: flex; align-items: center; gap: 8px; }
 .legion-ide-row label { color: #5a7190; font-size: 11px; width: 38px; }
 .legion-ide-row select {
