@@ -1,0 +1,45 @@
+/* 8796 军团套件 · Design Tokens（W1 方案 A）
+   ------------------------------------------------------------
+   原则：8796 沿用自有 navy 品牌视觉，不直接套 portal GitHub Dark；
+   语义 token 与平台 tokens.css 对齐命名（--color-err/warn/info），
+   避免红涨绿跌语义污染。新页面禁止再硬编码 hex。
+   ------------------------------------------------------------ */
+:root {
+  /* 品牌 navy */
+  --legion-bg: #060F1D;
+  --legion-bg-deep: #081321;
+  --legion-panel: #0F2440;
+  --legion-panel-2: #0A1626;
+  --legion-line: #1E3A5F;
+  --legion-line-strong: #16304F;
+
+  /* 文字 */
+  --legion-text: #E8F0F8;
+  --legion-text-dim: #8FA8C0;
+  --legion-text-muted: #5A7190;
+  --legion-text-strong: #CFE3FF;
+
+  /* 状态：成功（品牌绿；语义对齐平台 --color-ok） */
+  --legion-ok: #4FD1A5;
+  --legion-ok-strong: #1D9E75;
+
+  /* 状态：警告 */
+  --legion-warn: #EF9F27;
+  --legion-warn-accent: #F5D08A;
+  --color-warn-bg: #2A2412;
+  --color-warn-bd: #7A6A2A;
+  --color-warn-bd-2: #7A5A1E;
+  --color-warn-text: #F3DDB4;
+  --color-warn-bg-2: #2A1F0C;
+
+  /* 状态：错误 */
+  --legion-err: #E24B4A;
+  --color-err-bg: #2A1214;
+  --color-err-bd: #7A2A2E;
+  --color-err-text: #F3B5B4;
+
+  /* 状态：信息 */
+  --color-info-bg: #12202A;
+  --color-info-bd: #2A5A7A;
+  --color-info-text: #B4D9F3;
+}
