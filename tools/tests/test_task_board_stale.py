@@ -23,6 +23,7 @@ def _tasks():
         "OLD2": {"owner": "OTHER", "status": "doing", "created": "2026-10-01 09:00:00"},
         "DONE1": {"owner": "ZHAOYUN", "status": "done", "created": "2026-10-29 09:00:00"},
         "AHEAD": {"owner": "DSH-Lead", "status": "doing", "created": "2026-10-28 09:00:00"},
+        "STALEIN": {"owner": "DSH-Lead", "status": "doing", "created": "2026-10-01 09:00:00"},
     }
 
 
@@ -37,7 +38,8 @@ def test_classify():
     assert by["OLD2"]["safe"] is False
     assert by["DONE1"]["kind"] == "merged_but_open" and by["DONE1"]["safe"] is False
     assert by["AHEAD"]["kind"] == "ahead_unmerged"
-    assert any(r["kind"] == "stale_in_progress" and r["task"] == "AHEAD" for r in rows)
+    assert any(r["kind"] == "stale_in_progress" and r["task"] == "STALEIN" for r in rows)
+    assert all(r["task"] != "AHEAD" or r["kind"] == "ahead_unmerged" for r in rows)
 
 
 def test_apply_safe_only_whitelisted_branch_missing(tmp_path):
