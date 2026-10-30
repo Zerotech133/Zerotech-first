@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 18:51",
+ "generated": "2026-10-30 18:52",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 29,
+  "workorders_doing": 28,
   "workorders_review": 9
  },
  "workorders": [
@@ -336,15 +336,6 @@
    "branch": "task/K-ORG-20261030-JEVARCH2",
    "created": "2026-10-30 18:47:29",
    "project": "general"
-  },
-  {
-   "id": "WO-UI-OPS-20261030",
-   "desc": "模拟确认页修复 tokens 变量；watch_admin 覆盖为平台 tokens 调色；与D1/作战台风格统一",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-UI-OPS-20261030",
-   "created": "2026-10-30 18:48:09",
-   "project": "portal"
   },
   {
    "id": "K-ORG-20261030-JEVROTATE",
