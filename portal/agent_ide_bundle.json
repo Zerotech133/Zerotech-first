@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 28,
+  "workorders_doing": 27,
   "workorders_review": 10
  },
  "workorders": [
@@ -335,15 +335,6 @@
    "owner": "GUANYU",
    "branch": "task/WO-GUANYU-P84-20261030",
    "created": "2026-10-30 19:14:33",
-   "project": "general"
-  },
-  {
-   "id": "WO-GUANYU-P85-20261030",
-   "desc": "h21误报豁免登记",
-   "status": "doing",
-   "owner": "GUANYU",
-   "branch": "task/WO-GUANYU-P85-20261030",
-   "created": "2026-10-30 19:24:28",
    "project": "general"
   },
   {
@@ -6656,11 +6647,6 @@
      "id": "WO-GUANYU-P84-20261030",
      "desc": "ruff零告警清理",
      "status": "review"
-    },
-    {
-     "id": "WO-GUANYU-P85-20261030",
-     "desc": "h21误报豁免登记",
-     "status": "doing"
     }
    ]
   },
