@@ -22,6 +22,9 @@ class EvidenceRef:
     hash: str
     freshness_s: int = 0
 
+    def to_dict(self):
+        return asdict(self)
+
 
 @dataclass
 class EvidenceBundle:

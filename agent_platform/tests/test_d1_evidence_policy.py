@@ -75,3 +75,10 @@ def test_decision_id_deterministic():
     a = DP.decision_id("600519", "2026-10-30", "run1")
     b = DP.decision_id("600519", "2026-10-30", "run1")
     assert a == b and a.startswith("D1-20261030-")
+
+
+def test_ref_serializable():
+    import json
+    b = EB.EvidenceBundle.from_context("600519", "贵州茅台", _ctx())
+    json.dumps([r.to_dict() for r in b.refs])  # 不抛=可落账
+    assert b.refs[0].to_dict()["source"] in ("market_technical", "fundamental")
