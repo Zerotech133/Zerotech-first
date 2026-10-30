@@ -53,6 +53,21 @@ try {
     $code = $LASTEXITCODE
     $ErrorActionPreference = 'Stop'
     W ('P2 exit=' + $code + ' out=' + ($out -join ' | '))
+    # 2026-10-30 JEVALERTB (user approved B): JEV risk bridge -> LOCAL OUTBOX ONLY.
+    # High-impact bear events (last 2h, conf>=0.8) appended to risk_alerts.jsonl; NO push.
+    $riskPy = Join-Path (Split-Path $dir -Parent) 'tools\jev_risk_alert.py'
+    if (-not (Test-Path -LiteralPath $riskPy)) { $riskPy = 'C:\aios\tools\jev_risk_alert.py' }
+    if (Test-Path -LiteralPath $riskPy) {
+        $ErrorActionPreference = 'Continue'
+        $riskOut = & $py -X utf8 -B $riskPy --hours 2 --emit-outbox 2>&1
+        $riskLine = ($riskOut | Select-Object -Last 1)
+        if ($null -eq $riskLine) { $riskLine = '' }
+        $riskLine = ([string]$riskLine).Substring(0, [Math]::Min(220, ([string]$riskLine).Length))
+        W ('P2.5 risk outbox exit=' + $LASTEXITCODE + ' out=' + $riskLine)
+        $ErrorActionPreference = 'Stop'
+    } else {
+        W ('P2.5 risk SKIP: not found ' + $riskPy)
+    }
     # log cap ~400KB: keep tail
     if ((Get-Item -LiteralPath $log).Length -gt 400KB) {
         $tail = Get-Content -LiteralPath $log -Tail 200 -Encoding UTF8
