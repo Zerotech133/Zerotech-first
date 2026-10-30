@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>零界个股分析 · 客户门户</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<style>
+  :root{--bg:#0f1216;--panel:#171c23;--line:#28313c;--txt:#e7ecf2;--muted:#8b97a6;--blue:#4da3ff;--green:#39c477;--red:#ff5c5c}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.6 "Segoe UI",system-ui,sans-serif}
+  .wrap{max-width:980px;margin:0 auto;padding:24px 16px 60px}
+  header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+  header b{font-size:18px}
+  .tag{font-size:11px;border:1px solid var(--blue);color:var(--blue);border-radius:999px;padding:2px 8px;margin-left:8px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+  .card h2{margin:0 0 10px;font-size:15px}
+  label{display:block;font-size:12px;color:var(--muted);margin:8px 0 4px}
+  input,select{width:100%;background:#0f141a;border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:8px 10px;font-size:14px}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  .row > div{flex:1;min-width:200px}
+  button{background:var(--blue);border:0;color:#08121d;font-weight:600;border-radius:8px;padding:9px 16px;cursor:pointer;font-size:14px}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  button.ghost{background:transparent;border:1px solid var(--line);color:var(--txt);font-weight:400}
+  .muted{color:var(--muted);font-size:12px}
+  .ok{color:var(--green)} .err{color:var(--red)}
+  .badge{display:inline-block;background:#1d2733;border:1px solid var(--line);border-radius:999px;padding:1px 8px;font-size:12px;margin-right:6px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  td,th{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+  a{color:var(--blue)}
+  .hide{display:none}
+  footer{margin-top:24px;color:var(--muted);font-size:11.5px}
+  .wb-nav{display:none !important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div><b>零界 · 个股分析</b><span class="tag">客户门户</span></div>
+    <div class="muted" id="who"></div>
+  </header>
+
+  <div class="card" id="loginCard">
+    <h2>登录</h2>
+    <div class="row">
+      <div><label>租户 ID</label><input id="tenant" placeholder="例如 acme"></div>
+      <div><label>License Key</label><input id="license" placeholder="SAC1.xxxx.yyyy" autocomplete="off"></div>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:10px;align-items:center">
+      <button id="loginBtn">登录</button>
+      <span id="loginMsg" class="muted"></span>
+    </div>
+    <p class="muted" style="margin-bottom:0">研究分析工具，不构成投资建议。License 由服务方提供，请勿外传。</p>
+  </div>
+
+  <div id="main" class="hide">
+    <div class="card">
+      <h2>分析</h2>
+      <div class="row">
+        <div><label>股票代码</label><input id="code" placeholder="如 600337.SH"></div>
+        <div style="flex:0 0 auto;display:flex;align-items:flex-end"><button id="runBtn">生成报告</button></div>
+      </div>
+      <div id="runMsg" class="muted" style="margin-top:10px"></div>
+      <div id="result" class="hide" style="margin-top:12px">
+        <div><span class="badge" id="rRating"></span><span class="muted" id="rMeta"></span></div>
+        <div style="margin-top:8px">
+          <a id="rMd" target="_blank">下载 Markdown 报告</a> ｜
+          <a id="rH5" target="_blank">查看 H5 全景</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>历史报告 <button class="ghost" id="refreshBtn" style="float:right;font-size:12px">刷新</button></h2>
+      <div id="history" class="muted">加载中…</div>
+    </div>
+
+    <div class="card">
+      <h2>配额</h2>
+      <div id="quota" class="muted"></div>
+    </div>
+  </div>
+
+  <footer>
+    零界 · 个股分析（客户门户 MVP）｜研究分析，不构成投资建议｜技术支持：服务方渠道
+  </footer>
+</div>
+<script src="/static/nav.js" defer></script>
+<script>
+(function(){
+  var TOKEN_KEY = 'zb_customer_token';
+  var token = localStorage.getItem(TOKEN_KEY) || '';
+  function $(id){ return document.getElementById(id); }
+  function api(path, opts){
+    opts = opts || {};
+    return fetch(path, {
+      method: opts.method || 'GET',
+      headers: {'Content-Type':'application/json'},
+      body: opts.body ? JSON.stringify(opts.body) : undefined
+    }).then(function(r){ return r.json().then(function(j){ j._status = r.status; return j; }); });
+  }
+  function errMsg(e){ return (e && e.error) ? e.error : '请求失败'; }
+
+  function showLogin(){
+    $('loginCard').classList.remove('hide'); $('main').classList.add('hide'); $('who').textContent = '';
+  }
+  function showMain(me){
+    $('loginCard').classList.add('hide'); $('main').classList.remove('hide');
+    $('who').textContent = (me.tenant || '') + ' · ' + (me.plan_name || me.plan || '');
+    if(me.usage) renderQuota(me.usage);
+    loadHistory();
+  }
+  function renderQuota(u){
+    var el = $('quota'); if(!u){ el.textContent='—'; return; }
+    var parts = [];
+    Object.keys(u).forEach(function(k){ var x=u[k]; parts.push((k==='reports_month'?'报告':'API')+'：剩余 '+x.remaining+' / '+x.limit); });
+    el.textContent = parts.join(' ｜ ');
+  }
+
+  function login(){
+    var tenant = $('tenant').value.trim(), license = $('license').value.trim();
+    if(!tenant || !license){ $('loginMsg').className='err'; $('loginMsg').textContent='请填写租户与 license'; return; }
+    $('loginBtn').disabled = true; $('loginMsg').textContent = '校验中…';
+    api('/api/customer/login', {method:'POST', body:{tenant:tenant, license:license}}).then(function(r){
+      $('loginBtn').disabled = false;
+      if(!r.ok){ $('loginMsg').className='err'; $('loginMsg').textContent = errMsg(r); return; }
+      token = r.token; localStorage.setItem(TOKEN_KEY, token);
+      $('loginMsg').textContent = '';
+      showMain({tenant:tenant, plan:r.plan, plan_name:r.plan_name, usage:r.usage});
+    }).catch(function(e){ $('loginBtn').disabled=false; $('loginMsg').className='err'; $('loginMsg').textContent='网络错误'; });
+  }
+
+  function run(){
+    var code = $('code').value.trim().toUpperCase();
+    if(!code){ $('runMsg').textContent='请输入股票代码'; return; }
+    $('runBtn').disabled = true; $('runMsg').className='muted'; $('runMsg').textContent = '分析中（约 15-30 秒）…';
+    api('/api/customer/analyze', {method:'POST', body:{token:token, code:code}}).then(function(r){
+      $('runBtn').disabled = false;
+      if(!r.ok){ $('runMsg').className='err'; $('runMsg').textContent = errMsg(r); return; }
+      $('runMsg').className='ok'; $('runMsg').textContent = '完成：' + code;
+      $('result').classList.remove('hide');
+      $('rRating').textContent = '评级 ' + (r.rating || '—');
+      $('rMeta').textContent = ' 覆盖 ' + (r.coverage||'—') + '% ｜ 用时 ' + (r.elapsed||'—') + 's';
+      $('rMd').href = r.report_url + '&token=' + encodeURIComponent(token);
+      $('rH5').href = r.h5_url + '&token=' + encodeURIComponent(token);
+      if(r.usage) renderQuota(r.usage);
+      loadHistory();
+    }).catch(function(){ $('runBtn').disabled=false; $('runMsg').className='err'; $('runMsg').textContent='网络错误'; });
+  }
+
+  function loadHistory(){
+    if(!token) return;
+    api('/api/customer/history?token=' + encodeURIComponent(token)).then(function(r){
+      if(!r.ok){ $('history').textContent = errMsg(r); return; }
+      if(!r.rows || !r.rows.length){ $('history').textContent = '暂无历史报告'; return; }
+      var h = '<table><tr><th>代码</th><th>评级</th><th>时间</th><th>报告</th></tr>';
+      r.rows.forEach(function(x){
+        h += '<tr><td>'+ (x.code||'—') +'</td><td>'+ (x.rating||'—') +'</td><td>'+ (x.generated||'') +'</td>'
+          + '<td><a target="_blank" href="/api/customer/report?run_id='+encodeURIComponent(x.run_id)+'&format=md&token='+encodeURIComponent(token)+'">MD</a> '
+          + '<a target="_blank" href="/api/customer/report?run_id='+encodeURIComponent(x.run_id)+'&format=h5&token='+encodeURIComponent(token)+'">H5</a></td></tr>';
+      });
+      $('history').innerHTML = h + '</table>';
+    }).catch(function(){ $('history').textContent='加载失败'; });
+  }
+
+  $('loginBtn').addEventListener('click', login);
+  $('runBtn').addEventListener('click', run);
+  $('refreshBtn').addEventListener('click', loadHistory);
+  $('code').addEventListener('keydown', function(e){ if(e.key==='Enter') run(); });
+  // 自动恢复会话
+  if(token){
+    api('/api/customer/quota?token=' + encodeURIComponent(token)).then(function(r){
+      if(r.ok) showMain({tenant:'', plan:r.plan, plan_name:'', usage:r.usage});
+      else { localStorage.removeItem(TOKEN_KEY); showLogin(); }
+    }).catch(showLogin);
+  } else { showLogin(); }
+})();
+</script>
+</body>
+</html>

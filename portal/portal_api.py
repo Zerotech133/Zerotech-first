@@ -2568,6 +2568,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
             import api_analysis
             api_analysis.handle_post(self, path, self.path.split("?", 1)[1] if "?" in self.path else "")
             return
+        if path.startswith('/api/customer/'):
+            import api_customer
+            api_customer.handle_post(self, path)
+            return
         if path == '/api/zhuge/brief':
             # WO-OS-09 只读出口：非 GET 显式 405（不落 404 兜底，契约清晰）
             self._zhuge_brief_method_not_allowed()
@@ -3119,6 +3123,11 @@ color:#fff;font-size:13.5px;cursor:pointer}
             # P2.1 商业化只读入口（套餐/租户/用量/审计/健康，独立文件 api_commercial.py）
             import api_commercial
             api_commercial.handle_get(self, path, qs)
+            return
+        if path.startswith('/api/customer/'):
+            # P2.4 客户门户（登录/分析/报告下载/历史/配额，独立文件 api_customer.py）
+            import api_customer
+            api_customer.handle_get(self, path, qs)
             return
         if path == '/api/bff/identity/me' or path.startswith('/api/auth/'):
             # Phase A auth-gateway（2026-10-30）：登录态 / 登出 / 当前 SessionContext。
