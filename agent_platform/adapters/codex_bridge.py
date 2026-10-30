@@ -268,7 +268,7 @@ def register_from_source(source, registry):
     module = ast.parse(source)
     code = compile(module, "<codex_plugin>", "exec")
     namespace = _exec_globals()
-    exec(code, namespace)  # noqa: S102
+    exec(code, namespace)  # noqa: S102  # nosec B102 - 受控插件：来源先经 validate_source 静态校验，globals 受限
     classes = [
         v
         for v in namespace.values()

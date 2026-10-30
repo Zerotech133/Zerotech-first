@@ -231,6 +231,6 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    srv = ThreadingHTTPServer(("0.0.0.0", PORT), Handler)
+    srv = ThreadingHTTPServer(("0.0.0.0", PORT), Handler)  # nosec B104 - 对外门禁服务，依赖网络 ACL/basic-auth
     print("PicksGate v1.2 on 0.0.0.0:%d (key-gate+cookie, basic-auth kept)" % PORT)
     srv.serve_forever()

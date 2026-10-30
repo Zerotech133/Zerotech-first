@@ -31,7 +31,7 @@ def _fetch(url: str, timeout: int = 25) -> str:
         import ssl
 
         with urllib.request.urlopen(
-            req, timeout=timeout, context=ssl._create_unverified_context()
+            req, timeout=timeout, context=ssl._create_unverified_context()  # nosec B323 - 同上，只读公开源
         ) as r:
             return r.read().decode("utf-8", errors="replace")
 

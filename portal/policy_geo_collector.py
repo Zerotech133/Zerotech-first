@@ -42,7 +42,7 @@ def _fetch(url: str, timeout: int = 20) -> str:
     except urllib.error.URLError as e:
         if "CERTIFICATE" not in str(e):
             raise
-        ctx = ssl._create_unverified_context()
+        ctx = ssl._create_unverified_context()  # nosec B323 - 仅 CERTIFICATE 失败时公网只读 GET 降级，无凭据
         with urllib.request.urlopen(req, timeout=timeout, context=ctx) as r:
             raw = r.read()
     for enc in ("utf-8", "gb18030"):
