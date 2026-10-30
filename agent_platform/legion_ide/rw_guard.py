@@ -89,13 +89,13 @@ LOCAL_TOKEN_FILE_ENV = "IDE_LOCAL_TOKEN_FILE"
 
 def local_token() -> str:
     """A1 本地准入 token：未配置返回空串（默认关，不改变现状）。"""
-    v = str(os.environ.get(LOCAL_TOKEN_ENV) or "").strip()
+    v = str(os.environ.get(LOCAL_TOKEN_ENV) or "").strip().lstrip("\ufeff")
     if v:
         return v
     path = str(os.environ.get(LOCAL_TOKEN_FILE_ENV) or "").strip()
     if path:
         try:
-            return Path(path).read_text(encoding="utf-8").strip()
+            return Path(path).read_text(encoding="utf-8-sig").strip()
         except OSError:
             return ""
     return ""
