@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 14:59",
+ "generated": "2026-10-30 15:01",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 28,
+  "workorders_doing": 27,
   "workorders_review": 8
  },
  "workorders": [
@@ -149,15 +149,6 @@
    "project": "quant"
   },
   {
-   "id": "WO-AUDIT-FIX-20261029",
-   "desc": "审计修复：hq_stats双计数、hk_r1_daily台账表格插入+去重+锁、kg zip strict",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-AUDIT-FIX-20261029",
-   "created": "2026-10-29 23:20:37",
-   "project": "general"
-  },
-  {
    "id": "WO-H13-20261029",
    "desc": "H13 多因子复核(L1)：资金流动量+反转+市值+价值+质量规避 合成因子，月度/OOS/成本",
    "status": "doing",
@@ -293,33 +284,6 @@
    "project": "quant"
   },
   {
-   "id": "WO-BANDIT-BASELINE-ENC-20261030",
-   "desc": "bandit基线编码修复：baseline json 转 ASCII 转义，避免Windows GBK读取失败；夜间复扫可用。",
-   "status": "review",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-BANDIT-BASELINE-ENC-20261030",
-   "created": "2026-10-30 12:39:23",
-   "project": "quant"
-  },
-  {
-   "id": "WO-BANDIT-4BFINAL-20261030",
-   "desc": "bandit收敛收口：新增HIGH B324改usedforsecurity=False；portal/auth_oidc B310接safe_urlopen；复扫确认HIGH=0。",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-BANDIT-4BFINAL-20261030",
-   "created": "2026-10-30 13:24:16",
-   "project": "quant"
-  },
-  {
-   "id": "WO-SEC-B310-LAST-20261030",
-   "desc": "B310最后1处：tools/kb_corpus/build_full_index.py 接 safe_urlopen；复扫确认MEDIUM=0/B310=0。",
-   "status": "review",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-SEC-B310-LAST-20261030",
-   "created": "2026-10-30 14:44:59",
-   "project": "quant"
-  },
-  {
    "id": "WO-GUANYU-P76-20261030",
    "desc": "flaky淘汰执行",
    "status": "doing",
@@ -331,11 +295,38 @@
   {
    "id": "WO-KB-PAGE-20261030",
    "desc": "语料知识库门户页：api_kb_corpus 只读接口 + kb_corpus.html（检索/问答/引用）",
-   "status": "doing",
+   "status": "review",
    "owner": "DSH-Lead",
    "branch": "task/WO-KB-PAGE-20261030",
    "created": "2026-10-30 14:57:41",
    "project": "general"
+  },
+  {
+   "id": "WO-SEC-AUDIT-V2-20261030",
+   "desc": "夜间安全审计基线切v2：security_audit.ps1 \\ 指向 bandit_baseline_v2.json，避免并发覆盖导致误报HIGH。",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-SEC-AUDIT-V2-20261030",
+   "created": "2026-10-30 14:59:52",
+   "project": "quant"
+  },
+  {
+   "id": "WO-PIPAUDIT-OSV-20261030",
+   "desc": "依赖审计兜底：OSV批量查询脚本+测试，SecurityAuditWeekly接入OSV结果",
+   "status": "review",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-PIPAUDIT-OSV-20261030",
+   "created": "2026-10-30 15:00:01",
+   "project": "general"
+  },
+  {
+   "id": "WO-METHODS-EXIT-20261030",
+   "desc": "板块/行业 regime（THS行业指数，缺失回退大盘）+移动止盈/ATR目标出场；再回放对比；测试",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-METHODS-EXIT-20261030",
+   "created": "2026-10-30 15:00:44",
+   "project": "portal"
   }
  ],
  "coder_traces": [
@@ -7052,23 +7043,13 @@
    "home_page": "http://127.0.0.1:8796/zhaoyun",
    "tasks": [
     {
-     "id": "WO-AUDIT-FIX-20261029",
-     "desc": "审计修复：hq_stats双计数、hk_r1_daily台账表格插入+去重+锁、kg zip strict",
+     "id": "WO-SEC-AUDIT-V2-20261030",
+     "desc": "夜间安全审计基线切v2：security_audit.ps1 \\ 指向 bandit_baseline_v2.json，避免并发覆盖导致误报HIGH。",
      "status": "doing"
     },
     {
-     "id": "WO-BANDIT-BASELINE-ENC-20261030",
-     "desc": "bandit基线编码修复：baseline json 转 ASCII 转义，避免Windows GBK读取失败；夜间复扫可用。",
-     "status": "review"
-    },
-    {
-     "id": "WO-BANDIT-4BFINAL-20261030",
-     "desc": "bandit收敛收口：新增HIGH B324改usedforsecurity=False；portal/auth_oidc B310接safe_urlopen；复扫确认HIGH=0。",
-     "status": "doing"
-    },
-    {
-     "id": "WO-SEC-B310-LAST-20261030",
-     "desc": "B310最后1处：tools/kb_corpus/build_full_index.py 接 safe_urlopen；复扫确认MEDIUM=0/B310=0。",
+     "id": "WO-PIPAUDIT-OSV-20261030",
+     "desc": "依赖审计兜底：OSV批量查询脚本+测试，SecurityAuditWeekly接入OSV结果",
      "status": "review"
     }
    ]
