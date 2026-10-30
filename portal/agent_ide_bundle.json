@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 15:08",
+ "generated": "2026-10-30 15:09",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -284,15 +284,6 @@
    "project": "quant"
   },
   {
-   "id": "WO-LEGION-P2-V1-20261030",
-   "desc": "P2 v1 两周试跑：只读周任务包装器+计划任务",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-P2-V1-20261030",
-   "created": "2026-10-30 15:03:39",
-   "project": "general"
-  },
-  {
    "id": "WO-GUANYU-P77-20261030",
    "desc": "收口日报+解除元数据豁免",
    "status": "doing",
@@ -309,6 +300,15 @@
    "branch": "task/K-STOCK-ANALYSIS-P0U-20261030",
    "created": "2026-10-30 15:08:01",
    "project": "quant"
+  },
+  {
+   "id": "K-ORG-20261030-TRACELINK",
+   "desc": "修复 run_shadow trace link 死代码（误放在 except return 后），回填 10-29/10-30 links，恢复 Monday replay_trace",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-ORG-20261030-TRACELINK",
+   "created": "2026-10-30 15:09:04",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -7029,14 +7029,7 @@
    ],
    "entry_source": "virtual_governance",
    "seat_note": "profile 角色，不占编（D5-C）；与 R2 风控席（org 编制·保守风控哨）是不同 id，报表按 id 区分。",
-   "home_page": "http://127.0.0.1:8796/zhaoyun",
-   "tasks": [
-    {
-     "id": "WO-LEGION-P2-V1-20261030",
-     "desc": "P2 v1 两周试跑：只读周任务包装器+计划任务",
-     "status": "doing"
-    }
-   ]
+   "home_page": "http://127.0.0.1:8796/zhaoyun"
   }
  }
 }
