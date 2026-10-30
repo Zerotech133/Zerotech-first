@@ -27,7 +27,7 @@
 - 适配器写入会话 `agent_settings.llm`：
   - `model`
   - `api_key=legion-local`
-  - `base_url=http://127.0.0.1:8797/v1`
+  - `base_url=http://127.0.0.1:8796/v1`
 - OpenHands 会话 stats 已验证显示：
   - `openai/deepseek-flash`
   - `openai/glm-5.3`
@@ -45,6 +45,7 @@
 | 新建文件（git worktree，Windows 主机） | ⚠ 同样卡住 |
 | Docker sandbox + 工单 worktree（新建文件） | ✅ 成功 |
 | IDE OH + Docker sandbox + 工单 worktree | ✅ A0 · 12.5s，工具事件可见 |
+| 8796 换血 + 退役 8797 后最终验证 | ✅ A0 · 11.6s，8796 → sandbox → 文件写回 |
 
 ## Windows 主机的工具阻塞
 
@@ -58,13 +59,14 @@ Windows 直接运行 OpenHands 时：
 
 **已通过 Docker sandbox 绕过：文件工具在 Linux 容器内执行。**
 
-## 未完成
+## 4. 8796 换血、退役 8797
 
-### 4. 8796 换血、退役 8797
+已完成：
 
-- 8796 是 Session0 旧进程，当前会话无权限停止
-- 现用 8797 临时适配网关 + nginx `/openhands/` 同源代理
-- 需要管理员终端或系统重启后把前端地址切回 8796，并退役 8797
+- 旧 8796（Session0）退出后，新 8796 由 `C:\项目\py312\python.exe` 启动
+- nginx `/openhands/` 从 8797 切回 8796
+- 8797 已停止并从端口注册表移除
+- 最终实测：A0 · OpenHands · ✅ 11.6s
 
 ### 5. Docker sandbox / 资源限制
 
@@ -80,7 +82,7 @@ Windows 直接运行 OpenHands 时：
 
 - 适配器默认连 8771
 - task/worktree 映射为容器内 `/workspaces/<TID>`
-- LLM 走容器内 `host.docker.internal:8797/v1`
+- LLM 走容器内 `host.docker.internal:8796/v1`
 - 启动/停止脚本：
 
 ```text
@@ -96,14 +98,15 @@ ObservationEvent: File created successfully at /workspaces/...
 宿主 worktree 实际出现 OH2_UI_SANDBOX.txt
 ```
 
-## 仍未完成
-
-### 4. 8796 换血、退役 8797
-
-- 8796 仍是 Session0 旧进程，当前会话无权限停止
-- 现用 8797 适配网关 + nginx `/openhands/` 同源代理
-- 需管理员终端/重启后切回 8796，并退役 8797
-
 ## 结论
 
-OH 模式 + 真实工单 worktree + Docker sandbox 已可运行，事件流和模型映射已验证；唯一未收口的是 8796 进程换血。
+5 项全部完成：
+
+- 工单 worktree 映射
+- 事件流展示
+- IDE 模型/角色 → OpenHands 模型映射
+- 8796 换血、8797 退役
+- Docker sandbox + 资源限制
+
+最终链路：8734 `/ide` → `/openhands/` → 8796 → 8771 sandbox；sandbox 的模型请求回 8796 `/v1` → DeepSeek。  
+实测：A0 · OpenHands · ✅ 11.6s，FileEditor + Observation + 宿主 worktree 写回。

@@ -23,7 +23,7 @@ HOST_BASE_URL = os.environ.get("OPENHANDS_HOST_URL", "http://127.0.0.1:8770").rs
 KEY_FILE = Path(os.environ.get("OPENHANDS_KEY_FILE", r"C:\项目\legion-openhands\.session_key"))
 # 容器内访问宿主机网关；容器外测试可覆盖为 127.0.0.1。
 LEGION_GATEWAY = os.environ.get(
-    "OPENHANDS_GATEWAY_URL", "http://host.docker.internal:8797/v1"
+    "OPENHANDS_GATEWAY_URL", "http://host.docker.internal:8796/v1"
 )
 REPO_ROOT = Path(os.environ.get("OPENHANDS_REPO", r"C:\项目\老田的AI助手")).resolve()
 WORKTREE_ROOT = Path(os.environ.get("OPENHANDS_WORKTREE_ROOT", r"C:\legion-worktrees"))
