@@ -1,5 +1,5 @@
 {
-  "_note": "交易机器人多角色组编排（2026-10-30 WO-TRADING-BOT-20261030）。paper-only；阶段顺序=选股→研判/建仓→盯盘→人工确认→模拟执行→复盘。人工接口必须保留，任何 BUY/SELL/新标的/超阈值都先过人工门。",
+  "_note": "交易机器人多角色组编排（2026-10-30 WO-BOT-FLOW-20261030 按老田口径重梳）。主链：司马徽(ACAD1)选股入池 → 鲁肃(D1)投研团队分析研判出投研报告 → 盯盘团队在股票池内发现异动并通知 → 人工确认门（保留）→ 周瑜(TR1)模拟执行 → 复盘。paper-only；人工接口必须保留。",
   "bot_id": "TRADING-BOT",
   "bot_name": "量化交易机器人（多角色组）",
   "owner": "D1",
@@ -12,18 +12,19 @@
   "stages": [
     {
       "id": "select",
-      "name": "选股",
+      "name": "司马徽选股入池",
       "owner": "ACAD1",
       "owner_name": "司马徽",
       "project": "acad1-recommendation-pool",
-      "input": "全市场扫描/策略发现",
-      "output": "ACAD1 推荐池（T1/T2 核心池）",
+      "input": "全市场策略发现/选股",
+      "output": "ACAD1 推荐池（股票池，T1/T2 核心池）",
       "mode": "daily",
-      "human_gate": false
+      "human_gate": false,
+      "artifact": "agent_platform/data/recommendation_pool/latest.json"
     },
     {
       "id": "research",
-      "name": "看多看空研判",
+      "name": "投研分析研判/出投研报告",
       "owner": "D1",
       "owner_name": "鲁肃",
       "members": [
@@ -33,10 +34,11 @@
         "F1",
         "ST1"
       ],
-      "input": "ACAD1 推荐池",
-      "output": "D1 五档裁决 + T1/T2 多空辩论 + N1/F1 结构化摘要",
+      "input": "ACAD1 股票池（仅池内）",
+      "output": "投研报告：T1/T2 多空 + N1/F1 结构化 + ST1 策略 + D1 五档裁决/建仓计划",
       "mode": "daily",
-      "human_gate": false
+      "human_gate": false,
+      "artifact": "team_exec/<run_id>_summary.json + pool_review/<date>.json"
     },
     {
       "id": "plan",
@@ -48,43 +50,46 @@
         "ST1",
         "QS1"
       ],
-      "input": "D1 裁决 + 技术/情绪/基本面",
+      "input": "投研报告 + 技术/情绪/基本面",
       "output": "建仓/加仓/止损计划（含触发价）",
       "mode": "daily",
       "human_gate": false
     },
     {
       "id": "watch",
-      "name": "盯盘",
+      "name": "盯盘发现异动并通知交易",
       "owner": "WA1",
       "owner_name": "许褚",
       "platform": "WATCH_TOWER",
       "platform_owner_name": "朱然",
       "engineering_project": "watchbot",
-      "input": "建仓计划触发价/止损价/异常条件",
-      "output": "QUANT_UPSTREAM_REPORT（ANOMALY/HEALTH）",
+      "input": "股票池 + 投研报告触发条件（触发价/止损价/异常）",
+      "output": "异动通知：QUANT_UPSTREAM_REPORT + watch trigger payload",
       "mode": "realtime",
-      "human_gate": false
+      "human_gate": false,
+      "scope": "仅 ACAD1 股票池；不盯全市场、不执行"
     },
     {
       "id": "human_confirm",
-      "name": "人工确认",
+      "name": "人工确认（保留）",
       "owner": "HUMAN",
       "owner_name": "老田",
-      "input": "建仓计划 + 盯盘触发",
-      "output": "批准/拒绝/改价/挂起",
+      "input": "盯盘异动通知 + 建仓计划",
+      "output": "批准/拒绝/改价/挂起/接管",
       "mode": "on_trigger",
-      "human_gate": true
+      "human_gate": true,
+      "note": "paper 阶段可配置，但接口必须保留；未来实盘强制。"
     },
     {
       "id": "execute",
-      "name": "模拟交易执行",
+      "name": "周瑜模拟执行",
       "owner": "TR1",
       "owner_name": "周瑜",
-      "input": "人工确认后的订单",
+      "input": "人工确认后的异动通知/订单",
       "output": "quant paper 台账（hash-chain）",
       "mode": "on_trigger",
-      "human_gate": false
+      "human_gate": false,
+      "artifact": "agent_platform/data/paper/paper_ledger.jsonl"
     },
     {
       "id": "review",
@@ -95,7 +100,7 @@
         "ST1",
         "WA1"
       ],
-      "input": "执行账/盯盘事件",
+      "input": "执行账 + 盯盘事件",
       "output": "feedback + T+5 归因",
       "mode": "daily",
       "human_gate": false
@@ -133,28 +138,28 @@
     "profile_selection": "人工确认时选择：aggressive 激进 / balanced 平衡 / conservative 保守",
     "kill_switch": "PAPER_KILL env 或 agent_platform/data/paper/KILL 文件",
     "audit": "dev_events + decision_audit + paper ledger",
-    "note": "未来接真实交易所时，人工门默认强制；paper 阶段可配置自动通过，但保留入口"
+    "note": "保留未来人工接口：BUY/SELL/新标的/加仓/超阈值必须人工确认；paper 阶段可配置自动，但接口与审计不删除；真实交易强制人工门。"
   },
   "handoffs": [
     {
       "from": "select",
       "to": "research",
-      "contract": "recommendation_pool/latest.json"
+      "contract": "recommendation_pool/latest.json（股票池）"
     },
     {
       "from": "research",
       "to": "plan",
-      "contract": "team_invest decision + structured"
+      "contract": "投研报告 + D1 裁决"
     },
     {
       "from": "plan",
       "to": "watch",
-      "contract": "watch_plan/触发价+止损价"
+      "contract": "触发价/止损价/异常条件"
     },
     {
       "from": "watch",
       "to": "human_confirm",
-      "contract": "QUANT_UPSTREAM_REPORT"
+      "contract": "QUANT_UPSTREAM_REPORT（异动通知）"
     },
     {
       "from": "human_confirm",
@@ -178,5 +183,17 @@
     "WATCH_TOWER": "contract_only_no_market_feed",
     "watchbot": "registered_no_runtime",
     "note": "2026-10-30 检查：盯盘三层均未接实时行情入口；watchbot 仅登记，WATCH_TOWER 仅 service_probe，WA1 上行仅契约。"
+  },
+  "flow_note": "1) ACAD1 司马徽从策略发现/全市场选出股票，进入 ACAD1 推荐池（股票池）；2) D1 鲁肃投研团队（T1/T2/N1/F1/ST1）对池内股票分析研判，出投研报告与建仓计划；3) 盯盘团队（WA1 许褚/WATCH_TOWER/watchbot）只在股票池内盯异动，发现后通知交易；4) 人工确认门保留；5) TR1 周瑜按批准结果模拟执行并记账；6) 复盘。",
+  "stock_pool": {
+    "owner": "ACAD1",
+    "path": "agent_platform/data/recommendation_pool/latest.json",
+    "page": "/acad1_pool.html",
+    "scope": "仅池内股票；不扫全市场"
+  },
+  "research_report": {
+    "owner": "D1",
+    "artifact": "team_exec/<run_id>_summary.json + pool_review/<date>.json",
+    "content": "T1/T2 多空辩论、N1 情绪、F1 基本面、D1 五档裁决/建仓计划"
   }
 }
