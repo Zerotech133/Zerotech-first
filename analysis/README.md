@@ -197,3 +197,10 @@ python -m analysis.backtest --universe 300 --out "C:\项目\deliverables\2026-10
 - 刷新/自检：`python -m analysis.industry --refresh` / `--check`；
 - `snapshot.industry` 现返回 **L1/L2/L3 + tushare_sw 标注**；同业改成**申万二级（L2）同行业**（比一级更可比），回退一级/旧表；
 - 效果（300308）：行业=通信/通信设备（原"电力设备"），同业=新易盛/长飞/天孚，PS 同业分位 **95.1 → 25.0**。
+
+### 策略实验网格（P0P，2026-10-30）
+
+- `python -m analysis.backtest --universe 300` 默认在基线之外跑 6 个变体：`base / val_heavy / val_only / equal / qg_only / trend_rev`；
+- 评估：2019-2023 训练、2024-2026 验证的 IC / 验证 IC 胜率 / Top-Bottom 分位差 / 季频（3/6/9/12 月末 60 日）IC；
+- 判定：`val IC>0.02 且 top_bottom>0 且 买入/观察偏多 val 超额>0` 才算通过；
+- 2026-10-30 首跑结论：**6 个变体全部未通过**（最好 trend_rev val IC 0.0232 但 top_bottom -0.43；val_heavy 季频 IC 0.0312 但验证段 0.0182；val_only 训练 0.0723→验证 0.0061 过拟合）→ 评分仅作解释框架，不作选股信号。

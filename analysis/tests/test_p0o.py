@@ -56,6 +56,19 @@ class TestBacktest(unittest.TestCase):
             self.assertIn("按当月分位映射", md)
             self.assertIn("建议分档", md)
 
+    def test_variants_grid(self):
+        vres = backtest.evaluate_variants(synth())
+        self.assertIn("variants", vres)
+        self.assertIn("verdict", vres)
+        for name in ("base", "val_heavy", "val_only", "equal", "qg_only", "trend_rev"):
+            self.assertIn(name, vres["variants"])
+        self.assertIn("passed", vres["verdict"])
+        with tempfile.TemporaryDirectory() as td:
+            out = backtest.write_variants(vres, td)
+            self.assertTrue(os.path.exists(out["json"]))
+            self.assertTrue(os.path.exists(out["md"]))
+            self.assertIn("实验对比", open(out["md"], encoding="utf-8").read())
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
