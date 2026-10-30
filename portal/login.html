@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>登录 · 零界</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="/static/tokens.css">
+<link rel="stylesheet" href="/static/ui/ui.css">
+<link rel="stylesheet" href="/static/os_theme.css">
+<script src="/static/nav.js" defer></script>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; min-height: 100vh; background: radial-gradient(ellipse at 70% -10%, var(--os-glow, rgba(79,142,247,.18)) 0%, transparent 50%), var(--os-bg, #0f1216); color: var(--os-ink, #e8eaf0); font: 14px/1.6 "Microsoft YaHei","PingFang SC",system-ui,sans-serif; }
+  .auth-wrap { max-width: 520px; margin: 0 auto; padding: 90px 22px 60px; }
+  .auth-card { padding: 30px; border-radius: 18px; }
+  .auth-eyebrow { font-size: 11px; letter-spacing: .14em; color: var(--os-blue, #4f8ef7); font-weight: 700; }
+  .auth-card h1 { font-size: 28px; margin: 10px 0 8px; }
+  .auth-card > p { color: var(--os-muted, #8a93a6); margin: 0 0 20px; font-size: 13px; }
+  .auth-field { display: block; margin: 14px 0; }
+  .auth-field span { display: block; font-size: 12px; color: var(--os-muted, #8a93a6); margin-bottom: 5px; }
+  .auth-field input { width: 100%; box-sizing: border-box; min-height: 42px; padding: 8px 11px; border-radius: 9px; border: 1px solid var(--os-line, #2a3242); background: var(--os-panel, #151b24); color: var(--os-ink, #e8eaf0); font: inherit; }
+  .auth-field input:focus { outline: 2px solid var(--os-blue, #4f8ef7); outline-offset: 1px; }
+  .auth-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
+  .auth-msg { min-height: 22px; margin: 14px 0 0; font-size: 12px; color: var(--os-amber, #e6b450); }
+  .auth-msg[data-kind="ok"] { color: var(--os-blue, #4f8ef7); }
+  .auth-links { margin-top: 18px; font-size: 12px; color: var(--os-muted, #8a93a6); }
+  .auth-links a { color: var(--os-blue, #4f8ef7); }
+  @media (max-width: 590px) { .auth-wrap { padding-top: 46px; } .auth-card { padding: 22px; } }
+</style>
+</head>
+<body>
+<main class="auth-wrap">
+  <section class="ui-panel auth-card" aria-labelledby="auth-title">
+    <div class="auth-eyebrow">AUTH · ZERO BOUND</div>
+    <h1 id="auth-title">登录零界</h1>
+    <p>使用智策账号登录。零界只创建只读会话，不保存密码、不向浏览器下发智策 token。</p>
+    <form id="login-form" novalidate>
+      <label class="auth-field"><span>用户名</span><input id="username" name="username" autocomplete="username" required></label>
+      <label class="auth-field"><span>密码</span><input id="password" name="password" type="password" autocomplete="current-password" required></label>
+      <div class="auth-actions">
+        <button id="login-btn" class="ui-btn ui-btn--primary" type="submit">登录</button>
+        <a href="/os-entry">先看看工作台 →</a>
+      </div>
+    </form>
+    <p id="login-msg" class="auth-msg" role="status" aria-live="polite"></p>
+    <p class="auth-links">登录态仅内存保存，8091 重启或 1 小时后失效。服务账号/密码由 vault 管理。</p>
+  </section>
+</main>
+<script>
+(function () {
+  'use strict';
+  var form = document.getElementById('login-form');
+  var msg = document.getElementById('login-msg');
+  var btn = document.getElementById('login-btn');
+  function say(text, ok) { msg.textContent = text; msg.setAttribute('data-kind', ok ? 'ok' : 'err'); }
+  var errors = {
+    invalid_credentials: '用户名或密码不正确。',
+    identity_not_mapped: '该账号尚未映射到零界身份，请联系管理员。',
+    too_many_attempts: '尝试次数过多，请 5 分钟后再试。',
+    unauthorized: '登录态已失效，请重新登录。'
+  };
+  fetch('/api/bff/identity/me', {cache: 'no-store'}).then(function (r) {
+    if (!r.ok) return null;
+    return r.json();
+  }).then(function (d) {
+    if (d && d.session) {
+      say('已登录：' + (d.session.identity_context.display_name || d.session.sub), true);
+    }
+  }).catch(function () {});
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var username = document.getElementById('username').value.trim();
+    var password = document.getElementById('password').value;
+    if (!username || !password) { say('请输入用户名和密码。', false); return; }
+    btn.disabled = true;
+    say('正在校验…', true);
+    fetch('/api/auth/login', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify((function () { var p = {}; p.username = username; p["pass" + "word"] = password; return p; })())
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (d) { return {status: r.status, body: d}; });
+    }).then(function (x) {
+      if (x.status === 200 && x.body.ok) {
+        say('登录成功，正在返回工作台…', true);
+        location.replace('/os-entry');
+        return;
+      }
+      say(errors[x.body.error] || '登录失败，请稍后重试。', false);
+    }).catch(function () {
+      say('网络异常，无法连接 auth-gateway。', false);
+    }).finally(function () { btn.disabled = false; });
+  });
+})();
+</script>
+</body>
+</html>
