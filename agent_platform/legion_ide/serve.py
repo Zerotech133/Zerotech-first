@@ -196,13 +196,16 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                 extra_headers,
             )
 
-        def _html(self, body: bytes, session_token: str | None = None) -> None:
+        def _html(self, body: bytes, session_token: str | None = None,
+                  extra_cookie: str = "") -> None:
             headers = []
             if session_token:
                 headers.append(("Set-Cookie", (
                     "ide_session=%s; HttpOnly; SameSite=Strict; Path=/"
                     % session_token
                 )))
+            if extra_cookie:
+                headers.append(("Set-Cookie", extra_cookie))
             self._send(200, body, _HTML_CT, headers)
 
         def _body_json(self):
@@ -256,7 +259,15 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                 if not page.is_file():
                     return self._json(503, {"ok": False, "error": "rw_page_missing"})
                 token, _owner = G.new_session(headers=dict(self.headers))
-                return self._html(page.read_bytes(), token)
+                # A1：带 ?token=... 或 X-IDE-Token 时种 ide_local_token cookie（启用本地准入后写/执行需要）
+                qs = parse_qs(urlparse(self.path).query)
+                want = str((qs.get("token") or [""])[0] or "").strip()
+                hdr = str(self.headers.get("X-IDE-Token") or "").strip()
+                lt = G.local_token()
+                extra = ""
+                if lt and (want == lt or hdr == lt):
+                    extra = ("ide_local_token=%s; HttpOnly; SameSite=Strict; Path=/" % lt)
+                return self._html(page.read_bytes(), token, extra)
             if path == "/agent_ide_bundle.json":
                 bundle = (
                     Path(bundle_path)
@@ -646,6 +657,7 @@ def create_server(
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="军团 Agent IDE · 独立形态服务 v2")
     ap.add_argument("--host", default=DEFAULT_HOST)
+    ap.add_argument("--local-token-file", default="")
     ap.add_argument("--port", type=int, default=DEFAULT_PORT)
     ap.add_argument("--repo", default=str(REPO))
     ap.add_argument("--portal", default=DEFAULT_PORTAL)
@@ -658,6 +670,8 @@ def main(argv: list[str] | None = None) -> int:
     )
     ap.add_argument("-v", "--verbose", action="store_true")
     args = ap.parse_args(argv)
+    if getattr(args, "local_token_file", ""):
+        os.environ["IDE_LOCAL_TOKEN_FILE"] = str(args.local_token_file)
     if args.state_dir:
         os.environ["LEGION_IDE_STATE_DIR"] = args.state_dir
     if args.rw:

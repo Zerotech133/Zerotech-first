@@ -44,3 +44,31 @@ def test_write_roles_env_override(monkeypatch):
     roles = m.write_roles()
     assert "CUSTOM_ROLE" in roles and "QA1" in roles
     assert "LOCAL_DEVELOPER" in roles  # 默认仍保留
+
+
+def test_local_token_required_when_configured(monkeypatch, tmp_path):
+    monkeypatch.setenv("LEGION_IDE_STATE_DIR", str(tmp_path))
+    monkeypatch.setenv("IDE_LOCAL_TOKEN", "tok-e2e-123")
+    m = _load()
+    token, _ = m.new_session(headers={})
+    hdr = {"Cookie": "ide_session=" + token}
+    err = m.check_access(hdr, required_roles=m.write_roles())
+    assert err and err.get("error") == "local_token_required"
+    hdr["X-IDE-Token"] = "tok-e2e-123"
+    assert m.check_access(hdr, required_roles=m.write_roles()) is None
+    bad = {"Cookie": "ide_session=" + token, "X-IDE-Token": "wrong"}
+    assert m.check_access(bad, required_roles=m.write_roles())["error"] == "local_token_required"
+    cookie = {"Cookie": "ide_session=" + token + "; ide_local_token=tok-e2e-123"}
+    assert m.check_access(cookie, required_roles=m.write_roles()) is None
+
+
+def test_local_token_file(monkeypatch, tmp_path):
+    tok = tmp_path / "local_token"
+    tok.write_text("file-token-xyz\n", encoding="utf-8")
+    monkeypatch.setenv("LEGION_IDE_STATE_DIR", str(tmp_path / "state"))
+    monkeypatch.delenv("IDE_LOCAL_TOKEN", raising=False)
+    monkeypatch.setenv("IDE_LOCAL_TOKEN_FILE", str(tok))
+    m = _load()
+    token, _ = m.new_session(headers={})
+    hdr = {"Cookie": "ide_session=" + token, "X-IDE-Token": "file-token-xyz"}
+    assert m.check_access(hdr, required_roles=m.write_roles()) is None
