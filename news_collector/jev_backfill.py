@@ -151,8 +151,9 @@ def _locked_tick(
     让其单次等待/冷却不越过 deadline —— 否则 tick 最坏阻塞可击穿外层 hard timeout。
     """
     if _should_skip_lease_yield(paused, disabled):
-        lock_mod.heartbeat()
-        return True
+        # 2026-10-30 BATCH2：heartbeat 显式返回 False = 锁已丢失，停止本轮判读；
+        # None 兼容旧 mock/旧模块（视为仍持锁）。
+        return lock_mod.heartbeat() is not False
     if deadline_ts is None:
         return lock_mod.tick(purpose)
     return lock_mod.tick(purpose, deadline_ts=deadline_ts)

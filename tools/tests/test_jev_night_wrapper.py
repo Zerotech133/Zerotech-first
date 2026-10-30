@@ -31,3 +31,12 @@ def test_wrapper_has_on_demand_gate():
     assert "JEV_NIGHT_MIN_BACKLOG" in t
     assert "SKIP night run" in t or "pending -lt $minBacklog" in t
     assert "jev_pending.py" in t
+
+def test_wrapper_gate_is_fail_closed():
+    t = _text()
+    assert "fail-closed" in t
+    assert "missing path" in t
+    assert "pending output not integer" in t
+    # 不再有「检查失败就照常跑」的旧行为
+    assert "-> run as usual" not in t  # 注释里的历史说明不算
+
