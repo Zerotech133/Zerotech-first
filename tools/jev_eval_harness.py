@@ -32,7 +32,6 @@ TOOLS = REPO / "tools"
 if str(TOOLS) not in sys.path:
     sys.path.insert(0, str(TOOLS))
 
-import jev_audit  # noqa: E402
 import jev_prefilter_eval as pre_eval  # noqa: E402
 
 NEWS_DB = Path(r"C:\aios\news_collector\news.db")
