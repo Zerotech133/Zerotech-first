@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 19:33",
+ "generated": "2026-10-30 19:34",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 29,
+  "workorders_doing": 30,
   "workorders_review": 9
  },
  "workorders": [
@@ -338,21 +338,30 @@
    "project": "quant"
   },
   {
-   "id": "WO-ZHAOYUN-UIUX-B1FIX-20261030",
-   "desc": "走查修复：页面级失败banner加重试+JSON错误文案",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-ZHAOYUN-UIUX-B1FIX-20261030",
-   "created": "2026-10-30 19:30:45",
-   "project": "general"
-  },
-  {
    "id": "WO-LEGION-W1AUTH-20261030",
    "desc": "W1-1 IDE认证边界修复",
    "status": "doing",
    "owner": "ZHAOYUN",
    "branch": "task/WO-LEGION-W1AUTH-20261030",
    "created": "2026-10-30 19:31:11",
+   "project": "general"
+  },
+  {
+   "id": "K-ORG-20261030-JEVEVAL",
+   "desc": "P0：JEV-Eval 评测门（校准/预筛误杀/JEV schema/OOS 集/账本一致性，离线+CI 可用）",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-ORG-20261030-JEVEVAL",
+   "created": "2026-10-30 19:34:08",
+   "project": "general"
+  },
+  {
+   "id": "WO-GUANYU-P86-20261030",
+   "desc": "清理与债务台账",
+   "status": "doing",
+   "owner": "GUANYU",
+   "branch": "task/WO-GUANYU-P86-20261030",
+   "created": "2026-10-30 19:34:39",
    "project": "general"
   }
  ],
@@ -6650,7 +6659,14 @@
    ],
    "experience": "30 年工程治理经验：漏洞分级与补丁流程、失败测试基线修复、编码规范与门禁落地、技术债清欠与重复功能合并；证据驱动、逐项闭环，只出报告与工单不自行合并，开发动作限独立 worktree 提交+跑测试并交 L2 人签。",
    "dept_name": "研究院",
-   "dept_cn_title": "太学"
+   "dept_cn_title": "太学",
+   "tasks": [
+    {
+     "id": "WO-GUANYU-P86-20261030",
+     "desc": "清理与债务台账",
+     "status": "doing"
+    }
+   ]
   },
   "HUANGZHONG": {
    "id": "HUANGZHONG",
@@ -7313,11 +7329,6 @@
     {
      "id": "WO-LEGION-OIDC-PATH-20261030",
      "desc": "OIDC配置路径对齐实际vault",
-     "status": "doing"
-    },
-    {
-     "id": "WO-ZHAOYUN-UIUX-B1FIX-20261030",
-     "desc": "走查修复：页面级失败banner加重试+JSON错误文案",
      "status": "doing"
     },
     {
