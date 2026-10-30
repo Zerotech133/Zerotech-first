@@ -57,3 +57,11 @@ def test_tri_readonly_panel():
     assert '历史快照' in HTML
     assert 'zero_bff' in HTML
     assert 'tri-refresh' in HTML
+
+
+def test_tri_metric_drilldowns():
+    assert 'data-tri-drill="scores"' in HTML
+    assert 'data-tri-drill="users"' in HTML
+    assert 'tri-drawer' in HTML
+    assert '/api/bff/cainiao/score-distribution' in HTML
+    assert '/data/bff_score_distribution.json' in HTML
