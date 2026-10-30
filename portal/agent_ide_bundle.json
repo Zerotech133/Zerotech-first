@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 13:01",
+ "generated": "2026-10-30 13:03",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 28,
+  "workorders_doing": 29,
   "workorders_review": 7
  },
  "workorders": [
@@ -326,6 +326,15 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-BANDIT-MEDIUM4-20261030",
    "created": "2026-10-30 13:01:12",
+   "project": "general"
+  },
+  {
+   "id": "K-ORG-20261030-BATCH1",
+   "desc": "批次1 数据正确性：posterior 导出修复/回填、T+1 口径、覆盖率与 data_through、API 计数、门控按拍板",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-ORG-20261030-BATCH1",
+   "created": "2026-10-30 13:02:30",
    "project": "general"
   }
  ],
