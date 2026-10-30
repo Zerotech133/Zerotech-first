@@ -306,6 +306,80 @@ def _count_recent(conn: Any, table: str, column: str, hours: int) -> int:
     return _select(conn, sql)
 
 
+def score_distribution(force: bool = False) -> Dict[str, Any]:
+    """菜鸟评分快照历史分布（只读，聚合到日/分桶；不含用户/交易明细）。"""
+    pw = _password()
+    if not pw:
+        return _fail("cainiao_db_password_missing", source="cainiao_mysql:thunder_model")
+    try:
+        import pymysql
+    except ImportError:
+        return _fail("pymysql_missing", source="cainiao_mysql:thunder_model")
+    try:
+        conn = pymysql.connect(
+            host=CAINIAO_HOST,
+            port=CAINIAO_PORT,
+            user=CAINIAO_USER,
+            password=pw,
+            database=CAINIAO_DB,
+            connect_timeout=4,
+            read_timeout=8,
+            charset="utf8mb4",
+            autocommit=False,
+        )
+        try:
+            with conn.cursor() as cur:
+                cur.execute("START TRANSACTION READ ONLY")
+                cur.execute(
+                    "SELECT DATE(record_time) AS d, COUNT(*) AS n, ROUND(AVG(score), 2) AS avg_score "
+                    "FROM stock_realtime_monitor_record GROUP BY DATE(record_time) ORDER BY d"
+                )
+                daily = [
+                    {
+                        "date": str(r[0]),
+                        "count": int(r[1]),
+                        "avg_score": float(r[2]) if r[2] is not None else None,
+                    }
+                    for r in cur.fetchall()
+                ]
+                cur.execute(
+                    "SELECT CASE "
+                    "WHEN score < 60 THEN '0-59' WHEN score < 70 THEN '60-69' "
+                    "WHEN score < 80 THEN '70-79' WHEN score < 90 THEN '80-89' "
+                    "ELSE '90-100' END AS bucket, COUNT(*) AS n "
+                    "FROM stock_realtime_monitor_record GROUP BY bucket ORDER BY bucket"
+                )
+                buckets = [{"range": str(r[0]), "count": int(r[1])} for r in cur.fetchall()]
+                cur.execute("SELECT MAX(record_time) FROM stock_realtime_monitor_record")
+                latest = cur.fetchone()[0]
+                cur.execute("SELECT COUNT(*) FROM stock_recommend")
+                recommend_total = int(cur.fetchone()[0] or 0)
+                cur.execute("SELECT MAX(create_time) FROM stock_recommend")
+                recommend_latest = cur.fetchone()[0]
+                conn.rollback()
+        finally:
+            conn.close()
+    except Exception as exc:
+        return _fail("cainiao_db_error:%s" % type(exc).__name__, source="cainiao_mysql:thunder_model")
+
+    return {
+        "ok": True,
+        "mode": "read_only",
+        "source": "cainiao_mysql:thunder_model",
+        "kind": "score_distribution",
+        "as_of": _now(),
+        "latest_business_at": latest.isoformat(sep=" ") if hasattr(latest, "isoformat") else None,
+        "stale": True,
+        "note": "历史快照；非实时。仅统计评分快照，不含交易指令。",
+        "daily": daily,
+        "buckets": buckets,
+        "recommendations": {
+            "total": recommend_total,
+            "latest_at": recommend_latest.isoformat(sep=" ") if hasattr(recommend_latest, "isoformat") else None,
+        },
+    }
+
+
 def zhice_health() -> Dict[str, Any]:
     ok, data = _http_json(ZHICE_BASE + "/api/v1/health")
     if not ok:
@@ -366,6 +440,9 @@ def handle_get(handler: Any, path: str, query: str = "") -> None:
         return
     if path == "/api/bff/zhice/health":
         handler._json(zhice_health())
+        return
+    if path == "/api/bff/cainiao/score-distribution":
+        handler._json(score_distribution())
         return
     if path == "/api/bff/contracts":
         handler._json(contracts())

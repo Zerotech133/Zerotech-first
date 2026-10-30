@@ -106,3 +106,20 @@ def test_cainiao_live_stats_if_available():
     assert payload["users"]["system_users"] >= 0
     assert payload["score_snapshots"]["monitor_snapshots"] >= 0
     assert payload["instructions"]["member_instructions"] >= 0
+
+
+def test_score_distribution_artifact():
+    data = json.loads((ROOT / "portal" / "data" / "bff_score_distribution.json").read_text(encoding="utf-8"))
+    assert data["ok"] is True and data["mode"] == "read_only"
+    assert len(data["daily"]) > 0 and len(data["buckets"]) == 5
+    assert data["stale"] is True
+    assert data["latest_business_at"].startswith("2026-")
+
+
+def test_score_distribution_live_if_available():
+    payload = bff.score_distribution()
+    if not payload.get("ok"):
+        pytest.skip("cainiao mysql unavailable")
+    assert payload["kind"] == "score_distribution"
+    assert len(payload["daily"]) > 0
+    assert sum(b["count"] for b in payload["buckets"]) > 0
