@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 28,
+  "workorders_doing": 27,
   "workorders_review": 9
  },
  "workorders": [
@@ -335,15 +335,6 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-LEGION-W1T1B-20261030",
    "created": "2026-10-30 20:11:59",
-   "project": "general"
-  },
-  {
-   "id": "K-ORG-20261030-JEVHERMES",
-   "desc": "JEV×Hermes 能力增强：MCP 新增 jev_digest/jev_risk 一站式摘要工具（风险事件+校准+数据质量）",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-ORG-20261030-JEVHERMES",
-   "created": "2026-10-30 20:18:26",
    "project": "general"
   }
  ],
