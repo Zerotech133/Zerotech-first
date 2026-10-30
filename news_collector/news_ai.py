@@ -337,11 +337,18 @@ def _validate_jev(d):
     if bias not in _BIAS_CN:
         raise ValueError("bias=%r 不在枚举内" % (bias,))
     conf = d.get("conf")
-    if not isinstance(conf, (int, float)):
+    # 2026-10-30 JEVSAFE：bool 是 int 子类（True→1.0）、NaN/Inf 也能通过
+    # isinstance(float) 且 NaN<0.7 恒 False 被下游当高置信——统一拒绝。
+    if isinstance(conf, bool) or not isinstance(conf, (int, float)):
         raise ValueError("conf=%r 非数字" % (conf,))
+    if not math.isfinite(float(conf)):
+        raise ValueError("conf=%r 非有限数" % (conf,))
     d["conf"] = round(min(max(float(conf), 0.0), 1.0), 2)
-    et = d.get("event_type") or "other"
-    if str(et).strip().lower() not in _EVENT_TYPES:
+    # 2026-10-30 JE VSAFE：原实现只用 lower 做"校验"，写回仍是原始大小写，
+    # 下游 _EVENT_CN[event_type] 会 KeyError（如 EARNINGS）→ 整轮 backfill 崩溃。
+    # 现统一写回归一化后的小写枚举值。
+    et = str(d.get("event_type") or "other").strip().lower()
+    if et not in _EVENT_TYPES:
         et = "other"  # 可修复：缺省/非法类别降级 other，不阻断判定
     d["event_type"] = et
     impact = str(d.get("impact") or "low").strip().lower()
@@ -382,10 +389,14 @@ def _resample_consistency(ask_fn, first_bias, k=3):
                 votes.append(b2)
     cnt = Counter(votes)
     maj, n = cnt.most_common(1)[0]
-    if n == len(votes) and len(cnt) == 1:
-        return maj, _JEV_AGREE_CONF[3]  # 全一致 → 高可信
+    # 2026-10-30 JE VSAFE：重采样全部失败时 votes 只有首票，旧逻辑把 len(votes)==1
+    # 当成"全一致"返回 0.8 → 超时季把低置信伪装成高置信（10-30 日志 685 次升至 0.8）。
+    if len(votes) < 2:
+        return maj, 0.5  # 无法验证一致性：保留首票方向但按中低置信记
+    if len(votes) >= 3 and len(cnt) == 1:
+        return maj, _JEV_AGREE_CONF[3]  # 3 票全一致 → 高可信
     if n >= 2:
-        return maj, _JEV_AGREE_CONF[2]  # 2:1 多数 → 中可信
+        return maj, _JEV_AGREE_CONF[2]  # 多数（2 票一致或 2:1）→ 中可信
     return "neutral", 0.3  # 全分散 → 中性低置信
 
 
@@ -728,6 +739,9 @@ def _jev_stats(db, hours=24):
     bias_cnt, scope_cnt, event_cnt = {}, {}, {}
     low_conf, hi_dir, net = 0, 0, 0.0
     now = now_cst()
+    # 2026-10-30 JEVSAFE：now_cst() 带 tzinfo，而 created_at 是本地墙上时间；
+    # tz-aware 与 naive 相减必抛 TypeError（被 except 吞掉→age 恒 0，时衰彻底失效）。
+    now_naive = now.replace(tzinfo=None)
     for j, _ca in rows:
         try:
             d = json.loads(j)
@@ -746,20 +760,21 @@ def _jev_stats(db, hours=24):
                 low_conf += 1
                 continue  # 低置信不参与净倾向
             if d.get("bias") in ("bull", "bear"):
+                # 2026-10-30 JEVSAFE：原实现读 d.get("created_at")——JEV JSON 无此键，
+                # age 恒 0（时衰失效 + 每行 warning 刷日志）；应使用 SQL 取出的
+                # news.created_at（_ca），缺失/坏值按 0 龄处理但不刷 warning。
                 age_h = 0.0
                 try:
                     age_h = max(
                         0.0,
                         (
-                            now
-                            - datetime.strptime(
-                                str(d.get("created_at") or "")[:16], "%Y-%m-%d %H:%M"
-                            )
+                            now_naive
+                            - datetime.strptime(str(_ca or "")[:16], "%Y-%m-%d %H:%M")
                         ).total_seconds()
                         / 3600.0,
                     )
-                except Exception as exc:
-                    logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/news_ai.py", exc)
+                except (TypeError, ValueError):
+                    age_h = 0.0
                 net += math.exp(
                     -math.log(2) * age_h / _JEV_HL_H.get(d.get("bias"), 6.0)
                 ) * (1.0 if d.get("bias") == "bull" else -1.0)
