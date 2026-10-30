@@ -35,3 +35,23 @@ def test_apply_missing_file_keeps_off(tmp_path, monkeypatch):
     out = auth_oidc_runtime.apply()
     assert out["applied"] is False
     assert auth_oidc.MODE == "off"
+
+
+def test_removing_runtime_file_forces_off(tmp_path, monkeypatch):
+    f = tmp_path / "oidc_runtime.env"
+    f.write_text(
+        "AUTH_OIDC_MODE=on\n"
+        "OIDC_CLIENT_ID=cid\n"
+        "OIDC_CLIENT_SECRET=csec\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(auth_oidc_runtime, "RUNTIME_FILE", f)
+    auth_oidc_runtime.apply()
+    assert auth_oidc.MODE == "on"
+    monkeypatch.setattr(auth_oidc_runtime, "RUNTIME_FILE", tmp_path / "missing.env")
+    out = auth_oidc_runtime.apply()
+    assert out["applied"] is False
+    assert auth_oidc.MODE == "off"
+    assert auth_oidc.CLIENT_ID == ""
+    assert auth_oidc.CLIENT_SECRET == ""
+

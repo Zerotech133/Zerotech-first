@@ -194,13 +194,22 @@ def _rate_limited(ip: str, username: str) -> bool:
     now = time.time()
     with _lock:
         arr = [t for t in _login_fails.get(key, []) if now - t < LOGIN_WINDOW_SECONDS]
-        _login_fails[key] = arr
+        if arr:
+            _login_fails[key] = arr
         return len(arr) >= MAX_LOGIN_FAILS
 
 
 def _record_fail(ip: str, username: str) -> None:
     key = "%s:%s" % (ip, username.lower())
     with _lock:
+        if len(_login_fails) > 5000:
+            # 有界：清过期 key，仍超限则丢最旧 key
+            stale = [k for k, arr in _login_fails.items()
+                     if not any(time.time() - t < LOGIN_WINDOW_SECONDS for t in arr)]
+            for k in stale:
+                _login_fails.pop(k, None)
+            while len(_login_fails) > 5000:
+                _login_fails.pop(next(iter(_login_fails)), None)
         _login_fails.setdefault(key, []).append(time.time())
 
 
@@ -249,6 +258,9 @@ def login(handler) -> None:
         return
     username = str(body.get("username") or "").strip()
     password = str(body.get("password") or "")
+    if len(username) > 128 or len(password) > 4096:
+        _json_safe(handler, {"ok": False, "error": "invalid_credentials"}, 400)
+        return
     if not username or not password:
         _json_safe(handler, {"ok": False, "error": "missing_credentials"}, 400)
         return
@@ -258,15 +270,19 @@ def login(handler) -> None:
         return
     try:
         ident = _zhice_login(username, password)
+    except ValueError:
+        _record_fail(ip, username)
+        _json_safe(handler, {"ok": False, "error": "invalid_credentials"}, 401)
+        return
+    try:
         import identity_registry as reg
         ctx = reg.resolve_source("zhice", ident["user_id"])
-        if ctx is None:
-            _record_fail(ip, username)
-            _json_safe(handler, {"ok": False, "error": "identity_not_mapped"}, 403)
-            return
-    except ValueError as exc:
+    except (OSError, ValueError, TypeError, KeyError):
+        _json_safe(handler, {"ok": False, "error": "identity_registry_unavailable"}, 503)
+        return
+    if ctx is None:
         _record_fail(ip, username)
-        _json_safe(handler, {"ok": False, "error": str(exc)}, 401)
+        _json_safe(handler, {"ok": False, "error": "identity_not_mapped"}, 403)
         return
     _clear_fails(ip, username)
     sid = STORE.create(ctx["sub"], ctx, ident["token"])

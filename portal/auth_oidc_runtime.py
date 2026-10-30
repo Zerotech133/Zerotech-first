@@ -30,10 +30,15 @@ def apply() -> dict:
             k, v = line.split("=", 1)
             vals[k.strip()] = v.strip()
     except OSError:
-        return {"applied": False, "reason": "runtime_file_missing"}
+        # 运行时文件被删除/移走 = 紧急关闸，不能继续用旧凭据
+        auth_oidc.MODE = "off"
+        auth_oidc.CLIENT_ID = ""
+        auth_oidc.CLIENT_SECRET = ""
+        return {"applied": False, "reason": "runtime_file_missing", "mode": "off"}
 
-    if vals.get("AUTH_OIDC_MODE"):
-        auth_oidc.MODE = vals["AUTH_OIDC_MODE"].lower()
+    mode = vals.get("AUTH_OIDC_MODE", "").strip().lower()
+    if mode:
+        auth_oidc.MODE = mode if mode in ("off", "shadow", "on") else "off"
     if vals.get("OIDC_ISSUER"):
         auth_oidc.ISSUER = vals["OIDC_ISSUER"].rstrip("/")
     if vals.get("OIDC_CLIENT_ID"):

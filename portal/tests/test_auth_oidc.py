@@ -109,10 +109,15 @@ def test_start_pkce_state(subject):
     loc = h.location()
     assert "code_challenge=" in loc and "code_challenge_method=S256" in loc
     assert "state=" in loc and "nonce=" in loc
-    state = auth_oidc._states.popitem()[0]
-    assert auth_oidc._states == {}
-    # 把 state 补回，供后续断言
-    auth_oidc._states[state] = {"nonce": "n", "verifier": "v", "next": "/os-board", "created": time.time(), "issuer": "https://idp.test"}
+    assert auth_oidc._states
+    assert _binding_cookie(h)
+
+
+def _binding_cookie(h):
+    for k, v in h.out:
+        if k == "set-cookie" and v.startswith("zb_oidc_state="):
+            return v.split(";")[0]
+    return ""
 
 
 def _issue(private, nonce, sub="u-oidc"):
@@ -142,6 +147,7 @@ def test_callback_creates_session(subject):
     subject.setattr(identity_registry, "resolve_oidc", lambda issuer, sub: ctx)
 
     cb = _H("/api/auth/oidc/callback?code=abc&state=" + state)
+    cb.headers["Cookie"] = _binding_cookie(h)
     auth_oidc.callback(cb, "code=abc&state=" + state)
     assert cb.status == 302
     assert cb.location() == "/os-board"
@@ -165,6 +171,7 @@ def test_callback_rejects_bad_nonce(subject):
     subject.setattr(auth_oidc, "_get_jwks", lambda disc: [jwk])
     subject.setattr(auth_oidc, "_post_form", lambda url, form: (200, {"id_token": token}))
     cb = _H("/api/auth/oidc/callback?code=abc&state=" + state)
+    cb.headers["Cookie"] = _binding_cookie(h)
     auth_oidc.callback(cb, "code=abc&state=" + state)
     assert cb.status == 401
     assert "nonce" in cb.wfile.getvalue().decode() or "invalid" in cb.wfile.getvalue().decode()
@@ -182,9 +189,21 @@ def test_callback_unmapped(subject):
     subject.setattr(auth_oidc, "_post_form", lambda url, form: (200, {"id_token": token}))
     subject.setattr(identity_registry, "resolve_oidc", lambda issuer, sub: None)
     cb = _H("/api/auth/oidc/callback?code=abc&state=" + state)
+    cb.headers["Cookie"] = _binding_cookie(h)
     auth_oidc.callback(cb, "code=abc&state=" + state)
     assert cb.status == 403
     assert b"identity_not_mapped" in cb.wfile.getvalue()
+
+
+def test_callback_requires_state_binding_cookie(subject):
+    h = _H()
+    subject.setattr(auth_oidc, "_discovery", lambda: _disc())
+    auth_oidc.start(h)
+    state = next(iter(auth_oidc._states))
+    cb = _H("/api/auth/oidc/callback?code=abc&state=" + state)
+    auth_oidc.callback(cb, "code=abc&state=" + state)
+    assert cb.status == 400
+    assert b"oidc_state_binding_invalid" in cb.wfile.getvalue()
 
 
 def test_safe_next_rejects_open_redirect_and_headers():
