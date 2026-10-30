@@ -36,7 +36,7 @@ DOSSIER_RE = re.compile(r"^(\d{4}-\d{2}-\d{2})_.+_v\d+\.(md|json|html|png)$")
 
 def _read_json(path: Path):
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        return json.loads(path.read_text(encoding="utf-8-sig"))
     except (OSError, ValueError):
         return None
 
@@ -169,9 +169,9 @@ def collect() -> dict:
     status = _read_json(Path(r"C:\Temp\security_audit_status.json")) or {}
     bandit = None
     if status:
-        bandit = {"HIGH": status.get("bandit_high", 0),
-                  "MEDIUM": status.get("bandit_medium", 0),
-                  "LOW": status.get("bandit_low", 0)}
+        bandit = {"HIGH": int(status.get("bandit_high") or 0),
+                  "MEDIUM": int(status.get("bandit_medium") or 0),
+                  "LOW": int(status.get("bandit_low") or 0)}
     else:
         bpath = Path(r"C:\Temp\bandit_latest.json")
         if bpath.exists():
@@ -193,12 +193,17 @@ def collect() -> dict:
     gate_logs = sorted(glob.glob(r"C:\Temp\test_gate_*_*.log") + glob.glob(r"C:\Temp\audit_gate_*.log") + glob.glob(r"C:\Temp\gate_after_*.log"),
                        key=lambda p: Path(p).stat().st_mtime, reverse=True)
     gate = "未知"
-    if gate_logs:
+    for lp in gate_logs:
         try:
-            txt = Path(gate_logs[0]).read_text(encoding="utf-8", errors="replace")
-            gate = "PASS" if "GATE PASS" in txt else ("FAIL" if "GATE FAIL" in txt else "未知")
+            txt = Path(lp).read_text(encoding="utf-8", errors="replace")
         except OSError:
-            pass
+            continue
+        if "GATE PASS" in txt:
+            gate = "PASS"
+            break
+        if "GATE FAIL" in txt:
+            gate = "FAIL"
+            break
     data["gate"] = gate
 
     data["deadlines"] = deadline_status((_read_json(DEADLINES) or {}).get("items") or [], now)
