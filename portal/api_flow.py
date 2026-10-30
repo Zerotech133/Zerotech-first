@@ -38,6 +38,26 @@ NEWS_DB_CAND = [
     os.path.join(os.path.dirname(STATION), "news_collector", "news.db"),
 ]
 WORK = os.path.join(ROOT, "work")
+
+
+def _zhice_pg_password() -> str:
+    """PG 凭据回落链：env → zhice 活部署 .env.local V2_DB_PASSWORD → 旧默认（仅兜底）。
+
+    2026-10-30 R5：V2 口令轮换后未注入 env 的消费方会认证失败（gate_seen 块
+    静默降级为 None）；补文件回落链防漂移（下次 8091 重启生效）。
+    """
+    pw = os.environ.get("ZHICE_PG_PASSWORD", "").strip()
+    if pw:
+        return pw
+    try:
+        with open(r"C:\项目\zhice-os-v2-windows-20260920\code\.env.local", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith("V2_DB_PASSWORD=") and not line.startswith("#"):
+                    return line.split("=", 1)[1].strip()
+    except OSError:
+        pass
+    return "zhice_pass"
 PUSH_FLOW = os.path.join(WORK, "push_flow.jsonl")
 TUNE_REQ = os.path.join(WORK, "tune_requests.jsonl")
 
@@ -476,7 +496,7 @@ def _jev_health():
         con = psycopg2.connect(
             host="127.0.0.1", port=int(os.environ.get("ZHICE_PG_PORT", "5446")),
             user=os.environ.get("ZHICE_PG_USER", "zhice"),
-            password=os.environ.get("ZHICE_PG_PASSWORD", "zhice_pass"),
+            password=_zhice_pg_password(),
             dbname=os.environ.get("ZHICE_PG_DB", "zhice_os_v2"),
             connect_timeout=3)
         cur = con.cursor()

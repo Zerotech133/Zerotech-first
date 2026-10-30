@@ -282,13 +282,33 @@ def start_metrics(port: int) -> bool:
 
 
 # ── DB 直连（P1-7）：psycopg2 参数化，降级 docker exec psql ──
+def _zhice_pg_password() -> str:
+    """凭据回落链：env → zhice 活部署 .env.local 的 V2_DB_PASSWORD → 旧默认（仅兜底）。
+
+    2026-10-30 R5：V2 口令轮换后 env 未注入时旧默认 zhice_pass 会认证失败，
+    直连被静默降级 docker psql（功能可用但持续 WARN）；补文件回落链消噪并防漂移。
+    """
+    pw = os.environ.get("ZHICE_PG_PASSWORD", "").strip()
+    if pw:
+        return pw
+    try:
+        with open(r"C:\项目\zhice-os-v2-windows-20260920\code\.env.local", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith("V2_DB_PASSWORD=") and not line.startswith("#"):
+                    return line.split("=", 1)[1].strip()
+    except OSError:
+        pass
+    return "zhice_pass"
+
+
 DB_DSN = {
     "host": os.environ.get("ZHICE_PG_HOST", "127.0.0.1"),
     # 2026-10-16 换机：zhice-db 宿主端口 5446（5432 被 infinity 容器占用，
     # 误连报语法错）；env 仍可覆盖
     "port": int(os.environ.get("ZHICE_PG_PORT", "5446")),
     "user": os.environ.get("ZHICE_PG_USER", "zhice"),
-    "password": os.environ.get("ZHICE_PG_PASSWORD", "zhice_pass"),
+    "password": _zhice_pg_password(),
     "dbname": os.environ.get("ZHICE_PG_DB", "zhice_os_v2"),
 }
 PG_CONTAINER = os.environ.get("ZHICE_PG_CONTAINER", "zhice-db")
