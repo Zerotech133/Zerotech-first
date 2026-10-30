@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 19:17",
+ "generated": "2026-10-30 19:18",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -338,21 +338,21 @@
    "project": "general"
   },
   {
-   "id": "K-STOCK-ANALYSIS-P2-6-20261030",
-   "desc": "P2.6 生产化加固：分析任务持久化(SQLite，重启不丢)+多实例限流(SQLite滑窗可选后端)+测试",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-STOCK-ANALYSIS-P2-6-20261030",
-   "created": "2026-10-30 19:13:21",
-   "project": "quant"
-  },
-  {
    "id": "WO-GUANYU-P84-20261030",
    "desc": "ruff零告警清理",
    "status": "doing",
    "owner": "GUANYU",
    "branch": "task/WO-GUANYU-P84-20261030",
    "created": "2026-10-30 19:14:33",
+   "project": "general"
+  },
+  {
+   "id": "WO-LEGION-HERMES-FORK-AUDIT-20261030",
+   "desc": "Hermes二开合理性评估",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-HERMES-FORK-AUDIT-20261030",
+   "created": "2026-10-30 19:18:34",
    "project": "general"
   }
  ],
@@ -7325,6 +7325,11 @@
     {
      "id": "WO-ZHAOYUN-UIUX-B1-20261030",
      "desc": "W2-B1：zhaoyun.html banner升级+token失败处理+下钻四卡错误态",
+     "status": "doing"
+    },
+    {
+     "id": "WO-LEGION-HERMES-FORK-AUDIT-20261030",
+     "desc": "Hermes二开合理性评估",
      "status": "doing"
     }
    ]
