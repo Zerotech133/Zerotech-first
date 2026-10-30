@@ -6,6 +6,7 @@ $py = 'C:\Program Files\Python311\python.exe'
 $out = Join-Path $root 'logs\xueqiu_classify.out'
 $err = Join-Path $root 'logs\xueqiu_classify.err'
 $log = Join-Path $root 'logs\xueqiu_classify_status.log'
+$env:XQ_OLLAMA_LOCK_WAIT_S='600'
 New-Item -ItemType Directory -Path (Split-Path $log -Parent) -Force | Out-Null
 Add-Content -Path $log -Value ("starting " + (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')) -Encoding ascii
 & $py -X utf8 (Join-Path $root 'xq_classify.py') --limit 500 --order asc 1> $out 2> $err
