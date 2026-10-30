@@ -16,8 +16,12 @@ if (Test-Path $freeze) {
     & $py311 -m pip_audit -r $freeze *>> $log
     $r1 = $LASTEXITCODE
 }
-& $py312 -m bandit -r 'C:\aios\agent_platform' 'C:\aios\portal' 'C:\aios\tools' -f json -o 'C:\Temp\bandit_latest.json' *>> $log
+Push-Location 'C:\aios'
+& $py312 -m bandit -r agent_platform portal tools quant_backtest k_stock news_collector `
+    -x '.venv,venv,node_modules,worktrees,archive,__pycache__,tests,test_' `
+    -b 'tools/bandit_baseline.json' -f json -o 'C:\Temp\bandit_latest.json' *>> $log
 $r2 = $LASTEXITCODE
+Pop-Location
 @{
     ts = $ts
     pip_audit_rc = $r1
