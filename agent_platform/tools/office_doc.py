@@ -107,7 +107,7 @@ def read_docx(path, max_paragraphs: int = 1000) -> dict:
     except (OSError, KeyError, zipfile.BadZipFile) as e:
         return {"ok": False, "error": "%s: %s" % (type(e).__name__, str(e)[:160])}
     try:
-        root = ET.fromstring(xml)
+        root = ET.fromstring(xml)  # nosec B314 - ElementTree 不解析外部实体（无网络/DTD 展开）
     except ET.ParseError as e:
         return {"ok": False, "error": "xml_parse: %s" % str(e)[:120]}
     paras = []

@@ -221,7 +221,7 @@ def parse_task_xml(text: str) -> dict:
 
     解析失败抛 ValueError（调用方转 WARN）。
     """
-    root = ET.fromstring(text)
+    root = ET.fromstring(text)  # nosec B314 - 仅解析本仓生成的任务链 XML
     info = {
         "startboundary": None,
         "hhmm": None,
