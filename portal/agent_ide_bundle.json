@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 15:52",
+ "generated": "2026-10-30 15:54",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 28,
+  "workorders_doing": 27,
   "workorders_review": 6
  },
  "workorders": [
@@ -308,15 +308,6 @@
    "owner": "DSH-Lead",
    "branch": "task/K-ORG-20261030-PREFILTEREVAL",
    "created": "2026-10-30 15:50:24",
-   "project": "general"
-  },
-  {
-   "id": "WO-LEGION-M2-REVIEW-PREP-20261030",
-   "desc": "M2/memory 11-03 复盘准备包",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-M2-REVIEW-PREP-20261030",
-   "created": "2026-10-30 15:52:15",
    "project": "general"
   }
  ],
@@ -7045,14 +7036,7 @@
    ],
    "entry_source": "virtual_governance",
    "seat_note": "profile 角色，不占编（D5-C）；与 R2 风控席（org 编制·保守风控哨）是不同 id，报表按 id 区分。",
-   "home_page": "http://127.0.0.1:8796/zhaoyun",
-   "tasks": [
-    {
-     "id": "WO-LEGION-M2-REVIEW-PREP-20261030",
-     "desc": "M2/memory 11-03 复盘准备包",
-     "status": "doing"
-    }
-   ]
+   "home_page": "http://127.0.0.1:8796/zhaoyun"
   }
  }
 }
