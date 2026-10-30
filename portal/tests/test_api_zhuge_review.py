@@ -55,6 +55,7 @@ def test_post_202_with_anonymous_test_flag(monkeypatch):
 
 def test_get_status(monkeypatch):
     monkeypatch.setenv(z.FEATURE_ENV, "1")
+    monkeypatch.setenv("ZHUGE_IDE_REVIEW_ALLOW_ANONYMOUS", "1")
     monkeypatch.setattr(api.zhuge_review, "status",
                         lambda: {"enabled": True, "model": "m"})
     h = H()
