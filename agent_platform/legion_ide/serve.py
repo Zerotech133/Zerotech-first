@@ -21,6 +21,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import subprocess
 import sys
 import time
 import urllib.error
@@ -262,6 +263,55 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                 if denied:
                     return self._json(403, denied)
                 return self._json(200, {"ok": True, "items": G.list_scope(repo)})
+            if path == "/api/ide/tree":
+                denied = self._rw_denied()
+                if denied:
+                    return self._json(403, denied)
+                qs = parse_qs(parsed.query)
+                task = (qs.get("task") or [""])[0].strip()
+                rel = (qs.get("path") or ["."])[0].strip() or "."
+                wt, error = G.resolve_worktree(repo, task)
+                if error:
+                    return self._json(400, error)
+                if rel in ("", ".", "/"):
+                    base = wt
+                    names = list(G.ALLOWED_TOP)
+                    items = []
+                    for name in names:
+                        d = (wt / name)
+                        if d.is_dir():
+                            items.append({"name": name, "path": name, "type": "dir"})
+                    return self._json(200, {"ok": True, "path": ".", "items": items})
+                rel = rel.replace("\\", "/").strip("/")
+                if not rel or ".." in rel.split("/"):
+                    return self._json(400, G.err("bad_path", "非法目录路径"))
+                target = (wt / rel).resolve()
+                wt_resolved = wt.resolve()
+                if not target.is_relative_to(wt_resolved):
+                    return self._json(400, G.err("escape", "路径越出 worktree"))
+                parts = target.relative_to(wt_resolved).parts
+                if not parts or parts[0] not in G.ALLOWED_TOP:
+                    return self._json(400, G.err("scope_denied", "只允许受控目录"))
+                if any(p.lower() in G.BLOCKED_PARTS for p in parts):
+                    return self._json(400, G.err("blocked_path", "路径含禁止目录"))
+                if not target.is_dir():
+                    return self._json(400, G.err("not_dir", "不是目录：%s" % rel))
+                items = []
+                for entry in sorted(target.iterdir(), key=lambda p: (not p.is_dir(), p.name.lower())):
+                    if entry.name in G.BLOCKED_PARTS or entry.name.startswith("."):
+                        continue
+                    if len(items) >= 500:
+                        break
+                    try:
+                        r = entry.relative_to(wt).as_posix()
+                    except ValueError:
+                        continue
+                    items.append({
+                        "name": entry.name, "path": r,
+                        "type": "dir" if entry.is_dir() else "file",
+                        "size": entry.stat().st_size if entry.is_file() else 0,
+                    })
+                return self._json(200, {"ok": True, "path": rel, "items": items})
             if path == "/api/ide/audit":
                 denied = self._rw_denied()
                 if denied:
@@ -314,6 +364,7 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                 "/api/ide/write/confirm",
                 "/api/ide/exec",
                 "/api/ide/lock",
+                "/api/ide/git",
             ):
                 return self._json(
                     404, {"ok": False, "error": "not_found", "path": path}
@@ -351,6 +402,46 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
             locked = self._lock_required(wt, owner)
             if locked:
                 return self._json(409, locked)
+            if path == "/api/ide/git":
+                action = str(data.get("action") or "diff").strip().lower()
+                rel = str(data.get("path") or "").strip()
+                if action in ("add", "commit") and not rel:
+                    return self._json(400, G.err("path_required", "需要文件路径"))
+                if rel:
+                    _target, perr = G.safe_path(wt, rel)
+                    if perr:
+                        return self._json(400, perr)
+                if action == "diff":
+                    args = ["diff", "--cached", "--"] + ([rel] if rel else [])
+                elif action == "add":
+                    args = ["add", "--", rel]
+                elif action == "commit":
+                    message = str(data.get("message") or "").strip()[:500]
+                    if not message:
+                        return self._json(400, G.err("message_required", "需要提交说明"))
+                    args = ["commit", "-m", message, "--", rel]
+                else:
+                    return self._json(400, G.err("bad_action", "仅 diff/add/commit"))
+                env = dict(os.environ)
+                env.update({"GIT_PAGER": "cat", "GIT_TERMINAL_PROMPT": "0"})
+                try:
+                    proc = subprocess.run(
+                        ["git", "-C", str(wt), *args],
+                        capture_output=True, text=True, encoding="utf-8",
+                        errors="replace", timeout=60, env=env,
+                    )
+                    out = ((proc.stdout or "") + (proc.stderr or ""))[:256 * 1024]
+                    ok = proc.returncode == 0
+                except (OSError, subprocess.TimeoutExpired) as exc:
+                    return self._json(500, G.err("git_failed", str(exc)[:200]))
+                G.audit(
+                    repo, "code_action", data.get("task"), owner,
+                    "git %s %s -> %s" % (action, rel, "ok" if ok else "fail"),
+                )
+                return self._json(200, {
+                    "ok": bool(ok), "action": action, "path": rel,
+                    "exit_code": proc.returncode, "output": out,
+                })
             if path == "/api/ide/write":
                 return self._json(400, G.err(
                     "write_requires_preview",

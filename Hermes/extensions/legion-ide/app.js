@@ -1,4 +1,4 @@
-﻿/* 军团 IDE · Hermes 扩展 panel（方式 A 原型） */
+/* 军团 IDE · Hermes 扩展 panel（方式 A 原型） */
 (function () {
   if (window.__legionIdeExtensionLoaded) return;
   window.__legionIdeExtensionLoaded = true;
@@ -215,6 +215,59 @@
     }
   }
 
+  async function ldeTree(path) {
+    const box = $("#lde-tree");
+    const cwd = $("#lde-tree-cwd");
+    if (!box) return;
+    const p = String(path || ".").trim() || ".";
+    try {
+      const sel = $("#lde-task");
+      const q = new URLSearchParams({ task: sel ? sel.value : "", path: p });
+      const d = await ldeApi("/api/ide/tree?" + q.toString());
+      if (cwd) cwd.textContent = p;
+      box.innerHTML = "";
+      const items = d.items || [];
+      items.forEach((it) => {
+        const b = el("button", "lde-file " + (it.type === "dir" ? "dir" : "file"),
+          (it.type === "dir" ? "📁 " : "📄 ") + it.name);
+        b.title = it.path;
+        b.addEventListener("click", () => {
+          if (it.type === "dir") { ldeTree(it.path); return; }
+          $("#lde-path").value = it.path;
+          ldeRead();
+        });
+        box.appendChild(b);
+      });
+      if (!items.length) box.textContent = "（空目录）";
+    } catch (e) {
+      box.textContent = "文件树不可用：" + e.message;
+    }
+  }
+
+  async function ldeGit(action) {
+    const p = $("#lde-path");
+    const out = $("#lde-diff");
+    if (!p) return;
+    const path = p.value.trim();
+    if (!path) { ldeStatus("先选择/填写文件路径", "warn"); return; }
+    let message = "";
+    if (action === "commit") {
+      message = window.prompt("提交说明：", "LDE: " + path);
+      if (!message) return;
+    }
+    try {
+      const d = await ldeApi("/api/ide/git", {
+        method: "POST",
+        body: JSON.stringify(ldeBody({ action, path, message })),
+      });
+      if (out) out.textContent = d.output || "（无输出）";
+      ldeStatus("git " + action + " " + path + " · exit=" + d.exit_code, d.ok ? "ok" : "bad");
+      if (action === "commit") ldeTree($("#lde-tree-cwd")?.textContent || ".");
+    } catch (e) {
+      ldeStatus("git " + action + " 失败：" + e.message, "bad");
+    }
+  }
+
   function ldeBody(extra) {
     const sel = $("#lde-task");
     return Object.assign({ task: sel ? sel.value : "", owner: LDE_OWNER }, extra || {});
@@ -339,6 +392,12 @@
               <input id="lde-path" placeholder="文件相对路径，例如 agent_platform/foo.py">
               <button id="lde-read">读取</button>
             </div>
+            <div class="lde-tree-bar">
+              <span>文件树</span>
+              <button id="lde-tree-root">根目录</button>
+              <span id="lde-tree-cwd">.</span>
+            </div>
+            <div id="lde-tree" class="lde-tree"></div>
             <textarea id="lde-content" spellcheck="false" placeholder="文件内容（UTF-8）"></textarea>
             <div class="lde-actions">
               <button id="lde-preview" class="primary">预览变更</button>
@@ -347,6 +406,11 @@
             </div>
             <div class="lde-label">diff</div>
             <pre id="lde-diff">—</pre>
+            <div class="lde-actions">
+              <button id="lde-git-diff">文件 diff</button>
+              <button id="lde-git-add">git add</button>
+              <button id="lde-git-commit">commit</button>
+            </div>
           </div>
           <div class="lde-right">
             <div class="lde-label">白名单执行</div>
@@ -381,6 +445,7 @@
       // 先访问 /rw 种 ide_session cookie，再调受保护 API
       await fetch(LDE_BASE + "/rw", { credentials: "include" });
       await ldeScope();
+      await ldeTree(".");
       ldeStatus("就绪", "ok");
     } catch (e) {
       ldeStatus("LDE 不可用：" + e.message, "bad");
@@ -403,12 +468,17 @@
     $("#lde-unlock").onclick = ldeUnlock;
     $("#lde-exec").onclick = ldeExec;
     $("#lde-audit").onclick = ldeAudit;
+    $("#lde-tree-root").onclick = () => ldeTree(".");
+    $("#lde-git-diff").onclick = () => ldeGit("diff");
+    $("#lde-git-add").onclick = () => ldeGit("add");
+    $("#lde-git-commit").onclick = () => ldeGit("commit");
     $("#lde-task").onchange = () => {
       LDE_PREVIEW = null;
       $("#lde-confirm").style.display = "none";
       $("#lde-cancel-preview").style.display = "none";
       $("#lde-preview").style.display = "";
       $("#lde-lockchip").textContent = "锁 —";
+      ldeTree(".");
     };
   }
 

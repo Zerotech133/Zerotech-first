@@ -72,9 +72,33 @@ rw_enabled=True
 
 后续可扩白名单，但不在本次 P0 放宽。
 
-## 6. 待办
+## 6. P1 增量：文件树 + 逐文件 Git
 
-1. 逐文件 Git diff / 提交
-2. 文件树（当前仍需填路径）
-3. Agent prompt/技能编辑
-4. LDE 面板 8787 直连兼容（当前主入口 8734）
+已补：
+
+- 文件树 API：`GET /api/ide/tree?task=&path=`
+  - 根目录只列受控目录
+  - 目录下钻 / 根目录返回
+  - 点文件直接加载到编辑器
+- 逐文件 Git API：`POST /api/ide/git`
+  - `diff` → diff
+  - `add` → stage 单文件
+  - `commit` → commit 单文件
+  - 全部要求工单锁 + 受控路径
+- UI：文件树、文件 diff/add/commit 按钮
+
+实测：
+
+```text
+tree root → agent_platform → legion_command
+→ ide_worktree.py 已加载 5270 字节
+→ LDE_TREE_OK.txt 写入成功
+→ git diff / add / commit 成功
+→ commit 0b013fbf / a92088dfe
+```
+
+## 7. 待办
+
+1. Agent prompt/技能面板编辑（P2）
+2. LDE 面板 8787 直连兼容（当前主入口 8734）
+3. exec 命令白名单按需扩容

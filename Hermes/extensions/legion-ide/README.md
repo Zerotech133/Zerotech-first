@@ -58,8 +58,10 @@ msedge.exe --app=http://127.0.0.1:8734/hermes/
 
 - 作用域/工单选择
 - 工单锁 acquire/release
+- 文件树：目录下钻 + 点文件加载
 - 文件读取 + 编辑
 - 预览 diff → 确认写入
+- 逐文件 git diff / add / commit
 - 白名单 exec
 - code_action / code_observation 审计
 
