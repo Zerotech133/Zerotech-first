@@ -9,7 +9,7 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 25,
+  "workorders_doing": 24,
   "workorders_review": 7
  },
  "workorders": [
@@ -290,15 +290,6 @@
    "owner": "DSH-Lead",
    "branch": "task/WO-KB-IDXFIX-20261030",
    "created": "2026-10-30 16:02:15",
-   "project": "general"
-  },
-  {
-   "id": "WO-KB-MERGEFIX-20261030",
-   "desc": "merge_full_index.py 修复 U+2028 行分隔符导致 shard 解析失败（splitlines→split(\\n)）",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-KB-MERGEFIX-20261030",
-   "created": "2026-10-30 16:18:41",
    "project": "general"
   }
  ],
