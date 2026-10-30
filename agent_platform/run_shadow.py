@@ -890,10 +890,27 @@ def _paper_auto(today):
         print("[warn] paper auto failed（shadow 不受影响）：%s" % str(exc)[:160])
 
 
+def _existing_pool(today):
+    """复用当日已构建池；缺失返回 None。"""
+    from agent_platform import recommendation_pool
+    path = os.path.join(recommendation_pool.OUT_DIR, today + ".json")
+    try:
+        pool = json.load(open(path, encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    items = pool.get("items") or []
+    pool_id = str(pool.get("pool_id") or "")
+    if items and today.replace("-", "") in pool_id:
+        return pool
+    return None
+
+
 def _pool_review_auto(today):
     """17:10 shadow 后自动做 ACAD1 推荐池全池复盘（无新增计划任务）。
 
     - 默认开；POOL_REVIEW_AUTO=0/off/false/no 关闭；
+    - **优先复用当日已构建池**：D1 已研究后不再被晚到的 picks 重建洗掉；
+      只有当日池缺失才 build_pool；
     - 只做“池构建+已有决策复盘”，不额外跑 LLM；未分析票保持 pending；
     - rehearsal/隔离跳过；失败不阻塞 shadow。
     """
@@ -909,7 +926,12 @@ def _pool_review_auto(today):
             sys.path.insert(0, root)
         from agent_platform import recommendation_pool, analysis_digest
         _pool_mod = _load_repo_tool("pool_review_daily")
-        pool = recommendation_pool.build_pool(day=today)
+        pool = _existing_pool(today)
+        if pool is None:
+            pool = recommendation_pool.build_pool(day=today)
+            print("[pool] auto %s: built new pool total=%s" % (today, len(pool.get('items') or [])))
+        else:
+            print("[pool] auto %s: reuse existing pool total=%s" % (today, len(pool.get('items') or [])))
         codes = [str(x.get("code")) for x in pool.get("items") or []]
         decisions = _pool_mod.load_decisions(today, set(codes))
         analyses = analysis_digest.latest_analyses(codes)
