@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 18:28",
+ "generated": "2026-10-30 18:29",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 28,
+  "workorders_doing": 27,
   "workorders_review": 8
  },
  "workorders": [
@@ -317,15 +317,6 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-LEGION-OIDC-PATH-20261030",
    "created": "2026-10-30 17:25:25",
-   "project": "general"
-  },
-  {
-   "id": "WO-LEGION-TRACECITE-20261030",
-   "desc": "trace归因+引用评测修正",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-TRACECITE-20261030",
-   "created": "2026-10-30 18:22:30",
    "project": "general"
   },
   {
@@ -7295,11 +7286,6 @@
     {
      "id": "WO-LEGION-OIDC-PATH-20261030",
      "desc": "OIDC配置路径对齐实际vault",
-     "status": "doing"
-    },
-    {
-     "id": "WO-LEGION-TRACECITE-20261030",
-     "desc": "trace归因+引用评测修正",
      "status": "doing"
     }
    ]
