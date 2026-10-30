@@ -38,6 +38,7 @@ if str(_PLATFORM) not in sys.path:
 from legion_ide import rw_guard as G  # noqa: E402
 from legion_ide import writer as W  # noqa: E402
 from legion_ide import exec_runner as X  # noqa: E402
+from legion_ide import undo_store as U  # noqa: E402
 import logging
 # safe_path=true 时脚本目录不入 sys.path：把本树根加入 path（helper 同目录）
 import sys as _sys
@@ -78,9 +79,6 @@ _EXEC_RESULTS_MAX = 100
 _PREVIEWS: dict[str, dict] = {}
 _PREVIEW_TTL_S = 600
 _PREVIEW_MAX = 20
-_UNDO: dict[tuple, dict] = {}
-_UNDO_TTL_S = 600
-_UNDO_MAX = 20
 
 
 def _prune_previews() -> None:
@@ -90,15 +88,6 @@ def _prune_previews() -> None:
         _PREVIEWS.pop(key, None)
     while len(_PREVIEWS) > _PREVIEW_MAX:
         _PREVIEWS.pop(next(iter(_PREVIEWS)))
-
-
-def _prune_undo() -> None:
-    now = time.time()
-    for key in [k for k, v in _UNDO.items()
-                if now - float(v.get("ts") or 0) > _UNDO_TTL_S]:
-        _UNDO.pop(key, None)
-    while len(_UNDO) > _UNDO_MAX:
-        _UNDO.pop(next(iter(_UNDO)))
 
 
 def _remember_exec(run_id: str, result: dict) -> None:
@@ -296,6 +285,7 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                 return self._json(200, {
                     "ok": True,
                     "owner": info.get("owner") or "",
+                    "roles": list(info.get("roles") or []),
                     "created": info.get("created") or 0,
                 })
             if path == "/api/ide/scope":
@@ -541,33 +531,32 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                     return self._json(409 if res.get("error") == "stale_preview" else 400, res)
                 if (not pending.get("created")
                         and pending.get("old_content") is not None):
-                    _prune_undo()
-                    _UNDO[(pending["task"], pending["path"])] = {
-                        "ts": time.time(),
-                        "old_content": pending["old_content"],
-                        "new_sha256": res.get("sha256") or pending.get("new_sha256"),
-                        "owner": owner,
-                    }
+                    U.save(
+                        pending["task"], pending["path"],
+                        pending["old_content"],
+                        res.get("sha256") or pending.get("new_sha256") or "",
+                        owner,
+                    )
                 _PREVIEWS.pop(preview_id, None)
                 G.audit(repo, "code_action", data.get("task"), owner,
                         "confirm %s -> ok" % pending["path"])
                 return self._json(200, {**res, "confirmed": True})
             if path == "/api/ide/undo":
                 rel = str(data.get("path") or "").strip()
-                key = (str(data.get("task") or ""), rel)
-                rec = _UNDO.get(key)
+                task = str(data.get("task") or "")
+                rec = U.get(task, rel)
                 if not rec:
                     return self._json(404, G.err("undo_missing", "没有可撤销的写入"))
                 current = W.read_file(wt, rel)
                 if not current.get("ok"):
                     return self._json(400, current)
-                if current.get("sha256") != rec.get("new_sha256"):
-                    _UNDO.pop(key, None)
+                if current.get("sha256") != rec.get("new_sha"):
+                    U.pop(task, rel)
                     return self._json(409, G.err("undo_stale", "文件已被再次修改，拒绝回滚"))
                 res = W.write_file(wt, rel, rec["old_content"])
                 if not res.get("ok"):
                     return self._json(400, res)
-                _UNDO.pop(key, None)
+                U.pop(task, rel)
                 G.audit(repo, "code_action", data.get("task"), owner,
                         "undo %s -> ok" % rel)
                 return self._json(200, {**res, "undone": True,
