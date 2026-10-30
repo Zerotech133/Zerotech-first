@@ -36,7 +36,7 @@ if (Test-Path $bjson) {
     } catch { "bandit result parse failed: $_" | Out-File $log -Append -Encoding utf8 }
 }
 $reg = $false
-$base = 'C:\aios\tools\bandit_baseline.json'
+$base = 'C:\aios\tools\bandit_baseline_v2.json'
 if (Test-Path $base) {
     try {
         $b = Get-Content $base -Raw | ConvertFrom-Json
