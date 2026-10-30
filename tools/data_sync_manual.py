@@ -26,6 +26,21 @@ LAST = WORK / "last.json"
 PY312 = sys.executable
 PY311 = r"C:\Program Files\Python311\python.exe"
 
+def _last_quarter_end() -> str:
+    """最近一个已结束季度末（YYYYMMDD），用于财报补齐默认报告期。"""
+    from datetime import date
+    today = date.today()
+    for y in (today.year, today.year - 1):
+        for m in (12, 9, 6, 3):
+            day = {12: 31, 9: 30, 6: 30, 3: 31}[m]
+            d0 = date(y, m, day)
+            if d0 < today:
+                return d0.strftime("%Y%m%d")
+    return "20260930"
+
+
+LAST_QUARTER_END = _last_quarter_end()
+
 STEPS = {
     "tushare": {
         "desc": "Tushare 增量同步（A股/港股/美股行情基础表）",
@@ -56,7 +71,7 @@ STEPS = {
     },
     "fin": {
         "desc": "财报补齐（按报告期拉全市场并合并，income/balance/cashflow/fina）",
-        "cmd": [PY312, "-X", "utf8", str(REPO / "tools" / "fin_report_sync.py"), "--period", _last_quarter_end()],
+        "cmd": [PY312, "-X", "utf8", str(REPO / "tools" / "fin_report_sync.py"), "--period", LAST_QUARTER_END],
         "cwd": REPO, "timeout": 2400,
     },
     "recent": {
