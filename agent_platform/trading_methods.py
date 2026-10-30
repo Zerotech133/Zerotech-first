@@ -49,6 +49,10 @@ METHODS = {
     },
 }
 
+DEFAULT_COSTS = {"commission": 0.00025, "stamp": 0.0005, "slippage": 0.0005}
+DEFAULT_LIMITS = {"single_max": 0.10, "total_max": 0.60}
+REGIME_METHODS = {"trend_pullback", "volume_breakout"}
+
 
 def _f(x, default=0.0):
     try:
@@ -160,14 +164,17 @@ def exit_reason(method_id, bars, entry_price, entry_index):
     return False, None, ""
 
 
-def simulate(method_id, bars):
-    """单标的 paper 回放；返回 {trades, stats}。信号次日开盘成交，最多持有 N 日。"""
+def simulate(method_id, bars, regime_by_date=None, costs=None):
+    """单标的 paper 回放；regime_by_date 为 None 时不过滤；costs 计入往返成本。"""
     if method_id not in METHODS:
         raise ValueError("unknown method: %s" % method_id)
     trades = []
     i = 25
     max_hold = int(METHODS[method_id]["holding_days"][1])
     while i < len(bars) - 1:
+        if regime_by_date is not None and not regime_by_date.get(str(bars[i][0]), True):
+            i += 1
+            continue
         if not entry_signal(method_id, bars[: i + 1]):
             i += 1
             continue
@@ -191,11 +198,16 @@ def simulate(method_id, bars):
             exit_price = _f(bars[exit_index][2])
             reason = "max_hold"
         ret = (exit_price / entry_price - 1.0) if entry_price else 0.0
+        cost = float((costs or {}).get("commission", 0.0)) * 2.0 \
+            + float((costs or {}).get("slippage", 0.0)) * 2.0 \
+            + float((costs or {}).get("stamp", 0.0))
+        net = ret - cost
         trades.append({
             "entry_date": str(bars[entry_index][0]), "entry": round(entry_price, 4),
             "exit_date": str(bars[exit_index][0]), "exit": round(exit_price, 4),
-            "return_pct": round(ret * 100, 2), "reason": reason,
-            "hold_days": exit_index - entry_index,
+            "gross_return_pct": round(ret * 100, 2),
+            "return_pct": round(net * 100, 2), "cost_pct": round(cost * 100, 2),
+            "reason": reason, "hold_days": exit_index - entry_index,
         })
         i = exit_index + 1
     return {"method": method_id, "trades": trades, "stats": _stats(trades)}
@@ -255,3 +267,128 @@ def replay(codes, days=250, methods=None, kline_fn=None):
         st["win_rate"] = round(st["wins"] / st["trades"], 3) if st["trades"] else None
         st["avg_code_return_pct"] = round(st["sum_ret"] / st["codes"], 2) if st["codes"] else None
     return out
+
+
+def market_regime(index_bars, ma=20):
+    """大盘 regime：date → bool（收盘>MA20 且 MA20 不向下）。指数不足返回空。"""
+    if not index_bars or len(index_bars) < ma + 2:
+        return {}
+    closes = [_f(b[2]) for b in index_bars]
+    out = {}
+    for i in range(ma, len(index_bars)):
+        cur_ma = sum(closes[i - ma + 1:i + 1]) / ma
+        prev_ma = sum(closes[i - ma:i]) / ma
+        out[str(index_bars[i][0])] = bool(closes[i] > cur_ma and cur_ma >= prev_ma)
+    return out
+
+
+def portfolio_stats(trades_by_code, bars_by_code, costs=None, limits=None):
+    """按单票/总仓上限把逐笔交易聚合为 NAV，计成本，返回统计。"""
+    costs = costs or DEFAULT_COSTS
+    limits = limits or DEFAULT_LIMITS
+    single = float(limits.get("single_max", 0.10))
+    total = float(limits.get("total_max", 0.60))
+    entry_cost = float(costs.get("commission", 0.0)) + float(costs.get("slippage", 0.0))
+    exit_cost = float(costs.get("commission", 0.0)) + float(costs.get("slippage", 0.0)) \
+        + float(costs.get("stamp", 0.0))
+
+    closes = {}
+    dates = set()
+    for code, bars in (bars_by_code or {}).items():
+        closes[code] = {str(b[0]): _f(b[2]) for b in bars}
+        dates.update(closes[code].keys())
+
+    by_entry, by_exit = {}, {}
+    for code, trades in (trades_by_code or {}).items():
+        for t in trades:
+            by_entry.setdefault(t["entry_date"], []).append((code, t))
+            by_exit.setdefault(t["exit_date"], []).append((code, t))
+
+    cash = 1.0
+    pos = {}
+    nav = []
+    for d in sorted(dates):
+        for code, t in by_exit.get(d, []):
+            if code not in pos:
+                continue
+            p = pos.pop(code)
+            cash += p["weight"] * (t["exit"] / p["entry"]) * (1.0 - exit_cost)
+        invested = sum(p["weight"] for p in pos.values())
+        for code, t in sorted(by_entry.get(d, []), key=lambda x: x[1]["entry_date"]):
+            if code in pos:
+                continue
+            room = min(single, total - invested)
+            if room <= 1e-9 or cash <= 1e-9:
+                continue
+            w = min(room, cash)
+            if w <= 1e-9:
+                continue
+            cash -= w * (1.0 + entry_cost)
+            pos[code] = {"weight": w, "entry": t["entry"], "entry_date": t["entry_date"]}
+            invested += w
+        mv = cash + sum(p["weight"] * (closes[c].get(d, p["entry"]) / p["entry"])
+                        for c, p in pos.items())
+        nav.append((d, round(mv, 6)))
+
+    peak = 0.0
+    max_dd = 0.0
+    for _, v in nav:
+        peak = max(peak, v)
+        max_dd = min(max_dd, (v / peak - 1.0) if peak else 0.0)
+    all_trades = [t for trades in (trades_by_code or {}).values() for t in trades]
+    wins = sum(1 for t in all_trades if t.get("return_pct", 0) > 0)
+    return {
+        "trades": len(all_trades),
+        "win_rate": round(wins / len(all_trades), 3) if all_trades else None,
+        "nav_start": 1.0,
+        "nav_end": nav[-1][1] if nav else 1.0,
+        "total_return_pct": round((nav[-1][1] - 1.0) * 100, 2) if nav else 0.0,
+        "max_drawdown_pct": round(max_dd * 100, 2),
+        "days": len(nav),
+        "limits": {"single_max": single, "total_max": total},
+        "costs": dict(costs),
+        "nav_series": nav[-5:],
+    }
+
+
+def replay_with_constraints(codes, days=250, methods=None, kline_fn=None,
+                            index_kline_fn=None, costs=None, limits=None,
+                            index_code="sh000001"):
+    """带费用/滑点/仓位约束/大盘 regime 的批量回放；返回每手法组合统计。"""
+    if kline_fn is None:
+        import os
+        import sys
+        base = os.path.dirname(os.path.abspath(__file__))
+        sys.path.insert(0, os.path.join(base, "engine"))
+        from tools import kline_daily as kline_fn  # noqa: E402
+    if index_kline_fn is None:
+        index_kline_fn = kline_fn
+    methods = methods or list(METHODS)
+    bars_by_code = {}
+    for code in codes:
+        try:
+            bars = kline_fn(code, days)
+        except Exception:  # noqa: BLE001
+            bars = []
+        if bars:
+            bars_by_code[str(code)] = bars
+    try:
+        index_bars = index_kline_fn(index_code, days)
+    except Exception:  # noqa: BLE001
+        index_bars = []
+    regime = market_regime(index_bars)
+    out = {"days": days, "codes": len(bars_by_code), "regime_days": len(regime),
+           "index_code": index_code, "costs": costs or DEFAULT_COSTS,
+           "limits": limits or DEFAULT_LIMITS, "methods": {}}
+    for m in methods:
+        trades_by_code = {}
+        for code, bars in bars_by_code.items():
+            r = simulate(m, bars, regime_by_date=regime if m in REGIME_METHODS else None,
+                         costs=costs or DEFAULT_COSTS)
+            if r["trades"]:
+                trades_by_code[code] = r["trades"]
+        out["methods"][m] = portfolio_stats(trades_by_code, bars_by_code,
+                                            costs=costs, limits=limits)
+        out["methods"][m]["regime_filter"] = m in REGIME_METHODS
+    return out
+
