@@ -120,12 +120,30 @@ def acquire(purpose, wait_s=0):
         time.sleep(_POLL_S)
 
 
+def _owns_lock():
+    """当前进程是否仍持有锁（读 pid 校验）。"""
+    d = _read_lock()
+    return int(d.get("pid") or 0) == os.getpid()
+
+
 def heartbeat():
-    """持锁方周期续命：仅 touch mtime（不动内容，避免撕裂读）。"""
+    """持锁方周期续命：仅 touch mtime（不动内容，避免撕裂读）。
+
+    2026-10-30 BATCH2：先校验锁仍归本进程 —— 旧实现无条件 utime，
+    锁被他人接管后会给"窃锁者"续命，且持有方误以为自己仍持锁。
+    返回 True=续命成功 / False=已丢失（调用方应停止判读）。
+    """
+    if not _owns_lock():
+        logging.getLogger(__name__).warning(
+            "ollama_lock: heartbeat 发现锁不属于本进程（pid=%s），停止续命",
+            _read_lock().get("pid"))
+        return False
     try:
         os.utime(LOCK_PATH, None)
+        return True
     except OSError as exc:
         logging.getLogger(__name__).warning("silent-except %s: %s", "ollama_lock.py", exc)
+        return False
 
 
 def release():
@@ -136,7 +154,10 @@ def release():
         if pid != os.getpid():
             return
     except Exception as exc:
-        logging.getLogger(__name__).warning("silent-except %s: %s", "ollama_lock.py", exc)
+        # 2026-10-30 BATCH2：读不到/损坏时**不得**盲删（旧实现会删掉别人的锁）。
+        logging.getLogger(__name__).warning(
+            "ollama_lock: release 读锁失败，保守不删除（%s）", exc)
+        return
     try:
         os.remove(LOCK_PATH)
     except OSError as exc:
@@ -183,6 +204,15 @@ def tick(purpose, lease_s=None, yield_s=None, wait_s=None, max_tries=6,
     为假或首抢即中）路径与旧实现完全一致，不影响正常吞吐。
     """
     started = time.time()
+    if not _owns_lock():
+        # 2026-10-30 BATCH2：锁已丢失（被接管/文件被删）——重新抢，不能假装持有。
+        logging.getLogger(__name__).warning(
+            "ollama_lock: tick 发现锁所有权丢失，尝试重新抢锁 purpose=%s", purpose)
+        wait = TICK_WAIT_S if wait_s is None else max(0.0, wait_s)
+        budget = _tick_budget_s(deadline_ts, started)
+        if budget <= 0:
+            return False
+        return bool(acquire(purpose, wait_s=min(wait, budget)))
     if not should_yield(lease_s):
         return True
     release()

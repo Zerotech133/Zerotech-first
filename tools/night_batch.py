@@ -555,7 +555,7 @@ def main(argv=None) -> int:
             # 让 JEV 拿到 ollama 锁；finally 恢复（异常/被杀留下旗由 k266 自愈）。
             try:
                 import jev_night as _jn
-                _jn.pause_m3(log)
+                _jn.pause_m3(log, owner="night_batch")
                 m3_paused = True
                 log("M3 PAUSED（--pause-m3）收工自动恢复")
             except Exception as exc:  # noqa: BLE001
@@ -701,7 +701,7 @@ def main(argv=None) -> int:
         if m3_paused:
             try:
                 import jev_night as _jn
-                _jn.resume_m3(log)
+                _jn.resume_m3(log, owner="night_batch")
                 log("M3 RESUMED（--pause-m3 收工恢复）")
             except Exception as exc:  # noqa: BLE001
                 log("ALERT M3 恢复失败（下轮 k266 tick 自愈）：%s"

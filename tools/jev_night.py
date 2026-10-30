@@ -252,17 +252,30 @@ def _hm(text: str) -> tuple[int, int]:
 
 
 def window(start: str, until: str, now: datetime | None = None) -> tuple[datetime, datetime]:
-    """返回 (开始, 结束)。若当前已过开始时刻，则从当前时刻起算（不回溯等待）。"""
+    """返回 (开始, 结束)。若当前已在窗口内，从当前时刻起算（不回溯等待）。
+
+    2026-10-30 BATCH2 修复：旧实现只在「今天 start 已过」时把 begin 设为 now；
+    跨午夜窗口（21:50-07:00）若在 00:00-06:59 重启，begin 会被算成「今天 21:50」，
+    导致等待 15.8-20.8 小时（还被任务 10h 时限先杀）——夜跑实际无崩溃恢复。
+    现同时检查「昨晚 start → 今天 until」这个候选窗口。
+    """
     now = now or datetime.now()
     sh, sm = _hm(start)
     uh, um = _hm(until)
-    begin = now.replace(hour=sh, minute=sm, second=0, microsecond=0)
-    if begin <= now:
-        begin = now
-    end = begin.replace(hour=uh, minute=um, second=0, microsecond=0)
-    if end <= begin:
-        end += timedelta(days=1)
-    return begin, end
+    begin_today = now.replace(hour=sh, minute=sm, second=0, microsecond=0)
+    end_today = begin_today.replace(hour=uh, minute=um, second=0, microsecond=0)
+    if end_today <= begin_today:
+        end_today += timedelta(days=1)
+    # 候选 A：昨晚开启、今天凌晨仍在窗口内（重启恢复场景）
+    begin_y = begin_today - timedelta(days=1)
+    end_y = end_today - timedelta(days=1)
+    if begin_y <= now < end_y:
+        return now, end_y
+    # 候选 B：今天窗口
+    if begin_today <= now < end_today:
+        return now, end_today
+    # 尚未开始：等到今天窗口开始
+    return begin_today, end_today
 
 
 def backlog() -> int:
@@ -292,15 +305,20 @@ def m3_pids() -> list[int]:
     return out
 
 
-def pause_m3(log: Logger, dry_run: bool = False) -> int:
-    """写暂停旗并停掉 M3，返回被停的进程数。"""
+def pause_m3(log: Logger, dry_run: bool = False, owner: str = "jev_night") -> int:
+    """写暂停旗（带 owner/pid）并停掉 M3，返回被停的进程数。
+
+    2026-10-30 BATCH2：DayBatch 与 JevNight 共用同一暂停旗，原实现无 owner，
+    先收工者会无条件删旗导致另一方仍在跑时 M3 被恢复；现写入 owner，恢复时校验。
+    """
     if dry_run:
         pids = m3_pids()
         log("DRY-RUN 将写暂停旗 %s 并停止 M3 进程 %s" % (PAUSE_FILE, pids or "（无）"))
         return len(pids)
     PAUSE_FILE.parent.mkdir(parents=True, exist_ok=True)
     PAUSE_FILE.write_text(
-        "paused by tools/jev_night.py at %s\n" % datetime.now().isoformat(),
+        json.dumps({"owner": owner, "pid": os.getpid(),
+                    "at": datetime.now().isoformat()}, ensure_ascii=False),
         encoding="utf-8")
     killed = 0
     for pid in m3_pids():
@@ -316,12 +334,27 @@ def pause_m3(log: Logger, dry_run: bool = False) -> int:
     return killed
 
 
-def resume_m3(log: Logger) -> None:
+def resume_m3(log: Logger, owner: str | None = None) -> None:
+    """删暂停旗；owner 匹配（或旧版纯文本旗）才删，避免误删另一任务的旗。"""
+    try:
+        raw = PAUSE_FILE.read_text(encoding="utf-8").strip()
+    except FileNotFoundError:
+        log("暂停旗本就不存在")
+        return
+    except OSError as exc:
+        log("读暂停旗失败：%s" % exc)
+        return
+    file_owner = ""
+    try:
+        file_owner = str((json.loads(raw) or {}).get("owner") or "")
+    except (ValueError, AttributeError):
+        file_owner = "legacy"
+    if owner and file_owner and file_owner not in (owner, "legacy"):
+        log("暂停旗 owner=%s 非本任务(%s)，不删除" % (file_owner, owner))
+        return
     try:
         PAUSE_FILE.unlink()
         log("暂停旗已删除，M3 可被 k266_services 下一 tick 恢复")
-    except FileNotFoundError:
-        log("暂停旗本就不存在")
     except OSError as exc:
         log("删暂停旗失败：%s" % exc)
 
@@ -395,12 +428,17 @@ def main(argv=None) -> int:
             % (begin.strftime("%m-%d %H:%M"), end.strftime("%m-%d %H:%M"),
                left0, args.batch, args.deadline, os.getpid(), _lock_path()))
         stop = Path(args.stop_file)
+        if stop.exists():
+            log("WARN 启动时检测到遗留停止旗，清理后继续")
+            stop.unlink(missing_ok=True)
 
         # ① 等到开始时刻（分片睡眠，可被停止旗打断）
         while datetime.now() < begin:
             if stop.exists():
                 log("STOP 等待期检测到停止旗，退出")
-                resume_m3(log)
+                stop.unlink(missing_ok=True)
+                resume_m3(log, owner="jev_night")
+                log("END 轮数=0 | 等待期停止（停止旗已清理）")
                 return 0
             remain = (begin - datetime.now()).total_seconds()
             touch_lock()
@@ -409,7 +447,7 @@ def main(argv=None) -> int:
                 log("等待中... 距开始 %.0f 分钟" % ((begin - datetime.now()).total_seconds() / 60))
 
         # ② 暂停 M3
-        pause_m3(log)
+        pause_m3(log, owner="jev_night")
         touch_lock()
 
         # ③ 循环 JEV 直到结束/清空/停止旗
@@ -423,6 +461,8 @@ def main(argv=None) -> int:
             while datetime.now() < end:
                 if stop.exists():
                     log("STOP 检测到停止旗")
+                    stop.unlink(missing_ok=True)
+                    log("STOP 已清理停止旗")
                     break
                 left = backlog()
                 if left == 0:
@@ -446,7 +486,7 @@ def main(argv=None) -> int:
                     stall = 0
         finally:
             left1 = backlog()
-            resume_m3(log)
+            resume_m3(log, owner="jev_night")
             log("END 轮数=%d | 剩余 JEV=%s | 本轮完成=%s"
                 % (rounds, left1, (left0 - left1) if (left0 >= 0 and left1 >= 0) else "?"))
         return 0
