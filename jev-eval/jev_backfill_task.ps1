@@ -49,7 +49,7 @@ try {
     # v2 fix(2026-10-11): Stop 偏好下 stderr 任意一行会变 ErrorRecord 直接 throw,
     #   traceback 只剩首行——native 段局部改 Continue, 全文由 P2 落盘
     $ErrorActionPreference = 'Continue'
-    $out = & $py -X utf8 (Join-Path $dir 'jev_backfill.py') --batch 500 2>&1
+    $out = & $py -X utf8 (Join-Path $dir 'jev_backfill.py') --batch 0 2>&1
     $code = $LASTEXITCODE
     $ErrorActionPreference = 'Stop'
     W ('P2 exit=' + $code + ' out=' + ($out -join ' | '))
@@ -64,3 +64,4 @@ try {
     try { W ('ERR ' + $_.Exception.Message) } catch {}
     exit 1
 }
+

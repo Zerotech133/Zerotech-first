@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """JEV 积压批量补判（历史新闻逐条过本地模型，每轮限量防过载）。
 
-news.jev 为空的条目按时间倒序取一批（--batch，默认 100），
+news.jev 为空的条目按时间倒序取一批（--batch，默认 0=按 deadline/历史耗时动态算），
 按 news_ai.jev_judge_batch 的 8 条/组上限分批调用（条间 sleep 由
 JEV_ITEM_SLEEP_S 控制；2026-10-26 EXEC-R28 起默认 0.2s，设 0.8 可回退），
 判完落库并打印剩余积压。单轮 100 条约 2-3 分钟，剩余积压
@@ -47,6 +47,8 @@ from pathlib import Path
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import news_ai  # noqa: E402
+import jev_batch  # noqa: E402
+import jev_schema  # noqa: E402
 import logging
 
 ALERT_STATE = os.path.join(HERE, "logs", "alert_state.json")
@@ -128,10 +130,12 @@ def _should_skip_lease_yield(paused: bool, disabled: bool) -> bool:
     return bool(paused) and not bool(disabled)
 
 
-def _judge_batch_sleep(items, sleep_s: float, deadline_ts=None) -> dict:
+def _judge_batch_sleep(items, sleep_s: float, deadline_ts=None,
+                       failures: dict | None = None) -> dict:
     """news_ai.jev_judge_batch() 的等价循环，仅把 0.8s 换成可配置 sleep_s。
 
     与 news_ai 版逐行对齐：8 条上限、条间 sleep、失败重试一次、成功才收录。
+    failures 可选：把失败 id/原因带回主循环，写 news.attempt/last_error（不静默）。
     EXEC-R28 的 writeScope 只允许改本文件，故就地实现；news_ai 其他调用方不变。
     """
     out = {}
@@ -144,16 +148,26 @@ def _judge_batch_sleep(items, sleep_s: float, deadline_ts=None) -> dict:
             time.sleep(sleep_s)
         # 2026-10-30 JEVSAFE：单条异常隔离——旧实现任一异常（如 event_type
         # 归一化 KeyError）会中断整组并让整轮 backfill 崩溃，坏行永远重来。
-        try:
-            j = news_ai.jev_judge_one(it.get("title") or "", it.get("stocks") or [])
-            if j is None:
+        j = None
+        last_exc = None
+        for attempt in range(2):  # 与 news_ai 版一致：失败（含异常）重试一次
+            try:
                 j = news_ai.jev_judge_one(it.get("title") or "", it.get("stocks") or [])
-        except Exception as exc:  # noqa: BLE001
-            print("BACKFILL item FAIL id=%s %r（单条隔离，跳过）"
-                  % (it.get("id"), exc), file=sys.stderr, flush=True)
-            continue
+                last_exc = None
+            except Exception as exc:  # noqa: BLE001
+                last_exc = exc
+                j = None
+            if j:
+                break
         if j:
             out[it["id"]] = j
+        else:
+            reason = ("exception: %s" % str(last_exc)[:300]
+                      if last_exc is not None else "judge returned None")
+            print("BACKFILL item FAIL id=%s %s（单条隔离，跳过）"
+                  % (it.get("id"), reason), file=sys.stderr, flush=True)
+            if failures is not None:
+                failures[it.get("id")] = reason
     return out
 
 
@@ -217,7 +231,13 @@ def alert_backlog(left, judged, deadline_hit):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--batch", type=int, default=100)
+    ap.add_argument(
+        "--batch",
+        type=int,
+        default=0,
+        help="本轮取批上限；0=按 deadline 与历史单条耗时动态计算（推荐）",
+    )
+    ap.add_argument("--db", default="", help="news.db 路径（默认脚本同目录，测试/演练用）")
     ap.add_argument(
         "--deadline",
         type=int,
@@ -257,11 +277,32 @@ def main():
         return
     # 2026-10-16 审计：timeout=30 防与速报链写库竞争立刻抛 locked
     # （默认 5s 偏短；配合下方组级回滚兜底）
-    db = sqlite3.connect(os.path.join(HERE, "news.db"), timeout=30)
+    db_path = args.db or os.path.join(HERE, "news.db")
+    db = sqlite3.connect(db_path, timeout=30)
+    # 2026-10-30 JEV P1：schema 迁移必须先于取批/写回；首次迁移前自动备份。
+    if not set(jev_schema.META_COLUMNS).issubset(jev_schema.columns(db)):
+        bak = jev_schema.backup_to(Path(db_path), Path(HERE) / "backups")
+        print("BACKFILL schema backup=%s" % bak, flush=True)
+    _added = jev_schema.ensure_news_meta(db)
+    if _added:
+        print("BACKFILL schema added=%s" % ",".join(_added), flush=True)
+    remaining = db.execute(
+        "SELECT COUNT(*) FROM news WHERE jev IS NULL OR jev=''"
+    ).fetchone()[0]
+    batch_n = jev_batch.estimate_batch(args.deadline, remaining, args.batch)
+    if batch_n <= 0:
+        print("BACKFILL done: no pending")
+        return
+    if args.batch <= 0:
+        print(
+            "BACKFILL batch_auto=%d deadline=%ds remaining=%d item_s=%.2f"
+            % (batch_n, args.deadline, remaining, jev_batch.median_item_s()),
+            flush=True,
+        )
     rows = db.execute(
         "SELECT id, title, stocks, source FROM news "
         "WHERE (jev IS NULL OR jev='') ORDER BY ts DESC LIMIT ?",
-        (args.batch,),
+        (batch_n,),
     ).fetchall()
     if not rows:
         print("BACKFILL done: no pending")
@@ -331,17 +372,32 @@ def main():
         if args.deadline and (time.time() - t0) >= args.deadline:
             deadline_hit = 1
             break
-        judges = _judge_batch_sleep(items[i : i + 8], item_sleep, deadline_ts)
+        failures = {}
+        judges = _judge_batch_sleep(
+            items[i : i + 8], item_sleep, deadline_ts, failures=failures
+        )
         written = 0
         try:
+            stamp = time.strftime("%Y-%m-%d %H:%M:%S")
             for nid, j in judges.items():
                 # OS-FIX-JEVLOCK：事务内二次校验——只写仍是"待判"的行，绝不覆盖
                 # 已被另一实例/外部写入的 jev（锁被陈旧回收时的最后一道防重复写）。
+                model = str((j.get("meter") or {}).get("model") or "")
                 cur = db.execute(
-                    "UPDATE news SET jev=? WHERE id=? AND (jev IS NULL OR jev='')",
-                    (json.dumps(j, ensure_ascii=False), nid),
+                    "UPDATE news SET jev=?, model=?, judged_at=?, "
+                    "attempt=COALESCE(attempt,0)+1, last_error=NULL "
+                    "WHERE id=? AND (jev IS NULL OR jev='')",
+                    (json.dumps(j, ensure_ascii=False), model, stamp, nid),
                 )
                 written += int(cur.rowcount or 0)
+            # 失败也落计数，供 attempts/last_error 查询与告警（不静默丢单）。
+            for nid, reason in failures.items():
+                db.execute(
+                    "UPDATE news SET attempt=COALESCE(attempt,0)+1, "
+                    "judged_at=?, last_error=? "
+                    "WHERE id=? AND (jev IS NULL OR jev='')",
+                    (stamp, str(reason)[:300], nid),
+                )
             db.commit()
         except sqlite3.OperationalError as e:
             # 2026-10-16 审计：写库瞬态失败（locked/busy）原炸整个轮次，
@@ -418,6 +474,9 @@ def main():
             pref_skipped,
             len(items),
         )
+    )
+    jev_batch.record_run(
+        time.time() - t0, judged, left, batch_n, deadline_hit
     )
 
 

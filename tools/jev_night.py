@@ -382,7 +382,9 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="夜间 JEV 独占跑批（暂停 M3）")
     ap.add_argument("--start", default="22:00")
     ap.add_argument("--until", default="07:00")
-    ap.add_argument("--batch", type=int, default=600)
+    ap.add_argument(
+        "--batch", type=int, default=0,
+        help="本轮取批上限；0=按 deadline/历史中位耗时动态计算（2026-10-30 P1）")
     ap.add_argument("--deadline", type=int, default=1500)
     ap.add_argument("--log", default=DEFAULT_LOG)
     ap.add_argument("--stop-file", default=DEFAULT_STOP)
