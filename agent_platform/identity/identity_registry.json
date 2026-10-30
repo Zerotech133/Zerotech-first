@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-10-30T11:30:00+08:00",
+  "updated_at": "2026-10-30T14:20:00+08:00",
   "note": "只做身份映射，不做鉴权决策；unconfirmed 不得当已合并身份使用。",
   "actors": [
     {
@@ -12,9 +12,12 @@
       "permissions": ["view", "manage_own", "trade", "approve", "research", "risk", "admin"],
       "owner_scope": "global",
       "mapping_status": "partial",
+      "idp_issuer": "http://localhost:1411",
+      "idp_sub": "f5d9ec3c-cfd2-482c-9a00-b7b2250e9a43",
       "source_ids": {
         "zero_bound_actor": "owner",
-        "zhice_user_id": "u-96d51f4d9b7a2826"
+        "zhice_user_id": "u-96d51f4d9b7a2826",
+        "pocket_id_sub": "f5d9ec3c-cfd2-482c-9a00-b7b2250e9a43"
       },
       "source_claims": {
         "zero_bound": {"roles": ["OWNER"], "permissions": ["*"]},
@@ -96,43 +99,6 @@
           "source_id": "1",
           "status": "verified",
           "evidence": "system_users.id=1 username=admin nickname=超级管理员"
-        }
-      ]
-    },
-    {
-      "sub": "zero_bound:oidc_test",
-      "display_name": "Pocket ID 虚拟测试",
-      "actor_type": "member",
-      "source": "zero_bound",
-      "roles": [
-        "VIEWER"
-      ],
-      "permissions": [
-        "view"
-      ],
-      "owner_scope": "own",
-      "mapping_status": "test",
-      "idp_issuer": "http://localhost:1411",
-      "idp_sub": "f5d9ec3c-cfd2-482c-9a00-b7b2250e9a43",
-      "source_ids": {
-        "pocket_id_sub": "f5d9ec3c-cfd2-482c-9a00-b7b2250e9a43"
-      },
-      "source_claims": {
-        "pocket_id": {
-          "roles": [
-            "viewer"
-          ],
-          "amr": [
-            "passkey"
-          ]
-        }
-      },
-      "links": [
-        {
-          "system": "pocket_id",
-          "source_id": "f5d9ec3c-cfd2-482c-9a00-b7b2250e9a43",
-          "status": "verified",
-          "evidence": "B2 virtual passkey test admin tianfeng; test-only"
         }
       ]
     }
