@@ -184,6 +184,23 @@ body{background:radial-gradient(ellipse at 78% -12%,var(--os-glow) 0%,transparen
     <label class="os-search"><span aria-hidden="true">⌕</span><input id="work-search" type="search" placeholder="过滤领域 / 能力（如 量化、情报、系统）" autocomplete="off"></label>
     <span class="os-toolbar-hint">只筛当前页文本，不发起新请求</span>
   </div>
+  <section class="ui-panel os-panel" id="tri-readonly" aria-labelledby="tri-title" style="margin:16px 0">
+    <div class="os-section-head">
+      <div><span class="eyebrow">READ-ONLY · 3 SYSTEMS</span><h2 id="tri-title">三系统只读</h2></div>
+      <div class="os-page-head-actions"><span class="os-chip amber">历史快照 · 非实时</span><button type="button" id="tri-refresh">重新读取</button></div>
+    </div>
+    <p class="subtle">智策 = 本机量化域；菜鸟 = 历史快照（业务时点截至 2026-09-30）；经零界只读 BFF 聚合，不写任何系统。</p>
+    <div class="os-kpis" aria-label="三系统只读统计">
+      <div class="os-kpi"><span>菜鸟用户</span><b id="tri-users">—</b><small>管理端 / 会员 / QMT / 策略协作</small></div>
+      <div class="os-kpi"><span>菜鸟策略</span><b id="tri-strategies">—</b><small>有效 / 启用 / Agent</small></div>
+      <div class="os-kpi"><span>评分快照</span><b id="tri-scores">—</b><small>monitor + stock_own + 推荐</small></div>
+      <div class="os-kpi"><span>实盘指令</span><b id="tri-instructions">—</b><small>指令 / 委托</small></div>
+    </div>
+    <div id="tri-detail" class="os-list"><div class="empty">读取只读 BFF…</div></div>
+    <p class="subtle" id="tri-status" role="status" aria-live="polite">只读 BFF 读取中…</p>
+    <p class="subtle">服务账号 zero_bff · VIEWER · 凭据仅存 vault；建议按月度轮换，轮换后重启 8091。</p>
+    <div class="os-actions-row"><a href="/api/bff/overview" target="_blank" rel="noopener noreferrer">查看 BFF JSON ↗</a><a href="http://127.0.0.1:5175" target="_blank" rel="noopener noreferrer">智策驾驶舱 ↗</a><a href="/os-board">今日指挥板 ↗</a></div>
+  </section>
   <div class="os-work-grid">
     <div class="os-work-main">
       <section class="ui-panel os-panel"><div class="os-section-head"><h2>当前建议下钻</h2><span class="os-chip">只读</span></div><div id="work-focus" class="empty">来源核对中…</div></section>
@@ -411,4 +428,60 @@ async function refresh(){const run=++sequence,keys=Object.keys(endpoints);$('#fr
 <!-- PAGE-SHELL-GEN:v2 -->
 <link rel="stylesheet" href="/static/ui/ui.css" data-page-shell="1">
 <script defer src="/static/ui/ui.js" data-page-shell="1"></script>
+<script>
+(function () {
+  'use strict';
+  function fmt(n) { return typeof n === 'number' ? n.toLocaleString('zh-CN') : '—'; }
+  function row(label, value, note) {
+    var d = document.createElement('div'); d.className = 'row';
+    var b = document.createElement('strong'); b.textContent = label + ' · ' + value;
+    var p = document.createElement('p'); p.textContent = note;
+    d.append(b, p); return d;
+  }
+  function setText(id, text) { var n = document.getElementById(id); if (n) n.textContent = text; }
+  function render(d) {
+    var c = d && d.sources && d.sources.cainiao || {};
+    var z = d && d.sources && d.sources.zhice || {};
+    var box = document.getElementById('tri-detail');
+    if (!c.ok) {
+      setText('tri-status', '菜鸟快照不可用：' + (c.reason || '未知原因') + '（未做任何推断）');
+      if (box) { box.replaceChildren(); var e = document.createElement('div'); e.className = 'empty'; e.textContent = '菜鸟只读统计不可用；不拿 0 冒充正常。'; box.append(e); }
+      return;
+    }
+    var u = c.users || {}, st = c.strategies || {}, sc = c.score_snapshots || {}, ins = c.instructions || {};
+    setText('tri-users', fmt(u.system_users) + ' / ' + fmt(u.member_user));
+    setText('tri-strategies', fmt(st.live) + ' / ' + fmt(st.enabled));
+    setText('tri-scores', fmt(sc.monitor_snapshots));
+    setText('tri-instructions', fmt(ins.member_instructions));
+    if (box) {
+      box.replaceChildren();
+      box.append(row('用户规模', fmt(u.system_users) + ' 管理端 · ' + fmt(u.member_user) + ' 会员 · ' + fmt(u.qmt_clients) + ' QMT · ' + fmt(u.strategy_authorized_users) + ' 策略协作', '菜鸟四层身份模型'));
+      box.append(row('策略与选股', fmt(st.total) + ' 策略 · ' + fmt(st.live) + ' 有效 · ' + fmt(st.enabled) + ' 启用 · ' + fmt(st.agents) + ' Agent · ' + fmt((c.pool || {}).active) + ' 生效池', '选股结果只读，不触发交易'));
+      box.append(row('评分快照', fmt(sc.monitor_snapshots) + ' 盯盘 · ' + fmt(sc.stock_own_snapshots) + ' 自有 · ' + fmt(sc.recommendations) + ' 推荐', '历史样本，非实时行情'));
+      box.append(row('实盘指令', fmt(ins.member_instructions) + ' 指令 · ' + fmt(ins.real_orders) + ' 委托', '仅统计，无下单/撤单入口'));
+      var last = (c.freshness || {}).instructions || (c.freshness || {}).signals || '未知';
+      box.append(row('菜鸟数据时点', String(last), '近 24h 信号/指令/委托/评分全为 0；历史快照，不能当实时源'));
+      box.append(row('月度轮换', 'zero_bff · VIEWER', '凭据在 vault；轮换后重启 8091，BFF 自动换 token'));
+    }
+    var healthy = z.ok ? '智策在线' : '智策不可用：' + (z.reason || '未知');
+    setText('tri-status', '只读 BFF 正常 · 菜鸟历史快照 · ' + healthy + ' · 不写任何系统');
+  }
+  async function load() {
+    var box = document.getElementById('tri-detail');
+    if (box) { box.replaceChildren(); var e = document.createElement('div'); e.className = 'empty'; e.textContent = '读取只读 BFF…'; box.append(e); }
+    try {
+      var r = await fetch('/api/bff/overview', {cache: 'no-store'});
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      render(await r.json());
+    } catch (err) {
+      setText('tri-status', '只读 BFF 不可用：' + String(err && err.message || err) + '（未做推断）');
+      if (box) { box.replaceChildren(); var e2 = document.createElement('div'); e2.className = 'empty'; e2.textContent = '三系统只读面板暂不可用；不影响其他视图。'; box.append(e2); }
+    }
+  }
+  var btn = document.getElementById('tri-refresh');
+  if (btn) btn.addEventListener('click', load);
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', load, {once: true});
+  else load();
+})();
+</script>
 </body></html>
