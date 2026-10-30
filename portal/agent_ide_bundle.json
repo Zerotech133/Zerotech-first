@@ -311,15 +311,6 @@
    "project": "general"
   },
   {
-   "id": "WO-LEGION-AUDIT-P2TEST-20261030",
-   "desc": "P2周报live-only口径测试更新",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-AUDIT-P2TEST-20261030",
-   "created": "2026-10-30 17:06:03",
-   "project": "general"
-  },
-  {
    "id": "K-JEV-20261030-QUEUEUI",
    "desc": "JEV low-confidence review workbench: list/filter/sort, first 100 manual review, resolve writes back",
    "status": "doing",
@@ -327,6 +318,15 @@
    "branch": "task/K-JEV-20261030-QUEUEUI",
    "created": "2026-10-30 17:09:05",
    "project": "quant"
+  },
+  {
+   "id": "WO-ZHAOYUN-IDENTITY-20261030",
+   "desc": "P0身份F2：display_name（赵云·治理/赵云·风控R2等）+ registry一致性测试",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-ZHAOYUN-IDENTITY-20261030",
+   "created": "2026-10-30 17:10:04",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -4204,7 +4204,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 107,
+     "count": 108,
      "recent": [
       {
        "ts": "",
@@ -4355,7 +4355,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 107,
+     "count": 108,
      "recent": [
       {
        "ts": "",
@@ -7284,8 +7284,8 @@
      "status": "review"
     },
     {
-     "id": "WO-LEGION-AUDIT-P2TEST-20261030",
-     "desc": "P2周报live-only口径测试更新",
+     "id": "WO-ZHAOYUN-IDENTITY-20261030",
+     "desc": "P0身份F2：display_name（赵云·治理/赵云·风控R2等）+ registry一致性测试",
      "status": "doing"
     }
    ]
