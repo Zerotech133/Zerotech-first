@@ -59,6 +59,18 @@ def test_nginx_static_auth_bypass_redirects():
     assert "return 302 /os-board;" in conf
 
 
+def test_nginx_ide_surfaces_require_auth():
+    """IDE 静态直链/扩展资产不能绕过门户认证。"""
+    conf = (PORTAL / "nginx.conf").read_text(encoding="utf-8")
+    assert "location = /ide.html" in conf
+    assert "return 302 /ide;" in conf
+    for marker in ("location ^~ /lde/", "location ^~ /extensions/",
+                   "location = /agent_ide_bundle.json"):
+        block = conf.split(marker, 1)[1].split("}", 1)[0]
+        assert "auth_request /_auth_guard;" in block, marker
+        assert "error_page 401 = @login_required;" in block, marker
+
+
 def test_login_oidc_entry():
     html = (PORTAL / "login.html").read_text(encoding="utf-8")
     assert 'id="oidc-entry"' in html
