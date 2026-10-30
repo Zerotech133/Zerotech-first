@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 18:11",
+ "generated": "2026-10-30 18:12",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 29,
+  "workorders_doing": 28,
   "workorders_review": 8
  },
  "workorders": [
@@ -326,15 +326,6 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-LEGION-EVALTRACE-20261030",
    "created": "2026-10-30 18:07:19",
-   "project": "general"
-  },
-  {
-   "id": "K-ORG-20261030-NIGHTSUM",
-   "desc": "夜跑轮次摘要工具：解析 jev_night.log 的 judged/耗时/速率/预筛，自动对照历史基线",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-ORG-20261030-NIGHTSUM",
-   "created": "2026-10-30 18:07:44",
    "project": "general"
   },
   {
@@ -3927,7 +3918,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 113,
+     "count": 114,
      "recent": [
       {
        "ts": "",
@@ -4072,7 +4063,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 113,
+     "count": 114,
      "recent": [
       {
        "ts": "",
@@ -4525,7 +4516,7 @@
    "report_to": "",
    "memory": {
     "decision": {
-     "count": 113,
+     "count": 114,
      "recent": [
       {
        "ts": "",
