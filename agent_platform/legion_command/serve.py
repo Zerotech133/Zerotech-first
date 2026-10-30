@@ -547,6 +547,10 @@ class Handler(BaseHTTPRequestHandler):
             from legion_command import ide_worktree
             self._send_json({"ok": True, "tasks": ide_worktree.list_tasks()})
             return
+        if path == "/api/ide/tasks":
+            from legion_command import hermes_orchestrator
+            self._send_json({"ok": True, "tasks": hermes_orchestrator.list_tasks()})
+            return
         if path == "/api/ide/openhands/sessions":
             from urllib.parse import parse_qs
             from legion_command import openhands_engine
