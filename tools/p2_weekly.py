@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -25,9 +26,13 @@ PY = sys.executable
 
 def _run(script: str, args: list[str], timeout: int = 300) -> dict:
     cmd = [PY, str(ROOT / "tools" / script), *args]
+    env = os.environ.copy()
+    env["PYTHONIOENCODING"] = "utf-8"
+    env["PYTHONUTF8"] = "1"
     try:
         proc = subprocess.run(
-            cmd, cwd=str(ROOT), capture_output=True, timeout=timeout, text=False
+            cmd, cwd=str(ROOT), capture_output=True, timeout=timeout, text=False,
+            env=env,
         )
     except subprocess.TimeoutExpired:
         return {"script": script, "rc": 124, "stdout": "", "stderr": "timeout"}
