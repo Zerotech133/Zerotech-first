@@ -1,0 +1,175 @@
+{
+ "meta": {
+  "pairs": 155,
+  "panel_rows": 159829,
+  "hold_h_codes": 155,
+  "weekly": 298,
+  "start": "20210104",
+  "end": "20261029",
+  "is_end": "20231231",
+  "cost": 0.003,
+  "generated_at": "2026-10-30T17:22:17+08:00"
+ },
+ "groups": {
+  "h5": {
+   "hi_prem_hi_hold": {
+    "all": {
+     "n": 186,
+     "mean_pct": -0.493,
+     "t": -2.65
+    },
+    "IS": {
+     "n": 45,
+     "mean_pct": -0.157,
+     "t": -0.63
+    },
+    "OOS": {
+     "n": 141,
+     "mean_pct": -0.6,
+     "t": -2.59
+    }
+   },
+   "hi_prem_lo_hold": {
+    "all": {
+     "n": 186,
+     "mean_pct": -0.672,
+     "t": -2.5
+    },
+    "IS": {
+     "n": 45,
+     "mean_pct": -0.178,
+     "t": -0.54
+    },
+    "OOS": {
+     "n": 141,
+     "mean_pct": -0.83,
+     "t": -2.46
+    }
+   },
+   "spread_hi_hold_minus_lo_hold": {
+    "all": {
+     "n": 186,
+     "mean_pct": -0.121,
+     "t": -0.49
+    },
+    "IS": {
+     "n": 45,
+     "mean_pct": -0.279,
+     "t": -0.92
+    },
+    "OOS": {
+     "n": 141,
+     "mean_pct": -0.071,
+     "t": -0.22
+    }
+   }
+  },
+  "h10": {
+   "hi_prem_hi_hold": {
+    "all": {
+     "n": 186,
+     "mean_pct": -1.048,
+     "t": -3.59
+    },
+    "IS": {
+     "n": 45,
+     "mean_pct": -0.192,
+     "t": -0.57
+    },
+    "OOS": {
+     "n": 141,
+     "mean_pct": -1.321,
+     "t": -3.6
+    }
+   },
+   "hi_prem_lo_hold": {
+    "all": {
+     "n": 186,
+     "mean_pct": -1.462,
+     "t": -3.97
+    },
+    "IS": {
+     "n": 45,
+     "mean_pct": -0.48,
+     "t": -1.13
+    },
+    "OOS": {
+     "n": 141,
+     "mean_pct": -1.776,
+     "t": -3.82
+    }
+   },
+   "spread_hi_hold_minus_lo_hold": {
+    "all": {
+     "n": 186,
+     "mean_pct": 0.114,
+     "t": 0.37
+    },
+    "IS": {
+     "n": 45,
+     "mean_pct": -0.012,
+     "t": -0.03
+    },
+    "OOS": {
+     "n": 141,
+     "mean_pct": 0.155,
+     "t": 0.41
+    }
+   }
+  },
+  "h20": {
+   "hi_prem_hi_hold": {
+    "all": {
+     "n": 186,
+     "mean_pct": -1.593,
+     "t": -4.08
+    },
+    "IS": {
+     "n": 45,
+     "mean_pct": -0.028,
+     "t": -0.07
+    },
+    "OOS": {
+     "n": 141,
+     "mean_pct": -2.092,
+     "t": -4.24
+    }
+   },
+   "hi_prem_lo_hold": {
+    "all": {
+     "n": 186,
+     "mean_pct": -2.898,
+     "t": -5.15
+    },
+    "IS": {
+     "n": 45,
+     "mean_pct": -0.663,
+     "t": -1.21
+    },
+    "OOS": {
+     "n": 141,
+     "mean_pct": -3.611,
+     "t": -5.08
+    }
+   },
+   "spread_hi_hold_minus_lo_hold": {
+    "all": {
+     "n": 186,
+     "mean_pct": 1.005,
+     "t": 2.36
+    },
+    "IS": {
+     "n": 45,
+     "mean_pct": 0.335,
+     "t": 0.52
+    },
+    "OOS": {
+     "n": 141,
+     "mean_pct": 1.219,
+     "t": 2.33
+    }
+   }
+  }
+ },
+ "status": "rejected"
+}
