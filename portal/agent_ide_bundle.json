@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 15:50",
+ "generated": "2026-10-30 15:52",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -9,8 +9,8 @@
   "prompt_ok": 62,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 26,
-  "workorders_review": 7
+  "workorders_doing": 28,
+  "workorders_review": 6
  },
  "workorders": [
   {
@@ -293,15 +293,6 @@
    "project": "general"
   },
   {
-   "id": "WO-KB-P3PREP-20261030",
-   "desc": "P3 预置：字幕抓取脚本 + 知识单元蒸馏脚本（网络恢复即可跑试点100）",
-   "status": "review",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-KB-P3PREP-20261030",
-   "created": "2026-10-30 15:36:34",
-   "project": "general"
-  },
-  {
    "id": "WO-D1-RESEARCH-FIX-20261030",
    "desc": "D1工作台/原型修正：WATCH 不显示虚假买点区间，只显示盯盘触发；BUY才给买点区间",
    "status": "doing",
@@ -309,6 +300,24 @@
    "branch": "task/WO-D1-RESEARCH-FIX-20261030",
    "created": "2026-10-30 15:49:51",
    "project": "portal"
+  },
+  {
+   "id": "K-ORG-20261030-PREFILTEREVAL",
+   "desc": "prefilter 灰度评估：用已判数据计算误杀率（替代人工标注集），产出数据版报告与启用建议",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/K-ORG-20261030-PREFILTEREVAL",
+   "created": "2026-10-30 15:50:24",
+   "project": "general"
+  },
+  {
+   "id": "WO-LEGION-M2-REVIEW-PREP-20261030",
+   "desc": "M2/memory 11-03 复盘准备包",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-M2-REVIEW-PREP-20261030",
+   "created": "2026-10-30 15:52:15",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -7036,7 +7045,14 @@
    ],
    "entry_source": "virtual_governance",
    "seat_note": "profile 角色，不占编（D5-C）；与 R2 风控席（org 编制·保守风控哨）是不同 id，报表按 id 区分。",
-   "home_page": "http://127.0.0.1:8796/zhaoyun"
+   "home_page": "http://127.0.0.1:8796/zhaoyun",
+   "tasks": [
+    {
+     "id": "WO-LEGION-M2-REVIEW-PREP-20261030",
+     "desc": "M2/memory 11-03 复盘准备包",
+     "status": "doing"
+    }
+   ]
   }
  }
 }
