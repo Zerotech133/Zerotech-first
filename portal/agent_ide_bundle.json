@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 23:25",
+ "generated": "2026-10-30 23:28",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -392,12 +392,12 @@
    "project": "general"
   },
   {
-   "id": "WO-GUANYU-P102-20261030",
-   "desc": "legion课题工作台",
+   "id": "WO-LEGION-ACAD-D1-FLOW-20261030",
+   "desc": "司马徽鲁肃研究到决策闭环",
    "status": "doing",
-   "owner": "GUANYU",
-   "branch": "task/WO-GUANYU-P102-20261030",
-   "created": "2026-10-30 23:24:08",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-ACAD-D1-FLOW-20261030",
+   "created": "2026-10-30 23:27:51",
    "project": "general"
   }
  ],
@@ -6708,11 +6708,6 @@
      "id": "WO-GUANYU-P101-20261030",
      "desc": "基线同步186",
      "status": "review"
-    },
-    {
-     "id": "WO-GUANYU-P102-20261030",
-     "desc": "legion课题工作台",
-     "status": "doing"
     }
    ]
   },
@@ -7387,6 +7382,11 @@
     {
      "id": "WO-PICKCHAIN-VERDICTS-FIX-20261030",
      "desc": "选股产品链 verdicts 异常修复：py312 build_pick_verdicts 0xC0000005 访问冲突、py311 长跑无输出；先定位 pandas/tdx 依赖，再加超时/分片/日志；不阻塞 11-02 试运行。",
+     "status": "doing"
+    },
+    {
+     "id": "WO-LEGION-ACAD-D1-FLOW-20261030",
+     "desc": "司马徽鲁肃研究到决策闭环",
      "status": "doing"
     }
    ]
