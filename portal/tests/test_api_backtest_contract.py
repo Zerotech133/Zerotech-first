@@ -65,7 +65,7 @@ EXPECTED_TOP_SYMBOLS = [
     "_pulse_ago",
 ]
 
-LINE_CEILING = 6395  # B0 冻结基线；B1-B5 每批合并后必须下调（只减不增）
+LINE_CEILING = 5248  # 2026-10-30 B1 完成（6395→5249，minute/bt2 迁出）；只减不增
 
 
 def test_handler_keeps_all_methods():

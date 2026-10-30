@@ -85,3 +85,15 @@ portal/backtest/bt_api.py       # JSON API 方法（_sa_results/_sa_start/_algo_
 
 - 新增 portal/tests/test_api_backtest_contract.py（5 条）：Handler 20 方法快照/可调用、17 个外部导入符号、行数上限 6,395（只减不增）、AST 方法集漂移守卫；
 - 实测 5/5 绿；后续 B1-B5 每批合并后**必须下调 LINE_CEILING**（拆分期契约哨兵）。
+
+## 九、B1 完成记录（2026-10-30，P68）
+
+- **api_backtest.py 6,395 → 5,248 行**（-1,147）；契约上限同步下调至 5,248（只减不增）；
+- 新模块：`portal/api_backtest_minute.py`（450 行，minute 注册表/校验/重放/产物）、
+  `portal/api_backtest_bt2.py`（776 行，bt2 参数化回测/我的策略/产物读取）；均为纯移动；
+- 依赖单向：两个新模块不 import api_backtest；api_backtest 以 `# noqa: F401` 再导出全部符号（外部导入不变）；
+- 门禁同步：`portal/mixin_baseline.json` 显式重建（模块函数并入 api_* 新文件，union 396→424，diff 可评审）；
+- 测试沙箱适配：`test_api_backtest_minute.py` 改为“隔离副本模块 + 转发 ModuleType”（保持单文件沙箱语义）；
+- 验证：契约 5/5、portal 339 passed（1 known flaky）、ruff 净、`check_portal_split` PASS、mixin 零 diff。
+
+后续：B2 页面 HTML builder（fut/sellpoint 等，L44-420）→ B3/B4 页面渲染 → B5 JSON API → B6 收口至 ≤300 行。

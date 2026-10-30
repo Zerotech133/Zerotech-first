@@ -8,6 +8,7 @@ import importlib.util
 import json
 import sys
 import threading
+import types
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -72,23 +73,65 @@ def api(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         import_patches.setattr(api_common, "REPORTS_DIR", str(sandbox / "reports"))
         import_patches.setattr(api_common, "QBT_DIR", str(sandbox / "quant_backtest"))
         import_patches.setattr(job_spec_registry, "JobSpecRegistry", IsolatedRegistry)
+
+        # 2026-10-30 P68（B1 拆分配套）：api_backtest 的 minute/bt2 机制已迁至
+        # api_backtest_minute.py / api_backtest_bt2.py。为保持“单文件沙箱”语义，
+        # 在 patched 上下文内分别加载两份隔离副本，并用 sys.modules 别名让
+        # api_backtest.py 的 from ... import 绑定到隔离副本。
+        def _load_iso(name, path, alias_map):
+            spec_i = importlib.util.spec_from_file_location(name, path)
+            assert spec_i is not None and spec_i.loader is not None
+            mod = importlib.util.module_from_spec(spec_i)
+            sys.modules[name] = mod
+            spec_i.loader.exec_module(mod)
+            return mod
+
+        saved_modules = {k: sys.modules.get(k) for k in
+                         ("api_backtest_minute", "api_backtest_bt2")}
+        isolated_minute = _load_iso("api_backtest_minute",
+                                    PORTAL_ROOT / "api_backtest_minute.py", {})
+        isolated_bt2 = _load_iso("api_backtest_bt2",
+                                 PORTAL_ROOT / "api_backtest_bt2.py", {})
         spec = importlib.util.spec_from_file_location(
             f"_test_api_backtest_minute_{sandbox.name}", PORTAL_ROOT / "api_backtest.py"
         )
         assert spec is not None and spec.loader is not None
         isolated_api = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(isolated_api)
+        # 恢复真实模块名（isolated_api 内已绑定隔离副本的函数对象）
+        for k, v in saved_modules.items():
+            if v is None:
+                sys.modules.pop(k, None)
+            else:
+                sys.modules[k] = v
 
     assert Path(isolated_api._JOB_SPEC_CATALOG).resolve() == catalog
     assert Path(isolated_api._JOB_SPEC_REGISTRY.catalog_path).resolve() == catalog
     assert isolated_api._JOB_SPEC_REGISTRY.descriptors() == {}
     assert _catalog_fingerprint(default_catalog) == before
 
-    # These assignments belong to the private module, not an already-imported API.
+    # 2026-10-30 P68：isolated_api 还承担“旧单文件模块”的赋值入口（测试会改
+    # _BT2_DIR/_JOB_SPEC_* 等）；切换到转发 ModuleType，赋值同时落到底层子模块。
+    class _IsoApiModule(types.ModuleType):
+        _iso_targets = (isolated_minute, isolated_bt2)
+
+        def __setattr__(self, name, value):
+            super().__setattr__(name, value)
+            for _m in self._iso_targets:
+                if hasattr(_m, name):
+                    setattr(_m, name, value)
+
+    isolated_api.__class__ = _IsoApiModule
+
+    # These assignments belong to the private modules, not an already-imported API.
     isolated_api.STATION = str(sandbox)
-    isolated_api._BT2_STATE_DIR = str(sandbox / "state")
-    isolated_api._BT2_DIR = str(sandbox / "daily")
-    isolated_api.log_exc = lambda error: None  # No production error-log writes.
+    isolated_minute.STATION = str(sandbox)
+    isolated_minute.log_exc = lambda error: None
+    isolated_bt2.STATION = str(sandbox)
+    isolated_bt2.log_exc = lambda error: None  # No production error-log writes.
+    isolated_bt2._BT2_STATE_DIR = str(sandbox / "state")
+    isolated_bt2._BT2_DIR = str(sandbox / "daily")
+    isolated_api._bt2_state_dir_alias = None  # keep attribute checks backwards-compatible
 
     # backtest_engine_v2 is shared in sys.modules. Restore ONLY after every
     # auto-started worker has exited; on a timeout leave the safe temp paths set.
@@ -98,7 +141,7 @@ def api(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     engine.OUT_DIR = str(sandbox / "daily")
     finished: dict[str, threading.Event] = {}
     worker_errors: dict[str, BaseException] = {}
-    original_worker = isolated_api._bt2_worker
+    original_worker = isolated_bt2._bt2_worker
 
     def tracked_worker(job_id: str, params: dict) -> None:
         event = finished.setdefault(job_id, threading.Event())
@@ -110,6 +153,7 @@ def api(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         finally:
             event.set()
 
+    isolated_bt2._bt2_worker = tracked_worker
     isolated_api._bt2_worker = tracked_worker
 
     def await_job(job_id: str) -> dict:
