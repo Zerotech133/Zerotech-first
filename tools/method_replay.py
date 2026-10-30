@@ -33,6 +33,8 @@ def main(argv=None):
     ap.add_argument("--methods", default=",".join(tm.METHODS))
     ap.add_argument("--index", default="sh000001")
     ap.add_argument("--source", default="auto", choices=["auto", "local", "network"])
+    ap.add_argument("--sector", dest="sector", action="store_true", default=True)
+    ap.add_argument("--no-sector", dest="sector", action="store_false")
     ap.add_argument("--commission", type=float, default=tm.DEFAULT_COSTS["commission"])
     ap.add_argument("--stamp", type=float, default=tm.DEFAULT_COSTS["stamp"])
     ap.add_argument("--slippage", type=float, default=tm.DEFAULT_COSTS["slippage"])
@@ -54,9 +56,18 @@ def main(argv=None):
             return _k(code, n)
     else:
         kfn = tm.auto_kline
+    sector_map, sector_meta = {}, {"sector_covered": 0, "reason": "disabled"}
+    if args.sector:
+        try:
+            from agent_platform import sector_regime as sr
+            sector_map, sector_meta = sr.load_regime(codes)
+        except Exception as exc:  # noqa: BLE001
+            sector_meta = {"sector_covered": 0, "reason": str(exc)[:120]}
     res = tm.replay_with_constraints(codes, days=args.days, methods=methods,
                                      kline_fn=kfn, index_kline_fn=kfn,
-                                     costs=costs, limits=limits, index_code=args.index)
+                                     costs=costs, limits=limits, index_code=args.index,
+                                     sector_regime_by_code=sector_map)
+    res["sector"] = sector_meta
     os.makedirs(OUT_DIR, exist_ok=True)
     path = args.out or os.path.join(OUT_DIR, "replay_net_%s.json" % date.today().isoformat())
     with open(path, "w", encoding="utf-8") as f:
