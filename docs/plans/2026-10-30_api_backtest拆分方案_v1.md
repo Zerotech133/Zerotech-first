@@ -145,3 +145,28 @@ portal/backtest/bt_api.py       # JSON API 方法（_sa_results/_sa_start/_algo_
 | `api_backtest_json_api.py` | 65 | JSON API |
 
 残项：`api_backtest_pages_a/b` 单文件 >1,200（建议项 WARN，非阻塞）→ 可作后续 B7 拆分（按页面族再分 3-4 个 ≤1,200 模块）。
+
+## 十三、B7 完成记录（残项收口，2026-10-30 P75）
+
+- 目标：消除拆分遗留的「单文件 >1,200 行」建议项 WARN；
+- `api_backtest_pages_a.py`（2,520）→ 3 模块：
+  - `api_backtest_pages_a1.py` **568**（sectors/report/ind/lhb）
+  - `api_backtest_pages_a2.py` **631**（seat/jev/brief/news）
+  - `api_backtest_pages_stock.py` **1,346**（`_bt_stock_page` 单体 1,318 + stock_form；单函数不可拆，**登记冻结基线**，只减不增）
+- `api_backtest_pages_b.py`（1,730）→ 2 模块：
+  - `api_backtest_pages_b1.py` **1,093**（weak/cross/nine_dim/algo_market）
+  - `api_backtest_pages_b2.py` **649**（fin/strategies/sa）
+- Handler 20 个委托改指向新模块；`check_portal_split.py` FROZEN 同步：
+  `api_backtest.py` 基线 6,135→**285**（收紧）、新增 `api_backtest_pages_stock.py`=1,346；
+- 验证：契约 5/5；分钟测试 98 passed；portal 全量绿（known flaky 除外）；ruff 净；mixin 零 diff；split guard PASS（仅剩存量 api_portfolio/api_screen 建议项）。
+
+### api_backtest 拆分最终形态
+
+| 模块 | 行数 |
+|---|---:|
+| `api_backtest.py` | 285 |
+| `api_backtest_pages_a1/a2/stock` | 568 / 631 / 1,346（冻结） |
+| `api_backtest_pages_b1/b2` | 1,093 / 649 |
+| `api_backtest_pages_html` | 373 |
+| `api_backtest_jobs` | 519 |
+| `api_backtest_minute` / `bt2` / `json_api` | 450 / 776 / 65 |
