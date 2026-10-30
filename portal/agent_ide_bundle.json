@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 20:24",
+ "generated": "2026-10-30 20:26",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 28,
+  "workorders_doing": 29,
   "workorders_review": 9
  },
  "workorders": [
@@ -329,15 +329,6 @@
    "project": "general"
   },
   {
-   "id": "WO-LEGION-ACAD1-HERMES-20261030",
-   "desc": "Hermes底座接入司马徽研究院：新增静态页/顶栏Tab，iframe 5175 /cn/replay?tab=selection；不改Hermes核心API。",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-ACAD1-HERMES-20261030",
-   "created": "2026-10-30 20:23:37",
-   "project": "quant"
-  },
-  {
    "id": "WO-D1-HERMES-BRIDGE-20261030",
    "desc": "A: D1只读MCP数据桥，接Hermes stock-data的risk_overview/strategy_signals；增强make_context；fail-open+缓存+开关；B: D1研究MCP工具",
    "status": "doing",
@@ -345,6 +336,24 @@
    "branch": "task/WO-D1-HERMES-BRIDGE-20261030",
    "created": "2026-10-30 20:23:55",
    "project": "portal"
+  },
+  {
+   "id": "WO-LEGION-W1T1C-20261030",
+   "desc": "W1-3c T1/T2-only 4b两轮",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-W1T1C-20261030",
+   "created": "2026-10-30 20:25:55",
+   "project": "general"
+  },
+  {
+   "id": "WO-GUANYU-P88-20261030",
+   "desc": "关羽线复盘",
+   "status": "doing",
+   "owner": "GUANYU",
+   "branch": "task/WO-GUANYU-P88-20261030",
+   "created": "2026-10-30 20:26:01",
+   "project": "general"
   }
  ],
  "coder_traces": [
@@ -6641,7 +6650,14 @@
    ],
    "experience": "30 年工程治理经验：漏洞分级与补丁流程、失败测试基线修复、编码规范与门禁落地、技术债清欠与重复功能合并；证据驱动、逐项闭环，只出报告与工单不自行合并，开发动作限独立 worktree 提交+跑测试并交 L2 人签。",
    "dept_name": "研究院",
-   "dept_cn_title": "太学"
+   "dept_cn_title": "太学",
+   "tasks": [
+    {
+     "id": "WO-GUANYU-P88-20261030",
+     "desc": "关羽线复盘",
+     "status": "doing"
+    }
+   ]
   },
   "HUANGZHONG": {
    "id": "HUANGZHONG",
@@ -7307,8 +7323,8 @@
      "status": "doing"
     },
     {
-     "id": "WO-LEGION-ACAD1-HERMES-20261030",
-     "desc": "Hermes底座接入司马徽研究院：新增静态页/顶栏Tab，iframe 5175 /cn/replay?tab=selection；不改Hermes核心API。",
+     "id": "WO-LEGION-W1T1C-20261030",
+     "desc": "W1-3c T1/T2-only 4b两轮",
      "status": "doing"
     }
    ]
