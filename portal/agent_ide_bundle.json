@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-31 00:44",
+ "generated": "2026-10-31 00:50",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 31,
+  "workorders_doing": 32,
   "workorders_review": 11
  },
  "workorders": [
@@ -389,6 +389,15 @@
    "owner": "GUANYU",
    "branch": "task/WO-GUANYU-P101-20261030",
    "created": "2026-10-30 23:22:26",
+   "project": "general"
+  },
+  {
+   "id": "WO-HZ-REFRESH-LOG-20261031",
+   "desc": "证据刷新任务日志路径对齐 C:\\Temp",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-HZ-REFRESH-LOG-20261031",
+   "created": "2026-10-31 00:48:24",
    "project": "general"
   }
  ],
