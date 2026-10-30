@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-30 14:51",
+ "generated": "2026-10-30 14:57",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 62,
@@ -329,12 +329,12 @@
    "project": "general"
   },
   {
-   "id": "K-ORG-20261030-IDXDAILY",
-   "desc": "数据线：curated_update 日更补 index_daily（JEV 基准 10-24 起缺失，校准门控被冻结）",
+   "id": "WO-KB-PAGE-20261030",
+   "desc": "语料知识库门户页：api_kb_corpus 只读接口 + kb_corpus.html（检索/问答/引用）",
    "status": "doing",
    "owner": "DSH-Lead",
-   "branch": "task/K-ORG-20261030-IDXDAILY",
-   "created": "2026-10-30 14:48:37",
+   "branch": "task/WO-KB-PAGE-20261030",
+   "created": "2026-10-30 14:57:41",
    "project": "general"
   }
  ],
