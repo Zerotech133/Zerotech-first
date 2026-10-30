@@ -25,7 +25,10 @@ from pathlib import Path
 try:
     from safe_urlopen import safe_urlopen
 except ImportError:  # 作为包导入时
-    from tools.safe_urlopen import safe_urlopen
+    try:
+        from safe_urlopen import safe_urlopen
+    except ImportError:  # 作为包/仓库根导入时
+        from tools.safe_urlopen import safe_urlopen
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent

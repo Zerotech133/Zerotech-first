@@ -33,7 +33,10 @@ import urllib.request
 try:
     from safe_urlopen import safe_urlopen
 except ImportError:  # 作为包导入时
-    from tools.safe_urlopen import safe_urlopen
+    try:
+        from safe_urlopen import safe_urlopen
+    except ImportError:  # 作为包/仓库根导入时
+        from tools.safe_urlopen import safe_urlopen
 
 # K-ORG-080/N8：轨迹目录与 agent_coder.py:440 TRACE_DIR 同源
 TRACE_DIR = os.path.join(os.path.dirname(os.path.dirname(

@@ -22,7 +22,10 @@ from _repo_paths import repo_root  # noqa: E402
 try:
     from safe_urlopen import safe_urlopen
 except ImportError:  # 作为包导入时
-    from tools.safe_urlopen import safe_urlopen
+    try:
+        from safe_urlopen import safe_urlopen
+    except ImportError:  # 作为包/仓库根导入时
+        from tools.safe_urlopen import safe_urlopen
 
 REPO = repo_root(Path(__file__))
 DEFAULT_URL = "http://127.0.0.1:8091/api/zhuge/brief"

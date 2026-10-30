@@ -17,7 +17,10 @@ from pathlib import Path
 try:
     from safe_urlopen import safe_urlopen
 except ImportError:  # 作为包导入时
-    from tools.safe_urlopen import safe_urlopen
+    try:
+        from safe_urlopen import safe_urlopen
+    except ImportError:  # 作为包/仓库根导入时
+        from tools.safe_urlopen import safe_urlopen
 
 REPO = Path(r"C:\项目\老田的AI助手")
 ADVICE_ROOT = REPO / "agent_platform" / "data" / "governance_ai" / "advice"

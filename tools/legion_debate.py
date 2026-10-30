@@ -31,7 +31,10 @@ from xsec_profile import profile as xsec_profile  # noqa: E402
 try:
     from safe_urlopen import safe_urlopen
 except ImportError:  # 作为包导入时
-    from tools.safe_urlopen import safe_urlopen
+    try:
+        from safe_urlopen import safe_urlopen
+    except ImportError:  # 作为包/仓库根导入时
+        from tools.safe_urlopen import safe_urlopen
 
 MODEL_CHAIN = ["qwen3.5:9b"]          # 10-26：qwen2.5:7b 已清理（404），改在役 9b
 PROMPTS_DIR = ROOT / "agent_platform" / "prompts"
