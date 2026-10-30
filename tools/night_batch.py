@@ -394,10 +394,21 @@ def _cutoff(until: str) -> datetime:
     return target
 
 
-def _run(cmd: list[str], cwd: Path, timeout: float) -> tuple[int, str]:
+def _jev_child_env() -> dict:
+    """JEV 子进程环境：预筛默认 safe（2026-10-30 PREFILTERON，用户批准）。
+
+    只对 JEV 子进程生效（XQ 等其他子进程不受影响）；父进程显式设置
+    JEV_PREFILTER 时尊重父值（便于回滚/对照）。
+    """
+    env = dict(os.environ)
+    env.setdefault("JEV_PREFILTER", "safe")
+    return env
+
+
+def _run(cmd: list[str], cwd: Path, timeout: float, env: dict | None = None) -> tuple[int, str]:
     try:
         proc = subprocess.run(cmd, cwd=str(cwd), capture_output=True,
-                              timeout=timeout, check=False)
+                              timeout=timeout, check=False, env=env)
     except subprocess.TimeoutExpired:
         return 124, "HARD-KILL(%ss)" % int(timeout)
     out = (proc.stdout or b"").decode("utf-8", "replace")
@@ -596,7 +607,7 @@ def main(argv=None) -> int:
                                  "--batch", str(args.batch_jev),
                                  "--deadline", str(args.deadline),
                                  "--alert-threshold", ALERT_THRESHOLD],
-                                ROOT / "news_collector", hard_s)
+                                ROOT / "news_collector", hard_s, env=_jev_child_env())
                 elapsed = time.time() - t0
                 jev_elapsed = elapsed
                 if rc == 124:
