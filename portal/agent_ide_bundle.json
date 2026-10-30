@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 29,
+  "workorders_doing": 28,
   "workorders_review": 9
  },
  "workorders": [
@@ -326,15 +326,6 @@
    "owner": "DSH-Lead",
    "branch": "task/K-ORG-20261030-JEVARCH2",
    "created": "2026-10-30 18:47:29",
-   "project": "general"
-  },
-  {
-   "id": "WO-ZHAOYUN-UIUX-B1-20261030",
-   "desc": "W2-B1：zhaoyun.html banner升级+token失败处理+下钻四卡错误态",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-ZHAOYUN-UIUX-B1-20261030",
-   "created": "2026-10-30 19:12:57",
    "project": "general"
   },
   {
@@ -7320,11 +7311,6 @@
     {
      "id": "WO-LEGION-OIDC-PATH-20261030",
      "desc": "OIDC配置路径对齐实际vault",
-     "status": "doing"
-    },
-    {
-     "id": "WO-ZHAOYUN-UIUX-B1-20261030",
-     "desc": "W2-B1：zhaoyun.html banner升级+token失败处理+下钻四卡错误态",
      "status": "doing"
     },
     {
