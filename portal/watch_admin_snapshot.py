@@ -185,6 +185,8 @@ class WatchAdminAggregator:
         self.agent_platform_data = self.station_root / "agent_platform" / "data"
         self.quant_backtest_dir = self.station_root / "quant_backtest"
         self.chanlun_pool_path = self.quant_backtest_dir / "data" / "chanlun_pool.jsonl"
+        self.runtime_decisions_path = (self.quant_backtest_dir / "data" /
+                                       "semantica" / "decisions_runtime.jsonl")
         # Cache (mirrors SnapshotAggregator._lock/_cached/_cached_at) --------- #
         self._lock = threading.Lock()
         self._cached: Optional[Dict[str, Any]] = None
@@ -636,6 +638,22 @@ class WatchAdminAggregator:
             error_code="no_runtime_feed",
             note=("运行时投票/分歧上报无实时供源接入（本页只读、不连运行体）→ SOURCE_UNVERIFIED。"),
             data=None, source="运行时投票源（未接入）", verified=False))
+        # 2026-10-30 WO-WATCH-ADMIN：运行期决策流水（真实文件源；非投票）。
+        rows, rerr = self._read_runtime_decisions()
+        if rows:
+            closes = [r for r in rows if r.get("t") == "close"]
+            sources.append(_source(
+                "runtime_decisions", state="healthy", source_mode="file", error_code=None,
+                note=("quant_backtest/data/semantica/decisions_runtime.jsonl：运行期决策流水"
+                      "（record/close，只读；含决策与后验结果）。"),
+                data={"count": len(rows), "closed": len(closes), "recent": rows[-5:]},
+                source=str(self.runtime_decisions_path), verified=True))
+        else:
+            sources.append(_source(
+                "runtime_decisions", state="unknown", source_mode="file",
+                error_code=rerr or "no_data",
+                note=("运行期决策流水缺失/不可读 → SOURCE_UNVERIFIED。"), data=None,
+                source=str(self.runtime_decisions_path), verified=False))
         return self._zone("zone4", "④ 组合决策", sources)
 
     # ---- Zone 5: 回测对比 --------------------------------------------- #
@@ -784,6 +802,28 @@ class WatchAdminAggregator:
         return self._zone("zone6", "⑥ 上行时间线", sources)
 
     # ---- Zone 7: A/B 影子对比 (M3) ------------------------------------ #
+    def _read_runtime_decisions(self) -> Tuple[List[Dict[str, Any]], Optional[str]]:
+        """只读运行期决策流水（decisions_runtime.jsonl）；缺失不编造。"""
+        p = Path(self.runtime_decisions_path)
+        if not p.exists():
+            return [], "missing"
+        rows: List[Dict[str, Any]] = []
+        try:
+            with p.open("r", encoding="utf-8", errors="replace") as fh:
+                for line in fh:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        item = json.loads(line)
+                    except ValueError:
+                        continue
+                    if isinstance(item, dict):
+                        rows.append(item)
+            return rows, None
+        except OSError:
+            return [], "read_error"
+
     def _read_shadow_ledger(self, path: Path) -> Tuple[Optional[List[Dict[str, Any]]], Optional[str]]:
         p = Path(path)
         if not p.exists():
@@ -884,6 +924,28 @@ class WatchAdminAggregator:
             "posterior_metrics", state="unknown", source_mode="computed", error_code="not_wired",
             note=("后验指标（夏普/胜率/回撤/ROI 排名）需结算后验配对，尚未接入 → SOURCE_UNVERIFIED。"),
             data=None, source="结算后验（未接入）", verified=False))
+        # 2026-10-30 WO-WATCH-ADMIN：从运行期决策流水计算可复核的后验统计（胜率/均值）。
+        rows, rerr = self._read_runtime_decisions()
+        closes = [r for r in rows or [] if r.get("t") == "close"
+                  and r.get("outcome") in ("win", "loss")]
+        if closes:
+            wins = sum(1 for r in closes if r.get("outcome") == "win")
+            realized = [float(r.get("realized") or 0.0) for r in closes]
+            sources.append(_source(
+                "posterior_metrics", state="healthy", source_mode="computed", error_code=None,
+                note=("从 decisions_runtime.jsonl 的 close 记录计算：胜率/均值收益/样本数"
+                      "（只读；非夏普/最大回撤全量指标）。"),
+                data={"sample": len(closes), "wins": wins,
+                      "win_rate": round(wins / len(closes), 4),
+                      "avg_realized": round(sum(realized) / len(realized), 6),
+                      "source_file": str(self.runtime_decisions_path)},
+                source=str(self.runtime_decisions_path), verified=True))
+        else:
+            sources.append(_source(
+                "posterior_metrics", state="unknown", source_mode="computed",
+                error_code=rerr or "no_closed_sample",
+                note=("无 close 后验样本 → SOURCE_UNVERIFIED。"),
+                data=None, source=str(self.runtime_decisions_path), verified=False))
 
         z = self._zone("zone7", "⑦ A/B 影子对比（M3）", sources)
         z["interactive_locked"] = True
