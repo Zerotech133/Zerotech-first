@@ -49,3 +49,11 @@ def test_zhice_entry_card():
     assert "127.0.0.1:5175" in HTML
     assert "智策账户" in HTML
     assert "a.target='_blank'" in HTML
+
+
+def test_tri_readonly_panel():
+    assert 'id="tri-readonly"' in HTML
+    assert '/api/bff/overview' in HTML
+    assert '历史快照' in HTML
+    assert 'zero_bff' in HTML
+    assert 'tri-refresh' in HTML
