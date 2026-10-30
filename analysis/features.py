@@ -192,6 +192,29 @@ def build_features(snap):
             for k, src in (("revenue_yoy", "or_yoy"), ("net_profit_yoy", "netprofit_yoy")):
                 if k not in fnd or fnd.get(k) is None:
                     fnd[k] = _f(r.get(src))
+        # P0L：非经常性损益识别（扣非口径；一次性收益不得抬高评级）
+        try:
+            nr = {}
+            if fi is not None and len(fi):
+                fr = fi.iloc[-1]
+                # 仅当 fina 最新期与 income 最新期一致才采信
+                if str(fr.get("end_date")) == str(fnd.get("latest_end")):
+                    for k, src in (("profit_dedt_yi", "profit_dedt"), ("extra_item_yi", "extra_item")):
+                        v = fr.get(src)
+                        if v is not None and pd.notna(v):
+                            nr[k] = round(float(v) / 1e8, 2)
+                    v = fr.get("dt_netprofit_yoy")
+                    if v is not None and pd.notna(v):
+                        nr["dt_yoy"] = _f(v)
+            np_val = fnd.get("net_profit_latest_yi")
+            if nr.get("extra_item_yi") is not None and np_val:
+                nr["ratio"] = round(nr["extra_item_yi"] / max(abs(float(np_val)), 1e-9), 2)
+            if nr.get("profit_dedt_yi") is not None and np_val:
+                nr["dedt_ratio"] = round(nr["profit_dedt_yi"] / max(abs(float(np_val)), 1e-9), 2)
+            if nr:
+                fnd["nonrecurring"] = nr
+        except Exception as exc:
+            logging.getLogger(__name__).warning("silent-except %s: %s", "analysis/features.py", exc)
     if bs is not None and len(bs):
         r = bs.iloc[-1]
         fnd["net_assets_yi"] = _f(float(r.get("total_hldr_eqy_exc_min_int", 0)) / 1e8)
