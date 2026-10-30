@@ -235,3 +235,7 @@ python -m analysis.curated_update --auto --dry-run  # 只看计划
 - 仅 append-only：只追加旧表没有的 (ts_code, trade_date)，**不删除/不改历史行**（修掉全局去重误删教训）；
 - 计划口径：只补 trade_cal 已收盘交易日，默认 18:00 后才纳入当日数据；有缺失但补数为 0 → 退出码 1（供定时任务告警）；
 - 定位：供 L2 定时任务调用（计划任务变更需人类批准）；日常也可手动补数。
+
+### 数据勘误（P0T，2026-10-30）
+
+- 龙虎榜 `seat_net_wan` 修复：tushare `top_inst.net_buy/buy/sell` 单位为**元**，原实现直接当万元输出（600337 出现"155 亿"级错误）；现统一 `��/1e4` 转万元，并优先用 `net_buy` 字段。
