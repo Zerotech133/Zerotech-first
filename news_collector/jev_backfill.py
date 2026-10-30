@@ -92,14 +92,25 @@ def m3_paused(flag_path: Path = M3_PAUSE_FLAG) -> bool:
 PREFILTER_ENV = "JEV_PREFILTER"
 
 
+def prefilter_mode() -> str:
+    """预筛模式：off（默认）/ safe（推荐，仅 routine 治理模板）/ aggressive（旧全量规则）。
+
+    2026-10-30 PREFILTEREVAL：旧全量 skip 误杀率 58%，safe 模式按模式拆分后
+    routine 模板精度 100%——开启时默认走 safe。
+    """
+    raw = str(os.environ.get(PREFILTER_ENV, "0")).strip().lower()
+    if raw in ("0", "off", "false", "no", ""):
+        return "off"
+    if raw in ("1", "safe", "on", "true", "yes"):
+        return "safe"
+    if raw in ("aggressive", "legacy"):
+        return "aggressive"
+    return "off"
+
+
 def prefilter_enabled() -> bool:
-    """两段式推理灰度开关（K-ORG-20261026-JEV2STAGE）。默认 0=关，行为与现状完全一致。"""
-    return str(os.environ.get(PREFILTER_ENV, "0")).strip().lower() in (
-        "1",
-        "true",
-        "yes",
-        "on",
-    )
+    """两段式推理灰度开关（K-ORG-20261026-JEV2STAGE）。默认 off。"""
+    return prefilter_mode() != "off"
 
 
 def _lease_yield_disabled() -> bool:
@@ -274,7 +285,8 @@ def main():
             skipped_jsons = []
             for it in items:
                 j = jev_prefilter.prefilter_jev(
-                    it.get("title") or "", it.get("source") or ""
+                    it.get("title") or "", it.get("source") or "",
+                    mode=prefilter_mode()
                 )
                 if j is None:
                     kept.append(it)

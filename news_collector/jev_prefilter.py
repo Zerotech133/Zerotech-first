@@ -69,6 +69,33 @@ NEUTRAL_PATTERNS = [
     r"^(据统计|数据显示|据.{0,6}报道|消息称)",
 ]
 
+# ── SAFE 模式：仅 routine 治理模板（2026-10-30 PREFILTEREVAL 数据验证）──────
+# 评估（近 30 天 2 万条已判）：旧全量预筛 skip 1,449 条中 840 条是模型高置信方向
+# （误杀率 58%），不可开启。按模式拆分后「董事会决议/独董声明/章程修订」等
+# routine 模板精度 100%（各 n=12-20），可安全作为 skip 白名单。
+SAFE_NEUTRAL_PATTERNS = [
+    r"股东大会.{0,8}(通知|决议|提示)",
+    r"(董事会|监事会).{0,8}(决议|会议).{0,6}(公告|决议)?",
+    r"独立董事.{0,24}(候选人|提名人|声明|意见|专项)",
+    r"(章程|议事规则|管理制度).{0,8}(修订|审议)",
+    r"(修订|审议).{0,8}(章程|议事规则|管理制度)",
+    r"(证券变动|股份变动)月报表",
+    r"(定期报告|年度报告|季度报告|中期报告|年报|半年报|季报).{0,6}(披露|预约)提示",
+    r"(新股|可转债).{0,6}(申购|上市|缴款)提示",
+    r"(休市|假期|交易日)安排",
+]
+_SAFE_RE = [re.compile(p) for p in SAFE_NEUTRAL_PATTERNS]
+
+
+def safe_neutral_hit(title: str) -> str | None:
+    text = title or ""
+    for rx in _SAFE_RE:
+        m = rx.search(text)
+        if m:
+            return m.group(0)
+    return None
+
+
 # ── 来源权重（仅用于 reason 标注，不单独决定 skip）──────────────────────
 SOURCE_TRUST = {
     "announcement": "high",
@@ -106,7 +133,8 @@ def neutral_hit(title: str) -> str | None:
     return None
 
 
-def decide(title: str, source: str = "", stocks: list | None = None) -> dict[str, Any]:
+def decide(title: str, source: str = "", stocks: list | None = None,
+           mode: str = "aggressive") -> dict[str, Any]:
     """粗筛决策 → {decision: keep|skip, reason, bias_hint, matched}。
 
     公式：方向性词命中 → keep；否则中性模式命中 → skip；否则 keep（宁漏不误）。
@@ -132,7 +160,8 @@ def decide(title: str, source: str = "", stocks: list | None = None) -> dict[str
     # 2026-10-30 BATCH4：标题出现 6 位个股代码时，不接受「例行/行情」skip
     # （实证误杀："开盘涨停！000678，6连板！"）。
     has_stock_code = bool(re.search(r"(?<!\d)\d{6}(?!\d)", text))
-    n = neutral_hit(text)
+    hit_fn = safe_neutral_hit if mode == "safe" else neutral_hit
+    n = hit_fn(text)
     if n and has_stock_code:
         return {
             "decision": "keep",
@@ -158,13 +187,13 @@ def decide(title: str, source: str = "", stocks: list | None = None) -> dict[str
     }
 
 
-def prefilter_jev(title: str, source: str = "") -> dict[str, Any] | None:
+def prefilter_jev(title: str, source: str = "", mode: str = "aggressive") -> dict[str, Any] | None:
     """给 jev_backfill 用：skip 时返回可落库的 jev dict，keep 时返回 None。
 
     落库 dict 与 news_ai 的本地判读结构保持同构（少 reason/event_type 细节），
     并带 src=prefilter 与 pref 证据字段，便于审计与回退。
     """
-    r = decide(title, source)
+    r = decide(title, source, mode=mode)
     if r["decision"] != "skip":
         return None
     return {
