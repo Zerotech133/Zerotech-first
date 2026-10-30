@@ -71,6 +71,19 @@ def _run_dir(run_id):
 
 def handle_get(handler, path, qs):
     q = _qs(qs)
+    if path == "/api/analysis/watchlist":
+        codes = []
+        try:
+            p = os.path.join(ROOT, "analysis", "watchlist.txt")
+            if os.path.exists(p):
+                for ln in open(p, encoding="utf-8"):
+                    t = ln.strip()
+                    if t and not t.startswith("#") and CODE_RE.match(t.split()[0].upper()):
+                        codes.append(t.split()[0].upper())
+        except Exception as e:
+            return _json(handler, {"ok": False, "error": "watchlist 读取失败: " + str(e)[:80]}, 500)
+        return _json(handler, {"ok": True, "codes": codes})
+
     if path == "/api/analysis/health":
         stats = {}
         for k in ("pending", "running", "done"):

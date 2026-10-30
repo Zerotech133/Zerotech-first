@@ -256,6 +256,7 @@ QBT_DIR = os.path.join(STATION, "quant_backtest")   # 缠论 P1 数据底座模�
 # 现有工具页 URL 全部不动（飞书卡片历史链接不破坏），只重组入口归属。
 SECTIONS = [
     ("quant", "📈 量化", "/quant"),
+    ("stock", "📊 个股分析", "/sa"),
     ("intel", "🕵️ 情报", "/intel"),
     ("creator", "🎬 创作", "/creator"),
     ("dev", "💻 开发", "/dev"),
@@ -264,6 +265,16 @@ SECTIONS = [
 
 
 DOMAIN_NAV_GROUPS = {
+    "stock": (
+        ("📊 分析工作台", (
+            ("🔍 单股分析", "/sa", "sa"),
+            ("🧾 事件复核", "/sa#review", "sareview"),
+            ("📚 方法说明", "/sa#method", "samethod"),
+            ("🗄️ 数据口径", "/sa#data", "sadata"))),
+        ("🧩 产品与开源", (
+            ("📖 开源边界", "/sa#opensource", "saopensource"),
+            ("💼 商业化路线", "/sa#commercial", "sacommercial"))),
+    ),
     "quant": (
         ("🌅 盘前与驾驶", (
             ("📺 数据大屏", "/screen", "screen"),
@@ -271,7 +282,6 @@ DOMAIN_NAV_GROUPS = {
             ("🌇 盘后复盘", "/afterhours", "afterhours"),
             ("💰 金融驾驶舱", "/fin", "fin"),
             ("🎯 量化驾驶舱", "/quant-drill", "quantdrill"),
-            ("🔍 个股分析", "/sa", "sa"),
             ("💬 查数", "/nl", "nl"))),
         ("🚀 指挥", (
             ("🚀 驾驶舱", "/bridge", "bridge"),

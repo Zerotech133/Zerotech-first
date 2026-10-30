@@ -53,6 +53,12 @@ class TestAnalysisApi(unittest.TestCase):
         api_analysis.handle_post(h, "/api/analysis/submit", "")
         self.assertEqual(h.status, 400)
 
+    def test_watchlist(self):
+        h = Stub()
+        api_analysis.handle_get(h, "/api/analysis/watchlist", "")
+        self.assertEqual(h.status, 200)
+        self.assertIn("codes", h.obj)
+
     def test_unknown(self):
         h = Stub()
         api_analysis.handle_get(h, "/api/analysis/nope", "")
