@@ -1,0 +1,20 @@
+{
+  "sub": "zhice:u_1001",
+  "actor_type": "member",
+  "tenant_id": "tenant_1",
+  "roles": ["USER", "RESEARCHER"],
+  "permissions": ["view", "manage_own", "research"],
+  "owner_scope": "own",
+  "display_name": "示例用户",
+  "source": "zero_bound",
+  "source_ids": {
+    "zhice_user_id": "u_1001",
+    "cainiao_member_id": "m_2001"
+  },
+  "entitlements": ["quant.readonly", "research.basic"],
+  "issued_at": "2026-10-30T08:00:00+08:00",
+  "expires_at": "2026-10-30T20:00:00+08:00",
+  "attributes": {
+    "readonly": true
+  }
+}

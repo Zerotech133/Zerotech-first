@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://zerobound.local/contracts/identity_context.schema.json",
+  "title": "IdentityContext",
+  "description": "零界/智策/菜鸟统一身份上下文；只描述调用者，不做鉴权决策。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["sub", "actor_type", "roles", "permissions", "owner_scope", "source", "issued_at"],
+  "properties": {
+    "sub": {"type": "string", "minLength": 1, "maxLength": 128, "description": "跨系统唯一主体 ID"},
+    "actor_type": {
+      "type": "string",
+      "enum": ["admin", "member", "qmt_client", "strategy_collaborator", "agent"],
+      "description": "菜鸟四层 + agent 的统一操作者类型"
+    },
+    "tenant_id": {"type": ["string", "null"], "maxLength": 64},
+    "roles": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "enum": ["ADMIN", "USER", "TRADER", "RESEARCHER", "RISK_MANAGER", "VIEWER"]}
+    },
+    "permissions": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "enum": ["view", "manage_own", "trade", "approve", "research", "risk", "admin"]}
+    },
+    "owner_scope": {
+      "type": "string",
+      "enum": ["own", "strategy", "tenant", "global"],
+      "description": "可写资源边界；只读视图不得据此提升权限"
+    },
+    "display_name": {"type": "string", "maxLength": 128},
+    "source": {"type": "string", "enum": ["zero_bound", "zhice", "cainiao"]},
+    "source_ids": {
+      "type": "object",
+      "additionalProperties": {"type": "string", "maxLength": 128},
+      "description": "如 {zhice_user_id, cainiao_user_id, qmt_client_id}"
+    },
+    "entitlements": {
+      "type": "array",
+      "items": {"type": "string", "maxLength": 64},
+      "description": "由权益/计费系统下发的功能键，不替代 roles"
+    },
+    "issued_at": {"type": "string", "format": "date-time"},
+    "expires_at": {"type": ["string", "null"], "format": "date-time"},
+    "attributes": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "只读上下文扩展；不得放密钥/token/密码"
+    }
+  }
+}

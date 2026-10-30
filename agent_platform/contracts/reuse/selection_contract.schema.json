@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://zerobound.local/contracts/selection_contract.schema.json",
+  "title": "SelectionContract",
+  "description": "统一选股输出契约；只描述一次选股结果与来源，不包含下单/实盘指令。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_id", "strategy_id", "mode", "as_of", "source", "universe", "pool"],
+  "properties": {
+    "contract_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "strategy_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "strategy_name": {"type": "string", "maxLength": 200},
+    "mode": {"type": "string", "enum": ["MODEL", "AGENT", "HYBRID"]},
+    "as_of": {"type": "string", "format": "date-time"},
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["system"],
+      "properties": {
+        "system": {"type": "string", "enum": ["zero_bound", "zhice", "cainiao"]},
+        "service": {"type": "string", "maxLength": 128},
+        "version": {"type": "string", "maxLength": 64},
+        "task_id": {"type": ["string", "null"], "maxLength": 128}
+      }
+    },
+    "universe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": {"type": "string", "enum": ["full_a", "custom", "index", "watchlist"]},
+        "codes": {"type": "array", "items": {"type": "string", "pattern": "^[0-9A-Za-z.\\-]{2,20}$"}, "uniqueItems": true},
+        "index_code": {"type": ["string", "null"], "maxLength": 32},
+        "exclude_st": {"type": "boolean"},
+        "exclude_new_days": {"type": "integer", "minimum": 0}
+      }
+    },
+    "selection_model": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["model_type"],
+      "properties": {
+        "model_id": {"type": ["string", "null"], "maxLength": 128},
+        "model_type": {"type": "string", "enum": ["FACTOR", "RULE", "COMPOSITE"]},
+        "top_n": {"type": "integer", "minimum": 1, "maximum": 500},
+        "factors": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "filters": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "ranking": {"type": ["string", "null"], "maxLength": 128}
+      }
+    },
+    "score_task": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["task_id", "status"],
+      "properties": {
+        "task_id": {"type": "string", "maxLength": 128},
+        "status": {"type": "string", "enum": ["pending", "running", "completed", "failed"]},
+        "engine": {"type": "string", "maxLength": 64}
+      }
+    },
+    "pool": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "name", "rank"],
+        "properties": {
+          "code": {"type": "string", "minLength": 2, "maxLength": 20},
+          "name": {"type": "string", "maxLength": 64},
+          "rank": {"type": "integer", "minimum": 1},
+          "score": {"type": ["number", "null"]},
+          "weight": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+          "signal_strength": {"type": ["string", "null"], "maxLength": 32},
+          "target_price": {"type": ["number", "null"], "minimum": 0},
+          "reason": {"type": ["string", "null"], "maxLength": 2000},
+          "factor_detail": {"type": ["object", "null"], "additionalProperties": true}
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "数据时点/权限/来源追踪；不得放密钥"
+    }
+  }
+}

@@ -1,0 +1,76 @@
+{
+  "ok": true,
+  "mode": "read_only",
+  "as_of": "2026-10-30T08:26:16+08:00",
+  "sources": {
+    "cainiao": {
+      "ok": true,
+      "mode": "read_only",
+      "source": "cainiao_mysql:thunder_model",
+      "as_of": "2026-10-30T08:26:16+08:00",
+      "db": {
+        "host": "127.0.0.1",
+        "port": 3307,
+        "database": "thunder_model"
+      },
+      "users": {
+        "system_users": 35,
+        "member_user": 70,
+        "qmt_clients": 12,
+        "strategy_authorized_users": 4
+      },
+      "strategies": {
+        "total": 19,
+        "live": 17,
+        "enabled": 5,
+        "agents": 28
+      },
+      "pool": {
+        "total": 1181,
+        "active": 14,
+        "signals": 399
+      },
+      "score_snapshots": {
+        "monitor_snapshots": 27252,
+        "stock_own_snapshots": 586,
+        "recommendations": 1606
+      },
+      "instructions": {
+        "member_instructions": 23702,
+        "real_orders": 6822
+      },
+      "freshness": {
+        "strategies": "2026-09-09 10:54:25",
+        "signals": "2026-09-24 10:43:04",
+        "pool": "2026-08-26 14:41:07",
+        "monitor_snapshots": "2026-04-14 10:21:32",
+        "recommendations": "2026-02-27 20:08:08",
+        "instructions": "2026-09-30 09:33:03",
+        "real_orders": "2026-09-30 09:34:01"
+      },
+      "last_24h": {
+        "signals": 0,
+        "instructions": 0,
+        "real_orders": 0,
+        "monitor_snapshots": 0
+      },
+      "cached": false
+    },
+    "zhice": {
+      "ok": true,
+      "mode": "read_only",
+      "source": "zhice_api",
+      "as_of": "2026-10-30T08:26:16+08:00",
+      "data": {
+        "status": "ok",
+        "app": "zhice-os-v2",
+        "version": "0.1.0"
+      }
+    }
+  },
+  "contracts": {
+    "identity_context": "agent_platform/contracts/reuse/identity_context.schema.json",
+    "conversation": "agent_platform/contracts/reuse/conversation.schema.json",
+    "selection_contract": "agent_platform/contracts/reuse/selection_contract.schema.json"
+  }
+}
