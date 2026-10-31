@@ -1091,6 +1091,16 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/health":
             self._send_json({"ok": True, "service": "legion-command", "version": "1.0"})
             return
+        if path == "/api/ide/version":
+            # 2026-10-31 发布单元：只读 release artifact + manifest hash 校验
+            try:
+                from ide_release_info import build_info
+                info = build_info()
+                self._send_json(info, 200 if info.get("ok") else 503)
+            except Exception as e:  # noqa: BLE001
+                self._send_json({"ok": False, "error": "release_info_failed",
+                                 "detail": "%s: %s" % (type(e).__name__, str(e)[:160])}, 500)
+            return
         self._send_json({"ok": False, "error": "not_found: %s" % path}, 404)
 
     @staticmethod

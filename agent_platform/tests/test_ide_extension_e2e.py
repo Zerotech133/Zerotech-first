@@ -8,6 +8,7 @@
 """
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 from pathlib import Path
@@ -15,7 +16,23 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-A0 = ROOT / "Hermes" / "extensions" / "legion-ide" / "a0-mainchat.js"
+RELEASE_ROOT = Path(r"C:\项目\_vault\legion_ide\release\legion-ide")
+
+
+def _a0_source() -> Path:
+    """E2E 必须断言生产 release artifact；artifact 缺失才退回本地文件。"""
+    try:
+        current = json.loads((RELEASE_ROOT / "current.json").read_text(encoding="utf-8"))
+        art = Path(str(current.get("dir")))
+        p = art / "a0-mainchat.js"
+        if p.is_file():
+            return p
+    except (OSError, ValueError):
+        pass
+    return ROOT / "Hermes" / "extensions" / "legion-ide" / "a0-mainchat.js"
+
+
+A0 = _a0_source()
 EDGE = Path(r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe")
 
 HARNESS = """<!doctype html><html><head><meta charset="utf-8"><title>e2e</title></head>
@@ -116,6 +133,17 @@ def _edge():
     if os.environ.get("E2E_SKIP") == "1":
         return None
     return EDGE if EDGE.is_file() else None
+
+
+def test_release_artifact_manifest_hashes():
+    """E2E 的制品断言：artifact 必须存在且所有文件 hash 与 manifest 一致。"""
+    import sys
+    sys.path.insert(0, str(ROOT))
+    from ide_release_info import build_info
+    info = build_info(RELEASE_ROOT)
+    assert info["ok"] is True, info
+    assert info["all_match"] is True, info
+    assert info.get("version")
 
 
 def test_p03_p04_browser_e2e(tmp_path):
