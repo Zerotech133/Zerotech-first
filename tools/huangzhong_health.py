@@ -459,14 +459,18 @@ def check_scheduled_tasks(tasks, now: dt.datetime) -> dict:
             continue
         last_run = _parse_ts(got.get("last_run"))
         gap_min = _age_minutes(last_run, now)
+        # 计划任务"正在运行"是正常瞬态（20:00 证据刷新窗口等），不得判 fail：
+        # 267009 = 0x41301 SCHED_S_TASK_RUNNING。
+        is_running = (str(got.get("state") or "").lower() in ("running", "正在运行")
+                      or got.get("last_result") == 267009)
         state_ok = (got.get("enabled") is not False
                     and str(got.get("state") or "").lower() in (
                         "ready", "running", "enabled", "已就绪", "正在运行",
                         "已启用", ""))
-        result_ok = got.get("last_result") in (0, None)
+        result_ok = got.get("last_result") in (0, None) or is_running
         gap_ok = True
         max_gap = t.get("max_gap_minutes")
-        if _num(max_gap) and gap_min is not None and gap_min > float(max_gap):
+        if (not is_running) and _num(max_gap) and gap_min is not None and gap_min > float(max_gap):
             gap_ok = False
         row.update({"status": "ok", "state": got.get("state"),
                     "enabled": got.get("enabled"),
