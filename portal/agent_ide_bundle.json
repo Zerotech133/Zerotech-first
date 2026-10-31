@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-31 09:44",
+ "generated": "2026-10-31 09:56",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,8 +9,8 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 24,
-  "workorders_review": 13
+  "workorders_doing": 21,
+  "workorders_review": 12
  },
  "workorders": [
   {
@@ -266,30 +266,12 @@
    "project": "general"
   },
   {
-   "id": "WO-LEGION-AUDIT-20261030",
-   "desc": "产品复盘+代码审计+Bug修复",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-AUDIT-20261030",
-   "created": "2026-10-30 16:40:31",
-   "project": "general"
-  },
-  {
    "id": "WO-LEGION-AUDIT-LOGINLINK-20261030",
    "desc": "修复登录页返回受保护页死循环",
    "status": "review",
    "owner": "ZHAOYUN",
    "branch": "task/WO-LEGION-AUDIT-LOGINLINK-20261030",
    "created": "2026-10-30 16:41:37",
-   "project": "general"
-  },
-  {
-   "id": "WO-LEGION-OIDC-PATH-20261030",
-   "desc": "OIDC配置路径对齐实际vault",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-OIDC-PATH-20261030",
-   "created": "2026-10-30 17:25:25",
    "project": "general"
   },
   {
@@ -300,24 +282,6 @@
    "branch": "task/K-ORG-20261030-JEVARCH2",
    "created": "2026-10-30 18:47:29",
    "project": "general"
-  },
-  {
-   "id": "WO-HERMES-CSP-SELF-20261030",
-   "desc": "用户批准：Hermes CSP frame-ancestors none→self、X-Frame-Options DENY→SAMEORIGIN，允许同源 iframe 挂 5175 研究台；更新对应断言。",
-   "status": "review",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-HERMES-CSP-SELF-20261030",
-   "created": "2026-10-30 21:30:19",
-   "project": "quant"
-  },
-  {
-   "id": "WO-PICKCHAIN-VERDICTS-FIX-20261030",
-   "desc": "选股产品链 verdicts 异常修复：py312 build_pick_verdicts 0xC0000005 访问冲突、py311 长跑无输出；先定位 pandas/tdx 依赖，再加超时/分片/日志；不阻塞 11-02 试运行。",
-   "status": "doing",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-PICKCHAIN-VERDICTS-FIX-20261030",
-   "created": "2026-10-30 22:08:57",
-   "project": "quant"
   },
   {
    "id": "WO-GUANYU-P101-20261030",
@@ -7334,29 +7298,9 @@
    "home_page": "http://127.0.0.1:8796/zhaoyun",
    "tasks": [
     {
-     "id": "WO-LEGION-AUDIT-20261030",
-     "desc": "产品复盘+代码审计+Bug修复",
-     "status": "doing"
-    },
-    {
      "id": "WO-LEGION-AUDIT-LOGINLINK-20261030",
      "desc": "修复登录页返回受保护页死循环",
      "status": "review"
-    },
-    {
-     "id": "WO-LEGION-OIDC-PATH-20261030",
-     "desc": "OIDC配置路径对齐实际vault",
-     "status": "doing"
-    },
-    {
-     "id": "WO-HERMES-CSP-SELF-20261030",
-     "desc": "用户批准：Hermes CSP frame-ancestors none→self、X-Frame-Options DENY→SAMEORIGIN，允许同源 iframe 挂 5175 研究台；更新对应断言。",
-     "status": "review"
-    },
-    {
-     "id": "WO-PICKCHAIN-VERDICTS-FIX-20261030",
-     "desc": "选股产品链 verdicts 异常修复：py312 build_pick_verdicts 0xC0000005 访问冲突、py311 长跑无输出；先定位 pandas/tdx 依赖，再加超时/分片/日志；不阻塞 11-02 试运行。",
-     "status": "doing"
     },
     {
      "id": "WO-LEGION-TXN-20261031",
