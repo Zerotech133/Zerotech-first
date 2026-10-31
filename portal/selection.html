@@ -49,6 +49,16 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;color:#79c0ff;font-siz
 <table><thead><tr><th>代码</th><th>报告期</th><th>公告日</th><th>类型</th><th>方向</th><th>Δ中值(pp)</th><th>摘要</th></tr></thead><tbody id="watch-body"></tbody></table>
 </div>
 
+<div class="panel"><b>影子盘（模拟 T+1 调仓，30bp×换手）</b>
+<div class="cards" style="margin-top:8px">
+  <div class="card"><div class="k">净值（20日回填）</div><div class="v" id="s-nav">—</div></div>
+  <div class="card"><div class="k">20日收益</div><div class="v" id="s-ret">—</div></div>
+  <div class="card"><div class="k">最大回撤</div><div class="v" id="s-mdd">—</div></div>
+  <div class="card"><div class="k">年化波动</div><div class="v" id="s-vol">—</div></div>
+  <div class="card"><div class="k">调仓日数</div><div class="v" id="s-days">—</div></div>
+</div>
+<div class="muted" id="s-note" style="margin-top:8px"></div>
+</div>
 <div class="panel"><b>风险与纪律</b>
 <ul class="muted" style="margin:6px 0 0 18px;padding:0">
 <li>S02 排序权重（动量/反转/低换手/质量中性）为 <b>MVP 未验证</b>，仅供研究，不得实盘；</li>
@@ -84,5 +94,19 @@ const BADGE={"validated":'<span class="badge b-ok">validated</span>',"mvp_unvali
       <td>${w.delta_pp}</td><td class="reason">${w.summary||''}</td></tr>`).join('') || '<tr><td colspan="7" class="muted">近期无修订事件</td></tr>';
   }catch(e){ $('sub').textContent='加载失败：'+e.message; }
 })();
+
+(async function loadShadow(){
+  try{
+    const r=await fetch('/static/shadow_selection.json?ts='+Date.now());
+    const d=await r.json();
+    $('s-nav').textContent=d.nav;
+    $('s-ret').textContent=((d.ledger.length? (d.nav-1)*100 : 0).toFixed(2))+'%';
+    $('s-mdd').textContent=(d.mdd_pct)+'%';
+    $('s-vol').textContent=(d.ann_vol_pct!=null?d.ann_vol_pct+'%':'—');
+    $('s-days').textContent=d.days;
+    $('s-note').textContent=d.note||'';
+  }catch(e){}
+})();
+
 </script>
 </body></html>
