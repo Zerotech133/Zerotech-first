@@ -11,8 +11,9 @@
 #       得到"新增失败"; 新增=0 才放行。
 #
 # 2026-10-31 W5 P1-6（docs/audit/2026-10-31_W5质量还债_v1.md）：
-#   · fast 增 B1 关键集三套件（agent_key/quant_key/tools_key，共 57 文件，每次独立
-#     pytest；覆盖率 23.0%→30.9%，实测 +45s）。不同套件不能合并一次 pytest（sys.path 冲突）。
+#   · fast 增 B1+B2 关键集三套件（agent_key/quant_key/tools_key，共 88 文件，每次独立
+#     pytest；覆盖率 23.0%→30.9%→约 41.0%）。不同套件不能合并一次 pytest（sys.path 冲突）。
+#   · B2 扩容（工单 K-ORG-20261031-GATEB2）：再 +31 文件（agent 9 / quant 14 / tools 8）。
 #   · 新增 A5 portal 预算门（阶段1 **非 strict**：只拦硬规则，建议项 WARN 不阻断）。
 #   · 文件列表套件的 baseline 查找支持 suiteKey（agent_platform/tests 等）回退。
 param(
@@ -49,7 +50,7 @@ if (Test-Path -LiteralPath $baselinePath) {
 $suites = @()
 switch ($Suite) {
     # 2026-10-30 P1：LDE HTTP 契约进 fast 门（单独文件，不拖入整个 agent 套件）
-    # 2026-10-31 W5 P1-6：B1 关键集三套件进 fast（先 B1，不接 B2）
+    # 2026-10-31 W5 P1-6 / K-ORG-20261031-GATEB2：B1+B2 关键集三套件进 fast（88 文件）
     'fast'    { $suites = @('portal', 'kstock', 'ide', 'agent_key', 'quant_key', 'tools_key') }
     'portal'  { $suites = @('portal') }
     'kstock'  { $suites = @('kstock') }
@@ -78,9 +79,9 @@ $paths = @{
         # live 分支默认 skip（LEGION_LIVE_SMOKE=1 才跑），不拖慢门禁。
         'agent_platform/tests/test_release_live_smoke.py'
     )
-    # W5 P1-6 B1 关键集（2026-10-31）：每次独立 pytest（不同套件 sys.path 不共用，
-    # 混跑会 ImportError）。清单与 docs/audit/2026-10-31_W5质量还债_v1.md §8.3 一致；
-    # tools/tests/test_test_gate_b1.py 冻结该清单防漂移。
+    # W5 P1-6 B1+B2 关键集（2026-10-31）：每次独立 pytest（不同套件 sys.path 不共用，
+    # 混跑会 ImportError）。B1 清单见 W5 报告 §8.3；B2 扩容见 §8.4（工单 GATEB2，+31）。
+    # tools/tests/test_test_gate_b1.py 冻结清单防漂移。
     'agent_key' = @(
         'agent_platform/tests/test_d1_evidence_policy.py',
         'agent_platform/tests/test_legion_ide.py',
@@ -124,7 +125,17 @@ $paths = @{
         'agent_platform/tests/test_gate_content_hash.py',
         'agent_platform/tests/test_dev_gate_warn_report.py',
         'agent_platform/tests/test_run_shadow_guard.py',
-        'agent_platform/tests/test_signature_guard.py'
+        'agent_platform/tests/test_signature_guard.py',
+        # ---- B2 扩容（K-ORG-20261031-GATEB2，+9；W5 报告 §8.4）----
+        'agent_platform/tests/test_lookahead_guard.py',
+        'agent_platform/tests/test_quality_gate.py',
+        'agent_platform/tests/test_demo_guard.py',
+        'agent_platform/tests/test_osleg_p2b_gate.py',
+        'agent_platform/tests/test_osleg_http_api.py',
+        'agent_platform/tests/test_org_enroll.py',
+        'agent_platform/tests/test_check_trigger_chain.py',
+        'agent_platform/tests/test_gov_ai.py',
+        'agent_platform/tests/test_codex_bridge.py'
     )
     'quant_key' = @(
         'quant_backtest/tests/test_xq_acceptance_evidence_offline.py',
@@ -135,14 +146,38 @@ $paths = @{
         'quant_backtest/tests/test_valuation_identity.py',
         'quant_backtest/tests/test_calendar_provider.py',
         'quant_backtest/tests/test_xq_request_gate_offline.py',
-        'quant_backtest/tests/test_quant_sector_dual_gate.py'
+        'quant_backtest/tests/test_quant_sector_dual_gate.py',
+        # ---- B2 扩容（K-ORG-20261031-GATEB2，+14；含 2 个离线替代单测）----
+        'quant_backtest/tests/test_peak_shift_gates.py',
+        'quant_backtest/tests/test_watch_offline_consumption_gate.py',
+        'quant_backtest/tests/test_weak_inventory_gate.py',
+        'quant_backtest/tests/test_execution_calendar_gate.py',
+        'quant_backtest/tests/test_session_aggregate.py',
+        'quant_backtest/tests/test_xq_factor_v1.py',
+        'quant_backtest/tests/test_xq_t7_cache_tdx_backfill.py',
+        'quant_backtest/tests/test_game_signal_ref_bridge.py',
+        'quant_backtest/tests/test_watch_dispatch_agent_reporting.py',
+        'quant_backtest/tests/test_xq_history_priority_offline.py',
+        'quant_backtest/tests/test_osleg_http_contract.py',
+        'quant_backtest/tests/test_proxy_dialogue.py',
+        'quant_backtest/tests/test_xq_offline_chain_e2e.py',
+        'quant_backtest/tests/test_chanlun_learn.py'
     )
     'tools_key' = @(
         'tools/tests/test_release_legion_ide.py',
         'tools/tests/test_auto_rebuild_ide_bundle.py',
         'tools/tests/test_academy_ledger_check.py',
         'tools/tests/test_academy_activation4.py',
-        'tools/tests/test_killsvc_guard.py'
+        'tools/tests/test_killsvc_guard.py',
+        # ---- B2 扩容（K-ORG-20261031-GATEB2，+8）----
+        'tools/tests/test_l2_guard_fp.py',
+        'tools/tests/test_merge_gated.py',
+        'tools/tests/test_git_worktree_guard.py',
+        'tools/tests/test_devtask_branch_gate.py',
+        'tools/tests/test_merge_dirty_guard.py',
+        'tools/tests/test_sql_guard.py',
+        'tools/tests/test_devtask_gates.py',
+        'tools/tests/test_merge_lock_gated.py'
     )
 }
 

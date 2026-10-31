@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
-"""W5 P1-6 落地守卫：test_gate.ps1 B1 关键集 + A5 预算门（2026-10-31）。
+"""W5 P1-6 落地守卫：test_gate.ps1 B1+B2 关键集 + A5 预算门（2026-10-31）。
 
 静态锁死（不执行门禁本体）：
   · fast = portal + kstock + ide + agent_key + quant_key + tools_key；
-  · agent_key/quant_key/tools_key = W5 报告 B1 清单（57 文件），文件必须真实存在；
+  · agent_key/quant_key/tools_key = W5 报告 B1(57)+B2(31) 清单（共 88 文件），
+    文件必须真实存在（B2 扩容工单 K-ORG-20261031-GATEB2；W5 口径 30.9%→约 41.0%）；
   · 每次套件独立 pytest（脚本结构保证），baseline 支持 suiteKey 回退；
   · A5 预算门已接入且**阶段1 非 strict**（不得出现 --strict 调用）；
-  · B1 只进 fast，不进 all（all 仍是 portal/kstock/agent/quant/ide）。
+  · 关键集只进 fast，不进 all（all 仍是 portal/kstock/agent/quant/ide）。
 """
 import re
 from pathlib import Path
@@ -60,6 +61,16 @@ AGENT_KEY = {
     "agent_platform/tests/test_dev_gate_warn_report.py",
     "agent_platform/tests/test_run_shadow_guard.py",
     "agent_platform/tests/test_signature_guard.py",
+    # ---- B2 扩容（工单 K-ORG-20261031-GATEB2，+9）----
+    "agent_platform/tests/test_lookahead_guard.py",
+    "agent_platform/tests/test_quality_gate.py",
+    "agent_platform/tests/test_demo_guard.py",
+    "agent_platform/tests/test_osleg_p2b_gate.py",
+    "agent_platform/tests/test_osleg_http_api.py",
+    "agent_platform/tests/test_org_enroll.py",
+    "agent_platform/tests/test_check_trigger_chain.py",
+    "agent_platform/tests/test_gov_ai.py",
+    "agent_platform/tests/test_codex_bridge.py",
 }
 QUANT_KEY = {
     "quant_backtest/tests/test_xq_acceptance_evidence_offline.py",
@@ -71,6 +82,21 @@ QUANT_KEY = {
     "quant_backtest/tests/test_calendar_provider.py",
     "quant_backtest/tests/test_xq_request_gate_offline.py",
     "quant_backtest/tests/test_quant_sector_dual_gate.py",
+    # ---- B2 扩容（工单 K-ORG-20261031-GATEB2，+14）----
+    "quant_backtest/tests/test_peak_shift_gates.py",
+    "quant_backtest/tests/test_watch_offline_consumption_gate.py",
+    "quant_backtest/tests/test_weak_inventory_gate.py",
+    "quant_backtest/tests/test_execution_calendar_gate.py",
+    "quant_backtest/tests/test_session_aggregate.py",
+    "quant_backtest/tests/test_xq_factor_v1.py",
+    "quant_backtest/tests/test_xq_t7_cache_tdx_backfill.py",
+    "quant_backtest/tests/test_game_signal_ref_bridge.py",
+    "quant_backtest/tests/test_watch_dispatch_agent_reporting.py",
+    "quant_backtest/tests/test_xq_history_priority_offline.py",
+    "quant_backtest/tests/test_osleg_http_contract.py",
+    "quant_backtest/tests/test_proxy_dialogue.py",
+    "quant_backtest/tests/test_xq_offline_chain_e2e.py",
+    "quant_backtest/tests/test_chanlun_learn.py",
 }
 TOOLS_KEY = {
     "tools/tests/test_release_legion_ide.py",
@@ -78,6 +104,15 @@ TOOLS_KEY = {
     "tools/tests/test_academy_ledger_check.py",
     "tools/tests/test_academy_activation4.py",
     "tools/tests/test_killsvc_guard.py",
+    # ---- B2 扩容（工单 K-ORG-20261031-GATEB2，+8）----
+    "tools/tests/test_l2_guard_fp.py",
+    "tools/tests/test_merge_gated.py",
+    "tools/tests/test_git_worktree_guard.py",
+    "tools/tests/test_devtask_branch_gate.py",
+    "tools/tests/test_merge_dirty_guard.py",
+    "tools/tests/test_sql_guard.py",
+    "tools/tests/test_devtask_gates.py",
+    "tools/tests/test_merge_lock_gated.py",
 }
 
 
@@ -93,16 +128,16 @@ def _suite_list(switch_key: str) -> list:
     return re.findall(r"'([a-z_]+)'", m.group(1))
 
 
-def test_b1_lists_frozen():
+def test_b1_b2_lists_frozen():
     assert set(_suite_files("agent_key")) == AGENT_KEY
     assert set(_suite_files("quant_key")) == QUANT_KEY
     assert set(_suite_files("tools_key")) == TOOLS_KEY
-    assert len(AGENT_KEY) == 43 and len(QUANT_KEY) == 9 and len(TOOLS_KEY) == 5
+    assert len(AGENT_KEY) == 52 and len(QUANT_KEY) == 23 and len(TOOLS_KEY) == 13
     all_files = AGENT_KEY | QUANT_KEY | TOOLS_KEY
-    assert len(all_files) == 57, "B1 应为 57 文件（W5 报告 §8.3）"
+    assert len(all_files) == 88, "B1(57)+B2(31) 应为 88 文件（W5 报告 §8.3/§8.4）"
 
 
-def test_b1_files_exist_and_under_expected_dir():
+def test_b1_b2_files_exist_and_under_expected_dir():
     for f in AGENT_KEY:
         assert f.startswith("agent_platform/tests/")
     for f in QUANT_KEY:
@@ -110,12 +145,12 @@ def test_b1_files_exist_and_under_expected_dir():
     for f in TOOLS_KEY:
         assert f.startswith("tools/tests/")
     missing = [f for f in (AGENT_KEY | QUANT_KEY | TOOLS_KEY) if not (REPO / f).is_file()]
-    assert not missing, "B1 文件缺失: %s" % missing[:5]
+    assert not missing, "关键集文件缺失: %s" % missing[:5]
 
 
-def test_fast_includes_b1_suites_only():
+def test_fast_includes_key_suites_only():
     assert _suite_list("fast") == ["portal", "kstock", "ide", "agent_key", "quant_key", "tools_key"]
-    # B1 只进 fast；all 保持原样（不扩 all，避免夜间/全量时长失控）
+    # 关键集只进 fast；all 保持原样（不扩 all，避免夜间/全量时长失控）
     assert _suite_list("all") == ["portal", "kstock", "agent", "quant", "ide"]
     param_block = GATE[: GATE.find("$suites = @()")]
     for key in ("agent_key", "quant_key", "tools_key"):
