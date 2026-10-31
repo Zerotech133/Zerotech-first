@@ -1000,9 +1000,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
     def do_POST(self):
         """v2.5：标注保存（首个 POST 端点，其余页面均为只读 GET）。"""
         path = self.path.split("?", 1)[0]
-        if path == '/api/zhuge/review':
-            # P0：只读复核（默认关；模块内校验门户 session/大小/feature flag）
-            api_zhuge_review.handle_post(self)
+        if path == '/api/zhuge/review' or path.startswith('/api/zhuge/review/'):
+            # P0/运营化：只读复核 + <id>/adoption 子资源（模块内校验 feature flag/
+            # 门户 session/正文大小/限额；默认关）
+            api_zhuge_review.handle_post(self, path)
             return
         # P1 移动端 /m 家族（2026-10-25）：POST 早分支（m_api.py 独立文件）。
         if path.startswith('/api/m/'):

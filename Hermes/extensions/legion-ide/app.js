@@ -1506,14 +1506,29 @@ async function loadDiff(task) {
   } else build();
 })();
 
-/* 诸葛亮只读复核面板（P0，feature flag 由后端 /api/zhuge/review/status 控制） */
+/* 诸葛亮只读复核面板（P0）· 运营化（WO-LEGION-REVIEWOPS-20261031）：
+   - 打开/提交自动从 LDE /api/ide/git 取当前工单 staged diff（有锁时）；
+   - 自动调 LDE /api/ide/test 取结构化 test_result（失败不伪造 pass）；
+   - 无 LDE 会话 / 无锁 / 无 diff / IDE_RW off / 测试不可用时明确降级；
+   - findings 带稳定 id，可就地记录采纳/忽略到 /api/zhuge/review/<id>/adoption。 */
 (function () {
   if (window.__zhugeReviewLoaded) return;
   window.__zhugeReviewLoaded = true;
   const $ = (s) => document.querySelector(s);
+  // LDE 与主面板同源：8734 走 /lde 反代；非 8734（8787 直连）走 8734 同源链路
+  const ZR_LDE_BASE = (location.port === "8734") ? "/lde" : "http://127.0.0.1:8734/lde";
+  const ZR_LDE_TEST_CMD = "python -m pytest -q .";
+  const ZR_LDE_TEST_TIMEOUT = 180;
   let panel = null;
   let timer = null;
   let zrEnabled = false;
+  let zrLdeOwner = "";
+  let zrTestResult = null;
+  let zrDiffSource = "";
+  let zrLastReview = null;
+  let zrAdoptionState = {};
+  let zrTestPromise = null;
+  let zrTestKey = "";
 
   function style() {
     if ($("#zr-style")) return;
@@ -1522,13 +1537,24 @@ async function loadDiff(task) {
     s.textContent = `
       #zr-review-btn{margin-left:6px;padding:4px 8px;border-radius:999px;border:1px solid #6b5a2a;background:#2a2416;color:#ffd98a;font-size:12px;cursor:pointer}
       #zr-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99998;display:none}
-      #zr-panel{position:fixed;right:18px;top:60px;width:min(520px,92vw);max-height:82vh;overflow:auto;background:#151515;color:#eee;border:1px solid #444;border-radius:10px;z-index:99999;padding:14px;display:none;font-size:13px}
+      #zr-panel{position:fixed;right:18px;top:60px;width:min(560px,92vw);max-height:84vh;overflow:auto;background:#151515;color:#eee;border:1px solid #444;border-radius:10px;z-index:99999;padding:14px;display:none;font-size:13px}
       #zr-panel h3{margin:0 0 8px;font-size:15px;color:#ffd98a}
-      #zr-panel textarea{width:100%;height:120px;background:#0d0d0d;color:#ddd;border:1px solid #333;border-radius:6px;padding:6px;font:12px/1.4 monospace}
+      #zr-panel textarea{width:100%;height:110px;background:#0d0d0d;color:#ddd;border:1px solid #333;border-radius:6px;padding:6px;font:12px/1.4 monospace}
+      #zr-panel textarea#zr-adopt-note{height:44px}
       #zr-panel button{margin-top:6px;padding:5px 10px;border-radius:6px;border:1px solid #555;background:#222;color:#eee;cursor:pointer}
+      #zr-panel button:disabled{opacity:.45;cursor:not-allowed}
       #zr-status{color:#aaa;margin:6px 0}
+      #zr-degrade{color:#ffb86b;margin:6px 0;white-space:pre-wrap}
+      #zr-test-state{color:#8fb8d8;margin:4px 0;font-size:12px;white-space:pre-wrap}
       .zr-finding{border-left:3px solid #c6a15b;padding:4px 8px;margin:6px 0;background:#1d1d1d}
       .zr-finding b{color:#ffd98a}
+      .zr-fid{color:#777;font-size:11px;margin-left:6px}
+      .zr-finding .zr-actions{margin-top:4px}
+      .zr-finding .zr-actions button{margin:2px 6px 0 0;padding:2px 8px;font-size:12px}
+      .zr-finding .zr-actions button.active{background:#3a2f12;border-color:#c6a15b;color:#ffd98a}
+      #zr-adoption-box{margin-top:8px;border-top:1px solid #333;padding-top:8px}
+      #zr-adoption-summary{color:#9c9;margin:6px 0;font-size:12px}
+      #zr-panel .zr-label{color:#8a7a4a;margin:8px 0 4px;font-size:12px}
     `;
     document.head.appendChild(s);
   }
@@ -1544,15 +1570,26 @@ async function loadDiff(task) {
     p.innerHTML = `<h3>⚔ 诸葛亮 · 只读复核</h3>
       <div>任务：<span id="zr-task">—</span></div>
       <div id="zr-status">读取中…</div>
-      <textarea id="zr-diff" placeholder="自动读取 LDE diff；为空时请先点「文件 diff」"></textarea>
+      <div id="zr-degrade"></div>
+      <div id="zr-test-state"></div>
+      <textarea id="zr-diff" placeholder="自动从 LDE 取当前工单 staged diff；取不到时降级为手动粘贴"></textarea>
       <button id="zr-load">读取 diff</button>
+      <button id="zr-test">运行结构化测试</button>
       <button id="zr-submit">提交复核</button>
-      <div id="zr-result"></div>`;
+      <div id="zr-result"></div>
+      <div id="zr-adoption-box" style="display:none">
+        <div class="zr-label">采纳记录（append-only 账本）</div>
+        <div id="zr-adoption-summary"></div>
+        <textarea id="zr-adopt-note" placeholder="备注（可选）"></textarea>
+        <button id="zr-adopt-submit">记录采纳/忽略</button>
+      </div>`;
     document.body.appendChild(ov);
     document.body.appendChild(p);
     panel = p;
-    $("#zr-load").onclick = loadDiff;
+    $("#zr-load").onclick = () => autoLoadDiff(taskId());
+    $("#zr-test").onclick = () => ensureTest(taskId(), true);
     $("#zr-submit").onclick = submit;
+    $("#zr-adopt-submit").onclick = submitAdoption;
     return p;
   }
 
@@ -1561,16 +1598,168 @@ async function loadDiff(task) {
     return sel ? String(sel.value || "").trim() : "";
   }
 
-  function loadDiff() {
-    if (!zrEnabled) return;
-    const tx = $("#zr-diff");
-    const cur = ($("#lde-diff") && $("#lde-diff").textContent || "").trim();
-    if (!cur || cur === "—") {
-      $("#zr-status").textContent = "没有读到 diff：先在 LDE 点「文件 diff」";
-      return;
+  function setStatus(text) {
+    const n = $("#zr-status");
+    if (n) n.textContent = text;
+  }
+
+  function setDegrade(text) {
+    const n = $("#zr-degrade");
+    if (n) n.textContent = text || "";
+  }
+
+  function setTestState(text) {
+    const n = $("#zr-test-state");
+    if (n) n.textContent = text || "";
+  }
+
+  async function zrLdeFetch(path, opts) {
+    try {
+      const o = Object.assign({ credentials: "include", headers: {} }, opts || {});
+      if (o.body !== undefined) {
+        o.headers = Object.assign({ "Content-Type": "application/json" }, o.headers);
+      }
+      const r = await fetch(ZR_LDE_BASE + path, o);
+      let d = {};
+      try { d = await r.json(); } catch (_) { d = { ok: false, error: "bad_response" }; }
+      return { status: r.status, ok: r.ok, data: d };
+    } catch (e) {
+      return { status: 0, ok: false,
+               data: { ok: false, error: "lde_unreachable", message: e.message } };
     }
-    tx.value = cur.slice(0, 64000);
-    $("#zr-status").textContent = "diff 已载入，长度 " + tx.value.length;
+  }
+
+  async function ensureLdeSession() {
+    if (zrLdeOwner) return true;
+    try { await fetch(ZR_LDE_BASE + "/rw", { credentials: "include" }); } catch (_) {}
+    const r = await zrLdeFetch("/api/ide/session");
+    if (r.status === 200 && r.data && r.data.owner) {
+      zrLdeOwner = String(r.data.owner);
+      return true;
+    }
+    zrLdeOwner = "";
+    return false;
+  }
+
+  async function ldeLockInfo(task) {
+    const q = new URLSearchParams({ task: task || "" });
+    const r = await zrLdeFetch("/api/ide/lock?" + q.toString());
+    if (r.status === 200 && r.data && r.data.ok) return r.data;
+    return { ok: false,
+             error: (r.data && r.data.error) || ("HTTP " + r.status),
+             message: (r.data && r.data.message) || "" };
+  }
+
+  function ldeReason(info) {
+    if (!info) return "LDE 不可达";
+    if (info.error === "rw_disabled") return "LDE 写/执行未开启（IDE_RW=off）";
+    if (info.error === "no_session") return "无 LDE 会话";
+    if (info.error === "task_not_active") return "工单状态非 doing/review（LDE 不可写）";
+    if (info.error === "lock_required") return "当前工单无 LDE 锁";
+    return info.message || info.error || "LDE 不可用";
+  }
+
+  async function autoLoadDiff(task) {
+    const tx = $("#zr-diff");
+    if (!tx) return false;
+    if (!task) {
+      setDegrade("未选工单：无法自动取 LDE diff（降级：可手动粘贴 diff）");
+      return false;
+    }
+    if (!(await ensureLdeSession())) {
+      setDegrade("LDE 会话不可用（IDE_RW=off 或未从 /lde 进入）：自动 diff 降级，可手动粘贴 diff");
+      return false;
+    }
+    const info = await ldeLockInfo(task);
+    if (!info.ok) {
+      setDegrade("无法读取 LDE 工单锁（" + ldeReason(info) + "）：自动 diff 降级，可手动粘贴 diff");
+      return false;
+    }
+    if (!info.locked) {
+      setDegrade("工单当前无 LDE 锁（先在 LDE 施工台获取锁）：自动 diff 降级，可手动粘贴 diff");
+      return false;
+    }
+    if (info.owner && zrLdeOwner && info.owner !== zrLdeOwner) {
+      setDegrade("LDE 锁属于 " + info.owner + "，当前会话 " + zrLdeOwner +
+                 " 不能取 diff：降级，可手动粘贴 diff");
+      return false;
+    }
+    const r = await zrLdeFetch("/api/ide/git", {
+      method: "POST",
+      body: JSON.stringify({ task, owner: zrLdeOwner || info.owner || "",
+                             action: "diff" }),
+    });
+    if (!(r.status === 200 && r.data && r.data.ok)) {
+      const why = (r.data && (r.data.message || r.data.error)) || ("HTTP " + r.status);
+      setDegrade("LDE /api/ide/git diff 失败（" + why + "）：降级，可手动粘贴 diff");
+      return false;
+    }
+    const out = String(r.data.output || "").trim();
+    if (!out) {
+      setDegrade("LDE 无 staged diff（先在 LDE 预览/确认写入）：自动 diff 为空，不静默提交，可手动粘贴 diff");
+      return false;
+    }
+    tx.value = out.slice(0, 64000);
+    zrDiffSource = "lde";
+    setDegrade("");
+    setStatus("已自动载入 LDE diff · " + tx.value.length + " 字符");
+    return true;
+  }
+
+  async function autoRunTest(task) {
+    zrTestResult = { source: "lde", available: false, error: "not_started" };
+    if (!task) {
+      setTestState("结构化测试：降级（未选工单）");
+      return false;
+    }
+    if (!(await ensureLdeSession())) {
+      zrTestResult = { source: "lde", available: false,
+                       error: "lde_session_unavailable" };
+      setTestState("结构化测试：降级（无 LDE 会话），不伪造 pass");
+      return false;
+    }
+    const info = await ldeLockInfo(task);
+    if (!info.ok || !info.locked) {
+      const why = (info && info.ok) ? "无工单锁" : ldeReason(info);
+      zrTestResult = { source: "lde", available: false,
+                       error: (info && info.error) || "lock_required" };
+      setTestState("结构化测试：降级（" + why + "），不伪造 pass");
+      return false;
+    }
+    setTestState("结构化测试运行中（" + ZR_LDE_TEST_CMD + "）…");
+    const r = await zrLdeFetch("/api/ide/test", {
+      method: "POST",
+      body: JSON.stringify({ task, owner: zrLdeOwner || info.owner || "",
+                             command: ZR_LDE_TEST_CMD,
+                             timeout: ZR_LDE_TEST_TIMEOUT }),
+    });
+    const d = r.data || {};
+    // 运行器级失败（无权限/无锁/超时/命令拒绝）→ 测试不可用；测试挂 = success:false 但结构完整
+    if (d.success === undefined) {
+      zrTestResult = { source: "lde", available: false,
+                       error: String(d.error || ("HTTP " + r.status)),
+                       message: String(d.message || "") };
+      setTestState("结构化测试：降级（" +
+                   (d.message || d.error || ("HTTP " + r.status)) +
+                   "），不伪造 pass");
+      return false;
+    }
+    zrTestResult = {
+      source: "lde", available: true, ok: Boolean(d.success),
+      exit_code: d.exit_code, command: ZR_LDE_TEST_CMD,
+      output_tail: String(d.output_tail || "").slice(-4000),
+      evidence_run_id: String(d.evidence_run_id || ""),
+    };
+    setTestState("结构化测试：" + (d.success ? "通过" : "失败") +
+                 " · exit=" + d.exit_code);
+    return true;
+  }
+
+  function ensureTest(task, force) {
+    if (!force && zrTestPromise && zrTestKey === task) return zrTestPromise;
+    zrTestKey = task;
+    zrTestPromise = autoRunTest(task).catch(() => false);
+    return zrTestPromise;
   }
 
   function parseFiles(diff) {
@@ -1582,54 +1771,245 @@ async function loadDiff(task) {
     return out.slice(0, 100);
   }
 
+  function renderFindings(d) {
+    const box = $("#zr-result");
+    if (!box) return;
+    box.innerHTML = "";
+    const findings = (d && d.findings) || [];
+    if (!findings.length) {
+      box.textContent = (d && d.status === "degraded")
+        ? "复核降级，无 findings（不伪造 pass）"
+        : "无 findings";
+      return;
+    }
+    findings.forEach((f) => {
+      const fid = String(f.id || "");
+      const n = document.createElement("div");
+      n.className = "zr-finding";
+      const head = document.createElement("div");
+      const sev = document.createElement("b");
+      sev.textContent = f.severity || "P2";
+      head.appendChild(sev);
+      head.appendChild(document.createTextNode(
+        " " + (f.file || "") + ":" + (f.line || 0)));
+      if (fid) {
+        const tag = document.createElement("span");
+        tag.className = "zr-fid";
+        tag.textContent = fid;
+        head.appendChild(tag);
+      }
+      n.appendChild(head);
+      const claim = document.createElement("div");
+      claim.textContent = f.claim || "";
+      n.appendChild(claim);
+      if (f.evidence) {
+        const ev = document.createElement("div");
+        const sm = document.createElement("small");
+        sm.textContent = "证据：" + f.evidence;
+        ev.appendChild(sm);
+        n.appendChild(ev);
+      }
+      const acts = document.createElement("div");
+      acts.className = "zr-actions";
+      ["adopted", "ignored"].forEach((kind) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.textContent = kind === "adopted" ? "采纳" : "忽略";
+        b.disabled = !fid;
+        b.dataset.fid = fid;
+        b.dataset.kind = kind;
+        if (fid && zrAdoptionState[fid] === kind) b.classList.add("active");
+        b.onclick = () => {
+          if (!fid) return;
+          if (zrAdoptionState[fid] === kind) delete zrAdoptionState[fid];
+          else zrAdoptionState[fid] = kind;
+          renderFindings(zrLastReview || d);
+        };
+        acts.appendChild(b);
+      });
+      if (!fid) {
+        const warn = document.createElement("span");
+        warn.className = "zr-fid";
+        warn.textContent = "（finding 无稳定 id，不可记录采纳）";
+        acts.appendChild(warn);
+      }
+      n.appendChild(acts);
+      box.appendChild(n);
+    });
+  }
+
+  function renderAdoption(d) {
+    const box = $("#zr-adoption-box");
+    const sum = $("#zr-adoption-summary");
+    if (!box) return;
+    if (!d) {
+      box.style.display = "none";
+      if (sum) sum.textContent = "";
+      return;
+    }
+    box.style.display = "";
+    if (!sum) return;
+    const adopted = (d.adopted || []).length;
+    const ignored = (d.ignored || []).length;
+    sum.textContent = "已记录：采纳 " + adopted + " / 忽略 " + ignored +
+      (d.by ? (" · by " + d.by) : "") + (d.ts ? (" · " + d.ts) : "");
+  }
+
+  async function submitAdoption() {
+    if (!zrLastReview || !zrLastReview.review_id) {
+      setStatus("先提交复核并等待完成");
+      return;
+    }
+    const rid = zrLastReview.review_id;
+    const adopted = Object.keys(zrAdoptionState).filter(
+      (k) => zrAdoptionState[k] === "adopted");
+    const ignored = Object.keys(zrAdoptionState).filter(
+      (k) => zrAdoptionState[k] === "ignored");
+    const noteEl = $("#zr-adopt-note");
+    const note = noteEl ? String(noteEl.value || "").trim() : "";
+    if (!adopted.length && !ignored.length && !note) {
+      setStatus("先对 findings 选采纳/忽略或填写备注");
+      return;
+    }
+    setStatus("记录采纳/忽略…");
+    const payload = { adopted: adopted, ignored: ignored, note: note, by: "hermes-lde" };
+    let r = null;
+    let d = {};
+    try {
+      // 线上主路径：/<id>/adoption 子资源
+      r = await fetch("/api/zhuge/review/" + encodeURIComponent(rid) + "/adoption", {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      try { d = await r.json(); } catch (_) { d = {}; }
+      if (r.status === 404 && d.error !== "zhuge_review_disabled") {
+        // 兼容回退：旧路由只认精确 /api/zhuge/review（合并前的老 portal_api）
+        r = await fetch("/api/zhuge/review", {
+          method: "POST", credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(Object.assign(
+            { action: "adopt", review_id: rid }, payload)),
+        });
+        try { d = await r.json(); } catch (_) { d = {}; }
+      }
+    } catch (e) {
+      setStatus("记录失败：" + e.message);
+      return;
+    }
+    if (!r || !r.ok || !d || !d.ok) {
+      setStatus("记录失败：" +
+        ((d && (d.error || d.message)) || ("HTTP " + (r ? r.status : "?"))));
+      return;
+    }
+    renderAdoption(d.adoption || payload);
+    setStatus("已记录采纳 " + adopted.length + " / 忽略 " + ignored.length);
+    try {
+      const g = await fetch("/api/zhuge/review/" +
+        encodeURIComponent(rid), { credentials: "include" });
+      const gd = await g.json();
+      if (gd && gd.ok && gd.adoption) renderAdoption(gd.adoption);
+    } catch (_) {}
+  }
+
   async function open() {
     ensurePanel();
     $("#zr-overlay").style.display = "block";
     panel.style.display = "block";
     $("#zr-task").textContent = taskId() || "（未选工单）";
     $("#zr-result").textContent = "";
+    setDegrade("");
+    setTestState("");
+    renderAdoption(null);
+    zrAdoptionState = {};
+    zrLastReview = null;
+    zrTestPromise = null;
+    zrTestKey = "";
+    zrTestResult = null;
     try {
       const r = await fetch("/api/zhuge/review/status", { credentials: "include" });
       const d = await r.json();
       zrEnabled = Boolean(d.enabled);
       const sub = $("#zr-submit");
       const load = $("#zr-load");
+      const testBtn = $("#zr-test");
       if (sub) sub.disabled = !zrEnabled;
       if (load) load.disabled = !zrEnabled;
-      if (zrEnabled) {
-        $("#zr-status").textContent =
-          "可用 · " + (d.model || "unknown") + " · " + (d.carrier || "");
-        loadDiff();
-      } else {
-        $("#zr-status").textContent = "复核未启用（后端 ZHUGE_IDE_REVIEW=off）";
+      if (testBtn) testBtn.disabled = !zrEnabled;
+      if (!zrEnabled) {
+        setStatus("复核未启用（后端 ZHUGE_IDE_REVIEW=off）");
+        return;
       }
+      setStatus("可用 · " + (d.model || "unknown") + " · " + (d.carrier || ""));
+      const task = taskId();
+      const sess = await ensureLdeSession();
+      if (!sess) {
+        setDegrade("LDE 会话不可用（IDE_RW=off 或未从 /lde 进入）：" +
+                   "自动 diff/测试降级，可手动粘贴 diff 后提交（test_result.available=false）");
+        return;
+      }
+      await autoLoadDiff(task);
+      ensureTest(task);  // 打开即自动跑结构化测试（后台；提交时复用/重试同一结果）
     } catch (e) {
-      $("#zr-status").textContent = "状态读取失败：" + e.message;
+      setStatus("状态读取失败：" + e.message);
     }
   }
 
   async function submit() {
-    if (!zrEnabled) { $("#zr-status").textContent = "复核未启用"; return; }
+    if (!zrEnabled) { setStatus("复核未启用"); return; }
     const task = taskId();
-    const diff = String($("#zr-diff").value || "").trim();
-    if (!task) { $("#zr-status").textContent = "先选工单"; return; }
-    if (!diff) { $("#zr-status").textContent = "先读取或粘贴 diff"; return; }
+    if (!task) { setStatus("先选工单"); return; }
+    const tx = $("#zr-diff");
+    let diff = tx ? String(tx.value || "").trim() : "";
+    if (!diff) {
+      setStatus("自动取 diff 中…");
+      await autoLoadDiff(task);
+      diff = tx ? String(tx.value || "").trim() : "";
+    }
+    if (!diff) {
+      setStatus("缺 diff：LDE 不可用且未手动粘贴，拒绝空提交（不伪造）");
+      return;
+    }
     $("#zr-result").textContent = "提交中…";
-    $("#zr-status").textContent = "复核中（DeepSeek 约 30–60s）…";
+    setStatus("复核中（DeepSeek 约 30–60s）…");
+    let testOk = await ensureTest(task);
+    if (!testOk) testOk = await autoRunTest(task);  // 打开时无锁/无会话 → 提交再试一次
+    if (!testOk) {
+      setDegrade("LDE 结构化测试不可用（" +
+        ((zrTestResult && (zrTestResult.message || zrTestResult.error)) || "unknown") +
+        "）：本次 test_result.available=false，不伪造 pass");
+    } else {
+      setDegrade("");
+    }
+    const test_result = zrTestResult ||
+      { source: "lde", available: false, error: "test_not_run" };
+    const payload = {
+      task_id: task,
+      diff: diff,
+      changed_files: parseFiles(diff),
+      test_result: test_result,
+      context: { goal: task, acceptance: [],
+                 diff_source: zrDiffSource || "manual",
+                 test_available: Boolean(test_result.available) },
+    };
+    const sub = $("#zr-submit");
+    if (sub) sub.disabled = true;
     try {
       const r = await fetch("/api/zhuge/review", {
         method: "POST", credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          task_id: task, diff: diff, changed_files: parseFiles(diff),
-          test_result: {}, context: { goal: task, acceptance: [] },
-        }),
+        body: JSON.stringify(payload),
       });
       const d = await r.json();
+      if (r.status === 429) {
+        throw new Error("限流：" + (d.retry_after_s || "?") + "s 后重试");
+      }
       if (!r.ok) throw new Error(d.error || ("HTTP " + r.status));
       poll(d.review_id);
     } catch (e) {
-      $("#zr-status").textContent = "提交失败：" + e.message;
+      setStatus("提交失败：" + e.message);
+    } finally {
+      if (sub) sub.disabled = !zrEnabled;
     }
   }
 
@@ -1637,32 +2017,22 @@ async function loadDiff(task) {
     if (timer) clearInterval(timer);
     timer = setInterval(async () => {
       try {
-        const r = await fetch("/api/zhuge/review/" + encodeURIComponent(rid), { credentials: "include" });
+        const r = await fetch("/api/zhuge/review/" + encodeURIComponent(rid),
+                              { credentials: "include" });
         const d = await r.json();
         if (d.status === "pending") return;
         clearInterval(timer); timer = null;
-        $("#zr-status").textContent = "完成 · " + (d.verdict || d.status) + " · " + (d.model || "");
-        const box = $("#zr-result");
-        box.innerHTML = "";
-        (d.findings || []).forEach((f) => {
-          const n = document.createElement("div");
-          n.className = "zr-finding";
-          n.innerHTML = `<b>${escapeHtml(f.severity || "P2")}</b> ${escapeHtml(f.file || "")}:${f.line || 0}<br>` +
-            `${escapeHtml(f.claim || "")}<br><small>${escapeHtml(f.evidence || "")}</small>`;
-          box.appendChild(n);
-        });
-        if (!(d.findings || []).length) box.textContent = "无 findings";
+        $("#zr-status").textContent =
+          "完成 · " + (d.verdict || d.status) + " · " + (d.model || "");
+        zrLastReview = d;
+        zrAdoptionState = {};
+        renderFindings(d);
+        renderAdoption(d.adoption || null);
       } catch (e) {
         clearInterval(timer); timer = null;
         $("#zr-status").textContent = "查询失败：" + e.message;
       }
     }, 2000);
-  }
-
-  function escapeHtml(s) {
-    return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({
-      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-    }[c]));
   }
 
   function mount() {
