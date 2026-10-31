@@ -10,6 +10,19 @@
       horizon_days, model, fallback（legacy 行可能为 null；legacy 行无
       decision_id 不报错，按缺失处理）。
 
+PIT / raw refs（K-ORG-20261101-D1RAWPIT，2026-11-01 schema 向后兼容增量）：
+      **`as_of` 是采集时刻，不是数据时点**。新增两个分账字段（旧行缺省=null，
+      读取方按缺失处理，不推断）：
+      - `pit_as_of`：决策输入的数据时点——优先取 shadow_ledger 行 evidence_refs
+        中 raw ref 的 `pit_as_of`（最新 K 线交易日），无 raw ref 时回退到账本
+        `date`（数据到该决策日；`pit_source=decision_date`，如实标注非 raw）；
+      - `raw_refs_status` / `raw_refs_in_bundle`：从账本行
+        `evidence_raw_refs_summary`（缺失时顶层同名字段）拷贝，值为
+        none/partial/full/invalid 与纳入 bundle 的 raw ref 数。
+      `pit_source` 记录来源（raw_ref:<kind> / decision_date），不伪造。历史行只在
+      **账本行确有证据接线字段**时才补上述字段（require_evidence），避免为
+      无证据旧行凭空补时点导致无意义重写。
+
 decision_id（K-ORG-20261031-D1WRITER）：与 ``engine/decision_policy.py::
 decision_id`` 同一公式 ``D1-<yyyymmdd>-sha256("symbol|date|run_id")[:10]``；
 延迟 import 单一真源，引擎不可用时回退同公式本地实现。重复运行按 run_id
@@ -36,6 +49,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import sys
 import time
 
@@ -43,6 +57,12 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_LEDGER = os.path.join(HERE, "data", "shadow", "shadow_ledger.jsonl")
 DEFAULT_OUT = os.path.join(HERE, "data", "shadow", "decision_outcomes.jsonl")
 DIRECTION = {"BUY": 1, "STRONG_BUY": 1, "SELL": -1, "STRONG_SELL": -1}
+# PIT/raw 增量字段（旧 outcome 行缺省=null，schema 向后兼容）
+PIT_FIELDS = ("pit_as_of", "pit_source", "raw_refs_status",
+              "raw_refs_in_bundle")
+_PIT_TEXT_RE = re.compile(
+    r"^\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2})?)?"
+    r"(?:Z|[+-]\d{2}:?\d{2})?$")
 
 _POLICY_DECISION_ID = None
 
@@ -100,12 +120,76 @@ def _decision_id_from_ledger_row(ledger_row):
         return None
 
 
+def _valid_pit_text(value):
+    """数据时点字符串校验（日期/日期时间，可带时区）；非法返回 ""（不伪造）。"""
+    text = str(value or "").strip()
+    if not text or not _PIT_TEXT_RE.match(text):
+        return ""
+    return text
+
+
+def derive_pit_fields(ledger_row, *, require_evidence=False):
+    """从 shadow_ledger 行派生 PIT / raw refs 字段（只读推导，不伪造）。
+
+    返回 dict（可为空，调用方不得补默认值）：
+      - ``pit_as_of``/``pit_source``：优先 raw evidence_refs 的 `pit_as_of`
+        （取最大者，source=raw_ref:<kind>）；否则回退账本 ``date``
+        （source=decision_date，**诚实标注是日期回退而非 raw**）；
+      - ``raw_refs_status``/``raw_refs_in_bundle``：取账本行
+        ``evidence_raw_refs_summary``（兼容顶层同名字段）。
+
+    ``require_evidence=True``（历史 outcome 回放）时，账本行必须**确有**证据
+    接线字段（evidence_refs / evidence_raw_refs_summary / raw_refs_status）才
+    派生，避免给无证据旧行凭空补时点引发无意义重写。
+    """
+    if not isinstance(ledger_row, dict):
+        return {}
+    has_evidence = ("evidence_refs" in ledger_row
+                    or "evidence_raw_refs_summary" in ledger_row
+                    or "raw_refs_status" in ledger_row)
+    if require_evidence and not has_evidence:
+        return {}
+    refs = ledger_row.get("evidence_refs")
+    candidates = []
+    if isinstance(refs, list):
+        for ref in refs:
+            if not isinstance(ref, dict):
+                continue
+            pit = _valid_pit_text(ref.get("pit_as_of"))
+            if pit:
+                candidates.append((pit, "raw_ref:%s"
+                                   % (str(ref.get("kind") or "ref"))))
+    out = {}
+    if candidates:
+        candidates.sort()
+        out["pit_as_of"], out["pit_source"] = candidates[-1]
+    if not out and not require_evidence:
+        date = _valid_pit_text(ledger_row.get("date"))
+        if date:
+            out["pit_as_of"] = date
+            out["pit_source"] = "decision_date"
+    summary = ledger_row.get("evidence_raw_refs_summary")
+    status = ledger_row.get("raw_refs_status")
+    if status in (None, "") and isinstance(summary, dict):
+        status = summary.get("status")
+    if status not in (None, ""):
+        out["raw_refs_status"] = str(status)
+    raw_in = ledger_row.get("raw_refs_in_bundle")
+    if raw_in in (None, "") and isinstance(summary, dict):
+        raw_in = summary.get("raw_refs_in_bundle")
+    if isinstance(raw_in, int) and not isinstance(raw_in, bool):
+        out["raw_refs_in_bundle"] = raw_in
+    return out
+
+
 def enrich_outcome_row(row, ledger_index):
-    """按 run_id 从 shadow_ledger 补 outcome 行缺的 decision_id/model。
+    """按 run_id 从 shadow_ledger 补 outcome 行缺的 decision_id/model/PIT/raw 字段。
 
     - 只补空值（None/缺键），已有值一律不动；
     - decision_id 优先取账本行同名字段，否则按同公式复算；
-    - model 取账本行值；账本行缺失/字段不全 → 落 null，**绝不编造**。
+    - model 取账本行值；账本行缺失/字段不全 → 落 null，**绝不编造**；
+    - PIT/raw 字段仅当账本行确有证据接线字段时才补（derive_pit_fields
+      require_evidence=True），否则保持缺失（不凭空补时点）。
     返回实际补到值的字段名列表（用于 repaired 计数）。
     """
     filled = []
@@ -125,6 +209,13 @@ def enrich_outcome_row(row, ledger_index):
             filled.append("model")
         elif "model" not in row:
             row["model"] = None
+    derived = derive_pit_fields(ledger_row, require_evidence=True)
+    for key in PIT_FIELDS:
+        if key not in derived:
+            continue
+        if row.get(key) in (None, ""):
+            row[key] = derived[key]
+            filled.append(key)
     return filled
 
 
@@ -133,16 +224,20 @@ def repair_outcomes(out_rows, ledger_rows):
     index = _ledger_by_run_id(ledger_rows)
     fields = {"decision_id": 0, "model": 0}
     repaired = 0
+    pit_repaired = 0
     rows = []
     for row in out_rows or []:
         new_row = dict(row)
         filled = enrich_outcome_row(new_row, index)
         if filled:
             repaired += 1
+            if any(name in PIT_FIELDS for name in filled):
+                pit_repaired += 1
             for name in filled:
                 fields[name] = fields.get(name, 0) + 1
         rows.append(new_row)
-    return rows, {"repaired": repaired, "fields": fields}
+    return rows, {"repaired": repaired, "fields": fields,
+                  "pit_repaired": pit_repaired}
 
 
 def _write_jsonl_atomic(path, rows):
@@ -224,7 +319,7 @@ def compute_outcome(row, price_fetcher):
         conf = float(row.get("confidence"))
     except (TypeError, ValueError):
         conf = None
-    return {
+    outcome = {
         "ts": time.time(),
         "run_id": run_id,
         "decision_id": decision_id(symbol, date, run_id),
@@ -241,6 +336,13 @@ def compute_outcome(row, price_fetcher):
         "model": row.get("model"),
         "fallback": row.get("fallback"),
     }
+    # PIT / raw refs（schema 向后兼容增量；旧读取方忽略未知键即可）
+    pit = derive_pit_fields(row)
+    outcome["pit_as_of"] = pit.get("pit_as_of")
+    outcome["pit_source"] = pit.get("pit_source")
+    outcome["raw_refs_status"] = pit.get("raw_refs_status")
+    outcome["raw_refs_in_bundle"] = pit.get("raw_refs_in_bundle")
+    return outcome
 
 
 def compute_all(rows, price_fetcher, existing_run_ids=None, since=None):
@@ -277,7 +379,8 @@ def run_backfill(ledger_path, out_path, since=None, price_fetcher=None,
     existing = {str(o.get("run_id")) for o in out_rows if o.get("run_id")}
     new_rows = compute_all(ledger_rows, fetcher, existing, since=since)
     merged = list(out_rows) + new_rows
-    repaired_report = {"repaired": 0, "fields": {"decision_id": 0, "model": 0}}
+    repaired_report = {"repaired": 0, "pit_repaired": 0,
+                       "fields": {"decision_id": 0, "model": 0}}
     if repair:
         merged, repaired_report = repair_outcomes(merged, ledger_rows)
     written = False
@@ -291,6 +394,7 @@ def run_backfill(ledger_path, out_path, since=None, price_fetcher=None,
         dates[day] = dates.get(day, 0) + 1
     return {"new": len(new_rows), "dates": dict(sorted(dates.items())),
             "since": since, "repaired": repaired_report["repaired"],
+            "repaired_pit": repaired_report.get("pit_repaired", 0),
             "repaired_fields": repaired_report["fields"],
             "written": written, "out_path": out_path,
             "outcomes": len(merged), "summary": summary}
@@ -321,6 +425,12 @@ def summarize(outcomes, ledger_rows=None, week=None):
     for o in outcomes:
         k = o.get("recommendation") or "UNKNOWN"
         rec_counts[k] = rec_counts.get(k, 0) + 1
+    pit_rows = [o for o in outcomes if str(o.get("pit_as_of") or "").strip()]
+    raw_status_counts = {}
+    for o in outcomes:
+        status = str(o.get("raw_refs_status") or "").strip()
+        if status:
+            raw_status_counts[status] = raw_status_counts.get(status, 0) + 1
     model_counts = {}
     fallback_counts = {"true": 0, "false": 0, "unknown": 0}
     for r in done:
@@ -352,6 +462,10 @@ def summarize(outcomes, ledger_rows=None, week=None):
         "by_recommendation": rec_counts,
         "models": model_counts,
         "fallback": fallback_counts,
+        # PIT/raw refs 覆盖（2026-11-01 D1RAWPIT；旧行缺省不计数、不推断）
+        "pit": {"outcomes_with_pit_as_of": len(pit_rows),
+                "outcomes_with_raw_status": sum(raw_status_counts.values()),
+                "raw_refs_status": raw_status_counts},
         "warn_only": True,
     }
 

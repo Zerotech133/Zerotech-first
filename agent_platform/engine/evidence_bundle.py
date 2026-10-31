@@ -47,6 +47,78 @@ L4_KIND = "l4_record"
 
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 _LINE_SELECTOR_RE = re.compile(r"^line:(\d+)$")
+# 数据时点（PIT）字段（2026-11-01 WO-D1RAWPIT）：
+# - `as_of` = **采集时刻**（EvidenceBundle.from_context / make_raw_ref 的 now）；
+# - `pit_as_of` = **数据时点**（该 ref 指向原始数据里最新一根 K 线交易日 /
+#   L4 记录的 as_of 等），用于区分“什么时候采的”与“数据到哪天”。
+_PIT_RE = re.compile(
+    r"^(\d{4}-\d{2}-\d{2})"
+    r"(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?)?"
+    r"(Z|[+-]\d{2}:?\d{2})?$")
+_PIT_TZ_RE = re.compile(r"(Z|[+-]\d{2}:?\d{2})$")
+
+
+def normalize_pit_as_of(value) -> str:
+    """规范化数据时点字符串；空返回 ""，非法抛 RawRefError(bad_pit_format)。
+
+    接受 ``YYYY-MM-DD`` / ``YYYY-MM-DD HH:MM[:SS]`` / ISO8601（可带 Z/时区）。
+    """
+    text = str(value or "").strip()
+    if not text:
+        return ""
+    match = _PIT_RE.match(text)
+    if not match:
+        raise RawRefError("bad_pit_format")
+    date_part = match.group(1)
+    hour, minute, second = match.group(2), match.group(3), match.group(4)
+    try:  # 日历有效性（13 月/99 日等格式对但日期非法 → 拒绝）
+        time.strptime(date_part, "%Y-%m-%d")
+        if hour is not None:
+            time.strptime("%s %s:%s:%s" % (date_part, hour, minute,
+                                           second or "00"),
+                          "%Y-%m-%d %H:%M:%S")
+    except ValueError as exc:
+        raise RawRefError("bad_pit_format") from exc
+    # 保留调用方给的时区写法（不擅自换算），去掉时区仅用于比较
+    return text
+
+
+def _pit_datetime(value):
+    """PIT/采集时点 → 可比较 datetime；非法/空返回 None（不猜）。"""
+    text = str(value or "").strip()
+    if not text:
+        return None
+    try:
+        text = normalize_pit_as_of(text)
+    except RawRefError:
+        return None
+    naive = _PIT_TZ_RE.sub("", text)
+    for fmt in ("%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M",
+                "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"):
+        try:
+            return time.strptime(naive, fmt)
+        except ValueError:
+            continue
+    return None
+
+
+def validate_pit(as_of, pit_as_of):
+    """PIT 字段校验；返回 ``(ok, reason)``。
+
+    - 缺数据时点 → ``pit_missing``（raw 可核验 ≠ PIT 齐全，必须显式区分）；
+    - 格式非法 → ``bad_pit_format``；
+    - 数据时点晚于采集时点 → ``pit_after_as_of``（未来数据/时区错乱，拒绝）。
+    """
+    if not str(pit_as_of or "").strip():
+        return False, "pit_missing"
+    pit_dt = _pit_datetime(pit_as_of)
+    if pit_dt is None:
+        return False, "bad_pit_format"
+    if str(as_of or "").strip():
+        as_of_dt = _pit_datetime(as_of)
+        if as_of_dt is not None and pit_dt > as_of_dt:
+            return False, "pit_after_as_of"
+    return True, ""
 
 ENGINE_DIR = Path(__file__).resolve().parent
 PLATFORM_ROOT = ENGINE_DIR.parent
@@ -142,13 +214,15 @@ def _selector_exists(path: Path, selector: str):
 
 
 def make_raw_ref(*, source, path, kind, as_of=None, root=None,
-                 row_range=None, selector="") -> "EvidenceRef":
+                 row_range=None, selector="", pit_as_of=None) -> "EvidenceRef":
     """构造**已核验**的 raw ref（文件不存在/越界/selector 缺失 → RawRefError）。
 
     - `path` 可为绝对或相对；存入 ref 的 `raw_uri` 一律是相对 root 的 POSIX
       路径（root 默认仓库根），便于跨机/跨 worktree 复核；
     - `row_range` 仅对 parquet 有意义，格式 `[start, end)`；必须落在真实行数内；
-    - `selector` 仅对 JSON/JSONL 文件有意义，必须能在文件中解析到。
+    - `selector` 仅对 JSON/JSONL 文件有意义，必须能在文件中解析到；
+    - `pit_as_of` = **数据时点**（如最新 K 线交易日 / L4 记录 as_of），
+      与 `as_of`（采集时刻）分开存；非法格式直接拒绝（不伪造）。
     """
     kind = str(kind or "").strip()
     if kind not in RAW_KINDS:
@@ -194,6 +268,7 @@ def make_raw_ref(*, source, path, kind, as_of=None, root=None,
         if not ok:
             raise RawRefError(reason)
     now = as_of or time.strftime("%Y-%m-%dT%H:%M:%S%z", time.localtime())
+    pit = normalize_pit_as_of(pit_as_of) if pit_as_of is not None else ""
     return EvidenceRef(
         source=str(source),
         uri="%s%s/%s" % (RAW_PREFIX, kind, relative),
@@ -209,6 +284,7 @@ def make_raw_ref(*, source, path, kind, as_of=None, root=None,
         raw_bytes=size,
         raw_verified=True,
         raw_verify_error="",
+        pit_as_of=pit,
     )
 
 
@@ -245,6 +321,11 @@ def verify_raw_ref(ref, root=None):
         ok, sel_reason = _selector_exists(candidate, item.raw_selector)
         if not ok:
             return False, sel_reason
+    # PIT 字段（若有）也必须自洽：非法格式/数据时点晚于采集时点 → 拒绝
+    if str(item.pit_as_of or "").strip():
+        ok, pit_reason = validate_pit(item.as_of, item.pit_as_of)
+        if not ok:
+            return False, pit_reason
     return True, ""
 
 
@@ -265,6 +346,8 @@ class EvidenceRef:
     raw_bytes: int = 0
     raw_verified: bool = False
     raw_verify_error: str = ""
+    # 数据时点（PIT）：与 as_of（采集时刻）分开；空=未提供（不伪造）
+    pit_as_of: str = ""
 
     @property
     def is_raw(self) -> bool:
@@ -421,12 +504,16 @@ class EvidenceBundle:
     def raw_summary(self) -> dict:
         """raw ref 落账摘要（供 ledger row / 预检脚本核验）。"""
         inside = sum(1 for ref in self.refs if ref.is_raw)
+        all_refs = list(self.refs) + list(self.raw_refs_extra)
+        with_pit = sum(1 for ref in all_refs
+                       if str(getattr(ref, "pit_as_of", "") or "").strip())
         return {
             "schema": RAW_SCHEMA,
             "status": self.raw_refs_status,
             "refs": len(self.refs),
             "raw_refs_in_bundle": inside,
             "extra_raw_refs": len(self.raw_refs_extra),
+            "refs_with_pit_as_of": with_pit,
             "upgraded": list((self.raw_refs_report or {}).get("upgraded") or []),
             "rejected": list((self.raw_refs_report or {}).get("rejected") or []),
             "error": self.raw_refs_error,
