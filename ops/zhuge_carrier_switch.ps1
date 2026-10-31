@@ -401,14 +401,24 @@ try {
     $inferText = ''
     $job = Start-Job -ScriptBlock {
         param($exe)
-        & $exe infer model run --local --agent zhuge --prompt 'reply only: OK' --json
+        & $exe infer model run --local --agent zhuge --prompt 'reply only: OK' --json 2>&1
     } -ArgumentList $oc
     if (-not (Wait-Job $job -Timeout $InferTimeoutSec)) {
         Stop-Job $job -ErrorAction SilentlyContinue
         Remove-Job $job -Force -ErrorAction SilentlyContinue
         throw ('self-check timeout ' + $InferTimeoutSec + 's')
     }
-    $inferText = (Receive-Job $job | Out-String)
+    # 2026-10-31 P125：真实 CLI 把 gateway/secrets 错误写 stderr；脚本 EAP=Stop 时
+    # Receive-Job 会把错误记录变成终止异常，绕过下方 unusable 分类 → 统一捕获为文本。
+    $oldEap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $inferText = (Receive-Job $job 2>&1 | Out-String)
+    } catch {
+        $inferText = [string]$_.Exception.Message
+    } finally {
+        $ErrorActionPreference = $oldEap
+    }
     Remove-Job $job -Force -ErrorAction SilentlyContinue
     Log ('selfcheck raw len=' + $inferText.Length)
     $ok = $false
