@@ -229,7 +229,11 @@ $paths = @{
         'tools/tests/test_merge_dirty_guard.py',
         'tools/tests/test_sql_guard.py',
         'tools/tests/test_devtask_gates.py',
-        'tools/tests/test_merge_lock_gated.py'
+        'tools/tests/test_merge_lock_gated.py',
+        # ---- 黄忠工具测试纳管（WO-HZ-GATE-20261031，+1 聚合入口）----
+        # 黄忠 15 个测试文件位于 tools/ 根与 agent_platform/tests（不在 tools/tests/ 约定内），
+        # 由唯一聚合 gate 测试用子进程跑全套（独立 pytest 防 sys.path 污染）。
+        'tools/tests/test_huangzhong_tools_suite_gate.py'
     )
 }
 
