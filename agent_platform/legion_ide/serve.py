@@ -311,6 +311,14 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                 if not bundle.is_file():
                     return self._json(503, {"ok": False, "error": "bundle_missing"})
                 return self._send(200, bundle.read_bytes(), _JSON_CT)
+            if path == "/api/ide/version":
+                try:
+                    from ide_release_info import build_info
+                    info = build_info()
+                    return self._json(200 if info.get("ok") else 503, info)
+                except Exception as e:  # noqa: BLE001
+                    return self._json(500, {"ok": False, "error": "release_info_failed",
+                                            "detail": "%s: %s" % (type(e).__name__, str(e)[:160])})
             if path == "/api/health":
                 return self._json(
                     200,
