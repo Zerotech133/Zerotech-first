@@ -300,6 +300,38 @@ try {
             Write-Host "[budget] ⚠ 缺 tools/check_portal_split.py（跳过，不阻断）" -ForegroundColor Yellow
         }
     }
+
+    # ===== 2026-10-31 P130（WO-GUANYU-P130）：portal 路由清单门（阻断）=====
+    # B0 契约：路由集合必须与 tools/portal_route_baseline.json 零 diff；
+    # 新增/删除路由必须同提交 `python tools/portal_route_inventory.py --write-baseline` 重冻结，
+    # 否则本条阻断合并（防 B4a-lite 期间"他线加路由未更基线→任意 portal_api 合并误红/漏检"重演）。
+    if ($Suite -in @('fast', 'all')) {
+        $routeTool = Join-Path $repo 'tools\portal_route_inventory.py'
+        if (Test-Path -LiteralPath $routeTool) {
+            $rlog = Join-Path $env:TEMP "test_gate_route_$ts.log"
+            $rsw = [System.Diagnostics.Stopwatch]::StartNew()
+            python -X utf8 $routeTool --check *> $rlog
+            $rrc = $LASTEXITCODE
+            $rsw.Stop()
+            $rsecs = [math]::Round($rsw.Elapsed.TotalSeconds, 1)
+            if ($rrc -ne 0) {
+                $newFailures++
+                Write-Host "[route] 路由清单与 B0 基线不一致 → 判失败（日志 $rlog）" -ForegroundColor Red
+                Write-Host "        修法：确认路由变更属本单后，同提交运行 python tools\portal_route_inventory.py --write-baseline" -ForegroundColor Yellow
+                if (Test-Path -LiteralPath $rlog) {
+                    Get-Content -LiteralPath $rlog -Encoding UTF8 | Select-Object -Last 8 | ForEach-Object { Write-Host "  | $_" }
+                }
+            } else {
+                Write-Host "[route] PASS：路由清单与基线零 diff [${rsecs}s]" -ForegroundColor Green
+            }
+            $summary += [pscustomobject]@{
+                Suite = 'route'; Rc = $rrc; Failed = 0; Known = 0
+                New = $(if ($rrc -ne 0) { 1 } else { 0 }); Seconds = $rsecs; Log = $rlog
+            }
+        } else {
+            Write-Host "[route] ⚠ 缺 tools/portal_route_inventory.py（跳过，不阻断）" -ForegroundColor Yellow
+        }
+    }
 } finally {
     Pop-Location
     $ErrorActionPreference = $origEAP
