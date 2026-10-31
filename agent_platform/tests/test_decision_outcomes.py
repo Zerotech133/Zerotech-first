@@ -1,12 +1,25 @@
 # -*- coding: utf-8 -*-
-"""D1 决策 outcome 台账单测（不联网）。"""
+"""D1 决策 outcome 台账单测（不联网）。
+
+覆盖：first_next_bar/五档 hit/去重/指标渲染/账本 model-fallback/CLI 兼容；
+K-ORG-20261031-D1WRITER 增量：decision_id（与 engine/decision_policy 同公式）、
+legacy 行（无 decision_id）兼容、--no-write 不写、写后按 run_id 幂等、
+不伪造 hit/model。
+"""
+import hashlib
 import importlib.util
+import json
 import pathlib
 import sys
+
+import pytest
 
 HERE = pathlib.Path(__file__).resolve().parent
 PLATFORM = HERE.parent
 sys.path.insert(0, str(PLATFORM))
+sys.path.insert(0, str(PLATFORM / "engine"))
+
+import decision_policy as policy  # noqa: E402
 
 spec = importlib.util.spec_from_file_location("decision_outcomes", PLATFORM / "decision_outcomes.py")
 m = importlib.util.module_from_spec(spec)
@@ -113,3 +126,112 @@ def test_cli_compute_and_report_flags(tmp_path):
                    "--out", str(out)]) == 0
     assert m.main(["--report", "--no-write", "--ledger", str(led),
                    "--out", str(out)]) == 0
+
+
+# ---------------------------------------------------------------- decision_id
+DECISION_CASES = [
+    ("600519", "2026-10-30", "df51a1059157"),
+    ("000858", "2026-10-27", "5d66cc48a2f2"),
+    ("300324", "2026-10-30", "run-x-001"),
+]
+
+
+def test_decision_id_matches_policy_single_source():
+    """outcome 的 decision_id 必须与 engine/decision_policy 单一真源完全一致。"""
+    for symbol, date, run_id in DECISION_CASES:
+        assert m.decision_id(symbol, date, run_id) == policy.decision_id(
+            symbol, date, run_id)
+    # 与 W3 预检已复算的锚点一致（task-17 D1-20261030-6d46c0beb1）
+    assert m.decision_id("600519", "2026-10-30", "df51a1059157") == \
+        "D1-20261030-6d46c0beb1"
+    expected = "D1-%s-%s" % (
+        "20261030",
+        hashlib.sha256(b"600519|2026-10-30|df51a1059157").hexdigest()[:10])
+    assert m.decision_id("600519", "2026-10-30", "df51a1059157") == expected
+
+
+def test_fallback_decision_id_matches_policy():
+    """engine 不可用时的回退实现必须与 policy 同公式（防止双实现漂移）。"""
+    for symbol, date, run_id in DECISION_CASES:
+        assert m._fallback_decision_id(symbol, date, run_id) == \
+            policy.decision_id(symbol, date, run_id)
+
+
+def test_compute_outcome_carries_decision_id():
+    o = m.compute_outcome(_row(), lambda s, n: BARS)
+    assert o["decision_id"] == m.decision_id("600519", "2026-10-27", "r1")
+    # 原有 hit/model 语义不变
+    assert o["hit"] == 1
+    assert o["model"] == "glm/glm-5.3" and o["fallback"] is False
+
+
+def test_legacy_outcome_row_without_decision_id_compatible(tmp_path):
+    """历史 outcome 行（无 decision_id）可读、可统计、可幂等去重，不重写、不崩。"""
+    old_row = {"ts": 1.0, "run_id": "r0", "date": "2026-10-20",
+               "symbol": "600519", "recommendation": "WATCH",
+               "hit": None, "model": "glm/glm-5.3"}
+    out = tmp_path / "out.jsonl"
+    out.write_text(json.dumps(old_row, ensure_ascii=False) + "\n",
+                   encoding="utf-8")
+    rows = m._load_jsonl(str(out))
+    assert len(rows) == 1 and rows[0]["run_id"] == "r0"
+    assert "decision_id" not in rows[0]
+    summary = m.summarize(rows, [_row(run_id="r0")], week="2026-W43")
+    assert summary["outcomes"] == 1
+    existing = {str(r["run_id"]) for r in rows}
+    assert m.compute_all([_row(run_id="r0")], lambda s, n: BARS, existing) == []
+    assert out.read_text(encoding="utf-8").count("\n") == 1  # 未重写
+
+
+def test_no_write_does_not_create_out_file(tmp_path, monkeypatch):
+    monkeypatch.setattr(m, "_default_price_fetcher", lambda symbol, n=60: BARS)
+    ledger = tmp_path / "ledger.jsonl"
+    ledger.write_text(json.dumps(_row(), ensure_ascii=False) + "\n",
+                      encoding="utf-8")
+    out = tmp_path / "out.jsonl"
+    assert m.main(["--no-write", "--ledger", str(ledger),
+                   "--out", str(out)]) == 0
+    assert not out.exists(), "--no-write 不得创建/写 sidecar"
+
+
+def test_no_write_preserves_existing_out_file(tmp_path, monkeypatch):
+    monkeypatch.setattr(m, "_default_price_fetcher", lambda symbol, n=60: BARS)
+    ledger = tmp_path / "ledger.jsonl"
+    ledger.write_text(json.dumps(_row(run_id="r2"), ensure_ascii=False) + "\n",
+                      encoding="utf-8")
+    out = tmp_path / "out.jsonl"
+    out.write_text('{"run_id": "legacy", "decision_id": "legacy-kept"}\n',
+                   encoding="utf-8")
+    before = out.read_bytes()
+    assert m.main(["--no-write", "--ledger", str(ledger),
+                   "--out", str(out)]) == 0
+    assert out.read_bytes() == before
+
+
+def test_write_appends_decision_id_and_is_idempotent(tmp_path, monkeypatch):
+    monkeypatch.setattr(m, "_default_price_fetcher", lambda symbol, n=60: BARS)
+    ledger = tmp_path / "ledger.jsonl"
+    ledger.write_text(json.dumps(_row(), ensure_ascii=False) + "\n",
+                      encoding="utf-8")
+    out = tmp_path / "out.jsonl"
+    assert m.main(["--ledger", str(ledger), "--out", str(out)]) == 0
+    rows = m._load_jsonl(str(out))
+    assert len(rows) == 1
+    assert rows[0]["decision_id"] == m.decision_id("600519", "2026-10-27", "r1")
+    # 同一 run_id 再跑：幂等，不重复追加
+    assert m.main(["--ledger", str(ledger), "--out", str(out)]) == 0
+    assert len(m._load_jsonl(str(out))) == 1
+
+
+def test_no_fabricated_hit_or_model():
+    """无方向裁决 hit 必须 null；缺 model 不得补默认值（decision_id 仍应落）。"""
+    for rec in ("HOLD", "WATCH", ""):
+        o = m.compute_outcome(_row(recommendation=rec), lambda s, n: BARS)
+        assert o["hit"] is None, rec
+        assert o["decision_id"], rec
+    row = _row()
+    row.pop("model")
+    row.pop("fallback")
+    o = m.compute_outcome(row, lambda s, n: BARS)
+    assert o["decision_id"]
+    assert o["model"] is None and o["fallback"] is None

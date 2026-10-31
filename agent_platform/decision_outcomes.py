@@ -5,9 +5,15 @@
 首个交易日收盘价计算次日收益/方向命中，写 sidecar
 ``agent_platform/data/shadow/decision_outcomes.jsonl``（**不改原账本**）。
 
-字段：ts, run_id, date, symbol, recommendation, confidence, price_at_decision,
-      next_trade_date, next_close, next_day_return, hit, horizon_days,
-      model, fallback（legacy 行可能为 null）。
+字段：ts, run_id, decision_id, date, symbol, recommendation, confidence,
+      price_at_decision, next_trade_date, next_close, next_day_return, hit,
+      horizon_days, model, fallback（legacy 行可能为 null；legacy 行无
+      decision_id 不报错，按缺失处理）。
+
+decision_id（K-ORG-20261031-D1WRITER）：与 ``engine/decision_policy.py::
+decision_id`` 同一公式 ``D1-<yyyymmdd>-sha256("symbol|date|run_id")[:10]``；
+延迟 import 单一真源，引擎不可用时回退同公式本地实现。历史 outcome 行
+（无该字段）保持原样、不重写；重复运行按 run_id 幂等去重，不重复追加。
 
 用法::
 
@@ -18,6 +24,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import sys
@@ -27,6 +34,33 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_LEDGER = os.path.join(HERE, "data", "shadow", "shadow_ledger.jsonl")
 DEFAULT_OUT = os.path.join(HERE, "data", "shadow", "decision_outcomes.jsonl")
 DIRECTION = {"BUY": 1, "STRONG_BUY": 1, "SELL": -1, "STRONG_SELL": -1}
+
+_POLICY_DECISION_ID = None
+
+
+def _fallback_decision_id(symbol, date, run_id):
+    """engine/decision_policy.py 不可用时的同公式回退（tests 断言两者一致）。"""
+    raw = "%s|%s|%s" % (symbol, date, run_id)
+    return "D1-%s-%s" % (str(date).replace("-", ""),
+                         hashlib.sha256(raw.encode()).hexdigest()[:10])
+
+
+def decision_id(symbol, date, run_id):
+    """D1 decision_id：优先复用 engine/decision_policy.py 单一真源，失败回退同公式。
+
+    延迟 import（脚本/测试无需预先配置 engine 路径）；不写盘、不联网。
+    """
+    global _POLICY_DECISION_ID
+    if _POLICY_DECISION_ID is None:
+        engine = os.path.join(HERE, "engine")
+        if engine not in sys.path:
+            sys.path.insert(0, engine)
+        try:
+            from decision_policy import decision_id as _policy_fn  # noqa: E402
+        except Exception:  # noqa: BLE001 - 引擎目录不可用时按同公式回退
+            _policy_fn = _fallback_decision_id
+        _POLICY_DECISION_ID = _policy_fn
+    return _POLICY_DECISION_ID(symbol, date, run_id)
 
 
 def _load_jsonl(path):
@@ -96,6 +130,7 @@ def compute_outcome(row, price_fetcher):
     return {
         "ts": time.time(),
         "run_id": run_id,
+        "decision_id": decision_id(symbol, date, run_id),
         "date": date,
         "symbol": symbol,
         "recommendation": rec or None,
