@@ -12,10 +12,12 @@ GET /api/intel/bus?domain=<news|jev|evidence|events>[&code=][&days=][&limit=]
                             [&since_id=]
   统一信封 {"ok","schema_ver","endpoint","domain","params","items","count",
             "source","errors"}；count=过滤后总数（不受 limit 截断）。
-  news     原料流：news.db ro，窗口内 id 倒序，stocks 精确代码过滤，
-           坏 jev → None 不炸（api_news_intel._parse_jev 判例复用）
+  news     原料流：news.db ro，窗口内 **ts 倒序**（ts DESC, created_at DESC,
+            id DESC，2026-10-31 排序拍板：旧 id 倒序会让旧闻顶到第一屏），
+            stocks 精确代码过滤，坏 jev → None 不炸（api_news_intel._parse_jev
+            判例复用）；信封附新鲜度 as_of/latest_ts/age_s（数据截至）。
   jev      判定流：news.db ro，jev 非空且可解析 dict 才入选（量化对账基线
-           = event_graph 的「jev IS NOT NULL AND jev!=''」读法）
+           = event_graph 的「jev IS NOT NULL AND jev!=''」读法），同 ts 倒序。
   since_id 水位模式（仅 news/jev，量化读点机器消费）：忽略 days/ts 窗口，
            改 SQL 级「rowid > since_id ORDER BY rowid ASC LIMIT limit」
            分页游标。items 各带 rid（news.rowid）且 jev=完整解析 dict
@@ -23,6 +25,7 @@ GET /api/intel/bus?domain=<news|jev|evidence|events>[&code=][&days=][&limit=]
            （预过滤），errors.max_rowid=本页扫过末行 rid（含坏 jev 行，
            与 event_graph 原直读「坏行也推水位」语义 1:1）。分页终点：
            count < limit；消费方水位 = max_rowid 逐页推进，零丢行零滞留。
+           水位语义依赖 rowid 升序，排序不随展示口径改成 ts（机器契约）。
   evidence 证据—标的流：委托 api_intel_evidence.load_evidence_targets
            （精确 ts_code 匹配口径不漂移），状态码透传 fail-visible
   events   事件流：quant_backtest/data/semantica/events.jsonl 只读投影
@@ -90,10 +93,14 @@ def validate_params(params):
     return domain, code, days, limit, since_id
 
 
-def _envelope(domain, params, items, count, source, errors=None, ok=True):
-    return {"ok": ok, "schema_ver": _SCHEMA_VER, "endpoint": _ENDPOINT,
-            "domain": domain, "params": params, "items": items,
-            "count": count, "source": source, "errors": errors or {}}
+def _envelope(domain, params, items, count, source, errors=None, ok=True,
+              freshness=None):
+    out = {"ok": ok, "schema_ver": _SCHEMA_VER, "endpoint": _ENDPOINT,
+           "domain": domain, "params": params, "items": items,
+           "count": count, "source": source, "errors": errors or {}}
+    if freshness:
+        out.update(freshness)
+    return out
 
 
 def _db_path():
@@ -106,6 +113,24 @@ def _window(days):
     return since, datetime.now().strftime("%Y-%m-%d %H:%M")
 
 
+def _freshness(latest_ts):
+    """新鲜度信封：as_of=查询时刻，latest_ts=本域可见最新事件时间，age_s=滞后秒。
+
+    无数据时 latest_ts/age_s 为 None（如实空态，不拿 as_of 冒充数据时间）。
+    """
+    now = datetime.now()
+    as_of = now.strftime("%Y-%m-%d %H:%M:%S")
+    latest = str(latest_ts or "").strip() or None
+    age_s = None
+    if latest:
+        try:
+            dt = datetime.strptime(latest[:16], "%Y-%m-%d %H:%M")
+            age_s = max(0, int((now - dt).total_seconds()))
+        except ValueError:
+            age_s = None
+    return {"as_of": as_of, "latest_ts": latest, "age_s": age_s}
+
+
 def _domain_news(code, days, limit, jev_only, since_id=None):
     """news/jev 两域同源查询（一次 ro 连接；python 侧 stocks 精确过滤）。
 
@@ -115,15 +140,18 @@ def _domain_news(code, days, limit, jev_only, since_id=None):
     """
     if since_id is not None:
         return _domain_news_since(code, limit, jev_only, since_id)
-    items, count, bad_rows = [], 0, 0
+    items, count, bad_rows, latest_ts = [], 0, 0, None
     since, until = _window(days)
     uri = "file:" + _db_path().resolve().as_posix() + "?mode=ro"
     try:
         db = sqlite3.connect(uri, uri=True)
         try:
+            # 2026-10-31 排序拍板：事件时间优先（ts DESC），同 ts 用入库时间/
+            # id 兜底稳定；旧 ORDER BY id DESC 会让旧闻（补采/重判）顶到第一屏。
             rows = db.execute(
                 "SELECT id,source,ts,created_at,title,content,stocks,jev "
-                "FROM news WHERE ts>=? AND ts<=? ORDER BY id DESC",
+                "FROM news WHERE ts>=? AND ts<=? "
+                "ORDER BY ts DESC, created_at DESC, id DESC",
                 (since, until)).fetchall()
         finally:
             db.close()
@@ -143,6 +171,8 @@ def _domain_news(code, days, limit, jev_only, since_id=None):
         else:
             jev = api_news_intel._parse_jev(raw_jev)
         count += 1
+        if latest_ts is None or str(ts or "") > str(latest_ts):
+            latest_ts = ts
         if len(items) < limit:
             items.append({"id": nid, "ts": ts, "ingested_at": ingested,
                           "title": title or "", "content": content or "",
@@ -151,7 +181,8 @@ def _domain_news(code, days, limit, jev_only, since_id=None):
     return _envelope(
         domain, {"code": code, "days": days, "limit": limit}, items, count,
         "news.db@news_collector (sqlite mode=ro)",
-        {"bad_rows": bad_rows} if bad_rows else {}), 200
+        {"bad_rows": bad_rows} if bad_rows else {},
+        freshness=_freshness(latest_ts)), 200
 
 
 def _domain_news_since(code, limit, jev_only, since_id):
@@ -173,7 +204,7 @@ def _domain_news_since(code, limit, jev_only, since_id):
         return _envelope(domain, {"code": code, "since_id": since_id,
                                   "limit": limit}, [], 0, "",
                          {"db": "news.db 读取失败: %r" % e}, ok=False), 503
-    items, scanned, bad_rows = [], len(rows), 0
+    items, scanned, bad_rows, latest_ts = [], len(rows), 0, None
     for rid, nid, source, ts, ingested, title, content, stocks, raw_jev in rows:
         code_list = api_news_intel._parse_stocks(stocks)
         if code and code not in code_list:
@@ -190,6 +221,8 @@ def _domain_news_since(code, limit, jev_only, since_id):
         if jev_only and jev is None:
             bad_rows += 1  # 有值但坏（SQL 已滤空值）；水位由 max_rowid 兜住
             continue
+        if latest_ts is None or str(ts or "") > str(latest_ts):
+            latest_ts = ts
         items.append({"id": nid, "rid": rid, "ts": ts,
                       "ingested_at": ingested, "title": title or "",
                       "content": content or "", "source": source,
@@ -201,7 +234,8 @@ def _domain_news_since(code, limit, jev_only, since_id):
         errors["max_rowid"] = rows[-1][0]  # 本页扫过末行 rid（坏行含在内）
     return _envelope(domain, {"code": code, "since_id": since_id,
                               "limit": limit}, items, scanned,
-                     "news.db@news_collector (sqlite mode=ro)", errors), 200
+                     "news.db@news_collector (sqlite mode=ro)", errors,
+                     freshness=_freshness(latest_ts)), 200
 
 
 def _domain_evidence(code, days, limit):

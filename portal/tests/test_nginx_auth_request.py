@@ -72,10 +72,16 @@ def test_login_not_protected():
     assert "auth_request" not in m.group(0)
 
 
-def test_other_pages_not_locked():
+def test_non_intel_public_routes_not_locked():
+    """2026-10-31 情报全私有后：/intel 已纳入 auth_request（见 test_intel_privacy.py），
+    此处只锁「非情报公开基线」不被误加锁：/quant 与全局 /api/（含 /api/health）。"""
     s = _text()
-    for p in ("/quant", "/intel", "/api/"):
-        assert ("location = " + p) not in s or "auth_request" not in s.split("location = " + p, 1)[1][:120]
+    q = s.split("location = /quant", 1)
+    assert len(q) == 2
+    assert "auth_request" not in q[1][:120]
+    assert "location /api/ {" in s
+    api_block = s.split("location /api/ {", 1)[1].split("}", 1)[0]
+    assert "auth_request" not in api_block, "全局 /api/ 不得整体加锁（/api/health 公开）"
 
 
 # ── WO-LEGION-AUTH-20261031：Hermes trusted-header 认证拓扑收口 ──────────────

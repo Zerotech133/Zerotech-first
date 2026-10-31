@@ -10,13 +10,14 @@ GET /api/news/intel（零参数）→ 判读结论在前、原料流水在后的
              排序口径拍板依据：JEV 置信度右偏（真实库 conf>=0.9 占 34%）
              分辨率差，冲击为主、conf 只做次级（K-ORG-208）。
   flash      速报栏（原料流）：news.db 只读（sqlite mode=ro uri），近 48h
-             news 表按 id 倒序 top 80（ts/title/source/hit/pushed/jev）；
-             hit=1 表示自选股/关键词命中并已推送；ts 解析出 hm（HH:MM）；
-             jev 为解析投影 dict（坏 JSON/空值置 null 不炸）。
+             news 表按 **ts 倒序**（ts DESC, created_at DESC, id DESC；2026-10-31
+             排序拍板：旧 id 倒序会让旧闻顶第一屏）top 80（ts/title/source/
+             hit/pushed/jev）；hit=1 表示自选股/关键词命中并已推送；ts 解析
+             出 hm（HH:MM）；jev 为解析投影 dict（坏 JSON/空值置 null 不炸）。
   policy     政策栏：读时分类不改库——标题或 content 命中 policy_keywords
              （news_collector/news_config.json 新键，读不到时用内置默认表
              兜底）；命中者再按 policy_authority_sources 白名单打
-             authority=true/false 分层（营养度：权威源 vs 一般源）。
+             authority=true/false 分层（营养度：权威源 vs 一般源）；同 ts 倒序。
   sentiment  舆情栏：复用 api_xq_intel.read_xq_intel("") 读最新
              xq_intel 报告做摘要投影（report_exists=false 是合法空态，
              只报 hint 不记 error；坏 JSON 才 fail-visible 记 error）。
@@ -157,23 +158,26 @@ def read_news_columns(kw, auth):
                  ).strftime("%Y-%m-%d %H:%M")
         db = _connect_ro()
         try:
-            # 速报栏：近 48h 按 id 倒序 top 80（拍板口径；content 供前端点击
-            # 展开，jev 随行带出供原料流条目展示判读徽标）
+            # 速报栏：近 48h 按事件时间 ts 倒序 top 80（2026-10-31 排序拍板：
+            # ts DESC, created_at DESC, id DESC；content 供前端点击展开，
+            # jev 随行带出供原料流条目展示判读徽标）
             flash["total"] = db.execute(
                 "SELECT COUNT(*) FROM news WHERE ts>=?", (since,)).fetchone()[0]
             for ts, title, content, source, hit, pushed, raw in db.execute(
                     "SELECT ts,title,content,source,hit,pushed,jev FROM news "
-                    "WHERE ts>=? ORDER BY id DESC LIMIT ?", (since, FLASH_LIMIT)):
+                    "WHERE ts>=? ORDER BY ts DESC, created_at DESC, id DESC "
+                    "LIMIT ?", (since, FLASH_LIMIT)):
                 flash["items"].append({
                     "ts": ts, "hm": (ts or "")[-5:], "title": title,
                     "content": content or "", "source": source,
                     "hit": bool(hit), "pushed": bool(pushed),
                     "jev": _parse_jev(raw)})
-            # 政策栏：同一窗口深扫描后读时分类（不改库）
+            # 政策栏：同一窗口深扫描后读时分类（不改库）；同 ts 倒序
             matches, pol_hits = [], 0
             for ts, title, content, source in db.execute(
                     "SELECT ts,title,content,source FROM news "
-                    "WHERE ts>=? ORDER BY id DESC LIMIT ?", (since, POLICY_SCAN)):
+                    "WHERE ts>=? ORDER BY ts DESC, created_at DESC, id DESC "
+                    "LIMIT ?", (since, POLICY_SCAN)):
                 text = (title or "") + (content or "")
                 if any(k in text for k in kw):
                     is_auth = source in auth
@@ -215,17 +219,20 @@ def read_verdicts():
         db = _connect_ro()
         try:
             # 判例过滤：jev IS NOT NULL AND jev!=''（api_backtest._bt_jev 同款）；
-            # ORDER BY id DESC 保证同分条目经稳定排序后仍保持 id 降序；
+            # SQL 基础序 = 事件时间倒序（2026-10-31 排序拍板：
+            # ORDER BY ts DESC, created_at DESC, id DESC）；下方 python 稳定
+            # 排序再按 impact/conf 降序，同分条目保持该基础序；
             # content 随行带出供前端行卡展开正文（K-ORG-209）
             rows = db.execute(
                 "SELECT id,ts,title,content,source,stocks,jev FROM news "
                 "WHERE ts>=? AND jev IS NOT NULL AND jev!='' "
-                "ORDER BY id DESC", (since,)).fetchall()
+                "ORDER BY ts DESC, created_at DESC, id DESC",
+                (since,)).fetchall()
         finally:
             db.close()
     except Exception as e:  # noqa: BLE001
         return overview, verdicts, "news.db 读取失败: %r" % e
-    # 第一遍：解析 + 计数（遍历顺序即 id 降序，供下方稳定排序保序）
+    # 第一遍：解析 + 计数（遍历顺序即 ts 倒序基础序，供下方稳定排序保序）
     # 投影元组：(impact_weight, conf, id, ts, title, content, source,
     # stocks, jev)——content 截 300 字（政策栏 (content or "")[:300] 同款），
     # 供前端行卡展开正文
