@@ -30,6 +30,7 @@ from datetime import datetime
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 DEFAULT_PDF_DIR = Path(r"C:/项目/PDF")
 DEFAULT_OUT = DEFAULT_PDF_DIR / "_ingest"
 OLLAMA = "http://127.0.0.1:11434"
@@ -110,7 +111,22 @@ def cmd_ocr(args) -> int:
     for pdf in sorted(pdf_dir.glob("*.pdf")):
         info = pdf_type(pdf)
         if info["kind"] == "text" and not args.force:
-            log(f"ocr skip {pdf.name}（有文本层，走 text 通道）")
+            d = book_out(pdf, out)
+            layout = d / "layout.jsonl"
+            if not layout.exists():
+                try:
+                    import pdf_layout
+                    pdf_layout.parse_pdf(pdf, d)
+                    src_j, src_m = d / f"{pdf.stem}.layout.jsonl", d / f"{pdf.stem}.layout.md"
+                    if src_j.exists() and not layout.exists():
+                        src_j.rename(layout)
+                    if src_m.exists() and not (d / "layout.md").exists():
+                        src_m.rename(d / "layout.md")
+                    log(f"ocr→layout {pdf.name}（文本层，布局/表格通道）")
+                except Exception as e:  # noqa: BLE001
+                    log(f"layout ERR {pdf.name}: {type(e).__name__} {e}")
+            else:
+                log(f"ocr skip {pdf.name}（已有 layout.jsonl）")
             continue
         d = book_out(pdf, out)
         jl = d / "ocr.jsonl"
@@ -166,9 +182,34 @@ def cmd_structure(args) -> int:
     pdf_dir = Path(args.pdf_dir)
     for pdf in sorted(pdf_dir.glob("*.pdf")):
         d = book_out(pdf, out)
+        layout = d / "layout.jsonl"
+        if layout.exists():
+            chapters = []
+            seen = set()
+            max_page = 0
+            for line in layout.read_text(encoding="utf-8").splitlines():
+                if not line.strip():
+                    continue
+                rec = json.loads(line)
+                page = int(rec.get("page") or 0)
+                max_page = max(max_page, page)
+                for b in rec.get("blocks") or []:
+                    if b.get("kind") not in ("h1", "h2"):
+                        continue
+                    title = str(b.get("text") or "").strip()
+                    if not title or len(title) > 60 or title in seen:
+                        continue
+                    seen.add(title)
+                    chapters.append({"title": title, "page": page})
+            structure = {"generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+                         "book": pdf.stem, "pages": max_page or None, "source": "layout",
+                         "chapters": chapters}
+            (d / "structure.json").write_text(json.dumps(structure, ensure_ascii=False, indent=1), encoding="utf-8")
+            log(f"structure(layout) {pdf.name}: pages={max_page} chapters={len(chapters)}")
+            continue
         txt_file = d / "ocr.txt"
         if not txt_file.exists():
-            log(f"structure skip {pdf.name}（缺 ocr.txt）")
+            log(f"structure skip {pdf.name}（缺 ocr.txt/layout.jsonl）")
             continue
         txt = txt_file.read_text(encoding="utf-8")
         pages = []
@@ -228,26 +269,40 @@ def cmd_distill(args) -> int:
         d = book_out(pdf, out)
         st = d / "structure.json"
         txt_file = d / "ocr.txt"
-        if not (st.exists() and txt_file.exists()):
+        layout_file = d / "layout.jsonl"
+        if not st.exists():
             log(f"distill skip {pdf.name}")
             continue
         structure = json.loads(st.read_text(encoding="utf-8"))
         chapters = structure.get("chapters") or []
         if args.chapters:
             chapters = chapters[: args.chapters]
-        pages = []
-        cur = {}
-        for line in txt_file.read_text(encoding="utf-8").splitlines():
-            m = re.match(r"^=== 第(\d+)页 ===$", line.strip())
-            if m:
-                if cur:
-                    pages.append(cur)
-                cur = {"page": int(m.group(1)), "text": []}
-            elif cur:
-                cur["text"].append(line)
-        if cur:
-            pages.append(cur)
-        page_text = {p["page"]: "\n".join(p["text"]) for p in pages}
+        page_text = {}
+        if txt_file.exists():
+            pages = []
+            cur = {}
+            for line in txt_file.read_text(encoding="utf-8").splitlines():
+                m = re.match(r"^=== 第(\d+)页 ===$", line.strip())
+                if m:
+                    if cur:
+                        pages.append(cur)
+                    cur = {"page": int(m.group(1)), "text": []}
+                elif cur:
+                    cur["text"].append(line)
+            if cur:
+                pages.append(cur)
+            page_text = {p["page"]: "\n".join(p["text"]) for p in pages}
+        elif layout_file.exists():
+            for line in layout_file.read_text(encoding="utf-8").splitlines():
+                if not line.strip():
+                    continue
+                rec = json.loads(line)
+                texts = [str(b.get("text") or "") for b in (rec.get("blocks") or [])
+                         if b.get("kind") in ("p", "h3")]
+                page_text[int(rec.get("page") or 0)] = "\n".join(t for t in texts if t.strip())
+        else:
+            log(f"distill skip {pdf.name}（无 ocr.txt / layout.jsonl）")
+            continue
         units = []
         for i, ch in enumerate(chapters):
             start = ch["page"]
@@ -287,9 +342,11 @@ def cmd_distill(args) -> int:
 def cmd_verify(args) -> int:
     out = Path(args.out_dir)
     pdf_dir = Path(args.pdf_dir)
+    units_min = int(getattr(args, "units_min", 10))
+    chapters_min = int(getattr(args, "chapters_min", 5))
     report = {"generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
               "thresholds": {"ocr_chars_per_page": 100, "page_coverage": 0.95,
-                             "chapters_min": 5, "unit_citation_rate": 1.0},
+                             "chapters_min": chapters_min, "units_min": units_min, "unit_citation_rate": 1.0},
               "books": {}, "ok": True, "failures": []}
     for pdf in sorted(pdf_dir.glob("*.pdf")):
         d = book_out(pdf, out)
@@ -328,25 +385,43 @@ def cmd_verify(args) -> int:
         checks = {
             "page_coverage": item["page_coverage"] >= 0.95,
             "ocr_quality": item["ocr_chars_per_page"] >= 100 and item["garbled_ratio"] < 0.02,
-            "structure": item["chapters"] >= 5,
-            "units": item["units"] >= 10 and item["unit_citation_rate"] >= 1.0,
+            "structure": item["chapters"] >= chapters_min,
+            "units": item["units"] >= units_min and item["unit_citation_rate"] >= 1.0,
         }
         item["checks"] = checks
         # 仅有文本层的书允许无 OCR：按文本层折算
         if info["kind"] == "text" and not pages:
-            text_pages = 0
-            try:
-                from pypdf import PdfReader
-                r = PdfReader(str(pdf), strict=False)
-                text = "".join((p.extract_text() or "") for p in r.pages)
-                text_pages = info["pages"]
-                item["ocr_chars"] = len(text)
-                item["ocr_chars_per_page"] = round(len(text) / max(1, text_pages), 1)
-                item.update({"ocr_pages": text_pages, "page_coverage": 1.0, "garbled_ratio": 0.0})
-                checks["page_coverage"] = True
-                checks["ocr_quality"] = item["ocr_chars_per_page"] >= 100
-            except Exception:  # noqa: BLE001
-                pass
+            lay = d / "layout.jsonl"
+            if lay.exists():
+                # 文本层 PDF 走 layout 通道：按 blocks 计字符与页数
+                chars = 0
+                max_page = 0
+                for line in lay.read_text(encoding="utf-8").splitlines():
+                    if not line.strip():
+                        continue
+                    rec = json.loads(line)
+                    max_page = max(max_page, int(rec.get("page") or 0))
+                    chars += sum(len(str(b.get("text") or "")) for b in (rec.get("blocks") or []))
+                if max_page:
+                    item["ocr_chars"] = chars
+                    item["ocr_chars_per_page"] = round(chars / max_page, 1)
+                    item.update({"ocr_pages": max_page, "page_coverage": 1.0, "garbled_ratio": 0.0})
+                    checks["page_coverage"] = True
+                    checks["ocr_quality"] = item["ocr_chars_per_page"] >= 100
+            else:
+                text_pages = 0
+                try:
+                    from pypdf import PdfReader
+                    r = PdfReader(str(pdf), strict=False)
+                    text = "".join((p.extract_text() or "") for p in r.pages)
+                    text_pages = info["pages"]
+                    item["ocr_chars"] = len(text)
+                    item["ocr_chars_per_page"] = round(len(text) / max(1, text_pages), 1)
+                    item.update({"ocr_pages": text_pages, "page_coverage": 1.0, "garbled_ratio": 0.0})
+                    checks["page_coverage"] = True
+                    checks["ocr_quality"] = item["ocr_chars_per_page"] >= 100
+                except Exception:  # noqa: BLE001
+                    pass
         if not all(checks.values()):
             report["ok"] = False
             report["failures"].append({"book": pdf.stem, "checks": checks, **item})
@@ -373,8 +448,20 @@ def cmd_index(args) -> int:
         ku = d / "knowledge_units.jsonl"
         if ku.exists():
             units = [json.loads(x) for x in ku.read_text(encoding="utf-8").splitlines() if x.strip()]
-        lines = [f"# {pdf.stem}（PDF OCR 知识入库）", "",
-                 f"> 来源：`{pdf}`；页数 {structure.get('pages')}；OCR 产物 `{d}`；"
+        layout_note = ""
+        lay = d / "layout.jsonl"
+        if lay.exists():
+            tables = 0
+            heads = 0
+            for line in lay.read_text(encoding="utf-8").splitlines():
+                if not line.strip():
+                    continue
+                rec = json.loads(line)
+                tables += len(rec.get("tables") or [])
+                heads += sum(1 for b in (rec.get("blocks") or []) if b.get("kind") in ("h1", "h2", "h3"))
+            layout_note = f"布局解析：{tables} 张表格 / {heads} 个标题（layout 通道）。"
+        lines = [f"# {pdf.stem}（PDF 知识入库）", "",
+                 f"> 来源：`{pdf}`；页数 {structure.get('pages')}；产物 `{d}`；{layout_note}"
                  f"知识单元 {len(units)} 条（含章节/页码引用）。仅内部研究使用。", "",
                  "## 章节结构", ""]
         for ch in structure.get("chapters", [])[:40]:
@@ -417,6 +504,9 @@ def build_parser() -> argparse.ArgumentParser:
         p.add_argument("--force", action="store_true")
         p.add_argument("--chapters", type=int, default=0, help="distill 最多处理章节数（0=全部）")
         p.add_argument("--rebuild-rag", action="store_true", help="index 后重建 RAG 索引")
+        if name == "verify":
+            p.add_argument("--units-min", type=int, default=10, help="知识单元数阈值（短文档可放宽，需在报告注明）")
+            p.add_argument("--chapters-min", type=int, default=5, help="章节数阈值")
         p.set_defaults(fn=fn)
     return ap
 
