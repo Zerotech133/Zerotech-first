@@ -1,0 +1,66 @@
+{
+ "generated_at": "2026-10-31T19:27:52+08:00",
+ "ingest_dir": "C:\\项目\\PDF\\_ingest",
+ "books": [
+  {
+   "book": "伏击涨停(2)",
+   "pages": 236,
+   "chapters": 141,
+   "units": 20,
+   "has_ocr": true
+  },
+  {
+   "book": "涨停密码(2)",
+   "pages": 202,
+   "chapters": 133,
+   "units": 15,
+   "has_ocr": true
+  }
+ ],
+ "totals": {
+  "books": 2,
+  "pages": 438,
+  "chapters": 274,
+  "units": 35
+ },
+ "verify": {
+  "ok": true,
+  "books": {
+   "伏击涨停(2)": {
+    "page_coverage": true,
+    "ocr_quality": true,
+    "structure": true,
+    "units": true
+   },
+   "涨停密码(2)": {
+    "page_coverage": true,
+    "ocr_quality": true,
+    "structure": true,
+    "units": true
+   }
+  }
+ },
+ "pipeline": {
+  "ok": true,
+  "next_steps": [
+   "golden 评测（Recall@5≥0.6、引用正确率≥0.9）",
+   "知识单元→特征映射（写入报告）",
+   "假设登记 + 四关回测（PIT/OOS/成本/容量 + 重叠/前视修正）",
+   "例会复核清单 6 条逐项打勾",
+   "备份 + 版本登记 + 驾驶舱展示"
+  ]
+ },
+ "rag": {
+  "docs": 0,
+  "records": 66,
+  "version": 2,
+  "updated_at": "2026-10-31T09:53:00.035260+00:00"
+ },
+ "thresholds": {
+  "ocr_chars_per_page_min": 100,
+  "page_coverage_min": 0.95,
+  "chapters_min": 5,
+  "units_min": 10,
+  "citation_rate_min": 1.0
+ }
+}
