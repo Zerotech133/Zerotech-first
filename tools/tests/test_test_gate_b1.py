@@ -3,8 +3,8 @@
 
 静态锁死（不执行门禁本体）：
   · fast = portal + kstock + ide + agent_key + quant_key + tools_key；
-  · agent_key/quant_key/tools_key = W5 报告 B1(57)+B2(31) 清单（共 88 文件），
-    文件必须真实存在（B2 扩容工单 K-ORG-20261031-GATEB2；W5 口径 30.9%→约 41.0%）；
+  · agent_key/quant_key/tools_key = W5 报告 B1(57)+B2(31) 清单 + 黄忠聚合入口（共 89 文件），
+    文件必须真实存在（B2 扩容工单 K-ORG-20261031-GATEB2；黄忠纳管 WO-HZ-GATE-20261031；W5 口径 30.9%→约 41.0%）；
   · 每次套件独立 pytest（脚本结构保证），baseline 支持 suiteKey 回退；
   · A5 预算门已接入，**2026-10-31 K-ORG-20261031-A5STRICT 起为阶段2 strict**
     （调用必须带 --strict；建议项同样阻断；缺脚本 fail-closed）；
@@ -114,6 +114,8 @@ TOOLS_KEY = {
     "tools/tests/test_sql_guard.py",
     "tools/tests/test_devtask_gates.py",
     "tools/tests/test_merge_lock_gated.py",
+    # ---- 黄忠工具测试纳管（WO-HZ-GATE-20261031，+1 聚合入口）----
+    "tools/tests/test_huangzhong_tools_suite_gate.py",
 }
 
 
@@ -133,9 +135,9 @@ def test_b1_b2_lists_frozen():
     assert set(_suite_files("agent_key")) == AGENT_KEY
     assert set(_suite_files("quant_key")) == QUANT_KEY
     assert set(_suite_files("tools_key")) == TOOLS_KEY
-    assert len(AGENT_KEY) == 52 and len(QUANT_KEY) == 23 and len(TOOLS_KEY) == 13
+    assert len(AGENT_KEY) == 52 and len(QUANT_KEY) == 23 and len(TOOLS_KEY) == 14
     all_files = AGENT_KEY | QUANT_KEY | TOOLS_KEY
-    assert len(all_files) == 88, "B1(57)+B2(31) 应为 88 文件（W5 报告 §8.3/§8.4）"
+    assert len(all_files) == 89, "B1(57)+B2(31)+黄忠聚合入口(1) 应为 89 文件"
 
 
 def test_b1_b2_files_exist_and_under_expected_dir():

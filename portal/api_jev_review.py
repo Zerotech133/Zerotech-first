@@ -11,6 +11,14 @@
 - status 新增 unreviewed_legacy：**不计入 resolved、不可被 resolve 当 pending**。
 - legacy 可通过 POST /api/jev/review/reopen 重开为 pending（原文/裁决字段保留）。
 
+2026-10-31 WO-INTEL-AI1ST-20261031（N1 AI 初筛）：
+- 幂等迁移 `review_type TEXT NOT NULL DEFAULT ''`（旧 schema 兼容；现有行默认 ''，
+  统计时 '' 计入 human=历史人工档，不破坏既有读数）。
+- 分类：人工 resolve 写 `review_type='human'`；AI 初筛写 `review_type='ai_first_pass'`
+  （reviewer='N1-AI'，由 tools/intel_ai_first_pass.py 写入，不冒充人工）。
+- summary 增 `resolved_human` / `resolved_ai_first_pass` / `review_type_counts`
+  （resolved 仍为总 resolved；人工 50 只数 human，AI 初筛不计人工 50）。
+
 GET  /api/jev/review/queue?status=pending&bias=bull&sort=conf_asc&limit=100&offset=0
 GET  /api/jev/review/summary
 POST /api/jev/review/resolve
@@ -45,6 +53,38 @@ SORTS = {
 }
 DECISIONS = ("correct", "wrong", "uncertain")
 MAX_LIMIT = 500
+
+# N1 AI 初筛（WO-INTEL-AI1ST-20261031）：review_type 分类，人工/ai_first_pass 分账。
+REVIEW_TYPE_COLUMN = "review_type"
+REVIEW_TYPE_HUMAN = "human"
+REVIEW_TYPE_AI_FIRST_PASS = "ai_first_pass"
+
+
+def table_columns(con: sqlite3.Connection, table: str = "jev_review_queue"):
+    """表列名（表不存在返回 []，便于旧库/坏库 fail-visible 而非直接炸）。"""
+    try:
+        return [str(r[1]) for r in con.execute("PRAGMA table_info(%s)" % table)]
+    except sqlite3.Error:
+        return []
+
+
+def has_review_type(con: sqlite3.Connection) -> bool:
+    return REVIEW_TYPE_COLUMN in table_columns(con)
+
+
+def ensure_review_type_column(con: sqlite3.Connection) -> bool:
+    """幂等迁移：无 review_type 列则 ALTER ADD（默认 ''）；已存在返回 False。
+
+    只加列不改数据：旧行 review_type='' → 统计口径里计为 human（历史人工/未分类），
+    不伪造 ai_first_pass。返回 True 表示本次确实新增了列。
+    """
+    if has_review_type(con):
+        return False
+    con.execute(
+        "ALTER TABLE jev_review_queue ADD COLUMN %s TEXT NOT NULL DEFAULT ''"
+        % REVIEW_TYPE_COLUMN)
+    con.commit()
+    return True
 
 
 def budgets() -> dict:
@@ -101,15 +141,16 @@ def query(status="pending", bias="", sort="conf_asc",
         total = con.execute(
             "SELECT COUNT(*) FROM jev_review_queue" + where_sql, args
         ).fetchone()[0]
+        cols = ["id", "queued_at", "conf", "bias", "title", "status",
+                "reviewer", "reviewed_at", "decision", "note"]
+        if has_review_type(con):
+            cols.append(REVIEW_TYPE_COLUMN)
         rows = con.execute(
-            "SELECT id, queued_at, conf, bias, title, status, reviewer, "
-            "reviewed_at, decision, note FROM jev_review_queue"
+            "SELECT " + ", ".join(cols) + " FROM jev_review_queue"
             + where_sql + " ORDER BY " + SORTS[sort] + " LIMIT ? OFFSET ?",
             args + [limit, offset],
         ).fetchall()
-        items = [dict(zip((
-            "id", "queued_at", "conf", "bias", "title", "status",
-            "reviewer", "reviewed_at", "decision", "note"), r)) for r in rows]
+        items = [dict(zip(cols, r)) for r in rows]
         summary = _summary(con)
     finally:
         con.close()
@@ -137,7 +178,27 @@ def _summary(con: sqlite3.Connection) -> dict:
         "SELECT bias, COUNT(*) FROM jev_review_queue WHERE status='pending' "
         "GROUP BY bias ORDER BY 2 DESC"
     ).fetchall()
+    # 2026-10-31 N1 AI 初筛：resolved 按 review_type 分账（'' 计 human=历史口径）。
+    rt_present = has_review_type(con)
+    if rt_present:
+        resolved_human = con.execute(
+            "SELECT COUNT(*) FROM jev_review_queue WHERE status='resolved' "
+            "AND COALESCE(%s,'')!=?" % REVIEW_TYPE_COLUMN,
+            (REVIEW_TYPE_AI_FIRST_PASS,)).fetchone()[0]
+        resolved_ai = con.execute(
+            "SELECT COUNT(*) FROM jev_review_queue WHERE status='resolved' "
+            "AND %s=?" % REVIEW_TYPE_COLUMN,
+            (REVIEW_TYPE_AI_FIRST_PASS,)).fetchone()[0]
+    else:
+        resolved_human, resolved_ai = resolved, 0
     return {"total": total, "pending": pending, "resolved": resolved,
+            "resolved_human": resolved_human,
+            "resolved_ai_first_pass": resolved_ai,
+            "review_type_column": rt_present,
+            "review_type_counts": {
+                REVIEW_TYPE_HUMAN: resolved_human,
+                REVIEW_TYPE_AI_FIRST_PASS: resolved_ai,
+            },
             LEGACY_STATUS: legacy,
             **budgets(),
             "tier_counts": tier_counts(total, pending, legacy, resolved),
@@ -154,10 +215,12 @@ def summary() -> dict:
 
 
 def resolve(nid: str, decision: str, reviewer: str, note: str = "") -> dict:
-    """pending → resolved 的唯一写入口。
+    """pending → resolved 的唯一人工写入口（review_type 固定写 'human'）。
 
     只允许 status='pending'：unreviewed_legacy / resolved 均返回 not_pending
     （legacy 是归档档位，不是 pending，也不是"已复核"；重开走 reopen()）。
+    AI 初筛（review_type='ai_first_pass'）由 tools/intel_ai_first_pass.py 写入，
+    不走本函数、不冒充人工；本函数只写 human。
     """
     nid = str(nid or "").strip()
     decision = str(decision or "").strip().lower()
@@ -170,23 +233,26 @@ def resolve(nid: str, decision: str, reviewer: str, note: str = "") -> dict:
         raise ValueError("reviewer 必填")
     con = _db(write=True)
     try:
+        ensure_review_type_column(con)  # 幂等迁移（旧库首次 resolve 自动补列）
         cur = con.execute(
             "UPDATE jev_review_queue SET status='resolved', decision=?, "
-            "reviewer=?, reviewed_at=datetime('now','localtime'), note=? "
-            "WHERE id=? AND status='pending'",
-            (decision, reviewer, str(note or "")[:500], nid),
+            "reviewer=?, reviewed_at=datetime('now','localtime'), note=?, "
+            "%s=? WHERE id=? AND status='pending'" % REVIEW_TYPE_COLUMN,
+            (decision, reviewer, str(note or "")[:500],
+             REVIEW_TYPE_HUMAN, nid),
         )
         con.commit()
         if not cur.rowcount:
             return {"ok": False, "error": "not_pending", "id": nid}
         row = con.execute(
-            "SELECT id, status, reviewer, reviewed_at, decision, note "
-            "FROM jev_review_queue WHERE id=?", (nid,)
+            "SELECT id, status, reviewer, reviewed_at, decision, note, %s "
+            "FROM jev_review_queue WHERE id=?" % REVIEW_TYPE_COLUMN, (nid,)
         ).fetchone()
     finally:
         con.close()
     return {"ok": True, "item": dict(zip((
-        "id", "status", "reviewer", "reviewed_at", "decision", "note"), row))}
+        "id", "status", "reviewer", "reviewed_at", "decision", "note",
+        "review_type"), row))}
 
 
 def reopen(nid: str, reviewer: str, note: str = "") -> dict:

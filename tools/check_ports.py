@@ -60,6 +60,7 @@ REGISTRY = {
     9103: "QD桥(jev_qd_bridge)",
     9104: "飞书卡片回调(lark_card)",
     9105: "agent_platform ack-serve",  # K-ORG-191 收编：2026-10-18 实证活监听（agent_platform.cli ack-serve）
+    8105: "智策OS v2 API(zhice_os_v2.api.main:app,uvicorn,2026-10-31 他线起)",  # P136 补注册：13:53 未登记监听触发合并门红；owner=智策OS线
     8098: "模型管理台(api_model_admin.py)",  # K-ORG-191 收编：2026-10-18 实证活监听（并行线 model_admin）
     9899: "CowAgent console",
     11434: "Ollama",
