@@ -50,6 +50,9 @@ def _ctx(mod, tmp_path, **overrides):
         "dispatch_path": tmp_path / "dispatch.jsonl",
         "gate_log_dir": tmp_path / "gate",
         "m4_since": mod.DEFAULT_M4_SINCE,
+        "evidence_require_prod": False,
+        "evidence_task": (),
+        "evidence_run_prefix": (),
         "now": FIXED_NOW,
     }
     data.update(overrides)
@@ -318,19 +321,21 @@ def _sign_record(record, key):
     return hmac.new(key, body, hashlib.sha256).hexdigest()
 
 
-def _evidence_record():
-    return {"schema": "legion-evidence/v1", "run_id": "patchset-T-1-abcd1234",
-            "kind": "patchset", "task": "T-BOOT", "agent": "LDE", "mode": "patchset",
+def _evidence_record(task="T-BOOT", run_id="patchset-T-BOOT-abcd1234", agent="LDE"):
+    return {"schema": "legion-evidence/v1", "run_id": run_id,
+            "kind": "patchset", "task": task, "agent": agent, "mode": "patchset",
             "ok": True, "created_at": "2026-10-31T10:00:00+08:00",
             "finalized_at": "2026-10-31T10:00:00+08:00",
             "events": [{"at": "2026-10-31T10:00:00+08:00",
                         "event": "patchset_confirm", "payload": {"files": []}}]}
 
 
-def _write_evidence(tmp_path, key, signed=True, mutate=False, name="patchset-T-1-abcd1234.json"):
+def _write_evidence(tmp_path, key, signed=True, mutate=False,
+                    name="patchset-T-BOOT-abcd1234.json",
+                    task="T-BOOT", run_id=None, agent="LDE"):
     directory = tmp_path / "evidence"
     directory.mkdir(exist_ok=True)
-    record = _evidence_record()
+    record = _evidence_record(task=task, run_id=run_id or Path(name).stem, agent=agent)
     if signed:
         record["signature"] = _sign_record(record, key)
     if mutate:
@@ -646,3 +651,209 @@ def test_no_stdlib_network_import_regression():
     for banned in ("import requests", "import httpx", "from requests", "from httpx"):
         assert banned not in source
     assert callable(mod.collect)
+
+
+# ---------------------------------------------------------------------------
+# 证据来源口径：生产样本 / 测试样本 / 混合 / 无符合项（task-9）
+# ---------------------------------------------------------------------------
+def _mixed_evidence_dir(tmp_path):
+    """prod 样本较旧、test 样本较新（模拟并行测试污染生产 evidence 目录）。"""
+    key = b"k" * 32
+    (tmp_path / "cap.key").write_bytes(key)
+    prod = _write_evidence(tmp_path, key, name="patchset-WO-PROD-aaaa1111.json",
+                           task="WO-PROD-20261031", run_id="patchset-WO-PROD-aaaa1111",
+                           agent="LDE")
+    test = _write_evidence(tmp_path, key, name="patchset-T-BOOT-bbbb2222.json",
+                           task="T-BOOT", run_id="patchset-T-BOOT-bbbb2222")
+    os.utime(prod, (FIXED_NOW.timestamp() - 120, FIXED_NOW.timestamp() - 120))
+    os.utime(test, (FIXED_NOW.timestamp() - 10, FIXED_NOW.timestamp() - 10))
+    return key, prod, test
+
+
+def test_evidence_is_prod_heuristic():
+    mod = _load()
+    assert mod._evidence_is_prod({"task": "WO-PROD-20261031"}) is True
+    assert mod._evidence_is_prod({"task": "refactor-IDE"}) is True
+    assert mod._evidence_is_prod({"task": "T-BOOT"}) is False
+    assert mod._evidence_is_prod({"task": "T-REV"}) is False
+    assert mod._evidence_is_prod({"task": "P0-4-LIVE-SMOKE"}) is False
+    assert mod._evidence_is_prod({"task": "SOME-E2E"}) is False
+    assert mod._evidence_is_prod({"task": "__m1_kpi_readonly_probe__"}) is False
+    assert mod._evidence_is_prod({"task": ""}) is False
+
+
+def test_filter_values_normalization():
+    mod = _load()
+    assert mod._filter_values(None) == ()
+    assert mod._filter_values("") == ()
+    assert mod._filter_values("WO-A, WO-B") == ("WO-A", "WO-B")
+    assert mod._filter_values(["x", " y "]) == ("x", "y")
+
+
+def test_patchset_evidence_require_prod_prefers_prod_over_newer_test(tmp_path):
+    mod = _load()
+    _key, prod, _test = _mixed_evidence_dir(tmp_path)
+    result = mod.check_patchset_evidence(_ctx(mod, tmp_path, evidence_require_prod=True))
+    assert result["status"] == "pass"
+    sel = result["evidence"]["selected_evidence"]
+    assert sel["task"] == "WO-PROD-20261031"
+    assert sel["agent"] == "LDE"
+    assert sel["run_id"] == "patchset-WO-PROD-aaaa1111"
+    assert sel["is_prod"] is True
+    assert Path(sel["file"]).name == prod.name
+    # 最新样本（T-BOOT）被记录但未被选中
+    assert result["evidence"]["latest_sample"]["task"] == "T-BOOT"
+    assert result["evidence"]["matched"] == 1
+
+
+def test_patchset_evidence_require_prod_only_test_fails(tmp_path):
+    mod = _load()
+    key = b"k" * 32
+    (tmp_path / "cap.key").write_bytes(key)
+    _write_evidence(tmp_path, key, name="patchset-T-BOOT-bbbb2222.json",
+                    task="T-BOOT", run_id="patchset-T-BOOT-bbbb2222")
+    result = mod.check_patchset_evidence(_ctx(mod, tmp_path, evidence_require_prod=True))
+    assert result["status"] == "fail"
+    assert "无符合筛选条件" in result["detail"]
+    assert "要求生产证据但只找到测试/演练样本" in result["detail"]
+    assert result["evidence"]["selected_evidence"] is None
+    assert result["evidence"]["matched"] == 0
+
+
+def test_patchset_evidence_require_prod_only_smoke_fails(tmp_path):
+    mod = _load()
+    key = b"k" * 32
+    (tmp_path / "cap.key").write_bytes(key)
+    _write_evidence(tmp_path, key, name="patchset-P0-4-LIVE-SMOKE-cccc3333.json",
+                    task="P0-4-LIVE-SMOKE", run_id="patchset-P0-4-LIVE-SMOKE-cccc3333")
+    result = mod.check_patchset_evidence(_ctx(mod, tmp_path, evidence_require_prod=True))
+    assert result["status"] == "fail"
+
+
+def test_patchset_evidence_default_behavior_compat(tmp_path):
+    """不加新参数 = 原有行为：仍取最新，即使它是测试样本。"""
+    mod = _load()
+    _mixed_evidence_dir(tmp_path)
+    result = mod.check_patchset_evidence(_ctx(mod, tmp_path))
+    assert result["status"] == "pass"
+    sel = result["evidence"]["selected_evidence"]
+    assert sel["task"] == "T-BOOT"
+    assert sel["is_prod"] is False
+
+
+def test_patchset_evidence_task_filter_selects_older_prod(tmp_path):
+    mod = _load()
+    _mixed_evidence_dir(tmp_path)
+    result = mod.check_patchset_evidence(_ctx(mod, tmp_path,
+                                              evidence_task=("WO-PROD",)))
+    assert result["status"] == "pass"
+    assert result["evidence"]["selected_evidence"]["task"] == "WO-PROD-20261031"
+
+
+def test_patchset_evidence_run_prefix_filter(tmp_path):
+    mod = _load()
+    _mixed_evidence_dir(tmp_path)
+    result = mod.check_patchset_evidence(_ctx(
+        mod, tmp_path, evidence_run_prefix=("patchset-WO-PROD",)))
+    assert result["status"] == "pass"
+    assert result["evidence"]["selected_evidence"]["run_id"] == "patchset-WO-PROD-aaaa1111"
+
+
+def test_patchset_evidence_filter_no_match_fails(tmp_path):
+    mod = _load()
+    _mixed_evidence_dir(tmp_path)
+    result = mod.check_patchset_evidence(_ctx(mod, tmp_path,
+                                              evidence_task=("NOT-EXIST",)))
+    assert result["status"] == "fail"
+    assert "无符合筛选条件" in result["detail"]
+    assert result["evidence"]["latest_sample"]["task"] == "T-BOOT"
+    assert result["evidence"]["selected_evidence"] is None
+
+
+def test_patchset_evidence_mixed_filters_combined_fails(tmp_path):
+    mod = _load()
+    _mixed_evidence_dir(tmp_path)
+    result = mod.check_patchset_evidence(_ctx(
+        mod, tmp_path, evidence_require_prod=True,
+        evidence_run_prefix=("patchset-T-BOOT",)))
+    assert result["status"] == "fail"
+    assert result["evidence"]["matched"] == 0
+
+
+def test_collect_exposes_selected_evidence(tmp_path):
+    mod = _load()
+    key, prod, _test = _mixed_evidence_dir(tmp_path)
+    report = mod.collect(
+        repo=tmp_path, now=FIXED_NOW, evidence_dir=tmp_path / "evidence",
+        evidence_require_prod=True, cap_key_path=tmp_path / "cap.key",
+        checks=[("patchset_evidence", mod.check_patchset_evidence)])
+    assert report["verdict"] == "pass"
+    assert report["selected_evidence"]["task"] == "WO-PROD-20261031"
+    assert report["selected_evidence"]["run_id"] == "patchset-WO-PROD-aaaa1111"
+    check = report["checks"][0]
+    assert check["evidence"]["filters"]["require_prod"] is True
+
+
+def test_collect_selected_evidence_none_on_fail(tmp_path):
+    mod = _load()
+    key = b"k" * 32
+    (tmp_path / "cap.key").write_bytes(key)
+    _write_evidence(tmp_path, key, name="patchset-T-BOOT-bbbb2222.json")
+    report = mod.collect(
+        repo=tmp_path, now=FIXED_NOW, evidence_dir=tmp_path / "evidence",
+        evidence_require_prod=True, cap_key_path=tmp_path / "cap.key",
+        checks=[("patchset_evidence", mod.check_patchset_evidence)])
+    assert report["verdict"] == "fail"
+    assert report["selected_evidence"] is None
+
+
+def test_render_markdown_shows_selected_evidence(tmp_path):
+    mod = _load()
+    _mixed_evidence_dir(tmp_path)
+    report = mod.collect(
+        repo=tmp_path, now=FIXED_NOW, evidence_dir=tmp_path / "evidence",
+        evidence_require_prod=True, cap_key_path=tmp_path / "cap.key",
+        checks=[("patchset_evidence", mod.check_patchset_evidence)])
+    text = mod.render_markdown(report)
+    assert "## patchset 证据（selected_evidence）" in text
+    assert "WO-PROD-20261031" in text
+    assert "patchset-WO-PROD-aaaa1111" in text
+
+
+def test_main_passes_evidence_filters(tmp_path, monkeypatch, capsys):
+    mod = _load()
+    captured = {}
+
+    def fake_collect(**kwargs):
+        captured.update(kwargs)
+        return {"schema": mod.SCHEMA, "verdict": "pass", "counts": {},
+                "checks": [], "selected_evidence": None,
+                "generated_at": "2026-10-31T12:00:00+08:00"}
+
+    monkeypatch.setattr(mod, "collect", fake_collect)
+    rc = mod.main(["--json", "--evidence-require-prod",
+                   "--evidence-task", "WO-A,WO-B",
+                   "--evidence-run-prefix", "patchset-WO-"])
+    assert rc == 0
+    assert captured["evidence_require_prod"] is True
+    assert mod._filter_values(captured["evidence_task"]) == ("WO-A", "WO-B")
+    assert mod._filter_values(captured["evidence_run_prefix"]) == ("patchset-WO-",)
+    capsys.readouterr()
+
+
+def test_main_evidence_flags_default_off(tmp_path, monkeypatch, capsys):
+    mod = _load()
+    captured = {}
+
+    def fake_collect(**kwargs):
+        captured.update(kwargs)
+        return {"schema": mod.SCHEMA, "verdict": "pass", "counts": {},
+                "checks": [], "selected_evidence": None,
+                "generated_at": "2026-10-31T12:00:00+08:00"}
+
+    monkeypatch.setattr(mod, "collect", fake_collect)
+    assert mod.main(["--json"]) == 0
+    assert captured["evidence_require_prod"] is False
+    assert captured["evidence_task"] is None
+    assert captured["evidence_run_prefix"] is None
+    capsys.readouterr()

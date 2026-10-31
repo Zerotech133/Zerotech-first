@@ -22,14 +22,26 @@
   7 release_artifact_drift
                          current.json 指针 ↔ current junction drift=false
                          （复用 tools/release_legion_ide.py status()）
-  8 patchset_evidence    最新 patchset-*.json 存在且 signature 非空；
-                         可读 cap_master.key 时追加 HMAC-SHA256 校验（只读，不落盘）
+  8 patchset_evidence    最新 patchset-*.json 存在且 signature 非空（来源口径见下）；
+                         可读 cap_master.key 时追加 HMAC-SHA256 校验（只读，不落盘）。
+                         证据来源口径（2026-10-31 M1 证据生产/测试口径）：
+                         · 默认（不加参数）= 原有行为：取目录内最新 patchset-*；
+                         · --evidence-task A,B        只选 task 含 A/B 的证据（逗号分隔子串，大小写不敏感）
+                         · --evidence-run-prefix P1,P2 只选 run_id 以 P1/P2 开头的证据
+                         · --evidence-require-prod    只选「生产样本」：task 非空且非测试/演练命名
+                           （排除 ^T-、含 -SMOKE/-TEST/-E2E/-DRILL、^__ 探针）；无符合项 → fail 并说明
+                         命中证据以 selected_evidence 输出 kind/task/agent/run_id/created_at
   9 m4_signoff           只读 approvals.jsonl 的 approve 计数 + dispatch accepted/done，
                          输出 missing 四方（QA1/GUANYU/VERIFY1/A0·老田）；不代签
  10 fast_gate            最近 fast gate 日志 PASS/FAIL（advisory，不参与总体判定）
 
 总体判定：required 检查有 fail → fail；无 fail 但有 unknown → unknown；全 pass → pass。
 退出码：0=pass；1=fail；2=unknown（无 fail 但有未判定项）。
+
+证据口径示例：
+  python -X utf8 tools/trust_chain_kpi.py --json --evidence-require-prod
+  python -X utf8 tools/trust_chain_kpi.py --json --evidence-task WO-LEGION- \
+      --evidence-run-prefix patchset-WO-
 
 只读边界（硬约束）：
   - 不写 approvals.jsonl / dispatch / 任务板 / evidence，不点卡、不代签；
@@ -48,6 +60,7 @@ import hmac
 import http.client
 import importlib.util
 import json
+import re
 import sys
 import time
 from pathlib import Path
@@ -74,6 +87,12 @@ FAIL_CLOSED_CAP_CODES = {
     "cap_required", "cap_invalid", "cap_missing", "cap_expired", "cap_scope_mismatch",
     "no_session", "rw_disabled", "identity_required",
 }
+# patchset evidence 生产/测试口径（2026-10-31 WO-LEGION-KPI-PROVENANCE-20261031）：
+# 「生产样本」启发式 = task 非空且不匹配测试/演练命名（见 TEST_TASK_PATTERN）。
+# 默认不启用（--evidence-require-prod 才过滤）；口径待验收方确认——若生产 patchset
+# 也使用 T-*/SMOKE 命名，用 --evidence-task/--evidence-run-prefix 显式覆盖。
+TEST_TASK_PATTERN = re.compile(
+    r"(?i)^(?:t-|__)|(?:^|[-_])(?:smoke|test|e2e|drill)(?:[-_]|$)")
 CATEGORY_TRUST_CHAIN = "trust_chain"
 CATEGORY_SIGNOFF = "signoff"
 CATEGORY_ADVISORY = "advisory"
@@ -94,6 +113,9 @@ class Ctx:
     dispatch_path: Path
     gate_log_dir: Path
     m4_since: str
+    evidence_require_prod: bool
+    evidence_task: tuple
+    evidence_run_prefix: tuple
     now: dt.datetime
 
 
@@ -384,58 +406,134 @@ def _verify_evidence_signature(rec: dict, key_path: Path) -> tuple:
     return ("true" if hmac.compare_digest(expected, present) else "false"), ""
 
 
+def _filter_values(value) -> tuple:
+    """把 --evidence-task / --evidence-run-prefix 归一为去空白元组（str/list 均可）。"""
+    if value is None:
+        return ()
+    items = value.split(",") if isinstance(value, str) else list(value)
+    return tuple(str(item).strip() for item in items if str(item).strip())
+
+
+def _evidence_is_prod(record: dict) -> bool:
+    """生产样本启发式：task 非空且不是测试/演练命名（口径见模块 docstring/工单）。"""
+    task = str(record.get("task") or "").strip()
+    return bool(task) and TEST_TASK_PATTERN.search(task) is None
+
+
+def _task_matches(task: str, filters: tuple) -> bool:
+    if not filters:
+        return True
+    low = task.lower()
+    return any(str(item).lower() in low for item in filters)
+
+
+def _run_prefix_matches(run_id: str, prefixes: tuple) -> bool:
+    if not prefixes:
+        return True
+    return any(run_id.startswith(str(prefix)) for prefix in prefixes)
+
+
+def _evidence_summary(ctx: Ctx, path: Path, record: dict) -> dict:
+    try:
+        mtime = path.stat().st_mtime
+    except OSError:
+        mtime = 0.0
+    age_hours = max(0.0, (ctx.now.timestamp() - mtime) / 3600.0) if mtime else None
+    return {
+        "file": str(path), "name": path.name,
+        "kind": record.get("kind"), "task": record.get("task"),
+        "agent": record.get("agent"), "run_id": record.get("run_id"),
+        "created_at": record.get("created_at"), "finalized_at": record.get("finalized_at"),
+        "mode": record.get("mode"), "ok": record.get("ok"),
+        "is_prod": _evidence_is_prod(record),
+        "mtime": (dt.datetime.fromtimestamp(mtime).astimezone().isoformat(timespec="seconds")
+                  if mtime else None),
+        "age_hours": round(age_hours, 1) if age_hours is not None else None,
+        "signature_present": bool(str(record.get("signature") or "").strip()),
+        "signature_verified": "not_checked",
+    }
+
+
 def check_patchset_evidence(ctx: Ctx) -> dict:
     cid, title = "patchset_evidence", "最新 patchset-* evidence 存在且带 signature"
     directory = Path(ctx.evidence_dir)
+    filters = {"require_prod": bool(ctx.evidence_require_prod),
+               "task": tuple(ctx.evidence_task or ()),
+               "run_prefix": tuple(ctx.evidence_run_prefix or ())}
     if not directory.is_dir():
         return _result(cid, title, "unknown", "evidence 目录不存在：%s" % directory,
-                       {"evidence_dir": str(directory), "dir_exists": False})
+                       {"evidence_dir": str(directory), "dir_exists": False,
+                        "filters": filters})
     try:
-        files = sorted(Path(p) for p in directory.glob("patchset-*.json"))
+        files = [Path(p) for p in directory.glob("patchset-*.json")]
         files.sort(key=lambda p: p.stat().st_mtime, reverse=True)
     except OSError as exc:
         return _result(cid, title, "unknown", "evidence 目录不可读：%s: %s"
                        % (type(exc).__name__, str(exc)[:160]),
-                       {"evidence_dir": str(directory)})
+                       {"evidence_dir": str(directory), "filters": filters})
     if not files:
         return _result(cid, title, "fail", "无 patchset-*.json evidence：%s" % directory,
-                       {"evidence_dir": str(directory), "count": 0})
-    latest = None
-    record: object = None
+                       {"evidence_dir": str(directory), "count": 0, "filters": filters})
+    records = []
     read_errors = []
-    for cand in files[:3]:
+    for cand in files:
         try:
             record = json.loads(cand.read_text(encoding="utf-8"))
-            latest = cand
-            break
         except (OSError, ValueError) as exc:
             read_errors.append("%s: %s" % (cand.name, type(exc).__name__))
-    if latest is None:
-        return _result(cid, title, "fail", "最新 evidence 不可读（可能正被并发写入）：%s"
-                       % "; ".join(read_errors),
-                       {"evidence_dir": str(directory), "read_errors": read_errors})
-    if not isinstance(record, dict):
-        return _result(cid, title, "fail", "最新 evidence 非 JSON 对象：%s" % latest.name,
-                       {"file": str(latest)})
-    mtime = latest.stat().st_mtime
-    age_hours = max(0.0, (ctx.now.timestamp() - mtime) / 3600.0)
-    signature = str(record.get("signature") or "").strip()
-    ev = {"evidence_dir": str(directory), "file": str(latest),
-          "mtime": dt.datetime.fromtimestamp(mtime).astimezone().isoformat(timespec="seconds"),
-          "age_hours": round(age_hours, 1), "run_id": record.get("run_id"),
-          "task": record.get("task"), "ok": record.get("ok"),
-          "finalized_at": record.get("finalized_at"),
-          "signature_present": bool(signature), "signature_verified": "not_checked"}
+            continue
+        if isinstance(record, dict):
+            records.append((cand, record))
+    if not records:
+        return _result(cid, title, "fail", "patchset evidence 均不可读（可能正被并发写入）：%s"
+                       % "; ".join(read_errors[:5]),
+                       {"evidence_dir": str(directory), "read_errors": read_errors[:5],
+                        "filters": filters})
+    matched = [(path, record) for path, record in records
+               if (not filters["require_prod"] or _evidence_is_prod(record))
+               and _task_matches(str(record.get("task") or ""), filters["task"])
+               and _run_prefix_matches(str(record.get("run_id") or ""),
+                                       filters["run_prefix"])]
+    latest = _evidence_summary(ctx, records[0][0], records[0][1])
+    ev = {"evidence_dir": str(directory), "scanned": len(files),
+          "readable": len(records), "read_errors": read_errors[:5],
+          "filters": filters, "matched": len(matched), "latest_sample": latest,
+          "selected_evidence": None}
+    if not matched:
+        reason = ("无符合筛选条件的 patchset 证据：require_prod=%s task=%s run_prefix=%s"
+                  "（扫描 %d 文件 / 可读 %d 条；目录内最新样本 task=%s run_id=%s、is_prod=%s）"
+                  % (filters["require_prod"], ",".join(filters["task"]) or "-",
+                     ",".join(filters["run_prefix"]) or "-", len(files), len(records),
+                     latest.get("task") or "-", latest.get("run_id") or "-",
+                     latest.get("is_prod")))
+        if filters["require_prod"]:
+            reason += "；要求生产证据但只找到测试/演练样本"
+        return _result(cid, title, "fail", reason, ev)
+    selected_path, selected_record = matched[0]
+    summary = _evidence_summary(ctx, selected_path, selected_record)
+    signature = str(selected_record.get("signature") or "").strip()
+    ev["selected_evidence"] = summary
+    for key in ("file", "name", "kind", "task", "agent", "run_id", "created_at",
+                "finalized_at", "ok", "mode", "mtime", "age_hours", "is_prod",
+                "signature_present"):
+        ev[key] = summary[key]
     if not signature:
         return _result(cid, title, "fail",
-                       "最新 patchset evidence 缺 signature：%s" % latest.name, ev)
-    verified, note = _verify_evidence_signature(record, Path(ctx.cap_key_path))
+                       "选中 patchset evidence 缺 signature：%s（task=%s run_id=%s）"
+                       % (selected_path.name, summary.get("task") or "-",
+                          summary.get("run_id") or "-"), ev)
+    verified, note = _verify_evidence_signature(selected_record, Path(ctx.cap_key_path))
+    summary["signature_verified"] = verified
     ev["signature_verified"] = verified
     if verified == "false":
-        detail = "signature 校验失败（内容与 HMAC 不符）：%s" % latest.name
-        return _result(cid, title, "fail", detail, ev)
-    detail = "%s signature ✔ verified=%s%s age=%.1fh" % (
-        latest.name, verified, ("（%s）" % note) if note else "", age_hours)
+        return _result(cid, title, "fail",
+                       "signature 校验失败（内容与 HMAC 不符）：%s（task=%s run_id=%s）"
+                       % (selected_path.name, summary.get("task") or "-",
+                          summary.get("run_id") or "-"), ev)
+    detail = "%s task=%s run_id=%s signature ✔ verified=%s%s age=%.1fh" % (
+        selected_path.name, summary.get("task") or "-", summary.get("run_id") or "-",
+        verified, ("（%s）" % note) if note else "",
+        summary.get("age_hours") if summary.get("age_hours") is not None else 0.0)
     return _result(cid, title, "pass", detail, ev)
 
 
@@ -514,7 +612,7 @@ def _read_text_any(path: Path) -> str:
 
 
 def check_fast_gate(ctx: Ctx) -> dict:
-    cid, title = "fast_gate", "最近 fast gate 结果（可选）"
+    cid, title = "fast_gate", "最近 fast gate 结果（可选/仅参考）"
     candidates = []
     for pattern in GATE_LOG_PATTERNS:
         candidates.extend(glob.glob(str(Path(ctx.gate_log_dir) / pattern)))
@@ -586,6 +684,9 @@ def collect(repo: Optional[Path] = None, *, timeout: Optional[float] = None,
             gate_log_dir: Optional[Path] = None,
             m4_since: Optional[str] = None,
             now: Optional[dt.datetime] = None,
+            evidence_require_prod: Optional[bool] = None,
+            evidence_task: Optional[object] = None,
+            evidence_run_prefix: Optional[object] = None,
             checks: Optional[list] = None) -> dict:
     """执行全部只读检查并返回报告（任何单检查异常都转 unknown，不中断）。"""
     repo = Path(repo or REPO)
@@ -603,6 +704,9 @@ def collect(repo: Optional[Path] = None, *, timeout: Optional[float] = None,
                        else repo / "work" / "tianfeng_dispatch.jsonl"),
         gate_log_dir=Path(gate_log_dir) if gate_log_dir else DEFAULT_GATE_LOG_DIR,
         m4_since=str(m4_since or DEFAULT_M4_SINCE),
+        evidence_require_prod=bool(evidence_require_prod),
+        evidence_task=_filter_values(evidence_task),
+        evidence_run_prefix=_filter_values(evidence_run_prefix),
         now=now or dt.datetime.now().astimezone(),
     )
     entries = (list(checks) if checks is not None
@@ -647,6 +751,12 @@ def collect(repo: Optional[Path] = None, *, timeout: Optional[float] = None,
         "note": ("只读 KPI：unknown=服务不可达/超时或数据源缺失，不阻塞其它检查；"
                  "不写 approval/任务板、不重启服务、不代签。"),
     }
+    selected_evidence = None
+    for check in results:
+        if check.get("id") == "patchset_evidence":
+            selected_evidence = (check.get("evidence") or {}).get("selected_evidence")
+            break
+    report["selected_evidence"] = selected_evidence
     report["duration_ms"] = round((time.time() - started) * 1000, 1)
     return report
 
@@ -699,6 +809,21 @@ def render_markdown(report: dict) -> str:
                 check.get("detail") or "-"))
     else:
         lines.append("无未决项。")
+    selected = report.get("selected_evidence")
+    lines.extend(["", "## patchset 证据（selected_evidence）", ""])
+    if isinstance(selected, dict):
+        lines.append("- file：%s" % (selected.get("name") or selected.get("file") or "-"))
+        lines.append("- kind=%s task=%s agent=%s"
+                     % (selected.get("kind") or "-", selected.get("task") or "-",
+                        selected.get("agent") or "-"))
+        lines.append("- run_id=%s created_at=%s ok=%s"
+                     % (selected.get("run_id") or "-", selected.get("created_at") or "-",
+                        selected.get("ok")))
+        lines.append("- is_prod=%s signature_verified=%s age_hours=%s"
+                     % (selected.get("is_prod"), selected.get("signature_verified"),
+                        selected.get("age_hours")))
+    else:
+        lines.append("- 无（未命中生产/筛选条件证据；详见 patchset_evidence 检查明细）")
     lines.extend(["", "## 数据源", ""])
     for name, source in _DATA_SOURCES:
         lines.append("- %s：%s" % (name, source))
@@ -721,6 +846,12 @@ def main(argv=None) -> int:
     parser.add_argument("--approvals", default="", help="approvals.jsonl 路径")
     parser.add_argument("--dispatch", default="", help="tianfeng_dispatch.jsonl 路径")
     parser.add_argument("--gate-log-dir", default="", help="fast gate 日志目录")
+    parser.add_argument("--evidence-require-prod", action="store_true",
+                        help="patchset evidence 只选生产样本（排除 T-*/SMOKE/TEST/E2E/DRILL）")
+    parser.add_argument("--evidence-task", default="",
+                        help="patchset evidence 任务过滤（逗号分隔子串，大小写不敏感）")
+    parser.add_argument("--evidence-run-prefix", default="",
+                        help="patchset evidence run_id 前缀过滤（逗号分隔）")
     since_default = DEFAULT_M4_SINCE
     parser.add_argument("--m4-since", default=since_default,
                         help="M4 approve 统计起点（ISO，默认 %s）" % since_default)
@@ -737,6 +868,9 @@ def main(argv=None) -> int:
         dispatch_path=args.dispatch or None,
         gate_log_dir=args.gate_log_dir or None,
         m4_since=args.m4_since,
+        evidence_require_prod=args.evidence_require_prod,
+        evidence_task=args.evidence_task or None,
+        evidence_run_prefix=args.evidence_run_prefix or None,
     )
     text = (json.dumps(report, ensure_ascii=False, indent=1)
             if args.json else render_markdown(report))
