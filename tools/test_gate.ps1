@@ -1,4 +1,4 @@
-# test_gate.ps1 - 测试门禁脚本（GY-01，2026-10-27；W5 P1-6 2026-10-31 扩展）
+﻿# test_gate.ps1 - 测试门禁脚本（GY-01，2026-10-27；W5 P1-6 2026-10-31 扩展）
 #
 # 用法（仓库任意目录）:
 #   powershell -NoProfile -ExecutionPolicy Bypass -File tools\test_gate.ps1 -Suite fast
