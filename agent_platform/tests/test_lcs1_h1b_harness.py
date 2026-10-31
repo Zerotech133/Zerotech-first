@@ -301,7 +301,8 @@ def test_run_backtest_funnel_and_trade():
 GOOD_METRICS = {
     "n_indep": 35, "median_net": 0.010, "mean_net": 0.012,
     "mean_net_stress": 0.0105, "p_holm": 0.01, "ci_low": 0.002,
-    "neutral_net_median": 0.004, "neutral_net_mean": 0.003,
+    "neutral_n": 35, "neutral_net_median": 0.004, "neutral_net_mean": 0.003,
+    "neutral_net_reason": "",
     "subperiod_means": [0.010, -0.002, 0.008],
 }
 

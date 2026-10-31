@@ -13,6 +13,11 @@
   同股同事件间隔 <20 交易日合并为 1 独立事件（保留首事件）。
   判定：OOS 2025-07-01~2026-10-16 唯一判定段；8 门 M1-M4 + R1-R4
   （见 §七评分卡；GO 需 M1-M4 全过、R1-R4 ≥3、总分 ≥7/8）。
+  R2 中性化端点（§5.1，2026-10-31 补齐）：同事件日匹配——同板块 + 同 SW L1
+  PIT 行业 + 同市值三分位 + 同换手三分位，控制组 ≥10 只；不足按预注册回退链
+  依次「去行业维度 → 去换手维度 → 该事件不计入中性化端点」；neutral_net =
+  raw_net − 同组控制股在同 entry/exit 日期的收益均值；无控制样本/单元<10 →
+  R2=False 并给原因（不猜、不编造）。
 
 本文件只提供**可复现骨架**：纯函数 + 数据接口（load_events/load_panel/
 check_freeze）。纪律：
@@ -48,8 +53,13 @@ check_freeze）。纪律：
   panel JSON：{"calendar":["2024-01-02",...],
                "codes":{"600000":{"list_date":"2020-01-02",
                                   "bars":[{"date","open","high","low","close",
-                                           "volume","amount","is_st"?}, ...]}}}
-  （bars 按日期升序、必须是交易日历子集；amount=当日成交额，单位元。）
+                                           "volume","amount","is_st"?,
+                                           "circ_mv"?,"turnover_rate"?,
+                                           "sw_l1"?}, ...]}}}
+  （bars 按日期升序、必须是交易日历子集；amount=当日成交额，单位元。R2 中性化
+  另需当日截面字段：circ_mv=流通市值（万元）、turnover_rate=换手（当日）、
+  sw_l1=SW L1 行业（PIT，as-of 事件日；缺失即按预注册跳过行业维度）；缺
+  circ_mv/turnover_rate 的事件计入「未匹配」，R2=False 并给原因。）
 
 退出码：0=成功（dry-run/冻结校验/骨架回测完成）/ 1=数据未冻结拒绝 /
 2=参数或输入错误。
@@ -91,6 +101,9 @@ SPEC = {
     "robust_min_pass": 3,
     "holm_alpha": 0.05,
     "bootstrap": 1000,
+    # R2 中性化（预注册 §5.1 同事件日匹配）：控制单元 ≥10 只；未匹配率>20% 仅参考
+    "neutral_min_controls": 10,
+    "neutral_unmatched_warn": 0.20,
 }
 BOARD_LIMITS = {"main": 0.10, "chinext": 0.20, "star": 0.20, "bj": 0.30}
 ST_MAIN_LIMIT = 0.05
@@ -179,6 +192,11 @@ def validate_spec(spec=None):
         issues.append("评分卡必须 8 门（M1-M4 + R1-R4）")
     if spec.get("go_total_score", 0) > 8 or spec.get("robust_min_pass", 0) > 4:
         issues.append("GO 阈值越界（总分≤8、稳健门≤4）")
+    if int(spec.get("neutral_min_controls", 0) or 0) < 1:
+        issues.append("R2 控制单元阈值必须 ≥1（预注册 §5.1 为 10）")
+    warn = spec.get("neutral_unmatched_warn")
+    if warn is not None and not (0.0 <= float(warn) <= 1.0):
+        issues.append("未匹配率告警阈值必须在 [0,1]")
     return issues
 
 
@@ -217,7 +235,8 @@ def load_events(path):
 def load_panel(path):
     """读 panel JSON：{calendar?, codes:{code:{list_date?, bars:[...]}}}。
 
-    bars 必须含 date/open/close；high/low/volume/amount 建议提供（硬闸/成本用）。
+    bars 必须含 date/open/close；high/low/volume/amount 建议提供（硬闸/成本用）；
+    R2 中性化另用 bars 的可选当日截面字段 circ_mv（万元）/turnover_rate/sw_l1。
     返回 {"calendar": [...], "codes": {code: {"list_date", "bars"}}}。
     """
     path = Path(path)
@@ -235,9 +254,12 @@ def load_panel(path):
                 raise ValueError("panel.codes.%s bars 需含 date 的对象" % code)
             item = dict(bar)
             item["date"] = str(item["date"])
-            for key in ("open", "close", "high", "low", "volume", "amount"):
+            for key in ("open", "close", "high", "low", "volume", "amount",
+                        "circ_mv", "turnover_rate"):
                 item[key] = _num(item.get(key))
             item["is_st"] = bool(item.get("is_st"))
+            item["sw_l1"] = (str(item["sw_l1"]).strip()
+                             if item.get("sw_l1") else None)
             bars.append(item)
         bars.sort(key=lambda b: b["date"])
         codes[str(code)] = {"list_date": (str(row["list_date"])
@@ -586,6 +608,226 @@ def run_backtest(events, panel, spec=None):
 
 
 # ---------------------------------------------------------------------------
+# R2 中性化端点：同事件日匹配（预注册 §5.1；纯函数，只读 records）
+# ---------------------------------------------------------------------------
+def build_panel_index(panel):
+    """把 load_panel 结构预处理为按 code/date 快速索引的只读视图。"""
+    index = {"calendar": list(panel.get("calendar") or []), "codes": {}}
+    for code, data in (panel.get("codes") or {}).items():
+        bars = data.get("bars") or []
+        index["codes"][str(code)] = {
+            "list_date": data.get("list_date"),
+            "bars": bars,
+            "by_date": {bar["date"]: bar for bar in bars},
+            "dates": [bar["date"] for bar in bars],
+        }
+    return index
+
+
+def event_index_by_date(events):
+    """{事件日: 当日事件代码集合}（E1/E2 合并；判非事件控制池用）。"""
+    out = {}
+    for event in events or []:
+        day = str(event.get("date") or "")
+        code = str(event.get("ts_code") or "")
+        if day and code:
+            out.setdefault(day, set()).add(code)
+    return out
+
+
+def _tercile_bounds(values):
+    """当日全市场三分位切点（两边界）；样本 <3 → None（无法分层）。"""
+    vals = sorted(v for v in values if v is not None)
+    if len(vals) < 3:
+        return None
+    return (vals[int((len(vals) - 1) / 3.0)],
+            vals[int(2 * (len(vals) - 1) / 3.0)])
+
+
+def _tercile(value, bounds):
+    if value is None or bounds is None:
+        return None
+    low, high = bounds
+    if value <= low:
+        return 0
+    if value <= high:
+        return 1
+    return 2
+
+
+def _stdev(values):
+    if not values or len(values) < 2:
+        return None
+    mean = _mean(values)
+    return math.sqrt(sum((v - mean) ** 2 for v in values) / (len(values) - 1))
+
+
+def _raw_return_by_dates(index, code, entry_date, exit_date):
+    """控制股在**与事件相同的 entry/exit 日期**上的 close_exit/open_entry−1。"""
+    row = index["codes"].get(code)
+    if not row:
+        return None
+    entry = row["by_date"].get(entry_date)
+    exit_bar = row["by_date"].get(exit_date)
+    if not entry or not exit_bar:
+        return None
+    open_entry = _num(entry.get("open"))
+    close_exit = _num(exit_bar.get("close"))
+    if not open_entry or open_entry <= 0 or close_exit is None:
+        return None
+    return close_exit / open_entry - 1.0
+
+
+def match_control(index, trade, events_by_date=None, spec=None):
+    """为单笔 trade 找同事件日匹配控制组（预注册 §5.1）。
+
+    匹配维度和回退链（不放宽）：
+      1) 板块 + SW L1（事件日 PIT）+ 市值三分位 + 换手三分位；
+      2) 不足 10 只 → 去行业维度（板块 + 市值 + 换手）；
+      3) 仍不足 → 去换手维度（板块 + 市值）；
+      4) 仍不足 → 该事件不计入中性化端点（unmatched，不猜）。
+    事件行业缺失（预注册允许）→ 直接从第 2 步起（fallback=no_industry）。
+    返回 {matched, control_n, control_mean, neutral_net, fallback, attempts,
+    reason}；中性化值 = trade["raw_net"] − 控制组收益均值。
+    """
+    spec = spec or SPEC
+    events_by_date = events_by_date or {}
+    code = str(trade.get("ts_code") or "")
+    day = str(trade.get("event_date") or "")
+    entry_date = str(trade.get("entry_date") or "")
+    exit_date = str(trade.get("exit_date") or "")
+    row = index["codes"].get(code) or {}
+    event_bar = (row.get("by_date") or {}).get(day)
+    if not event_bar:
+        return {"matched": False, "control_n": 0, "control_mean": None,
+                "neutral_net": None, "fallback": "unmatched",
+                "attempts": {}, "reason": "event_bar_missing"}
+    event_sw = event_bar.get("sw_l1")
+    event_mv = _num(event_bar.get("circ_mv"))
+    event_turn = _num(event_bar.get("turnover_rate"))
+    if event_mv is None or event_turn is None:
+        return {"matched": False, "control_n": 0, "control_mean": None,
+                "neutral_net": None, "fallback": "unmatched",
+                "attempts": {}, "reason": "event_cross_section_missing"}
+    event_codes = events_by_date.get(day) or set()
+    control_pool = []
+    mv_values, turn_values = [], []
+    for cand_code, cand in index["codes"].items():
+        bar = (cand.get("by_date") or {}).get(day)
+        if bar is None:
+            continue                    # 当日无 bar 不进截面
+        if cand_code != code:
+            mv_values.append(_num(bar.get("circ_mv")))
+            turn_values.append(_num(bar.get("turnover_rate")))
+        if cand_code == code or cand_code in event_codes:
+            continue                    # 非事件股才是控制池
+        control_pool.append((cand_code, bar))
+    if not control_pool:
+        return {"matched": False, "control_n": 0, "control_mean": None,
+                "neutral_net": None, "fallback": "unmatched",
+                "attempts": {}, "reason": "no_control_pool"}
+    mv_bounds = _tercile_bounds(mv_values)
+    turn_bounds = _tercile_bounds(turn_values)
+    if mv_bounds is None or turn_bounds is None:
+        return {"matched": False, "control_n": 0, "control_mean": None,
+                "neutral_net": None, "fallback": "unmatched",
+                "attempts": {}, "reason": "cross_section_lt_3"}
+    board = board_of(code)
+    event_mv_tier = _tercile(event_mv, mv_bounds)
+    event_turn_tier = _tercile(event_turn, turn_bounds)
+    attempts = []
+    if event_sw:
+        attempts.append(("full", ("board", "industry", "mv", "turnover")))
+    attempts.append(("no_industry", ("board", "mv", "turnover")))
+    attempts.append(("no_turnover", ("board", "mv")))
+    attempts_sizes = {}
+    for label, dims in attempts:
+        returns = []
+        for cand_code, bar in control_pool:
+            if "board" in dims and board_of(cand_code) != board:
+                continue
+            if "industry" in dims and str(bar.get("sw_l1") or "") != str(event_sw):
+                continue
+            if "mv" in dims:
+                cand_mv = _num(bar.get("circ_mv"))
+                if cand_mv is None or _tercile(cand_mv, mv_bounds) != event_mv_tier:
+                    continue
+            if "turnover" in dims:
+                cand_turn = _num(bar.get("turnover_rate"))
+                if cand_turn is None or \
+                        _tercile(cand_turn, turn_bounds) != event_turn_tier:
+                    continue
+            ret = _raw_return_by_dates(index, cand_code, entry_date, exit_date)
+            if ret is None:
+                continue
+            returns.append(ret)
+        attempts_sizes[label] = len(returns)
+        if len(returns) >= spec["neutral_min_controls"]:
+            control_mean = _mean(returns)
+            return {"matched": True, "control_n": len(returns),
+                    "control_mean": control_mean,
+                    "neutral_net": trade["raw_net"] - control_mean,
+                    "fallback": label, "attempts": attempts_sizes,
+                    "reason": ""}
+    return {"matched": False, "control_n": max(attempts_sizes.values()),
+            "control_mean": None, "neutral_net": None,
+            "fallback": "unmatched", "attempts": attempts_sizes,
+            "reason": "control_cell_lt_%d" % spec["neutral_min_controls"]}
+
+
+def neutralize_trade(index, trade, events_by_date=None, spec=None):
+    """单笔 trade 附中性化字段（缺控制/单元<10 → neutral_net=None + 原因）。"""
+    result = match_control(index, trade, events_by_date, spec)
+    row = dict(trade)
+    row.update({
+        "neutral_net": result["neutral_net"],
+        "neutral_control_n": result["control_n"],
+        "neutral_control_mean": result["control_mean"],
+        "neutral_fallback": result["fallback"],
+        "neutral_reason": result["reason"],
+        "neutral_attempts": result["attempts"],
+    })
+    return row
+
+
+def neutralize_trades(trades, panel, events_by_date=None, spec=None):
+    """批量中性化；返回 (trades_with_neutral, summary)。
+
+    summary 含 n/matched/unmatched/match_rate/unmatched_rate/fallback_counts；
+    未匹配率超过预注册告警阈值（20%）时置未匹配告警标记（bool）。
+    """
+    spec = spec or SPEC
+    index = build_panel_index(panel)
+    events_by_date = events_by_date or {}
+    rows, fallback_counts, unmatched = [], {}, 0
+    for trade in trades or []:
+        row = neutralize_trade(index, trade, events_by_date, spec)
+        rows.append(row)
+        if row.get("neutral_net") is None:
+            unmatched += 1
+        else:
+            label = row.get("neutral_fallback") or "unknown"
+            fallback_counts[label] = fallback_counts.get(label, 0) + 1
+    total = len(rows)
+    matched = total - unmatched
+    unmatched_rate = (unmatched / total) if total else None
+    summary = {
+        "n": total,
+        "matched": matched,
+        "unmatched": unmatched,
+        "match_rate": round(matched / total, 3) if total else None,
+        "unmatched_rate": (round(unmatched_rate, 3)
+                           if unmatched_rate is not None else None),
+        "fallback_counts": dict(sorted(fallback_counts.items())),
+        "min_controls": spec["neutral_min_controls"],
+        "warn_unmatched_over_20pct": bool(
+            unmatched_rate is not None
+            and unmatched_rate > spec["neutral_unmatched_warn"]),
+    }
+    return rows, summary
+
+
+# ---------------------------------------------------------------------------
 # 统计 + 8 门判定（预注册 §七）
 # ---------------------------------------------------------------------------
 def _mean(values):
@@ -642,7 +884,7 @@ def cluster_bootstrap_ci(values, clusters, n_boot=1000, seed=7):
 
 
 def summarize_trades(trades, spec=None):
-    """按事件类型汇总 raw_net（OOS 过滤由调用方传入）；返回 metrics dict。"""
+    """按事件类型汇总 raw_net + 中性化 neutral_net（OOS 过滤由调用方传入）。"""
     spec = spec or SPEC
     out = {}
     for etype in spec["event_types"]:
@@ -650,11 +892,15 @@ def summarize_trades(trades, spec=None):
         nets = [t["raw_net"] for t in subset]
         stress = [t["stress_net"] for t in subset]
         dates = [t["entry_date"] for t in subset]
-        stdev = None
-        if len(nets) > 1:
-            m = _mean(nets)
-            var = sum((v - m) ** 2 for v in nets) / (len(nets) - 1)
-            stdev = math.sqrt(var)
+        stdev = _stdev(nets)
+        neutral = [t["neutral_net"] for t in subset
+                   if t.get("neutral_net") is not None]
+        neutral_fallback = {}
+        for row in subset:
+            if row.get("neutral_net") is None:
+                continue
+            label = row.get("neutral_fallback") or "unknown"
+            neutral_fallback[label] = neutral_fallback.get(label, 0) + 1
         out[etype] = {
             "n_indep": len(subset),
             "mean_net": _mean(nets),
@@ -669,11 +915,29 @@ def summarize_trades(trades, spec=None):
             "entry_dates": dates,
             "avoid_ret_median": _median([t["avoid_ret"] for t in subset
                                          if t.get("avoid_ret") is not None]),
-            "neutral_net_median": None,
-            "neutral_net_mean": None,
+            "neutral_n": len(neutral),
+            "neutral_net_median": _median(neutral),
+            "neutral_net_mean": _mean(neutral),
+            "neutral_net_p": one_sided_p(_mean(neutral), _stdev(neutral),
+                                         len(neutral)),
+            "neutral_net_reason": ("" if neutral
+                                   else _neutral_reason(subset)),
+            "neutral_fallback_counts": dict(sorted(neutral_fallback.items())),
             "subperiod_means": _subperiod_means(subset),
         }
     return out
+
+
+def _neutral_reason(trades):
+    """无中性化样本时给出原因（优先计数最多者；全部缺失 → unavailable）。"""
+    counts = {}
+    for row in trades or []:
+        reason = str(row.get("neutral_reason") or "")
+        if reason:
+            counts[reason] = counts.get(reason, 0) + 1
+    if counts:
+        return sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))[0][0]
+    return "neutral_net_unavailable"
 
 
 def _subperiod_means(trades):
@@ -694,8 +958,10 @@ def evaluate_event_gates(metrics, spec=None):
     """单事件 8 门判定（预注册 §7.1/§7.2，不放宽）。
 
     metrics 需含：n_indep / median_net / mean_net / mean_net_stress /
-    p_holm / ci_low / neutral_net_median / neutral_net_mean / subperiod_means。
-    返回 {gates, score, robust_pass, verdict, go, reasons}。
+    p_holm / ci_low / neutral_n / neutral_net_median / neutral_net_mean /
+    subperiod_means。R2 由中性化端点结果决定；无控制/单元<10 → R2=False 并在
+    ``reasons["R2"]`` 给原因（neutral_net_reason）。
+    返回 {gates, score, robust_pass, verdict, go, failed, reasons}。
     """
     spec = spec or SPEC
     m = metrics or {}
@@ -705,7 +971,8 @@ def evaluate_event_gates(metrics, spec=None):
     gates["M3"] = _gt(m.get("mean_net"), 0.0)
     gates["M4"] = m.get("p_holm") is not None and m["p_holm"] < spec["holm_alpha"]
     gates["R1"] = _gt(m.get("ci_low"), 0.0)
-    gates["R2"] = (_gt(m.get("neutral_net_median"), 0.0)
+    gates["R2"] = (int(m.get("neutral_n") or 0) >= 1
+                   and _gt(m.get("neutral_net_median"), 0.0)
                    and _ge(m.get("neutral_net_mean"), 0.0))
     subs = m.get("subperiod_means") or []
     gates["R3"] = sum(1 for v in subs if _gt(v, 0.0)) >= 2
@@ -713,7 +980,11 @@ def evaluate_event_gates(metrics, spec=None):
     score = sum(1 for name in spec["gates"] if gates.get(name))
     robust_pass = sum(1 for name in ("R1", "R2", "R3", "R4")
                       if gates.get(name))
-    reasons = [name for name in spec["gates"] if not gates.get(name)]
+    failed = [name for name in spec["gates"] if not gates.get(name)]
+    reasons = {}
+    if not gates["R2"]:
+        reasons["R2"] = (str(m.get("neutral_net_reason") or "")
+                         or "neutral_net_median>0 且 mean≥0 未达（R2）")
     main_pass = all(gates.get(name) for name in ("M1", "M2", "M3", "M4"))
     if not all(gates.get(name) for name in ("M2", "M3", "M4")):
         verdict = "No-Go"
@@ -723,7 +994,8 @@ def evaluate_event_gates(metrics, spec=None):
     else:
         verdict = "GO"
     return {"gates": gates, "score": score, "robust_pass": robust_pass,
-            "verdict": verdict, "go": verdict == "GO", "failed": reasons,
+            "verdict": verdict, "go": verdict == "GO", "failed": failed,
+            "reasons": reasons,
             "note": "GO 仅代表值得进入 H1c 仿真/产品化预研设计，不代表可交易"}
 
 
@@ -735,9 +1007,17 @@ def _ge(value, threshold):
     return value is not None and float(value) >= threshold
 
 
-def evaluate_all(trades, spec=None):
-    """按事件类型汇总 + Holm 校正 + 8 门判定（骨架输出）。"""
+def evaluate_all(trades, spec=None, panel=None, events=None):
+    """按事件类型汇总 + R2 中性化 + Holm 校正 + 8 门判定（骨架输出）。
+
+    panel 给出时才做 R2 中性化（同事件日匹配，预注册 §5.1）；events 用于判
+    事件日非事件控制池。不提供 panel → neutral 字段缺失、R2=False 并给原因。
+    """
     spec = spec or SPEC
+    neutral_summary = None
+    if panel is not None:
+        trades, neutral_summary = neutralize_trades(
+            trades, panel, event_index_by_date(events or []), spec)
     stats = summarize_trades(trades, spec)
     pvals = [stats[e]["p_raw"] for e in spec["event_types"]]
     holm = holm_adjust(pvals)
@@ -745,7 +1025,8 @@ def evaluate_all(trades, spec=None):
         stats[etype]["p_holm"] = holm[idx]
     results = {etype: evaluate_event_gates(stats[etype], spec)
                for etype in spec["event_types"]}
-    return {"by_event": stats, "gates": results}
+    return {"by_event": stats, "gates": results,
+            "neutralization": neutral_summary}
 
 
 # ---------------------------------------------------------------------------
@@ -757,7 +1038,8 @@ def _public_spec():
              "cost_bps", "stress_cost_bps", "event_types", "sample_in",
              "sample_out", "is_end", "oos_start", "min_independent",
              "liquidity_20d_cny", "min_listed_days", "gates",
-             "go_total_score", "robust_min_pass", "holm_alpha")}
+             "go_total_score", "robust_min_pass", "holm_alpha",
+             "neutral_min_controls", "neutral_unmatched_warn")}
 
 
 def _emit(payload, as_json):
@@ -852,7 +1134,8 @@ def main(argv=None):
             print("[lcs1_h1b_harness] 输入错误：%s" % exc, file=sys.stderr)
         return 2
     backtest = run_backtest(events, panel, SPEC)
-    evaluation = evaluate_all(backtest["trades"], SPEC)
+    evaluation = evaluate_all(backtest["trades"], SPEC, panel=panel,
+                              events=events)
     payload = {
         "status": "backtest_skeleton_ran",
         "data_version": freeze["manifest"].get("data_version"),
@@ -872,6 +1155,18 @@ def main(argv=None):
             print("  %s：verdict=%s score=%d/8 稳健门=%d/4 未过=%s"
                   % (etype, res["verdict"], res["score"],
                      res["robust_pass"], ",".join(res["failed"]) or "-"))
+            if res.get("reasons", {}).get("R2"):
+                print("    %s R2 未过原因：%s"
+                      % (etype, res["reasons"]["R2"]))
+        neutral = evaluation.get("neutralization") or {}
+        if neutral:
+            print("  R2 中性化：matched=%d/%d（match_rate=%s，回退=%s）%s"
+                  % (neutral.get("matched", 0), neutral.get("n", 0),
+                     neutral.get("match_rate"),
+                     json.dumps(neutral.get("fallback_counts") or {},
+                                ensure_ascii=False),
+                     " ⚠未匹配率>20%"
+                     if neutral.get("warn_unmatched_over_20pct") else ""))
         print("  note: %s" % NOTE)
     return 0
 
