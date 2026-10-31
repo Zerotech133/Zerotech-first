@@ -10,7 +10,7 @@
   "prompt_miss": [],
   "name_collisions": {},
   "workorders_doing": 27,
-  "workorders_review": 11
+  "workorders_review": 10
  },
  "workorders": [
   {
@@ -344,15 +344,6 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-LEGION-REVIEWOPS-20261031",
    "created": "2026-10-31 08:21:17",
-   "project": "general"
-  },
-  {
-   "id": "WO-LEGION-P0-4-20261031",
-   "desc": "P0-4多文件patchset事务：preview/confirm原子/rollback/evidence/tests",
-   "status": "review",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-P0-4-20261031",
-   "created": "2026-10-31 08:23:11",
    "project": "general"
   }
  ],
@@ -7360,11 +7351,6 @@
      "id": "WO-LEGION-REVIEWOPS-20261031",
      "desc": "诸葛亮复核运营化",
      "status": "doing"
-    },
-    {
-     "id": "WO-LEGION-P0-4-20261031",
-     "desc": "P0-4多文件patchset事务：preview/confirm原子/rollback/evidence/tests",
-     "status": "review"
     }
    ]
   }
