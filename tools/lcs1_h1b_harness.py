@@ -64,7 +64,16 @@ check_freeze）。纪律：
   （bars 按日期升序、必须是交易日历子集；amount=当日成交额，单位元。R2 中性化
   另需当日截面字段：circ_mv=流通市值（万元）、turnover_rate=换手（当日）、
   sw_l1=SW L1 行业（PIT，as-of 事件日；缺失即按预注册跳过行业维度）；缺
-  circ_mv/turnover_rate 的事件计入「未匹配」，R2=False 并给原因。）
+  circ_mv/turnover_rate 的事件计入「未匹配」，R2=False 并给原因。pre_close 可选：
+  给出则 E1 涨停价用该 bar 的 pre_close（H1 口径，首 bar 也可判定）；缺省退回
+  上一 bar 收盘价。）
+
+E1 涨停口径（2026-10-31 task-40）：`close >= limit_up - limit_up_tolerance`，
+默认 tolerance=1e-3，与 H1 脚本 `close >= LP - 1e-3` 一致；置 0 = 仍为 `>=`（不加宽）。
+涨停价舍入默认 `limit_up_rounding="h1_float32"`（复现 H1 的 float32+np.round，
+使 raw/indep 与 H1 证据 59,849/28,898 可对齐）；可切 `"half_up"` 用标准 Decimal
+四舍五入（两者在 pre_close 末尾 .x5 的标的上差 1 分，约 0.2% 事件量，待 ACAD1
+口径确认后定默认）。t+1 一字板硬闸同样使用该容差/舍入口径（H1 ONEWORD 口径）。
 
 数据适配（2026-10-31 task-38）：`tools/h1b_data_adapter.py` 把 tdx/tushare
 parquet（或 CSV 合成夹具）适配成上述 panel.json/events.jsonl——amount 千元→元
@@ -117,6 +126,12 @@ SPEC = {
     "robust_min_pass": 3,
     "holm_alpha": 0.05,
     "bootstrap": 1000,
+    # E1 涨停判定（2026-10-31 task-40）：容差 + 涨停价舍入口径，对齐 H1 复算。
+    # 容差默认 1e-3 = H1 `close >= LP - 1e-3`；0=严格 `>=`（不再等值，H1 亦 >=）。
+    "limit_up_tolerance": 0.001,
+    # 舍入口径：h1_float32=按 H1 脚本 float32 + np.round 复现（默认，保证与 H1
+    # 原始证据 59,849/28,898 可对齐）；half_up=标准 A 股分位 Decimal ROUND_HALF_UP。
+    "limit_up_rounding": "h1_float32",
     # R2 中性化（预注册 §5.1 同事件日匹配）：控制单元 ≥10 只；未匹配率>20% 仅参考
     "neutral_min_controls": 10,
     "neutral_unmatched_warn": 0.20,
@@ -163,9 +178,36 @@ def limit_rate(code, is_st=False):
     return BOARD_LIMITS[board]
 
 
-def limit_up_price(prev_close, code, is_st=False):
+def _round_cent_float32(value):
+    """按 H1 脚本口径复现涨停价：float32 乘加 + np.round(2) + float32。
+
+    H1 用 pandas pivot 的 float32 矩阵计算 `LP=np.round(PC*(1+pct),2).astype(float32)`；
+    对 pre_close 末尾 .x5 的标的会得到比标准 Decimal 四舍五入低 0.01 的价格（例如
+    9.45×1.3=12.285 → float32 12.2799997 → 12.28，标准 half-up 为 12.29）。此口径
+    仅用于与 H1 证据复现对齐（task-40）；标准口径见 limit_up_rounding="half_up"。
+    """
+    import numpy as np  # noqa: WPS433 - 仅复现口径需要，保持模块顶层无 numpy
+    value = np.float32(value)
+    return float(np.round(value, 2).astype(np.float32))
+
+
+def limit_up_price(prev_close, code, is_st=False, rounding="half_up"):
+    """涨停价；rounding: half_up=标准分位；h1_float32=H1 脚本 float32 复现口径。"""
     rate = limit_rate(code, is_st=is_st)
+    rounding = str(rounding or "half_up").strip().lower()
+    if rounding not in ("half_up", "h1_float32"):
+        raise ValueError("limit_up_rounding 必须 ∈ ('half_up','h1_float32')，"
+                         "收到 %r" % rounding)
+    if rounding == "h1_float32":
+        # H1：PC(float32) * (1+pct)(float32) → float32 中间值 → np.round → float32
+        return _round_cent_float32(_float32_mul(prev_close, 1.0 + rate))
     return round_cent(float(prev_close) * (1.0 + rate))
+
+
+def _float32_mul(left, right):
+    """float32 乘法（模拟 H1 的 PC*(1+pct) 在 float32 下计算）。"""
+    import numpy as np  # noqa: WPS433 - 仅复现口径需要
+    return float(np.float32(left) * np.float32(right))
 
 
 def limit_down_price(prev_close, code, is_st=False):
@@ -231,6 +273,14 @@ def validate_spec(spec=None):
     warn = spec.get("neutral_unmatched_warn")
     if warn is not None and not (0.0 <= float(warn) <= 1.0):
         issues.append("未匹配率告警阈值必须在 [0,1]")
+    tol = spec.get("limit_up_tolerance")
+    if tol is not None and not (0.0 <= float(tol) <= 0.01):
+        issues.append("limit_up_tolerance 必须在 [0,0.01]"
+                      "（默认 0.001=H1 `close>=limit-1e-3` 口径）")
+    rounding = spec.get("limit_up_rounding", "half_up")
+    if rounding not in ("half_up", "h1_float32"):
+        issues.append("limit_up_rounding 必须 ∈ ('half_up','h1_float32')"
+                      "（默认 h1_float32=H1 复现口径）")
     return issues
 
 
@@ -289,7 +339,7 @@ def load_panel(path):
             item = dict(bar)
             item["date"] = str(item["date"])
             for key in ("open", "close", "high", "low", "volume", "amount",
-                        "circ_mv", "turnover_rate"):
+                        "pre_close", "circ_mv", "turnover_rate"):
                 item[key] = _num(item.get(key))
             item["is_st"] = bool(item.get("is_st"))
             item["sw_l1"] = (str(item["sw_l1"]).strip()
@@ -384,19 +434,28 @@ def detect_events(panel, top_list=None, spec=None):
     cal_idx = _calendar_index_map(calendar)
     cal_by_token = {_date_token(day): str(day) for day in calendar}
     lo, hi = _date_token(spec["sample_in"]), _date_token(spec["sample_out"])
+    tol = float(spec.get("limit_up_tolerance", 0.0) or 0.0)
+    rounding = str(spec.get("limit_up_rounding", "half_up"))
     raw = []
     for code, data in (panel.get("codes") or {}).items():
         bars = data.get("bars") or []
-        for i in range(1, len(bars)):
-            day = bars[i]["date"]
+        for i, bar in enumerate(bars):
+            day = bar["date"]
             token = _date_token(day)
             if token < lo or token > hi:
                 continue
-            prev_close = _num(bars[i - 1].get("close"))
-            close = _num(bars[i].get("close"))
+            close = _num(bar.get("close"))
+            # H1 口径：LP 用 bar 的 pre_close（数据列）计算，首 bar 也可判定；
+            # 缺失 pre_close 时退回上一 bar 收盘价（旧 panel 兼容）。
+            prev_close = _num(bar.get("pre_close"))
+            if prev_close is None and i > 0:
+                prev_close = _num(bars[i - 1].get("close"))
             if prev_close is None or close is None or prev_close <= 0:
                 continue
-            if close == limit_up_price(prev_close, code, _bar_is_st(bars[i])):
+            # 2026-10-31 task-40：容差 `close >= limit - tol`，默认 1e-3=H1 口径；
+            # 严格等值可用 spec["limit_up_tolerance"]=0.0 复现旧行为。
+            if close >= limit_up_price(prev_close, code, _bar_is_st(bar),
+                                       rounding=rounding) - tol:
                 raw.append({"date": day, "ts_code": code, "event_type": "E1",
                             "net_amount": None})
     agg = {}
@@ -447,6 +506,8 @@ def detect_events(panel, top_list=None, spec=None):
 def gate_t1(panel, event, spec=None):
     """t+1 可交易硬闸；返回 (ok, reasons)。"""
     spec = spec or SPEC
+    tol = float(spec.get("limit_up_tolerance", 0.0) or 0.0)
+    rounding = str(spec.get("limit_up_rounding", "half_up"))
     reasons = []
     data = (panel.get("codes") or {}).get(event["ts_code"])
     if not data:
@@ -476,8 +537,10 @@ def gate_t1(panel, event, spec=None):
         reasons.append("t1_volume_zero")
     close_t = _num(event_bar.get("close"))
     if close_t and close_t > 0 and open_t1:
-        lu = limit_up_price(close_t, event["ts_code"], _bar_is_st(t1))
-        if open_t1 >= lu:
+        lu = limit_up_price(close_t, event["ts_code"], _bar_is_st(t1),
+                            rounding=rounding)
+        # 与 H1 一致：一字板判定同样用容差（H1 ONEWORD: open >= LP - 1e-3）
+        if open_t1 >= lu - tol:
             reasons.append("t1_open_at_limit_up（一字板不可交易）")
     # 流动性：事件日 20 日均成交额 ≥3000 万
     window = bars[max(0, i - 19):i + 1]
@@ -1345,6 +1408,7 @@ def _public_spec():
              "sample_out", "is_end", "oos_start", "min_independent",
              "liquidity_20d_cny", "min_listed_days", "gates",
              "go_total_score", "robust_min_pass", "holm_alpha",
+             "limit_up_tolerance", "limit_up_rounding",
              "neutral_min_controls", "neutral_unmatched_warn")}
 
 

@@ -80,7 +80,9 @@ AMOUNT_MULTIPLIER = 1000.0   # 千元 -> 元
 VOL_LOT_SIZE = 100.0         # 手 -> 股
 OPEN_END = "99999999"        # 开区间哨兵（namechange/sw_member 空 end_date）
 A_SHARE_SH = frozenset({"600", "601", "603", "605", "688", "689"})
-A_SHARE_SZ = frozenset({"000", "001", "002", "003", "300", "301"})
+# 302：2026-10-31 task-40 补（302132.SZ 实测属 A 股且 TopList 有 6 行；
+# 原白名单漏 302 → 被误归非 A 股丢弃）
+A_SHARE_SZ = frozenset({"000", "001", "002", "003", "300", "301", "302"})
 UNITS_META = {
     "amount": {"source": "千元", "target": "元", "multiplier": AMOUNT_MULTIPLIER},
     "vol": {"source": "手", "target": "股", "multiplier": VOL_LOT_SIZE},
@@ -477,6 +479,7 @@ def build_panel(daily_rows, basic_index, namechange_rows, stock_basic,
             bars.append({
                 "date": _iso(day), "open": bar["open"], "high": bar["high"],
                 "low": bar["low"], "close": bar["close"],
+                "pre_close": bar["pre_close"],
                 "volume": bar["volume"], "amount": bar["amount"],
                 "circ_mv": basic.get("circ_mv"),
                 "turnover_rate": basic.get("turnover_rate"),
