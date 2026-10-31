@@ -82,7 +82,14 @@ def main(argv=None) -> int:
     date = args.date or selection_engine.latest_trade_date()
     enabled = {s["id"]: s for s in reg["strategies"] if s.get("executable")}
 
-    picks_doc = selection_engine.build(date, args.top)
+    s02 = enabled.get("S02_composite_mvp") or {}
+    s02_paused = str(s02.get("status", "")).startswith("paused")
+    if s02_paused:
+        picks_doc = {"picks": [], "candidates": 0, "filters": {}, "weights": {},
+                     "validation": {"status": "S02 已熔断暂停（影子盘20日-9.6%/MDD-9.5%），今日不输出候选",
+                                    "validated": [], "unvalidated": [], "caveat": "等待因子重做/人工复核"}}
+    else:
+        picks_doc = selection_engine.build(date, args.top)
     watch = forecast_watch(date, args.lookback, args.top)
 
     payload = {
@@ -98,6 +105,7 @@ def main(argv=None) -> int:
             "S04_AH_premium_pair": {"status": "未启用（phase2）"},
         },
         "picks": picks_doc["picks"],
+        "s02_paused": bool(s02_paused),
         "picks_validation": picks_doc["validation"],
         "forecast_watch": watch,
         "disclaimer": "研究输出，不构成投资建议；S02 排序因子未验证；实盘前须过影子盘+人工批准。",

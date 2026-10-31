@@ -30,10 +30,13 @@ def test_static_daily_payload():
     d = json.loads(STATIC.read_text(encoding="utf-8"))
     assert d["library"]["owner"] == "司马微"
     assert len(d["strategies"]) >= 4
-    assert len(d["picks"]) > 0
-    p = d["picks"][0]
-    for k in ("ts_code", "name", "score", "reason"):
-        assert k in p
+    if d.get("s02_paused"):
+        assert d["picks"] == []
+    else:
+        assert len(d["picks"]) > 0
+        p = d["picks"][0]
+        for k in ("ts_code", "name", "score", "reason"):
+            assert k in p
     assert "validated" in d["picks_validation"] and "unvalidated" in d["picks_validation"]
 
 

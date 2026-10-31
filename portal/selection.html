@@ -36,6 +36,10 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;color:#79c0ff;font-siz
   <div class="card"><div class="k">数据日期</div><div class="v" id="c-date" style="font-size:16px">—</div></div>
 </div></div>
 
+<div class="panel" id="pausedBanner" style="display:none;border-color:#f85149">
+  <b style="color:#f85149">⛔ S02 复合排序已熔断暂停</b>
+  <span class="muted" id="pausedNote">影子盘 20 日回撤超 8% → 暂停输出候选，等待因子重做/人工复核</span>
+</div>
 <div class="panel"><b>策略库（本轮更新）</b>
 <table><thead><tr><th>ID</th><th>策略</th><th>类型</th><th>状态</th><th>来源假设</th><th>验证</th></tr></thead><tbody id="strat-body"></tbody></table>
 <div class="muted" style="margin-top:8px">状态图例：<span class="badge b-ok">validated</span> 已验证 · <span class="badge b-warn">mvp</span> 未验证仅演示 · <span class="badge b-info">planned</span> 规划中</div>
@@ -58,6 +62,18 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;color:#79c0ff;font-siz
   <div class="card"><div class="k">调仓日数</div><div class="v" id="s-days">—</div></div>
 </div>
 <div class="muted" id="s-note" style="margin-top:8px"></div>
+</div>
+<div class="panel"><b>影子盘归因 / 熔断</b>
+<div class="cards" style="margin-top:8px">
+  <div class="card"><div class="k">熔断状态</div><div class="v" id="m-status" style="font-size:16px">—</div></div>
+  <div class="card"><div class="k">回撤</div><div class="v" id="m-dd">—</div></div>
+  <div class="card"><div class="k">20日收益</div><div class="v" id="m-ret">—</div></div>
+  <div class="card"><div class="k">连续负收益</div><div class="v" id="m-streak">—</div></div>
+</div>
+<div class="muted" id="m-action" style="margin-top:6px"></div>
+<table style="margin-top:8px"><thead><tr><th>行业归因</th><th>贡献(%)</th></tr></thead><tbody id="m-ind"></tbody></table>
+<table style="margin-top:8px"><thead><tr><th>分数分桶</th><th>贡献(%)</th></tr></thead><tbody id="m-bucket"></tbody></table>
+<table style="margin-top:8px"><thead><tr><th>最差个股</th><th>贡献(%)</th></tr></thead><tbody id="m-worst"></tbody></table>
 </div>
 <div class="panel"><b>风险与纪律</b>
 <ul class="muted" style="margin:6px 0 0 18px;padding:0">
@@ -105,6 +121,26 @@ const BADGE={"validated":'<span class="badge b-ok">validated</span>',"mvp_unvali
     $('s-vol').textContent=(d.ann_vol_pct!=null?d.ann_vol_pct+'%':'—');
     $('s-days').textContent=d.days;
     $('s-note').textContent=d.note||'';
+  }catch(e){}
+})();
+
+
+(async function loadMonitor(){
+  try{
+    const [d, m] = await Promise.all([
+      fetch('/static/selection_daily.json?ts='+Date.now()).then(r=>r.json()),
+      fetch('/static/shadow_monitor.json?ts='+Date.now()).then(r=>r.json())
+    ]);
+    if(d.s02_paused){ document.getElementById('pausedBanner').style.display='block'; }
+    $('m-status').textContent = m.breaker.status;
+    $('m-status').style.color = (m.breaker.status==='paused' ? '#f85149' : (m.breaker.status==='watch'?'#d29922':'#3fb950'));
+    $('m-dd').textContent = m.dd_pct+'%';
+    $('m-ret').textContent = m.ret20_pct+'%';
+    $('m-streak').textContent = m.neg_streak+' 日';
+    $('m-action').textContent = m.action;
+    $('m-ind').innerHTML = Object.entries(m.attribution.industry_pct).map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('');
+    $('m-bucket').innerHTML = Object.entries(m.attribution.score_bucket_pct).map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('');
+    $('m-worst').innerHTML = (m.attribution.worst_contributors||[]).map(w=>`<tr><td><code>${w.ts_code}</code></td><td>${w.contrib_pct}</td></tr>`).join('');
   }catch(e){}
 })();
 

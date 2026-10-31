@@ -29,10 +29,10 @@
       "type": "ranking",
       "owner": "司马微",
       "source_hypothesis": "MVP（非台账结论）",
-      "status": "mvp_unvalidated",
+      "status": "paused_shadow_breaker",
       "executable": true,
       "rule": "在 S01 过滤后候选池内打分：动量20d 0.45 + 5日反转 0.25 + 低换手 0.20 + ROE层内中性 0.10；每行业≤3；top20",
-      "validation": {"stats": "未验证（仅流程演示）", "shadow": "无", "cost": "未评估"},
+      "validation": {"stats": "未验证（仅流程演示）", "shadow": "2026-11-01 20日回填 NAV 0.904（-9.6%）、MDD -9.5% → 触发 8% 熔断", "cost": "30bp×换手已计，未含冲击成本", "action": "S02 暂停（paused_shadow_breaker），等待因子重做"},
       "approved": false,
       "effective_from": "2026-11-01"
     },
