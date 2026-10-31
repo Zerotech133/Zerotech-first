@@ -1,0 +1,227 @@
+{
+ "meta": {
+  "generated_at": "2026-11-01T05:10:28+08:00",
+  "days": 21,
+  "cost_daily_bp": 5.0
+ },
+ "market_ret_pct": -14.7,
+ "s01_neutral_ret_pct": -15.43,
+ "s01_neutral_gross_pct": -14.53,
+ "excess_gross_pct": 0.17,
+ "mdd_pct": -14.25,
+ "avg_invested": 0.8898,
+ "avg_turnover": 0.343,
+ "avg_hold": 2428.5,
+ "daily": [
+  {
+   "date": "20260924",
+   "port": -0.013756,
+   "port_gross": -0.013256,
+   "market": -0.012059,
+   "invested": 0.8812,
+   "turnover": 0.881,
+   "n_hold": 2383,
+   "excess": -0.001197
+  },
+  {
+   "date": "20260928",
+   "port": -0.022436,
+   "port_gross": -0.021936,
+   "market": -0.022401,
+   "invested": 0.878,
+   "turnover": 0.281,
+   "n_hold": 2368,
+   "excess": 0.000465
+  },
+  {
+   "date": "20260929",
+   "port": 0.004086,
+   "port_gross": 0.004586,
+   "market": 0.008458,
+   "invested": 0.8846,
+   "turnover": 0.291,
+   "n_hold": 2471,
+   "excess": -0.003872
+  },
+  {
+   "date": "20260930",
+   "port": -0.001314,
+   "port_gross": -0.000814,
+   "market": -0.000808,
+   "invested": 0.8739,
+   "turnover": 0.32,
+   "n_hold": 2243,
+   "excess": -6e-06
+  },
+  {
+   "date": "20261008",
+   "port": -0.009364,
+   "port_gross": -0.008864,
+   "market": -0.010692,
+   "invested": 0.8606,
+   "turnover": 0.308,
+   "n_hold": 2262,
+   "excess": 0.001828
+  },
+  {
+   "date": "20261009",
+   "port": 0.003598,
+   "port_gross": 0.004098,
+   "market": 0.006891,
+   "invested": 0.8956,
+   "turnover": 0.363,
+   "n_hold": 2497,
+   "excess": -0.002793
+  },
+  {
+   "date": "20261012",
+   "port": -0.015404,
+   "port_gross": -0.014904,
+   "market": -0.016043,
+   "invested": 0.9219,
+   "turnover": 0.31,
+   "n_hold": 2632,
+   "excess": 0.001139
+  },
+  {
+   "date": "20261013",
+   "port": 0.002132,
+   "port_gross": 0.002632,
+   "market": 0.004076,
+   "invested": 0.8914,
+   "turnover": 0.355,
+   "n_hold": 2455,
+   "excess": -0.001444
+  },
+  {
+   "date": "20261014",
+   "port": -0.017871,
+   "port_gross": -0.017371,
+   "market": -0.017402,
+   "invested": 0.9069,
+   "turnover": 0.321,
+   "n_hold": 2545,
+   "excess": 3.1e-05
+  },
+  {
+   "date": "20261015",
+   "port": -0.025707,
+   "port_gross": -0.025207,
+   "market": -0.028471,
+   "invested": 0.8882,
+   "turnover": 0.33,
+   "n_hold": 2379,
+   "excess": 0.003264
+  },
+  {
+   "date": "20261016",
+   "port": 0.001469,
+   "port_gross": 0.001969,
+   "market": 0.004753,
+   "invested": 0.8969,
+   "turnover": 0.292,
+   "n_hold": 2490,
+   "excess": -0.002784
+  },
+  {
+   "date": "20261019",
+   "port": -0.001342,
+   "port_gross": -0.000842,
+   "market": -0.002795,
+   "invested": 0.8998,
+   "turnover": 0.275,
+   "n_hold": 2474,
+   "excess": 0.001953
+  },
+  {
+   "date": "20261020",
+   "port": 0.011624,
+   "port_gross": 0.012124,
+   "market": 0.012417,
+   "invested": 0.9004,
+   "turnover": 0.291,
+   "n_hold": 2402,
+   "excess": -0.000293
+  },
+  {
+   "date": "20261021",
+   "port": -0.00401,
+   "port_gross": -0.00351,
+   "market": -0.002085,
+   "invested": 0.8754,
+   "turnover": 0.306,
+   "n_hold": 2321,
+   "excess": -0.001426
+  },
+  {
+   "date": "20261022",
+   "port": -0.025624,
+   "port_gross": -0.025124,
+   "market": -0.02639,
+   "invested": 0.868,
+   "turnover": 0.289,
+   "n_hold": 2280,
+   "excess": 0.001266
+  },
+  {
+   "date": "20261023",
+   "port": 0.017617,
+   "port_gross": 0.018117,
+   "market": 0.01899,
+   "invested": 0.8765,
+   "turnover": 0.273,
+   "n_hold": 2388,
+   "excess": -0.000873
+  },
+  {
+   "date": "20261026",
+   "port": -0.008234,
+   "port_gross": -0.007734,
+   "market": -0.006161,
+   "invested": 0.9144,
+   "turnover": 0.378,
+   "n_hold": 2654,
+   "excess": -0.001573
+  },
+  {
+   "date": "20261027",
+   "port": -0.026355,
+   "port_gross": -0.025855,
+   "market": -0.027943,
+   "invested": 0.8978,
+   "turnover": 0.393,
+   "n_hold": 2465,
+   "excess": 0.002088
+  },
+  {
+   "date": "20261028",
+   "port": 0.018372,
+   "port_gross": 0.018872,
+   "market": 0.018717,
+   "invested": 0.8934,
+   "turnover": 0.285,
+   "n_hold": 2451,
+   "excess": 0.000155
+  },
+  {
+   "date": "20261029",
+   "port": -0.026179,
+   "port_gross": -0.025679,
+   "market": -0.026491,
+   "invested": 0.8921,
+   "turnover": 0.318,
+   "n_hold": 2391,
+   "excess": 0.000812
+  },
+  {
+   "date": "20261030",
+   "port": -0.025992,
+   "port_gross": -0.025492,
+   "market": -0.030363,
+   "invested": 0.8885,
+   "turnover": 0.346,
+   "n_hold": 2448,
+   "excess": 0.004871
+  }
+ ]
+}

@@ -16,10 +16,10 @@
       "type": "filter",
       "owner": "司马微",
       "source_hypothesis": "H14",
-      "status": "validated",
+      "status": "validated_filter_no_alpha",
       "executable": true,
       "rule": "剔除「高估值层(PE三分位) + ROE 层内前20%」的质量陷阱；叠加 ST/次新/低价/低流动性/涨停不可买/亏损股过滤",
-      "validation": {"stats": "backtested（台账 H14：估值分层内质量反向 OOS 全负；高ROE+高PE 质量陷阱 OOS -0.60%）", "shadow": "H14ShadowMonthly 已有影子", "cost": "过滤类无独立换手成本"},
+      "validation": {"stats": "backtested（H14 陷阱规避）；**中性化检验 2026-11-01：剥离市值/行业后 20 日超额 +0.17% ≈ 0 → 过滤器无 alpha**", "shadow": "H14ShadowMonthly + S01 中性化检验", "cost": "仅作风险/工程过滤，不产生收益"},
       "approved": false,
       "effective_from": "2026-11-01"
     },
