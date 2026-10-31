@@ -21,7 +21,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[2]
 
 FILES = [
-    # tools/ 根下的黄忠工具测试（13）
+    # tools/ 根下的黄忠工具测试（17：13 基础 + P0 四项）
     "tools/test_huangzhong_accept.py",
     "tools/test_huangzhong_daily.py",
     "tools/test_huangzhong_evidence_refresh.py",
@@ -35,6 +35,11 @@ FILES = [
     "tools/test_huangzhong_1104_receipt.py",
     "tools/test_huangzhong_drill.py",
     "tools/test_huangzhong_evidence_lint.py",
+    # P0 能力增强（2026-10-31 第四轮）
+    "tools/test_huangzhong_health.py",
+    "tools/test_huangzhong_impact.py",
+    "tools/test_huangzhong_risk_coverage.py",
+    "tools/test_huangzhong_brief.py",
 ]
 
 
