@@ -336,7 +336,17 @@ def test_sandbox_trial_pilot_ok():
 
 
 def test_loop_passes_static_gate_but_killed_by_sandbox():
-    """M3 核心判据②：静态过关的运行时对抗样本在沙箱门被击杀。"""
+    """M3 核心判据②：静态过关的运行时对抗样本在沙箱门被击杀。
+
+    WO-GATE-FLAKE-20261031：本用例曾在 fast gate 并行负载下偶发红
+    （实测 r["elapsed_ms"]=2996 < 3000）。根因不在测试，而在沙箱超时的
+    测量口径：subprocess.communicate 的截止钟是 time.monotonic（Windows =
+    GetTickCount64，15.625ms 粒度），跨 tick 边界时真实等待可比标称
+    timeout 短最多一个 tick；sandbox_trial 已改用 perf_counter 补齐到真正
+    墙钟截止再击杀（见适配器同处注释），故下面的严格断言——killed=True、
+    reason 含「超时」、elapsed 覆盖 timeout——现在确定性成立。
+    不得把本用例登记进 known_failures/flaky 基线掩盖。
+    """
     from codex_bridge import sandbox_trial
 
     assert validate_source(LOOP) == []  # 静态门放行（无任何可静态命中的违规）
