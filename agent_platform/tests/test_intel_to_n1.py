@@ -12,6 +12,7 @@
 from __future__ import annotations
 
 import json
+import importlib.util
 import sqlite3
 import sys
 from pathlib import Path
@@ -24,7 +25,22 @@ for p in (str(REPO), str(ENGINE)):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-import tools as engine_tools  # noqa: E402  agent_platform/engine/tools.py
+
+def _load_engine_tools():
+    """按文件加载 agent_platform/engine/tools.py。
+
+    不能 `import tools`：与 tools/tests 同跑时 sys.path 里的 `tools` 会解析成
+    另一个 namespace 包，导致 monkeypatch 找不到 kline_daily（混合套件红）。
+    """
+    path = ENGINE / "tools.py"
+    spec = importlib.util.spec_from_file_location("_intel_engine_tools", path)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+engine_tools = _load_engine_tools()
 from agent_platform import hermes_bridge as hb  # noqa: E402
 from agent_platform import intel_context as IC  # noqa: E402
 
