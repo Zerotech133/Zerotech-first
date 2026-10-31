@@ -440,6 +440,24 @@ def sandbox_trial(source, context=None, timeout_s=10.0):
     try:
         out, err = proc.communicate(payload.encode("utf-8"), timeout=timeout_s)
     except subprocess.TimeoutExpired:
+        # WO-GATE-FLAKE-20261031（flake 根因，2026-10-31）：
+        # subprocess.communicate 的截止钟是 time.monotonic（Windows =
+        # GetTickCount64，粒度 15.625ms）：内部先 _time()+timeout 算出
+        # endtime，再 _time() 算 remaining 去 join 读线程；两次读数一旦
+        # 跨 tick 边界，实际等待会比标称 timeout_s **短最多一个 tick**。
+        # 而 elapsed_ms 用 perf_counter（QPC，100ns）从 Popen 前测量，
+        # 扣除 spawn/kill 开销（约 11~20ms）后，并行 gate 负载下曾出现
+        # 真实等待 2984ms + 开销 12ms = 2996ms < 3000ms 的假超时红
+        # （test_loop_passes_static_gate_but_killed_by_sandbox）。
+        # 沙箱契约是「墙钟 timeout_s 后击杀」，故这里用 perf_counter 补齐
+        # 到真正截止时刻再杀：补偿上限 = 一个 monotonic tick（15.625ms），
+        # 不改变击杀语义，只保证 elapsed_ms 确定性覆盖 timeout_s。
+        deadline = t0 + timeout_s
+        while True:
+            remain = deadline - time.perf_counter()
+            if remain <= 0:
+                break
+            time.sleep(min(remain, 0.002))
         proc.kill()
         proc.communicate()
         return {
@@ -447,7 +465,7 @@ def sandbox_trial(source, context=None, timeout_s=10.0):
             "killed": True,
             "reason": "试跑超时 %.0fs 被击杀（墙钟口径，Windows 无 "
             "rlimit，语义覆盖 CPU 上限）" % timeout_s,
-            "elapsed_ms": int((time.perf_counter() - t0) * 1000),
+            "elapsed_ms": int(round((time.perf_counter() - t0) * 1000)),
             "verdict": None,
         }
     elapsed_ms = int((time.perf_counter() - t0) * 1000)
