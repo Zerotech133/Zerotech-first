@@ -451,3 +451,102 @@ def test_max_samples_truncates_issues(tmp_path):
     report = _audit(mod, directory, key_path, max_samples=2)
     assert report["counts"]["bad_files"] == 3
     assert len(report["issues"]["bad_files"]) == 2
+
+
+# ---------------------------------------------------------------------------
+# 内嵌链字段（evidence.py finalize 写入 prev_hash/record_hash）双轨 canonical
+# ---------------------------------------------------------------------------
+def test_canonical_hash_excludes_chain_fields():
+    mod = _load()
+    record = _record()
+    base = mod.record_hash(record)
+    with_chain = dict(record, prev_hash=mod.GENESIS_HASH, record_hash="f" * 64,
+                      signature="deadbeef")
+    assert mod.record_hash(with_chain) == base
+    assert mod.canonical_payload(with_chain) == mod.canonical_payload(record)
+
+
+def test_hmac_payload_includes_chain_fields():
+    """HMAC 输入口径不变：除 signature 外整条记录（含链字段）。"""
+    mod = _load()
+    record = dict(_record(), prev_hash=mod.GENESIS_HASH)
+    record["record_hash"] = mod.record_hash(record)
+    record["signature"] = _sign(record)
+    assert mod.verify_signature(record, KEY) == "true"
+    # 反证：若按「排除链字段」的旧输入签名 → 验签必须失败
+    legacy_payload = {key: value for key, value in record.items()
+                      if key not in ("signature", "prev_hash", "record_hash")}
+    import hashlib as _hashlib
+    import hmac as _hmac
+    bad_sig = _hmac.new(KEY, json.dumps(legacy_payload, ensure_ascii=False,
+                                        sort_keys=True).encode("utf-8"),
+                        _hashlib.sha256).hexdigest()
+    assert mod.verify_signature(dict(record, signature=bad_sig), KEY) == "false"
+
+
+def test_embedded_chain_records_pass(tmp_path):
+    """新格式（内嵌 prev_hash/record_hash）证据：audit 必须 PASS（A 方案验收）。"""
+    mod = _load()
+    directory, key_path = _setup(tmp_path)
+    first = _record("run-embed-1")
+    first["prev_hash"] = mod.GENESIS_HASH
+    first["record_hash"] = mod.record_hash(first)
+    _write(directory, "run-embed-1.json", first)
+    second = _record("run-embed-2", created="2026-10-31T11:00:00+08:00")
+    second["prev_hash"] = first["record_hash"]
+    second["record_hash"] = mod.record_hash(second)
+    _write(directory, "run-embed-2.json", second)
+    report = _audit(mod, directory, key_path)
+    assert report["verdict"] == "pass"
+    assert report["counts"]["stored_chain_records"] == 2
+    assert report["counts"]["signature_verified"] == 2
+    assert report["counts"]["chain_breaks"] == 0
+    assert report["chain"]["head_hash"] == second["record_hash"]
+
+
+def test_embedded_chain_tamper_detected(tmp_path):
+    mod = _load()
+    directory, key_path = _setup(tmp_path)
+    first = _record("run-embed-1")
+    first["prev_hash"] = mod.GENESIS_HASH
+    first["record_hash"] = mod.record_hash(first)
+    _write(directory, "run-embed-1.json", first)
+    second = _record("run-embed-2", created="2026-10-31T11:00:00+08:00")
+    second["prev_hash"] = "e" * 64  # 人为断链（签名按篡改后内容重签 → 只剩链不一致）
+    second["record_hash"] = mod.record_hash(second)
+    _write(directory, "run-embed-2.json", second)
+    report = _audit(mod, directory, key_path)
+    assert report["verdict"] == "fail"
+    assert any(item["kind"] == "prev_hash_mismatch"
+               for item in report["issues"]["chain_breaks"])
+
+
+def test_embedded_chain_content_hash_tamper_detected(tmp_path):
+    mod = _load()
+    directory, key_path = _setup(tmp_path)
+    record = _record("run-embed-t")
+    record["prev_hash"] = mod.GENESIS_HASH
+    record["record_hash"] = mod.record_hash(record)
+    path = _write(directory, "run-embed-t.json", record)
+    stored = json.loads(path.read_text(encoding="utf-8"))
+    stored["record_hash"] = "a" * 64  # 改 stored record_hash
+    path.write_text(json.dumps(stored, ensure_ascii=False), encoding="utf-8")
+    report = _audit(mod, directory, key_path)
+    assert report["verdict"] == "fail"
+    assert any(item["kind"] == "record_hash_mismatch"
+               for item in report["issues"]["chain_breaks"])
+
+
+def test_sorted_by_finalized_at_completion_order(tmp_path):
+    """链顺序 = 完成顺序（finalized_at 优先于 created_at）。"""
+    mod = _load()
+    directory, key_path = _setup(tmp_path)
+    # A：创建早、完成晚；B：创建晚、完成早 → 完成顺序应为 B, A
+    _write(directory, "run-b.json", _record(
+        "run-b", created="2026-10-31T12:00:00+08:00",
+        finalized="2026-10-31T12:05:00+08:00"))
+    _write(directory, "run-a.json", _record(
+        "run-a", created="2026-10-31T09:00:00+08:00",
+        finalized="2026-10-31T13:00:00+08:00"))
+    report = _audit(mod, directory, key_path)
+    assert [entry["run_id"] for entry in report["entries"]] == ["run-b", "run-a"]
