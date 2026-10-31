@@ -274,6 +274,13 @@ def _audit(tool: str, detail: str) -> None:
         if tools_dir not in sys.path:
             sys.path.insert(0, tools_dir)
         import events as _events  # noqa: WPS433 —— 惰性导入，避免拖慢只读路径
+        # 2026-10-31 P134：全量套件下 sys.modules["events"] 可能是他处缓存的同名模块
+        # （写向主仓），导致本工具审计事件未落到当前 REPO → 全量顺序 flaky。
+        # 仅当已导入模块确属 REPO/tools/events.py 时才走 emit，否则用下方直写兜底。
+        _expected = (REPO / "tools" / "events.py").resolve()
+        _actual = Path(str(getattr(_events, "__file__", "") or "")).resolve()
+        if _actual != _expected:
+            raise RuntimeError("events module path mismatch: %s != %s" % (_actual, _expected))
         _events.emit(kind="code_action", task="HUANGZHONG-MCP", agent="HERMES",
                      ide="Hermes 8787", model="huangzhong-mcp",
                      detail="%s %s" % (tool, detail))
