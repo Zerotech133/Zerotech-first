@@ -159,12 +159,44 @@ def looks_like_identifier(cand: str) -> bool:
     return False
 
 
+# 2026-10-31 WO-SCANFP-FLAG-20261031：布尔开关赋值（标识符=True/False）窄豁免。
+# HIGH_ENTROPY 字符集 [A-Za-z0-9_=] 会把 docstring/注释里的
+# `warn_unmatched_over_20pct=True` 整段拼成候选（含 `=`、熵约 4.1）→ 误判密钥
+# 并阻塞合并。真实高熵 token 不含 `=True|False` 尾巴，故只放行「整串恰为
+# name=True/False 且 name/整行无凭据语境」的形态；其余规则一律不动。
+_FLAG_ASSIGN_RE = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)=(True|False)$")
+_CRED_NAME_RE = re.compile(
+    r"(?i)(token|api[_-]?key|apikey|secret|password|passwd|pwd|credential|"
+    r"authorization|bearer|密钥|口令|密码)")
+
+
+def is_boolean_flag_assign(cand: str, line: str = "") -> bool:
+    """「标识符=True|False」布尔开关赋值 → 非密钥（窄豁免，2026-10-31 SCANFIX）。
+
+    只放行候选**整串**恰为 ``name=True`` / ``name=False`` 的形态（高熵规则把
+    ``=`` 纳入字符集才会误拼出这种尾巴）；``name`` 或整行命中凭据语境词
+    （token/key/secret/password/密码…）时不放行——如 ``api_key_*_enabled=True``
+    这类带凭据语义的参数名照旧走原规则，避免一刀切免扫。
+    """
+    m = _FLAG_ASSIGN_RE.match(str(cand or ""))
+    if not m:
+        return False
+    name = m.group(1)
+    if _CRED_NAME_RE.search(name) or _CRED_NAME_RE.search(str(line or "")):
+        return False
+    return True
+
+
 def is_high_entropy_candidate(cand: str, line: str) -> bool:
     """高熵规则判定：len>=20、base64/hex 字符集；剔除 UUID、纯数字、
     含点号的标识符/路径形态、commit 上下文 40 位 hex（git sha）、
     base64 图片 data URI（SVG/PNG 内嵌资源）、KEY=value 连写赋值片段（第6轮）、
-    PascalCase 长标识符类名（第7轮）。"""
+    PascalCase 长标识符类名（第7轮）、标识符=True|False 布尔开关（第8轮）。"""
     if len(cand) < 20:
+        return False
+    # 第8轮（2026-10-31）：docstring/注释里的布尔开关参数 `name=True|False`
+    # 被高熵字符集误拼成候选 → 窄豁免（真实 token 不会以 =True/False 结尾）。
+    if is_boolean_flag_assign(cand, line):
         return False
     if UUID_RE.match(cand) or cand.isdigit():
         return False
