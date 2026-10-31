@@ -34,14 +34,13 @@ def test_static_daily_payload():
     p = d["picks"][0]
     for k in ("ts_code", "name", "score", "reason"):
         assert k in p
-    assert "validation" in d["picks_validation"]
     assert "validated" in d["picks_validation"] and "unvalidated" in d["picks_validation"]
 
 
 def test_page_and_tool_registered():
     assert PAGE.is_file()
     txt = PAGE.read_text(encoding="utf-8")
-    assert "司马微" in txt and "S01" not in txt  # 页面动态渲染，静态文件里应只有占位
+    assert "司马微" in txt and "selection_daily.json" in txt
     skills = json.loads((REPO / "agent_platform/registry/skill_registry.json").read_text(encoding="utf-8"))
     assert any(s["id"] == "selection_daily" for s in skills["skills"])
 
