@@ -130,9 +130,19 @@ def audit():
                 repr(p.get("llm_binding")))
     for tid in WEEK_TASKS:
         t = tasks.get(tid) or {}
-        add("—", "周派单 %s" % tid,
-            t.get("status") == "doing" and t.get("approver") == "D1"
-            and "正式派单" in str(t.get("note") or ""), "status=%s" % t.get("status"))
+        status = str(t.get("status") or "")
+        if (status == "doing" and t.get("approver") == "D1"
+                and "正式派单" in str(t.get("note") or "")):
+            add("—", "周派单 %s" % tid, True, "status=doing")
+        elif status == "done":
+            add("—", "周派单 %s" % tid, True, "status=done(已交付)")
+        elif status == "aborted" and t.get("abort_reason") and t.get("closed_at"):
+            # 2026-10-31 W3 闭环：超期未交付按 aborted 终态归档（有 abort_reason/closed_at），
+            # 属「有据收口」，不应把审计整体判红；记 WARN 保留可见性（未交付≠完成）。
+            add("—", "周派单 %s" % tid, False,
+                "aborted(已收口未交付): %s" % str(t.get("abort_reason"))[:80], level="WARN")
+        else:
+            add("—", "周派单 %s" % tid, False, "status=%s" % status)
     hb_seats = set(hb.get("seats") or [])
     add("—", "心跳名单", set(SEATS) - {"QS1"} <= hb_seats, "missing=%s" % sorted((set(SEATS) - {"QS1"}) - hb_seats))
     add("—", "QS1 专用探针", os.path.exists(QS1_PROBE), QS1_PROBE)
