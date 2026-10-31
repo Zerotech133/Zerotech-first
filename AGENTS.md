@@ -32,7 +32,7 @@
 - **一单一事、单据先行**：无任务单不写码。
 - 每个 Agent 在**独立 git worktree** 干活：`python tools/devtask.py new <TID> <一句话>`——自动建 `.worktrees/<TID>/` + 分支 `task/<TID>`。禁止在 master 直接开发。
 - 完工合并必须过评审门：`python tools/devtask.py merge <TID>`（内置评审门四道：Mixin 方法集/导航统一/端口注册/明文凭据，门不过不合并）。
-- **合并默认走质量闸（P0 #1，2026-10-28；2026-10-29 P37 内联）**：**直接 `python tools/devtask.py merge <TID>`**——内联质量闸先跑 `test_gate -Suite fast`（现含 **portal/kstock/ide/agent_key/quant_key/tools_key** 六套件 + **budget 预算门（A5，阶段 1 非 strict）+ route 路由清单门（P130，阻断）**，新增失败即拒绝合并），纯文档/配置单（`docs/`、`deliverables/`、`portal/static/`、`agent_platform/skills/` 下的 .md/.json/.css/.js 等）自动跳过测试。`tools/merge_gated.py` 降为兼容入口/预检器（`--dry-run` 看改动分类）；绕过：`DEVTOOL_MERGE_GATE=0`（仅回滚/紧急，回单注明「绕过质量闸」）。
+- **合并默认走质量闸（P0 #1，2026-10-28；2026-10-29 P37 内联）**：**直接 `python tools/devtask.py merge <TID>`**——内联质量闸先跑 `test_gate -Suite fast`（现含 **portal/kstock/ide/agent_key/quant_key/tools_key** 六套件 + **budget 预算门（A5，**已切 --strict**，P133）+ route 路由清单门（P130，阻断）**，新增失败即拒绝合并），纯文档/配置单（`docs/`、`deliverables/`、`portal/static/`、`agent_platform/skills/` 下的 .md/.json/.css/.js 等）自动跳过测试。`tools/merge_gated.py` 降为兼容入口/预检器（`--dry-run` 看改动分类）；绕过：`DEVTOOL_MERGE_GATE=0`（仅回滚/紧急，回单注明「绕过质量闸」）。
 - **合并钩子（第二道，2026-10-28）**：`powershell -NoProfile -ExecutionPolicy Bypass -File tools\install_merge_hook.ps1` 安装 git `pre-merge-commit` 钩子 → 任何 `git merge`/`devtask merge` 在生成合并提交前自动跑 `tools/merge_preflight.py`（纯文档单放行，其余跑 `test_gate -Suite fast`，新增失败即中止合并）。绕过：`DEVTOOL_MERGE_GATE=0`（仅回滚/紧急，回单注明"绕过质量闸"）。
 - **共享数据根互斥（2026-10-17 立章）**：对数据根（`quant_backtest/data` 等 KG_DATA_ROOT 指向目录）做结构性操作（还原/迁移/清理/换根/重建 catalog）前，**必须先读 `C:\Temp\kg_sync_task.log` 尾部**确认无其他会话的进行中操作；操作完成后**必须补记该日志**。违反=评审门拒绝合并。（教训：2026-10-17 KGDataRoot 17.7GB 因两会话同时「清理 vs 还原」反复拉锯一上午）
 
@@ -55,7 +55,7 @@
 | 导入边界（2026-10-30 恢复） | `_import_boundary_gate` → `tools/check_import_boundaries.py` | 业务 import 越界（osleg 类回归） |
 | 元数据一致性（2026-10-30 恢复，P77 起全阻断） | `_metadata_gate` → `tools/datawarehouse/metadata_consistency.py` | catalog×registry×lifecycle×store 漂移 |
 | 路由清单门（2026-10-31 P130，阻断） | `python tools/portal_route_inventory.py --check` | 路由集合与 B0 基线漂移（新增/删除路由必须同提交 `--write-baseline`） |
-| budget 预算门（W5 P1-6 / A5，阶段 1 非 strict） | `tools/check_portal_split.py`（fast 门内执行） | portal 拆分预算超限回归（硬违规阻断，建议项 WARN 不阻断） |
+| budget 预算门（W5 P1-6 / A5，**P133 起 --strict**） | `tools/check_portal_split.py --strict`（fast 门内执行） | portal 拆分预算超限回归（硬违规/建议项均阻断） |
 | **测试门（P0 #1）** | `python tools/merge_gated.py <TID>`（merge 前跑 `test_gate -Suite fast`，新增失败即拒） | 带失败测试合入主区 |
 
 ## 6. 受训与记忆（怎么让 Agent 越用越准）
