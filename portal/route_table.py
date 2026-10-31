@@ -2,7 +2,14 @@
 """portal_api GET 精确路由表（B4a-lite，2026-10-31 关羽）。
 
 由 B4a 生成规则产出；仅收录“单语句直接调 self._handler()”的分支（32 条/16 段），
-保持原 if/elif 顺序语义；等价测试见 portal/tests/test_route_table_equivalence.py。
+保持原 if/elif 顺序语义；等价测试见 tools/tests/test_route_table_equivalence.py。
+
+⚠ 契约（2026-10-31 P0 修复，WO-INTEL-PRIVATE-20261031）：
+表值 = **Handler 方法名字符串**，不是可调用对象。dispatch 必须统一走
+`getattr(self, table[path])()`；直接 `table[path]()` 会得到
+`TypeError: 'str' object is not callable` → 502（/intel/stream 等 32 条全中）。
+本模块提供 iter_routes()/unresolved() 供契约测试校验“每个值都能解析为
+portal_api.Handler 上的可调用方法”，防止表值写错或方法改名后静默 404/500。
 """
 
 _GET_EXACT_1 = {
@@ -85,6 +92,28 @@ _GET_EXACT_16 = {
     '/bt-data-health': '_data_health_page',
 }
 
+# 16 段顺序即原 if/elif 链顺序（组内/组间匹配互不重叠；保持顺序供审计）
+_TABLES = (_GET_EXACT_1, _GET_EXACT_2, _GET_EXACT_3, _GET_EXACT_4, _GET_EXACT_5,
+           _GET_EXACT_6, _GET_EXACT_7, _GET_EXACT_8, _GET_EXACT_9, _GET_EXACT_10,
+           _GET_EXACT_11, _GET_EXACT_12, _GET_EXACT_13, _GET_EXACT_14,
+           _GET_EXACT_15, _GET_EXACT_16,)
+
 GET_EXACT = {}
-for _d in (_GET_EXACT_1, _GET_EXACT_2, _GET_EXACT_3, _GET_EXACT_4, _GET_EXACT_5, _GET_EXACT_6, _GET_EXACT_7, _GET_EXACT_8, _GET_EXACT_9, _GET_EXACT_10, _GET_EXACT_11, _GET_EXACT_12, _GET_EXACT_13, _GET_EXACT_14, _GET_EXACT_15, _GET_EXACT_16,):
+for _d in _TABLES:
     GET_EXACT.update(_d)
+
+
+def iter_routes():
+    """遍历全部精确路由：(route, handler_method_name)，供契约测试与审计。"""
+    for table in _TABLES:
+        for route, handler in table.items():
+            yield route, handler
+
+
+def unresolved(handler_cls):
+    """契约校验：返回表值无法解析为 handler_cls 可调用方法的 (route, name) 列表。"""
+    bad = []
+    for route, handler in iter_routes():
+        if not callable(getattr(handler_cls, handler, None)):
+            bad.append((route, handler))
+    return bad
