@@ -50,6 +50,8 @@ FILES = [
     # P2 收尾（2026-10-31 第七轮：性能/SLO + 安全信号）
     "tools/test_huangzhong_perf_signal.py",
     "tools/test_huangzhong_security_signal.py",
+    # 11-04 一键执行器（2026-10-31 第八轮）
+    "tools/test_huangzhong_1104_run.py",
 ]
 
 
