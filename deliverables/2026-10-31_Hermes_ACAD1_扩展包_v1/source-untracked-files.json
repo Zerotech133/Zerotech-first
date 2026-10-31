@@ -1,0 +1,47 @@
+{
+ "generated_at": "2026-10-31T13:49:17+08:00",
+ "repo": "C:\\项目\\zhice-os-v2-windows-20260920",
+ "head": "f4230a892e2da0650eea78bcb819fc680fe3eb8d",
+ "files": [
+  {
+   "path": "code/frontend/src/components/ProtectedRoute.tsx.bak_20261030",
+   "sha256": "18699567b293538d4b1d1d15eeb2cb445461cf8d54962b20755ebae500f64f52",
+   "bytes": 1607
+  },
+  {
+   "path": "code/frontend/src/pages/Acad1ResearchPage.tsx",
+   "sha256": "5406a78dcf6d834be4c466a68054fa7ec55e29ae1ae8ec0f84001396745f4072",
+   "bytes": 16241
+  },
+  {
+   "path": "code/frontend/src/pages/LusuDeskPage.tsx",
+   "sha256": "6694fa5748cb7981c87c31bfd831367fe4f84f789881451140885d072e0242ad",
+   "bytes": 5833
+  },
+  {
+   "path": "code/frontend/src/pages/SelectionDeskPage.tsx",
+   "sha256": "5bdeeca9147633be825d31b051470ced1ab7f72150920e26290e3fbb8619a438",
+   "bytes": 13195
+  },
+  {
+   "path": "code/frontend/src/pages/SimFactorPage.tsx",
+   "sha256": "09aa64d202d023448a59e2d7ee7fba34f5048530734c6804b2baf6ec1dcaea26",
+   "bytes": 12140
+  },
+  {
+   "path": "code/frontend/src/pages/StrategyWorkspacePage.tsx",
+   "sha256": "0b051d00be84821c8e86cb1b2e9f0ed503cbe4a6aab75638bf2f4eb23b8767ba",
+   "bytes": 5970
+  },
+  {
+   "path": "code/frontend/src/services/autoSession.ts",
+   "sha256": "70eb0d38c9b28289563cf0d754fd9755f19b55e0de4bb7dfe660ee3c44f58e0a",
+   "bytes": 2515
+  },
+  {
+   "path": "code/frontend/src/services/strategyWorkspaceApi.ts",
+   "sha256": "d3f9f97203aeedaf6bdee42c94d5d8632e7d1726eba6e7fd363c098dc6a41ad7",
+   "bytes": 4679
+  }
+ ]
+}

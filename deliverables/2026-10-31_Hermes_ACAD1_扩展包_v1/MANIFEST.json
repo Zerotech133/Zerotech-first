@@ -1,0 +1,577 @@
+{
+ "schema": "hermes-acad1-zhice-build/v1",
+ "version": "20261031_134907_f4230a89",
+ "built_at": "2026-10-31T13:49:15+08:00",
+ "task": "P2-3 Hermes 司马徽扩展构建流水线/版本化",
+ "source": {
+  "path": "C:\\项目\\zhice-os-v2-windows-20260920\\code\\frontend",
+  "git": {
+   "git_ok": true,
+   "repo": "C:\\项目\\zhice-os-v2-windows-20260920",
+   "head": "f4230a892e2da0650eea78bcb819fc680fe3eb8d",
+   "branch": "master",
+   "dirty": true,
+   "dirty_count": 56,
+   "dirty_files": [
+    " M code/.env.example",
+    " M code/frontend/src/App.tsx",
+    " M code/frontend/src/components/ProtectedRoute.tsx",
+    " M code/frontend/src/main.tsx",
+    " M code/frontend/src/pages/StrategyCatalogPage.tsx",
+    " M code/frontend/src/pages/groups/ReplayGroup.tsx",
+    " M code/frontend/src/pages/groups/StrategiesGroup.tsx",
+    " M code/frontend/src/services/api.ts",
+    " M code/frontend/src/services/myStrategiesApi.ts",
+    " M code/frontend/vite.config.ts",
+    " M code/src/zhice_os_v2/api/main.py",
+    " M code/src/zhice_os_v2/api/routers/strategy.py",
+    "?? code/frontend/src/components/ProtectedRoute.tsx.bak_20261030",
+    "?? code/frontend/src/pages/Acad1ResearchPage.tsx",
+    "?? code/frontend/src/pages/LusuDeskPage.tsx",
+    "?? code/frontend/src/pages/SelectionDeskPage.tsx",
+    "?? code/frontend/src/pages/SimFactorPage.tsx",
+    "?? code/frontend/src/pages/StrategyWorkspacePage.tsx",
+    "?? code/frontend/src/services/autoSession.ts",
+    "?? code/frontend/src/services/strategyWorkspaceApi.ts",
+    "?? code/migrations/versions/0034_strategy_workspace.py",
+    "?? code/migrations/versions/0035_strategy_daily_signal_key.py",
+    "?? code/migrations/versions/0036_acad1_pool_review.py",
+    "?? code/migrations/versions/0037_lusu_decision.py",
+    "?? code/migrations/versions/0038_stock_research.py",
+    "?? code/migrations/versions/0039_selection_desk.py",
+    "?? code/migrations/versions/0040_selection_tables.py",
+    "?? code/migrations/versions/0041_supervision.py",
+    "?? code/migrations/versions/0042_sim_factor.py",
+    "?? code/migrations/versions/0043_drop_unused.py",
+    "?? code/migrations/versions/0044_market_columns.py",
+    "?? code/migrations/versions/0045_report_market.py",
+    "?? code/scripts/adapt_platform_cn.py",
+    "?? code/scripts/adapt_platform_global.py",
+    "?? code/scripts/backfill_selection_market.py",
+    "?? code/scripts/calc_observations.py",
+    "?? code/scripts/ingest_acad1_pool.py",
+    "?? code/scripts/ingest_observations_backtest.py",
+    "?? code/scripts/ingest_strategy_workspace.py",
+    "?? code/scripts/run_calc_observations.ps1",
+    "?? code/scripts/run_calc_observations.py",
+    "?? code/scripts/run_daily_research_ops.py",
+    "?? code/scripts/seed_selection_desk.py",
+    "?? code/scripts/select_acad1_pool.py",
+    "?? code/scripts/sync_candidate_to_acad1.py",
+    "?? code/src/zhice_os_v2/api/routers/acad1_research.py",
+    "?? code/src/zhice_os_v2/api/routers/lusu_research.py",
+    "?? code/src/zhice_os_v2/api/routers/selection_desk.py",
+    "?? code/src/zhice_os_v2/api/routers/selection_public.py",
+    "?? code/src/zhice_os_v2/api/routers/sim_factor.py",
+    "?? code/src/zhice_os_v2/api/routers/stock_research.py",
+    "?? code/src/zhice_os_v2/api/routers/strategy_workspace.py",
+    "?? code/tests/test_acad1_research_api.py",
+    "?? code/tests/test_migration_0045.py",
+    "?? code/tests/test_selection_desk_integration.py",
+    "?? code/tests/test_selection_market_split.py"
+   ]
+  },
+  "head": "f4230a892e2da0650eea78bcb819fc680fe3eb8d",
+  "branch": "master",
+  "dirty": true,
+  "dirty_count": 56,
+  "repo": "C:\\项目\\zhice-os-v2-windows-20260920",
+  "digest": {
+   "digest": "94b05da8a2adb05f8d913314ccfea68bf9b2a9cd586d2f62f343ff2726fd76fa",
+   "file_count": 168,
+   "bytes": 1594395
+  }
+ },
+ "build": {
+  "out_dir": "C:\\项目\\老田的AI助手\\tmp\\hermes_acad1_build\\20261031_134907_f4230a89\\zhice",
+  "typecheck": "pass",
+  "typecheck_rc": 0,
+  "vite_rc": 0,
+  "assets": [
+   "index-BHhUDjC8.js",
+   "index-Dl42rMEp.css"
+  ],
+  "tools": {
+   "node": "node.EXE",
+   "node_version": "v24.20.0",
+   "vite": "8.2.1",
+   "typescript": "6.0.3"
+  },
+  "env": {
+   "VITE_BASE": "/extensions/zhice/",
+   "VITE_ROUTER": "hash",
+   "VITE_ENABLED_MARKETS": "CN,US,HK,CRYPTO",
+   "VITE_API_BASE": "http://127.0.0.1:8105/api/v1"
+  },
+  "command": [
+   "node node_modules/vite/bin/vite.js build --outDir <tmp> --emptyOutDir"
+  ],
+  "built_at": "2026-10-31T13:49:15+08:00",
+  "duration_s": 7.8
+ },
+ "output": {
+  "root": "C:\\项目\\老田的AI助手\\Hermes\\extensions\\legion-ide\\zhice",
+  "file_count": 8,
+  "total_bytes": 2292356,
+  "files": {
+   "apple-touch-icon.png": {
+    "sha256": "3495cab7606f62196f7bd5d7bd8c24f5f2987fd16afbf7642ea1f34ce10cd907",
+    "bytes": 24068
+   },
+   "assets/index-BHhUDjC8.js": {
+    "sha256": "f59f62cfb7ef443e3c6042b7e87ce326665a337c368f6290ae9cebb1b040ea0e",
+    "bytes": 1846588
+   },
+   "assets/index-Dl42rMEp.css": {
+    "sha256": "1948d2a4ae5b63a8a34443775411e612eb8f1c886db89949a2b8f98420f53a84",
+    "bytes": 16229
+   },
+   "favicon-32.png": {
+    "sha256": "bbd3795f5d8104a80ec23fc6647fd6f8b6eaf2d16009d4319dce4eb2b4b39e91",
+    "bytes": 1570
+   },
+   "index.html": {
+    "sha256": "4948501c8cc7391739b86c843f60aa8a94911714c95c78e69ccb34696817f1f6",
+    "bytes": 620
+   },
+   "logo-icon.png": {
+    "sha256": "8ea7de811a2f5190e3af54232c698e004a4404ee0fa62489bd683f6148480dc4",
+    "bytes": 145097
+   },
+   "logo.png": {
+    "sha256": "05ade2be5d4e85d94b0a9eb40c72cf9da7d8a0255173e79ae895d5567e73b667",
+    "bytes": 34946
+   },
+   "logo.whotalk.bak.png": {
+    "sha256": "4863b2446c51afb085a8bef1be6ce0dae99eb1ab5e80c5385151fe0dc49d9f9f",
+    "bytes": 223238
+   }
+  }
+ },
+ "patch": {
+  "api_base": "http://127.0.0.1:8105/api/v1",
+  "base_path": "/extensions/zhice/",
+  "rules": [
+   {
+    "name": "ws-host-to-api-host",
+    "from": "://${location.host}/api/v1",
+    "to": "://127.0.0.1:8105/api/v1"
+   },
+   {
+    "name": "relative-api-to-absolute",
+    "from": "/api/v1 (relative)",
+    "to": "http://127.0.0.1:8105/api/v1"
+   },
+   {
+    "name": "root-logo-to-base",
+    "from": "/logo*.png (root absolute)",
+    "to": "/extensions/zhice/logo*.png"
+   }
+  ],
+  "files": {
+   "index-BHhUDjC8.js": {
+    "bytes_before": 1846472,
+    "bytes_after": 1846588,
+    "ws_replaced": 1,
+    "api_replaced": 4,
+    "logo_replaced": {
+     "logo-icon.png": 1,
+     "logo.png": 1
+    },
+    "sha256": "f59f62cfb7ef443e3c6042b7e87ce326665a337c368f6290ae9cebb1b040ea0e"
+   }
+  },
+  "counts": {
+   "ws_replaced": 1,
+   "api_replaced": 4,
+   "logo_replaced": 2
+  },
+  "assertions": {
+   "ok": true,
+   "details": {
+    "index_ref_count": 4
+   }
+  },
+  "duration_s": 0.3
+ },
+ "boundaries": {
+  "hermes_core_changed": false,
+  "csp_changed": false,
+  "hermes_8787_restarted": false,
+  "port_8796_touched": false
+ },
+ "promote": {
+  "backup": "C:\\项目\\老田的AI助手\\Hermes\\extensions\\legion-ide\\_build_backup\\zhice_20261031_134915_prev"
+ },
+ "live_publish": {
+  "schema": "hermes-acad1-live-publish/v1",
+  "requested_root": "C:\\项目\\_vault\\legion_ide\\release\\legion-ide\\current",
+  "resolved_root": "C:\\项目\\_vault\\legion_ide\\release\\legion-ide\\20261031_092952_7e6dbe8a",
+  "is_junction": true,
+  "published_at": "2026-10-31T13:49:17+08:00",
+  "version": "20261031_134907_f4230a89",
+  "mode": "add-only: zhice/ subdirectory, existing files untouched",
+  "before": {
+   "root": "C:\\项目\\_vault\\legion_ide\\release\\legion-ide\\20261031_092952_7e6dbe8a",
+   "exists": true,
+   "files": {
+    "a0-mainchat.js": {
+     "sha256": "ae4cefeaec6ffb7f5012610002455fdc90b9c4d57681c55552920cea39b182d9",
+     "bytes": 15780
+    },
+    "app.css": {
+     "sha256": "38ca0225ab879174e7852262bf02964d0e0d0af62f3527f4628c8edd2e9dfb8d",
+     "bytes": 14099
+    },
+    "app.js": {
+     "sha256": "e90997188aafb89252729e8faeed09df0ba0bfcb76c43b6df7401e903886596a",
+     "bytes": 81060
+    },
+    "manifest.json": {
+     "sha256": "d5a2cba4656e5cbd65797651a215d66b69d7a290b797b0d727eae56fd8a9e47d",
+     "bytes": 935
+    },
+    "README.md": {
+     "sha256": "98cc9576f52e72661b2ee83771eb64f19cc00fb58996009520149c98f67b7a65",
+     "bytes": 2880
+    }
+   }
+  },
+  "before_manifest_sha256": "d5a2cba4656e5cbd65797651a215d66b69d7a290b797b0d727eae56fd8a9e47d",
+  "replaced_previous_zhice": "C:\\项目\\老田的AI助手\\Hermes\\extensions\\legion-ide\\_build_backup\\live_zhice_20261031_134907_f4230a89",
+  "pruned_live_backups": [
+   "live_zhice_20261031_133017_f4230a89"
+  ],
+  "after": {
+   "root": "C:\\项目\\_vault\\legion_ide\\release\\legion-ide\\20261031_092952_7e6dbe8a",
+   "exists": true,
+   "files": {
+    "a0-mainchat.js": {
+     "sha256": "ae4cefeaec6ffb7f5012610002455fdc90b9c4d57681c55552920cea39b182d9",
+     "bytes": 15780
+    },
+    "app.css": {
+     "sha256": "38ca0225ab879174e7852262bf02964d0e0d0af62f3527f4628c8edd2e9dfb8d",
+     "bytes": 14099
+    },
+    "app.js": {
+     "sha256": "e90997188aafb89252729e8faeed09df0ba0bfcb76c43b6df7401e903886596a",
+     "bytes": 81060
+    },
+    "manifest.json": {
+     "sha256": "d5a2cba4656e5cbd65797651a215d66b69d7a290b797b0d727eae56fd8a9e47d",
+     "bytes": 935
+    },
+    "README.md": {
+     "sha256": "98cc9576f52e72661b2ee83771eb64f19cc00fb58996009520149c98f67b7a65",
+     "bytes": 2880
+    }
+   }
+  },
+  "added_files": [],
+  "removed_files": [],
+  "changed_existing_files": [],
+  "existing_files_intact": true,
+  "zhice_dir": "C:\\项目\\_vault\\legion_ide\\release\\legion-ide\\20261031_092952_7e6dbe8a\\zhice",
+  "zhice_file_count": 8,
+  "zhice_added_bytes": 2292356,
+  "existing_before_file_count": 5,
+  "zhice_tree_matches_deliverable_dir": true,
+  "zhice_sha256": {
+   "apple-touch-icon.png": {
+    "sha256": "3495cab7606f62196f7bd5d7bd8c24f5f2987fd16afbf7642ea1f34ce10cd907",
+    "bytes": 24068
+   },
+   "assets/index-BHhUDjC8.js": {
+    "sha256": "f59f62cfb7ef443e3c6042b7e87ce326665a337c368f6290ae9cebb1b040ea0e",
+    "bytes": 1846588
+   },
+   "assets/index-Dl42rMEp.css": {
+    "sha256": "1948d2a4ae5b63a8a34443775411e612eb8f1c886db89949a2b8f98420f53a84",
+    "bytes": 16229
+   },
+   "favicon-32.png": {
+    "sha256": "bbd3795f5d8104a80ec23fc6647fd6f8b6eaf2d16009d4319dce4eb2b4b39e91",
+    "bytes": 1570
+   },
+   "index.html": {
+    "sha256": "4948501c8cc7391739b86c843f60aa8a94911714c95c78e69ccb34696817f1f6",
+    "bytes": 620
+   },
+   "logo-icon.png": {
+    "sha256": "8ea7de811a2f5190e3af54232c698e004a4404ee0fa62489bd683f6148480dc4",
+    "bytes": 145097
+   },
+   "logo.png": {
+    "sha256": "05ade2be5d4e85d94b0a9eb40c72cf9da7d8a0255173e79ae895d5567e73b667",
+    "bytes": 34946
+   },
+   "logo.whotalk.bak.png": {
+    "sha256": "4863b2446c51afb085a8bef1be6ce0dae99eb1ab5e80c5385151fe0dc49d9f9f",
+    "bytes": 223238
+   }
+  },
+  "ok": true,
+  "version_json": {
+   "ok": true,
+   "path": "C:\\项目\\_vault\\legion_ide\\release\\legion-ide\\20261031_092952_7e6dbe8a\\zhice\\VERSION.json",
+   "sha256": "6a02f6a141224cff7fb89ae01b8f447d3515f32458190ef56fb0c73a13e94270",
+   "bytes": 23625,
+   "synced_at": "2026-10-31T13:49:17+08:00"
+  }
+ },
+ "verify": {
+  "verified_at": "2026-10-31T13:49:15+08:00",
+  "file_hashes_match": true,
+  "file_count": 8,
+  "total_bytes": 2292356,
+  "assert_patched": {
+   "ok": true,
+   "details": {
+    "index_ref_count": 4
+   }
+  },
+  "static_path": {
+   "ok": true,
+   "mode": "production-handler",
+   "module_file": "C:\\项目\\老田的AI助手\\Hermes\\hermes-webui-next\\api\\extensions.py",
+   "import_error": "",
+   "port": 49675,
+   "checks": [
+    {
+     "path": "/extensions/zhice/index.html",
+     "status": 200,
+     "bytes": 620,
+     "sha256_match": true,
+     "content_type": "text/html; charset=utf-8",
+     "cache_control": "no-store",
+     "csp_present": true,
+     "ok": true
+    },
+    {
+     "path": "/extensions/zhice/assets/index-BHhUDjC8.js",
+     "status": 200,
+     "bytes": 1846588,
+     "sha256_match": true,
+     "content_type": "application/javascript; charset=utf-8",
+     "cache_control": "no-store",
+     "csp_present": true,
+     "ok": true
+    },
+    {
+     "path": "/extensions/zhice/assets/index-Dl42rMEp.css",
+     "status": 200,
+     "bytes": 16229,
+     "sha256_match": true,
+     "content_type": "text/css; charset=utf-8",
+     "cache_control": "no-store",
+     "csp_present": true,
+     "ok": true
+    },
+    {
+     "path": "/extensions/zhice/logo.png",
+     "status": 200,
+     "bytes": 34946,
+     "sha256_match": true,
+     "content_type": "image/png",
+     "cache_control": "no-store",
+     "csp_present": true,
+     "ok": true
+    },
+    {
+     "path": "/extensions/zhice/logo-icon.png",
+     "status": 200,
+     "bytes": 145097,
+     "sha256_match": true,
+     "content_type": "image/png",
+     "cache_control": "no-store",
+     "csp_present": true,
+     "ok": true
+    },
+    {
+     "path": "/extensions/zhice/favicon-32.png",
+     "status": 200,
+     "bytes": 1570,
+     "sha256_match": true,
+     "content_type": "image/png",
+     "cache_control": "no-store",
+     "csp_present": true,
+     "ok": true
+    }
+   ],
+   "traversal_404": true
+  },
+  "live_probe": {
+   "base": "http://127.0.0.1:8787",
+   "ok": true,
+   "checks": {
+    "health": {
+     "status": 200,
+     "server_started_at": 1793409096.180473,
+     "uptime_seconds": 16661.3
+    },
+    "extensions_app_js": {
+     "status": 200,
+     "sha256": "e90997188aafb89252729e8faeed09df0ba0bfcb76c43b6df7401e903886596a",
+     "bytes": 81060
+    },
+    "extensions_zhice": [
+     {
+      "path": "/extensions/zhice/apple-touch-icon.png",
+      "status": 200,
+      "sha256_match": true,
+      "content_type": "image/png",
+      "csp": "default-src 'self' https://*.cloudflareaccess.com; object-src 'none'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com blob:; worker-src blob: 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob:; font-src 'self' data: https://fonts."
+     },
+     {
+      "path": "/extensions/zhice/assets/index-BHhUDjC8.js",
+      "status": 200,
+      "sha256_match": true,
+      "content_type": "application/javascript; charset=utf-8",
+      "csp": "default-src 'self' https://*.cloudflareaccess.com; object-src 'none'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com blob:; worker-src blob: 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob:; font-src 'self' data: https://fonts."
+     },
+     {
+      "path": "/extensions/zhice/assets/index-Dl42rMEp.css",
+      "status": 200,
+      "sha256_match": true,
+      "content_type": "text/css; charset=utf-8",
+      "csp": "default-src 'self' https://*.cloudflareaccess.com; object-src 'none'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com blob:; worker-src blob: 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob:; font-src 'self' data: https://fonts."
+     },
+     {
+      "path": "/extensions/zhice/favicon-32.png",
+      "status": 200,
+      "sha256_match": true,
+      "content_type": "image/png",
+      "csp": "default-src 'self' https://*.cloudflareaccess.com; object-src 'none'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com blob:; worker-src blob: 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob:; font-src 'self' data: https://fonts."
+     },
+     {
+      "path": "/extensions/zhice/index.html",
+      "status": 200,
+      "sha256_match": true,
+      "content_type": "text/html; charset=utf-8",
+      "csp": "default-src 'self' https://*.cloudflareaccess.com; object-src 'none'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com blob:; worker-src blob: 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob:; font-src 'self' data: https://fonts."
+     },
+     {
+      "path": "/extensions/zhice/logo-icon.png",
+      "status": 200,
+      "sha256_match": true,
+      "content_type": "image/png",
+      "csp": "default-src 'self' https://*.cloudflareaccess.com; object-src 'none'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com blob:; worker-src blob: 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob:; font-src 'self' data: https://fonts."
+     },
+     {
+      "path": "/extensions/zhice/logo.png",
+      "status": 200,
+      "sha256_match": true,
+      "content_type": "image/png",
+      "csp": "default-src 'self' https://*.cloudflareaccess.com; object-src 'none'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com blob:; worker-src blob: 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob:; font-src 'self' data: https://fonts."
+     },
+     {
+      "path": "/extensions/zhice/logo.whotalk.bak.png",
+      "status": 200,
+      "sha256_match": true,
+      "content_type": "image/png",
+      "csp": "default-src 'self' https://*.cloudflareaccess.com; object-src 'none'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com blob:; worker-src blob: 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob:; font-src 'self' data: https://fonts."
+     }
+    ]
+   },
+   "trusted_header": {
+    "name": "X-Portal-User",
+    "user": "laotian",
+    "used": true
+   },
+   "zhice_served": true,
+   "zhice_index_status": 200
+  },
+  "live_zhice_served": true
+ },
+ "live_probe": {
+  "base": "http://127.0.0.1:8787",
+  "ok": true,
+  "checks": {
+   "health": {
+    "status": 200,
+    "server_started_at": 1793409096.180473,
+    "uptime_seconds": 16661.3
+   },
+   "extensions_app_js": {
+    "status": 200,
+    "sha256": "e90997188aafb89252729e8faeed09df0ba0bfcb76c43b6df7401e903886596a",
+    "bytes": 81060
+   },
+   "extensions_zhice": [
+    {
+     "path": "/extensions/zhice/apple-touch-icon.png",
+     "status": 200,
+     "sha256_match": true,
+     "content_type": "image/png",
+     "csp": "default-src 'self' https://*.cloudflareaccess.com; object-src 'none'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com blob:; worker-src blob: 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob:; font-src 'self' data: https://fonts."
+    },
+    {
+     "path": "/extensions/zhice/assets/index-BHhUDjC8.js",
+     "status": 200,
+     "sha256_match": true,
+     "content_type": "application/javascript; charset=utf-8",
+     "csp": "default-src 'self' https://*.cloudflareaccess.com; object-src 'none'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com blob:; worker-src blob: 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob:; font-src 'self' data: https://fonts."
+    },
+    {
+     "path": "/extensions/zhice/assets/index-Dl42rMEp.css",
+     "status": 200,
+     "sha256_match": true,
+     "content_type": "text/css; charset=utf-8",
+     "csp": "default-src 'self' https://*.cloudflareaccess.com; object-src 'none'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com blob:; worker-src blob: 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob:; font-src 'self' data: https://fonts."
+    },
+    {
+     "path": "/extensions/zhice/favicon-32.png",
+     "status": 200,
+     "sha256_match": true,
+     "content_type": "image/png",
+     "csp": "default-src 'self' https://*.cloudflareaccess.com; object-src 'none'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com blob:; worker-src blob: 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob:; font-src 'self' data: https://fonts."
+    },
+    {
+     "path": "/extensions/zhice/index.html",
+     "status": 200,
+     "sha256_match": true,
+     "content_type": "text/html; charset=utf-8",
+     "csp": "default-src 'self' https://*.cloudflareaccess.com; object-src 'none'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com blob:; worker-src blob: 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob:; font-src 'self' data: https://fonts."
+    },
+    {
+     "path": "/extensions/zhice/logo-icon.png",
+     "status": 200,
+     "sha256_match": true,
+     "content_type": "image/png",
+     "csp": "default-src 'self' https://*.cloudflareaccess.com; object-src 'none'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com blob:; worker-src blob: 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob:; font-src 'self' data: https://fonts."
+    },
+    {
+     "path": "/extensions/zhice/logo.png",
+     "status": 200,
+     "sha256_match": true,
+     "content_type": "image/png",
+     "csp": "default-src 'self' https://*.cloudflareaccess.com; object-src 'none'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com blob:; worker-src blob: 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob:; font-src 'self' data: https://fonts."
+    },
+    {
+     "path": "/extensions/zhice/logo.whotalk.bak.png",
+     "status": 200,
+     "sha256_match": true,
+     "content_type": "image/png",
+     "csp": "default-src 'self' https://*.cloudflareaccess.com; object-src 'none'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com blob:; worker-src blob: 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob:; font-src 'self' data: https://fonts."
+    }
+   ]
+  },
+  "trusted_header": {
+   "name": "X-Portal-User",
+   "user": "laotian",
+   "used": true
+  },
+  "zhice_served": true,
+  "zhice_index_status": 200
+ },
+ "finished_at": "2026-10-31T13:49:17+08:00",
+ "deliverables": {
+  "dir": "C:\\项目\\老田的AI助手\\deliverables\\2026-10-31_Hermes_ACAD1_扩展包_v1",
+  "version_json_sha256": "6a02f6a141224cff7fb89ae01b8f447d3515f32458190ef56fb0c73a13e94270",
+  "rebuild_command": "python tools\\hermes_acad1_build.py",
+  "rebuild_command_ps1": "powershell -NoProfile -ExecutionPolicy Bypass -File tools\\hermes_acad1_build.ps1",
+  "publish_live_command": "python tools\\hermes_acad1_build.py --publish-live",
+  "verify_only_command": "python tools\\hermes_acad1_build.py --verify-only"
+ }
+}

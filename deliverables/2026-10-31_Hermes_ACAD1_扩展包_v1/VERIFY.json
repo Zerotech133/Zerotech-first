@@ -1,0 +1,164 @@
+{
+ "verified_at": "2026-10-31T13:49:15+08:00",
+ "file_hashes_match": true,
+ "file_count": 8,
+ "total_bytes": 2292356,
+ "assert_patched": {
+  "ok": true,
+  "details": {
+   "index_ref_count": 4
+  }
+ },
+ "static_path": {
+  "ok": true,
+  "mode": "production-handler",
+  "module_file": "C:\\项目\\老田的AI助手\\Hermes\\hermes-webui-next\\api\\extensions.py",
+  "import_error": "",
+  "port": 49675,
+  "checks": [
+   {
+    "path": "/extensions/zhice/index.html",
+    "status": 200,
+    "bytes": 620,
+    "sha256_match": true,
+    "content_type": "text/html; charset=utf-8",
+    "cache_control": "no-store",
+    "csp_present": true,
+    "ok": true
+   },
+   {
+    "path": "/extensions/zhice/assets/index-BHhUDjC8.js",
+    "status": 200,
+    "bytes": 1846588,
+    "sha256_match": true,
+    "content_type": "application/javascript; charset=utf-8",
+    "cache_control": "no-store",
+    "csp_present": true,
+    "ok": true
+   },
+   {
+    "path": "/extensions/zhice/assets/index-Dl42rMEp.css",
+    "status": 200,
+    "bytes": 16229,
+    "sha256_match": true,
+    "content_type": "text/css; charset=utf-8",
+    "cache_control": "no-store",
+    "csp_present": true,
+    "ok": true
+   },
+   {
+    "path": "/extensions/zhice/logo.png",
+    "status": 200,
+    "bytes": 34946,
+    "sha256_match": true,
+    "content_type": "image/png",
+    "cache_control": "no-store",
+    "csp_present": true,
+    "ok": true
+   },
+   {
+    "path": "/extensions/zhice/logo-icon.png",
+    "status": 200,
+    "bytes": 145097,
+    "sha256_match": true,
+    "content_type": "image/png",
+    "cache_control": "no-store",
+    "csp_present": true,
+    "ok": true
+   },
+   {
+    "path": "/extensions/zhice/favicon-32.png",
+    "status": 200,
+    "bytes": 1570,
+    "sha256_match": true,
+    "content_type": "image/png",
+    "cache_control": "no-store",
+    "csp_present": true,
+    "ok": true
+   }
+  ],
+  "traversal_404": true
+ },
+ "live_probe": {
+  "base": "http://127.0.0.1:8787",
+  "ok": true,
+  "checks": {
+   "health": {
+    "status": 200,
+    "server_started_at": 1793409096.180473,
+    "uptime_seconds": 16661.3
+   },
+   "extensions_app_js": {
+    "status": 200,
+    "sha256": "e90997188aafb89252729e8faeed09df0ba0bfcb76c43b6df7401e903886596a",
+    "bytes": 81060
+   },
+   "extensions_zhice": [
+    {
+     "path": "/extensions/zhice/apple-touch-icon.png",
+     "status": 200,
+     "sha256_match": true,
+     "content_type": "image/png",
+     "csp": "default-src 'self' https://*.cloudflareaccess.com; object-src 'none'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com blob:; worker-src blob: 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob:; font-src 'self' data: https://fonts."
+    },
+    {
+     "path": "/extensions/zhice/assets/index-BHhUDjC8.js",
+     "status": 200,
+     "sha256_match": true,
+     "content_type": "application/javascript; charset=utf-8",
+     "csp": "default-src 'self' https://*.cloudflareaccess.com; object-src 'none'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com blob:; worker-src blob: 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob:; font-src 'self' data: https://fonts."
+    },
+    {
+     "path": "/extensions/zhice/assets/index-Dl42rMEp.css",
+     "status": 200,
+     "sha256_match": true,
+     "content_type": "text/css; charset=utf-8",
+     "csp": "default-src 'self' https://*.cloudflareaccess.com; object-src 'none'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com blob:; worker-src blob: 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob:; font-src 'self' data: https://fonts."
+    },
+    {
+     "path": "/extensions/zhice/favicon-32.png",
+     "status": 200,
+     "sha256_match": true,
+     "content_type": "image/png",
+     "csp": "default-src 'self' https://*.cloudflareaccess.com; object-src 'none'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com blob:; worker-src blob: 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob:; font-src 'self' data: https://fonts."
+    },
+    {
+     "path": "/extensions/zhice/index.html",
+     "status": 200,
+     "sha256_match": true,
+     "content_type": "text/html; charset=utf-8",
+     "csp": "default-src 'self' https://*.cloudflareaccess.com; object-src 'none'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com blob:; worker-src blob: 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob:; font-src 'self' data: https://fonts."
+    },
+    {
+     "path": "/extensions/zhice/logo-icon.png",
+     "status": 200,
+     "sha256_match": true,
+     "content_type": "image/png",
+     "csp": "default-src 'self' https://*.cloudflareaccess.com; object-src 'none'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com blob:; worker-src blob: 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob:; font-src 'self' data: https://fonts."
+    },
+    {
+     "path": "/extensions/zhice/logo.png",
+     "status": 200,
+     "sha256_match": true,
+     "content_type": "image/png",
+     "csp": "default-src 'self' https://*.cloudflareaccess.com; object-src 'none'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com blob:; worker-src blob: 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob:; font-src 'self' data: https://fonts."
+    },
+    {
+     "path": "/extensions/zhice/logo.whotalk.bak.png",
+     "status": 200,
+     "sha256_match": true,
+     "content_type": "image/png",
+     "csp": "default-src 'self' https://*.cloudflareaccess.com; object-src 'none'; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com blob:; worker-src blob: 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob:; font-src 'self' data: https://fonts."
+    }
+   ]
+  },
+  "trusted_header": {
+   "name": "X-Portal-User",
+   "user": "laotian",
+   "used": true
+  },
+  "zhice_served": true,
+  "zhice_index_status": 200
+ },
+ "live_zhice_served": true
+}
