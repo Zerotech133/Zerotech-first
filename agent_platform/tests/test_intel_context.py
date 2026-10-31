@@ -323,3 +323,67 @@ def test_cli_probe_json(tmp_path, capsys):
     assert data["source"] == "reviewed_jev"
     assert data["event_ids"] == ["cli:1"]
     assert data["text"].startswith("[reviewed_jev]")
+
+
+# ---------------------------------------------------------------- AI 初筛标注
+def test_review_type_ai_first_pass_annotated_not_human(tmp_path):
+    """review_type=ai_first_pass 必须在文本/返回中显式标注，不伪装人工复核。"""
+    db = tmp_path / "rt.db"
+    con = sqlite3.connect(str(db))
+    try:
+        con.execute(SCHEMA[:-2] + ",\n    review_type TEXT NOT NULL DEFAULT ''\n)")
+        cols = ("id", "queued_at", "conf", "bias", "title", "stocks",
+                "original_jev", "status", "reviewer", "reviewed_at",
+                "decision", "note", "review_type")
+        rows = [
+            dict(_row("h:1", reviewer="老田", decision="correct",
+                      reviewed_at="2026-10-31 09:10"),
+                 review_type="human"),
+            dict(_row("ai:1", reviewer="N1-AI", decision="correct",
+                      reviewed_at="2026-10-31 09:20"),
+                 review_type="ai_first_pass"),
+        ]
+        for row in rows:
+            con.execute("INSERT INTO jev_review_queue (%s) VALUES (%s)"
+                        % (",".join(cols), ",".join("?" for _ in cols)),
+                        [row[c] for c in cols])
+        con.commit()
+    finally:
+        con.close()
+    res = IC.reviewed_news_event("600519", db_path=db)
+    assert res["source"] == "reviewed_jev"
+    by_id = {x["event_id"]: x for x in res["items"]}
+    assert by_id["h:1"]["review_type"] == "human"
+    assert by_id["ai:1"]["review_type"] == "ai_first_pass"
+    assert res["review_type_counts"]["human"] == 1
+    assert res["review_type_counts"]["ai_first_pass"] == 1
+    text = res["text"]
+    assert "review_type=ai_first_pass" in text
+    assert "review_type=human" in text
+    assert "AI 初筛" in text and "非人工复核" in text
+    assert "不等同人工复核" in text
+
+
+def test_legacy_empty_review_type_counts_human(tmp_path):
+    """旧库/空 review_type：按历史人工口径计 human，不误标 AI。"""
+    db = tmp_path / "legacy.db"
+    con = sqlite3.connect(str(db))
+    try:
+        con.execute(SCHEMA[:-2] + ",\n    review_type TEXT NOT NULL DEFAULT ''\n)")
+        cols = ("id", "queued_at", "conf", "bias", "title", "stocks",
+                "original_jev", "status", "reviewer", "reviewed_at",
+                "decision", "note", "review_type")
+        row = dict(_row("legacy:1", reviewer="老田"), review_type="")
+        con.execute("INSERT INTO jev_review_queue (%s) VALUES (%s)"
+                    % (",".join(cols), ",".join("?" for _ in cols)),
+                    [row[c] for c in cols])
+        con.commit()
+    finally:
+        con.close()
+    res = IC.reviewed_news_event("600519", db_path=db)
+    assert res["items"][0]["review_type"] == "human"
+    assert res["review_type_counts"] == {"human": 1, "ai_first_pass": 0}
+    assert "review_type=human" in res["text"]
+    assert "review_type=ai_first_pass" not in res["text"]
+    assert "AI 初筛" not in res["text"]
+
