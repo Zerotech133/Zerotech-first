@@ -288,6 +288,27 @@
       "title": "战法规格库（24 YAML 校验/查询）",
       "ref": "tools/research/strategy_specs.py",
       "enabled": true
+    },
+    {
+      "id": "book_batch_test",
+      "kind": "tool",
+      "title": "量学战法批量四关初筛",
+      "ref": "tools/research/book_batch_test.py",
+      "enabled": true
+    },
+    {
+      "id": "factor_validate",
+      "kind": "tool",
+      "title": "因子独立验证（中性化/walk-forward/成本）",
+      "ref": "tools/research/factor_validate.py",
+      "enabled": true
+    },
+    {
+      "id": "report_panel",
+      "kind": "tool",
+      "title": "多智能体研报评审面板",
+      "ref": "tools/research/report_panel.py",
+      "enabled": true
     }
   ]
 }

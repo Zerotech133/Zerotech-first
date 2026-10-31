@@ -111,7 +111,15 @@
         "note": "backlog",
         "strategy_spec_id": "LX03_GENERAL_PILLAR",
         "spec_test_status": "untested",
-        "computability": "B"
+        "computability": "B",
+        "batch_20261101": {
+          "grade": "D",
+          "track": null,
+          "oos_ic_t": null,
+          "oos_excess_pct": null,
+          "n_events": null,
+          "action": null
+        }
       },
       {
         "name": "元帅柱·零号战法",
@@ -120,7 +128,15 @@
         "note": "backlog",
         "strategy_spec_id": "LX04_MARSHAL_PILLAR_ZERO",
         "spec_test_status": "untested",
-        "computability": "B"
+        "computability": "B",
+        "batch_20261101": {
+          "grade": "D",
+          "track": null,
+          "oos_ic_t": null,
+          "oos_excess_pct": null,
+          "n_events": null,
+          "action": null
+        }
       },
       {
         "name": "金线战法三步曲（黄金线/黄金双线/黄金十字）",
@@ -129,7 +145,15 @@
         "note": "backlog",
         "strategy_spec_id": "LX05_GOLDEN_LINE_TRILOGY",
         "spec_test_status": "untested",
-        "computability": "B"
+        "computability": "B",
+        "batch_20261101": {
+          "grade": "C",
+          "track": null,
+          "oos_ic_t": null,
+          "oos_excess_pct": null,
+          "n_events": null,
+          "action": null
+        }
       },
       {
         "name": "大盘阴线战法 / 长阴短柱",
@@ -138,7 +162,15 @@
         "note": "backlog",
         "strategy_spec_id": "LX06_YIN_LINE_TACTICS",
         "spec_test_status": "untested",
-        "computability": "B"
+        "computability": "B",
+        "batch_20261101": {
+          "grade": "D",
+          "track": null,
+          "oos_ic_t": null,
+          "oos_excess_pct": null,
+          "n_events": null,
+          "action": null
+        }
       },
       {
         "name": "一剑封喉战法",
@@ -147,7 +179,15 @@
         "note": "backlog",
         "strategy_spec_id": "LX07_ONE_SWORD_SEAL_THROAT",
         "spec_test_status": "untested",
-        "computability": "C"
+        "computability": "C",
+        "batch_20261101": {
+          "grade": "F",
+          "track": null,
+          "oos_ic_t": null,
+          "oos_excess_pct": null,
+          "n_events": null,
+          "action": null
+        }
       },
       {
         "name": "倍量伸缩战法",
@@ -165,7 +205,15 @@
         "note": "backlog",
         "strategy_spec_id": "LX09_LIVE_SUFFOCATION",
         "spec_test_status": "untested",
-        "computability": "B"
+        "computability": "B",
+        "batch_20261101": {
+          "grade": "D",
+          "track": null,
+          "oos_ic_t": null,
+          "oos_excess_pct": null,
+          "n_events": null,
+          "action": null
+        }
       },
       {
         "name": "3121 战法",
@@ -174,7 +222,15 @@
         "note": "backlog",
         "strategy_spec_id": "LX10_3121_RULER",
         "spec_test_status": "untested",
-        "computability": "A"
+        "computability": "A",
+        "batch_20261101": {
+          "grade": "D",
+          "track": null,
+          "oos_ic_t": null,
+          "oos_excess_pct": null,
+          "n_events": null,
+          "action": null
+        }
       },
       {
         "name": "间谍战法（量学七剑）",
@@ -183,7 +239,15 @@
         "note": "backlog",
         "strategy_spec_id": "LX11_SPY_TACTICS",
         "spec_test_status": "untested",
-        "computability": "B"
+        "computability": "B",
+        "batch_20261101": {
+          "grade": "D",
+          "track": null,
+          "oos_ic_t": null,
+          "oos_excess_pct": null,
+          "n_events": null,
+          "action": null
+        }
       },
       {
         "name": "双阴出货战法",
@@ -192,7 +256,15 @@
         "note": "backlog",
         "strategy_spec_id": "LX12_DOUBLE_YIN_EXIT",
         "spec_test_status": "untested",
-        "computability": "A"
+        "computability": "A",
+        "batch_20261101": {
+          "grade": "D",
+          "track": null,
+          "oos_ic_t": null,
+          "oos_excess_pct": null,
+          "n_events": null,
+          "action": null
+        }
       },
       {
         "name": "兵临城下（试关/攻关/冲关/守关）",
@@ -210,7 +282,15 @@
         "note": "backlog",
         "strategy_spec_id": "LX14_RELAY_DOUBLE_YANG",
         "spec_test_status": "untested",
-        "computability": "A"
+        "computability": "A",
+        "batch_20261101": {
+          "grade": "D",
+          "track": null,
+          "oos_ic_t": null,
+          "oos_excess_pct": null,
+          "n_events": null,
+          "action": null
+        }
       },
       {
         "name": "价升量缩择机做多",
@@ -228,7 +308,15 @@
         "note": "backlog",
         "strategy_spec_id": "LX16_FLAT_SLANT_CROSS",
         "spec_test_status": "untested",
-        "computability": "C"
+        "computability": "C",
+        "batch_20261101": {
+          "grade": "F",
+          "track": null,
+          "oos_ic_t": null,
+          "oos_excess_pct": null,
+          "n_events": null,
+          "action": null
+        }
       },
       {
         "name": "站稳凹峰即将上攻",
@@ -237,7 +325,15 @@
         "note": "backlog",
         "strategy_spec_id": "LX17_STAND_ON_CONCAVE_PEAK",
         "spec_test_status": "untested",
-        "computability": "B"
+        "computability": "B",
+        "batch_20261101": {
+          "grade": "C",
+          "track": null,
+          "oos_ic_t": null,
+          "oos_excess_pct": null,
+          "n_events": null,
+          "action": null
+        }
       },
       {
         "name": "极阴次阳择幅建仓",
@@ -255,7 +351,15 @@
         "note": "backlog",
         "strategy_spec_id": "LX19_BULL_STOCK_VOLUME_SHAPE",
         "spec_test_status": "untested",
-        "computability": "B"
+        "computability": "B",
+        "batch_20261101": {
+          "grade": "D",
+          "track": null,
+          "oos_ic_t": null,
+          "oos_excess_pct": null,
+          "n_events": null,
+          "action": null
+        }
       },
       {
         "name": "牛股三绝",
@@ -264,7 +368,15 @@
         "note": "backlog",
         "strategy_spec_id": "LX20_BULL_STOCK_THREE_ABSOLUTES",
         "spec_test_status": "untested",
-        "computability": "A"
+        "computability": "A",
+        "batch_20261101": {
+          "grade": "D",
+          "track": null,
+          "oos_ic_t": null,
+          "oos_excess_pct": null,
+          "n_events": null,
+          "action": null
+        }
       },
       {
         "name": "十月怀胎一朝分娩",
@@ -273,7 +385,15 @@
         "note": "backlog",
         "strategy_spec_id": "LX21_TEN_MONTH_PREGNANCY",
         "spec_test_status": "untested",
-        "computability": "C"
+        "computability": "C",
+        "batch_20261101": {
+          "grade": "F",
+          "track": null,
+          "oos_ic_t": null,
+          "oos_excess_pct": null,
+          "n_events": null,
+          "action": null
+        }
       },
       {
         "name": "凹口淘金",
@@ -282,7 +402,15 @@
         "note": "backlog",
         "strategy_spec_id": "LX22_CONCAVE_NOTCH_GOLD",
         "spec_test_status": "untested",
-        "computability": "B"
+        "computability": "B",
+        "batch_20261101": {
+          "grade": "D",
+          "track": null,
+          "oos_ic_t": null,
+          "oos_excess_pct": null,
+          "n_events": null,
+          "action": null
+        }
       },
       {
         "name": "量学导火索战法",
@@ -291,7 +419,15 @@
         "note": "backlog",
         "strategy_spec_id": "LX23_FUSE_TACTICS",
         "spec_test_status": "untested",
-        "computability": "C"
+        "computability": "C",
+        "batch_20261101": {
+          "grade": "F",
+          "track": null,
+          "oos_ic_t": null,
+          "oos_excess_pct": null,
+          "n_events": null,
+          "action": null
+        }
       },
       {
         "name": "涨停基因（单个/组合）",
@@ -307,6 +443,57 @@
     "spec_dir": "research/strategy_specs/",
     "spec_loader": "tools/research/strategy_specs.py",
     "spec_mapped": 24,
-    "spec_unmapped": []
+    "spec_unmapped": [],
+    "batch_test": {
+      "report": "research/reports/book_batch_test_20261101.md",
+      "date": "2026-11-01",
+      "tested": 17,
+      "mapped": 17,
+      "grade_counts": {
+        "A": 0,
+        "B": 0,
+        "C": 2,
+        "D": 11,
+        "F": 4
+      },
+      "note": "A=正向显著/B=方向对不显著/C=方向未定/D=反向/F=不可计算；A/B 档为 0"
+    }
+  },
+  "factor_validation_20261101": {
+    "report": "research/reports/factor_validate_20261101.md",
+    "date": "2026-11-01",
+    "factors": {
+      "low_turnover": "pass",
+      "max_ret20": "fail",
+      "vol20": "fail",
+      "rev5": "fail",
+      "mom20": "fail"
+    },
+    "net_verdicts": {
+      "low_turnover": "fail",
+      "max_ret20": "fail",
+      "vol20": "fail",
+      "rev5": "fail",
+      "mom20": "fail"
+    },
+    "note": "毛口径=剥离市值/行业后 alpha 存在性；净口径=30bp×周频成本后可交易性。low_turnover 毛 PASS/净 FAIL（成本硬约束）。"
+  },
+  "report_panel_20261101": {
+    "report": "research/reports/report_panel_20261101.md",
+    "date": "2026-11-01",
+    "reports_reviewed": 5,
+    "candidates": 5,
+    "model": "qwen3.5:9b",
+    "llm": {
+      "endpoint": "http://127.0.0.1:11434/api/chat",
+      "think": false,
+      "timeout_seconds": 150.0,
+      "deadline_seconds": 420.0,
+      "roles_total": 15,
+      "llm_ok_roles": 15,
+      "rule_fallback_roles": 0,
+      "rule_only": false
+    },
+    "note": "9b 模型偏乐观（5/5 进候选），仅作初筛候选；页码漂移需人工抽查，不得直接交易。"
   }
 }
