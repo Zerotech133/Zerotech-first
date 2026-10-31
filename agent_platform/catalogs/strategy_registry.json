@@ -45,7 +45,7 @@
       "status": "validated_event_ambiguous_direction",
       "executable": true,
       "rule": "同一 code+报告期 二次公告：净利润变动区间中值相对首次公告的变化（改善/恶化）；近90日修订事件列出观察清单（不作为买入信号）",
-      "validation": {"stats": "backtested（H18：修订事件 493；改善/恶化两组 20 日均负 → 方向待确认）", "shadow": "无", "cost": "事件型，换手低"},
+      "validation": {"stats": "backtested（H18 v2：493 修订事件/1,361 观测；20日 CAR 改善 -1.51%(t=-1.27) 恶化 -2.35%(t=-3.23)；OOS 改善 -2.92%(t=-2.0) 恶化 -3.04%(t=-3.06)；价差+0.84% 不显著 → 仅事件提醒）", "shadow": "无", "cost": "事件型换手低，30bp 已计；容量极小（493 事件/3.8年）"},
       "approved": false,
       "effective_from": "2026-11-01"
     },

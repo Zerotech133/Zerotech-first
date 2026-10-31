@@ -9,7 +9,7 @@
   "discipline": "策略上架需通过数据/PIT、统计、成本容量、影子盘、人工批准五关；未过影子盘仅供研究"
  },
  "date": "20261030",
- "generated_at": "2026-11-01T00:44:17+08:00",
+ "generated_at": "2026-11-01T00:58:50+08:00",
  "strategies": [
   {
    "id": "S01_H14_quality_trap_guard",
@@ -55,9 +55,9 @@
    "executable": true,
    "rule": "同一 code+报告期 二次公告：净利润变动区间中值相对首次公告的变化（改善/恶化）；近90日修订事件列出观察清单（不作为买入信号）",
    "validation": {
-    "stats": "backtested（H18：修订事件 493；改善/恶化两组 20 日均负 → 方向待确认）",
+    "stats": "backtested（H18 v2：493 修订事件/1,361 观测；20日 CAR 改善 -1.51%(t=-1.27) 恶化 -2.35%(t=-3.23)；OOS 改善 -2.92%(t=-2.0) 恶化 -3.04%(t=-3.06)；价差+0.84% 不显著 → 仅事件提醒）",
     "shadow": "无",
-    "cost": "事件型，换手低"
+    "cost": "事件型换手低，30bp 已计；容量极小（493 事件/3.8年）"
    },
    "approved": false,
    "effective_from": "2026-11-01"
@@ -91,10 +91,11 @@
     "limitup": 60,
     "missing": 1718,
     "loss": 1478,
+    "extreme": 7,
     "input": 5571,
-    "eligible_before_h14": 2770,
+    "eligible_before_h14": 2768,
     "h14_trap_excluded": 185,
-    "eligible_after_h14": 2585
+    "eligible_after_h14": 2583
    }
   },
   "S02_composite_mvp": {
@@ -105,7 +106,7 @@
     "low_turnover": 0.2,
     "quality_mid": 0.1
    },
-   "candidates": 2585
+   "candidates": 2583
   },
   "S03_H18_forecast_revision_watch": {
    "status": "已运行（事件观察）",
@@ -116,22 +117,6 @@
   }
  },
  "picks": [
-  {
-   "ts_code": "002242.SZ",
-   "name": "九阳股份",
-   "industry": "家用电器",
-   "close": 22.14,
-   "pct_chg": -3.74,
-   "pe_ttm": 255.77,
-   "roe": 2.163,
-   "ret20": 1.3578,
-   "ret5": 0.0283,
-   "turnover_rate": 13.65,
-   "pe_bucket": "高估值",
-   "roe_pct_in_pe": 0.418,
-   "score": 3.5537,
-   "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +135.8%；5d +2.8%；换手 13.6%；高估值"
-  },
   {
    "ts_code": "600825.SH",
    "name": "新华传媒",
@@ -145,24 +130,8 @@
    "turnover_rate": 0.88,
    "pe_bucket": "高估值",
    "roe_pct_in_pe": 0.115,
-   "score": 2.7402,
+   "score": 2.82,
    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +71.9%；5d -12.0%；换手 0.9%；高估值"
-  },
-  {
-   "ts_code": "002724.SZ",
-   "name": "海洋王",
-   "industry": "元器件",
-   "close": 14.72,
-   "pct_chg": 8.71,
-   "pe_ttm": 96.31,
-   "roe": 2.271,
-   "ret20": 1.0388,
-   "ret5": 0.1938,
-   "turnover_rate": 22.85,
-   "pe_bucket": "高估值",
-   "roe_pct_in_pe": 0.441,
-   "score": 1.5383,
-   "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +103.9%；5d +19.4%；换手 22.9%；高估值"
   },
   {
    "ts_code": "688018.SH",
@@ -177,7 +146,7 @@
    "turnover_rate": 3.68,
    "pe_bucket": "中估值",
    "roe_pct_in_pe": 0.886,
-   "score": 1.0999,
+   "score": 1.1202,
    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +10.9%；5d -14.7%；换手 3.7%；中估值"
   },
   {
@@ -193,7 +162,7 @@
    "turnover_rate": 1.29,
    "pe_bucket": "中估值",
    "roe_pct_in_pe": 0.928,
-   "score": 1.074,
+   "score": 1.1126,
    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +29.6%；5d +9.2%；换手 1.3%；中估值"
   },
   {
@@ -209,7 +178,7 @@
    "turnover_rate": 13.15,
    "pe_bucket": "高估值",
    "roe_pct_in_pe": 0.244,
-   "score": 1.023,
+   "score": 1.0633,
    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +36.7%；5d -12.9%；换手 13.2%；高估值"
   },
   {
@@ -225,7 +194,7 @@
    "turnover_rate": 3.09,
    "pe_bucket": "中估值",
    "roe_pct_in_pe": 0.95,
-   "score": 1.0071,
+   "score": 1.0264,
    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +9.7%；5d -11.1%；换手 3.1%；中估值"
   },
   {
@@ -240,8 +209,8 @@
    "ret5": -0.0145,
    "turnover_rate": 5.84,
    "pe_bucket": "高估值",
-   "roe_pct_in_pe": 0.546,
-   "score": 0.9906,
+   "roe_pct_in_pe": 0.544,
+   "score": 1.0263,
    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +29.4%；5d -1.4%；换手 5.8%；高估值"
   },
   {
@@ -257,24 +226,8 @@
    "turnover_rate": 1.03,
    "pe_bucket": "中估值",
    "roe_pct_in_pe": 0.953,
-   "score": 0.9602,
+   "score": 0.9882,
    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +18.1%；5d +2.5%；换手 1.0%；中估值"
-  },
-  {
-   "ts_code": "600329.SH",
-   "name": "达仁堂",
-   "industry": "中成药",
-   "close": 40.3,
-   "pct_chg": 0.8,
-   "pe_ttm": 36.59,
-   "roe": 9.889,
-   "ret20": 0.1472,
-   "ret5": -0.019,
-   "turnover_rate": 1.04,
-   "pe_bucket": "中估值",
-   "roe_pct_in_pe": 0.81,
-   "score": 0.9431,
-   "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +14.7%；5d -1.9%；换手 1.0%；中估值"
   },
   {
    "ts_code": "601857.SH",
@@ -289,8 +242,24 @@
    "turnover_rate": 0.1,
    "pe_bucket": "低估值",
    "roe_pct_in_pe": 0.583,
-   "score": 0.9426,
+   "score": 0.9786,
    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +26.4%；5d +8.5%；换手 0.1%；低估值"
+  },
+  {
+   "ts_code": "600329.SH",
+   "name": "达仁堂",
+   "industry": "中成药",
+   "close": 40.3,
+   "pct_chg": 0.8,
+   "pe_ttm": 36.59,
+   "roe": 9.889,
+   "ret20": 0.1472,
+   "ret5": -0.019,
+   "turnover_rate": 1.04,
+   "pe_bucket": "中估值",
+   "roe_pct_in_pe": 0.81,
+   "score": 0.9679,
+   "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +14.7%；5d -1.9%；换手 1.0%；中估值"
   },
   {
    "ts_code": "600573.SH",
@@ -304,8 +273,8 @@
    "ret5": -0.0595,
    "turnover_rate": 4.7,
    "pe_bucket": "中估值",
-   "roe_pct_in_pe": 0.724,
-   "score": 0.9375,
+   "roe_pct_in_pe": 0.723,
+   "score": 0.9643,
    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +18.6%；5d -5.9%；换手 4.7%；中估值"
   },
   {
@@ -321,8 +290,24 @@
    "turnover_rate": 3.56,
    "pe_bucket": "低估值",
    "roe_pct_in_pe": 0.753,
-   "score": 0.9255,
+   "score": 0.9478,
    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +13.3%；5d -8.2%；换手 3.6%；低估值"
+  },
+  {
+   "ts_code": "603939.SH",
+   "name": "益丰药房",
+   "industry": "医药商业",
+   "close": 26.46,
+   "pct_chg": 5.0,
+   "pe_ttm": 17.76,
+   "roe": 11.514,
+   "ret20": 0.2142,
+   "ret5": 0.0434,
+   "turnover_rate": 1.54,
+   "pe_bucket": "低估值",
+   "roe_pct_in_pe": 0.702,
+   "score": 0.9123,
+   "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +21.4%；5d +4.3%；换手 1.5%；低估值"
   },
   {
    "ts_code": "688213.SH",
@@ -337,24 +322,8 @@
    "turnover_rate": 2.32,
    "pe_bucket": "中估值",
    "roe_pct_in_pe": 0.882,
-   "score": 0.8736,
+   "score": 0.8864,
    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +2.5%；5d -13.1%；换手 2.3%；中估值"
-  },
-  {
-   "ts_code": "603939.SH",
-   "name": "益丰药房",
-   "industry": "医药商业",
-   "close": 26.46,
-   "pct_chg": 5.0,
-   "pe_ttm": 17.76,
-   "roe": 11.514,
-   "ret20": 0.1984,
-   "ret5": 0.0434,
-   "turnover_rate": 1.54,
-   "pe_bucket": "低估值",
-   "roe_pct_in_pe": 0.702,
-   "score": 0.8339,
-   "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +19.8%；5d +4.3%；换手 1.5%；低估值"
   },
   {
    "ts_code": "301101.SZ",
@@ -369,7 +338,7 @@
    "turnover_rate": 2.89,
    "pe_bucket": "中估值",
    "roe_pct_in_pe": 0.805,
-   "score": 0.828,
+   "score": 0.8472,
    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +9.8%；5d -6.6%；换手 2.9%；中估值"
   },
   {
@@ -385,7 +354,7 @@
    "turnover_rate": 1.01,
    "pe_bucket": "低估值",
    "roe_pct_in_pe": 0.803,
-   "score": 0.8172,
+   "score": 0.8379,
    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +10.4%；5d -2.0%；换手 1.0%；低估值"
   },
   {
@@ -401,7 +370,7 @@
    "turnover_rate": 1.48,
    "pe_bucket": "中估值",
    "roe_pct_in_pe": 0.986,
-   "score": 0.805,
+   "score": 0.8277,
    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +12.9%；5d +1.9%；换手 1.5%；中估值"
   },
   {
@@ -417,8 +386,24 @@
    "turnover_rate": 2.72,
    "pe_bucket": "高估值",
    "roe_pct_in_pe": 0.158,
-   "score": 0.7978,
+   "score": 0.8267,
    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +19.8%；5d -3.1%；换手 2.7%；高估值"
+  },
+  {
+   "ts_code": "600312.SH",
+   "name": "平高电气",
+   "industry": "电气设备",
+   "close": 20.54,
+   "pct_chg": 1.53,
+   "pe_ttm": 20.36,
+   "roe": 10.613,
+   "ret20": 0.0976,
+   "ret5": -0.0447,
+   "turnover_rate": 1.5,
+   "pe_bucket": "低估值",
+   "roe_pct_in_pe": 0.65,
+   "score": 0.8081,
+   "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +9.8%；5d -4.5%；换手 1.5%；低估值"
   },
   {
    "ts_code": "302132.SZ",
@@ -432,9 +417,25 @@
    "ret5": -0.0554,
    "turnover_rate": 1.48,
    "pe_bucket": "高估值",
-   "roe_pct_in_pe": 0.687,
-   "score": 0.7903,
+   "roe_pct_in_pe": 0.685,
+   "score": 0.808,
    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +8.2%；5d -5.5%；换手 1.5%；高估值"
+  },
+  {
+   "ts_code": "688360.SH",
+   "name": "德马科技",
+   "industry": "机械基件",
+   "close": 21.33,
+   "pct_chg": -6.37,
+   "pe_ttm": 60.97,
+   "roe": 5.364,
+   "ret20": 0.3006,
+   "ret5": 0.0644,
+   "turnover_rate": 7.24,
+   "pe_bucket": "高估值",
+   "roe_pct_in_pe": 0.783,
+   "score": 0.8041,
+   "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +30.1%；5d +6.4%；换手 7.2%；高估值"
   }
  ],
  "picks_validation": {
@@ -447,6 +448,12 @@
    "短期反转5d",
    "低换手",
    "ROE 层内中性（MVP 权重，未过影子盘）"
+  ],
+  "risk_guards": [
+   "ST/次新/低价/低流动性/涨停不可买",
+   "H14 质量陷阱剔除",
+   "ROE≤0 剔除",
+   "20日涨幅>80%或5日>50% 剔除（追高保护）"
   ],
   "caveat": "候选清单为研究输出，不构成投资建议；未做行业/市值中性化与成本模型；实盘前须四关+影子盘+人工批准。"
  },

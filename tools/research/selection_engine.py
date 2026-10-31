@@ -58,8 +58,17 @@ def load_universe(date: str, hist_days: int = 26) -> tuple[pd.DataFrame, dict]:
     hist_files = files[max(0, i - hist_days + 1): i + 1]
     closes = []
     for f in hist_files:
-        df = pq.read_table(f, columns=["ts_code", "trade_date", "close"]).to_pandas()
-        closes.append(df.set_index("ts_code")["close"].rename(Path(f).stem[2:]))
+        dt = Path(f).stem[2:]
+        df = pq.read_table(f, columns=["ts_code", "close"]).to_pandas()
+        # P0 复权修复：close × adj_factor（前复权口径，消除除权除息跳空）
+        adjp = DATA / "adj_factor" / f"d_{dt}.parquet"
+        if adjp.exists():
+            adj = pq.read_table(adjp, columns=["ts_code", "adj_factor"]).to_pandas()
+            df = df.merge(adj, on="ts_code", how="left")
+            df["adj_close"] = df["close"] * df["adj_factor"].fillna(1.0)
+        else:
+            df["adj_close"] = df["close"]
+        closes.append(df.set_index("ts_code")["adj_close"].rename(dt))
     px = pd.concat(closes, axis=1)
     px = px[~px.index.duplicated()]
 
@@ -102,6 +111,7 @@ def build(date: str, top: int) -> dict:
         "limitup": u["pct_chg"].fillna(0) >= 9.5,
         "missing": u["pe_ttm"].isna() | u["roe"].isna() | (u["pe_ttm"] <= 0) | u["ret20"].isna(),
         "loss": u["roe"] <= 0,  # 风险控制：剔除亏损股
+        "extreme": (u["ret20"] > 0.8) | (u["ret5"] > 0.5),  # 风险控制：剔除 20日>80% / 5日>50% 的极端动量（追高风险）
     }
     u["_eligible"] = ~pd.concat(drops.values(), axis=1).any(axis=1)
     e = u[u["_eligible"]].copy()
@@ -152,6 +162,7 @@ def build(date: str, top: int) -> dict:
         "validation": {
             "validated": ["可交易性过滤（工程常规）", "H14 质量陷阱规避（台账 H14 backtested）"],
             "unvalidated": ["动量20d", "短期反转5d", "低换手", "ROE 层内中性（MVP 权重，未过影子盘）"],
+            "risk_guards": ["ST/次新/低价/低流动性/涨停不可买", "H14 质量陷阱剔除", "ROE≤0 剔除", "20日涨幅>80%或5日>50% 剔除（追高保护）"],
             "caveat": "候选清单为研究输出，不构成投资建议；未做行业/市值中性化与成本模型；实盘前须四关+影子盘+人工批准。",
         },
         "disclaimer": "研究用途，禁止直接实盘。",
