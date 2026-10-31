@@ -16,7 +16,10 @@ def test_docs_only_true_for_docs_files():
 
 
 def test_docs_only_true_for_frontend_assets():
-    assert is_docs_only(["portal/static/nav.js", "portal/static/tokens.css"])
+    # A9（2026-10-31）：html/css 属纯静态资产可跳过；.js 是前端代码，不得免测
+    assert is_docs_only(["portal/static/tokens.css", "portal/static/index.html"])
+    assert not is_docs_only(["portal/static/nav.js"])
+    assert not is_docs_only(["portal/static/tokens.css", "portal/static/nav.js"])
 
 
 def test_docs_only_false_for_py():

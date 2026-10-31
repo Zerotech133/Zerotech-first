@@ -1863,6 +1863,15 @@ def _quality_gate(tid):
         return False, "改动文件计算异常：%r" % exc
     if _mg.is_docs_only(files):
         return True, "纯文档/配置变更（跳过测试）"
+    # 2026-10-31 H5-a（K-ORG-20261031-MERGEGATE，审计 v2）：gate/baseline master 钉扎。
+    # 分支不得改 quality gate 脚本（改动即拒）；baseline 仅允许 ratchet（只减 known）。
+    try:
+        pin_ok, pin_detail = _mg.gate_pin_check(tid)
+    except Exception as exc:  # noqa: BLE001 —— 钉扎异常按拒绝（fail-visible）
+        return False, "H5 钉扎校验异常：%r" % exc
+    if not pin_ok:
+        return False, pin_detail
+    print("  质量闸   … %s" % pin_detail)
     gate_script = _gate_script_for(tid)
     if not gate_script:
         return False, "任务 worktree 不可用（缺 tools/test_gate.ps1），拒绝在 master 上跑分支级闸"
@@ -1893,10 +1902,19 @@ def _quality_gate(tid):
             tail = ((p.stdout or "") + (p.stderr or "")).strip().splitlines()[-6:]
             return False, "变更的 tools 测试未过 rc=%d：%s" % (
                 p.returncode, " | ".join(tail)[:300])
-    # 2026-10-30 P41：通知 pre-merge-commit 钩子跳过重复测试（此前内外各跑一遍，
-    # 每单白等 ~5 分钟）。必须只在真跑过且全过后置位；钩子侧仅认该变量。
-    os.environ["DEVTOOL_PREFLIGHT_DONE"] = "1"
-    return True, "fast 门通过（%d 文件，钩子将跳过重复测试）" % len(files)
+    # 2026-10-30 P41 / 2026-10-31 H5-b：通知 pre-merge-commit 钩子跳过重复测试——
+    # 不再设裸 env（可被伪造跳过）；改为写 TID+HEAD 绑定的一次性 token，钩子校验后删除。
+    try:
+        import merge_preflight as _mp
+        head = subprocess.run(
+            ["git", "-C", REPO, "rev-parse", "refs/heads/task/%s" % tid],
+            capture_output=True, text=True, encoding="utf-8",
+            errors="replace").stdout.strip()
+        tok = _mp.write_preflight_token(tid, head)
+        print("  质量闸   … H5 preflight token 已写：%s（钩子校验后删除）" % tok)
+    except Exception as exc:  # noqa: BLE001 —— token 失败=钩子重跑测试（安全，不阻断合并）
+        print("  质量闸   ⚠ H5 token 写入失败（钩子将重跑测试）：%s" % str(exc)[:160])
+    return True, "fast 门通过（%d 文件；钩子凭一次性 token 跳过重复测试）" % len(files)
 
 
 _MERGE_TIMINGS = []

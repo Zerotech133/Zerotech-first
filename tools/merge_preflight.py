@@ -11,6 +11,12 @@
   DEVTOOL_MERGE_GATE=0  → 显式跳过（回滚/紧急，须在回单注明"绕过质量闸"）
   DEVTOOL_MERGE_SUITE   → 覆盖套件（默认 fast）
 
+2026-10-31 H5-b/A9（K-ORG-20261031-MERGEGATE，审计 v2）：
+  - 不再认裸 `DEVTOOL_PREFLIGHT_DONE=1`（env 可被分支/包装器伪造跳过质量闸）；
+    只认 devtask 质量闸**真跑通过**后写入的一次性 token 文件（TID+HEAD 绑定，
+    校验 MERGE_HEAD、TTL，用后即删）；
+  - A9 `docs_only` 去掉 `.js`：`portal/static/*.js` 属前端代码，必须跑测试。
+
 退出码：0=放行，1=拒绝合并，2=预检自身异常（按拒绝处理）。
 """
 from __future__ import annotations
@@ -20,17 +26,102 @@ import os
 import subprocess
 import sys
 import time
+import uuid
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
 TMP = Path(os.environ.get("TEMP", r"C:\Temp"))
-DOC_SUFFIX = (".md", ".json", ".yaml", ".yml", ".txt", ".tsv", ".csv", ".html", ".css", ".js")
+# A9（2026-10-31）：.js 不再按文档免测；html/css 保留为纯静态资产
+DOC_SUFFIX = (".md", ".json", ".yaml", ".yml", ".txt", ".tsv", ".csv", ".html", ".css")
 DOC_PREFIX = ("docs/", "deliverables/", "portal/static/", "agent_platform/skills/")
 DEPS_FILES = ("uv.lock", "pyproject.toml")
 DEPS_PREFIX = ("requirements/",)
 DEP_AGE_HINT_LIMIT = 40
 DEP_AGE_HINT_TIMEOUT = 120
+
+# H5-b（2026-10-31）：一次性 preflight token（devtask 写、钩子校验后删）
+PREFLIGHT_TOKEN_DIR = TMP / "devtool_preflight"
+PREFLIGHT_TOKEN_TTL_S = 900
+
+
+def _token_dir(token_dir=None) -> Path:
+    return Path(token_dir) if token_dir else PREFLIGHT_TOKEN_DIR
+
+
+def _token_path(head: str, token_dir=None) -> Path:
+    return _token_dir(token_dir) / ("%s.json" % str(head or "").strip()[:16])
+
+
+def _cleanup_tokens(token_dir=None, now=None) -> None:
+    d = _token_dir(token_dir)
+    if not d.is_dir():
+        return
+    now = time.time() if now is None else now
+    for p in d.glob("*.json"):
+        try:
+            if now - p.stat().st_mtime > PREFLIGHT_TOKEN_TTL_S * 4:
+                p.unlink()
+        except OSError:
+            continue
+
+
+def write_preflight_token(tid: str, head: str, token_dir=None) -> str:
+    """devtask 质量闸真跑通过后写一次性 token（TID+HEAD 绑定，原子写）。"""
+    head = str(head or "").strip()
+    if not head:
+        raise ValueError("预检 token 需要非空 HEAD")
+    d = _token_dir(token_dir)
+    d.mkdir(parents=True, exist_ok=True)
+    _cleanup_tokens(token_dir)
+    payload = {"schema": "devtool_preflight_token/v1", "tid": str(tid or ""),
+               "head": head, "ts": time.time(), "nonce": uuid.uuid4().hex}
+    path = _token_path(head, token_dir)
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    os.replace(tmp, path)
+    return str(path)
+
+
+def consume_preflight_token(head: str, token_dir=None,
+                            ttl: int = PREFLIGHT_TOKEN_TTL_S):
+    """校验并删除一次性 token → (ok, detail)。**不读任何裸 env**。"""
+    path = _token_path(head, token_dir)
+    if not path.is_file():
+        return False, "无 token 文件（%s）" % path
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        try:
+            path.unlink()
+        except OSError:
+            pass
+        return False, "token 解析失败（%s: %s）" % (type(exc).__name__, exc)
+    tok_head = str(payload.get("head") or "")
+    try:
+        age = time.time() - float(payload.get("ts") or 0)
+    except (TypeError, ValueError):
+        age = 1e9
+    head_s = str(head or "").strip()
+    if not tok_head or not head_s or tok_head[:16] != head_s[:16]:
+        try:
+            path.unlink()
+        except OSError:
+            pass
+        return False, "token HEAD 不匹配（token=%s / merge=%s）" % (
+            tok_head[:16] or "?", head_s[:16] or "?")
+    if age > ttl or age < -60:
+        try:
+            path.unlink()
+        except OSError:
+            pass
+        return False, "token 已过期/时钟异常（age=%.0fs，ttl=%ss）" % (age, ttl)
+    try:
+        path.unlink()
+    except OSError as exc:
+        return False, "token 删除失败（%s）→ 保守重跑测试" % exc
+    return True, "预检 token 命中 tid=%s head=%s（一次性，已删除）" % (
+        payload.get("tid") or "?", tok_head[:12])
 
 
 def changed_files() -> list[str]:
@@ -107,10 +198,6 @@ def main() -> int:
             return 1
     except Exception as exc:  # noqa: BLE001
         print("preflight: core.bare 守卫不可用（跳过）：%s" % exc)
-    # 2026-10-30 P41：devtask 内联质量闸已真跑并通过（同一进程链），跳过重复测试。
-    if os.environ.get("DEVTOOL_PREFLIGHT_DONE") == "1":
-        print("preflight: 内联质量闸已跑（跳过重复测试）")
-        return 0
     # 2026-10-29 合并串行锁：直连 git merge 的 hook 也需持锁（父进程已持锁则复用）
     if not os.environ.get("AIOS_MERGE_LOCK_TOKEN"):
         try:
@@ -131,6 +218,23 @@ def main() -> int:
     if os.environ.get("DEVTOOL_MERGE_GATE") == "0":
         print("[merge-gate] DEVTOOL_MERGE_GATE=0 → 显式跳过（回滚/紧急）")
         return 0
+    # 2026-10-31 H5-b：只认 devtask 质量闸真跑通过后写的一次性 token
+    # （TID+HEAD 绑定、TTL、用后即删）；裸 env DEVTOOL_PREFLIGHT_DONE 不再有跳过效果。
+    try:
+        _mh = subprocess.run(
+            ["git", "-C", str(REPO), "rev-parse", "MERGE_HEAD"],
+            capture_output=True, text=True, encoding="utf-8",
+            errors="replace").stdout.strip()
+    except Exception as exc:  # noqa: BLE001
+        _mh = ""
+        print("[merge-gate] MERGE_HEAD 读取异常：%s（将正常跑测试）" % exc)
+    if _mh:
+        _tok_ok, _tok_detail = consume_preflight_token(_mh)
+        if _tok_ok:
+            print("[merge-gate] %s → 跳过重复测试" % _tok_detail)
+            return 0
+        print("[merge-gate] 预检 token 未命中（HEAD=%s，%s）→ 正常跑测试门"
+              % (_mh[:12], _tok_detail))
     suite = os.environ.get("DEVTOOL_MERGE_SUITE", "fast")
     try:
         files = changed_files()
