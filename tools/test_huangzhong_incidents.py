@@ -123,11 +123,15 @@ def test_add_only_writes_ledger_file(tmp_path):
 
 def test_drill_refused_in_production_ledger(tmp_path, monkeypatch):
     monkeypatch.delenv("HUANGZHONG_WORK_DIR", raising=False)
+    ledger = hi.DEFAULT_WORK_DIR / "incidents.jsonl"
+    before = ledger.read_bytes() if ledger.exists() else None
     rep = hi.add_record("2026-10-30T10:00:00+08:00", "", "drill", "演练：模拟事故",
                         work_dir=None, now=NOW)
     assert rep["ok"] is False
     assert rep["error"] == "drill_not_allowed_in_production_ledger"
-    assert not (hi.DEFAULT_WORK_DIR / "incidents.jsonl").exists()
+    # 生产台账可能已建立（空台账正常存在）：只断言「未被本次演练写入」
+    after = ledger.read_bytes() if ledger.exists() else None
+    assert after == before
 
 
 def test_drill_allowed_in_temp_workdir(tmp_path):
