@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""黄忠变更影响面验证工具（P0-2，2026-10-31，**只读**）。
+"""黄忠变更影响面验证工具（P0-2 / P1-D，2026-10-31，**只读**）。
 
 按 commit 改动文件映射影响面测试，可选执行，输出 JSON/MD 与 PASS/REJECT/OBSERVE
 **建议**（工具只出建议，不改验收 verdict、不改 accept/review 语义）。供黄忠 2.0
@@ -9,13 +9,21 @@
   1) 解析 commit（git rev-parse），取第一父 + 标题（merge commit 用第一父做 diff）；
   2) `git diff --name-only <第一父> <sha>` 取改动文件；失败/根提交 → 数据错误 fail-visible；
   3) 文件分类：tools/ portal/ agent_platform/ quant_backtest/ docs/ other；
-  4) 确定性映射（只映射**存在**的文件）：
-       · 改动文件本身是测试文件（test_*.py / *_test.py）→ 映射自身；
-       · tools/foo_bar.py → tools/test_foo_bar.py；兼容 tools/tests/ 下
-         test_foo_bar*.py / test_*foo_bar*.py 布局；
-       · agent_platform/x.py → agent_platform/tests/**/test_x*.py 及 test_*x*.py；
-       · portal/x.py → portal/tests/**/test_x*.py 及 test_*x*.py（兼容 portal/test_x*.py）；
-       · docs/**、quant_backtest/**、other → 无测试映射（计入 unmapped）；
+  4) 确定性映射（两层；只映射**存在**的文件；原目录内规则优先）：
+       第 1 层 same_dir（原目录内规则）：
+         · 改动文件本身是测试文件（test_*.py / *_test.py）→ 映射自身；
+         · tools/foo_bar.py → tools/test_foo_bar.py；兼容 tools/tests/ 下
+           test_foo_bar*.py / test_*foo_bar*.py 布局；
+         · agent_platform/x.py → agent_platform/tests/**/test_x*.py 及 test_*x*.py；
+         · portal/x.py → portal/tests/**/test_x*.py 及 test_*x*.py（兼容 portal/test_x*.py）；
+       第 2 层 cross_dir（全仓精确同名，仅第 1 层无命中时生效；stem 完全一致、不做模糊）：
+         · agent_platform/tests/**/test_<stem>.py
+         · tools/tests/test_<stem>.py
+         · portal/tests/test_<stem>.py
+         · quant_backtest/**/tests/test_<stem>.py（真实量化测试多在子目录 tests/）
+         · tests/**/test_<stem>.py（仓库根 tests/）
+       · docs/** 与非 .py 文件无映射（计入 unmapped）；来源记入 mapping_source
+         （same_dir / cross_dir / none），顶层输出 cross_dir_count 与 source 计数；
   5) risk_level：docs→low；tools/portal/agent_platform→medium；关键词（data/security/
      auth/secret/token/migration/schema/sql/database 等，按路径 token 匹配）或
      高影响目录（quant_backtest）→high；其他目录保守 medium；取最高；
@@ -56,6 +64,15 @@ HIGH_KEYWORDS = {
 }
 HIGH_DIRS = ("quant_backtest",)
 MEDIUM_DIRS = ("tools", "portal", "agent_platform")
+# 第 2 层跨目录映射：全仓精确同名 test_<stem>.py（stem 完全一致，不做模糊）
+CROSS_DIR_GLOBS = (
+    "agent_platform/tests/**/test_{stem}.py",
+    "tools/tests/test_{stem}.py",
+    "portal/tests/test_{stem}.py",
+    "quant_backtest/**/tests/test_{stem}.py",  # 真实量化测试多在子目录 tests/
+    "tests/**/test_{stem}.py",                 # 仓库根 tests/
+)
+MAPPING_SOURCES = ("same_dir", "cross_dir", "none")
 
 
 # ------------------------------------------------------------------ 基础工具
@@ -158,15 +175,25 @@ def _glob_tests(tdir: Path, stem: str) -> list[Path]:
     return out
 
 
-def _map_tests(path: str, repo_root: Path) -> list[str]:
-    """确定性映射：返回存在的影响面测试相对路径（排序去重；空=unmapped）。"""
+def _existing_tests(repo_root: Path, cands: list[Path]) -> list[str]:
+    """候选过滤为存在文件（相对路径，排序去重）——不映射不存在的文件。"""
+    seen: set[str] = set()
+    out: list[str] = []
+    for c in cands:
+        if c.is_file():
+            rel = _rel(repo_root, c)
+            if rel not in seen:
+                seen.add(rel)
+                out.append(rel)
+    return sorted(out)
+
+
+def _primary_candidates(path: str, repo_root: Path) -> list[Path]:
+    """第 1 层（原目录内规则）候选：改动文件同目录/既有命名习惯。"""
     p = path.replace("\\", "/")
     name = p.split("/")[-1]
-    if not name.endswith(".py"):
-        return []
     if _is_test_name(name):  # 改动测试文件本身 → 自身即影响面
-        cand = repo_root / p
-        return [p] if cand.is_file() else []
+        return [repo_root / p]
     top = p.split("/", 1)[0]
     stem = name[:-3]
     cands: list[Path] = []
@@ -178,15 +205,41 @@ def _map_tests(path: str, repo_root: Path) -> list[str]:
     elif top == "portal":
         cands += _glob_tests(repo_root / "portal" / "tests", stem)
         cands += _glob_tests(repo_root / "portal", stem)  # 兼容 portal/test_*.py 旧布局
-    seen: set[str] = set()
-    out: list[str] = []
-    for c in cands:
-        if c.is_file():
-            rel = _rel(repo_root, c)
-            if rel not in seen:
-                seen.add(rel)
-                out.append(rel)
-    return sorted(out)
+    return cands
+
+
+def _cross_dir_candidates(path: str, repo_root: Path) -> list[Path]:
+    """第 2 层（跨目录）候选：全仓精确同名 test_<stem>.py（stem 完全一致）。"""
+    p = path.replace("\\", "/")
+    name = p.split("/")[-1]
+    if not name.endswith(".py") or _is_test_name(name):
+        return []
+    stem = name[:-3]
+    out: list[Path] = []
+    for pattern in CROSS_DIR_GLOBS:
+        out += list(repo_root.glob(pattern.format(stem=stem)))
+    return out
+
+
+def _map_tests(path: str, repo_root: Path) -> tuple[list[str], str]:
+    """两层确定性映射：原目录内规则优先 → 全仓精确同名 → none。
+
+    返回 (存在的影响面测试相对路径列表, mapping_source)：
+      same_dir：第 1 层命中（原目录内规则，含改动测试文件自身）；
+      cross_dir：第 1 层无命中、第 2 层全仓精确同名命中（可多目录全部列出）；
+      none：均无命中（该文件计入 unmapped）。
+    """
+    p = path.replace("\\", "/")
+    name = p.split("/")[-1]
+    if not name.endswith(".py"):
+        return [], "none"
+    same = _existing_tests(repo_root, _primary_candidates(p, repo_root))
+    if same:  # 原目录内规则优先：命中后不再叠加跨目录（避免噪声）
+        return same, "same_dir"
+    cross = _existing_tests(repo_root, _cross_dir_candidates(p, repo_root))
+    if cross:
+        return cross, "cross_dir"
+    return [], "none"
 
 
 # ------------------------------------------------------------------ 判定建议
@@ -234,7 +287,7 @@ def _suggest(run_flag: bool, run_summary: dict, impacted: list[str],
 def _build_md(rep: dict) -> str:
     c = rep.get("commit") or {}
     lines = [
-        "# 黄忠变更影响面验证报告（P0-2）", "",
+        "# 黄忠变更影响面验证报告（P0-2 / P1-D）", "",
         "- 生成时间：%s" % rep["generated_at"],
         "- Commit：`%s` %s" % (c.get("sha", "?")[:12], c.get("subject") or ""),
         "- merge commit：%s（父提交：%s）"
@@ -244,6 +297,9 @@ def _build_md(rep: dict) -> str:
         % (rep["changed_count"],
            json.dumps(rep["class_counts"], ensure_ascii=False)),
         "- 影响面测试（映射后存在）：%d" % len(rep["impacted_tests"]),
+        "- 跨目录映射（cross_dir）：%d；映射来源计数：%s"
+        % (rep.get("cross_dir_count", 0),
+           json.dumps(rep.get("mapping_source_counts") or {}, ensure_ascii=False)),
         "- 未映射文件：%d（占比 %s）"
         % (len(rep["unmapped_files"]), _pct(rep["unmapped_ratio"])),
         "- 风险等级：**%s**" % rep["risk_level"],
@@ -251,13 +307,15 @@ def _build_md(rep: dict) -> str:
         "- 决策建议：**%s**（工具只出建议，不改 verdict）" % rep["suggestion"],
         "",
         "## 改动文件与映射", "",
-        "| 文件 | 分类 | 影响面测试 | 风险 |",
-        "|---|---|---|---|",
+        "| 文件 | 分类 | 映射来源 | 影响面测试 | 风险 |",
+        "|---|---|---|---|---|",
     ]
     for m in rep["mapping"]:
         lv, _why = _risk_of(m["file"])
-        lines.append("| %s | %s | %s | %s |"
-                     % (m["file"], m["class"], ", ".join(m["tests"]) or "-", lv))
+        lines.append("| %s | %s | %s | %s | %s |"
+                     % (m["file"], m["class"],
+                        m.get("mapping_source", "-"),
+                        ", ".join(m["tests"]) or "-", lv))
     lines += ["", "## 未映射文件（无对应测试，逐条列出）", ""]
     lines += (["- `%s`" % f for f in rep["unmapped_files"]] or ["无"])
     lines += ["", "## 风险说明", ""]
@@ -276,6 +334,14 @@ def _build_md(rep: dict) -> str:
         lines.append("未执行（默认仅映射；加 `--run` 实测）")
     lines += ["", "## 决策建议理由", ""]
     lines += ["- " + x for x in rep["suggestion_reasons"]]
+    lines += [
+        "", "## 映射口径", "",
+        "- 第 1 层 same_dir：原目录内规则优先（含改动测试文件自身）；",
+        "- 第 2 层 cross_dir：全仓精确同名 `test_<stem>.py`（stem 完全一致、不做模糊；"
+        "同名多目录全部列出），仅第 1 层无命中时生效；",
+        "- 只映射存在的文件；`docs/` 与非 `.py` 文件无映射（计入 unmapped）；"
+        "`mapping_source` 标记来源，未映射文件不计入 cross_dir_count。",
+    ]
     lines += ["", "> 只读工具：不写生产 work/、不改验收单/verdict；建议仅供黄忠人工采纳。", ""]
     return "\n".join(lines)
 
@@ -306,6 +372,8 @@ def analyze(commit: str = "HEAD", run_tests: bool = False,
         "class_counts": {k: 0 for k in CLASS_DIRS + ("other",)},
         "mapping": [], "impacted_tests": [], "unmapped_files": [],
         "unmapped_ratio": None,
+        "cross_dir_count": 0,
+        "mapping_source_counts": {s: 0 for s in MAPPING_SOURCES},
         "risk_level": "none", "risk_reasons": [],
         "run_results": [], "run_summary": {"passed": 0, "failed": 0, "error": 0},
         "suggestion": None, "suggestion_reasons": [],
@@ -360,10 +428,12 @@ def analyze(commit: str = "HEAD", run_tests: bool = False,
     mapping = []
     impacted: list[str] = []
     unmapped: list[str] = []
+    source_counts = {s: 0 for s in MAPPING_SOURCES}
     for f in files:
-        tests = _map_tests(f, repo)
+        tests, source = _map_tests(f, repo)
+        source_counts[source] += 1
         mapping.append({"file": f, "class": _classify(f), "tests": tests,
-                        "mapped": bool(tests)})
+                        "mapped": bool(tests), "mapping_source": source})
         if tests:
             for t in tests:
                 if t not in impacted:
@@ -373,6 +443,8 @@ def analyze(commit: str = "HEAD", run_tests: bool = False,
     rep["mapping"] = mapping
     rep["impacted_tests"] = sorted(impacted)
     rep["unmapped_files"] = unmapped
+    rep["mapping_source_counts"] = source_counts
+    rep["cross_dir_count"] = source_counts["cross_dir"]
     rep["unmapped_ratio"] = (round(len(unmapped) / len(files), 4) if files else None)
     # 5) 风险
     risk, risk_reasons = _risk_level(files)
@@ -427,11 +499,12 @@ def _summary_line(rep: dict) -> str:
     if not rep.get("ok"):
         return "变更影响面：数据错误 → %s" % rep.get("error", "unknown")
     c = rep.get("commit") or {}
-    return ("变更影响面：commit=%s 改动 %d（%s）｜映射测试 %d｜unmapped %d（%s）"
-            "｜risk=%s｜run=%s｜建议=%s"
+    return ("变更影响面：commit=%s 改动 %d（%s）｜映射测试 %d｜cross_dir %d"
+            "｜unmapped %d（%s）｜risk=%s｜run=%s｜建议=%s"
             % (c.get("short", "?"), rep["changed_count"],
                json.dumps(rep["class_counts"], ensure_ascii=False),
-               len(rep["impacted_tests"]), len(rep["unmapped_files"]),
+               len(rep["impacted_tests"]), rep.get("cross_dir_count", 0),
+               len(rep["unmapped_files"]),
                _pct(rep["unmapped_ratio"]), rep["risk_level"],
                "是" if rep["run"] else "否", rep["suggestion"]))
 
@@ -448,7 +521,7 @@ def _positive_int(text: str) -> int:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(
-        description="黄忠变更影响面验证工具（只读；映射/可选执行/建议，P0-2）")
+        description="黄忠变更影响面验证工具（只读；两层映射/可选执行/建议，P0-2 / P1-D）")
     ap.add_argument("--commit", default="HEAD", help="待分析 commit（sha 或 HEAD）")
     ap.add_argument("--run", action="store_true",
                     help="执行映射测试（默认只映射不跑）")
