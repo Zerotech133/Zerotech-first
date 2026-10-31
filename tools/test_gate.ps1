@@ -90,6 +90,9 @@ $paths = @{
         # 离线上线，必须进 fast gate，防止再次出现“分支绿、合并红”。
         'agent_platform/tests/test_intel_context.py',
         'agent_platform/tests/test_intel_to_n1.py',
+        # WO-INTEL-D1EVID-FIX-20261031：D1/run_shadow 的 reviewed 情报证据旁路
+        # 也放入 fast gate，锁定 off 逐字不变与 on/fallback 两态。
+        'agent_platform/tests/test_d1_intel_evidence.py',
         # W1（2026-10-31）：release/junction/live-version 信任链离线断言；
         # live 分支默认 skip（LEGION_LIVE_SMOKE=1 才跑），不拖慢门禁。
         'agent_platform/tests/test_release_live_smoke.py',

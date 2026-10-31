@@ -28,13 +28,23 @@ from pathlib import Path
 
 BASE = Path(__file__).parent
 sys.path.insert(0, str(BASE / "engine"))
+_ROOT = BASE.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
 
 from checkpoints import Checkpointer  # noqa: E402
 from idem_hook import DualTrackHook  # noqa: E402
 from interpreter import Interpreter, Team  # noqa: E402
 from llm import OllamaLLM  # noqa: E402
 from memory import MemoryStore  # noqa: E402
-from tools import make_context, quote_snapshot, kline_daily  # noqa: E402
+try:
+    # 正常运行 engine 在 sys.path 首位；混合测试套件里 `tools` 可能先被另一个
+    # namespace 包占用（tools/tests 同跑），保留显式包路径回退。
+    from tools import make_context, quote_snapshot, kline_daily  # noqa: E402
+except ImportError:
+    from agent_platform.engine.tools import (  # noqa: E402
+        make_context, quote_snapshot, kline_daily,
+    )
 from evidence_bundle import EvidenceBundle  # noqa: E402
 from evidence_raw import collect_shadow_raw_refs  # noqa: E402
 from decision_policy import apply_policy  # noqa: E402
