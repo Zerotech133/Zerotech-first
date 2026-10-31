@@ -81,3 +81,33 @@ def test_units_pagination():
     assert r.returncode == 0
     assert len(p["data"]["items"]) <= 5
     assert p["data"]["total"] >= 100
+
+def test_sources_includes_corpus():
+    r, p = run("sources")
+    assert r.returncode == 0, r.stderr
+    names = {s["name"] for s in p["data"]["sources"]}
+    assert {"书籍", "研报", "语料"} <= names
+    assert p["data"]["total_chunks"] >= 1000
+
+
+def test_corpus_get_roundtrip():
+    r, p = run("corpus-search", "--q", "trading", "--top", "1")
+    assert r.returncode == 0, r.stderr
+    items = p["data"]["items"]
+    assert items, "corpus search 无命中"
+    cid = items[0]["id"]
+    r2, p2 = run("corpus-get", "--id", cid)
+    assert r2.returncode == 0
+    assert p2["data"]["id"] == cid
+    assert p2["data"]["source"] == "语料"
+
+
+def test_http_handler_ready():
+    sys.path.insert(0, str(REPO / "portal"))
+    import api_kb_read  # noqa: PLC0415
+    status, body = api_kb_read.handle("status")
+    assert status == 200 and body["ok"] is True
+    status2, body2 = api_kb_read.handle("search", {"q": ["盈利预测"], "top": ["3"]})
+    assert status2 == 200 and body2["data"]["items"]
+    status3, body3 = api_kb_read.handle("schema")
+    assert status3 == 200 and body3["data"]["component"] == "kb_read_api"

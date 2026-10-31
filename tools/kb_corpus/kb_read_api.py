@@ -32,6 +32,7 @@ from pathlib import Path
 REPO = Path(r"C:\项目\老田的AI助手")
 ROOTS = [(Path(r"C:/项目/PDF/_ingest"), "书籍"), (Path(r"C:/项目/PDF/_ingest_reports"), "研报")]
 STATIC = REPO / "portal" / "static"
+CORPUS_RAG = Path(r"C:/项目/知识库/50_RAG/rag_index_corpus.json")
 API_VERSION = "1.0"
 
 
@@ -74,6 +75,26 @@ def load_units() -> list[dict]:
                         "claim": u.get("claim", ""), "evidence": u.get("evidence", "")}
                 item["id"] = unit_id(item)
                 out.append(item)
+    return out
+
+
+def chunk_id(rec: dict) -> str:
+    raw = f"{rec.get('source')}|{rec.get('index')}"
+    return hashlib.sha1(raw.encode()).hexdigest()[:12]
+
+
+def load_corpus() -> list[dict]:
+    if not CORPUS_RAG.exists():
+        return []
+    import json as _json
+    d = _json.loads(CORPUS_RAG.read_text(encoding="utf-8"))
+    out = []
+    for rec in d.get("records") or []:
+        src = str(rec.get("source") or "")
+        vid = Path(src).stem
+        out.append({"type": "chunk", "id": chunk_id(rec), "source": "语料", "video_id": vid,
+                    "chunk_index": rec.get("index"), "document_hash": rec.get("document_hash"),
+                    "text": str(rec.get("text") or "")})
     return out
 
 
@@ -190,6 +211,57 @@ def cmd_briefing(_):
     return envelope(json.loads(p.read_text(encoding="utf-8")))
 
 
+def cmd_sources(_):
+    units = load_units()
+    corpus = load_corpus()
+    books = sum(1 for u in units if u["source"] == "书籍")
+    reports = sum(1 for u in units if u["source"] == "研报")
+    return envelope({"sources": [
+        {"name": "书籍", "kind": "unit", "count": books, "path": str(ROOTS[0][0])},
+        {"name": "研报", "kind": "unit", "count": reports, "path": str(ROOTS[1][0])},
+        {"name": "语料", "kind": "chunk", "count": len(corpus), "path": str(CORPUS_RAG)},
+    ], "total_units": len(units), "total_chunks": len(corpus)})
+
+
+def cmd_corpus_status(_):
+    p = STATIC / "kb_corpus_gov.json"
+    gov = {}
+    if p.exists():
+        try:
+            gov = json.loads(p.read_text(encoding="utf-8"))
+        except Exception:  # noqa: BLE001
+            gov = {}
+    corpus = load_corpus()
+    return envelope({"chunks": len(corpus), "index": str(CORPUS_RAG),
+                     "gov": {k: gov.get(k) for k in ("verify", "cleaned", "backup", "index_full")}})
+
+
+def cmd_corpus_search(args):
+    q = tokenize(args.q)
+    if not q:
+        return envelope(None, err("INVALID_ARGUMENT", "q 不能为空"))
+    chunks = load_corpus()
+    scored = []
+    for c in chunks:
+        text = c["text"].lower()
+        s = sum(text.count(t) for t in q)
+        if s:
+            scored.append((s, c))
+    scored.sort(key=lambda x: -x[0])
+    top = max(1, min(args.top, 50))
+    items = []
+    for s, c in scored[:top]:
+        items.append({**c, "score": s, "snippet": c["text"][:300]})
+    return envelope({"q": args.q, "total_hits": len(scored), "items": items})
+
+
+def cmd_corpus_get(args):
+    for c in load_corpus():
+        if c["id"] == args.id:
+            return envelope(c)
+    return envelope(None, err("NOT_FOUND", f"chunk {args.id} 不存在"))
+
+
 SCHEMA = {
     "envelope": {
         "type": "object", "required": ["api_version", "request_id", "ok", "data", "error"],
@@ -214,6 +286,8 @@ def main(argv=None) -> int:
     sub = ap.add_subparsers(dest="cmd", required=True)
     for name, fn in (("status", cmd_status), ("books", cmd_books), ("units", cmd_units),
                      ("search", cmd_search), ("get-unit", cmd_get_unit), ("briefing", cmd_briefing),
+                     ("sources", cmd_sources), ("corpus-status", cmd_corpus_status),
+                     ("corpus-search", cmd_corpus_search), ("corpus-get", cmd_corpus_get),
                      ("schema", cmd_schema)):
         p = sub.add_parser(name)
         if name == "units":
@@ -225,6 +299,11 @@ def main(argv=None) -> int:
             p.add_argument("--q", required=True)
             p.add_argument("--top", type=int, default=10)
         if name == "get-unit":
+            p.add_argument("--id", required=True)
+        if name == "corpus-search":
+            p.add_argument("--q", required=True)
+            p.add_argument("--top", type=int, default=10)
+        if name == "corpus-get":
             p.add_argument("--id", required=True)
         p.set_defaults(fn=fn)
     args = ap.parse_args(argv)
