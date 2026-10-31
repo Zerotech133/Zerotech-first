@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>策略健康周报 · Strategy Health 只读（WeeklyHealthReport）</title>
+<!-- 前端准入三件套（相对路径接入，零硬依赖/离线优先；禁写死端口/绝对 URL/外部 CDN）：
+     tokens.css 已按相对路径接入（../../portal/static/tokens.css，自带下方 fallback 变量）；
+     nav/shortscreen 接入点（本页 h2=3 < 6，暂不需要 shortscreen；Lead 接页面路由时按需注入）：
+       <script src="../../portal/static/nav.js" defer></script>
+       <script src="../../portal/static/shortscreen.js" defer></script>
+     只许相对路径，禁止写死入口端口；页面路由由 Lead 后续接入，本页不写服务端。 -->
+<link rel="stylesheet" href="../../portal/static/tokens.css">
+<style>
+/* ── 语义变量：优先吃 tokens.css 的 primitive，离线/缺 tokens 时用 fallback ── */
+:root{
+  --bg:var(--gray-1,#0d1117);
+  --panel:var(--gray-2,#161b22);
+  --card:var(--gray-3,#21262d);
+  --line:var(--gray-4,#30363d);
+  --ink:var(--gray-7,#e6edf3);
+  --ink-2:var(--gray-6,#c9d1d9);
+  --muted:var(--gray-5,#8b949e);
+  --acc:var(--blu-500,#58a6ff);
+  --ok:var(--grn-500,#3fb950);
+  --warn:var(--ylw-500,#d29922);
+  --err:var(--red-500,#f85149);
+  --insuf:var(--gray-5,#8b949e);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+     font:14px/1.6 "Microsoft YaHei","PingFang SC",system-ui,sans-serif}
+a{color:var(--acc)}
+header{background:var(--panel);border-bottom:1px solid var(--line);
+       padding:12px 24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+       position:sticky;top:0;z-index:10}
+header h1{font-size:17px;margin:0}
+header .meta{color:var(--muted);font-size:12px}
+header .sp{flex:1}
+.badge{display:inline-block;font-size:12px;border:1px solid var(--line);
+       border-radius:10px;padding:1px 9px;color:var(--ink-2);white-space:nowrap}
+.badge.ok{color:var(--ok);border-color:var(--ok)}
+.badge.warn{color:var(--warn);border-color:var(--warn)}
+.badge.bad{color:var(--err);border-color:var(--err)}
+.badge.empty{color:var(--insuf);border-color:var(--insuf)}
+button{border:1px solid var(--line);background:var(--card);color:var(--ink);
+       border-radius:6px;padding:4px 12px;cursor:pointer;font-size:13px}
+button:hover{border-color:var(--acc);color:var(--acc)}
+main{padding:14px 20px 80px;max-width:1360px;margin:0 auto}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+      padding:12px 16px 16px;margin:0 0 14px}
+.card h2{font-size:15px;margin:0 0 10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.card h2 .tag{font-size:11px;color:var(--muted);border:1px solid var(--line);
+              border-radius:10px;padding:0 8px;font-weight:400}
+.hint{color:var(--muted);font-size:12px;margin:4px 0 0}
+.mono{font-family:Consolas,"Courier New",monospace}
+.status{color:var(--muted);font-size:12px;margin:6px 0}
+.empty{color:var(--muted);border:1px dashed var(--line);border-radius:8px;
+       padding:14px;margin-top:8px;font-size:13px}
+.grid{display:grid;gap:10px}
+#levelCounts{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+#summaryCounts{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-top:10px}
+.count{background:var(--card);border:1px solid var(--line);border-radius:8px;
+       padding:8px 12px}
+.count .k{color:var(--muted);font-size:12px}
+.count .v{font-size:20px;font-weight:600;line-height:1.3}
+.count.green .v{color:var(--ok)}
+.count.yellow .v{color:var(--warn)}
+.count.red .v{color:var(--err)}
+.count.insufficient .v{color:var(--insuf)}
+#strategyCards{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.strategy{background:var(--card);border:1px solid var(--line);border-radius:8px;
+          padding:10px 12px}
+.strategy.green{border-left:3px solid var(--ok)}
+.strategy.yellow{border-left:3px solid var(--warn)}
+.strategy.red{border-left:3px solid var(--err)}
+.strategy.insufficient{border-left:3px solid var(--insuf)}
+.strategy h3{font-size:14px;margin:0 0 8px;display:flex;align-items:center;
+             gap:8px;flex-wrap:wrap}
+.strategy h3 .sname{font-weight:600}
+.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 10px}
+.metric .k{color:var(--muted);font-size:11px}
+.metric .v{font-size:13px;font-family:Consolas,"Courier New",monospace}
+.reasons{margin:8px 0 0;padding-left:18px;color:var(--muted);font-size:12px}
+.reasons li{margin:1px 0}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;
+      vertical-align:top}
+th{color:var(--muted);font-weight:600;white-space:nowrap}
+td.mono{font-family:Consolas,"Courier New",monospace}
+#notesList{margin:6px 0 0;padding-left:20px;color:var(--muted);font-size:12px}
+footer{padding:16px 24px 40px;color:var(--muted);font-size:12px;
+       max-width:1360px;margin:0 auto}
+footer b{color:var(--ink-2)}
+[hidden]{display:none !important}
+@media (max-width:640px){
+  .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+  main{padding:10px 10px 60px}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>策略健康周报 · Strategy Health</h1>
+  <span class="badge" id="periodBadge">周期 —</span>
+  <span class="badge" id="asofBadge">asof —</span>
+  <span class="badge empty" id="statusBadge">状态 —</span>
+  <span class="badge" id="sourceBadge">GET /strategy_health.json</span>
+  <span class="sp"></span>
+  <button type="button" id="btnRefresh">刷新（GET）</button>
+</header>
+
+<main>
+  <div class="status" id="overviewStatus" role="status" aria-live="polite">
+    正在读取 /strategy_health.json…
+  </div>
+  <div class="empty" id="reportEmpty" hidden>
+    暂无周报：等待 GET /strategy_health.json（空态显式显示，不造数）。
+  </div>
+  <div class="empty" id="insufficientBanner" hidden>
+    样本不足：窗口内样本数未达门槛，本期不下健康结论（insufficient，不造数）。
+  </div>
+
+  <section class="card" aria-labelledby="overviewTitle">
+    <h2 id="overviewTitle">健康总览
+      <span class="tag">summary / health_levels</span></h2>
+    <div class="grid" id="levelCounts"></div>
+    <div class="grid" id="summaryCounts"></div>
+    <p class="hint">等级口径沿用 strategy_health：green 健康 / yellow 关注 /
+      red 预警 / insufficient 样本不足（无数据不评级，不造数）。</p>
+  </section>
+
+  <section class="card" aria-labelledby="strategyTitle">
+    <h2 id="strategyTitle">策略卡片
+      <span class="tag">strategies[] · 样本 / T+1 · T+5 / 回撤 / regime</span></h2>
+    <div class="grid" id="strategyCards"></div>
+    <div class="empty" id="strategyEmpty">
+      暂无周报：没有可展示的策略卡片（空态显式显示，不造数）。
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="ticketTitle">
+    <h2 id="ticketTitle">上游偏差票（BiasTicket）
+      <span class="tag">bias_tickets[] · status=draft / not_auto_apply=true</span></h2>
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">票号</th>
+          <th scope="col">策略</th>
+          <th scope="col">上游 owner</th>
+          <th scope="col">类型</th>
+          <th scope="col">优先级</th>
+          <th scope="col">证据</th>
+          <th scope="col">建议动作</th>
+          <th scope="col">状态</th>
+        </tr>
+      </thead>
+      <tbody id="ticketBody"></tbody>
+    </table>
+    <div class="empty" id="ticketEmpty">
+      本周无偏差票（BiasTicket status=draft，仅建议上游人工复核）。
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="notesTitle">
+    <h2 id="notesTitle">口径与数据缺口
+      <span class="tag">notes · 缺失显式 null / insufficient</span></h2>
+    <ul id="notesList"></ul>
+    <p class="hint">
+      收益为百分数口径；最大回撤仅注入权益曲线才算；换手/成本有才算，单位未给
+      显式 null；regime 无标签不做分层结论；空窗口不当 0 收益，不造数。
+    </p>
+  </section>
+</main>
+
+<footer>
+  <b>只读边界</b>：本页仅发 <b>GET</b> 请求到同源
+  <span class="mono">/strategy_health.json</span>（WeeklyHealthReport 只读产出）；
+  不写服务端、不调 POST、不执行、不下单、不改 registry/权重、不新增计划任务。
+  空/缺失/不可用一律显式显示（暂无周报 / 样本不足 / 端点未接入 / 接口不可用），
+  不补零、不猜归属、不造数。BiasTicket 全部 status=draft 且 not_auto_apply=true，
+  仅建议上游人工复核。
+</footer>
+
+<script src="strategy_health.js" defer></script>
+</body>
+</html>
