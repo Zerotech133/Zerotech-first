@@ -190,3 +190,55 @@ def test_security_rejects_no_session_bad_origin_and_escape(tmp_path, monkeypatch
         httpd.server_close()
 
 
+def _new_session_client(httpd):
+    """为同一服务另建一个独立会话（独立 cookie jar / 独立 owner）。"""
+    c = Client(httpd.server_port)
+    with c.opener.open(c.base + "/rw?token=" + _TEST_LOCAL_TOKEN,
+                       timeout=5) as r:
+        assert r.status == 200
+    st, d = c.req("/api/ide/session")
+    assert st == 200 and d["owner"]
+    c.owner = d["owner"]
+    return c
+
+
+def test_lock_delete_uses_session_owner_and_get_masks_others(tmp_path, monkeypatch):
+    """M1（K-ORG-20261031-APIHARDEN）：释放锁 owner 取会话身份、忽略 query；
+    GET 不再向他人泄露持锁 owner。"""
+    repo, _wt = _fixture(tmp_path)
+    httpd, c1 = _serve(repo, monkeypatch)
+    try:
+        c2 = _new_session_client(httpd)
+        assert c1.owner and c2.owner and c1.owner != c2.owner
+
+        st, d = c1.req("/api/ide/lock", "POST",
+                       {"task": "T123", "owner": c1.owner})
+        assert st == 200 and d["ok"]
+
+        # 他人 GET：locked 可见，owner 必须掩码/为空（不得泄露 c1.owner）
+        st, d = c2.req("/api/ide/lock?task=T123")
+        assert st == 200 and d["locked"] is True
+        assert d.get("owner") != c1.owner
+        assert d.get("owner") == "" and d.get("owner_masked") is True
+
+        # 他人伪造 query owner=c1.owner 释放：query 被忽略 → 释放失败、锁仍在
+        st, d = c2.req("/api/ide/lock?task=T123&owner=" + c1.owner, "DELETE")
+        assert st == 409 and d.get("ok") is False
+        st, d = c1.req("/api/ide/lock?task=T123")
+        assert st == 200 and d["locked"] is True and d["owner"] == c1.owner
+
+        # 自己带无关 query owner 释放：owner 来自会话 → 正常释放
+        st, d = c1.req("/api/ide/lock?task=T123&owner=someone-else", "DELETE")
+        assert st == 200 and d["ok"]
+        st, d = c1.req("/api/ide/lock?task=T123")
+        assert st == 200 and d["locked"] is False
+
+        # 无会话 DELETE：拒绝（不因 query 自报 owner 放行）
+        bare = Client(httpd.server_port)
+        st, d = bare.req("/api/ide/lock?task=T123&owner=" + c1.owner, "DELETE")
+        assert st == 403
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
+
+

@@ -1132,3 +1132,69 @@ def test_serve_osleg_enabled_bad_source_403(auth, monkeypatch):
             _headers(source="mallory", idem="idem-serve-403"),
         )
         assert status == 403 and body["error"] == "source_forbidden"
+
+
+# ---------------------------------------------------------------- M2 msg_id 路径安全
+def test_invalid_msg_id_rejected_by_sidecar_helpers(tmp_path):
+    """M2（K-ORG-20261031-APIHARDEN）：msg_id 必须 _ID_RE_TEXT 全匹配且不越 records 根。"""
+    store = API._HttpStore(tmp_path / "store").ensure()
+    bad_ids = [
+        "../escape", "../../secret", "a/b", "a\\b", "%2e%2e%2fescape",
+        "C:\\Windows\\win.ini", "/etc/passwd", "..",
+        "", "x" * 65, "lg-测试",
+    ]
+    for bad in bad_ids:
+        assert API._valid_msg_id(bad) is False, bad
+        assert API._record_path(store, bad) is None, bad
+        assert API._get_record(store, bad) is None, bad
+        with pytest.raises(ValueError):
+            API._save_record(store, {"msg_id": bad})
+    # 合法 msg_id 正常可用，且路径必须落在 records/ 内
+    assert API._valid_msg_id("lg-abc_123") is True
+    path = API._record_path(store, "lg-abc_123")
+    assert path is not None
+    assert path.name == "lg-abc_123.json"
+    assert path.parent.name == "records"
+    assert ".." not in path.parts
+
+
+def test_traversal_msg_id_handlers_fail_closed(auth, store, monkeypatch):
+    """恶意 msg_id 一律 404 失败关闭，且不得触达 gateway 账（防越权/穿越查询）。"""
+    gateway_calls = []
+    monkeypatch.setattr(
+        API, "_gateway_view",
+        lambda msg_id: gateway_calls.append(msg_id) or {
+            "ok": True, "state": "processed", "answered": True, "delivered": False},
+    )
+    bad_ids = ["../secret", "..\\secret", "/etc/passwd",
+               "C:\\Windows\\win.ini", "lg-ok/../../secret", "%2e%2e/escape"]
+    for idx, bad in enumerate(bad_ids):
+        body = {
+            "msg_id": bad,
+            "consumed_by": ANSWERED_BY,
+            "answered_by": ANSWERED_BY,
+            "answer_ref": ANSWER_REF,
+            "trace_id": "tr-x",
+        }
+        status, out = _call("consume", body,
+                            _headers(idem="idem-m2-consume-%d" % idx))
+        assert status == 404 and out["error"] == "not_found", bad
+        status, out = _call("answer",
+                            {"msg_id": bad, "answered_by": ANSWERED_BY,
+                             "text": "x", "report_id": "QR-1",
+                             "trace_id": "tr-x"},
+                            _headers(idem="idem-m2-answer-%d" % idx))
+        assert status == 404 and out["error"] == "not_found", bad
+        status, out = _call("deliver",
+                            {"msg_id": bad, "channel": "synthetic",
+                             "delivered_ref": "r", "trace_id": "tr-x"},
+                            _headers(idem="idem-m2-deliver-%d" % idx))
+        assert status == 404 and out["error"] == "not_found", bad
+    # receipt 非法 msg_id：404，且不调用 _gateway_view
+    status, out = _receipt(msg_id="../secret")
+    assert status == 404 and out["error"] == "not_found"
+    assert gateway_calls == [], "非法 msg_id 不得回查 gateway 账"
+    # 合法链路仍正常（回归）
+    submitted = _submit()
+    status, out = _consume(submitted["msg_id"], submitted["trace_id"])
+    assert status == 200 and out["status"] == "consumed"
