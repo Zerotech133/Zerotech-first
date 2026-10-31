@@ -1,4 +1,7 @@
 # 验收判据：OTel 接通验收
+> STATUS: declared
+
+
 
 ## 判据（可测/可计数）
 

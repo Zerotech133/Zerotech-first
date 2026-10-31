@@ -1,4 +1,7 @@
 # 验收判据：测试收集修复（WO-QUANT-COLLECT）
+> STATUS: unspecified（owner: TBD；2026-11-07 前补状态或标 superseded）
+
+
 
 | # | 判据 | 证据路径/命令 | 通过线 |
 |---|---|---|---|

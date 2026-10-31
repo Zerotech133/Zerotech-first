@@ -1,4 +1,7 @@
 # 诸葛亮 P1-2：LlamaIndex RAG 方案与 v0 工单（2026-10-27）
+> STATUS: unspecified（owner: TBD；2026-11-07 前补状态或标 superseded）
+
+
 
 - 工单：`WO-LEGION-ZHUGE-P1RAG-20261027`
 - 前置：P1-1 已把 grounding（关键词检索 docs + `[S#]`）接入 L5，引用率 8/8=100%；本单升级检索质量，目标不是「有引用」而是「引对、答对」。

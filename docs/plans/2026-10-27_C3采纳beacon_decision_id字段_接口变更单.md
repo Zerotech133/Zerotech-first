@@ -1,4 +1,7 @@
 # C3 采纳 beacon：decision_id / card_id 字段接口变更单（待前端）
+> STATUS: unspecified（owner: TBD；2026-11-07 前补状态或标 superseded）
+
+
 
 - 工单：`WO-LEGION-C3DID-20261027`
 - 日期：2026-10-27

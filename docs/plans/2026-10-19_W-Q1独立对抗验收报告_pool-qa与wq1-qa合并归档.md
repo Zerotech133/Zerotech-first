@@ -1,4 +1,7 @@
 # W-Q1 独立对抗验收报告（wq1-qa-1019）
+> STATUS: unspecified（owner: TBD；2026-11-07 前补状态或标 superseded）
+
+
 
 验收对象：6301a239e52c9924fe51c61cbec07e26277d7ac2（7 files / 1356 insertions）
 验收人：独立 QA 工位 wq1-qa-1019（新鲜视角，未复用实施方测试代码）

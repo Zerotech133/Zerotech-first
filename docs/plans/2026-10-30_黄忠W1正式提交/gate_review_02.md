@@ -1,4 +1,7 @@
 # 七检解读 02：语法门拦截真实案例（WO-SYNTAX-GATE-20261028）
+> STATUS: unspecified（owner: TBD；2026-11-07 前补状态或标 superseded）
+
+
 
 > 工具：`tools/check_syntax.py`（语法门：SyntaxError 阻断；`--fail-on-warning` 下 SyntaxWarning 也阻断）
 > 拦截案例：merge 前置语法门在 `quant_backtest/kg_build_p2.py` 报 invalid escape 告警 → merge 被拒 → 修复后复跑告警 0 才放行

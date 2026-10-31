@@ -1,4 +1,7 @@
 # 六文件归 worktree 盘点清单（K-ORG-190 · C 路 c-inventory）
+> STATUS: unspecified（owner: TBD；2026-11-07 前补状态或标 superseded）
+
+
 
 - 盘点时间：2026-10-19
 - 盘点人：c-inventory（C 路工位）

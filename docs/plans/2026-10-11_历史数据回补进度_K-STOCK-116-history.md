@@ -1,4 +1,7 @@
 # K-STOCK-116-history 历史数据回补进度
+> STATUS: unspecified（owner: TBD；2026-11-07 前补状态或标 superseded）
+
+
 
 本任务按“明确缺口 → 最近 30 个交易日 → 2023 年以来年度批次”执行。所有数据只写入 `quant_backtest/data/tushare_staging`，没有修改 `quant_backtest/data/tushare`，`global_activation=false` 保持不变。
 

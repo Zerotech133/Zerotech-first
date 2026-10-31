@@ -1,4 +1,7 @@
 # 验收判据 01：验收会证据接入（WO-HQ-ACCEPT-20261028）
+> STATUS: unspecified（owner: TBD；2026-11-07 前补状态或标 superseded）
+
+
 
 > 工单：WO-HQ-ACCEPT-20261028「黄忠验收会接入：acceptance evidence 路由 + 纪要 acceptance 字段 + 验收面板」
 > 任务提交：d746b3418 · 合并提交：38fd8fc29（merge task/WO-HQ-ACCEPT-20261028）· 2026-10-29 05:03 入 master

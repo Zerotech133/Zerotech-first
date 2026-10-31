@@ -1,4 +1,7 @@
 # 零界 · 产品 ROADMAP v1（单一事实源 · 2026-10-12 立宪）
+> STATUS: superseded（见 PLAN_REGISTER_ALL_20261031）
+
+
 
 > STATUS: superseded by [PRODUCT_ROADMAP_v2](2026-10-22_PRODUCT_ROADMAP_v2.md)（2026-10-22 立宪，本文件只读冻结）
 

@@ -1,4 +1,7 @@
 # 验收判据 02：任务板审计 F401 清零（WO-BOARD-AUDIT-FIX-20261030）
+> STATUS: unspecified（owner: TBD；2026-11-07 前补状态或标 superseded）
+
+
 
 > 工单：WO-BOARD-AUDIT-FIX-20261030「修 task_board_audit F401（sys 未用）」
 > 任务提交：ac6f54158（-1 行：删除 `import sys`）· 合并提交：31fd4f06a（merge task/WO-BOARD-AUDIT-FIX-20261030）· 2026-10-30 00:53 入 master

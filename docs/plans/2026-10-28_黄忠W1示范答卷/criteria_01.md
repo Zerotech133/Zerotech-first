@@ -1,4 +1,7 @@
 # 验收判据：席位入编（WO-HUANGZHONG-20261028）
+> STATUS: unspecified（owner: TBD；2026-11-07 前补状态或标 superseded）
+
+
 
 | # | 判据 | 证据路径/命令 | 通过线 |
 |---|---|---|---|

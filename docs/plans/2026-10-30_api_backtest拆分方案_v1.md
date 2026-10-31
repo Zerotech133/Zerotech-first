@@ -1,4 +1,7 @@
 # api_backtest.py 拆分方案 v1（2026-10-30 · 关羽）
+> STATUS: declared
+
+
 
 > 背景：`portal/api_backtest.py` **6,395 行**（`tools/check_portal_split.py` 实测 6,394>冻结基线 6,135，已触发 WARN），是全 portal 最大冻结文件。
 > 方法：复用 api_kg 已验证套路（**契约先冻结 → 纯移动分批 → 委托收口 → 上限递减**）；本单只出方案，不改代码。

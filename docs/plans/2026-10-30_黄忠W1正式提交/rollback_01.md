@@ -1,4 +1,7 @@
 # 回滚点 01：ZHAOYUN 会议绑定覆盖回滚（MEETING_BINDING_OVERRIDES）
+> STATUS: unspecified（owner: TBD；2026-11-07 前补状态或标 superseded）
+
+
 
 > 回滚对象：`agent_platform/legion_command/serve.py` 的 `MEETING_BINDING_OVERRIDES = {"ZHAOYUN": "ollama/qwen3.5:9b"}` 及配套 `resolve_meeting_binding()`、`/api/chat` 的 `purpose=meeting` 覆盖分支
 > 引入提交：289c742a0（WO-HQ-P2B-20261029，2026-10-29 07:33；合并 bb6e617f3）；代码位置：`serve.py:118-128`、`:2049-2052`、`:2163-2166`

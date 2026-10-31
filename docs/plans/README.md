@@ -31,7 +31,7 @@
 
 ## 五、2026-10-31 计划治理收口
 
-- 全量状态视图：`docs/plans/PLAN_REGISTER_ALL_20261031.md` / `.json`（288 份，含子目录）。
+- 全量状态视图：`docs/plans/PLAN_REGISTER_ALL_20261031.md` / `.json`（289 份，含子目录；其中 277 份已插入 `> STATUS:` 行）。
 - 顶层工具视图：`docs/plans/PLAN_REGISTER_20261031.md`（`tools/plan_register.py` 生成，259 份）。
 - 状态口径：`declared`（头部 STATUS）/ `frozen` / `pending_approval` / `superseded` / `unspecified`。
 - **未标注（unspecified）的计划必须在 2026-11-07 前由 owner 补状态或标 superseded**；否则默认不作为执行依据。

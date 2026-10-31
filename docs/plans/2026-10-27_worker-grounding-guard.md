@@ -1,4 +1,7 @@
 # Worker Grounding Guard
+> STATUS: unspecified（owner: TBD；2026-11-07 前补状态或标 superseded）
+
+
 
 ## Overview
 

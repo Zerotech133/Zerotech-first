@@ -44,10 +44,22 @@ def plan_rows():
         except OSError:
             pass
         low = text.lower() + "\n" + p.name.lower()
-        if "superseded" in low or "已废弃" in text or "已被取代" in text:
+        mstat = re.search(r"(?im)^\s*>\s*STATUS\s*[:：]\s*([^\n]{0,120})", text[:2000])
+        declared = (mstat.group(1).strip().lower() if mstat else "")
+        if declared.startswith("superseded"):
             state = "superseded"
+        elif declared.startswith("pending"):
+            state = "pending_approval"
+        elif declared.startswith("frozen"):
+            state = "frozen"
+        elif declared.startswith("unspecified"):
+            state = "unspecified"
+        elif declared:
+            state = "declared"
         elif "status" in low[:1500]:
             state = "declared"
+        elif "superseded" in p.name.lower() or "_deprecated" in p.name.lower():
+            state = "superseded"
         elif "待批" in text or "待拍板" in text:
             state = "pending_approval"
         elif "冻结" in text:

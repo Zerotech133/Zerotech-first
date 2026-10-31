@@ -1,4 +1,7 @@
 # 验收判据 03：研究院角色属性一致性（WO-ACAD-ROLE-ATTR-20261029）
+> STATUS: unspecified（owner: TBD；2026-11-07 前补状态或标 superseded）
+
+
 
 > 工单：WO-ACAD-ROLE-ATTR-20261029「复盘整改 A：仅修研究院角色属性一致性」
 > 任务提交：ac45c66bd · 合并提交：37bbcfca3（merge task/WO-ACAD-ROLE-ATTR-20261029）· 2026-10-29 08:16 入 master

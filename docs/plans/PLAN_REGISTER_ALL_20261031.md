@@ -2,11 +2,11 @@
 
 > 只读扫描；原计划不改。unspecified 需 owner 在 2026-11-07 前补状态。
 
-总数：288
+总数：289
 
 | 状态 | 数量 |
 |---|---|
-| declared | 52 |
+| declared | 53 |
 | frozen | 43 |
 | pending_approval | 41 |
 | superseded | 7 |
@@ -298,9 +298,10 @@
 | 2026-10-31 | declared | portal_api 路由清单（A5 B0） | `docs\plans\2026-10-31_A5_B0路由清单_v1.md` |
 | 2026-10-31 | unspecified | A5 B4/B5 路由表化 · 设计与测试方案 v1（2026-10-31 · 关羽） | `docs\plans\2026-10-31_A5_B4B5_路由表化设计_v1.md` |
 | 2026-10-31 | frozen | portal_api 拆分提案 v1（A5 · 2026-10-31 · 关羽） | `docs\plans\2026-10-31_portal_api拆分提案_v1.md` |
-| 2026-10-31 | unspecified | 身份拓扑决策 v1（2026-10-31） | `docs\plans\2026-10-31_身份拓扑决策_v1.md` |
+| 2026-10-31 | unspecified | 身份拓扑决策 v2：SSO 已启用（2026-10-31 09:15） | `docs\plans\2026-10-31_身份拓扑决策_v1.md` |
 | 2026-10-31 | declared | 黄忠 × Hermes 底层结合方案 v1（2026-10-31） | `docs\plans\2026-10-31_黄忠Hermes底层结合方案_v1.md` |
 | 2026-11-02 | pending_approval | P5c 形态 B 复验报告（预定 2026-11-02 执行） | `docs\plans\2026-11-02_P5c形态B_复验报告.md` |
 | - | superseded | 计划全集索引（docs/plans/ 全量 91 份） | `docs\plans\INDEX_计划全集索引.md` |
 | - | declared | 计划台账（PLAN_REGISTER） | `docs\plans\PLAN_REGISTER_20261031.md` |
-| - | unspecified | docs/plans/ · 现行方案与计划归置区 | `docs\plans\README.md` |
+| - | unspecified | 计划台账（全量，含子目录）2026-10-31 | `docs\plans\PLAN_REGISTER_ALL_20261031.md` |
+| - | declared | docs/plans/ · 现行方案与计划归置区 | `docs\plans\README.md` |

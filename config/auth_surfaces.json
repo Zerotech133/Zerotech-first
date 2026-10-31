@@ -1,9 +1,9 @@
 {
-  "version": 1,
-  "decision": "explicit_dual_login",
-  "sso": "deferred_after_m4",
+  "version": 2,
+  "decision": "sso_trusted_header",
+  "sso": "active_2026-10-31",
   "max_surfaces": 5,
-  "rule": "只允许下表 5 个凭证入口；新增第 6 个必须经 L2 批准并同步本表与检查脚本",
+  "rule": "只允许下表 5 个凭证入口；X-Portal-User 是 nginx 内部身份断言，不是用户可持有的第 6 个凭证。新增入口必须经 L2 批准并同步本表与检查脚本",
   "surfaces": [
     {
       "id": "portal_session",
@@ -12,18 +12,18 @@
       "owner": "portal",
       "human": true,
       "entry": "8734 /api/auth/login",
-      "purpose": "门户登录态；8734/8091 统一入口",
-      "source": "portal/auth_gateway.py:COOKIE_NAME"
+      "purpose": "唯一人类登录态；nginx auth_request 通过后注入内部 X-Portal-User 给 8787",
+      "source": "portal/auth_gateway.py:COOKIE_NAME; portal/nginx.conf:X-Portal-User"
     },
     {
-      "id": "hermes_session",
+      "id": "hermes_trusted_session",
       "kind": "cookie",
       "name": "hermes_session",
       "owner": "hermes",
-      "human": true,
-      "entry": "8787 /api/auth/login",
-      "purpose": "Hermes 密码登录态；当前双层登录第二层",
-      "source": "Hermes/hermes-webui-next/api/auth.py:COOKIE_NAME"
+      "human": false,
+      "entry": "8734 /hermes/（trusted header 建会话）",
+      "purpose": "Hermes 内部会话；来自门户可信头，不再要求第二次密码",
+      "source": "Hermes/hermes-webui-next/api/auth.py:COOKIE_NAME; start_hermes_bg.py:HERMES_WEBUI_TRUSTED_AUTH_HEADER"
     },
     {
       "id": "oh_capability",
@@ -59,11 +59,13 @@
   "forbidden": [
     "新增 cookie/header/token 身份入口",
     "前端持有模型或 vault secret",
-    "绕过 8734 的直连写入口"
+    "绕过 8734 的直连写入口",
+    "把内部 X-Portal-User 暴露给浏览器或外部请求"
   ],
   "review": {
     "owner": "ARCH1",
     "next_review": "2026-11-14",
-    "sso_revisit": "M4 后单独 L2 窗口"
+    "deployed_at": "2026-10-31T09:11:29+08:00",
+    "note": "SSO trusted-header 已激活；直连 8787 只读；SSO 前双登录仅作历史"
   }
 }

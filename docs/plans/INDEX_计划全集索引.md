@@ -1,4 +1,7 @@
 # 计划全集索引（docs/plans/ 全量 91 份）
+> STATUS: superseded（见 PLAN_REGISTER_ALL_20261031）
+
+
 
 > STATUS: superseded by ../../../DOCS_INDEX.md（现行文档索引，2026-10-25 起；本索引停留在 2026-10-12 的 91 份口径，docs/plans 现为 215 份，勿据此判断现行）
 

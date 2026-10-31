@@ -1,4 +1,7 @@
 # B-09 Tushare token 轮换 · 执行手册 v1（待 token 到即执行）
+> STATUS: unspecified（owner: TBD；2026-11-07 前补状态或标 superseded）
+
+
 
 > 2026-10-28 · dry-run 已通过（前置齐备）· 执行窗口：10–15 分钟
 > 依据：`tools/secrets/rotate_tushare_token.py`（R1 引导）+ SECVAULT L1

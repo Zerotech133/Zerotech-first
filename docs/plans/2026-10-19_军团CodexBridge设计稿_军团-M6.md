@@ -1,4 +1,7 @@
 # 军团 Codex bridge 设计稿（演进篇）：目标架构与 digital-legion 对接口径（军团-M6 设想）
+> STATUS: pending_approval（owner: TBD；2026-11-07 前拍板）
+
+
 
 - **日期**：2026-10-19
 - **作者**：c-bridgedoc（老田个人 AI 组 C 路文档代理）

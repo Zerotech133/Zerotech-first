@@ -1,4 +1,7 @@
 # portal_api 拆分提案 v1（A5 · 2026-10-31 · 关羽）
+> STATUS: frozen（只读保留）
+
+
 
 - 背景：`portal/portal_api.py` 当前 **5,153 / 5,200 行（99.1%）**，再增 ~47 行即触发 `mixin_integrity` 行数门 FAIL；且 Handler 内 `do_GET` 单函数 **2,031 行**、`do_POST` 547 行，已到可维护性红线。
 - 先例：`api_backtest` 拆分（P54–P75，6,395→285 行）验证了"契约先行 + 纯移动"的低风险路径，本提案复用同一方法论。

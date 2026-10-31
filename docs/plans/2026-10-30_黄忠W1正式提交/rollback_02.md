@@ -1,4 +1,7 @@
 # 回滚点 02：任务板审计 F401 修复回滚（WO-BOARD-AUDIT-FIX-20261030）
+> STATUS: unspecified（owner: TBD；2026-11-07 前补状态或标 superseded）
+
+
 
 > 回滚对象：`tools/task_board_audit.py` 删除 `import sys` 的修复
 > 修复提交：ac6f54158（2026-10-30 00:22，1 行删除）· 合并提交：31fd4f06a（merge task/WO-BOARD-AUDIT-FIX-20261030）

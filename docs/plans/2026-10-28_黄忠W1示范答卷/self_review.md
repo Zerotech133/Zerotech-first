@@ -1,4 +1,7 @@
 # W1 自评
+> STATUS: unspecified（owner: TBD；2026-11-07 前补状态或标 superseded）
+
+
 
 - 自评分数：92/100
 - 本周完成：3 判据 / 2 七检 / 2 回滚点

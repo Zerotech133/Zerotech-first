@@ -1,4 +1,7 @@
 # 七检解读：全绿七检
+> STATUS: unspecified（owner: TBD；2026-11-07 前补状态或标 superseded）
+
+
 
 ## 原始输出
 

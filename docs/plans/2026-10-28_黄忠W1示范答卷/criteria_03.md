@@ -1,4 +1,7 @@
 # 验收判据：Phoenix OTel 接通（WO-OTEL-PB）
+> STATUS: declared
+
+
 
 | # | 判据 | 证据路径/命令 | 通过线 |
 |---|---|---|---|

@@ -1,4 +1,7 @@
 # RiskGuard 校准草案（R′3：213 拦截样本逐规则归因）
+> STATUS: superseded（见 PLAN_REGISTER_ALL_20261031）
+
+
 
 > 产出：riskguard-audit · 2026-10-08 ｜ 性质：只读分析，未改任何代码/参数/数据
 > 数据边界声明：213 个 critical 样本的**原始明细落盘未定位**（盯盘机器人后端跑在

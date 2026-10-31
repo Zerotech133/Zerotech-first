@@ -1,11 +1,11 @@
 {
  "schema": "external-deliverables-index/v1",
- "generated_at": "2026-10-31 08:28:58",
+ "generated_at": "2026-10-31 09:15:55",
  "root": "C:\\项目\\deliverables",
- "total": 1431,
+ "total": 1442,
  "by_ext": {
   ".html": 44,
-  ".md": 1069,
+  ".md": 1080,
   ".json": 87,
   ".svg": 1,
   ".sql": 1,
@@ -9551,6 +9551,14 @@
    "title": "黄忠遗留清理回执（2026-10-30）"
   },
   {
+   "path": "C:\\项目\\deliverables\\2026-10-31_8788_staging去留决策_v1.md",
+   "rel": "2026-10-31_8788_staging去留决策_v1.md",
+   "ext": ".md",
+   "bytes": 1351,
+   "mtime": "2026-10-31 08:28",
+   "title": "8788 staging 去留决策 v1（2026-10-31）"
+  },
+  {
    "path": "C:\\项目\\deliverables\\2026-10-31_A1_LDE本地token准入回执.md",
    "rel": "2026-10-31_A1_LDE本地token准入回执.md",
    "ext": ".md",
@@ -9663,12 +9671,28 @@
    "title": "M4 S2 卡发送回执（2026-10-31 08:19）"
   },
   {
+   "path": "C:\\项目\\deliverables\\2026-10-31_M4前提要_v1.md",
+   "rel": "2026-10-31_M4前提要_v1.md",
+   "ext": ".md",
+   "bytes": 2598,
+   "mtime": "2026-10-31 08:36",
+   "title": "M4 前提要（2026-10-31 08:50）"
+  },
+  {
    "path": "C:\\项目\\deliverables\\2026-10-31_M4提醒与A0OH evidence演练回执.md",
    "rel": "2026-10-31_M4提醒与A0OH evidence演练回执.md",
    "ext": ".md",
    "bytes": 2072,
    "mtime": "2026-10-31 04:07",
    "title": "M4 提醒确认 + A0→OH→evidence 真实演练回执（2026-10-31 04:08）"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-10-31_P0-4_多文件事务回执.md",
+   "rel": "2026-10-31_P0-4_多文件事务回执.md",
+   "ext": ".md",
+   "bytes": 2874,
+   "mtime": "2026-10-31 08:32",
+   "title": "P0-4 多文件 patchset 事务回执（代码已合并；8103 激活受阻）"
   },
   {
    "path": "C:\\项目\\deliverables\\2026-10-31_PhaseA_能力令牌LDE接入回执.md",
@@ -9711,6 +9735,14 @@
    "title": "Phase D1 回执：LDE 测试 runner + evidence artifact 校验门（2026-10-31 03:50）"
   },
   {
+   "path": "C:\\项目\\deliverables\\2026-10-31_PLAN_REGISTER_ALL_v1.md",
+   "rel": "2026-10-31_PLAN_REGISTER_ALL_v1.md",
+   "ext": ".md",
+   "bytes": 45354,
+   "mtime": "2026-10-31 08:28",
+   "title": "计划台账（全量，含子目录）2026-10-31"
+  },
+  {
    "path": "C:\\项目\\deliverables\\2026-10-31_ResearchArtifact_LCS1_600519_v1.json",
    "rel": "2026-10-31_ResearchArtifact_LCS1_600519_v1.json",
    "ext": ".json",
@@ -9743,6 +9775,14 @@
    "title": "双登录 SSO 建议 + fast gate 扩展回执（2026-10-31 04:10）"
   },
   {
+   "path": "C:\\项目\\deliverables\\2026-10-31_T19_blocker升级单_v1.md",
+   "rel": "2026-10-31_T19_blocker升级单_v1.md",
+   "ext": ".md",
+   "bytes": 3516,
+   "mtime": "2026-10-31 09:10",
+   "title": "T19 Blocker 升级单 v1（2026-10-31 09:05）"
+  },
+  {
    "path": "C:\\项目\\deliverables\\2026-10-31_v6_P0执行回执.md",
    "rel": "2026-10-31_v6_P0执行回执.md",
    "ext": ".md",
@@ -9767,6 +9807,22 @@
    "title": "10-31 下一步执行回执：backfill / M4 / L4 / 校准 / 日常预检"
   },
   {
+   "path": "C:\\项目\\deliverables\\2026-10-31_五项治理执行回执_v1.md",
+   "rel": "2026-10-31_五项治理执行回执_v1.md",
+   "ext": ".md",
+   "bytes": 4653,
+   "mtime": "2026-10-31 08:33",
+   "title": "五项治理执行回执 v1（2026-10-31 08:40）"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-10-31_仓外交付物索引_v1.md",
+   "rel": "2026-10-31_仓外交付物索引_v1.md",
+   "ext": ".md",
+   "bytes": 20517,
+   "mtime": "2026-10-31 08:28",
+   "title": "仓外交付物索引 2026-10-31"
+  },
+  {
    "path": "C:\\项目\\deliverables\\2026-10-31_代码审计与BUG修复_v1.md",
    "rel": "2026-10-31_代码审计与BUG修复_v1.md",
    "ext": ".md",
@@ -9781,6 +9837,14 @@
    "bytes": 9850,
    "mtime": "2026-10-31 05:40",
    "title": "代码审计与项目复盘 v1"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-10-31_任务账本清理_v1.md",
+   "rel": "2026-10-31_任务账本清理_v1.md",
+   "ext": ".md",
+   "bytes": 2608,
+   "mtime": "2026-10-31 08:32",
+   "title": "任务账本清理 v1（2026-10-31 08:30）"
   },
   {
    "path": "C:\\项目\\deliverables\\2026-10-31_全仓文本索引_v1.json",
@@ -9813,6 +9877,14 @@
    "bytes": 10785,
    "mtime": "2026-10-31 05:50",
    "title": "零界 · 全仓代码审计 + BUG 修复 + 项目复盘 · 汇总 v1（2026-10-31）"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-10-31_工作计划_v1.md",
+   "rel": "2026-10-31_工作计划_v1.md",
+   "ext": ".md",
+   "bytes": 6982,
+   "mtime": "2026-10-31 09:15",
+   "title": "工作计划 v1（2026-10-31 起）"
   },
   {
    "path": "C:\\项目\\deliverables\\2026-10-31_数字军团IDE复审_v4.md",
@@ -9869,6 +9941,22 @@
    "bytes": 6133,
    "mtime": "2026-10-31 05:08",
    "title": "赵云视角：现状判断与调整方向（2026-10-31 05:10）"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-10-31_身份拓扑决策_v1.md",
+   "rel": "2026-10-31_身份拓扑决策_v1.md",
+   "ext": ".md",
+   "bytes": 1420,
+   "mtime": "2026-10-31 08:28",
+   "title": "身份拓扑决策 v1（2026-10-31）"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-10-31_进度与下一步_v1.md",
+   "rel": "2026-10-31_进度与下一步_v1.md",
+   "ext": ".md",
+   "bytes": 2833,
+   "mtime": "2026-10-31 09:14",
+   "title": "进度与下一步（2026-10-31 09:12）"
   },
   {
    "path": "C:\\项目\\deliverables\\2026-10-31_零界数字军团全景复盘_v1.md",

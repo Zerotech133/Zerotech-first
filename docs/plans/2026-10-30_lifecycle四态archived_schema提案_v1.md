@@ -1,4 +1,7 @@
 # lifecycle 四态（archived）schema 提案 v1（2026-10-30 · 关羽）
+> STATUS: superseded（见 PLAN_REGISTER_ALL_20261031）
+
+
 
 > 目的：把治理方案 §5.3 的四态（active / planned / deprecated / **archived**）补齐为**代码可执行**语义，
 > 为「deprecated 满 90 天 → archived」迁移提供消费方一致行为。**真源仍由数据线（DATA1）维护；本提案只做代码就绪 + 规则定义，YAML 登记变更需数据线会签。**

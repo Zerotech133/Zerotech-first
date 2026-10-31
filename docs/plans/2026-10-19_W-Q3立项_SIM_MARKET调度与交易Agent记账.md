@@ -1,4 +1,7 @@
 # W-Q3 立项：SIM_MARKET 调度与交易 Agent 记账
+> STATUS: frozen（只读保留）
+
+
 
 - 日期：2026-10-19
 - 优先级：P2

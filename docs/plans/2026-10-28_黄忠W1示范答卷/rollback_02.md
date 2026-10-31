@@ -1,4 +1,7 @@
 # 回滚点：OTel 开关回滚
+> STATUS: unspecified（owner: TBD；2026-11-07 前补状态或标 superseded）
+
+
 
 ## 回滚步骤
 
