@@ -189,7 +189,7 @@ def test_wrong_confirm_refused_zero_write(tmp_path):
     h = _load()
     rep = _call(h, root, "reject", confirm="DRILL-OBSERVE", apply=True)
     assert rep["ok"] is False
-    assert "口令" in rep["refused"]["reason"]
+    assert "确认字符串" in rep["refused"]["reason"]
     assert not (_work(root) / "drills").exists()
     assert not list(_work(root).glob("acceptance_drill_*"))
 
