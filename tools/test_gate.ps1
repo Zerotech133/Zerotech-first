@@ -282,14 +282,14 @@ try {
     }
 
     # ===== 2026-10-31 W5 P1-6 / A5：portal 拆分预算门 =====
-    # 阶段1 非 strict：只拦硬规则（portal_api.py ≤5200 / api_*.py 存在可读）；
-    # 建议项（冻结增长/新文件 >1200）只打印 WARN 不阻断——当前 5 项债清完后再切 --strict。
+    # 2026-10-31 P133：已切 --strict（api_common/api_screen 拆分完成、3 条冻结增长已回收至基线以下）；
+    # 任一建议项（冻结增长/新文件 >1200）也阻断合并。
     if ($Suite -in @('fast', 'all')) {
         $budget = Join-Path $repo 'tools\check_portal_split.py'
         if (Test-Path -LiteralPath $budget) {
             $blog = Join-Path $env:TEMP "test_gate_budget_$ts.log"
             $bsw = [System.Diagnostics.Stopwatch]::StartNew()
-            python -X utf8 $budget *> $blog
+            python -X utf8 $budget --strict *> $blog
             $brc = $LASTEXITCODE
             $bsw.Stop()
             $bsecs = [math]::Round($bsw.Elapsed.TotalSeconds, 1)
@@ -299,12 +299,12 @@ try {
             }
             if ($brc -ne 0) {
                 $newFailures++
-                Write-Host "[budget] PORTAL-SPLIT 硬违规 → 判失败（日志 $blog）" -ForegroundColor Red
+                Write-Host "[budget] PORTAL-SPLIT strict 违规 → 判失败（日志 $blog）" -ForegroundColor Red
                 if (Test-Path -LiteralPath $blog) {
                     Get-Content -LiteralPath $blog -Encoding UTF8 | Select-Object -Last 8 | ForEach-Object { Write-Host "  | $_" }
                 }
             } else {
-                Write-Host "[budget] PASS：硬规则 0 违规；建议项 WARN $($bwarn.Count) 条（非 strict 不阻断）[${bsecs}s]" -ForegroundColor Green
+                Write-Host "[budget] PASS：strict 模式 0 违规（P133 已切 --strict；建议项亦阻断）[${bsecs}s]" -ForegroundColor Green
                 $bwarn | ForEach-Object { Write-Host "  $_" }
             }
             $summary += [pscustomobject]@{
