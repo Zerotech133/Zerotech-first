@@ -113,9 +113,11 @@ STALE_DAYS = 14
 def build(stale_days: float = STALE_DAYS) -> dict:
     if not PLANS.is_dir():
         raise SystemExit("docs/plans 不存在：%s" % PLANS)
+    # 2026-10-31 PLANREG：生成本工具/全量台账（PLAN_REGISTER*）不计入计划统计
     files = sorted(p for p in PLANS.glob("*.md")
                    if p.name.lower() not in ("readme.md", "plan_register.md")
-                   and not p.name.startswith("INDEX_"))
+                   and not p.name.startswith("INDEX_")
+                   and not p.name.upper().startswith("PLAN_REGISTER"))
     rows = [scan_plan(p) for p in files]
     by_life: dict[str, int] = {}
     by_kind: dict[str, int] = {}
