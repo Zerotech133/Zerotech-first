@@ -1,0 +1,289 @@
+{
+ "schema": "m1-evidence-pack/v1",
+ "generated_at": "2026-10-31T13:08:53+08:00",
+ "date": "20261031",
+ "duration_ms": 1539,
+ "repo": "C:\\项目\\老田的AI助手\\.worktrees\\WO-LEGION-M1-EVIDENCE-20261031",
+ "main_repo": "C:\\项目\\老田的AI助手",
+ "commit": {
+  "repo": "C:\\项目\\老田的AI助手\\.worktrees\\WO-LEGION-M1-EVIDENCE-20261031",
+  "head": "c951bffc1515651e6055515b9bb08f9b8a832303",
+  "short": "c951bffc1515",
+  "branch": "task/WO-LEGION-M1-EVIDENCE-20261031",
+  "error": ""
+ },
+ "host": {
+  "os": "nt",
+  "python": "3.11.9"
+ },
+ "verdict": "fail",
+ "passed": false,
+ "verdict_reasons": {
+  "required_fail": [
+   "M1-KPI"
+  ],
+  "required_unknown": [],
+  "advisory_not_pass": [
+   "M4-SIGNOFF"
+  ]
+ },
+ "counts": {
+  "pass": 4,
+  "fail": 2,
+  "unknown": 0,
+  "total": 6,
+  "required_total": 3,
+  "required_pass": 2,
+  "required_fail": 1,
+  "required_unknown": 0
+ },
+ "criteria": [
+  {
+   "id": "M1-KPI",
+   "title": "M1 信任链 KPI（trust_chain_kpi）",
+   "required": true,
+   "status": "fail",
+   "detail": "verdict=fail pass=8 fail=1 unknown=0（共 9 项）",
+   "source": "C:\\项目\\老田的AI助手\\tools\\trust_chain_kpi.py",
+   "derived": false
+  },
+  {
+   "id": "W1-DRILL",
+   "title": "W1 发布回滚演练（release_rollback_drill）",
+   "required": true,
+   "status": "pass",
+   "detail": "ok=True 场景 5/5 · 检查失败 0",
+   "source": "C:\\项目\\老田的AI助手\\tools\\release_rollback_drill.py",
+   "derived": false
+  },
+  {
+   "id": "W2-INVARIANT",
+   "title": "W2 工作树/abort 不变量（worktree_invariant_check）",
+   "required": true,
+   "status": "pass",
+   "detail": "verdict=PASS 阻断违规=0 已知欠账=34 工单=1830",
+   "source": "C:\\项目\\老田的AI助手\\tools\\worktree_invariant_check.py",
+   "derived": false
+  },
+  {
+   "id": "M4-SIGNOFF",
+   "title": "M4 四方签字（只读派生）",
+   "required": false,
+   "status": "fail",
+   "detail": "approve=0 dispatch_done=- missing=QA1,GUANYU,VERIFY1,A0/老田",
+   "source": "C:\\项目\\老田的AI助手\\tools\\trust_chain_kpi.py",
+   "derived": true
+  },
+  {
+   "id": "FAST-GATE",
+   "title": "最新 fast gate 日志",
+   "required": false,
+   "status": "pass",
+   "detail": "result=pass age=0.7h · GATE PASS: 无新增失败",
+   "source": "C:\\Temp\\test_gate_p130.log",
+   "derived": false
+  },
+  {
+   "id": "EVIDENCE",
+   "title": "legion_ide evidence 最新 artifact",
+   "required": false,
+   "status": "pass",
+   "detail": "patchset=200 run=271 最新=patchset-rollback-T-BOOT-741c2ea1.json",
+   "source": "C:\\项目\\_vault\\legion_ide\\evidence",
+   "derived": false
+  }
+ ],
+ "gaps": [
+  {
+   "id": "M1-KPI",
+   "status": "fail",
+   "required": true,
+   "detail": "verdict=fail pass=8 fail=1 unknown=0（共 9 项）"
+  },
+  {
+   "id": "M4-SIGNOFF",
+   "status": "fail",
+   "required": false,
+   "detail": "approve=0 dispatch_done=- missing=QA1,GUANYU,VERIFY1,A0/老田"
+  }
+ ],
+ "services": {
+  "available": true,
+  "detail": "",
+  "lde_8103": {
+   "status": "pass",
+   "version": "20261031_092952_7e6dbe8a",
+   "commit": "7e6dbe8a95b73474fba2eb415dd16d8b3ea4bff2",
+   "all_match": true,
+   "health_ok": true,
+   "rw_enabled": true
+  },
+  "hermes_8787": {
+   "status": "pass",
+   "detail": "status=401 error=Authentication required"
+  },
+  "release": {
+   "status": "pass",
+   "pointer_version": "20261031_092952_7e6dbe8a",
+   "junction_version": "20261031_092952_7e6dbe8a",
+   "drift": false,
+   "junction_target_exists": true
+  },
+  "patchset": {
+   "status": "pass",
+   "file": "C:\\项目\\_vault\\legion_ide\\evidence\\patchset-rollback-T-BOOT-741c2ea1.json",
+   "signature_verified": "true",
+   "age_hours": 0.0
+  },
+  "m4": {
+   "status": "fail",
+   "detail": "approve=0 dispatch_done=- missing=QA1,GUANYU,VERIFY1,A0/老田"
+  }
+ },
+ "sources": {
+  "kpi": {
+   "name": "kpi",
+   "mode": "subprocess",
+   "path": "C:\\项目\\老田的AI助手\\tools\\trust_chain_kpi.py",
+   "ok": true,
+   "error": "",
+   "exit_code": 1,
+   "duration_ms": 271,
+   "schema": "trust_chain_kpi/v1"
+  },
+  "drill": {
+   "name": "drill",
+   "mode": "subprocess",
+   "path": "C:\\项目\\老田的AI助手\\tools\\release_rollback_drill.py",
+   "ok": true,
+   "error": "",
+   "exit_code": 0,
+   "duration_ms": 934,
+   "schema": "legion-ide-rollback-drill/v1"
+  },
+  "invariant": {
+   "name": "invariant",
+   "mode": "subprocess",
+   "path": "C:\\项目\\老田的AI助手\\tools\\worktree_invariant_check.py",
+   "ok": true,
+   "error": "",
+   "exit_code": 0,
+   "duration_ms": 160,
+   "schema": null
+  },
+  "gate": {
+   "path": "C:\\Temp\\test_gate_p130.log",
+   "explicit": false,
+   "found": true,
+   "dir": "C:\\Temp",
+   "mtime": "2026-10-31T12:28:26+08:00",
+   "age_hours": 0.7,
+   "stale": false,
+   "result": "pass",
+   "summary": "GATE PASS: 无新增失败",
+   "pytest": {
+    "passed": 1512,
+    "failed": 0,
+    "skipped": 7,
+    "errors": 0
+   },
+   "error": ""
+  },
+  "evidence": {
+   "dir": "C:\\项目\\_vault\\legion_ide\\evidence",
+   "exists": true,
+   "counts": {
+    "patchset": 200,
+    "run": 271,
+    "total": 471
+   },
+   "latest": [
+    {
+     "kind": "patchset",
+     "file": "patchset-rollback-T-BOOT-741c2ea1.json",
+     "mtime": "2026-10-31T13:08:20+08:00",
+     "age_hours": 0.0,
+     "bytes": 584,
+     "run_id": "patchset-rollback-T-BOOT-741c2ea1",
+     "task": "T-BOOT",
+     "ok": true,
+     "finalized_at": "2026-10-31T13:08:20+08:00",
+     "signature_present": true
+    },
+    {
+     "kind": "patchset",
+     "file": "patchset-T-BOOT-eeb0e426.json",
+     "mtime": "2026-10-31T13:08:20+08:00",
+     "age_hours": 0.0,
+     "bytes": 1046,
+     "run_id": "patchset-T-BOOT-eeb0e426",
+     "task": "T-BOOT",
+     "ok": true,
+     "finalized_at": "2026-10-31T13:08:20+08:00",
+     "signature_present": true
+    },
+    {
+     "kind": "run",
+     "file": "run-b664bfce6461.json",
+     "mtime": "2026-10-31T13:08:13+08:00",
+     "age_hours": 0.0,
+     "bytes": 575
+    },
+    {
+     "kind": "run",
+     "file": "run-c3e0f9ab72ca.json",
+     "mtime": "2026-10-31T13:08:13+08:00",
+     "age_hours": 0.0,
+     "bytes": 775
+    },
+    {
+     "kind": "patchset",
+     "file": "patchset-rollback-T-BOOT-af8bac9a.json",
+     "mtime": "2026-10-31T13:06:31+08:00",
+     "age_hours": 0.0,
+     "bytes": 584,
+     "run_id": "patchset-rollback-T-BOOT-af8bac9a",
+     "task": "T-BOOT",
+     "ok": true,
+     "finalized_at": "2026-10-31T13:06:31+08:00",
+     "signature_present": true
+    },
+    {
+     "kind": "patchset",
+     "file": "patchset-T-BOOT-2dd15a1e.json",
+     "mtime": "2026-10-31T13:06:30+08:00",
+     "age_hours": 0.0,
+     "bytes": 1046,
+     "run_id": "patchset-T-BOOT-2dd15a1e",
+     "task": "T-BOOT",
+     "ok": true,
+     "finalized_at": "2026-10-31T13:06:30+08:00",
+     "signature_present": true
+    },
+    {
+     "kind": "run",
+     "file": "run-89686233fe8f.json",
+     "mtime": "2026-10-31T13:06:24+08:00",
+     "age_hours": 0.0,
+     "bytes": 775
+    },
+    {
+     "kind": "run",
+     "file": "run-b44b4d3fc1be.json",
+     "mtime": "2026-10-31T13:06:24+08:00",
+     "age_hours": 0.0,
+     "bytes": 575
+    }
+   ],
+   "error": "",
+   "read_errors": []
+  }
+ },
+ "notes": [
+  "只读聚合：不写 approval/任务板/tasks.json、不重启 8787/8103、不代签、不 promote artifact",
+  "失败项（工具缺失/超时/输出非 JSON/文件不可读）一律标 unknown 并保留错误原文，不伪造数值",
+  "M4 状态由 KPI m4_signoff 检查派生（只读计数），签字须 owner 本人完成",
+  "fast gate 日志与 evidence 清单为 advisory：不参与总判定，但出现在缺口清单",
+  "worktree 内运行时账本/配置以主仓为准（自动解析主仓并传 --repo 给 KPI/不变量工具）"
+ ]
+}
