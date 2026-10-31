@@ -33,6 +33,13 @@ def make_item(store, kind="software"):
     )["payload"]["item_id"]
 
 
+def _sign(store, iid, actions, signer_id="u-test"):
+    """H2：先向服务端申请一次性 nonce，再以会话 sub 签准。"""
+    n = X.issue_grant_nonce(store, iid, actions, signer_id=signer_id)
+    return X.sign_real_grant(store, iid, actions, nonce=n["nonce"],
+                             signer_id=signer_id)
+
+
 def happy_setup(store, consumer_id="CONS-AGENT-01"):
     iid = make_item(store)
     X.register_consumer(
@@ -42,9 +49,7 @@ def happy_setup(store, consumer_id="CONS-AGENT-01"):
         display_name="本机 Agent",
         capabilities=["artifact.generate", "test.run"],
     )
-    grant = X.sign_real_grant(
-        store, iid, ["artifact.generate", "test.run"], nonce="nonce-123456"
-    )
+    grant = _sign(store, iid, ["artifact.generate", "test.run"])
     wo = X.create_formal_workorder(
         store, iid, "产物可打开、可核对", required_capabilities=["artifact.generate"]
     )
@@ -65,15 +70,22 @@ def test_register_and_list_consumer(store):
         X.register_consumer(store, "bad id!")
 
 
-def test_grant_requires_nonce_and_l1_actions(store):
+def test_grant_requires_server_nonce_and_l1_actions(store):
+    """H2：不再接受自造 nonce；必须服务端签发的一次性 nonce + 会话 signer。"""
     iid = make_item(store)
     with pytest.raises(C.ContractError):
         X.sign_real_grant(store, iid, ["artifact.generate"], nonce="")
     with pytest.raises(C.ContractError):
-        X.sign_real_grant(store, iid, ["publish"], nonce="nonce-123456")
-    g = X.sign_real_grant(store, iid, ["artifact.generate"], nonce="nonce-123456")
+        X.sign_real_grant(store, iid, ["artifact.generate"],
+                          nonce="nonce-123456", signer_id="u-test")  # 自造 nonce 拒绝
+    with pytest.raises(C.ContractError):
+        X.issue_grant_nonce(store, iid, ["publish"], signer_id="u-test")  # L2 动作拒绝
+    with pytest.raises(C.ContractError):
+        X.issue_grant_nonce(store, iid, ["artifact.generate"], signer_id="")  # 无会话拒绝
+    g = _sign(store, iid, ["artifact.generate"])
     assert g["env"] == "controlled"
     assert g["signer"]["kind"] == "user"
+    assert g["signer"]["id"] == "u-test"
     assert g["signer"]["nonce_sha256"].startswith("sha256:")
 
 
@@ -81,14 +93,14 @@ def test_workorder_requires_valid_grant(store):
     iid = make_item(store)
     with pytest.raises(C.ContractError):
         X.create_formal_workorder(store, iid, "验收口径")
-    X.sign_real_grant(store, iid, ["artifact.generate"], nonce="nonce-123456")
+    _sign(store, iid, ["artifact.generate"])
     wo = X.create_formal_workorder(store, iid, "产物可打开")
     assert wo["env"] == "controlled" and wo["acceptance"] == "产物可打开"
 
 
 def test_real_claim_rejects_unknown_consumer(store):
     iid = make_item(store)
-    X.sign_real_grant(store, iid, ["artifact.generate"], nonce="nonce-123456")
+    _sign(store, iid, ["artifact.generate"])
     X.create_formal_workorder(store, iid, "验收口径")
     with pytest.raises(C.ContractError):
         X.real_claim(store, iid, "CONS-NOT-REGISTERED")
@@ -127,7 +139,7 @@ def test_artifact_requires_active_real_claim(store):
     X.register_consumer(
         store, "CONS-AGENT-01", kind="agent", capabilities=["artifact.generate"]
     )
-    X.sign_real_grant(store, iid, ["artifact.generate"], nonce="nonce-123456")
+    _sign(store, iid, ["artifact.generate"])
     X.create_formal_workorder(store, iid, "验收口径")
     with pytest.raises(C.ContractError):
         X.produce_controlled_artifact(store, iid, "CONS-AGENT-01", "a.md", "内容")
@@ -149,10 +161,19 @@ def test_api_routes_controlled(store):
     assert st == 201 and p["consumer"]["status"] == "active"
     st, p = A.handle_post(
         store,
+        "/api/os/item/%s/grant/nonce" % iid,
+        {"actions": ["artifact.generate"]},
+        auth_sub="u-api",
+    )
+    assert st == 201 and p["nonce"]
+    st, p = A.handle_post(
+        store,
         "/api/os/item/%s/grant/real" % iid,
-        {"actions": ["artifact.generate"], "nonce": "nonce-123456"},
+        {"actions": ["artifact.generate"], "nonce": p["nonce"]},
+        auth_sub="u-api",
     )
     assert st == 201 and p["grant"]["env"] == "controlled"
+    assert p["grant"]["signer"]["id"] == "u-api"
     st, p = A.handle_post(
         store, "/api/os/item/%s/workorder/formal" % iid, {"acceptance": "API 验收"}
     )

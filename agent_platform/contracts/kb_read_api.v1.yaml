@@ -1,0 +1,126 @@
+openapi: 3.0.3
+info:
+  title: 零界知识库只读接口（KB Read API）
+  version: "1.0.0"
+  description: >-
+    研报/书籍知识库只读接口。当前 CLI 通道已上线（kb_read_api.py），HTTP 端点预留待 8091 重启窗口接线。
+    统一信封；引用必带 book/chapter/page_start-page_end。
+servers:
+  - url: http://127.0.0.1:8734
+    description: 门户同源（静态快照/预留 HTTP）
+  - url: http://127.0.0.1:8091
+    description: portal-api（预留；当前未接线）
+paths:
+  /static/kb_units_all.json:
+    get:
+      summary: 全量知识单元快照（静态，已上线）
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/UnitsSnapshot"}
+  /static/kb_reports_gov.json:
+    get:
+      summary: 研报知识库治理快照（已上线）
+      responses:
+        "200": {description: OK}
+  /static/kb_daily_briefing.json:
+    get:
+      summary: 今日研报简报（已上线）
+      responses:
+        "200": {description: OK}
+  /api/kb_read/status:
+    get:
+      summary: 知识库状态（HTTP 预留）
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Envelope"}
+  /api/kb_read/books:
+    get:
+      summary: 书目清单（HTTP 预留）
+      responses:
+        "200": {description: OK, content: {application/json: {schema: {$ref: "#/components/schemas/Envelope"}}}}
+  /api/kb_read/units:
+    get:
+      summary: 知识单元列表（HTTP 预留）
+      parameters:
+        - {name: book, in: query, schema: {type: string}}
+        - {name: chapter, in: query, schema: {type: string}}
+        - {name: page, in: query, schema: {type: integer, minimum: 1, default: 1}}
+        - {name: size, in: query, schema: {type: integer, minimum: 1, maximum: 200, default: 20}}
+      responses:
+        "200": {description: OK, content: {application/json: {schema: {$ref: "#/components/schemas/Envelope"}}}}
+  /api/kb_read/search:
+    get:
+      summary: 检索（HTTP 预留）
+      parameters:
+        - {name: q, in: query, required: true, schema: {type: string}}
+        - {name: top, in: query, schema: {type: integer, minimum: 1, maximum: 50, default: 10}}
+      responses:
+        "200": {description: OK, content: {application/json: {schema: {$ref: "#/components/schemas/Envelope"}}}}
+        "400":
+          description: 参数错误
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Envelope"}
+  /api/kb_read/unit/{id}:
+    get:
+      summary: 单条知识单元（HTTP 预留）
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        "200": {description: OK, content: {application/json: {schema: {$ref: "#/components/schemas/Envelope"}}}}
+        "404": {description: NOT_FOUND}
+  /api/kb_read/briefing:
+    get:
+      summary: 今日简报（HTTP 预留）
+      responses:
+        "200": {description: OK, content: {application/json: {schema: {$ref: "#/components/schemas/Envelope"}}}}
+  /api/kb_read/schema:
+    get:
+      summary: 自描述 schema
+      responses:
+        "200": {description: OK}
+components:
+  schemas:
+    Envelope:
+      type: object
+      required: [api_version, request_id, ok, data, error]
+      properties:
+        api_version: {type: string, const: "1.0"}
+        request_id: {type: string}
+        ok: {type: boolean}
+        data: {type: [object, "null"]}
+        error:
+          type: [object, "null"]
+          properties:
+            code: {type: string, enum: [INVALID_ARGUMENT, NOT_FOUND, NOT_READY, UPSTREAM_UNAVAILABLE]}
+            message: {type: string}
+        generated_at: {type: string, format: date-time}
+    Unit:
+      type: object
+      required: [id, source, book, chapter, page_start, page_end, concept, claim, evidence]
+      properties:
+        id: {type: string}
+        source: {type: string, enum: [书籍, 研报]}
+        book: {type: string}
+        chapter: {type: string}
+        page_start: {type: integer}
+        page_end: {type: integer}
+        concept: {type: string}
+        claim: {type: string}
+        evidence: {type: string}
+        score: {type: number}
+    UnitsSnapshot:
+      type: object
+      required: [generated_at, total, units]
+      properties:
+        generated_at: {type: string}
+        total: {type: integer}
+        units:
+          type: array
+          items: {$ref: "#/components/schemas/Unit"}

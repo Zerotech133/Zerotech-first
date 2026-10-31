@@ -81,6 +81,13 @@ tr.clickable{cursor:pointer}tr.clickable:hover td{background:var(--panel2)}
   </div>
   <div id="kbGovPills" style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;font-size:12px;color:#8b949e">治理状态加载中…</div>
 </div>
+<div class="panel" id="kbReportsCard" style="border:1px solid #2d333b;border-radius:10px;padding:12px 16px;margin-bottom:14px;background:#161b22">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+    <div><b>📑 研报知识库</b> <span style="color:#8b949e;font-size:12px">100 份研报 · 498 知识单元 · RAG 112 文档/462 记录 · 抽检 PASS</span></div>
+    <a href="/kb_ingest.html" style="color:#58a6ff;font-size:13px;text-decoration:none">入库看板 →</a>
+  </div>
+  <div id="kbReportsPills" style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;font-size:12px;color:#8b949e">治理状态加载中…</div>
+</div>
 <div><h1>🗄 数据仓驾驶舱 <small>来源治理 · 今日动态 · 挖掘时间线 · 治理路线</small></h1>
   <div class="sub" id="sub">加载中…</div>
 <div class="strip" id="legend" style="font-size:12px;color:var(--dim)"><b>接入方式口径</b>：接口同步＝按交易日/股票从 Tushare 接口拉取；爬虫采集＝新闻/雪球页面抓取；本地库＝SQLite 落盘库；容器库＝PostgreSQL/MySQL 容器库；文件导入＝PDF/人工导入。「条数」为数据行数（万/条）；「滞后」＝最新数据日期距今天数（越红越滞后）。</div></div>
@@ -370,5 +377,25 @@ load();
   }catch(e){}
 })();
 </script>
+
+<script>
+(async function loadKbReports(){
+  try{
+    const r=await fetch('/static/kb_reports_gov.json?ts='+Date.now(),{cache:'no-store'});
+    if(!r.ok) return;
+    const g=await r.json();
+    const pill=(t,ok)=>'<span style="padding:2px 9px;border-radius:10px;border:1px solid '+(ok?'#1f6feb':'#d29922')+';color:'+(ok?'#79c0ff':'#d29922')+'">'+t+'</span>';
+    const s=g.spotcheck||{}, rag=g.rag||{};
+    document.getElementById('kbReportsPills').innerHTML=[
+      pill('文档 '+(g.docs||0), (g.docs||0)>0),
+      pill('知识单元 '+(g.units||0), (g.units||0)>0),
+      pill('表格 '+(g.tables||0), (g.tables||0)>0),
+      pill('证据接地 '+((s.ground_rate!=null?(s.ground_rate*100).toFixed(1):'—')+'%'), (s.ground_rate||0)>=0.8),
+      pill('RAG '+(rag.records||0)+' 记录', (rag.records||0)>0)
+    ].join(' ');
+  }catch(e){}
+})();
+</script>
+
 </body>
 </html>

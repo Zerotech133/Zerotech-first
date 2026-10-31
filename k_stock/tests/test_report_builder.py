@@ -82,8 +82,21 @@ def _registration(tmp_path, combo_id, budget=100.0) -> Path:
 
 
 @pytest.fixture
-def env(tmp_path):
-    """隔离四账 + 版本账：注册表副本 / 成本账 / 回执账 / -006 版本账 全 tmp。"""
+def env(tmp_path, monkeypatch):
+    """隔离四账 + 版本账：注册表副本 / 成本账 / 回执账 / -006 版本账 全 tmp。
+
+    2026-11-01 K-ORG-20261031-MIDNIGHTTESTS：成本账写 ts=datetime.now()，
+    跨月/跨日后会落到 11 月，而本夹具断言固定 MONTH=2026-10 → 假红。
+    冻结 combo_factory.datetime，保证成本账归月与断言同月。
+    """
+    import datetime as _dt
+
+    class _FixedDatetime(_dt.datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return cls(2026, 10, 20, 14, 0, 0, tzinfo=tz)
+
+    monkeypatch.setattr(combo_factory, "datetime", _FixedDatetime)
     reg = _registry_copy(tmp_path)
     ledger = tmp_path / "budget.jsonl"
     subs = tmp_path / "subs.jsonl"
@@ -240,7 +253,7 @@ def test_five_sections_always_present(env):
 def test_five_sections_with_full_data(env):
     """全量喂入：一~五段均 available 且各出数。"""
     cid = _make_combo(env, "combo_report_a")
-    combo_factory.record_combo_cost(cid, 4.0, note="b1", ledger=env["ledger"])
+    combo_factory.record_combo_cost(cid, 4.0, note="b1", ledger=env["ledger"], ts=CLOCK)
     _four_receipts(env["receipts"], combo_id=cid)
     _seed_plan_ledger(env)
     rep = _build(
@@ -267,7 +280,7 @@ def test_five_sections_with_full_data(env):
 def test_roi_null_renders_pending_backfill_not_zero(env):
     """后验收益缺失 → ROI 原样透出 pending_backfill，绝不渲染 0（「打平」是造数）。"""
     cid = _make_combo(env, "combo_report_a")
-    combo_factory.record_combo_cost(cid, 4.0, ledger=env["ledger"])
+    combo_factory.record_combo_cost(cid, 4.0, ledger=env["ledger"], ts=CLOCK)
     rep = _build(
         env, [cid], reviews_by_combo={cid: _reviews(combo_id=cid)}, findings=[]
     )
@@ -288,7 +301,7 @@ def test_roi_null_renders_pending_backfill_not_zero(env):
 def test_roi_unit_mismatch_renders_token(env):
     """收益单位与成本单位不可减 → unit_mismatch，不出数、不填 0。"""
     cid = _make_combo(env, "combo_report_a")
-    combo_factory.record_combo_cost(cid, 4.0, ledger=env["ledger"])
+    combo_factory.record_combo_cost(cid, 4.0, ledger=env["ledger"], ts=CLOCK)
     rep = _build(
         env, [cid], findings=[], posterior_by_combo={cid: {"unit": "PCT", "total": 3.5}}
     )
@@ -301,7 +314,7 @@ def test_roi_unit_mismatch_renders_token(env):
 def test_roi_computed_shows_number(env):
     """算出数时才给数值（对照组：确保 pending_backfill 不是恒定文案）。"""
     cid = _make_combo(env, "combo_report_a")
-    combo_factory.record_combo_cost(cid, 4.0, ledger=env["ledger"])
+    combo_factory.record_combo_cost(cid, 4.0, ledger=env["ledger"], ts=CLOCK)
     rep = _build(
         env,
         [cid],
@@ -349,8 +362,8 @@ def test_budget_unregistered_stays_null(env):
     env["registry_path"].write_text(
         json.dumps(reg, ensure_ascii=False), encoding="utf-8"
     )
-    combo_factory.record_combo_cost(with_budget, 4.0, ledger=env["ledger"])
-    combo_factory.record_combo_cost(no_budget, 6.0, ledger=env["ledger"])
+    combo_factory.record_combo_cost(with_budget, 4.0, ledger=env["ledger"], ts=CLOCK)
+    combo_factory.record_combo_cost(no_budget, 6.0, ledger=env["ledger"], ts=CLOCK)
     rep = _build(env, [with_budget, no_budget], findings=[])
     t = rep["sections"]["cost_budget"]["totals"]
     assert t["cost_accumulated"] == 10.0  # 成本照实
@@ -446,7 +459,7 @@ def test_zero_real_outlet_under_network_clamp(env, monkeypatch):
     monkeypatch.setattr(urllib.request, "urlopen", _no_urlopen)
 
     cid = _make_combo(env, "combo_report_a")
-    combo_factory.record_combo_cost(cid, 4.0, ledger=env["ledger"])
+    combo_factory.record_combo_cost(cid, 4.0, ledger=env["ledger"], ts=CLOCK)
     _four_receipts(env["receipts"], combo_id=cid)
     _seed_plan_ledger(env)
     rep = _build(
@@ -599,7 +612,7 @@ def test_live_field_guard_recurses_into_lists():
 def test_roundtrip_same_input_twice_identical(env):
     """同输入两次生成完全一致（clock 注入 → 可复现，供 015 归档复现比对）。"""
     cid = _make_combo(env, "combo_report_a")
-    combo_factory.record_combo_cost(cid, 4.0, ledger=env["ledger"])
+    combo_factory.record_combo_cost(cid, 4.0, ledger=env["ledger"], ts=CLOCK)
     _four_receipts(env["receipts"], combo_id=cid)
     _seed_plan_ledger(env)
     kw = dict(
@@ -700,8 +713,8 @@ def test_multi_combo_aggregation(env):
     """多组合：分支留痕跨组合聚合、成本合计、ROI 三态分布可读。"""
     a = _make_combo(env, "combo_report_a", budget=100.0)
     b = _make_combo(env, "combo_report_b", budget=50.0)
-    combo_factory.record_combo_cost(a, 4.0, ledger=env["ledger"])
-    combo_factory.record_combo_cost(b, 6.0, ledger=env["ledger"])
+    combo_factory.record_combo_cost(a, 4.0, ledger=env["ledger"], ts=CLOCK)
+    combo_factory.record_combo_cost(b, 6.0, ledger=env["ledger"], ts=CLOCK)
     _four_receipts(env["receipts"], signal_id=SIG, combo_id=a)
     rep = _build(
         env,

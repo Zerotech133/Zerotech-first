@@ -1,0 +1,215 @@
+{
+ "date": "20261030",
+ "method": "inverse-vol + 5% single cap + 30% industry cap + vol target",
+ "target_vol_ann": 0.15,
+ "estimated_vol_ann": 29.88,
+ "scale": 0.502,
+ "cash": 0.498,
+ "holdings": [
+  {
+   "ts_code": "600825.SH",
+   "name": "新华传媒",
+   "industry": "出版业",
+   "weight": 0.0251,
+   "vol_ann": 111.6,
+   "score": 2.82
+  },
+  {
+   "ts_code": "688018.SH",
+   "name": "乐鑫科技",
+   "industry": "半导体",
+   "weight": 0.0251,
+   "vol_ann": 96.5,
+   "score": 1.1202
+  },
+  {
+   "ts_code": "300832.SZ",
+   "name": "新产业",
+   "industry": "医疗保健",
+   "weight": 0.0251,
+   "vol_ann": 50.7,
+   "score": 1.1126
+  },
+  {
+   "ts_code": "688787.SH",
+   "name": "海天瑞声",
+   "industry": "软件服务",
+   "weight": 0.0251,
+   "vol_ann": 116.3,
+   "score": 1.0633
+  },
+  {
+   "ts_code": "920982.BJ",
+   "name": "锦波生物",
+   "industry": "医疗保健",
+   "weight": 0.0251,
+   "vol_ann": 76.6,
+   "score": 1.0264
+  },
+  {
+   "ts_code": "003021.SZ",
+   "name": "兆威机电",
+   "industry": "元器件",
+   "weight": 0.0251,
+   "vol_ann": 79.7,
+   "score": 1.0263
+  },
+  {
+   "ts_code": "300760.SZ",
+   "name": "迈瑞医疗",
+   "industry": "医疗保健",
+   "weight": 0.0251,
+   "vol_ann": 28.5,
+   "score": 0.9882
+  },
+  {
+   "ts_code": "601857.SH",
+   "name": "中国石油",
+   "industry": "石油开采",
+   "weight": 0.0251,
+   "vol_ann": 26.3,
+   "score": 0.9786
+  },
+  {
+   "ts_code": "600329.SH",
+   "name": "达仁堂",
+   "industry": "中成药",
+   "weight": 0.0251,
+   "vol_ann": 36.5,
+   "score": 0.9679
+  },
+  {
+   "ts_code": "600573.SH",
+   "name": "惠泉啤酒",
+   "industry": "啤酒",
+   "weight": 0.0251,
+   "vol_ann": 57.4,
+   "score": 0.9643
+  },
+  {
+   "ts_code": "600267.SH",
+   "name": "海正药业",
+   "industry": "化学制药",
+   "weight": 0.0251,
+   "vol_ann": 61.6,
+   "score": 0.9478
+  },
+  {
+   "ts_code": "603939.SH",
+   "name": "益丰药房",
+   "industry": "医药商业",
+   "weight": 0.0251,
+   "vol_ann": 30.9,
+   "score": 0.9123
+  },
+  {
+   "ts_code": "688213.SH",
+   "name": "思特威",
+   "industry": "半导体",
+   "weight": 0.0251,
+   "vol_ann": 52.5,
+   "score": 0.8864
+  },
+  {
+   "ts_code": "301101.SZ",
+   "name": "明月镜片",
+   "industry": "文教休闲",
+   "weight": 0.0251,
+   "vol_ann": 75.9,
+   "score": 0.8472
+  },
+  {
+   "ts_code": "002043.SZ",
+   "name": "兔宝宝",
+   "industry": "其他建材",
+   "weight": 0.0251,
+   "vol_ann": 41.1,
+   "score": 0.8379
+  },
+  {
+   "ts_code": "002027.SZ",
+   "name": "分众传媒",
+   "industry": "广告包装",
+   "weight": 0.0251,
+   "vol_ann": 30.3,
+   "score": 0.8277
+  },
+  {
+   "ts_code": "601595.SH",
+   "name": "上海电影",
+   "industry": "影视音像",
+   "weight": 0.0251,
+   "vol_ann": 69.3,
+   "score": 0.8267
+  },
+  {
+   "ts_code": "600312.SH",
+   "name": "平高电气",
+   "industry": "电气设备",
+   "weight": 0.0251,
+   "vol_ann": 33.7,
+   "score": 0.8081
+  },
+  {
+   "ts_code": "302132.SZ",
+   "name": "中航成飞",
+   "industry": "航空",
+   "weight": 0.0251,
+   "vol_ann": 41.0,
+   "score": 0.808
+  },
+  {
+   "ts_code": "688360.SH",
+   "name": "德马科技",
+   "industry": "机械基件",
+   "weight": 0.0251,
+   "vol_ann": 76.9,
+   "score": 0.8041
+  }
+ ],
+ "industry_exposure": {
+  "出版业": 0.0251,
+  "半导体": 0.0502,
+  "医疗保健": 0.0753,
+  "软件服务": 0.0251,
+  "元器件": 0.0251,
+  "石油开采": 0.0251,
+  "中成药": 0.0251,
+  "啤酒": 0.0251,
+  "化学制药": 0.0251,
+  "医药商业": 0.0251,
+  "文教休闲": 0.0251,
+  "其他建材": 0.0251,
+  "广告包装": 0.0251,
+  "影视音像": 0.0251,
+  "电气设备": 0.0251,
+  "航空": 0.0251,
+  "机械基件": 0.0251
+ },
+ "n": 20,
+ "selection": {
+  "candidates": 2583,
+  "filters": {
+   "st": 195,
+   "new": 116,
+   "price": 95,
+   "liquidity": 1376,
+   "limitup": 60,
+   "missing": 1718,
+   "loss": 1478,
+   "extreme": 7,
+   "input": 5571,
+   "eligible_before_h14": 2768,
+   "h14_trap_excluded": 185,
+   "eligible_after_h14": 2583
+  },
+  "weights": {
+   "momentum20": 0.45,
+   "reversal5": 0.25,
+   "low_turnover": 0.2,
+   "quality_mid": 0.1
+  }
+ },
+ "generated_at": "2026-11-01T01:03:41+08:00",
+ "note": "组合权重为研究输出；S02 排序未验证；实盘前须过影子盘+审批"
+}

@@ -1,0 +1,42 @@
+# 研报知识库血缘：inbox PDF → ingest 产物 → 知识单元 → RAG / Agent 工具 / 学习卡
+nodes:
+- id: inbox_research_pdf
+  layer: source
+  path: inbox/docs/done/
+  desc: 101 份卖方研报 PDF（东财渠道；内部研究用）
+- id: reports_ingest
+  layer: raw_derived
+  path: C:/项目/PDF/_ingest_reports/
+  desc: 100 份结构入库（structure/layout/ocr/knowledge_units）；2 份原生崩溃走 pypdf fallback
+- id: reports_units
+  layer: knowledge
+  path: C:/项目/PDF/_ingest_reports/*/knowledge_units.jsonl
+  desc: 研报知识单元 463 条（concept/claim/evidence/章节/页码，LLM 抽取）
+- id: reports_rag
+  layer: served
+  path: knowledge_docs/.rag_index.json
+  desc: RAG 112 文档 / 462 记录（含研报摘要、书籍、量学摘要）
+- id: reports_agent_tool
+  layer: served
+  path: tools/kb_corpus/kb_reports_search.py
+  desc: Agent 只读检索工具（知识单元+RBAC 记录，BM25-lite）
+- id: learning_cards
+  layer: human
+  path: C:/项目/知识库/60_学习卡/
+  desc: 知识单元 → Q/A 学习卡（每日一卡）
+edges:
+- from: inbox_research_pdf
+  to: reports_ingest
+  op: tools/kb_corpus/batch_ingest.py
+- from: reports_ingest
+  to: reports_units
+  op: tools/kb_corpus/pdf_ingest.py distill
+- from: reports_units
+  to: reports_rag
+  op: tools/kb_corpus/pdf_ingest.py index --rebuild-rag
+- from: reports_units
+  to: reports_agent_tool
+  op: tools/kb_corpus/kb_reports_search.py
+- from: reports_units
+  to: learning_cards
+  op: tools/kb_corpus/learning_cards.py

@@ -1,0 +1,338 @@
+{
+ "library": {
+  "name": "零界选股策略库",
+  "owner": "司马微",
+  "role": "策略库负责人（选股策略）",
+  "created_at": "2026-11-01",
+  "registry_file": "agent_platform/catalogs/strategy_registry.json",
+  "output_contract": "research/reports/selection_daily_<date>.json + portal/static/selection_daily.json",
+  "discipline": "策略上架需通过数据/PIT、统计、成本容量、影子盘、人工批准五关；未过影子盘仅供研究"
+ },
+ "date": "20261030",
+ "generated_at": "2026-11-01T01:20:21+08:00",
+ "strategies": [
+  {
+   "id": "S01_H14_quality_trap_guard",
+   "name": "H14 质量陷阱规避（过滤器）",
+   "type": "filter",
+   "owner": "司马微",
+   "source_hypothesis": "H14",
+   "status": "validated",
+   "executable": true,
+   "rule": "剔除「高估值层(PE三分位) + ROE 层内前20%」的质量陷阱；叠加 ST/次新/低价/低流动性/涨停不可买/亏损股过滤",
+   "validation": {
+    "stats": "backtested（台账 H14：估值分层内质量反向 OOS 全负；高ROE+高PE 质量陷阱 OOS -0.60%）",
+    "shadow": "H14ShadowMonthly 已有影子",
+    "cost": "过滤类无独立换手成本"
+   },
+   "approved": false,
+   "effective_from": "2026-11-01"
+  },
+  {
+   "id": "S02_composite_mvp",
+   "name": "复合排序 MVP（动量+反转+低换手+质量中性）",
+   "type": "ranking",
+   "owner": "司马微",
+   "source_hypothesis": "MVP（非台账结论）",
+   "status": "paused_shadow_breaker",
+   "executable": true,
+   "rule": "在 S01 过滤后候选池内打分：动量20d 0.45 + 5日反转 0.25 + 低换手 0.20 + ROE层内中性 0.10；每行业≤3；top20",
+   "validation": {
+    "stats": "未验证（仅流程演示）",
+    "shadow": "2026-11-01 20日回填 NAV 0.904（-9.6%）、MDD -9.5% → 触发 8% 熔断",
+    "cost": "30bp×换手已计，未含冲击成本",
+    "action": "S02 暂停（paused_shadow_breaker），等待因子重做"
+   },
+   "approved": false,
+   "effective_from": "2026-11-01"
+  },
+  {
+   "id": "S03_H18_forecast_revision_watch",
+   "name": "H18 业绩预告修订监控（事件观察）",
+   "type": "watch",
+   "owner": "司马微",
+   "source_hypothesis": "H18",
+   "status": "validated_event_ambiguous_direction",
+   "executable": true,
+   "rule": "同一 code+报告期 二次公告：净利润变动区间中值相对首次公告的变化（改善/恶化）；近90日修订事件列出观察清单（不作为买入信号）",
+   "validation": {
+    "stats": "backtested（H18 v2：493 修订事件/1,361 观测；20日 CAR 改善 -1.51%(t=-1.27) 恶化 -2.35%(t=-3.23)；OOS 改善 -2.92%(t=-2.0) 恶化 -3.04%(t=-3.06)；价差+0.84% 不显著 → 仅事件提醒）",
+    "shadow": "无",
+    "cost": "事件型换手低，30bp 已计；容量极小（493 事件/3.8年）"
+   },
+   "approved": false,
+   "effective_from": "2026-11-01"
+  },
+  {
+   "id": "S04_AH_premium_pair",
+   "name": "A/H 溢价收敛配对（轮动）",
+   "type": "pair",
+   "owner": "司马微",
+   "source_hypothesis": "H15/H16",
+   "status": "validated_pair_planned",
+   "executable": false,
+   "rule": "A/H 溢价（汇率换算）收敛：155 对，OOS IC t=-11.77；以配对/轮动形式实现（非单边选股）",
+   "validation": {
+    "stats": "backtested（H15/H16）",
+    "shadow": "无",
+    "cost": "双边成本/汇率基差待评估"
+   },
+   "approved": false,
+   "effective_from": "待建（phase2）"
+  }
+ ],
+ "active": {
+  "S01_H14_quality_trap_guard": {
+   "status": "已应用为过滤器",
+   "filters": {}
+  },
+  "S02_composite_mvp": {
+   "status": "已运行（MVP 未验证）",
+   "weights": {},
+   "candidates": 0
+  },
+  "S03_H18_forecast_revision_watch": {
+   "status": "已运行（事件观察）",
+   "events": 20
+  },
+  "S04_AH_premium_pair": {
+   "status": "未启用（phase2）"
+  }
+ },
+ "picks": [],
+ "s02_paused": true,
+ "picks_validation": {
+  "status": "S02 已熔断暂停（影子盘20日-9.6%/MDD-9.5%），今日不输出候选",
+  "validated": [],
+  "unvalidated": [],
+  "caveat": "等待因子重做/人工复核"
+ },
+ "forecast_watch": {
+  "rule": "同 code+报告期 二次公告净利润区间中值变化；近 90 日",
+  "events": 20,
+  "items": [
+   {
+    "ts_code": "000096.SZ",
+    "end_date": "20260630",
+    "ann_date": "20260812",
+    "type": "预增",
+    "prev_mid": 186.01,
+    "latest_mid": 619.13,
+    "delta_pp": 433.12,
+    "direction": "改善",
+    "summary": "预计2026年1-6月归属于上市公司股东的净利润盈利:6,555.96万元至6,856.42万元,同比上年增长:603.02%至635.24%。"
+   },
+   {
+    "ts_code": "002933.SZ",
+    "end_date": "20260630",
+    "ann_date": "20260805",
+    "type": "续盈",
+    "prev_mid": -51.12,
+    "latest_mid": -0.97,
+    "delta_pp": 50.16,
+    "direction": "改善",
+    "summary": "预计2026年1-6月归属于上市公司股东的净利润盈利:1,300万元至1,800万元,同比上年变动:-16.94%至15.01%。"
+   },
+   {
+    "ts_code": "600187.SH",
+    "end_date": "20260630",
+    "ann_date": "20260819",
+    "type": "扭亏",
+    "prev_mid": 138.21,
+    "latest_mid": 115.83,
+    "delta_pp": -22.38,
+    "direction": "恶化",
+    "summary": "预计2026年1-6月归属于上市公司股东的净利润盈利:265万元至315万元。"
+   },
+   {
+    "ts_code": "688836.SH",
+    "end_date": "20260630",
+    "ann_date": "20260814",
+    "type": "扭亏",
+    "prev_mid": 980.55,
+    "latest_mid": 980.58,
+    "delta_pp": 0.03,
+    "direction": "改善",
+    "summary": "预计2026年1-6月归属于上市公司股东的净利润盈利:25,800万元至30,600万元。"
+   },
+   {
+    "ts_code": "301655.SZ",
+    "end_date": "20260630",
+    "ann_date": "20260814",
+    "type": "预增",
+    "prev_mid": 99.13,
+    "latest_mid": 99.13,
+    "delta_pp": 0.0,
+    "direction": "持平",
+    "summary": "预计2026年1-6月归属于上市公司股东的净利润盈利:12,066.4万元至15,132.67万元,同比上年增长:76.68%至121.58%。"
+   },
+   {
+    "ts_code": "301688.SZ",
+    "end_date": "20260930",
+    "ann_date": "20260826",
+    "type": "略增",
+    "prev_mid": 6.22,
+    "latest_mid": 6.22,
+    "delta_pp": 0.0,
+    "direction": "持平",
+    "summary": "预计2026年1-9月归属于上市公司股东的净利润盈利:14,479.11万元至15,984.95万元,同比上年增长:0.97%至11.47%。"
+   },
+   {
+    "ts_code": "301689.SZ",
+    "end_date": "20260930",
+    "ann_date": "20260903",
+    "type": "续盈",
+    "prev_mid": 1.95,
+    "latest_mid": 1.95,
+    "delta_pp": 0.0,
+    "direction": "持平",
+    "summary": "预计2026年1-9月净利润盈利:24,500万元至26,500万元,同比上年变动:-2.05%至5.95%。"
+   },
+   {
+    "ts_code": "301697.SZ",
+    "end_date": "20260930",
+    "ann_date": "20260825",
+    "type": "预增",
+    "prev_mid": 40.95,
+    "latest_mid": 40.95,
+    "delta_pp": 0.0,
+    "direction": "持平",
+    "summary": "预计2026年1-9月归属于上市公司股东的净利润盈利:10,500万元至12,000万元,同比上年增长:31.56%至50.35%。"
+   },
+   {
+    "ts_code": "301697.SZ",
+    "end_date": "20261231",
+    "ann_date": "20260831",
+    "type": "略增",
+    "prev_mid": 2.63,
+    "latest_mid": 2.63,
+    "delta_pp": 0.0,
+    "direction": "持平",
+    "summary": "预计2026年1-12月归属于上市公司股东的净利润盈利:11,910.63万元,同比上年增长:2.63%。"
+   },
+   {
+    "ts_code": "301699.SZ",
+    "end_date": "20260930",
+    "ann_date": "20260901",
+    "type": "略增",
+    "prev_mid": 9.86,
+    "latest_mid": 9.86,
+    "delta_pp": 0.0,
+    "direction": "持平",
+    "summary": "预计2026年1-9月归属于上市公司股东的净利润盈利:45,000万元至47,000万元,同比上年增长:7.47%至12.25%。"
+   },
+   {
+    "ts_code": "301717.SZ",
+    "end_date": "20260630",
+    "ann_date": "20260806",
+    "type": "预增",
+    "prev_mid": 73.98,
+    "latest_mid": 73.98,
+    "delta_pp": 0.0,
+    "direction": "持平",
+    "summary": "预计2026年1-6月归属于上市公司股东的净利润盈利:10,325万元至11,085万元,同比上年增长:67.81%至80.16%。"
+   },
+   {
+    "ts_code": "600889.SH",
+    "end_date": "20260630",
+    "ann_date": "20260801",
+    "type": "扭亏",
+    "prev_mid": 149.48,
+    "latest_mid": 149.48,
+    "delta_pp": 0.0,
+    "direction": "持平",
+    "summary": "预计2026年1-6月归属于上市公司股东的净利润盈利:4,000万元至4,800万元。"
+   },
+   {
+    "ts_code": "601123.SH",
+    "end_date": "20260930",
+    "ann_date": "20260831",
+    "type": "略增",
+    "prev_mid": 13.0,
+    "latest_mid": 13.0,
+    "delta_pp": 0.0,
+    "direction": "持平",
+    "summary": "预计2026年1-9月归属于上市公司股东的净利润盈利:53,164万元至58,087万元,同比上年增长:8%至18%。"
+   },
+   {
+    "ts_code": "603448.SH",
+    "end_date": "20260930",
+    "ann_date": "20260904",
+    "type": "略减",
+    "prev_mid": -12.45,
+    "latest_mid": -12.45,
+    "delta_pp": 0.0,
+    "direction": "持平",
+    "summary": "预计2026年1-9月归属于上市公司股东的净利润盈利:21,800万元至24,900万元,同比上年下降:6.64%至18.26%。"
+   },
+   {
+    "ts_code": "688801.SH",
+    "end_date": "20260930",
+    "ann_date": "20260910",
+    "type": "减亏",
+    "prev_mid": 12.14,
+    "latest_mid": 12.14,
+    "delta_pp": 0.0,
+    "direction": "持平",
+    "summary": "预计2026年1-9月归属于上市公司股东的净利润亏损:70,000万元至86,000万元,同比上年增长:3.13%至21.15%。"
+   },
+   {
+    "ts_code": "688826.SH",
+    "end_date": "20260630",
+    "ann_date": "20260817",
+    "type": "略增",
+    "prev_mid": 37.5,
+    "latest_mid": 37.5,
+    "delta_pp": 0.0,
+    "direction": "持平",
+    "summary": "预计2026年1-6月归属于上市公司股东的净利润盈利:9,000万元至10,500万元,同比上年增长:26.93%至48.08%。"
+   },
+   {
+    "ts_code": "688828.SH",
+    "end_date": "20260630",
+    "ann_date": "20260806",
+    "type": "续亏",
+    "prev_mid": 7.69,
+    "latest_mid": 7.69,
+    "delta_pp": 0.0,
+    "direction": "持平",
+    "summary": "预计2026年1-6月归属于上市公司股东的净利润亏损:5,900万元至7,500万元,同比上年变动:-3.34%至18.71%。"
+   },
+   {
+    "ts_code": "688835.SH",
+    "end_date": "20260930",
+    "ann_date": "20260824",
+    "type": "略增",
+    "prev_mid": 28.46,
+    "latest_mid": 28.46,
+    "delta_pp": 0.0,
+    "direction": "持平",
+    "summary": "预计2026年1-9月归属于上市公司股东的净利润盈利:13,000万元至15,000万元,同比上年增长:19.28%至37.63%。"
+   },
+   {
+    "ts_code": "688837.SH",
+    "end_date": "20260930",
+    "ann_date": "20260915",
+    "type": "首亏",
+    "prev_mid": -202.14,
+    "latest_mid": -202.14,
+    "delta_pp": 0.0,
+    "direction": "持平",
+    "summary": "预计2026年1-9月归属于上市公司股东的净利润亏损:34,900万元至38,600万元,同比上年下降:197%至207.28%。"
+   },
+   {
+    "ts_code": "920107.BJ",
+    "end_date": "20260930",
+    "ann_date": "20260804",
+    "type": "略增",
+    "prev_mid": 3.06,
+    "latest_mid": 3.06,
+    "delta_pp": 0.0,
+    "direction": "持平",
+    "summary": "预计:净利润8300-8700"
+   }
+  ],
+  "note": "H18 事件研究：改善/恶化组 20 日均负收益 → 仅观察，不作买入信号"
+ },
+ "disclaimer": "研究输出，不构成投资建议；S02 排序因子未验证；实盘前须过影子盘+人工批准。"
+}

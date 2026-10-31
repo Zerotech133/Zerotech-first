@@ -1,0 +1,79 @@
+{
+ "generated_at": "2026-11-01T01:20:17+08:00",
+ "days": 20,
+ "nav": 0.903977,
+ "peak": 0.998836,
+ "dd_pct": -9.5,
+ "ret20_pct": -9.5,
+ "neg_streak": 1,
+ "breaker": {
+  "limit_pct": 8.0,
+  "breached": true,
+  "status": "paused"
+ },
+ "attribution": {
+  "industry_pct": {
+   "医疗保健": -1.057,
+   "元器件": -0.935,
+   "食品": -0.781,
+   "半导体": -0.59,
+   "生物制药": -0.541,
+   "机械基件": -0.541,
+   "汽车配件": -0.539,
+   "出版业": -0.469,
+   "红黄酒": -0.439,
+   "电气设备": -0.383
+  },
+  "score_bucket_pct": {
+   "score_q1": -2.566,
+   "score_q2": -1.102,
+   "score_q3": -2.698,
+   "score_q4": -1.932
+  },
+  "top_contributors": [
+   {
+    "ts_code": "688203.SH",
+    "contrib_pct": 0.185
+   },
+   {
+    "ts_code": "601857.SH",
+    "contrib_pct": 0.178
+   },
+   {
+    "ts_code": "301132.SZ",
+    "contrib_pct": 0.151
+   },
+   {
+    "ts_code": "920690.BJ",
+    "contrib_pct": 0.146
+   },
+   {
+    "ts_code": "688499.SH",
+    "contrib_pct": 0.143
+   }
+  ],
+  "worst_contributors": [
+   {
+    "ts_code": "601579.SH",
+    "contrib_pct": -0.439
+   },
+   {
+    "ts_code": "688517.SH",
+    "contrib_pct": -0.422
+   },
+   {
+    "ts_code": "002811.SZ",
+    "contrib_pct": -0.414
+   },
+   {
+    "ts_code": "301047.SZ",
+    "contrib_pct": -0.387
+   },
+   {
+    "ts_code": "300939.SZ",
+    "contrib_pct": -0.364
+   }
+  ]
+ },
+ "action": "S02 熔断：暂停组合运行，等待因子重做"
+}

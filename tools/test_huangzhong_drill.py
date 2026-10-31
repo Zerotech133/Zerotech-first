@@ -282,9 +282,12 @@ def test_missing_or_unreadable_evidence_tolerated(tmp_path):
 
 # ------------------------------------------------------------------- CLI
 
-def test_cli_json_dry_run_zero_write(tmp_path, capsys):
+def test_cli_json_dry_run_zero_write(tmp_path, capsys, monkeypatch):
     root = _setup(tmp_path, redteam_age=60)
     h = _load()
+    # 2026-11-01 K-ORG-20261031-MIDNIGHTTESTS：CLI 默认用真实时钟，
+    # 跨日会生成 20261101 演练单而用例固定 DATE=20261031 → 冻结时钟。
+    monkeypatch.setattr(h, "_now", lambda: NOW)
     rc = h.main(["--kind", "observe", "--confirm", "DRILL-OBSERVE",
                  "--dry-run", "--json", "--repo-root", str(root),
                  "--commit", SHA])
@@ -292,8 +295,12 @@ def test_cli_json_dry_run_zero_write(tmp_path, capsys):
     data = json.loads(out)
     assert rc == 0
     assert data["dry_run"] is True and data["ok"] is True
-    assert data["plan"]["acceptance_file"].endswith(
-        "acceptance_drill_observe_%s.json" % DATE)
+    # 2026-11-01 P143：日期翻页修复——产物文件名用真实当天日期（非测试 NOW），
+    # 断言改为「前缀+8位数字日期+.json」形状，避免跨日/跨月变红。
+    _af = Path(data["plan"]["acceptance_file"]).name
+    assert _af.startswith("acceptance_drill_observe_") and _af.endswith(".json")
+    assert len(_af) == len("acceptance_drill_observe_") + 8 + len(".json")
+    assert _af[len("acceptance_drill_observe_"):-len(".json")].isdigit()
     assert not (_work(root) / "drills").exists()
 
 

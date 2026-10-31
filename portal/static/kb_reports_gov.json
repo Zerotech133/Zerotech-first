@@ -1,0 +1,27 @@
+{
+ "generated_at": "2026-10-31T23:51:48+08:00",
+ "path": "C:\\项目\\PDF\\_ingest_reports",
+ "docs": 100,
+ "pages": 2053,
+ "units": 463,
+ "tables": 483,
+ "spotcheck": {
+  "units": 463,
+  "schema_rate": 1.0,
+  "page_rate": 1.0,
+  "chapter_rate": 1.0,
+  "ground_rate": 0.994,
+  "books": 88,
+  "pass": true
+ },
+ "rag": {
+  "docs": 112,
+  "records": 462,
+  "version": 2
+ },
+ "next_steps": [
+  "研报知识单元接入 Agent 工具（kb_reports_search）",
+  "每日学习卡（learning_cards）从知识单元生成",
+  "抽样 20 条知识单元人工对照原文"
+ ]
+}

@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-10-31T22:52:30+08:00",
+ "generated_at": "2026-10-31T23:48:31+08:00",
  "ingest_dirs": [
   "C:\\项目\\PDF\\_ingest",
   "C:\\项目\\PDF\\_ingest_reports"
@@ -46,7 +46,7 @@
    "source": "研报库",
    "pages": 37,
    "chapters": 321,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -55,7 +55,7 @@
    "source": "研报库",
    "pages": 12,
    "chapters": 6,
-   "units": 0,
+   "units": 10,
    "has_ocr": false,
    "has_layout": true
   },
@@ -91,7 +91,7 @@
    "source": "研报库",
    "pages": 24,
    "chapters": 42,
-   "units": 0,
+   "units": 10,
    "has_ocr": true,
    "has_layout": false
   },
@@ -109,7 +109,7 @@
    "source": "研报库",
    "pages": 18,
    "chapters": 7,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -127,7 +127,7 @@
    "source": "研报库",
    "pages": 11,
    "chapters": 65,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -145,7 +145,7 @@
    "source": "研报库",
    "pages": 36,
    "chapters": 437,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -154,7 +154,7 @@
    "source": "研报库",
    "pages": 23,
    "chapters": 25,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -181,7 +181,7 @@
    "source": "研报库",
    "pages": 20,
    "chapters": 48,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -190,7 +190,7 @@
    "source": "研报库",
    "pages": 3,
    "chapters": 13,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -199,7 +199,7 @@
    "source": "研报库",
    "pages": 10,
    "chapters": 11,
-   "units": 0,
+   "units": 10,
    "has_ocr": false,
    "has_layout": true
   },
@@ -208,7 +208,7 @@
    "source": "研报库",
    "pages": 3,
    "chapters": 6,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -217,7 +217,7 @@
    "source": "研报库",
    "pages": 8,
    "chapters": 13,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -235,7 +235,7 @@
    "source": "研报库",
    "pages": 2,
    "chapters": 3,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -244,7 +244,7 @@
    "source": "研报库",
    "pages": 13,
    "chapters": 6,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -262,7 +262,7 @@
    "source": "研报库",
    "pages": 3,
    "chapters": 8,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -271,7 +271,7 @@
    "source": "研报库",
    "pages": 3,
    "chapters": 6,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -280,7 +280,7 @@
    "source": "研报库",
    "pages": 3,
    "chapters": 13,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -289,7 +289,7 @@
    "source": "研报库",
    "pages": 3,
    "chapters": 4,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -298,7 +298,7 @@
    "source": "研报库",
    "pages": 23,
    "chapters": 51,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -307,7 +307,7 @@
    "source": "研报库",
    "pages": 4,
    "chapters": 7,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -316,7 +316,7 @@
    "source": "研报库",
    "pages": 3,
    "chapters": 7,
-   "units": 0,
+   "units": 3,
    "has_ocr": false,
    "has_layout": true
   },
@@ -325,7 +325,7 @@
    "source": "研报库",
    "pages": 12,
    "chapters": 40,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -343,7 +343,7 @@
    "source": "研报库",
    "pages": 5,
    "chapters": 8,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -352,7 +352,7 @@
    "source": "研报库",
    "pages": 22,
    "chapters": 31,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -361,7 +361,7 @@
    "source": "研报库",
    "pages": 9,
    "chapters": 7,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -370,7 +370,7 @@
    "source": "研报库",
    "pages": 4,
    "chapters": 13,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -379,7 +379,7 @@
    "source": "研报库",
    "pages": 4,
    "chapters": 13,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -388,7 +388,7 @@
    "source": "研报库",
    "pages": 4,
    "chapters": 13,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -397,7 +397,7 @@
    "source": "研报库",
    "pages": 14,
    "chapters": 6,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -406,7 +406,7 @@
    "source": "研报库",
    "pages": 14,
    "chapters": 31,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -415,7 +415,7 @@
    "source": "研报库",
    "pages": 12,
    "chapters": 12,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -433,7 +433,7 @@
    "source": "研报库",
    "pages": 12,
    "chapters": 28,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -442,7 +442,7 @@
    "source": "研报库",
    "pages": 20,
    "chapters": 52,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -460,7 +460,7 @@
    "source": "研报库",
    "pages": 10,
    "chapters": 17,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -469,7 +469,7 @@
    "source": "研报库",
    "pages": 9,
    "chapters": 20,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -478,7 +478,7 @@
    "source": "研报库",
    "pages": 9,
    "chapters": 12,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -487,7 +487,7 @@
    "source": "研报库",
    "pages": 10,
    "chapters": 42,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -496,7 +496,7 @@
    "source": "研报库",
    "pages": 9,
    "chapters": 12,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -505,7 +505,7 @@
    "source": "研报库",
    "pages": 8,
    "chapters": 17,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -514,7 +514,7 @@
    "source": "研报库",
    "pages": 9,
    "chapters": 20,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -523,7 +523,7 @@
    "source": "研报库",
    "pages": 9,
    "chapters": 42,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -541,7 +541,7 @@
    "source": "研报库",
    "pages": 26,
    "chapters": 15,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -568,7 +568,7 @@
    "source": "研报库",
    "pages": 34,
    "chapters": 131,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -586,7 +586,7 @@
    "source": "研报库",
    "pages": 12,
    "chapters": 4,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -595,7 +595,7 @@
    "source": "研报库",
    "pages": 9,
    "chapters": 23,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -613,7 +613,7 @@
    "source": "研报库",
    "pages": 14,
    "chapters": 20,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -622,7 +622,7 @@
    "source": "研报库",
    "pages": 29,
    "chapters": 114,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -640,7 +640,7 @@
    "source": "研报库",
    "pages": 4,
    "chapters": 13,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -649,7 +649,7 @@
    "source": "研报库",
    "pages": 4,
    "chapters": 13,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -658,7 +658,7 @@
    "source": "研报库",
    "pages": 3,
    "chapters": 3,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -667,7 +667,7 @@
    "source": "研报库",
    "pages": 19,
    "chapters": 10,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -676,7 +676,7 @@
    "source": "研报库",
    "pages": 15,
    "chapters": 33,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -685,7 +685,7 @@
    "source": "研报库",
    "pages": 13,
    "chapters": 82,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -694,7 +694,7 @@
    "source": "研报库",
    "pages": 13,
    "chapters": 2,
-   "units": 0,
+   "units": 10,
    "has_ocr": false,
    "has_layout": true
   },
@@ -703,7 +703,7 @@
    "source": "研报库",
    "pages": 12,
    "chapters": 5,
-   "units": 0,
+   "units": 10,
    "has_ocr": false,
    "has_layout": true
   },
@@ -712,7 +712,7 @@
    "source": "研报库",
    "pages": 4,
    "chapters": 13,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -721,7 +721,7 @@
    "source": "研报库",
    "pages": 4,
    "chapters": 13,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -730,7 +730,7 @@
    "source": "研报库",
    "pages": 31,
    "chapters": 24,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -739,7 +739,7 @@
    "source": "研报库",
    "pages": 3,
    "chapters": 5,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -748,7 +748,7 @@
    "source": "研报库",
    "pages": 35,
    "chapters": 9,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -757,7 +757,7 @@
    "source": "研报库",
    "pages": 18,
    "chapters": 17,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -766,7 +766,7 @@
    "source": "研报库",
    "pages": 9,
    "chapters": 63,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -775,7 +775,7 @@
    "source": "研报库",
    "pages": 12,
    "chapters": 88,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -784,7 +784,7 @@
    "source": "研报库",
    "pages": 27,
    "chapters": 240,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -793,7 +793,7 @@
    "source": "研报库",
    "pages": 17,
    "chapters": 140,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -802,7 +802,7 @@
    "source": "研报库",
    "pages": 6,
    "chapters": 54,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -811,7 +811,7 @@
    "source": "研报库",
    "pages": 6,
    "chapters": 54,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -820,7 +820,7 @@
    "source": "研报库",
    "pages": 6,
    "chapters": 54,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -829,7 +829,7 @@
    "source": "研报库",
    "pages": 6,
    "chapters": 55,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -838,7 +838,7 @@
    "source": "研报库",
    "pages": 29,
    "chapters": 27,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -847,7 +847,7 @@
    "source": "研报库",
    "pages": 18,
    "chapters": 152,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -856,7 +856,7 @@
    "source": "研报库",
    "pages": 15,
    "chapters": 9,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -865,7 +865,7 @@
    "source": "研报库",
    "pages": 28,
    "chapters": 23,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -874,7 +874,7 @@
    "source": "研报库",
    "pages": 21,
    "chapters": 48,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -883,7 +883,7 @@
    "source": "研报库",
    "pages": 7,
    "chapters": 10,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -892,7 +892,7 @@
    "source": "研报库",
    "pages": 19,
    "chapters": 4,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -901,7 +901,7 @@
    "source": "研报库",
    "pages": 3,
    "chapters": 12,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -910,7 +910,7 @@
    "source": "研报库",
    "pages": 10,
    "chapters": 26,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -919,7 +919,7 @@
    "source": "研报库",
    "pages": 3,
    "chapters": 3,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -928,7 +928,7 @@
    "source": "研报库",
    "pages": 10,
    "chapters": 29,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   }
@@ -937,7 +937,7 @@
   "books": 103,
   "pages": 2491,
   "chapters": 5107,
-  "units": 75
+  "units": 498
  },
  "verify": {
   "ok": true,
@@ -1059,9 +1059,9 @@
  },
  "rag": {
   "docs": 112,
-  "records": 295,
-  "version": 1,
-  "updated_at": "2026-10-31T14:52:29.696589+00:00"
+  "records": 462,
+  "version": 2,
+  "updated_at": "2026-10-31T15:48:29.696542+00:00"
  },
  "thresholds": {
   "ocr_chars_per_page_min": 100,

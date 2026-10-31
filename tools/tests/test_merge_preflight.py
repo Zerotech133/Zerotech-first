@@ -15,7 +15,13 @@ from merge_preflight import dep_age_hint, deps_changed, is_docs_only  # noqa: E4
 def test_docs_only_true():
     assert is_docs_only(["docs/plans/x.md", "deliverables/y.md"])
     assert is_docs_only(["agent_platform/skills/guanyu/SKILL.md"])
-    assert is_docs_only(["portal/static/nav.js"])
+    # A9（2026-10-31）：html/css 可跳过；.js 是前端代码，必须跑测试
+    assert is_docs_only(["portal/static/tokens.css", "portal/static/index.html"])
+
+
+def test_docs_only_false_for_js():
+    assert not is_docs_only(["portal/static/nav.js"])
+    assert not is_docs_only(["portal/static/tokens.css", "portal/static/m.js"])
 
 
 def test_docs_only_false_for_code():

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>策略库 · 选股 · 零界</title>
+<link rel="stylesheet" href="/static/nav.css">
+<style>
+:root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2333;--bd:#2d333b;--fg:#e6edf3;--dim:#8b949e;--acc:#58a6ff;--ok:#3fb950;--warn:#d29922;--bad:#f85149;--purple:#bc8cff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.6 "Microsoft YaHei",system-ui,sans-serif;padding:24px}
+h1{font-size:22px;margin:0 0 4px}h1 small{color:var(--dim);font-size:13px;font-weight:normal}
+.sub{color:var(--dim);font-size:12px;margin-bottom:16px}
+.panel{background:var(--panel);border:1px solid var(--bd);border-radius:10px;padding:16px;margin-bottom:14px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.card{background:var(--panel2);border:1px solid var(--bd);border-radius:8px;padding:12px}
+.card .k{color:var(--dim);font-size:12px}.card .v{font-size:20px;font-weight:700;color:var(--acc)}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{border-bottom:1px solid var(--bd);padding:7px 8px;text-align:left}th{color:var(--dim);font-weight:600}
+.badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:700}
+.b-ok{background:#12301c;color:var(--ok)}.b-warn{background:#2b2410;color:var(--warn)}.b-bad{background:#2a1512;color:var(--bad)}.b-info{background:#122642;color:#79c0ff}
+.owner{color:#bc8cff;font-weight:700}
+.muted{color:var(--dim);font-size:12px}.foot{margin-top:14px;color:var(--dim);font-size:12px}
+code{background:#0a0e14;padding:1px 6px;border-radius:4px;color:#79c0ff;font-size:12px}
+.reason{color:#9aa4b2;font-size:12px}
+</style>
+<script src="/static/nav.js" defer></script></head>
+<body>
+<div id="nav"></div>
+<h1>📊 策略库 · 今日选股 <small>策略库负责人 <span class="owner" id="owner">司马微</span></small></h1>
+<div class="sub" id="sub">加载中…</div>
+
+<div class="panel"><div class="cards">
+  <div class="card"><div class="k">策略总数</div><div class="v" id="c-strat">—</div></div>
+  <div class="card"><div class="k">可执行策略</div><div class="v" id="c-exec">—</div></div>
+  <div class="card"><div class="k">今日候选</div><div class="v" id="c-picks">—</div></div>
+  <div class="card"><div class="k">预告修订观察</div><div class="v" id="c-watch">—</div></div>
+  <div class="card"><div class="k">数据日期</div><div class="v" id="c-date" style="font-size:16px">—</div></div>
+</div></div>
+
+<div class="panel" id="pausedBanner" style="display:none;border-color:#f85149">
+  <b style="color:#f85149">⛔ S02 复合排序已熔断暂停</b>
+  <span class="muted" id="pausedNote">影子盘 20 日回撤超 8% → 暂停输出候选，等待因子重做/人工复核</span>
+</div>
+<div class="panel"><b>策略库（本轮更新）</b>
+<table><thead><tr><th>ID</th><th>策略</th><th>类型</th><th>状态</th><th>来源假设</th><th>验证</th></tr></thead><tbody id="strat-body"></tbody></table>
+<div class="muted" style="margin-top:8px">状态图例：<span class="badge b-ok">validated</span> 已验证 · <span class="badge b-warn">mvp</span> 未验证仅演示 · <span class="badge b-info">planned</span> 规划中</div>
+</div>
+
+<div class="panel"><b>今日候选（S01 过滤 + S02 复合排序）</b>
+<table><thead><tr><th>#</th><th>代码</th><th>名称</th><th>行业</th><th>PE</th><th>ROE</th><th>20日</th><th>5日</th><th>分数</th><th>入选理由</th></tr></thead><tbody id="pick-body"></tbody></table>
+</div>
+
+<div class="panel"><b>H18 预告修订观察（近 90 日，仅观察不作买入信号）</b>
+<table><thead><tr><th>代码</th><th>报告期</th><th>公告日</th><th>类型</th><th>方向</th><th>Δ中值(pp)</th><th>摘要</th></tr></thead><tbody id="watch-body"></tbody></table>
+</div>
+
+<div class="panel"><b>影子盘（模拟 T+1 调仓，30bp×换手）</b>
+<div class="cards" style="margin-top:8px">
+  <div class="card"><div class="k">净值（20日回填）</div><div class="v" id="s-nav">—</div></div>
+  <div class="card"><div class="k">20日收益</div><div class="v" id="s-ret">—</div></div>
+  <div class="card"><div class="k">最大回撤</div><div class="v" id="s-mdd">—</div></div>
+  <div class="card"><div class="k">年化波动</div><div class="v" id="s-vol">—</div></div>
+  <div class="card"><div class="k">调仓日数</div><div class="v" id="s-days">—</div></div>
+</div>
+<div class="muted" id="s-note" style="margin-top:8px"></div>
+</div>
+<div class="panel"><b>影子盘归因 / 熔断</b>
+<div class="cards" style="margin-top:8px">
+  <div class="card"><div class="k">熔断状态</div><div class="v" id="m-status" style="font-size:16px">—</div></div>
+  <div class="card"><div class="k">回撤</div><div class="v" id="m-dd">—</div></div>
+  <div class="card"><div class="k">20日收益</div><div class="v" id="m-ret">—</div></div>
+  <div class="card"><div class="k">连续负收益</div><div class="v" id="m-streak">—</div></div>
+</div>
+<div class="muted" id="m-action" style="margin-top:6px"></div>
+<table style="margin-top:8px"><thead><tr><th>行业归因</th><th>贡献(%)</th></tr></thead><tbody id="m-ind"></tbody></table>
+<table style="margin-top:8px"><thead><tr><th>分数分桶</th><th>贡献(%)</th></tr></thead><tbody id="m-bucket"></tbody></table>
+<table style="margin-top:8px"><thead><tr><th>最差个股</th><th>贡献(%)</th></tr></thead><tbody id="m-worst"></tbody></table>
+</div>
+<div class="panel"><b>风险与纪律</b>
+<ul class="muted" style="margin:6px 0 0 18px;padding:0">
+<li>S02 排序权重（动量/反转/低换手/质量中性）为 <b>MVP 未验证</b>，仅供研究，不得实盘；</li>
+<li>H14 为<b>规避规则</b>，只做过滤，禁止反用为「买低 ROE」；</li>
+<li>实盘前必须：数据/PIT、统计、成本容量、影子盘、人工批准 五关齐全；</li>
+<li>数据未复权（P0 待接 adj_factor），极端价格需人工核。</li>
+</ul></div>
+
+<div class="foot">数据：<code>research/reports/selection_daily_*.json</code> · 注册表：<code>agent_platform/catalogs/strategy_registry.json</code> · 引擎：<code>tools/research/selection_engine.py</code> · 每日任务：<code>selection_daily.py</code></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const BADGE={"validated":'<span class="badge b-ok">validated</span>',"mvp_unvalidated":'<span class="badge b-warn">mvp</span>',
+  "validated_event_ambiguous_direction":'<span class="badge b-ok">validated</span>',"validated_pair_planned":'<span class="badge b-info">planned</span>'};
+(async function(){
+  try{
+    const r=await fetch('/static/selection_daily.json?ts='+Date.now());
+    const d=await r.json();
+    $('owner').textContent=d.library.owner;
+    $('sub').textContent='策略库：'+d.library.name+' · 生成 '+d.generated_at+' · 数据日 '+d.date;
+    $('c-strat').textContent=d.strategies.length;
+    $('c-exec').textContent=d.strategies.filter(s=>s.executable).length;
+    $('c-picks').textContent=d.picks.length;
+    $('c-watch').textContent=d.forecast_watch.events;
+    $('c-date').textContent=d.date;
+    $('strat-body').innerHTML=d.strategies.map(s=>`<tr><td><code>${s.id}</code></td><td>${s.name}</td><td>${s.type}</td>
+      <td>${BADGE[s.status]||s.status}</td><td>${s.source_hypothesis||'—'}</td><td class="muted">${(s.validation&&s.validation.stats)||'—'}</td></tr>`).join('');
+    $('pick-body').innerHTML=d.picks.map((p,i)=>`<tr><td>${i+1}</td><td><code>${p.ts_code}</code></td><td><b>${p.name}</b></td><td>${p.industry||'—'}</td>
+      <td>${p.pe_ttm}</td><td>${p.roe}</td><td>${(p.ret20*100).toFixed(1)}%</td><td>${(p.ret5*100).toFixed(1)}%</td>
+      <td><b>${p.score}</b></td><td class="reason">${p.reason||''}</td></tr>`).join('') || '<tr><td colspan="10" class="muted">无候选</td></tr>';
+    $('watch-body').innerHTML=(d.forecast_watch.items||[]).map(w=>`<tr><td><code>${w.ts_code}</code></td><td>${w.end_date}</td><td>${w.ann_date}</td>
+      <td>${w.type}</td><td><span class="badge ${w.direction==='改善'?'b-ok':(w.direction==='恶化'?'b-bad':'b-info')}">${w.direction}</span></td>
+      <td>${w.delta_pp}</td><td class="reason">${w.summary||''}</td></tr>`).join('') || '<tr><td colspan="7" class="muted">近期无修订事件</td></tr>';
+  }catch(e){ $('sub').textContent='加载失败：'+e.message; }
+})();
+
+(async function loadShadow(){
+  try{
+    const r=await fetch('/static/shadow_selection.json?ts='+Date.now());
+    const d=await r.json();
+    $('s-nav').textContent=d.nav;
+    $('s-ret').textContent=((d.ledger.length? (d.nav-1)*100 : 0).toFixed(2))+'%';
+    $('s-mdd').textContent=(d.mdd_pct)+'%';
+    $('s-vol').textContent=(d.ann_vol_pct!=null?d.ann_vol_pct+'%':'—');
+    $('s-days').textContent=d.days;
+    $('s-note').textContent=d.note||'';
+  }catch(e){}
+})();
+
+
+(async function loadMonitor(){
+  try{
+    const [d, m] = await Promise.all([
+      fetch('/static/selection_daily.json?ts='+Date.now()).then(r=>r.json()),
+      fetch('/static/shadow_monitor.json?ts='+Date.now()).then(r=>r.json())
+    ]);
+    if(d.s02_paused){ document.getElementById('pausedBanner').style.display='block'; }
+    $('m-status').textContent = m.breaker.status;
+    $('m-status').style.color = (m.breaker.status==='paused' ? '#f85149' : (m.breaker.status==='watch'?'#d29922':'#3fb950'));
+    $('m-dd').textContent = m.dd_pct+'%';
+    $('m-ret').textContent = m.ret20_pct+'%';
+    $('m-streak').textContent = m.neg_streak+' 日';
+    $('m-action').textContent = m.action;
+    $('m-ind').innerHTML = Object.entries(m.attribution.industry_pct).map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('');
+    $('m-bucket').innerHTML = Object.entries(m.attribution.score_bucket_pct).map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('');
+    $('m-worst').innerHTML = (m.attribution.worst_contributors||[]).map(w=>`<tr><td><code>${w.ts_code}</code></td><td>${w.contrib_pct}</td></tr>`).join('');
+  }catch(e){}
+})();
+
+</script>
+</body></html>
