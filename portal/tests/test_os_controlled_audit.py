@@ -35,6 +35,12 @@ def make_item(store):
     ]["item_id"]
 
 
+def _sign(store, iid, actions, signer_id="u-test"):
+    n = X.issue_grant_nonce(store, iid, actions, signer_id=signer_id)
+    return X.sign_real_grant(store, iid, actions, nonce=n["nonce"],
+                             signer_id=signer_id)
+
+
 def setup(store, caps=None, workorder_caps=None):
     iid = make_item(store)
     X.register_consumer(
@@ -43,9 +49,7 @@ def setup(store, caps=None, workorder_caps=None):
         kind="agent",
         capabilities=caps or ["artifact.generate", "test.run"],
     )
-    g = X.sign_real_grant(
-        store, iid, ["artifact.generate", "test.run"], nonce="nonce-audit-123"
-    )
+    g = _sign(store, iid, ["artifact.generate", "test.run"])
     X.create_formal_workorder(
         store,
         iid,

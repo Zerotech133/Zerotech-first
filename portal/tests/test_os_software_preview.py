@@ -64,12 +64,13 @@ def build_item(store):
     return iid
 
 
-def test_preview_serves_index_html(store):
+def test_preview_serves_index_html_as_plain_text(store):
+    """H1（K-ORG-20261031-PORTALAUTH）：预览不再以 text/html 执行（防存储型 XSS）。"""
     iid = build_item(store)
     status, ctype, body = A.read_workspace_file(store, iid, "index.html")
     assert status == 200
-    assert "text/html" in ctype
-    assert b"data-artifact" in body and b"<h1>" in body
+    assert ctype == "text/plain; charset=utf-8"
+    assert b"data-artifact" in body and b"<h1>" in body  # 原文可读、但不执行
 
 
 def test_preview_rejects_traversal_and_unknown(store):
