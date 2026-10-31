@@ -73,6 +73,11 @@ def _cli_opt(flag, argv=None):
 
 
 _CLI_ROOT = _cli_opt("--root")
+
+
+def _log(msg):
+    """run_shadow 进度日志：强制 flush，避免长链被重定向后看不到阶段。"""
+    print(msg, flush=True)
 if _CLI_ROOT:
     os.environ.setdefault("SHADOW_DATA_ROOT", _CLI_ROOT)
 if "--rehearsal" in sys.argv:
@@ -742,15 +747,17 @@ def main():
     data_root = _data_root()
     if not _assert_not_real_root(data_root):
         return 2
+    # 节点级进度日志：run_shadow 专用，默认开；不影响其它调用方。
+    os.environ.setdefault("SHADOW_NODE_TRACE", "1")
     LEDGER.parent.mkdir(parents=True, exist_ok=True)
     if not sys.stdout.isatty():
         log_f = _redirect_run_log()
         if log_f is not None:
             sys.stdout = log_f
             sys.stderr = log_f
-        print("===== shadow run start %s =====" % datetime.now())
+        _log("===== shadow run start %s =====" % datetime.now())
     if REHEARSAL:
-        print(
+        _log(
             "[rehearsal] 隔离模式 data_root=%s（真仓 data/ 零写入；飞书推送已禁）"
             % data_root
         )
@@ -815,6 +822,7 @@ def main():
         ):  # 脚本内重试一次（Ollama 偶发超时；幂等不受影响，done 才跳过）
             try:
                 data_ctx = make_context(symbol)
+                _log("[context] %s ready" % symbol)
                 try:
                     # WO-INV-CHAIN-20261030：ST1 策略旁路（只读周记）接入 D1 数据段
                     from strategy_alpha_bridge import render_strategy_context
@@ -833,7 +841,10 @@ def main():
                 if not bundle.is_sufficient():
                     raise RuntimeError("evidence_insufficient: %s" % bundle.input_degraded)
                 t0 = time.time()
+                _log("[symbol] start %s (attempt %d)" % (symbol, attempt))
                 result = interp.run(symbol, data_ctx=data_ctx)
+                _log("[symbol] interp done %s elapsed=%.1fs status=%s" % (
+                    symbol, time.time() - t0, result.get("status")))
                 dec = parse_decision(result["decision"])
                 if dec is None and attempt == 1:
                     # Strict JSON：解析/字段校验失败先重试一次（模型偶发不守格式）

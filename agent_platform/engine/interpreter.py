@@ -11,6 +11,7 @@
 """
 
 import json
+import os
 import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
@@ -29,6 +30,16 @@ import team_exec  # noqa: E402
 import logging  # noqa: E402
 
 SIM_CONVERGE = 0.8  # 菜鸟 bull/bear 辩论收敛阈值
+
+
+def _node_trace(msg):
+    """run_shadow 节点级进度：仅 SHADOW_NODE_TRACE=1 时输出并 flush。
+
+    默认关闭，避免影响其他调用方；run_shadow 启动时显式打开。
+    """
+    if os.environ.get("SHADOW_NODE_TRACE") != "1":
+        return
+    print("[node-trace] %s" % msg, flush=True)
 
 
 def _infer_role(role_profile):
@@ -342,12 +353,19 @@ class Interpreter:
     # ---------- 单节点 ----------
     def _single(self, node, ctx, run_id):
         t0 = time.time()
+        model = node.get("llm_binding") or ""
+        user = self._build_user(node, ctx)
+        _node_trace("start node=%s agent=%s model=%s prompt_chars=%d" % (
+            node.get("node_key"), node.get("agent_id"), model, len(user)))
         exc = None
         try:
-            text, status = self._chat(node, self._build_user(node, ctx))
+            text, status = self._chat(node, user)
         except Exception as e:  # noqa: BLE001
             exc = e
             text, status = "[降级] LLM 不可用（%s），按中性规则处理" % e, "degraded"
+        _node_trace("done node=%s status=%s elapsed=%.1fs%s" % (
+            node.get("node_key"), status, time.time() - t0,
+            " error=%s" % type(exc).__name__ if exc else ""))
         self._emit_attempt(run_id, node, status, (time.time() - t0) * 1000,
                            reason=self._attempt_reason(exc))
         self._record(
@@ -365,6 +383,9 @@ class Interpreter:
     # ---------- 辩论对（对齐菜鸟 bull/bear：轮次上限 + 相似度收敛） ----------
     def _debate(self, na, nb, ctx, run_id):
         t0 = time.time()
+        _node_trace("start debate nodes=%s,%s models=%s,%s" % (
+            na.get("node_key"), nb.get("node_key"),
+            na.get("llm_binding"), nb.get("llm_binding")))
         # 开场陈词（各自独立）
         exc_a = exc_b = None
         try:
@@ -372,11 +393,15 @@ class Interpreter:
         except Exception as e:  # noqa: BLE001
             exc_a = e
             a_text, st_a = "[降级] 多头 LLM 不可用：%s" % e, "degraded"
+        _node_trace("done debate node=%s status=%s elapsed=%.1fs" % (
+            na.get("node_key"), st_a, time.time() - t0))
         try:
             b_text, st_b = self._chat(nb, self._build_user(nb, ctx))
         except Exception as e:  # noqa: BLE001
             exc_b = e
             b_text, st_b = "[降级] 空头 LLM 不可用：%s" % e, "degraded"
+        _node_trace("done debate node=%s status=%s elapsed=%.1fs" % (
+            nb.get("node_key"), st_b, time.time() - t0))
         self._emit_attempt(run_id, na, st_a, (time.time() - t0) * 1000,
                            reason=self._attempt_reason(exc_a))
         self._emit_attempt(run_id, nb, st_b, (time.time() - t0) * 1000,
