@@ -154,6 +154,9 @@ def test_push_disabled_by_default(tmp_path, monkeypatch):
     alerts = tmp_path / "alerts"
     monkeypatch.setenv("HUANGZHONG_ALERTS_DIR", str(alerts))
     d = _load("huangzhong_daily")
+    # 隔离生产 push_config.json：B 已在生产开启（2026-10-31 老田批准），
+    # 本用例只验证「无配置时默认关闭」，故把模块 OUT 指向 tmp（无配置）。
+    monkeypatch.setattr(d, "OUT", tmp_path / "work")
     _run_reject(d, tmp_path)
     assert not alerts.exists() or not list(alerts.glob("*.flag"))
 
