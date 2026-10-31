@@ -93,6 +93,11 @@ def _merge_record(rec, item):
     return rec
 
 
+def _should_derive_levels(rec, price):
+    """仅已研究且有价格才显示技术推导水平；pending 不显示，避免误导。"""
+    return bool(rec.get("decision_status") == "done" and price)
+
+
 def d1_snapshot(day=None):
     snap = pool_data.pool_snapshot(day)
     day = snap.get("date") or day
@@ -111,8 +116,10 @@ def d1_snapshot(day=None):
         _price = rec.get("price") or item.get("price")
         _rec = str(rec.get("recommendation") or "").upper()
         _can_buy = (rec.get("decision_status") == "done" and _rec in ("BUY", "STRONG_BUY"))
+        _levels = {}
         try:
-            _levels = technical_levels.derive(code, price=_price, can_buy=_can_buy)
+            if _should_derive_levels(rec, _price):
+                _levels = technical_levels.derive(code, price=_price, can_buy=_can_buy)
         except Exception:  # noqa: BLE001 数据缺失回退旧计划
             _levels = {}
         built = research_plan.build_item(item, rec, plan_rows.get(code),

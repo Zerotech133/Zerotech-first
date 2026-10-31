@@ -8,10 +8,13 @@ from __future__ import annotations
 
 import glob
 import os
+import time
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ASHARE = os.path.join(REPO, "quant_backtest", "data", "ashare")
 _CACHE = {}
+_CACHE_TS = {}
+_CACHE_TTL = 300
 
 
 def _suffix(code):
@@ -111,10 +114,11 @@ def derive_from_bars(bars, price=None, can_buy=False, lookback=20):
 def derive(code, price=None, can_buy=False, use_cache=True):
     c = str(code or "").split(".")[0].strip()
     key = (c, round(float(price or 0), 2), bool(can_buy))
-    if use_cache and key in _CACHE:
+    if use_cache and key in _CACHE and time.time() - _CACHE_TS.get(key, 0) < _CACHE_TTL:
         return _CACHE[key]
     bars = load_bars(c)
     out = derive_from_bars(bars, price=price, can_buy=can_buy)
     if use_cache:
         _CACHE[key] = out
+        _CACHE_TS[key] = time.time()
     return out
