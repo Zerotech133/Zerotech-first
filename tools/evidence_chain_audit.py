@@ -5,9 +5,13 @@
   ``_vault/legion_ide/evidence`` 下每个 ``*.json`` 是 LDE/A0/OH 的 run manifest
   （``legion-evidence/v1``），由 ``agent_platform/legion_command/evidence.py`` 在
   有 cap master key 时附 HMAC-SHA256。本工具做 **tamper-evident 快照/审计**：
-  - 逐条计算 canonical SHA-256（稳定 JSON：``sort_keys=True``、``ensure_ascii=False``、
-    排除 ``signature`` 自身，与 evidence.py 的 HMAC 口径一致）；
-  - 按 created_at/finalized_at/mtime 排序生成链式 ledger（``prev_hash`` +
+  - 逐条计算 canonical SHA-256（稳定 JSON：``sort_keys=True``、``ensure_ascii=False``）；
+    **双轨口径**：
+    · 链哈希 record_hash/content_hash = 排除 ``signature``/``prev_hash``/``record_hash``
+      自身（与 evidence.py::canonical_chain_payload 一致；内嵌链记录可自证）；
+    · HMAC 验签输入 = 只排除 ``signature``（与 evidence.py::_sign 一致，口径不变）；
+      旧文件无链字段时两口径结果等价；
+  - 按 finalized_at/created_at/mtime 排序（完成顺序优先）生成链式 ledger（``prev_hash`` +
     ``record_hash``，创世哈希 = 64 个 0）；
   - 校验 signature 存在性 + HMAC（cap key 只读；不可读则 verified=unknown，不伪造）；
   - 校验 run_id 重复、文件 stem≠run_id、时间倒序/mtime 早于声明时间、时间缺口、
@@ -59,14 +63,29 @@ MAX_ISSUE_SAMPLES = 20
 # ---------------------------------------------------------------------------
 # canonical 哈希 / 签名（与 evidence.py 同一口径）
 # ---------------------------------------------------------------------------
-def canonical_payload(record: dict) -> bytes:
-    """稳定序列化：排除 signature 自身、sort_keys、ensure_ascii=False（与 HMAC 同口径）。"""
+CHAIN_FIELDS = ("prev_hash", "record_hash")
+
+
+def canonical_hmac_payload(record: dict) -> bytes:
+    """HMAC 验签输入（口径不变）：排除 signature 自身、sort_keys、ensure_ascii=False。"""
     body = {key: value for key, value in record.items() if key != "signature"}
     return json.dumps(body, ensure_ascii=False, sort_keys=True).encode("utf-8")
 
 
+def canonical_payload(record: dict) -> bytes:
+    """链哈希输入：排除 signature 与链字段自身（signature/prev_hash/record_hash）。
+
+    对应 ``evidence.py::canonical_chain_payload``：内嵌链记录（finalize 写入
+    record_hash/prev_hash）的 stored record_hash 按此口径可复算自证；
+    旧文件无链字段时与 HMAC 输入同结果（两口径等价）。
+    """
+    body = {key: value for key, value in record.items()
+            if key not in ("signature",) + CHAIN_FIELDS}
+    return json.dumps(body, ensure_ascii=False, sort_keys=True).encode("utf-8")
+
+
 def record_hash(record: dict) -> str:
-    """记录内容的 canonical SHA-256（链上 record_hash）。"""
+    """记录内容的 canonical SHA-256（链上 record_hash，排除链字段自身）。"""
     return hashlib.sha256(canonical_payload(record)).hexdigest()
 
 
@@ -77,7 +96,7 @@ def verify_signature(record: dict, key: bytes) -> str:
         return "absent"
     if not key:
         return "unknown"
-    expected = hmac.new(key, canonical_payload(record), hashlib.sha256).hexdigest()
+    expected = hmac.new(key, canonical_hmac_payload(record), hashlib.sha256).hexdigest()
     return "true" if hmac.compare_digest(expected, signature) else "false"
 
 
@@ -113,11 +132,10 @@ def _mtime_iso(path: Path) -> str:
 
 
 def _sort_time(record: dict, path: Path) -> dt.datetime:
-    """链排序键：created_at → finalized_at → 文件 mtime（均失败用 epoch）。"""
-    for field in ("created_at", "finalized_at"):
-        parsed = _parse_ts(record.get(field))
-        if parsed is not None:
-            return parsed
+    """链排序键：finalized_at → created_at → 文件 mtime（完成顺序优先；均失败用 epoch）。"""
+    parsed = _parse_ts(record.get("finalized_at")) or _parse_ts(record.get("created_at"))
+    if parsed is not None:
+        return parsed
     try:
         return dt.datetime.fromtimestamp(path.stat().st_mtime).astimezone()
     except OSError:
@@ -537,11 +555,14 @@ def render_markdown(report: dict) -> str:
         "",
         "## 未决口径",
         "",
+        "- **双轨 canonical**：链哈希排除 signature/prev_hash/record_hash；HMAC 验签"
+        "只排除 signature（与 evidence.py 写入口径一致，旧文件不变）。",
         "- **HMAC key 可用性**：cap key 不可读时 signature 只报存在性、verified=unknown"
         "（不判负，但审计强度降级）；生产审计应保证 key 可读。",
         "- **链锚定**：首次运行无基线 → 链自洽但不能证明未被整体重写；"
         "建议每次审计 `--out deliverables/evidence_chain_<date>`，下次 `--baseline` 比对。",
-        "- **排序口径**：created_at → finalized_at → mtime；同键按 run_id 稳定排序。",
+        "- **排序口径**：finalized_at → created_at → mtime（完成顺序；evidence.py "
+        "finalize 写入微秒级单调 finalized_at，链顺序与之对齐）；同键按 run_id 稳定排序。",
         "- **时间缺口**：> gap_hours（默认 %.1f）只告警，不判负（属空窗非篡改）。" % DEFAULT_GAP_HOURS,
         "",
         "## 只读声明",
