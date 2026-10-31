@@ -55,7 +55,16 @@
       <button class="danger" id="btnUnlock">释放锁</button>
     </div>
     <div class="status" id="writeStatus"></div>
-    <textarea id="content" placeholder="文件内容（UTF-8，≤1MB）"></textarea>
+    <div class="status"><b>多文件 patchset（默认推荐）</b>：JSON 数组，≥2 项；预览不落盘，确认原子应用/失败整体回滚。</div>
+  <textarea id="patchset" placeholder='[{"path":"agent_platform/a.py","content":"x = 1\n"},{"path":"agent_platform/b.py","content":"y = 2\n"}]'></textarea>
+  <div class="row">
+    <button class="primary" id="btnPsPreview">多文件预览</button>
+    <button class="primary" id="btnPsConfirm" style="display:none">原子确认</button>
+    <button id="btnPsRollback" style="display:none">回滚</button>
+  </div>
+  <div class="status" id="psStatus"></div>
+  <pre id="psDiff">—</pre>
+  <textarea id="content" placeholder="文件内容（UTF-8，≤1MB）"></textarea>
     <label>diff（预览/确认后显示）</label>
     <pre id="diff">—</pre>
   </section>
@@ -104,6 +113,39 @@ async function refreshScope() {
   });
   if (!d.items.length) { const o = document.createElement('option'); o.value = ''; o.textContent = '（无可写 worktree）'; sel.appendChild(o); }
   status($('writeStatus'), '可写工单：' + d.items.length, 'ok');
+}
+let PATCHSET = null;
+function psSet(status, cls) { const el = $('psStatus'); el.className = 'status ' + (cls || ''); el.textContent = status; }
+async function psPreview() {
+  let files;
+  try { files = JSON.parse($('patchset').value); } catch (e) { psSet('JSON 解析失败：' + e.message, 'bad'); return; }
+  if (!Array.isArray(files) || files.length < 2) { psSet('至少 2 个文件', 'warn'); return; }
+  const d = await api('POST', '/api/ide/patchset/preview', body({ files: files }));
+  if (!d.ok) { psSet('预览失败：' + (d.message || d.error), 'bad'); return; }
+  PATCHSET = d;
+  $('psDiff').textContent = (d.files || []).map(f => '• ' + f.path + (f.created ? ' (new)' : '') + '\n' + (f.diff || '')).join('\n');
+  $('btnPsPreview').style.display = 'none';
+  $('btnPsConfirm').style.display = '';
+  $('btnPsRollback').style.display = '';
+  psSet('预览就绪：' + d.files.length + ' 文件（不落盘）', 'warn');
+}
+async function psConfirm() {
+  if (!PATCHSET) return;
+  const d = await api('POST', '/api/ide/patchset/confirm', body({ patchset_id: PATCHSET.patchset_id }));
+  if (!d.ok) { psSet('确认失败（已整体回滚）：' + (d.message || d.error) + (d.rolled_back ? ' rolled=' + d.rolled_back.join(',') : ''), 'bad'); return; }
+  psSet('已原子写入 ' + d.files.length + ' 文件，evidence=' + (d.evidence_run_id || '—'), 'ok');
+  $('btnPsPreview').style.display = '';
+  $('btnPsConfirm').style.display = 'none';
+}
+async function psRollback() {
+  if (!PATCHSET) return;
+  const d = await api('POST', '/api/ide/patchset/rollback', body({ patchset_id: PATCHSET.patchset_id }));
+  if (!d.ok) { psSet('回滚失败：' + (d.message || d.error), 'bad'); return; }
+  psSet('已回滚 ' + (d.restored || []).join(', '), 'ok');
+  $('btnPsPreview').style.display = '';
+  $('btnPsConfirm').style.display = 'none';
+  $('btnPsRollback').style.display = 'none';
+  PATCHSET = null;
 }
 let PREVIEW = null;
 function clearPreview() {
@@ -162,6 +204,9 @@ async function showAudit() {
     ? d.events.map(e => e.ts + '  ' + e.kind + '  ' + e.detail).join('\n')
     : '（本单暂无 code_action / code_observation）';
 }
+$('btnPsPreview').onclick = psPreview;
+$('btnPsConfirm').onclick = psConfirm;
+$('btnPsRollback').onclick = psRollback;
 $('btnScope').onclick = refreshScope;
 $('btnRead').onclick = readFile;
 $('btnWrite').onclick = previewFile;

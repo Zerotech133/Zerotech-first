@@ -60,7 +60,8 @@ $paths = @{
         'agent_platform/tests/test_hermes_orchestrator.py',
         'agent_platform/tests/test_legion_ide_session.py',
         'agent_platform/tests/test_legion_ide_undo_store.py',
-        'agent_platform/tests/test_ide_extension_e2e.py'
+        'agent_platform/tests/test_ide_extension_e2e.py',
+        'agent_platform/tests/test_ide_rw.py'
     )
 }
 
