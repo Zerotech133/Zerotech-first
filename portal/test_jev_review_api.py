@@ -161,3 +161,81 @@ def test_resolve_only_pending_and_legacy_reopen(tmp_path, monkeypatch):
     else:
         raise AssertionError("缺 reviewer 应拒绝")
 
+
+# ── WO-INTEL-AI1ST-20261031：review_type 迁移 + AI 初筛分账 ─────────────────
+
+
+def test_review_type_migration_idempotent(tmp_path, monkeypatch):
+    p = _db(tmp_path, monkeypatch)
+    con = sqlite3.connect(str(p))
+    assert R.has_review_type(con) is False
+    assert R.ensure_review_type_column(con) is True      # 首次补列
+    assert R.ensure_review_type_column(con) is False     # 幂等：第二次不重复 ALTER
+    assert R.has_review_type(con) is True
+    # 旧行零改动（不破坏现有数据）
+    assert con.execute("SELECT COUNT(*) FROM jev_review_queue").fetchone()[0] == 3
+    assert {r[0] for r in con.execute(
+        "SELECT status FROM jev_review_queue")} == {"pending"}
+    assert {r[0] for r in con.execute(
+        "SELECT review_type FROM jev_review_queue")} == {""}
+    con.close()
+    d = R.summary()
+    assert d["review_type_column"] is True
+    assert d["resolved"] == 0 and d["resolved_human"] == 0
+    assert d["resolved_ai_first_pass"] == 0
+
+
+def test_ai_first_pass_not_counted_as_human(tmp_path, monkeypatch):
+    p = _db(tmp_path, monkeypatch)
+    con = sqlite3.connect(str(p))
+    R.ensure_review_type_column(con)
+    con.execute("UPDATE jev_review_queue SET status='resolved', "
+                "reviewer='N1-AI', decision='correct', "
+                "reviewed_at='2026-10-31 10:00', review_type='ai_first_pass' "
+                "WHERE id='a'")
+    con.execute("UPDATE jev_review_queue SET status='resolved', "
+                "reviewer='老田', decision='wrong', "
+                "reviewed_at='2026-10-31 10:01', review_type='human' "
+                "WHERE id='b'")
+    con.commit()
+    con.close()
+    d = R.summary()
+    assert d["resolved"] == 2                      # 总数仍是 resolved 总数
+    assert d["resolved_human"] == 1                # 人工 50 只数 human
+    assert d["resolved_ai_first_pass"] == 1        # AI 初筛单独分账
+    assert d["review_type_counts"] == {"human": 1, "ai_first_pass": 1}
+    assert d["pending"] == 1
+
+
+def test_resolve_writes_review_type_human(tmp_path, monkeypatch):
+    p = _db(tmp_path, monkeypatch)
+    r = R.resolve("c", "correct", "老田", "人工确认")
+    assert r["ok"] and r["item"]["review_type"] == "human"
+    con = sqlite3.connect(str(p))
+    got = con.execute("SELECT review_type FROM jev_review_queue WHERE id='c'"
+                      ).fetchone()[0]
+    con.close()
+    assert got == "human"
+    d = R.summary()
+    assert d["resolved"] == 1 and d["resolved_human"] == 1
+    assert d["resolved_ai_first_pass"] == 0
+
+
+def test_summary_old_schema_compatible_without_column(tmp_path, monkeypatch):
+    """旧 schema（无 review_type）：summary 不崩，resolved 全计 human、AI=0。"""
+    p = _db(tmp_path, monkeypatch)
+    con = sqlite3.connect(str(p))
+    con.execute("UPDATE jev_review_queue SET status='resolved', reviewer='老田', "
+                "decision='correct' WHERE id='a'")
+    con.commit()
+    con.close()
+    d = R.summary()
+    assert d["review_type_column"] is False
+    assert d["resolved"] == 1
+    assert d["resolved_human"] == 1 and d["resolved_ai_first_pass"] == 0
+    assert d["review_type_counts"] == {"human": 1, "ai_first_pass": 0}
+    # queue 也能读（不选不存在的列）
+    q = R.query(status="all")
+    assert "review_type" not in q["items"][0]
+
+

@@ -1,0 +1,214 @@
+diff --git a/code/frontend/src/App.tsx b/code/frontend/src/App.tsx
+index e8f9806..920b62f 100644
+--- a/code/frontend/src/App.tsx
++++ b/code/frontend/src/App.tsx
+@@ -5,8 +5,6 @@ import CommandPalette from './components/CommandPalette';
+ import BigscreenLayout from './layouts/BigscreenLayout';
+ import WorkspaceLayout from './layouts/WorkspaceLayout';
+ import { GROUP_KEYS, LEGACY_REDIRECTS, MARKET_ROUTES } from './config/navigation';
+-import LoginPage from './pages/LoginPage';
+-import RegisterPage from './pages/RegisterPage';
+ import ProfilePage from './pages/ProfilePage';
+ import BillingPage from './pages/BillingPage';
+ import HomeBigscreen from './pages/home/HomeBigscreen';
+@@ -124,9 +122,9 @@ export default function App() {
+         </Route>
+         <Route path="/:market" element={<MarketIndexRedirect />} />
+ 
+-        {/* 登录/注册（公开，不进 ProtectedRoute） */}
+-        <Route path="/login" element={<LoginPage />} />
+-        <Route path="/register" element={<RegisterPage />} />
++        {/* 不展示登录/注册页：旧地址直接回首页（本地自动会话） */}
++        <Route path="/login" element={<Navigate to="/" replace />} />
++        <Route path="/register" element={<Navigate to="/" replace />} />
+         {/* 个人中心（需登录） */}
+         <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+         <Route path="/billing" element={<ProtectedRoute><BillingPage /></ProtectedRoute>} />
+diff --git a/code/frontend/src/components/ProtectedRoute.tsx b/code/frontend/src/components/ProtectedRoute.tsx
+index 221b500..80e44e1 100644
+--- a/code/frontend/src/components/ProtectedRoute.tsx
++++ b/code/frontend/src/components/ProtectedRoute.tsx
+@@ -1,4 +1,5 @@
+ import { useState, useEffect } from 'react';
++import { ensureAutoSession } from '../services/autoSession';
+ import { Navigate, useLocation } from 'react-router-dom';
+ import type { ReactNode } from 'react';
+ 
+@@ -9,7 +10,10 @@ export default function ProtectedRoute({ children }: { children: ReactNode }) {
+ 
+   useEffect(() => {
+     if (!token) {
+-      setStatus('invalid');
++      // 本地直入：首次访问自动注册/登录，不再展示登录页
++      ensureAutoSession()
++        .then((newToken) => setStatus(newToken ? 'valid' : 'invalid'))
++        .catch(() => setStatus('invalid'));
+       return;
+     }
+     // 向后端验证 token 真实性
+@@ -38,8 +42,12 @@ export default function ProtectedRoute({ children }: { children: ReactNode }) {
+ 
+   if (status === 'checking') return null; // 验证期间不渲染，避免闪跳
+   if (status === 'invalid') {
+-    // 将来源路径传给登录页，登录成功后可跳回
+-    return <Navigate to="/login" state={{ from: location.pathname + location.search }} replace />;
++    // 不出现登录页：自动会话失败时给出明确错误，不跳登录
++    return (
++      <div style={{ padding: 24, color: '#ff7b72' }}>
++        本地会话建立失败，请检查后端服务后刷新页面（已禁用登录页）
++      </div>
++    );
+   }
+   return <>{children}</>;
+ }
+diff --git a/code/frontend/src/main.tsx b/code/frontend/src/main.tsx
+index 0f6686e..9282700 100644
+--- a/code/frontend/src/main.tsx
++++ b/code/frontend/src/main.tsx
+@@ -1,7 +1,7 @@
+ import { ConfigProvider, theme } from 'antd';
+ import React from 'react';
+ import ReactDOM from 'react-dom/client';
+-import { BrowserRouter } from 'react-router-dom';
++import { BrowserRouter, HashRouter } from 'react-router-dom';
+ 
+ import App from './App';
+ import { LanguageProvider, useLang } from './contexts/LanguageContext';
+@@ -29,12 +29,20 @@ function AppShell() {
+         },
+       }}
+     >
+-      <BrowserRouter>
++      {import.meta.env.VITE_ROUTER === 'hash' ? (
++      <HashRouter>
++        <MarketProvider>
++          <App />
++        </MarketProvider>
++      </HashRouter>
++    ) : (
++    <BrowserRouter basename={(import.meta.env.BASE_URL || '/').replace(/\/$/, '') || '/'}>
+         {/* MarketProvider 需在 Router 内（market 由 useParams 派生） */}
+         <MarketProvider>
+           <App />
+         </MarketProvider>
+       </BrowserRouter>
++    )}
+     </ConfigProvider>
+   );
+ }
+diff --git a/code/frontend/src/pages/StrategyCatalogPage.tsx b/code/frontend/src/pages/StrategyCatalogPage.tsx
+index 00b699f..5d65bef 100644
+--- a/code/frontend/src/pages/StrategyCatalogPage.tsx
++++ b/code/frontend/src/pages/StrategyCatalogPage.tsx
+@@ -63,16 +63,20 @@ export default function StrategyCatalogPage() {
+       render: (v: string, r) => (
+         <Space size={4}>
+           <Text>{v}</Text>
+-          {r.is_builtin
+-            ? <Tag color="purple">{t('strategies.builtin')}</Tag>
+-            : <Tag color="cyan">{t('strategies.external')}</Tag>}
++          {r.is_sidecar
++            ? <Tag color="geekblue">研究策略</Tag>
++            : (r.is_builtin
++              ? <Tag color="purple">{t('strategies.builtin')}</Tag>
++              : <Tag color="cyan">{t('strategies.external')}</Tag>)}
+         </Space>
+       ) },
+     { title: t('strategies.colStatus'), dataIndex: 'status', key: 'status', width: 90,
+       render: (v: string) => statusTag(v, t) },
+     { title: t('strategies.colVersion'), dataIndex: 'version_count', key: 'version_count', width: 60 },
+     { title: t('strategies.colAction'), key: 'action', width: 120, render: (_: unknown, r) => (
+-      canManageOwn ? (
++      r.is_sidecar ? (
++        <Tag>仅供研究</Tag>
++      ) : canManageOwn ? (
+         <Button size="small" type="primary" onClick={() => setWizardTarget(r)}>
+           {t('strategyCatalog.useBtn')}
+         </Button>
+diff --git a/code/frontend/src/pages/groups/ReplayGroup.tsx b/code/frontend/src/pages/groups/ReplayGroup.tsx
+index 7cd2e28..0dafbe6 100644
+--- a/code/frontend/src/pages/groups/ReplayGroup.tsx
++++ b/code/frontend/src/pages/groups/ReplayGroup.tsx
+@@ -7,6 +7,10 @@ import PnlCalendarPage from '../PnlCalendarPage';
+ import KnowledgePage from '../KnowledgePage';
+ import LearningReportPage from '../LearningReportPage';
+ import DailyReportPage from '../DailyReportPage';
++import Acad1ResearchPage from '../Acad1ResearchPage';
++import LusuDeskPage from '../LusuDeskPage';
++import SelectionDeskPage from '../SelectionDeskPage';
++import SimFactorPage from '../SimFactorPage';
+ import { useRole } from '../../hooks/useRole';
+ 
+ /**
+@@ -25,6 +29,10 @@ export default function ReplayGroup() {
+     { key: 'knowledge', label: t('replayGroup.tabKnowledge'), children: <KnowledgePage /> },
+     { key: 'learning', label: t('replayGroup.tabLearning'), children: <LearningReportPage /> },
+     { key: 'report', label: t('replayGroup.tabReport'), children: <DailyReportPage /> },
++    { key: 'acad1', label: '司马徽研究院', children: <Acad1ResearchPage /> },
++    { key: 'selection', label: '选股中台', children: <SelectionDeskPage /> },
++    { key: 'sim', label: '模拟盘/因子', children: <SimFactorPage /> },
++    { key: 'lusu', label: '鲁肃台', children: <LusuDeskPage /> },
+   ];
+   // VIEWER 只读：只留 盈亏日历 + 复盘报告，隐藏 复盘/知识库/学习报告。
+   const items = isViewer ? allItems.filter(i => ['calendar', 'report'].includes(i.key)) : allItems;
+diff --git a/code/frontend/src/pages/groups/StrategiesGroup.tsx b/code/frontend/src/pages/groups/StrategiesGroup.tsx
+index 6130d65..60392f4 100644
+--- a/code/frontend/src/pages/groups/StrategiesGroup.tsx
++++ b/code/frontend/src/pages/groups/StrategiesGroup.tsx
+@@ -14,6 +14,7 @@ import ModelOpsPage from '../ModelOpsPage';
+ import FundamentalsPage from '../FundamentalsPage';
+ import RegimePage from '../RegimePage';
+ import StrategyDetailPage from '../StrategyDetailPage';
++import StrategyWorkspacePage from '../StrategyWorkspacePage';
+ import { useRole } from '../../hooks/useRole';
+ 
+ /**
+@@ -55,6 +56,7 @@ export default function StrategiesGroup() {
+         ]
+       : []),
+     { key: 'strategies', label: t('strategiesGroup.tabStrategies'), children: <StrategiesPage /> },
++    { key: 'workspace', label: '策略工作台', children: <StrategyWorkspacePage /> },
+     { key: 'perf', label: t('strategiesGroup.tabPerf'), children: <StrategyPerformancePage /> },
+     { key: 'ai', label: t('strategiesGroup.tabAi'), children: <ResearchPage /> },
+     { key: 'backtest', label: t('strategiesGroup.tabBacktest'), children: <BacktestPage /> },
+diff --git a/code/frontend/src/services/api.ts b/code/frontend/src/services/api.ts
+index 6c078cf..7724ae1 100644
+--- a/code/frontend/src/services/api.ts
++++ b/code/frontend/src/services/api.ts
+@@ -1,7 +1,7 @@
+ import { showToast } from '../components/Toast';
+ import i18n from '../i18n';
+ 
+-const BASE = '/api/v1';
++const BASE = import.meta.env.VITE_API_BASE || '/api/v1';
+ 
+ /**
+  * 401 不触发全局登出跳转的认证端点（deep-test C2）：
+diff --git a/code/frontend/src/services/myStrategiesApi.ts b/code/frontend/src/services/myStrategiesApi.ts
+index d058d9b..50d7487 100644
+--- a/code/frontend/src/services/myStrategiesApi.ts
++++ b/code/frontend/src/services/myStrategiesApi.ts
+@@ -34,6 +34,7 @@ export interface CatalogStrategy {
+   owner_user_id: string | null; // 平台策略为 null（可订阅）
+   version_count: number;
+   versions: CatalogVersion[];
++  is_sidecar?: boolean;
+ }
+ 
+ /** 我的策略项（后端 my_strategies.py _serialize；公共+本人私有）。 */
+diff --git a/code/frontend/vite.config.ts b/code/frontend/vite.config.ts
+index 7d8d88d..e407807 100644
+--- a/code/frontend/vite.config.ts
++++ b/code/frontend/vite.config.ts
+@@ -1,9 +1,10 @@
+ import { defineConfig } from 'vite';
+ import react from '@vitejs/plugin-react';
+ 
+-const target = process.env.VITE_PROXY_TARGET || 'http://localhost:8102';
++const target = process.env.VITE_PROXY_TARGET || 'http://127.0.0.1:8105';
+ 
+ export default defineConfig({
++  base: process.env.VITE_BASE || '/',
+   plugins: [react()],
+   server: {
+     // 固定 5175 且禁止漂移：5173/5174 已被本机其他项目的 Docker 容器长期占用

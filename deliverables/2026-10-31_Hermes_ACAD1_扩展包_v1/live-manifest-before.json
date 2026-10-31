@@ -1,0 +1,37 @@
+{
+ "schema": "legion-ide-release/v1",
+ "version": "20261031_092952_7e6dbe8a",
+ "commit": "7e6dbe8a95b73474fba2eb415dd16d8b3ea4bff2",
+ "built_at": "2026-10-31T09:29:52+08:00",
+ "source_rel": "Hermes/extensions/legion-ide",
+ "hermes_baseline": {
+  "exists": true,
+  "ok": true,
+  "dirty": false,
+  "files": [],
+  "upstream": true,
+  "remotes": [
+   "upstream"
+  ],
+  "head": "6d517b7",
+  "note": ""
+ },
+ "files": {
+  "app.js": {
+   "sha256": "e90997188aafb89252729e8faeed09df0ba0bfcb76c43b6df7401e903886596a",
+   "bytes": 81060
+  },
+  "app.css": {
+   "sha256": "38ca0225ab879174e7852262bf02964d0e0d0af62f3527f4628c8edd2e9dfb8d",
+   "bytes": 14099
+  },
+  "a0-mainchat.js": {
+   "sha256": "ae4cefeaec6ffb7f5012610002455fdc90b9c4d57681c55552920cea39b182d9",
+   "bytes": 15780
+  },
+  "README.md": {
+   "sha256": "98cc9576f52e72661b2ee83771eb64f19cc00fb58996009520149c98f67b7a65",
+   "bytes": 2880
+  }
+ }
+}

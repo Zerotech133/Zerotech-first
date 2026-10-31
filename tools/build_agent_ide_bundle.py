@@ -223,7 +223,18 @@ def _default_attributes(a):
             "specialties": [], "knowledge": []}
 
 
-def main():
+def main(argv=None):
+    # 2026-10-31 WO-QUAL-BUNDLE-20261031：支持 --out（缺省 OUT 不变），供 fresh
+    # worktree 引导/测试生成到指定路径，不覆写仓内正式 bundle。
+    argv = sys.argv[1:] if argv is None else list(argv)
+    out_path = OUT
+    if "--out" in argv:
+        i = argv.index("--out")
+        if i + 1 >= len(argv):
+            print("用法：python tools/build_agent_ide_bundle.py [--out <bundle.json>]",
+                  file=sys.stderr)
+            return 2
+        out_path = argv[i + 1]
     agents = {}          # agent_id -> 卡片（职能部主数据）
     dept_agents = {}     # dept -> [agent_id]（含项目部编制）
     projects_of = {}     # agent_id -> [项目 dept]
@@ -615,9 +626,12 @@ def main():
         "projects": projects,  # K-ORG-057 项目线（IDE 工作区内 chips）
         "agents": agents,
     }
-    with open(OUT, "w", encoding="utf-8", newline="\n") as f:
+    out_dir = os.path.dirname(os.path.abspath(out_path))
+    if out_dir:
+        os.makedirs(out_dir, exist_ok=True)
+    with open(out_path, "w", encoding="utf-8", newline="\n") as f:
         json.dump(bundle, f, ensure_ascii=False, indent=1)
-    print("bundle ->", OUT)
+    print("bundle ->", out_path)
     print("agents:", len(agents), "| prompt_ok:", bundle["stats"]["prompt_ok"],
           "| miss:", miss_prompt or "none")
     print("workorders: doing=%d review=%d" % (wo_stats["doing"], wo_stats["review"]))

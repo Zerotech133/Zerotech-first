@@ -159,12 +159,12 @@ def test_concurrency_verdict_boundaries():
 
 def test_worktree_cap_env(monkeypatch):
     monkeypatch.delenv(devtask.MAX_WORKTREES_ENV, raising=False)
-    assert devtask._worktree_cap() == devtask.MAX_WORKTREES_DEFAULT == 60
+    assert devtask._worktree_cap() == devtask.MAX_WORKTREES_DEFAULT == 65
     monkeypatch.setenv(devtask.MAX_WORKTREES_ENV, "70")
     assert devtask._worktree_cap() == 70
     for bad in ("abc", "0", "-3"):
         monkeypatch.setenv(devtask.MAX_WORKTREES_ENV, bad)
-        assert devtask._worktree_cap() == 60
+        assert devtask._worktree_cap() == 65
 
 
 def test_enforce_cap_blocks_when_count_at_cap(monkeypatch):
