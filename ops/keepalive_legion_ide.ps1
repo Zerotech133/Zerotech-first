@@ -40,7 +40,14 @@ if ($conn) {
 
 if ($DryRun) { Write-KeepLog "DRY-RUN: would start legion-ide port=$Port"; exit 0 }
 
-& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $launcher -Action start -Port $Port -Repo $Repo -Python $Python | Out-Null
+# 2026-10-31 P0-4：保活与手工启动参数必须一致，否则 /rw 无 token、cap 未启用
+$startArgs = @('-Action', 'start', '-Port', $Port, '-Repo', $Repo, '-Python', $Python, '-EnableWrite')
+$tokenFile = 'C:\项目\_vault\legion_ide\local_token'
+if (Test-Path -LiteralPath $tokenFile) {
+    $startArgs += @('-LocalTokenFile', $tokenFile, '-EnableCap')
+}
+Write-KeepLog ("START args: " + ($startArgs -join ' '))
+& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $launcher @startArgs | Out-Null
 Start-Sleep -Seconds 2
 $conn2 = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
 if ($conn2) { Write-KeepLog "STARTED legion-ide pid=$($conn2.OwningProcess) port=$Port"; exit 0 }
