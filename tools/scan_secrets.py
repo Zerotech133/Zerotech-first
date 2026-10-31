@@ -47,6 +47,9 @@ EXEMPT_PATH_PATTERNS = [
     r"(^|/)scan_secrets_allowlist\.tsv$",
     # 自动生成的仓库 Wiki 会列模块文件名；非凭据载体，按生成物路径豁免。
     r"(^|/)project_wiki\.md$",
+    # 2026-10-31 K-ORG-20261031-PLANREG：计划台账生成物列出计划路径/标题，
+    # 文件名可能触发 HIGH_ENTROPY 误报；它不是凭据载体，按生成物路径豁免。
+    r"(^|/)docs/plans/PLAN_REGISTER(_ALL)?_[0-9]+\.(json|md)$",
 ]
 
 # 测试桩目录/文件标记（按路径豁免）
