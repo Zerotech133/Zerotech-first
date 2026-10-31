@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-31 10:30",
+ "generated": "2026-10-31 10:34",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,8 +9,8 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 19,
-  "workorders_review": 6
+  "workorders_doing": 15,
+  "workorders_review": 7
  },
  "workorders": [
   {
@@ -21,60 +21,6 @@
    "branch": "task/K-QUANT-20261029-T2MANUAL2",
    "created": "2026-10-29 05:16:14",
    "project": "quant"
-  },
-  {
-   "id": "WO-INV-WEEK-20261029-T2",
-   "desc": "D1 周派单（空头风险复核）：对当前 5 票（600519/000858/601318/300750/600036）出具空头风险复核——每个票列 1 条最强空头论据 + 失效条件；只读研究，不下单。",
-   "status": "doing",
-   "owner": "T2",
-   "branch": "",
-   "created": "2026-10-29 07:39:07",
-   "project": "general"
-  },
-  {
-   "id": "WO-INV-WEEK-20261029-N1",
-   "desc": "D1 周派单（情绪面周报）：5 票公告/事件/情绪/资金偏好变化各 1 条，标注置信度与来源；传闻降权，不编造。",
-   "status": "doing",
-   "owner": "N1",
-   "branch": "",
-   "created": "2026-10-29 07:39:07",
-   "project": "general"
-  },
-  {
-   "id": "WO-INV-WEEK-20261029-F1",
-   "desc": "D1 周派单（基本面估值复核）：5 票营收/利润/估值分位/行业景气各 1 行，给估值区间与安全边际判断。",
-   "status": "doing",
-   "owner": "F1",
-   "branch": "",
-   "created": "2026-10-29 07:39:07",
-   "project": "general"
-  },
-  {
-   "id": "WO-INV-WEEK-20261029-ST1",
-   "desc": "D1 周派单（缠论结构观察周记）：5 票结构/级别/买卖点观察各 1 条，影子只读、权重草案不 adopt。",
-   "status": "doing",
-   "owner": "ST1",
-   "branch": "",
-   "created": "2026-10-29 07:39:07",
-   "project": "general"
-  },
-  {
-   "id": "WO-INV-WEEK-20261029-WA1",
-   "desc": "D1 周派单（盯盘异常上报清单）：本周 5 票异常/健康事件清单，走 QUANT_UPSTREAM_REPORT 语义，不直连飞书。",
-   "status": "doing",
-   "owner": "WA1",
-   "branch": "",
-   "created": "2026-10-29 07:39:07",
-   "project": "general"
-  },
-  {
-   "id": "WO-INV-WEEK-20261029-QS1",
-   "desc": "D1 周派单（上游报告受理 ACK 台账）：受理 WA1 本周报告并出 agent 级 ACK；受理≠授权≠研判确认。",
-   "status": "doing",
-   "owner": "QS1",
-   "branch": "",
-   "created": "2026-10-29 07:39:07",
-   "project": "general"
   },
   {
    "id": "K-QUANT-20261029-IDEBUILD",
@@ -236,6 +182,33 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-LEGION-TXN-20261031",
    "created": "2026-10-31 08:21:14",
+   "project": "general"
+  },
+  {
+   "id": "WO-HZ-HERMES-PHASE2-20261031",
+   "desc": "Phase2：黄忠 MCP 触发面（受控写工具）+ 本地事件流（events.jsonl+8091 只读端点）",
+   "status": "review",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-HZ-HERMES-PHASE2-20261031",
+   "created": "2026-10-31 09:21:00",
+   "project": "general"
+  },
+  {
+   "id": "WO-HZ-HERMES-PHASE2B-20261031",
+   "desc": "A2 黄忠验收事件只读页（静态页+导航三件套+2测试）",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-HZ-HERMES-PHASE2B-20261031",
+   "created": "2026-10-31 10:33:18",
+   "project": "general"
+  },
+  {
+   "id": "WO-AUDIT-OUTCOME-CLI-20261031",
+   "desc": "代码审计修复：decision_outcomes.py 文档写 --compute/--report，但 argparse 不支持（实测报错）；补兼容 flag + 测试，避免运维按文档执行失败。",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-AUDIT-OUTCOME-CLI-20261031",
+   "created": "2026-10-31 10:33:28",
    "project": "general"
   }
  ],
@@ -4061,14 +4034,7 @@
    ],
    "experience": "15 年空头研究经验：财务质量审查与估值泡沫识别，擅长从应收/存货/现金流背离里找风险；立场纪律=只为空头论点找最强反证。",
    "dept_name": "量化交易部",
-   "dept_cn_title": "谋略府",
-   "tasks": [
-    {
-     "id": "WO-INV-WEEK-20261029-T2",
-     "desc": "D1 周派单（空头风险复核）：对当前 5 票（600519/000858/601318/300750/600036）出具空头风险复核——每个票列 1 条最强空头论据 + 失效条件；只读研究，不下单。",
-     "status": "doing"
-    }
-   ]
+   "dept_cn_title": "谋略府"
   },
   "N1": {
    "id": "N1",
@@ -4212,14 +4178,7 @@
    ],
    "experience": "12 年市场情绪研究经验：新闻舆情、龙虎榜资金与市场情绪周期跟踪，把非结构化消息转成可计量的情绪因子。",
    "dept_name": "量化交易部",
-   "dept_cn_title": "谋略府",
-   "tasks": [
-    {
-     "id": "WO-INV-WEEK-20261029-N1",
-     "desc": "D1 周派单（情绪面周报）：5 票公告/事件/情绪/资金偏好变化各 1 条，标注置信度与来源；传闻降权，不编造。",
-     "status": "doing"
-    }
-   ]
+   "dept_cn_title": "谋略府"
   },
   "F1": {
    "id": "F1",
@@ -4361,14 +4320,7 @@
    ],
    "experience": "18 年基本面分析经验：三表拆解、行业横向对比与盈利预测建模，估值锚定 DCF 与可比公司双口径。",
    "dept_name": "量化交易部",
-   "dept_cn_title": "谋略府",
-   "tasks": [
-    {
-     "id": "WO-INV-WEEK-20261029-F1",
-     "desc": "D1 周派单（基本面估值复核）：5 票营收/利润/估值分位/行业景气各 1 行，给估值区间与安全边际判断。",
-     "status": "doing"
-    }
-   ]
+   "dept_cn_title": "谋略府"
   },
   "D1": {
    "id": "D1",
@@ -5617,14 +5569,7 @@
    ],
    "experience": "20 年缠论结构化技术分析经验：分型/笔/中枢/三类买卖点的实战判读与复盘归因，擅长把逐日影子信号对账成「哪类信号在哪种市场状态下可信」的结构化结论，并输出可沉淀的理论笔记。",
    "dept_name": "量化交易部",
-   "dept_cn_title": "谋略府",
-   "tasks": [
-    {
-     "id": "WO-INV-WEEK-20261029-ST1",
-     "desc": "D1 周派单（缠论结构观察周记）：5 票结构/级别/买卖点观察各 1 条，影子只读、权重草案不 adopt。",
-     "status": "doing"
-    }
-   ]
+   "dept_cn_title": "谋略府"
   },
   "TR1": {
    "id": "TR1",
@@ -5905,14 +5850,7 @@
    ],
    "experience": "",
    "dept_name": "量化交易部",
-   "dept_cn_title": "谋略府",
-   "tasks": [
-    {
-     "id": "WO-INV-WEEK-20261029-WA1",
-     "desc": "D1 周派单（盯盘异常上报清单）：本周 5 票异常/健康事件清单，走 QUANT_UPSTREAM_REPORT 语义，不直连飞书。",
-     "status": "doing"
-    }
-   ]
+   "dept_cn_title": "谋略府"
   },
   "QS1": {
    "id": "QS1",
@@ -5965,14 +5903,7 @@
    ],
    "experience": "",
    "dept_name": "量化交易部",
-   "dept_cn_title": "谋略府",
-   "tasks": [
-    {
-     "id": "WO-INV-WEEK-20261029-QS1",
-     "desc": "D1 周派单（上游报告受理 ACK 台账）：受理 WA1 本周报告并出 agent 级 ACK；受理≠授权≠研判确认。",
-     "status": "doing"
-    }
-   ]
+   "dept_cn_title": "谋略府"
   },
   "WA2": {
    "id": "WA2",
