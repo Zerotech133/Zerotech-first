@@ -103,3 +103,54 @@ def test_established_allows_direction():
                           run_id="r1", date="2026-10-31")
     assert out["decision"]["recommendation"] == "BUY"
     assert out["watch_reason"] is None
+
+
+# ── 2026-10-31 WO-D1-B123-20261031（B1）：无 artifact 的 established 不得放行 ──
+def _fake_established(**overrides):
+    rec = {"status": "established", "source": "xsec", "as_of": "2026-10-30",
+           "artifact_ref": ""}
+    rec.update(overrides)
+    return rec
+
+
+def test_policy_blocks_buy_and_sell_on_no_research_artifact():
+    """上游 dict 声称 established 但无 artifact_ref → 降级 unresolved，禁 BUY/SELL。"""
+    b = EB.EvidenceBundle.from_context("600519", "x", _ctx(),
+                                       l4=_fake_established())
+    assert b.l4_status == "unresolved"
+    assert b.l4_reason == "no_research_artifact"
+    assert "no_research_artifact" in b.l4_source
+    for raw in ("BUY", "SELL", "STRONG_BUY", "STRONG_SELL"):
+        out = DP.apply_policy({"recommendation": raw, "confidence": 0.9}, b,
+                              run_id="r1", date="2026-10-31")
+        assert out["decision"]["recommendation"] == "WATCH", raw
+        assert out["blocked"] is True, raw
+        assert out["watch_reason"] == "l4_unresolved", raw
+
+
+def test_valid_artifact_established_still_allows_buy(tmp_path):
+    """对照：带可核验 artifact 的 established 仍按原语义允许方向（不误伤）。"""
+    art = tmp_path / "RA-ok.json"
+    art.write_text(
+        '{"schema": "research_artifact/v1", "artifact_id": "RA-1",'
+        ' "created": "2026-10-31T04:45:00+08:00",'
+        ' "data_version": "tdx-parquet@2026-10-28 sha256=' + "d" * 64 + '"}',
+        encoding="utf-8")
+    b = EB.EvidenceBundle.from_context(
+        "600519", "x", _ctx(),
+        l4=_fake_established(artifact_ref="RA-ok.json"), artifact_root=tmp_path)
+    assert b.l4_status == "established"
+    assert b.l4_reason == ""
+    out = DP.apply_policy({"recommendation": "BUY", "confidence": 0.72}, b,
+                          run_id="r1", date="2026-10-31")
+    assert out["decision"]["recommendation"] == "BUY"
+    assert out["watch_reason"] is None
+
+
+def test_bundle_to_dict_carries_l4_reason():
+    """机读原因必须可落账（日报/账本消费 to_dict）。"""
+    b = EB.EvidenceBundle.from_context("600519", "x", _ctx(),
+                                       l4=_fake_established())
+    d = b.to_dict()
+    assert d["l4_status"] == "unresolved"
+    assert d["l4_reason"] == "no_research_artifact"
