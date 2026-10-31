@@ -330,9 +330,14 @@ def _run_review(confirm) -> dict:
         _LAST_RUN["review"] = time.monotonic()
         _audit("huangzhong_run_review",
                "rc=%s elapsed=%.1fs" % (r.returncode, time.time() - t0))
-        return {"ok": r.returncode == 0, "rc": r.returncode,
+        review = _latest_review()
+        # rc=1 = 六条未全通过（观察期正常，如 5/6）；只要报告已生成即视为已执行
+        ok = bool(review.get("ok")) and r.returncode in (0, 1)
+        return {"ok": ok, "rc": r.returncode,
+                "note": ("rc=1 表示六条未全通过（观察期正常），非执行失败"
+                         if r.returncode == 1 else None),
                 "duration_s": round(time.time() - t0, 1),
-                "review": _latest_review(),
+                "review": review,
                 "stderr_tail": ((r.stderr or "")[-300:] or None)}
 
 
