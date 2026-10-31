@@ -474,3 +474,26 @@ def test_no_draft_when_write_disabled(monkeypatch, env):
     assert rep["ok"] is True
     assert rep["draft"]["written"] is False
     assert _drafts(env) == []
+
+
+def test_incidents_confirm_auto_included(monkeypatch, env):
+    """work/incidents_confirm_*.md 存在时，草案自动收编人工确认（免手工补签）。"""
+    mod = _load()
+    _setup(mod, monkeypatch, env)
+    (env["work"] / "incidents_confirm_20261031.md").write_text(
+        "# 确认记录\n- 确认人：老田\n- 确认时间：2026-10-31 14:42\n- 结论：无已知事故\n",
+        encoding="utf-8")
+    rep = _run_tool(mod, env)
+    assert rep["ok"] is True
+    md = _drafts(env)[-1].read_text(encoding="utf-8")
+    assert "人工确认（老田，2026-10-31 14:42）" in md
+    assert "无已知事故" in md
+    assert "已完成人工确认（老田" in md
+
+
+def test_incidents_confirm_absent_keeps_manual_item(monkeypatch, env):
+    mod = _load()
+    _setup(mod, monkeypatch, env)
+    _run_tool(mod, env)
+    md = _drafts(env)[-1].read_text(encoding="utf-8")
+    assert "④ 满窗人工核对：`work/huangzhong/incidents.jsonl` 缺失时须人工确认" in md
