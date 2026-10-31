@@ -64,6 +64,8 @@ IDE_KEY_FILES = {
     "agent_platform/tests/test_ide_release_artifact.py",  # W5 P1-7b 补入（W1 产出）
     "agent_platform/tests/test_legion_ide_audit.py",  # W5 P1-7 补入
     "agent_platform/tests/test_gate_coverage_w5.py",  # 本文件
+    # WO-QUAL-BUNDLE-20261031：fresh worktree 缺 gitignored IDE bundle 引导回归
+    "agent_platform/tests/test_ide_bundle_bootstrap.py",
 }
 # ACAD1/D1/W3(outcome) 关键链路：W5 验收项要求“关键 IDE/ACAD/D1 测试入 gate”，
 # B1 已全部接入；这里锁住“不得被移出”，防止后续精简清单时静默丢失。
@@ -289,3 +291,32 @@ def test_test_gate_ps1_keeps_utf8_bom():
         "整脚本解析失败（用 UTF-8 BOM 保存即可）")
     text = raw.decode("utf-8-sig")
     assert "GATE PASS" in text and "新增失败" in text
+
+
+# ── fresh worktree 缺 gitignored IDE bundle 引导守卫（WO-QUAL-BUNDLE-20261031）──
+BUNDLE_REL = "portal/agent_ide_bundle.json"
+BUNDLE_BUILDER = "tools/build_agent_ide_bundle.py"
+
+
+def test_gate_bootstraps_missing_ide_bundle():
+    """fresh worktree 缺 gitignored IDE bundle：gate 必须先受控生成（防假红）。
+
+    根因（2026-10-31 task-21 实测）：portal/agent_ide_bundle.json 被 .gitignore
+    忽略，fresh worktree 无该文件 → test_hermes_orchestrator 2 + test_ide_enrich 1
+    假红（读不到 bundle，非代码/测试坏）。引导块必须：在套件循环之前、仅 worktree、
+    缺件才生成、失败 fail-open（不新增假红、不锁死合并）。
+    """
+    gate = _gate_text()
+    assert BUNDLE_REL in gate and BUNDLE_BUILDER in gate
+    assert (REPO / BUNDLE_BUILDER).is_file()
+    assert "if (-not (Test-Path -LiteralPath $bundlePath))" in gate
+    assert "$inWorktree = ($repo -match" in gate, (
+        "引导需限定 worktree：不得自动改写主仓/生产 bundle")
+    boot = gate.find("fresh worktree 缺 gitignored IDE bundle 引导")
+    assert boot >= 0, "test_gate.ps1 缺 bundle 引导块（marker 注释）"
+    assert boot < gate.find("foreach ($s in $suites)"), (
+        "bundle 引导必须在套件循环之前，否则 pytest 已先跑出假红")
+    block = gate[boot:gate.find("$newFailures = 0", boot)]
+    assert "build_agent_ide_bundle.py" in block
+    assert "fail-open" in block, "引导失败须 fail-open（不新增假红）"
+    assert "exit 1" not in block, "引导失败不得直接 exit 1（否则缺件仍锁死合并）"

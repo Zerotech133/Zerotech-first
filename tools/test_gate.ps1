@@ -110,7 +110,10 @@ $paths = @{
         # W5 P1-7b（WO-LEGION-W5-GATE-ART-20261031）：W1 release artifact 文件/manifest
         # sha256 对照 + /api/ide/version all_match live smoke（4 用例，约 +0.5s）；
         # W1 已合并（ef5e32b04）但此前未入 gate，属“关键 IDE 测试入 gate”的新缺口。
-        'agent_platform/tests/test_ide_release_artifact.py'
+        'agent_platform/tests/test_ide_release_artifact.py',
+        # WO-QUAL-BUNDLE-20261031：fresh worktree 缺 gitignored IDE bundle 的引导
+        # 回归（builder --out 受控生成 + bundle 契约断言，约 +1~2s）。
+        'agent_platform/tests/test_ide_bundle_bootstrap.py'
     )
     # W5 P1-6 B1+B2 关键集（2026-10-31）：每次独立 pytest（不同套件 sys.path 不共用，
     # 混跑会 ImportError）。B1 清单见 W5 报告 §8.3；B2 扩容见 §8.4（工单 GATEB2，+31）。
@@ -212,6 +215,44 @@ $paths = @{
         'tools/tests/test_devtask_gates.py',
         'tools/tests/test_merge_lock_gated.py'
     )
+}
+
+# ===== 2026-10-31 WO-QUAL-BUNDLE-20261031：fresh worktree 缺 gitignored IDE bundle 引导 =====
+# 背景：portal/agent_ide_bundle.json 是 .gitignore 忽略的 nginx 静态产物（~800KB）。
+# fresh worktree 检出无该文件 → hermes_orchestrator 2 + ide_enrich 1 假红（非代码坏）。
+# 处理：仅在 **worktree**（合并门实际执行处）且缺件时，用本 checkout 的受控源
+# （registry/prompts → tools/build_agent_ide_bundle.py）确定性生成到该 worktree；
+# 不写主仓/生产 bundle、不入 git；生成失败 fail-open（不阻断门禁）并留日志。
+$bundleRel = 'portal/agent_ide_bundle.json'
+$bundlePath = Join-Path $repo $bundleRel
+$inWorktree = ($repo -match '[\\/]\.worktrees[\\/]')
+if (-not (Test-Path -LiteralPath $bundlePath)) {
+    if (-not $inWorktree) {
+        Write-Host "[bootstrap] 缺 $bundleRel 且当前非 worktree：不自动生成（避免覆盖生产 bundle）；相关测试可能假红" -ForegroundColor Yellow
+    } else {
+        $builder = Join-Path $repo 'tools\build_agent_ide_bundle.py'
+        if (Test-Path -LiteralPath $builder) {
+            $blog = Join-Path $env:TEMP "test_gate_bundle_$ts.log"
+            $bsw = [System.Diagnostics.Stopwatch]::StartNew()
+            Push-Location -LiteralPath $repo
+            try {
+                python -X utf8 $builder *> $blog
+                $brc = $LASTEXITCODE
+            } finally {
+                Pop-Location
+            }
+            $bsw.Stop()
+            $bsecs = [math]::Round($bsw.Elapsed.TotalSeconds, 1)
+            if ($brc -eq 0 -and (Test-Path -LiteralPath $bundlePath)) {
+                $bsize = (Get-Item -LiteralPath $bundlePath).Length
+                Write-Host "[bootstrap] 缺 $bundleRel → 已用受控源生成（$bsize bytes，仅本 worktree，不入 git）[${bsecs}s]"
+            } else {
+                Write-Host "[bootstrap] 生成失败 rc=$brc（fail-open：不阻断门禁；日志 $blog）" -ForegroundColor Yellow
+            }
+        } else {
+            Write-Host "[bootstrap] 缺 $bundleRel 且缺生成器（跳过，不阻断）" -ForegroundColor Yellow
+        }
+    }
 }
 
 $newFailures = 0
