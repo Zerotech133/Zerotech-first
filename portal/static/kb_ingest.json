@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-10-31T23:48:31+08:00",
+ "generated_at": "2026-11-01T05:16:30+08:00",
  "ingest_dirs": [
   "C:\\项目\\PDF\\_ingest",
   "C:\\项目\\PDF\\_ingest_reports"
@@ -1058,10 +1058,10 @@
   ]
  },
  "rag": {
-  "docs": 112,
-  "records": 462,
-  "version": 2,
-  "updated_at": "2026-10-31T15:48:29.696542+00:00"
+  "docs": 113,
+  "records": 466,
+  "version": 1,
+  "updated_at": "2026-10-31T21:16:28.567052+00:00"
  },
  "thresholds": {
   "ocr_chars_per_page_min": 100,

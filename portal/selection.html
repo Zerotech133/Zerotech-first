@@ -75,6 +75,15 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;color:#79c0ff;font-siz
 <table style="margin-top:8px"><thead><tr><th>分数分桶</th><th>贡献(%)</th></tr></thead><tbody id="m-bucket"></tbody></table>
 <table style="margin-top:8px"><thead><tr><th>最差个股</th><th>贡献(%)</th></tr></thead><tbody id="m-worst"></tbody></table>
 </div>
+<div class="panel"><b>研究结论（本轮证伪清单）</b>
+<table><thead><tr><th>实验</th><th>窗口</th><th>结果</th><th>结论</th></tr></thead><tbody>
+<tr><td>S02 复合排序</td><td>20 交易日</td><td><span class="badge b-bad">NAV 0.904（-9.6%）</span></td><td>证伪，已熔断暂停（四分数桶全负）</td></tr>
+<tr><td>S01 基线（大市值等权）</td><td>21 交易日</td><td>-2.03% vs 市场 -14.7%</td><td>跑赢来自<b>大市值倾斜</b>（未验证规模因子），非过滤器 alpha</td></tr>
+<tr><td>S01 中性化（市值×行业匹配）</td><td>21 交易日</td><td><span class="badge b-warn">纯过滤超额 +0.17%≈0</span></td><td><b>过滤器无 alpha</b>，仅作风险/工程过滤</td></tr>
+<tr><td>H18 预告修订事件</td><td>493 事件</td><td>改善 -1.51% / 恶化 -2.35%（OOS 均负）</td><td>方向不清晰、容量小 → 只作事件提醒</td></tr>
+</tbody></table>
+<div class="muted" style="margin-top:6px">完整结论：<code>knowledge_docs/选股策略研究结论_20261101.md</code>（已入知识库/RAG）。研究输出，不构成投资建议。</div>
+</div>
 <div class="panel"><b>风险与纪律</b>
 <ul class="muted" style="margin:6px 0 0 18px;padding:0">
 <li>S02 排序权重（动量/反转/低换手/质量中性）为 <b>MVP 未验证</b>，仅供研究，不得实盘；</li>
