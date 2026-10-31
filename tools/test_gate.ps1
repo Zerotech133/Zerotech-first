@@ -279,6 +279,75 @@ $newFailures = 0
 $summary = @()
 Push-Location -LiteralPath $repo
 try {
+    # ===== 2026-10-31 K-ORG-20261031-ARTGUARDWIRE：release artifact 完整性 guard（前置）=====
+    # 背景：14:12 事故——另一并行进程绕过 release 工具改写 current/app.js（83,125B vs manifest
+    # 81,060B），直到 ide 测试才暴露。本前置只读校验 current.json→junction→manifest→逐文件
+    # sha256+bytes（不 repair/不 lock/不发布），在跑任何测试套件前尽早失败可见。
+    # rc 映射：0=PASS；1=篡改/缺文件/junction drift → newFailures++ 判失败（不假绿）；
+    # 2/缺脚本/无 release 根 → 只告警（开发机/旧 worktree 无发布物，不阻断）。
+    if ($Suite -in @('fast', 'all')) {
+        $guardTool = Join-Path $repo 'tools\release_artifact_guard.py'
+        $releaseRoot = 'C:\项目\_vault\legion_ide\release\legion-ide'
+        $glog = Join-Path $env:TEMP "test_gate_artifact_$ts.log"
+        if (-not (Test-Path -LiteralPath $guardTool)) {
+            Write-Host "[artifact] ⚠ 缺 tools/release_artifact_guard.py（只告警，不阻断；开发机/旧 worktree）" -ForegroundColor Yellow
+            $summary += [pscustomobject]@{
+                Suite = 'artifact'; Rc = -1; Failed = 0; Known = 0
+                New = 0; Seconds = 0; Log = ''
+            }
+        } elseif (-not (Test-Path -LiteralPath $releaseRoot)) {
+            Write-Host "[artifact] ⚠ 无 release 根 $releaseRoot（开发机无发布物；只告警，不阻断）" -ForegroundColor Yellow
+            $summary += [pscustomobject]@{
+                Suite = 'artifact'; Rc = -2; Failed = 0; Known = 0
+                New = 0; Seconds = 0; Log = ''
+            }
+        } else {
+            $gsw = [System.Diagnostics.Stopwatch]::StartNew()
+            python -X utf8 $guardTool --check --json --release-root $releaseRoot *> $glog
+            $grc = $LASTEXITCODE
+            $gsw.Stop()
+            $gsecs = [math]::Round($gsw.Elapsed.TotalSeconds, 1)
+            $gjson = $null
+            if (Test-Path -LiteralPath $glog) {
+                try { $gjson = Get-Content -LiteralPath $glog -Raw -Encoding UTF8 | ConvertFrom-Json } catch { $gjson = $null }
+            }
+            $gver = ''
+            $gdrift = $null
+            $gbad = 0
+            if ($gjson) {
+                if ($gjson.pointer) { $gver = [string]$gjson.pointer.version }
+                if ($gjson.junction) { $gdrift = $gjson.junction.drift }
+                if ($gjson.summary) { $gbad = [int]$gjson.summary.files_bad }
+            }
+            if ($grc -eq 0) {
+                Write-Host "[artifact] PASS：version=$gver junction_drift=$gdrift（current/manifest/逐文件 sha 全一致）[${gsecs}s]" -ForegroundColor Green
+                $summary += [pscustomobject]@{
+                    Suite = 'artifact'; Rc = 0; Failed = 0; Known = 0
+                    New = 0; Seconds = $gsecs; Log = $glog
+                }
+            } elseif ($grc -eq 1) {
+                $newFailures++
+                Write-Host "[artifact] FAIL：artifact 完整性失败（篡改/缺文件/junction drift）→ 判失败（version=$gver drift=$gdrift bad_files=$gbad）" -ForegroundColor Red
+                if ($gjson -and $gjson.errors) {
+                    @($gjson.errors) | Select-Object -First 5 | ForEach-Object { Write-Host "  | $_" }
+                }
+                if (Test-Path -LiteralPath $glog) {
+                    Get-Content -LiteralPath $glog -Encoding UTF8 | Select-Object -Last 6 | ForEach-Object { Write-Host "  | $_" }
+                }
+                $summary += [pscustomobject]@{
+                    Suite = 'artifact'; Rc = 1; Failed = $gbad; Known = 0
+                    New = 1; Seconds = $gsecs; Log = $glog
+                }
+            } else {
+                Write-Host "[artifact] ⚠ guard 环境错误 rc=$grc（缺 current/current.json 等；只告警，不阻断；日志 $glog）" -ForegroundColor Yellow
+                $summary += [pscustomobject]@{
+                    Suite = 'artifact'; Rc = $grc; Failed = 0; Known = 0
+                    New = 0; Seconds = $gsecs; Log = $glog
+                }
+            }
+        }
+    }
+
     foreach ($s in $suites) {
         $name = $s
         $targets = @($paths[$name])
