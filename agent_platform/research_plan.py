@@ -31,24 +31,26 @@ def _shadow_info(shadow):
     }
 
 
-def build_item(item, rec, plan_row=None, shadow=None):
+def build_item(item, rec, plan_row=None, shadow=None, levels=None):
     item = item or {}
     rec = rec or {}
     plan = plan_row or {}
+    levels = levels or {}
     price = _f(rec.get("price")) or _f(plan.get("price")) or _f((shadow or {}).get("price_at_decision"))
     recommendation = str(rec.get("recommendation") or plan.get("recommendation") or "").upper()
     confidence = _f(rec.get("confidence"))
     status = rec.get("decision_status") or (shadow or {}).get("status")
     done = status == "done"
     can_buy = bool(done and recommendation in ("BUY", "STRONG_BUY") and price)
-    watch_trigger = plan.get("watch_trigger") or (
-        {"pullback": round(price * 0.97, 2), "breakout": round(price * 1.02, 2)} if price else None)
+    watch_trigger = (levels.get("watch_trigger") or plan.get("watch_trigger") or (
+        {"pullback": round(price * 0.97, 2), "breakout": round(price * 1.02, 2)} if price else None))
     # WATCH/无买点时不得显示“买点区间”；只在可买时给买点。
-    buy_zone = (plan.get("buy_zone") or
-                ([round(price * 0.98, 2), round(price * 1.01, 2)] if price else None)) if can_buy else None
-    stop = _f(plan.get("stop_loss")) or (round(price * 0.92, 2) if price else None)
-    target1 = _f(plan.get("target1")) or (round(price * 1.08, 2) if price else None)
-    target2 = _f(plan.get("target2")) or (round(price * 1.15, 2) if price else None)
+    buy_zone = ((levels.get("buy_zone") or plan.get("buy_zone") or
+                 ([round(price * 0.98, 2), round(price * 1.01, 2)] if price else None))
+                if can_buy else None)
+    stop = _f(levels.get("stop_loss")) or _f(plan.get("stop_loss")) or (round(price * 0.92, 2) if price else None)
+    target1 = _f(levels.get("target1")) or _f(plan.get("target1")) or (round(price * 1.08, 2) if price else None)
+    target2 = _f(levels.get("target2")) or _f(plan.get("target2")) or (round(price * 1.15, 2) if price else None)
     rr = round((target1 - price) / (price - stop), 2) if (price and target1 and stop and price > stop) else None
 
     if not done:
@@ -97,6 +99,8 @@ def build_item(item, rec, plan_row=None, shadow=None):
         "l1_basis": info["l1_basis"],
         "risk_level": info["risk_level"],
         "time_horizon": info["time_horizon"],
+        "level_source": levels.get("source") or "legacy_rule",
+        "levels": {k: levels.get(k) for k in ("atr", "ma20", "support", "resistance")} if levels else {},
         "node_exec": rec.get("node_exec") or [],
         "strategy_owner": "ACAD1",
         "research_owner": "D1",

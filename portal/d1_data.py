@@ -21,6 +21,7 @@ import sys  # noqa: E402
 if REPO not in sys.path:
     sys.path.insert(0, REPO)
 from agent_platform import research_plan  # noqa: E402
+from agent_platform import technical_levels  # noqa: E402
 
 import pool_data  # noqa: E402
 
@@ -107,7 +108,15 @@ def d1_snapshot(day=None):
         rec = next((r for r in (review.get("records") or [])
                     if str(r.get("code")) == code), {}) or item
         rec = _merge_record(rec, item)
-        built = research_plan.build_item(item, rec, plan_rows.get(code), shadows.get(code))
+        _price = rec.get("price") or item.get("price")
+        _rec = str(rec.get("recommendation") or "").upper()
+        _can_buy = (rec.get("decision_status") == "done" and _rec in ("BUY", "STRONG_BUY"))
+        try:
+            _levels = technical_levels.derive(code, price=_price, can_buy=_can_buy)
+        except Exception:  # noqa: BLE001 数据缺失回退旧计划
+            _levels = {}
+        built = research_plan.build_item(item, rec, plan_rows.get(code),
+                                         shadows.get(code), levels=_levels)
         items.append(built)
     out = research_plan.build_snapshot(items)
     out["team"] = _team_snapshot()
