@@ -52,10 +52,13 @@ NAME_FILE_CANDIDATES = (
 REJECTED_DECISIONS = frozenset({"wrong", "reject", "rejected", "invalid", "false"})
 USABLE_DECISIONS = frozenset({"", "correct", "accept", "accepted", "uncertain",
                               "needs_evidence", "ok", "yes"})
+# 2026-10-31 N1 AI 初筛（WO-INTEL-AI1ST-20261031）：review_type 分类，不伪装人工。
+REVIEW_TYPE_HUMAN = "human"
+REVIEW_TYPE_AI_FIRST_PASS = "ai_first_pass"
 _BIAS_CN = {"bull": "看多", "bear": "看空", "neutral": "中性"}
 _SQL_COLS = ("id", "queued_at", "conf", "bias", "title", "stocks",
              "original_jev", "status", "reviewer", "reviewed_at",
-             "decision", "note")
+             "decision", "note", "review_type")
 _REQUIRED_COLS = ("id", "status")
 
 
@@ -278,28 +281,58 @@ def _clean(text, limit: int) -> str:
     return " ".join(str(text or "").split())[:limit]
 
 
-def _render(code6: str, display_name: str, items: list) -> str:
-    lines = ["[reviewed_jev] 人工复核情报（source=reviewed_jev；只含 status=resolved 记录）"]
+def _review_type(row: dict) -> str:
+    """review_type 归一：ai_first_pass 保持；其余（含旧库 '' / 无列）视为 human。
+
+    历史 resolved 行只可能来自人工 resolve（AI 初筛是 2026-10-31 新增档位），
+    因此 ''→human 不伪造 AI 档；ai_first_pass 明确透出，绝不伪装人工。
+    """
+    raw = str(row.get("review_type") or "").strip().lower()
+    return REVIEW_TYPE_AI_FIRST_PASS if raw == REVIEW_TYPE_AI_FIRST_PASS \
+        else REVIEW_TYPE_HUMAN
+
+
+def _render(code6: str, display_name: str, items: list,
+            review_type_counts: dict | None = None) -> str:
+    counts = review_type_counts or {}
+    ai_n = int(counts.get(REVIEW_TYPE_AI_FIRST_PASS) or 0)
+    human_n = int(counts.get(REVIEW_TYPE_HUMAN) or 0)
+    if ai_n:
+        lines = ["[reviewed_jev] reviewed 情报（source=reviewed_jev；"
+                 "含 AI 初筛 %d 条 review_type=ai_first_pass，非人工复核；"
+                 "人工 %d 条 review_type=human）" % (ai_n, human_n)]
+    else:
+        lines = ["[reviewed_jev] 人工复核情报（source=reviewed_jev；"
+                 "只含 status=resolved 记录，全部 review_type=human）"]
     label = ("%s %s" % (display_name, code6)).strip() if display_name else code6
     lines.append("标的：%s｜可用复核事件 %d 条" % (label, len(items)))
     for idx, item in enumerate(items, 1):
         conf = item.get("conf")
         conf_s = "?" if conf is None else ("%.2f" % float(conf))
+        rt = item.get("review_type") or REVIEW_TYPE_HUMAN
         lines.append(
-            "%d) bias=%s 置信=%s 复核=%s 复核人=%s 复核时间=%s｜%s"
+            "%d) bias=%s 置信=%s 复核=%s 复核人=%s 复核时间=%s review_type=%s｜%s"
             % (idx, item.get("bias_cn") or item.get("bias") or "?",
                conf_s, item.get("decision") or "resolved",
                item.get("reviewer") or "-",
-               item.get("reviewed_at") or "-",
+               item.get("reviewed_at") or "-", rt,
                item.get("title") or "(无标题)"))
+        if rt == REVIEW_TYPE_AI_FIRST_PASS:
+            lines.append("   [AI 初筛] review_type=ai_first_pass（机器映射，非人工复核）")
         lines.append("   event_id=%s review_id=%s"
                      % (item.get("event_id"), item.get("review_id")))
         if item.get("summary"):
             lines.append("   事件摘要：%s" % item.get("summary"))
         if item.get("note"):
             lines.append("   复核备注：%s" % item.get("note"))
-    lines.append("（说明：以上为人工复核过的历史情报，不含未复核事件，不代表未来走势。）")
-    return "\n".join(lines[:1 + 1 + TEXT_ITEMS * 3 + 1])
+    if ai_n:
+        lines.append("（说明：以上为已 resolved 历史情报，其中 %d 条为 AI 初筛"
+                     "（review_type=ai_first_pass，机器映射），不等同人工复核；"
+                     "不代表未来走势。）" % ai_n)
+    else:
+        lines.append("（说明：以上为人工复核过的历史情报，不含未复核事件，"
+                     "不代表未来走势。）")
+    return "\n".join(lines[:2 + len(items) * 5 + 1])
 
 
 # ---------------------------------------------------------------- 主入口
@@ -326,6 +359,8 @@ def reviewed_news_event(code, db_path=None, limit=None, names=None,
         "errors": [],
         "rejected": 0,
         "counts": {"scanned": 0, "matched": 0, "usable": 0},
+        "review_type_counts": {REVIEW_TYPE_HUMAN: 0,
+                               REVIEW_TYPE_AI_FIRST_PASS: 0},
         "db": str(db_path or default_db_path()),
     }
     if not code6:
@@ -421,6 +456,7 @@ def reviewed_news_event(code, db_path=None, limit=None, names=None,
             "note": _clean(row.get("note"), 80),
             "summary": _clean(jev.get("reason"), SUMMARY_CHARS),
             "event_type": str(jev.get("event_type") or ""),
+            "review_type": _review_type(row),
             "matched_by": hits,
         }
         # 坏 stocks 但 title/companies 命中：仍可用，但坏字段 fail-visible
@@ -429,6 +465,8 @@ def reviewed_news_event(code, db_path=None, limit=None, names=None,
             out["bad_rows"].append({"id": row_id, "error": "bad_stocks_json"})
         usable += 1
         out["counts"]["usable"] = usable
+        rt = item["review_type"]
+        out["review_type_counts"][rt] = out["review_type_counts"].get(rt, 0) + 1
         if usable <= want:
             out["items"].append(item)
 
@@ -445,7 +483,8 @@ def reviewed_news_event(code, db_path=None, limit=None, names=None,
         return out
     out["source"] = "reviewed_jev"
     out["reason"] = ""
-    out["text"] = _render(code6, display_name, out["items"])
+    out["text"] = _render(code6, display_name, out["items"],
+                          out["review_type_counts"])
     out["event_ids"] = [x["event_id"] for x in out["items"]]
     out["review_ids"] = [x["review_id"] for x in out["items"]]
     log.info("INTEL_TO_N1 code=%s source=reviewed_jev items=%d rejected=%d bad=%d",
