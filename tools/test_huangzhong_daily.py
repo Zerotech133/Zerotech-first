@@ -129,3 +129,61 @@ def test_daily_appends_events_jsonl(tmp_path):
                 emit_fn=_noop_emit)
     assert len((tmp_path / "events.jsonl").read_text(
         encoding="utf-8").splitlines()) == 2
+
+
+# ── B（飞书 REJECT 推送，默认关闭）────────────────────────────────────────
+
+def _push_env(tmp_path, monkeypatch, enabled="1", drill=None):
+    alerts = tmp_path / "alerts"
+    monkeypatch.setenv("HUANGZHONG_ALERTS_DIR", str(alerts))
+    monkeypatch.setenv("HUANGZHONG_EVENT_PUSH", enabled)
+    if drill is not None:
+        monkeypatch.setenv("HUANGZHONG_DRILL", drill)
+    else:
+        monkeypatch.delenv("HUANGZHONG_DRILL", raising=False)
+    return alerts
+
+
+def _run_reject(d, tmp_path):
+    d.run_daily(accept_fn=lambda c: _fake_verdict("REJECT", failed=2),
+                out_dir=tmp_path, emit_fn=_noop_emit)
+
+
+def test_push_disabled_by_default(tmp_path, monkeypatch):
+    monkeypatch.delenv("HUANGZHONG_EVENT_PUSH", raising=False)
+    alerts = tmp_path / "alerts"
+    monkeypatch.setenv("HUANGZHONG_ALERTS_DIR", str(alerts))
+    d = _load("huangzhong_daily")
+    _run_reject(d, tmp_path)
+    assert not alerts.exists() or not list(alerts.glob("*.flag"))
+
+
+def test_reject_push_writes_flag_once(tmp_path, monkeypatch):
+    alerts = _push_env(tmp_path, monkeypatch, "1")
+    d = _load("huangzhong_daily")
+    _run_reject(d, tmp_path)
+    flags = list(alerts.glob("huangzhong_reject_*.flag"))
+    assert len(flags) == 1
+    txt = flags[0].read_text(encoding="utf-8")
+    for key in ("黄忠验收 REJECT", "commit=" + "a" * 12, "reasons=基线失败",
+                "baseline_failed=2"):
+        assert key in txt, (key, txt)
+    # 同 sha 再跑 → 去重（不新增 flag）
+    _run_reject(d, tmp_path)
+    assert len(list(alerts.glob("huangzhong_reject_*.flag"))) == 1
+
+
+def test_pass_does_not_push(tmp_path, monkeypatch):
+    alerts = _push_env(tmp_path, monkeypatch, "1")
+    d = _load("huangzhong_daily")
+    d.run_daily(accept_fn=lambda c: _fake_verdict("PASS"), out_dir=tmp_path,
+                emit_fn=_noop_emit)
+    assert not list(alerts.glob("*.flag"))
+
+
+def test_drill_marker_in_flag(tmp_path, monkeypatch):
+    alerts = _push_env(tmp_path, monkeypatch, "1", drill="1")
+    d = _load("huangzhong_daily")
+    _run_reject(d, tmp_path)
+    flags = list(alerts.glob("huangzhong_reject_*.flag"))
+    assert len(flags) == 1 and "【演练】" in flags[0].read_text(encoding="utf-8")

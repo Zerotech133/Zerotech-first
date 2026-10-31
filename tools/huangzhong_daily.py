@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -15,6 +16,9 @@ ROOT = Path(__file__).resolve().parents[1]
 TOOLS = ROOT / "tools"
 OUT = ROOT / "work" / "huangzhong"
 DAILY = OUT / "daily.jsonl"
+# B（2026-10-31 老田批，默认关闭）：REJECT → jev-eval alerts flag → 既有 AlertPush
+# （每 30 分钟）→ backup_alert.py → 飞书。alerts 目录可用 env 覆盖（测试/迁移）。
+ALERTS_DIR = Path(os.environ.get("HUANGZHONG_ALERTS_DIR") or r"C:\aios\jev-eval\alerts")
 
 
 def _accept_fn():
@@ -71,6 +75,59 @@ def _append_accept_event(summary: dict, out: Path) -> None:
         pass
 
 
+def _push_enabled() -> bool:
+    """B 开关：env 优先（1/0），否则读 work/huangzhong/push_config.json 的 enabled。默认关。"""
+    v = str(os.environ.get("HUANGZHONG_EVENT_PUSH", "")).strip().lower()
+    if v in ("1", "true", "on", "yes"):
+        return True
+    if v in ("0", "false", "off", "no"):
+        return False
+    try:
+        cfg = json.loads((OUT / "push_config.json").read_text(encoding="utf-8"))
+        return bool(cfg.get("enabled"))
+    except (OSError, ValueError):
+        return False
+
+
+def _push_reject(summary: dict, out: Path) -> dict:
+    """B：REJECT → 写 jev-eval alerts flag（既有 AlertPush 每 30 分钟转发飞书）。
+
+    约束：默认关闭；仅 REJECT；按 commit sha 去重（同一 sha 只推一次）；
+    HUANGZHONG_DRILL=1 时正文加【演练】前缀；任何失败 fail-open，不影响验收主流程。
+    """
+    try:
+        if summary.get("verdict") != "REJECT":
+            return {"skipped": "not_reject"}
+        if not _push_enabled():
+            return {"skipped": "disabled"}
+        sha = str(summary.get("commit") or "")[:12] or "unknown"
+        alerts = Path(os.environ.get("HUANGZHONG_ALERTS_DIR") or ALERTS_DIR)
+        alerts.mkdir(parents=True, exist_ok=True)
+        name = "huangzhong_reject_%s.flag" % sha
+        target = alerts / name
+        if target.exists():
+            return {"skipped": "duplicate_pending"}
+        sent = alerts / "sent"
+        if sent.is_dir() and list(sent.glob(name + ".*.done")):
+            return {"skipped": "duplicate_sent"}
+        drill = str(os.environ.get("HUANGZHONG_DRILL", "")).strip().lower() \
+            in ("1", "true", "on", "yes")
+        lines = [
+            ("【演练】" if drill else "") + "🔴 黄忠验收 REJECT",
+            "commit=%s" % sha,
+            "reasons=%s" % ("；".join(summary.get("reasons") or []) or "-"),
+            "baseline_failed=%s" % summary.get("baseline_failed"),
+            "baseline_age_h=%s" % summary.get("baseline_age_h"),
+            "redteam_rate=%s" % summary.get("redteam_rate"),
+            "时间=%s" % summary.get("ts"),
+            "查看：http://127.0.0.1:8734/static/huangzhong_events.html",
+        ]
+        target.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        return {"written": str(target), "drill": drill}
+    except Exception as e:  # noqa: BLE001  fail-open：外发/写 flag 永不影响验收主流程
+        return {"error": str(e)[:200]}
+
+
 def run_daily(commit: str = "HEAD", accept_fn=None, out_dir: Path | None = None,
               emit_fn=None) -> dict:
     accept = accept_fn or _accept_fn()
@@ -93,6 +150,7 @@ def run_daily(commit: str = "HEAD", accept_fn=None, out_dir: Path | None = None,
     # 先落盘再发事件：事件层失败不回滚、不影响返回值（fail-open）
     _emit_event(summary, emit_fn)
     _append_accept_event(summary, out)
+    _push_reject(summary, out)
     return summary
 
 
