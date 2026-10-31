@@ -66,6 +66,16 @@ check_freeze）。纪律：
   sw_l1=SW L1 行业（PIT，as-of 事件日；缺失即按预注册跳过行业维度）；缺
   circ_mv/turnover_rate 的事件计入「未匹配」，R2=False 并给原因。）
 
+数据适配（2026-10-31 task-38）：`tools/h1b_data_adapter.py` 把 tdx/tushare
+parquet（或 CSV 合成夹具）适配成上述 panel.json/events.jsonl——amount 千元→元
+×1000、vol 手→股×100、turnover_rate 百分数/circ_mv 万元保持、ST 开区间展开、
+top_list 过滤可转债/B股（只留 A 股日线 universe，审计实测 1,628 个非 A 股
+code-date）。适配器不写数据仓，只写 `--out-dir`。
+
+判定段（2026-10-31）：预注册唯一判定段 = OOS（2025-07-01~2026-10-16）；main
+真实回测默认 `--segment oos`，`evaluate_all(..., segment="oos")` 在汇总/中性化/
+回归之前过滤；`all`/`is` 仅作盘点，不得用于宣称结论。
+
 退出码：0=成功（dry-run/冻结校验/骨架回测完成）/ 1=数据未冻结拒绝 /
 2=参数或输入错误。
 """
@@ -169,6 +179,22 @@ def _num(value):
     except (TypeError, ValueError):
         return None
     return out if math.isfinite(out) else None
+
+
+def _date_token(value):
+    """日期归一为 YYYYMMDD 便于比较（容忍 YYYY-MM-DD / 空；不做日历推断）。"""
+    text = str(value or "").strip()
+    if text in ("", "None", "none", "nan", "NaN", "NaT"):
+        return ""
+    return text.replace("-", "").replace("/", "")
+
+
+def _iso_date(value):
+    """YYYYMMDD → YYYY-MM-DD（harness/prereg 契约用 ISO；非法则原样返回）。"""
+    token = _date_token(value)
+    if len(token) == 8 and token.isdigit():
+        return "%s-%s-%s" % (token[:4], token[4:6], token[6:8])
+    return str(value or "")
 
 
 def _bar_is_st(bar):
@@ -356,13 +382,15 @@ def detect_events(panel, top_list=None, spec=None):
     spec = spec or SPEC
     calendar = panel.get("calendar") or []
     cal_idx = _calendar_index_map(calendar)
-    lo, hi = spec["sample_in"], spec["sample_out"]
+    cal_by_token = {_date_token(day): str(day) for day in calendar}
+    lo, hi = _date_token(spec["sample_in"]), _date_token(spec["sample_out"])
     raw = []
     for code, data in (panel.get("codes") or {}).items():
         bars = data.get("bars") or []
         for i in range(1, len(bars)):
             day = bars[i]["date"]
-            if day < lo or day > hi:
+            token = _date_token(day)
+            if token < lo or token > hi:
                 continue
             prev_close = _num(bars[i - 1].get("close"))
             close = _num(bars[i].get("close"))
@@ -376,12 +404,14 @@ def detect_events(panel, top_list=None, spec=None):
         if not isinstance(row, dict):
             continue
         code = str(row.get("ts_code") or row.get("symbol") or "").strip()
-        day = str(row.get("trade_date") or row.get("date") or "").strip()
+        day_raw = str(row.get("trade_date") or row.get("date") or "").strip()
         net = _num(row.get("net_amount"))
-        if not code or not day or net is None:
+        if not code or not day_raw or net is None:
             continue
-        if day < lo or day > hi:
+        token = _date_token(day_raw)
+        if token < lo or token > hi:
             continue
+        day = cal_by_token.get(token, day_raw)  # 对齐 panel 日期格式（ISO/数字）
         agg[(code, day)] = agg.get((code, day), 0.0) + net
     for (code, day), net in agg.items():
         if net > 0:
@@ -1230,14 +1260,60 @@ def _ge(value, threshold):
     return value is not None and float(value) >= threshold
 
 
-def evaluate_all(trades, spec=None, panel=None, events=None):
+SEGMENTS = ("all", "is", "oos")
+
+
+def filter_trades_by_segment(trades, segment="all", spec=None):
+    """按预注册段过滤 trades（IS 2023-09-04~2025-06-30；OOS 2025-07-01~2026-10-16）。
+
+    - ``event_date``（事件日/决策日）为分段键，与 H1 切分口径一致（OOS=is_end 次日）；
+    - 预注册判定段 = ``oos``（见 §七）；``all`` 仅供盘点，不得用于宣称结论；
+    - 非法 segment → ValueError（fail-visible，不静默当 all）。
+    """
+    spec = spec or SPEC
+    segment = str(segment or "all").strip().lower()
+    if segment not in SEGMENTS:
+        raise ValueError("segment 必须 ∈ %s，收到 %r" % (SEGMENTS, segment))
+    if segment == "all":
+        return list(trades or [])
+    is_end = _date_token(spec["is_end"])
+    out = []
+    for trade in trades or []:
+        day = _date_token(trade.get("event_date") or "")
+        if not day:
+            continue
+        if segment == "is" and day <= is_end:
+            out.append(trade)
+        elif segment == "oos" and day > is_end:
+            out.append(trade)
+    return out
+
+
+def _segment_window(segment, spec):
+    if segment == "is":
+        return [spec["sample_in"], spec["is_end"]]
+    if segment == "oos":
+        return [spec["oos_start"], spec["sample_out"]]
+    return [spec["sample_in"], spec["sample_out"]]
+
+
+def evaluate_all(trades, spec=None, panel=None, events=None, segment=None):
     """按事件类型汇总 + R2 中性化 + §5.2 暴露回归 + Holm 校正 + 8 门判定。
+
+    ``segment``：``all``/``is``/``oos``（默认 ``all`` 保旧行为；预注册判定段=``oos``，
+    main 真实回测路径默认用 oos）。过滤在汇总/中性化/回归**之前**执行，8 门与
+    GO/No-Go 只基于该段。
 
     panel 给出时才做 R2 中性化（§5.1，同事件日匹配）与 §5.2 暴露回归；events
     用于判事件日非事件控制池。§5.2 仅稳健性输出（used_in_go=False），**不进入
     gates/GO 判定**；不提供 panel → R2=False、暴露回归 unavailable，均给原因。
     """
     spec = spec or SPEC
+    segment = str(segment or "all").strip().lower()
+    if segment not in SEGMENTS:
+        raise ValueError("segment 必须 ∈ %s，收到 %r" % (SEGMENTS, segment))
+    total = len(trades or [])
+    trades = filter_trades_by_segment(trades, segment, spec)
     neutral_summary = None
     if panel is not None:
         trades, neutral_summary = neutralize_trades(
@@ -1250,6 +1326,10 @@ def evaluate_all(trades, spec=None, panel=None, events=None):
     results = {etype: evaluate_event_gates(stats[etype], spec)
                for etype in spec["event_types"]}
     return {"by_event": stats, "gates": results,
+            "segment": segment,
+            "segment_window": _segment_window(segment, spec),
+            "n_trades_total": total,
+            "n_trades_segment": len(trades),
             "neutralization": neutral_summary,
             "exposure_regression": cross_section_regression(trades, panel,
                                                             spec)}
@@ -1282,6 +1362,9 @@ def main(argv=None):
     ap.add_argument("--manifest", default=None, help="DATA1 冻结回执 JSON")
     ap.add_argument("--events", default=None, help="事件 JSONL（真实回测用）")
     ap.add_argument("--panel", default=None, help="行情 panel JSON（真实回测用）")
+    ap.add_argument("--segment", default="oos",
+                    choices=list(SEGMENTS),
+                    help="判定段（预注册判定=oos；all/is 仅盘点，默认 oos）")
     ap.add_argument("--json", action="store_true", help="JSON 输出")
     args = ap.parse_args(argv)
 
@@ -1361,11 +1444,17 @@ def main(argv=None):
         return 2
     backtest = run_backtest(events, panel, SPEC)
     evaluation = evaluate_all(backtest["trades"], SPEC, panel=panel,
-                              events=events)
+                              events=events, segment=args.segment)
+    segment_counts = {
+        name: len(filter_trades_by_segment(backtest["trades"], name, SPEC))
+        for name in SEGMENTS
+    }
     payload = {
         "status": "backtest_skeleton_ran",
         "data_version": freeze["manifest"].get("data_version"),
         "funnel": backtest["funnel"],
+        "segment": args.segment,
+        "segment_counts": segment_counts,
         "evaluation": evaluation,
         "result_claim": False,
         "note": NOTE,
@@ -1374,9 +1463,13 @@ def main(argv=None):
     _emit(payload, args.json)
     if not args.json:
         print("[lcs1_h1b_harness] 骨架回测完成（研究用，非结论）："
-              "events=%d traded=%d"
+              "events=%d traded=%d | 判定段=%s（该段 trades=%d；all/is/oos=%d/%d/%d）"
               % (backtest["funnel"]["events"],
-                 backtest["funnel"]["traded"]))
+                 backtest["funnel"]["traded"],
+                 evaluation.get("segment"),
+                 evaluation.get("n_trades_segment", 0),
+                 segment_counts["all"], segment_counts["is"],
+                 segment_counts["oos"]))
         for etype, res in evaluation["gates"].items():
             print("  %s：verdict=%s score=%d/8 稳健门=%d/4 未过=%s"
                   % (etype, res["verdict"], res["score"],
