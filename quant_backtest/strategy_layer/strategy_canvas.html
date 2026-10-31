@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>策略画布 · Canvas MVP（composition_ir/v1 只读）</title>
+<!-- 前端准入三件套（可选接入，离线优先保持零硬依赖）：
+     tokens.css 已按相对路径接入（../../portal/static/tokens.css，自带 fallback 变量）；
+     nav/shortscreen 接入点（h2 数量 3 < 6，暂不需要 shortscreen）：
+       <script src="../../portal/static/nav.js" defer></script>
+       <script src="../../portal/static/shortscreen.js" defer></script>
+     只许用相对路径，禁止写死入口端口。 -->
+<link rel="stylesheet" href="../../portal/static/tokens.css">
+<style>
+/* ── 语义变量：优先吃 tokens.css 的 primitive，离线时用 fallback ── */
+:root{
+  --bg:var(--gray-1,#0f141c);
+  --panel:var(--gray-2,#161b22);
+  --card:var(--gray-3,#21262d);
+  --line:var(--gray-4,#30363d);
+  --ink:var(--gray-7,#e6edf3);
+  --ink-2:var(--gray-6,#c9d1d9);
+  --muted:var(--gray-5,#8b949e);
+  --acc:var(--blu-500,#58a6ff);
+  --acc-2:var(--blu-600,#1f6feb);
+  --ok:var(--grn-500,#3fb950);
+  --warn:var(--ylw-500,#d29922);
+  --err:var(--red-500,#f85149);
+  --pur:var(--pur-500,#a371f7);
+  --org:var(--org-400,#ffa657);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);
+     font:13px/1.5 "Microsoft YaHei","PingFang SC",system-ui,sans-serif;overflow:hidden}
+button,input,select{font-family:inherit}
+.topbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+        padding:10px 18px;background:var(--panel);border-bottom:1px solid var(--line)}
+.topbar h1{font-size:16px;margin:0;white-space:nowrap}
+.badge{font-size:11px;color:var(--muted);border:1px solid var(--line);
+       border-radius:10px;padding:2px 9px;white-space:nowrap;max-width:52vw;
+       overflow:hidden;text-overflow:ellipsis}
+#graphSource.ok{color:var(--ok);border-color:var(--ok)}
+#graphSource.fallback{color:var(--warn);border-color:var(--warn)}
+.spacer{flex:1}
+.app{display:grid;grid-template-columns:246px minmax(0,1fr) 392px;
+     height:calc(100vh - 54px)}
+.panel{background:var(--panel);display:flex;flex-direction:column;
+       min-height:0;overflow:auto}
+.palette-panel{border-right:1px solid var(--line);padding:12px 12px 24px}
+.inspector{border-left:1px solid var(--line);padding:12px 12px 24px}
+.panel h2{font-size:13px;margin:2px 0 8px;display:flex;align-items:center;gap:8px}
+.panel h2 .tag{font-size:10px;font-weight:400;color:var(--muted);
+               border:1px solid var(--line);border-radius:8px;padding:0 6px}
+.hint{color:var(--muted);font-size:11px;margin:0 0 8px}
+.palette-group{color:var(--muted);font-size:11px;margin:10px 0 4px}
+.palette{display:flex;flex-direction:column;gap:6px}
+.palette-item{display:flex;align-items:center;gap:8px;width:100%;
+  border:1px solid var(--line);background:var(--card);color:var(--ink);
+  border-radius:7px;padding:7px 9px;cursor:grab;text-align:left}
+.palette-item:hover{border-color:var(--acc)}
+.palette-item:active{cursor:grabbing}
+.palette-item .plabel{font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.palette-item .phint{display:none}
+.palette-item .pico{width:10px;height:10px;flex:none;border-radius:3px;background:var(--muted)}
+.palette-item .pdot{width:9px;height:9px;flex:none;border-radius:50%;background:var(--muted)}
+.palette-item .pdot.live{background:var(--ok)}
+.palette-item .pdot.shadow{background:var(--warn)}
+.palette-item .pdot.registry-only{background:transparent;border:1px dashed var(--muted)}
+.pico.type-universe{background:var(--acc)}
+.pico.type-filter{background:var(--org)}
+.pico.type-rank{background:var(--pur)}
+.pico.type-allocator{background:var(--blu-600,#1f6feb)}
+.pico.type-risk{background:var(--err)}
+.pico.type-execution{background:var(--warn)}
+.pico.type-agent_team{background:#58a6ff}
+.empty{color:var(--muted);font-size:12px;padding:8px}
+/* ── 工作区 ── */
+.workspace{display:flex;flex-direction:column;min-width:0;min-height:0}
+.toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+         padding:8px 12px;background:var(--panel);border-bottom:1px solid var(--line)}
+.btn{border:1px solid var(--line);background:var(--card);color:var(--ink);
+     border-radius:6px;padding:5px 11px;cursor:pointer;font-size:12px}
+.btn:hover{border-color:var(--acc);color:var(--acc)}
+.btn.primary{background:var(--acc-2);border-color:var(--acc-2);color:#fff}
+.btn.primary:hover{background:var(--acc);color:#fff}
+.toolbar .hint{margin:0 0 0 auto;max-width:60%;text-align:right}
+.canvas-wrap{position:relative;flex:1;min-height:0;overflow:auto;
+  background-color:var(--bg);
+  background-image:
+    linear-gradient(var(--line) 1px,transparent 1px),
+    linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:20px 20px;background-position:-1px -1px}
+.edge-layer{position:absolute;top:0;left:0;pointer-events:none;overflow:visible}
+.edge-line{fill:none;stroke:var(--muted);stroke-width:2;pointer-events:none}
+.edge-line.selected{stroke:var(--acc);stroke-width:3}
+.edge-hit{fill:none;stroke:transparent;stroke-width:14;pointer-events:stroke;cursor:pointer}
+.temp-edge{fill:none;stroke:var(--acc);stroke-width:2;stroke-dasharray:6 5;
+           pointer-events:none;display:none}
+.node-layer{position:absolute;top:0;left:0;width:100%;height:100%;
+            pointer-events:none}
+.dag-node{position:absolute;width:200px;min-height:70px;pointer-events:auto;
+  background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--muted);
+  border-radius:8px;padding:7px 10px;cursor:grab;user-select:none;
+  box-shadow:0 2px 8px rgba(0,0,0,.35)}
+.dag-node:active{cursor:grabbing}
+.dag-node.selected{outline:2px solid var(--acc);outline-offset:1px}
+.dag-node.type-universe{border-left-color:var(--acc)}
+.dag-node.type-strategy{border-left-color:var(--ok)}
+.dag-node.type-filter{border-left-color:var(--org)}
+.dag-node.type-rank{border-left-color:var(--pur)}
+.dag-node.type-allocator{border-left-color:var(--blu-600,#1f6feb)}
+.dag-node.type-risk{border-left-color:var(--err)}
+.dag-node.type-execution{border-left-color:var(--warn)}
+.dag-node.type-agent_team{border-left-color:var(--acc)}
+.node-head{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.node-type{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.node-del{border:none;background:transparent;color:var(--muted);cursor:pointer;
+          font-size:15px;line-height:1;padding:0 2px}
+.node-del:hover{color:var(--err)}
+.node-title{font-size:12px;font-weight:600;margin-top:2px;white-space:nowrap;
+            overflow:hidden;text-overflow:ellipsis}
+.node-sub{font-size:10px;color:var(--muted);margin-top:2px;white-space:nowrap;
+          overflow:hidden;text-overflow:ellipsis}
+.port{position:absolute;top:50%;transform:translateY(-50%);width:12px;height:12px;
+      border-radius:50%;background:var(--panel);border:2px solid var(--muted)}
+.port.in{left:-7px}
+.port.out{right:-7px;cursor:crosshair}
+.port.out:hover{background:var(--acc);border-color:var(--acc)}
+.canvas-empty{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  color:var(--muted);font-size:13px;pointer-events:none}
+/* ── 右侧 inspector ── */
+.fields{display:grid;grid-template-columns:1fr;gap:6px;margin-bottom:10px}
+.fields label{display:flex;flex-direction:column;gap:2px;font-size:11px;color:var(--muted)}
+.fields input,.fields select{background:var(--card);border:1px solid var(--line);
+  color:var(--ink);border-radius:6px;padding:5px 8px;font-size:12px}
+.actions{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.status{border:1px solid var(--line);border-radius:7px;padding:8px 10px;
+        font-size:12px;margin-bottom:10px;background:var(--card);max-height:180px;
+        overflow:auto}
+.status.ok{border-color:var(--ok)}
+.status.err{border-color:var(--err)}
+.status-badge{display:inline-block;font-size:11px;border-radius:8px;padding:1px 8px;
+              margin-right:6px;color:#fff;background:var(--muted)}
+.status-badge.ok{background:var(--ok)}
+.status-badge.err{background:var(--err)}
+.status-list{margin:6px 0 0;padding-left:18px;color:var(--ink-2);font-size:11px}
+.status-list li{margin:2px 0}
+.status-note{color:var(--muted);font-size:10px;margin-top:6px}
+.preview-head{display:flex;justify-content:space-between;color:var(--muted);
+              font-size:11px;margin-bottom:4px}
+.preview{flex:1;min-height:200px;margin:0;padding:10px;overflow:auto;
+  background:var(--card);border:1px solid var(--line);border-radius:7px;
+  color:var(--ink-2);font:11px/1.45 Consolas,"Cascadia Mono",monospace;
+  white-space:pre-wrap;word-break:break-all}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);
+  background:var(--card);border:1px solid var(--acc);color:var(--ink);
+  border-radius:8px;padding:7px 16px;font-size:12px;opacity:0;
+  pointer-events:none;transition:opacity .18s;z-index:50}
+.toast.show{opacity:1}
+@media (max-width:1100px){
+  body{overflow:auto}
+  .app{grid-template-columns:1fr;height:auto}
+  .palette-panel,.inspector{border-left:none;border-right:none;
+    border-bottom:1px solid var(--line);max-height:46vh}
+  .workspace{min-height:70vh}
+  .canvas-wrap{height:60vh}
+  .toolbar .hint{margin-left:0;text-align:left}
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <h1>🧩 策略画布 · Canvas MVP</h1>
+  <span class="badge" id="graphSource">Graph: 加载中…</span>
+  <span class="badge">composition_ir/v1</span>
+  <span class="badge">只读 · 不写服务端 · 不调 POST</span>
+  <span class="spacer"></span>
+  <span class="badge" title="权威校验命令">pytest 契约测试 + node --check</span>
+</header>
+
+<div class="app" id="canvas-app">
+  <!-- ═══ 左：节点面板 ═══ -->
+  <aside class="panel palette-panel">
+    <h2>节点面板</h2>
+    <p class="hint">点击或拖拽到画布添加；8 类节点与 composition_ir NODE_TYPES 对齐</p>
+    <div id="palette" class="palette"></div>
+    <h2>策略（Graph JSON live/shadow）</h2>
+    <p class="hint" id="strategyHint">等待 pipeline_graph.json…</p>
+    <div id="strategyPalette" class="palette strategies"></div>
+  </aside>
+
+  <!-- ═══ 中：画布 ═══ -->
+  <main class="workspace">
+    <div class="toolbar">
+      <button type="button" id="btnSeed" class="btn">载入示例</button>
+      <button type="button" id="btnClear" class="btn">清空画布</button>
+      <button type="button" id="btnSelDelete" class="btn">删除选中</button>
+      <span class="hint">拖拽节点移动 · 从节点右侧圆点拖到目标节点连线 · 点选节点/边后 Delete 删除</span>
+    </div>
+    <div class="canvas-wrap" id="canvasWrap">
+      <svg id="edgeLayer" class="edge-layer" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
+                  markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--muted,#8b949e)"></path>
+          </marker>
+        </defs>
+        <g id="edgeGroup"></g>
+        <path id="tempEdge" class="temp-edge" d="" marker-end="url(#arrow)"></path>
+      </svg>
+      <div id="nodeLayer" class="node-layer"></div>
+      <div class="canvas-empty" id="canvasEmpty">从左侧面板添加节点开始编排…</div>
+    </div>
+  </main>
+
+  <!-- ═══ 右：IR 预览 ═══ -->
+  <aside class="panel inspector">
+    <h2>IR 预览 <span class="tag">composition_ir/v1</span></h2>
+    <div class="fields">
+      <label>pipeline_id <input id="fPipelineId" type="text" value="pc-canvas-001"></label>
+      <label>owner <input id="fOwner" type="text" value="quant-classic"></label>
+      <label>tenant <input id="fTenant" type="text" value="official"></label>
+      <label>mode
+        <select id="fMode">
+          <option value="SHADOW" selected>SHADOW（影子，默认）</option>
+          <option value="BACKTEST">BACKTEST</option>
+          <option value="REPLAY">REPLAY</option>
+          <option value="SIM_MARKET">SIM_MARKET</option>
+        </select>
+      </label>
+      <label>description <input id="fDescription" type="text"
+        value="Canvas MVP 只读组合（不执行、不下单、不发布）"></label>
+    </div>
+    <div class="actions">
+      <button type="button" id="btnValidate" class="btn primary">校验</button>
+      <button type="button" id="btnCopy" class="btn">复制</button>
+      <button type="button" id="btnDownload" class="btn">导出 JSON</button>
+    </div>
+    <div id="irStatus" class="status">未校验</div>
+    <div class="preview-head"><span>IR JSON</span><span id="statSummary">nodes 0 / edges 0</span></div>
+    <pre id="irPreview" class="preview">{}</pre>
+  </aside>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script src="strategy_canvas.js" defer></script>
+</body>
+</html>
