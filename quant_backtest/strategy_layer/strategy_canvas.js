@@ -218,6 +218,11 @@
         template_id: "trend_pullback",
         title: "趋势回踩",
         description: "内置 fallback：trend_follow 单策略 + filter/allocator/risk/execution（只读计划）",
+        parameters: {
+          tenant: { type: "str", default: "official" },
+          weights: { type: "dict", default: { trend_follow: 1.0 } },
+          max_single: { type: "float", default: 8.0 }
+        },
         ir: {
           schema: SCHEMA,
           pipeline_id: "pc-template-trend-pullback",
@@ -249,6 +254,11 @@
         template_id: "trend_reversal",
         title: "趋势+反转",
         description: "内置 fallback：trend_follow + rsi_reversal 双信号源 → allocator → risk → execution（只读计划）",
+        parameters: {
+          tenant: { type: "str", default: "official" },
+          weights: { type: "dict", default: { trend_follow: 0.5, rsi_reversal: 0.5 } },
+          max_single: { type: "float", default: 10.0 }
+        },
         ir: {
           schema: SCHEMA,
           pipeline_id: "pc-template-trend-reversal",
@@ -281,6 +291,11 @@
         template_id: "nine_dim_chan",
         title: "九维+缠论",
         description: "内置 fallback：nine_dim + chan_monitor + chanlun_li122 三信号源 → allocator → risk → execution（只读计划）",
+        parameters: {
+          tenant: { type: "str", default: "official" },
+          weights: { type: "dict", default: { nine_dim: 0.5, chan_monitor: 0.3, chanlun_li122: 0.2 } },
+          max_single: { type: "float", default: 10.0 }
+        },
         ir: {
           schema: SCHEMA,
           pipeline_id: "pc-template-nine-dim-chan",
@@ -409,7 +424,12 @@
     }
 
     /** 由画布图 {nodes:[{id,type,label,strategy_id,params}], edges:[{from,to,port}]} 生成 IR。 */
-    function buildIR(graph, header) {
+    /**
+     * 画布图 → Composition IR。
+     * options（Phase 5-C 可选）：{risk_policy, publish} 覆写默认只读口径；
+     * 缺省时 risk_policy=DEFAULT_RISK_POLICY（旧调用/旧测试口径不变）。
+     */
+    function buildIR(graph, header, options) {
       var head = {};
       var source = header || DEFAULT_HEADER;
       TOP_LEVEL_REQUIRED.forEach(function (key) {
@@ -439,6 +459,14 @@
           var right = b.from + "\u0000" + b.to + "\u0000" + b.port;
           return left < right ? -1 : left > right ? 1 : 0;
         });
+      var riskPolicy =
+        options && isPlainObject(options.risk_policy)
+          ? copy(options.risk_policy)
+          : copy(DEFAULT_RISK_POLICY);
+      var publish =
+        options && isPlainObject(options.publish)
+          ? copy(options.publish)
+          : copy(DEFAULT_PUBLISH);
       var ir = {
         schema: SCHEMA,
         pipeline_id: head.pipeline_id,
@@ -448,8 +476,8 @@
         mode: head.mode,
         nodes: nodes,
         edges: edges,
-        risk_policy: copy(DEFAULT_RISK_POLICY),
-        publish: copy(DEFAULT_PUBLISH)
+        risk_policy: riskPolicy,
+        publish: publish
       };
       if (head.description) ir.description = head.description;
       return ir;
@@ -917,7 +945,159 @@
         return { id: "e" + (index + 1), from: edge.from, to: edge.to, port: edge.port };
       });
       layoutTemplateNodes(nodes, edges);
-      return { nodes: nodes, edges: edges, header: header };
+      return { nodes: nodes, edges: edges, header: header, params: parseTemplateParameters(template) };
+    }
+
+    /* ══════════════════════════════════════════════════════════════════
+     * 3c. Phase 5-C：模板参数（tenant / 每策略 weights / max_single）
+     *     —— 纯函数，浏览器与 Node 测试共用；只改内存 IR，不写服务端。
+     *     max_single 在 Canvas 内统一为归一化 (0,1]；写入 IR 时 ×100 变成
+     *     risk_policy.max_position_pct / allocator.params.max_single_pct 的百分数口径。
+     * ══════════════════════════════════════════════════════════════════ */
+    /** 模板 IR 里的策略 id（去重，保持出现顺序）——参数区按此生成权重输入。 */
+    function templateStrategyIds(template) {
+      var ir = template && template.ir;
+      var ids = [];
+      ((ir && ir.nodes) || []).forEach(function (node) {
+        if (node && node.type === "strategy" && isNonemptyStr(node.strategy_id) && ids.indexOf(node.strategy_id) < 0) {
+          ids.push(node.strategy_id);
+        }
+      });
+      return ids;
+    }
+
+    /** 模板参数默认值 → Canvas 参数（max_single 归一化到 (0,1]）。 */
+    function parseTemplateParameters(template) {
+      var ir = (template && template.ir) || {};
+      var raw = template && template.parameters;
+      var tenant =
+        raw && raw.tenant && isNonemptyStr(raw.tenant.default)
+          ? raw.tenant.default
+          : isNonemptyStr(ir.tenant)
+            ? ir.tenant
+            : DEFAULT_HEADER.tenant;
+      var weights = null;
+      if (raw && raw.weights && isPlainObject(raw.weights.default)) {
+        weights = copy(raw.weights.default);
+      }
+      if (!isPlainObject(weights) || !Object.keys(weights).length) {
+        weights = {};
+        ((ir && ir.nodes) || []).forEach(function (node) {
+          if (
+            node &&
+            node.type === "allocator" &&
+            isPlainObject(node.params) &&
+            isPlainObject(node.params.weights) &&
+            Object.keys(node.params.weights).length &&
+            !Object.keys(weights).length
+          ) {
+            weights = copy(node.params.weights);
+          }
+        });
+      }
+      if (!isPlainObject(weights) || !Object.keys(weights).length) {
+        var strategyIds = templateStrategyIds(template);
+        var equal = strategyIds.length ? 1 / strategyIds.length : 0;
+        strategyIds.forEach(function (sid) {
+          weights[sid] = Math.round(equal * 1000) / 1000;
+        });
+      }
+      var maxPct =
+        raw && raw.max_single && isNumber(raw.max_single.default)
+          ? raw.max_single.default
+          : ir.risk_policy && isNumber(ir.risk_policy.max_position_pct)
+            ? ir.risk_policy.max_position_pct
+            : 10.0;
+      var maxSingle = maxPct / 100;
+      return { tenant: String(tenant), weights: weights, max_single: maxSingle, max_single_pct: maxPct };
+    }
+
+    /** Canvas 模板参数校验：权重和 ∈ (0,1]、max_single ∈ (0,1]、tenant 合法。 */
+    function validateTemplateParams(params) {
+      var errors = [];
+      var warnings = [];
+      if (!isPlainObject(params)) {
+        return { ok: false, errors: ["模板参数必须为 dict"], warnings: [], weights_sum: null, max_single: null };
+      }
+      var tenant = params.tenant;
+      if (!isNonemptyStr(tenant)) {
+        errors.push("tenant 必须为非空字符串");
+      } else if (!TENANT_RE.test(String(tenant))) {
+        errors.push("tenant 必须为合法标识符（字母/数字开头，允许 . _ -）: " + JSON.stringify(tenant));
+      }
+      var weights = params.weights;
+      var sum = null;
+      if (!isPlainObject(weights) || !Object.keys(weights).length) {
+        errors.push("策略权重 weights 必须为非空 dict（至少 1 个策略）");
+      } else {
+        sum = 0;
+        Object.keys(weights).forEach(function (sid) {
+          var value = weights[sid];
+          if (!isNonemptyStr(sid)) {
+            errors.push("策略权重键必须为非空 strategy_id");
+            return;
+          }
+          if (!isNumber(value)) {
+            errors.push("策略权重 " + sid + " 必须为数值: " + JSON.stringify(value));
+            return;
+          }
+          if (value < 0) {
+            errors.push("策略权重 " + sid + " 不得为负数: " + value);
+            return;
+          }
+          sum += value;
+        });
+        if (sum !== null && !(sum > 0)) {
+          errors.push("策略权重和必须 > 0（当前 Σw = " + sum + "）");
+        } else if (sum !== null && sum > 1 + 1e-9) {
+          errors.push("策略权重和必须 ≤ 1（当前 Σw = " + Math.round(sum * 1000) / 1000 + "）");
+        }
+        if (sum !== null && Math.abs(sum - 1) > 1e-9) {
+          warnings.push("策略权重和未归一化（Σw = " + Math.round(sum * 1000) / 1000 + "，允许 (0,1]）");
+        }
+      }
+      var maxSingle = params.max_single;
+      if (!isNumber(maxSingle)) {
+        errors.push("max_single 必须为数值（归一化 (0,1] 口径）: " + JSON.stringify(maxSingle));
+      } else if (!(maxSingle > 0) || maxSingle > 1) {
+        errors.push("max_single 必须 ∈ (0,1]（当前 " + maxSingle + "；写入 IR 时 ×100 为百分数）");
+      }
+      return {
+        ok: errors.length === 0,
+        errors: errors,
+        warnings: warnings,
+        weights_sum: sum,
+        max_single: isNumber(maxSingle) ? maxSingle : null
+      };
+    }
+
+    /**
+     * 应用模板参数到画布图/header → 返回 {nodes, edges, header, options}：
+     * - header.tenant ← params.tenant；
+     * - 每个 allocator 节点 params.weights ← 权重表，params.max_single_pct ← max_single×100；
+     * - risk_policy.max_position_pct ← max_single×100（仅内存，publish 保持不生效）。
+     */
+    function applyTemplateParams(graph, header, params) {
+      var nodes = ((graph && graph.nodes) || []).map(copy);
+      var edges = ((graph && graph.edges) || []).map(copy);
+      var outHeader = cloneHeader(header || DEFAULT_HEADER);
+      var riskPolicy = copy(DEFAULT_RISK_POLICY);
+      if (isPlainObject(params)) {
+        if (isNonemptyStr(params.tenant)) outHeader.tenant = params.tenant;
+        var maxPct = null;
+        if (isNumber(params.max_single)) {
+          maxPct = Math.round(params.max_single * 100 * 100) / 100;
+          riskPolicy.max_position_pct = maxPct;
+        }
+        nodes.forEach(function (node) {
+          if (node.type !== "allocator") return;
+          node.params = copy(node.params || {});
+          if (!isNonemptyStr(node.params.scheme)) node.params.scheme = "weighted";
+          if (isPlainObject(params.weights)) node.params.weights = copy(params.weights);
+          if (maxPct !== null) node.params.max_single_pct = maxPct;
+        });
+      }
+      return { nodes: nodes, edges: edges, header: outHeader, options: { risk_policy: riskPolicy, publish: copy(DEFAULT_PUBLISH) } };
     }
 
     /* ══════════════════════════════════════════════════════════════════
@@ -958,6 +1138,8 @@
         graphSource: "内置 fallback（pipeline_graph.json 加载中…）",
         templates: copy(FALLBACK_TEMPLATES),
         templateSource: "内置 fallback（pipeline_templates.json 加载中…）",
+        template: null,
+        templateParams: null,
         lastIR: null,
         booted: false
       };
@@ -1303,14 +1485,43 @@
         });
     }
 
+    /** 当前画布 + 模板参数 → 待预览 IR（参数只在内存生效，不自动导出/不写盘）。 */
+    function currentIRBundle() {
+      var graph = { nodes: state.nodes, edges: state.edges };
+      var header = cloneHeader(state.header);
+      var options = null;
+      if (state.templateParams) {
+        var applied = applyTemplateParams(graph, header, state.templateParams);
+        graph = { nodes: applied.nodes, edges: applied.edges };
+        header = applied.header;
+        options = applied.options;
+      }
+      return { ir: buildIR(graph, header, options), paramResult: state.templateParams ? validateTemplateParams(state.templateParams) : null };
+    }
+
+    function mergeParamStatus(result, paramResult) {
+      if (!paramResult || paramResult.ok) return result;
+      var errors = paramResult.errors.map(function (item) {
+        return "模板参数: " + item;
+      });
+      return {
+        ok: false,
+        errors: errors.concat(result.errors),
+        warnings: (result.warnings || []).concat(paramResult.warnings || []),
+        node_count: result.node_count,
+        edge_count: result.edge_count,
+        schema: result.schema
+      };
+    }
+
     function syncPreview() {
-      state.lastIR = buildIR({ nodes: state.nodes, edges: state.edges }, cloneHeader(state.header));
+      var bundle = currentIRBundle();
+      state.lastIR = bundle.ir;
       if (dom.irPreview) dom.irPreview.textContent = JSON.stringify(state.lastIR, null, 2);
       if (dom.statSummary) dom.statSummary.textContent = "nodes " + state.nodes.length + " / edges " + state.edges.length;
-      if (state.lastIR) {
-        var result = validateIR(state.lastIR, { strategyIds: strategyIdList() });
-        paintStatus(result, false);
-      }
+      renderTemplateParamErrors(bundle.paramResult);
+      var result = validateIR(state.lastIR, { strategyIds: strategyIdList() });
+      paintStatus(mergeParamStatus(result, bundle.paramResult), false);
     }
 
     function paintStatus(result, verbose) {
@@ -1350,8 +1561,10 @@
       readHeaderInputs();
       syncPreview();
       var result = validateIR(state.lastIR, { strategyIds: strategyIdList() });
-      paintStatus(result, verbose !== false);
-      return result;
+      var paramResult = state.templateParams ? validateTemplateParams(state.templateParams) : null;
+      var merged = mergeParamStatus(result, paramResult);
+      paintStatus(merged, verbose !== false);
+      return merged;
     }
 
     /* ── 渲染面板 ── */
@@ -1461,6 +1674,9 @@
       connect(r.id, a.id);
       connect(a.id, k.id);
       connect(k.id, x.id);
+      state.template = null;
+      state.templateParams = null;
+      renderTemplateParams();
       renderAll();
     }
 
@@ -1470,6 +1686,9 @@
       state.edges = [];
       state.nextNode = 1;
       state.nextEdge = 1;
+      state.template = null;
+      state.templateParams = null;
+      renderTemplateParams();
       renderAll();
       showToast("画布已清空");
     }
@@ -1603,11 +1822,14 @@
       state.nextNode = converted.nodes.length + 1;
       state.nextEdge = converted.edges.length + 1;
       state.header = cloneHeader(converted.header);
+      state.template = template;
+      state.templateParams = copy(converted.params);
       syncHeaderInputs();
+      renderTemplateParams();
       renderAll();
       showToast(
         "已载入模板 " + template.title + "（" + converted.nodes.length + " 节点 / " +
-          converted.edges.length + " 边，只读）"
+          converted.edges.length + " 边，只读；参数区已在右侧）"
       );
       return converted;
     }
@@ -1619,6 +1841,97 @@
         return null;
       }
       return loadTemplateById(selected);
+    }
+
+    /* ── Phase 5-C：模板参数区（tenant / 每策略权重 / max_single）── */
+    function renderTemplateParamErrors(paramResult) {
+      if (!dom.pErrors) return;
+      if (!state.templateParams) {
+        dom.pErrors.textContent = "";
+        dom.pErrors.classList.remove("err");
+      } else if (!paramResult || paramResult.ok) {
+        var sum = paramResult && isNumber(paramResult.weights_sum) ? Math.round(paramResult.weights_sum * 1000) / 1000 : "-";
+        dom.pErrors.textContent = "参数校验通过 · Σw = " + sum + " · max_single = " + paramResult.max_single;
+        dom.pErrors.classList.remove("err");
+        dom.pErrors.classList.add("ok");
+      } else {
+        dom.pErrors.textContent = "参数非法：" + paramResult.errors.join("；");
+        dom.pErrors.classList.remove("ok");
+        dom.pErrors.classList.add("err");
+      }
+      if (dom.pWeightsHint) {
+        var sumText = paramResult && isNumber(paramResult.weights_sum) ? Math.round(paramResult.weights_sum * 1000) / 1000 : "-";
+        dom.pWeightsHint.textContent = "Σw = " + sumText + "（需 ∈ (0,1]）";
+      }
+    }
+
+    function renderTemplateParams() {
+      if (!dom.templateParams) return;
+      if (!state.template || !state.templateParams) {
+        dom.templateParams.classList.add("hidden");
+        if (dom.pWeights) dom.pWeights.innerHTML = "";
+        if (dom.pErrors) dom.pErrors.textContent = "";
+        return;
+      }
+      dom.templateParams.classList.remove("hidden");
+      if (dom.templateParamsTitle) {
+        dom.templateParamsTitle.textContent = state.template.title + "（" + state.template.template_id + "）";
+      }
+      if (dom.pTenant) dom.pTenant.value = state.templateParams.tenant;
+      if (dom.pMaxSingle) dom.pMaxSingle.value = String(state.templateParams.max_single);
+      var strategyIds = templateStrategyIds(state.template);
+      var weightHtml = strategyIds
+        .map(function (sid) {
+          var weight = isNumber(state.templateParams.weights[sid]) ? state.templateParams.weights[sid] : 0;
+          return (
+            '<label class="pweight"><span class="pwsid">' +
+            escHtml(sid) +
+            '</span><input id="pw-' +
+            attr(sid) +
+            '" type="number" step="0.05" min="0" max="1" value="' +
+            attr(weight) +
+            '"></label>'
+          );
+        })
+        .join("");
+      if (dom.pWeights) dom.pWeights.innerHTML = weightHtml;
+      /* 逐项补值 + 绑定（不依赖 querySelectorAll，便于离线 DOM shim 测试） */
+      strategyIds.forEach(function (sid) {
+        var input = document.getElementById("pw-" + sid);
+        if (!input) return;
+        if (isNumber(state.templateParams.weights[sid])) input.value = String(state.templateParams.weights[sid]);
+        if (input.addEventListener) input.addEventListener("input", onTemplateParamInput);
+      });
+      renderTemplateParamErrors(validateTemplateParams(state.templateParams));
+    }
+
+    function readTemplateParamsFromInputs() {
+      if (!state.templateParams) return;
+      if (dom.pTenant) state.templateParams.tenant = dom.pTenant.value.trim();
+      if (dom.pMaxSingle) state.templateParams.max_single = parseFloat(dom.pMaxSingle.value);
+      if (state.template) {
+        templateStrategyIds(state.template).forEach(function (sid) {
+          var input = document.getElementById("pw-" + sid);
+          if (input) state.templateParams.weights[sid] = parseFloat(input.value);
+        });
+      }
+      if (isNonemptyStr(state.templateParams.tenant)) {
+        state.header.tenant = state.templateParams.tenant;
+        if (dom.fTenant) dom.fTenant.value = state.templateParams.tenant;
+      }
+    }
+
+    function onTemplateParamInput() {
+      readTemplateParamsFromInputs();
+      syncPreview(); /* 实时更新 IR 预览（内存），不自动导出、不写服务端 */
+    }
+
+    function resetTemplateParams() {
+      if (!state.template) return;
+      state.templateParams = parseTemplateParameters(state.template);
+      renderTemplateParams();
+      syncPreview();
+      showToast("已重置模板参数（仅内存，不写服务端）");
     }
 
     /* ── 画布节点事件 ── */
@@ -1858,6 +2171,12 @@
       if (dom.btnCopy) dom.btnCopy.addEventListener("click", copyIR);
       if (dom.btnDownload) dom.btnDownload.addEventListener("click", downloadIR);
       if (dom.btnLoadTemplate) dom.btnLoadTemplate.addEventListener("click", onLoadTemplateClick);
+      if (dom.btnResetParams) dom.btnResetParams.addEventListener("click", resetTemplateParams);
+      [dom.pTenant, dom.pMaxSingle].forEach(function (input) {
+        if (!input) return;
+        input.addEventListener("input", onTemplateParamInput);
+        input.addEventListener("change", onTemplateParamInput);
+      });
       if (dom.templateSelect) {
         dom.templateSelect.addEventListener("change", function () {
           var selected = dom.templateSelect.value;
@@ -1875,10 +2194,19 @@
         if (!input) return;
         input.addEventListener("input", function () {
           readHeaderInputs();
+          /* 模板参数生效时，header.tenant 与参数区 tenant 双向同步 */
+          if (state.templateParams) {
+            state.templateParams.tenant = state.header.tenant;
+            if (dom.pTenant) dom.pTenant.value = state.header.tenant;
+          }
           syncPreview();
         });
         input.addEventListener("change", function () {
           readHeaderInputs();
+          if (state.templateParams) {
+            state.templateParams.tenant = state.header.tenant;
+            if (dom.pTenant) dom.pTenant.value = state.header.tenant;
+          }
           syncPreview();
         });
       });
@@ -1918,7 +2246,15 @@
         btnDownload: $("btnDownload"),
         templateSelect: $("templateSelect"),
         btnLoadTemplate: $("btnLoadTemplate"),
-        templateSource: $("templateSource")
+        templateSource: $("templateSource"),
+        templateParams: $("templateParams"),
+        templateParamsTitle: $("templateParamsTitle"),
+        pTenant: $("pTenant"),
+        pWeights: $("pWeights"),
+        pWeightsHint: $("pWeightsHint"),
+        pMaxSingle: $("pMaxSingle"),
+        pErrors: $("pErrors"),
+        btnResetParams: $("btnResetParams")
       };
       state.booted = true;
       syncHeaderInputs();
@@ -1926,6 +2262,7 @@
       renderStrategyPalette();
       renderTemplateOptions();
       updateTemplateSource();
+      renderTemplateParams();
       updateGraphSource();
       bindEvents();
       seedCanvas();
@@ -1962,6 +2299,10 @@
       parseTemplatesPayload: parseTemplatesPayload,
       selectTemplates: selectTemplates,
       templateToCanvas: templateToCanvas,
+      templateStrategyIds: templateStrategyIds,
+      parseTemplateParameters: parseTemplateParameters,
+      validateTemplateParams: validateTemplateParams,
+      applyTemplateParams: applyTemplateParams,
       pickSeedStrategy: pickSeedStrategy,
       boot: boot
     };
