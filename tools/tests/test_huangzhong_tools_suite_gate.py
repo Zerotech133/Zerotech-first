@@ -44,6 +44,9 @@ FILES = [
     "tools/test_huangzhong_policy.py",
     "tools/test_huangzhong_defect_classify.py",
     "tools/test_huangzhong_cert_lifecycle.py",
+    # P2 能力增强（2026-10-31 第六轮）
+    "tools/test_huangzhong_corpus.py",
+    "tools/test_huangzhong_peer_verify.py",
 ]
 
 
