@@ -41,3 +41,12 @@ def test_route_inventory_still_zero_diff():
     r = subprocess.run([sys.executable, str(ROOT / "tools" / "portal_route_inventory.py"), "--check"],
                        capture_output=True, text=True, encoding="utf-8")
     assert r.returncode == 0, (r.stdout or "") + (r.stderr or "")
+
+
+def test_dispatch_uses_getattr_for_handler_strings():
+    """B4a-lite 回归（2026-10-31 P128）：路由表值是方法名字符串，分发必须 getattr。"""
+    src = (ROOT / "portal" / "portal_api.py").read_text(encoding="utf-8")
+    assert src.count("getattr(self, route_table._GET_EXACT_") >= 16
+    import re as _re
+    bad = _re.findall(r"route_table\._GET_EXACT_\d+\[path\]\(\)", src)
+    assert bad == [], "发现对 handler 字符串直接调用: %s" % bad[:3]

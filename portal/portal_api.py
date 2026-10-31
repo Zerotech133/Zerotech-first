@@ -1833,7 +1833,7 @@ color:#fff;font-size:13.5px;cursor:pointer}
             except ReplayArgumentError as exc:
                 self._json({"error": "invalid_replay_at", "message": str(exc)}, 400)
         elif path in route_table._GET_EXACT_1:
-            route_table._GET_EXACT_1[path]()
+            getattr(self, route_table._GET_EXACT_1[path])()
         elif path == "/api/audit_status":
             # M6 最小接线（2026-10-08 定位拍板 C 混合态）：审计线状态面，
             # 只读、无鉴权、全体 unverified（拍板原文，鉴权/对账/调度缓行）。
@@ -1862,7 +1862,7 @@ color:#fff;font-size:13.5px;cursor:pointer}
             # ?snapshot=1 由 9:15 出件任务调用：现算+原子落盘当日快照）
             self._api_duty_brief(qs)
         elif path in route_table._GET_EXACT_2:
-            route_table._GET_EXACT_2[path]()
+            getattr(self, route_table._GET_EXACT_2[path])()
         elif path == "/api/minutes_inbox":
             # K-STOCK-146 S-c 纪要收件箱只读投影（纯只读直读
             # minutes_inbox.json；?mid= 可选按经理过滤，created_at 倒序≤50）
@@ -2369,12 +2369,12 @@ color:#fff;font-size:13.5px;cursor:pointer}
             # M3-W4 影子面板页（真假信号按日对照，口径透明）
             self._kg_shadow_page(qs)
         elif path in route_table._GET_EXACT_3:
-            route_table._GET_EXACT_3[path]()
+            getattr(self, route_table._GET_EXACT_3[path])()
         elif path == "/kg/doc":
             # K266 M4 文档智能中心（词云三跳+上传）
             self._kg_doc_page(qs)
         elif path in route_table._GET_EXACT_4:
-            route_table._GET_EXACT_4[path]()
+            getattr(self, route_table._GET_EXACT_4[path])()
         elif path == "/kg/events":
             # K266 事件图谱查询面板（态势感知 + 市场Tab + G6 + 下钻原文）
             self._kg_events_page(qs)
@@ -2522,7 +2522,7 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 else:
                     self._json(kg_portal.api(kind, arg, days, per))
         elif path in route_table._GET_EXACT_5:
-            route_table._GET_EXACT_5[path]()
+            getattr(self, route_table._GET_EXACT_5[path])()
         elif path == "/intel":
             self._html_file(os.path.join(ROOT, "intel_workbench.html"))
         elif path == "/intel-dossier":
@@ -2814,7 +2814,7 @@ color:#fff;font-size:13.5px;cursor:pointer}
             # K4.4 工单详情页（卡片「查看详情」按钮落点）
             self._html_file(os.path.join(ROOT, "static", "comm_ticket.html"))
         elif path in route_table._GET_EXACT_6:
-            route_table._GET_EXACT_6[path]()
+            getattr(self, route_table._GET_EXACT_6[path])()
         elif path.startswith("/gzh/view/"):
             # 草稿全文预览（gzh_writer 生成的 preview.html，白名单防穿越）
             import re as _re2
@@ -2825,7 +2825,7 @@ color:#fff;font-size:13.5px;cursor:pointer}
             else:
                 self._json({"error": "bad file"}, 400)
         elif path in route_table._GET_EXACT_7:
-            route_table._GET_EXACT_7[path]()
+            getattr(self, route_table._GET_EXACT_7[path])()
         elif path.startswith("/vd/file/"):
             # 成片附件（mp4/wav/srt/json，白名单防穿越）
             import re as _re2
@@ -2893,7 +2893,7 @@ color:#fff;font-size:13.5px;cursor:pointer}
                                          "reports", "positions.html"),
                             nav_key="positions")
         elif path in route_table._GET_EXACT_8:
-            route_table._GET_EXACT_8[path]()
+            getattr(self, route_table._GET_EXACT_8[path])()
         elif path == "/bt-opt":
             # 飞书卡片「寻优榜单」按钮目标页：全池参数寻优 Top5
             self._html_file(os.path.join(STATION, "quant_backtest",
@@ -3261,7 +3261,7 @@ color:#fff;font-size:13.5px;cursor:pointer}
             except Exception as _ae:
                 self._json({"ok": False, "error": repr(_ae)}, 500)
         elif path in route_table._GET_EXACT_9:
-            route_table._GET_EXACT_9[path]()
+            getattr(self, route_table._GET_EXACT_9[path])()
         elif path == "/approvals":
             # M1 审批注册表页（数据走 /api/platform/approvals 只读面）
             self._html_file(os.path.join(
@@ -3315,7 +3315,7 @@ color:#fff;font-size:13.5px;cursor:pointer}
             # K-STOCK-113 开发指挥台数据口：dev_events.jsonl 只读投影
             self._json(self._devops_data())
         elif path in route_table._GET_EXACT_10:
-            route_table._GET_EXACT_10[path]()
+            getattr(self, route_table._GET_EXACT_10[path])()
         elif path == "/portal":
             # K-STOCK-035 总入口门户：哪里是什么、我的入口在哪里
             # K-STOCK-181 fail-loud 化：此分支异常曾以「裸断连+stderr 无处寻」
@@ -3329,7 +3329,7 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 except Exception as exc:
                     logging.getLogger(__name__).warning("silent-except %s: %s", "portal_api.py", exc)
         elif path in route_table._GET_EXACT_11:
-            route_table._GET_EXACT_11[path]()
+            getattr(self, route_table._GET_EXACT_11[path])()
         elif path == "/api/org":
             # K-ORG-190 Agent 指挥台数据面（org.html bundle，此前 404 断粮已修）
             try:
@@ -3353,7 +3353,7 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 log_exc("org-command knowledge")
                 self._json({"ok": False, "error": "knowledge internal"})
         elif path in route_table._GET_EXACT_12:
-            route_table._GET_EXACT_12[path]()
+            getattr(self, route_table._GET_EXACT_12[path])()
         elif path == "/algo":
             # K-STOCK-087 算法商品市场：试看样例+本地卡密订阅解锁
             self._algo_market_page(qs)
@@ -3363,7 +3363,7 @@ color:#fff;font-size:13.5px;cursor:pointer}
             # /bt-qpzm/{res,rps,hub,batch,spec} 子页
             self._qpzm_page(path[len("/bt-qpzm"):].strip("/"))
         elif path in route_table._GET_EXACT_13:
-            route_table._GET_EXACT_13[path]()
+            getattr(self, route_table._GET_EXACT_13[path])()
         elif path == "/bt-chanlun-pool":
             # 缠论扫描 → 预警池 → 模拟交易（影子观察；?m=US|HK 切市场池链）
             self._chanlun_pool_page(qs)
@@ -3374,7 +3374,7 @@ color:#fff;font-size:13.5px;cursor:pointer}
             # 缠论图手工标注（GET 列表 / POST 增删，出图时叠加）
             self._chanlun_anno(qs)
         elif path in route_table._GET_EXACT_14:
-            route_table._GET_EXACT_14[path]()
+            getattr(self, route_table._GET_EXACT_14[path])()
         elif path == "/bt-linkage":
             # 大盘-板块-个股 三线联动复盘（TDX 880xxx 板块口径，影子观察）
             self._linkage_page(qs)
@@ -3382,7 +3382,7 @@ color:#fff;font-size:13.5px;cursor:pointer}
             from urllib.parse import parse_qs as _pql
             self._linkage_png(_pql(qs))
         elif path in route_table._GET_EXACT_15:
-            route_table._GET_EXACT_15[path]()
+            getattr(self, route_table._GET_EXACT_15[path])()
         elif path == "/api/kline":
             # S1 个股K线 JSON（四市场日线+MA+A股结构信号+JEV标注）
             from urllib.parse import parse_qs as _pqk, unquote as _uqk
@@ -3480,7 +3480,7 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 log_exc("GET /screen 文件版读取失败，兜底内嵌渲染")  # C2批1
                 self._screen_page()
         elif path in route_table._GET_EXACT_16:
-            route_table._GET_EXACT_16[path]()
+            getattr(self, route_table._GET_EXACT_16[path])()
         elif path == "/bt-rps":
             # 旧入口 → A股市场页（保留飞书旧卡片按钮可用）
             self.send_response(301)
