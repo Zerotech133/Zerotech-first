@@ -1,0 +1,370 @@
+{
+ "meta": {
+  "start": "20210101",
+  "end": "20261029",
+  "is_end": "20231231",
+  "cost": 0.003,
+  "rows": 7216321,
+  "generated_at": "2026-10-31T18:09:09+08:00"
+ },
+ "refined": {
+  "H29_golden_pillar": {
+   "h5": {
+    "events": 60634,
+    "daily": {
+     "all": {
+      "n": 1393,
+      "mean_pct": 0.662,
+      "t": 5.77
+     },
+     "IS": {
+      "n": 722,
+      "mean_pct": 0.266,
+      "t": 1.55
+     },
+     "OOS": {
+      "n": 671,
+      "mean_pct": 1.088,
+      "t": 7.27
+     }
+    },
+    "bootstrap": {
+     "n_boot": 300,
+     "mean_pct": 1.091,
+     "p_le_0": 0.0
+    }
+   },
+   "h10": {
+    "events": 60550,
+    "daily": {
+     "all": {
+      "n": 1388,
+      "mean_pct": 0.414,
+      "t": 2.61
+     },
+     "IS": {
+      "n": 722,
+      "mean_pct": -0.212,
+      "t": -1.02
+     },
+     "OOS": {
+      "n": 666,
+      "mean_pct": 1.093,
+      "t": 4.54
+     }
+    },
+    "bootstrap": {
+     "n_boot": 300,
+     "mean_pct": 1.062,
+     "p_le_0": 0.0
+    }
+   },
+   "h20": {
+    "events": 60348,
+    "daily": {
+     "all": {
+      "n": 1378,
+      "mean_pct": -0.221,
+      "t": -1.14
+     },
+     "IS": {
+      "n": 722,
+      "mean_pct": -1.134,
+      "t": -4.06
+     },
+     "OOS": {
+      "n": 656,
+      "mean_pct": 0.785,
+      "t": 3.04
+     }
+    },
+    "bootstrap": {
+     "n_boot": 300,
+     "mean_pct": 0.759,
+     "p_le_0": 0.0133
+    }
+   },
+   "status": "backtested",
+   "best": {
+    "horizon": 5,
+    "IS": {
+     "n": 722,
+     "mean_pct": 0.266,
+     "t": 1.55
+    },
+    "OOS": {
+     "n": 671,
+     "mean_pct": 1.088,
+     "t": 7.27
+    }
+   }
+  },
+  "H29_double_vol_confirm": {
+   "h5": {
+    "events": 10321,
+    "daily": {
+     "all": {
+      "n": 1327,
+      "mean_pct": 1.096,
+      "t": 4.15
+     },
+     "IS": {
+      "n": 713,
+      "mean_pct": 0.751,
+      "t": 2.13
+     },
+     "OOS": {
+      "n": 614,
+      "mean_pct": 1.496,
+      "t": 3.75
+     }
+    },
+    "bootstrap": {
+     "n_boot": 300,
+     "mean_pct": 1.51,
+     "p_le_0": 0.0
+    }
+   },
+   "h10": {
+    "events": 10307,
+    "daily": {
+     "all": {
+      "n": 1323,
+      "mean_pct": 0.745,
+      "t": 2.3
+     },
+     "IS": {
+      "n": 713,
+      "mean_pct": 0.662,
+      "t": 1.54
+     },
+     "OOS": {
+      "n": 610,
+      "mean_pct": 0.841,
+      "t": 1.71
+     }
+    },
+    "bootstrap": {
+     "n_boot": 300,
+     "mean_pct": 0.831,
+     "p_le_0": 0.0633
+    }
+   },
+   "h20": {
+    "events": 10281,
+    "daily": {
+     "all": {
+      "n": 1314,
+      "mean_pct": 0.239,
+      "t": 0.64
+     },
+     "IS": {
+      "n": 713,
+      "mean_pct": 0.123,
+      "t": 0.25
+     },
+     "OOS": {
+      "n": 601,
+      "mean_pct": 0.376,
+      "t": 0.66
+     }
+    },
+    "bootstrap": {
+     "n_boot": 300,
+     "mean_pct": 0.359,
+     "p_le_0": 0.2533
+    }
+   },
+   "status": "backtested",
+   "best": {
+    "horizon": 5,
+    "IS": {
+     "n": 713,
+     "mean_pct": 0.751,
+     "t": 2.13
+    },
+    "OOS": {
+     "n": 614,
+     "mean_pct": 1.496,
+     "t": 3.75
+    }
+   }
+  },
+  "H29_yin_yang_strict": {
+   "h5": {
+    "events": 10235,
+    "daily": {
+     "all": {
+      "n": 1234,
+      "mean_pct": -0.961,
+      "t": -1.88
+     },
+     "IS": {
+      "n": 639,
+      "mean_pct": 0.317,
+      "t": 0.34
+     },
+     "OOS": {
+      "n": 595,
+      "mean_pct": -2.334,
+      "t": -7.15
+     }
+    },
+    "bootstrap": {
+     "n_boot": 300,
+     "mean_pct": -2.312,
+     "p_le_0": 1.0
+    }
+   },
+   "h10": {
+    "events": 10176,
+    "daily": {
+     "all": {
+      "n": 1229,
+      "mean_pct": -2.099,
+      "t": -4.53
+     },
+     "IS": {
+      "n": 639,
+      "mean_pct": -0.257,
+      "t": -0.34
+     },
+     "OOS": {
+      "n": 590,
+      "mean_pct": -4.093,
+      "t": -8.53
+     }
+    },
+    "bootstrap": {
+     "n_boot": 300,
+     "mean_pct": -4.042,
+     "p_le_0": 1.0
+    }
+   },
+   "h20": {
+    "events": 10071,
+    "daily": {
+     "all": {
+      "n": 1217,
+      "mean_pct": -2.993,
+      "t": -4.04
+     },
+     "IS": {
+      "n": 637,
+      "mean_pct": -0.616,
+      "t": -0.49
+     },
+     "OOS": {
+      "n": 580,
+      "mean_pct": -5.604,
+      "t": -7.8
+     }
+    },
+    "bootstrap": {
+     "n_boot": 300,
+     "mean_pct": -5.537,
+     "p_le_0": 1.0
+    }
+   },
+   "status": "rejected",
+   "best": null
+  },
+  "H29_shrink_pullback": {
+   "h5": {
+    "events": 44147,
+    "daily": {
+     "all": {
+      "n": 1366,
+      "mean_pct": -0.952,
+      "t": -8.07
+     },
+     "IS": {
+      "n": 715,
+      "mean_pct": -0.955,
+      "t": -5.42
+     },
+     "OOS": {
+      "n": 651,
+      "mean_pct": -0.949,
+      "t": -6.14
+     }
+    },
+    "bootstrap": {
+     "n_boot": 300,
+     "mean_pct": -0.956,
+     "p_le_0": 1.0
+    }
+   },
+   "h10": {
+    "events": 44115,
+    "daily": {
+     "all": {
+      "n": 1361,
+      "mean_pct": -1.589,
+      "t": -8.77
+     },
+     "IS": {
+      "n": 715,
+      "mean_pct": -1.674,
+      "t": -6.6
+     },
+     "OOS": {
+      "n": 646,
+      "mean_pct": -1.494,
+      "t": -5.78
+     }
+    },
+    "bootstrap": {
+     "n_boot": 300,
+     "mean_pct": -1.503,
+     "p_le_0": 1.0
+    }
+   },
+   "h20": {
+    "events": 43692,
+    "daily": {
+     "all": {
+      "n": 1351,
+      "mean_pct": -2.05,
+      "t": -7.68
+     },
+     "IS": {
+      "n": 715,
+      "mean_pct": -2.516,
+      "t": -7.35
+     },
+     "OOS": {
+      "n": 636,
+      "mean_pct": -1.525,
+      "t": -3.67
+     }
+    },
+    "bootstrap": {
+     "n_boot": 300,
+     "mean_pct": -1.485,
+     "p_le_0": 0.9867
+    }
+   },
+   "status": "rejected",
+   "best": null
+  }
+ },
+ "h28_capacity": {
+  "days": 1409,
+  "ann_all_pct": 25.46,
+  "ann_avoid_pct": 23.94,
+  "excess_ann_pct": -1.52,
+  "excess_t": -0.84,
+  "avg_avoid_per_day": 788.9,
+  "max_avoid_per_day": 4403,
+  "IS": {
+   "excess_t": 0.37,
+   "days": 727
+  },
+  "OOS": {
+   "excess_t": -3.19,
+   "days": 682
+  },
+  "turnover_note": "每日触发股集合变化即换手；规避=不持有，非做空（A股做空受限）"
+ }
+}
