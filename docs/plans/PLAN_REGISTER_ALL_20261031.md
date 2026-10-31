@@ -2,11 +2,11 @@
 
 > 只读扫描；原计划不改。unspecified 需 owner 在 2026-11-07 前补状态。
 
-总数：290
+总数：292
 
 | 状态 | 数量 |
 |---|---|
-| declared | 127 |
+| declared | 129 |
 | frozen | 98 |
 | pending_approval | 48 |
 | superseded | 16 |
@@ -298,6 +298,8 @@
 | 2026-10-31 | declared | portal_api 路由清单（A5 B0） | `docs\plans\2026-10-31_A5_B0路由清单_v1.md` |
 | 2026-10-31 | declared | A5 B4/B5 路由表化 · 设计与测试方案 v1（2026-10-31 · 关羽） | `docs\plans\2026-10-31_A5_B4B5_路由表化设计_v1.md` |
 | 2026-10-31 | frozen | portal_api 拆分提案 v1（A5 · 2026-10-31 · 关羽） | `docs\plans\2026-10-31_portal_api拆分提案_v1.md` |
+| 2026-10-31 | declared | 情报板块研发方案 v1（2026-10-31） | `docs\plans\2026-10-31_情报板块研发方案_v1.md` |
+| 2026-10-31 | declared | 情报板块研发计划 v1（2026-10-31 → 2026-11-28） | `docs\plans\2026-10-31_情报板块研发计划_v1.md` |
 | 2026-10-31 | declared | 身份拓扑决策 v2：SSO 已启用（2026-10-31 09:15） | `docs\plans\2026-10-31_身份拓扑决策_v1.md` |
 | 2026-10-31 | declared | 零界研发计划 v2：收口与闭环（2026-10-31 → 2026-11-28） | `docs\plans\2026-10-31_零界研发计划_v2_收口与闭环.md` |
 | 2026-10-31 | declared | 黄忠 × Hermes 底层结合方案 v1（2026-10-31） | `docs\plans\2026-10-31_黄忠Hermes底层结合方案_v1.md` |
