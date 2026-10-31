@@ -44,6 +44,10 @@ register_routes() 以装饰器方式包装 Handler 的 do_GET/do_POST，
                                     引擎=quant_backtest/admission.py 纯函数；
                                     缺源 → verdict=unknown + source_missing，
                                     禁 fail-open；契约 §9）
+  GET  /pipeline_graph.json     → 同目录 pipeline_graph.json 只读原样返回
+                                    （application/json; charset=utf-8 + no-store；
+                                    缺文件 503 / 坏 JSON 500 JSON 错误，不抛栈；
+                                    Phase 2-A，供 pipeline_map.html 同源 fetch）
 
 数据库访问：psycopg2（XMAP_PG_* env/.env.local，主机 5442）优先，
 docker exec quant-pg psql（容器内 5432）兜底；子进程/连接超时一律 10s。
@@ -1512,6 +1516,65 @@ def _pipeline_page() -> bytes:
     return _static_page("pipeline_map.html")
 
 
+# ── 只读 Graph JSON：GET /pipeline_graph.json（Phase 2-A）──────────────
+# pipeline_graph.json 由 pipeline_graph.py 只读产出（Phase 1-B，40 nodes/19 edges，
+# counts cards=10/enabled=2/shadow=8），与 pipeline_map.html 同目录；本路由只读取
+# 该文件原样返回（供页面同源 fetch），绝不回写/重建 Graph、不改 cards/registry。
+PIPELINE_GRAPH_ROUTE = "/pipeline_graph.json"
+PIPELINE_GRAPH_PATH = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "pipeline_graph.json"
+)
+
+
+def pipeline_graph_payload() -> tuple:
+    """只读读取同目录 pipeline_graph.json → ``(payload, code)``。
+
+    - 成功 ``(graph_doc, 200)``：payload 即 Graph JSON 文档本体
+      （nodes/edges/meta/counts，与页面 validator 同构）；
+    - 文件缺失/不可读 ``(error, 503)``；坏 JSON/顶层非 dict ``(error, 500)``。
+    错误一律 JSON 结构（``ok=false`` + ``error``），不抛栈；本函数只读不写盘。
+    """
+    path = PIPELINE_GRAPH_PATH
+    try:
+        with open(path, "rb") as fh:
+            raw = fh.read()
+    except FileNotFoundError:
+        return (
+            {"ok": False, "error": "pipeline_graph.json 不存在", "path": path},
+            503,
+        )
+    except OSError as exc:
+        return (
+            {
+                "ok": False,
+                "error": "pipeline_graph.json 读取失败: %s" % str(exc)[:200],
+                "path": path,
+            },
+            503,
+        )
+    try:
+        doc = json.loads(raw.decode("utf-8"))
+    except (ValueError, UnicodeDecodeError) as exc:
+        return (
+            {
+                "ok": False,
+                "error": "pipeline_graph.json 非法 JSON: %s" % str(exc)[:200],
+                "path": path,
+            },
+            500,
+        )
+    if not isinstance(doc, dict):
+        return (
+            {
+                "ok": False,
+                "error": "pipeline_graph.json 顶层必须为 dict",
+                "path": path,
+            },
+            500,
+        )
+    return doc, 200
+
+
 # ── 路由注册（零侵入包装）─────────────────────────────────────────────
 def register_routes(server_or_app: Any) -> Any:
     """把三个端点包装进 http.server Handler 类（或 HTTPServer 实例）。
@@ -1549,6 +1612,14 @@ def register_routes(server_or_app: Any) -> Any:
             self.end_headers()
             self.wfile.write(body)
             return None
+        if u.path == PIPELINE_GRAPH_ROUTE:
+            # 只读 Graph JSON（Phase 2-A）：urlparse 已剥离 query（?t=... 兼容）；
+            # 缺文件/坏 JSON 显式 503/500 JSON 错误，不抛栈、不重建 Graph
+            try:
+                payload, code = pipeline_graph_payload()
+            except Exception as exc:  # noqa: BLE001
+                payload, code = ({"ok": False, "error": str(exc)[:200]}, 500)
+            return _send_json(self, payload, code)
         if u.path == "/api/risk":
             try:
                 payload, code = risk_payload()
@@ -1748,4 +1819,7 @@ __all__ = [
     "health_payload",
     "sixring_payload",
     "admission_payload",
+    "pipeline_graph_payload",
+    "PIPELINE_GRAPH_PATH",
+    "PIPELINE_GRAPH_ROUTE",
 ]
