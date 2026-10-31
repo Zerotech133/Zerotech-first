@@ -38,6 +38,7 @@
     { "id": "agent_shadow_eval_weekly", "kind": "automation", "title": "影子链周度评估（周五 17:45）", "ref": "agent_platform/shadow_automation.ps1#eval", "enabled": true },
     { "id": "premarket_receipt", "kind": "automation", "title": "盘前跑单回执", "ref": "quant_backtest/premarket_run_receipt.py", "enabled": true },
     { "id": "pdf_knowledge_ingest", "kind": "tool", "title": "扫描版 PDF 知识入库（OCR→结构→知识单元→RAG）", "ref": "tools/kb_corpus/pdf_ingest.py", "enabled": true },
-    { "id": "kb_reports_search", "kind": "tool", "title": "研报知识库检索（Agent 只读）", "ref": "tools/kb_corpus/kb_reports_search.py", "enabled": true }
+    { "id": "kb_reports_search", "kind": "tool", "title": "研报知识库检索（Agent 只读）", "ref": "tools/kb_corpus/kb_reports_search.py", "enabled": true },
+    { "id": "kb_read_api", "kind": "tool", "title": "知识库只读接口（KB Read API v1）", "ref": "tools/kb_corpus/kb_read_api.py", "enabled": true }
   ]
 }
