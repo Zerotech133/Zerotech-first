@@ -1726,6 +1726,8 @@ def portal_static_payload(filename: str) -> tuple:
 # ── Canvas / Paper Exchange 只读路由（Phase 3 路由收口）────────────────
 CANVAS_ROUTES = ("/canvas", "/strategy/canvas")
 CANVAS_JS_ROUTES = ("/strategy_canvas.js", "/strategy/strategy_canvas.js")
+PAPER_EXCHANGE_PAGE_ROUTES = ("/paper_exchange_card",)
+PAPER_EXCHANGE_JS_ROUTE = "/paper_exchange.js"
 
 
 def _send_bytes(handler: Any, body: bytes, content_type: str, code: int = 200) -> None:
@@ -1824,6 +1826,18 @@ def register_routes(server_or_app: Any) -> Any:
         if u.path in CANVAS_JS_ROUTES:
             try:
                 body = _static_page("strategy_canvas.js")
+            except OSError as exc:
+                return _send_json(self, {"ok": False, "error": str(exc)[:200]}, 500)
+            return _send_bytes(self, body, "application/javascript; charset=utf-8")
+        if u.path in PAPER_EXCHANGE_PAGE_ROUTES:
+            try:
+                body = _static_page("paper_exchange.html")
+            except OSError as exc:
+                return _send_json(self, {"ok": False, "error": str(exc)[:200]}, 500)
+            return _send_bytes(self, body, "text/html; charset=utf-8")
+        if u.path == PAPER_EXCHANGE_JS_ROUTE:
+            try:
+                body = _static_page("paper_exchange.js")
             except OSError as exc:
                 return _send_json(self, {"ok": False, "error": str(exc)[:200]}, 500)
             return _send_bytes(self, body, "application/javascript; charset=utf-8")
@@ -2040,4 +2054,6 @@ __all__ = [
     "PORTAL_STATIC_ROUTE_PREFIX",
     "CANVAS_ROUTES",
     "CANVAS_JS_ROUTES",
+    "PAPER_EXCHANGE_PAGE_ROUTES",
+    "PAPER_EXCHANGE_JS_ROUTE",
 ]
