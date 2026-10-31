@@ -1,0 +1,207 @@
+{
+ "schema": "research_artifact/v2",
+ "artifact_id": "RA-20261031-LCS1-600519-v2",
+ "supersedes": "RA-20261031-LCS1-600519-v1",
+ "topic_id": "AC-20261030-LCS1-REDEFINE",
+ "owner": "ACAD1",
+ "created_by": "W3 worker(w4-http-api) 代 ACAD1 补证包; 依据 task-13 / 研发计划v2 §W3",
+ "created": "2026-10-31T10:40:00+08:00",
+ "status": "frozen",
+ "candidate": {
+  "candidate_id": "cand-RA-20261031-600519-LCS1v0",
+  "symbol": "600519",
+  "name": "贵州茅台",
+  "kind": "strategy_proxy_candidate",
+  "tier_note": "非 ACAD1 推荐池 19 只 T2；为研究代理候选（图形先行 proxy）"
+ },
+ "strategy_spec": {
+  "name": "LCS-1 v0 图形先行 proxy",
+  "signal": "日线 close > 前 20 日最高 high 且 vol > 1.5 x 前 20 日均量",
+  "entry": "信号次日开盘价买入",
+  "exit": "持有 5 个交易日后收盘卖出（entry_date + 5 个交易日）",
+  "position_rule": "持仓期内不再开新仓（非重叠）",
+  "cost_model": "cost_bps=3 + slippage_bps=1 = 4bps/笔；T+1",
+  "limits": "不处理涨跌停/停牌；不叠加 KG/席位/事件；非 LCS-1 完整版；仅 600519 单票"
+ },
+ "hypothesis": "突破前 20 日高点且量能 >1.5 倍均量的图形先行信号，在 T+1 开盘买入并持有 5 个交易日后卖出，扣除 4bps 成本后存在正期望（600519，样本外 2025-07-01~2026-10-16）。",
+ "data": {
+  "data_version": "tdx-parquet@2026-10-28; files=142; sha256=d538a1be84cb7083f9c5fc6d78051d8e9e2f428a63684d502373fe2507493fdc",
+  "sha256": "d538a1be84cb7083f9c5fc6d78051d8e9e2f428a63684d502373fe2507493fdc",
+  "freeze_receipt": "agent_platform/data/academy/freeze_receipts/AC-20261017-LCS1.json",
+  "frozen_at": "2026-10-29T09:55:00+08:00",
+  "inputs": [
+   {
+    "namespace": "file",
+    "name": "quant_backtest/data/tdx/ts_daily",
+    "version": "2026-10-28"
+   },
+   {
+    "namespace": "file",
+    "name": "quant_backtest/data/tdx/ts_adj_factor",
+    "version": "2026-10-28"
+   },
+   {
+    "namespace": "file",
+    "name": "quant_backtest/data/tdx/ts_daily_basic",
+    "version": "2026-10-28"
+   },
+   {
+    "namespace": "file",
+    "name": "quant_backtest/data/tdx/ts_stock_basic",
+    "version": "2026-10-28"
+   }
+  ],
+  "live_paths_used_for_recompute": [
+   "quant_backtest/data/tdx/ts_daily/part_*.parquet"
+  ],
+  "sample_in": "2023-07-31~2025-06-30; A股全市场; rows=2473761; codes=5487; trading_days=463",
+  "sample_out": "2025-07-01~2026-10-16; rows=1718692; codes=5611; trading_days=314",
+  "recompute_slice": "trade_date 20230731~20261016（不含冻结后新增 10-28~10-30 行）",
+  "pit_check": {
+   "window_rows": 314,
+   "last_fetched": "2026-10-16 17:05:06",
+   "rows_fetched_after_freeze": 0
+  },
+  "pit_verdict": "B：窗口过滤与抓取时点可核验（314 行样本外数据全部 _fetched_at<=2026-10-16，0 行冻结后重抓）；因无冻结字节快照，sha256 无法逐字节复核，不能标 A。"
+ },
+ "backtest": {
+  "window_rows": 777,
+  "signals_total": 16,
+  "signals_in_sample": 11,
+  "signals_out_sample": 5,
+  "executable_trades_out_sample": 3,
+  "win_rate": 0.6667,
+  "avg_ret": 0.01368,
+  "cum_ret": 0.04025,
+  "max_drawdown": -0.01457,
+  "leave_one_out_cum_ret_drop_best": -0.01431,
+  "trades": [
+   {
+    "signal_date": "20250825",
+    "entry_date": "20250826",
+    "exit_date": "20250902",
+    "entry": 1490.32,
+    "exit": 1491.3,
+    "ret": 0.00026
+   },
+   {
+    "signal_date": "20260129",
+    "entry_date": "20260130",
+    "exit_date": "20260206",
+    "entry": 1435.0,
+    "exit": 1515.01,
+    "ret": 0.05536
+   },
+   {
+    "signal_date": "20260720",
+    "entry_date": "20260721",
+    "exit_date": "20260728",
+    "entry": 1338.98,
+    "exit": 1320.0,
+    "ret": -0.01457
+   }
+  ],
+  "reproduced_from_v1": true,
+  "reproduce_note": "独立脚本复算 v1 逐笔 entry/exit/ret 完全一致（3 笔）；v1 的 win_rate/avg_ret/cum_ret/max_drawdown 一致。"
+ },
+ "evidence_refs": [
+  {
+   "type": "freeze_receipt",
+   "uri": "agent_platform/data/academy/freeze_receipts/AC-20261017-LCS1.json",
+   "as_of": "2026-10-29T09:55:00+08:00",
+   "sha256": "d538a1be84cb7083f9c5fc6d78051d8e9e2f428a63684d502373fe2507493fdc"
+  },
+  {
+   "type": "kline_raw",
+   "uri": "quant_backtest/data/tdx/ts_daily/part_*.parquet (ts_code=600519.SH)",
+   "as_of": "2026-10-16T17:05:06",
+   "hash_note": "逐行 _fetched_at 见 pit_check"
+  },
+  {
+   "type": "research_artifact",
+   "uri": "agent_platform/data/academy/artifacts/RA-20261031-LCS1-600519-v1.json",
+   "as_of": "2026-10-31T04:45:00+08:00"
+  },
+  {
+   "type": "l4",
+   "uri": "agent_platform/data/xsec/l4_status.json#symbols.600519",
+   "as_of": "2026-10-31 02:10",
+   "status": "unresolved",
+   "verdict": "散手票",
+   "source": "xsec_profile/v2:无为自然"
+  },
+  {
+   "type": "audit_report",
+   "uri": "docs/audit/2026-10-31_W3产品闭环_v1.md",
+   "as_of": "2026-10-31T10:40:00+08:00"
+  }
+ ],
+ "l4": {
+  "status": "unresolved",
+  "source": "xsec_profile/v2:无为自然",
+  "as_of": "2026-10-31 02:10",
+  "confidence": null,
+  "rationale": "verdict=散手票; L2=无关; L3=无关(席位净额+0万)",
+  "verdict": "散手票"
+ },
+ "falsification_conditions": [
+  {
+   "id": "F1_sample_size",
+   "condition": "样本外可执行交易数 < 10 → 统计不可判定",
+   "observed": 3,
+   "triggered": true
+  },
+  {
+   "id": "F2_cost_adjusted_return",
+   "condition": "样本外成本后累计收益 <= 0 → 证伪",
+   "observed": 0.04025,
+   "triggered": false
+  },
+  {
+   "id": "F3_single_trade_fragility",
+   "condition": "去掉最佳一笔后累计收益 <= 0 → 脆弱/不可依赖",
+   "observed": -0.01431,
+   "triggered": true
+  },
+  {
+   "id": "F4_l4_lock",
+   "condition": "L4=missing/unresolved → D1 规则禁止 BUY/SELL",
+   "observed": "unresolved",
+   "triggered": true
+  },
+  {
+   "id": "F5_registration",
+   "condition": "backtests.jsonl 无本候选登记(或 cancelled) → 不可追溯复盘",
+   "observed": "cancelled(pending)",
+   "triggered": true
+  },
+  {
+   "id": "F6_pit_byte_verify",
+   "condition": "冻结数据 sha 无法逐字节复核 → 只能降级 PIT 证据",
+   "observed": "B",
+   "triggered": true
+  }
+ ],
+ "verdict": "No-Go",
+ "verdict_reasons": [
+  "样本外仅 3 笔可执行交易（<10），统计上不可判定；11 笔样本内信号不能替代样本外证据。",
+  "去掉最佳一笔（+5.54%）后样本外累计收益 -1.43% → 单笔依赖，脆弱。",
+  "L4=unresolved（散手票，xsec_profile/v2 2026-10-31 02:10），按 DecisionPolicy l4_lock 禁止 BUY/SELL，只能 WATCH。",
+  "backtests.jsonl 唯一相关登记为 cancelled，候选产物未登记，无法按登记口径复盘。",
+  "冻结数据 sha 无字节快照可复核，PIT 证据等级 B（窗口/抓取时点可核验）。"
+ ],
+ "go_conditions": [
+  "DATA1 重出冻结回执并提供字节级快照（sha 可复核）；",
+  "BACK1 按登记口径复跑并登记（非 cancelled），OOS 可执行交易 >=10 或给出 block bootstrap 显著性；",
+  "去掉最佳 N 笔后成本后累计收益仍 >0；",
+  "L4 由 xsec_profile/v2 复核为 established/定性成立；",
+  "以上满足后重走 ACAD1 review → D1 五档裁决。"
+ ],
+ "boundary": {
+  "paper_only": true,
+  "trading_permitted_observed": false,
+  "real_exchange_adapter_observed": "disabled",
+  "no_order": true,
+  "no_policy_change": true
+ }
+}
