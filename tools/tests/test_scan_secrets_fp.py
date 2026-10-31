@@ -107,3 +107,21 @@ def test_real_high_entropy_secret_still_blocked(tmp_path, content):
     assert hits, "真实高熵密钥必须仍被检出：%r" % content
     assert any(h[1] in ("HIGH_ENTROPY", "TOKEN_ASSIGN", "PASSWORD_LITERAL")
                for h in hits), hits
+
+
+# ── 自测夹具口径（2026-10-31 WO-SCANST-SELFTEST-20261031）──────────────
+def test_unquoted_alnum_password_in_py_is_identifier_reference(tmp_path):
+    """`.py` 未加引号的纯字母数字 password 值 = 标识符引用（SCANFIX④ 既定豁免）。
+
+    该豁免防 `password=password`/函数引用误报；因此自测夹具里的硬编码口令
+    必须写成**加引号字符串**（旧夹具 `password: <pwd>` 在随机值恰为纯字母
+    数字时漏检 → selftest config.py PASSWORD_LITERAL 与 pwd 脱敏两项失败）。
+    """
+    assert _hits(tmp_path, "password: Px9FgOtU0vrNqW9z\n", "t.py") == []
+
+
+def test_quoted_password_in_py_hits_and_masks(tmp_path):
+    """加引号的硬编码口令必须命中 PASSWORD_LITERAL，且预览按前4后2脱敏。"""
+    hits = _hits(tmp_path, 'password: "Px9FgOtU0vrNqW9z"\n', "t.py")
+    assert any(h[1] == "PASSWORD_LITERAL" for h in hits), hits
+    assert any("Px9F****" in str(h[2]) for h in hits), hits
