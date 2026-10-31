@@ -31,6 +31,22 @@ if ($PSScriptRoot) { $repo = Split-Path -Parent $PSScriptRoot } else { $repo = '
 $baselinePath = Join-Path $repo 'tools\test_baseline.json'
 $ts = Get-Date -Format 'yyyyMMdd_HHmmss'
 
+# ===== 2026-10-31 K-ORG-20261031-BUNDLEB5：clean worktree 缺 ignored bundle 时先自愈 =====
+# Phase2-B 后 bundle 不再 tracked；干净 worktree/CI 没有该文件，会让读取 bundle 的测试假红。
+# 只做"缺失才生成"，已有文件不动；生成失败 fail-visible（退出 2，不假绿）。
+$bootstrapScript = Join-Path $repo 'tools\bundle_bootstrap.py'
+if (Test-Path -LiteralPath $bootstrapScript) {
+    & python -X utf8 $bootstrapScript --repo $repo --check *> $null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host '[bootstrap] bundle missing; generating before gate...' -ForegroundColor Yellow
+        & python -X utf8 $bootstrapScript --repo $repo --quiet
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host '[bootstrap] FAILED: cannot generate bundle before gate (fail-visible)' -ForegroundColor Red
+            exit 2
+        }
+    }
+}
+
 $known = @{}
 $envKnown = @{}
 $flaky = @{}
