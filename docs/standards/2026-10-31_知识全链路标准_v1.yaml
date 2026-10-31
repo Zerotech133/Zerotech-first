@@ -1,0 +1,52 @@
+# 知识全链路标准 v1 · 可执行清单（机器可读）
+
+# > 配套 `docs/standards/2026-10-31_知识全链路标准_v1.md`；供自动化/检查脚本读取。
+version: 1
+name: knowledge_full_pipeline
+layers:
+  L0_ingest:
+    tools: [tools/kb_corpus/pdf_ingest.py, tools/kb_corpus/phase0_manifest.py]
+    gates:
+      page_coverage_min: 0.95
+      ocr_chars_per_page_min: 100
+      garbled_ratio_max: 0.02
+      chapters_min: 5
+      units_min: 10
+      citation_completeness: 1.0
+  L1_organize:
+    artifacts: [structure.json, knowledge_units.jsonl]
+    rules: [citation_required, dedupe_sha1, page_monotonic]
+  L2_knowledge_base:
+    index: hybrid_rrf
+    gates:
+      golden_queries_min: 50
+      recall5_min: 0.60
+      citation_accuracy_min: 0.90
+  L3_models:
+    default: no_training
+    finetune_triggers:
+      embedding: {recall5_below: 0.60, pairs_min: 5000, min_lift_pp: 3}
+      reranker: {generic_reranker_effective: false, pairs_min: 2000}
+      llm_lora: {gpu_available: true, use_case: style_or_hidden_knowledge}
+    artifacts: [model_card, eval_report, rollback_point]
+  L4_strategy:
+    steps: [feature_mapping, hypothesis_register, four_gates, stat_correction, ledger]
+    gates: {pit: true, oos: true, cost: true, capacity: true, overlap_correction: true}
+  L5_governance:
+    catalog: agent_platform/catalogs/data_catalog.yaml
+    lineage: quant-pg lineage schema
+    backup: jev-eval/backup_kb_corpus.py
+    registry: agent_platform/registry/skill_registry.json
+sop:
+  - place_pdf
+  - scan
+  - ocr_if_scanned
+  - structure
+  - distill_pilot_then_full
+  - verify_green
+  - index_rebuild_rag
+  - golden_eval
+  - feature_mapping
+  - hypothesis_four_gates
+  - meeting_review_6_checks
+  - backup_and_register
