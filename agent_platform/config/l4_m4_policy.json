@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "m4_enforce": false,
+  "enforce_after": "2026-11-07",
+  "required_signers": ["QA1", "GUANYU", "VERIFY1", "A0"],
+  "note": "M4 四方签字强制开关（2026-10-31 WO-M4-ENFORCE-PROBE-20261031）。m4_enforce=true → portal/approval_control.handle_action 对 approve 且 signoff 未齐返回 ok=false / error=m4_signoff_enforce_incomplete（审批行仍落账，签名可继续累积；reject/escalate 不受影响）。默认 false=灰度只 warn，不阻断存量。优先级：env M4_SIGNOFF_ENFORCE(1/0) > m4_enforce(bool) > enforce_after(仅 m4_enforce 缺省时按日期自动生效) > 默认灰度。"
+}

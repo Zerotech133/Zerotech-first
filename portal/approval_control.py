@@ -47,6 +47,127 @@ REQUIRED_SIGNERS = ("QA1", "GUANYU", "VERIFY1", "A0")
 THREE_PARTY_ROLES = ("QA1", "GUANYU", "VERIFY1")
 MIN_THREE_PARTY_SIGNERS = 3
 
+# ----------------------------------------------------------------------
+# M4 强制开关（2026-10-31 WO-M4-ENFORCE-PROBE-20261031）
+# 背景：`_attach_signoff` 目前只 warn（灰度）。这里加"可配置强制"：
+#   开关真源优先级（高→低）：env ``M4_SIGNOFF_ENFORCE`` > 策略文件
+#   ``agent_platform/config/l4_m4_policy.json`` 的 ``m4_enforce`` >
+#   ``enforce_after`` 日期（仅当 m4_enforce 缺省时生效）> 默认灰度(False)。
+# 强制开启且 approve 的 signoff 未齐 → 本次 handle_action 返回 ok=False /
+# error=m4_signoff_enforce_incomplete（审批行仍落账，签名可继续累积）；
+# reject/escalate 不受强制影响（否则无法否决）。默认灰度 = 不阻断存量。
+# ----------------------------------------------------------------------
+POLICY_PATH = ROOT / "agent_platform" / "config" / "l4_m4_policy.json"
+POLICY_ENV = "M4_SIGNOFF_ENFORCE"
+POLICY_ENFORCE_KEY = "m4_enforce"
+POLICY_AFTER_KEY = "enforce_after"
+_TRUTHY = {"1", "true", "yes", "on", "enforce", "enabled"}
+_FALSY = {"0", "false", "no", "off", "gray", "warn", "disabled"}
+_POLICY_CACHE = {"mtime": None, "data": None}
+_POLICY_CACHE_LOCK = threading.Lock()
+
+
+def _read_policy_file(path=None):
+    """读策略 JSON（缺失/损坏一律回退 {}，绝不因配置坏而阻断审批）。"""
+    p = Path(path or POLICY_PATH)
+    try:
+        st = p.stat()
+        with _POLICY_CACHE_LOCK:
+            if _POLICY_CACHE["mtime"] == st.st_mtime and _POLICY_CACHE["data"] is not None:
+                return dict(_POLICY_CACHE["data"])
+        data = json.loads(p.read_text(encoding="utf-8"))
+        if not isinstance(data, dict):
+            data = {}
+        with _POLICY_CACHE_LOCK:
+            _POLICY_CACHE["mtime"] = st.st_mtime
+            _POLICY_CACHE["data"] = dict(data)
+        return data
+    except (OSError, ValueError, TypeError) as exc:
+        log.debug("m4 policy unavailable(%r): %s", p, exc)
+        return {}
+
+
+def _flag(value):
+    """归一三态：True/False/None（未设置或无法识别）。"""
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return None
+    text = str(value).strip().lower()
+    if text in _TRUTHY:
+        return True
+    if text in _FALSY:
+        return False
+    return None
+
+
+def _parse_day(text):
+    """``YYYY-MM-DD`` → date；坏值返回 None（保守：不自动启用）。"""
+    try:
+        return time.strptime(str(text).strip(), "%Y-%m-%d")[:3]
+    except (ValueError, TypeError):
+        return None
+
+
+def _enforce_after_due(policy, today=None):
+    """enforce_after 是否已到（仅 m4_enforce 缺省时作为自动生效日期）。"""
+    horizon = _parse_day((policy or {}).get(POLICY_AFTER_KEY))
+    if horizon is None:
+        return False
+    now = today or time.localtime()
+    return time.mktime(now[:3] + (0, 0, 0, 0, 0, -1)) >= time.mktime(
+        horizon + (0, 0, 0, 0, 0, -1))
+
+
+def m4_enforce_state(policy=None, env=None, today=None):
+    """解析 M4 强制开关，返回 ``{enabled, source, policy}``（纯函数可注入）。
+
+    source 取值：``env`` / ``policy`` / ``enforce_after`` / ``default_gray``。
+    ``policy=False`` 表示显式空策略（用于"配置缺失回退灰度"测试）。
+    """
+    if policy is None:
+        policy = _read_policy_file()
+    elif not isinstance(policy, dict):
+        policy = {}
+    env_value = (env if env is not None else os.environ).get(POLICY_ENV)
+    env_flag = _flag(env_value)
+    if env_flag is not None:
+        return {"enabled": env_flag, "source": "env", "policy": dict(policy)}
+    pol_flag = _flag(policy.get(POLICY_ENFORCE_KEY))
+    if pol_flag is not None:
+        return {"enabled": pol_flag, "source": "policy", "policy": dict(policy)}
+    if _enforce_after_due(policy, today=today):
+        return {"enabled": True, "source": "enforce_after", "policy": dict(policy)}
+    return {"enabled": False, "source": "default_gray", "policy": dict(policy)}
+
+
+def _enforce_result(result, enforce):
+    """强制开启且 signoff 未齐 → 明确拒绝（审批行已落账，签名可继续累积）。"""
+    if not enforce.get("enabled") or result.get("action") != "approve":
+        return result
+    signoff = result.get("signoff") or {}
+    if signoff.get("state") == "complete" or result.get("approved") is True:
+        result["enforce"] = {"enabled": True, "source": enforce.get("source"),
+                             "blocked": False}
+        return result
+    result["ok"] = False
+    result["approved"] = False
+    result["error"] = "m4_signoff_enforce_incomplete"
+    result["enforce"] = {
+        "enabled": True, "source": enforce.get("source"), "blocked": True,
+        "reason": str(signoff.get("reason") or ""),
+        "missing_signers": list(signoff.get("missing_signers") or []),
+        "hint": "M4 强制开关已开启：四方签字未齐；本次 approve 拒绝。"
+                "修法：补齐 QA1/GUANYU/VERIFY1/A0 签字，或把 "
+                "agent_platform/config/l4_m4_policy.json 的 m4_enforce 改回 false"
+                "（env M4_SIGNOFF_ENFORCE=0 亦可临时降级）。",
+    }
+    result.setdefault("warnings", []).append(
+        "m4_signoff_enforced_block:" + str(signoff.get("reason") or ""))
+    log.warning("approval m4 enforce block task=%r reason=%s",
+                result.get("task"), signoff.get("reason"))
+    return result
+
 
 def _read_jsonl(path):
     rows = []
@@ -221,9 +342,10 @@ def _attach_signoff(result, ledger, task, signoff_roles, required_signers,
 def handle_action(payload, ledger=None, allowed_ops=None, owner=None,
                   owner_ids=None, now=None, signoff_roles=None,
                   required_signers=None, signoff_required_roles=None,
-                  signoff_min_signers=None):
+                  signoff_min_signers=None, m4_policy=None, m4_env=None,
+                  m4_today=None):
     """返回 {ok, action, task, error?, duplicate?, signoff?, signoff_state?,
-    signed, approved, warnings?}。
+    signed, approved, warnings?, enforce?}。
 
     ``ok`` 仍表示「本次动作已记录」（向后兼容审批主流程）；签字是否齐全看
     ``signoff_state`` / ``approved``——单签恒为 ``incomplete`` / False，且台账
@@ -232,9 +354,15 @@ def handle_action(payload, ledger=None, allowed_ops=None, owner=None,
     2026-10-31 WO-D1-B123-20261031（B2）：``required_signers`` 为要求签字的
     角色集合（默认 M4 四方 QA1/GUANYU/VERIFY1/A0，可由调用方覆盖）；兼容旧
     参数名 ``signoff_required_roles`` / ``signoff_min_signers``。
+
+    2026-10-31 WO-M4-ENFORCE-PROBE-20261031：``m4_enforce_state()`` 为真时，
+    approve 且 signoff 未齐 → ``ok=False`` / ``error=m4_signoff_enforce_incomplete``
+    （台账行仍写入，签名可继续累积；reject/escalate 不受影响）。默认灰度。
+    测试/调用方可注入 ``m4_policy`` / ``m4_env`` / ``m4_today``。
     """
     ledger = Path(ledger or LEDGER)
     now = now or time.time()
+    enforce = m4_enforce_state(policy=m4_policy, env=m4_env, today=m4_today)
     if required_signers is None:
         required_signers = signoff_required_roles
     required = _normalise_required(required_signers)
@@ -261,15 +389,15 @@ def handle_action(payload, ledger=None, allowed_ops=None, owner=None,
     rows = _read_jsonl(ledger)
     for r in rows:
         if r.get("task") == task and r.get("action") == action and r.get("operator") == op:
-            return _attach_signoff(
+            return _enforce_result(_attach_signoff(
                 {"ok": True, "action": action, "task": task, "duplicate": True},
-                ledger, task, signoff_roles, required, min_signers)
+                ledger, task, signoff_roles, required, min_signers), enforce)
     rec = {"ts": time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(now)),
            "schema": "approval/v1", "task": task, "action": action,
            "operator": op, "level": str(val.get("level") or "S2"),
            "evidence_hash": str(val.get("evidence_hash") or ""),
            "source": "feishu_card", "revocable": True}
     _append(ledger, rec)
-    return _attach_signoff(
+    return _enforce_result(_attach_signoff(
         {"ok": True, "action": action, "task": task, "record": rec},
-        ledger, task, signoff_roles, required, min_signers)
+        ledger, task, signoff_roles, required, min_signers), enforce)
