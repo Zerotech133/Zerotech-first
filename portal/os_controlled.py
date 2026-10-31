@@ -19,6 +19,8 @@ import hashlib
 import json
 import os
 import re
+import secrets
+import threading
 import time
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
@@ -43,6 +45,12 @@ L1_ACTIONS = set(CONTROLLED_ACTIONS)
 L2_ACTIONS = {"external.send", "publish", "production.deploy", "trade.execute"}
 SIGNER_METHODS = ("session_nonce", "local_password_session")
 CONSUMER_KINDS = ("agent", "human", "service")
+# H2（K-ORG-20261031-PORTALAUTH）：真实签准改用**服务端一次性 nonce**（TTL+单次消费）。
+# 旧实现只校验 len(nonce)>=8 —— 任意客户端可自造 nonce 冒充"真实签准"（审计 v2 实测）。
+NONCE_TTL_SECONDS = 120
+MAX_GRANT_NONCES = 1024
+_grant_nonces: Dict[str, Dict[str, Any]] = {}
+_grant_nonce_lock = threading.Lock()
 LEASE_MINUTES = 30
 ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{2,63}$")
 FILE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}\.(html|md|txt|json|log)$")
@@ -212,6 +220,77 @@ def deactivate_consumer(
     return ev["payload"]
 
 
+# ---------------- 签准 nonce（H2） ----------------
+def _purge_grant_nonces_locked(now: float) -> None:
+    expired = [k for k, v in _grant_nonces.items() if float(v.get("expires") or 0) <= now]
+    for k in expired:
+        _grant_nonces.pop(k, None)
+
+
+def issue_grant_nonce(
+    store: S.OsGoalStore,
+    item_id: str,
+    actions: List[str],
+    signer_method: str = "session_nonce",
+    signer_id: str = "",
+    ttl_seconds: int = NONCE_TTL_SECONDS,
+) -> Dict[str, Any]:
+    """签发**一次性**签准 nonce（绑定 item/动作/方式/会话 sub，TTL 默认 120s）。"""
+    _item(store, item_id)
+    _require(signer_method in SIGNER_METHODS, "签准方式必须是 %s" % (SIGNER_METHODS,))
+    sid = str(signer_id or "").strip()
+    _require(bool(sid), "签发签准 nonce 需要登录会话（zb_session sub）")
+    acts = sorted({str(a) for a in (actions or [])})
+    _require(bool(acts), "签准动作不能为空")
+    _require(all(a in L1_ACTIONS for a in acts),
+             "真实签准只允许 L1 受控动作：%s" % (CONTROLLED_ACTIONS,))
+    ttl = max(30, min(int(ttl_seconds or NONCE_TTL_SECONDS), 600))
+    nonce = "n1-" + secrets.token_urlsafe(24)
+    now = time.time()
+    with _grant_nonce_lock:
+        _purge_grant_nonces_locked(now)
+        if len(_grant_nonces) >= MAX_GRANT_NONCES:
+            oldest = min(_grant_nonces, key=lambda k: _grant_nonces[k].get("issued", 0))
+            _grant_nonces.pop(oldest, None)
+        _grant_nonces[nonce] = {
+            "item_id": item_id,
+            "actions": acts,
+            "signer_method": signer_method,
+            "signer_id": sid,
+            "expires": now + ttl,
+            "issued": now,
+            "issued_at": _now(),
+        }
+    return {
+        "nonce": nonce,
+        "expires_in": ttl,
+        "item_id": item_id,
+        "actions": acts,
+        "signer_method": signer_method,
+        "signer_id": sid,
+    }
+
+
+def _consume_grant_nonce(nonce: str, item_id: str, actions: List[str],
+                         signer_method: str, signer_id: str) -> Dict[str, Any]:
+    """单次消费：先 pop 再校验（重放必失败），并核对绑定范围与会话 signer。"""
+    key = str(nonce or "").strip()
+    _require(bool(key), "真实签准必须带服务端签发的一次性 nonce")
+    with _grant_nonce_lock:
+        rec = _grant_nonces.pop(key, None)
+    _require(rec is not None,
+             "nonce 无效或已被使用（须先 POST /api/os/item/<iid>/grant/nonce 获取）")
+    _require(float(rec.get("expires") or 0) >= time.time(),
+             "nonce 已过期（TTL %ss）" % NONCE_TTL_SECONDS)
+    _require(rec.get("item_id") == item_id, "nonce 与 item 不匹配")
+    _require(rec.get("signer_method") == signer_method, "nonce 与签准方式不匹配")
+    _require(rec.get("signer_id") == str(signer_id or "").strip(),
+             "signer 与会话不一致（nonce 绑定其他会话）")
+    _require(sorted(rec.get("actions") or []) == sorted({str(a) for a in (actions or [])}),
+             "nonce 绑定的动作范围不一致")
+    return rec
+
+
 # ---------------- 签准 / 工单 ----------------
 def sign_real_grant(
     store: S.OsGoalStore,
@@ -221,13 +300,12 @@ def sign_real_grant(
     signer_method: str = "session_nonce",
     valid_hours: int = 2,
     idem: Optional[str] = None,
+    signer_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     _item(store, item_id)
     _require(signer_method in SIGNER_METHODS, "签准方式必须是 %s" % (SIGNER_METHODS,))
-    _require(
-        isinstance(nonce, str) and len(nonce.strip()) >= 8,
-        "真实签准必须带 nonce（≥8 字符）",
-    )
+    sid = str(signer_id or "").strip()
+    _require(bool(sid), "真实签准需要登录会话（zb_session sub），不接受匿名/自填 signer")
     acts = [str(a) for a in (actions or [])]
     _require(bool(acts), "签准动作不能为空")
     _require(
@@ -235,6 +313,8 @@ def sign_real_grant(
         "真实签准只允许 L1 受控动作：%s" % (CONTROLLED_ACTIONS,),
     )
     _require(1 <= int(valid_hours) <= 24, "真实签准有效期 1-24 小时")
+    # H2：一次性 nonce 在此消费（重放/过期/错 item/错动作/错方式/伪造 signer 全部拒绝）
+    _consume_grant_nonce(nonce, item_id, acts, signer_method, sid)
     ev = store.append_event(
         "grant.signed",
         {"item_id": item_id},
@@ -246,7 +326,7 @@ def sign_real_grant(
             "env": "controlled",
             "signer": {
                 "kind": "user",
-                "id": "laotian",
+                "id": sid,
                 "method": signer_method,
                 "nonce_sha256": "sha256:" + hashlib.sha256(nonce.encode()).hexdigest(),
             },

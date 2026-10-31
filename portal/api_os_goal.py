@@ -73,46 +73,62 @@ def _err(status: int, code: str, message: str) -> Tuple[int, Dict[str, Any]]:
     return status, {"ok": False, "error": code, "message": message}
 
 
-PRIVATE_IP_PREFIXES = ("127.", "10.", "172.", "192.168.", "::1")
+# H1（K-ORG-20261031-PORTALAUTH，2026-10-31 审计 v2）：/api/os/* POST 认证只认三种
+# 可信来源——peer 回环直连（本机进程）、X-Portal-Token 常量、有效 zb_session 登录会话。
+# 旧实现信任可伪造的 `X-OS-Page` / 私网 Origin / X-Real-IP（审计实测伪造即通过），已删除。
+LOOPBACK_PEERS = ("127.0.0.1", "::1", "::ffff:127.0.0.1")
+
+
+def _peer_is_loopback(handler) -> bool:
+    """直连 8091 且 TCP peer 为回环 = 本机进程（唯一免凭据通道）。"""
+    try:
+        peer = str(handler.client_address[0])
+    except (AttributeError, IndexError, TypeError):
+        return False
+    return peer in LOOPBACK_PEERS
 
 
 def _origin_is_local_entry(origin: str) -> bool:
-    """只接受 http + 8734 + 回环/私网主机的 Origin（本机浏览器经 8734 入口）。"""
-    try:
-        scheme, rest = origin.split("://", 1)
-        host, _, port = rest.partition(":")
-    except ValueError:
-        return False
-    if scheme != "http" or port != "8734":
-        return False
-    if host in ("127.0.0.1", "localhost", "::1"):
-        return True
-    return host.startswith(("10.", "172.", "192.168."))
+    """DEPRECATED（H1 2026-10-31）：Origin/私网来源不是认证凭据，恒 False。
+
+    仅为 `_mixin_integrity.py` 函数基线兼容而保留（函数丢弃会被评审门判 FAIL）；
+    新代码禁止使用——认证请走 `_peer_is_loopback` / `_zb_session_sub` / Handler token。
+    """
+    return False
 
 
 def is_local_page_request(headers, proxy_hdr="X-Portal-Proxy") -> bool:
-    """8734 反代下"本机页面"POST 判定（OS-CLOSE-QUICKFIX1）。
+    """DEPRECATED（H1 2026-10-31）：旧"本机页面"头信任判定，恒 False。
 
-    - 直连 8091（无 X-Portal-Proxy）：本机放行（portal_api 既有语义）；
-    - 经 8734 反代（nginx 置 X-Portal-Proxy=1 / X-Real-IP=网关）：要求
-      Origin 为本机入口，且 X-Real-IP 为回环/私网（本机浏览器经 docker 发布口）；
-    - 他源页面/局域网直连不带该 Origin，仍走 X-Portal-Token。
-    首版账本为隔离目录，故按"本机入口 + 私网来源"收敛，不放松其他 API。
+    审计 v2 实测：伪造 `X-Portal-Proxy`/`X-Real-IP`/`Origin`/`X-OS-Page` 即可通过，
+    已从 `_os_goal_post` 认证链删除。本函数仅作混入完整性基线兼容（不丢函数名），
+    任何调用方必须迁移到 peer 回环 / token / zb_session 三选一。
     """
-    if not (headers.get(proxy_hdr) or "").strip():
-        return True
-    # 页面同源标记头（同源 fetch 无需预检；仅配合私网反代来源使用）
-    rip0 = (headers.get("X-Real-IP") or "").strip()
-    if (headers.get("X-OS-Page") or "").strip() == "quick" and (
-            not rip0 or rip0.startswith(PRIVATE_IP_PREFIXES)):
-        return True
-    origin = (headers.get("Origin") or "").strip().lower()
-    if not _origin_is_local_entry(origin):
-        return False
-    rip = (headers.get("X-Real-IP") or "").strip()
-    if not rip:
-        return True
-    return rip.startswith(PRIVATE_IP_PREFIXES)
+    return False
+
+
+def _zb_session_sub(headers) -> str:
+    """从 Cookie 的 zb_session 解析有效会话 sub；缺失/失效/异常一律 ""（fail-closed）。"""
+    try:
+        import auth_gateway as G
+        try:
+            cookie = headers.get("Cookie") or ""
+        except AttributeError:
+            return ""
+        if not cookie:
+            return ""
+        sid = ""
+        for part in str(cookie).split(";"):
+            k, _, v = part.strip().partition("=")
+            if k == G.COOKIE_NAME:
+                sid = v.strip()
+                break
+        if not sid:
+            return ""
+        rec = G.STORE.get(sid)
+        return str((rec or {}).get("sub") or "")
+    except Exception:  # noqa: BLE001 - 认证辅助失败一律视为未登录
+        return ""
 
 
 def read_workspace_file(store, item_id, filename):
@@ -130,8 +146,8 @@ def read_workspace_file(store, item_id, filename):
     path = os.path.realpath(os.path.join(ws, filename))
     if not path.startswith(ws + os.sep) or not os.path.isfile(path):
         return 404, "text/plain; charset=utf-8", b"not found"
-    ctype = ("text/html; charset=utf-8" if filename.endswith(".html")
-             else "text/plain; charset=utf-8")
+    # H1：预览一律 text/plain（浏览器不执行），配合 nosniff 彻底消除存储型 XSS。
+    ctype = "text/plain; charset=utf-8"
     with open(path, "rb") as fh:
         data = fh.read(1024 * 1024)
     return 200, ctype, data
@@ -192,7 +208,7 @@ def handle_get(store: S.OsGoalStore, path: str,
 
 
 CTRL_ITEM_RE = re.compile(
-    r"^/api/os/item/([A-Za-z0-9-]+)/(grant/real|grant/revoke|workorder/formal|claim/real|risk/verdict|controlled/artifact)$")
+    r"^/api/os/item/([A-Za-z0-9-]+)/(grant/nonce|grant/real|grant/revoke|workorder/formal|claim/real|risk/verdict|controlled/artifact)$")
 CTRL_CHAIN_RE = re.compile(r"^/api/os/item/([A-Za-z0-9-]+)/chain/controlled$")
 
 
@@ -201,7 +217,7 @@ CTRL_C1_RE = re.compile(
 CTRL_C1_CHAIN_RE = re.compile(r"^/api/os/item/([A-Za-z0-9-]+)/chain/c1$")
 
 
-def _handle_controlled_post(store, path, body):
+def _handle_controlled_post(store, path, body, auth_sub=""):
     import os_controlled as X
     if path == "/api/os/consumer/deactivate":
         c = X.deactivate_consumer(store, str(body.get("consumer_id") or ""),
@@ -218,11 +234,20 @@ def _handle_controlled_post(store, path, body):
     if not m:
         return None
     iid, action = m.group(1), m.group(2)
+    if action == "grant/nonce":
+        n = X.issue_grant_nonce(
+            store, iid, body.get("actions") or [],
+            signer_method=str(body.get("signer_method") or "session_nonce"),
+            signer_id=auth_sub,
+            ttl_seconds=int(body.get("ttl_seconds") or X.NONCE_TTL_SECONDS),
+        )
+        return 201, {"ok": True, **n}
     if action == "grant/real":
         g = X.sign_real_grant(store, iid, body.get("actions") or [],
                               str(body.get("nonce") or ""),
                               signer_method=str(body.get("signer_method") or "session_nonce"),
-                              valid_hours=int(body.get("valid_hours") or 2))
+                              valid_hours=int(body.get("valid_hours") or 2),
+                              signer_id=auth_sub)
         return 201, {"ok": True, "grant": g}
     if action == "grant/revoke":
         g = X.revoke_grant(store, iid, str(body.get("grant_id") or ""))
@@ -296,11 +321,12 @@ def _handle_controlled_get(store, path):
 
 
 def handle_post(store: S.OsGoalStore, path: str,
-                body: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
+                body: Dict[str, Any],
+                auth_sub: str = "") -> Tuple[int, Dict[str, Any]]:
     if not isinstance(body, dict):
         return _err(400, "bad_body", "body 必须是 JSON 对象")
     try:
-        ctrl = _handle_controlled_post(store, path, body)
+        ctrl = _handle_controlled_post(store, path, body, auth_sub)
         if ctrl is not None:
             return ctrl
         c1 = _handle_c1_post(store, path, body)
@@ -495,6 +521,7 @@ class Handler:
                 self._os_goal_store(), m.group(1), m.group(2))
             self.send_response(status)
             self.send_header("Content-Type", ctype)
+            self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header("Content-Length", str(len(body)))
             self.send_header("Cache-Control", "no-store")
             self.end_headers()
@@ -507,11 +534,12 @@ class Handler:
         self._json(payload, status)
 
     def _os_goal_post(self, path: str) -> None:
-        if not (is_local_page_request(self.headers) or self._check_portal_token()):
+        # H1：只认 peer 回环 / X-Portal-Token / 有效 zb_session；不再信任可伪造的
+        # X-OS-Page、Origin、X-Real-IP（审计 v2 实测伪造头可匿名写 /api/os/*）。
+        session_sub = _zb_session_sub(self.headers)
+        if not (_peer_is_loopback(self) or self._check_portal_token() or session_sub):
             self._json({"ok": False, "error": "forbidden",
-                        "message": "非本机请求需 X-Portal-Token",
-                        "origin": self.headers.get("Origin"),
-                        "real_ip": self.headers.get("X-Real-IP")}, 403)
+                        "message": "需要本机直连、X-Portal-Token 或有效 zb_session 登录会话"}, 403)
             return
         try:
             length = int(self.headers.get("Content-Length") or 0)
@@ -525,7 +553,8 @@ class Handler:
             body = json.loads(raw.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError):
             return self._json({"ok": False, "error": "bad_json"}, 400)
-        status, payload = handle_post(self._os_goal_store(), path, body)
+        status, payload = handle_post(self._os_goal_store(), path, body,
+                                      auth_sub=session_sub)
         self._json(payload, status)
 
     def _os_goal_store(self) -> S.OsGoalStore:
