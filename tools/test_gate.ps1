@@ -303,6 +303,34 @@ try {
         }
     }
 
+    # ===== 2026-10-31 P132：导航统一门（阻断，分支感知 --root 由 devtask 门负责）=====
+    if ($Suite -in @('fast', 'all')) {
+        $navTool = Join-Path $repo 'tools\unify_nav.py'
+        if (Test-Path -LiteralPath $navTool) {
+            $nlog = Join-Path $env:TEMP "test_gate_nav_$ts.log"
+            $nsw = [System.Diagnostics.Stopwatch]::StartNew()
+            python -X utf8 $navTool --check *> $nlog
+            $nrc = $LASTEXITCODE
+            $nsw.Stop()
+            $nsecs = [math]::Round($nsw.Elapsed.TotalSeconds, 1)
+            if ($nrc -ne 0) {
+                $newFailures++
+                Write-Host "[nav] 导航统一检查失败 → 判失败（日志 $nlog）" -ForegroundColor Red
+                if (Test-Path -LiteralPath $nlog) {
+                    Get-Content -LiteralPath $nlog -Encoding UTF8 | Select-Object -Last 8 | ForEach-Object { Write-Host "  | $_" }
+                }
+            } else {
+                Write-Host "[nav] PASS：导航统一 [${nsecs}s]" -ForegroundColor Green
+            }
+            $summary += [pscustomobject]@{
+                Suite = 'nav'; Rc = $nrc; Failed = 0; Known = 0
+                New = $(if ($nrc -ne 0) { 1 } else { 0 }); Seconds = $nsecs; Log = $nlog
+            }
+        } else {
+            Write-Host "[nav] ⚠ 缺 tools/unify_nav.py（跳过，不阻断）" -ForegroundColor Yellow
+        }
+    }
+
     # ===== 2026-10-31 P130（WO-GUANYU-P130）：portal 路由清单门（阻断）=====
     # B0 契约：路由集合必须与 tools/portal_route_baseline.json 零 diff；
     # 新增/删除路由必须同提交 `python tools/portal_route_inventory.py --write-baseline` 重冻结，

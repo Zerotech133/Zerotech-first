@@ -22,6 +22,13 @@ import ast
 import json
 import re
 import sys
+
+if hasattr(sys.stdout, "reconfigure"):
+    # 2026-10-31 P132：GBK 控制台直跑时中文/✅ 输出会 UnicodeEncodeError；统一 UTF-8。
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:  # noqa: BLE001
+        pass
 import time
 from collections import Counter
 from pathlib import Path
