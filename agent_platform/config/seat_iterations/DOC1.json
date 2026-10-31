@@ -1,7 +1,7 @@
 {
  "schema": "seat_iteration/v1",
  "seat": "DOC1",
- "cn_name": "",
+ "cn_name": "陈寿",
  "role_title": "技术文档工程师",
  "discipline": "docs",
  "group": "G2",
@@ -28,7 +28,7 @@
    "evidence": ""
   },
   "practice": {
-   "tid": "待定（下一任务）",
+   "tid": "待定（下一任务；计划载体：v1.1 文档 + 索引刷新）",
    "acceptance": "索引无漂移 + 链接可点",
    "status": "planned",
    "evidence": ""

@@ -2,17 +2,17 @@
 
 | 席位 | 角色 | 域 | 版本 | 本轮目标能力 | 学习材料 | 实践载体 | 导师 | 状态 |
 |---|---|---|---|---|---|---|---|---|
-| ARCH1 曹操 | 研发主官 · 架构师 | architecture | v1 | 研发计划拆解与验收标准 | 总纲 §5/§6 + WBS 模板 | 待定（下一任务） | A0 | planned |
-| DEV1  | 后端工程师 · G1 组长 | backend | v1 | 质量门与 code review 判据 | devtask 质量门 + AGENTS 红线 | WO-P0-DEV1-MONDAY-20261027 | ARCH1 | planned |
-| DEV2  | AI/模型工程师 | ai | v1 | 模型评估与降级策略 | model_tiers + fallback 链 | 待定（下一任务） | DEV1 | planned |
-| DEV3  | 量化策略工程师 | quant | v1 | 策略数据契约与回测口径 | v1.1 白名单/字段契约 | 待定（下一任务） | DEV5 | planned |
-| DEV4  | 回测/风控工程师 | quant | v1 | 风控判据与 Go-No-Go 复核 | backtest_registry + 判据冻结 | 待定（下一任务） | DEV5 | planned |
-| DEV5  | 前端工程师 · G2 组长 | frontend | v1 | 前端设计 tokens 与组件规范 | tokens.css + unify_nav + 设计规范 | WO-P0-DEV5-EVALCASES-20261027 | ARCH1 | planned |
-| DEV6  | 后端工程师 | backend | v1 | 数据管道与可观测 | dev_metrics_daily + 指标口径 | WO-P0-DEV6-TRACE-20261027 | DEV1 | planned |
-| DEV7  | 后端工程师（标准化交付） | backend | v1 | 标准化交付（L1/L2 已启动） | seat_learning DEV7 计划 L1–L4 | WO-P0-DEV7-WIKI-20261027 | DEV1 | planned |
-| DEV8  | 前端工程师 | frontend | v1 | 数据可视化与空错态 | 作战屏 v1/v1.1 页面 | WO-P0-DEV8-METRICS-20261027 | DEV5 | planned |
-| DOC1  | 技术文档工程师 | docs | v1 | 文档/索引自动化 | gen_docs_index + 文档规范 | 待定（下一任务） | DEV5 | planned |
-| OPS1  | 运维/SRE 工程师 | devops | v1 | 部署/重启演练与五要素 | start_portal_api.ps1 + 重启规范 | 待定（下一任务） | DEV1 | planned |
+| ARCH1 曹操 | 研发主官 · 架构师 | architecture | v1 | 研发计划拆解与验收标准 | 总纲 §5/§6 + WBS 模板 | 待定（下一任务；计划载体：下一项目 WBS→工单→验收样例） | A0 | planned |
+| DEV1 马钧 | 后端工程师 · G1 组长 | backend | v1 | 质量门与 code review 判据 | devtask 质量门 + AGENTS 红线 | WO-P0-DEV1-MONDAY-20261027 | ARCH1 | planned |
+| DEV2 刘晔 | AI/模型工程师 | ai | v1 | 模型评估与降级策略 | model_tiers + fallback 链 | 待定（下一任务；计划载体：选 1 席做 fallback 演练） | DEV1 | planned |
+| DEV3 蒋济 | 量化策略工程师 | quant | v1 | 策略数据契约与回测口径 | v1.1 白名单/字段契约 | 待定（下一任务；计划载体：v1.1 策略适配器（LV-02）） | DEV5 | planned |
+| DEV4 杜预 | 回测/风控工程师 | quant | v1 | 风控判据与 Go-No-Go 复核 | backtest_registry + 判据冻结 | 待定（下一任务；计划载体：v1.1 风控适配器（LV-03）） | DEV5 | planned |
+| DEV5 邓艾 | 前端工程师 · G2 组长 | frontend | v1 | 前端设计 tokens 与组件规范 | tokens.css + unify_nav + 设计规范 | 待定（v1.1 补证；原载体 WO-P0-DEV5-EVALCASES-20261027 已 aborted，详见 T19 降级关闭裁决 2026-10-31） | ARCH1 | planned |
+| DEV6 胡昭 | 后端工程师 | backend | v1 | 数据管道与可观测 | dev_metrics_daily + 指标口径 | 待定（v1.1 补证；原载体 WO-P0-DEV6-TRACE-20261027 已 aborted，详见 T19 降级关闭裁决 2026-10-31） | DEV1 | planned |
+| DEV7 姜维 | 后端工程师（标准化交付） | backend | v1 | 标准化交付（L1/L2 已启动） | seat_learning DEV7 计划 L1–L4 | WO-P0-DEV7-WIKI-20261027 | DEV1 | planned |
+| DEV8 郝昭 | 前端工程师 | frontend | v1 | 数据可视化与空错态 | 作战屏 v1/v1.1 页面 | WO-P0-DEV8-METRICS-20261027 | DEV5 | planned |
+| DOC1 陈寿 | 技术文档工程师 | docs | v1 | 文档/索引自动化 | gen_docs_index + 文档规范 | 待定（下一任务；计划载体：v1.1 文档 + 索引刷新） | DEV5 | planned |
+| OPS1 王基 | 运维/SRE 工程师 | devops | v1 | 部署/重启演练与五要素 | start_portal_api.ps1 + 重启规范 | 待定（下一任务；计划载体：一次受控重启演练（审批后）） | DEV1 | planned |
 
 > 规则：v1 基线 → 学习/实践/评估 → 导师 pass + 证据 → version+1；AI 不代签、评估无证据不得标 passed。
 
@@ -25,3 +25,4 @@
 - **导师**：组长（DEV1/DEV5）或 A0；DSH 汇总进周报「能力迭代闭环」栏。
 - **边界**：不改 org/权限/服务；实践载体必须真实任务，不为评估造样例。
 
+> 口径对齐（2026-10-31 · task-19）：本表 cn_name/实践载体按 hr+org 真源与 `tools/seat_iteration.py` 策划口径补齐；**状态/证据/updated_at 未动**，仍为 planned/空。

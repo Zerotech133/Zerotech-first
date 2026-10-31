@@ -1,7 +1,7 @@
 {
  "schema": "seat_iteration/v1",
  "seat": "DEV3",
- "cn_name": "",
+ "cn_name": "蒋济",
  "role_title": "量化策略工程师",
  "discipline": "quant",
  "group": "G2",
@@ -28,7 +28,7 @@
    "evidence": ""
   },
   "practice": {
-   "tid": "待定（下一任务）",
+   "tid": "待定（下一任务；计划载体：v1.1 策略适配器（LV-02））",
    "acceptance": "单测 + 抽样一致 + 脱敏审计",
    "status": "planned",
    "evidence": ""
