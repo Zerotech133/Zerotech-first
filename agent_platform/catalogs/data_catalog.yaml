@@ -3,8 +3,9 @@
 # v1→v2 变更摘要：①kg_dataroot 注销（路径不存在，AGENTS §8）；②paper_db/weak_state 路径修正；
 #   ③ashare_kline 补北交所代码段；④tdx_quote 标注按需手动启停；⑤增补 11 条主力源 + 补登 quant_data_root（10 → 22 条）。
 # v3→v4 变更摘要（2026-10-31）：登记 report_rc（卖方研报评级/盈利预测历史，H34-H36 数据源）。
+# v4→v5 变更摘要（2026-10-31）：登记 research_reports_kb（研报知识库：100 份研报入库/498 知识单元/RAG 462 记录）。
 # v1 种子出处：K-ORG-119 批1（2026-10-16 实战验证的真实位置）。
-version: 4
+version: 5
 updated: "2026-10-31"
 registrar: DATA1（张松） / DSH-Lead（Phase6 语料登记、report_rc 登记）
 resources:
@@ -166,6 +167,21 @@ resources:
     fail_mode: 重建中断→curated 与原始层版本不一致；回滚 tushare_curated.prev
     grants: [invest, quality]
     verified: 2026-10-27（DATA1 实测：7.22GB / 322.9M 行）
+
+  - id: research_reports_kb
+    kind: parquet+jsonl
+    uri: C:/项目/PDF/_ingest_reports/ ; knowledge_docs/.rag_index.json
+    what: 研报知识库（inbox 101 份卖方研报 → 100 份结构入库；知识单元 498 条=研报463+书籍35；layout 表格解析；RAG 112 文档/462 记录）
+    layer: 派生层（可重建，源自 inbox PDF + report_rc）
+    owner: DSH-Lead
+    steward: DSH-Lead
+    freshness: 手动/批跑（pdf_ingest.py all + distill_remaining.py）
+    backup: 无独立备份（PDF 原件在 inbox；产物可重建）
+    verify_period: 每次入库（verify + golden_spotcheck：schema/页码/章节/证据接地）
+    verify_result: "2026-10-31 golden PASS：schema 100%/页码 100%/章节 100%/证据接地 99.4%"
+    fail_mode: PDF 原生崩溃→pypdf fallback（2 份已处理）；Ollama 占用→自动卸载重试
+    grants: [invest, quality]
+    verified: "2026-10-31（498 知识单元；RAG 112/462；抽检 PASS）"
 
   - id: report_rc
     kind: parquet
