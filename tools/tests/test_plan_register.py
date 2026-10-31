@@ -40,3 +40,20 @@ def test_scan_plan_uses_filename_date(tmp_path):
     expect = round((time.time() - time.mktime(time.strptime(old, "%Y-%m-%d"))) / 86400.0, 1)
     assert abs(row["age_days"] - expect) < 1.0
     assert row["lifecycle"] == "活跃(未标注)"
+
+
+def test_generated_plan_registers_excluded(tmp_path, monkeypatch):
+    """2026-10-31 PLANREG：PLAN_REGISTER* 生成物不计入计划统计（不碰真实 docs/plans）。"""
+    m = _load()
+    plans = tmp_path / "plans"
+    plans.mkdir()
+    (plans / "2026-10-01_真实计划.md").write_text("# 真实计划\n\n正文\n", encoding="utf-8")
+    (plans / "PLAN_REGISTER_ALL_20261031.md").write_text("# 全量台账\n", encoding="utf-8")
+    (plans / "PLAN_REGISTER_20261031.md").write_text("# 计划台账\n", encoding="utf-8")
+    (plans / "INDEX_计划全集索引.md").write_text("# 索引\n", encoding="utf-8")
+    (plans / "README.md").write_text("# 说明\n", encoding="utf-8")
+    monkeypatch.setattr(m, "PLANS", plans)
+    rep = m.build()
+    assert rep["total"] == 1, "生成物/README/INDEX 都不得计入计划统计"
+    assert [r["file"] for r in rep["rows"]] == ["2026-10-01_真实计划.md"]
+    assert rep["by_lifecycle"] == {"活跃(未标注)": 1}
