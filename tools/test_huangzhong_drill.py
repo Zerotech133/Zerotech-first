@@ -282,9 +282,12 @@ def test_missing_or_unreadable_evidence_tolerated(tmp_path):
 
 # ------------------------------------------------------------------- CLI
 
-def test_cli_json_dry_run_zero_write(tmp_path, capsys):
+def test_cli_json_dry_run_zero_write(tmp_path, capsys, monkeypatch):
     root = _setup(tmp_path, redteam_age=60)
     h = _load()
+    # 2026-11-01 K-ORG-20261031-MIDNIGHTTESTS：CLI 默认用真实时钟，
+    # 跨日会生成 20261101 演练单而用例固定 DATE=20261031 → 冻结时钟。
+    monkeypatch.setattr(h, "_now", lambda: NOW)
     rc = h.main(["--kind", "observe", "--confirm", "DRILL-OBSERVE",
                  "--dry-run", "--json", "--repo-root", str(root),
                  "--commit", SHA])
