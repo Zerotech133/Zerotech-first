@@ -160,6 +160,10 @@ def _silence_keepalive(monkeypatch):
 
 def test_build_view_full(monkeypatch, tmp_path):
     fx = _fixture(tmp_path)
+    # WO-ZHAOYUN-PIDPROBE：进程探测注入固定值，不依赖真实系统 PID/进程表
+    # （旧版直接 OpenProcess(12345)，整包并发撞 PID 即假红）。
+    probed = []
+    monkeypatch.setattr(V, "PID_PROBE", lambda pid: probed.append(pid) or False)
     monkeypatch.setattr(
         V,
         "_keepalive",
@@ -188,8 +192,9 @@ def test_build_view_full(monkeypatch, tmp_path):
     assert view["advice"]["anomaly_digest"]["status"] == "draft"
     assert view["advice"]["anomaly_digest"]["items"][0]["title"] == "取消码误计"
     assert view["advice"]["case_draft"]["exists"] is False
-    assert view["clock"]["pid"] == 12345  # 不存在的 pid -> alive False，但字段保留
-    assert view["clock"]["alive"] is False
+    assert view["clock"]["pid"] == 12345  # pid 字段保留
+    assert view["clock"]["alive"] is False  # 注入探测返回 False
+    assert probed == [12345]  # 探测函数被调用且入参=夹具 pid（不触真实系统调用）
     assert view["clock"]["last_tick"] == "2026-10-26T13:20:00+08:00"
     assert view["keepalive"]["last"].startswith("2026-10-26 13:25")
     assert view["sign_chain"]["entries_total"] == 2
@@ -486,13 +491,23 @@ def test_index_has_zhaoyun_tab():
     assert "/static/zhaoyun.html" in idx
 
 
-def test_pid_alive_own_process_and_absent_pid():
-    import os
+def test_pid_probe_injectable_exists_and_absent(monkeypatch):
+    """PID_PROBE 可注入：默认实现不变，用例不依赖真实系统进程。"""
+    assert V.PID_PROBE is V._default_pid_probe  # 默认行为不变
+    monkeypatch.setattr(V, "PID_PROBE", lambda pid: pid == 12345)
+    assert V._pid_alive(12345) is True  # 注入"存在"
+    assert V._pid_alive(99999999) is False  # 注入"不存在"
+    monkeypatch.setattr(V, "PID_PROBE", lambda pid: (_ for _ in ()).throw(OSError("boom")))
+    assert V._pid_alive(12345) is False  # 探测异常 → fail-closed
 
-    assert V._pid_alive(os.getpid()) is True
-    assert V._pid_alive(99999999) is False
-    assert V._pid_alive("not-a-pid") is False
-    assert V._pid_alive(-1) is False
+
+def test_pid_alive_bad_pid_short_circuit(monkeypatch):
+    """边界：非法/非正 pid 直接 False，且不进入探测函数（不触系统调用）。"""
+    called = []
+    monkeypatch.setattr(V, "PID_PROBE", lambda pid: called.append(pid) or True)
+    for bad in ("not-a-pid", None, -1, 0):
+        assert V._pid_alive(bad) is False
+    assert called == []
 
 
 def test_no_os_kill_probe_in_view():
