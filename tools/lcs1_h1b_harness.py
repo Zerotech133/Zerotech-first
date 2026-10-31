@@ -18,6 +18,11 @@
   依次「去行业维度 → 去换手维度 → 该事件不计入中性化端点」；neutral_net =
   raw_net − 同组控制股在同 entry/exit 日期的收益均值；无控制样本/单元<10 →
   R2=False 并给原因（不猜、不编造）。
+  §5.2 暴露回归辅方法（2026-10-31 补齐，**仅稳健性、不参与 GO**）：
+  raw_net ~ log(circ_mv) + turnover + board 哑变量 + SW L1 哑变量（事件内暴露
+  调整，事件类型哑变量在 E1/E2 混合时加入）；按事件日截面 OLS 后做
+  Fama-MacBeth 取系数均值/SE/t；无 panel/字段缺失/样本不足 → status=unavailable
+  并给原因；本段结果只作稳健性参考，**不进入 8 门与 GO/No-Go 判定**。
 
 本文件只提供**可复现骨架**：纯函数 + 数据接口（load_events/load_panel/
 check_freeze）。纪律：
@@ -72,6 +77,7 @@ import json
 import math
 import random
 import sys
+from collections import defaultdict
 from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
 
@@ -107,6 +113,8 @@ SPEC = {
 }
 BOARD_LIMITS = {"main": 0.10, "chinext": 0.20, "star": 0.20, "bj": 0.30}
 ST_MAIN_LIMIT = 0.05
+# §5.2 暴露回归（仅稳健性）：Fama-MacBeth 至少需 2 个可估截面日
+EXPOSURE_MIN_DAYS = 2
 
 FREEZE_DATASETS = ("ts_daily", "top_list", "ts_daily_basic", "ts_namechange",
                    "ts_stock_basic", "sw_classify_l1", "sw_l1_member")
@@ -828,6 +836,221 @@ def neutralize_trades(trades, panel, events_by_date=None, spec=None):
 
 
 # ---------------------------------------------------------------------------
+# §5.2 暴露回归辅方法（横截面 OLS + 按日 Fama-MacBeth；仅稳健性，不参与 GO）
+# ---------------------------------------------------------------------------
+def _solve_linear(matrix, vector):
+    """高斯-约当解线性方程组；奇异/非满秩 → None。"""
+    size = len(matrix)
+    aug = [list(matrix[i]) + [vector[i]] for i in range(size)]
+    for col in range(size):
+        pivot = max(range(col, size), key=lambda r: abs(aug[r][col]))
+        if abs(aug[pivot][col]) < 1e-12:
+            return None
+        aug[col], aug[pivot] = aug[pivot], aug[col]
+        pivot_value = aug[col][col]
+        for j in range(col, size + 1):
+            aug[col][j] /= pivot_value
+        for row in range(size):
+            if row == col:
+                continue
+            factor = aug[row][col]
+            if factor == 0.0:
+                continue
+            for j in range(col, size + 1):
+                aug[row][j] -= factor * aug[col][j]
+    return [aug[i][size] for i in range(size)]
+
+
+def _invert_matrix(matrix):
+    size = len(matrix)
+    columns = []
+    for i in range(size):
+        unit = [1.0 if j == i else 0.0 for j in range(size)]
+        column = _solve_linear(matrix, unit)
+        if column is None:
+            return None
+        columns.append(column)
+    return [[columns[j][i] for j in range(size)] for i in range(size)]
+
+
+def _ols(y_values, x_rows):
+    """普通最小二乘：返回 {beta, se, n, k}；样本不足/奇异 → None。"""
+    n_obs = len(y_values)
+    k = len(x_rows[0]) if x_rows else 0
+    if not k or n_obs <= k:
+        return None
+    xtx = [[sum(x_rows[r][i] * x_rows[r][j] for r in range(n_obs))
+            for j in range(k)] for i in range(k)]
+    xty = [sum(x_rows[r][i] * y_values[r] for r in range(n_obs))
+           for i in range(k)]
+    beta = _solve_linear(xtx, xty)
+    if beta is None:
+        return None
+    residuals = [y_values[r] - sum(x_rows[r][j] * beta[j] for j in range(k))
+                 for r in range(n_obs)]
+    rss = sum(value * value for value in residuals)
+    sigma2 = rss / (n_obs - k)
+    inverse = _invert_matrix(xtx)
+    if inverse is None:
+        return None
+    se = [math.sqrt(max(0.0, sigma2 * inverse[j][j])) for j in range(k)]
+    return {"beta": beta, "se": se, "n": n_obs, "k": k}
+
+
+def _feature_names(rows):
+    """回归自变量：截距 + log(circ_mv) + turnover + board/SW/事件哑变量。"""
+    features = ["intercept", "log_circ_mv", "turnover"]
+    boards = sorted({row["board"] for row in rows})
+    for board in boards[1:]:
+        features.append("board:" + board)
+    industries = sorted({row["sw_l1"] for row in rows if row.get("sw_l1")})
+    for industry in industries[1:]:
+        features.append("sw:" + industry)
+    event_types = sorted({row["event_type"] for row in rows
+                          if row.get("event_type")})
+    for etype in event_types[1:]:
+        features.append("event:" + etype)
+    return features
+
+
+def _design_matrix(rows, features):
+    matrix = []
+    for row in rows:
+        values = []
+        for feature in features:
+            if feature == "intercept":
+                values.append(1.0)
+            elif feature == "log_circ_mv":
+                values.append(math.log(row["circ_mv"]))
+            elif feature == "turnover":
+                values.append(row["turnover"])
+            elif feature.startswith("board:"):
+                values.append(1.0 if row["board"] == feature[6:] else 0.0)
+            elif feature.startswith("sw:"):
+                values.append(1.0 if row["sw_l1"] == feature[3:] else 0.0)
+            elif feature.startswith("event:"):
+                values.append(1.0 if row["event_type"] == feature[6:] else 0.0)
+            else:  # pragma: no cover - 防新增维度漏接线
+                values.append(0.0)
+        matrix.append(values)
+    return matrix
+
+
+def _exposure_rows(trades, panel):
+    """从 trades+panel 提取回归样本（只用事件日可知字段，事件内暴露调整）。
+
+    返回 (rows, dropped, missing_fields)；缺 circ_mv/turnover_rate/sw_l1 的
+    事件行丢弃并记录字段名，供 unavailable 原因使用。
+    """
+    index = build_panel_index(panel)
+    rows, dropped, missing = [], defaultdict(int), set()
+    for trade in trades or []:
+        code = str(trade.get("ts_code") or "")
+        day = str(trade.get("event_date") or "")
+        y_value = _num(trade.get("raw_net"))
+        data = index["codes"].get(code)
+        bar = (data or {}).get("by_date", {}).get(day) if data else None
+        if bar is None:
+            dropped["event_bar_missing"] += 1
+            continue
+        if y_value is None:
+            dropped["raw_net_missing"] += 1
+            continue
+        circ_mv = _num(bar.get("circ_mv"))
+        turnover = _num(bar.get("turnover_rate"))
+        sw_l1 = str(bar.get("sw_l1") or "").strip()
+        row_missing = []
+        if circ_mv is None or circ_mv <= 0:
+            row_missing.append("circ_mv")
+        if turnover is None:
+            row_missing.append("turnover_rate")
+        if not sw_l1:
+            row_missing.append("sw_l1")
+        if row_missing:
+            for field in row_missing:
+                missing.add(field)
+                dropped["%s_missing" % field] += 1
+            continue
+        rows.append({
+            "y": y_value, "circ_mv": circ_mv, "turnover": turnover,
+            "sw_l1": sw_l1, "board": board_of(code),
+            "event_type": str(trade.get("event_type") or ""),
+            "event_date": day,
+        })
+    return rows, dict(sorted(dropped.items())), sorted(missing)
+
+
+def cross_section_regression(trades, panel, spec=None):
+    """§5.2 暴露回归辅方法（仅稳健性，**不参与 GO 判定**）。
+
+    模型：``raw_net = α + β1·log(circ_mv) + β2·turnover + Σγ·board +
+    Σδ·SW_L1 + ε``（E1/E2 混合时含事件类型哑变量）；按事件日做截面 OLS，
+    再按日 Fama-MacBeth 取系数均值/SE/t。无 panel/字段缺失/可估截面日不足
+    返回 status=unavailable + 原因。返回的 ``used_in_go`` 恒为 False。
+    """
+    note = "仅稳健性（预注册 §5.2），不参与 GO 判定"
+    if not panel:
+        return {"status": "unavailable", "reason": "panel_missing",
+                "missing_fields": [], "dropped": {}, "n": 0, "n_days": 0,
+                "days_estimable": 0, "coefficients": {},
+                "used_in_go": False, "note": note}
+    rows, dropped, missing = _exposure_rows(trades, panel)
+    if not rows:
+        return {"status": "unavailable",
+                "reason": "fields_missing" if missing else "no_trades",
+                "missing_fields": missing, "dropped": dropped,
+                "n": 0, "n_days": 0, "days_estimable": 0,
+                "coefficients": {}, "used_in_go": False, "note": note}
+    features = _feature_names(rows)
+    by_day = defaultdict(list)
+    for row in rows:
+        by_day[row["event_date"]].append(row)
+    estimable_days, skipped = [], {}
+    for day in sorted(by_day):
+        day_rows = by_day[day]
+        fit = _ols([row["y"] for row in day_rows],
+                   _design_matrix(day_rows, features))
+        if fit is None:
+            skipped[day] = "insufficient_obs_or_singular"
+            continue
+        estimable_days.append((day, fit["beta"]))
+    if len(estimable_days) < EXPOSURE_MIN_DAYS:
+        return {
+            "status": "unavailable",
+            "reason": "insufficient_cross_section_sample",
+            "n": len(rows), "n_days": len(by_day),
+            "days_estimable": len(estimable_days),
+            "min_days_required": EXPOSURE_MIN_DAYS,
+            "regressors": len(features), "skipped_days": skipped,
+            "missing_fields": missing, "dropped": dropped,
+            "coefficients": {}, "used_in_go": False, "note": note,
+        }
+    coefficients = {}
+    for idx, feature in enumerate(features):
+        values = [beta[idx] for _, beta in estimable_days]
+        mean = _mean(values)
+        stdev = _stdev(values)
+        se = (stdev / math.sqrt(len(values))) if stdev is not None else 0.0
+        t_value = (mean / se) if se and se > 0 else None
+        coefficients[feature] = {
+            "mean": mean,
+            "se": se,
+            "t": t_value,
+            "n_days": len(values),
+        }
+    return {
+        "status": "ok",
+        "model": ("raw_net ~ intercept + log_circ_mv + turnover + board dummies"
+                  " + SW_L1 dummies + event-type dummies"),
+        "n": len(rows), "n_days": len(by_day),
+        "days_estimable": len(estimable_days),
+        "regressors": len(features), "coefficients": coefficients,
+        "missing_fields": missing, "dropped": dropped,
+        "used_in_go": False, "note": note,
+    }
+
+
+# ---------------------------------------------------------------------------
 # 统计 + 8 门判定（预注册 §七）
 # ---------------------------------------------------------------------------
 def _mean(values):
@@ -1008,10 +1231,11 @@ def _ge(value, threshold):
 
 
 def evaluate_all(trades, spec=None, panel=None, events=None):
-    """按事件类型汇总 + R2 中性化 + Holm 校正 + 8 门判定（骨架输出）。
+    """按事件类型汇总 + R2 中性化 + §5.2 暴露回归 + Holm 校正 + 8 门判定。
 
-    panel 给出时才做 R2 中性化（同事件日匹配，预注册 §5.1）；events 用于判
-    事件日非事件控制池。不提供 panel → neutral 字段缺失、R2=False 并给原因。
+    panel 给出时才做 R2 中性化（§5.1，同事件日匹配）与 §5.2 暴露回归；events
+    用于判事件日非事件控制池。§5.2 仅稳健性输出（used_in_go=False），**不进入
+    gates/GO 判定**；不提供 panel → R2=False、暴露回归 unavailable，均给原因。
     """
     spec = spec or SPEC
     neutral_summary = None
@@ -1026,7 +1250,9 @@ def evaluate_all(trades, spec=None, panel=None, events=None):
     results = {etype: evaluate_event_gates(stats[etype], spec)
                for etype in spec["event_types"]}
     return {"by_event": stats, "gates": results,
-            "neutralization": neutral_summary}
+            "neutralization": neutral_summary,
+            "exposure_regression": cross_section_regression(trades, panel,
+                                                            spec)}
 
 
 # ---------------------------------------------------------------------------
@@ -1167,6 +1393,18 @@ def main(argv=None):
                                 ensure_ascii=False),
                      " ⚠未匹配率>20%"
                      if neutral.get("warn_unmatched_over_20pct") else ""))
+        exposure = evaluation.get("exposure_regression") or {}
+        if exposure.get("status") == "ok":
+            coef = exposure.get("coefficients") or {}
+            print("  §5.2 暴露回归（仅稳健性，不参与 GO）：days=%d/%d "
+                  "log_mv_t=%s turnover_t=%s"
+                  % (exposure.get("days_estimable", 0),
+                     exposure.get("n_days", 0),
+                     (coef.get("log_circ_mv") or {}).get("t"),
+                     (coef.get("turnover") or {}).get("t")))
+        else:
+            print("  §5.2 暴露回归：unavailable（%s）"
+                  % (exposure.get("reason") or "unknown"))
         print("  note: %s" % NOTE)
     return 0
 
