@@ -51,12 +51,13 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_OUT = os.path.join(REPO, "agent_platform", "data", "dev", "diagnostics")
 
 KEY_PORTS = [8091, 8734, 8796, 8795, 8787, 8096, 8094, 8080, 8101]
+# 8787 单独走 hermes_health.probe（登录门感知，见 probe_hermes），不再用裸 200=活。
+HERMES_BASE = "http://127.0.0.1:8787"
 HEALTH_URLS = {
     "portal_api_8091": "http://127.0.0.1:8091/health",
     "portal_8734": "http://127.0.0.1:8734/",
     "legion_8796_mcp": "http://127.0.0.1:8796/api/zhaoyun/mcp",
     "gateway_8795": "http://127.0.0.1:8795/health",
-    "hermes_8787": "http://127.0.0.1:8787/",
 }
 LOGS = {
     "portal_api_task": r"C:\Temp\portal_api_task.log",
@@ -117,6 +118,37 @@ def probe_http(url, timeout=3):
     except Exception as e:  # noqa: BLE001
         return {"url": url, "status": None, "ms": round((time.time() - t0) * 1000, 1),
                 "error": redact_text("%s: %s" % (type(e).__name__, str(e)[:200]))}
+
+
+def _hermes_probe_fn():
+    """延迟加载统一 8787 探针（legion_command/hermes_health.probe）。
+
+    单独把 legion_command 目录放 sys.path 走模块级 fallback import，避免
+    污染顶层包路径；失败抛 ImportError，由 probe_hermes 归一为 error 结果。
+    """
+    lc = os.path.join(REPO, "agent_platform", "legion_command")
+    if lc not in sys.path:
+        sys.path.insert(0, lc)
+    import hermes_health  # noqa: E402  登录门感知探针（302→/login 或 401 = alive+auth_gated）
+    return hermes_health.probe
+
+
+def probe_hermes(timeout=3, base=HERMES_BASE):
+    """8787 探活：返回 {url,status,ms,alive,auth_gated,error}（与 probe_http 兼容键）。"""
+    t0 = time.time()
+    out = {"url": str(base), "status": None, "ms": None,
+           "alive": False, "auth_gated": False, "error": ""}
+    try:
+        res = _hermes_probe_fn()(str(base), timeout=timeout)
+    except Exception as e:  # noqa: BLE001 探针自身异常不得影响诊断包
+        res = {"alive": False, "auth_gated": False, "status": None,
+               "error": "%s: %s" % (type(e).__name__, str(e)[:120])}
+    out["ms"] = round((time.time() - t0) * 1000, 1)
+    for key in ("status", "alive", "auth_gated", "error"):
+        if key in res:
+            out[key] = res[key]
+    out["error"] = redact_text(str(out.get("error") or ""))
+    return out
 
 
 def _git(args):
@@ -183,7 +215,11 @@ def collect(with_logs=True):
         "registry_ports": registry_count(),
     }
     payload["ports.json"] = {"key_ports": [probe_port(p) for p in KEY_PORTS]}
-    payload["health.json"] = {k: probe_http(u) for k, u in HEALTH_URLS.items()}
+    health = {k: probe_http(u) for k, u in HEALTH_URLS.items()}
+    # 8787 用统一登录门感知探针：无会话 302→/login 或 401/403 = alive+auth_gated，
+    # 不再把「活着但需登录」误判为 down（2026-10-31 WO-M4-ENFORCE-PROBE-20261031）。
+    health["hermes_8787"] = probe_hermes()
+    payload["health.json"] = health
     q = subprocess.run([sys.executable, "-X", "utf8", "tools/quality_scale_check.py", "--json"],
                        cwd=REPO, capture_output=True, text=True, encoding="utf-8",
                        errors="replace", timeout=120)
@@ -229,7 +265,8 @@ def main(argv=None):
     else:
         print("diagnostics: %s (%d bytes)" % (path, os.path.getsize(path)))
         for k, v in payload["health.json"].items():
-            print("  %-20s %s" % (k, v.get("status")))
+            mark = " auth_gated" if v.get("auth_gated") else ""
+            print("  %-20s %s%s" % (k, v.get("status"), mark))
     return 0
 
 

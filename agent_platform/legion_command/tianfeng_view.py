@@ -21,6 +21,13 @@ try:
 except ImportError:  # 作为包导入时
     from legion_command.safe_http import safe_urlopen
 
+# 8787 统一走登录门感知探针（2026-10-31 WO-M4-ENFORCE-PROBE-20261031）：
+# 无会话 302→/login 或 401/403 = alive+auth_gated，不是 down。
+try:
+    from hermes_health import probe as hermes_probe
+except ImportError:  # 作为包导入时
+    from legion_command.hermes_health import probe as hermes_probe
+
 
 HOME = Path.home() / ".hermes" / "profiles" / "tianfeng"
 
@@ -38,6 +45,30 @@ def _health(url: str, timeout=3):
             return r.status
     except Exception:
         return None
+
+
+HERMES_BASE = "http://127.0.0.1:8787"
+
+
+def _hermes_health(timeout=3):
+    """8787 会话感知探活：返回 hermes_health.probe 的 dict（异常归一为 down）。"""
+    try:
+        return hermes_probe(HERMES_BASE, timeout=timeout)
+    except Exception as exc:  # noqa: BLE001 探针异常不得影响视图聚合
+        logging.getLogger(__name__).warning(
+            "hermes probe failed: %s", exc)
+        return {"alive": False, "auth_gated": False, "status": None,
+                "error": str(exc)[:120]}
+
+
+def _fmt_health(h):
+    """把探针 dict 格式化为可读串（登录门显式标注 auth_gated）。"""
+    h = h or {}
+    if not h.get("alive"):
+        status = h.get("status")
+        return "down" if status is None else "down(%s)" % status
+    status = str(h.get("status"))
+    return status + ("(auth_gated)" if h.get("auth_gated") else "")
 
 
 def _pid(port: int) -> str:
@@ -146,7 +177,7 @@ def build_view(platform: Path) -> dict:
     auth = role_model.get("decision_authority") or {}
     attrs = a0.get("attributes") or {}
     audit = _audit(repo)
-    health = _health("http://127.0.0.1:8787/health")
+    health = _hermes_health()   # 登录门感知：无会话 302→/login / 401 = alive，不判 down
     pid = _pid(8787)
     tasks = _load(repo / ".worktrees" / "tasks.json", {})
     doing = sum(
@@ -428,13 +459,14 @@ def build_view(platform: Path) -> dict:
             {
                 "label": "Hermes",
                 "value": "8787 PID %s" % pid,
-                "state": "good" if health == 200 else "bad",
+                "state": "good" if health.get("alive") else "bad",
             },
         ],
         "status": [
             {
                 "k": "Hermes profile",
-                "v": "tianfeng（127.0.0.1:8787，PID %s，health %s）" % (pid, health),
+                "v": "tianfeng（127.0.0.1:8787，PID %s，health %s）"
+                % (pid, _fmt_health(health)),
             },
             {"k": "SOUL", "v": "v3 · 产品经理+研发（全在性）"},
             {"k": "能力清单", "v": "%d 项 / %d ready" % (len(caps), ready)},
