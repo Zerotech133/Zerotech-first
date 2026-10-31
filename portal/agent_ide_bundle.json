@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-31 09:28",
+ "generated": "2026-10-31 09:29",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 25,
+  "workorders_doing": 24,
   "workorders_review": 13
  },
  "workorders": [
@@ -344,15 +344,6 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-LEGION-TXN-20261031",
    "created": "2026-10-31 08:21:14",
-   "project": "general"
-  },
-  {
-   "id": "WO-HZ-HERMES-PHASE2-20261031",
-   "desc": "Phase2：黄忠 MCP 触发面（受控写工具）+ 本地事件流（events.jsonl+8091 只读端点）",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-HZ-HERMES-PHASE2-20261031",
-   "created": "2026-10-31 09:21:00",
    "project": "general"
   }
  ],
