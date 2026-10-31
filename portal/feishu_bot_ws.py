@@ -1285,21 +1285,75 @@ def handle_cmd(text, message_id, open_id="", chat_type="p2p"):
             )
 
 
+# ── M4 签字角色映射（2026-10-31 WO-M4-SIGNERMAP-20261031）──────────────
+# 契约：agent_platform/config/approval_signers.json
+#   {"map": {"ou_xxx": "A0", "ou_yyy": "QA1"}, "note": "..."}   允许空 map。
+APPROVAL_SIGNERS_CONFIG = os.path.join(
+    os.path.dirname(HERE), "agent_platform", "config", "approval_signers.json")
+_APPROVAL_SIGNERS_CACHE = {"stamp": None, "map": {}}
+
+
+def _load_approval_signers(path=None, use_cache=True):
+    """读 open_id → M4 签字角色映射（QA1/GUANYU/VERIFY1/A0；只读）。
+
+    - 缺失/坏 JSON/结构非法 → 空映射（fail-safe：审批记账不崩，角色未知 →
+      approval_control 侧 roles_unresolved，**不猜**）；
+    - 值归一：open_id 去空白、role 字符串 trim + 大写；非字符串/空值丢弃；
+    - 缓存键 = (绝对路径, mtime_ns, size)：修改配置后下次回调自动生效，无需重启。
+    """
+    p = path or APPROVAL_SIGNERS_CONFIG
+    try:
+        st = os.stat(p)
+        stamp = (os.path.abspath(p), st.st_mtime_ns, st.st_size)
+    except OSError:
+        stamp = None
+    if use_cache and stamp is not None and _APPROVAL_SIGNERS_CACHE["stamp"] == stamp:
+        return dict(_APPROVAL_SIGNERS_CACHE["map"])
+    mapping = {}
+    try:
+        # utf-8-sig：容忍 Windows/PowerShell 写出的 UTF-8 BOM（否则 json 解析失败
+        # → 空映射 → 静默 roles_unresolved，运维以为配了却永远签不齐）。
+        with open(p, encoding="utf-8-sig") as f:
+            doc = json.load(f)
+    except (OSError, ValueError):
+        doc = None
+    if isinstance(doc, dict) and isinstance(doc.get("map"), dict):
+        for key, role in doc["map"].items():
+            op = str(key or "").strip()
+            role = str(role).strip().upper() if isinstance(role, str) else ""
+            if op and role:
+                mapping[op] = role
+    if use_cache and stamp is not None:
+        _APPROVAL_SIGNERS_CACHE["stamp"] = stamp
+        _APPROVAL_SIGNERS_CACHE["map"] = dict(mapping)
+    return mapping
+
+
 # ── ws 主程序 ───────────────────────────────────────────────
 def _handle_approval_card(val, sender):
     """D3 接线：approval:* 卡片按钮 → approval_control.handle_action（只记账/回执）。
 
     红线：不触发重启/发布/权限变更。白名单取环境变量 APPROVAL_OPERATORS
     （逗号分隔 open_id）；未配置时记录全部操作人（pilot，审计可查）。
+
+    2026-10-31 WO-M4-SIGNERMAP-20261031：加载 approval_signers.json 的
+    open_id→角色映射并作为 ``signoff_roles`` 传给 handle_action（M4 四方判签）。
+    配置缺失/坏 → 空映射；未知 open_id 不在映射内 → roles_unresolved（不猜）。
     """
     import approval_control
 
+    try:
+        signoff_roles = _load_approval_signers()
+    except Exception as exc:  # noqa: BLE001 映射加载异常不得挡审批记账
+        log("approval signers load error: %s" % str(exc)[:120])
+        signoff_roles = {}
     allowed = str(os.environ.get("APPROVAL_OPERATORS", "")).strip()
     allowed_ops = {x for x in allowed.split(",") if x} or None
     payload = {"operator": {"open_id": sender}, "action": {"value": val}}
     return approval_control.handle_action(
         payload, allowed_ops=allowed_ops,
-        owner_ids=val.get("owner_ids") if isinstance(val, dict) else None)
+        owner_ids=val.get("owner_ids") if isinstance(val, dict) else None,
+        signoff_roles=signoff_roles or None)
 
 
 def _handle_card(val, sender):
