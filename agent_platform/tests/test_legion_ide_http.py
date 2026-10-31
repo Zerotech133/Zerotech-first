@@ -65,15 +65,19 @@ class Client:
             return exc.code, json.loads(exc.read() or b"{}")
 
 
+_TEST_LOCAL_TOKEN = "tok-http-tests"
+
+
 def _serve(repo, monkeypatch):
     monkeypatch.setenv("IDE_RW", "on")
+    monkeypatch.setenv("IDE_LOCAL_TOKEN", _TEST_LOCAL_TOKEN)
     # 审计修复 2026-10-31：测试隔离宿主 cap key（否则 write/preview 403）
     monkeypatch.setenv("LEGION_CAP_KEY_FILE", str(Path(repo) / "no_such_cap.key"))
     httpd = L.create_server("127.0.0.1", 0, repo=repo,
                             portal_url="http://127.0.0.1:59999", bundle_path=None)
     threading.Thread(target=httpd.serve_forever, daemon=True).start()
     c = Client(httpd.server_port)
-    with c.opener.open(c.base + "/rw", timeout=5) as r:
+    with c.opener.open(c.base + "/rw?token=" + _TEST_LOCAL_TOKEN, timeout=5) as r:
         assert r.status == 200
     st, d = c.req("/api/ide/session")
     assert st == 200 and d["owner"]

@@ -30,6 +30,7 @@ import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
+import secrets
 
 _PLATFORM = Path(__file__).resolve().parents[1]
 if str(_PLATFORM) not in sys.path:
@@ -263,22 +264,31 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                 page = static_dir / "ide_rw.html"
                 if not page.is_file():
                     return self._json(503, {"ok": False, "error": "rw_page_missing"})
-                # v6 P0b：页面本身也不做匿名直连入口；需本地 token 或门户身份
+                # 2026-10-31 RWHOLE：直连 /rw fail-closed——本地 token 或门户身份
+                # 必须至少有一个；未配置 token 且无身份 → 403，空串绝不作为凭证。
+                _qs_rw = parse_qs(urlparse(self.path).query)
+                _provided = str((_qs_rw.get("token") or [""])[0] or "").strip()
+                if not _provided:
+                    _provided = str(G.parse_cookies(
+                        self.headers.get("Cookie") or "").get(
+                            "ide_local_token") or "").strip()
+                if not _provided:
+                    _provided = str(self.headers.get("X-IDE-Token") or "").strip()
+                _identity = G.auth_identity(dict(self.headers))
+                _has_identity = bool((_identity or {}).get("sub"))
                 _lt = G.local_token()
-                if _lt:
-                    from urllib.parse import parse_qs as _pq
-                    _qs = _pq(urlparse(self.path).query)
-                    _provided = str((_qs.get("token") or [""])[0] or "").strip()
-                    if not _provided:
-                        _provided = str(G.parse_cookies(self.headers.get("Cookie") or "").get("ide_local_token") or "").strip()
-                    if not _provided:
-                        _provided = str(self.headers.get("X-IDE-Token") or "").strip()
-                    _identity = G.auth_identity(dict(self.headers))
-                    if _provided != _lt and not _identity.get("sub"):
-                        return self._json(401, G.err(
-                            "local_token_required",
-                            "直连 /rw 需本地 token（/rw?token=...）或门户登录",
-                        ))
+                if not _lt and not _has_identity:
+                    return self._json(403, G.err(
+                        "identity_required",
+                        "直连 /rw 需本地 token（先配置 IDE_LOCAL_TOKEN / "
+                        "--local-token-file）或门户登录（zb_session）",
+                    ))
+                if _lt and not _has_identity and not (
+                        _provided and secrets.compare_digest(_provided, _lt)):
+                    return self._json(401, G.err(
+                        "local_token_required",
+                        "直连 /rw 需本地 token（token 查询参数）或门户登录",
+                    ))
                 token, _owner = G.new_session(headers=dict(self.headers))
                 # A1：带 ?token=... 或 X-IDE-Token 时种 ide_local_token cookie（启用本地准入后写/执行需要）
                 qs = parse_qs(urlparse(self.path).query)
