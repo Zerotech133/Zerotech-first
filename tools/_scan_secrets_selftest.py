@@ -27,7 +27,7 @@ lit = "Tf" + "".join(rng.choices(string.ascii_uppercase, k=6)) + "20" + "26"
 fake_tok = "aa" + "b" * 28 + "1234"
 
 w("tests/test_stub.py", "TUSHARE_TOKEN = '%s'  # fake fixture\n" % fake_tok)
-w("config.py", "api_key = '%s'\npassword: %s\n" % (tok32, pwd))
+w("config.py", "api_key = '%s'\npassword: \"%s\"\n" % (tok32, pwd))
 w("docs/notes.md",
   "服务器 192.168.1.50 的密码为%s\n联系电话 13800001111\ncommit %s\n"
   % (lit, "a1f3c5d7e9b204861d3c5e7f9a1b3c5d7e9f0a1b"))
@@ -120,3 +120,14 @@ for n, ok in results:
     print(("PASS " if ok else "FAIL ") + n)
 print("\n汇总: %d/%d 通过" % (len(results) - len(fails), len(results)))
 sys.exit(1 if fails else 0)
+
+
+# ── 夹具口径说明（2026-10-31 WO-SCANST-SELFTEST-20261031）─────────────────
+# ① config.py 的 password 必须加引号：.py 中未加引号的纯字母数字值会被扫描器
+#    SCANFIX④ 判为标识符引用（防 password=password 类误报的既定规则）而豁免；
+#    随机 pwd 可能恰好纯字母数字，旧夹具 `password: <pwd>` 因此偶发漏检
+#    （selftest 34/36 两项失败的根因；本修复只改夹具，不削弱扫描规则）。
+# ② 本文件 fixtures 区行号被 tools/scan_secrets_allowlist.tsv 以 path:line:rule
+#    精确引用（当前第 32 行 PHONE_CN / INTRANET_IP_WITH_CREDS）。在 fixture 区
+#    之前增删行会让 allowlist 失配、merge 明文凭据门报“新增命中”——改动须同步
+#    更新 allowlist 行号（或在 fixture 区之后添加说明）。
