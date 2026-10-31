@@ -202,7 +202,19 @@ _MUTATION_POSTS = frozenset((
     "/api/agent/update",      # K-ORG-190 Agent 属性/模型编辑（改 org.json+审计）
     "/api/agent/learn",       # K-ORG-190 学习环（LLM 提炼→knowledge jsonl+审计）
     "/api/sim/confirm",       # WO-BOT-CONFIRM 人工确认（approve/reject；paper-only）
+    "/api/jev/review/resolve",  # P142 补登记（L-02）：低置信复核裁决（写 DB）
+    "/api/jev/review/reopen",   # P142 补登记（L-02）：legacy 重新打开（写 DB）
 ))
+
+# 2026-11-01 P142（审计 L-01/L-02 修复）：do_POST 的"早分支"族里含变更端点
+# （analysis submit/review、jev review resolve/reopen），历史上它们先于
+# :1042 的 _MUTATION_POSTS 鉴权闸门 early-return → 反代/局域网可无 token 写入。
+# 这些前缀必须在 do_POST 最前面先过同一 token 闸门；zhuge/m/auth 分支保留
+# 各自模块内鉴权，不在此列。
+_EARLY_TOKEN_PREFIXES = (
+    "/api/analysis/",
+    "/api/jev/review/",
+)
 
 # C1a（研发计划 v2）：GET 形式但触发后台动作/子进程的端点——比照变更类
 # POST 待遇纳入鉴权。此前局域网攻击者可直接 GET 触发数据同步/预警推送/
@@ -1001,6 +1013,13 @@ color:#fff;font-size:13.5px;cursor:pointer}
     def do_POST(self):
         """v2.5：标注保存（首个 POST 端点，其余页面均为只读 GET）。"""
         path = self.path.split("?", 1)[0]
+        # P142：早分支变更端点先过 token 闸门（本机直连/页面自动带 token；
+        # 反代+局域网须 X-Portal-Token）。403 语义与 :1042 闸门保持一致。
+        if path.startswith(_EARLY_TOKEN_PREFIXES) and not self._check_portal_token():
+            self._json({"error": "forbidden: 缺失或不匹配的 X-Portal-Token"
+                        "（该变更端点需 token；本机页面自动携带，脚本请带"
+                        " header X-Portal-Token）"}, 403)
+            return
         if path == '/api/zhuge/review' or path.startswith('/api/zhuge/review/'):
             # P0/运营化：只读复核 + <id>/adoption 子资源（模块内校验 feature flag/
             # 门户 session/正文大小/限额；默认关）
