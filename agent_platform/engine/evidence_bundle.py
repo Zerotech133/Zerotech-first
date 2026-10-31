@@ -35,6 +35,7 @@ class EvidenceBundle:
     refs: list = field(default_factory=list)
     l4_status: str = "missing"  # established|unresolved|missing|unknown
     l4_source: str = ""
+    l4_reason: str = ""         # 机读原因：no_research_artifact 等（B1，WO-D1-B123）
     input_degraded: str = ""
 
     @classmethod
@@ -56,22 +57,28 @@ class EvidenceBundle:
                 freshness_s=0,
             ))
         l4_status, l4_source = _detect_l4(texts)
+        l4_reason = ""
         if isinstance(l4, dict):
             status = str(l4.get("status") or "").strip().lower()
             l4_status = status if status in ("established", "unresolved", "missing", "unknown") else "unknown"
             l4_source = str(l4.get("source") or "") + (
                 ":" + str(l4.get("as_of")) if l4.get("as_of") else "")
+            l4_reason = str(l4.get("reason") or "").strip()
             # 2026-10-31 WO-L4-M4-HARDEN-20261031（7d P0）：消费侧二次防线——
             # 调用方直接塞 dict 绕过 l4_provider 时，established 仍须带可核验
             # artifact_ref，否则降级 unresolved（不静默信任上游 dict）。
+            # 2026-10-31 WO-D1-B123-20261031（B1）：降级落机读原因
+            # no_research_artifact，并把标记写进 l4_source 供账本/日报追溯。
             if l4_status == "established":
                 ok, reason, _ = validate_artifact_ref(l4.get("artifact_ref"),
                                                       root=artifact_root)
                 if not ok:
                     l4_status = "unresolved"
-                    l4_source = "%s;artifact_ref_invalid:%s" % (l4_source, reason)
+                    l4_reason = "no_research_artifact"
+                    l4_source = "%s;no_research_artifact:%s" % (l4_source, reason)
         bundle = cls(symbol=str(symbol), name=str(name or ""), refs=refs,
-                     l4_status=l4_status, l4_source=l4_source)
+                     l4_status=l4_status, l4_source=l4_source,
+                     l4_reason=l4_reason)
         if not bundle.is_sufficient():
             bundle.input_degraded = "missing:" + ",".join(
                 s for s in REQUIRED if s not in texts)

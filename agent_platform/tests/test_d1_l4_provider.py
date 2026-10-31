@@ -1,10 +1,16 @@
 # -*- coding: utf-8 -*-
-"""L4 provider 契约测试（含 2026-10-31 WO-L4-M4-HARDEN 的 artifact_ref 门）。"""
+"""L4 provider 契约测试（含 2026-10-31 WO-L4-M4-HARDEN 的 artifact_ref 门）。
+
+2026-10-31 WO-D1-B123-20261031（D1 证据链 P0 / B1）：补充
+``reason = no_research_artifact`` 机读标记与真实 l4_status.json 数据契约护栏。
+"""
 from __future__ import annotations
 
 import json
 import sys
 from pathlib import Path
+
+import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "agent_platform" / "engine"))
@@ -113,3 +119,66 @@ def test_unknown_symbol_and_invalid_status(tmp_path):
                  encoding="utf-8")
     assert L.load_l4("000858", path=p)["status"] == "missing"
     assert L.load_l4("600519", path=p)["status"] == "unknown"
+
+
+# ── 2026-10-31 WO-D1-B123-20261031（B1）：no_research_artifact 机读标记 ──
+def test_established_without_artifact_ref_marks_no_research_artifact(tmp_path):
+    """B1 核心判据：established 无 artifact_ref → unresolved + 机读标记。"""
+    p, _ = _l4(tmp_path, {"status": "established", "source": "text_guess",
+                          "as_of": "2026-10-30", "rationale": "L4=定性成立"})
+    r = L.load_l4("600519", path=p)
+    assert r["status"] == "unresolved"
+    assert r["reason"] == "no_research_artifact"
+    assert r["artifact_invalid"] == "missing"
+
+
+def test_established_empty_artifact_ref_marks_no_research_artifact(tmp_path):
+    p, _ = _l4(tmp_path, {"status": "established", "artifact_ref": "   "})
+    r = L.load_l4("600519", path=p)
+    assert r["status"] == "unresolved"
+    assert r["reason"] == "no_research_artifact"
+
+
+def test_established_invalid_artifact_marks_no_research_artifact(tmp_path):
+    """artifact 存在但不可核验（schema 不符）同属「无研究级产物」。"""
+    root = tmp_path / "artifacts"
+    root.mkdir()
+    (root / "RA-schema.json").write_text(json.dumps({"schema": "other/v1"}),
+                                         encoding="utf-8")
+    p, _ = _l4(tmp_path, {"status": "established",
+                          "artifact_ref": "RA-schema.json"})
+    r = L.load_l4("600519", path=p, artifact_root=root)
+    assert r["status"] == "unresolved"
+    assert r["reason"] == "no_research_artifact"
+    assert r["artifact_invalid"] == "schema_mismatch"
+
+
+def test_established_with_valid_artifact_has_no_reason_marker(tmp_path):
+    root = _artifact(tmp_path)
+    p, _ = _l4(tmp_path, {"status": "established",
+                          "artifact_ref": "RA-test.json"})
+    r = L.load_l4("600519", path=p, artifact_root=root)
+    assert r["status"] == "established"
+    assert "reason" not in r          # 合法 established 不得被误标
+    assert "artifact_invalid" not in r
+
+
+def test_unresolved_rows_do_not_get_no_research_artifact_marker(tmp_path):
+    p, _ = _l4(tmp_path, {"status": "unresolved", "source": "xsec"})
+    assert "reason" not in L.load_l4("600519", path=p)
+
+
+def test_real_l4_status_established_rows_have_artifact_ref():
+    """数据契约护栏：仓内 l4_status.json 的任何 established 行必须带非空 artifact_ref。
+
+    data/ 不入 git，worktree 检出可能没有该文件 → skip；有则逐行校验（不写死
+    票号/状态，数据随生产更新）。
+    """
+    if not L.L4_PATH.is_file():
+        pytest.skip("本检出无 agent_platform/data/xsec/l4_status.json（data 不入 git）")
+    doc = json.loads(L.L4_PATH.read_text(encoding="utf-8"))
+    for symbol, rec in (doc.get("symbols") or {}).items():
+        if str((rec or {}).get("status") or "").strip().lower() == "established":
+            assert str(rec.get("artifact_ref") or "").strip(), (
+                "L4 symbol %s 声明 established 但缺 artifact_ref（B1 契约）"
+                % symbol)

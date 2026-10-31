@@ -16,6 +16,11 @@
 2026-10-31 WO-L4-M4-HARDEN-20261031（7d P0）：`established` 必须带可核验
 `artifact_ref`（见 `l4_artifact.validate_artifact_ref`），否则降级
 `unresolved` + `artifact_invalid` 原因，禁止把占位/文本推断当研究级 L4。
+
+2026-10-31 WO-D1-B123-20261031（D1 证据链 P0 / B1）：降级行额外落机读标记
+``reason = "no_research_artifact"``（无研究级产物）——下游 policy/日报据此
+识别「伪 established」，不必解析 rationale 文本；policy 侧对 ``unresolved``
+一律禁 BUY/SELL（见 engine/decision_policy.py 的 l4_lock）。
 """
 from __future__ import annotations
 
@@ -55,10 +60,13 @@ def load_l4(symbol, path=None, artifact_root=None):
     }
     # 2026-10-31 WO-L4-M4-HARDEN-20261031（7d P0）：established 必须带可核验
     # 的 Research Artifact；缺失/空/不可达 → 降级 unresolved（不猜、不直通）。
+    # 2026-10-31 WO-D1-B123-20261031（D1 证据链 P0 / B1）：降级同时落机读标记
+    # reason=no_research_artifact（artifact_invalid 仍保留细码供排障）。
     if status == "established":
         ok, reason, _ = validate_artifact_ref(artifact_ref, root=artifact_root)
         if not ok:
             result["status"] = "unresolved"
+            result["reason"] = "no_research_artifact"
             result["artifact_invalid"] = reason
             result["rationale"] = (
                 "artifact_ref 校验失败(%s)，established 降级为 unresolved；原 rationale: %s"

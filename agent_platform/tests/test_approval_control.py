@@ -1,7 +1,16 @@
 # -*- coding: utf-8 -*-
-"""approval_control 测试：批准/驳回/幂等/未授权/自审阻断。"""
+"""approval_control 测试：批准/驳回/幂等/未授权/自审阻断 + M4 多方签字。
+
+2026-10-30 WO-SUPERVISOR：基础审批卡回调契约（不回归）。
+2026-10-31 WO-L4-M4-HARDEN：三方签字灰度机制（兼容入口不回归）。
+2026-10-31 WO-D1-B123-20261031（D1 证据链 P0 / B2）：M4 多方签字状态机——
+``required_signers`` 默认四方 QA1/GUANYU/VERIFY1/A0；单签恒 incomplete、
+绝不返回 complete、台账不写「通过」；四签才 complete；幂等/越权/自审防护
+不回归（重复只算一签、未授权不落账、owner 自签被拒且不计签）。
+"""
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -9,12 +18,24 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "portal"))
 import approval_control as AC  # noqa: E402
 
+ROLE_MAP = {"ou_qa1": "QA1", "ou_guanyu": "GUANYU", "ou_verify1": "VERIFY1",
+            "ou_a0": "A0"}
+
 
 def _payload(tag, task="T1", op="ou_ok"):
     return {"operator": {"open_id": op},
             "action": {"value": {"tag": tag, "task": task, "level": "S2"}}}
 
 
+def _sign(ledger, op, task="M4", **kwargs):
+    """M4 单次 approve 点击（默认注入四方角色映射）。"""
+    return AC.handle_action(_payload("approval:approve", task=task, op=op),
+                            ledger=ledger, signoff_roles=ROLE_MAP, **kwargs)
+
+
+# ----------------------------------------------------------------------
+# 基础契约（2026-10-30 WO-SUPERVISOR，不回归）
+# ----------------------------------------------------------------------
 def test_approve_and_duplicate(tmp_path):
     ledger = tmp_path / "approvals.jsonl"
     r = AC.handle_action(_payload("approval:approve"), ledger=ledger,
@@ -48,10 +69,9 @@ def test_owner_ids_blocked(tmp_path):
     assert not r["ok"] and r["error"] == "self_approval_blocked"
 
 
-# ── 2026-10-31 WO-L4-M4-HARDEN-20261031：M4 三方签字最小校验（灰度） ──
-ROLE_MAP = {"ou_qa1": "QA1", "ou_guanyu": "GUANYU", "ou_verify1": "VERIFY1"}
-
-
+# ----------------------------------------------------------------------
+# 旧三方灰度契约（2026-10-31 WO-L4-M4-HARDEN，兼容入口不回归）
+# ----------------------------------------------------------------------
 def _rows(*signers, task="M4"):
     return [{"ts": "2026-10-31T09:0%d:00" % i, "task": task,
              "action": "approve", "operator": op}
@@ -98,16 +118,141 @@ def test_three_party_annotated_pilot_excluded():
     assert r["excluded_ts"] == ["2026-10-31T09:00:00"]
 
 
-def test_handle_action_gray_warns_but_does_not_block(tmp_path):
+# ----------------------------------------------------------------------
+# B2：M4 四方多签（2026-10-31 WO-D1-B123-20261031）
+# ----------------------------------------------------------------------
+def test_default_required_signers_is_four_party():
+    assert set(AC.REQUIRED_SIGNERS) == {"QA1", "GUANYU", "VERIFY1", "A0"}
+
+
+def test_evaluate_signoff_pure_state_machine():
+    """纯函数判定：单签 incomplete、四签 complete、缺签名单可读。"""
+    one = _rows("ou_qa1")
+    r = AC.evaluate_signoff(one, "M4", role_of=ROLE_MAP)
+    assert r["state"] == "incomplete" and r["ok"] is False
+    assert r["distinct_signers"] == 1
+    assert r["signed_roles"] == ["QA1"]
+    assert r["missing_signers"] == ["GUANYU", "VERIFY1", "A0"]
+    full = _rows("ou_qa1", "ou_guanyu", "ou_verify1", "ou_a0")
+    r = AC.evaluate_signoff(full, "M4", role_of=ROLE_MAP)
+    assert r["state"] == "complete" and r["ok"] is True
+    assert r["signed_roles"] == ["QA1", "GUANYU", "VERIFY1", "A0"]
+    assert r["missing_signers"] == [] and r["reason"] == ""
+
+
+def test_single_sign_incomplete_not_complete_and_no_pass_written(tmp_path):
+    """B2 核心判据：单签不返回 complete、不写「通过」。"""
+    ledger = tmp_path / "a.jsonl"
+    r = _sign(ledger, "ou_qa1")
+    assert r["ok"] is True                  # 动作已记录（主流程语义不变）
+    assert r["signed"] is True              # 本次「已签」
+    assert r["signoff_state"] == "incomplete"
+    assert r["approved"] is False
+    assert r["signoff"]["state"] == "incomplete"
+    assert r["signoff"]["signed_roles"] == ["QA1"]
+    assert r["signoff"]["missing_signers"] == ["GUANYU", "VERIFY1", "A0"]
+    assert any("m4_signoff_incomplete" in w for w in r["warnings"])
+    text = ledger.read_text(encoding="utf-8")
+    assert "通过" not in text
+    for banned in ("approved", "complete", "verdict", "decision"):
+        assert banned not in text
+
+
+def test_all_four_signers_reach_complete(tmp_path):
+    ledger = tmp_path / "a.jsonl"
+    for op in ("ou_qa1", "ou_guanyu", "ou_verify1"):
+        r = _sign(ledger, op)
+        assert r["signoff_state"] == "incomplete"
+        assert r["approved"] is False
+    last = _sign(ledger, "ou_a0")
+    assert last["signoff_state"] == "complete"
+    assert last["approved"] is True
+    assert last["signoff"]["signed_roles"] == ["QA1", "GUANYU", "VERIFY1", "A0"]
+    assert "warnings" not in last
+
+
+def test_duplicate_signature_counts_once(tmp_path):
+    ledger = tmp_path / "a.jsonl"
+    _sign(ledger, "ou_qa1")
+    r = _sign(ledger, "ou_qa1")
+    assert r["duplicate"] is True
+    assert r["signoff"]["distinct_signers"] == 1
+    assert len(ledger.read_text(encoding="utf-8").splitlines()) == 1
+
+
+def test_required_signers_configurable_subset(tmp_path):
+    """required_signers 可由调用方覆盖（不锁死四方，也不放宽到任意）。"""
+    ledger = tmp_path / "a.jsonl"
+    r = _sign(ledger, "ou_qa1", required_signers=["QA1", "A0"])
+    assert r["signoff_state"] == "incomplete"
+    r2 = _sign(ledger, "ou_a0", required_signers=["QA1", "A0"])
+    assert r2["signoff_state"] == "complete"
+    assert r2["approved"] is True
+
+
+def test_legacy_signoff_required_roles_kwarg_still_supported(tmp_path):
+    """旧参数名 signoff_required_roles/signoff_min_signers 兼容（三方口径）。"""
+    ledger = tmp_path / "a.jsonl"
+    kwargs = dict(signoff_required_roles=AC.THREE_PARTY_ROLES,
+                  signoff_min_signers=3)
+    for op in ("ou_qa1", "ou_guanyu"):
+        r = _sign(ledger, op, **kwargs)
+        assert r["signoff_state"] == "incomplete"
+    r = _sign(ledger, "ou_verify1", **kwargs)
+    assert r["signoff_state"] == "complete"
+
+
+def test_roles_unresolved_never_complete(tmp_path):
+    """不给角色映射 → 就算四人点满，也不能判 complete（不自定谁是谁）。"""
+    ledger = tmp_path / "a.jsonl"
+    last = None
+    for op in ("ou_qa1", "ou_guanyu", "ou_verify1", "ou_a0"):
+        last = AC.handle_action(_payload("approval:approve", task="M4", op=op),
+                                ledger=ledger)   # 不传 signoff_roles
+        assert last["signoff_state"] == "incomplete"
+        assert last["approved"] is False
+    assert last["signoff"]["distinct_signers"] == 4
+    assert last["signoff"]["reason"] == "roles_unresolved"
+
+
+def test_self_review_signature_rejected_and_not_counted(tmp_path):
+    """自审防护不回归：owner 自签拒收、不落账、不计入已签。"""
     ledger = tmp_path / "a.jsonl"
     r = AC.handle_action(_payload("approval:approve", task="M4", op="ou_qa1"),
-                         ledger=ledger, signoff_roles=ROLE_MAP)
-    assert r["ok"] is True  # 灰度：不阻断存量审批
-    assert r["signoff"]["ok"] is False
-    assert any("three_party_incomplete" in w for w in r["warnings"])
-    for op in ("ou_guanyu", "ou_verify1"):
-        last = AC.handle_action(_payload("approval:approve", task="M4", op=op),
-                                ledger=ledger, signoff_roles=ROLE_MAP)
-    assert last["ok"] is True
-    assert last["signoff"]["ok"] is True
-    assert "warnings" not in last
+                         ledger=ledger, owner="ou_qa1",
+                         signoff_roles=ROLE_MAP)
+    assert r["ok"] is False and r["error"] == "self_approval_blocked"
+    assert not ledger.exists()
+    for op in ("ou_guanyu", "ou_verify1", "ou_a0"):
+        last = _sign(ledger, op)
+    assert last["signoff_state"] == "incomplete"
+    assert last["signoff"]["distinct_signers"] == 3
+    assert "QA1" in last["signoff"]["missing_signers"]
+
+
+def test_unauthorized_signer_not_recorded(tmp_path):
+    """越权防护不回归：未授权操作人拒收、不落账、不计签。"""
+    ledger = tmp_path / "a.jsonl"
+    r = AC.handle_action(_payload("approval:approve", task="M4", op="ou_bad"),
+                         ledger=ledger, allowed_ops=["ou_qa1"],
+                         signoff_roles=ROLE_MAP)
+    assert r["ok"] is False and r["error"] == "operator_not_allowed"
+    assert not ledger.exists()
+    r2 = _sign(ledger, "ou_qa1")
+    assert r2["signoff"]["distinct_signers"] == 1
+
+
+def test_annotated_pilot_clicks_do_not_count_in_m4(tmp_path):
+    """试点点击 annotate 后不计签：quorum 回落 incomplete，不写「通过」。"""
+    ledger = tmp_path / "a.jsonl"
+    _sign(ledger, "ou_qa1")
+    ts = json.loads(ledger.read_text(encoding="utf-8").splitlines()[0])["ts"]
+    with ledger.open("a", encoding="utf-8") as f:
+        f.write(json.dumps({"ts": "2026-10-31T10:00:00", "task": "M4",
+                            "action": "annotate", "operator": "DSH-Lead",
+                            "refs": [ts]}, ensure_ascii=False) + "\n")
+    for op in ("ou_guanyu", "ou_verify1", "ou_a0"):
+        last = _sign(ledger, op)
+    assert last["signoff_state"] == "incomplete"
+    assert last["approved"] is False
+    assert "QA1" in last["signoff"]["missing_signers"]

@@ -4,6 +4,10 @@
 纪律：影子期间决策链路冻结——本模块【只读】账本与 trace，不触碰任何决策组件。
 输出：data/shadow/daily_report_YYYY-MM-DD.md（四段格式对齐 K-ORG-001 §4 日报契约）
 严重度：failed → P0（立即推送：17:35 automation 带 --push / run_shadow 失败即时告警 K-STOCK-013）；degraded → P1；仅集中度观察 → P2 进日报。
+
+2026-10-31 WO-D1-B123-20261031（D1 证据链 P0 / B3）：账本行已由
+run_shadow.build_ledger_row 落 decision_id / watch_reason / evidence_refs；
+日报「今日产出」表透传展示这三列（旧行缺字段降级为 `-`/`0 条`，不崩、不猜）。
 """
 
 import json
@@ -123,6 +127,35 @@ def debate_health(run_id):
     return out
 
 
+def _evidence_refs_summary(refs, limit=4):
+    """账本 evidence_refs → 日报单格短摘要（B3，只读、容错、不抛）。
+
+    正常行（run_shadow.build_ledger_row）是 EvidenceRef.to_dict() 列表；
+    旧行可能缺该字段/为字符串/为脏数据，一律降级为可读占位——日报是只读
+    聚合器，不得因单行脏数据崩掉。
+    """
+    if isinstance(refs, str):
+        text = refs.strip().replace("|", "/")
+        return "1 条:%s" % text if text else "0 条"
+    if not isinstance(refs, list) or not refs:
+        return "0 条"
+    sources = []
+    for ref in refs:
+        if isinstance(ref, dict):
+            name = str(ref.get("source") or ref.get("uri") or "").strip()
+        elif isinstance(ref, str):
+            name = ref.strip()
+        else:
+            name = ""
+        if name:
+            sources.append(name.replace("|", "/"))
+    if not sources:
+        return "%d 条" % len(refs)
+    shown = ",".join(sources[:limit])
+    tail = "…" if len(sources) > limit else ""
+    return "%d 条:%s%s" % (len(refs), shown, tail)
+
+
 def build(today):
     done, failed = load_today(today)
     day_n = shadow_progress()
@@ -148,12 +181,14 @@ def build(today):
     lines.append("")
     lines.append("## 一、今日产出")
     lines.append("")
-    lines.append("| 票 | 决策 | 置信度 | 决策价 | 链路状态 | run_id |")
-    lines.append("|---|---|---|---|---|---|")
+    lines.append("| 票 | 决策 | 置信度 | 决策价 | 链路状态 | 决策ID | WATCH原因 | 证据引用 | run_id |")
+    lines.append("|---|---|---|---|---|---|---|---|---|")
     for r in done:
         st = "降级" if r.get("degraded") else "正常"
+        decision_id = str(r.get("decision_id") or "").strip().replace("|", "/")
+        watch_reason = str(r.get("watch_reason") or "").strip().replace("|", "/")
         lines.append(
-            "| %s %s | %s | %s | %s | %s | `%s` |"
+            "| %s %s | %s | %s | %s | %s | %s | %s | %s | `%s` |"
             % (
                 r["symbol"],
                 r.get("name", ""),
@@ -161,11 +196,14 @@ def build(today):
                 r.get("confidence", "?"),
                 r.get("price_at_decision", "?"),
                 st,
+                "`%s`" % decision_id if decision_id else "-",
+                watch_reason or "-",
+                _evidence_refs_summary(r.get("evidence_refs")),
                 r.get("run_id", ""),
             )
         )
     if not done:
-        lines.append("| - | 今日无完成决策 | - | - | - | - |")
+        lines.append("| - | 今日无完成决策 | - | - | - | - | - | - | - |")
     lines.append("")
     lines.append(
         "决策分布：%s；平均置信度 %.2f"
