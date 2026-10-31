@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
-"""IDE bundle 收尾提交并发修复单测（2026-10-29）。
+"""IDE bundle 自动重建单测（2026-10-29 并发修复 → 2026-10-31 Phase2 去 tracked）。
 
-背景：devtask merge 后 `_auto_rebuild_ide_bundle` 旧实现用
-`git commit -m ...` 提交整个暂存区；并行会话的 index 若含其它改动/误删，
-收尾提交会把刚合入文件一起抹掉（WO-D1-OUTCOME 实证）。
-本组锁死：提交必须 pathspec 限定 `portal/agent_ide_bundle.json`。
+历史：旧实现 merge 后用 `git commit -m ...` 提交整个暂存区（并行 index 含其它改动
+时会把刚合入文件一起抹掉，WO-D1-OUTCOME），后改为 pathspec 限定提交。
+2026-10-31 K-ORG-20261031-BUNDLEP2B（Phase2）：bundle 生成物去 tracked + ignored；
+`_auto_rebuild_ide_bundle` 改为「重建 + 刷新 _vault 部署副本、不 git add/commit」。
+本组锁死：Phase1 源判定矩阵不变；重建路径绝不产生 git 提交；部署副本刷新幂等。
 """
 import importlib.util
 import subprocess
@@ -22,32 +23,30 @@ def _git(repo, *args):
                           text=True, encoding="utf-8", errors="replace")
 
 
-def test_commit_args_pathspec():
-    args = m._ide_bundle_commit_args("WO-X")
-    assert args[-2:] == ["--", "portal/agent_ide_bundle.json"]
-    assert any("after merge WO-X" in a for a in args)
+# ---------------------------------------------------------------- W5 P1-6 Phase2
+# K-ORG-20261031-BUNDLEP2B（2026-10-31）：bundle 生成物 untracked+ignored；
+# 旧 `_ide_bundle_commit_args`（pathspec 收尾提交）已移除，重建只刷新 _vault 副本。
+
+def test_commit_helper_removed():
+    assert not hasattr(m, "_ide_bundle_commit_args")
+    assert hasattr(m, "_refresh_bundle_deploy_copy")
+    assert hasattr(m, "_bundle_deploy_target")
 
 
-def test_pathspec_commit_isolates_other_staged(tmp_path):
-    repo = tmp_path
-    _git(repo, "init")
-    _git(repo, "config", "user.name", "t")
-    _git(repo, "config", "user.email", "t@local")
-    (repo / "portal").mkdir()
-    bundle = repo / "portal" / "agent_ide_bundle.json"
-    bundle.write_text('{"v": 1}\n', encoding="utf-8")
-    other = repo / "other.txt"
-    other.write_text("other\n", encoding="utf-8")
-    _git(repo, "add", "portal/agent_ide_bundle.json", "other.txt")
-    args = m._ide_bundle_commit_args("T1", repo=str(repo))
-    r = subprocess.run(args, capture_output=True, text=True, encoding="utf-8", errors="replace")
-    assert r.returncode == 0, r.stderr
-    head = _git(repo, "ls-tree", "-r", "--name-only", "HEAD")
-    assert "portal/agent_ide_bundle.json" in head.stdout
-    assert "other.txt" not in head.stdout
-    # 其它暂存改动未被收尾提交吞掉：仍在 index 中
-    staged = _git(repo, "diff", "--cached", "--name-only")
-    assert "other.txt" in staged.stdout
+def test_refresh_deploy_copy_and_idempotent(tmp_path):
+    repo = tmp_path / "repo"
+    (repo / "portal").mkdir(parents=True)
+    src = repo / "portal" / "agent_ide_bundle.json"
+    src.write_bytes(b'{"v": 1}\n')
+    deploy = tmp_path / "deploy" / "agent_ide_bundle.json"
+    r1 = m._refresh_bundle_deploy_copy(repo=str(repo), deploy=str(deploy))
+    assert r1["ok"] is True and r1["bytes"] == len(b'{"v": 1}\n')
+    assert deploy.read_bytes() == src.read_bytes()
+    r2 = m._refresh_bundle_deploy_copy(repo=str(repo), deploy=str(deploy))
+    assert r2["ok"] is True and deploy.read_bytes() == src.read_bytes()  # 幂等
+
+    r3 = m._refresh_bundle_deploy_copy(repo=str(tmp_path / "empty"), deploy=str(deploy))
+    assert r3["ok"] is False and r3["error"] == "src_missing"
 
 
 # ---------------------------------------------------------------- W5 P1-6 Phase1
@@ -118,24 +117,47 @@ def test_auto_rebuild_dry_run_when_sources_changed(monkeypatch, capsys):
     assert "[dry-run]" in out
 
 
-def test_auto_rebuild_unchanged_bundle_skips_commit(monkeypatch, capsys):
+def _tmp_repo_with_bundle(tmp_path):
+    repo = tmp_path / "repo"
+    (repo / "portal").mkdir(parents=True)
+    (repo / "tools").mkdir()
+    (repo / "tools" / "build_agent_ide_bundle.py").write_text("# fake\n", encoding="utf-8")
+    (repo / "portal" / "agent_ide_bundle.json").write_bytes(b'{"v": 2}\n')
+    deploy = tmp_path / "deploy" / "agent_ide_bundle.json"
+    return repo, deploy
+
+
+def test_auto_rebuild_refreshes_deploy_copy_without_commit(monkeypatch, tmp_path, capsys):
+    """Phase2：源变 → 重建 + 刷新部署副本；绝不 git add/commit。"""
     monkeypatch.delenv("DEVTOOL_IDE_BUNDLE_DRY_RUN", raising=False)
+    repo, deploy = _tmp_repo_with_bundle(tmp_path)
+    monkeypatch.setattr(m, "REPO", str(repo))
+    monkeypatch.setenv("DEVTOOL_IDE_BUNDLE_DEPLOY", str(deploy))
     calls = []
-    monkeypatch.setattr(m.subprocess, "run", _fake_run_factory(calls, status_out=""))
-    m._auto_rebuild_ide_bundle("WO-X", changed_files=["agent_platform/prompts/a.md"])
+    monkeypatch.setattr(m.subprocess, "run", _fake_run_factory(calls))
+    m._auto_rebuild_ide_bundle("WO-X", changed_files=["agent_platform/registry/org.json"])
     assert any("build_agent_ide_bundle.py" in " ".join(c) for c in calls), calls
-    assert not any("commit" in c for c in calls), calls
-    assert "已是最新" in capsys.readouterr().out
+    assert not any(("commit" in c) or ("add" in c) for c in calls), calls
+    assert deploy.is_file() and deploy.read_bytes() == b'{"v": 2}\n'
+    out = capsys.readouterr().out
+    assert "不产生提交" in out and "部署副本已刷新" in out
 
 
-def test_auto_rebuild_commits_when_bundle_changed(monkeypatch, capsys):
+def test_auto_rebuild_build_failure_no_deploy_no_commit(monkeypatch, tmp_path, capsys):
     monkeypatch.delenv("DEVTOOL_IDE_BUNDLE_DRY_RUN", raising=False)
+    repo, deploy = _tmp_repo_with_bundle(tmp_path)
+    monkeypatch.setattr(m, "REPO", str(repo))
+    monkeypatch.setenv("DEVTOOL_IDE_BUNDLE_DEPLOY", str(deploy))
+
+    import types
     calls = []
-    monkeypatch.setattr(
-        m.subprocess, "run",
-        _fake_run_factory(calls, status_out=" M portal/agent_ide_bundle.json\n"))
-    m._auto_rebuild_ide_bundle("WO-X", changed_files=["agent_platform/hr/DEV1/resume.yaml"])
-    assert any("add" in c for c in calls), calls
-    commits = [c for c in calls if "commit" in c]
-    assert commits, calls
-    assert commits[0][-2:] == ["--", "portal/agent_ide_bundle.json"]
+
+    def fake(cmd, **kwargs):
+        calls.append(list(cmd))
+        return types.SimpleNamespace(returncode=1, stdout="", stderr="boom")
+
+    monkeypatch.setattr(m.subprocess, "run", fake)
+    m._auto_rebuild_ide_bundle("WO-X", changed_files=["agent_platform/prompts/a.md"])
+    assert not deploy.exists()                     # 构建失败不刷新副本
+    assert not any(("commit" in c) or ("add" in c) for c in calls), calls
+    assert "重建失败" in capsys.readouterr().out

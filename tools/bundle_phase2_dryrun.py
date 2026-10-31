@@ -8,6 +8,9 @@ tracked；每个 merge 后由 post-merge 钩子/`devtask.py` 自动重烘并提�
 bundle 自动提交约 900/3928 ≈ 22.9%（W5 报告：852/3896=21.87%）。W5 Phase1（源变才提交）已落地；
 Phase2 目标：**bundle 提交 0 增长**（去 tracked），但**需要一次受控窗口**。
 
+Phase2-B 落地后（K-ORG-20261031-BUNDLEP2B）：本脚本额外报告 `implementation`
+（B1 ignore / B2 untracked / B3 rebake 无 checkout / B4 devtask 不提交）与各步骤 `landed` 状态。
+
 本脚本只做**离线只读分析 + 步骤规划**，绝不执行：
 - 不 `git rm`/不改索引、不改 `.gitignore`、不改 tracked 文件；
 - 不改 nginx/容器/挂载、不切生产、不重启服务、不写任何被分析文件；
@@ -191,8 +194,8 @@ def _consumers(repo: Path, mounts: dict) -> list[dict]:
         "IDE 页同源 fetch；Phase2 后仍须 200 且内容为最新生成物")
     add("devtask_autorebuild", "tooling", DEVTASK_REL, r"_auto_rebuild_ide_bundle|BUNDLE_SOURCE",
         "Phase1：仅 agent 源变更才重建+paths 提交；Phase2 需改为重建但不提交")
-    add("rebake_script", "tooling", REBAKE_REL, r"git -C \$Repo checkout -- portal/agent_ide_bundle\.json",
-        "post-merge 钩子：build→复制 vault 副本→git checkout 恢复 tracked；Phase2 去掉恢复动作")
+    add("rebake_script", "tooling", REBAKE_REL, r"agent_ide_bundle\.json",
+        "post-merge 钩子：build→复制 vault 部署副本；Phase2-B 起不再 git checkout 还原/不提交")
     add("generator", "tooling", BUILD_REL, r"portal\", \"agent_ide_bundle\.json\"|OUT =",
         "生成器：OUT=portal/agent_ide_bundle.json（含 generated 时间戳，故每次内容会变）")
     add("ide_serve_8103", "server", IDE_SERVE_REL, r"DEFAULT_BUNDLE|agent_ide_bundle\.json",
@@ -369,6 +372,29 @@ def analyze(repo: Path | str = REPO_DEFAULT, days: int = 8, docker_mode: str = "
     after = _snapshot(candidate)
 
     writes = sorted([p for p in before if before[p] != after.get(p)])
+    rebake_text = (repo / REBAKE_REL).read_text(encoding="utf-8", errors="replace") \
+        if (repo / REBAKE_REL).is_file() else ""
+    devtask_text = (repo / DEVTASK_REL).read_text(encoding="utf-8", errors="replace") \
+        if (repo / DEVTASK_REL).is_file() else ""
+    implementation = {
+        "b1_gitignore": bool(tracked["ignored"]),
+        "b2_untracked": not tracked["tracked"],
+        "b3_rebake_no_checkout": ("git -C $Repo checkout --" not in rebake_text),
+        # 注释里可能提到旧函数名；判定标准=没有定义/调用点 + 有部署副本刷新助手
+        "b4_devtask_no_commit": ("def _ide_bundle_commit_args" not in devtask_text
+                                 and "_ide_bundle_commit_args(" not in devtask_text
+                                 and "_refresh_bundle_deploy_copy" in devtask_text),
+        "deploy_copy_helper": "_refresh_bundle_deploy_copy" in devtask_text,
+    }
+    implementation["done"] = all(implementation[k] for k in
+                                ("b1_gitignore", "b2_untracked", "b3_rebake_no_checkout",
+                                 "b4_devtask_no_commit"))
+    landed_map = {"B1": implementation["b1_gitignore"],
+                  "B2": implementation["b2_untracked"],
+                  "B3": implementation["b3_rebake_no_checkout"],
+                  "B4": implementation["b4_devtask_no_commit"]}
+    for step in plan:
+        step["landed"] = bool(landed_map.get(step["id"], False))
     blockers = []
     if not tracked["ignored"]:
         blockers.append("W5-P2-1: portal/agent_ide_bundle.json 尚未 ignore（Phase2-B1 需先加）")
@@ -394,6 +420,7 @@ def analyze(repo: Path | str = REPO_DEFAULT, days: int = 8, docker_mode: str = "
                 "snapshot_paths": [str(x) for x in candidate],
             },
         },
+        "implementation": implementation,
         "phase1_status": {
             "devtask_source_gate_present": (repo / DEVTASK_REL).is_file()
             and bool(_grep_lines(repo / DEVTASK_REL, r"_bundle_sources_changed")),
@@ -456,13 +483,18 @@ def render_human(res: dict) -> str:
             res["options"][1]["id"], res["options"][1]["feasible"],
             "; ".join(res["options"][1].get("blockers") or []) or "-"),
         "L2 门禁: %s（%s）" % (res["l2"]["status"], "未批准=只出计划" if not res["l2"]["approved"] else "已标记批准"),
+        "Phase2-B 实现: done=%s (B1..B4=%s)" % (
+            res["implementation"]["done"],
+            ",".join("%s=%s" % (k, res["implementation"][k]) for k in
+                     ("b1_gitignore", "b2_untracked", "b3_rebake_no_checkout", "b4_devtask_no_commit"))),
         "自我校验零写入: %s" % res["dry_run"]["self_check"]["no_writes"],
         "blockers:",
     ]
     lines += ["  - " + b for b in res["blockers"]]
     lines.append("Phase2-B 步骤（未执行）:")
     for s in res["phase2_plan"]:
-        lines.append("  [%s] %s%s" % (s["id"], s["title"], "（L2）" if s["l2"] else ""))
+        lines.append("  [%s] %s%s%s" % (s["id"], s["title"], "（L2）" if s["l2"] else "",
+                                        "（已落地）" if s.get("landed") else ""))
     return "\n".join(lines)
 
 
