@@ -56,6 +56,15 @@ register_routes() 以装饰器方式包装 Handler 的 do_GET/do_POST，
                                     （tokens.css / nav.js / shortscreen.js；
                                     text/css / application/javascript; charset=utf-8
                                     + no-store；白名单外/路径穿越/缺失 → 404 JSON）
+  GET  /strategy_health.json    → 策略健康周报：优先读 automation_runs/
+                                    strategy_health/latest.json；无文件/缺目录 → 200
+                                    {status:"insufficient",rows:0,readonly:true,
+                                    note:"no weekly report yet",generated_at}；
+                                    坏 JSON → 500 JSON；只读不写盘（Phase 5-A）
+  POST /api/strategy/validate_ir → body=composition_ir/v1 IR JSON → validate+compile
+                                    只读摘要（readonly/safety/execution.dry_run）；
+                                    合法 200、非法 IR 400+errors、坏 body/超限 400；
+                                    不执行/不下单/不写 ledger/不持久化（Phase 5-A）
 
 数据库访问：psycopg2（XMAP_PG_* env/.env.local，主机 5442）优先，
 docker exec quant-pg psql（容器内 5432）兜底；子进程/连接超时一律 10s。
@@ -1723,6 +1732,154 @@ def portal_static_payload(filename: str) -> tuple:
         )
 
 
+# ── Phase 5-A：策略健康 JSON + IR 校验 API（只读）─────────────────────
+# GET  /strategy_health.json：优先读 automation_runs/strategy_health/latest.json
+#      （周报产物；无文件/缺目录不 500，显式 insufficient）；只读不写盘。
+# POST /api/strategy/validate_ir：body=composition_ir/v1 IR JSON → validate+compile
+#      只读摘要（readonly/safety/execution.dry_run）；不执行、不下单、不写 ledger、
+#      不持久化、不写盘。
+STRATEGY_HEALTH_ROUTE = "/strategy_health.json"
+STRATEGY_HEALTH_PATH = os.path.join(
+    REPO_ROOT, "automation_runs", "strategy_health", "latest.json"
+)
+MAX_IR_BODY_BYTES = 65536  # IR JSON body 封顶（nodes/edges/params 富文本，防巨体）
+VALIDATE_IR_ROUTE = "/api/strategy/validate_ir"
+
+
+def _now_iso() -> str:
+    """本地时间戳（与模块其它只读端点同口径：YYYY-MM-DDTHH:MM:SS）。"""
+    return time.strftime("%Y-%m-%dT%H:%M:%S")
+
+
+def strategy_health_payload() -> tuple:
+    """只读策略健康 JSON → ``(payload, code)``。
+
+    - 优先读 ``automation_runs/strategy_health/latest.json``（周报产物）；
+      存在且顶层为 dict → ``(report_doc, 200)`` 原样返回（周报文档本体）；
+    - 文件/目录不存在（含缺目录）→ ``(insufficient_stub, 200)``，不 500：
+      ``{"status":"insufficient","rows":0,"readonly":true,
+        "note":"no weekly report yet","generated_at":<ts>}``；
+    - 文件存在但读失败/坏 JSON/顶层非 dict → ``(error, 500)``。
+    只读：不写盘、不重建周报、不改 registry/health_report。
+    """
+    path = STRATEGY_HEALTH_PATH
+    if not os.path.isfile(path):
+        return (
+            {
+                "status": "insufficient",
+                "rows": 0,
+                "readonly": True,
+                "note": "no weekly report yet",
+                "generated_at": _now_iso(),
+            },
+            200,
+        )
+    try:
+        with open(path, "rb") as fh:
+            raw = fh.read()
+    except OSError as exc:
+        return (
+            {
+                "ok": False,
+                "error": "strategy_health latest.json 读取失败: %s" % str(exc)[:200],
+                "path": path,
+            },
+            500,
+        )
+    try:
+        doc = json.loads(raw.decode("utf-8"))
+    except (ValueError, UnicodeDecodeError) as exc:
+        return (
+            {
+                "ok": False,
+                "error": "strategy_health latest.json 非法 JSON: %s" % str(exc)[:200],
+                "path": path,
+            },
+            500,
+        )
+    if not isinstance(doc, dict):
+        return (
+            {
+                "ok": False,
+                "error": "strategy_health latest.json 顶层必须为 dict",
+                "path": path,
+            },
+            500,
+        )
+    return doc, 200
+
+
+def _ir_compiled_summary(plan: Any) -> dict:
+    """CompiledPipeline → 只读摘要（不下发完整节点/卡片，避免大 payload）。"""
+    return {
+        "schema": plan.schema,
+        "pipeline_id": plan.pipeline_id,
+        "version": plan.version,
+        "owner": plan.owner,
+        "tenant": plan.tenant,
+        "mode": plan.mode,
+        "topological_order": list(plan.topological_order),
+        "nodes": len(plan.nodes),
+        "edges": len(plan.edges),
+        "strategies": sorted(plan.strategies),
+        "data_deps": list(plan.data_deps),
+        "readonly": plan.readonly,
+        "side_effects": list(plan.side_effects),
+        "safety": dict(plan.safety),
+        "execution": dict(plan.execution),
+        "publish_plan": dict(plan.publish_plan),
+    }
+
+
+def validate_ir_payload(body: Any) -> tuple:
+    """POST body（IR JSON dict）→ ``validate_ir`` + ``compile_ir`` → ``(payload, code)``。
+
+    - 合法：200，``ok=true / readonly=true / side_effects=[] / pipeline=... /
+      compiled=_ir_compiled_summary(plan)``（含 safety 与 execution.dry_run）；
+    - IR 非法（``IRValidationError``）→ 400 + ``errors`` 列表（closed-on-failure）；
+    - body 非 dict → 400；其他输入非法 ValueError → 400。
+    只读：不执行/不下单/不写 ledger/不持久化/不写盘。
+    """
+    if not isinstance(body, dict):
+        return (
+            {"ok": False, "error": "IR 请求体必须为 JSON 对象（dict）"},
+            400,
+        )
+    try:
+        from strategy_layer import composition_ir as composition_ir
+    except ImportError as exc:  # pragma: no cover - 模块缺失属环境异常
+        return (
+            {"ok": False, "error": "composition_ir 不可用: %s" % str(exc)[:200]},
+            503,
+        )
+    try:
+        validated = composition_ir.validate_ir(body)
+        plan = composition_ir.compile_ir(body)
+    except composition_ir.IRValidationError as exc:
+        return (
+            {"ok": False, "error": str(exc)[:500], "errors": list(exc.errors)},
+            400,
+        )
+    except ValueError as exc:
+        return ({"ok": False, "error": str(exc)[:500]}, 400)
+    return (
+        {
+            "ok": True,
+            "readonly": True,
+            "side_effects": [],
+            "pipeline": {
+                "pipeline_id": validated.pipeline_id,
+                "version": validated.version,
+                "owner": validated.owner,
+                "tenant": validated.tenant,
+                "mode": validated.mode,
+            },
+            "compiled": _ir_compiled_summary(plan),
+        },
+        200,
+    )
+
+
 # ── Canvas / Paper Exchange 只读路由（Phase 3 路由收口）────────────────
 CANVAS_ROUTES = ("/canvas", "/strategy/canvas")
 CANVAS_JS_ROUTES = ("/strategy_canvas.js", "/strategy/strategy_canvas.js")
@@ -1814,6 +1971,14 @@ def register_routes(server_or_app: Any) -> Any:
             # 只读模板库 JSON（Phase 4-A）：同目录原样返回；缺文件 503 / 坏 JSON 500
             try:
                 payload, code = pipeline_templates_payload()
+            except Exception as exc:  # noqa: BLE001
+                payload, code = ({"ok": False, "error": str(exc)[:200]}, 500)
+            return _send_json(self, payload, code)
+        if u.path == STRATEGY_HEALTH_ROUTE:
+            # 只读策略健康 JSON（Phase 5-A）：优先周报 latest.json；无文件/缺目录
+            # 返回 200 insufficient 显式说明（不 500），坏 JSON 显式 500；不写盘
+            try:
+                payload, code = strategy_health_payload()
             except Exception as exc:  # noqa: BLE001
                 payload, code = ({"ok": False, "error": str(exc)[:200]}, 500)
             return _send_json(self, payload, code)
@@ -1987,6 +2152,17 @@ def register_routes(server_or_app: Any) -> Any:
 
     def do_POST(self):  # noqa: N802
         u = urlparse(self.path)
+        if u.path == VALIDATE_IR_ROUTE:
+            # IR 校验/编译（Phase 5-A）：body=composition_ir/v1 IR JSON，只返回
+            # 只读摘要；不执行/不下单/不写 ledger/不持久化/不写盘
+            body, err = self._read_json_body(MAX_IR_BODY_BYTES)
+            if err is not None:
+                return _send_json(self, err[0], err[1])
+            try:
+                payload, code = validate_ir_payload(body)
+            except Exception as exc:  # noqa: BLE001
+                return _send_json(self, {"ok": False, "error": str(exc)[:200]}, 500)
+            return _send_json(self, payload, code)
         if u.path == "/api/feedback":
             body, err = self._read_json_body(MAX_BODY_BYTES)
             if err is not None:
@@ -2056,4 +2232,10 @@ __all__ = [
     "CANVAS_JS_ROUTES",
     "PAPER_EXCHANGE_PAGE_ROUTES",
     "PAPER_EXCHANGE_JS_ROUTE",
+    "strategy_health_payload",
+    "STRATEGY_HEALTH_PATH",
+    "STRATEGY_HEALTH_ROUTE",
+    "validate_ir_payload",
+    "VALIDATE_IR_ROUTE",
+    "MAX_IR_BODY_BYTES",
 ]
