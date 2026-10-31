@@ -22,6 +22,14 @@ def test_context_budget_and_no_secret_paths():
     assert "credentials" not in r["context"].lower()
 
 
+def test_budget_is_hard_cap_even_when_head_is_long():
+    # 仓库增长后 head 可能自身超过 budget；chars 必须仍 <= budget（2026-10-31 回归）
+    r = C.build_context("legion ide 写文件 preview def", 1000)
+    assert r["ok"]
+    assert r["chars"] <= 1000, r["chars"]
+    assert r["budget"] == 1000
+
+
 def test_ast_symbol_search():
     syms = C.search_symbols("acquire_oh_lock", 5)
     assert any(s.get("name") == "acquire_oh_lock" for s in syms)
