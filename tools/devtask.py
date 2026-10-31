@@ -17,9 +17,10 @@
                            可选字段（O2；落账不做强校验，供编排器/评审使用）。
   list                     任务单总览（谁在干什么/分支/进度）
   port <服务名>            申请分配一个未注册端口（并提示写回 REGISTRY）
-  merge <TID> [--l2-ack --l2-reason "五要素"]
+  merge <TID> [--l2-ack --l2-reason "五要素"] [--keep-worktree]
                                     过评审门（Mixin/导航/端口/明文凭据 + L2 危险操作门）
-                                    后合并回 master；worktree 保留待人工回收；
+                                    后合并回 master；成功后**自动回收 worktree+分支**（仅当干净），
+                                    --keep-worktree=跳过自动回收（保留待人工处理）；
                                     --l2-ack=人工确认豁免 L2 命中（K-STOCK-416，须带 --l2-reason）
   board [out.html]         生成看板 HTML（默认 docs/dev/devboard.html）
   drop <TID>               放弃任务（留原因，清 worktree）
@@ -1072,7 +1073,147 @@ def _dev_gate_check(dept, owner_ok, acceptance, gate=None, owner=None,
     return warnings, blocked
 
 
+# ===== 2026-10-31 WO-WORKTREE-MECH-20261031：worktree 收口机制 =====
+# 背景：创建速率 ~4 棵/小时 > 清理速率（10-31 已 60+ 棵）。三条闸：
+#   1) merge 成功即回收 worktree+分支（--keep-worktree 可跳过，脏树保留）
+#   2) prune 输出 age>TTL(72h) 标 [TTL-RED]（只标注，不自动删）
+#   3) devtask new 并发上限（默认 60，env DEVTOOL_MAX_WORKTREES；>=80% WARN，>=上限硬拒）
+WT_TTL_HOURS_DEFAULT = 72.0
+WT_TTL_ENV = "DEVTOOL_WT_TTL_HOURS"
+MAX_WORKTREES_DEFAULT = 65
+MAX_WORKTREES_ENV = "DEVTOOL_MAX_WORKTREES"
+KEEP_WORKTREE_ENV = "DEVTOOL_KEEP_WORKTREE"
+
+
+def _ttl_hours():
+    """TTL 阈值（小时）：env DEVTOOL_WT_TTL_HOURS 可调，非法/非正回落默认 72。"""
+    raw = str(os.environ.get(WT_TTL_ENV) or "").strip()
+    try:
+        v = float(raw) if raw else WT_TTL_HOURS_DEFAULT
+    except (TypeError, ValueError):
+        v = WT_TTL_HOURS_DEFAULT
+    return v if v > 0 else WT_TTL_HOURS_DEFAULT
+
+
+def _worktree_age_hours(path, task=None):
+    """worktree 年龄（小时）：优先 tasks.json ``created``，缺失回退目录 mtime；取不到→None。"""
+    created = str((task or {}).get("created") or "").strip()
+    ts = None
+    if created:
+        for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M", "%Y-%m-%d"):
+            try:
+                ts = time.mktime(time.strptime(created[:len(time.strftime(fmt))], fmt))
+                break
+            except ValueError:
+                continue
+    if ts is None:
+        try:
+            ts = os.path.getmtime(path)
+        except OSError:
+            return None
+    return max(0.0, (time.time() - ts) / 3600.0)
+
+
+def _format_prune_wt(it, apply_=False):
+    """prune 单行渲染：DRY/APPLY/SKIP + [TTL-RED] + age 标注（只读格式器，便于单测）。"""
+    if it.get("skip"):
+        tag = "SKIP"
+    else:
+        tag = "APPLY" if apply_ else "DRY"
+    prefix = "  [%s]" % tag
+    if it.get("ttl_red"):
+        prefix += "[TTL-RED]"
+    age = it.get("age_hours")
+    suffix = ("（age=%.0fh）" % age) if age is not None else ""
+    if it.get("skip"):
+        return "%s %s  # %s%s" % (prefix, it["path"], it["reason"], suffix)
+    return '%s git worktree remove "%s"  # %s%s' % (prefix, it["path"], it["reason"], suffix)
+
+
+def _worktree_cap():
+    """并发上限：env DEVTOOL_MAX_WORKTREES 可调，非法/非正回落默认 60。"""
+    raw = str(os.environ.get(MAX_WORKTREES_ENV) or "").strip()
+    try:
+        cap = int(float(raw)) if raw else MAX_WORKTREES_DEFAULT
+    except (TypeError, ValueError):
+        cap = MAX_WORKTREES_DEFAULT
+    return cap if cap > 0 else MAX_WORKTREES_DEFAULT
+
+
+def _concurrency_verdict(count, cap):
+    """ok / warn（>=80%）/ block（>=上限）。纯函数，便于单测。"""
+    if not cap or cap <= 0:
+        return "ok"
+    if count >= cap:
+        return "block"
+    if count >= cap * 0.8:
+        return "warn"
+    return "ok"
+
+
+def _active_worktree_count(repo=None):
+    """当前在册任务 worktree 数（不含主树）；git 不可用时返回 0（不拦单）。"""
+    repo = repo or REPO
+    try:
+        wts = _prune_worktrees(repo)
+    except SystemExit:
+        return 0
+    except Exception:  # noqa: BLE001
+        return 0
+    return len([w for w in wts if not _prune_same_path(w["path"], repo)])
+
+
+def _enforce_worktree_cap():
+    """devtask new 前置并发闸：达上限硬拒、达 80% 只告警。"""
+    cap, cur = _worktree_cap(), _active_worktree_count()
+    verdict = _concurrency_verdict(cur, cap)
+    if verdict == "block":
+        raise SystemExit(
+            "并发 worktree 数 %d 已达上限 %d（%s 可调）——先收口再开单：\n"
+            "  python tools/devtask.py prune --dry-run --all   # 看清单（含 TTL-RED）\n"
+            "  python tools/devtask.py prune --apply           # 授权会话回收"
+            % (cur, cap, MAX_WORKTREES_ENV))
+    if verdict == "warn":
+        print("[warn] worktree 并发 %d/%d 已达 80%%：merge 后自动回收 + 每日 prune 收口"
+              % (cur, cap), file=sys.stderr)
+
+
+def _should_keep_worktree(flags):
+    """--keep-worktree 或 env DEVTOOL_KEEP_WORKTREE=1 → 不自动回收。"""
+    if "--keep-worktree" in flags:
+        return True
+    return str(os.environ.get(KEEP_WORKTREE_ENV) or "").strip().lower() in ("1", "true", "yes")
+
+
+def _recycle_worktree(tid, task):
+    """merge 成功后回收 worktree+分支；任何失败只返回原因，**不阻断合并**。"""
+    wt = str((task or {}).get("worktree") or "").strip()
+    br = str((task or {}).get("branch") or "").strip()
+    if not wt or not br:
+        return False, "无 worktree/分支登记"
+    if not os.path.isdir(wt):
+        return False, "worktree 目录不存在（可能已回收）"
+    try:
+        st = _git("status", "--porcelain", cwd=wt)
+    except SystemExit as e:
+        return False, "git status 失败：%s" % str(e)[:120]
+    dirty = [x for x in (st or "").splitlines() if x.strip()]
+    if dirty:
+        return False, "worktree 脏（%d 项未提交），保留待 owner 处理" % len(dirty)
+    try:
+        _git("worktree", "remove", wt)
+    except SystemExit as e:
+        return False, "git worktree remove 失败：%s" % str(e)[:120]
+    try:
+        _git("branch", "-d", br)
+    except SystemExit as e:
+        return True, "worktree 已回收；分支删除失败（保留）：%s" % str(e)[:120]
+    return True, "worktree + 分支已回收"
+
+
 def cmd_new(tid, *desc):
+    # 2026-10-31 WO-WORKTREE-MECH：并发上限闸（在任何副作用之前，达上限直接拒单）
+    _enforce_worktree_cap()
     # K-ORG-057：--project <pid> 可选参数；缺省归 general 线（显式提示，不拒收——
     # 保兼容；判据3的「拒收」落在「声明了但不存在的线」上）
     desc = list(desc)
@@ -1853,6 +1994,8 @@ def cmd_merge(tid, *flags):
             raise SystemExit("--l2-reason 需要跟五要素说明文本"
                              "（命令全文+影响面+不可逆点+替代方案+回滚预案）")
         reason = flags[i + 1]
+    # 2026-10-31 WO-WORKTREE-MECH：--keep-worktree 跳过合并后自动回收
+    keep_worktree = _should_keep_worktree(flags)
     tasks = _tasks()
     t = tasks.get(tid)
     if not t:
@@ -1999,20 +2142,26 @@ def cmd_merge(tid, *flags):
         t["merged"] = time.strftime("%F %T")
         _save(tasks, changed=(tid,))
         _ckpt(tid, "merge", t.get("owner", "devtask"), {"status": "done"})
-        _emit("merge_done", tid,
-              "守卫全绿（含明文凭据扫描），已合并 master；worktree 保留待人工回收")
+        _emit("merge_done", tid, "守卫全绿（含明文凭据扫描），已合并 master")
         if str(t.get("dept") or "").strip().lower() == "dev":
             _emit("review_verdict", tid,
                   "approver=%s merged=1" % (t.get("approver") or "MISSING"))
-        print("工单 %s 已合并 ✓（worktree 保留待人工回收）" % tid)
+        print("工单 %s 已合并 ✓" % tid)
         _bd0 = time.perf_counter()
         _auto_rebuild_ide_bundle(tid, _bundle_changed)
         _MERGE_TIMINGS.append(("IDE bundle", time.perf_counter() - _bd0))
     finally:
         _release_merge_lock(lock)
     if t.get("worktree"):
-        print("→ 分支已合并、工作区干净，可执行 `git worktree remove %s` 回收"
-              % t["worktree"])
+        if keep_worktree:
+            print("→ --keep-worktree：保留 worktree %s 待人工处理" % t["worktree"])
+        else:
+            _r_ok, _r_note = _recycle_worktree(tid, t)
+            if _r_ok:
+                print("→ 自动回收：%s（--keep-worktree 可跳过）" % _r_note)
+                _emit("merge_done", tid, "worktree 自动回收：%s" % _r_note)
+            else:
+                print("→ 自动回收跳过：%s（合并已成功，不影响 master）" % _r_note)
     _print_dirty_board()
     _print_merge_timings(tid)
     return 0
@@ -2217,6 +2366,10 @@ def _prune_plan(repo, do_branches=True, do_worktrees=True):
                 "reason": "；".join(reasons) if reasons
                 else "分支已合并 + 任务 %s + 工作树干净"
                      % (tv or {}).get("status", "?")})
+            # 2026-10-31 WO-WORKTREE-MECH：TTL 红灯（只标注，不改变 skip/删除判定）
+            _age = _worktree_age_hours(path, tv)
+            plan["worktrees"][-1]["age_hours"] = _age
+            plan["worktrees"][-1]["ttl_red"] = bool(_age is not None and _age > _ttl_hours())
     # ② 分支：本地 task/* 且已合并 master（当前分支/他人检出排除）
     if do_branches:
         wt_by_branch = {it["branch"]: it for it in plan["worktrees"] if it["branch"]}
@@ -2313,10 +2466,9 @@ def cmd_prune(*args):
         print("-- worktree 回收：候选 %d / 拒绝 %d --"
               % (len(wts_do), len(wts_skip)))
         for it in wts_do:
-            print("  [%s] git worktree remove \"%s\"  # %s"
-                  % ("APPLY" if apply_ else "DRY", it["path"], it["reason"]))
+            print(_format_prune_wt(it, apply_))
         for it in wts_skip:
-            print("  [SKIP] %s  # %s" % (it["path"], it["reason"]))
+            print(_format_prune_wt(it, False))
     if do_branches:
         print("-- 分支删除：候选 %d / 拒绝 %d --"
               % (len(brs_do), len(brs_skip)))
@@ -2333,6 +2485,11 @@ def cmd_prune(*args):
             print("  [STALE] %s" % p)
     print("汇总：worktree 候选 %d / 分支候选 %d；拒绝 worktree %d / 分支 %d"
           % (len(wts_do), len(brs_do), len(wts_skip), len(brs_skip)))
+    # 2026-10-31 WO-WORKTREE-MECH：TTL 红灯汇总（仅标注，不自动删）
+    _ttl_red = [x for x in plan["worktrees"] if x.get("ttl_red")]
+    if _ttl_red:
+        print("TTL 红灯：%d 个 worktree age>%gh（[TTL-RED] 仅标注，需人工收口；"
+              "DEVTOOL_WT_TTL_HOURS 可调）" % (len(_ttl_red), _ttl_hours()))
     if not apply_:
         print("→ dry-run：未执行任何删除。确认后在有权限会话跑 "
               "`python tools/devtask.py prune --apply`")
