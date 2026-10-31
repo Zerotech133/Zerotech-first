@@ -85,6 +85,15 @@ button,input,select{font-family:inherit}
 .btn.primary{background:var(--acc-2);border-color:var(--acc-2);color:#fff}
 .btn.primary:hover{background:var(--acc);color:#fff}
 .toolbar .hint{margin:0 0 0 auto;max-width:60%;text-align:right}
+/* ── Phase 4-B：模板下拉/载入（本地只读，不写服务端）── */
+.tpl-picker{display:flex;align-items:center;gap:5px;color:var(--muted);font-size:12px}
+.tpl-picker select{background:var(--card);border:1px solid var(--line);color:var(--ink);
+  border-radius:6px;padding:4px 8px;font-size:12px;max-width:240px}
+.tpl-picker select:hover{border-color:var(--acc)}
+.tpl-source{color:var(--muted);font-size:11px;max-width:34%;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.tpl-source.ok{color:var(--ok)}
+.tpl-source.fallback{color:var(--warn)}
 .canvas-wrap{position:relative;flex:1;min-height:0;overflow:auto;
   background-color:var(--bg);
   background-image:
@@ -196,6 +205,13 @@ button,input,select{font-family:inherit}
       <button type="button" id="btnSeed" class="btn">载入示例</button>
       <button type="button" id="btnClear" class="btn">清空画布</button>
       <button type="button" id="btnSelDelete" class="btn">删除选中</button>
+      <span class="tpl-picker">模板
+        <select id="templateSelect" title="从 pipeline_templates.json（同源只读 GET）载入模板">
+          <option value="">加载中…</option>
+        </select>
+      </span>
+      <button type="button" id="btnLoadTemplate" class="btn">载入模板</button>
+      <span class="tpl-source" id="templateSource">模板: 加载中…</span>
       <span class="hint">拖拽节点移动 · 从节点右侧圆点拖到目标节点连线 · 点选节点/边后 Delete 删除</span>
     </div>
     <div class="canvas-wrap" id="canvasWrap">

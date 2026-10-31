@@ -1,20 +1,24 @@
 /*!
- * Phase 2-B · Strategy Canvas MVP —— 轻量 DAG 编排 + Composition IR 导出
- * 工单：WO-STRATEGY-CANVAS-20261031（只读/离线优先，零外部依赖）
+ * Phase 2-B / 4-B · Strategy Canvas —— 轻量 DAG 编排 + Composition IR 导出 + 模板库载入
+ * 工单：WO-STRATEGY-CANVAS-20261031（Phase 2-B）、WO-CANVAS-TEMPLATES-20261031（Phase 4-B）
  *
  * 职责边界（硬约束）：
- *  - 前端纯本地：只有一处网络调用 = GET pipeline_graph.json（读取 live/shadow 策略清单）；
- *  - 不写服务端、不发 POST/PUT/DELETE、不接执行/不下单、不新增计划任务/不重启服务；
+ *  - 前端纯本地：唯一网络出口 = 白名单 GET（pipeline_graph.json / pipeline_templates.json），
+ *    收敛在 getJson() 单点；不写服务端、不发 POST/PUT/DELETE、不接执行/不下单；
+ *  - 模板库（Phase 4-B）：下拉列出 pipeline_templates.json 的 3 个模板，载入节点/边/header
+ *    到画布（只读内存状态）；fetch 失败用内置 3 模板 fallback，不崩；
  *  - 导出的 Composition IR（composition_ir/v1）只是「计划」，权威校验仍走
  *    `python -X utf8 strategy_layer/composition_ir.py --file <ir>.json`；
  *  - 不改 pipeline_map.html / strategy_cards / strategy_registry / composition_ir.py。
  *
  * 结构：
- *  1) 常量与契约（NODE_TYPES / NODE_SPECS / 端口 / schema 字段）——与 composition_ir.py
- *     的 NODE_TYPES / NODE_SPECS / PORT_TYPES / TOP_LEVEL_REQUIRED 同口径（客户端镜像）；
- *  2) 纯函数：buildIR / validateIR / canConnect —— 浏览器与 Node 均可直接调用
- *     （Node 下 module.exports 导出，便于 pytest 用 node 做契约/负例测试）；
- *  3) DOM 层：左侧节点面板、中 SVG+HTML 画布（拖拽/连线/删除/移动）、右侧 IR 预览。
+ *  1) 常量与契约（NODE_TYPES / NODE_SPECS / 端口 / schema 字段 / 模板 URL）——与
+ *     composition_ir.py、pipeline_templates.py 同口径（客户端镜像）；
+ *  2) 纯函数：buildIR / validateIR / canConnect / parseTemplatesPayload / selectTemplates /
+ *     templateToCanvas —— 浏览器与 Node 均可直接调用（Node 下 module.exports 导出，
+ *     便于 pytest 用 node 做契约/负例/模板测试）；
+ *  3) DOM 层：左侧节点面板、中 SVG+HTML 画布（拖拽/连线/删除/移动）、右侧 IR 预览、
+ *     工具栏模板下拉+载入。
  */
 (function (root, factory) {
   "use strict";
@@ -47,6 +51,9 @@
      * ══════════════════════════════════════════════════════════════════ */
     var SCHEMA = "composition_ir/v1";
     var GRAPH_URL = "pipeline_graph.json";
+    var TEMPLATES_URL = "pipeline_templates.json";
+    var TEMPLATE_SCHEMA = "pipeline_templates/v1";
+    var TEMPLATE_IDS = ["trend_pullback", "trend_reversal", "nine_dim_chan"];
     var ALLOWED_MODES = ["BACKTEST", "REPLAY", "SHADOW", "SIM_MARKET"];
     var NODE_TYPES = [
       "universe",
@@ -201,6 +208,110 @@
       { id: "nine_dim", status: "shadow", label: "nine_dim 九维拥挤预警", card: true },
       { id: "qpzm", status: "shadow", label: "qpzm 相对强弱", card: true },
       { id: "rps_resonance", status: "shadow", label: "rps_resonance RPS 共振", card: true }
+    ];
+
+    /* pipeline_templates.json 不可达时的内置 3 模板最小 fallback（合法 composition_ir/v1）。
+     * template_id 与 pipeline_templates.json 对齐；策略均用 10 张 Strategy Card 内的
+     * strategy_id（composition_ir 校验要求），execution 恒 dry_run，publish 不生效。 */
+    var FALLBACK_TEMPLATES = [
+      {
+        template_id: "trend_pullback",
+        title: "趋势回踩",
+        description: "内置 fallback：trend_follow 单策略 + filter/allocator/risk/execution（只读计划）",
+        ir: {
+          schema: SCHEMA,
+          pipeline_id: "pc-template-trend-pullback",
+          version: "1.0.0",
+          owner: "quant-classic",
+          tenant: "official",
+          mode: "SHADOW",
+          description: "模板：趋势回踩（内置 fallback，只读计划）",
+          nodes: [
+            { id: "u_cn", type: "universe", label: "CN 股票池", params: { markets: ["CN"] } },
+            { id: "s_trend", type: "strategy", label: "趋势跟随", strategy_id: "trend_follow", params: {} },
+            { id: "f_pullback", type: "filter", label: "回踩/量能过滤", params: { pullback_pct: 3.0 } },
+            { id: "a_weight", type: "allocator", label: "加权分配", params: { scheme: "weighted", max_single_pct: 8.0 } },
+            { id: "k_risk", type: "risk", label: "风控闸", params: {} },
+            { id: "x_paper", type: "execution", label: "纸面执行（dry-run）", params: { book: "official", dry_run: true } }
+          ],
+          edges: [
+            { from: "u_cn", to: "s_trend", port: "universe" },
+            { from: "s_trend", to: "f_pullback", port: "signals" },
+            { from: "f_pullback", to: "a_weight", port: "signals" },
+            { from: "a_weight", to: "k_risk", port: "allocations" },
+            { from: "k_risk", to: "x_paper", port: "allocations" }
+          ],
+          risk_policy: { policy_id: "rp-trend-pullback", max_position_pct: 8.0, max_positions: 30, kill_switch: true },
+          publish: { enabled: false, visibility: "private", requires_approval: true }
+        }
+      },
+      {
+        template_id: "trend_reversal",
+        title: "趋势+反转",
+        description: "内置 fallback：trend_follow + rsi_reversal 双信号源 → allocator → risk → execution（只读计划）",
+        ir: {
+          schema: SCHEMA,
+          pipeline_id: "pc-template-trend-reversal",
+          version: "1.0.0",
+          owner: "quant-classic",
+          tenant: "official",
+          mode: "SHADOW",
+          description: "模板：趋势+反转（内置 fallback，只读计划）",
+          nodes: [
+            { id: "u_cn", type: "universe", label: "CN 股票池", params: { markets: ["CN"] } },
+            { id: "s_trend", type: "strategy", label: "趋势跟随", strategy_id: "trend_follow", params: {} },
+            { id: "s_rsi", type: "strategy", label: "RSI 反转", strategy_id: "rsi_reversal", params: {} },
+            { id: "a_weight", type: "allocator", label: "加权分配", params: { scheme: "weighted" } },
+            { id: "k_risk", type: "risk", label: "风控闸", params: {} },
+            { id: "x_paper", type: "execution", label: "纸面执行（dry-run）", params: { book: "official", dry_run: true } }
+          ],
+          edges: [
+            { from: "u_cn", to: "s_trend", port: "universe" },
+            { from: "u_cn", to: "s_rsi", port: "universe" },
+            { from: "s_trend", to: "a_weight", port: "signals" },
+            { from: "s_rsi", to: "a_weight", port: "signals" },
+            { from: "a_weight", to: "k_risk", port: "allocations" },
+            { from: "k_risk", to: "x_paper", port: "allocations" }
+          ],
+          risk_policy: { policy_id: "rp-trend-reversal", max_position_pct: 10.0, max_positions: 30, kill_switch: true },
+          publish: { enabled: false, visibility: "private", requires_approval: true }
+        }
+      },
+      {
+        template_id: "nine_dim_chan",
+        title: "九维+缠论",
+        description: "内置 fallback：nine_dim + chan_monitor + chanlun_li122 三信号源 → allocator → risk → execution（只读计划）",
+        ir: {
+          schema: SCHEMA,
+          pipeline_id: "pc-template-nine-dim-chan",
+          version: "1.0.0",
+          owner: "quant-strategy-layer",
+          tenant: "official",
+          mode: "SHADOW",
+          description: "模板：九维+缠论（内置 fallback，只读计划）",
+          nodes: [
+            { id: "u_cn", type: "universe", label: "CN 股票池", params: { markets: ["CN"] } },
+            { id: "s_nine", type: "strategy", label: "九维拥挤预警", strategy_id: "nine_dim", params: {} },
+            { id: "s_chan", type: "strategy", label: "盯盘缠论", strategy_id: "chan_monitor", params: {} },
+            { id: "s_li", type: "strategy", label: "缠论多级别", strategy_id: "chanlun_li122", params: {} },
+            { id: "a_multi", type: "allocator", label: "多信号加权分配", params: { scheme: "weighted" } },
+            { id: "k_risk", type: "risk", label: "风控闸", params: {} },
+            { id: "x_paper", type: "execution", label: "纸面执行（dry-run）", params: { book: "official", dry_run: true } }
+          ],
+          edges: [
+            { from: "u_cn", to: "s_nine", port: "universe" },
+            { from: "u_cn", to: "s_chan", port: "universe" },
+            { from: "u_cn", to: "s_li", port: "universe" },
+            { from: "s_nine", to: "a_multi", port: "signals" },
+            { from: "s_chan", to: "a_multi", port: "signals" },
+            { from: "s_li", to: "a_multi", port: "signals" },
+            { from: "a_multi", to: "k_risk", port: "allocations" },
+            { from: "k_risk", to: "x_paper", port: "allocations" }
+          ],
+          risk_policy: { policy_id: "rp-nine-dim-chan", max_position_pct: 10.0, max_positions: 30, kill_switch: true },
+          publish: { enabled: false, visibility: "private", requires_approval: true }
+        }
+      }
     ];
 
     var NODE_W = 200;
@@ -694,6 +805,122 @@
     }
 
     /* ══════════════════════════════════════════════════════════════════
+     * 3b. Phase 4-B：模板库解析 / 画布转换（纯函数，Node 测试可直接 require）
+     * ══════════════════════════════════════════════════════════════════ */
+    /** 解析 pipeline_templates.json（pipeline_templates/v1）→ 规范化模板列表。 */
+    function parseTemplatesPayload(payload) {
+      if (!isPlainObject(payload) || !Array.isArray(payload.templates)) return [];
+      var parsed = [];
+      payload.templates.forEach(function (item) {
+        if (!isPlainObject(item) || !isNonemptyStr(item.template_id) || !isPlainObject(item.ir)) return;
+        if (!Array.isArray(item.ir.nodes) || !item.ir.nodes.length) return;
+        if (!Array.isArray(item.ir.edges) || !item.ir.edges.length) return;
+        parsed.push({
+          template_id: item.template_id,
+          title: isNonemptyStr(item.title) ? item.title : item.template_id,
+          description: typeof item.description === "string" ? item.description : "",
+          ir: copy(item.ir)
+        });
+      });
+      return parsed;
+    }
+
+    /** 解析成功用文件模板；失败（null/非法/空）回落内置 3 模板，不崩。 */
+    function selectTemplates(payload) {
+      var parsed = parseTemplatesPayload(payload);
+      if (parsed.length) {
+        return { templates: parsed, source: TEMPLATES_URL, from_fallback: false };
+      }
+      return {
+        templates: copy(FALLBACK_TEMPLATES),
+        source: "内置 fallback（" + TEMPLATES_URL + " 不可用或无有效模板）",
+        from_fallback: true
+      };
+    }
+
+    /** 模板节点自动布局：按最长路径分层（x=层号、y=层内序号），仅内存。 */
+    function layoutTemplateNodes(nodes, edges) {
+      var indegree = {};
+      var adjacency = {};
+      nodes.forEach(function (node) {
+        indegree[node.id] = 0;
+        adjacency[node.id] = [];
+      });
+      edges.forEach(function (edge) {
+        if (!(edge.from in adjacency) || !(edge.to in indegree)) return;
+        adjacency[edge.from].push(edge.to);
+        indegree[edge.to] += 1;
+      });
+      var depth = {};
+      var queue = [];
+      nodes.forEach(function (node) {
+        if (indegree[node.id] === 0) {
+          depth[node.id] = 0;
+          queue.push(node.id);
+        }
+      });
+      var guard = 0;
+      while (queue.length && guard < nodes.length * 4) {
+        guard += 1;
+        var current = queue.shift();
+        adjacency[current].forEach(function (nextId) {
+          depth[nextId] = Math.max(depth[nextId] || 0, (depth[current] || 0) + 1);
+          indegree[nextId] -= 1;
+          if (indegree[nextId] === 0) queue.push(nextId);
+        });
+      }
+      var perDepth = {};
+      nodes.forEach(function (node) {
+        var level = depth[node.id] || 0;
+        var index = perDepth[level] || 0;
+        perDepth[level] = index + 1;
+        node.x = 40 + level * (NODE_W + 60);
+        node.y = 40 + index * (NODE_H + 40);
+      });
+    }
+
+    /** 模板 IR → 画布状态（nodes/edges/header）；不改模板本体、不写任何文件。 */
+    function templateToCanvas(template) {
+      var ir = template && template.ir;
+      if (!isPlainObject(ir) || !Array.isArray(ir.nodes) || !ir.nodes.length) {
+        throw new Error("模板 IR 非法（缺 nodes）: " + (template ? template.template_id : "?"));
+      }
+      if (!Array.isArray(ir.edges) || !ir.edges.length) {
+        throw new Error("模板 IR 非法（缺 edges）: " + (template ? template.template_id : "?"));
+      }
+      var header = {
+        pipeline_id: isNonemptyStr(ir.pipeline_id) ? ir.pipeline_id : DEFAULT_HEADER.pipeline_id,
+        version: isNonemptyStr(ir.version) ? ir.version : DEFAULT_HEADER.version,
+        owner: isNonemptyStr(ir.owner) ? ir.owner : DEFAULT_HEADER.owner,
+        tenant: isNonemptyStr(ir.tenant) ? ir.tenant : DEFAULT_HEADER.tenant,
+        mode: ALLOWED_MODES.indexOf(ir.mode) >= 0 ? ir.mode : DEFAULT_HEADER.mode,
+        description: typeof ir.description === "string" ? ir.description : ""
+      };
+      var nodes = ir.nodes.map(function (node) {
+        if (!isPlainObject(node) || !isNonemptyStr(node.id) || NODE_TYPES.indexOf(node.type) < 0) {
+          throw new Error("模板节点非法: " + JSON.stringify(node));
+        }
+        return {
+          id: node.id,
+          type: node.type,
+          label: isNonemptyStr(node.label) ? node.label : node.id,
+          strategy_id: node.type === "strategy" ? node.strategy_id : null,
+          params: copy(node.params || {}),
+          x: 0,
+          y: 0
+        };
+      });
+      var edges = ir.edges.map(function (edge, index) {
+        if (!isPlainObject(edge) || !isNonemptyStr(edge.from) || !isNonemptyStr(edge.to) || !isNonemptyStr(edge.port)) {
+          throw new Error("模板边非法: " + JSON.stringify(edge));
+        }
+        return { id: "e" + (index + 1), from: edge.from, to: edge.to, port: edge.port };
+      });
+      layoutTemplateNodes(nodes, edges);
+      return { nodes: nodes, edges: edges, header: header };
+    }
+
+    /* ══════════════════════════════════════════════════════════════════
      * 4. DOM 层（浏览器 only；Node require 时不会执行）
      * ══════════════════════════════════════════════════════════════════ */
     var state = null;
@@ -729,6 +956,8 @@
         header: copy(DEFAULT_HEADER),
         strategies: FALLBACK_STRATEGIES.slice(),
         graphSource: "内置 fallback（pipeline_graph.json 加载中…）",
+        templates: copy(FALLBACK_TEMPLATES),
+        templateSource: "内置 fallback（pipeline_templates.json 加载中…）",
         lastIR: null,
         booted: false
       };
@@ -1245,15 +1474,28 @@
       showToast("画布已清空");
     }
 
-    /* ── Graph JSON（唯一网络调用：GET；失败用内置 fallback） ── */
+    /* ── 唯一网络出口：GET 白名单（graph + templates 两条只读数据）──
+     * Canvas 契约要求「唯一网络 = GET、不得 POST」；本函数收敛为唯一 fetch 调用点，
+     * method 固定 GET，URL 仅允许 GRAPH_URL / TEMPLATES_URL（其余直接 reject）。 */
+    function getJson(url) {
+      if (url !== GRAPH_URL && url !== TEMPLATES_URL) {
+        return Promise.reject(new Error("非白名单 GET URL: " + url));
+      }
+      return fetch(url === TEMPLATES_URL ? TEMPLATES_URL : GRAPH_URL, {
+        method: "GET",
+        cache: "no-store",
+        credentials: "same-origin"
+      }).then(function (response) {
+        if (!response || !response.ok) {
+          throw new Error("HTTP " + (response ? response.status : "?"));
+        }
+        return response.json();
+      });
+    }
+
+    /* ── Graph JSON（GET；失败用内置 fallback） ── */
     function fetchGraph() {
-      return fetch(GRAPH_URL, { method: "GET", cache: "no-store", credentials: "same-origin" })
-        .then(function (response) {
-          if (!response || !response.ok) {
-            throw new Error("HTTP " + (response ? response.status : "?"));
-          }
-          return response.json();
-        })
+      return getJson(GRAPH_URL)
         .then(function (graph) {
           var strategies = ((graph && graph.nodes) || [])
             .filter(function (node) {
@@ -1290,6 +1532,93 @@
           updateGraphSource();
           syncPreview();
         });
+    }
+
+    /* ── Phase 4-B：模板库（GET；失败用内置 3 模板 fallback） ── */
+    function renderTemplateOptions() {
+      if (!dom.templateSelect) return;
+      var options = ['<option value="">— 选择模板 —</option>'];
+      state.templates.forEach(function (template) {
+        options.push(
+          '<option value="' +
+            attr(template.template_id) +
+            '">' +
+            escHtml(template.title + "（" + template.template_id + "）") +
+            "</option>"
+        );
+      });
+      dom.templateSelect.innerHTML = options.join("");
+      dom.templateSelect.value = state.templates.length ? state.templates[0].template_id : "";
+    }
+
+    function updateTemplateSource() {
+      if (!dom.templateSource) return;
+      var fromFallback = state.templateSource.indexOf("fallback") >= 0;
+      dom.templateSource.textContent = "模板: " + state.templateSource + " · " + state.templates.length + " 个";
+      dom.templateSource.title = state.templateSource;
+      dom.templateSource.classList.toggle("fallback", fromFallback);
+      dom.templateSource.classList.toggle("ok", !fromFallback);
+    }
+
+    function fetchTemplates() {
+      return getJson(TEMPLATES_URL)
+        .then(function (payload) {
+          var resolved = selectTemplates(payload);
+          state.templates = resolved.templates;
+          state.templateSource = resolved.source;
+        })
+        .catch(function (error) {
+          state.templates = copy(FALLBACK_TEMPLATES);
+          state.templateSource = "内置 fallback（" + TEMPLATES_URL + " 不可达：" + ((error && error.message) || error) + "）";
+        })
+        .then(function () {
+          renderTemplateOptions();
+          updateTemplateSource();
+        });
+    }
+
+    /** 把模板 IR 载入画布（节点/边/header）；只改内存，不执行、不写服务端。 */
+    function loadTemplateById(templateId) {
+      var template = null;
+      for (var i = 0; i < state.templates.length; i += 1) {
+        if (state.templates[i].template_id === templateId) {
+          template = state.templates[i];
+          break;
+        }
+      }
+      if (!template) {
+        showToast("未找到模板：" + templateId);
+        return null;
+      }
+      var converted;
+      try {
+        converted = templateToCanvas(template);
+      } catch (error) {
+        showToast("模板载入失败：" + ((error && error.message) || error));
+        return null;
+      }
+      resetSelection();
+      state.nodes = converted.nodes;
+      state.edges = converted.edges;
+      state.nextNode = converted.nodes.length + 1;
+      state.nextEdge = converted.edges.length + 1;
+      state.header = cloneHeader(converted.header);
+      syncHeaderInputs();
+      renderAll();
+      showToast(
+        "已载入模板 " + template.title + "（" + converted.nodes.length + " 节点 / " +
+          converted.edges.length + " 边，只读）"
+      );
+      return converted;
+    }
+
+    function onLoadTemplateClick() {
+      var selected = dom.templateSelect ? dom.templateSelect.value : "";
+      if (!selected) {
+        showToast("请先选择模板");
+        return null;
+      }
+      return loadTemplateById(selected);
     }
 
     /* ── 画布节点事件 ── */
@@ -1528,6 +1857,20 @@
       });
       if (dom.btnCopy) dom.btnCopy.addEventListener("click", copyIR);
       if (dom.btnDownload) dom.btnDownload.addEventListener("click", downloadIR);
+      if (dom.btnLoadTemplate) dom.btnLoadTemplate.addEventListener("click", onLoadTemplateClick);
+      if (dom.templateSelect) {
+        dom.templateSelect.addEventListener("change", function () {
+          var selected = dom.templateSelect.value;
+          if (!selected) return;
+          var found = null;
+          state.templates.forEach(function (template) {
+            if (template.template_id === selected) found = template;
+          });
+          if (found && dom.templateSource) {
+            dom.templateSource.title = found.title + " · " + found.description;
+          }
+        });
+      }
       [dom.fPipeline, dom.fOwner, dom.fTenant, dom.fMode, dom.fDescription].forEach(function (input) {
         if (!input) return;
         input.addEventListener("input", function () {
@@ -1572,21 +1915,31 @@
         btnSelDelete: $("btnSelDelete"),
         btnValidate: $("btnValidate"),
         btnCopy: $("btnCopy"),
-        btnDownload: $("btnDownload")
+        btnDownload: $("btnDownload"),
+        templateSelect: $("templateSelect"),
+        btnLoadTemplate: $("btnLoadTemplate"),
+        templateSource: $("templateSource")
       };
       state.booted = true;
       syncHeaderInputs();
       renderPalette();
       renderStrategyPalette();
+      renderTemplateOptions();
+      updateTemplateSource();
       updateGraphSource();
       bindEvents();
       seedCanvas();
-      fetchGraph(); /* 唯一网络调用：GET pipeline_graph.json；失败内置 fallback */
+      /* 唯一网络出口：两条只读 GET（graph + templates），均失败走内置 fallback */
+      fetchGraph();
+      fetchTemplates();
     }
 
     return {
       SCHEMA: SCHEMA,
       GRAPH_URL: GRAPH_URL,
+      TEMPLATES_URL: TEMPLATES_URL,
+      TEMPLATE_SCHEMA: TEMPLATE_SCHEMA,
+      TEMPLATE_IDS: TEMPLATE_IDS,
       ALLOWED_MODES: ALLOWED_MODES,
       NODE_TYPES: NODE_TYPES,
       PORT_TYPES: PORT_TYPES,
@@ -1602,9 +1955,13 @@
       DEFAULT_RISK_POLICY: DEFAULT_RISK_POLICY,
       DEFAULT_PUBLISH: DEFAULT_PUBLISH,
       FALLBACK_STRATEGIES: FALLBACK_STRATEGIES,
+      FALLBACK_TEMPLATES: FALLBACK_TEMPLATES,
       canConnect: canConnect,
       buildIR: buildIR,
       validateIR: validateIR,
+      parseTemplatesPayload: parseTemplatesPayload,
+      selectTemplates: selectTemplates,
+      templateToCanvas: templateToCanvas,
       pickSeedStrategy: pickSeedStrategy,
       boot: boot
     };
