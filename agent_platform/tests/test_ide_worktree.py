@@ -48,3 +48,12 @@ def test_auto_worktree_diff_commit(tmp_path, monkeypatch):
     assert (wt / "new.py").is_file()
     log = _git(wt, "log", "-1", "--format=%s")
     assert "test commit" in log
+
+
+def test_auto_worktree_ignores_git_env(tmp_path, monkeypatch):
+    """全套件并发时 GIT_DIR/GIT_WORK_TREE 泄漏不得串仓（2026-11-01 修复）。"""
+    _repo(tmp_path, monkeypatch)
+    monkeypatch.setenv("GIT_DIR", str(tmp_path / "bogus-git-dir"))
+    monkeypatch.setenv("GIT_WORK_TREE", str(tmp_path / "bogus-work-tree"))
+    ready = W.ensure_worktree("T-1")
+    assert ready["ok"] and Path(ready["worktree"]).is_dir()

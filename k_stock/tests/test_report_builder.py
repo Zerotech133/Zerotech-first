@@ -82,8 +82,21 @@ def _registration(tmp_path, combo_id, budget=100.0) -> Path:
 
 
 @pytest.fixture
-def env(tmp_path):
-    """隔离四账 + 版本账：注册表副本 / 成本账 / 回执账 / -006 版本账 全 tmp。"""
+def env(tmp_path, monkeypatch):
+    """隔离四账 + 版本账：注册表副本 / 成本账 / 回执账 / -006 版本账 全 tmp。
+
+    2026-11-01 K-ORG-20261031-MIDNIGHTTESTS：成本账写 ts=datetime.now()，
+    跨月/跨日后会落到 11 月，而本夹具断言固定 MONTH=2026-10 → 假红。
+    冻结 combo_factory.datetime，保证成本账归月与断言同月。
+    """
+    import datetime as _dt
+
+    class _FixedDatetime(_dt.datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return cls(2026, 10, 20, 14, 0, 0, tzinfo=tz)
+
+    monkeypatch.setattr(combo_factory, "datetime", _FixedDatetime)
     reg = _registry_copy(tmp_path)
     ledger = tmp_path / "budget.jsonl"
     subs = tmp_path / "subs.jsonl"

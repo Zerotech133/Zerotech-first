@@ -24,10 +24,18 @@ ALLOWED_STATUS = {"doing", "review"}
 
 
 def _run(args: list[str], cwd: Path | None = None, timeout: int = 60) -> dict:
+    # 2026-11-01 K-ORG-20261031-MIDNIGHTTESTS：全套件并发时，外部 GIT_DIR/
+    # GIT_WORK_TREE 等环境可能泄漏进 -C 临时仓命令，导致 worktree add 失败/串仓。
+    # 本模块始终显式 -C 目标仓，先清掉这些全局覆盖。
+    env = dict(os.environ)
+    for _k in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE",
+               "GIT_OBJECT_DIRECTORY", "GIT_COMMON_DIR", "GIT_NAMESPACE"):
+        env.pop(_k, None)
     try:
         p = subprocess.run(
             args, cwd=str(cwd) if cwd else None, capture_output=True,
             text=True, encoding="utf-8", errors="replace", timeout=timeout,
+            env=env,
         )
         return {"ok": p.returncode == 0, "rc": p.returncode,
                 "out": (p.stdout or "").strip(), "err": (p.stderr or "").strip()}
