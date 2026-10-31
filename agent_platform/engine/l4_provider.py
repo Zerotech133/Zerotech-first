@@ -7,22 +7,29 @@
   "symbols": {
     "600519": {"status": "established|unresolved|missing",
                "source": "xsec_profile/lcs1", "as_of": "...",
-               "confidence": 0.7, "rationale": "..."}
+               "confidence": 0.7, "rationale": "...",
+               "artifact_ref": "RA-...json  # established 时必填"}
   }
 }
 缺失文件/缺 symbol → status=missing（不猜），由规则门压 WATCH。
+
+2026-10-31 WO-L4-M4-HARDEN-20261031（7d P0）：`established` 必须带可核验
+`artifact_ref`（见 `l4_artifact.validate_artifact_ref`），否则降级
+`unresolved` + `artifact_invalid` 原因，禁止把占位/文本推断当研究级 L4。
 """
 from __future__ import annotations
 
 import json
 from pathlib import Path
 
+from l4_artifact import validate_artifact_ref
+
 ROOT = Path(__file__).resolve().parents[1]
 L4_PATH = ROOT / "data" / "xsec" / "l4_status.json"
 VALID = {"established", "unresolved", "missing", "unknown"}
 
 
-def load_l4(symbol, path=None):
+def load_l4(symbol, path=None, artifact_root=None):
     path = Path(path or L4_PATH)
     try:
         doc = json.loads(path.read_text(encoding="utf-8"))
@@ -37,10 +44,23 @@ def load_l4(symbol, path=None):
     status = str(rec.get("status") or "").strip().lower()
     if status not in VALID:
         status = "unknown"
-    return {
+    artifact_ref = str(rec.get("artifact_ref") or "").strip()
+    result = {
         "status": status,
         "source": str(rec.get("source") or ""),
         "as_of": str(rec.get("as_of") or ""),
         "confidence": rec.get("confidence"),
+        "artifact_ref": artifact_ref,
         "rationale": str(rec.get("rationale") or "")[:200],
     }
+    # 2026-10-31 WO-L4-M4-HARDEN-20261031（7d P0）：established 必须带可核验
+    # 的 Research Artifact；缺失/空/不可达 → 降级 unresolved（不猜、不直通）。
+    if status == "established":
+        ok, reason, _ = validate_artifact_ref(artifact_ref, root=artifact_root)
+        if not ok:
+            result["status"] = "unresolved"
+            result["artifact_invalid"] = reason
+            result["rationale"] = (
+                "artifact_ref 校验失败(%s)，established 降级为 unresolved；原 rationale: %s"
+                % (reason, result["rationale"]))[:200]
+    return result
