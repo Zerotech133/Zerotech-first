@@ -1,7 +1,7 @@
 {
  "schema": "seat_iteration/v1",
  "seat": "DEV5",
- "cn_name": "",
+ "cn_name": "邓艾",
  "role_title": "前端工程师 · G2 组长",
  "discipline": "frontend",
  "group": "G2",
@@ -28,7 +28,7 @@
    "evidence": ""
   },
   "practice": {
-   "tid": "WO-P0-DEV5-EVALCASES-20261027",
+   "tid": "待定（v1.1 补证；原载体 WO-P0-DEV5-EVALCASES-20261027 已 aborted，详见 T19 降级关闭裁决 2026-10-31）",
    "acceptance": "三件套 PASS + 无自绘色",
    "status": "planned",
    "evidence": ""

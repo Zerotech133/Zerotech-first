@@ -1,7 +1,7 @@
 {
  "schema": "seat_iteration/v1",
  "seat": "DEV6",
- "cn_name": "",
+ "cn_name": "胡昭",
  "role_title": "后端工程师",
  "discipline": "backend",
  "group": "G1",
@@ -27,7 +27,7 @@
    "evidence": ""
   },
   "practice": {
-   "tid": "WO-P0-DEV6-TRACE-20261027",
+   "tid": "待定（v1.1 补证；原载体 WO-P0-DEV6-TRACE-20261027 已 aborted，详见 T19 降级关闭裁决 2026-10-31）",
    "acceptance": "验收 rc0 + 指标可解释",
    "status": "planned",
    "evidence": ""

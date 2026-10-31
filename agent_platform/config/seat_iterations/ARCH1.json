@@ -28,7 +28,7 @@
    "evidence": ""
   },
   "practice": {
-   "tid": "待定（下一任务）",
+   "tid": "待定（下一任务；计划载体：下一项目 WBS→工单→验收样例）",
    "acceptance": "WBS 样例评审通过 + 计划可执行",
    "status": "planned",
    "evidence": ""

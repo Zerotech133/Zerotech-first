@@ -1,7 +1,7 @@
 {
  "schema": "seat_iteration/v1",
  "seat": "DEV4",
- "cn_name": "",
+ "cn_name": "杜预",
  "role_title": "回测/风控工程师",
  "discipline": "quant",
  "group": "G2",
@@ -28,7 +28,7 @@
    "evidence": ""
   },
   "practice": {
-   "tid": "待定（下一任务）",
+   "tid": "待定（下一任务；计划载体：v1.1 风控适配器（LV-03））",
    "acceptance": "单测 + Go-No-Go 口径确认",
    "status": "planned",
    "evidence": ""

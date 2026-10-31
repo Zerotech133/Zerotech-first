@@ -1,7 +1,7 @@
 {
  "schema": "seat_iteration/v1",
  "seat": "OPS1",
- "cn_name": "",
+ "cn_name": "王基",
  "role_title": "运维/SRE 工程师",
  "discipline": "devops",
  "group": "G1",
@@ -28,7 +28,7 @@
    "evidence": ""
   },
   "practice": {
-   "tid": "待定（下一任务）",
+   "tid": "待定（下一任务；计划载体：一次受控重启演练（审批后））",
    "acceptance": "重启前后验证 + 回滚预案",
    "status": "planned",
    "evidence": ""

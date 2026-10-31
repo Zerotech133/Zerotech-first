@@ -1,7 +1,7 @@
 {
  "schema": "seat_iteration/v1",
  "seat": "DEV2",
- "cn_name": "",
+ "cn_name": "刘晔",
  "role_title": "AI/模型工程师",
  "discipline": "ai",
  "group": "G1",
@@ -28,7 +28,7 @@
    "evidence": ""
   },
   "practice": {
-   "tid": "待定（下一任务）",
+   "tid": "待定（下一任务；计划载体：选 1 席做 fallback 演练）",
    "acceptance": "演练记录 + 成本/延迟可解释",
    "status": "planned",
    "evidence": ""
