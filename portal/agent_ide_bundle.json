@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-31 08:20",
+ "generated": "2026-10-31 08:31",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,28 +9,10 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 32,
+  "workorders_doing": 27,
   "workorders_review": 11
  },
  "workorders": [
-  {
-   "id": "WO-GUANYU-P19-20261029",
-   "desc": "ruff收尾E702F401 [UNOWNED]",
-   "status": "doing",
-   "owner": "unknown-agent",
-   "branch": "task/WO-GUANYU-P19-20261029",
-   "created": "2026-10-29 05:05:06",
-   "project": "general"
-  },
-  {
-   "id": "WO-GUANYU-P19B-20261029",
-   "desc": "ruff收尾窄单 [UNOWNED]",
-   "status": "review",
-   "owner": "unknown-agent",
-   "branch": "task/WO-GUANYU-P19B-20261029",
-   "created": "2026-10-29 05:09:52",
-   "project": "general"
-  },
   {
    "id": "K-QUANT-20261029-T2MANUAL2",
    "desc": "T2人工规则收紧：.py/.ps1/后端任务强制worker_eligible=false；测试/api/kg T2待人工",
@@ -92,33 +74,6 @@
    "owner": "QS1",
    "branch": "",
    "created": "2026-10-29 07:39:07",
-   "project": "general"
-  },
-  {
-   "id": "WO-GUANYU-P21-20261029",
-   "desc": "ruff收尾2+历史治理计划 [UNOWNED]",
-   "status": "doing",
-   "owner": "unknown-agent",
-   "branch": "task/WO-GUANYU-P21-20261029",
-   "created": "2026-10-29 08:10:41",
-   "project": "general"
-  },
-  {
-   "id": "WO-GUANYU-P23-20261029",
-   "desc": "portal flaky登记 [UNOWNED]",
-   "status": "doing",
-   "owner": "unknown-agent",
-   "branch": "task/WO-GUANYU-P23-20261029",
-   "created": "2026-10-29 08:18:21",
-   "project": "general"
-  },
-  {
-   "id": "WO-GUANYU-P24-20261029",
-   "desc": "L2批准单+数据副本登记 [UNOWNED]",
-   "status": "doing",
-   "owner": "unknown-agent",
-   "branch": "task/WO-GUANYU-P24-20261029",
-   "created": "2026-10-29 08:46:03",
    "project": "general"
   },
   {
@@ -329,48 +284,12 @@
    "project": "general"
   },
   {
-   "id": "K-ORG-20261030-LOCALADMIN",
-   "desc": "Local admin login admin mapped to zero_bound:owner; vault PBKDF2 hash",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-ORG-20261030-LOCALADMIN",
-   "created": "2026-10-30 20:51:00",
-   "project": "portal"
-  },
-  {
-   "id": "K-QUANT-20261030-HERMESMAIN",
-   "desc": "A0 mainchat mode in Hermes composer (client-side orchestrator)",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-QUANT-20261030-HERMESMAIN",
-   "created": "2026-10-30 21:14:03",
-   "project": "quant"
-  },
-  {
    "id": "WO-HERMES-CSP-SELF-20261030",
    "desc": "用户批准：Hermes CSP frame-ancestors none→self、X-Frame-Options DENY→SAMEORIGIN，允许同源 iframe 挂 5175 研究台；更新对应断言。",
    "status": "review",
    "owner": "ZHAOYUN",
    "branch": "task/WO-HERMES-CSP-SELF-20261030",
    "created": "2026-10-30 21:30:19",
-   "project": "quant"
-  },
-  {
-   "id": "K-QUANT-20261030-IDETASKS",
-   "desc": "Fix Hermes task picker worktree root to C:\\legion-worktrees",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-QUANT-20261030-IDETASKS",
-   "created": "2026-10-30 21:34:04",
-   "project": "quant"
-  },
-  {
-   "id": "K-JEV-20261030-NIGHTFALL",
-   "desc": "Night JEV pauses M3 by lock holder fallback when CommandLine null",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/K-JEV-20261030-NIGHTFALL",
-   "created": "2026-10-30 21:42:42",
    "project": "quant"
   },
   {
@@ -398,6 +317,42 @@
    "owner": "code-upgrade",
    "branch": "task/WO-L4-M4-HARDEN-20261031",
    "created": "2026-10-31 08:13:11",
+   "project": "general"
+  },
+  {
+   "id": "WO-LEGION-AUTH-20261031",
+   "desc": "IDE认证拓扑收口",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-AUTH-20261031",
+   "created": "2026-10-31 08:21:10",
+   "project": "general"
+  },
+  {
+   "id": "WO-LEGION-TXN-20261031",
+   "desc": "LDE真事务与测试runner",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-TXN-20261031",
+   "created": "2026-10-31 08:21:14",
+   "project": "general"
+  },
+  {
+   "id": "WO-LEGION-REVIEWOPS-20261031",
+   "desc": "诸葛亮复核运营化",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-REVIEWOPS-20261031",
+   "created": "2026-10-31 08:21:17",
+   "project": "general"
+  },
+  {
+   "id": "WO-LEGION-P0-4-20261031",
+   "desc": "P0-4多文件patchset事务：preview/confirm原子/rollback/evidence/tests",
+   "status": "review",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-P0-4-20261031",
+   "created": "2026-10-31 08:23:11",
    "project": "general"
   }
  ],
@@ -859,6 +814,13 @@
    "lines": 130,
    "truncated": false,
    "content": "# -*- coding: utf-8 -*-\n\"\"\"D1 ↔ Hermes stock-data 只读 MCP 数据桥（2026-10-30 WO-D1-HERMES-BRIDGE）。\n\n方向：D1 引擎 → Hermes stock-data MCP（stdio JSON-RPC）→ 8791 数据总览 API。\n只读、fail-open、带缓存、可用 D1_HERMES_BRIDGE=0 关闭；不参与编排、不改裁决链。\n\"\"\"\nfrom __future__ import annotations\n\nimport json\nimport os\nimport subprocess\nimport time\n\nPYTHON = os.environ.get(\"D1_HERMES_PYTHON\", r\"C:\\Program Files\\Python311\\python.exe\")\nSERVER = os.environ.get(\n    \"D1_HERMES_STOCK_MCP\",\n    r\"C:\\项目\\zerobound-kg\\stock_data_mcp.py\",\n)\nCACHE_TTL = int(os.environ.get(\"D1_HERMES_CACHE_TTL\", \"300\"))\n_CACHE = {\"ts\": 0.0, \"risk\": None, \"signals\": None}\n_TIMEOUT = float(os.environ.get(\"D1_HERMES_TIMEOUT\", \"20\"))\n\n\ndef enabled():\n    return os.environ.get(\"D1_HERMES_BRIDGE\", \"1\").strip().lower() not in (\n        \"0\", \"off\", \"false\", \"no\")\n\n\ndef _mcp_call(name, arguments=None, timeout=None):\n    \"\"\"一次 stdio MCP 调用；返回 result.content 文本解析后的对象，失败抛异常。\"\"\"\n    msgs = [\n        {\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"initialize\",\n         \"params\": {\"protocolVersion\": \"2024-11-05\", \"capabilities\": {},\n                    \"clientInfo\": {\"name\": \"d1-hermes-bridge\", \"version\": \"1.0\"}}},\n        {\"jsonrpc\": \"2.0\", \"id\": 2, \"method\": \"tools/call\",\n         \"params\": {\"name\": name, \"arguments\": arguments or {}}},\n    ]\n    payload = \"\\n\".join(json.dumps(m, ensure_ascii=False) for m in msgs) + \"\\n\"\n    p = subprocess.Popen(\n        [PYTHON, SERVER], stdin=subprocess.PIPE, stdout=subprocess.PIPE,\n        stderr=subprocess.PIPE, text=True, encoding=\"utf-8\")\n    try:\n        out, err = p.communicate(payload, timeout=timeout or _TIMEOUT)\n    except subprocess.TimeoutExpired:\n        # 超时必须 kill + 回收，避免 run_shadow 长跑积累僵尸子进程\n        p.kill()\n        try:\n            p.communicate(timeout=2)\n        except Exception:  # noqa: BLE001\n            pass\n        raise\n    finally:\n        if p.poll() is None:\n            p.kill()\n    if not out.strip():\n        raise RuntimeError(\"mcp empty output: %s\" % (err or \"\")[:160])\n    res = None\n    for line in out.splitlines():\n        try:\n            msg = json.loads(line)\n        except ValueError:\n            continue\n        if msg.get(\"id\") == 2:\n            res = msg\n    if not res or \"result\" not in res:\n        raise RuntimeError(\"mcp call failed: %s\" % out[:200])\n    content = (res.get(\"result\") or {}).get(\"content\") or []\n    if not content:\n        return {}\n    text = content[0].get(\"text\") or \"\"\n    try:\n        return json.loads(text)\n    except ValueError:\n        return {\"text\": text}\n\n\ndef _load(force=False):\n    if not enabled():\n        return None, None\n    age = time.time() - _CACHE.get(\"ts\", 0)\n    if not force and _CACHE.get(\"risk\") is not None and age < CACHE_TTL:\n        return _CACHE[\"risk\"], _CACHE[\"signals\"]\n    try:\n        risk = _mcp_call(\"risk_overview\")\n        signals = _mcp_call(\"strategy_signals\")\n        _CACHE.update({\"ts\": time.time(), \"risk\": risk, \"signals\": signals})\n        return risk, signals\n    except Exception:\n        return _CACHE.get(\"risk\"), _CACHE.get(\"signals\")\n\n\ndef _symbol(code):\n    return str(code or \"\").split(\".\")[0].strip()\n\n\ndef context_text(code=None):\n    \"\"\"生成给投研 prompt 的只读补充；失败返回空字符串。\"\"\"\n    risk, signals = _load()\n    parts = []\n    if isinstance(risk, dict) and risk.get(\"ok\"):\n        gate = risk.get(\"market_gate\") or {}\n        if gate:\n            parts.append(\"市场闸: action=%s score=%s reason=%s\" % (\n                gate.get(\"action\"), gate.get(\"score\"), str(gate.get(\"reason\") or \"\")[:180]))\n        rules = (risk.get(\"risk\") or {}).get(\"rules\") or {}\n        rs = []\n        for k in (\"R1\", \"R2\", \"R3\", \"R4\"):\n            r = rules.get(k) or {}\n            if r.get(\"pass\") or r.get(\"block\"):\n                rs.append(\"%s pass=%s block=%s\" % (k, r.get(\"pass\"), r.get(\"block\")))\n        if rs:\n            parts.append(\"风控水位: \" + \" | \".join(rs))\n    if isinstance(signals, dict) and signals.get(\"ok\"):\n        rows = signals.get(\"signals\") or []\n        sym = _symbol(code)\n        mine = [x for x in rows if _symbol(x.get(\"symbol\")) == sym]\n        parts.append(\"今日信号总数: %s\" % signals.get(\"count\"))\n        if mine:\n            s = mine[0]\n            parts.append(\"本票Hermes信号: action=%s score=%s conf=%s %s\" % (\n                s.get(\"action\"), s.get(\"score\"), s.get(\"confidence\"),\n                str(s.get(\"rationale\") or \"\")[:180]))\n        else:\n            top = rows[:3]\n            if top:\n                parts.append(\"市场高分信号: \" + \"; \".join(\n                    \"%s %s %s\" % (x.get(\"symbol\"), x.get(\"action\"), x.get(\"score\"))\n                    for x in top))\n    return \"\\n\".join(parts)\n"
+  },
+  {
+   "path": "agent_platform/ide_release_info.py",
+   "size": 2820,
+   "lines": 81,
+   "truncated": false,
+   "content": "# -*- coding: utf-8 -*-\n\"\"\"IDE release artifact 只读信息：/api/ide/version 的唯一数据源。\n\n- 读 _vault/legion_ide/release/legion-ide/current.json\n- 读取 manifest.json，逐个校验 artifact 文件 sha256\n- 返回 build id / commit / 文件 hash / match 状态\n- 只读，不写 artifact、不启动 Hermes\n\"\"\"\nfrom __future__ import annotations\n\nimport hashlib\nimport json\nimport os\nfrom pathlib import Path\nfrom typing import Any\n\nDEFAULT_ROOT = os.environ.get(\n    \"LEGION_IDE_RELEASE_ROOT\",\n    r\"C:\\项目\\_vault\\legion_ide\\release\\legion-ide\",\n)\n\n\ndef _read_json(p: Path) -> dict:\n    try:\n        data = json.loads(p.read_text(encoding=\"utf-8\"))\n        return data if isinstance(data, dict) else {}\n    except (OSError, ValueError):\n        return {}\n\n\ndef _sha256(p: Path) -> str:\n    h = hashlib.sha256()\n    with p.open(\"rb\") as f:\n        for chunk in iter(lambda: f.read(1024 * 1024), b\"\"):\n            h.update(chunk)\n    return h.hexdigest()\n\n\ndef build_info(root: str | Path | None = None) -> dict[str, Any]:\n    base = Path(root or os.environ.get(\"LEGION_IDE_RELEASE_ROOT\") or DEFAULT_ROOT)\n    current = _read_json(base / \"current.json\")\n    if not current:\n        return {\"ok\": False, \"error\": \"release_current_missing\",\n                \"release_root\": str(base)}\n    art = Path(str(current.get(\"dir\") or (base / \"current\")))\n    manifest = _read_json(art / \"manifest.json\")\n    if not manifest:\n        return {\"ok\": False, \"error\": \"release_manifest_missing\",\n                \"release_root\": str(base), \"artifact_dir\": str(art)}\n    files = {}\n    all_match = True\n    for name, meta in (manifest.get(\"files\") or {}).items():\n        fp = art / str(name)\n        if not fp.is_file():\n            files[name] = {\"exists\": False, \"bytes\": 0, \"sha256\": \"\",\n                           \"expected_bytes\": (meta or {}).get(\"bytes\"),\n                           \"expected_sha256\": (meta or {}).get(\"sha256\"),\n                           \"match\": False}\n            all_match = False\n            continue\n        got = _sha256(fp)\n        exp = str((meta or {}).get(\"sha256\") or \"\")\n        match = bool(exp) and got == exp\n        files[name] = {\"exists\": True, \"bytes\": fp.stat().st_size,\n                       \"sha256\": got, \"expected_bytes\": (meta or {}).get(\"bytes\"),\n                       \"expected_sha256\": exp, \"match\": match}\n        all_match = all_match and match\n    return {\n        \"ok\": True,\n        \"service\": \"legion-ide-release\",\n        \"version\": current.get(\"version\") or manifest.get(\"version\") or \"\",\n        \"commit\": manifest.get(\"commit\") or \"\",\n        \"built_at\": manifest.get(\"built_at\") or \"\",\n        \"promoted_at\": current.get(\"promoted_at\") or \"\",\n        \"release_root\": str(base),\n        \"artifact_dir\": str(art),\n        \"files\": files,\n        \"all_match\": all_match,\n        \"manifest_schema\": manifest.get(\"schema\") or \"\",\n    }\n"
   },
   {
    "path": "agent_platform/monday_checkpoint.py",
@@ -7383,6 +7345,26 @@
      "id": "WO-PICKCHAIN-VERDICTS-FIX-20261030",
      "desc": "选股产品链 verdicts 异常修复：py312 build_pick_verdicts 0xC0000005 访问冲突、py311 长跑无输出；先定位 pandas/tdx 依赖，再加超时/分片/日志；不阻塞 11-02 试运行。",
      "status": "doing"
+    },
+    {
+     "id": "WO-LEGION-AUTH-20261031",
+     "desc": "IDE认证拓扑收口",
+     "status": "doing"
+    },
+    {
+     "id": "WO-LEGION-TXN-20261031",
+     "desc": "LDE真事务与测试runner",
+     "status": "doing"
+    },
+    {
+     "id": "WO-LEGION-REVIEWOPS-20261031",
+     "desc": "诸葛亮复核运营化",
+     "status": "doing"
+    },
+    {
+     "id": "WO-LEGION-P0-4-20261031",
+     "desc": "P0-4多文件patchset事务：preview/confirm原子/rollback/evidence/tests",
+     "status": "review"
     }
    ]
   }
