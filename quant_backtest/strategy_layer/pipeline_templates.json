@@ -1,0 +1,527 @@
+{
+  "_meta": {
+    "schema": "pipeline_templates/v1",
+    "ir_schema": "composition_ir/v1",
+    "wo": "WO-PIPELINE-TEMPLATES-20261031",
+    "phase": "Phase 2-E",
+    "purpose": "可直接复用的组合流水线模板库：每个模板是一条合法的 Composition IR（composition_ir/v1），默认只读、execution dry-run、publish 不生效。",
+    "source_ir_module": "quant_backtest/strategy_layer/composition_ir.py",
+    "source_cards": "quant_backtest/strategy_layer/strategy_cards.json（10 张 Strategy Card，只读引用）",
+    "safety": {
+      "readonly": true,
+      "executes": false,
+      "places_orders": false,
+      "writes_ledger": false,
+      "publishes": false,
+      "writes_registry": false,
+      "note": "模板只在内存中产出 IR / 编译计划；load_template 的参数覆写不落盘、不写 strategy_registry.json、不注册 adapter、不新增计划任务。"
+    },
+    "parameterization": {
+      "tenant": "多租户隔离键（Phase 0-C 口径）；覆写仅作用于返回的 IR 副本。",
+      "weights": "allocator 节点的策略权重表（键必须是本模板 strategy 节点用到的 strategy_id）；覆写仅内存。",
+      "max_single": "单票上限（percent，写入 risk_policy.max_position_pct 及 allocator.params.max_single_pct）；覆写仅内存。",
+      "rule": "默认值见每个模板的 parameters 块；load_template(name, tenant=..., weights=..., max_single=...) 只改返回副本，原始模板 JSON 不被修改。"
+    },
+    "templates": [
+      "trend_pullback",
+      "trend_reversal",
+      "nine_dim_chan"
+    ]
+  },
+  "templates": [
+    {
+      "template_id": "trend_pullback",
+      "title": "趋势回踩",
+      "description": "趋势跟随（trend_follow）为唯一信号源：universe → strategy → filter（量能/回踩过滤）→ allocator（加权）→ risk → execution（dry_run）。默认单票上限 8%。",
+      "parameters": {
+        "tenant": {
+          "type": "str",
+          "default": "official",
+          "description": "多租户隔离键（覆写仅内存，不写 registry）"
+        },
+        "weights": {
+          "type": "dict",
+          "default": {
+            "trend_follow": 1.0
+          },
+          "description": "allocator 策略权重（键必须属于本模板 strategy 节点）"
+        },
+        "max_single": {
+          "type": "float",
+          "default": 8.0,
+          "description": "单票上限 %（(0,100]，写入 risk_policy.max_position_pct）"
+        }
+      },
+      "ir": {
+        "schema": "composition_ir/v1",
+        "pipeline_id": "pc-template-trend-pullback",
+        "version": "1.0.0",
+        "owner": "quant-classic",
+        "tenant": "official",
+        "mode": "SHADOW",
+        "description": "模板：趋势回踩（trend_follow 单策略 + filter/allocator/risk/execution，只读计划）",
+        "nodes": [
+          {
+            "id": "u_cn",
+            "type": "universe",
+            "label": "CN 股票池",
+            "params": {
+              "markets": [
+                "CN"
+              ]
+            }
+          },
+          {
+            "id": "s_trend",
+            "type": "strategy",
+            "label": "趋势跟随",
+            "strategy_id": "trend_follow",
+            "params": {
+              "n": 20,
+              "slope_lookback": 5
+            }
+          },
+          {
+            "id": "f_pullback",
+            "type": "filter",
+            "label": "回踩/量能过滤",
+            "params": {
+              "min_amount": 50000000,
+              "pullback_pct": 3.0,
+              "require_above_ma": true
+            }
+          },
+          {
+            "id": "a_weight",
+            "type": "allocator",
+            "label": "加权分配",
+            "params": {
+              "scheme": "weighted",
+              "weights": {
+                "trend_follow": 1.0
+              },
+              "max_single_pct": 8.0
+            }
+          },
+          {
+            "id": "k_risk",
+            "type": "risk",
+            "label": "风控闸",
+            "params": {}
+          },
+          {
+            "id": "x_paper",
+            "type": "execution",
+            "label": "纸面执行（dry-run）",
+            "params": {
+              "book": "official",
+              "dry_run": true
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "u_cn",
+            "to": "s_trend",
+            "port": "universe"
+          },
+          {
+            "from": "s_trend",
+            "to": "f_pullback",
+            "port": "signals"
+          },
+          {
+            "from": "f_pullback",
+            "to": "a_weight",
+            "port": "signals"
+          },
+          {
+            "from": "a_weight",
+            "to": "k_risk",
+            "port": "allocations"
+          },
+          {
+            "from": "k_risk",
+            "to": "x_paper",
+            "port": "allocations"
+          }
+        ],
+        "risk_policy": {
+          "policy_id": "rp-trend-pullback",
+          "max_position_pct": 8.0,
+          "max_positions": 20,
+          "max_gross_exposure_pct": 80.0,
+          "stop_loss_pct": 6.0,
+          "kill_switch": true,
+          "notes": "趋势回踩模板默认风控（只读计划，不生效）"
+        },
+        "publish": {
+          "enabled": false,
+          "channel": "paper",
+          "visibility": "private",
+          "requires_approval": true,
+          "notes": "模板默认不发布；发布需人工审批后另行评估"
+        }
+      }
+    },
+    {
+      "template_id": "trend_reversal",
+      "title": "趋势+反转",
+      "description": "趋势跟随（trend_follow）+ RSI 反转（rsi_reversal）双信号源：universe → 2×strategy → filter → rank → allocator（加权）→ risk → execution（dry_run）。默认权重 0.6/0.4、单票上限 10%。",
+      "parameters": {
+        "tenant": {
+          "type": "str",
+          "default": "official",
+          "description": "多租户隔离键（覆写仅内存，不写 registry）"
+        },
+        "weights": {
+          "type": "dict",
+          "default": {
+            "trend_follow": 0.6,
+            "rsi_reversal": 0.4
+          },
+          "description": "allocator 策略权重（键必须属于本模板 strategy 节点）"
+        },
+        "max_single": {
+          "type": "float",
+          "default": 10.0,
+          "description": "单票上限 %（(0,100]，写入 risk_policy.max_position_pct）"
+        }
+      },
+      "ir": {
+        "schema": "composition_ir/v1",
+        "pipeline_id": "pc-template-trend-reversal",
+        "version": "1.0.0",
+        "owner": "quant-classic",
+        "tenant": "official",
+        "mode": "SHADOW",
+        "description": "模板：趋势+反转（trend_follow + rsi_reversal + filter/rank/allocator/risk/execution，只读计划）",
+        "nodes": [
+          {
+            "id": "u_cn",
+            "type": "universe",
+            "label": "CN 股票池",
+            "params": {
+              "markets": [
+                "CN"
+              ]
+            }
+          },
+          {
+            "id": "s_trend",
+            "type": "strategy",
+            "label": "趋势跟随",
+            "strategy_id": "trend_follow",
+            "params": {
+              "n": 20,
+              "slope_lookback": 5
+            }
+          },
+          {
+            "id": "s_rsi",
+            "type": "strategy",
+            "label": "RSI 反转",
+            "strategy_id": "rsi_reversal",
+            "params": {
+              "period": 14,
+              "oversold": 30.0,
+              "overbought": 70.0
+            }
+          },
+          {
+            "id": "f_quality",
+            "type": "filter",
+            "label": "信号质量过滤",
+            "params": {
+              "min_amount": 50000000,
+              "min_confidence": 0.5
+            }
+          },
+          {
+            "id": "r_top",
+            "type": "rank",
+            "label": "信号排序",
+            "params": {
+              "top_n": 30
+            }
+          },
+          {
+            "id": "a_weight",
+            "type": "allocator",
+            "label": "加权分配",
+            "params": {
+              "scheme": "weighted",
+              "weights": {
+                "trend_follow": 0.6,
+                "rsi_reversal": 0.4
+              },
+              "max_single_pct": 10.0
+            }
+          },
+          {
+            "id": "k_risk",
+            "type": "risk",
+            "label": "风控闸",
+            "params": {}
+          },
+          {
+            "id": "x_paper",
+            "type": "execution",
+            "label": "纸面执行（dry-run）",
+            "params": {
+              "book": "official",
+              "dry_run": true
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "u_cn",
+            "to": "s_trend",
+            "port": "universe"
+          },
+          {
+            "from": "u_cn",
+            "to": "s_rsi",
+            "port": "universe"
+          },
+          {
+            "from": "s_trend",
+            "to": "f_quality",
+            "port": "signals"
+          },
+          {
+            "from": "s_rsi",
+            "to": "f_quality",
+            "port": "signals"
+          },
+          {
+            "from": "f_quality",
+            "to": "r_top",
+            "port": "signals"
+          },
+          {
+            "from": "r_top",
+            "to": "a_weight",
+            "port": "ranking"
+          },
+          {
+            "from": "a_weight",
+            "to": "k_risk",
+            "port": "allocations"
+          },
+          {
+            "from": "k_risk",
+            "to": "x_paper",
+            "port": "allocations"
+          }
+        ],
+        "risk_policy": {
+          "policy_id": "rp-trend-reversal",
+          "max_position_pct": 10.0,
+          "max_positions": 30,
+          "max_gross_exposure_pct": 100.0,
+          "stop_loss_pct": 8.0,
+          "kill_switch": true,
+          "notes": "趋势+反转模板默认风控（只读计划，不生效）"
+        },
+        "publish": {
+          "enabled": false,
+          "channel": "paper",
+          "visibility": "private",
+          "requires_approval": true,
+          "notes": "模板默认不发布；发布需人工审批后另行评估"
+        }
+      }
+    },
+    {
+      "template_id": "nine_dim_chan",
+      "title": "九维+缠论",
+      "description": "九维评分（nine_dim）+ 缠论信号池（chan_monitor）+ 缠论多级别联立（chanlun_li122）三信号源：universe → 3×strategy → filter（合并）→ rank → allocator（加权）→ risk → execution（dry_run）。默认权重 0.5/0.3/0.2、单票上限 10%。",
+      "parameters": {
+        "tenant": {
+          "type": "str",
+          "default": "official",
+          "description": "多租户隔离键（覆写仅内存，不写 registry）"
+        },
+        "weights": {
+          "type": "dict",
+          "default": {
+            "nine_dim": 0.5,
+            "chan_monitor": 0.3,
+            "chanlun_li122": 0.2
+          },
+          "description": "allocator 策略权重（键必须属于本模板 strategy 节点）"
+        },
+        "max_single": {
+          "type": "float",
+          "default": 10.0,
+          "description": "单票上限 %（(0,100]，写入 risk_policy.max_position_pct）"
+        }
+      },
+      "ir": {
+        "schema": "composition_ir/v1",
+        "pipeline_id": "pc-template-nine-dim-chan",
+        "version": "1.0.0",
+        "owner": "quant-nine-dim",
+        "tenant": "official",
+        "mode": "SHADOW",
+        "description": "模板：九维+缠论（nine_dim + chan_monitor + chanlun_li122 + filter/rank/allocator/risk/execution，只读计划）",
+        "nodes": [
+          {
+            "id": "u_cn",
+            "type": "universe",
+            "label": "CN 股票池",
+            "params": {
+              "markets": [
+                "CN"
+              ]
+            }
+          },
+          {
+            "id": "s_nine",
+            "type": "strategy",
+            "label": "九维评分",
+            "strategy_id": "nine_dim",
+            "params": {
+              "alert_threshold": 75,
+              "min_coverage": 0.75
+            }
+          },
+          {
+            "id": "s_chan",
+            "type": "strategy",
+            "label": "缠论信号池",
+            "strategy_id": "chan_monitor",
+            "params": {
+              "toxic_score_cap": 60.0
+            }
+          },
+          {
+            "id": "s_li122",
+            "type": "strategy",
+            "label": "缠论多级别联立",
+            "strategy_id": "chanlun_li122",
+            "params": {
+              "ruleset_key": "A_30F_5F_1F"
+            }
+          },
+          {
+            "id": "f_merge",
+            "type": "filter",
+            "label": "多源信号合并过滤",
+            "params": {
+              "min_amount": 50000000,
+              "min_sources": 1
+            }
+          },
+          {
+            "id": "r_top",
+            "type": "rank",
+            "label": "信号排序",
+            "params": {
+              "top_n": 30
+            }
+          },
+          {
+            "id": "a_weight",
+            "type": "allocator",
+            "label": "加权分配",
+            "params": {
+              "scheme": "weighted",
+              "weights": {
+                "nine_dim": 0.5,
+                "chan_monitor": 0.3,
+                "chanlun_li122": 0.2
+              },
+              "max_single_pct": 10.0
+            }
+          },
+          {
+            "id": "k_risk",
+            "type": "risk",
+            "label": "风控闸",
+            "params": {}
+          },
+          {
+            "id": "x_paper",
+            "type": "execution",
+            "label": "纸面执行（dry-run）",
+            "params": {
+              "book": "official",
+              "dry_run": true
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "u_cn",
+            "to": "s_nine",
+            "port": "universe"
+          },
+          {
+            "from": "u_cn",
+            "to": "s_chan",
+            "port": "universe"
+          },
+          {
+            "from": "u_cn",
+            "to": "s_li122",
+            "port": "universe"
+          },
+          {
+            "from": "s_nine",
+            "to": "f_merge",
+            "port": "signals"
+          },
+          {
+            "from": "s_chan",
+            "to": "f_merge",
+            "port": "signals"
+          },
+          {
+            "from": "s_li122",
+            "to": "f_merge",
+            "port": "signals"
+          },
+          {
+            "from": "f_merge",
+            "to": "r_top",
+            "port": "signals"
+          },
+          {
+            "from": "r_top",
+            "to": "a_weight",
+            "port": "ranking"
+          },
+          {
+            "from": "a_weight",
+            "to": "k_risk",
+            "port": "allocations"
+          },
+          {
+            "from": "k_risk",
+            "to": "x_paper",
+            "port": "allocations"
+          }
+        ],
+        "risk_policy": {
+          "policy_id": "rp-nine-dim-chan",
+          "max_position_pct": 10.0,
+          "max_positions": 30,
+          "max_gross_exposure_pct": 90.0,
+          "stop_loss_pct": 10.0,
+          "kill_switch": true,
+          "notes": "九维+缠论模板默认风控（只读计划，不生效）"
+        },
+        "publish": {
+          "enabled": false,
+          "channel": "paper",
+          "visibility": "private",
+          "requires_approval": true,
+          "notes": "模板默认不发布；发布需人工审批后另行评估"
+        }
+      }
+    }
+  ]
+}
