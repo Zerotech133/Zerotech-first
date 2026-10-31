@@ -373,7 +373,8 @@ def test_md_report_written_only_with_out_dir(tmp_path):
     assert mp.is_file()
     assert mp.name == "2026-10-31_变更影响面_aaaaaaaa_150000.md"
     md = mp.read_text(encoding="utf-8")
-    for key in ("改动文件与映射", "未映射文件", "风险说明", "决策建议"):
+    for key in ("改动文件与映射", "未映射文件", "风险说明", "决策建议",
+                "映射来源", "映射口径", "cross_dir"):
         assert key in md, key
 
 
@@ -389,7 +390,8 @@ def test_cli_json_human_and_exit_codes(tmp_path, capsys):
     for key in ("ok", "generated_at", "repo_root", "commit", "changed_files",
                 "class_counts", "mapping", "impacted_tests", "unmapped_files",
                 "unmapped_ratio", "risk_level", "run", "run_results",
-                "run_summary", "suggestion", "suggestion_reasons", "md_report"):
+                "run_summary", "suggestion", "suggestion_reasons", "md_report",
+                "cross_dir_count", "mapping_source_counts"):
         assert key in data, key
     assert data["suggestion"] == "OBSERVE" and data["impacted_tests"] == [
         "tools/test_foo_bar.py"]
@@ -418,3 +420,150 @@ def test_env_repo_root_override(tmp_path, monkeypatch):
     rep = h.analyze("HEAD", runner=fake)  # 不传 repo_root → env 生效
     assert rep["repo_root"] == str(repo)
     assert rep["ok"] is True and rep["changed_count"] == 1
+
+
+# --------------------------------------------------- P1-D 跨目录映射规则
+
+def test_cross_dir_tools_to_agent_platform(tmp_path):
+    """tools/foo.py 无同目录测试，但 agent_platform/tests/test_foo.py 存在 → cross_dir。"""
+    h = _load()
+    repo = _repo(tmp_path, {"tools/foo.py": "",
+                            "agent_platform/tests/test_foo.py": ""})
+    rep = h.analyze("HEAD", repo_root=repo,
+                    runner=_FakeRun(files=["tools/foo.py"]))
+    assert rep["ok"] is True
+    assert rep["mapping"][0]["mapping_source"] == "cross_dir"
+    assert rep["mapping"][0]["tests"] == ["agent_platform/tests/test_foo.py"]
+    assert rep["impacted_tests"] == ["agent_platform/tests/test_foo.py"]
+    assert rep["unmapped_files"] == []
+    assert rep["cross_dir_count"] == 1
+    assert rep["mapping_source_counts"] == {"same_dir": 0, "cross_dir": 1, "none": 0}
+
+
+def test_same_dir_priority_over_cross_dir(tmp_path):
+    """原目录内规则优先：同目录已有测试时不叠加跨目录命中。"""
+    h = _load()
+    repo = _repo(tmp_path, {"tools/foo.py": "",
+                            "tools/test_foo.py": "",
+                            "agent_platform/tests/test_foo.py": ""})
+    rep = h.analyze("HEAD", repo_root=repo,
+                    runner=_FakeRun(files=["tools/foo.py"]))
+    assert rep["mapping"][0]["mapping_source"] == "same_dir"
+    assert rep["mapping"][0]["tests"] == ["tools/test_foo.py"]
+    assert rep["cross_dir_count"] == 0
+    assert rep["mapping_source_counts"] == {"same_dir": 1, "cross_dir": 0, "none": 0}
+
+
+def test_cross_dir_multiple_dirs_all_listed(tmp_path):
+    """跨目录层同名测试分布在多目录 → 全部列出。"""
+    h = _load()
+    repo = _repo(tmp_path, {"tools/foo.py": "",
+                            "agent_platform/tests/test_foo.py": "",
+                            "portal/tests/test_foo.py": "",
+                            "tests/test_foo.py": ""})
+    rep = h.analyze("HEAD", repo_root=repo,
+                    runner=_FakeRun(files=["tools/foo.py"]))
+    assert rep["mapping"][0]["mapping_source"] == "cross_dir"
+    assert rep["mapping"][0]["tests"] == [
+        "agent_platform/tests/test_foo.py",
+        "portal/tests/test_foo.py",
+        "tests/test_foo.py"]
+    assert rep["cross_dir_count"] == 1
+
+
+def test_cross_dir_exact_stem_only(tmp_path):
+    """跨目录层只认 stem 完全一致：test_foo_extra.py / test_xfoo.py 不算。"""
+    h = _load()
+    repo = _repo(tmp_path, {"tools/foo.py": "",
+                            "agent_platform/tests/test_foo_extra.py": "",
+                            "agent_platform/tests/test_xfoo.py": ""})
+    rep = h.analyze("HEAD", repo_root=repo,
+                    runner=_FakeRun(files=["tools/foo.py"]))
+    assert rep["mapping"][0]["tests"] == []
+    assert rep["mapping"][0]["mapping_source"] == "none"
+    assert rep["unmapped_files"] == ["tools/foo.py"]
+    assert rep["cross_dir_count"] == 0
+    assert rep["mapping_source_counts"] == {"same_dir": 0, "cross_dir": 0, "none": 1}
+
+
+def test_cross_dir_tools_tests_dir(tmp_path):
+    """tools/tests/test_<stem>.py：第 1 层原目录内规则已命中（same_dir）。"""
+    h = _load()
+    repo = _repo(tmp_path, {"tools/foo.py": "",
+                            "tools/tests/test_foo.py": ""})
+    rep = h.analyze("HEAD", repo_root=repo,
+                    runner=_FakeRun(files=["tools/foo.py"]))
+    assert rep["mapping"][0]["mapping_source"] == "same_dir"
+    assert rep["mapping"][0]["tests"] == ["tools/tests/test_foo.py"]
+
+
+def test_cross_dir_tools_tests_from_other_module(tmp_path):
+    """其他目录模块的测试落在 tools/tests/ → 第 2 层 cross_dir 命中。"""
+    h = _load()
+    repo = _repo(tmp_path, {"agent_platform/foo.py": "",
+                            "tools/tests/test_foo.py": ""})
+    rep = h.analyze("HEAD", repo_root=repo,
+                    runner=_FakeRun(files=["agent_platform/foo.py"]))
+    assert rep["mapping"][0]["mapping_source"] == "cross_dir"
+    assert rep["mapping"][0]["tests"] == ["tools/tests/test_foo.py"]
+    assert rep["cross_dir_count"] == 1
+
+
+def test_cross_dir_quant_nested_tests(tmp_path):
+    """quant_backtest 子目录 tests/ 同名精确匹配 → cross_dir（risk=high）。"""
+    h = _load()
+    repo = _repo(tmp_path, {
+        "quant_backtest/strategy_layer/strategy_health.py": "",
+        "quant_backtest/strategy_layer/tests/test_strategy_health.py": ""})
+    rep = h.analyze("HEAD", repo_root=repo, runner=_FakeRun(
+        files=["quant_backtest/strategy_layer/strategy_health.py"]))
+    assert rep["mapping"][0]["mapping_source"] == "cross_dir"
+    assert rep["mapping"][0]["tests"] == [
+        "quant_backtest/strategy_layer/tests/test_strategy_health.py"]
+    assert rep["cross_dir_count"] == 1 and rep["unmapped_files"] == []
+    assert rep["risk_level"] == "high"
+
+
+def test_cross_dir_nonexistent_test_unmapped(tmp_path):
+    h = _load()
+    repo = _repo(tmp_path, {"tools/foo.py": ""})
+    rep = h.analyze("HEAD", repo_root=repo,
+                    runner=_FakeRun(files=["tools/foo.py"]))
+    assert rep["mapping"][0]["tests"] == []
+    assert rep["mapping"][0]["mapping_source"] == "none"
+    assert rep["unmapped_files"] == ["tools/foo.py"]
+    assert rep["mapping_source_counts"] == {"same_dir": 0, "cross_dir": 0, "none": 1}
+
+
+def test_cross_dir_run_all_pass_suggestion_pass(tmp_path):
+    """cross_dir 映射的测试 --run 全过 → PASS 建议（可直接执行跨目录测试）。"""
+    h = _load()
+    repo = _repo(tmp_path, {"tools/foo.py": "",
+                            "agent_platform/tests/test_foo.py": ""})
+    fake = _FakeRun(files=["tools/foo.py"],
+                    pytest_rc={"agent_platform/tests/test_foo.py": 0})
+    rep = h.analyze("HEAD", run_tests=True, repo_root=repo, runner=fake)
+    assert rep["run_results"][0]["test"] == "agent_platform/tests/test_foo.py"
+    assert rep["run_results"][0]["status"] == "passed"
+    assert rep["suggestion"] == "PASS"
+    assert rep["cross_dir_count"] == 1 and rep["unmapped_files"] == []
+
+
+def test_cross_dir_json_backward_compat(tmp_path, capsys):
+    """新增字段不破坏旧字段（JSON 向后兼容）。"""
+    h = _load()
+    repo = _repo(tmp_path, {"tools/foo.py": "",
+                            "agent_platform/tests/test_foo.py": ""})
+    h._run = _FakeRun(files=["tools/foo.py"])
+    rc = h.main(["--json", "--repo-root", str(repo)])
+    assert rc == 0
+    data = json.loads(capsys.readouterr().out)
+    for key in ("ok", "commit", "changed_files", "class_counts", "mapping",
+                "impacted_tests", "unmapped_files", "unmapped_ratio",
+                "risk_level", "run", "run_results", "run_summary",
+                "suggestion", "suggestion_reasons", "md_report"):
+        assert key in data, key
+    assert data["cross_dir_count"] == 1
+    assert data["mapping_source_counts"] == {"same_dir": 0, "cross_dir": 1,
+                                             "none": 0}
+    assert data["mapping"][0]["mapping_source"] == "cross_dir"
