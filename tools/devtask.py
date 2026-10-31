@@ -1387,6 +1387,47 @@ def _ide_bundle_commit_args(tid, repo=None):
             "--", IDE_BUNDLE_REL]
 
 
+# W5 P1-6 Phase1（2026-10-31）：bundle 自动提交去噪——只有本次 merge 触及
+# agent 源（org.json / team_* / hr/ / prompts/）才重烘+提交；其余 merge 跳过。
+# 依据：W5 报告实测 8 日 852/3,896 = 21.87% 提交是 bundle 收尾，其中多数仅
+# 时间戳/工单计数抖动。历史提交不删（git show 仍可追溯），不做 Phase2 去 tracked。
+BUNDLE_SOURCE_EXACT = ("agent_platform/registry/org.json",)
+BUNDLE_SOURCE_PREFIXES = (
+    "agent_platform/registry/team_",
+    "agent_platform/hr/",
+    "agent_platform/prompts/",
+)
+
+
+def _bundle_sources_changed(changed_files):
+    """本次 merge 改动是否触及 agent 源（决定 IDE bundle 是否重烘+提交）。"""
+    for raw in changed_files or []:
+        f = str(raw or "").replace("\\", "/")
+        while f.startswith("./"):
+            f = f[2:]
+        f = f.lstrip("/")
+        if not f:
+            continue
+        if f in BUNDLE_SOURCE_EXACT:
+            return True
+        if any(f.startswith(prefix) for prefix in BUNDLE_SOURCE_PREFIXES):
+            return True
+    return False
+
+
+def _merge_changed_files(tid):
+    """merge 前计算 task/<tid> 相对 master 的改动文件（失败返回 []，保守跳过重烘）。"""
+    try:
+        tools_dir = os.path.dirname(os.path.abspath(__file__))
+        if tools_dir not in sys.path:
+            sys.path.insert(0, tools_dir)
+        import merge_gated as _mg
+        return _mg.branch_changed_files(tid)
+    except Exception as exc:  # noqa: BLE001
+        print("  IDE bundle   ⚠ 改动文件计算失败（按源未变跳过）：%s" % str(exc)[:120])
+        return []
+
+
 MERGE_LOCK_NAME = "devtask_merge.lock"
 MERGE_LOCK_STALE_S = 1800
 
@@ -1603,9 +1644,23 @@ def _merge_with_retry(tid, branch, desc, tries=3, sleep_fn=None, git_fn=None,
     raise last if last else SystemExit("merge failed")
 
 
-def _auto_rebuild_ide_bundle(tid):
-    """merge 后自动重建 portal/agent_ide_bundle.json（失败只告警，不影响合并）。"""
+def _auto_rebuild_ide_bundle(tid, changed_files=None):
+    """merge 后按需重建 portal/agent_ide_bundle.json（失败只告警，不影响合并）。
+
+    W5 P1-6 Phase1（2026-10-31）：只有本次 merge 触及 agent 源才重烘+提交，
+    其余 merge 直接跳过——消除「每 merge 1 条 bundle 噪声提交」。
+    dry-run：``DEVTOOL_IDE_BUNDLE_DRY_RUN=1`` 只打印决策，不重建、不提交。
+    """
     try:
+        if changed_files is None:
+            changed_files = _merge_changed_files(tid)
+        if not _bundle_sources_changed(changed_files):
+            print("  IDE bundle   - 源未变，跳过重建/提交（W5 Phase1：仅 agent 源变更才提交）")
+            return
+        if os.environ.get("DEVTOOL_IDE_BUNDLE_DRY_RUN") == "1":
+            print("  IDE bundle   [dry-run] 源变（%d 文件）→ 将重建并提交；已跳过（不落盘/不提交）"
+                  % len(changed_files or []))
+            return
         tool = os.path.join(REPO, "tools", "build_agent_ide_bundle.py")
         r = subprocess.run([sys.executable, "-X", "utf8", tool], cwd=REPO,
                            capture_output=True, text=True, encoding="utf-8",
@@ -1916,6 +1971,9 @@ def cmd_merge(tid, *flags):
             _save(tasks, changed=(tid,))
             _emit("guard_fail", tid, "L2 门未过（K-STOCK-416）：%s" % detail[:120])
             return 1
+    # W5 P1-6 Phase1：merge 前抓取本单改动文件（merge 后 merge-base 会退化，
+    # 故必须在合并前算），供 IDE bundle 决定是否重烘+提交。
+    _bundle_changed = _merge_changed_files(tid)
     _qg0 = time.perf_counter()
     qg_ok, qg_detail = _quality_gate(tid)
     _MERGE_TIMINGS.append(("质量闸", time.perf_counter() - _qg0))
@@ -1952,7 +2010,7 @@ def cmd_merge(tid, *flags):
                   "approver=%s merged=1" % (t.get("approver") or "MISSING"))
         print("工单 %s 已合并 ✓（worktree 保留待人工回收）" % tid)
         _bd0 = time.perf_counter()
-        _auto_rebuild_ide_bundle(tid)
+        _auto_rebuild_ide_bundle(tid, _bundle_changed)
         _MERGE_TIMINGS.append(("IDE bundle", time.perf_counter() - _bd0))
     finally:
         _release_merge_lock(lock)
