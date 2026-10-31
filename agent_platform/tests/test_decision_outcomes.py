@@ -103,3 +103,13 @@ def test_build_ledger_row_model_fallback():
         {"web": "normal"}, 3.2, model="glm/glm-5.3", fallback=True,
     )
     assert r["model"] == "glm/glm-5.3" and r["fallback"] is True
+
+
+def test_cli_compute_and_report_flags(tmp_path):
+    led = tmp_path / "ledger.jsonl"
+    led.write_text("", encoding="utf-8")
+    out = tmp_path / "out.jsonl"
+    assert m.main(["--compute", "--no-write", "--ledger", str(led),
+                   "--out", str(out)]) == 0
+    assert m.main(["--report", "--no-write", "--ledger", str(led),
+                   "--out", str(out)]) == 0
