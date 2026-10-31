@@ -23,9 +23,9 @@ mod = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(mod)
 
 TASK = mod.DEFAULT_TASK
-ROLES = ["QA1", "GUANYU", "VERIFY1", "A0"]
+ROLES = ["QA1", "GUANYU", "VERIFY1", "ARCH1"]
 OPERATORS = {"ou_qa1": "QA1", "ou_guanyu": "GUANYU",
-             "ou_verify1": "VERIFY1", "ou_a0": "A0"}
+             "ou_verify1": "VERIFY1", "ou_arch1": "ARCH1"}
 EVIDENCE_FILES = {
     "deliverables/2026-10-31_M4独立复验与收口评估_v1.md":
         "# M4 独立复验与收口评估\n- 结论：技术验收 PASS；签字未完成\n",
@@ -129,11 +129,11 @@ def test_incomplete_missing_signatures(tmp_path, capsys):
     _write_config(tmp_path / "approval_signers.json", OPERATORS)
     _write_evidence(tmp_path / "evidence")
 
-    rc, report, _ = _run(tmp_path, capsys)
+    rc, report, _ = _run(tmp_path, capsys, "--require-complete")
 
     assert rc == 1
     assert report["complete"] is False and report["signoff_complete"] is False
-    assert report["missing"] == ["VERIFY1", "A0"]
+    assert report["missing"] == ["VERIFY1", "ARCH1"]
     assert report["signed"] == ["QA1", "GUANYU"]
     assert any("签字未齐" in r for r in report["reasons"])
     # 证据本身没缺，缺的是签字
@@ -150,7 +150,7 @@ def test_bad_config_json_does_not_crash(tmp_path, capsys):
     bad.write_text("{bad json", encoding="utf-8")
     _write_evidence(tmp_path / "evidence")
 
-    rc, report, _ = _run(tmp_path, capsys)
+    rc, report, _ = _run(tmp_path, capsys, "--require-complete")
 
     assert rc == 1                      # 状态 incomplete，不是工具崩溃 2
     assert report["role_map"]["valid"] is False
@@ -164,7 +164,7 @@ def test_missing_config_file_reports_unresolved(tmp_path, capsys):
     _complete_ledger(tmp_path)
     _write_evidence(tmp_path / "evidence")
     # 不写 config 文件
-    rc, report, _ = _run(tmp_path, capsys)
+    rc, report, _ = _run(tmp_path, capsys, "--require-complete")
     assert rc == 1
     assert report["role_map"]["exists"] is False
     assert "missing" in report["role_map"]["error"]
@@ -180,7 +180,7 @@ def test_missing_required_evidence_incomplete(tmp_path, capsys):
     _write_config(tmp_path / "approval_signers.json", OPERATORS)
     (tmp_path / "evidence").mkdir()      # 空证据根 → 三份必检全缺
 
-    rc, report, _ = _run(tmp_path, capsys)
+    rc, report, _ = _run(tmp_path, capsys, "--require-complete")
 
     assert rc == 1
     assert report["signoff_complete"] is True   # 签字齐
@@ -195,12 +195,12 @@ def test_role_mapping_missing_roles(tmp_path, capsys):
                   {"ou_qa1": "QA1", "ou_guanyu": "GUANYU"})
     _write_evidence(tmp_path / "evidence")
 
-    rc, report, _ = _run(tmp_path, capsys)
+    rc, report, _ = _run(tmp_path, capsys, "--require-complete")
 
     assert rc == 1
     assert report["role_map"]["covered_roles"] == ["QA1", "GUANYU"]
-    assert report["role_map"]["missing_roles"] == ["VERIFY1", "A0"]
-    assert report["missing"] == ["VERIFY1", "A0"]
+    assert report["role_map"]["missing_roles"] == ["VERIFY1", "ARCH1"]
+    assert report["missing"] == ["VERIFY1", "ARCH1"]
     assert any("角色映射未覆盖" in w for w in report["warnings"])
 
 
@@ -219,7 +219,7 @@ def test_annotated_pilot_clicks_excluded(tmp_path, capsys):
     _write_config(tmp_path / "approval_signers.json", OPERATORS)
     _write_evidence(tmp_path / "evidence")
 
-    rc, report, _ = _run(tmp_path, capsys)
+    rc, report, _ = _run(tmp_path, capsys, "--require-complete")
 
     assert rc == 1
     assert report["excluded_ts"] == ["2026-10-31T10:00:00"]
@@ -242,7 +242,7 @@ def test_available_tasks_and_unknown_task_warning(tmp_path, capsys):
     _write_config(tmp_path / "approval_signers.json", OPERATORS)
     _write_evidence(tmp_path / "evidence")
 
-    rc, report, _ = _run(tmp_path, capsys)
+    rc, report, _ = _run(tmp_path, capsys, "--require-complete")
     assert rc == 1
     available = report["approvals"]["available_m4_tasks"]
     assert available[TASK] == 2
@@ -250,7 +250,8 @@ def test_available_tasks_and_unknown_task_warning(tmp_path, capsys):
     assert available["M4/v1.1"] == 1
 
     # 选错 task：断言给出候选提示（不静默空）
-    rc2, report2, _ = _run(tmp_path, capsys, task="不存在的 M4 任务")
+    rc2, report2, _ = _run(tmp_path, capsys, "--require-complete",
+                           task="不存在的 M4 任务")
     assert rc2 == 1
     assert report2["approvals"]["task_rows"] == 0
     assert any("台账候选 M4 任务" in w for w in report2["warnings"])
@@ -329,3 +330,94 @@ def test_default_evidence_roots_cover_platform_root():
         main_repo = mod.REPO
     assert main_repo in roots
     assert main_repo.parent in roots
+
+
+# ---------------------------------------------------------------------------
+# 2026-11-01 K-ORG-20261101-M4SIGNOFF：默认四签=QA1/GUANYU/VERIFY1/ARCH1、
+# A0 监督签、--require-complete 硬门（M4 22:50 裁定；审计 v2 H8）
+# ---------------------------------------------------------------------------
+
+def test_default_required_signers_is_arch1_not_a0():
+    assert mod.DEFAULT_REQUIRED == ["QA1", "GUANYU", "VERIFY1", "ARCH1"]
+    assert mod.AC.REQUIRED_SIGNERS == ("QA1", "GUANYU", "VERIFY1", "ARCH1")
+    assert "A0" not in mod.DEFAULT_REQUIRED
+    assert mod.AC.SUPERVISOR_SIGNER == "A0"
+    # 默认参数不漂移：required 缺省来自 AC.REQUIRED_SIGNERS
+    assert list(mod.DEFAULT_REQUIRED) == list(mod.AC.REQUIRED_SIGNERS)
+
+
+def test_default_report_mode_exit0_even_incomplete(tmp_path, capsys):
+    """默认只出报告（不误阻断）：incomplete 也 exit 0，hard_gate.ok=False 供调用方判断。"""
+    _write_ledger(tmp_path / "approvals.jsonl", [
+        _approval("ou_qa1", "2026-10-31T10:00:00"),
+        _approval("ou_guanyu", "2026-10-31T10:01:00"),
+    ])
+    _write_config(tmp_path / "approval_signers.json", OPERATORS)
+    _write_evidence(tmp_path / "evidence")
+
+    rc, report, _ = _run(tmp_path, capsys)
+
+    assert rc == 0
+    assert report["complete"] is False
+    assert report["hard_gate"]["require_complete"] is False
+    assert report["hard_gate"]["ok"] is False
+    assert report["supervisor"] == "A0"
+
+
+def test_require_complete_hard_gate(tmp_path, capsys):
+    _complete_ledger(tmp_path)
+    _write_config(tmp_path / "approval_signers.json", OPERATORS)
+    _write_evidence(tmp_path / "evidence")
+    rc, report, _ = _run(tmp_path, capsys, "--require-complete")
+    assert rc == 0
+    assert report["complete"] is True
+    assert report["hard_gate"]["ok"] is True
+    assert report["hard_gate"]["signed_count"] == 4
+    assert report["hard_gate"]["required_count"] == 4
+
+    # 少一签（3/4）→ 硬门 exit 1，理由可见
+    _write_ledger(tmp_path / "approvals.jsonl", [
+        _approval("ou_qa1", "2026-10-31T10:00:00"),
+        _approval("ou_guanyu", "2026-10-31T10:01:00"),
+        _approval("ou_verify1", "2026-10-31T10:02:00"),
+    ])
+    rc2, report2, _ = _run(tmp_path, capsys, "--require-complete")
+    assert rc2 == 1
+    assert report2["hard_gate"]["ok"] is False
+    assert report2["hard_gate"]["signed_count"] == 3
+    assert any("ARCH1" in r for r in report2["hard_gate"]["reasons"])
+
+
+def test_a0_supervisor_click_does_not_satisfy_arch1(tmp_path, capsys):
+    """A0 是监督签：即使点了也补不上 ARCH1 第 4 签（不占第 4 签）。"""
+    rows = [_approval("ou_qa1", "2026-10-31T10:00:00"),
+            _approval("ou_guanyu", "2026-10-31T10:01:00"),
+            _approval("ou_verify1", "2026-10-31T10:02:00"),
+            _approval("ou_a0_supervisor", "2026-10-31T10:03:00")]
+    _write_ledger(tmp_path / "approvals.jsonl", rows)
+    _write_config(tmp_path / "approval_signers.json",
+                  dict(OPERATORS, ou_a0_supervisor="A0"))
+    _write_evidence(tmp_path / "evidence")
+
+    rc, report, _ = _run(tmp_path, capsys, "--require-complete")
+
+    assert rc == 1
+    assert "A0" not in report["required"]
+    assert "ARCH1" in report["missing"]
+    assert report["hard_gate"]["ok"] is False
+
+
+def test_signoff_gate_reuse_semantics():
+    """signoff_gate 纯函数：complete 才 ok；signed<required 必 fail；报告模式不阻断。"""
+    incomplete = {"state": "incomplete",
+                  "required_signers": ["QA1", "GUANYU", "VERIFY1", "ARCH1"],
+                  "signed_roles": ["QA1", "GUANYU", "VERIFY1"],
+                  "missing_signers": ["ARCH1"]}
+    ok, reasons = mod.AC.signoff_gate(incomplete, require_complete=True)
+    assert ok is False and reasons
+    assert mod.AC.signoff_gate(incomplete, require_complete=False) == (True, [])
+    complete = {"state": "complete",
+                "required_signers": ["QA1", "GUANYU", "VERIFY1", "ARCH1"],
+                "signed_roles": ["QA1", "GUANYU", "VERIFY1", "ARCH1"],
+                "missing_signers": []}
+    assert mod.AC.signoff_gate(complete) == (True, [])

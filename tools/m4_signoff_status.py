@@ -11,18 +11,24 @@ signed / missing / state / complete，并汇总 M4 证据文件的存在性/时�
   - 不重启 bot/服务、不改 org/权限。
 
 判定口径：
-  - 签字：``evaluate_signoff`` 默认要求四签 QA1/GUANYU/VERIFY1/A0（``--required``
-    可覆盖）；annotate 的 refs 指向的试点点击不计签；同 operator 重复只算 1 签；
-    角色映射缺失 → roles_unresolved（incomplete，绝不猜谁是谁）。
+  - 签字：``evaluate_signoff`` 默认要求四签 QA1/GUANYU/VERIFY1/ARCH1
+    （2026-10-31 22:50 裁定：第 4 签=ARCH1 终审；**A0/老田=监督签，不计入默认
+    四签**；``--required`` 可覆盖）；annotate 的 refs 指向的试点点击不计签；
+    同 operator 重复只算 1 签；角色映射缺失 → roles_unresolved（incomplete，绝不猜谁是谁）。
   - 证据：M4 独立复验评估 md / m4_tests.txt / m4_smoke.txt 为必检（另有 S2 卡
     payload/回执为参考项）；先查仓根再查平台根（C:\\项目），默认路径见
     ``EVIDENCE_SPECS``，``--evidence-root`` 可隔离（测试/异地核验）。
   - complete = 签字齐 **且** 必检证据齐；否则 incomplete。
+  - ``--require-complete``（硬门，2026-11-01 K-ORG-20261101-M4SIGNOFF）：默认只
+    出报告（exit 0，不误阻断）；带此参数时 complete 才 exit 0，incomplete 或
+    signed 数 < 要求签数 exit 1（复用 ``approval_control.signoff_gate`` 判定，
+    供 M4/Go-No-Go/release 调用，**不**设为所有 merge 的全局门）。
 
 用法::
 
     python -X utf8 tools/m4_signoff_status.py
     python -X utf8 tools/m4_signoff_status.py --json
+    python -X utf8 tools/m4_signoff_status.py --require-complete
     python -X utf8 tools/m4_signoff_status.py --task "M4/v1.1 正式验收签字"
     python -X utf8 tools/m4_signoff_status.py --report-dir deliverables
     python -X utf8 tools/m4_signoff_status.py --evidence-root C:\\Temp\\m4ev
@@ -30,7 +36,8 @@ signed / missing / state / complete，并汇总 M4 证据文件的存在性/时�
 输出：JSON 报告默认 ``agent_platform/data/shadow/m4_signoff_status_<date>.json``
 （``--report-dir`` 可指 deliverables；``--no-write`` 只打印）+ 人类可读摘要。
 
-退出码：0=complete（签字齐且证据齐）/ 1=incomplete / 2=自身错误（参数/异常）。
+退出码：默认 0=报告生成成功（不论是否 complete；看报告字段，不误阻断）/
+``--require-complete`` 时 0=complete（签字齐且证据齐）否则 1 / 2=自身错误（参数/异常）。
 """
 from __future__ import annotations
 
@@ -286,6 +293,7 @@ def build_report(task, required, ledger, config, evidence_roots,
         "warnings": warnings,
         "task": task,
         "required": list(required),
+        "supervisor": AC.SUPERVISOR_SIGNER,
         "state": signoff["state"],
         "signoff_complete": signoff["state"] == "complete",
         "signed": list(signoff.get("signed_roles") or []),
@@ -355,7 +363,8 @@ def main(argv=None):
     parser.add_argument("--config", default=str(DEFAULT_CONFIG),
                         help="signer 角色映射（默认 agent_platform/config/approval_signers.json）")
     parser.add_argument("--required", default=",".join(DEFAULT_REQUIRED),
-                        help="要求签角色（逗号分隔，默认 QA1,GUANYU,VERIFY1,A0）")
+                        help="要求签角色（逗号分隔，默认 QA1,GUANYU,VERIFY1,ARCH1；"
+                             "A0=监督签不计入默认四签）")
     parser.add_argument("--evidence-root", default=None,
                         help="只在指定目录下找证据（默认先仓根再平台根）")
     parser.add_argument("--report-dir", default=str(DEFAULT_REPORT_DIR),
@@ -365,6 +374,9 @@ def main(argv=None):
     parser.add_argument("--json", action="store_true", help="stdout 输出报告 JSON")
     parser.add_argument("--no-write", action="store_true",
                         help="只打印，不写报告文件")
+    parser.add_argument("--require-complete", action="store_true",
+                        help="硬门：complete 才 exit 0；incomplete/signed<required exit 1"
+                             "（默认只出报告不阻断；供 M4/Go-No-Go/release 调用）")
     args = parser.parse_args(argv)
     run_date = args.date or date.today().isoformat()
     try:
@@ -375,13 +387,29 @@ def main(argv=None):
                 for x in str(args.required or "").replace("，", ",").split(",")
                 if x.strip()]
     if not required:
-        parser.error("--required 不能为空（如 QA1,GUANYU,VERIFY1,A0）")
+        parser.error("--required 不能为空（如 QA1,GUANYU,VERIFY1,ARCH1）")
     roots = ([Path(args.evidence_root)]
              if args.evidence_root else default_evidence_roots())
     try:
         report = build_report(args.task.strip(), required, args.ledger,
                               args.config, roots, report_dir=args.report_dir,
                               run_date=run_date)
+        # 2026-11-01 K-ORG-20261101-M4SIGNOFF：--require-complete 硬门（复用 AC 判定）；
+        # 默认只出报告（hard_gate.ok 仅供参考，不阻断）。
+        signoff_ok, signoff_reasons = AC.signoff_gate(
+            report.get("signoff") or {}, require_complete=True)
+        gate_ok = bool(signoff_ok and report["complete"])
+        gate_reasons = list(report["reasons"]) + list(signoff_reasons)
+        report["hard_gate"] = {
+            "require_complete": bool(args.require_complete),
+            "ok": bool(gate_ok),
+            "signoff_ok": bool(signoff_ok),
+            "complete": bool(report["complete"]),
+            "signed_count": report["signed_count"],
+            "required_count": len(report["required"]),
+            "reasons": gate_reasons,
+            "supervisor": AC.SUPERVISOR_SIGNER,
+        }
         if not args.no_write:
             _write_json_atomic(report["report_path"], report)
     except Exception as exc:  # noqa: BLE001 - 看板 fail-visible，不静默
@@ -397,7 +425,15 @@ def main(argv=None):
         print(json.dumps(report, ensure_ascii=False, indent=2))
     else:
         _print_summary(report)
-    return 0 if report["complete"] else 1
+        gate = report["hard_gate"]
+        print("  hard_gate=%s require_complete=%s reason=%s | supervisor=%s"
+              % ("OK" if gate["ok"] else "BLOCK",
+                 gate["require_complete"], ",".join(gate["reasons"]) or "-",
+                 gate["supervisor"]))
+    # 默认报告模式 exit 0（不误阻断）；--require-complete 才是硬门（0=complete/1=incomplete）
+    if args.require_complete and not report["hard_gate"]["ok"]:
+        return 1
+    return 0
 
 
 if __name__ == "__main__":

@@ -16,7 +16,8 @@ payload 关键结构（飞书卡片回调）：
 
 2026-10-31 WO-D1-B123-20261031（D1 证据链 P0 / B2，M4 多方签字）：
 `required_signers` 取代硬编码三方——默认 M4 正式验收四方
-``QA1/GUANYU/VERIFY1/A0``（调用方可显式传参覆盖为旧三方/任意子集）。
+``QA1/GUANYU/VERIFY1/ARCH1``（第 4 签=ARCH1 终审；A0/老田为监督签，不计入默认
+四签；调用方可显式传参覆盖为旧三方/任意子集）。
 `handle_action` 返回值新增签字进度：``signoff_state`` / ``signoff.state`` =
 ``incomplete``（未齐）| ``complete``（齐），``signoff.signed_roles`` 为「已签」
 名单；**单签绝不返回 complete、绝不写「通过」**（台账只记签名行，不写裁决
@@ -38,11 +39,15 @@ ROOT = Path(__file__).resolve().parents[1]
 LEDGER = ROOT / "agent_platform" / "data" / "approvals.jsonl"
 TAGS = {"approval:approve": "approve", "approval:reject": "reject",
         "approval:escalate": "escalate"}
-# M4 正式验收四方签字（2026-10-31 D1 证据链 B2）：QA1 / GUANYU / VERIFY1 / A0·老田。
+# M4 正式验收四方签字（2026-11-01 依 2026-10-31 22:50 裁定）：
+# QA1 / GUANYU / VERIFY1 / ARCH1（**第 4 签 = ARCH1 终审**）；A0/老田 = 监督签
+# （知情、不阻断，不计入默认四签；如需 A0 亲签由 A0 明示后与 ARCH1 并列）。
 # 本模块**不自定组织政策**：默认值仅反映 M4 验收口径，调用方可用
 # ``required_signers`` 显式覆盖；operator → 角色映射仍由调用方注入 ``role_of``，
 # 映射缺失/未命中时状态保持 incomplete（roles_unresolved），绝不猜。
-REQUIRED_SIGNERS = ("QA1", "GUANYU", "VERIFY1", "A0")
+REQUIRED_SIGNERS = ("QA1", "GUANYU", "VERIFY1", "ARCH1")
+# 监督签（不计入默认四签；仅用于报告/口径说明，不参与 complete 判定）。
+SUPERVISOR_SIGNER = "A0"
 # 兼容旧名（2026-10-31 WO-L4-M4-HARDEN 的三方灰度机制）。
 THREE_PARTY_ROLES = ("QA1", "GUANYU", "VERIFY1")
 MIN_THREE_PARTY_SIGNERS = 3
@@ -158,7 +163,7 @@ def _enforce_result(result, enforce):
         "reason": str(signoff.get("reason") or ""),
         "missing_signers": list(signoff.get("missing_signers") or []),
         "hint": "M4 强制开关已开启：四方签字未齐；本次 approve 拒绝。"
-                "修法：补齐 QA1/GUANYU/VERIFY1/A0 签字，或把 "
+                "修法：补齐 QA1/GUANYU/VERIFY1/ARCH1 签字，或把 "
                 "agent_platform/config/l4_m4_policy.json 的 m4_enforce 改回 false"
                 "（env M4_SIGNOFF_ENFORCE=0 亦可临时降级）。",
     }
@@ -310,6 +315,40 @@ def evaluate_three_party_signoff(rows, task, required_roles=THREE_PARTY_ROLES,
     return result
 
 
+def signoff_gate(signoff, require_complete=True):
+    """签字硬门（纯函数，供 M4 看板 / approval_rollup / release 复用）。
+
+    ``--require-complete`` 口径：complete 才 ok；incomplete 或已签角色数 <
+    要求签角色数 → fail（防止「证据齐但少签」被误判通过）。默认不启用时
+    返回 ok=True（仅报告，不阻断）。→ ``(ok: bool, reasons: list[str])``。
+    """
+    if not require_complete:
+        return True, []
+    signoff = signoff or {}
+    required = _normalise_required(signoff.get("required_signers")
+                                   or signoff.get("required")
+                                   or REQUIRED_SIGNERS)
+    signed = signoff.get("signed_roles")
+    if signed is None:
+        # 兼容 rollup/看板报告形态（signed 为角色 list；bool 形态忽略）
+        maybe = signoff.get("signed")
+        signed = maybe if isinstance(maybe, (list, tuple, set)) else []
+    if not isinstance(signed, (list, tuple, set)):
+        signed = []
+    signed = [str(x) for x in signed]
+    reasons = []
+    if str(signoff.get("state") or "") != "complete":
+        missing = list(signoff.get("missing_signers")
+                       or signoff.get("missing") or [])
+        reasons.append("signoff_incomplete" + (
+            ":%s" % ",".join(str(x) for x in missing) if missing else ""))
+    if len(signed) < len(required):
+        reasons.append("signed_lt_required(%d/%d)" % (len(signed), len(required)))
+    if reasons:
+        return False, reasons
+    return True, []
+
+
 def _attach_signoff(result, ledger, task, signoff_roles, required_signers,
                     min_signers):
     """挂载多方签字进度（不改审批主流程 ok/记录语义，不写「通过」）。"""
@@ -352,7 +391,7 @@ def handle_action(payload, ledger=None, allowed_ops=None, owner=None,
     不写「通过」裁决。
 
     2026-10-31 WO-D1-B123-20261031（B2）：``required_signers`` 为要求签字的
-    角色集合（默认 M4 四方 QA1/GUANYU/VERIFY1/A0，可由调用方覆盖）；兼容旧
+    角色集合（默认 M4 四方 QA1/GUANYU/VERIFY1/ARCH1，可由调用方覆盖）；兼容旧
     参数名 ``signoff_required_roles`` / ``signoff_min_signers``。
 
     2026-10-31 WO-M4-ENFORCE-PROBE-20261031：``m4_enforce_state()`` 为真时，

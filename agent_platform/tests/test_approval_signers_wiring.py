@@ -39,7 +39,7 @@ def _rows(*ops, task="M4"):
 
 
 FULL_MAP = {"ou_qa1": "QA1", "ou_guanyu": "GUANYU",
-            "ou_verify1": "VERIFY1", "ou_a0": "A0"}
+            "ou_verify1": "VERIFY1", "ou_arch1": "ARCH1"}
 
 
 # ----------------------------------------------------------------------
@@ -48,13 +48,13 @@ FULL_MAP = {"ou_qa1": "QA1", "ou_guanyu": "GUANYU",
 def test_load_signers_mapped_and_normalized(tmp_path):
     p = _write_config(tmp_path, {
         "ou_qa1": "qa1",          # 小写 → 归一
-        "ou_a0": " A0 ",          # 空白 → 归一
+        "ou_arch1": " ARCH1 ",          # 空白 → 归一
         "ou_bad": 3,              # 非字符串角色 → 丢弃
         "": "QA1",                # 空 open_id → 丢弃
         "ou_blank": "   ",        # 空角色 → 丢弃
     })
     assert WS._load_approval_signers(str(p), use_cache=False) == {
-        "ou_qa1": "QA1", "ou_a0": "A0"}
+        "ou_qa1": "QA1", "ou_arch1": "ARCH1"}
 
 
 def test_load_signers_missing_file_returns_empty(tmp_path):
@@ -84,9 +84,9 @@ def test_load_signers_cache_invalidated_when_config_changes(tmp_path, monkeypatc
                         {"stamp": None, "map": {}})
     p = _write_config(tmp_path, {"ou_qa1": "QA1"})
     assert WS._load_approval_signers(str(p)) == {"ou_qa1": "QA1"}
-    _write_config(tmp_path, {"ou_qa1": "QA1", "ou_a0": "A0"})   # size 变化 → 失效
+    _write_config(tmp_path, {"ou_qa1": "QA1", "ou_arch1": "ARCH1"})   # size 变化 → 失效
     assert WS._load_approval_signers(str(p)) == {
-        "ou_qa1": "QA1", "ou_a0": "A0"}
+        "ou_qa1": "QA1", "ou_arch1": "ARCH1"}
 
 
 def test_load_signers_cache_returns_copy(tmp_path, monkeypatch):
@@ -94,7 +94,7 @@ def test_load_signers_cache_returns_copy(tmp_path, monkeypatch):
                         {"stamp": None, "map": {}})
     p = _write_config(tmp_path, {"ou_qa1": "QA1"})
     first = WS._load_approval_signers(str(p))
-    first["injected"] = "A0"        # 污染返回值不得污染缓存
+    first["injected"] = "ARCH1"        # 污染返回值不得污染缓存
     assert "injected" not in WS._load_approval_signers(str(p))
 
 
@@ -114,16 +114,16 @@ def test_mapped_single_sign_incomplete():
     r = AC.evaluate_signoff(_rows("ou_qa1"), "M4", role_of=FULL_MAP)
     assert r["state"] == "incomplete" and r["ok"] is False
     assert r["signed_roles"] == ["QA1"]
-    assert r["missing_signers"] == ["GUANYU", "VERIFY1", "A0"]
+    assert r["missing_signers"] == ["GUANYU", "VERIFY1", "ARCH1"]
     assert r["distinct_signers"] == 1
 
 
 def test_mapped_four_signers_complete():
     r = AC.evaluate_signoff(
-        _rows("ou_qa1", "ou_guanyu", "ou_verify1", "ou_a0"), "M4",
+        _rows("ou_qa1", "ou_guanyu", "ou_verify1", "ou_arch1"), "M4",
         role_of=FULL_MAP)
     assert r["state"] == "complete" and r["ok"] is True
-    assert r["signed_roles"] == ["QA1", "GUANYU", "VERIFY1", "A0"]
+    assert r["signed_roles"] == ["QA1", "GUANYU", "VERIFY1", "ARCH1"]
     assert r["missing_signers"] == []
 
 
@@ -138,7 +138,7 @@ def test_unknown_open_id_not_guessed():
 
 
 def test_empty_map_never_complete():
-    rows = _rows("ou_qa1", "ou_guanyu", "ou_verify1", "ou_a0")
+    rows = _rows("ou_qa1", "ou_guanyu", "ou_verify1", "ou_arch1")
     for role_of in ({}, None):
         r = AC.evaluate_signoff(rows, "M4", role_of=role_of)
         assert r["state"] == "incomplete"
@@ -213,7 +213,7 @@ def test_handle_approval_card_end_to_end_four_signs(tmp_path, monkeypatch):
     monkeypatch.delenv("APPROVAL_OPERATORS", raising=False)
     monkeypatch.setattr(WS, "_load_approval_signers", lambda *a, **k: FULL_MAP)
     states = []
-    for op in ("ou_qa1", "ou_guanyu", "ou_verify1", "ou_a0"):
+    for op in ("ou_qa1", "ou_guanyu", "ou_verify1", "ou_arch1"):
         r = WS._handle_approval_card(
             {"tag": "approval:approve", "task": "M4"}, op)
         states.append((r["signoff_state"], r["approved"]))

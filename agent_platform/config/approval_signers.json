@@ -1,4 +1,4 @@
 {
   "map": {},
-  "note": "M4 签字角色映射（飞书 open_id → QA1/GUANYU/VERIFY1/A0）。空 map = pilot 尚未配置：任何点击都不匹配角色 → approval_control 判 roles_unresolved（绝不猜、不伪造签字）。只读契约：feishu_bot_ws._handle_approval_card 与 tools/approval_rollup.py 消费；2026-10-31 WO-M4-SIGNERMAP-20261031。"
+  "note": "M4 签字角色映射（飞书 open_id → QA1/GUANYU/VERIFY1/ARCH1；第4签=ARCH1 终审，A0/老田=监督签不计入默认四签）。空 map = pilot 尚未配置：任何点击都不匹配角色 → approval_control 判 roles_unresolved（绝不猜、不伪造签字）。只读契约：feishu_bot_ws._handle_approval_card 与 tools/approval_rollup.py 消费；2026-11-01 K-ORG-20261101-M4SIGNOFF 按 2026-10-31 22:50 裁定更新口径。"
 }
