@@ -31,6 +31,8 @@ def _load():
         "huangzhong_health", _TOOLS / "huangzhong_health.py")
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
+    # 冻结时钟：夹具时间基于固定 NOW，若不冻结，跨过 90min 阈值后用例会随真实时间漂移失败。
+    mod._now = lambda: NOW
     return mod
 
 
