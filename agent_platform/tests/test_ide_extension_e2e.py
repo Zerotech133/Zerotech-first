@@ -17,21 +17,33 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 RELEASE_ROOT = Path(r"C:\项目\_vault\legion_ide\release\legion-ide")
+# W1（2026-10-31）：E2E 必须断言生产 release artifact。旧实现 artifact 缺失时
+# 静默回退主仓工作树（E2E 可能全绿但 artifact/live 已坏）——现改为：回退仍保留
+# 但显式标记来源；LEGION_E2E_REQUIRE_ARTIFACT=1 时回退直接失败（fail-closed）。
+STRICT_ARTIFACT = str(os.environ.get("LEGION_E2E_REQUIRE_ARTIFACT", "")).strip() == "1"
 
 
 def _a0_source() -> Path:
-    """E2E 必须断言生产 release artifact；artifact 缺失才退回本地文件。"""
+    """E2E 断言源：优先生产 release artifact；回退主仓时标记（strict 模式直接失败）。"""
+    global A0_SOURCE
     try:
         current = json.loads((RELEASE_ROOT / "current.json").read_text(encoding="utf-8"))
         art = Path(str(current.get("dir")))
         p = art / "a0-mainchat.js"
         if p.is_file():
+            A0_SOURCE = "artifact"
             return p
     except (OSError, ValueError):
         pass
+    if STRICT_ARTIFACT:
+        raise RuntimeError(
+            "LEGION_E2E_REQUIRE_ARTIFACT=1 但 release artifact 不可用：%s" % RELEASE_ROOT
+        )
+    A0_SOURCE = "local-worktree"
     return ROOT / "Hermes" / "extensions" / "legion-ide" / "a0-mainchat.js"
 
 
+A0_SOURCE = "unknown"
 A0 = _a0_source()
 EDGE = Path(r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe")
 
@@ -144,6 +156,18 @@ def test_release_artifact_manifest_hashes():
     assert info["ok"] is True, info
     assert info["all_match"] is True, info
     assert info.get("version")
+
+
+def test_e2e_source_prefers_release_artifact():
+    """W1：release artifact 存在时 E2E 必须用 artifact，不允许静默回退工作树。
+
+    回退本身保留（开发机无 vault 时可跑），但来源必须可区分（A0_SOURCE），
+    需要 fail-closed 的流水线用 LEGION_E2E_REQUIRE_ARTIFACT=1。
+    """
+    if not (RELEASE_ROOT / "current.json").is_file():
+        pytest.skip("无 release artifact（非生产机）")
+    assert A0_SOURCE == "artifact", "E2E 回退到了 %s，未断言生产 artifact" % A0_SOURCE
+    assert A0.is_file()
 
 
 def test_p03_p04_browser_e2e(tmp_path):

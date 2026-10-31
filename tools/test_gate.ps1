@@ -61,7 +61,10 @@ $paths = @{
         'agent_platform/tests/test_legion_ide_session.py',
         'agent_platform/tests/test_legion_ide_undo_store.py',
         'agent_platform/tests/test_ide_extension_e2e.py',
-        'agent_platform/tests/test_ide_rw.py'
+        'agent_platform/tests/test_ide_rw.py',
+        # W1（2026-10-31）：release/junction/live-version 信任链离线断言；
+        # live 分支默认 skip（LEGION_LIVE_SMOKE=1 才跑），不拖慢门禁。
+        'agent_platform/tests/test_release_live_smoke.py'
     )
 }
 
