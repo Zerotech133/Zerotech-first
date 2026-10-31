@@ -1,4 +1,4 @@
-# zhuge_carrier_switch.ps1
+﻿# zhuge_carrier_switch.ps1
 # WO-LEGION-ZHUGE-SWITCH-20261026 (2026-10-26)
 #
 # Probe the available carriers for the OpenClaw "zhuge" agent and switch its
@@ -13,9 +13,16 @@
 # -Apply: backup openclaw.json -> openclaw config patch -> validate ->
 #         real inference self-check; auto rollback on any failure.
 # -ForceTier: skip probing (test/dry-run use).
-# Scheduling this script (Task Scheduler) is L2 and needs human approval.
 #
-# Exit: 0 ok / no change; 1 error or rolled back.
+# 2026-10-31 P122（WO-GUANYU-P122-20261031，L2-1 恢复条件）：
+#   ① openclaw CLI 调用统一「超时 + 进程树 kill + 退避重试」：修复 shared-state
+#      清理超时（CLI 在 patch/validate 后清理锁 >5s 即报错）导致每 10min 写配置+回滚死循环；
+#   ② 回滚判据改为 备份文件 sha256 还原校验（不依赖可能同样超时的 CLI validate）；
+#   ③ 同一 target 失败后进入冷却（默认 30min，状态文件可 env 覆盖），冷却期任务绿退出；
+#   ④ 备份保留最近 N 份（默认 20），旧备份进回收站（不直接删）；
+#   ⑤ 路径/超时/重试/冷却/保留数均可 env 覆盖，供隔离测试（测试不碰生产配置）。
+#
+# Exit: 0 ok / no change / cooldown; 1 error or rolled back.
 param(
     [switch]$Apply,
     [switch]$DryRun,
@@ -23,12 +30,22 @@ param(
     [ValidateSet('auto', 'gpt6', 'ms1max35', 'ms1max177', 'deepseek')]
     [string]$ForceTier = 'auto',
     [int]$ProbeTimeoutMs = 2000,
-    [int]$InferTimeoutSec = 150
+    [int]$InferTimeoutSec = 150,
+    [int]$CliTimeoutSec = 45,
+    [int]$RetryCount = 3,
+    [int]$CooldownMinutes = 30,
+    [int]$BackupRetain = 20
 )
 
 $ErrorActionPreference = 'Stop'
-$logFile = 'C:\Temp\zhuge_carrier_switch.log'
-$backupDir = 'C:\Temp\oc_cfg_backups'
+function Env-OrDefault([string]$name, [string]$default) {
+    $v = [Environment]::GetEnvironmentVariable($name)
+    if ($v) { return [string]$v }
+    return $default
+}
+$logFile = Env-OrDefault 'ZH_CARRIER_LOG' 'C:\Temp\zhuge_carrier_switch.log'
+$backupDir = Env-OrDefault 'ZH_CARRIER_BACKUP_DIR' 'C:\Temp\oc_cfg_backups'
+$stateFile = Env-OrDefault 'ZH_CARRIER_STATE_FILE' 'C:\Temp\zhuge_carrier_switch_state.json'
 
 function Log([string]$msg) {
     try {
@@ -38,7 +55,6 @@ function Log([string]$msg) {
 }
 
 function Fail([string]$msg) {
-    # A2-B11：错误路径也遵守 -Json 契约（计划任务以 -Json 调用，下游按 JSON 解析）
     Log ('ERROR ' + $msg)
     if ($Json) {
         @{ ok = $false; error = $msg; action = 'error'; log = $logFile } |
@@ -49,10 +65,13 @@ function Fail([string]$msg) {
     exit 1
 }
 
+function Get-Sha256([string]$path) {
+    try { return (Get-FileHash -Path $path -Algorithm SHA256).Hash.ToLower() }
+    catch { return '' }
+}
+
 function Resolve-ConfigPath {
-    if ($env:OPENCLAW_CONFIG -and (Test-Path $env:OPENCLAW_CONFIG)) {
-        return $env:OPENCLAW_CONFIG
-    }
+    if ($env:OPENCLAW_CONFIG -and (Test-Path $env:OPENCLAW_CONFIG)) { return $env:OPENCLAW_CONFIG }
     foreach ($n in @('openclaw.json', 'config.json')) {
         $p = Join-Path $env:USERPROFILE ('.openclaw\' + $n)
         if (Test-Path $p) { return $p }
@@ -74,9 +93,7 @@ function Probe-Tcp([string]$hostName, [int]$port, [int]$timeoutMs) {
         $ok = $client.Connected
         $client.Dispose()
         return $ok
-    } catch {
-        return $false
-    }
+    } catch { return $false }
 }
 
 function Find-OpenClaw {
@@ -91,9 +108,141 @@ function Get-CurrentModel {
         $raw = Get-Content -Path $cfgPath -Raw -Encoding UTF8
         $cfg = $raw | ConvertFrom-Json
         return [string]$cfg.agents.entries.zhuge.model.primary
+    } catch { return '' }
+}
+
+function Kill-ProcessTree([int]$rootPid) {
+    $all = @()
+    try { $all = Get-CimInstance Win32_Process -ErrorAction SilentlyContinue } catch { }
+    $kids = @($all | Where-Object { $_.ParentProcessId -eq $rootPid } | ForEach-Object { [int]$_.ProcessId })
+    foreach ($k in $kids) { Kill-ProcessTree $k }
+    try { Stop-Process -Id $rootPid -Force -ErrorAction SilentlyContinue } catch { }
+}
+
+function Invoke-OcCli {
+    # 统一 CLI 调用：可选 stdin 文件；超时 kill 进程树；返回 @{ rc; out; timed_out; elapsed_ms }
+    param([string[]]$ocArgs, [int]$timeoutSec, [string]$stdinFile = '')
+    $outFile = Join-Path $env:TEMP ('zh_oc_out_' + $PID + '_' + [guid]::NewGuid().ToString('N').Substring(0, 8) + '.log')
+    $errFile = $outFile + '.err'
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
+    $timedOut = $false
+    $rc = -1
+    $text = ''
+    try {
+        if ($oc -match '\.ps1$') {
+            $exe = 'powershell.exe'
+            $argList = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $oc) + $ocArgs
+        } else {
+            $exe = $oc
+            $argList = $ocArgs
+        }
+        $psi = New-Object System.Diagnostics.ProcessStartInfo
+        $psi.FileName = $exe
+        $quoted = @()
+        foreach ($a in $argList) {
+            $s = [string]$a
+            if ($s -match '[\s"]') { $quoted += ('"' + ($s -replace '"', '\"') + '"') } else { $quoted += $s }
+        }
+        $psi.Arguments = ($quoted -join ' ')
+        $psi.UseShellExecute = $false
+        $psi.RedirectStandardOutput = $true
+        $psi.RedirectStandardError = $true
+        $psi.CreateNoWindow = $true
+        if ($stdinFile) { $psi.RedirectStandardInput = $true }
+        $proc = New-Object System.Diagnostics.Process
+        $proc.StartInfo = $psi
+        $null = $proc.Start()
+        if ($stdinFile) {
+            try {
+                $stdinText = [System.IO.File]::ReadAllText($stdinFile)
+                $proc.StandardInput.Write($stdinText)
+                $proc.StandardInput.Close()
+            } catch { Log ('stdin write failed: ' + $_.Exception.Message) }
+        }
+        $ms = [Math]::Max(1000, $timeoutSec * 1000)
+        $finished = $proc.WaitForExit($ms)
+        if (-not $finished) {
+            Kill-ProcessTree ([int]$proc.Id)
+            $timedOut = $true
+            Log ('cli timeout after ' + $timeoutSec + 's; process tree killed')
+        } else {
+            $rc = [int]$proc.ExitCode
+            try { $text = $proc.StandardOutput.ReadToEnd() + $proc.StandardError.ReadToEnd() } catch { }
+            if ($rc -ne 0) { Log ('cli exit rc=' + $rc) }
+        }
     } catch {
-        return ''
+        Log ('cli invoke failed: ' + $_.Exception.Message)
+        $rc = -1
+    } finally {
+        $sw.Stop()
+        foreach ($f in @($outFile, $errFile)) {
+            if (Test-Path -LiteralPath $f) {
+                $text += [System.IO.File]::ReadAllText($f, [System.Text.Encoding]::UTF8)
+            }
+        }
+        Remove-Item -LiteralPath $outFile, $errFile -Force -ErrorAction SilentlyContinue
     }
+    return @{ rc = $rc; out = $text.Trim(); timed_out = $timedOut; elapsed_ms = [int]$sw.ElapsedMilliseconds }
+}
+
+function Invoke-OcCli-Retry {
+    # 退避重试（1s, 3s, ...），超时/非零都重试；返回最后一次结果
+    param([string]$name, [string[]]$ocArgs, [int]$timeoutSec)
+    $last = @{ rc = -1; out = ''; timed_out = $false; elapsed_ms = 0 }
+    for ($i = 1; $i -le $RetryCount; $i++) {
+        $r = Invoke-OcCli -ocArgs $ocArgs -timeoutSec $timeoutSec
+        Log ($name + ' attempt ' + $i + '/' + $RetryCount + ' rc=' + $r.rc + ' timed_out=' + $r.timed_out + ' ms=' + $r.elapsed_ms)
+        if ($r.out) { foreach ($line in ($r.out -split "`r?`n")) { if ($line.Trim()) { Log ($name + ': ' + $line.Trim()) } } }
+        $last = $r
+        if ($r.rc -eq 0) { return $r }
+        if ($i -lt $RetryCount) { Start-Sleep -Seconds (1 + 2 * ($i - 1)) }
+    }
+    return $last
+}
+
+function Read-Cooldown {
+    try {
+        if (-not (Test-Path -LiteralPath $stateFile)) { return $null }
+        $d = Get-Content -LiteralPath $stateFile -Raw -Encoding UTF8 | ConvertFrom-Json
+        if (-not $d.target -or -not $d.ts) { return $null }
+        return $d
+    } catch { return $null }
+}
+
+function Set-Cooldown([string]$target, [string]$reason) {
+    try {
+        @{ target = $target; ts = (Get-Date).ToString('o'); reason = $reason } |
+            ConvertTo-Json -Depth 3 | Out-File -FilePath $stateFile -Encoding utf8 -Force
+        Log ('cooldown set target=' + $target + ' reason=' + $reason)
+    } catch { Log ('cooldown write failed: ' + $_.Exception.Message) }
+}
+
+function Clear-Cooldown {
+    try {
+        if (Test-Path -LiteralPath $stateFile) {
+            @{ cleared = $true; ts = (Get-Date).ToString('o') } |
+                ConvertTo-Json | Out-File -FilePath $stateFile -Encoding utf8 -Force
+        }
+    } catch { }
+}
+
+function Prune-Backups {
+    # 只保留最近 $BackupRetain 份；旧文件进回收站（Windows 删除红线）
+    try {
+        $files = @(Get-ChildItem -Path $backupDir -Filter 'openclaw-*.json' -File -ErrorAction SilentlyContinue |
+            Sort-Object LastWriteTime -Descending)
+        if ($files.Count -le $BackupRetain) { return }
+        Add-Type -AssemblyName Microsoft.VisualBasic -ErrorAction SilentlyContinue
+        foreach ($f in ($files | Select-Object -Skip $BackupRetain)) {
+            try {
+                [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteFile(
+                    $f.FullName, 'OnlyErrorDialogs', 'SendToRecycleBin')
+                Log ('backup pruned (recycle) ' + $f.Name)
+            } catch {
+                Log ('backup prune failed ' + $f.Name + ': ' + $_.Exception.Message)
+            }
+        }
+    } catch { Log ('backup prune error: ' + $_.Exception.Message) }
 }
 
 $tiers = [ordered]@{
@@ -136,6 +285,8 @@ $result = [ordered]@{
     target = $targetModel
     changed = $changed
     probes = $probes
+    retry = $RetryCount
+    cli_timeout_sec = $CliTimeoutSec
     action = if ($dry) { 'plan-only' } elseif ($changed) { 'apply' } else { 'no-change' }
     log = $logFile
 }
@@ -153,34 +304,75 @@ if ($dry -or (-not $changed)) {
     exit 0
 }
 
+# ---- cooldown：同一 target 失败后 N 分钟内不再重试（任务绿退出，避免死循环）----
+$cd = Read-Cooldown
+if ($cd -and $cd.target -eq $targetModel) {
+    try { $ageMin = ((Get-Date) - [datetime]::Parse($cd.ts)).TotalMinutes } catch { $ageMin = 9999 }
+    if ($ageMin -ge 0 -and $ageMin -lt $CooldownMinutes) {
+        $result.action = 'cooldown'
+        $result.ok = $true
+        $result.error = 'cooldown_active'
+        $result.cooldown_age_min = [math]::Round($ageMin, 1)
+        Log ('cooldown active target=' + $targetModel + ' age=' + [math]::Round($ageMin, 1) + 'min -> skip apply')
+        if ($Json) { $result | ConvertTo-Json -Depth 8 } else {
+            Write-Output ('COOLDOWN: ' + $targetModel + ' 失败冷却中（' + [math]::Round($ageMin, 1) + 'min）')
+        }
+        exit 0
+    }
+}
+
 # ---- apply ----
 New-Item -ItemType Directory -Force -Path $backupDir | Out-Null
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $backup = Join-Path $backupDir ('openclaw-' + $stamp + '.json')
 Copy-Item -Path $cfgPath -Destination $backup -Force
-Log ('apply target=' + $targetModel + ' backup=' + $backup)
+$backupSha = Get-Sha256 $backup
+Log ('apply target=' + $targetModel + ' backup=' + $backup + ' sha=' + $backupSha.Substring(0, [Math]::Min(12, $backupSha.Length)))
+Prune-Backups
 
 function Restore-Backup {
+    # 回滚判据：备份文件 sha256 与还原后配置 sha256 一致（不依赖 CLI）
     try {
         Copy-Item -Path $backup -Destination $cfgPath -Force
-        & $oc config validate *> $null
-        Log ('rolled back to ' + $backup)
+        $got = Get-Sha256 $cfgPath
+        if ($got -eq $backupSha) {
+            Log ('rolled back sha ok to ' + $backup)
+            return $true
+        }
+        Log ('ROLLBACK SHA MISMATCH expect=' + $backupSha + ' got=' + $got)
+        return $false
     } catch {
         Log ('ROLLBACK FAILED: ' + $_.Exception.Message)
+        return $false
     }
 }
 
 try {
     $patchObj = @{ agents = @{ entries = @{ zhuge = @{ model = @{ primary = $targetModel } } } } }
     $patchJson = $patchObj | ConvertTo-Json -Depth 10
-    $patchJson | & $oc config patch --stdin 2>&1 | ForEach-Object { Log ('patch: ' + $_) }
-    if ($LASTEXITCODE -ne 0) { throw ('config patch failed exit=' + $LASTEXITCODE) }
-    & $oc config validate 2>&1 | ForEach-Object { Log ('validate: ' + $_) }
-    if ($LASTEXITCODE -ne 0) { throw ('config validate failed exit=' + $LASTEXITCODE) }
+    $patchFile = Join-Path $env:TEMP ('zh_patch_' + $PID + '.json')
+    $patchJson | Out-File -FilePath $patchFile -Encoding utf8 -Force
 
-    # real inference self-check (uses OpenClaw secret store; no key on disk)
-    # A2-B06：必须有超时（InferTimeoutSec 旧版声明未用，OpenClaw 挂起会无限阻塞）
-    # 且必须判「非空正文」——{"ok":true,"outputs":[]} 不能算健康（L5 会判 empty_output）。
+    $patchRes = @{ rc = -1; out = ''; timed_out = $false }
+    for ($i = 1; $i -le $RetryCount; $i++) {
+        $r = Invoke-OcCli -ocArgs @('config', 'patch', '--stdin') -timeoutSec $CliTimeoutSec -stdinFile $patchFile
+        Log ('config patch attempt ' + $i + '/' + $RetryCount + ' rc=' + $r.rc + ' timed_out=' + $r.timed_out + ' ms=' + $r.elapsed_ms)
+        if ($r.out) { foreach ($line in ($r.out -split "`r?`n")) { if ($line.Trim()) { Log ('patch: ' + $line.Trim()) } } }
+        $patchRes = $r
+        if ($r.rc -eq 0) { break }
+        if ($i -lt $RetryCount) { Start-Sleep -Seconds (1 + 2 * ($i - 1)) }
+    }
+    Remove-Item -LiteralPath $patchFile -Force -ErrorAction SilentlyContinue
+    if ($patchRes.rc -ne 0) {
+        throw ('config patch failed rc=' + $patchRes.rc + ' timed_out=' + $patchRes.timed_out)
+    }
+
+    # validate 失败仅告警，不单独阻断（CLI validate 本身可能撞 shared-state；真正判据是 self-check）
+    $valRes = Invoke-OcCli-Retry -name 'config validate' -ocArgs @('config', 'validate') -timeoutSec $CliTimeoutSec
+    if ($valRes.rc -ne 0) { Log ('WARN config validate rc=' + $valRes.rc + ' (continue to self-check)') }
+
+    # real inference self-check（判「非空正文」，{"ok":true,"outputs":[]} 不算健康）
+    $inferText = ''
     $job = Start-Job -ScriptBlock {
         param($exe)
         & $exe infer model run --local --agent zhuge --prompt 'reply only: OK' --json
@@ -217,9 +409,11 @@ try {
     } catch { $ok = $false }
     if (-not $ok) { throw 'self-check inference empty/failed' }
 
+    Clear-Cooldown
     $result.ok = $true
     $result.action = 'applied'
     $result.backup = $backup
+    $result.backup_sha = $backupSha
     Log ('applied ok target=' + $targetModel + ' backup=' + $backup)
     if ($Json) { $result | ConvertTo-Json -Depth 8 } else {
         Write-Output ('APPLIED: ' + $current + ' -> ' + $targetModel)
@@ -229,11 +423,13 @@ try {
 } catch {
     $msg = $_.Exception.Message
     Log ('apply failed: ' + $msg + ' -> rollback')
-    Restore-Backup
+    $restored = Restore-Backup
+    Set-Cooldown -target $targetModel -reason $msg
     $result.ok = $false
     $result.action = 'rolled-back'
     $result.error = $msg
     $result.backup = $backup
-    if ($Json) { $result | ConvertTo-Json -Depth 8 } else { Write-Output ('ERROR: ' + $msg + ' (rolled back)') }
+    $result.rollback_sha_ok = $restored
+    if ($Json) { $result | ConvertTo-Json -Depth 8 } else { Write-Output ('ERROR: ' + $msg + ' (rolled back=' + $restored + ')') }
     exit 1
 }
