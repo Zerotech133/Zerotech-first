@@ -172,23 +172,42 @@ env.update({
     "HERMES_WEBUI_CSP_FRAME_EXTRA": "http://127.0.0.1:5175",
     "NO_PROXY": "localhost,127.0.0.1",
 })
-# Phase B2：可选密码认证（文件存在才启用；不存在=保持现状）
-_PW_FILE = os.environ.get(
-    "HERMES_WEBUI_PASSWORD_FILE",
-    r"C:\项目\_vault\legion_ide\hermes_webui_password",
-)
-try:
-    _pw = open(_PW_FILE, "r", encoding="utf-8-sig").read().strip()
-    if _pw:
-        env["HERMES_WEBUI_PASSWORD"] = _pw
-except OSError:
-    _pw = ""
-# 生产 fail-closed：默认要求认证；密码缺失/读失败拒绝拉起（回滚显式 HERMES_AUTH_REQUIRED=0）
+# ── WO-LEGION-AUTH-20261031：认证拓扑收口（trusted-header，替代密码注入）──
+# 背景：8734 /hermes/ 已由 nginx auth_request 校验门户 session，但 8787 还要
+# 第二次密码登录（Phase B2 注入 HERMES_WEBUI_PASSWORD 导致双登录）。
+# 现改为 Hermes 原生 trusted-header 认证：
+#   nginx /hermes/、/extensions/ 在 auth_request 通过后注入 X-Portal-User
+#   （单用户常量 laotian），Hermes 信任该头直接建会话；直连 8787 不带该头
+#   → 页面 302 / API 401（/health 仍为公共探活，auth.py PUBLIC_PATHS）。
+# 本启动器：不再使用磁盘密码文件（历史双登录根因），改为注入
+# HERMES_WEBUI_TRUSTED_AUTH_HEADER；trusted-header 模式下额外注入「一次性随机
+# 密码」（env 优先级 > settings.json 的旧 password_hash，见 auth.py
+# get_password_hash 优先级），使直连 8787 的密码登录等价不可用（登录页还在，
+# 但没有可用的密码）。随机值每次启动生成、不落盘、不打印/不进日志。
+# 回滚：git revert 本单（恢复密码注入）→ 重启 8787；或临时 HERMES_AUTH_REQUIRED=0。
+# 残余风险：Hermes 对 trusted 头只采信 loopback/白名单 peer（api/routes.py
+# _raw_peer_is_trusted_proxy，默认 127.0.0.0/8）；8787 只绑 127.0.0.1，故
+# 「本机进程伪造 X-Portal-User 直连 8787」仍属本机信任边界内的残余风险；
+# 另重启前已签发的 Hermes 密码会话 cookie 仍可能有效到 TTL 到期（服务端会话，
+# 未在本单撤销，见 docs/audit/2026-10-31_IDE认证拓扑收口_v1.md）。
+env.pop("HERMES_WEBUI_PASSWORD", None)  # 防继承环境块残留旧密码注入
+_TRUSTED_AUTH_HEADER = os.environ.get("HERMES_TRUSTED_AUTH_HEADER", "X-Portal-User").strip()
+if _TRUSTED_AUTH_HEADER:
+    env["HERMES_WEBUI_TRUSTED_AUTH_HEADER"] = _TRUSTED_AUTH_HEADER
+    # 每次启动随机、不落盘、不打印：覆盖 settings.json 旧 password_hash
+    import secrets
+    env["HERMES_WEBUI_PASSWORD"] = secrets.token_urlsafe(48)
+# 生产 fail-closed：默认要求认证；既无 trusted-header 配置又无密码时拒绝拉起
+# （回滚/调试显式 HERMES_AUTH_REQUIRED=0）
 _AUTH_REQUIRED = str(os.environ.get("HERMES_AUTH_REQUIRED", "1")).strip().lower() \
     not in ("0", "off", "false", "no")
-if _AUTH_REQUIRED and not env.get("HERMES_WEBUI_PASSWORD"):
-    _log("[FATAL] HERMES_AUTH_REQUIRED=1 but password file missing/unreadable: %s" % _PW_FILE)
+if _AUTH_REQUIRED and not env.get("HERMES_WEBUI_TRUSTED_AUTH_HEADER"):
+    _log("[FATAL] HERMES_AUTH_REQUIRED=1 but HERMES_TRUSTED_AUTH_HEADER is empty; "
+         "refuse to launch unauthenticated 8787")
     sys.exit(2)
+# 只记 header 名，绝不记随机密码/凭据
+_log("[auth] trusted-header=%s (settings password overridden by ephemeral random)"
+     % env.get("HERMES_WEBUI_TRUSTED_AUTH_HEADER"))
 # 2026-10-16 判例：交互会话 PATH 前置了 WorkBuddy 3.13/PortableGit，
 # server 启动后 spawn 子进程会拿到坏解释器而静默死。守护链环境必须
 # 以系统 PATH 为底重建，剔除注入项。

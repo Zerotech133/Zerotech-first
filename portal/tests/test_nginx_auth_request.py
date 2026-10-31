@@ -1,12 +1,27 @@
 # -*- coding: utf-8 -*-
-"""nginx auth_request 页面真保护配置回归（2026-10-30 L2）。"""
+"""nginx auth_request 页面真保护配置回归（2026-10-30 L2）。
+
+2026-10-31 扩：WO-LEGION-AUTH-20261031 认证拓扑收口——
+- /hermes/、/extensions/ 在 auth_request 后注入 Hermes trusted-header 身份
+  （X-Portal-User，单用户常量），消除 8734→8787 第二次密码登录；
+- 启动器不再注入 HERMES_WEBUI_PASSWORD，改 HERMES_WEBUI_TRUSTED_AUTH_HEADER；
+- A0 主聊天直连 8787 只读（不调 8796 执行）。
+"""
 from __future__ import annotations
 
+import os
 import re
+import shutil
+import subprocess
 from pathlib import Path
+
+import pytest
 
 CONF = Path(__file__).resolve().parents[1] / "nginx.conf"
 PROTECTED = ("/os-entry", "/os-board", "/devops", "/model_admin", "/approvals")
+REPO = Path(__file__).resolve().parents[2]
+HERMES_LAUNCHER = REPO / "Hermes" / "start_hermes_bg.py"
+A0_MAINCHAT = REPO / "Hermes" / "extensions" / "legion-ide" / "a0-mainchat.js"
 
 
 def _text():
@@ -61,3 +76,129 @@ def test_other_pages_not_locked():
     s = _text()
     for p in ("/quant", "/intel", "/api/"):
         assert ("location = " + p) not in s or "auth_request" not in s.split("location = " + p, 1)[1][:120]
+
+
+# ── WO-LEGION-AUTH-20261031：Hermes trusted-header 认证拓扑收口 ──────────────
+
+
+def _location_block(prefix: str) -> str:
+    m = re.search(r"location \^~ " + re.escape(prefix) + r" \{(.*?)\n    \}", _text(), re.S)
+    assert m, prefix
+    return m.group(1)
+
+
+def test_hermes_and_extensions_inject_portal_user():
+    """8734→/hermes/ 消除第二次密码登录：auth_request 通过后注入 trusted-header 身份。"""
+    s = _text()
+    # 只允许在这两处注入：直连 8787 无该头必须由 Hermes 302/401 拒绝
+    assert s.count('proxy_set_header X-Portal-User "laotian";') == 2
+    for prefix in ("/hermes/", "/extensions/"):
+        block = _location_block(prefix)
+        assert "auth_request /_auth_guard;" in block, prefix
+        assert "error_page 401 = @login_required;" in block, prefix
+        assert 'proxy_set_header X-Portal-User "laotian";' in block, prefix
+        # nginx 语义：本层一旦声明 proxy_set_header，server 级不再继承 → 显式重声明保行为不变
+        assert "proxy_set_header X-Real-IP $remote_addr;" in block, prefix
+        assert 'proxy_set_header X-Portal-Proxy "1";' in block, prefix
+
+
+def test_portal_user_header_not_injected_globally():
+    """防误注入：server 级不得带 X-Portal-User（否则所有 8091 反代都会被"认证"）。"""
+    head = re.split(r"\n    location ", _text(), maxsplit=1)[0]
+    assert "X-Portal-User" not in head
+
+
+def test_hermes_launcher_trusted_header_and_ephemeral_password():
+    """启动器：trusted-header 注入 + 一次性随机密码覆盖 settings 旧 hash；不落日志。"""
+    src = HERMES_LAUNCHER.read_text(encoding="utf-8")
+    assert "HERMES_WEBUI_TRUSTED_AUTH_HEADER" in src
+    assert '"X-Portal-User"' in src
+    assert "_PW_FILE" not in src, "磁盘密码文件注入应已移除（双登录根因）"
+    assert "secrets.token_urlsafe(" in src, "需用一次性随机密码覆盖 settings 旧 hash"
+    assert 'env["HERMES_WEBUI_PASSWORD"] =' in src
+    for line in src.splitlines():
+        assert not (("_log(" in line or "print(" in line) and "HERMES_WEBUI_PASSWORD" in line), \
+            "随机密码不得进日志/打印: " + line
+
+
+def _node():
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node 不在 PATH，跳过 a0-mainchat 可执行断言")
+    return node
+
+
+def test_a0_mainchat_syntax():
+    """node --check：语法可执行断言（不依赖浏览器/生产）。"""
+    r = subprocess.run([_node(), "--check", str(A0_MAINCHAT)], capture_output=True,
+                       text=True, encoding="utf-8", errors="replace", timeout=60)
+    assert r.returncode == 0, (r.stderr or r.stdout)[-2000:]
+
+
+def test_a0_mainchat_direct_readonly_static():
+    """静态断言：8787 直连判定 + 只读守卫必须先于 fetch(8796)。"""
+    src = A0_MAINCHAT.read_text(encoding="utf-8")
+    assert "function isDirectMode()" in src
+    assert 'String(location.port || "") === "8787"' in src
+    assert "直连只读" in src and "8734 /hermes/" in src
+    body = re.search(r"async function runA0\(text\) \{(.*?)\n  \}\n", src, re.S)
+    assert body, "runA0 函数体未找到"
+    code = body.group(1)
+    direct_pos = code.find("isDirectMode()")
+    fetch_pos = code.find("fetch(endpoint()")
+    assert direct_pos != -1 and fetch_pos != -1
+    assert direct_pos < fetch_pos, "直连只读守卫必须先于 8796 fetch（否则会先执行再报错）"
+
+
+_A0_NODE_HARNESS = r"""
+const assert = require('assert');
+const jsPath = process.env.A0_JS;
+global.location = { port: '8787', origin: 'http://127.0.0.1:8787' };
+global.localStorage = { getItem: () => null, setItem: () => {} };
+global.window = { confirm: () => false, open: () => {} };
+function el() {
+  return { style: {}, dataset: {}, classList: { toggle: () => {} },
+           appendChild: () => {}, setAttribute: () => {}, remove: () => {} };
+}
+global.document = {
+  readyState: 'complete',
+  addEventListener: () => {},
+  getElementById: () => null,
+  querySelector: () => null,
+  createElement: () => el(),
+  body: { appendChild: () => {} },
+};
+const m = require(jsPath);
+assert.strictEqual(typeof m.isDirectMode, 'function', 'isDirectMode 未导出（测试钩子缺失）');
+assert.strictEqual(m.isDirectMode(), true, '8787 应判定为直连');
+let calls = [];
+global.fetch = (url) => {
+  calls.push(String(url));
+  return Promise.resolve({ ok: false, status: 403,
+    json: async () => ({ ok: false, error: 'oh_auth_required' }) });
+};
+(async () => {
+  await m.runA0('hello');
+  assert.deepStrictEqual(calls, [], '直连只读不得调用 8796（实得 ' + calls.join(',') + '）');
+  global.location.port = '8734';
+  assert.strictEqual(m.isDirectMode(), false, '8734 不应判定为直连');
+  await m.runA0('hello');
+  assert.strictEqual(calls.length, 1, '8734 同源应发起一次 orchestrate，实得 ' + calls.length);
+  assert.strictEqual(calls[0], '/openhands/api/ide/orchestrate',
+    '同源必须走 /openhands 前缀，实得 ' + calls[0]);
+  console.log('A0_MAINCHAT_DIRECT_READONLY_OK');
+})().catch((e) => { console.error(e && e.stack || e); process.exit(1); });
+"""
+
+
+def test_a0_mainchat_direct_readonly_executable():
+    """可执行断言：直连 8787 不 fetch 8796；8734 同源仍走 /openhands 执行入口。"""
+    node = _node()
+    env = os.environ.copy()
+    env["A0_JS"] = str(A0_MAINCHAT)
+    r = subprocess.run([node, "-e", _A0_NODE_HARNESS], cwd=str(REPO), env=env,
+                       capture_output=True, text=True, encoding="utf-8",
+                       errors="replace", timeout=60)
+    assert r.returncode == 0, (r.stderr or r.stdout)[-3000:]
+    assert "A0_MAINCHAT_DIRECT_READONLY_OK" in (r.stdout or "")
+
