@@ -82,9 +82,11 @@ def main() -> int:
     # 黄金柱：今日阳柱且量比≥1.5；后3日不破实顶+缩量 → 第4日（T+4）入场；用 shift(-3) 后信号在 T+3 确认
     gold_ok = (df["pct_chg"] > 0) & (df["vol_ratio5"] >= 1.5) & (c1 >= c * 0.99) & (c2 >= c * 0.99) & (c3 >= c * 0.99) \
         & (v1 < v * 0.9) & (v2 < v * 0.9) & (v3 < v * 0.9)
-    df["sig_golden_pillar"] = gold_ok
-    # 倍量确认：倍量阳后次日缩量<60%且不破前收
-    df["sig_double_vol_confirm"] = (df["vol_ratio5"] >= 1.9) & (df["pct_chg"] > 0) & (v1 < v * 0.6) & (c1 >= c)
+    # PIT 修正：信息在 T+3 收盘才确认 → 信号移到 T+3 行（次日 T+4 入场）
+    df["sig_golden_pillar"] = gold_ok.groupby(df["ts_code"], sort=False).shift(3).fillna(False).astype(bool)
+    # 倍量确认：T+1 收盘确认 → 信号移到 T+1 行（T+2 入场）
+    dv = (df["vol_ratio5"] >= 1.9) & (df["pct_chg"] > 0) & (v1 < v * 0.6) & (c1 >= c)
+    df["sig_double_vol_confirm"] = dv.groupby(df["ts_code"], sort=False).shift(1).fillna(False).astype(bool)
     # 极阴次阳（严格）：前日≤-7%，今日收阳且收盘≥前日开盘
     df["sig_yin_yang_strict"] = (df["prev_pct"] <= -7) & (df["pct_chg"] > 0) & (df["close"] >= df["prev_open"])
     # 缩量回踩：close>ma10、当日跌>1%、量比5<0.6

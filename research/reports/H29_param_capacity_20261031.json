@@ -1,0 +1,1594 @@
+{
+ "meta": {
+  "start": "20210101",
+  "end": "20261029",
+  "is_end": "20231231",
+  "base_cost": 0.003,
+  "generated_at": "2026-10-31T18:15:23+08:00"
+ },
+ "grid": [
+  {
+   "kind": "golden",
+   "vol_th": 1.5,
+   "confirm_days": 2,
+   "shrink": 0.6,
+   "hold": 3,
+   "events": 21570,
+   "IS": {
+    "n": 713,
+    "mean_pct": -0.43,
+    "t": -2.79
+   },
+   "OOS": {
+    "n": 639,
+    "mean_pct": -0.127,
+    "t": -0.71
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.5,
+   "confirm_days": 2,
+   "shrink": 0.6,
+   "hold": 5,
+   "events": 21562,
+   "IS": {
+    "n": 713,
+    "mean_pct": -0.478,
+    "t": -2.34
+   },
+   "OOS": {
+    "n": 638,
+    "mean_pct": -0.182,
+    "t": -0.76
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.5,
+   "confirm_days": 2,
+   "shrink": 0.6,
+   "hold": 10,
+   "events": 21539,
+   "IS": {
+    "n": 713,
+    "mean_pct": -0.827,
+    "t": -2.74
+   },
+   "OOS": {
+    "n": 634,
+    "mean_pct": -0.667,
+    "t": -1.96
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.5,
+   "confirm_days": 2,
+   "shrink": 0.8,
+   "hold": 3,
+   "events": 67127,
+   "IS": {
+    "n": 721,
+    "mean_pct": -0.584,
+    "t": -4.7
+   },
+   "OOS": {
+    "n": 675,
+    "mean_pct": -0.353,
+    "t": -3.34
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.5,
+   "confirm_days": 2,
+   "shrink": 0.8,
+   "hold": 5,
+   "events": 67103,
+   "IS": {
+    "n": 721,
+    "mean_pct": -0.653,
+    "t": -3.99
+   },
+   "OOS": {
+    "n": 673,
+    "mean_pct": -0.402,
+    "t": -2.73
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.5,
+   "confirm_days": 2,
+   "shrink": 0.8,
+   "hold": 10,
+   "events": 66996,
+   "IS": {
+    "n": 721,
+    "mean_pct": -1.035,
+    "t": -4.74
+   },
+   "OOS": {
+    "n": 668,
+    "mean_pct": -0.546,
+    "t": -2.15
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.5,
+   "confirm_days": 2,
+   "shrink": 0.9,
+   "hold": 3,
+   "events": 90064,
+   "IS": {
+    "n": 722,
+    "mean_pct": -0.668,
+    "t": -5.59
+   },
+   "OOS": {
+    "n": 676,
+    "mean_pct": -0.382,
+    "t": -4.52
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.5,
+   "confirm_days": 2,
+   "shrink": 0.9,
+   "hold": 5,
+   "events": 90029,
+   "IS": {
+    "n": 722,
+    "mean_pct": -0.796,
+    "t": -5.14
+   },
+   "OOS": {
+    "n": 674,
+    "mean_pct": -0.473,
+    "t": -4.39
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.5,
+   "confirm_days": 2,
+   "shrink": 0.9,
+   "hold": 10,
+   "events": 89885,
+   "IS": {
+    "n": 722,
+    "mean_pct": -1.218,
+    "t": -5.76
+   },
+   "OOS": {
+    "n": 669,
+    "mean_pct": -0.606,
+    "t": -3.35
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.5,
+   "confirm_days": 3,
+   "shrink": 0.6,
+   "hold": 3,
+   "events": 11579,
+   "IS": {
+    "n": 691,
+    "mean_pct": -0.319,
+    "t": -1.51
+   },
+   "OOS": {
+    "n": 583,
+    "mean_pct": -0.086,
+    "t": -0.42
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.5,
+   "confirm_days": 3,
+   "shrink": 0.6,
+   "hold": 5,
+   "events": 11575,
+   "IS": {
+    "n": 691,
+    "mean_pct": -0.288,
+    "t": -1.11
+   },
+   "OOS": {
+    "n": 581,
+    "mean_pct": 0.028,
+    "t": 0.1
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.5,
+   "confirm_days": 3,
+   "shrink": 0.6,
+   "hold": 10,
+   "events": 11562,
+   "IS": {
+    "n": 691,
+    "mean_pct": -0.546,
+    "t": -1.52
+   },
+   "OOS": {
+    "n": 578,
+    "mean_pct": -0.189,
+    "t": -0.56
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.5,
+   "confirm_days": 3,
+   "shrink": 0.8,
+   "hold": 3,
+   "events": 42864,
+   "IS": {
+    "n": 717,
+    "mean_pct": -0.536,
+    "t": -4.11
+   },
+   "OOS": {
+    "n": 664,
+    "mean_pct": -0.275,
+    "t": -2.2
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.5,
+   "confirm_days": 3,
+   "shrink": 0.8,
+   "hold": 5,
+   "events": 42848,
+   "IS": {
+    "n": 717,
+    "mean_pct": -0.531,
+    "t": -3.02
+   },
+   "OOS": {
+    "n": 662,
+    "mean_pct": -0.189,
+    "t": -1.08
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.5,
+   "confirm_days": 3,
+   "shrink": 0.8,
+   "hold": 10,
+   "events": 42777,
+   "IS": {
+    "n": 717,
+    "mean_pct": -0.799,
+    "t": -2.95
+   },
+   "OOS": {
+    "n": 657,
+    "mean_pct": -0.36,
+    "t": -1.58
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.5,
+   "confirm_days": 3,
+   "shrink": 0.9,
+   "hold": 3,
+   "events": 60633,
+   "IS": {
+    "n": 720,
+    "mean_pct": -0.6,
+    "t": -4.73
+   },
+   "OOS": {
+    "n": 673,
+    "mean_pct": -0.32,
+    "t": -3.57
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.5,
+   "confirm_days": 3,
+   "shrink": 0.9,
+   "hold": 5,
+   "events": 60610,
+   "IS": {
+    "n": 720,
+    "mean_pct": -0.677,
+    "t": -3.94
+   },
+   "OOS": {
+    "n": 671,
+    "mean_pct": -0.342,
+    "t": -2.62
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.5,
+   "confirm_days": 3,
+   "shrink": 0.9,
+   "hold": 10,
+   "events": 60513,
+   "IS": {
+    "n": 720,
+    "mean_pct": -1.029,
+    "t": -3.95
+   },
+   "OOS": {
+    "n": 666,
+    "mean_pct": -0.42,
+    "t": -2.22
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.5,
+   "confirm_days": 5,
+   "shrink": 0.6,
+   "hold": 3,
+   "events": 4822,
+   "IS": {
+    "n": 608,
+    "mean_pct": 0.003,
+    "t": 0.01
+   },
+   "OOS": {
+    "n": 439,
+    "mean_pct": -0.123,
+    "t": -0.61
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.5,
+   "confirm_days": 5,
+   "shrink": 0.6,
+   "hold": 5,
+   "events": 4820,
+   "IS": {
+    "n": 608,
+    "mean_pct": 0.049,
+    "t": 0.17
+   },
+   "OOS": {
+    "n": 438,
+    "mean_pct": 0.036,
+    "t": 0.12
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.5,
+   "confirm_days": 5,
+   "shrink": 0.6,
+   "hold": 10,
+   "events": 4819,
+   "IS": {
+    "n": 608,
+    "mean_pct": -0.257,
+    "t": -0.71
+   },
+   "OOS": {
+    "n": 437,
+    "mean_pct": 0.188,
+    "t": 0.42
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.5,
+   "confirm_days": 5,
+   "shrink": 0.8,
+   "hold": 3,
+   "events": 22318,
+   "IS": {
+    "n": 704,
+    "mean_pct": -0.263,
+    "t": -1.81
+   },
+   "OOS": {
+    "n": 635,
+    "mean_pct": -0.193,
+    "t": -1.52
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.5,
+   "confirm_days": 5,
+   "shrink": 0.8,
+   "hold": 5,
+   "events": 22309,
+   "IS": {
+    "n": 704,
+    "mean_pct": -0.325,
+    "t": -1.77
+   },
+   "OOS": {
+    "n": 633,
+    "mean_pct": -0.251,
+    "t": -1.51
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.5,
+   "confirm_days": 5,
+   "shrink": 0.8,
+   "hold": 10,
+   "events": 22286,
+   "IS": {
+    "n": 704,
+    "mean_pct": -0.632,
+    "t": -2.28
+   },
+   "OOS": {
+    "n": 628,
+    "mean_pct": -0.398,
+    "t": -1.83
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.5,
+   "confirm_days": 5,
+   "shrink": 0.9,
+   "hold": 3,
+   "events": 33962,
+   "IS": {
+    "n": 714,
+    "mean_pct": -0.401,
+    "t": -2.97
+   },
+   "OOS": {
+    "n": 661,
+    "mean_pct": -0.254,
+    "t": -2.2
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.5,
+   "confirm_days": 5,
+   "shrink": 0.9,
+   "hold": 5,
+   "events": 33940,
+   "IS": {
+    "n": 714,
+    "mean_pct": -0.523,
+    "t": -2.97
+   },
+   "OOS": {
+    "n": 659,
+    "mean_pct": -0.208,
+    "t": -1.31
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.5,
+   "confirm_days": 5,
+   "shrink": 0.9,
+   "hold": 10,
+   "events": 33905,
+   "IS": {
+    "n": 714,
+    "mean_pct": -0.902,
+    "t": -3.62
+   },
+   "OOS": {
+    "n": 654,
+    "mean_pct": -0.399,
+    "t": -1.78
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.9,
+   "confirm_days": 2,
+   "shrink": 0.6,
+   "hold": 3,
+   "events": 9306,
+   "IS": {
+    "n": 693,
+    "mean_pct": -0.241,
+    "t": -1.22
+   },
+   "OOS": {
+    "n": 560,
+    "mean_pct": -0.302,
+    "t": -1.33
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.9,
+   "confirm_days": 2,
+   "shrink": 0.6,
+   "hold": 5,
+   "events": 9305,
+   "IS": {
+    "n": 693,
+    "mean_pct": -0.19,
+    "t": -0.73
+   },
+   "OOS": {
+    "n": 559,
+    "mean_pct": -0.349,
+    "t": -1.24
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.9,
+   "confirm_days": 2,
+   "shrink": 0.6,
+   "hold": 10,
+   "events": 9299,
+   "IS": {
+    "n": 693,
+    "mean_pct": -0.285,
+    "t": -0.76
+   },
+   "OOS": {
+    "n": 556,
+    "mean_pct": -0.795,
+    "t": -2.01
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.9,
+   "confirm_days": 2,
+   "shrink": 0.8,
+   "hold": 3,
+   "events": 24420,
+   "IS": {
+    "n": 719,
+    "mean_pct": -0.322,
+    "t": -2.06
+   },
+   "OOS": {
+    "n": 657,
+    "mean_pct": -0.348,
+    "t": -2.6
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.9,
+   "confirm_days": 2,
+   "shrink": 0.8,
+   "hold": 5,
+   "events": 24413,
+   "IS": {
+    "n": 719,
+    "mean_pct": -0.448,
+    "t": -2.32
+   },
+   "OOS": {
+    "n": 656,
+    "mean_pct": -0.367,
+    "t": -2.13
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.9,
+   "confirm_days": 2,
+   "shrink": 0.8,
+   "hold": 10,
+   "events": 24388,
+   "IS": {
+    "n": 719,
+    "mean_pct": -0.7,
+    "t": -2.65
+   },
+   "OOS": {
+    "n": 651,
+    "mean_pct": -0.597,
+    "t": -1.92
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.9,
+   "confirm_days": 2,
+   "shrink": 0.9,
+   "hold": 3,
+   "events": 31634,
+   "IS": {
+    "n": 721,
+    "mean_pct": -0.459,
+    "t": -3.13
+   },
+   "OOS": {
+    "n": 669,
+    "mean_pct": -0.376,
+    "t": -3.0
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.9,
+   "confirm_days": 2,
+   "shrink": 0.9,
+   "hold": 5,
+   "events": 31621,
+   "IS": {
+    "n": 721,
+    "mean_pct": -0.645,
+    "t": -3.48
+   },
+   "OOS": {
+    "n": 667,
+    "mean_pct": -0.492,
+    "t": -3.31
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.9,
+   "confirm_days": 2,
+   "shrink": 0.9,
+   "hold": 10,
+   "events": 31583,
+   "IS": {
+    "n": 721,
+    "mean_pct": -1.011,
+    "t": -3.93
+   },
+   "OOS": {
+    "n": 661,
+    "mean_pct": -0.742,
+    "t": -3.0
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.9,
+   "confirm_days": 3,
+   "shrink": 0.6,
+   "hold": 3,
+   "events": 5532,
+   "IS": {
+    "n": 651,
+    "mean_pct": -0.282,
+    "t": -0.92
+   },
+   "OOS": {
+    "n": 486,
+    "mean_pct": -0.163,
+    "t": -0.61
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.9,
+   "confirm_days": 3,
+   "shrink": 0.6,
+   "hold": 5,
+   "events": 5530,
+   "IS": {
+    "n": 651,
+    "mean_pct": -0.131,
+    "t": -0.37
+   },
+   "OOS": {
+    "n": 484,
+    "mean_pct": 0.007,
+    "t": 0.02
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.9,
+   "confirm_days": 3,
+   "shrink": 0.6,
+   "hold": 10,
+   "events": 5525,
+   "IS": {
+    "n": 651,
+    "mean_pct": -0.296,
+    "t": -0.69
+   },
+   "OOS": {
+    "n": 483,
+    "mean_pct": 0.093,
+    "t": 0.2
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.9,
+   "confirm_days": 3,
+   "shrink": 0.8,
+   "hold": 3,
+   "events": 16630,
+   "IS": {
+    "n": 709,
+    "mean_pct": -0.329,
+    "t": -2.11
+   },
+   "OOS": {
+    "n": 636,
+    "mean_pct": -0.367,
+    "t": -2.6
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.9,
+   "confirm_days": 3,
+   "shrink": 0.8,
+   "hold": 5,
+   "events": 16624,
+   "IS": {
+    "n": 709,
+    "mean_pct": -0.268,
+    "t": -1.28
+   },
+   "OOS": {
+    "n": 634,
+    "mean_pct": -0.308,
+    "t": -1.64
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.9,
+   "confirm_days": 3,
+   "shrink": 0.8,
+   "hold": 10,
+   "events": 16610,
+   "IS": {
+    "n": 709,
+    "mean_pct": -0.352,
+    "t": -1.15
+   },
+   "OOS": {
+    "n": 629,
+    "mean_pct": -0.729,
+    "t": -2.62
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.9,
+   "confirm_days": 3,
+   "shrink": 0.9,
+   "hold": 3,
+   "events": 22384,
+   "IS": {
+    "n": 717,
+    "mean_pct": -0.494,
+    "t": -3.3
+   },
+   "OOS": {
+    "n": 658,
+    "mean_pct": -0.36,
+    "t": -2.93
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.9,
+   "confirm_days": 3,
+   "shrink": 0.9,
+   "hold": 5,
+   "events": 22378,
+   "IS": {
+    "n": 717,
+    "mean_pct": -0.493,
+    "t": -2.42
+   },
+   "OOS": {
+    "n": 656,
+    "mean_pct": -0.401,
+    "t": -2.42
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.9,
+   "confirm_days": 3,
+   "shrink": 0.9,
+   "hold": 10,
+   "events": 22354,
+   "IS": {
+    "n": 717,
+    "mean_pct": -0.826,
+    "t": -2.79
+   },
+   "OOS": {
+    "n": 650,
+    "mean_pct": -0.574,
+    "t": -2.24
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.9,
+   "confirm_days": 5,
+   "shrink": 0.6,
+   "hold": 3,
+   "events": 2626,
+   "IS": {
+    "n": 527,
+    "mean_pct": 0.073,
+    "t": 0.25
+   },
+   "OOS": {
+    "n": 356,
+    "mean_pct": -0.141,
+    "t": -0.6
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.9,
+   "confirm_days": 5,
+   "shrink": 0.6,
+   "hold": 5,
+   "events": 2625,
+   "IS": {
+    "n": 527,
+    "mean_pct": 0.263,
+    "t": 0.63
+   },
+   "OOS": {
+    "n": 355,
+    "mean_pct": 0.01,
+    "t": 0.03
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.9,
+   "confirm_days": 5,
+   "shrink": 0.6,
+   "hold": 10,
+   "events": 2625,
+   "IS": {
+    "n": 527,
+    "mean_pct": 0.008,
+    "t": 0.02
+   },
+   "OOS": {
+    "n": 355,
+    "mean_pct": 0.016,
+    "t": 0.03
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.9,
+   "confirm_days": 5,
+   "shrink": 0.8,
+   "hold": 3,
+   "events": 9587,
+   "IS": {
+    "n": 678,
+    "mean_pct": -0.119,
+    "t": -0.64
+   },
+   "OOS": {
+    "n": 581,
+    "mean_pct": -0.24,
+    "t": -1.43
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.9,
+   "confirm_days": 5,
+   "shrink": 0.8,
+   "hold": 5,
+   "events": 9584,
+   "IS": {
+    "n": 678,
+    "mean_pct": -0.096,
+    "t": -0.41
+   },
+   "OOS": {
+    "n": 579,
+    "mean_pct": -0.303,
+    "t": -1.36
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.9,
+   "confirm_days": 5,
+   "shrink": 0.8,
+   "hold": 10,
+   "events": 9575,
+   "IS": {
+    "n": 678,
+    "mean_pct": -0.35,
+    "t": -1.07
+   },
+   "OOS": {
+    "n": 576,
+    "mean_pct": -0.542,
+    "t": -1.79
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.9,
+   "confirm_days": 5,
+   "shrink": 0.9,
+   "hold": 3,
+   "events": 13596,
+   "IS": {
+    "n": 704,
+    "mean_pct": -0.354,
+    "t": -2.19
+   },
+   "OOS": {
+    "n": 632,
+    "mean_pct": -0.296,
+    "t": -1.89
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.9,
+   "confirm_days": 5,
+   "shrink": 0.9,
+   "hold": 5,
+   "events": 13589,
+   "IS": {
+    "n": 704,
+    "mean_pct": -0.444,
+    "t": -2.07
+   },
+   "OOS": {
+    "n": 629,
+    "mean_pct": -0.151,
+    "t": -0.66
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 1.9,
+   "confirm_days": 5,
+   "shrink": 0.9,
+   "hold": 10,
+   "events": 13579,
+   "IS": {
+    "n": 704,
+    "mean_pct": -0.909,
+    "t": -3.05
+   },
+   "OOS": {
+    "n": 626,
+    "mean_pct": -0.28,
+    "t": -0.86
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 2.5,
+   "confirm_days": 2,
+   "shrink": 0.6,
+   "hold": 3,
+   "events": 2125,
+   "IS": {
+    "n": 533,
+    "mean_pct": -0.068,
+    "t": -0.16
+   },
+   "OOS": {
+    "n": 309,
+    "mean_pct": -0.041,
+    "t": -0.11
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 2.5,
+   "confirm_days": 2,
+   "shrink": 0.6,
+   "hold": 5,
+   "events": 2124,
+   "IS": {
+    "n": 533,
+    "mean_pct": -0.391,
+    "t": -0.78
+   },
+   "OOS": {
+    "n": 308,
+    "mean_pct": -0.197,
+    "t": -0.38
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 2.5,
+   "confirm_days": 2,
+   "shrink": 0.6,
+   "hold": 10,
+   "events": 2124,
+   "IS": {
+    "n": 533,
+    "mean_pct": -0.215,
+    "t": -0.34
+   },
+   "OOS": {
+    "n": 308,
+    "mean_pct": -0.107,
+    "t": -0.16
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 2.5,
+   "confirm_days": 2,
+   "shrink": 0.8,
+   "hold": 3,
+   "events": 5111,
+   "IS": {
+    "n": 663,
+    "mean_pct": 0.209,
+    "t": 0.81
+   },
+   "OOS": {
+    "n": 512,
+    "mean_pct": -0.488,
+    "t": -1.99
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 2.5,
+   "confirm_days": 2,
+   "shrink": 0.8,
+   "hold": 5,
+   "events": 5110,
+   "IS": {
+    "n": 663,
+    "mean_pct": -0.031,
+    "t": -0.09
+   },
+   "OOS": {
+    "n": 511,
+    "mean_pct": -0.553,
+    "t": -1.82
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 2.5,
+   "confirm_days": 2,
+   "shrink": 0.8,
+   "hold": 10,
+   "events": 5101,
+   "IS": {
+    "n": 663,
+    "mean_pct": -0.106,
+    "t": -0.23
+   },
+   "OOS": {
+    "n": 507,
+    "mean_pct": -0.909,
+    "t": -2.44
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 2.5,
+   "confirm_days": 2,
+   "shrink": 0.9,
+   "hold": 3,
+   "events": 6527,
+   "IS": {
+    "n": 681,
+    "mean_pct": 0.069,
+    "t": 0.28
+   },
+   "OOS": {
+    "n": 563,
+    "mean_pct": -0.649,
+    "t": -3.01
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 2.5,
+   "confirm_days": 2,
+   "shrink": 0.9,
+   "hold": 5,
+   "events": 6525,
+   "IS": {
+    "n": 681,
+    "mean_pct": -0.186,
+    "t": -0.62
+   },
+   "OOS": {
+    "n": 562,
+    "mean_pct": -0.989,
+    "t": -3.82
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 2.5,
+   "confirm_days": 2,
+   "shrink": 0.9,
+   "hold": 10,
+   "events": 6513,
+   "IS": {
+    "n": 681,
+    "mean_pct": -0.245,
+    "t": -0.63
+   },
+   "OOS": {
+    "n": 557,
+    "mean_pct": -1.425,
+    "t": -4.58
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 2.5,
+   "confirm_days": 3,
+   "shrink": 0.6,
+   "hold": 3,
+   "events": 1348,
+   "IS": {
+    "n": 436,
+    "mean_pct": -0.435,
+    "t": -0.86
+   },
+   "OOS": {
+    "n": 233,
+    "mean_pct": -0.342,
+    "t": -0.83
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 2.5,
+   "confirm_days": 3,
+   "shrink": 0.6,
+   "hold": 5,
+   "events": 1347,
+   "IS": {
+    "n": 436,
+    "mean_pct": 0.024,
+    "t": 0.04
+   },
+   "OOS": {
+    "n": 232,
+    "mean_pct": -0.174,
+    "t": -0.34
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 2.5,
+   "confirm_days": 3,
+   "shrink": 0.6,
+   "hold": 10,
+   "events": 1347,
+   "IS": {
+    "n": 436,
+    "mean_pct": 0.111,
+    "t": 0.15
+   },
+   "OOS": {
+    "n": 232,
+    "mean_pct": 0.537,
+    "t": 0.73
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 2.5,
+   "confirm_days": 3,
+   "shrink": 0.8,
+   "hold": 3,
+   "events": 3585,
+   "IS": {
+    "n": 618,
+    "mean_pct": -0.198,
+    "t": -0.66
+   },
+   "OOS": {
+    "n": 441,
+    "mean_pct": -0.388,
+    "t": -1.64
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 2.5,
+   "confirm_days": 3,
+   "shrink": 0.8,
+   "hold": 5,
+   "events": 3584,
+   "IS": {
+    "n": 618,
+    "mean_pct": 0.093,
+    "t": 0.23
+   },
+   "OOS": {
+    "n": 440,
+    "mean_pct": -0.228,
+    "t": -0.79
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 2.5,
+   "confirm_days": 3,
+   "shrink": 0.8,
+   "hold": 10,
+   "events": 3582,
+   "IS": {
+    "n": 618,
+    "mean_pct": 0.308,
+    "t": 0.58
+   },
+   "OOS": {
+    "n": 438,
+    "mean_pct": -0.558,
+    "t": -1.27
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 2.5,
+   "confirm_days": 3,
+   "shrink": 0.9,
+   "hold": 3,
+   "events": 4686,
+   "IS": {
+    "n": 649,
+    "mean_pct": -0.337,
+    "t": -1.31
+   },
+   "OOS": {
+    "n": 512,
+    "mean_pct": -0.489,
+    "t": -2.19
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 2.5,
+   "confirm_days": 3,
+   "shrink": 0.9,
+   "hold": 5,
+   "events": 4685,
+   "IS": {
+    "n": 649,
+    "mean_pct": -0.098,
+    "t": -0.29
+   },
+   "OOS": {
+    "n": 511,
+    "mean_pct": -0.613,
+    "t": -2.21
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 2.5,
+   "confirm_days": 3,
+   "shrink": 0.9,
+   "hold": 10,
+   "events": 4680,
+   "IS": {
+    "n": 649,
+    "mean_pct": -0.064,
+    "t": -0.15
+   },
+   "OOS": {
+    "n": 508,
+    "mean_pct": -0.99,
+    "t": -2.74
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 2.5,
+   "confirm_days": 5,
+   "shrink": 0.6,
+   "hold": 3,
+   "events": 748,
+   "IS": {
+    "n": 297,
+    "mean_pct": 0.458,
+    "t": 1.12
+   },
+   "OOS": {
+    "n": 144,
+    "mean_pct": 0.202,
+    "t": 0.55
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 2.5,
+   "confirm_days": 5,
+   "shrink": 0.6,
+   "hold": 5,
+   "events": 748,
+   "IS": {
+    "n": 297,
+    "mean_pct": 0.512,
+    "t": 0.71
+   },
+   "OOS": {
+    "n": 144,
+    "mean_pct": 0.671,
+    "t": 1.25
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 2.5,
+   "confirm_days": 5,
+   "shrink": 0.6,
+   "hold": 10,
+   "events": 748,
+   "IS": {
+    "n": 297,
+    "mean_pct": 0.647,
+    "t": 0.76
+   },
+   "OOS": {
+    "n": 144,
+    "mean_pct": 1.379,
+    "t": 1.51
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 2.5,
+   "confirm_days": 5,
+   "shrink": 0.8,
+   "hold": 3,
+   "events": 2273,
+   "IS": {
+    "n": 505,
+    "mean_pct": 0.031,
+    "t": 0.12
+   },
+   "OOS": {
+    "n": 354,
+    "mean_pct": 0.347,
+    "t": 1.22
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 2.5,
+   "confirm_days": 5,
+   "shrink": 0.8,
+   "hold": 5,
+   "events": 2273,
+   "IS": {
+    "n": 505,
+    "mean_pct": -0.088,
+    "t": -0.21
+   },
+   "OOS": {
+    "n": 354,
+    "mean_pct": 0.346,
+    "t": 0.93
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 2.5,
+   "confirm_days": 5,
+   "shrink": 0.8,
+   "hold": 10,
+   "events": 2271,
+   "IS": {
+    "n": 505,
+    "mean_pct": 0.31,
+    "t": 0.55
+   },
+   "OOS": {
+    "n": 353,
+    "mean_pct": 0.738,
+    "t": 1.41
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 2.5,
+   "confirm_days": 5,
+   "shrink": 0.9,
+   "hold": 3,
+   "events": 3067,
+   "IS": {
+    "n": 558,
+    "mean_pct": -0.098,
+    "t": -0.4
+   },
+   "OOS": {
+    "n": 433,
+    "mean_pct": -0.293,
+    "t": -1.24
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 2.5,
+   "confirm_days": 5,
+   "shrink": 0.9,
+   "hold": 5,
+   "events": 3065,
+   "IS": {
+    "n": 558,
+    "mean_pct": -0.176,
+    "t": -0.53
+   },
+   "OOS": {
+    "n": 431,
+    "mean_pct": -0.108,
+    "t": -0.33
+   },
+   "pass": false
+  },
+  {
+   "kind": "golden",
+   "vol_th": 2.5,
+   "confirm_days": 5,
+   "shrink": 0.9,
+   "hold": 10,
+   "events": 3063,
+   "IS": {
+    "n": 558,
+    "mean_pct": -0.166,
+    "t": -0.35
+   },
+   "OOS": {
+    "n": 430,
+    "mean_pct": -0.071,
+    "t": -0.17
+   },
+   "pass": false
+  }
+ ],
+ "pass_count": 0,
+ "passed_top": [],
+ "capacity": {
+  "golden_events": 60713,
+  "tradable_events": 59581,
+  "excluded_limitup_pct": 1.86,
+  "golden_all": {
+   "events": 60610,
+   "OOS": {
+    "n": 671,
+    "mean_pct": -0.342,
+    "t": -2.62
+   },
+   "IS": {
+    "n": 720,
+    "mean_pct": -0.677,
+    "t": -3.94
+   },
+   "avg_events_per_day": 43.57
+  },
+  "golden_tradable": {
+   "events": 59494,
+   "OOS": {
+    "n": 670,
+    "mean_pct": -0.505,
+    "t": -4.98
+   },
+   "IS": {
+    "n": 719,
+    "mean_pct": -0.752,
+    "t": -4.99
+   },
+   "avg_events_per_day": 42.83
+  },
+  "avg_event_amount_yi": 2.498,
+  "median_event_amount_yi": 0.87,
+  "slippage_oos_mean_pct": {
+   "0": -0.342,
+   "10": -0.442,
+   "20": -0.542,
+   "30": -0.642,
+   "50": -0.842
+  }
+ }
+}
