@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """黄忠受控演练 helper（复演/复证；**默认 dry-run**，--apply 才写盘）。
 
-用途：按确认口令生成一次「演练用」OBSERVE/REJECT 证据单 + drill 台账条目，
+用途：按确认确认字符串生成一次「演练用」OBSERVE/REJECT 证据单 + drill 台账条目，
 供认证 v2 第②条（≥1 次真实受控拒收演练）在 11-04 复演/复证；工具本身**只读
 证据、只写演练产物**，严禁污染生产日更/事件/正式验收历史。
 
@@ -11,7 +11,7 @@
     + 追加 `work/huangzhong/drills/drill_ledger_<YYYYMMDD>.json` 条目；
   · **不写** daily.jsonl / events.jsonl / incidents.jsonl；
   · **不覆盖**既有 acceptance_*.json（目标文件名带 drill 且已存在→skip 幂等）；
-  · 口令错误 / `--dry-run` 与 `--apply` 同时给 / 前置不满足 / 台账不可读 →
+  · 确认字符串错误 / `--dry-run` 与 `--apply` 同时给 / 前置不满足 / 台账不可读 →
     **拒绝且零写入**（fail-visible，不编造数据）。
 
 受控构造成立判定（与 tools/huangzhong_accept.py 同一判定口径，不另立标准）：
@@ -502,14 +502,14 @@ def run(kind: str, confirm: str, apply: bool = False,
         "refused": None,
         "warnings": warnings,
     }
-    # 1) 口令/参数校验（任何错误都不写盘）
+    # 1) 确认字符串/参数校验（任何错误都不写盘）
     kind_norm = (kind or "").strip().lower()
     if kind_norm not in CONFIRM:
         return _refused("--kind 必须是 observe|reject（实际：%r）" % kind, result)
     result["request"]["kind"] = kind_norm
     expected_confirm = CONFIRM[kind_norm]
     if (confirm or "").strip().upper() != expected_confirm:
-        return _refused("确认口令错误：--kind %s 必须配 --confirm %s（实际：%r）"
+        return _refused("确认确认字符串错误：--kind %s 必须配 --confirm %s（实际：%r）"
                         % (kind_norm, expected_confirm, confirm), result)
     if apply and dry_run_flag:
         return _refused("--dry-run 与 --apply 不能同时使用（拒绝且零写入）", result)
@@ -597,7 +597,7 @@ def main(argv=None) -> int:
         description="黄忠受控演练 helper（复演/复证；默认 dry-run，--apply 才写盘）")
     ap.add_argument("--kind", default="", help="observe | reject")
     ap.add_argument("--confirm", default="",
-                    help="确认口令：kind=observe 须为 DRILL-OBSERVE；"
+                    help="确认确认字符串：kind=observe 须为 DRILL-OBSERVE；"
                          "kind=reject 须为 DRILL-REJECT")
     ap.add_argument("--dry-run", action="store_true",
                     help="仅打印将写文件/台账内容，不写盘（默认行为）")
@@ -615,7 +615,7 @@ def main(argv=None) -> int:
     ap.add_argument("--witness", default="", help="见证人（默认「待老田/赵云签字」）")
     args = ap.parse_args(argv)
     if not args.kind:
-        print("错误：必须提供 --kind observe|reject（本工具拒绝无口令写入）")
+        print("错误：必须提供 --kind observe|reject（本工具拒绝无确认字符串写入）")
         return 1
     rep = run(kind=args.kind, confirm=args.confirm, apply=args.apply,
               dry_run_flag=args.dry_run,
