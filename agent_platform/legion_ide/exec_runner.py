@@ -183,7 +183,9 @@ def run(worktree: Path, command: str, timeout: int = DEFAULT_TIMEOUT) -> dict:
     argv = check["argv"]
     t0 = time.time()
     try:
-        # 2026-10-30 P0：Job Object 进程树隔离（超时整树终止；非 Windows fail-soft）。
+        # 2026-10-30 P0：Job Object 进程树隔离（超时整树终止）。
+        # 2026-10-31 K-ORG-20261031-SANDBOXFAILCLOSED：Job 建立/Assign 失败抛
+        # IsolationError(OSError) → 下行 OSError 分支返回 exec_failed（fail-closed）。
         proc = S.run(
             argv,
             cwd=str(worktree),
@@ -195,7 +197,9 @@ def run(worktree: Path, command: str, timeout: int = DEFAULT_TIMEOUT) -> dict:
     except FileNotFoundError:
         return _err("not_found", "可执行文件不存在：%s" % argv[0])
     except OSError as exc:
-        return _err("exec_failed", "执行失败：%s" % type(exc).__name__)
+        # fail-closed：Job 隔离建立失败也是 OSError → exec_failed；带原因便于定位
+        return _err("exec_failed", "执行失败：%s: %s"
+                    % (type(exc).__name__, str(exc)[:160]))
     out = (proc.stdout or "") + (proc.stderr or "")
     truncated = len(out) > MAX_OUTPUT
     return {
