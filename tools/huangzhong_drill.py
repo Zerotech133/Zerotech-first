@@ -509,7 +509,7 @@ def run(kind: str, confirm: str, apply: bool = False,
     result["request"]["kind"] = kind_norm
     expected_confirm = CONFIRM[kind_norm]
     if (confirm or "").strip().upper() != expected_confirm:
-        return _refused("确认确认字符串错误：--kind %s 必须配 --confirm %s（实际：%r）"
+        return _refused("确认字符串错误：--kind %s 必须配 --confirm %s（实际：%r）"
                         % (kind_norm, expected_confirm, confirm), result)
     if apply and dry_run_flag:
         return _refused("--dry-run 与 --apply 不能同时使用（拒绝且零写入）", result)
