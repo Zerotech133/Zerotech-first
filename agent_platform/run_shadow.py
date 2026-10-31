@@ -13,6 +13,9 @@
     memory/幂等库/p0_alert_state/org tasks）重定向到该根；配合 `--rehearsal`
     （或 SHADOW_REHEARSAL=1）时数据根若仍解析为真仓 data/ → **拒绝执行 exit 2**，
     且禁用飞书推送。用于周一前对 run 路径做零污染预演。
+  - 2026-10-31 WO-INTEL-D1EVID：`INTEL_TO_D1`（默认 off）开启后 done 行追加
+    `intel_evidence`（reviewed JEV 证据来源/引用/坏行），只读 news.db，不改模型
+    l1_basis/裁决文本；off 时账本行逐字不变。
 """
 
 import json
@@ -439,6 +442,84 @@ def _wire_raw_refs(bundle, symbol, data_ctx, root=None):
         return bundle
 
 
+# ---- INTEL_TO_D1：D1 决策记录接 reviewed 情报证据（2026-10-31 WO-INTEL-D1EVID；默认 off）----
+# off：build_ledger_row 不新增任何键、不读 news.db → 账本行与旧版逐字一致（测试锁定）；
+# on ：done 行增加 `intel_evidence`（source/event_refs/review_refs/bad_rows/...），
+#      只读 `news.db.jev_review_queue`，不改模型 l1_basis/裁决文本、不伪造证据；
+#      无 reviewed → source=price_proxy + reason=no_reviewed_jev；坏行 fail-visible 不阻塞落账。
+_INTEL_TO_D1_ENV = "INTEL_TO_D1"
+_INTEL_TO_D1_ON = ("1", "true", "yes", "on", "y")
+
+
+def _intel_to_d1_enabled() -> bool:
+    return str(os.environ.get(_INTEL_TO_D1_ENV) or "").strip().lower() \
+        in _INTEL_TO_D1_ON
+
+
+def _intel_context_module():
+    """导入 agent_platform/intel_context.py（兼容模块/脚本两种执行上下文）。"""
+    try:
+        from agent_platform import intel_context as mod
+        return mod
+    except ImportError:
+        pass
+    try:
+        import intel_context as mod  # run_shadow 以脚本态运行时 BASE 在 sys.path
+        return mod
+    except ImportError:
+        pass
+    import importlib.util
+    path = Path(__file__).resolve().parent / "intel_context.py"
+    spec = importlib.util.spec_from_file_location("intel_context_d1", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def build_intel_evidence(symbol, module=None):
+    """D1 决策记录的 reviewed 情报证据（只读；恒不抛、不阻塞裁决/落账）。
+
+    返回固定字段：
+      {source: reviewed_jev|price_proxy, reason, event_refs[], review_refs[],
+       bad_rows[], counts{}, errors[]}
+    - source=price_proxy 时 reason 显式（no_reviewed_jev/only_rejected_reviews/...）；
+    - 坏行（news.db 行级坏 JSON 等）进 bad_rows 并打印 warn（fail-visible）；
+    - 任何异常降级 price_proxy + intel_error，仅影响本字段，不影响行/决策。
+    """
+    base = {"source": "price_proxy", "reason": "", "event_refs": [],
+            "review_refs": [], "bad_rows": [], "counts": {}, "errors": []}
+    try:
+        mod = module if module is not None else _intel_context_module()
+        res = mod.reviewed_news_event(symbol)
+    except Exception as exc:  # noqa: BLE001 —— 证据旁路不得阻塞裁决
+        msg = "%s: %s" % (type(exc).__name__, str(exc)[:140])
+        base["reason"] = "intel_error"
+        base["errors"] = [msg]
+        print("[warn] INTEL_TO_D1 情报证据读取失败（降级 price_proxy，不影响裁决）：%s"
+              % msg)
+        return base
+    ev = {
+        "source": str(res.get("source") or "price_proxy"),
+        "reason": str(res.get("reason") or ""),
+        "event_refs": [str(x) for x in (res.get("event_ids") or [])],
+        "review_refs": [str(x) for x in (res.get("review_ids") or [])],
+        "bad_rows": [dict(x) for x in (res.get("bad_rows") or [])],
+        "counts": dict(res.get("counts") or {}),
+        "errors": [str(x) for x in (res.get("errors") or [])],
+    }
+    if ev["bad_rows"]:
+        print("[warn] INTEL_TO_D1 坏行 %d 条（fail-visible，已跳过，不影响裁决）：%s"
+              % (len(ev["bad_rows"]),
+                 ",".join(str(x.get("id") or "?") for x in ev["bad_rows"][:5])))
+    if ev["source"] == "reviewed_jev":
+        print("[intel_to_d1] source=reviewed_jev symbol=%s events=%d bad_rows=%d"
+              % (symbol, len(ev["event_refs"]), len(ev["bad_rows"])))
+    else:
+        print("[intel_to_d1] source=price_proxy reason=%s symbol=%s"
+              % (ev["reason"] or "unknown", symbol))
+    return ev
+
+
 def build_ledger_row(
     today,
     symbol,
@@ -468,7 +549,7 @@ def build_ledger_row(
     if ts is None:
         ts = time.time()
     src_bad = any(v != "normal" for v in (source_status or {}).values())
-    return {
+    row = {
         "date": today,
         "ts": ts,
         "symbol": symbol,
@@ -504,6 +585,11 @@ def build_ledger_row(
                                (bundle.raw_refs_extra if bundle else [])]),
         "evidence_raw_refs_summary": (bundle.raw_summary() if bundle else {}),
     }
+    # 2026-10-31 WO-INTEL-D1EVID：flag on 时追加 reviewed 情报证据（独立字段，
+    # 不改模型 l1_basis/裁决文本；off 时不新增任何键 → 账本行逐字不变）。
+    if _intel_to_d1_enabled():
+        row["intel_evidence"] = build_intel_evidence(str(symbol))
+    return row
 
 
 def already_done(today, symbol):
