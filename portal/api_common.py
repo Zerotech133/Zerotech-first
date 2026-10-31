@@ -187,7 +187,9 @@ DOMAIN_NAV_GROUPS = {
             ("🎛 数据指挥台", "/dataops", "dataops"),
             ("🗄 数据仓", "/dw.html", "dw"),
             ("📚 语料知识库", "/kb_corpus.html", "kbcorpus"),
-            ("📥 PDF知识入库", "/kb_ingest.html", "kbingest"),)),
+            ("📥 PDF知识入库", "/kb_ingest.html", "kbingest"),
+            ("📑 研报知识库", "/kb_reports.html", "kbreports"),
+            ("📊 策略库·选股", "/selection.html", "selection"),)),
         ("🪖 军团", (
             ("🏛 组织架构 🚧", "/org", "org"),
             ("✅ 审批注册表", "/approvals", "approvals"),

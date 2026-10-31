@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://zerobound.local/contracts/kb_unit.schema.json",
+  "title": "Knowledge Unit (KB Read API v1)",
+  "type": "object",
+  "required": ["id", "source", "book", "chapter", "page_start", "page_end", "concept", "claim", "evidence"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^[0-9a-f]{12}$", "description": "sha1(book|chapter|page_start|claim[:80])[:12]"},
+    "source": {"type": "string", "enum": ["书籍", "研报"]},
+    "book": {"type": "string", "minLength": 1},
+    "chapter": {"type": "string"},
+    "page_start": {"type": "integer", "minimum": 1},
+    "page_end": {"type": "integer", "minimum": 1},
+    "concept": {"type": "string"},
+    "claim": {"type": "string", "minLength": 1, "maxLength": 400},
+    "evidence": {"type": "string", "maxLength": 300},
+    "score": {"type": "number", "description": "仅检索结果返回"}
+  },
+  "additionalProperties": false
+}

@@ -14,6 +14,8 @@ def _load_gated(monkeypatch):
     spec.loader.exec_module(mod)
     monkeypatch.setattr(mod, "branch_changed_files", lambda tid: ["docs/x.md"])
     monkeypatch.setattr(mod, "is_docs_only", lambda files: True)
+    # H5-a（2026-10-31）：dry-run 现含 PIN_GATE 校验；本单测只测预检语义，钉扎另有单测
+    monkeypatch.setattr(mod, "gate_pin_check", lambda tid: (True, "test-pin-ok"))
     monkeypatch.setattr(mod, "run", lambda cmd, timeout=3600: 0)
     calls = []
     monkeypatch.setattr(mod, "emit", lambda k, t, d: calls.append((k, t, d)))

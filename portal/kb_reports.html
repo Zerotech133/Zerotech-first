@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>研报知识库 · 零界</title>
+<link rel="stylesheet" href="/static/nav.css">
+<style>
+:root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2333;--bd:#2d333b;--fg:#e6edf3;--dim:#8b949e;--acc:#58a6ff;--ok:#3fb950;--warn:#d29922;--bad:#f85149}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.6 "Microsoft YaHei",system-ui,sans-serif;padding:24px}
+h1{font-size:22px;margin:0 0 4px} h1 small{color:var(--dim);font-size:13px;font-weight:normal}
+.sub{color:var(--dim);font-size:12px;margin-bottom:16px}
+.panel{background:var(--panel);border:1px solid var(--bd);border-radius:10px;padding:16px;margin-bottom:14px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+input[type=text]{flex:1;min-width:280px;background:var(--panel2);color:var(--fg);border:1px solid var(--bd);border-radius:7px;padding:9px 12px;font-size:14px}
+.btn{background:#1f6feb;border:1px solid #1f6feb;color:#fff;border-radius:7px;padding:8px 16px;cursor:pointer;font-size:13px}
+.btn.ghost{background:transparent;border-color:var(--bd);color:var(--fg)}
+.card{background:var(--panel2);border:1px solid var(--bd);border-radius:8px;padding:12px;margin:8px 0}
+.card .meta{color:var(--dim);font-size:12px;margin-bottom:4px}
+.card .claim{font-size:14px;margin:4px 0}
+.card .ev{color:#9aa4b2;font-size:12px;border-left:2px solid #30363d;padding-left:8px;margin-top:6px}
+.badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:700;background:#122642;color:#79c0ff}
+.count{color:var(--dim);font-size:12px;margin:8px 0}
+.empty{color:var(--dim);text-align:center;padding:24px}
+.foot{margin-top:16px;color:var(--dim);font-size:12px}
+code{background:#0a0e14;padding:1px 6px;border-radius:4px;color:#79c0ff;font-size:12px}
+</style>
+<script src="/static/nav.js" defer></script></head>
+<body>
+<div id="nav"></div>
+<h1>📑 研报知识库 <small>498 条带出处的知识单元 · 搜索/问答</small></h1>
+<div class="sub" id="sub">加载中…</div>
+
+<div class="panel">
+  <div class="row">
+    <input type="text" id="q" placeholder="输入关键词，如：盈利预测上修 / 存贷双高 / 评级 / 商誉 / 行业景气">
+    <button class="btn" id="go">搜索</button>
+    <button class="btn ghost" data-f="all">全部</button>
+    <button class="btn ghost" data-f="研报">仅研报</button>
+    <button class="btn ghost" data-f="书籍">仅书籍</button>
+  </div>
+  <div class="count" id="count"></div>
+</div>
+
+<div id="results"><div class="empty">输入关键词开始检索</div></div>
+
+<div class="panel">
+  <b>使用提示</b>
+  <div class="sub" style="margin:6px 0 0">
+    每条结果都带出处（书名/章节/页码）；回答问题时请引用出处。数据由 OCR/LLM 抽取，重大结论请对照原文。
+    其他 Agent 可用 <code>tools/kb_corpus/kb_reports_search.py --json</code> 调用同一知识库。
+  </div>
+</div>
+
+<div class="foot">数据源：<code>C:/项目/PDF/_ingest*</code> · 治理卡：<code>/dw.html</code> · 状态：<code>/kb_ingest.html</code></div>
+
+<script>
+let UNITS=[], FILTER='all', LASTQ='';
+const $=id=>document.getElementById(id);
+function tok(s){
+  s=(s||'').toLowerCase();
+  const zh=s.match(/[\u4e00-\u9fff]{2}/g)||[];
+  const en=s.match(/[a-z0-9]{2,}/g)||[];
+  return zh.concat(en);
+}
+function score(qt,u){
+  const text=(u.concept+' '+u.claim+' '+u.evidence);
+  const ut=tok(text), set=new Set(ut);
+  let s=0;
+  for(const t of qt){ if(set.has(t)) s+= (u.concept.toLowerCase().includes(t)?2:1); }
+  return s;
+}
+function render(){
+  const q=LASTQ.trim();
+  let list=UNITS.filter(u=>FILTER==='all'||u.source===FILTER);
+  if(q){
+    const qt=tok(q);
+    list=list.map(u=>({u,s:score(qt,u)})).filter(x=>x.s>0).sort((a,b)=>b.s-a.s).map(x=>x.u);
+  } else {
+    list=list.slice(0,30);
+  }
+  const box=$('results');
+  if(!list.length){ box.innerHTML='<div class="empty">没有命中，换个关键词试试</div>'; $('count').textContent=''; return; }
+  box.innerHTML=list.slice(0,50).map(u=>`
+    <div class="card">
+      <div class="meta"><span class="badge">${u.source}</span> ${u.book} · ${u.chapter||'—'} · p${u.p1??'?'}-${u.p2??'?'}</div>
+      ${u.concept?`<div class="claim"><b>${u.concept}</b>：${u.claim}</div>`:`<div class="claim">${u.claim}</div>`}
+      ${u.evidence?`<div class="ev">原文依据：${u.evidence}</div>`:''}
+    </div>`).join('');
+  $('count').textContent=`命中 ${list.length} 条（显示前 50）`;
+}
+async function load(){
+  try{
+    const r=await fetch('/static/kb_units_all.json?ts='+Date.now());
+    const d=await r.json();
+    UNITS=d.units||[];
+    $('sub').textContent=`生成时间 ${d.generated_at} · 知识单元 ${d.total} 条（书籍+研报）`;
+    render();
+  }catch(e){ $('sub').textContent='加载失败：'+e.message; }
+}
+$('go').onclick=()=>{LASTQ=$('q').value;render();};
+$('q').addEventListener('keydown',e=>{if(e.key==='Enter'){LASTQ=$('q').value;render();}});
+document.querySelectorAll('button[data-f]').forEach(b=>b.onclick=()=>{FILTER=b.dataset.f;render();});
+load();
+</script>
+</body>
+</html>
