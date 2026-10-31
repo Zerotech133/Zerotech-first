@@ -34,7 +34,8 @@ param(
     [int]$CliTimeoutSec = 45,
     [int]$RetryCount = 3,
     [int]$CooldownMinutes = 30,
-    [int]$BackupRetain = 20
+    [int]$BackupRetain = 20,
+    [int]$UnusableCooldownMinutes = 180
 )
 
 $ErrorActionPreference = 'Stop'
@@ -209,9 +210,10 @@ function Read-Cooldown {
     } catch { return $null }
 }
 
-function Set-Cooldown([string]$target, [string]$reason) {
+function Set-Cooldown([string]$target, [string]$reason, [int]$minutes = 0) {
     try {
-        @{ target = $target; ts = (Get-Date).ToString('o'); reason = $reason } |
+        if ($minutes -le 0) { $minutes = $CooldownMinutes }
+        @{ target = $target; ts = (Get-Date).ToString('o'); reason = $reason; minutes = $minutes } |
             ConvertTo-Json -Depth 3 | Out-File -FilePath $stateFile -Encoding utf8 -Force
         Log ('cooldown set target=' + $target + ' reason=' + $reason)
     } catch { Log ('cooldown write failed: ' + $_.Exception.Message) }
@@ -227,13 +229,18 @@ function Clear-Cooldown {
 }
 
 function Prune-Backups {
-    # 只保留最近 $BackupRetain 份；旧文件进回收站（Windows 删除红线）
+    # 只保留最近 $BackupRetain 份（含当前 keep）；旧文件进回收站（Windows 删除红线）。
+    # 2026-10-31 P123：Copy-Item 会继承源文件 mtime → 新备份被当成最旧误删（首跑回滚因此失败），
+    # 故调用方需把备份 mtime 置为当前时间，并在此排除 keep 文件。
+    param([string]$keep = '')
     try {
         $files = @(Get-ChildItem -Path $backupDir -Filter 'openclaw-*.json' -File -ErrorAction SilentlyContinue |
+            Where-Object { $_.FullName -ne $keep } |
             Sort-Object LastWriteTime -Descending)
-        if ($files.Count -le $BackupRetain) { return }
+        $keepOthers = [Math]::Max(0, $BackupRetain - 1)
+        if ($files.Count -le $keepOthers) { return }
         Add-Type -AssemblyName Microsoft.VisualBasic -ErrorAction SilentlyContinue
-        foreach ($f in ($files | Select-Object -Skip $BackupRetain)) {
+        foreach ($f in ($files | Select-Object -Skip $keepOthers)) {
             try {
                 [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteFile(
                     $f.FullName, 'OnlyErrorDialogs', 'SendToRecycleBin')
@@ -308,7 +315,8 @@ if ($dry -or (-not $changed)) {
 $cd = Read-Cooldown
 if ($cd -and $cd.target -eq $targetModel) {
     try { $ageMin = ((Get-Date) - [datetime]::Parse($cd.ts)).TotalMinutes } catch { $ageMin = 9999 }
-    if ($ageMin -ge 0 -and $ageMin -lt $CooldownMinutes) {
+    $cdMin = if ($cd.minutes) { [int]$cd.minutes } else { $CooldownMinutes }
+    if ($ageMin -ge 0 -and $ageMin -lt $cdMin) {
         $result.action = 'cooldown'
         $result.ok = $true
         $result.error = 'cooldown_active'
@@ -326,13 +334,18 @@ New-Item -ItemType Directory -Force -Path $backupDir | Out-Null
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $backup = Join-Path $backupDir ('openclaw-' + $stamp + '.json')
 Copy-Item -Path $cfgPath -Destination $backup -Force
+(Get-Item -LiteralPath $backup).LastWriteTime = Get-Date
 $backupSha = Get-Sha256 $backup
 Log ('apply target=' + $targetModel + ' backup=' + $backup + ' sha=' + $backupSha.Substring(0, [Math]::Min(12, $backupSha.Length)))
-Prune-Backups
+Prune-Backups -keep $backup
 
 function Restore-Backup {
     # 回滚判据：备份文件 sha256 与还原后配置 sha256 一致（不依赖 CLI）
     try {
+        if (-not (Test-Path -LiteralPath $backup)) {
+            Log ('ROLLBACK BACKUP MISSING: ' + $backup + ' (备份被误删/不可达，配置可能未回滚)')
+            return $false
+        }
         Copy-Item -Path $backup -Destination $cfgPath -Force
         $got = Get-Sha256 $cfgPath
         if ($got -eq $backupSha) {
@@ -363,13 +376,26 @@ try {
         if ($i -lt $RetryCount) { Start-Sleep -Seconds (1 + 2 * ($i - 1)) }
     }
     Remove-Item -LiteralPath $patchFile -Force -ErrorAction SilentlyContinue
+    $postcondition = $false
     if ($patchRes.rc -ne 0) {
-        throw ('config patch failed rc=' + $patchRes.rc + ' timed_out=' + $patchRes.timed_out)
+        # P123：openclaw CLI 在 patch 写入成功后清理 shared-state 挂起（>timeout 被杀），
+        # rc 非零但配置可能已生效 → 以「配置 postcondition」判定，最终仍由 self-check 决定。
+        $nowModel = Get-CurrentModel -cfgPath $cfgPath
+        if ($nowModel -eq $targetModel) {
+            $postcondition = $true
+            Log ('WARN config patch rc=' + $patchRes.rc + ' but postcondition satisfied model=' + $nowModel + ' -> continue to self-check')
+        } else {
+            throw ('config patch failed rc=' + $patchRes.rc + ' timed_out=' + $patchRes.timed_out + ' model=' + $nowModel)
+        }
     }
 
-    # validate 失败仅告警，不单独阻断（CLI validate 本身可能撞 shared-state；真正判据是 self-check）
-    $valRes = Invoke-OcCli-Retry -name 'config validate' -ocArgs @('config', 'validate') -timeoutSec $CliTimeoutSec
-    if ($valRes.rc -ne 0) { Log ('WARN config validate rc=' + $valRes.rc + ' (continue to self-check)') }
+    if ($postcondition) {
+        Log 'skip config validate (postcondition path; self-check is authoritative)'
+    } else {
+        # validate 失败仅告警，不单独阻断（CLI validate 本身可能撞 shared-state；真正判据是 self-check）
+        $valRes = Invoke-OcCli-Retry -name 'config validate' -ocArgs @('config', 'validate') -timeoutSec $CliTimeoutSec
+        if ($valRes.rc -ne 0) { Log ('WARN config validate rc=' + $valRes.rc + ' (continue to self-check)') }
+    }
 
     # real inference self-check（判「非空正文」，{"ok":true,"outputs":[]} 不算健康）
     $inferText = ''
@@ -407,7 +433,11 @@ try {
             Log ('selfcheck ok=' + $ok + ' text_len=' + ($outText.Length))
         }
     } catch { $ok = $false }
-    if (-not $ok) { throw 'self-check inference empty/failed' }
+    if (-not $ok) {
+        $unusable = ($inferText -match 'Invalid API key|401|unauthorized|Unauthorized')
+        if ($unusable) { throw 'UNUSABLE: self-check inference failed (provider key/401)' }
+        throw 'self-check inference empty/failed'
+    }
 
     Clear-Cooldown
     $result.ok = $true
@@ -424,6 +454,20 @@ try {
     $msg = $_.Exception.Message
     Log ('apply failed: ' + $msg + ' -> rollback')
     $restored = Restore-Backup
+    if ($msg -match '^UNUSABLE:') {
+        # 目标载体不可用（如 provider 401）：回滚 + 长冷却 + 任务绿退出（预期状态，不制造 24h 红灯）
+        Set-Cooldown -target $targetModel -reason $msg -minutes $UnusableCooldownMinutes
+        $result.ok = $true
+        $result.action = 'unusable'
+        $result.error = $msg
+        $result.backup = $backup
+        $result.rollback_sha_ok = $restored
+        $result.cooldown_minutes = $UnusableCooldownMinutes
+        if ($Json) { $result | ConvertTo-Json -Depth 8 } else {
+            Write-Output ('UNUSABLE: ' + $msg + ' -> rolled back=' + $restored + ' cooldown=' + $UnusableCooldownMinutes + 'min')
+        }
+        exit 0
+    }
     Set-Cooldown -target $targetModel -reason $msg
     $result.ok = $false
     $result.action = 'rolled-back'
