@@ -23,6 +23,8 @@ from evidence_bundle import (
     REPO_ROOT,
     RawRefError,
     make_raw_ref,
+    normalize_pit_as_of,
+    validate_pit,
 )
 
 __all__ = [
@@ -31,6 +33,7 @@ __all__ = [
     "collect_shadow_raw_refs",
     "context_kline_rows",
     "symbol_parts",
+    "validate_pit",
 ]
 
 ASHARE_REL = Path("quant_backtest") / "data" / "ashare"
@@ -81,6 +84,32 @@ def _read_kline_rows(path: Path, pyarrow_parquet):
     frame = table.to_pydict()
     return [(_norm_date(date), float(close))
             for date, close in zip(frame["trade_date"], frame["close"])]
+
+
+def _json_selector_value(path: Path, selector: str):
+    """读取 JSON 点路径 selector 的值（只读；找不到/坏文件返回 None）。"""
+    try:
+        import json  # noqa: PLC0415  惰性
+        doc = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    cur = doc
+    for part in str(selector or "").split("."):
+        if isinstance(cur, dict) and part in cur:
+            cur = cur[part]
+        elif isinstance(cur, list) and part.isdigit() and int(part) < len(cur):
+            cur = cur[int(part)]
+        else:
+            return None
+    return cur
+
+
+def _safe_pit(value):
+    """把候选数据时点规范化；非法/空 → ""（不伪造，由 issue 记录）。"""
+    try:
+        return normalize_pit_as_of(value)
+    except RawRefError:
+        return ""
 
 
 def _collect_kline(symbol, ctx, root: Path, report: dict):
@@ -141,6 +170,8 @@ def _collect_kline(symbol, ctx, root: Path, report: dict):
             kind="kline_parquet",
             row_range=[start, end],
             root=root,
+            # 数据时点 = 上下文里最新一根 K 线交易日（不是采集时刻）
+            pit_as_of=max(date for date, _close in rows),
         )
     except (RawRefError, OSError) as exc:
         report["unavailable"].append({
@@ -157,6 +188,14 @@ def _collect_l4(symbol, root: Path, report: dict):
             "source": "l4_status", "reason": "l4_file_missing"})
         return None
     selector = "symbols.%s" % bare
+    record = _json_selector_value(path, selector)
+    pit = ""
+    if isinstance(record, dict):
+        pit = _safe_pit(record.get("as_of"))
+        if str(record.get("as_of") or "").strip() and not pit:
+            report.setdefault("pit_issues", []).append({
+                "source": "l4_status", "reason": "bad_pit_format",
+                "value": str(record.get("as_of"))[:40]})
     try:
         return make_raw_ref(
             source="l4_status",
@@ -164,6 +203,8 @@ def _collect_l4(symbol, root: Path, report: dict):
             kind="l4_record",
             selector=selector,
             root=root,
+            # 数据时点 = L4 记录的 as_of（数据侧时点），非采集时刻
+            pit_as_of=pit or None,
         )
     except (RawRefError, OSError) as exc:
         report["unavailable"].append({
@@ -197,4 +238,21 @@ def collect_shadow_raw_refs(symbol, ctx, root=None) -> dict:
         {"source": "news_event", "reason": "derived_proxy_no_raw_file"},
         {"source": "final_decision", "reason": "derived_text_no_raw_file"},
     ])
+    # PIT 分账：as_of=采集时刻，pit_as_of=数据时点；缺失/非法/时点倒挂显式列出。
+    pit_refs = []
+    pit_issues = list(report.get("pit_issues") or [])
+    for ref in refs:
+        ok, reason = validate_pit(ref.as_of, getattr(ref, "pit_as_of", ""))
+        pit_refs.append({
+            "source": ref.source,
+            "kind": ref.kind,
+            "as_of": ref.as_of,
+            "pit_as_of": getattr(ref, "pit_as_of", ""),
+            "pit_ok": ok,
+            "pit_reason": reason,
+        })
+        if not ok:
+            pit_issues.append({"source": ref.source, "reason": reason})
+    report["pit"] = {"collection_as_of": report["generated_at"],
+                     "refs": pit_refs, "issues": pit_issues}
     return {"refs": refs, "root": str(base), "report": report}
