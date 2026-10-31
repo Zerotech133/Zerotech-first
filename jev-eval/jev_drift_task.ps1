@@ -53,8 +53,13 @@ try {
     # 失败不阻塞、不改本任务退出码（只留痕）。
     $rotPy = Join-Path (Split-Path $PSScriptRoot -Parent) 'tools\rotate_logs.py'
     if (Test-Path -LiteralPath $rotPy) {
+        # 2026-10-31 DRIFTPLUS：native 程序的 stderr 在 Stop 偏好下会变成 ErrorRecord 直接 throw，
+        # 导致轮转（即使成功/部分失败）把整个 drift wrapper 变成 rc=1。此处局部 Continue。
+        $ErrorActionPreference = 'Continue'
         $rotOut = & $py -X utf8 -B $rotPy --execute --gzip --active-guard-min 1 --keep-days 14 2>&1
-        W ('P5 rotate_logs exit=' + $LASTEXITCODE + ' out=' + (($rotOut | Select-Object -Last 2) -join ' | '))
+        $rotRc = $LASTEXITCODE
+        $ErrorActionPreference = 'Stop'
+        W ('P5 rotate_logs exit=' + $rotRc + ' out=' + (($rotOut | Select-Object -Last 2) -join ' | '))
     } else {
         W ('P5 rotate_logs SKIP: not found ' + $rotPy)
     }
