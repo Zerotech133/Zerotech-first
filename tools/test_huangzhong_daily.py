@@ -4,7 +4,17 @@ import importlib.util
 import json
 from pathlib import Path
 
+import pytest
+
 _TOOLS = Path(__file__).resolve().parent
+
+
+@pytest.fixture(autouse=True)
+def _isolate_push_and_alerts(tmp_path, monkeypatch):
+    """B 已开启（2026-10-31 老田批准）：默认关闭推送并把 alerts 目录指向 tmp，
+    避免单元测试写生产 alerts（历史事故：测试 fake REJECT 写生产 flag）。"""
+    monkeypatch.setenv("HUANGZHONG_EVENT_PUSH", "0")
+    monkeypatch.setenv("HUANGZHONG_ALERTS_DIR", str(tmp_path / "alerts"))
 
 
 def _load(name):
