@@ -48,7 +48,11 @@ def adj_close(dt: str, codes: list[str]) -> pd.Series:
     return m.set_index("ts_code")["adj"].reindex(codes)
 
 
-def step(prev_pos: dict | None, date: str, next_date: str) -> dict:
+def _build(date: str, baseline: bool, target_vol: float) -> dict:
+    return portfolio_build.build_baseline(date) if baseline else portfolio_build.build(date, target_vol)
+
+
+def step(prev_pos: dict | None, date: str, next_date: str, baseline: bool = False, target_vol: float = 0.15) -> dict:
     """prev_pos 在 date 收盘建立；计算 next_date 日收益（T+1 持有），并在 next_date 调仓。"""
     w_prev = prev_pos["weights"] if prev_pos else {}
     codes = list(w_prev)
@@ -60,14 +64,15 @@ def step(prev_pos: dict | None, date: str, next_date: str) -> dict:
     else:
         gross = 0.0
     # next_date 收盘调仓（生成新持仓）
-    pos = portfolio_build.build(next_date)
+    pos = _build(next_date, baseline, target_vol)
     w_new = {h["ts_code"]: h["weight"] for h in pos["holdings"]}
     turnover = float(sum(abs(w_new.get(c, 0) - w_prev.get(c, 0)) for c in set(w_new) | set(w_prev)))
     net = gross - COST * turnover
     return {"gross": gross, "net": net, "turnover": turnover, "weights": w_new, "positions": pos}
 
 
-def write_outputs(ledger: list[dict], latest_pos: dict) -> None:
+def write_outputs(ledger: list[dict], latest_pos: dict, shadow_dir: Path = None, out_name: str = "shadow_selection.json") -> None:
+    shadow_dir = shadow_dir or SHADOW
     nav = 1.0
     rows = []
     for r in ledger:
@@ -93,8 +98,8 @@ def write_outputs(ledger: list[dict], latest_pos: dict) -> None:
         "note": "影子盘模拟（T+1 收盘调仓、成本 30bp×换手）；未含冲击成本/停牌；仅供研究",
     }
     STATIC.mkdir(parents=True, exist_ok=True)
-    (STATIC / "shadow_selection.json").write_text(json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8")
-    (SHADOW / "shadow_report.json").write_text(json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8")
+    (STATIC / out_name).write_text(json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8")
+    (shadow_dir / "shadow_report.json").write_text(json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8")
     return payload
 
 
@@ -103,10 +108,12 @@ def main(argv=None) -> int:
     ap.add_argument("--backfill", type=int, default=0)
     ap.add_argument("--date", default="")
     ap.add_argument("--target-vol", type=float, default=0.15)
+    ap.add_argument("--baseline", action="store_true", help="S01 基线（过滤后市值等权，不含 alpha 排序）")
     args = ap.parse_args(argv)
-    SHADOW.mkdir(parents=True, exist_ok=True)
+    shadow_dir = REPO / "research" / "shadow" / ("baseline" if args.baseline else "selection")
+    shadow_dir.mkdir(parents=True, exist_ok=True)
     dates = trade_dates(args.backfill + 2) if args.backfill else [args.date or selection_engine.latest_trade_date()]
-    ledger_path = SHADOW / "ledger.jsonl"
+    ledger_path = shadow_dir / "ledger.jsonl"
 
     if args.backfill:
         start_dates = trade_dates(args.backfill + 2)
@@ -114,26 +121,27 @@ def main(argv=None) -> int:
         ledger = []
         for i in range(len(start_dates) - 2):
             d, nd = start_dates[i], start_dates[i + 1]
-            st = step(prev, d, nd)
+            st = step(prev, d, nd, args.baseline, args.target_vol)
             prev = {"weights": st["weights"]}
             ledger.append({"date": nd, "ret": round(st["gross"], 6), "net": round(st["net"], 6),
                            "turnover": round(st["turnover"], 4), "n_positions": len(st["weights"])})
-            (SHADOW / f"positions_{nd}.json").write_text(json.dumps(st["positions"], ensure_ascii=False, indent=1), encoding="utf-8")
+            (shadow_dir / f"positions_{nd}.json").write_text(json.dumps(st["positions"], ensure_ascii=False, indent=1), encoding="utf-8")
+        ledger_path = shadow_dir / "ledger.jsonl"
         ledger_path.write_text("\n".join(json.dumps(r, ensure_ascii=False) for r in ledger) + "\n", encoding="utf-8")
-        payload = write_outputs(ledger, prev)
+        payload = write_outputs(ledger, prev, shadow_dir, "shadow_baseline.json" if args.baseline else "shadow_selection.json")
         print(json.dumps({"days": payload["days"], "nav": payload["nav"], "mdd_pct": payload["mdd_pct"],
                           "ann_ret_pct": payload["ann_ret_pct"], "ann_vol_pct": payload["ann_vol_pct"]}, ensure_ascii=False))
         return 0
 
     date = dates[0]
-    pos = portfolio_build.build(date, args.target_vol)
-    (SHADOW / f"positions_{date}.json").write_text(json.dumps(pos, ensure_ascii=False, indent=1), encoding="utf-8")
+    pos = _build(date, args.baseline, args.target_vol)
+    (shadow_dir / f"positions_{date}.json").write_text(json.dumps(pos, ensure_ascii=False, indent=1), encoding="utf-8")
     ledger = []
     if ledger_path.exists():
         ledger = [json.loads(x) for x in ledger_path.read_text(encoding="utf-8").splitlines() if x.strip()]
     ledger.append({"date": date, "ret": 0.0, "net": -COST * 1.0, "turnover": 1.0, "n_positions": pos["n"]})
     ledger_path.write_text("\n".join(json.dumps(r, ensure_ascii=False) for r in ledger) + "\n", encoding="utf-8")
-    payload = write_outputs(ledger, pos)
+    payload = write_outputs(ledger, pos, shadow_dir, "shadow_baseline.json" if args.baseline else "shadow_selection.json")
     print(json.dumps({"date": date, "positions": pos["n"], "cash": pos["cash"], "nav": payload["nav"]}, ensure_ascii=False))
     return 0
 

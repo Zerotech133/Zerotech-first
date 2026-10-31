@@ -1,0 +1,173 @@
+{
+ "date": "20261030",
+ "method": "S01 基线：过滤后按流通市值等权（无 alpha 排序）",
+ "holdings": [
+  {
+   "ts_code": "601288.SH",
+   "name": "农业银行",
+   "industry": "银行",
+   "weight": 0.05,
+   "score": null
+  },
+  {
+   "ts_code": "601398.SH",
+   "name": "工商银行",
+   "industry": "银行",
+   "weight": 0.05,
+   "score": null
+  },
+  {
+   "ts_code": "601857.SH",
+   "name": "中国石油",
+   "industry": "石油开采",
+   "weight": 0.05,
+   "score": null
+  },
+  {
+   "ts_code": "600519.SH",
+   "name": "贵州茅台",
+   "industry": "白酒",
+   "weight": 0.05,
+   "score": null
+  },
+  {
+   "ts_code": "601988.SH",
+   "name": "中国银行",
+   "industry": "银行",
+   "weight": 0.05,
+   "score": null
+  },
+  {
+   "ts_code": "300750.SZ",
+   "name": "宁德时代",
+   "industry": "电气设备",
+   "weight": 0.05,
+   "score": null
+  },
+  {
+   "ts_code": "600036.SH",
+   "name": "招商银行",
+   "industry": "银行",
+   "weight": 0.05,
+   "score": null
+  },
+  {
+   "ts_code": "601138.SH",
+   "name": "工业富联",
+   "industry": "通信设备",
+   "weight": 0.05,
+   "score": null
+  },
+  {
+   "ts_code": "601088.SH",
+   "name": "中国神华",
+   "industry": "煤炭开采",
+   "weight": 0.05,
+   "score": null
+  },
+  {
+   "ts_code": "600900.SH",
+   "name": "长江电力",
+   "industry": "水力发电",
+   "weight": 0.05,
+   "score": null
+  },
+  {
+   "ts_code": "601628.SH",
+   "name": "中国人寿",
+   "industry": "保险",
+   "weight": 0.05,
+   "score": null
+  },
+  {
+   "ts_code": "000333.SZ",
+   "name": "美的集团",
+   "industry": "家用电器",
+   "weight": 0.05,
+   "score": null
+  },
+  {
+   "ts_code": "300308.SZ",
+   "name": "中际旭创",
+   "industry": "通信设备",
+   "weight": 0.05,
+   "score": null
+  },
+  {
+   "ts_code": "601899.SH",
+   "name": "紫金矿业",
+   "industry": "铜",
+   "weight": 0.05,
+   "score": null
+  },
+  {
+   "ts_code": "601318.SH",
+   "name": "中国平安",
+   "industry": "保险",
+   "weight": 0.05,
+   "score": null
+  },
+  {
+   "ts_code": "600028.SH",
+   "name": "中国石化",
+   "industry": "石油加工",
+   "weight": 0.05,
+   "score": null
+  },
+  {
+   "ts_code": "601728.SH",
+   "name": "中国电信",
+   "industry": "电信运营",
+   "weight": 0.05,
+   "score": null
+  },
+  {
+   "ts_code": "601166.SH",
+   "name": "兴业银行",
+   "industry": "银行",
+   "weight": 0.05,
+   "score": null
+  },
+  {
+   "ts_code": "601658.SH",
+   "name": "邮储银行",
+   "industry": "银行",
+   "weight": 0.05,
+   "score": null
+  },
+  {
+   "ts_code": "601998.SH",
+   "name": "中信银行",
+   "industry": "银行",
+   "weight": 0.05,
+   "score": null
+  }
+ ],
+ "cash": 0.0,
+ "industry_exposure": {
+  "银行": 0.35,
+  "石油开采": 0.05,
+  "白酒": 0.05,
+  "电气设备": 0.05,
+  "通信设备": 0.1,
+  "煤炭开采": 0.05,
+  "水力发电": 0.05,
+  "保险": 0.1,
+  "家用电器": 0.05,
+  "铜": 0.05,
+  "石油加工": 0.05,
+  "电信运营": 0.05
+ },
+ "n": 20,
+ "filters": {
+  "st": 195,
+  "new": 116,
+  "price": 95,
+  "liquidity": 1376,
+  "limitup": 60,
+  "missing": 1718,
+  "loss": 1478,
+  "extreme": 7
+ },
+ "note": "基线用于对照 S02；不含未验证 alpha 因子"
+}

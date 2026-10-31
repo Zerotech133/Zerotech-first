@@ -85,17 +85,33 @@ def load_universe(date: str, hist_days: int = 26) -> tuple[pd.DataFrame, dict]:
     return d, meta
 
 
+_FINA_RAW: pd.DataFrame | None = None
+
+
+def _load_fina_all() -> pd.DataFrame:
+    """一次性加载全部 fina_indicator（缓存），供多日期 PIT 查询复用。"""
+    global _FINA_RAW
+    if _FINA_RAW is None:
+        rows = []
+        for f in sorted(glob.glob(str(DATA / "fina_indicator" / "*.parquet"))):
+            df = pq.read_table(f, columns=["ts_code", "ann_date", "end_date", "roe"]).to_pandas()
+            df["ann_date"] = df["ann_date"].astype(str)
+            df["end_date"] = df["end_date"].astype(str)
+            rows.append(df)
+        raw = pd.concat(rows, ignore_index=True)
+        raw = raw[(raw["ann_date"].str.len() == 8) & raw["roe"].notna()]
+        _FINA_RAW = raw
+    return _FINA_RAW
+
+
 def load_latest_fina(date: str) -> pd.DataFrame:
-    rows = []
-    for f in sorted(glob.glob(str(DATA / "fina_indicator" / "*.parquet"))):
-        df = pq.read_table(f, columns=["ts_code", "ann_date", "end_date", "roe"]).to_pandas()
-        df["ann_date"] = df["ann_date"].astype(str)
-        df["end_date"] = df["end_date"].astype(str)
-        df = df[(df["ann_date"] <= date) & (df["ann_date"].str.len() == 8) & df["roe"].notna()]
-        if df.empty:
-            continue
-        rows.append(df.sort_values(["ann_date", "end_date"]).tail(1)[["ts_code", "ann_date", "end_date", "roe"]])
-    return pd.concat(rows, ignore_index=True) if rows else pd.DataFrame(columns=["ts_code", "ann_date", "end_date", "roe"])
+    """PIT：每只股票取 ann_date ≤ date 的最新报告 roe（使用缓存，回填快）。"""
+    raw = _load_fina_all()
+    df = raw[raw["ann_date"] <= date]
+    if df.empty:
+        return pd.DataFrame(columns=["ts_code", "ann_date", "end_date", "roe"])
+    df = df.sort_values(["ann_date", "end_date"]).groupby("ts_code", as_index=False).tail(1)
+    return df[["ts_code", "ann_date", "end_date", "roe"]]
 
 
 def build(date: str, top: int) -> dict:

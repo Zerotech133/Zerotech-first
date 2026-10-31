@@ -115,21 +115,66 @@ def build(date: str, target_vol: float = 0.15, top: int = 20, single_cap: float 
     }
 
 
+def build_baseline(date: str, top: int = 20, single_cap: float = 0.05, ind_cap: float = 0.30) -> dict:
+    """S01 基线：过滤后候选池内按流通市值降序取 top，等权（无 alpha 排序因子）。"""
+    import selection_engine as se  # 同目录
+    sel = se.build(date, max(top * 3, 60))  # 复用过滤后的候选（含选中池）
+    # 重新取候选池：用 build 内部逻辑不可直接拿；改为对 picks 的父候选做近似：
+    # 简化且透明：用 picks（S02 排名结果）不合适 → 重新加载候选池：调用 se.build 的 filters 后无池返回。
+    # 因此此处直接调用 se.build 拿候选数，但池需要独立；为保持简单，使用 picks 的行业/市值不可靠。
+    # 方案：对全市场做同款过滤（复用 se.build 的过滤规则），按 circ_mv 降序。
+    u, _meta = se.load_universe(date)
+    fin = se.load_latest_fina(date)
+    import pandas as pd
+    u = u.merge(fin, on="ts_code", how="left")
+    listing_days = (pd.to_datetime(date) - pd.to_datetime(u["list_date"], format="%Y%m%d", errors="coerce")).dt.days
+    drops = {
+        "st": u["name"].fillna("").str.contains(r"ST|\*ST|退", regex=True),
+        "new": listing_days.fillna(0) < 250,
+        "price": u["close"].fillna(0) < 2.0,
+        "liquidity": u["amount"].fillna(0) * 1000.0 < 5e7,
+        "limitup": u["pct_chg"].fillna(0) >= 9.5,
+        "missing": u["pe_ttm"].isna() | u["roe"].isna() | (u["pe_ttm"] <= 0) | u["ret20"].isna(),
+        "loss": u["roe"] <= 0,
+        "extreme": (u["ret20"] > 0.8) | (u["ret5"] > 0.5),
+    }
+    u["_eligible"] = ~pd.concat(drops.values(), axis=1).any(axis=1)
+    e = u[u["_eligible"]].copy()
+    e["pe_bucket"] = pd.qcut(e["pe_ttm"], 3, labels=["低估值", "中估值", "高估值"], duplicates="drop")
+    e["roe_pct_in_pe"] = e.groupby("pe_bucket", observed=True)["roe"].rank(pct=True)
+    e = e[~((e["pe_bucket"].astype(str) == "高估值") & (e["roe_pct_in_pe"] >= 0.8))].copy()
+    e = e.sort_values("circ_mv", ascending=False).head(top)
+    if e.empty:
+        return {"date": date, "method": "baseline（S01 过滤 + 市值等权）", "holdings": [], "cash": 1.0, "n": 0,
+                "industry_exposure": {}, "note": "无候选"}
+    w = 1.0 / len(e)
+    holdings = [{"ts_code": r["ts_code"], "name": r["name"], "industry": r.get("industry"),
+                 "weight": round(w, 4), "score": None} for _, r in e.iterrows()]
+    ind_exp = {}
+    for h in holdings:
+        ind_exp[h["industry"] or "未知"] = round(ind_exp.get(h["industry"] or "未知", 0) + h["weight"], 4)
+    return {"date": date, "method": "S01 基线：过滤后按流通市值等权（无 alpha 排序）",
+            "holdings": holdings, "cash": round(1 - sum(h["weight"] for h in holdings), 4),
+            "industry_exposure": ind_exp, "n": len(holdings), "filters": {k: int(v.sum()) for k, v in drops.items()},
+            "note": "基线用于对照 S02；不含未验证 alpha 因子"}
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--date", default="")
     ap.add_argument("--target-vol", type=float, default=0.15)
+    ap.add_argument("--baseline", action="store_true")
     ap.add_argument("--top", type=int, default=20)
     args = ap.parse_args(argv)
     date = args.date or selection_engine.latest_trade_date()
-    out = build(date, args.target_vol, args.top)
+    out = build_baseline(date, args.top) if args.baseline else build(date, args.target_vol, args.top)
     OUT.mkdir(parents=True, exist_ok=True)
-    p = OUT / f"portfolio_{date}.json"
+    p = OUT / (f"portfolio_baseline_{date}.json" if args.baseline else f"portfolio_{date}.json")
     p.write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
-    print(json.dumps({"date": date, "n": out["n"], "cash": out["cash"], "est_vol": out["estimated_vol_ann"],
-                      "top_weights": [(h["ts_code"], h["weight"]) for h in out["holdings"][:5]]}, ensure_ascii=False))
-    return 0
-
+    print(json.dumps({"date": date, "n": out.get("n"), "cash": out.get("cash"),
+                      "est_vol": out.get("estimated_vol_ann"), "method": out.get("method"),
+                      "top_weights": [(h["ts_code"], h["weight"]) for h in out.get("holdings", [])[:5]]},
+                     ensure_ascii=False))
 
 if __name__ == "__main__":
     sys.exit(main())
