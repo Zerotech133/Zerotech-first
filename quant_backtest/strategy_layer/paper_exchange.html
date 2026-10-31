@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>模拟交易所 · Paper Exchange 只读卡片（不迁移两账）</title>
+<!-- 前端准入三件套（相对路径接入，零硬依赖/离线优先；禁写死端口/绝对 URL/外部 CDN）：
+     tokens.css 已按相对路径接入（../../portal/static/tokens.css，自带下方 fallback 变量）；
+     nav/shortscreen 接入点（本页 h2=4 < 6，暂不需要 shortscreen；Lead 接页面路由时按需注入）：
+       <script src="../../portal/static/nav.js" defer></script>
+       <script src="../../portal/static/shortscreen.js" defer></script>
+     说明：本页是由 dashboard_api 的只读静态路由提供的卡片页；页面本身不写服务端。 -->
+<link rel="stylesheet" href="../../portal/static/tokens.css">
+<style>
+/* ── 语义变量：优先吃 tokens.css 的 primitive，离线/缺 tokens 时用 fallback ── */
+:root{
+  --bg:var(--gray-1,#0d1117);
+  --panel:var(--gray-2,#161b22);
+  --card:var(--gray-3,#21262d);
+  --line:var(--gray-4,#30363d);
+  --ink:var(--gray-7,#e6edf3);
+  --ink-2:var(--gray-6,#c9d1d9);
+  --muted:var(--gray-5,#8b949e);
+  --acc:var(--blu-500,#58a6ff);
+  --acc-2:var(--blu-600,#1f6feb);
+  --ok:var(--grn-500,#3fb950);
+  --warn:var(--ylw-500,#d29922);
+  --err:var(--red-500,#f85149);
+  --pur:var(--pur-500,#a371f7);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);
+     font:13px/1.55 "Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+     display:flex;flex-direction:column;min-height:100%}
+button,select,input{font-family:inherit}
+a{color:var(--acc)}
+.topbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+        padding:10px 18px;background:var(--panel);border-bottom:1px solid var(--line)}
+.topbar h1{font-size:16px;margin:0;white-space:nowrap}
+.badge{font-size:11px;color:var(--muted);border:1px solid var(--line);
+       border-radius:10px;padding:2px 9px;white-space:nowrap}
+.badge.ro{color:var(--ok);border-color:var(--ok)}
+.badge.no{color:var(--warn);border-color:var(--warn)}
+#sourceBadge.ok{color:var(--ok);border-color:var(--ok)}
+#sourceBadge.warn{color:var(--warn);border-color:var(--warn)}
+#sourceBadge.bad{color:var(--err);border-color:var(--err)}
+.spacer{flex:1}
+.btn{background:var(--card);color:var(--ink);border:1px solid var(--line);
+     border-radius:7px;padding:5px 12px;cursor:pointer;font-size:12px}
+.btn:hover{border-color:var(--acc)}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--acc-2);border-color:var(--acc-2);color:#fff}
+main{flex:1;min-height:0;overflow:auto;padding:14px 18px 10px;
+     display:flex;flex-direction:column;gap:12px;max-width:1400px;width:100%;margin:0 auto}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.card h2{font-size:13px;margin:0 0 9px;display:flex;align-items:center;gap:8px}
+.card h2 .tag{font-size:10px;font-weight:400;color:var(--muted);
+              border:1px solid var(--line);border-radius:8px;padding:0 6px}
+.hint{color:var(--muted);font-size:11px;margin:0 0 8px}
+.status{font-size:12px;color:var(--muted);margin:6px 0;min-height:17px}
+.status.ok{color:var(--ok)}
+.status.warn{color:var(--warn)}
+.status.bad{color:var(--err)}
+.empty{color:var(--muted);font-size:12px;border:1px dashed var(--line);
+       border-radius:8px;padding:12px;text-align:center;margin:8px 0}
+.empty.warn{border-color:var(--warn);color:var(--warn)}
+.hidden{display:none !important}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.chip{font-size:11px;border:1px solid var(--line);border-radius:9px;
+      padding:1px 8px;color:var(--ink-2);white-space:nowrap}
+.chip.off{color:var(--muted)}
+.chip.ok{color:var(--ok);border-color:var(--ok)}
+.chip.warn{color:var(--warn);border-color:var(--warn)}
+.chip.bad{color:var(--err);border-color:var(--err)}
+.health-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px}
+.book-card{border:1px solid var(--line);border-radius:9px;padding:10px 12px;
+           background:var(--card);cursor:pointer}
+.book-card:hover{border-color:var(--acc)}
+.book-card:focus{outline:2px solid var(--acc);outline-offset:1px}
+.book-card .book-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.book-card .book-name{font-weight:600;font-size:13px}
+.book-card .book-prefix{color:var(--muted);font-size:11px;font-family:Consolas,monospace}
+.kv{display:grid;grid-template-columns:150px minmax(0,1fr);gap:2px 10px;font-size:12px}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;word-break:break-all}
+ul.reasons{margin:4px 0 0;padding-left:18px;color:var(--warn);font-size:11px}
+.main-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:12px}
+@media (max-width:1000px){.main-grid{grid-template-columns:1fr}}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px}
+.controls label{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px}
+.controls input[type=text]{background:var(--card);border:1px solid var(--line);
+  border-radius:6px;color:var(--ink);padding:4px 8px;font-size:12px;width:130px}
+.controls input[type=text]:focus{outline:none;border-color:var(--acc)}
+.controls select{background:var(--card);border:1px solid var(--line);border-radius:6px;
+  color:var(--ink);padding:4px 8px;font-size:12px}
+.list{display:flex;flex-direction:column;gap:6px;max-height:420px;overflow:auto}
+.account-row{display:flex;align-items:center;gap:9px;width:100%;text-align:left;
+  background:var(--card);border:1px solid var(--line);border-radius:8px;
+  padding:7px 10px;color:var(--ink);cursor:pointer}
+.account-row:hover{border-color:var(--acc)}
+.account-row:focus{outline:2px solid var(--acc);outline-offset:1px}
+.account-row .aid{font-family:Consolas,monospace;font-size:12px;font-weight:600}
+.account-row .ameta{color:var(--muted);font-size:11px}
+.account-row .abook{font-size:10px;border:1px solid var(--line);border-radius:8px;
+  padding:0 6px;color:var(--muted);margin-left:auto;white-space:nowrap}
+.account-row .anote{color:var(--warn);font-size:10px;white-space:nowrap}
+.table-wrap{overflow:auto;max-height:300px;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:12px}
+th,td{padding:5px 9px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{color:var(--muted);font-weight:500;background:var(--card);position:sticky;top:0}
+tbody tr:last-child td{border-bottom:none}
+.mono{font-family:Consolas,monospace}
+.section-title{font-size:12px;color:var(--ink-2);margin:10px 0 5px;font-weight:600}
+footer{border-top:1px solid var(--line);background:var(--panel);color:var(--muted);
+       font-size:11px;padding:9px 18px;line-height:1.7}
+footer b{color:var(--ink-2);font-weight:600}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <h1>模拟交易所 · Paper Exchange</h1>
+  <span class="badge ro">只读</span>
+  <span class="badge no">不下单</span>
+  <span class="badge no">不迁移两账</span>
+  <span class="badge" id="sourceBadge">数据源：加载中…</span>
+  <span class="spacer"></span>
+  <button type="button" class="btn" id="btnRefresh">刷新（仅 GET）</button>
+</header>
+
+<main>
+  <!-- 健康卡：official / legacy 两本账只读状态 + 只读边界 -->
+  <section class="card" id="healthCard" aria-labelledby="healthTitle">
+    <h2 id="healthTitle">健康卡 · 两本账只读状态
+      <span class="tag">GET /paper_exchange/health</span></h2>
+    <p class="hint">official 与 legacy 两本账物理隔离、各自只读；缺数据/不可用显式标注，不造数。</p>
+    <div class="health-grid" id="healthBooks"></div>
+    <div class="chips" id="boundaryChips"></div>
+    <div class="status" id="healthStatus" role="status" aria-live="polite">读取中…</div>
+    <div class="empty hidden" id="healthEmpty"></div>
+  </section>
+
+  <div class="main-grid">
+    <!-- 账户目录：GET /paper_exchange/accounts -->
+    <section class="card" id="accountsCard" aria-labelledby="accountsTitle">
+      <h2 id="accountsTitle">账户目录
+        <span class="tag">GET /paper_exchange/accounts</span></h2>
+      <p class="hint">账户来自两本账的只读发现；租户归属未落库时显式标 null（不猜）。点账户行可预填快照查询。</p>
+      <div class="controls">
+        <label>账本
+          <select id="bookFilter">
+            <option value="">全部（official + legacy）</option>
+            <option value="official">official</option>
+            <option value="legacy">legacy</option>
+          </select>
+        </label>
+        <button type="button" class="btn" id="btnLoadAccounts">读取账户（GET）</button>
+      </div>
+      <div class="status" id="accountsNote" role="status" aria-live="polite"></div>
+      <div class="list" id="accountsList"></div>
+      <div class="empty" id="accountsEmpty">暂无账户：accounts 返回空列表（不造数）。</div>
+    </section>
+
+    <!-- 账户快照：GET /paper_exchange/snapshot -->
+    <section class="card" id="snapshotCard" aria-labelledby="snapshotTitle">
+      <h2 id="snapshotTitle">账户快照
+        <span class="tag">GET /paper_exchange/snapshot</span></h2>
+      <p class="hint">tenant 归属未落库：输入框为调用方声明（未验证，不猜归属）；空/不可用显式显示。</p>
+      <div class="controls">
+        <label>账本
+          <select id="selBook">
+            <option value="official">official</option>
+            <option value="legacy">legacy</option>
+          </select>
+        </label>
+        <label>tenant
+          <input type="text" id="inpTenant" value="t1" autocomplete="off"
+                 placeholder="tenant_id（未验证）" spellcheck="false">
+        </label>
+        <label>account
+          <input type="text" id="inpAccount" value="" autocomplete="off"
+                 placeholder="account_id（可空）" spellcheck="false">
+        </label>
+        <button type="button" class="btn primary" id="btnLoadSnapshot">读取快照（GET）</button>
+      </div>
+      <div class="status" id="snapshotStatus" role="status" aria-live="polite">
+        尚未读取快照：从账户目录选择，或填 tenant/account 后点“读取快照”。
+      </div>
+      <div id="snapshotBody"></div>
+      <div class="empty" id="snapshotEmpty">尚无快照数据（空态显式显示，不造数）。</div>
+    </section>
+  </div>
+
+  <!-- 路由详情：GET /paper_exchange/route -->
+  <section class="card" id="routeCard" aria-labelledby="routeTitle">
+    <h2 id="routeTitle">路由详情
+      <span class="tag">GET /paper_exchange/route</span></h2>
+    <p class="hint">点击上方健康卡中的账本卡片读取该账本只读路由（后端/namespace 前缀/存储/能力）。</p>
+    <div class="status" id="routeStatus" role="status" aria-live="polite">
+      尚未读取路由：点击 official 或 legacy 账本卡片。
+    </div>
+    <div id="routeBody"></div>
+  </section>
+</main>
+
+<footer>
+  <b>只读边界</b>：本页仅发 <b>GET</b> 请求到
+  <span class="mono">/paper_exchange/{health,route,accounts,snapshot}</span>；
+  不写服务端、不调 POST、不下单、不执行、不启动撮合、不迁移两账、不合并两账统计。
+  空/缺失/不可用一律显式显示（unavailable / null），不造数。
+</footer>
+
+<script src="paper_exchange.js" defer></script>
+</body>
+</html>
