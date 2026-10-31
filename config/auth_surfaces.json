@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "decision": "explicit_dual_login",
+  "sso": "deferred_after_m4",
+  "max_surfaces": 5,
+  "rule": "只允许下表 5 个凭证入口；新增第 6 个必须经 L2 批准并同步本表与检查脚本",
+  "surfaces": [
+    {
+      "id": "portal_session",
+      "kind": "cookie",
+      "name": "zb_session",
+      "owner": "portal",
+      "human": true,
+      "entry": "8734 /api/auth/login",
+      "purpose": "门户登录态；8734/8091 统一入口",
+      "source": "portal/auth_gateway.py:COOKIE_NAME"
+    },
+    {
+      "id": "hermes_session",
+      "kind": "cookie",
+      "name": "hermes_session",
+      "owner": "hermes",
+      "human": true,
+      "entry": "8787 /api/auth/login",
+      "purpose": "Hermes 密码登录态；当前双层登录第二层",
+      "source": "Hermes/hermes-webui-next/api/auth.py:COOKIE_NAME"
+    },
+    {
+      "id": "oh_capability",
+      "kind": "capability_token",
+      "name": "X-ZB-Cap / zbcap",
+      "owner": "legion-command",
+      "human": false,
+      "entry": "8796 OH 写/执行",
+      "purpose": "服务/Agent 能力令牌（run:execute / ide:exec）",
+      "source": "agent_platform/legion_command/oh_auth.py"
+    },
+    {
+      "id": "lde_session",
+      "kind": "cookie",
+      "name": "ide_session",
+      "owner": "legion-ide",
+      "human": true,
+      "entry": "8103 /rw",
+      "purpose": "LDE 受控写/执行会话；绑定 owner/roles",
+      "source": "agent_platform/legion_ide/rw_guard.py"
+    },
+    {
+      "id": "local_write_token",
+      "kind": "header",
+      "name": "X-DSH-Token",
+      "owner": "legion-command",
+      "human": true,
+      "entry": "8796 本机同源写（dispatch/zhaoyun）",
+      "purpose": "本机浏览器同源写守卫；不是用户身份",
+      "source": "agent_platform/legion_command/serve.py:_write_guard"
+    }
+  ],
+  "forbidden": [
+    "新增 cookie/header/token 身份入口",
+    "前端持有模型或 vault secret",
+    "绕过 8734 的直连写入口"
+  ],
+  "review": {
+    "owner": "ARCH1",
+    "next_review": "2026-11-14",
+    "sso_revisit": "M4 后单独 L2 窗口"
+  }
+}

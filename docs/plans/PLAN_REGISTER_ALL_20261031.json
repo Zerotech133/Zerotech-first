@@ -1,0 +1,2318 @@
+{
+ "schema": "plan-register-all/v1",
+ "generated_at": "2026-10-31 08:28:58",
+ "total": 288,
+ "counts": {
+  "unspecified": 145,
+  "pending_approval": 41,
+  "declared": 52,
+  "frozen": 43,
+  "superseded": 7
+ },
+ "plans": [
+  {
+   "path": "docs\\plans\\2026-10-07_131600_P0P1修复并行研发计划.md",
+   "date": "2026-10-07",
+   "state": "unspecified",
+   "title": "P0/P1 修复并行研发计划（上线前全检后）",
+   "bytes": 1869,
+   "mtime": "2026-10-07 13:24"
+  },
+  {
+   "path": "docs\\plans\\2026-10-07_143000_研发计划v2.md",
+   "date": "2026-10-07",
+   "state": "unspecified",
+   "title": "研发计划 v2 — 老田的AI助手（2026-10-07 14:30 重新体检后）",
+   "bytes": 4533,
+   "mtime": "2026-10-07 14:31"
+  },
+  {
+   "path": "docs\\plans\\2026-10-07_155700_研发计划v3执行状态.md",
+   "date": "2026-10-07",
+   "state": "pending_approval",
+   "title": "研发计划 v3 — 老田的AI助手（2026-10-07 15:57 执行状态盘点）",
+   "bytes": 4663,
+   "mtime": "2026-10-07 16:33"
+  },
+  {
+   "path": "docs\\plans\\2026-10-07_193000_主控计划v4.md",
+   "date": "2026-10-07",
+   "state": "unspecified",
+   "title": "临界项目 · 主控计划 v4（Master Plan）",
+   "bytes": 15460,
+   "mtime": "2026-10-09 14:21"
+  },
+  {
+   "path": "docs\\plans\\2026-10-07_D2二梯队缠论联立立项草案.md",
+   "date": "2026-10-07",
+   "state": "pending_approval",
+   "title": "D2 第二梯队立项草案 — A 缠论多级别联立（2026-10-07）",
+   "bytes": 2367,
+   "mtime": "2026-10-07 17:27"
+  },
+  {
+   "path": "docs\\plans\\2026-10-07_D2策略上新候选方案.md",
+   "date": "2026-10-07",
+   "state": "unspecified",
+   "title": "D2 策略上新候选方案 — 第 11 条领域卡方向（2026-10-07）",
+   "bytes": 3361,
+   "mtime": "2026-10-07 16:43"
+  },
+  {
+   "path": "docs\\plans\\2026-10-08_020000_研发计划v5.md",
+   "date": "2026-10-08",
+   "state": "unspecified",
+   "title": "临界项目 · 研发计划 v5（R&D Plan）",
+   "bytes": 16736,
+   "mtime": "2026-10-08 12:01"
+  },
+  {
+   "path": "docs\\plans\\2026-10-08_063000_全面盘点与缺口清单.md",
+   "date": "2026-10-08",
+   "state": "pending_approval",
+   "title": "临界项目 · 全面盘点与缺口清单（2026-10-08 06:30）",
+   "bytes": 6612,
+   "mtime": "2026-10-08 07:45"
+  },
+  {
+   "path": "docs\\plans\\2026-10-08_132000_多团队选股Agent立项蓝图.md",
+   "date": "2026-10-08",
+   "state": "unspecified",
+   "title": "多团队选股策略 Agent 立项蓝图 v2（以菜鸟 thunder 体系为蓝本）",
+   "bytes": 5919,
+   "mtime": "2026-10-08 13:40"
+  },
+  {
+   "path": "docs\\plans\\2026-10-08_135126_多Agent框架与记忆分配调研.md",
+   "date": "2026-10-08",
+   "state": "unspecified",
+   "title": "多 Agent 框架与记忆分配调研报告（K-STOCK-003）",
+   "bytes": 14958,
+   "mtime": "2026-10-08 14:08"
+  },
+  {
+   "path": "docs\\plans\\2026-10-08_140041_组织架构Agent平台设计.md",
+   "date": "2026-10-08",
+   "state": "unspecified",
+   "title": "组织架构 Agent 平台设计（K-ORG-001）",
+   "bytes": 13105,
+   "mtime": "2026-10-08 14:08"
+  },
+  {
+   "path": "docs\\plans\\2026-10-08_172000_研发计划对照与下一步计划v6.1.md",
+   "date": "2026-10-08",
+   "state": "unspecified",
+   "title": "研发计划对照审计与下一步计划 v6.1（2026-10-08 17:20）",
+   "bytes": 6086,
+   "mtime": "2026-10-08 17:14"
+  },
+  {
+   "path": "docs\\plans\\2026-10-08_A6正式复检报告.md",
+   "date": "2026-10-08",
+   "state": "declared",
+   "title": "A6 正式复检报告（Phase R 出口 Go/No-Go）",
+   "bytes": 9571,
+   "mtime": "2026-10-09 08:30"
+  },
+  {
+   "path": "docs\\plans\\2026-10-08_B4量化库ENC修复_施工记录.md",
+   "date": "2026-10-08",
+   "state": "unspecified",
+   "title": "B4 量化库 ENC 修复施工记录（2026-10-08）",
+   "bytes": 3823,
+   "mtime": "2026-10-08 05:40"
+  },
+  {
+   "path": "docs\\plans\\2026-10-08_Day0辩论质量基线_倒戈模式与校准靶点.md",
+   "date": "2026-10-08",
+   "state": "frozen",
+   "title": "Day0 影子辩论质量基线（K-STOCK-009）",
+   "bytes": 3199,
+   "mtime": "2026-10-08 16:30"
+  },
+  {
+   "path": "docs\\plans\\2026-10-08_K-ORG_P2任务单系统实施设计.md",
+   "date": "2026-10-08",
+   "state": "declared",
+   "title": "K-ORG P2 任务单系统实施设计（2026-10-08 晚，K-ORG-010）",
+   "bytes": 3841,
+   "mtime": "2026-10-08 22:48"
+  },
+  {
+   "path": "docs\\plans\\2026-10-08_RiskGuard校准草案.md",
+   "date": "2026-10-08",
+   "state": "superseded",
+   "title": "RiskGuard 校准草案（R′3：213 拦截样本逐规则归因）",
+   "bytes": 13921,
+   "mtime": "2026-10-08 02:10"
+  },
+  {
+   "path": "docs\\plans\\2026-10-08_S2联立回测_V1报告.md",
+   "date": "2026-10-08",
+   "state": "unspecified",
+   "title": "S2 缠论多级别联立 V1 回测报告（2026-10-08）",
+   "bytes": 7516,
+   "mtime": "2026-10-08 06:03"
+  },
+  {
+   "path": "docs\\plans\\2026-10-08_S3影子落位_施工记录.md",
+   "date": "2026-10-08",
+   "state": "declared",
+   "title": "S3 影子落位 施工记录（RiskGuard 校准参数 + 台账规则归因）",
+   "bytes": 6268,
+   "mtime": "2026-10-08 05:36"
+  },
+  {
+   "path": "docs\\plans\\2026-10-08_X1登录整合_预置说明.md",
+   "date": "2026-10-08",
+   "state": "unspecified",
+   "title": "X1 菜鸟登录整合 · 预置说明（2026-10-08）",
+   "bytes": 2983,
+   "mtime": "2026-10-08 02:07"
+  },
+  {
+   "path": "docs\\plans\\2026-10-08_X2实体ID映射_设计稿.md",
+   "date": "2026-10-08",
+   "state": "unspecified",
+   "title": "X2 实体 ID 映射 设计稿（只设计不施工）",
+   "bytes": 17643,
+   "mtime": "2026-10-11 08:03"
+  },
+  {
+   "path": "docs\\plans\\2026-10-08_X2映射_施工记录.md",
+   "date": "2026-10-08",
+   "state": "declared",
+   "title": "X2 实体 ID 映射 施工记录",
+   "bytes": 10370,
+   "mtime": "2026-10-11 08:03"
+  },
+  {
+   "path": "docs\\plans\\2026-10-08_X3血缘_施工记录.md",
+   "date": "2026-10-08",
+   "state": "declared",
+   "title": "X3 血缘三表 施工记录",
+   "bytes": 6544,
+   "mtime": "2026-10-08 05:40"
+  },
+  {
+   "path": "docs\\plans\\2026-10-08_X3血缘三表_设计稿.md",
+   "date": "2026-10-08",
+   "state": "unspecified",
+   "title": "X3 血缘三表 设计稿（只设计不施工）",
+   "bytes": 15293,
+   "mtime": "2026-10-08 02:10"
+  },
+  {
+   "path": "docs\\plans\\2026-10-08_X5快照自动发布_施工记录.md",
+   "date": "2026-10-08",
+   "state": "unspecified",
+   "title": "X5 快照自动发布 施工记录",
+   "bytes": 4690,
+   "mtime": "2026-10-08 06:06"
+  },
+  {
+   "path": "docs\\plans\\2026-10-08_合流设计_K-STOCK_S2算法位x平台位.md",
+   "date": "2026-10-08",
+   "state": "unspecified",
+   "title": "K-STOCK S2 合流设计：算法位 × 平台位（2026-10-08）",
+   "bytes": 5196,
+   "mtime": "2026-10-08 21:09"
+  },
+  {
+   "path": "docs\\plans\\2026-10-08_投研部bug台账与下一步盘点.md",
+   "date": "2026-10-08",
+   "state": "frozen",
+   "title": "投研部/组织平台 bug 台账与下一步工作盘点（2026-10-08）",
+   "bytes": 12869,
+   "mtime": "2026-10-09 02:15"
+  },
+  {
+   "path": "docs\\plans\\2026-10-09_023500_研发计划v6.2全面对照与优化方案.md",
+   "date": "2026-10-09",
+   "state": "pending_approval",
+   "title": "研发计划 v6 全面对照与优化方案 v6.2（2026-10-09 02:35）",
+   "bytes": 15874,
+   "mtime": "2026-10-09 17:26"
+  },
+  {
+   "path": "docs\\plans\\2026-10-09_025500_K-STOCK_S2合流设计稿.md",
+   "date": "2026-10-09",
+   "state": "frozen",
+   "title": "K-STOCK S2 合流设计稿：算法位 × 平台位（2026-10-09 02:55）",
+   "bytes": 9091,
+   "mtime": "2026-10-09 18:41"
+  },
+  {
+   "path": "docs\\plans\\2026-10-09_085000_模拟仓平台化架构设计v0.2.md",
+   "date": "2026-10-09",
+   "state": "unspecified",
+   "title": "模拟仓平台化架构设计 v0.2（2026-10-09 08:55）",
+   "bytes": 7349,
+   "mtime": "2026-10-09 11:39"
+  },
+  {
+   "path": "docs\\plans\\2026-10-09_144500_研发计划v6.3与下一步执行方案.md",
+   "date": "2026-10-09",
+   "state": "frozen",
+   "title": "研发计划 v6.3 全面对照与下一步执行方案",
+   "bytes": 12743,
+   "mtime": "2026-10-09 14:41"
+  },
+  {
+   "path": "docs\\plans\\2026-10-09_162000_雇佣交互A3设计稿.md",
+   "date": "2026-10-09",
+   "state": "declared",
+   "title": "雇佣交互（A3）设计稿 v1 —— 交易员市场商业化最后一公里",
+   "bytes": 5912,
+   "mtime": "2026-10-09 16:15"
+  },
+  {
+   "path": "docs\\plans\\2026-10-09_163000_A5快枪手T1短打论证记录.md",
+   "date": "2026-10-09",
+   "state": "unspecified",
+   "title": "A5 快枪手 T+1 短打可行性论证记录（结论：不过，维持 design）",
+   "bytes": 2955,
+   "mtime": "2026-10-09 16:27"
+  },
+  {
+   "path": "docs\\plans\\2026-10-09_173000_国际行情接入立项_K-STOCK-044.md",
+   "date": "2026-10-09",
+   "state": "unspecified",
+   "title": "国际行情接入立项方案（K-STOCK-044）",
+   "bytes": 4217,
+   "mtime": "2026-10-09 17:24"
+  },
+  {
+   "path": "docs\\plans\\2026-10-09_184500_三裁决窗D3就绪度复核.md",
+   "date": "2026-10-09",
+   "state": "unspecified",
+   "title": "三裁决窗 D-3 就绪度复核（10-13 / 10-14 / 10-15）",
+   "bytes": 3453,
+   "mtime": "2026-10-09 18:41"
+  },
+  {
+   "path": "docs\\plans\\2026-10-09_192500_研发计划v6.4增量_审查驱动.md",
+   "date": "2026-10-09",
+   "state": "declared",
+   "title": "研发计划 v6.4 增量（审查驱动 · 2026-10-09 晚）",
+   "bytes": 3326,
+   "mtime": "2026-10-09 19:26"
+  },
+  {
+   "path": "docs\\plans\\2026-10-09_205000_超级个体OS_菜鸟总管与首页重规划_产品规划v1.md",
+   "date": "2026-10-09",
+   "state": "unspecified",
+   "title": "超级个体 OS · 菜鸟总管与首页重规划（产品规划 v1）",
+   "bytes": 12621,
+   "mtime": "2026-10-09 21:12"
+  },
+  {
+   "path": "docs\\plans\\2026-10-09_225500_主项目整合方案_菜鸟OS×AI工作站_K-STOCK-049.md",
+   "date": "2026-10-09",
+   "state": "declared",
+   "title": "主项目整合方案 · 菜鸟 OS × AI 工作站（K-STOCK-049）",
+   "bytes": 7830,
+   "mtime": "2026-10-09 22:52"
+  },
+  {
+   "path": "docs\\plans\\2026-10-09_230500_DockerDesktop商业化底层评估_K-STOCK-050.md",
+   "date": "2026-10-09",
+   "state": "unspecified",
+   "title": "Docker Desktop 商业化评估 · 底层研究报告（K-STOCK-050）",
+   "bytes": 6470,
+   "mtime": "2026-10-09 23:01"
+  },
+  {
+   "path": "docs\\plans\\2026-10-09_T009_前置数据核查.md",
+   "date": "2026-10-09",
+   "state": "unspecified",
+   "title": "T-20261009-009 前置数据核查报告（只读，影子纪律合规）",
+   "bytes": 2027,
+   "mtime": "2026-10-09 01:27"
+  },
+  {
+   "path": "docs\\plans\\2026-10-09_交易员训练与上岗体系v0.3.md",
+   "date": "2026-10-09",
+   "state": "declared",
+   "title": "交易员训练与上岗体系 v0.3",
+   "bytes": 5560,
+   "mtime": "2026-10-09 16:27"
+  },
+  {
+   "path": "docs\\plans\\2026-10-09_产品体检与研发盘点及下一步方案.md",
+   "date": "2026-10-09",
+   "state": "declared",
+   "title": "产品体检与研发盘点及下一步方案",
+   "bytes": 13068,
+   "mtime": "2026-10-09 20:17"
+  },
+  {
+   "path": "docs\\plans\\2026-10-09_量子双刀策略研究报告.md",
+   "date": "2026-10-09",
+   "state": "unspecified",
+   "title": "量子双刀策略研究报告（2026-10-09）",
+   "bytes": 5355,
+   "mtime": "2026-10-09 00:42"
+  },
+  {
+   "path": "docs\\plans\\2026-10-10_004500_零界融合产品规划v1_K-STOCK-055.md",
+   "date": "2026-10-10",
+   "state": "unspecified",
+   "title": "零界 · 产品融合规划 v1（K-STOCK-055）",
+   "bytes": 6232,
+   "mtime": "2026-10-11 08:03"
+  },
+  {
+   "path": "docs\\plans\\2026-10-10_A3_jev情绪源本地回落预研.md",
+   "date": "2026-10-10",
+   "state": "unspecified",
+   "title": "A-3 jev 情绪源本地回落预研（2026-10-10，只研不改）",
+   "bytes": 7011,
+   "mtime": "2026-10-10 20:45"
+  },
+  {
+   "path": "docs\\plans\\2026-10-10_A4_市场部M1预演.md",
+   "date": "2026-10-10",
+   "state": "unspecified",
+   "title": "A-4 市场部 M1 预演（2026-10-10，只演不注册）",
+   "bytes": 4116,
+   "mtime": "2026-10-10 19:50"
+  },
+  {
+   "path": "docs\\plans\\2026-10-10_B8裁决路径与双引擎提案决策_K-STOCK-091.md",
+   "date": "2026-10-10",
+   "state": "unspecified",
+   "title": "K-STOCK-091 决策记录：B8 二选一裁决路径 + 双引擎提案出口",
+   "bytes": 3113,
+   "mtime": "2026-10-11 08:03"
+  },
+  {
+   "path": "docs\\plans\\2026-10-10_L5菜鸟下钻_施工预置说明.md",
+   "date": "2026-10-10",
+   "state": "pending_approval",
+   "title": "L5 菜鸟侧下钻 · 施工预置说明（2026-10-10）",
+   "bytes": 4188,
+   "mtime": "2026-10-11 08:03"
+  },
+  {
+   "path": "docs\\plans\\2026-10-10_P4拆分施工图.md",
+   "date": "2026-10-10",
+   "state": "frozen",
+   "title": "P-4 portal_api 拆分施工图（077 生成，10-17 automation 照此施工）",
+   "bytes": 6975,
+   "mtime": "2026-10-10 19:54"
+  },
+  {
+   "path": "docs\\plans\\2026-10-10_P4拆分最优方案_K-STOCK-089.md",
+   "date": "2026-10-10",
+   "state": "frozen",
+   "title": "P4 拆分最优方案（K-STOCK-089，基于 077 施工图强化）",
+   "bytes": 5498,
+   "mtime": "2026-10-10 23:44"
+  },
+  {
+   "path": "docs\\plans\\2026-10-10_三车道并行运营机制_K-STOCK-090.md",
+   "date": "2026-10-10",
+   "state": "declared",
+   "title": "三车道并行运营机制（K-STOCK-090）——开发、还债、优化互不影响",
+   "bytes": 5367,
+   "mtime": "2026-10-10 23:47"
+  },
+  {
+   "path": "docs\\plans\\2026-10-10_全项目审计与未完成开发计划.md",
+   "date": "2026-10-10",
+   "state": "pending_approval",
+   "title": "全项目审计与未完成开发计划（2026-10-10 下午，K-STOCK-076）",
+   "bytes": 4998,
+   "mtime": "2026-10-10 18:17"
+  },
+  {
+   "path": "docs\\plans\\2026-10-10_影子解禁校准包_B8B9B10.md",
+   "date": "2026-10-10",
+   "state": "frozen",
+   "title": "影子解禁校准包 B8/B9/B10（A-2 预写，2026-10-10）",
+   "bytes": 5356,
+   "mtime": "2026-10-10 21:52"
+  },
+  {
+   "path": "docs\\plans\\2026-10-10_投研部与市场部_未完盘点与开发计划.md",
+   "date": "2026-10-10",
+   "state": "frozen",
+   "title": "AI 投研团队 × AI 市场部：未完盘点与开发计划（K-STOCK-079，2026-10-10 晚）",
+   "bytes": 6511,
+   "mtime": "2026-10-10 19:35"
+  },
+  {
+   "path": "docs\\plans\\2026-10-10_菜鸟团队分析模式研究与投研部优化方案.md",
+   "date": "2026-10-10",
+   "state": "frozen",
+   "title": "菜鸟团队分析模式研究与投研部优化方案（K-STOCK-085，2026-10-10）",
+   "bytes": 8127,
+   "mtime": "2026-10-10 20:50"
+  },
+  {
+   "path": "docs\\plans\\2026-10-10_选股策略审计修复排期_077e.md",
+   "date": "2026-10-10",
+   "state": "frozen",
+   "title": "选股策略审计修复与优化排期（077e~h）",
+   "bytes": 5277,
+   "mtime": "2026-10-11 00:29"
+  },
+  {
+   "path": "docs\\plans\\2026-10-11_A0第一滴血任务单_K-STOCK-120.md",
+   "date": "2026-10-11",
+   "state": "unspecified",
+   "title": "A0 第一滴血任务单（K-STOCK-120 · 批 C 施工件，10-11 预写）",
+   "bytes": 2451,
+   "mtime": "2026-10-11 13:32"
+  },
+  {
+   "path": "docs\\plans\\2026-10-11_AI交易员经验等级商业化_K-STOCK-101.md",
+   "date": "2026-10-11",
+   "state": "unspecified",
+   "title": "AI 交易员「经验等级」商业化协议 — K-STOCK-101",
+   "bytes": 4581,
+   "mtime": "2026-10-11 10:56"
+  },
+  {
+   "path": "docs\\plans\\2026-10-11_gzh凭证核验与双引擎提案终稿_K-STOCK-097.md",
+   "date": "2026-10-11",
+   "state": "unspecified",
+   "title": "gzh 凭证核验记录 + 双引擎提案终稿标记（K-STOCK-097）",
+   "bytes": 1927,
+   "mtime": "2026-10-11 06:52"
+  },
+  {
+   "path": "docs\\plans\\2026-10-11_K-STOCK-137_SaSb上线前三方审查报告.md",
+   "date": "2026-10-11",
+   "state": "unspecified",
+   "title": "K-STOCK-137 S-a/S-b 上线前三方联合审查报告",
+   "bytes": 4500,
+   "mtime": "2026-10-11 23:49"
+  },
+  {
+   "path": "docs\\plans\\2026-10-11_P4全链彩排报告.md",
+   "date": "2026-10-11",
+   "state": "declared",
+   "title": "P4 全链彩排报告（K-STOCK-089 · 2026-10-11）",
+   "bytes": 9974,
+   "mtime": "2026-10-11 17:01"
+  },
+  {
+   "path": "docs\\plans\\2026-10-11_P4批0施工图v2_K-STOCK-089.md",
+   "date": "2026-10-11",
+   "state": "pending_approval",
+   "title": "P4 批 0 施工图 v2（K-STOCK-089 · 2026-10-11 收敛版）",
+   "bytes": 7443,
+   "mtime": "2026-10-11 22:59"
+  },
+  {
+   "path": "docs\\plans\\2026-10-11_P4批0预演报告.md",
+   "date": "2026-10-11",
+   "state": "unspecified",
+   "title": "P4 批 0 沙盘预演报告（K-STOCK-089）",
+   "bytes": 4302,
+   "mtime": "2026-10-11 14:40"
+  },
+  {
+   "path": "docs\\plans\\2026-10-11_P4批1预演报告.md",
+   "date": "2026-10-11",
+   "state": "declared",
+   "title": "P4 批 1 沙盘预演报告（K-STOCK-089）",
+   "bytes": 6150,
+   "mtime": "2026-10-11 15:11"
+  },
+  {
+   "path": "docs\\plans\\2026-10-11_P4批2预演报告.md",
+   "date": "2026-10-11",
+   "state": "unspecified",
+   "title": "P4 批 2 沙盘预演报告（K-STOCK-089）",
+   "bytes": 8891,
+   "mtime": "2026-10-11 15:33"
+  },
+  {
+   "path": "docs\\plans\\2026-10-11_P4批3_kg细审清单.md",
+   "date": "2026-10-11",
+   "state": "pending_approval",
+   "title": "P4 批 3 · kg 大块细审清单（白天人工审后施工）",
+   "bytes": 7322,
+   "mtime": "2026-10-11 22:59"
+  },
+  {
+   "path": "docs\\plans\\2026-10-11_P4批3预演报告.md",
+   "date": "2026-10-11",
+   "state": "unspecified",
+   "title": "P4 批 3 沙盘预演报告（K-STOCK-089）",
+   "bytes": 6387,
+   "mtime": "2026-10-11 15:55"
+  },
+  {
+   "path": "docs\\plans\\2026-10-11_P4批4预演报告.md",
+   "date": "2026-10-11",
+   "state": "declared",
+   "title": "P4 批 4 沙盘预演报告（K-STOCK-089 · 2026-10-11）",
+   "bytes": 6713,
+   "mtime": "2026-10-11 15:56"
+  },
+  {
+   "path": "docs\\plans\\2026-10-11_P4批5预演报告.md",
+   "date": "2026-10-11",
+   "state": "declared",
+   "title": "P4 批 5 沙盘预演报告（K-STOCK-089 · 2026-10-11）",
+   "bytes": 8095,
+   "mtime": "2026-10-11 16:12"
+  },
+  {
+   "path": "docs\\plans\\2026-10-11_P4批6预演报告.md",
+   "date": "2026-10-11",
+   "state": "declared",
+   "title": "P4 批 6 沙盘预演报告（K-STOCK-089 · 2026-10-11）",
+   "bytes": 9277,
+   "mtime": "2026-10-11 16:41"
+  },
+  {
+   "path": "docs\\plans\\2026-10-11_P4批7归域审计.md",
+   "date": "2026-10-11",
+   "state": "unspecified",
+   "title": "P4 批 7 归域审计——基座残余四类预分类",
+   "bytes": 21130,
+   "mtime": "2026-10-11 17:51"
+  },
+  {
+   "path": "docs\\plans\\2026-10-11_P5c形态B_离线回测报告.md",
+   "date": "2026-10-11",
+   "state": "pending_approval",
+   "title": "P5c 形态 B 离线回测报告",
+   "bytes": 10488,
+   "mtime": "2026-10-11 13:51"
+  },
+  {
+   "path": "docs\\plans\\2026-10-11_paper接入施工图与作战日历_K-STOCK-095.md",
+   "date": "2026-10-11",
+   "state": "frozen",
+   "title": "paper.db 接入施工图 + 作战日历（K-STOCK-095）",
+   "bytes": 3742,
+   "mtime": "2026-10-11 19:25"
+  },
+  {
+   "path": "docs\\plans\\2026-10-11_S2与快照治理拍板材料.md",
+   "date": "2026-10-11",
+   "state": "unspecified",
+   "title": "拍板材料：快照 Agent 治理 + S2 GLM 主链恢复（2026-10-11 深夜）",
+   "bytes": 3678,
+   "mtime": "2026-10-12 01:12"
+  },
+  {
+   "path": "docs\\plans\\2026-10-11_今日实时开发作战计划_K-STOCK-114.md",
+   "date": "2026-10-11",
+   "state": "unspecified",
+   "title": "今日实时开发作战计划（K-STOCK-114）",
+   "bytes": 3024,
+   "mtime": "2026-10-11 09:08"
+  },
+  {
+   "path": "docs\\plans\\2026-10-11_历史数据回补进度_K-STOCK-116-history.md",
+   "date": "2026-10-11",
+   "state": "unspecified",
+   "title": "K-STOCK-116-history 历史数据回补进度",
+   "bytes": 9374,
+   "mtime": "2026-10-11 20:49"
+  },
+  {
+   "path": "docs\\plans\\2026-10-11_双引擎互证提案_一页纸.md",
+   "date": "2026-10-11",
+   "state": "unspecified",
+   "title": "双引擎互证：本地保底 × 云端精判 —— 联合试点提案（一页纸）",
+   "bytes": 2567,
+   "mtime": "2026-10-11 08:03"
+  },
+  {
+   "path": "docs\\plans\\2026-10-11_双引擎提案_面谈材料包_K-STOCK-097.md",
+   "date": "2026-10-11",
+   "state": "unspecified",
+   "title": "双引擎互证提案 · 面谈材料包（K-STOCK-097 · 批 D 菜鸟面谈用）",
+   "bytes": 3780,
+   "mtime": "2026-10-11 13:48"
+  },
+  {
+   "path": "docs\\plans\\2026-10-11_多Agent协作开发选型与施工图_K-STOCK-104.md",
+   "date": "2026-10-11",
+   "state": "unspecified",
+   "title": "多 Agent 协作开发：方案选型与落地施工图（K-STOCK-104）",
+   "bytes": 4342,
+   "mtime": "2026-10-11 07:43"
+  },
+  {
+   "path": "docs\\plans\\2026-10-11_大平台设计规范与流动方案_K-STOCK-103.md",
+   "date": "2026-10-11",
+   "state": "frozen",
+   "title": "零界大平台设计规范与流动方案（K-STOCK-103）",
+   "bytes": 5036,
+   "mtime": "2026-10-11 08:03"
+  },
+  {
+   "path": "docs\\plans\\2026-10-11_开发计划总表与进度看板.md",
+   "date": "2026-10-11",
+   "state": "declared",
+   "title": "开发计划总表与进度看板（2026-10-11 整理）",
+   "bytes": 17174,
+   "mtime": "2026-10-15 07:24"
+  },
+  {
+   "path": "docs\\plans\\2026-10-11_开发道挂账清单_backlog.md",
+   "date": "2026-10-11",
+   "state": "frozen",
+   "title": "开发道挂账清单（10-13~15 裁决窗冻结期启用）",
+   "bytes": 3157,
+   "mtime": "2026-10-11 14:40"
+  },
+  {
+   "path": "docs\\plans\\2026-10-11_模拟交易松耦合架构蓝图_K-STOCK-137.md",
+   "date": "2026-10-11",
+   "state": "unspecified",
+   "title": "模拟交易松耦合可组合架构蓝图（K-STOCK-137）",
+   "bytes": 10334,
+   "mtime": "2026-10-12 08:04"
+  },
+  {
+   "path": "docs\\plans\\2026-10-11_模拟市场三端架构_K-STOCK-100.md",
+   "date": "2026-10-11",
+   "state": "unspecified",
+   "title": "模拟市场三端架构（选策略 / 持仓 / 评审）与蒸馏沉淀 — K-STOCK-100",
+   "bytes": 4815,
+   "mtime": "2026-10-11 10:50"
+  },
+  {
+   "path": "docs\\plans\\2026-10-11_模拟盘闭环深研_K-STOCK-097.md",
+   "date": "2026-10-11",
+   "state": "unspecified",
+   "title": "模拟盘闭环深研（K-STOCK-097）——positions 恒空根因与 10-16 施工前必改清单",
+   "bytes": 3737,
+   "mtime": "2026-10-11 08:10"
+  },
+  {
+   "path": "docs\\plans\\2026-10-11_策略市场与投研团队_K-STOCK-122.md",
+   "date": "2026-10-11",
+   "state": "declared",
+   "title": "K-STOCK-122 策略市场独立页 + 投研团队三 Agent 方案",
+   "bytes": 17320,
+   "mtime": "2026-10-11 17:48"
+  },
+  {
+   "path": "docs\\plans\\2026-10-11_综合平台整合方案_K-STOCK-093.md",
+   "date": "2026-10-11",
+   "state": "frozen",
+   "title": "综合平台整合方案（K-STOCK-093）——项目落列 · 表打通 · UI/UE · 空档 · 整合路线",
+   "bytes": 7815,
+   "mtime": "2026-10-11 00:10"
+  },
+  {
+   "path": "docs\\plans\\2026-10-12_P4完工总结.md",
+   "date": "2026-10-12",
+   "state": "unspecified",
+   "title": "P4 巨石拆分 · 完工总结（2026-10-12 凌晨收官）",
+   "bytes": 4629,
+   "mtime": "2026-10-12 00:35"
+  },
+  {
+   "path": "docs\\plans\\2026-10-12_PRODUCT_ROADMAP_v1.md",
+   "date": "2026-10-12",
+   "state": "superseded",
+   "title": "零界 · 产品 ROADMAP v1（单一事实源 · 2026-10-12 立宪）",
+   "bytes": 4833,
+   "mtime": "2026-10-22 02:29"
+  },
+  {
+   "path": "docs\\plans\\2026-10-12_平台整合与商业化前置门禁.md",
+   "date": "2026-10-12",
+   "state": "unspecified",
+   "title": "平台整合与商业化前置门禁",
+   "bytes": 1296,
+   "mtime": "2026-10-12 08:10"
+  },
+  {
+   "path": "docs\\plans\\2026-10-12_智能对话体验对照与实施建议_K-STOCK-212.md",
+   "date": "2026-10-12",
+   "state": "unspecified",
+   "title": "智能对话体验对照与实施建议（K-STOCK-212）",
+   "bytes": 6465,
+   "mtime": "2026-10-14 13:36"
+  },
+  {
+   "path": "docs\\plans\\2026-10-12_模块攻坚台账.md",
+   "date": "2026-10-12",
+   "state": "pending_approval",
+   "title": "零界模块攻坚台账 v1（2026-10-12 · 一个模块一个模块解决）",
+   "bytes": 5913,
+   "mtime": "2026-10-12 17:18"
+  },
+  {
+   "path": "docs\\plans\\2026-10-12_版面架构宪法.md",
+   "date": "2026-10-12",
+   "state": "frozen",
+   "title": "零界版面架构宪法 v1.1（K-STOCK-169 · 2026-10-12 · UX 定版冻结）",
+   "bytes": 6527,
+   "mtime": "2026-10-12 10:01"
+  },
+  {
+   "path": "docs\\plans\\2026-10-13_071500_软件工程板块规划_K-ORG-016.md",
+   "date": "2026-10-13",
+   "state": "pending_approval",
+   "title": "软件工程板块规划（K-ORG-016）",
+   "bytes": 8840,
+   "mtime": "2026-10-13 07:12"
+  },
+  {
+   "path": "docs\\plans\\2026-10-13_072500_中大型软件公司组织架构_K-ORG-018.md",
+   "date": "2026-10-13",
+   "state": "pending_approval",
+   "title": "中大型软件公司组织架构 v1（K-ORG-018）",
+   "bytes": 6128,
+   "mtime": "2026-10-13 07:23"
+  },
+  {
+   "path": "docs\\plans\\2026-10-13_074000_工程部职级梯队_K-ORG-020.md",
+   "date": "2026-10-13",
+   "state": "unspecified",
+   "title": "GenOS 工程部职级梯队体系（K-ORG-020）",
+   "bytes": 3204,
+   "mtime": "2026-10-13 07:41"
+  },
+  {
+   "path": "docs\\plans\\2026-10-13_075500_研发沙盘_K-ORG-021.md",
+   "date": "2026-10-13",
+   "state": "unspecified",
+   "title": "研发沙盘 K-ORG-021",
+   "bytes": 2931,
+   "mtime": "2026-10-13 07:54"
+  },
+  {
+   "path": "docs\\plans\\2026-10-13_082200_AgentIDE_K-ORG-022.md",
+   "date": "2026-10-13",
+   "state": "unspecified",
+   "title": "Agent IDE（GenOS Agent 开发台）K-ORG-022",
+   "bytes": 2458,
+   "mtime": "2026-10-13 08:21"
+  },
+  {
+   "path": "docs\\plans\\2026-10-13_083500_27满编开发计划_K-ORG-023.md",
+   "date": "2026-10-13",
+   "state": "frozen",
+   "title": "27 满编组织落地开发计划 K-ORG-023",
+   "bytes": 5481,
+   "mtime": "2026-10-13 08:32"
+  },
+  {
+   "path": "docs\\plans\\2026-10-13_084800_田小皮监督回路_K-ORG-026.md",
+   "date": "2026-10-13",
+   "state": "frozen",
+   "title": "K-ORG-026 · 田小皮监督回路：开源调研 + 最优方案 + 研发计划（2026-10-13）",
+   "bytes": 4667,
+   "mtime": "2026-10-13 08:47"
+  },
+  {
+   "path": "docs\\plans\\2026-10-13_085000_27满编落地_K-ORG-024.md",
+   "date": "2026-10-13",
+   "state": "frozen",
+   "title": "K-ORG-024 · 27 满编落地 + 研发工单投影（2026-10-13 08:50）",
+   "bytes": 2487,
+   "mtime": "2026-10-13 08:37"
+  },
+  {
+   "path": "docs\\plans\\2026-10-13_104500_写代码板块重梳_K-ORG-034.md",
+   "date": "2026-10-13",
+   "state": "frozen",
+   "title": "研发板块·写代码功能全线重梳（K-ORG-034）",
+   "bytes": 8323,
+   "mtime": "2026-10-13 10:39"
+  },
+  {
+   "path": "docs\\plans\\2026-10-13_105000_编码生产线研发计划_K-ORG-035.md",
+   "date": "2026-10-13",
+   "state": "unspecified",
+   "title": "编码 Agent 生产线·研发计划（K-ORG-035）",
+   "bytes": 5046,
+   "mtime": "2026-10-13 10:46"
+  },
+  {
+   "path": "docs\\plans\\2026-10-13_174000_chat_auto通道元数据改造设计_K-ORG-047.md",
+   "date": "2026-10-13",
+   "state": "unspecified",
+   "title": "K-ORG-047 设计稿：chat_auto 通道元数据改造",
+   "bytes": 4023,
+   "mtime": "2026-10-13 17:05"
+  },
+  {
+   "path": "docs\\plans\\2026-10-13_194000_合流S2S3预演映射_K-STOCK-328.md",
+   "date": "2026-10-13",
+   "state": "unspecified",
+   "title": "K-STOCK-328：合流日 S2/S3 预演映射表（10-13 晚·只读勘查）",
+   "bytes": 4266,
+   "mtime": "2026-10-13 19:39"
+  },
+  {
+   "path": "docs\\plans\\2026-10-13_210000_合流S4S5S6预演映射_K-STOCK-330.md",
+   "date": "2026-10-13",
+   "state": "frozen",
+   "title": "K-STOCK-330 · 合流 S4/S5/S6 预演映射（只读勘查·10-13）",
+   "bytes": 3827,
+   "mtime": "2026-10-13 21:03"
+  },
+  {
+   "path": "docs\\plans\\2026-10-13_210700_合流S7S8S9预演映射_K-STOCK-331.md",
+   "date": "2026-10-13",
+   "state": "unspecified",
+   "title": "K-STOCK-331 · 合流 S7/S8/S9 预演映射（只读勘查·10-13）",
+   "bytes": 3386,
+   "mtime": "2026-10-13 21:07"
+  },
+  {
+   "path": "docs\\plans\\2026-10-13_2350_AgentIDE整合方案_K-STOCK-342.md",
+   "date": "2026-10-13",
+   "state": "unspecified",
+   "title": "Agent IDE 整合方案：仿 Trae/VS Code 五区开发台（K-STOCK-342）",
+   "bytes": 5185,
+   "mtime": "2026-10-13 23:55"
+  },
+  {
+   "path": "docs\\plans\\2026-10-13_K-STOCK-211_代码审计与研发进度计划.md",
+   "date": "2026-10-13",
+   "state": "unspecified",
+   "title": "K-STOCK-211 代码审计与研发进度计划",
+   "bytes": 30706,
+   "mtime": "2026-10-17 17:49"
+  },
+  {
+   "path": "docs\\plans\\2026-10-13_云反代全门户公网B方案_K-STOCK-307.md",
+   "date": "2026-10-13",
+   "state": "unspecified",
+   "title": "云反代全门户公网发布（B 方案）· 拍板档 K-STOCK-307",
+   "bytes": 3889,
+   "mtime": "2026-10-14 13:55"
+  },
+  {
+   "path": "docs\\plans\\2026-10-13_冻结期作战计划_审计后.md",
+   "date": "2026-10-13",
+   "state": "superseded",
+   "title": "冻结期作战计划（2026-10-13 ~ 10-15 · 审计后定稿）",
+   "bytes": 3817,
+   "mtime": "2026-10-12 18:53"
+  },
+  {
+   "path": "docs\\plans\\2026-10-13_推送联动收口_K-STOCK-304.md",
+   "date": "2026-10-13",
+   "state": "unspecified",
+   "title": "推送联动收口 · K-STOCK-304 立项档",
+   "bytes": 6204,
+   "mtime": "2026-10-13 20:33"
+  },
+  {
+   "path": "docs\\plans\\2026-10-14_0052_多IDE团队工作区方案_K-STOCK-346.md",
+   "date": "2026-10-14",
+   "state": "unspecified",
+   "title": "K-STOCK-346 · Agent IDE 多 IDE 团队工作区方案（多项目并行）",
+   "bytes": 3329,
+   "mtime": "2026-10-14 00:51"
+  },
+  {
+   "path": "docs\\plans\\2026-10-14_0117_田小皮中枢研发治理模型_K-ORG-051.md",
+   "date": "2026-10-14",
+   "state": "pending_approval",
+   "title": "K-ORG-051 · 田小皮中枢研发治理模型设计稿",
+   "bytes": 5520,
+   "mtime": "2026-10-14 01:18"
+  },
+  {
+   "path": "docs\\plans\\2026-10-14_0200_研发总计划_四线并进_K-ORG-055.md",
+   "date": "2026-10-14",
+   "state": "frozen",
+   "title": "K-ORG-055 · 研发总计划：四线并进（2026-10-14 定稿·老田令「完整研发计划+时间节点+研发方向+验收标准，准备执行」）",
+   "bytes": 8314,
+   "mtime": "2026-10-14 01:59"
+  },
+  {
+   "path": "docs\\plans\\2026-10-14_0210_晨会三件套生成器v0_K-ORG-056.md",
+   "date": "2026-10-14",
+   "state": "unspecified",
+   "title": "研发方案：晨会三件套生成器 v0（K-ORG-056）",
+   "bytes": 3150,
+   "mtime": "2026-10-14 02:12"
+  },
+  {
+   "path": "docs\\plans\\2026-10-14_0712_部门内多项目承载_K-ORG-057.md",
+   "date": "2026-10-14",
+   "state": "declared",
+   "title": "部门内多项目/子项目承载设计 —— 工作区 × 项目线 × 身份 三维键位",
+   "bytes": 3954,
+   "mtime": "2026-10-14 07:12"
+  },
+  {
+   "path": "docs\\plans\\2026-10-14_1745_下一轮开发计划_完成度审计与开源对标_K-ORG-080.md",
+   "date": "2026-10-14",
+   "state": "frozen",
+   "title": "K-ORG-080 · 下一轮开发计划：完成度审计 + 开源对标 + 三轮排期（2026-10-14）",
+   "bytes": 11709,
+   "mtime": "2026-10-14 17:41"
+  },
+  {
+   "path": "docs\\plans\\2026-10-14_1815_G4渗透压测工具链依赖评估稿v0_K-ORG-081.md",
+   "date": "2026-10-14",
+   "state": "unspecified",
+   "title": "K-ORG-081 · G4 前置：SEC2 渗透/压测工具链依赖评估稿 v0（2026-10-14）",
+   "bytes": 4997,
+   "mtime": "2026-10-14 18:13"
+  },
+  {
+   "path": "docs\\plans\\2026-10-14_K-ORG-061a_人设注入按岗区分.md",
+   "date": "2026-10-14",
+   "state": "unspecified",
+   "title": "研发方案：人设注入按岗区分（K-ORG-061a）",
+   "bytes": 1938,
+   "mtime": "2026-10-14 08:58"
+  },
+  {
+   "path": "docs\\plans\\2026-10-14_K-ORG-062a_QA1复核只读审查升级.md",
+   "date": "2026-10-14",
+   "state": "unspecified",
+   "title": "研发方案：QA1 复核升级 claude -p 只读审查（K-ORG-062a·F6b）",
+   "bytes": 1675,
+   "mtime": "2026-10-14 09:43"
+  },
+  {
+   "path": "docs\\plans\\2026-10-14_K-ORG-064_e2e方案.md",
+   "date": "2026-10-14",
+   "state": "declared",
+   "title": "研发方案：K-ORG-064（e2e 全自动彩排）",
+   "bytes": 1320,
+   "mtime": "2026-10-14 11:00"
+  },
+  {
+   "path": "docs\\plans\\2026-10-14_K-ORG-066_e2e方案.md",
+   "date": "2026-10-14",
+   "state": "unspecified",
+   "title": "研发方案：K-ORG-066（e2e 全自动彩排）",
+   "bytes": 1561,
+   "mtime": "2026-10-14 11:22"
+  },
+  {
+   "path": "docs\\plans\\2026-10-14_K-STOCK-362_策略上架与晋级规则.md",
+   "date": "2026-10-14",
+   "state": "declared",
+   "title": "K-STOCK-362 · 策略上架与晋级规则（老田 10-14 拍板固化）",
+   "bytes": 3244,
+   "mtime": "2026-10-14 07:29"
+  },
+  {
+   "path": "docs\\plans\\2026-10-14_K-STOCK-365_工程卫生例行.md",
+   "date": "2026-10-14",
+   "state": "declared",
+   "title": "K-STOCK-365 · 工程卫生例行制度（主线 D·每周例行固化）",
+   "bytes": 2949,
+   "mtime": "2026-10-14 08:19"
+  },
+  {
+   "path": "docs\\plans\\2026-10-14_研发方案v2_K-STOCK-360.md",
+   "date": "2026-10-14",
+   "state": "declared",
+   "title": "零界研发方案 v2（K-STOCK-360 · 2026-10-14）",
+   "bytes": 5321,
+   "mtime": "2026-10-14 07:15"
+  },
+  {
+   "path": "docs\\plans\\2026-10-14_飞书自建底座与Lark插件分工边界_K-STOCK-395.md",
+   "date": "2026-10-14",
+   "state": "frozen",
+   "title": "飞书自建底座与 Lark 插件分工边界（K-STOCK-395 拍板档）",
+   "bytes": 8517,
+   "mtime": "2026-10-15 04:53"
+  },
+  {
+   "path": "docs\\plans\\2026-10-15_0440_Trae能力对标_数字军团增强方案_K-ORG-086.md",
+   "date": "2026-10-15",
+   "state": "frozen",
+   "title": "Trae CN 能力对标 × 数字军团增强方案（K-ORG-086）",
+   "bytes": 5314,
+   "mtime": "2026-10-15 04:36"
+  },
+  {
+   "path": "docs\\plans\\2026-10-15_G4安全评估稿_K-ORG-100.md",
+   "date": "2026-10-15",
+   "state": "pending_approval",
+   "title": "G4 依赖评估稿：SEC2 渗透/压测工具链（K-ORG-080/N6 · K-ORG-100）",
+   "bytes": 5341,
+   "mtime": "2026-10-15 07:05"
+  },
+  {
+   "path": "docs\\plans\\2026-10-15_Hermes总控与双表面边界_K-ORG-112.md",
+   "date": "2026-10-15",
+   "state": "declared",
+   "title": "Hermes 总控与双表面边界（K-ORG-112 拍板档）",
+   "bytes": 6627,
+   "mtime": "2026-10-18 07:18"
+  },
+  {
+   "path": "docs\\plans\\2026-10-15_合流日执行runbook总纲_K-STOCK-332.md",
+   "date": "2026-10-15",
+   "state": "frozen",
+   "title": "K-STOCK-332 · 合流日执行 Runbook 总纲（10-15 施工单一事实源）",
+   "bytes": 4913,
+   "mtime": "2026-10-13 21:10"
+  },
+  {
+   "path": "docs\\plans\\2026-10-15_地基加固研发方案_K-ORG-090.md",
+   "date": "2026-10-15",
+   "state": "frozen",
+   "title": "地基加固研发方案（K-ORG-090）——底座四断点 + Hermes 门面连接器",
+   "bytes": 7763,
+   "mtime": "2026-10-15 05:22"
+  },
+  {
+   "path": "docs\\plans\\2026-10-15_数字军团改进方案_K-ORG-087.md",
+   "date": "2026-10-15",
+   "state": "frozen",
+   "title": "数字军团改进方案（K-ORG-087）——Trae 能力落地执行稿",
+   "bytes": 6376,
+   "mtime": "2026-10-15 04:50"
+  },
+  {
+   "path": "docs\\plans\\2026-10-16_军团独立体系与任务路由_K-ORG-119.md",
+   "date": "2026-10-16",
+   "state": "unspecified",
+   "title": "军团独立体系与任务路由架构（K-ORG-119）",
+   "bytes": 7640,
+   "mtime": "2026-10-17 10:53"
+  },
+  {
+   "path": "docs\\plans\\2026-10-16_图先行事佐证方法论_K-ORG-120.md",
+   "date": "2026-10-16",
+   "state": "unspecified",
+   "title": "军团数据能力与「图先行·事佐证」方法论（K-ORG-120）",
+   "bytes": 6884,
+   "mtime": "2026-10-17 10:53"
+  },
+  {
+   "path": "docs\\plans\\2026-10-16_数字军团入职框架_K-ORG-117.md",
+   "date": "2026-10-16",
+   "state": "unspecified",
+   "title": "数字军团入职框架（K-ORG-117 · HR 体系 v1）",
+   "bytes": 7332,
+   "mtime": "2026-10-17 10:53"
+  },
+  {
+   "path": "docs\\plans\\2026-10-16_数字军团统一收编方案_K-ORG-116.md",
+   "date": "2026-10-16",
+   "state": "frozen",
+   "title": "数字军团统一收编方案（K-ORG-116 建议稿）",
+   "bytes": 7900,
+   "mtime": "2026-10-17 10:53"
+  },
+  {
+   "path": "docs\\plans\\2026-10-17_K-STOCK-211_6表增量接管通道设计.md",
+   "date": "2026-10-17",
+   "state": "unspecified",
+   "title": "2026-10-17 K-STOCK-211 六表增量接管通道设计（已落地）",
+   "bytes": 4594,
+   "mtime": "2026-10-17 17:34"
+  },
+  {
+   "path": "docs\\plans\\2026-10-17_军团能力盘点与作战大屏_K-ORG-121.md",
+   "date": "2026-10-17",
+   "state": "unspecified",
+   "title": "数字军团能力盘点与可视化开发方案（K-ORG-121 建议稿）",
+   "bytes": 6120,
+   "mtime": "2026-10-17 10:53"
+  },
+  {
+   "path": "docs\\plans\\2026-10-18_K-PUSH-012_通知决策与闸门鉴权_收口拍板.md",
+   "date": "2026-10-18",
+   "state": "unspecified",
+   "title": "K-PUSH-012 通知决策独立板块 + 闸门鉴权 · 收口拍板档",
+   "bytes": 3931,
+   "mtime": "2026-10-18 21:30"
+  },
+  {
+   "path": "docs\\plans\\2026-10-18_整体研发方案与研发计划.md",
+   "date": "2026-10-18",
+   "state": "frozen",
+   "title": "老田的AI助手 · 量化智能交易整体研发方案与研发计划",
+   "bytes": 28218,
+   "mtime": "2026-10-18 15:45"
+  },
+  {
+   "path": "docs\\plans\\2026-10-18_文档直落新规.md",
+   "date": "2026-10-18",
+   "state": "declared",
+   "title": "文档直落新规（2026-10-18 起生效）",
+   "bytes": 3543,
+   "mtime": "2026-10-19 13:30"
+  },
+  {
+   "path": "docs\\plans\\2026-10-18_知识采集功能采集方案.md",
+   "date": "2026-10-18",
+   "state": "declared",
+   "title": "知识采集与提炼功能 · 采集方案（2026-10-18）",
+   "bytes": 2870,
+   "mtime": "2026-10-19 13:30"
+  },
+  {
+   "path": "docs\\plans\\2026-10-18_缠论专属学习环设计_K-ORG-185.md",
+   "date": "2026-10-18",
+   "state": "pending_approval",
+   "title": "缠论专属学习环设计（K-ORG-185）",
+   "bytes": 13617,
+   "mtime": "2026-10-18 17:57"
+  },
+  {
+   "path": "docs\\plans\\2026-10-18_联动层一期施工设计.md",
+   "date": "2026-10-18",
+   "state": "unspecified",
+   "title": "联动层一期施工设计（R1 执行健康总线 + R2 陈旧数据治理 + R3 失败必响）",
+   "bytes": 29727,
+   "mtime": "2026-10-21 10:29"
+  },
+  {
+   "path": "docs\\plans\\2026-10-18_计划口径统一勘误表.md",
+   "date": "2026-10-18",
+   "state": "pending_approval",
+   "title": "2026-10-18 · 计划口径统一勘误表",
+   "bytes": 14744,
+   "mtime": "2026-10-18 16:48"
+  },
+  {
+   "path": "docs\\plans\\2026-10-18_课程语料采集与评论舆情方案.md",
+   "date": "2026-10-18",
+   "state": "pending_approval",
+   "title": "课程语料采集与评论舆情方案（2026-10-18）",
+   "bytes": 6912,
+   "mtime": "2026-10-19 13:30"
+  },
+  {
+   "path": "docs\\plans\\2026-10-18_量化智能交易优先级与路线图.md",
+   "date": "2026-10-18",
+   "state": "frozen",
+   "title": "老田的AI助手 · 量化智能交易功能优先级与路线图",
+   "bytes": 28719,
+   "mtime": "2026-10-18 15:45"
+  },
+  {
+   "path": "docs\\plans\\2026-10-18_量化板块策略收编与四域贯通研发计划.md",
+   "date": "2026-10-18",
+   "state": "frozen",
+   "title": "量化板块研发计划：策略收编与四域贯通（推演版）",
+   "bytes": 10375,
+   "mtime": "2026-10-19 13:30"
+  },
+  {
+   "path": "docs\\plans\\2026-10-19_agent_platform注册表接线协调包_盯盘Agent挂靠量化板块.md",
+   "date": "2026-10-19",
+   "state": "unspecified",
+   "title": "agent_platform 注册表接线协调包：盯盘 Agent 挂靠量化板块（跨工位交接）",
+   "bytes": 7713,
+   "mtime": "2026-10-19 17:01"
+  },
+  {
+   "path": "docs\\plans\\2026-10-19_Agent危险操作治理规范_K-STOCK-416.md",
+   "date": "2026-10-19",
+   "state": "unspecified",
+   "title": "Agent 危险操作治理规范（K-STOCK-416）",
+   "bytes": 6705,
+   "mtime": "2026-10-19 06:27"
+  },
+  {
+   "path": "docs\\plans\\2026-10-19_Agent指挥平台迭代方案_K-ORG-190.md",
+   "date": "2026-10-19",
+   "state": "unspecified",
+   "title": "Agent 指挥平台迭代方案（松耦合 · 属性/技能/模型三可配）",
+   "bytes": 12479,
+   "mtime": "2026-10-19 09:45"
+  },
+  {
+   "path": "docs\\plans\\2026-10-19_D3预警三源分级路由schema_K-DASH-003.md",
+   "date": "2026-10-19",
+   "state": "declared",
+   "title": "D3 预警三源分级路由 Schema 定稿（K-DASH-003）",
+   "bytes": 7006,
+   "mtime": "2026-10-19 10:29"
+  },
+  {
+   "path": "docs\\plans\\2026-10-19_H3收编面板动态化方案_K-DASH-001.md",
+   "date": "2026-10-19",
+   "state": "unspecified",
+   "title": "H3 收编面板动态化方案（K-DASH-001）",
+   "bytes": 6587,
+   "mtime": "2026-10-19 10:28"
+  },
+  {
+   "path": "docs\\plans\\2026-10-19_W-Q1独立对抗验收报告_pool-qa与wq1-qa合并归档.md",
+   "date": "2026-10-19",
+   "state": "unspecified",
+   "title": "W-Q1 独立对抗验收报告（wq1-qa-1019）",
+   "bytes": 5912,
+   "mtime": "2026-10-21 10:29"
+  },
+  {
+   "path": "docs\\plans\\2026-10-19_W-Q1立项_量化层上行接收与三路分发.md",
+   "date": "2026-10-19",
+   "state": "frozen",
+   "title": "W-Q1 立项：量化层上行接收与三路分发模块",
+   "bytes": 6379,
+   "mtime": "2026-10-20 05:27"
+  },
+  {
+   "path": "docs\\plans\\2026-10-19_W-Q2立项_双门所有权移交量化层.md",
+   "date": "2026-10-19",
+   "state": "frozen",
+   "title": "W-Q2 立项：双门所有权移交量化层",
+   "bytes": 4837,
+   "mtime": "2026-10-20 05:28"
+  },
+  {
+   "path": "docs\\plans\\2026-10-19_W-Q3立项_SIM_MARKET调度与交易Agent记账.md",
+   "date": "2026-10-19",
+   "state": "frozen",
+   "title": "W-Q3 立项：SIM_MARKET 调度与交易 Agent 记账",
+   "bytes": 4932,
+   "mtime": "2026-10-20 05:28"
+  },
+  {
+   "path": "docs\\plans\\2026-10-19_W-Q批次三接线层契约设计.md",
+   "date": "2026-10-19",
+   "state": "declared",
+   "title": "W-Q 线批次三「接线层修复」契约设计",
+   "bytes": 44838,
+   "mtime": "2026-10-21 10:29"
+  },
+  {
+   "path": "docs\\plans\\2026-10-19_六文件归worktree盘点清单_K-ORG-190.md",
+   "date": "2026-10-19",
+   "state": "unspecified",
+   "title": "六文件归 worktree 盘点清单（K-ORG-190 · C 路 c-inventory）",
+   "bytes": 9561,
+   "mtime": "2026-10-19 12:05"
+  },
+  {
+   "path": "docs\\plans\\2026-10-19_军团CodexBridge设计稿_军团-M6.md",
+   "date": "2026-10-19",
+   "state": "pending_approval",
+   "title": "军团 Codex bridge 设计稿（演进篇）：目标架构与 digital-legion 对接口径（军团-M6 设想）",
+   "bytes": 23373,
+   "mtime": "2026-10-19 14:11"
+  },
+  {
+   "path": "docs\\plans\\2026-10-19_周一护航操作单_三触发点_K-ORG-190.md",
+   "date": "2026-10-19",
+   "state": "unspecified",
+   "title": "2026-10-19 周一护航操作单 —— 三触发点首跑（K-ORG-190）",
+   "bytes": 8398,
+   "mtime": "2026-10-19 11:53"
+  },
+  {
+   "path": "docs\\plans\\2026-10-19_心跳对接五项拍板执行_K-ORG-190.md",
+   "date": "2026-10-19",
+   "state": "pending_approval",
+   "title": "心跳对接五项拍板执行记录_K-ORG-190",
+   "bytes": 2851,
+   "mtime": "2026-10-19 13:29"
+  },
+  {
+   "path": "docs\\plans\\2026-10-19_投研三工具码定夺单_K-ORG-190.md",
+   "date": "2026-10-19",
+   "state": "unspecified",
+   "title": "投研三工具码定夺单（K-ORG-190 遗留 · tool-memo）",
+   "bytes": 8621,
+   "mtime": "2026-10-19 11:07"
+  },
+  {
+   "path": "docs\\plans\\2026-10-19_散落文档盘点与直落新规执行草案_K-ORG-190.md",
+   "date": "2026-10-19",
+   "state": "pending_approval",
+   "title": "散落文档盘点与《文档直落新规》执行草案（K-ORG-190 · C 路 c-inventory）",
+   "bytes": 8242,
+   "mtime": "2026-10-19 12:06"
+  },
+  {
+   "path": "docs\\plans\\2026-10-19_许褚盯盘营信号池设计_多Agent协作底座.md",
+   "date": "2026-10-19",
+   "state": "pending_approval",
+   "title": "许褚盯盘营·信号池设计（多 Agent 协作底座）",
+   "bytes": 6716,
+   "mtime": "2026-10-19 17:01"
+  },
+  {
+   "path": "docs\\plans\\2026-10-19_选股策略独立化与选股Agent_M0计划.md",
+   "date": "2026-10-19",
+   "state": "pending_approval",
+   "title": "选股策略独立化与选股 Agent 整体开发计划（M0）",
+   "bytes": 43646,
+   "mtime": "2026-10-19 19:12"
+  },
+  {
+   "path": "docs\\plans\\2026-10-20_daily透传侦察记录_2026-10-20.md",
+   "date": "2026-10-20",
+   "state": "unspecified",
+   "title": "daily:alert / daily:report 发送侧透传侦察记录（2026-10-20）",
+   "bytes": 5171,
+   "mtime": "2026-10-20 11:42"
+  },
+  {
+   "path": "docs\\plans\\2026-10-20_I5军团受控回写契约设计_v0.md",
+   "date": "2026-10-20",
+   "state": "pending_approval",
+   "title": "I5 军团受控回写契约设计 v0",
+   "bytes": 7676,
+   "mtime": "2026-10-20 11:04"
+  },
+  {
+   "path": "docs\\plans\\2026-10-20_P3.10lite_派工单_四工位.md",
+   "date": "2026-10-20",
+   "state": "declared",
+   "title": "P3.10-lite 派工单（四工位并行）",
+   "bytes": 4572,
+   "mtime": "2026-10-21 10:29"
+  },
+  {
+   "path": "docs\\plans\\2026-10-20_P3.11lite_派工单_handler迁移.md",
+   "date": "2026-10-20",
+   "state": "pending_approval",
+   "title": "P3.11-lite 派工单：WS 卡片动作 handler 迁移（B1 修复代码侧）",
+   "bytes": 5817,
+   "mtime": "2026-10-20 23:43"
+  },
+  {
+   "path": "docs\\plans\\2026-10-20_P3.7lite_派工单_四工位.md",
+   "date": "2026-10-20",
+   "state": "declared",
+   "title": "P3.7-lite 派工单（2026-10-20 13:35）",
+   "bytes": 7671,
+   "mtime": "2026-10-20 13:35"
+  },
+  {
+   "path": "docs\\plans\\2026-10-20_P3.8lite_派工单_四工位.md",
+   "date": "2026-10-20",
+   "state": "declared",
+   "title": "P3.8-lite 派工单（四工位并行）",
+   "bytes": 4459,
+   "mtime": "2026-10-20 14:59"
+  },
+  {
+   "path": "docs\\plans\\2026-10-20_P3.9lite_派工单_四工位.md",
+   "date": "2026-10-20",
+   "state": "unspecified",
+   "title": "P3.9-lite 派工单（四工位并行）",
+   "bytes": 4424,
+   "mtime": "2026-10-20 16:03"
+  },
+  {
+   "path": "docs\\plans\\2026-10-20_W44策略环接线设计_v0.md",
+   "date": "2026-10-20",
+   "state": "pending_approval",
+   "title": "W44 策略环接线设计 v0",
+   "bytes": 5337,
+   "mtime": "2026-10-20 11:05"
+  },
+  {
+   "path": "docs\\plans\\2026-10-20_入向回调通道取证与预案_2026-10-20.md",
+   "date": "2026-10-20",
+   "state": "unspecified",
+   "title": "入向回调通道取证与预案（P3.10-lite O-D 工位）",
+   "bytes": 21951,
+   "mtime": "2026-10-20 21:35"
+  },
+  {
+   "path": "docs\\plans\\2026-10-20_卡片模板覆盖审计_2026-10-20.md",
+   "date": "2026-10-20",
+   "state": "unspecified",
+   "title": "卡片模板覆盖审计（H-B · P3-lite 波次 · 2026-10-20）",
+   "bytes": 7002,
+   "mtime": "2026-10-20 11:39"
+  },
+  {
+   "path": "docs\\plans\\2026-10-20_商业化上线检查清单_v0.md",
+   "date": "2026-10-20",
+   "state": "declared",
+   "title": "商业化上线检查清单 v0（飞书中台）",
+   "bytes": 41665,
+   "mtime": "2026-10-21 00:55"
+  },
+  {
+   "path": "docs\\plans\\2026-10-20_待核项只读取证_2026-10-20.md",
+   "date": "2026-10-20",
+   "state": "unspecified",
+   "title": "待核项只读取证（P3.9-lite N-D 工位）",
+   "bytes": 27363,
+   "mtime": "2026-10-20 16:33"
+  },
+  {
+   "path": "docs\\plans\\2026-10-20_撤销订阅决策卡_v1.md",
+   "date": "2026-10-20",
+   "state": "unspecified",
+   "title": "撤销订阅 · 决策卡 v1（一页拍板用）",
+   "bytes": 3573,
+   "mtime": "2026-10-20 13:07"
+  },
+  {
+   "path": "docs\\plans\\2026-10-20_撤销订阅设计_v0.md",
+   "date": "2026-10-20",
+   "state": "declared",
+   "title": "撤销订阅设计稿 v0（2026-10-20）",
+   "bytes": 7250,
+   "mtime": "2026-10-20 11:41"
+  },
+  {
+   "path": "docs\\plans\\2026-10-20_收银台技术方案_v0.md",
+   "date": "2026-10-20",
+   "state": "declared",
+   "title": "收银台技术方案 v0（飞书中台 · P3.7-lite / L-C）",
+   "bytes": 42242,
+   "mtime": "2026-10-20 13:43"
+  },
+  {
+   "path": "docs\\plans\\2026-10-20_订阅OAuth免登录设计_v0.md",
+   "date": "2026-10-20",
+   "state": "pending_approval",
+   "title": "订阅 OAuth 免登录设计 v0",
+   "bytes": 7373,
+   "mtime": "2026-10-20 11:10"
+  },
+  {
+   "path": "docs\\plans\\2026-10-20_邓芝席位松耦合扩展设计_v0.md",
+   "date": "2026-10-20",
+   "state": "declared",
+   "title": "邓芝席位松耦合扩展设计 v0",
+   "bytes": 4044,
+   "mtime": "2026-10-21 10:29"
+  },
+  {
+   "path": "docs\\plans\\2026-10-20_重启五要素操作单_待批稿.md",
+   "date": "2026-10-20",
+   "state": "declared",
+   "title": "重启五要素操作单（待批稿）—— 飞书中台 P1~P3.6-lite 一次性接线",
+   "bytes": 11351,
+   "mtime": "2026-10-20 15:34"
+  },
+  {
+   "path": "docs\\plans\\2026-10-20_飞书中台商业化_收件人分域与订阅闸门立项方案.md",
+   "date": "2026-10-20",
+   "state": "pending_approval",
+   "title": "飞书中台商业化立项方案：收件人分域 + 订阅闸门",
+   "bytes": 9060,
+   "mtime": "2026-10-21 10:29"
+  },
+  {
+   "path": "docs\\plans\\2026-10-20_飞书中台实施对账_2026-10-20.md",
+   "date": "2026-10-20",
+   "state": "pending_approval",
+   "title": "飞书中台实施对账（2026-10-20）",
+   "bytes": 25746,
+   "mtime": "2026-10-21 01:43"
+  },
+  {
+   "path": "docs\\plans\\2026-10-20_飞书中台研发总纲_v1.md",
+   "date": "2026-10-20",
+   "state": "pending_approval",
+   "title": "飞书中台研发总纲 v1（统一版）",
+   "bytes": 11753,
+   "mtime": "2026-10-20 11:56"
+  },
+  {
+   "path": "docs\\plans\\2026-10-20_飞书中台重启前就绪自查_2026-10-20.md",
+   "date": "2026-10-20",
+   "state": "pending_approval",
+   "title": "飞书中台重启前就绪自查（2026-10-20）",
+   "bytes": 8077,
+   "mtime": "2026-10-20 13:49"
+  },
+  {
+   "path": "docs\\plans\\2026-10-21_P3.12lite_派工单_三工位.md",
+   "date": "2026-10-21",
+   "state": "unspecified",
+   "title": "P3.12-lite 派工单（三工位，2026-10-21）",
+   "bytes": 4073,
+   "mtime": "2026-10-21 00:18"
+  },
+  {
+   "path": "docs\\plans\\2026-10-21_P3.13lite_派工单_量化出口收编方案稿.md",
+   "date": "2026-10-21",
+   "state": "unspecified",
+   "title": "P3.13-lite ④b 派工单：量化侧第二出口收编进 8097（改造方案稿工位）",
+   "bytes": 2105,
+   "mtime": "2026-10-21 01:38"
+  },
+  {
+   "path": "docs\\plans\\2026-10-21_军团对外接口契约_v1.md",
+   "date": "2026-10-21",
+   "state": "declared",
+   "title": "军团对外接口契约 v1（WO-LEGION-S21，2026-10-21）",
+   "bytes": 5052,
+   "mtime": "2026-10-26 23:45"
+  },
+  {
+   "path": "docs\\plans\\2026-10-21_商业化上线检查清单_增量更新_v0.3.md",
+   "date": "2026-10-21",
+   "state": "declared",
+   "title": "商业化上线检查清单 · 2026-10-21 增量更新（v0 → v0.3）",
+   "bytes": 6686,
+   "mtime": "2026-10-26 23:45"
+  },
+  {
+   "path": "docs\\plans\\2026-10-21_客户入口智能化方案_客问路由与查询反推_v2.md",
+   "date": "2026-10-21",
+   "state": "unspecified",
+   "title": "飞书中台客户入口智能化方案 v2（客问路由 + 查询反推，2026-10-21 12:15）",
+   "bytes": 6877,
+   "mtime": "2026-10-21 11:59"
+  },
+  {
+   "path": "docs\\plans\\2026-10-21_订阅提醒与勾稽日跑排程操作单_待批.md",
+   "date": "2026-10-21",
+   "state": "declared",
+   "title": "订阅提醒与勾稽日跑排程操作单（待批 · 门禁 D，2026-10-21）",
+   "bytes": 4026,
+   "mtime": "2026-10-21 15:53"
+  },
+  {
+   "path": "docs\\plans\\2026-10-21_订阅管理面开key后取数交互设计_v0.md",
+   "date": "2026-10-21",
+   "state": "unspecified",
+   "title": "订阅管理面开 key 后取数交互设计 v0",
+   "bytes": 14652,
+   "mtime": "2026-10-21 00:23"
+  },
+  {
+   "path": "docs\\plans\\2026-10-21_重启后实测对账单_20261021.md",
+   "date": "2026-10-21",
+   "state": "declared",
+   "title": "重启后实测对账单（2026-10-21 01:00~01:15，操作单方案 A 全量接线）",
+   "bytes": 4737,
+   "mtime": "2026-10-21 01:11"
+  },
+  {
+   "path": "docs\\plans\\2026-10-21_阚泽通信部研发计划_v2.md",
+   "date": "2026-10-21",
+   "state": "unspecified",
+   "title": "阚泽通信部研发计划 v2（正式版，2026-10-21 13:15）",
+   "bytes": 5266,
+   "mtime": "2026-10-26 23:45"
+  },
+  {
+   "path": "docs\\plans\\2026-10-21_阚泽部K1-K3实施说明.md",
+   "date": "2026-10-21",
+   "state": "unspecified",
+   "title": "阚泽部 K1-K3 实施说明（2026-10-21）",
+   "bytes": 7264,
+   "mtime": "2026-10-21 13:23"
+  },
+  {
+   "path": "docs\\plans\\2026-10-21_阚泽部K1-K6实施总说明.md",
+   "date": "2026-10-21",
+   "state": "pending_approval",
+   "title": "阚泽部 K1-K6 实施总说明（2026-10-21 15:45）",
+   "bytes": 6301,
+   "mtime": "2026-10-26 23:45"
+  },
+  {
+   "path": "docs\\plans\\2026-10-21_阚泽部智能层开闸操作单_待批.md",
+   "date": "2026-10-21",
+   "state": "pending_approval",
+   "title": "阚泽部智能层开闸操作单（待批，2026-10-21 15:30）",
+   "bytes": 6526,
+   "mtime": "2026-10-21 16:03"
+  },
+  {
+   "path": "docs\\plans\\2026-10-21_阚泽部智能层开闸验收报告.md",
+   "date": "2026-10-21",
+   "state": "unspecified",
+   "title": "阚泽部智能层开闸验收报告（2026-10-21 16:30）",
+   "bytes": 6492,
+   "mtime": "2026-10-21 16:30"
+  },
+  {
+   "path": "docs\\plans\\2026-10-21_飞书中台开发文档_v1.md",
+   "date": "2026-10-21",
+   "state": "unspecified",
+   "title": "飞书中台开发文档 v1.0（2026-10-21 12:00）",
+   "bytes": 9109,
+   "mtime": "2026-10-26 23:45"
+  },
+  {
+   "path": "docs\\plans\\2026-10-21_飞书中台智能体化研究报告与对接方案_v1.md",
+   "date": "2026-10-21",
+   "state": "unspecified",
+   "title": "飞书中台智能体化研究报告与对接方案 v1（2026-10-21 12:10）",
+   "bytes": 10041,
+   "mtime": "2026-10-21 11:47"
+  },
+  {
+   "path": "docs\\plans\\2026-10-21_飞书中台研发计划_v1.md",
+   "date": "2026-10-21",
+   "state": "unspecified",
+   "title": "飞书中台研发计划 v1（聚焦版，2026-10-21 12:00）",
+   "bytes": 7852,
+   "mtime": "2026-10-21 11:42"
+  },
+  {
+   "path": "docs\\plans\\2026-10-21_飞书回调开通操作单_待批稿v2.md",
+   "date": "2026-10-21",
+   "state": "pending_approval",
+   "title": "飞书回调链路开通操作单（待批稿 v2）—— Encrypt Key 注入 + nginx 方案 i",
+   "bytes": 5531,
+   "mtime": "2026-10-21 11:29"
+  },
+  {
+   "path": "docs\\plans\\2026-10-21_鲁肃通信与客户服务部_编制方案_v1.md",
+   "date": "2026-10-21",
+   "state": "superseded",
+   "title": "鲁肃·通信与客户服务部 编制方案 v1（2026-10-21 12:20）",
+   "bytes": 8481,
+   "mtime": "2026-10-27 07:01"
+  },
+  {
+   "path": "docs\\plans\\2026-10-22_PRODUCT_ROADMAP_v2.md",
+   "date": "2026-10-22",
+   "state": "declared",
+   "title": "零界 · 产品 ROADMAP v2（单一事实源 · 2026-10-22 01:50 立宪）",
+   "bytes": 7565,
+   "mtime": "2026-10-27 07:01"
+  },
+  {
+   "path": "docs\\plans\\2026-10-24_B_STAGE_DECISION_CARD_v1.md",
+   "date": "2026-10-24",
+   "state": "frozen",
+   "title": "16 · 老田裁定卡（B 阶段 · 一页纸）",
+   "bytes": 4271,
+   "mtime": "2026-10-24 09:05"
+  },
+  {
+   "path": "docs\\plans\\2026-10-24_B_STAGE_SCOPE_v1.md",
+   "date": "2026-10-24",
+   "state": "frozen",
+   "title": "14 · B 阶段首版范围与四件成果定义（\"四类真实工作各一件\"）",
+   "bytes": 13705,
+   "mtime": "2026-10-24 09:05"
+  },
+  {
+   "path": "docs\\plans\\2026-10-24_PRODUCT_BASELINE_v1.md",
+   "date": "2026-10-24",
+   "state": "frozen",
+   "title": "09 · 产品基线 v0.1（供老田裁定，不冒充已批准战略源）",
+   "bytes": 12552,
+   "mtime": "2026-10-24 09:05"
+  },
+  {
+   "path": "docs\\plans\\2026-10-25_OSLINK-W4_司马懿到田丰归口契约v0.1_草案.md",
+   "date": "2026-10-25",
+   "state": "frozen",
+   "title": "OSLINK-W4 · 司马懿(QS1) → 田丰(A0) 归口契约 v1.0（已签认）",
+   "bytes": 13454,
+   "mtime": "2026-10-26 14:04"
+  },
+  {
+   "path": "docs\\plans\\2026-10-26_DeepSeek进治理动作_设计与研发计划_v1.md",
+   "date": "2026-10-26",
+   "state": "unspecified",
+   "title": "DeepSeek 进治理动作 · 设计与研发计划 v1",
+   "bytes": 13438,
+   "mtime": "2026-10-26 11:08"
+  },
+  {
+   "path": "docs\\plans\\2026-10-26_PRODUCT_ROADMAP_v3.md",
+   "date": "2026-10-26",
+   "state": "superseded",
+   "title": "零界 · 产品 ROADMAP v3（唯一战略源 + 唯一主排期 · 2026-10-26 23:55 立宪）",
+   "bytes": 4948,
+   "mtime": "2026-10-30 15:49"
+  },
+  {
+   "path": "docs\\plans\\2026-10-26_可写可执行IDE_设计与安全方案_v1.md",
+   "date": "2026-10-26",
+   "state": "unspecified",
+   "title": "可写 / 可执行 IDE · 设计与安全方案 v1",
+   "bytes": 11290,
+   "mtime": "2026-10-26 17:08"
+  },
+  {
+   "path": "docs\\plans\\2026-10-26_诸葛亮角色总卡_v0.1_待签.md",
+   "date": "2026-10-26",
+   "state": "frozen",
+   "title": "诸葛亮角色总卡 v0.1（待签）",
+   "bytes": 17738,
+   "mtime": "2026-10-27 05:05"
+  },
+  {
+   "path": "docs\\plans\\2026-10-27_B系列裁决与执行记录_v1.md",
+   "date": "2026-10-27",
+   "state": "pending_approval",
+   "title": "B 系列裁决与执行记录（2026-10-27）· B-01/02/03/04/06 + MCP 口径 + A3 状态",
+   "bytes": 8573,
+   "mtime": "2026-10-27 14:46"
+  },
+  {
+   "path": "docs\\plans\\2026-10-27_C3采纳beacon_decision_id字段_接口变更单.md",
+   "date": "2026-10-27",
+   "state": "unspecified",
+   "title": "C3 采纳 beacon：decision_id / card_id 字段接口变更单（待前端）",
+   "bytes": 3484,
+   "mtime": "2026-10-27 14:47"
+  },
+  {
+   "path": "docs\\plans\\2026-10-27_worker-grounding-guard.md",
+   "date": "2026-10-27",
+   "state": "unspecified",
+   "title": "Worker Grounding Guard",
+   "bytes": 1597,
+   "mtime": "2026-10-27 23:33"
+  },
+  {
+   "path": "docs\\plans\\2026-10-27_前端页面联动矩阵.md",
+   "date": "2026-10-27",
+   "state": "unspecified",
+   "title": "全量前端页面联动矩阵（方案 v1）",
+   "bytes": 16438,
+   "mtime": "2026-10-27 16:37"
+  },
+  {
+   "path": "docs\\plans\\2026-10-27_建议到决策映射方案_v1.md",
+   "date": "2026-10-27",
+   "state": "unspecified",
+   "title": "建议 → 决策映射方案 v1（2026-10-27）",
+   "bytes": 2827,
+   "mtime": "2026-10-27 14:56"
+  },
+  {
+   "path": "docs\\plans\\2026-10-27_研发单路由规则_ARCH1优先_v1.md",
+   "date": "2026-10-27",
+   "state": "unspecified",
+   "title": "研发单路由规则：新研发需求优先 ARCH1/组长（v1）",
+   "bytes": 3158,
+   "mtime": "2026-10-27 10:33"
+  },
+  {
+   "path": "docs\\plans\\2026-10-27_诸葛P1-2_LlamaIndexRAG方案_v0.md",
+   "date": "2026-10-27",
+   "state": "unspecified",
+   "title": "诸葛亮 P1-2：LlamaIndex RAG 方案与 v0 工单（2026-10-27）",
+   "bytes": 4529,
+   "mtime": "2026-10-27 14:23"
+  },
+  {
+   "path": "docs\\plans\\2026-10-27_诸葛亮四议题执行记录_v1.md",
+   "date": "2026-10-27",
+   "state": "pending_approval",
+   "title": "诸葛亮四议题执行记录 v1（2026-10-27）",
+   "bytes": 7476,
+   "mtime": "2026-10-27 05:05"
+  },
+  {
+   "path": "docs\\plans\\2026-10-27_诸葛亮记忆写入策略_v0.md",
+   "date": "2026-10-27",
+   "state": "declared",
+   "title": "诸葛亮记忆写入策略 v0（2026-10-27）",
+   "bytes": 2436,
+   "mtime": "2026-10-27 14:23"
+  },
+  {
+   "path": "docs\\plans\\2026-10-27_零界UI重构总体方案_v1.md",
+   "date": "2026-10-27",
+   "state": "unspecified",
+   "title": "零界 UI 总体重构方案 v1（系统理解 · 研发计划 · 全页面联动）",
+   "bytes": 16887,
+   "mtime": "2026-10-27 16:37"
+  },
+  {
+   "path": "docs\\plans\\2026-10-28_api_kg拆分方案_v1.md",
+   "date": "2026-10-28",
+   "state": "frozen",
+   "title": "api_kg.py 拆分方案 v1（2026-10-28 · 关羽）",
+   "bytes": 4527,
+   "mtime": "2026-10-30 03:39"
+  },
+  {
+   "path": "docs\\plans\\2026-10-28_B09_TushareToken轮换执行手册_v1.md",
+   "date": "2026-10-28",
+   "state": "unspecified",
+   "title": "B-09 Tushare token 轮换 · 执行手册 v1（待 token 到即执行）",
+   "bytes": 3815,
+   "mtime": "2026-10-28 16:56"
+  },
+  {
+   "path": "docs\\plans\\2026-10-28_portal大文件拆分守则_v1.md",
+   "date": "2026-10-28",
+   "state": "frozen",
+   "title": "portal 大文件拆分守则 v1（2026-10-28 · 关羽）",
+   "bytes": 2413,
+   "mtime": "2026-10-28 00:26"
+  },
+  {
+   "path": "docs\\plans\\2026-10-28_指挥部会议系统结合方案_v1.md",
+   "date": "2026-10-28",
+   "state": "unspecified",
+   "title": "「会议系统 × 指挥部五席（A 组）」结合方案 v1",
+   "bytes": 14707,
+   "mtime": "2026-10-28 22:46"
+  },
+  {
+   "path": "docs\\plans\\2026-10-28_测试夹具化方案_v1.md",
+   "date": "2026-10-28",
+   "state": "unspecified",
+   "title": "测试夹具化 / 时间注入方案 v1（P0 #3，2026-10-28 · 关羽）",
+   "bytes": 4550,
+   "mtime": "2026-10-28 21:09"
+  },
+  {
+   "path": "docs\\plans\\2026-10-28_零界UI整体规划与最优路径_v1.md",
+   "date": "2026-10-28",
+   "state": "pending_approval",
+   "title": "零界 UI 整体规划 v2：现状、最优路径与整体设计",
+   "bytes": 9652,
+   "mtime": "2026-10-28 06:23"
+  },
+  {
+   "path": "docs\\plans\\2026-10-28_黄忠W1提交模板\\criteria_01.md",
+   "date": "",
+   "state": "unspecified",
+   "title": "验收判据：席位入编验收",
+   "bytes": 311,
+   "mtime": "2026-10-28 07:53"
+  },
+  {
+   "path": "docs\\plans\\2026-10-28_黄忠W1提交模板\\criteria_02.md",
+   "date": "",
+   "state": "unspecified",
+   "title": "验收判据：测试收集修复验收",
+   "bytes": 306,
+   "mtime": "2026-10-28 07:53"
+  },
+  {
+   "path": "docs\\plans\\2026-10-28_黄忠W1提交模板\\criteria_03.md",
+   "date": "",
+   "state": "declared",
+   "title": "验收判据：OTel 接通验收",
+   "bytes": 276,
+   "mtime": "2026-10-28 07:53"
+  },
+  {
+   "path": "docs\\plans\\2026-10-28_黄忠W1提交模板\\gate_review_01.md",
+   "date": "",
+   "state": "unspecified",
+   "title": "七检解读：全绿七检",
+   "bytes": 377,
+   "mtime": "2026-10-28 07:53"
+  },
+  {
+   "path": "docs\\plans\\2026-10-28_黄忠W1提交模板\\gate_review_02.md",
+   "date": "",
+   "state": "unspecified",
+   "title": "七检解读：语法门拦截",
+   "bytes": 343,
+   "mtime": "2026-10-28 07:53"
+  },
+  {
+   "path": "docs\\plans\\2026-10-28_黄忠W1提交模板\\rollback_01.md",
+   "date": "",
+   "state": "unspecified",
+   "title": "回滚点：L2 模型变更",
+   "bytes": 351,
+   "mtime": "2026-10-28 07:53"
+  },
+  {
+   "path": "docs\\plans\\2026-10-28_黄忠W1提交模板\\rollback_02.md",
+   "date": "",
+   "state": "unspecified",
+   "title": "回滚点：OTel 开关回滚",
+   "bytes": 321,
+   "mtime": "2026-10-28 07:53"
+  },
+  {
+   "path": "docs\\plans\\2026-10-28_黄忠W1提交模板\\self_review.md",
+   "date": "",
+   "state": "unspecified",
+   "title": "W1 自评",
+   "bytes": 175,
+   "mtime": "2026-10-28 07:53"
+  },
+  {
+   "path": "docs\\plans\\2026-10-28_黄忠W1示范答卷\\criteria_01.md",
+   "date": "",
+   "state": "unspecified",
+   "title": "验收判据：席位入编（WO-HUANGZHONG-20261028）",
+   "bytes": 1022,
+   "mtime": "2026-10-28 10:53"
+  },
+  {
+   "path": "docs\\plans\\2026-10-28_黄忠W1示范答卷\\criteria_02.md",
+   "date": "",
+   "state": "unspecified",
+   "title": "验收判据：测试收集修复（WO-QUANT-COLLECT）",
+   "bytes": 736,
+   "mtime": "2026-10-28 10:53"
+  },
+  {
+   "path": "docs\\plans\\2026-10-28_黄忠W1示范答卷\\criteria_03.md",
+   "date": "",
+   "state": "declared",
+   "title": "验收判据：Phoenix OTel 接通（WO-OTEL-PB）",
+   "bytes": 678,
+   "mtime": "2026-10-28 10:53"
+  },
+  {
+   "path": "docs\\plans\\2026-10-28_黄忠W1示范答卷\\gate_review_01.md",
+   "date": "",
+   "state": "unspecified",
+   "title": "七检解读：全绿",
+   "bytes": 742,
+   "mtime": "2026-10-28 10:53"
+  },
+  {
+   "path": "docs\\plans\\2026-10-28_黄忠W1示范答卷\\gate_review_02.md",
+   "date": "",
+   "state": "unspecified",
+   "title": "七检解读：语法门拦截",
+   "bytes": 795,
+   "mtime": "2026-10-28 10:53"
+  },
+  {
+   "path": "docs\\plans\\2026-10-28_黄忠W1示范答卷\\README.md",
+   "date": "",
+   "state": "unspecified",
+   "title": "黄忠 W1 示范答卷（批改工具验证用）",
+   "bytes": 676,
+   "mtime": "2026-10-28 10:53"
+  },
+  {
+   "path": "docs\\plans\\2026-10-28_黄忠W1示范答卷\\rollback_01.md",
+   "date": "",
+   "state": "unspecified",
+   "title": "回滚点：L2 模型变更（ZHAOYUN flash→v4-pro）",
+   "bytes": 468,
+   "mtime": "2026-10-28 10:53"
+  },
+  {
+   "path": "docs\\plans\\2026-10-28_黄忠W1示范答卷\\rollback_02.md",
+   "date": "",
+   "state": "unspecified",
+   "title": "回滚点：OTel 开关回滚",
+   "bytes": 462,
+   "mtime": "2026-10-28 10:53"
+  },
+  {
+   "path": "docs\\plans\\2026-10-28_黄忠W1示范答卷\\self_review.md",
+   "date": "",
+   "state": "unspecified",
+   "title": "W1 自评",
+   "bytes": 435,
+   "mtime": "2026-10-28 10:53"
+  },
+  {
+   "path": "docs\\plans\\2026-10-28_黄忠W1验收样例与批改标准_v1.md",
+   "date": "2026-10-28",
+   "state": "declared",
+   "title": "黄忠 W1 学习包：验收判据样例 + 七检解读 + 回滚点 + 批改标准",
+   "bytes": 5561,
+   "mtime": "2026-10-28 07:46"
+  },
+  {
+   "path": "docs\\plans\\2026-10-28_黄忠技能清单与共享资能_v1.md",
+   "date": "2026-10-28",
+   "state": "pending_approval",
+   "title": "黄忠 · 技能清单与共享资能 v1（2026-10-28）",
+   "bytes": 8486,
+   "mtime": "2026-10-30 01:31"
+  },
+  {
+   "path": "docs\\plans\\2026-10-28_黄忠每日验收任务_L2五要素待批.md",
+   "date": "2026-10-28",
+   "state": "pending_approval",
+   "title": "黄忠每日验收任务 · L2 五要素待批（2026-10-28）",
+   "bytes": 1892,
+   "mtime": "2026-10-28 07:46"
+  },
+  {
+   "path": "docs\\plans\\2026-10-28_黄忠验收守门官_charter_v1.md",
+   "date": "2026-10-28",
+   "state": "unspecified",
+   "title": "黄忠 · 验收守门官 Charter v1（观察模式）",
+   "bytes": 3018,
+   "mtime": "2026-10-28 07:11"
+  },
+  {
+   "path": "docs\\plans\\2026-10-29_判定中台P0三项契约拍板.md",
+   "date": "2026-10-29",
+   "state": "unspecified",
+   "title": "判定中台 P0 三项契约拍板（2026-10-29）",
+   "bytes": 3295,
+   "mtime": "2026-10-29 09:23"
+  },
+  {
+   "path": "docs\\plans\\2026-10-30_api_backtest拆分方案_v1.md",
+   "date": "2026-10-30",
+   "state": "declared",
+   "title": "api_backtest.py 拆分方案 v1（2026-10-30 · 关羽）",
+   "bytes": 12431,
+   "mtime": "2026-10-30 12:30"
+  },
+  {
+   "path": "docs\\plans\\2026-10-30_Hermes与关羽融合边界建议_v1.md",
+   "date": "2026-10-30",
+   "state": "pending_approval",
+   "title": "Hermes × 关羽 · 融合边界建议 v1（2026-10-30 · 关羽）",
+   "bytes": 5299,
+   "mtime": "2026-10-30 20:41"
+  },
+  {
+   "path": "docs\\plans\\2026-10-30_JEV开源生态研究与中台化建议.md",
+   "date": "2026-10-30",
+   "state": "unspecified",
+   "title": "JEV 开源生态研究与中台化建议（2026-10-30）",
+   "bytes": 13563,
+   "mtime": "2026-10-30 19:23"
+  },
+  {
+   "path": "docs\\plans\\2026-10-30_lifecycle四态archived_schema提案_v1.md",
+   "date": "2026-10-30",
+   "state": "superseded",
+   "title": "lifecycle 四态（archived）schema 提案 v1（2026-10-30 · 关羽）",
+   "bytes": 4509,
+   "mtime": "2026-10-30 12:08"
+  },
+  {
+   "path": "docs\\plans\\2026-10-30_司马徽-鲁肃军团业务串联与开源最佳实践_v1.md",
+   "date": "2026-10-30",
+   "state": "declared",
+   "title": "司马徽 × 鲁肃军团业务串联与开源最佳实践 v1",
+   "bytes": 10512,
+   "mtime": "2026-10-30 23:30"
+  },
+  {
+   "path": "docs\\plans\\2026-10-30_司马徽鲁肃研究到决策闭环_v1.md",
+   "date": "2026-10-30",
+   "state": "declared",
+   "title": "司马徽 × 鲁肃：研究到决策闭环 v1",
+   "bytes": 11106,
+   "mtime": "2026-10-30 23:34"
+  },
+  {
+   "path": "docs\\plans\\2026-10-30_评估闸门与trace运营化_v1.md",
+   "date": "2026-10-30",
+   "state": "unspecified",
+   "title": "评估闸门 + trace 运营化 v0（2026-10-30）",
+   "bytes": 3749,
+   "mtime": "2026-10-30 18:15"
+  },
+  {
+   "path": "docs\\plans\\2026-10-30_诸葛亮下一步能力路线_v1.md",
+   "date": "2026-10-30",
+   "state": "unspecified",
+   "title": "诸葛亮下一步能力路线研究 v1（2026-10-30）",
+   "bytes": 7613,
+   "mtime": "2026-10-30 17:44"
+  },
+  {
+   "path": "docs\\plans\\2026-10-30_诸葛亮与军团IDE高效结合_v1.md",
+   "date": "2026-10-30",
+   "state": "unspecified",
+   "title": "诸葛亮 × 军团 IDE：高效结合研究 v1",
+   "bytes": 9334,
+   "mtime": "2026-10-30 21:04"
+  },
+  {
+   "path": "docs\\plans\\2026-10-30_零界研发计划_四周_v1.md",
+   "date": "2026-10-30",
+   "state": "frozen",
+   "title": "零界研发计划 v1（2026-10-30 → 11-27）",
+   "bytes": 9752,
+   "mtime": "2026-10-30 19:23"
+  },
+  {
+   "path": "docs\\plans\\2026-10-30_黄忠11-04复核runbook_v1.md",
+   "date": "2026-10-30",
+   "state": "unspecified",
+   "title": "黄忠 11-04 观察期复核 Runbook v1（2026-10-30 版）",
+   "bytes": 8124,
+   "mtime": "2026-10-31 01:23"
+  },
+  {
+   "path": "docs\\plans\\2026-10-30_黄忠v0验收单豁免与复核口径补丁_v1.md",
+   "date": "2026-10-30",
+   "state": "unspecified",
+   "title": "黄忠 v0 验收单⑤豁免与 ③ 复核口径补丁（v1）",
+   "bytes": 12932,
+   "mtime": "2026-10-30 02:39"
+  },
+  {
+   "path": "docs\\plans\\2026-10-30_黄忠W1正式提交\\criteria_01.md",
+   "date": "",
+   "state": "unspecified",
+   "title": "验收判据 01：验收会证据接入（WO-HQ-ACCEPT-20261028）",
+   "bytes": 3742,
+   "mtime": "2026-10-30 01:20"
+  },
+  {
+   "path": "docs\\plans\\2026-10-30_黄忠W1正式提交\\criteria_02.md",
+   "date": "",
+   "state": "unspecified",
+   "title": "验收判据 02：任务板审计 F401 清零（WO-BOARD-AUDIT-FIX-20261030）",
+   "bytes": 3584,
+   "mtime": "2026-10-30 01:20"
+  },
+  {
+   "path": "docs\\plans\\2026-10-30_黄忠W1正式提交\\criteria_03.md",
+   "date": "",
+   "state": "unspecified",
+   "title": "验收判据 03：研究院角色属性一致性（WO-ACAD-ROLE-ATTR-20261029）",
+   "bytes": 4106,
+   "mtime": "2026-10-30 01:20"
+  },
+  {
+   "path": "docs\\plans\\2026-10-30_黄忠W1正式提交\\gate_review_01.md",
+   "date": "",
+   "state": "declared",
+   "title": "七检解读 01：全绿（2026-10-30 现场实跑）",
+   "bytes": 3924,
+   "mtime": "2026-10-30 01:20"
+  },
+  {
+   "path": "docs\\plans\\2026-10-30_黄忠W1正式提交\\gate_review_02.md",
+   "date": "",
+   "state": "unspecified",
+   "title": "七检解读 02：语法门拦截真实案例（WO-SYNTAX-GATE-20261028）",
+   "bytes": 4586,
+   "mtime": "2026-10-30 01:20"
+  },
+  {
+   "path": "docs\\plans\\2026-10-30_黄忠W1正式提交\\README.md",
+   "date": "",
+   "state": "unspecified",
+   "title": "黄忠 W1 正式四件套提交（WO-HZ-W1FORMAL-20261030）",
+   "bytes": 4293,
+   "mtime": "2026-10-30 01:20"
+  },
+  {
+   "path": "docs\\plans\\2026-10-30_黄忠W1正式提交\\rollback_01.md",
+   "date": "",
+   "state": "unspecified",
+   "title": "回滚点 01：ZHAOYUN 会议绑定覆盖回滚（MEETING_BINDING_OVERRIDES）",
+   "bytes": 6482,
+   "mtime": "2026-10-30 01:20"
+  },
+  {
+   "path": "docs\\plans\\2026-10-30_黄忠W1正式提交\\rollback_02.md",
+   "date": "",
+   "state": "unspecified",
+   "title": "回滚点 02：任务板审计 F401 修复回滚（WO-BOARD-AUDIT-FIX-20261030）",
+   "bytes": 4664,
+   "mtime": "2026-10-30 01:20"
+  },
+  {
+   "path": "docs\\plans\\2026-10-30_黄忠W1正式提交\\self_review.md",
+   "date": "",
+   "state": "pending_approval",
+   "title": "自评（黄忠 W1 正式提交）",
+   "bytes": 3519,
+   "mtime": "2026-10-30 01:20"
+  },
+  {
+   "path": "docs\\plans\\2026-10-30_黄忠受控拒收演练记录_v1.md",
+   "date": "2026-10-30",
+   "state": "unspecified",
+   "title": "黄忠受控拒收演练记录 v1（2026-10-30）",
+   "bytes": 5050,
+   "mtime": "2026-10-30 02:30"
+  },
+  {
+   "path": "docs\\plans\\2026-10-30_黄忠认证标准v2与验收工具证据口径拍板_v1.md",
+   "date": "2026-10-30",
+   "state": "unspecified",
+   "title": "黄忠认证标准 v2 与验收工具证据口径拍板（D4 = A+B 并行）",
+   "bytes": 23505,
+   "mtime": "2026-10-30 01:31"
+  },
+  {
+   "path": "docs\\plans\\2026-10-30_黄忠赵云抽查3单记录_v1.md",
+   "date": "2026-10-30",
+   "state": "unspecified",
+   "title": "黄忠认证 v2 · 赵云抽查 3 单记录 v1（2026-10-30）",
+   "bytes": 2809,
+   "mtime": "2026-10-30 02:30"
+  },
+  {
+   "path": "docs\\plans\\2026-10-31_8788_staging去留决策_v1.md",
+   "date": "2026-10-31",
+   "state": "unspecified",
+   "title": "8788 staging 去留决策 v1（2026-10-31）",
+   "bytes": 1351,
+   "mtime": "2026-10-31 08:28"
+  },
+  {
+   "path": "docs\\plans\\2026-10-31_A5_B0路由清单_v1.md",
+   "date": "2026-10-31",
+   "state": "declared",
+   "title": "portal_api 路由清单（A5 B0）",
+   "bytes": 9021,
+   "mtime": "2026-10-31 00:40"
+  },
+  {
+   "path": "docs\\plans\\2026-10-31_A5_B4B5_路由表化设计_v1.md",
+   "date": "2026-10-31",
+   "state": "unspecified",
+   "title": "A5 B4/B5 路由表化 · 设计与测试方案 v1（2026-10-31 · 关羽）",
+   "bytes": 5939,
+   "mtime": "2026-10-31 03:49"
+  },
+  {
+   "path": "docs\\plans\\2026-10-31_portal_api拆分提案_v1.md",
+   "date": "2026-10-31",
+   "state": "frozen",
+   "title": "portal_api 拆分提案 v1（A5 · 2026-10-31 · 关羽）",
+   "bytes": 5284,
+   "mtime": "2026-10-31 00:17"
+  },
+  {
+   "path": "docs\\plans\\2026-10-31_身份拓扑决策_v1.md",
+   "date": "2026-10-31",
+   "state": "unspecified",
+   "title": "身份拓扑决策 v1（2026-10-31）",
+   "bytes": 1420,
+   "mtime": "2026-10-31 08:28"
+  },
+  {
+   "path": "docs\\plans\\2026-10-31_黄忠Hermes底层结合方案_v1.md",
+   "date": "2026-10-31",
+   "state": "declared",
+   "title": "黄忠 × Hermes 底层结合方案 v1（2026-10-31）",
+   "bytes": 6787,
+   "mtime": "2026-10-31 04:52"
+  },
+  {
+   "path": "docs\\plans\\2026-11-02_P5c形态B_复验报告.md",
+   "date": "2026-11-02",
+   "state": "pending_approval",
+   "title": "P5c 形态 B 复验报告（预定 2026-11-02 执行）",
+   "bytes": 5991,
+   "mtime": "2026-10-11 12:16"
+  },
+  {
+   "path": "docs\\plans\\INDEX_计划全集索引.md",
+   "date": "",
+   "state": "superseded",
+   "title": "计划全集索引（docs/plans/ 全量 91 份）",
+   "bytes": 28043,
+   "mtime": "2026-10-25 14:55"
+  },
+  {
+   "path": "docs\\plans\\PLAN_REGISTER_20261031.md",
+   "date": "",
+   "state": "declared",
+   "title": "计划台账（PLAN_REGISTER）",
+   "bytes": 32498,
+   "mtime": "2026-10-31 08:28"
+  },
+  {
+   "path": "docs\\plans\\README.md",
+   "date": "",
+   "state": "unspecified",
+   "title": "docs/plans/ · 现行方案与计划归置区",
+   "bytes": 1717,
+   "mtime": "2026-10-18 15:46"
+  }
+ ]
+}

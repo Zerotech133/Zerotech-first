@@ -28,3 +28,12 @@
 
 - 新增文件必须能被 `docs/PROJECT_DOCUMENTATION_INDEX.md` 索引到，或在同批次补录索引。
 - 归位类副本须在头部注明"与原件一致、仅作仓内归档"，避免与仓库外原件形成双版本漂移。
+
+## 五、2026-10-31 计划治理收口
+
+- 全量状态视图：`docs/plans/PLAN_REGISTER_ALL_20261031.md` / `.json`（288 份，含子目录）。
+- 顶层工具视图：`docs/plans/PLAN_REGISTER_20261031.md`（`tools/plan_register.py` 生成，259 份）。
+- 状态口径：`declared`（头部 STATUS）/ `frozen` / `pending_approval` / `superseded` / `unspecified`。
+- **未标注（unspecified）的计划必须在 2026-11-07 前由 owner 补状态或标 superseded**；否则默认不作为执行依据。
+- 本目录不再新增另一套 INDEX；以 `PLAN_REGISTER_ALL_20261031` 为唯一全量台账，`INDEX_计划全集索引.md` 已 superseded。
+
