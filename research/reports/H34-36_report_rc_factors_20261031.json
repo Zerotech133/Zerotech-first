@@ -1,0 +1,255 @@
+{
+ "meta": {
+  "start": "20190101",
+  "end": "20261031",
+  "is_end": "20231231",
+  "cost": 0.003,
+  "rc_rows": 1729477,
+  "rc_codes": 5035,
+  "coverage": [
+   "201901",
+   "202610"
+  ],
+  "months": 93,
+  "generated_at": "2026-10-31T19:09:53+08:00"
+ },
+ "hypotheses": {
+  "H34_rating_up": {
+   "expect": "评级上调 → 跑赢",
+   "direction": 1,
+   "events": 19123,
+   "h20": {
+    "flag": {
+     "IS": {
+      "n": 59,
+      "mean_pct": -3.882,
+      "t": -3.75
+     },
+     "OOS": {
+      "n": 32,
+      "mean_pct": -1.334,
+      "t": -2.83
+     }
+    },
+    "spread": {
+     "IS": {
+      "n": 59,
+      "mean_pct": -0.271,
+      "t": -1.53
+     },
+     "OOS": {
+      "n": 32,
+      "mean_pct": -0.178,
+      "t": -0.74
+     }
+    },
+    "clusters": {
+     "IS": 59,
+     "OOS": 32
+    },
+    "bootstrap": {
+     "n_boot": 300,
+     "mean_pct": -0.148,
+     "p_le_0": 0.7433
+    },
+    "avg_ev_per_month": 204.59
+   },
+   "h60": {
+    "flag": {
+     "IS": {
+      "n": 59,
+      "mean_pct": -8.869,
+      "t": -5.81
+     },
+     "OOS": {
+      "n": 30,
+      "mean_pct": -4.101,
+      "t": -4.39
+     }
+    },
+    "spread": {
+     "IS": {
+      "n": 59,
+      "mean_pct": 0.206,
+      "t": 0.73
+     },
+     "OOS": {
+      "n": 30,
+      "mean_pct": -0.651,
+      "t": -1.48
+     }
+    },
+    "clusters": {
+     "IS": 59,
+     "OOS": 30
+    },
+    "bootstrap": {
+     "n_boot": 300,
+     "mean_pct": -0.801,
+     "p_le_0": 0.9633
+    },
+    "avg_ev_per_month": 206.34
+   },
+   "status": "rejected",
+   "best_horizon": null
+  },
+  "H35_np_revision_up": {
+   "expect": "盈利预测上修 → 跑赢",
+   "direction": 1,
+   "events": 28676,
+   "h20": {
+    "flag": {
+     "IS": {
+      "n": 59,
+      "mean_pct": -3.764,
+      "t": -3.82
+     },
+     "OOS": {
+      "n": 32,
+      "mean_pct": -0.683,
+      "t": -1.27
+     }
+    },
+    "spread": {
+     "IS": {
+      "n": 59,
+      "mean_pct": -0.153,
+      "t": -0.88
+     },
+     "OOS": {
+      "n": 32,
+      "mean_pct": 0.611,
+      "t": 2.25
+     }
+    },
+    "clusters": {
+     "IS": 59,
+     "OOS": 32
+    },
+    "bootstrap": {
+     "n_boot": 300,
+     "mean_pct": 0.573,
+     "p_le_0": 0.0
+    },
+    "avg_ev_per_month": 308.68
+   },
+   "h60": {
+    "flag": {
+     "IS": {
+      "n": 59,
+      "mean_pct": -9.04,
+      "t": -5.95
+     },
+     "OOS": {
+      "n": 30,
+      "mean_pct": -3.188,
+      "t": -2.8
+     }
+    },
+    "spread": {
+     "IS": {
+      "n": 59,
+      "mean_pct": 0.047,
+      "t": 0.14
+     },
+     "OOS": {
+      "n": 30,
+      "mean_pct": 0.403,
+      "t": 0.74
+     }
+    },
+    "clusters": {
+     "IS": 59,
+     "OOS": 30
+    },
+    "bootstrap": {
+     "n_boot": 300,
+     "mean_pct": 0.508,
+     "p_le_0": 0.1967
+    },
+    "avg_ev_per_month": 311.18
+   },
+   "status": "rejected",
+   "best_horizon": null
+  },
+  "H36_org_breadth": {
+   "expect": "机构广度≥3（拥挤）→ 跑输",
+   "direction": -1,
+   "events": 61493,
+   "h20": {
+    "flag": {
+     "IS": {
+      "n": 60,
+      "mean_pct": -3.966,
+      "t": -3.83
+     },
+     "OOS": {
+      "n": 32,
+      "mean_pct": -1.43,
+      "t": -2.7
+     }
+    },
+    "spread": {
+     "IS": {
+      "n": 60,
+      "mean_pct": -0.588,
+      "t": -1.96
+     },
+     "OOS": {
+      "n": 32,
+      "mean_pct": -0.432,
+      "t": -1.19
+     }
+    },
+    "clusters": {
+     "IS": 60,
+     "OOS": 32
+    },
+    "bootstrap": {
+     "n_boot": 300,
+     "mean_pct": -0.407,
+     "p_le_0": 0.9133
+    },
+    "avg_ev_per_month": 655.11
+   },
+   "h60": {
+    "flag": {
+     "IS": {
+      "n": 60,
+      "mean_pct": -9.389,
+      "t": -6.03
+     },
+     "OOS": {
+      "n": 30,
+      "mean_pct": -3.917,
+      "t": -3.52
+     }
+    },
+    "spread": {
+     "IS": {
+      "n": 60,
+      "mean_pct": -0.649,
+      "t": -1.2
+     },
+     "OOS": {
+      "n": 30,
+      "mean_pct": -0.962,
+      "t": -1.23
+     }
+    },
+    "clusters": {
+     "IS": 60,
+     "OOS": 30
+    },
+    "bootstrap": {
+     "n_boot": 300,
+     "mean_pct": -1.216,
+     "p_le_0": 0.9067
+    },
+    "avg_ev_per_month": 656.79
+   },
+   "status": "rejected",
+   "best_horizon": null
+  }
+ }
+}
