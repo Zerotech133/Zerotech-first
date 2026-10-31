@@ -228,6 +228,9 @@ def main(argv=None):
     ap.add_argument("--week", default=None)
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--no-write", action="store_true", help="只报告，不写 sidecar")
+    # 兼容文档里的旧入口（2026-10-31 审计：文档写 --compute/--report，实际不支持）
+    ap.add_argument("--compute", action="store_true", help="兼容旧入口（默认即计算）")
+    ap.add_argument("--report", action="store_true", help="兼容旧入口（默认即报告）")
     args = ap.parse_args(argv)
     ledger_rows = _load_jsonl(args.ledger)
     existing = {str(o.get("run_id")) for o in _load_jsonl(args.out) if o.get("run_id")}
