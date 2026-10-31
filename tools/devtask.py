@@ -381,6 +381,25 @@ def _import_boundary_gate(branch, worktree=""):
     except Exception:  # noqa: BLE001
         return r.returncode == 0, (r.stdout or r.stderr or "").strip()[:160]
 
+
+
+def _nav_gate(branch, worktree=""):
+    """分支感知的导航门（WO-NAVROOT-DEDUP-20261031）。
+
+    此前 ``unify_nav.py --check`` 固定验 master 树（与 P103 前的 mixin 门同病）：
+    分支内新增静态页未带 nav.js / nav.js 与 api_common 数据漂移，合并门看不到。
+    改为传 ``--root <worktree>`` 在分支树内校验（缺 worktree 时回退 REPO）。
+    """
+    root = worktree if (worktree and os.path.isdir(worktree)) else REPO
+    r = subprocess.run([sys.executable,
+                        os.path.join(REPO, "tools", "unify_nav.py"),
+                        "--check", "--root", root],
+                       capture_output=True, text=True,
+                       encoding="utf-8", errors="replace",
+                       env=GUARD_ENV)
+    return r.returncode == 0, (r.stdout or r.stderr or "").strip()[-200:]
+
+
 def _mixin_gate(branch, worktree=""):
     """分支感知的 Mixin 门（2026-10-30 P103）。
 
@@ -399,42 +418,7 @@ def _mixin_gate(branch, worktree=""):
 
 
 GATES = [("Mixin方法集", _mixin_gate),
-         ("导航统一", [sys.executable,
-                       os.path.join(REPO, "tools", "unify_nav.py"),
-                       "--check"]),
-         ("端口注册", [sys.executable,
-                       os.path.join(REPO, "tools", "check_ports.py"),
-                       "--strict"]),  # 2026-10-26 WO-UPGRADE-20261026：合并门
-         # 必须走 strict，否则非 strict 恒 rc=0 = 假门（审计 B-02）。strict 语义
-         # 已拆：只拦「未登记监听/端口冲突」，在册服务离线不判负（check_ports.py）。
-         ("UI/UX审计", _ui_audit_gate),
-         ("明文凭据", _secret_scan_gate),
-         ("语法门", _syntax_gate),
-         ("元数据一致性", _metadata_gate),
-         ("导入边界", _import_boundary_gate)]
-
-
-def _mixin_gate(branch, worktree=""):
-    """分支感知的 Mixin 门（2026-10-30 P103）。
-
-    此前固定扫描 master 树：并行线先后增/删 Handler 方法会互相误卡
-    （P98 新增 → P99 移除 → 并行线补回基线，连续三次基线热修）。
-    改为在分支 worktree 内校验（基线也取分支文件，显式改基线在评审 diff 可见）。
-    """
-    root = worktree if (worktree and os.path.isdir(worktree)) else REPO
-    r = subprocess.run([sys.executable,
-                        os.path.join(REPO, "tools", "_mixin_integrity.py"),
-                        "--check", "--root", root],
-                       capture_output=True, text=True,
-                       encoding="utf-8", errors="replace",
-                       env=GUARD_ENV)
-    return r.returncode == 0, (r.stdout or r.stderr or "").strip()[-200:]
-
-
-GATES = [("Mixin方法集", _mixin_gate),
-         ("导航统一", [sys.executable,
-                       os.path.join(REPO, "tools", "unify_nav.py"),
-                       "--check"]),
+         ("导航统一", _nav_gate),
          ("端口注册", [sys.executable,
                        os.path.join(REPO, "tools", "check_ports.py"),
                        "--strict"]),  # 2026-10-26 WO-UPGRADE-20261026：合并门
