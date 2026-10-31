@@ -143,6 +143,29 @@ button,input,select{font-family:inherit}
 .fields label{display:flex;flex-direction:column;gap:2px;font-size:11px;color:var(--muted)}
 .fields input,.fields select{background:var(--card);border:1px solid var(--line);
   color:var(--ink);border-radius:6px;padding:5px 8px;font-size:12px}
+/* ── Phase 5-C：模板参数区（载入模板后显示；仅内存，不写服务端）── */
+.hidden{display:none !important}
+.tpl-params{border:1px solid var(--line);border-radius:8px;padding:8px 10px;
+  margin-bottom:10px;background:var(--card);font-size:11px}
+.tpl-params-head{display:flex;align-items:center;gap:6px;margin-bottom:6px;color:var(--ink-2)}
+.tpl-params-head .tag{font-size:10px;color:var(--muted);border:1px solid var(--line);
+  border-radius:8px;padding:0 6px;max-width:52%;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.tpl-params-head .btn.tiny{margin-left:auto;font-size:10px;padding:2px 8px}
+.tpl-params label{display:flex;flex-direction:column;gap:2px;color:var(--muted);margin-bottom:6px}
+.tpl-params input{background:var(--card);border:1px solid var(--line);color:var(--ink);
+  border-radius:6px;padding:4px 8px;font-size:12px}
+.pblock{margin-bottom:6px}
+.pblock-title{color:var(--muted);margin-bottom:3px}
+.pweights{display:grid;grid-template-columns:1fr 1fr;gap:4px 8px}
+.tpl-params .pweight{flex-direction:row;align-items:center;gap:5px;margin-bottom:0}
+.pweight .pwsid{color:var(--ink-2);font-size:10px;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap;flex:1}
+.pweight input{width:62px}
+.phint{color:var(--muted);font-size:10px;margin-top:3px}
+.perrors{font-size:10px;color:var(--ok);margin-top:4px;word-break:break-all}
+.perrors.ok{color:var(--ok)}
+.perrors.err{color:var(--err)}
 .actions{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
 .status{border:1px solid var(--line);border-radius:7px;padding:8px 10px;
         font-size:12px;margin-bottom:10px;background:var(--card);max-height:180px;
@@ -247,6 +270,24 @@ button,input,select{font-family:inherit}
       </label>
       <label>description <input id="fDescription" type="text"
         value="Canvas MVP 只读组合（不执行、不下单、不发布）"></label>
+    </div>
+    <!-- Phase 5-C：模板参数（载入模板后显示；仅内存，不自动导出、不写服务端） -->
+    <div class="tpl-params hidden" id="templateParams">
+      <div class="tpl-params-head">
+        <span>模板参数</span>
+        <span class="tag" id="templateParamsTitle">-</span>
+        <button type="button" id="btnResetParams" class="btn tiny">重置</button>
+      </div>
+      <label>tenant <input id="pTenant" type="text" placeholder="official"></label>
+      <div class="pblock">
+        <div class="pblock-title">策略权重（Σw ∈ (0,1]）</div>
+        <div class="pweights" id="pWeights"></div>
+        <div class="phint" id="pWeightsHint">Σw = -</div>
+      </div>
+      <label>max_single（(0,1] 归一化；写入 IR 时 ×100 为百分数）
+        <input id="pMaxSingle" type="number" step="0.01" min="0.001" max="1">
+      </label>
+      <div class="perrors" id="pErrors"></div>
     </div>
     <div class="actions">
       <button type="button" id="btnValidate" class="btn primary">校验</button>
