@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-10-31T20:28:53+08:00",
+ "generated_at": "2026-10-31T22:52:30+08:00",
  "ingest_dirs": [
   "C:\\项目\\PDF\\_ingest",
   "C:\\项目\\PDF\\_ingest_reports"
@@ -64,7 +64,7 @@
    "source": "研报库",
    "pages": 73,
    "chapters": 58,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -82,7 +82,7 @@
    "source": "研报库",
    "pages": 63,
    "chapters": 92,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -100,7 +100,7 @@
    "source": "研报库",
    "pages": 181,
    "chapters": 509,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -172,7 +172,7 @@
    "source": "研报库",
    "pages": 163,
    "chapters": 515,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -224,10 +224,10 @@
   {
    "book": "rp_AP202609301830023151",
    "source": "研报库",
-   "pages": null,
+   "pages": 6,
    "chapters": 0,
    "units": 0,
-   "has_ocr": false,
+   "has_ocr": true,
    "has_layout": false
   },
   {
@@ -332,10 +332,10 @@
   {
    "book": "rp_AP202609301830038476",
    "source": "研报库",
-   "pages": null,
+   "pages": 3,
    "chapters": 0,
    "units": 0,
-   "has_ocr": false,
+   "has_ocr": true,
    "has_layout": false
   },
   {
@@ -424,7 +424,7 @@
    "source": "研报库",
    "pages": 75,
    "chapters": 24,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -532,7 +532,7 @@
    "source": "研报库",
    "pages": 73,
    "chapters": 58,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -604,7 +604,7 @@
    "source": "研报库",
    "pages": 54,
    "chapters": 192,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -631,7 +631,7 @@
    "source": "研报库",
    "pages": 45,
    "chapters": 58,
-   "units": 0,
+   "units": 5,
    "has_ocr": false,
    "has_layout": true
   },
@@ -935,9 +935,9 @@
  ],
  "totals": {
   "books": 103,
-  "pages": 2482,
+  "pages": 2491,
   "chapters": 5107,
-  "units": 35
+  "units": 75
  },
  "verify": {
   "ok": true,
@@ -1058,10 +1058,10 @@
   ]
  },
  "rag": {
-  "docs": 110,
-  "records": 278,
-  "version": 4,
-  "updated_at": "2026-10-31T12:28:28.779622+00:00"
+  "docs": 112,
+  "records": 295,
+  "version": 1,
+  "updated_at": "2026-10-31T14:52:29.696589+00:00"
  },
  "thresholds": {
   "ocr_chars_per_page_min": 100,
