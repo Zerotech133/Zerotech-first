@@ -173,6 +173,14 @@ def _load_json_file(name: str, path) -> dict:
     return meta
 
 
+def _tool_script(repo: Path, name: str) -> Path:
+    """取 <repo>/tools/<name>；repo 内无该工具时回退到本工具同目录（worktree 场景）。"""
+    candidate = Path(repo) / "tools" / name
+    if candidate.is_file():
+        return candidate
+    return TOOLS_DIR / name
+
+
 def _source_meta(src: dict) -> dict:
     report = src.get("report")
     schema = report.get("schema") if isinstance(report, dict) else None
@@ -226,7 +234,7 @@ def collect_task_ledger(repo=None, tasks_path=None, audit_json=None,
         audit_src = _load_json_file("task_board_audit", audit_json)
     else:
         audit_src = _run_json_tool("task_board_audit",
-                                   TOOLS_DIR / "task_board_audit.py", [],
+                                   _tool_script(repo, "task_board_audit.py"), [],
                                    timeout, cwd=repo)
     result["source"] = {"tasks_path": str(tp),
                         "audit": _source_meta(audit_src)}
@@ -263,8 +271,13 @@ def collect_task_ledger(repo=None, tasks_path=None, audit_json=None,
 # 计划账
 # ---------------------------------------------------------------------------
 def scan_plans(plans_dir: Path) -> dict:
-    """扫描 docs/plans/**/*.md 的 STATUS 覆盖（只读，不写文件）。"""
-    files = sorted(Path(plans_dir).rglob("*.md"))
+    """扫描 docs/plans/**/*.md 的 STATUS 覆盖（只读，不写文件）。
+
+    排除仅限顶层说明/生成台账（README.md、PLAN_REGISTER*）；子目录中的
+    夹具 README（如黄忠 W1 模板）仍是受治理计划文档，照常计入。
+    """
+    root = Path(plans_dir)
+    files = sorted(root.rglob("*.md"))
     plan_docs, with_status, unspecified = 0, 0, []
     by_status: dict[str, int] = {}
     for path in files:
@@ -272,7 +285,7 @@ def scan_plans(plans_dir: Path) -> dict:
             text = path.read_text(encoding="utf-8", errors="replace")
         except OSError:
             continue
-        if path.name in NON_PLAN_FILES:
+        if path.parent == root and path.name in NON_PLAN_FILES:
             continue
         plan_docs += 1
         match = STATUS_RE.search(text[:6000])
@@ -342,7 +355,7 @@ def collect_evidence_ledger(repo=None, evidence_json=None,
     else:
         main_repo = resolve_main_repo(repo)
         src = _run_json_tool("m1_evidence_pack",
-                             Path(main_repo) / "tools" / "m1_evidence_pack.py",
+                             _tool_script(main_repo, "m1_evidence_pack.py"),
                              ["--no-write"], timeout, cwd=main_repo)
     result["source"] = _source_meta(src)
     report = src.get("report") if src.get("ok") else None

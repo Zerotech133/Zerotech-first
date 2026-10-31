@@ -205,6 +205,32 @@ def test_plan_dir_missing_unknown(tmp_path):
     assert "不存在" in ledger["error"]
 
 
+def test_plan_top_readme_excluded_but_subdir_fixture_counted(tmp_path):
+    # 顶层 README/生成台账不算计划；子目录夹具 README（有 STATUS）照常计入
+    _write_plan(tmp_path, "2026-10-01_a.md", "declared")
+    plans = tmp_path / "docs" / "plans"
+    (plans / "README.md").write_text("# 目录说明\n", encoding="utf-8")
+    (plans / "PLAN_REGISTER_ALL_20261031.md").write_text("# 台账\n", encoding="utf-8")
+    fixture = plans / "2026-10-28_W1模板"
+    fixture.mkdir(parents=True)
+    (fixture / "README.md").write_text("# 夹具\n\n> STATUS: frozen\n", encoding="utf-8")
+    counts = MOD.scan_plans(plans)
+    assert counts["plan_docs"] == 2
+    assert counts["with_status"] == 2
+    assert counts["unspecified"] == 0
+
+
+def test_tool_script_prefers_repo_tools(tmp_path):
+    (tmp_path / "tools").mkdir(parents=True)
+    script = tmp_path / "tools" / "task_board_audit.py"
+    script.write_text("# stub\n", encoding="utf-8")
+    assert MOD._tool_script(tmp_path, "task_board_audit.py") == script
+    assert MOD._tool_script(tmp_path / "no_tools", "task_board_audit.py").name == \
+        "task_board_audit.py"
+    assert MOD._tool_script(tmp_path / "no_tools", "task_board_audit.py").parent == \
+        MOD.TOOLS_DIR
+
+
 def test_plan_empty_dir_unknown(tmp_path):
     (tmp_path / "docs" / "plans").mkdir(parents=True)
     ledger = MOD.collect_plan_ledger(repo=tmp_path)
