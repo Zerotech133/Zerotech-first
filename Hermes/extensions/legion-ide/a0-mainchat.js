@@ -1,8 +1,18 @@
 // ── A0 田丰 · Hermes 主聊天模式（2026-10-30）────────────────────────────
 // 只做客户端路由：开启后主聊天发送走 /api/ide/orchestrate（Hermes 规划 + OH 执行），
 // 关闭时完全走原 Hermes。会话不写 Hermes 历史，刷新后只保留当前消息流。
+//
+// WO-LEGION-AUTH-20261031：认证拓扑收口——8787 直连只读。
+//   直连 http://127.0.0.1:8787 时页面不带门户 session，不允许调 8796 执行
+//   （会被 oh_auth 拦成 403 且语义上是"绕过同源认证的旁路"）；本文件检测
+//   location.port==8787 进入只读模式：不 fetch 8796、不发 orchestrate，
+//   只回显"直连只读 / 请走 8734"。经 8734 同源反代（/openhands/ → 8796）
+//   时行为不变，仍可执行。
 (function () {
   const KEY = "legion-a0-mainchat";
+  // 直连只读提示（与 docs/audit/2026-10-31_IDE认证拓扑收口_v1.md 同口径）
+  const READONLY_MSG = "直连只读：8787 直连不触发 8796 执行。请从 8734 /hermes/ " +
+    "登录后使用 A0 执行（同源链路会自动带上门户身份），或为本次执行提供 run:execute cap。";
   let on = false;
   try { on = localStorage.getItem(KEY) === "1"; } catch (_) {}
   let busy = false;
@@ -10,9 +20,15 @@
   let ctrlCid = "";
   let ctrlTask = "";
   let ctrlTimer = null;
+  let roHint = null;
+
+  // 直连判定：只有 8787 是 Hermes 原生端口；8734 为门户同源反代入口。
+  function isDirectMode() {
+    try { return String(location.port || "") === "8787"; } catch (_) { return false; }
+  }
 
   function base() {
-    return location.port === "8787" ? "http://127.0.0.1:8796" : "/openhands";
+    return isDirectMode() ? "http://127.0.0.1:8796" : "/openhands";
   }
 
   function endpoint() {
@@ -21,6 +37,17 @@
 
   async function loadTasks() {
     if (!taskSel) return;
+    if (isDirectMode()) {
+      // 直连只读：不加载工单，也不触碰 8796（避免误以为可执行）。
+      taskSel.innerHTML = "";
+      const ro = document.createElement("option");
+      ro.value = "";
+      ro.textContent = "直连只读 · 不加载工单";
+      taskSel.appendChild(ro);
+      taskSel.disabled = true;
+      taskSel.title = "直连只读：请走 8734 /hermes/ 后再执行";
+      return;
+    }
     try {
       const r = await fetch(base() + "/api/ide/tasks", { credentials: "include" });
       const d = await r.json();
@@ -57,6 +84,12 @@
   }
 
   async function runA0(text) {
+    // 直连只读：不调 8796、不发 execute，只诚实回显引导（WO-LEGION-AUTH-20261031）。
+    if (isDirectMode()) {
+      pushMsg("user", text);
+      pushMsg("assistant", READONLY_MSG);
+      return;
+    }
     const ta = document.getElementById("msg");
     const task = taskSel ? String(taskSel.value || "") : "";
     if (task && taskSel && taskSel.selectedOptions && taskSel.selectedOptions[0] &&
@@ -87,8 +120,8 @@
       let out;
       if (!d.ok) {
         if (d.error === "oh_auth_required" || r.status === 403) {
-          out = "直连模式只读：当前页面未带门户 session，A0 可规划但不可执行。\n" +
-            "请从 8734 /hermes/ 登录后使用（或为本次执行提供 run:execute cap）。";
+          out = "执行未授权：当前请求未带门户 session 或缺少 run:execute cap。\n" +
+            "请从 8734 /hermes/ 登录后使用（同源链路会自动带上门户身份）。";
         } else {
           out = "A0 编排失败：" + (d.error || d.detail || ("HTTP " + r.status));
         }
@@ -167,6 +200,11 @@
   }
 
   async function ctrlAct(act) {
+    // 直连只读：控制面板（审批/停止/diff/状态）全部依赖 8796 执行面，一律不调。
+    if (isDirectMode()) {
+      ctrlStatus("直连只读：控制面板不可用，请走 8734 /hermes/ 后再操作");
+      return;
+    }
     if (!ctrlCid) return;
     try {
       if (act === "status") {
@@ -270,13 +308,27 @@
   }
 
   function paint(btn) {
-    btn.textContent = on ? "A0 田丰 · 开" : "A0 田丰";
+    const direct = isDirectMode();
+    btn.textContent = on ? (direct ? "A0 田丰 · 只读" : "A0 田丰 · 开") : "A0 田丰";
     btn.title = on
-      ? "主聊天已切到 A0 田丰（Hermes 规划 + OH 执行）；点击关闭"
+      ? (direct
+        ? "直连只读：8787 直连不触发执行；请走 8734 /hermes/"
+        : "主聊天已切到 A0 田丰（Hermes 规划 + OH 执行）；点击关闭")
       : "主聊天切到 A0 田丰（不改 Hermes 默认）";
+    btn.classList.toggle("a0-readonly", direct);
     btn.style.cssText = "margin-right:6px;padding:4px 8px;border-radius:999px;border:1px solid " +
       (on ? "#c6a15b" : "#555") + ";background:" + (on ? "#3b2f18" : "transparent") +
       ";color:" + (on ? "#ffd98a" : "inherit") + ";font-size:12px;cursor:pointer";
+  }
+
+  function ensureRoHint() {
+    if (!isDirectMode()) return null;
+    if (roHint && roHint.isConnected) return roHint;
+    roHint = document.createElement("span");
+    roHint.id = "a0-ro-hint";
+    roHint.textContent = "直连只读 · 请走 8734 /hermes/";
+    roHint.title = "8787 直连不触发 8796 执行；门户同源入口 8734 /hermes/ 才可执行";
+    return roHint;
   }
 
   function build() {
@@ -299,6 +351,8 @@
       "border:1px solid #555;background:#1b1b1b;color:inherit;font-size:12px;";
     footer.prepend(taskSel);
     footer.prepend(btn);
+    const hint = ensureRoHint();
+    if (hint) footer.appendChild(hint);
     loadTasks();
     document.addEventListener("click", onClick, true);
     document.addEventListener("keydown", onKey, true);
@@ -307,4 +361,17 @@
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", build);
   } else build();
+
+  // 测试钩子（WO-LEGION-AUTH-20261031）：浏览器无 module → 零副作用；
+  // node 侧供 portal/tests 断言"直连只读不 fetch 8796 / 同源仍可执行"。
+  try {
+    if (typeof module === "object" && module.exports) {
+      module.exports = {
+        isDirectMode: isDirectMode,
+        readOnlyMessage: READONLY_MSG,
+        base: base,
+        runA0: runA0,
+      };
+    }
+  } catch (_) {}
 })();
