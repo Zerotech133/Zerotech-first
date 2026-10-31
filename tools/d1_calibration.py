@@ -89,8 +89,11 @@ def main(argv=None):
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--gate", action="store_true")
     ap.add_argument("--min-n", type=int, default=CONF_FLOOR_N)
+    ap.add_argument("--outcomes", default=None,
+                    help="outcome sidecar 路径（默认生产 decision_outcomes.jsonl；"
+                         "便于日常工具/测试指向隔离文件）")
     args = ap.parse_args(argv)
-    rep = evaluate(load_rows(), min_n=args.min_n)
+    rep = evaluate(load_rows(args.outcomes), min_n=args.min_n)
     if args.json or not args.gate:
         print(json.dumps(rep, ensure_ascii=False, indent=1))
     if args.gate:
