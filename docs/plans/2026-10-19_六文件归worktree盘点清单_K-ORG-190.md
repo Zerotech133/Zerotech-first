@@ -1,5 +1,5 @@
 # 六文件归 worktree 盘点清单（K-ORG-190 · C 路 c-inventory）
-> STATUS: unspecified（owner: TBD；2026-11-07 前补状态或标 superseded）
+> STATUS: frozen（盘点清单历史；2026-10-31 W2 只读保留）
 
 
 

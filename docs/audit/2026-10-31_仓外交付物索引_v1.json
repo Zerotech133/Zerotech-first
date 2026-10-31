@@ -1,16 +1,16 @@
 {
  "schema": "external-deliverables-index/v1",
- "generated_at": "2026-10-31 09:24:22",
+ "generated_at": "2026-10-31 10:27:02",
  "root": "C:\\项目\\deliverables",
- "total": 1444,
+ "total": 1461,
  "by_ext": {
-  ".html": 44,
-  ".md": 1082,
-  ".json": 87,
+  ".html": 45,
+  ".md": 1094,
+  ".json": 88,
   ".svg": 1,
   ".sql": 1,
   ".bak_20261026_234302": 2,
-  ".png": 95,
+  ".png": 98,
   ".log": 26,
   ".py": 46,
   ".jsonl": 4,
@@ -5738,8 +5738,8 @@
    "path": "C:\\项目\\deliverables\\2026-10-27_研发部C阶段待办台账_v1.md",
    "rel": "2026-10-27_研发部C阶段待办台账_v1.md",
    "ext": ".md",
-   "bytes": 42712,
-   "mtime": "2026-10-31 08:19",
+   "bytes": 43769,
+   "mtime": "2026-10-31 09:32",
    "title": "研发部 C 阶段 · 待办台账 v1"
   },
   {
@@ -7703,6 +7703,54 @@
    "title": ""
   },
   {
+   "path": "C:\\项目\\deliverables\\2026-10-30_600337_SH_ST美克\\charts\\chart_fin.png",
+   "rel": "2026-10-30_600337_SH_ST美克\\charts\\chart_fin.png",
+   "ext": ".png",
+   "bytes": 54936,
+   "mtime": "2026-10-31 10:04",
+   "title": ""
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-10-30_600337_SH_ST美克\\charts\\chart_peers.png",
+   "rel": "2026-10-30_600337_SH_ST美克\\charts\\chart_peers.png",
+   "ext": ".png",
+   "bytes": 45136,
+   "mtime": "2026-10-31 10:04",
+   "title": ""
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-10-30_600337_SH_ST美克\\charts\\chart_price.png",
+   "rel": "2026-10-30_600337_SH_ST美克\\charts\\chart_price.png",
+   "ext": ".png",
+   "bytes": 90408,
+   "mtime": "2026-10-31 10:04",
+   "title": ""
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-10-30_600337_SH_ST美克\\h5.html",
+   "rel": "2026-10-30_600337_SH_ST美克\\h5.html",
+   "ext": ".html",
+   "bytes": 177560,
+   "mtime": "2026-10-31 10:04",
+   "title": ""
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-10-30_600337_SH_ST美克\\manifest.json",
+   "rel": "2026-10-30_600337_SH_ST美克\\manifest.json",
+   "ext": ".json",
+   "bytes": 814,
+   "mtime": "2026-10-31 10:04",
+   "title": ""
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-10-30_600337_SH_ST美克\\report.md",
+   "rel": "2026-10-30_600337_SH_ST美克\\report.md",
+   "ext": ".md",
+   "bytes": 7470,
+   "mtime": "2026-10-31 10:04",
+   "title": "ST美克（600337.SH）个股全维分析"
+  },
+  {
    "path": "C:\\项目\\deliverables\\2026-10-30_ACAD1_MVP上线范围锁定_v1.md",
    "rel": "2026-10-30_ACAD1_MVP上线范围锁定_v1.md",
    "ext": ".md",
@@ -9551,6 +9599,30 @@
    "title": "黄忠遗留清理回执（2026-10-30）"
   },
   {
+   "path": "C:\\项目\\deliverables\\2026-10-31_0930三方回执收集回执_v1.md",
+   "rel": "2026-10-31_0930三方回执收集回执_v1.md",
+   "ext": ".md",
+   "bytes": 1154,
+   "mtime": "2026-10-31 09:25",
+   "title": "09:30 M4 三方回执收集回执（2026-10-31 09:25 检查）"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-10-31_600337三季报更新_跟踪清单补充.md",
+   "rel": "2026-10-31_600337三季报更新_跟踪清单补充.md",
+   "ext": ".md",
+   "bytes": 1209,
+   "mtime": "2026-10-31 10:05",
+   "title": "三季报更新（2026-10-31）"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-10-31_600337三季报速评.md",
+   "rel": "2026-10-31_600337三季报速评.md",
+   "ext": ".md",
+   "bytes": 3382,
+   "mtime": "2026-10-31 10:05",
+   "title": "600337 ST美克 · 2026 三季报速评（2026-10-31）"
+  },
+  {
    "path": "C:\\项目\\deliverables\\2026-10-31_8788_staging去留决策_v1.md",
    "rel": "2026-10-31_8788_staging去留决策_v1.md",
    "ext": ".md",
@@ -9663,6 +9735,22 @@
    "title": ""
   },
   {
+   "path": "C:\\项目\\deliverables\\2026-10-31_M4_0930催办清单_v1.md",
+   "rel": "2026-10-31_M4_0930催办清单_v1.md",
+   "ext": ".md",
+   "bytes": 2607,
+   "mtime": "2026-10-31 09:43",
+   "title": "M4 09:30 催办清单 v1（2026-10-31 09:45）"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-10-31_M4_1000再核对与滑期记录_v1.md",
+   "rel": "2026-10-31_M4_1000再核对与滑期记录_v1.md",
+   "ext": ".md",
+   "bytes": 2159,
+   "mtime": "2026-10-31 10:21",
+   "title": "M4 10:00 再核对与滑期记录 v1（2026-10-31 10:22）"
+  },
+  {
    "path": "C:\\项目\\deliverables\\2026-10-31_M4_S2卡发送回执_v1.md",
    "rel": "2026-10-31_M4_S2卡发送回执_v1.md",
    "ext": ".md",
@@ -9687,12 +9775,28 @@
    "title": "M4 提醒确认 + A0→OH→evidence 真实演练回执（2026-10-31 04:08）"
   },
   {
+   "path": "C:\\项目\\deliverables\\2026-10-31_M4独立复验与收口评估_v1.md",
+   "rel": "2026-10-31_M4独立复验与收口评估_v1.md",
+   "ext": ".md",
+   "bytes": 2222,
+   "mtime": "2026-10-31 09:31",
+   "title": "M4 独立复验与收口评估（2026-10-31 09:40）"
+  },
+  {
    "path": "C:\\项目\\deliverables\\2026-10-31_P0-4_多文件事务回执.md",
    "rel": "2026-10-31_P0-4_多文件事务回执.md",
    "ext": ".md",
    "bytes": 2874,
    "mtime": "2026-10-31 08:32",
    "title": "P0-4 多文件 patchset 事务回执（代码已合并；8103 激活受阻）"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-10-31_P0-4_激活验收回执_v1.md",
+   "rel": "2026-10-31_P0-4_激活验收回执_v1.md",
+   "ext": ".md",
+   "bytes": 3212,
+   "mtime": "2026-10-31 09:42",
+   "title": "P0-4 激活验收回执 v1（2026-10-31 09:42）"
   },
   {
    "path": "C:\\项目\\deliverables\\2026-10-31_PhaseA_能力令牌LDE接入回执.md",
@@ -9738,8 +9842,8 @@
    "path": "C:\\项目\\deliverables\\2026-10-31_PLAN_REGISTER_ALL_v1.md",
    "rel": "2026-10-31_PLAN_REGISTER_ALL_v1.md",
    "ext": ".md",
-   "bytes": 45491,
-   "mtime": "2026-10-31 09:15",
+   "bytes": 45662,
+   "mtime": "2026-10-31 09:24",
    "title": "计划台账（全量，含子目录）2026-10-31"
   },
   {
@@ -9845,6 +9949,14 @@
    "bytes": 9850,
    "mtime": "2026-10-31 05:40",
    "title": "代码审计与项目复盘 v1"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-10-31_任务板对账_v1.md",
+   "rel": "2026-10-31_任务板对账_v1.md",
+   "ext": ".md",
+   "bytes": 2424,
+   "mtime": "2026-10-31 09:45",
+   "title": "每日任务板对账（2026-10-31 09:45）"
   },
   {
    "path": "C:\\项目\\deliverables\\2026-10-31_任务账本清理_v1.md",
@@ -9975,6 +10087,14 @@
    "title": "零界数字军团全景复盘与研发进度对账 v1"
   },
   {
+   "path": "C:\\项目\\deliverables\\2026-10-31_零界研发计划_v2_收口与闭环.md",
+   "rel": "2026-10-31_零界研发计划_v2_收口与闭环.md",
+   "ext": ".md",
+   "bytes": 9840,
+   "mtime": "2026-10-31 09:23",
+   "title": "零界研发计划 v2：收口与闭环（2026-10-31 → 2026-11-28）"
+  },
+  {
    "path": "C:\\项目\\deliverables\\2026-10-31_项目代码审计与复盘总结_v1.md",
    "rel": "2026-10-31_项目代码审计与复盘总结_v1.md",
    "ext": ".md",
@@ -9999,11 +10119,27 @@
    "title": "黄忠 11-04 复核彩排报告 v0（2026-10-31 01:06）"
   },
   {
+   "path": "C:\\项目\\deliverables\\2026-10-31_黄忠HermesPhase2_事件面与触发面上线回执_v1.md",
+   "rel": "2026-10-31_黄忠HermesPhase2_事件面与触发面上线回执_v1.md",
+   "ext": ".md",
+   "bytes": 5685,
+   "mtime": "2026-10-31 09:40",
+   "title": "黄忠×Hermes Phase 2（事件面+触发面）上线回执 v1（2026-10-31）"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-10-31_黄忠Hermes事件UI与飞书推送_L2五要素待批包_v1.md",
+   "rel": "2026-10-31_黄忠Hermes事件UI与飞书推送_L2五要素待批包_v1.md",
+   "ext": ".md",
+   "bytes": 7214,
+   "mtime": "2026-10-31 10:24",
+   "title": "黄忠×Hermes · 事件 UI 卡片 & 飞书 REJECT 推送 · L2 五要素待批包 v1（2026-10-31）"
+  },
+  {
    "path": "C:\\项目\\deliverables\\2026-10-31_黄忠Hermes事件面与触发面_L2五要素待批包_v1.md",
    "rel": "2026-10-31_黄忠Hermes事件面与触发面_L2五要素待批包_v1.md",
    "ext": ".md",
-   "bytes": 7738,
-   "mtime": "2026-10-31 09:19",
+   "bytes": 8576,
+   "mtime": "2026-10-31 09:41",
    "title": "黄忠×Hermes 事件面与触发面 · L2 五要素待批包 v1（2026-10-31）"
   },
   {
@@ -10082,8 +10218,8 @@
    "path": "C:\\项目\\deliverables\\ANALYSIS_INDEX.md",
    "rel": "ANALYSIS_INDEX.md",
    "ext": ".md",
-   "bytes": 6995,
-   "mtime": "2026-10-30 17:17",
+   "bytes": 7099,
+   "mtime": "2026-10-31 10:04",
    "title": "个股全维分析索引（analysis 自动生成）"
   },
   {

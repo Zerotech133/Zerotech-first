@@ -1,5 +1,5 @@
 # W-Q1 独立对抗验收报告（wq1-qa-1019）
-> STATUS: unspecified（owner: TBD；2026-11-07 前补状态或标 superseded）
+> STATUS: done（验收报告与合并归档完成；2026-10-31 W2 存档）
 
 
 

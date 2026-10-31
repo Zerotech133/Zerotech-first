@@ -1,5 +1,5 @@
 # 回滚点 02：任务板审计 F401 修复回滚（WO-BOARD-AUDIT-FIX-20261030）
-> STATUS: unspecified（owner: TBD；2026-11-07 前补状态或标 superseded）
+> STATUS: frozen（黄忠验收夹具/样例文件，非计划；2026-10-31 W2 收口）
 
 
 

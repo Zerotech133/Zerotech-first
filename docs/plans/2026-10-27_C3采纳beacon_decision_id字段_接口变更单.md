@@ -1,5 +1,5 @@
 # C3 采纳 beacon：decision_id / card_id 字段接口变更单（待前端）
-> STATUS: unspecified（owner: TBD；2026-11-07 前补状态或标 superseded）
+> STATUS: done（字段变更已实现（WO-LEGION-C3DID-20261027 done）；仅待 8091 重启生效，非本单未结）
 
 
 

@@ -1,5 +1,5 @@
 # Worker Grounding Guard
-> STATUS: unspecified（owner: TBD；2026-11-07 前补状态或标 superseded）
+> STATUS: frozen（英文安全机制描述稿；无工单/实现/引用，2026-10-31 W2 复核后转只读）
 
 
 

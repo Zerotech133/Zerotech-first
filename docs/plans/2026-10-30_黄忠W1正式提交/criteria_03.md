@@ -1,5 +1,5 @@
 # 验收判据 03：研究院角色属性一致性（WO-ACAD-ROLE-ATTR-20261029）
-> STATUS: unspecified（owner: TBD；2026-11-07 前补状态或标 superseded）
+> STATUS: frozen（黄忠验收夹具/样例文件，非计划；2026-10-31 W2 收口）
 
 
 

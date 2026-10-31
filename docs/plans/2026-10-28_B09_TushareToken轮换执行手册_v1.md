@@ -1,5 +1,5 @@
 # B-09 Tushare token 轮换 · 执行手册 v1（待 token 到即执行）
-> STATUS: unspecified（owner: TBD；2026-11-07 前补状态或标 superseded）
+> STATUS: pending_approval（执行手册就绪，待 token 重置窗口；owner: DATA1/DSH；2026-11-07 前确认）
 
 
 

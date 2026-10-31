@@ -1,5 +1,5 @@
 # 回滚点 01：ZHAOYUN 会议绑定覆盖回滚（MEETING_BINDING_OVERRIDES）
-> STATUS: unspecified（owner: TBD；2026-11-07 前补状态或标 superseded）
+> STATUS: frozen（黄忠验收夹具/样例文件，非计划；2026-10-31 W2 收口）
 
 
 

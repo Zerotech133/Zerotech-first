@@ -1,5 +1,5 @@
 # agent_platform 注册表接线协调包：盯盘 Agent 挂靠量化板块（跨工位交接）
-> STATUS: unspecified（owner: TBD；2026-11-07 前补状态或标 superseded）
+> STATUS: frozen（协调包历史；2026-10-31 W2 只读保留）
 
 
 

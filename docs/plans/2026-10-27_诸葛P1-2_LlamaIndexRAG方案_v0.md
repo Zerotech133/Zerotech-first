@@ -1,5 +1,5 @@
 # 诸葛亮 P1-2：LlamaIndex RAG 方案与 v0 工单（2026-10-27）
-> STATUS: unspecified（owner: TBD；2026-11-07 前补状态或标 superseded）
+> STATUS: pending_approval（v0 待实施；工单 WO-LEGION-ZHUGE-P1RAG-20261027 已 done=立单；owner: ZHAOYUN；2026-11-07 前确认）
 
 
 

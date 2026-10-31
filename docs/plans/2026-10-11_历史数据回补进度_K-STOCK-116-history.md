@@ -1,5 +1,5 @@
 # K-STOCK-116-history 历史数据回补进度
-> STATUS: unspecified（owner: TBD；2026-11-07 前补状态或标 superseded）
+> STATUS: done（完工归档；据 INDEX_计划全集索引 2026-10-12 口径；2026-10-31 W2 校核）
 
 
 
