@@ -488,7 +488,26 @@ def cmd_index(args) -> int:
         cmd = [r"C:\Program Files\Python311\python.exe", "-X", "utf8", str(REPO / "AI" / "111111" / "rag_index_cli.py"),
                "rebuild", "--docs-dir", str(kb_docs), "--index-path", str(kb_docs / ".rag_index.json")]
         r = subprocess.run(cmd, cwd=str(REPO / "AI" / "111111"), capture_output=True, text=True, encoding="utf-8", errors="replace")
-        log(f"rag rebuild rc={r.returncode} {(r.stdout or r.stderr).strip()[-200:]}")
+        out = (r.stdout or "") + (r.stderr or "")
+        # 硬化：qwen 等聊天模型占用会让 bge-m3 嵌入排队超时（502 上游模型不可用）→ 卸载聊天模型后重试一次
+        if r.returncode != 0 and ("上游模型不可用" in out or "Ollama" in out):
+            try:
+                import urllib.request
+                for model in ("qwen3.5:9b", "qwen3.5:4b"):
+                    body = json.dumps({"model": model, "prompt": "", "keep_alive": 0}).encode()
+                    req = urllib.request.Request("http://127.0.0.1:11434/api/generate", data=body,
+                                                 headers={"Content-Type": "application/json"}, method="POST")
+                    try:
+                        urllib.request.urlopen(req, timeout=120).read()
+                        log(f"rag rebuild preflight: 已卸载 {model}")
+                    except Exception:  # noqa: BLE001
+                        pass
+                r = subprocess.run(cmd, cwd=str(REPO / "AI" / "111111"), capture_output=True, text=True,
+                                   encoding="utf-8", errors="replace")
+                out = (r.stdout or "") + (r.stderr or "")
+            except Exception as e:  # noqa: BLE001
+                log(f"rag rebuild retry ERR {type(e).__name__}")
+        log(f"rag rebuild rc={r.returncode} {out.strip()[-200:]}")
     return 0
 
 
