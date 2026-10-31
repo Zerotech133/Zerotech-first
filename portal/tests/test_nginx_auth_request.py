@@ -73,15 +73,19 @@ def test_login_not_protected():
 
 
 def test_non_intel_public_routes_not_locked():
-    """2026-10-31 情报全私有后：/intel 已纳入 auth_request（见 test_intel_privacy.py），
-    此处只锁「非情报公开基线」不被误加锁：/quant 与全局 /api/（含 /api/health）。"""
+    """2026-11-01 H4-B：情报全私有后，/quant 与 /api/health 仍公开；全局 /api/ 已从
+    公开基线收敛为**显式白名单 + 未登记默认拒绝**（不再有公开 passthrough）。"""
     s = _text()
     q = s.split("location = /quant", 1)
     assert len(q) == 2
     assert "auth_request" not in q[1][:120]
     assert "location /api/ {" in s
     api_block = s.split("location /api/ {", 1)[1].split("}", 1)[0]
-    assert "auth_request" not in api_block, "全局 /api/ 不得整体加锁（/api/health 公开）"
+    assert "auth_request" not in api_block, "/api/ 不得整体加锁"
+    assert "return 401" in api_block and "proxy_pass" not in api_block, \
+        "全局 /api/ 必须是白名单未登记默认拒绝，而不是公开 passthrough"
+    assert re.search(r"location ~ \^/api/\(.*\bhealth\b", s), \
+        "/api/health 必须在 H4-B 公开白名单 regex 内（否则默认 401 锁死探活）"
 
 
 # ── WO-LEGION-AUTH-20261031：Hermes trusted-header 认证拓扑收口 ──────────────
