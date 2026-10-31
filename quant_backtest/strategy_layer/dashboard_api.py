@@ -48,6 +48,14 @@ register_routes() 以装饰器方式包装 Handler 的 do_GET/do_POST，
                                     （application/json; charset=utf-8 + no-store；
                                     缺文件 503 / 坏 JSON 500 JSON 错误，不抛栈；
                                     Phase 2-A，供 pipeline_map.html 同源 fetch）
+  GET  /pipeline_templates.json → 同目录 pipeline_templates.json（Phase 2-E 的 3 个
+                                    Composition IR 模板）只读原样返回
+                                    （application/json; charset=utf-8 + no-store；
+                                    缺文件 503 / 坏 JSON 500 JSON 错误）
+  GET  /portal/static/<name>    → repo/portal/static 视觉三件套白名单只读返回
+                                    （tokens.css / nav.js / shortscreen.js；
+                                    text/css / application/javascript; charset=utf-8
+                                    + no-store；白名单外/路径穿越/缺失 → 404 JSON）
 
 数据库访问：psycopg2（XMAP_PG_* env/.env.local，主机 5442）优先，
 docker exec quant-pg psql（容器内 5432）兜底；子进程/连接超时一律 10s。
@@ -1578,6 +1586,143 @@ def pipeline_graph_payload() -> tuple:
     return doc, 200
 
 
+# ── 只读模板库 JSON：GET /pipeline_templates.json（Phase 4-A）──────────
+# pipeline_templates.json 由 Phase 2-E 只读产出（_meta + 3 个 Composition IR 模板：
+# trend_pullback / trend_reversal / nine_dim_chan），与 pipeline_graph.json 同目录；
+# 本路由只读取原样返回供 Canvas/管理台模板面板同源 fetch，不写盘、不改模板/registry。
+PIPELINE_TEMPLATES_ROUTE = "/pipeline_templates.json"
+PIPELINE_TEMPLATES_PATH = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "pipeline_templates.json"
+)
+
+
+def pipeline_templates_payload() -> tuple:
+    """只读读取同目录 pipeline_templates.json → ``(payload, code)``。
+
+    - 成功 ``(templates_doc, 200)``：payload 即模板库文档本体（_meta + templates）；
+    - 文件缺失/不可读 ``(error, 503)``；坏 JSON/顶层非 dict/templates 非 list
+      ``(error, 500)``。错误一律 JSON 结构（``ok=false`` + ``error``），不抛栈，
+      本函数只读、不写盘。
+    """
+    path = PIPELINE_TEMPLATES_PATH
+    try:
+        with open(path, "rb") as fh:
+            raw = fh.read()
+    except FileNotFoundError:
+        return (
+            {"ok": False, "error": "pipeline_templates.json 不存在", "path": path},
+            503,
+        )
+    except OSError as exc:
+        return (
+            {
+                "ok": False,
+                "error": "pipeline_templates.json 读取失败: %s" % str(exc)[:200],
+                "path": path,
+            },
+            503,
+        )
+    try:
+        doc = json.loads(raw.decode("utf-8"))
+    except (ValueError, UnicodeDecodeError) as exc:
+        return (
+            {
+                "ok": False,
+                "error": "pipeline_templates.json 非法 JSON: %s" % str(exc)[:200],
+                "path": path,
+            },
+            500,
+        )
+    if not isinstance(doc, dict):
+        return (
+            {
+                "ok": False,
+                "error": "pipeline_templates.json 顶层必须为 dict",
+                "path": path,
+            },
+            500,
+        )
+    if "templates" in doc and not isinstance(doc.get("templates"), list):
+        return (
+            {
+                "ok": False,
+                "error": "pipeline_templates.json.templates 必须为 list",
+                "path": path,
+            },
+            500,
+        )
+    return doc, 200
+
+
+# ── 只读视觉资产：GET /portal/static/<白名单>（Phase 4-A）──────────────
+# Canvas HTML 以 ../../portal/static/tokens.css 引用视觉三件套，在 8791 下原为 404
+# （页面有 fallback）；本路由按**文件名白名单**只读返回 repo/portal/static 既有资产：
+# tokens.css / nav.js / shortscreen.js（AGENTS §2 前端准入三件套唯一视觉来源）。
+# 白名单外文件名、含路径分隔符或 ../ 的请求一律 404 JSON（不拼接自由路径）；
+# realpath 双保险确保解析后仍落在 portal/static 内；只读不写盘、不改 portal。
+PORTAL_STATIC_ROUTE_PREFIX = "/portal/static/"
+PORTAL_STATIC_DIR = os.path.join(REPO_ROOT, "portal", "static")
+PORTAL_STATIC_ALLOW = {
+    "tokens.css": "text/css; charset=utf-8",
+    "nav.js": "application/javascript; charset=utf-8",
+    "shortscreen.js": "application/javascript; charset=utf-8",
+}
+
+
+def portal_static_payload(filename: str) -> tuple:
+    """白名单只读读取 ``portal/static/<filename>`` → ``(body, ctype, error)``。
+
+    - 成功 ``(bytes, ctype, None)``；
+    - 非白名单 / 含路径分隔符或 ``..`` / realpath 解析后越出 static 目录 /
+      白名单文件缺失或不可读 → ``(None, None, (payload, code))`` 的 404 JSON 错误。
+    防路径穿越：只接受 ``PORTAL_STATIC_ALLOW`` 的**纯文件名**，不做自由路径拼接。
+    """
+    name = str(filename or "")
+    ctype = PORTAL_STATIC_ALLOW.get(name)
+    if (
+        ctype is None
+        or name != os.path.basename(name)
+        or "/" in name
+        or "\\" in name
+        or ".." in name
+    ):
+        return (
+            None,
+            None,
+            ({"ok": False, "error": "不在静态白名单: %s" % name[:80]}, 404),
+        )
+    path = os.path.join(PORTAL_STATIC_DIR, name)
+    try:
+        static_dir = os.path.realpath(PORTAL_STATIC_DIR)
+        real_path = os.path.realpath(path)
+    except OSError:  # pragma: no cover - Windows 极少数 realpath 异常
+        return (None, None, ({"ok": False, "error": "静态路径不可解析"}, 404))
+    if os.path.dirname(real_path) != static_dir:
+        return (None, None, ({"ok": False, "error": "非法静态路径"}, 404))
+    try:
+        with open(path, "rb") as fh:
+            return fh.read(), ctype, None
+    except FileNotFoundError:
+        return (
+            None,
+            None,
+            ({"ok": False, "error": "%s 不存在" % name, "path": path}, 404),
+        )
+    except OSError as exc:
+        return (
+            None,
+            None,
+            (
+                {
+                    "ok": False,
+                    "error": "%s 读取失败: %s" % (name, str(exc)[:200]),
+                    "path": path,
+                },
+                404,
+            ),
+        )
+
+
 # ── Canvas / Paper Exchange 只读路由（Phase 3 路由收口）────────────────
 CANVAS_ROUTES = ("/canvas", "/strategy/canvas")
 CANVAS_JS_ROUTES = ("/strategy_canvas.js", "/strategy/strategy_canvas.js")
@@ -1650,6 +1795,23 @@ def register_routes(server_or_app: Any) -> Any:
             # 缺文件/坏 JSON 显式 503/500 JSON 错误，不抛栈、不重建 Graph
             try:
                 payload, code = pipeline_graph_payload()
+            except Exception as exc:  # noqa: BLE001
+                payload, code = ({"ok": False, "error": str(exc)[:200]}, 500)
+            return _send_json(self, payload, code)
+        if u.path.startswith(PORTAL_STATIC_ROUTE_PREFIX):
+            # 只读视觉三件套白名单（Phase 4-A）：纯文件名白名单 + realpath 防穿越；
+            # 白名单外/穿越/缺失一律 404 JSON，不抛栈、不写盘、不改 portal 静态目录
+            body, ctype, error = portal_static_payload(
+                u.path[len(PORTAL_STATIC_ROUTE_PREFIX):]
+            )
+            if error is not None:
+                payload, code = error
+                return _send_json(self, payload, code)
+            return _send_bytes(self, body, ctype)
+        if u.path == PIPELINE_TEMPLATES_ROUTE:
+            # 只读模板库 JSON（Phase 4-A）：同目录原样返回；缺文件 503 / 坏 JSON 500
+            try:
+                payload, code = pipeline_templates_payload()
             except Exception as exc:  # noqa: BLE001
                 payload, code = ({"ok": False, "error": str(exc)[:200]}, 500)
             return _send_json(self, payload, code)
@@ -1869,6 +2031,13 @@ __all__ = [
     "pipeline_graph_payload",
     "PIPELINE_GRAPH_PATH",
     "PIPELINE_GRAPH_ROUTE",
+    "pipeline_templates_payload",
+    "PIPELINE_TEMPLATES_PATH",
+    "PIPELINE_TEMPLATES_ROUTE",
+    "portal_static_payload",
+    "PORTAL_STATIC_ALLOW",
+    "PORTAL_STATIC_DIR",
+    "PORTAL_STATIC_ROUTE_PREFIX",
     "CANVAS_ROUTES",
     "CANVAS_JS_ROUTES",
 ]
