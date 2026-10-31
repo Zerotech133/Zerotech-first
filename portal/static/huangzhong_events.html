@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>黄忠验收事件 · 只读投影｜零界</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<script src="/static/nav.js" defer></script>
+<style>
+:root{color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:radial-gradient(circle at 78% -25%,var(--bg-surface),transparent 48%),var(--bg-page);color:var(--text);font:14px/1.6 var(--font-ui)}
+a{color:var(--link)}
+.main{max-width:var(--page-w,1160px);margin:auto;padding:22px clamp(14px,3vw,28px) 48px}
+.eyebrow{font:700 11px var(--font-mono);letter-spacing:.18em;color:var(--color-ok);margin:6px 0 8px}
+h1{font-size:clamp(24px,3.2vw,34px);letter-spacing:-.02em;line-height:1.25;margin:0 0 8px}
+.lead{margin:0;color:var(--text-dim);font-size:13px;line-height:1.8;max-width:780px}
+.readonly-banner{margin:14px 0 0;border:1px solid var(--border);border-left:3px solid var(--color-warn);background:var(--bg-raised);border-radius:var(--r-s,8px);padding:10px 14px;font-size:12.5px;color:var(--text-dim)}
+.readonly-banner b{color:var(--color-warn);font-weight:600}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:18px 0 4px}
+.kpi{background:var(--bg-surface);border:1px solid var(--border);border-radius:10px;padding:12px 15px}
+.kpi .lbl{font:11px var(--font-mono);color:var(--text-dim);letter-spacing:.06em}
+.kpi .val{font:700 22px var(--font-mono);margin-top:4px}
+.kpi .val.ok{color:var(--color-ok)}
+.kpi .val.warn{color:var(--color-warn)}
+.kpi .val.bad{color:var(--color-danger,var(--color-warn))}
+h2{font-size:14px;margin:24px 0 8px}
+.card{background:var(--bg-raised);border:1px solid var(--border);border-radius:12px;padding:6px 14px 10px;overflow:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{color:var(--text-dim);text-align:left;padding:8px 9px;border-bottom:1px solid var(--border);font-weight:600;white-space:nowrap}
+td{padding:8px 9px;border-bottom:1px solid var(--border-weak,var(--border));vertical-align:top}
+.num{font-family:var(--font-mono),Consolas,monospace}
+.bdg{font-size:10.5px;padding:2px 9px;border-radius:999px;border:1px solid var(--border);white-space:nowrap}
+.bdg.PASS{color:var(--color-ok)}
+.bdg.OBSERVE{color:var(--color-warn)}
+.bdg.REJECT{color:var(--color-danger,#ff7b72);border-color:var(--color-danger,#ff7b72)}
+.dim{color:var(--text-dim)}
+.meta-row{display:flex;flex-wrap:wrap;gap:8px 16px;margin:10px 0 0;font:12px var(--font-mono);color:var(--text-dim)}
+#err{margin:12px 0 0;color:var(--color-danger,#ff7b72);font-size:12.5px}
+footer{margin-top:22px;font-size:12px;color:var(--text-dim)}
+footer a{margin-right:14px}
+@media (max-width:640px){th:nth-child(5),td:nth-child(5){display:none}}
+</style>
+</head>
+<body>
+<main class="main">
+  <div class="eyebrow">HUANGZHONG · OBSERVATION EVENTS</div>
+  <h1>黄忠验收事件 · 只读投影</h1>
+  <p class="lead">数据源：<code>work/huangzhong/events.jsonl</code> → <code>GET /api/huangzhong/events</code>（8091 只读端点）。
+  每次黄忠验收（观察模式，不阻断 merge）追加一行；本页只读展示，不提供任何写操作。</p>
+  <div class="readonly-banner"><b>只读</b> · 观察模式（blocking=false）；PASS 不告警，OBSERVE/REJECT 高亮；接入 merge 前置需老田 L3 单独批准。</div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="lbl">TOTAL EVENTS</div><div class="val" id="k-total">—</div></div>
+    <div class="kpi"><div class="lbl">PASS</div><div class="val ok" id="k-pass">—</div></div>
+    <div class="kpi"><div class="lbl">OBSERVE</div><div class="val warn" id="k-observe">—</div></div>
+    <div class="kpi"><div class="lbl">REJECT</div><div class="val bad" id="k-reject">—</div></div>
+    <div class="kpi"><div class="lbl">最近事件</div><div class="val" id="k-last" style="font-size:14px;padding-top:6px;">—</div></div>
+  </div>
+  <div class="meta-row"><span id="m-generated">—</span><span class="dim">·</span><span>30s 自动刷新</span><span class="dim">·</span><button id="refresh" style="border:1px solid var(--border);background:var(--bg-raised);border-radius:999px;padding:3px 12px;font-size:12px;color:var(--text);cursor:pointer;">立即刷新</button></div>
+  <div id="err"></div>
+
+  <h2>事件列表（最近 50 条）</h2>
+  <div class="card">
+    <table>
+      <thead><tr><th>时间</th><th>结论</th><th>commit</th><th>基线年龄(h)</th><th>红队率</th><th>reasons</th></tr></thead>
+      <tbody id="rows"><tr><td colspan="6" class="dim">加载中…</td></tr></tbody>
+    </table>
+  </div>
+
+  <footer>
+    <a href="/static/ops_board.html">运维对账</a>
+    <a href="/devops">开发指挥台</a>
+    <a href="/api/execution/health">执行健康(JSON)</a>
+    <a href="/api/huangzhong/events?limit=10">事件(JSON)</a>
+    <a href="/">← 门户首页</a>
+  </footer>
+</main>
+<script>
+(function(){
+  var LIMIT = 50;
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function setText(id,v){var e=document.getElementById(id); if(e) e.textContent=(v==null?'—':v);}
+  function fmt(ts){var s=String(ts||''); return s.length>=19 ? s.slice(0,10)+' '+s.slice(11,19) : s;}
+  function load(){
+    fetch('/api/huangzhong/events?limit='+LIMIT,{cache:'no-store'}).then(function(r){
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return r.json();
+    }).then(function(d){
+      document.getElementById('err').textContent='';
+      var evs=(d.events||[]);
+      var c={PASS:0,OBSERVE:0,REJECT:0};
+      evs.forEach(function(x){ if(c[x.verdict]!=null) c[x.verdict]++; });
+      setText('k-total',d.count!=null?d.count:evs.length);
+      setText('k-pass',c.PASS); setText('k-observe',c.OBSERVE); setText('k-reject',c.REJECT);
+      setText('k-last',evs.length?fmt(evs[evs.length-1].ts):'—');
+      setText('m-generated','生成于 '+fmt(d.generated_at)+(d.bad_lines?' · 坏行 '+d.bad_lines:''));
+      var rows=evs.slice().reverse().map(function(x){
+        var v=x.verdict||'—';
+        var reasons=Array.isArray(x.reasons)?x.reasons.join('；'):(x.reasons||'');
+        return '<tr><td class="num">'+esc(fmt(x.ts))+'</td>'+
+          '<td><span class="bdg '+esc(v)+'">'+esc(v)+'</span></td>'+
+          '<td class="num">'+esc(x.commit||'—')+'</td>'+
+          '<td class="num">'+esc(x.baseline_age_h==null?'—':x.baseline_age_h)+'</td>'+
+          '<td class="num">'+esc(x.redteam_rate==null?'—':x.redteam_rate)+'</td>'+
+          '<td class="dim">'+esc(reasons||'—')+'</td></tr>';
+      }).join('');
+      document.getElementById('rows').innerHTML=rows||'<tr><td colspan="6" class="dim">暂无事件——等待下一次黄忠验收（30 分钟周期）</td></tr>';
+    }).catch(function(e){
+      document.getElementById('err').textContent='加载失败：'+e.message+'（端点 /api/huangzhong/events）';
+    });
+  }
+  document.getElementById('refresh').addEventListener('click',load);
+  load(); setInterval(load,30000);
+})();
+</script>
+</body>
+</html>
