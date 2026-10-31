@@ -434,8 +434,10 @@ try {
         }
     } catch { $ok = $false }
     if (-not $ok) {
-        $unusable = ($inferText -match 'Invalid API key|401|unauthorized|Unauthorized')
-        if ($unusable) { throw 'UNUSABLE: self-check inference failed (provider key/401)' }
+        # 2026-10-31 P124：任务会话下 gateway(18789) 不可达时 CLI 无法解析 secrets，
+        # 与 provider 401 同级 → 都视为「目标不可用」，回滚+长冷却+绿退出。
+        $unusable = ($inferText -match 'Invalid API key|401|unauthorized|Unauthorized|secrets\.resolve unavailable|Gateway not reachable|ECONNREFUSED')
+        if ($unusable) { throw 'UNUSABLE: self-check inference failed (provider key/401 or gateway/secrets unavailable)' }
         throw 'self-check inference empty/failed'
     }
 
