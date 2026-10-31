@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -70,7 +71,9 @@ def test_initialize_and_tools_list():
     names = [t["name"] for t in lst["result"]["tools"]]
     assert names == ["huangzhong_status", "huangzhong_review_latest",
                      "huangzhong_evidence", "huangzhong_acceptance_latest",
-                     "huangzhong_weekly_kpi", "huangzhong_tasks_health"]
+                     "huangzhong_weekly_kpi", "huangzhong_tasks_health",
+                     "huangzhong_health", "huangzhong_preflight",
+                     "huangzhong_brief"]
 
 
 def test_status_aggregate(tmp_path, monkeypatch):
@@ -137,14 +140,14 @@ def _list_tools():
 def test_write_tools_hidden_by_default(monkeypatch):
     monkeypatch.setattr(R, "WRITE_ENABLED", False)
     names = _list_tools()
-    assert len(names) == 6
+    assert len(names) == 9
     assert "huangzhong_run_review" not in names
 
 
 def test_write_tools_visible_when_enabled(monkeypatch):
     monkeypatch.setattr(R, "WRITE_ENABLED", True)
     names = _list_tools()
-    assert len(names) == 8
+    assert len(names) == 11
     assert "huangzhong_run_review" in names and "huangzhong_run_acceptance" in names
 
 
@@ -202,3 +205,175 @@ def test_write_tools_disabled_blocks_call(tmp_path, monkeypatch):
     resp = _call("huangzhong_run_review", confirm="RUN-REVIEW")
     assert resp["result"]["isError"] is True
     assert "disabled" in resp["result"]["content"][0]["text"]
+
+
+# ── P2-C：新增 3 只读工具（health / preflight / brief）─────────────────────
+
+HEALTH_PAYLOAD = {
+    "ok": True, "tool": "huangzhong_health", "version": "v1",
+    "status": "ok",
+    "summary": {"ok": 7, "warn": 0, "fail": 0, "skipped": 0, "total": 7},
+    "checks": [
+        {"id": "acceptance_latest", "name": "最新验收单 age", "status": "ok",
+         "detail": "age=28.4 min；阈值 ≤90 min"},
+        {"id": "review_latest", "name": "最新复核报告 age", "status": "ok",
+         "detail": "age=12.0 min"}],
+    "warnings": [],
+    "generated_at": "2026-10-31T19:00:00+08:00",
+    "read_only": True,
+}
+PREFLIGHT_PAYLOAD = {
+    "ok": True, "tool": "huangzhong_1104_preflight.py",
+    "ready": False,
+    "blockers": [{"check": "evidence", "message": "基线证据超龄 72h > 48h"}],
+    "warnings": ["④ 满窗样本不足"],
+    "checks": [{"id": "1", "key": "evidence", "name": "证据新鲜度（48h 认证门）",
+                "status": "✗", "result": "基线：超龄 72h"}],
+    "generated_at": "2026-10-31T19:00:00+08:00",
+    "read_only": True,
+}
+BRIEF_PAYLOAD = {
+    "ok": True, "tool": "huangzhong_brief.py",
+    "conclusion": "六条 5/6 ✓；待办：④；近7天事件 18 条（PASS 18 / REJECT 0 / OBSERVE 0）",
+    "generated_at": "2026-10-31T19:00:00+08:00", "date": "2026-10-31", "days": 7,
+    "kpi": {"runs": 65, "merge_done": 1540, "coverage": 0.0422,
+            "counts": {"PASS": 65, "REJECT": 0, "OBSERVE": 0}},
+    "events": {"status": "✓", "total": 18,
+               "counts": {"PASS": 18, "REJECT": 0, "OBSERVE": 0},
+               "bad_lines": 0, "window_days": 7},
+    "review": {"status": "✓", "generated_at": "2026-10-31T18:30:00+08:00",
+               "age_hours": 0.5,
+               "summary": {"overall_pass": False, "passed": 5, "total": 6}},
+    "acceptance": {"status": "✓", "verdict": "PASS", "commit": "abc123456789",
+                   "generated_at": "2026-10-31T18:45:00+08:00", "age_hours": 0.48},
+    "push_state": {"enabled": True, "state": "ON", "source": "file",
+                   "updated_at": "2026-10-31T14:41:57+08:00", "by": "DSH-Lead"},
+    "incidents": {"status": "✓", "rows": 0, "recent_window": 0, "latest": None},
+    "warnings": [],
+}
+
+
+def _fake_tool_cmd(monkeypatch, payload, rc=0):
+    """注入 _run_tool_cmd：返回给定 payload（dict → JSON 文本；str 原样）。"""
+    calls = []
+
+    def fake(cmd, timeout=180):
+        calls.append({"cmd": list(cmd), "timeout": timeout})
+        text = payload if isinstance(payload, str) else json.dumps(
+            payload, ensure_ascii=False)
+        return _FakeCmdResult(rc, text)
+
+    monkeypatch.setattr(R, "_run_tool_cmd", fake)
+    return calls
+
+
+def test_health_tool_summary(tmp_path, monkeypatch):
+    repo, work = _make_work(tmp_path)
+    _patch(monkeypatch, repo, work)
+    calls = _fake_tool_cmd(monkeypatch, HEALTH_PAYLOAD)
+    out = R.call_tool("huangzhong_health", {})
+    assert out["ok"] is True and out["status"] == "ok"
+    assert out["summary"]["total"] == 7 and out["checks_total"] == 2
+    assert out["checks"][0]["id"] == "acceptance_latest"
+    assert out["read_only"] is True and out["run"]["rc"] == 0
+    cmd = calls[0]["cmd"]
+    assert any("huangzhong_health.py" in part for part in cmd)
+    assert "--json" in cmd
+    assert calls[0]["timeout"] == R.TOOL_RUN_TIMEOUT_S
+
+
+def test_preflight_tool_summary(tmp_path, monkeypatch):
+    repo, work = _make_work(tmp_path)
+    _patch(monkeypatch, repo, work)
+    calls = _fake_tool_cmd(monkeypatch, PREFLIGHT_PAYLOAD)
+    out = R.call_tool("huangzhong_preflight", {})
+    assert out["ok"] is True
+    assert out["ready"] is False          # 未就绪≠执行失败，数据有效
+    assert out["blockers_total"] == 1
+    assert out["blockers"][0]["check"] == "evidence"
+    assert "超龄" in out["blockers"][0]["message"]
+    assert out["warnings_total"] == 1 and "满窗" in out["warnings"][0]["message"]
+    assert out["checks"][0]["id"] == "1"
+    assert any("huangzhong_1104_preflight.py" in part for part in calls[0]["cmd"])
+
+
+def test_brief_tool_summary(tmp_path, monkeypatch):
+    repo, work = _make_work(tmp_path)
+    _patch(monkeypatch, repo, work)
+    calls = _fake_tool_cmd(monkeypatch, BRIEF_PAYLOAD)
+    out = R.call_tool("huangzhong_brief", {})
+    assert out["ok"] is True
+    assert "六条 5/6" in out["conclusion"]
+    assert out["kpi"]["runs"] == 65
+    assert out["events"]["counts"]["PASS"] == 18
+    assert out["review"]["summary"]["passed"] == 5
+    assert out["acceptance"]["verdict"] == "PASS"
+    assert out["push_state"]["state"] == "ON"
+    assert any("huangzhong_brief.py" in part for part in calls[0]["cmd"])
+
+
+def test_new_readonly_tools_listed_no_confirm(monkeypatch):
+    """新增 3 工具在 tools/list 中、无 confirm 必填（只读）。"""
+    monkeypatch.setattr(R, "WRITE_ENABLED", False)
+    resp = R.handle({"jsonrpc": "2.0", "id": 3, "method": "tools/list"})
+    tools = {t["name"]: t for t in resp["result"]["tools"]}
+    for name in ("huangzhong_health", "huangzhong_preflight", "huangzhong_brief"):
+        assert name in tools
+        assert tools[name]["inputSchema"]["properties"] == {}
+        assert "required" not in tools[name]["inputSchema"]
+    assert len(tools) == 9
+
+
+def test_new_readonly_tools_fail_visible(tmp_path, monkeypatch):
+    """子进程超时/非 JSON/自报 ok=false → isError=True（fail-visible，不编造）。"""
+    repo, work = _make_work(tmp_path)
+    _patch(monkeypatch, repo, work)
+    names = ("huangzhong_health", "huangzhong_preflight", "huangzhong_brief")
+
+    def timeout(cmd, timeout=180):
+        raise subprocess.TimeoutExpired(cmd, timeout)
+
+    monkeypatch.setattr(R, "_run_tool_cmd", timeout)
+    for name in names:
+        resp = _call(name)
+        assert resp["result"]["isError"] is True
+        assert "超时" in resp["result"]["content"][0]["text"]
+
+    monkeypatch.setattr(R, "_run_tool_cmd",
+                        lambda cmd, timeout=180: _FakeCmdResult(0, "not json"))
+    for name in names:
+        assert _call(name)["result"]["isError"] is True
+
+    monkeypatch.setattr(R, "_run_tool_cmd",
+                        lambda cmd, timeout=180: _FakeCmdResult(
+                            0, json.dumps({"ok": False, "error": "数据缺失"})))
+    resp = _call("huangzhong_health")
+    assert resp["result"]["isError"] is True
+    assert "自报" in resp["result"]["content"][0]["text"]
+
+
+def test_readonly_output_cap_truncates(tmp_path, monkeypatch):
+    """超 8KB 输出被截断并标记 output_truncated（不返回半截 JSON）。"""
+    repo, work = _make_work(tmp_path)
+    _patch(monkeypatch, repo, work)
+    big = {"ok": True, "status": "ok", "summary": {"ok": 1},
+           "checks": [{"id": "c%d" % i, "name": "检查项%d" % i,
+                       "status": "ok", "detail": "x" * 400} for i in range(30)],
+           "warnings": [], "generated_at": "2026-10-31T19:00:00+08:00"}
+    _fake_tool_cmd(monkeypatch, big)
+    monkeypatch.setattr(R, "TOOL_OUTPUT_CAP_BYTES", 500)  # 收紧上限便于断言
+    out = R.call_tool("huangzhong_health", {})
+    assert out.get("output_truncated") is True
+    assert len(json.dumps(out, ensure_ascii=False).encode("utf-8")) <= 500
+
+
+def test_new_readonly_tools_do_not_change_write_semantics(tmp_path, monkeypatch):
+    """新增只读工具不改变写工具 confirm/限频语义。"""
+    _prepare_write_env(tmp_path, monkeypatch)
+    monkeypatch.setattr(R, "_run_tool_cmd",
+                        lambda cmd, timeout=180: _FakeCmdResult(
+                            0, json.dumps(HEALTH_PAYLOAD)))
+    out = R.call_tool("huangzhong_health", {})  # 只读：无需 confirm
+    assert out["ok"] is True
+    bad = _call("huangzhong_run_review", confirm="WRONG")  # 写工具仍需 confirm
+    assert bad["result"]["isError"] is True
