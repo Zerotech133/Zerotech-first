@@ -1,0 +1,30 @@
+nodes:
+- id: tushare_report_rc_api
+  layer: source
+  path: tushare pro / report_rc
+  desc: 卖方研报评级/盈利预测/目标价（5000 行/次分页上限）
+- id: report_rc_store
+  layer: raw
+  path: quant_backtest/data/tushare/report_rc/rc_YYYYMM.parquet
+  desc: 94 个月文件 / 1,729,480 行 / 81.5MB / 2019-01~2026-10（_sync_meta.json 溯源）
+- id: factor_h34_h36
+  layer: derived
+  path: research/reports/H34-36_report_rc_factors_20261031.{md,json}
+  desc: 评级上调/盈利预测上修/机构广度因子检验（H34-H36，均 rejected）；walk-forward 见 walkforward_20261031
+- id: walkforward
+  layer: derived
+  path: research/reports/walkforward_20261031.{md,json}
+  desc: 逐年滚动重估（H30/H34/H35/H36）
+edges:
+- from: tushare_report_rc_api
+  to: report_rc_store
+  op: tools/data_sources/sync_report_rc.py
+  schema: [ts_code, report_date, org_name, rating, quarter, op_rt, op_pr, tp, np, eps, pe, roe]
+- from: report_rc_store
+  to: factor_h34_h36
+  op: tools/research/h34_report_rc_factors.py
+  schema: [ts_code, month, rating, np_med, n_org, car20, car60]
+- from: report_rc_store
+  to: walkforward
+  op: tools/research/walkforward_eval.py
+  schema: [year, yearly_spread_pct, hit_rate]

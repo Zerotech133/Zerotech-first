@@ -2,10 +2,11 @@
 # 纪律不变：新数据源上线不登记=黑户；条目变更走 git（变更留痕）
 # v1→v2 变更摘要：①kg_dataroot 注销（路径不存在，AGENTS §8）；②paper_db/weak_state 路径修正；
 #   ③ashare_kline 补北交所代码段；④tdx_quote 标注按需手动启停；⑤增补 11 条主力源 + 补登 quant_data_root（10 → 22 条）。
+# v3→v4 变更摘要（2026-10-31）：登记 report_rc（卖方研报评级/盈利预测历史，H34-H36 数据源）。
 # v1 种子出处：K-ORG-119 批1（2026-10-16 实战验证的真实位置）。
-version: 3
-updated: "2026-10-30"
-registrar: DATA1（张松） / DSH-Lead（Phase6 语料登记）
+version: 4
+updated: "2026-10-31"
+registrar: DATA1（张松） / DSH-Lead（Phase6 语料登记、report_rc 登记）
 resources:
   - id: ashare_kline
     kind: parquet
@@ -165,6 +166,20 @@ resources:
     fail_mode: 重建中断→curated 与原始层版本不一致；回滚 tushare_curated.prev
     grants: [invest, quality]
     verified: 2026-10-27（DATA1 实测：7.22GB / 322.9M 行）
+
+  - id: report_rc
+    kind: parquet
+    uri: quant_backtest/data/tushare/report_rc/
+    what: 卖方研报评级/盈利预测/目标价历史（tushare report_rc；1,729,480 行 / 94 个月文件 / 81.5MB / 2019-01~2026-10；字段 ts_code/report_date/org_name/rating/quarter/op_rt/op_pr/tp/np/eps/pe/roe 等）
+    layer: 原始层（可重拉）
+    owner: DATA1（源） / DSH-Lead（登记）
+    steward: DSH-Lead
+    freshness: 手动/按需（tools/data_sources/sync_report_rc.py，周窗口+二分拆页；tushare 限速 5000/次）
+    backup: 无独立备份（可由 tushare report_rc 重拉；_sync_meta.json 记录同步范围与行数）
+    verify_period: 每次同步后（行数/去重/覆盖期检查；覆盖 <18 个月时研究侧拒绝检验）
+    fail_mode: 限频/超时→当月文件缺失；重跑按周窗口断点续传（已存在月份文件跳过）
+    grants: [invest, quality]
+    verified: "2026-10-31（同步完成 1,729,480 行 / 94 文件 / 2019-01~2026-10；已用于 H34-H36 检验）"
 
   - id: tushare_staging
     kind: parquet
