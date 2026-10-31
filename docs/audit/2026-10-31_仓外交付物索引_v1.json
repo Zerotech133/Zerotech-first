@@ -1,11 +1,11 @@
 {
  "schema": "external-deliverables-index/v1",
- "generated_at": "2026-10-31 09:18:07",
+ "generated_at": "2026-10-31 09:24:22",
  "root": "C:\\项目\\deliverables",
- "total": 1442,
+ "total": 1444,
  "by_ext": {
   ".html": 44,
-  ".md": 1080,
+  ".md": 1082,
   ".json": 87,
   ".svg": 1,
   ".sql": 1,
@@ -9783,6 +9783,14 @@
    "title": "T19 Blocker 升级单 v1（2026-10-31 09:05）"
   },
   {
+   "path": "C:\\项目\\deliverables\\2026-10-31_T19降级关闭裁决_v1.md",
+   "rel": "2026-10-31_T19降级关闭裁决_v1.md",
+   "ext": ".md",
+   "bytes": 1919,
+   "mtime": "2026-10-31 09:21",
+   "title": "T19 降级关闭裁决 v1（2026-10-31 09:21）"
+  },
+  {
    "path": "C:\\项目\\deliverables\\2026-10-31_v6_P0执行回执.md",
    "rel": "2026-10-31_v6_P0执行回执.md",
    "ext": ".md",
@@ -9989,6 +9997,14 @@
    "bytes": 4277,
    "mtime": "2026-10-31 01:23",
    "title": "黄忠 11-04 复核彩排报告 v0（2026-10-31 01:06）"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-10-31_黄忠Hermes事件面与触发面_L2五要素待批包_v1.md",
+   "rel": "2026-10-31_黄忠Hermes事件面与触发面_L2五要素待批包_v1.md",
+   "ext": ".md",
+   "bytes": 7738,
+   "mtime": "2026-10-31 09:19",
+   "title": "黄忠×Hermes 事件面与触发面 · L2 五要素待批包 v1（2026-10-31）"
   },
   {
    "path": "C:\\项目\\deliverables\\2026-10-31_黄忠Hermes底层结合_AB落地_v1.md",

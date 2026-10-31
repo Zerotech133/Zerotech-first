@@ -2,14 +2,14 @@
 
 > 只读扫描；原计划不改。unspecified 需 owner 在 2026-11-07 前补状态。
 
-总数：289
+总数：290
 
 | 状态 | 数量 |
 |---|---|
-| declared | 53 |
-| frozen | 43 |
+| declared | 54 |
+| frozen | 42 |
 | pending_approval | 41 |
-| superseded | 7 |
+| superseded | 8 |
 | unspecified | 145 |
 
 ## 计划清单
@@ -279,7 +279,7 @@
 | 2026-10-30 | unspecified | 评估闸门 + trace 运营化 v0（2026-10-30） | `docs\plans\2026-10-30_评估闸门与trace运营化_v1.md` |
 | 2026-10-30 | unspecified | 诸葛亮下一步能力路线研究 v1（2026-10-30） | `docs\plans\2026-10-30_诸葛亮下一步能力路线_v1.md` |
 | 2026-10-30 | unspecified | 诸葛亮 × 军团 IDE：高效结合研究 v1 | `docs\plans\2026-10-30_诸葛亮与军团IDE高效结合_v1.md` |
-| 2026-10-30 | frozen | 零界研发计划 v1（2026-10-30 → 11-27） | `docs\plans\2026-10-30_零界研发计划_四周_v1.md` |
+| 2026-10-30 | superseded | 零界研发计划 v1（2026-10-30 → 11-27） | `docs\plans\2026-10-30_零界研发计划_四周_v1.md` |
 | 2026-10-30 | unspecified | 黄忠 11-04 观察期复核 Runbook v1（2026-10-30 版） | `docs\plans\2026-10-30_黄忠11-04复核runbook_v1.md` |
 | 2026-10-30 | unspecified | 黄忠 v0 验收单⑤豁免与 ③ 复核口径补丁（v1） | `docs\plans\2026-10-30_黄忠v0验收单豁免与复核口径补丁_v1.md` |
 | - | unspecified | 验收判据 01：验收会证据接入（WO-HQ-ACCEPT-20261028） | `docs\plans\2026-10-30_黄忠W1正式提交\criteria_01.md` |
@@ -299,6 +299,7 @@
 | 2026-10-31 | unspecified | A5 B4/B5 路由表化 · 设计与测试方案 v1（2026-10-31 · 关羽） | `docs\plans\2026-10-31_A5_B4B5_路由表化设计_v1.md` |
 | 2026-10-31 | frozen | portal_api 拆分提案 v1（A5 · 2026-10-31 · 关羽） | `docs\plans\2026-10-31_portal_api拆分提案_v1.md` |
 | 2026-10-31 | unspecified | 身份拓扑决策 v2：SSO 已启用（2026-10-31 09:15） | `docs\plans\2026-10-31_身份拓扑决策_v1.md` |
+| 2026-10-31 | declared | 零界研发计划 v2：收口与闭环（2026-10-31 → 2026-11-28） | `docs\plans\2026-10-31_零界研发计划_v2_收口与闭环.md` |
 | 2026-10-31 | declared | 黄忠 × Hermes 底层结合方案 v1（2026-10-31） | `docs\plans\2026-10-31_黄忠Hermes底层结合方案_v1.md` |
 | 2026-11-02 | pending_approval | P5c 形态 B 复验报告（预定 2026-11-02 执行） | `docs\plans\2026-11-02_P5c形态B_复验报告.md` |
 | - | superseded | 计划全集索引（docs/plans/ 全量 91 份） | `docs\plans\INDEX_计划全集索引.md` |
