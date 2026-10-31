@@ -6,7 +6,8 @@
   · agent_key/quant_key/tools_key = W5 报告 B1(57)+B2(31) 清单（共 88 文件），
     文件必须真实存在（B2 扩容工单 K-ORG-20261031-GATEB2；W5 口径 30.9%→约 41.0%）；
   · 每次套件独立 pytest（脚本结构保证），baseline 支持 suiteKey 回退；
-  · A5 预算门已接入且**阶段1 非 strict**（不得出现 --strict 调用）；
+  · A5 预算门已接入，**2026-10-31 K-ORG-20261031-A5STRICT 起为阶段2 strict**
+    （调用必须带 --strict；建议项同样阻断；缺脚本 fail-closed）；
   · 关键集只进 fast，不进 all（all 仍是 portal/kstock/agent/quant/ide）。
 """
 import re
@@ -164,16 +165,16 @@ def test_baseline_suite_key_fallback_present():
     assert re.search(r"\$flaky\[\$suiteKey\]", GATE)
 
 
-def test_a5_budget_gate_wired_non_strict():
+def test_a5_budget_gate_wired_strict():
     # 已接入
     assert "check_portal_split.py" in GATE
     assert re.search(r"if \(\$Suite -in @\('fast', 'all'\)\)", GATE), "预算门应只在 fast/all 跑"
-    # 阶段1 必须非 strict（预算调用行出现 --strict 即说明未按计划分阶段；
-    # 注释里允许写“清债后再切 --strict”）
-    assert not re.search(r"\$budget[^\n]*--strict", GATE), "阶段1 预算调用不得使用 --strict"
-    assert re.search(r"python -X utf8 \$budget", GATE), "预算门应以非 strict 方式调用脚本"
-    # 硬违规必须计入 newFailures（否则门形同虚设）
+    # 2026-10-31 K-ORG-20261031-A5STRICT：阶段2 必须使用 --strict（建议项同样阻断）
+    assert re.search(r"python -X utf8 \$budget --strict", GATE), "阶段2 预算门必须以 --strict 调用"
+    assert "PASS（strict）" in GATE
+    # 违规/缺脚本必须计入 newFailures（否则门形同虚设）
     assert re.search(r"newFailures\+\+", GATE)
+    assert "fail-closed，不假绿" in GATE
 
 
 def test_per_suite_invocation_and_timing():

@@ -14,7 +14,8 @@
 #   · fast 增 B1+B2 关键集三套件（agent_key/quant_key/tools_key，共 88 文件，每次独立
 #     pytest；覆盖率 23.0%→30.9%→约 41.0%）。不同套件不能合并一次 pytest（sys.path 冲突）。
 #   · B2 扩容（工单 K-ORG-20261031-GATEB2）：再 +31 文件（agent 9 / quant 14 / tools 8）。
-#   · 新增 A5 portal 预算门（阶段1 **非 strict**：只拦硬规则，建议项 WARN 不阻断）。
+#   · 新增 A5 portal 预算门（2026-10-31 K-ORG-20261031-A5STRICT 起为**阶段2 strict**：
+#     5 项债清完、strict 实测 PASS；硬规则+建议项全部阻断，缺脚本/执行异常 fail-closed）。
 #   · 文件列表套件的 baseline 查找支持 suiteKey（agent_platform/tests 等）回退。
 # 2026-10-31 K-ORG-20261031-ORGGATEWIRE：新增 org 模型一致性检查（fast/all，warn-only；
 #   当前 fail=6 为真实配置债，记录 fail/warn/info 到汇总但不断言失败，等 W4 决策后再 strict）。
@@ -281,38 +282,39 @@ try {
         if ($tail) { Write-Host "  $tail" }
     }
 
-    # ===== 2026-10-31 W5 P1-6 / A5：portal 拆分预算门 =====
-    # 2026-10-31 P133：已切 --strict（api_common/api_screen 拆分完成、3 条冻结增长已回收至基线以下）；
-    # 任一建议项（冻结增长/新文件 >1200）也阻断合并。
+    # ===== 2026-10-31 W5 P1-6 / A5：portal 拆分预算门（阶段2 **strict**）=====
+    # 2026-10-31 K-ORG-20261031-A5STRICT：5 项债已清（api_common 533≤1200、api_screen 1016≤1200、
+    # 三冻结文件回基线），`check_portal_split.py --strict` 实测 PASS（rc=0）→ 升级为 strict：
+    # 硬规则 + 建议项（冻结增长/新文件 >1200）全部阻断；缺脚本/执行异常 fail-closed 可见（不假绿）。
     if ($Suite -in @('fast', 'all')) {
         $budget = Join-Path $repo 'tools\check_portal_split.py'
+        $blog = Join-Path $env:TEMP "test_gate_budget_$ts.log"
         if (Test-Path -LiteralPath $budget) {
-            $blog = Join-Path $env:TEMP "test_gate_budget_$ts.log"
             $bsw = [System.Diagnostics.Stopwatch]::StartNew()
             python -X utf8 $budget --strict *> $blog
             $brc = $LASTEXITCODE
             $bsw.Stop()
             $bsecs = [math]::Round($bsw.Elapsed.TotalSeconds, 1)
-            $bwarn = @()
-            if (Test-Path -LiteralPath $blog) {
-                $bwarn = @(Get-Content -LiteralPath $blog -Encoding UTF8 | Where-Object { $_ -match 'PORTAL-SPLIT WARN' })
-            }
-            if ($brc -ne 0) {
+            $bpass = ($brc -eq 0) -and (Test-Path -LiteralPath $blog)
+            if (-not $bpass) {
                 $newFailures++
-                Write-Host "[budget] PORTAL-SPLIT strict 违规 → 判失败（日志 $blog）" -ForegroundColor Red
+                Write-Host "[budget] PORTAL-SPLIT strict 违规/执行异常 → 判失败（rc=$brc，日志 $blog）" -ForegroundColor Red
                 if (Test-Path -LiteralPath $blog) {
-                    Get-Content -LiteralPath $blog -Encoding UTF8 | Select-Object -Last 8 | ForEach-Object { Write-Host "  | $_" }
+                    Get-Content -LiteralPath $blog -Encoding UTF8 | Select-Object -Last 10 | ForEach-Object { Write-Host "  | $_" }
                 }
             } else {
-                Write-Host "[budget] PASS：strict 模式 0 违规（P133 已切 --strict；建议项亦阻断）[${bsecs}s]" -ForegroundColor Green
-                $bwarn | ForEach-Object { Write-Host "  $_" }
+                Write-Host "[budget] PASS（strict）：硬规则 0 违规、建议项 0 WARN [${bsecs}s]" -ForegroundColor Green
             }
             $summary += [pscustomobject]@{
                 Suite = 'budget'; Rc = $brc; Failed = 0; Known = 0
-                New = $(if ($brc -ne 0) { 1 } else { 0 }); Seconds = $bsecs; Log = $blog
+                New = $(if ($bpass) { 0 } else { 1 }); Seconds = $bsecs; Log = $blog
             }
         } else {
-            Write-Host "[budget] ⚠ 缺 tools/check_portal_split.py（跳过，不阻断）" -ForegroundColor Yellow
+            $newFailures++
+            Write-Host "[budget] ✗ 缺 tools/check_portal_split.py → 判失败（fail-closed，不假绿）" -ForegroundColor Red
+            $summary += [pscustomobject]@{
+                Suite = 'budget'; Rc = -1; Failed = 0; Known = 0; New = 1; Seconds = 0; Log = ''
+            }
         }
     }
 
