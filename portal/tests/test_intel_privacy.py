@@ -123,3 +123,51 @@ def test_conf_braces_balanced():
     """静态括号配平（不替代 nginx -t，但防手改配置结构断裂）。"""
     s = _text()
     assert s.count("{") == s.count("}"), "nginx.conf 花括号不配平"
+
+
+# ── WO-INTEL-BASELINE-20261031：auth 状态码/白名单回归补充（只加断言，不改 nginx）──
+
+
+def _protected_locations():
+    return [(kind, path) for kind, path in PAGES + APIS]
+
+
+def test_unauth_status_matrix():
+    """未登录状态矩阵：情报页面 → 302 /login；情报 API → 401（不 302）。"""
+    for kind, path in PAGES:
+        body = _block(kind, path)
+        assert "auth_request /_auth_guard;" in body, path
+        assert "error_page 401 = @login_required;" in body, \
+            "页面未登录应 302 /login: %s" % path
+    for kind, path in APIS:
+        body = _block(kind, path)
+        assert "auth_request /_auth_guard;" in body, path
+        assert "error_page 401" not in body, \
+            "API 未登录应直接 401（不跳登录页）: %s" % path
+
+
+def test_api_health_public_200():
+    """健康探活 /api/health：无独立受保护 location + 全局 /api/ 无 auth → 未登录 200。"""
+    s = _text()
+    assert "location = /api/health" not in s, "/api/health 不应有独立受保护 location"
+    assert "location /api/ {" in s
+    api_block = s.split("location /api/ {", 1)[1].split("}", 1)[0]
+    assert "auth_request" not in api_block
+    exact = {path for kind, path in _protected_locations() if kind == "="}
+    prefixes = [path for kind, path in _protected_locations() if kind == "^~"]
+    assert "/api/health" not in exact
+    assert not any("/api/health".startswith(p) for p in prefixes), \
+        "/api/health 被情报受保护前缀误伤"
+
+
+def test_whitelist_not_misfired_by_intel_auth():
+    """白名单不误伤：/login、/s/ 分享短链、/api/health 均不被情报认证规则覆盖。"""
+    exact = {path for kind, path in _protected_locations() if kind == "="}
+    prefixes = [path for kind, path in _protected_locations() if kind == "^~"]
+
+    def covered(path):
+        return path in exact or any(path.startswith(p) for p in prefixes)
+
+    for path in ("/login", "/s/abc123", "/api/health"):
+        assert not covered(path), "受保护规则误伤白名单: %s" % path
+
