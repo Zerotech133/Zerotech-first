@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-31 09:26",
+ "generated": "2026-10-31 09:28",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -10,7 +10,7 @@
   "prompt_miss": [],
   "name_collisions": {},
   "workorders_doing": 25,
-  "workorders_review": 14
+  "workorders_review": 13
  },
  "workorders": [
   {
@@ -344,15 +344,6 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-LEGION-TXN-20261031",
    "created": "2026-10-31 08:21:14",
-   "project": "general"
-  },
-  {
-   "id": "WO-LEGION-RWHOLE-20261031",
-   "desc": "8103 /rw fail-closed",
-   "status": "review",
-   "owner": "ZHAOYUN",
-   "branch": "task/WO-LEGION-RWHOLE-20261031",
-   "created": "2026-10-31 09:16:13",
    "project": "general"
   },
   {
@@ -7379,11 +7370,6 @@
     {
      "id": "WO-LEGION-TXN-20261031",
      "desc": "LDE真事务与测试runner",
-     "status": "review"
-    },
-    {
-     "id": "WO-LEGION-RWHOLE-20261031",
-     "desc": "8103 /rw fail-closed",
      "status": "review"
     }
    ]
