@@ -49,6 +49,13 @@
     /* 唯一网络出口：同源 GET（页面路由由 Lead 后续接入，本页不写服务端）。 */
     var HEALTH_URL = "/strategy_health.json";
 
+    /* Phase 6-A：自动刷新与新鲜度策略（只读，不改任何服务端状态）。
+       - 每 60s 自动 GET 一次（可开关；页面隐藏时暂停，回到页面立即刷新）；
+       - generated_at 距今 > 24h 标 stale（过期，不判失败）；
+         缺 generated_at / 结构非法 → 新鲜度未知（不猜）。 */
+    var REFRESH_INTERVAL_MS = 60 * 1000;
+    var STALE_AFTER_MS = 24 * 60 * 60 * 1000;
+
     /* 健康等级固定顺序与文案（与 strategy_health.HEALTH_LEVELS 同口径）。 */
     var LEVEL_ORDER = ["green", "yellow", "red", "insufficient"];
     var LEVEL_TEXT = {
@@ -95,6 +102,12 @@
 
     /* 只读边界徽标（页面/JS 双处显式声明）。 */
     var BOUNDARIES = ["只读", "不下单", "不造数"];
+
+    /* 自动刷新运行时状态（纯内存，不持久化任何客户端存储）。 */
+    var autoRefreshEnabled = true;
+    var refreshTimer = null;
+    var refreshing = false;
+    var lastGeneratedAt = null;
 
     /* ── 2. 纯函数（Node 契约测试直调） ─────────────────────────────── */
     function $(id) {
@@ -177,6 +190,78 @@
 
     function statusText(status) {
       return STATUS_TEXT[status] || TEXT.unknown;
+    }
+
+    /* generated_at（"YYYY-MM-DD HH:MM:SS" / ISO 字符串）→ 毫秒时间戳；非法 → null。 */
+    function parseGeneratedAt(value) {
+      if (typeof value !== "string") {
+        return null;
+      }
+      var text = value.trim();
+      if (text === "") {
+        return null;
+      }
+      var stamp = Date.parse(text.replace(" ", "T"));
+      if (!isFinite(stamp)) {
+        return null;
+      }
+      return stamp;
+    }
+
+    function formatAge(ageMs) {
+      if (typeof ageMs !== "number" || !isFinite(ageMs) || ageMs < 0) {
+        return "—";
+      }
+      var minutes = Math.floor(ageMs / 60000);
+      if (minutes < 1) {
+        return "刚刚";
+      }
+      if (minutes < 60) {
+        return minutes + " 分钟前";
+      }
+      var hours = Math.floor(minutes / 60);
+      if (hours < 48) {
+        return hours + " 小时前";
+      }
+      return Math.floor(hours / 24) + " 天前";
+    }
+
+    /* 新鲜度：fresh（<=24h）/ stale（>24h，不判失败）/ unknown（缺或非法）。
+       未来时间戳按「刚刚」处理（时钟偏差不判过期，不造结论）。 */
+    function computeFreshness(generatedAt, nowMs) {
+      var stamp = parseGeneratedAt(generatedAt);
+      var now =
+        typeof nowMs === "number" && isFinite(nowMs) ? nowMs : Date.now();
+      if (stamp === null) {
+        return {
+          status: "unknown",
+          ageMs: null,
+          ageText: "—",
+          label: "未知（缺 generated_at，不猜）",
+          tone: "empty"
+        };
+      }
+      var ageMs = now - stamp;
+      if (ageMs < 0) {
+        ageMs = 0;
+      }
+      var ageText = formatAge(ageMs);
+      if (ageMs > STALE_AFTER_MS) {
+        return {
+          status: "stale",
+          ageMs: ageMs,
+          ageText: ageText,
+          label: "过期 " + ageText + "（>24h，不判失败）",
+          tone: "warn"
+        };
+      }
+      return {
+        status: "fresh",
+        ageMs: ageMs,
+        ageText: ageText,
+        label: "新鲜 " + ageText,
+        tone: "ok"
+      };
     }
 
     /* 周期文案：start ~ end（N 交易日 / M 行）；无周期 → 暂无周报。 */
@@ -363,6 +448,8 @@
         empty: empty,
         insufficient: insufficient,
         emptyText: emptyText,
+        generatedAtRaw:
+          typeof payload.generated_at === "string" ? payload.generated_at : null,
         notes: Array.isArray(payload.notes) ? payload.notes.slice() : []
       };
     }
@@ -390,6 +477,14 @@
         return;
       }
       node.textContent = String(text);
+    }
+
+    /* 顶部 generated_at + 新鲜度徽标（stale 只提示，不判失败）。 */
+    function renderFreshness(generatedAt) {
+      lastGeneratedAt = typeof generatedAt === "string" ? generatedAt : null;
+      setText("generatedBadge", "generated_at " + display(lastGeneratedAt));
+      var freshness = computeFreshness(lastGeneratedAt);
+      setBadge("freshnessBadge", "新鲜度 " + freshness.label, freshness.tone);
     }
 
     function countNode(item) {
@@ -574,6 +669,7 @@
 
     function renderUnavailable(message) {
       setBadge("statusBadge", "状态 不可用", "bad");
+      renderFreshness(null);
       setText("overviewStatus", message);
       renderEmptyBanner(message);
       var holder = $("levelCounts");
@@ -609,6 +705,7 @@
       renderStrategies(state);
       renderTickets(state);
       renderNotes(state);
+      renderFreshness(state.generatedAtRaw);
       var banner = $("reportEmpty");
       if (banner) {
         if (state.empty) {
@@ -656,30 +753,135 @@
         });
     }
 
-    function loadHealthReport() {
-      setStatus("overviewStatus", TEXT.loading);
-      return apiGet().then(function (result) {
-        if (result.networkError) {
-          renderUnavailable(TEXT.networkFail);
+    /* silent=true（自动刷新）：不闪 loading、失败保留上次数据，不打扰。 */
+    function loadHealthReport(options) {
+      var silent = !!(options && options.silent);
+      if (refreshing) {
+        return Promise.resolve();
+      }
+      refreshing = true;
+      if (!silent) {
+        setStatus("overviewStatus", TEXT.loading);
+      }
+      return apiGet()
+        .then(function (result) {
+          var failure = null;
+          if (result.networkError) {
+            failure = TEXT.networkFail;
+          } else if (result.http === 404) {
+            failure = TEXT.endpointMissing;
+          } else if (!result.ok || result.doc === null) {
+            failure = result.doc === null ? TEXT.nonJson : TEXT.endpointMissing;
+          }
+          var state = failure ? null : summarizeReport(result.doc);
+          if (!state) {
+            failure = failure || TEXT.nonJson;
+            if (silent) {
+              renderAutoRefreshFailure(failure);
+            } else {
+              renderUnavailable(failure);
+            }
+            return;
+          }
+          renderReport(state);
+          if (silent) {
+            setStatus(
+              "overviewStatus",
+              "自动刷新：" + state.statusText + "（每 60s，可关闭）｜" +
+                TEXT.readonlyNote
+            );
+          }
+        })
+        .then(
+          function () {
+            refreshing = false;
+          },
+          function (error) {
+            refreshing = false;
+            throw error;
+          }
+        );
+    }
+
+    /* 自动刷新失败：保留上次已渲染数据，仅提示与新鲜度未知（不判失败）。 */
+    function renderAutoRefreshFailure(message) {
+      setStatus(
+        "overviewStatus",
+        "自动刷新失败：" + message + "（保留上次数据，不判失败）"
+      );
+      setBadge("freshnessBadge", "新鲜度 未知（刷新失败，不猜）", "empty");
+    }
+
+    function isPageHidden() {
+      if (typeof document === "undefined") {
+        return false;
+      }
+      if (document.hidden === true) {
+        return true;
+      }
+      return document.visibilityState === "hidden";
+    }
+
+    function startAutoRefresh() {
+      if (refreshTimer !== null || typeof setInterval !== "function") {
+        return;
+      }
+      refreshTimer = setInterval(function () {
+        if (!autoRefreshEnabled || isPageHidden() || refreshing) {
           return;
         }
-        if (result.http === 404) {
-          renderUnavailable(TEXT.endpointMissing);
-          return;
-        }
-        if (!result.ok || result.doc === null) {
-          renderUnavailable(
-            result.doc === null ? TEXT.nonJson : TEXT.endpointMissing
-          );
-          return;
-        }
-        var state = summarizeReport(result.doc);
-        if (!state) {
-          renderUnavailable(TEXT.nonJson);
-          return;
-        }
-        renderReport(state);
-      });
+        loadHealthReport({ silent: true });
+      }, REFRESH_INTERVAL_MS);
+    }
+
+    function stopAutoRefresh() {
+      if (refreshTimer !== null && typeof clearInterval === "function") {
+        clearInterval(refreshTimer);
+      }
+      refreshTimer = null;
+    }
+
+    /* 自动刷新开关（可关；关闭后仅保留手动「刷新」按钮）。 */
+    function setAutoRefresh(enabled) {
+      autoRefreshEnabled = enabled !== false;
+      var button = $("btnAutoRefresh");
+      if (button) {
+        button.setAttribute(
+          "aria-pressed",
+          autoRefreshEnabled ? "true" : "false"
+        );
+        button.textContent = autoRefreshEnabled
+          ? "自动刷新：开（60s）"
+          : "自动刷新：关";
+      }
+      if (autoRefreshEnabled) {
+        startAutoRefresh();
+      } else {
+        stopAutoRefresh();
+      }
+      setText(
+        "autoRefreshHint",
+        autoRefreshEnabled
+          ? "每 60s 自动刷新（可关闭）；页面隐藏时暂停，回到页面立即刷新；" +
+              "数据 >24h 标过期但不判失败。"
+          : "自动刷新已关闭（点按钮恢复）；数据 >24h 标过期但不判失败。"
+      );
+      return autoRefreshEnabled;
+    }
+
+    /* visibilitychange：隐藏暂停（不刷新），回来立即刷新并恢复定时器。 */
+    function onVisibilityChange() {
+      if (typeof document === "undefined") {
+        return;
+      }
+      if (isPageHidden()) {
+        stopAutoRefresh();
+        return;
+      }
+      if (autoRefreshEnabled) {
+        loadHealthReport({ silent: true });
+        startAutoRefresh();
+      }
     }
 
     function boot() {
@@ -692,8 +894,22 @@
           loadHealthReport();
         });
       }
+      var autoButton = $("btnAutoRefresh");
+      if (autoButton) {
+        autoButton.addEventListener("click", function () {
+          var enabled = setAutoRefresh(!autoRefreshEnabled);
+          if (enabled) {
+            loadHealthReport({ silent: true });
+          }
+        });
+      }
+      if (document.addEventListener) {
+        document.addEventListener("visibilitychange", onVisibilityChange);
+      }
       setBadge("sourceBadge", "GET " + HEALTH_URL, "");
       setBadge("statusBadge", "状态 读取中", "empty");
+      setAutoRefresh(true);
+      renderFreshness(null);
       setText("overviewStatus", TEXT.loading);
       loadHealthReport();
     }
@@ -709,7 +925,7 @@
       }
     }
 
-    return {
+    var api = {
       /* 契约常量 */
       API: { health: HEALTH_URL },
       LEVEL_ORDER: LEVEL_ORDER,
@@ -739,5 +955,28 @@
       boot: boot,
       loadHealthReport: loadHealthReport
     };
+
+    /* 新鲜度/自动刷新契约：非枚举挂载（不改变既有 Object.keys 契约，
+       向后兼容既有 UI 契约测试；供页面内部与 Node 契约测试使用）。 */
+    if (typeof Object.defineProperty === "function") {
+      Object.defineProperty(api, "freshness", {
+        value: {
+          intervalMs: REFRESH_INTERVAL_MS,
+          staleAfterMs: STALE_AFTER_MS,
+          parseGeneratedAt: parseGeneratedAt,
+          formatAge: formatAge,
+          computeFreshness: computeFreshness,
+          setAutoRefresh: setAutoRefresh,
+          onVisibilityChange: onVisibilityChange,
+          lastGeneratedAt: function () {
+            return lastGeneratedAt;
+          }
+        },
+        enumerable: false,
+        writable: false,
+        configurable: false
+      });
+    }
+    return api;
   }
 );

@@ -106,8 +106,15 @@ footer b{color:var(--ink-2)}
   <span class="badge" id="asofBadge">asof —</span>
   <span class="badge empty" id="statusBadge">状态 —</span>
   <span class="badge" id="sourceBadge">GET /strategy_health.json</span>
+  <span class="badge" id="generatedBadge">generated_at —</span>
+  <span class="badge empty" id="freshnessBadge">新鲜度 —</span>
   <span class="sp"></span>
+  <button type="button" id="btnAutoRefresh" aria-pressed="true"
+          title="每 60s 自动 GET /strategy_health.json；页面隐藏时暂停，回到页面立即刷新">
+    自动刷新：开（60s）
+  </button>
   <button type="button" id="btnRefresh">刷新（GET）</button>
+  <span class="meta" id="autoRefreshHint">每 60s 自动刷新（可关闭）；页面隐藏时暂停，回到页面立即刷新；数据 &gt;24h 标过期但不判失败。</span>
 </header>
 
 <main>
@@ -179,7 +186,10 @@ footer b{color:var(--ink-2)}
   不写服务端、不调 POST、不执行、不下单、不改 registry/权重、不新增计划任务。
   空/缺失/不可用一律显式显示（暂无周报 / 样本不足 / 端点未接入 / 接口不可用），
   不补零、不猜归属、不造数。BiasTicket 全部 status=draft 且 not_auto_apply=true，
-  仅建议上游人工复核。
+  仅建议上游人工复核。<br>
+  <b>自动刷新/新鲜度</b>：本页每 60s 自动 GET 一次（可关闭；页面隐藏时暂停，
+  回到页面立即刷新）；generated_at &gt;24h 显式标「过期」（stale，不判失败），
+  缺 generated_at 标「新鲜度未知」，不猜不造数。
 </footer>
 
 <script src="strategy_health.js" defer></script>
