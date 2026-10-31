@@ -3,6 +3,9 @@ data/*
 # 例外：员工编号台账是人事真源（工号永不复用），必须入库。
 # 它丢了 = 60 个工号无从追溯，比运行时产物严重得多。
 !data/emp_ledger.json
+# 2026-10-31 WO-INTEL-BASELINE-20261031：情报来源登记表是真源配置，需自然入库。
+# data/* 原规则会连 data/intel/ 整个目录忽略；此处反忽略目录（sources.json 及后续登记表）。
+!data/intel/
 __pycache__/
 *.pyc
 
