@@ -1,11 +1,11 @@
 {
  "schema": "external-deliverables-index/v1",
- "generated_at": "2026-10-31 11:09:58",
+ "generated_at": "2026-10-31 11:22:41",
  "root": "C:\\项目\\deliverables",
- "total": 1471,
+ "total": 1479,
  "by_ext": {
   ".html": 45,
-  ".md": 1104,
+  ".md": 1112,
   ".json": 88,
   ".svg": 1,
   ".sql": 1,
@@ -9775,6 +9775,14 @@
    "title": "M4 S2 卡发送回执（2026-10-31 08:19）"
   },
   {
+   "path": "C:\\项目\\deliverables\\2026-10-31_M4_收签推进清单_v1.md",
+   "rel": "2026-10-31_M4_收签推进清单_v1.md",
+   "ext": ".md",
+   "bytes": 13285,
+   "mtime": "2026-10-31 11:12",
+   "title": "M4 收签推进清单 v1（P0-1 · 2026-10-31 11:12 · 不代签）"
+  },
+  {
    "path": "C:\\项目\\deliverables\\2026-10-31_M4前提要_v1.md",
    "rel": "2026-10-31_M4前提要_v1.md",
    "ext": ".md",
@@ -9863,6 +9871,14 @@
    "title": "计划台账（全量，含子目录）2026-10-31"
   },
   {
+   "path": "C:\\项目\\deliverables\\2026-10-31_RDPLAN_P0-P1执行回执_v1.md",
+   "rel": "2026-10-31_RDPLAN_P0-P1执行回执_v1.md",
+   "ext": ".md",
+   "bytes": 6656,
+   "mtime": "2026-10-31 11:22",
+   "title": "研发计划 v2 · P0/P1 执行回执 v1（2026-10-31 11:25）"
+  },
+  {
    "path": "C:\\项目\\deliverables\\2026-10-31_RDPLAN_W1-W5团队执行回执_v1.md",
    "rel": "2026-10-31_RDPLAN_W1-W5团队执行回执_v1.md",
    "ext": ".md",
@@ -9943,12 +9959,44 @@
    "title": "W1 信任链与发布收口 · 验收报告 v1（2026-10-31）"
   },
   {
+   "path": "C:\\项目\\deliverables\\2026-10-31_W1回滚备份与演练_v1.md",
+   "rel": "2026-10-31_W1回滚备份与演练_v1.md",
+   "ext": ".md",
+   "bytes": 15743,
+   "mtime": "2026-10-31 11:11",
+   "title": "W1 回滚备份与演练（P0-2）· 验收报告 v1（2026-10-31）"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-10-31_W2收口剩余_v1.md",
+   "rel": "2026-10-31_W2收口剩余_v1.md",
+   "ext": ".md",
+   "bytes": 12522,
+   "mtime": "2026-10-31 11:10",
+   "title": "W2 收口剩余（P1-7）：pending 计划推进 + 在制压降（2026-10-31 11:1x）"
+  },
+  {
    "path": "C:\\项目\\deliverables\\2026-10-31_W2账本收口_v1.md",
    "rel": "2026-10-31_W2账本收口_v1.md",
    "ext": ".md",
    "bytes": 36057,
    "mtime": "2026-10-31 10:29",
    "title": "W2 任务/计划/证据一本账 · 收口报告 v1（2026-10-31）"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-10-31_W3_ACAD1冻结与Go条件_v1.md",
+   "rel": "2026-10-31_W3_ACAD1冻结与Go条件_v1.md",
+   "ext": ".md",
+   "bytes": 24532,
+   "mtime": "2026-10-31 11:19",
+   "title": "W3 ACAD1 冻结与 Go 条件 · 只读核对报告 v1（2026-10-31）"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-10-31_W3_outcome预检_v1.md",
+   "rel": "2026-10-31_W3_outcome预检_v1.md",
+   "ext": ".md",
+   "bytes": 17399,
+   "mtime": "2026-10-31 11:13",
+   "title": "W3 P0-3 D1 outcome / EvidenceBundle raw-ref 预检 v1（2026-10-31）"
   },
   {
    "path": "C:\\项目\\deliverables\\2026-10-31_W3产品闭环_v1.md",
@@ -9965,6 +10013,22 @@
    "bytes": 27403,
    "mtime": "2026-10-31 10:25",
    "title": "W4 Agent 平台运行化审计 v1（2026-10-31）"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-10-31_W4落地清单_v1.md",
+   "rel": "2026-10-31_W4落地清单_v1.md",
+   "ext": ".md",
+   "bytes": 14135,
+   "mtime": "2026-10-31 11:11",
+   "title": "W4 落地清单 v1（P1-5：A0 记忆 / 席位 / 模型）"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-10-31_W5落地回执_v1.md",
+   "rel": "2026-10-31_W5落地回执_v1.md",
+   "ext": ".md",
+   "bytes": 13168,
+   "mtime": "2026-10-31 11:20",
+   "title": "14 passed in 0.60s"
   },
   {
    "path": "C:\\项目\\deliverables\\2026-10-31_W5质量还债_v1.md",
