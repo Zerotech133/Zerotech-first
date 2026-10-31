@@ -18,6 +18,15 @@ Tools（全部只读，无写/无触发）：
   - huangzhong_acceptance_latest() 最近一张验收单（verdict/commit/reasons）
   - huangzhong_weekly_kpi()        7 天窗口 runs/merge_done/覆盖率（只读计算，不落盘）
   - huangzhong_tasks_health()      两个 Windows 计划任务 LastRun/rc（只读查询）
+  - huangzhong_health()            P0 工具链心跳：跑 tools/huangzhong_health.py --json，
+                                   返回 status/summary/checks 摘要（超时 180s、输出 ≤8KB）
+  - huangzhong_preflight()         P1 11-04 复核 preflight：跑 tools/huangzhong_1104_preflight.py
+                                   --json，返回 ready/blockers/warnings 摘要
+  - huangzhong_brief()             P1 每日简报：跑 tools/huangzhong_brief.py --json，
+                                   返回结论/KPI/事件计数摘要
+
+注：huangzhong_health/preflight/brief 只读执行底层工具；preflight/brief 底层 CLI 按其
+既有行为可能生成 md 报告到默认 deliverables（本 MCP 不额外写仓库/work/、不改配置）。
 
 环境变量（测试/迁移用）：
   HUANGZHONG_REPO_ROOT  默认 C:\\项目\\老田的AI助手
@@ -41,6 +50,16 @@ WORK = Path(os.environ.get("HUANGZHONG_WORK_DIR") or str(REPO / "work" / "huangz
 AGE_LIMIT_HOURS = 48.0
 MATURITY_DAYS = 7
 TASKS = ("HuangzhongDaily", "HuangzhongEvidenceRefresh")
+# ── P2-C：只读子工具（P0/P1 能力服务化）──────────────────────────────────
+# 全部经 _run_tool_cmd 跑固定白名单脚本 + --json；超时 180s；交回 Hermes 的
+# JSON 截断上限 8KB（超限标记 output_truncated，不返回半截 JSON）。
+TOOL_RUN_TIMEOUT_S = 180
+TOOL_OUTPUT_CAP_BYTES = 8 * 1024
+READONLY_CMD_TOOLS = {
+    "huangzhong_health": ("tools/huangzhong_health.py", "--json"),
+    "huangzhong_preflight": ("tools/huangzhong_1104_preflight.py", "--json"),
+    "huangzhong_brief": ("tools/huangzhong_brief.py", "--json"),
+}
 
 TOOLS = [
     {
@@ -82,6 +101,31 @@ TOOLS = [
         "name": "huangzhong_tasks_health",
         "description": "黄忠两个计划任务（HuangzhongDaily / HuangzhongEvidenceRefresh）的 "
                        "LastRunTime/LastTaskResult/NextRunTime（只读查询 Windows Scheduler）。",
+        "inputSchema": {"type": "object", "properties": {},
+                        "additionalProperties": False},
+    },
+    {
+        "name": "huangzhong_health",
+        "description": "黄忠工具链心跳（P0，只读）：跑 tools/huangzhong_health.py --json，"
+                       "返回 status（ok/warn/fail）、summary（ok/warn/fail 计数）、"
+                       "checks 摘要（id/name/status/detail）与 warnings；超时 180s、输出 ≤8KB。",
+        "inputSchema": {"type": "object", "properties": {},
+                        "additionalProperties": False},
+    },
+    {
+        "name": "huangzhong_preflight",
+        "description": "黄忠 11-04 复核 preflight（P1，只读）：跑 "
+                       "tools/huangzhong_1104_preflight.py --json，返回 ready、"
+                       "blockers/warnings（逐条）、checks 摘要（id/name/status/result）。"
+                       "ready=false 不是执行失败（数据有效）。",
+        "inputSchema": {"type": "object", "properties": {},
+                        "additionalProperties": False},
+    },
+    {
+        "name": "huangzhong_brief",
+        "description": "黄忠每日简报（P1，只读）：跑 tools/huangzhong_brief.py --json，"
+                       "返回 conclusion（一行结论）、kpi（runs/merge_done/coverage 等）、"
+                       "events 计数、review/acceptance/push_state 摘要。",
         "inputSchema": {"type": "object", "properties": {},
                         "additionalProperties": False},
     },
@@ -308,6 +352,165 @@ def _run_tool_cmd(cmd: list, timeout: int = 180):
                           timeout=timeout, encoding="utf-8", errors="replace")
 
 
+# ── P2-C：只读子工具实现（health / preflight / brief）─────────────────────
+
+def _cap_text(value, limit: int = 300):
+    """字符串截断（None → None），避免大字段撑爆 MCP 输出。"""
+    if value is None:
+        return None
+    s = str(value)
+    return s if len(s) <= limit else s[:limit] + "…"
+
+
+def _cap_issue(item):
+    """preflight 的 blockers/warnings 条目（dict 或 str）统一压缩成 {check, message}。"""
+    if isinstance(item, dict):
+        msg = item.get("message") or item.get("detail") or item.get("note")
+        return {"check": item.get("check") or item.get("id"),
+                "message": _cap_text(msg if msg is not None else item, 200)}
+    return {"check": None, "message": _cap_text(item, 200)}
+
+
+def _finalize_readonly(summary: dict) -> dict:
+    """保证交回 Hermes 的单工具 JSON ≤ TOOL_OUTPUT_CAP_BYTES（超限截断并标记）。"""
+    summary = dict(summary)
+    if len(json.dumps(summary, ensure_ascii=False).encode("utf-8")) \
+            <= TOOL_OUTPUT_CAP_BYTES:
+        return summary
+    summary["output_truncated"] = True
+    summary["details"] = ("（输出超过 %dKB 上限，明细已截断；完整内容请用对应 CLI 查看）"
+                          % (TOOL_OUTPUT_CAP_BYTES // 1024))
+    for key in ("checks", "blockers", "warnings", "kpi", "review", "events",
+                "acceptance", "incidents", "push_state", "evidence", "conclusion"):
+        summary.pop(key, None)
+    if len(json.dumps(summary, ensure_ascii=False).encode("utf-8")) \
+            > TOOL_OUTPUT_CAP_BYTES:
+        summary = {"ok": summary.get("ok", False), "tool": summary.get("tool"),
+                   "output_truncated": True,
+                   "error": "工具输出超过 %dKB 上限，已截断"
+                            % (TOOL_OUTPUT_CAP_BYTES // 1024)}
+    return summary
+
+
+def _run_readonly_tool(name: str) -> tuple[dict, dict]:
+    """跑白名单只读工具（--json）：超时/异常/非 JSON/自报 ok=false → RuntimeError（isError）。"""
+    script, flag = READONLY_CMD_TOOLS[name]
+    cmd = [_py(), "-X", "utf8", script, flag]
+    t0 = time.time()
+    try:
+        r = _run_tool_cmd(cmd, timeout=TOOL_RUN_TIMEOUT_S)
+    except subprocess.TimeoutExpired:
+        raise RuntimeError("%s 超时（>%ss）" % (name, TOOL_RUN_TIMEOUT_S))
+    except Exception as exc:  # noqa: BLE001 —— 失败 fail-visible，不编造
+        raise RuntimeError("%s 执行失败：%s: %s"
+                           % (name, type(exc).__name__, str(exc)[:200]))
+    raw = getattr(r, "stdout", "") or ""
+    raw_bytes = len(raw.encode("utf-8", errors="replace"))
+    meta = {"script": script, "rc": getattr(r, "returncode", None),
+            "elapsed_s": round(time.time() - t0, 1), "raw_bytes": raw_bytes,
+            "raw_truncated": raw_bytes > TOOL_OUTPUT_CAP_BYTES,
+            "stderr_tail": _cap_text((getattr(r, "stderr", "") or "").strip(), 200)
+            or None}
+    try:
+        data = json.loads(raw)
+    except ValueError as exc:
+        raise RuntimeError("%s 输出非合法 JSON（raw_bytes=%d, rc=%s）：%s"
+                           % (name, raw_bytes, meta["rc"], str(exc)[:150]))
+    if not isinstance(data, dict):
+        raise RuntimeError("%s 输出 JSON 顶层不是对象（%s）"
+                           % (name, type(data).__name__))
+    if data.get("ok") is False:
+        raise RuntimeError("%s 自报数据错误：%s"
+                           % (name, _cap_text(data.get("error")
+                                              or data.get("note"), 200)))
+    return data, meta
+
+
+def _health() -> dict:
+    """P0 工具链心跳摘要（status/summary/checks）。"""
+    data, meta = _run_readonly_tool("huangzhong_health")
+    checks = data.get("checks") if isinstance(data.get("checks"), list) else []
+    out = {
+        "ok": data.get("ok") is not False,
+        "tool": "huangzhong_health",
+        "status": data.get("status"),
+        "summary": data.get("summary"),
+        "checks_total": len(checks),
+        "checks": [{"id": c.get("id"), "name": _cap_text(c.get("name"), 80),
+                    "status": c.get("status"),
+                    "detail": _cap_text(c.get("detail"), 160)}
+                   for c in checks[:10] if isinstance(c, dict)],
+        "warnings": [_cap_text(w, 160) for w in (data.get("warnings") or [])[:5]],
+        "generated_at": data.get("generated_at"),
+        "read_only": True,
+        "run": meta,
+    }
+    return _finalize_readonly(out)
+
+
+def _preflight() -> dict:
+    """P1 11-04 preflight 摘要（ready/blockers/warnings）。ready=false 不是执行失败。"""
+    data, meta = _run_readonly_tool("huangzhong_preflight")
+    checks = data.get("checks") if isinstance(data.get("checks"), list) else []
+    blockers = data.get("blockers") if isinstance(data.get("blockers"), list) else []
+    warnings = data.get("warnings") if isinstance(data.get("warnings"), list) else []
+    out = {
+        "ok": data.get("ok") is not False,
+        "tool": "huangzhong_preflight",
+        "ready": bool(data.get("ready")),
+        "blockers_total": len(blockers),
+        "blockers": [_cap_issue(x) for x in blockers[:20]],
+        "warnings_total": len(warnings),
+        "warnings": [_cap_issue(x) for x in warnings[:20]],
+        "checks_total": len(checks),
+        "checks": [{"id": c.get("id"), "name": _cap_text(c.get("name"), 80),
+                    "status": c.get("status"),
+                    "result": _cap_text(c.get("result"), 160)}
+                   for c in checks[:10] if isinstance(c, dict)],
+        "generated_at": data.get("generated_at"),
+        "read_only": True,
+        "run": meta,
+    }
+    return _finalize_readonly(out)
+
+
+def _brief() -> dict:
+    """P1 每日简报摘要（结论/KPI/事件计数/复核/验收/推送状态）。"""
+    data, meta = _run_readonly_tool("huangzhong_brief")
+    review = data.get("review") if isinstance(data.get("review"), dict) else {}
+    rsum = review.get("summary") if isinstance(review.get("summary"), dict) else {}
+    events = data.get("events") if isinstance(data.get("events"), dict) else {}
+    acceptance = data.get("acceptance") if isinstance(data.get("acceptance"), dict) else {}
+    push_state = data.get("push_state") if isinstance(data.get("push_state"), dict) else {}
+    incidents = data.get("incidents") if isinstance(data.get("incidents"), dict) else {}
+    out = {
+        "ok": data.get("ok") is not False,
+        "tool": "huangzhong_brief",
+        "conclusion": _cap_text(data.get("conclusion"), 500),
+        "generated_at": data.get("generated_at"),
+        "date": data.get("date"),
+        "days": data.get("days"),
+        "kpi": data.get("kpi"),
+        "events": {k: events.get(k) for k in
+                   ("status", "total", "counts", "bad_lines", "window_days")},
+        "review": {"status": review.get("status"),
+                   "generated_at": review.get("generated_at"),
+                   "age_hours": review.get("age_hours"),
+                   "summary": {k: rsum.get(k) for k in
+                               ("overall_pass", "passed", "total")}},
+        "acceptance": {k: acceptance.get(k) for k in
+                       ("status", "verdict", "commit", "generated_at", "age_hours")},
+        "push_state": {k: push_state.get(k) for k in
+                       ("enabled", "state", "source", "updated_at", "by")},
+        "incidents": {k: incidents.get(k) for k in
+                      ("status", "rows", "recent_window", "latest")},
+        "warnings": [_cap_text(w, 160) for w in (data.get("warnings") or [])[:5]],
+        "read_only": True,
+        "run": meta,
+    }
+    return _finalize_readonly(out)
+
+
 def _guard_write(kind: str, confirm, expect: str) -> None:
     if not WRITE_ENABLED:
         raise RuntimeError("write tools disabled（HUANGZHONG_MCP_WRITE=0）")
@@ -379,6 +582,12 @@ def call_tool(name: str, args: dict):
         return _weekly_kpi(args.get("window_days", 7))
     if name == "huangzhong_tasks_health":
         return _tasks_health()
+    if name == "huangzhong_health":
+        return _health()
+    if name == "huangzhong_preflight":
+        return _preflight()
+    if name == "huangzhong_brief":
+        return _brief()
     if name == "huangzhong_run_review":
         return _run_review(args.get("confirm"))
     if name == "huangzhong_run_acceptance":
@@ -399,8 +608,9 @@ def handle(msg: dict) -> dict:
         return {"jsonrpc": "2.0", "id": mid, "result": {
             "protocolVersion": PROTOCOL,
             "capabilities": {"tools": {}},
-            "serverInfo": {"name": "huangzhong", "version": "1.0.0",
-                           "description": "黄忠验收守门·只读工具面（不写/不触发）"}}}
+            "serverInfo": {"name": "huangzhong", "version": "1.1.0",
+                           "description": "黄忠验收守门·只读工具面（9 只读 + 受控写；"
+                                          "不写/不触发除显式写工具外动作）"}}}
     if method == "ping":
         return {"jsonrpc": "2.0", "id": mid, "result": {}}
     if method == "tools/list":
