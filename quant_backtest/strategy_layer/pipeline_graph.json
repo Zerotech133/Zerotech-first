@@ -1,0 +1,838 @@
+{
+  "nodes": [
+    {
+      "id": "layer:L0",
+      "type": "layer",
+      "label": "L0 采集层",
+      "status": "live",
+      "layer": "L0",
+      "metrics": {
+        "title": "采集层",
+        "desc": "原始数据进门 · 计划任务驱动 · 失败必告警",
+        "color": "#1a73e8"
+      }
+    },
+    {
+      "id": "L0:tushare_sync",
+      "type": "pipeline",
+      "label": "TushareSync",
+      "status": "live",
+      "layer": "L0",
+      "detail": "→ PG + Parquet（日线/基本面）",
+      "schedule": "每日 ~18:10"
+    },
+    {
+      "id": "L0:tdx_sync",
+      "type": "pipeline",
+      "label": "TdxSync",
+      "status": "live",
+      "layer": "L0",
+      "detail": "→ 本地行情库镜像",
+      "schedule": "每日盘后"
+    },
+    {
+      "id": "L0:chanlun_scan",
+      "type": "pipeline",
+      "label": "ChanlunScan",
+      "status": "live",
+      "layer": "L0",
+      "detail": "→ chanlun_pool.jsonl（买卖点信号）",
+      "schedule": "每日 05:50（约45min）"
+    },
+    {
+      "id": "L0:xmap_sync",
+      "type": "pipeline",
+      "label": "XmapSync",
+      "status": "live",
+      "layer": "L0",
+      "detail": "→ xmap 实体对齐（PG 5442）",
+      "schedule": "每日 06:00"
+    },
+    {
+      "id": "L0:xueqiu_sync",
+      "type": "pipeline",
+      "label": "XueqiuSync",
+      "status": "live",
+      "layer": "L0",
+      "detail": "→ 帖流/热帖/行情快照",
+      "schedule": "多时段 · 三级token链"
+    },
+    {
+      "id": "L0:jev_feed",
+      "type": "pipeline",
+      "label": "JevFeed / GoldShadow / AdjFactorSync",
+      "status": "live",
+      "layer": "L0",
+      "detail": "→ news.db / 数仓",
+      "schedule": "事件门禁 · 黄金影子 · 复权因子"
+    },
+    {
+      "id": "layer:L1",
+      "type": "layer",
+      "label": "L1 存储层",
+      "status": "live",
+      "layer": "L1",
+      "metrics": {
+        "title": "存储层",
+        "desc": "数仓 210 表 · 数据池=数仓整体（7 子模块）",
+        "color": "#188038"
+      }
+    },
+    {
+      "id": "L1:pg5442",
+      "type": "pipeline",
+      "label": "PG 5442",
+      "status": "live",
+      "layer": "L1",
+      "detail": "quant_system 主库 · 血缘账本 · strategy schema"
+    },
+    {
+      "id": "L1:neo4j",
+      "type": "pipeline",
+      "label": "Neo4j",
+      "status": "live",
+      "layer": "L1",
+      "detail": "KG 147万节点 · Security-MAPS_TO-Concept"
+    },
+    {
+      "id": "L1:parquet",
+      "type": "pipeline",
+      "label": "Parquet 湖",
+      "status": "live",
+      "layer": "L1",
+      "detail": "data/ashare 单票后复权 · ts_daily · kg_scores"
+    },
+    {
+      "id": "L1:mysql3307",
+      "type": "pipeline",
+      "label": "MySQL 3307",
+      "status": "live",
+      "layer": "L1",
+      "detail": "只读镜像（内网 VPN 依赖）"
+    },
+    {
+      "id": "L1:duckdb",
+      "type": "pipeline",
+      "label": "DuckDB",
+      "status": "live",
+      "layer": "L1",
+      "detail": "分析湖"
+    },
+    {
+      "id": "layer:L2",
+      "type": "layer",
+      "label": "L2 情报服务层",
+      "status": "live",
+      "layer": "L2",
+      "metrics": {
+        "title": "情报服务层",
+        "desc": "数据→信息→情报 · 逐跳置信度",
+        "color": "#e8710a"
+      }
+    },
+    {
+      "id": "L2:kg_analysis",
+      "type": "pipeline",
+      "label": "KGAnalysis",
+      "status": "live",
+      "layer": "L2",
+      "detail": "Louvain 社区 + PageRank → kg_scores.parquet",
+      "schedule": "每日 07:00"
+    },
+    {
+      "id": "L2:jev_gate",
+      "type": "pipeline",
+      "label": "Jev 事件门禁",
+      "status": "live",
+      "layer": "L2",
+      "detail": "事件分级 · rc≠0 告警"
+    },
+    {
+      "id": "L2:mcp_server",
+      "type": "pipeline",
+      "label": "MCP Server",
+      "status": "live",
+      "layer": "L2",
+      "detail": "11 工具（含 pool_overview）"
+    },
+    {
+      "id": "L2:confidence_engine",
+      "type": "pipeline",
+      "label": "置信度传播引擎",
+      "status": "live",
+      "layer": "L2",
+      "detail": "融合增益 ×1.15/冲突 ×0.7 · 半衰期 · 事故惩罚"
+    },
+    {
+      "id": "layer:L3",
+      "type": "layer",
+      "label": "L3 策略适配层",
+      "status": "live",
+      "layer": "L3",
+      "metrics": {
+        "title": "策略适配层",
+        "desc": "可插拔 · 下方开关与权重可实时调整（写回 registry，07:30 生效）",
+        "color": "#7b52d0"
+      }
+    },
+    {
+      "id": "strategy:kg_boost",
+      "type": "strategy",
+      "label": "kg_boost 图谱社区打分",
+      "status": "live",
+      "layer": "L3",
+      "strategy_id": "kg_boost",
+      "card": false,
+      "detail": "adapter-only（无 manifest 卡）· Neo4j 社区分位 → top 50",
+      "metrics": {
+        "enabled": true,
+        "shadow_candidate": false,
+        "overlay": false,
+        "weight": 0.5,
+        "top_n": 50,
+        "registry_only": true
+      }
+    },
+    {
+      "id": "strategy:chan_monitor",
+      "type": "strategy",
+      "label": "chan_monitor 盯盘缠论",
+      "status": "live",
+      "layer": "L3",
+      "strategy_id": "chan_monitor",
+      "card": true,
+      "detail": "CN/US/HK · daily · horizon 5d · v1.0.0",
+      "metrics": {
+        "enabled": true,
+        "shadow_candidate": false,
+        "overlay": false,
+        "weight": 0.5,
+        "top_n": null,
+        "version": "1.0.0",
+        "horizon_days": 5,
+        "modes": [
+          "BACKTEST",
+          "REPLAY",
+          "SHADOW"
+        ],
+        "capacity_timeout_s": 5.0
+      }
+    },
+    {
+      "id": "strategy:trend_follow",
+      "type": "strategy",
+      "label": "trend_follow 趋势跟随",
+      "status": "shadow",
+      "layer": "L3",
+      "strategy_id": "trend_follow",
+      "card": true,
+      "detail": "CN/US/HK/CRYPTO · daily · horizon 10d · v1.0.0",
+      "metrics": {
+        "enabled": false,
+        "shadow_candidate": true,
+        "overlay": false,
+        "weight": null,
+        "top_n": null,
+        "version": "1.0.0",
+        "horizon_days": 10,
+        "modes": [
+          "BACKTEST",
+          "REPLAY",
+          "SHADOW"
+        ],
+        "capacity_timeout_s": 5.0
+      }
+    },
+    {
+      "id": "strategy:boll_breakout",
+      "type": "strategy",
+      "label": "boll_breakout 布林突破",
+      "status": "shadow",
+      "layer": "L3",
+      "strategy_id": "boll_breakout",
+      "card": true,
+      "detail": "CN/US/HK/CRYPTO · daily · horizon 5d · v1.0.0",
+      "metrics": {
+        "enabled": false,
+        "shadow_candidate": true,
+        "overlay": false,
+        "weight": null,
+        "top_n": null,
+        "version": "1.0.0",
+        "horizon_days": 5,
+        "modes": [
+          "BACKTEST",
+          "REPLAY",
+          "SHADOW"
+        ],
+        "capacity_timeout_s": 5.0
+      }
+    },
+    {
+      "id": "strategy:rsi_reversal",
+      "type": "strategy",
+      "label": "rsi_reversal RSI 反转",
+      "status": "shadow",
+      "layer": "L3",
+      "strategy_id": "rsi_reversal",
+      "card": true,
+      "detail": "CN/US/HK/CRYPTO · daily · horizon 5d · v1.0.0",
+      "metrics": {
+        "enabled": false,
+        "shadow_candidate": true,
+        "overlay": false,
+        "weight": null,
+        "top_n": null,
+        "version": "1.0.0",
+        "horizon_days": 5,
+        "modes": [
+          "BACKTEST",
+          "REPLAY",
+          "SHADOW"
+        ],
+        "capacity_timeout_s": 5.0
+      }
+    },
+    {
+      "id": "strategy:ma_cross",
+      "type": "strategy",
+      "label": "ma_cross 双均线交叉",
+      "status": "shadow",
+      "layer": "L3",
+      "strategy_id": "ma_cross",
+      "card": true,
+      "detail": "CN/US/HK/CRYPTO · daily · horizon 5d · v1.0.0",
+      "metrics": {
+        "enabled": false,
+        "shadow_candidate": true,
+        "overlay": false,
+        "weight": null,
+        "top_n": null,
+        "version": "1.0.0",
+        "horizon_days": 5,
+        "modes": [
+          "BACKTEST",
+          "REPLAY",
+          "SHADOW"
+        ],
+        "capacity_timeout_s": 5.0
+      }
+    },
+    {
+      "id": "strategy:chanlun_li122",
+      "type": "strategy",
+      "label": "chanlun_li122 缠论多级别",
+      "status": "shadow",
+      "layer": "L3",
+      "strategy_id": "chanlun_li122",
+      "card": true,
+      "detail": "CN · multi:1m/5m/30m/daily · horizon 5d · v1.0.0",
+      "metrics": {
+        "enabled": false,
+        "shadow_candidate": true,
+        "overlay": false,
+        "weight": null,
+        "top_n": null,
+        "version": "1.0.0",
+        "horizon_days": 5,
+        "modes": [
+          "BACKTEST",
+          "REPLAY",
+          "SHADOW"
+        ],
+        "capacity_timeout_s": 10.0
+      }
+    },
+    {
+      "id": "strategy:nine_dim",
+      "type": "strategy",
+      "label": "nine_dim 九维拥挤预警",
+      "status": "shadow",
+      "layer": "L3",
+      "strategy_id": "nine_dim",
+      "card": true,
+      "detail": "CN · daily · horizon 20d · v1.0.0",
+      "metrics": {
+        "enabled": false,
+        "shadow_candidate": true,
+        "overlay": false,
+        "weight": null,
+        "top_n": null,
+        "version": "1.0.0",
+        "horizon_days": 20,
+        "modes": [
+          "BACKTEST",
+          "REPLAY",
+          "SHADOW"
+        ],
+        "capacity_timeout_s": 10.0
+      }
+    },
+    {
+      "id": "strategy:qpzm",
+      "type": "strategy",
+      "label": "qpzm 相对强弱",
+      "status": "shadow",
+      "layer": "L3",
+      "strategy_id": "qpzm",
+      "card": true,
+      "detail": "CN · daily · horizon 10d · v1.0.0",
+      "metrics": {
+        "enabled": false,
+        "shadow_candidate": true,
+        "overlay": false,
+        "weight": null,
+        "top_n": null,
+        "version": "1.0.0",
+        "horizon_days": 10,
+        "modes": [
+          "BACKTEST",
+          "REPLAY",
+          "SHADOW"
+        ],
+        "capacity_timeout_s": 10.0
+      }
+    },
+    {
+      "id": "strategy:rps_resonance",
+      "type": "strategy",
+      "label": "rps_resonance RPS 共振",
+      "status": "shadow",
+      "layer": "L3",
+      "strategy_id": "rps_resonance",
+      "card": true,
+      "detail": "CN/US/HK/CRYPTO · daily · horizon 10d · v1.0.0",
+      "metrics": {
+        "enabled": false,
+        "shadow_candidate": true,
+        "overlay": false,
+        "weight": null,
+        "top_n": null,
+        "version": "1.0.0",
+        "horizon_days": 10,
+        "modes": [
+          "BACKTEST",
+          "REPLAY",
+          "SHADOW"
+        ],
+        "capacity_timeout_s": 10.0
+      }
+    },
+    {
+      "id": "strategy:vol_target",
+      "type": "strategy",
+      "label": "vol_target 波动率目标缩放",
+      "status": "overlay",
+      "layer": "L3",
+      "strategy_id": "vol_target",
+      "card": true,
+      "detail": "CN/US/HK/CRYPTO · daily · horizon 20d · v1.0.0",
+      "metrics": {
+        "enabled": false,
+        "shadow_candidate": false,
+        "overlay": true,
+        "weight": null,
+        "top_n": null,
+        "version": "1.0.0",
+        "horizon_days": 20,
+        "modes": [
+          "BACKTEST",
+          "REPLAY",
+          "SHADOW"
+        ],
+        "capacity_timeout_s": 5.0
+      }
+    },
+    {
+      "id": "L3:dual_blade",
+      "label": "dual_blade 量子双刀",
+      "type": "slot",
+      "status": "planned",
+      "layer": "L3",
+      "detail": "预留插槽 · Scanner→Screener→Signal 包装即接入"
+    },
+    {
+      "id": "L3:llm_agent",
+      "label": "llm_agent AI选股",
+      "type": "slot",
+      "status": "planned",
+      "layer": "L3",
+      "detail": "预留插槽 · Ollama qwen2.5:7b + MCP 工具调用"
+    },
+    {
+      "id": "layer:L4",
+      "type": "layer",
+      "label": "L4 组合裁决层",
+      "status": "live",
+      "layer": "L4",
+      "metrics": {
+        "title": "组合裁决层",
+        "desc": "加权融合 + 分歧标注 · upsert 双路径",
+        "color": "#d93025"
+      }
+    },
+    {
+      "id": "L4:signal_aggregator",
+      "type": "pipeline",
+      "label": "SignalAggregator",
+      "status": "live",
+      "layer": "L4",
+      "detail": "组合分 = Σ wᵢ×scoreᵢ · 冲突出分歧标记不强扭",
+      "schedule": "StrategyDaily 每日 07:30"
+    },
+    {
+      "id": "L4:signals_combined",
+      "type": "pipeline",
+      "label": "signals_combined",
+      "status": "live",
+      "layer": "L4",
+      "detail": "PG strategy schema · PK(trade_date,symbol) · contributions jsonb"
+    },
+    {
+      "id": "L4:risk_guard",
+      "type": "pipeline",
+      "label": "RiskGuard 共享位",
+      "status": "planned",
+      "layer": "L4",
+      "detail": "规划中 · 四规则解耦后全策略前置"
+    },
+    {
+      "id": "layer:L5",
+      "type": "layer",
+      "label": "L5 前端反馈层",
+      "status": "live",
+      "layer": "L5",
+      "metrics": {
+        "title": "前端反馈层",
+        "desc": "8791 仪表盘 · 反馈闭环入口",
+        "color": "#0b8043"
+      }
+    },
+    {
+      "id": "L5:signal_tabs",
+      "type": "pipeline",
+      "label": "多策略信号页签",
+      "status": "live",
+      "layer": "L5",
+      "detail": "组合信号对比 · 置信徽章 · 分歧看板",
+      "href": "/"
+    },
+    {
+      "id": "L5:feedback_controls",
+      "type": "pipeline",
+      "label": "反馈控件",
+      "status": "live",
+      "layer": "L5",
+      "detail": "采纳/驳回/静默 → strategy.feedback"
+    },
+    {
+      "id": "L5:weight_updater",
+      "type": "pipeline",
+      "label": "WeightUpdater",
+      "status": "shadow",
+      "layer": "L5",
+      "detail": "双通道 + EWMA α=0.3 → 建议权重（--apply 待满窗）",
+      "schedule": "每周日 20:00 · 影子期 dry-run"
+    }
+  ],
+  "edges": [
+    {
+      "from": "layer:L0",
+      "to": "layer:L1",
+      "port": "rows",
+      "label": "原始行 · parquet / PG 行 / jsonl",
+      "kind": "forward"
+    },
+    {
+      "from": "layer:L1",
+      "to": "layer:L2",
+      "port": "scores_input",
+      "label": "打分输入 · 图查询 · 事件流",
+      "kind": "forward"
+    },
+    {
+      "from": "layer:L2",
+      "to": "layer:L3",
+      "port": "signals",
+      "label": "标准化 Signal（score 0-100 · confidence 0-1 · rationale）",
+      "kind": "forward"
+    },
+    {
+      "from": "layer:L3",
+      "to": "layer:L4",
+      "port": "strategy_scores",
+      "label": "启用策略并行 score（失败降级跳过）",
+      "kind": "forward"
+    },
+    {
+      "from": "layer:L4",
+      "to": "layer:L5",
+      "port": "verdicts",
+      "label": "组合建议 + 各策略意见 + 分歧标记",
+      "kind": "forward"
+    },
+    {
+      "from": "layer:L5",
+      "to": "layer:L3",
+      "port": "feedback",
+      "label": "权重进化回流：feedback + 后验收益 → wᵢ ← EWMA（回到 L3）",
+      "kind": "feedback"
+    },
+    {
+      "from": "layer:L3",
+      "to": "strategy:kg_boost",
+      "port": "adapter",
+      "label": "registry 装配 · enabled",
+      "kind": "forward"
+    },
+    {
+      "from": "strategy:kg_boost",
+      "to": "layer:L4",
+      "port": "score",
+      "label": "score × wᵢ → 加权融合",
+      "kind": "forward"
+    },
+    {
+      "from": "layer:L3",
+      "to": "strategy:chan_monitor",
+      "port": "adapter",
+      "label": "registry 装配 · enabled",
+      "kind": "forward"
+    },
+    {
+      "from": "strategy:chan_monitor",
+      "to": "layer:L4",
+      "port": "score",
+      "label": "score × wᵢ → 加权融合",
+      "kind": "forward"
+    },
+    {
+      "from": "layer:L3",
+      "to": "strategy:trend_follow",
+      "port": "shadow",
+      "label": "影子候选 · 未启用（只读登记）",
+      "kind": "shadow"
+    },
+    {
+      "from": "layer:L3",
+      "to": "strategy:boll_breakout",
+      "port": "shadow",
+      "label": "影子候选 · 未启用（只读登记）",
+      "kind": "shadow"
+    },
+    {
+      "from": "layer:L3",
+      "to": "strategy:rsi_reversal",
+      "port": "shadow",
+      "label": "影子候选 · 未启用（只读登记）",
+      "kind": "shadow"
+    },
+    {
+      "from": "layer:L3",
+      "to": "strategy:ma_cross",
+      "port": "shadow",
+      "label": "影子候选 · 未启用（只读登记）",
+      "kind": "shadow"
+    },
+    {
+      "from": "layer:L3",
+      "to": "strategy:chanlun_li122",
+      "port": "shadow",
+      "label": "影子候选 · 未启用（只读登记）",
+      "kind": "shadow"
+    },
+    {
+      "from": "layer:L3",
+      "to": "strategy:nine_dim",
+      "port": "shadow",
+      "label": "影子候选 · 未启用（只读登记）",
+      "kind": "shadow"
+    },
+    {
+      "from": "layer:L3",
+      "to": "strategy:qpzm",
+      "port": "shadow",
+      "label": "影子候选 · 未启用（只读登记）",
+      "kind": "shadow"
+    },
+    {
+      "from": "layer:L3",
+      "to": "strategy:rps_resonance",
+      "port": "shadow",
+      "label": "影子候选 · 未启用（只读登记）",
+      "kind": "shadow"
+    },
+    {
+      "from": "layer:L3",
+      "to": "strategy:vol_target",
+      "port": "overlay",
+      "label": "仓位缩放 overlay（只读登记）",
+      "kind": "overlay"
+    }
+  ],
+  "meta": {
+    "schema_version": "1.0.0",
+    "version": "1.0.0",
+    "wo": "WO-PIPELINE-GRAPH-20261031",
+    "phase": "Phase 1-B",
+    "generated_at": "2026-10-31T15:01:07+08:00",
+    "readonly": true,
+    "generator": "quant_backtest/strategy_layer/pipeline_graph.py",
+    "source": {
+      "cards": "quant_backtest/strategy_layer/strategy_cards.json",
+      "registry": "quant_backtest/strategy_layer/strategy_registry.json",
+      "manifests": "quant_backtest/strategies/manifests",
+      "cards_module": "quant_backtest/strategy_layer/strategy_cards.py",
+      "page": "quant_backtest/strategy_layer/pipeline_map.html"
+    },
+    "layers": [
+      {
+        "id": "L0",
+        "label": "采集层",
+        "desc": "原始数据进门 · 计划任务驱动 · 失败必告警",
+        "color": "#1a73e8",
+        "order": 0
+      },
+      {
+        "id": "L1",
+        "label": "存储层",
+        "desc": "数仓 210 表 · 数据池=数仓整体（7 子模块）",
+        "color": "#188038",
+        "order": 1
+      },
+      {
+        "id": "L2",
+        "label": "情报服务层",
+        "desc": "数据→信息→情报 · 逐跳置信度",
+        "color": "#e8710a",
+        "order": 2
+      },
+      {
+        "id": "L3",
+        "label": "策略适配层",
+        "desc": "可插拔 · 下方开关与权重可实时调整（写回 registry，07:30 生效）",
+        "color": "#7b52d0",
+        "order": 3
+      },
+      {
+        "id": "L4",
+        "label": "组合裁决层",
+        "desc": "加权融合 + 分歧标注 · upsert 双路径",
+        "color": "#d93025",
+        "order": 4
+      },
+      {
+        "id": "L5",
+        "label": "前端反馈层",
+        "desc": "8791 仪表盘 · 反馈闭环入口",
+        "color": "#0b8043",
+        "order": 5
+      }
+    ],
+    "node_contract": {
+      "required": [
+        "id",
+        "type",
+        "label",
+        "status",
+        "layer"
+      ],
+      "optional": [
+        "strategy_id",
+        "card",
+        "detail",
+        "schedule",
+        "href",
+        "metrics"
+      ],
+      "type_values": [
+        "layer",
+        "pipeline",
+        "strategy",
+        "slot"
+      ],
+      "status_values": [
+        "live",
+        "shadow",
+        "overlay",
+        "planned"
+      ],
+      "layer_values": [
+        "L0",
+        "L1",
+        "L2",
+        "L3",
+        "L4",
+        "L5"
+      ],
+      "strategy_status_rule": "type=strategy 时：registry enabled → live；影子候选 → shadow；非选股 overlay（signal_schema.kind=position_scale）→ overlay。"
+    },
+    "edge_contract": {
+      "required": [
+        "from",
+        "to",
+        "port",
+        "label"
+      ],
+      "optional": [
+        "kind"
+      ],
+      "port_values": [
+        "rows",
+        "scores_input",
+        "signals",
+        "strategy_scores",
+        "verdicts",
+        "feedback",
+        "adapter",
+        "score",
+        "shadow",
+        "overlay"
+      ],
+      "kind_values": [
+        "forward",
+        "feedback",
+        "shadow",
+        "overlay"
+      ]
+    },
+    "status_values": [
+      "live",
+      "shadow",
+      "overlay",
+      "planned"
+    ],
+    "counts": {
+      "nodes": 40,
+      "edges": 19,
+      "layers": 6,
+      "layer_nodes": 6,
+      "cards": 10,
+      "enabled": 2,
+      "shadow": 8,
+      "shadow_candidates": 8,
+      "overlay": 1,
+      "strategy_nodes": 11,
+      "registry_only_enabled": 1,
+      "pipeline_nodes": 21,
+      "slot_nodes": 2,
+      "planned": 3
+    }
+  },
+  "counts": {
+    "nodes": 40,
+    "edges": 19,
+    "layers": 6,
+    "layer_nodes": 6,
+    "cards": 10,
+    "enabled": 2,
+    "shadow": 8,
+    "shadow_candidates": 8,
+    "overlay": 1,
+    "strategy_nodes": 11,
+    "registry_only_enabled": 1,
+    "pipeline_nodes": 21,
+    "slot_nodes": 2,
+    "planned": 3
+  }
+}

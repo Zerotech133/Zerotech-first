@@ -13,6 +13,7 @@ body{margin:0;background:var(--bg);color:var(--ink);
      font:14px/1.6 "Microsoft YaHei","PingFang SC",sans-serif}
 header{background:var(--card);border-bottom:1px solid var(--line);
        padding:12px 24px;display:flex;align-items:center;gap:16px;
+       flex-wrap:wrap;
        position:sticky;top:0;z-index:10;box-shadow:0 1px 4px rgba(0,0,0,.04)}
 header h1{font-size:17px;margin:0}
 header .meta{color:var(--muted);font-size:12px}
@@ -21,6 +22,11 @@ button{border:1px solid var(--line);background:var(--card);border-radius:6px;
        padding:4px 12px;cursor:pointer;font-size:13px}
 button:hover{border-color:var(--acc);color:var(--acc)}
 main{padding:14px 20px 60px;max-width:1360px;margin:0 auto}
+/* ── Graph JSON 数据源徽标（fetch 成功=绿，fallback=橙）── */
+#graphMeta{font-size:12px;color:var(--muted);border:1px solid var(--line);
+           border-radius:10px;padding:1px 8px;white-space:nowrap}
+#graphMeta.ok{color:var(--down);border-color:var(--down)}
+#graphMeta.fail{color:var(--warn);border-color:var(--warn)}
 /* ── 层带 ── */
 .layer{border:1px solid var(--line);border-radius:10px;padding:10px 14px 14px;
        margin:0;background:var(--card)}
@@ -68,6 +74,9 @@ main{padding:14px 20px 60px;max-width:1360px;margin:0 auto}
 input[type=range]{flex:1;accent-color:var(--acc)}
 .wval{font-variant-numeric:tabular-nums;font-size:12px;width:34px;text-align:right}
 .node.reserved{opacity:.62;background:#f4f5f7;border-style:dashed}
+/* ── 只读策略卡（shadow 候选 / 非选股 overlay；Graph JSON 渲染）── */
+.node.strat.readonly{background:#f4f5f7;border-style:dashed;min-width:200px}
+.node.strat.readonly .ro{color:var(--muted);font-size:11px;margin-top:4px}
 .savebtn{font-size:12px;padding:2px 10px}
 .savebtn.saved{background:var(--down);color:#fff;border-color:var(--down)}
 /* ── 汇总条 ── */
@@ -84,6 +93,7 @@ input[type=range]{flex:1;accent-color:var(--acc)}
 <header>
   <h1>🔗 链路动线 · 数据→情报→策略→融合→反馈</h1>
   <span class="meta">置信度血缘纽带全景 · <span id="clock">-</span></span>
+  <span class="meta" id="graphMeta" title="Graph JSON 数据源（成功优先，失败回退静态结构）">Graph: 静态 fallback（pipeline_graph.json 加载中…）</span>
   <span class="sp"></span>
   <a href="/" style="font-size:13px;color:var(--acc)">← 回仪表盘</a>
   <button onclick="location.reload()">刷新</button>
@@ -93,12 +103,13 @@ input[type=range]{flex:1;accent-color:var(--acc)}
 <div class="kpis">
   <div class="kpi"><div class="v" id="kSig">-</div><div class="l">今日融合信号</div></div>
   <div class="kpi"><div class="v" id="kStrat">-</div><div class="l">启用策略 / 已注册</div></div>
+  <div class="kpi"><div class="v" id="kCards">-</div><div class="l">策略卡（启用 / 影子 / 总）</div></div>
   <div class="kpi"><div class="v" id="kPool">-</div><div class="l">数据池表（完成/总）</div></div>
   <div class="kpi"><div class="v" id="kNext">07:30</div><div class="l">下次融合编排（StrategyDaily）</div></div>
 </div>
 
 <!-- ═══ L0 采集层 ═══ -->
-<div class="layer">
+<div class="layer" data-layer="L0">
   <h2><span class="ltag" style="background:#1a73e8">L0</span>采集层
     <span class="ldesc">原始数据进门 · 计划任务驱动 · 失败必告警</span></h2>
   <div class="nodes">
@@ -117,11 +128,11 @@ input[type=range]{flex:1;accent-color:var(--acc)}
       <div class="io">→ news.db / 数仓</div></div>
   </div>
 </div>
-<div class="flow"><div class="pipe"></div>
+<div class="flow" data-from="L0" data-to="L1"><div class="pipe"></div>
   <span class="lbl">原始行 · parquet / PG 行 / jsonl</span></div>
 
 <!-- ═══ L1 存储层 ═══ -->
-<div class="layer">
+<div class="layer" data-layer="L1">
   <h2><span class="ltag" style="background:#188038">L1</span>存储层
     <span class="ldesc">数仓 210 表 · 数据池=数仓整体（7 子模块）</span></h2>
   <div class="nodes">
@@ -132,11 +143,11 @@ input[type=range]{flex:1;accent-color:var(--acc)}
     <div class="node"><b>DuckDB</b><div class="io">分析湖</div></div>
   </div>
 </div>
-<div class="flow"><div class="pipe"></div>
+<div class="flow" data-from="L1" data-to="L2"><div class="pipe"></div>
   <span class="lbl">打分输入 · 图查询 · 事件流</span></div>
 
 <!-- ═══ L2 情报层 ═══ -->
-<div class="layer">
+<div class="layer" data-layer="L2">
   <h2><span class="ltag" style="background:#e8710a">L2</span>情报服务层
     <span class="ldesc">数据→信息→情报 · 逐跳置信度</span></h2>
   <div class="nodes">
@@ -147,11 +158,11 @@ input[type=range]{flex:1;accent-color:var(--acc)}
     <div class="node"><b>置信度传播引擎</b><div class="io">融合增益 ×1.15/冲突 ×0.7 · 半衰期 · 事故惩罚</div></div>
   </div>
 </div>
-<div class="flow"><div class="pipe"></div>
+<div class="flow" data-from="L2" data-to="L3"><div class="pipe"></div>
   <span class="lbl">标准化 Signal（score 0-100 · confidence 0-1 · rationale）</span></div>
 
-<!-- ═══ L3 策略层（可调整）═══ -->
-<div class="layer">
+<!-- ═══ L3 策略层（可调整；Graph JSON 优先渲染，fetch 失败保留本静态 fallback）═══ -->
+<div class="layer" data-layer="L3">
   <h2><span class="ltag" style="background:#7b52d0">L3</span>策略适配层
     <span class="ldesc">可插拔 · 下方开关与权重可实时调整（写回 registry，07:30 生效）</span></h2>
   <div class="nodes" id="stratNodes">
@@ -191,11 +202,11 @@ input[type=range]{flex:1;accent-color:var(--acc)}
       <div class="io">预留插槽 · Ollama qwen2.5:7b + MCP 工具调用</div></div>
   </div>
 </div>
-<div class="flow"><div class="pipe"></div>
+<div class="flow" data-from="L3" data-to="L4"><div class="pipe"></div>
   <span class="lbl">启用策略并行 score（失败降级跳过）</span></div>
 
 <!-- ═══ L4 融合层 ═══ -->
-<div class="layer">
+<div class="layer" data-layer="L4">
   <h2><span class="ltag" style="background:#d93025">L4</span>组合裁决层
     <span class="ldesc">加权融合 + 分歧标注 · upsert 双路径</span></h2>
   <div class="nodes">
@@ -205,11 +216,11 @@ input[type=range]{flex:1;accent-color:var(--acc)}
     <div class="node"><b>RiskGuard 共享位</b><div class="io">规划中 · 四规则解耦后全策略前置</div></div>
   </div>
 </div>
-<div class="flow"><div class="pipe"></div>
+<div class="flow" data-from="L4" data-to="L5"><div class="pipe"></div>
   <span class="lbl">组合建议 + 各策略意见 + 分歧标记</span></div>
 
 <!-- ═══ L5 前端层 ═══ -->
-<div class="layer">
+<div class="layer" data-layer="L5">
   <h2><span class="ltag" style="background:#0b8043">L5</span>前端反馈层
     <span class="ldesc">8791 仪表盘 · 反馈闭环入口</span></h2>
   <div class="nodes">
@@ -223,7 +234,7 @@ input[type=range]{flex:1;accent-color:var(--acc)}
 </div>
 
 <!-- ═══ 反馈回流环 ═══ -->
-<div class="flow rev"><div class="pipe"></div>
+<div class="flow rev" data-from="L5" data-to="L3" data-kind="feedback"><div class="pipe"></div>
   <span class="lbl">权重进化回流：feedback + 后验收益 → wᵢ ← EWMA（回到 L3）</span></div>
 
 <div class="legend">
@@ -232,11 +243,15 @@ input[type=range]{flex:1;accent-color:var(--acc)}
   <span class="dot off"></span>停用/预留
   · 每个可调整项的变更即刻写回 strategy_registry.json，次日 07:30 StrategyDaily 编排生效；
   权重建议值由 WeightUpdater 每周日产出，影子期内人工决策是否 --apply。
+  · 页面优先 fetch 同目录 <b>pipeline_graph.json</b>（strategy_cards + strategy_registry 只读导出）
+  渲染层带与策略卡；fetch 失败时保留本页静态结构（fallback），开关/权重交互不变。
 </div>
 
 </main>
 <script>
 const esc=s=>{const d=document.createElement("div");d.textContent=s==null?"":String(s);return d.innerHTML};
+const attr=s=>String(s==null?"":s).replace(/&/g,"&amp;").replace(/"/g,"&quot;")
+  .replace(/</g,"&lt;").replace(/>/g,"&gt;");
 function tick(){document.getElementById("clock").textContent=
   new Date().toLocaleString("zh-CN",{hour12:false})}
 tick();setInterval(tick,1000);
@@ -292,7 +307,122 @@ async function saveStrat(sid){
   btn.disabled=false;
   setTimeout(()=>{if(!DIRTY[sid]){btn.textContent="保存";
     btn.classList.remove("saved")}},2500)}
-loadStrategies();loadKpis();
+
+/* ═══ Graph JSON 优先渲染（Phase 1-B；fetch 失败保留上方静态 fallback）═══ */
+const GRAPH={loaded:false,source:"static fallback"};
+function setGraphMeta(text,state){
+  const el=document.getElementById("graphMeta");
+  if(!el)return;
+  el.textContent="Graph: "+text;
+  el.classList.remove("ok");el.classList.remove("fail");
+  if(state==="ok")el.classList.add("ok");
+  if(state==="fail")el.classList.add("fail");
+}
+function validateGraphPayload(g){
+  if(!g||typeof g!=="object")throw new Error("Graph JSON 不是对象");
+  if(!Array.isArray(g.nodes)||!g.nodes.length)throw new Error("Graph JSON 缺 nodes");
+  if(!Array.isArray(g.edges))throw new Error("Graph JSON 缺 edges");
+  const c=g.counts||{};
+  if(typeof c.cards!=="number"||typeof c.enabled!=="number"||typeof c.shadow!=="number")
+    throw new Error("Graph JSON 缺 counts(cards/enabled/shadow)");
+  if(!g.nodes.some(n=>n&&n.type==="layer"))throw new Error("Graph JSON 缺 layer 节点");
+  return g;
+}
+function renderPlainNode(n){
+  const reserved=(n.status==="planned"||n.status==="shadow");
+  let h='<div class="node'+(reserved?" reserved":"")+'" data-node="'+attr(n.id)+'">';
+  h+='<b>'+esc(n.label)+'</b>';
+  if(n.schedule)h+='<div class="sched'+(n.status==="shadow"?" shadow":"")+'">'+esc(n.schedule)+'</div>';
+  if(n.detail)h+='<div class="io">'+(n.href?'<a href="'+attr(n.href)+'" style="color:var(--acc)">打开 →</a> ':"")+esc(n.detail)+'</div>';
+  return h+"</div>";
+}
+function renderStrategyNode(n){
+  const sid=String(n.strategy_id||n.id);
+  const detail=n.detail?'<div class="io">'+esc(n.detail)+'</div>':"";
+  if(n.status==="live"){
+    /* 与静态 fallback 完全同构的开关/权重/保存控件（交互不变） */
+    return '<div class="node strat" data-sid="'+attr(sid)+'">'
+      +'<b><span class="dot" id="dot-'+attr(sid)+'"></span>'+esc(n.label||sid)+'</b>'+detail
+      +'<div class="row"><label class="switch" title="启用/停用">'
+      +'<input type="checkbox" id="en-'+attr(sid)+'"><span class="tk"></span></label>'
+      +'<input type="range" min="0" max="1" step="0.05" id="w-'+attr(sid)+'">'
+      +'<span class="wval" id="wv-'+attr(sid)+'">-</span></div>'
+      +'<div class="row"><span class="muted" id="msg-'+attr(sid)+'" style="font-size:11px"></span>'
+      +'<span style="flex:1"></span>'
+      +'<button class="savebtn" id="btn-'+attr(sid)+'">保存</button></div></div>';
+  }
+  const note=(n.status==="overlay")?"非选股 overlay · 只读":"影子候选 · 未启用 · 只读";
+  return '<div class="node strat readonly" data-sid="'+attr(sid)+'">'
+    +'<b><span class="dot shadow"></span>'+esc(n.label||sid)+'</b>'+detail
+    +'<div class="ro">'+note+'</div></div>';
+}
+function attachStratEvents(box){
+  box.querySelectorAll(".node.strat[data-sid]").forEach(card=>{
+    const sid=card.getAttribute("data-sid");
+    if(!sid)return;
+    const en=card.querySelector('input[type="checkbox"]');
+    const w=card.querySelector('input[type="range"]');
+    const btn=card.querySelector(".savebtn");
+    if(en)en.addEventListener("change",()=>markDirty(sid));
+    if(w)w.addEventListener("input",()=>markDirty(sid));
+    if(btn)btn.addEventListener("click",()=>saveStrat(sid));
+  });
+}
+function renderGraph(g){
+  validateGraphPayload(g);
+  const nodes=g.nodes||[],edges=g.edges||[];
+  /* ① 层带标题 + 各层节点由 Graph JSON 重建；渲染异常前已整体校验，失败即回落静态结构 */
+  nodes.filter(n=>n&&n.type==="layer").forEach(ln=>{
+    const lid=String(ln.layer||"");
+    const sec=document.querySelector('.layer[data-layer="'+lid+'"]');
+    if(!sec)return;
+    const m=ln.metrics||{};
+    const h2=sec.querySelector("h2");
+    if(h2){
+      h2.innerHTML='<span class="ltag" style="background:'+attr(m.color||"#1a73e8")+'">'
+        +esc(lid)+'</span>'+esc(m.title||ln.label||lid)
+        +' <span class="ldesc">'+esc(m.desc||"")+'</span>';
+    }
+    const box=sec.querySelector(".nodes");
+    const items=nodes.filter(n=>n&&n.layer===lid&&n.type!=="layer");
+    if(box&&items.length){
+      box.innerHTML=items.map(n=>n.type==="strategy"?renderStrategyNode(n):renderPlainNode(n)).join("");
+      if(lid==="L3")attachStratEvents(box);
+    }
+  });
+  /* ② 层间通道标签取自 edges（端点均为 layer 节点的流动边） */
+  edges.forEach(e=>{
+    if(!e)return;
+    const from=String(e.from||""),to=String(e.to||"");
+    if(from.indexOf("layer:")!==0||to.indexOf("layer:")!==0)return;
+    const flow=document.querySelector('.flow[data-from="'+from.slice(6)+'"][data-to="'+to.slice(6)+'"]');
+    if(!flow)return;
+    const lbl=flow.querySelector(".lbl");
+    if(lbl)lbl.textContent=e.label||"";
+  });
+  /* ③ 汇总条 + 数据源徽标 */
+  const c=g.counts||{};
+  const kc=document.getElementById("kCards");
+  if(kc)kc.textContent=c.enabled+" / "+c.shadow+" / "+c.cards;
+  const gen=(g.meta&&g.meta.generated_at)||"";
+  setGraphMeta("pipeline_graph.json"+(gen?" · "+gen:"")
+    +" · 启用 "+c.enabled+" / 影子 "+c.shadow+" / 卡 "+c.cards,"ok");
+  GRAPH.loaded=true;GRAPH.source="pipeline_graph.json";
+  loadStrategies();  /* 用 /api/strategies 真值回填开关/权重，保持现有交互语义 */
+}
+async function loadGraph(){
+  try{
+    const r=await fetch("pipeline_graph.json",{cache:"no-store"});
+    if(!r||!r.ok)throw new Error("HTTP "+(r?r.status:"?"));
+    renderGraph(await r.json());
+  }catch(e){
+    /* fetch 失败/JSON 非法：不破坏静态 fallback，只更新徽标并回填 API 真值 */
+    setGraphMeta("pipeline_graph.json 不可达 → 静态 fallback（"
+      +((e&&e.message)?e.message:e)+"）","fail");
+    loadStrategies();
+  }
+}
+loadStrategies();loadKpis();loadGraph();
 setInterval(loadKpis,120000);
 </script>
 </body>
