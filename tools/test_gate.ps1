@@ -85,7 +85,11 @@ $paths = @{
         'agent_platform/tests/test_ide_rw.py',
         # W1（2026-10-31）：release/junction/live-version 信任链离线断言；
         # live 分支默认 skip（LEGION_LIVE_SMOKE=1 才跑），不拖慢门禁。
-        'agent_platform/tests/test_release_live_smoke.py'
+        'agent_platform/tests/test_release_live_smoke.py',
+        # W5 P1-7b（WO-LEGION-W5-GATE-ART-20261031）：W1 release artifact 文件/manifest
+        # sha256 对照 + /api/ide/version all_match live smoke（4 用例，约 +0.5s）；
+        # W1 已合并（ef5e32b04）但此前未入 gate，属“关键 IDE 测试入 gate”的新缺口。
+        'agent_platform/tests/test_ide_release_artifact.py'
     )
     # W5 P1-6 B1 关键集（2026-10-31）：每次独立 pytest（不同套件 sys.path 不共用，
     # 混跑会 ImportError）。清单与 docs/audit/2026-10-31_W5质量还债_v1.md §8.3 一致；
