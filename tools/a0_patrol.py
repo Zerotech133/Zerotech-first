@@ -6,13 +6,19 @@
 2. 工单体检：doing >72h 催办、review 滞留、孤儿单
 3. 影子纪律：shadow 成员若有产码动作=违规
 4. 产出判读：调 qwen3.5:9b 给一段一句话简报（可选 --llm；qwen2.5:7b 已于 10-24 清理）
+5. 决策记忆（P1-5 W4，2026-10-31）：本轮巡察摘要 append 到
+   agent_platform/data/memory/agent__A0__decision.jsonl（受控：A0_DECISION_MEMORY=off 可关；
+   幂等：同一摘要不重复写；失败不影响巡察主流程；只写摘要，不写任务描述/催办文本）
 
 用法：
-  python tools/a0_patrol.py            # 纯规则巡察
+  python tools/a0_patrol.py            # 纯规则巡察（含决策记忆 append）
   python tools/a0_patrol.py --llm      # 带 LLM 判读
+  python tools/a0_patrol.py --no-memory  # 只巡察，不写决策记忆
 挂载：计划任务 A0Patrol 每 30min（下一步注册）
 """
+import hashlib
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -39,6 +45,85 @@ except ImportError:  # 作为包导入时
 
 ORG = ROOT / "agent_platform" / "registry" / "org.json"
 HR = ROOT / "agent_platform" / "hr"
+
+# ── A0 决策记忆（P1-5 W4，2026-10-31）──────────────────────────────
+# 背景：A0 决策记忆自 2026-10-15 旧晨巡 automation 停摆后不再写入；
+# A0Patrol（K-ORG-121）每 30min 只落 llm_tool_audit 心跳/催办，无决策记忆。
+# 本段为最小修复：把本轮巡察摘要 append 到契约层已有的 A0 决策账（append-only）。
+# 约束：受控（env 可关）、幂等（同摘要不重复）、失败不影响巡察、只写摘要不写敏感明细。
+DECISION_MEMORY = (ROOT / "agent_platform" / "data" / "memory"
+                   / "agent__A0__decision.jsonl")
+DECISION_SCHEMA = "a0_patrol_decision/v1"
+DECISION_KILL_ENV = "A0_DECISION_MEMORY"
+_DECISION_KILL_VALUES = ("off", "0", "false", "no")
+
+
+def decision_enabled(env=None) -> bool:
+    """决策记忆写盘开关（默认开；A0_DECISION_MEMORY=off 立即跳过，便于回滚）。"""
+    env = os.environ if env is None else env
+    return str(env.get(DECISION_KILL_ENV) or "").strip().lower() not in _DECISION_KILL_VALUES
+
+
+def decision_summary(report: dict, ts: str = "") -> dict:
+    """把巡察报告收敛成一行摘要（只含计数/席码/判词，不含任务描述与催办文本）。"""
+    summary = {
+        "schema": DECISION_SCHEMA,
+        "ts": ts or time.strftime("%Y-%m-%d %H:%M"),
+        "event": "patrol",
+        "agent": "A0",
+        "source": "a0_patrol",
+        "verdict": str(report.get("verdict") or "")[:120],
+        "n_members": int(report.get("n_members") or 0),
+        "n_active_48h": int(report.get("n_active_48h") or 0),
+        "n_idle": int(report.get("n_idle") or 0),
+        "idle": [str(x)[:16] for x in (report.get("idle_48h") or [])][:64],
+        "overdue_n": len(report.get("overdue_doing") or []),
+        "review_stuck_n": len(report.get("review_stuck") or []),
+        "escalations_n": len(report.get("escalations") or []),
+    }
+    canonical = json.dumps(summary, ensure_ascii=False, sort_keys=True,
+                           separators=(",", ":"))
+    summary["digest"] = hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:16]
+    return summary
+
+
+def _last_memory_digest(path: Path) -> str:
+    """只读最后一行的 digest（空文件/坏行/IO 错误一律返回空，不阻塞写入）。"""
+    try:
+        if not path.exists() or path.stat().st_size == 0:
+            return ""
+        with open(path, "r", encoding="utf-8", errors="replace") as f:
+            last = f.readlines()[-1].strip()
+        return str(json.loads(last).get("digest") or "")
+    except (OSError, ValueError, IndexError):
+        return ""
+
+
+def record_decision(report: dict, memory_path=None, ts: str = "", env=None) -> dict:
+    """把本轮巡察摘要 append 到 A0 决策记忆（append-only）。
+
+    返回 dict：{"ok": bool, "written": bool, "reason"/"error"/"digest", "path"}。
+    - A0_DECISION_MEMORY=off：ok=True/written=False/reason=disabled；
+    - 同摘要（digest 相同）：ok=True/written=False/reason=duplicate；
+    - 任何异常：ok=False（不抛出），巡察主流程继续。
+    """
+    path = Path(memory_path) if memory_path is not None else DECISION_MEMORY
+    if not decision_enabled(env):
+        return {"ok": True, "written": False, "reason": "disabled",
+                "path": str(path)}
+    try:
+        summary = decision_summary(report, ts=ts)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if _last_memory_digest(path) == summary["digest"]:
+            return {"ok": True, "written": False, "reason": "duplicate",
+                    "path": str(path), "digest": summary["digest"]}
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(summary, ensure_ascii=False) + "\n")
+        return {"ok": True, "written": True, "path": str(path),
+                "digest": summary["digest"], "ts": summary["ts"]}
+    except Exception as exc:  # noqa: BLE001 记忆写盘失败不得影响巡察
+        return {"ok": False, "written": False, "path": str(path),
+                "error": "%s: %s" % (type(exc).__name__, str(exc)[:160])}
 
 
 def patrol() -> dict:
@@ -151,5 +236,12 @@ def llm_brief(report: dict) -> str:
 if __name__ == "__main__":
     rep = patrol()
     print(json.dumps(rep, ensure_ascii=False, indent=2))
+    if "--no-memory" not in sys.argv:
+        mem = record_decision(rep)
+        if mem.get("written"):
+            print("A0 决策记忆: +1 行 digest=%s" % mem.get("digest"))
+        elif not mem.get("ok"):
+            print("A0 决策记忆写入失败(不阻塞巡察): %s" % mem.get("error"),
+                  file=sys.stderr)
     if "--llm" in sys.argv:
         print("田丰判读:", llm_brief(rep))
