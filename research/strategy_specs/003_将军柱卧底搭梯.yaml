@@ -1,0 +1,27 @@
+id: LX03_GENERAL_PILLAR
+name: 将军柱（卧底/搭梯战法）
+source: 伏击涨停（修订升级版）
+chapter: 第8章第4–6节《将军柱双线认定/卧底战法/搭梯战法》
+page_start: 79
+page_end: 83
+evidence_page: 98
+evidence_quote: 基柱后3天的平均收盘价低于基柱实顶线，却高于基柱实底线
+type: 形态
+computability: B
+params:
+  confirm_days: 3
+  bottom_hold_ratio_min: 0.99
+  flat_bottom_days_min: 3
+  flat_bottom_days_max: 8
+  flat_bottom_tol_pct: 0.01
+  breakout_vol_ratio_min: 1.9
+entry_rule: is_general_pillar(T) = 基柱后3日平均收盘价 < close[T] 且 min(close[T+1..T+3]) >= 基柱实底*0.99; 卧底：其后 3~8 日依托基柱实底形成平底（低点极差<=1%）且不破实底; 突破信号：close > 平底上沿 and vol/prev_vol>=1.9 → 次日入场
+exit_rule: 收盘跌破将军柱实底（close < base_low*0.99）止损（“破底为亡”）；持有 5/10 个交易日
+test_status: untested
+tested_ref: null
+h_ids: []
+notes: |-
+  原文：将军柱比黄金柱低一档，采用“双线判定”（顶线+底线）；卧底战法=依托将军柱实底横盘平底不破，平底不破必有收获；搭梯战法=前柱垫底托起后柱（印刷79-83页，OCR 第97-101页）。
+  简化定义：用日线收盘价代理“实底/实顶”，平底用滚动极差判定；原书画线与人工辨柱。
+  状态：未测（strategy_registry book_backlog）。
+updated_at: '2026-11-01'

@@ -1,0 +1,25 @@
+id: LX07_ONE_SWORD_SEAL_THROAT
+name: 一剑封喉战法
+source: 伏击涨停（修订升级版）
+chapter: 第16章《伏击涨停的抓手：一剑封喉战法》
+page_start: 153
+page_end: 161
+evidence_page: 171
+evidence_quote: 所谓“一剑封喉”，就是一条特殊的下行斜衡线所形成的“剑”，刚好与底部水平的平衡线相交的“喉”切合，形成平底三角形
+type: 形态
+computability: C
+params:
+  cross_tol_pct: 0.005
+  confirm_points_min: 3
+  slope_lookback_days: 20
+  triangle_window_days: 10
+entry_rule: A=距今最近波峰右侧最凸出的大阴实顶; B=距今最近凹底左侧最凸出的大阴实顶; AB 连线为封喉线（需至少第3个大阴实顶 C 确认）; D=底部水平平衡线（精准线/黄金线/真底线）; 价格进入 AB×D 的逼涨三角并出现长阳矮柱/假阴真阳等底部涨停基因（close>open 且 vol/prev_vol>=1.5）→ 入场
+exit_rule: 收盘跌破底部平衡线 D（close < D*0.995）止损；三角区上沿突破失败离场
+test_status: untested
+tested_ref: null
+h_ids: []
+notes: |-
+  原文三要素：封喉线取点、第3个大阴实顶确认、底部最好为精准线/黄金线；交叉处“逼涨三角”易出中到大阳，2012-07-19 两市 46 只涨停中 44 只符合（印刷153-161页，OCR 第171-180页）。
+  简化定义：斜衡线/平衡线需算法拟合，属于画线类战法；给出可计算的“三角区间+底部基因”代理规则。
+  状态：未测；可计算化程度 C（依赖画线算法与人工判读）。
+updated_at: '2026-11-01'

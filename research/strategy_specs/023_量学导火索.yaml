@@ -1,0 +1,24 @@
+id: LX23_FUSE_TACTICS
+name: 量学导火索战法
+source: 涨停密码（修订升级版）
+chapter: 第10章《长腿踩线》引申（量学导火索战法）
+page_start: 84
+page_end: 97
+evidence_page: 116
+evidence_quote: 涨停基因密集成导火索形态，往往就是爆发涨停的前奏
+type: 概念
+computability: C
+params:
+  fuse_window_days_max: 13
+  gene_count_min: 3
+  final_confirm_vol_ratio_min: 1.9
+entry_rule: 多个涨停基因（倍量伸缩/长腿踩线/假阴真阳/黄金柱/价升量缩等）在<=13个交易日内密集连成“导火索”形态；火药填充完成（底部逐步抬高）后，最后一根放量阳线过峰确认（close>prev_high and vol/prev_vol>=1.9）→ 入场
+exit_rule: 收盘跌破导火索起点（A柱/首个黄金柱实底）止损；信号未确认不持有
+test_status: untested
+tested_ref: null
+h_ids: []
+notes: |-
+  原文（长腿踩线章末）：长腿踩线是多重基因集合的导火索，火药早在13天前的A柱开始填充；“任何单一的涨停基因不能引爆涨停，它必须有其他基因如导火索一样连结起来”（印刷84-97页，OCR 第104-117页，证据第116页）。
+  简化定义：概念级——需先定义“基因”集合与窗口密度，再统计；可计算化程度 C。
+  状态：未测（registry 仅写来源“涨停密码”，已按书补全为第10章引申）。
+updated_at: '2026-11-01'

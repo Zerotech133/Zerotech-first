@@ -1,0 +1,25 @@
+id: LX09_LIVE_SUFFOCATION
+name: 现场直憋战法
+source: 伏击涨停（修订升级版）
+chapter: 第18章《伏击涨停的契机：现场直憋战法》
+page_start: 172
+page_end: 181
+evidence_page: 191
+evidence_quote: 主力以大阴柱的实顶和实底为框架，让股价在这个框架内“现场直憋”、上下折腾，下不穿底，上不过顶
+type: 形态
+computability: B
+params:
+  box_days_min: 8
+  box_hold_ratio_min: 0.99
+  vol_low_lookback_days: 100
+  breakout_vol_ratio_min: 1.9
+entry_rule: box_top=大阴实顶, box_bottom=大阴实底; 价格在 [box_bottom*0.99, box_top*1.01] 内运行>=8日且量柱处于百日低量群（vol 为近100日低位区）; 突破：close > box_top and vol/prev_vol>=1.9（现场解憋）→ 次日入场
+exit_rule: 收盘跌破框架下线 box_bottom（close < box_bottom*0.99）止损；突破后跌破 box_top 止盈离场
+test_status: untested
+tested_ref: null
+h_ids: []
+notes: |-
+  原文三特点：跟随大势藏憋（缩量大跌）、故弄玄虚造憋（大阴实顶/实底夹成框架）、欲上先下做憋（阳胜却阴胜）；“憋”出低量群后现场解憋（印刷172-181页，OCR 第190-199页）。
+  简化定义：框架/横盘天数/百日低量群用日线滚动窗口程序化；突破需放量代理“解憋”。
+  状态：未测（strategy_registry book_backlog）。
+updated_at: '2026-11-01'

@@ -1,0 +1,24 @@
+id: LX11_SPY_TACTICS
+name: 间谍战法（量学七剑）
+source: 伏击涨停（修订升级版）
+chapter: 卷首彩页图注；相关正文第6章《股市三规律·神奇的股市密探》
+page_start: 51
+page_end: 62
+evidence_page: 3
+evidence_quote: 黑马王子讲解“间谍战法”
+type: 概念
+computability: B
+params:
+  small_double_vol_ratio_min: 1.0
+  small_double_vol_ratio_max: 1.9
+  line_tol_pct: 0.01
+entry_rule: 出现“小倍阳”（1.0 <= vol/prev_vol < 1.9 and close>open）→ 以其实底（开盘价）画水平线; 价格回踩该线不破（low >= line*0.99）且再收阳 → 入场；小倍阳密集出现视为“密探”暴露主力建仓/加仓/洗盘位置
+exit_rule: 收盘跌破最近一根小倍阳实底止损；持有 5/10 个交易日
+test_status: untested
+tested_ref: null
+h_ids: []
+notes: |-
+  原文：本书仅在卷首彩页图注出现“黑马王子讲解‘间谍战法’”与“量学七剑横天下”（OCR 第3页），正文对应第6章“神奇的股市密探”：量柱是股市密探，小倍阳一出场，主力建仓/加仓/洗盘/启动/拉升一目了然（印刷51-62页，OCR 第69-73页）。定义未在正文展开，故按概念级登记。
+  简化定义：以小倍阳+实底水平线代理“间谍/密探”信号。
+  状态：未测（strategy_registry book_backlog）。
+updated_at: '2026-11-01'

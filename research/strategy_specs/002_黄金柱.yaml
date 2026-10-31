@@ -1,0 +1,27 @@
+id: LX02_GOLDEN_PILLAR
+name: 黄金柱（三日不破实顶+缩量）
+source: 伏击涨停（修订升级版）
+chapter: 第8章第1–3节《伏击涨停的王牌：黄金柱生成/基柱选定/生死认定》
+page_start: 74
+page_end: 78
+evidence_page: 92
+evidence_quote: 基柱后3天收盘均价高于基柱实顶线，价升量缩或量平的，就是黄金柱；
+type: 形态
+computability: A
+params:
+  confirm_days: 3
+  top_hold_ratio_min: 0.99
+  vol_shrink_ratio_max: 0.9
+  base_vol_ratio5_min: 1.5
+  entry_lag_days: 4
+entry_rule: 'T日: pct_chg>0 and vol/vol_ma5>=1.5（阳柱/量比≥1.5）; T+1..T+3: all(close >= close[T]*0.99) and all(vol < vol[T]*0.9); → T+3 收盘确认“黄金柱”，T+4 开盘入场（PIT：确认日才可知，禁止 T 日直接用后3日数据）'
+exit_rule: 持有 5/10/20 个交易日；收盘跌破基柱实底（close < close[T]*0.98，“破底为亡”）止损
+test_status: tested_rejected
+tested_ref: research/reports/H29_liangxue_refined_20261031.md
+h_ids:
+- H29
+notes: |-
+  原文“一线判定法”：基柱后3天收盘均价高于基柱实顶线为黄金柱；低于实顶且未破实底为将军柱；跳空为元帅柱（印刷73-84页，OCR 第91-97页）。基柱选定：高/大/空/倍/峰（“高大空倍峰”）。
+  简化定义：H29 严格版的日线口径（阳柱量比≥1.5、后3日不破实顶×0.99、后3日缩量<90%）。
+  已测：H29_golden_pillar 事件 60,513，10日 IS -1.03%（t=-3.95）/ OOS -0.42%（t=-2.22）→ rejected；H29 报告明确“PIT 修正后前视撤回”，本规格按确认日 T+4 入场保留。
+updated_at: '2026-11-01'

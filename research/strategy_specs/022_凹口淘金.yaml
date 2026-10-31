@@ -1,0 +1,25 @@
+id: LX22_CONCAVE_NOTCH_GOLD
+name: 凹口淘金
+source: 涨停密码（修订升级版）
+chapter: 第2章《凹口淘金一抓就灵》
+page_start: 9
+page_end: 17
+evidence_page: 30
+evidence_quote: 以打压最凶狠的大阴线C的底部
+type: 形态
+computability: B
+params:
+  concave_depth_pct_min: 10.0
+  long_yin_short_pillar: true
+  bottom_golden_pillars_min: 2
+  balance_line_tol_pct: 0.01
+entry_rule: ①凹口形成：长阴短柱（pct_chg<=-3 且 vol<=prev_vol*0.7）砸出凹口；②凹底刹车换挡：凹底出现隐形黄金柱/接力黄金柱（两柱后3日价升量缩）；③凹底加油：放量阳线收复凹口平衡线（close > concave_line）→ 入场
+exit_rule: 收盘跌破凹底谷底线/黄金线（close < bottom_line*0.99）止损；持有 5/10 个交易日
+test_status: untested
+tested_ref: null
+h_ids: []
+notes: |-
+  原文三要素：凹口长阴短柱（洗盘）、凹底刹车换挡（隐形黄金柱+跳空小倍阳）、凹底加油飙涨；以打压最凶狠的大阴线底部画凹口平衡线（印刷9-17页，OCR 第29-37页）。
+  简化定义：凹口深度用回撤幅度代理，“隐形黄金柱”复用 LX02 识别。可计算化程度 B。
+  状态：未测（strategy_registry book_backlog）。
+updated_at: '2026-11-01'

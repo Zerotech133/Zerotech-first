@@ -1,0 +1,25 @@
+id: LX17_STAND_ON_CONCAVE_PEAK
+name: 站稳凹峰即将上攻
+source: 涨停密码（修订升级版）
+chapter: 第14章《站稳凹峰即将上攻》
+page_start: 125
+page_end: 130
+evidence_page: 145
+evidence_quote: 所谓“凹间峰”，就是在一段波谷中间所“凸”起的或大或小的“峰”
+type: 形态
+computability: B
+params:
+  peak_line_points_min: 3
+  peak_line_tol_pct: 0.01
+  pullback_hold_ratio_min: 0.99
+  pullback_days_max: 5
+entry_rule: 识别凹间峰（两谷之间的凸起，价柱常为当前最大量柱/前期假阴真阳）; 以凹间峰大阴实顶画凹峰线（水平线与附近价柱≥3个契合点）; 回踩凹峰线不破且向上翘起：low <= line*1.01 and close >= line*0.99 and close>open → 入场
+exit_rule: 收盘有效跌破凹峰线（close < line*0.99）止损；持有 5/10 个交易日
+test_status: untested
+tested_ref: null
+h_ids: []
+notes: |-
+  原文凹间峰五特点：价柱往往是当前最大量柱、往往是主力前期假阴真阳、大阴实顶画线与附近价柱≥3个契合点、右侧往往是中到大阳、次日附近回踩凹峰线（印刷125-130页，OCR 第145-149页）。
+  简化定义：峰识别用滚动高低点+量柱极大值；凹峰线用拟合水平线。可计算化程度 B。
+  状态：未测（strategy_registry book_backlog）。
+updated_at: '2026-11-01'

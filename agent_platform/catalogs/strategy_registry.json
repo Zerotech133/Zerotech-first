@@ -90,147 +90,223 @@
         "name": "量柱七形态（高/低/平/倍/梯/缩/金）",
         "source": "伏击涨停·序言",
         "status": "部分已测",
-        "note": "H24 倍量柱/H25 价升量缩 → rejected（简化定义无效）"
+        "note": "H24 倍量柱/H25 价升量缩 → rejected（简化定义无效）",
+        "strategy_spec_id": "LX01_SEVEN_VOLUME_FORMS",
+        "spec_test_status": "tested_rejected",
+        "computability": "A"
       },
       {
         "name": "黄金柱（三日不破实顶+缩量）",
         "source": "伏击涨停·第8章",
         "status": "已测",
-        "note": "H29 严格版 → rejected（PIT 修正后前视撤回）"
+        "note": "H29 严格版 → rejected（PIT 修正后前视撤回）",
+        "strategy_spec_id": "LX02_GOLDEN_PILLAR",
+        "spec_test_status": "tested_rejected",
+        "computability": "A"
       },
       {
         "name": "将军柱（卧底/搭梯战法）",
         "source": "伏击涨停·第8章",
         "status": "未测",
-        "note": "backlog"
+        "note": "backlog",
+        "strategy_spec_id": "LX03_GENERAL_PILLAR",
+        "spec_test_status": "untested",
+        "computability": "B"
       },
       {
         "name": "元帅柱·零号战法",
         "source": "伏击涨停·第9章",
         "status": "未测",
-        "note": "backlog"
+        "note": "backlog",
+        "strategy_spec_id": "LX04_MARSHAL_PILLAR_ZERO",
+        "spec_test_status": "untested",
+        "computability": "B"
       },
       {
         "name": "金线战法三步曲（黄金线/黄金双线/黄金十字）",
         "source": "伏击涨停·第11章",
         "status": "未测",
-        "note": "backlog"
+        "note": "backlog",
+        "strategy_spec_id": "LX05_GOLDEN_LINE_TRILOGY",
+        "spec_test_status": "untested",
+        "computability": "B"
       },
       {
         "name": "大盘阴线战法 / 长阴短柱",
         "source": "伏击涨停·第14章",
         "status": "未测",
-        "note": "backlog"
+        "note": "backlog",
+        "strategy_spec_id": "LX06_YIN_LINE_TACTICS",
+        "spec_test_status": "untested",
+        "computability": "B"
       },
       {
         "name": "一剑封喉战法",
         "source": "伏击涨停·第15章",
         "status": "未测",
-        "note": "backlog"
+        "note": "backlog",
+        "strategy_spec_id": "LX07_ONE_SWORD_SEAL_THROAT",
+        "spec_test_status": "untested",
+        "computability": "C"
       },
       {
         "name": "倍量伸缩战法",
         "source": "伏击涨停",
         "status": "部分已测",
-        "note": "H29 倍量确认 → rejected"
+        "note": "H29 倍量确认 → rejected",
+        "strategy_spec_id": "LX08_DOUBLE_VOL_EXPAND_CONTRACT",
+        "spec_test_status": "tested_rejected",
+        "computability": "A"
       },
       {
         "name": "现场直憋战法",
         "source": "伏击涨停",
         "status": "未测",
-        "note": "backlog"
+        "note": "backlog",
+        "strategy_spec_id": "LX09_LIVE_SUFFOCATION",
+        "spec_test_status": "untested",
+        "computability": "B"
       },
       {
         "name": "3121 战法",
         "source": "伏击涨停",
         "status": "未测",
-        "note": "backlog"
+        "note": "backlog",
+        "strategy_spec_id": "LX10_3121_RULER",
+        "spec_test_status": "untested",
+        "computability": "A"
       },
       {
         "name": "间谍战法（量学七剑）",
         "source": "伏击涨停",
         "status": "未测",
-        "note": "backlog"
+        "note": "backlog",
+        "strategy_spec_id": "LX11_SPY_TACTICS",
+        "spec_test_status": "untested",
+        "computability": "B"
       },
       {
         "name": "双阴出货战法",
         "source": "涨停密码·附",
         "status": "未测",
-        "note": "backlog"
+        "note": "backlog",
+        "strategy_spec_id": "LX12_DOUBLE_YIN_EXIT",
+        "spec_test_status": "untested",
+        "computability": "A"
       },
       {
         "name": "兵临城下（试关/攻关/冲关/守关）",
         "source": "涨停密码·第4章",
         "status": "已测",
-        "note": "H27 near_high_vol → rejected"
+        "note": "H27 near_high_vol → rejected",
+        "strategy_spec_id": "LX13_ARMY_AT_CITY_GATE",
+        "spec_test_status": "tested_rejected",
+        "computability": "B"
       },
       {
         "name": "接力双阳",
         "source": "涨停密码·第5章",
         "status": "未测",
-        "note": "backlog"
+        "note": "backlog",
+        "strategy_spec_id": "LX14_RELAY_DOUBLE_YANG",
+        "spec_test_status": "untested",
+        "computability": "A"
       },
       {
         "name": "价升量缩择机做多",
         "source": "涨停密码·第12章",
         "status": "已测",
-        "note": "H25 → rejected"
+        "note": "H25 → rejected",
+        "strategy_spec_id": "LX15_PRICE_UP_VOL_DOWN",
+        "spec_test_status": "tested_rejected",
+        "computability": "A"
       },
       {
         "name": "平斜交叉不上必下",
         "source": "涨停密码·第13章",
         "status": "未测",
-        "note": "backlog"
+        "note": "backlog",
+        "strategy_spec_id": "LX16_FLAT_SLANT_CROSS",
+        "spec_test_status": "untested",
+        "computability": "C"
       },
       {
         "name": "站稳凹峰即将上攻",
         "source": "涨停密码·第14章",
         "status": "未测",
-        "note": "backlog"
+        "note": "backlog",
+        "strategy_spec_id": "LX17_STAND_ON_CONCAVE_PEAK",
+        "spec_test_status": "untested",
+        "computability": "B"
       },
       {
         "name": "极阴次阳择幅建仓",
         "source": "涨停密码·第15章",
         "status": "已测",
-        "note": "H26 → rejected（严格版仍负）"
+        "note": "H26 → rejected（严格版仍负）",
+        "strategy_spec_id": "LX18_EXTREME_YIN_NEXT_YANG",
+        "spec_test_status": "tested_rejected",
+        "computability": "A"
       },
       {
         "name": "牛股量形",
         "source": "涨停密码·第16章",
         "status": "未测",
-        "note": "backlog"
+        "note": "backlog",
+        "strategy_spec_id": "LX19_BULL_STOCK_VOLUME_SHAPE",
+        "spec_test_status": "untested",
+        "computability": "B"
       },
       {
         "name": "牛股三绝",
         "source": "涨停密码·第17章",
         "status": "未测",
-        "note": "backlog"
+        "note": "backlog",
+        "strategy_spec_id": "LX20_BULL_STOCK_THREE_ABSOLUTES",
+        "spec_test_status": "untested",
+        "computability": "A"
       },
       {
         "name": "十月怀胎一朝分娩",
         "source": "涨停密码·第1章",
         "status": "未测",
-        "note": "backlog"
+        "note": "backlog",
+        "strategy_spec_id": "LX21_TEN_MONTH_PREGNANCY",
+        "spec_test_status": "untested",
+        "computability": "C"
       },
       {
         "name": "凹口淘金",
         "source": "涨停密码·第2章",
         "status": "未测",
-        "note": "backlog"
+        "note": "backlog",
+        "strategy_spec_id": "LX22_CONCAVE_NOTCH_GOLD",
+        "spec_test_status": "untested",
+        "computability": "B"
       },
       {
         "name": "量学导火索战法",
         "source": "涨停密码",
         "status": "未测",
-        "note": "backlog"
+        "note": "backlog",
+        "strategy_spec_id": "LX23_FUSE_TACTICS",
+        "spec_test_status": "untested",
+        "computability": "C"
       },
       {
         "name": "涨停基因（单个/组合）",
         "source": "涨停密码·前言",
         "status": "概念",
-        "note": "作为特征映射框架使用"
+        "note": "作为特征映射框架使用",
+        "strategy_spec_id": "LX24_LIMIT_UP_GENE",
+        "spec_test_status": "concept",
+        "computability": "C"
       }
     ],
-    "updated_at": "2026-11-01T05:33:27+08:00"
+    "updated_at": "2026-11-01T05:43:42+08:00",
+    "spec_dir": "research/strategy_specs/",
+    "spec_loader": "tools/research/strategy_specs.py",
+    "spec_mapped": 24,
+    "spec_unmapped": []
   }
 }

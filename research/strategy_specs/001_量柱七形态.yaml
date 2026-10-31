@@ -1,0 +1,28 @@
+id: LX01_SEVEN_VOLUME_FORMS
+name: 量柱七形态（高/低/平/倍/梯/缩/金）
+source: 伏击涨停（修订升级版）
+chapter: 序言1《量学理论的七大贡献》；第4章第1节《量柱的形态及规律》
+page_start: 31
+page_end: 33
+evidence_page: 49
+evidence_quote: 即可将其归纳为“高低平倍梯缩金”这7种形态
+type: 形态
+computability: A
+params:
+  vol_ratio_prev_double_min: 1.9
+  vol_ratio_ma5_double_min: 1.9
+  flat_band_pct_max: 0.05
+  hundred_low_lookback_days: 100
+  golden_confirm_days: 3
+entry_rule: 'kind = classify_pillar(vol, prev_vol)  # 就近对比/左推法：高量=阶段最高、低量=阶段最低、平量=abs(vol/prev_vol-1)<=0.05、倍量=vol/prev_vol>=1.9、梯量=连续递增、缩量=连续递减、金=黄金柱见 LX02；看涨分支：kind in {''倍量'',''金''} and close > open（H24 口径 vol/vol_ma5>=1.9 and pct_chg>0），或 kind==''缩量'' and pct_chg>0 and close>prev_close（H25 口径）'
+exit_rule: 持有 5/10/20 个交易日后到期离场；收盘跌破形态柱实底（close < base_low*0.98）止损
+test_status: tested_rejected
+tested_ref: research/reports/H24-26_liangxue_features_20261031.md
+h_ids:
+- H24
+- H25
+notes: |-
+  原文：把量柱完全分类为“高低平倍梯缩金”七种（序言 OCR 第6页/印刷 IV），第4章第1节给出各形态定义与测市规律（印刷31-33页，OCR 第49-51页；OCR 页码=印刷页码+18）。
+  简化定义：以 vol/prev_vol（或 vol/vol_ma5）做“就近对比”分类，把“高/低/梯/缩”降级为滚动窗口阈值；原书要求左推法人工对比。
+  已测：H24 倍量柱（vol_ratio5>=1.9 且收阳）事件 169,211，10日 OOS -1.78%（t=-16.03）；H25 价升量缩（收阳且缩量<80%）事件 739,383，10日 OOS -0.62%（t=-6.72）；bootstrap p(<=0) 均=1.0 → 判定 rejected（量学看涨形态在本样本上是反向/规避信号）。
+updated_at: '2026-11-01'

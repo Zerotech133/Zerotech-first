@@ -1,0 +1,25 @@
+id: LX20_BULL_STOCK_THREE_ABSOLUTES
+name: 牛股三绝（倍量不穿/高量不破/跳空不补）
+source: 涨停密码（修订升级版）
+chapter: 第17章《牛股三绝上涨不歇》
+page_start: 155
+page_end: 163
+evidence_page: 175
+evidence_quote: 所谓“倍量不穿”，就是倍量柱后面的波段回调没有击穿其倍量柱对应的价柱实体
+type: 过滤器
+computability: A
+params:
+  double_vol_ratio_min: 1.9
+  high_vol_lookback_days: 60
+  gap_hold_ratio_min: 0.99
+  target_multiple: 2.0
+entry_rule: 持有/加仓过滤（不是独立入场）：倍量不穿=倍量柱（vol/prev_vol>=1.9 且收阳）后回调 close >= 该柱实体下沿；高量不破=高量柱（近60日最高量）后回调 close >= 其价柱实底 且后续量柱不超高量柱；跳空不补=向上跳空缺口回调低点不破缺口/元帅柱实顶 → 维持持有；目标位=第3根倍量不穿柱实顶×2 递推
+exit_rule: 对应基因被击穿（跌破倍量柱实体/高量柱实底/回补缺口）即离场；目标位=实顶×2 到达后按书分批
+test_status: untested
+tested_ref: null
+h_ids: []
+notes: |-
+  原文：牛股三绝=倍量不穿（后市翻番）、高量不破（后市必火）、跳空不补（后市如虎）；用于“骑牛”不被甩下来的持有过滤，配合牛股量形使用（印刷155-163页，OCR 第175-183页）。
+  简化定义：三种“不穿/不破/不补”用日线回调低点与柱体阈值程序化；作为过滤器需先有 LX02/LX19 选股前置。
+  状态：未测（strategy_registry book_backlog）。
+updated_at: '2026-11-01'

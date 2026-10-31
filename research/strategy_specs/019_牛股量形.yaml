@@ -1,0 +1,25 @@
+id: LX19_BULL_STOCK_VOLUME_SHAPE
+name: 牛股量形（五要素/三阶段）
+source: 涨停密码（修订升级版）
+chapter: 第16章《牛股量形看懂就赢》
+page_start: 142
+page_end: 154
+evidence_page: 163
+evidence_quote: 从量柱上看，长期百日低量，风平浪静
+type: 概念
+computability: B
+params:
+  low_vol_lookback_days: 100
+  prepare_days_min: 60
+  launch_vol_ratio_min: 1.9
+  pullback_gold_cross: true
+entry_rule: 五要素同现：①量柱长期百日低量群；②价柱大起大落波浪滔天；③启动柱倍阳过左峰/踩线（vol/prev_vol>=1.9 and close>prev_high）；④拉升柱价升量缩越走越强；⑤回踩依托黄金十字/黄金线 → 启动柱确认后入场；三阶段：孕育期→启动期→爆发期
+exit_rule: 收盘跌破启动柱实底或最近黄金十字止损；趋势跟踪（价升量缩不破则持有）
+test_status: untested
+tested_ref: null
+h_ids: []
+notes: |-
+  原文：牛股=短时间涨幅翻番（慢牛/强牛/快牛/猛牛四类）；五要素与三阶段（孕育/启动/爆发）、擒牛三个机会、“五五法则”（印刷142-154页，OCR 第162-173页）。
+  简化定义：五要素中①③④可日线计算，②⑤依赖波段/画线；作为牛股识别框架而非单点信号，可计算化程度 B。
+  状态：未测（strategy_registry book_backlog）。
+updated_at: '2026-11-01'

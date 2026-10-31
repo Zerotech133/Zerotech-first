@@ -1,0 +1,26 @@
+id: LX08_DOUBLE_VOL_EXPAND_CONTRACT
+name: 倍量伸缩战法
+source: 伏击涨停（修订升级版）
+chapter: 第17章《伏击涨停的先兆：倍量伸缩战法》
+page_start: 162
+page_end: 171
+evidence_page: 180
+evidence_quote: 所谓“倍量伸缩”，就是“伸倍量柱+缩倍量柱”的组合
+type: 形态
+computability: A
+params:
+  expand_ratio_min: 1.9
+  shrink_confirm_ratio_max: 0.6
+  dual_shrink_ratio_max: 0.5
+  bottom_lookback_days: 20
+entry_rule: 'T日: vol/vol_ma5>=1.9 and pct_chg>0（伸倍量柱）; T+1日: vol < vol[T]*0.6 and close >= close[T]（缩倍量确认，不破前收）; → T+2 开盘入场（H29 简化口径）。原书凹底口径：凹底“缩倍双阴”（两阴柱平均高度≤前柱 50%）后出现“阳过阴”时介入'
+exit_rule: 持有 5/10/20 个交易日；收盘跌破凹底谷底线/倍量柱实底止损
+test_status: tested_rejected
+tested_ref: research/reports/H29_liangxue_refined_20261031.md
+h_ids:
+- H29
+notes: |-
+  原文：“伸倍量柱+缩倍量柱”组合，要求出现在股价走势凹底部位、踩到预设攻防线（印刷162-171页，OCR 第180-189页）。
+  简化定义：H29 的倍量确认版（倍量收阳→次日缩量<60%且不破前收→次日入场），PIT：T+1 收盘确认。
+  已测：H29_double_vol_confirm 事件 10,306，10日 IS +0.25%（t=0.56）/ OOS -0.87%（t=-2.06）→ rejected。
+updated_at: '2026-11-01'

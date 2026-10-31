@@ -1,0 +1,24 @@
+id: LX21_TEN_MONTH_PREGNANCY
+name: 十月怀胎一朝分娩
+source: 涨停密码（修订升级版）
+chapter: 第1章《十月怀胎一朝分娩》
+page_start: 1
+page_end: 8
+evidence_page: 21
+evidence_quote: “涨停密码”特指构成股票涨停或走牛的基本因子组合
+type: 概念
+computability: C
+params:
+  low_vol_lookback_days: 100
+  prepare_days_min: 60
+  gene_count_min: 3
+entry_rule: 蓄势框架：长期百日低量群/低位横盘（>=60日）为主力“怀胎”；其间涨停基因（倍量柱/价升量缩/接力双阳/倍量伸缩等）密集出现>=3个 → 视为“一朝分娩”前兆，择机伏击；单因是银，组合是金
+exit_rule: 跌破吸筹平台/基因柱实底止损；作为组合框架不单独给持有期
+test_status: untested
+tested_ref: null
+h_ids: []
+notes: |-
+  原文：《涨停密码》总纲——涨停密码=基本因子（涨停基因）组合；主力运作如“十月怀胎”，涨停/拉升如“一朝分娩”，不管行情（印刷1-8页，OCR 第21-28页）；案例分析英唐智控 B/B1 接力双阳、C/C1 倍量不穿等组合。
+  简化定义：框架级概念，需先有各基因规格（LX01/LX08/LX14 等）才能实例化；可计算化程度 C。
+  状态：未测（strategy_registry book_backlog）。
+updated_at: '2026-11-01'

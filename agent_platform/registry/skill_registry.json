@@ -2,44 +2,292 @@
   "_note": "K-ORG-190 拍板①（2026-10-19 老田确认）：Skill=插件，Agent=编制——Agent 的 skills 数组只存 {id, kind, enabled} 引用，实体永不内嵌。本注册表是唯一技能真源；kind 五类：tool（内置工具）/ algo（算法商品，外键 portal/algo_market.json）/ automation（计划任务与 automation）/ prompt（人设包，按 role_profile 动态解析 agent_platform/prompts/*.md 与 registry/claude_agents.json，不在本文件枚举）/ external（外部 skill，预留）。加 Skill=在本文件加条目，不改 Agent 框架（K-ORG-019 判例平移）。 | K-ORG-190 技能普查（2026-10-19，报告=agent_platform/docs/audit/2026-10-19_技能普查_K-ORG-190.md）：修正 devtask/events/三 automation 的 ref 为实证路径；补登记 22 条漏项（ollama、paper_bridge、ST1 十八只读判读工具、AgentShadowDaily、AgentShadowEvalWeekly）；本轮无悬空条目。",
   "registry": "laotian_skills",
   "version": "v1",
-  "kinds": ["tool", "algo", "automation", "external"],
+  "kinds": [
+    "tool",
+    "algo",
+    "automation",
+    "external"
+  ],
   "skills": [
-    { "id": "devtask", "kind": "tool", "title": "研发工单", "ref": "tools/devtask.py", "enabled": true },
-    { "id": "events", "kind": "tool", "title": "事件总线", "ref": "tools/events.py", "enabled": true },
-    { "id": "ollama", "kind": "tool", "title": "Ollama 本地模型运行时（tuned 守护）", "ref": "agent_platform/tools/start_tuned_ollama.py", "enabled": true },
-    { "id": "paper_bridge", "kind": "tool", "title": "Paper 模拟盘执行桥", "ref": "k_stock/paper/engine.py#PaperEngine", "enabled": true },
-    { "id": "tgraph_slots", "kind": "tool", "title": "结构槽位边际战绩", "ref": "quant_backtest/agent_tools.py#tgraph_slots", "enabled": true },
-    { "id": "tgraph_eval", "kind": "tool", "title": "P10 升级预演分层", "ref": "quant_backtest/agent_tools.py#tgraph_eval", "enabled": true },
-    { "id": "tgraph_left_tail", "kind": "tool", "title": "npv 分层左尾统计", "ref": "quant_backtest/agent_tools.py#tgraph_left_tail", "enabled": true },
-    { "id": "tgraph_fps", "kind": "tool", "title": "结构指纹分组战绩", "ref": "quant_backtest/agent_tools.py#tgraph_fps", "enabled": true },
-    { "id": "signal_precedents", "kind": "tool", "title": "先例检索 topk", "ref": "quant_backtest/agent_tools.py#signal_precedents", "enabled": true },
-    { "id": "signal_enrich", "kind": "tool", "title": "信号增强（先例+摘要）", "ref": "quant_backtest/agent_tools.py#signal_enrich", "enabled": true },
-    { "id": "events_for_stock", "kind": "tool", "title": "个股事件流", "ref": "quant_backtest/agent_tools.py#events_for_stock", "enabled": true },
-    { "id": "related_events", "kind": "tool", "title": "语义检索事件", "ref": "quant_backtest/agent_tools.py#related_events", "enabled": true },
-    { "id": "event_summary", "kind": "tool", "title": "个股事件摘要", "ref": "quant_backtest/agent_tools.py#event_summary", "enabled": true },
-    { "id": "recent_events", "kind": "tool", "title": "近期强事件", "ref": "quant_backtest/agent_tools.py#recent_events", "enabled": true },
-    { "id": "datamart_read", "kind": "tool", "title": "数据中台读层", "ref": "quant_backtest/agent_tools.py#datamart_read", "enabled": true },
-    { "id": "datamart_latest", "kind": "tool", "title": "表最新日期", "ref": "quant_backtest/agent_tools.py#datamart_latest", "enabled": true },
-    { "id": "datamart_ready", "kind": "tool", "title": "表可用性", "ref": "quant_backtest/agent_tools.py#datamart_ready", "enabled": true },
-    { "id": "market_snapshot", "kind": "tool", "title": "市场总量快照", "ref": "quant_backtest/agent_tools.py#market_snapshot", "enabled": true },
-    { "id": "data_health", "kind": "tool", "title": "全仓健康扫描", "ref": "quant_backtest/agent_tools.py#data_health", "enabled": true },
-    { "id": "pool_rows", "kind": "tool", "title": "预警池查询", "ref": "quant_backtest/agent_tools.py#pool_rows", "enabled": true },
-    { "id": "stock_info", "kind": "tool", "title": "股票身份卡", "ref": "quant_backtest/agent_tools.py#stock_info", "enabled": true },
-    { "id": "paper_positions", "kind": "tool", "title": "模拟账本", "ref": "quant_backtest/agent_tools.py#paper_positions", "enabled": true },
-    { "id": "quant_dual", "kind": "algo", "title": "量子双刀 · 三阶段流水线", "ref": "portal/algo_market.json#quant_dual", "enabled": true },
-    { "id": "riskguard", "kind": "algo", "title": "RiskGuard 风控影子评估", "ref": "portal/algo_market.json#riskguard", "enabled": true },
-    { "id": "chanlun_9dim", "kind": "algo", "title": "缠论九维结构研判", "ref": "portal/algo_market.json#chanlun_9dim", "enabled": true },
-    { "id": "jev_sentiment", "kind": "algo", "title": "JEV 消息面情绪研判", "ref": "portal/algo_market.json#jev_sentiment", "enabled": true },
-    { "id": "tdx_backtest", "kind": "algo", "title": "TDX 回测引擎", "ref": "portal/algo_market.json#tdx_backtest", "enabled": true },
-    { "id": "score_ranking", "kind": "algo", "title": "Score 多因子评分排序", "ref": "portal/algo_market.json#score_ranking", "enabled": true },
-    { "id": "xq_data_review", "kind": "automation", "title": "雪球数据健康复盘（每日 07:40）", "ref": "automation_runs/xq_data_review", "enabled": true },
-    { "id": "chief_push_1735", "kind": "automation", "title": "参谋长值班判读（每日 17:35）", "ref": "agent_platform/shadow_automation.ps1#push", "enabled": true },
-    { "id": "agent_shadow_daily", "kind": "automation", "title": "影子链逐日跑单（工作日 17:10）", "ref": "agent_platform/shadow_automation.ps1#run", "enabled": true },
-    { "id": "agent_shadow_eval_weekly", "kind": "automation", "title": "影子链周度评估（周五 17:45）", "ref": "agent_platform/shadow_automation.ps1#eval", "enabled": true },
-    { "id": "premarket_receipt", "kind": "automation", "title": "盘前跑单回执", "ref": "quant_backtest/premarket_run_receipt.py", "enabled": true },
-    { "id": "pdf_knowledge_ingest", "kind": "tool", "title": "扫描版 PDF 知识入库（OCR→结构→知识单元→RAG）", "ref": "tools/kb_corpus/pdf_ingest.py", "enabled": true },
-    { "id": "kb_reports_search", "kind": "tool", "title": "研报知识库检索（Agent 只读）", "ref": "tools/kb_corpus/kb_reports_search.py", "enabled": true },
-    { "id": "kb_read_api", "kind": "tool", "title": "知识库只读接口（KB Read API v1）", "ref": "tools/kb_corpus/kb_read_api.py", "enabled": true },
-    { "id": "selection_daily", "kind": "tool", "title": "每日选股（策略库·司马微）", "ref": "tools/research/selection_daily.py", "enabled": true }
+    {
+      "id": "devtask",
+      "kind": "tool",
+      "title": "研发工单",
+      "ref": "tools/devtask.py",
+      "enabled": true
+    },
+    {
+      "id": "events",
+      "kind": "tool",
+      "title": "事件总线",
+      "ref": "tools/events.py",
+      "enabled": true
+    },
+    {
+      "id": "ollama",
+      "kind": "tool",
+      "title": "Ollama 本地模型运行时（tuned 守护）",
+      "ref": "agent_platform/tools/start_tuned_ollama.py",
+      "enabled": true
+    },
+    {
+      "id": "paper_bridge",
+      "kind": "tool",
+      "title": "Paper 模拟盘执行桥",
+      "ref": "k_stock/paper/engine.py#PaperEngine",
+      "enabled": true
+    },
+    {
+      "id": "tgraph_slots",
+      "kind": "tool",
+      "title": "结构槽位边际战绩",
+      "ref": "quant_backtest/agent_tools.py#tgraph_slots",
+      "enabled": true
+    },
+    {
+      "id": "tgraph_eval",
+      "kind": "tool",
+      "title": "P10 升级预演分层",
+      "ref": "quant_backtest/agent_tools.py#tgraph_eval",
+      "enabled": true
+    },
+    {
+      "id": "tgraph_left_tail",
+      "kind": "tool",
+      "title": "npv 分层左尾统计",
+      "ref": "quant_backtest/agent_tools.py#tgraph_left_tail",
+      "enabled": true
+    },
+    {
+      "id": "tgraph_fps",
+      "kind": "tool",
+      "title": "结构指纹分组战绩",
+      "ref": "quant_backtest/agent_tools.py#tgraph_fps",
+      "enabled": true
+    },
+    {
+      "id": "signal_precedents",
+      "kind": "tool",
+      "title": "先例检索 topk",
+      "ref": "quant_backtest/agent_tools.py#signal_precedents",
+      "enabled": true
+    },
+    {
+      "id": "signal_enrich",
+      "kind": "tool",
+      "title": "信号增强（先例+摘要）",
+      "ref": "quant_backtest/agent_tools.py#signal_enrich",
+      "enabled": true
+    },
+    {
+      "id": "events_for_stock",
+      "kind": "tool",
+      "title": "个股事件流",
+      "ref": "quant_backtest/agent_tools.py#events_for_stock",
+      "enabled": true
+    },
+    {
+      "id": "related_events",
+      "kind": "tool",
+      "title": "语义检索事件",
+      "ref": "quant_backtest/agent_tools.py#related_events",
+      "enabled": true
+    },
+    {
+      "id": "event_summary",
+      "kind": "tool",
+      "title": "个股事件摘要",
+      "ref": "quant_backtest/agent_tools.py#event_summary",
+      "enabled": true
+    },
+    {
+      "id": "recent_events",
+      "kind": "tool",
+      "title": "近期强事件",
+      "ref": "quant_backtest/agent_tools.py#recent_events",
+      "enabled": true
+    },
+    {
+      "id": "datamart_read",
+      "kind": "tool",
+      "title": "数据中台读层",
+      "ref": "quant_backtest/agent_tools.py#datamart_read",
+      "enabled": true
+    },
+    {
+      "id": "datamart_latest",
+      "kind": "tool",
+      "title": "表最新日期",
+      "ref": "quant_backtest/agent_tools.py#datamart_latest",
+      "enabled": true
+    },
+    {
+      "id": "datamart_ready",
+      "kind": "tool",
+      "title": "表可用性",
+      "ref": "quant_backtest/agent_tools.py#datamart_ready",
+      "enabled": true
+    },
+    {
+      "id": "market_snapshot",
+      "kind": "tool",
+      "title": "市场总量快照",
+      "ref": "quant_backtest/agent_tools.py#market_snapshot",
+      "enabled": true
+    },
+    {
+      "id": "data_health",
+      "kind": "tool",
+      "title": "全仓健康扫描",
+      "ref": "quant_backtest/agent_tools.py#data_health",
+      "enabled": true
+    },
+    {
+      "id": "pool_rows",
+      "kind": "tool",
+      "title": "预警池查询",
+      "ref": "quant_backtest/agent_tools.py#pool_rows",
+      "enabled": true
+    },
+    {
+      "id": "stock_info",
+      "kind": "tool",
+      "title": "股票身份卡",
+      "ref": "quant_backtest/agent_tools.py#stock_info",
+      "enabled": true
+    },
+    {
+      "id": "paper_positions",
+      "kind": "tool",
+      "title": "模拟账本",
+      "ref": "quant_backtest/agent_tools.py#paper_positions",
+      "enabled": true
+    },
+    {
+      "id": "quant_dual",
+      "kind": "algo",
+      "title": "量子双刀 · 三阶段流水线",
+      "ref": "portal/algo_market.json#quant_dual",
+      "enabled": true
+    },
+    {
+      "id": "riskguard",
+      "kind": "algo",
+      "title": "RiskGuard 风控影子评估",
+      "ref": "portal/algo_market.json#riskguard",
+      "enabled": true
+    },
+    {
+      "id": "chanlun_9dim",
+      "kind": "algo",
+      "title": "缠论九维结构研判",
+      "ref": "portal/algo_market.json#chanlun_9dim",
+      "enabled": true
+    },
+    {
+      "id": "jev_sentiment",
+      "kind": "algo",
+      "title": "JEV 消息面情绪研判",
+      "ref": "portal/algo_market.json#jev_sentiment",
+      "enabled": true
+    },
+    {
+      "id": "tdx_backtest",
+      "kind": "algo",
+      "title": "TDX 回测引擎",
+      "ref": "portal/algo_market.json#tdx_backtest",
+      "enabled": true
+    },
+    {
+      "id": "score_ranking",
+      "kind": "algo",
+      "title": "Score 多因子评分排序",
+      "ref": "portal/algo_market.json#score_ranking",
+      "enabled": true
+    },
+    {
+      "id": "xq_data_review",
+      "kind": "automation",
+      "title": "雪球数据健康复盘（每日 07:40）",
+      "ref": "automation_runs/xq_data_review",
+      "enabled": true
+    },
+    {
+      "id": "chief_push_1735",
+      "kind": "automation",
+      "title": "参谋长值班判读（每日 17:35）",
+      "ref": "agent_platform/shadow_automation.ps1#push",
+      "enabled": true
+    },
+    {
+      "id": "agent_shadow_daily",
+      "kind": "automation",
+      "title": "影子链逐日跑单（工作日 17:10）",
+      "ref": "agent_platform/shadow_automation.ps1#run",
+      "enabled": true
+    },
+    {
+      "id": "agent_shadow_eval_weekly",
+      "kind": "automation",
+      "title": "影子链周度评估（周五 17:45）",
+      "ref": "agent_platform/shadow_automation.ps1#eval",
+      "enabled": true
+    },
+    {
+      "id": "premarket_receipt",
+      "kind": "automation",
+      "title": "盘前跑单回执",
+      "ref": "quant_backtest/premarket_run_receipt.py",
+      "enabled": true
+    },
+    {
+      "id": "pdf_knowledge_ingest",
+      "kind": "tool",
+      "title": "扫描版 PDF 知识入库（OCR→结构→知识单元→RAG）",
+      "ref": "tools/kb_corpus/pdf_ingest.py",
+      "enabled": true
+    },
+    {
+      "id": "kb_reports_search",
+      "kind": "tool",
+      "title": "研报知识库检索（Agent 只读）",
+      "ref": "tools/kb_corpus/kb_reports_search.py",
+      "enabled": true
+    },
+    {
+      "id": "kb_read_api",
+      "kind": "tool",
+      "title": "知识库只读接口（KB Read API v1）",
+      "ref": "tools/kb_corpus/kb_read_api.py",
+      "enabled": true
+    },
+    {
+      "id": "selection_daily",
+      "kind": "tool",
+      "title": "每日选股（策略库·司马微）",
+      "ref": "tools/research/selection_daily.py",
+      "enabled": true
+    },
+    {
+      "id": "factor_lib",
+      "kind": "tool",
+      "title": "因子库（量学形态+通用，PIT/IC）",
+      "ref": "tools/research/factor_lib.py",
+      "enabled": true
+    },
+    {
+      "id": "bt_harness",
+      "kind": "tool",
+      "title": "统一回测口径（复权/涨跌停/停牌/成本）",
+      "ref": "tools/research/bt_harness.py",
+      "enabled": true
+    },
+    {
+      "id": "strategy_specs",
+      "kind": "tool",
+      "title": "战法规格库（24 YAML 校验/查询）",
+      "ref": "tools/research/strategy_specs.py",
+      "enabled": true
+    }
   ]
 }

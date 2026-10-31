@@ -1,0 +1,25 @@
+id: LX12_DOUBLE_YIN_EXIT
+name: 双阴出货战法
+source: 涨停密码（修订升级版）
+chapter: 第6章《双阴进出攻防有度》
+page_start: 43
+page_end: 53
+evidence_page: 63
+evidence_quote: 所谓“双阴出货”，就是在发现将要呈现连续两个阴柱的第一临界点出货
+type: 事件
+computability: A
+params:
+  consecutive_yin_min: 2
+  break_prev_close_ratio: 1.0
+  trend_lookback_days: 20
+  fake_yang_included: true
+entry_rule: 出场/风控信号（非做多入场）：连续两根阴柱（含低开高走假阳柱），若第二根阴柱收盘 <= 第一根阴柱收盘，或第一根阴柱跌破左侧第一阳柱实底 → 盘中/收盘出货；趋势过滤：下降途中的双阴出货全部正确，上升途中不正确（不做规避）
+exit_rule: 触发即清仓/减仓；不适用持有期；与“大阴出货技术”联动可提高胜率
+test_status: untested
+tested_ref: null
+h_ids: []
+notes: |-
+  原文：双阴出货的临界点=第一阴柱跌破左侧第一阳柱实底（阴克阳，快逃亡）；第二阴柱有效跌破第一阴柱收盘价亦出货；17 处样本中仅 4 处失误，且失误全在上升途中（印刷43-53页，OCR 第63-68页）。
+  简化定义：纯日线可算，但原书用于盘中分时确认，故作为事件级出场规则登记。
+  状态：未测；registry 原写“涨停密码·附”，实际为第6章（已按书更正）。
+updated_at: '2026-11-01'

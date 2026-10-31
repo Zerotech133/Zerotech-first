@@ -1,0 +1,25 @@
+id: LX04_MARSHAL_PILLAR_ZERO
+name: 元帅柱·零号战法
+source: 伏击涨停（修订升级版）
+chapter: 第9章《伏击涨停的天牌：元帅柱认定/生死存亡/零号战法》
+page_start: 85
+page_end: 94
+evidence_page: 103
+evidence_quote: 元帅柱的认定标准就是“跳空补空，先者优先”
+type: 形态
+computability: B
+params:
+  gap_min_pct: 0.5
+  confirm_days: 3
+  marshal_hold_ratio_min: 0.99
+  zero_hold_ratio_min: 0.99
+entry_rule: is_marshal_pillar(T) = 缺口下方的柱子（跳空补空）且连续跳空时最先跳空者（先者优先），其后3日形成王牌柱建构; 零号：价格回踩元帅柱实底/上沿不破（low >= marshal_low*0.99），且出现跳空向上或放量阳线确认（close>open and vol/prev_vol>=1.5）→ 入场
+exit_rule: 收盘跌破元帅柱实底（close < marshal_low*0.99，“破底为亡/皮球被挤破”）止损；持有 5/10/20 个交易日
+test_status: untested
+tested_ref: null
+h_ids: []
+notes: |-
+  原文：元帅柱=王牌中的“炸弹”，认定标准“跳空补空，先者优先”；零号战法借助跳空的“零交易区”，行情向下挤压不破则弹起（印刷85-94页，OCR 第103-112页）。
+  简化定义：跳空用 open>prev_high*(1+gap) 判定；零号确认可用“回踩不破+次日阳线”代理。
+  状态：未测（strategy_registry book_backlog）；零号战法偏盘中确认，可计算化程度 B。
+updated_at: '2026-11-01'

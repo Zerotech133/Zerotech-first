@@ -1,0 +1,25 @@
+id: LX16_FLAT_SLANT_CROSS
+name: 平斜交叉不上必下
+source: 涨停密码（修订升级版）
+chapter: 第13章《平斜交叉不上必下》
+page_start: 116
+page_end: 124
+evidence_page: 138
+evidence_quote: 若股价重心处于平斜交叉上方，看涨，且往往有中到大阳出现
+type: 过滤器
+computability: C
+params:
+  cross_tol_pct: 0.005
+  balance_lookback_days: 20
+  slant_lookback_days: 20
+  reaction_days_max: 3
+entry_rule: 平衡线（水平攻防线/大阴实顶/黄金线）× 斜衡线（上行或下行趋势线）形成交叉; 股价重心在交叉上方（close > cross_price）→ 看涨并允许做多；回踩交叉点不破（low >= cross_price*0.995）→ 入场；重心在交叉下方 → 看跌，回避
+exit_rule: 收盘跌破平斜交叉区域（close < cross_price*0.995）离场；时间误差按书为“几个小时”，日线按1日近似
+test_status: untested
+tested_ref: null
+h_ids: []
+notes: |-
+  原文：平衡线刻画幅度、斜衡线刻画速度，交叉形成力学建构；重心在交叉上方看涨（中到大阳），下方看跌（中到大阴），时间误差仅几小时（印刷116-124页，OCR 第136-143页）。
+  简化定义：“股价重心”用 N 日均价代理，趋势线用滚动高低点回归；依赖画线算法，可计算化程度 C。
+  状态：未测（strategy_registry book_backlog）。
+updated_at: '2026-11-01'

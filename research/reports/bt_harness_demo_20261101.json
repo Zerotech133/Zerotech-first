@@ -1,0 +1,2925 @@
+{
+ "schema_version": "bt_harness.v1",
+ "label": "mom20",
+ "meta": {
+  "start": "20260101",
+  "end": "20261030",
+  "top_n": 50,
+  "cost_bp": 30.0,
+  "rebalance": "weekly",
+  "trading_days": 198,
+  "rebalance_count": 41,
+  "universe": 5603,
+  "first_entry_date": "20260112",
+  "last_date": "20261030",
+  "data_start": "20251127",
+  "data_end": "20261030",
+  "generated_at": "2026-11-01T05:47:11+08:00",
+  "cost_model": "成本 = 换手 × cost_bp/10000 × NAV；换手 = Σ|w_target−w_drift|（双边，全换仓=2.0）",
+  "return_model": "复权价 close×adj_factor；T+1 收盘建仓，T+1 当日及之前收益不计入",
+  "limit_model": "pct_chg 阈值（主板9.5/双创19.5/北交所29.5/ST4.5）或 limit_list_d(U/D)",
+  "ic_min_cross_section": 100,
+  "factor": "mom20",
+  "factor_desc": "mom20 = 复权收盘价(t)/复权收盘价(t-20) - 1（close×adj_factor）",
+  "data_dir": "quant_backtest\\data\\tushare"
+ },
+ "nav": [
+  {
+   "date": "20260105",
+   "nav": 1.0,
+   "n": 0
+  },
+  {
+   "date": "20260106",
+   "nav": 1.0,
+   "n": 0
+  },
+  {
+   "date": "20260107",
+   "nav": 1.0,
+   "n": 0
+  },
+  {
+   "date": "20260108",
+   "nav": 1.0,
+   "n": 0
+  },
+  {
+   "date": "20260109",
+   "nav": 1.0,
+   "n": 0
+  },
+  {
+   "date": "20260112",
+   "nav": 0.997,
+   "n": 50
+  },
+  {
+   "date": "20260113",
+   "nav": 0.943235,
+   "n": 50
+  },
+  {
+   "date": "20260114",
+   "nav": 0.932035,
+   "n": 50
+  },
+  {
+   "date": "20260115",
+   "nav": 0.896241,
+   "n": 50
+  },
+  {
+   "date": "20260116",
+   "nav": 0.902819,
+   "n": 50
+  },
+  {
+   "date": "20260119",
+   "nav": 0.904553,
+   "n": 50
+  },
+  {
+   "date": "20260120",
+   "nav": 0.885864,
+   "n": 50
+  },
+  {
+   "date": "20260121",
+   "nav": 0.885627,
+   "n": 50
+  },
+  {
+   "date": "20260122",
+   "nav": 0.900834,
+   "n": 50
+  },
+  {
+   "date": "20260123",
+   "nav": 0.958804,
+   "n": 50
+  },
+  {
+   "date": "20260126",
+   "nav": 0.912993,
+   "n": 50
+  },
+  {
+   "date": "20260127",
+   "nav": 0.932514,
+   "n": 50
+  },
+  {
+   "date": "20260128",
+   "nav": 0.905617,
+   "n": 50
+  },
+  {
+   "date": "20260129",
+   "nav": 0.909637,
+   "n": 50
+  },
+  {
+   "date": "20260130",
+   "nav": 0.898475,
+   "n": 50
+  },
+  {
+   "date": "20260202",
+   "nav": 0.879761,
+   "n": 50
+  },
+  {
+   "date": "20260203",
+   "nav": 0.913572,
+   "n": 50
+  },
+  {
+   "date": "20260204",
+   "nav": 0.890805,
+   "n": 50
+  },
+  {
+   "date": "20260205",
+   "nav": 0.860916,
+   "n": 50
+  },
+  {
+   "date": "20260206",
+   "nav": 0.864595,
+   "n": 50
+  },
+  {
+   "date": "20260209",
+   "nav": 0.879381,
+   "n": 50
+  },
+  {
+   "date": "20260210",
+   "nav": 0.868607,
+   "n": 50
+  },
+  {
+   "date": "20260211",
+   "nav": 0.859386,
+   "n": 50
+  },
+  {
+   "date": "20260212",
+   "nav": 0.863055,
+   "n": 50
+  },
+  {
+   "date": "20260213",
+   "nav": 0.842856,
+   "n": 50
+  },
+  {
+   "date": "20260224",
+   "nav": 0.86197,
+   "n": 50
+  },
+  {
+   "date": "20260225",
+   "nav": 0.849296,
+   "n": 50
+  },
+  {
+   "date": "20260226",
+   "nav": 0.858643,
+   "n": 50
+  },
+  {
+   "date": "20260227",
+   "nav": 0.881575,
+   "n": 50
+  },
+  {
+   "date": "20260302",
+   "nav": 0.866656,
+   "n": 50
+  },
+  {
+   "date": "20260303",
+   "nav": 0.821148,
+   "n": 50
+  },
+  {
+   "date": "20260304",
+   "nav": 0.823858,
+   "n": 50
+  },
+  {
+   "date": "20260305",
+   "nav": 0.82446,
+   "n": 50
+  },
+  {
+   "date": "20260306",
+   "nav": 0.823299,
+   "n": 50
+  },
+  {
+   "date": "20260309",
+   "nav": 0.815973,
+   "n": 50
+  },
+  {
+   "date": "20260310",
+   "nav": 0.836182,
+   "n": 50
+  },
+  {
+   "date": "20260311",
+   "nav": 0.841546,
+   "n": 50
+  },
+  {
+   "date": "20260312",
+   "nav": 0.832593,
+   "n": 50
+  },
+  {
+   "date": "20260313",
+   "nav": 0.805399,
+   "n": 50
+  },
+  {
+   "date": "20260316",
+   "nav": 0.802132,
+   "n": 50
+  },
+  {
+   "date": "20260317",
+   "nav": 0.77306,
+   "n": 50
+  },
+  {
+   "date": "20260318",
+   "nav": 0.782171,
+   "n": 50
+  },
+  {
+   "date": "20260319",
+   "nav": 0.772771,
+   "n": 50
+  },
+  {
+   "date": "20260320",
+   "nav": 0.758623,
+   "n": 50
+  },
+  {
+   "date": "20260323",
+   "nav": 0.725369,
+   "n": 50
+  },
+  {
+   "date": "20260324",
+   "nav": 0.741114,
+   "n": 50
+  },
+  {
+   "date": "20260325",
+   "nav": 0.757011,
+   "n": 50
+  },
+  {
+   "date": "20260326",
+   "nav": 0.738332,
+   "n": 50
+  },
+  {
+   "date": "20260327",
+   "nav": 0.740358,
+   "n": 50
+  },
+  {
+   "date": "20260330",
+   "nav": 0.73645,
+   "n": 50
+  },
+  {
+   "date": "20260331",
+   "nav": 0.701231,
+   "n": 50
+  },
+  {
+   "date": "20260401",
+   "nav": 0.703483,
+   "n": 50
+  },
+  {
+   "date": "20260402",
+   "nav": 0.689311,
+   "n": 50
+  },
+  {
+   "date": "20260403",
+   "nav": 0.671995,
+   "n": 50
+  },
+  {
+   "date": "20260407",
+   "nav": 0.684025,
+   "n": 50
+  },
+  {
+   "date": "20260408",
+   "nav": 0.697732,
+   "n": 50
+  },
+  {
+   "date": "20260409",
+   "nav": 0.694613,
+   "n": 50
+  },
+  {
+   "date": "20260410",
+   "nav": 0.690969,
+   "n": 50
+  },
+  {
+   "date": "20260413",
+   "nav": 0.690114,
+   "n": 50
+  },
+  {
+   "date": "20260414",
+   "nav": 0.692229,
+   "n": 50
+  },
+  {
+   "date": "20260415",
+   "nav": 0.695668,
+   "n": 50
+  },
+  {
+   "date": "20260416",
+   "nav": 0.70442,
+   "n": 50
+  },
+  {
+   "date": "20260417",
+   "nav": 0.7114,
+   "n": 50
+  },
+  {
+   "date": "20260420",
+   "nav": 0.716967,
+   "n": 50
+  },
+  {
+   "date": "20260421",
+   "nav": 0.714167,
+   "n": 50
+  },
+  {
+   "date": "20260422",
+   "nav": 0.73321,
+   "n": 50
+  },
+  {
+   "date": "20260423",
+   "nav": 0.720727,
+   "n": 50
+  },
+  {
+   "date": "20260424",
+   "nav": 0.723795,
+   "n": 50
+  },
+  {
+   "date": "20260427",
+   "nav": 0.72275,
+   "n": 50
+  },
+  {
+   "date": "20260428",
+   "nav": 0.718226,
+   "n": 50
+  },
+  {
+   "date": "20260429",
+   "nav": 0.725174,
+   "n": 50
+  },
+  {
+   "date": "20260430",
+   "nav": 0.734235,
+   "n": 50
+  },
+  {
+   "date": "20260506",
+   "nav": 0.753788,
+   "n": 50
+  },
+  {
+   "date": "20260507",
+   "nav": 0.777231,
+   "n": 50
+  },
+  {
+   "date": "20260508",
+   "nav": 0.788764,
+   "n": 50
+  },
+  {
+   "date": "20260511",
+   "nav": 0.809046,
+   "n": 50
+  },
+  {
+   "date": "20260512",
+   "nav": 0.806561,
+   "n": 50
+  },
+  {
+   "date": "20260513",
+   "nav": 0.825855,
+   "n": 50
+  },
+  {
+   "date": "20260514",
+   "nav": 0.816122,
+   "n": 50
+  },
+  {
+   "date": "20260515",
+   "nav": 0.795957,
+   "n": 50
+  },
+  {
+   "date": "20260518",
+   "nav": 0.794415,
+   "n": 50
+  },
+  {
+   "date": "20260519",
+   "nav": 0.805592,
+   "n": 50
+  },
+  {
+   "date": "20260520",
+   "nav": 0.811248,
+   "n": 50
+  },
+  {
+   "date": "20260521",
+   "nav": 0.77202,
+   "n": 50
+  },
+  {
+   "date": "20260522",
+   "nav": 0.805428,
+   "n": 50
+  },
+  {
+   "date": "20260525",
+   "nav": 0.802427,
+   "n": 50
+  },
+  {
+   "date": "20260526",
+   "nav": 0.780136,
+   "n": 50
+  },
+  {
+   "date": "20260527",
+   "nav": 0.779215,
+   "n": 50
+  },
+  {
+   "date": "20260528",
+   "nav": 0.802377,
+   "n": 50
+  },
+  {
+   "date": "20260529",
+   "nav": 0.772738,
+   "n": 50
+  },
+  {
+   "date": "20260601",
+   "nav": 0.746796,
+   "n": 50
+  },
+  {
+   "date": "20260602",
+   "nav": 0.77576,
+   "n": 50
+  },
+  {
+   "date": "20260603",
+   "nav": 0.792031,
+   "n": 50
+  },
+  {
+   "date": "20260604",
+   "nav": 0.815662,
+   "n": 50
+  },
+  {
+   "date": "20260605",
+   "nav": 0.790094,
+   "n": 50
+  },
+  {
+   "date": "20260608",
+   "nav": 0.762053,
+   "n": 50
+  },
+  {
+   "date": "20260609",
+   "nav": 0.794666,
+   "n": 50
+  },
+  {
+   "date": "20260610",
+   "nav": 0.760823,
+   "n": 50
+  },
+  {
+   "date": "20260611",
+   "nav": 0.748917,
+   "n": 50
+  },
+  {
+   "date": "20260612",
+   "nav": 0.733162,
+   "n": 50
+  },
+  {
+   "date": "20260615",
+   "nav": 0.788283,
+   "n": 50
+  },
+  {
+   "date": "20260616",
+   "nav": 0.819298,
+   "n": 50
+  },
+  {
+   "date": "20260617",
+   "nav": 0.842845,
+   "n": 50
+  },
+  {
+   "date": "20260618",
+   "nav": 0.867008,
+   "n": 50
+  },
+  {
+   "date": "20260622",
+   "nav": 0.893395,
+   "n": 50
+  },
+  {
+   "date": "20260623",
+   "nav": 0.843862,
+   "n": 50
+  },
+  {
+   "date": "20260624",
+   "nav": 0.874334,
+   "n": 50
+  },
+  {
+   "date": "20260625",
+   "nav": 0.904237,
+   "n": 50
+  },
+  {
+   "date": "20260626",
+   "nav": 0.889323,
+   "n": 50
+  },
+  {
+   "date": "20260629",
+   "nav": 0.865953,
+   "n": 50
+  },
+  {
+   "date": "20260630",
+   "nav": 0.877246,
+   "n": 50
+  },
+  {
+   "date": "20260701",
+   "nav": 0.872712,
+   "n": 50
+  },
+  {
+   "date": "20260702",
+   "nav": 0.833435,
+   "n": 50
+  },
+  {
+   "date": "20260703",
+   "nav": 0.815806,
+   "n": 50
+  },
+  {
+   "date": "20260706",
+   "nav": 0.770939,
+   "n": 50
+  },
+  {
+   "date": "20260707",
+   "nav": 0.760558,
+   "n": 50
+  },
+  {
+   "date": "20260708",
+   "nav": 0.733952,
+   "n": 50
+  },
+  {
+   "date": "20260709",
+   "nav": 0.765591,
+   "n": 50
+  },
+  {
+   "date": "20260710",
+   "nav": 0.726426,
+   "n": 50
+  },
+  {
+   "date": "20260713",
+   "nav": 0.665,
+   "n": 50
+  },
+  {
+   "date": "20260714",
+   "nav": 0.673257,
+   "n": 50
+  },
+  {
+   "date": "20260715",
+   "nav": 0.645213,
+   "n": 50
+  },
+  {
+   "date": "20260716",
+   "nav": 0.612507,
+   "n": 50
+  },
+  {
+   "date": "20260717",
+   "nav": 0.558661,
+   "n": 50
+  },
+  {
+   "date": "20260720",
+   "nav": 0.524034,
+   "n": 50
+  },
+  {
+   "date": "20260721",
+   "nav": 0.533706,
+   "n": 50
+  },
+  {
+   "date": "20260722",
+   "nav": 0.529038,
+   "n": 50
+  },
+  {
+   "date": "20260723",
+   "nav": 0.523801,
+   "n": 50
+  },
+  {
+   "date": "20260724",
+   "nav": 0.504038,
+   "n": 50
+  },
+  {
+   "date": "20260727",
+   "nav": 0.521595,
+   "n": 50
+  },
+  {
+   "date": "20260728",
+   "nav": 0.509059,
+   "n": 50
+  },
+  {
+   "date": "20260729",
+   "nav": 0.500181,
+   "n": 50
+  },
+  {
+   "date": "20260730",
+   "nav": 0.486568,
+   "n": 50
+  },
+  {
+   "date": "20260731",
+   "nav": 0.492835,
+   "n": 50
+  },
+  {
+   "date": "20260803",
+   "nav": 0.48259,
+   "n": 50
+  },
+  {
+   "date": "20260804",
+   "nav": 0.495514,
+   "n": 50
+  },
+  {
+   "date": "20260805",
+   "nav": 0.502586,
+   "n": 50
+  },
+  {
+   "date": "20260806",
+   "nav": 0.497924,
+   "n": 50
+  },
+  {
+   "date": "20260807",
+   "nav": 0.511067,
+   "n": 50
+  },
+  {
+   "date": "20260810",
+   "nav": 0.518707,
+   "n": 50
+  },
+  {
+   "date": "20260811",
+   "nav": 0.517464,
+   "n": 50
+  },
+  {
+   "date": "20260812",
+   "nav": 0.52692,
+   "n": 50
+  },
+  {
+   "date": "20260813",
+   "nav": 0.521887,
+   "n": 50
+  },
+  {
+   "date": "20260814",
+   "nav": 0.518008,
+   "n": 50
+  },
+  {
+   "date": "20260817",
+   "nav": 0.520154,
+   "n": 50
+  },
+  {
+   "date": "20260818",
+   "nav": 0.513429,
+   "n": 50
+  },
+  {
+   "date": "20260819",
+   "nav": 0.483828,
+   "n": 50
+  },
+  {
+   "date": "20260820",
+   "nav": 0.494633,
+   "n": 50
+  },
+  {
+   "date": "20260821",
+   "nav": 0.491361,
+   "n": 50
+  },
+  {
+   "date": "20260824",
+   "nav": 0.480064,
+   "n": 50
+  },
+  {
+   "date": "20260825",
+   "nav": 0.486322,
+   "n": 50
+  },
+  {
+   "date": "20260826",
+   "nav": 0.484012,
+   "n": 50
+  },
+  {
+   "date": "20260827",
+   "nav": 0.501603,
+   "n": 50
+  },
+  {
+   "date": "20260828",
+   "nav": 0.494713,
+   "n": 50
+  },
+  {
+   "date": "20260831",
+   "nav": 0.490268,
+   "n": 50
+  },
+  {
+   "date": "20260901",
+   "nav": 0.493137,
+   "n": 50
+  },
+  {
+   "date": "20260902",
+   "nav": 0.489128,
+   "n": 50
+  },
+  {
+   "date": "20260903",
+   "nav": 0.48361,
+   "n": 50
+  },
+  {
+   "date": "20260904",
+   "nav": 0.471337,
+   "n": 50
+  },
+  {
+   "date": "20260907",
+   "nav": 0.490886,
+   "n": 50
+  },
+  {
+   "date": "20260908",
+   "nav": 0.487206,
+   "n": 50
+  },
+  {
+   "date": "20260909",
+   "nav": 0.479412,
+   "n": 50
+  },
+  {
+   "date": "20260910",
+   "nav": 0.465395,
+   "n": 50
+  },
+  {
+   "date": "20260911",
+   "nav": 0.448417,
+   "n": 50
+  },
+  {
+   "date": "20260914",
+   "nav": 0.445874,
+   "n": 50
+  },
+  {
+   "date": "20260915",
+   "nav": 0.424735,
+   "n": 50
+  },
+  {
+   "date": "20260916",
+   "nav": 0.432404,
+   "n": 50
+  },
+  {
+   "date": "20260917",
+   "nav": 0.441245,
+   "n": 50
+  },
+  {
+   "date": "20260918",
+   "nav": 0.443796,
+   "n": 50
+  },
+  {
+   "date": "20260921",
+   "nav": 0.455411,
+   "n": 50
+  },
+  {
+   "date": "20260922",
+   "nav": 0.460972,
+   "n": 50
+  },
+  {
+   "date": "20260923",
+   "nav": 0.460614,
+   "n": 50
+  },
+  {
+   "date": "20260924",
+   "nav": 0.449628,
+   "n": 50
+  },
+  {
+   "date": "20260928",
+   "nav": 0.422962,
+   "n": 50
+  },
+  {
+   "date": "20260929",
+   "nav": 0.427139,
+   "n": 50
+  },
+  {
+   "date": "20260930",
+   "nav": 0.418107,
+   "n": 50
+  },
+  {
+   "date": "20261008",
+   "nav": 0.403825,
+   "n": 50
+  },
+  {
+   "date": "20261009",
+   "nav": 0.407336,
+   "n": 50
+  },
+  {
+   "date": "20261012",
+   "nav": 0.396382,
+   "n": 50
+  },
+  {
+   "date": "20261013",
+   "nav": 0.397567,
+   "n": 50
+  },
+  {
+   "date": "20261014",
+   "nav": 0.39409,
+   "n": 50
+  },
+  {
+   "date": "20261015",
+   "nav": 0.388362,
+   "n": 50
+  },
+  {
+   "date": "20261016",
+   "nav": 0.378458,
+   "n": 50
+  },
+  {
+   "date": "20261019",
+   "nav": 0.374299,
+   "n": 50
+  },
+  {
+   "date": "20261020",
+   "nav": 0.37157,
+   "n": 50
+  },
+  {
+   "date": "20261021",
+   "nav": 0.372567,
+   "n": 50
+  },
+  {
+   "date": "20261022",
+   "nav": 0.349297,
+   "n": 50
+  },
+  {
+   "date": "20261023",
+   "nav": 0.349366,
+   "n": 50
+  },
+  {
+   "date": "20261026",
+   "nav": 0.344597,
+   "n": 50
+  },
+  {
+   "date": "20261027",
+   "nav": 0.331979,
+   "n": 50
+  },
+  {
+   "date": "20261028",
+   "nav": 0.340959,
+   "n": 50
+  },
+  {
+   "date": "20261029",
+   "nav": 0.328684,
+   "n": 50
+  },
+  {
+   "date": "20261030",
+   "nav": 0.31425,
+   "n": 50
+  }
+ ],
+ "total_return": -0.68575,
+ "annual_return": -0.781136,
+ "mdd": -0.68575,
+ "mdd_detail": {
+  "peak_date": "20260105",
+  "peak_nav": 1.0,
+  "trough_date": "20261030",
+  "trough_nav": 0.31425,
+  "mdd": -0.68575,
+  "note": "逐日 NAV 对历史峰值回撤的最小值；若 NAV 全程未创新高，则数值上与总收益相等"
+ },
+ "vol_ann": 0.434185,
+ "sharpe": -3.261588,
+ "avg_turnover": 1.142933,
+ "avg_holdings": 48.7374,
+ "max_holdings": 50,
+ "ic": {
+  "mean": 0.000752,
+  "mean_rank": -0.028162,
+  "ir": 0.004307,
+  "rank_ir": -0.154768,
+  "n_days": 197,
+  "win_rate": 0.5228,
+  "definition": "日度截面 corr(score_t, ret_{t+1})；ret=复权收盘价(t+1)/复权收盘价(t)-1；mean=Pearson 均值、mean_rank=Spearman 均值、n_days=有效交易日数"
+ },
+ "ic_mean": 0.000752,
+ "rebalance_count": 41,
+ "benchmark": {
+  "name": "等权全市场（复权价、日频等权再平衡）",
+  "total_return": -0.161732,
+  "annual_return": -0.202019,
+  "mdd": -0.242905,
+  "vol_ann": 0.240371,
+  "trading_days": 198
+ },
+ "excess_return": -0.524018,
+ "beta_vs_benchmark": 1.191118,
+ "corr_vs_benchmark": 0.667693,
+ "errors": [
+  {
+   "type": "entry_out_of_range",
+   "date": "20261030",
+   "ts_code": "",
+   "detail": "信号日无下一交易日数据（期末信号不建仓）"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260112",
+   "ts_code": "300986.SZ",
+   "detail": "涨停不可买：pct_chg=19.99"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260112",
+   "ts_code": "002931.SZ",
+   "detail": "涨停不可买：pct_chg=10.01"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260112",
+   "ts_code": "301079.SZ",
+   "detail": "涨停不可买：pct_chg=20.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260112",
+   "ts_code": "688031.SH",
+   "detail": "涨停不可买：pct_chg=20.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260112",
+   "ts_code": "688387.SH",
+   "detail": "涨停不可买：pct_chg=20.01"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260112",
+   "ts_code": "600783.SH",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260112",
+   "ts_code": "601698.SH",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260112",
+   "ts_code": "600879.SH",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260112",
+   "ts_code": "600118.SH",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260112",
+   "ts_code": "002792.SZ",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260112",
+   "ts_code": "002202.SZ",
+   "detail": "涨停不可买：pct_chg=9.99"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260112",
+   "ts_code": "002413.SZ",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260112",
+   "ts_code": "002151.SZ",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260112",
+   "ts_code": "002471.SZ",
+   "detail": "涨停不可买：pct_chg=9.98"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260112",
+   "ts_code": "688375.SH",
+   "detail": "涨停不可买：pct_chg=20.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260112",
+   "ts_code": "300058.SZ",
+   "detail": "涨停不可买：pct_chg=20.02"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260112",
+   "ts_code": "603698.SH",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260112",
+   "ts_code": "002718.SZ",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260112",
+   "ts_code": "300342.SZ",
+   "detail": "涨停不可买：pct_chg=20.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260112",
+   "ts_code": "688258.SH",
+   "detail": "涨停不可买：pct_chg=20.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260112",
+   "ts_code": "002519.SZ",
+   "detail": "涨停不可买：pct_chg=9.97"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260112",
+   "ts_code": "002639.SZ",
+   "detail": "涨停不可买：pct_chg=10.01"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260112",
+   "ts_code": "688119.SH",
+   "detail": "涨停不可买：pct_chg=20.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260112",
+   "ts_code": "600498.SH",
+   "detail": "涨停不可买：pct_chg=9.99"
+  },
+  {
+   "type": "valuation_frozen",
+   "date": "20260113",
+   "ts_code": "001270.SZ",
+   "detail": "停牌/缺价：该持仓估值保持不变"
+  },
+  {
+   "type": "valuation_frozen",
+   "date": "20260114",
+   "ts_code": "001270.SZ",
+   "detail": "停牌/缺价：该持仓估值保持不变"
+  },
+  {
+   "type": "valuation_frozen",
+   "date": "20260115",
+   "ts_code": "001270.SZ",
+   "detail": "停牌/缺价：该持仓估值保持不变"
+  },
+  {
+   "type": "sell_limit_down",
+   "date": "20260119",
+   "ts_code": "002788.SZ",
+   "detail": "跌停不可卖：保留持仓"
+  },
+  {
+   "type": "sell_limit_down",
+   "date": "20260119",
+   "ts_code": "002361.SZ",
+   "detail": "跌停不可卖：保留持仓"
+  },
+  {
+   "type": "sell_limit_down",
+   "date": "20260119",
+   "ts_code": "603929.SH",
+   "detail": "跌停不可卖：保留持仓"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260119",
+   "ts_code": "002969.SZ",
+   "detail": "涨停不可买：pct_chg=9.97"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260119",
+   "ts_code": "001331.SZ",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260119",
+   "ts_code": "002718.SZ",
+   "detail": "涨停不可买：pct_chg=9.99"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260119",
+   "ts_code": "603061.SH",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "sell_limit_down",
+   "date": "20260126",
+   "ts_code": "002361.SZ",
+   "detail": "跌停不可卖：保留持仓"
+  },
+  {
+   "type": "sell_limit_down",
+   "date": "20260126",
+   "ts_code": "001400.SZ",
+   "detail": "跌停不可卖：保留持仓"
+  },
+  {
+   "type": "sell_limit_down",
+   "date": "20260126",
+   "ts_code": "600783.SH",
+   "detail": "跌停不可卖：保留持仓"
+  },
+  {
+   "type": "sell_limit_down",
+   "date": "20260126",
+   "ts_code": "600118.SH",
+   "detail": "跌停不可卖：保留持仓"
+  },
+  {
+   "type": "sell_limit_down",
+   "date": "20260126",
+   "ts_code": "002465.SZ",
+   "detail": "跌停不可卖：保留持仓"
+  },
+  {
+   "type": "sell_limit_down",
+   "date": "20260126",
+   "ts_code": "601698.SH",
+   "detail": "跌停不可卖：保留持仓"
+  },
+  {
+   "type": "buy_suspended",
+   "date": "20260126",
+   "ts_code": "002969.SZ",
+   "detail": "停牌/缺价不可买：跳过"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260126",
+   "ts_code": "002716.SZ",
+   "detail": "涨停不可买：pct_chg=9.98"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260126",
+   "ts_code": "601212.SH",
+   "detail": "涨停不可买：pct_chg=10.03"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260126",
+   "ts_code": "001337.SZ",
+   "detail": "涨停不可买：pct_chg=9.99"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260209",
+   "ts_code": "300912.SZ",
+   "detail": "涨停不可买：pct_chg=20.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260209",
+   "ts_code": "603103.SH",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260209",
+   "ts_code": "002440.SZ",
+   "detail": "涨停不可买：pct_chg=9.99"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260209",
+   "ts_code": "603618.SH",
+   "detail": "涨停不可买：pct_chg=9.99"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260209",
+   "ts_code": "002716.SZ",
+   "detail": "涨停不可买：pct_chg=9.97"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260209",
+   "ts_code": "002506.SZ",
+   "detail": "涨停不可买：pct_chg=10.04"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260209",
+   "ts_code": "603629.SH",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260209",
+   "ts_code": "605287.SH",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260209",
+   "ts_code": "002455.SZ",
+   "detail": "涨停不可买：pct_chg=9.96"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260209",
+   "ts_code": "002218.SZ",
+   "detail": "涨停不可买：pct_chg=9.94"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260209",
+   "ts_code": "601869.SH",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260209",
+   "ts_code": "002830.SZ",
+   "detail": "涨停不可买：pct_chg=10.02"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260209",
+   "ts_code": "002623.SZ",
+   "detail": "涨停不可买：pct_chg=10.02"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260209",
+   "ts_code": "600841.SH",
+   "detail": "涨停不可买：pct_chg=10.05"
+  },
+  {
+   "type": "buy_suspended",
+   "date": "20260224",
+   "ts_code": "300344.SZ",
+   "detail": "停牌/缺价不可买：跳过"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260224",
+   "ts_code": "300749.SZ",
+   "detail": "涨停不可买：pct_chg=19.99"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260224",
+   "ts_code": "601869.SH",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260224",
+   "ts_code": "603256.SH",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260224",
+   "ts_code": "301526.SZ",
+   "detail": "涨停不可买：pct_chg=19.98"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260224",
+   "ts_code": "600397.SH",
+   "detail": "涨停不可买：pct_chg=10.01"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260224",
+   "ts_code": "002498.SZ",
+   "detail": "涨停不可买：pct_chg=10.04"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260224",
+   "ts_code": "002491.SZ",
+   "detail": "涨停不可买：pct_chg=10.04"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260224",
+   "ts_code": "300164.SZ",
+   "detail": "涨停不可买：pct_chg=20.04"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260224",
+   "ts_code": "600487.SH",
+   "detail": "涨停不可买：pct_chg=9.69"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260224",
+   "ts_code": "002506.SZ",
+   "detail": "涨停不可买：pct_chg=9.98"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260224",
+   "ts_code": "600759.SH",
+   "detail": "涨停不可买：pct_chg=9.92"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260224",
+   "ts_code": "002165.SZ",
+   "detail": "涨停不可买：pct_chg=10.02"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260224",
+   "ts_code": "002283.SZ",
+   "detail": "涨停不可买：pct_chg=10.05"
+  },
+  {
+   "type": "valuation_frozen",
+   "date": "20260227",
+   "ts_code": "000711.SZ",
+   "detail": "停牌/缺价：该持仓估值保持不变"
+  },
+  {
+   "type": "valuation_frozen",
+   "date": "20260302",
+   "ts_code": "000711.SZ",
+   "detail": "停牌/缺价：该持仓估值保持不变"
+  },
+  {
+   "type": "sell_suspended",
+   "date": "20260302",
+   "ts_code": "000711.SZ",
+   "detail": "停牌/缺价不可卖：保留持仓"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260302",
+   "ts_code": "300164.SZ",
+   "detail": "涨停不可买：pct_chg=19.97"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260302",
+   "ts_code": "002842.SZ",
+   "detail": "涨停不可买：pct_chg=10.01"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260302",
+   "ts_code": "603629.SH",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260302",
+   "ts_code": "300191.SZ",
+   "detail": "涨停不可买：pct_chg=19.99"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260302",
+   "ts_code": "000070.SZ",
+   "detail": "涨停不可买：pct_chg=10.02"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260302",
+   "ts_code": "300139.SZ",
+   "detail": "涨停不可买：pct_chg=20.01"
+  },
+  {
+   "type": "valuation_frozen",
+   "date": "20260303",
+   "ts_code": "000711.SZ",
+   "detail": "停牌/缺价：该持仓估值保持不变"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260309",
+   "ts_code": "000533.SZ",
+   "detail": "涨停不可买：pct_chg=10.01"
+  },
+  {
+   "type": "valuation_frozen",
+   "date": "20260313",
+   "ts_code": "000711.SZ",
+   "detail": "停牌/缺价：该持仓估值保持不变"
+  },
+  {
+   "type": "valuation_frozen",
+   "date": "20260316",
+   "ts_code": "000711.SZ",
+   "detail": "停牌/缺价：该持仓估值保持不变"
+  },
+  {
+   "type": "sell_suspended",
+   "date": "20260316",
+   "ts_code": "000711.SZ",
+   "detail": "停牌/缺价不可卖：保留持仓"
+  },
+  {
+   "type": "sell_limit_down",
+   "date": "20260316",
+   "ts_code": "001896.SZ",
+   "detail": "跌停不可卖：保留持仓"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260316",
+   "ts_code": "000890.SZ",
+   "detail": "涨停不可买：pct_chg=10.01"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260316",
+   "ts_code": "600227.SH",
+   "detail": "涨停不可买：pct_chg=10.07"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260316",
+   "ts_code": "000669.SZ",
+   "detail": "涨停不可买：pct_chg=4.94"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260316",
+   "ts_code": "002980.SZ",
+   "detail": "涨停不可买：pct_chg=9.99"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260316",
+   "ts_code": "000533.SZ",
+   "detail": "涨停不可买：pct_chg=10.02"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260316",
+   "ts_code": "600545.SH",
+   "detail": "涨停不可买：pct_chg=9.92"
+  },
+  {
+   "type": "valuation_frozen",
+   "date": "20260317",
+   "ts_code": "000711.SZ",
+   "detail": "停牌/缺价：该持仓估值保持不变"
+  },
+  {
+   "type": "valuation_frozen",
+   "date": "20260318",
+   "ts_code": "000711.SZ",
+   "detail": "停牌/缺价：该持仓估值保持不变"
+  },
+  {
+   "type": "valuation_frozen",
+   "date": "20260319",
+   "ts_code": "000711.SZ",
+   "detail": "停牌/缺价：该持仓估值保持不变"
+  },
+  {
+   "type": "sell_limit_down",
+   "date": "20260323",
+   "ts_code": "605289.SH",
+   "detail": "跌停不可卖：保留持仓"
+  },
+  {
+   "type": "sell_limit_down",
+   "date": "20260323",
+   "ts_code": "001267.SZ",
+   "detail": "跌停不可卖：保留持仓"
+  },
+  {
+   "type": "sell_limit_down",
+   "date": "20260323",
+   "ts_code": "002667.SZ",
+   "detail": "跌停不可卖：保留持仓"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260323",
+   "ts_code": "600396.SH",
+   "detail": "涨停不可买：pct_chg=10.06"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260323",
+   "ts_code": "002310.SZ",
+   "detail": "涨停不可买：pct_chg=10.06"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260323",
+   "ts_code": "603843.SH",
+   "detail": "涨停不可买：pct_chg=5.06"
+  },
+  {
+   "type": "valuation_frozen",
+   "date": "20260325",
+   "ts_code": "000908.SZ",
+   "detail": "停牌/缺价：该持仓估值保持不变"
+  },
+  {
+   "type": "sell_limit_down",
+   "date": "20260330",
+   "ts_code": "001896.SZ",
+   "detail": "跌停不可卖：保留持仓"
+  },
+  {
+   "type": "sell_limit_down",
+   "date": "20260330",
+   "ts_code": "600726.SH",
+   "detail": "跌停不可卖：保留持仓"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260330",
+   "ts_code": "000890.SZ",
+   "detail": "涨停不可买：pct_chg=10.01"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260330",
+   "ts_code": "603538.SH",
+   "detail": "涨停不可买：pct_chg=10.01"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260330",
+   "ts_code": "002432.SZ",
+   "detail": "涨停不可买：pct_chg=9.99"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260330",
+   "ts_code": "603778.SH",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260330",
+   "ts_code": "002082.SZ",
+   "detail": "涨停不可买：pct_chg=5.41"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260330",
+   "ts_code": "300385.SZ",
+   "detail": "涨停不可买：pct_chg=19.98"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260330",
+   "ts_code": "002980.SZ",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260407",
+   "ts_code": "002082.SZ",
+   "detail": "涨停不可买：pct_chg=6.43"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260407",
+   "ts_code": "000890.SZ",
+   "detail": "涨停不可买：pct_chg=9.99"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260407",
+   "ts_code": "605299.SH",
+   "detail": "涨停不可买：pct_chg=10.02"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260407",
+   "ts_code": "603778.SH",
+   "detail": "涨停不可买：pct_chg=10.01"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260407",
+   "ts_code": "600488.SH",
+   "detail": "涨停不可买：pct_chg=10.04"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260407",
+   "ts_code": "603687.SH",
+   "detail": "涨停不可买：pct_chg=10.01"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260407",
+   "ts_code": "000720.SZ",
+   "detail": "涨停不可买：pct_chg=9.93"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260407",
+   "ts_code": "002980.SZ",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260407",
+   "ts_code": "002620.SZ",
+   "detail": "涨停不可买：pct_chg=4.70"
+  },
+  {
+   "type": "sell_limit_down",
+   "date": "20260413",
+   "ts_code": "603843.SH",
+   "detail": "跌停不可卖：保留持仓"
+  },
+  {
+   "type": "sell_limit_down",
+   "date": "20260413",
+   "ts_code": "603272.SH",
+   "detail": "跌停不可卖：保留持仓"
+  },
+  {
+   "type": "sell_limit_down",
+   "date": "20260413",
+   "ts_code": "000669.SZ",
+   "detail": "跌停不可卖：保留持仓"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260413",
+   "ts_code": "600396.SH",
+   "detail": "涨停不可买：pct_chg=9.94"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260413",
+   "ts_code": "002980.SZ",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260413",
+   "ts_code": "002580.SZ",
+   "detail": "涨停不可买：pct_chg=10.01"
+  },
+  {
+   "type": "sell_limit_down",
+   "date": "20260420",
+   "ts_code": "000669.SZ",
+   "detail": "跌停不可卖：保留持仓"
+  },
+  {
+   "type": "sell_limit_down",
+   "date": "20260420",
+   "ts_code": "603272.SH",
+   "detail": "跌停不可卖：保留持仓"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260420",
+   "ts_code": "002297.SZ",
+   "detail": "涨停不可买：pct_chg=10.01"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260420",
+   "ts_code": "002361.SZ",
+   "detail": "涨停不可买：pct_chg=10.03"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260420",
+   "ts_code": "002428.SZ",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "sell_limit_down",
+   "date": "20260427",
+   "ts_code": "002990.SZ",
+   "detail": "跌停不可卖：保留持仓"
+  },
+  {
+   "type": "sell_limit_down",
+   "date": "20260427",
+   "ts_code": "002528.SZ",
+   "detail": "跌停不可卖：保留持仓"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260427",
+   "ts_code": "688677.SH",
+   "detail": "涨停不可买：pct_chg=20.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260427",
+   "ts_code": "688001.SH",
+   "detail": "涨停不可买：pct_chg=20.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260427",
+   "ts_code": "603773.SH",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "valuation_frozen",
+   "date": "20260429",
+   "ts_code": "002528.SZ",
+   "detail": "停牌/缺价：该持仓估值保持不变"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260506",
+   "ts_code": "603629.SH",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260506",
+   "ts_code": "688813.SH",
+   "detail": "涨停不可买：pct_chg=20.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260506",
+   "ts_code": "301511.SZ",
+   "detail": "涨停不可买：pct_chg=20.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260506",
+   "ts_code": "603399.SH",
+   "detail": "涨停不可买：pct_chg=10.01"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260506",
+   "ts_code": "002081.SZ",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260506",
+   "ts_code": "300209.SZ",
+   "detail": "涨停不可买：pct_chg=19.63"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260506",
+   "ts_code": "000609.SZ",
+   "detail": "涨停不可买：pct_chg=4.99"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260506",
+   "ts_code": "603256.SH",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260511",
+   "ts_code": "603773.SH",
+   "detail": "涨停不可买：pct_chg=10.01"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260511",
+   "ts_code": "603045.SH",
+   "detail": "涨停不可买：pct_chg=9.99"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260511",
+   "ts_code": "600683.SH",
+   "detail": "涨停不可买：pct_chg=9.98"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260511",
+   "ts_code": "600234.SH",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260511",
+   "ts_code": "002281.SZ",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260511",
+   "ts_code": "603738.SH",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260511",
+   "ts_code": "002008.SZ",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260511",
+   "ts_code": "300302.SZ",
+   "detail": "涨停不可买：pct_chg=20.00"
+  },
+  {
+   "type": "sell_limit_down",
+   "date": "20260518",
+   "ts_code": "002081.SZ",
+   "detail": "跌停不可卖：保留持仓"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260518",
+   "ts_code": "001259.SZ",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260518",
+   "ts_code": "300302.SZ",
+   "detail": "涨停不可买：pct_chg=20.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260518",
+   "ts_code": "601126.SH",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "sell_limit_down",
+   "date": "20260525",
+   "ts_code": "001211.SZ",
+   "detail": "跌停不可卖：保留持仓"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260525",
+   "ts_code": "003036.SZ",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260525",
+   "ts_code": "002552.SZ",
+   "detail": "涨停不可买：pct_chg=9.99"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260525",
+   "ts_code": "600396.SH",
+   "detail": "涨停不可买：pct_chg=10.03"
+  },
+  {
+   "type": "sell_limit_down",
+   "date": "20260601",
+   "ts_code": "603629.SH",
+   "detail": "跌停不可卖：保留持仓"
+  },
+  {
+   "type": "sell_limit_down",
+   "date": "20260601",
+   "ts_code": "001259.SZ",
+   "detail": "跌停不可卖：保留持仓"
+  },
+  {
+   "type": "sell_limit_down",
+   "date": "20260601",
+   "ts_code": "603459.SH",
+   "detail": "跌停不可卖：保留持仓"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260601",
+   "ts_code": "003004.SZ",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "sell_limit_down",
+   "date": "20260608",
+   "ts_code": "603629.SH",
+   "detail": "跌停不可卖：保留持仓"
+  },
+  {
+   "type": "sell_limit_down",
+   "date": "20260608",
+   "ts_code": "003036.SZ",
+   "detail": "跌停不可卖：保留持仓"
+  },
+  {
+   "type": "sell_limit_down",
+   "date": "20260608",
+   "ts_code": "600730.SH",
+   "detail": "跌停不可卖：保留持仓"
+  },
+  {
+   "type": "sell_limit_down",
+   "date": "20260608",
+   "ts_code": "603989.SH",
+   "detail": "跌停不可卖：保留持仓"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260608",
+   "ts_code": "301319.SZ",
+   "detail": "涨停不可买：pct_chg=19.80"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260608",
+   "ts_code": "002856.SZ",
+   "detail": "涨停不可买：pct_chg=5.02"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260608",
+   "ts_code": "002421.SZ",
+   "detail": "涨停不可买：pct_chg=9.98"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260608",
+   "ts_code": "603823.SH",
+   "detail": "涨停不可买：pct_chg=9.99"
+  },
+  {
+   "type": "sell_limit_down",
+   "date": "20260615",
+   "ts_code": "600730.SH",
+   "detail": "跌停不可卖：保留持仓"
+  },
+  {
+   "type": "sell_limit_down",
+   "date": "20260615",
+   "ts_code": "603272.SH",
+   "detail": "跌停不可卖：保留持仓"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260615",
+   "ts_code": "000636.SZ",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260615",
+   "ts_code": "003036.SZ",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260615",
+   "ts_code": "002552.SZ",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260615",
+   "ts_code": "603678.SH",
+   "detail": "涨停不可买：pct_chg=10.01"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260615",
+   "ts_code": "301217.SZ",
+   "detail": "涨停不可买：pct_chg=20.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260615",
+   "ts_code": "600183.SH",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260615",
+   "ts_code": "603186.SH",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260615",
+   "ts_code": "603256.SH",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260615",
+   "ts_code": "301176.SZ",
+   "detail": "涨停不可买：pct_chg=20.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260615",
+   "ts_code": "301526.SZ",
+   "detail": "涨停不可买：pct_chg=20.01"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260615",
+   "ts_code": "603124.SH",
+   "detail": "涨停不可买：pct_chg=9.68"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260615",
+   "ts_code": "603011.SH",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260615",
+   "ts_code": "002859.SZ",
+   "detail": "涨停不可买：pct_chg=10.00"
+  },
+  {
+   "type": "valuation_frozen",
+   "date": "20260617",
+   "ts_code": "688143.SH",
+   "detail": "停牌/缺价：该持仓估值保持不变"
+  },
+  {
+   "type": "valuation_frozen",
+   "date": "20260618",
+   "ts_code": "688143.SH",
+   "detail": "停牌/缺价：该持仓估值保持不变"
+  },
+  {
+   "type": "valuation_frozen",
+   "date": "20260622",
+   "ts_code": "688143.SH",
+   "detail": "停牌/缺价：该持仓估值保持不变"
+  },
+  {
+   "type": "sell_limit_down",
+   "date": "20260622",
+   "ts_code": "600730.SH",
+   "detail": "跌停不可卖：保留持仓"
+  },
+  {
+   "type": "sell_limit_down",
+   "date": "20260622",
+   "ts_code": "603272.SH",
+   "detail": "跌停不可卖：保留持仓"
+  },
+  {
+   "type": "sell_suspended",
+   "date": "20260622",
+   "ts_code": "688143.SH",
+   "detail": "停牌/缺价不可卖：保留持仓"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260622",
+   "ts_code": "920725.BJ",
+   "detail": "涨停不可买：pct_chg=29.99"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260622",
+   "ts_code": "600367.SH",
+   "detail": "涨停不可买：pct_chg=10.01"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260622",
+   "ts_code": "688662.SH",
+   "detail": "涨停不可买：pct_chg=20.00"
+  },
+  {
+   "type": "buy_limit_up",
+   "date": "20260622",
+   "ts_code": "603823.SH",
+   "detail": "涨停不可买：pct_chg=10.00"
+  }
+ ],
+ "error_summary": {
+  "buy_limit_up": 236,
+  "buy_suspended": 6,
+  "entry_out_of_range": 1,
+  "sell_limit_down": 98,
+  "sell_suspended": 5,
+  "valuation_frozen": 30
+ },
+ "rebalances": [
+  {
+   "date": "20260112",
+   "signal_date": "20260109",
+   "turnover": 1.0,
+   "cost_pct": 0.3,
+   "n_target": 50,
+   "n_slots": 50,
+   "n_buy": 50,
+   "n_sell": 0,
+   "n_unsellable": 0,
+   "n_skipped_limit_up": 24,
+   "n_skipped_suspended": 0,
+   "n_holdings": 50,
+   "nav": 0.997
+  },
+  {
+   "date": "20260119",
+   "signal_date": "20260116",
+   "turnover": 1.29446,
+   "cost_pct": 0.3883,
+   "n_target": 47,
+   "n_slots": 47,
+   "n_buy": 32,
+   "n_sell": 32,
+   "n_unsellable": 3,
+   "n_skipped_limit_up": 4,
+   "n_skipped_suspended": 0,
+   "n_holdings": 50,
+   "nav": 0.904553
+  },
+  {
+   "date": "20260126",
+   "signal_date": "20260123",
+   "turnover": 0.854203,
+   "cost_pct": 0.2563,
+   "n_target": 44,
+   "n_slots": 44,
+   "n_buy": 20,
+   "n_sell": 20,
+   "n_unsellable": 6,
+   "n_skipped_limit_up": 3,
+   "n_skipped_suspended": 1,
+   "n_holdings": 50,
+   "nav": 0.912993
+  },
+  {
+   "date": "20260202",
+   "signal_date": "20260130",
+   "turnover": 1.211673,
+   "cost_pct": 0.3635,
+   "n_target": 50,
+   "n_slots": 50,
+   "n_buy": 30,
+   "n_sell": 30,
+   "n_unsellable": 0,
+   "n_skipped_limit_up": 0,
+   "n_skipped_suspended": 0,
+   "n_holdings": 50,
+   "nav": 0.879761
+  },
+  {
+   "date": "20260209",
+   "signal_date": "20260206",
+   "turnover": 0.981522,
+   "cost_pct": 0.2945,
+   "n_target": 50,
+   "n_slots": 50,
+   "n_buy": 24,
+   "n_sell": 24,
+   "n_unsellable": 0,
+   "n_skipped_limit_up": 14,
+   "n_skipped_suspended": 0,
+   "n_holdings": 50,
+   "nav": 0.879381
+  },
+  {
+   "date": "20260224",
+   "signal_date": "20260213",
+   "turnover": 1.306244,
+   "cost_pct": 0.3919,
+   "n_target": 50,
+   "n_slots": 50,
+   "n_buy": 32,
+   "n_sell": 32,
+   "n_unsellable": 0,
+   "n_skipped_limit_up": 13,
+   "n_skipped_suspended": 1,
+   "n_holdings": 50,
+   "nav": 0.86197
+  },
+  {
+   "date": "20260302",
+   "signal_date": "20260227",
+   "turnover": 1.189569,
+   "cost_pct": 0.3569,
+   "n_target": 49,
+   "n_slots": 49,
+   "n_buy": 29,
+   "n_sell": 29,
+   "n_unsellable": 1,
+   "n_skipped_limit_up": 6,
+   "n_skipped_suspended": 0,
+   "n_holdings": 50,
+   "nav": 0.866656
+  },
+  {
+   "date": "20260309",
+   "signal_date": "20260306",
+   "turnover": 1.220258,
+   "cost_pct": 0.3661,
+   "n_target": 50,
+   "n_slots": 50,
+   "n_buy": 30,
+   "n_sell": 30,
+   "n_unsellable": 0,
+   "n_skipped_limit_up": 1,
+   "n_skipped_suspended": 0,
+   "n_holdings": 50,
+   "nav": 0.815973
+  },
+  {
+   "date": "20260316",
+   "signal_date": "20260313",
+   "turnover": 1.292236,
+   "cost_pct": 0.3877,
+   "n_target": 48,
+   "n_slots": 48,
+   "n_buy": 32,
+   "n_sell": 32,
+   "n_unsellable": 2,
+   "n_skipped_limit_up": 6,
+   "n_skipped_suspended": 0,
+   "n_holdings": 50,
+   "nav": 0.802132
+  },
+  {
+   "date": "20260323",
+   "signal_date": "20260320",
+   "turnover": 1.062546,
+   "cost_pct": 0.3188,
+   "n_target": 47,
+   "n_slots": 47,
+   "n_buy": 26,
+   "n_sell": 26,
+   "n_unsellable": 3,
+   "n_skipped_limit_up": 3,
+   "n_skipped_suspended": 0,
+   "n_holdings": 50,
+   "nav": 0.725369
+  },
+  {
+   "date": "20260330",
+   "signal_date": "20260327",
+   "turnover": 1.253378,
+   "cost_pct": 0.376,
+   "n_target": 48,
+   "n_slots": 48,
+   "n_buy": 31,
+   "n_sell": 31,
+   "n_unsellable": 2,
+   "n_skipped_limit_up": 7,
+   "n_skipped_suspended": 0,
+   "n_holdings": 50,
+   "nav": 0.73645
+  },
+  {
+   "date": "20260407",
+   "signal_date": "20260403",
+   "turnover": 1.295307,
+   "cost_pct": 0.3886,
+   "n_target": 50,
+   "n_slots": 50,
+   "n_buy": 32,
+   "n_sell": 32,
+   "n_unsellable": 0,
+   "n_skipped_limit_up": 9,
+   "n_skipped_suspended": 0,
+   "n_holdings": 50,
+   "nav": 0.684025
+  },
+  {
+   "date": "20260413",
+   "signal_date": "20260410",
+   "turnover": 1.13569,
+   "cost_pct": 0.3407,
+   "n_target": 47,
+   "n_slots": 47,
+   "n_buy": 28,
+   "n_sell": 28,
+   "n_unsellable": 3,
+   "n_skipped_limit_up": 3,
+   "n_skipped_suspended": 0,
+   "n_holdings": 50,
+   "nav": 0.690114
+  },
+  {
+   "date": "20260420",
+   "signal_date": "20260417",
+   "turnover": 1.256011,
+   "cost_pct": 0.3768,
+   "n_target": 48,
+   "n_slots": 48,
+   "n_buy": 31,
+   "n_sell": 31,
+   "n_unsellable": 2,
+   "n_skipped_limit_up": 3,
+   "n_skipped_suspended": 0,
+   "n_holdings": 50,
+   "nav": 0.716967
+  },
+  {
+   "date": "20260427",
+   "signal_date": "20260424",
+   "turnover": 0.91026,
+   "cost_pct": 0.2731,
+   "n_target": 48,
+   "n_slots": 48,
+   "n_buy": 22,
+   "n_sell": 22,
+   "n_unsellable": 2,
+   "n_skipped_limit_up": 3,
+   "n_skipped_suspended": 0,
+   "n_holdings": 50,
+   "nav": 0.72275
+  },
+  {
+   "date": "20260506",
+   "signal_date": "20260430",
+   "turnover": 1.102843,
+   "cost_pct": 0.3309,
+   "n_target": 50,
+   "n_slots": 50,
+   "n_buy": 27,
+   "n_sell": 27,
+   "n_unsellable": 0,
+   "n_skipped_limit_up": 8,
+   "n_skipped_suspended": 0,
+   "n_holdings": 50,
+   "nav": 0.753788
+  },
+  {
+   "date": "20260511",
+   "signal_date": "20260508",
+   "turnover": 1.002034,
+   "cost_pct": 0.3006,
+   "n_target": 50,
+   "n_slots": 50,
+   "n_buy": 24,
+   "n_sell": 24,
+   "n_unsellable": 0,
+   "n_skipped_limit_up": 8,
+   "n_skipped_suspended": 0,
+   "n_holdings": 50,
+   "nav": 0.809046
+  },
+  {
+   "date": "20260518",
+   "signal_date": "20260515",
+   "turnover": 1.166919,
+   "cost_pct": 0.3501,
+   "n_target": 49,
+   "n_slots": 49,
+   "n_buy": 29,
+   "n_sell": 29,
+   "n_unsellable": 1,
+   "n_skipped_limit_up": 3,
+   "n_skipped_suspended": 0,
+   "n_holdings": 50,
+   "nav": 0.794415
+  },
+  {
+   "date": "20260525",
+   "signal_date": "20260522",
+   "turnover": 1.100947,
+   "cost_pct": 0.3303,
+   "n_target": 49,
+   "n_slots": 49,
+   "n_buy": 27,
+   "n_sell": 27,
+   "n_unsellable": 1,
+   "n_skipped_limit_up": 3,
+   "n_skipped_suspended": 0,
+   "n_holdings": 50,
+   "nav": 0.802427
+  },
+  {
+   "date": "20260601",
+   "signal_date": "20260529",
+   "turnover": 1.167758,
+   "cost_pct": 0.3503,
+   "n_target": 47,
+   "n_slots": 47,
+   "n_buy": 29,
+   "n_sell": 29,
+   "n_unsellable": 3,
+   "n_skipped_limit_up": 1,
+   "n_skipped_suspended": 0,
+   "n_holdings": 50,
+   "nav": 0.746796
+  },
+  {
+   "date": "20260608",
+   "signal_date": "20260605",
+   "turnover": 0.953124,
+   "cost_pct": 0.2859,
+   "n_target": 46,
+   "n_slots": 46,
+   "n_buy": 23,
+   "n_sell": 23,
+   "n_unsellable": 4,
+   "n_skipped_limit_up": 4,
+   "n_skipped_suspended": 0,
+   "n_holdings": 50,
+   "nav": 0.762053
+  },
+  {
+   "date": "20260615",
+   "signal_date": "20260612",
+   "turnover": 1.163585,
+   "cost_pct": 0.3491,
+   "n_target": 48,
+   "n_slots": 48,
+   "n_buy": 28,
+   "n_sell": 28,
+   "n_unsellable": 2,
+   "n_skipped_limit_up": 13,
+   "n_skipped_suspended": 0,
+   "n_holdings": 50,
+   "nav": 0.788283
+  },
+  {
+   "date": "20260622",
+   "signal_date": "20260618",
+   "turnover": 1.027738,
+   "cost_pct": 0.3083,
+   "n_target": 47,
+   "n_slots": 47,
+   "n_buy": 25,
+   "n_sell": 25,
+   "n_unsellable": 3,
+   "n_skipped_limit_up": 9,
+   "n_skipped_suspended": 0,
+   "n_holdings": 50,
+   "nav": 0.893395
+  },
+  {
+   "date": "20260629",
+   "signal_date": "20260626",
+   "turnover": 1.191453,
+   "cost_pct": 0.3574,
+   "n_target": 45,
+   "n_slots": 45,
+   "n_buy": 29,
+   "n_sell": 29,
+   "n_unsellable": 5,
+   "n_skipped_limit_up": 2,
+   "n_skipped_suspended": 0,
+   "n_holdings": 50,
+   "nav": 0.865953
+  },
+  {
+   "date": "20260706",
+   "signal_date": "20260703",
+   "turnover": 1.036612,
+   "cost_pct": 0.311,
+   "n_target": 42,
+   "n_slots": 42,
+   "n_buy": 25,
+   "n_sell": 25,
+   "n_unsellable": 8,
+   "n_skipped_limit_up": 1,
+   "n_skipped_suspended": 0,
+   "n_holdings": 50,
+   "nav": 0.770939
+  },
+  {
+   "date": "20260713",
+   "signal_date": "20260710",
+   "turnover": 1.069919,
+   "cost_pct": 0.321,
+   "n_target": 39,
+   "n_slots": 39,
+   "n_buy": 26,
+   "n_sell": 26,
+   "n_unsellable": 11,
+   "n_skipped_limit_up": 3,
+   "n_skipped_suspended": 0,
+   "n_holdings": 50,
+   "nav": 0.665
+  },
+  {
+   "date": "20260720",
+   "signal_date": "20260717",
+   "turnover": 1.03038,
+   "cost_pct": 0.3091,
+   "n_target": 33,
+   "n_slots": 33,
+   "n_buy": 25,
+   "n_sell": 25,
+   "n_unsellable": 17,
+   "n_skipped_limit_up": 3,
+   "n_skipped_suspended": 0,
+   "n_holdings": 50,
+   "nav": 0.524034
+  },
+  {
+   "date": "20260727",
+   "signal_date": "20260724",
+   "turnover": 1.371278,
+   "cost_pct": 0.4114,
+   "n_target": 50,
+   "n_slots": 50,
+   "n_buy": 34,
+   "n_sell": 34,
+   "n_unsellable": 0,
+   "n_skipped_limit_up": 10,
+   "n_skipped_suspended": 1,
+   "n_holdings": 50,
+   "nav": 0.521595
+  },
+  {
+   "date": "20260803",
+   "signal_date": "20260731",
+   "turnover": 1.291647,
+   "cost_pct": 0.3875,
+   "n_target": 48,
+   "n_slots": 48,
+   "n_buy": 32,
+   "n_sell": 32,
+   "n_unsellable": 2,
+   "n_skipped_limit_up": 5,
+   "n_skipped_suspended": 2,
+   "n_holdings": 50,
+   "nav": 0.48259
+  },
+  {
+   "date": "20260810",
+   "signal_date": "20260807",
+   "turnover": 1.268158,
+   "cost_pct": 0.3804,
+   "n_target": 49,
+   "n_slots": 49,
+   "n_buy": 31,
+   "n_sell": 31,
+   "n_unsellable": 1,
+   "n_skipped_limit_up": 9,
+   "n_skipped_suspended": 0,
+   "n_holdings": 50,
+   "nav": 0.518707
+  },
+  {
+   "date": "20260817",
+   "signal_date": "20260814",
+   "turnover": 1.37465,
+   "cost_pct": 0.4124,
+   "n_target": 50,
+   "n_slots": 50,
+   "n_buy": 34,
+   "n_sell": 34,
+   "n_unsellable": 0,
+   "n_skipped_limit_up": 4,
+   "n_skipped_suspended": 0,
+   "n_holdings": 50,
+   "nav": 0.520154
+  },
+  {
+   "date": "20260824",
+   "signal_date": "20260821",
+   "turnover": 1.153598,
+   "cost_pct": 0.3461,
+   "n_target": 50,
+   "n_slots": 50,
+   "n_buy": 28,
+   "n_sell": 28,
+   "n_unsellable": 0,
+   "n_skipped_limit_up": 6,
+   "n_skipped_suspended": 0,
+   "n_holdings": 50,
+   "nav": 0.480064
+  },
+  {
+   "date": "20260831",
+   "signal_date": "20260828",
+   "turnover": 1.177534,
+   "cost_pct": 0.3533,
+   "n_target": 47,
+   "n_slots": 47,
+   "n_buy": 29,
+   "n_sell": 29,
+   "n_unsellable": 3,
+   "n_skipped_limit_up": 3,
+   "n_skipped_suspended": 0,
+   "n_holdings": 50,
+   "nav": 0.490268
+  },
+  {
+   "date": "20260907",
+   "signal_date": "20260904",
+   "turnover": 1.464663,
+   "cost_pct": 0.4394,
+   "n_target": 50,
+   "n_slots": 50,
+   "n_buy": 36,
+   "n_sell": 36,
+   "n_unsellable": 0,
+   "n_skipped_limit_up": 11,
+   "n_skipped_suspended": 0,
+   "n_holdings": 50,
+   "nav": 0.490886
+  },
+  {
+   "date": "20260914",
+   "signal_date": "20260911",
+   "turnover": 1.35816,
+   "cost_pct": 0.4074,
+   "n_target": 50,
+   "n_slots": 50,
+   "n_buy": 33,
+   "n_sell": 33,
+   "n_unsellable": 0,
+   "n_skipped_limit_up": 4,
+   "n_skipped_suspended": 0,
+   "n_holdings": 50,
+   "nav": 0.445874
+  },
+  {
+   "date": "20260921",
+   "signal_date": "20260918",
+   "turnover": 1.140375,
+   "cost_pct": 0.3421,
+   "n_target": 49,
+   "n_slots": 49,
+   "n_buy": 28,
+   "n_sell": 28,
+   "n_unsellable": 1,
+   "n_skipped_limit_up": 6,
+   "n_skipped_suspended": 0,
+   "n_holdings": 50,
+   "nav": 0.455411
+  },
+  {
+   "date": "20260928",
+   "signal_date": "20260924",
+   "turnover": 1.055592,
+   "cost_pct": 0.3167,
+   "n_target": 46,
+   "n_slots": 46,
+   "n_buy": 26,
+   "n_sell": 26,
+   "n_unsellable": 4,
+   "n_skipped_limit_up": 3,
+   "n_skipped_suspended": 0,
+   "n_holdings": 50,
+   "nav": 0.422962
+  },
+  {
+   "date": "20261008",
+   "signal_date": "20260930",
+   "turnover": 0.784582,
+   "cost_pct": 0.2354,
+   "n_target": 45,
+   "n_slots": 45,
+   "n_buy": 19,
+   "n_sell": 19,
+   "n_unsellable": 5,
+   "n_skipped_limit_up": 2,
+   "n_skipped_suspended": 1,
+   "n_holdings": 50,
+   "nav": 0.403825
+  },
+  {
+   "date": "20261012",
+   "signal_date": "20261009",
+   "turnover": 0.689687,
+   "cost_pct": 0.2069,
+   "n_target": 47,
+   "n_slots": 47,
+   "n_buy": 16,
+   "n_sell": 16,
+   "n_unsellable": 3,
+   "n_skipped_limit_up": 9,
+   "n_skipped_suspended": 0,
+   "n_holdings": 50,
+   "nav": 0.396382
+  },
+  {
+   "date": "20261019",
+   "signal_date": "20261016",
+   "turnover": 1.192213,
+   "cost_pct": 0.3577,
+   "n_target": 48,
+   "n_slots": 48,
+   "n_buy": 29,
+   "n_sell": 29,
+   "n_unsellable": 2,
+   "n_skipped_limit_up": 3,
+   "n_skipped_suspended": 0,
+   "n_holdings": 50,
+   "nav": 0.374299
+  },
+  {
+   "date": "20261026",
+   "signal_date": "20261023",
+   "turnover": 1.261465,
+   "cost_pct": 0.3784,
+   "n_target": 47,
+   "n_slots": 47,
+   "n_buy": 31,
+   "n_sell": 31,
+   "n_unsellable": 3,
+   "n_skipped_limit_up": 4,
+   "n_skipped_suspended": 0,
+   "n_holdings": 50,
+   "nav": 0.344597
+  }
+ ],
+ "metrics": {
+  "total_return": -0.68575,
+  "annual_return": -0.781136,
+  "mdd": -0.68575,
+  "mdd_detail": {
+   "peak_date": "20260105",
+   "peak_nav": 1.0,
+   "trough_date": "20261030",
+   "trough_nav": 0.31425,
+   "mdd": -0.68575,
+   "note": "逐日 NAV 对历史峰值回撤的最小值；若 NAV 全程未创新高，则数值上与总收益相等"
+  },
+  "vol_ann": 0.434185,
+  "sharpe": -3.261588,
+  "avg_turnover": 1.142933,
+  "avg_holdings": 48.7374,
+  "max_holdings": 50,
+  "rebalance_count": 41,
+  "trading_days": 198,
+  "first_entry_date": "20260112",
+  "benchmark": {
+   "name": "等权全市场（复权价、日频等权再平衡）",
+   "total_return": -0.161732,
+   "annual_return": -0.202019,
+   "mdd": -0.242905,
+   "vol_ann": 0.240371,
+   "trading_days": 198
+  },
+  "excess_return": -0.524018,
+  "beta_vs_benchmark": 1.191118,
+  "corr_vs_benchmark": 0.667693,
+  "ic": {
+   "mean": 0.000752,
+   "mean_rank": -0.028162,
+   "ir": 0.004307,
+   "rank_ir": -0.154768,
+   "n_days": 197,
+   "win_rate": 0.5228,
+   "definition": "日度截面 corr(score_t, ret_{t+1})；ret=复权收盘价(t+1)/复权收盘价(t)-1；mean=Pearson 均值、mean_rank=Spearman 均值、n_days=有效交易日数"
+  },
+  "ic_mean": 0.000752
+ }
+}

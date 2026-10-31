@@ -1,0 +1,27 @@
+id: LX10_3121_RULER
+name: 3121 战法（量柱/价柱/量价标尺）
+source: 伏击涨停（修订升级版）
+chapter: 第5章《测庄七穴位：3121 标尺的标准和用法》
+page_start: 42
+page_end: 48
+evidence_page: 61
+evidence_quote: 量学将其简称为3121标尺，使用3121标尺判势选股的方法，简称“3121战法”
+type: 过滤器
+computability: A
+params:
+  center_ratio: 0.5
+  third_ratio: 0.333
+  shrink_31_ratio_max: 0.667
+  shrink_21_ratio_max: 0.5
+  shrink_32_ratio_max: 0.333
+  hundred_low_lookback_days: 100
+entry_rule: 假跌判定：pct_chg<0 and vol <= prev_vol*0.667（缩量31；缩量21/32 更严格）或 vol==min(vol,100)（缩为百低）; 买点：假跌后出现阳盖阴（T+1 close>open and close>prev_close）且收盘站上关键3121位（如实体中点21位）→ 入场
+exit_rule: 收盘跌破相应 3121 关键位（量柱/价柱下31位≈柱体下1/3）止损；持有 5/10 个交易日
+test_status: untested
+tested_ref: null
+h_ids: []
+notes: |-
+  原文：量柱/价柱设 7 刻度（顶位、上31、中21、下31、底位+上下41位），31/21 位最重要；缩量31/21/32/百低衡量控盘，下跌缩量为假跌（印刷42-48页，OCR 第60-66页）。
+  简化定义：缩量比例阈值固定为 2/3、1/2、1/3；“关键位”用实体比例计算，可直接日线计算。
+  状态：未测（strategy_registry book_backlog）。
+updated_at: '2026-11-01'

@@ -1,0 +1,2798 @@
+{
+ "meta": {
+  "lib": "factor_lib",
+  "version": "1.0.0",
+  "generated_at": "2026-11-01T05:53:49+08:00",
+  "python": "3.12.10",
+  "pandas": "3.0.5",
+  "numpy": "2.5.2",
+  "requested": {
+   "start": "20260101",
+   "end": "20261030",
+   "factors": [
+    "vol_ratio5",
+    "double_vol",
+    "shrink_vol",
+    "up_vol_down",
+    "yin_yang",
+    "near_high_vol",
+    "golden_pillar",
+    "zero_vol",
+    "aokou",
+    "mom20",
+    "rev5",
+    "low_turnover",
+    "pe",
+    "roe",
+    "quality_trap",
+    "vol20",
+    "max_ret20"
+   ],
+   "horizon": 20,
+   "cost": 0.003,
+   "universe": "tradable",
+   "is_end": "20260630",
+   "seed": 42,
+   "min_cross_section": 50,
+   "n_boot": 300
+  },
+  "horizon": 20,
+  "cost": 0.003,
+  "entry": "T+1 收盘入场",
+  "exit": "T+21 收盘卖出",
+  "market": "equal_weight_daily_rebalanced（等权市场日收益复利，与 H24/H26/H29 同口径）",
+  "seed": 42,
+  "min_cross_section": 50,
+  "block": 5,
+  "data": {
+   "data_root": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\tushare",
+   "universe": "tradable",
+   "load_dates": [
+    "20251106",
+    "20261030"
+   ],
+   "load_days": 238,
+   "warmup_days": 40,
+   "horizon": 20,
+   "panel_dates": 238,
+   "codes": 5607,
+   "eligible_avg_per_day": 4196.1,
+   "eligible_share": 0.7484,
+   "load_sec": 13.98
+  },
+  "notes": [
+   "PIT：因子只用 T 日及以前数据；golden_pillar 等确认型形态信号索引=确认完成日，T+1 入场。",
+   "CAR = 个股 T+1→T+1+h 复权买入持有收益 - 等权市场同期复利收益 - 30bp。",
+   "等权市场为日频再平衡，与个股买入持有存在再平衡差，故全样本无条件 CAR 均值不等于 -cost，见 baseline。",
+   "连续因子按日横截面五分组（同值时按 ts_code 顺序破并列）；0/1 事件因子二值分组：Q5=信号组、Q1=非信号组、Q2~Q4 无定义（事件组明细另见 event_split）。",
+   "年化 = h 日平均 CAR × 252/h（重叠窗口近似，仅用于量级比较；显著性看 t 与 block bootstrap）。",
+   "可复现：bootstrap 固定 seed；除 generated_at / runtime_sec / data.load_sec 等耗时字段外，同数据同参数两次运行因子数值完全一致（已验证）。"
+  ],
+  "runtime_sec": 16.015,
+  "is_end": "20260630",
+  "is_end_source": "arg",
+  "effective": {
+   "start": "20260105",
+   "end": "20260923",
+   "signal_days": 177,
+   "panel_dates": 238,
+   "codes": 5607,
+   "panel_first": "20251106",
+   "panel_last": "20261030",
+   "requested_start": "20260101",
+   "requested_end": "20261030"
+  },
+  "baseline": {
+   "n_obs": 749451,
+   "mean_pct": -1.638,
+   "median_pct": -3.878,
+   "note": "无条件下（全部合格股票等权）20日 CAR 均值；含 30bp 成本与等权市场再平衡差"
+  },
+  "factors_evaluated": 17
+ },
+ "factors": {
+  "vol_ratio5": {
+   "name": "vol_ratio5",
+   "family": "量学形态",
+   "kind": "continuous",
+   "direction": 1,
+   "description": "量比：当日成交量 / 近5日均量（含当日，与 H24/H29 口径一致）；先验：量增价升",
+   "source": "伏击涨停·量柱七形态",
+   "n_obs": 749195,
+   "n_days": 177,
+   "signal": null,
+   "ic": {
+    "n_days": 177,
+    "mean": -0.004616,
+    "std": 0.071126,
+    "ir": -0.0649,
+    "t": -0.863,
+    "positive_rate": 0.452
+   },
+   "ic_directed": {
+    "n_days": 177,
+    "mean": -0.004616,
+    "std": 0.071126,
+    "ir": -0.0649,
+    "t": -0.863,
+    "positive_rate": 0.452
+   },
+   "by_year": {
+    "2026": {
+     "n_days": 177,
+     "mean": -0.004616,
+     "std": 0.071126,
+     "ir": -0.0649,
+     "t": -0.863,
+     "positive_rate": 0.452
+    }
+   },
+   "is_oos": {
+    "split_date": "20260630",
+    "source": "arg",
+    "IS": {
+     "n_days": 116,
+     "mean": 0.002022,
+     "std": 0.070186,
+     "ir": 0.0288,
+     "t": 0.31,
+     "positive_rate": 0.5
+    },
+    "OOS": {
+     "n_days": 61,
+     "mean": -0.017239,
+     "std": 0.071769,
+     "ir": -0.2402,
+     "t": -1.876,
+     "positive_rate": 0.3607
+    }
+   },
+   "bootstrap": {
+    "ic_directed": {
+     "series": "directed_daily_ic",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": -0.613,
+     "p_le_0": 0.7867
+    },
+    "long_short_spread": {
+     "series": "daily_top_minus_bottom",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": -0.174,
+     "p_le_0": 0.6967
+    }
+   },
+   "quintiles": {
+    "method": "quantile",
+    "n_groups": 5,
+    "tie_break": "ts_code_order",
+    "groups": {
+     "Q1": {
+      "n_days": 177,
+      "mean_car_pct": -1.9299,
+      "std_car_pct": 1.4855,
+      "t": -17.284,
+      "positive_rate": 0.0847,
+      "ann_pct": -24.32,
+      "n_obs": 149771,
+      "avg_members_per_day": 846.2
+     },
+     "Q2": {
+      "n_days": 177,
+      "mean_car_pct": -1.5576,
+      "std_car_pct": 1.004,
+      "t": -20.64,
+      "positive_rate": 0.0452,
+      "ann_pct": -19.63,
+      "n_obs": 149840,
+      "avg_members_per_day": 846.6
+     },
+     "Q3": {
+      "n_days": 177,
+      "mean_car_pct": -1.4204,
+      "std_car_pct": 1.0526,
+      "t": -17.953,
+      "positive_rate": 0.0734,
+      "ann_pct": -17.9,
+      "n_obs": 149827,
+      "avg_members_per_day": 846.5
+     },
+     "Q4": {
+      "n_days": 177,
+      "mean_car_pct": -1.3976,
+      "std_car_pct": 1.3592,
+      "t": -13.68,
+      "positive_rate": 0.113,
+      "ann_pct": -17.61,
+      "n_obs": 149840,
+      "avg_members_per_day": 846.6
+     },
+     "Q5": {
+      "n_days": 177,
+      "mean_car_pct": -2.0397,
+      "std_car_pct": 1.8232,
+      "t": -14.884,
+      "positive_rate": 0.1186,
+      "ann_pct": -25.7,
+      "n_obs": 149917,
+      "avg_members_per_day": 847.0
+     }
+    },
+    "top_minus_bottom": {
+     "n_days": 177,
+     "mean_car_pct": -0.1098,
+     "std_car_pct": 2.8572,
+     "t": -0.511,
+     "positive_rate": 0.4633,
+     "ann_pct": -1.38,
+     "directed_ann_pct": -1.38
+    },
+    "n_obs": 749195
+   },
+   "event_split": null
+  },
+  "double_vol": {
+   "name": "double_vol",
+   "family": "量学形态",
+   "kind": "event",
+   "direction": 1,
+   "description": "倍量柱：量比5 ≥ 1.9 且当日收阳（pct_chg>0）；先验看涨",
+   "source": "伏击涨停·量柱七形态 / H24 倍量柱",
+   "n_obs": 749195,
+   "n_days": 177,
+   "signal": {
+    "n_events": 16455,
+    "n_signal_days": 177,
+    "avg_signals_per_day": 93.0,
+    "signal_share_pct": 2.2
+   },
+   "ic": {
+    "n_days": 177,
+    "mean": -0.023926,
+    "std": 0.031997,
+    "ir": -0.7477,
+    "t": -9.948,
+    "positive_rate": 0.2373
+   },
+   "ic_directed": {
+    "n_days": 177,
+    "mean": -0.023926,
+    "std": 0.031997,
+    "ir": -0.7477,
+    "t": -9.948,
+    "positive_rate": 0.2373
+   },
+   "by_year": {
+    "2026": {
+     "n_days": 177,
+     "mean": -0.023926,
+     "std": 0.031997,
+     "ir": -0.7477,
+     "t": -9.948,
+     "positive_rate": 0.2373
+    }
+   },
+   "is_oos": {
+    "split_date": "20260630",
+    "source": "arg",
+    "IS": {
+     "n_days": 116,
+     "mean": -0.022622,
+     "std": 0.032379,
+     "ir": -0.6987,
+     "t": -7.525,
+     "positive_rate": 0.25
+    },
+    "OOS": {
+     "n_days": 61,
+     "mean": -0.026406,
+     "std": 0.031372,
+     "ir": -0.8417,
+     "t": -6.574,
+     "positive_rate": 0.2131
+    }
+   },
+   "bootstrap": {
+    "ic_directed": {
+     "series": "directed_daily_ic",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": -2.468,
+     "p_le_0": 1.0
+    },
+    "long_short_spread": {
+     "series": "daily_top_minus_bottom",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": -1.723,
+     "p_le_0": 1.0
+    }
+   },
+   "quintiles": {
+    "method": "binary_signal_vs_non_signal",
+    "n_groups": 5,
+    "tie_break": null,
+    "groups": {
+     "Q1": {
+      "n_days": 177,
+      "mean_car_pct": -1.6375,
+      "std_car_pct": 0.6594,
+      "t": -33.039,
+      "positive_rate": 0.0056,
+      "ann_pct": -20.63,
+      "n_obs": 732740,
+      "avg_members_per_day": 4139.8
+     },
+     "Q2": {
+      "n_days": 0,
+      "mean_car_pct": null,
+      "std_car_pct": null,
+      "t": null,
+      "positive_rate": null,
+      "ann_pct": null,
+      "n_obs": 0,
+      "avg_members_per_day": 0.0
+     },
+     "Q3": {
+      "n_days": 0,
+      "mean_car_pct": null,
+      "std_car_pct": null,
+      "t": null,
+      "positive_rate": null,
+      "ann_pct": null,
+      "n_obs": 0,
+      "avg_members_per_day": 0.0
+     },
+     "Q4": {
+      "n_days": 0,
+      "mean_car_pct": null,
+      "std_car_pct": null,
+      "t": null,
+      "positive_rate": null,
+      "ann_pct": null,
+      "n_obs": 0,
+      "avg_members_per_day": 0.0
+     },
+     "Q5": {
+      "n_days": 177,
+      "mean_car_pct": -3.2658,
+      "std_car_pct": 3.344,
+      "t": -12.993,
+      "positive_rate": 0.1356,
+      "ann_pct": -41.15,
+      "n_obs": 16455,
+      "avg_members_per_day": 93.0
+     }
+    },
+    "top_minus_bottom": {
+     "n_days": 177,
+     "mean_car_pct": -1.6283,
+     "std_car_pct": 3.22,
+     "t": -6.727,
+     "positive_rate": 0.3051,
+     "ann_pct": -20.52,
+     "directed_ann_pct": -20.52
+    },
+    "n_obs": 749195
+   },
+   "event_split": {
+    "signal": {
+     "n_days": 177,
+     "mean_car_pct": -3.2658,
+     "std_car_pct": 3.344,
+     "t": -12.993,
+     "positive_rate": 0.1356,
+     "ann_pct": -41.15
+    },
+    "non_signal": {
+     "n_days": 177,
+     "mean_car_pct": -1.6375,
+     "std_car_pct": 0.6594,
+     "t": -33.039,
+     "positive_rate": 0.0056,
+     "ann_pct": -20.63
+    },
+    "excess": {
+     "n_days": 177,
+     "mean_car_pct": -1.6283,
+     "std_car_pct": 3.22,
+     "t": -6.727,
+     "positive_rate": 0.3051,
+     "ann_pct": -20.52
+    },
+    "n_signal_obs": 16455,
+    "n_signal_days": 177,
+    "avg_signals_per_day": 93.0,
+    "signal_share_pct": 2.2
+   }
+  },
+  "shrink_vol": {
+   "name": "shrink_vol",
+   "family": "量学形态",
+   "kind": "event",
+   "direction": 1,
+   "description": "缩量柱：当日量 < 前日量 × 0.8（惜售/缩量洗盘）；先验看涨",
+   "source": "伏击涨停·量柱七形态",
+   "n_obs": 749182,
+   "n_days": 177,
+   "signal": {
+    "n_events": 194278,
+    "n_signal_days": 177,
+    "avg_signals_per_day": 1097.6,
+    "signal_share_pct": 25.93
+   },
+   "ic": {
+    "n_days": 177,
+    "mean": -0.007805,
+    "std": 0.047663,
+    "ir": -0.1638,
+    "t": -2.179,
+    "positive_rate": 0.4237
+   },
+   "ic_directed": {
+    "n_days": 177,
+    "mean": -0.007805,
+    "std": 0.047663,
+    "ir": -0.1638,
+    "t": -2.179,
+    "positive_rate": 0.4237
+   },
+   "by_year": {
+    "2026": {
+     "n_days": 177,
+     "mean": -0.007805,
+     "std": 0.047663,
+     "ir": -0.1638,
+     "t": -2.179,
+     "positive_rate": 0.4237
+    }
+   },
+   "is_oos": {
+    "split_date": "20260630",
+    "source": "arg",
+    "IS": {
+     "n_days": 116,
+     "mean": -0.008725,
+     "std": 0.045001,
+     "ir": -0.1939,
+     "t": -2.088,
+     "positive_rate": 0.4052
+    },
+    "OOS": {
+     "n_days": 61,
+     "mean": -0.006056,
+     "std": 0.052704,
+     "ir": -0.1149,
+     "t": -0.897,
+     "positive_rate": 0.459
+    }
+   },
+   "bootstrap": {
+    "ic_directed": {
+     "series": "directed_daily_ic",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": -0.734,
+     "p_le_0": 0.99
+    },
+    "long_short_spread": {
+     "series": "daily_top_minus_bottom",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": -0.249,
+     "p_le_0": 0.99
+    }
+   },
+   "quintiles": {
+    "method": "binary_signal_vs_non_signal",
+    "n_groups": 5,
+    "tie_break": null,
+    "groups": {
+     "Q1": {
+      "n_days": 177,
+      "mean_car_pct": -1.6397,
+      "std_car_pct": 0.8408,
+      "t": -25.944,
+      "positive_rate": 0.0339,
+      "ann_pct": -20.66,
+      "n_obs": 554904,
+      "avg_members_per_day": 3135.1
+     },
+     "Q2": {
+      "n_days": 0,
+      "mean_car_pct": null,
+      "std_car_pct": null,
+      "t": null,
+      "positive_rate": null,
+      "ann_pct": null,
+      "n_obs": 0,
+      "avg_members_per_day": 0.0
+     },
+     "Q3": {
+      "n_days": 0,
+      "mean_car_pct": null,
+      "std_car_pct": null,
+      "t": null,
+      "positive_rate": null,
+      "ann_pct": null,
+      "n_obs": 0,
+      "avg_members_per_day": 0.0
+     },
+     "Q4": {
+      "n_days": 0,
+      "mean_car_pct": null,
+      "std_car_pct": null,
+      "t": null,
+      "positive_rate": null,
+      "ann_pct": null,
+      "n_obs": 0,
+      "avg_members_per_day": 0.0
+     },
+     "Q5": {
+      "n_days": 177,
+      "mean_car_pct": -1.9011,
+      "std_car_pct": 1.323,
+      "t": -19.118,
+      "positive_rate": 0.0791,
+      "ann_pct": -23.95,
+      "n_obs": 194278,
+      "avg_members_per_day": 1097.6
+     }
+    },
+    "top_minus_bottom": {
+     "n_days": 177,
+     "mean_car_pct": -0.2615,
+     "std_car_pct": 1.6041,
+     "t": -2.169,
+     "positive_rate": 0.435,
+     "ann_pct": -3.29,
+     "directed_ann_pct": -3.29
+    },
+    "n_obs": 749182
+   },
+   "event_split": {
+    "signal": {
+     "n_days": 177,
+     "mean_car_pct": -1.9011,
+     "std_car_pct": 1.323,
+     "t": -19.118,
+     "positive_rate": 0.0791,
+     "ann_pct": -23.95
+    },
+    "non_signal": {
+     "n_days": 177,
+     "mean_car_pct": -1.6397,
+     "std_car_pct": 0.8408,
+     "t": -25.944,
+     "positive_rate": 0.0339,
+     "ann_pct": -20.66
+    },
+    "excess": {
+     "n_days": 177,
+     "mean_car_pct": -0.2615,
+     "std_car_pct": 1.6041,
+     "t": -2.169,
+     "positive_rate": 0.435,
+     "ann_pct": -3.29
+    },
+    "n_signal_obs": 194278,
+    "n_signal_days": 177,
+    "avg_signals_per_day": 1097.6,
+    "signal_share_pct": 25.93
+   }
+  },
+  "up_vol_down": {
+   "name": "up_vol_down",
+   "family": "量学形态",
+   "kind": "event",
+   "direction": 1,
+   "description": "价升量缩：当日收阳且量 < 前日量 × 0.8；先验看涨",
+   "source": "涨停密码·第12章 价升量缩 / H25",
+   "n_obs": 749182,
+   "n_days": 177,
+   "signal": {
+    "n_events": 64349,
+    "n_signal_days": 177,
+    "avg_signals_per_day": 363.6,
+    "signal_share_pct": 8.59
+   },
+   "ic": {
+    "n_days": 177,
+    "mean": -0.004262,
+    "std": 0.046959,
+    "ir": -0.0908,
+    "t": -1.208,
+    "positive_rate": 0.452
+   },
+   "ic_directed": {
+    "n_days": 177,
+    "mean": -0.004262,
+    "std": 0.046959,
+    "ir": -0.0908,
+    "t": -1.208,
+    "positive_rate": 0.452
+   },
+   "by_year": {
+    "2026": {
+     "n_days": 177,
+     "mean": -0.004262,
+     "std": 0.046959,
+     "ir": -0.0908,
+     "t": -1.208,
+     "positive_rate": 0.452
+    }
+   },
+   "is_oos": {
+    "split_date": "20260630",
+    "source": "arg",
+    "IS": {
+     "n_days": 116,
+     "mean": -0.003674,
+     "std": 0.042493,
+     "ir": -0.0865,
+     "t": -0.931,
+     "positive_rate": 0.4569
+    },
+    "OOS": {
+     "n_days": 61,
+     "mean": -0.005381,
+     "std": 0.054825,
+     "ir": -0.0982,
+     "t": -0.767,
+     "positive_rate": 0.4426
+    }
+   },
+   "bootstrap": {
+    "ic_directed": {
+     "series": "directed_daily_ic",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": -0.374,
+     "p_le_0": 0.8867
+    },
+    "long_short_spread": {
+     "series": "daily_top_minus_bottom",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": -0.384,
+     "p_le_0": 0.9467
+    }
+   },
+   "quintiles": {
+    "method": "binary_signal_vs_non_signal",
+    "n_groups": 5,
+    "tie_break": null,
+    "groups": {
+     "Q1": {
+      "n_days": 177,
+      "mean_car_pct": -1.6639,
+      "std_car_pct": 0.6718,
+      "t": -32.952,
+      "positive_rate": 0.0113,
+      "ann_pct": -20.97,
+      "n_obs": 684833,
+      "avg_members_per_day": 3869.1
+     },
+     "Q2": {
+      "n_days": 0,
+      "mean_car_pct": null,
+      "std_car_pct": null,
+      "t": null,
+      "positive_rate": null,
+      "ann_pct": null,
+      "n_obs": 0,
+      "avg_members_per_day": 0.0
+     },
+     "Q3": {
+      "n_days": 0,
+      "mean_car_pct": null,
+      "std_car_pct": null,
+      "t": null,
+      "positive_rate": null,
+      "ann_pct": null,
+      "n_obs": 0,
+      "avg_members_per_day": 0.0
+     },
+     "Q4": {
+      "n_days": 0,
+      "mean_car_pct": null,
+      "std_car_pct": null,
+      "t": null,
+      "positive_rate": null,
+      "ann_pct": null,
+      "n_obs": 0,
+      "avg_members_per_day": 0.0
+     },
+     "Q5": {
+      "n_days": 177,
+      "mean_car_pct": -2.0716,
+      "std_car_pct": 3.0115,
+      "t": -9.152,
+      "positive_rate": 0.1977,
+      "ann_pct": -26.1,
+      "n_obs": 64349,
+      "avg_members_per_day": 363.6
+     }
+    },
+    "top_minus_bottom": {
+     "n_days": 177,
+     "mean_car_pct": -0.4077,
+     "std_car_pct": 3.0368,
+     "t": -1.786,
+     "positive_rate": 0.4859,
+     "ann_pct": -5.14,
+     "directed_ann_pct": -5.14
+    },
+    "n_obs": 749182
+   },
+   "event_split": {
+    "signal": {
+     "n_days": 177,
+     "mean_car_pct": -2.0716,
+     "std_car_pct": 3.0115,
+     "t": -9.152,
+     "positive_rate": 0.1977,
+     "ann_pct": -26.1
+    },
+    "non_signal": {
+     "n_days": 177,
+     "mean_car_pct": -1.6639,
+     "std_car_pct": 0.6718,
+     "t": -32.952,
+     "positive_rate": 0.0113,
+     "ann_pct": -20.97
+    },
+    "excess": {
+     "n_days": 177,
+     "mean_car_pct": -0.4077,
+     "std_car_pct": 3.0368,
+     "t": -1.786,
+     "positive_rate": 0.4859,
+     "ann_pct": -5.14
+    },
+    "n_signal_obs": 64349,
+    "n_signal_days": 177,
+    "avg_signals_per_day": 363.6,
+    "signal_share_pct": 8.59
+   }
+  },
+  "yin_yang": {
+   "name": "yin_yang",
+   "family": "量学形态",
+   "kind": "event",
+   "direction": 1,
+   "description": "极阴次阳：前日跌幅 ≤ -5%，当日收阳且收盘 ≥ 前日实体中点（严格版采用前日开收中点）；先验看涨",
+   "source": "涨停密码·第15章 极阴次阳 / H26/H29 严格版",
+   "n_obs": 749182,
+   "n_days": 177,
+   "signal": {
+    "n_events": 10960,
+    "n_signal_days": 177,
+    "avg_signals_per_day": 61.9,
+    "signal_share_pct": 1.46
+   },
+   "ic": {
+    "n_days": 177,
+    "mean": -0.014876,
+    "std": 0.05203,
+    "ir": -0.2859,
+    "t": -3.804,
+    "positive_rate": 0.3277
+   },
+   "ic_directed": {
+    "n_days": 177,
+    "mean": -0.014876,
+    "std": 0.05203,
+    "ir": -0.2859,
+    "t": -3.804,
+    "positive_rate": 0.3277
+   },
+   "by_year": {
+    "2026": {
+     "n_days": 177,
+     "mean": -0.014876,
+     "std": 0.05203,
+     "ir": -0.2859,
+     "t": -3.804,
+     "positive_rate": 0.3277
+    }
+   },
+   "is_oos": {
+    "split_date": "20260630",
+    "source": "arg",
+    "IS": {
+     "n_days": 116,
+     "mean": -0.010859,
+     "std": 0.044335,
+     "ir": -0.2449,
+     "t": -2.638,
+     "positive_rate": 0.3879
+    },
+    "OOS": {
+     "n_days": 61,
+     "mean": -0.022515,
+     "std": 0.063899,
+     "ir": -0.3524,
+     "t": -2.752,
+     "positive_rate": 0.2131
+    }
+   },
+   "bootstrap": {
+    "ic_directed": {
+     "series": "directed_daily_ic",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": -1.405,
+     "p_le_0": 1.0
+    },
+    "long_short_spread": {
+     "series": "daily_top_minus_bottom",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": -1.818,
+     "p_le_0": 0.99
+    }
+   },
+   "quintiles": {
+    "method": "binary_signal_vs_non_signal",
+    "n_groups": 5,
+    "tie_break": null,
+    "groups": {
+     "Q1": {
+      "n_days": 177,
+      "mean_car_pct": -1.6804,
+      "std_car_pct": 0.7186,
+      "t": -31.11,
+      "positive_rate": 0.0113,
+      "ann_pct": -21.17,
+      "n_obs": 738222,
+      "avg_members_per_day": 4170.7
+     },
+     "Q2": {
+      "n_days": 0,
+      "mean_car_pct": null,
+      "std_car_pct": null,
+      "t": null,
+      "positive_rate": null,
+      "ann_pct": null,
+      "n_obs": 0,
+      "avg_members_per_day": 0.0
+     },
+     "Q3": {
+      "n_days": 0,
+      "mean_car_pct": null,
+      "std_car_pct": null,
+      "t": null,
+      "positive_rate": null,
+      "ann_pct": null,
+      "n_obs": 0,
+      "avg_members_per_day": 0.0
+     },
+     "Q4": {
+      "n_days": 0,
+      "mean_car_pct": null,
+      "std_car_pct": null,
+      "t": null,
+      "positive_rate": null,
+      "ann_pct": null,
+      "n_obs": 0,
+      "avg_members_per_day": 0.0
+     },
+     "Q5": {
+      "n_days": 177,
+      "mean_car_pct": -3.6677,
+      "std_car_pct": 8.8626,
+      "t": -5.506,
+      "positive_rate": 0.3051,
+      "ann_pct": -46.21,
+      "n_obs": 10960,
+      "avg_members_per_day": 61.9
+     }
+    },
+    "top_minus_bottom": {
+     "n_days": 177,
+     "mean_car_pct": -1.9873,
+     "std_car_pct": 8.8766,
+     "t": -2.979,
+     "positive_rate": 0.3785,
+     "ann_pct": -25.04,
+     "directed_ann_pct": -25.04
+    },
+    "n_obs": 749182
+   },
+   "event_split": {
+    "signal": {
+     "n_days": 177,
+     "mean_car_pct": -3.6677,
+     "std_car_pct": 8.8626,
+     "t": -5.506,
+     "positive_rate": 0.3051,
+     "ann_pct": -46.21
+    },
+    "non_signal": {
+     "n_days": 177,
+     "mean_car_pct": -1.6804,
+     "std_car_pct": 0.7186,
+     "t": -31.11,
+     "positive_rate": 0.0113,
+     "ann_pct": -21.17
+    },
+    "excess": {
+     "n_days": 177,
+     "mean_car_pct": -1.9873,
+     "std_car_pct": 8.8766,
+     "t": -2.979,
+     "positive_rate": 0.3785,
+     "ann_pct": -25.04
+    },
+    "n_signal_obs": 10960,
+    "n_signal_days": 177,
+    "avg_signals_per_day": 61.9,
+    "signal_share_pct": 1.46
+   }
+  },
+  "near_high_vol": {
+   "name": "near_high_vol",
+   "family": "量学形态",
+   "kind": "event",
+   "direction": 1,
+   "description": "兵临城下：收盘 ≥ 近20日最高收盘 × 0.98 且量比5 ≥ 1.5；先验看涨",
+   "source": "涨停密码·第4章 兵临城下 / H27",
+   "n_obs": 749175,
+   "n_days": 177,
+   "signal": {
+    "n_events": 31619,
+    "n_signal_days": 177,
+    "avg_signals_per_day": 178.6,
+    "signal_share_pct": 4.22
+   },
+   "ic": {
+    "n_days": 177,
+    "mean": -0.028001,
+    "std": 0.0469,
+    "ir": -0.597,
+    "t": -7.943,
+    "positive_rate": 0.2429
+   },
+   "ic_directed": {
+    "n_days": 177,
+    "mean": -0.028001,
+    "std": 0.0469,
+    "ir": -0.597,
+    "t": -7.943,
+    "positive_rate": 0.2429
+   },
+   "by_year": {
+    "2026": {
+     "n_days": 177,
+     "mean": -0.028001,
+     "std": 0.0469,
+     "ir": -0.597,
+     "t": -7.943,
+     "positive_rate": 0.2429
+    }
+   },
+   "is_oos": {
+    "split_date": "20260630",
+    "source": "arg",
+    "IS": {
+     "n_days": 116,
+     "mean": -0.018595,
+     "std": 0.044302,
+     "ir": -0.4197,
+     "t": -4.521,
+     "positive_rate": 0.3362
+    },
+    "OOS": {
+     "n_days": 61,
+     "mean": -0.045888,
+     "std": 0.046839,
+     "ir": -0.9797,
+     "t": -7.652,
+     "positive_rate": 0.0656
+    }
+   },
+   "bootstrap": {
+    "ic_directed": {
+     "series": "directed_daily_ic",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": -2.833,
+     "p_le_0": 1.0
+    },
+    "long_short_spread": {
+     "series": "daily_top_minus_bottom",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": -1.746,
+     "p_le_0": 1.0
+    }
+   },
+   "quintiles": {
+    "method": "binary_signal_vs_non_signal",
+    "n_groups": 5,
+    "tie_break": null,
+    "groups": {
+     "Q1": {
+      "n_days": 177,
+      "mean_car_pct": -1.6319,
+      "std_car_pct": 0.6552,
+      "t": -33.135,
+      "positive_rate": 0.0056,
+      "ann_pct": -20.56,
+      "n_obs": 717556,
+      "avg_members_per_day": 4054.0
+     },
+     "Q2": {
+      "n_days": 0,
+      "mean_car_pct": null,
+      "std_car_pct": null,
+      "t": null,
+      "positive_rate": null,
+      "ann_pct": null,
+      "n_obs": 0,
+      "avg_members_per_day": 0.0
+     },
+     "Q3": {
+      "n_days": 0,
+      "mean_car_pct": null,
+      "std_car_pct": null,
+      "t": null,
+      "positive_rate": null,
+      "ann_pct": null,
+      "n_obs": 0,
+      "avg_members_per_day": 0.0
+     },
+     "Q4": {
+      "n_days": 0,
+      "mean_car_pct": null,
+      "std_car_pct": null,
+      "t": null,
+      "positive_rate": null,
+      "ann_pct": null,
+      "n_obs": 0,
+      "avg_members_per_day": 0.0
+     },
+     "Q5": {
+      "n_days": 177,
+      "mean_car_pct": -3.3343,
+      "std_car_pct": 4.102,
+      "t": -10.814,
+      "positive_rate": 0.1638,
+      "ann_pct": -42.01,
+      "n_obs": 31619,
+      "avg_members_per_day": 178.6
+     }
+    },
+    "top_minus_bottom": {
+     "n_days": 177,
+     "mean_car_pct": -1.7024,
+     "std_car_pct": 4.0497,
+     "t": -5.593,
+     "positive_rate": 0.3446,
+     "ann_pct": -21.45,
+     "directed_ann_pct": -21.45
+    },
+    "n_obs": 749175
+   },
+   "event_split": {
+    "signal": {
+     "n_days": 177,
+     "mean_car_pct": -3.3343,
+     "std_car_pct": 4.102,
+     "t": -10.814,
+     "positive_rate": 0.1638,
+     "ann_pct": -42.01
+    },
+    "non_signal": {
+     "n_days": 177,
+     "mean_car_pct": -1.6319,
+     "std_car_pct": 0.6552,
+     "t": -33.135,
+     "positive_rate": 0.0056,
+     "ann_pct": -20.56
+    },
+    "excess": {
+     "n_days": 177,
+     "mean_car_pct": -1.7024,
+     "std_car_pct": 4.0497,
+     "t": -5.593,
+     "positive_rate": 0.3446,
+     "ann_pct": -21.45
+    },
+    "n_signal_obs": 31619,
+    "n_signal_days": 177,
+    "avg_signals_per_day": 178.6,
+    "signal_share_pct": 4.22
+   }
+  },
+  "golden_pillar": {
+   "name": "golden_pillar",
+   "family": "量学形态",
+   "kind": "event",
+   "direction": 1,
+   "description": "黄金柱（确认日信号）：基柱 T-3 为阳柱且量比5≥1.5；T-2、T-1、T 三日收盘均不破基柱实顶（≥基柱收盘×0.99）且三日量均 < 基柱量×0.9 → T 为确认完成日，T+1 入场",
+   "source": "伏击涨停·第8章 黄金柱 / 判例 H29（确认型形态不得按形态日索引）",
+   "n_obs": 748878,
+   "n_days": 177,
+   "signal": {
+    "n_events": 5458,
+    "n_signal_days": 177,
+    "avg_signals_per_day": 30.8,
+    "signal_share_pct": 0.73
+   },
+   "ic": {
+    "n_days": 177,
+    "mean": -0.002104,
+    "std": 0.02371,
+    "ir": -0.0888,
+    "t": -1.181,
+    "positive_rate": 0.4689
+   },
+   "ic_directed": {
+    "n_days": 177,
+    "mean": -0.002104,
+    "std": 0.02371,
+    "ir": -0.0888,
+    "t": -1.181,
+    "positive_rate": 0.4689
+   },
+   "by_year": {
+    "2026": {
+     "n_days": 177,
+     "mean": -0.002104,
+     "std": 0.02371,
+     "ir": -0.0888,
+     "t": -1.181,
+     "positive_rate": 0.4689
+    }
+   },
+   "is_oos": {
+    "split_date": "20260630",
+    "source": "arg",
+    "IS": {
+     "n_days": 116,
+     "mean": 0.000979,
+     "std": 0.022801,
+     "ir": 0.0429,
+     "t": 0.463,
+     "positive_rate": 0.5
+    },
+    "OOS": {
+     "n_days": 61,
+     "mean": -0.007968,
+     "std": 0.024478,
+     "ir": -0.3255,
+     "t": -2.542,
+     "positive_rate": 0.4098
+    }
+   },
+   "bootstrap": {
+    "ic_directed": {
+     "series": "directed_daily_ic",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": -0.185,
+     "p_le_0": 0.7733
+    },
+    "long_short_spread": {
+     "series": "daily_top_minus_bottom",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": -0.483,
+     "p_le_0": 0.77
+    }
+   },
+   "quintiles": {
+    "method": "binary_signal_vs_non_signal",
+    "n_groups": 5,
+    "tie_break": null,
+    "groups": {
+     "Q1": {
+      "n_days": 177,
+      "mean_car_pct": -1.6696,
+      "std_car_pct": 0.6562,
+      "t": -33.849,
+      "positive_rate": 0.0056,
+      "ann_pct": -21.04,
+      "n_obs": 743420,
+      "avg_members_per_day": 4200.1
+     },
+     "Q2": {
+      "n_days": 0,
+      "mean_car_pct": null,
+      "std_car_pct": null,
+      "t": null,
+      "positive_rate": null,
+      "ann_pct": null,
+      "n_obs": 0,
+      "avg_members_per_day": 0.0
+     },
+     "Q3": {
+      "n_days": 0,
+      "mean_car_pct": null,
+      "std_car_pct": null,
+      "t": null,
+      "positive_rate": null,
+      "ann_pct": null,
+      "n_obs": 0,
+      "avg_members_per_day": 0.0
+     },
+     "Q4": {
+      "n_days": 0,
+      "mean_car_pct": null,
+      "std_car_pct": null,
+      "t": null,
+      "positive_rate": null,
+      "ann_pct": null,
+      "n_obs": 0,
+      "avg_members_per_day": 0.0
+     },
+     "Q5": {
+      "n_days": 177,
+      "mean_car_pct": -2.1951,
+      "std_car_pct": 5.69,
+      "t": -5.133,
+      "positive_rate": 0.3051,
+      "ann_pct": -27.66,
+      "n_obs": 5458,
+      "avg_members_per_day": 30.8
+     }
+    },
+    "top_minus_bottom": {
+     "n_days": 177,
+     "mean_car_pct": -0.5255,
+     "std_car_pct": 5.7194,
+     "t": -1.222,
+     "positive_rate": 0.4915,
+     "ann_pct": -6.62,
+     "directed_ann_pct": -6.62
+    },
+    "n_obs": 748878
+   },
+   "event_split": {
+    "signal": {
+     "n_days": 177,
+     "mean_car_pct": -2.1951,
+     "std_car_pct": 5.69,
+     "t": -5.133,
+     "positive_rate": 0.3051,
+     "ann_pct": -27.66
+    },
+    "non_signal": {
+     "n_days": 177,
+     "mean_car_pct": -1.6696,
+     "std_car_pct": 0.6562,
+     "t": -33.849,
+     "positive_rate": 0.0056,
+     "ann_pct": -21.04
+    },
+    "excess": {
+     "n_days": 177,
+     "mean_car_pct": -0.5255,
+     "std_car_pct": 5.7194,
+     "t": -1.222,
+     "positive_rate": 0.4915,
+     "ann_pct": -6.62
+    },
+    "n_signal_obs": 5458,
+    "n_signal_days": 177,
+    "avg_signals_per_day": 30.8,
+    "signal_share_pct": 0.73
+   }
+  },
+  "zero_vol": {
+   "name": "zero_vol",
+   "family": "量学形态",
+   "kind": "event",
+   "direction": 1,
+   "description": "缩量地量：当日量创近20日新低（严格低于前20日最低量）；先验：地量见底",
+   "source": "涨停密码·第16章 牛股量形（地量）",
+   "n_obs": 749423,
+   "n_days": 177,
+   "signal": {
+    "n_events": 53972,
+    "n_signal_days": 177,
+    "avg_signals_per_day": 304.9,
+    "signal_share_pct": 7.2
+   },
+   "ic": {
+    "n_days": 177,
+    "mean": 0.001093,
+    "std": 0.042001,
+    "ir": 0.026,
+    "t": 0.346,
+    "positive_rate": 0.5028
+   },
+   "ic_directed": {
+    "n_days": 177,
+    "mean": 0.001093,
+    "std": 0.042001,
+    "ir": 0.026,
+    "t": 0.346,
+    "positive_rate": 0.5028
+   },
+   "by_year": {
+    "2026": {
+     "n_days": 177,
+     "mean": 0.001093,
+     "std": 0.042001,
+     "ir": 0.026,
+     "t": 0.346,
+     "positive_rate": 0.5028
+    }
+   },
+   "is_oos": {
+    "split_date": "20260630",
+    "source": "arg",
+    "IS": {
+     "n_days": 116,
+     "mean": -0.005838,
+     "std": 0.038435,
+     "ir": -0.1519,
+     "t": -1.636,
+     "positive_rate": 0.4138
+    },
+    "OOS": {
+     "n_days": 61,
+     "mean": 0.014272,
+     "std": 0.045538,
+     "ir": 0.3134,
+     "t": 2.448,
+     "positive_rate": 0.6721
+    }
+   },
+   "bootstrap": {
+    "ic_directed": {
+     "series": "directed_daily_ic",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": 0.078,
+     "p_le_0": 0.42
+    },
+    "long_short_spread": {
+     "series": "daily_top_minus_bottom",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": -0.281,
+     "p_le_0": 0.8167
+    }
+   },
+   "quintiles": {
+    "method": "binary_signal_vs_non_signal",
+    "n_groups": 5,
+    "tie_break": null,
+    "groups": {
+     "Q1": {
+      "n_days": 177,
+      "mean_car_pct": -1.6732,
+      "std_car_pct": 0.7253,
+      "t": -30.692,
+      "positive_rate": 0.0056,
+      "ann_pct": -21.08,
+      "n_obs": 695451,
+      "avg_members_per_day": 3929.1
+     },
+     "Q2": {
+      "n_days": 0,
+      "mean_car_pct": null,
+      "std_car_pct": null,
+      "t": null,
+      "positive_rate": null,
+      "ann_pct": null,
+      "n_obs": 0,
+      "avg_members_per_day": 0.0
+     },
+     "Q3": {
+      "n_days": 0,
+      "mean_car_pct": null,
+      "std_car_pct": null,
+      "t": null,
+      "positive_rate": null,
+      "ann_pct": null,
+      "n_obs": 0,
+      "avg_members_per_day": 0.0
+     },
+     "Q4": {
+      "n_days": 0,
+      "mean_car_pct": null,
+      "std_car_pct": null,
+      "t": null,
+      "positive_rate": null,
+      "ann_pct": null,
+      "n_obs": 0,
+      "avg_members_per_day": 0.0
+     },
+     "Q5": {
+      "n_days": 177,
+      "mean_car_pct": -1.9633,
+      "std_car_pct": 2.6779,
+      "t": -9.754,
+      "positive_rate": 0.209,
+      "ann_pct": -24.74,
+      "n_obs": 53972,
+      "avg_members_per_day": 304.9
+     }
+    },
+    "top_minus_bottom": {
+     "n_days": 177,
+     "mean_car_pct": -0.2901,
+     "std_car_pct": 2.9588,
+     "t": -1.304,
+     "positive_rate": 0.4633,
+     "ann_pct": -3.66,
+     "directed_ann_pct": -3.66
+    },
+    "n_obs": 749423
+   },
+   "event_split": {
+    "signal": {
+     "n_days": 177,
+     "mean_car_pct": -1.9633,
+     "std_car_pct": 2.6779,
+     "t": -9.754,
+     "positive_rate": 0.209,
+     "ann_pct": -24.74
+    },
+    "non_signal": {
+     "n_days": 177,
+     "mean_car_pct": -1.6732,
+     "std_car_pct": 0.7253,
+     "t": -30.692,
+     "positive_rate": 0.0056,
+     "ann_pct": -21.08
+    },
+    "excess": {
+     "n_days": 177,
+     "mean_car_pct": -0.2901,
+     "std_car_pct": 2.9588,
+     "t": -1.304,
+     "positive_rate": 0.4633,
+     "ann_pct": -3.66
+    },
+    "n_signal_obs": 53972,
+    "n_signal_days": 177,
+    "avg_signals_per_day": 304.9,
+    "signal_share_pct": 7.2
+   }
+  },
+  "aokou": {
+   "name": "aokou",
+   "family": "量学形态",
+   "kind": "event",
+   "direction": 1,
+   "description": "凹口收口（近似）：近10日内曾自20日高点回落≥8%（凹口），当日放量收阳且站上5日均线、量≥5日均量（收口）；先验看涨",
+   "source": "涨停密码·第2章 凹口淘金（近似实现）",
+   "n_obs": 749030,
+   "n_days": 177,
+   "signal": {
+    "n_events": 114691,
+    "n_signal_days": 177,
+    "avg_signals_per_day": 648.0,
+    "signal_share_pct": 15.31
+   },
+   "ic": {
+    "n_days": 177,
+    "mean": -0.047279,
+    "std": 0.086817,
+    "ir": -0.5446,
+    "t": -7.245,
+    "positive_rate": 0.2825
+   },
+   "ic_directed": {
+    "n_days": 177,
+    "mean": -0.047279,
+    "std": 0.086817,
+    "ir": -0.5446,
+    "t": -7.245,
+    "positive_rate": 0.2825
+   },
+   "by_year": {
+    "2026": {
+     "n_days": 177,
+     "mean": -0.047279,
+     "std": 0.086817,
+     "ir": -0.5446,
+     "t": -7.245,
+     "positive_rate": 0.2825
+    }
+   },
+   "is_oos": {
+    "split_date": "20260630",
+    "source": "arg",
+    "IS": {
+     "n_days": 116,
+     "mean": -0.038546,
+     "std": 0.075752,
+     "ir": -0.5089,
+     "t": -5.48,
+     "positive_rate": 0.319
+    },
+    "OOS": {
+     "n_days": 61,
+     "mean": -0.063885,
+     "std": 0.103358,
+     "ir": -0.6181,
+     "t": -4.827,
+     "positive_rate": 0.2131
+    }
+   },
+   "bootstrap": {
+    "ic_directed": {
+     "series": "directed_daily_ic",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": -4.795,
+     "p_le_0": 1.0
+    },
+    "long_short_spread": {
+     "series": "daily_top_minus_bottom",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": -1.25,
+     "p_le_0": 0.9967
+    }
+   },
+   "quintiles": {
+    "method": "binary_signal_vs_non_signal",
+    "n_groups": 5,
+    "tie_break": null,
+    "groups": {
+     "Q1": {
+      "n_days": 177,
+      "mean_car_pct": -1.539,
+      "std_car_pct": 0.822,
+      "t": -24.909,
+      "positive_rate": 0.0282,
+      "ann_pct": -19.39,
+      "n_obs": 634339,
+      "avg_members_per_day": 3583.8
+     },
+     "Q2": {
+      "n_days": 0,
+      "mean_car_pct": null,
+      "std_car_pct": null,
+      "t": null,
+      "positive_rate": null,
+      "ann_pct": null,
+      "n_obs": 0,
+      "avg_members_per_day": 0.0
+     },
+     "Q3": {
+      "n_days": 0,
+      "mean_car_pct": null,
+      "std_car_pct": null,
+      "t": null,
+      "positive_rate": null,
+      "ann_pct": null,
+      "n_obs": 0,
+      "avg_members_per_day": 0.0
+     },
+     "Q4": {
+      "n_days": 0,
+      "mean_car_pct": null,
+      "std_car_pct": null,
+      "t": null,
+      "positive_rate": null,
+      "ann_pct": null,
+      "n_obs": 0,
+      "avg_members_per_day": 0.0
+     },
+     "Q5": {
+      "n_days": 177,
+      "mean_car_pct": -2.773,
+      "std_car_pct": 3.3212,
+      "t": -11.108,
+      "positive_rate": 0.1751,
+      "ann_pct": -34.94,
+      "n_obs": 114691,
+      "avg_members_per_day": 648.0
+     }
+    },
+    "top_minus_bottom": {
+     "n_days": 177,
+     "mean_car_pct": -1.234,
+     "std_car_pct": 3.6861,
+     "t": -4.454,
+     "positive_rate": 0.3559,
+     "ann_pct": -15.55,
+     "directed_ann_pct": -15.55
+    },
+    "n_obs": 749030
+   },
+   "event_split": {
+    "signal": {
+     "n_days": 177,
+     "mean_car_pct": -2.773,
+     "std_car_pct": 3.3212,
+     "t": -11.108,
+     "positive_rate": 0.1751,
+     "ann_pct": -34.94
+    },
+    "non_signal": {
+     "n_days": 177,
+     "mean_car_pct": -1.539,
+     "std_car_pct": 0.822,
+     "t": -24.909,
+     "positive_rate": 0.0282,
+     "ann_pct": -19.39
+    },
+    "excess": {
+     "n_days": 177,
+     "mean_car_pct": -1.234,
+     "std_car_pct": 3.6861,
+     "t": -4.454,
+     "positive_rate": 0.3559,
+     "ann_pct": -15.55
+    },
+    "n_signal_obs": 114691,
+    "n_signal_days": 177,
+    "avg_signals_per_day": 648.0,
+    "signal_share_pct": 15.31
+   }
+  },
+  "mom20": {
+   "name": "mom20",
+   "family": "通用",
+   "kind": "continuous",
+   "direction": 1,
+   "description": "20日动量：复权收盘价 20 日收益率（先验：动量延续）",
+   "source": "通用动量（selection_engine momentum20 同口径）",
+   "n_obs": 748202,
+   "n_days": 177,
+   "signal": null,
+   "ic": {
+    "n_days": 177,
+    "mean": -0.063569,
+    "std": 0.198143,
+    "ir": -0.3208,
+    "t": -4.268,
+    "positive_rate": 0.452
+   },
+   "ic_directed": {
+    "n_days": 177,
+    "mean": -0.063569,
+    "std": 0.198143,
+    "ir": -0.3208,
+    "t": -4.268,
+    "positive_rate": 0.452
+   },
+   "by_year": {
+    "2026": {
+     "n_days": 177,
+     "mean": -0.063569,
+     "std": 0.198143,
+     "ir": -0.3208,
+     "t": -4.268,
+     "positive_rate": 0.452
+    }
+   },
+   "is_oos": {
+    "split_date": "20260630",
+    "source": "arg",
+    "IS": {
+     "n_days": 116,
+     "mean": -0.000685,
+     "std": 0.154632,
+     "ir": -0.0044,
+     "t": -0.048,
+     "positive_rate": 0.5431
+    },
+    "OOS": {
+     "n_days": 61,
+     "mean": -0.183151,
+     "std": 0.217144,
+     "ir": -0.8435,
+     "t": -6.588,
+     "positive_rate": 0.2787
+    }
+   },
+   "bootstrap": {
+    "ic_directed": {
+     "series": "directed_daily_ic",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": -5.927,
+     "p_le_0": 0.9733
+    },
+    "long_short_spread": {
+     "series": "daily_top_minus_bottom",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": -0.521,
+     "p_le_0": 0.6333
+    }
+   },
+   "quintiles": {
+    "method": "quantile",
+    "n_groups": 5,
+    "tie_break": "ts_code_order",
+    "groups": {
+     "Q1": {
+      "n_days": 177,
+      "mean_car_pct": -1.4845,
+      "std_car_pct": 3.6367,
+      "t": -5.431,
+      "positive_rate": 0.2373,
+      "ann_pct": -18.7,
+      "n_obs": 149571,
+      "avg_members_per_day": 845.0
+     },
+     "Q2": {
+      "n_days": 177,
+      "mean_car_pct": -1.4066,
+      "std_car_pct": 2.8662,
+      "t": -6.529,
+      "positive_rate": 0.1808,
+      "ann_pct": -17.72,
+      "n_obs": 149640,
+      "avg_members_per_day": 845.4
+     },
+     "Q3": {
+      "n_days": 177,
+      "mean_car_pct": -1.4256,
+      "std_car_pct": 2.1703,
+      "t": -8.739,
+      "positive_rate": 0.1695,
+      "ann_pct": -17.96,
+      "n_obs": 149636,
+      "avg_members_per_day": 845.4
+     },
+     "Q4": {
+      "n_days": 177,
+      "mean_car_pct": -1.7768,
+      "std_car_pct": 1.8628,
+      "t": -12.69,
+      "positive_rate": 0.1356,
+      "ann_pct": -22.39,
+      "n_obs": 149640,
+      "avg_members_per_day": 845.4
+     },
+     "Q5": {
+      "n_days": 177,
+      "mean_car_pct": -2.247,
+      "std_car_pct": 6.7388,
+      "t": -4.436,
+      "positive_rate": 0.3277,
+      "ann_pct": -28.31,
+      "n_obs": 149715,
+      "avg_members_per_day": 845.8
+     }
+    },
+    "top_minus_bottom": {
+     "n_days": 177,
+     "mean_car_pct": -0.7625,
+     "std_car_pct": 9.8815,
+     "t": -1.027,
+     "positive_rate": 0.5593,
+     "ann_pct": -9.61,
+     "directed_ann_pct": -9.61
+    },
+    "n_obs": 748202
+   },
+   "event_split": null
+  },
+  "rev5": {
+   "name": "rev5",
+   "family": "通用",
+   "kind": "continuous",
+   "direction": -1,
+   "description": "5日反转：复权收盘价 5 日收益率（原始值；先验：短期反转，取负向）",
+   "source": "通用短期反转（selection_engine reversal5 同口径）",
+   "n_obs": 748603,
+   "n_days": 177,
+   "signal": null,
+   "ic": {
+    "n_days": 177,
+    "mean": -0.048073,
+    "std": 0.167846,
+    "ir": -0.2864,
+    "t": -3.81,
+    "positive_rate": 0.4011
+   },
+   "ic_directed": {
+    "n_days": 177,
+    "mean": 0.048073,
+    "std": 0.167846,
+    "ir": 0.2864,
+    "t": 3.81,
+    "positive_rate": 0.5989
+   },
+   "by_year": {
+    "2026": {
+     "n_days": 177,
+     "mean": 0.048073,
+     "std": 0.167846,
+     "ir": 0.2864,
+     "t": 3.81,
+     "positive_rate": 0.5989
+    }
+   },
+   "is_oos": {
+    "split_date": "20260630",
+    "source": "arg",
+    "IS": {
+     "n_days": 116,
+     "mean": 0.014907,
+     "std": 0.149076,
+     "ir": 0.1,
+     "t": 1.077,
+     "positive_rate": 0.5259
+    },
+    "OOS": {
+     "n_days": 61,
+     "mean": 0.111143,
+     "std": 0.184045,
+     "ir": 0.6039,
+     "t": 4.717,
+     "positive_rate": 0.7377
+    }
+   },
+   "bootstrap": {
+    "ic_directed": {
+     "series": "directed_daily_ic",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": 4.615,
+     "p_le_0": 0.03
+    },
+    "long_short_spread": {
+     "series": "daily_top_minus_bottom",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": -0.729,
+     "p_le_0": 0.7667
+    }
+   },
+   "quintiles": {
+    "method": "quantile",
+    "n_groups": 5,
+    "tie_break": "ts_code_order",
+    "groups": {
+     "Q1": {
+      "n_days": 177,
+      "mean_car_pct": -1.6492,
+      "std_car_pct": 3.6485,
+      "t": -6.014,
+      "positive_rate": 0.2147,
+      "ann_pct": -20.78,
+      "n_obs": 149651,
+      "avg_members_per_day": 845.5
+     },
+     "Q2": {
+      "n_days": 177,
+      "mean_car_pct": -1.3163,
+      "std_car_pct": 2.325,
+      "t": -7.532,
+      "positive_rate": 0.1977,
+      "ann_pct": -16.59,
+      "n_obs": 149721,
+      "avg_members_per_day": 845.9
+     },
+     "Q3": {
+      "n_days": 177,
+      "mean_car_pct": -1.3571,
+      "std_car_pct": 2.2269,
+      "t": -8.108,
+      "positive_rate": 0.1412,
+      "ann_pct": -17.1,
+      "n_obs": 149726,
+      "avg_members_per_day": 845.9
+     },
+     "Q4": {
+      "n_days": 177,
+      "mean_car_pct": -1.558,
+      "std_car_pct": 2.1409,
+      "t": -9.682,
+      "positive_rate": 0.1638,
+      "ann_pct": -19.63,
+      "n_obs": 149721,
+      "avg_members_per_day": 845.9
+     },
+     "Q5": {
+      "n_days": 177,
+      "mean_car_pct": -2.4561,
+      "std_car_pct": 4.7781,
+      "t": -6.839,
+      "positive_rate": 0.2655,
+      "ann_pct": -30.95,
+      "n_obs": 149784,
+      "avg_members_per_day": 846.2
+     }
+    },
+    "top_minus_bottom": {
+     "n_days": 177,
+     "mean_car_pct": -0.8069,
+     "std_car_pct": 7.3516,
+     "t": -1.46,
+     "positive_rate": 0.4689,
+     "ann_pct": -10.17,
+     "directed_ann_pct": 10.17
+    },
+    "n_obs": 748603
+   },
+   "event_split": null
+  },
+  "low_turnover": {
+   "name": "low_turnover",
+   "family": "通用",
+   "kind": "continuous",
+   "direction": -1,
+   "description": "换手率（原始值；先验：低换手/低拥挤度占优，取负向）",
+   "source": "通用拥挤度（selection_engine low_turnover 同口径）",
+   "n_obs": 749451,
+   "n_days": 177,
+   "signal": null,
+   "ic": {
+    "n_days": 177,
+    "mean": -0.103907,
+    "std": 0.237202,
+    "ir": -0.4381,
+    "t": -5.828,
+    "positive_rate": 0.3616
+   },
+   "ic_directed": {
+    "n_days": 177,
+    "mean": 0.103907,
+    "std": 0.237202,
+    "ir": 0.4381,
+    "t": 5.828,
+    "positive_rate": 0.6384
+   },
+   "by_year": {
+    "2026": {
+     "n_days": 177,
+     "mean": 0.103907,
+     "std": 0.237202,
+     "ir": 0.4381,
+     "t": 5.828,
+     "positive_rate": 0.6384
+    }
+   },
+   "is_oos": {
+    "split_date": "20260630",
+    "source": "arg",
+    "IS": {
+     "n_days": 116,
+     "mean": 0.085766,
+     "std": 0.203356,
+     "ir": 0.4218,
+     "t": 4.542,
+     "positive_rate": 0.6293
+    },
+    "OOS": {
+     "n_days": 61,
+     "mean": 0.138405,
+     "std": 0.289718,
+     "ir": 0.4777,
+     "t": 3.731,
+     "positive_rate": 0.6557
+    }
+   },
+   "bootstrap": {
+    "ic_directed": {
+     "series": "directed_daily_ic",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": 9.492,
+     "p_le_0": 0.0033
+    },
+    "long_short_spread": {
+     "series": "daily_top_minus_bottom",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": -1.245,
+     "p_le_0": 0.7867
+    }
+   },
+   "quintiles": {
+    "method": "quantile",
+    "n_groups": 5,
+    "tie_break": "ts_code_order",
+    "groups": {
+     "Q1": {
+      "n_days": 177,
+      "mean_car_pct": -1.1093,
+      "std_car_pct": 5.3451,
+      "t": -2.761,
+      "positive_rate": 0.3051,
+      "ann_pct": -13.98,
+      "n_obs": 149814,
+      "avg_members_per_day": 846.4
+     },
+     "Q2": {
+      "n_days": 177,
+      "mean_car_pct": -1.4965,
+      "std_car_pct": 2.7834,
+      "t": -7.153,
+      "positive_rate": 0.1808,
+      "ann_pct": -18.86,
+      "n_obs": 149893,
+      "avg_members_per_day": 846.9
+     },
+     "Q3": {
+      "n_days": 177,
+      "mean_car_pct": -1.4164,
+      "std_car_pct": 1.1279,
+      "t": -16.708,
+      "positive_rate": 0.0791,
+      "ann_pct": -17.85,
+      "n_obs": 149889,
+      "avg_members_per_day": 846.8
+     },
+     "Q4": {
+      "n_days": 177,
+      "mean_car_pct": -1.5842,
+      "std_car_pct": 2.3896,
+      "t": -8.82,
+      "positive_rate": 0.2316,
+      "ann_pct": -19.96,
+      "n_obs": 149893,
+      "avg_members_per_day": 846.9
+     },
+     "Q5": {
+      "n_days": 177,
+      "mean_car_pct": -2.7455,
+      "std_car_pct": 5.526,
+      "t": -6.61,
+      "positive_rate": 0.2825,
+      "ann_pct": -34.59,
+      "n_obs": 149962,
+      "avg_members_per_day": 847.2
+     }
+    },
+    "top_minus_bottom": {
+     "n_days": 177,
+     "mean_car_pct": -1.6361,
+     "std_car_pct": 10.5612,
+     "t": -2.061,
+     "positive_rate": 0.5198,
+     "ann_pct": -20.62,
+     "directed_ann_pct": 20.62
+    },
+    "n_obs": 749451
+   },
+   "event_split": null
+  },
+  "pe": {
+   "name": "pe",
+   "family": "通用",
+   "kind": "continuous",
+   "direction": -1,
+   "description": "PE(TTM)（原始值，仅保留正 PE；先验：低估值占优，取负向）",
+   "source": "通用估值（selection_engine pe_ttm 同口径）",
+   "n_obs": 549558,
+   "n_days": 177,
+   "signal": null,
+   "ic": {
+    "n_days": 177,
+    "mean": -0.068217,
+    "std": 0.22896,
+    "ir": -0.2979,
+    "t": -3.964,
+    "positive_rate": 0.3672
+   },
+   "ic_directed": {
+    "n_days": 177,
+    "mean": 0.068217,
+    "std": 0.22896,
+    "ir": 0.2979,
+    "t": 3.964,
+    "positive_rate": 0.6328
+   },
+   "by_year": {
+    "2026": {
+     "n_days": 177,
+     "mean": 0.068217,
+     "std": 0.22896,
+     "ir": 0.2979,
+     "t": 3.964,
+     "positive_rate": 0.6328
+    }
+   },
+   "is_oos": {
+    "split_date": "20260630",
+    "source": "arg",
+    "IS": {
+     "n_days": 116,
+     "mean": 0.060032,
+     "std": 0.206157,
+     "ir": 0.2912,
+     "t": 3.136,
+     "positive_rate": 0.6379
+    },
+    "OOS": {
+     "n_days": 61,
+     "mean": 0.083782,
+     "std": 0.268211,
+     "ir": 0.3124,
+     "t": 2.44,
+     "positive_rate": 0.623
+    }
+   },
+   "bootstrap": {
+    "ic_directed": {
+     "series": "directed_daily_ic",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": 6.064,
+     "p_le_0": 0.05
+    },
+    "long_short_spread": {
+     "series": "daily_top_minus_bottom",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": -0.66,
+     "p_le_0": 0.6633
+    }
+   },
+   "quintiles": {
+    "method": "quantile",
+    "n_groups": 5,
+    "tie_break": "ts_code_order",
+    "groups": {
+     "Q1": {
+      "n_days": 177,
+      "mean_car_pct": -1.2146,
+      "std_car_pct": 6.0374,
+      "t": -2.676,
+      "positive_rate": 0.3729,
+      "ann_pct": -15.3,
+      "n_obs": 109840,
+      "avg_members_per_day": 620.6
+     },
+     "Q2": {
+      "n_days": 177,
+      "mean_car_pct": -1.7868,
+      "std_car_pct": 2.8433,
+      "t": -8.36,
+      "positive_rate": 0.1469,
+      "ann_pct": -22.51,
+      "n_obs": 109908,
+      "avg_members_per_day": 620.9
+     },
+     "Q3": {
+      "n_days": 177,
+      "mean_car_pct": -1.5385,
+      "std_car_pct": 1.1316,
+      "t": -18.087,
+      "positive_rate": 0.0904,
+      "ann_pct": -19.38,
+      "n_obs": 109918,
+      "avg_members_per_day": 621.0
+     },
+     "Q4": {
+      "n_days": 177,
+      "mean_car_pct": -1.0777,
+      "std_car_pct": 2.9495,
+      "t": -4.861,
+      "positive_rate": 0.3785,
+      "ann_pct": -13.58,
+      "n_obs": 109908,
+      "avg_members_per_day": 620.9
+     },
+     "Q5": {
+      "n_days": 177,
+      "mean_car_pct": -2.211,
+      "std_car_pct": 3.9831,
+      "t": -7.385,
+      "positive_rate": 0.2768,
+      "ann_pct": -27.86,
+      "n_obs": 109984,
+      "avg_members_per_day": 621.4
+     }
+    },
+    "top_minus_bottom": {
+     "n_days": 177,
+     "mean_car_pct": -0.9964,
+     "std_car_pct": 9.6895,
+     "t": -1.368,
+     "positive_rate": 0.4859,
+     "ann_pct": -12.56,
+     "directed_ann_pct": 12.56
+    },
+    "n_obs": 549558
+   },
+   "event_split": null
+  },
+  "roe": {
+   "name": "roe",
+   "family": "通用",
+   "kind": "continuous",
+   "direction": 1,
+   "description": "最新一期 ROE（PIT：ann_date ≤ T 的最新公告；原始值未年化，先验：高质量占优）",
+   "source": "通用质量（selection_engine load_latest_fina 同口径）",
+   "n_obs": 749451,
+   "n_days": 177,
+   "signal": null,
+   "ic": {
+    "n_days": 177,
+    "mean": 0.018758,
+    "std": 0.100419,
+    "ir": 0.1868,
+    "t": 2.485,
+    "positive_rate": 0.5424
+   },
+   "ic_directed": {
+    "n_days": 177,
+    "mean": 0.018758,
+    "std": 0.100419,
+    "ir": 0.1868,
+    "t": 2.485,
+    "positive_rate": 0.5424
+   },
+   "by_year": {
+    "2026": {
+     "n_days": 177,
+     "mean": 0.018758,
+     "std": 0.100419,
+     "ir": 0.1868,
+     "t": 2.485,
+     "positive_rate": 0.5424
+    }
+   },
+   "is_oos": {
+    "split_date": "20260630",
+    "source": "arg",
+    "IS": {
+     "n_days": 116,
+     "mean": 0.064346,
+     "std": 0.085021,
+     "ir": 0.7568,
+     "t": 8.151,
+     "positive_rate": 0.7672
+    },
+    "OOS": {
+     "n_days": 61,
+     "mean": -0.067934,
+     "std": 0.063767,
+     "ir": -1.0654,
+     "t": -8.321,
+     "positive_rate": 0.1148
+    }
+   },
+   "bootstrap": {
+    "ic_directed": {
+     "series": "directed_daily_ic",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": 2.004,
+     "p_le_0": 0.0967
+    },
+    "long_short_spread": {
+     "series": "daily_top_minus_bottom",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": 0.407,
+     "p_le_0": 0.2533
+    }
+   },
+   "quintiles": {
+    "method": "quantile",
+    "n_groups": 5,
+    "tie_break": "ts_code_order",
+    "groups": {
+     "Q1": {
+      "n_days": 177,
+      "mean_car_pct": -2.1096,
+      "std_car_pct": 1.7182,
+      "t": -16.334,
+      "positive_rate": 0.1186,
+      "ann_pct": -26.58,
+      "n_obs": 149814,
+      "avg_members_per_day": 846.4
+     },
+     "Q2": {
+      "n_days": 177,
+      "mean_car_pct": -1.8331,
+      "std_car_pct": 1.0523,
+      "t": -23.176,
+      "positive_rate": 0.0395,
+      "ann_pct": -23.1,
+      "n_obs": 149893,
+      "avg_members_per_day": 846.9
+     },
+     "Q3": {
+      "n_days": 177,
+      "mean_car_pct": -1.502,
+      "std_car_pct": 0.8136,
+      "t": -24.561,
+      "positive_rate": 0.0169,
+      "ann_pct": -18.93,
+      "n_obs": 149889,
+      "avg_members_per_day": 846.8
+     },
+     "Q4": {
+      "n_days": 177,
+      "mean_car_pct": -1.1513,
+      "std_car_pct": 1.2963,
+      "t": -11.817,
+      "positive_rate": 0.1469,
+      "ann_pct": -14.51,
+      "n_obs": 149893,
+      "avg_members_per_day": 846.9
+     },
+     "Q5": {
+      "n_days": 177,
+      "mean_car_pct": -1.7565,
+      "std_car_pct": 2.2024,
+      "t": -10.611,
+      "positive_rate": 0.209,
+      "ann_pct": -22.13,
+      "n_obs": 149962,
+      "avg_members_per_day": 847.2
+     }
+    },
+    "top_minus_bottom": {
+     "n_days": 177,
+     "mean_car_pct": 0.353,
+     "std_car_pct": 3.4357,
+     "t": 1.367,
+     "positive_rate": 0.4802,
+     "ann_pct": 4.45,
+     "directed_ann_pct": 4.45
+    },
+    "n_obs": 749451
+   },
+   "event_split": null
+  },
+  "quality_trap": {
+   "name": "quality_trap",
+   "family": "通用",
+   "kind": "event",
+   "direction": -1,
+   "description": "H14 质量陷阱：PE 横截面处于最高 1/3 层、且层内 ROE 排名前 20% 的股票（先验：high PE + high ROE = 陷阱，利空）",
+   "source": "H14 质量陷阱规避（selection_engine v1.1 同定义）",
+   "n_obs": 549558,
+   "n_days": 177,
+   "signal": {
+    "n_events": 42198,
+    "n_signal_days": 177,
+    "avg_signals_per_day": 238.4,
+    "signal_share_pct": 7.68
+   },
+   "ic": {
+    "n_days": 177,
+    "mean": -0.018184,
+    "std": 0.133998,
+    "ir": -0.1357,
+    "t": -1.805,
+    "positive_rate": 0.4915
+   },
+   "ic_directed": {
+    "n_days": 177,
+    "mean": 0.018184,
+    "std": 0.133998,
+    "ir": 0.1357,
+    "t": 1.805,
+    "positive_rate": 0.5085
+   },
+   "by_year": {
+    "2026": {
+     "n_days": 177,
+     "mean": 0.018184,
+     "std": 0.133998,
+     "ir": 0.1357,
+     "t": 1.805,
+     "positive_rate": 0.5085
+    }
+   },
+   "is_oos": {
+    "split_date": "20260630",
+    "source": "arg",
+    "IS": {
+     "n_days": 116,
+     "mean": -0.01781,
+     "std": 0.114016,
+     "ir": -0.1562,
+     "t": -1.682,
+     "positive_rate": 0.431
+    },
+    "OOS": {
+     "n_days": 61,
+     "mean": 0.086633,
+     "std": 0.143126,
+     "ir": 0.6053,
+     "t": 4.727,
+     "positive_rate": 0.6557
+    }
+   },
+   "bootstrap": {
+    "ic_directed": {
+     "series": "directed_daily_ic",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": 1.195,
+     "p_le_0": 0.29
+    },
+    "long_short_spread": {
+     "series": "daily_top_minus_bottom",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": 1.19,
+     "p_le_0": 0.1933
+    }
+   },
+   "quintiles": {
+    "method": "binary_signal_vs_non_signal",
+    "n_groups": 5,
+    "tie_break": null,
+    "groups": {
+     "Q1": {
+      "n_days": 177,
+      "mean_car_pct": -1.6177,
+      "std_car_pct": 1.1912,
+      "t": -18.067,
+      "positive_rate": 0.0734,
+      "ann_pct": -20.38,
+      "n_obs": 507360,
+      "avg_members_per_day": 2866.4
+     },
+     "Q2": {
+      "n_days": 0,
+      "mean_car_pct": null,
+      "std_car_pct": null,
+      "t": null,
+      "positive_rate": null,
+      "ann_pct": null,
+      "n_obs": 0,
+      "avg_members_per_day": 0.0
+     },
+     "Q3": {
+      "n_days": 0,
+      "mean_car_pct": null,
+      "std_car_pct": null,
+      "t": null,
+      "positive_rate": null,
+      "ann_pct": null,
+      "n_obs": 0,
+      "avg_members_per_day": 0.0
+     },
+     "Q4": {
+      "n_days": 0,
+      "mean_car_pct": null,
+      "std_car_pct": null,
+      "t": null,
+      "positive_rate": null,
+      "ann_pct": null,
+      "n_obs": 0,
+      "avg_members_per_day": 0.0
+     },
+     "Q5": {
+      "n_days": 177,
+      "mean_car_pct": -0.8276,
+      "std_car_pct": 8.1827,
+      "t": -1.346,
+      "positive_rate": 0.4294,
+      "ann_pct": -10.43,
+      "n_obs": 42198,
+      "avg_members_per_day": 238.4
+     }
+    },
+    "top_minus_bottom": {
+     "n_days": 177,
+     "mean_car_pct": 0.7902,
+     "std_car_pct": 8.7526,
+     "t": 1.201,
+     "positive_rate": 0.5593,
+     "ann_pct": 9.96,
+     "directed_ann_pct": -9.96
+    },
+    "n_obs": 549558
+   },
+   "event_split": {
+    "signal": {
+     "n_days": 177,
+     "mean_car_pct": -0.8276,
+     "std_car_pct": 8.1827,
+     "t": -1.346,
+     "positive_rate": 0.4294,
+     "ann_pct": -10.43
+    },
+    "non_signal": {
+     "n_days": 177,
+     "mean_car_pct": -1.6177,
+     "std_car_pct": 1.1912,
+     "t": -18.067,
+     "positive_rate": 0.0734,
+     "ann_pct": -20.38
+    },
+    "excess": {
+     "n_days": 177,
+     "mean_car_pct": 0.7902,
+     "std_car_pct": 8.7526,
+     "t": 1.201,
+     "positive_rate": 0.5593,
+     "ann_pct": 9.96
+    },
+    "n_signal_obs": 42198,
+    "n_signal_days": 177,
+    "avg_signals_per_day": 238.4,
+    "signal_share_pct": 7.68
+   }
+  },
+  "vol20": {
+   "name": "vol20",
+   "family": "通用",
+   "kind": "continuous",
+   "direction": -1,
+   "description": "20日波动率：复权日收益的 20 日标准差（先验：低波动异象，取负向）",
+   "source": "通用低波异象",
+   "n_obs": 748970,
+   "n_days": 177,
+   "signal": null,
+   "ic": {
+    "n_days": 177,
+    "mean": -0.11086,
+    "std": 0.265595,
+    "ir": -0.4174,
+    "t": -5.553,
+    "positive_rate": 0.3729
+   },
+   "ic_directed": {
+    "n_days": 177,
+    "mean": 0.11086,
+    "std": 0.265595,
+    "ir": 0.4174,
+    "t": 5.553,
+    "positive_rate": 0.6271
+   },
+   "by_year": {
+    "2026": {
+     "n_days": 177,
+     "mean": 0.11086,
+     "std": 0.265595,
+     "ir": 0.4174,
+     "t": 5.553,
+     "positive_rate": 0.6271
+    }
+   },
+   "is_oos": {
+    "split_date": "20260630",
+    "source": "arg",
+    "IS": {
+     "n_days": 116,
+     "mean": 0.081988,
+     "std": 0.223263,
+     "ir": 0.3672,
+     "t": 3.955,
+     "positive_rate": 0.6121
+    },
+    "OOS": {
+     "n_days": 61,
+     "mean": 0.165764,
+     "std": 0.326657,
+     "ir": 0.5075,
+     "t": 3.963,
+     "positive_rate": 0.6557
+    }
+   },
+   "bootstrap": {
+    "ic_directed": {
+     "series": "directed_daily_ic",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": 10.045,
+     "p_le_0": 0.01
+    },
+    "long_short_spread": {
+     "series": "daily_top_minus_bottom",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": -0.878,
+     "p_le_0": 0.7
+    }
+   },
+   "quintiles": {
+    "method": "quantile",
+    "n_groups": 5,
+    "tie_break": "ts_code_order",
+    "groups": {
+     "Q1": {
+      "n_days": 177,
+      "mean_car_pct": -0.9199,
+      "std_car_pct": 5.7409,
+      "t": -2.132,
+      "positive_rate": 0.3559,
+      "ann_pct": -11.59,
+      "n_obs": 149727,
+      "avg_members_per_day": 845.9
+     },
+     "Q2": {
+      "n_days": 177,
+      "mean_car_pct": -1.4753,
+      "std_car_pct": 3.1478,
+      "t": -6.235,
+      "positive_rate": 0.1864,
+      "ann_pct": -18.59,
+      "n_obs": 149794,
+      "avg_members_per_day": 846.3
+     },
+     "Q3": {
+      "n_days": 177,
+      "mean_car_pct": -1.7467,
+      "std_car_pct": 1.2436,
+      "t": -18.686,
+      "positive_rate": 0.0508,
+      "ann_pct": -22.01,
+      "n_obs": 149796,
+      "avg_members_per_day": 846.3
+     },
+     "Q4": {
+      "n_days": 177,
+      "mean_car_pct": -1.9452,
+      "std_car_pct": 2.387,
+      "t": -10.842,
+      "positive_rate": 0.2034,
+      "ann_pct": -24.51,
+      "n_obs": 149794,
+      "avg_members_per_day": 846.3
+     },
+     "Q5": {
+      "n_days": 177,
+      "mean_car_pct": -2.2583,
+      "std_car_pct": 6.5359,
+      "t": -4.597,
+      "positive_rate": 0.3729,
+      "ann_pct": -28.45,
+      "n_obs": 149859,
+      "avg_members_per_day": 846.7
+     }
+    },
+    "top_minus_bottom": {
+     "n_days": 177,
+     "mean_car_pct": -1.3384,
+     "std_car_pct": 12.0025,
+     "t": -1.484,
+     "positive_rate": 0.4915,
+     "ann_pct": -16.86,
+     "directed_ann_pct": 16.86
+    },
+    "n_obs": 748970
+   },
+   "event_split": null
+  },
+  "max_ret20": {
+   "name": "max_ret20",
+   "family": "通用",
+   "kind": "continuous",
+   "direction": -1,
+   "description": "近20日最大单日收益（MAX 彩票因子；先验：高 MAX 未来收益低，取负向）",
+   "source": "通用 MAX/彩票效应",
+   "n_obs": 748970,
+   "n_days": 177,
+   "signal": null,
+   "ic": {
+    "n_days": 177,
+    "mean": -0.106781,
+    "std": 0.213056,
+    "ir": -0.5012,
+    "t": -6.668,
+    "positive_rate": 0.3559
+   },
+   "ic_directed": {
+    "n_days": 177,
+    "mean": 0.106781,
+    "std": 0.213056,
+    "ir": 0.5012,
+    "t": 6.668,
+    "positive_rate": 0.6441
+   },
+   "by_year": {
+    "2026": {
+     "n_days": 177,
+     "mean": 0.106781,
+     "std": 0.213056,
+     "ir": 0.5012,
+     "t": 6.668,
+     "positive_rate": 0.6441
+    }
+   },
+   "is_oos": {
+    "split_date": "20260630",
+    "source": "arg",
+    "IS": {
+     "n_days": 116,
+     "mean": 0.075528,
+     "std": 0.185332,
+     "ir": 0.4075,
+     "t": 4.389,
+     "positive_rate": 0.6121
+    },
+    "OOS": {
+     "n_days": 61,
+     "mean": 0.166213,
+     "std": 0.248676,
+     "ir": 0.6684,
+     "t": 5.22,
+     "positive_rate": 0.7049
+    }
+   },
+   "bootstrap": {
+    "ic_directed": {
+     "series": "directed_daily_ic",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": 9.844,
+     "p_le_0": 0.0
+    },
+    "long_short_spread": {
+     "series": "daily_top_minus_bottom",
+     "block": 5,
+     "n_boot": 300,
+     "mean_pct": -1.054,
+     "p_le_0": 0.77
+    }
+   },
+   "quintiles": {
+    "method": "quantile",
+    "n_groups": 5,
+    "tie_break": "ts_code_order",
+    "groups": {
+     "Q1": {
+      "n_days": 177,
+      "mean_car_pct": -1.0241,
+      "std_car_pct": 5.0703,
+      "t": -2.687,
+      "positive_rate": 0.2994,
+      "ann_pct": -12.9,
+      "n_obs": 149727,
+      "avg_members_per_day": 845.9
+     },
+     "Q2": {
+      "n_days": 177,
+      "mean_car_pct": -1.2536,
+      "std_car_pct": 2.8144,
+      "t": -5.926,
+      "positive_rate": 0.1695,
+      "ann_pct": -15.8,
+      "n_obs": 149794,
+      "avg_members_per_day": 846.3
+     },
+     "Q3": {
+      "n_days": 177,
+      "mean_car_pct": -1.6877,
+      "std_car_pct": 1.0737,
+      "t": -20.913,
+      "positive_rate": 0.0226,
+      "ann_pct": -21.26,
+      "n_obs": 149796,
+      "avg_members_per_day": 846.3
+     },
+     "Q4": {
+      "n_days": 177,
+      "mean_car_pct": -1.9493,
+      "std_car_pct": 2.7538,
+      "t": -9.417,
+      "positive_rate": 0.2429,
+      "ann_pct": -24.56,
+      "n_obs": 149794,
+      "avg_members_per_day": 846.3
+     },
+     "Q5": {
+      "n_days": 177,
+      "mean_car_pct": -2.4305,
+      "std_car_pct": 4.646,
+      "t": -6.96,
+      "positive_rate": 0.2542,
+      "ann_pct": -30.62,
+      "n_obs": 149859,
+      "avg_members_per_day": 846.7
+     }
+    },
+    "top_minus_bottom": {
+     "n_days": 177,
+     "mean_car_pct": -1.4063,
+     "std_car_pct": 9.5549,
+     "t": -1.958,
+     "positive_rate": 0.4915,
+     "ann_pct": -17.72,
+     "directed_ann_pct": 17.72
+    },
+    "n_obs": 748970
+   },
+   "event_split": null
+  }
+ }
+}

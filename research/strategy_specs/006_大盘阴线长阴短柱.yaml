@@ -1,0 +1,26 @@
+id: LX06_YIN_LINE_TACTICS
+name: 大盘阴线战法 / 长阴短柱
+source: 伏击涨停（修订升级版）
+chapter: 第14章《大盘阴线战法》；第15章《长阴短柱战法》
+page_start: 135
+page_end: 152
+evidence_page: 153
+evidence_quote: 所谓“阴线战法”，就是根据阴线实体的长短高低、位置的上下前后、分布的远近疏密来测算多空力道
+type: 过滤器
+computability: B
+params:
+  big_yin_points_min: 80
+  long_yin_pct_max: -3.0
+  short_pillar_vol_ratio_max: 0.7
+  balance_tol_pct: 0.005
+  bottom_support_lookback_days: 20
+entry_rule: 大盘/指数：取距当前最近的大阴实顶（短线）或大阴中线=(最高+最低)/2（波段）作攻防线；回踩不破（abs(low/line-1)<=0.005）且收阳 → 做多/加仓；个股：长阴短柱 = pct_chg<=-3 and vol <= prev_vol*0.7 and close<open and 有底（回踩左阳实底/黄金线不破）→ 次日阳盖阴（close>prev_open）入场
+exit_rule: 有效跌破大阴中线/实底或长阴短柱实底离场；大盘阴线战法只作择时/过滤，不单独做多个股
+test_status: untested
+tested_ref: null
+h_ids: []
+notes: |-
+  原文：大阴实顶用于短线预测、大阴中线用于波段（本屏 80 点以上巨阴，(顶+底)/2，如 2555/3062 点案例）；长阴短柱=长阴价柱对应短阴量柱，价量比例失衡，分“有底/无底”两类，有底者一般看涨（印刷135-152页，OCR 第153-170页）。
+  简化定义：大阴阈值固定为 -3%/80点；长阴短柱用量比≤0.7代理“短柱”；“有底”用回踩左阳实底不破代理。
+  状态：未测；registry 归入“第14章”，实际横跨第14/15章。
+updated_at: '2026-11-01'

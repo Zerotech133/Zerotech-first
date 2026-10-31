@@ -1,0 +1,27 @@
+id: LX18_EXTREME_YIN_NEXT_YANG
+name: 极阴次阳择幅建仓
+source: 涨停密码（修订升级版）
+chapter: 第15章《极阴次阳择幅建仓》
+page_start: 131
+page_end: 141
+evidence_page: 151
+evidence_quote: 所谓“极阴次阳”，特指极度大阴的次日出现中到大阳的阴阳组合
+type: 形态
+computability: A
+params:
+  extreme_yin_pct_max: -5.0
+  strict_extreme_yin_pct_max: -7.0
+  recover_body_ratio_min: 0.5
+  close_above_prev_open: true
+entry_rule: H26 简化：prev_pct_chg<=-5 and pct_chg>0 and close >= (prev_open+prev_close)/2 → T+1 收盘入场; H29 严格：prev_pct_chg<=-7 and pct_chg>0 and close >= prev_open → T+1 收盘入场; “次阳的高度是主导，极阴的位置是核心”
+exit_rule: 持有 5/10/20 个交易日；收盘跌破次阳实底止损
+test_status: tested_rejected
+tested_ref: research/reports/H29_liangxue_refined_20261031.md
+h_ids:
+- H26
+- H29
+notes: |-
+  原文三种极阴形态：价柱单胜阳、量价双胜阳、量价连胜阳；“极阴位置是核心，次阳高度是主导”（印刷131-141页，OCR 第151-159页）。
+  简化定义：H26 宽松版（前日≤-5%、收复实体≥50%）与 H29 严格版（前日≤-7%、收盘≥前日开盘）。
+  已测：H26_yin_yang 事件 19,850，10日 OOS -3.63%（t=-9.78）；H29_yin_yang_strict 事件 10,176，10日 OOS -4.09%（t=-8.53）→ 双版本均 rejected。
+updated_at: '2026-11-01'

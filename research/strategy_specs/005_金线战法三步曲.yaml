@@ -1,0 +1,26 @@
+id: LX05_GOLDEN_LINE_TRILOGY
+name: 金线战法三步曲（黄金线/黄金双线/黄金十字）
+source: 伏击涨停（修订升级版）
+chapter: 第10–13章（金线三要点；金线战法三步曲；黄金双线；黄金十字）
+page_start: 98
+page_end: 134
+evidence_page: 116
+evidence_quote: 所谓“金线”，就是“黄金线”的简称
+type: 过滤器
+computability: B
+params:
+  line_touch_tol_pct: 0.01
+  precise_points_min: 3
+  gold_cross_count_min: 3
+  gold_cross_upside_pct: 30
+  line_source_count: 5
+entry_rule: 三步曲：①找准黄金柱（LX02）；②顺着主力画黄金线（取点：基柱实顶/实底/后3日最低实底或虚底）；③用活黄金线：价格回踩黄金线不破 or 碰线即起（low <= line*1.01 and close >= line*0.99 and 收阳）→ 入场；强庄踩顶/精庄踩腰/狡庄踩脚分类用回踩深度区分
+exit_rule: 收盘有效跌破当前黄金线（close < line*0.99）止损；黄金十字连续3个组合后目标涨幅约+30%分批止盈
+test_status: untested
+tested_ref: null
+h_ids: []
+notes: |-
+  原文：黄金线=主庄攻防线/生命线；取点原则“先找顶，后找底，先找实，后找虚，微调抓战机”；黄金双线=依托黄金柱设上下两线（上线主攻、下线主守）；黄金十字=黄金柱竖线×精准线横线，“左支右撑、顶底互换”（印刷98-134页，OCR 第116-152页）。
+  简化定义：黄金线用黄金柱/后3日极值可程序化生成，回踩用容差1%；画线精度要求高，可计算化程度 B。
+  状态：未测（strategy_registry book_backlog）。
+updated_at: '2026-11-01'

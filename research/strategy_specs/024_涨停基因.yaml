@@ -1,0 +1,24 @@
+id: LX24_LIMIT_UP_GENE
+name: 涨停基因（单个/组合）
+source: 涨停密码（修订升级版）
+chapter: 前言《从“涨停基因”到“涨停密码”》；第11章《涨停基因势在必行》
+page_start: 98
+page_end: 109
+evidence_page: 118
+evidence_quote: 本文将“涨停板”这个基因简称为“涨停基因”，特此说明
+type: 概念
+computability: C
+params:
+  limit_up_repeat_prob: 0.05
+  gene_count_min: 2
+  gene_probe_lookback_days: 60
+entry_rule: gene = 任一涨停基因（倍量柱/价升量缩/长阴短柱/倍量伸缩/一剑封喉/涨停板自身等）; genes = 2个以上基因在近距离窗口内组合 → “涨停密码”，作为特征映射框架供因子库组合；单基因仅作候选特征，不直接作为买入信号
+exit_rule: 基因被破坏（关键柱实底失守/涨停板被后续阴线吞没）离场；框架本身不产生独立持仓规则
+test_status: concept
+tested_ref: null
+h_ids: []
+notes: |-
+  原文：“涨停密码”=涨停基因组合而成的框架；涨停板自身是最鲜明普遍的涨停基因（涨停后再涨停概率约1/20）；核心八字“量价阴阳、真假虚实”（前言 OCR 第8-9页；第11章印刷98-109页，OCR 第118-127页）。
+  用途：作为 H24–H29 的“知识单元→特征”映射框架，不做独立策略；相关已测基因见 LX01/LX08/LX15/LX18 等。
+  状态：concept（strategy_registry book_backlog 记为“概念”）。
+updated_at: '2026-11-01'

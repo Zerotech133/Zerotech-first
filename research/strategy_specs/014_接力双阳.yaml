@@ -1,0 +1,26 @@
+id: LX14_RELAY_DOUBLE_YANG
+name: 接力双阳（底部小双阳）
+source: 涨停密码（修订升级版）
+chapter: 第5章《接力双阳后市看涨》
+page_start: 34
+page_end: 42
+evidence_page: 54
+evidence_quote: 所谓“接力双阳”，就是由一左一右两个阳柱，通过一条精准线衔接起来
+type: 形态
+computability: A
+params:
+  double_yang_window_min_days: 3
+  double_yang_window_max_days: 5
+  small_yang_vol_ratio_min: 1.0
+  small_yang_vol_ratio_max: 1.9
+  precise_line_tol_pct: 0.01
+entry_rule: 左右两个小阳柱（close>open、1.0<=vol/prev_vol<1.9），间隔3~5日，两柱实底/关键点重合形成精准线（abs(a/b-1)<=0.01），右阳为王牌柱/黄金柱（后续3日不破实底）; 突破右阳实顶（close > right_high）→ 入场
+exit_rule: 收盘跌破精准线/左阳实底止损；持有 5/10/20 个交易日
+test_status: untested
+tested_ref: null
+h_ids: []
+notes: |-
+  原文五特点：对称小双阳夹精准线、对应量柱为“小阳”、左阳阳盖阴/阳并阴或长阳矮柱而右阳须为王牌柱、两柱间隔3~5日、“左刹车右换挡”的小 W 双底（印刷34-42页，OCR 第54-61页）。
+  简化定义：小阳/精准线/右阳牌柱均可用日线阈值程序化；“王牌柱”复用 LX02/LX03。
+  状态：未测（strategy_registry book_backlog）。
+updated_at: '2026-11-01'

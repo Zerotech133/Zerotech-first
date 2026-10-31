@@ -1,0 +1,27 @@
+id: LX13_ARMY_AT_CITY_GATE
+name: 兵临城下（试关/攻关/冲关/守关）
+source: 涨停密码（修订升级版）
+chapter: 第4章《兵临城下蓄势待发》
+page_start: 27
+page_end: 33
+evidence_page: 47
+evidence_quote: 特指将价柱悄悄集结在某条重要的攻防线（即平衡线）下方
+type: 形态
+computability: B
+params:
+  near_high_ratio: 0.98
+  near_high_lookback_days: 20
+  vol_ratio5_min: 1.5
+  line_tol_pct: 0.005
+  probe_days_min: 2
+entry_rule: 简化版（H27 口径）：close >= max(close,20)*0.98 and vol/vol_ma5>=1.5 → 事件信号; 原书版：价柱在攻防线（大阴实顶/凹间峰平衡线）下方多次上引线试关（>=2次），随后放量攻关（close > line and vol/prev_vol>=1.9）→ 突破日入场
+exit_rule: 收盘跌破所攻关的平衡线（close < line*0.995）止损；持有 5/10/20 个交易日
+test_status: tested_rejected
+tested_ref: research/reports/H24-26_liangxue_features_20261031.md
+h_ids:
+- H27
+notes: |-
+  原文四阶段：试关与攻关、攻关与冲关、冲关与守关、攻守与冲防；每轮攻关前有上引线侦察兵、攻关中两个矮将军配合、攻关后回踩攻防线（印刷27-33页，OCR 第47-52页）。
+  简化定义：H27_near_high_vol（近20日高×0.98 + 量比5≥1.5）为可计算代理；原书“平衡线/矮将军”需画线与王牌柱识别。
+  已测：H27_near_high_vol 事件 308,515，10日 IS -2.04%（t=-9.81）/ OOS -1.84%（t=-17.82）→ rejected。
+updated_at: '2026-11-01'

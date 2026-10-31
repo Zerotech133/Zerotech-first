@@ -1,0 +1,26 @@
+id: LX15_PRICE_UP_VOL_DOWN
+name: 价升量缩择机做多
+source: 涨停密码（修订升级版）
+chapter: 第12章《价升量缩择机做多》
+page_start: 110
+page_end: 115
+evidence_page: 130
+evidence_quote: 所谓“价升量缩”，就是在某一天的走势图上，昨天与今天对比，今天的价柱上升而量柱却缩小
+type: 形态
+computability: A
+params:
+  price_up_pct_min: 1.0
+  vol_shrink_ratio_max: 0.8
+  vol_ratio5_max: 1.0
+  compare_lag_days: 1
+entry_rule: 'T日: pct_chg>0 and vol < prev_vol*0.8（价升量缩）→ 收盘后信号，T+1 收盘入场（H25 口径）；原书：昨日与今日对比，价柱上升而量柱缩小（特殊可隔日/隔波段对比）；“价板量缩”为最强子形态'
+exit_rule: 持有 5/10/20 个交易日；放量滞涨（vol>prev_vol*1.5 且 pct_chg<=0）或跌破形态柱实底离场
+test_status: tested_rejected
+tested_ref: research/reports/H24-26_liangxue_features_20261031.md
+h_ids:
+- H25
+notes: |-
+  原文：反传统“价升量缩，择机做多”，体现“三先规律”（卖在买先/价在量先/庄在散先），单个基因即可预报，需吃透“价升量缩”的三种形态（印刷110-115页，OCR 第130-135页）。
+  简化定义：H25 的日线口径（收阳且量<前日80%）。
+  已测：H25_price_up_vol_down 事件 739,383，10日 IS -1.35%（t=-7.42）/ OOS -0.62%（t=-6.72）；bootstrap p(<=0)=1.0 → rejected。
+updated_at: '2026-11-01'
