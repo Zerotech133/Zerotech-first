@@ -1,43 +1,1050 @@
 {
- "generated_at": "2026-10-31T19:27:52+08:00",
- "ingest_dir": "C:\\项目\\PDF\\_ingest",
+ "generated_at": "2026-10-31T20:28:53+08:00",
+ "ingest_dirs": [
+  "C:\\项目\\PDF\\_ingest",
+  "C:\\项目\\PDF\\_ingest_reports"
+ ],
  "books": [
   {
    "book": "伏击涨停(2)",
+   "source": "书籍库",
    "pages": 236,
    "chapters": 141,
    "units": 20,
-   "has_ocr": true
+   "has_ocr": true,
+   "has_layout": false
   },
   {
    "book": "涨停密码(2)",
+   "source": "书籍库",
    "pages": 202,
    "chapters": 133,
    "units": 15,
-   "has_ocr": true
+   "has_ocr": true,
+   "has_layout": false
+  },
+  {
+   "book": "make_test",
+   "source": "研报库",
+   "pages": 1,
+   "chapters": 0,
+   "units": 0,
+   "has_ocr": true,
+   "has_layout": false
+  },
+  {
+   "book": "rp_AP202609301830015352",
+   "source": "研报库",
+   "pages": 8,
+   "chapters": 0,
+   "units": 0,
+   "has_ocr": true,
+   "has_layout": false
+  },
+  {
+   "book": "rp_AP202609301830015404",
+   "source": "研报库",
+   "pages": 37,
+   "chapters": 321,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202609301830015406",
+   "source": "研报库",
+   "pages": 12,
+   "chapters": 6,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202609301830015407",
+   "source": "研报库",
+   "pages": 73,
+   "chapters": 58,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202609301830015408",
+   "source": "研报库",
+   "pages": 43,
+   "chapters": 42,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202609301830015410",
+   "source": "研报库",
+   "pages": 63,
+   "chapters": 92,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202609301830015411",
+   "source": "研报库",
+   "pages": 24,
+   "chapters": 42,
+   "units": 0,
+   "has_ocr": true,
+   "has_layout": false
+  },
+  {
+   "book": "rp_AP202609301830015419",
+   "source": "研报库",
+   "pages": 181,
+   "chapters": 509,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202609301830015420",
+   "source": "研报库",
+   "pages": 18,
+   "chapters": 7,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202609301830015421",
+   "source": "研报库",
+   "pages": 67,
+   "chapters": 0,
+   "units": 0,
+   "has_ocr": true,
+   "has_layout": false
+  },
+  {
+   "book": "rp_AP202609301830015422",
+   "source": "研报库",
+   "pages": 11,
+   "chapters": 65,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202609301830015445",
+   "source": "研报库",
+   "pages": 35,
+   "chapters": 0,
+   "units": 0,
+   "has_ocr": true,
+   "has_layout": false
+  },
+  {
+   "book": "rp_AP202609301830015453",
+   "source": "研报库",
+   "pages": 36,
+   "chapters": 437,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202609301830015454",
+   "source": "研报库",
+   "pages": 23,
+   "chapters": 25,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202609301830015455",
+   "source": "研报库",
+   "pages": 66,
+   "chapters": 11,
+   "units": 0,
+   "has_ocr": true,
+   "has_layout": false
+  },
+  {
+   "book": "rp_AP202609301830015458",
+   "source": "研报库",
+   "pages": 163,
+   "chapters": 515,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202609301830015460",
+   "source": "研报库",
+   "pages": 20,
+   "chapters": 48,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202609301830015836",
+   "source": "研报库",
+   "pages": 3,
+   "chapters": 13,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202609301830016191",
+   "source": "研报库",
+   "pages": 10,
+   "chapters": 11,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202609301830022766",
+   "source": "研报库",
+   "pages": 3,
+   "chapters": 6,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202609301830022983",
+   "source": "研报库",
+   "pages": 8,
+   "chapters": 13,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202609301830023151",
+   "source": "研报库",
+   "pages": null,
+   "chapters": 0,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": false
+  },
+  {
+   "book": "rp_AP202609301830023754",
+   "source": "研报库",
+   "pages": 2,
+   "chapters": 3,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202609301830023858",
+   "source": "研报库",
+   "pages": 13,
+   "chapters": 6,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202609301830023938",
+   "source": "研报库",
+   "pages": 21,
+   "chapters": 21,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202609301830034656",
+   "source": "研报库",
+   "pages": 3,
+   "chapters": 8,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202609301830034661",
+   "source": "研报库",
+   "pages": 3,
+   "chapters": 6,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202609301830034708",
+   "source": "研报库",
+   "pages": 3,
+   "chapters": 13,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202609301830035133",
+   "source": "研报库",
+   "pages": 3,
+   "chapters": 4,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202609301830035477",
+   "source": "研报库",
+   "pages": 23,
+   "chapters": 51,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202609301830035707",
+   "source": "研报库",
+   "pages": 4,
+   "chapters": 7,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202609301830035720",
+   "source": "研报库",
+   "pages": 3,
+   "chapters": 7,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202609301830037744",
+   "source": "研报库",
+   "pages": 12,
+   "chapters": 40,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202609301830038476",
+   "source": "研报库",
+   "pages": null,
+   "chapters": 0,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": false
+  },
+  {
+   "book": "rp_AP202609301830038557",
+   "source": "研报库",
+   "pages": 5,
+   "chapters": 8,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202609301830039062",
+   "source": "研报库",
+   "pages": 22,
+   "chapters": 31,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202609301830042069",
+   "source": "研报库",
+   "pages": 9,
+   "chapters": 7,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202609301830042321",
+   "source": "研报库",
+   "pages": 4,
+   "chapters": 13,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202609301830042382",
+   "source": "研报库",
+   "pages": 4,
+   "chapters": 13,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202609301830049884",
+   "source": "研报库",
+   "pages": 4,
+   "chapters": 13,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202609301830053954",
+   "source": "研报库",
+   "pages": 14,
+   "chapters": 6,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202609301830054135",
+   "source": "研报库",
+   "pages": 14,
+   "chapters": 31,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202609301830054738",
+   "source": "研报库",
+   "pages": 12,
+   "chapters": 12,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610011830075758",
+   "source": "研报库",
+   "pages": 75,
+   "chapters": 24,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610011830075766",
+   "source": "研报库",
+   "pages": 12,
+   "chapters": 28,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610011830075767",
+   "source": "研报库",
+   "pages": 20,
+   "chapters": 52,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610011830075769",
+   "source": "研报库",
+   "pages": 13,
+   "chapters": 28,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610021830105301",
+   "source": "研报库",
+   "pages": 10,
+   "chapters": 17,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610021830105330",
+   "source": "研报库",
+   "pages": 9,
+   "chapters": 20,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610021830105332",
+   "source": "研报库",
+   "pages": 9,
+   "chapters": 12,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610021830105333",
+   "source": "研报库",
+   "pages": 10,
+   "chapters": 42,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610021830105365",
+   "source": "研报库",
+   "pages": 9,
+   "chapters": 12,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610021830105367",
+   "source": "研报库",
+   "pages": 8,
+   "chapters": 17,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610021830105370",
+   "source": "研报库",
+   "pages": 9,
+   "chapters": 20,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610021830105372",
+   "source": "研报库",
+   "pages": 9,
+   "chapters": 42,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610021830105410",
+   "source": "研报库",
+   "pages": 73,
+   "chapters": 58,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610021830105411",
+   "source": "研报库",
+   "pages": 26,
+   "chapters": 15,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610021830105412",
+   "source": "研报库",
+   "pages": null,
+   "chapters": 0,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": false
+  },
+  {
+   "book": "rp_AP202610021830105413",
+   "source": "研报库",
+   "pages": 27,
+   "chapters": 50,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610021830105414",
+   "source": "研报库",
+   "pages": 34,
+   "chapters": 131,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610021830105416",
+   "source": "研报库",
+   "pages": 15,
+   "chapters": 0,
+   "units": 0,
+   "has_ocr": true,
+   "has_layout": false
+  },
+  {
+   "book": "rp_AP202610021830105528",
+   "source": "研报库",
+   "pages": 12,
+   "chapters": 4,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610021830105529",
+   "source": "研报库",
+   "pages": 9,
+   "chapters": 23,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610021830110823",
+   "source": "研报库",
+   "pages": 54,
+   "chapters": 192,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610021830111802",
+   "source": "研报库",
+   "pages": 14,
+   "chapters": 20,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610021830111804",
+   "source": "研报库",
+   "pages": 29,
+   "chapters": 114,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610021830111904",
+   "source": "研报库",
+   "pages": 45,
+   "chapters": 58,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610021830111912",
+   "source": "研报库",
+   "pages": 4,
+   "chapters": 13,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610021830111958",
+   "source": "研报库",
+   "pages": 4,
+   "chapters": 13,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610021830112192",
+   "source": "研报库",
+   "pages": 3,
+   "chapters": 3,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610021830112214",
+   "source": "研报库",
+   "pages": 19,
+   "chapters": 10,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610021830112399",
+   "source": "研报库",
+   "pages": 15,
+   "chapters": 33,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610021830114811",
+   "source": "研报库",
+   "pages": 13,
+   "chapters": 82,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610031830124601",
+   "source": "研报库",
+   "pages": 13,
+   "chapters": 2,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610031830124602",
+   "source": "研报库",
+   "pages": 12,
+   "chapters": 5,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610031830126542",
+   "source": "研报库",
+   "pages": 4,
+   "chapters": 13,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610031830126544",
+   "source": "研报库",
+   "pages": 4,
+   "chapters": 13,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610031830126598",
+   "source": "研报库",
+   "pages": 31,
+   "chapters": 24,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610031830126605",
+   "source": "研报库",
+   "pages": 3,
+   "chapters": 5,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610061830164303",
+   "source": "研报库",
+   "pages": 35,
+   "chapters": 9,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610061830165137",
+   "source": "研报库",
+   "pages": 18,
+   "chapters": 17,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610061830165858",
+   "source": "研报库",
+   "pages": 9,
+   "chapters": 63,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610061830165864",
+   "source": "研报库",
+   "pages": 12,
+   "chapters": 88,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610061830165866",
+   "source": "研报库",
+   "pages": 27,
+   "chapters": 240,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610061830165954",
+   "source": "研报库",
+   "pages": 17,
+   "chapters": 140,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610061830165956",
+   "source": "研报库",
+   "pages": 6,
+   "chapters": 54,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610061830165957",
+   "source": "研报库",
+   "pages": 6,
+   "chapters": 54,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610061830165965",
+   "source": "研报库",
+   "pages": 6,
+   "chapters": 54,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610061830165974",
+   "source": "研报库",
+   "pages": 6,
+   "chapters": 55,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610061830167919",
+   "source": "研报库",
+   "pages": 29,
+   "chapters": 27,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610061830167967",
+   "source": "研报库",
+   "pages": 18,
+   "chapters": 152,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610061830170460",
+   "source": "研报库",
+   "pages": 15,
+   "chapters": 9,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610071830180005",
+   "source": "研报库",
+   "pages": 28,
+   "chapters": 23,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610071830182729",
+   "source": "研报库",
+   "pages": 21,
+   "chapters": 48,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610071830182733",
+   "source": "研报库",
+   "pages": 7,
+   "chapters": 10,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610071830184407",
+   "source": "研报库",
+   "pages": 19,
+   "chapters": 4,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610071830185864",
+   "source": "研报库",
+   "pages": 3,
+   "chapters": 12,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610071830186073",
+   "source": "研报库",
+   "pages": 10,
+   "chapters": 26,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610071830188839",
+   "source": "研报库",
+   "pages": 3,
+   "chapters": 3,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
+  },
+  {
+   "book": "rp_AP202610071830191034",
+   "source": "研报库",
+   "pages": 10,
+   "chapters": 29,
+   "units": 0,
+   "has_ocr": false,
+   "has_layout": true
   }
  ],
  "totals": {
-  "books": 2,
-  "pages": 438,
-  "chapters": 274,
+  "books": 103,
+  "pages": 2482,
+  "chapters": 5107,
   "units": 35
  },
  "verify": {
   "ok": true,
   "books": {
-   "伏击涨停(2)": {
-    "page_coverage": true,
-    "ocr_quality": true,
-    "structure": true,
-    "units": true
-   },
-   "涨停密码(2)": {
-    "page_coverage": true,
-    "ocr_quality": true,
-    "structure": true,
-    "units": true
-   }
+   "伏击涨停(2)": null,
+   "涨停密码(2)": null,
+   "make_test": null,
+   "rp_AP202609301830015352": null,
+   "rp_AP202609301830015404": null,
+   "rp_AP202609301830015406": null,
+   "rp_AP202609301830015407": null,
+   "rp_AP202609301830015408": null,
+   "rp_AP202609301830015410": null,
+   "rp_AP202609301830015411": null,
+   "rp_AP202609301830015419": null,
+   "rp_AP202609301830015420": null,
+   "rp_AP202609301830015421": null,
+   "rp_AP202609301830015422": null,
+   "rp_AP202609301830015445": null,
+   "rp_AP202609301830015453": null,
+   "rp_AP202609301830015454": null,
+   "rp_AP202609301830015455": null,
+   "rp_AP202609301830015458": null,
+   "rp_AP202609301830015460": null,
+   "rp_AP202609301830015836": null,
+   "rp_AP202609301830016191": null,
+   "rp_AP202609301830022766": null,
+   "rp_AP202609301830022983": null,
+   "rp_AP202609301830023151": null,
+   "rp_AP202609301830023754": null,
+   "rp_AP202609301830023858": null,
+   "rp_AP202609301830023938": null,
+   "rp_AP202609301830034656": null,
+   "rp_AP202609301830034661": null,
+   "rp_AP202609301830034708": null,
+   "rp_AP202609301830035133": null,
+   "rp_AP202609301830035477": null,
+   "rp_AP202609301830035707": null,
+   "rp_AP202609301830035720": null,
+   "rp_AP202609301830037744": null,
+   "rp_AP202609301830038476": null,
+   "rp_AP202609301830038557": null,
+   "rp_AP202609301830039062": null,
+   "rp_AP202609301830042069": null,
+   "rp_AP202609301830042321": null,
+   "rp_AP202609301830042382": null,
+   "rp_AP202609301830049884": null,
+   "rp_AP202609301830053954": null,
+   "rp_AP202609301830054135": null,
+   "rp_AP202609301830054738": null,
+   "rp_AP202610011830075758": null,
+   "rp_AP202610011830075766": null,
+   "rp_AP202610011830075767": null,
+   "rp_AP202610011830075769": null,
+   "rp_AP202610021830105301": null,
+   "rp_AP202610021830105330": null,
+   "rp_AP202610021830105332": null,
+   "rp_AP202610021830105333": null,
+   "rp_AP202610021830105365": null,
+   "rp_AP202610021830105367": null,
+   "rp_AP202610021830105370": null,
+   "rp_AP202610021830105372": null,
+   "rp_AP202610021830105410": null,
+   "rp_AP202610021830105411": null,
+   "rp_AP202610021830105412": null,
+   "rp_AP202610021830105413": null,
+   "rp_AP202610021830105414": null,
+   "rp_AP202610021830105416": null,
+   "rp_AP202610021830105528": null,
+   "rp_AP202610021830105529": null,
+   "rp_AP202610021830110823": null,
+   "rp_AP202610021830111802": null,
+   "rp_AP202610021830111804": null,
+   "rp_AP202610021830111904": null,
+   "rp_AP202610021830111912": null,
+   "rp_AP202610021830111958": null,
+   "rp_AP202610021830112192": null,
+   "rp_AP202610021830112214": null,
+   "rp_AP202610021830112399": null,
+   "rp_AP202610021830114811": null,
+   "rp_AP202610031830124601": null,
+   "rp_AP202610031830124602": null,
+   "rp_AP202610031830126542": null,
+   "rp_AP202610031830126544": null,
+   "rp_AP202610031830126598": null,
+   "rp_AP202610031830126605": null,
+   "rp_AP202610061830164303": null,
+   "rp_AP202610061830165137": null,
+   "rp_AP202610061830165858": null,
+   "rp_AP202610061830165864": null,
+   "rp_AP202610061830165866": null,
+   "rp_AP202610061830165954": null,
+   "rp_AP202610061830165956": null,
+   "rp_AP202610061830165957": null,
+   "rp_AP202610061830165965": null,
+   "rp_AP202610061830165974": null,
+   "rp_AP202610061830167919": null,
+   "rp_AP202610061830167967": null,
+   "rp_AP202610061830170460": null,
+   "rp_AP202610071830180005": null,
+   "rp_AP202610071830182729": null,
+   "rp_AP202610071830182733": null,
+   "rp_AP202610071830184407": null,
+   "rp_AP202610071830185864": null,
+   "rp_AP202610071830186073": null,
+   "rp_AP202610071830188839": null,
+   "rp_AP202610071830191034": null
   }
  },
  "pipeline": {
@@ -51,10 +1058,10 @@
   ]
  },
  "rag": {
-  "docs": 0,
-  "records": 66,
-  "version": 2,
-  "updated_at": "2026-10-31T09:53:00.035260+00:00"
+  "docs": 110,
+  "records": 278,
+  "version": 4,
+  "updated_at": "2026-10-31T12:28:28.779622+00:00"
  },
  "thresholds": {
   "ocr_chars_per_page_min": 100,

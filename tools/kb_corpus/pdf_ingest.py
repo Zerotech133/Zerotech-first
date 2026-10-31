@@ -61,6 +61,16 @@ def book_out(pdf: Path, out_root: Path) -> Path:
 
 
 # ---------------------------------------------------------------- scan
+def iter_pdfs(args) -> list[Path]:
+    """按 --only 过滤（隔离单文件崩溃/批量续跑用）。"""
+    base = Path(args.pdf_dir)
+    files = sorted(base.glob("*.pdf"))
+    only = (getattr(args, "only", "") or "").strip()
+    if only:
+        files = [f for f in files if only in f.stem]
+    return files
+
+
 def pdf_type(pdf: Path, sample_pages: int = 5) -> dict:
     from pypdf import PdfReader
     r = PdfReader(str(pdf), strict=False)
@@ -84,7 +94,7 @@ def cmd_scan(args) -> int:
     out = Path(args.out_dir)
     out.mkdir(parents=True, exist_ok=True)
     items = []
-    for pdf in sorted(pdf_dir.glob("*.pdf")):
+    for pdf in iter_pdfs(args):
         try:
             info = pdf_type(pdf)
         except Exception as e:  # noqa: BLE001
@@ -108,7 +118,7 @@ def cmd_ocr(args) -> int:
     pdf_dir = Path(args.pdf_dir)
     out = Path(args.out_dir)
     engine = None
-    for pdf in sorted(pdf_dir.glob("*.pdf")):
+    for pdf in iter_pdfs(args):
         info = pdf_type(pdf)
         if info["kind"] == "text" and not args.force:
             d = book_out(pdf, out)
@@ -180,7 +190,7 @@ def clean_line(ln: str) -> bool:
 def cmd_structure(args) -> int:
     out = Path(args.out_dir)
     pdf_dir = Path(args.pdf_dir)
-    for pdf in sorted(pdf_dir.glob("*.pdf")):
+    for pdf in iter_pdfs(args):
         d = book_out(pdf, out)
         layout = d / "layout.jsonl"
         if layout.exists():
@@ -265,7 +275,7 @@ def chat(prompt: str, num: int = 1600, timeout: int = 300) -> str:
 def cmd_distill(args) -> int:
     out = Path(args.out_dir)
     pdf_dir = Path(args.pdf_dir)
-    for pdf in sorted(pdf_dir.glob("*.pdf")):
+    for pdf in iter_pdfs(args):
         d = book_out(pdf, out)
         st = d / "structure.json"
         txt_file = d / "ocr.txt"
@@ -348,7 +358,7 @@ def cmd_verify(args) -> int:
               "thresholds": {"ocr_chars_per_page": 100, "page_coverage": 0.95,
                              "chapters_min": chapters_min, "units_min": units_min, "unit_citation_rate": 1.0},
               "books": {}, "ok": True, "failures": []}
-    for pdf in sorted(pdf_dir.glob("*.pdf")):
+    for pdf in iter_pdfs(args):
         d = book_out(pdf, out)
         item = {"book": pdf.stem}
         info = pdf_type(pdf)
@@ -386,7 +396,8 @@ def cmd_verify(args) -> int:
             "page_coverage": item["page_coverage"] >= 0.95,
             "ocr_quality": item["ocr_chars_per_page"] >= 100 and item["garbled_ratio"] < 0.02,
             "structure": item["chapters"] >= chapters_min,
-            "units": item["units"] >= units_min and item["unit_citation_rate"] >= 1.0,
+            "units": (item["units"] >= units_min and item["unit_citation_rate"] >= 1.0)
+                     if not (units_min == 0 and item["units"] == 0) else True,
         }
         item["checks"] = checks
         # 仅有文本层的书允许无 OCR：按文本层折算
@@ -438,7 +449,7 @@ def cmd_index(args) -> int:
     pdf_dir = Path(args.pdf_dir)
     kb_docs = REPO / "knowledge_docs"
     kb_docs.mkdir(parents=True, exist_ok=True)
-    for pdf in sorted(pdf_dir.glob("*.pdf")):
+    for pdf in iter_pdfs(args):
         d = book_out(pdf, out)
         st = d / "structure.json"
         if not st.exists():
@@ -504,6 +515,7 @@ def build_parser() -> argparse.ArgumentParser:
         p.add_argument("--force", action="store_true")
         p.add_argument("--chapters", type=int, default=0, help="distill 最多处理章节数（0=全部）")
         p.add_argument("--rebuild-rag", action="store_true", help="index 后重建 RAG 索引")
+        p.add_argument("--only", default="", help="仅处理文件名含该串的 PDF（单文件隔离/续跑）")
         if name == "verify":
             p.add_argument("--units-min", type=int, default=10, help="知识单元数阈值（短文档可放宽，需在报告注明）")
             p.add_argument("--chapters-min", type=int, default=5, help="章节数阈值")
