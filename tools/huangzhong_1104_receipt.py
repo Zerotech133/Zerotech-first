@@ -587,6 +587,36 @@ def _incidents_view(step_incidents: dict, preflight: dict | None) -> dict:
             "note": "事故台账状态不可得（工具缺失且 preflight 未提供）"}
 
 
+def _latest_confirm(work: Path) -> dict | None:
+    """读取最近一份 incidents 人工确认记录（work/incidents_confirm_*.md）。
+
+    返回 {path, confirmer, time, conclusion}；无可读记录 → None（不编造）。
+    """
+    try:
+        files = sorted(Path(work).glob("incidents_confirm_*.md"),
+                       key=lambda p: p.stat().st_mtime, reverse=True)
+    except OSError:
+        return None
+    for f in files:
+        try:
+            text = f.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        info = {"path": str(f), "confirmer": None, "time": None,
+                "conclusion": None}
+        for line in text.splitlines():
+            s = line.strip().lstrip("-").strip()
+            if s.startswith("确认人："):
+                info["confirmer"] = s.split("：", 1)[1].strip()
+            elif s.startswith("确认时间："):
+                info["time"] = s.split("：", 1)[1].strip()
+            elif s.startswith("结论："):
+                info["conclusion"] = s.split("：", 1)[1].strip()
+        if info["confirmer"] or info["conclusion"]:
+            return info
+    return None
+
+
 def _evidence_view(preflight: dict | None, review: dict) -> dict:
     ev = (preflight or {}).get("evidence") if isinstance(preflight, dict) else None
     out = {"baseline": None, "redteam": None, "max_age_hours": None}
@@ -819,6 +849,13 @@ def render_md(rep: dict) -> str:
     if incidents.get("exists") is False:
         lines.append("- **台账缺失**：按「无已知事故」记录，但须人工确认 `docs/audit/` + "
                      "`STATUS.md` 事故段，并在最终回执注明「无已知事故」。")
+    confirm = incidents.get("confirm") if isinstance(incidents.get("confirm"), dict) else None
+    if confirm:
+        lines.append("- **人工确认（%s，%s）**：%s；记录 `%s`"
+                     % (confirm.get("confirmer") or "—",
+                        confirm.get("time") or "—",
+                        confirm.get("conclusion") or "无已知事故（记录未写结论）",
+                        confirm.get("path") or "—"))
     if incidents.get("note"):
         lines.append("- 说明：%s" % incidents.get("note"))
     lines.append("")
@@ -886,8 +923,16 @@ def render_md(rep: dict) -> str:
     lines.append("")
     lines.append("1. 老田 Go/No-Go 决策 + 签字（L3；本草案不构成批准）；")
     lines.append("2. 赵云抽查 3/3 一致性确认（若本轮抽查记录有更新需重跑 `audit_sample_3`）；")
-    lines.append("3. ④ 满窗人工核对：`work/huangzhong/incidents.jsonl` 缺失时须人工确认"
-                 "「无已知事故」；")
+    _confirm = incidents.get("confirm") if isinstance(incidents.get("confirm"), dict) else None
+    if _confirm:
+        lines.append("3. ④ 满窗人工核对：**已完成人工确认（%s，%s：%s）**；"
+                     % (_confirm.get("confirmer") or "—",
+                        _confirm.get("time") or "—",
+                        _confirm.get("conclusion") or "无已知事故")
+                     + "11-04 满窗时仍按 runbook 再核对一次；")
+    else:
+        lines.append("3. ④ 满窗人工核对：`work/huangzhong/incidents.jsonl` 缺失时须人工确认"
+                     "「无已知事故」；")
     lines.append("4. 11-04 09:30 preflight 复核：`python -X utf8 tools/huangzhong_1104_preflight.py --json`；")
     lines.append("5. 复核数据时效：本草案数据为生成时刻快照，正式回执前如重跑验收/刷新证据需重跑本工具。")
     lines.append("")
@@ -1021,6 +1066,7 @@ def run(work_dir: Path | str | None = None,
     rep["coverage"] = _coverage_view(review, gng, trend)
     rep["maturity"] = _maturity_view(preflight, gng, review)
     rep["incidents"] = _incidents_view(incidents_step, preflight)
+    rep["incidents"]["confirm"] = _latest_confirm(work)
     rep["evidence"] = _evidence_view(preflight, review)
     rep["evidence_paths"] = _evidence_paths(review_step, preflight, gng, trend,
                                             incidents)
