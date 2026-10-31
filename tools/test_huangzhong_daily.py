@@ -110,3 +110,22 @@ def test_daily_emit_fail_open(tmp_path):
     assert rep["verdict"] == "REJECT"
     lines = (tmp_path / "daily.jsonl").read_text(encoding="utf-8").splitlines()
     assert len(lines) == 1 and json.loads(lines[0])["verdict"] == "REJECT"
+
+
+def test_daily_appends_events_jsonl(tmp_path):
+    """Phase2 事件面：验收后 events.jsonl 追加一行 acceptance 事件（append-only）。"""
+    d = _load("huangzhong_daily")
+    d.run_daily(accept_fn=lambda c: _fake_verdict("REJECT", failed=2),
+                out_dir=tmp_path, emit_fn=_noop_emit)
+    lines = (tmp_path / "events.jsonl").read_text(encoding="utf-8").splitlines()
+    assert len(lines) == 1
+    ev = json.loads(lines[0])
+    assert ev["kind"] == "acceptance"
+    assert ev["verdict"] == "REJECT"
+    assert ev["commit"] == "a" * 12
+    assert ev["baseline_age_h"] is None
+    # 再跑一次 → 追加第二行（不覆盖）
+    d.run_daily(accept_fn=lambda c: _fake_verdict(), out_dir=tmp_path,
+                emit_fn=_noop_emit)
+    assert len((tmp_path / "events.jsonl").read_text(
+        encoding="utf-8").splitlines()) == 2

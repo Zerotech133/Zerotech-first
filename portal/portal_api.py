@@ -94,6 +94,7 @@ import api_daily_data   # K-ORG-183 /api/daily/data 多维数据日报聚合出�
 import api_guojia       # K-ORG-191 /api/guojia/data 郭嘉预判对账司出口（2026-10-18）
 # ==== M1-M4 导入结束 ====
 import api_execution    # R1 执行健康总线 /api/execution/health（联动层一期 2026-10-18）
+import api_huangzhong   # 黄忠验收事件只读投影 /api/huangzhong/events（WO-HZ-HERMES-PHASE2-20261031）
 import api_tickets      # 工单只读投影 /api/org/tasks（驾驶舱一期 2026-10-18）
 import api_evolution    # 进化舱只读投影 /api/evolution/summary（驾驶舱二期 2026-10-18）
 import org_command_api  # K-ORG-190 Agent 指挥台后端（/api/org 等 8 端点，2026-10-19）
@@ -531,7 +532,7 @@ if _os.environ.get("PORTAL_NO_WARMUP") != "1":
 import route_table  # B4a-lite：GET 精确路由表（等价生成）
 
 
-class Handler(api_data.Handler, api_chanlun_pages.Handler, api_pages_portal.Handler, api_health_portal.Handler, api_manager_portal.Handler, api_backtest.Handler, api_kg.Handler, api_bridge.Handler, api_portfolio.Handler, api_screen.Handler, api_misc.Handler, api_flow.Handler, api_lineage.Handler, api_intel_evidence.Handler, api_intel_bus.Handler, api_unified.Handler, api_replay.Handler, api_approvals.Handler, api_capability.Handler, api_perf.Handler, api_xq_intel.Handler, api_dataops.Handler, api_daily_data.Handler, api_guojia.Handler, api_execution.Handler, api_tickets.Handler, api_notify.Handler, api_news_intel.Handler, api_zhuge_route.Handler, api_os_goal.Handler, http.server.BaseHTTPRequestHandler):
+class Handler(api_data.Handler, api_chanlun_pages.Handler, api_pages_portal.Handler, api_health_portal.Handler, api_manager_portal.Handler, api_backtest.Handler, api_kg.Handler, api_bridge.Handler, api_portfolio.Handler, api_screen.Handler, api_misc.Handler, api_flow.Handler, api_lineage.Handler, api_intel_evidence.Handler, api_intel_bus.Handler, api_unified.Handler, api_replay.Handler, api_approvals.Handler, api_capability.Handler, api_perf.Handler, api_xq_intel.Handler, api_dataops.Handler, api_daily_data.Handler, api_guojia.Handler, api_execution.Handler, api_huangzhong.Handler, api_tickets.Handler, api_notify.Handler, api_news_intel.Handler, api_zhuge_route.Handler, api_os_goal.Handler, http.server.BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         # K82 访问日志：一行式留痕（判断「用户是否看过页面」的唯一取证
         # 通道）；独立文件，不与 stderr 错误日志混写；失败不阻断请求。
@@ -1698,6 +1699,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
         if path == '/api/execution/health':
             # R1 执行健康总线（Windows 计划任务只读投影，联动层一期 2026-10-18）
             self._execution_health(qs)
+            return
+        if path == '/api/huangzhong/events':
+            # 黄忠验收事件只读投影（WO-HZ-HERMES-PHASE2-20261031，Hermes Tile 数据面）
+            self._huangzhong_events(qs)
             return
         if path == '/api/org/tasks':
             # 工单只读投影（驾驶舱一期复盘舱数据面，2026-10-18）
