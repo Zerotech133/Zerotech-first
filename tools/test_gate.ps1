@@ -84,6 +84,10 @@ $paths = @{
         'agent_platform/tests/test_legion_ide_undo_store.py',
         'agent_platform/tests/test_ide_extension_e2e.py',
         'agent_platform/tests/test_ide_rw.py',
+        # WO-INTEL-N1AB-FIX-20261031：INTEL_TO_N1 接线 + reviewed JEV 只读上下文
+        # 离线上线，必须进 fast gate，防止再次出现“分支绿、合并红”。
+        'agent_platform/tests/test_intel_context.py',
+        'agent_platform/tests/test_intel_to_n1.py',
         # W1（2026-10-31）：release/junction/live-version 信任链离线断言；
         # live 分支默认 skip（LEGION_LIVE_SMOKE=1 才跑），不拖慢门禁。
         'agent_platform/tests/test_release_live_smoke.py',
