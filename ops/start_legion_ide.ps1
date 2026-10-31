@@ -78,6 +78,13 @@ switch ($Action) {
         if ($p) { Write-LaunchLog "legion-ide already running pid=$p (rw 由该进程启动参数决定)"; exit 0 }
         # 写/执行开关：默认 off；-EnableWrite 才 on（受控写/白名单执行）
         $env:IDE_RW = if ($EnableWrite) { "on" } else { "off" }
+        # 2026-10-31 K-ORG-20261031-BUNDLEB5：Phase2-B 后 bundle 不再 tracked；
+        # 干净环境启动前缺失则 bootstrap，失败直接退出（不带着缺 bundle 起服务）。
+        $bootstrapScript = Join-Path $Repo "tools\bundle_bootstrap.py"
+        if (Test-Path -LiteralPath $bootstrapScript) {
+            & $Python -X utf8 $bootstrapScript --repo $Repo --quiet
+            if ($LASTEXITCODE -ne 0) { Write-LaunchLog "ERROR bundle bootstrap failed"; exit 1 }
+        }
         $bundlePath = Resolve-BundlePath
         $stateDir = 'C:\项目\_vault\legion_ide'
         if (-not (Test-Path -LiteralPath $stateDir)) { New-Item -ItemType Directory -Force -Path $stateDir | Out-Null }
