@@ -77,6 +77,9 @@ _EXEC_RESULTS: dict[str, dict] = {}
 _EXEC_RESULTS_TTL_S = 3600
 _EXEC_RESULTS_MAX = 100
 _PREVIEWS: dict[str, dict] = {}
+_PATCHSETS: dict[str, dict] = {}
+_PATCHSET_TTL_S = 600
+_CONFIRMED_PATCHSETS: dict[str, dict] = {}
 _PREVIEW_TTL_S = 600
 _PREVIEW_MAX = 20
 
@@ -441,6 +444,9 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                 "/api/ide/git",
                 "/api/ide/undo",
                 "/api/ide/test",
+                "/api/ide/patchset/preview",
+                "/api/ide/patchset/confirm",
+                "/api/ide/patchset/rollback",
             ):
                 return self._json(
                     404, {"ok": False, "error": "not_found", "path": path}
@@ -449,10 +455,12 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
             if error:
                 return self._json(400, error)
             # Phase A：能力令牌先于 worktree 解析（避免无 cap 探测任务/先报 worktree）
-            if path in ("/api/ide/write/preview", "/api/ide/write/confirm",
-                        "/api/ide/undo", "/api/ide/exec", "/api/ide/test"):
+            if (path in ("/api/ide/write/preview", "/api/ide/write/confirm",
+                         "/api/ide/undo", "/api/ide/exec", "/api/ide/test")
+                    or path.startswith("/api/ide/patchset/")):
                 _ct = str(data.get("task") or "")
-                _scope = ("ide:exec:" if path in ("/api/ide/exec", "/api/ide/test") else "ide:write:") + _ct
+                _scope = ("ide:exec:" if path in ("/api/ide/exec", "/api/ide/test")
+                          else "ide:write:") + _ct
                 cap_err = G.check_cap(dict(self.headers), _scope, _ct)
                 if cap_err:
                     return self._json(403, cap_err)
@@ -614,6 +622,158 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                         "undo %s -> ok" % rel)
                 return self._json(200, {**res, "undone": True,
                                         "restored_sha256": res.get("sha256")})
+            if path == "/api/ide/patchset/preview":
+                files = data.get("files")
+                if not isinstance(files, list) or not (2 <= len(files) <= 20):
+                    return self._json(400, G.err("bad_files", "files 须为 2–20 项数组"))
+                now = time.time()
+                for k in [k for k, v in _PATCHSETS.items() if now - v.get("ts", 0) > _PATCHSET_TTL_S]:
+                    _PATCHSETS.pop(k, None)
+                items = []
+                seen = set()
+                for item in files:
+                    if not isinstance(item, dict):
+                        return self._json(400, G.err("bad_files", "files 项须为对象"))
+                    rel = str(item.get("path") or "").strip()
+                    if not rel or rel in seen:
+                        return self._json(400, G.err("bad_path", "path 缺失或重复：%s" % rel))
+                    seen.add(rel)
+                    res = W.preview_file(wt, rel, item.get("content", ""))
+                    if not res.get("ok"):
+                        return self._json(400, res)
+                    old_content = None
+                    if not res.get("created"):
+                        old = W.read_file(wt, rel)
+                        if old.get("ok"):
+                            old_content = old.get("content")
+                    items.append({
+                        "path": rel, "created": bool(res.get("created")),
+                        "old_sha256": res.get("old_sha256"),
+                        "new_sha256": res.get("new_sha256"),
+                        "bytes": res.get("bytes"),
+                        "diff": res.get("diff"), "old_content": old_content,
+                        "content": item.get("content", ""),
+                    })
+                pid = "ps-" + uuid.uuid4().hex[:12]
+                _PATCHSETS[pid] = {
+                    "ts": time.time(), "task": str(data.get("task") or ""),
+                    "owner": owner, "files": items,
+                    "message": str(data.get("message") or "")[:200],
+                }
+                G.audit(repo, "code_action", data.get("task"), owner,
+                        "patchset preview %d files" % len(items))
+                return self._json(200, {
+                    "ok": True, "patchset_id": pid,
+                    "files": [{k: v for k, v in f.items() if k not in ("content", "old_content")}
+                              for f in items],
+                })
+            if path == "/api/ide/patchset/confirm":
+                pid = str(data.get("patchset_id") or "").strip()
+                pending = _PATCHSETS.get(pid)
+                if not pending:
+                    return self._json(400, G.err("patchset_missing", "patchset 不存在或已过期"))
+                task = str(data.get("task") or "")
+                if pending.get("owner") != owner or pending.get("task") != task:
+                    return self._json(409, G.err("patchset_owner_mismatch", "patchset 不属于当前工单/会话"))
+                applied = []
+                try:
+                    for f in pending["files"]:
+                        res = W.write_file(wt, f["path"], f["content"],
+                                           expected_sha256=f["old_sha256"])
+                        if not res.get("ok"):
+                            raise RuntimeError("write_failed:%s:%s" % (f["path"], res.get("error")))
+                        applied.append(f)
+                except Exception as exc:  # noqa: BLE001
+                    rolled = []
+                    for f in reversed(applied):
+                        try:
+                            if f.get("created"):
+                                pth, _e = G.safe_path(wt, f["path"])
+                                if pth.is_file():
+                                    pth.unlink()
+                            elif f.get("old_content") is not None:
+                                W.write_file(wt, f["path"], f["old_content"])
+                            rolled.append(f["path"])
+                        except Exception:  # noqa: BLE001
+                            pass
+                    G.audit(repo, "code_action", task, owner,
+                            "patchset confirm FAIL %s rolled=%s" % (str(exc)[:160], ",".join(rolled)))
+                    return self._json(409, {"ok": False, "error": "patchset_apply_failed",
+                                            "detail": str(exc)[:300], "rolled_back": rolled})
+                _PATCHSETS.pop(pid, None)
+                _CONFIRMED_PATCHSETS[pid] = {"ts": time.time(), "task": task,
+                                             "owner": owner, "files": applied}
+                for f in applied:
+                    if not f.get("created") and f.get("old_content") is not None:
+                        U.save(task, f["path"], f["old_content"], f.get("new_sha256") or "", owner)
+                run_id = "patchset-" + (task or "none") + "-" + uuid.uuid4().hex[:8]
+                try:
+                    from legion_command import evidence as EV
+                    EV.new_run(run_id, task=task, agent=owner, kind="patchset")
+                    EV.append(run_id, "patchset_confirm", {
+                        "files": [{"path": f["path"], "created": f["created"],
+                                   "old_sha256": f["old_sha256"], "new_sha256": f["new_sha256"]}
+                                  for f in applied],
+                        "message": pending.get("message") or "",
+                    })
+                    EV.finalize(run_id, mode="patchset", ok=True, task=task)
+                except Exception:  # noqa: BLE001
+                    pass
+                G.audit(repo, "code_action", task, owner,
+                        "patchset confirm %d files ok" % len(applied))
+                return self._json(200, {"ok": True, "patchset_id": pid,
+                                        "files": [f["path"] for f in applied],
+                                        "evidence_run_id": run_id})
+            if path == "/api/ide/patchset/rollback":
+                pid = str(data.get("patchset_id") or "").strip()
+                task = str(data.get("task") or "")
+                pending = _PATCHSETS.get(pid)
+                if pending:
+                    if pending.get("owner") != owner or pending.get("task") != task:
+                        return self._json(409, G.err("patchset_owner_mismatch",
+                                                     "patchset 不属于当前工单/会话"))
+                    _PATCHSETS.pop(pid, None)
+                    G.audit(repo, "code_action", task, owner, "patchset cancel %s" % pid)
+                    return self._json(200, {"ok": True, "patchset_id": pid,
+                                            "cancelled": True, "restored": []})
+                confirmed = _CONFIRMED_PATCHSETS.get(pid)
+                if not confirmed:
+                    return self._json(400, G.err("patchset_missing", "patchset 不存在或已过期"))
+                if confirmed.get("owner") != owner or confirmed.get("task") != task:
+                    return self._json(409, G.err("patchset_owner_mismatch",
+                                                 "patchset 不属于当前工单/会话"))
+                restored = []
+                for f in reversed(confirmed["files"]):
+                    try:
+                        if f.get("created"):
+                            pth, _e = G.safe_path(wt, f["path"])
+                            if pth.is_file():
+                                pth.unlink()
+                        else:
+                            cur = W.read_file(wt, f["path"])
+                            if not cur.get("ok"):
+                                return self._json(409, G.err("rollback_failed", "读取失败：%s" % f["path"]))
+                            if cur.get("sha256") != (f.get("new_sha256") or ""):
+                                return self._json(409, G.err("rollback_stale",
+                                                             "文件已再次修改，拒绝回滚：%s" % f["path"]))
+                            if f.get("old_content") is not None:
+                                W.write_file(wt, f["path"], f["old_content"])
+                        restored.append(f["path"])
+                    except Exception as exc:  # noqa: BLE001
+                        return self._json(500, G.err("rollback_failed", "%s: %s" % (f["path"], str(exc)[:160])))
+                _CONFIRMED_PATCHSETS.pop(pid, None)
+                run_id = "patchset-rollback-" + (task or "none") + "-" + uuid.uuid4().hex[:8]
+                try:
+                    from legion_command import evidence as EV
+                    EV.new_run(run_id, task=task, agent=owner, kind="patchset")
+                    EV.append(run_id, "patchset_rollback", {"restored": restored})
+                    EV.finalize(run_id, mode="rollback", ok=True, task=task)
+                except Exception:  # noqa: BLE001
+                    pass
+                G.audit(repo, "code_action", task, owner,
+                        "patchset rollback %d files" % len(restored))
+                return self._json(200, {"ok": True, "patchset_id": pid,
+                                        "restored": restored, "evidence_run_id": run_id})
             if path == "/api/ide/test":
                 _ttask = str(data.get("task") or "")
                 _cmd = str(data.get("command") or "python -m pytest -q .")

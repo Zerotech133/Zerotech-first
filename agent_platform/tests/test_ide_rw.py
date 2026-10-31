@@ -496,3 +496,61 @@ def test_launcher_supports_enable_write():
     text = ps1.read_text(encoding="utf-8-sig")
     assert "EnableWrite" in text and "IDE_RW" in text
 
+
+
+def test_patchset_preview_confirm_rollback(tmp_path, monkeypatch):
+    repo, wt = make_repo(tmp_path)
+    httpd, base = _serve(repo, monkeypatch)
+    try:
+        h = _hdr(base)
+        status, _h, body = _req(base, "POST", "/api/ide/lock",
+                                body={"task": "T-BOOT", "owner": _owner()}, headers=h)
+        assert status == 200
+        files = [
+            {"path": "agent_platform/pkg/a.py", "content": "x = 2\n"},
+            {"path": "agent_platform/pkg/b.py", "content": "y = 3\n"},
+        ]
+        status, _h, body = _req(base, "POST", "/api/ide/patchset/preview",
+                                body={"task": "T-BOOT", "files": files}, headers=h)
+        data = json.loads(body)
+        assert status == 200 and data["patchset_id"] and len(data["files"]) == 2
+        pid = data["patchset_id"]
+        assert (wt / "agent_platform/pkg/a.py").read_text(encoding="utf-8") == "x = 1\n"
+        assert not (wt / "agent_platform/pkg/b.py").exists()
+        status, _h, body = _req(base, "POST", "/api/ide/patchset/confirm",
+                                body={"task": "T-BOOT", "patchset_id": pid}, headers=h)
+        assert status == 200, body
+        assert (wt / "agent_platform/pkg/a.py").read_text(encoding="utf-8") == "x = 2\n"
+        assert (wt / "agent_platform/pkg/b.py").read_text(encoding="utf-8") == "y = 3\n"
+        status, _h, body = _req(base, "POST", "/api/ide/patchset/rollback",
+                                body={"task": "T-BOOT", "patchset_id": pid}, headers=h)
+        assert status == 200, body
+        assert (wt / "agent_platform/pkg/a.py").read_text(encoding="utf-8") == "x = 1\n"
+        assert not (wt / "agent_platform/pkg/b.py").exists()
+    finally:
+        httpd.shutdown()
+
+
+def test_patchset_confirm_conflict_rolls_back(tmp_path, monkeypatch):
+    repo, wt = make_repo(tmp_path)
+    httpd, base = _serve(repo, monkeypatch)
+    try:
+        h = _hdr(base)
+        _req(base, "POST", "/api/ide/lock",
+             body={"task": "T-BOOT", "owner": _owner()}, headers=h)
+        files = [
+            {"path": "agent_platform/pkg/a.py", "content": "x = 2\n"},
+            {"path": "agent_platform/pkg/b.py", "content": "y = 3\n"},
+        ]
+        status, _h, body = _req(base, "POST", "/api/ide/patchset/preview",
+                                body={"task": "T-BOOT", "files": files}, headers=h)
+        pid = json.loads(body)["patchset_id"]
+        # 外部改动造成 stale
+        (wt / "agent_platform/pkg/a.py").write_text("external\n", encoding="utf-8")
+        status, _h, body = _req(base, "POST", "/api/ide/patchset/confirm",
+                                body={"task": "T-BOOT", "patchset_id": pid}, headers=h)
+        assert status == 409, body
+        assert (wt / "agent_platform/pkg/a.py").read_text(encoding="utf-8") == "external\n"
+        assert not (wt / "agent_platform/pkg/b.py").exists()
+    finally:
+        httpd.shutdown()
