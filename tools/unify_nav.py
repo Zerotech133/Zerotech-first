@@ -8,6 +8,8 @@ check：守卫——①普通页含 nav.js、定型页自身导航与返回入�
 用法：
   python tools/unify_nav.py            # 注入 + 守卫
   python tools/unify_nav.py --check    # 仅守卫
+  python tools/unify_nav.py --check --root <worktree>
+                                       # 分支感知守卫（WO-NAVROOT-DEDUP-20261031）
 """
 import ast
 import glob
@@ -46,11 +48,17 @@ def _self_nav_valid(name, src):
             and TAG not in active)
 
 
-def _regen_js():
-    """调 export_nav.py 的提取逻辑，返回应生成的 nav.js 内容。"""
+def _regen_js(root=None):
+    """调 export_nav.py 的提取逻辑，返回应生成的 nav.js 内容。
+
+    ``root`` 缺省为脚本自身所在仓库；分支感知门传 worktree 根时，加载的是该
+    worktree 的 tools/export_nav.py，其 SRC 随之指向该 worktree 的
+    portal/api_common.py（不是 master 的）。
+    """
+    root = root or REPO
     import importlib.util
     spec = importlib.util.spec_from_file_location(
-        "export_nav", os.path.join(REPO, "tools", "export_nav.py"))
+        "export_nav", os.path.join(root, "tools", "export_nav.py"))
     m = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(m)
     tree = ast.parse(open(m.SRC, encoding="utf-8").read())
@@ -65,9 +73,25 @@ def _regen_js():
     return json.dumps(data, ensure_ascii=False, sort_keys=True)
 
 
-def main():
-    check_only = "--check" in sys.argv
-    pages = sorted(glob.glob(os.path.join(PORTAL, "*.html")))
+def _parse_root(argv):
+    """解析 ``--root <path>``；缺省=脚本所在仓库（向后兼容）。"""
+    if "--root" not in argv:
+        return REPO
+    i = argv.index("--root")
+    if i + 1 >= len(argv):
+        raise SystemExit("--root 需要跟仓库/worktree 路径")
+    root = os.path.abspath(argv[i + 1])
+    if not os.path.isdir(os.path.join(root, "portal")):
+        raise SystemExit("--root 不是仓库根（缺 portal/）：%s" % root)
+    return root
+
+
+def main(argv=None):
+    argv = list(sys.argv[1:] if argv is None else argv)
+    check_only = "--check" in argv
+    root = _parse_root(argv)
+    portal = os.path.join(root, "portal")
+    pages = sorted(glob.glob(os.path.join(portal, "*.html")))
     pages = [p for p in pages
              if ANCHOR in open(p, encoding="utf-8").read()]  # 片段页跳过
     # 仅普通静态页注入；定型页绝不能被注入旧深色顶栏。
@@ -97,9 +121,9 @@ def main():
             print("FAIL 定型页自身导航/返回入口缺失或叠加旧顶栏：%s" % bad_self)
         return 1
     # 守卫 ②：nav.js 与源同步（结构化比对，键序无关）
-    navjs = open(os.path.join(PORTAL, "static", "nav.js"),
+    navjs = open(os.path.join(portal, "static", "nav.js"),
                  encoding="utf-8").read()
-    want = _regen_js()
+    want = _regen_js(root)
     i = navjs.find("var NAV=")
     j = navjs.find(";\n", i)
     assert i >= 0 and j > i, "nav.js 里找不到 NAV 数据块"
