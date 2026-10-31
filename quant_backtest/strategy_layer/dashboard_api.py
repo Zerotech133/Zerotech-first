@@ -75,6 +75,9 @@ from urllib.parse import parse_qs, urlparse
 QUANT_BT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if QUANT_BT not in sys.path:
     sys.path.insert(0, QUANT_BT)
+REPO_ROOT = os.path.dirname(QUANT_BT)
+if REPO_ROOT not in sys.path:
+    sys.path.insert(0, REPO_ROOT)
 
 REGISTRY_JSON_CANDIDATES = (
     os.path.join(QUANT_BT, "strategy_registry.json"),
@@ -1575,6 +1578,36 @@ def pipeline_graph_payload() -> tuple:
     return doc, 200
 
 
+# ── Canvas / Paper Exchange 只读路由（Phase 3 路由收口）────────────────
+CANVAS_ROUTES = ("/canvas", "/strategy/canvas")
+CANVAS_JS_ROUTES = ("/strategy_canvas.js", "/strategy/strategy_canvas.js")
+
+
+def _send_bytes(handler: Any, body: bytes, content_type: str, code: int = 200) -> None:
+    handler.send_response(code)
+    handler.send_header("Content-Type", content_type)
+    handler.send_header("Content-Length", str(len(body)))
+    handler.send_header("Cache-Control", "no-store")
+    handler.send_header("Access-Control-Allow-Origin", "*")
+    handler.end_headers()
+    handler.wfile.write(body)
+
+
+def _paper_exchange_get(handler: Any, path: str, query: str) -> None:
+    """把 /paper_exchange/* 交给只读 exchange_gateway.handle_get（不自己起服务）。"""
+    try:
+        from agent_platform.paper.exchange_gateway import handle_get
+
+        status, ctype, body = handle_get(path, query)
+    except Exception as exc:  # noqa: BLE001
+        payload = json.dumps(
+            {"ok": False, "error": "paper_exchange route unavailable: %s" % str(exc)[:200]},
+            ensure_ascii=False,
+        ).encode("utf-8")
+        return _send_bytes(handler, payload, "application/json; charset=utf-8", 503)
+    return _send_bytes(handler, body, ctype, status)
+
+
 # ── 路由注册（零侵入包装）─────────────────────────────────────────────
 def register_routes(server_or_app: Any) -> Any:
     """把三个端点包装进 http.server Handler 类（或 HTTPServer 实例）。
@@ -1620,6 +1653,20 @@ def register_routes(server_or_app: Any) -> Any:
             except Exception as exc:  # noqa: BLE001
                 payload, code = ({"ok": False, "error": str(exc)[:200]}, 500)
             return _send_json(self, payload, code)
+        if u.path in CANVAS_ROUTES:
+            try:
+                body = _static_page("strategy_canvas.html")
+            except OSError as exc:
+                return _send_json(self, {"ok": False, "error": str(exc)[:200]}, 500)
+            return _send_bytes(self, body, "text/html; charset=utf-8")
+        if u.path in CANVAS_JS_ROUTES:
+            try:
+                body = _static_page("strategy_canvas.js")
+            except OSError as exc:
+                return _send_json(self, {"ok": False, "error": str(exc)[:200]}, 500)
+            return _send_bytes(self, body, "application/javascript; charset=utf-8")
+        if u.path == "/paper_exchange" or u.path.startswith("/paper_exchange/"):
+            return _paper_exchange_get(self, u.path, u.query)
         if u.path == "/api/risk":
             try:
                 payload, code = risk_payload()
@@ -1822,4 +1869,6 @@ __all__ = [
     "pipeline_graph_payload",
     "PIPELINE_GRAPH_PATH",
     "PIPELINE_GRAPH_ROUTE",
+    "CANVAS_ROUTES",
+    "CANVAS_JS_ROUTES",
 ]
