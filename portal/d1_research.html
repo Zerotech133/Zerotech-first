@@ -47,6 +47,10 @@ tr.detail td{padding:10px 12px}
 .buy{color:var(--color-up);border-color:var(--color-up-bd)}
 .avoid{color:var(--color-dn);border-color:var(--color-dn-bd)}
 .watch{color:var(--warn)}
+.lv{display:inline-block;font-size:10.5px;padding:1px 6px;border-radius:999px;border:1px solid var(--line);background:var(--gray-1);color:var(--gray-6);margin-right:4px}
+.lv.tech{color:var(--color-up);border-color:var(--color-up-bd)}
+.lv.legacy{color:var(--warn)}
+.tagnote{color:var(--gray-5);font-size:10px}
 .mono{font-family:ui-monospace,Consolas,monospace;font-size:11.5px;color:var(--gray-6);word-break:break-all}
 .cols{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .box{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px}
@@ -78,13 +82,30 @@ tr.detail td{padding:10px 12px}
     <thead><tr><th>代码/名称</th><th>档位</th><th>结论</th><th>置信</th><th>可买</th><th>买点</th><th>止损</th><th>止盈</th><th>盯盘/交棒</th></tr></thead>
     <tbody id="rows"><tr><td colspan="9" class="empty">加载中…</td></tr></tbody>
   </table>
-  <div class="note" style="margin-top:10px">点击行展开：T1/T2 多空、N1/F1、D1 rationale、买点/止损/止盈与交棒状态。数据来自 ACAD1 池 + 当日池复盘 + D1 影子账。</div>
+  <div class="note" style="margin-top:10px">点击行展开：T1/T2 多空、N1/F1、D1 rationale、<b>水平来源 / ATR / 支撑 / 阻力</b>、买点/止损/止盈与交棒状态。数据来自 ACAD1 池 + 当日池复盘 + D1 影子账。<br><b>水平来源口径：</b>技术推导=已研究票，止损/止盈/买点由 ATR(14)+20日支撑压力推导；旧规则=计划回退，非技术推导；未研究/待投研=pending，不展示技术推导止损止盈，避免误导。</div>
 </div>
 <script>
 const $=s=>document.querySelector(s);
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 let DATA={items:[],summary:{}};
 function fm(v){return v==null?'—':Number(v).toFixed(2);}
+// 水平来源展示契约（WO-D1-LEVEL-UI-20261031）：技术推导水平只对已研究票可见；
+// pending/旧规则票只标注来源口径，不渲染技术推导止损/止盈/买点（防误导）。
+const TECH_SRC='technical_atr_support_resistance';
+function isPending(x){return !!(x.level_pending||x.action==='pending_research'||(x.decision_status&&x.decision_status!=='done'));}
+function hasTech(x){return !!(x.level_show_derived||(x.level_source===TECH_SRC&&x.levels&&x.levels.support!=null));}
+function srcLabel(x){return x.level_source_label||(hasTech(x)?'技术推导（ATR+支撑压力）':(x.level_source==='legacy_rule'?(isPending(x)?'未研究（旧规则回退）':'旧规则（非技术推导）'):'未研究（无技术推导水平）'));}
+function srcBadge(x){const t=hasTech(x)&&!isPending(x);return '<span class="lv '+(t?'tech':'legacy')+'">'+esc(t?'技术推导':'未研究/旧规则')+'</span>';}
+function levelVal(x,v){
+  if(isPending(x)) return '<span class="lv legacy">未研究</span>';
+  if(v==null) return '<span class="lv legacy">旧规则</span>';
+  return fm(v)+(hasTech(x)?'':' <small class="tagnote">旧规则</small>');
+}
+function targetVal(x){
+  if(isPending(x)) return '<span class="lv legacy">未研究</span>';
+  if(x.target1==null&&x.target2==null) return '<span class="lv legacy">旧规则</span>';
+  return fm(x.target1)+' / '+fm(x.target2)+(hasTech(x)?'':' <small class="tagnote">旧规则</small>');
+}
 function badge(x){
   const a=x.action; if(a==='buy_ready') return '<span class="badge buy">可买</span>';
   if(a==='avoid') return '<span class="badge avoid">回避</span>';
@@ -92,18 +113,32 @@ function badge(x){
   return '<span class="badge">待研究</span>';
 }
 function row(x){
-  const p=x.price, tr=x.watch_trigger||{};
-  const buy=x.buy_zone?x.buy_zone.map(fm).join(' ~ '):('回踩 '+fm(tr.pullback)+' / 突破 '+fm(tr.breakout));
+  const tr=x.watch_trigger||{};
+  const buy=isPending(x)?'<span class="lv legacy">未研究</span>'
+    :(x.buy_zone?esc(x.buy_zone.map(fm).join(' ~ ')):esc('回踩 '+fm(tr.pullback)+' / 突破 '+fm(tr.breakout)));
   const hand=x.handoff||{};
-  return '<tr class="r" data-code="'+esc(x.code)+'">'+
+  return '<tr class="r" data-code="'+esc(x.code)+'" data-level-source="'+esc(x.level_source||'')+'">'+
     '<td><b>'+esc(x.code)+'</b> '+esc(x.name)+'<div class="mono">'+esc((x.sources||[]).join('+'))+'</div></td>'+
     '<td>'+esc(x.tier||'—')+'</td><td>'+esc(x.recommendation||'—')+'</td><td>'+esc(x.confidence==null?'—':x.confidence)+'</td>'+
-    '<td>'+badge(x)+'</td><td>'+esc(buy)+'</td><td>'+fm(x.stop_loss)+'</td><td>'+fm(x.target1)+' / '+fm(x.target2)+'</td>'+
+    '<td>'+badge(x)+'</td><td>'+buy+'</td><td>'+levelVal(x,x.stop_loss)+'</td><td>'+targetVal(x)+'</td>'+
     '<td>'+esc(hand.status||'—')+'<div class="mono">'+esc(hand.to||'')+'</div></td></tr>'+
     '<tr class="detail" id="d-'+esc(x.code)+'"><td colspan="9">'+detail(x)+'</td></tr>';
 }
 function detail(x){
   const h=x.handoff||{};
+  const pend=isPending(x), tech=hasTech(x)&&!pend, lvls=x.levels||{};
+  const build=pend
+    ? '<div>买点/止损/止盈：<span class="lv legacy">未研究</span> 待投研，不展示技术推导水平（避免误认为研究结论）</div>'
+    : '<div>买点 '+(x.buy_zone?esc(x.buy_zone.map(fm).join(' ~ ')):'—')+
+      ' · 止损 '+fm(x.stop_loss)+' · 止盈 '+fm(x.target1)+'/'+fm(x.target2)+
+      ' · 盈亏比 '+esc(x.risk_reward==null?'—':x.risk_reward)+' · 来源 '+srcBadge(x)+'</div>';
+  const levelBox='<div class="box" style="margin-top:8px"><b>水平来源 / 关键位</b>'+
+    '<div>来源：'+srcBadge(x)+' '+esc(srcLabel(x))+'</div>'+
+    (tech
+      ? '<div>ATR(14) '+fm(lvls.atr)+' · MA20 '+fm(lvls.ma20)+' · 支撑 '+fm(lvls.support)+' · 阻力 '+fm(lvls.resistance)+'</div>'
+      : '<div class="note">'+esc(pend?'待投研（pending）：不展示由 ATR/支撑压力推导的止损、止盈与买点。':'旧规则回退：无 ATR/支撑压力研究数据，不展示技术推导水平。')+'</div>')+
+    '<div class="mono">level_source='+esc(x.level_source||'—')+' · '+(pend?'pending':'done')+
+    (x.level_note?' · '+esc(x.level_note):'')+'</div></div>';
   return '<div class="cols">'+
     '<div class="box bull"><b>多头（T1）</b><div>'+esc((x.bull||'—').slice(0,900))+'</div></div>'+
     '<div class="box bear"><b>空头（T2）</b><div>'+esc((x.bear||'—').slice(0,900))+'</div></div></div>'+
@@ -112,9 +147,9 @@ function detail(x){
     '<div class="box"><b>F1 基本面</b><div>'+esc((x.fundamental||'—').slice(0,500))+'</div></div></div>'+
     '<div class="box" style="margin-top:8px"><b>D1 结论</b><div>'+esc(x.rationale||'—')+'</div>'+
     '<div class="mono">L1: '+esc(x.l1_basis||'—')+' · risk='+esc(x.risk_level||'—')+' · horizon='+esc(x.time_horizon||'—')+'</div></div>'+
-    '<div class="box" style="margin-top:8px"><b>建仓/交棒</b><div>买点 '+(x.buy_zone?esc(x.buy_zone.map(fm).join(' ~ ')):'—')+
-    ' · 止损 '+fm(x.stop_loss)+' · 止盈 '+fm(x.target1)+'/'+fm(x.target2)+' · 盈亏比 '+esc(x.risk_reward==null?'—':x.risk_reward)+
-    '</div><div class="mono">交棒：'+esc(h.to||'—')+' / '+esc(h.status||'—')+' '+esc(h.condition||h.note||'')+'</div></div>';
+    levelBox+
+    '<div class="box" style="margin-top:8px"><b>建仓/交棒</b>'+build+
+    '<div class="mono">交棒：'+esc(h.to||'—')+' / '+esc(h.status||'—')+' '+esc(h.condition||h.note||'')+'</div></div>';
 }
 function render(){
   const fa=$('#f-action').value, ft=$('#f-tier').value, kw=$('#f-kw').value.trim();

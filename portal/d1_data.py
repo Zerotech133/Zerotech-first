@@ -98,6 +98,40 @@ def _should_derive_levels(rec, price):
     return bool(rec.get("decision_status") == "done" and price)
 
 
+LEVEL_SOURCE_TECH = "technical_atr_support_resistance"
+
+
+def _level_view(item, pending):
+    """展示契约（WO-D1-LEVEL-UI-20261031）：水平来源标签 + 是否展示技术推导水平。
+
+    技术推导水平只对已研究票可见；pending/旧规则票只标注来源口径，
+    页面不得把 ATR/支撑压力推导的止损止盈当作研究结论展示（防误导）。
+    纯展示字段，不参与 D1 裁决/paper/交易链。
+    """
+    src = str(item.get("level_source") or "")
+    levels = item.get("levels") or {}
+    tech = (src == LEVEL_SOURCE_TECH and levels.get("support") is not None)
+    if tech and not pending:
+        return {"level_source_label": "技术推导（ATR+支撑压力）",
+                "level_show_derived": True,
+                "level_pending": False,
+                "level_note": "止损/止盈/买点由 ATR(14)+20日支撑压力推导"}
+    if src == "legacy_rule":
+        if pending:
+            label = "未研究（旧规则回退）"
+            note = "待投研：不展示技术推导止损/止盈/买点（旧计划回退值仅后台参考）"
+        else:
+            label = "旧规则（非技术推导）"
+            note = "计划回退水平，非 ATR/支撑压力推导"
+    else:
+        label = "未研究（无技术推导水平）"
+        note = "待投研，不展示技术推导止损/止盈/买点"
+    return {"level_source_label": label,
+            "level_show_derived": False,
+            "level_pending": bool(pending),
+            "level_note": note}
+
+
 def d1_snapshot(day=None):
     snap = pool_data.pool_snapshot(day)
     day = snap.get("date") or day
@@ -124,6 +158,9 @@ def d1_snapshot(day=None):
             _levels = {}
         built = research_plan.build_item(item, rec, plan_rows.get(code),
                                          shadows.get(code), levels=_levels)
+        _pending = bool(built.get("action") == "pending_research"
+                        or built.get("decision_status") != "done")
+        built.update(_level_view(built, _pending))
         items.append(built)
     out = research_plan.build_snapshot(items)
     out["team"] = _team_snapshot()
