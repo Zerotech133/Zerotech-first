@@ -412,13 +412,18 @@ def test_patchset_evidence_picks_latest(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# 9) M4 签字（只读）
+# 9) M4 签字（只读；2026-11-01 K-ORG-20261101-M4WIRE 统一口径：ARCH1 第4签+A0监督）
 # ---------------------------------------------------------------------------
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
 def _m4_dispatch():
     return [
         {"task": "作战屏 v1 M4 质量门验收", "to": "质量工程部/QA1", "status": "accepted"},
         {"task": "作战屏 v1 M4 代码审计", "to": "研究院/GUANYU", "status": "done"},
         {"task": "作战屏 v1 M4 独立复验", "to": "质量工程部/VERIFY1", "status": "accepted"},
+        {"task": "作战屏 v1 M4 架构终审", "to": "研发部/ARCH1", "status": "accepted"},
+        {"task": "作战屏 v1 M4 监督签", "to": "直属参谋长线/A0", "status": "done"},
         {"task": "M5 无关任务", "to": "质量工程部/QA1", "status": "accepted"},
     ]
 
@@ -437,8 +442,11 @@ def test_m4_missing_all_fails(tmp_path):
     _write_m4(tmp_path, [], [])
     result = mod.check_m4_signoff(_ctx(mod, tmp_path))
     assert result["status"] == "fail"
-    assert result["evidence"]["missing"] == ["QA1", "GUANYU", "VERIFY1", "A0/老田"]
+    assert result["evidence"]["required"] == ["QA1", "GUANYU", "VERIFY1", "ARCH1"]
+    assert result["evidence"]["missing"] == ["QA1", "GUANYU", "VERIFY1", "ARCH1"]
+    assert "A0/老田" not in result["evidence"]["missing"]
     assert result["evidence"]["approvals_count"] == 0
+    assert result["evidence"]["signoff_gate"]["ok"] is False
 
 
 def test_m4_full_signoff_passes(tmp_path):
@@ -449,7 +457,37 @@ def test_m4_full_signoff_passes(tmp_path):
     result = mod.check_m4_signoff(_ctx(mod, tmp_path))
     assert result["status"] == "pass"
     assert result["evidence"]["missing"] == []
+    assert result["evidence"]["signed"] == ["QA1", "GUANYU", "VERIFY1", "ARCH1"]
     assert result["evidence"]["approvals_count"] == 1
+    assert result["evidence"]["supervisor"] == "A0"
+    assert result["evidence"]["supervisor_done"] is True
+    assert result["evidence"]["signoff_gate"]["ok"] is True
+
+
+def test_m4_a0_supervisor_not_required(tmp_path):
+    """A0 是监督签：dispatch 没有 A0 也 pass（A0 不占第4签、不计入 missing）。"""
+    mod = _load()
+    approvals = [{"ts": "2026-10-31T08:30:00", "action": "approve",
+                  "task": "M4/v1.1 正式验收签字", "operator": "ou_laotian"}]
+    dispatch = [r for r in _m4_dispatch() if "A0" not in str(r.get("to") or "")]
+    _write_m4(tmp_path, approvals, dispatch)
+    result = mod.check_m4_signoff(_ctx(mod, tmp_path))
+    assert result["status"] == "pass"
+    assert result["evidence"]["supervisor_done"] is False
+    assert "A0/老田" not in result["evidence"]["missing"]
+
+
+def test_m4_arch1_missing_fails(tmp_path):
+    """ARCH1 是第4签：缺 ARCH1 即使其它三方齐 + 有 approve 也 fail。"""
+    mod = _load()
+    approvals = [{"ts": "2026-10-31T08:30:00", "action": "approve",
+                  "task": "M4/v1.1 正式验收签字", "operator": "ou_laotian"}]
+    dispatch = [r for r in _m4_dispatch() if "ARCH1" not in str(r.get("to") or "")]
+    _write_m4(tmp_path, approvals, dispatch)
+    result = mod.check_m4_signoff(_ctx(mod, tmp_path))
+    assert result["status"] == "fail"
+    assert result["evidence"]["missing"] == ["ARCH1"]
+    assert result["evidence"]["signoff_gate"]["ok"] is False
 
 
 def test_m4_old_approval_not_counted(tmp_path):
@@ -459,13 +497,72 @@ def test_m4_old_approval_not_counted(tmp_path):
     _write_m4(tmp_path, approvals, _m4_dispatch())
     result = mod.check_m4_signoff(_ctx(mod, tmp_path))
     assert result["status"] == "fail"
-    assert result["evidence"]["missing"] == ["A0/老田"]
+    assert result["evidence"]["approvals_count"] == 0
+    # dispatch 四签齐全，但无 approve 行（dispatch 只是通知≠签字）→ fail 且 missing 为空
+    assert result["evidence"]["missing"] == []
+    assert any("no_approve_rows" in r
+               for r in result["evidence"]["signoff_gate"]["reasons"])
+
+
+def test_m4_default_parties_unified_with_approval_control():
+    """常量口径与 approval_control 真源一致（ARCH1 第4签，A0 监督）。"""
+    mod = _load()
+    spec = importlib.util.spec_from_file_location(
+        "kpi_ac_ref", REPO_ROOT / "portal" / "approval_control.py")
+    ac = importlib.util.module_from_spec(spec)
+    sys.modules["kpi_ac_ref"] = ac
+    spec.loader.exec_module(ac)
+    assert mod.M4_PARTIES == tuple(ac.REQUIRED_SIGNERS) == (
+        "QA1", "GUANYU", "VERIFY1", "ARCH1")
+    assert ac.SUPERVISOR_SIGNER == "A0"
+    assert "A0" not in mod.M4_PARTIES
+
+
+def test_m4_uses_approval_control_signoff_gate(tmp_path):
+    """check 从 ctx.repo 的 portal 真源加载 approval_control 并调 signoff_gate。"""
+    mod = _load()
+    approvals = [{"ts": "2026-10-31T08:30:00", "action": "approve",
+                  "task": "M4/v1.1 正式验收签字", "operator": "ou_laotian"}]
+    _write_m4(tmp_path, approvals, _m4_dispatch())
+    result = mod.check_m4_signoff(_ctx(mod, tmp_path, repo=REPO_ROOT))
+    assert result["evidence"]["approval_control"]["loaded"] is True
+    assert result["evidence"]["signoff_gate"]["ok"] is True
 
 
 def test_m4_ledgers_missing_is_unknown(tmp_path):
     mod = _load()
     result = mod.check_m4_signoff(_ctx(mod, tmp_path))
     assert result["status"] == "unknown"
+
+
+def test_m4_hard_gate_function_and_cli(monkeypatch, capsys):
+    """横门：函数 m4_hard_gate / CLI --require-complete（默认总体退出码不变）。"""
+    mod = _load()
+    pass_check = {"id": "m4_signoff", "status": "pass", "detail": "ok",
+                  "evidence": {"signoff_gate": {"ok": True, "reasons": []}}}
+    fail_check = {"id": "m4_signoff", "status": "fail", "detail": "缺少 ARCH1",
+                  "evidence": {"signoff_gate": {"ok": False,
+                                                "reasons": ["missing_signers:ARCH1"]},
+                               "missing": ["ARCH1"]}}
+    assert mod.m4_gate_from_report({"checks": [pass_check]})["ok"] is True
+    gate_fail = mod.m4_gate_from_report({"checks": [fail_check]})
+    assert gate_fail["ok"] is False
+    assert gate_fail["reasons"] == ["missing_signers:ARCH1"]
+    assert mod.m4_gate_from_report({})["ok"] is False
+
+    monkeypatch.setattr(mod, "collect", lambda **kwargs: {
+        "schema": mod.SCHEMA, "verdict": "fail", "checks": [fail_check]})
+    rc = mod.main(["--json", "--require-complete"])
+    err = capsys.readouterr().err
+    assert rc == 1 and "BLOCK" in err and "ARCH1" in err
+    monkeypatch.setattr(mod, "collect", lambda **kwargs: {
+        "schema": mod.SCHEMA, "verdict": "pass", "checks": [pass_check]})
+    rc2 = mod.main(["--json", "--require-complete"])
+    assert rc2 == 0 and "OK" in capsys.readouterr().err
+    # 默认（不带 flag）仍按总体 verdict：fail → 1
+    monkeypatch.setattr(mod, "collect", lambda **kwargs: {
+        "schema": mod.SCHEMA, "verdict": "fail", "checks": [fail_check]})
+    assert mod.main(["--json"]) == 1
 
 
 # ---------------------------------------------------------------------------
