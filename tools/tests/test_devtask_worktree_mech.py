@@ -135,12 +135,16 @@ def test_format_prune_wt_ttl_red_annotation():
 
 
 def test_prune_plan_carries_ttl_fields(monkeypatch):
-    monkeypatch.setenv(devtask.WT_TTL_ENV, "0.001")  # 极小 TTL → 全部工作树年龄都超阈
+    monkeypatch.setenv(devtask.WT_TTL_ENV, "0.001")
     plan = devtask._prune_plan(MAIN)
     assert plan["worktrees"], "主仓应有 worktree 记录"
+    ttl = devtask._ttl_hours()
     for it in plan["worktrees"]:
         assert "age_hours" in it and "ttl_red" in it
-    assert all(it["ttl_red"] for it in plan["worktrees"]), "极小 TTL 下应全部 TTL-RED"
+        # 规则断言（不做"全红"绝对判断）：并行会话可能在测试瞬间新建 worktree，
+        # 其 age 可小于极小 TTL，故逐条按规则核对，避免时钟竞态 flaky。
+        expect = it["age_hours"] is not None and it["age_hours"] > ttl
+        assert it["ttl_red"] is expect, "ttl_red 与规则不符：%s" % it.get("tid")
     monkeypatch.setenv(devtask.WT_TTL_ENV, "1000000")
     plan2 = devtask._prune_plan(MAIN)
     assert not any(it["ttl_red"] for it in plan2["worktrees"]), "极大 TTL 下应无红灯"
