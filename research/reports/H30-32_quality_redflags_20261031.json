@@ -1,0 +1,148 @@
+{
+ "meta": {
+  "start": "20200101",
+  "end": "20261029",
+  "is_end": "20231231",
+  "hold": 60,
+  "cost": 0.003,
+  "financial_rows": 55855,
+  "events": 10718,
+  "control": 25470,
+  "generated_at": "2026-10-31T18:24:22+08:00"
+ },
+ "hypotheses": {
+  "H30": {
+   "events": 1266,
+   "flag_car": {
+    "all": {
+     "n": 1266,
+     "mean_pct": -9.386,
+     "t": -14.35
+    },
+    "IS": {
+     "n": 765,
+     "mean_pct": -11.58,
+     "t": -13.13
+    },
+    "OOS": {
+     "n": 501,
+     "mean_pct": -6.036,
+     "t": -6.42
+    }
+   },
+   "spread_vs_ctrl": {
+    "all": {
+     "n": 18,
+     "mean_pct": -3.741,
+     "t": -1.6
+    },
+    "IS": {
+     "n": 10,
+     "mean_pct": -4.174,
+     "t": -1.0
+    },
+    "OOS": {
+     "n": 8,
+     "mean_pct": -3.199,
+     "t": -2.46
+    }
+   },
+   "bootstrap_oos": {
+    "n_boot": 0,
+    "mean_pct": null,
+    "p_le_0": null
+   },
+   "monthly_n": 18,
+   "expect": "红旗 → 未来 60 日跑输（spread<0）",
+   "status": "rejected"
+  },
+  "H31": {
+   "events": 1301,
+   "flag_car": {
+    "all": {
+     "n": 1301,
+     "mean_pct": -8.997,
+     "t": -12.84
+    },
+    "IS": {
+     "n": 959,
+     "mean_pct": -10.227,
+     "t": -11.48
+    },
+    "OOS": {
+     "n": 342,
+     "mean_pct": -5.548,
+     "t": -6.15
+    }
+   },
+   "spread_vs_ctrl": {
+    "all": {
+     "n": 20,
+     "mean_pct": 1.004,
+     "t": 0.34
+    },
+    "IS": {
+     "n": 13,
+     "mean_pct": 2.689,
+     "t": 0.61
+    },
+    "OOS": {
+     "n": 7
+    }
+   },
+   "bootstrap_oos": {
+    "n_boot": 0,
+    "mean_pct": null,
+    "p_le_0": null
+   },
+   "monthly_n": 20,
+   "expect": "红旗 → 未来 60 日跑输（spread<0）",
+   "status": "rejected"
+  },
+  "H32": {
+   "events": 8648,
+   "flag_car": {
+    "all": {
+     "n": 8648,
+     "mean_pct": -7.643,
+     "t": -27.01
+    },
+    "IS": {
+     "n": 6143,
+     "mean_pct": -8.569,
+     "t": -24.24
+    },
+    "OOS": {
+     "n": 2505,
+     "mean_pct": -5.371,
+     "t": -12.0
+    }
+   },
+   "spread_vs_ctrl": {
+    "all": {
+     "n": 25,
+     "mean_pct": -1.266,
+     "t": -0.68
+    },
+    "IS": {
+     "n": 16,
+     "mean_pct": -3.616,
+     "t": -1.63
+    },
+    "OOS": {
+     "n": 9,
+     "mean_pct": 2.912,
+     "t": 0.96
+    }
+   },
+   "bootstrap_oos": {
+    "n_boot": 300,
+    "mean_pct": 2.09,
+    "p_le_0": 0.2033
+   },
+   "monthly_n": 25,
+   "expect": "红旗 → 未来 60 日跑输（spread<0）",
+   "status": "rejected"
+  }
+ }
+}
