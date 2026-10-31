@@ -33,6 +33,7 @@ from llm import OllamaLLM  # noqa: E402
 from memory import MemoryStore  # noqa: E402
 from tools import make_context, quote_snapshot, kline_daily  # noqa: E402
 from evidence_bundle import EvidenceBundle  # noqa: E402
+from evidence_raw import collect_shadow_raw_refs  # noqa: E402
 from decision_policy import apply_policy  # noqa: E402
 from l4_provider import load_l4  # noqa: E402
 from regime_roster import dk_snapshot, enrich_row, bars_to_df  # noqa: E402
@@ -409,6 +410,35 @@ def _collect_verdicts(registry, context, timeout_s=None):
     return vs
 
 
+def _wire_raw_refs(bundle, symbol, data_ctx, root=None):
+    """WO-EVIDRAW（K-ORG-20261031-EVIDRAW）：把上下文可核验部分升级为 raw ref。
+
+    - 成功：按 source 原位升级已有 ref（refs 数量/source 集不变 → is_sufficient
+      不放松）；L4 原始记录放 raw_refs_extra（不参与充分性）；
+    - 缺文件/哈希不符/行越界：raw ref 被拒并记 rejected，保留摘要 ref（降级可见）；
+    - 任何异常 fail-open：记 raw_refs_error，不阻塞 D1 主链、不假成功。
+    """
+    if bundle is None:
+        return bundle
+    try:
+        collected = collect_shadow_raw_refs(symbol, data_ctx, root=root)
+        bundle.attach_raw_refs(collected.get("refs") or [],
+                               root=collected.get("root"))
+        bundle.raw_refs_report = collected.get("report") or bundle.raw_refs_report
+        unavailable = (bundle.raw_refs_report or {}).get("unavailable") or []
+        if unavailable:
+            reasons = sorted({str(item.get("reason"))
+                              for item in unavailable})
+            print("[evidence] %s raw refs 降级 %d 项：%s"
+                  % (symbol, len(unavailable), ",".join(reasons)))
+        return bundle
+    except Exception as exc:  # noqa: BLE001  raw 采集是旁路，不得阻塞 D1
+        bundle.raw_refs_error = str(exc)[:160]
+        print("[warn] %s raw refs 挂载失败（fail-open，保留摘要 ref）：%s"
+              % (symbol, bundle.raw_refs_error))
+        return bundle
+
+
 def build_ledger_row(
     today,
     symbol,
@@ -468,6 +498,11 @@ def build_ledger_row(
                            for r in (bundle.refs if bundle else [])]),
         "policy_checks": (policy or {}).get("policy_checks", []),
         "evidence_sufficient": bool(bundle.is_sufficient()) if bundle else False,
+        # WO-EVIDRAW：raw ref 挂载摘要（旧行无此键，向后兼容；不改变
+        # evidence_sufficient 判定——raw 缺失只降级、不放松充分性）
+        "evidence_raw_refs": ([r.to_dict() for r in
+                               (bundle.raw_refs_extra if bundle else [])]),
+        "evidence_raw_refs_summary": (bundle.raw_summary() if bundle else {}),
     }
 
 
@@ -697,6 +732,8 @@ def main():
                 bundle = EvidenceBundle.from_context(
                     symbol, data_ctx.get("name", ""), data_ctx,
                     l4=load_l4(symbol))
+                # WO-EVIDRAW：可核验段升级为 raw ref（fail-open 降级，不阻塞）
+                bundle = _wire_raw_refs(bundle, symbol, data_ctx)
                 if not bundle.is_sufficient():
                     raise RuntimeError("evidence_insufficient: %s" % bundle.input_degraded)
                 t0 = time.time()
