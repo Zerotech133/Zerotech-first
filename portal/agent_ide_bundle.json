@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-31 10:34",
+ "generated": "2026-10-31 10:37",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 15,
+  "workorders_doing": 14,
   "workorders_review": 7
  },
  "workorders": [
@@ -170,7 +170,7 @@
    "id": "WO-L4-M4-HARDEN-20261031",
    "desc": "L4 artifact_ref + M4 三方签字强制 [UNOWNED]",
    "status": "doing",
-   "owner": "code-upgrade",
+   "owner": "OPS1",
    "branch": "task/WO-L4-M4-HARDEN-20261031",
    "created": "2026-10-31 08:13:11",
    "project": "general"
@@ -191,15 +191,6 @@
    "owner": "DSH-Lead",
    "branch": "task/WO-HZ-HERMES-PHASE2-20261031",
    "created": "2026-10-31 09:21:00",
-   "project": "general"
-  },
-  {
-   "id": "WO-HZ-HERMES-PHASE2B-20261031",
-   "desc": "A2 黄忠验收事件只读页（静态页+导航三件套+2测试）",
-   "status": "doing",
-   "owner": "DSH-Lead",
-   "branch": "task/WO-HZ-HERMES-PHASE2B-20261031",
-   "created": "2026-10-31 10:33:18",
    "project": "general"
   },
   {
@@ -3220,7 +3211,14 @@
    ],
    "experience": "30 年生产运维经验：容器集群、计划任务、端口监护、备份三件套与磁盘巡检的全套生产配方执法；铁律=生产操作先验明进程身份再动手（误杀线上服务判例亲历）。",
    "dept_name": "研发部",
-   "dept_cn_title": "将作监"
+   "dept_cn_title": "将作监",
+   "tasks": [
+    {
+     "id": "WO-L4-M4-HARDEN-20261031",
+     "desc": "L4 artifact_ref + M4 三方签字强制 [UNOWNED]",
+     "status": "doing"
+    }
+   ]
   },
   "DOC1": {
    "id": "DOC1",
