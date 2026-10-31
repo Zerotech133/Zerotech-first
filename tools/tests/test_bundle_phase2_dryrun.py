@@ -145,8 +145,24 @@ def test_dry_run_zero_write_and_no_git_mutation():
     assert before == after, "dry-run 修改了文件（size/mtime/sha 变化）"
     assert _git("ls-files", "-s", "portal/agent_ide_bundle.json").stdout == ls_before
     assert _git("status", "--porcelain", "--", "portal/agent_ide_bundle.json").stdout == status_before
-    assert res["tracked"]["tracked"] is True  # 未去 tracked（禁止 git rm）
-    assert res["tracked"]["ignored"] is False
+    # Phase2-B 已在 worktree 落地：bundle 不再 tracked、且被 .gitignore 覆盖
+    assert res["tracked"]["tracked"] is False
+    assert res["tracked"]["ignored"] is True
+
+
+def test_implementation_b1_b4_landed():
+    """Phase2-B 实现状态：B1-B4 应全部 landed，但步骤仍未"执行"（dry-run 语义）。"""
+    m = _load()
+    res = m.analyze(repo=ROOT, docker_mode="off")
+    impl = res["implementation"]
+    assert impl["done"] is True
+    for key in ("b1_gitignore", "b2_untracked", "b3_rebake_no_checkout",
+                "b4_devtask_no_commit", "deploy_copy_helper"):
+        assert impl[key] is True, key
+    assert not any("W5-P2-1" in b or "W5-P2-2" in b for b in res["blockers"])
+    landed = {s["id"]: s["landed"] for s in res["phase2_plan"]}
+    assert landed["B1"] and landed["B2"] and landed["B3"] and landed["B4"]
+    assert all(s["executed"] is False for s in res["phase2_plan"])
 
 
 def test_l2_approved_flag_changes_status_but_not_execution():
@@ -191,6 +207,7 @@ def test_human_output_mentions_dry_run_and_blockers(capsys):
     assert "只读" in text and "未执行" in text
     assert "L2 门禁: blocked" in text
     assert "推荐方案: " + m.OPTION_B in text
+    assert "Phase2-B 实现: done=True" in text
 
 
 def test_non_git_repo_degrades(tmp_path):

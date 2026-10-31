@@ -1358,23 +1358,45 @@ def _l2_exempt(tid, t, reason):
 IDE_BUNDLE_REL = "portal/agent_ide_bundle.json"
 
 
-def _ide_bundle_commit_args(tid, repo=None):
-    """IDE bundle 收尾提交参数（并发修复，2026-10-29）。
+# W5 P1-6 Phase2（K-ORG-20261031-BUNDLEP2B，2026-10-31）：bundle 生成物不再 tracked。
+# 重建后只刷新 _vault 部署副本（8103/独立 IDE 数据源），绝不 git add / commit；
+# 历史提交保留，git show 仍可追溯。旧 `_ide_bundle_commit_args`（pathspec 收尾提交）
+# 在 Phase2 一并移除——不再存在「每 merge 一条 bundle 提交」的代码路径。
+IDE_BUNDLE_DEPLOY = r"C:\项目\_vault\legion_ide\agent_ide_bundle.json"
 
-    必须用 pathspec 限定只提交 bundle 本身：旧实现 `git commit -m ...` 会提交
-    整个暂存区；并行会话的 index 若含其它改动（甚至误删刚合入文件），收尾提交
-    会把这些一起带上，造成「刚合入就被抹掉」事故（WO-D1-OUTCOME 实证）。
-    参数抽成纯函数，方便测试锁死 pathspec。
+
+def _bundle_deploy_target():
+    """部署副本路径（DEVTOOL_IDE_BUNDLE_DEPLOY 可覆盖，供测试/异机使用）。"""
+    return os.environ.get("DEVTOOL_IDE_BUNDLE_DEPLOY") or IDE_BUNDLE_DEPLOY
+
+
+def _refresh_bundle_deploy_copy(repo=None, deploy=None):
+    """把 portal/agent_ide_bundle.json 复制到 _vault 部署副本（失败不抛）。
+
+    返回 ``{"ok","src","dst","bytes","error"}``。纯文件复制（不 git add/commit）；
+    供 devtask merge 收尾与单测复用。
     """
-    return ["git", "-C", repo or REPO, "commit", "-m",
-            "chore(ide): auto rebuild agent_ide_bundle after merge %s" % tid,
-            "--", IDE_BUNDLE_REL]
+    src = Path(repo or REPO) / IDE_BUNDLE_REL
+    dst = Path(deploy or _bundle_deploy_target())
+    try:
+        if not src.is_file():
+            return {"ok": False, "src": str(src), "dst": str(dst),
+                    "bytes": 0, "error": "src_missing"}
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(str(src), str(dst))
+        return {"ok": True, "src": str(src), "dst": str(dst),
+                "bytes": dst.stat().st_size, "error": ""}
+    except OSError as e:
+        return {"ok": False, "src": str(src), "dst": str(dst), "bytes": 0,
+                "error": ("%s: %s" % (type(e).__name__, e))[:160]}
 
 
-# W5 P1-6 Phase1（2026-10-31）：bundle 自动提交去噪——只有本次 merge 触及
-# agent 源（org.json / team_* / hr/ / prompts/）才重烘+提交；其余 merge 跳过。
+# W5 P1-6 Phase1（2026-10-31）：bundle 自动重建去噪——只有本次 merge 触及
+# agent 源（org.json / team_* / hr/ / prompts/）才重烘；其余 merge 跳过。
 # 依据：W5 报告实测 8 日 852/3,896 = 21.87% 提交是 bundle 收尾，其中多数仅
-# 时间戳/工单计数抖动。历史提交不删（git show 仍可追溯），不做 Phase2 去 tracked。
+# 时间戳/工单计数抖动。
+# W5 Phase2（K-ORG-20261031-BUNDLEP2B）：进一步去 tracked——生成物 untracked/ignored，
+# 重建仅刷新 _vault 部署副本，不产生任何 git 提交；历史提交保留可追溯。
 BUNDLE_SOURCE_EXACT = ("agent_platform/registry/org.json",)
 BUNDLE_SOURCE_PREFIXES = (
     "agent_platform/registry/team_",
@@ -1631,19 +1653,20 @@ def _merge_with_retry(tid, branch, desc, tries=3, sleep_fn=None, git_fn=None,
 def _auto_rebuild_ide_bundle(tid, changed_files=None):
     """merge 后按需重建 portal/agent_ide_bundle.json（失败只告警，不影响合并）。
 
-    W5 P1-6 Phase1（2026-10-31）：只有本次 merge 触及 agent 源才重烘+提交，
-    其余 merge 直接跳过——消除「每 merge 1 条 bundle 噪声提交」。
-    dry-run：``DEVTOOL_IDE_BUNDLE_DRY_RUN=1`` 只打印决策，不重建、不提交。
+    W5 Phase1 门槛（保留）：仅本次 merge 触及 agent 源才重建，其余 merge 跳过。
+    W5 Phase2（K-ORG-20261031-BUNDLEP2B）：bundle 生成物已 untracked + ignored；
+    重建后**只刷新 _vault 部署副本，不 git add / 不 commit**（bundle 提交 0 增长）。
+    dry-run：``DEVTOOL_IDE_BUNDLE_DRY_RUN=1`` 只打印决策，不重建、不复制。
     """
     try:
         if changed_files is None:
             changed_files = _merge_changed_files(tid)
         if not _bundle_sources_changed(changed_files):
-            print("  IDE bundle   - 源未变，跳过重建/提交（W5 Phase1：仅 agent 源变更才提交）")
+            print("  IDE bundle   - 源未变，跳过重建（W5 Phase1 门槛）")
             return
         if os.environ.get("DEVTOOL_IDE_BUNDLE_DRY_RUN") == "1":
-            print("  IDE bundle   [dry-run] 源变（%d 文件）→ 将重建并提交；已跳过（不落盘/不提交）"
-                  % len(changed_files or []))
+            print("  IDE bundle   [dry-run] 源变（%d 文件）→ 将重建并刷新部署副本；"
+                  "不提交（Phase2）" % len(changed_files or []))
             return
         tool = os.path.join(REPO, "tools", "build_agent_ide_bundle.py")
         r = subprocess.run([sys.executable, "-X", "utf8", tool], cwd=REPO,
@@ -1652,23 +1675,12 @@ def _auto_rebuild_ide_bundle(tid, changed_files=None):
         if r.returncode != 0:
             print("  IDE bundle   ⚠ 重建失败（不阻断）：%s" % (r.stderr or r.stdout).strip()[:160])
             return
-        st = subprocess.run(["git", "-C", REPO, "status", "--porcelain",
-                             IDE_BUNDLE_REL], capture_output=True,
-                            text=True, encoding="utf-8", errors="replace")
-        if not (st.stdout or "").strip():
-            print("  IDE bundle   ✓ 已是最新")
-            return
-        subprocess.run(["git", "-C", REPO, "add", "--", IDE_BUNDLE_REL],
-                       capture_output=True, text=True)
-        # 2026-10-29 WO-DEVTASK-IDE-RACE：pathspec 限定，绝不提交索引中的其它内容。
-        c = subprocess.run(_ide_bundle_commit_args(tid),
-                           capture_output=True, text=True, encoding="utf-8",
-                           errors="replace")
-        if c.returncode == 0:
-            print("  IDE bundle   ✓ 已重建并提交（仅 bundle 路径）")
+        dep = _refresh_bundle_deploy_copy(REPO)
+        if dep["ok"]:
+            print("  IDE bundle   ✓ 已重建（生成物 untracked/ignored，不产生提交）；"
+                  "部署副本已刷新（%d bytes）" % dep["bytes"])
         else:
-            print("  IDE bundle   ⚠ 重建后提交失败（工作区已更新）：%s"
-                  % (c.stderr or c.stdout).strip()[:160])
+            print("  IDE bundle   ⚠ 已重建，但部署副本刷新失败（不阻断）：%s" % dep["error"])
     except Exception as e:  # noqa: BLE001
         print("  IDE bundle   ⚠ 重建异常（不阻断）：%s" % str(e)[:160])
 

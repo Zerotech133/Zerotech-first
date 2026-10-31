@@ -321,3 +321,9 @@ bin/SECVAULT-TOOLS.json
 _vault/pocket-id/
 # team_exec 运行态输出（agent_platform.agent_platform.data 旧路径）
 agent_platform/agent_platform/data/
+
+# ===== 2026-10-31 bundle Phase2（K-ORG-20261031-BUNDLEP2B）：去 tracked =====
+# 军团 IDE 数据源 portal/agent_ide_bundle.json 改为生成物（tools/build_agent_ide_bundle.py
+# 生成；ops/rebake_ide_bundle.ps1 刷新 _vault 部署副本），不再入库、不产生提交。
+# 历史提交保留可 git show 追溯；干净 clone 缺该文件时由 rebake/start 流程生成。
+/portal/agent_ide_bundle.json

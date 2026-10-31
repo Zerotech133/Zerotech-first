@@ -5,6 +5,9 @@
 > **依据**：W5 质量还债 §2（`docs/audit/2026-10-31_W5质量还债_v1.md`）、W5 落地回执（`docs/audit/2026-10-31_W5落地回执_v1.md`）、`tools/build_agent_ide_bundle.py`、`ops/rebake_ide_bundle.ps1`、`portal/nginx.conf`、`tools/devtask.py`（Phase1）、`agent_platform/legion_ide/serve.py`、`ops/start_legion_ide.ps1`。
 > **工具**：`tools/bundle_phase2_dryrun.py`（本次新增，只读）｜**测试**：`tools/tests/test_bundle_phase2_dryrun.py`（12 用例）
 
+> **落地状态（2026-10-31 更新）**：Phase2-B 已在工单 `K-ORG-20261031-BUNDLEP2B` 分支实现并通过测试，
+> 见 `docs/ops/2026-10-31_bundle_Phase2B_落地回执_v1.md`；本文档保留为方案基线（B1-B7 步骤与回滚清单不变）。
+
 ## 0. 一页结论
 
 1. **W5 原文 Phase2-A（nginx alias 指向 `_vault/legion_ide/agent_ide_bundle.json`）在本机不可行**：

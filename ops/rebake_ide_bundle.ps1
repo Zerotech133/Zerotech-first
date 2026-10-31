@@ -8,8 +8,8 @@
      .worktrees/tasks.json → portal/agent_ide_bundle.json）；
   2) 复制到部署副本 C:\项目\_vault\legion_ide\agent_ide_bundle.json（独立 IDE
      服务优先读取该副本，见 start_legion_ide.ps1）；
-  3) `git checkout -- portal/agent_ide_bundle.json` 恢复仓内 tracked 文件，
-     避免每次 merge 后工作树变脏。
+  3) 生成物保留在 portal/agent_ide_bundle.json（K-ORG-20261031-BUNDLEP2B 起已被
+     .gitignore 忽略、不再 tracked），不产生任何 git 提交/工作树脏状态。
   供 .git/hooks/post-merge 调用；也可手动执行。
   日志：C:\Temp\legion_ide_rebake.log。
 #>
@@ -48,7 +48,7 @@ $dst = Join-Path $DeployDir "agent_ide_bundle.json"
 Copy-Item -LiteralPath $srcBundle -Destination $dst -Force
 Write-RebakeLog ("OK bundle -> " + $dst + " (" + (Get-Item $dst).Length + " bytes)")
 
-# 恢复仓内 tracked bundle，保持工作树干净（部署副本已保留新数据）
-& git -C $Repo checkout -- portal/agent_ide_bundle.json 2>&1 | Out-Null
-Write-RebakeLog "OK restored tracked portal/agent_ide_bundle.json (deploy copy is authoritative)"
+# Phase2-B（K-ORG-20261031-BUNDLEP2B）：生成物已是 untracked/ignored——
+# 不再 `git checkout --` 还原、不产生提交；部署副本仍是 8103/独立 IDE 的数据源。
+Write-RebakeLog ("OK bundle generated (untracked/ignored; no git commit): " + $srcBundle)
 exit 0
