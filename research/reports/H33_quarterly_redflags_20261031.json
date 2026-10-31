@@ -1,0 +1,176 @@
+{
+ "meta": {
+  "start": "20190101",
+  "end": "20261029",
+  "is_end": "20231231",
+  "hold": 60,
+  "cost": 0.003,
+  "announcements": 163746,
+  "events": 111021,
+  "generated_at": "2026-10-31T18:29:27+08:00"
+ },
+ "hypotheses": {
+  "H30": {
+   "events": 3935,
+   "flag_car": {
+    "all": {
+     "n": 3935,
+     "mean_pct": -5.399,
+     "t": -12.63
+    },
+    "IS": {
+     "n": 2455,
+     "mean_pct": -5.789,
+     "t": -10.47
+    },
+    "OOS": {
+     "n": 1480,
+     "mean_pct": -4.753,
+     "t": -7.09
+    }
+   },
+   "spread_vs_ctrl": {
+    "all": {
+     "n": 53,
+     "mean_pct": 3.517,
+     "t": 0.7
+    },
+    "IS": {
+     "n": 35,
+     "mean_pct": 3.233,
+     "t": 0.47
+    },
+    "OOS": {
+     "n": 18,
+     "mean_pct": 4.069,
+     "t": 0.65
+    }
+   },
+   "clusters": {
+    "IS": 35,
+    "OOS": 18,
+    "total": 53
+   },
+   "bootstrap_oos": {
+    "n_boot": 300,
+    "mean_pct": 1.067,
+    "p_le_0": 0.46
+   },
+   "fama_macbeth": {
+    "beta_pct": null,
+    "t": null,
+    "years": 0
+   },
+   "expect": "红旗 → 未来 60 日跑输（spread<0）",
+   "status": "rejected"
+  },
+  "H31": {
+   "events": 4586,
+   "flag_car": {
+    "all": {
+     "n": 4586,
+     "mean_pct": -6.116,
+     "t": -17.45
+    },
+    "IS": {
+     "n": 3495,
+     "mean_pct": -6.505,
+     "t": -15.92
+    },
+    "OOS": {
+     "n": 1091,
+     "mean_pct": -4.871,
+     "t": -7.22
+    }
+   },
+   "spread_vs_ctrl": {
+    "all": {
+     "n": 46,
+     "mean_pct": 0.872,
+     "t": 0.37
+    },
+    "IS": {
+     "n": 32,
+     "mean_pct": -0.397,
+     "t": -0.15
+    },
+    "OOS": {
+     "n": 14,
+     "mean_pct": 3.773,
+     "t": 0.79
+    }
+   },
+   "clusters": {
+    "IS": 32,
+    "OOS": 14,
+    "total": 46
+   },
+   "bootstrap_oos": {
+    "n_boot": 300,
+    "mean_pct": 3.557,
+    "p_le_0": 0.2533
+   },
+   "fama_macbeth": {
+    "beta_pct": null,
+    "t": null,
+    "years": 0
+   },
+   "expect": "红旗 → 未来 60 日跑输（spread<0）",
+   "status": "rejected"
+  },
+  "H32": {
+   "events": 27647,
+   "flag_car": {
+    "all": {
+     "n": 27647,
+     "mean_pct": -5.564,
+     "t": -35.63
+    },
+    "IS": {
+     "n": 19263,
+     "mean_pct": -6.188,
+     "t": -34.64
+    },
+    "OOS": {
+     "n": 8384,
+     "mean_pct": -4.129,
+     "t": -13.3
+    }
+   },
+   "spread_vs_ctrl": {
+    "all": {
+     "n": 66,
+     "mean_pct": 1.124,
+     "t": 0.3
+    },
+    "IS": {
+     "n": 45,
+     "mean_pct": -0.797,
+     "t": -0.24
+    },
+    "OOS": {
+     "n": 21,
+     "mean_pct": 5.24,
+     "t": 0.54
+    }
+   },
+   "clusters": {
+    "IS": 45,
+    "OOS": 21,
+    "total": 66
+   },
+   "bootstrap_oos": {
+    "n_boot": 300,
+    "mean_pct": 7.817,
+    "p_le_0": 0.2833
+   },
+   "fama_macbeth": {
+    "beta_pct": null,
+    "t": null,
+    "years": 0
+   },
+   "expect": "红旗 → 未来 60 日跑输（spread<0）",
+   "status": "rejected"
+  }
+ }
+}
