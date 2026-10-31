@@ -117,6 +117,8 @@ def verify(name: str, timeout: int = TIMEOUT) -> dict:
             cwd=str(REPO),
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=timeout,
             env=_clean_env(),
         )
