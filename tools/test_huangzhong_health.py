@@ -31,6 +31,8 @@ def _load():
         "huangzhong_health", _TOOLS / "huangzhong_health.py")
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
+    # 冻结时钟：夹具时间基于固定 NOW，若不冻结，跨过 90min 阈值后用例会随真实时间漂移失败。
+    mod._now = lambda: NOW
     return mod
 
 
@@ -429,6 +431,7 @@ def test_cli_json_ok_exit_code(tmp_path, monkeypatch, capsys):
     _fixture(root)
     h = _load()
     monkeypatch.setattr(h, "_run", _fake_run())
+    monkeypatch.setattr(h, "_now", lambda: NOW)
     rc = h.main(["--json", "--repo-root", str(root)])
     data = json.loads(capsys.readouterr().out)
     assert rc == 0
@@ -441,6 +444,7 @@ def test_cli_fail_exit_code(tmp_path, monkeypatch, capsys):
     _fixture(root, acc_age_min=200.0)
     h = _load()
     monkeypatch.setattr(h, "_run", _fake_run())
+    monkeypatch.setattr(h, "_now", lambda: NOW)
     rc = h.main(["--json", "--repo-root", str(root)])
     data = json.loads(capsys.readouterr().out)
     assert rc == 2
@@ -452,6 +456,7 @@ def test_cli_warn_exit_code(tmp_path, monkeypatch, capsys):
     _fixture(root, review_age_h=30.0)
     h = _load()
     monkeypatch.setattr(h, "_run", _fake_run())
+    monkeypatch.setattr(h, "_now", lambda: NOW)
     rc = h.main(["--json", "--repo-root", str(root)])
     data = json.loads(capsys.readouterr().out)
     assert rc == 1
