@@ -1,6 +1,6 @@
 {
  "schema": "plan-register-all/v1",
- "generated_at": "2026-10-31 09:15:55",
+ "generated_at": "2026-10-31 09:18:07",
  "total": 289,
  "counts": {
   "unspecified": 145,
@@ -2311,7 +2311,7 @@
    "date": "",
    "state": "unspecified",
    "title": "计划台账（全量，含子目录）2026-10-31",
-   "bytes": 45354,
+   "bytes": 45491,
    "mtime": "2026-10-31 09:15"
   },
   {
@@ -2319,8 +2319,8 @@
    "date": "",
    "state": "declared",
    "title": "docs/plans/ · 现行方案与计划归置区",
-   "bytes": 2377,
-   "mtime": "2026-10-31 08:32"
+   "bytes": 2419,
+   "mtime": "2026-10-31 09:16"
   }
  ]
 }
