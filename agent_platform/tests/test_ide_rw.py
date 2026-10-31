@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import threading
@@ -585,3 +586,100 @@ def test_patchset_confirm_conflict_rolls_back(tmp_path, monkeypatch):
         assert not (wt / "agent_platform/pkg/b.py").exists()
     finally:
         httpd.shutdown()
+
+
+# ---------------------------------------------------------------- M1 evidence 生产目录隔离
+
+
+def _evidence_file_names(directory):
+    try:
+        return {p.name for p in Path(directory).iterdir() if p.is_file()}
+    except OSError:
+        return set()
+
+
+def test_tests_do_not_write_production_evidence(
+    tmp_path, monkeypatch, legion_evidence_prod_guard
+):
+    """M1 P0 回归：patchset confirm/rollback 的 evidence 只落隔离目录，不写生产目录。
+
+    历史 bug（WO-LEGION-EVIDENCE-ISOLATION-20261031）：本文件的 patchset live HTTP
+    测试在进程内 serve 里调 `legion_command.evidence`，未设 `LEGION_EVIDENCE_DIR`
+    → 直写生产 `C:\\项目\\_vault\\legion_ide\\evidence`，污染
+    `tools/trust_chain_kpi.py --evidence-require-prod` 的生产样本口径。
+    修复：conftest 会话级 autouse fixture 把 env 指向 pytest tmp。
+
+    口径说明：生产目录「整体文件数不增加」断言在共享主机上会被并发 pytest/merge 门
+    进程干扰（同一生产目录），故本回归用 env + run_id 精确口径（任务允许「或用 env
+    断言」）；会话级零增长校验留在 conftest 的 guard fixture（并发场景只告警）。
+    """
+    from legion_command import evidence as EV  # 生产模块本体，非 mock
+
+    isolated_dir = Path(os.environ["LEGION_EVIDENCE_DIR"])
+    prod_dir = Path(legion_evidence_prod_guard["prod_dir"])
+    assert isolated_dir != prod_dir, "测试未隔离：evidence 仍指向生产目录"
+    assert str(isolated_dir).lower().startswith(
+        str(legion_evidence_prod_guard["isolated_dir"]).lower()
+    )
+    # 确认 evidence 模块没有缓存目录：_dir() 每次动态读 env
+    assert EV._dir() == isolated_dir, "evidence 目录被模块级缓存，env 未生效"
+
+    repo, _wt = make_repo(tmp_path)
+    httpd, base = _serve(repo, monkeypatch)
+    prod_before = _evidence_file_names(prod_dir)
+    try:
+        h = _hdr(base)
+        _req(
+            base,
+            "POST",
+            "/api/ide/lock",
+            body={"task": "T-BOOT", "owner": _owner()},
+            headers=h,
+        )
+        files = [
+            {"path": "agent_platform/pkg/a.py", "content": "x = 9\n"},
+            {"path": "agent_platform/pkg/b.py", "content": "y = 9\n"},
+        ]
+        status, _h, body = _req(
+            base,
+            "POST",
+            "/api/ide/patchset/preview",
+            body={"task": "T-BOOT", "files": files},
+            headers=h,
+        )
+        assert status == 200, body
+        pid = json.loads(body)["patchset_id"]
+        status, _h, body = _req(
+            base,
+            "POST",
+            "/api/ide/patchset/confirm",
+            body={"task": "T-BOOT", "patchset_id": pid},
+            headers=h,
+        )
+        assert status == 200, body
+        confirm_run = json.loads(body)["evidence_run_id"]
+        status, _h, body = _req(
+            base,
+            "POST",
+            "/api/ide/patchset/rollback",
+            body={"task": "T-BOOT", "patchset_id": pid},
+            headers=h,
+        )
+        assert status == 200, body
+        rollback_run = json.loads(body)["evidence_run_id"]
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
+
+    for run_id in (confirm_run, rollback_run):
+        assert (isolated_dir / (run_id + ".json")).is_file(), (
+            "evidence 未落隔离目录：%s" % run_id
+        )
+        assert not (prod_dir / (run_id + ".json")).exists(), (
+            "evidence 泄漏到生产目录：%s" % run_id
+        )
+    leaked = (_evidence_file_names(prod_dir) - prod_before) & {
+        confirm_run + ".json",
+        rollback_run + ".json",
+    }
+    assert not leaked, "本次测试 evidence 泄漏生产目录：%s" % sorted(leaked)
