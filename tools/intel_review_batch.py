@@ -25,6 +25,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import datetime as dt
 import json
 import sqlite3
@@ -41,6 +42,7 @@ import intel_pre_review as PRE  # noqa: E402  复用同一套打分/解析（单
 DEFAULT_DB = ROOT / "news_collector" / "news.db"
 DEFAULT_OUT_DIR = Path(r"C:\Temp")
 DEFAULT_MACHINE_JSONL = Path(r"C:\Temp\intel_pre_review_20261031.jsonl")
+DEFAULT_MASTER = ROOT / "quant_backtest" / "data" / "ashare" / "_names.json"
 
 RULE_VERSION = "intel-review-batch/v1"
 KIND = "human_review_batch"
@@ -315,6 +317,52 @@ def render_markdown(records: list, meta: dict) -> str:
     return "\n".join(lines)
 
 
+def _preflight_records(records, master_path):
+    """批次入库前质量闸；主数据缺失时明确 skip，不伪造 name 校验。"""
+    import importlib.util
+    mp = Path(master_path or DEFAULT_MASTER)
+    if not mp.is_file():
+        return {"ok": True, "skipped": True, "reason": "master_missing",
+                "master": str(mp)}
+    spec = importlib.util.spec_from_file_location(
+        "_batch_preflight", str(TOOLS_DIR / "intel_batch_preflight.py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    rep = mod.check(records, mp)
+    rep["skipped"] = False
+    return rep
+
+
+def _write_csv(payload: dict, od: Path, db: Path) -> str:
+    """人工填写用 CSV：companies 用 ; 分隔、QUOTE_ALL，避免 Excel 千分位化。"""
+    stamp = str(payload.get("batch_id") or "").replace("IRB-", "")
+    day = stamp.split("-")[0] if stamp else dt.datetime.now().strftime("%Y%m%d")
+    path = od / ("intel_review_batch_%s.csv" % day)
+    if path.resolve() == db:
+        raise ValueError("输出路径不得是 news.db")
+    cols = ["id", "title", "bias", "conf", "impact", "machine_decision",
+            "suggested_decision", "decision", "reviewer", "note", "companies"]
+    mapping = {"accept": "correct", "reject": "wrong", "needs_evidence": "uncertain"}
+    with open(path, "w", encoding="utf-8-sig", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=cols, quoting=csv.QUOTE_ALL)
+        w.writeheader()
+        for rec in payload["records"]:
+            jev = rec.get("jev") or {}
+            comps = rec.get("companies")
+            if not isinstance(comps, list):
+                comps = jev.get("companies") if isinstance(jev, dict) else []
+            md = rec.get("machine_decision") or "unavailable"
+            w.writerow({
+                "id": rec.get("id", ""), "title": rec.get("title", ""),
+                "bias": rec.get("bias", ""), "conf": rec.get("conf", ""),
+                "impact": rec.get("impact", ""), "machine_decision": md,
+                "suggested_decision": mapping.get(md, "uncertain"),
+                "decision": "", "reviewer": "老田", "note": "",
+                "companies": ";".join(str(c) for c in comps or []),
+            })
+    return str(path)
+
+
 def write_batch(payload: dict, out_dir=None, db_path=None) -> dict:
     """写 markdown+JSONL 两个批次文件（独立文件；拒绝写到 news.db）。"""
     od = Path(out_dir or DEFAULT_OUT_DIR)
@@ -335,8 +383,9 @@ def write_batch(payload: dict, out_dir=None, db_path=None) -> dict:
             fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
     tmp_md.replace(md_path)
     tmp_jsonl.replace(jsonl_path)
+    csv_path = _write_csv(payload, od, db)
     return {"markdown": str(md_path), "jsonl": str(jsonl_path),
-            "records": len(payload["records"])}
+            "csv": csv_path, "records": len(payload["records"])}
 
 
 def _fmt(payload: dict, written=None) -> str:
@@ -361,6 +410,7 @@ def _fmt(payload: dict, written=None) -> str:
     if written:
         lines.append("产物：%s" % written["markdown"])
         lines.append("      %s" % written["jsonl"])
+        lines.append("      %s" % written.get("csv", ""))
     for rec in payload["preview_records"]:
         lines.append("  #%02d %-14s score=%s id=%s conf=%s impact=%s source=%s" % (
             rec["batch_rank"], rec["machine_decision"], rec["batch_priority"],
@@ -390,6 +440,12 @@ def main(argv=None) -> int:
     ap.add_argument("--samples", type=int, default=3, help="摘要预览条数")
     ap.add_argument("--now", default=None,
                     help="注入时钟（ISO8601，测试/回放用）")
+    ap.add_argument("--master", default=str(DEFAULT_MASTER),
+                    help="证券主数据（默认 quant_backtest/data/ashare/_names.json）")
+    ap.add_argument("--no-preflight", dest="preflight", action="store_false",
+                    default=True, help="跳过入库前 companies/去重质量闸")
+    ap.add_argument("--filter-hard", action="store_true",
+                    help="剔除 hard/重复记录后写干净批次（默认阻断）")
     ap.add_argument("--json", action="store_true", help="输出 JSON（含 records）")
     args = ap.parse_args(argv)
     if args.dry_run and args.write:
@@ -409,6 +465,42 @@ def main(argv=None) -> int:
         print(json.dumps({"ok": False, "error": "%s: %s" % (type(exc).__name__, exc)},
                          ensure_ascii=False), file=sys.stderr)
         return 1
+
+    if args.preflight:
+        pre = _preflight_records(payload["records"], args.master)
+        payload["preflight"] = pre
+        if not pre.get("ok", True):
+            if args.filter_hard:
+                bad = {str(e.get("id")) for e in pre.get("hard_errors", [])
+                       if e.get("id")}
+                for grp in pre.get("duplicate_titles", []) + pre.get(
+                        "duplicate_hashes", []):
+                    ids = [str(x) for x in grp.get("ids", [])]
+                    bad.update(ids[1:])  # 每组保留第一条
+                kept = [r for r in payload["records"]
+                        if str(r.get("id")) not in bad]
+                removed = len(payload["records"]) - len(kept)
+                payload["records"] = kept
+                payload["preview_records"] = kept[:max(0, args.samples)]
+                payload["preflight_filtered"] = {
+                    "removed": removed, "removed_ids": sorted(bad)[:200],
+                    "kept": len(kept),
+                }
+                if not kept:
+                    payload["mode"] = "blocked_preflight"
+                    print("[BLOCKED] 过滤后无可用记录", file=sys.stderr)
+                    return 1
+            else:
+                payload["mode"] = "blocked_preflight"
+                payload["out"] = None
+                if args.json:
+                    print(json.dumps(payload, ensure_ascii=False, indent=1))
+                else:
+                    print("[BLOCKED] 批次质量闸硬错误 %d 项；拒绝写入人工批次"
+                          % pre["counts"]["hard"])
+                    for e in pre.get("hard_errors", [])[:10]:
+                        print("  - %s" % e)
+                return 1
 
     written = None
     if args.write:

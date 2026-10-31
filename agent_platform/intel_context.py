@@ -61,6 +61,21 @@ _SQL_COLS = ("id", "queued_at", "conf", "bias", "title", "stocks",
              "decision", "note", "review_type")
 _REQUIRED_COLS = ("id", "status")
 
+# 事件簇：同一地缘/油价事件被多家源重复报道时，因子/证据只保留 1 条。
+CLUSTER_WORDS = {
+    "geopolitics_mideast": ("胡塞", "也门", "沙特", "伊朗", "以色列", "中东",
+                            "红海", "地缘"),
+    "oil": ("油价", "原油", "OPEC", "减产"),
+}
+
+
+def _cluster_of(text):
+    t = str(text or "")
+    for key, words in CLUSTER_WORDS.items():
+        if any(w in t for w in words):
+            return key
+    return ""
+
 
 def _fetch_resolved(con: sqlite3.Connection, max_scan: int):
     """读最近 resolved 行；列集合按实际 schema 动态适配（兼容旧/最小表结构）。
@@ -358,6 +373,8 @@ def reviewed_news_event(code, db_path=None, limit=None, names=None,
         "bad_rows": [],
         "errors": [],
         "rejected": 0,
+        "cluster_suppressed": 0,
+        "clusters": {},
         "counts": {"scanned": 0, "matched": 0, "usable": 0},
         "review_type_counts": {REVIEW_TYPE_HUMAN: 0,
                                REVIEW_TYPE_AI_FIRST_PASS: 0},
@@ -418,6 +435,7 @@ def reviewed_news_event(code, db_path=None, limit=None, names=None,
     want = max(1, min(MAX_LIMIT, want))
 
     matched = usable = 0
+    seen_clusters = set()
     for row in rows:
         row_id = str(row.get("id") or "").strip()
         jev, jev_err = _parse_json(row.get("original_jev"))
@@ -459,6 +477,14 @@ def reviewed_news_event(code, db_path=None, limit=None, names=None,
             "review_type": _review_type(row),
             "matched_by": hits,
         }
+        cluster = _cluster_of(item["title"] + " " + item["summary"])
+        item["cluster"] = cluster
+        if cluster:
+            out["clusters"][cluster] = out["clusters"].get(cluster, 0) + 1
+            if cluster in seen_clusters:
+                out["cluster_suppressed"] += 1
+                continue
+            seen_clusters.add(cluster)
         # 坏 stocks 但 title/companies 命中：仍可用，但坏字段 fail-visible
         _stocks, stocks_err = _parse_json(row.get("stocks"))
         if stocks_err:

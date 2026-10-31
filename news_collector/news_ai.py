@@ -415,6 +415,31 @@ def _validate_jev(d):
     return d
 
 
+def _derive_anchor(d):
+    """从 companies/scope 派生资产锚（不改 TypeSafe 题；旧行不回填）。
+
+    anchor 表示 bias 到底绑在什么资产上；没有具体锚的 bull/bear 不应直接进
+    情绪池。当前仅做确定性派生：单票 / 多票篮子 / 商品 / 外汇 / 加密 / 市场。
+    """
+    comps = [str(c) for c in (d.get("companies") or []) if str(c).strip()]
+    scope = str(d.get("scope") or "").strip().lower()
+    if len(comps) == 1:
+        d["anchor"] = {"type": "stock", "code": comps[0], "name": ""}
+    elif len(comps) > 1:
+        d["anchor"] = {"type": "stock_basket", "codes": comps[:10], "name": ""}
+    elif scope == "commodity":
+        d["anchor"] = {"type": "commodity", "code": "", "name": ""}
+    elif scope == "fx":
+        d["anchor"] = {"type": "fx", "code": "", "name": ""}
+    elif scope == "crypto":
+        d["anchor"] = {"type": "crypto", "code": "", "name": ""}
+    elif scope in ("cn", "hk", "us"):
+        d["anchor"] = {"type": "market", "code": scope, "name": ""}
+    else:
+        d["anchor"] = None
+    return d
+
+
 # K-ORG-163（A1）：自一致性重采样校准（借鉴 Self-Consistency / FinAbstain）。
 # 实证（K-ORG-156/158）：conf 右偏 0.9+ 占 75%、与方向命中仅弱正相关，低置信
 # 段命中率更不可信。对本地判定 conf<0.7 样本触发 K=3 重采样，以多数票一致率
@@ -584,7 +609,7 @@ def _jev_judge_one_cloud(title, stocks, timeout=15):
         }
         d["horizon"] = "unknown"  # 云端 schema 暂缺，契约 v2 允许 unknown
         d["reason"] = jev_reason(title, _BIAS_CN[bias], _SCOPE_CN.get(scope, scope))
-        return d
+        return _derive_anchor(d)
     except Exception as e:
         log("jev_judge FAIL %s" % str(e)[:100])
         return None
@@ -744,7 +769,7 @@ def jev_judge_one_local(title, stocks, timeout=60):
     # 只有模型漏给时才回落单独调用（旧行为每条多一次本地模型调用，实测中位 3.0s/条）。
     _reason = str(j.get("reason") or "").strip()[:60]
     d["reason"] = _reason or jev_reason(title, d["bias_cn"], d["scope_cn"])
-    return d
+    return _derive_anchor(d)
 
 
 def jev_judge_one(title, stocks, timeout=15):
