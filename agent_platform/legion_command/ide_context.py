@@ -220,6 +220,11 @@ def build_context(query: str, budget_chars: int = 8000) -> dict:
     head = ("[IDE repo map]\n"
             "根目录: " + ", ".join("%s(%d)" % (k, v) for k, v in m["dirs"].items())
             + "\n文件 %d 个 / %.1f KB\n" % (m["files"], m["bytes"] / 1024.0))
+    # 硬预算：仓库文件数增长会让 head 本身超过 budget（2026-10-31 实锤 1202>1200）；
+    # head 超限时必须截断，否则 build_context 的 chars<=budget 承诺不成立。
+    head_truncated = len(head) > budget_chars
+    if head_truncated:
+        head = head[:budget_chars]
     parts = [head]
     used = len(head)
     omitted = 0
@@ -243,9 +248,14 @@ def build_context(query: str, budget_chars: int = 8000) -> dict:
         parts.append(block)
         used += len(block)
     if omitted:
-        parts.append("\n[context compressed] 另有 %d 个命中因预算省略；如需请指定文件。\n" % omitted)
+        tail = "\n[context compressed] 另有 %d 个命中因预算省略；如需请指定文件。\n" % omitted
+        # 压缩提示同样受硬预算约束：放不下就不追加，避免最后 1 行把 chars 顶超。
+        if used + len(tail) <= budget_chars:
+            parts.append(tail)
+        else:
+            head_truncated = True
     context = "".join(parts)
     return {"ok": True, "query": str(query or ""), "repo": m, "hits": hits,
             "symbols": syms,
             "context": context, "chars": len(context), "budget": budget_chars,
-            "truncated": omitted > 0 or len(context) > budget_chars}
+            "truncated": head_truncated or omitted > 0 or len(context) > budget_chars}
