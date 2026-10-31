@@ -4,6 +4,7 @@
 用法：
   python tools/approval_rollup.py <task>
   python tools/approval_rollup.py <task> --json
+  python tools/approval_rollup.py <task> --require-complete
   python tools/approval_rollup.py <task> --ledger <approvals.jsonl> \
       --config <approval_signers.json>
 
@@ -11,7 +12,12 @@
 调用 ``portal/approval_control.evaluate_signoff`` 计算该 task 的签收状态，
 输出 signed（已签角色）/ missing（缺签角色）/ complete（是否四方齐）。
 **不写台账、不改审批状态、不伪造签字**；未命中映射的 open_id 一律按
-roles_unresolved 处理（不猜）。退出码 0=汇总成功（不论是否签齐，看 complete）。
+roles_unresolved 处理（不猜）。
+
+默认退出码 0=汇总成功（不论是否签齐，看 complete，不误阻断）；
+``--require-complete`` 为硬门：仅 complete 且 signed 数 ≥ required 时 exit 0，
+否则 exit 1（复用 ``approval_control.signoff_gate`` 同一判定，供 M4/Go-No-Go/
+release 调用；**不**设为所有 merge 的全局门）。
 """
 from __future__ import annotations
 
@@ -101,6 +107,8 @@ def main(argv=None):
     ap.add_argument("--config", default=None,
                     help="signer 映射路径（默认 agent_platform/config/approval_signers.json）")
     ap.add_argument("--json", action="store_true", help="JSON 输出")
+    ap.add_argument("--require-complete", action="store_true",
+                    help="硬门：仅 complete 且 signed>=required 时 exit 0，否则 exit 1")
     args = ap.parse_args(argv)
     data = rollup(args.task, args.ledger, args.config)
     if args.json:
@@ -111,6 +119,14 @@ def main(argv=None):
                  ",".join(data["signed"]) or "-",
                  ",".join(data["missing"]) or "-",
                  data["reason"] or "-"))
+    if args.require_complete:
+        ok, reasons = AC.signoff_gate(data, require_complete=True)
+        if not ok:
+            print("[require-complete] BLOCK：%s" % "；".join(reasons),
+                  file=sys.stderr)
+            return 1
+        print("[require-complete] OK：四签齐（signed=%s）"
+              % ",".join(data["signed"]))
     return 0
 
 

@@ -19,7 +19,7 @@ for _p in (ROOT / "tools", ROOT / "portal"):
 import approval_rollup as R  # noqa: E402
 
 FULL_MAP = {"ou_qa1": "QA1", "ou_guanyu": "GUANYU",
-            "ou_verify1": "VERIFY1", "ou_a0": "A0"}
+            "ou_verify1": "VERIFY1", "ou_arch1": "ARCH1"}
 
 
 def _rows(*ops, task="M4"):
@@ -53,19 +53,19 @@ def test_single_sign_incomplete(tmp_path):
     assert out["task"] == "M4"
     assert out["state"] == "incomplete" and out["complete"] is False
     assert out["signed"] == ["QA1"]
-    assert out["missing"] == ["GUANYU", "VERIFY1", "A0"]
-    assert out["required"] == ["QA1", "GUANYU", "VERIFY1", "A0"]
+    assert out["missing"] == ["GUANYU", "VERIFY1", "ARCH1"]
+    assert out["required"] == ["QA1", "GUANYU", "VERIFY1", "ARCH1"]
     assert out["signed_count"] == 1
     assert out["role_map_size"] == 4
 
 
 def test_four_signs_complete(tmp_path):
     ledger = _write_ledger(tmp_path, _rows(
-        "ou_qa1", "ou_guanyu", "ou_verify1", "ou_a0"))
+        "ou_qa1", "ou_guanyu", "ou_verify1", "ou_arch1"))
     cfg = _write_cfg(tmp_path, FULL_MAP)
     out = R.rollup("M4", ledger=ledger, config=cfg)
     assert out["complete"] is True and out["state"] == "complete"
-    assert out["signed"] == ["QA1", "GUANYU", "VERIFY1", "A0"]
+    assert out["signed"] == ["QA1", "GUANYU", "VERIFY1", "ARCH1"]
     assert out["missing"] == []
     assert out["signed_count"] == 4
 
@@ -76,7 +76,7 @@ def test_empty_ledger_incomplete(tmp_path):
     out = R.rollup("M4", ledger=ledger, config=cfg)
     assert out["complete"] is False
     assert out["signed"] == []
-    assert out["missing"] == ["QA1", "GUANYU", "VERIFY1", "A0"]
+    assert out["missing"] == ["QA1", "GUANYU", "VERIFY1", "ARCH1"]
     assert out["reason"].startswith("distinct_signers_lt_4")
 
 
@@ -100,7 +100,7 @@ def test_unknown_open_ids_not_guessed(tmp_path):
 
 def test_empty_config_incomplete(tmp_path):
     ledger = _write_ledger(tmp_path, _rows(
-        "ou_qa1", "ou_guanyu", "ou_verify1", "ou_a0"))
+        "ou_qa1", "ou_guanyu", "ou_verify1", "ou_arch1"))
     cfg = _write_cfg(tmp_path, {})
     out = R.rollup("M4", ledger=ledger, config=cfg)
     assert out["complete"] is False
@@ -117,7 +117,7 @@ def test_bad_config_fail_safe(tmp_path):
 
 
 def test_annotated_pilot_click_excluded(tmp_path):
-    rows = _rows("ou_qa1", "ou_guanyu", "ou_verify1", "ou_a0")
+    rows = _rows("ou_qa1", "ou_guanyu", "ou_verify1", "ou_arch1")
     rows.append({"ts": "2026-10-31T10:00:00", "task": "M4",
                  "action": "annotate", "operator": "DSH-Lead",
                  "refs": ["2026-10-31T09:00:00"]})
@@ -152,19 +152,19 @@ def test_cli_json(tmp_path, capsys):
     assert data["complete"] is False
     assert data["state"] == "incomplete"
     assert data["signed"] == ["QA1"]
-    assert data["missing"] == ["GUANYU", "VERIFY1", "A0"]
+    assert data["missing"] == ["GUANYU", "VERIFY1", "ARCH1"]
     assert data["signed_signers"][0]["operator"] == "ou_qa1"
 
 
 def test_cli_human_output(tmp_path, capsys):
     ledger = _write_ledger(tmp_path, _rows(
-        "ou_qa1", "ou_guanyu", "ou_verify1", "ou_a0"))
+        "ou_qa1", "ou_guanyu", "ou_verify1", "ou_arch1"))
     cfg = _write_cfg(tmp_path, FULL_MAP)
     rc = R.main(["M4", "--ledger", str(ledger), "--config", str(cfg)])
     assert rc == 0
     out = capsys.readouterr().out
     assert "complete=True" in out
-    assert "signed=QA1,GUANYU,VERIFY1,A0" in out
+    assert "signed=QA1,GUANYU,VERIFY1,ARCH1" in out
     assert "missing=-" in out
 
 
@@ -188,3 +188,30 @@ def test_bom_config_and_ledger_tolerated(tmp_path):
     assert out["role_map_size"] == 4
     assert out["signed"] == ["QA1"]
     assert out["signed_count"] == 1
+
+
+# ----------------------------------------------------------------------
+# 2026-11-01 K-ORG-20261101-M4SIGNOFF：--require-complete 硬门（复用 AC.signoff_gate）
+# ----------------------------------------------------------------------
+def test_require_complete_cli_gate(tmp_path, capsys):
+    # 四签齐 → exit 0
+    ledger = _write_ledger(tmp_path, _rows(
+        "ou_qa1", "ou_guanyu", "ou_verify1", "ou_arch1"))
+    cfg = _write_cfg(tmp_path, FULL_MAP)
+    rc = R.main(["M4", "--ledger", str(ledger), "--config", str(cfg),
+                 "--require-complete"])
+    out = capsys.readouterr()
+    assert rc == 0
+    assert "OK" in (out.out + out.err)
+
+    # 少一签 → exit 1（默认模式仍 exit 0，只报告）
+    ledger2 = _write_ledger(tmp_path, _rows(
+        "ou_qa1", "ou_guanyu", "ou_verify1"))
+    rc2 = R.main(["M4", "--ledger", str(ledger2), "--config", str(cfg),
+                  "--require-complete"])
+    err = capsys.readouterr()
+    assert rc2 == 1
+    assert "BLOCK" in err.err
+    rc3 = R.main(["M4", "--ledger", str(ledger2), "--config", str(cfg)])
+    capsys.readouterr()
+    assert rc3 == 0, "默认报告模式不得误阻断"

@@ -15,7 +15,7 @@ sys.path.insert(0, str(ROOT / "portal"))
 import approval_control as AC  # noqa: E402
 
 ROLE_MAP = {"ou_qa1": "QA1", "ou_guanyu": "GUANYU", "ou_verify1": "VERIFY1",
-            "ou_a0": "A0"}
+            "ou_arch1": "ARCH1"}
 NO_ENV = {}
 
 
@@ -120,7 +120,7 @@ def test_enforce_allows_complete_four_party(tmp_path):
         r = _sign(ledger, op, m4_policy=enforce)
         assert r["ok"] is False
         assert r["error"] == "m4_signoff_enforce_incomplete"
-    last = _sign(ledger, "ou_a0", m4_policy=enforce)
+    last = _sign(ledger, "ou_arch1", m4_policy=enforce)
     assert last["ok"] is True
     assert last["approved"] is True
     assert last["signoff_state"] == "complete"
@@ -143,8 +143,8 @@ def test_enforce_does_not_block_reject(tmp_path):
 def test_enforce_complete_duplicate_click_still_pass(tmp_path):
     ledger = tmp_path / "a.jsonl"
     enforce = {"m4_enforce": True}
-    for op in ("ou_qa1", "ou_guanyu", "ou_verify1", "ou_a0"):
+    for op in ("ou_qa1", "ou_guanyu", "ou_verify1", "ou_arch1"):
         _sign(ledger, op, m4_policy=enforce)
-    dup = _sign(ledger, "ou_a0", m4_policy=enforce)
+    dup = _sign(ledger, "ou_arch1", m4_policy=enforce)
     assert dup["duplicate"] is True
     assert dup["ok"] is True and dup["approved"] is True
