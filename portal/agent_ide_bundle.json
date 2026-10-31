@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-31 09:29",
+ "generated": "2026-10-31 09:37",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 24,
+  "workorders_doing": 26,
   "workorders_review": 13
  },
  "workorders": [
@@ -344,6 +344,24 @@
    "owner": "ZHAOYUN",
    "branch": "task/WO-LEGION-TXN-20261031",
    "created": "2026-10-31 08:21:14",
+   "project": "general"
+  },
+  {
+   "id": "WO-LEGION-KEEPALIVE-P04-20261031",
+   "desc": "修复keepalive拉起8103丢参数：补-EnableWrite/-LocalTokenFile/-EnableCap",
+   "status": "doing",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-KEEPALIVE-P04-20261031",
+   "created": "2026-10-31 09:35:28",
+   "project": "general"
+  },
+  {
+   "id": "WO-GUANYU-P123-20261031",
+   "desc": "诸葛脚本postcondition修复",
+   "status": "doing",
+   "owner": "GUANYU",
+   "branch": "task/WO-GUANYU-P123-20261031",
+   "created": "2026-10-31 09:35:50",
    "project": "general"
   }
  ],
@@ -6682,6 +6700,11 @@
      "id": "WO-GUANYU-P101-20261030",
      "desc": "基线同步186",
      "status": "review"
+    },
+    {
+     "id": "WO-GUANYU-P123-20261031",
+     "desc": "诸葛脚本postcondition修复",
+     "status": "doing"
     }
    ]
   },
@@ -7362,6 +7385,11 @@
      "id": "WO-LEGION-TXN-20261031",
      "desc": "LDE真事务与测试runner",
      "status": "review"
+    },
+    {
+     "id": "WO-LEGION-KEEPALIVE-P04-20261031",
+     "desc": "修复keepalive拉起8103丢参数：补-EnableWrite/-LocalTokenFile/-EnableCap",
+     "status": "doing"
     }
    ]
   }
