@@ -68,6 +68,15 @@ $paths = @{
     'agent'  = 'agent_platform/tests'; 'quant' = 'quant_backtest/tests'
     'tools'  = 'tools/tests'
     'ide'    = @(
+        # W5 P1-7（WO-LEGION-W5-GATE-20261031，2026-10-31）：IDE 关键缺口补入——
+        # rw_guard 锁互斥/stale 回收/审计留痕/exec 沙箱；此前是 IDE 相关测试里唯一
+        # 未进 fast gate 的文件（6 用例，约 +0.3s）。
+        'agent_platform/tests/test_legion_ide_audit.py',
+        # W5 P1-7：fast gate 覆盖口径 + 关键链路漂移守卫（约 +0.1s）。借 ide 套件跑：
+        # B1/B2 三清单被 tools/tests/test_test_gate_b1.py 精确冻结，本单写面不含
+        # tools/tests/；追加块放在 ide 数组开头，避开 K-ORG-20261031-GATEB2 的
+        # B2 扩容区域（agent_key/quant_key/tools_key 与头部注释），降低并行合并冲突面。
+        'agent_platform/tests/test_gate_coverage_w5.py',
         'agent_platform/tests/test_legion_ide_http.py',
         'agent_platform/tests/test_hermes_orchestrator.py',
         'agent_platform/tests/test_legion_ide_session.py',
