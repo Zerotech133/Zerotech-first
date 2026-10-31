@@ -1,6 +1,6 @@
 {
  "schema": "plan-register-all/v1",
- "generated_at": "2026-10-31 11:22:41",
+ "generated_at": "2026-10-31 11:33:27",
  "total": 292,
  "counts": {
   "declared": 129,
@@ -2336,7 +2336,7 @@
    "state": "unspecified",
    "title": "计划台账（全量，含子目录）2026-10-31",
    "bytes": 45465,
-   "mtime": "2026-10-31 11:09"
+   "mtime": "2026-10-31 11:22"
   },
   {
    "path": "docs\\plans\\README.md",
