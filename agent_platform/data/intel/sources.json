@@ -1,0 +1,64 @@
+{
+  "schema_version": "1.0",
+  "registry_id": "intel-sources",
+  "phase": "Phase 2 · 来源登记 + 只读采样（不接入、不发布）",
+  "updated_at": "2026-10-31",
+  "owner": "情报部（治理侧登记，研发部执行；工单 WO-INTEL-SOURCES-20261031）",
+  "policy": {
+    "registration_is_not_ingestion": "登记≠接入：本表只声明来源身份、授权边界与已有落盘样本位置，不代表已接入生产链路、不代表已获准采集新数据。",
+    "sampling_is_not_publication": "采样≠发布：--sample 只读本机已有落盘数据并打印样本，不联网、不写库、不新增常驻服务、不回写本表、不对外分发。",
+    "readonly_tool": "配套工具 tools/intel_sources.py 只读；无网络/写库/写文件路径。",
+    "priority": "股吧优先、视频后置；行情/TDX 仅登记真源。",
+    "max_sample_limit": 100
+  },
+  "sources": [
+    {
+      "source_id": "guba",
+      "name": "东方财富股吧（帖子）",
+      "kind": "forum_posts",
+      "mode": "sampling",
+      "enabled": true,
+      "full_ingest": "deferred",
+      "trust": "medium",
+      "authorization": "公开论坛可见内容，仅限本机内部研究采样；沿用既有 GubaCrawl 计划任务（每日 17:50）已落盘数据的只读使用边界，不批量抓取、不再分发原文、不用于对外发布。",
+      "sample_path": "C:/项目/老田的AI助手/quant_backtest/data/guba",
+      "sample_format": "jsonl",
+      "last_sample": null,
+      "owner": "情报部·采集线（GubaCrawl）",
+      "priority": 1,
+      "note": "股吧优先：现有落盘按代码分文件（*.jsonl，每行一条帖子 JSON）。采样跳过 0 字节文件与坏行；本工具不回写 last_sample。"
+    },
+    {
+      "source_id": "osint_video",
+      "name": "开源视频情报（osint_video 产线）",
+      "kind": "video_extraction",
+      "mode": "sampling",
+      "enabled": false,
+      "full_ingest": "deferred",
+      "trust": "low",
+      "authorization": "公开视频平台内容，仅限内部证据链 PoC；下载/转写受平台条款与版权约束，须人工复核。Phase 2 不启动采集、不接入 T02/T05 入库，样本仅限已有落盘文件。",
+      "sample_path": "C:/项目/老田的AI助手/osint_video/data/work",
+      "sample_format": "json",
+      "last_sample": null,
+      "owner": "情报部·OSINT 视频线（T01/T03 PoC）",
+      "priority": 2,
+      "note": "视频后置：Phase 2 只登记、不启用采样（enabled=false）；data/work 为抽取中间产物目录，当前可能为空，缺样本按 fail-visible 报错。"
+    },
+    {
+      "source_id": "tdx_market",
+      "name": "通达信行情/公告仓（tdx_info.db）",
+      "kind": "market_data",
+      "mode": "registered",
+      "enabled": false,
+      "full_ingest": "existing_pipeline",
+      "trust": "high",
+      "authorization": "本地已购通达信终端数据，经既有入库链路（stock_notice/stock_news/stock_report，INTAKE_SOURCES 登记）使用；仅本机内部使用，禁外发/再分发。Phase 2 不新增采集任务、不改行情仓。",
+      "sample_path": "C:/项目/老田的AI助手/quant_backtest/data/tdx/tdx_info.db",
+      "sample_format": "sqlite",
+      "last_sample": null,
+      "owner": "量化部·行情仓（既有 INTAKE_SOURCES）",
+      "priority": 3,
+      "note": "registered：本表只登记真源路径与授权边界；采样/接入沿用既有链路，不归 Phase 2 工具处理（--sample 对该来源显式拒绝）。"
+    }
+  ]
+}
