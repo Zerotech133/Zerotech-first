@@ -30,6 +30,10 @@
   `tools/tests/test_test_gate_b1.py` 精确冻结（B1=57 文件），本单写面不含
   `tools/tests/`，故**不扩三清单、不新增 fast 套件**；覆盖守卫与 IDE 关键集同属
   “质量门自证”链路，跟随 ide 套件每次 fast 执行（实测约 +0.1s）。
+* W5 P1-7b（WO-LEGION-W5-GATE-ART-20261031）：W1 合并后新增的
+  `test_ide_release_artifact.py`（release artifact 文件/manifest sha256 对照 +
+  `/api/ide/version` all_match smoke，4 用例）也补入 ide 套件，纳入本守卫的
+  IDE 关键集冻结。
 """
 import json
 import re
@@ -57,6 +61,7 @@ IDE_KEY_FILES = {
     "agent_platform/tests/test_ide_extension_e2e.py",
     "agent_platform/tests/test_ide_rw.py",
     "agent_platform/tests/test_release_live_smoke.py",
+    "agent_platform/tests/test_ide_release_artifact.py",  # W5 P1-7b 补入（W1 产出）
     "agent_platform/tests/test_legion_ide_audit.py",  # W5 P1-7 补入
     "agent_platform/tests/test_gate_coverage_w5.py",  # 本文件
 }
