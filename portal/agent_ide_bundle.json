@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-31 08:44",
+ "generated": "2026-10-31 09:23",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,10 +9,28 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 25,
-  "workorders_review": 10
+  "workorders_doing": 26,
+  "workorders_review": 14
  },
  "workorders": [
+  {
+   "id": "WO-P0-DEV5-EVALCASES-20261027",
+   "desc": "P0 派工周-2（G2 DEV5）：O3 Agent 评估用例 v1——建 agent_platform/evals/agent_cases.jsonl 20 条（派工决策/验收判定/代码评审/升级判断四类）+ tools/agent_eval.py（--check/--json，LLM judge 可后接）；验收=--check rc0、20 条载荷可读",
+   "status": "review",
+   "owner": "DEV5",
+   "branch": "task/WO-P0-DEV5-EVALCASES-20261027",
+   "created": "2026-10-27 16:50:56",
+   "project": "general"
+  },
+  {
+   "id": "WO-P0-DEV6-TRACE-20261027",
+   "desc": "P0 派工周-3（DEV6）：O4 可观测性 v0——dev_events 事件增 trace_id/span_id/parent_id（可选字段，缺省可空），devtask/工具写入任务时带 trace_id；补测试；验收=新测试全绿 + 抽样事件可串成树",
+   "status": "review",
+   "owner": "DEV6",
+   "branch": "task/WO-P0-DEV6-TRACE-20261027",
+   "created": "2026-10-27 16:51:03",
+   "project": "general"
+  },
   {
    "id": "K-QUANT-20261029-T2MANUAL2",
    "desc": "T2人工规则收紧：.py/.ps1/后端任务强制worker_eligible=false；测试/api/kg T2待人工",
@@ -322,10 +340,37 @@
   {
    "id": "WO-LEGION-TXN-20261031",
    "desc": "LDE真事务与测试runner",
-   "status": "doing",
+   "status": "review",
    "owner": "ZHAOYUN",
    "branch": "task/WO-LEGION-TXN-20261031",
    "created": "2026-10-31 08:21:14",
+   "project": "general"
+  },
+  {
+   "id": "WO-LEGION-RWHOLE-20261031",
+   "desc": "8103 /rw fail-closed",
+   "status": "review",
+   "owner": "ZHAOYUN",
+   "branch": "task/WO-LEGION-RWHOLE-20261031",
+   "created": "2026-10-31 09:16:13",
+   "project": "general"
+  },
+  {
+   "id": "WO-D1-PLAN-20261031",
+   "desc": "P1：D1 买点/止损/止盈研究化：从本地K线/ATR/支撑压力推导，替换固定±2/-8/+8+15；D1页接入；测试",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-D1-PLAN-20261031",
+   "created": "2026-10-31 09:20:24",
+   "project": "portal"
+  },
+  {
+   "id": "WO-HZ-HERMES-PHASE2-20261031",
+   "desc": "Phase2：黄忠 MCP 触发面（受控写工具）+ 本地事件流（events.jsonl+8091 只读端点）",
+   "status": "doing",
+   "owner": "DSH-Lead",
+   "branch": "task/WO-HZ-HERMES-PHASE2-20261031",
+   "created": "2026-10-31 09:21:00",
    "project": "general"
   }
  ],
@@ -3077,7 +3122,14 @@
    ],
    "experience": "30 年前端与设计系统工程经验：大型门户/大屏架构，tokens.css 设计单源纪律与版面架构宪法作者；坚持 Demo 先行、改动必过 node --check + 死引用检查 + 线上实测三关。",
    "dept_name": "研发部",
-   "dept_cn_title": "将作监"
+   "dept_cn_title": "将作监",
+   "tasks": [
+    {
+     "id": "WO-P0-DEV5-EVALCASES-20261027",
+     "desc": "P0 派工周-2（G2 DEV5）：O3 Agent 评估用例 v1——建 agent_platform/evals/agent_cases.jsonl 20 条（派工决策/验收判定/代码评审/升级判断四类）+ tools/agent_eval.py（--check/--json，LLM judge 可后接）；验收=--check rc0、20 条载荷可读",
+     "status": "review"
+    }
+   ]
   },
   "ARCH1": {
    "id": "ARCH1",
@@ -3543,7 +3595,14 @@
    ],
    "experience": "20 年后端独立交付经验：API 服务、数据接口与运维脚本全栈交付，习惯小步提交、灰度验证，疑难问题升级 DEV1 主线。",
    "dept_name": "研发部",
-   "dept_cn_title": "将作监"
+   "dept_cn_title": "将作监",
+   "tasks": [
+    {
+     "id": "WO-P0-DEV6-TRACE-20261027",
+     "desc": "P0 派工周-3（DEV6）：O4 可观测性 v0——dev_events 事件增 trace_id/span_id/parent_id（可选字段，缺省可空），devtask/工具写入任务时带 trace_id；补测试；验收=新测试全绿 + 抽样事件可串成树",
+     "status": "review"
+    }
+   ]
   },
   "DEV7": {
    "id": "DEV7",
@@ -7322,7 +7381,12 @@
     {
      "id": "WO-LEGION-TXN-20261031",
      "desc": "LDE真事务与测试runner",
-     "status": "doing"
+     "status": "review"
+    },
+    {
+     "id": "WO-LEGION-RWHOLE-20261031",
+     "desc": "8103 /rw fail-closed",
+     "status": "review"
     }
    ]
   }
