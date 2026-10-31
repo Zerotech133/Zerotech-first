@@ -1,0 +1,376 @@
+{
+  "_meta": {
+    "schema_version": "1.0.0",
+    "wo": "WO-STRAT-CARDS-20261031",
+    "phase": "Phase 0-A",
+    "purpose": "把 quant_backtest/strategies/manifests/ 的 10 个运行 manifest 归一为可组合 Strategy Card；本文件是只读 overlay，不改 10 个 manifest 既有字段，不改 strategy_registry.json 运行语义。",
+    "source_manifests": "quant_backtest/strategies/manifests/*.manifest.json",
+    "source_registry": "quant_backtest/strategy_layer/strategy_registry.json",
+    "field_derivation": {
+      "strategy_id": "manifest.strategy_id（全局唯一，装配/注册同名）",
+      "version": "manifest.version（强一致；改本体逻辑必须升 version）",
+      "owner": "A0 归一：按源码归属工位命名（classic/strategy-layer/chanlun/nine-dim/qpzm/rps/risk），非运行语义",
+      "universe": "由 manifest allowed_data + 源码/计划任务实际市场范围归一（名称为市场令牌列表，非枚举约束）",
+      "frequency": "由 manifest allowed_data 的 bar 周期与执行入口归一",
+      "horizon_days": "A0 归一初值（源码持有期/评估窗口径）；Phase 0-B strategy_health 用后验校准，本字段不代表运行参数",
+      "signal_schema": "由 manifest _provenance.source_symbol + 源码产出口径归一（kind/actions/字段）",
+      "regime_tags": "由源码语义与 BATCH1/BATCH2 DOSIER 的适用场景归一（标签非枚举约束）",
+      "known_failure_modes": "由 BATCH1/BATCH2 DOSIER 的风险点 + 源码降级语义归一",
+      "data_deps": "manifest.allowed_data 原样镜像（validate_card 强一致校验）",
+      "capacity": "manifest.resource_budget 原样镜像（validate_card 强一致校验）",
+      "params_schema": "由 manifest _provenance.source_symbol + 源码常量/PARAM_DEFAULTS/config.json 归一",
+      "modes": "manifest.allowed_modes 原样镜像（validate_card 强一致校验）",
+      "health": "Phase 0-A 固定为空 {}；健康度由 Phase 0-B strategy_health 只读产出为独立 HealthCard，不回写本文件"
+    },
+    "activation_policy": "只读 overlay：不修改 manifest、不写 strategy_registry.json、不注册 adapter、不新增计划任务；默认不启用任何新增策略（当前运行语义零变更）。",
+    "shadow_candidate_rule": "shadow_candidates = 10 张卡中未处于 registry enabled 的卡，扣除非选股 overlay（signal_schema.kind=position_scale 的 vol_target：只输出仓位缩放系数、无独立选股信号流，不进入信号影子候选）。当前 registry enabled=[kg_boost, chan_monitor]，其中仅 chan_monitor 有 manifest 卡；kg_boost 为 adapter-only（无 manifest，见 registry_only_enabled_ids）。因此 10 卡 - 1 张在册启用卡（chan_monitor） - 1 张非选股 overlay（vol_target）= 8 张 shadow_candidates 选股卡。",
+    "normalized_values_note": "universe/frequency/horizon_days/signal_schema/regime_tags/known_failure_modes/params_schema 属 A0 归一初值，用于组合与健康度接线；正式值待 Phase 0-B 校准，不构成对运行行为的修改。",
+    "enabled_baseline": {
+      "registry_enabled_ids": ["kg_boost", "chan_monitor"],
+      "enabled_count": 2,
+      "enabled_card_ids": ["chan_monitor"],
+      "shadow_candidates_count": 8,
+      "note": "数字口径见 shadow_candidate_rule；kg_boost 当前无 manifest 卡，不改 10 manifest 范围。"
+    }
+  },
+  "cards": [
+    {
+      "strategy_id": "trend_follow",
+      "version": "1.0.0",
+      "owner": "quant-classic",
+      "universe": ["CN", "US", "HK", "CRYPTO"],
+      "frequency": "daily",
+      "horizon_days": 10,
+      "signal_schema": {
+        "kind": "event_frame_signals",
+        "frame": "position_series(0/1)",
+        "actions": ["buy", "sell"],
+        "score_base": {"buy": 70.0, "sell": 30.0},
+        "confidence_default": 0.5,
+        "fields": ["symbol", "action", "score", "confidence", "rationale", "strategy", "trade_date"]
+      },
+      "regime_tags": ["trend", "momentum"],
+      "known_failure_modes": [
+        "均线斜率窗口不足时预热期信号缺失（n + slope_lookback 预热窗要求）",
+        "震荡市反复穿越均线造成高换手，成本口径敏感"
+      ],
+      "data_deps": ["bars.daily"],
+      "capacity": {"timeout_s": 5.0, "max_concurrency": 1, "max_context_bytes": 262144},
+      "params_schema": {
+        "n": {"type": "int", "default": 20},
+        "slope_lookback": {"type": "int", "default": 5}
+      },
+      "modes": ["BACKTEST", "REPLAY", "SHADOW"],
+      "health": {}
+    },
+    {
+      "strategy_id": "boll_breakout",
+      "version": "1.0.0",
+      "owner": "quant-classic",
+      "universe": ["CN", "US", "HK", "CRYPTO"],
+      "frequency": "daily",
+      "horizon_days": 5,
+      "signal_schema": {
+        "kind": "event_frame_signals",
+        "frame": "position_series(0/1)",
+        "actions": ["buy", "sell"],
+        "score_base": {"buy": 70.0, "sell": 30.0},
+        "confidence_default": 0.5,
+        "fields": ["symbol", "action", "score", "confidence", "rationale", "strategy", "trade_date"]
+      },
+      "regime_tags": ["breakout", "volatility_expansion"],
+      "known_failure_modes": [
+        "ffill 持有状态预热窗口不足导致重算起点漂移（窗口 >= period + 预热）",
+        "突破后跌破中轨才离场，单边急跌时回撤放大"
+      ],
+      "data_deps": ["bars.daily"],
+      "capacity": {"timeout_s": 5.0, "max_concurrency": 1, "max_context_bytes": 262144},
+      "params_schema": {
+        "period": {"type": "int", "default": 20},
+        "k": {"type": "float", "default": 2.0}
+      },
+      "modes": ["BACKTEST", "REPLAY", "SHADOW"],
+      "health": {}
+    },
+    {
+      "strategy_id": "rsi_reversal",
+      "version": "1.0.0",
+      "owner": "quant-classic",
+      "universe": ["CN", "US", "HK", "CRYPTO"],
+      "frequency": "daily",
+      "horizon_days": 5,
+      "signal_schema": {
+        "kind": "event_frame_signals",
+        "frame": "position_series(0/1)",
+        "actions": ["buy", "sell"],
+        "score_base": {"buy": 70.0, "sell": 30.0},
+        "confidence_default": 0.5,
+        "fields": ["symbol", "action", "score", "confidence", "rationale", "strategy", "trade_date"]
+      },
+      "regime_tags": ["mean_reversion", "range"],
+      "known_failure_modes": [
+        "ffill 事件帧状态依赖 context 预热窗口（须覆盖最近一次反向触发），窗口不足时与逐帧序列不一致",
+        "oversold/overbought 边界在趋势市出现连续误触发"
+      ],
+      "data_deps": ["bars.daily"],
+      "capacity": {"timeout_s": 5.0, "max_concurrency": 1, "max_context_bytes": 262144},
+      "params_schema": {
+        "period": {"type": "int", "default": 14},
+        "oversold": {"type": "float", "default": 30.0},
+        "overbought": {"type": "float", "default": 70.0}
+      },
+      "modes": ["BACKTEST", "REPLAY", "SHADOW"],
+      "health": {}
+    },
+    {
+      "strategy_id": "ma_cross",
+      "version": "1.0.0",
+      "owner": "quant-classic",
+      "universe": ["CN", "US", "HK", "CRYPTO"],
+      "frequency": "daily",
+      "horizon_days": 5,
+      "signal_schema": {
+        "kind": "event_frame_signals",
+        "frame": "position_series(0/1)",
+        "actions": ["buy", "sell"],
+        "score_base": {"buy": 70.0, "sell": 30.0},
+        "confidence_default": 0.5,
+        "fields": ["symbol", "action", "score", "confidence", "rationale", "strategy", "trade_date"]
+      },
+      "regime_tags": ["trend", "momentum"],
+      "known_failure_modes": [
+        "无状态逐帧语义，事件帧改造必须沿用 shift(1) 次日常规口径，否则对账漂移",
+        "短窗口参数在震荡市频繁穿越，换手成本敏感"
+      ],
+      "data_deps": ["bars.daily"],
+      "capacity": {"timeout_s": 5.0, "max_concurrency": 1, "max_context_bytes": 262144},
+      "params_schema": {
+        "fast": {"type": "int", "default": 5},
+        "slow": {"type": "int", "default": 20}
+      },
+      "modes": ["BACKTEST", "REPLAY", "SHADOW"],
+      "health": {}
+    },
+    {
+      "strategy_id": "vol_target",
+      "version": "1.0.0",
+      "owner": "quant-risk",
+      "universe": ["CN", "US", "HK", "CRYPTO"],
+      "frequency": "daily",
+      "horizon_days": 20,
+      "signal_schema": {
+        "kind": "position_scale",
+        "field": "scale",
+        "scale_range": [0.25, 1.0],
+        "actions": ["hold"],
+        "note": "非选股型 overlay：输出仓位缩放系数叠加在上游信号之上，无独立选股信号流"
+      },
+      "regime_tags": ["risk_control", "volatility_regime", "overlay"],
+      "known_failure_modes": [
+        "rv20 窗口起点对齐：scale(t) 只取截至 t 的 lookback 窗，重放侧必须复现同一预热起点",
+        "非选股型：Verdict/聚合契约需承载 position_scale 语义（A0 未改运行，仅登记）",
+        "config backtest.vol_target.enabled 缺省 false；启用属运行语义变更，不在本单范围"
+      ],
+      "data_deps": ["bars.daily"],
+      "capacity": {"timeout_s": 5.0, "max_concurrency": 1, "max_context_bytes": 262144},
+      "params_schema": {
+        "enabled": {"type": "bool", "default": false},
+        "target_vol": {"type": "float", "default": 0.15},
+        "lookback": {"type": "int", "default": 20},
+        "floor": {"type": "float", "default": 0.25},
+        "cap": {"type": "float", "default": 1.0}
+      },
+      "modes": ["BACKTEST", "REPLAY", "SHADOW"],
+      "health": {}
+    },
+    {
+      "strategy_id": "chan_monitor",
+      "version": "1.0.0",
+      "owner": "quant-strategy-layer",
+      "universe": ["CN", "US", "HK"],
+      "frequency": "daily",
+      "horizon_days": 5,
+      "signal_schema": {
+        "kind": "signal_pool_events",
+        "source": "artifacts.chanlun_pool JSONL（CN/US/HK 三池）",
+        "actions": ["buy", "sell"],
+        "score_range": [0, 100],
+        "type_base_score": {"1买": 95.0, "2买": 85.0, "3买": 75.0, "3卖": 25.0, "2卖": 15.0, "1卖": 5.0},
+        "resonance_fields": ["mbei", "bei", "bei2", "vv"],
+        "resonance_bonus_per_field": 2,
+        "toxic_score_cap": 60.0,
+        "fields": ["symbol", "action", "score", "confidence", "rationale", "strategy", "trade_date"]
+      },
+      "regime_tags": ["structure", "chanlun", "signal_pool"],
+      "known_failure_modes": [
+        "信号池缺失/损坏时降级返回空列表（不 raise），须由监控覆盖而非静默",
+        "三市场选日按池内最大 dt 口径，跨市场交易日不一致需对齐",
+        "毒层买点 score 封顶 60（action 仍 buy，池内低分沉底）"
+      ],
+      "data_deps": ["artifacts.chanlun_pool"],
+      "capacity": {"timeout_s": 5.0, "max_concurrency": 1, "max_context_bytes": 524288},
+      "params_schema": {
+        "resonance_fields": {"type": "list", "default": ["mbei", "bei", "bei2", "vv"]},
+        "resonance_bonus_per_field": {"type": "int", "default": 2},
+        "toxic_score_cap": {"type": "float", "default": 60.0}
+      },
+      "modes": ["BACKTEST", "REPLAY", "SHADOW"],
+      "health": {}
+    },
+    {
+      "strategy_id": "chanlun_li122",
+      "version": "1.0.0",
+      "owner": "quant-chanlun",
+      "universe": ["CN"],
+      "frequency": "multi:1m/5m/30m/daily",
+      "horizon_days": 5,
+      "signal_schema": {
+        "kind": "multi_level_judgement",
+        "outputs": ["checks", "signal"],
+        "actions": ["buy", "sell"],
+        "rulesets": ["A_30F_5F_1F", "B_D_30F_5F", "A1_30F_5F_1F_only1", "A2_30F_5F_1F_wide"],
+        "fields": ["dt", "signal", "checks", "ruleset_key"]
+      },
+      "regime_tags": ["structure", "multi_level", "chanlun"],
+      "known_failure_modes": [
+        "分钟 Bar 取模起点不一致导致分型识别漂移，重放与回测切片须逐字节一致",
+        "_dt_index 找不到 dt 时取末根保底，属容错语义，对账需单列",
+        "多级别输入三元组装配成本高（max_context_bytes 给到 1MB 的原因）"
+      ],
+      "data_deps": ["bars.1m", "bars.5m", "bars.30m", "bars.daily"],
+      "capacity": {"timeout_s": 10.0, "max_concurrency": 1, "max_context_bytes": 1048576},
+      "params_schema": {
+        "ruleset_key": {
+          "type": "enum",
+          "default": "A_30F_5F_1F",
+          "values": ["A_30F_5F_1F", "B_D_30F_5F", "A1_30F_5F_1F_only1", "A2_30F_5F_1F_wide"]
+        },
+        "mid_lookback": {"type": "int", "default": 24},
+        "mid_confirm_bars": {"type": "int", "default": 2},
+        "low_window": {"type": "int", "default": 60},
+        "low_tol": {"type": "float", "default": 0.002}
+      },
+      "modes": ["BACKTEST", "REPLAY", "SHADOW"],
+      "health": {}
+    },
+    {
+      "strategy_id": "nine_dim",
+      "version": "1.0.0",
+      "owner": "quant-nine-dim",
+      "universe": ["CN"],
+      "frequency": "daily",
+      "horizon_days": 20,
+      "signal_schema": {
+        "kind": "score_surface+alert_pool",
+        "fields": ["code", "score", "cov", "band"],
+        "actions": ["alert", "watch"],
+        "alert_threshold": 75,
+        "min_coverage": 0.75,
+        "note": "K33 语义反转：高分=拥挤警报（回避位），非买入信号"
+      },
+      "regime_tags": ["multi_factor", "crowding_alert", "risk_warning"],
+      "known_failure_modes": [
+        "None 三态（True/False/None）不可判语义，Verdict 契约需扩展",
+        "as-of 因子快照缺失时 fail-closed 整项 None（None 率本身是对账指标）",
+        "news.db 时间边界（2026-09-25 起）导致 JEV 维度缺失，影响 cov 分母"
+      ],
+      "data_deps": [
+        "bars.daily",
+        "bars.index_daily",
+        "factors.daily_basic",
+        "factors.moneyflow",
+        "factors.top_list",
+        "factors.top_inst",
+        "factors.block_trade",
+        "factors.margin",
+        "factors.moneyflow_hsgt",
+        "factors.fina_indicator",
+        "factors.report_rc",
+        "factors.forecast",
+        "artifacts.news_jev",
+        "artifacts.kg_features"
+      ],
+      "capacity": {"timeout_s": 10.0, "max_concurrency": 1, "max_context_bytes": 1048576},
+      "params_schema": {
+        "alert_threshold": {"type": "int", "default": 75},
+        "min_coverage": {"type": "float", "default": 0.75},
+        "candidate_cap": {"type": "int", "default": 400}
+      },
+      "modes": ["BACKTEST", "REPLAY", "SHADOW"],
+      "health": {}
+    },
+    {
+      "strategy_id": "qpzm",
+      "version": "1.0.0",
+      "owner": "quant-qpzm",
+      "universe": ["CN"],
+      "frequency": "daily",
+      "horizon_days": 10,
+      "signal_schema": {
+        "kind": "cross_section_signals",
+        "actions": ["buy", "watch", "avoid"],
+        "thresholds": {"buy": 75, "watch": 50},
+        "fields": ["trade_date", "code", "action", "combine_score"]
+      },
+      "regime_tags": ["relative_strength", "breadth_gate"],
+      "known_failure_modes": [
+        "K254 后 own-bar pre_close 复权因子链依赖装配层，拿不到后复权价会与批次回测基线漂移",
+        "live/replay 分位基准（滚动 60 日）不一致导致对账漂移",
+        "watchlist 限定 backfill 复算池，扩容需重跑干跑"
+      ],
+      "data_deps": ["bars.daily", "artifacts.rps_daily_batches", "config.watchlist"],
+      "capacity": {"timeout_s": 10.0, "max_concurrency": 1, "max_context_bytes": 1048576},
+      "params_schema": {
+        "periods": {"type": "list", "default": [50, 120, 250]},
+        "rps_weights": {"type": "dict", "default": {"50": 0.4, "120": 0.3, "250": 0.3}},
+        "thresholds": {"type": "list", "default": [75, 50]},
+        "holds": {"type": "list", "default": [5, 10, 20]},
+        "min_bars_elig": {"type": "int", "default": 55},
+        "cost": {"type": "float", "default": 0.0015}
+      },
+      "modes": ["BACKTEST", "REPLAY", "SHADOW"],
+      "health": {}
+    },
+    {
+      "strategy_id": "rps_resonance",
+      "version": "1.0.0",
+      "owner": "quant-rps",
+      "universe": ["CN", "US", "HK", "CRYPTO"],
+      "frequency": "daily",
+      "horizon_days": 10,
+      "signal_schema": {
+        "kind": "cross_section_signals",
+        "actions": ["buy", "watch", "avoid"],
+        "thresholds": {"buy": 75, "watch": 50},
+        "dimension_weights": {"tech": 0.35, "jev": 0.25, "rps": 0.25, "env": 0.15},
+        "subnew_cn_downgrade": true,
+        "fields": ["trade_date", "code", "action", "score", "dims"]
+      },
+      "regime_tags": ["relative_strength", "cross_market", "breadth_gate"],
+      "known_failure_modes": [
+        "全市场 RPS rank 依赖截面完整性（DB 缺码/tushare 断供会改变分位）",
+        "海外三市场 DB 拉取窗口的 new_flag 无次新语义，回放需明示降级",
+        "环境闸门数据缺失时 safe=None 缺维降权（缺维按比例降权，不静默补 0）"
+      ],
+      "data_deps": [
+        "bars.daily",
+        "bars.us_daily",
+        "bars.hk_daily",
+        "bars.crypto_daily",
+        "artifacts.news_jev",
+        "config.watchlist"
+      ],
+      "capacity": {"timeout_s": 10.0, "max_concurrency": 1, "max_context_bytes": 1048576},
+      "params_schema": {
+        "periods": {"type": "list", "default": [50, 120, 250]},
+        "rps_weights": {"type": "dict", "default": {"50": 0.4, "120": 0.3, "250": 0.3}},
+        "db_periods": {"type": "dict", "default": {"US": [50], "HK": [50, 120], "CRYPTO": [50]}},
+        "dimension_weights": {"type": "dict", "default": {"tech": 0.35, "jev": 0.25, "rps": 0.25, "env": 0.15}},
+        "buy_threshold": {"type": "int", "default": 75},
+        "watch_threshold": {"type": "int", "default": 50}
+      },
+      "modes": ["BACKTEST", "REPLAY", "SHADOW"],
+      "health": {}
+    }
+  ]
+}
