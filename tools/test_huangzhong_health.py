@@ -285,6 +285,18 @@ def test_scheduled_tasks_gap_fail(tmp_path, monkeypatch):
     assert _check(rep, "scheduled_tasks")["status"] == "fail"
 
 
+def test_scheduled_tasks_running_is_ok(tmp_path, monkeypatch):
+    """任务正在运行（267009=0x41301 SCHED_S_TASK_RUNNING / state=Running）不是异常。"""
+    root = tmp_path
+    _fixture(root)
+    for kw in ({"daily_result": 267009}, {"daily_state": "Running"}):
+        _, rep = _call(root, monkeypatch,
+                       tasks_payload=_tasks_payload(**kw))
+        check = _check(rep, "scheduled_tasks")
+        assert check["status"] == "ok", (kw, check["detail"])
+        assert rep["status"] != "fail"
+
+
 def test_scheduled_tasks_unavailable_warn(tmp_path, monkeypatch):
     root = tmp_path
     _fixture(root)
