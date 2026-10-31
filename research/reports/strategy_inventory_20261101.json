@@ -1,0 +1,104 @@
+{
+ "generated_at": "2026-11-01T05:28:33+08:00",
+ "strategy_registry": {
+  "owner": "司马微",
+  "count": 4,
+  "items": [
+   {
+    "id": "S01_H14_quality_trap_guard",
+    "name": "H14 质量陷阱规避（过滤器）",
+    "type": "filter",
+    "status": "validated_filter_no_alpha"
+   },
+   {
+    "id": "S02_composite_mvp",
+    "name": "复合排序 MVP（动量+反转+低换手+质量中性）",
+    "type": "ranking",
+    "status": "paused_shadow_breaker"
+   },
+   {
+    "id": "S03_H18_forecast_revision_watch",
+    "name": "H18 业绩预告修订监控（事件观察）",
+    "type": "watch",
+    "status": "validated_event_ambiguous_direction"
+   },
+   {
+    "id": "S04_AH_premium_pair",
+    "name": "A/H 溢价收敛配对（轮动）",
+    "type": "pair",
+    "status": "validated_pair_planned"
+   }
+  ]
+ },
+ "hypotheses": {
+  "total": 36,
+  "by_status": {
+   "backtested": 6,
+   "in_progress": 2,
+   "rejected": 28
+  },
+  "validated": [
+   {
+    "id": "H10",
+    "title": "数据质量对回测结论的影响",
+    "status": "backtested"
+   },
+   {
+    "id": "H14",
+    "title": "质量反向（高ROE跑输）规避候选",
+    "status": "backtested"
+   },
+   {
+    "id": "H15",
+    "title": "A/H 溢价收敛（汇率换算后）",
+    "status": "backtested"
+   },
+   {
+    "id": "H16",
+    "title": "A/H 溢价收敛的横截面结构（行业/市值/流动性）",
+    "status": "backtested"
+   },
+   {
+    "id": "H18",
+    "title": "业绩预告修订动量（同公司同报告期二次公告）",
+    "status": "backtested"
+   },
+   {
+    "id": "H28",
+    "title": "量价形态反向规避（倍量柱/价升量缩/极阴次阳/兵临城下）",
+    "status": "in_progress"
+   },
+   {
+    "id": "H5",
+    "title": "舆情情绪领先价格",
+    "status": "in_progress"
+   },
+   {
+    "id": "H6",
+    "title": "JEV 决策归因",
+    "status": "backtested"
+   }
+  ]
+ },
+ "paper": {
+  "account": 12,
+  "positions": 21,
+  "equity_marks": 31,
+  "orders": 828
+ },
+ "research_scripts": {
+  "total": 48,
+  "h_series": 22
+ },
+ "reports": {
+  "research_reports": 42,
+  "docs_plans": 273,
+  "deliverables": 313
+ },
+ "knowledge": {
+  "units_snapshot": 498,
+  "rag_records": 466,
+  "report_docs": 100,
+  "learning_cards": 1
+ }
+}
