@@ -37,11 +37,37 @@ td{padding:8px 9px;border-bottom:1px solid var(--border-weak,var(--border));vert
 .bdg.OBSERVE{color:var(--color-warn)}
 .bdg.REJECT{color:var(--color-danger,#ff7b72);border-color:var(--color-danger,#ff7b72)}
 .dim{color:var(--text-dim)}
-.meta-row{display:flex;flex-wrap:wrap;gap:8px 16px;margin:10px 0 0;font:12px var(--font-mono);color:var(--text-dim)}
+.meta-row{display:flex;flex-wrap:wrap;gap:8px 16px;margin:10px 0 0;font:12px var(--font-mono);color:var(--text-dim);align-items:center}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin:0 0 10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--border);background:var(--bg-raised);color:var(--text-dim);border-radius:999px;padding:4px 12px;font:12px var(--font-ui);cursor:pointer}
+.chip:hover{color:var(--text)}
+.chip.active{border-color:var(--color-ok);color:var(--color-ok)}
+.chip[data-verdict="OBSERVE"].active{border-color:var(--color-warn);color:var(--color-warn)}
+.chip[data-verdict="REJECT"].active{border-color:var(--color-danger,#ff7b72);color:var(--color-danger,#ff7b72)}
+#q{border:1px solid var(--border);background:var(--bg-surface);border-radius:8px;padding:5px 10px;font:12px var(--font-mono);color:var(--text);min-width:220px}
+#q::placeholder{color:var(--text-dim)}
+#q:focus{outline:2px solid var(--color-ok);outline-offset:1px}
+#filter-meta{font:11.5px var(--font-mono)}
+.trend{display:grid;grid-template-columns:repeat(auto-fit,minmax(64px,1fr));gap:10px;align-items:end;padding:10px 4px 6px;min-height:96px}
+.trend .day{display:flex;flex-direction:column;align-items:center;gap:4px}
+.trend .bars{display:flex;align-items:flex-end;gap:3px;height:56px}
+.trend .bar{width:7px;border-radius:2px 2px 0 0;background:var(--border);min-height:2px}
+.trend .bar.pass{background:var(--color-ok)}
+.trend .bar.observe{background:var(--color-warn)}
+.trend .bar.reject{background:var(--color-danger,#ff7b72)}
+.trend .d{font:10px var(--font-mono);color:var(--text-dim);white-space:nowrap}
+.trend .n{font:11px var(--font-mono)}
+.legend{display:flex;flex-wrap:wrap;gap:12px;padding:2px 4px 8px;font:11px var(--font-mono);color:var(--text-dim)}
+.legend i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px;vertical-align:middle}
+.legend i.pass{background:var(--color-ok)}
+.legend i.observe{background:var(--color-warn)}
+.legend i.reject{background:var(--color-danger,#ff7b72)}
+.empty{color:var(--text-dim);font-size:12px;padding:10px 4px}
 #err{margin:12px 0 0;color:var(--color-danger,#ff7b72);font-size:12.5px}
 footer{margin-top:22px;font-size:12px;color:var(--text-dim)}
 footer a{margin-right:14px}
-@media (max-width:640px){th:nth-child(5),td:nth-child(5){display:none}}
+@media (max-width:640px){th:nth-child(5),td:nth-child(5){display:none}#q{min-width:0;width:100%}.trend{grid-template-columns:repeat(auto-fit,minmax(52px,1fr))}}
 </style>
 </head>
 <body>
@@ -62,7 +88,23 @@ footer a{margin-right:14px}
   <div class="meta-row"><span id="m-generated">—</span><span class="dim">·</span><span>30s 自动刷新</span><span class="dim">·</span><button id="refresh" style="border:1px solid var(--border);background:var(--bg-raised);border-radius:999px;padding:3px 12px;font-size:12px;color:var(--text);cursor:pointer;">立即刷新</button></div>
   <div id="err"></div>
 
+  <h2>近 7 日趋势（按最近 50 条事件统计）</h2>
+  <div class="card">
+    <div class="trend" id="trend" aria-live="polite"><div class="empty">加载中…</div></div>
+    <div class="legend"><span><i class="pass"></i>PASS</span><span><i class="observe"></i>OBSERVE</span><span><i class="reject"></i>REJECT</span><span class="dim">· 柱高=当日条数；数字=当日合计</span></div>
+  </div>
+
   <h2>事件列表（最近 50 条）</h2>
+  <div class="toolbar">
+    <div class="chips" id="chips" role="group" aria-label="按结论过滤">
+      <button type="button" class="chip active" data-verdict="ALL">全部</button>
+      <button type="button" class="chip" data-verdict="PASS">PASS</button>
+      <button type="button" class="chip" data-verdict="OBSERVE">OBSERVE</button>
+      <button type="button" class="chip" data-verdict="REJECT">REJECT</button>
+    </div>
+    <input id="q" type="search" placeholder="搜索 commit（前缀/子串）" aria-label="按 commit 搜索" autocomplete="off">
+    <span id="filter-meta" class="dim" aria-live="polite"></span>
+  </div>
   <div class="card">
     <table>
       <thead><tr><th>时间</th><th>结论</th><th>commit</th><th>基线年龄(h)</th><th>红队率</th><th>reasons</th></tr></thead>
@@ -81,37 +123,99 @@ footer a{margin-right:14px}
 <script>
 (function(){
   var LIMIT = 50;
+  var TREND_DAYS = 7;
+  var ALL = [];
+  var state = {verdict:'ALL', q:''};
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function setText(id,v){var e=document.getElementById(id); if(e) e.textContent=(v==null?'—':v);}
   function fmt(ts){var s=String(ts||''); return s.length>=19 ? s.slice(0,10)+' '+s.slice(11,19) : s;}
+  function dayKey(ts){var s=String(ts||''); return s.length>=10 ? s.slice(0,10) : '';}
+  function shiftDay(key, delta){var p=String(key||'').split('-'); if(p.length!==3) return ''; var d=new Date(Date.UTC(+p[0], +p[1]-1, +p[2])); d.setUTCDate(d.getUTCDate()+delta); return d.toISOString().slice(0,10);}
+  function verdictOf(x){return String((x&&x.verdict)||'').toUpperCase();}
+  function buildTrend(evs){
+    var counts={}, maxDay='';
+    evs.forEach(function(x){
+      var k=dayKey(x.ts); if(!k) return;
+      if(k>maxDay) maxDay=k;
+      if(!counts[k]) counts[k]={PASS:0,OBSERVE:0,REJECT:0,total:0};
+      counts[k].total++;
+      var v=verdictOf(x); if(counts[k][v]!=null) counts[k][v]++;
+    });
+    if(!maxDay){
+      return '<div class="empty">暂无事件——等待下一次黄忠验收（30 分钟周期）</div>';
+    }
+    var days=[];
+    for(var i=TREND_DAYS-1;i>=0;i--) days.push(shiftDay(maxDay,-i));
+    var max=1;
+    days.forEach(function(d){var c=counts[d]; if(!c) return; max=Math.max(max,c.PASS,c.OBSERVE,c.REJECT);});
+    var html=days.map(function(d){
+      var c=counts[d]||{PASS:0,OBSERVE:0,REJECT:0,total:0};
+      function bar(k,cls){var h=Math.max(2,Math.round((c[k]/max)*52)); return '<span class="bar '+cls+'" style="height:'+h+'px" title="'+esc(d)+' '+k+'='+c[k]+'"></span>';}
+      return '<div class="day" title="'+esc(d)+'：PASS '+c.PASS+' / OBSERVE '+c.OBSERVE+' / REJECT '+c.REJECT+'">'
+        +'<div class="bars">'+bar('PASS','pass')+bar('OBSERVE','observe')+bar('REJECT','reject')+'</div>'
+        +'<div class="d">'+esc(d.slice(5))+'</div><div class="n">'+c.total+'</div></div>';
+    }).join('');
+    return html;
+  }
+  function currentRows(){
+    var q=state.q.toLowerCase();
+    return ALL.filter(function(x){
+      if(state.verdict!=='ALL' && verdictOf(x)!==state.verdict) return false;
+      if(q && String((x&&x.commit)||'').toLowerCase().indexOf(q)<0) return false;
+      return true;
+    });
+  }
+  function renderRows(){
+    var rows=currentRows();
+    var html=rows.slice().reverse().map(function(x){
+      var v=verdictOf(x)||'—';
+      var reasons=Array.isArray(x.reasons)?x.reasons.join('；'):(x.reasons||'');
+      return '<tr><td class="num">'+esc(fmt(x.ts))+'</td>'+
+        '<td><span class="bdg '+esc(v)+'">'+esc(v)+'</span></td>'+
+        '<td class="num">'+esc(x.commit||'—')+'</td>'+
+        '<td class="num">'+esc(x.baseline_age_h==null?'—':x.baseline_age_h)+'</td>'+
+        '<td class="num">'+esc(x.redteam_rate==null?'—':x.redteam_rate)+'</td>'+
+        '<td class="dim">'+esc(reasons||'—')+'</td></tr>';
+    }).join('');
+    document.getElementById('rows').innerHTML=html||'<tr><td colspan="6" class="dim">无匹配事件（调整结论过滤或 commit 搜索）</td></tr>';
+    var meta='显示 '+rows.length+'/'+ALL.length+' 条';
+    if(state.verdict!=='ALL') meta+=' · 结论='+state.verdict;
+    if(state.q) meta+=' · 搜索="'+state.q+'"';
+    setText('filter-meta',meta);
+  }
+  function renderKpis(evs,d){
+    var c={PASS:0,OBSERVE:0,REJECT:0};
+    evs.forEach(function(x){var v=verdictOf(x); if(c[v]!=null) c[v]++;});
+    setText('k-total',d.count!=null?d.count:evs.length);
+    setText('k-pass',c.PASS); setText('k-observe',c.OBSERVE); setText('k-reject',c.REJECT);
+    setText('k-last',evs.length?fmt(evs[evs.length-1].ts):'—');
+    setText('m-generated','生成于 '+fmt(d.generated_at)+(d.bad_lines?' · 坏行 '+d.bad_lines:''));
+  }
   function load(){
     fetch('/api/huangzhong/events?limit='+LIMIT,{cache:'no-store'}).then(function(r){
       if(!r.ok) throw new Error('HTTP '+r.status);
       return r.json();
     }).then(function(d){
       document.getElementById('err').textContent='';
-      var evs=(d.events||[]);
-      var c={PASS:0,OBSERVE:0,REJECT:0};
-      evs.forEach(function(x){ if(c[x.verdict]!=null) c[x.verdict]++; });
-      setText('k-total',d.count!=null?d.count:evs.length);
-      setText('k-pass',c.PASS); setText('k-observe',c.OBSERVE); setText('k-reject',c.REJECT);
-      setText('k-last',evs.length?fmt(evs[evs.length-1].ts):'—');
-      setText('m-generated','生成于 '+fmt(d.generated_at)+(d.bad_lines?' · 坏行 '+d.bad_lines:''));
-      var rows=evs.slice().reverse().map(function(x){
-        var v=x.verdict||'—';
-        var reasons=Array.isArray(x.reasons)?x.reasons.join('；'):(x.reasons||'');
-        return '<tr><td class="num">'+esc(fmt(x.ts))+'</td>'+
-          '<td><span class="bdg '+esc(v)+'">'+esc(v)+'</span></td>'+
-          '<td class="num">'+esc(x.commit||'—')+'</td>'+
-          '<td class="num">'+esc(x.baseline_age_h==null?'—':x.baseline_age_h)+'</td>'+
-          '<td class="num">'+esc(x.redteam_rate==null?'—':x.redteam_rate)+'</td>'+
-          '<td class="dim">'+esc(reasons||'—')+'</td></tr>';
-      }).join('');
-      document.getElementById('rows').innerHTML=rows||'<tr><td colspan="6" class="dim">暂无事件——等待下一次黄忠验收（30 分钟周期）</td></tr>';
+      ALL=(d.events||[]);
+      renderKpis(ALL,d);
+      document.getElementById('trend').innerHTML=buildTrend(ALL);
+      renderRows();
     }).catch(function(e){
       document.getElementById('err').textContent='加载失败：'+e.message+'（端点 /api/huangzhong/events）';
     });
   }
+  Array.prototype.forEach.call(document.querySelectorAll('#chips .chip'),function(btn){
+    btn.addEventListener('click',function(){
+      Array.prototype.forEach.call(document.querySelectorAll('#chips .chip'),function(b){b.classList.toggle('active',b===btn);});
+      state.verdict=btn.getAttribute('data-verdict')||'ALL';
+      renderRows();
+    });
+  });
+  document.getElementById('q').addEventListener('input',function(e){
+    state.q=String(e.target.value||'').trim();
+    renderRows();
+  });
   document.getElementById('refresh').addEventListener('click',load);
   load(); setInterval(load,30000);
 })();
