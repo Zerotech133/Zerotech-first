@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-31 08:08",
+ "generated": "2026-10-31 08:09",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 66,
@@ -9,7 +9,7 @@
   "prompt_ok": 66,
   "prompt_miss": [],
   "name_collisions": {},
-  "workorders_doing": 32,
+  "workorders_doing": 31,
   "workorders_review": 11
  },
  "workorders": [
@@ -389,15 +389,6 @@
    "owner": "GUANYU",
    "branch": "task/WO-GUANYU-P101-20261030",
    "created": "2026-10-30 23:22:26",
-   "project": "general"
-  },
-  {
-   "id": "WO-GUANYU-P118-20261031",
-   "desc": "8787会话感知监控",
-   "status": "doing",
-   "owner": "GUANYU",
-   "branch": "task/WO-GUANYU-P118-20261031",
-   "created": "2026-10-31 08:05:41",
    "project": "general"
   }
  ],
@@ -6708,11 +6699,6 @@
      "id": "WO-GUANYU-P101-20261030",
      "desc": "基线同步186",
      "status": "review"
-    },
-    {
-     "id": "WO-GUANYU-P118-20261031",
-     "desc": "8787会话感知监控",
-     "status": "doing"
     }
    ]
   },
