@@ -1,11 +1,15 @@
 # -*- coding: utf-8 -*-
-"""LDE exec 进程隔离层（Windows Job Object）。
+"""LDE exec 进程隔离层（Windows Job Object）· fail-closed。
 
 定位：**资源/进程树隔离**，不是文件系统沙箱。
 - 命令启动后立即加入 Job Object；
 - 超时用 TerminateJobObject 整树终止，避免子进程残留；
-- IDE_EXEC_ISOLATION=off 可回退普通 subprocess；
-- 非 Windows 或 Job API 不可用时 fail-soft 回退，不影响命令本身。
+- **fail-closed（2026-10-31 K-ORG-20261031-SANDBOXFAILCLOSED）**：创建 Job /
+  SetInformationJobObject / AssignProcessToJobObject 任一失败 → 终止并回收进程，
+  抛 ``IsolationError``（OSError 子类）；上层 exec_runner 已把 OSError 映射为
+  ``exec_failed``，绝不把「未隔离执行」静默当成功。
+- 唯一回退：``IDE_EXEC_ISOLATION=off|0|false|no`` 显式关闭（用户知情选择普通
+  subprocess，非失败路径）；非 Windows 在未显式关闭时同样 fail-closed。
 
 真正的文件系统/低权限隔离仍需独立容器/低权限账户，见实战准入报告。
 """
@@ -18,6 +22,10 @@ from types import SimpleNamespace
 
 JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x00002000
 JOB_OBJECT_EXTENDED_LIMIT_INFORMATION = 9
+
+
+class IsolationError(OSError):
+    """进程隔离建立失败（fail-closed）：命令未执行或已终止；上层按执行失败处理。"""
 
 
 class _BasicLimit(ctypes.Structure):
@@ -56,10 +64,16 @@ class _ExtendedLimit(ctypes.Structure):
     ]
 
 
-def enabled() -> bool:
-    return os.name == "nt" and os.environ.get(
+def _requested() -> bool:
+    """用户是否要求隔离（默认要求；仅显式 off 等值才关闭）。"""
+    return os.environ.get(
         "IDE_EXEC_ISOLATION", "job"
     ).strip().lower() not in ("0", "off", "false", "no")
+
+
+def enabled() -> bool:
+    """当前平台/配置下是否启用 Job Object 隔离。"""
+    return os.name == "nt" and _requested()
 
 
 def _close(handle) -> None:
@@ -71,6 +85,7 @@ def _close(handle) -> None:
 
 
 def _plain(argv, cwd, timeout, env):
+    """显式关闭隔离时的普通 subprocess 回退（非失败路径）。"""
     p = subprocess.run(
         argv, cwd=cwd, capture_output=True, text=True,
         encoding="utf-8", errors="replace", timeout=max(1, int(timeout)),
@@ -80,54 +95,94 @@ def _plain(argv, cwd, timeout, env):
                            stderr=p.stderr or "", isolation="subprocess")
 
 
+def _terminate_and_reap(k32, job, proc) -> None:
+    """fail-closed 清理：整树终止 + kill + 回收，尽量不泄露进程。"""
+    if job:
+        try:
+            k32.TerminateJobObject(ctypes.c_void_p(job), 1)
+        except Exception:
+            pass
+    try:
+        proc.kill()
+    except Exception:
+        pass
+    try:
+        proc.communicate(timeout=5)
+    except subprocess.TimeoutExpired:
+        try:
+            proc.kill()
+        except Exception:
+            pass
+        try:
+            proc.communicate(timeout=5)
+        except Exception:
+            pass
+    except Exception:
+        pass
+
+
 def run(argv, cwd: str, timeout: int, env: dict):
-    if not enabled():
+    # 唯一允许的非隔离路径：用户显式关闭（IDE_EXEC_ISOLATION=off 等）。
+    if not _requested():
         return _plain(argv, cwd, timeout, env)
+    if os.name != "nt":
+        raise IsolationError("job_isolation_requires_windows")
     k32 = ctypes.windll.kernel32
     k32.CreateJobObjectW.restype = ctypes.c_void_p
     k32.AssignProcessToJobObject.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
     k32.TerminateJobObject.argtypes = [ctypes.c_void_p, ctypes.c_uint32]
+
     job = k32.CreateJobObjectW(None, None)
     if not job:
-        return _plain(argv, cwd, timeout, env)
-    # KILL_ON_JOB_CLOSE：句柄关闭/进程异常时整树清理；ActiveProcessLimit 32 防 fork 炸弹。
-    info = _ExtendedLimit()
-    info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
-    info.BasicLimitInformation.ActiveProcessLimit = 32
+        # fail-closed：拿不到 Job 就不执行命令
+        raise IsolationError("create_job_object_failed")
     try:
-        k32.SetInformationJobObject(
-            ctypes.c_void_p(job), JOB_OBJECT_EXTENDED_LIMIT_INFORMATION,
-            ctypes.byref(info), ctypes.sizeof(info),
+        # KILL_ON_JOB_CLOSE：句柄关闭/进程异常时整树清理；ActiveProcessLimit 32 防 fork 炸弹。
+        info = _ExtendedLimit()
+        info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+        info.BasicLimitInformation.ActiveProcessLimit = 32
+        try:
+            set_ok = bool(k32.SetInformationJobObject(
+                ctypes.c_void_p(job), JOB_OBJECT_EXTENDED_LIMIT_INFORMATION,
+                ctypes.byref(info), ctypes.sizeof(info),
+            ))
+        except Exception as exc:
+            raise IsolationError(
+                "set_job_information_failed: %s: %s" % (type(exc).__name__, exc)
+            ) from exc
+        if not set_ok:
+            raise IsolationError("set_job_information_failed: SetInformationJobObject=false")
+
+        proc = subprocess.Popen(
+            argv, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            text=True, encoding="utf-8", errors="replace", env=env,
         )
-    except Exception:
-        pass
-    proc = subprocess.Popen(
-        argv, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-        text=True, encoding="utf-8", errors="replace", env=env,
-    )
-    try:
-        assigned = bool(k32.AssignProcessToJobObject(
-            ctypes.c_void_p(job), ctypes.c_void_p(int(proc._handle))
-        ))
-    except Exception:
+        assign_error = None
         assigned = False
-    try:
+        try:
+            assigned = bool(k32.AssignProcessToJobObject(
+                ctypes.c_void_p(job), ctypes.c_void_p(int(proc._handle))
+            ))
+        except Exception as exc:
+            assign_error = exc
+        if assign_error is not None or not assigned:
+            # fail-closed：未隔离的进程不可继续跑 → 立即终止/回收，再抛错
+            _terminate_and_reap(k32, job, proc)
+            detail = (
+                "%s: %s" % (type(assign_error).__name__, assign_error)
+                if assign_error is not None
+                else "AssignProcessToJobObject=false"
+            )
+            raise IsolationError("assign_process_to_job_failed: %s" % detail)
+
         try:
             out, err = proc.communicate(timeout=max(1, int(timeout)))
         except subprocess.TimeoutExpired:
-            try:
-                k32.TerminateJobObject(ctypes.c_void_p(job), 1)
-            except Exception:
-                proc.kill()
-            try:
-                out, err = proc.communicate(timeout=5)
-            except subprocess.TimeoutExpired:
-                proc.kill()
-                out, err = "", ""
-            raise subprocess.TimeoutExpired(argv, timeout, output=out, stderr=err)
+            _terminate_and_reap(k32, job, proc)
+            raise
         return SimpleNamespace(
             returncode=proc.returncode, stdout=out or "", stderr=err or "",
-            isolation="job" if assigned else "job-assign-failed",
+            isolation="job",
         )
     finally:
         _close(job)
