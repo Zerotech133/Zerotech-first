@@ -1,0 +1,68 @@
+{
+  "schema": "zero_interop_h0/v1",
+  "generated_at": "2026-11-01T01:45:00+08:00",
+  "note": "H0 本地互操作件：MCP 工具清单 + A2A Agent Card 草案（仅本地JSON，不联网、不注册）；真实 endpoint/签名后续单。",
+  "mcp_tools": [
+    {
+      "name": "zero_devtask_status",
+      "description": "查询 devtask 工单/分支/worktree 状态（只读）",
+      "input_schema": {"type": "object", "properties": {"tid": {"type": "string"}}, "required": []}
+    },
+    {
+      "name": "zero_dispatch_list",
+      "description": "列出 tianfeng_dispatch 台账（只读）",
+      "input_schema": {"type": "object", "properties": {"limit": {"type": "integer"}}, "required": []}
+    },
+    {
+      "name": "zero_w1_acceptance",
+      "description": "运行 W1 验收一条命令（version/8787 鉴权/未授权矩阵/P1 回归，只读）",
+      "input_schema": {"type": "object", "properties": {}, "required": []}
+    },
+    {
+      "name": "zero_obs_export",
+      "description": "导出 OTel GenAI 形态 span JSONL（只读）",
+      "input_schema": {"type": "object", "properties": {"limit": {"type": "integer"}}, "required": []}
+    }
+  ],
+  "a2a_agent_cards": [
+    {
+      "protocolVersion": "1.0",
+      "name": "zero-devtask",
+      "description": "零界研发治理 Agent：worktree/分支/评审门/质量闸（本地）",
+      "url": "http://127.0.0.1:8091/.well-known/agent-card.json",
+      "preferredTransport": "JSONRPC",
+      "skills": [
+        {"id": "devtask.status", "name": "工单状态", "description": "只读查询任务/分支状态"},
+        {"id": "devtask.merge", "name": "受控合并", "description": "需人类审批；L2 五要素"}
+      ],
+      "securitySchemes": {"local-draft": {"type": "none"}},
+      "security": [{"local-draft": []}]
+    },
+    {
+      "protocolVersion": "1.0",
+      "name": "zero-hermes",
+      "description": "零界 Hermes 执行/工具 Agent（8787，登录门后）",
+      "url": "http://127.0.0.1:8091/.well-known/hermes-agent-card.json",
+      "preferredTransport": "JSONRPC",
+      "skills": [
+        {"id": "hermes.chat", "name": "对话/规划", "description": "A0 规划与执行闭环"},
+        {"id": "hermes.tools", "name": "受控工具", "description": "MCP 工具调用（审计留痕）"}
+      ],
+      "securitySchemes": {"session": {"type": "apiKey", "in": "header", "name": "Cookie"}},
+      "security": [{"session": []}]
+    },
+    {
+      "protocolVersion": "1.0",
+      "name": "zero-kb",
+      "description": "零界知识库只读 API Agent（KB Read API v1.1）",
+      "url": "http://127.0.0.1:8091/.well-known/kb-agent-card.json",
+      "preferredTransport": "JSONRPC",
+      "skills": [
+        {"id": "kb.search", "name": "语料检索", "description": "只读检索（语料库+RAG）"},
+        {"id": "kb.get", "name": "文档读取", "description": "按 id 读取知识单元"}
+      ],
+      "securitySchemes": {"local-draft": {"type": "none"}},
+      "security": [{"local-draft": []}]
+    }
+  ]
+}
