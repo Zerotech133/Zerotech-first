@@ -16,6 +16,8 @@
 #   · B2 扩容（工单 K-ORG-20261031-GATEB2）：再 +31 文件（agent 9 / quant 14 / tools 8）。
 #   · 新增 A5 portal 预算门（阶段1 **非 strict**：只拦硬规则，建议项 WARN 不阻断）。
 #   · 文件列表套件的 baseline 查找支持 suiteKey（agent_platform/tests 等）回退。
+# 2026-10-31 K-ORG-20261031-ORGGATEWIRE：新增 org 模型一致性检查（fast/all，warn-only；
+#   当前 fail=6 为真实配置债，记录 fail/warn/info 到汇总但不断言失败，等 W4 决策后再 strict）。
 param(
     [ValidateSet('fast', 'portal', 'kstock', 'ide', 'agent_key', 'quant_key', 'tools_key',
                  'agent', 'quant', 'tools', 'all')]
@@ -330,6 +332,48 @@ try {
             }
         } else {
             Write-Host "[route] ⚠ 缺 tools/portal_route_inventory.py（跳过，不阻断）" -ForegroundColor Yellow
+        }
+    }
+
+    # ===== 2026-10-31 K-ORG-20261031-ORGGATEWIRE：org 模型一致性 gate（warn-only）=====
+    # 当前 fail=6/warn=10/info=42 是真实配置债（等 W4 决策后再 strict），故 **warn-only**：
+    # 只调用 --json、记录 fail/warn/info 到汇总/日志，绝不 newFailures++（不阻断门禁）。
+    # 缺脚本/执行失败/JSON 解析失败也只告警（汇总行仍可见，不让门禁假绿）。
+    if ($Suite -in @('fast', 'all')) {
+        $orgTool = Join-Path $repo 'tools\org_model_consistency.py'
+        if (Test-Path -LiteralPath $orgTool) {
+            $olog = Join-Path $env:TEMP "test_gate_org_$ts.log"
+            $osw = [System.Diagnostics.Stopwatch]::StartNew()
+            python -X utf8 $orgTool --json *> $olog
+            $orc = $LASTEXITCODE
+            $osw.Stop()
+            $osecs = [math]::Round($osw.Elapsed.TotalSeconds, 2)
+            $ofail = 0; $owarn = 0; $oinfo = 0; $oparse = $false
+            if (Test-Path -LiteralPath $olog) {
+                try {
+                    $oj = Get-Content -LiteralPath $olog -Raw -Encoding UTF8 | ConvertFrom-Json
+                    $ofail = [int]$oj.summary.fail
+                    $owarn = [int]$oj.summary.warn
+                    $oinfo = [int]$oj.summary.info
+                    $oparse = $true
+                } catch {
+                    $oparse = $false
+                }
+            }
+            if ($oparse) {
+                Write-Host "[org] WARN-ONLY：fail=$ofail warn=$owarn info=$oinfo（不阻断；W4 决策后转 strict）[${osecs}s]" -ForegroundColor Yellow
+            } else {
+                Write-Host "[org] ⚠ WARN-ONLY：输出无法解析为 JSON（rc=$orc，不阻断；日志 $olog）" -ForegroundColor Yellow
+            }
+            $summary += [pscustomobject]@{
+                Suite = 'org_gate'; Rc = $orc; Failed = $(if ($oparse) { $ofail } else { 0 })
+                Known = $(if ($oparse) { $owarn } else { 0 }); New = 0; Seconds = $osecs; Log = $olog
+            }
+        } else {
+            Write-Host "[org] ⚠ WARN-ONLY：缺 tools/org_model_consistency.py（只告警，不阻断）" -ForegroundColor Yellow
+            $summary += [pscustomobject]@{
+                Suite = 'org_gate'; Rc = -1; Failed = 0; Known = 0; New = 0; Seconds = 0; Log = ''
+            }
         }
     }
 } finally {
