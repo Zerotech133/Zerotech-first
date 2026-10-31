@@ -562,9 +562,19 @@ class Handler(api_data.Handler, api_chanlun_pages.Handler, api_pages_portal.Hand
             logging.getLogger(__name__).warning("silent-except %s: %s", "portal_api.py", exc)
 
     def _is_local_req(self):
-        """P0-1b：请求是否来自本机可信域（判定规则见模块头注释）。"""
+        """P0-1b/M5（K-ORG-20261031-APIHARDEN）：仅当 TCP peer 为回环才视为本机可信域。
+
+        修复审计 v2 M5：旧逻辑“缺 X-Portal-Proxy 即本机”可被远端伪造头利用；
+        现要求 client_address 必须是 127.0.0.1/::1（8091 已绑回环，本机直连满足），
+        反代来源还须 X-Real-IP 为回环。合成 stub 无 client_address 时按不可信处理，
+        真实 BaseHTTPRequestHandler 一定有该属性。
+        """
+        addr = getattr(self, "client_address", None)
+        peer = addr[0] if isinstance(addr, (tuple, list)) and addr else ""
+        if peer not in ("127.0.0.1", "::1"):
+            return False
         if not (self.headers.get("X-Portal-Proxy") or "").strip():
-            return True   # 无反代标记 = 本机直连 8091（已绑回环）
+            return True   # 本机直连 8091（已绑回环）
         rip = (self.headers.get("X-Real-IP") or "").strip()
         return rip in ("127.0.0.1", "::1")
 
@@ -1043,11 +1053,6 @@ color:#fff;font-size:13.5px;cursor:pointer}
             import api_jev_review
             api_jev_review.handle_post(self, path)
             return
-        if path.startswith('/api/analysis/'):
-            # K-STOCK-ANALYSIS-P0C2 个股分析入队（独立文件 api_analysis.py）
-            import api_analysis
-            api_analysis.handle_post(self, path, self.path.split("?", 1)[1] if "?" in self.path else "")
-            return
         if path.startswith('/api/customer/'):
             import api_customer
             api_customer.handle_post(self, path)
@@ -1073,6 +1078,14 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 self._json({"error": "too many requests: 写端点每分钟限 "
                             f"{_WRITE_MAX_PER_MIN} 次"}, 429)
                 return
+        # H3（K-ORG-20261031-APIHARDEN）：analysis 写分支移到 token 闸门+频控之后，
+        # 不得再以“早分支”绕过 _MUTATION_POSTS 鉴权（审计 v2 H3）。
+        if path.startswith('/api/analysis/'):
+            import api_analysis
+            api_analysis.handle_post(
+                self, path,
+                self.path.split("?", 1)[1] if "?" in self.path else "")
+            return
         try:
             if path == "/api/sim/confirm":
                 # WO-BOT-CONFIRM：人工确认 approve/reject（paper-only，执行走 trading_bot_flow）

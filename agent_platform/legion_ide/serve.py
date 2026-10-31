@@ -403,8 +403,15 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
                 wt, error = G.resolve_worktree(repo, task)
                 if error:
                     return self._json(400, error)
-                return self._json(200, {"ok": True, "task": task,
-                                        **G.lock_info(wt)})
+                info = dict(G.lock_info(wt) or {})
+                # M1（K-ORG-20261031-APIHARDEN）：不向他人泄露持锁 owner，
+                # 仅当持锁者就是当前会话身份时返回 owner；否则置空（locked 仍可见）。
+                requester = G.session_owner(dict(self.headers))
+                holder = str(info.get("owner") or "")
+                if holder and holder != requester:
+                    info["owner"] = ""
+                    info["owner_masked"] = True
+                return self._json(200, {"ok": True, "task": task, **info})
             if path == "/api/ide/audit":
                 denied = self._rw_denied()
                 if denied:
@@ -854,14 +861,15 @@ def make_handler(repo: Path, portal_url: str, bundle_path: Path | None = None):
             denied = self._rw_denied()
             if denied:
                 return self._json(403, denied)
-            q = parse_qs(parsed.query)
-            task = (q.get("task") or [""])[0].strip()
-            owner = (q.get("owner") or [""])[0].strip()
+            task = (parse_qs(parsed.query).get("task") or [""])[0].strip()
+            # M1（K-ORG-20261031-APIHARDEN）：owner 一律取会话身份，忽略 query
+            # 自报（旧实现允许任意 query owner 释放他人锁）。
+            owner = G.session_owner(dict(self.headers))
+            if not owner:
+                return self._json(403, G.err("no_session", "缺少有效 IDE 会话"))
             wt, error = G.resolve_worktree(repo, task)
             if error:
                 return self._json(400, error)
-            if not owner:
-                return self._json(400, G.err("owner_required", "缺少 owner"))
             res = G.release_lock(wt, owner)
             G.audit(repo, "code_action", task, owner, "unlock")
             return self._json(200 if res.get("ok") else 409, res)

@@ -81,6 +81,7 @@ import hashlib
 import hmac
 import json
 import os
+import re
 import threading
 import uuid
 from dataclasses import dataclass
@@ -256,6 +257,8 @@ RECORDS_DIRNAME = "records"
 IDEM_FILENAME = "idem.json"
 
 _ID_RE_TEXT = r"^[A-Za-z0-9_-]{1,64}$"
+# M2（K-ORG-20261031-APIHARDEN）：msg_id 必须全匹配该正则，禁止路径穿越/绝对路径。
+_ID_RE = re.compile(_ID_RE_TEXT)
 
 _LOCK = threading.RLock()
 _DEFAULT_STORE = None
@@ -506,22 +509,47 @@ def _store():
 
 
 # ---------------------------------------------------------------- sidecar 账
-def _record_path(store, msg_id: str) -> Path:
-    return store.records / ("%s.json" % msg_id)
+def _valid_msg_id(msg_id) -> bool:
+    """M2（K-ORG-20261031-APIHARDEN）：msg_id 只允许 _ID_RE_TEXT 全匹配。
+
+    旧实现把用户可控 msg_id 直接拼路径（`../`、绝对路径、超长/编码串可穿越），
+    审计 v2 M2 要求全匹配 + resolve 包含性双闸；任一不满足即失败关闭。
+    """
+    text = _str(msg_id)
+    return bool(text) and bool(_ID_RE.fullmatch(text))
+
+
+def _record_path(store, msg_id: str):
+    """记录文件路径；非法 msg_id 返回 None（M2 全匹配 + resolve 包含性校验）。"""
+    text = _str(msg_id)
+    if not _valid_msg_id(text):
+        return None
+    records_root = store.records.resolve()
+    path = (records_root / ("%s.json" % text)).resolve()
+    try:
+        path.relative_to(records_root)
+    except ValueError:
+        return None
+    return path
 
 
 def _get_record(store, msg_id: str):
     text = _str(msg_id)
-    if not text:
+    if not _valid_msg_id(text):
         return None
     path = _record_path(store, text)
-    if not path.is_file():
+    if path is None or not path.is_file():
         return None
     return _read_json(path)
 
 
 def _save_record(store, record: dict) -> None:
-    _atomic_write_json(_record_path(store, str(record["msg_id"])), record)
+    msg_id = _str(record.get("msg_id"))
+    path = _record_path(store, msg_id)
+    if path is None:
+        # 失败关闭：不写 records/ 之外的任何路径（也不静默改名字典）。
+        raise ValueError("invalid msg_id for sidecar record: %r" % (msg_id,))
+    _atomic_write_json(path, record)
 
 
 def _find_records_by_report(store, report_id: str) -> list:
@@ -1303,7 +1331,8 @@ def _handle_receipt(store, headers, query):
     else:
         matched = _find_records_by_report(store, report_id)
     if not matched:
-        if msg_id:
+        if msg_id and _valid_msg_id(msg_id):
+            # M2：只有合法 msg_id 才允许回查 gateway 账（防路径穿越查询）。
             gateway = _gateway_view(msg_id)
             if gateway.get("ok") and gateway.get("state") != "not_found":
                 return 500, _failure(

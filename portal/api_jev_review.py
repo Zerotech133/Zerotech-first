@@ -25,9 +25,15 @@ POST /api/jev/review/resolve
      {"id":"...", "decision":"correct|wrong|uncertain", "reviewer":"老田", "note":""}
 POST /api/jev/review/reopen
      {"id":"...", "reviewer":"老田", "note":""}
+
+2026-10-31 P0-B（K-ORG-20261031-APIHARDEN，审计 v2 M3）：
+- resolve/reopen 写接口需门户登录会话（_authorized 同 api_zhuge_review 口径）；
+- reviewer 一律取会话身份（sub），body 自报他人 → 403 reviewer_mismatch；
+- 未登录 403 unauthorized；会话身份缺失 403。GET 只读接口不变。
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import sqlite3
@@ -335,21 +341,66 @@ def handle_get(handler, path: str, qs_raw: str) -> None:
                         "message": "%s: %s" % (type(exc).__name__, exc)}, 500)
 
 
+# ---------------------------------------------------------------- M3 鉴权
+def _authorized(handler) -> bool:
+    """M3（K-ORG-20261031-APIHARDEN）：写接口必须门户登录会话（zb_session）。
+
+    与 api_zhuge_review._authorized 同款：不信任 body；无会话一律拒。
+    """
+    try:
+        import auth_gateway
+        sid = auth_gateway._cookie_value(handler)
+        return bool(sid and auth_gateway.STORE.get(sid))
+    except Exception:  # noqa: BLE001 - auth 依赖不可用 → 失败关闭
+        return False
+
+
+def _session_actor(handler) -> str:
+    """会话身份：优先 identity sub，其次 session id 短哈希（不落明文 cookie）。"""
+    try:
+        import auth_gateway
+        sid = auth_gateway._cookie_value(handler)
+        rec = auth_gateway.STORE.get(sid) if sid else None
+        if isinstance(rec, dict):
+            for key in ("sub", "user", "username", "name"):
+                if rec.get(key):
+                    return str(rec[key])[:120]
+        if sid:
+            digest = hashlib.sha256(
+                ("zb_session:" + sid).encode("utf-8", "replace")).hexdigest()
+            return "session:" + digest[:8]
+    except Exception:  # noqa: BLE001
+        pass
+    return ""
+
+
 def handle_post(handler, path: str) -> None:
+    # M3（K-ORG-20261031-APIHARDEN）：写接口进程内鉴权；reviewer 取会话身份，
+    # 禁止 body 自报他人（审计 v2 M3）。
+    if not _authorized(handler):
+        _json(handler, {"ok": False, "error": "unauthorized"}, 403)
+        return
     if path not in ("/api/jev/review/resolve", "/api/jev/review/reopen"):
         _json(handler, {"ok": False, "error": "not_found"}, 404)
         return
+    actor = _session_actor(handler)
     try:
         body = _read_body(handler)
+        supplied = str(body.get("reviewer") or "").strip()
+        if not actor:
+            _json(handler, {"ok": False, "error": "unauthorized",
+                            "message": "会话身份缺失"}, 403)
+            return
+        if supplied and supplied != actor:
+            _json(handler, {"ok": False, "error": "reviewer_mismatch",
+                            "message": "reviewer 与会话身份不一致（禁止自报）"}, 403)
+            return
         if path == "/api/jev/review/reopen":
-            result = reopen(
-                body.get("id"), body.get("reviewer"),
-                body.get("note") or "",
-            )
+            result = reopen(body.get("id"), actor, body.get("note") or "")
         else:
             result = resolve(
-                body.get("id"), body.get("decision"),
-                body.get("reviewer"), body.get("note") or "",
+                body.get("id"), body.get("decision"), actor,
+                body.get("note") or "",
             )
     except ValueError as exc:
         _json(handler, {"ok": False, "error": "invalid_params", "message": str(exc)}, 400)

@@ -190,6 +190,11 @@ def _read_body(handler):
 
 
 def handle_post(handler, path, qs):
+    # H3（K-ORG-20261031-APIHARDEN）：进程内鉴权兜底。即使 portal_api 将来又出现
+    # 早分支/其它调用方，analysis 写接口也不得绕过 token 闸门（审计 v2 H3）。
+    if not handler._check_portal_token():
+        return _json(handler, {"ok": False,
+                               "error": "forbidden: 缺失或不匹配的 X-Portal-Token"}, 403)
     if path not in ("/api/analysis/submit", "/api/analysis/review"):
         return _json(handler, {"ok": False, "error": "unknown analysis post"}, 404)
     try:

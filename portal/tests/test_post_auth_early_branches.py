@@ -20,6 +20,8 @@ class H:
         self._token_ok = token_ok
         self.status = None
         self.payload = None
+        # H3 后 analysis 分支会走到写频控，真实 BaseHTTPRequestHandler 必有 headers
+        self.headers = {}
 
     def _check_portal_token(self):
         return self._token_ok
