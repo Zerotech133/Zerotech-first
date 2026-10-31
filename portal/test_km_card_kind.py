@@ -11,6 +11,10 @@
      等价，send_msg 缺省即 None，不发模板字段）；
   A3 位置参数与返回值保持 —— json/"interactive"/receive_id/
      receive_id_type 顺序不变，send_msg 返回值原样透出；
+     2026-10-28 OS-FIX-L1-AUDIT（5fbb814ea）起 send_card 新增
+     critical 透传（预警卡豁免静默窗），故 kwarg 恒含
+     critical（缺省 False）——契约已同步更新，非回归；
+  A3b critical=True 透传 —— 红卡/预警卡必须到达 send_msg；
   A4 feishu_bot_ws 5 处 send_card 调用无 kind 实参（静态）；
   A5 km_feishu_hub 调用处含 kind="km_card"（静态）；
   A6 锚点存在性 —— feishu_card_v2 kind=kind 透传锚点 count==1。
@@ -90,7 +94,21 @@ def test_send_card_positional_args_unchanged(monkeypatch):
         "ou_z",
         "chat_id",
     )
-    assert kwargs == {"kind": "km_card"}
+    # 契约更新（2026-10-31 WO-QUAL-PORTAL-20261031）：2026-10-28
+    # OS-FIX-L1-AUDIT（5fbb814ea）有意给 send_card 增加 critical 透传
+    # （预警类豁免飞书静默窗，修复红卡连续三晚被吞），send_msg 恒收
+    # critical（缺省 False）。旧断言 == {"kind": "km_card"} 已过期 →
+    # 显式写全 kwargs，避免再多透传参数时又假红/假绿。
+    assert kwargs == {"kind": "km_card", "critical": False}
+
+
+def test_send_card_critical_true_forwarded(monkeypatch):
+    """critical=True 必须透传到 send_msg（2026-10-28 红卡避静默窗回归护栏）。"""
+    calls = _stub_send_msg(monkeypatch)
+    feishu_card_v2.send_card(_CARD, kind="km_card", critical=True)
+    args, kwargs = calls[0]
+    assert kwargs == {"kind": "km_card", "critical": True}
+    assert args[1] == "interactive"
 
 
 def test_send_card_returns_send_msg_result(monkeypatch):

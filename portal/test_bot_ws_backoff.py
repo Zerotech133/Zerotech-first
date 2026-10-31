@@ -7,11 +7,12 @@
     ≥60s 重置（含恰好 60s 边界）；
   · 源码静态断言：main() 重连环存在、cleanly 出口保留、watchdog
     兜底注释存在、closed on failure 措辞、traceback 尾 ≤200、
-    Client 重建在环内；
+    Client 重建在环内（AST 契约，格式无关）；
   · _patch_ws_card_route 幂等动态验证：重复调用后 CARD 帧路由
     （MessageType.CARD 同路派发）语义不破。
 """
 
+import ast
 import inspect
 import os
 import sys
@@ -81,9 +82,71 @@ def test_src_clean_exit_and_watchdog_kept():
     assert "traceback.format_exc()[-200:]" in _SRC
 
 
+def _main_client_calls(src=None):
+    """在 main() 的 AST 中找 ``Client(...)`` 构造，返回 (环内列表, 环外列表)。
+
+    格式无关：2026-10-27 WO-GUANYU-FMT10 全仓格式化把单行调用拆成多行
+    （commit 838a5bdd7，纯格式零行为变化），旧字符串计数断言因此假红；
+    改为 AST 断言真实契约。``src`` 仅供阴性对照测试注入合成源码。
+    """
+    main_fn = next(n for n in ast.walk(ast.parse(src or _SRC))
+                   if isinstance(n, ast.FunctionDef) and n.name == "main")
+    inside, outside = [], []
+
+    def walk(node, in_while):
+        if isinstance(node, ast.While):
+            for child in ast.iter_child_nodes(node):
+                walk(child, True)
+            return
+        if isinstance(node, ast.Call):
+            fn = node.func
+            name = (fn.id if isinstance(fn, ast.Name)
+                    else fn.attr if isinstance(fn, ast.Attribute) else "")
+            if name == "Client":
+                (inside if in_while else outside).append(node)
+        for child in ast.iter_child_nodes(node):
+            walk(child, in_while)
+
+    for child in ast.iter_child_nodes(main_fn):
+        walk(child, False)
+    return inside, outside
+
+
 def test_src_client_rebuild_inside_loop():
-    """Client 重建在环内：环外初始化 1 处 + 环内重建 1 处（共 2 处）。"""
-    assert _SRC.count("cli = Client(app_id, app_secret, event_handler=handler,") == 2
+    """Client 重建契约（格式无关）：环外初始化 1 处 + 重连环内重建 1 处。
+
+    2026-10-31 WO-QUAL-PORTAL-20261031 根因判定：**非代码回归，是测试契约
+    过期**——2026-10-27 WO-GUANYU-FMT10 格式化批次（838a5bdd7）把
+    ``cli = Client(app_id, app_secret, event_handler=handler,`` 单行拆成多行，
+    行为未变。此处改断言 AST 构造点：恰 1 处 while 环内 + 恰 1 处环外，
+    且两处都复用同一 app_id/app_secret/event_handler（重连必须换新 Client）。
+    """
+    inside, outside = _main_client_calls()
+    assert len(inside) == 1, "重连环内必须重建 Client（存活 ≥60s 新断连周期仍要换新连接）"
+    assert len(outside) == 1, "环外初始化 Client 恰好 1 处"
+    for call in inside + outside:
+        pos = [a.id if isinstance(a, ast.Name) else "?" for a in call.args]
+        kws = {k.arg: (k.value.id if isinstance(k.value, ast.Name) else "?")
+               for k in call.keywords}
+        assert pos[:2] == ["app_id", "app_secret"]
+        assert kws.get("event_handler") == "handler"
+
+
+def test_client_rebuild_check_detects_missing_in_loop_rebuild():
+    """阴性对照：环内不再重建 Client 时契约必须报红（防空壳断言假绿）。"""
+    fake = (
+        "def main():\n"
+        "    cli = Client(app_id, app_secret, event_handler=handler)\n"
+        "    while True:\n"
+        "        try:\n"
+        "            cli.start()\n"
+        "        except Exception:\n"
+        "            time.sleep(1)\n"
+        "            cli.start()\n"          # 回归形态：环内未重建 Client
+    )
+    inside, outside = _main_client_calls(fake)
+    assert len(outside) == 1
+    assert inside == []
 
 
 # ── _patch_ws_card_route 幂等（动态） ────────────────────────
