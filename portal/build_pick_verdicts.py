@@ -20,20 +20,35 @@
       事件数——同票跨档再次入选=独立事件（各自 exec 首买日入桶，九审
       设计），n 可大于去重票数，与 per_code（每票最近一次）是两个视图。
 窗口未满（湖还没走到首次可操作日或窗口终点）如实标 pending，不硬凑。
-用法: "C:/Program Files/Python311/python.exe" portal/build_pick_verdicts.py
+用法（推荐：固定 py311 + 超时 + 分片 + 独立输出 + 进度日志）:
+  & "C:/Program Files/Python311/python.exe" portal/run_build_pick_verdicts_safe.py --help
+直跑（生产链 portal/start_todays_picks.ps1 用法，全量 + 写生产 JSON）:
+  "C:/Program Files/Python311/python.exe" portal/build_pick_verdicts.py
+可调环境变量（安全运行器注入；直跑缺省=全量写生产，行为不变）:
+  VERDICTS_OUT            输出路径，默认 portal/data/pick_verdicts.json
+  VERDICTS_MAX_ARCHIVES   只算尾部 N 份归档（0/缺省=全量；增量/分片）
+  VERDICTS_ARCHIVE_FROM   只算信号日 >= YYYYMMDD 的归档（含）
+  VERDICTS_ARCHIVE_TO     只算信号日 <= YYYYMMDD 的归档（含）
+  VERDICTS_PROGRESS_EVERY 档内每 N 只股票打一行进度（默认 25）
+  VERDICTS_NO_PY_WARN=1   关闭「非 Python311」告警（仅诊断/测试）
+py312 曾出 0xC0000005：WER 实证 python312.dll，且只在 faulthandler 定时栈
+dump 命中 pandas/pyarrow 读链时复现（非本文件业务逻辑），故生产/回归统一
+固定 Python311；别在该负载上用 faulthandler.dump_traceback_later 诊断。
 """
 
 import glob
 import json
 import os
 import sys
+import time
 from datetime import datetime
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, ".."))
 QB = os.path.join(ROOT, "quant_backtest")
 HIST_DIR = os.path.join(HERE, "data", "picks_history")
-OUT = os.path.join(HERE, "data", "pick_verdicts.json")
+PROD_OUT = os.path.abspath(os.path.join(HERE, "data", "pick_verdicts.json"))
+OUT = os.path.abspath(os.environ.get("VERDICTS_OUT") or PROD_OUT)
 WINDOWS = (1, 3, 5)
 
 
@@ -45,6 +60,64 @@ def _trading_days(cal):
 def _code_to_ts(code):
     """600540.SH → ts_daily 的 ts_code 同形态（湖本身就是 .SH 风格）。"""
     return (code or "").strip().upper()
+
+
+def _env_int(name, default=0):
+    """读整数环境变量；非法值忽略并留痕（配置笔误不该中断产线）。"""
+    raw = os.environ.get(name)
+    if raw is None or str(raw).strip() == "":
+        return default
+    try:
+        return int(str(raw).strip())
+    except ValueError:
+        print("[verdicts] 环境变量 %s=%r 非整数，按 %d 处理" % (name, raw, default))
+        return default
+
+
+def _norm_day(value):
+    """YYYY-MM-DD / YYYYMMDD → YYYYMMDD（只留数字前 8 位）。"""
+    digits = "".join(ch for ch in str(value or "") if ch.isdigit())
+    return digits[:8]
+
+
+def _archive_date(fp):
+    """归档文件名里的信号日（build_todays_picks 以 scan_run_date 命名）。"""
+    return _norm_day(os.path.basename(fp))
+
+
+def select_archives(archs, max_archives=0, date_from="", date_to=""):
+    """按信号日区间 + 尾部 N 档筛选待算归档（分片/回归用）。
+
+    只选择「算哪些归档」，不改变单档计算与汇总口径；区间先筛、再取尾部，
+    保证 max_archives 永远命中最新档。纯函数，供测试固化分片语义。
+    """
+    selected = sorted(archs)
+    d_from = _norm_day(date_from)
+    d_to = _norm_day(date_to)
+    if d_from or d_to:
+        selected = [
+            fp
+            for fp in selected
+            if (not d_from or _archive_date(fp) >= d_from)
+            and (not d_to or _archive_date(fp) <= d_to)
+        ]
+    if max_archives and int(max_archives) > 0:
+        selected = selected[-int(max_archives):]
+    return selected
+
+
+def _python_warn():
+    """非 Python311 告警：不阻断（诊断需要），只提示走安全运行器。"""
+    if os.environ.get("VERDICTS_NO_PY_WARN") == "1":
+        return
+    ver = sys.version_info[:2]
+    if ver != (3, 11):
+        print(
+            "[verdicts] WARN 当前 Python %d.%d 非生产口径 Python311；"
+            "py312 曾出 0xC0000005（faulthandler 定时栈 dump×pandas/pyarrow 读链）"
+            "——请用 portal/run_build_pick_verdicts_safe.py 固定 py311" % ver,
+            flush=True,
+        )
 
 
 def pct_between(code, exec_day, d1):
@@ -108,13 +181,29 @@ def pct_between(code, exec_day, d1):
 
 
 def main():
+    _python_warn()
     sys.path.insert(0, QB)
     from tdx_read import read_day, latest_date  # noqa: E402
 
-    archs = sorted(glob.glob(os.path.join(HIST_DIR, "todays_*.json")))
+    max_archives = _env_int("VERDICTS_MAX_ARCHIVES", 0)
+    archive_from = _norm_day(os.environ.get("VERDICTS_ARCHIVE_FROM"))
+    archive_to = _norm_day(os.environ.get("VERDICTS_ARCHIVE_TO"))
+    progress_every = _env_int("VERDICTS_PROGRESS_EVERY", 25)
+    archs = select_archives(
+        sorted(glob.glob(os.path.join(HIST_DIR, "todays_*.json"))),
+        max_archives=max_archives,
+        date_from=archive_from,
+        date_to=archive_to,
+    )
     if not archs:
-        print("[verdicts] 无归档可算（等 build_todays_picks 首份归档）")
+        print("[verdicts] 无归档可算（等 build_todays_picks 首份归档；或筛选区间为空）")
         sys.exit(0)
+    t_start = time.time()
+    print(
+        "[verdicts] 待算归档 %d 份 | Python %d.%d | 输出 %s"
+        % (len(archs), sys.version_info[0], sys.version_info[1], OUT),
+        flush=True,
+    )
     today = latest_date("ts_daily")
     if not today:
         print("[verdicts] 行情湖不可达，跳过")
@@ -205,7 +294,25 @@ def main():
         if not sig or sig > today:
             continue
         n_arch += 1
+        t_arch = time.time()
+        n_stock = 0
         for r in doc.get("stocks") or []:
+            n_stock += 1
+            if progress_every > 0 and n_stock % progress_every == 0:
+                # 长跑可观测（P2-1）：档内每 N 票一行，含已耗时/事件数/总进度
+                print(
+                    "[verdicts] 档 %d/%d %s 进度 %d 票 | 事件 n=%d | 档内 %.0fs | 总 %.0fs"
+                    % (
+                        n_arch,
+                        len(archs),
+                        os.path.basename(fp),
+                        n_stock,
+                        sum(len(v) for v in buckets.values()),
+                        time.time() - t_arch,
+                        time.time() - t_start,
+                    ),
+                    flush=True,
+                )
             code = _code_to_ts(r.get("code"))
             if not code or "." not in code:
                 continue  # 后验口径当前只覆盖 A 股（湖 ts_daily）
@@ -295,6 +402,19 @@ def main():
                                 strat_buckets.setdefault(s, {}).setdefault(
                                     w, []
                                 ).append(r1)
+        print(
+            "[verdicts] 档 %d/%d %s 完成 | 票 %d | 事件 n=%d | 档内 %.1fs | 总 %.1fs"
+            % (
+                n_arch,
+                len(archs),
+                os.path.basename(fp),
+                n_stock,
+                sum(len(v) for v in buckets.values()),
+                time.time() - t_arch,
+                time.time() - t_start,
+            ),
+            flush=True,
+        )
 
     # 汇总
     def blk(vals, w):
@@ -345,6 +465,15 @@ def main():
         "summary": summary,
         "per_code": per_code,
     }
+    # 分片/回归产物自证（仅筛选生效时加字段；全量生产输出结构不变）
+    if max_archives or archive_from or archive_to:
+        out["select"] = {
+            "max_archives": max_archives,
+            "archive_from": archive_from,
+            "archive_to": archive_to,
+            "archives": n_arch,
+            "archive_files": [os.path.basename(fp) for fp in archs],
+        }
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     # K-STOCK-393（20261015 原子写补齐）：api_misc 请求路径并发读此
     # 文件，直写可被读到半截 JSON（sync_publish 判例：tmp+os.replace）
@@ -353,13 +482,16 @@ def main():
         json.dump(out, f, ensure_ascii=False)
     os.replace(tmp, OUT)
     print(
-        "[verdicts] 归档 %d 份 | 覆盖 %d 票 | asof %s" % (n_arch, len(per_code), today)
+        "[verdicts] 归档 %d 份 | 覆盖 %d 票 | asof %s | 输出 %s"
+        % (n_arch, len(per_code), today, OUT),
+        flush=True,
     )
     for w in WINDOWS:
         b = summary["windows"][str(w)]
         print(
             "  execT+%d(首买=信号+2开盘): n=%s 命中率=%s%% 均值=%s%%"
-            % (w, b["n"], b["hit"], b["avg"])
+            % (w, b["n"], b["hit"], b["avg"]),
+            flush=True,
         )
 
 
