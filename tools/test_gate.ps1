@@ -67,7 +67,17 @@ switch ($Suite) {
     default   { Write-Host "[ERR] 未知 Suite: $Suite"; exit 2 }
 }
 $paths = @{
-    'portal' = 'portal/tests'; 'kstock' = 'k_stock/tests'
+    # 2026-10-31 WO-QUAL-GATE-PORTAL-20261031：portal 根级回归测试显式纳入 fast 门。
+    # 背景：fast 只收 portal/tests 目录，导致 portal/ 根级 test_bot_ws_backoff.py /
+    # test_km_card_kind.py 长期失败不被门拦（2026-10-31 task-16 修复时才暴露）。
+    # 只显式加这两条，不全量纳入 portal 根 140 个测试（性能）；覆盖守卫见
+    # agent_platform/tests/test_gate_coverage_w5.py::test_portal_root_regressions_gated。
+    'portal' = @(
+        'portal/tests',
+        'portal/test_bot_ws_backoff.py',
+        'portal/test_km_card_kind.py'
+    )
+    'kstock' = 'k_stock/tests'
     'agent'  = 'agent_platform/tests'; 'quant' = 'quant_backtest/tests'
     'tools'  = 'tools/tests'
     'ide'    = @(

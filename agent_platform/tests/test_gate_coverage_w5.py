@@ -228,3 +228,64 @@ def test_baseline_suite_key_fallback_ready():
         assert isinstance(baseline[key].get("flaky", []), list)
     assert "suiteKey" in GATE_PATH.read_text(encoding="utf-8-sig"), (
         "test_gate.ps1 缺 suiteKey 回退逻辑，文件列表套件的既存登记将失效")
+
+
+# ── portal 根级回归测试入门守卫（2026-10-31 WO-QUAL-GATE-PORTAL-20261031）──
+# 根因：fast 原只收 portal/tests 目录，portal/ 根级两条回归测试
+# （test_bot_ws_backoff / test_km_card_kind）长期失败却不被门拦，2026-10-31
+# task-16 修复时才暴露。本守卫锁死「显式纳入且仅这两条」，既防回退成只收
+# portal/tests，也防“图省事”把 portal 根 140 个测试全量塞进门禁（性能）。
+PORTAL_ROOT_REGRESSIONS = {
+    "portal/test_bot_ws_backoff.py",
+    "portal/test_km_card_kind.py",
+}
+
+
+def _portal_suite_targets(gate: str) -> list:
+    """解析 $paths 表里 portal 套件的目标（兼容 字符串 与 数组 两种写法）。"""
+    m = re.search(r"'portal'\s*=\s*@\((.*?)\n    \)", gate, re.S)
+    if m:
+        return re.findall(r"'([^']+)'", m.group(1))
+    m = re.search(r"'portal'\s*=\s*'([^']+)'", gate)
+    return [m.group(1)] if m else []
+
+
+def test_portal_root_regressions_gated():
+    """portal 根级两个回归测试必须显式在 fast portal 套件内。"""
+    gate = _gate_text()
+    targets = _portal_suite_targets(gate)
+    assert "portal/tests" in targets, (
+        "portal 套件必须仍覆盖 portal/tests 目录（实际 %s）" % targets)
+    root_files = [t for t in targets
+                  if t.startswith("portal/") and t.endswith(".py")]
+    assert set(root_files) == PORTAL_ROOT_REGRESSIONS, (
+        "fast portal 套件根级文件应为且仅为 %s（实际 %s）：不得回退成只收 "
+        "portal/tests，也不得全量纳入 portal 根 140 个测试"
+        % (sorted(PORTAL_ROOT_REGRESSIONS), root_files))
+    for f in PORTAL_ROOT_REGRESSIONS:
+        assert (REPO / f).is_file(), "gate 目标不存在: %s" % f
+    # 多目标必须真被 pytest 消费：脚本按 @($paths[$name]) 展开为多路径参数
+    assert "$targets = @($paths[$name])" in gate, (
+        "test_gate.ps1 缺多目标展开，portal 数组会只跑第一项")
+
+
+def test_portal_suite_still_switchable():
+    """-Suite portal 仍映射到 portal 套件（数组改造不得丢 switch 分支）。"""
+    assert re.search(
+        r"'portal'\s*\{\s*\$suites\s*=\s*@\('portal'\)\s*\}", _gate_text())
+
+
+def test_test_gate_ps1_keeps_utf8_bom():
+    """test_gate.ps1 必须保留 UTF-8 BOM（2026-10-31 本单实测踩坑）。
+
+    门禁由 `powershell -File tools/test_gate.ps1` 执行；Windows PowerShell 5.1
+    对无 BOM 的 UTF-8 按 ANSI(GBK) 解码，中文注释/字符串的引号会错位 →
+    整脚本 ParserError（GATE 恒失败或恒不跑）。编辑工具重写 ps1 时易丢 BOM，
+    故用字节级断言锁死。
+    """
+    raw = GATE_PATH.read_bytes()
+    assert raw.startswith(b"\xef\xbb\xbf"), (
+        "test_gate.ps1 丢了 UTF-8 BOM：Windows PowerShell 5.1 会按 ANSI 解码中文 → "
+        "整脚本解析失败（用 UTF-8 BOM 保存即可）")
+    text = raw.decode("utf-8-sig")
+    assert "GATE PASS" in text and "新增失败" in text
