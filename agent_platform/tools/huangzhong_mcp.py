@@ -30,6 +30,8 @@ import json
 import os
 import subprocess
 import sys
+import threading
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -85,8 +87,37 @@ TOOLS = [
     },
 ]
 
+#: 受控写工具（Phase 2，老田 2026-10-31 批 A）：默认关闭（HUANGZHONG_MCP_WRITE=1 才注册）
+#: 只允许两个固定动作：复核 / 当前 HEAD 验收；必须带精确 confirm 口令；限频 60s；
+#: 每次调用写 dev_events code_action 审计；不接受调用方传路径/参数。
+WRITE_ENABLED = str(os.environ.get("HUANGZHONG_MCP_WRITE") or "0").strip().lower() \
+    in ("1", "true", "on", "yes")
+WRITE_TOOLS = [
+    {
+        "name": "huangzhong_run_review",
+        "description": "【受控写】立即跑一次黄忠六条复核（只读计算 + 写 work 报告）。"
+                       "必须 confirm=\"RUN-REVIEW\"；60s 限频；仅在 HUANGZHONG_MCP_WRITE=1 时可用。",
+        "inputSchema": {"type": "object", "properties": {
+            "confirm": {"type": "string", "description": "必须为 RUN-REVIEW"}},
+            "required": ["confirm"], "additionalProperties": False},
+    },
+    {
+        "name": "huangzhong_run_acceptance",
+        "description": "【受控写】对当前 HEAD 立即跑一次黄忠验收（写 acceptance 单 + 日更）。"
+                       "必须 confirm=\"RUN-ACCEPT\"；60s 限频；仅在 HUANGZHONG_MCP_WRITE=1 时可用。",
+        "inputSchema": {"type": "object", "properties": {
+            "confirm": {"type": "string", "description": "必须为 RUN-ACCEPT"}},
+            "required": ["confirm"], "additionalProperties": False},
+    },
+]
+CONFIRM_REVIEW = "RUN-REVIEW"
+CONFIRM_ACCEPT = "RUN-ACCEPT"
+MIN_INTERVAL_S = 60.0
+_WRITE_LOCK = threading.Lock()
+_LAST_RUN = {"review": 0.0, "accept": 0.0}
 
-# ── 工具实现（纯只读）──────────────────────────────────────────────────────
+
+# ── 工具实现（只读 + 受控写）──────────────────────────────────────────────
 
 def _now() -> datetime:
     return datetime.now().astimezone()
@@ -232,6 +263,95 @@ def _tasks_health() -> dict:
         return {"ok": False, "error": "%s: %s" % (type(exc).__name__, str(exc)[:200])}
 
 
+def _py() -> str:
+    return sys.executable or "python"
+
+
+def _audit(tool: str, detail: str) -> None:
+    """写 dev_events code_action 审计（fail-open，审计失败不影响工具返回）。"""
+    try:
+        tools_dir = str(REPO / "tools")
+        if tools_dir not in sys.path:
+            sys.path.insert(0, tools_dir)
+        import events as _events  # noqa: WPS433 —— 惰性导入，避免拖慢只读路径
+        _events.emit(kind="code_action", task="HUANGZHONG-MCP", agent="HERMES",
+                     ide="Hermes 8787", model="huangzhong-mcp",
+                     detail="%s %s" % (tool, detail))
+        return
+    except Exception:  # noqa: BLE001 —— fallback 直写（同 schema）
+        pass
+    try:
+        p = REPO / "portal" / "data" / "dev_events.jsonl"
+        p.parent.mkdir(parents=True, exist_ok=True)
+        now = _now()
+        rec = {"ts": now.strftime("%Y-%m-%d %H:%M:%S"),
+               "day": now.date().isoformat(), "kind": "code_action",
+               "task": "HUANGZHONG-MCP", "agent": "HERMES",
+               "ide": "Hermes 8787", "model": "huangzhong-mcp",
+               "detail": ("%s %s" % (tool, detail))[:300]}
+        with p.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    except Exception:  # noqa: BLE001 —— 审计永远 fail-open
+        pass
+
+
+def _run_tool_cmd(cmd: list, timeout: int = 180):
+    """跑固定白名单命令（测试可 monkeypatch 本函数，不真跑子进程）。"""
+    return subprocess.run(cmd, cwd=str(REPO), capture_output=True, text=True,
+                          timeout=timeout, encoding="utf-8", errors="replace")
+
+
+def _guard_write(kind: str, confirm, expect: str) -> None:
+    if not WRITE_ENABLED:
+        raise RuntimeError("write tools disabled（HUANGZHONG_MCP_WRITE=0）")
+    if str(confirm or "").strip() != expect:
+        raise ValueError("confirm 口令错误：需 %r" % expect)
+    now = time.monotonic()
+    if now - _LAST_RUN[kind] < MIN_INTERVAL_S:
+        raise RuntimeError("限频：%s 刚跑过（<%.0fs），请复用上次结果"
+                           % (kind, MIN_INTERVAL_S))
+
+
+def _latest_daily_row() -> dict:
+    p = WORK / "daily.jsonl"
+    try:
+        lines = [ln for ln in p.read_text(encoding="utf-8",
+                                          errors="replace").splitlines() if ln.strip()]
+        return json.loads(lines[-1]) if lines else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _run_review(confirm) -> dict:
+    with _WRITE_LOCK:
+        _guard_write("review", confirm, CONFIRM_REVIEW)
+        t0 = time.time()
+        r = _run_tool_cmd([_py(), "-X", "utf8", "tools/huangzhong_review.py", "--json"])
+        _LAST_RUN["review"] = time.monotonic()
+        _audit("huangzhong_run_review",
+               "rc=%s elapsed=%.1fs" % (r.returncode, time.time() - t0))
+        return {"ok": r.returncode == 0, "rc": r.returncode,
+                "duration_s": round(time.time() - t0, 1),
+                "review": _latest_review(),
+                "stderr_tail": ((r.stderr or "")[-300:] or None)}
+
+
+def _run_acceptance(confirm) -> dict:
+    with _WRITE_LOCK:
+        _guard_write("accept", confirm, CONFIRM_ACCEPT)
+        t0 = time.time()
+        r = _run_tool_cmd([_py(), "-X", "utf8", "tools/huangzhong_daily.py",
+                           "--daily", "--json"])
+        _LAST_RUN["accept"] = time.monotonic()
+        _audit("huangzhong_run_acceptance",
+               "rc=%s elapsed=%.1fs" % (r.returncode, time.time() - t0))
+        return {"ok": r.returncode == 0, "rc": r.returncode,
+                "duration_s": round(time.time() - t0, 1),
+                "acceptance": _latest_acceptance(),
+                "daily": _latest_daily_row(),
+                "stderr_tail": ((r.stderr or "")[-300:] or None)}
+
+
 def call_tool(name: str, args: dict):
     if name == "huangzhong_status":
         return {"ok": True, "review": _latest_review(),
@@ -247,6 +367,10 @@ def call_tool(name: str, args: dict):
         return _weekly_kpi(args.get("window_days", 7))
     if name == "huangzhong_tasks_health":
         return _tasks_health()
+    if name == "huangzhong_run_review":
+        return _run_review(args.get("confirm"))
+    if name == "huangzhong_run_acceptance":
+        return _run_acceptance(args.get("confirm"))
     raise KeyError("unknown tool: %s" % name)
 
 
@@ -268,7 +392,8 @@ def handle(msg: dict) -> dict:
     if method == "ping":
         return {"jsonrpc": "2.0", "id": mid, "result": {}}
     if method == "tools/list":
-        return {"jsonrpc": "2.0", "id": mid, "result": {"tools": TOOLS}}
+        return {"jsonrpc": "2.0", "id": mid,
+                "result": {"tools": TOOLS + (WRITE_TOOLS if WRITE_ENABLED else [])}}
     if method == "tools/call":
         params = msg.get("params") or {}
         name = params.get("name")

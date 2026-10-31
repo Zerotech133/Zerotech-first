@@ -118,3 +118,87 @@ def test_empty_work_dir_fail_visible(tmp_path, monkeypatch):
     _patch(monkeypatch, repo, work)
     res = R.call_tool("huangzhong_review_latest", {})
     assert res["ok"] is False and "error" in res
+
+
+# ── Phase 2：受控写工具（触发面）──────────────────────────────────────────
+
+class _FakeCmdResult:
+    def __init__(self, rc=0, out="", err=""):
+        self.returncode = rc
+        self.stdout = out
+        self.stderr = err
+
+
+def _list_tools():
+    resp = R.handle({"jsonrpc": "2.0", "id": 1, "method": "tools/list"})
+    return [t["name"] for t in resp["result"]["tools"]]
+
+
+def test_write_tools_hidden_by_default(monkeypatch):
+    monkeypatch.setattr(R, "WRITE_ENABLED", False)
+    names = _list_tools()
+    assert len(names) == 6
+    assert "huangzhong_run_review" not in names
+
+
+def test_write_tools_visible_when_enabled(monkeypatch):
+    monkeypatch.setattr(R, "WRITE_ENABLED", True)
+    names = _list_tools()
+    assert len(names) == 8
+    assert "huangzhong_run_review" in names and "huangzhong_run_acceptance" in names
+
+
+def _prepare_write_env(tmp_path, monkeypatch):
+    repo, work = _make_work(tmp_path)
+    _patch(monkeypatch, repo, work)
+    monkeypatch.setattr(R, "WRITE_ENABLED", True)
+    calls = []
+
+    def fake_cmd(cmd, timeout=180):
+        calls.append(cmd)
+        return _FakeCmdResult(0, "{}")
+
+    monkeypatch.setattr(R, "_run_tool_cmd", fake_cmd)
+    monkeypatch.setattr(R, "_LAST_RUN", {"review": 0.0, "accept": 0.0})
+    return repo, calls
+
+
+def _call(name, **args):
+    resp = R.handle({"jsonrpc": "2.0", "id": 9, "method": "tools/call",
+                     "params": {"name": name, "arguments": args}})
+    return resp
+
+
+def test_run_review_requires_confirm_and_audits(tmp_path, monkeypatch):
+    repo, calls = _prepare_write_env(tmp_path, monkeypatch)
+    resp = _call("huangzhong_run_review", confirm="RUN-REVIEW")
+    assert resp["result"]["isError"] is False
+    assert calls and "huangzhong_review.py" in str(calls[0])
+    ev = (repo / "portal" / "data" / "dev_events.jsonl").read_text(
+        encoding="utf-8").splitlines()
+    assert any("code_action" in line and "huangzhong_run_review" in line for line in ev)
+    # 错口令 → 拒绝
+    bad = _call("huangzhong_run_review", confirm="WRONG")
+    assert bad["result"]["isError"] is True
+    # 60s 限频 → 第二次拒绝（第一次已刷新 _LAST_RUN）
+    again = _call("huangzhong_run_review", confirm="RUN-REVIEW")
+    assert again["result"]["isError"] is True
+    assert "限频" in again["result"]["content"][0]["text"]
+
+
+def test_run_acceptance_ok(tmp_path, monkeypatch):
+    _prepare_write_env(tmp_path, monkeypatch)
+    resp = _call("huangzhong_run_acceptance", confirm="RUN-ACCEPT")
+    assert resp["result"]["isError"] is False
+    payload = json.loads(resp["result"]["content"][0]["text"])
+    assert payload["ok"] is True
+    assert payload["acceptance"]["verdict"] == "PASS"
+
+
+def test_write_tools_disabled_blocks_call(tmp_path, monkeypatch):
+    repo, work = _make_work(tmp_path)
+    _patch(monkeypatch, repo, work)
+    monkeypatch.setattr(R, "WRITE_ENABLED", False)
+    resp = _call("huangzhong_run_review", confirm="RUN-REVIEW")
+    assert resp["result"]["isError"] is True
+    assert "disabled" in resp["result"]["content"][0]["text"]

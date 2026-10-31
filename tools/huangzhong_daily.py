@@ -52,6 +52,25 @@ def _emit_event(summary: dict, emit_fn=None) -> None:
         pass
 
 
+def _append_accept_event(summary: dict, out: Path) -> None:
+    """事件面（WO-HZ-HERMES-PHASE2-20261031）：验收结果追加 events.jsonl。
+
+    append-only、fail-open；供 8091 `/api/huangzhong/events` 与 Hermes 控制面
+    只读消费（不引入外部推送；PASS/OBSERVE/REJECT 全记，展示侧自行过滤）。
+    """
+    try:
+        out.mkdir(parents=True, exist_ok=True)
+        rec = {"ts": summary.get("ts"), "kind": "acceptance",
+               "verdict": summary.get("verdict"), "commit": summary.get("commit"),
+               "reasons": summary.get("reasons") or [],
+               "baseline_age_h": summary.get("baseline_age_h"),
+               "redteam_rate": summary.get("redteam_rate")}
+        with (out / "events.jsonl").open("a", encoding="utf-8") as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    except Exception:  # noqa: BLE001  fail-open：事件面永不影响日更主流程
+        pass
+
+
 def run_daily(commit: str = "HEAD", accept_fn=None, out_dir: Path | None = None,
               emit_fn=None) -> dict:
     accept = accept_fn or _accept_fn()
@@ -63,6 +82,7 @@ def run_daily(commit: str = "HEAD", accept_fn=None, out_dir: Path | None = None,
         "blocking": rep.get("blocking"),
         "reasons": rep.get("reasons") or [],
         "baseline_failed": ((rep.get("evidence") or {}).get("baseline") or {}).get("failed"),
+        "baseline_age_h": ((rep.get("evidence") or {}).get("baseline") or {}).get("age_hours"),
         "redteam_rate": ((rep.get("evidence") or {}).get("redteam") or {}).get("pass_rate"),
         "report": rep.get("report_md", ""),
     }
@@ -72,6 +92,7 @@ def run_daily(commit: str = "HEAD", accept_fn=None, out_dir: Path | None = None,
         f.write(json.dumps(summary, ensure_ascii=False) + "\n")
     # 先落盘再发事件：事件层失败不回滚、不影响返回值（fail-open）
     _emit_event(summary, emit_fn)
+    _append_accept_event(summary, out)
     return summary
 
 
