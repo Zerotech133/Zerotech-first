@@ -15,6 +15,11 @@ import urllib.request
 from pathlib import Path
 from typing import Optional
 
+try:  # 8787 会话感知探针（2026-10-31 · 24h 审计项）
+    from .hermes_health import probe as _probe_hermes
+except ImportError:  # 直接以脚本方式加载时
+    from hermes_health import probe as _probe_hermes  # type: ignore
+
 REPO = Path(__file__).resolve().parents[2]
 TMP = Path(r"C:\Temp")
 HEALTH_URLS = {
@@ -62,9 +67,15 @@ def _port_open(port: int, timeout: float = 0.8) -> bool:
 
 
 def _hermes_health() -> dict:
-    """Hermes 运行域只读健康（8787 WebUI / 8788 next / 8093 OrgRegistry / 8771 OpenHands / 8103 LDE）。"""
+    """Hermes 运行域只读健康（8787 WebUI / 8788 next / 8093 OrgRegistry / 8771 OpenHands / 8103 LDE）。
+
+    2026-10-31：8787 已加登录门（V6-P0B）。旧口径 `200=活` 会把登录门误判；
+    改用 hermes_health.probe：有会话带 session 真探活，无会话把 302→/login 或 401
+    识别为 **alive + auth_gated**，连接失败才判 down。
+    """
+    _h7 = _probe_hermes()
     checks = {
-        "8787_webui": _http_ok("http://127.0.0.1:8787/"),
+        "8787_webui": _h7["alive"],
         "8788_next": _port_open(8788),
         "8093_org_registry": _http_ok("http://127.0.0.1:8093/"),
         "8771_openhands": _http_ok("http://127.0.0.1:8771/health"),
@@ -74,8 +85,11 @@ def _hermes_health() -> dict:
     return {
         "checks": checks,
         "ok": all(production.values()),
+        "auth_gated": bool(_h7.get("auth_gated")),
+        "detail_8787": _h7,
         "next_expected_off": not checks["8788_next"],
-        "note": "8788 next 由 HermesWebUI-Next-Guard(Disabled) 管理、预期关闭；ok 仅按生产组件判定",
+        "note": ("8788 next 由 HermesWebUI-Next-Guard(Disabled) 管理、预期关闭；"
+                 "8787 登录门：alive + auth_gated 表示服务在线但需会话"),
     }
 
 

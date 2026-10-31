@@ -73,5 +73,15 @@ def test_hermes_health_section(monkeypatch, tmp_path):
     assert kpi["hermes"]["checks"]["8788_next"] is False
 
 
+def test_hermes_health_uses_session_aware_probe(monkeypatch):
+    """2026-10-31：8787 登录门 → alive + auth_gated，而不是 down。"""
+    monkeypatch.setattr(gk, "_probe_hermes", lambda: {
+        "alive": True, "auth_gated": True, "status": 302, "error": ""})
+    h = gk._hermes_health()
+    assert h["checks"]["8787_webui"] is True
+    assert h["auth_gated"] is True
+    assert h["detail_8787"]["status"] == 302
+
+
 def test_port_open_closed_port():
     assert gk._port_open(9) is False
