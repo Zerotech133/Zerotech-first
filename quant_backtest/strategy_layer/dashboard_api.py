@@ -1885,6 +1885,8 @@ CANVAS_ROUTES = ("/canvas", "/strategy/canvas")
 CANVAS_JS_ROUTES = ("/strategy_canvas.js", "/strategy/strategy_canvas.js")
 PAPER_EXCHANGE_PAGE_ROUTES = ("/paper_exchange_card",)
 PAPER_EXCHANGE_JS_ROUTE = "/paper_exchange.js"
+STRATEGY_HEALTH_PAGE_ROUTES = ("/strategy_health", "/strategy/health")
+STRATEGY_HEALTH_JS_ROUTE = "/strategy_health.js"
 
 
 def _send_bytes(handler: Any, body: bytes, content_type: str, code: int = 200) -> None:
@@ -1974,6 +1976,18 @@ def register_routes(server_or_app: Any) -> Any:
             except Exception as exc:  # noqa: BLE001
                 payload, code = ({"ok": False, "error": str(exc)[:200]}, 500)
             return _send_json(self, payload, code)
+        if u.path in STRATEGY_HEALTH_PAGE_ROUTES:
+            try:
+                body = _static_page("strategy_health.html")
+            except OSError as exc:
+                return _send_json(self, {"ok": False, "error": str(exc)[:200]}, 500)
+            return _send_bytes(self, body, "text/html; charset=utf-8")
+        if u.path == STRATEGY_HEALTH_JS_ROUTE:
+            try:
+                body = _static_page("strategy_health.js")
+            except OSError as exc:
+                return _send_json(self, {"ok": False, "error": str(exc)[:200]}, 500)
+            return _send_bytes(self, body, "application/javascript; charset=utf-8")
         if u.path == STRATEGY_HEALTH_ROUTE:
             # 只读策略健康 JSON（Phase 5-A）：优先周报 latest.json；无文件/缺目录
             # 返回 200 insufficient 显式说明（不 500），坏 JSON 显式 500；不写盘
@@ -2235,6 +2249,8 @@ __all__ = [
     "strategy_health_payload",
     "STRATEGY_HEALTH_PATH",
     "STRATEGY_HEALTH_ROUTE",
+    "STRATEGY_HEALTH_PAGE_ROUTES",
+    "STRATEGY_HEALTH_JS_ROUTE",
     "validate_ir_payload",
     "VALIDATE_IR_ROUTE",
     "MAX_IR_BODY_BYTES",
