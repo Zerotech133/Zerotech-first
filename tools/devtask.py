@@ -2556,8 +2556,41 @@ def _attribution_gate(argv):
     return 2, rest
 
 
+def _git_health_autofix(repo=None):
+    """2026-10-31 P140：主仓 .git/config 被外部改成 bare=true 时，任何 devtask 命令
+    启动即自愈（此前只在 merge 门检查，`devtask new/list/prune` 在事故期间直接不可用）。
+    返回 True=健康/已修复；False=修复失败（仅告警，不阻断其余命令）。"""
+    repo = Path(repo or REPO)
+    dotgit = repo / ".git"
+    if not dotgit.exists():
+        return True
+    def _inside():
+        try:
+            r = subprocess.run(["git", "--git-dir=.git", "rev-parse",
+                                "--is-inside-work-tree"], cwd=str(repo),
+                               capture_output=True, text=True, timeout=15)
+            return r.stdout.strip() == "true"
+        except Exception:  # noqa: BLE001
+            return False
+    if _inside():
+        return True
+    try:
+        subprocess.run(["git", "--git-dir=.git", "config", "core.bare", "false"],
+                       cwd=str(repo), capture_output=True, text=True, timeout=15)
+    except Exception as e:  # noqa: BLE001
+        print("[warn] git core.bare 自愈执行失败：%s" % e)
+        return False
+    ok = _inside()
+    if ok:
+        print("[warn] 检测到主仓 core.bare=true（外部误改），已自动修复为 false", file=sys.stderr)
+    else:
+        print("[warn] 主仓 core.bare 异常且自动修复失败（请人工检查 .git/config）", file=sys.stderr)
+    return ok
+
+
 def main():
     a = sys.argv[1:]
+    _git_health_autofix()
     if not a:
         print(__doc__)
         return 0
