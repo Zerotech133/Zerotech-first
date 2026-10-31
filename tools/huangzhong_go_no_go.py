@@ -380,6 +380,51 @@ def load_incidents(work_dir: Path, warnings: list[str]) -> dict:
 
 # ------------------------------------------------------------------- 决策合成
 
+def _maturity_from_sheets(work: Path, now) -> dict:
+    """直扫 acceptance_*.json 计算 ④ 满窗（不依赖 review 明细的 50 条截断）。
+
+    review 报告的 `tracking_samples` 被 _cap 截断为 50 条，最早满窗样本会被
+    截掉；本函数按验收单全量计算 mature/tracking 与最早满窗时间，作为权威值。
+    """
+    win = dt.timedelta(days=7)
+    drill_files = set()
+    for lf in work.glob("drills/drill_ledger_*.json"):
+        try:
+            d = json.loads(lf.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        rows = d.get("drills") if isinstance(d, dict) else d
+        for e in rows or []:
+            if isinstance(e, dict) and e.get("file"):
+                drill_files.add(str(e["file"]))
+    mature, tracking = [], []
+    for f in work.glob("acceptance_*.json"):
+        if f.name in drill_files:
+            continue
+        try:
+            d = json.loads(f.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if str(d.get("verdict") or "").upper() != "PASS":
+            continue
+        gen = _parse_ts(d.get("generated_at"))
+        if gen is None:
+            continue
+        row = {"file": f.name, "generated_at": _iso(gen),
+               "window_end": _iso(gen + win)}
+        (mature if now >= gen + win else tracking).append(row)
+    all_rows = sorted(mature + tracking, key=lambda x: x["window_end"])
+    return {
+        "mature_count": len(mature),
+        "tracking_count": len(tracking),
+        "mature_samples": _cap(mature),
+        "tracking_samples": _cap(tracking),
+        "earliest_window_end": all_rows[0]["window_end"] if all_rows else None,
+        "earliest_mature": mature[0]["window_end"] if mature else None,
+        "source": "acceptance_*.json 直扫（不依赖 review 明细 50 条截断）",
+    }
+
+
 def _tracking_info(items: list[dict]) -> dict:
     """从复核报告 ④ 条目解析满窗/跟踪样本（字段缺失时如实标注）。"""
     it = next((i for i in items if i["id"] == "④"), None)
@@ -711,6 +756,22 @@ def run(work_dir: Path | str | None = None, draft_dir: Path | str | None = None,
                                    "detail": "复核报告 ① 计数不可读"}
     incidents = load_incidents(work, warnings)
     tracking = _tracking_info(review["items"])
+    maturity = _maturity_from_sheets(work, now)
+    if maturity["mature_count"] or maturity["tracking_count"]:
+        tracking = dict(tracking)
+        tracking.update({
+            "mature_count": maturity["mature_count"],
+            "tracking_count": maturity["tracking_count"],
+            "mature_samples": maturity["mature_samples"],
+            "samples": maturity["tracking_samples"],
+            "earliest_window_end": maturity["earliest_window_end"],
+            "earliest_mature": maturity["earliest_mature"],
+            "maturity_source": maturity["source"],
+            "note": ("满窗样本 %d 单、跟踪 %d 单%s（直扫验收单；review 明细截断 50 条仅展示）"
+                     % (maturity["mature_count"], maturity["tracking_count"],
+                        "，最早 %s 满窗" % maturity["earliest_window_end"]
+                        if maturity["earliest_window_end"] else "")),
+        })
     decision = decide(review["items"], review["all_ok"], review["passed"],
                       review["kpi"], coverage, tracking, warnings)
 
