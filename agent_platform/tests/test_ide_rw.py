@@ -42,8 +42,15 @@ def make_repo(tmp_path, status="doing"):
     return repo, wt
 
 
-def _serve(repo, monkeypatch, rw=True):
+_TEST_LOCAL_TOKEN = "tok-ide-rw-tests"
+
+
+def _serve(repo, monkeypatch, rw=True, token=_TEST_LOCAL_TOKEN):
     monkeypatch.setenv(G.RW_ENV, "1" if rw else "0")
+    if token is None:
+        monkeypatch.delenv(G.LOCAL_TOKEN_ENV, raising=False)
+    else:
+        monkeypatch.setenv(G.LOCAL_TOKEN_ENV, token)
     httpd = S.create_server(
         "127.0.0.1", 0, repo=repo, portal_url="http://127.0.0.1:59999"
     )
@@ -65,7 +72,7 @@ def _req(base, method="GET", path="/", body=None, headers=None):
 
 
 def _cookie(base):
-    status, headers, _ = _req(base, "GET", "/rw")
+    status, headers, _ = _req(base, "GET", "/rw?token=" + _TEST_LOCAL_TOKEN)
     assert status == 200
     return headers["Set-Cookie"].split(";")[0]
 
@@ -75,7 +82,8 @@ _LAST_OWNER = ""
 
 def _hdr(base):
     global _LAST_OWNER
-    h = {"Cookie": _cookie(base), "Origin": base}
+    h = {"Cookie": _cookie(base), "Origin": base,
+         "X-IDE-Token": _TEST_LOCAL_TOKEN}
     status, _h, body = _req(base, "GET", "/api/ide/session", headers=h)
     assert status == 200, body
     _LAST_OWNER = json.loads(body)["owner"]
@@ -305,12 +313,35 @@ def test_http_rw_page_sets_cookie(tmp_path, monkeypatch):
     repo, _wt = make_repo(tmp_path)
     httpd, base = _serve(repo, monkeypatch)
     try:
-        status, headers, body = _req(base, "GET", "/rw")
+        status, headers, body = _req(base, "GET",
+                                     "/rw?token=" + _TEST_LOCAL_TOKEN)
         assert status == 200 and "ide_session=" in headers.get("Set-Cookie", "")
         assert b"/api/ide/write" in body
     finally:
         httpd.shutdown()
         httpd.server_close()
+
+
+def test_http_rw_page_requires_token_when_configured(tmp_path, monkeypatch):
+    repo, _wt = make_repo(tmp_path)
+    httpd, base = _serve(repo, monkeypatch)
+    try:
+        status, _h, body = _req(base, "GET", "/rw")
+        assert status == 401 and json.loads(body)["error"] == "local_token_required"
+        status, _h, body = _req(base, "GET", "/rw?token=wrong")
+        assert status == 401 and json.loads(body)["error"] == "local_token_required"
+    finally:
+        httpd.shutdown()
+
+
+def test_http_rw_page_requires_identity_when_no_token(tmp_path, monkeypatch):
+    repo, _wt = make_repo(tmp_path)
+    httpd, base = _serve(repo, monkeypatch, token=None)
+    try:
+        status, _h, body = _req(base, "GET", "/rw")
+        assert status == 403 and json.loads(body)["error"] == "identity_required"
+    finally:
+        httpd.shutdown()
 
 
 def test_http_scope_ok_with_cookie(tmp_path, monkeypatch):

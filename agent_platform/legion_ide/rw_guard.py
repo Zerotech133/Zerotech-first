@@ -87,6 +87,15 @@ LOCAL_TOKEN_ENV = "IDE_LOCAL_TOKEN"
 LOCAL_TOKEN_FILE_ENV = "IDE_LOCAL_TOKEN_FILE"
 
 
+def header_get(headers: dict, name: str) -> str:
+    """大小写不敏感取 header（dict(self.headers) 保留客户端原始大小写）。"""
+    target = str(name or "").lower()
+    for key, value in (headers or {}).items():
+        if str(key).lower() == target:
+            return str(value or "").strip()
+    return ""
+
+
 def local_token() -> str:
     """A1 本地准入 token：未配置返回空串（默认关，不改变现状）。"""
     v = str(os.environ.get(LOCAL_TOKEN_ENV) or "").strip().lstrip("\ufeff")
@@ -127,7 +136,7 @@ def check_cap(headers: dict, scope: str, task: str = ""):
         return None
     if not cap.enabled():
         return None
-    token = str(headers.get("X-ZB-Cap") or "").strip()
+    token = header_get(headers, "X-ZB-Cap")
     if not token:
         token = str(parse_cookies(headers.get("Cookie") or "").get("zbcap") or "").strip()
     res = cap.verify(token, required_scope=str(scope or ""), task=str(task or ""))
@@ -145,7 +154,7 @@ def _local_token_denied(headers: dict, info: dict):
         return None
     if str((info or {}).get("role_source") or "") != "local_fallback":
         return None
-    presented = str(headers.get("X-IDE-Token") or "").strip()
+    presented = header_get(headers, "X-IDE-Token")
     if not presented:
         presented = str(parse_cookies(headers.get("Cookie") or "").get("ide_local_token") or "").strip()
     if presented and secrets.compare_digest(presented, tok):
