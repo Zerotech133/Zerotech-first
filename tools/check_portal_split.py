@@ -23,9 +23,12 @@ PORTAL = REPO / "portal"
 PORTAL_API_BUDGET = 5200
 NEW_FILE_LIMIT = 1200
 # 冻结名单：基线行数（2026-10-28 实测），只减不增
+# 2026-10-31 P120 校正：api_kg 已拆分，基线 5,841→96（否则可回填 5,745 行不报警）；
+# 另经 git show baa92f391 复核：misc/chanlun_pages/portfolio 冻结提交实测即 2710/2328/2322，
+# 当前 2798/2403/2383 属真实增长（非基线登记错误），保持基线不变、增长需 owner 说明/回收。
 FROZEN = {
     "api_backtest.py": 285,          # 2026-10-30 拆分 B0-B6 收口后收紧（6,395→285）
-    "api_kg.py": 5841,
+    "api_kg.py": 96,                 # 2026-10-31：已拆至 96 行，按实际收紧
     "api_misc.py": 2710,
     "api_chanlun_pages.py": 2328,
     "api_portfolio.py": 2322,
