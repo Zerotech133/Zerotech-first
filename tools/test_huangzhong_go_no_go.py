@@ -148,6 +148,27 @@ def _md(rep: dict) -> str:
     return Path(rep["draft"]["path"]).read_text(encoding="utf-8")
 
 
+def test_maturity_computed_from_sheets_not_truncated_detail(tmp_path):
+    """④ 满窗/最早满窗必须直扫验收单：review 明细 tracking_samples 被截断也不影响。"""
+    work = _setup(tmp_path, review=_review(overrides={
+        "④": ("tracking", "满窗 0/52 单（52 单跟踪中）")}))
+    # 8 天前（已满窗）+ 3 天前（跟踪）；review 明细只含后者（模拟 _cap 截断掉最早的）
+    old = "acceptance_oldold00.json"
+    mid = "acceptance_midmid00.json"
+    for name, days in ((old, 8), (mid, 3)):
+        _write_json(work / name, {"verdict": "PASS", "commit": {"sha": "c" * 40},
+                                  "generated_at": _iso(NOW - timedelta(days=days)),
+                                  "mode": "observe", "blocking": False,
+                                  "evidence": {}, "rollback_point": "x"})
+    _, rep = _run(tmp_path, work)
+    t = rep["tracking"]
+    assert t["mature_count"] == 1
+    assert t["tracking_count"] == 1
+    assert t["earliest_window_end"] == _iso(NOW - timedelta(days=8) + timedelta(days=7))
+    assert t["maturity_source"] == "acceptance_*.json 直扫（不依赖 review 明细 50 条截断）"
+    assert "直扫验收单" in t["note"]
+
+
 # ------------------------------------------------------ 决策：GO / 条件化 / NO-GO
 
 def test_go_when_all_ok_and_coverage_12pct(tmp_path):
