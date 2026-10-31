@@ -1,0 +1,44 @@
+{
+ "meta": {
+  "data_insufficient": true,
+  "coverage": [
+   "20260713",
+   "20261030"
+  ],
+  "months": 3,
+  "reports": 4042,
+  "codes": 1626,
+  "note": "初次运行因 IS 无样本暴露数据覆盖不足；下文 invalid_observations 仅作排查记录，不构成证据",
+  "generated_at": "2026-10-31T18:33:08+08:00"
+ },
+ "hypotheses": {},
+ "invalid_observations": {
+  "H34_attention_peak": {
+   "events": 29986,
+   "h20_oos": {
+    "n": 53,
+    "mean_pct": -3.388,
+    "t": -7.73
+   },
+   "note": "无效：仅 3.5 个月、无 IS"
+  },
+  "H35_first_coverage": {
+   "events": 1509,
+   "h20_oos": {
+    "n": 53,
+    "mean_pct": -4.595,
+    "t": -7.36
+   },
+   "note": "无效：仅 3.5 个月、无 IS"
+  },
+  "H36_inst_breadth": {
+   "events": 974,
+   "h20_oos": {
+    "n": 42,
+    "mean_pct": -5.983,
+    "t": -7.5
+   },
+   "note": "无效：仅 3.5 个月、无 IS"
+  }
+ }
+}
