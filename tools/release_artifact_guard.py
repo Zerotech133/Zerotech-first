@@ -52,6 +52,11 @@ CURRENT_LINK_NAME = "current"
 CURRENT_JSON_NAME = "current.json"
 MANIFEST_NAME = "manifest.json"
 LOCK_MANIFEST_NAME = ".artifact_lock.json"
+# M9（K-ORG-20261101-BUNDLEPROV）：8103 实际消费的 _vault bundle 不属 artifact manifest；
+# `--check --with-bundle` 只读附带 bundle 证据（auxiliary，advisory，不改 ok/exit_code）。
+BUNDLE_NAME = "agent_ide_bundle.json"
+DEFAULT_BUNDLE_PATH = Path(r"C:\项目\_vault\legion_ide\agent_ide_bundle.json")
+BUNDLE_ENV = "DEVTOOL_IDE_BUNDLE_DEPLOY"
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -82,6 +87,40 @@ def _sha256(p: Path) -> str:
         return h.hexdigest()
     except OSError:
         return ""
+
+
+def _resolve_bundle_path(bundle_path=None) -> Path:
+    if bundle_path:
+        return Path(bundle_path)
+    env = os.environ.get(BUNDLE_ENV) or ""
+    return Path(env) if env else DEFAULT_BUNDLE_PATH
+
+
+def _inspect_bundle(bundle_path=None) -> dict:
+    """只读采集 bundle 辅助证据：pass/unknown(缺失)/fail(零字节/读取失败)。"""
+    path = _resolve_bundle_path(bundle_path)
+    info = {"path": str(path), "exists": False, "bytes": 0, "sha256": "",
+            "mtime": "", "status": "unknown", "detail": ""}
+    try:
+        if not path.is_file():
+            info["detail"] = "bundle 缺失（8103 回落仓内生成物；重建=rebake_ide_bundle.ps1）"
+            return info
+        st = path.stat()
+        info.update(exists=True, bytes=st.st_size,
+                    mtime=dt.datetime.fromtimestamp(st.st_mtime).astimezone().isoformat(
+                        timespec="seconds"))
+        if st.st_size <= 0:
+            info.update(status="fail",
+                        detail="bundle 零字节/损坏（8103 会读到空数据；需 rebake）")
+        else:
+            sha = _sha256(path)
+            info.update(sha256=sha, status="pass",
+                        detail="bundle exists bytes=%d sha256=%s" % (st.st_size, sha[:16]))
+    except OSError as exc:
+        info.update(status="fail",
+                    detail="bundle 读取失败：%s: %s"
+                    % (type(exc).__name__, str(exc)[:160]))
+    return info
 
 
 def _file_present(p: Path) -> bool:
@@ -141,8 +180,15 @@ def _write_json_atomic(p: Path, data: dict) -> None:
 # ──────────────────────────────────────────────────────────────────────────
 # --check
 # ──────────────────────────────────────────────────────────────────────────
-def check(release_root: Path | str = DEFAULT_RELEASE_ROOT) -> dict:
-    """只读完整性校验；不写任何文件。exit_code: 0 ok / 1 完整性失败 / 2 环境错误。"""
+def check(release_root: Path | str = DEFAULT_RELEASE_ROOT, *,
+          with_bundle: bool = False, bundle_path=None) -> dict:
+    """只读完整性校验；不写任何文件。exit_code: 0 ok / 1 完整性失败 / 2 环境错误。
+
+    ``with_bundle=True`` 时在 ``res["auxiliary"]["bundle"]`` 附带 _vault bundle 证据
+    （path/exists/bytes/sha256/mtime/status）：**advisory，不改变 ok/exit_code**；
+    bundle 缺失=unknown、零字节/读取失败=fail、正常=pass；若 artifact 目录有
+    provenance.json 的 auxiliary.bundle 记录且 sha 不同 → drift=True（warn）。
+    """
     root = Path(release_root)
     res: dict = {
         "schema": SCHEMA, "tool": TOOL_NAME, "tool_version": TOOL_VERSION,
@@ -255,6 +301,39 @@ def check(release_root: Path | str = DEFAULT_RELEASE_ROOT) -> dict:
 
     res["ok"] = (not res["errors"]) and res["exit_code"] == 2  # errors 为空即一致性 ok
     res["exit_code"] = 0 if res["ok"] else 1
+
+    # M9：bundle 辅助段（advisory；不改 ok/exit_code）
+    if with_bundle:
+        blob = _inspect_bundle(bundle_path)
+        recorded = None
+        prov_path = pointer_dir / "provenance.json"
+        prov_meta = {"path": str(prov_path), "exists": prov_path.is_file(),
+                     "recorded": None}
+        if prov_meta["exists"]:
+            payload, _err = _read_json(prov_path)
+            if isinstance(payload, dict):
+                rec = ((payload.get("auxiliary") or {})
+                       if isinstance(payload.get("auxiliary"), dict) else {}).get("bundle")
+                if not isinstance(rec, dict) or not rec:
+                    rec = payload.get("bundle") if isinstance(payload.get("bundle"), dict) else None
+                recorded = rec
+                prov_meta["recorded"] = rec
+        drift = None
+        if isinstance(recorded, dict) and recorded.get("sha256") and blob.get("sha256"):
+            drift = str(recorded.get("sha256")) != str(blob.get("sha256"))
+        res["auxiliary"] = {"schema": SCHEMA + "/auxiliary/v1",
+                            "bundle": blob, "provenance": prov_meta,
+                            "drift": drift,
+                            "advisory": True,
+                            "note": "bundle 是 auxiliary 证据：不改变 artifact ok/exit_code"}
+        if blob["status"] == "unknown":
+            res["warnings"].append("bundle_missing_or_unreadable: %s" % blob["detail"])
+        elif blob["status"] == "fail":
+            res["warnings"].append("bundle_bad: %s" % blob["detail"])
+        if drift:
+            res["warnings"].append(
+                "bundle_drift: provenance 记录 sha=%s 实际 sha=%s（生成物会变，仅告警）"
+                % (str((recorded or {}).get("sha256"))[:16], str(blob.get("sha256"))[:16]))
     return res
 
 
@@ -431,6 +510,8 @@ def unlock(release_root: Path | str = DEFAULT_RELEASE_ROOT,
 def _version_payload() -> dict:
     return {"schema": SCHEMA, "tool": TOOL_NAME, "tool_version": TOOL_VERSION,
             "modes": ["--check", "--lock", "--unlock"],
+            "check_flags": ["--with-bundle"],
+            "bundle_default": str(DEFAULT_BUNDLE_PATH),
             "lock_manifest_default": LOCK_MANIFEST_NAME,
             "note": "只读校验 + 只读锁；不自动修复/不发布/不重启/不删文件"}
 
@@ -454,6 +535,18 @@ def render_human(res: dict) -> str:
             lines.append("  [%s] %-18s bytes=%s expected=%s sha=%s" % (
                 mark, name, info.get("bytes"), info.get("expected_bytes"),
                 (info.get("sha256") or "")[:16]))
+        aux = res.get("auxiliary") or {}
+        bundle = aux.get("bundle") if isinstance(aux.get("bundle"), dict) else None
+        if bundle:
+            lines += [
+                "auxiliary bundle（advisory，不影响 ok）: %s" % bundle.get("path"),
+                "  exists=%s bytes=%s status=%s sha256=%s" % (
+                    bundle.get("exists"), bundle.get("bytes"), bundle.get("status"),
+                    str(bundle.get("sha256") or "")[:16]),
+                "  detail: %s" % bundle.get("detail"),
+            ]
+            if aux.get("drift") is not None:
+                lines.append("  provenance drift: %s" % aux.get("drift"))
     else:
         lines.append("ok=%s exit_code=%s" % (res.get("ok"), res.get("exit_code")))
         lines.append("summary: %s" % json.dumps(res.get("summary") or {}, ensure_ascii=False))
@@ -476,6 +569,10 @@ def main(argv: list[str] | None = None) -> int:
     g.add_argument("--version", action="store_true", help="打印工具版本/schema")
     ap.add_argument("--release-root", default=str(DEFAULT_RELEASE_ROOT))
     ap.add_argument("--lock-manifest", default="")
+    ap.add_argument("--with-bundle", action="store_true",
+                    help="--check 时附带 _vault bundle 证据（auxiliary/advisory，不改 ok/exit_code）")
+    ap.add_argument("--bundle-path", default="",
+                    help="bundle 路径（默认 env %s 或 %s）" % (BUNDLE_ENV, DEFAULT_BUNDLE_PATH))
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--quiet", action="store_true")
     args = ap.parse_args(argv)
@@ -488,7 +585,8 @@ def main(argv: list[str] | None = None) -> int:
     root = Path(args.release_root)
     lock_path = Path(args.lock_manifest) if args.lock_manifest else None
     if args.check:
-        res = check(root)
+        res = check(root, with_bundle=bool(args.with_bundle),
+                    bundle_path=args.bundle_path or None)
     elif args.lock:
         res = lock(root, lock_path)
     else:

@@ -69,6 +69,12 @@ PROVENANCE_NAME = "provenance.json"
 SIGN_ALGORITHM = "hmac-sha256"
 KNOWN_MANIFEST_SCHEMAS = ("legion-ide-release/v1",)
 VERSION_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
+# M9（K-ORG-20261101-BUNDLEPROV）：8103 实际消费的 _vault bundle 不在 artifact manifest；
+# 作为 **auxiliary（辅助、非必需）** 段记录 path/exists/bytes/sha256/mtime，与 artifact 分开。
+BUNDLE_NAME = "agent_ide_bundle.json"
+DEFAULT_BUNDLE_PATH = Path(r"C:\项目\_vault\legion_ide\agent_ide_bundle.json")
+BUNDLE_ENV = "DEVTOOL_IDE_BUNDLE_DEPLOY"
+AUXILIARY_SCHEMA = "legion-ide-release-auxiliary/v1"
 
 STATUS_LABEL = {"pass": "PASS", "fail": "FAIL", "unknown": "UNKNOWN"}
 NOTES = (
@@ -79,6 +85,8 @@ NOTES = (
     "source_commit 默认取 manifest.commit（构建 commit）；--source-commit 可显式覆盖并记录 override",
     "git_dirty 是 provenance 生成时刻的工作树状态（basis=provenance-generation-time），非构建时刻快照",
     "current artifact 解析优先 current.json 指针、其次 current junction；两者不一致=drift（fail，拒绝 --write）",
+    "bundle 是 auxiliary（辅助证据）：记录 _vault/legion_ide/agent_ide_bundle.json 的 path/bytes/sha256/mtime；"
+    "不写入 artifact manifest.files，也不参与 provenance 整体 pass/fail 判定（生成物会变，漂移/缺失只告警）",
 )
 
 
@@ -475,9 +483,87 @@ def _verify_signature(payload: dict, signature: dict, key: bytes) -> bool:
 # ---------------------------------------------------------------------------
 # 生成（只读 / --write）
 # ---------------------------------------------------------------------------
+def resolve_bundle_path(bundle_path=None) -> Path:
+    """bundle 路径：显式参数 > 环境变量 > 默认 _vault 部署副本。"""
+    if bundle_path:
+        return Path(bundle_path)
+    env = os.environ.get(BUNDLE_ENV) or ""
+    return Path(env) if env else DEFAULT_BUNDLE_PATH
+
+
+def inspect_bundle(bundle_path=None) -> dict:
+    """只读采集 bundle 辅助证据（不进 manifest.files；不参与必需判定）。"""
+    path = resolve_bundle_path(bundle_path)
+    info = {"path": str(path), "exists": False, "bytes": 0, "sha256": "",
+            "mtime": "", "status": "unknown", "detail": ""}
+    try:
+        if not path.is_file():
+            info["detail"] = "bundle 缺失（8103 回落仓内生成物；重建=rebake_ide_bundle.ps1）"
+            return info
+        st = path.stat()
+        info.update(exists=True, bytes=st.st_size,
+                    mtime=time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(st.st_mtime)))
+        if st.st_size <= 0:
+            info.update(status="fail",
+                        detail="bundle 零字节/损坏（8103 会读到空数据；需 rebake）")
+        else:
+            info.update(sha256=_sha256_file(path), status="pass",
+                        detail="bundle exists bytes=%d sha256=%s"
+                        % (st.st_size, _sha256_file(path)[:16]))
+    except OSError as exc:
+        info["detail"] = "bundle 读取失败：%s: %s" % (type(exc).__name__, str(exc)[:160])
+    return info
+
+
+def _bundle_checks(recorded: dict | None, bundle_path=None) -> tuple[dict, list[dict]]:
+    """生成/校验共用的 bundle 辅助判据（全部 required=False/advisory，不影响 status）。"""
+    current = inspect_bundle(bundle_path)
+    checks: list[dict] = [ _crit(
+        "bundle_current", "当前 bundle 可读且非空（辅助/advisory）",
+        current["status"], "%s（path=%s）" % (current["detail"], current["path"]),
+        required=False, advisory=True,
+        evidence={"bundle": current}) ]
+    rec = recorded if isinstance(recorded, dict) else None
+    if not rec:
+        checks.append(_crit(
+            "bundle_recorded", "provenance.bundle 辅助段（兼容）", "pass",
+            "旧 provenance 无 bundle 段（兼容跳过；新 --write 会记录）",
+            required=False, advisory=True))
+        checks.append(_crit(
+            "bundle_drift", "bundle 与 provenance 记录一致（辅助/advisory）", "unknown",
+            "无记录可比（旧 provenance）", required=False, advisory=True))
+    else:
+        checks.append(_crit(
+            "bundle_recorded", "provenance.bundle 辅助段（兼容）", "pass",
+            "记录 bytes=%r sha256=%s mtime=%r"
+            % (rec.get("bytes"), str(rec.get("sha256") or "")[:16], rec.get("mtime")),
+            required=False, advisory=True, evidence={"recorded": rec}))
+        rec_sha = str(rec.get("sha256") or "")
+        if not current["exists"]:
+            checks.append(_crit(
+                "bundle_drift", "bundle 与 provenance 记录一致（辅助/advisory）", "unknown",
+                "bundle 现存缺失（provenance 记录 bytes=%r sha256=%s；8103 回落仓内）"
+                % (rec.get("bytes"), rec_sha[:16]), required=False, advisory=True))
+        elif not rec_sha:
+            checks.append(_crit(
+                "bundle_drift", "bundle 与 provenance 记录一致（辅助/advisory）", "unknown",
+                "provenance 未记录 sha256，无法比对漂移", required=False, advisory=True))
+        elif rec_sha != current["sha256"]:
+            checks.append(_crit(
+                "bundle_drift", "bundle 与 provenance 记录一致（辅助/advisory）", "unknown",
+                "bundle 漂移：recorded=%s actual=%s（生成物会变；需 rebake/复核，不阻断 artifact）"
+                % (rec_sha[:16], current["sha256"][:16]), required=False, advisory=True))
+        else:
+            checks.append(_crit(
+                "bundle_drift", "bundle 与 provenance 记录一致（辅助/advisory）", "pass",
+                "bundle sha256 与 provenance 记录一致（%s）" % rec_sha[:16],
+                required=False, advisory=True))
+    return current, checks
+
+
 def build_provenance_payload(target: dict, manifest: dict, manifest_sha: str,
                              artifact: dict, git: dict, commit: str,
-                             commit_source: str) -> dict:
+                             commit_source: str, bundle: dict | None = None) -> dict:
     files = {}
     for entry in artifact["files"]:
         if entry["match"]:
@@ -505,6 +591,8 @@ def build_provenance_payload(target: dict, manifest: dict, manifest_sha: str,
         "builder": builder_info(),
         "files": files,
         "files_total": len(files),
+        # M9：bundle 辅助段（独立于 artifact files；不参与 manifest/整链判定）
+        "auxiliary": {"schema": AUXILIARY_SCHEMA, "bundle": bundle or {}},
         "generated_at": _now(),
         "tool": {"name": TOOL_NAME, "version": TOOL_VERSION},
         "signature": None,
@@ -540,7 +628,8 @@ def _signing_check(key: bytes, key_error: str, requested: bool) -> dict:
 
 
 def generate(release_root, version=None, *, repo=None, source_commit="", key_file="",
-             no_git: bool = False, write: bool = False, force: bool = False) -> dict:
+             no_git: bool = False, write: bool = False, force: bool = False,
+             bundle_path="") -> dict:
     """生成 provenance 报告；``write=True`` 时（校验全 pass 才）写 provenance.json。"""
     started = time.perf_counter()
     repo = Path(repo or Path(__file__).resolve().parents[1])
@@ -551,13 +640,16 @@ def generate(release_root, version=None, *, repo=None, source_commit="", key_fil
         "generated_at": _now(), "release_root": str(Path(release_root)),
         "target": target, "current": target.get("current") or {},
         "manifest": {}, "provenance": None, "provenance_path": "",
-        "files": [], "signature": {"status": "unsigned", "required": False},
+        "files": [], "auxiliary": {"schema": AUXILIARY_SCHEMA, "bundle": {}},
+        "signature": {"status": "unsigned", "required": False},
         "git": {}, "checks": [], "gaps": [], "write": None, "errors": [],
         "notes": list(NOTES),
     }
     checks: list[dict] = []
     git = git_state(repo, enabled=not no_git)
     report["git"] = git
+    bundle = inspect_bundle(bundle_path or None)
+    report["auxiliary"]["bundle"] = bundle
     key_bytes, key_error = _read_key(key_file) if key_file else (b"", "")
     requested_key = bool(key_file)
     payload = None
@@ -620,7 +712,7 @@ def generate(release_root, version=None, *, repo=None, source_commit="", key_fil
             if manifest_meta.get("ok"):
                 payload = build_provenance_payload(
                     target, manifest, str(manifest_meta.get("sha256") or ""),
-                    artifact, git, commit, commit_source)
+                    artifact, git, commit, commit_source, bundle=bundle)
                 report["provenance"] = payload
                 report["provenance_path"] = str(Path(target["dir"]) / PROVENANCE_NAME)
                 if not artifact["ok"]:
@@ -644,6 +736,11 @@ def generate(release_root, version=None, *, repo=None, source_commit="", key_fil
                     report["signature"] = {"status": "unverifiable", "present": False,
                                            "required": False, "detail": key_error}
                 checks.append(_signing_check(key_bytes, key_error, requested_key))
+                # M9：bundle 辅助判据（advisory，不影响生成/写入判定）
+                checks.append(_crit(
+                    "bundle_recorded", "bundle 辅助证据已记录（advisory）",
+                    bundle["status"], "%s（path=%s）" % (bundle["detail"], bundle["path"]),
+                    required=False, advisory=True, evidence={"bundle": bundle}))
                 # git 状态为 advisory（不影响生成/写入判定，但如实记录）
                 checks.append(_crit("git_state", "git 状态采集（advisory）",
                                     "pass" if git.get("ok") else "unknown",
@@ -708,7 +805,8 @@ def generate(release_root, version=None, *, repo=None, source_commit="", key_fil
 # 校验（--verify）
 # ---------------------------------------------------------------------------
 def verify(release_root, version=None, *, repo=None, source_commit="", key_file="",
-           no_git: bool = False, require_signature: bool = False) -> dict:
+           no_git: bool = False, require_signature: bool = False,
+           bundle_path="") -> dict:
     """校验已有 provenance.json 与 manifest/实际文件/current 的一致性。"""
     started = time.perf_counter()
     repo = Path(repo or Path(__file__).resolve().parents[1])
@@ -719,6 +817,7 @@ def verify(release_root, version=None, *, repo=None, source_commit="", key_file=
         "release_root": str(Path(release_root)), "target": target,
         "current": target.get("current") or {}, "manifest": {}, "provenance": None,
         "provenance_path": "", "files": [],
+        "auxiliary": {"schema": AUXILIARY_SCHEMA, "bundle": {}, "recorded": {}},
         "signature": {"status": "unsigned", "required": bool(require_signature)},
         "git": {}, "checks": [], "gaps": [], "write": None, "errors": [],
         "notes": list(NOTES),
@@ -726,6 +825,8 @@ def verify(release_root, version=None, *, repo=None, source_commit="", key_file=
     checks: list[dict] = []
     git = git_state(repo, enabled=not no_git)
     report["git"] = git
+    bundle_current = inspect_bundle(bundle_path or None)
+    report["auxiliary"]["bundle"] = bundle_current
     key_bytes, key_error = _read_key(key_file) if key_file else (b"", "")
     target_ok = bool(target.get("ok"))
     checks.append(_crit("target_resolved", "解析目标 artifact",
@@ -833,6 +934,15 @@ def verify(release_root, version=None, *, repo=None, source_commit="", key_file=
                                 "matched=%s/%s errors=%s"
                                 % (artifact["files_matched"], artifact["files_total"],
                                    artifact["errors"][:3] or "无")))
+            # M9：bundle 辅助段比对（recorded vs 当前 _vault 文件；全部 advisory）
+            recorded = ((prov.get("auxiliary") or {}) if isinstance(prov.get("auxiliary"), dict)
+                        else {}).get("bundle")
+            if not isinstance(recorded, dict) or not recorded:
+                recorded = prov.get("bundle") if isinstance(prov.get("bundle"), dict) else None
+            report["auxiliary"]["recorded"] = recorded or {}
+            _cur, _bchecks = _bundle_checks(recorded, bundle_path or None)
+            report["auxiliary"]["bundle"] = _cur
+            checks.extend(_bchecks)
             signature = prov.get("signature")
             signature = signature if isinstance(signature, dict) else None
             if signature and signature.get("value"):
@@ -989,6 +1099,20 @@ def render_markdown(report: dict) -> str:
                         current.get("drift")))
         if current.get("drift_detail"):
             lines.append("- detail：%s" % current.get("drift_detail"))
+    auxiliary = report.get("auxiliary") or {}
+    bundle = auxiliary.get("bundle") if isinstance(auxiliary.get("bundle"), dict) else {}
+    if bundle:
+        lines += ["", "## bundle 辅助证据（advisory；不参与 artifact 判定）", "",
+                  "- path：`%s`" % _md_cell(bundle.get("path")),
+                  "- exists=%s · bytes=%s · mtime=%s" % (
+                      bundle.get("exists"), bundle.get("bytes"), bundle.get("mtime") or "-"),
+                  "- sha256：`%s` · status=%s" % (
+                      _md_cell(bundle.get("sha256") or "-"), _label(bundle.get("status"))),
+                  "- detail：%s" % _md_cell(bundle.get("detail"))]
+        if auxiliary.get("recorded"):
+            lines.append("- provenance 记录：bytes=%r sha256=`%s`"
+                         % ((auxiliary.get("recorded") or {}).get("bytes"),
+                            _md_cell(str((auxiliary.get("recorded") or {}).get("sha256") or "")[:16])))
     write_info = report.get("write")
     if write_info:
         lines += ["", "## 写入", "",
@@ -1039,6 +1163,9 @@ def main(argv=None) -> int:
                         help="--verify 时要求 provenance 必须已签名（unsigned → fail）")
     parser.add_argument("--repo", default="", help="git 仓库根（默认工具所在仓库；仅用于 git_dirty）")
     parser.add_argument("--no-git", action="store_true", help="跳过 git 状态采集（离线/mock）")
+    parser.add_argument("--bundle-path", default="",
+                        help="bundle 辅助证据路径（默认 env %s 或 %s）"
+                        % (BUNDLE_ENV, DEFAULT_BUNDLE_PATH))
     fmt = parser.add_mutually_exclusive_group()
     fmt.add_argument("--json", action="store_true", help="stdout 输出 JSON（稳定机器契约）")
     fmt.add_argument("--markdown", action="store_true", help="stdout 输出 Markdown（默认）")
@@ -1053,13 +1180,15 @@ def main(argv=None) -> int:
                 args.release_root, version=(args.version or None),
                 repo=(args.repo or None), source_commit=args.source_commit,
                 key_file=args.key_file, no_git=args.no_git,
-                require_signature=args.require_signature)
+                require_signature=args.require_signature,
+                bundle_path=args.bundle_path)
         else:
             report = generate(
                 args.release_root, version=(args.version or None),
                 repo=(args.repo or None), source_commit=args.source_commit,
                 key_file=args.key_file, no_git=args.no_git,
-                write=bool(args.write), force=bool(args.force))
+                write=bool(args.write), force=bool(args.force),
+                bundle_path=args.bundle_path)
     except Exception as exc:  # noqa: BLE001 - 环境异常也给出结构化 unknown
         report = {
             "schema": REPORT_SCHEMA, "tool": TOOL_NAME, "tool_version": TOOL_VERSION,
