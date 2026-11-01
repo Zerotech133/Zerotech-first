@@ -119,6 +119,42 @@
       },
       "approved": false,
       "effective_from": "2026-11-01（未启用）"
+    },
+    {
+      "id": "S07_mom20_long_only",
+      "name": "S07 短期反转（-20日收益）多头 top50",
+      "type": "ranking",
+      "owner": "司马微",
+      "source_hypothesis": "H38",
+      "status": "rejected_long_only_no_excess",
+      "executable": false,
+      "rule": "月频取 -ret20 分数 top50 等权（多头）；宇宙=非ST/上市≥250日/价≥2",
+      "validation": {
+        "stats": "2019-2026/93月：CAGR 10.54%，MDD -31.42%，月均超额 -0.01%（t=-0.02），月换手 0.97，容量 5.71 亿",
+        "caveat": "top50 集中后超额消失（top-decile 多头薄利不可移植）；换手 97%/月成本吞噬；不启动影子",
+        "final": "rejected：long-only top50 无超额（t≈0），仅保留 LS 四关证据"
+      },
+      "approved": false,
+      "effective_from": "2026-11-01（未启用）"
+    },
+    {
+      "id": "S08_mom120_long_only",
+      "name": "S08 长期反转（-120日收益）多头 top50（小仓位影子）",
+      "type": "ranking",
+      "owner": "司马微",
+      "source_hypothesis": "H39",
+      "status": "shadow_observing_weak",
+      "executable": false,
+      "rule": "月频取 -ret120 分数 top50 等权（多头）；宇宙=非ST/上市≥250日/价≥2",
+      "validation": {
+        "stats": "2019-2026/93月：CAGR 20.32%，MDD -37.41%，月均超额 0.746%（t=1.4，弱显著），月换手 0.623，容量 3.94 亿",
+        "shadow": "2026-10-30 初始持仓已生成（50 只等权），逐月跟踪",
+        "cost": "0.15%单边×换手已计；换手 62%/月",
+        "caveat": "t=1.4 未达显著；MDD -37%；收益集中于少数年份；小仓位观察，不实盘",
+        "final": "shadow_observing_weak：小仓位影子验证，3 个月后复核"
+      },
+      "approved": false,
+      "effective_from": "2026-11-01（影子观察）"
     }
   ],
   "book_backlog": {

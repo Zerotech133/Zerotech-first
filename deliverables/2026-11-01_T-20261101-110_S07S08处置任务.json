@@ -1,0 +1,20 @@
+{
+ "task_id": "T-20261101-110",
+ "opened_by": "A0",
+ "assigned_dept": "strategy",
+ "assigned_agent": null,
+ "title": "S07/S08 单因子影子处置：S07 拒绝，S08 小仓位观察启动",
+ "body": "【S07/S08 单因子小仓位影子处置】2026-11-01\nS07（mom_20 多头 top50）：CAGR 10.54%、MDD -31.42%、月均超额 -0.01%（t=-0.02）、换手 0.97/月、容量 5.71 亿 → **拒绝，不启动影子**（集中后超额消失，成本吞噬）。\nS08（mom_120 多头 top50）：CAGR 20.32%、MDD -37.41%、月均超额 0.746%（t=1.4，弱显著）、换手 0.623/月、容量 3.94 亿 → **小仓位影子观察启动**（2026-10-30 初始 50 只等权，月频调仓）。\n请复核：①S07 拒绝是否接受；②S08 t=1.4 是否够格观察（小仓位）；③3 个月后（2027-02）复核去留。\n证据：research/reports/s07s08_backtest_*.json；registry S07/S08；hypotheses H42/H43；/selection.html S08 卡。",
+ "severity": "P2",
+ "status": "open",
+ "created_at": "2026-11-01T16:18:55",
+ "due": "2026-11-15",
+ "closure_note": null,
+ "history": [
+  {
+   "at": "2026-11-01T16:18:55",
+   "by": "A0",
+   "action": "open"
+  }
+ ]
+}

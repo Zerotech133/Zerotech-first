@@ -25,7 +25,23 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;color:#79c0ff;font-siz
 .rp-tab{background:var(--panel2);color:var(--dim);border:1px solid var(--bd);border-radius:6px;padding:4px 12px;cursor:pointer;font-size:12px}
 .rp-tab.active{color:var(--fg);border-color:var(--acc)}
 </style>
-<script src="/static/nav.js" defer></script></head>
+<script src="/static/nav.js" defer>
+(async function loadS08(){
+  const $=id=>document.getElementById(id);
+  try{
+    const d=await fetch('/static/s08_shadow.json?ts='+Date.now()).then(r=>r.json());
+    $('s08-date').textContent=d.signal_date||'—';
+    $('s08-n').textContent=d.n||'—';
+    const b=d.backtest||{};
+    $('s08-cagr').textContent=(b.cagr_pct??'—')+'%';
+    $('s08-ex').textContent=(b.excess_mean_monthly_pct??'—')+'% (t='+(b.excess_t??'—')+')';
+    $('s08-cap').textContent=(b.capacity5_median_yi??'—')+' 亿';
+    $('s08-note').textContent='月换手 '+(b.avg_turnover??'—')+'；弱显著信号，小仓位观察；'+(d.disclaimer||'');
+    $('s08-hold').innerHTML=(d.holdings||[]).slice(0,15).map((h,i)=>`<tr><td>${i+1}</td><td><code>${h.ts_code}</code></td><td>${h.name}</td><td>${h.score}</td><td>${(h.w*100).toFixed(2)}</td></tr>`).join('');
+  }catch(e){ $('s08-note').textContent='S08 数据加载失败: '+e.message; }
+})();
+
+</script></head>
 <body>
 <div id="nav"></div>
 <h1>📊 策略库 · 今日选股 <small>策略库负责人 <span class="owner" id="owner">司马微</span></small></h1>
@@ -104,6 +120,17 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;color:#79c0ff;font-siz
 <tr><td>H18 预告修订事件</td><td>493 事件</td><td>改善 -1.51% / 恶化 -2.35%（OOS 均负）</td><td>方向不清晰、容量小 → 只作事件提醒</td></tr>
 </tbody></table>
 <div class="muted" style="margin-top:6px">完整结论：<code>knowledge_docs/选股策略研究结论_20261101.md</code>（已入知识库/RAG）。研究输出，不构成投资建议。</div>
+</div>
+<div class="panel" id="s08panel"><b>S08 长期反转 · 小仓位影子（观察）</b>
+<div class="cards" style="margin-top:8px">
+  <div class="card"><div class="k">信号日</div><div class="v" id="s08-date" style="font-size:16px">—</div></div>
+  <div class="card"><div class="k">持仓</div><div class="v" id="s08-n">—</div></div>
+  <div class="card"><div class="k">回测 CAGR</div><div class="v" id="s08-cagr">—</div></div>
+  <div class="card"><div class="k">月均超额(t)</div><div class="v" id="s08-ex" style="font-size:16px">—</div></div>
+  <div class="card"><div class="k">容量中位</div><div class="v" id="s08-cap" style="font-size:16px">—</div></div>
+</div>
+<div class="muted" id="s08-note" style="margin-top:6px"></div>
+<table style="margin-top:8px"><thead><tr><th>#</th><th>代码</th><th>名称</th><th>分数</th><th>权重%</th></tr></thead><tbody id="s08-hold"></tbody></table>
 </div>
 <div class="panel"><b>风险与纪律</b>
 <ul class="muted" style="margin:6px 0 0 18px;padding:0">
