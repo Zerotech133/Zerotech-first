@@ -127,6 +127,11 @@
    "id": "mining_v2",
    "result": "93 月/15 假设：低波 t-4.47、反转 t-3.78；研报因子无信号",
    "action": "候选（vol/mom/rev）待四关"
+  },
+  {
+   "id": "four_gate_v1",
+   "result": "mom_20/mom_120 四关 PASS（14.3%/12.5% 净多空）；vol/rev_5 FAIL",
+   "action": "候选 H38/H39（待复核）"
   }
  ],
  "deep_mining_directions": [
@@ -242,5 +247,144 @@
    "daily_basic 2023+ → 估值类仅 45 月",
    "挖掘轮非验证，无四关/多重检验修正（15 假设）"
   ]
+ },
+ "four_gate": {
+  "generated_at": "2026-11-01T15:50:47+08:00",
+  "candidates": {
+   "vol_20": {
+    "months": 93,
+    "gates": {
+     "G1_consistency": true,
+     "G2_cost_net": false,
+     "G3_capacity": true,
+     "G4_regime": true
+    },
+    "metrics": {
+     "ic_mean": 0.086,
+     "ic_t": 4.28,
+     "ls_gross_ann_pct": 11.9,
+     "ls_net_ann_pct": 9.7,
+     "lo_net_ann_pct": -0.6,
+     "turnover_monthly_avg": 0.547,
+     "cap_median_yi": 23.22,
+     "regime_up_ls_net_mean_pct": 1.224,
+     "regime_down_ls_net_mean_pct": 0.237,
+     "positive_years": "7/8"
+    },
+    "yearly_ls_net_pct": {
+     "2019": 7.7,
+     "2020": 1.2,
+     "2021": 25.0,
+     "2022": 27.9,
+     "2023": 3.0,
+     "2024": 14.7,
+     "2025": -15.4,
+     "2026": 8.2
+    },
+    "verdict": "FAIL"
+   },
+   "mom_20": {
+    "months": 93,
+    "gates": {
+     "G1_consistency": true,
+     "G2_cost_net": true,
+     "G3_capacity": true,
+     "G4_regime": true
+    },
+    "metrics": {
+     "ic_mean": 0.0624,
+     "ic_t": 4.02,
+     "ls_gross_ann_pct": 18.0,
+     "ls_net_ann_pct": 14.3,
+     "lo_net_ann_pct": 1.3,
+     "turnover_monthly_avg": 0.887,
+     "cap_median_yi": 47.37,
+     "regime_up_ls_net_mean_pct": 0.718,
+     "regime_down_ls_net_mean_pct": 1.613,
+     "positive_years": "6/8"
+    },
+    "yearly_ls_net_pct": {
+     "2019": 20.9,
+     "2020": -4.5,
+     "2021": 1.9,
+     "2022": 32.2,
+     "2023": -1.3,
+     "2024": 16.6,
+     "2025": 7.4,
+     "2026": 31.1
+    },
+    "verdict": "PASS"
+   },
+   "mom_120": {
+    "months": 93,
+    "gates": {
+     "G1_consistency": true,
+     "G2_cost_net": true,
+     "G3_capacity": true,
+     "G4_regime": true
+    },
+    "metrics": {
+     "ic_mean": 0.0582,
+     "ic_t": 3.41,
+     "ls_gross_ann_pct": 14.4,
+     "ls_net_ann_pct": 12.5,
+     "lo_net_ann_pct": 2.2,
+     "turnover_monthly_avg": 0.477,
+     "cap_median_yi": 34.39,
+     "regime_up_ls_net_mean_pct": 1.385,
+     "regime_down_ls_net_mean_pct": 0.503,
+     "positive_years": "6/8"
+    },
+    "yearly_ls_net_pct": {
+     "2019": 11.3,
+     "2020": -19.6,
+     "2021": 5.1,
+     "2022": 52.0,
+     "2023": 3.9,
+     "2024": 36.1,
+     "2025": 4.9,
+     "2026": -1.9
+    },
+    "verdict": "PASS"
+   },
+   "rev_5": {
+    "months": 93,
+    "gates": {
+     "G1_consistency": false,
+     "G2_cost_net": false,
+     "G3_capacity": true,
+     "G4_regime": true
+    },
+    "metrics": {
+     "ic_mean": 0.0373,
+     "ic_t": 2.94,
+     "ls_gross_ann_pct": 14.4,
+     "ls_net_ann_pct": 10.9,
+     "lo_net_ann_pct": -2.3,
+     "turnover_monthly_avg": 0.876,
+     "cap_median_yi": 55.7,
+     "regime_up_ls_net_mean_pct": 0.675,
+     "regime_down_ls_net_mean_pct": 1.094,
+     "positive_years": "5/8"
+    },
+    "yearly_ls_net_pct": {
+     "2019": 15.3,
+     "2020": -13.9,
+     "2021": -2.3,
+     "2022": 36.8,
+     "2023": 8.1,
+     "2024": 4.1,
+     "2025": -3.7,
+     "2026": 36.0
+    },
+    "verdict": "FAIL"
+   }
+  },
+  "pass": [
+   "mom_20",
+   "mom_120"
+  ],
+  "report": "research/reports/four_gate_*.{json,md}",
+  "note": "四关粗估（成本/容量近似）；PASS 仍需人工复核与影子盘"
  }
 }

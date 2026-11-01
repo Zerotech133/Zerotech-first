@@ -1,0 +1,20 @@
+{
+ "task_id": "T-20261101-108",
+ "opened_by": "A0",
+ "assigned_dept": "strategy",
+ "assigned_agent": null,
+ "title": "四关通过候选复核：mom_20/mom_120（H38/H39）",
+ "body": "【四关通过候选 · 请复核是否进影子盘】2026-11-01\n背景：对 mining v2 候选做四关（2019-2026，93 月，前视/成本/容量/regime）：\n- mom_20（短期反转）：净多空 14.3%/年、多头净超额 +1.3%、容量 47.4亿、双 regime 均正 → PASS（H38 candidate）\n- mom_120（长期反转）：净多空 12.5%/年、多头净超额 +2.2%、容量 34.4亿、双 regime 均正 → PASS（H39 candidate）\n- vol_20：多头净 -0.6% → FAIL；rev_5：年度仅 5/8 → FAIL\n请复核：①口径/成本/容量是否接受；②是否进影子盘观察（不直接实盘）；③与现有 S01 过滤层如何组合。\n证据：research/reports/four_gate_*.{json,md}；hypotheses.db H37-H40；能力清单§八。\n纪律：仍属研究候选，进策略库需复核+影子盘；实盘需人类批准。",
+ "severity": "P2",
+ "status": "open",
+ "created_at": "2026-11-01T15:50:47",
+ "due": "2026-11-08",
+ "closure_note": null,
+ "history": [
+  {
+   "at": "2026-11-01T15:50:47",
+   "by": "A0",
+   "action": "open"
+  }
+ ]
+}
