@@ -323,6 +323,19 @@ BADSTANCE = GOOD.replace(
 )
 
 
+def test_sandbox_child_env_scrubs_secrets(monkeypatch):
+    """H6 第二层：子进程不继承宿主 API key/token；只保留启动必需变量。"""
+    from codex_bridge import _sandbox_child_env
+
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-should-not-leak")
+    monkeypatch.setenv("FEISHU_APP_SECRET", "feishu-secret")
+    env = _sandbox_child_env("engine", "platform", "repo")
+    assert "OPENAI_API_KEY" not in env
+    assert "FEISHU_APP_SECRET" not in env
+    assert env["PYTHONPATH"].startswith("engine")
+    assert env["PYTHONIOENCODING"] == "utf-8"
+
+
 def test_sandbox_trial_pilot_ok():
     from codex_bridge import sandbox_trial
 
