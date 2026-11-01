@@ -49,6 +49,15 @@
    "概念定义": 14,
    "关键事实": 14,
    "影响传导": 12
+  },
+  "decision_stats": {
+   "total": 60,
+   "pass": 36,
+   "revise": 24,
+   "reject": 0,
+   "pending": 0,
+   "decided": 60,
+   "decided_at": "2026-11-01T12:53:53+08:00"
   }
  },
  "entries": [
@@ -56,7 +65,7 @@
    "review_id": "REV-20261101-001",
    "source": "AE",
    "source_card_id": "PROP-20261101-001",
-   "status": "pending_review",
+   "status": "approved_for_merge",
    "theme": "AI算力/硬件",
    "angle": "",
    "angle_cn": "—",
@@ -75,15 +84,15 @@
    "traceable": true,
    "review": {
     "checkboxes": {
-     "pass": false,
+     "pass": true,
      "revise": false,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "pass",
+     "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -91,7 +100,7 @@
    "review_id": "REV-20261101-002",
    "source": "AE",
    "source_card_id": "PROP-20261101-002",
-   "status": "pending_review",
+   "status": "approved_for_merge",
    "theme": "AI算力/硬件",
    "angle": "",
    "angle_cn": "—",
@@ -110,15 +119,15 @@
    "traceable": true,
    "review": {
     "checkboxes": {
-     "pass": false,
+     "pass": true,
      "revise": false,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "pass",
+     "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -126,7 +135,7 @@
    "review_id": "REV-20261101-003",
    "source": "AE",
    "source_card_id": "PROP-20261101-003",
-   "status": "pending_review",
+   "status": "approved_for_merge",
    "theme": "其他",
    "angle": "",
    "angle_cn": "—",
@@ -145,15 +154,15 @@
    "traceable": true,
    "review": {
     "checkboxes": {
-     "pass": false,
+     "pass": true,
      "revise": false,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "pass",
+     "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -161,7 +170,7 @@
    "review_id": "REV-20261101-004",
    "source": "AE",
    "source_card_id": "PROP-20261101-004",
-   "status": "pending_review",
+   "status": "approved_for_merge",
    "theme": "其他",
    "angle": "",
    "angle_cn": "—",
@@ -180,15 +189,15 @@
    "traceable": true,
    "review": {
     "checkboxes": {
-     "pass": false,
+     "pass": true,
      "revise": false,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "pass",
+     "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -196,7 +205,7 @@
    "review_id": "REV-20261101-005",
    "source": "AE",
    "source_card_id": "PROP-20261101-005",
-   "status": "pending_review",
+   "status": "approved_for_merge",
    "theme": "新能源/电力",
    "angle": "",
    "angle_cn": "—",
@@ -215,15 +224,15 @@
    "traceable": true,
    "review": {
     "checkboxes": {
-     "pass": false,
+     "pass": true,
      "revise": false,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "pass",
+     "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -231,7 +240,7 @@
    "review_id": "REV-20261101-006",
    "source": "AE",
    "source_card_id": "PROP-20261101-006",
-   "status": "pending_review",
+   "status": "approved_for_merge",
    "theme": "新能源/电力",
    "angle": "",
    "angle_cn": "—",
@@ -250,15 +259,15 @@
    "traceable": true,
    "review": {
     "checkboxes": {
-     "pass": false,
+     "pass": true,
      "revise": false,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "pass",
+     "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -266,7 +275,7 @@
    "review_id": "REV-20261101-007",
    "source": "AE",
    "source_card_id": "PROP-20261101-007",
-   "status": "pending_review",
+   "status": "approved_for_merge",
    "theme": "金融/地产",
    "angle": "",
    "angle_cn": "—",
@@ -285,15 +294,15 @@
    "traceable": true,
    "review": {
     "checkboxes": {
-     "pass": false,
+     "pass": true,
      "revise": false,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "pass",
+     "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -301,7 +310,7 @@
    "review_id": "REV-20261101-008",
    "source": "AE",
    "source_card_id": "PROP-20261101-008",
-   "status": "pending_review",
+   "status": "needs_revision",
    "theme": "金融/地产",
    "angle": "",
    "angle_cn": "—",
@@ -321,14 +330,14 @@
    "review": {
     "checkboxes": {
      "pass": false,
-     "revise": false,
+     "revise": true,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "revise",
+     "notes": "预审建议 revise（置信 medium，score 88）：问题与答案概念覆盖低（0%）",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -336,7 +345,7 @@
    "review_id": "REV-20261101-009",
    "source": "AE",
    "source_card_id": "PROP-20261101-009",
-   "status": "pending_review",
+   "status": "needs_revision",
    "theme": "消费/零售",
    "angle": "",
    "angle_cn": "—",
@@ -356,14 +365,14 @@
    "review": {
     "checkboxes": {
      "pass": false,
-     "revise": false,
+     "revise": true,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "revise",
+     "notes": "预审建议 revise（置信 medium，score 70）：批内同 concept 重复（2 张）；批内同 evidence 重复",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -371,7 +380,7 @@
    "review_id": "REV-20261101-010",
    "source": "AE",
    "source_card_id": "PROP-20261101-010",
-   "status": "pending_review",
+   "status": "approved_for_merge",
    "theme": "消费/零售",
    "angle": "",
    "angle_cn": "—",
@@ -390,15 +399,15 @@
    "traceable": true,
    "review": {
     "checkboxes": {
-     "pass": false,
+     "pass": true,
      "revise": false,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "pass",
+     "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -406,7 +415,7 @@
    "review_id": "REV-20261101-011",
    "source": "AE",
    "source_card_id": "PROP-20261101-011",
-   "status": "pending_review",
+   "status": "needs_revision",
    "theme": "宏观/政策",
    "angle": "",
    "angle_cn": "—",
@@ -426,14 +435,14 @@
    "review": {
     "checkboxes": {
      "pass": false,
-     "revise": false,
+     "revise": true,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "revise",
+     "notes": "预审建议 revise（置信 medium，score 70）：批内同 concept 重复（2 张）；批内同 evidence 重复",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -441,7 +450,7 @@
    "review_id": "REV-20261101-012",
    "source": "AE",
    "source_card_id": "PROP-20261101-012",
-   "status": "pending_review",
+   "status": "needs_revision",
    "theme": "宏观/政策",
    "angle": "",
    "angle_cn": "—",
@@ -461,14 +470,14 @@
    "review": {
     "checkboxes": {
      "pass": false,
-     "revise": false,
+     "revise": true,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "revise",
+     "notes": "预审建议 revise（置信 low，score 58）：问题与答案概念覆盖低（0%）；批内同 concept 重复（2 张）",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -476,7 +485,7 @@
    "review_id": "REV-20261101-013",
    "source": "AE",
    "source_card_id": "PROP-20261101-013",
-   "status": "pending_review",
+   "status": "approved_for_merge",
    "theme": "量学/交易",
    "angle": "",
    "angle_cn": "—",
@@ -495,15 +504,15 @@
    "traceable": true,
    "review": {
     "checkboxes": {
-     "pass": false,
+     "pass": true,
      "revise": false,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "pass",
+     "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -511,7 +520,7 @@
    "review_id": "REV-20261101-014",
    "source": "AE",
    "source_card_id": "PROP-20261101-014",
-   "status": "pending_review",
+   "status": "approved_for_merge",
    "theme": "量学/交易",
    "angle": "",
    "angle_cn": "—",
@@ -530,15 +539,15 @@
    "traceable": true,
    "review": {
     "checkboxes": {
-     "pass": false,
+     "pass": true,
      "revise": false,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "pass",
+     "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -546,7 +555,7 @@
    "review_id": "REV-20261101-015",
    "source": "AE",
    "source_card_id": "PROP-20261101-015",
-   "status": "pending_review",
+   "status": "approved_for_merge",
    "theme": "机械/制造",
    "angle": "",
    "angle_cn": "—",
@@ -565,15 +574,15 @@
    "traceable": true,
    "review": {
     "checkboxes": {
-     "pass": false,
+     "pass": true,
      "revise": false,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "pass",
+     "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -581,7 +590,7 @@
    "review_id": "REV-20261101-016",
    "source": "AE",
    "source_card_id": "PROP-20261101-016",
-   "status": "pending_review",
+   "status": "needs_revision",
    "theme": "机械/制造",
    "angle": "",
    "angle_cn": "—",
@@ -601,14 +610,14 @@
    "review": {
     "checkboxes": {
      "pass": false,
-     "revise": false,
+     "revise": true,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "revise",
+     "notes": "预审建议 revise（置信 medium，score 70）：批内同 concept 重复（2 张）；批内同 evidence 重复",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -616,7 +625,7 @@
    "review_id": "REV-20261101-017",
    "source": "AE",
    "source_card_id": "PROP-20261101-017",
-   "status": "pending_review",
+   "status": "needs_revision",
    "theme": "军工/航天",
    "angle": "",
    "angle_cn": "—",
@@ -636,14 +645,14 @@
    "review": {
     "checkboxes": {
      "pass": false,
-     "revise": false,
+     "revise": true,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "revise",
+     "notes": "预审建议 revise（置信 medium，score 78）：批内同 concept 重复（3 张）；主题候选超额（5 张 > 建议 ≤3，且本卡排名 4）",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -651,7 +660,7 @@
    "review_id": "REV-20261101-018",
    "source": "AE",
    "source_card_id": "PROP-20261101-018",
-   "status": "pending_review",
+   "status": "approved_for_merge",
    "theme": "军工/航天",
    "angle": "",
    "angle_cn": "—",
@@ -670,15 +679,15 @@
    "traceable": true,
    "review": {
     "checkboxes": {
-     "pass": false,
+     "pass": true,
      "revise": false,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "pass",
+     "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -686,7 +695,7 @@
    "review_id": "REV-20261101-019",
    "source": "AE",
    "source_card_id": "PROP-20261101-019",
-   "status": "pending_review",
+   "status": "needs_revision",
    "theme": "交运/物流",
    "angle": "",
    "angle_cn": "—",
@@ -706,14 +715,14 @@
    "review": {
     "checkboxes": {
      "pass": false,
-     "revise": false,
+     "revise": true,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "revise",
+     "notes": "预审建议 revise（置信 medium，score 88）：问题与答案概念覆盖低（17%）",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -721,7 +730,7 @@
    "review_id": "REV-20261101-020",
    "source": "AE",
    "source_card_id": "PROP-20261101-020",
-   "status": "pending_review",
+   "status": "needs_revision",
    "theme": "交运/物流",
    "angle": "",
    "angle_cn": "—",
@@ -741,14 +750,14 @@
    "review": {
     "checkboxes": {
      "pass": false,
-     "revise": false,
+     "revise": true,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "revise",
+     "notes": "预审建议 revise（置信 medium，score 70）：批内同 concept 重复（2 张）；批内同 evidence 重复",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -756,7 +765,7 @@
    "review_id": "REV-20261101-021",
    "source": "AV",
    "source_card_id": "CP2-20261101-001",
-   "status": "pending_review",
+   "status": "approved_for_merge",
    "theme": "宏观/政策",
    "angle": "definition",
    "angle_cn": "概念定义",
@@ -775,15 +784,15 @@
    "traceable": true,
    "review": {
     "checkboxes": {
-     "pass": false,
+     "pass": true,
      "revise": false,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "pass",
+     "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -791,7 +800,7 @@
    "review_id": "REV-20261101-022",
    "source": "AV",
    "source_card_id": "CP2-20261101-002",
-   "status": "pending_review",
+   "status": "approved_for_merge",
    "theme": "宏观/政策",
    "angle": "key_fact",
    "angle_cn": "关键事实",
@@ -810,15 +819,15 @@
    "traceable": true,
    "review": {
     "checkboxes": {
-     "pass": false,
+     "pass": true,
      "revise": false,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "pass",
+     "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -826,7 +835,7 @@
    "review_id": "REV-20261101-023",
    "source": "AV",
    "source_card_id": "CP2-20261101-003",
-   "status": "pending_review",
+   "status": "needs_revision",
    "theme": "宏观/政策",
    "angle": "impact",
    "angle_cn": "影响传导",
@@ -846,14 +855,14 @@
    "review": {
     "checkboxes": {
      "pass": false,
-     "revise": false,
+     "revise": true,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "revise",
+     "notes": "预审建议 revise（置信 medium，score 88）：问题与答案概念覆盖低（0%）",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -861,7 +870,7 @@
    "review_id": "REV-20261101-024",
    "source": "AV",
    "source_card_id": "CP2-20261101-004",
-   "status": "pending_review",
+   "status": "needs_revision",
    "theme": "消费/零售",
    "angle": "definition",
    "angle_cn": "概念定义",
@@ -881,14 +890,14 @@
    "review": {
     "checkboxes": {
      "pass": false,
-     "revise": false,
+     "revise": true,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "revise",
+     "notes": "预审建议 revise（置信 low，score 52）：批内同 concept 重复（2 张）；批内同 evidence 重复",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -896,7 +905,7 @@
    "review_id": "REV-20261101-025",
    "source": "AV",
    "source_card_id": "CP2-20261101-005",
-   "status": "pending_review",
+   "status": "approved_for_merge",
    "theme": "消费/零售",
    "angle": "key_fact",
    "angle_cn": "关键事实",
@@ -915,15 +924,15 @@
    "traceable": true,
    "review": {
     "checkboxes": {
-     "pass": false,
+     "pass": true,
      "revise": false,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "pass",
+     "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -931,7 +940,7 @@
    "review_id": "REV-20261101-026",
    "source": "AV",
    "source_card_id": "CP2-20261101-006",
-   "status": "pending_review",
+   "status": "approved_for_merge",
    "theme": "消费/零售",
    "angle": "impact",
    "angle_cn": "影响传导",
@@ -950,15 +959,15 @@
    "traceable": true,
    "review": {
     "checkboxes": {
-     "pass": false,
+     "pass": true,
      "revise": false,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "pass",
+     "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -966,7 +975,7 @@
    "review_id": "REV-20261101-027",
    "source": "AV",
    "source_card_id": "CP2-20261101-007",
-   "status": "pending_review",
+   "status": "needs_revision",
    "theme": "机械/制造",
    "angle": "definition",
    "angle_cn": "概念定义",
@@ -986,14 +995,14 @@
    "review": {
     "checkboxes": {
      "pass": false,
-     "revise": false,
+     "revise": true,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "revise",
+     "notes": "预审建议 revise（置信 low，score 52）：批内同 concept 重复（2 张）；批内同 evidence 重复",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -1001,7 +1010,7 @@
    "review_id": "REV-20261101-028",
    "source": "AV",
    "source_card_id": "CP2-20261101-008",
-   "status": "pending_review",
+   "status": "needs_revision",
    "theme": "机械/制造",
    "angle": "key_fact",
    "angle_cn": "关键事实",
@@ -1021,14 +1030,14 @@
    "review": {
     "checkboxes": {
      "pass": false,
-     "revise": false,
+     "revise": true,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "revise",
+     "notes": "预审建议 revise（置信 medium，score 76）：答案含截断/占位符（… 或 待补充）；问题与答案概念覆盖低（0%）",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -1036,7 +1045,7 @@
    "review_id": "REV-20261101-029",
    "source": "AV",
    "source_card_id": "CP2-20261101-009",
-   "status": "pending_review",
+   "status": "approved_for_merge",
    "theme": "机械/制造",
    "angle": "impact",
    "angle_cn": "影响传导",
@@ -1055,15 +1064,15 @@
    "traceable": true,
    "review": {
     "checkboxes": {
-     "pass": false,
+     "pass": true,
      "revise": false,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "pass",
+     "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -1071,7 +1080,7 @@
    "review_id": "REV-20261101-030",
    "source": "AV",
    "source_card_id": "CP2-20261101-010",
-   "status": "pending_review",
+   "status": "needs_revision",
    "theme": "军工/航天",
    "angle": "definition",
    "angle_cn": "概念定义",
@@ -1091,14 +1100,14 @@
    "review": {
     "checkboxes": {
      "pass": false,
-     "revise": false,
+     "revise": true,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "revise",
+     "notes": "预审建议 revise（置信 low，score 52）：批内同 concept 重复（3 张）；批内同 evidence 重复",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -1106,7 +1115,7 @@
    "review_id": "REV-20261101-031",
    "source": "AV",
    "source_card_id": "CP2-20261101-011",
-   "status": "pending_review",
+   "status": "needs_revision",
    "theme": "军工/航天",
    "angle": "key_fact",
    "angle_cn": "关键事实",
@@ -1126,14 +1135,14 @@
    "review": {
     "checkboxes": {
      "pass": false,
-     "revise": false,
+     "revise": true,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "revise",
+     "notes": "预审建议 revise（置信 medium，score 88）：问题与答案概念覆盖低（0%）",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -1141,7 +1150,7 @@
    "review_id": "REV-20261101-032",
    "source": "AV",
    "source_card_id": "CP2-20261101-012",
-   "status": "pending_review",
+   "status": "approved_for_merge",
    "theme": "军工/航天",
    "angle": "impact",
    "angle_cn": "影响传导",
@@ -1160,15 +1169,15 @@
    "traceable": true,
    "review": {
     "checkboxes": {
-     "pass": false,
+     "pass": true,
      "revise": false,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "pass",
+     "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -1176,7 +1185,7 @@
    "review_id": "REV-20261101-033",
    "source": "AV",
    "source_card_id": "CP2-20261101-013",
-   "status": "pending_review",
+   "status": "approved_for_merge",
    "theme": "网络安全/信创",
    "angle": "definition",
    "angle_cn": "概念定义",
@@ -1195,15 +1204,15 @@
    "traceable": true,
    "review": {
     "checkboxes": {
-     "pass": false,
+     "pass": true,
      "revise": false,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "pass",
+     "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -1211,7 +1220,7 @@
    "review_id": "REV-20261101-034",
    "source": "AV",
    "source_card_id": "CP2-20261101-014",
-   "status": "pending_review",
+   "status": "approved_for_merge",
    "theme": "网络安全/信创",
    "angle": "key_fact",
    "angle_cn": "关键事实",
@@ -1230,15 +1239,15 @@
    "traceable": true,
    "review": {
     "checkboxes": {
-     "pass": false,
+     "pass": true,
      "revise": false,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "pass",
+     "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -1246,7 +1255,7 @@
    "review_id": "REV-20261101-035",
    "source": "AV",
    "source_card_id": "CP2-20261101-015",
-   "status": "pending_review",
+   "status": "approved_for_merge",
    "theme": "网络安全/信创",
    "angle": "impact",
    "angle_cn": "影响传导",
@@ -1265,15 +1274,15 @@
    "traceable": true,
    "review": {
     "checkboxes": {
-     "pass": false,
+     "pass": true,
      "revise": false,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "pass",
+     "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -1281,7 +1290,7 @@
    "review_id": "REV-20261101-036",
    "source": "AV",
    "source_card_id": "CP2-20261101-016",
-   "status": "pending_review",
+   "status": "needs_revision",
    "theme": "交运/物流",
    "angle": "definition",
    "angle_cn": "概念定义",
@@ -1301,14 +1310,14 @@
    "review": {
     "checkboxes": {
      "pass": false,
-     "revise": false,
+     "revise": true,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "revise",
+     "notes": "预审建议 revise（置信 low，score 40）：问题与答案概念覆盖低（17%）；批内同 concept 重复（2 张）",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -1316,7 +1325,7 @@
    "review_id": "REV-20261101-037",
    "source": "AV",
    "source_card_id": "CP2-20261101-017",
-   "status": "pending_review",
+   "status": "needs_revision",
    "theme": "交运/物流",
    "angle": "key_fact",
    "angle_cn": "关键事实",
@@ -1336,14 +1345,14 @@
    "review": {
     "checkboxes": {
      "pass": false,
-     "revise": false,
+     "revise": true,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "revise",
+     "notes": "预审建议 revise（置信 medium，score 88）：问题与答案概念覆盖低（0%）",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -1351,7 +1360,7 @@
    "review_id": "REV-20261101-038",
    "source": "AV",
    "source_card_id": "CP2-20261101-018",
-   "status": "pending_review",
+   "status": "approved_for_merge",
    "theme": "交运/物流",
    "angle": "impact",
    "angle_cn": "影响传导",
@@ -1370,15 +1379,15 @@
    "traceable": true,
    "review": {
     "checkboxes": {
-     "pass": false,
+     "pass": true,
      "revise": false,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "pass",
+     "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -1386,7 +1395,7 @@
    "review_id": "REV-20261101-039",
    "source": "AV",
    "source_card_id": "CP2-20261101-019",
-   "status": "pending_review",
+   "status": "needs_revision",
    "theme": "通信/互联网",
    "angle": "definition",
    "angle_cn": "概念定义",
@@ -1406,14 +1415,14 @@
    "review": {
     "checkboxes": {
      "pass": false,
-     "revise": false,
+     "revise": true,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "revise",
+     "notes": "预审建议 revise（置信 medium，score 88）：问题与答案概念覆盖低（0%）",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -1421,7 +1430,7 @@
    "review_id": "REV-20261101-040",
    "source": "AV",
    "source_card_id": "CP2-20261101-020",
-   "status": "pending_review",
+   "status": "approved_for_merge",
    "theme": "通信/互联网",
    "angle": "key_fact",
    "angle_cn": "关键事实",
@@ -1440,15 +1449,15 @@
    "traceable": true,
    "review": {
     "checkboxes": {
-     "pass": false,
+     "pass": true,
      "revise": false,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "pass",
+     "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -1456,7 +1465,7 @@
    "review_id": "REV-20261101-041",
    "source": "AV",
    "source_card_id": "CP2-20261101-021",
-   "status": "pending_review",
+   "status": "approved_for_merge",
    "theme": "通信/互联网",
    "angle": "impact",
    "angle_cn": "影响传导",
@@ -1475,15 +1484,15 @@
    "traceable": true,
    "review": {
     "checkboxes": {
-     "pass": false,
+     "pass": true,
      "revise": false,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "pass",
+     "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -1491,7 +1500,7 @@
    "review_id": "REV-20261101-042",
    "source": "AV",
    "source_card_id": "CP2-20261101-022",
-   "status": "pending_review",
+   "status": "approved_for_merge",
    "theme": "农业",
    "angle": "definition",
    "angle_cn": "概念定义",
@@ -1510,15 +1519,15 @@
    "traceable": true,
    "review": {
     "checkboxes": {
-     "pass": false,
+     "pass": true,
      "revise": false,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "pass",
+     "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -1526,7 +1535,7 @@
    "review_id": "REV-20261101-043",
    "source": "AV",
    "source_card_id": "CP2-20261101-023",
-   "status": "pending_review",
+   "status": "needs_revision",
    "theme": "农业",
    "angle": "key_fact",
    "angle_cn": "关键事实",
@@ -1546,14 +1555,14 @@
    "review": {
     "checkboxes": {
      "pass": false,
-     "revise": false,
+     "revise": true,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "revise",
+     "notes": "预审建议 revise（置信 medium，score 88）：问题与答案概念覆盖低（0%）",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -1561,7 +1570,7 @@
    "review_id": "REV-20261101-044",
    "source": "AV",
    "source_card_id": "CP2-20261101-024",
-   "status": "pending_review",
+   "status": "needs_revision",
    "theme": "农业",
    "angle": "impact",
    "angle_cn": "影响传导",
@@ -1581,14 +1590,14 @@
    "review": {
     "checkboxes": {
      "pass": false,
-     "revise": false,
+     "revise": true,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "revise",
+     "notes": "预审建议 revise（置信 medium，score 76）：答案含截断/占位符（… 或 待补充）；问题与答案概念覆盖低（33%）",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -1596,7 +1605,7 @@
    "review_id": "REV-20261101-045",
    "source": "AV",
    "source_card_id": "CP2-20261101-025",
-   "status": "pending_review",
+   "status": "approved_for_merge",
    "theme": "有色/金属",
    "angle": "definition",
    "angle_cn": "概念定义",
@@ -1615,15 +1624,15 @@
    "traceable": true,
    "review": {
     "checkboxes": {
-     "pass": false,
+     "pass": true,
      "revise": false,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "pass",
+     "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -1631,7 +1640,7 @@
    "review_id": "REV-20261101-046",
    "source": "AV",
    "source_card_id": "CP2-20261101-026",
-   "status": "pending_review",
+   "status": "needs_revision",
    "theme": "有色/金属",
    "angle": "key_fact",
    "angle_cn": "关键事实",
@@ -1651,14 +1660,14 @@
    "review": {
     "checkboxes": {
      "pass": false,
-     "revise": false,
+     "revise": true,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "revise",
+     "notes": "预审建议 revise（置信 medium，score 88）：问题与答案概念覆盖低（0%）",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -1666,7 +1675,7 @@
    "review_id": "REV-20261101-047",
    "source": "AV",
    "source_card_id": "CP2-20261101-027",
-   "status": "pending_review",
+   "status": "needs_revision",
    "theme": "有色/金属",
    "angle": "impact",
    "angle_cn": "影响传导",
@@ -1686,14 +1695,14 @@
    "review": {
     "checkboxes": {
      "pass": false,
-     "revise": false,
+     "revise": true,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "revise",
+     "notes": "预审建议 revise（置信 medium，score 88）：问题与答案概念覆盖低（0%）",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -1701,7 +1710,7 @@
    "review_id": "REV-20261101-048",
    "source": "AV",
    "source_card_id": "CP2-20261101-028",
-   "status": "pending_review",
+   "status": "approved_for_merge",
    "theme": "建筑/建材",
    "angle": "definition",
    "angle_cn": "概念定义",
@@ -1720,15 +1729,15 @@
    "traceable": true,
    "review": {
     "checkboxes": {
-     "pass": false,
+     "pass": true,
      "revise": false,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "pass",
+     "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -1736,7 +1745,7 @@
    "review_id": "REV-20261101-049",
    "source": "AV",
    "source_card_id": "CP2-20261101-029",
-   "status": "pending_review",
+   "status": "approved_for_merge",
    "theme": "建筑/建材",
    "angle": "key_fact",
    "angle_cn": "关键事实",
@@ -1755,15 +1764,15 @@
    "traceable": true,
    "review": {
     "checkboxes": {
-     "pass": false,
+     "pass": true,
      "revise": false,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "pass",
+     "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -1771,7 +1780,7 @@
    "review_id": "REV-20261101-050",
    "source": "AV",
    "source_card_id": "CP2-20261101-030",
-   "status": "pending_review",
+   "status": "approved_for_merge",
    "theme": "建筑/建材",
    "angle": "impact",
    "angle_cn": "影响传导",
@@ -1790,15 +1799,15 @@
    "traceable": true,
    "review": {
     "checkboxes": {
-     "pass": false,
+     "pass": true,
      "revise": false,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "pass",
+     "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -1806,7 +1815,7 @@
    "review_id": "REV-20261101-051",
    "source": "AV",
    "source_card_id": "CP2-20261101-031",
-   "status": "pending_review",
+   "status": "needs_revision",
    "theme": "半导体/电子",
    "angle": "definition",
    "angle_cn": "概念定义",
@@ -1826,14 +1835,14 @@
    "review": {
     "checkboxes": {
      "pass": false,
-     "revise": false,
+     "revise": true,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "revise",
+     "notes": "预审建议 revise（置信 medium，score 88）：问题与答案概念覆盖低（0%）",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -1841,7 +1850,7 @@
    "review_id": "REV-20261101-052",
    "source": "AV",
    "source_card_id": "CP2-20261101-032",
-   "status": "pending_review",
+   "status": "approved_for_merge",
    "theme": "半导体/电子",
    "angle": "key_fact",
    "angle_cn": "关键事实",
@@ -1860,15 +1869,15 @@
    "traceable": true,
    "review": {
     "checkboxes": {
-     "pass": false,
+     "pass": true,
      "revise": false,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "pass",
+     "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -1876,7 +1885,7 @@
    "review_id": "REV-20261101-053",
    "source": "AV",
    "source_card_id": "CP2-20261101-033",
-   "status": "pending_review",
+   "status": "approved_for_merge",
    "theme": "半导体/电子",
    "angle": "impact",
    "angle_cn": "影响传导",
@@ -1895,15 +1904,15 @@
    "traceable": true,
    "review": {
     "checkboxes": {
-     "pass": false,
+     "pass": true,
      "revise": false,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "pass",
+     "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -1911,7 +1920,7 @@
    "review_id": "REV-20261101-054",
    "source": "AV",
    "source_card_id": "CP2-20261101-034",
-   "status": "pending_review",
+   "status": "approved_for_merge",
    "theme": "医药/生物",
    "angle": "definition",
    "angle_cn": "概念定义",
@@ -1930,15 +1939,15 @@
    "traceable": true,
    "review": {
     "checkboxes": {
-     "pass": false,
+     "pass": true,
      "revise": false,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "pass",
+     "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -1946,7 +1955,7 @@
    "review_id": "REV-20261101-055",
    "source": "AV",
    "source_card_id": "CP2-20261101-035",
-   "status": "pending_review",
+   "status": "needs_revision",
    "theme": "医药/生物",
    "angle": "key_fact",
    "angle_cn": "关键事实",
@@ -1966,14 +1975,14 @@
    "review": {
     "checkboxes": {
      "pass": false,
-     "revise": false,
+     "revise": true,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "revise",
+     "notes": "预审建议 revise（置信 medium，score 88）：问题与答案概念覆盖低（20%）",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -1981,7 +1990,7 @@
    "review_id": "REV-20261101-056",
    "source": "AV",
    "source_card_id": "CP2-20261101-036",
-   "status": "pending_review",
+   "status": "needs_revision",
    "theme": "医药/生物",
    "angle": "impact",
    "angle_cn": "影响传导",
@@ -2001,14 +2010,14 @@
    "review": {
     "checkboxes": {
      "pass": false,
-     "revise": false,
+     "revise": true,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "revise",
+     "notes": "预审建议 revise（置信 medium，score 88）：问题与答案概念覆盖低（25%）",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -2016,7 +2025,7 @@
    "review_id": "REV-20261101-057",
    "source": "AV",
    "source_card_id": "CP2-20261101-037",
-   "status": "pending_review",
+   "status": "approved_for_merge",
    "theme": "评级/研报方法论",
    "angle": "definition",
    "angle_cn": "概念定义",
@@ -2035,15 +2044,15 @@
    "traceable": true,
    "review": {
     "checkboxes": {
-     "pass": false,
+     "pass": true,
      "revise": false,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "pass",
+     "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -2051,7 +2060,7 @@
    "review_id": "REV-20261101-058",
    "source": "AV",
    "source_card_id": "CP2-20261101-038",
-   "status": "pending_review",
+   "status": "approved_for_merge",
    "theme": "评级/研报方法论",
    "angle": "key_fact",
    "angle_cn": "关键事实",
@@ -2070,15 +2079,15 @@
    "traceable": true,
    "review": {
     "checkboxes": {
-     "pass": false,
+     "pass": true,
      "revise": false,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "pass",
+     "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -2086,7 +2095,7 @@
    "review_id": "REV-20261101-059",
    "source": "AV",
    "source_card_id": "CP2-20261101-039",
-   "status": "pending_review",
+   "status": "approved_for_merge",
    "theme": "传媒/文化",
    "angle": "definition",
    "angle_cn": "概念定义",
@@ -2105,15 +2114,15 @@
    "traceable": true,
    "review": {
     "checkboxes": {
-     "pass": false,
+     "pass": true,
      "revise": false,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "pass",
+     "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   },
@@ -2121,7 +2130,7 @@
    "review_id": "REV-20261101-060",
    "source": "AV",
    "source_card_id": "CP2-20261101-040",
-   "status": "pending_review",
+   "status": "approved_for_merge",
    "theme": "传媒/文化",
    "angle": "key_fact",
    "angle_cn": "关键事实",
@@ -2140,15 +2149,15 @@
    "traceable": true,
    "review": {
     "checkboxes": {
-     "pass": false,
+     "pass": true,
      "revise": false,
      "reject": false
     },
     "decision": {
-     "verdict": "",
-     "notes": "",
-     "reviewer": "",
-     "reviewed_at": null
+     "verdict": "pass",
+     "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题",
+     "reviewer": "machine-precheck-suggestion（待人工确认）",
+     "reviewed_at": "2026-11-01T12:53:53+08:00"
     }
    }
   }
@@ -2158,5 +2167,6 @@
  "validation": {
   "ok": true,
   "errors": []
- }
+ },
+ "status": "reviewed"
 }

@@ -6,7 +6,7 @@
 
   a) 引用可解析硬门：答案中的 [unit_id] 必须能在知识库单元集合（或 alias：book ID）中解析；
      不可解析引用从 citations 剔除并记入 citation_invalid；
-  b) 推断比例限制：inference_ratio = 推断标记 /（直接事实+推断标记），>0.6 记 inference_heavy；
+  b) 推断比例限制：inference_ratio = 推断标记 /（直接事实+推断标记），>0.7 记 inference_heavy；
   c) 被引单元集中度：有效引用必须覆盖 ≥2 个不同单元（防单单元复制）；
   d) payload 增加：citation_valid / citation_invalid / citation_resolvable_rate /
      inference_ratio / inference_heavy / distinct_cited_units / guard_passed / guard_issues；
@@ -37,7 +37,7 @@ DEFAULT_K = 8
 DEFAULT_MODEL = "qwen3.5:9b"
 DEFAULT_TIMEOUT = 300
 DEFAULT_DEADLINE = 480
-INFERENCE_RATIO_MAX = 0.6
+INFERENCE_RATIO_MAX = 0.7
 MIN_DISTINCT_UNITS = 2
 REFUSAL_ANSWER = "知识库中没有足够依据回答该问题。"
 GUARD_FALLBACK_PREFIX = "（质量守卫回退：多单元答案引用/集中度/推断比例未达标，摘录可核验知识单元）"

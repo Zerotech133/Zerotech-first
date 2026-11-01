@@ -4573,5 +4573,23 @@
       "conclusion": "建议默认 inference_ratio 阈值=0.7、最小被引单元=2（不修改 guard 代码，仅调参）"
     },
     "note": "guard 阈值敏感性：当前默认 inference_max=0.6/min_units=2；推荐 inference_max=0.7/min_units=2（12 条中通过 6/12，引用可解析/支撑 100%、幻觉 0%）；仅参数建议，未改 guard 代码。"
+  },
+  "card_merge_executed_20261101": {
+    "executed_at": "2026-11-01T12:54:28+08:00",
+    "decisions": "research/reports/card_review_decisions_suggested_20261101.json（机器预审建议，用户口头「去执行」授权）",
+    "result": {
+      "cards_before": 20,
+      "approved": 36,
+      "cards_after": 56,
+      "checklist": "research/reports/card_review_checklist_20261101.json（60 卡状态已更新）",
+      "backup": "research/reports/kb_learning_cards.20261101_125353.bak.json"
+    },
+    "note": "学习卡合并已执行（pass36 进入学习卡，revise24 标需修改未合并）；portal/static/kb_learning_cards.json 20→56，digest 已刷新。"
+  },
+  "guard_threshold_adopted_20261101": {
+    "change": "inference_ratio 阈值 0.6 → 0.7（kb_qa_guard.INFERENCE_RATIO_MAX）",
+    "basis": "wave22 CH 阈值研究：通过率同为 50%，inference_heavy 误拦截 4→1；引用/支撑 100%、幻觉 0%",
+    "affected": "kb_qa.ask(mode=multi) guard 默认、portal/api_kb_qa.py multi guard（重启后生效）、tests",
+    "note": "已更新代码默认与文档；63 项相关测试通过。"
   }
 }
