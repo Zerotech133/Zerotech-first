@@ -97,19 +97,30 @@ def load_reg() -> dict:
     return json.loads(REG.read_text(encoding="utf-8")) if REG.exists() else {"projects": []}
 
 
-def existing_hashes(reg: dict) -> dict:
+def existing_hashes(reg: dict, kb_root: Path | None = None) -> dict:
     out = {}
     for p in reg.get("projects", []):
         for m in p.get("manifest") or []:
             if m.get("sha256"):
                 out[m["sha256"]] = m.get("name")
+    if kb_root is not None:
+        root = kb_root / "05_学习源件"
+        if root.exists():
+            for mp in root.glob("*/manifest.json"):
+                try:
+                    man = json.loads(mp.read_text(encoding="utf-8"))
+                except (OSError, ValueError):
+                    continue
+                for m in man.get("files") or []:
+                    if m.get("sha256"):
+                        out[m["sha256"]] = m.get("name")
     return out
 
 
 def ingest(files: list[dict], kb_root: Path, project: str | None = None,
            write: bool = False) -> dict:
     reg = load_reg()
-    seen = existing_hashes(reg)
+    seen = existing_hashes(reg, kb_root)
     pid = project_id_for(project or (files[0]["name"] if files else "learning_project"))
     pdir = kb_root / "05_学习源件" / pid
     receipt = {"generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
