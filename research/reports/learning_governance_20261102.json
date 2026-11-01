@@ -1,0 +1,23 @@
+{
+ "generated_at": "2026-11-02T04:02:55+08:00",
+ "projects": [
+  {
+   "project_id": "learnpdf_liangxue",
+   "status": "archived",
+   "manifest": false,
+   "units_draft": 0
+  },
+  {
+   "project_id": "laomu_notes",
+   "status": "intake_pending",
+   "manifest": false,
+   "units_draft": 0
+  }
+ ],
+ "issues": [],
+ "summary": {
+  "projects": 2,
+  "issues": 0,
+  "high": 0
+ }
+}

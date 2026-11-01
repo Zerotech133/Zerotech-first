@@ -1,0 +1,5946 @@
+{
+ "schema_version": 1,
+ "date": "20261102",
+ "generated_at": "2026-11-02T04:11:56+08:00",
+ "generator": "tools/kb_corpus/card_from_units.py（S5 草稿→候选）",
+ "mode": "dry-run 预览 + 候选输出（**不合并学习卡**）",
+ "pid": "laomu_notes",
+ "sources": {
+  "units_dir": "C:\\项目\\知识库\\30_知识单元",
+  "drafts": [
+   "laomu_notes_units_draft.jsonl"
+  ],
+  "cards": {
+   "path": "C:\\项目\\老田的AI助手\\portal\\static\\kb_learning_cards.json",
+   "sha256": "f5f257b370827feda7f64f7ae7c349a9823b7ebf646bbfa994f546ba8b4bfe94",
+   "count": 130
+  }
+ },
+ "policy": {
+  "min_answer_len": 8,
+  "max_answer_len": 300,
+  "max_concept_len": 20,
+  "answer_similarity_max": 0.85,
+  "dedupe": "concept 归一化与现有卡/批内去重 + 答案 jaccard ≥0.85 去重",
+  "status": "pending_review"
+ },
+ "summary": {
+  "inputs": 1,
+  "units": 288,
+  "candidates": 203,
+  "rejected": 85,
+  "reasons": {
+   "duplicate_batch_concept": 85
+  },
+  "by_theme": {
+   "AI算力/硬件": 62,
+   "其他": 135,
+   "量学/交易": 1,
+   "机械/制造": 1,
+   "评级/研报方法论": 1,
+   "化工/材料": 1,
+   "宏观/政策": 2
+  },
+  "estimated_new_cards": 203,
+  "per_input": [
+   {
+    "draft": "laomu_notes_units_draft.jsonl",
+    "units": 288,
+    "candidates": 203,
+    "rejected": 85
+   }
+  ]
+ },
+ "candidates": [
+  {
+   "card_id": "CAND-001",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**两类视频的区别**",
+   "q": "什么是「**两类视频的区别**」？",
+   "a": "**两类视频的区别**：`01–06`、`24` 等「创业笔记」是真人出镜/录屏讲解；`AI量化××10条` 系列多为**无口播的信息卡动画**（配乐循环），文案全部来自屏幕文字，因此句式是「标题 + 一句话解释 + 一句限定」。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L13",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L13",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0001",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 13
+   },
+   "quality_score": 68.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-002",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "一个月 500 万美刀交易量的 AI 量",
+   "q": "什么是「一个月 500 万美刀交易量的 AI 量」？",
+   "a": "一个月 500 万美刀交易量的 AI 量化平台，到底能赚多少钱？先给大家看个数据：8 月、9 月，这个平台已经连续两个月交易额突破了 500 万美刀。没错，这就是我们的 AI 量化平台。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L57",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L57",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0002",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 57
+   },
+   "quality_score": 61.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-003",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "接下来我还会公开这个平台的所有收入和支出",
+   "q": "什么是「接下来我还会公开这个平台的所有收入和支出」？",
+   "a": "接下来我还会公开这个平台的所有收入和支出，包括客户数量、系统升级维护，还有我们收了多少钱、我们的客户是赚还是亏。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L59",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L59",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0003",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 59
+   },
+   "quality_score": 48.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-004",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "我是老木，一个做 AI 量化系统的技术员",
+   "q": "什么是「我是老木，一个做 AI 量化系统的技术员」？",
+   "a": "我是老木，一个做 AI 量化系统的技术员，这本创业笔记就从今天开始记录。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L61",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L61",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0004",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 61
+   },
+   "quality_score": 42.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-005",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "看这张图",
+   "q": "什么是「看这张图」？",
+   "a": "看这张图，你是不是也想问老木：你们这个 AI 怎么天天赚钱？先别误会，这不是客户的盈利图，图里的收入全部来自客户交易产生的手续费返佣。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L65",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L65",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0005",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 65
+   },
+   "quality_score": 52.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-006",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "说得直接一点",
+   "q": "什么是「说得直接一点」？",
+   "a": "说得直接一点，不管客户是否赚钱，这笔钱我们都是躺赚的。只要我们的客户在交易，24 小时每个小时我们都会有钱进账。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L67",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L67",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0006",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 67
+   },
+   "quality_score": 48.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-007",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "那你可能会说",
+   "q": "什么是「那你可能会说」？",
+   "a": "那你可能会说，做平台这钱也太好赚了吧？但如果我们因此觉得\"客户赚不赚钱都无所谓\"，那这门生意就很难做成。你去想啊，客户长期亏损，为什么还要继续使用我们的平台呢？客户离开、交易量减少，返佣自然会受影响，可服务器维护、客户服务这些成本不会跟着一起消失。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L69",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L69",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0007",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 69
+   },
+   "quality_score": 71.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-008",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "再给大家看一个数据",
+   "q": "什么是「再给大家看一个数据」？",
+   "a": "再给大家看一个数据，这是我们客户半年的交易数据，几乎每个月都在递增，这个月很有可能突破 600 万美刀。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L71",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L71",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0008",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 71
+   },
+   "quality_score": 47.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-009",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "一个平台能不能做大做强",
+   "q": "什么是「一个平台能不能做大做强」？",
+   "a": "一个平台能不能做大做强，首先考虑的一定是客户的利益。今天先拆开手续费返佣这一项收入，它是我们平台里最小的一个板块。接下来我会陆续把其他收入和对应的支出摊开讲，看看我们这个平台到底是怎么经营的。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L73",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L73",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0009",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 73
+   },
+   "quality_score": 62.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-010",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "我是老木，这是我的 AI 量化技术员创业",
+   "q": "什么是「我是老木，这是我的 AI 量化技术员创业」？",
+   "a": "我是老木，这是我的 AI 量化技术员创业笔记。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L75",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L75",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0010",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 75
+   },
+   "quality_score": 37.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-011",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "> 素材为 5 月实盘录屏",
+   "q": "什么是「> 素材为 5 月实盘录屏」？",
+   "a": "> 素材为 5 月实盘录屏，口播是边看边讲，重复较多，以下做了去重整理；文件名标注「4 天 73%」，口播里未念具体收益数字。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L79",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L79",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0011",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 79
+   },
+   "quality_score": 51.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-012",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "今天给大家展示一段 AI 教科书级别的实",
+   "q": "什么是「今天给大家展示一段 AI 教科书级别的实」？",
+   "a": "今天给大家展示一段 AI 教科书级别的实盘操作：从开仓、滚仓，到高位逃顶后的反向开仓，整套过程行云流水，没有一步多余动作。这是我们在 5 月份测试时录制的一段实盘视频。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L81",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L81",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0012",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 81
+   },
+   "quality_score": 58.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-013",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "5 月 17 号下午 1 点",
+   "q": "什么是「5 月 17 号下午 1 点」？",
+   "a": "5 月 17 号下午 1 点，AI 在这里凭空开了一个多单，刚开始用的是 3 倍杠杆。对一下 K 线时间：5 月 17 号下午 1 点，大概在这个位置，位置对得上。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L83",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L83",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0013",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 83
+   },
+   "quality_score": 57.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-014",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "然后",
+   "q": "什么是「然后」？",
+   "a": "然后是加仓。5 月 19 号凌晨第一次加仓、继续开多；5 月 19 号晚上 10 点又继续开多，也就是我们说的滚仓，滚进去；5 月 20 号 12 点还在加仓——这是最后一次加仓。最后在 5 月 22 号凌晨 7 点 01 分平仓。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L85",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L85",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0014",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 85
+   },
+   "quality_score": 68.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-015",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "系统后台的记录",
+   "q": "什么是「系统后台的记录」？",
+   "a": "系统后台的记录是这样的：5 月 19 号 0 点第一次加仓，success，如果不是加仓，状态就是 hold 等待；5 月 19 号晚上 10 点，AI 第二次向交易所发出加仓指令，加仓成功；5 月 20 号 12 点第三次向交易所发出加仓指令；平仓时间是 22 号凌晨 7 点。所有时间和后台记录完全一致。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L87",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L87",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0015",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 87
+   },
+   "quality_score": 81.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-016",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "平多之后开空",
+   "q": "什么是「平多之后开空」？",
+   "a": "平多之后开空。这一波：从这里开仓，滚仓、滚仓、再滚仓，然后全部平掉，平多开空——这一波 AI 不得不服。有技术交流的可以打在评论区。我是老木，这是我的第三篇创业笔记。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L89",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L89",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0016",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 89
+   },
+   "quality_score": 57.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-017",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "AI 量化和传统量化到底有什么区别",
+   "q": "什么是「AI 量化和传统量化到底有什么区别」？",
+   "a": "AI 量化和传统量化到底有什么区别？AI 量化像请了个学霸炒股，可学霸也会把答案背错。今天咱们不讲代码，讲开饭店。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L93",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L93",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0017",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 93
+   },
+   "quality_score": 49.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-018",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "传统量化的典型做法",
+   "q": "什么是「传统量化的典型做法」？",
+   "a": "传统量化的典型做法，像老板先写菜谱：放多少盐、炒几分钟、什么时候起锅，全部写清楚，再让后厨照着执行。放到交易里，就是人先设计规则，再交给电脑验证和执行。好处是：这道菜为什么咸了，你比较容易顺着菜谱查出来。但问题是，客人如果口味变了，你还照着旧菜谱做生意，就可能越来越差。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L95",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L95",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0018",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 95
+   },
+   "quality_score": 75.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-019",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "AI 量化呢",
+   "q": "什么是「AI 量化呢」？",
+   "a": "AI 量化呢，就像你找了一个学习能力很强的厨师，把过去的订单、顾客评价、食材信息都交给他，让他自己总结什么情况下什么菜更受欢迎。他有机会发现一些你没想到的组合，处理的关系也可以更复杂。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L97",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L97",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0019",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 97
+   },
+   "quality_score": 60.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-020",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "但先别忙着给他发年终奖",
+   "q": "什么是「但先别忙着给他发年终奖」？",
+   "a": "但先别忙着给他发年终奖。假设他发现\"每次店里有人撑伞，热汤就卖得特别好\"，他可能真的学到了天气和需求的关系；也可能因为数据有问题，把撑伞误当成了关键。然后你为了多卖汤，在店门口摆了一大把雨伞——这就尴尬了。能找到关联，不代表理解了原因；历史上管用，也不代表以后还管用。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L99",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L99",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0020",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 99
+   },
+   "quality_score": 74.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-021",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "还有一个特别容易被忽略的点",
+   "q": "什么是「还有一个特别容易被忽略的点」？",
+   "a": "还有一个特别容易被忽略的点：AI 量化不等于它会自己实时进化。不少模型训练完上线，就按已有模型运行；什么时候重新训练、怎么更新、更新后能不能用，都得有人设计和验证。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L101",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L101",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0021",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 101
+   },
+   "quality_score": 57.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-022",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "所以别把传统量化想成老算盘",
+   "q": "什么是「所以别把传统量化想成老算盘」？",
+   "a": "所以别把传统量化想成老算盘，也别把 AI 量化想成自动印钞机。一个更依赖人明确写出规则，一个更多让模型从数据里学习；在实际项目里，它们经常一起干活。你选饭店是看招牌上写着\"智能厨房\"，还是看端上来的菜？量化也一样：名字负责吸引你，验证结果才值得你往下看。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L103",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L103",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0022",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 103
+   },
+   "quality_score": 72.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-023",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "我是老木，这是我的第 5 篇创业笔记",
+   "q": "什么是「我是老木，这是我的第 5 篇创业笔记」？",
+   "a": "我是老木，这是我的第 5 篇创业笔记。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L105",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L105",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0023",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 105
+   },
+   "quality_score": 36.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-024",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "这是一套可视化 AI 策略编辑器，即使你",
+   "q": "什么是「这是一套可视化 AI 策略编辑器，即使你」？",
+   "a": "这是一套可视化 AI 策略编辑器，即使你不懂代码，也可以傻瓜式地编写 AI 策略。自定义具体到什么程度呢？",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L109",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L109",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0024",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 109
+   },
+   "quality_score": 47.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-025",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "第一层",
+   "q": "什么是「第一层」？",
+   "a": "第一层是**交易范围**：关注哪些币种、使用什么筛选来源、哪些币种直接排除，都可以自己设置。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L111",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L111",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0025",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 111
+   },
+   "quality_score": 45.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-026",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "第二层",
+   "q": "什么是「第二层」？",
+   "a": "第二层是**分析依据**：K 线周期怎么选，要不要加入 MACD、RSI、布林带，要不要结合持仓量和资金费率，你都可以按照自己的思路组合。这相当于先确定 AI 做分析时应该参考哪些信息。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L113",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L113",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0026",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 113
+   },
+   "quality_score": 61.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-027",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "第三层也",
+   "q": "什么是「第三层也」？",
+   "a": "第三层也是很关键的一层，叫**决策逻辑配置**。通过提示词的编辑，你可以描述 AI 的角色、交易频率、偏好、开仓标准和决策流程。例如希望它在多个信号相互印证后再考虑入场，你就可以把这个要求写进策略逻辑。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L115",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L115",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0027",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 115
+   },
+   "quality_score": 63.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-028",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "只是表达交易偏好还不够，资金使用也需要明",
+   "q": "什么是「只是表达交易偏好还不够，资金使用也需要明」？",
+   "a": "只是表达交易偏好还不够，资金使用也需要明确的边界。所以编辑器还提供最大持仓量、仓位价值比例、最大保证金使用率等参数配置。其中部分限制由代码强制执行：提示词用来描述决策要求，风控参数用来设置明确约束，这是两种不同的配置，都非常重要。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L117",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L117",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0028",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 117
+   },
+   "quality_score": 68.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-029",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "从使用一套现成配置",
+   "q": "什么是「从使用一套现成配置」？",
+   "a": "从使用一套现成配置，到亲手编排自己的策略，这就是这个编辑器带来的自主空间。我是老木，这是我的第 6 篇创业笔记。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L119",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L119",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0029",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 119
+   },
+   "quality_score": 48.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-030",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "做交易老",
+   "q": "什么是「做交易老」？",
+   "a": "做交易老是被主力精准洗盘出局？那是你还没看懂盘面背后的两个生死数据。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L123",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L123",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0030",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 123
+   },
+   "quality_score": 41.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-031",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "第 1 个 **OI**",
+   "q": "什么是「第 1 个 **OI**」？",
+   "a": "第 1 个 **OI**，也就是场内未平仓合约量，它看的是博弈真假。记住两条铁律：价格涨、OI 猛增，那是主力真金白银在加仓，趋势极强，直接跟；价格暴涨、OI 却断崖式暴跌，别追——那是空头爆仓踩踏出来的虚火，随时可能掉头埋人。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L125",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L125",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0031",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 125
+   },
+   "quality_score": 68.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-032",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "第二个 **Netflow 净流向**",
+   "q": "什么是「第二个 **Netflow 净流向**」？",
+   "a": "第二个 **Netflow 净流向**，它看的是主力主动买卖的意图。净流入持续翻绿，说明大资金在偷偷吃筹码；净流出持续扩大，甚至突然出现极端大单流出，赶紧撤——那是大户在甩货，甚至准备插针清算。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L127",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L127",
+   "theme": "量学/交易",
+   "topic": "量学/交易",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0032",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 127
+   },
+   "quality_score": 62.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-033",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "新手到底该怎么设置呢",
+   "q": "什么是「新手到底该怎么设置呢」？",
+   "a": "新手到底该怎么设置呢？别看花哨的 5 分钟线，杂波太多，全是陷阱。直接把周期锁定在 1 小时，紧盯前 10 名，顺着前十名的主力资金方向做，你就已经跑赢了 80% 的散户。在我们系统里，这套逻辑全是一键配置。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L129",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L129",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0033",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 129
+   },
+   "quality_score": 64.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-034",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "我是老木，这是我的第七篇创业笔记",
+   "q": "什么是「我是老木，这是我的第七篇创业笔记」？",
+   "a": "我是老木，这是我的第七篇创业笔记。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L131",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L131",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0034",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 131
+   },
+   "quality_score": 35.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-035",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "只有配置好这几个关键数据",
+   "q": "什么是「只有配置好这几个关键数据」？",
+   "a": "只有配置好这几个关键数据，才算真正摸到了 AI 量化的门槛。我们把这几个关键数据整合进了客户的策略编辑器，咱们一个一个看。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L135",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L135",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0035",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 135
+   },
+   "quality_score": 50.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-036",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "首先",
+   "q": "什么是「首先」？",
+   "a": "首先是 **AI 500 数据源**：它提供系统筛选出来的候选标的，你可以设置数量上限，确定策略关注的范围——这一步就叫交易标的池配置。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L137",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L137",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0036",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 137
+   },
+   "quality_score": 52.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-037",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "接下来",
+   "q": "什么是「接下来」？",
+   "a": "接下来是 **OI**，也就是未平仓合约量。价格告诉你市场涨了还是跌了，OI 帮助你观察合约持仓规模的变化；结合 OI 增减排行，还能进一步筛选哪些标的的持仓变化值得关注。但要注意，持仓增加本身并不等于看涨，还得结合价格和其他数据一起判断。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L139",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L139",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0037",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 139
+   },
+   "quality_score": 70.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-038",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "第三",
+   "q": "什么是「第三」？",
+   "a": "第三是 **Netflow 和资金流向数据**，它们提供相应统计口径下资金净流入、净流出的信息，让你分析资金动向时多一个观察维度。不过用这些数据的时候要结合统计周期和数据覆盖范围，不能看到一个流入信号就直接把它当成买入指令。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L141",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L141",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0038",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 141
+   },
+   "quality_score": 67.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-039",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "第四",
+   "q": "什么是「第四」？",
+   "a": "第四是**涨跌幅排行**，它能帮你比较不同标的的相对强弱，再配合多个周期一起观察，进一步区分哪些是短时异动、哪些是持续走强。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L143",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L143",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0039",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 143
+   },
+   "quality_score": 50.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-040",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "把这些数据组合起来",
+   "q": "什么是「把这些数据组合起来」？",
+   "a": "把这些数据组合起来，就是一套多维分析：输入标的池确定关注范围，OI 观察持仓变化，资金流向补充资金信息，涨跌排行对比市场强弱。在这个策略编辑器里，你可以按需启用，让 AI 围绕你的策略需求获取信息。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L145",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L145",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0040",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 145
+   },
+   "quality_score": 63.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-041",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "专业的 AI 量化",
+   "q": "什么是「专业的 AI 量化」？",
+   "a": "专业的 AI 量化，需要把数据依据、决策逻辑和风险约束连接起来。所以想让 AI 做出有依据的分析，先把它能看到的数据配置好。我是老木，欢迎大家交流。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L147",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L147",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0041",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 147
+   },
+   "quality_score": 54.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-042",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "天才交易员 AI 量化十大仓位管理法则",
+   "q": "什么是「天才交易员 AI 量化十大仓位管理法则」？",
+   "a": "天才交易员 AI 量化十大仓位管理法则：",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L155",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L155",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0042",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 155
+   },
+   "quality_score": 36.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-043",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **第 10 个",
+   "q": "什么是「- **第 10 个」？",
+   "a": "- **第 10 个，账户权益**：先算净值，再定规模。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L157",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L157",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0043",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 157
+   },
+   "quality_score": 39.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-044",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **第 9 个",
+   "q": "什么是「- **第 9 个」？",
+   "a": "- **第 9 个，单笔风险**：先决定能亏多少。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L158",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L158",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0044",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 158
+   },
+   "quality_score": 38.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-045",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **第 8 个",
+   "q": "什么是「- **第 8 个」？",
+   "a": "- **第 8 个，止损距离**：距离大小决定数量大小。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L159",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L159",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0045",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 159
+   },
+   "quality_score": 39.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-046",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **第 7 个",
+   "q": "什么是「- **第 7 个」？",
+   "a": "- **第 7 个，波动水平**：波动放大了，就要重新估算规模。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L160",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L160",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0046",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 160
+   },
+   "quality_score": 40.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-047",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **第 6 个",
+   "q": "什么是「- **第 6 个」？",
+   "a": "- **第 6 个，合约乘数**：先核对合约规格，再换算风险与数量。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L161",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L161",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0047",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 161
+   },
+   "quality_score": 41.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-048",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **第 5 个",
+   "q": "什么是「- **第 5 个」？",
+   "a": "- **第 5 个，杠杆与名义仓位**：保证金多少，可不代表风险大小。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L162",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L162",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0048",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 162
+   },
+   "quality_score": 41.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-049",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **第 4 个",
+   "q": "什么是「- **第 4 个」？",
+   "a": "- **第 4 个，同向敞口**：不同订单也可能压的是同一个方向。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L163",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L163",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0049",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 163
+   },
+   "quality_score": 41.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-050",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **第 3 个",
+   "q": "什么是「- **第 3 个」？",
+   "a": "- **第 3 个，标的相关性**：持仓多，不等于分散。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L164",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L164",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0050",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 164
+   },
+   "quality_score": 39.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-051",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **第 2 个",
+   "q": "什么是「- **第 2 个」？",
+   "a": "- **第 2 个，加减仓规则**：每次调整都要重新过风控。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L165",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L165",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0051",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 165
+   },
+   "quality_score": 40.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-052",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **第 1 个",
+   "q": "什么是「- **第 1 个」？",
+   "a": "- **第 1 个，极端波动承受能力**：最后一关，是能不能扛住尾部风险。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L166",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L166",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0052",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 166
+   },
+   "quality_score": 42.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-053",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "仓位",
+   "q": "什么是「仓位」？",
+   "a": "仓位是风险的表达。我是老木，感谢关注。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L168",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L168",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0053",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 168
+   },
+   "quality_score": 36.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-054",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "天才交易员 AI 量化十大误区",
+   "q": "什么是「天才交易员 AI 量化十大误区」？",
+   "a": "天才交易员 AI 量化十大误区：",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L172",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L172",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0054",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 172
+   },
+   "quality_score": 35.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-055",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "我是老木，感谢关注",
+   "q": "什么是「我是老木，感谢关注」？",
+   "a": "我是老木，感谢关注。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L185",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L185",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0065",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 185
+   },
+   "quality_score": 33.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-056",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "天才交易员 AI 量化十大等待场景——什",
+   "q": "什么是「天才交易员 AI 量化十大等待场景——什」？",
+   "a": "天才交易员 AI 量化十大等待场景——什么时候该先按下暂停？",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L189",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L189",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0066",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 189
+   },
+   "quality_score": 40.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-057",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "等待也",
+   "q": "什么是「等待也」？",
+   "a": "等待也是一种决策。我是老木，感谢关注。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L202",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L202",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0077",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 202
+   },
+   "quality_score": 36.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-058",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "天才交易员 AI 量化的十大市场情绪数据",
+   "q": "什么是「天才交易员 AI 量化的十大市场情绪数据」？",
+   "a": "天才交易员 AI 量化的十大市场情绪数据：",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L206",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L206",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0078",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 206
+   },
+   "quality_score": 37.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-059",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "所有数据都需要交叉验证",
+   "q": "什么是「所有数据都需要交叉验证」？",
+   "a": "所有数据都需要交叉验证：先核对口径，再让 AI 解释市场。我是老木，感谢关注。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L219",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L219",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0089",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 219
+   },
+   "quality_score": 43.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-060",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "天才交易员 AI 量化十大趋势衰竭线索",
+   "q": "什么是「天才交易员 AI 量化十大趋势衰竭线索」？",
+   "a": "天才交易员 AI 量化十大趋势衰竭线索：",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L223",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L223",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0090",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 223
+   },
+   "quality_score": 36.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-061",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "从推进减弱到结构改变",
+   "q": "什么是「从推进减弱到结构改变」？",
+   "a": "从推进减弱到结构改变，要逐层交叉验证。线索不是预言，AI 帮助量化观察。我是老木，感谢关注。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L236",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L236",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0101",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 236
+   },
+   "quality_score": 45.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-062",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "天才交易员 AI 量化十大回撤排查法则",
+   "q": "什么是「天才交易员 AI 量化十大回撤排查法则」？",
+   "a": "天才交易员 AI 量化十大回撤排查法则：",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L240",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L240",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0102",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 240
+   },
+   "quality_score": 36.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-063",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "天才交易员 AI 量化自动交易十大故障—",
+   "q": "什么是「天才交易员 AI 量化自动交易十大故障—」？",
+   "a": "天才交易员 AI 量化自动交易十大故障——策略没错，系统也可能出错：",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L257",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L257",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0114",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 257
+   },
+   "quality_score": 41.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-064",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "天才交易员 AI 量化十大止损误区",
+   "q": "什么是「天才交易员 AI 量化十大止损误区」？",
+   "a": "天才交易员 AI 量化十大止损误区：",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L274",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L274",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0126",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 274
+   },
+   "quality_score": 36.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-065",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "先定失效",
+   "q": "什么是「先定失效」？",
+   "a": "先定失效，再控风险。我是老木，感谢关注。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L287",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L287",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0137",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 287
+   },
+   "quality_score": 36.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-066",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "天才交易员的十大风控防线——先守住风险",
+   "q": "什么是「天才交易员的十大风控防线——先守住风险」？",
+   "a": "天才交易员的十大风控防线——先守住风险，再谈策略：",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L291",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L291",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0138",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 291
+   },
+   "quality_score": 38.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-067",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "所以风控不",
+   "q": "什么是「所以风控不」？",
+   "a": "所以风控不是一条止损线，而是层层约束。我是老木，感谢关注。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L304",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L304",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0149",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 304
+   },
+   "quality_score": 39.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-068",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "冲过去",
+   "q": "什么是「冲过去」？",
+   "a": "冲过去，不等于站得住。十条线索，按 10 到 1 倒序，需要交叉验证，不是确定性预测。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L308",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L308",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0150",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 308
+   },
+   "quality_score": 44.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-069",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**10 突破幅度——刺穿一点",
+   "q": "什么是「**10 突破幅度——刺穿一点」？",
+   "a": "**10 突破幅度——刺穿一点，还是明显越过。** 把收盘超过关键位的距离，除以事前 ATR：先衡量幅度，再判断它是否只是日常波动。距离小不必然是假突破，距离大也可能过度拉伸。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L310",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L310",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0151",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 310
+   },
+   "quality_score": 59.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-070",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**09 收盘位置——盘中冲高",
+   "q": "什么是「**09 收盘位置——盘中冲高」？",
+   "a": "**09 收盘位置——盘中冲高，收盘在哪里。** 观察收盘是否仍在关键位上方，再看它位于当根 K 线区间的什么位置。冲高回落值得继续核对；收在高位，也不保证后续延续。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L312",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L312",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0152",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 312
+   },
+   "quality_score": 57.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-071",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**08 成交量——参与增加",
+   "q": "什么是「**08 成交量——参与增加」？",
+   "a": "**08 成交量——参与增加，还是只有价格动。** 对比当期量与此前均量。突破时量能不足、或放量回落，都需要结合价格重新审视。放量不等于有效突破，缩量也不能单独判假。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L314",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L314",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0153",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 314
+   },
+   "quality_score": 57.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-072",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**07 上下影线——冲上去",
+   "q": "什么是「**07 上下影线——冲上去」？",
+   "a": "**07 上下影线——冲上去，又被压回来多少。** 比较上下影线占整根振幅的比例：长上影描述高位回落，长下影描述低位回收。影线只是价格路径的结果，不能单凭它认定操纵。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L316",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L316",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0154",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 316
+   },
+   "quality_score": 57.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-073",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**06 后续延续——突破之后",
+   "q": "什么是「**06 后续延续——突破之后」？",
+   "a": "**06 后续延续——突破之后，能站住几根。** 冻结突破位，等待后续 K 线收盘，统计站在关键位上方的比例，观察突破是否持续。这条线索需要等待，不能在突破当下提前知道。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L318",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L318",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0155",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 318
+   },
+   "quality_score": 58.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-074",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**05 回踩表现——原来的压力",
+   "q": "什么是「**05 回踩表现——原来的压力」？",
+   "a": "**05 回踩表现——原来的压力，变成支撑了吗。** 回踩关键位附近后，观察能否重新站回并延续；若收回区间内且反抽受阻，需提高警惕。一次触碰不等于确认，容忍区间应预先规定。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L320",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L320",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0156",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 320
+   },
+   "quality_score": 58.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-075",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**04 大周期压力——小周期突破",
+   "q": "什么是「**04 大周期压力——小周期突破」？",
+   "a": "**04 大周期压力——小周期突破，上方还有没有墙。** 把更大周期上已形成的压力位放到同一张图。小周期突破之后，可能很快遇到上方压力；大周期关键位也可能失效，不能当作绝对屏障。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L322",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L322",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0157",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 322
+   },
+   "quality_score": 59.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-076",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**03 板块配合——一个在冲",
+   "q": "什么是「**03 板块配合——一个在冲」？",
+   "a": "**03 板块配合——一个在冲，还是一群在走。** 观察板块中同步站上均线的成员占比。若个别冲高而多数转弱，突破需要更多证据。板块背离是线索，不是必然反转结论。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L324",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L324",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0158",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 324
+   },
+   "quality_score": 56.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-077",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**02 流动性——价格能过去",
+   "q": "什么是「**02 流动性——价格能过去」？",
+   "a": "**02 流动性——价格能过去，订单能成交吗。** 看买卖价差、挂单深度与预期冲击。盘口稀薄时，小额交易也可能推动价格快速穿过关键位；挂单可以撤销，盘口快照不能保证实际成交。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L326",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L326",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0159",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 326
+   },
+   "quality_score": 59.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-078",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**01 失效后的应对——确认看错",
+   "q": "什么是「**01 失效后的应对——确认看错」？",
+   "a": "**01 失效后的应对——确认看错，先执行预案。** 事先写明失效条件，触发后停止沿用原判断，按计划控制风险，再记录原因、复核数据。止损条件不是成交保证，不要因为失效就机械反向。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L328",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L328",
+   "theme": "机械/制造",
+   "topic": "机械/制造",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0160",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 328
+   },
+   "quality_score": 59.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-079",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "识别假突破",
+   "q": "什么是「识别假突破」？",
+   "a": "识别假突破：先观察，再验证——幅度、收盘、量价、后续、执行条件。AI 帮助把线索写成规则，失效后按预案应对。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L330",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L330",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0161",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 330
+   },
+   "quality_score": 48.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-080",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "从结构到验证",
+   "q": "什么是「从结构到验证」？",
+   "a": "从结构到验证，最后一条决定何时看错。按 10 到 1 倒序拆解，这是一套观察框架，不是确定性预测。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L334",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L334",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0162",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 334
+   },
+   "quality_score": 46.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-081",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**10 高低点抬升——先看结构",
+   "q": "什么是「**10 高低点抬升——先看结构」？",
+   "a": "**10 高低点抬升——先看结构，再谈主升。** 已确认的波峰与波谷同时抬高，说明价格结构改善。AI 先把\"看起来上涨\"写成可检验条件；拐点需后续 K 线确认，不能提前知道。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L336",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L336",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0163",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 336
+   },
+   "quality_score": 59.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-082",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**09 均线向上——方向",
+   "q": "什么是「**09 均线向上——方向」？",
+   "a": "**09 均线向上——方向，要有连续性。** 观察均线斜率与价格位置：均线向上、价格位于均线上方，再结合结构判断。均线会滞后，横盘时可能反复穿越。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L338",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L338",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0164",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 338
+   },
+   "quality_score": 54.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-083",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**08 关键位突破——收盘",
+   "q": "什么是「**08 关键位突破——收盘」？",
+   "a": "**08 关键位突破——收盘，站上过去的压力。** 把过去 20 根 K 线的最高价作为参考位，收盘站上它，才记录一次突破观察事件。盘中刺穿不等于收盘突破，仍可能是假突破。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L340",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L340",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0165",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 340
+   },
+   "quality_score": 58.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-084",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**07 成交量配合——价格突破",
+   "q": "什么是「**07 成交量配合——价格突破」？",
+   "a": "**07 成交量配合——价格突破，也看参与度。** 把当前成交量与前 20 期平均量比较：放量说明参与增加，但要和价格方向一起看。放量下跌也会出现，成交量不是单独买点。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L342",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L342",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0166",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 342
+   },
+   "quality_score": 58.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-085",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**06 回踩表现——突破之后",
+   "q": "什么是「**06 回踩表现——突破之后」？",
+   "a": "**06 回踩表现——突破之后，观察承接。** 冻结突破时的关键位，观察回踩有没有守住附近区域，以及回踩后能否重新走强。回踩深度与容忍区间必须事先定义。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L344",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L344",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0167",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 344
+   },
+   "quality_score": 55.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-086",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**05 相对强弱——它",
+   "q": "什么是「**05 相对强弱——它」？",
+   "a": "**05 相对强弱——它是否跑赢比较对象。** 把标的和基准归一到同一起点，再看两者比值。上涨时更强，下跌时也可能只是跌得更少。这里是相对基准的强弱，不是 RSI。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L346",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L346",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0168",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 346
+   },
+   "quality_score": 57.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-087",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**04 板块联动——一只在涨",
+   "q": "什么是「**04 板块联动——一只在涨」？",
+   "a": "**04 板块联动——一只在涨，还是多数在涨。** 统计板块内站在各自均线上方的成员占比，观察上涨是否从个别扩展到更多标的。板块成员应使用当时名单，避免幸存者偏差。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L348",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L348",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0169",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 348
+   },
+   "quality_score": 57.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-088",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**03 多周期一致性——不同尺度",
+   "q": "什么是「**03 多周期一致性——不同尺度」？",
+   "a": "**03 多周期一致性——不同尺度，是否同向。** 在 1、4、12 根基础 K 线聚合的周期上，分别观察已收盘均线斜率，让不同尺度互相核对。同一行情的多尺度相关，不能当作独立证据。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L350",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L350",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0170",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 350
+   },
+   "quality_score": 60.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-089",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**02 波动扩张——振幅变大",
+   "q": "什么是「**02 波动扩张——振幅变大」？",
+   "a": "**02 波动扩张——振幅变大，方向另看。** 用真实波幅衡量跳空和日内振幅。ATR 扩大说明波动增强，需要同时检查价格方向；波动扩张也可能是急跌，不代表主升已确认。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L352",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L352",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0171",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 352
+   },
+   "quality_score": 57.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-090",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**01 趋势失效条件——最后一条",
+   "q": "什么是「**01 趋势失效条件——最后一条」？",
+   "a": "**01 趋势失效条件——最后一条，先定义何时看错。** 示例：收盘跌破此前已确认的结构低点，撤销原先看多假设，进入重新评估。失效规则不是成交保证，真实执行仍有跳空和滑点。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L354",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L354",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0172",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 354
+   },
+   "quality_score": 58.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-091",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "主升浪",
+   "q": "什么是「主升浪」？",
+   "a": "主升浪，是观察假设，不是十个信号的许愿。结构→量价→相对强弱→失效条件。AI 把条件写清楚，数据和回测负责检验。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L356",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L356",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0173",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 356
+   },
+   "quality_score": 48.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-092",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "AI 量化",
+   "q": "什么是「AI 量化」？",
+   "a": "AI 量化，预测涨跌只是最浅的一层。从条件分布，到受约束的资产组合。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L364",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L364",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0174",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 364
+   },
+   "quality_score": 41.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-093",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **01 高斯过程回归——预测一整条",
+   "q": "什么是「- **01 高斯过程回归——预测一整条」？",
+   "a": "- **01 高斯过程回归——预测一整条分布。** 核函数定义相似性；区间反映模型的不确定性。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L366",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L366",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0175",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 366
+   },
+   "quality_score": 45.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-094",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **02 自注意力机制——依赖关系",
+   "q": "什么是「- **02 自注意力机制——依赖关系」？",
+   "a": "- **02 自注意力机制——依赖关系，变成矩阵。** 注意力权重是计算结构，不等于因果解释。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L367",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L367",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0176",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 367
+   },
+   "quality_score": 45.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-095",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **03 岭回归路径——用惩罚项收缩",
+   "q": "什么是「- **03 岭回归路径——用惩罚项收缩」？",
+   "a": "- **03 岭回归路径——用惩罚项收缩参数。** 正则化降低复杂度；强度仍需时间验证。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L368",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L368",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0177",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 368
+   },
+   "quality_score": 44.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-096",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **04 隐马尔可夫滤波——市场状态",
+   "q": "什么是「- **04 隐马尔可夫滤波——市场状态」？",
+   "a": "- **04 隐马尔可夫滤波——市场状态，不直接可见。** 用观测似然更新状态概率，而非事后贴标签。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L369",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L369",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0178",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 369
+   },
+   "quality_score": 46.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-097",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **05 凸组合优化——信号进入约束",
+   "q": "什么是「- **05 凸组合优化——信号进入约束」？",
+   "a": "- **05 凸组合优化——信号进入约束系统。** 收益预测、风险与换手成本，共同决定仓位。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L370",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L370",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0179",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 370
+   },
+   "quality_score": 45.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-098",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **06 条件风险价值——把尾部损失",
+   "q": "什么是「- **06 条件风险价值——把尾部损失」？",
+   "a": "- **06 条件风险价值——把尾部损失写进目标。** 关注超过分位点的平均损失，而不是最大损失。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L371",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L371",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0180",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 371
+   },
+   "quality_score": 46.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-099",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "AI 量化的深度",
+   "q": "什么是「AI 量化的深度」？",
+   "a": "AI 量化的深度，在决策链条里：分布 → 状态 → 约束 → 组合。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L373",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L373",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0181",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 373
+   },
+   "quality_score": 41.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-100",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **01 均值回复过程——价差围绕均",
+   "q": "什么是「- **01 均值回复过程——价差围绕均」？",
+   "a": "- **01 均值回复过程——价差围绕均衡波动。** OU 是假设模型；结构变化会破坏均值回复。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L379",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L379",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0183",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 379
+   },
+   "quality_score": 46.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-101",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **02 序贯漂移检测——变化发生时",
+   "q": "什么是「- **02 序贯漂移检测——变化发生时」？",
+   "a": "- **02 序贯漂移检测——变化发生时，累积证据。** CUSUM 报警提示复核；阈值影响误报与延迟。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L380",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L380",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0184",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 380
+   },
+   "quality_score": 47.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-102",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **03 指数加权协方差——让风险估",
+   "q": "什么是「- **03 指数加权协方差——让风险估」？",
+   "a": "- **03 指数加权协方差——让风险估计随时间更新。** 此处为零均值假设；衰减因子控制记忆长度。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L381",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L381",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0185",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 381
+   },
+   "quality_score": 46.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-103",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **04 霍克斯点过程——事件会激发",
+   "q": "什么是「- **04 霍克斯点过程——事件会激发」？",
+   "a": "- **04 霍克斯点过程——事件会激发后续事件。** 强度随事件跳升并衰减；演示参数满足稳定条件。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L382",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L382",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0186",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 382
+   },
+   "quality_score": 46.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-104",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **05 最优执行轨迹——冲击成本与",
+   "q": "什么是「- **05 最优执行轨迹——冲击成本与」？",
+   "a": "- **05 最优执行轨迹——冲击成本与风险的权衡。** 线性临时冲击模型下，风险厌恶越强，越早执行。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L383",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L383",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0187",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 383
+   },
+   "quality_score": 47.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-105",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **06 滚动时间验证——让模型接受",
+   "q": "什么是「- **06 滚动时间验证——让模型接受」？",
+   "a": "- **06 滚动时间验证——让模型接受未来检验。** 训练、隔离、测试按时间推进；重叠标签需净化。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L384",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L384",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0188",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 384
+   },
+   "quality_score": 46.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-106",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "复杂",
+   "q": "什么是「复杂」？",
+   "a": "复杂，不等于有效。AI 量化要经得起检验：样本外验证 → 成本约束 → 执行监控。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L386",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L386",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0189",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 386
+   },
+   "quality_score": 43.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-107",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **01 数据边界——先知道",
+   "q": "什么是「- **01 数据边界——先知道」？",
+   "a": "- **01 数据边界——先知道：当时能看到什么。** 价格、财报、新闻，都要对齐可用时间，避免未来信息泄漏。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L392",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L392",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0191",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 392
+   },
+   "quality_score": 48.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-108",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **02 特征工程——把市场现象变成",
+   "q": "什么是「- **02 特征工程——把市场现象变成」？",
+   "a": "- **02 特征工程——把市场现象变成变量。** 特征不等于有效信号；先提出假设，再把假设变成可测试的特征。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L393",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L393",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0192",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 393
+   },
+   "quality_score": 48.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-109",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **03 模型学习——从历史中学习条",
+   "q": "什么是「- **03 模型学习——从历史中学习条」？",
+   "a": "- **03 模型学习——从历史中学习条件关系。** 模型输出不是确定答案；AI 可以拟合非线性关系，但预测仍有误差。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L394",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L394",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0193",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 394
+   },
+   "quality_score": 49.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-110",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **04 控制复杂度——拟合更好",
+   "q": "什么是「- **04 控制复杂度——拟合更好」？",
+   "a": "- **04 控制复杂度——拟合更好，不一定更有效。** 用验证集选择复杂度；模型太复杂，可能把噪声也记成了规律。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L395",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L395",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0194",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 395
+   },
+   "quality_score": 49.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-111",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **05 时间验证——过去训练",
+   "q": "什么是「- **05 时间验证——过去训练」？",
+   "a": "- **05 时间验证——过去训练，未来检验。** 测试区间不能反复用来调参；按时间推进测试，重叠标签还需防泄漏。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L396",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L396",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0195",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 396
+   },
+   "quality_score": 49.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-112",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **06 交易成本——预测优势",
+   "q": "什么是「- **06 交易成本——预测优势」？",
+   "a": "- **06 交易成本——预测优势，要过成本这一关。** 手续费、滑点和冲击成本，都会消耗收益。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L397",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L397",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0196",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 397
+   },
+   "quality_score": 46.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-113",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **07 仓位与风险——信号有强弱",
+   "q": "什么是「- **07 仓位与风险——信号有强弱」？",
+   "a": "- **07 仓位与风险——信号有强弱，仓位有边界。** 模型输出之后，还要约束集中度和风险；协方差估计本身也有误差。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L398",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L398",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0197",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 398
+   },
+   "quality_score": 49.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-114",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **08 持续监控——市场变了",
+   "q": "什么是「- **08 持续监控——市场变了」？",
+   "a": "- **08 持续监控——市场变了，模型也可能失效。** 监控输入分布和样本外表现，识别漂移；监控触发复核，不等于自动恢复盈利。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L399",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L399",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0198",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 399
+   },
+   "quality_score": 51.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-115",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **09 人机分工——AI 提速研究",
+   "q": "什么是「- **09 人机分工——AI 提速研究」？",
+   "a": "- **09 人机分工——AI 提速研究，纪律约束交易。** 人提出问题，AI 辅助研究，规则约束执行，把 AI 量化做成可复核的流程。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L400",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L400",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0199",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 400
+   },
+   "quality_score": 52.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-116",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "AI 量化到底怎么入门",
+   "q": "什么是「AI 量化到底怎么入门」？",
+   "a": "AI 量化到底怎么入门？先把这 6 步可检验的闭环真正跑通：数据 → 规则 → 回测 → 成本 → 独立检验 → 模拟运行。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L404",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L404",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0200",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 404
+   },
+   "quality_score": 50.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-117",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**01 准备工具与数据",
+   "q": "什么是「**01 准备工具与数据」？",
+   "a": "**01 准备工具与数据。** Python + Backtrader，导入 ETF 日线的日期、开高低收与成交量。先检查，再计算：核对日期排序、缺失、重复和复权口径，不能用未来值回填历史。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L406",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L406",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0201",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 406
+   },
+   "quality_score": 61.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-118",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**02 把想法写成规则",
+   "q": "什么是「**02 把想法写成规则」？",
+   "a": "**02 把想法写成规则。** 均线是价格的滚动平均。用 5 日与 20 日均线做教学例子，窗口不足时不生成交叉信号；5 和 20 不是最优参数结论。规则要明确：上涨不是买点，交叉才是事件——上穿申请约半仓，下穿申请清仓，没有新交叉就保持股数。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L408",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L408",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0202",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 408
+   },
+   "quality_score": 70.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-119",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**03 按时间做回测",
+   "q": "什么是「**03 按时间做回测」？",
+   "a": "**03 按时间做回测。** 今天的收盘，不能买回今天。t 日收盘生成信号，t+1 日开盘模拟成交，逐笔保存订单与持仓。禁区是：用 t 日收盘信号，假设已经在 t 日收盘成交。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L410",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L410",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0203",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 410
+   },
+   "quality_score": 59.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-120",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**04 把成本算进去",
+   "q": "什么是「**04 把成本算进去」？",
+   "a": "**04 把成本算进去。** 毛收益还不是你的净收益。买入向上滑点、卖出向下滑点，手续费按成交金额计入现金账。示例单边费率 0.03%、滑点 0.05%，不是任何平台的真实报价。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L412",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L412",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0204",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 412
+   },
+   "quality_score": 59.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-121",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**05 评估",
+   "q": "什么是「**05 评估」？",
+   "a": "**05 评估，不只看收益。** 净值、回撤、基准一起看：持仓按收盘价估值，比较扣费曲线与买入持有基准，并检查交易明细。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L414",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L414",
+   "theme": "评级/研报方法论",
+   "topic": "评级/研报方法论",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0205",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 414
+   },
+   "quality_score": 50.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-122",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**06 留出独立检验区",
+   "q": "什么是「**06 留出独立检验区」？",
+   "a": "**06 留出独立检验区。** 参数冻结后，再揭开后半段。前段开发、后段检验，时序数据不能随意打乱，调参只在开发区进行。反复看测试结果再改参数，会污染测试。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L416",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L416",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0206",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 416
+   },
+   "quality_score": 56.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-123",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**再用模拟账户跑一遍",
+   "q": "什么是「**再用模拟账户跑一遍」？",
+   "a": "**再用模拟账户跑一遍。** 信号、成交、持仓必须对上：监控拒单、漏单、重复单与仓位上限。订单发出不代表已经成交；有差异先暂停并复核。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L418",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L418",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0207",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 418
+   },
+   "quality_score": 52.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-124",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "入门的第一份成绩不",
+   "q": "什么是「入门的第一份成绩不」？",
+   "a": "入门的第一份成绩不是漂亮曲线，而是流程可重复、结果可追溯。把数据、参数、代码版本和成交记录一起保存，别把调出漂亮曲线当成功。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L420",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L420",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0208",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 420
+   },
+   "quality_score": 50.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-125",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "从第 9 名倒数到第 1 名",
+   "q": "什么是「从第 9 名倒数到第 1 名」？",
+   "a": "从第 9 名倒数到第 1 名，看公式、看机制、看它如何成为 AI 特征。名次沿用参考作品的主观排序，不代表预测能力或收益排名。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L424",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L424",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0209",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 424
+   },
+   "quality_score": 51.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-126",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **#09 MACD",
+   "q": "什么是「- **#09 MACD」？",
+   "a": "- **#09 MACD：趋势动量的二次平滑。** 两条指数均线做差，再平滑。AI 特征：动量、交叉与斜率。滞后来自平滑——交叉不是盈利证明。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L426",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L426",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0210",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 426
+   },
+   "quality_score": 53.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-127",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **#08 KDJ",
+   "q": "什么是「- **#08 KDJ」？",
+   "a": "- **#08 KDJ：价格在区间里的位置。** 高低区间归一化，再递推平滑。AI 特征：区间位置与变化速度。J 值可超出 0–100；超买不等于下跌。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L427",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L427",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0211",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 427
+   },
+   "quality_score": 55.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-128",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **#07 RSI",
+   "q": "什么是「- **#07 RSI」？",
+   "a": "- **#07 RSI：上涨与下跌的相对强度。** 把涨幅与跌幅分别递推平滑。AI 特征：方向强度，而非绝对价格。趋势中可以持续超买；阈值不是反转。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L428",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L428",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0212",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 428
+   },
+   "quality_score": 54.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-129",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **#06 布林带",
+   "q": "什么是「- **#06 布林带」？",
+   "a": "- **#06 布林带：波动变化，边界跟着变。** 均值定中轴，标准差定带宽。AI 特征：带宽、偏离与波动状态。两倍标准差不自动等于 95% 覆盖率。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L429",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L429",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0213",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 429
+   },
+   "quality_score": 55.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-130",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **#05 均线 MA/EMA",
+   "q": "什么是「- **#05 均线 MA/EMA」？",
+   "a": "- **#05 均线 MA/EMA：给趋势一个可计算的尺度。** 等权平均，与指数衰减比较。AI 特征：均线距离、斜率与多尺度。多条均线高度相关，不等于多份证据。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L430",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L430",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0214",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 430
+   },
+   "quality_score": 57.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-131",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **#04 VWAP",
+   "q": "什么是「- **#04 VWAP」？",
+   "a": "- **#04 VWAP：把成交量放进价格权重。** 从固定锚点累计价格乘成交量。AI 特征：相对成交均价的偏离。它是成交加权基准，不代表机构持仓。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L431",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L431",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0215",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 431
+   },
+   "quality_score": 54.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-132",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **#03 成交量／订单流",
+   "q": "什么是「- **#03 成交量／订单流」？",
+   "a": "- **#03 成交量／订单流：成交多少，和谁主动成交。** 成交量描述活跃度，Delta 描述主动性。AI 特征：成交失衡与累计净主动量。真实订单流需逐笔方向数据，K 线不够。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L432",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L432",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0216",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 432
+   },
+   "quality_score": 59.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-133",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **#02 斐波那契",
+   "q": "什么是「- **#02 斐波那契」？",
+   "a": "- **#02 斐波那契：把一段波动映射成比例。** 先固定高低锚点，再画回撤层级。AI 特征：距各层级的标准化距离。比例是候选位置，不能证明必然支撑（0.5 是惯例，不是斐波那契比例）。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L433",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L433",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0217",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 433
+   },
+   "quality_score": 61.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-134",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **#01 价格行为 PA/SMC",
+   "q": "什么是「- **#01 价格行为 PA/SMC」？",
+   "a": "- **#01 价格行为 PA/SMC：把叙事变成规则。** 突破、回落、扫过前高，都要先定义。AI 特征：结构事件与条件概率。PA/SMC 没有统一公式；复杂不等于有效。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L434",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L434",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0218",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 434
+   },
+   "quality_score": 58.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-135",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "名次",
+   "q": "什么是「名次」？",
+   "a": "名次是话题，验证才是工作：特征 → 样本外检验 → 成本与风控。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L436",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L436",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0219",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 436
+   },
+   "quality_score": 40.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-136",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "从想法到可检验的系统",
+   "q": "什么是「从想法到可检验的系统」？",
+   "a": "从想法到可检验的系统，一共 16 步。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L440",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L440",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0220",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 440
+   },
+   "quality_score": 36.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-137",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**01 安装 Python 环境——环",
+   "q": "什么是「**01 安装 Python 环境——环」？",
+   "a": "**01 安装 Python 环境——环境也要能够复现。** 隔离虚拟环境、固定依赖版本、保存数据和随机种子。同一环境、输入与参数，才能追查结果差异。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L442",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L442",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0221",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 442
+   },
+   "quality_score": 55.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-138",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**02 安装量化工具库——计算、数据、",
+   "q": "什么是「**02 安装量化工具库——计算、数据、」？",
+   "a": "**02 安装量化工具库——计算、数据、回测各司其职。** NumPy 处理数组，pandas 整理表格，Matplotlib 画图，Backtrader 做回放。工具库是基础设施；库的数量不等于策略质量。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L444",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L444",
+   "theme": "化工/材料",
+   "topic": "化工/材料",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0222",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 444
+   },
+   "quality_score": 64.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-139",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**03 接入 AI 接口——让 AI ",
+   "q": "什么是「**03 接入 AI 接口——让 AI 」？",
+   "a": "**03 接入 AI 接口——让 AI 辅助研究与编码。** 用提示词描述任务，密钥放环境变量，输出先审查再运行。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L446",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L446",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0223",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 446
+   },
+   "quality_score": 49.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-140",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**04 连接行情数据源——统一时间与价",
+   "q": "什么是「**04 连接行情数据源——统一时间与价」？",
+   "a": "**04 连接行情数据源——统一时间与价格口径。** 选用有授权的数据接口，核对频率、复权、时区与可用时间。不同数据源不应直接混拼，先检查字段与口径。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L448",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L448",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0224",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 448
+   },
+   "quality_score": 55.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-141",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**05 获取行情序列——让 K 线逐根",
+   "q": "什么是「**05 获取行情序列——让 K 线逐根」？",
+   "a": "**05 获取行情序列——让 K 线逐根长出来。** 一根 K 线包含开高低收；成交量反映这一周期的交易活跃度。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L450",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L450",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0225",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 450
+   },
+   "quality_score": 48.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-142",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**06 清洗与预处理——先清数据",
+   "q": "什么是「**06 清洗与预处理——先清数据」？",
+   "a": "**06 清洗与预处理——先清数据，再谈模型。** 排序、去重、检查缺失与异常；标准化参数只从训练区估计。不能用未来价格回填，也不能用全样本统计量预处理训练集。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L452",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L452",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0226",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 452
+   },
+   "quality_score": 56.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-143",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**07 计算技术指标——趋势、动量与波",
+   "q": "什么是「**07 计算技术指标——趋势、动量与波」？",
+   "a": "**07 计算技术指标——趋势、动量与波动同屏。** 均线观察趋势，MACD 显示动量差，布林带描述滚动波动区间。（本片 MACD 柱值 = DIF - DEA；不同软件可能采用两倍柱值。）",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L454",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L454",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0227",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 454
+   },
+   "quality_score": 61.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-144",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**08 构建特征工程——把走势图变成数",
+   "q": "什么是「**08 构建特征工程——把走势图变成数」？",
+   "a": "**08 构建特征工程——把走势图变成数值向量。** 收益、波动、成交量变化与趋势偏离，组成可供模型读取的输入。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L456",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L456",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0228",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 456
+   },
+   "quality_score": 48.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-145",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**09 设计策略思想——写清进场、退出",
+   "q": "什么是「**09 设计策略思想——写清进场、退出」？",
+   "a": "**09 设计策略思想——写清进场、退出与仓位。** 例：短均线上穿长均线申请半仓，下穿申请清仓，否则保持股数。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L458",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L458",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0229",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 458
+   },
+   "quality_score": 48.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-146",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**10 向 AI 描述策略——把模糊想",
+   "q": "什么是「**10 向 AI 描述策略——把模糊想」？",
+   "a": "**10 向 AI 描述策略——把模糊想法写成规格。** 同时给出数据字段、交叉条件、成交时点、成本假设和风险约束。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L460",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L460",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0230",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 460
+   },
+   "quality_score": 49.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-147",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**11 获取策略代码——生成只",
+   "q": "什么是「**11 获取策略代码——生成只」？",
+   "a": "**11 获取策略代码——生成只是起点，测试才落地。** 把加载数据、计算指标、生成订单和记录结果拆成可检查模块；检查语法、边界、空值、重复订单和未来数据泄漏。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L462",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L462",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0231",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 462
+   },
+   "quality_score": 56.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-148",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**12 理解策略逻辑——信号不等于成交",
+   "q": "什么是「**12 理解策略逻辑——信号不等于成交」？",
+   "a": "**12 理解策略逻辑——信号不等于成交。** 交叉点标记信号，后一个交易日标记成交，逐笔解释买卖原因。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L464",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L464",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0232",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 464
+   },
+   "quality_score": 47.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-149",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**13 配置回测参数——先写成本",
+   "q": "什么是「**13 配置回测参数——先写成本」？",
+   "a": "**13 配置回测参数——先写成本，再看结果。** 设初始资金、时间范围、手续费与滑点，同时规定交易单位。（教学设定：10 万元、单边费率 0.03%、滑点 0.05%、100 股取整。）",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L466",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L466",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0233",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 466
+   },
+   "quality_score": 61.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-150",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**14 执行回测分析——让收益与回撤一",
+   "q": "什么是「**14 执行回测分析——让收益与回撤一」？",
+   "a": "**14 执行回测分析——让收益与回撤一起说话。** 净值按现金与持仓计算；对照买入持有基准，检查每笔成交记录。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L468",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L468",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0234",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 468
+   },
+   "quality_score": 48.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-151",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**15 模拟盘验证——冻结参数",
+   "q": "什么是「**15 模拟盘验证——冻结参数」？",
+   "a": "**15 模拟盘验证——冻结参数，检验新数据。** 先按时间留出测试区，再模拟信号、订单与持仓是否一致。不能用测试集挑冠军。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L470",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L470",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0235",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 470
+   },
+   "quality_score": 50.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-152",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**16 部署与监控——自动执行",
+   "q": "什么是「**16 部署与监控——自动执行」？",
+   "a": "**16 部署与监控——自动执行，也需要刹车。** 核对权限、仓位与订单状态；异常触发预设暂停和人工复核。真实成交还受流动性、停牌、涨跌停与接口异常影响。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L472",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L472",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0236",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 472
+   },
+   "quality_score": 55.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-153",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "把 16 步连成一个系统",
+   "q": "什么是「把 16 步连成一个系统」？",
+   "a": "把 16 步连成一个系统：K 线提供数据，指标提供描述，规则形成订单，风控约束执行。AI 加速研究，验证决定取舍——从可复现、可解释、可监控开始，而不是从收益承诺开始。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L474",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L474",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0237",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 474
+   },
+   "quality_score": 58.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-154",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "从市场情绪到链上资金",
+   "q": "什么是「从市场情绪到链上资金」？",
+   "a": "从市场情绪到链上资金，最后一个，是做策略绕不开的基础。按讲解顺序倒数，不是收益排名。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L478",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L478",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0238",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 478
+   },
+   "quality_score": 44.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-155",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**10 恐惧与贪婪指数——把情绪变成数",
+   "q": "什么是「**10 恐惧与贪婪指数——把情绪变成数」？",
+   "a": "**10 恐惧与贪婪指数——把情绪变成数值。** 给 AI 增加情绪参考。极度恐惧，不等于直接抄底。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L480",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L480",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0239",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 480
+   },
+   "quality_score": 46.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-156",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**09 社交热度——热度",
+   "q": "什么是「**09 社交热度——热度」？",
+   "a": "**09 社交热度——热度，在网络中扩散。** 追踪社交讨论、互动和情绪变化。标的突然火了，先观察热度变化。热度不等于买盘。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L482",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L482",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0240",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 482
+   },
+   "quality_score": 50.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-157",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**08 社交、链上、开发活动——让三类",
+   "q": "什么是「**08 社交、链上、开发活动——让三类」？",
+   "a": "**08 社交、链上、开发活动——让三类数据交叉验证。** 讨论热度与实际活动是否同步？相关不等于因果；三类数据要先对齐时间。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L484",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L484",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0241",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 484
+   },
+   "quality_score": 51.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-158",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**07 宏观数据——把价格放回宏观环境",
+   "q": "什么是「**07 宏观数据——把价格放回宏观环境」？",
+   "a": "**07 宏观数据——把价格放回宏观环境。** 提供利率、通胀等宏观经济数据，让分析视野扩展到更大的经济环境。按实际发布时间对齐，回测注意历史修订。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L486",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L486",
+   "theme": "宏观/政策",
+   "topic": "宏观/政策",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0242",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 486
+   },
+   "quality_score": 54.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-159",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**06 行情与基本面筛选——从海量标的",
+   "q": "什么是「**06 行情与基本面筛选——从海量标的」？",
+   "a": "**06 行情与基本面筛选——从海量标的筛出候选。** 价格、市值、成交量和历史行情，用来筛选标的、比较交易对，搭建基础数据集。成交量与市值要使用一致币值和时间口径。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L488",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L488",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0243",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 488
+   },
+   "quality_score": 57.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-160",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**05 链上查询——把链上记录",
+   "q": "什么是「**05 链上查询——把链上记录」？",
+   "a": "**05 链上查询——把链上记录，查询成指标。** 研究特定链上行为：通过查询，把链上记录整理成你需要的指标。核对合约、地址标签和去重规则；每日唯一活跃地址数，不等于独立人数。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L490",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L490",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0244",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 490
+   },
+   "quality_score": 59.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-161",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**04 链上成本指标——成本与盈亏",
+   "q": "什么是「**04 链上成本指标——成本与盈亏」？",
+   "a": "**04 链上成本指标——成本与盈亏，写在链上。** MVRV、SOPR 等指标帮助研究持币群体的成本与盈亏状态，为周期分析补充依据。链上成本是统计代理，不是每个人的真实买入价。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L492",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L492",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0245",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 492
+   },
+   "quality_score": 59.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-162",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**03 交易所资金流——追踪资金",
+   "q": "什么是「**03 交易所资金流——追踪资金」？",
+   "a": "**03 交易所资金流——追踪资金，流向哪里。** 交易所资金流、矿工流向和相关链上指标，帮助观察资金往哪里走。流入交易所，不等于已经卖出。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L494",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L494",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0246",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 494
+   },
+   "quality_score": 53.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-163",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**02 衍生品数据——把杠杆拥挤",
+   "q": "什么是「**02 衍生品数据——把杠杆拥挤」？",
+   "a": "**02 衍生品数据——把杠杆拥挤，摊开来看。** 持仓量、资金费率、清算等衍生品数据，帮助 AI 观察多空拥挤和风险变化。OI 并不直接给出多空方向；资金费率看平台约定。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L496",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L496",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0247",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 496
+   },
+   "quality_score": 58.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-164",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**01 交易所原生行情 API——最后",
+   "q": "什么是「**01 交易所原生行情 API——最后」？",
+   "a": "**01 交易所原生行情 API——最后一个，是行情基础。** 以某安为例：K 线、逐笔成交、订单簿，提供交易场所的一手行情，研究信号和执行条件都不能忽略。单一场所不等于全市场，订单簿快照也会变化。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L498",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L498",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0248",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 498
+   },
+   "quality_score": 63.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-165",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "让数据互相验证",
+   "q": "什么是「让数据互相验证」？",
+   "a": "让数据互相验证，让策略经得起检验。情绪 → 社交 → 宏观 → 链上 → 衍生品 → 原生行情；数据 → 特征 → 假设 → 回测 → 验证。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L500",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L500",
+   "theme": "宏观/政策",
+   "topic": "宏观/政策",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0249",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 500
+   },
+   "quality_score": 53.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-166",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "从数据输入",
+   "q": "什么是「从数据输入」？",
+   "a": "从数据输入，一直到交易执行。这一条按 15 个公式的链条讲。（\"少走 80% 弯路\"是主题表达，不是实测比例或效果保证。）",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L504",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L504",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0250",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 504
+   },
+   "quality_score": 50.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-167",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**01 特征向量——把行情",
+   "q": "什么是「**01 特征向量——把行情」？",
+   "a": "**01 特征向量——把行情，变成可计算的输入。** 收益率、成交量、持仓变化、波动率，先统一到同一时点、同一口径。只使用决策时已经能拿到的数据，避免未来信息泄漏。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L506",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L506",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0251",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 506
+   },
+   "quality_score": 57.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-168",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**02 条件概率——评分",
+   "q": "什么是「**02 条件概率——评分」？",
+   "a": "**02 条件概率——评分，需要验证与校准。** 模型输出 0.73 只是估计，不能直接宣称 73% 胜率。先做样本外校准，再讨论收益和交易成本。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L508",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L508",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0252",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 508
+   },
+   "quality_score": 54.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-169",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**03 几何布朗运动——把价格的不确定",
+   "q": "什么是「**03 几何布朗运动——把价格的不确定」？",
+   "a": "**03 几何布朗运动——把价格的不确定性写出来。** 漂移决定平均趋势，随机项生成不同的价格路径。常系数模型是假设基线，难以完整描述跳跃与肥尾。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L510",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L510",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0253",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 510
+   },
+   "quality_score": 54.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-170",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**04 蒙特卡洛模拟——同一组假设",
+   "q": "什么是「**04 蒙特卡洛模拟——同一组假设」？",
+   "a": "**04 蒙特卡洛模拟——同一组假设，推演多种结局。** 终点分布与亏损比例，展示模型假设下的可能结果。模拟次数增多只降低采样误差，不会修复错误假设。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L512",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L512",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0254",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 512
+   },
+   "quality_score": 55.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-171",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**05 条件异方差（GARCH）——大",
+   "q": "什么是「**05 条件异方差（GARCH）——大」？",
+   "a": "**05 条件异方差（GARCH）——大波动，往往有后续影响。** 前一期冲击与方差，共同更新这一期的条件方差；冲击之后，条件波动率逐步衰减。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L514",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L514",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0255",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 514
+   },
+   "quality_score": 53.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-172",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**06 卡尔曼滤波——预测之后",
+   "q": "什么是「**06 卡尔曼滤波——预测之后」？",
+   "a": "**06 卡尔曼滤波——预测之后，用新观测校正。** 观测是带噪的，估计由模型递推得到。滤波并不等于提前预知。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L516",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L516",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0256",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 516
+   },
+   "quality_score": 48.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-173",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**07 隐马尔可夫——状态看不见",
+   "q": "什么是「**07 隐马尔可夫——状态看不见」？",
+   "a": "**07 隐马尔可夫——状态看不见，概率可以更新。** 观测似然与状态转移，共同改变各状态的后验概率，不做事后\"上帝视角\"的分类。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L518",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L518",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0257",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 518
+   },
+   "quality_score": 51.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-174",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**08 概率加权——状态不确定",
+   "q": "什么是「**08 概率加权——状态不确定」？",
+   "a": "**08 概率加权——状态不确定，仓位也可以平滑。** 用状态概率加权候选仓位，避免只凭一个硬标签切换。示例仓位仍需成本、限额与样本外检验。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L520",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L520",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0258",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 520
+   },
+   "quality_score": 53.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-175",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**09 因子分解——收益来源",
+   "q": "什么是「**09 因子分解——收益来源」？",
+   "a": "**09 因子分解——收益来源，先拆开再评价。** 市场、规模等共同因子之外，才讨论剩余部分。估计出的 α 有统计误差，不代表可持续超额收益。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L522",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L522",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0259",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 522
+   },
+   "quality_score": 53.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-176",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**10 协方差收缩——风险矩阵",
+   "q": "什么是「**10 协方差收缩——风险矩阵」？",
+   "a": "**10 协方差收缩——风险矩阵，也需要抑制噪声。** 把样本协方差向结构化目标收缩，改善估计稳定性。收缩强度需要数据支持。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L524",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L524",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0260",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 524
+   },
+   "quality_score": 50.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-177",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**11 均值—方差优化——从看法",
+   "q": "什么是「**11 均值—方差优化——从看法」？",
+   "a": "**11 均值—方差优化——从看法，到受约束的权重。** 偏好变化，组合权重沿有效前沿移动；约束非负权重、权重合计为 1。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L526",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L526",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0261",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 526
+   },
+   "quality_score": 50.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-178",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**12 有向成交量——把买卖方向",
+   "q": "什么是「**12 有向成交量——把买卖方向」？",
+   "a": "**12 有向成交量——把买卖方向，转成可测量量。** 主动买入记正、主动卖出记负，累加得到方向性成交量。这是成交量差示意，不能与完整盘口事件 OFI 混同。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L528",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L528",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0262",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 528
+   },
+   "quality_score": 56.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-179",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**13 执行调度——大订单",
+   "q": "什么是「**13 执行调度——大订单」？",
+   "a": "**13 执行调度——大订单，拆成一条执行路径。** 前一项惩罚交易冲击，后一项惩罚剩余持仓的价格风险。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L530",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L530",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0263",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 530
+   },
+   "quality_score": 47.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-180",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**14 CUSUM 监测——模型失配",
+   "q": "什么是「**14 CUSUM 监测——模型失配」？",
+   "a": "**14 CUSUM 监测——模型失配，累积证据再报警。** 残差持续偏移，累积量越过阈值，触发复核或预设风控。报警不是必然下跌，也不自动等于无条件平仓。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L532",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L532",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0264",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 532
+   },
+   "quality_score": 55.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-181",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**15 滚动样本外——公式再漂亮",
+   "q": "什么是「**15 滚动样本外——公式再漂亮」？",
+   "a": "**15 滚动样本外——公式再漂亮，也要经得起检验。** 按时间训练、隔离、测试，把成本和滑点写入评估。同一测试集反复挑参数，会让\"样本外\"逐渐变成样本内。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L534",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L534",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0265",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 534
+   },
+   "quality_score": 56.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-182",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "把公式连起来",
+   "q": "什么是「把公式连起来」？",
+   "a": "把公式连起来，每一层都回答不同的问题：输入是什么？不确定性多大？风险如何分配？订单如何执行？复杂程度不是成绩；数据、假设、成本和验证才是约束。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L536",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L536",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0266",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 536
+   },
+   "quality_score": 53.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-183",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "少走弯路",
+   "q": "什么是「少走弯路」？",
+   "a": "少走弯路，从会用开始：理解假设、检查数据、验证结果。公式负责把问题写清楚，验证负责检验它是否有用。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L538",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L538",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0267",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 538
+   },
+   "quality_score": 46.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-184",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "诺贝尔奖与 AI 量化到底有什么底层关系",
+   "q": "什么是「诺贝尔奖与 AI 量化到底有什么底层关系」？",
+   "a": "诺贝尔奖与 AI 量化到底有什么底层关系？从价格、波动到模型检验，六位获奖者给出了哪些启发。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L542",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L542",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0268",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 542
+   },
+   "quality_score": 45.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-185",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**01 价格",
+   "q": "什么是「**01 价格」？",
+   "a": "**01 价格：到底能预测什么。** 法玛与席勒，2013 年（与汉森共同获奖）——同一年，不同视角。短期价格难预测，长期仍有可研究的规律。AI 更强，不代表市场就变得容易预测。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L544",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L544",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0269",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 544
+   },
+   "quality_score": 59.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-186",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**02 波动",
+   "q": "什么是「**02 波动」？",
+   "a": "**02 波动：风险会变化。** 恩格尔，2003 年，条件异方差 ARCH——一次大冲击，会改变下一期的风险估计。AI 量化不只找方向，也需要估计风险。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L546",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L546",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0270",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 546
+   },
+   "quality_score": 55.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-187",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**03 关系",
+   "q": "什么是「**03 关系」？",
+   "a": "**03 关系：从单线到组合。** 格兰杰，2003 年，协整——两条非平稳序列，可能留下一个平稳组合。关系可以建模；失效也必须被识别。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L548",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L548",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0271",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 548
+   },
+   "quality_score": 52.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-188",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**04 行为",
+   "q": "什么是「**04 行为」？",
+   "a": "**04 行为：价格背后是决策。** 谢林，2005 年（与奥曼共同获奖）——共同线索可以帮助协调，这叫聚焦点。把它用于整数关口，需要额外的市场证据。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L550",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L550",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0272",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 550
+   },
+   "quality_score": 55.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-189",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**05 证据",
+   "q": "什么是「**05 证据」？",
+   "a": "**05 证据：让模型接受检验。** 汉森，2013 年，广义矩方法 GMM——让模型的限制，与数据中的统计量对照。AI 拟合的是历史，检验面对的是未知。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L552",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L552",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0273",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 552
+   },
+   "quality_score": 55.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-190",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**06 从理论走向约束",
+   "q": "什么是「**06 从理论走向约束」？",
+   "a": "**06 从理论走向约束。** 所以，AI 量化第一步是管住风险：波动估计上升时，重新评估风险敞口；仓位规则仍需考虑成本、误差与杠杆边界。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L554",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L554",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0274",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 554
+   },
+   "quality_score": 53.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-191",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**07 从图形走向证据",
+   "q": "什么是「**07 从图形走向证据」？",
+   "a": "**07 从图形走向证据。** 第二步，找关系；第三步，验证关系。偏离只是研究线索，不是自动兑现的利润；样本外、交易成本、结构变化，一个不能少。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L556",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L556",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0275",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 556
+   },
+   "quality_score": 54.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-192",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "理论如何进入系统",
+   "q": "什么是「理论如何进入系统」？",
+   "a": "理论如何进入系统？方法升级，不是收益保证。价格·波动·关系·行为·检验——AI 加速计算，理论提出问题，数据给出证据。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L558",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L558",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0276",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 558
+   },
+   "quality_score": 49.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-193",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**你该起势了",
+   "q": "什么是「**你该起势了」？",
+   "a": "**你该起势了。** 跌下去，不代表故事结束。低谷里，先别把自己判出局。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L566",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L566",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0277",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 566
+   },
+   "quality_score": 42.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-194",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**不",
+   "q": "什么是「**不」？",
+   "a": "**不是跌一次，就到谷底。** 反弹、回落、再下探——人生也会反复。一次失利，不等于你这个人失败。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L568",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L568",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0278",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 568
+   },
+   "quality_score": 46.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-195",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**最难的",
+   "q": "什么是「**最难的」？",
+   "a": "**最难的，是低处的挣扎。** 明明努力了，却还在原地来回。先保住生活的节奏，再寻找改变的方法。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L570",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L570",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0279",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 570
+   },
+   "quality_score": 46.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-196",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**再次探底",
+   "q": "什么是「**再次探底」？",
+   "a": "**再次探底，也别否定自己。** 有些日子，能稳住自己，就是进步。坚持不是硬扛；该复盘、该调整，就调整。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L572",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L572",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0280",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 572
+   },
+   "quality_score": 47.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-197",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "**积累",
+   "q": "什么是「**积累」？",
+   "a": "**积累，终于开始显形。** 不是突然变强，而是一次次重新站起。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L574",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L574",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0281",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 574
+   },
+   "quality_score": 40.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-198",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "> 这一条**没有口播、没有字幕**",
+   "q": "什么是「> 这一条**没有口播、没有字幕**」？",
+   "a": "> 这一条**没有口播、没有字幕**，是纯视觉动画（30 秒竖屏），所以没有可提取的成篇文案。画面是一套\"AI 开发交付\"的数据可视化：黑色背景上一条粒子流场，右侧是实时看板。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L580",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L580",
+   "theme": "AI算力/硬件",
+   "topic": "AI算力/硬件",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0283",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 580
+   },
+   "quality_score": 59.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-199",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "画面可读的信息只有这些",
+   "q": "什么是「画面可读的信息只有这些」？",
+   "a": "画面可读的信息只有这些：任务队列（身份认证 0.92、计费模块、交互界面 0.66 等）、协作能力与执行流程（收到新的变更需求 → 任务规划 → 开发构建 → 代码审查 → 自动测试 → 人工复核 → 通过则合并并交付，否则转交人工复核）、每分钟交付 17.x、累计交付 4,812。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L582",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L582",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0284",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 582
+   },
+   "quality_score": 77.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-200",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "也就",
+   "q": "什么是「也就」？",
+   "a": "也就是说，这条视频的\"文案\"其实只有标题一句话：**如果测试成功，就对该系统开源。**",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L584",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L584",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0285",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 584
+   },
+   "quality_score": 44.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-201",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **可以直接当口播稿用的**",
+   "q": "什么是「- **可以直接当口播稿用的**」？",
+   "a": "- **可以直接当口播稿用的**：A 部分（01–06、24）与 18，句子完整、有起承转合。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L590",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L590",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0286",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 590
+   },
+   "quality_score": 45.7,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-202",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **适合改成分图文案的**",
+   "q": "什么是「- **适合改成分图文案的**」？",
+   "a": "- **适合改成分图文案的**：B、C 两部分的「十条」系列，一条一个小标题 + 一句解释，天然是 10 屏的轮播结构。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L591",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L591",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0287",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 591
+   },
+   "quality_score": 50.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-203",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "- **注意**",
+   "q": "什么是「- **注意**」？",
+   "a": "- **注意**：B/C 系列的句子本身都带限定语（\"不等于\"\"不能单独判假\"\"不代表收益排名\"），这是原作者刻意加的风险边界，改写时建议保留，否则容易被读成投资建议。",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L592",
+   "evidence": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L592",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "laomu_notes",
+   "unit_id": "learn_laomu_notes_0288",
+   "evidence_pointer": {
+    "file": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+    "line": 592
+   },
+   "quality_score": 58.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  }
+ ],
+ "note": "候选卡为 pending_review；本工具不写学习卡、不合并；审核后再走 decisions/merge 流程。",
+ "disclaimer": "候选卡来自知识单元草稿规则化转换，需人工审核；不构成投资建议。",
+ "cards_unchanged": true
+}

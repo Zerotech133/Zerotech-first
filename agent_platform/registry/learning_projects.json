@@ -55,14 +55,19 @@
   },
   {
    "project_id": "laomu_notes",
-   "name": "老木创业笔记",
+   "name": "老木创业笔记（交易老木 29 条视频文案汇编）",
    "type": "notes",
-   "status": "intake_pending",
+   "status": "distilling",
    "owner": "DATA1",
-   "source": [],
+   "source": [
+    "C:\\项目\\知识库\\05_学习源件\\laomu_notes\\source"
+   ],
    "archive": "_archive/2026-11-02_老木创业笔记/",
    "next_action": "待老田提供源文件（放 C:\\项目\\PDF\\ 或知识库）→ DATA2 入库 → S2 起流水线",
-   "note": "全盘0文件；不得归档为已完成"
+   "note": "源文件已入库（md，48KB，29 条视频文案）；S2 文本抽取完成，进入流水线",
+   "manifest_path": "C:\\项目\\知识库\\05_学习源件\\laomu_notes\\manifest.json",
+   "updated_at": "2026-11-02T04:11:50+08:00",
+   "stage_updated_at": "2026-11-02T04:11:51+08:00"
   }
  ],
  "sop": "docs/standards/2026-11-02_学习项目标准化流程_v1.md"

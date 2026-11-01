@@ -1,0 +1,19 @@
+{
+ "generated_at": "2026-11-02T04:11:51+08:00",
+ "project_id": "老木创业笔记",
+ "write": true,
+ "items": [
+  {
+   "name": "20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+   "sha256": "16553a445242e41b641569f78a1aeac3d7188b3b8f6b1530f1b5cedc48f21123",
+   "size": 48419,
+   "copy": true,
+   "extract": {
+    "chars": 49011
+   },
+   "text_md": "C:\\项目\\知识库\\20_清洗\\老木创业笔记\\text\\20261102_老木创业笔记_交易老木29条视频文案汇编.md",
+   "action": "ingested"
+  }
+ ],
+ "registered": true
+}
