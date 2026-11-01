@@ -526,6 +526,125 @@
       "title": "问答样本扩量生成",
       "ref": "tools/kb_corpus/kb_qa_expand.py",
       "enabled": true
+    },
+    {
+      "id": "merge_sim",
+      "kind": "tool",
+      "title": "concept 合并影响模拟（副本）",
+      "ref": "tools/kb_corpus/merge_sim.py",
+      "enabled": true
+    },
+    {
+      "id": "kb_qa_bank_v2",
+      "kind": "tool",
+      "title": "问答问题模板 v2 生成",
+      "ref": "tools/kb_corpus/kb_qa_bank_v2.py",
+      "enabled": true
+    },
+    {
+      "id": "eval_registry",
+      "kind": "tool",
+      "title": "评测集资产化（冻结/hash/校验）",
+      "ref": "tools/kb_corpus/eval_registry.py",
+      "enabled": true
+    },
+    {
+      "id": "merge_sim_89",
+      "kind": "tool",
+      "title": "合并模拟 89 查询评测",
+      "ref": "tools/kb_corpus/merge_sim_89.py",
+      "enabled": true
+    },
+    {
+      "id": "kb_qa_bank_v3",
+      "kind": "tool",
+      "title": "问答 claim 过滤/可答率扩验",
+      "ref": "tools/kb_corpus/kb_qa_bank_v3.py",
+      "enabled": true
+    },
+    {
+      "id": "eval_report_header",
+      "kind": "tool",
+      "title": "评测报告头（set_id/hash）",
+      "ref": "tools/kb_corpus/eval_report_header.py",
+      "enabled": true
+    },
+    {
+      "id": "kb_qa_multi",
+      "kind": "tool",
+      "title": "多单元聚合问答（突破可答率）",
+      "ref": "tools/kb_corpus/kb_qa_multi.py",
+      "enabled": true
+    },
+    {
+      "id": "kb_qa_eval",
+      "kind": "tool",
+      "title": "问答答案质量/幻觉评估",
+      "ref": "tools/kb_corpus/kb_qa_eval.py",
+      "enabled": true
+    },
+    {
+      "id": "card_proposal_v2",
+      "kind": "tool",
+      "title": "零卡主题概念卡候选生成",
+      "ref": "tools/kb_corpus/card_proposal_v2.py",
+      "enabled": true
+    },
+    {
+      "id": "kb_qa_multi_ab",
+      "kind": "tool",
+      "title": "问答 single/multi A/B 判定",
+      "ref": "tools/kb_corpus/kb_qa_multi_ab.py",
+      "enabled": true
+    },
+    {
+      "id": "kb_qa_schema_v2",
+      "kind": "tool",
+      "title": "问答样本 schema v2 迁移",
+      "ref": "tools/kb_corpus/kb_qa_schema_v2.py",
+      "enabled": true
+    },
+    {
+      "id": "card_review",
+      "kind": "tool",
+      "title": "学习卡审核工作流",
+      "ref": "tools/kb_corpus/card_review.py",
+      "enabled": true
+    },
+    {
+      "id": "kb_qa_multi_eval",
+      "kind": "tool",
+      "title": "multi 答案质量评估",
+      "ref": "tools/kb_corpus/kb_qa_multi_eval.py",
+      "enabled": true
+    },
+    {
+      "id": "card_precheck",
+      "kind": "tool",
+      "title": "学习卡机器预审建议",
+      "ref": "tools/kb_corpus/card_precheck.py",
+      "enabled": true
+    },
+    {
+      "id": "kb_qa_multi_ab50",
+      "kind": "tool",
+      "title": "multi 50 条 A/B 复跑",
+      "ref": "tools/kb_corpus/kb_qa_multi_ab50.py",
+      "enabled": true
+    },
+    {
+      "id": "kb_qa_guard",
+      "kind": "tool",
+      "title": "multi 质量守卫（引用/推断/集中度）",
+      "ref": "tools/kb_corpus/kb_qa_guard.py",
+      "enabled": true
+    },
+    {
+      "id": "eval_set_v3",
+      "kind": "tool",
+      "title": "评测集 v3 构建/合并复评",
+      "ref": "tools/kb_corpus/eval_set_v3.py",
+      "enabled": true
     }
   ]
 }

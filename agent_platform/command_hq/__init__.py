@@ -1,7 +1,40 @@
 # -*- coding: utf-8 -*-
-"""指挥部五角色智能体运行包（W-C1~W-C5，2026-11-01 专项）。
 
-模块均为**只出意见/只做判定**，不替代人类定版、不做 L2 自动执行：
-  - role_contract.py（W-C1）／orchestrator.py（W-C2）／consensus.py（W-C3）/
-  - execution_gate.py（W-C4，L0/L1 安全门；只判定不执行）／...
-"""
+# W-C2 编排器（K-ORG-20261101-HQORCH；本集成分支以 HQROLE 正式契约为唯一契约源）
+from .orchestrator import (  # noqa: F401
+    Orchestrator,
+    OrchestratorError,
+    PlanError,
+    StateError,
+    TaskNode,
+    normalize_plan,
+    validate_dag,
+    STATES,
+    TRANSITIONS,
+)
+
+__all__ = [
+    # W-C1（HQROLE）
+    "ADAPTER_KEYS", "DIGEST_RE", "EVIDENCE_KINDS", "EXECUTES", "POSITIONS",
+    "READ_ONLY", "REQUIRED_FIELDS", "ROLES", "ROLE_ORDER", "ROLE_SPECS",
+    "RoleAdapter", "RoleOpinionError", "SCHEMA", "adapters", "all_role_bindings",
+    "compose_prompt", "dedupe_key", "dedupe_opinions", "deserialize_opinion",
+    "guanyu", "huangzhong", "load_identity", "load_router_bindings",
+    "make_opinion", "normalize_opinion", "opinion_fingerprint", "role_binding",
+    "serialize_opinion", "tianfeng", "validate_evidence", "validate_opinion",
+    "zhaoyun", "zhuge",
+    # W-C2（HQORCH）
+    "Orchestrator", "OrchestratorError", "PlanError", "StateError",
+    "TaskNode", "normalize_plan", "validate_dag", "STATES", "TRANSITIONS",
+    # W-C3（HQCONS）
+    "consensus",
+]
+
+# W-C4 执行门（K-ORG-20261101-HQEXEC；只判定不执行）
+from . import execution_gate  # noqa: F401
+
+# W-C3 共识/飞书定版卡/回写（K-ORG-20261101-HQCONS；纯逻辑，不发飞书）
+from . import consensus  # noqa: F401
+
+# W-C4 执行门导出
+__all__.append("execution_gate")
