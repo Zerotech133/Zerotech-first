@@ -1,0 +1,579 @@
+{
+ "schema_version": 1,
+ "kind": "qa_http_live_acceptance",
+ "generated_at": "2026-11-01T23:56:02+08:00",
+ "config": {
+  "base_url": "http://127.0.0.1:8091",
+  "retrieval_n": 3,
+  "single_n": 2,
+  "multi_n": 3,
+  "multi_timeout_seconds": 180,
+  "wired": true,
+  "gotcha": "不重启 8091、不压测；multi 默认 v4+segment+citation_retry"
+ },
+ "cases": {
+  "normal": [
+   {
+    "url": "http://127.0.0.1:8091/api/kb/qa?q=%E9%87%8F%E5%AD%A6%E7%90%86%E8%AE%BA%E7%9A%84%E7%BB%93%E8%AE%BA%E5%9C%A8%E4%BB%80%E4%B9%88%E6%9D%A1%E4%BB%B6%E4%B8%8B%E5%8F%AF%E8%83%BD%E4%B8%8D%E6%88%90%E7%AB%8B%EF%BC%9F&mode=retrieval&topk=3",
+    "params": {
+     "q": "量学理论的结论在什么条件下可能不成立？",
+     "mode": "retrieval",
+     "topk": "3"
+    },
+    "status": 200,
+    "ok": true,
+    "error": null,
+    "elapsed_seconds": 2.0,
+    "meta": {
+     "mode": "retrieval",
+     "k": 3,
+     "clusters": 0,
+     "topk": 3,
+     "cache_hit": false,
+     "llm_called": false,
+     "prompt_version": "v1",
+     "guard_marker": "strict",
+     "citation_retry": true,
+     "citation_retry_info": null
+    },
+    "guard": {
+     "enabled": true,
+     "applicable": false,
+     "applied": false,
+     "on_fail": "fallback",
+     "marker_mode": "strict_line"
+    },
+    "data": {
+     "answer_length": 0,
+     "citations": 0,
+     "refusal": false,
+     "fallback": false,
+     "confidence": "n/a"
+    },
+    "raw_error": null
+   },
+   {
+    "url": "http://127.0.0.1:8091/api/kb/qa?q=%E5%82%A8%E6%B0%94%E8%B0%83%E5%B3%B0%E8%83%BD%E5%8A%9B%E5%BB%BA%E8%AE%BE%E4%B8%AD%E7%A0%94%E6%8A%A5%E6%8F%90%E4%BE%9B%E4%BA%86%E5%93%AA%E4%BA%9B%E5%8F%AF%E9%AA%8C%E8%AF%81%E7%9A%84%E5%85%B3%E9%94%AE%E6%95%B0%E6%8D%AE%E6%88%96%E6%8C%87%E6%A0%87%EF%BC%9F&mode=retrieval&topk=3",
+    "params": {
+     "q": "储气调峰能力建设中研报提供了哪些可验证的关键数据或指标？",
+     "mode": "retrieval",
+     "topk": "3"
+    },
+    "status": 200,
+    "ok": true,
+    "error": null,
+    "elapsed_seconds": 2.02,
+    "meta": {
+     "mode": "retrieval",
+     "k": 3,
+     "clusters": 0,
+     "topk": 3,
+     "cache_hit": false,
+     "llm_called": false,
+     "prompt_version": "v1",
+     "guard_marker": "strict",
+     "citation_retry": true,
+     "citation_retry_info": null
+    },
+    "guard": {
+     "enabled": true,
+     "applicable": false,
+     "applied": false,
+     "on_fail": "fallback",
+     "marker_mode": "strict_line"
+    },
+    "data": {
+     "answer_length": 0,
+     "citations": 0,
+     "refusal": false,
+     "fallback": false,
+     "confidence": "n/a"
+    },
+    "raw_error": null
+   },
+   {
+    "url": "http://127.0.0.1:8091/api/kb/qa?q=%E6%99%BA%E8%83%BD%E7%AE%97%E5%8A%9B%E8%A7%84%E6%A8%A1%E5%8D%A0%E6%AF%94%E7%9A%84%E6%A0%B8%E5%BF%83%E9%A9%B1%E5%8A%A8%E5%9B%A0%E7%B4%A0%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F&mode=retrieval&topk=3",
+    "params": {
+     "q": "智能算力规模占比的核心驱动因素是什么？",
+     "mode": "retrieval",
+     "topk": "3"
+    },
+    "status": 200,
+    "ok": true,
+    "error": null,
+    "elapsed_seconds": 2.17,
+    "meta": {
+     "mode": "retrieval",
+     "k": 3,
+     "clusters": 0,
+     "topk": 3,
+     "cache_hit": false,
+     "llm_called": false,
+     "prompt_version": "v1",
+     "guard_marker": "strict",
+     "citation_retry": true,
+     "citation_retry_info": null
+    },
+    "guard": {
+     "enabled": true,
+     "applicable": false,
+     "applied": false,
+     "on_fail": "fallback",
+     "marker_mode": "strict_line"
+    },
+    "data": {
+     "answer_length": 0,
+     "citations": 0,
+     "refusal": false,
+     "fallback": false,
+     "confidence": "n/a"
+    },
+    "raw_error": null
+   },
+   {
+    "url": "http://127.0.0.1:8091/api/kb/qa?q=%E5%8C%97%E4%BA%AC%E5%B8%82%E8%B4%A7%E7%89%A9%E8%B4%B8%E6%98%93%E5%87%80%E5%87%BA%E5%8F%A3%E9%9C%80%E8%A6%81%E8%B7%9F%E8%B8%AA%E5%93%AA%E4%BA%9B%E6%8C%87%E6%A0%87%E6%88%96%E4%BA%8B%E4%BB%B6%EF%BC%9F&mode=single&topk=5",
+    "params": {
+     "q": "北京市货物贸易净出口需要跟踪哪些指标或事件？",
+     "mode": "single",
+     "topk": "5"
+    },
+    "status": 200,
+    "ok": true,
+    "error": null,
+    "elapsed_seconds": 11.47,
+    "meta": {
+     "mode": "single",
+     "k": 5,
+     "clusters": 0,
+     "topk": 5,
+     "cache_hit": false,
+     "llm_called": false,
+     "prompt_version": "v1",
+     "guard_marker": "strict",
+     "citation_retry": true,
+     "citation_retry_info": null
+    },
+    "guard": {
+     "enabled": true,
+     "applicable": false,
+     "applied": false,
+     "on_fail": "fallback",
+     "marker_mode": "strict_line"
+    },
+    "data": {
+     "answer_length": 387,
+     "citations": 3,
+     "refusal": false,
+     "fallback": false,
+     "confidence": "none"
+    },
+    "raw_error": null
+   },
+   {
+    "url": "http://127.0.0.1:8091/api/kb/qa?q=%E7%A6%BB%E5%B2%9B%E5%85%8D%E7%A8%8E%E6%B6%88%E8%B4%B9%E6%95%B0%E6%8D%AE%E5%AF%B9%E7%9B%B8%E5%85%B3%E6%A0%87%E7%9A%84%E5%9F%BA%E6%9C%AC%E9%9D%A2%E6%88%96%E4%BC%B0%E5%80%BC%E7%9A%84%E5%BD%B1%E5%93%8D%E5%A6%82%E4%BD%95%EF%BC%9F&mode=single&topk=5",
+    "params": {
+     "q": "离岛免税消费数据对相关标的基本面或估值的影响如何？",
+     "mode": "single",
+     "topk": "5"
+    },
+    "status": 200,
+    "ok": true,
+    "error": null,
+    "elapsed_seconds": 11.94,
+    "meta": {
+     "mode": "single",
+     "k": 5,
+     "clusters": 0,
+     "topk": 5,
+     "cache_hit": false,
+     "llm_called": false,
+     "prompt_version": "v1",
+     "guard_marker": "strict",
+     "citation_retry": true,
+     "citation_retry_info": null
+    },
+    "guard": {
+     "enabled": true,
+     "applicable": false,
+     "applied": false,
+     "on_fail": "fallback",
+     "marker_mode": "strict_line"
+    },
+    "data": {
+     "answer_length": 411,
+     "citations": 3,
+     "refusal": false,
+     "fallback": false,
+     "confidence": "none"
+    },
+    "raw_error": null
+   },
+   {
+    "url": "http://127.0.0.1:8091/api/kb/qa?q=%E6%B5%B7%E4%B8%8A%E9%A3%8E%E7%94%B5%E9%A1%B9%E7%9B%AE%E8%A7%84%E5%88%92%E7%9A%84%E7%BB%93%E8%AE%BA%E7%94%B1%E5%93%AA%E4%BA%9B%E8%AF%81%E6%8D%AE%E6%94%AF%E6%92%91%EF%BC%9F&mode=multi&topk=8",
+    "params": {
+     "q": "海上风电项目规划的结论由哪些证据支撑？",
+     "mode": "multi",
+     "topk": "8"
+    },
+    "status": 200,
+    "ok": true,
+    "error": null,
+    "elapsed_seconds": 11.19,
+    "meta": {
+     "mode": "multi",
+     "k": 8,
+     "clusters": 3,
+     "topk": 8,
+     "cache_hit": false,
+     "llm_called": true,
+     "prompt_version": "v1",
+     "guard_marker": "strict",
+     "citation_retry": true,
+     "citation_retry_info": {
+      "used": false,
+      "first_units": 3,
+      "second_units": null,
+      "improved": false,
+      "error": null
+     }
+    },
+    "guard": {
+     "enabled": true,
+     "applicable": true,
+     "applied": true,
+     "on_fail": "fallback",
+     "guard_passed": true,
+     "guard_action": "pass",
+     "guard_issues": [],
+     "citation_valid": [
+      "540733583fec",
+      "3d627dcc4f13",
+      "4b6cf5a7158e"
+     ],
+     "citation_invalid": [],
+     "citation_total": 3,
+     "citation_valid_count": 3,
+     "citation_invalid_count": 0,
+     "support_rate": 1.0,
+     "inference_ratio": 0.0,
+     "distinct_cited_units": 3,
+     "marker_mode": "strict_line"
+    },
+    "data": {
+     "answer_length": 360,
+     "citations": 3,
+     "refusal": false,
+     "fallback": false,
+     "confidence": "high"
+    },
+    "raw_error": null
+   },
+   {
+    "url": "http://127.0.0.1:8091/api/kb/qa?q=%E4%BF%9D%E9%99%A9%E8%B5%84%E9%87%91%E6%8A%95%E8%B5%84%E6%B8%AF%E8%82%A1%E9%80%9A+ETF%E7%9A%84%E8%BF%9B%E5%85%A5%E5%A3%81%E5%9E%92%E4%B8%8E%E5%B7%AE%E5%BC%82%E5%8C%96%E4%BC%98%E5%8A%BF%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F&mode=multi&topk=8",
+    "params": {
+     "q": "保险资金投资港股通 ETF的进入壁垒与差异化优势是什么？",
+     "mode": "multi",
+     "topk": "8"
+    },
+    "status": 200,
+    "ok": true,
+    "error": null,
+    "elapsed_seconds": 9.48,
+    "meta": {
+     "mode": "multi",
+     "k": 8,
+     "clusters": 3,
+     "topk": 8,
+     "cache_hit": false,
+     "llm_called": true,
+     "prompt_version": "v1",
+     "guard_marker": "strict",
+     "citation_retry": true,
+     "citation_retry_info": {
+      "used": false,
+      "first_units": 2,
+      "second_units": null,
+      "improved": false,
+      "error": null
+     }
+    },
+    "guard": {
+     "enabled": true,
+     "applicable": true,
+     "applied": true,
+     "on_fail": "fallback",
+     "guard_passed": true,
+     "guard_action": "pass",
+     "guard_issues": [],
+     "citation_valid": [
+      "e9548ab7c8d3",
+      "49d741ab6006"
+     ],
+     "citation_invalid": [],
+     "citation_total": 2,
+     "citation_valid_count": 2,
+     "citation_invalid_count": 0,
+     "support_rate": 1.0,
+     "inference_ratio": 0.0,
+     "distinct_cited_units": 2,
+     "marker_mode": "strict_line"
+    },
+    "data": {
+     "answer_length": 372,
+     "citations": 2,
+     "refusal": false,
+     "fallback": false,
+     "confidence": "high"
+    },
+    "raw_error": null
+   },
+   {
+    "url": "http://127.0.0.1:8091/api/kb/qa?q=%E4%BC%8F%E5%87%BB%E6%B6%A8%E5%81%9C%E7%9A%84%E7%81%B5%E9%AD%82%E7%9A%84%E6%99%AF%E6%B0%94%E5%BA%A6%E5%8F%97%E5%93%AA%E4%BA%9B%E5%8F%98%E9%87%8F%E5%BD%B1%E5%93%8D%EF%BC%9F&mode=multi&topk=8",
+    "params": {
+     "q": "伏击涨停的灵魂的景气度受哪些变量影响？",
+     "mode": "multi",
+     "topk": "8"
+    },
+    "status": 200,
+    "ok": true,
+    "error": null,
+    "elapsed_seconds": 61.05,
+    "meta": {
+     "mode": "multi",
+     "k": 8,
+     "clusters": 3,
+     "topk": 8,
+     "cache_hit": false,
+     "llm_called": false,
+     "prompt_version": "v1",
+     "guard_marker": "strict",
+     "citation_retry": true,
+     "citation_retry_info": {
+      "used": false,
+      "first_units": 0,
+      "second_units": null,
+      "improved": false,
+      "error": null
+     }
+    },
+    "guard": {
+     "enabled": true,
+     "applicable": true,
+     "applied": false,
+     "on_fail": "fallback",
+     "marker_mode": "strict_line",
+     "skipped": "refusal"
+    },
+    "data": {
+     "answer_length": 144,
+     "citations": 0,
+     "refusal": true,
+     "fallback": false,
+     "confidence": "none"
+    },
+    "raw_error": null
+   }
+  ],
+  "boundary": [
+   {
+    "url": "http://127.0.0.1:8091/api/kb/qa?q=M9+%E7%BA%A7%E8%A6%86%E9%93%9C%E6%9D%BF%E5%AF%B9+PCB+%E7%9A%84%E4%BB%B7%E5%80%BC%E9%87%8F%E6%9C%89%E4%BB%80%E4%B9%88%E5%BD%B1%E5%93%8D%EF%BC%9F&mode=retrieval&topk=0",
+    "params": {
+     "q": "M9 级覆铜板对 PCB 的价值量有什么影响？",
+     "mode": "retrieval",
+     "topk": "0"
+    },
+    "status": 400,
+    "ok": false,
+    "error": {
+     "code": "INVALID_ARGUMENT",
+     "message": "topk 超出范围 1..20（收到 0）"
+    },
+    "elapsed_seconds": 0.0,
+    "meta": {
+     "mode": null,
+     "k": null,
+     "clusters": null,
+     "topk": null,
+     "cache_hit": null,
+     "llm_called": null,
+     "prompt_version": null,
+     "guard_marker": null,
+     "citation_retry": null,
+     "citation_retry_info": null
+    },
+    "guard": {},
+    "data": {
+     "answer_length": 0,
+     "citations": 0,
+     "refusal": false,
+     "fallback": false,
+     "confidence": null
+    },
+    "raw_error": null,
+    "case": "topk_zero",
+    "expected_status": 400,
+    "pass": true
+   },
+   {
+    "url": "http://127.0.0.1:8091/api/kb/qa?mode=retrieval",
+    "params": {
+     "mode": "retrieval"
+    },
+    "status": 400,
+    "ok": false,
+    "error": {
+     "code": "INVALID_ARGUMENT",
+     "message": "q 不能为空"
+    },
+    "elapsed_seconds": 0.02,
+    "meta": {
+     "mode": null,
+     "k": null,
+     "clusters": null,
+     "topk": null,
+     "cache_hit": null,
+     "llm_called": null,
+     "prompt_version": null,
+     "guard_marker": null,
+     "citation_retry": null,
+     "citation_retry_info": null
+    },
+    "guard": {},
+    "data": {
+     "answer_length": 0,
+     "citations": 0,
+     "refusal": false,
+     "fallback": false,
+     "confidence": null
+    },
+    "raw_error": null,
+    "case": "empty_q",
+    "expected_status": 400,
+    "pass": true
+   },
+   {
+    "url": "http://127.0.0.1:8091/api/kb/qa?q=%E4%BB%BB%E6%84%8F%E9%97%AE%E9%A2%98&mode=bogus",
+    "params": {
+     "q": "任意问题",
+     "mode": "bogus"
+    },
+    "status": 400,
+    "ok": false,
+    "error": {
+     "code": "INVALID_ARGUMENT",
+     "message": "mode 只能是 retrieval/single/multi（收到 'bogus'）"
+    },
+    "elapsed_seconds": 0.01,
+    "meta": {
+     "mode": null,
+     "k": null,
+     "clusters": null,
+     "topk": null,
+     "cache_hit": null,
+     "llm_called": null,
+     "prompt_version": null,
+     "guard_marker": null,
+     "citation_retry": null,
+     "citation_retry_info": null
+    },
+    "guard": {},
+    "data": {
+     "answer_length": 0,
+     "citations": 0,
+     "refusal": false,
+     "fallback": false,
+     "confidence": null
+    },
+    "raw_error": null,
+    "case": "invalid_mode",
+    "expected_status": 400,
+    "pass": true
+   }
+  ]
+ },
+ "summary": {
+  "totals": {
+   "normal": 8,
+   "boundary": 3,
+   "http_200": 8,
+   "errors": 0
+  },
+  "retrieval": {
+   "n": 3,
+   "http_200": 3,
+   "llm_called": false,
+   "avg_elapsed_seconds": 2.06
+  },
+  "single": {
+   "n": 2,
+   "http_200": 2,
+   "llm_called": 0,
+   "avg_elapsed_seconds": 11.71,
+   "avg_citations": 3.0
+  },
+  "multi": {
+   "n": 3,
+   "http_200": 3,
+   "llm_called": 2,
+   "avg_elapsed_seconds": 27.24,
+   "avg_citations": 1.67,
+   "guard_passed": 0,
+   "fallback": 0,
+   "prompt_versions": [
+    "v1"
+   ],
+   "guard_markers": [
+    "strict"
+   ],
+   "citation_retry_values": [
+    true,
+    true,
+    true
+   ]
+  },
+  "boundary": {
+   "n": 3,
+   "passed": 3,
+   "cases": [
+    {
+     "case": "topk_zero",
+     "status": 400,
+     "expected": 400,
+     "pass": true
+    },
+    {
+     "case": "empty_q",
+     "status": 400,
+     "expected": 400,
+     "pass": true
+    },
+    {
+     "case": "invalid_mode",
+     "status": 400,
+     "expected": 400,
+     "pass": true
+    }
+   ]
+  },
+  "llm_calls": 2
+ },
+ "conclusion": {
+  "normal_pass": true,
+  "retrieval_pass": true,
+  "single_pass": true,
+  "multi_pass": true,
+  "boundary_pass": true,
+  "can_go_live": "conditional",
+  "verdict": "正常路径可用，但存在需修项（边界校验/灰度字段）→ 修复后重新验收再对外",
+  "fixes_needed": [
+   "multi 通道 meta.prompt_version 未显示 v4，灰度可能未生效（需查 api 默认）。",
+   "multi 通道 meta.guard_marker 未显示 segment，守卫分段模式可能未生效。"
+  ],
+  "risks": [
+   "本次为低频串行验收（retrieval 3/single 2/multi 3），未做限流/并发/长稳压测。",
+   "multi 含真实 LLM，单条耗时可受模型负载影响；本验收未触发限流。"
+  ]
+ },
+ "elapsed_seconds": 111.36,
+ "disclaimer": "HTTP 端到端验收记录仅供上线评审参考，不构成投资建议。"
+}

@@ -1,0 +1,84 @@
+{
+ "schema_version": 1,
+ "date": "20261101",
+ "generated_at": "2026-11-01T23:55:34+08:00",
+ "task": "task-109 飞书卡片通道升级（群 chat_id + interactive 探测）",
+ "target": {
+  "name": "内部测试",
+  "id": "oc_6b97bee8b5340e071d0fc10cc6c8569f",
+  "type": "chat_id",
+  "app": "cli_aa3e4f1b58f85cdd",
+  "source": "news_collector/push_targets.py → news_config.json push_targets（按名读取，不硬编码）"
+ },
+ "attempt": {
+  "method": "news_collector.send_feishu.send_content_to(群 chat_id, 'chat_id', feishu_payload, 'interactive')",
+  "msg_type": "interactive",
+  "kind": "kb:daily_card",
+  "payload_date": "20261101",
+  "cards": 5,
+  "candidates": 1,
+  "real_sends": 1,
+  "limit": 2,
+  "ok": false,
+  "channel_results": [
+   {
+    "channel": "openapi",
+    "result": "SEND_FAIL：silent window（应用级静默失败）"
+   },
+   {
+    "channel": "lark-cli（bot 身份群发兜底）",
+    "result": "error code 230099（api/unknown）"
+   }
+  ],
+  "raw_stdout": "SEND_FAIL openapi:silent window lark-cli:{\n  \"ok\": false,\n  \"identity\": \"bot\",\n  \"error\": {\n    \"type\": \"api\",\n    \"subtype\": \"unknown\",\n    \"code\": 230099,",
+  "error": null
+ },
+ "decision": {
+  "mode": "keep_current_priority（群卡片通道未启用，保留现状）",
+  "group_card_enabled": false,
+  "current_priority": [
+   "① 个人卡片：send_feishu.send_content(content, 'interactive')",
+   "② 失败 → 个人文本：send_feishu.send_text(card_text)"
+  ],
+  "reason": "1 次真实发送失败：OpenAPI 返回 silent window，lark-cli bot 群发兜底返回 230099（api/unknown）。按任务约定「失败则记录原因与前置条件、保留现状」。"
+ },
+ "preconditions": [
+  "飞书应用（cli_aa3e4f1b58f85cdd）需完成发布且可用范围包含「内部测试」群（silent window 通常=应用未发布/可用范围不含目标）。",
+  "机器人需在「内部测试」群内，且群 chat_id（oc_6b97…）与该应用可见域一致。",
+  "应用需具备群消息发送权限（im:message:send_as_bot 或等价），并完成权限审核。",
+  "push_targets 的 app 字段需与发送凭证应用一致（当前记录 app=cli_aa3e4f1b58f85cdd）。",
+  "权限/发布就绪后，用 kb_daily_push.send_group_card(payload) 重试 1 次即可判定；成功后再切换 send_payload 优先级。"
+ ],
+ "code_changes": {
+  "file": "tools/kb_corpus/kb_daily_push.py",
+  "added": [
+   "resolve_group_target()：从 push_targets 读取「内部测试」群 id/type/app（不硬编码）",
+   "send_group_card()：群 chat_id + interactive 卡片探测（可注入 mock；成功不自动改默认优先级）"
+  ],
+  "send_payload_default_unchanged": true,
+  "note": "本次仅新增探测函数，默认发送优先级保持「个人卡片 → 个人文本」；待权限就绪后再切换为「群卡片 → 个人卡片 → 个人文本」。"
+ },
+ "tests": {
+  "existing_file": "tools/tests/test_kb_daily_push_send.py",
+  "added_coverage": [
+   "resolve_group_target 按名读取 push_targets（mock 群目标）",
+   "send_group_card 成功（mock 返回 True → channel=group_card）",
+   "send_group_card 失败/异常（mock False/raise → 如实记录）",
+   "默认 send_payload 优先级不变（不调用群探测）",
+   "报告记录真实尝试/决策/前置条件"
+  ]
+ },
+ "safety": {
+  "real_sends": 1,
+  "limit_per_message": 2,
+  "network_mode": "仅本次显式探测调用",
+  "committed": false
+ },
+ "next_steps": [
+  "按「前置条件」完成应用发布/可用范围/群权限/机器人进群配置；",
+  "重试用 kb_daily_push.send_group_card(payload)（1 次真实调用）确认群卡片可用；",
+  "确认成功后：send_payload 改优先级 群卡片→个人卡片→个人文本（群 chat_id 继续从 push_targets 读取）；",
+  "更新测试为三层 mock，并保留一条真实成功发送结果。"
+ ],
+ "disclaimer": "本次为通道可行性探测（1 次真实发送），非生产推送；不构成投资建议。"
+}

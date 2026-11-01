@@ -1,0 +1,115 @@
+{
+ "schema_version": "daily_tasks_health.v1",
+ "kind": "daily_tasks_health",
+ "tag": "20261101",
+ "generated_at": "2026-11-01T23:55:47+08:00",
+ "dry_run": false,
+ "summary": {
+  "total": 3,
+  "ok": 3,
+  "alert": 0
+ },
+ "tasks": [
+  {
+   "name": "ZeroBound_DailyKB",
+   "label": "每日知识库",
+   "status": "ok",
+   "issues": [],
+   "task": {
+    "found": true,
+    "last_run_time": "2026/11/1 23:41:19",
+    "last_result": 0,
+    "status": "Ready"
+   },
+   "log": {
+    "exists": true,
+    "timestamp": "2026-11-01T23:41:20+08:00",
+    "rc": 0,
+    "line": "2026-11-01 23:41:20 daily_kb rc=0",
+    "age_hours": 0.24
+   },
+   "outputs": [
+    {
+     "path": "portal\\static\\kb_learning_digest.json",
+     "exists": true,
+     "mtime": "2026-11-01T23:54:07+08:00",
+     "age_hours": 0.03,
+     "fresh": true,
+     "spec": {
+      "path": "portal/static/kb_learning_digest.json",
+      "stale_hours": 30
+     }
+    }
+   ]
+  },
+  {
+   "name": "ZeroBound_DailyScreening",
+   "label": "每日筛选",
+   "status": "ok",
+   "issues": [],
+   "task": {
+    "found": true,
+    "last_run_time": "2026/11/1 23:40:29",
+    "last_result": 0,
+    "status": "Ready"
+   },
+   "log": {
+    "exists": true,
+    "timestamp": "2026-11-01T23:40:31+08:00",
+    "rc": 0,
+    "line": "2026-11-01 23:40:31 daily_screening rc=0",
+    "age_hours": 0.25
+   },
+   "outputs": [
+    {
+     "path": "research\\reports\\daily_screening_20261030.json",
+     "exists": true,
+     "mtime": "2026-11-01T23:54:07+08:00",
+     "age_hours": 0.03,
+     "fresh": true,
+     "spec": {
+      "dir": "research/reports",
+      "pattern": "daily_screening_????????.json",
+      "stale_hours": 30
+     }
+    }
+   ]
+  },
+  {
+   "name": "ZeroBound_DailyPush",
+   "label": "每日飞书推送",
+   "status": "ok",
+   "issues": [],
+   "task": {
+    "found": true,
+    "last_run_time": "2026/11/1 23:49:21",
+    "last_result": 0,
+    "status": "Ready"
+   },
+   "log": {
+    "exists": true,
+    "timestamp": "2026-11-01T23:49:22+08:00",
+    "rc": 0,
+    "line": "2026-11-01 23:49:22 daily_push rc=0",
+    "age_hours": 0.11
+   },
+   "outputs": [
+    {
+     "path": "research\\reports\\kb_daily_push_send_20261101.json",
+     "exists": true,
+     "mtime": "2026-11-01T23:52:17+08:00",
+     "age_hours": 0.06,
+     "fresh": true,
+     "spec": {
+      "dir": "research/reports",
+      "pattern": "kb_daily_push_send_*.json",
+      "stale_hours": 30
+     }
+    }
+   ]
+  }
+ ],
+ "alerts": [],
+ "alert_text": "",
+ "disclaimer": "研究/运维监控输出；告警默认 dry-run，--send 才发飞书。"
+}

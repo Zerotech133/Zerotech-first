@@ -799,6 +799,20 @@
       "title": "每日筛选页",
       "ref": "portal/screening.html",
       "enabled": true
+    },
+    {
+      "id": "qa_http_live_acceptance",
+      "kind": "tool",
+      "title": "8091 HTTP 端到端验收",
+      "ref": "tools/kb_corpus/qa_http_live_acceptance.py",
+      "enabled": true
+    },
+    {
+      "id": "daily_tasks_health",
+      "kind": "tool",
+      "title": "每日任务健康监控",
+      "ref": "tools/research/daily_tasks_health.py",
+      "enabled": true
     }
   ]
 }

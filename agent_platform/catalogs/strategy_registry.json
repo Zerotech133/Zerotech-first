@@ -6266,5 +6266,107 @@
       "cli": "--no-citation-retry"
     },
     "tests": "76 passed"
+  },
+  "qa_http_live_acceptance_20261101": {
+    "report": "research/reports/qa_http_live_acceptance_20261101.md",
+    "summary": {
+      "totals": {
+        "normal": 8,
+        "boundary": 3,
+        "http_200": 8,
+        "errors": 0
+      },
+      "retrieval": {
+        "n": 3,
+        "http_200": 3,
+        "llm_called": false,
+        "avg_elapsed_seconds": 2.06
+      },
+      "single": {
+        "n": 2,
+        "http_200": 2,
+        "llm_called": 0,
+        "avg_elapsed_seconds": 11.71,
+        "avg_citations": 3.0
+      },
+      "multi": {
+        "n": 3,
+        "http_200": 3,
+        "llm_called": 2,
+        "avg_elapsed_seconds": 27.24,
+        "avg_citations": 1.67,
+        "guard_passed": 0,
+        "fallback": 0,
+        "prompt_versions": [
+          "v1"
+        ],
+        "guard_markers": [
+          "strict"
+        ],
+        "citation_retry_values": [
+          true,
+          true,
+          true
+        ]
+      },
+      "boundary": {
+        "n": 3,
+        "passed": 3,
+        "cases": [
+          {
+            "case": "topk_zero",
+            "status": 400,
+            "expected": 400,
+            "pass": true
+          },
+          {
+            "case": "empty_q",
+            "status": 400,
+            "expected": 400,
+            "pass": true
+          },
+          {
+            "case": "invalid_mode",
+            "status": 400,
+            "expected": 400,
+            "pass": true
+          }
+        ]
+      },
+      "llm_calls": 2
+    },
+    "conclusion": {
+      "normal_pass": true,
+      "retrieval_pass": true,
+      "single_pass": true,
+      "multi_pass": true,
+      "boundary_pass": true,
+      "can_go_live": "conditional",
+      "verdict": "正常路径可用，但存在需修项（边界校验/灰度字段）→ 修复后重新验收再对外",
+      "fixes_needed": [
+        "multi 通道 meta.prompt_version 未显示 v4，灰度可能未生效（需查 api 默认）。",
+        "multi 通道 meta.guard_marker 未显示 segment，守卫分段模式可能未生效。"
+      ],
+      "risks": [
+        "本次为低频串行验收（retrieval 3/single 2/multi 3），未做限流/并发/长稳压测。",
+        "multi 含真实 LLM，单条耗时可受模型负载影响；本验收未触发限流。"
+      ]
+    },
+    "note": "8091 HTTP 端到端验收：8/8 正常 200（retrieval 3/single 2/multi 3，均真实）、3/3 边界 400；**conditional**：HTTP 默认 meta 仍为 v1/strict（CLI 已 v4/segment+retry）→ 需决策是否切换 HTTP 默认后复验。"
+  },
+  "daily_tasks_health_20261101": {
+    "tool": "tools/research/daily_tasks_health.py",
+    "report": "research/reports/daily_tasks_health_20261101.md",
+    "summary": {
+      "total": 3,
+      "ok": 3,
+      "alert": 0
+    },
+    "note": "每日任务健康监控：3/3 任务 Last Result=0、日志 rc=0、产出新鲜；失败→飞书文本告警（默认 dry-run/--send）；已注册 ZeroBound_DailyHealth 每日 18:10。"
+  },
+  "feishu_card_channel_20261101": {
+    "report": "research/reports/feishu_card_channel_20261101.md",
+    "decision": "保留现状（个人卡片→文本兜底）；群卡片通道失败",
+    "note": "真实尝试群 chat_id 交互卡片：OpenAPI silent window + lark-cli 230099 → 失败；已加 resolve_group_target/send_group_card 探测函数（默认不接入）；升级需应用发布/进群/群发权限（5 条前置已记录）。"
   }
 }

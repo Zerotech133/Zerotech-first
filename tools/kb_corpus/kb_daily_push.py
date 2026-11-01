@@ -44,6 +44,11 @@ DISCLAIMER = "本推送由本地脚本组装，仅供内部研究与学习，不
 ZH_TITLE_PREFIX = "零界知识库日报"
 SEND_RESULT_DIR = DEFAULT_OUT_DIR
 SEND_KIND = "daily:report"
+# 2026-11-01 task-109：群卡片通道探测（不改变 send_payload 默认优先级；权限就绪后可切换）
+GROUP_TARGET_NAME = "内部测试"
+GROUP_TARGET_TYPE = "chat_id"
+GROUP_MSG_TYPE = "interactive"
+
 
 
 # ---------------------------------------------------------------------------
@@ -362,6 +367,57 @@ def build(
 # ---------------------------------------------------------------------------
 REQUIRED_TOP = ("schema_version", "date", "generated_at", "dry_run", "disclaimer",
                 "sources", "summary", "feishu_payload", "card_text", "meta")
+
+
+def resolve_group_target(target_name: str = GROUP_TARGET_NAME) -> dict | None:
+    """从 news_collector.push_targets 读取群目标（不硬编码 chat_id）；查无返回 None。"""
+    try:
+        repo = str(REPO)
+        if repo not in sys.path:
+            sys.path.insert(0, repo)
+        from news_collector import push_targets  # noqa: PLC0415 - 延迟导入
+        entry = push_targets.target_entry(target_name)
+        if not entry:
+            return None
+        return {"name": entry.get("name"), "id": entry.get("id"),
+                "type": entry.get("type") or GROUP_TARGET_TYPE, "app": entry.get("app")}
+    except Exception as exc:  # noqa: BLE001
+        return {"error": f"{type(exc).__name__}: {exc}"}
+
+
+def send_group_card(payload: dict, *, target_name: str = GROUP_TARGET_NAME,
+                    resolve_fn=None, send_group_fn=None, kind: str = SEND_KIND) -> dict:
+    """尝试「群 chat_id + 交互卡片」通道（task-109 探测；成功也不改变默认 send_payload 优先级）。
+
+    真实发送需显式调用；测试可注入 send_group_fn/resolve_fn（mock 不联网）。
+    """
+    errors = validate_payload(payload)
+    if errors:
+        return {"ok": False, "sent": False, "channel": "failed",
+                "reason": "validate_failed", "errors": errors}
+    card = (payload.get("feishu_payload") or {}).get("card")
+    if not isinstance(card, dict) or not card:
+        return {"ok": False, "sent": False, "channel": "failed", "reason": "no_feishu_card"}
+    target = (resolve_fn or resolve_group_target)(target_name)
+    if not isinstance(target, dict) or not target.get("id"):
+        return {"ok": False, "sent": False, "channel": "failed",
+                "reason": "target_not_found", "target": target}
+    receive_id, receive_type = target["id"], target.get("type") or GROUP_TARGET_TYPE
+    content = json.dumps(payload["feishu_payload"], ensure_ascii=False)
+    try:
+        if send_group_fn is None:
+            from news_collector import send_feishu  # noqa: PLC0415
+            send_group_fn = send_feishu.send_content_to
+        ok = bool(send_group_fn(receive_id, receive_type, content, GROUP_MSG_TYPE, kind=kind))
+        error = None
+    except Exception as exc:  # noqa: BLE001
+        ok, error = False, f"{type(exc).__name__}: {exc}"
+    return {"ok": ok, "sent": ok, "channel": "group_card" if ok else "failed",
+            "target": {"name": target.get("name"), "id": receive_id,
+                       "type": receive_type, "app": target.get("app")},
+            "msg_type": GROUP_MSG_TYPE, "kind": kind,
+            "date": payload.get("date"),
+            "error": error}
 
 
 def send_payload(payload: dict, *, send_fn=None, send_text_fn=None, kind: str = SEND_KIND) -> dict:

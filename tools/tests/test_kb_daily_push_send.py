@@ -75,3 +75,77 @@ def test_interactive_fail_falls_back_to_text(monkeypatch, tmp_path):
     out = kp.send_payload(payload, send_fn=lambda *a, **k: False,
                           send_text_fn=lambda text, kind=None: True)
     assert out["ok"] is True and out["channel"] == "text_fallback"
+
+# ---------------------------------------------------------------------------
+# task-109：群卡片通道探测（失败预留；默认优先级不变）
+# ---------------------------------------------------------------------------
+def _base_payload_with_card():
+    payload = _payload(card={"schema": "2.0",
+                             "header": {"title": {"tag": "plain_text", "content": "t"}},
+                             "body": {"elements": [{"tag": "markdown", "content": "x"}]}})
+    payload["date"] = "20261101"
+    return payload
+
+
+def test_resolve_group_target_reads_push_targets(monkeypatch):
+    import types
+    fake = types.SimpleNamespace(
+        target_entry=lambda name: {"name": name, "id": "oc_test_123", "type": "chat_id", "app": "cli_x"})
+    # 注入 news_collector.push_targets 模块（resolve_group_target 内部延迟导入）
+    monkeypatch.setitem(__import__("sys").modules, "news_collector.push_targets", fake)
+    target = kp.resolve_group_target("内部测试")
+    assert target and target["id"] == "oc_test_123" and target["type"] == "chat_id"
+    assert target["app"] == "cli_x"
+
+
+def test_send_group_card_success_mock(monkeypatch):
+    monkeypatch.setattr(kp, "validate_payload", lambda payload: [])
+    seen = {}
+
+    def fake_send_group(receive_id, receive_id_type, content, msg_type, kind=None):
+        seen.update({"id": receive_id, "type": receive_id_type, "msg_type": msg_type,
+                     "kind": kind, "content_len": len(content)})
+        return True
+
+    out = kp.send_group_card(
+        _base_payload_with_card(),
+        resolve_fn=lambda name: {"name": name, "id": "oc_test_123", "type": "chat_id", "app": "cli_x"},
+        send_group_fn=fake_send_group,
+    )
+    assert out["ok"] is True and out["channel"] == "group_card" and out["target"]["id"] == "oc_test_123"
+    assert seen["msg_type"] == "interactive" and seen["type"] == "chat_id" and seen["content_len"] > 0
+
+
+def test_send_group_card_failure_and_exception(monkeypatch):
+    monkeypatch.setattr(kp, "validate_payload", lambda payload: [])
+    target = lambda name: {"name": name, "id": "oc_test_123", "type": "chat_id", "app": "cli_x"}
+    out = kp.send_group_card(_base_payload_with_card(), resolve_fn=target,
+                             send_group_fn=lambda *a, **k: False)
+    assert out["ok"] is False and out["channel"] == "failed" and out["target"]["id"] == "oc_test_123"
+
+    def boom(*a, **k):
+        raise RuntimeError("230099 api unknown")
+    out2 = kp.send_group_card(_base_payload_with_card(), resolve_fn=target, send_group_fn=boom)
+    assert out2["ok"] is False and "230099" in out2["error"]
+
+
+def test_default_send_payload_priority_unchanged(monkeypatch):
+    """默认 send_payload 仍走「个人卡片 → 个人文本」，不调用群探测。"""
+    import tempfile
+    from pathlib import Path as _P
+    monkeypatch.setattr(kp, "SEND_RESULT_DIR", _P(tempfile.gettempdir()))
+    monkeypatch.setattr(kp, "validate_payload", lambda payload: [])
+    monkeypatch.setattr(kp, "send_group_card", lambda *a, **k: (_ for _ in ()).throw(AssertionError("default path 不应调用群探测")))
+    out = kp.send_payload(_payload(), send_fn=lambda *a, **k: True)
+    assert out["ok"] is True and out["channel"] == "interactive"
+
+
+def test_channel_report_records_failure_and_decision():
+    import json as _json
+    from pathlib import Path as _P
+    rep = _json.loads(_P(r"C:\项目\老田的AI助手\research\reports\feishu_card_channel_20261101.json").read_text(encoding="utf-8"))
+    assert rep["attempt"]["ok"] is False and rep["attempt"]["real_sends"] <= rep["attempt"]["limit"]
+    assert rep["decision"]["group_card_enabled"] is False
+    assert "keep_current_priority" in rep["decision"]["mode"]
+    assert len(rep["preconditions"]) >= 4
+    assert rep["code_changes"]["send_payload_default_unchanged"] is True
