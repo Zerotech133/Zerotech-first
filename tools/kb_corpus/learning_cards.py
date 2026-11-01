@@ -75,6 +75,27 @@ def to_card(u: dict) -> dict:
             "evidence": (u.get("evidence") or "")[:200]}
 
 
+def _norm_card(c):
+    key = str(c.get("concept") or c.get("q") or "")
+    return "".join(key.split()).lower()
+
+
+def merge_cards(existing: list, generated: list) -> list:
+    """现有卡全量保留（含历史重复），仅追加 concept 不重复的生成卡。
+
+    防止 `python tools/kb_corpus/learning_cards.py` 重跑覆盖人工合并/修订卡池。
+    """
+    seen = {_norm_card(c) for c in existing if _norm_card(c)}
+    merged = list(existing)
+    for c in generated:
+        k = _norm_card(c)
+        if not k or k in seen:
+            continue
+        seen.add(k)
+        merged.append(c)
+    return merged
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--n", type=int, default=20)
@@ -100,10 +121,20 @@ def main(argv=None) -> int:
             md += [f"> 原文依据：{c['evidence']}", ""]
     p = CARDS_DIR / f"cards_{stamp}.md"
     p.write_text("\n".join(md), encoding="utf-8")
+    # 保留人工合并/修订卡（防止重跑覆盖 70 张卡池）：与生成卡按 concept 归一化去重，现有优先
+    existing = []
+    if OUT_JSON.exists():
+        try:
+            old_doc = json.loads(OUT_JSON.read_text(encoding="utf-8"))
+            existing = old_doc.get("cards") or []
+        except Exception:  # noqa: BLE001
+            existing = []
+
+    merged = merge_cards(existing, cards)
     from collections import Counter as _Counter
-    topics = _Counter([c.get("topic", "其他") for c in cards])
+    topics = _Counter([c.get("topic", "其他") for c in merged])
     payload = {"generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
-               "total_units": len(units), "cards": cards[:30], "daily": cards[0] if args.daily else (cards[0] if cards else None),
+               "total_units": len(units), "cards": merged, "daily": cards[0] if cards else None,
                "topics": dict(topics), "file": str(p)}
     OUT_JSON.parent.mkdir(parents=True, exist_ok=True)
     OUT_JSON.write_text(json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8")
