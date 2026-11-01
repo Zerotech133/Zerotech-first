@@ -32,6 +32,13 @@ mark{background:#5c4d00;color:#ffd33d;border-radius:2px;padding:0 1px}
 .foot{margin-top:22px;color:var(--dim);font-size:12px;text-align:center}
 code{background:#0a0e14;padding:1px 6px;border-radius:4px;color:#79c0ff;font-size:12px}
 @media (min-width:761px){body{padding:24px}}
+
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 10px}
+.chip{padding:5px 11px;border-radius:16px;border:1px solid var(--bd);background:var(--panel);color:var(--dim);font-size:12px;cursor:pointer}
+.chip.on{background:#122642;color:#79c0ff;border-color:#1f6feb}
+.star{background:transparent;border:none;color:#d29922;font-size:20px;cursor:pointer;padding:0 4px;line-height:1}
+.card .head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.card .topic{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:700;background:#1f3b2a;color:#7ee787;margin-bottom:6px}
 </style>
 <script src="/static/nav.js" defer></script></head>
 <body>
@@ -42,7 +49,10 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;color:#79c0ff;font-siz
 <div class="tabs">
   <div class="tab on" data-mode="daily">今日 5 张</div>
   <div class="tab" data-mode="all">全部卡片</div>
+  <div class="tab" data-mode="fav">⭐ 收藏</div>
 </div>
+
+<div class="chips" id="topics"></div>
 
 <div class="toolbar">
   <div class="cnt" id="cnt"></div>
@@ -59,18 +69,48 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;color:#79c0ff;font-siz
 <script>
 (function(){
   const $=id=>document.getElementById(id);
-  let ALL=[], MODE='daily', START=0, DAILY_N=5;
+  let ALL=[], MODE='daily', START=0, DAILY_N=5, TOPIC='全部';
+  const FAV_KEY='kb_fav_cards';
+  let FAV=[]; try{ FAV=JSON.parse(localStorage.getItem(FAV_KEY)||'[]'); }catch(e){ FAV=[]; }
+  function saveFav(){ try{ localStorage.setItem(FAV_KEY, JSON.stringify(FAV)); }catch(e){} }
+  function favKey(c){ return c.q+'|'+c.source; }
+  function isFav(c){ return FAV.indexOf(favKey(c))>=0; }
   function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function pool(){
+    let items=ALL.slice();
+    if(TOPIC!=='全部'){ items=items.filter(function(c){ return (c.topic||'其他')===TOPIC; }); }
+    return items;
+  }
+  function renderTopics(){
+    const counts={};
+    ALL.forEach(function(c){ const k=c.topic||'其他'; counts[k]=(counts[k]||0)+1; });
+    const names=['全部'].concat(Object.keys(counts));
+    $('topics').innerHTML=names.map(function(n){
+      const num = n==='全部'?ALL.length:counts[n];
+      return '<div class="chip'+(TOPIC===n?' on':'')+'" data-t="'+esc(n)+'">'+esc(n)+' '+num+'</div>';
+    }).join('');
+    $('topics').querySelectorAll('.chip').forEach(function(ch){
+      ch.onclick=function(){ TOPIC=ch.dataset.t; START=0; renderTopics(); render(); };
+    });
+  }
   function render(){
     const list=$('list');
     let items;
-    if(MODE==='daily'){ items=ALL.slice(0,DAILY_N); }
-    else { items=ALL.slice(START, START+10); }
-    if(!items.length){ list.innerHTML='<div class="empty">没有卡片</div>'; return; }
-    $('cnt').textContent = MODE==='daily' ? ('今日 '+items.length+' 张') :
-      ('第 '+(START+1)+'–'+(START+items.length)+' 张 / 共 '+ALL.length+' 张');
+    if(MODE==='daily'){ items=pool().slice(0,DAILY_N); }
+    else if(MODE==='fav'){ items=ALL.filter(isFav); }
+    else { items=pool().slice(START, START+10); }
+    if(!items.length){
+      list.innerHTML='<div class="empty">'+(MODE==='fav'?'还没有收藏：点卡片右上角 ☆ 收藏':'没有卡片')+'</div>';
+      $('cnt').textContent='';
+      return;
+    }
+    $('cnt').textContent = MODE==='daily' ? ('今日 '+items.length+' 张 · 主题：'+TOPIC) :
+      (MODE==='fav' ? ('收藏 '+items.length+' 张') : ('第 '+(START+1)+'–'+(START+items.length)+' 张 / 共 '+pool().length+' 张'));
     list.innerHTML=items.map(function(c,i){
+      const f=isFav(c);
       return '<div class="card">'
+        + '<div class="head"><div class="topic">'+esc(c.topic||'其他')+'</div>'
+        + '<button class="star" data-fav="'+i+'" title="收藏">'+(f?'★':'☆')+'</button></div>'
         + '<div class="q">Q：'+esc(c.q)+'</div>'
         + '<div class="a">A：'+esc(c.a)+'</div>'
         + '<div class="src">出处：'+esc(c.source)+'</div>'
@@ -87,10 +127,18 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;color:#79c0ff;font-siz
         b.textContent='已复制'; setTimeout(function(){b.textContent='复制学习卡';},1200);
       };
     });
+    list.querySelectorAll('[data-fav]').forEach(function(b){
+      b.onclick=function(){
+        const it=items[+b.dataset.fav]; const k=favKey(it); const idx=FAV.indexOf(k);
+        if(idx>=0){ FAV.splice(idx,1); b.textContent='☆'; } else { FAV.push(k); b.textContent='★'; }
+        saveFav();
+        if(MODE==='fav'){ render(); }
+      };
+    });
     list.querySelectorAll('[data-next]').forEach(function(b){
       b.onclick=function(){
-        if(MODE==='daily'){ MODE='all'; START=+b.dataset.next+1; syncTabs(); render(); return; }
-        START=START+10; if(START>=ALL.length) START=0; render();
+        if(MODE!=='all'){ MODE='all'; START=+b.dataset.next+1; syncTabs(); render(); return; }
+        START=START+10; if(START>=pool().length) START=0; render();
       };
     });
   }
@@ -100,14 +148,15 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;color:#79c0ff;font-siz
     t.onclick=function(){ MODE=t.dataset.mode; START=0; syncTabs(); render(); };
   });
   $('shuffle').onclick=function(){
-    if(MODE==='daily'){ MODE='all'; START=Math.floor(Math.random()*Math.max(1,ALL.length-10)); syncTabs(); render(); }
-    else { START=Math.floor(Math.random()*Math.max(1,ALL.length-10)); render(); }
+    const n=Math.max(1,pool().length-10);
+    MODE='all'; START=Math.floor(Math.random()*n); syncTabs(); render();
   };
   fetch('/static/kb_learning_cards.json?ts='+Date.now()).then(function(r){return r.json();}).then(function(d){
     ALL=(d.cards||[]).slice();
     $('pool').textContent=d.total_units||'—';
-    $('meta').textContent='生成 '+ (d.generated_at||'') +' · 知识单元池 '+ (d.total_units||'—') +' 条';
-    render();
+    $('meta').textContent='生成 '+ (d.generated_at||'') +' · 知识单元池 '+ (d.total_units||'—') +' 条 · 收藏 '+FAV.length+' 张';
+    renderTopics(); render();
+    if(MODE==='fav'){ render(); }
   }).catch(function(e){ $('meta').textContent='加载失败：'+e.message; });
 })();
 </script>
