@@ -7,7 +7,7 @@
 - 本工具把 registry 重建为「catalog 全量 245 表」的资格台账：
   * 旧 83 条 physical 条目**逐字段原样保留**（历史证据不许机械覆盖）；
   * catalog 新增的 162 表自动补登（qualification_status=unknown，资格待取证）；
-  * display_assets 原样保留（92 条，不增不删）。
+  * display_assets 原样保留（不增不删；2026-11-02 起有补登记批次，条数以文件内 display_count 为准）。
 
 用法：
     python tools/datawarehouse/registry_rebuild.py --dry-run          # 默认，只看前后差异
@@ -53,7 +53,8 @@ PROVENANCE_COLUMNS = {
 LIMITATIONS_V2 = [
     "v2（2026-10-27）由 catalog v12 自动重建：physical_tables 覆盖 catalog 全部表，"
     "其中新增表为自动补登、qualification_status=unknown（资格仍待逐项取证）",
-    "display_assets 沿用 2026-10-09 历史证据原样保留（92 条），不称当前实时资产清单",
+    "display_assets 沿用 2026-10-09 历史证据；2026-11-02 补登记 82 条"
+    "（当前 174 条，新增为机械映射、待新看板逐项复核），不称当前实时资产清单",
 ]
 
 
