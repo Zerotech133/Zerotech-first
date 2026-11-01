@@ -583,8 +583,43 @@ def _load_approval_control(ctx: Ctx):
         return None, "%s: %s" % (type(exc).__name__, str(exc)[:160])
 
 
+def _load_m4_policy(ac_mod):
+    """读取 approval_control 的 m4_policy；不可用 → None（回退旧四签）。"""
+    if ac_mod is None:
+        return None
+    fn = getattr(ac_mod, "load_m4_policy", None)
+    if not callable(fn):
+        return None
+    try:
+        policy = fn()
+        return policy if isinstance(policy, dict) else None
+    except Exception:  # noqa: BLE001 - 配置坏 → 回退旧口径，不静默改判
+        return None
+
+
+def _load_signer_map(ctx: Ctx) -> dict:
+    """open_id → M4 角色；缺失/坏配置 → 空 map（evaluate_signoff 不猜、判 unresolved）。"""
+    path = Path(ctx.repo) / "agent_platform" / "config" / "approval_signers.json"
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8-sig"))
+        raw = doc.get("map") if isinstance(doc, dict) else None
+        if not isinstance(raw, dict):
+            return {}
+        return {str(k).strip(): str(v).strip().upper()
+                for k, v in raw.items()
+                if str(k).strip() and str(v).strip()}
+    except (OSError, ValueError, TypeError):
+        return {}
+
+
 def _m4_required(ac_mod):
-    """required 四签：优先 approval_control 真源，fallback M4_PARTIES（两端一致由测试锁）。"""
+    """required：优先 m4_policy（B=owner 单签），再 approval_control 旧四签，最后常量。"""
+    policy = _load_m4_policy(ac_mod)
+    if policy:
+        roles = tuple(str(x).strip().upper() for x in policy.get("required") or []
+                      if str(x).strip())
+        if roles:
+            return roles
     if ac_mod is not None:
         try:
             roles = tuple(str(x).strip().upper() for x in ac_mod.REQUIRED_SIGNERS
@@ -640,17 +675,37 @@ def check_m4_signoff(ctx: Ctx) -> dict:
                 dispatch_done.add(party)
         if supervisor and supervisor.lower() in target:
             supervisor_done = True
-    signed = [party for party in required if party in dispatch_done]
-    missing = [party for party in required if party not in dispatch_done]
-    reasons = []
-    if len(approves) < M4_REQUIRED_APPROVALS_MIN:
-        reasons.append("no_approve_rows(dispatch 只是通知，不等于签字)")
-    if missing:
-        reasons.append("missing_signers:" + ",".join(missing))
-    signoff = {"state": "complete" if not reasons else "incomplete",
-               "required_signers": list(required),
-               "signed_roles": signed,
-               "missing_signers": missing}
+    policy = _load_m4_policy(ac_mod)
+    owner_mode = bool(policy and str(policy.get("mode") or "").lower()
+                      == "owner_acceptance")
+    if owner_mode:
+        # 政策 B：owner 单签 + 五角色 advisory；角色由 approval_signers.map 解析，
+        # 不复用 dispatch（dispatch 只是通知，不等于签字）。
+        title = "M4 owner 验收（B：A0 单签 + 五角色 AI advisory；只读，不代签）"
+        signer_map = _load_signer_map(ctx)
+        signoff = ac_mod.evaluate_signoff(
+            approvals, "M4/v1.1 正式验收签字",
+            required_signers=required, role_of=signer_map)
+        signed = list(signoff.get("signed_roles") or [])
+        missing = list(signoff.get("missing_signers") or [])
+        reasons = []
+        if len(approves) < M4_REQUIRED_APPROVALS_MIN:
+            reasons.append("no_approve_rows(dispatch 只是通知，不等于签字)")
+        if signoff.get("reason"):
+            reasons.append(str(signoff.get("reason")))
+        supervisor_done = supervisor in signed
+    else:
+        signed = [party for party in required if party in dispatch_done]
+        missing = [party for party in required if party not in dispatch_done]
+        reasons = []
+        if len(approves) < M4_REQUIRED_APPROVALS_MIN:
+            reasons.append("no_approve_rows(dispatch 只是通知，不等于签字)")
+        if missing:
+            reasons.append("missing_signers:" + ",".join(missing))
+        signoff = {"state": "complete" if not reasons else "incomplete",
+                   "required_signers": list(required),
+                   "signed_roles": signed,
+                   "missing_signers": missing}
     gate_ok, gate_reasons = bool(not reasons), list(reasons)
     gate_error = ""
     if ac_mod is not None and hasattr(ac_mod, "signoff_gate"):
@@ -669,7 +724,10 @@ def check_m4_signoff(ctx: Ctx) -> dict:
           "supervisor": supervisor,
           "supervisor_label": supervisor_label,
           "supervisor_done": bool(supervisor_done),
-          "supervisor_required": False,
+          "supervisor_required": bool(supervisor in required),
+          "policy_mode": (policy or {}).get("mode", "four_sign"),
+          "policy_required": list((policy or {}).get("required") or []),
+          "policy_source": (policy or {}).get("source", ""),
           "approvals_count": len(approves),
           "operators": sorted({str(r.get("operator") or "") for r in approves}),
           "dispatch_done": sorted(dispatch_done),
