@@ -1,0 +1,667 @@
+{
+ "schema_version": 1,
+ "kind": "kb_qa_rank_eval",
+ "generated_at": "2026-11-01T09:46:43+08:00",
+ "source_questions": "C:\\项目\\老田的AI助手\\research\\reports\\kb_qa_questions_20261101.json",
+ "config": {
+  "topk": 5,
+  "pool_size": 10,
+  "no_llm": true,
+  "presets": {
+   "A_score_heavy": {
+    "score": 0.7,
+    "origin": 0.1,
+    "concept": 0.15,
+    "book": 0.03,
+    "chapter": 0.02
+   },
+   "B_concept_heavy": {
+    "score": 0.45,
+    "origin": 0.1,
+    "concept": 0.35,
+    "book": 0.06,
+    "chapter": 0.04
+   },
+   "C_balanced": {
+    "score": 0.55,
+    "origin": 0.1,
+    "concept": 0.25,
+    "book": 0.06,
+    "chapter": 0.04
+   }
+  },
+  "chosen_preset": "A_score_heavy",
+  "source_prior_weights": {
+   "same_book": 0.35,
+   "same_chapter": 0.25,
+   "same_unit": 0.4
+  },
+  "note": "auto 模式在 32 问题自检集上选 @1 最高 preset（同集调参，存在过拟合风险）"
+ },
+ "baseline": {
+  "summary": {
+   "total": 32,
+   "hit_at_1": 30,
+   "hit_at_5": 32,
+   "hit_rate_at_1": 0.9375,
+   "hit_rate_at_5": 1.0,
+   "avg_source_rank": 1.062,
+   "miss_source": 0
+  },
+  "by_theme": [
+   {
+    "theme": "AI算力/半导体",
+    "total": 5,
+    "hit_at_1": 5,
+    "hit_at_5": 5,
+    "hit_rate_at_1": 1.0,
+    "hit_rate_at_5": 1.0,
+    "avg_source_rank": 1.0,
+    "miss_source": 0
+   },
+   {
+    "theme": "新能源/电池",
+    "total": 5,
+    "hit_at_1": 5,
+    "hit_at_5": 5,
+    "hit_rate_at_1": 1.0,
+    "hit_rate_at_5": 1.0,
+    "avg_source_rank": 1.0,
+    "miss_source": 0
+   },
+   {
+    "theme": "消费/医药",
+    "total": 5,
+    "hit_at_1": 5,
+    "hit_at_5": 5,
+    "hit_rate_at_1": 1.0,
+    "hit_rate_at_5": 1.0,
+    "avg_source_rank": 1.0,
+    "miss_source": 0
+   },
+   {
+    "theme": "金融/资本市场",
+    "total": 5,
+    "hit_at_1": 4,
+    "hit_at_5": 5,
+    "hit_rate_at_1": 0.8,
+    "hit_rate_at_5": 1.0,
+    "avg_source_rank": 1.2,
+    "miss_source": 0
+   },
+   {
+    "theme": "宏观/策略/贸易",
+    "total": 4,
+    "hit_at_1": 3,
+    "hit_at_5": 4,
+    "hit_rate_at_1": 0.75,
+    "hit_rate_at_5": 1.0,
+    "avg_source_rank": 1.25,
+    "miss_source": 0
+   },
+   {
+    "theme": "量化/技术分析",
+    "total": 4,
+    "hit_at_1": 4,
+    "hit_at_5": 4,
+    "hit_rate_at_1": 1.0,
+    "hit_rate_at_5": 1.0,
+    "avg_source_rank": 1.0,
+    "miss_source": 0
+   },
+   {
+    "theme": "其他/综合",
+    "total": 4,
+    "hit_at_1": 4,
+    "hit_at_5": 4,
+    "hit_rate_at_1": 1.0,
+    "hit_rate_at_5": 1.0,
+    "avg_source_rank": 1.0,
+    "miss_source": 0
+   }
+  ]
+ },
+ "rerank": {
+  "preset": "A_score_heavy",
+  "summary": {
+   "total": 32,
+   "hit_at_1": 30,
+   "hit_at_5": 32,
+   "hit_rate_at_1": 0.9375,
+   "hit_rate_at_5": 1.0,
+   "avg_source_rank": 1.062,
+   "miss_source": 0
+  },
+  "presets": {
+   "A_score_heavy": {
+    "total": 32,
+    "hit_at_1": 30,
+    "hit_at_5": 32,
+    "hit_rate_at_1": 0.9375,
+    "hit_rate_at_5": 1.0,
+    "avg_source_rank": 1.062,
+    "miss_source": 0
+   },
+   "B_concept_heavy": {
+    "total": 32,
+    "hit_at_1": 30,
+    "hit_at_5": 32,
+    "hit_rate_at_1": 0.9375,
+    "hit_rate_at_5": 1.0,
+    "avg_source_rank": 1.062,
+    "miss_source": 0
+   },
+   "C_balanced": {
+    "total": 32,
+    "hit_at_1": 30,
+    "hit_at_5": 32,
+    "hit_rate_at_1": 0.9375,
+    "hit_rate_at_5": 1.0,
+    "avg_source_rank": 1.062,
+    "miss_source": 0
+   }
+  },
+  "by_theme": [
+   {
+    "theme": "AI算力/半导体",
+    "total": 5,
+    "hit_at_1": 5,
+    "hit_at_5": 5,
+    "hit_rate_at_1": 1.0,
+    "hit_rate_at_5": 1.0,
+    "avg_source_rank": 1.0,
+    "miss_source": 0
+   },
+   {
+    "theme": "新能源/电池",
+    "total": 5,
+    "hit_at_1": 5,
+    "hit_at_5": 5,
+    "hit_rate_at_1": 1.0,
+    "hit_rate_at_5": 1.0,
+    "avg_source_rank": 1.0,
+    "miss_source": 0
+   },
+   {
+    "theme": "消费/医药",
+    "total": 5,
+    "hit_at_1": 5,
+    "hit_at_5": 5,
+    "hit_rate_at_1": 1.0,
+    "hit_rate_at_5": 1.0,
+    "avg_source_rank": 1.0,
+    "miss_source": 0
+   },
+   {
+    "theme": "金融/资本市场",
+    "total": 5,
+    "hit_at_1": 4,
+    "hit_at_5": 5,
+    "hit_rate_at_1": 0.8,
+    "hit_rate_at_5": 1.0,
+    "avg_source_rank": 1.2,
+    "miss_source": 0
+   },
+   {
+    "theme": "宏观/策略/贸易",
+    "total": 4,
+    "hit_at_1": 3,
+    "hit_at_5": 4,
+    "hit_rate_at_1": 0.75,
+    "hit_rate_at_5": 1.0,
+    "avg_source_rank": 1.25,
+    "miss_source": 0
+   },
+   {
+    "theme": "量化/技术分析",
+    "total": 4,
+    "hit_at_1": 4,
+    "hit_at_5": 4,
+    "hit_rate_at_1": 1.0,
+    "hit_rate_at_5": 1.0,
+    "avg_source_rank": 1.0,
+    "miss_source": 0
+   },
+   {
+    "theme": "其他/综合",
+    "total": 4,
+    "hit_at_1": 4,
+    "hit_at_5": 4,
+    "hit_rate_at_1": 1.0,
+    "hit_rate_at_5": 1.0,
+    "avg_source_rank": 1.0,
+    "miss_source": 0
+   }
+  ]
+ },
+ "source_prior_eval": {
+  "mode": "leaky_upper_bound",
+  "summary": {
+   "total": 32,
+   "hit_at_1": 32,
+   "hit_at_5": 32,
+   "hit_rate_at_1": 1.0,
+   "hit_rate_at_5": 1.0,
+   "avg_source_rank": 1.0,
+   "miss_source": 0
+  },
+  "note": "使用问题库来源 book/chapter/unit 元数据加权，仅评估上界，不可用于自由输入"
+ },
+ "delta": {
+  "hit_at_1": 0,
+  "hit_at_5": 0,
+  "avg_source_rank": 0.0,
+  "miss_source": 0,
+  "improved": 0,
+  "regressed": 0,
+  "same": 32
+ },
+ "questions": [
+  {
+   "id": "qk_f3968d07ff",
+   "theme": "AI算力/半导体",
+   "question": "DeepSeek DSec 系统架构的结论在什么条件下会被证伪？",
+   "source_unit_id": "4aa85d55c144",
+   "baseline_rank": 1,
+   "rerank_rank": 1,
+   "source_prior_rank": 1,
+   "hit_at_1_before": true,
+   "hit_at_1_after": true,
+   "pool_size": 10
+  },
+  {
+   "id": "qk_426789898a",
+   "theme": "新能源/电池",
+   "question": "钙钛矿光伏电池测试标准的关键逻辑链条是什么？",
+   "source_unit_id": "6e81b7133003",
+   "baseline_rank": 1,
+   "rerank_rank": 1,
+   "source_prior_rank": 1,
+   "hit_at_1_before": true,
+   "hit_at_1_after": true,
+   "pool_size": 10
+  },
+  {
+   "id": "qk_ada54a9059",
+   "theme": "消费/医药",
+   "question": "网红营销与透明度要求对产业链或行业格局的影响如何？",
+   "source_unit_id": "08c51a31de48",
+   "baseline_rank": 1,
+   "rerank_rank": 1,
+   "source_prior_rank": 1,
+   "hit_at_1_before": true,
+   "hit_at_1_after": true,
+   "pool_size": 10
+  },
+  {
+   "id": "qk_ab60afef9f",
+   "theme": "金融/资本市场",
+   "question": "中小行配债中枢趋势下移的政策演进与市场影响如何？",
+   "source_unit_id": "44852b57db0f",
+   "baseline_rank": 1,
+   "rerank_rank": 1,
+   "source_prior_rank": 1,
+   "hit_at_1_before": true,
+   "hit_at_1_after": true,
+   "pool_size": 10
+  },
+  {
+   "id": "qk_17dcb0bf7e",
+   "theme": "宏观/策略/贸易",
+   "question": "跨境电子商务面临的四大挑战的规模/增速/份额等数据是多少？",
+   "source_unit_id": "bcf6880edb59",
+   "baseline_rank": 1,
+   "rerank_rank": 1,
+   "source_prior_rank": 1,
+   "hit_at_1_before": true,
+   "hit_at_1_after": true,
+   "pool_size": 10
+  },
+  {
+   "id": "qk_48516af659",
+   "theme": "量化/技术分析",
+   "question": "十月怀胎一朝分娩的识别规则与实战用法是什么？",
+   "source_unit_id": "266f7161277f",
+   "baseline_rank": 1,
+   "rerank_rank": 1,
+   "source_prior_rank": 1,
+   "hit_at_1_before": true,
+   "hit_at_1_after": true,
+   "pool_size": 3
+  },
+  {
+   "id": "qk_4213d10ccc",
+   "theme": "其他/综合",
+   "question": "PTFE材料路线的传导路径与受益环节是什么？",
+   "source_unit_id": "a6b4696b9ece",
+   "baseline_rank": 1,
+   "rerank_rank": 1,
+   "source_prior_rank": 1,
+   "hit_at_1_before": true,
+   "hit_at_1_after": true,
+   "pool_size": 10
+  },
+  {
+   "id": "qk_16b8d22f31",
+   "theme": "AI算力/半导体",
+   "question": "CoWoP封装方案的技术升级路径与价值量变化如何？",
+   "source_unit_id": "98c77086175f",
+   "baseline_rank": 1,
+   "rerank_rank": 1,
+   "source_prior_rank": 1,
+   "hit_at_1_before": true,
+   "hit_at_1_after": true,
+   "pool_size": 10
+  },
+  {
+   "id": "qk_1e9ede7285",
+   "theme": "新能源/电池",
+   "question": "电力设备板块周度表现的产业化进度与量产时间表如何？",
+   "source_unit_id": "bf1ee34d6040",
+   "baseline_rank": 1,
+   "rerank_rank": 1,
+   "source_prior_rank": 1,
+   "hit_at_1_before": true,
+   "hit_at_1_after": true,
+   "pool_size": 10
+  },
+  {
+   "id": "qk_f3db19b238",
+   "theme": "消费/医药",
+   "question": "大中华区零售市场趋势的景气度与需求变化如何？",
+   "source_unit_id": "bf663d3e998a",
+   "baseline_rank": 1,
+   "rerank_rank": 1,
+   "source_prior_rank": 1,
+   "hit_at_1_before": true,
+   "hit_at_1_after": true,
+   "pool_size": 10
+  },
+  {
+   "id": "qk_2eda64b590",
+   "theme": "金融/资本市场",
+   "question": "资本市场现存障碍的规模/增速/份额等数据是多少？",
+   "source_unit_id": "653a45d7f679",
+   "baseline_rank": 1,
+   "rerank_rank": 1,
+   "source_prior_rank": 1,
+   "hit_at_1_before": true,
+   "hit_at_1_after": true,
+   "pool_size": 10
+  },
+  {
+   "id": "qk_2feca0b1e3",
+   "theme": "宏观/策略/贸易",
+   "question": "跨境电子商务面临的四大挑战的结论在什么条件下会被证伪？",
+   "source_unit_id": "276e87e6cc33",
+   "baseline_rank": 2,
+   "rerank_rank": 2,
+   "source_prior_rank": 1,
+   "hit_at_1_before": false,
+   "hit_at_1_after": false,
+   "pool_size": 10
+  },
+  {
+   "id": "qk_cf3f319c9d",
+   "theme": "量化/技术分析",
+   "question": "央行资产负债表保护机制的识别规则与实战用法是什么？",
+   "source_unit_id": "f6bbd1535811",
+   "baseline_rank": 1,
+   "rerank_rank": 1,
+   "source_prior_rank": 1,
+   "hit_at_1_before": true,
+   "hit_at_1_after": true,
+   "pool_size": 10
+  },
+  {
+   "id": "qk_4da1f2f379",
+   "theme": "其他/综合",
+   "question": "研报对多层级安全评估体系（ARIA）的风险提示是否充分？",
+   "source_unit_id": "ae05187cc3bc",
+   "baseline_rank": 1,
+   "rerank_rank": 1,
+   "source_prior_rank": 1,
+   "hit_at_1_before": true,
+   "hit_at_1_after": true,
+   "pool_size": 10
+  },
+  {
+   "id": "qk_961a10dedb",
+   "theme": "AI算力/半导体",
+   "question": "M9 材料体系的技术升级路径与价值量变化如何？",
+   "source_unit_id": "41692ee59293",
+   "baseline_rank": 1,
+   "rerank_rank": 1,
+   "source_prior_rank": 1,
+   "hit_at_1_before": true,
+   "hit_at_1_after": true,
+   "pool_size": 10
+  },
+  {
+   "id": "qk_5369bf6b66",
+   "theme": "新能源/电池",
+   "question": "光伏产业链价格变动的规模/增速/份额等数据是多少？",
+   "source_unit_id": "c98b2779dcd8",
+   "baseline_rank": 1,
+   "rerank_rank": 1,
+   "source_prior_rank": 1,
+   "hit_at_1_before": true,
+   "hit_at_1_after": true,
+   "pool_size": 10
+  },
+  {
+   "id": "qk_580c47818a",
+   "theme": "消费/医药",
+   "question": "上海零售市场动态的景气度与需求变化如何？",
+   "source_unit_id": "afef8065108b",
+   "baseline_rank": 1,
+   "rerank_rank": 1,
+   "source_prior_rank": 1,
+   "hit_at_1_before": true,
+   "hit_at_1_after": true,
+   "pool_size": 10
+  },
+  {
+   "id": "qk_335b4bf908",
+   "theme": "金融/资本市场",
+   "question": "资本市场现存障碍的结论在什么条件下会被证伪？",
+   "source_unit_id": "918a6d233355",
+   "baseline_rank": 2,
+   "rerank_rank": 2,
+   "source_prior_rank": 1,
+   "hit_at_1_before": false,
+   "hit_at_1_after": false,
+   "pool_size": 10
+  },
+  {
+   "id": "qk_b5e1fe51c3",
+   "theme": "宏观/策略/贸易",
+   "question": "中国水产品贸易总体趋势的关键逻辑链条是什么？",
+   "source_unit_id": "c11541d03786",
+   "baseline_rank": 1,
+   "rerank_rank": 1,
+   "source_prior_rank": 1,
+   "hit_at_1_before": true,
+   "hit_at_1_after": true,
+   "pool_size": 10
+  },
+  {
+   "id": "qk_6946fb91e7",
+   "theme": "量化/技术分析",
+   "question": "涨停密码的结论在什么条件下会被证伪？",
+   "source_unit_id": "1afc73202fc6",
+   "baseline_rank": 1,
+   "rerank_rank": 1,
+   "source_prior_rank": 1,
+   "hit_at_1_before": true,
+   "hit_at_1_after": true,
+   "pool_size": 10
+  },
+  {
+   "id": "qk_f7d4528e2a",
+   "theme": "其他/综合",
+   "question": "研报对球形硅微粉的风险提示是否充分？",
+   "source_unit_id": "49a9df63e537",
+   "baseline_rank": 1,
+   "rerank_rank": 1,
+   "source_prior_rank": 1,
+   "hit_at_1_before": true,
+   "hit_at_1_after": true,
+   "pool_size": 1
+  },
+  {
+   "id": "qk_78167bef8c",
+   "theme": "AI算力/半导体",
+   "question": "Meta Ray-Ban Meta Audio对相关标的的业绩/估值影响如何？",
+   "source_unit_id": "5c0ac9f37cbf",
+   "baseline_rank": 1,
+   "rerank_rank": 1,
+   "source_prior_rank": 1,
+   "hit_at_1_before": true,
+   "hit_at_1_after": true,
+   "pool_size": 10
+  },
+  {
+   "id": "qk_dce3ffcfd9",
+   "theme": "新能源/电池",
+   "question": "光伏成本核算新规的传导路径与受益环节是什么？",
+   "source_unit_id": "51d2ba9d8d1c",
+   "baseline_rank": 1,
+   "rerank_rank": 1,
+   "source_prior_rank": 1,
+   "hit_at_1_before": true,
+   "hit_at_1_after": true,
+   "pool_size": 10
+  },
+  {
+   "id": "qk_8d7ff894c2",
+   "theme": "消费/医药",
+   "question": "北京零售市场现状的景气度与需求变化如何？",
+   "source_unit_id": "dd02cab720e0",
+   "baseline_rank": 1,
+   "rerank_rank": 1,
+   "source_prior_rank": 1,
+   "hit_at_1_before": true,
+   "hit_at_1_after": true,
+   "pool_size": 10
+  },
+  {
+   "id": "qk_7f3721cb06",
+   "theme": "金融/资本市场",
+   "question": "中小行配债增速回落的政策演进与市场影响如何？",
+   "source_unit_id": "13bd656fa984",
+   "baseline_rank": 1,
+   "rerank_rank": 1,
+   "source_prior_rank": 1,
+   "hit_at_1_before": true,
+   "hit_at_1_after": true,
+   "pool_size": 10
+  },
+  {
+   "id": "qk_4a6c73ec65",
+   "theme": "宏观/策略/贸易",
+   "question": "数字贸易增长预测的结论在什么条件下会被证伪？",
+   "source_unit_id": "ffda0f7d249e",
+   "baseline_rank": 1,
+   "rerank_rank": 1,
+   "source_prior_rank": 1,
+   "hit_at_1_before": true,
+   "hit_at_1_after": true,
+   "pool_size": 10
+  },
+  {
+   "id": "qk_472e1ff0cd",
+   "theme": "量化/技术分析",
+   "question": "施工旺季需求特征的主要风险与不确定性有哪些？",
+   "source_unit_id": "46b94880b5e3",
+   "baseline_rank": 1,
+   "rerank_rank": 1,
+   "source_prior_rank": 1,
+   "hit_at_1_before": true,
+   "hit_at_1_after": true,
+   "pool_size": 10
+  },
+  {
+   "id": "qk_092c509a56",
+   "theme": "其他/综合",
+   "question": "景嘉微股权激励计划具体指什么，研报如何定义？",
+   "source_unit_id": "233133a1cbf7",
+   "baseline_rank": 1,
+   "rerank_rank": 1,
+   "source_prior_rank": 1,
+   "hit_at_1_before": true,
+   "hit_at_1_after": true,
+   "pool_size": 10
+  },
+  {
+   "id": "qk_0d2e5d5fe9",
+   "theme": "AI算力/半导体",
+   "question": "Muse 智能体的技术升级路径与价值量变化如何？",
+   "source_unit_id": "d22ef9aab17c",
+   "baseline_rank": 1,
+   "rerank_rank": 1,
+   "source_prior_rank": 1,
+   "hit_at_1_before": true,
+   "hit_at_1_after": true,
+   "pool_size": 10
+  },
+  {
+   "id": "qk_1b3df661ff",
+   "theme": "新能源/电池",
+   "question": "光伏产业链价格对相关标的的业绩/估值影响如何？",
+   "source_unit_id": "247807a1827d",
+   "baseline_rank": 1,
+   "rerank_rank": 1,
+   "source_prior_rank": 1,
+   "hit_at_1_before": true,
+   "hit_at_1_after": true,
+   "pool_size": 10
+  },
+  {
+   "id": "qk_b7575c6fea",
+   "theme": "消费/医药",
+   "question": "深圳零售市场特征的景气度与需求变化如何？",
+   "source_unit_id": "3c014ae6bcd0",
+   "baseline_rank": 1,
+   "rerank_rank": 1,
+   "source_prior_rank": 1,
+   "hit_at_1_before": true,
+   "hit_at_1_after": true,
+   "pool_size": 10
+  },
+  {
+   "id": "qk_38dcd85910",
+   "theme": "金融/资本市场",
+   "question": "关于中小行资产端策略调整，知识库中有哪些可验证的数据或证据？",
+   "source_unit_id": "f20a48f347ff",
+   "baseline_rank": 1,
+   "rerank_rank": 1,
+   "source_prior_rank": 1,
+   "hit_at_1_before": true,
+   "hit_at_1_after": true,
+   "pool_size": 10
+  }
+ ],
+ "recommendation": {
+  "verdict": "暂不接入（无泄漏重排对本 32 问 @1 无收益）",
+  "integration": "kb_qa.search(...) 之后调用 rerank(...)[:topk] 即可，属可选后处理层",
+  "reasons": [
+   "无泄漏重排 @1 与基线相同（30/32）；2 条未命中均为「同 concept、不同 unit」并列（融合分 1.1 vs 1.0909，来源排第 2），无泄漏特征（分数/来源类型/概念匹配/同书同章一致性）无法区分二者。",
+   "来源先验评估上界 @1=32/32，证明用来源元数据可继续提升，但该特征对自由输入问题不可用（真值泄漏），不能上线。"
+  ],
+  "risks": [
+   "当前 32 问题自检集同时用于权重调参，@1 提升可能过拟合；上线前需留出集/线上影子验证与 A/B。",
+   "重排候选池 > 输出 top-k 时存在把来源挤出 @5 的风险，需限定 rerank 只作用于池内且监控 @5 回退。",
+   "concept 匹配依赖知识单元 concept 字段质量；chunk（语料）无 concept，匹配度天然偏低。",
+   "重排为纯后处理、不改索引：对「同义词缺失/知识库无料」类未命中无改善，需配合索引/同义词表优化。",
+   "排序权重应在固定评测集外做稳健性试验（不同 preset 间 @1 差异、来源排名抖动）。"
+  ],
+  "next_actions": [
+   "数据/索引层：对同 concept 的多知识单元做合并或加唯一标识（本次 2 条 @1 未命中均为重复概念单元）。",
+   "检索层：同一 concept 命中多个来源时按 book 多样性重排/标注，而不是猜测哪一个才是「来源」。",
+   "保留本重排层为可选能力：对自由文本、concept 区分度高的问题可能有效，但需另建不含重复概念单元的评测集验证。"
+  ]
+ },
+ "disclaimer": "重排评估仅供研究参考，不构成投资建议；未修改 kb_qa.py 检索链路，不调 LLM。",
+ "elapsed_seconds": 2.28
+}

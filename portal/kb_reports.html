@@ -25,6 +25,50 @@ input[type=text]{flex:1;min-width:280px;background:var(--panel2);color:var(--fg)
 .empty{color:var(--dim);text-align:center;padding:24px}
 .foot{margin-top:16px;color:var(--dim);font-size:12px}
 code{background:#0a0e14;padding:1px 6px;border-radius:4px;color:#79c0ff;font-size:12px}
+/* 学习卡 / 今日简报（learning digest） */
+.digest{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px;margin-bottom:14px}
+.digest .panel{margin-bottom:0}
+.panel-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.panel-head .sub{margin:0;font-size:11px}
+.dcard{background:var(--panel2);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;margin:8px 0}
+.dcard .dq{font-size:13px;font-weight:700;margin:0 0 4px;color:#e6edf3}
+.dcard .da{font-size:13px;color:#c9d1d9;margin:0}
+.dcard .dsrc{color:var(--dim);font-size:11px;margin-top:6px;border-left:2px solid #30363d;padding-left:8px}
+.rank{display:inline-block;min-width:18px;text-align:center;padding:0 6px;border-radius:9px;font-size:11px;font-weight:700;background:#122642;color:#79c0ff;margin-right:6px}
+.rank.top{background:#1f3b2a;color:#7ee787}
+
+mark{background:#5c4d00;color:#ffd33d;border-radius:2px;padding:0 1px}
+.copy-cite{background:transparent;border:1px solid var(--bd);color:var(--dim);border-radius:6px;padding:1px 8px;font-size:11px;cursor:pointer;margin-left:8px}
+.copy-cite:hover{color:var(--fg);border-color:var(--acc)}
+@media (max-width: 760px){
+  body{padding:12px}
+  h1{font-size:18px}
+  .digest{grid-template-columns:1fr;gap:10px}
+  .row{gap:6px}
+  input[type=text]{min-width:100%;font-size:16px;padding:10px 12px}
+  select#engine{flex:1;min-width:100%}
+  .btn{padding:8px 12px}
+  .card{padding:10px}
+  .card .claim{font-size:13px}
+  table{display:block;overflow-x:auto;white-space:nowrap}
+  .panel{padding:12px}
+}
+/* 检索引擎 v1/v2 切换 + v2 分组 */
+select#engine{background:var(--panel2);color:var(--fg);border:1px solid var(--bd);border-radius:7px;padding:8px 10px;font-size:13px}
+.grp{margin:10px 0}
+.grp-head{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:13px;font-weight:700;color:#c9d1d9;padding:6px 0;border-bottom:1px dashed var(--bd)}
+.grp-head .gscore{color:var(--ok);font-weight:700;font-size:12px}
+.grp-head .gmeta{color:var(--dim);font-weight:normal;font-size:11px}
+.unit .score{float:right;color:var(--acc);font-size:11px;font-weight:700}
+.unit .mt{color:var(--dim);font-size:11px;margin-top:4px}
+/* 问答示例（静态 · /static/kb_qa_samples.json） */
+.qa-card{background:var(--panel2);border:1px solid var(--bd);border-radius:8px;padding:12px;margin:8px 0}
+.qa-q{font-size:13px;font-weight:700;margin:0 0 4px;color:#e6edf3}
+.qa-a{font-size:13px;color:#c9d1d9;margin:0}
+.qa-cites{margin-top:6px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:11px;color:var(--dim)}
+.qa-cite{background:#0a0e14;border:1px solid #30363d;border-radius:10px;padding:1px 8px}
+.qa-conf{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:700}
+.qa-note{color:var(--dim);font-size:11px;margin-top:10px;border-top:1px dashed var(--bd);padding-top:8px}
 </style>
 <script src="/static/nav.js" defer></script></head>
 <body>
@@ -34,7 +78,16 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;color:#79c0ff;font-siz
 
 <div class="panel">
   <div class="row">
-    <input type="text" id="q" placeholder="输入关键词，如：盈利预测上修 / 存贷双高 / 评级 / 商誉 / 行业景气">
+    <input type="text" id="q" placeholder="输入关键词，如：量柱分类 / 太阳能|光伏 / 大模型 应用 / -排除词">
+    <select id="engine" title="检索引擎：v2 为多字段加权+同义词+AND/OR（默认）；v1 为旧逻辑回退">
+      <option value="v2" selected>引擎 v2（加权+同义词）</option>
+      <option value="v1">引擎 v1（旧逻辑·回退）</option>
+    </select>
+    <select id="and-mode" title="v2 AND 模式：soft=覆盖率≥0.5 即可（默认，与后端一致）；strict=全部查询词必须命中（回退）；any=至少 1 词">
+      <option value="soft" selected>AND: soft（默认·覆盖率≥0.5）</option>
+      <option value="strict">AND: strict（全部词）</option>
+      <option value="any">AND: any（≥1 词）</option>
+    </select>
     <button class="btn" id="go">搜索</button>
     <button class="btn ghost" data-f="all">全部</button>
     <button class="btn ghost" data-f="研报">仅研报</button>
@@ -43,20 +96,49 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;color:#79c0ff;font-siz
   <div class="count" id="count"></div>
 </div>
 
+<div class="digest">
+  <div class="panel" id="learning-cards">
+    <div class="panel-head"><b>📚 学习卡（每日 5 张）</b><span class="sub" id="lc-meta">加载中…</span></div>
+    <div id="learning-cards-list"><div class="empty">加载中…</div></div>
+  </div>
+  <div class="panel" id="daily-briefing">
+    <div class="panel-head"><b>📰 今日简报</b><span class="sub" id="bf-meta">加载中…</span></div>
+    <div id="daily-briefing-list"><div class="empty">加载中…</div></div>
+    <div id="strategy-note" style="display:none;margin-top:8px"></div>
+  </div>
+</div>
+
 <div id="results"><div class="empty">输入关键词开始检索</div></div>
 
 <div class="panel">
   <b>使用提示</b>
   <div class="sub" style="margin:6px 0 0">
-    每条结果都带出处（书名/章节/页码）；回答问题时请引用出处。数据由 OCR/LLM 抽取，重大结论请对照原文。
-    其他 Agent 可用 <code>tools/kb_corpus/kb_reports_search.py --json</code> 调用同一知识库。
+    每条结果都带出处（书名/章节/页码）；回答问题时请引用出处。数据由 OCR/LLM 抽取，重大结论请对照原文。<br>
+    <b>检索引擎切换</b>：默认 <b>v2</b>（多字段加权 concept/claim/evidence/chapter + 同义词/别名 +
+    短语/空格 AND/<code>|</code> OR/<code>-排除词</code> + 按书·章节分组）；v1 为旧逻辑回退。<br>
+    <b>AND 模式</b>（v2 生效）：<b>soft</b> 默认（命中词覆盖率 ≥0.5 即可，2 词查询允许 1 词命中，
+    与后端 search_v2 默认一致）、<b>strict</b>（全部查询词必须命中，旧行为回退）、<b>any</b>（≥1 词）；
+    同义词/别名命中按 0.6 权重计分（原词命中优先）。
+    其他 Agent 可用 <code>tools/kb_corpus/search_v2.py search --q ... --explain</code> 调用同口径检索。
   </div>
+</div>
+
+<div class="panel">
+  <b>📡 H18 业绩预告修订观察</b>
+  <div class="muted" id="h18-meta" style="margin:4px 0">加载中…</div>
+  <table><thead><tr><th>代码</th><th>报告期</th><th>类型</th><th>方向</th><th>Δ中值(pp)</th></tr></thead><tbody id="h18-body"></tbody></table>
+</div>
+
+<div class="panel" id="qa-sample-panel">
+  <div class="panel-head"><b>💬 问答示例（静态）</b><span class="sub" id="qa-meta">加载中…</span></div>
+  <div id="qa-body"><div class="empty">加载中…</div></div>
+  <div class="qa-note" id="qa-note">问答接口待 8091 审批，当前为静态示例（multi 多单元聚合 + 质量守卫 fallback）；回答依据知识库检索材料，仅供参考，不构成投资建议。</div>
 </div>
 
 <div class="foot">数据源：<code>C:/项目/PDF/_ingest*</code> · 治理卡：<code>/dw.html</code> · 状态：<code>/kb_ingest.html</code></div>
 
 <script>
-let UNITS=[], FILTER='all', LASTQ='';
+let UNITS=[], FILTER='all', LASTQ='', ENGINE='v2', AND_MODE=SEARCH_V2_DEFAULT_AND_MODE;
 const $=id=>document.getElementById(id);
 function tok(s){
   s=(s||'').toLowerCase();
@@ -71,7 +153,251 @@ function score(qt,u){
   for(const t of qt){ if(set.has(t)) s+= (u.concept.toLowerCase().includes(t)?2:1); }
   return s;
 }
+
+/* ===== 检索引擎 v2（多字段加权 + 同义词 + 短语/AND/OR/-排除 + 按书章节分组）=====
+   wave8 前端灰度：移植自 tools/kb_corpus/search_v2.py（wave7 支线 T）。
+   wave13 软 AND 同步：默认 and_mode=soft（覆盖率≥soft_cov=0.5 即可命中，
+   取代「全部词必须命中」）+ 同义词/别名命中权重×0.6，与后端 v2 默认一致；
+   保留 strict/any 模式与 v1 引擎回退。
+   同义词表镜像 tools/kb_corpus/synonyms_v2.json（见下方 SEARCH_V2_SYNONYMS 标记块，
+   tools/tests/test_kb_search_frontend.py 校验二者一致）。纯客户端，数据仍来自
+   /static/kb_units_all.json，无新增网络请求。v1（旧逻辑）保留为回退。 */
+const SEARCH_V2_WEIGHTS = {concept:1.0, claim:0.85, evidence:0.6, chapter:0.45, book:0.15};
+const SEARCH_V2_AND_MODES = ['strict','soft','any'];
+const SEARCH_V2_DEFAULT_AND_MODE = 'soft';   // 与 search_v2.DEFAULT_AND_MODE 对齐
+const SEARCH_V2_SOFT_COV = 0.5;              // 与 search_v2.DEFAULT_SOFT_COV 对齐
+const SEARCH_V2_SYNONYM_WEIGHT = 0.6;        // 与 search_v2.DEFAULT_SYNONYM_WEIGHT 对齐
+/* === SEARCH_V2_SYNONYMS_BEGIN (mirror of tools/kb_corpus/synonyms_v2.json) === */
+const SYNONYMS_V2 = [
+  ["涨停","涨停板","涨停基因","伏击涨停"],
+  ["量柱","量柱分类","高低平倍梯缩金"],
+  ["量线","量线定义","斜衡线","平衡线"],
+  ["量学","量学理论","三维互动"],
+  ["大模型","人工智能","AI","LLM"],
+  ["数据中心","IDC","算力","智算中心"],
+  ["光伏","太阳能","硅料","组件","硅片"],
+  ["钠电池","钠离子电池","钠离子"],
+  ["具身智能","人形机器人","机器人","机器视觉"],
+  ["房地产","地产","楼市","商品房"],
+  ["半导体","芯片","集成电路","晶圆"],
+  ["储能","新型储能","锂电","锂电池"],
+  ["铁路","客流","铁路客流","铁路运输"],
+  ["东盟","ASEAN","东南亚","RCEP"],
+  ["企业信用","信用债","信用风险","信用利差"],
+  ["评级","投资评级","行业评级","信用评级"],
+  ["净利润","归母净利润","盈利","利润总额"],
+  ["毛利率","毛利润","盈利能力"],
+  ["现金流","经营现金流","经营性现金流","自由现金流"],
+  ["库存","存货","去库存","补库存"],
+  ["分红","股息","派息","股利"],
+  ["风险提示","风险因素","风险"],
+  ["市盈率","PE","估值","PB","市净率"]
+];
+/* === SEARCH_V2_SYNONYMS_END === */
+const V2_FIELDS = ['concept','claim','evidence','chapter','book'];
+function v2Tok(s){
+  s=(s||'').toLowerCase();
+  const out=[];
+  const runs=s.match(/[\u4e00-\u9fff]+/g)||[];
+  for(const run of runs){
+    if(run.length===1) continue;
+    for(let i=0;i<run.length-1;i++) out.push(run.slice(i,i+2));
+  }
+  return out.concat(s.match(/[a-z0-9]{2,}/g)||[]);
+}
+const V2_SYN = (()=>{
+  const m={};
+  for(const g of SYNONYMS_V2){
+    const gs=[...new Set(g.map(x=>String(x).trim().toLowerCase()).filter(Boolean))];
+    if(gs.length<2) continue;
+    for(const t of gs){ if(!m[t]) m[t]=[]; for(const x of gs){ if(!m[t].includes(x)) m[t].push(x); } }
+  }
+  return m;
+})();
+function v2Expand(term){
+  const t=String(term||'').trim().toLowerCase();
+  if(!t) return [];
+  const g=V2_SYN[t];
+  return g?[t].concat(g.filter(x=>x!==t)):[t];
+}
+function v2Parse(q){
+  const raw=String(q||'').trim();
+  const parts=raw.split(/\s*\|\s*|\s+OR\s+|\s+或\s+/i);
+  const branches=[];
+  for(const part of parts){
+    const terms=[];
+    const re=/"([^"]+)"|(\S+)/g;
+    let m;
+    while((m=re.exec(part.trim()))!==null){
+      const piece=(m[1]!==undefined?m[1]:m[2]);
+      if(!piece) continue;
+      const excl=piece.length>1&&piece.startsWith('-');
+      const term=(excl?piece.slice(1):piece).trim();
+      if(!term) continue;
+      terms.push({term:term, phrase:(m[1]!==undefined)||term.indexOf(' ')>-1,
+                  exclude:excl, variants:v2Expand(term)});
+    }
+    if(terms.length) branches.push(terms);
+  }
+  return {raw:raw, or_branches:branches};
+}
+function v2TermFieldScore(term,variants,textLower,tokens){
+  for(const v of variants){ if(v && textLower.indexOf(v)>=0) return [1.0,v]; }
+  const tt=new Set(v2Tok(term));
+  if(!tt.size) return [0,null];
+  let hit=0;
+  for(const t of tt){ if(tokens.has(t)) hit++; }
+  const overlap=hit/tt.size;
+  if(overlap<=0) return [0,null];
+  return [0.7*overlap,null];   // 多词/短语未精确命中时按 bigram 重叠打折
+}
+/* 单词打分：同义词/别名命中 ×SEARCH_V2_SYNONYM_WEIGHT；返回 [eff, field, var] */
+function v2TermScore(u,texts,toks,t){
+  let best=0, bestField=null, bestVar=null;
+  for(const f of V2_FIELDS){
+    const w=SEARCH_V2_WEIGHTS[f]||0;
+    if(w<=0) continue;
+    const r=v2TermFieldScore(t.term,t.variants,texts[f],toks[f]);
+    if(r[0]<=0) continue;
+    // 原词命中权重 1.0；同义词/别名命中 ×0.6（与后端 v2 默认一致）
+    const eff = (r[1]===null || r[1]===String(t.term).trim().toLowerCase())
+      ? r[0] : r[0]*SEARCH_V2_SYNONYM_WEIGHT;
+    if(eff>best){ best=eff; bestField=f; bestVar=r[1]; }
+  }
+  return [best,bestField,bestVar];
+}
+function v2UnitScore(u,terms){
+  const fieldScores={}, texts={}, toks={};
+  for(const f of V2_FIELDS){
+    fieldScores[f]=0;
+    texts[f]=String(u[f]||'').toLowerCase();
+    toks[f]=new Set(v2Tok(u[f]));
+  }
+  const normTerms=terms.filter(t=>!t.exclude);
+  const excludeTerms=terms.filter(t=>t.exclude);
+  if(!normTerms.length) return null;
+  // 排除词：命中即过滤
+  for(const t of excludeTerms){
+    const r=v2TermScore(u,texts,toks,t);
+    if(r[0]>0) return null;
+  }
+  const matched=[];
+  let phraseHit=false;
+  const weightSum=V2_FIELDS.reduce((a,f)=>a+(SEARCH_V2_WEIGHTS[f]||0),0)||1;
+  for(const t of normTerms){
+    const bestArr=v2TermScore(u,texts,toks,t);
+    const best=bestArr[0];
+    if(best<=0) continue;              // 软 AND：未命中词按 0 分参与平均，不直接淘汰
+    for(const f of V2_FIELDS){
+      const w=SEARCH_V2_WEIGHTS[f]||0;
+      if(w<=0) continue;
+      const r=v2TermFieldScore(t.term,t.variants,texts[f],toks[f]);
+      if(r[0]<=0) continue;
+      const eff = (r[1]===null || r[1]===String(t.term).trim().toLowerCase())
+        ? r[0] : r[0]*SEARCH_V2_SYNONYM_WEIGHT;
+      fieldScores[f]+=w*eff;
+      if(eff>=1 && (f==='concept'||f==='claim')) phraseHit=true;
+    }
+    matched.push({term:t.term, field:bestArr[1], score:Math.round(best*1000)/1000,
+                  matched_variant:bestArr[2]});
+  }
+  const n=normTerms.length;
+  const coverage=matched.length/n;
+  // AND 模式：strict=全部词；soft（默认）=覆盖率≥0.5；any=≥1 词
+  let ok;
+  if(AND_MODE==='strict') ok=matched.length>=n;
+  else if(AND_MODE==='any') ok=matched.length>=1;
+  else ok=coverage>=SEARCH_V2_SOFT_COV-1e-9;
+  if(!ok) return null;
+  let base=0;
+  for(const f of V2_FIELDS) base+=fieldScores[f];
+  base=Math.min(base/(weightSum*n),1);
+  let score=base*(0.8+0.2*coverage);
+  if(phraseHit) score=Math.min(1,score+0.05);
+  return {score:Math.round(score*10000)/10000, coverage:coverage,
+          field_scores:fieldScores, matched:matched, n_terms:n};
+}
+function v2SearchUnits(units,q){
+  const parsed=v2Parse(q);
+  if(!parsed.or_branches.length) return {parsed:parsed, results:[]};
+  const results=[];
+  for(const u of units){
+    let best=null;
+    for(const terms of parsed.or_branches){
+      const hit=v2UnitScore(u,terms);
+      if(hit && (best===null||hit.score>best.score)) best=hit;
+    }
+    if(best) results.push({u:u, score:best.score, explain:best});
+  }
+  results.sort((a,b)=>b.score-a.score);
+  return {parsed:parsed, results:results};
+}
+function v2GroupResults(results){
+  const map=new Map();
+  for(const r of results){
+    const key=(r.u.book||'')+'||'+(r.u.chapter||'');
+    if(!map.has(key)) map.set(key,[]);
+    map.get(key).push(r);
+  }
+  const groups=[];
+  for(const rows of map.values()){
+    rows.sort((a,b)=>b.score-a.score);
+    const best=rows[0].score;
+    const gs=best+0.3*rows.slice(1).reduce((a,r)=>a+r.score,0);
+    groups.push({book:rows[0].u.book, chapter:rows[0].u.chapter, n:rows.length,
+                 group_score:Math.round(gs*10000)/10000, rows:rows});
+  }
+  groups.sort((a,b)=>b.group_score-a.group_score);
+  return groups;
+}
+function v2Esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function v2UnitHTML(r){
+  const u=r.u;
+  const mt=(r.explain.matched||[]).map(m=>v2Esc(m.term)+(m.matched_variant&&m.matched_variant!==m.term.toLowerCase()?'→'+v2Esc(m.matched_variant):'')).join(' · ');
+  return `<div class="card unit">
+      <div class="meta"><span class="badge">${v2Esc(u.source)}</span> ${v2Esc(u.book)} · ${v2Esc(u.chapter||'—')} · p${u.p1??'?'}-${u.p2??'?'}<span class="score">相关度 ${r.score.toFixed(3)}</span></div>
+      ${u.concept?`<div class="claim"><b>${v2Esc(u.concept)}</b>：${v2Esc(u.claim)}</div>`:`<div class="claim">${v2Esc(u.claim)}</div>`}
+      ${u.evidence?`<div class="ev">原文依据：${v2Esc(u.evidence)}</div>`:''}
+      ${mt?`<div class="mt">匹配：${mt}</div>`:''}
+    </div>`;
+}
+function renderV2(q){
+  const box=$('results');
+  const list=UNITS.filter(u=>FILTER==='all'||u.source===FILTER);
+  if(!q){
+    box.innerHTML=list.slice(0,30).map(u=>v2UnitHTML({u:u,score:1,explain:{matched:[]}})).join('')
+      || '<div class="empty">暂无数据</div>';
+    $('count').textContent=`引擎 v2（AND:${AND_MODE}）· 显示前 30 条（输入查询使用 v2 检索）`;
+    return;
+  }
+  const resp=v2SearchUnits(list,q);
+  const results=resp.results;
+  if(!results.length){
+    box.innerHTML='<div class="empty">没有命中（引擎 v2）。语法：空格=AND、<code>|</code>=OR、<code>"短语"</code>、<code>-排除词</code>；也可切换 v1 回退。</div>';
+    $('count').textContent=`引擎 v2（AND:${AND_MODE}）· 命中 0 条`;
+    return;
+  }
+  const groups=v2GroupResults(results);
+  const topGroups=groups.slice(0,15);
+  box.innerHTML=topGroups.map(g=>`<div class="grp">
+      <div class="grp-head">📚 ${v2Esc(g.book||'—')} · ${v2Esc(g.chapter||'—')}
+        <span class="gscore">组相关度 ${g.group_score.toFixed(2)}</span>
+        <span class="gmeta">${g.n} 条命中</span></div>
+      ${g.rows.slice(0,3).map(v2UnitHTML).join('')}
+    </div>`).join('');
+  $('count').textContent=`引擎 v2（AND:${AND_MODE}）· 命中 ${results.length} 条 / ${groups.length} 个书·章节分组（显示前 ${topGroups.length} 组，每组前 3 条）`;
+}
 function render(){
+  if(ENGINE==='v2'){
+    try{ renderV2(LASTQ.trim()); return; }
+    catch(e){
+      console.warn('[kb_search] v2 检索异常，回退 v1：', e);
+      $('sub').textContent='v2 检索异常，已自动回退 v1：'+e.message;
+    }
+  }
+  renderV1();
+}
+function renderV1(){
   const q=LASTQ.trim();
   let list=UNITS.filter(u=>FILTER==='all'||u.source===FILTER);
   if(q){
@@ -100,9 +426,235 @@ async function load(){
   }catch(e){ $('sub').textContent='加载失败：'+e.message; }
 }
 $('go').onclick=()=>{LASTQ=$('q').value;render();};
+$('engine').onchange=()=>{ENGINE=$('engine').value;LASTQ=$('q').value;render();};
+$('and-mode').onchange=()=>{AND_MODE=$('and-mode').value;LASTQ=$('q').value;if(ENGINE==='v2')render();};
 $('q').addEventListener('keydown',e=>{if(e.key==='Enter'){LASTQ=$('q').value;render();}});
 document.querySelectorAll('button[data-f]').forEach(b=>b.onclick=()=>{FILTER=b.dataset.f;render();});
 load();
+
+/* ===== 学习卡（每日5张）/ 今日简报：主源 learning_digest.json，兜底原始 JSON，失败降级文案 ===== */
+let DIGEST=null;
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+async function fetchJSON(u){const r=await fetch(u+(u.indexOf('?')>=0?'&':'?')+'ts='+Date.now()); if(!r.ok) throw new Error('HTTP '+r.status); return r.json();}
+function cardHTML(c){
+  const rank=Number(c.rank)||0;
+  return `<div class="dcard">
+    <div class="dq"><span class="rank${rank<=3?' top':''}">${rank||'·'}</span>${esc(c.q||('什么是「'+(c.concept||'')+'」？'))}</div>
+    <p class="da">${esc(c.a)}</p>
+    <div class="dsrc">出处：${esc(c.source||'—')}${c.quality_score!=null?' · 质量分 '+esc(c.quality_score):''}</div>
+  </div>`;
+}
+function renderCards(cards){
+  const box=$('learning-cards-list');
+  if(!Array.isArray(cards)||!cards.length){box.innerHTML='<div class="empty">今日暂无学习卡（稍后刷新）</div>';return;}
+  box.innerHTML=cards.slice(0,5).map(cardHTML).join('');
+}
+function renderBriefing(b){
+  const box=$('daily-briefing-list');
+  const hs=(b&&b.highlights)||[];
+  if(!hs.length){box.innerHTML='<div class="empty">今日暂无简报（稍后刷新）</div>';return;}
+  box.innerHTML=`<div class="count" style="margin:0 0 6px">${esc(b.headline||'')}</div>`+hs.map(h=>`
+    <div class="dcard"><div class="dq">${esc(h.concept||'要点')}</div>
+    <p class="da">${esc(h.claim||'')}</p>
+    <div class="dsrc">${esc(h.doc||'')}${h.pages?'（'+esc(h.pages)+'页）':''} · ${esc(h.chapter||'—')}</div></div>`).join('');
+}
+function renderStrategyNotes(n){
+  const box=$('strategy-note');
+  if(!box) return;
+  if(!n||!n.points||!n.points.length){box.style.display='none';return;}
+  box.style.display='';
+  box.innerHTML=`<div class="count" style="margin:0 0 4px">📌 ${esc(n.title||'策略研究结论')}：${esc(n.takeaway||'')}</div>`+
+    n.points.slice(0,3).map(p=>`<div class="dsrc" style="border-left-color:#1f6feb">· ${esc(p)}</div>`).join('');
+}
+async function loadDigest(){
+  $('lc-meta').textContent='加载中…'; $('bf-meta').textContent='加载中…';
+  try{
+    const d=await fetchJSON('/static/kb_learning_digest.json');
+    DIGEST=d;
+    renderCards(d.cards||[]);
+    renderBriefing(d.briefing||{});
+    renderStrategyNotes(d.strategy_notes||{});
+    $('lc-meta').textContent=`${d.date||''} · 每日5张（主题去重+质量排序）`;
+    $('bf-meta').textContent=`${(d.briefing&&d.briefing.date)||''} · ${(d.briefing&&d.briefing.docs_count)||0} 篇研报`;
+    return;
+  }catch(e){
+    $('lc-meta').textContent='摘要暂不可用，尝试原始数据…';
+    $('bf-meta').textContent='摘要暂不可用，尝试原始数据…';
+  }
+  try{
+    const c=await fetchJSON('/static/kb_learning_cards.json');
+    renderCards(c.cards||[]);
+    $('lc-meta').textContent=`兜底数据 · 知识单元池 ${c.total_units||0} 条`;
+  }catch(e){
+    $('learning-cards-list').innerHTML='<div class="empty">学习卡暂时无法加载（无摘要且原始数据缺失），请稍后刷新</div>';
+    $('lc-meta').textContent='加载失败（降级）';
+  }
+  try{
+    const b=await fetchJSON('/static/kb_daily_briefing.json');
+    const hs=[];
+    (b.docs||[]).forEach(d=>{(d.units||[]).slice(0,1).forEach(u=>hs.push({doc:d.doc,pages:d.pages,chapter:u.chapter,concept:u.concept,claim:u.claim}))});
+    renderBriefing({headline:`兜底数据 · 研报 ${(b.docs||[]).length} 篇`,highlights:hs.slice(0,5)});
+    $('bf-meta').textContent='兜底数据（原始简报）';
+  }catch(e){
+    $('daily-briefing-list').innerHTML='<div class="empty">今日简报暂时无法加载（无摘要且原始数据缺失），请稍后刷新</div>';
+    $('bf-meta').textContent='加载失败（降级）';
+  }
+}
+async function loadH18(){
+  const $m=$('h18-meta'), $b=$('h18-body');
+  try{
+    const h=await fetchJSON('/static/h18_watch.json');
+    $m.textContent='数据日 '+(h.date||'')+' · '+(h.items||[]).length+' 条（只观察不交易）';
+    $b.innerHTML=(h.items||[]).slice(0,10).map(w=>`<tr><td><code>${w.ts_code}</code></td><td>${w.end_date}</td>
+      <td>${w.type||''}</td><td>${w.direction||''}</td><td>${w.delta_pp}</td></tr>`).join('')
+      || '<tr><td colspan="5" class="muted">今日无修订事件</td></tr>';
+  }catch(e){ $m.textContent='H18 数据加载失败'; }
+}
+loadDigest();
+loadH18();
+
+</script>
+
+<script>
+/* ===== 页面增强：输入即搜(防抖) + 命中高亮 + 复制引用（2026-11-01） ===== */
+(function(){
+  const $=id=>document.getElementById(id);
+  const q=$('q'), results=$('results');
+  if(!q||!results) return;
+  let timer=null;
+  q.addEventListener('input', function(){
+    clearTimeout(timer);
+    timer=setTimeout(function(){
+      if(q.value.trim().length===0){ return; }
+      const go=$('go'); if(go) go.click();
+    }, 240);
+  });
+  q.addEventListener('keydown', function(e){
+    if(e.key==='Enter'){ clearTimeout(timer); const go=$('go'); if(go) go.click(); }
+  });
+
+  function tokens(s){
+    s=(s||'').toLowerCase();
+    return (s.match(/[\u4e00-\u9fff]{2}/g)||[]).concat(s.match(/[a-z0-9]{2,}/g)||[]);
+  }
+  function highlight(root, query){
+    const ts=tokens(query); if(!ts.length) return;
+    if(root.dataset.hlq===query) return;
+    root.dataset.hlq=query;
+    const re=new RegExp('('+ts.map(x=>x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')+')','gi');
+    const walker=document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+    const nodes=[]; let n;
+    while((n=walker.nextNode())) nodes.push(n);
+    nodes.forEach(function(node){
+      const parent=node.parentElement;
+      if(!parent || parent.tagName==='SCRIPT' || parent.tagName==='STYLE' || parent.tagName==='MARK') return;
+      if(!re.test(node.nodeValue)) { re.lastIndex=0; return; }
+      re.lastIndex=0;
+      const span=document.createElement('span');
+      span.innerHTML=node.nodeValue.replace(re,'<mark>$1</mark>');
+      node.parentNode.replaceChild(span,node);
+    });
+  }
+  function addCopyButtons(root){
+    root.querySelectorAll('.card').forEach(function(card){
+      if(card.querySelector('.copy-cite')) return;
+      const meta=card.querySelector('.meta'); if(!meta) return;
+      const btn=document.createElement('button');
+      btn.className='copy-cite'; btn.textContent='复制引用';
+      btn.onclick=function(){
+        const cite=(meta.textContent||'').trim();
+        const claim=(card.querySelector('.claim')||{textContent:''}).textContent||'';
+        const text='引用：'+cite+'\n结论：'+claim.slice(0,160);
+        if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(text); }
+        btn.textContent='已复制'; setTimeout(function(){btn.textContent='复制引用';},1200);
+      };
+      meta.appendChild(btn);
+    });
+  }
+  const obs=new MutationObserver(function(){
+    const query=($('q')&&$('q').value)||'';
+    if(query.trim()){
+      highlight(results, query);
+      addCopyButtons(results);
+    }
+  });
+  obs.observe(results, {childList:true, subtree:true});
+})();
+</script>
+
+<script>
+/* ===== 问答示例（静态 · /static/kb_qa_samples.json） =====
+   说明：HTTP 问答接口待 8091 审批，当前仅展示 wave7 生成的静态样本；
+   失败/无数据均降级为文案，不影响本页检索/学习卡/简报/H18 区块。 */
+(function(){
+  const qid=function(id){return document.getElementById(id);};
+  const qesc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});};
+  const body=qid('qa-body'), meta=qid('qa-meta');
+  const CONF_STYLE={high:'background:#12301c;color:#3fb950',medium:'background:#2b2410;color:#d29922',
+                    low:'background:#2a1512;color:#f85149',none:'background:#122642;color:#79c0ff'};
+  const CONF_LABEL={high:'高置信',medium:'中置信',low:'低置信',none:'拒答/无依据'};
+  function renderQA(d){
+    const samples=(d&&d.samples)||[];
+    if(!samples.length){
+      if(meta) meta.textContent='无数据（降级）';
+      if(body) body.innerHTML='<div class="empty">暂无问答示例数据（/static/kb_qa_samples.json 为空）。HTTP 问答接口待 8091 审批，当前为静态示例。</div>';
+      return;
+    }
+    const guardInfo=((d.guard&&d.guard.enabled) ? ('开('+(d.guard.on_fail||'fallback')+')') : '关');
+    if(meta) meta.textContent=(d.mode||'single')+' 模式 · 守卫='+guardInfo+' · 模型 '+(d.model||'—')
+      +' · 生成 '+(d.generated_at||'—')+' · '+samples.length+' 个示例';
+    if(body) body.innerHTML=samples.map(function(s,i){
+      const level=((s.confidence&&s.confidence.level)||'none');
+      const cites=(s.citations||[]).map(function(c){
+        return '<span class="qa-cite"><code>'+qesc(c.unit_id)+'</code> p.'+qesc(c.page)+'</span>';
+      }).join('');
+      const ans=String(s.answer||'（无答案）');
+      const short=ans.length>180?ans.slice(0,180)+'…':ans;
+      const confReason=((s.confidence&&s.confidence.reasons)||[]).slice(0,1).join('；');
+      const isMulti=String(s.mode||d.mode||'multi')==='multi';
+      const modeBadge=isMulti?'<span class="qa-conf" style="background:#122642;color:#79c0ff">multi</span>':'';
+      let guardBadge='';
+      if(s.guard_passed===true){ guardBadge='<span class="qa-conf" style="background:#12301c;color:#3fb950">守卫通过</span>'; }
+      else if(s.guard_passed===false){ guardBadge='<span class="qa-conf" style="background:#2a1512;color:#f85149">守卫未通过('+qesc(s.guard_action||'—')+')</span>'; }
+      const status=s.status||(s.fallback?'fallback':(s.refusal||level==='none'?'no_evidence':'success'));
+      const statusLabel={success:'可答',no_evidence:'拒答',fallback:'回退'}[status]||status;
+      const statusStyle=status==='success'?'background:#12301c;color:#3fb950':(status==='fallback'?'background:#2b2410;color:#d29922':'background:#2a120f;color:#f85149');
+      const statusBadge='<span class="qa-conf" style="'+statusStyle+'">'+qesc(statusLabel)+'</span>';
+      const demo=(String(s.category||'').indexOf('simulated')>=0)
+        ? '<span class="qa-conf" style="background:#2d333b;color:#c9d1d9">演示</span>' : '';
+      const fb=(s.fallback && status!=='fallback')
+        ? '<span class="qa-conf" style="background:#2a1512;color:#f85149">规则降级</span>' : '';
+      const citesHtml=cites ? ('引用：'+cites) : '<span style="color:var(--dim)">无引用</span>';
+      const metrics=[];
+      if(s.citation_resolvable_rate!=null) metrics.push('引用可解析 '+Math.round(s.citation_resolvable_rate*100)+'%');
+      if(s.inference_ratio!=null) metrics.push('推断占比 '+Math.round(s.inference_ratio*100)+'%');
+      if(s.distinct_cited_units!=null) metrics.push('引用单元 '+s.distinct_cited_units+' 个');
+      const metricHtml=metrics.length?'<div style="color:var(--dim);font-size:11px;margin-top:4px">'+qesc(metrics.join(' · '))+'</div>':'';
+      return '<div class="card qa-card">'
+        + '<div class="meta">#'+(i+1)+' · '+qesc(s.category||'')+demo+modeBadge+guardBadge+statusBadge+fb
+        + ' <span class="qa-conf" style="'+(CONF_STYLE[level]||CONF_STYLE.none)+'">'+(CONF_LABEL[level]||CONF_LABEL.none)+'</span></div>'
+        + '<div class="qa-q">'+qesc(s.question)+'</div>'
+        + '<div class="qa-a">'+qesc(short)+'</div>'
+        + '<div class="qa-cites">'+citesHtml+'</div>'
+        + metricHtml
+        + (confReason?'<div style="color:var(--dim);font-size:11px;margin-top:4px">置信说明：'+qesc(confReason)+'</div>':'')
+        + '</div>';
+    }).join('');
+  }
+  async function loadQA(){
+    try{
+      const r=await fetch('/static/kb_qa_samples.json?ts='+Date.now());
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      renderQA(await r.json());
+    }catch(e){
+      if(meta) meta.textContent='加载失败（降级）';
+      if(body) body.innerHTML='<div class="empty">问答示例暂不可用：'+qesc((e&&e.message)||'加载失败')
+        +'。HTTP 问答接口待 8091 审批，当前为静态示例。</div>';
+    }
+  }
+  if(body) loadQA();
+})();
 </script>
 </body>
 </html>

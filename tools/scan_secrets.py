@@ -197,6 +197,11 @@ def is_high_entropy_candidate(cand: str, line: str) -> bool:
     PascalCase 长标识符类名（第7轮）、标识符=True|False 布尔开关（第8轮）。"""
     if len(cand) < 20:
         return False
+    # 2026-11-01 SCANFIX：JSON 字符串字段 `"id": "..."` 是标识符/策略 id，不是凭据。
+    # 典型误报：strategy_registry / selection_daily 里的 S03_H18_forecast_revision_watch。
+    # 只放行值为 id 的整串，不扩大到任意 JSON 字符串。
+    if re.search(r'"id"\s*:\s*"' + re.escape(cand) + r'"', line):
+        return False
     # 第8轮（2026-10-31）：docstring/注释里的布尔开关参数 `name=True|False`
     # 被高熵字符集误拼成候选 → 窄豁免（真实 token 不会以 =True/False 结尾）。
     if is_boolean_flag_assign(cand, line):

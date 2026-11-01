@@ -1,0 +1,391 @@
+{
+ "schema_version": 1,
+ "date": "20261101",
+ "generated_at": "2026-11-01T10:16:12+08:00",
+ "generator": "tools/kb_corpus/merge_sim_89.py",
+ "mode": "in_memory_merge_simulation",
+ "head": {
+  "eval_set_id": "eval_set_20261101_v2",
+  "eval_set_content_hash": "1fa417f9e720cb6d4142432cbd1073ffc66d93905c542eadeed8fc1ea8519e0f",
+  "eval_set_file_sha256": "b138d81fea3ea2d7c2aa8940941ccb5738aca83258350fb8a9ec930ab4416051",
+  "eval_set_version": 2,
+  "frozen_at": "2026-11-01T10:00:34+08:00",
+  "n_queries": 89,
+  "topk": 5
+ },
+ "policy": {
+  "merge_source": "concept_dedup_20261101.json groups[action=merge] + alias_map",
+  "merge_strategy": "保留主单元、剔除被合并单元；expected_units 索引按 alias 重映射",
+  "retrieval": "search_v2.SearchV2 当前默认（软 AND），复用 eval_search_v2_ext2 分级口径",
+  "metrics": [
+   "precision_at_k(P@5)",
+   "coverage",
+   "hit_rate",
+   "ndcg_at_k(NDCG@5)"
+  ],
+  "stats": [
+   "paired_t（正态近似）",
+   "bootstrap 95% CI（2000 次，seed=42）",
+   "McNemar（命中率）"
+  ],
+  "modifies_real_data": false
+ },
+ "merge_plan": {
+  "groups": [
+   {
+    "group_id": "CG-003",
+    "concept_forms": [
+     "东盟中小微企业（MSME）经济地位"
+    ],
+    "al_primary_unit_id": "828edf428bd9",
+    "primary_unit_id": "a1ad2c883391",
+    "dropped_unit_ids": [
+     "7f5dacb982da"
+    ],
+    "count_before": 2,
+    "count_after": 1,
+    "action": "merge"
+   },
+   {
+    "group_id": "CG-004",
+    "concept_forms": [
+     "跨境电子商务面临的四大挑战"
+    ],
+    "al_primary_unit_id": "7de7f0318345",
+    "primary_unit_id": "276e87e6cc33",
+    "dropped_unit_ids": [
+     "bcf6880edb59"
+    ],
+    "count_before": 2,
+    "count_after": 1,
+    "action": "merge"
+   }
+  ],
+  "alias_remap": {
+   "7f5dacb982da": "a1ad2c883391",
+   "bcf6880edb59": "276e87e6cc33"
+  },
+  "dropped_ids": [
+   "7f5dacb982da",
+   "bcf6880edb59"
+  ],
+  "merge_groups": 2,
+  "units_before": 498,
+  "units_after": 496
+ },
+ "expected_units_remap": {
+  "records": [
+   {
+    "query_id": "E02",
+    "from": 51,
+    "to": 279
+   },
+   {
+    "query_id": "E10",
+    "from": 51,
+    "to": 279
+   },
+   {
+    "query_id": "E15",
+    "from": 51,
+    "to": 279
+   },
+   {
+    "query_id": "E30",
+    "from": 51,
+    "to": 279
+   }
+  ],
+  "count": 4,
+  "note": "评测集 expected_units 中被合并单元的索引已映射到主单元（只用于本模拟，不改资产文件）"
+ },
+ "results": {
+  "baseline": {
+   "summary": {
+    "n": 89,
+    "precision_at_k": 0.7303,
+    "coverage": 0.8708,
+    "hit_rate": 0.9775,
+    "ndcg_at_k": 0.8028
+   },
+   "by_type": {
+    "主题": {
+     "n": 44,
+     "v2": {
+      "precision_at_k": 0.75,
+      "coverage": 0.8617,
+      "hit": 1.0,
+      "ndcg_at_k": 0.8084
+     }
+    },
+    "同义词": {
+     "n": 8,
+     "v2": {
+      "precision_at_k": 0.325,
+      "coverage": 0.5833,
+      "hit": 0.75,
+      "ndcg_at_k": 0.4271
+     }
+    },
+    "AND": {
+     "n": 10,
+     "v2": {
+      "precision_at_k": 0.86,
+      "coverage": 1.0,
+      "hit": 1.0,
+      "ndcg_at_k": 0.9523
+     }
+    },
+    "OR": {
+     "n": 8,
+     "v2": {
+      "precision_at_k": 0.975,
+      "coverage": 0.9583,
+      "hit": 1.0,
+      "ndcg_at_k": 0.994
+     }
+    },
+    "短语": {
+     "n": 6,
+     "v2": {
+      "precision_at_k": 0.5667,
+      "coverage": 0.9444,
+      "hit": 1.0,
+      "ndcg_at_k": 0.6765
+     }
+    },
+    "排除": {
+     "n": 5,
+     "v2": {
+      "precision_at_k": 0.84,
+      "coverage": 0.7667,
+      "hit": 1.0,
+      "ndcg_at_k": 0.8678
+     }
+    },
+    "短查询": {
+     "n": 5,
+     "v2": {
+      "precision_at_k": 0.52,
+      "coverage": 1.0,
+      "hit": 1.0,
+      "ndcg_at_k": 0.8237
+     }
+    },
+    "长查询": {
+     "n": 3,
+     "v2": {
+      "precision_at_k": 0.9333,
+      "coverage": 0.9167,
+      "hit": 1.0,
+      "ndcg_at_k": 0.8229
+     }
+    }
+   },
+   "eval_meta": {
+    "topk": 5,
+    "n_units": 498
+   }
+  },
+  "merged": {
+   "summary": {
+    "n": 89,
+    "precision_at_k": 0.7303,
+    "coverage": 0.8708,
+    "hit_rate": 0.9775,
+    "ndcg_at_k": 0.8028
+   },
+   "by_type": {
+    "主题": {
+     "n": 44,
+     "v2": {
+      "precision_at_k": 0.75,
+      "coverage": 0.8617,
+      "hit": 1.0,
+      "ndcg_at_k": 0.8084
+     }
+    },
+    "同义词": {
+     "n": 8,
+     "v2": {
+      "precision_at_k": 0.325,
+      "coverage": 0.5833,
+      "hit": 0.75,
+      "ndcg_at_k": 0.4271
+     }
+    },
+    "AND": {
+     "n": 10,
+     "v2": {
+      "precision_at_k": 0.86,
+      "coverage": 1.0,
+      "hit": 1.0,
+      "ndcg_at_k": 0.9523
+     }
+    },
+    "OR": {
+     "n": 8,
+     "v2": {
+      "precision_at_k": 0.975,
+      "coverage": 0.9583,
+      "hit": 1.0,
+      "ndcg_at_k": 0.994
+     }
+    },
+    "短语": {
+     "n": 6,
+     "v2": {
+      "precision_at_k": 0.5667,
+      "coverage": 0.9444,
+      "hit": 1.0,
+      "ndcg_at_k": 0.6765
+     }
+    },
+    "排除": {
+     "n": 5,
+     "v2": {
+      "precision_at_k": 0.84,
+      "coverage": 0.7667,
+      "hit": 1.0,
+      "ndcg_at_k": 0.8678
+     }
+    },
+    "短查询": {
+     "n": 5,
+     "v2": {
+      "precision_at_k": 0.52,
+      "coverage": 1.0,
+      "hit": 1.0,
+      "ndcg_at_k": 0.8237
+     }
+    },
+    "长查询": {
+     "n": 3,
+     "v2": {
+      "precision_at_k": 0.9333,
+      "coverage": 0.9167,
+      "hit": 1.0,
+      "ndcg_at_k": 0.8229
+     }
+    }
+   },
+   "eval_meta": {
+    "topk": 5,
+    "n_units": 496
+   }
+  }
+ },
+ "comparison": {
+  "n_pairs": 89,
+  "mean_delta": {
+   "precision_at_k": 0.0,
+   "ndcg_at_k": 0.0
+  },
+  "stats": {
+   "precision_at_k": {
+    "mean_delta": 0.0,
+    "paired_t": {
+     "n": 89,
+     "mean": 0.0,
+     "sd": 0.0,
+     "t": null,
+     "p_two_sided": 1.0
+    },
+    "bootstrap": {
+     "n": 89,
+     "n_boot": 2000,
+     "mean": 0.0,
+     "ci_low": 0.0,
+     "ci_high": 0.0,
+     "significant": false
+    }
+   },
+   "ndcg_at_k": {
+    "mean_delta": 0.0,
+    "paired_t": {
+     "n": 89,
+     "mean": 0.0,
+     "sd": 0.0,
+     "t": null,
+     "p_two_sided": 1.0
+    },
+    "bootstrap": {
+     "n": 89,
+     "n_boot": 2000,
+     "mean": 0.0,
+     "ci_low": 0.0,
+     "ci_high": 0.0,
+     "significant": false
+    }
+   },
+   "hit_rate": {
+    "mcnemar": {
+     "b": 0,
+     "c": 0,
+     "n_discordant": 0,
+     "p_two_sided": 1.0
+    },
+    "improved": 0,
+    "regressed": 0
+   },
+   "n_pairs": 89
+  },
+  "affected_queries": []
+ },
+ "verdict": "neutral",
+ "conclusion": "合并后 P@5/NDCG@5 与合并前持平：去重收益主要是知识库整洁度，对 89 查询检索无直接收益；可合并但优先级不高（需审批+备份）。",
+ "recommendation": {
+  "action": "可合并不紧急",
+  "preconditions": [
+   "人工确认 2 组跨研报重复内容确为同一知识（claim 全同）",
+   "备份 kb_units_all.json 与知识单元源 jsonl",
+   "同步更新下游引用（问题库 source_unit_id / 评测 expected_units）或保留 alias 解析层",
+   "刷新门户缓存；数据变更按仓库纪律审批后执行（本工具不执行）"
+  ],
+  "risk": "若合并后不更新引用，被剔除单元的评测/问题来源会变成假 miss；本模拟已按 alias 重映射 expected_units，等价于「引用同步更新」的理想情形。"
+ },
+ "real_data_unchanged": true,
+ "disclaimer": "本模拟仅在内存合并单元并做检索评测，不修改知识库与评测集；结论供「是否执行真实合并」审批参考，不构成投资建议。",
+ "eval_set_coverage": {
+  "groups": [
+   {
+    "group_id": "CG-003",
+    "concept_forms": [
+     "东盟中小微企业（MSME）经济地位"
+    ],
+    "mentioned_by_queries": [],
+    "count": 0
+   },
+   {
+    "group_id": "CG-004",
+    "concept_forms": [
+     "跨境电子商务面临的四大挑战"
+    ],
+    "mentioned_by_queries": [],
+    "count": 0
+   }
+  ],
+  "blind_group_count": 2,
+  "note": "被合并概念未被任何 89 查询提及 → 合并对本评测集指标无影响（0 变化是预期，而非收益/风险证据）；收益验证见 wave14 32 问题自检（@1 +1）与问题库侧"
+ },
+ "sources": {
+  "units_all": {
+   "path": "C:\\项目\\老田的AI助手\\portal\\static\\kb_units_all.json",
+   "error": null,
+   "declared_total": 498,
+   "sha256_before": "b241de371129e0a9c66c9897a287d73711a542f6360e8c1518db597a1ef0fdf2"
+  },
+  "dedup": {
+   "path": "C:\\项目\\老田的AI助手\\research\\reports\\concept_dedup_20261101.json",
+   "error": null,
+   "sha256_before": "e036b36dc03a6d35d783b05a4fb94aa8d7cc853707fbc4fb17c31273e6b7d882"
+  },
+  "eval_set": {
+   "path": "C:\\项目\\老田的AI助手\\research\\reports\\eval_sets\\eval_set_20261101_v2.json",
+   "errors": [],
+   "set_id": "eval_set_20261101_v2",
+   "content_hash": "1fa417f9e720cb6d4142432cbd1073ffc66d93905c542eadeed8fc1ea8519e0f",
+   "file_sha256_before": "b138d81fea3ea2d7c2aa8940941ccb5738aca83258350fb8a9ec930ab4416051"
+  }
+ }
+}

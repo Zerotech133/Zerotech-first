@@ -47,12 +47,32 @@ def load_units() -> list[dict]:
     return units
 
 
+TOPIC_RULES = [
+    ("量学/涨停", ("涨停", "量柱", "量线", "停密码", "庄", "倍量", "缩量")),
+    ("策略/因子", ("策略", "因子", "选股", "回测", "质量", "估值", "组合", "规避", "超额")),
+    ("新能源/电力", ("煤电", "钠电", "光伏", "储能", "电气化", "电力", "新能源", "充电")),
+    ("AI/科技", ("AI", "大模型", "算力", "芯片", "CCL", "PCB", "数据中心", "智能", "Agent", "软件工程")),
+    ("金融/资本市场", ("金融", "资本", "市场", "汇率", "溢价", "保险", "银行", "监管", "中长期资金")),
+    ("制造/宏观", ("制造", "TFP", "生产率", "宏观", "产业", "供应链", "工厂", "贸易")),
+]
+
+
+def classify_topic(concept: str, claim: str, book: str) -> str:
+    text = (concept or "") + " " + (claim or "") + " " + (book or "")
+    for topic, kws in TOPIC_RULES:
+        if any(k in text for k in kws):
+            return topic
+    return "其他"
+
+
 def to_card(u: dict) -> dict:
     concept = (u.get("concept") or u.get("chapter") or "").strip()
     q = f"什么是「{concept}」？" if concept else "这条知识的核心结论是什么？"
     a = u.get("claim", "").strip()
     src = f"《{u['book']}》 {u.get('chapter','')} p{u.get('page_start')}-{u.get('page_end')}"
-    return {"q": q, "a": a, "concept": concept, "source": src, "evidence": (u.get("evidence") or "")[:200]}
+    return {"q": q, "a": a, "concept": concept, "source": src,
+            "topic": classify_topic(concept, a, u.get("book", "")),
+            "evidence": (u.get("evidence") or "")[:200]}
 
 
 def main(argv=None) -> int:
@@ -80,9 +100,11 @@ def main(argv=None) -> int:
             md += [f"> 原文依据：{c['evidence']}", ""]
     p = CARDS_DIR / f"cards_{stamp}.md"
     p.write_text("\n".join(md), encoding="utf-8")
+    from collections import Counter as _Counter
+    topics = _Counter([c.get("topic", "其他") for c in cards])
     payload = {"generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
                "total_units": len(units), "cards": cards[:30], "daily": cards[0] if args.daily else (cards[0] if cards else None),
-               "file": str(p)}
+               "topics": dict(topics), "file": str(p)}
     OUT_JSON.parent.mkdir(parents=True, exist_ok=True)
     OUT_JSON.write_text(json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8")
     print(f"cards={len(cards)} units={len(units)} file={p}", flush=True)

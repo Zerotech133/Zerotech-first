@@ -1,0 +1,620 @@
+{
+ "meta": {
+  "schema_version": "search_v2b.v1",
+  "generated_at": "2026-11-01T09:47:39+08:00",
+  "n_queries": 89,
+  "n_units": 498,
+  "topk": 5,
+  "eval_set": "冻结的 wave10 89 查询（eval_search_v2_ext2.all_queries()，分级标注未改）",
+  "engines": {
+   "v1": "v1 旧检索器（bigram 词袋）",
+   "v2": "v2 严格 AND（wave7 实现）",
+   "v2b_soft": "v2b 软 AND（soft_cov=0.5，推荐）",
+   "v2b_soft07": "v2b 软 AND（soft_cov=0.7，规格字面口径）",
+   "v2b_any": "v2b any（≥1 词命中）",
+   "v2b_strict": "v2b 严格 AND（应复现 v2）"
+  },
+  "defaults": {
+   "soft_cov": 0.5,
+   "synonym_weight": 0.6
+  },
+  "soft_and_note": "ceil(0.7×n)=n（n≤3 时），规格 0.7 字面阈值对 2 词 AND 等价 strict；软 AND 用覆盖率阈值实现，默认 0.5 以修复 2 词 AND，0.7 作敏感性对照"
+ },
+ "tables": {
+  "all": {
+   "v2": {
+    "n": 89,
+    "precision_at_k": 0.7281,
+    "coverage": 0.9111,
+    "hit_rate": 1.0,
+    "ndcg_at_k": 0.8054
+   },
+   "v2b_soft": {
+    "n": 89,
+    "precision_at_k": 0.782,
+    "coverage": 0.8933,
+    "hit_rate": 1.0,
+    "ndcg_at_k": 0.8479
+   },
+   "v2b_soft07": {
+    "n": 89,
+    "precision_at_k": 0.7236,
+    "coverage": 0.8895,
+    "hit_rate": 1.0,
+    "ndcg_at_k": 0.8104
+   },
+   "v2b_any": {
+    "n": 89,
+    "precision_at_k": 0.7888,
+    "coverage": 0.8933,
+    "hit_rate": 1.0,
+    "ndcg_at_k": 0.8529
+   },
+   "v2b_strict": {
+    "n": 89,
+    "precision_at_k": 0.7236,
+    "coverage": 0.8895,
+    "hit_rate": 1.0,
+    "ndcg_at_k": 0.8104
+   },
+   "v2b_strict_parity": {
+    "n": 89,
+    "precision_at_k": 0.7281,
+    "coverage": 0.9111,
+    "hit_rate": 1.0,
+    "ndcg_at_k": 0.8054
+   },
+   "v1": {
+    "n": 89,
+    "precision_at_k": 0.6831,
+    "coverage": 0.8371,
+    "hit_rate": 0.9551,
+    "ndcg_at_k": 0.7552
+   }
+  },
+  "AND": {
+   "v2": {
+    "n": 10,
+    "precision_at_k": 0.46,
+    "coverage": 1.0,
+    "hit_rate": 1.0,
+    "ndcg_at_k": 0.6718
+   },
+   "v2b_soft": {
+    "n": 10,
+    "precision_at_k": 0.86,
+    "coverage": 1.0,
+    "hit_rate": 1.0,
+    "ndcg_at_k": 0.9523
+   },
+   "v2b_soft07": {
+    "n": 10,
+    "precision_at_k": 0.46,
+    "coverage": 1.0,
+    "hit_rate": 1.0,
+    "ndcg_at_k": 0.6718
+   },
+   "v2b_any": {
+    "n": 10,
+    "precision_at_k": 0.86,
+    "coverage": 1.0,
+    "hit_rate": 1.0,
+    "ndcg_at_k": 0.9523
+   },
+   "v2b_strict": {
+    "n": 10,
+    "precision_at_k": 0.46,
+    "coverage": 1.0,
+    "hit_rate": 1.0,
+    "ndcg_at_k": 0.6718
+   },
+   "v2b_strict_parity": {
+    "n": 10,
+    "precision_at_k": 0.46,
+    "coverage": 1.0,
+    "hit_rate": 1.0,
+    "ndcg_at_k": 0.6718
+   },
+   "v1": {
+    "n": 10,
+    "precision_at_k": 0.78,
+    "coverage": 0.9667,
+    "hit_rate": 1.0,
+    "ndcg_at_k": 0.8648
+   }
+  }
+ },
+ "by_type": {
+  "AND": {
+   "n": 10,
+   "v2": {
+    "n": 10,
+    "precision_at_k": 0.46,
+    "coverage": 1.0,
+    "hit_rate": 1.0,
+    "ndcg_at_k": 0.6718
+   },
+   "v2b_soft": {
+    "n": 10,
+    "precision_at_k": 0.86,
+    "coverage": 1.0,
+    "hit_rate": 1.0,
+    "ndcg_at_k": 0.9523
+   }
+  },
+  "OR": {
+   "n": 8,
+   "v2": {
+    "n": 8,
+    "precision_at_k": 0.95,
+    "coverage": 0.8958,
+    "hit_rate": 1.0,
+    "ndcg_at_k": 0.9516
+   },
+   "v2b_soft": {
+    "n": 8,
+    "precision_at_k": 0.975,
+    "coverage": 0.9583,
+    "hit_rate": 1.0,
+    "ndcg_at_k": 0.994
+   }
+  },
+  "主题": {
+   "n": 44,
+   "v2": {
+    "n": 44,
+    "precision_at_k": 0.75,
+    "coverage": 0.8674,
+    "hit_rate": 1.0,
+    "ndcg_at_k": 0.8094
+   },
+   "v2b_soft": {
+    "n": 44,
+    "precision_at_k": 0.7727,
+    "coverage": 0.8693,
+    "hit_rate": 1.0,
+    "ndcg_at_k": 0.8286
+   }
+  },
+  "同义词": {
+   "n": 8,
+   "v2": {
+    "n": 8,
+    "precision_at_k": 0.85,
+    "coverage": 0.9583,
+    "hit_rate": 1.0,
+    "ndcg_at_k": 0.9505
+   },
+   "v2b_soft": {
+    "n": 8,
+    "precision_at_k": 0.775,
+    "coverage": 0.7917,
+    "hit_rate": 1.0,
+    "ndcg_at_k": 0.8178
+   }
+  },
+  "排除": {
+   "n": 5,
+   "v2": {
+    "n": 5,
+    "precision_at_k": 0.8,
+    "coverage": 0.9333,
+    "hit_rate": 1.0,
+    "ndcg_at_k": 0.6972
+   },
+   "v2b_soft": {
+    "n": 5,
+    "precision_at_k": 0.84,
+    "coverage": 0.7667,
+    "hit_rate": 1.0,
+    "ndcg_at_k": 0.8678
+   }
+  },
+  "短查询": {
+   "n": 5,
+   "v2": {
+    "n": 5,
+    "precision_at_k": 0.52,
+    "coverage": 1.0,
+    "hit_rate": 1.0,
+    "ndcg_at_k": 0.8237
+   },
+   "v2b_soft": {
+    "n": 5,
+    "precision_at_k": 0.52,
+    "coverage": 1.0,
+    "hit_rate": 1.0,
+    "ndcg_at_k": 0.8237
+   }
+  },
+  "短语": {
+   "n": 6,
+   "v2": {
+    "n": 6,
+    "precision_at_k": 0.5667,
+    "coverage": 0.9444,
+    "hit_rate": 1.0,
+    "ndcg_at_k": 0.6765
+   },
+   "v2b_soft": {
+    "n": 6,
+    "precision_at_k": 0.5667,
+    "coverage": 0.9444,
+    "hit_rate": 1.0,
+    "ndcg_at_k": 0.6765
+   }
+  },
+  "长查询": {
+   "n": 3,
+   "v2": {
+    "n": 3,
+    "precision_at_k": 0.9333,
+    "coverage": 0.9167,
+    "hit_rate": 1.0,
+    "ndcg_at_k": 0.8229
+   },
+   "v2b_soft": {
+    "n": 3,
+    "precision_at_k": 0.9333,
+    "coverage": 0.9167,
+    "hit_rate": 1.0,
+    "ndcg_at_k": 0.8229
+   }
+  }
+ },
+ "vs_v1": {
+  "v2": {
+   "precision_at_k_delta": 0.045
+  },
+  "v2b_soft": {
+   "precision_at_k_delta": 0.0989
+  },
+  "v2b_soft07": {
+   "precision_at_k_delta": 0.0405
+  },
+  "v2b_any": {
+   "precision_at_k_delta": 0.1057
+  }
+ },
+ "significance": {
+  "v2b_soft": {
+   "precision_at_k": {
+    "all_89": {
+     "paired_t": {
+      "n": 89,
+      "mean": 0.0539,
+      "sd": 0.204,
+      "t": 2.4945,
+      "p_two_sided": 0.0126
+     },
+     "bootstrap": {
+      "n": 89,
+      "n_boot": 2000,
+      "mean": 0.0539,
+      "ci_low": 0.0157,
+      "ci_high": 0.0989,
+      "significant": true
+     }
+    },
+    "AND_10": {
+     "paired_t": {
+      "n": 10,
+      "mean": 0.4,
+      "sd": 0.3771,
+      "t": 3.3541,
+      "p_two_sided": 0.0008
+     },
+     "bootstrap": {
+      "n": 10,
+      "n_boot": 2000,
+      "mean": 0.4,
+      "ci_low": 0.2,
+      "ci_high": 0.64,
+      "significant": true
+     }
+    }
+   },
+   "ndcg_at_k": {
+    "all_89": {
+     "paired_t": {
+      "n": 89,
+      "mean": 0.0425,
+      "sd": 0.1729,
+      "t": 2.3178,
+      "p_two_sided": 0.0205
+     },
+     "bootstrap": {
+      "n": 89,
+      "n_boot": 2000,
+      "mean": 0.0425,
+      "ci_low": 0.0074,
+      "ci_high": 0.0794,
+      "significant": true
+     }
+    },
+    "AND_10": {
+     "paired_t": {
+      "n": 10,
+      "mean": 0.2805,
+      "sd": 0.2424,
+      "t": 3.6583,
+      "p_two_sided": 0.0003
+     },
+     "bootstrap": {
+      "n": 10,
+      "n_boot": 2000,
+      "mean": 0.2805,
+      "ci_low": 0.1434,
+      "ci_high": 0.432,
+      "significant": true
+     }
+    }
+   }
+  },
+  "v2b_soft07": {
+   "precision_at_k": {
+    "all_89": {
+     "paired_t": {
+      "n": 89,
+      "mean": -0.0045,
+      "sd": 0.0601,
+      "t": -0.7051,
+      "p_two_sided": 0.4807
+     },
+     "bootstrap": {
+      "n": 89,
+      "n_boot": 2000,
+      "mean": -0.0045,
+      "ci_low": -0.018,
+      "ci_high": 0.0067,
+      "significant": false
+     }
+    },
+    "AND_10": {
+     "paired_t": {
+      "n": 10,
+      "mean": 0.0,
+      "sd": 0.0,
+      "t": null,
+      "p_two_sided": 1.0
+     },
+     "bootstrap": {
+      "n": 10,
+      "n_boot": 2000,
+      "mean": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0,
+      "significant": false
+     }
+    }
+   },
+   "ndcg_at_k": {
+    "all_89": {
+     "paired_t": {
+      "n": 89,
+      "mean": 0.0049,
+      "sd": 0.116,
+      "t": 0.4018,
+      "p_two_sided": 0.6878
+     },
+     "bootstrap": {
+      "n": 89,
+      "n_boot": 2000,
+      "mean": 0.0049,
+      "ci_low": -0.0193,
+      "ci_high": 0.029,
+      "significant": false
+     }
+    },
+    "AND_10": {
+     "paired_t": {
+      "n": 10,
+      "mean": 0.0,
+      "sd": 0.0,
+      "t": null,
+      "p_two_sided": 1.0
+     },
+     "bootstrap": {
+      "n": 10,
+      "n_boot": 2000,
+      "mean": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0,
+      "significant": false
+     }
+    }
+   }
+  },
+  "v2b_any": {
+   "precision_at_k": {
+    "all_89": {
+     "paired_t": {
+      "n": 89,
+      "mean": 0.0607,
+      "sd": 0.2183,
+      "t": 2.6225,
+      "p_two_sided": 0.0087
+     },
+     "bootstrap": {
+      "n": 89,
+      "n_boot": 2000,
+      "mean": 0.0607,
+      "ci_low": 0.0202,
+      "ci_high": 0.1101,
+      "significant": true
+     }
+    },
+    "AND_10": {
+     "paired_t": {
+      "n": 10,
+      "mean": 0.4,
+      "sd": 0.3771,
+      "t": 3.3541,
+      "p_two_sided": 0.0008
+     },
+     "bootstrap": {
+      "n": 10,
+      "n_boot": 2000,
+      "mean": 0.4,
+      "ci_low": 0.2,
+      "ci_high": 0.64,
+      "significant": true
+     }
+    }
+   },
+   "ndcg_at_k": {
+    "all_89": {
+     "paired_t": {
+      "n": 89,
+      "mean": 0.0475,
+      "sd": 0.184,
+      "t": 2.4346,
+      "p_two_sided": 0.0149
+     },
+     "bootstrap": {
+      "n": 89,
+      "n_boot": 2000,
+      "mean": 0.0475,
+      "ci_low": 0.0093,
+      "ci_high": 0.0889,
+      "significant": true
+     }
+    },
+    "AND_10": {
+     "paired_t": {
+      "n": 10,
+      "mean": 0.2805,
+      "sd": 0.2424,
+      "t": 3.6583,
+      "p_two_sided": 0.0003
+     },
+     "bootstrap": {
+      "n": 10,
+      "n_boot": 2000,
+      "mean": 0.2805,
+      "ci_low": 0.1434,
+      "ci_high": 0.432,
+      "significant": true
+     }
+    }
+   }
+  }
+ },
+ "parity_check": {
+  "v2b_strict_parity_vs_v2_max_abs_diff": {
+   "precision_at_k": 0.0,
+   "ndcg_at_k": 0.0
+  },
+  "identical": true,
+  "note": "strict + synonym_weight=1.0 与 v2 逐条一致 → 软 AND/同义词权重是仅有的改动；默认 v2b_strict（synonym_weight=0.6）与 v2 的差异来自同义词低权重（预期行为）"
+ },
+ "per_query": {
+  "AND": [
+   {
+    "id": "Q27",
+    "query": "光伏 储能",
+    "precision_at_k": 0.6,
+    "ndcg_at_k": 0.7227,
+    "v2b_soft_precision_at_k": 1.0,
+    "v2b_soft_ndcg_at_k": 1.0
+   },
+   {
+    "id": "Q28",
+    "query": "白酒 价格带",
+    "precision_at_k": 0.4,
+    "ndcg_at_k": 0.6062,
+    "v2b_soft_precision_at_k": 0.8,
+    "v2b_soft_ndcg_at_k": 0.9521
+   },
+   {
+    "id": "Q29",
+    "query": "钠电池 竞争壁垒",
+    "precision_at_k": 1.0,
+    "ndcg_at_k": 0.589,
+    "v2b_soft_precision_at_k": 1.0,
+    "v2b_soft_ndcg_at_k": 0.7739
+   },
+   {
+    "id": "Q30",
+    "query": "AI 商业化",
+    "precision_at_k": 1.0,
+    "ndcg_at_k": 1.0,
+    "v2b_soft_precision_at_k": 1.0,
+    "v2b_soft_ndcg_at_k": 1.0
+   },
+   {
+    "id": "Q31",
+    "query": "铁路 客流",
+    "precision_at_k": 0.6,
+    "ndcg_at_k": 1.0,
+    "v2b_soft_precision_at_k": 0.6,
+    "v2b_soft_ndcg_at_k": 1.0
+   },
+   {
+    "id": "E35",
+    "query": "快递 盈利",
+    "precision_at_k": 0.2,
+    "ndcg_at_k": 0.3717,
+    "v2b_soft_precision_at_k": 1.0,
+    "v2b_soft_ndcg_at_k": 1.0
+   },
+   {
+    "id": "E36",
+    "query": "航空 运力",
+    "precision_at_k": 0.2,
+    "ndcg_at_k": 0.3392,
+    "v2b_soft_precision_at_k": 1.0,
+    "v2b_soft_ndcg_at_k": 1.0
+   },
+   {
+    "id": "E37",
+    "query": "免税 消费",
+    "precision_at_k": 0.2,
+    "ndcg_at_k": 0.6062,
+    "v2b_soft_precision_at_k": 1.0,
+    "v2b_soft_ndcg_at_k": 1.0
+   },
+   {
+    "id": "E38",
+    "query": "保险资金 港股通",
+    "precision_at_k": 0.2,
+    "ndcg_at_k": 1.0,
+    "v2b_soft_precision_at_k": 0.2,
+    "v2b_soft_ndcg_at_k": 1.0
+   },
+   {
+    "id": "E39",
+    "query": "挖掘机 出口",
+    "precision_at_k": 0.2,
+    "ndcg_at_k": 0.4831,
+    "v2b_soft_precision_at_k": 1.0,
+    "v2b_soft_ndcg_at_k": 0.7968
+   }
+  ]
+ },
+ "conclusion": {
+  "and_p5_improvement": 0.4,
+  "and_ndcg_improvement": 0.2805,
+  "overall_p5_improvement": 0.0539,
+  "overall_ndcg_improvement": 0.0425,
+  "and_ci": {
+   "n": 10,
+   "n_boot": 2000,
+   "mean": 0.4,
+   "ci_low": 0.2,
+   "ci_high": 0.64,
+   "significant": true
+  },
+  "overall_ci": {
+   "n": 89,
+   "n_boot": 2000,
+   "mean": 0.0539,
+   "ci_low": 0.0157,
+   "ci_high": 0.0989,
+   "significant": true
+  },
+  "synonym_class_p5_change": -0.075,
+  "merge_recommended": true,
+  "recommendation": "AND 类 P@5 0.460→0.860（+0.400）、NDCG 0.672→0.952（+0.281）；整体 P@5 0.728→0.782（+0.054）、NDCG 0.805→0.848（+0.043）；同义词类 P@5 变化 -0.075（synonym_weight=0.6 的代价，见分语法表）。 → **建议合入 v2**：软 AND 作为 v2 的 `and_mode` 默认 soft（soft_cov=0.5）+ 同义词权重 0.6，AND 类回退修复且整体不劣化；v2 文件保持不变，v2b 独立可灰度。"
+ }
+}

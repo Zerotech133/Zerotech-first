@@ -39,7 +39,6 @@ SELF_NAV_PAGES = {
                      r'href="/home\.html"[^>]*>打开旧总览'),
 }
 
-
 def _self_nav_valid(name, src):
     nav, back = SELF_NAV_PAGES[name]
     # 校验真实标记，不接受注释里写了导航字符串就绕过守卫。

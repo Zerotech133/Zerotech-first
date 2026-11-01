@@ -1,0 +1,1744 @@
+{
+ "meta": {
+  "schema_version": "lowturn_attribution.v1",
+  "generated_at": "2026-11-01T08:09:19+08:00",
+  "start": "20230101",
+  "end": "20261030",
+  "effective_start": "20230103",
+  "effective_end": "20261030",
+  "factor": "low_turnover",
+  "direction": -1,
+  "neutrality": "市值十分位 × 行业市场权重法（桶内 signed 分数 top50% 等权）",
+  "cost_bp": 30.0,
+  "years": [
+   "2023",
+   "2024",
+   "2025",
+   "2026"
+  ],
+  "is_years": [
+   "2023",
+   "2024"
+  ],
+  "oos_years": [
+   "2025",
+   "2026"
+  ],
+  "regime_rule": "trailing 20 日等权市场收益全样本 1/3、2/3 分位",
+  "load_sec": 46.55,
+  "runtime_sec": 109.67,
+  "panel": {
+   "dates": 965,
+   "codes": 5740
+  }
+ },
+ "factors": {
+  "weekly_baseline": {
+   "label": "周频全换仓",
+   "desc": "wave2 基线：每周换仓，用于逐年/regime 归因主口径",
+   "schedule": "weekly",
+   "rebalance_count": 195,
+   "avg_holdings": 1992.0,
+   "yearly": {
+    "2023": {
+     "gross_excess": -0.020617,
+     "gross_t": -0.798,
+     "net_excess": -0.168111,
+     "net_t": -5.669,
+     "gross_excess_daily_sum": -0.018754,
+     "net_excess_daily_sum": -0.169734,
+     "market_annual_return": 0.073836,
+     "turnover": 50.2127,
+     "turnover_avg": 1.0247,
+     "n_rebalances": 49,
+     "ic": 0.0818,
+     "ic_t": 6.644,
+     "ic_positive_rate": 0.6901
+    },
+    "2024": {
+     "gross_excess": 0.011158,
+     "gross_t": 0.279,
+     "net_excess": -0.142439,
+     "net_t": -4.106,
+     "gross_excess_daily_sum": 0.008211,
+     "net_excess_daily_sum": -0.148613,
+     "market_annual_return": 0.045758,
+     "turnover": 52.2639,
+     "turnover_avg": 1.0051,
+     "n_rebalances": 52,
+     "ic": 0.1184,
+     "ic_t": 6.801,
+     "ic_positive_rate": 0.7025
+    },
+    "2025": {
+     "gross_excess": 0.072237,
+     "gross_t": 2.797,
+     "net_excess": -0.106117,
+     "net_t": -3.063,
+     "gross_excess_daily_sum": 0.049927,
+     "net_excess_daily_sum": -0.080308,
+     "market_annual_return": 0.392424,
+     "turnover": 43.2283,
+     "turnover_avg": 0.8313,
+     "n_rebalances": 52,
+     "ic": 0.0712,
+     "ic_t": 6.337,
+     "ic_positive_rate": 0.6996
+    },
+    "2026": {
+     "gross_excess": 0.039858,
+     "gross_t": 1.832,
+     "net_excess": -0.044718,
+     "net_t": -2.015,
+     "gross_excess_daily_sum": 0.044029,
+     "net_excess_daily_sum": -0.055555,
+     "market_annual_return": -0.14784,
+     "turnover": 33.1651,
+     "turnover_avg": 0.7896,
+     "n_rebalances": 42,
+     "ic": 0.1039,
+     "ic_t": 5.828,
+     "ic_positive_rate": 0.6384
+    }
+   },
+   "ic_by_year": {
+    "2023": {
+     "n_days": 242,
+     "mean": 0.0818,
+     "t": 6.644,
+     "positive_rate": 0.6901
+    },
+    "2024": {
+     "n_days": 242,
+     "mean": 0.1184,
+     "t": 6.801,
+     "positive_rate": 0.7025
+    },
+    "2025": {
+     "n_days": 243,
+     "mean": 0.0712,
+     "t": 6.337,
+     "positive_rate": 0.6996
+    },
+    "2026": {
+     "n_days": 177,
+     "mean": 0.1039,
+     "t": 5.828,
+     "positive_rate": 0.6384
+    }
+   },
+   "period": {
+    "is_gross_excess": -0.010543,
+    "is_gross_t": -0.28,
+    "is_net_t": -6.783,
+    "oos_gross_excess": 0.093955,
+    "oos_gross_t": 3.143,
+    "oos_net_t": -3.574,
+    "cum_cost_drag": 0.415716
+   },
+   "regime": {
+    "lookback_days": 20,
+    "thresholds": "trailing 20 日等权市场收益全样本 1/3、2/3 分位",
+    "stats": {
+     "上涨": {
+      "n_days": 314,
+      "gross_excess_sum": 0.01924,
+      "gross_excess_mean_bp": 0.6127,
+      "gross_t": 0.7015,
+      "win_rate": 0.5127,
+      "net_excess_sum": -0.154877
+     },
+     "震荡": {
+      "n_days": 306,
+      "gross_excess_sum": 0.025533,
+      "gross_excess_mean_bp": 0.8344,
+      "gross_t": 1.1747,
+      "win_rate": 0.5359,
+      "net_excess_sum": -0.159862
+     },
+     "下跌": {
+      "n_days": 304,
+      "gross_excess_sum": 0.03864,
+      "gross_excess_mean_bp": 1.2711,
+      "gross_t": 1.1652,
+      "win_rate": 0.5296,
+      "net_excess_sum": -0.139471
+     }
+    },
+    "stats_is": {
+     "上涨": {
+      "n_days": 124,
+      "gross_excess_sum": -0.008044,
+      "gross_excess_mean_bp": -0.6487,
+      "gross_t": -0.3611,
+      "win_rate": 0.5161,
+      "net_excess_sum": -0.089768
+     },
+     "震荡": {
+      "n_days": 194,
+      "gross_excess_sum": -0.001897,
+      "gross_excess_mean_bp": -0.0978,
+      "gross_t": -0.1124,
+      "win_rate": 0.4948,
+      "net_excess_sum": -0.119542
+     },
+     "下跌": {
+      "n_days": 165,
+      "gross_excess_sum": -0.000602,
+      "gross_excess_mean_bp": -0.0365,
+      "gross_t": -0.0238,
+      "win_rate": 0.5212,
+      "net_excess_sum": -0.109037
+     }
+    },
+    "stats_oos": {
+     "上涨": {
+      "n_days": 190,
+      "gross_excess_sum": 0.027284,
+      "gross_excess_mean_bp": 1.436,
+      "gross_t": 1.7069,
+      "win_rate": 0.5105,
+      "net_excess_sum": -0.065109
+     },
+     "震荡": {
+      "n_days": 112,
+      "gross_excess_sum": 0.02743,
+      "gross_excess_mean_bp": 2.4491,
+      "gross_t": 2.0206,
+      "win_rate": 0.6071,
+      "net_excess_sum": -0.04032
+     },
+     "下跌": {
+      "n_days": 139,
+      "gross_excess_sum": 0.039242,
+      "gross_excess_mean_bp": 2.8232,
+      "gross_t": 1.8366,
+      "win_rate": 0.5396,
+      "net_excess_sum": -0.030434
+     }
+    },
+    "ic": {
+     "上涨": {
+      "n_days": 65,
+      "mean": 0.1371,
+      "t": 6.368
+     },
+     "震荡": {
+      "n_days": 68,
+      "mean": 0.1016,
+      "t": 4.582
+     },
+     "下跌": {
+      "n_days": 57,
+      "mean": 0.0057,
+      "t": 0.149
+     }
+    },
+    "bear_peak_trough": {
+     "year": "2026",
+     "peak_date": "20260513",
+     "trough_date": "20261030",
+     "market_ret": -0.243141,
+     "max_drawdown": -0.243141,
+     "portfolio_gross_excess": 0.044864,
+     "portfolio_net_excess": -0.013134,
+     "portfolio_gross_t": 2.132
+    }
+   },
+   "industry_contribution": {
+    "total": 0.099903,
+    "n_industries": 111,
+    "top10": [
+     {
+      "industry": "元器件",
+      "contribution": 0.04154
+     },
+     {
+      "industry": "软件服务",
+      "contribution": 0.031422
+     },
+     {
+      "industry": "专用机械",
+      "contribution": 0.016793
+     },
+     {
+      "industry": "通信设备",
+      "contribution": 0.014667
+     },
+     {
+      "industry": "机械基件",
+      "contribution": 0.013935
+     },
+     {
+      "industry": "互联网",
+      "contribution": 0.012986
+     },
+     {
+      "industry": "半导体",
+      "contribution": 0.012796
+     },
+     {
+      "industry": "汽车配件",
+      "contribution": 0.009691
+     },
+     {
+      "industry": "塑料",
+      "contribution": 0.005091
+     },
+     {
+      "industry": "IT设备",
+      "contribution": 0.004918
+     }
+    ],
+    "bottom10": [
+     {
+      "industry": "医疗保健",
+      "contribution": -0.008848
+     },
+     {
+      "industry": "化工原料",
+      "contribution": -0.008309
+     },
+     {
+      "industry": "食品",
+      "contribution": -0.00704
+     },
+     {
+      "industry": "仓储物流",
+      "contribution": -0.004192
+     },
+     {
+      "industry": "白酒",
+      "contribution": -0.00366
+     },
+     {
+      "industry": "全国地产",
+      "contribution": -0.003435
+     },
+     {
+      "industry": "农业综合",
+      "contribution": -0.003063
+     },
+     {
+      "industry": "装修装饰",
+      "contribution": -0.002727
+     },
+     {
+      "industry": "环境保护",
+      "contribution": -0.00252
+     },
+     {
+      "industry": "饲料",
+      "contribution": -0.002194
+     }
+    ],
+    "by_year": {
+     "2023": {
+      "top5": [
+       {
+        "industry": "软件服务",
+        "contribution": 0.01253
+       },
+       {
+        "industry": "元器件",
+        "contribution": 0.011216
+       },
+       {
+        "industry": "汽车配件",
+        "contribution": 0.00837
+       },
+       {
+        "industry": "通信设备",
+        "contribution": 0.007597
+       },
+       {
+        "industry": "机械基件",
+        "contribution": 0.007105
+       }
+      ],
+      "bottom5": [
+       {
+        "industry": "电气设备",
+        "contribution": -0.010597
+       },
+       {
+        "industry": "化工原料",
+        "contribution": -0.007562
+       },
+       {
+        "industry": "医疗保健",
+        "contribution": -0.004866
+       },
+       {
+        "industry": "半导体",
+        "contribution": -0.003215
+       },
+       {
+        "industry": "化学制药",
+        "contribution": -0.002523
+       }
+      ]
+     },
+     "2024": {
+      "top5": [
+       {
+        "industry": "元器件",
+        "contribution": 0.014616
+       },
+       {
+        "industry": "软件服务",
+        "contribution": 0.0135
+       },
+       {
+        "industry": "通信设备",
+        "contribution": 0.004327
+       },
+       {
+        "industry": "互联网",
+        "contribution": 0.003767
+       },
+       {
+        "industry": "半导体",
+        "contribution": 0.003701
+       }
+      ],
+      "bottom5": [
+       {
+        "industry": "化工原料",
+        "contribution": -0.008715
+       },
+       {
+        "industry": "医疗保健",
+        "contribution": -0.007347
+       },
+       {
+        "industry": "电器仪表",
+        "contribution": -0.005598
+       },
+       {
+        "industry": "机械基件",
+        "contribution": -0.003864
+       },
+       {
+        "industry": "环境保护",
+        "contribution": -0.003345
+       }
+      ]
+     },
+     "2025": {
+      "top5": [
+       {
+        "industry": "专用机械",
+        "contribution": 0.010866
+       },
+       {
+        "industry": "汽车配件",
+        "contribution": 0.008796
+       },
+       {
+        "industry": "电气设备",
+        "contribution": 0.008723
+       },
+       {
+        "industry": "机械基件",
+        "contribution": 0.008694
+       },
+       {
+        "industry": "元器件",
+        "contribution": 0.008517
+       }
+      ],
+      "bottom5": [
+       {
+        "industry": "建筑工程",
+        "contribution": -0.005244
+       },
+       {
+        "industry": "医疗保健",
+        "contribution": -0.003204
+       },
+       {
+        "industry": "中成药",
+        "contribution": -0.002624
+       },
+       {
+        "industry": "证券",
+        "contribution": -0.002435
+       },
+       {
+        "industry": "白酒",
+        "contribution": -0.001872
+       }
+      ]
+     },
+     "2026": {
+      "top5": [
+       {
+        "industry": "半导体",
+        "contribution": 0.009062
+       },
+       {
+        "industry": "元器件",
+        "contribution": 0.007191
+       },
+       {
+        "industry": "医疗保健",
+        "contribution": 0.00657
+       },
+       {
+        "industry": "专用机械",
+        "contribution": 0.004275
+       },
+       {
+        "industry": "化学制药",
+        "contribution": 0.00417
+       }
+      ],
+      "bottom5": [
+       {
+        "industry": "汽车配件",
+        "contribution": -0.009404
+       },
+       {
+        "industry": "软件服务",
+        "contribution": -0.00178
+       },
+       {
+        "industry": "通信设备",
+        "contribution": -0.001721
+       },
+       {
+        "industry": "IT设备",
+        "contribution": -0.001482
+       },
+       {
+        "industry": "广告包装",
+        "contribution": -0.001313
+       }
+      ]
+     }
+    }
+   },
+   "size_contribution": {
+    "contribution_by_decile": [
+     -0.024658,
+     0.001519,
+     0.005666,
+     0.017142,
+     0.002666,
+     0.020463,
+     0.01674,
+     0.015016,
+     0.018152,
+     0.027197
+    ],
+    "avg_weight_by_decile": [
+     0.057592,
+     0.088783,
+     0.096224,
+     0.096833,
+     0.096048,
+     0.098843,
+     0.100921,
+     0.105244,
+     0.105185,
+     0.108731
+    ],
+    "by_year": {
+     "2023": [
+      0.000292,
+      0.006849,
+      -0.003123,
+      0.010295,
+      -0.001012,
+      0.002688,
+      -0.003263,
+      -0.00709,
+      -0.005404,
+      -0.004512
+     ],
+     "2024": [
+      -0.005026,
+      -0.006572,
+      -0.005767,
+      -0.001807,
+      -0.005601,
+      -0.001411,
+      1.2e-05,
+      0.006901,
+      0.01043,
+      0.017743
+     ],
+     "2025": [
+      0.002734,
+      0.004068,
+      0.011051,
+      0.004328,
+      0.005704,
+      0.011119,
+      0.009981,
+      0.00545,
+      -0.000245,
+      -0.003525
+     ],
+     "2026": [
+      -0.022658,
+      -0.002825,
+      0.003506,
+      0.004327,
+      0.003575,
+      0.008067,
+      0.01001,
+      0.009756,
+      0.013371,
+      0.017491
+     ]
+    },
+    "total": 0.099903
+   },
+   "crowding": {
+    "vs_small_size": {
+     "2023": {
+      "n_days": 50,
+      "mean": -0.694,
+      "t": -96.09
+     },
+     "2024": {
+      "n_days": 51,
+      "mean": -0.6912,
+      "t": -49.84
+     },
+     "2025": {
+      "n_days": 53,
+      "mean": -0.5201,
+      "t": -34.45
+     },
+     "2026": {
+      "n_days": 42,
+      "mean": -0.3468,
+      "t": -24.67
+     }
+    },
+    "vs_low_vol": {
+     "2023": {
+      "n_days": 50,
+      "mean": 0.65,
+      "t": 84.14
+     },
+     "2024": {
+      "n_days": 51,
+      "mean": 0.7005,
+      "t": 66.31
+     },
+     "2025": {
+      "n_days": 53,
+      "mean": 0.6522,
+      "t": 60.82
+     },
+     "2026": {
+      "n_days": 42,
+      "mean": 0.6502,
+      "t": 83.33
+     }
+    },
+    "vs_neg_max_ret20": {
+     "2023": {
+      "n_days": 50,
+      "mean": 0.5777,
+      "t": 73.19
+     },
+     "2024": {
+      "n_days": 51,
+      "mean": 0.5886,
+      "t": 58.37
+     },
+     "2025": {
+      "n_days": 53,
+      "mean": 0.5879,
+      "t": 61.88
+     },
+     "2026": {
+      "n_days": 42,
+      "mean": 0.5826,
+      "t": 86.39
+     }
+    },
+    "industry_turnover_median": {
+     "陶瓷": 5.438,
+     "半导体": 4.2027,
+     "元器件": 3.8149,
+     "小金属": 3.431,
+     "染料涂料": 3.3964,
+     "互联网": 3.1923,
+     "玻璃": 3.1715,
+     "通信设备": 3.1078,
+     "矿物制品": 3.0842,
+     "铅锌": 3.0435,
+     "机械基件": 2.9944,
+     "石油贸易": 2.9824,
+     "轻工机械": 2.9254,
+     "种植业": 2.756,
+     "IT设备": 2.7302,
+     "塑料": 2.6806,
+     "专用机械": 2.6345,
+     "黄金": 2.5765,
+     "软件服务": 2.5419,
+     "电气设备": 2.5094,
+     "化工原料": 2.4904,
+     "铜": 2.4871,
+     "装修装饰": 2.472,
+     "电器仪表": 2.3409,
+     "纺织机械": 2.2604,
+     "渔业": 2.2504,
+     "船舶": 2.2334,
+     "文教休闲": 2.2325,
+     "铝": 2.2051,
+     "机床制造": 2.203,
+     "钢加工": 2.1318,
+     "其他商业": 2.13,
+     "房产服务": 2.08,
+     "影视音像": 2.0759,
+     "旅游景点": 2.0717,
+     "水力发电": 2.0694,
+     "石油开采": 2.012,
+     "生物制药": 2.0045,
+     "饲料": 2.0019,
+     "汽车配件": 2.0014,
+     "供气供热": 2.0004,
+     "环境保护": 1.9654,
+     "其他建材": 1.9651,
+     "焦炭加工": 1.96,
+     "广告包装": 1.9542,
+     "化学制药": 1.9457,
+     "林业": 1.9229,
+     "橡胶": 1.9201,
+     "造纸": 1.9107,
+     "旅游服务": 1.8799,
+     "乳制品": 1.8671,
+     "家居用品": 1.8609,
+     "航空": 1.8495,
+     "化纤": 1.8464,
+     "农用机械": 1.8261,
+     "综合类": 1.8245,
+     "纺织": 1.8108,
+     "化工机械": 1.7995,
+     "工程机械": 1.7956,
+     "服饰": 1.7273,
+     "区域地产": 1.6954,
+     "建筑工程": 1.6861,
+     "农药化肥": 1.6852,
+     "医疗保健": 1.6511,
+     "百货": 1.6109,
+     "新型电力": 1.6101,
+     "全国地产": 1.6054,
+     "石油加工": 1.6016,
+     "摩托车": 1.5866,
+     "农业综合": 1.5741,
+     "日用化工": 1.5574,
+     "火力发电": 1.5539,
+     "医药商业": 1.548,
+     "食品": 1.5105,
+     "水运": 1.4943,
+     "家用电器": 1.4819,
+     "中成药": 1.4597,
+     "超市连锁": 1.4151,
+     "软饮料": 1.4106,
+     "酒店餐饮": 1.404,
+     "运输设备": 1.3399,
+     "红黄酒": 1.2458,
+     "煤炭开采": 1.235,
+     "仓储物流": 1.2177,
+     "汽车整车": 1.1806,
+     "公共交通": 1.1739,
+     "多元金融": 1.1628,
+     "水泥": 1.1608,
+     "批发业": 1.1126,
+     "特种钢": 1.0845,
+     "白酒": 1.0597,
+     "啤酒": 1.0506,
+     "汽车服务": 0.9663,
+     "园区开发": 0.961,
+     "商贸代理": 0.9434,
+     "商品城": 0.9377,
+     "电器连锁": 0.9281,
+     "出版业": 0.903,
+     "水务": 0.8498,
+     "普钢": 0.7907,
+     "证券": 0.7466,
+     "公路": 0.7397,
+     "电信运营": 0.7313,
+     "港口": 0.693,
+     "空运": 0.6891,
+     "保险": 0.6714,
+     "银行": 0.6406,
+     "路桥": 0.5826,
+     "铁路": 0.5571,
+     "机场": 0.4773
+    },
+    "industry_exposure": {
+     "overweight_top5": [
+      {
+       "industry": "软件服务",
+       "active_weight": 0.003354
+      },
+      {
+       "industry": "化学制药",
+       "active_weight": 0.00134
+      },
+      {
+       "industry": "元器件",
+       "active_weight": 0.00125
+      },
+      {
+       "industry": "建筑工程",
+       "active_weight": 0.001008
+      },
+      {
+       "industry": "环境保护",
+       "active_weight": 0.000924
+      }
+     ],
+     "underweight_top5": [
+      {
+       "industry": "未知",
+       "active_weight": -0.0277
+      },
+      {
+       "industry": "汽车配件",
+       "active_weight": -0.001481
+      },
+      {
+       "industry": "半导体",
+       "active_weight": -0.001435
+      },
+      {
+       "industry": "橡胶",
+       "active_weight": -0.001166
+      },
+      {
+       "industry": "染料涂料",
+       "active_weight": -0.001099
+      }
+     ]
+    }
+   },
+   "runtime_sec": 42.88
+  },
+  "hold60": {
+   "label": "60日持有",
+   "desc": "wave3 最优净口径候选：每 60 个交易日换仓",
+   "schedule": "every60",
+   "rebalance_count": 16,
+   "avg_holdings": 1939.4,
+   "yearly": {
+    "2023": {
+     "gross_excess": -0.038864,
+     "gross_t": -1.313,
+     "net_excess": -0.057935,
+     "net_t": -1.924,
+     "gross_excess_daily_sum": -0.035631,
+     "net_excess_daily_sum": -0.054304,
+     "market_annual_return": 0.073836,
+     "turnover": 6.1879,
+     "turnover_avg": 1.2376,
+     "n_rebalances": 5,
+     "ic": 0.0818,
+     "ic_t": 6.644,
+     "ic_positive_rate": 0.6901
+    },
+    "2024": {
+     "gross_excess": -0.046231,
+     "gross_t": -1.469,
+     "net_excess": -0.061278,
+     "net_t": -1.878,
+     "gross_excess_daily_sum": -0.047649,
+     "net_excess_daily_sum": -0.062964,
+     "market_annual_return": 0.045758,
+     "turnover": 5.0468,
+     "turnover_avg": 1.2617,
+     "n_rebalances": 4,
+     "ic": 0.1184,
+     "ic_t": 6.801,
+     "ic_positive_rate": 0.7025
+    },
+    "2025": {
+     "gross_excess": 0.002704,
+     "gross_t": 0.106,
+     "net_excess": -0.01594,
+     "net_t": -0.678,
+     "gross_excess_daily_sum": 0.001693,
+     "net_excess_daily_sum": -0.011785,
+     "market_annual_return": 0.392424,
+     "turnover": 4.4769,
+     "turnover_avg": 1.1192,
+     "n_rebalances": 4,
+     "ic": 0.0712,
+     "ic_t": 6.337,
+     "ic_positive_rate": 0.6996
+    },
+    "2026": {
+     "gross_excess": 0.075464,
+     "gross_t": 2.577,
+     "net_excess": 0.066154,
+     "net_t": 2.204,
+     "gross_excess_daily_sum": 0.083155,
+     "net_excess_daily_sum": 0.073023,
+     "market_annual_return": -0.14784,
+     "turnover": 3.3567,
+     "turnover_avg": 1.1189,
+     "n_rebalances": 3,
+     "ic": 0.1039,
+     "ic_t": 5.828,
+     "ic_positive_rate": 0.6384
+    }
+   },
+   "ic_by_year": {
+    "2023": {
+     "n_days": 242,
+     "mean": 0.0818,
+     "t": 6.644,
+     "positive_rate": 0.6901
+    },
+    "2024": {
+     "n_days": 242,
+     "mean": 0.1184,
+     "t": 6.801,
+     "positive_rate": 0.7025
+    },
+    "2025": {
+     "n_days": 243,
+     "mean": 0.0712,
+     "t": 6.337,
+     "positive_rate": 0.6996
+    },
+    "2026": {
+     "n_days": 177,
+     "mean": 0.1039,
+     "t": 5.828,
+     "positive_rate": 0.6384
+    }
+   },
+   "period": {
+    "is_gross_excess": -0.08328,
+    "is_gross_t": -1.971,
+    "is_net_t": -2.678,
+    "oos_gross_excess": 0.084849,
+    "oos_gross_t": 2.345,
+    "oos_net_t": 1.628,
+    "cum_cost_drag": 0.055697
+   },
+   "regime": {
+    "lookback_days": 20,
+    "thresholds": "trailing 20 日等权市场收益全样本 1/3、2/3 分位",
+    "stats": {
+     "上涨": {
+      "n_days": 314,
+      "gross_excess_sum": -0.067201,
+      "gross_excess_mean_bp": -2.1401,
+      "gross_t": -2.4488,
+      "win_rate": 0.465,
+      "net_excess_sum": -0.078254
+     },
+     "震荡": {
+      "n_days": 306,
+      "gross_excess_sum": -0.009888,
+      "gross_excess_mean_bp": -0.3231,
+      "gross_t": -0.421,
+      "win_rate": 0.4706,
+      "net_excess_sum": -0.038565
+     },
+     "下跌": {
+      "n_days": 304,
+      "gross_excess_sum": 0.078657,
+      "gross_excess_mean_bp": 2.5874,
+      "gross_t": 1.8592,
+      "win_rate": 0.5329,
+      "net_excess_sum": 0.060791
+     }
+    },
+    "stats_is": {
+     "上涨": {
+      "n_days": 124,
+      "gross_excess_sum": -0.075334,
+      "gross_excess_mean_bp": -6.0753,
+      "gross_t": -3.4473,
+      "win_rate": 0.3952,
+      "net_excess_sum": -0.083017
+     },
+     "震荡": {
+      "n_days": 194,
+      "gross_excess_sum": -0.016599,
+      "gross_excess_mean_bp": -0.8556,
+      "gross_t": -0.8691,
+      "win_rate": 0.4433,
+      "net_excess_sum": -0.031922
+     },
+     "下跌": {
+      "n_days": 165,
+      "gross_excess_sum": 0.008653,
+      "gross_excess_mean_bp": 0.5244,
+      "gross_t": 0.2856,
+      "win_rate": 0.503,
+      "net_excess_sum": -0.002328
+     }
+    },
+    "stats_oos": {
+     "上涨": {
+      "n_days": 190,
+      "gross_excess_sum": 0.008133,
+      "gross_excess_mean_bp": 0.4281,
+      "gross_t": 0.518,
+      "win_rate": 0.5105,
+      "net_excess_sum": 0.004763
+     },
+     "震荡": {
+      "n_days": 112,
+      "gross_excess_sum": 0.006711,
+      "gross_excess_mean_bp": 0.5992,
+      "gross_t": 0.4906,
+      "win_rate": 0.5179,
+      "net_excess_sum": -0.006643
+     },
+     "下跌": {
+      "n_days": 139,
+      "gross_excess_sum": 0.070004,
+      "gross_excess_mean_bp": 5.0363,
+      "gross_t": 2.3836,
+      "win_rate": 0.5683,
+      "net_excess_sum": 0.063119
+     }
+    },
+    "ic": {
+     "上涨": {
+      "n_days": 2,
+      "mean": -0.0549,
+      "t": -0.245
+     },
+     "震荡": {
+      "n_days": 9,
+      "mean": 0.2212,
+      "t": 3.05
+     },
+     "下跌": {
+      "n_days": 5,
+      "mean": 0.2325,
+      "t": 1.851
+     }
+    },
+    "bear_peak_trough": {
+     "year": "2026",
+     "peak_date": "20260513",
+     "trough_date": "20261030",
+     "market_ret": -0.243141,
+     "max_drawdown": -0.243141,
+     "portfolio_gross_excess": 0.088349,
+     "portfolio_net_excess": 0.081646,
+     "portfolio_gross_t": 2.852
+    }
+   },
+   "industry_contribution": {
+    "total": 0.00863,
+    "n_industries": 111,
+    "top10": [
+     {
+      "industry": "元器件",
+      "contribution": 0.037816
+     },
+     {
+      "industry": "通信设备",
+      "contribution": 0.018015
+     },
+     {
+      "industry": "半导体",
+      "contribution": 0.015389
+     },
+     {
+      "industry": "专用机械",
+      "contribution": 0.014871
+     },
+     {
+      "industry": "机械基件",
+      "contribution": 0.014092
+     },
+     {
+      "industry": "软件服务",
+      "contribution": 0.01161
+     },
+     {
+      "industry": "塑料",
+      "contribution": 0.004821
+     },
+     {
+      "industry": "染料涂料",
+      "contribution": 0.00463
+     },
+     {
+      "industry": "互联网",
+      "contribution": 0.004066
+     },
+     {
+      "industry": "玻璃",
+      "contribution": 0.003709
+     }
+    ],
+    "bottom10": [
+     {
+      "industry": "医疗保健",
+      "contribution": -0.011569
+     },
+     {
+      "industry": "环境保护",
+      "contribution": -0.010291
+     },
+     {
+      "industry": "化学制药",
+      "contribution": -0.00825
+     },
+     {
+      "industry": "建筑工程",
+      "contribution": -0.008235
+     },
+     {
+      "industry": "食品",
+      "contribution": -0.00613
+     },
+     {
+      "industry": "中成药",
+      "contribution": -0.005884
+     },
+     {
+      "industry": "生物制药",
+      "contribution": -0.004822
+     },
+     {
+      "industry": "家居用品",
+      "contribution": -0.004315
+     },
+     {
+      "industry": "仓储物流",
+      "contribution": -0.003637
+     },
+     {
+      "industry": "广告包装",
+      "contribution": -0.003306
+     }
+    ],
+    "by_year": {
+     "2023": {
+      "top5": [
+       {
+        "industry": "元器件",
+        "contribution": 0.010673
+       },
+       {
+        "industry": "软件服务",
+        "contribution": 0.009682
+       },
+       {
+        "industry": "通信设备",
+        "contribution": 0.009495
+       },
+       {
+        "industry": "互联网",
+        "contribution": 0.003331
+       },
+       {
+        "industry": "机械基件",
+        "contribution": 0.00253
+       }
+      ],
+      "bottom5": [
+       {
+        "industry": "化工原料",
+        "contribution": -0.009806
+       },
+       {
+        "industry": "医疗保健",
+        "contribution": -0.006482
+       },
+       {
+        "industry": "电气设备",
+        "contribution": -0.005728
+       },
+       {
+        "industry": "化学制药",
+        "contribution": -0.004898
+       },
+       {
+        "industry": "建筑工程",
+        "contribution": -0.002814
+       }
+      ]
+     },
+     "2024": {
+      "top5": [
+       {
+        "industry": "通信设备",
+        "contribution": 0.00438
+       },
+       {
+        "industry": "银行",
+        "contribution": 0.001753
+       },
+       {
+        "industry": "元器件",
+        "contribution": 0.001528
+       },
+       {
+        "industry": "文教休闲",
+        "contribution": 0.001487
+       },
+       {
+        "industry": "互联网",
+        "contribution": 0.001465
+       }
+      ],
+      "bottom5": [
+       {
+        "industry": "医疗保健",
+        "contribution": -0.005583
+       },
+       {
+        "industry": "化学制药",
+        "contribution": -0.005239
+       },
+       {
+        "industry": "环境保护",
+        "contribution": -0.005114
+       },
+       {
+        "industry": "化工原料",
+        "contribution": -0.004971
+       },
+       {
+        "industry": "建筑工程",
+        "contribution": -0.004403
+       }
+      ]
+     },
+     "2025": {
+      "top5": [
+       {
+        "industry": "汽车配件",
+        "contribution": 0.008554
+       },
+       {
+        "industry": "专用机械",
+        "contribution": 0.007192
+       },
+       {
+        "industry": "化工原料",
+        "contribution": 0.00631
+       },
+       {
+        "industry": "机械基件",
+        "contribution": 0.00628
+       },
+       {
+        "industry": "电气设备",
+        "contribution": 0.005412
+       }
+      ],
+      "bottom5": [
+       {
+        "industry": "中成药",
+        "contribution": -0.004138
+       },
+       {
+        "industry": "环境保护",
+        "contribution": -0.003205
+       },
+       {
+        "industry": "食品",
+        "contribution": -0.002862
+       },
+       {
+        "industry": "家用电器",
+        "contribution": -0.0027
+       },
+       {
+        "industry": "证券",
+        "contribution": -0.002528
+       }
+      ]
+     },
+     "2026": {
+      "top5": [
+       {
+        "industry": "元器件",
+        "contribution": 0.021694
+       },
+       {
+        "industry": "半导体",
+        "contribution": 0.014626
+       },
+       {
+        "industry": "专用机械",
+        "contribution": 0.010397
+       },
+       {
+        "industry": "机械基件",
+        "contribution": 0.007464
+       },
+       {
+        "industry": "化工原料",
+        "contribution": 0.00605
+       }
+      ],
+      "bottom5": [
+       {
+        "industry": "汽车配件",
+        "contribution": -0.007081
+       },
+       {
+        "industry": "软件服务",
+        "contribution": -0.003313
+       },
+       {
+        "industry": "航空",
+        "contribution": -0.001477
+       },
+       {
+        "industry": "IT设备",
+        "contribution": -0.001312
+       },
+       {
+        "industry": "工程机械",
+        "contribution": -0.000959
+       }
+      ]
+     }
+    }
+   },
+   "size_contribution": {
+    "contribution_by_decile": [
+     -0.037701,
+     -0.041881,
+     -0.019836,
+     -0.007902,
+     -0.009581,
+     0.003944,
+     0.019255,
+     0.014151,
+     0.036733,
+     0.051448
+    ],
+    "avg_weight_by_decile": [
+     0.054234,
+     0.08611,
+     0.094297,
+     0.098523,
+     0.097684,
+     0.100614,
+     0.105337,
+     0.103298,
+     0.106907,
+     0.11051
+    ],
+    "by_year": {
+     "2023": [
+      -0.001799,
+      -0.013888,
+      -0.002194,
+      0.000829,
+      -0.005285,
+      -0.003758,
+      -0.001023,
+      -0.006329,
+      -0.001706,
+      0.004006
+     ],
+     "2024": [
+      -0.017017,
+      -0.017925,
+      -0.008671,
+      -0.008855,
+      -0.004199,
+      -0.008311,
+      -0.004206,
+      0.000243,
+      0.00731,
+      0.014963
+     ],
+     "2025": [
+      -0.004925,
+      -0.008361,
+      -0.003022,
+      -0.001656,
+      -0.004611,
+      0.008803,
+      0.005275,
+      0.002115,
+      0.006655,
+      0.002156
+     ],
+     "2026": [
+      -0.01396,
+      -0.001707,
+      -0.005949,
+      0.001781,
+      0.004514,
+      0.00721,
+      0.019209,
+      0.018122,
+      0.024474,
+      0.030324
+     ]
+    },
+    "total": 0.00863
+   },
+   "crowding": {
+    "vs_small_size": {
+     "2023": {
+      "n_days": 5,
+      "mean": -0.6772,
+      "t": -20.37
+     },
+     "2024": {
+      "n_days": 4,
+      "mean": -0.6793,
+      "t": -17.07
+     },
+     "2025": {
+      "n_days": 4,
+      "mean": -0.5085,
+      "t": -9.85
+     },
+     "2026": {
+      "n_days": 3,
+      "mean": -0.3264,
+      "t": -4.37
+     }
+    },
+    "vs_low_vol": {
+     "2023": {
+      "n_days": 5,
+      "mean": 0.6721,
+      "t": 72.98
+     },
+     "2024": {
+      "n_days": 4,
+      "mean": 0.6924,
+      "t": 10.55
+     },
+     "2025": {
+      "n_days": 4,
+      "mean": 0.6739,
+      "t": 44.5
+     },
+     "2026": {
+      "n_days": 3,
+      "mean": 0.6879,
+      "t": 31.98
+     }
+    },
+    "vs_neg_max_ret20": {
+     "2023": {
+      "n_days": 5,
+      "mean": 0.5972,
+      "t": 34.25
+     },
+     "2024": {
+      "n_days": 4,
+      "mean": 0.5918,
+      "t": 9.26
+     },
+     "2025": {
+      "n_days": 4,
+      "mean": 0.5998,
+      "t": 31.52
+     },
+     "2026": {
+      "n_days": 3,
+      "mean": 0.6199,
+      "t": 30.27
+     }
+    },
+    "industry_turnover_median": {
+     "陶瓷": 5.438,
+     "半导体": 4.2027,
+     "元器件": 3.8149,
+     "小金属": 3.431,
+     "染料涂料": 3.3964,
+     "互联网": 3.1923,
+     "玻璃": 3.1715,
+     "通信设备": 3.1078,
+     "矿物制品": 3.0842,
+     "铅锌": 3.0435,
+     "机械基件": 2.9944,
+     "石油贸易": 2.9824,
+     "轻工机械": 2.9254,
+     "种植业": 2.756,
+     "IT设备": 2.7302,
+     "塑料": 2.6806,
+     "专用机械": 2.6345,
+     "黄金": 2.5765,
+     "软件服务": 2.5419,
+     "电气设备": 2.5094,
+     "化工原料": 2.4904,
+     "铜": 2.4871,
+     "装修装饰": 2.472,
+     "电器仪表": 2.3409,
+     "纺织机械": 2.2604,
+     "渔业": 2.2504,
+     "船舶": 2.2334,
+     "文教休闲": 2.2325,
+     "铝": 2.2051,
+     "机床制造": 2.203,
+     "钢加工": 2.1318,
+     "其他商业": 2.13,
+     "房产服务": 2.08,
+     "影视音像": 2.0759,
+     "旅游景点": 2.0717,
+     "水力发电": 2.0694,
+     "石油开采": 2.012,
+     "生物制药": 2.0045,
+     "饲料": 2.0019,
+     "汽车配件": 2.0014,
+     "供气供热": 2.0004,
+     "环境保护": 1.9654,
+     "其他建材": 1.9651,
+     "焦炭加工": 1.96,
+     "广告包装": 1.9542,
+     "化学制药": 1.9457,
+     "林业": 1.9229,
+     "橡胶": 1.9201,
+     "造纸": 1.9107,
+     "旅游服务": 1.8799,
+     "乳制品": 1.8671,
+     "家居用品": 1.8609,
+     "航空": 1.8495,
+     "化纤": 1.8464,
+     "农用机械": 1.8261,
+     "综合类": 1.8245,
+     "纺织": 1.8108,
+     "化工机械": 1.7995,
+     "工程机械": 1.7956,
+     "服饰": 1.7273,
+     "区域地产": 1.6954,
+     "建筑工程": 1.6861,
+     "农药化肥": 1.6852,
+     "医疗保健": 1.6511,
+     "百货": 1.6109,
+     "新型电力": 1.6101,
+     "全国地产": 1.6054,
+     "石油加工": 1.6016,
+     "摩托车": 1.5866,
+     "农业综合": 1.5741,
+     "日用化工": 1.5574,
+     "火力发电": 1.5539,
+     "医药商业": 1.548,
+     "食品": 1.5105,
+     "水运": 1.4943,
+     "家用电器": 1.4819,
+     "中成药": 1.4597,
+     "超市连锁": 1.4151,
+     "软饮料": 1.4106,
+     "酒店餐饮": 1.404,
+     "运输设备": 1.3399,
+     "红黄酒": 1.2458,
+     "煤炭开采": 1.235,
+     "仓储物流": 1.2177,
+     "汽车整车": 1.1806,
+     "公共交通": 1.1739,
+     "多元金融": 1.1628,
+     "水泥": 1.1608,
+     "批发业": 1.1126,
+     "特种钢": 1.0845,
+     "白酒": 1.0597,
+     "啤酒": 1.0506,
+     "汽车服务": 0.9663,
+     "园区开发": 0.961,
+     "商贸代理": 0.9434,
+     "商品城": 0.9377,
+     "电器连锁": 0.9281,
+     "出版业": 0.903,
+     "水务": 0.8498,
+     "普钢": 0.7907,
+     "证券": 0.7466,
+     "公路": 0.7397,
+     "电信运营": 0.7313,
+     "港口": 0.693,
+     "空运": 0.6891,
+     "保险": 0.6714,
+     "银行": 0.6406,
+     "路桥": 0.5826,
+     "铁路": 0.5571,
+     "机场": 0.4773
+    },
+    "industry_exposure": {
+     "overweight_top5": [
+      {
+       "industry": "软件服务",
+       "active_weight": 0.004584
+      },
+      {
+       "industry": "化学制药",
+       "active_weight": 0.001534
+      },
+      {
+       "industry": "元器件",
+       "active_weight": 0.001504
+      },
+      {
+       "industry": "电气设备",
+       "active_weight": 0.00137
+      },
+      {
+       "industry": "互联网",
+       "active_weight": 0.001149
+      }
+     ],
+     "underweight_top5": [
+      {
+       "industry": "未知",
+       "active_weight": -0.0277
+      },
+      {
+       "industry": "半导体",
+       "active_weight": -0.001438
+      },
+      {
+       "industry": "橡胶",
+       "active_weight": -0.001325
+      },
+      {
+       "industry": "家居用品",
+       "active_weight": -0.001227
+      },
+      {
+       "industry": "纺织",
+       "active_weight": -0.001223
+      }
+     ]
+    }
+   },
+   "runtime_sec": 14.35
+  }
+ },
+ "conclusion": {
+  "negative_is_years": [
+   "2023"
+  ],
+  "negative_is_years_hold60": [
+   "2023",
+   "2024"
+  ],
+  "ic_sign_negative_is_years": [],
+  "is_ic": {
+   "2023": 0.0818,
+   "2024": 0.1184
+  },
+  "worst_regime_state": "上涨",
+  "regime_dependent": true,
+  "regime_dependence_evidence": {
+   "weekly_baseline": {
+    "上涨": {
+     "n_days": 314,
+     "gross_excess_sum": 0.01924,
+     "gross_excess_mean_bp": 0.6127,
+     "gross_t": 0.7015,
+     "win_rate": 0.5127,
+     "net_excess_sum": -0.154877
+    },
+    "下跌": {
+     "n_days": 304,
+     "gross_excess_sum": 0.03864,
+     "gross_excess_mean_bp": 1.2711,
+     "gross_t": 1.1652,
+     "win_rate": 0.5296,
+     "net_excess_sum": -0.139471
+    },
+    "上涨_IS": {
+     "n_days": 124,
+     "gross_excess_sum": -0.008044,
+     "gross_excess_mean_bp": -0.6487,
+     "gross_t": -0.3611,
+     "win_rate": 0.5161,
+     "net_excess_sum": -0.089768
+    },
+    "下跌_IS": {
+     "n_days": 165,
+     "gross_excess_sum": -0.000602,
+     "gross_excess_mean_bp": -0.0365,
+     "gross_t": -0.0238,
+     "win_rate": 0.5212,
+     "net_excess_sum": -0.109037
+    }
+   },
+   "hold60": {
+    "上涨": {
+     "n_days": 314,
+     "gross_excess_sum": -0.067201,
+     "gross_excess_mean_bp": -2.1401,
+     "gross_t": -2.4488,
+     "win_rate": 0.465,
+     "net_excess_sum": -0.078254
+    },
+    "下跌": {
+     "n_days": 304,
+     "gross_excess_sum": 0.078657,
+     "gross_excess_mean_bp": 2.5874,
+     "gross_t": 1.8592,
+     "win_rate": 0.5329,
+     "net_excess_sum": 0.060791
+    },
+    "上涨_IS": {
+     "n_days": 124,
+     "gross_excess_sum": -0.075334,
+     "gross_excess_mean_bp": -6.0753,
+     "gross_t": -3.4473,
+     "win_rate": 0.3952,
+     "net_excess_sum": -0.083017
+    },
+    "下跌_IS": {
+     "n_days": 165,
+     "gross_excess_sum": 0.008653,
+     "gross_excess_mean_bp": 0.5244,
+     "gross_t": 0.2856,
+     "win_rate": 0.503,
+     "net_excess_sum": -0.002328
+    }
+   }
+  },
+  "crowding_avg_corr": {
+   "vs_small_size": -0.563,
+   "vs_low_vol": 0.6632,
+   "vs_neg_max_ret20": 0.5842
+  },
+  "factor_decay_suspected": false,
+  "crowded_suspected": true,
+  "root_cause": "style_crowding(低换手≈大市值+低波防御) + regime-dependent(尤其长持有)",
+  "text_lines": [
+   "**根因判断（数字驱动）：**",
+   "",
+   "1. **因子失效：否。** IS 两年 IC 仍显著为正：2023 0.0818（t=6.64）、2024 0.1184（t=6.80）→ 截面排序方向在 IS 有效，负超额来自组合层面的风格/行业暴露被反转，而不是「低换手不再有效」。",
+   "",
+   "2. **regime：是，低换手本质是「防御型」因子（长持有版本尤其显著）。** 全样本分状态毛超额：上涨 +1.92%（t=0.70）、震荡 +2.55%（t=1.17）、下跌 +3.86%（t=1.17）。",
+   "   `hold60` 更极端：上涨市毛超额 -6.72%（t=-2.45，显著为负）、下跌市 +7.87%（t=1.86）；2026 熊市段 20260513→20261030（等权市场 -24.31%）组合毛超额 +8.83%（t=2.85）。",
+   "",
+   "3. **拥挤：是（因子≈风格代理，不独立）。** low_turnover(signed) 与风格代理的逐年截面相关均值：小市值 -0.563、低波 0.663、低MAX 0.584。与小市值负相关（≈−0.6~−0.7）= 低换手股票偏大市值；与低波正相关≈+0.65 → 因子收益大部分可由「大市值+低波防御」风格解释，不是独立的拥挤度 alpha。",
+   "",
+   "4. **2023-24 负超额的具体来源（行业/市值拆解）**：2023 行业拖累 电气设备 -1.06%；化工原料 -0.76%；医疗保健 -0.49%；2024 拖累 化工原料 -0.87%；医疗保健 -0.73%；电器仪表 -0.56%（正向 元器件 +1.46%；软件服务 +1.35%；通信设备 +0.43%）。市值分位：全样本 D0(最小) -2.47% vs D9(最大) +2.72% → 小市值桶内选股明显跑输，而 2023-24 是低换手/防御风格逆风期，2026 年初（D0 拖累最大）同样验证这一点。",
+   "",
+   "5. **IS/OOS × 状态拆解（weekly）**：IS（2023-2024）上涨 -0.80%（t=-0.36）、震荡 -0.19%（t=-0.11）、下跌 -0.06%（t=-0.02）；OOS（2025-2026）上涨 +2.73%、震荡 +2.74%、下跌 +3.92% → IS 的负超额不是单一年份/状态造成，而是**多状态的风格逆风 + 行业拖累**，regime 是放大器而非唯一原因。",
+   "",
+   "**是否值得继续 / 能否当全天候：**",
+   "",
+   "- **不能当全天候策略**：`hold60` 在等权市场上涨状态毛超额 -6.72%（t=-2.45），且 OOS t=1.63、逐年净仅 1/4 同向，单靠自己不足以支撑独立策略。",
+   "- **有条件的防御价值**：下跌/熊市段表现强（2026 熊市段 hold60 毛超额 +8.83%、t=2.85；周频 +4.49%、t=2.13），可作为「低波防御卫星」叠加在动量/成长主策略上互补，或用 regime 条件（上涨状态降权/停用）控制回撤——但 regime 阈值用全样本分位，实盘需滚动估计。",
+   "- **不建议作为独立高频中性 alpha 继续投入**：IC 虽正但组合超额被风格暴露吃掉，2023-24 的负超额说明其收益高度依赖市场风格周期。若继续，应改造成「风格剥离后的残差因子」（对低波/大市值做双重中性）或在风格中性约束下重新检验。",
+   ""
+  ]
+ },
+ "notes": [
+  "归因主口径为 `weekly_baseline`（与 wave2 逐年/IS 数字可直接对照），`hold60` 为 wave3 最优净口径候选的对照；两者均为中性化组合（宽口径、约 2000 只），超额是「同市值/行业暴露下选股是否有效」的下界式检验。",
+  "IC = 逐日截面 Spearman(signed factor=−turnover_rate, 20 日 forward CAR)，CAR 未扣成本（成本为统一平移不影响排序，与 factor_validate 的扣 30bp 口径等价）；信号日 IC 用全部交易日计算（不限于调仓日），日频重叠 CAR 的 t 偏大（仅作量级参考）。",
+  "市场状态 = 过去 20 日等权市场收益的全样本 1/3、2/3 分位（上涨>2/3、下跌<1/3、其余震荡）；状态标签用 t−1 收盘可知信息、收益按 t 日归因，无未来函数；但分位阈值用了全样本 → 属描述性归因（不是可交易 regime 择时信号）。",
+  "贡献拆解为逐日 Brinson 式：Σ holdings_t ×(个股日收益 − 等权市场日收益)，按行业/市值十分位累计（算术）；与组合官方日频毛超额口径（等权基准净值）存在基准构造细节差异，合计值近似相等。",
+  "市值十分位按调仓信号日 circ_mv 分桶，调仓间沿用最近一次映射；行业取 stock_basic.industry。",
+  "拥挤度代理为截面相关（ρ 高说明因子与某风格高度重合、alpha 可能只是风格暴露）；「换手率行业分布」用近 120 个交易日中位数（近似当前结构），非历史时点分布。",
+  "中性组合从简：停牌/涨跌停不做不可买/不可卖模拟（缺价冻结估值）；股票池为当前 stock_basic 名单（轻微幸存者偏差），与 factor_lib/factor_validate 同口径。",
+  "净口径成本 30bp 单边、由毛净值×换手解析折算；本归因只解释「毛超额」的来源，净超额按变体平均换手随年份变化（见逐年表）。"
+ ]
+}

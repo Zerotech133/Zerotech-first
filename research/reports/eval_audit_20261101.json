@@ -1,0 +1,325 @@
+{
+ "meta": {
+  "schema_version": "eval_audit.v1",
+  "generated_at": "2026-11-01T09:43:27+08:00",
+  "wave9_json": "C:\\项目\\老田的AI助手\\research\\reports\\search_v2_eval_ext_20261101.json",
+  "wave10_json": "C:\\项目\\老田的AI助手\\research\\reports\\search_v2_eval_ext2_20261101.json",
+  "n_wave9": 41,
+  "n_wave10": 89,
+  "n_overlap": 41,
+  "overlap_ids": [
+   "Q01",
+   "Q02",
+   "Q03",
+   "Q04",
+   "Q05",
+   "Q06",
+   "Q07",
+   "Q08",
+   "Q09",
+   "Q10",
+   "Q11",
+   "Q12",
+   "Q13",
+   "Q14",
+   "Q15",
+   "Q16",
+   "Q17",
+   "Q18",
+   "Q19",
+   "Q20",
+   "Q21",
+   "Q22",
+   "Q23",
+   "Q24",
+   "Q25",
+   "Q26",
+   "Q27",
+   "Q28",
+   "Q29",
+   "Q30",
+   "Q31",
+   "Q32",
+   "Q33",
+   "Q34",
+   "Q35",
+   "Q36",
+   "Q37",
+   "Q38",
+   "Q39",
+   "Q40",
+   "Q41"
+  ],
+  "topk": 5,
+  "principle": "同一子集只改一个变量：先固定 41 条看口径效应，再固定口径看查询集效应"
+ },
+ "overlap_validation": {
+  "annotation_identical": 41,
+  "annotation_changed": [],
+  "reproduction_max_abs_diff": {
+   "v1": 0.0,
+   "v2": 0.0
+  },
+  "reproduced_exactly": true,
+  "note": "用 wave10 分级 grades 复算仅 grade-2 口径 P@5，逐条对齐 wave9 存档 → 相同检索器/数据下两阶段可复现；差异只可能来自标注口径或查询集"
+ },
+ "stages": {
+  "wave9_reported_41": {
+   "v1": {
+    "n": 41,
+    "precision_at_k": 0.5854
+   },
+   "v2": {
+    "n": 41,
+    "precision_at_k": 0.7268
+   }
+  },
+  "overlap_41_g2": {
+   "v1": {
+    "n": 41,
+    "precision_at_k": 0.5854,
+    "coverage": 0.7947,
+    "hit_rate": 0.9024
+   },
+   "v2": {
+    "n": 41,
+    "precision_at_k": 0.7268,
+    "coverage": 0.9268,
+    "hit_rate": 1.0
+   }
+  },
+  "overlap_41_graded": {
+   "v1": {
+    "n": 41,
+    "precision_at_k": 0.639,
+    "coverage": 0.7947,
+    "hit_rate": 0.9024,
+    "ndcg_at_k": 0.7312
+   },
+   "v2": {
+    "n": 41,
+    "precision_at_k": 0.7951,
+    "coverage": 0.9268,
+    "hit_rate": 1.0,
+    "ndcg_at_k": 0.8744
+   }
+  },
+  "full_89_graded": {
+   "v1": {
+    "n": 89,
+    "precision_at_k": 0.6831,
+    "coverage": 0.8371,
+    "hit_rate": 0.9551,
+    "ndcg_at_k": 0.7552
+   },
+   "v2": {
+    "n": 89,
+    "precision_at_k": 0.7281,
+    "coverage": 0.9111,
+    "hit_rate": 1.0,
+    "ndcg_at_k": 0.8054
+   }
+  }
+ },
+ "delta_decomposition": {
+  "stages": {
+   "wave9_reported": 0.1414,
+   "wave9_reproduced_g2_41": 0.1414,
+   "wave10_overlap_graded_41": 0.1561,
+   "wave10_full_89": 0.045
+  },
+  "effects": {
+   "annotation_effect_on_delta": 0.0147,
+   "query_selection_effect_on_delta": -0.1111,
+   "total_delta_change": -0.0964
+  }
+ },
+ "significance": {
+  "wave9_reported": {
+   "t": 2.335,
+   "p": 0.0195,
+   "n": 41
+  },
+  "overlap_41_g2_rule": {
+   "paired_t": {
+    "n": 41,
+    "mean": 0.1415,
+    "sd": 0.3879,
+    "t": 2.335,
+    "p_two_sided": 0.0195
+   },
+   "bootstrap": {
+    "n": 41,
+    "n_boot": 2000,
+    "mean": 0.1415,
+    "ci_low": 0.0244,
+    "ci_high": 0.2585,
+    "significant": true
+   }
+  },
+  "overlap_41_graded_rule": {
+   "paired_t": {
+    "n": 41,
+    "mean": 0.1561,
+    "sd": 0.3755,
+    "t": 2.6616,
+    "p_two_sided": 0.0078
+   },
+   "bootstrap": {
+    "n": 41,
+    "n_boot": 2000,
+    "mean": 0.1561,
+    "ci_low": 0.039,
+    "ci_high": 0.2732,
+    "significant": true
+   }
+  },
+  "full_89_graded_rule": {
+   "paired_t": {
+    "n": 89,
+    "mean": 0.0449,
+    "sd": 0.3341,
+    "t": 1.2692,
+    "p_two_sided": 0.2044
+   },
+   "bootstrap": {
+    "n": 89,
+    "n_boot": 2000,
+    "mean": 0.0449,
+    "ci_low": -0.0225,
+    "ci_high": 0.1146,
+    "significant": false
+   }
+  },
+  "wave9_annotation_sensitivity": {
+   "three_field": {
+    "aggregate": {
+     "v1": {
+      "precision_at_k": 0.5854,
+      "coverage": 0.878,
+      "hit_rate": 0.9024
+     },
+     "v2": {
+      "precision_at_k": 0.7268,
+      "coverage": 0.9878,
+      "hit_rate": 1.0
+     },
+     "delta": {
+      "precision_at_k": 0.1414,
+      "coverage": 0.1098,
+      "hit_rate": 0.0976
+     }
+    },
+    "significance": {
+     "precision_at_k_paired_t": {
+      "n": 41,
+      "mean": 0.1415,
+      "sd": 0.3879,
+      "t": 2.335,
+      "p_two_sided": 0.0195
+     },
+     "hit_rate_mcnemar": {
+      "b": 4,
+      "c": 0,
+      "n_discordant": 4,
+      "p_two_sided": 0.125
+     },
+     "alpha": 0.05,
+     "significant": true
+    }
+   },
+   "concept_only": {
+    "aggregate": {
+     "v1": {
+      "precision_at_k": 0.4976,
+      "coverage": 0.878,
+      "hit_rate": 0.878
+     },
+     "v2": {
+      "precision_at_k": 0.522,
+      "coverage": 0.9878,
+      "hit_rate": 0.9756
+     },
+     "delta": {
+      "precision_at_k": 0.0244,
+      "coverage": 0.1098,
+      "hit_rate": 0.0976
+     }
+    },
+    "significance": {
+     "precision_at_k_paired_t": {
+      "n": 41,
+      "mean": 0.0244,
+      "sd": 0.3555,
+      "t": 0.4393,
+      "p_two_sided": 0.6605
+     },
+     "hit_rate_mcnemar": {
+      "b": 4,
+      "c": 0,
+      "n_discordant": 4,
+      "p_two_sided": 0.125
+     },
+     "alpha": 0.05,
+     "significant": false
+    }
+   },
+   "note": "三字段口径（默认）把同一知识点在不同单元的命名差异（如 concept=量学理论、claim 含量柱）也计入相关，更贴近人工判断；仅 concept 口径更严格。两口径下 v2 方向一致，但仅三字段口径的 P@5 提升达到统计显著 → 结论对标注口径敏感，需在扩大样本/人工分级复核后定论。"
+  }
+ },
+ "composition": {
+  "overlap_types": {
+   "主题": 18,
+   "同义词": 8,
+   "AND": 5,
+   "OR": 4,
+   "短语": 3,
+   "排除": 3
+  },
+  "new_types": {
+   "主题": 26,
+   "短查询": 5,
+   "AND": 5,
+   "OR": 4,
+   "长查询": 3,
+   "短语": 3,
+   "排除": 2
+  },
+  "new_subset": {
+   "v1": {
+    "n": 48,
+    "precision_at_k": 0.7208,
+    "coverage": 0.8733,
+    "hit_rate": 1.0,
+    "ndcg_at_k": 0.7757
+   },
+   "v2": {
+    "n": 48,
+    "precision_at_k": 0.6708,
+    "coverage": 0.8976,
+    "hit_rate": 1.0,
+    "ndcg_at_k": 0.7465
+   }
+  },
+  "new_subset_delta_p5": -0.05
+ },
+ "conclusion": {
+  "trustworthy_stage": "wave10（89 条，分级标注 + bootstrap CI）",
+  "rationale": "同一 41 条子集上：仅改标注口径（g2→grade>0），提升从 +0.141 变为 +0.156（标注效应 +0.015）；固定口径再加 48 条新查询，提升回到 +0.045（查询选择效应 -0.111）。p 值：0.0195 → 0.0078 → 0.2044；全量 89 条 bootstrap 95% CI [-0.0225, 0.1146] 含 0 → wave9 的显著结论不可复现，属于小样本 + 查询构成（新增查询含更多 AND/主题类，v2 严格 AND 在其中吃亏）叠加下的乐观偏差。",
+  "effect_size_note": "规模效应明显：41 条的 ΔP@5 比 89 条大 3.1×，符合小样本效应量波动规律；不能以 41 条结果宣称 v2 精度显著更优。",
+  "statement_norms": {
+   "allowed": [
+    "v2 提升覆盖率与命中率（89 条：覆盖率 +0.074、命中率 +0.045，命中率 95.5%→100%）",
+    "v2 在同义词/别名类查询上收益显著（P@5 0.275→0.850，n=8）",
+    "v2 的 NDCG@5 方向性更高（+0.050）但 95% CI 含 0，未达统计显著",
+    "v1 作为回退稳定可用；v2 默认上线属产品选择（覆盖率收益）而非统计显著精度收益"
+   ],
+   "forbidden": [
+    "「v2 精度显著优于 v1」（89 条 P@5 p=0.204、NDCG p=0.106，均不显著）",
+    "「v2 P@5 +0.141」（wave9 41 条结果，扩样后不可复现）",
+    "只报 p 值不报 CI/n 或只报显著子集（如只报同义词类）",
+    "在评测后修改标注关键词以提高指标（事后调参，需按规范冻结并做敏感性分析）"
+   ]
+  }
+ }
+}

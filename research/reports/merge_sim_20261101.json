@@ -1,0 +1,258 @@
+{
+ "schema_version": 1,
+ "date": "20261101",
+ "generated_at": "2026-11-01T10:09:40+08:00",
+ "generator": "tools/kb_corpus/merge_sim.py",
+ "mode": "in_memory_simulation",
+ "source": {
+  "units_all": {
+   "path": "C:\\项目\\老田的AI助手\\portal\\static\\kb_units_all.json",
+   "exists": true,
+   "error": null,
+   "declared_total": 498,
+   "loaded_units": 498,
+   "retrieval_units": 498,
+   "sha1_before": "0a2c0aa9e9325fb3203c161a7fef9c02181d3e05"
+  },
+  "dedup": "C:\\项目\\老田的AI助手\\research\\reports\\concept_dedup_20261101.json",
+  "questions": "C:\\项目\\老田的AI助手\\research\\reports\\kb_qa_questions_20261101.json"
+ },
+ "policy": {
+  "merge_source": "concept_dedup_20261101.json groups[action=merge]+alias_map",
+  "merge_strategy": "保留主单元、剔除被合并单元；被合并单元 alias 重映射到主单元",
+  "modifies_real_data": false,
+  "topk": 5,
+  "eval_chain": "kb_qa.search（unit-side 检索；corpus chunk 支路默认关闭以隔离单元合并影响、避免 99 次语料全量扫描）",
+  "corpus_enabled": false,
+  "views": {
+   "baseline": "原始单元集 + 原始问题 source_unit_id",
+   "merged_alias": "合并后单元集 + 问题 source_unit_id 按 alias 重映射（公平口径）",
+   "merged_raw": "合并后单元集 + 原始问题 source_unit_id（风险口径）"
+  }
+ },
+ "merge_plan": {
+  "groups": [
+   {
+    "group_id": "CG-003",
+    "concept_forms": [
+     "东盟中小微企业（MSME）经济地位"
+    ],
+    "al_primary_unit_id": "828edf428bd9",
+    "primary_unit_id": "a1ad2c883391",
+    "dropped_unit_ids": [
+     "7f5dacb982da"
+    ],
+    "count_before": 2,
+    "count_after": 1,
+    "action": "merge"
+   },
+   {
+    "group_id": "CG-004",
+    "concept_forms": [
+     "跨境电子商务面临的四大挑战"
+    ],
+    "al_primary_unit_id": "7de7f0318345",
+    "primary_unit_id": "276e87e6cc33",
+    "dropped_unit_ids": [
+     "bcf6880edb59"
+    ],
+    "count_before": 2,
+    "count_after": 1,
+    "action": "merge"
+   }
+  ],
+  "alias_remap": {
+   "7f5dacb982da": "a1ad2c883391",
+   "bcf6880edb59": "276e87e6cc33"
+  },
+  "dropped_ids": [
+   "7f5dacb982da",
+   "bcf6880edb59"
+  ],
+  "merge_groups": 2,
+  "units_before": 498,
+  "units_after": 496
+ },
+ "alias_remap_records": [
+  {
+   "question_id": "qk_17dcb0bf7e",
+   "from": "bcf6880edb59",
+   "to": "276e87e6cc33"
+  }
+ ],
+ "results": {
+  "baseline": {
+   "summary": {
+    "total": 32,
+    "hit_at_1": 30,
+    "hit_at_5": 32,
+    "miss_source": 0,
+    "retrieval_no_hits": 0,
+    "hit_rate_at_1": 0.9375,
+    "hit_rate_at_5": 1.0,
+    "avg_source_rank": 1.06,
+    "causes": {}
+   },
+   "elapsed_seconds": 43.49
+  },
+  "merged_alias": {
+   "summary": {
+    "total": 32,
+    "hit_at_1": 31,
+    "hit_at_5": 32,
+    "miss_source": 0,
+    "retrieval_no_hits": 0,
+    "hit_rate_at_1": 0.9688,
+    "hit_rate_at_5": 1.0,
+    "avg_source_rank": 1.03,
+    "causes": {}
+   },
+   "elapsed_seconds": 45.83
+  },
+  "merged_raw": {
+   "summary": {
+    "total": 32,
+    "hit_at_1": 30,
+    "hit_at_5": 31,
+    "miss_source": 1,
+    "retrieval_no_hits": 0,
+    "hit_rate_at_1": 0.9375,
+    "hit_rate_at_5": 0.9688,
+    "avg_source_rank": 1.03,
+    "causes": {
+     "模板失配/排序不足": 1
+    }
+   },
+   "elapsed_seconds": 43.8
+  }
+ },
+ "comparison": {
+  "deltas": {
+   "hit_at_1": {
+    "baseline": 30,
+    "merged_alias": 31,
+    "merged_raw": 30,
+    "delta_alias": 1,
+    "delta_raw": 0
+   },
+   "hit_at_5": {
+    "baseline": 32,
+    "merged_alias": 32,
+    "merged_raw": 31,
+    "delta_alias": 0,
+    "delta_raw": -1
+   },
+   "hit_rate_at_1": {
+    "baseline": 0.9375,
+    "merged_alias": 0.9688,
+    "merged_raw": 0.9375,
+    "delta_alias": 0.0313,
+    "delta_raw": 0.0
+   },
+   "hit_rate_at_5": {
+    "baseline": 1.0,
+    "merged_alias": 1.0,
+    "merged_raw": 0.9688,
+    "delta_alias": 0.0,
+    "delta_raw": -0.0312
+   },
+   "avg_source_rank": {
+    "baseline": 1.06,
+    "merged_alias": 1.03,
+    "merged_raw": 1.03,
+    "delta_alias": -0.03,
+    "delta_raw": -0.03
+   }
+  },
+  "affected_questions": [
+   {
+    "question_id": "qk_2feca0b1e3",
+    "question": "跨境电子商务面临的四大挑战的结论在什么条件下会被证伪？",
+    "concept": "跨境电子商务面临的四大挑战",
+    "source_unit_id": "276e87e6cc33",
+    "before": {
+     "hit_at_1": false,
+     "hit": true,
+     "source_rank": 2
+    },
+    "after": {
+     "hit_at_1": true,
+     "hit": true,
+     "source_rank": 1
+    },
+    "delta": "improved"
+   }
+  ],
+  "alias_remap_count": 2,
+  "dropped_unit_ids": [
+   "7f5dacb982da",
+   "bcf6880edb59"
+  ],
+  "merge_groups": [
+   {
+    "group_id": "CG-003",
+    "concept_forms": [
+     "东盟中小微企业（MSME）经济地位"
+    ],
+    "al_primary_unit_id": "828edf428bd9",
+    "primary_unit_id": "a1ad2c883391",
+    "dropped_unit_ids": [
+     "7f5dacb982da"
+    ],
+    "count_before": 2,
+    "count_after": 1,
+    "action": "merge"
+   },
+   {
+    "group_id": "CG-004",
+    "concept_forms": [
+     "跨境电子商务面临的四大挑战"
+    ],
+    "al_primary_unit_id": "7de7f0318345",
+    "primary_unit_id": "276e87e6cc33",
+    "dropped_unit_ids": [
+     "bcf6880edb59"
+    ],
+    "count_before": 2,
+    "count_after": 1,
+    "action": "merge"
+   }
+  ]
+ },
+ "conclusion": "合并后（alias 重映射口径）@1 30→31（Δ+1）、@5 32→32（Δ+0），检索命中不降；可考虑执行真实合并（需人工审批+备份+更新引用/重建索引）。",
+ "verdict": "worth_merging",
+ "recommendation": {
+  "action": "有条件可合并",
+  "preconditions": [
+   "人工确认 2 组跨研报重复内容确为同一知识（claim 全同）",
+   "备份 kb_units_all.json 与知识单元源 jsonl（写前快照）",
+   "合并后更新问题库 source_unit_id（按 alias_remap）或保留 alias 解析层",
+   "重建检索索引/清缓存（kb_read_api 每次全量加载，无需额外重建，但门户缓存需刷新）",
+   "合并/重建属数据变更，按仓库纪律审批后执行（本工具不执行）"
+  ],
+  "risk": "若不做 alias 重映射（merged_raw 口径），@5 变化 -1：问题库会丢失被剔除单元来源，出现假 miss；必须同步更新引用。"
+ },
+ "optional_89_eval": {
+  "run": false,
+  "reason": "本次以 32 问题自检为主；89 查询冻结评测需 search_v2 评测器口径，作为后续可选步骤（接口预留 --with-89）。"
+ },
+ "disclaimer": "本模拟只评估 concept 合并对检索命中的影响，不修改任何真实数据；结论供是否合并审批参考，不构成投资建议。",
+ "plan_issues": [],
+ "questions_meta": {
+  "path": "C:\\项目\\老田的AI助手\\research\\reports\\kb_qa_questions_20261101.json",
+  "error": null,
+  "count": 32
+ },
+ "dedup_meta": {
+  "path": "C:\\项目\\老田的AI助手\\research\\reports\\concept_dedup_20261101.json",
+  "error": null,
+  "sha1": "53c259020c60a1502a3175fa312e473848895a49"
+ },
+ "index_rebuild": {
+  "before": 498,
+  "after": 496,
+  "dropped_present_after": [],
+  "ok": true
+ },
+ "real_data_unchanged": true
+}

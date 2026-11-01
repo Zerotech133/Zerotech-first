@@ -1,0 +1,1657 @@
+{
+ "schema_version": "factor_validate.v1",
+ "meta": {
+  "generated_at": "2026-11-01T07:24:49+08:00",
+  "python": "3.12.10",
+  "pandas": "3.0.5",
+  "numpy": "2.5.2",
+  "start": "20230101",
+  "end": "20261030",
+  "horizon": 20,
+  "cost_bp": 30.0,
+  "top_n": 50,
+  "rebalance": "weekly",
+  "entry": "T+1 收盘建仓",
+  "universe": "factor_lib.tradable",
+  "data_root": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\tushare",
+  "data_load_sec": 33.37,
+  "runtime_sec": 179.03,
+  "panel": {
+   "dates": 965,
+   "codes": 5740,
+   "first": "20221107",
+   "last": "20261030"
+  },
+  "effective": {
+   "start": "20230101",
+   "end": "20261030",
+   "signal_days": 196,
+   "factors_requested": [
+    "low_turnover",
+    "max_ret20",
+    "vol20",
+    "rev5",
+    "mom20"
+   ],
+   "factors_effective": [
+    "low_turnover",
+    "max_ret20",
+    "vol20",
+    "rev5",
+    "mom20"
+   ],
+   "note": "effective=本次真正跑完并写入报告的因子子集；若少于 requested 说明时间/数据限制，未跑因子不给结论"
+  }
+ },
+ "method": {
+  "factor_recompute": "import tools/research/factor_lib 的因子实现，构造 date×ts_code score 面板",
+  "signed": "signed_score = raw_factor × direction（统一为越大越好）",
+  "raw_portfolio": "bt_harness.run_backtest：等权 top50、周频、30bp、T+1/复权/涨跌停/停牌",
+  "neutral_portfolio": "市场权重法：circ_mv 十分位 × 行业分桶，桶总权重=市场股票数占比，桶内持有因子分数最高 50% 等权；周频、T+1、30bp",
+  "walk_forward": "逐年（2023/2024/2025/2026）IC（20 日 CAR 截面 Spearman）与组合超额；IS=2023-2024，OOS=2025-2026",
+  "threshold": {
+   "oos_excess_gt": 0,
+   "oos_t_ge": 2.0,
+   "positive_years_at_least": "3/4"
+  },
+  "verdict_basis": "主判定 verdict = 中性化毛（未扣交易成本）OOS 超额；verdict_net = 净口径（30bp 单边×周频），用于成本容量判断。毛口径回答「剥离市值/行业暴露后是否还有 alpha」，净口径回答「30bp/周频成本后是否可交易」",
+  "capacity": "AUM_max ≈ 5% × ADTV × 持股数 / (双边换手/2)"
+ },
+ "limitations": [
+  "daily_basic 数据自 20230103 起：low_turnover 与中性化分桶（circ_mv）只能覆盖 2023 起，2022 年数据不可用；2023 年首周 IC 因 20 日 CAR 尾部缺失略少。",
+  "IC 用 20 日重叠 CAR：日频 IC 序列自相关，IC 的 t 值偏大（仅作量级参考，不用于 pass/fail）。",
+  "中性组合为宽口径（每个市值×行业桶都持有高分股），alpha 被桶内分散稀释；其超额是「同市值/行业暴露下选股是否有效」的下界式检验。",
+  "中性组合停牌/涨跌停处理从简（缺价冻结估值，不做涨跌停不可买/不可卖模拟），相对 bt_harness 的原始组合偏乐观；中性化超额与原始超额不宜直接比大小。",
+  "容量估算用信号日持仓的中位 20 日均成交额 × 5% 参与率，未考虑冲击成本与拥挤度非线性。",
+  "**成本主导**：周频调仓 + 单边 30bp 下，中性组合双边换手约 0.8-1.1/周，折算年化成本拖累约 13-20%；因此「净超额为负」不等于因子无效，报告同时给出毛（未扣费）超额用于区分「成本吃掉」与「选股/风格无效」。**本报告主判定（verdict）用中性化毛 OOS 超额**（回答中性化后是否还有 alpha），verdict_net 用 30bp 周频净口径（回答成本后是否可交易）；两者同时列出，消除「IC 为正而组合净超额为负」的表面矛盾。本报告结论只对 30bp/周频口径负责，月度调仓或更低费率下可能不同。",
+  "原始 top50 组合换手显著高于中性组合（尤其 rev5/mom20，双边换手 1.2-1.9/周），其净超额被换手成本放大，不宜直接与中性组合比大小。",
+  "股票池为当前 stock_basic 名单 + 上市日期，存在轻微幸存者偏差（与 factor_lib/bt_harness 同口径）。",
+  "负对照 mom20（direction=+1）用于校验流程：若其也 pass 则说明阈值过松。"
+ ],
+ "summary": {
+  "pass": [
+   "low_turnover"
+  ],
+  "fail": [
+   "max_ret20",
+   "vol20",
+   "rev5",
+   "mom20"
+  ],
+  "verdicts": {
+   "low_turnover": "pass",
+   "max_ret20": "fail",
+   "vol20": "fail",
+   "rev5": "fail",
+   "mom20": "fail"
+  },
+  "verdicts_net": {
+   "low_turnover": "fail",
+   "max_ret20": "fail",
+   "vol20": "fail",
+   "rev5": "fail",
+   "mom20": "fail"
+  },
+  "net_fail": [
+   "low_turnover",
+   "max_ret20",
+   "vol20",
+   "rev5",
+   "mom20"
+  ],
+  "effective_factors": [
+   "low_turnover",
+   "max_ret20",
+   "vol20",
+   "rev5",
+   "mom20"
+  ]
+ },
+ "factors": {
+  "low_turnover": {
+   "name": "low_turnover",
+   "family": "通用",
+   "kind": "continuous",
+   "direction": -1,
+   "description": "换手率（原始值；先验：低换手/低拥挤度占优，取负向）",
+   "signed_rule": "signed_score = factor × direction（越大越好）",
+   "ic": {
+    "definition": "日度截面 Spearman(signed factor, 20 日 forward CAR)；CAR 含 30bp 成本",
+    "full": {
+     "n_days": 904,
+     "mean": 0.09306153187806211,
+     "std": 0.22113515510723952,
+     "t": 12.653090726075195,
+     "positive_rate": 0.6858
+    },
+    "by_year": {
+     "2023": {
+      "n_days": 242,
+      "mean": 0.08176535819386575,
+      "std": 0.1914596847054212,
+      "t": 6.6435420352211265,
+      "positive_rate": 0.6901
+     },
+     "2024": {
+      "n_days": 242,
+      "mean": 0.11840726116158393,
+      "std": 0.27085536694843093,
+      "t": 6.800621016125248,
+      "positive_rate": 0.7025
+     },
+     "2025": {
+      "n_days": 243,
+      "mean": 0.07116984703134652,
+      "std": 0.17506120363250022,
+      "t": 6.337372851358648,
+      "positive_rate": 0.6996
+     },
+     "2026": {
+      "n_days": 177,
+      "mean": 0.10390722093294978,
+      "std": 0.2372024928011607,
+      "t": 5.827913723914582,
+      "positive_rate": 0.6384
+     }
+    },
+    "is": {
+     "n_days": 484,
+     "mean": 0.10008630967772482,
+     "std": 0.2350152777617913,
+     "t": 9.369173076236196,
+     "positive_rate": 0.6963
+    },
+    "oos": {
+     "n_days": 420,
+     "mean": 0.0849663117470222,
+     "std": 0.20395160767231849,
+     "t": 8.537766612124432,
+     "positive_rate": 0.6738
+    },
+    "n_obs_days": 904
+   },
+   "long_short": {
+    "n_days": 904,
+    "mean_pct": 0.8521328169962277,
+    "t": 3.1486641623760736,
+    "positive_rate": 0.5398,
+    "definition": "日内 signed factor 五分组 Q5−Q1 的 20 日 CAR（含 30bp 成本）均值"
+   },
+   "raw_portfolio": {
+    "engine": "bt_harness.run_backtest",
+    "params": {
+     "top_n": 50,
+     "rebalance": "weekly",
+     "cost_bp": 30.0,
+     "entry": "T+1 收盘",
+     "universe": "factor_lib.tradable"
+    },
+    "total_return": -0.049984,
+    "annual_return": -0.013947,
+    "excess_return": -0.382468,
+    "mdd": -0.294165,
+    "sharpe": -0.02608,
+    "vol_ann": 0.138675,
+    "avg_turnover": 0.717167,
+    "avg_holdings": 49.7838,
+    "rebalance_count": 195,
+    "annual_return_by_year": {
+     "2023": -0.07391800000000004,
+     "2024": 0.1861854565794392,
+     "2025": -0.06740979786163936,
+     "2026": -0.07266204957758016
+    },
+    "excess_by_year": {
+     "2023": -0.14775446481877041,
+     "2024": 0.14042717050106135,
+     "2025": -0.4598335014084308,
+     "2026": 0.07517810248045698
+    },
+    "entry_from": "20230103",
+    "entry_to": "20261030",
+    "error_summary": {
+     "buy_limit_up": 26,
+     "entry_out_of_range": 1,
+     "sell_limit_down": 9,
+     "sell_suspended": 8,
+     "valuation_frozen": 43
+    },
+    "gross_excess_return": 0.11341730771856096,
+    "gross_excess_by_year": {
+     "2023": -0.03659750378591475,
+     "2024": 0.2844866175027587,
+     "2025": -0.35093907283928183,
+     "2026": 0.1540192682727216
+    },
+    "gross_annual_return_by_year": {
+     "2023": 0.03723896103285562,
+     "2024": 0.33024490358113656,
+     "2025": 0.04148463070750963,
+     "2026": 0.006179116214684477
+    },
+    "cum_cost_drag": 0.342959,
+    "adtv_median_yi": 2.3009,
+    "capacity_est_yi": 15.97
+   },
+   "neutral_portfolio": {
+    "engine": "factor_validate.run_neutral_portfolio（市场权重法）",
+    "params": {
+     "size_buckets": "circ_mv 十分位",
+     "industry": "tushare stock_basic.industry",
+     "bucket_weight": "桶内全市场股票数 / 全市场股票数",
+     "within_bucket": "因子分数最高 50%（至少 1 只）等权",
+     "rebalance": "weekly",
+     "cost_bp": 30.0,
+     "entry": "T+1 收盘"
+    },
+    "total_return": -0.150245,
+    "mdd": -0.445206,
+    "vol_ann": 0.248154,
+    "sharpe": -0.05409,
+    "avg_turnover": 0.917282,
+    "max_turnover": 1.446509,
+    "avg_holdings": 1992.02,
+    "max_holdings": 2689,
+    "rebalance_count": 195,
+    "annual_return_by_year": {
+     "2023": -0.09427459999999999,
+     "2024": -0.09668047291154702,
+     "2025": 0.28630626079435095,
+     "2026": -0.1925577963382319
+    },
+    "excess_by_year": {
+     "2023": -0.16811106481877036,
+     "2024": -0.14243875898992486,
+     "2025": -0.1061174427524405,
+     "2026": -0.04471764428019476
+    },
+    "excess_total_compound": -0.36628692153888953,
+    "is_excess_compound": -0.31834686537675283,
+    "is_t": -6.783397430225189,
+    "oos_excess_compound": -0.13586305610882043,
+    "oos_t": -3.5743444985140544,
+    "oos_days": 441,
+    "is_days": 483,
+    "adtv_median_yi": 1.2327,
+    "capacity_est_yi": 267.7,
+    "gross_total_return": 0.454354,
+    "gross_annual_return_by_year": {
+     "2023": 0.053219860347925696,
+     "2024": 0.05691637024283969,
+     "2025": 0.46466068368532265,
+     "2026": -0.10798239444577218
+    },
+    "gross_excess_by_year": {
+     "2023": -0.02061660447084468,
+     "2024": 0.011158084164461846,
+     "2025": 0.07223698013853119,
+     "2026": 0.039857757612264955
+    },
+    "gross_excess_total_compound": 0.08572703159639516,
+    "gross_oos_excess_compound": 0.09395544379588316,
+    "gross_oos_t": 3.1427798216975753,
+    "gross_is_excess_compound": -0.01054292477999863,
+    "gross_is_t": -0.28017490012723,
+    "cum_cost_drag": 0.415716,
+    "avg_cost_per_rebalance_pct": 0.2752
+   },
+   "cost_diagnosis": {
+    "neutral_cum_cost_drag": 0.415716,
+    "neutral_gross_oos_excess": 0.09395544379588316,
+    "raw_cum_cost_drag": 0.342959,
+    "raw_gross_excess_return": 0.11341730771856096,
+    "note": "净超额为负而毛超额为正/接近 0 → 负超额主要由周频 30bp 换手成本解释；毛超额也为负 → 中性化后选股本身无效（不是成本问题）"
+   },
+   "walk_forward": {
+    "years": {
+     "2023": {
+      "ic": {
+       "n_days": 242,
+       "mean": 0.08176535819386575,
+       "std": 0.1914596847054212,
+       "t": 6.6435420352211265,
+       "positive_rate": 0.6901
+      },
+      "excess_gross": -0.02061660447084468,
+      "excess_net": -0.16811106481877036
+     },
+     "2024": {
+      "ic": {
+       "n_days": 242,
+       "mean": 0.11840726116158393,
+       "std": 0.27085536694843093,
+       "t": 6.800621016125248,
+       "positive_rate": 0.7025
+      },
+      "excess_gross": 0.011158084164461846,
+      "excess_net": -0.14243875898992486
+     },
+     "2025": {
+      "ic": {
+       "n_days": 243,
+       "mean": 0.07116984703134652,
+       "std": 0.17506120363250022,
+       "t": 6.337372851358648,
+       "positive_rate": 0.6996
+      },
+      "excess_gross": 0.07223698013853119,
+      "excess_net": -0.1061174427524405
+     },
+     "2026": {
+      "ic": {
+       "n_days": 177,
+       "mean": 0.10390722093294978,
+       "std": 0.2372024928011607,
+       "t": 5.827913723914582,
+       "positive_rate": 0.6384
+      },
+      "excess_gross": 0.039857757612264955,
+      "excess_net": -0.04471764428019476
+     }
+    },
+    "is": {
+     "years": [
+      "2023",
+      "2024"
+     ],
+     "ic": {
+      "n_days": 484,
+      "mean": 0.10008630967772482,
+      "std": 0.2350152777617913,
+      "t": 9.369173076236196,
+      "positive_rate": 0.6963
+     },
+     "excess_compound_gross": -0.01054292477999863,
+     "t_gross": -0.28017490012723,
+     "excess_compound_net": -0.31834686537675283,
+     "t_net": -6.783397430225189
+    },
+    "oos": {
+     "years": [
+      "2025",
+      "2026"
+     ],
+     "ic": {
+      "n_days": 420,
+      "mean": 0.0849663117470222,
+      "std": 0.20395160767231849,
+      "t": 8.537766612124432,
+      "positive_rate": 0.6738
+     },
+     "excess_compound_gross": 0.09395544379588316,
+     "t_gross": 3.1427798216975753,
+     "excess_compound_net": -0.13586305610882043,
+     "t_net": -3.5743444985140544
+    },
+    "positive_years_gross": 3,
+    "positive_years_net": 0,
+    "n_years": 4
+   },
+   "verdict_basis": "gross_neutral_oos（中性化后、未扣交易成本的 OOS 超额；回答「剥离市值/行业后是否还有 alpha」。30bp/周频净口径见 verdict_net）",
+   "verdict": "pass",
+   "verdict_reasons": [
+    "OOS 超额 +9.40% > 0",
+    "OOS t=3.14 ≥ 2",
+    "逐年同向 3/4 ≥ 3"
+   ],
+   "verdict_net": "fail",
+   "verdict_net_reasons": [
+    "OOS 超额 -13.59% ≤ 0",
+    "OOS t=-3.57 < 2",
+    "逐年同向 0/4 < 3"
+   ],
+   "direction_check": {
+    "rule": "signed_score = raw_factor × direction；组合按 signed_score 降序选 topN/桶内高分股",
+    "ic_oos_sign": 1,
+    "long_short_sign": 1,
+    "neutral_gross_oos_sign": 1,
+    "neutral_gross_is_sign": -1,
+    "consistent": true,
+    "note": "IC（20 日 CAR 截面相关）、多空 Q5−Q1、中性化毛超额三者符号一致 → 方向自洽；若不一致则说明方向翻转或口径错误。净超额符号不计入本检查（受成本拖累）。"
+   },
+   "threshold": {
+    "oos_excess_gt": 0,
+    "oos_t_ge": 2.0,
+    "positive_years_at_least": "3/4"
+   },
+   "runtime_sec": 27.09
+  },
+  "max_ret20": {
+   "name": "max_ret20",
+   "family": "通用",
+   "kind": "continuous",
+   "direction": -1,
+   "description": "近20日最大单日收益（MAX 彩票因子；先验：高 MAX 未来收益低，取负向）",
+   "signed_rule": "signed_score = factor × direction（越大越好）",
+   "ic": {
+    "definition": "日度截面 Spearman(signed factor, 20 日 forward CAR)；CAR 含 30bp 成本",
+    "full": {
+     "n_days": 904,
+     "mean": 0.0964151205856729,
+     "std": 0.17914924693597895,
+     "t": 16.181336041439874,
+     "positive_rate": 0.6969
+    },
+    "by_year": {
+     "2023": {
+      "n_days": 242,
+      "mean": 0.08976687165887108,
+      "std": 0.1599460446091538,
+      "t": 8.730724190660393,
+      "positive_rate": 0.6901
+     },
+     "2024": {
+      "n_days": 242,
+      "mean": 0.12495827902301491,
+      "std": 0.18733578433929332,
+      "t": 10.37652592126208,
+      "positive_rate": 0.7686
+     },
+     "2025": {
+      "n_days": 243,
+      "mean": 0.06705998026698355,
+      "std": 0.1565721508205108,
+      "t": 6.676548998750135,
+      "positive_rate": 0.6708
+     },
+     "2026": {
+      "n_days": 177,
+      "mean": 0.1067808324268638,
+      "std": 0.21305628624240233,
+      "t": 6.6678463357064865,
+      "positive_rate": 0.6441
+     }
+    },
+    "is": {
+     "n_days": 484,
+     "mean": 0.10736257534094301,
+     "std": 0.1748889743871435,
+     "t": 13.505577843187243,
+     "positive_rate": 0.7293
+    },
+    "oos": {
+     "n_days": 420,
+     "mean": 0.08379948224864738,
+     "std": 0.18333510693116017,
+     "t": 9.367427583165739,
+     "positive_rate": 0.6595
+    },
+    "n_obs_days": 904
+   },
+   "long_short": {
+    "n_days": 904,
+    "mean_pct": 0.9368850702970881,
+    "t": 4.207564770679022,
+    "positive_rate": 0.5619,
+    "definition": "日内 signed factor 五分组 Q5−Q1 的 20 日 CAR（含 30bp 成本）均值"
+   },
+   "raw_portfolio": {
+    "engine": "bt_harness.run_backtest",
+    "params": {
+     "top_n": 50,
+     "rebalance": "weekly",
+     "cost_bp": 30.0,
+     "entry": "T+1 收盘",
+     "universe": "factor_lib.tradable"
+    },
+    "total_return": -0.174004,
+    "annual_return": -0.051015,
+    "excess_return": -0.506488,
+    "mdd": -0.348546,
+    "sharpe": -0.260995,
+    "vol_ann": 0.152813,
+    "avg_turnover": 1.065389,
+    "avg_holdings": 49.7838,
+    "rebalance_count": 195,
+    "annual_return_by_year": {
+     "2023": -0.18314200000000003,
+     "2024": 0.1394758942190688,
+     "2025": 0.02109390947474732,
+     "2026": -0.1309184111512336
+    },
+    "excess_by_year": {
+     "2023": -0.2569784648187704,
+     "2024": 0.09371760814069097,
+     "2025": -0.37132979407204414,
+     "2026": 0.01692174090680354
+    },
+    "entry_from": "20230103",
+    "entry_to": "20261030",
+    "error_summary": {
+     "buy_limit_up": 31,
+     "buy_suspended": 1,
+     "entry_out_of_range": 1,
+     "sell_limit_down": 25,
+     "sell_suspended": 12,
+     "valuation_frozen": 50
+    },
+    "gross_excess_return": 0.20967703476164146,
+    "gross_excess_by_year": {
+     "2023": -0.11090837930182829,
+     "2024": 0.29149032080728077,
+     "2025": -0.18679429989435192,
+     "2026": 0.14120738302085756
+    },
+    "gross_annual_return_by_year": {
+     "2023": -0.03707191448305791,
+     "2024": 0.3372486068856586,
+     "2025": 0.20562940365243954,
+     "2026": -0.0066327690371795756
+    },
+    "cum_cost_drag": 0.46439,
+    "adtv_median_yi": 1.3949,
+    "capacity_est_yi": 6.52
+   },
+   "neutral_portfolio": {
+    "engine": "factor_validate.run_neutral_portfolio（市场权重法）",
+    "params": {
+     "size_buckets": "circ_mv 十分位",
+     "industry": "tushare stock_basic.industry",
+     "bucket_weight": "桶内全市场股票数 / 全市场股票数",
+     "within_bucket": "因子分数最高 50%（至少 1 只）等权",
+     "rebalance": "weekly",
+     "cost_bp": 30.0,
+     "entry": "T+1 收盘"
+    },
+    "total_return": -0.127378,
+    "mdd": -0.438265,
+    "vol_ann": 0.248599,
+    "sharpe": -0.024533,
+    "avg_turnover": 0.786775,
+    "max_turnover": 1.391992,
+    "avg_holdings": 1990.78,
+    "max_holdings": 2688,
+    "rebalance_count": 195,
+    "annual_return_by_year": {
+     "2023": -0.09637647999999999,
+     "2024": -0.06656818760096017,
+     "2025": 0.27892250798824203,
+     "2026": -0.19106797016877108
+    },
+    "excess_by_year": {
+     "2023": -0.17021294481877036,
+     "2024": -0.11232647367933801,
+     "2025": -0.11350119555854943,
+     "2026": -0.04322781811073395
+    },
+    "excess_total_compound": -0.3490140181606609,
+    "is_excess_compound": -0.28779237955832926,
+    "is_t": -5.792685636087086,
+    "oos_excess_compound": -0.13956352220263202,
+    "oos_t": -4.134392679720908,
+    "oos_days": 441,
+    "is_days": 483,
+    "adtv_median_yi": 1.3207,
+    "capacity_est_yi": 334.18,
+    "gross_total_return": 0.383444,
+    "gross_annual_return_by_year": {
+     "2023": 0.0320642417532897,
+     "2024": 0.06791980391410668,
+     "2025": 0.42439979792174154,
+     "2026": -0.11877992846226615
+    },
+    "gross_excess_by_year": {
+     "2023": -0.041772223065480674,
+     "2024": 0.02216151783572884,
+     "2025": 0.03197609437495008,
+     "2026": 0.029060223595770984
+    },
+    "gross_excess_total_compound": 0.03305795824760094,
+    "gross_oos_excess_compound": 0.0540898995730793,
+    "gross_oos_t": 1.9088947959187719,
+    "gross_is_excess_compound": -0.020234125089947264,
+    "gross_is_t": -0.46926132523848096,
+    "cum_cost_drag": 0.369239,
+    "avg_cost_per_rebalance_pct": 0.236
+   },
+   "cost_diagnosis": {
+    "neutral_cum_cost_drag": 0.369239,
+    "neutral_gross_oos_excess": 0.0540898995730793,
+    "raw_cum_cost_drag": 0.46439,
+    "raw_gross_excess_return": 0.20967703476164146,
+    "note": "净超额为负而毛超额为正/接近 0 → 负超额主要由周频 30bp 换手成本解释；毛超额也为负 → 中性化后选股本身无效（不是成本问题）"
+   },
+   "walk_forward": {
+    "years": {
+     "2023": {
+      "ic": {
+       "n_days": 242,
+       "mean": 0.08976687165887108,
+       "std": 0.1599460446091538,
+       "t": 8.730724190660393,
+       "positive_rate": 0.6901
+      },
+      "excess_gross": -0.041772223065480674,
+      "excess_net": -0.17021294481877036
+     },
+     "2024": {
+      "ic": {
+       "n_days": 242,
+       "mean": 0.12495827902301491,
+       "std": 0.18733578433929332,
+       "t": 10.37652592126208,
+       "positive_rate": 0.7686
+      },
+      "excess_gross": 0.02216151783572884,
+      "excess_net": -0.11232647367933801
+     },
+     "2025": {
+      "ic": {
+       "n_days": 243,
+       "mean": 0.06705998026698355,
+       "std": 0.1565721508205108,
+       "t": 6.676548998750135,
+       "positive_rate": 0.6708
+      },
+      "excess_gross": 0.03197609437495008,
+      "excess_net": -0.11350119555854943
+     },
+     "2026": {
+      "ic": {
+       "n_days": 177,
+       "mean": 0.1067808324268638,
+       "std": 0.21305628624240233,
+       "t": 6.6678463357064865,
+       "positive_rate": 0.6441
+      },
+      "excess_gross": 0.029060223595770984,
+      "excess_net": -0.04322781811073395
+     }
+    },
+    "is": {
+     "years": [
+      "2023",
+      "2024"
+     ],
+     "ic": {
+      "n_days": 484,
+      "mean": 0.10736257534094301,
+      "std": 0.1748889743871435,
+      "t": 13.505577843187243,
+      "positive_rate": 0.7293
+     },
+     "excess_compound_gross": -0.020234125089947264,
+     "t_gross": -0.46926132523848096,
+     "excess_compound_net": -0.28779237955832926,
+     "t_net": -5.792685636087086
+    },
+    "oos": {
+     "years": [
+      "2025",
+      "2026"
+     ],
+     "ic": {
+      "n_days": 420,
+      "mean": 0.08379948224864738,
+      "std": 0.18333510693116017,
+      "t": 9.367427583165739,
+      "positive_rate": 0.6595
+     },
+     "excess_compound_gross": 0.0540898995730793,
+     "t_gross": 1.9088947959187719,
+     "excess_compound_net": -0.13956352220263202,
+     "t_net": -4.134392679720908
+    },
+    "positive_years_gross": 3,
+    "positive_years_net": 0,
+    "n_years": 4
+   },
+   "verdict_basis": "gross_neutral_oos（中性化后、未扣交易成本的 OOS 超额；回答「剥离市值/行业后是否还有 alpha」。30bp/周频净口径见 verdict_net）",
+   "verdict": "fail",
+   "verdict_reasons": [
+    "OOS 超额 +5.41% > 0",
+    "OOS t=1.91 < 2",
+    "逐年同向 3/4 ≥ 3"
+   ],
+   "verdict_net": "fail",
+   "verdict_net_reasons": [
+    "OOS 超额 -13.96% ≤ 0",
+    "OOS t=-4.13 < 2",
+    "逐年同向 0/4 < 3"
+   ],
+   "direction_check": {
+    "rule": "signed_score = raw_factor × direction；组合按 signed_score 降序选 topN/桶内高分股",
+    "ic_oos_sign": 1,
+    "long_short_sign": 1,
+    "neutral_gross_oos_sign": 1,
+    "neutral_gross_is_sign": -1,
+    "consistent": true,
+    "note": "IC（20 日 CAR 截面相关）、多空 Q5−Q1、中性化毛超额三者符号一致 → 方向自洽；若不一致则说明方向翻转或口径错误。净超额符号不计入本检查（受成本拖累）。"
+   },
+   "threshold": {
+    "oos_excess_gt": 0,
+    "oos_t_ge": 2.0,
+    "positive_years_at_least": "3/4"
+   },
+   "runtime_sec": 27.92
+  },
+  "vol20": {
+   "name": "vol20",
+   "family": "通用",
+   "kind": "continuous",
+   "direction": -1,
+   "description": "20日波动率：复权日收益的 20 日标准差（先验：低波动异象，取负向）",
+   "signed_rule": "signed_score = factor × direction（越大越好）",
+   "ic": {
+    "definition": "日度截面 Spearman(signed factor, 20 日 forward CAR)；CAR 含 30bp 成本",
+    "full": {
+     "n_days": 904,
+     "mean": 0.0981403896059015,
+     "std": 0.22787984848638096,
+     "t": 12.948697073779911,
+     "positive_rate": 0.6681
+    },
+    "by_year": {
+     "2023": {
+      "n_days": 242,
+      "mean": 0.10446976660130829,
+      "std": 0.19494348126484443,
+      "t": 8.336612017474113,
+      "positive_rate": 0.6983
+     },
+     "2024": {
+      "n_days": 242,
+      "mean": 0.12131975259666478,
+      "std": 0.24935068659649368,
+      "t": 7.568827903889193,
+      "positive_rate": 0.7314
+     },
+     "2025": {
+      "n_days": 243,
+      "mean": 0.059488300885807796,
+      "std": 0.20126107338107227,
+      "t": 4.6076015631480045,
+      "positive_rate": 0.6049
+     },
+     "2026": {
+      "n_days": 177,
+      "mean": 0.11085983865861111,
+      "std": 0.2655950614749863,
+      "t": 5.553168864139827,
+      "positive_rate": 0.6271
+     }
+    },
+    "is": {
+     "n_days": 484,
+     "mean": 0.11289475959898654,
+     "std": 0.2237337383507356,
+     "t": 11.101073666789414,
+     "positive_rate": 0.7149
+    },
+    "oos": {
+     "n_days": 420,
+     "mean": 0.0811377346614892,
+     "std": 0.23166865090005126,
+     "t": 7.177616558025111,
+     "positive_rate": 0.6143
+    },
+    "n_obs_days": 904
+   },
+   "long_short": {
+    "n_days": 904,
+    "mean_pct": 0.699488576280557,
+    "t": 2.4861130090101864,
+    "positive_rate": 0.5465,
+    "definition": "日内 signed factor 五分组 Q5−Q1 的 20 日 CAR（含 30bp 成本）均值"
+   },
+   "raw_portfolio": {
+    "engine": "bt_harness.run_backtest",
+    "params": {
+     "top_n": 50,
+     "rebalance": "weekly",
+     "cost_bp": 30.0,
+     "entry": "T+1 收盘",
+     "universe": "factor_lib.tradable"
+    },
+    "total_return": -0.087322,
+    "annual_return": -0.024717,
+    "excess_return": -0.419806,
+    "mdd": -0.227773,
+    "sharpe": -0.110098,
+    "vol_ann": 0.135969,
+    "avg_turnover": 0.82607,
+    "avg_holdings": 49.7838,
+    "rebalance_count": 195,
+    "annual_return_by_year": {
+     "2023": -0.10197699999999998,
+     "2024": 0.1578422824359731,
+     "2025": -0.042530600546852204,
+     "2026": -0.0832396662337388
+    },
+    "excess_by_year": {
+     "2023": -0.17581346481877036,
+     "2024": 0.11208399635759525,
+     "2025": -0.43495430409364366,
+     "2026": 0.06460048582429834
+    },
+    "entry_from": "20230103",
+    "entry_to": "20261030",
+    "error_summary": {
+     "buy_limit_up": 18,
+     "buy_suspended": 3,
+     "entry_out_of_range": 1,
+     "sell_limit_down": 13,
+     "sell_suspended": 11,
+     "valuation_frozen": 48
+    },
+    "gross_excess_return": 0.14825833686475143,
+    "gross_excess_by_year": {
+     "2023": -0.043305317953819644,
+     "2024": 0.26475094329767757,
+     "2025": -0.30511800670345335,
+     "2026": 0.15622558801630404
+    },
+    "gross_annual_return_by_year": {
+     "2023": 0.03053114686495073,
+     "2024": 0.3105092293760554,
+     "2025": 0.08730569684333811,
+     "2026": 0.008385435958266907
+    },
+    "cum_cost_drag": 0.383635,
+    "adtv_median_yi": 1.4644,
+    "capacity_est_yi": 8.83
+   },
+   "neutral_portfolio": {
+    "engine": "factor_validate.run_neutral_portfolio（市场权重法）",
+    "params": {
+     "size_buckets": "circ_mv 十分位",
+     "industry": "tushare stock_basic.industry",
+     "bucket_weight": "桶内全市场股票数 / 全市场股票数",
+     "within_bucket": "因子分数最高 50%（至少 1 只）等权",
+     "rebalance": "weekly",
+     "cost_bp": 30.0,
+     "entry": "T+1 收盘"
+    },
+    "total_return": -0.142085,
+    "mdd": -0.443792,
+    "vol_ann": 0.244837,
+    "sharpe": -0.047611,
+    "avg_turnover": 0.776999,
+    "max_turnover": 1.344943,
+    "avg_holdings": 1990.78,
+    "max_holdings": 2688,
+    "rebalance_count": 195,
+    "annual_return_by_year": {
+     "2023": -0.09175151999999998,
+     "2024": -0.08647417719873318,
+     "2025": 0.2692688409919033,
+     "2026": -0.18536141269794804
+    },
+    "excess_by_year": {
+     "2023": -0.16558798481877035,
+     "2024": -0.13223246327711102,
+     "2025": -0.12315486255488817,
+     "2026": -0.0375212606399109
+    },
+    "excess_total_compound": -0.3622600857323599,
+    "is_excess_compound": -0.3056774093503025,
+    "is_t": -6.3977341178573415,
+    "oos_excess_compound": -0.1420577563008537,
+    "oos_t": -3.4877700463049064,
+    "oos_days": 441,
+    "is_days": 483,
+    "adtv_median_yi": 1.2639,
+    "capacity_est_yi": 323.83,
+    "gross_total_return": 0.352354,
+    "gross_annual_return_by_year": {
+     "2023": 0.03776913113534963,
+     "2024": 0.044418120498791236,
+     "2025": 0.4096612311586225,
+     "2026": -0.1148834575354648
+    },
+    "gross_excess_by_year": {
+     "2023": -0.036067333683420744,
+     "2024": -0.0013401655795866052,
+     "2025": 0.01723752761183106,
+     "2026": 0.03295669452257233
+    },
+    "gross_excess_total_compound": 0.006180380939404095,
+    "gross_oos_excess_compound": 0.046175136662671146,
+    "gross_oos_t": 1.254379620430004,
+    "gross_is_excess_compound": -0.03847053175557025,
+    "gross_is_t": -0.9250606006867043,
+    "cum_cost_drag": 0.365614,
+    "avg_cost_per_rebalance_pct": 0.2331
+   },
+   "cost_diagnosis": {
+    "neutral_cum_cost_drag": 0.365614,
+    "neutral_gross_oos_excess": 0.046175136662671146,
+    "raw_cum_cost_drag": 0.383635,
+    "raw_gross_excess_return": 0.14825833686475143,
+    "note": "净超额为负而毛超额为正/接近 0 → 负超额主要由周频 30bp 换手成本解释；毛超额也为负 → 中性化后选股本身无效（不是成本问题）"
+   },
+   "walk_forward": {
+    "years": {
+     "2023": {
+      "ic": {
+       "n_days": 242,
+       "mean": 0.10446976660130829,
+       "std": 0.19494348126484443,
+       "t": 8.336612017474113,
+       "positive_rate": 0.6983
+      },
+      "excess_gross": -0.036067333683420744,
+      "excess_net": -0.16558798481877035
+     },
+     "2024": {
+      "ic": {
+       "n_days": 242,
+       "mean": 0.12131975259666478,
+       "std": 0.24935068659649368,
+       "t": 7.568827903889193,
+       "positive_rate": 0.7314
+      },
+      "excess_gross": -0.0013401655795866052,
+      "excess_net": -0.13223246327711102
+     },
+     "2025": {
+      "ic": {
+       "n_days": 243,
+       "mean": 0.059488300885807796,
+       "std": 0.20126107338107227,
+       "t": 4.6076015631480045,
+       "positive_rate": 0.6049
+      },
+      "excess_gross": 0.01723752761183106,
+      "excess_net": -0.12315486255488817
+     },
+     "2026": {
+      "ic": {
+       "n_days": 177,
+       "mean": 0.11085983865861111,
+       "std": 0.2655950614749863,
+       "t": 5.553168864139827,
+       "positive_rate": 0.6271
+      },
+      "excess_gross": 0.03295669452257233,
+      "excess_net": -0.0375212606399109
+     }
+    },
+    "is": {
+     "years": [
+      "2023",
+      "2024"
+     ],
+     "ic": {
+      "n_days": 484,
+      "mean": 0.11289475959898654,
+      "std": 0.2237337383507356,
+      "t": 11.101073666789414,
+      "positive_rate": 0.7149
+     },
+     "excess_compound_gross": -0.03847053175557025,
+     "t_gross": -0.9250606006867043,
+     "excess_compound_net": -0.3056774093503025,
+     "t_net": -6.3977341178573415
+    },
+    "oos": {
+     "years": [
+      "2025",
+      "2026"
+     ],
+     "ic": {
+      "n_days": 420,
+      "mean": 0.0811377346614892,
+      "std": 0.23166865090005126,
+      "t": 7.177616558025111,
+      "positive_rate": 0.6143
+     },
+     "excess_compound_gross": 0.046175136662671146,
+     "t_gross": 1.254379620430004,
+     "excess_compound_net": -0.1420577563008537,
+     "t_net": -3.4877700463049064
+    },
+    "positive_years_gross": 2,
+    "positive_years_net": 0,
+    "n_years": 4
+   },
+   "verdict_basis": "gross_neutral_oos（中性化后、未扣交易成本的 OOS 超额；回答「剥离市值/行业后是否还有 alpha」。30bp/周频净口径见 verdict_net）",
+   "verdict": "fail",
+   "verdict_reasons": [
+    "OOS 超额 +4.62% > 0",
+    "OOS t=1.25 < 2",
+    "逐年同向 2/4 < 3"
+   ],
+   "verdict_net": "fail",
+   "verdict_net_reasons": [
+    "OOS 超额 -14.21% ≤ 0",
+    "OOS t=-3.49 < 2",
+    "逐年同向 0/4 < 3"
+   ],
+   "direction_check": {
+    "rule": "signed_score = raw_factor × direction；组合按 signed_score 降序选 topN/桶内高分股",
+    "ic_oos_sign": 1,
+    "long_short_sign": 1,
+    "neutral_gross_oos_sign": 1,
+    "neutral_gross_is_sign": -1,
+    "consistent": true,
+    "note": "IC（20 日 CAR 截面相关）、多空 Q5−Q1、中性化毛超额三者符号一致 → 方向自洽；若不一致则说明方向翻转或口径错误。净超额符号不计入本检查（受成本拖累）。"
+   },
+   "threshold": {
+    "oos_excess_gt": 0,
+    "oos_t_ge": 2.0,
+    "positive_years_at_least": "3/4"
+   },
+   "runtime_sec": 29.8
+  },
+  "rev5": {
+   "name": "rev5",
+   "family": "通用",
+   "kind": "continuous",
+   "direction": -1,
+   "description": "5日反转：复权收盘价 5 日收益率（原始值；先验：短期反转，取负向）",
+   "signed_rule": "signed_score = factor × direction（越大越好）",
+   "ic": {
+    "definition": "日度截面 Spearman(signed factor, 20 日 forward CAR)；CAR 含 30bp 成本",
+    "full": {
+     "n_days": 904,
+     "mean": 0.05078628394810729,
+     "std": 0.14621793130469368,
+     "t": 10.443113942805333,
+     "positive_rate": 0.6416
+    },
+    "by_year": {
+     "2023": {
+      "n_days": 242,
+      "mean": 0.03441985869159961,
+      "std": 0.12582955026537826,
+      "t": 4.255338587904093,
+      "positive_rate": 0.6074
+     },
+     "2024": {
+      "n_days": 242,
+      "mean": 0.07202377358963134,
+      "std": 0.15731162894241282,
+      "t": 7.122340409248188,
+      "positive_rate": 0.7314
+     },
+     "2025": {
+      "n_days": 243,
+      "mean": 0.04791154116492297,
+      "std": 0.13469410849458605,
+      "t": 5.544912249292545,
+      "positive_rate": 0.6173
+     },
+     "2026": {
+      "n_days": 177,
+      "mean": 0.04807309137827577,
+      "std": 0.16784563806366912,
+      "t": 3.8104706819385177,
+      "positive_rate": 0.5989
+     }
+    },
+    "is": {
+     "n_days": 484,
+     "mean": 0.05322181614061547,
+     "std": 0.1435348367806206,
+     "t": 8.157461849370543,
+     "positive_rate": 0.6694
+    },
+    "oos": {
+     "n_days": 420,
+     "mean": 0.04797962304055022,
+     "std": 0.14937249982325262,
+     "t": 6.5828025325620905,
+     "positive_rate": 0.6095
+    },
+    "n_obs_days": 904
+   },
+   "long_short": {
+    "n_days": 904,
+    "mean_pct": 0.9900788983376879,
+    "t": 5.622059973972444,
+    "positive_rate": 0.5929,
+    "definition": "日内 signed factor 五分组 Q5−Q1 的 20 日 CAR（含 30bp 成本）均值"
+   },
+   "raw_portfolio": {
+    "engine": "bt_harness.run_backtest",
+    "params": {
+     "top_n": 50,
+     "rebalance": "weekly",
+     "cost_bp": 30.0,
+     "entry": "T+1 收盘",
+     "universe": "factor_lib.tradable"
+    },
+    "total_return": -0.756451,
+    "annual_return": -0.320831,
+    "excess_return": -1.088935,
+    "mdd": -0.764866,
+    "sharpe": -0.939134,
+    "vol_ann": 0.346831,
+    "avg_turnover": 1.877009,
+    "avg_holdings": 49.7838,
+    "rebalance_count": 195,
+    "annual_return_by_year": {
+     "2023": -0.23784799999999995,
+     "2024": -0.15282122201345671,
+     "2025": -0.13822658008081423,
+     "2026": -0.5622999520154413
+    },
+    "excess_by_year": {
+     "2023": -0.3116844648187703,
+     "2024": -0.19857950809183456,
+     "2025": -0.5306502836276057,
+     "2026": -0.4144597999574041
+    },
+    "entry_from": "20230103",
+    "entry_to": "20261030",
+    "error_summary": {
+     "buy_limit_up": 301,
+     "buy_suspended": 9,
+     "entry_out_of_range": 1,
+     "sell_limit_down": 217,
+     "sell_suspended": 10,
+     "valuation_frozen": 44
+    },
+    "gross_excess_return": -0.5999505983816874,
+    "gross_excess_by_year": {
+     "2023": -0.06584658115350694,
+     "2024": 0.08923032760602911,
+     "2025": -0.23675572908336706,
+     "2026": -0.29811291437284493
+    },
+    "gross_annual_return_by_year": {
+     "2023": 0.00798988366526343,
+     "2024": 0.13498861368440696,
+     "2025": 0.1556679744634244,
+     "2026": -0.44595306643088206
+    },
+    "cum_cost_drag": 0.667525,
+    "adtv_median_yi": 3.0409,
+    "capacity_est_yi": 8.07
+   },
+   "neutral_portfolio": {
+    "engine": "factor_validate.run_neutral_portfolio（市场权重法）",
+    "params": {
+     "size_buckets": "circ_mv 十分位",
+     "industry": "tushare stock_basic.industry",
+     "bucket_weight": "桶内全市场股票数 / 全市场股票数",
+     "within_bucket": "因子分数最高 50%（至少 1 只）等权",
+     "rebalance": "weekly",
+     "cost_bp": 30.0,
+     "entry": "T+1 收盘"
+    },
+    "total_return": -0.289436,
+    "mdd": -0.46651,
+    "vol_ann": 0.2653,
+    "sharpe": -0.21786,
+    "avg_turnover": 1.103768,
+    "max_turnover": 1.481451,
+    "avg_holdings": 1990.28,
+    "max_holdings": 2687,
+    "rebalance_count": 195,
+    "annual_return_by_year": {
+     "2023": -0.11539882000000001,
+     "2024": -0.11217921956649435,
+     "2025": 0.20802924685011392,
+     "2026": -0.2510494476776456
+    },
+    "excess_by_year": {
+     "2023": -0.1892352848187704,
+     "2024": -0.1579375056448722,
+     "2025": -0.18439445669667753,
+     "2026": -0.10320929561960845
+    },
+    "excess_total_compound": -0.46229213601521946,
+    "is_excess_compound": -0.35264474359238296,
+    "is_t": -5.747696659894998,
+    "oos_excess_compound": -0.26427584890869305,
+    "oos_t": -4.938251626358826,
+    "oos_days": 441,
+    "is_days": 483,
+    "adtv_median_yi": 1.6732,
+    "capacity_est_yi": 301.71,
+    "gross_total_return": 0.356746,
+    "gross_annual_return_by_year": {
+     "2023": 0.04806357300769659,
+     "2024": 0.06031299800864076,
+     "2025": 0.42728107742488275,
+     "2026": -0.14460356648635264
+    },
+    "gross_excess_by_year": {
+     "2023": -0.025772891811073784,
+     "2024": 0.01455471193026292,
+     "2025": 0.03485737387809129,
+     "2026": 0.0032365855716844916
+    },
+    "gross_excess_total_compound": 0.028015124615652365,
+    "gross_oos_excess_compound": 0.03576062699986471,
+    "gross_oos_t": 0.791964660142341,
+    "gross_is_excess_compound": -0.005654620134026511,
+    "gross_is_t": -0.1045885443494867,
+    "cum_cost_drag": 0.476273,
+    "avg_cost_per_rebalance_pct": 0.3311
+   },
+   "cost_diagnosis": {
+    "neutral_cum_cost_drag": 0.476273,
+    "neutral_gross_oos_excess": 0.03576062699986471,
+    "raw_cum_cost_drag": 0.667525,
+    "raw_gross_excess_return": -0.5999505983816874,
+    "note": "净超额为负而毛超额为正/接近 0 → 负超额主要由周频 30bp 换手成本解释；毛超额也为负 → 中性化后选股本身无效（不是成本问题）"
+   },
+   "walk_forward": {
+    "years": {
+     "2023": {
+      "ic": {
+       "n_days": 242,
+       "mean": 0.03441985869159961,
+       "std": 0.12582955026537826,
+       "t": 4.255338587904093,
+       "positive_rate": 0.6074
+      },
+      "excess_gross": -0.025772891811073784,
+      "excess_net": -0.1892352848187704
+     },
+     "2024": {
+      "ic": {
+       "n_days": 242,
+       "mean": 0.07202377358963134,
+       "std": 0.15731162894241282,
+       "t": 7.122340409248188,
+       "positive_rate": 0.7314
+      },
+      "excess_gross": 0.01455471193026292,
+      "excess_net": -0.1579375056448722
+     },
+     "2025": {
+      "ic": {
+       "n_days": 243,
+       "mean": 0.04791154116492297,
+       "std": 0.13469410849458605,
+       "t": 5.544912249292545,
+       "positive_rate": 0.6173
+      },
+      "excess_gross": 0.03485737387809129,
+      "excess_net": -0.18439445669667753
+     },
+     "2026": {
+      "ic": {
+       "n_days": 177,
+       "mean": 0.04807309137827577,
+       "std": 0.16784563806366912,
+       "t": 3.8104706819385177,
+       "positive_rate": 0.5989
+      },
+      "excess_gross": 0.0032365855716844916,
+      "excess_net": -0.10320929561960845
+     }
+    },
+    "is": {
+     "years": [
+      "2023",
+      "2024"
+     ],
+     "ic": {
+      "n_days": 484,
+      "mean": 0.05322181614061547,
+      "std": 0.1435348367806206,
+      "t": 8.157461849370543,
+      "positive_rate": 0.6694
+     },
+     "excess_compound_gross": -0.005654620134026511,
+     "t_gross": -0.1045885443494867,
+     "excess_compound_net": -0.35264474359238296,
+     "t_net": -5.747696659894998
+    },
+    "oos": {
+     "years": [
+      "2025",
+      "2026"
+     ],
+     "ic": {
+      "n_days": 420,
+      "mean": 0.04797962304055022,
+      "std": 0.14937249982325262,
+      "t": 6.5828025325620905,
+      "positive_rate": 0.6095
+     },
+     "excess_compound_gross": 0.03576062699986471,
+     "t_gross": 0.791964660142341,
+     "excess_compound_net": -0.26427584890869305,
+     "t_net": -4.938251626358826
+    },
+    "positive_years_gross": 3,
+    "positive_years_net": 0,
+    "n_years": 4
+   },
+   "verdict_basis": "gross_neutral_oos（中性化后、未扣交易成本的 OOS 超额；回答「剥离市值/行业后是否还有 alpha」。30bp/周频净口径见 verdict_net）",
+   "verdict": "fail",
+   "verdict_reasons": [
+    "OOS 超额 +3.58% > 0",
+    "OOS t=0.79 < 2",
+    "逐年同向 3/4 ≥ 3"
+   ],
+   "verdict_net": "fail",
+   "verdict_net_reasons": [
+    "OOS 超额 -26.43% ≤ 0",
+    "OOS t=-4.94 < 2",
+    "逐年同向 0/4 < 3"
+   ],
+   "direction_check": {
+    "rule": "signed_score = raw_factor × direction；组合按 signed_score 降序选 topN/桶内高分股",
+    "ic_oos_sign": 1,
+    "long_short_sign": 1,
+    "neutral_gross_oos_sign": 1,
+    "neutral_gross_is_sign": -1,
+    "consistent": true,
+    "note": "IC（20 日 CAR 截面相关）、多空 Q5−Q1、中性化毛超额三者符号一致 → 方向自洽；若不一致则说明方向翻转或口径错误。净超额符号不计入本检查（受成本拖累）。"
+   },
+   "threshold": {
+    "oos_excess_gt": 0,
+    "oos_t_ge": 2.0,
+    "positive_years_at_least": "3/4"
+   },
+   "runtime_sec": 28.63
+  },
+  "mom20": {
+   "name": "mom20",
+   "family": "通用",
+   "kind": "continuous",
+   "direction": 1,
+   "description": "20日动量：复权收盘价 20 日收益率（先验：动量延续）",
+   "signed_rule": "signed_score = factor × direction（越大越好）",
+   "ic": {
+    "definition": "日度截面 Spearman(signed factor, 20 日 forward CAR)；CAR 含 30bp 成本",
+    "full": {
+     "n_days": 904,
+     "mean": -0.0819926444964036,
+     "std": 0.16307075489512632,
+     "t": -15.117606174739562,
+     "positive_rate": 0.3097
+    },
+    "by_year": {
+     "2023": {
+      "n_days": 242,
+      "mean": -0.04830472211039515,
+      "std": 0.1384482937969676,
+      "t": -5.4276228610589525,
+      "positive_rate": 0.3967
+     },
+     "2024": {
+      "n_days": 242,
+      "mean": -0.11573114640681083,
+      "std": 0.17429609226836043,
+      "t": -10.329285652833272,
+      "positive_rate": 0.2149
+     },
+     "2025": {
+      "n_days": 243,
+      "mean": -0.09536203323245739,
+      "std": 0.1364893854918279,
+      "t": -10.891300995227912,
+      "positive_rate": 0.214
+     },
+     "2026": {
+      "n_days": 177,
+      "mean": -0.06356890603445128,
+      "std": 0.19814303896567173,
+      "t": -4.268276557946529,
+      "positive_rate": 0.452
+     }
+    },
+    "is": {
+     "n_days": 484,
+     "mean": -0.08201793425860299,
+     "std": 0.16081409083150047,
+     "t": -11.22037592825055,
+     "positive_rate": 0.3058
+    },
+    "oos": {
+     "n_days": 420,
+     "mean": -0.08196350105615481,
+     "std": 0.16582543625600768,
+     "t": -10.129639684848627,
+     "positive_rate": 0.3143
+    },
+    "n_obs_days": 904
+   },
+   "long_short": {
+    "n_days": 904,
+    "mean_pct": -1.3853935766265193,
+    "t": -6.447713610238898,
+    "positive_rate": 0.4204,
+    "definition": "日内 signed factor 五分组 Q5−Q1 的 20 日 CAR（含 30bp 成本）均值"
+   },
+   "raw_portfolio": {
+    "engine": "bt_harness.run_backtest",
+    "params": {
+     "top_n": 50,
+     "rebalance": "weekly",
+     "cost_bp": 30.0,
+     "entry": "T+1 收盘",
+     "universe": "factor_lib.tradable"
+    },
+    "total_return": -0.990441,
+    "annual_return": -0.720225,
+    "excess_return": -1.322925,
+    "mdd": -0.990534,
+    "sharpe": -2.720413,
+    "vol_ann": 0.432075,
+    "avg_turnover": 1.166984,
+    "avg_holdings": 49.7838,
+    "rebalance_count": 195,
+    "annual_return_by_year": {
+     "2023": -0.6408499999999999,
+     "2024": -0.8687345120423222,
+     "2025": -0.46752502969624976,
+     "2026": -0.6192088594988647
+    },
+    "excess_by_year": {
+     "2023": -0.7146864648187703,
+     "2024": -0.9144927981207001,
+     "2025": -0.8599487332430412,
+     "2026": -0.4713687074408276
+    },
+    "entry_from": "20230103",
+    "entry_to": "20261030",
+    "error_summary": {
+     "buy_limit_up": 1274,
+     "buy_suspended": 11,
+     "entry_out_of_range": 1,
+     "sell_limit_down": 347,
+     "sell_suspended": 33,
+     "valuation_frozen": 153
+    },
+    "gross_excess_return": -1.3135412910451627,
+    "gross_excess_by_year": {
+     "2023": -0.6480433532009582,
+     "2024": -0.8865270935739789,
+     "2025": -0.7569577033396037,
+     "2026": -0.41249844020882553
+    },
+    "gross_annual_return_by_year": {
+     "2023": -0.5742068883821878,
+     "2024": -0.840768807495601,
+     "2025": -0.3645339997928122,
+     "2026": -0.5603385922668627
+    },
+    "cum_cost_drag": 0.495368,
+    "adtv_median_yi": 4.4531,
+    "capacity_est_yi": 19.0
+   },
+   "neutral_portfolio": {
+    "engine": "factor_validate.run_neutral_portfolio（市场权重法）",
+    "params": {
+     "size_buckets": "circ_mv 十分位",
+     "industry": "tushare stock_basic.industry",
+     "bucket_weight": "桶内全市场股票数 / 全市场股票数",
+     "within_bucket": "因子分数最高 50%（至少 1 只）等权",
+     "rebalance": "weekly",
+     "cost_bp": 30.0,
+     "entry": "T+1 收盘"
+    },
+    "total_return": -0.476441,
+    "mdd": -0.555612,
+    "vol_ann": 0.259552,
+    "sharpe": -0.549147,
+    "avg_turnover": 0.804453,
+    "max_turnover": 1.211774,
+    "avg_holdings": 1989.58,
+    "max_holdings": 2688,
+    "rebalance_count": 195,
+    "annual_return_by_year": {
+     "2023": -0.16669895,
+     "2024": -0.2500469308180998,
+     "2025": 0.1388893351563234,
+     "2026": -0.26438941237742686
+    },
+    "excess_by_year": {
+     "2023": -0.2405354148187704,
+     "2024": -0.29580521689647765,
+     "2025": -0.25353436839046806,
+     "2026": -0.11654926031938972
+    },
+    "excess_total_compound": -0.6060701883688994,
+    "is_excess_compound": -0.5831334706535898,
+    "is_t": -8.664316357707534,
+    "oos_excess_compound": -0.3444787285347225,
+    "oos_t": -6.983300883567841,
+    "oos_days": 441,
+    "is_days": 483,
+    "adtv_median_yi": 1.6922,
+    "capacity_est_yi": 418.52,
+    "gross_total_return": -0.161316,
+    "gross_annual_return_by_year": {
+     "2023": -0.05085686297926573,
+     "2024": -0.14178909803740758,
+     "2025": 0.27670686759536633,
+     "2026": -0.1935421523957085
+    },
+    "gross_excess_by_year": {
+     "2023": -0.1246933277980361,
+     "2024": -0.18754738411578542,
+     "2025": -0.11571683595142512,
+     "2026": -0.045702000337671356
+    },
+    "gross_excess_total_compound": -0.3684085041393005,
+    "gross_oos_excess_compound": -0.13794259016949018,
+    "gross_oos_t": -2.9025200658338877,
+    "gross_is_excess_compound": -0.31812901112083813,
+    "gross_is_t": -4.8100069804585335,
+    "cum_cost_drag": 0.375738,
+    "avg_cost_per_rebalance_pct": 0.2413
+   },
+   "cost_diagnosis": {
+    "neutral_cum_cost_drag": 0.375738,
+    "neutral_gross_oos_excess": -0.13794259016949018,
+    "raw_cum_cost_drag": 0.495368,
+    "raw_gross_excess_return": -1.3135412910451627,
+    "note": "净超额为负而毛超额为正/接近 0 → 负超额主要由周频 30bp 换手成本解释；毛超额也为负 → 中性化后选股本身无效（不是成本问题）"
+   },
+   "walk_forward": {
+    "years": {
+     "2023": {
+      "ic": {
+       "n_days": 242,
+       "mean": -0.04830472211039515,
+       "std": 0.1384482937969676,
+       "t": -5.4276228610589525,
+       "positive_rate": 0.3967
+      },
+      "excess_gross": -0.1246933277980361,
+      "excess_net": -0.2405354148187704
+     },
+     "2024": {
+      "ic": {
+       "n_days": 242,
+       "mean": -0.11573114640681083,
+       "std": 0.17429609226836043,
+       "t": -10.329285652833272,
+       "positive_rate": 0.2149
+      },
+      "excess_gross": -0.18754738411578542,
+      "excess_net": -0.29580521689647765
+     },
+     "2025": {
+      "ic": {
+       "n_days": 243,
+       "mean": -0.09536203323245739,
+       "std": 0.1364893854918279,
+       "t": -10.891300995227912,
+       "positive_rate": 0.214
+      },
+      "excess_gross": -0.11571683595142512,
+      "excess_net": -0.25353436839046806
+     },
+     "2026": {
+      "ic": {
+       "n_days": 177,
+       "mean": -0.06356890603445128,
+       "std": 0.19814303896567173,
+       "t": -4.268276557946529,
+       "positive_rate": 0.452
+      },
+      "excess_gross": -0.045702000337671356,
+      "excess_net": -0.11654926031938972
+     }
+    },
+    "is": {
+     "years": [
+      "2023",
+      "2024"
+     ],
+     "ic": {
+      "n_days": 484,
+      "mean": -0.08201793425860299,
+      "std": 0.16081409083150047,
+      "t": -11.22037592825055,
+      "positive_rate": 0.3058
+     },
+     "excess_compound_gross": -0.31812901112083813,
+     "t_gross": -4.8100069804585335,
+     "excess_compound_net": -0.5831334706535898,
+     "t_net": -8.664316357707534
+    },
+    "oos": {
+     "years": [
+      "2025",
+      "2026"
+     ],
+     "ic": {
+      "n_days": 420,
+      "mean": -0.08196350105615481,
+      "std": 0.16582543625600768,
+      "t": -10.129639684848627,
+      "positive_rate": 0.3143
+     },
+     "excess_compound_gross": -0.13794259016949018,
+     "t_gross": -2.9025200658338877,
+     "excess_compound_net": -0.3444787285347225,
+     "t_net": -6.983300883567841
+    },
+    "positive_years_gross": 0,
+    "positive_years_net": 0,
+    "n_years": 4
+   },
+   "verdict_basis": "gross_neutral_oos（中性化后、未扣交易成本的 OOS 超额；回答「剥离市值/行业后是否还有 alpha」。30bp/周频净口径见 verdict_net）",
+   "verdict": "fail",
+   "verdict_reasons": [
+    "OOS 超额 -13.79% ≤ 0",
+    "OOS t=-2.90 < 2",
+    "逐年同向 0/4 < 3"
+   ],
+   "verdict_net": "fail",
+   "verdict_net_reasons": [
+    "OOS 超额 -34.45% ≤ 0",
+    "OOS t=-6.98 < 2",
+    "逐年同向 0/4 < 3"
+   ],
+   "direction_check": {
+    "rule": "signed_score = raw_factor × direction；组合按 signed_score 降序选 topN/桶内高分股",
+    "ic_oos_sign": -1,
+    "long_short_sign": -1,
+    "neutral_gross_oos_sign": -1,
+    "neutral_gross_is_sign": -1,
+    "consistent": true,
+    "note": "IC（20 日 CAR 截面相关）、多空 Q5−Q1、中性化毛超额三者符号一致 → 方向自洽；若不一致则说明方向翻转或口径错误。净超额符号不计入本检查（受成本拖累）。"
+   },
+   "threshold": {
+    "oos_excess_gt": 0,
+    "oos_t_ge": 2.0,
+    "positive_years_at_least": "3/4"
+   },
+   "runtime_sec": 28.42
+  }
+ },
+ "schema_check": []
+}

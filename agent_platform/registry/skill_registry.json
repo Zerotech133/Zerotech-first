@@ -288,6 +288,377 @@
       "title": "战法规格库（24 YAML 校验/查询）",
       "ref": "tools/research/strategy_specs.py",
       "enabled": true
+    },
+    {
+      "id": "book_batch_test",
+      "kind": "tool",
+      "title": "量学战法批量四关初筛",
+      "ref": "tools/research/book_batch_test.py",
+      "enabled": true
+    },
+    {
+      "id": "factor_validate",
+      "kind": "tool",
+      "title": "因子独立验证（中性化/walk-forward/成本）",
+      "ref": "tools/research/factor_validate.py",
+      "enabled": true
+    },
+    {
+      "id": "report_panel",
+      "kind": "tool",
+      "title": "多智能体研报评审面板",
+      "ref": "tools/research/report_panel.py",
+      "enabled": true
+    },
+    {
+      "id": "lowturn_freq_validate",
+      "kind": "tool",
+      "title": "低频/成本优化因子验证",
+      "ref": "tools/research/lowturn_freq_validate.py",
+      "enabled": true
+    },
+    {
+      "id": "reverse_avoid_test",
+      "kind": "tool",
+      "title": "量学反向信号规避组合测试",
+      "ref": "tools/research/reverse_avoid_test.py",
+      "enabled": true
+    },
+    {
+      "id": "report_panel_v2",
+      "kind": "tool",
+      "title": "研报多智能体评审 v2（交叉+页码）",
+      "ref": "tools/research/report_panel_v2.py",
+      "enabled": true
+    },
+    {
+      "id": "lowturn_attribution",
+      "kind": "tool",
+      "title": "低换手因子逐年/regime 归因",
+      "ref": "tools/research/lowturn_attribution.py",
+      "enabled": true
+    },
+    {
+      "id": "lx20_avoid_rule",
+      "kind": "tool",
+      "title": "LX20 规避规则可执行性验证",
+      "ref": "tools/research/lx20_avoid_rule.py",
+      "enabled": true
+    },
+    {
+      "id": "report_panel_v3",
+      "kind": "tool",
+      "title": "研报评审面板 v3（精确页码+复核清单）",
+      "ref": "tools/research/report_panel_v3.py",
+      "enabled": true
+    },
+    {
+      "id": "lowturn_residual",
+      "kind": "tool",
+      "title": "低换手因子双重中性化残差检验",
+      "ref": "tools/research/lowturn_residual.py",
+      "enabled": true
+    },
+    {
+      "id": "s05_overlay_test",
+      "kind": "tool",
+      "title": "S05 规避规则与组合叠加测试",
+      "ref": "tools/research/s05_overlay_test.py",
+      "enabled": true
+    },
+    {
+      "id": "panel_export",
+      "kind": "tool",
+      "title": "研报面板门户导出",
+      "ref": "tools/research/panel_export.py",
+      "enabled": true
+    },
+    {
+      "id": "s05_reverse_hypothesis",
+      "kind": "tool",
+      "title": "S05 反向超配假设验证",
+      "ref": "tools/research/s05_reverse_hypothesis.py",
+      "enabled": true
+    },
+    {
+      "id": "panel_daily",
+      "kind": "tool",
+      "title": "研报面板日常运行器",
+      "ref": "tools/research/panel_daily.py",
+      "enabled": true
+    },
+    {
+      "id": "kb_qa",
+      "kind": "tool",
+      "title": "研报 RAG 问答（引用/拒答）",
+      "ref": "tools/kb_corpus/kb_qa.py",
+      "enabled": true
+    },
+    {
+      "id": "learning_digest",
+      "kind": "tool",
+      "title": "学习卡/简报每日摘要生成",
+      "ref": "tools/kb_corpus/learning_digest.py",
+      "enabled": true
+    },
+    {
+      "id": "search_v2",
+      "kind": "tool",
+      "title": "研报检索 v2（加权/同义词/分组）",
+      "ref": "tools/kb_corpus/search_v2.py",
+      "enabled": true
+    },
+    {
+      "id": "kb_search_frontend",
+      "kind": "tool",
+      "title": "研报检索 v2 前端引擎（灰度）",
+      "ref": "portal/kb_reports.html",
+      "enabled": true
+    },
+    {
+      "id": "api_kb_qa",
+      "kind": "tool",
+      "title": "问答 HTTP 预接线（待 8091）",
+      "ref": "portal/api_kb_qa.py",
+      "enabled": true
+    },
+    {
+      "id": "daily_kb",
+      "kind": "tool",
+      "title": "知识库每日自动化编排",
+      "ref": "tools/kb_corpus/daily_kb.py",
+      "enabled": true
+    },
+    {
+      "id": "eval_search_v2_ext",
+      "kind": "tool",
+      "title": "检索 v2 扩展评测（41 查询/显著性）",
+      "ref": "tools/kb_corpus/eval_search_v2_ext.py",
+      "enabled": true
+    },
+    {
+      "id": "kb_daily_push",
+      "kind": "tool",
+      "title": "知识库日报飞书 payload 组装（dry-run）",
+      "ref": "tools/kb_corpus/kb_daily_push.py",
+      "enabled": true
+    },
+    {
+      "id": "kb_qa_page",
+      "kind": "tool",
+      "title": "问答示例门户区块",
+      "ref": "portal/kb_reports.html",
+      "enabled": true
+    },
+    {
+      "id": "eval_search_v2_ext2",
+      "kind": "tool",
+      "title": "检索 v2 扩展评测 89 查询/NDCG",
+      "ref": "tools/kb_corpus/eval_search_v2_ext2.py",
+      "enabled": true
+    },
+    {
+      "id": "learning_analysis",
+      "kind": "tool",
+      "title": "学习卡覆盖/缺口分析",
+      "ref": "tools/kb_corpus/learning_analysis.py",
+      "enabled": true
+    },
+    {
+      "id": "kb_qa_bank",
+      "kind": "tool",
+      "title": "问答候选问题库生成",
+      "ref": "tools/kb_corpus/kb_qa_bank.py",
+      "enabled": true
+    },
+    {
+      "id": "kb_qa_selfcheck",
+      "kind": "tool",
+      "title": "问答问题库检索自检",
+      "ref": "tools/kb_corpus/kb_qa_selfcheck.py",
+      "enabled": true
+    },
+    {
+      "id": "card_proposal",
+      "kind": "tool",
+      "title": "学习卡候选审核稿生成",
+      "ref": "tools/kb_corpus/card_proposal.py",
+      "enabled": true
+    },
+    {
+      "id": "eval_audit",
+      "kind": "tool",
+      "title": "检索评测标注规范/偏差审计",
+      "ref": "tools/kb_corpus/eval_audit.py",
+      "enabled": true
+    },
+    {
+      "id": "kb_qa_rank",
+      "kind": "tool",
+      "title": "问答检索重排评估（暂不接入）",
+      "ref": "tools/kb_corpus/kb_qa_rank.py",
+      "enabled": true
+    },
+    {
+      "id": "search_v2b",
+      "kind": "tool",
+      "title": "检索软 AND/同义词增强",
+      "ref": "tools/kb_corpus/search_v2b.py",
+      "enabled": true
+    },
+    {
+      "id": "card_merge",
+      "kind": "tool",
+      "title": "学习卡审核合并工具（dry-run）",
+      "ref": "tools/kb_corpus/card_merge.py",
+      "enabled": true
+    },
+    {
+      "id": "concept_dedup",
+      "kind": "tool",
+      "title": "同 concept 重复知识单元审计",
+      "ref": "tools/kb_corpus/concept_dedup.py",
+      "enabled": true
+    },
+    {
+      "id": "kb_qa_expand",
+      "kind": "tool",
+      "title": "问答样本扩量生成",
+      "ref": "tools/kb_corpus/kb_qa_expand.py",
+      "enabled": true
+    },
+    {
+      "id": "merge_sim",
+      "kind": "tool",
+      "title": "concept 合并影响模拟（副本）",
+      "ref": "tools/kb_corpus/merge_sim.py",
+      "enabled": true
+    },
+    {
+      "id": "kb_qa_bank_v2",
+      "kind": "tool",
+      "title": "问答问题模板 v2 生成",
+      "ref": "tools/kb_corpus/kb_qa_bank_v2.py",
+      "enabled": true
+    },
+    {
+      "id": "eval_registry",
+      "kind": "tool",
+      "title": "评测集资产化（冻结/hash/校验）",
+      "ref": "tools/kb_corpus/eval_registry.py",
+      "enabled": true
+    },
+    {
+      "id": "merge_sim_89",
+      "kind": "tool",
+      "title": "合并模拟 89 查询评测",
+      "ref": "tools/kb_corpus/merge_sim_89.py",
+      "enabled": true
+    },
+    {
+      "id": "kb_qa_bank_v3",
+      "kind": "tool",
+      "title": "问答 claim 过滤/可答率扩验",
+      "ref": "tools/kb_corpus/kb_qa_bank_v3.py",
+      "enabled": true
+    },
+    {
+      "id": "eval_report_header",
+      "kind": "tool",
+      "title": "评测报告头（set_id/hash）",
+      "ref": "tools/kb_corpus/eval_report_header.py",
+      "enabled": true
+    },
+    {
+      "id": "kb_qa_multi",
+      "kind": "tool",
+      "title": "多单元聚合问答（突破可答率）",
+      "ref": "tools/kb_corpus/kb_qa_multi.py",
+      "enabled": true
+    },
+    {
+      "id": "kb_qa_eval",
+      "kind": "tool",
+      "title": "问答答案质量/幻觉评估",
+      "ref": "tools/kb_corpus/kb_qa_eval.py",
+      "enabled": true
+    },
+    {
+      "id": "card_proposal_v2",
+      "kind": "tool",
+      "title": "零卡主题概念卡候选生成",
+      "ref": "tools/kb_corpus/card_proposal_v2.py",
+      "enabled": true
+    },
+    {
+      "id": "kb_qa_multi_ab",
+      "kind": "tool",
+      "title": "问答 single/multi A/B 判定",
+      "ref": "tools/kb_corpus/kb_qa_multi_ab.py",
+      "enabled": true
+    },
+    {
+      "id": "kb_qa_schema_v2",
+      "kind": "tool",
+      "title": "问答样本 schema v2 迁移",
+      "ref": "tools/kb_corpus/kb_qa_schema_v2.py",
+      "enabled": true
+    },
+    {
+      "id": "card_review",
+      "kind": "tool",
+      "title": "学习卡审核工作流",
+      "ref": "tools/kb_corpus/card_review.py",
+      "enabled": true
+    },
+    {
+      "id": "kb_qa_multi_eval",
+      "kind": "tool",
+      "title": "multi 答案质量评估",
+      "ref": "tools/kb_corpus/kb_qa_multi_eval.py",
+      "enabled": true
+    },
+    {
+      "id": "card_precheck",
+      "kind": "tool",
+      "title": "学习卡机器预审建议",
+      "ref": "tools/kb_corpus/card_precheck.py",
+      "enabled": true
+    },
+    {
+      "id": "kb_qa_multi_ab50",
+      "kind": "tool",
+      "title": "multi 50 条 A/B 复跑",
+      "ref": "tools/kb_corpus/kb_qa_multi_ab50.py",
+      "enabled": true
+    },
+    {
+      "id": "kb_qa_guard",
+      "kind": "tool",
+      "title": "multi 质量守卫（引用/推断/集中度）",
+      "ref": "tools/kb_corpus/kb_qa_guard.py",
+      "enabled": true
+    },
+    {
+      "id": "eval_set_v3",
+      "kind": "tool",
+      "title": "评测集 v3 构建/合并复评",
+      "ref": "tools/kb_corpus/eval_set_v3.py",
+      "enabled": true
+    },
+    {
+      "id": "card_review_page",
+      "kind": "tool",
+      "title": "学习卡审核页（点选/导出）",
+      "ref": "portal/card_review.html",
+      "enabled": true
+    },
+    {
+      "id": "eval_v3_baseline",
+      "kind": "tool",
+      "title": "评测基线 v3 回归",
+      "ref": "tools/kb_corpus/eval_v3_baseline.py",
+      "enabled": true
     }
   ]
 }

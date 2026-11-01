@@ -207,7 +207,8 @@ def main() -> int:
             for r in last_port.itertuples()
         ],
     }
-    shadow_file = SHADOW_DIR / ("shadow_%s.json" % last_dt[:6])
+    # 影子期文件按「运行月」命名（月度节点 11-01 生成 202611 期=11 月持仓，signal_date 为上一月末信号）
+    shadow_file = SHADOW_DIR / ("shadow_%s.json" % datetime.now().strftime("%Y%m"))
     shadow_file.write_text(json.dumps(shadow, ensure_ascii=False, indent=1), encoding="utf-8")
     print("shadow:", shadow_file, "n=", shadow["n_holdings"],
           "trap_w_c=%.1f%%" % (shadow["trap_weight_constrained"] * 100), flush=True)

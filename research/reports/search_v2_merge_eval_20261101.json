@@ -1,0 +1,294 @@
+{
+ "meta": {
+  "schema_version": "search_v2_merge_eval.v1",
+  "generated_at": "2026-11-01T09:51:19+08:00",
+  "n_queries": 89,
+  "n_units": 498,
+  "topk": 5,
+  "eval_set": "冻结的 wave10 89 查询（eval_search_v2_ext2.all_queries()，标注未改）",
+  "merge": {
+   "and_mode": "soft",
+   "soft_cov": 0.5,
+   "synonym_weight": 0.6
+  },
+  "rollback": {
+   "and_mode": "strict",
+   "synonym_weight": 1.0,
+   "cli": "--and-mode strict --synonym-weight 1.0",
+   "note": "严格旧行为逐查询可复现（见 backward_compat）"
+  },
+  "frontend_note": "portal/kb_reports.html 的内联 JS 引擎不在本次范围，仍为严格 AND；前端同步需后续任务"
+ },
+ "tables": {
+  "overall": {
+   "v1": {
+    "n": 89,
+    "precision_at_k": 0.6831,
+    "coverage": 0.8371,
+    "hit_rate": 0.9551,
+    "ndcg_at_k": 0.7552
+   },
+   "before_strict": {
+    "n": 89,
+    "precision_at_k": 0.7281,
+    "coverage": 0.9111,
+    "hit_rate": 1.0,
+    "ndcg_at_k": 0.8054
+   },
+   "after_soft": {
+    "n": 89,
+    "precision_at_k": 0.782,
+    "coverage": 0.8933,
+    "hit_rate": 1.0,
+    "ndcg_at_k": 0.8479
+   }
+  },
+  "AND": {
+   "v1": {
+    "n": 10,
+    "precision_at_k": 0.78,
+    "coverage": 0.9667,
+    "hit_rate": 1.0,
+    "ndcg_at_k": 0.8648
+   },
+   "before_strict": {
+    "n": 10,
+    "precision_at_k": 0.46,
+    "coverage": 1.0,
+    "hit_rate": 1.0,
+    "ndcg_at_k": 0.6718
+   },
+   "after_soft": {
+    "n": 10,
+    "precision_at_k": 0.86,
+    "coverage": 1.0,
+    "hit_rate": 1.0,
+    "ndcg_at_k": 0.9523
+   }
+  },
+  "by_type": {
+   "AND": {
+    "n": 10,
+    "before_strict": {
+     "n": 10,
+     "precision_at_k": 0.46,
+     "coverage": 1.0,
+     "hit_rate": 1.0,
+     "ndcg_at_k": 0.6718
+    },
+    "after_soft": {
+     "n": 10,
+     "precision_at_k": 0.86,
+     "coverage": 1.0,
+     "hit_rate": 1.0,
+     "ndcg_at_k": 0.9523
+    }
+   },
+   "OR": {
+    "n": 8,
+    "before_strict": {
+     "n": 8,
+     "precision_at_k": 0.95,
+     "coverage": 0.8958,
+     "hit_rate": 1.0,
+     "ndcg_at_k": 0.9516
+    },
+    "after_soft": {
+     "n": 8,
+     "precision_at_k": 0.975,
+     "coverage": 0.9583,
+     "hit_rate": 1.0,
+     "ndcg_at_k": 0.994
+    }
+   },
+   "主题": {
+    "n": 44,
+    "before_strict": {
+     "n": 44,
+     "precision_at_k": 0.75,
+     "coverage": 0.8674,
+     "hit_rate": 1.0,
+     "ndcg_at_k": 0.8094
+    },
+    "after_soft": {
+     "n": 44,
+     "precision_at_k": 0.7727,
+     "coverage": 0.8693,
+     "hit_rate": 1.0,
+     "ndcg_at_k": 0.8286
+    }
+   },
+   "同义词": {
+    "n": 8,
+    "before_strict": {
+     "n": 8,
+     "precision_at_k": 0.85,
+     "coverage": 0.9583,
+     "hit_rate": 1.0,
+     "ndcg_at_k": 0.9505
+    },
+    "after_soft": {
+     "n": 8,
+     "precision_at_k": 0.775,
+     "coverage": 0.7917,
+     "hit_rate": 1.0,
+     "ndcg_at_k": 0.8178
+    }
+   },
+   "排除": {
+    "n": 5,
+    "before_strict": {
+     "n": 5,
+     "precision_at_k": 0.8,
+     "coverage": 0.9333,
+     "hit_rate": 1.0,
+     "ndcg_at_k": 0.6972
+    },
+    "after_soft": {
+     "n": 5,
+     "precision_at_k": 0.84,
+     "coverage": 0.7667,
+     "hit_rate": 1.0,
+     "ndcg_at_k": 0.8678
+    }
+   },
+   "短查询": {
+    "n": 5,
+    "before_strict": {
+     "n": 5,
+     "precision_at_k": 0.52,
+     "coverage": 1.0,
+     "hit_rate": 1.0,
+     "ndcg_at_k": 0.8237
+    },
+    "after_soft": {
+     "n": 5,
+     "precision_at_k": 0.52,
+     "coverage": 1.0,
+     "hit_rate": 1.0,
+     "ndcg_at_k": 0.8237
+    }
+   },
+   "短语": {
+    "n": 6,
+    "before_strict": {
+     "n": 6,
+     "precision_at_k": 0.5667,
+     "coverage": 0.9444,
+     "hit_rate": 1.0,
+     "ndcg_at_k": 0.6765
+    },
+    "after_soft": {
+     "n": 6,
+     "precision_at_k": 0.5667,
+     "coverage": 0.9444,
+     "hit_rate": 1.0,
+     "ndcg_at_k": 0.6765
+    }
+   },
+   "长查询": {
+    "n": 3,
+    "before_strict": {
+     "n": 3,
+     "precision_at_k": 0.9333,
+     "coverage": 0.9167,
+     "hit_rate": 1.0,
+     "ndcg_at_k": 0.8229
+    },
+    "after_soft": {
+     "n": 3,
+     "precision_at_k": 0.9333,
+     "coverage": 0.9167,
+     "hit_rate": 1.0,
+     "ndcg_at_k": 0.8229
+    }
+   }
+  }
+ },
+ "backward_compat": {
+  "hist_file": "C:\\项目\\老田的AI助手\\research\\reports\\search_v2_eval_ext2_20261101.json",
+  "max_abs_diff_precision": 0.0,
+  "max_abs_diff_ndcg": 0.0,
+  "identical": true
+ },
+ "consistency": {
+  "v2b_engine": "search_v2b.SearchV2B(soft,0.5,0.6)",
+  "max_abs_diff_precision": 0.0,
+  "max_abs_diff_ndcg": 0.0,
+  "identical": true
+ },
+ "significance": {
+  "precision_at_k": {
+   "all_89": {
+    "paired_t": {
+     "n": 89,
+     "mean": 0.0539,
+     "sd": 0.204,
+     "t": 2.4945,
+     "p_two_sided": 0.0126
+    },
+    "bootstrap": {
+     "n": 89,
+     "n_boot": 2000,
+     "mean": 0.0539,
+     "ci_low": 0.0157,
+     "ci_high": 0.0989,
+     "significant": true
+    }
+   },
+   "AND_10": {
+    "paired_t": {
+     "n": 10,
+     "mean": 0.4,
+     "sd": 0.3771,
+     "t": 3.3541,
+     "p_two_sided": 0.0008
+    },
+    "bootstrap": {
+     "n": 10,
+     "n_boot": 2000,
+     "mean": 0.4,
+     "ci_low": 0.2,
+     "ci_high": 0.64,
+     "significant": true
+    }
+   }
+  },
+  "ndcg_at_k": {
+   "all_89": {
+    "paired_t": {
+     "n": 89,
+     "mean": 0.0425,
+     "sd": 0.1729,
+     "t": 2.3178,
+     "p_two_sided": 0.0205
+    },
+    "bootstrap": {
+     "n": 89,
+     "n_boot": 2000,
+     "mean": 0.0425,
+     "ci_low": 0.0074,
+     "ci_high": 0.0794,
+     "significant": true
+    }
+   },
+   "AND_10": {
+    "paired_t": {
+     "n": 10,
+     "mean": 0.2805,
+     "sd": 0.2424,
+     "t": 3.6583,
+     "p_two_sided": 0.0003
+    },
+    "bootstrap": {
+     "n": 10,
+     "n_boot": 2000,
+     "mean": 0.2805,
+     "ci_low": 0.1434,
+     "ci_high": 0.432,
+     "significant": true
+    }
+   }
+  }
+ }
+}

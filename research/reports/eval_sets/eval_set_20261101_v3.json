@@ -1,0 +1,14763 @@
+{
+ "schema_version": "eval_set.v1",
+ "set_id": "eval_set_20261101_v3",
+ "version": 3,
+ "name": "研报检索评测集 v3（102 条：v2 89 + 新增 13 条 merged-concept 相关查询，冻结）",
+ "frozen_at": "2026-11-01T10:59:32+08:00",
+ "source": "eval_set_20261101_v2 + eval_set_v3 新增查询（跨境电商/东盟/中小微/贸易）",
+ "supersedes": {
+  "set_id": "eval_set_20261101_v2",
+  "version": 2,
+  "content_hash": "1fa417f9e720cb6d4142432cbd1073ffc66d93905c542eadeed8fc1ea8519e0f"
+ },
+ "n_queries": 102,
+ "type_distribution": {
+  "主题": 49,
+  "AND": 13,
+  "同义词": 9,
+  "OR": 9,
+  "短语": 8,
+  "排除": 6,
+  "短查询": 5,
+  "长查询": 3
+ },
+ "annotation_policy": {
+  "policy_ref": "docs/standards/2026-11-01_检索评测标注规范_v1.md",
+  "grades": {
+   "2": "直接相关（直接回答查询主题，命中核心知识点）",
+   "1": "部分相关（背景/相邻概念/同主题分支）",
+   "0": "不相关"
+  },
+  "unit_rule": "单元等级=concept/claim/evidence 三字段命中标注关键词的最高等级",
+  "expected_units": "由人工标注关键词规则展开（不反向使用检索器结果）",
+  "frozen": "冻结后不可修改；新增评测集必须新建版本文件，不得原地改标注",
+  "no_post_hoc_tuning": "不得看结果后改标注关键词以提升某方法指标；口径变更须并列报告敏感性",
+  "significance": "n≥60 才可称显著；配对 t + bootstrap 95% CI 不含 0 + McNemar"
+ },
+ "queries": [
+  {
+   "id": "Q01",
+   "q": "量柱分类",
+   "type": "主题",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "量柱"
+    ],
+    "1": [
+     "量学",
+     "涨停"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 0,
+     "grade": 2
+    },
+    {
+     "unit": 1,
+     "grade": 2
+    },
+    {
+     "unit": 2,
+     "grade": 2
+    },
+    {
+     "unit": 3,
+     "grade": 2
+    },
+    {
+     "unit": 4,
+     "grade": 2
+    },
+    {
+     "unit": 5,
+     "grade": 1
+    },
+    {
+     "unit": 7,
+     "grade": 2
+    },
+    {
+     "unit": 9,
+     "grade": 1
+    },
+    {
+     "unit": 10,
+     "grade": 1
+    },
+    {
+     "unit": 11,
+     "grade": 2
+    },
+    {
+     "unit": 12,
+     "grade": 1
+    },
+    {
+     "unit": 13,
+     "grade": 2
+    },
+    {
+     "unit": 14,
+     "grade": 1
+    },
+    {
+     "unit": 15,
+     "grade": 1
+    },
+    {
+     "unit": 16,
+     "grade": 1
+    },
+    {
+     "unit": 17,
+     "grade": 1
+    },
+    {
+     "unit": 18,
+     "grade": 1
+    },
+    {
+     "unit": 19,
+     "grade": 1
+    },
+    {
+     "unit": 20,
+     "grade": 2
+    },
+    {
+     "unit": 21,
+     "grade": 2
+    },
+    {
+     "unit": 22,
+     "grade": 1
+    },
+    {
+     "unit": 23,
+     "grade": 2
+    },
+    {
+     "unit": 24,
+     "grade": 1
+    },
+    {
+     "unit": 25,
+     "grade": 1
+    },
+    {
+     "unit": 26,
+     "grade": 1
+    },
+    {
+     "unit": 27,
+     "grade": 2
+    },
+    {
+     "unit": 28,
+     "grade": 1
+    },
+    {
+     "unit": 29,
+     "grade": 1
+    },
+    {
+     "unit": 30,
+     "grade": 2
+    },
+    {
+     "unit": 31,
+     "grade": 2
+    },
+    {
+     "unit": 32,
+     "grade": 2
+    },
+    {
+     "unit": 34,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "Q02",
+   "q": "量线定义",
+   "type": "主题",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "量线"
+    ],
+    "1": [
+     "量柱",
+     "量学"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 0,
+     "grade": 2
+    },
+    {
+     "unit": 1,
+     "grade": 1
+    },
+    {
+     "unit": 2,
+     "grade": 2
+    },
+    {
+     "unit": 3,
+     "grade": 2
+    },
+    {
+     "unit": 4,
+     "grade": 2
+    },
+    {
+     "unit": 7,
+     "grade": 1
+    },
+    {
+     "unit": 9,
+     "grade": 1
+    },
+    {
+     "unit": 11,
+     "grade": 2
+    },
+    {
+     "unit": 13,
+     "grade": 1
+    },
+    {
+     "unit": 19,
+     "grade": 1
+    },
+    {
+     "unit": 20,
+     "grade": 1
+    },
+    {
+     "unit": 21,
+     "grade": 1
+    },
+    {
+     "unit": 23,
+     "grade": 1
+    },
+    {
+     "unit": 27,
+     "grade": 1
+    },
+    {
+     "unit": 30,
+     "grade": 1
+    },
+    {
+     "unit": 31,
+     "grade": 1
+    },
+    {
+     "unit": 32,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "Q03",
+   "q": "涨停基因",
+   "type": "主题",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "涨停基因",
+     "涨停密码"
+    ],
+    "1": [
+     "涨停",
+     "伏击涨停"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 4,
+     "grade": 2
+    },
+    {
+     "unit": 5,
+     "grade": 1
+    },
+    {
+     "unit": 9,
+     "grade": 1
+    },
+    {
+     "unit": 10,
+     "grade": 1
+    },
+    {
+     "unit": 12,
+     "grade": 1
+    },
+    {
+     "unit": 14,
+     "grade": 1
+    },
+    {
+     "unit": 15,
+     "grade": 1
+    },
+    {
+     "unit": 16,
+     "grade": 1
+    },
+    {
+     "unit": 17,
+     "grade": 1
+    },
+    {
+     "unit": 18,
+     "grade": 1
+    },
+    {
+     "unit": 19,
+     "grade": 1
+    },
+    {
+     "unit": 20,
+     "grade": 2
+    },
+    {
+     "unit": 21,
+     "grade": 1
+    },
+    {
+     "unit": 22,
+     "grade": 2
+    },
+    {
+     "unit": 23,
+     "grade": 2
+    },
+    {
+     "unit": 24,
+     "grade": 2
+    },
+    {
+     "unit": 25,
+     "grade": 2
+    },
+    {
+     "unit": 26,
+     "grade": 2
+    },
+    {
+     "unit": 27,
+     "grade": 2
+    },
+    {
+     "unit": 28,
+     "grade": 2
+    },
+    {
+     "unit": 29,
+     "grade": 2
+    },
+    {
+     "unit": 30,
+     "grade": 2
+    },
+    {
+     "unit": 32,
+     "grade": 1
+    },
+    {
+     "unit": 34,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "Q04",
+   "q": "伏击涨停定律",
+   "type": "主题",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "伏击涨停第",
+     "伏击涨停"
+    ],
+    "1": [
+     "涨停",
+     "量学"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 0,
+     "grade": 1
+    },
+    {
+     "unit": 4,
+     "grade": 2
+    },
+    {
+     "unit": 5,
+     "grade": 1
+    },
+    {
+     "unit": 7,
+     "grade": 1
+    },
+    {
+     "unit": 9,
+     "grade": 2
+    },
+    {
+     "unit": 10,
+     "grade": 2
+    },
+    {
+     "unit": 11,
+     "grade": 1
+    },
+    {
+     "unit": 12,
+     "grade": 2
+    },
+    {
+     "unit": 14,
+     "grade": 2
+    },
+    {
+     "unit": 15,
+     "grade": 2
+    },
+    {
+     "unit": 16,
+     "grade": 2
+    },
+    {
+     "unit": 17,
+     "grade": 2
+    },
+    {
+     "unit": 18,
+     "grade": 2
+    },
+    {
+     "unit": 19,
+     "grade": 2
+    },
+    {
+     "unit": 20,
+     "grade": 1
+    },
+    {
+     "unit": 21,
+     "grade": 1
+    },
+    {
+     "unit": 22,
+     "grade": 1
+    },
+    {
+     "unit": 23,
+     "grade": 1
+    },
+    {
+     "unit": 24,
+     "grade": 1
+    },
+    {
+     "unit": 25,
+     "grade": 1
+    },
+    {
+     "unit": 26,
+     "grade": 1
+    },
+    {
+     "unit": 27,
+     "grade": 1
+    },
+    {
+     "unit": 28,
+     "grade": 1
+    },
+    {
+     "unit": 29,
+     "grade": 1
+    },
+    {
+     "unit": 30,
+     "grade": 1
+    },
+    {
+     "unit": 32,
+     "grade": 1
+    },
+    {
+     "unit": 34,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "Q05",
+   "q": "钠电池应用场景",
+   "type": "主题",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "钠电池"
+    ],
+    "1": [
+     "钠离子",
+     "储能"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 98,
+     "grade": 1
+    },
+    {
+     "unit": 198,
+     "grade": 2
+    },
+    {
+     "unit": 199,
+     "grade": 2
+    },
+    {
+     "unit": 200,
+     "grade": 2
+    },
+    {
+     "unit": 201,
+     "grade": 2
+    },
+    {
+     "unit": 202,
+     "grade": 2
+    },
+    {
+     "unit": 328,
+     "grade": 1
+    },
+    {
+     "unit": 329,
+     "grade": 1
+    },
+    {
+     "unit": 330,
+     "grade": 1
+    },
+    {
+     "unit": 331,
+     "grade": 1
+    },
+    {
+     "unit": 373,
+     "grade": 1
+    },
+    {
+     "unit": 466,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "Q06",
+   "q": "动力电池竞争",
+   "type": "主题",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "动力电池"
+    ],
+    "1": [
+     "电池",
+     "宁德时代"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 81,
+     "grade": 1
+    },
+    {
+     "unit": 82,
+     "grade": 1
+    },
+    {
+     "unit": 83,
+     "grade": 1
+    },
+    {
+     "unit": 193,
+     "grade": 2
+    },
+    {
+     "unit": 194,
+     "grade": 2
+    },
+    {
+     "unit": 195,
+     "grade": 1
+    },
+    {
+     "unit": 196,
+     "grade": 2
+    },
+    {
+     "unit": 197,
+     "grade": 1
+    },
+    {
+     "unit": 198,
+     "grade": 1
+    },
+    {
+     "unit": 199,
+     "grade": 1
+    },
+    {
+     "unit": 200,
+     "grade": 1
+    },
+    {
+     "unit": 201,
+     "grade": 1
+    },
+    {
+     "unit": 202,
+     "grade": 1
+    },
+    {
+     "unit": 204,
+     "grade": 2
+    },
+    {
+     "unit": 205,
+     "grade": 1
+    },
+    {
+     "unit": 206,
+     "grade": 1
+    },
+    {
+     "unit": 207,
+     "grade": 2
+    },
+    {
+     "unit": 230,
+     "grade": 1
+    },
+    {
+     "unit": 243,
+     "grade": 1
+    },
+    {
+     "unit": 244,
+     "grade": 1
+    },
+    {
+     "unit": 245,
+     "grade": 1
+    },
+    {
+     "unit": 247,
+     "grade": 1
+    },
+    {
+     "unit": 254,
+     "grade": 1
+    },
+    {
+     "unit": 268,
+     "grade": 1
+    },
+    {
+     "unit": 269,
+     "grade": 1
+    },
+    {
+     "unit": 274,
+     "grade": 1
+    },
+    {
+     "unit": 291,
+     "grade": 1
+    },
+    {
+     "unit": 293,
+     "grade": 1
+    },
+    {
+     "unit": 331,
+     "grade": 1
+    },
+    {
+     "unit": 344,
+     "grade": 1
+    },
+    {
+     "unit": 397,
+     "grade": 1
+    },
+    {
+     "unit": 463,
+     "grade": 1
+    },
+    {
+     "unit": 464,
+     "grade": 1
+    },
+    {
+     "unit": 465,
+     "grade": 1
+    },
+    {
+     "unit": 466,
+     "grade": 1
+    },
+    {
+     "unit": 467,
+     "grade": 2
+    }
+   ]
+  },
+  {
+   "id": "Q07",
+   "q": "光伏装机",
+   "type": "主题",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "光伏"
+    ],
+    "1": [
+     "光伏",
+     "储能"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 63,
+     "grade": 2
+    },
+    {
+     "unit": 98,
+     "grade": 2
+    },
+    {
+     "unit": 198,
+     "grade": 1
+    },
+    {
+     "unit": 200,
+     "grade": 1
+    },
+    {
+     "unit": 201,
+     "grade": 1
+    },
+    {
+     "unit": 202,
+     "grade": 1
+    },
+    {
+     "unit": 230,
+     "grade": 2
+    },
+    {
+     "unit": 243,
+     "grade": 2
+    },
+    {
+     "unit": 244,
+     "grade": 2
+    },
+    {
+     "unit": 245,
+     "grade": 2
+    },
+    {
+     "unit": 246,
+     "grade": 2
+    },
+    {
+     "unit": 247,
+     "grade": 2
+    },
+    {
+     "unit": 268,
+     "grade": 2
+    },
+    {
+     "unit": 270,
+     "grade": 2
+    },
+    {
+     "unit": 271,
+     "grade": 2
+    },
+    {
+     "unit": 274,
+     "grade": 2
+    },
+    {
+     "unit": 323,
+     "grade": 2
+    },
+    {
+     "unit": 324,
+     "grade": 2
+    },
+    {
+     "unit": 325,
+     "grade": 2
+    },
+    {
+     "unit": 326,
+     "grade": 2
+    },
+    {
+     "unit": 327,
+     "grade": 2
+    },
+    {
+     "unit": 328,
+     "grade": 1
+    },
+    {
+     "unit": 329,
+     "grade": 1
+    },
+    {
+     "unit": 330,
+     "grade": 1
+    },
+    {
+     "unit": 331,
+     "grade": 1
+    },
+    {
+     "unit": 373,
+     "grade": 2
+    },
+    {
+     "unit": 376,
+     "grade": 2
+    },
+    {
+     "unit": 466,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "Q08",
+   "q": "储能市场",
+   "type": "主题",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "储能"
+    ],
+    "1": [
+     "储能",
+     "光伏"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 63,
+     "grade": 1
+    },
+    {
+     "unit": 98,
+     "grade": 2
+    },
+    {
+     "unit": 198,
+     "grade": 2
+    },
+    {
+     "unit": 200,
+     "grade": 2
+    },
+    {
+     "unit": 201,
+     "grade": 2
+    },
+    {
+     "unit": 202,
+     "grade": 2
+    },
+    {
+     "unit": 230,
+     "grade": 1
+    },
+    {
+     "unit": 243,
+     "grade": 1
+    },
+    {
+     "unit": 244,
+     "grade": 1
+    },
+    {
+     "unit": 245,
+     "grade": 1
+    },
+    {
+     "unit": 246,
+     "grade": 1
+    },
+    {
+     "unit": 247,
+     "grade": 1
+    },
+    {
+     "unit": 268,
+     "grade": 1
+    },
+    {
+     "unit": 270,
+     "grade": 1
+    },
+    {
+     "unit": 271,
+     "grade": 1
+    },
+    {
+     "unit": 274,
+     "grade": 1
+    },
+    {
+     "unit": 323,
+     "grade": 1
+    },
+    {
+     "unit": 324,
+     "grade": 1
+    },
+    {
+     "unit": 325,
+     "grade": 1
+    },
+    {
+     "unit": 326,
+     "grade": 1
+    },
+    {
+     "unit": 327,
+     "grade": 1
+    },
+    {
+     "unit": 328,
+     "grade": 2
+    },
+    {
+     "unit": 329,
+     "grade": 2
+    },
+    {
+     "unit": 330,
+     "grade": 2
+    },
+    {
+     "unit": 331,
+     "grade": 2
+    },
+    {
+     "unit": 373,
+     "grade": 2
+    },
+    {
+     "unit": 376,
+     "grade": 1
+    },
+    {
+     "unit": 466,
+     "grade": 2
+    }
+   ]
+  },
+  {
+   "id": "Q09",
+   "q": "数据中心用电",
+   "type": "主题",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "数据中心"
+    ],
+    "1": [
+     "数据中心",
+     "AIDC",
+     "电力"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 40,
+     "grade": 2
+    },
+    {
+     "unit": 43,
+     "grade": 2
+    },
+    {
+     "unit": 44,
+     "grade": 2
+    },
+    {
+     "unit": 45,
+     "grade": 2
+    },
+    {
+     "unit": 46,
+     "grade": 2
+    },
+    {
+     "unit": 47,
+     "grade": 2
+    },
+    {
+     "unit": 49,
+     "grade": 2
+    },
+    {
+     "unit": 61,
+     "grade": 1
+    },
+    {
+     "unit": 65,
+     "grade": 1
+    },
+    {
+     "unit": 66,
+     "grade": 1
+    },
+    {
+     "unit": 68,
+     "grade": 1
+    },
+    {
+     "unit": 96,
+     "grade": 1
+    },
+    {
+     "unit": 99,
+     "grade": 1
+    },
+    {
+     "unit": 106,
+     "grade": 2
+    },
+    {
+     "unit": 107,
+     "grade": 2
+    },
+    {
+     "unit": 128,
+     "grade": 2
+    },
+    {
+     "unit": 129,
+     "grade": 2
+    },
+    {
+     "unit": 154,
+     "grade": 2
+    },
+    {
+     "unit": 244,
+     "grade": 1
+    },
+    {
+     "unit": 253,
+     "grade": 1
+    },
+    {
+     "unit": 254,
+     "grade": 1
+    },
+    {
+     "unit": 272,
+     "grade": 1
+    },
+    {
+     "unit": 273,
+     "grade": 1
+    },
+    {
+     "unit": 274,
+     "grade": 1
+    },
+    {
+     "unit": 291,
+     "grade": 1
+    },
+    {
+     "unit": 301,
+     "grade": 1
+    },
+    {
+     "unit": 328,
+     "grade": 2
+    },
+    {
+     "unit": 329,
+     "grade": 2
+    },
+    {
+     "unit": 330,
+     "grade": 2
+    },
+    {
+     "unit": 332,
+     "grade": 2
+    },
+    {
+     "unit": 333,
+     "grade": 2
+    },
+    {
+     "unit": 334,
+     "grade": 2
+    },
+    {
+     "unit": 335,
+     "grade": 2
+    },
+    {
+     "unit": 336,
+     "grade": 1
+    },
+    {
+     "unit": 337,
+     "grade": 2
+    },
+    {
+     "unit": 373,
+     "grade": 1
+    },
+    {
+     "unit": 374,
+     "grade": 1
+    },
+    {
+     "unit": 377,
+     "grade": 1
+    },
+    {
+     "unit": 379,
+     "grade": 2
+    },
+    {
+     "unit": 381,
+     "grade": 2
+    },
+    {
+     "unit": 382,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "Q10",
+   "q": "AI 算力建设",
+   "type": "主题",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "算力",
+     "AI 算力"
+    ],
+    "1": [
+     "算力",
+     "数据中心",
+     "AI"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 38,
+     "grade": 1
+    },
+    {
+     "unit": 40,
+     "grade": 1
+    },
+    {
+     "unit": 43,
+     "grade": 1
+    },
+    {
+     "unit": 44,
+     "grade": 1
+    },
+    {
+     "unit": 45,
+     "grade": 1
+    },
+    {
+     "unit": 46,
+     "grade": 1
+    },
+    {
+     "unit": 47,
+     "grade": 1
+    },
+    {
+     "unit": 49,
+     "grade": 1
+    },
+    {
+     "unit": 55,
+     "grade": 1
+    },
+    {
+     "unit": 70,
+     "grade": 1
+    },
+    {
+     "unit": 74,
+     "grade": 2
+    },
+    {
+     "unit": 78,
+     "grade": 1
+    },
+    {
+     "unit": 94,
+     "grade": 1
+    },
+    {
+     "unit": 106,
+     "grade": 2
+    },
+    {
+     "unit": 107,
+     "grade": 1
+    },
+    {
+     "unit": 109,
+     "grade": 1
+    },
+    {
+     "unit": 110,
+     "grade": 1
+    },
+    {
+     "unit": 111,
+     "grade": 1
+    },
+    {
+     "unit": 112,
+     "grade": 1
+    },
+    {
+     "unit": 113,
+     "grade": 2
+    },
+    {
+     "unit": 114,
+     "grade": 1
+    },
+    {
+     "unit": 115,
+     "grade": 1
+    },
+    {
+     "unit": 116,
+     "grade": 1
+    },
+    {
+     "unit": 117,
+     "grade": 1
+    },
+    {
+     "unit": 118,
+     "grade": 2
+    },
+    {
+     "unit": 125,
+     "grade": 1
+    },
+    {
+     "unit": 128,
+     "grade": 1
+    },
+    {
+     "unit": 129,
+     "grade": 2
+    },
+    {
+     "unit": 140,
+     "grade": 1
+    },
+    {
+     "unit": 143,
+     "grade": 1
+    },
+    {
+     "unit": 151,
+     "grade": 1
+    },
+    {
+     "unit": 153,
+     "grade": 1
+    },
+    {
+     "unit": 154,
+     "grade": 1
+    },
+    {
+     "unit": 155,
+     "grade": 1
+    },
+    {
+     "unit": 156,
+     "grade": 1
+    },
+    {
+     "unit": 157,
+     "grade": 1
+    },
+    {
+     "unit": 158,
+     "grade": 1
+    },
+    {
+     "unit": 159,
+     "grade": 1
+    },
+    {
+     "unit": 166,
+     "grade": 1
+    },
+    {
+     "unit": 168,
+     "grade": 1
+    },
+    {
+     "unit": 169,
+     "grade": 1
+    },
+    {
+     "unit": 183,
+     "grade": 1
+    },
+    {
+     "unit": 184,
+     "grade": 1
+    },
+    {
+     "unit": 187,
+     "grade": 1
+    },
+    {
+     "unit": 213,
+     "grade": 1
+    },
+    {
+     "unit": 214,
+     "grade": 1
+    },
+    {
+     "unit": 215,
+     "grade": 1
+    },
+    {
+     "unit": 216,
+     "grade": 1
+    },
+    {
+     "unit": 217,
+     "grade": 2
+    },
+    {
+     "unit": 233,
+     "grade": 1
+    },
+    {
+     "unit": 236,
+     "grade": 1
+    },
+    {
+     "unit": 238,
+     "grade": 1
+    },
+    {
+     "unit": 239,
+     "grade": 1
+    },
+    {
+     "unit": 240,
+     "grade": 1
+    },
+    {
+     "unit": 241,
+     "grade": 2
+    },
+    {
+     "unit": 266,
+     "grade": 1
+    },
+    {
+     "unit": 267,
+     "grade": 1
+    },
+    {
+     "unit": 281,
+     "grade": 1
+    },
+    {
+     "unit": 303,
+     "grade": 1
+    },
+    {
+     "unit": 304,
+     "grade": 1
+    },
+    {
+     "unit": 305,
+     "grade": 1
+    },
+    {
+     "unit": 306,
+     "grade": 1
+    },
+    {
+     "unit": 307,
+     "grade": 1
+    },
+    {
+     "unit": 310,
+     "grade": 1
+    },
+    {
+     "unit": 311,
+     "grade": 1
+    },
+    {
+     "unit": 316,
+     "grade": 1
+    },
+    {
+     "unit": 328,
+     "grade": 1
+    },
+    {
+     "unit": 329,
+     "grade": 1
+    },
+    {
+     "unit": 330,
+     "grade": 1
+    },
+    {
+     "unit": 332,
+     "grade": 1
+    },
+    {
+     "unit": 333,
+     "grade": 1
+    },
+    {
+     "unit": 334,
+     "grade": 1
+    },
+    {
+     "unit": 335,
+     "grade": 1
+    },
+    {
+     "unit": 336,
+     "grade": 1
+    },
+    {
+     "unit": 337,
+     "grade": 1
+    },
+    {
+     "unit": 338,
+     "grade": 1
+    },
+    {
+     "unit": 341,
+     "grade": 2
+    },
+    {
+     "unit": 375,
+     "grade": 2
+    },
+    {
+     "unit": 379,
+     "grade": 2
+    },
+    {
+     "unit": 380,
+     "grade": 2
+    },
+    {
+     "unit": 381,
+     "grade": 1
+    },
+    {
+     "unit": 382,
+     "grade": 2
+    },
+    {
+     "unit": 383,
+     "grade": 1
+    },
+    {
+     "unit": 385,
+     "grade": 1
+    },
+    {
+     "unit": 386,
+     "grade": 1
+    },
+    {
+     "unit": 388,
+     "grade": 1
+    },
+    {
+     "unit": 390,
+     "grade": 1
+    },
+    {
+     "unit": 391,
+     "grade": 2
+    },
+    {
+     "unit": 392,
+     "grade": 2
+    },
+    {
+     "unit": 398,
+     "grade": 2
+    },
+    {
+     "unit": 443,
+     "grade": 1
+    },
+    {
+     "unit": 445,
+     "grade": 1
+    },
+    {
+     "unit": 453,
+     "grade": 1
+    },
+    {
+     "unit": 454,
+     "grade": 1
+    },
+    {
+     "unit": 455,
+     "grade": 1
+    },
+    {
+     "unit": 473,
+     "grade": 1
+    },
+    {
+     "unit": 474,
+     "grade": 1
+    },
+    {
+     "unit": 477,
+     "grade": 1
+    },
+    {
+     "unit": 488,
+     "grade": 2
+    },
+    {
+     "unit": 490,
+     "grade": 1
+    },
+    {
+     "unit": 493,
+     "grade": 1
+    },
+    {
+     "unit": 494,
+     "grade": 1
+    },
+    {
+     "unit": 495,
+     "grade": 2
+    }
+   ]
+  },
+  {
+   "id": "Q11",
+   "q": "大模型商业化",
+   "type": "主题",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "大模型",
+     "AI 模型商业化",
+     "商业化"
+    ],
+    "1": [
+     "大模型",
+     "商业化",
+     "AI 模型"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 59,
+     "grade": 2
+    },
+    {
+     "unit": 70,
+     "grade": 2
+    },
+    {
+     "unit": 110,
+     "grade": 2
+    },
+    {
+     "unit": 114,
+     "grade": 2
+    },
+    {
+     "unit": 115,
+     "grade": 2
+    },
+    {
+     "unit": 127,
+     "grade": 2
+    },
+    {
+     "unit": 143,
+     "grade": 1
+    },
+    {
+     "unit": 155,
+     "grade": 1
+    },
+    {
+     "unit": 157,
+     "grade": 1
+    },
+    {
+     "unit": 165,
+     "grade": 2
+    },
+    {
+     "unit": 169,
+     "grade": 2
+    },
+    {
+     "unit": 213,
+     "grade": 2
+    },
+    {
+     "unit": 215,
+     "grade": 2
+    },
+    {
+     "unit": 238,
+     "grade": 1
+    },
+    {
+     "unit": 240,
+     "grade": 2
+    },
+    {
+     "unit": 292,
+     "grade": 2
+    },
+    {
+     "unit": 311,
+     "grade": 1
+    },
+    {
+     "unit": 318,
+     "grade": 2
+    },
+    {
+     "unit": 338,
+     "grade": 2
+    },
+    {
+     "unit": 340,
+     "grade": 2
+    },
+    {
+     "unit": 384,
+     "grade": 2
+    },
+    {
+     "unit": 443,
+     "grade": 2
+    },
+    {
+     "unit": 444,
+     "grade": 2
+    },
+    {
+     "unit": 445,
+     "grade": 2
+    },
+    {
+     "unit": 446,
+     "grade": 2
+    },
+    {
+     "unit": 447,
+     "grade": 2
+    },
+    {
+     "unit": 453,
+     "grade": 2
+    },
+    {
+     "unit": 473,
+     "grade": 2
+    }
+   ]
+  },
+  {
+   "id": "Q12",
+   "q": "四足机器人",
+   "type": "主题",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "四足机器人",
+     "机器人"
+    ],
+    "1": [
+     "机器人",
+     "具身"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 228,
+     "grade": 2
+    },
+    {
+     "unit": 232,
+     "grade": 2
+    },
+    {
+     "unit": 288,
+     "grade": 2
+    },
+    {
+     "unit": 289,
+     "grade": 2
+    },
+    {
+     "unit": 290,
+     "grade": 2
+    },
+    {
+     "unit": 291,
+     "grade": 2
+    },
+    {
+     "unit": 292,
+     "grade": 2
+    },
+    {
+     "unit": 312,
+     "grade": 1
+    },
+    {
+     "unit": 391,
+     "grade": 2
+    },
+    {
+     "unit": 400,
+     "grade": 2
+    },
+    {
+     "unit": 401,
+     "grade": 1
+    },
+    {
+     "unit": 403,
+     "grade": 2
+    },
+    {
+     "unit": 404,
+     "grade": 2
+    },
+    {
+     "unit": 405,
+     "grade": 2
+    },
+    {
+     "unit": 406,
+     "grade": 2
+    },
+    {
+     "unit": 407,
+     "grade": 2
+    },
+    {
+     "unit": 497,
+     "grade": 2
+    }
+   ]
+  },
+  {
+   "id": "Q13",
+   "q": "半导体景气度",
+   "type": "主题",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "半导体"
+    ],
+    "1": [
+     "半导体",
+     "芯片"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 106,
+     "grade": 1
+    },
+    {
+     "unit": 109,
+     "grade": 1
+    },
+    {
+     "unit": 111,
+     "grade": 2
+    },
+    {
+     "unit": 112,
+     "grade": 1
+    },
+    {
+     "unit": 113,
+     "grade": 1
+    },
+    {
+     "unit": 115,
+     "grade": 1
+    },
+    {
+     "unit": 116,
+     "grade": 2
+    },
+    {
+     "unit": 117,
+     "grade": 1
+    },
+    {
+     "unit": 118,
+     "grade": 1
+    },
+    {
+     "unit": 128,
+     "grade": 1
+    },
+    {
+     "unit": 129,
+     "grade": 1
+    },
+    {
+     "unit": 137,
+     "grade": 2
+    },
+    {
+     "unit": 143,
+     "grade": 1
+    },
+    {
+     "unit": 293,
+     "grade": 2
+    },
+    {
+     "unit": 341,
+     "grade": 1
+    },
+    {
+     "unit": 353,
+     "grade": 2
+    },
+    {
+     "unit": 392,
+     "grade": 1
+    },
+    {
+     "unit": 461,
+     "grade": 1
+    },
+    {
+     "unit": 489,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "Q14",
+   "q": "白酒价格带",
+   "type": "主题",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "白酒"
+    ],
+    "1": [
+     "白酒",
+     "消费"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 61,
+     "grade": 1
+    },
+    {
+     "unit": 64,
+     "grade": 1
+    },
+    {
+     "unit": 78,
+     "grade": 1
+    },
+    {
+     "unit": 79,
+     "grade": 1
+    },
+    {
+     "unit": 82,
+     "grade": 1
+    },
+    {
+     "unit": 85,
+     "grade": 1
+    },
+    {
+     "unit": 87,
+     "grade": 1
+    },
+    {
+     "unit": 99,
+     "grade": 1
+    },
+    {
+     "unit": 165,
+     "grade": 1
+    },
+    {
+     "unit": 169,
+     "grade": 1
+    },
+    {
+     "unit": 176,
+     "grade": 1
+    },
+    {
+     "unit": 290,
+     "grade": 1
+    },
+    {
+     "unit": 301,
+     "grade": 1
+    },
+    {
+     "unit": 314,
+     "grade": 1
+    },
+    {
+     "unit": 352,
+     "grade": 1
+    },
+    {
+     "unit": 390,
+     "grade": 1
+    },
+    {
+     "unit": 477,
+     "grade": 1
+    },
+    {
+     "unit": 483,
+     "grade": 2
+    },
+    {
+     "unit": 484,
+     "grade": 2
+    },
+    {
+     "unit": 485,
+     "grade": 2
+    },
+    {
+     "unit": 486,
+     "grade": 2
+    }
+   ]
+  },
+  {
+   "id": "Q15",
+   "q": "房地产政策",
+   "type": "主题",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "房地产",
+     "购房"
+    ],
+    "1": [
+     "房地产",
+     "购房",
+     "政策"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 41,
+     "grade": 1
+    },
+    {
+     "unit": 47,
+     "grade": 1
+    },
+    {
+     "unit": 48,
+     "grade": 1
+    },
+    {
+     "unit": 52,
+     "grade": 1
+    },
+    {
+     "unit": 66,
+     "grade": 1
+    },
+    {
+     "unit": 131,
+     "grade": 1
+    },
+    {
+     "unit": 132,
+     "grade": 2
+    },
+    {
+     "unit": 133,
+     "grade": 2
+    },
+    {
+     "unit": 134,
+     "grade": 2
+    },
+    {
+     "unit": 137,
+     "grade": 1
+    },
+    {
+     "unit": 138,
+     "grade": 1
+    },
+    {
+     "unit": 147,
+     "grade": 1
+    },
+    {
+     "unit": 171,
+     "grade": 1
+    },
+    {
+     "unit": 172,
+     "grade": 1
+    },
+    {
+     "unit": 179,
+     "grade": 1
+    },
+    {
+     "unit": 182,
+     "grade": 2
+    },
+    {
+     "unit": 188,
+     "grade": 1
+    },
+    {
+     "unit": 189,
+     "grade": 1
+    },
+    {
+     "unit": 210,
+     "grade": 1
+    },
+    {
+     "unit": 211,
+     "grade": 1
+    },
+    {
+     "unit": 218,
+     "grade": 2
+    },
+    {
+     "unit": 220,
+     "grade": 2
+    },
+    {
+     "unit": 221,
+     "grade": 2
+    },
+    {
+     "unit": 222,
+     "grade": 2
+    },
+    {
+     "unit": 230,
+     "grade": 1
+    },
+    {
+     "unit": 238,
+     "grade": 1
+    },
+    {
+     "unit": 257,
+     "grade": 1
+    },
+    {
+     "unit": 270,
+     "grade": 1
+    },
+    {
+     "unit": 293,
+     "grade": 2
+    },
+    {
+     "unit": 296,
+     "grade": 2
+    },
+    {
+     "unit": 300,
+     "grade": 1
+    },
+    {
+     "unit": 312,
+     "grade": 1
+    },
+    {
+     "unit": 317,
+     "grade": 1
+    },
+    {
+     "unit": 325,
+     "grade": 1
+    },
+    {
+     "unit": 326,
+     "grade": 1
+    },
+    {
+     "unit": 350,
+     "grade": 2
+    },
+    {
+     "unit": 351,
+     "grade": 2
+    },
+    {
+     "unit": 352,
+     "grade": 2
+    },
+    {
+     "unit": 354,
+     "grade": 1
+    },
+    {
+     "unit": 363,
+     "grade": 1
+    },
+    {
+     "unit": 365,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "Q16",
+   "q": "铁路客流",
+   "type": "主题",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "铁路"
+    ],
+    "1": [
+     "铁路",
+     "客流"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 88,
+     "grade": 1
+    },
+    {
+     "unit": 174,
+     "grade": 1
+    },
+    {
+     "unit": 175,
+     "grade": 2
+    }
+   ]
+  },
+  {
+   "id": "Q17",
+   "q": "企业信用分化",
+   "type": "主题",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "企业信用"
+    ],
+    "1": [
+     "企业信用",
+     "信用"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 297,
+     "grade": 2
+    },
+    {
+     "unit": 300,
+     "grade": 2
+    },
+    {
+     "unit": 363,
+     "grade": 1
+    },
+    {
+     "unit": 366,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "Q18",
+   "q": "网络安全技能",
+   "type": "主题",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "网络安全"
+    ],
+    "1": [
+     "网络安全",
+     "安全"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 8,
+     "grade": 1
+    },
+    {
+     "unit": 35,
+     "grade": 2
+    },
+    {
+     "unit": 36,
+     "grade": 2
+    },
+    {
+     "unit": 37,
+     "grade": 2
+    },
+    {
+     "unit": 38,
+     "grade": 1
+    },
+    {
+     "unit": 39,
+     "grade": 2
+    },
+    {
+     "unit": 41,
+     "grade": 2
+    },
+    {
+     "unit": 43,
+     "grade": 2
+    },
+    {
+     "unit": 45,
+     "grade": 2
+    },
+    {
+     "unit": 48,
+     "grade": 1
+    },
+    {
+     "unit": 49,
+     "grade": 2
+    },
+    {
+     "unit": 58,
+     "grade": 1
+    },
+    {
+     "unit": 70,
+     "grade": 1
+    },
+    {
+     "unit": 71,
+     "grade": 2
+    },
+    {
+     "unit": 72,
+     "grade": 1
+    },
+    {
+     "unit": 73,
+     "grade": 2
+    },
+    {
+     "unit": 74,
+     "grade": 2
+    },
+    {
+     "unit": 95,
+     "grade": 1
+    },
+    {
+     "unit": 193,
+     "grade": 1
+    },
+    {
+     "unit": 201,
+     "grade": 1
+    },
+    {
+     "unit": 216,
+     "grade": 1
+    },
+    {
+     "unit": 223,
+     "grade": 1
+    },
+    {
+     "unit": 238,
+     "grade": 2
+    },
+    {
+     "unit": 267,
+     "grade": 1
+    },
+    {
+     "unit": 312,
+     "grade": 1
+    },
+    {
+     "unit": 321,
+     "grade": 1
+    },
+    {
+     "unit": 327,
+     "grade": 1
+    },
+    {
+     "unit": 377,
+     "grade": 1
+    },
+    {
+     "unit": 453,
+     "grade": 1
+    },
+    {
+     "unit": 455,
+     "grade": 1
+    },
+    {
+     "unit": 456,
+     "grade": 2
+    },
+    {
+     "unit": 457,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "Q19",
+   "q": "太阳能",
+   "type": "同义词",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "光伏"
+    ],
+    "1": [
+     "光伏",
+     "储能"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 63,
+     "grade": 2
+    },
+    {
+     "unit": 98,
+     "grade": 2
+    },
+    {
+     "unit": 198,
+     "grade": 1
+    },
+    {
+     "unit": 200,
+     "grade": 1
+    },
+    {
+     "unit": 201,
+     "grade": 1
+    },
+    {
+     "unit": 202,
+     "grade": 1
+    },
+    {
+     "unit": 230,
+     "grade": 2
+    },
+    {
+     "unit": 243,
+     "grade": 2
+    },
+    {
+     "unit": 244,
+     "grade": 2
+    },
+    {
+     "unit": 245,
+     "grade": 2
+    },
+    {
+     "unit": 246,
+     "grade": 2
+    },
+    {
+     "unit": 247,
+     "grade": 2
+    },
+    {
+     "unit": 268,
+     "grade": 2
+    },
+    {
+     "unit": 270,
+     "grade": 2
+    },
+    {
+     "unit": 271,
+     "grade": 2
+    },
+    {
+     "unit": 274,
+     "grade": 2
+    },
+    {
+     "unit": 323,
+     "grade": 2
+    },
+    {
+     "unit": 324,
+     "grade": 2
+    },
+    {
+     "unit": 325,
+     "grade": 2
+    },
+    {
+     "unit": 326,
+     "grade": 2
+    },
+    {
+     "unit": 327,
+     "grade": 2
+    },
+    {
+     "unit": 328,
+     "grade": 1
+    },
+    {
+     "unit": 329,
+     "grade": 1
+    },
+    {
+     "unit": 330,
+     "grade": 1
+    },
+    {
+     "unit": 331,
+     "grade": 1
+    },
+    {
+     "unit": 373,
+     "grade": 2
+    },
+    {
+     "unit": 376,
+     "grade": 2
+    },
+    {
+     "unit": 466,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "Q20",
+   "q": "钠离子电池",
+   "type": "同义词",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "钠电池"
+    ],
+    "1": [
+     "钠电池",
+     "钠离子"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 198,
+     "grade": 2
+    },
+    {
+     "unit": 199,
+     "grade": 2
+    },
+    {
+     "unit": 200,
+     "grade": 2
+    },
+    {
+     "unit": 201,
+     "grade": 2
+    },
+    {
+     "unit": 202,
+     "grade": 2
+    },
+    {
+     "unit": 466,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "Q21",
+   "q": "IDC",
+   "type": "同义词",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "数据中心"
+    ],
+    "1": [
+     "数据中心",
+     "算力"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 40,
+     "grade": 2
+    },
+    {
+     "unit": 43,
+     "grade": 2
+    },
+    {
+     "unit": 44,
+     "grade": 2
+    },
+    {
+     "unit": 45,
+     "grade": 2
+    },
+    {
+     "unit": 46,
+     "grade": 2
+    },
+    {
+     "unit": 47,
+     "grade": 2
+    },
+    {
+     "unit": 49,
+     "grade": 2
+    },
+    {
+     "unit": 74,
+     "grade": 1
+    },
+    {
+     "unit": 106,
+     "grade": 2
+    },
+    {
+     "unit": 107,
+     "grade": 2
+    },
+    {
+     "unit": 113,
+     "grade": 1
+    },
+    {
+     "unit": 118,
+     "grade": 1
+    },
+    {
+     "unit": 128,
+     "grade": 2
+    },
+    {
+     "unit": 129,
+     "grade": 2
+    },
+    {
+     "unit": 154,
+     "grade": 2
+    },
+    {
+     "unit": 217,
+     "grade": 1
+    },
+    {
+     "unit": 241,
+     "grade": 1
+    },
+    {
+     "unit": 328,
+     "grade": 2
+    },
+    {
+     "unit": 329,
+     "grade": 2
+    },
+    {
+     "unit": 330,
+     "grade": 2
+    },
+    {
+     "unit": 332,
+     "grade": 2
+    },
+    {
+     "unit": 333,
+     "grade": 2
+    },
+    {
+     "unit": 334,
+     "grade": 2
+    },
+    {
+     "unit": 335,
+     "grade": 2
+    },
+    {
+     "unit": 337,
+     "grade": 2
+    },
+    {
+     "unit": 341,
+     "grade": 1
+    },
+    {
+     "unit": 375,
+     "grade": 1
+    },
+    {
+     "unit": 379,
+     "grade": 2
+    },
+    {
+     "unit": 380,
+     "grade": 1
+    },
+    {
+     "unit": 381,
+     "grade": 2
+    },
+    {
+     "unit": 382,
+     "grade": 1
+    },
+    {
+     "unit": 391,
+     "grade": 1
+    },
+    {
+     "unit": 392,
+     "grade": 1
+    },
+    {
+     "unit": 398,
+     "grade": 1
+    },
+    {
+     "unit": 488,
+     "grade": 1
+    },
+    {
+     "unit": 495,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "Q22",
+   "q": "人工智能",
+   "type": "同义词",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "AI",
+     "大模型"
+    ],
+    "1": [
+     "AI",
+     "大模型"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 38,
+     "grade": 2
+    },
+    {
+     "unit": 55,
+     "grade": 2
+    },
+    {
+     "unit": 59,
+     "grade": 2
+    },
+    {
+     "unit": 70,
+     "grade": 2
+    },
+    {
+     "unit": 74,
+     "grade": 2
+    },
+    {
+     "unit": 78,
+     "grade": 2
+    },
+    {
+     "unit": 94,
+     "grade": 2
+    },
+    {
+     "unit": 106,
+     "grade": 2
+    },
+    {
+     "unit": 109,
+     "grade": 2
+    },
+    {
+     "unit": 110,
+     "grade": 2
+    },
+    {
+     "unit": 111,
+     "grade": 2
+    },
+    {
+     "unit": 112,
+     "grade": 2
+    },
+    {
+     "unit": 113,
+     "grade": 2
+    },
+    {
+     "unit": 114,
+     "grade": 2
+    },
+    {
+     "unit": 115,
+     "grade": 2
+    },
+    {
+     "unit": 116,
+     "grade": 2
+    },
+    {
+     "unit": 117,
+     "grade": 2
+    },
+    {
+     "unit": 125,
+     "grade": 2
+    },
+    {
+     "unit": 128,
+     "grade": 2
+    },
+    {
+     "unit": 129,
+     "grade": 2
+    },
+    {
+     "unit": 140,
+     "grade": 2
+    },
+    {
+     "unit": 143,
+     "grade": 2
+    },
+    {
+     "unit": 151,
+     "grade": 2
+    },
+    {
+     "unit": 153,
+     "grade": 2
+    },
+    {
+     "unit": 154,
+     "grade": 2
+    },
+    {
+     "unit": 155,
+     "grade": 2
+    },
+    {
+     "unit": 156,
+     "grade": 2
+    },
+    {
+     "unit": 157,
+     "grade": 2
+    },
+    {
+     "unit": 158,
+     "grade": 2
+    },
+    {
+     "unit": 159,
+     "grade": 2
+    },
+    {
+     "unit": 166,
+     "grade": 2
+    },
+    {
+     "unit": 168,
+     "grade": 2
+    },
+    {
+     "unit": 169,
+     "grade": 2
+    },
+    {
+     "unit": 183,
+     "grade": 2
+    },
+    {
+     "unit": 184,
+     "grade": 2
+    },
+    {
+     "unit": 187,
+     "grade": 2
+    },
+    {
+     "unit": 213,
+     "grade": 2
+    },
+    {
+     "unit": 214,
+     "grade": 2
+    },
+    {
+     "unit": 215,
+     "grade": 2
+    },
+    {
+     "unit": 216,
+     "grade": 2
+    },
+    {
+     "unit": 217,
+     "grade": 2
+    },
+    {
+     "unit": 233,
+     "grade": 2
+    },
+    {
+     "unit": 236,
+     "grade": 2
+    },
+    {
+     "unit": 238,
+     "grade": 2
+    },
+    {
+     "unit": 239,
+     "grade": 2
+    },
+    {
+     "unit": 240,
+     "grade": 2
+    },
+    {
+     "unit": 266,
+     "grade": 2
+    },
+    {
+     "unit": 267,
+     "grade": 2
+    },
+    {
+     "unit": 281,
+     "grade": 2
+    },
+    {
+     "unit": 303,
+     "grade": 2
+    },
+    {
+     "unit": 304,
+     "grade": 2
+    },
+    {
+     "unit": 305,
+     "grade": 2
+    },
+    {
+     "unit": 306,
+     "grade": 2
+    },
+    {
+     "unit": 307,
+     "grade": 2
+    },
+    {
+     "unit": 310,
+     "grade": 2
+    },
+    {
+     "unit": 311,
+     "grade": 2
+    },
+    {
+     "unit": 316,
+     "grade": 2
+    },
+    {
+     "unit": 328,
+     "grade": 2
+    },
+    {
+     "unit": 329,
+     "grade": 2
+    },
+    {
+     "unit": 330,
+     "grade": 2
+    },
+    {
+     "unit": 333,
+     "grade": 2
+    },
+    {
+     "unit": 335,
+     "grade": 2
+    },
+    {
+     "unit": 336,
+     "grade": 2
+    },
+    {
+     "unit": 338,
+     "grade": 2
+    },
+    {
+     "unit": 375,
+     "grade": 2
+    },
+    {
+     "unit": 383,
+     "grade": 2
+    },
+    {
+     "unit": 384,
+     "grade": 2
+    },
+    {
+     "unit": 385,
+     "grade": 2
+    },
+    {
+     "unit": 386,
+     "grade": 2
+    },
+    {
+     "unit": 388,
+     "grade": 2
+    },
+    {
+     "unit": 390,
+     "grade": 2
+    },
+    {
+     "unit": 391,
+     "grade": 2
+    },
+    {
+     "unit": 443,
+     "grade": 2
+    },
+    {
+     "unit": 444,
+     "grade": 2
+    },
+    {
+     "unit": 445,
+     "grade": 2
+    },
+    {
+     "unit": 446,
+     "grade": 2
+    },
+    {
+     "unit": 447,
+     "grade": 2
+    },
+    {
+     "unit": 453,
+     "grade": 2
+    },
+    {
+     "unit": 454,
+     "grade": 2
+    },
+    {
+     "unit": 455,
+     "grade": 2
+    },
+    {
+     "unit": 473,
+     "grade": 2
+    },
+    {
+     "unit": 474,
+     "grade": 2
+    },
+    {
+     "unit": 477,
+     "grade": 2
+    },
+    {
+     "unit": 488,
+     "grade": 2
+    },
+    {
+     "unit": 490,
+     "grade": 2
+    },
+    {
+     "unit": 493,
+     "grade": 2
+    },
+    {
+     "unit": 494,
+     "grade": 2
+    },
+    {
+     "unit": 495,
+     "grade": 2
+    }
+   ]
+  },
+  {
+   "id": "Q23",
+   "q": "股息",
+   "type": "同义词",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "股息",
+     "分红"
+    ],
+    "1": [
+     "分红",
+     "股息"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 356,
+     "grade": 2
+    },
+    {
+     "unit": 359,
+     "grade": 2
+    },
+    {
+     "unit": 372,
+     "grade": 2
+    },
+    {
+     "unit": 480,
+     "grade": 2
+    }
+   ]
+  },
+  {
+   "id": "Q24",
+   "q": "存货",
+   "type": "同义词",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "库存"
+    ],
+    "1": [
+     "库存",
+     "存货"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 103,
+     "grade": 2
+    },
+    {
+     "unit": 139,
+     "grade": 2
+    },
+    {
+     "unit": 208,
+     "grade": 2
+    },
+    {
+     "unit": 210,
+     "grade": 2
+    },
+    {
+     "unit": 314,
+     "grade": 2
+    },
+    {
+     "unit": 315,
+     "grade": 2
+    },
+    {
+     "unit": 326,
+     "grade": 2
+    },
+    {
+     "unit": 351,
+     "grade": 2
+    },
+    {
+     "unit": 394,
+     "grade": 2
+    },
+    {
+     "unit": 395,
+     "grade": 2
+    },
+    {
+     "unit": 470,
+     "grade": 2
+    },
+    {
+     "unit": 486,
+     "grade": 2
+    }
+   ]
+  },
+  {
+   "id": "Q25",
+   "q": "芯片",
+   "type": "同义词",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "芯片",
+     "半导体"
+    ],
+    "1": [
+     "芯片",
+     "半导体"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 106,
+     "grade": 2
+    },
+    {
+     "unit": 109,
+     "grade": 2
+    },
+    {
+     "unit": 111,
+     "grade": 2
+    },
+    {
+     "unit": 112,
+     "grade": 2
+    },
+    {
+     "unit": 113,
+     "grade": 2
+    },
+    {
+     "unit": 115,
+     "grade": 2
+    },
+    {
+     "unit": 116,
+     "grade": 2
+    },
+    {
+     "unit": 117,
+     "grade": 2
+    },
+    {
+     "unit": 118,
+     "grade": 2
+    },
+    {
+     "unit": 128,
+     "grade": 2
+    },
+    {
+     "unit": 129,
+     "grade": 2
+    },
+    {
+     "unit": 137,
+     "grade": 2
+    },
+    {
+     "unit": 143,
+     "grade": 2
+    },
+    {
+     "unit": 293,
+     "grade": 2
+    },
+    {
+     "unit": 341,
+     "grade": 2
+    },
+    {
+     "unit": 353,
+     "grade": 2
+    },
+    {
+     "unit": 392,
+     "grade": 2
+    },
+    {
+     "unit": 461,
+     "grade": 2
+    },
+    {
+     "unit": 489,
+     "grade": 2
+    }
+   ]
+  },
+  {
+   "id": "Q26",
+   "q": "港股通",
+   "type": "同义词",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "港股通",
+     "港股"
+    ],
+    "1": [
+     "港股",
+     "港股通"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 479,
+     "grade": 2
+    }
+   ]
+  },
+  {
+   "id": "Q27",
+   "q": "光伏 储能",
+   "type": "AND",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "光伏",
+     "储能"
+    ],
+    "1": [
+     "光伏",
+     "储能"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 63,
+     "grade": 2
+    },
+    {
+     "unit": 98,
+     "grade": 2
+    },
+    {
+     "unit": 198,
+     "grade": 2
+    },
+    {
+     "unit": 200,
+     "grade": 2
+    },
+    {
+     "unit": 201,
+     "grade": 2
+    },
+    {
+     "unit": 202,
+     "grade": 2
+    },
+    {
+     "unit": 230,
+     "grade": 2
+    },
+    {
+     "unit": 243,
+     "grade": 2
+    },
+    {
+     "unit": 244,
+     "grade": 2
+    },
+    {
+     "unit": 245,
+     "grade": 2
+    },
+    {
+     "unit": 246,
+     "grade": 2
+    },
+    {
+     "unit": 247,
+     "grade": 2
+    },
+    {
+     "unit": 268,
+     "grade": 2
+    },
+    {
+     "unit": 270,
+     "grade": 2
+    },
+    {
+     "unit": 271,
+     "grade": 2
+    },
+    {
+     "unit": 274,
+     "grade": 2
+    },
+    {
+     "unit": 323,
+     "grade": 2
+    },
+    {
+     "unit": 324,
+     "grade": 2
+    },
+    {
+     "unit": 325,
+     "grade": 2
+    },
+    {
+     "unit": 326,
+     "grade": 2
+    },
+    {
+     "unit": 327,
+     "grade": 2
+    },
+    {
+     "unit": 328,
+     "grade": 2
+    },
+    {
+     "unit": 329,
+     "grade": 2
+    },
+    {
+     "unit": 330,
+     "grade": 2
+    },
+    {
+     "unit": 331,
+     "grade": 2
+    },
+    {
+     "unit": 373,
+     "grade": 2
+    },
+    {
+     "unit": 376,
+     "grade": 2
+    },
+    {
+     "unit": 466,
+     "grade": 2
+    }
+   ]
+  },
+  {
+   "id": "Q28",
+   "q": "白酒 价格带",
+   "type": "AND",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "白酒"
+    ],
+    "1": [
+     "白酒",
+     "消费"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 61,
+     "grade": 1
+    },
+    {
+     "unit": 64,
+     "grade": 1
+    },
+    {
+     "unit": 78,
+     "grade": 1
+    },
+    {
+     "unit": 79,
+     "grade": 1
+    },
+    {
+     "unit": 82,
+     "grade": 1
+    },
+    {
+     "unit": 85,
+     "grade": 1
+    },
+    {
+     "unit": 87,
+     "grade": 1
+    },
+    {
+     "unit": 99,
+     "grade": 1
+    },
+    {
+     "unit": 165,
+     "grade": 1
+    },
+    {
+     "unit": 169,
+     "grade": 1
+    },
+    {
+     "unit": 176,
+     "grade": 1
+    },
+    {
+     "unit": 290,
+     "grade": 1
+    },
+    {
+     "unit": 301,
+     "grade": 1
+    },
+    {
+     "unit": 314,
+     "grade": 1
+    },
+    {
+     "unit": 352,
+     "grade": 1
+    },
+    {
+     "unit": 390,
+     "grade": 1
+    },
+    {
+     "unit": 477,
+     "grade": 1
+    },
+    {
+     "unit": 483,
+     "grade": 2
+    },
+    {
+     "unit": 484,
+     "grade": 2
+    },
+    {
+     "unit": 485,
+     "grade": 2
+    },
+    {
+     "unit": 486,
+     "grade": 2
+    }
+   ]
+  },
+  {
+   "id": "Q29",
+   "q": "钠电池 竞争壁垒",
+   "type": "AND",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "钠电池"
+    ],
+    "1": [
+     "钠电池",
+     "电池"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 81,
+     "grade": 1
+    },
+    {
+     "unit": 82,
+     "grade": 1
+    },
+    {
+     "unit": 83,
+     "grade": 1
+    },
+    {
+     "unit": 193,
+     "grade": 1
+    },
+    {
+     "unit": 194,
+     "grade": 1
+    },
+    {
+     "unit": 195,
+     "grade": 1
+    },
+    {
+     "unit": 196,
+     "grade": 1
+    },
+    {
+     "unit": 197,
+     "grade": 1
+    },
+    {
+     "unit": 198,
+     "grade": 2
+    },
+    {
+     "unit": 199,
+     "grade": 2
+    },
+    {
+     "unit": 200,
+     "grade": 2
+    },
+    {
+     "unit": 201,
+     "grade": 2
+    },
+    {
+     "unit": 202,
+     "grade": 2
+    },
+    {
+     "unit": 204,
+     "grade": 1
+    },
+    {
+     "unit": 205,
+     "grade": 1
+    },
+    {
+     "unit": 206,
+     "grade": 1
+    },
+    {
+     "unit": 207,
+     "grade": 1
+    },
+    {
+     "unit": 230,
+     "grade": 1
+    },
+    {
+     "unit": 243,
+     "grade": 1
+    },
+    {
+     "unit": 244,
+     "grade": 1
+    },
+    {
+     "unit": 245,
+     "grade": 1
+    },
+    {
+     "unit": 247,
+     "grade": 1
+    },
+    {
+     "unit": 254,
+     "grade": 1
+    },
+    {
+     "unit": 268,
+     "grade": 1
+    },
+    {
+     "unit": 269,
+     "grade": 1
+    },
+    {
+     "unit": 274,
+     "grade": 1
+    },
+    {
+     "unit": 291,
+     "grade": 1
+    },
+    {
+     "unit": 293,
+     "grade": 1
+    },
+    {
+     "unit": 331,
+     "grade": 1
+    },
+    {
+     "unit": 344,
+     "grade": 1
+    },
+    {
+     "unit": 397,
+     "grade": 1
+    },
+    {
+     "unit": 463,
+     "grade": 1
+    },
+    {
+     "unit": 464,
+     "grade": 1
+    },
+    {
+     "unit": 465,
+     "grade": 1
+    },
+    {
+     "unit": 466,
+     "grade": 1
+    },
+    {
+     "unit": 467,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "Q30",
+   "q": "AI 商业化",
+   "type": "AND",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "AI",
+     "商业化"
+    ],
+    "1": [
+     "AI",
+     "商业化"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 38,
+     "grade": 2
+    },
+    {
+     "unit": 55,
+     "grade": 2
+    },
+    {
+     "unit": 70,
+     "grade": 2
+    },
+    {
+     "unit": 74,
+     "grade": 2
+    },
+    {
+     "unit": 78,
+     "grade": 2
+    },
+    {
+     "unit": 94,
+     "grade": 2
+    },
+    {
+     "unit": 106,
+     "grade": 2
+    },
+    {
+     "unit": 109,
+     "grade": 2
+    },
+    {
+     "unit": 110,
+     "grade": 2
+    },
+    {
+     "unit": 111,
+     "grade": 2
+    },
+    {
+     "unit": 112,
+     "grade": 2
+    },
+    {
+     "unit": 113,
+     "grade": 2
+    },
+    {
+     "unit": 114,
+     "grade": 2
+    },
+    {
+     "unit": 115,
+     "grade": 2
+    },
+    {
+     "unit": 116,
+     "grade": 2
+    },
+    {
+     "unit": 117,
+     "grade": 2
+    },
+    {
+     "unit": 125,
+     "grade": 2
+    },
+    {
+     "unit": 127,
+     "grade": 2
+    },
+    {
+     "unit": 128,
+     "grade": 2
+    },
+    {
+     "unit": 129,
+     "grade": 2
+    },
+    {
+     "unit": 140,
+     "grade": 2
+    },
+    {
+     "unit": 143,
+     "grade": 2
+    },
+    {
+     "unit": 151,
+     "grade": 2
+    },
+    {
+     "unit": 153,
+     "grade": 2
+    },
+    {
+     "unit": 154,
+     "grade": 2
+    },
+    {
+     "unit": 155,
+     "grade": 2
+    },
+    {
+     "unit": 156,
+     "grade": 2
+    },
+    {
+     "unit": 157,
+     "grade": 2
+    },
+    {
+     "unit": 158,
+     "grade": 2
+    },
+    {
+     "unit": 159,
+     "grade": 2
+    },
+    {
+     "unit": 165,
+     "grade": 2
+    },
+    {
+     "unit": 166,
+     "grade": 2
+    },
+    {
+     "unit": 168,
+     "grade": 2
+    },
+    {
+     "unit": 169,
+     "grade": 2
+    },
+    {
+     "unit": 183,
+     "grade": 2
+    },
+    {
+     "unit": 184,
+     "grade": 2
+    },
+    {
+     "unit": 187,
+     "grade": 2
+    },
+    {
+     "unit": 213,
+     "grade": 2
+    },
+    {
+     "unit": 214,
+     "grade": 2
+    },
+    {
+     "unit": 215,
+     "grade": 2
+    },
+    {
+     "unit": 216,
+     "grade": 2
+    },
+    {
+     "unit": 217,
+     "grade": 2
+    },
+    {
+     "unit": 233,
+     "grade": 2
+    },
+    {
+     "unit": 236,
+     "grade": 2
+    },
+    {
+     "unit": 238,
+     "grade": 2
+    },
+    {
+     "unit": 239,
+     "grade": 2
+    },
+    {
+     "unit": 240,
+     "grade": 2
+    },
+    {
+     "unit": 266,
+     "grade": 2
+    },
+    {
+     "unit": 267,
+     "grade": 2
+    },
+    {
+     "unit": 281,
+     "grade": 2
+    },
+    {
+     "unit": 292,
+     "grade": 2
+    },
+    {
+     "unit": 303,
+     "grade": 2
+    },
+    {
+     "unit": 304,
+     "grade": 2
+    },
+    {
+     "unit": 305,
+     "grade": 2
+    },
+    {
+     "unit": 306,
+     "grade": 2
+    },
+    {
+     "unit": 307,
+     "grade": 2
+    },
+    {
+     "unit": 310,
+     "grade": 2
+    },
+    {
+     "unit": 311,
+     "grade": 2
+    },
+    {
+     "unit": 316,
+     "grade": 2
+    },
+    {
+     "unit": 318,
+     "grade": 2
+    },
+    {
+     "unit": 328,
+     "grade": 2
+    },
+    {
+     "unit": 329,
+     "grade": 2
+    },
+    {
+     "unit": 330,
+     "grade": 2
+    },
+    {
+     "unit": 333,
+     "grade": 2
+    },
+    {
+     "unit": 335,
+     "grade": 2
+    },
+    {
+     "unit": 336,
+     "grade": 2
+    },
+    {
+     "unit": 338,
+     "grade": 2
+    },
+    {
+     "unit": 340,
+     "grade": 2
+    },
+    {
+     "unit": 375,
+     "grade": 2
+    },
+    {
+     "unit": 383,
+     "grade": 2
+    },
+    {
+     "unit": 385,
+     "grade": 2
+    },
+    {
+     "unit": 386,
+     "grade": 2
+    },
+    {
+     "unit": 388,
+     "grade": 2
+    },
+    {
+     "unit": 390,
+     "grade": 2
+    },
+    {
+     "unit": 391,
+     "grade": 2
+    },
+    {
+     "unit": 443,
+     "grade": 2
+    },
+    {
+     "unit": 444,
+     "grade": 2
+    },
+    {
+     "unit": 445,
+     "grade": 2
+    },
+    {
+     "unit": 453,
+     "grade": 2
+    },
+    {
+     "unit": 454,
+     "grade": 2
+    },
+    {
+     "unit": 455,
+     "grade": 2
+    },
+    {
+     "unit": 473,
+     "grade": 2
+    },
+    {
+     "unit": 474,
+     "grade": 2
+    },
+    {
+     "unit": 477,
+     "grade": 2
+    },
+    {
+     "unit": 488,
+     "grade": 2
+    },
+    {
+     "unit": 490,
+     "grade": 2
+    },
+    {
+     "unit": 493,
+     "grade": 2
+    },
+    {
+     "unit": 494,
+     "grade": 2
+    },
+    {
+     "unit": 495,
+     "grade": 2
+    }
+   ]
+  },
+  {
+   "id": "Q31",
+   "q": "铁路 客流",
+   "type": "AND",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "铁路"
+    ],
+    "1": [
+     "铁路",
+     "客流"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 88,
+     "grade": 1
+    },
+    {
+     "unit": 174,
+     "grade": 1
+    },
+    {
+     "unit": 175,
+     "grade": 2
+    }
+   ]
+  },
+  {
+   "id": "Q32",
+   "q": "光伏|钠电池",
+   "type": "OR",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "光伏",
+     "钠电池"
+    ],
+    "1": [
+     "光伏",
+     "钠电池"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 63,
+     "grade": 2
+    },
+    {
+     "unit": 98,
+     "grade": 2
+    },
+    {
+     "unit": 198,
+     "grade": 2
+    },
+    {
+     "unit": 199,
+     "grade": 2
+    },
+    {
+     "unit": 200,
+     "grade": 2
+    },
+    {
+     "unit": 201,
+     "grade": 2
+    },
+    {
+     "unit": 202,
+     "grade": 2
+    },
+    {
+     "unit": 230,
+     "grade": 2
+    },
+    {
+     "unit": 243,
+     "grade": 2
+    },
+    {
+     "unit": 244,
+     "grade": 2
+    },
+    {
+     "unit": 245,
+     "grade": 2
+    },
+    {
+     "unit": 246,
+     "grade": 2
+    },
+    {
+     "unit": 247,
+     "grade": 2
+    },
+    {
+     "unit": 268,
+     "grade": 2
+    },
+    {
+     "unit": 270,
+     "grade": 2
+    },
+    {
+     "unit": 271,
+     "grade": 2
+    },
+    {
+     "unit": 274,
+     "grade": 2
+    },
+    {
+     "unit": 323,
+     "grade": 2
+    },
+    {
+     "unit": 324,
+     "grade": 2
+    },
+    {
+     "unit": 325,
+     "grade": 2
+    },
+    {
+     "unit": 326,
+     "grade": 2
+    },
+    {
+     "unit": 327,
+     "grade": 2
+    },
+    {
+     "unit": 373,
+     "grade": 2
+    },
+    {
+     "unit": 376,
+     "grade": 2
+    }
+   ]
+  },
+  {
+   "id": "Q33",
+   "q": "量柱|量线",
+   "type": "OR",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "量柱",
+     "量线"
+    ],
+    "1": [
+     "量柱",
+     "量线"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 0,
+     "grade": 2
+    },
+    {
+     "unit": 1,
+     "grade": 2
+    },
+    {
+     "unit": 2,
+     "grade": 2
+    },
+    {
+     "unit": 3,
+     "grade": 2
+    },
+    {
+     "unit": 4,
+     "grade": 2
+    },
+    {
+     "unit": 7,
+     "grade": 2
+    },
+    {
+     "unit": 11,
+     "grade": 2
+    },
+    {
+     "unit": 13,
+     "grade": 2
+    },
+    {
+     "unit": 20,
+     "grade": 2
+    },
+    {
+     "unit": 21,
+     "grade": 2
+    },
+    {
+     "unit": 23,
+     "grade": 2
+    },
+    {
+     "unit": 27,
+     "grade": 2
+    },
+    {
+     "unit": 30,
+     "grade": 2
+    },
+    {
+     "unit": 31,
+     "grade": 2
+    },
+    {
+     "unit": 32,
+     "grade": 2
+    }
+   ]
+  },
+  {
+   "id": "Q34",
+   "q": "AI|机器人",
+   "type": "OR",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "AI",
+     "机器人"
+    ],
+    "1": [
+     "AI",
+     "机器人"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 38,
+     "grade": 2
+    },
+    {
+     "unit": 55,
+     "grade": 2
+    },
+    {
+     "unit": 70,
+     "grade": 2
+    },
+    {
+     "unit": 74,
+     "grade": 2
+    },
+    {
+     "unit": 78,
+     "grade": 2
+    },
+    {
+     "unit": 94,
+     "grade": 2
+    },
+    {
+     "unit": 106,
+     "grade": 2
+    },
+    {
+     "unit": 109,
+     "grade": 2
+    },
+    {
+     "unit": 110,
+     "grade": 2
+    },
+    {
+     "unit": 111,
+     "grade": 2
+    },
+    {
+     "unit": 112,
+     "grade": 2
+    },
+    {
+     "unit": 113,
+     "grade": 2
+    },
+    {
+     "unit": 114,
+     "grade": 2
+    },
+    {
+     "unit": 115,
+     "grade": 2
+    },
+    {
+     "unit": 116,
+     "grade": 2
+    },
+    {
+     "unit": 117,
+     "grade": 2
+    },
+    {
+     "unit": 125,
+     "grade": 2
+    },
+    {
+     "unit": 128,
+     "grade": 2
+    },
+    {
+     "unit": 129,
+     "grade": 2
+    },
+    {
+     "unit": 140,
+     "grade": 2
+    },
+    {
+     "unit": 143,
+     "grade": 2
+    },
+    {
+     "unit": 151,
+     "grade": 2
+    },
+    {
+     "unit": 153,
+     "grade": 2
+    },
+    {
+     "unit": 154,
+     "grade": 2
+    },
+    {
+     "unit": 155,
+     "grade": 2
+    },
+    {
+     "unit": 156,
+     "grade": 2
+    },
+    {
+     "unit": 157,
+     "grade": 2
+    },
+    {
+     "unit": 158,
+     "grade": 2
+    },
+    {
+     "unit": 159,
+     "grade": 2
+    },
+    {
+     "unit": 166,
+     "grade": 2
+    },
+    {
+     "unit": 168,
+     "grade": 2
+    },
+    {
+     "unit": 169,
+     "grade": 2
+    },
+    {
+     "unit": 183,
+     "grade": 2
+    },
+    {
+     "unit": 184,
+     "grade": 2
+    },
+    {
+     "unit": 187,
+     "grade": 2
+    },
+    {
+     "unit": 213,
+     "grade": 2
+    },
+    {
+     "unit": 214,
+     "grade": 2
+    },
+    {
+     "unit": 215,
+     "grade": 2
+    },
+    {
+     "unit": 216,
+     "grade": 2
+    },
+    {
+     "unit": 217,
+     "grade": 2
+    },
+    {
+     "unit": 228,
+     "grade": 2
+    },
+    {
+     "unit": 232,
+     "grade": 2
+    },
+    {
+     "unit": 233,
+     "grade": 2
+    },
+    {
+     "unit": 236,
+     "grade": 2
+    },
+    {
+     "unit": 238,
+     "grade": 2
+    },
+    {
+     "unit": 239,
+     "grade": 2
+    },
+    {
+     "unit": 240,
+     "grade": 2
+    },
+    {
+     "unit": 266,
+     "grade": 2
+    },
+    {
+     "unit": 267,
+     "grade": 2
+    },
+    {
+     "unit": 281,
+     "grade": 2
+    },
+    {
+     "unit": 288,
+     "grade": 2
+    },
+    {
+     "unit": 289,
+     "grade": 2
+    },
+    {
+     "unit": 290,
+     "grade": 2
+    },
+    {
+     "unit": 291,
+     "grade": 2
+    },
+    {
+     "unit": 292,
+     "grade": 2
+    },
+    {
+     "unit": 303,
+     "grade": 2
+    },
+    {
+     "unit": 304,
+     "grade": 2
+    },
+    {
+     "unit": 305,
+     "grade": 2
+    },
+    {
+     "unit": 306,
+     "grade": 2
+    },
+    {
+     "unit": 307,
+     "grade": 2
+    },
+    {
+     "unit": 310,
+     "grade": 2
+    },
+    {
+     "unit": 311,
+     "grade": 2
+    },
+    {
+     "unit": 316,
+     "grade": 2
+    },
+    {
+     "unit": 328,
+     "grade": 2
+    },
+    {
+     "unit": 329,
+     "grade": 2
+    },
+    {
+     "unit": 330,
+     "grade": 2
+    },
+    {
+     "unit": 333,
+     "grade": 2
+    },
+    {
+     "unit": 335,
+     "grade": 2
+    },
+    {
+     "unit": 336,
+     "grade": 2
+    },
+    {
+     "unit": 338,
+     "grade": 2
+    },
+    {
+     "unit": 375,
+     "grade": 2
+    },
+    {
+     "unit": 383,
+     "grade": 2
+    },
+    {
+     "unit": 385,
+     "grade": 2
+    },
+    {
+     "unit": 386,
+     "grade": 2
+    },
+    {
+     "unit": 388,
+     "grade": 2
+    },
+    {
+     "unit": 390,
+     "grade": 2
+    },
+    {
+     "unit": 391,
+     "grade": 2
+    },
+    {
+     "unit": 400,
+     "grade": 2
+    },
+    {
+     "unit": 403,
+     "grade": 2
+    },
+    {
+     "unit": 404,
+     "grade": 2
+    },
+    {
+     "unit": 405,
+     "grade": 2
+    },
+    {
+     "unit": 406,
+     "grade": 2
+    },
+    {
+     "unit": 407,
+     "grade": 2
+    },
+    {
+     "unit": 443,
+     "grade": 2
+    },
+    {
+     "unit": 445,
+     "grade": 2
+    },
+    {
+     "unit": 453,
+     "grade": 2
+    },
+    {
+     "unit": 454,
+     "grade": 2
+    },
+    {
+     "unit": 455,
+     "grade": 2
+    },
+    {
+     "unit": 473,
+     "grade": 2
+    },
+    {
+     "unit": 474,
+     "grade": 2
+    },
+    {
+     "unit": 477,
+     "grade": 2
+    },
+    {
+     "unit": 488,
+     "grade": 2
+    },
+    {
+     "unit": 490,
+     "grade": 2
+    },
+    {
+     "unit": 493,
+     "grade": 2
+    },
+    {
+     "unit": 494,
+     "grade": 2
+    },
+    {
+     "unit": 495,
+     "grade": 2
+    },
+    {
+     "unit": 497,
+     "grade": 2
+    }
+   ]
+  },
+  {
+   "id": "Q35",
+   "q": "白酒|消费",
+   "type": "OR",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "白酒",
+     "消费"
+    ],
+    "1": [
+     "白酒",
+     "消费"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 61,
+     "grade": 2
+    },
+    {
+     "unit": 64,
+     "grade": 2
+    },
+    {
+     "unit": 78,
+     "grade": 2
+    },
+    {
+     "unit": 79,
+     "grade": 2
+    },
+    {
+     "unit": 82,
+     "grade": 2
+    },
+    {
+     "unit": 85,
+     "grade": 2
+    },
+    {
+     "unit": 87,
+     "grade": 2
+    },
+    {
+     "unit": 99,
+     "grade": 2
+    },
+    {
+     "unit": 165,
+     "grade": 2
+    },
+    {
+     "unit": 169,
+     "grade": 2
+    },
+    {
+     "unit": 176,
+     "grade": 2
+    },
+    {
+     "unit": 290,
+     "grade": 2
+    },
+    {
+     "unit": 301,
+     "grade": 2
+    },
+    {
+     "unit": 314,
+     "grade": 2
+    },
+    {
+     "unit": 352,
+     "grade": 2
+    },
+    {
+     "unit": 390,
+     "grade": 2
+    },
+    {
+     "unit": 477,
+     "grade": 2
+    },
+    {
+     "unit": 483,
+     "grade": 2
+    },
+    {
+     "unit": 484,
+     "grade": 2
+    },
+    {
+     "unit": 485,
+     "grade": 2
+    },
+    {
+     "unit": 486,
+     "grade": 2
+    }
+   ]
+  },
+  {
+   "id": "Q36",
+   "q": "\"量柱完全分类\"",
+   "type": "短语",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "量柱完全分类"
+    ],
+    "1": [
+     "量柱",
+     "量学"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 0,
+     "grade": 1
+    },
+    {
+     "unit": 1,
+     "grade": 2
+    },
+    {
+     "unit": 2,
+     "grade": 1
+    },
+    {
+     "unit": 3,
+     "grade": 1
+    },
+    {
+     "unit": 4,
+     "grade": 1
+    },
+    {
+     "unit": 7,
+     "grade": 1
+    },
+    {
+     "unit": 9,
+     "grade": 1
+    },
+    {
+     "unit": 11,
+     "grade": 1
+    },
+    {
+     "unit": 13,
+     "grade": 1
+    },
+    {
+     "unit": 19,
+     "grade": 1
+    },
+    {
+     "unit": 20,
+     "grade": 1
+    },
+    {
+     "unit": 21,
+     "grade": 1
+    },
+    {
+     "unit": 23,
+     "grade": 1
+    },
+    {
+     "unit": 27,
+     "grade": 1
+    },
+    {
+     "unit": 30,
+     "grade": 1
+    },
+    {
+     "unit": 31,
+     "grade": 1
+    },
+    {
+     "unit": 32,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "Q37",
+   "q": "\"行业评级定义\"",
+   "type": "短语",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "行业评级定义"
+    ],
+    "1": [
+     "评级",
+     "行业评级"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 135,
+     "grade": 2
+    },
+    {
+     "unit": 212,
+     "grade": 2
+    }
+   ]
+  },
+  {
+   "id": "Q38",
+   "q": "\"企业信用结构性分化\"",
+   "type": "短语",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "企业信用"
+    ],
+    "1": [
+     "企业信用",
+     "信用"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 297,
+     "grade": 2
+    },
+    {
+     "unit": 300,
+     "grade": 2
+    },
+    {
+     "unit": 363,
+     "grade": 1
+    },
+    {
+     "unit": 366,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "Q39",
+   "q": "量柱 -量线",
+   "type": "排除",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "量柱"
+    ],
+    "1": [
+     "量柱",
+     "量学"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 0,
+     "grade": 2
+    },
+    {
+     "unit": 1,
+     "grade": 2
+    },
+    {
+     "unit": 2,
+     "grade": 2
+    },
+    {
+     "unit": 3,
+     "grade": 2
+    },
+    {
+     "unit": 4,
+     "grade": 2
+    },
+    {
+     "unit": 7,
+     "grade": 2
+    },
+    {
+     "unit": 9,
+     "grade": 1
+    },
+    {
+     "unit": 11,
+     "grade": 2
+    },
+    {
+     "unit": 13,
+     "grade": 2
+    },
+    {
+     "unit": 19,
+     "grade": 1
+    },
+    {
+     "unit": 20,
+     "grade": 2
+    },
+    {
+     "unit": 21,
+     "grade": 2
+    },
+    {
+     "unit": 23,
+     "grade": 2
+    },
+    {
+     "unit": 27,
+     "grade": 2
+    },
+    {
+     "unit": 30,
+     "grade": 2
+    },
+    {
+     "unit": 31,
+     "grade": 2
+    },
+    {
+     "unit": 32,
+     "grade": 2
+    }
+   ]
+  },
+  {
+   "id": "Q40",
+   "q": "钠电池 -储能",
+   "type": "排除",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "钠电池"
+    ],
+    "1": [
+     "钠电池",
+     "钠离子"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 198,
+     "grade": 2
+    },
+    {
+     "unit": 199,
+     "grade": 2
+    },
+    {
+     "unit": 200,
+     "grade": 2
+    },
+    {
+     "unit": 201,
+     "grade": 2
+    },
+    {
+     "unit": 202,
+     "grade": 2
+    },
+    {
+     "unit": 466,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "Q41",
+   "q": "AI -网络安全",
+   "type": "排除",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "AI"
+    ],
+    "1": [
+     "AI",
+     "大模型"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 38,
+     "grade": 2
+    },
+    {
+     "unit": 55,
+     "grade": 2
+    },
+    {
+     "unit": 59,
+     "grade": 1
+    },
+    {
+     "unit": 70,
+     "grade": 2
+    },
+    {
+     "unit": 74,
+     "grade": 2
+    },
+    {
+     "unit": 78,
+     "grade": 2
+    },
+    {
+     "unit": 94,
+     "grade": 2
+    },
+    {
+     "unit": 106,
+     "grade": 2
+    },
+    {
+     "unit": 109,
+     "grade": 2
+    },
+    {
+     "unit": 110,
+     "grade": 2
+    },
+    {
+     "unit": 111,
+     "grade": 2
+    },
+    {
+     "unit": 112,
+     "grade": 2
+    },
+    {
+     "unit": 113,
+     "grade": 2
+    },
+    {
+     "unit": 114,
+     "grade": 2
+    },
+    {
+     "unit": 115,
+     "grade": 2
+    },
+    {
+     "unit": 116,
+     "grade": 2
+    },
+    {
+     "unit": 117,
+     "grade": 2
+    },
+    {
+     "unit": 125,
+     "grade": 2
+    },
+    {
+     "unit": 128,
+     "grade": 2
+    },
+    {
+     "unit": 129,
+     "grade": 2
+    },
+    {
+     "unit": 140,
+     "grade": 2
+    },
+    {
+     "unit": 143,
+     "grade": 2
+    },
+    {
+     "unit": 151,
+     "grade": 2
+    },
+    {
+     "unit": 153,
+     "grade": 2
+    },
+    {
+     "unit": 154,
+     "grade": 2
+    },
+    {
+     "unit": 155,
+     "grade": 2
+    },
+    {
+     "unit": 156,
+     "grade": 2
+    },
+    {
+     "unit": 157,
+     "grade": 2
+    },
+    {
+     "unit": 158,
+     "grade": 2
+    },
+    {
+     "unit": 159,
+     "grade": 2
+    },
+    {
+     "unit": 166,
+     "grade": 2
+    },
+    {
+     "unit": 168,
+     "grade": 2
+    },
+    {
+     "unit": 169,
+     "grade": 2
+    },
+    {
+     "unit": 183,
+     "grade": 2
+    },
+    {
+     "unit": 184,
+     "grade": 2
+    },
+    {
+     "unit": 187,
+     "grade": 2
+    },
+    {
+     "unit": 213,
+     "grade": 2
+    },
+    {
+     "unit": 214,
+     "grade": 2
+    },
+    {
+     "unit": 215,
+     "grade": 2
+    },
+    {
+     "unit": 216,
+     "grade": 2
+    },
+    {
+     "unit": 217,
+     "grade": 2
+    },
+    {
+     "unit": 233,
+     "grade": 2
+    },
+    {
+     "unit": 236,
+     "grade": 2
+    },
+    {
+     "unit": 238,
+     "grade": 2
+    },
+    {
+     "unit": 239,
+     "grade": 2
+    },
+    {
+     "unit": 240,
+     "grade": 2
+    },
+    {
+     "unit": 266,
+     "grade": 2
+    },
+    {
+     "unit": 267,
+     "grade": 2
+    },
+    {
+     "unit": 281,
+     "grade": 2
+    },
+    {
+     "unit": 303,
+     "grade": 2
+    },
+    {
+     "unit": 304,
+     "grade": 2
+    },
+    {
+     "unit": 305,
+     "grade": 2
+    },
+    {
+     "unit": 306,
+     "grade": 2
+    },
+    {
+     "unit": 307,
+     "grade": 2
+    },
+    {
+     "unit": 310,
+     "grade": 2
+    },
+    {
+     "unit": 311,
+     "grade": 2
+    },
+    {
+     "unit": 316,
+     "grade": 2
+    },
+    {
+     "unit": 328,
+     "grade": 2
+    },
+    {
+     "unit": 329,
+     "grade": 2
+    },
+    {
+     "unit": 330,
+     "grade": 2
+    },
+    {
+     "unit": 333,
+     "grade": 2
+    },
+    {
+     "unit": 335,
+     "grade": 2
+    },
+    {
+     "unit": 336,
+     "grade": 2
+    },
+    {
+     "unit": 338,
+     "grade": 2
+    },
+    {
+     "unit": 375,
+     "grade": 2
+    },
+    {
+     "unit": 383,
+     "grade": 2
+    },
+    {
+     "unit": 384,
+     "grade": 1
+    },
+    {
+     "unit": 385,
+     "grade": 2
+    },
+    {
+     "unit": 386,
+     "grade": 2
+    },
+    {
+     "unit": 388,
+     "grade": 2
+    },
+    {
+     "unit": 390,
+     "grade": 2
+    },
+    {
+     "unit": 391,
+     "grade": 2
+    },
+    {
+     "unit": 443,
+     "grade": 2
+    },
+    {
+     "unit": 444,
+     "grade": 1
+    },
+    {
+     "unit": 445,
+     "grade": 2
+    },
+    {
+     "unit": 446,
+     "grade": 1
+    },
+    {
+     "unit": 447,
+     "grade": 1
+    },
+    {
+     "unit": 453,
+     "grade": 2
+    },
+    {
+     "unit": 454,
+     "grade": 2
+    },
+    {
+     "unit": 455,
+     "grade": 2
+    },
+    {
+     "unit": 473,
+     "grade": 2
+    },
+    {
+     "unit": 474,
+     "grade": 2
+    },
+    {
+     "unit": 477,
+     "grade": 2
+    },
+    {
+     "unit": 488,
+     "grade": 2
+    },
+    {
+     "unit": 490,
+     "grade": 2
+    },
+    {
+     "unit": 493,
+     "grade": 2
+    },
+    {
+     "unit": 494,
+     "grade": 2
+    },
+    {
+     "unit": 495,
+     "grade": 2
+    }
+   ]
+  },
+  {
+   "id": "E01",
+   "q": "挖掘机出口市场",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "挖掘机"
+    ],
+    "1": [
+     "出口",
+     "工程机械"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 73,
+     "grade": 1
+    },
+    {
+     "unit": 178,
+     "grade": 2
+    },
+    {
+     "unit": 179,
+     "grade": 1
+    },
+    {
+     "unit": 180,
+     "grade": 2
+    },
+    {
+     "unit": 182,
+     "grade": 1
+    },
+    {
+     "unit": 205,
+     "grade": 1
+    },
+    {
+     "unit": 230,
+     "grade": 1
+    },
+    {
+     "unit": 251,
+     "grade": 1
+    },
+    {
+     "unit": 261,
+     "grade": 1
+    },
+    {
+     "unit": 269,
+     "grade": 1
+    },
+    {
+     "unit": 313,
+     "grade": 1
+    },
+    {
+     "unit": 403,
+     "grade": 1
+    },
+    {
+     "unit": 406,
+     "grade": 1
+    },
+    {
+     "unit": 409,
+     "grade": 1
+    },
+    {
+     "unit": 411,
+     "grade": 1
+    },
+    {
+     "unit": 412,
+     "grade": 1
+    },
+    {
+     "unit": 413,
+     "grade": 1
+    },
+    {
+     "unit": 414,
+     "grade": 1
+    },
+    {
+     "unit": 415,
+     "grade": 1
+    },
+    {
+     "unit": 418,
+     "grade": 1
+    },
+    {
+     "unit": 420,
+     "grade": 1
+    },
+    {
+     "unit": 421,
+     "grade": 1
+    },
+    {
+     "unit": 423,
+     "grade": 1
+    },
+    {
+     "unit": 424,
+     "grade": 1
+    },
+    {
+     "unit": 425,
+     "grade": 1
+    },
+    {
+     "unit": 426,
+     "grade": 1
+    },
+    {
+     "unit": 427,
+     "grade": 1
+    },
+    {
+     "unit": 428,
+     "grade": 1
+    },
+    {
+     "unit": 429,
+     "grade": 1
+    },
+    {
+     "unit": 430,
+     "grade": 1
+    },
+    {
+     "unit": 432,
+     "grade": 1
+    },
+    {
+     "unit": 433,
+     "grade": 1
+    },
+    {
+     "unit": 434,
+     "grade": 1
+    },
+    {
+     "unit": 436,
+     "grade": 1
+    },
+    {
+     "unit": 438,
+     "grade": 1
+    },
+    {
+     "unit": 440,
+     "grade": 1
+    },
+    {
+     "unit": 442,
+     "grade": 1
+    },
+    {
+     "unit": 448,
+     "grade": 1
+    },
+    {
+     "unit": 449,
+     "grade": 1
+    },
+    {
+     "unit": 450,
+     "grade": 1
+    },
+    {
+     "unit": 452,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "E02",
+   "q": "上市快递企业盈利修复",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "快递"
+    ],
+    "1": [
+     "盈利",
+     "物流"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 51,
+     "grade": 1
+    },
+    {
+     "unit": 52,
+     "grade": 1
+    },
+    {
+     "unit": 53,
+     "grade": 1
+    },
+    {
+     "unit": 113,
+     "grade": 1
+    },
+    {
+     "unit": 146,
+     "grade": 2
+    },
+    {
+     "unit": 147,
+     "grade": 2
+    },
+    {
+     "unit": 148,
+     "grade": 2
+    },
+    {
+     "unit": 149,
+     "grade": 2
+    },
+    {
+     "unit": 162,
+     "grade": 1
+    },
+    {
+     "unit": 192,
+     "grade": 1
+    },
+    {
+     "unit": 279,
+     "grade": 1
+    },
+    {
+     "unit": 282,
+     "grade": 1
+    },
+    {
+     "unit": 296,
+     "grade": 1
+    },
+    {
+     "unit": 297,
+     "grade": 1
+    },
+    {
+     "unit": 315,
+     "grade": 1
+    },
+    {
+     "unit": 353,
+     "grade": 1
+    },
+    {
+     "unit": 364,
+     "grade": 1
+    },
+    {
+     "unit": 468,
+     "grade": 1
+    },
+    {
+     "unit": 478,
+     "grade": 1
+    },
+    {
+     "unit": 480,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "E03",
+   "q": "航空业运力与需求",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "航空"
+    ],
+    "1": [
+     "运力",
+     "客流"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 88,
+     "grade": 1
+    },
+    {
+     "unit": 120,
+     "grade": 2
+    },
+    {
+     "unit": 121,
+     "grade": 2
+    },
+    {
+     "unit": 123,
+     "grade": 2
+    },
+    {
+     "unit": 124,
+     "grade": 2
+    },
+    {
+     "unit": 174,
+     "grade": 1
+    },
+    {
+     "unit": 175,
+     "grade": 1
+    },
+    {
+     "unit": 252,
+     "grade": 2
+    },
+    {
+     "unit": 408,
+     "grade": 2
+    },
+    {
+     "unit": 409,
+     "grade": 2
+    },
+    {
+     "unit": 410,
+     "grade": 2
+    },
+    {
+     "unit": 411,
+     "grade": 2
+    },
+    {
+     "unit": 412,
+     "grade": 2
+    }
+   ]
+  },
+  {
+   "id": "E04",
+   "q": "离岛免税消费",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "免税"
+    ],
+    "1": [
+     "消费",
+     "零售"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 53,
+     "grade": 1
+    },
+    {
+     "unit": 61,
+     "grade": 1
+    },
+    {
+     "unit": 64,
+     "grade": 1
+    },
+    {
+     "unit": 78,
+     "grade": 1
+    },
+    {
+     "unit": 79,
+     "grade": 1
+    },
+    {
+     "unit": 82,
+     "grade": 1
+    },
+    {
+     "unit": 85,
+     "grade": 1
+    },
+    {
+     "unit": 86,
+     "grade": 1
+    },
+    {
+     "unit": 87,
+     "grade": 1
+    },
+    {
+     "unit": 88,
+     "grade": 1
+    },
+    {
+     "unit": 89,
+     "grade": 1
+    },
+    {
+     "unit": 99,
+     "grade": 1
+    },
+    {
+     "unit": 145,
+     "grade": 1
+    },
+    {
+     "unit": 165,
+     "grade": 1
+    },
+    {
+     "unit": 169,
+     "grade": 1
+    },
+    {
+     "unit": 176,
+     "grade": 2
+    },
+    {
+     "unit": 282,
+     "grade": 1
+    },
+    {
+     "unit": 290,
+     "grade": 1
+    },
+    {
+     "unit": 301,
+     "grade": 1
+    },
+    {
+     "unit": 314,
+     "grade": 1
+    },
+    {
+     "unit": 352,
+     "grade": 1
+    },
+    {
+     "unit": 390,
+     "grade": 1
+    },
+    {
+     "unit": 477,
+     "grade": 1
+    },
+    {
+     "unit": 483,
+     "grade": 1
+    },
+    {
+     "unit": 485,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "E05",
+   "q": "头部券商",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "券商"
+    ],
+    "1": [
+     "非银金融",
+     "证券"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 135,
+     "grade": 1
+    },
+    {
+     "unit": 212,
+     "grade": 1
+    },
+    {
+     "unit": 313,
+     "grade": 1
+    },
+    {
+     "unit": 355,
+     "grade": 1
+    },
+    {
+     "unit": 357,
+     "grade": 2
+    },
+    {
+     "unit": 360,
+     "grade": 1
+    },
+    {
+     "unit": 362,
+     "grade": 1
+    },
+    {
+     "unit": 369,
+     "grade": 1
+    },
+    {
+     "unit": 478,
+     "grade": 2
+    },
+    {
+     "unit": 480,
+     "grade": 1
+    },
+    {
+     "unit": 482,
+     "grade": 2
+    }
+   ]
+  },
+  {
+   "id": "E06",
+   "q": "保险资金港股通",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "保险资金"
+    ],
+    "1": [
+     "港股通",
+     "保险"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 355,
+     "grade": 1
+    },
+    {
+     "unit": 479,
+     "grade": 2
+    }
+   ]
+  },
+  {
+   "id": "E07",
+   "q": "中小行负债端收缩",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "中小行"
+    ],
+    "1": [
+     "银行",
+     "负债"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 160,
+     "grade": 2
+    },
+    {
+     "unit": 161,
+     "grade": 2
+    },
+    {
+     "unit": 162,
+     "grade": 2
+    },
+    {
+     "unit": 163,
+     "grade": 2
+    },
+    {
+     "unit": 164,
+     "grade": 2
+    },
+    {
+     "unit": 220,
+     "grade": 1
+    },
+    {
+     "unit": 221,
+     "grade": 1
+    },
+    {
+     "unit": 366,
+     "grade": 1
+    },
+    {
+     "unit": 371,
+     "grade": 1
+    },
+    {
+     "unit": 372,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "E08",
+   "q": "智能体安全治理",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "智能体"
+    ],
+    "1": [
+     "AI",
+     "安全"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 8,
+     "grade": 1
+    },
+    {
+     "unit": 35,
+     "grade": 1
+    },
+    {
+     "unit": 36,
+     "grade": 1
+    },
+    {
+     "unit": 37,
+     "grade": 1
+    },
+    {
+     "unit": 38,
+     "grade": 1
+    },
+    {
+     "unit": 39,
+     "grade": 1
+    },
+    {
+     "unit": 41,
+     "grade": 1
+    },
+    {
+     "unit": 43,
+     "grade": 1
+    },
+    {
+     "unit": 45,
+     "grade": 1
+    },
+    {
+     "unit": 48,
+     "grade": 1
+    },
+    {
+     "unit": 49,
+     "grade": 1
+    },
+    {
+     "unit": 55,
+     "grade": 2
+    },
+    {
+     "unit": 56,
+     "grade": 2
+    },
+    {
+     "unit": 57,
+     "grade": 2
+    },
+    {
+     "unit": 58,
+     "grade": 1
+    },
+    {
+     "unit": 70,
+     "grade": 2
+    },
+    {
+     "unit": 71,
+     "grade": 1
+    },
+    {
+     "unit": 72,
+     "grade": 1
+    },
+    {
+     "unit": 73,
+     "grade": 1
+    },
+    {
+     "unit": 74,
+     "grade": 2
+    },
+    {
+     "unit": 78,
+     "grade": 1
+    },
+    {
+     "unit": 94,
+     "grade": 1
+    },
+    {
+     "unit": 95,
+     "grade": 1
+    },
+    {
+     "unit": 106,
+     "grade": 1
+    },
+    {
+     "unit": 109,
+     "grade": 1
+    },
+    {
+     "unit": 110,
+     "grade": 1
+    },
+    {
+     "unit": 111,
+     "grade": 1
+    },
+    {
+     "unit": 112,
+     "grade": 1
+    },
+    {
+     "unit": 113,
+     "grade": 1
+    },
+    {
+     "unit": 114,
+     "grade": 1
+    },
+    {
+     "unit": 115,
+     "grade": 1
+    },
+    {
+     "unit": 116,
+     "grade": 1
+    },
+    {
+     "unit": 117,
+     "grade": 1
+    },
+    {
+     "unit": 125,
+     "grade": 1
+    },
+    {
+     "unit": 128,
+     "grade": 1
+    },
+    {
+     "unit": 129,
+     "grade": 1
+    },
+    {
+     "unit": 140,
+     "grade": 1
+    },
+    {
+     "unit": 143,
+     "grade": 1
+    },
+    {
+     "unit": 151,
+     "grade": 1
+    },
+    {
+     "unit": 153,
+     "grade": 1
+    },
+    {
+     "unit": 154,
+     "grade": 1
+    },
+    {
+     "unit": 155,
+     "grade": 1
+    },
+    {
+     "unit": 156,
+     "grade": 1
+    },
+    {
+     "unit": 157,
+     "grade": 1
+    },
+    {
+     "unit": 158,
+     "grade": 1
+    },
+    {
+     "unit": 159,
+     "grade": 1
+    },
+    {
+     "unit": 166,
+     "grade": 1
+    },
+    {
+     "unit": 167,
+     "grade": 2
+    },
+    {
+     "unit": 168,
+     "grade": 1
+    },
+    {
+     "unit": 169,
+     "grade": 1
+    },
+    {
+     "unit": 183,
+     "grade": 1
+    },
+    {
+     "unit": 184,
+     "grade": 1
+    },
+    {
+     "unit": 186,
+     "grade": 2
+    },
+    {
+     "unit": 187,
+     "grade": 2
+    },
+    {
+     "unit": 193,
+     "grade": 1
+    },
+    {
+     "unit": 201,
+     "grade": 1
+    },
+    {
+     "unit": 213,
+     "grade": 1
+    },
+    {
+     "unit": 214,
+     "grade": 2
+    },
+    {
+     "unit": 215,
+     "grade": 1
+    },
+    {
+     "unit": 216,
+     "grade": 2
+    },
+    {
+     "unit": 217,
+     "grade": 1
+    },
+    {
+     "unit": 223,
+     "grade": 2
+    },
+    {
+     "unit": 224,
+     "grade": 2
+    },
+    {
+     "unit": 225,
+     "grade": 2
+    },
+    {
+     "unit": 226,
+     "grade": 2
+    },
+    {
+     "unit": 227,
+     "grade": 2
+    },
+    {
+     "unit": 233,
+     "grade": 1
+    },
+    {
+     "unit": 236,
+     "grade": 1
+    },
+    {
+     "unit": 238,
+     "grade": 1
+    },
+    {
+     "unit": 239,
+     "grade": 1
+    },
+    {
+     "unit": 240,
+     "grade": 1
+    },
+    {
+     "unit": 242,
+     "grade": 2
+    },
+    {
+     "unit": 266,
+     "grade": 1
+    },
+    {
+     "unit": 267,
+     "grade": 1
+    },
+    {
+     "unit": 281,
+     "grade": 1
+    },
+    {
+     "unit": 303,
+     "grade": 1
+    },
+    {
+     "unit": 304,
+     "grade": 1
+    },
+    {
+     "unit": 305,
+     "grade": 1
+    },
+    {
+     "unit": 306,
+     "grade": 1
+    },
+    {
+     "unit": 307,
+     "grade": 1
+    },
+    {
+     "unit": 310,
+     "grade": 2
+    },
+    {
+     "unit": 311,
+     "grade": 1
+    },
+    {
+     "unit": 312,
+     "grade": 2
+    },
+    {
+     "unit": 316,
+     "grade": 1
+    },
+    {
+     "unit": 321,
+     "grade": 1
+    },
+    {
+     "unit": 327,
+     "grade": 1
+    },
+    {
+     "unit": 328,
+     "grade": 1
+    },
+    {
+     "unit": 329,
+     "grade": 1
+    },
+    {
+     "unit": 330,
+     "grade": 1
+    },
+    {
+     "unit": 333,
+     "grade": 1
+    },
+    {
+     "unit": 335,
+     "grade": 1
+    },
+    {
+     "unit": 336,
+     "grade": 1
+    },
+    {
+     "unit": 338,
+     "grade": 1
+    },
+    {
+     "unit": 339,
+     "grade": 2
+    },
+    {
+     "unit": 375,
+     "grade": 1
+    },
+    {
+     "unit": 377,
+     "grade": 1
+    },
+    {
+     "unit": 383,
+     "grade": 1
+    },
+    {
+     "unit": 384,
+     "grade": 2
+    },
+    {
+     "unit": 385,
+     "grade": 1
+    },
+    {
+     "unit": 386,
+     "grade": 1
+    },
+    {
+     "unit": 388,
+     "grade": 2
+    },
+    {
+     "unit": 390,
+     "grade": 2
+    },
+    {
+     "unit": 391,
+     "grade": 1
+    },
+    {
+     "unit": 443,
+     "grade": 1
+    },
+    {
+     "unit": 445,
+     "grade": 1
+    },
+    {
+     "unit": 453,
+     "grade": 1
+    },
+    {
+     "unit": 454,
+     "grade": 2
+    },
+    {
+     "unit": 455,
+     "grade": 1
+    },
+    {
+     "unit": 456,
+     "grade": 1
+    },
+    {
+     "unit": 457,
+     "grade": 1
+    },
+    {
+     "unit": 473,
+     "grade": 1
+    },
+    {
+     "unit": 474,
+     "grade": 1
+    },
+    {
+     "unit": 475,
+     "grade": 2
+    },
+    {
+     "unit": 477,
+     "grade": 1
+    },
+    {
+     "unit": 488,
+     "grade": 1
+    },
+    {
+     "unit": 490,
+     "grade": 1
+    },
+    {
+     "unit": 493,
+     "grade": 1
+    },
+    {
+     "unit": 494,
+     "grade": 1
+    },
+    {
+     "unit": 495,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "E09",
+   "q": "DeepSeek DSec 系统架构",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "DeepSeek"
+    ],
+    "1": [
+     "DSec",
+     "AI"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 38,
+     "grade": 1
+    },
+    {
+     "unit": 55,
+     "grade": 1
+    },
+    {
+     "unit": 70,
+     "grade": 1
+    },
+    {
+     "unit": 74,
+     "grade": 1
+    },
+    {
+     "unit": 78,
+     "grade": 1
+    },
+    {
+     "unit": 94,
+     "grade": 1
+    },
+    {
+     "unit": 106,
+     "grade": 1
+    },
+    {
+     "unit": 109,
+     "grade": 1
+    },
+    {
+     "unit": 110,
+     "grade": 1
+    },
+    {
+     "unit": 111,
+     "grade": 1
+    },
+    {
+     "unit": 112,
+     "grade": 1
+    },
+    {
+     "unit": 113,
+     "grade": 1
+    },
+    {
+     "unit": 114,
+     "grade": 1
+    },
+    {
+     "unit": 115,
+     "grade": 1
+    },
+    {
+     "unit": 116,
+     "grade": 1
+    },
+    {
+     "unit": 117,
+     "grade": 1
+    },
+    {
+     "unit": 125,
+     "grade": 1
+    },
+    {
+     "unit": 128,
+     "grade": 1
+    },
+    {
+     "unit": 129,
+     "grade": 1
+    },
+    {
+     "unit": 140,
+     "grade": 1
+    },
+    {
+     "unit": 143,
+     "grade": 1
+    },
+    {
+     "unit": 151,
+     "grade": 1
+    },
+    {
+     "unit": 153,
+     "grade": 1
+    },
+    {
+     "unit": 154,
+     "grade": 1
+    },
+    {
+     "unit": 155,
+     "grade": 1
+    },
+    {
+     "unit": 156,
+     "grade": 1
+    },
+    {
+     "unit": 157,
+     "grade": 1
+    },
+    {
+     "unit": 158,
+     "grade": 1
+    },
+    {
+     "unit": 159,
+     "grade": 1
+    },
+    {
+     "unit": 166,
+     "grade": 1
+    },
+    {
+     "unit": 168,
+     "grade": 1
+    },
+    {
+     "unit": 169,
+     "grade": 1
+    },
+    {
+     "unit": 183,
+     "grade": 1
+    },
+    {
+     "unit": 184,
+     "grade": 1
+    },
+    {
+     "unit": 187,
+     "grade": 1
+    },
+    {
+     "unit": 213,
+     "grade": 1
+    },
+    {
+     "unit": 214,
+     "grade": 1
+    },
+    {
+     "unit": 215,
+     "grade": 1
+    },
+    {
+     "unit": 216,
+     "grade": 1
+    },
+    {
+     "unit": 217,
+     "grade": 1
+    },
+    {
+     "unit": 233,
+     "grade": 1
+    },
+    {
+     "unit": 236,
+     "grade": 1
+    },
+    {
+     "unit": 238,
+     "grade": 1
+    },
+    {
+     "unit": 239,
+     "grade": 1
+    },
+    {
+     "unit": 240,
+     "grade": 1
+    },
+    {
+     "unit": 264,
+     "grade": 2
+    },
+    {
+     "unit": 265,
+     "grade": 2
+    },
+    {
+     "unit": 266,
+     "grade": 1
+    },
+    {
+     "unit": 267,
+     "grade": 1
+    },
+    {
+     "unit": 281,
+     "grade": 1
+    },
+    {
+     "unit": 303,
+     "grade": 1
+    },
+    {
+     "unit": 304,
+     "grade": 1
+    },
+    {
+     "unit": 305,
+     "grade": 1
+    },
+    {
+     "unit": 306,
+     "grade": 2
+    },
+    {
+     "unit": 307,
+     "grade": 1
+    },
+    {
+     "unit": 310,
+     "grade": 1
+    },
+    {
+     "unit": 311,
+     "grade": 1
+    },
+    {
+     "unit": 316,
+     "grade": 1
+    },
+    {
+     "unit": 328,
+     "grade": 1
+    },
+    {
+     "unit": 329,
+     "grade": 1
+    },
+    {
+     "unit": 330,
+     "grade": 1
+    },
+    {
+     "unit": 333,
+     "grade": 1
+    },
+    {
+     "unit": 335,
+     "grade": 1
+    },
+    {
+     "unit": 336,
+     "grade": 1
+    },
+    {
+     "unit": 338,
+     "grade": 2
+    },
+    {
+     "unit": 375,
+     "grade": 1
+    },
+    {
+     "unit": 383,
+     "grade": 1
+    },
+    {
+     "unit": 385,
+     "grade": 1
+    },
+    {
+     "unit": 386,
+     "grade": 1
+    },
+    {
+     "unit": 388,
+     "grade": 1
+    },
+    {
+     "unit": 390,
+     "grade": 1
+    },
+    {
+     "unit": 391,
+     "grade": 1
+    },
+    {
+     "unit": 443,
+     "grade": 2
+    },
+    {
+     "unit": 445,
+     "grade": 1
+    },
+    {
+     "unit": 446,
+     "grade": 2
+    },
+    {
+     "unit": 453,
+     "grade": 1
+    },
+    {
+     "unit": 454,
+     "grade": 1
+    },
+    {
+     "unit": 455,
+     "grade": 1
+    },
+    {
+     "unit": 473,
+     "grade": 1
+    },
+    {
+     "unit": 474,
+     "grade": 1
+    },
+    {
+     "unit": 477,
+     "grade": 1
+    },
+    {
+     "unit": 488,
+     "grade": 1
+    },
+    {
+     "unit": 490,
+     "grade": 1
+    },
+    {
+     "unit": 493,
+     "grade": 1
+    },
+    {
+     "unit": 494,
+     "grade": 1
+    },
+    {
+     "unit": 495,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "E10",
+   "q": "MLCC 行业趋势",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "MLCC"
+    ],
+    "1": [
+     "被动元件",
+     "电子"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 51,
+     "grade": 1
+    },
+    {
+     "unit": 53,
+     "grade": 1
+    },
+    {
+     "unit": 247,
+     "grade": 1
+    },
+    {
+     "unit": 249,
+     "grade": 1
+    },
+    {
+     "unit": 250,
+     "grade": 1
+    },
+    {
+     "unit": 252,
+     "grade": 1
+    },
+    {
+     "unit": 259,
+     "grade": 1
+    },
+    {
+     "unit": 279,
+     "grade": 1
+    },
+    {
+     "unit": 280,
+     "grade": 1
+    },
+    {
+     "unit": 281,
+     "grade": 1
+    },
+    {
+     "unit": 282,
+     "grade": 1
+    },
+    {
+     "unit": 318,
+     "grade": 1
+    },
+    {
+     "unit": 320,
+     "grade": 1
+    },
+    {
+     "unit": 390,
+     "grade": 1
+    },
+    {
+     "unit": 434,
+     "grade": 1
+    },
+    {
+     "unit": 435,
+     "grade": 1
+    },
+    {
+     "unit": 490,
+     "grade": 2
+    },
+    {
+     "unit": 491,
+     "grade": 1
+    },
+    {
+     "unit": 492,
+     "grade": 1
+    },
+    {
+     "unit": 494,
+     "grade": 2
+    }
+   ]
+  },
+  {
+   "id": "E11",
+   "q": "全球风电市场趋势",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "风电"
+    ],
+    "1": [
+     "新能源",
+     "光伏"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 63,
+     "grade": 1
+    },
+    {
+     "unit": 64,
+     "grade": 1
+    },
+    {
+     "unit": 95,
+     "grade": 1
+    },
+    {
+     "unit": 96,
+     "grade": 1
+    },
+    {
+     "unit": 97,
+     "grade": 2
+    },
+    {
+     "unit": 98,
+     "grade": 1
+    },
+    {
+     "unit": 152,
+     "grade": 1
+    },
+    {
+     "unit": 203,
+     "grade": 1
+    },
+    {
+     "unit": 204,
+     "grade": 1
+    },
+    {
+     "unit": 205,
+     "grade": 1
+    },
+    {
+     "unit": 206,
+     "grade": 1
+    },
+    {
+     "unit": 230,
+     "grade": 1
+    },
+    {
+     "unit": 243,
+     "grade": 1
+    },
+    {
+     "unit": 244,
+     "grade": 1
+    },
+    {
+     "unit": 245,
+     "grade": 1
+    },
+    {
+     "unit": 246,
+     "grade": 1
+    },
+    {
+     "unit": 247,
+     "grade": 1
+    },
+    {
+     "unit": 254,
+     "grade": 2
+    },
+    {
+     "unit": 256,
+     "grade": 2
+    },
+    {
+     "unit": 257,
+     "grade": 2
+    },
+    {
+     "unit": 268,
+     "grade": 1
+    },
+    {
+     "unit": 270,
+     "grade": 1
+    },
+    {
+     "unit": 271,
+     "grade": 1
+    },
+    {
+     "unit": 272,
+     "grade": 1
+    },
+    {
+     "unit": 274,
+     "grade": 2
+    },
+    {
+     "unit": 275,
+     "grade": 2
+    },
+    {
+     "unit": 277,
+     "grade": 2
+    },
+    {
+     "unit": 293,
+     "grade": 1
+    },
+    {
+     "unit": 323,
+     "grade": 1
+    },
+    {
+     "unit": 324,
+     "grade": 1
+    },
+    {
+     "unit": 325,
+     "grade": 1
+    },
+    {
+     "unit": 326,
+     "grade": 1
+    },
+    {
+     "unit": 327,
+     "grade": 1
+    },
+    {
+     "unit": 328,
+     "grade": 1
+    },
+    {
+     "unit": 330,
+     "grade": 1
+    },
+    {
+     "unit": 346,
+     "grade": 1
+    },
+    {
+     "unit": 373,
+     "grade": 2
+    },
+    {
+     "unit": 375,
+     "grade": 1
+    },
+    {
+     "unit": 376,
+     "grade": 1
+    },
+    {
+     "unit": 377,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "E12",
+   "q": "核电的长期战略价值",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "核电"
+    ],
+    "1": [
+     "电力",
+     "新能源"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 61,
+     "grade": 1
+    },
+    {
+     "unit": 64,
+     "grade": 1
+    },
+    {
+     "unit": 65,
+     "grade": 1
+    },
+    {
+     "unit": 66,
+     "grade": 1
+    },
+    {
+     "unit": 68,
+     "grade": 1
+    },
+    {
+     "unit": 95,
+     "grade": 1
+    },
+    {
+     "unit": 96,
+     "grade": 1
+    },
+    {
+     "unit": 99,
+     "grade": 1
+    },
+    {
+     "unit": 152,
+     "grade": 1
+    },
+    {
+     "unit": 203,
+     "grade": 1
+    },
+    {
+     "unit": 204,
+     "grade": 1
+    },
+    {
+     "unit": 205,
+     "grade": 1
+    },
+    {
+     "unit": 206,
+     "grade": 1
+    },
+    {
+     "unit": 244,
+     "grade": 1
+    },
+    {
+     "unit": 246,
+     "grade": 1
+    },
+    {
+     "unit": 247,
+     "grade": 1
+    },
+    {
+     "unit": 253,
+     "grade": 1
+    },
+    {
+     "unit": 254,
+     "grade": 1
+    },
+    {
+     "unit": 257,
+     "grade": 1
+    },
+    {
+     "unit": 272,
+     "grade": 1
+    },
+    {
+     "unit": 273,
+     "grade": 1
+    },
+    {
+     "unit": 274,
+     "grade": 1
+    },
+    {
+     "unit": 291,
+     "grade": 1
+    },
+    {
+     "unit": 293,
+     "grade": 1
+    },
+    {
+     "unit": 301,
+     "grade": 1
+    },
+    {
+     "unit": 328,
+     "grade": 1
+    },
+    {
+     "unit": 330,
+     "grade": 1
+    },
+    {
+     "unit": 333,
+     "grade": 1
+    },
+    {
+     "unit": 335,
+     "grade": 1
+    },
+    {
+     "unit": 336,
+     "grade": 1
+    },
+    {
+     "unit": 337,
+     "grade": 1
+    },
+    {
+     "unit": 346,
+     "grade": 1
+    },
+    {
+     "unit": 373,
+     "grade": 2
+    },
+    {
+     "unit": 374,
+     "grade": 1
+    },
+    {
+     "unit": 375,
+     "grade": 2
+    },
+    {
+     "unit": 376,
+     "grade": 1
+    },
+    {
+     "unit": 377,
+     "grade": 1
+    },
+    {
+     "unit": 382,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "E13",
+   "q": "轨道数据中心定位",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "轨道数据中心"
+    ],
+    "1": [
+     "数据中心",
+     "卫星"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 40,
+     "grade": 2
+    },
+    {
+     "unit": 41,
+     "grade": 1
+    },
+    {
+     "unit": 43,
+     "grade": 2
+    },
+    {
+     "unit": 44,
+     "grade": 2
+    },
+    {
+     "unit": 45,
+     "grade": 2
+    },
+    {
+     "unit": 46,
+     "grade": 2
+    },
+    {
+     "unit": 47,
+     "grade": 2
+    },
+    {
+     "unit": 48,
+     "grade": 1
+    },
+    {
+     "unit": 49,
+     "grade": 2
+    },
+    {
+     "unit": 106,
+     "grade": 1
+    },
+    {
+     "unit": 107,
+     "grade": 1
+    },
+    {
+     "unit": 128,
+     "grade": 1
+    },
+    {
+     "unit": 129,
+     "grade": 1
+    },
+    {
+     "unit": 154,
+     "grade": 1
+    },
+    {
+     "unit": 252,
+     "grade": 1
+    },
+    {
+     "unit": 328,
+     "grade": 1
+    },
+    {
+     "unit": 329,
+     "grade": 1
+    },
+    {
+     "unit": 330,
+     "grade": 1
+    },
+    {
+     "unit": 332,
+     "grade": 1
+    },
+    {
+     "unit": 333,
+     "grade": 1
+    },
+    {
+     "unit": 334,
+     "grade": 1
+    },
+    {
+     "unit": 335,
+     "grade": 1
+    },
+    {
+     "unit": 337,
+     "grade": 1
+    },
+    {
+     "unit": 379,
+     "grade": 1
+    },
+    {
+     "unit": 381,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "E14",
+   "q": "二手手机市场",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "二手手机"
+    ],
+    "1": [
+     "二手",
+     "手机"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 80,
+     "grade": 2
+    },
+    {
+     "unit": 81,
+     "grade": 1
+    },
+    {
+     "unit": 82,
+     "grade": 1
+    },
+    {
+     "unit": 83,
+     "grade": 2
+    },
+    {
+     "unit": 84,
+     "grade": 1
+    },
+    {
+     "unit": 134,
+     "grade": 1
+    },
+    {
+     "unit": 305,
+     "grade": 1
+    },
+    {
+     "unit": 388,
+     "grade": 1
+    },
+    {
+     "unit": 391,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "E15",
+   "q": "海外监管与关税政策风险",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "关税"
+    ],
+    "1": [
+     "海外",
+     "监管"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 41,
+     "grade": 1
+    },
+    {
+     "unit": 45,
+     "grade": 1
+    },
+    {
+     "unit": 46,
+     "grade": 1
+    },
+    {
+     "unit": 49,
+     "grade": 1
+    },
+    {
+     "unit": 51,
+     "grade": 1
+    },
+    {
+     "unit": 52,
+     "grade": 1
+    },
+    {
+     "unit": 53,
+     "grade": 1
+    },
+    {
+     "unit": 73,
+     "grade": 1
+    },
+    {
+     "unit": 75,
+     "grade": 1
+    },
+    {
+     "unit": 76,
+     "grade": 1
+    },
+    {
+     "unit": 110,
+     "grade": 1
+    },
+    {
+     "unit": 115,
+     "grade": 1
+    },
+    {
+     "unit": 131,
+     "grade": 1
+    },
+    {
+     "unit": 162,
+     "grade": 1
+    },
+    {
+     "unit": 163,
+     "grade": 1
+    },
+    {
+     "unit": 176,
+     "grade": 1
+    },
+    {
+     "unit": 178,
+     "grade": 1
+    },
+    {
+     "unit": 194,
+     "grade": 1
+    },
+    {
+     "unit": 195,
+     "grade": 1
+    },
+    {
+     "unit": 196,
+     "grade": 1
+    },
+    {
+     "unit": 205,
+     "grade": 1
+    },
+    {
+     "unit": 216,
+     "grade": 1
+    },
+    {
+     "unit": 243,
+     "grade": 1
+    },
+    {
+     "unit": 272,
+     "grade": 1
+    },
+    {
+     "unit": 279,
+     "grade": 1
+    },
+    {
+     "unit": 282,
+     "grade": 1
+    },
+    {
+     "unit": 313,
+     "grade": 2
+    },
+    {
+     "unit": 314,
+     "grade": 1
+    },
+    {
+     "unit": 317,
+     "grade": 2
+    },
+    {
+     "unit": 323,
+     "grade": 1
+    },
+    {
+     "unit": 336,
+     "grade": 1
+    },
+    {
+     "unit": 370,
+     "grade": 1
+    },
+    {
+     "unit": 372,
+     "grade": 1
+    },
+    {
+     "unit": 398,
+     "grade": 1
+    },
+    {
+     "unit": 479,
+     "grade": 1
+    },
+    {
+     "unit": 494,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "E16",
+   "q": "国防军工行业投资建议",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "国防军工"
+    ],
+    "1": [
+     "军工",
+     "投资建议"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 134,
+     "grade": 1
+    },
+    {
+     "unit": 158,
+     "grade": 1
+    },
+    {
+     "unit": 181,
+     "grade": 1
+    },
+    {
+     "unit": 217,
+     "grade": 1
+    },
+    {
+     "unit": 222,
+     "grade": 1
+    },
+    {
+     "unit": 248,
+     "grade": 2
+    },
+    {
+     "unit": 249,
+     "grade": 2
+    },
+    {
+     "unit": 250,
+     "grade": 2
+    },
+    {
+     "unit": 252,
+     "grade": 2
+    },
+    {
+     "unit": 258,
+     "grade": 2
+    },
+    {
+     "unit": 259,
+     "grade": 2
+    },
+    {
+     "unit": 260,
+     "grade": 2
+    }
+   ]
+  },
+  {
+   "id": "E17",
+   "q": "端侧 AI 放量",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "端侧 AI"
+    ],
+    "1": [
+     "AI",
+     "芯片"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 38,
+     "grade": 1
+    },
+    {
+     "unit": 55,
+     "grade": 1
+    },
+    {
+     "unit": 70,
+     "grade": 1
+    },
+    {
+     "unit": 74,
+     "grade": 1
+    },
+    {
+     "unit": 78,
+     "grade": 1
+    },
+    {
+     "unit": 94,
+     "grade": 1
+    },
+    {
+     "unit": 106,
+     "grade": 1
+    },
+    {
+     "unit": 109,
+     "grade": 1
+    },
+    {
+     "unit": 110,
+     "grade": 2
+    },
+    {
+     "unit": 111,
+     "grade": 1
+    },
+    {
+     "unit": 112,
+     "grade": 1
+    },
+    {
+     "unit": 113,
+     "grade": 2
+    },
+    {
+     "unit": 114,
+     "grade": 1
+    },
+    {
+     "unit": 115,
+     "grade": 2
+    },
+    {
+     "unit": 116,
+     "grade": 1
+    },
+    {
+     "unit": 117,
+     "grade": 1
+    },
+    {
+     "unit": 118,
+     "grade": 1
+    },
+    {
+     "unit": 125,
+     "grade": 1
+    },
+    {
+     "unit": 128,
+     "grade": 1
+    },
+    {
+     "unit": 129,
+     "grade": 1
+    },
+    {
+     "unit": 140,
+     "grade": 1
+    },
+    {
+     "unit": 143,
+     "grade": 1
+    },
+    {
+     "unit": 151,
+     "grade": 1
+    },
+    {
+     "unit": 153,
+     "grade": 1
+    },
+    {
+     "unit": 154,
+     "grade": 1
+    },
+    {
+     "unit": 155,
+     "grade": 1
+    },
+    {
+     "unit": 156,
+     "grade": 1
+    },
+    {
+     "unit": 157,
+     "grade": 1
+    },
+    {
+     "unit": 158,
+     "grade": 1
+    },
+    {
+     "unit": 159,
+     "grade": 1
+    },
+    {
+     "unit": 166,
+     "grade": 1
+    },
+    {
+     "unit": 168,
+     "grade": 1
+    },
+    {
+     "unit": 169,
+     "grade": 1
+    },
+    {
+     "unit": 183,
+     "grade": 1
+    },
+    {
+     "unit": 184,
+     "grade": 1
+    },
+    {
+     "unit": 187,
+     "grade": 1
+    },
+    {
+     "unit": 213,
+     "grade": 1
+    },
+    {
+     "unit": 214,
+     "grade": 1
+    },
+    {
+     "unit": 215,
+     "grade": 1
+    },
+    {
+     "unit": 216,
+     "grade": 1
+    },
+    {
+     "unit": 217,
+     "grade": 1
+    },
+    {
+     "unit": 233,
+     "grade": 1
+    },
+    {
+     "unit": 236,
+     "grade": 1
+    },
+    {
+     "unit": 238,
+     "grade": 1
+    },
+    {
+     "unit": 239,
+     "grade": 1
+    },
+    {
+     "unit": 240,
+     "grade": 1
+    },
+    {
+     "unit": 266,
+     "grade": 1
+    },
+    {
+     "unit": 267,
+     "grade": 1
+    },
+    {
+     "unit": 281,
+     "grade": 1
+    },
+    {
+     "unit": 303,
+     "grade": 1
+    },
+    {
+     "unit": 304,
+     "grade": 1
+    },
+    {
+     "unit": 305,
+     "grade": 1
+    },
+    {
+     "unit": 306,
+     "grade": 1
+    },
+    {
+     "unit": 307,
+     "grade": 1
+    },
+    {
+     "unit": 310,
+     "grade": 1
+    },
+    {
+     "unit": 311,
+     "grade": 1
+    },
+    {
+     "unit": 316,
+     "grade": 1
+    },
+    {
+     "unit": 328,
+     "grade": 1
+    },
+    {
+     "unit": 329,
+     "grade": 1
+    },
+    {
+     "unit": 330,
+     "grade": 1
+    },
+    {
+     "unit": 333,
+     "grade": 1
+    },
+    {
+     "unit": 335,
+     "grade": 1
+    },
+    {
+     "unit": 336,
+     "grade": 1
+    },
+    {
+     "unit": 338,
+     "grade": 1
+    },
+    {
+     "unit": 341,
+     "grade": 1
+    },
+    {
+     "unit": 375,
+     "grade": 1
+    },
+    {
+     "unit": 383,
+     "grade": 1
+    },
+    {
+     "unit": 385,
+     "grade": 1
+    },
+    {
+     "unit": 386,
+     "grade": 1
+    },
+    {
+     "unit": 388,
+     "grade": 1
+    },
+    {
+     "unit": 390,
+     "grade": 1
+    },
+    {
+     "unit": 391,
+     "grade": 1
+    },
+    {
+     "unit": 392,
+     "grade": 1
+    },
+    {
+     "unit": 443,
+     "grade": 1
+    },
+    {
+     "unit": 445,
+     "grade": 1
+    },
+    {
+     "unit": 453,
+     "grade": 1
+    },
+    {
+     "unit": 454,
+     "grade": 1
+    },
+    {
+     "unit": 455,
+     "grade": 1
+    },
+    {
+     "unit": 461,
+     "grade": 1
+    },
+    {
+     "unit": 473,
+     "grade": 1
+    },
+    {
+     "unit": 474,
+     "grade": 1
+    },
+    {
+     "unit": 477,
+     "grade": 1
+    },
+    {
+     "unit": 488,
+     "grade": 1
+    },
+    {
+     "unit": 489,
+     "grade": 1
+    },
+    {
+     "unit": 490,
+     "grade": 1
+    },
+    {
+     "unit": 493,
+     "grade": 1
+    },
+    {
+     "unit": 494,
+     "grade": 1
+    },
+    {
+     "unit": 495,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "E18",
+   "q": "化工行业周期传导",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "化工"
+    ],
+    "1": [
+     "周期",
+     "原材料"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 39,
+     "grade": 1
+    },
+    {
+     "unit": 44,
+     "grade": 1
+    },
+    {
+     "unit": 58,
+     "grade": 1
+    },
+    {
+     "unit": 91,
+     "grade": 1
+    },
+    {
+     "unit": 100,
+     "grade": 1
+    },
+    {
+     "unit": 111,
+     "grade": 1
+    },
+    {
+     "unit": 112,
+     "grade": 1
+    },
+    {
+     "unit": 113,
+     "grade": 1
+    },
+    {
+     "unit": 115,
+     "grade": 1
+    },
+    {
+     "unit": 116,
+     "grade": 1
+    },
+    {
+     "unit": 117,
+     "grade": 1
+    },
+    {
+     "unit": 182,
+     "grade": 1
+    },
+    {
+     "unit": 191,
+     "grade": 1
+    },
+    {
+     "unit": 198,
+     "grade": 1
+    },
+    {
+     "unit": 202,
+     "grade": 1
+    },
+    {
+     "unit": 217,
+     "grade": 1
+    },
+    {
+     "unit": 255,
+     "grade": 1
+    },
+    {
+     "unit": 276,
+     "grade": 1
+    },
+    {
+     "unit": 285,
+     "grade": 1
+    },
+    {
+     "unit": 293,
+     "grade": 2
+    },
+    {
+     "unit": 294,
+     "grade": 2
+    },
+    {
+     "unit": 295,
+     "grade": 2
+    },
+    {
+     "unit": 296,
+     "grade": 2
+    },
+    {
+     "unit": 297,
+     "grade": 2
+    },
+    {
+     "unit": 314,
+     "grade": 1
+    },
+    {
+     "unit": 315,
+     "grade": 1
+    },
+    {
+     "unit": 335,
+     "grade": 1
+    },
+    {
+     "unit": 350,
+     "grade": 1
+    },
+    {
+     "unit": 387,
+     "grade": 1
+    },
+    {
+     "unit": 490,
+     "grade": 1
+    },
+    {
+     "unit": 491,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "E19",
+   "q": "水务企业财务表现",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "水务"
+    ],
+    "1": [
+     "财务",
+     "现金流"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 72,
+     "grade": 1
+    },
+    {
+     "unit": 188,
+     "grade": 2
+    },
+    {
+     "unit": 189,
+     "grade": 2
+    },
+    {
+     "unit": 190,
+     "grade": 2
+    },
+    {
+     "unit": 191,
+     "grade": 1
+    },
+    {
+     "unit": 192,
+     "grade": 2
+    },
+    {
+     "unit": 233,
+     "grade": 1
+    },
+    {
+     "unit": 239,
+     "grade": 1
+    },
+    {
+     "unit": 297,
+     "grade": 1
+    },
+    {
+     "unit": 348,
+     "grade": 1
+    },
+    {
+     "unit": 445,
+     "grade": 1
+    },
+    {
+     "unit": 468,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "E20",
+   "q": "网络安全合规转型",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "合规"
+    ],
+    "1": [
+     "网络安全",
+     "转型"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 35,
+     "grade": 1
+    },
+    {
+     "unit": 36,
+     "grade": 1
+    },
+    {
+     "unit": 37,
+     "grade": 1
+    },
+    {
+     "unit": 39,
+     "grade": 1
+    },
+    {
+     "unit": 41,
+     "grade": 1
+    },
+    {
+     "unit": 43,
+     "grade": 1
+    },
+    {
+     "unit": 45,
+     "grade": 2
+    },
+    {
+     "unit": 49,
+     "grade": 1
+    },
+    {
+     "unit": 62,
+     "grade": 1
+    },
+    {
+     "unit": 63,
+     "grade": 1
+    },
+    {
+     "unit": 71,
+     "grade": 2
+    },
+    {
+     "unit": 73,
+     "grade": 2
+    },
+    {
+     "unit": 74,
+     "grade": 1
+    },
+    {
+     "unit": 90,
+     "grade": 1
+    },
+    {
+     "unit": 155,
+     "grade": 2
+    },
+    {
+     "unit": 225,
+     "grade": 1
+    },
+    {
+     "unit": 232,
+     "grade": 1
+    },
+    {
+     "unit": 238,
+     "grade": 1
+    },
+    {
+     "unit": 299,
+     "grade": 1
+    },
+    {
+     "unit": 300,
+     "grade": 1
+    },
+    {
+     "unit": 317,
+     "grade": 1
+    },
+    {
+     "unit": 340,
+     "grade": 1
+    },
+    {
+     "unit": 456,
+     "grade": 1
+    },
+    {
+     "unit": 475,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "E21",
+   "q": "传统 MNC 巨头拥抱 AI",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "MNC"
+    ],
+    "1": [
+     "AI",
+     "医药"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 38,
+     "grade": 1
+    },
+    {
+     "unit": 55,
+     "grade": 1
+    },
+    {
+     "unit": 70,
+     "grade": 1
+    },
+    {
+     "unit": 74,
+     "grade": 1
+    },
+    {
+     "unit": 78,
+     "grade": 1
+    },
+    {
+     "unit": 94,
+     "grade": 1
+    },
+    {
+     "unit": 106,
+     "grade": 1
+    },
+    {
+     "unit": 109,
+     "grade": 1
+    },
+    {
+     "unit": 110,
+     "grade": 1
+    },
+    {
+     "unit": 111,
+     "grade": 1
+    },
+    {
+     "unit": 112,
+     "grade": 1
+    },
+    {
+     "unit": 113,
+     "grade": 1
+    },
+    {
+     "unit": 114,
+     "grade": 1
+    },
+    {
+     "unit": 115,
+     "grade": 1
+    },
+    {
+     "unit": 116,
+     "grade": 1
+    },
+    {
+     "unit": 117,
+     "grade": 1
+    },
+    {
+     "unit": 125,
+     "grade": 1
+    },
+    {
+     "unit": 128,
+     "grade": 1
+    },
+    {
+     "unit": 129,
+     "grade": 1
+    },
+    {
+     "unit": 140,
+     "grade": 1
+    },
+    {
+     "unit": 143,
+     "grade": 1
+    },
+    {
+     "unit": 151,
+     "grade": 1
+    },
+    {
+     "unit": 153,
+     "grade": 1
+    },
+    {
+     "unit": 154,
+     "grade": 1
+    },
+    {
+     "unit": 155,
+     "grade": 1
+    },
+    {
+     "unit": 156,
+     "grade": 2
+    },
+    {
+     "unit": 157,
+     "grade": 2
+    },
+    {
+     "unit": 158,
+     "grade": 1
+    },
+    {
+     "unit": 159,
+     "grade": 1
+    },
+    {
+     "unit": 166,
+     "grade": 1
+    },
+    {
+     "unit": 168,
+     "grade": 1
+    },
+    {
+     "unit": 169,
+     "grade": 1
+    },
+    {
+     "unit": 183,
+     "grade": 1
+    },
+    {
+     "unit": 184,
+     "grade": 1
+    },
+    {
+     "unit": 187,
+     "grade": 1
+    },
+    {
+     "unit": 213,
+     "grade": 1
+    },
+    {
+     "unit": 214,
+     "grade": 1
+    },
+    {
+     "unit": 215,
+     "grade": 1
+    },
+    {
+     "unit": 216,
+     "grade": 1
+    },
+    {
+     "unit": 217,
+     "grade": 1
+    },
+    {
+     "unit": 233,
+     "grade": 1
+    },
+    {
+     "unit": 236,
+     "grade": 1
+    },
+    {
+     "unit": 238,
+     "grade": 1
+    },
+    {
+     "unit": 239,
+     "grade": 1
+    },
+    {
+     "unit": 240,
+     "grade": 1
+    },
+    {
+     "unit": 266,
+     "grade": 1
+    },
+    {
+     "unit": 267,
+     "grade": 1
+    },
+    {
+     "unit": 281,
+     "grade": 1
+    },
+    {
+     "unit": 303,
+     "grade": 1
+    },
+    {
+     "unit": 304,
+     "grade": 1
+    },
+    {
+     "unit": 305,
+     "grade": 1
+    },
+    {
+     "unit": 306,
+     "grade": 1
+    },
+    {
+     "unit": 307,
+     "grade": 1
+    },
+    {
+     "unit": 310,
+     "grade": 1
+    },
+    {
+     "unit": 311,
+     "grade": 1
+    },
+    {
+     "unit": 316,
+     "grade": 1
+    },
+    {
+     "unit": 328,
+     "grade": 1
+    },
+    {
+     "unit": 329,
+     "grade": 1
+    },
+    {
+     "unit": 330,
+     "grade": 1
+    },
+    {
+     "unit": 333,
+     "grade": 1
+    },
+    {
+     "unit": 335,
+     "grade": 1
+    },
+    {
+     "unit": 336,
+     "grade": 1
+    },
+    {
+     "unit": 338,
+     "grade": 1
+    },
+    {
+     "unit": 375,
+     "grade": 1
+    },
+    {
+     "unit": 383,
+     "grade": 1
+    },
+    {
+     "unit": 385,
+     "grade": 1
+    },
+    {
+     "unit": 386,
+     "grade": 1
+    },
+    {
+     "unit": 388,
+     "grade": 1
+    },
+    {
+     "unit": 390,
+     "grade": 1
+    },
+    {
+     "unit": 391,
+     "grade": 1
+    },
+    {
+     "unit": 443,
+     "grade": 1
+    },
+    {
+     "unit": 445,
+     "grade": 1
+    },
+    {
+     "unit": 453,
+     "grade": 1
+    },
+    {
+     "unit": 454,
+     "grade": 1
+    },
+    {
+     "unit": 455,
+     "grade": 1
+    },
+    {
+     "unit": 473,
+     "grade": 1
+    },
+    {
+     "unit": 474,
+     "grade": 1
+    },
+    {
+     "unit": 477,
+     "grade": 1
+    },
+    {
+     "unit": 488,
+     "grade": 1
+    },
+    {
+     "unit": 490,
+     "grade": 1
+    },
+    {
+     "unit": 493,
+     "grade": 1
+    },
+    {
+     "unit": 494,
+     "grade": 1
+    },
+    {
+     "unit": 495,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "E22",
+   "q": "新能源并网模式演变",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "新能源并网"
+    ],
+    "1": [
+     "新能源",
+     "储能"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 64,
+     "grade": 1
+    },
+    {
+     "unit": 95,
+     "grade": 1
+    },
+    {
+     "unit": 96,
+     "grade": 2
+    },
+    {
+     "unit": 98,
+     "grade": 1
+    },
+    {
+     "unit": 152,
+     "grade": 1
+    },
+    {
+     "unit": 198,
+     "grade": 1
+    },
+    {
+     "unit": 200,
+     "grade": 1
+    },
+    {
+     "unit": 201,
+     "grade": 1
+    },
+    {
+     "unit": 202,
+     "grade": 1
+    },
+    {
+     "unit": 203,
+     "grade": 1
+    },
+    {
+     "unit": 204,
+     "grade": 1
+    },
+    {
+     "unit": 205,
+     "grade": 1
+    },
+    {
+     "unit": 206,
+     "grade": 1
+    },
+    {
+     "unit": 246,
+     "grade": 1
+    },
+    {
+     "unit": 247,
+     "grade": 1
+    },
+    {
+     "unit": 257,
+     "grade": 1
+    },
+    {
+     "unit": 272,
+     "grade": 1
+    },
+    {
+     "unit": 293,
+     "grade": 1
+    },
+    {
+     "unit": 328,
+     "grade": 1
+    },
+    {
+     "unit": 329,
+     "grade": 1
+    },
+    {
+     "unit": 330,
+     "grade": 1
+    },
+    {
+     "unit": 331,
+     "grade": 1
+    },
+    {
+     "unit": 346,
+     "grade": 1
+    },
+    {
+     "unit": 373,
+     "grade": 1
+    },
+    {
+     "unit": 375,
+     "grade": 1
+    },
+    {
+     "unit": 376,
+     "grade": 1
+    },
+    {
+     "unit": 377,
+     "grade": 1
+    },
+    {
+     "unit": 466,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "E23",
+   "q": "光伏成本核算新规",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "成本核算"
+    ],
+    "1": [
+     "光伏",
+     "政策"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 41,
+     "grade": 1
+    },
+    {
+     "unit": 47,
+     "grade": 1
+    },
+    {
+     "unit": 48,
+     "grade": 1
+    },
+    {
+     "unit": 52,
+     "grade": 1
+    },
+    {
+     "unit": 63,
+     "grade": 1
+    },
+    {
+     "unit": 66,
+     "grade": 1
+    },
+    {
+     "unit": 98,
+     "grade": 1
+    },
+    {
+     "unit": 131,
+     "grade": 1
+    },
+    {
+     "unit": 132,
+     "grade": 1
+    },
+    {
+     "unit": 133,
+     "grade": 1
+    },
+    {
+     "unit": 137,
+     "grade": 1
+    },
+    {
+     "unit": 138,
+     "grade": 1
+    },
+    {
+     "unit": 147,
+     "grade": 1
+    },
+    {
+     "unit": 171,
+     "grade": 1
+    },
+    {
+     "unit": 172,
+     "grade": 1
+    },
+    {
+     "unit": 179,
+     "grade": 1
+    },
+    {
+     "unit": 188,
+     "grade": 1
+    },
+    {
+     "unit": 189,
+     "grade": 1
+    },
+    {
+     "unit": 210,
+     "grade": 1
+    },
+    {
+     "unit": 211,
+     "grade": 1
+    },
+    {
+     "unit": 220,
+     "grade": 1
+    },
+    {
+     "unit": 221,
+     "grade": 1
+    },
+    {
+     "unit": 222,
+     "grade": 1
+    },
+    {
+     "unit": 230,
+     "grade": 1
+    },
+    {
+     "unit": 238,
+     "grade": 1
+    },
+    {
+     "unit": 243,
+     "grade": 1
+    },
+    {
+     "unit": 244,
+     "grade": 1
+    },
+    {
+     "unit": 245,
+     "grade": 1
+    },
+    {
+     "unit": 246,
+     "grade": 1
+    },
+    {
+     "unit": 247,
+     "grade": 1
+    },
+    {
+     "unit": 257,
+     "grade": 1
+    },
+    {
+     "unit": 268,
+     "grade": 1
+    },
+    {
+     "unit": 270,
+     "grade": 1
+    },
+    {
+     "unit": 271,
+     "grade": 1
+    },
+    {
+     "unit": 274,
+     "grade": 1
+    },
+    {
+     "unit": 300,
+     "grade": 1
+    },
+    {
+     "unit": 312,
+     "grade": 1
+    },
+    {
+     "unit": 317,
+     "grade": 1
+    },
+    {
+     "unit": 323,
+     "grade": 2
+    },
+    {
+     "unit": 324,
+     "grade": 2
+    },
+    {
+     "unit": 325,
+     "grade": 1
+    },
+    {
+     "unit": 326,
+     "grade": 1
+    },
+    {
+     "unit": 327,
+     "grade": 1
+    },
+    {
+     "unit": 350,
+     "grade": 1
+    },
+    {
+     "unit": 351,
+     "grade": 1
+    },
+    {
+     "unit": 354,
+     "grade": 1
+    },
+    {
+     "unit": 363,
+     "grade": 1
+    },
+    {
+     "unit": 365,
+     "grade": 1
+    },
+    {
+     "unit": 373,
+     "grade": 1
+    },
+    {
+     "unit": 376,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "E24",
+   "q": "购房贷款贴息政策",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "贴息"
+    ],
+    "1": [
+     "购房",
+     "房地产"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 132,
+     "grade": 2
+    },
+    {
+     "unit": 133,
+     "grade": 2
+    },
+    {
+     "unit": 134,
+     "grade": 1
+    },
+    {
+     "unit": 182,
+     "grade": 1
+    },
+    {
+     "unit": 218,
+     "grade": 1
+    },
+    {
+     "unit": 220,
+     "grade": 1
+    },
+    {
+     "unit": 221,
+     "grade": 1
+    },
+    {
+     "unit": 222,
+     "grade": 1
+    },
+    {
+     "unit": 293,
+     "grade": 1
+    },
+    {
+     "unit": 296,
+     "grade": 1
+    },
+    {
+     "unit": 350,
+     "grade": 1
+    },
+    {
+     "unit": 351,
+     "grade": 1
+    },
+    {
+     "unit": 352,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "E25",
+   "q": "住房资产估值模型",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "住房资产"
+    ],
+    "1": [
+     "房地产",
+     "估值"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 134,
+     "grade": 1
+    },
+    {
+     "unit": 136,
+     "grade": 1
+    },
+    {
+     "unit": 147,
+     "grade": 1
+    },
+    {
+     "unit": 182,
+     "grade": 1
+    },
+    {
+     "unit": 209,
+     "grade": 1
+    },
+    {
+     "unit": 218,
+     "grade": 1
+    },
+    {
+     "unit": 220,
+     "grade": 1
+    },
+    {
+     "unit": 221,
+     "grade": 1
+    },
+    {
+     "unit": 222,
+     "grade": 1
+    },
+    {
+     "unit": 265,
+     "grade": 1
+    },
+    {
+     "unit": 293,
+     "grade": 1
+    },
+    {
+     "unit": 296,
+     "grade": 1
+    },
+    {
+     "unit": 308,
+     "grade": 1
+    },
+    {
+     "unit": 309,
+     "grade": 1
+    },
+    {
+     "unit": 348,
+     "grade": 2
+    },
+    {
+     "unit": 350,
+     "grade": 1
+    },
+    {
+     "unit": 351,
+     "grade": 1
+    },
+    {
+     "unit": 352,
+     "grade": 1
+    },
+    {
+     "unit": 393,
+     "grade": 1
+    },
+    {
+     "unit": 396,
+     "grade": 1
+    },
+    {
+     "unit": 478,
+     "grade": 1
+    },
+    {
+     "unit": 480,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "E26",
+   "q": "中国新三样产业",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "新三样"
+    ],
+    "1": [
+     "出口",
+     "新能源"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 64,
+     "grade": 1
+    },
+    {
+     "unit": 73,
+     "grade": 1
+    },
+    {
+     "unit": 95,
+     "grade": 1
+    },
+    {
+     "unit": 96,
+     "grade": 1
+    },
+    {
+     "unit": 152,
+     "grade": 1
+    },
+    {
+     "unit": 178,
+     "grade": 1
+    },
+    {
+     "unit": 203,
+     "grade": 1
+    },
+    {
+     "unit": 204,
+     "grade": 1
+    },
+    {
+     "unit": 205,
+     "grade": 1
+    },
+    {
+     "unit": 206,
+     "grade": 1
+    },
+    {
+     "unit": 230,
+     "grade": 2
+    },
+    {
+     "unit": 246,
+     "grade": 1
+    },
+    {
+     "unit": 247,
+     "grade": 1
+    },
+    {
+     "unit": 251,
+     "grade": 1
+    },
+    {
+     "unit": 257,
+     "grade": 1
+    },
+    {
+     "unit": 261,
+     "grade": 1
+    },
+    {
+     "unit": 269,
+     "grade": 1
+    },
+    {
+     "unit": 272,
+     "grade": 1
+    },
+    {
+     "unit": 293,
+     "grade": 1
+    },
+    {
+     "unit": 313,
+     "grade": 1
+    },
+    {
+     "unit": 328,
+     "grade": 1
+    },
+    {
+     "unit": 330,
+     "grade": 1
+    },
+    {
+     "unit": 346,
+     "grade": 1
+    },
+    {
+     "unit": 373,
+     "grade": 1
+    },
+    {
+     "unit": 375,
+     "grade": 1
+    },
+    {
+     "unit": 376,
+     "grade": 1
+    },
+    {
+     "unit": 377,
+     "grade": 1
+    },
+    {
+     "unit": 403,
+     "grade": 1
+    },
+    {
+     "unit": 406,
+     "grade": 1
+    },
+    {
+     "unit": 409,
+     "grade": 1
+    },
+    {
+     "unit": 411,
+     "grade": 1
+    },
+    {
+     "unit": 412,
+     "grade": 1
+    },
+    {
+     "unit": 413,
+     "grade": 1
+    },
+    {
+     "unit": 414,
+     "grade": 1
+    },
+    {
+     "unit": 415,
+     "grade": 1
+    },
+    {
+     "unit": 418,
+     "grade": 1
+    },
+    {
+     "unit": 420,
+     "grade": 1
+    },
+    {
+     "unit": 421,
+     "grade": 1
+    },
+    {
+     "unit": 423,
+     "grade": 1
+    },
+    {
+     "unit": 424,
+     "grade": 1
+    },
+    {
+     "unit": 425,
+     "grade": 1
+    },
+    {
+     "unit": 426,
+     "grade": 1
+    },
+    {
+     "unit": 427,
+     "grade": 1
+    },
+    {
+     "unit": 428,
+     "grade": 1
+    },
+    {
+     "unit": 429,
+     "grade": 1
+    },
+    {
+     "unit": 430,
+     "grade": 1
+    },
+    {
+     "unit": 432,
+     "grade": 1
+    },
+    {
+     "unit": 433,
+     "grade": 1
+    },
+    {
+     "unit": 434,
+     "grade": 1
+    },
+    {
+     "unit": 436,
+     "grade": 1
+    },
+    {
+     "unit": 438,
+     "grade": 1
+    },
+    {
+     "unit": 440,
+     "grade": 1
+    },
+    {
+     "unit": 442,
+     "grade": 1
+    },
+    {
+     "unit": 448,
+     "grade": 1
+    },
+    {
+     "unit": 449,
+     "grade": 1
+    },
+    {
+     "unit": 450,
+     "grade": 1
+    },
+    {
+     "unit": 452,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "E27",
+   "q": "免税",
+   "type": "短查询",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "免税"
+    ],
+    "1": [
+     "消费"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 61,
+     "grade": 1
+    },
+    {
+     "unit": 64,
+     "grade": 1
+    },
+    {
+     "unit": 78,
+     "grade": 1
+    },
+    {
+     "unit": 79,
+     "grade": 1
+    },
+    {
+     "unit": 82,
+     "grade": 1
+    },
+    {
+     "unit": 85,
+     "grade": 1
+    },
+    {
+     "unit": 87,
+     "grade": 1
+    },
+    {
+     "unit": 99,
+     "grade": 1
+    },
+    {
+     "unit": 165,
+     "grade": 1
+    },
+    {
+     "unit": 169,
+     "grade": 1
+    },
+    {
+     "unit": 176,
+     "grade": 2
+    },
+    {
+     "unit": 290,
+     "grade": 1
+    },
+    {
+     "unit": 301,
+     "grade": 1
+    },
+    {
+     "unit": 314,
+     "grade": 1
+    },
+    {
+     "unit": 352,
+     "grade": 1
+    },
+    {
+     "unit": 390,
+     "grade": 1
+    },
+    {
+     "unit": 477,
+     "grade": 1
+    },
+    {
+     "unit": 483,
+     "grade": 1
+    },
+    {
+     "unit": 485,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "E28",
+   "q": "券商",
+   "type": "短查询",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "券商"
+    ],
+    "1": [
+     "非银金融"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 357,
+     "grade": 2
+    },
+    {
+     "unit": 478,
+     "grade": 2
+    },
+    {
+     "unit": 480,
+     "grade": 1
+    },
+    {
+     "unit": 482,
+     "grade": 2
+    }
+   ]
+  },
+  {
+   "id": "E29",
+   "q": "风电",
+   "type": "短查询",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "风电"
+    ],
+    "1": [
+     "新能源"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 64,
+     "grade": 1
+    },
+    {
+     "unit": 95,
+     "grade": 1
+    },
+    {
+     "unit": 96,
+     "grade": 1
+    },
+    {
+     "unit": 97,
+     "grade": 2
+    },
+    {
+     "unit": 152,
+     "grade": 1
+    },
+    {
+     "unit": 203,
+     "grade": 1
+    },
+    {
+     "unit": 204,
+     "grade": 1
+    },
+    {
+     "unit": 205,
+     "grade": 1
+    },
+    {
+     "unit": 206,
+     "grade": 1
+    },
+    {
+     "unit": 246,
+     "grade": 1
+    },
+    {
+     "unit": 247,
+     "grade": 1
+    },
+    {
+     "unit": 254,
+     "grade": 2
+    },
+    {
+     "unit": 256,
+     "grade": 2
+    },
+    {
+     "unit": 257,
+     "grade": 2
+    },
+    {
+     "unit": 272,
+     "grade": 1
+    },
+    {
+     "unit": 274,
+     "grade": 2
+    },
+    {
+     "unit": 275,
+     "grade": 2
+    },
+    {
+     "unit": 277,
+     "grade": 2
+    },
+    {
+     "unit": 293,
+     "grade": 1
+    },
+    {
+     "unit": 328,
+     "grade": 1
+    },
+    {
+     "unit": 330,
+     "grade": 1
+    },
+    {
+     "unit": 346,
+     "grade": 1
+    },
+    {
+     "unit": 373,
+     "grade": 2
+    },
+    {
+     "unit": 375,
+     "grade": 1
+    },
+    {
+     "unit": 376,
+     "grade": 1
+    },
+    {
+     "unit": 377,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "E30",
+   "q": "关税",
+   "type": "短查询",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "关税"
+    ],
+    "1": [
+     "监管",
+     "海外"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 41,
+     "grade": 1
+    },
+    {
+     "unit": 45,
+     "grade": 1
+    },
+    {
+     "unit": 46,
+     "grade": 1
+    },
+    {
+     "unit": 49,
+     "grade": 1
+    },
+    {
+     "unit": 51,
+     "grade": 1
+    },
+    {
+     "unit": 52,
+     "grade": 1
+    },
+    {
+     "unit": 53,
+     "grade": 1
+    },
+    {
+     "unit": 73,
+     "grade": 1
+    },
+    {
+     "unit": 75,
+     "grade": 1
+    },
+    {
+     "unit": 76,
+     "grade": 1
+    },
+    {
+     "unit": 110,
+     "grade": 1
+    },
+    {
+     "unit": 115,
+     "grade": 1
+    },
+    {
+     "unit": 131,
+     "grade": 1
+    },
+    {
+     "unit": 162,
+     "grade": 1
+    },
+    {
+     "unit": 163,
+     "grade": 1
+    },
+    {
+     "unit": 176,
+     "grade": 1
+    },
+    {
+     "unit": 178,
+     "grade": 1
+    },
+    {
+     "unit": 194,
+     "grade": 1
+    },
+    {
+     "unit": 195,
+     "grade": 1
+    },
+    {
+     "unit": 196,
+     "grade": 1
+    },
+    {
+     "unit": 205,
+     "grade": 1
+    },
+    {
+     "unit": 216,
+     "grade": 1
+    },
+    {
+     "unit": 243,
+     "grade": 1
+    },
+    {
+     "unit": 272,
+     "grade": 1
+    },
+    {
+     "unit": 279,
+     "grade": 1
+    },
+    {
+     "unit": 282,
+     "grade": 1
+    },
+    {
+     "unit": 313,
+     "grade": 2
+    },
+    {
+     "unit": 314,
+     "grade": 1
+    },
+    {
+     "unit": 317,
+     "grade": 2
+    },
+    {
+     "unit": 323,
+     "grade": 1
+    },
+    {
+     "unit": 336,
+     "grade": 1
+    },
+    {
+     "unit": 370,
+     "grade": 1
+    },
+    {
+     "unit": 372,
+     "grade": 1
+    },
+    {
+     "unit": 398,
+     "grade": 1
+    },
+    {
+     "unit": 479,
+     "grade": 1
+    },
+    {
+     "unit": 494,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "E31",
+   "q": "核电",
+   "type": "短查询",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "核电"
+    ],
+    "1": [
+     "电力",
+     "新能源"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 61,
+     "grade": 1
+    },
+    {
+     "unit": 64,
+     "grade": 1
+    },
+    {
+     "unit": 65,
+     "grade": 1
+    },
+    {
+     "unit": 66,
+     "grade": 1
+    },
+    {
+     "unit": 68,
+     "grade": 1
+    },
+    {
+     "unit": 95,
+     "grade": 1
+    },
+    {
+     "unit": 96,
+     "grade": 1
+    },
+    {
+     "unit": 99,
+     "grade": 1
+    },
+    {
+     "unit": 152,
+     "grade": 1
+    },
+    {
+     "unit": 203,
+     "grade": 1
+    },
+    {
+     "unit": 204,
+     "grade": 1
+    },
+    {
+     "unit": 205,
+     "grade": 1
+    },
+    {
+     "unit": 206,
+     "grade": 1
+    },
+    {
+     "unit": 244,
+     "grade": 1
+    },
+    {
+     "unit": 246,
+     "grade": 1
+    },
+    {
+     "unit": 247,
+     "grade": 1
+    },
+    {
+     "unit": 253,
+     "grade": 1
+    },
+    {
+     "unit": 254,
+     "grade": 1
+    },
+    {
+     "unit": 257,
+     "grade": 1
+    },
+    {
+     "unit": 272,
+     "grade": 1
+    },
+    {
+     "unit": 273,
+     "grade": 1
+    },
+    {
+     "unit": 274,
+     "grade": 1
+    },
+    {
+     "unit": 291,
+     "grade": 1
+    },
+    {
+     "unit": 293,
+     "grade": 1
+    },
+    {
+     "unit": 301,
+     "grade": 1
+    },
+    {
+     "unit": 328,
+     "grade": 1
+    },
+    {
+     "unit": 330,
+     "grade": 1
+    },
+    {
+     "unit": 333,
+     "grade": 1
+    },
+    {
+     "unit": 335,
+     "grade": 1
+    },
+    {
+     "unit": 336,
+     "grade": 1
+    },
+    {
+     "unit": 337,
+     "grade": 1
+    },
+    {
+     "unit": 346,
+     "grade": 1
+    },
+    {
+     "unit": 373,
+     "grade": 2
+    },
+    {
+     "unit": 374,
+     "grade": 1
+    },
+    {
+     "unit": 375,
+     "grade": 2
+    },
+    {
+     "unit": 376,
+     "grade": 1
+    },
+    {
+     "unit": 377,
+     "grade": 1
+    },
+    {
+     "unit": 382,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "E32",
+   "q": "全球风电市场趋势与新能源并网模式演变",
+   "type": "长查询",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "风电",
+     "新能源并网"
+    ],
+    "1": [
+     "新能源",
+     "储能"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 64,
+     "grade": 1
+    },
+    {
+     "unit": 95,
+     "grade": 1
+    },
+    {
+     "unit": 96,
+     "grade": 2
+    },
+    {
+     "unit": 97,
+     "grade": 2
+    },
+    {
+     "unit": 98,
+     "grade": 1
+    },
+    {
+     "unit": 152,
+     "grade": 1
+    },
+    {
+     "unit": 198,
+     "grade": 1
+    },
+    {
+     "unit": 200,
+     "grade": 1
+    },
+    {
+     "unit": 201,
+     "grade": 1
+    },
+    {
+     "unit": 202,
+     "grade": 1
+    },
+    {
+     "unit": 203,
+     "grade": 1
+    },
+    {
+     "unit": 204,
+     "grade": 1
+    },
+    {
+     "unit": 205,
+     "grade": 1
+    },
+    {
+     "unit": 206,
+     "grade": 1
+    },
+    {
+     "unit": 246,
+     "grade": 1
+    },
+    {
+     "unit": 247,
+     "grade": 1
+    },
+    {
+     "unit": 254,
+     "grade": 2
+    },
+    {
+     "unit": 256,
+     "grade": 2
+    },
+    {
+     "unit": 257,
+     "grade": 2
+    },
+    {
+     "unit": 272,
+     "grade": 1
+    },
+    {
+     "unit": 274,
+     "grade": 2
+    },
+    {
+     "unit": 275,
+     "grade": 2
+    },
+    {
+     "unit": 277,
+     "grade": 2
+    },
+    {
+     "unit": 293,
+     "grade": 1
+    },
+    {
+     "unit": 328,
+     "grade": 1
+    },
+    {
+     "unit": 329,
+     "grade": 1
+    },
+    {
+     "unit": 330,
+     "grade": 1
+    },
+    {
+     "unit": 331,
+     "grade": 1
+    },
+    {
+     "unit": 346,
+     "grade": 1
+    },
+    {
+     "unit": 373,
+     "grade": 2
+    },
+    {
+     "unit": 375,
+     "grade": 1
+    },
+    {
+     "unit": 376,
+     "grade": 1
+    },
+    {
+     "unit": 377,
+     "grade": 1
+    },
+    {
+     "unit": 466,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "E33",
+   "q": "中小行负债端收缩与银行流动性风险",
+   "type": "长查询",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "中小行"
+    ],
+    "1": [
+     "银行",
+     "风险"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 45,
+     "grade": 1
+    },
+    {
+     "unit": 48,
+     "grade": 1
+    },
+    {
+     "unit": 71,
+     "grade": 1
+    },
+    {
+     "unit": 91,
+     "grade": 1
+    },
+    {
+     "unit": 103,
+     "grade": 1
+    },
+    {
+     "unit": 123,
+     "grade": 1
+    },
+    {
+     "unit": 159,
+     "grade": 1
+    },
+    {
+     "unit": 160,
+     "grade": 2
+    },
+    {
+     "unit": 161,
+     "grade": 2
+    },
+    {
+     "unit": 162,
+     "grade": 2
+    },
+    {
+     "unit": 163,
+     "grade": 2
+    },
+    {
+     "unit": 164,
+     "grade": 2
+    },
+    {
+     "unit": 172,
+     "grade": 1
+    },
+    {
+     "unit": 182,
+     "grade": 1
+    },
+    {
+     "unit": 191,
+     "grade": 1
+    },
+    {
+     "unit": 216,
+     "grade": 1
+    },
+    {
+     "unit": 220,
+     "grade": 1
+    },
+    {
+     "unit": 221,
+     "grade": 1
+    },
+    {
+     "unit": 290,
+     "grade": 1
+    },
+    {
+     "unit": 297,
+     "grade": 1
+    },
+    {
+     "unit": 299,
+     "grade": 1
+    },
+    {
+     "unit": 300,
+     "grade": 1
+    },
+    {
+     "unit": 317,
+     "grade": 1
+    },
+    {
+     "unit": 348,
+     "grade": 1
+    },
+    {
+     "unit": 349,
+     "grade": 1
+    },
+    {
+     "unit": 350,
+     "grade": 1
+    },
+    {
+     "unit": 352,
+     "grade": 1
+    },
+    {
+     "unit": 363,
+     "grade": 1
+    },
+    {
+     "unit": 364,
+     "grade": 1
+    },
+    {
+     "unit": 365,
+     "grade": 1
+    },
+    {
+     "unit": 366,
+     "grade": 1
+    },
+    {
+     "unit": 367,
+     "grade": 1
+    },
+    {
+     "unit": 368,
+     "grade": 1
+    },
+    {
+     "unit": 370,
+     "grade": 1
+    },
+    {
+     "unit": 371,
+     "grade": 1
+    },
+    {
+     "unit": 372,
+     "grade": 1
+    },
+    {
+     "unit": 387,
+     "grade": 1
+    },
+    {
+     "unit": 454,
+     "grade": 1
+    },
+    {
+     "unit": 457,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "E34",
+   "q": "AI 原生安全与传统安全运营的差异",
+   "type": "长查询",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "AI 原生安全"
+    ],
+    "1": [
+     "AI",
+     "安全"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 8,
+     "grade": 1
+    },
+    {
+     "unit": 35,
+     "grade": 1
+    },
+    {
+     "unit": 36,
+     "grade": 1
+    },
+    {
+     "unit": 37,
+     "grade": 1
+    },
+    {
+     "unit": 38,
+     "grade": 1
+    },
+    {
+     "unit": 39,
+     "grade": 1
+    },
+    {
+     "unit": 41,
+     "grade": 1
+    },
+    {
+     "unit": 43,
+     "grade": 1
+    },
+    {
+     "unit": 45,
+     "grade": 1
+    },
+    {
+     "unit": 48,
+     "grade": 1
+    },
+    {
+     "unit": 49,
+     "grade": 1
+    },
+    {
+     "unit": 55,
+     "grade": 1
+    },
+    {
+     "unit": 58,
+     "grade": 1
+    },
+    {
+     "unit": 70,
+     "grade": 2
+    },
+    {
+     "unit": 71,
+     "grade": 1
+    },
+    {
+     "unit": 72,
+     "grade": 1
+    },
+    {
+     "unit": 73,
+     "grade": 1
+    },
+    {
+     "unit": 74,
+     "grade": 1
+    },
+    {
+     "unit": 78,
+     "grade": 1
+    },
+    {
+     "unit": 94,
+     "grade": 1
+    },
+    {
+     "unit": 95,
+     "grade": 1
+    },
+    {
+     "unit": 106,
+     "grade": 1
+    },
+    {
+     "unit": 109,
+     "grade": 1
+    },
+    {
+     "unit": 110,
+     "grade": 1
+    },
+    {
+     "unit": 111,
+     "grade": 1
+    },
+    {
+     "unit": 112,
+     "grade": 1
+    },
+    {
+     "unit": 113,
+     "grade": 1
+    },
+    {
+     "unit": 114,
+     "grade": 1
+    },
+    {
+     "unit": 115,
+     "grade": 1
+    },
+    {
+     "unit": 116,
+     "grade": 1
+    },
+    {
+     "unit": 117,
+     "grade": 1
+    },
+    {
+     "unit": 125,
+     "grade": 1
+    },
+    {
+     "unit": 128,
+     "grade": 1
+    },
+    {
+     "unit": 129,
+     "grade": 1
+    },
+    {
+     "unit": 140,
+     "grade": 1
+    },
+    {
+     "unit": 143,
+     "grade": 1
+    },
+    {
+     "unit": 151,
+     "grade": 1
+    },
+    {
+     "unit": 153,
+     "grade": 1
+    },
+    {
+     "unit": 154,
+     "grade": 1
+    },
+    {
+     "unit": 155,
+     "grade": 1
+    },
+    {
+     "unit": 156,
+     "grade": 1
+    },
+    {
+     "unit": 157,
+     "grade": 1
+    },
+    {
+     "unit": 158,
+     "grade": 1
+    },
+    {
+     "unit": 159,
+     "grade": 1
+    },
+    {
+     "unit": 166,
+     "grade": 1
+    },
+    {
+     "unit": 168,
+     "grade": 1
+    },
+    {
+     "unit": 169,
+     "grade": 1
+    },
+    {
+     "unit": 183,
+     "grade": 1
+    },
+    {
+     "unit": 184,
+     "grade": 1
+    },
+    {
+     "unit": 187,
+     "grade": 1
+    },
+    {
+     "unit": 193,
+     "grade": 1
+    },
+    {
+     "unit": 201,
+     "grade": 1
+    },
+    {
+     "unit": 213,
+     "grade": 1
+    },
+    {
+     "unit": 214,
+     "grade": 1
+    },
+    {
+     "unit": 215,
+     "grade": 1
+    },
+    {
+     "unit": 216,
+     "grade": 1
+    },
+    {
+     "unit": 217,
+     "grade": 1
+    },
+    {
+     "unit": 223,
+     "grade": 1
+    },
+    {
+     "unit": 233,
+     "grade": 1
+    },
+    {
+     "unit": 236,
+     "grade": 1
+    },
+    {
+     "unit": 238,
+     "grade": 1
+    },
+    {
+     "unit": 239,
+     "grade": 1
+    },
+    {
+     "unit": 240,
+     "grade": 1
+    },
+    {
+     "unit": 266,
+     "grade": 1
+    },
+    {
+     "unit": 267,
+     "grade": 1
+    },
+    {
+     "unit": 281,
+     "grade": 1
+    },
+    {
+     "unit": 303,
+     "grade": 1
+    },
+    {
+     "unit": 304,
+     "grade": 1
+    },
+    {
+     "unit": 305,
+     "grade": 1
+    },
+    {
+     "unit": 306,
+     "grade": 1
+    },
+    {
+     "unit": 307,
+     "grade": 1
+    },
+    {
+     "unit": 310,
+     "grade": 1
+    },
+    {
+     "unit": 311,
+     "grade": 1
+    },
+    {
+     "unit": 312,
+     "grade": 1
+    },
+    {
+     "unit": 316,
+     "grade": 1
+    },
+    {
+     "unit": 321,
+     "grade": 1
+    },
+    {
+     "unit": 327,
+     "grade": 1
+    },
+    {
+     "unit": 328,
+     "grade": 1
+    },
+    {
+     "unit": 329,
+     "grade": 1
+    },
+    {
+     "unit": 330,
+     "grade": 1
+    },
+    {
+     "unit": 333,
+     "grade": 1
+    },
+    {
+     "unit": 335,
+     "grade": 1
+    },
+    {
+     "unit": 336,
+     "grade": 1
+    },
+    {
+     "unit": 338,
+     "grade": 1
+    },
+    {
+     "unit": 375,
+     "grade": 1
+    },
+    {
+     "unit": 377,
+     "grade": 1
+    },
+    {
+     "unit": 383,
+     "grade": 1
+    },
+    {
+     "unit": 385,
+     "grade": 1
+    },
+    {
+     "unit": 386,
+     "grade": 1
+    },
+    {
+     "unit": 388,
+     "grade": 1
+    },
+    {
+     "unit": 390,
+     "grade": 1
+    },
+    {
+     "unit": 391,
+     "grade": 1
+    },
+    {
+     "unit": 443,
+     "grade": 1
+    },
+    {
+     "unit": 445,
+     "grade": 1
+    },
+    {
+     "unit": 453,
+     "grade": 1
+    },
+    {
+     "unit": 454,
+     "grade": 1
+    },
+    {
+     "unit": 455,
+     "grade": 1
+    },
+    {
+     "unit": 456,
+     "grade": 1
+    },
+    {
+     "unit": 457,
+     "grade": 1
+    },
+    {
+     "unit": 473,
+     "grade": 1
+    },
+    {
+     "unit": 474,
+     "grade": 1
+    },
+    {
+     "unit": 477,
+     "grade": 1
+    },
+    {
+     "unit": 488,
+     "grade": 1
+    },
+    {
+     "unit": 490,
+     "grade": 1
+    },
+    {
+     "unit": 493,
+     "grade": 1
+    },
+    {
+     "unit": 494,
+     "grade": 1
+    },
+    {
+     "unit": 495,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "E35",
+   "q": "快递 盈利",
+   "type": "AND",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "快递"
+    ],
+    "1": [
+     "盈利"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 113,
+     "grade": 1
+    },
+    {
+     "unit": 146,
+     "grade": 2
+    },
+    {
+     "unit": 147,
+     "grade": 2
+    },
+    {
+     "unit": 148,
+     "grade": 2
+    },
+    {
+     "unit": 149,
+     "grade": 2
+    },
+    {
+     "unit": 162,
+     "grade": 1
+    },
+    {
+     "unit": 192,
+     "grade": 1
+    },
+    {
+     "unit": 296,
+     "grade": 1
+    },
+    {
+     "unit": 297,
+     "grade": 1
+    },
+    {
+     "unit": 315,
+     "grade": 1
+    },
+    {
+     "unit": 353,
+     "grade": 1
+    },
+    {
+     "unit": 364,
+     "grade": 1
+    },
+    {
+     "unit": 478,
+     "grade": 1
+    },
+    {
+     "unit": 480,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "E36",
+   "q": "航空 运力",
+   "type": "AND",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "航空"
+    ],
+    "1": [
+     "运力"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 120,
+     "grade": 2
+    },
+    {
+     "unit": 121,
+     "grade": 2
+    },
+    {
+     "unit": 123,
+     "grade": 2
+    },
+    {
+     "unit": 124,
+     "grade": 2
+    },
+    {
+     "unit": 252,
+     "grade": 2
+    },
+    {
+     "unit": 408,
+     "grade": 2
+    },
+    {
+     "unit": 409,
+     "grade": 2
+    },
+    {
+     "unit": 410,
+     "grade": 2
+    },
+    {
+     "unit": 411,
+     "grade": 2
+    },
+    {
+     "unit": 412,
+     "grade": 2
+    }
+   ]
+  },
+  {
+   "id": "E37",
+   "q": "免税 消费",
+   "type": "AND",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "免税"
+    ],
+    "1": [
+     "消费"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 61,
+     "grade": 1
+    },
+    {
+     "unit": 64,
+     "grade": 1
+    },
+    {
+     "unit": 78,
+     "grade": 1
+    },
+    {
+     "unit": 79,
+     "grade": 1
+    },
+    {
+     "unit": 82,
+     "grade": 1
+    },
+    {
+     "unit": 85,
+     "grade": 1
+    },
+    {
+     "unit": 87,
+     "grade": 1
+    },
+    {
+     "unit": 99,
+     "grade": 1
+    },
+    {
+     "unit": 165,
+     "grade": 1
+    },
+    {
+     "unit": 169,
+     "grade": 1
+    },
+    {
+     "unit": 176,
+     "grade": 2
+    },
+    {
+     "unit": 290,
+     "grade": 1
+    },
+    {
+     "unit": 301,
+     "grade": 1
+    },
+    {
+     "unit": 314,
+     "grade": 1
+    },
+    {
+     "unit": 352,
+     "grade": 1
+    },
+    {
+     "unit": 390,
+     "grade": 1
+    },
+    {
+     "unit": 477,
+     "grade": 1
+    },
+    {
+     "unit": 483,
+     "grade": 1
+    },
+    {
+     "unit": 485,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "E38",
+   "q": "保险资金 港股通",
+   "type": "AND",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "保险资金"
+    ],
+    "1": [
+     "港股通"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 479,
+     "grade": 2
+    }
+   ]
+  },
+  {
+   "id": "E39",
+   "q": "挖掘机 出口",
+   "type": "AND",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "挖掘机"
+    ],
+    "1": [
+     "出口"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 73,
+     "grade": 1
+    },
+    {
+     "unit": 178,
+     "grade": 2
+    },
+    {
+     "unit": 180,
+     "grade": 2
+    },
+    {
+     "unit": 205,
+     "grade": 1
+    },
+    {
+     "unit": 230,
+     "grade": 1
+    },
+    {
+     "unit": 251,
+     "grade": 1
+    },
+    {
+     "unit": 261,
+     "grade": 1
+    },
+    {
+     "unit": 269,
+     "grade": 1
+    },
+    {
+     "unit": 313,
+     "grade": 1
+    },
+    {
+     "unit": 403,
+     "grade": 1
+    },
+    {
+     "unit": 406,
+     "grade": 1
+    },
+    {
+     "unit": 409,
+     "grade": 1
+    },
+    {
+     "unit": 411,
+     "grade": 1
+    },
+    {
+     "unit": 412,
+     "grade": 1
+    },
+    {
+     "unit": 413,
+     "grade": 1
+    },
+    {
+     "unit": 414,
+     "grade": 1
+    },
+    {
+     "unit": 415,
+     "grade": 1
+    },
+    {
+     "unit": 418,
+     "grade": 1
+    },
+    {
+     "unit": 420,
+     "grade": 1
+    },
+    {
+     "unit": 421,
+     "grade": 1
+    },
+    {
+     "unit": 423,
+     "grade": 1
+    },
+    {
+     "unit": 424,
+     "grade": 1
+    },
+    {
+     "unit": 425,
+     "grade": 1
+    },
+    {
+     "unit": 426,
+     "grade": 1
+    },
+    {
+     "unit": 427,
+     "grade": 1
+    },
+    {
+     "unit": 428,
+     "grade": 1
+    },
+    {
+     "unit": 429,
+     "grade": 1
+    },
+    {
+     "unit": 430,
+     "grade": 1
+    },
+    {
+     "unit": 432,
+     "grade": 1
+    },
+    {
+     "unit": 433,
+     "grade": 1
+    },
+    {
+     "unit": 434,
+     "grade": 1
+    },
+    {
+     "unit": 436,
+     "grade": 1
+    },
+    {
+     "unit": 438,
+     "grade": 1
+    },
+    {
+     "unit": 440,
+     "grade": 1
+    },
+    {
+     "unit": 442,
+     "grade": 1
+    },
+    {
+     "unit": 448,
+     "grade": 1
+    },
+    {
+     "unit": 449,
+     "grade": 1
+    },
+    {
+     "unit": 450,
+     "grade": 1
+    },
+    {
+     "unit": 452,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "E40",
+   "q": "挖掘机|快递",
+   "type": "OR",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "挖掘机",
+     "快递"
+    ],
+    "1": [
+     "出口",
+     "盈利"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 73,
+     "grade": 1
+    },
+    {
+     "unit": 113,
+     "grade": 1
+    },
+    {
+     "unit": 146,
+     "grade": 2
+    },
+    {
+     "unit": 147,
+     "grade": 2
+    },
+    {
+     "unit": 148,
+     "grade": 2
+    },
+    {
+     "unit": 149,
+     "grade": 2
+    },
+    {
+     "unit": 162,
+     "grade": 1
+    },
+    {
+     "unit": 178,
+     "grade": 2
+    },
+    {
+     "unit": 180,
+     "grade": 2
+    },
+    {
+     "unit": 192,
+     "grade": 1
+    },
+    {
+     "unit": 205,
+     "grade": 1
+    },
+    {
+     "unit": 230,
+     "grade": 1
+    },
+    {
+     "unit": 251,
+     "grade": 1
+    },
+    {
+     "unit": 261,
+     "grade": 1
+    },
+    {
+     "unit": 269,
+     "grade": 1
+    },
+    {
+     "unit": 296,
+     "grade": 1
+    },
+    {
+     "unit": 297,
+     "grade": 1
+    },
+    {
+     "unit": 313,
+     "grade": 1
+    },
+    {
+     "unit": 315,
+     "grade": 1
+    },
+    {
+     "unit": 353,
+     "grade": 1
+    },
+    {
+     "unit": 364,
+     "grade": 1
+    },
+    {
+     "unit": 403,
+     "grade": 1
+    },
+    {
+     "unit": 406,
+     "grade": 1
+    },
+    {
+     "unit": 409,
+     "grade": 1
+    },
+    {
+     "unit": 411,
+     "grade": 1
+    },
+    {
+     "unit": 412,
+     "grade": 1
+    },
+    {
+     "unit": 413,
+     "grade": 1
+    },
+    {
+     "unit": 414,
+     "grade": 1
+    },
+    {
+     "unit": 415,
+     "grade": 1
+    },
+    {
+     "unit": 418,
+     "grade": 1
+    },
+    {
+     "unit": 420,
+     "grade": 1
+    },
+    {
+     "unit": 421,
+     "grade": 1
+    },
+    {
+     "unit": 423,
+     "grade": 1
+    },
+    {
+     "unit": 424,
+     "grade": 1
+    },
+    {
+     "unit": 425,
+     "grade": 1
+    },
+    {
+     "unit": 426,
+     "grade": 1
+    },
+    {
+     "unit": 427,
+     "grade": 1
+    },
+    {
+     "unit": 428,
+     "grade": 1
+    },
+    {
+     "unit": 429,
+     "grade": 1
+    },
+    {
+     "unit": 430,
+     "grade": 1
+    },
+    {
+     "unit": 432,
+     "grade": 1
+    },
+    {
+     "unit": 433,
+     "grade": 1
+    },
+    {
+     "unit": 434,
+     "grade": 1
+    },
+    {
+     "unit": 436,
+     "grade": 1
+    },
+    {
+     "unit": 438,
+     "grade": 1
+    },
+    {
+     "unit": 440,
+     "grade": 1
+    },
+    {
+     "unit": 442,
+     "grade": 1
+    },
+    {
+     "unit": 448,
+     "grade": 1
+    },
+    {
+     "unit": 449,
+     "grade": 1
+    },
+    {
+     "unit": 450,
+     "grade": 1
+    },
+    {
+     "unit": 452,
+     "grade": 1
+    },
+    {
+     "unit": 478,
+     "grade": 1
+    },
+    {
+     "unit": 480,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "E41",
+   "q": "免税|白酒",
+   "type": "OR",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "免税",
+     "白酒"
+    ],
+    "1": [
+     "消费"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 61,
+     "grade": 1
+    },
+    {
+     "unit": 64,
+     "grade": 1
+    },
+    {
+     "unit": 78,
+     "grade": 1
+    },
+    {
+     "unit": 79,
+     "grade": 1
+    },
+    {
+     "unit": 82,
+     "grade": 1
+    },
+    {
+     "unit": 85,
+     "grade": 1
+    },
+    {
+     "unit": 87,
+     "grade": 1
+    },
+    {
+     "unit": 99,
+     "grade": 1
+    },
+    {
+     "unit": 165,
+     "grade": 1
+    },
+    {
+     "unit": 169,
+     "grade": 1
+    },
+    {
+     "unit": 176,
+     "grade": 2
+    },
+    {
+     "unit": 290,
+     "grade": 1
+    },
+    {
+     "unit": 301,
+     "grade": 1
+    },
+    {
+     "unit": 314,
+     "grade": 1
+    },
+    {
+     "unit": 352,
+     "grade": 1
+    },
+    {
+     "unit": 390,
+     "grade": 1
+    },
+    {
+     "unit": 477,
+     "grade": 1
+    },
+    {
+     "unit": 483,
+     "grade": 2
+    },
+    {
+     "unit": 484,
+     "grade": 2
+    },
+    {
+     "unit": 485,
+     "grade": 2
+    },
+    {
+     "unit": 486,
+     "grade": 2
+    }
+   ]
+  },
+  {
+   "id": "E42",
+   "q": "券商|保险资金",
+   "type": "OR",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "券商",
+     "保险资金"
+    ],
+    "1": [
+     "非银金融"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 357,
+     "grade": 2
+    },
+    {
+     "unit": 478,
+     "grade": 2
+    },
+    {
+     "unit": 479,
+     "grade": 2
+    },
+    {
+     "unit": 480,
+     "grade": 1
+    },
+    {
+     "unit": 482,
+     "grade": 2
+    }
+   ]
+  },
+  {
+   "id": "E43",
+   "q": "风电|核电",
+   "type": "OR",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "风电",
+     "核电"
+    ],
+    "1": [
+     "新能源"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 64,
+     "grade": 1
+    },
+    {
+     "unit": 95,
+     "grade": 1
+    },
+    {
+     "unit": 96,
+     "grade": 1
+    },
+    {
+     "unit": 97,
+     "grade": 2
+    },
+    {
+     "unit": 152,
+     "grade": 1
+    },
+    {
+     "unit": 203,
+     "grade": 1
+    },
+    {
+     "unit": 204,
+     "grade": 1
+    },
+    {
+     "unit": 205,
+     "grade": 1
+    },
+    {
+     "unit": 206,
+     "grade": 1
+    },
+    {
+     "unit": 246,
+     "grade": 1
+    },
+    {
+     "unit": 247,
+     "grade": 1
+    },
+    {
+     "unit": 254,
+     "grade": 2
+    },
+    {
+     "unit": 256,
+     "grade": 2
+    },
+    {
+     "unit": 257,
+     "grade": 2
+    },
+    {
+     "unit": 272,
+     "grade": 1
+    },
+    {
+     "unit": 274,
+     "grade": 2
+    },
+    {
+     "unit": 275,
+     "grade": 2
+    },
+    {
+     "unit": 277,
+     "grade": 2
+    },
+    {
+     "unit": 293,
+     "grade": 1
+    },
+    {
+     "unit": 328,
+     "grade": 1
+    },
+    {
+     "unit": 330,
+     "grade": 1
+    },
+    {
+     "unit": 346,
+     "grade": 1
+    },
+    {
+     "unit": 373,
+     "grade": 2
+    },
+    {
+     "unit": 375,
+     "grade": 2
+    },
+    {
+     "unit": 376,
+     "grade": 1
+    },
+    {
+     "unit": 377,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "E44",
+   "q": "\"轨道数据中心定位\"",
+   "type": "短语",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "轨道数据中心"
+    ],
+    "1": [
+     "数据中心"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 40,
+     "grade": 2
+    },
+    {
+     "unit": 43,
+     "grade": 2
+    },
+    {
+     "unit": 44,
+     "grade": 2
+    },
+    {
+     "unit": 45,
+     "grade": 2
+    },
+    {
+     "unit": 46,
+     "grade": 2
+    },
+    {
+     "unit": 47,
+     "grade": 2
+    },
+    {
+     "unit": 49,
+     "grade": 2
+    },
+    {
+     "unit": 106,
+     "grade": 1
+    },
+    {
+     "unit": 107,
+     "grade": 1
+    },
+    {
+     "unit": 128,
+     "grade": 1
+    },
+    {
+     "unit": 129,
+     "grade": 1
+    },
+    {
+     "unit": 154,
+     "grade": 1
+    },
+    {
+     "unit": 328,
+     "grade": 1
+    },
+    {
+     "unit": 329,
+     "grade": 1
+    },
+    {
+     "unit": 330,
+     "grade": 1
+    },
+    {
+     "unit": 332,
+     "grade": 1
+    },
+    {
+     "unit": 333,
+     "grade": 1
+    },
+    {
+     "unit": 334,
+     "grade": 1
+    },
+    {
+     "unit": 335,
+     "grade": 1
+    },
+    {
+     "unit": 337,
+     "grade": 1
+    },
+    {
+     "unit": 379,
+     "grade": 1
+    },
+    {
+     "unit": 381,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "E45",
+   "q": "\"DeepSeek DSec 系统架构\"",
+   "type": "短语",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "DeepSeek"
+    ],
+    "1": [
+     "DSec"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 264,
+     "grade": 2
+    },
+    {
+     "unit": 265,
+     "grade": 2
+    },
+    {
+     "unit": 306,
+     "grade": 2
+    },
+    {
+     "unit": 338,
+     "grade": 2
+    },
+    {
+     "unit": 443,
+     "grade": 2
+    },
+    {
+     "unit": 446,
+     "grade": 2
+    }
+   ]
+  },
+  {
+   "id": "E46",
+   "q": "\"上市快递企业盈利修复\"",
+   "type": "短语",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "快递"
+    ],
+    "1": [
+     "盈利"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 113,
+     "grade": 1
+    },
+    {
+     "unit": 146,
+     "grade": 2
+    },
+    {
+     "unit": 147,
+     "grade": 2
+    },
+    {
+     "unit": 148,
+     "grade": 2
+    },
+    {
+     "unit": 149,
+     "grade": 2
+    },
+    {
+     "unit": 162,
+     "grade": 1
+    },
+    {
+     "unit": 192,
+     "grade": 1
+    },
+    {
+     "unit": 296,
+     "grade": 1
+    },
+    {
+     "unit": 297,
+     "grade": 1
+    },
+    {
+     "unit": 315,
+     "grade": 1
+    },
+    {
+     "unit": 353,
+     "grade": 1
+    },
+    {
+     "unit": 364,
+     "grade": 1
+    },
+    {
+     "unit": 478,
+     "grade": 1
+    },
+    {
+     "unit": 480,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "E47",
+   "q": "数据中心 -轨道",
+   "type": "排除",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "数据中心"
+    ],
+    "1": [
+     "IDC"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 40,
+     "grade": 2
+    },
+    {
+     "unit": 43,
+     "grade": 2
+    },
+    {
+     "unit": 44,
+     "grade": 2
+    },
+    {
+     "unit": 45,
+     "grade": 2
+    },
+    {
+     "unit": 46,
+     "grade": 2
+    },
+    {
+     "unit": 47,
+     "grade": 2
+    },
+    {
+     "unit": 49,
+     "grade": 2
+    },
+    {
+     "unit": 106,
+     "grade": 2
+    },
+    {
+     "unit": 107,
+     "grade": 2
+    },
+    {
+     "unit": 128,
+     "grade": 2
+    },
+    {
+     "unit": 129,
+     "grade": 2
+    },
+    {
+     "unit": 154,
+     "grade": 2
+    },
+    {
+     "unit": 289,
+     "grade": 1
+    },
+    {
+     "unit": 328,
+     "grade": 2
+    },
+    {
+     "unit": 329,
+     "grade": 2
+    },
+    {
+     "unit": 330,
+     "grade": 2
+    },
+    {
+     "unit": 332,
+     "grade": 2
+    },
+    {
+     "unit": 333,
+     "grade": 2
+    },
+    {
+     "unit": 334,
+     "grade": 2
+    },
+    {
+     "unit": 335,
+     "grade": 2
+    },
+    {
+     "unit": 336,
+     "grade": 1
+    },
+    {
+     "unit": 337,
+     "grade": 2
+    },
+    {
+     "unit": 379,
+     "grade": 2
+    },
+    {
+     "unit": 381,
+     "grade": 2
+    }
+   ]
+  },
+  {
+   "id": "E48",
+   "q": "大模型 -商业化",
+   "type": "排除",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "大模型"
+    ],
+    "1": [
+     "AI"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 38,
+     "grade": 1
+    },
+    {
+     "unit": 55,
+     "grade": 1
+    },
+    {
+     "unit": 59,
+     "grade": 2
+    },
+    {
+     "unit": 70,
+     "grade": 2
+    },
+    {
+     "unit": 74,
+     "grade": 1
+    },
+    {
+     "unit": 78,
+     "grade": 1
+    },
+    {
+     "unit": 94,
+     "grade": 1
+    },
+    {
+     "unit": 106,
+     "grade": 1
+    },
+    {
+     "unit": 109,
+     "grade": 1
+    },
+    {
+     "unit": 110,
+     "grade": 2
+    },
+    {
+     "unit": 111,
+     "grade": 1
+    },
+    {
+     "unit": 112,
+     "grade": 1
+    },
+    {
+     "unit": 113,
+     "grade": 1
+    },
+    {
+     "unit": 114,
+     "grade": 2
+    },
+    {
+     "unit": 115,
+     "grade": 2
+    },
+    {
+     "unit": 116,
+     "grade": 1
+    },
+    {
+     "unit": 117,
+     "grade": 1
+    },
+    {
+     "unit": 125,
+     "grade": 1
+    },
+    {
+     "unit": 128,
+     "grade": 1
+    },
+    {
+     "unit": 129,
+     "grade": 1
+    },
+    {
+     "unit": 140,
+     "grade": 1
+    },
+    {
+     "unit": 143,
+     "grade": 1
+    },
+    {
+     "unit": 151,
+     "grade": 1
+    },
+    {
+     "unit": 153,
+     "grade": 1
+    },
+    {
+     "unit": 154,
+     "grade": 1
+    },
+    {
+     "unit": 155,
+     "grade": 1
+    },
+    {
+     "unit": 156,
+     "grade": 1
+    },
+    {
+     "unit": 157,
+     "grade": 1
+    },
+    {
+     "unit": 158,
+     "grade": 1
+    },
+    {
+     "unit": 159,
+     "grade": 1
+    },
+    {
+     "unit": 166,
+     "grade": 1
+    },
+    {
+     "unit": 168,
+     "grade": 1
+    },
+    {
+     "unit": 169,
+     "grade": 1
+    },
+    {
+     "unit": 183,
+     "grade": 1
+    },
+    {
+     "unit": 184,
+     "grade": 1
+    },
+    {
+     "unit": 187,
+     "grade": 1
+    },
+    {
+     "unit": 213,
+     "grade": 2
+    },
+    {
+     "unit": 214,
+     "grade": 1
+    },
+    {
+     "unit": 215,
+     "grade": 1
+    },
+    {
+     "unit": 216,
+     "grade": 1
+    },
+    {
+     "unit": 217,
+     "grade": 1
+    },
+    {
+     "unit": 233,
+     "grade": 1
+    },
+    {
+     "unit": 236,
+     "grade": 1
+    },
+    {
+     "unit": 238,
+     "grade": 1
+    },
+    {
+     "unit": 239,
+     "grade": 1
+    },
+    {
+     "unit": 240,
+     "grade": 2
+    },
+    {
+     "unit": 266,
+     "grade": 1
+    },
+    {
+     "unit": 267,
+     "grade": 1
+    },
+    {
+     "unit": 281,
+     "grade": 1
+    },
+    {
+     "unit": 303,
+     "grade": 1
+    },
+    {
+     "unit": 304,
+     "grade": 1
+    },
+    {
+     "unit": 305,
+     "grade": 1
+    },
+    {
+     "unit": 306,
+     "grade": 1
+    },
+    {
+     "unit": 307,
+     "grade": 1
+    },
+    {
+     "unit": 310,
+     "grade": 1
+    },
+    {
+     "unit": 311,
+     "grade": 1
+    },
+    {
+     "unit": 316,
+     "grade": 1
+    },
+    {
+     "unit": 328,
+     "grade": 1
+    },
+    {
+     "unit": 329,
+     "grade": 1
+    },
+    {
+     "unit": 330,
+     "grade": 1
+    },
+    {
+     "unit": 333,
+     "grade": 1
+    },
+    {
+     "unit": 335,
+     "grade": 1
+    },
+    {
+     "unit": 336,
+     "grade": 1
+    },
+    {
+     "unit": 338,
+     "grade": 2
+    },
+    {
+     "unit": 375,
+     "grade": 1
+    },
+    {
+     "unit": 383,
+     "grade": 1
+    },
+    {
+     "unit": 384,
+     "grade": 2
+    },
+    {
+     "unit": 385,
+     "grade": 1
+    },
+    {
+     "unit": 386,
+     "grade": 1
+    },
+    {
+     "unit": 388,
+     "grade": 1
+    },
+    {
+     "unit": 390,
+     "grade": 1
+    },
+    {
+     "unit": 391,
+     "grade": 1
+    },
+    {
+     "unit": 443,
+     "grade": 2
+    },
+    {
+     "unit": 444,
+     "grade": 2
+    },
+    {
+     "unit": 445,
+     "grade": 2
+    },
+    {
+     "unit": 446,
+     "grade": 2
+    },
+    {
+     "unit": 447,
+     "grade": 2
+    },
+    {
+     "unit": 453,
+     "grade": 2
+    },
+    {
+     "unit": 454,
+     "grade": 1
+    },
+    {
+     "unit": 455,
+     "grade": 1
+    },
+    {
+     "unit": 473,
+     "grade": 2
+    },
+    {
+     "unit": 474,
+     "grade": 1
+    },
+    {
+     "unit": 477,
+     "grade": 1
+    },
+    {
+     "unit": 488,
+     "grade": 1
+    },
+    {
+     "unit": 490,
+     "grade": 1
+    },
+    {
+     "unit": 493,
+     "grade": 1
+    },
+    {
+     "unit": 494,
+     "grade": 1
+    },
+    {
+     "unit": 495,
+     "grade": 1
+    }
+   ]
+  },
+  {
+   "id": "V3-01",
+   "q": "东盟中小微企业（MSME）经济地位",
+   "type": "短语",
+   "source": "v3",
+   "graded": {
+    "2": [
+     "东盟中小微企业"
+    ],
+    "1": [
+     "MSME",
+     "中小微"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 50,
+     "grade": 2
+    },
+    {
+     "unit": 51,
+     "grade": 2
+    },
+    {
+     "unit": 52,
+     "grade": 1
+    },
+    {
+     "unit": 278,
+     "grade": 2
+    },
+    {
+     "unit": 279,
+     "grade": 2
+    },
+    {
+     "unit": 280,
+     "grade": 2
+    },
+    {
+     "unit": 281,
+     "grade": 1
+    }
+   ],
+   "note": "精确覆盖被合并概念 CG-003"
+  },
+  {
+   "id": "V3-02",
+   "q": "跨境电子商务面临的四大挑战",
+   "type": "短语",
+   "source": "v3",
+   "graded": {
+    "2": [
+     "跨境电子商务面临的四大挑战"
+    ],
+    "1": [
+     "跨境电子商务",
+     "跨境电商"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 51,
+     "grade": 2
+    },
+    {
+     "unit": 279,
+     "grade": 2
+    },
+    {
+     "unit": 280,
+     "grade": 1
+    },
+    {
+     "unit": 281,
+     "grade": 1
+    },
+    {
+     "unit": 313,
+     "grade": 1
+    },
+    {
+     "unit": 314,
+     "grade": 1
+    },
+    {
+     "unit": 315,
+     "grade": 1
+    }
+   ],
+   "note": "精确覆盖被合并概念 CG-004"
+  },
+  {
+   "id": "V3-03",
+   "q": "东盟 中小微企业 数字化",
+   "type": "AND",
+   "source": "v3",
+   "graded": {
+    "2": [
+     "东盟",
+     "中小微"
+    ],
+    "1": [
+     "MSME",
+     "数字化"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 50,
+     "grade": 2
+    },
+    {
+     "unit": 51,
+     "grade": 2
+    },
+    {
+     "unit": 52,
+     "grade": 2
+    },
+    {
+     "unit": 53,
+     "grade": 2
+    },
+    {
+     "unit": 54,
+     "grade": 2
+    },
+    {
+     "unit": 74,
+     "grade": 1
+    },
+    {
+     "unit": 225,
+     "grade": 1
+    },
+    {
+     "unit": 228,
+     "grade": 1
+    },
+    {
+     "unit": 278,
+     "grade": 2
+    },
+    {
+     "unit": 279,
+     "grade": 2
+    },
+    {
+     "unit": 280,
+     "grade": 2
+    },
+    {
+     "unit": 281,
+     "grade": 2
+    },
+    {
+     "unit": 282,
+     "grade": 2
+    },
+    {
+     "unit": 406,
+     "grade": 2
+    },
+    {
+     "unit": 415,
+     "grade": 2
+    },
+    {
+     "unit": 420,
+     "grade": 2
+    },
+    {
+     "unit": 425,
+     "grade": 2
+    },
+    {
+     "unit": 430,
+     "grade": 2
+    },
+    {
+     "unit": 436,
+     "grade": 2
+    },
+    {
+     "unit": 442,
+     "grade": 2
+    }
+   ],
+   "note": "CG-003 相关（AND）"
+  },
+  {
+   "id": "V3-04",
+   "q": "跨境电商 挑战 物流",
+   "type": "AND",
+   "source": "v3",
+   "graded": {
+    "2": [
+     "跨境电子商务"
+    ],
+    "1": [
+     "物流",
+     "支付",
+     "合规"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 45,
+     "grade": 1
+    },
+    {
+     "unit": 51,
+     "grade": 2
+    },
+    {
+     "unit": 52,
+     "grade": 1
+    },
+    {
+     "unit": 53,
+     "grade": 1
+    },
+    {
+     "unit": 71,
+     "grade": 1
+    },
+    {
+     "unit": 73,
+     "grade": 1
+    },
+    {
+     "unit": 82,
+     "grade": 1
+    },
+    {
+     "unit": 83,
+     "grade": 1
+    },
+    {
+     "unit": 155,
+     "grade": 1
+    },
+    {
+     "unit": 279,
+     "grade": 2
+    },
+    {
+     "unit": 280,
+     "grade": 2
+    },
+    {
+     "unit": 281,
+     "grade": 2
+    },
+    {
+     "unit": 282,
+     "grade": 1
+    },
+    {
+     "unit": 294,
+     "grade": 1
+    },
+    {
+     "unit": 398,
+     "grade": 1
+    },
+    {
+     "unit": 454,
+     "grade": 1
+    },
+    {
+     "unit": 468,
+     "grade": 1
+    }
+   ],
+   "note": "CG-004 相关（AND）"
+  },
+  {
+   "id": "V3-05",
+   "q": "数字贸易增长预测",
+   "type": "主题",
+   "source": "v3",
+   "graded": {
+    "2": [
+     "数字贸易增长预测"
+    ],
+    "1": [
+     "数字贸易",
+     "增长"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 51,
+     "grade": 1
+    },
+    {
+     "unit": 52,
+     "grade": 1
+    },
+    {
+     "unit": 54,
+     "grade": 2
+    },
+    {
+     "unit": 63,
+     "grade": 1
+    },
+    {
+     "unit": 72,
+     "grade": 1
+    },
+    {
+     "unit": 80,
+     "grade": 1
+    },
+    {
+     "unit": 85,
+     "grade": 1
+    },
+    {
+     "unit": 91,
+     "grade": 1
+    },
+    {
+     "unit": 97,
+     "grade": 1
+    },
+    {
+     "unit": 100,
+     "grade": 1
+    },
+    {
+     "unit": 101,
+     "grade": 1
+    },
+    {
+     "unit": 102,
+     "grade": 1
+    },
+    {
+     "unit": 103,
+     "grade": 1
+    },
+    {
+     "unit": 105,
+     "grade": 1
+    },
+    {
+     "unit": 106,
+     "grade": 1
+    },
+    {
+     "unit": 108,
+     "grade": 1
+    },
+    {
+     "unit": 124,
+     "grade": 1
+    },
+    {
+     "unit": 150,
+     "grade": 1
+    },
+    {
+     "unit": 151,
+     "grade": 1
+    },
+    {
+     "unit": 152,
+     "grade": 1
+    },
+    {
+     "unit": 154,
+     "grade": 1
+    },
+    {
+     "unit": 163,
+     "grade": 1
+    },
+    {
+     "unit": 173,
+     "grade": 1
+    },
+    {
+     "unit": 174,
+     "grade": 1
+    },
+    {
+     "unit": 177,
+     "grade": 1
+    },
+    {
+     "unit": 187,
+     "grade": 1
+    },
+    {
+     "unit": 192,
+     "grade": 1
+    },
+    {
+     "unit": 197,
+     "grade": 1
+    },
+    {
+     "unit": 203,
+     "grade": 1
+    },
+    {
+     "unit": 204,
+     "grade": 1
+    },
+    {
+     "unit": 205,
+     "grade": 1
+    },
+    {
+     "unit": 206,
+     "grade": 1
+    },
+    {
+     "unit": 229,
+     "grade": 1
+    },
+    {
+     "unit": 230,
+     "grade": 1
+    },
+    {
+     "unit": 232,
+     "grade": 1
+    },
+    {
+     "unit": 239,
+     "grade": 1
+    },
+    {
+     "unit": 242,
+     "grade": 1
+    },
+    {
+     "unit": 262,
+     "grade": 1
+    },
+    {
+     "unit": 271,
+     "grade": 1
+    },
+    {
+     "unit": 279,
+     "grade": 1
+    },
+    {
+     "unit": 280,
+     "grade": 1
+    },
+    {
+     "unit": 289,
+     "grade": 1
+    },
+    {
+     "unit": 293,
+     "grade": 1
+    },
+    {
+     "unit": 313,
+     "grade": 1
+    },
+    {
+     "unit": 314,
+     "grade": 1
+    },
+    {
+     "unit": 315,
+     "grade": 1
+    },
+    {
+     "unit": 316,
+     "grade": 1
+    },
+    {
+     "unit": 329,
+     "grade": 1
+    },
+    {
+     "unit": 332,
+     "grade": 1
+    },
+    {
+     "unit": 334,
+     "grade": 1
+    },
+    {
+     "unit": 350,
+     "grade": 1
+    },
+    {
+     "unit": 355,
+     "grade": 1
+    },
+    {
+     "unit": 357,
+     "grade": 1
+    },
+    {
+     "unit": 374,
+     "grade": 1
+    },
+    {
+     "unit": 376,
+     "grade": 1
+    },
+    {
+     "unit": 380,
+     "grade": 1
+    },
+    {
+     "unit": 403,
+     "grade": 1
+    },
+    {
+     "unit": 420,
+     "grade": 1
+    },
+    {
+     "unit": 425,
+     "grade": 1
+    },
+    {
+     "unit": 429,
+     "grade": 1
+    },
+    {
+     "unit": 433,
+     "grade": 1
+    },
+    {
+     "unit": 434,
+     "grade": 1
+    },
+    {
+     "unit": 435,
+     "grade": 1
+    },
+    {
+     "unit": 436,
+     "grade": 1
+    },
+    {
+     "unit": 437,
+     "grade": 1
+    },
+    {
+     "unit": 438,
+     "grade": 1
+    },
+    {
+     "unit": 440,
+     "grade": 1
+    },
+    {
+     "unit": 444,
+     "grade": 1
+    },
+    {
+     "unit": 452,
+     "grade": 1
+    },
+    {
+     "unit": 464,
+     "grade": 1
+    },
+    {
+     "unit": 469,
+     "grade": 1
+    },
+    {
+     "unit": 472,
+     "grade": 1
+    },
+    {
+     "unit": 474,
+     "grade": 1
+    },
+    {
+     "unit": 476,
+     "grade": 1
+    },
+    {
+     "unit": 480,
+     "grade": 1
+    },
+    {
+     "unit": 481,
+     "grade": 1
+    },
+    {
+     "unit": 487,
+     "grade": 1
+    },
+    {
+     "unit": 488,
+     "grade": 1
+    },
+    {
+     "unit": 492,
+     "grade": 1
+    },
+    {
+     "unit": 493,
+     "grade": 1
+    }
+   ],
+   "note": "东盟数字贸易"
+  },
+  {
+   "id": "V3-06",
+   "q": "跨境电商行业增长态势",
+   "type": "主题",
+   "source": "v3",
+   "graded": {
+    "2": [
+     "跨境电商行业增长态势"
+    ],
+    "1": [
+     "跨境电商",
+     "增长"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 54,
+     "grade": 1
+    },
+    {
+     "unit": 63,
+     "grade": 1
+    },
+    {
+     "unit": 72,
+     "grade": 1
+    },
+    {
+     "unit": 80,
+     "grade": 1
+    },
+    {
+     "unit": 85,
+     "grade": 1
+    },
+    {
+     "unit": 91,
+     "grade": 1
+    },
+    {
+     "unit": 97,
+     "grade": 1
+    },
+    {
+     "unit": 100,
+     "grade": 1
+    },
+    {
+     "unit": 101,
+     "grade": 1
+    },
+    {
+     "unit": 102,
+     "grade": 1
+    },
+    {
+     "unit": 103,
+     "grade": 1
+    },
+    {
+     "unit": 105,
+     "grade": 1
+    },
+    {
+     "unit": 106,
+     "grade": 1
+    },
+    {
+     "unit": 108,
+     "grade": 1
+    },
+    {
+     "unit": 124,
+     "grade": 1
+    },
+    {
+     "unit": 150,
+     "grade": 1
+    },
+    {
+     "unit": 151,
+     "grade": 1
+    },
+    {
+     "unit": 152,
+     "grade": 1
+    },
+    {
+     "unit": 154,
+     "grade": 1
+    },
+    {
+     "unit": 163,
+     "grade": 1
+    },
+    {
+     "unit": 173,
+     "grade": 1
+    },
+    {
+     "unit": 174,
+     "grade": 1
+    },
+    {
+     "unit": 177,
+     "grade": 1
+    },
+    {
+     "unit": 187,
+     "grade": 1
+    },
+    {
+     "unit": 192,
+     "grade": 1
+    },
+    {
+     "unit": 197,
+     "grade": 1
+    },
+    {
+     "unit": 203,
+     "grade": 1
+    },
+    {
+     "unit": 204,
+     "grade": 1
+    },
+    {
+     "unit": 205,
+     "grade": 1
+    },
+    {
+     "unit": 206,
+     "grade": 1
+    },
+    {
+     "unit": 229,
+     "grade": 1
+    },
+    {
+     "unit": 230,
+     "grade": 1
+    },
+    {
+     "unit": 232,
+     "grade": 1
+    },
+    {
+     "unit": 239,
+     "grade": 1
+    },
+    {
+     "unit": 242,
+     "grade": 1
+    },
+    {
+     "unit": 262,
+     "grade": 1
+    },
+    {
+     "unit": 271,
+     "grade": 1
+    },
+    {
+     "unit": 289,
+     "grade": 1
+    },
+    {
+     "unit": 293,
+     "grade": 1
+    },
+    {
+     "unit": 313,
+     "grade": 2
+    },
+    {
+     "unit": 314,
+     "grade": 1
+    },
+    {
+     "unit": 315,
+     "grade": 1
+    },
+    {
+     "unit": 316,
+     "grade": 1
+    },
+    {
+     "unit": 329,
+     "grade": 1
+    },
+    {
+     "unit": 332,
+     "grade": 1
+    },
+    {
+     "unit": 334,
+     "grade": 1
+    },
+    {
+     "unit": 350,
+     "grade": 1
+    },
+    {
+     "unit": 355,
+     "grade": 1
+    },
+    {
+     "unit": 357,
+     "grade": 1
+    },
+    {
+     "unit": 374,
+     "grade": 1
+    },
+    {
+     "unit": 376,
+     "grade": 1
+    },
+    {
+     "unit": 380,
+     "grade": 1
+    },
+    {
+     "unit": 403,
+     "grade": 1
+    },
+    {
+     "unit": 420,
+     "grade": 1
+    },
+    {
+     "unit": 425,
+     "grade": 1
+    },
+    {
+     "unit": 429,
+     "grade": 1
+    },
+    {
+     "unit": 433,
+     "grade": 1
+    },
+    {
+     "unit": 434,
+     "grade": 1
+    },
+    {
+     "unit": 435,
+     "grade": 1
+    },
+    {
+     "unit": 436,
+     "grade": 1
+    },
+    {
+     "unit": 437,
+     "grade": 1
+    },
+    {
+     "unit": 438,
+     "grade": 1
+    },
+    {
+     "unit": 440,
+     "grade": 1
+    },
+    {
+     "unit": 444,
+     "grade": 1
+    },
+    {
+     "unit": 452,
+     "grade": 1
+    },
+    {
+     "unit": 464,
+     "grade": 1
+    },
+    {
+     "unit": 469,
+     "grade": 1
+    },
+    {
+     "unit": 472,
+     "grade": 1
+    },
+    {
+     "unit": 474,
+     "grade": 1
+    },
+    {
+     "unit": 476,
+     "grade": 1
+    },
+    {
+     "unit": 480,
+     "grade": 1
+    },
+    {
+     "unit": 481,
+     "grade": 1
+    },
+    {
+     "unit": 487,
+     "grade": 1
+    },
+    {
+     "unit": 488,
+     "grade": 1
+    },
+    {
+     "unit": 492,
+     "grade": 1
+    },
+    {
+     "unit": 493,
+     "grade": 1
+    }
+   ],
+   "note": "跨境电商主题"
+  },
+  {
+   "id": "V3-07",
+   "q": "商业支持组织 BSO 能力",
+   "type": "主题",
+   "source": "v3",
+   "graded": {
+    "2": [
+     "商业支持组织"
+    ],
+    "1": [
+     "BSO",
+     "能力"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 36,
+     "grade": 1
+    },
+    {
+     "unit": 42,
+     "grade": 1
+    },
+    {
+     "unit": 43,
+     "grade": 1
+    },
+    {
+     "unit": 46,
+     "grade": 1
+    },
+    {
+     "unit": 47,
+     "grade": 1
+    },
+    {
+     "unit": 52,
+     "grade": 2
+    },
+    {
+     "unit": 72,
+     "grade": 1
+    },
+    {
+     "unit": 90,
+     "grade": 1
+    },
+    {
+     "unit": 94,
+     "grade": 1
+    },
+    {
+     "unit": 128,
+     "grade": 1
+    },
+    {
+     "unit": 134,
+     "grade": 1
+    },
+    {
+     "unit": 155,
+     "grade": 1
+    },
+    {
+     "unit": 166,
+     "grade": 1
+    },
+    {
+     "unit": 167,
+     "grade": 1
+    },
+    {
+     "unit": 171,
+     "grade": 1
+    },
+    {
+     "unit": 189,
+     "grade": 1
+    },
+    {
+     "unit": 193,
+     "grade": 1
+    },
+    {
+     "unit": 196,
+     "grade": 1
+    },
+    {
+     "unit": 202,
+     "grade": 1
+    },
+    {
+     "unit": 216,
+     "grade": 1
+    },
+    {
+     "unit": 223,
+     "grade": 1
+    },
+    {
+     "unit": 224,
+     "grade": 1
+    },
+    {
+     "unit": 226,
+     "grade": 1
+    },
+    {
+     "unit": 229,
+     "grade": 1
+    },
+    {
+     "unit": 233,
+     "grade": 1
+    },
+    {
+     "unit": 280,
+     "grade": 2
+    },
+    {
+     "unit": 283,
+     "grade": 1
+    },
+    {
+     "unit": 292,
+     "grade": 1
+    },
+    {
+     "unit": 295,
+     "grade": 1
+    },
+    {
+     "unit": 299,
+     "grade": 1
+    },
+    {
+     "unit": 300,
+     "grade": 1
+    },
+    {
+     "unit": 301,
+     "grade": 1
+    },
+    {
+     "unit": 303,
+     "grade": 1
+    },
+    {
+     "unit": 318,
+     "grade": 1
+    },
+    {
+     "unit": 335,
+     "grade": 1
+    },
+    {
+     "unit": 336,
+     "grade": 1
+    },
+    {
+     "unit": 338,
+     "grade": 1
+    },
+    {
+     "unit": 339,
+     "grade": 1
+    },
+    {
+     "unit": 346,
+     "grade": 1
+    },
+    {
+     "unit": 371,
+     "grade": 1
+    },
+    {
+     "unit": 373,
+     "grade": 1
+    },
+    {
+     "unit": 382,
+     "grade": 1
+    },
+    {
+     "unit": 383,
+     "grade": 1
+    },
+    {
+     "unit": 386,
+     "grade": 1
+    },
+    {
+     "unit": 390,
+     "grade": 1
+    },
+    {
+     "unit": 391,
+     "grade": 1
+    },
+    {
+     "unit": 399,
+     "grade": 1
+    },
+    {
+     "unit": 444,
+     "grade": 1
+    },
+    {
+     "unit": 447,
+     "grade": 1
+    },
+    {
+     "unit": 453,
+     "grade": 1
+    },
+    {
+     "unit": 456,
+     "grade": 1
+    },
+    {
+     "unit": 457,
+     "grade": 1
+    },
+    {
+     "unit": 463,
+     "grade": 1
+    },
+    {
+     "unit": 473,
+     "grade": 1
+    },
+    {
+     "unit": 476,
+     "grade": 1
+    }
+   ],
+   "note": "MSME 支持体系"
+  },
+  {
+   "id": "V3-08",
+   "q": "东盟区域贸易地位",
+   "type": "主题",
+   "source": "v3",
+   "graded": {
+    "2": [
+     "东盟"
+    ],
+    "1": [
+     "区域贸易",
+     "贸易"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 50,
+     "grade": 2
+    },
+    {
+     "unit": 51,
+     "grade": 2
+    },
+    {
+     "unit": 52,
+     "grade": 1
+    },
+    {
+     "unit": 53,
+     "grade": 2
+    },
+    {
+     "unit": 54,
+     "grade": 2
+    },
+    {
+     "unit": 269,
+     "grade": 1
+    },
+    {
+     "unit": 270,
+     "grade": 1
+    },
+    {
+     "unit": 278,
+     "grade": 2
+    },
+    {
+     "unit": 279,
+     "grade": 2
+    },
+    {
+     "unit": 280,
+     "grade": 2
+    },
+    {
+     "unit": 281,
+     "grade": 2
+    },
+    {
+     "unit": 282,
+     "grade": 2
+    },
+    {
+     "unit": 403,
+     "grade": 1
+    },
+    {
+     "unit": 406,
+     "grade": 2
+    },
+    {
+     "unit": 408,
+     "grade": 1
+    },
+    {
+     "unit": 409,
+     "grade": 1
+    },
+    {
+     "unit": 410,
+     "grade": 1
+    },
+    {
+     "unit": 411,
+     "grade": 1
+    },
+    {
+     "unit": 412,
+     "grade": 1
+    },
+    {
+     "unit": 413,
+     "grade": 1
+    },
+    {
+     "unit": 414,
+     "grade": 1
+    },
+    {
+     "unit": 415,
+     "grade": 2
+    },
+    {
+     "unit": 417,
+     "grade": 1
+    },
+    {
+     "unit": 418,
+     "grade": 1
+    },
+    {
+     "unit": 419,
+     "grade": 1
+    },
+    {
+     "unit": 420,
+     "grade": 2
+    },
+    {
+     "unit": 422,
+     "grade": 1
+    },
+    {
+     "unit": 423,
+     "grade": 1
+    },
+    {
+     "unit": 424,
+     "grade": 1
+    },
+    {
+     "unit": 425,
+     "grade": 2
+    },
+    {
+     "unit": 426,
+     "grade": 1
+    },
+    {
+     "unit": 427,
+     "grade": 1
+    },
+    {
+     "unit": 428,
+     "grade": 1
+    },
+    {
+     "unit": 429,
+     "grade": 1
+    },
+    {
+     "unit": 430,
+     "grade": 2
+    },
+    {
+     "unit": 431,
+     "grade": 1
+    },
+    {
+     "unit": 432,
+     "grade": 1
+    },
+    {
+     "unit": 433,
+     "grade": 1
+    },
+    {
+     "unit": 434,
+     "grade": 1
+    },
+    {
+     "unit": 435,
+     "grade": 1
+    },
+    {
+     "unit": 436,
+     "grade": 2
+    },
+    {
+     "unit": 439,
+     "grade": 1
+    },
+    {
+     "unit": 442,
+     "grade": 2
+    },
+    {
+     "unit": 448,
+     "grade": 1
+    },
+    {
+     "unit": 449,
+     "grade": 1
+    },
+    {
+     "unit": 450,
+     "grade": 1
+    },
+    {
+     "unit": 451,
+     "grade": 1
+    },
+    {
+     "unit": 452,
+     "grade": 1
+    }
+   ],
+   "note": "东盟贸易地位"
+  },
+  {
+   "id": "V3-09",
+   "q": "中国粮食贸易出口市场",
+   "type": "主题",
+   "source": "v3",
+   "graded": {
+    "2": [
+     "粮食贸易"
+    ],
+    "1": [
+     "出口",
+     "贸易"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 51,
+     "grade": 1
+    },
+    {
+     "unit": 52,
+     "grade": 1
+    },
+    {
+     "unit": 54,
+     "grade": 1
+    },
+    {
+     "unit": 73,
+     "grade": 1
+    },
+    {
+     "unit": 178,
+     "grade": 1
+    },
+    {
+     "unit": 205,
+     "grade": 1
+    },
+    {
+     "unit": 230,
+     "grade": 1
+    },
+    {
+     "unit": 251,
+     "grade": 1
+    },
+    {
+     "unit": 261,
+     "grade": 1
+    },
+    {
+     "unit": 269,
+     "grade": 1
+    },
+    {
+     "unit": 270,
+     "grade": 1
+    },
+    {
+     "unit": 279,
+     "grade": 1
+    },
+    {
+     "unit": 280,
+     "grade": 1
+    },
+    {
+     "unit": 313,
+     "grade": 1
+    },
+    {
+     "unit": 403,
+     "grade": 1
+    },
+    {
+     "unit": 406,
+     "grade": 1
+    },
+    {
+     "unit": 408,
+     "grade": 1
+    },
+    {
+     "unit": 409,
+     "grade": 1
+    },
+    {
+     "unit": 410,
+     "grade": 1
+    },
+    {
+     "unit": 411,
+     "grade": 1
+    },
+    {
+     "unit": 412,
+     "grade": 1
+    },
+    {
+     "unit": 413,
+     "grade": 1
+    },
+    {
+     "unit": 414,
+     "grade": 1
+    },
+    {
+     "unit": 415,
+     "grade": 1
+    },
+    {
+     "unit": 417,
+     "grade": 1
+    },
+    {
+     "unit": 418,
+     "grade": 1
+    },
+    {
+     "unit": 419,
+     "grade": 1
+    },
+    {
+     "unit": 420,
+     "grade": 1
+    },
+    {
+     "unit": 421,
+     "grade": 1
+    },
+    {
+     "unit": 422,
+     "grade": 1
+    },
+    {
+     "unit": 423,
+     "grade": 1
+    },
+    {
+     "unit": 424,
+     "grade": 1
+    },
+    {
+     "unit": 425,
+     "grade": 1
+    },
+    {
+     "unit": 426,
+     "grade": 1
+    },
+    {
+     "unit": 427,
+     "grade": 1
+    },
+    {
+     "unit": 428,
+     "grade": 1
+    },
+    {
+     "unit": 429,
+     "grade": 1
+    },
+    {
+     "unit": 430,
+     "grade": 1
+    },
+    {
+     "unit": 431,
+     "grade": 1
+    },
+    {
+     "unit": 432,
+     "grade": 1
+    },
+    {
+     "unit": 433,
+     "grade": 1
+    },
+    {
+     "unit": 434,
+     "grade": 1
+    },
+    {
+     "unit": 435,
+     "grade": 1
+    },
+    {
+     "unit": 436,
+     "grade": 1
+    },
+    {
+     "unit": 438,
+     "grade": 1
+    },
+    {
+     "unit": 439,
+     "grade": 1
+    },
+    {
+     "unit": 440,
+     "grade": 1
+    },
+    {
+     "unit": 442,
+     "grade": 1
+    },
+    {
+     "unit": 448,
+     "grade": 2
+    },
+    {
+     "unit": 449,
+     "grade": 2
+    },
+    {
+     "unit": 450,
+     "grade": 2
+    },
+    {
+     "unit": 451,
+     "grade": 2
+    },
+    {
+     "unit": 452,
+     "grade": 2
+    }
+   ],
+   "note": "贸易主题"
+  },
+  {
+   "id": "V3-10",
+   "q": "跨境电商|数字贸易",
+   "type": "OR",
+   "source": "v3",
+   "graded": {
+    "2": [
+     "跨境电商",
+     "数字贸易"
+    ],
+    "1": [
+     "贸易"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 51,
+     "grade": 2
+    },
+    {
+     "unit": 52,
+     "grade": 2
+    },
+    {
+     "unit": 54,
+     "grade": 2
+    },
+    {
+     "unit": 269,
+     "grade": 1
+    },
+    {
+     "unit": 270,
+     "grade": 1
+    },
+    {
+     "unit": 279,
+     "grade": 2
+    },
+    {
+     "unit": 280,
+     "grade": 2
+    },
+    {
+     "unit": 313,
+     "grade": 2
+    },
+    {
+     "unit": 314,
+     "grade": 2
+    },
+    {
+     "unit": 315,
+     "grade": 2
+    },
+    {
+     "unit": 403,
+     "grade": 1
+    },
+    {
+     "unit": 408,
+     "grade": 1
+    },
+    {
+     "unit": 409,
+     "grade": 1
+    },
+    {
+     "unit": 410,
+     "grade": 1
+    },
+    {
+     "unit": 411,
+     "grade": 1
+    },
+    {
+     "unit": 412,
+     "grade": 1
+    },
+    {
+     "unit": 413,
+     "grade": 1
+    },
+    {
+     "unit": 414,
+     "grade": 1
+    },
+    {
+     "unit": 417,
+     "grade": 1
+    },
+    {
+     "unit": 418,
+     "grade": 1
+    },
+    {
+     "unit": 419,
+     "grade": 1
+    },
+    {
+     "unit": 422,
+     "grade": 1
+    },
+    {
+     "unit": 423,
+     "grade": 1
+    },
+    {
+     "unit": 424,
+     "grade": 1
+    },
+    {
+     "unit": 425,
+     "grade": 1
+    },
+    {
+     "unit": 426,
+     "grade": 1
+    },
+    {
+     "unit": 427,
+     "grade": 1
+    },
+    {
+     "unit": 428,
+     "grade": 1
+    },
+    {
+     "unit": 429,
+     "grade": 1
+    },
+    {
+     "unit": 430,
+     "grade": 1
+    },
+    {
+     "unit": 431,
+     "grade": 1
+    },
+    {
+     "unit": 432,
+     "grade": 1
+    },
+    {
+     "unit": 433,
+     "grade": 1
+    },
+    {
+     "unit": 434,
+     "grade": 1
+    },
+    {
+     "unit": 435,
+     "grade": 1
+    },
+    {
+     "unit": 439,
+     "grade": 1
+    },
+    {
+     "unit": 442,
+     "grade": 1
+    },
+    {
+     "unit": 448,
+     "grade": 1
+    },
+    {
+     "unit": 449,
+     "grade": 1
+    },
+    {
+     "unit": 450,
+     "grade": 1
+    },
+    {
+     "unit": 451,
+     "grade": 1
+    },
+    {
+     "unit": 452,
+     "grade": 1
+    }
+   ],
+   "note": "OR 组合"
+  },
+  {
+   "id": "V3-11",
+   "q": "东盟 中小微 融资",
+   "type": "AND",
+   "source": "v3",
+   "graded": {
+    "2": [
+     "东盟",
+     "中小微"
+    ],
+    "1": [
+     "融资",
+     "MSME",
+     "资金"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 50,
+     "grade": 2
+    },
+    {
+     "unit": 51,
+     "grade": 2
+    },
+    {
+     "unit": 52,
+     "grade": 2
+    },
+    {
+     "unit": 53,
+     "grade": 2
+    },
+    {
+     "unit": 54,
+     "grade": 2
+    },
+    {
+     "unit": 131,
+     "grade": 1
+    },
+    {
+     "unit": 134,
+     "grade": 1
+    },
+    {
+     "unit": 138,
+     "grade": 1
+    },
+    {
+     "unit": 156,
+     "grade": 1
+    },
+    {
+     "unit": 161,
+     "grade": 1
+    },
+    {
+     "unit": 171,
+     "grade": 1
+    },
+    {
+     "unit": 189,
+     "grade": 1
+    },
+    {
+     "unit": 199,
+     "grade": 1
+    },
+    {
+     "unit": 265,
+     "grade": 1
+    },
+    {
+     "unit": 278,
+     "grade": 2
+    },
+    {
+     "unit": 279,
+     "grade": 2
+    },
+    {
+     "unit": 280,
+     "grade": 2
+    },
+    {
+     "unit": 281,
+     "grade": 2
+    },
+    {
+     "unit": 282,
+     "grade": 2
+    },
+    {
+     "unit": 297,
+     "grade": 1
+    },
+    {
+     "unit": 348,
+     "grade": 1
+    },
+    {
+     "unit": 353,
+     "grade": 1
+    },
+    {
+     "unit": 354,
+     "grade": 1
+    },
+    {
+     "unit": 355,
+     "grade": 1
+    },
+    {
+     "unit": 359,
+     "grade": 1
+    },
+    {
+     "unit": 360,
+     "grade": 1
+    },
+    {
+     "unit": 363,
+     "grade": 1
+    },
+    {
+     "unit": 364,
+     "grade": 1
+    },
+    {
+     "unit": 366,
+     "grade": 1
+    },
+    {
+     "unit": 371,
+     "grade": 1
+    },
+    {
+     "unit": 385,
+     "grade": 1
+    },
+    {
+     "unit": 406,
+     "grade": 2
+    },
+    {
+     "unit": 415,
+     "grade": 2
+    },
+    {
+     "unit": 420,
+     "grade": 2
+    },
+    {
+     "unit": 425,
+     "grade": 2
+    },
+    {
+     "unit": 430,
+     "grade": 2
+    },
+    {
+     "unit": 436,
+     "grade": 2
+    },
+    {
+     "unit": 442,
+     "grade": 2
+    },
+    {
+     "unit": 478,
+     "grade": 1
+    },
+    {
+     "unit": 479,
+     "grade": 1
+    }
+   ],
+   "note": "MSME 融资（AND）"
+  },
+  {
+   "id": "V3-12",
+   "q": "跨境电商 合规 -光伏",
+   "type": "排除",
+   "source": "v3",
+   "graded": {
+    "2": [
+     "跨境电商",
+     "跨境电子商务"
+    ],
+    "1": [
+     "合规",
+     "监管"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 41,
+     "grade": 1
+    },
+    {
+     "unit": 45,
+     "grade": 1
+    },
+    {
+     "unit": 46,
+     "grade": 1
+    },
+    {
+     "unit": 49,
+     "grade": 1
+    },
+    {
+     "unit": 51,
+     "grade": 2
+    },
+    {
+     "unit": 52,
+     "grade": 1
+    },
+    {
+     "unit": 53,
+     "grade": 1
+    },
+    {
+     "unit": 71,
+     "grade": 1
+    },
+    {
+     "unit": 73,
+     "grade": 1
+    },
+    {
+     "unit": 75,
+     "grade": 1
+    },
+    {
+     "unit": 76,
+     "grade": 1
+    },
+    {
+     "unit": 131,
+     "grade": 1
+    },
+    {
+     "unit": 155,
+     "grade": 1
+    },
+    {
+     "unit": 162,
+     "grade": 1
+    },
+    {
+     "unit": 163,
+     "grade": 1
+    },
+    {
+     "unit": 176,
+     "grade": 1
+    },
+    {
+     "unit": 216,
+     "grade": 1
+    },
+    {
+     "unit": 243,
+     "grade": 1
+    },
+    {
+     "unit": 272,
+     "grade": 1
+    },
+    {
+     "unit": 279,
+     "grade": 2
+    },
+    {
+     "unit": 280,
+     "grade": 2
+    },
+    {
+     "unit": 281,
+     "grade": 2
+    },
+    {
+     "unit": 282,
+     "grade": 1
+    },
+    {
+     "unit": 313,
+     "grade": 2
+    },
+    {
+     "unit": 314,
+     "grade": 2
+    },
+    {
+     "unit": 315,
+     "grade": 2
+    },
+    {
+     "unit": 317,
+     "grade": 1
+    },
+    {
+     "unit": 323,
+     "grade": 1
+    },
+    {
+     "unit": 370,
+     "grade": 1
+    },
+    {
+     "unit": 372,
+     "grade": 1
+    },
+    {
+     "unit": 398,
+     "grade": 1
+    },
+    {
+     "unit": 479,
+     "grade": 1
+    }
+   ],
+   "note": "排除无关行业"
+  },
+  {
+   "id": "V3-13",
+   "q": "东盟 MSME 技能 课程",
+   "type": "同义词",
+   "source": "v3",
+   "graded": {
+    "2": [
+     "MSME",
+     "东盟"
+    ],
+    "1": [
+     "技能",
+     "课程",
+     "中小微"
+    ]
+   },
+   "expected_units": [
+    {
+     "unit": 35,
+     "grade": 1
+    },
+    {
+     "unit": 36,
+     "grade": 1
+    },
+    {
+     "unit": 50,
+     "grade": 2
+    },
+    {
+     "unit": 51,
+     "grade": 2
+    },
+    {
+     "unit": 52,
+     "grade": 1
+    },
+    {
+     "unit": 53,
+     "grade": 2
+    },
+    {
+     "unit": 54,
+     "grade": 2
+    },
+    {
+     "unit": 155,
+     "grade": 1
+    },
+    {
+     "unit": 232,
+     "grade": 1
+    },
+    {
+     "unit": 278,
+     "grade": 2
+    },
+    {
+     "unit": 279,
+     "grade": 2
+    },
+    {
+     "unit": 280,
+     "grade": 2
+    },
+    {
+     "unit": 281,
+     "grade": 2
+    },
+    {
+     "unit": 282,
+     "grade": 2
+    },
+    {
+     "unit": 401,
+     "grade": 1
+    },
+    {
+     "unit": 406,
+     "grade": 2
+    },
+    {
+     "unit": 415,
+     "grade": 2
+    },
+    {
+     "unit": 420,
+     "grade": 2
+    },
+    {
+     "unit": 425,
+     "grade": 2
+    },
+    {
+     "unit": 430,
+     "grade": 2
+    },
+    {
+     "unit": 436,
+     "grade": 2
+    },
+    {
+     "unit": 442,
+     "grade": 2
+    }
+   ],
+   "note": "MSME 技能课程"
+  }
+ ],
+ "v3_additions": {
+  "n_new": 13,
+  "ids": [
+   "V3-01",
+   "V3-02",
+   "V3-03",
+   "V3-04",
+   "V3-05",
+   "V3-06",
+   "V3-07",
+   "V3-08",
+   "V3-09",
+   "V3-10",
+   "V3-11",
+   "V3-12",
+   "V3-13"
+  ],
+  "blind_groups_covered": [
+   "东盟中小微企业（MSME）经济地位",
+   "跨境电子商务面临的四大挑战"
+  ],
+  "note": "新增查询覆盖 wave15 AQ 发现的两组 merged-concept 盲区"
+ },
+ "content_hash": "6b778e2c4c66d4b3b8c37a5184dd1741b8aa0015c1575c8d54618a4584f89787"
+}
