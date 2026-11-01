@@ -246,6 +246,26 @@
       },
       "approved": false,
       "effective_from": "2026-11-01（研究候选）"
+    },
+    {
+      "id": "S10_EVIDENCE_BASELINE_NEUTRAL",
+      "name": "S10 证据基准：低波+反转+低换手（行业中性 top20）",
+      "type": "ranking",
+      "owner": "司马微",
+      "source_hypothesis": "H49 基准审查 / H50 四关",
+      "status": "shadow_observing",
+      "executable": false,
+      "rule": "月频；z(-vol20)+z(-ret20)+z(-ret120)+z(-turnover20) 均值；行业内 z 中性化；top20 等权；宇宙=非ST/上市≥250日/价≥2；turnover 仅 2023+（缺失时用其余因子均值）",
+      "validation": {
+        "stats": "2019-2026/93月：CAGR 35.17%、MDD -23.09%、vol 29.29%、月均超额 1.609%（t=3.1）、正收益年 6/8",
+        "gates": "G1 ✅ / G2 ✅ / G3 ✅（容量中位 1.61 亿；建仓实算 2.1 亿）/ G4 ✅（up +1.65%/月、down +1.56%/月）",
+        "shadow": "2026-10-30 初始 20 仓等权，月度跟踪（s10_rebalance.py；每月1日08:50提醒）",
+        "cost": "0.15%单边×换手已计",
+        "caveat": "current stock_basic 幸存者偏差；2023 前无 turnover 因子；2023/2026 各 -18.6%；年化波动 29%；容量约 1.6-2.1 亿（小资金）",
+        "final": "四关首次全过 → 小仓位影子观察；待司马微团队复核后决定是否升级"
+      },
+      "approved": false,
+      "effective_from": "2026-11-01（影子观察）"
     }
   ],
   "book_backlog": {

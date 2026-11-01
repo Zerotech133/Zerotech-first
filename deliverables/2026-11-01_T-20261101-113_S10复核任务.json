@@ -1,0 +1,20 @@
+{
+ "task_id": "T-20261101-113",
+ "opened_by": "A0",
+ "assigned_dept": "strategy",
+ "assigned_agent": null,
+ "title": "S10 证据基准四关通过：请复核影子观察资格",
+ "body": "【S10 四关首次全过】2026-11-01\nC2（低波+反转+低换手，行业中性 top20，月频）：CAGR 35.17%、MDD -23.09%、vol 29.29%、月均超额 1.609%（t=3.1）、正收益年 6/8；\n四关：G1✅ G2✅ G3✅（容量中位 1.61 亿，建仓实算 2.1 亿）G4✅（up +1.654%/月、down +1.555%/月）；\n对照：C1 raw 25.15%/MDD -35.55%（t 1.72 未过）；C4 仅低波 35.59%/t 2.49（正收益年 5/8 未过）。\n2026-10-30 已建影子 20 仓（容量 2.1 亿，5% 参与率）；\n请复核：①口径（turnover 仅2023+、幸存者偏差）是否接受；②影子观察是否继续/扩大；③是否建议进入下一步（人工批准前的扩大影子）。\n证据：research/reports/evidence_baseline_*.{json,md}；registry S10；hypotheses H49/H50；research/shadow/s10/。",
+ "severity": "P1",
+ "status": "open",
+ "created_at": "2026-11-01T22:09:52",
+ "due": "2026-11-10",
+ "closure_note": null,
+ "history": [
+  {
+   "at": "2026-11-01T22:09:52",
+   "by": "A0",
+   "action": "open"
+  }
+ ]
+}

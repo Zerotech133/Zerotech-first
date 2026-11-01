@@ -1,0 +1,190 @@
+{
+ "generated_at": "2026-11-01T22:09:20+08:00",
+ "strategy": "S10_EVIDENCE_BASELINE_NEUTRAL",
+ "signal_date": "20261030",
+ "n": 20,
+ "weight_per": 0.05,
+ "capacity5_yi": 2.1,
+ "rule": "z(-vol20)+z(-ret20)+z(-ret120)+z(-turnover20) 均值；行业内 z 中性；top20 等权；月频",
+ "holdings": [
+  {
+   "ts_code": "001203.SZ",
+   "name": "大中矿业",
+   "industry": "普钢",
+   "score": 2.7282,
+   "w": 0.05,
+   "close": 18.87
+  },
+  {
+   "ts_code": "603876.SH",
+   "name": "鼎胜新材",
+   "industry": "铝",
+   "score": 2.2988,
+   "w": 0.05,
+   "close": 26.96
+  },
+  {
+   "ts_code": "300051.SZ",
+   "name": "琏升科技",
+   "industry": "综合类",
+   "score": 2.1371,
+   "w": 0.05,
+   "close": 38.21
+  },
+  {
+   "ts_code": "300435.SZ",
+   "name": "中泰股份",
+   "industry": "供气供热",
+   "score": 2.0832,
+   "w": 0.05,
+   "close": 40.11
+  },
+  {
+   "ts_code": "600221.SH",
+   "name": "海航控股",
+   "industry": "空运",
+   "score": 1.8837,
+   "w": 0.05,
+   "close": 3.69
+  },
+  {
+   "ts_code": "688668.SH",
+   "name": "鼎通科技",
+   "industry": "通信设备",
+   "score": 1.8785,
+   "w": 0.05,
+   "close": 150.11
+  },
+  {
+   "ts_code": "300870.SZ",
+   "name": "欧陆通",
+   "industry": "电气设备",
+   "score": 1.8737,
+   "w": 0.05,
+   "close": 139.51
+  },
+  {
+   "ts_code": "300658.SZ",
+   "name": "延江股份",
+   "industry": "纺织",
+   "score": 1.8554,
+   "w": 0.05,
+   "close": 22.85
+  },
+  {
+   "ts_code": "600106.SH",
+   "name": "重庆路桥",
+   "industry": "路桥",
+   "score": 1.8377,
+   "w": 0.05,
+   "close": 34.15
+  },
+  {
+   "ts_code": "000688.SZ",
+   "name": "国城矿业",
+   "industry": "铅锌",
+   "score": 1.7974,
+   "w": 0.05,
+   "close": 94.35
+  },
+  {
+   "ts_code": "601515.SH",
+   "name": "衢州东峰",
+   "industry": "广告包装",
+   "score": 1.773,
+   "w": 0.05,
+   "close": 11.89
+  },
+  {
+   "ts_code": "600791.SH",
+   "name": "京能置业",
+   "industry": "全国地产",
+   "score": 1.7729,
+   "w": 0.05,
+   "close": 37.6
+  },
+  {
+   "ts_code": "002969.SZ",
+   "name": "嘉美包装",
+   "industry": "广告包装",
+   "score": 1.7722,
+   "w": 0.05,
+   "close": 9.98
+  },
+  {
+   "ts_code": "300257.SZ",
+   "name": "开山股份",
+   "industry": "机械基件",
+   "score": 1.7609,
+   "w": 0.05,
+   "close": 83.33
+  },
+  {
+   "ts_code": "600773.SH",
+   "name": "西藏城投",
+   "industry": "区域地产",
+   "score": 1.7334,
+   "w": 0.05,
+   "close": 53.25
+  },
+  {
+   "ts_code": "600185.SH",
+   "name": "珠免集团",
+   "industry": "旅游服务",
+   "score": 1.7264,
+   "w": 0.05,
+   "close": 29.0
+  },
+  {
+   "ts_code": "002796.SZ",
+   "name": "世嘉科技",
+   "industry": "通信设备",
+   "score": 1.7193,
+   "w": 0.05,
+   "close": 41.06
+  },
+  {
+   "ts_code": "301345.SZ",
+   "name": "涛涛车业",
+   "industry": "摩托车",
+   "score": 1.7142,
+   "w": 0.05,
+   "close": 131.34
+  },
+  {
+   "ts_code": "002685.SZ",
+   "name": "华东重机",
+   "industry": "机床制造",
+   "score": 1.7131,
+   "w": 0.05,
+   "close": 12.88
+  },
+  {
+   "ts_code": "002320.SZ",
+   "name": "海峡股份",
+   "industry": "水运",
+   "score": 1.7029,
+   "w": 0.05,
+   "close": 76.34
+  }
+ ],
+ "ledger": [
+  {
+   "date": "20261030",
+   "from": "20261030",
+   "ret": 0.0,
+   "market": 0.0,
+   "excess": 0.0,
+   "n": 20
+  }
+ ],
+ "tracking": {
+  "since": "20261030",
+  "cur_ret_pct": 0.0,
+  "market_pct": 0.0,
+  "excess_pct": 0.0
+ },
+ "next_rebalance": "下一个月末（每月 1 日 08:50 检查）",
+ "status": "shadow_observing",
+ "disclaimer": "研究/影子，不构成投资建议"
+}
