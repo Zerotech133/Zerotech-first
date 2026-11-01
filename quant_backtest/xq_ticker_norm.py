@@ -1,44 +1,58 @@
 # -*- coding: utf-8 -*-
-r"""雪球 canonical 双轨格式适配层（工单 WO-QT-20261020-079）。
+r"""雪球标的归一化 · 单一真源（D① 合一：xq_ticker_norm + tools/xq_ticker_normalize）。
 
-背景（WO-075 审计实证）：
-  xq_status_classified.norm_tickers（雪球库 quant_backtest/data/xueqiu/
-  xueqiu_info.db）的 stock_a canonical 为前缀式（SZ300750/SH600519/BJ830799，
-  雪球行情接口口径，见 tools/xq_ticker_normalize.py L24-28 canonical 口径）；
-  下游量化体系股票代码为后缀式（300750.SZ/600519.SH）。按后缀式直查
-  norm_tickers 命中 0。本模块做双轨互转，供消费点按需切换口径。
+两大职责（原两模块互补，非重复）：
+  A. 格式互转（原 xq_ticker_norm.py，WO-QT-20261020-079）：
+     雪球前缀式 canonical（SZ300750）↔ 下游后缀式（300750.SZ）双轨互转；
+     纯函数、零 IO；港股/美股/指数后缀不支持互转 → None，不造数。
+  B. 词形分类 + canonical 映射（原 tools/xq_ticker_normalize.py，P0-1）：
+     xq_status_classified.tickers 四种词形（港股5位/A股6位/中文指数/基金词）
+     → {raw, kind, canonical}；唯一数据源 data/xueqiu/ticker_map.json；
+     附幂等落库（ensure_norm_column / backfill，WAL 短事务+busy 退避）。
 
-设计要点：
-  - 纯函数：零 IO、零网络、无状态（不读 ticker_map.json / 不连库）；
-  - 格式层转换，不区分 kind：只要形如 (SH|SZ|BJ)+6 位数字即互转，
-    kind 过滤由调用方（norm_tickers JSON 里取 kind=='stock_a' 等）负责；
-  - 港股裸 5 位码（00700）、美股字母码（AAPL）、指数专属后缀（.CSI/.HK）
-    不支持互转 → 返回 None，如实标注不造数；
-  - 幂等：已是目标形态的原样返回；
-  - 容错：None/空/非字符串/畸形值不抛异常，标量返回 None；
-    批量 *_many 返回 (结果列表, invalid 计数)，invalid 含畸形与不支持形态；
-  - 大小写不敏感、容忍首尾空白（canonical 可能混入手工数据）。
-
-形态判定（双向共用）：
-  PREFIX_RE  ^(SH|SZ|BJ)\d{6}$   前缀式（雪球口径）
-  SUFFIX_RE  ^\d{6}\.(SH|SZ|BJ)$ 后缀式（下游口径）
+兼容：tools/xq_ticker_normalize.py 已降级为薄 shim（re-export），四个既有
+引用方（xq_classify / xq_daily_report / 两个迁移工具 / 测试）零改动。
 
 用法：
-  norm_to_suffix("SZ300750")   -> "300750.SZ"
-  norm_from_suffix("600519.SH") -> "SH600519"
-  norm_to_suffix_many(["SZ300750", "00700"])  -> (["300750.SZ", None], 1)
+  norm_to_suffix("SZ300750")            -> "300750.SZ"
+  norm_from_suffix("600519.SH")         -> "SH600519"
+  normalize_tickers('["01810","沪深300指数"]')
+    -> [{"raw":"01810","kind":"stock_hk","canonical":"01810"},
+        {"raw":"沪深300指数","kind":"index","canonical":"000300.SH"}]
 """
 
 from __future__ import annotations
 
+import json
 import re
+import sqlite3
+import sys
+import time
+import unicodedata
+from collections import Counter
+from pathlib import Path
 from typing import Iterable, List, Tuple
 
+HERE = Path(__file__).resolve().parent          # quant_backtest/
+MAP_PATH = HERE / "data" / "xueqiu" / "ticker_map.json"
+
+# ══════════════════════════════════════════════════════════════════
+# A. 前缀式 ↔ 后缀式 格式互转（原 xq_ticker_norm.py，纯函数）
+# ══════════════════════════════════════════════════════════════════
+
 __all__ = [
+    # A. 格式互转
     "norm_to_suffix",
     "norm_from_suffix",
     "norm_to_suffix_many",
     "norm_from_suffix_many",
+    # B. 词形分类 + 落库
+    "classify_token",
+    "normalize_tickers",
+    "ensure_norm_column",
+    "backfill",
+    "KIND_DIST_SQL",
+    "KINDS",
 ]
 
 # A 股三交易所：沪 SH / 深 SZ / 北 BJ（北交所 6 位码 82xxxx/83xxxx/87xxxx 等）
@@ -56,11 +70,7 @@ def _to_text(value) -> str:
 
 
 def norm_to_suffix(value) -> str | None:
-    """前缀式 canonical → 后缀式代码；不支持/畸形 → None。
-
-    SZ300750 -> 300750.SZ；SH600519 -> 600519.SH；BJ830799 -> 830799.BJ。
-    已是后缀式原样返回（幂等）。港股 5 位码/美股/其余形态 None。
-    """
+    """前缀式 canonical → 后缀式代码；不支持/畸形 → None（幂等）。"""
     text = _to_text(value)
     if not text:
         return None
@@ -68,16 +78,12 @@ def norm_to_suffix(value) -> str | None:
     if m:
         return "%s.%s" % (m.group(2), m.group(1))
     if _SUFFIX_RE.match(text):
-        return text  # 已是后缀式，幂等
+        return text
     return None
 
 
 def norm_from_suffix(value) -> str | None:
-    """后缀式代码 → 前缀式 canonical；不支持/畸形 → None。
-
-    300750.SZ -> SZ300750；600519.SH -> SH600519；830799.BJ -> BJ830799。
-    已是前缀式原样返回（幂等）。港股/美股/.CSI 等其余形态 None。
-    """
+    """后缀式代码 → 前缀式 canonical；不支持/畸形 → None（幂等）。"""
     text = _to_text(value)
     if not text:
         return None
@@ -85,16 +91,12 @@ def norm_from_suffix(value) -> str | None:
     if m:
         return "%s%s" % (m.group(2), m.group(1))
     if _PREFIX_RE.match(text):
-        return text  # 已是前缀式，幂等
+        return text
     return None
 
 
 def norm_to_suffix_many(values: Iterable) -> Tuple[List[str | None], int]:
-    """批量前缀式→后缀式。返回 (逐条结果, invalid 计数)。
-
-    结果与输入等长保序，不支持的条目占位 None；invalid 计入
-    畸形值与不支持形态（含 None/空），不抛异常。
-    """
+    """批量前缀式→后缀式。返回 (逐条结果, invalid 计数)，不抛异常。"""
     out: List[str | None] = []
     invalid = 0
     for v in values:
@@ -115,3 +117,198 @@ def norm_from_suffix_many(values: Iterable) -> Tuple[List[str | None], int]:
         if r is None:
             invalid += 1
     return out, invalid
+
+
+# ══════════════════════════════════════════════════════════════════
+# B. 词形分类 + canonical 映射 + 幂等落库（原 tools/xq_ticker_normalize.py）
+# ══════════════════════════════════════════════════════════════════
+
+# xq_index_map 在仓库根（本模块已在 quant_backtest/ 根，天然可达）
+if str(HERE) not in sys.path:
+    sys.path.insert(0, str(HERE))
+
+try:
+    import xq_index_map as _xim
+except Exception:  # pragma: no cover - 仓库完整性依赖，正常路径必命中
+    _xim = None
+
+with open(MAP_PATH, encoding="utf-8") as _f:
+    _MAP = json.load(_f)
+
+_SEGMENTS = _MAP["code_segments"]
+_FUND_NAME_CODES = dict(_MAP["fund_name_codes"])
+_FUND_NAME_CODES_LOWER = {k.lower(): v for k, v in _FUND_NAME_CODES.items()}
+_FUND_SUFFIXES = tuple(
+    s.lower() for s in _MAP.get("fund_suffixes", ("基金", "ETF", "LOF", "联接"))
+)
+_INDEX_SUFFIXES = tuple(_MAP.get("index_suffixes", ("指数",)))
+
+_TABLE = "xq_status_classified"
+_NORM_COL = "norm_tickers"
+
+KINDS = ("stock_hk", "stock_a", "index", "fund", "unknown")
+
+KIND_DIST_SQL = (
+    "SELECT json_extract(je.value, '$.kind') AS kind, COUNT(*) AS n "
+    "FROM " + _TABLE + ", json_each(" + _TABLE + "." + _NORM_COL + ") je "
+    "GROUP BY kind ORDER BY n DESC"
+)
+
+
+def _compress(text: str) -> str:
+    """NFKC 全角→半角 + 去首尾空白。"""
+    return unicodedata.normalize("NFKC", text or "").strip()
+
+
+def _route_6digit(code: str):
+    """6 位码段白名单路由 → (kind, canonical)；段外 → ("unknown", None)。"""
+    for exch, groups in _SEGMENTS.items():
+        for kind, segs in groups.items():
+            for seg in segs:
+                if code.startswith(seg):
+                    return kind, exch + code
+    return "unknown", None
+
+
+def _lookup_index(token: str):
+    """中文指数词 → xq_index_map 代码；未收录返回 None（不冒造代码）。"""
+    if _xim is None:
+        return None
+    code = _xim.lookup_index(token)
+    if code:
+        return code
+    for suf in _INDEX_SUFFIXES:
+        if token.endswith(suf) and len(token) > len(suf):
+            code = _xim.lookup_index(token[: -len(suf)])
+            if code:
+                return code
+    return None
+
+
+def classify_token(token) -> dict:
+    """单词形分类 → {raw, kind, canonical}。
+
+    判定顺序：纯数字 → 指数词形 → 基金词形 → unknown。
+    """
+    raw = token if isinstance(token, str) else str(token)
+    t = _compress(raw)
+    entry = {"raw": raw, "kind": "unknown", "canonical": None}
+    if not t:
+        return entry
+    if t.isdigit():
+        if len(t) == 5:
+            entry["kind"], entry["canonical"] = "stock_hk", t
+        elif len(t) == 6:
+            entry["kind"], entry["canonical"] = _route_6digit(t)
+        return entry
+    if t.endswith(_INDEX_SUFFIXES) or (
+        _xim is not None and _xim.normalize_index_name(t) is not None
+    ):
+        entry["kind"] = "index"
+        entry["canonical"] = _lookup_index(t)
+        return entry
+    low = t.lower()
+    if low.endswith(_FUND_SUFFIXES):
+        entry["kind"] = "fund"
+        entry["canonical"] = _FUND_NAME_CODES.get(t) or _FUND_NAME_CODES_LOWER.get(low)
+        return entry
+    return entry
+
+
+def normalize_tickers(raw_json_str) -> list:
+    """tickers 列原始 JSON 串 → [{raw, kind, canonical}, ...]，保序不去重。
+
+    - None/空串 → []；畸形 JSON/非数组 → 单条 unknown 兜底（保留现场）；
+    - 数组内空白词形跳过；其余逐词 classify_token。
+    """
+    if raw_json_str is None:
+        return []
+    s = str(raw_json_str).strip()
+    if not s:
+        return []
+    try:
+        parsed = json.loads(s)
+    except (ValueError, TypeError):
+        return [{"raw": raw_json_str, "kind": "unknown", "canonical": None}]
+    if not isinstance(parsed, list):
+        return [{"raw": raw_json_str, "kind": "unknown", "canonical": None}]
+    out = []
+    for el in parsed:
+        if isinstance(el, str) and not el.strip():
+            continue
+        out.append(classify_token(el))
+    return out
+
+
+# ── SQLite 落库（幂等迁移 + 批量回填） ────────────────────────
+
+def _is_busy(exc: Exception) -> bool:
+    msg = str(exc).lower()
+    return "locked" in msg or "busy" in msg
+
+
+def _with_retry(fn, retries: int = 3, base_delay: float = 0.5):
+    """sqlite busy/locked 重试 3 次指数退避；其余异常直抛（共享库纪律）。"""
+    for attempt in range(retries + 1):
+        try:
+            return fn()
+        except sqlite3.OperationalError as exc:
+            if attempt >= retries or not _is_busy(exc):
+                raise
+            time.sleep(base_delay * (2**attempt))
+
+
+def ensure_norm_column(conn: sqlite3.Connection, retries: int = 3) -> bool:
+    """幂等加列：norm_tickers 不存在才 ALTER ADD COLUMN。返回是否新增。"""
+    cols = [r[1] for r in conn.execute("PRAGMA table_info(%s)" % _TABLE)]
+    if _NORM_COL in cols:
+        return False
+    _with_retry(
+        lambda: conn.execute("ALTER TABLE %s ADD COLUMN %s TEXT" % (_TABLE, _NORM_COL)),
+        retries=retries,
+    )
+    conn.commit()
+    return True
+
+
+def backfill(conn: sqlite3.Connection, batch_size: int = 200, retries: int = 3) -> dict:
+    """全表回填 norm_tickers（列不存在时自动 ensure）。
+
+    已等于新值的行跳过（零写入）→ 重复执行零副作用；
+    返回 {"total", "updated", "skipped", "kinds"}。
+    """
+    ensure_norm_column(conn, retries=retries)
+    rows = conn.execute(
+        "SELECT status_id, tickers, %s FROM %s" % (_NORM_COL, _TABLE)
+    ).fetchall()
+    total = updated = skipped = 0
+    pending = 0
+    kinds: Counter = Counter()
+    for status_id, tickers_raw, norm_existing in rows:
+        total += 1
+        items = normalize_tickers(tickers_raw)
+        for it in items:
+            kinds[it["kind"]] += 1
+        payload = json.dumps(items, ensure_ascii=False, separators=(",", ":"))
+        if norm_existing == payload:
+            skipped += 1
+            continue
+        _with_retry(
+            lambda sid=status_id, p=payload: conn.execute(
+                "UPDATE %s SET %s=? WHERE status_id=?" % (_TABLE, _NORM_COL), (p, sid)
+            ),
+            retries=retries,
+        )
+        updated += 1
+        pending += 1
+        if pending >= batch_size:
+            conn.commit()
+            pending = 0
+    if pending:
+        conn.commit()
+    return {
+        "total": total,
+        "updated": updated,
+        "skipped": skipped,
+        "kinds": dict(kinds),
+    }
