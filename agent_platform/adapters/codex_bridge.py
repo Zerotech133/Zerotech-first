@@ -7,9 +7,14 @@
 红线（设计稿 §1 平移）：单向通道（R1）/ Codex 零凭据（R2）/ 零执行权
 （R3，策略只产建议）/ 插件只读 propose（R4）/ 注册权在 AP 侧（R5）。
 
-流水线（§3）：Codex 提交物 → 静态校验（AST，M1）→ 子进程沙箱试跑
-（M3，§2.3）→ 白名单沙箱 globals 内实例化 → StrategyRegistry.register
+流水线（§3）：Codex 提交物 → 静态校验（AST，M1 + H6 属性链禁）→ 子进程沙箱
+试跑（M3，§2.3）→ 宿主**隔离子进程代理**实例化 → StrategyRegistry.register
 （同键异值=漂移拒绝平移）。拒绝路径 fail-visible 落档
+H6（2026-11-01，审计 v2）：**主进程不再 exec 插件代码**——register_from_source
+只在一次性子进程内执行/试跑插件，宿主拿到 Verdict dict 后由可信宿主代码构造
+Verdict；propose() 每次也委托子进程。AST 属性链禁止表是**纵深防御，不是安全
+边界**（真正的边界=插件代码只在隔离子进程跑；Windows Job Object/AppContainer
+级隔离见架构建议单，本单未接入）。拒绝路径 fail-visible 落档
 rejects/<YYYYMMDD>/<submit_id>.md（按日归档，§5 风险 6），
 禁止静默丢弃。受理侧另设 submit_id 工单化按日限频（daily_limit，
 registrations+rejects 同日合计口径），默认不限频向后兼容。
@@ -20,8 +25,10 @@ M3 口径：静态过关后在一次性子进程内以合成数据试跑 propose
 部署轮。试跑耗时基线随注册事件入档（registrations.jsonl.sandbox_ms）。
 
 本模块自身纪律：零网络、除 rejects/processed/registrations 落档外零写；
-exec 仅在校验通过后于受限 globals（白名单 builtins + 白名单 __import__）
-内进行——静态门与 exec 沙箱是两道独立防线。
+H6（2026-11-01）后主进程零 exec 插件代码——插件只在一次性隔离子进程内
+执行/试跑，宿主仅接收结果并构造 Verdict。AST 属性链禁/受限 globals 是
+**纵深防御，不是安全边界**；真正的边界=插件跨进程隔离（Windows
+Job Object/AppContainer 待独立架构单，本单未接入）。
 """
 
 import ast
@@ -84,6 +91,19 @@ DENY_CALLS = frozenset(
         "write_bytes",  # attribute 尾名
     }
 )
+
+# H6（2026-11-01）：属性链/反射访问禁止表（AST 全扫 Attribute）。
+# 审计 v2 实证：受限 globals 仍可 (1).__class__.__mro__[1].__subclasses__() 触达
+# 316 子类 → 本表拦常见逃逸链。**仅纵深防御**：不是安全边界，真正边界是
+# register_from_source/propose 不在主进程执行插件代码（见模块 docstring）。
+DENY_ATTRS = frozenset({
+    "__class__", "__mro__", "__bases__", "__base__", "__subclasses__",
+    "__globals__", "__code__", "__builtins__", "__dict__",
+    "__getattribute__", "__getattr__", "__setattr__", "__delattr__",
+    "__reduce__", "__reduce_ex__", "__subclasshook__", "__init_subclass__",
+    "__loader__", "__spec__", "__self__", "__func__", "__closure__",
+    "__defaults__", "__kwdefaults__", "__weakref__",
+})
 
 # 凭据形态（R2）
 CRED_PATTERN = re.compile(r"(?i)(api[_-]?key|secret|token|password|credential)\s*=")
@@ -196,6 +216,20 @@ def validate_source(source, max_lines=MAX_LINES, max_bytes=MAX_BYTES):
                     reasons.append("禁用调用 %s()（line %d）" % (fn.id, node.lineno))
                 elif isinstance(fn, ast.Attribute) and fn.attr in DENY_CALLS:
                     reasons.append("禁用方法 .%s()（line %d）" % (fn.attr, node.lineno))
+        # 2b) H6：属性链/反射访问（全扫 Attribute；不依赖调用形态）
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Attribute) and node.attr in DENY_ATTRS:
+                reasons.append(
+                    "禁用属性链 .%s（line %d）：可疑沙箱逃逸/反射访问"
+                    % (node.attr, node.lineno)
+                )
+            # 裸 dunder 名（如 __builtins__）也拒（不进 globals 命名空间）
+            elif isinstance(node, ast.Name) and node.id in (
+                    "__builtins__", "__loader__", "__spec__"):
+                reasons.append(
+                    "禁用 dunder 名称 %s（line %d）：可疑沙箱逃逸"
+                    % (node.id, node.lineno)
+                )
         # 3) 接口签名：恰好一个 StrategyAgent 子类
         subclasses = [
             n
@@ -256,31 +290,91 @@ def validate_source(source, max_lines=MAX_LINES, max_bytes=MAX_BYTES):
     return reasons
 
 
-def register_from_source(source, registry):
-    """校验通过后于受限 globals 内实例化并注册。返回插件实例。
+SANDBOX_TIMEOUT_S = 10.0
 
-    漂移拒绝平移：同 strategy_id 二次注册 → StrategyRegistry 抛
-    StrategyError（不覆盖、不静默替换，§2.4）。
+
+def _static_plugin_identity(source):
+    """从已通过静态校验的源码解析 strategy_id/stance（只读 AST，不执行）。"""
+    text = source if isinstance(source, str) else source.decode("utf-8", "replace")
+    module = ast.parse(text)
+    for node in module.body:
+        if not isinstance(node, ast.ClassDef):
+            continue
+        if not any(getattr(b, "id", None) == "StrategyAgent" for b in node.bases):
+            continue
+        sid = stance = None
+        for item in node.body:
+            val = tgt = None
+            if (isinstance(item, ast.Assign) and len(item.targets) == 1
+                    and isinstance(item.targets[0], ast.Name)):
+                val, tgt = item.value, item.targets[0].id
+            elif (isinstance(item, ast.AnnAssign) and isinstance(item.target, ast.Name)
+                  and item.value):
+                val, tgt = item.value, item.target.id
+            if tgt == "strategy_id" and isinstance(val, ast.Constant):
+                sid = str(val.value)
+            elif tgt == "stance" and isinstance(val, ast.Constant):
+                stance = str(val.value)
+        if sid and stance:
+            return sid, stance
+    raise StrategyError("插件身份解析失败：未找到 strategy_id/stance 类属性")
+
+
+class _IsolatedPluginAgent(StrategyAgent):
+    """宿主代理：**插件代码永不在主进程执行**。
+
+    - strategy_id/stance 来自静态 AST（validate_source 已校验）；
+    - propose(context) 委托一次性隔离子进程（sandbox_trial），宿主只接收
+      经出口校验的 Verdict dict，再由可信宿主代码构造 Verdict；
+    - 失败 fail-closed：子进程失败/超时/非法 Verdict → StrategyError。
+    """
+
+    def __init__(self, source, strategy_id, stance, timeout_s=SANDBOX_TIMEOUT_S):
+        self._source = source
+        self.strategy_id = strategy_id
+        self.stance = stance
+        self._timeout_s = float(timeout_s)
+
+    def propose(self, context):
+        result = sandbox_trial(self._source, context=context,
+                               timeout_s=self._timeout_s)
+        if not result.get("ok"):
+            raise StrategyError("隔离试跑失败：%s" % result.get("reason"))
+        v = dict(result.get("verdict") or {})
+        try:
+            return Verdict(
+                strategy_id=str(v["strategy_id"]),
+                symbol=str(v["symbol"]),
+                recommendation=str(v["recommendation"]),
+                confidence=float(v["confidence"]),
+                stance=str(v.get("stance") or "neutral"),
+                score=float(v.get("score") or 0.0),
+                rationale=str(v.get("rationale") or ""),
+                trace_id=str(v.get("trace_id") or ""),
+                extras=dict(v.get("extras") or {}),
+            )
+        except (KeyError, TypeError, ValueError) as exc:
+            raise StrategyError("隔离结果无法转为 Verdict：%s" % exc) from exc
+
+
+def register_from_source(source, registry, skip_trial=False):
+    """校验通过后注册**隔离子进程代理**；主进程零 exec 插件代码。
+
+    - 默认先在一次性子进程跑一次 propose 试跑（fail-closed：静态过但运行时
+      炸/死循环/非法 Verdict → 拒绝注册）；调用方已自行试跑时可 skip_trial。
+    - 漂移拒绝平移：同 strategy_id 二次注册 → StrategyRegistry 抛
+      StrategyError（不覆盖、不静默替换，§2.4）。
+    - 返回 _IsolatedPluginAgent（isinstance(StrategyAgent) 契约不变）。
     """
     reasons = validate_source(source)
     if reasons:
         raise StrategyError("静态校验拒绝：%s" % "; ".join(reasons))
-    module = ast.parse(source)
-    code = compile(module, "<codex_plugin>", "exec")
-    namespace = _exec_globals()
-    exec(code, namespace)  # noqa: S102  # nosec B102 - 受控插件：来源先经 validate_source 静态校验，globals 受限
-    classes = [
-        v
-        for v in namespace.values()
-        if isinstance(v, type)
-        and issubclass(v, StrategyAgent)
-        and v is not StrategyAgent
-    ]
-    if len(classes) != 1:
-        raise StrategyError(
-            "实例化后 StrategyAgent 子类数=%d（应恰为 1）" % len(classes)
-        )
-    agent = classes[0]()
+    sid, stance = _static_plugin_identity(source)
+    if not skip_trial:
+        trial = sandbox_trial(source, timeout_s=SANDBOX_TIMEOUT_S)
+        if not trial["ok"]:
+            raise StrategyError("隔离试跑失败（拒绝注册）：%s" % trial["reason"])
+    agent = _IsolatedPluginAgent(source, sid, stance)
     registry.register(agent)
     return agent
 
@@ -641,7 +735,7 @@ def process_submission(
         shutil.move(str(inbox), str(bdir / "rejects" / _today() / submit_id))
         return False, [trial["reason"]]
 
-    agent = register_from_source(source, registry)
+    agent = register_from_source(source, registry, skip_trial=True)
     shutil.move(str(inbox), str(bdir / "processed" / submit_id))
     if data_root:
         reg_dir = Path(data_root) / "data" / "codex_bridge"
@@ -666,8 +760,9 @@ def load_registered(registry, bridge_dir=None):
 
     幂等：同 strategy_id 已注册 → 视为重复装载跳过（计数 skipped）。
     单插件失败不拖垮其余（对齐影子主链 fail-open 纪律）。
-    口径：不重复跑沙箱试跑——processed/ 件已过 M3 门，试跑是受理时
-    一次性动作；周一首跑影子 run 的装配不走子进程（零额外延迟）。
+    口径（H6 起更新）：processed/ 件已过受理期 M3 试跑，装配**不再**重复试跑
+    （零额外延迟，保持旧契约）；但注册的仍是隔离子进程代理——主进程零 exec，
+    之后 propose() **每次**走子进程（延迟换安全，失败 fail-closed）。
     返回 (loaded, skipped)。
     """
     bdir = Path(bridge_dir) if bridge_dir else default_bridge_dir()
@@ -678,7 +773,8 @@ def load_registered(registry, bridge_dir=None):
     for src in sorted(processed.glob("*/strategy_*.py")):
         try:
             source = src.read_text(encoding="utf-8")
-            register_from_source(source, registry)
+            # H6：装配不重复试跑（processed 已过 M3）；代理 propose 仍隔离执行
+            register_from_source(source, registry, skip_trial=True)
             loaded += 1
         except StrategyError as e:
             if "重复注册" in str(e):

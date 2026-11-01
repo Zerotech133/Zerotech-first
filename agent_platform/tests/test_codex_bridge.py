@@ -600,3 +600,115 @@ def test_daily_limit_legacy_flat_stale_not_counted(tmp_path):
     )
     assert ok is True  # 跨日旧档不计入，额度正常
     assert (tmp_path / "processed" / "s-stale").exists()
+# ---- H6（K-ORG-20261101-H6SANDBOX）：属性链禁 + 主进程零 exec ----
+
+_PROBE_ANCHOR = '        closes = [float(x) for x in (context.get("closes") or [])]'
+
+
+def _with_probe(expr):
+    """在 GOOD.propose 开头插入 `_probe = <expr>`（保守地构造绕过样本）。"""
+    assert _PROBE_ANCHOR in GOOD
+    return GOOD.replace(_PROBE_ANCHOR, "        _probe = %s\n" % expr + _PROBE_ANCHOR, 1)
+
+
+def test_h6_rejects_dunder_attribute_chains():
+    """审计 PoC 及同类反射链：AST 属性链禁命中即拒。"""
+    payloads = {
+        "__class__": "(1).__class__",
+        "__mro__": "(1).__class__.__mro__[1]",
+        "__subclasses__": "[].__class__.__base__.__subclasses__()",
+        "__globals__": "propose.__globals__",
+        "__code__": "(lambda: 0).__code__",
+        "__dict__": "type.__dict__",
+        "__builtins__": "__builtins__",
+        "__bases__": "[].__class__.__bases__",
+        "__getattribute__": "object.__getattribute__",
+        "__reduce__": "(1).__reduce__",
+    }
+    for name, expr in payloads.items():
+        bad = _with_probe(expr)
+        reasons = validate_source(bad)
+        assert reasons, name
+        hit = [r for r in reasons if "禁用属性链" in r or "禁用 dunder" in r]
+        assert hit, (name, reasons)
+
+
+def test_h6_normal_attribute_usage_still_passes():
+    """纵深防御不误伤正常属性访问（context.get/self.strategy_id/math.sqrt）。"""
+    assert validate_source(PILOT) == []
+    assert validate_source(GOOD) == []
+    normal = GOOD.replace("from statistics import fmean",
+                          "import math\nfrom statistics import fmean").replace(
+        "TH = 0.01", "TH = math.sqrt(0.0001)")
+    assert validate_source(normal) == []
+
+
+def test_h6_register_returns_isolated_proxy():
+    import codex_bridge as cb
+    import inspect
+
+    reg = _fresh_registry()
+    agent = register_from_source(GOOD, reg)
+    assert type(agent).__name__ == "_IsolatedPluginAgent"
+    assert isinstance(agent, cb.StrategyAgent)
+    assert agent.strategy_id == "codex_good" and agent.stance == "neutral"
+    # 结构断言：注册函数不再 compile/exec 插件代码（主进程零执行）
+    src = inspect.getsource(cb.register_from_source)
+    assert "exec(" not in src and "compile(" not in src
+
+
+def test_h6_main_process_does_not_execute_plugin_code():
+    """运行时证明：插件顶层副作用只在子进程生效，主进程 math 不被污染。"""
+    import math
+
+    from strategy_registry import Verdict
+
+    src = GOOD.replace(
+        "from statistics import fmean",
+        "import math\nfrom statistics import fmean\n\nmath.H6_PROBE = 1",
+    )
+    assert not hasattr(math, "H6_PROBE")
+    reg = _fresh_registry()
+    agent = register_from_source(src, reg)
+    assert "codex_good" in reg.list_ids()
+    assert not hasattr(math, "H6_PROBE"), "主进程执执行了插件代码（H6 回归）"
+    v = agent.propose({"symbol": "S", "closes": [1.0, 2.0, 3.0]})
+    assert isinstance(v, Verdict) and v.strategy_id == "codex_good"
+
+
+def test_h6_register_fail_closed_on_runtime_crash():
+    reg = _fresh_registry()
+    with pytest.raises(StrategyError, match="隔离试跑失败"):
+        register_from_source(CRASH, reg)
+    assert reg.list_ids() == []
+
+
+def test_h6_register_timeout_cleanup(monkeypatch):
+    import codex_bridge as cb
+
+    monkeypatch.setattr(cb, "SANDBOX_TIMEOUT_S", 1.0)
+    t0 = time.time()
+    with pytest.raises(StrategyError, match="超时"):
+        cb.register_from_source(LOOP, _fresh_registry())
+    assert time.time() - t0 < 15.0  # 超时被杀，不会挂住
+
+
+def test_h6_proxy_propose_fail_closed(monkeypatch):
+    import codex_bridge as cb
+
+    reg = _fresh_registry()
+    agent = register_from_source(GOOD, reg)
+    monkeypatch.setattr(cb, "sandbox_trial", lambda *a, **k: {
+        "ok": False, "killed": False, "reason": "boom",
+        "elapsed_ms": 1, "verdict": None,
+    })
+    with pytest.raises(StrategyError, match="隔离试跑失败"):
+        agent.propose({"symbol": "S", "closes": [1.0, 2.0]})
+
+
+def test_h6_ast_ban_documented_as_defense_in_depth():
+    import codex_bridge as cb
+
+    doc = cb.__doc__ or ""
+    assert "纵深防御" in doc and "不是安全边界" in doc
+    assert "Job Object" in doc  # 架构建议：OS 级隔离待独立单
