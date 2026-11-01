@@ -1,0 +1,350 @@
+{
+ "schema_version": 1,
+ "kind": "qa_live_quality_review",
+ "generated_at": "2026-11-02T02:18:45+08:00",
+ "config": {
+  "base_url": "http://127.0.0.1:8091",
+  "n": 3,
+  "mode": "multi",
+  "topk": 8,
+  "cache": "0",
+  "llm_calls": 3,
+  "offline_baseline": "kb_qa_prompt_v4_scale_20261101（v4 扩样 30 条）"
+ },
+ "samples": [
+  {
+   "id": "q2_b5a0a0e045",
+   "category": "风险限制",
+   "theme": "量化/技术分析",
+   "question": "量学理论的结论在什么条件下可能不成立？",
+   "http_status": 200,
+   "elapsed_seconds": 10.39,
+   "meta": {
+    "mode": "multi",
+    "k": 8,
+    "clusters": 3,
+    "topk": 8,
+    "llm_called": true,
+    "prompt_version": "v4",
+    "guard_marker": "segment",
+    "citation_retry": true,
+    "citation_retry_info": {
+     "used": false,
+     "first_units": 4,
+     "second_units": null,
+     "improved": false,
+     "error": null
+    },
+    "cache_hit": false
+   },
+   "guard_meta": {
+    "enabled": true,
+    "applicable": true,
+    "applied": true,
+    "on_fail": "fallback",
+    "guard_passed": true,
+    "guard_action": "pass",
+    "guard_issues": [],
+    "citation_valid": [
+     "5cfa2f156e5c",
+     "26748eb94001",
+     "51116c325854",
+     "eba0013d750b"
+    ],
+    "citation_invalid": [],
+    "citation_total": 4,
+    "citation_valid_count": 4,
+    "citation_invalid_count": 0,
+    "support_rate": 1.0,
+    "inference_ratio": 0.4,
+    "distinct_cited_units": 4,
+    "marker_mode": "segment"
+   },
+   "answer": "【事实摘录】\n【事实】量学理论构建了‘量柱选股、量线选价、量波选时’的三维互动看盘操盘系统，实现了不管指标、消息和行情均可预测股市的效果（[5cfa2f156e5c] p.5）。\n【事实】《量柱擒涨停》《量线捉涨停》《伏击涨停》和《涨停密码》四本书构成了完整的量学理论体系和实战交易系统（[26748eb94001] p.5）。\n【事实】量学理论通过以量柱为基础，结合量价阴阳真假虚实八个要素，实现了比传统‘价学’更高效的四维立体看盘（[51116c325854] p.7）。\n【推断】\n【推断】若市场出现极端非理性波动导致“量价”关系暂时失效，该理论预测效果可能受限（依据：[5cfa2f156e5c] p.5、[51116c325854] p.7）。\n【推断】若投资者无法准确识别“量柱、价柱、量线”背后的量化规律，理论体系将难以转化为实战收益（依据：[eba0013d750b] p.11、[26748eb94001] p.5）。",
+   "answer_length": 418,
+   "citations": [
+    {
+     "unit_id": "5cfa2f156e5c",
+     "book": "伏击涨停(2)",
+     "chapter": "序言1",
+     "page": 5,
+     "text": "量学理论构建了‘量柱选股、量线选价、量波选时’的三维互动看盘操盘系统，实现了不管指标、消息和行情均可预测股市的效果。 2009 年“量学”问世，它摆脱了“以价论价”的“价学”桔，在“以量论价”动态平衡规律，构建了“量柱选股、量线选价、量波选时”的“三维互动”看盘操 盘系统，形成了一个独立的科学体系。"
+    },
+    {
+     "unit_id": "26748eb94001",
+     "book": "伏击涨停(2)",
+     "chapter": "序言1",
+     "page": 5,
+     "text": "《量柱擒涨停》《量线捉涨停》《伏击涨停》和《涨停密码》四本书构成了完整的量学理论体系和实战交易系统。 被市场知名人士誉为“股市四大名著”的《量柱擒涨停》《量线捉涨停》《伏 击涨停》和《涨停密码》，构成了一套完整的量学理论体系和实战交易系统。"
+    },
+    {
+     "unit_id": "51116c325854",
+     "book": "伏击涨停(2)",
+     "chapter": "序言1量学理论的七大贡献",
+     "page": 7,
+     "text": "量学理论通过以量柱为基础，结合量价阴阳真假虚实八个要素，实现了比传统‘价学’更高效的四维立体看盘。 王子老师的“量学”理论，创造了以量柱为基础，以“量价阴阳真假虚实”八个要素互渗互动的“四维立体看盘法”。"
+    },
+    {
+     "unit_id": "eba0013d750b",
+     "book": "伏击涨停(2)",
+     "chapter": "序言2",
+     "page": 11,
+     "text": "量柱、价柱、量线理论是黑马王子独创的投资理论，通过量化研究总结，为投资者提供研究股票和牛股的新思路。 他独创的量柱、价柱、量线理论独树一帜...像黑马王子这样能够把量柱、价柱、量线提高到新的理论层面，并特别对量柱进行量化研究总结并饱有心得者却屈指可数。"
+    }
+   ],
+   "citation_count": 4,
+   "citation_resolvable_rate": 1.0,
+   "distinct_cited_units": 4,
+   "support_rate": 1.0,
+   "inference_ratio": 0.4,
+   "guard_passed_recomputed": true,
+   "guard_issues": [],
+   "fallback": false,
+   "refusal": false,
+   "status": "success",
+   "completeness_score": 5,
+   "human_score": null,
+   "verdict": "☐通过 ☐需修改"
+  },
+  {
+   "id": "q2_aa49124184",
+   "category": "关键数据",
+   "theme": "其他/综合",
+   "question": "储气调峰能力建设中研报提供了哪些可验证的关键数据或指标？",
+   "http_status": 200,
+   "elapsed_seconds": 14.86,
+   "meta": {
+    "mode": "multi",
+    "k": 8,
+    "clusters": 3,
+    "topk": 8,
+    "llm_called": true,
+    "prompt_version": "v4",
+    "guard_marker": "segment",
+    "citation_retry": true,
+    "citation_retry_info": {
+     "used": true,
+     "first_units": 1,
+     "second_units": 2,
+     "improved": true,
+     "error": null
+    },
+    "cache_hit": false
+   },
+   "guard_meta": {
+    "enabled": true,
+    "applicable": true,
+    "applied": true,
+    "on_fail": "fallback",
+    "guard_passed": true,
+    "guard_action": "pass",
+    "guard_issues": [],
+    "citation_valid": [
+     "4c6ddf0bf36f",
+     "cfa085455968"
+    ],
+    "citation_invalid": [],
+    "citation_total": 2,
+    "citation_valid_count": 2,
+    "citation_invalid_count": 0,
+    "support_rate": 1.0,
+    "inference_ratio": 0.4,
+    "distinct_cited_units": 2,
+    "marker_mode": "segment"
+   },
+   "answer": "【事实摘录】\n【事实】我国储气库工作气量在消费总量中的平均占比约为 7%，而全球平均水平约为 11.4%（[4c6ddf0bf36f] p.1）。\n【事实】需加快储气库建设以弥补调峰能力不足，推动天然气行业从单一气源供应转向电力系统调节与兜底保供并重（[4c6ddf0bf36f] p.1）。\n【事实】市场体系建设重点在于推进省级管网运销分离与并入整合，以释放资源配置效率和商业模式创新空间（[cfa085455968] p.1）。\n\n【推断】\n【推断】当前我国储气调峰能力显著低于全球平均水平，亟需通过加快储气库建设来缩小差距（依据：[4c6ddf0bf36f] p.1）。\n【推断】推进\"X+1+X\"市场体系中的管网运销分离改革，是提升储气调峰资源配置效率的关键路径（依据：[cfa085455968] p.1）。",
+   "answer_length": 359,
+   "citations": [
+    {
+     "unit_id": "4c6ddf0bf36f",
+     "book": "rp_AP202610021830105529",
+     "chapter": "摘要：",
+     "page": 1,
+     "text": "我国需加快储气库建设以弥补调峰能力不足，推动天然气行业从单一气源供应转向电力系统调节与兜底保供并重。 全球储气库工作气量在消费总量中的平均占比约为11.4%，而我国目前仅维持在7%左右...加快储气调峰能力建设，推动天然气行业从单一气源供应转向电力系统调节与兜底保供并重。"
+    },
+    {
+     "unit_id": "cfa085455968",
+     "book": "rp_AP202610021830105529",
+     "chapter": "摘要：",
+     "page": 1,
+     "text": "需推进'X+1+X'市场体系建设，重点在于省级管网运销分离与并入整合，以释放资源配置效率和商业模式创新空间。 推进'X+1+X'市场体系建设，以上游勘探开发引入多元竞争主体，中游管网保持自然垄断并公平开放，下游销售充分竞争...行业需重点突破省级管网运销分离与并入整合，以市场化改革释放资源配置效率和商业模式创新空间。"
+    }
+   ],
+   "citation_count": 2,
+   "citation_resolvable_rate": 1.0,
+   "distinct_cited_units": 2,
+   "support_rate": 1.0,
+   "inference_ratio": 0.4,
+   "guard_passed_recomputed": true,
+   "guard_issues": [],
+   "fallback": false,
+   "refusal": false,
+   "status": "success",
+   "completeness_score": 5,
+   "human_score": null,
+   "verdict": "☐通过 ☐需修改"
+  },
+  {
+   "id": "q2_bcbfd79337",
+   "category": "驱动因素",
+   "theme": "AI算力/半导体",
+   "question": "智能算力规模占比的核心驱动因素是什么？",
+   "http_status": 200,
+   "elapsed_seconds": 7.24,
+   "meta": {
+    "mode": "multi",
+    "k": 8,
+    "clusters": 3,
+    "topk": 8,
+    "llm_called": true,
+    "prompt_version": "v4",
+    "guard_marker": "segment",
+    "citation_retry": true,
+    "citation_retry_info": {
+     "used": false,
+     "first_units": 3,
+     "second_units": null,
+     "improved": false,
+     "error": null
+    },
+    "cache_hit": false
+   },
+   "guard_meta": {
+    "enabled": true,
+    "applicable": true,
+    "applied": true,
+    "on_fail": "fallback",
+    "guard_passed": true,
+    "guard_action": "pass",
+    "guard_issues": [],
+    "citation_valid": [
+     "776f36408a89",
+     "9ab889268ce2",
+     "0a3ddb232a72"
+    ],
+    "citation_invalid": [],
+    "citation_total": 3,
+    "citation_valid_count": 3,
+    "citation_invalid_count": 0,
+    "support_rate": 1.0,
+    "inference_ratio": 0.25,
+    "distinct_cited_units": 3,
+    "marker_mode": "segment"
+   },
+   "answer": "【事实摘录】\n【事实】2024 年智能算力规模占全国算力总规模的 32%（[776f36408a89] p.1）。\n【事实】智谱已完成与多家国产算力平台的深度适配，实现 10 万级国产芯片规模化推理（[9ab889268ce2] p.1）。\n【事实】海光信息发布首款面向端侧智能的算力芯片 1000 系列，标志着公司算力版图从云侧延伸到边缘和端侧（[0a3ddb232a72] p.2）。\n【推断】\n【推断】国产算力的规模化适配与成本下降是提升智能算力规模占比的关键驱动因素之一（依据：[9ab889268ce2] p.1、[0a3ddb232a72] p.2）。",
+   "answer_length": 282,
+   "citations": [
+    {
+     "unit_id": "776f36408a89",
+     "book": "rp_AP202610031830126544",
+     "chapter": "太 平 洋 证 券 股 份 有 限 公 司 证 券 研 究 报 告",
+     "page": 1,
+     "text": "2024 年智能算力规模占全国算力总规模的 32%，带动用电需求加深增长。 2024 年，全国算力总规模达到 280 EFLOPS，其中八大国家枢纽节点算力规模达到 175 EFLOPS；智能算力规模占全国算力总规模的 32%。"
+    },
+    {
+     "unit_id": "9ab889268ce2",
+     "book": "rp_AP202610021830112214",
+     "chapter": "大模型系列深度（一）：国产大模型竞争重心转向效",
+     "page": 1,
+     "text": "智谱已完成与多家国产算力平台的深度适配，实现 10 万级国产芯片规模化推理，单位 Token 推理成本较年初下降 80%。 智谱已兼容 40 多款主流芯片，并完成与多家国产算力平台的深度适配，实现 10 万级国产芯片规模化推理，单位 Token 推理成本较年初下降 80%。"
+    },
+    {
+     "unit_id": "0a3ddb232a72",
+     "book": "rp_AP202609301830016191",
+     "chapter": "目录",
+     "page": 2,
+     "text": "海光信息发布首款面向端侧智能的算力芯片 1000 系列，标志着公司算力版图从云侧延伸到边缘和端侧。 9 月 22 日，海光信息算力芯片 CPU 1000 系列正式发布，该产品是面向低功耗、嵌入式和端侧算力需求，采用 C86 架构打造的轻量级 CPU。海光信息总裁沙超群表示，1000 系列是海光首款面向端侧智能的算力芯片。"
+    }
+   ],
+   "citation_count": 3,
+   "citation_resolvable_rate": 1.0,
+   "distinct_cited_units": 3,
+   "support_rate": 1.0,
+   "inference_ratio": 0.25,
+   "guard_passed_recomputed": true,
+   "guard_issues": [],
+   "fallback": false,
+   "refusal": false,
+   "status": "success",
+   "completeness_score": 5,
+   "human_score": null,
+   "verdict": "☐通过 ☐需修改"
+  }
+ ],
+ "summary": {
+  "live": {
+   "total": 3,
+   "http_200": 3,
+   "success": 3,
+   "fallback": 0,
+   "no_evidence": 0,
+   "answerable_rate": 1.0,
+   "guard_pass_rate": 1.0,
+   "fallback_rate": 0.0,
+   "avg_citations": 3.0,
+   "avg_citation_resolvable_rate": 1.0,
+   "avg_inference_ratio": 0.35,
+   "avg_elapsed_seconds": 10.83,
+   "avg_completeness_score": 5.0
+  },
+  "baseline_v4_offline": {
+   "total": 30,
+   "answerable_rate": 0.8333,
+   "guard_pass_rate": 0.8667,
+   "fallback_rate": 0.1333,
+   "avg_citations": 2.2667,
+   "avg_citation_resolvable_rate": 1.0,
+   "avg_support_rate": 1.0,
+   "avg_inference_ratio": 0.4105,
+   "avg_elapsed_seconds": 23.9153
+  },
+  "compare": {
+   "answerable_rate": {
+    "live": 1.0,
+    "offline_v4": 0.8333,
+    "delta": 0.1667
+   },
+   "guard_pass_rate": {
+    "live": 1.0,
+    "offline_v4": 0.8667,
+    "delta": 0.1333
+   },
+   "fallback_rate": {
+    "live": 0.0,
+    "offline_v4": 0.1333,
+    "delta": -0.1333
+   },
+   "avg_citations": {
+    "live": 3.0,
+    "offline_v4": 2.2667,
+    "delta": 0.7333
+   },
+   "avg_citation_resolvable_rate": {
+    "live": 1.0,
+    "offline_v4": 1.0,
+    "delta": 0.0
+   },
+   "avg_inference_ratio": {
+    "live": 0.35,
+    "offline_v4": 0.4105,
+    "delta": -0.0605
+   },
+   "avg_elapsed_seconds": {
+    "live": 10.83,
+    "offline_v4": 23.9153,
+    "delta": -13.0853
+   }
+  },
+  "contains_human_review_slot": true,
+  "verdict": "线上 multi 质量可接受（与离线 v4 基线方向一致，抽样 n=3）",
+  "fixes_needed": [],
+  "risks": [
+   "抽样仅 3 条（LLM 成本约束），结论方向性参考；人工 1-5 评分位（human_score）待人工填写。",
+   "引用可解析/推断比例由响应 + 本地 KB 口径离线重算，与 8091 内部 guard 口径可能有细微差异。",
+   "线上 multi 单次 8–25s（真实 LLM），不适合高频抽检；建议按需/每日 1-3 条。"
+  ],
+  "live_ok": true
+ },
+ "elapsed_seconds": 33.06,
+ "disclaimer": "线上质量抽检结果仅供评审参考，不构成投资建议；人工评分位待填。"
+}

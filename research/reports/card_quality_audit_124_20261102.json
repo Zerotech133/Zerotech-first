@@ -1544,8 +1544,28 @@
   "本报告复用 card_quality_audit.py 的通用检查（字段/source/长度/重复/可追溯/主题/来源）+ 新增 20 张 CP3 重点检查。",
   "新增 20 张 CP3：source 全部可解析、书名均在知识单元集合、无概念重复；2 张概念-答案对齐不足（medium）。",
   "主题语义检查为启发式（内容分类映射 vs 卡 topic），low 风险项仅供人工确认，不影响卡片内容。",
-  "知识单元实际 516 个（任务背景历史为 498，以当前文件为准）。"
+  "知识单元实际 516 个（任务背景历史为 498，以当前文件为准）。",
+  "2 张新增 CP3 对齐问题已于 2026-11-02 修复（card_concept_fix_20261102），详见 concept_fix。"
  ],
  "disclaimer": "本报告为只读质量审计，不修改学习卡；修复建议需人工确认；不构成投资建议。",
- "source_unchanged": true
+ "source_unchanged": true,
+ "concept_fix": {
+  "fixed_at": "2026-11-02T02:18:24+08:00",
+  "report": "C:\\项目\\老田的AI助手\\research\\reports\\card_concept_fix_20261102.json",
+  "cards": [
+   {
+    "card_index": 104,
+    "concept": "主要原材料价格波动",
+    "coverage_before": 0.0,
+    "coverage_after": 1.0
+   },
+   {
+    "card_index": 105,
+    "concept": "四足机器人商业化挑战",
+    "coverage_before": 0.0,
+    "coverage_after": 1.0
+   }
+  ],
+  "status": "fixed（2 张 CP3 概念对齐已修复；其余检查项不变）"
+ }
 }

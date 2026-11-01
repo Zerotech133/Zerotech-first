@@ -1,0 +1,119 @@
+{
+ "schema_version": 1,
+ "date": "20261102",
+ "generated_at": "2026-11-02T02:18:24+08:00",
+ "task": "task-121 修复 2 张 CP3 卡概念对齐（最小修复，不编造）",
+ "applied": true,
+ "rule": "答案前缀「concept：」概念锚点；保留原文与证据，不改问题、不编造",
+ "fixes": [
+  {
+   "card_index": 104,
+   "concept": "主要原材料价格波动",
+   "rule": "答案前缀概念锚点（不改原意、不编造）",
+   "before": {
+    "q": "「主要原材料价格波动」的定义与要点是什么？",
+    "a": "2026 年 9 月第一周，铁矿石期货价格小幅下跌，铜价上涨约 1.5%，铝价下跌约 0.9%，环氧树脂价格持平。 依据：本周铁矿石期货收盘价 713.5 元/吨，环比 -2 元/吨；铸造生铁价格 3110 元/吨，环比持平；中厚板价格 3499 元/吨，环比 -13 元/吨；铜、铝现货价格分别为 14740、3254 美元/吨，单价分别 +211、-31 美元/吨，环比 +1.5%、-0.9%。",
+    "answer_len": 200
+   },
+   "after": {
+    "q": "「主要原材料价格波动」的定义与要点是什么？",
+    "a": "主要原材料价格波动：2026 年 9 月第一周，铁矿石期货价格小幅下跌，铜价上涨约 1.5%，铝价下跌约 0.9%，环氧树脂价格持平。 依据：本周铁矿石期货收盘价 713.5 元/吨，环比 -2 元/吨；铸造生铁价格 3110 元/吨，环比持平；中厚板价格 3499 元/吨，环比 -13 元/吨；铜、铝现货价格分别为 14740、3254 美元/吨，单价分别 +211、-31 美元/吨，环比 +1.5%、-0.9%。",
+    "answer_len": 210
+   },
+   "coverage_before": 0.0,
+   "coverage_after": 1.0
+  },
+  {
+   "card_index": 105,
+   "concept": "四足机器人商业化挑战",
+   "rule": "答案前缀概念锚点（不改原意、不编造）",
+   "before": {
+    "q": "「四足机器人商业化挑战」的定义与要点是什么？",
+    "a": "工业场景下...面对动态、未知、干扰较多的真实复杂环境时泛化能力不足；高强度作业下续航与负载不满足实际需求；核心零部件仍带有小批量、半自动化生产和半定制化特征。工业场景下...面对动态、未知、干扰较多的真实复杂环境时泛化能力不足；高强度作业下续航与负载不满足实际需求；核心零部件仍带有小批量、半自动化生产和半定制化特征...",
+    "answer_len": 162
+   },
+   "after": {
+    "q": "「四足机器人商业化挑战」的定义与要点是什么？",
+    "a": "四足机器人商业化挑战：工业场景下...面对动态、未知、干扰较多的真实复杂环境时泛化能力不足；高强度作业下续航与负载不满足实际需求；核心零部件仍带有小批量、半自动化生产和半定制化特征。工业场景下...面对动态、未知、干扰较多的真实复杂环境时泛化能力不足；高强度作业下续航与负载不满足实际需求；核心零部件仍带有小批量、半自动化生产和半定制化特征...",
+    "answer_len": 173
+   },
+   "coverage_before": 0.0,
+   "coverage_after": 1.0
+  }
+ ],
+ "before": {
+  "cards": 124,
+  "sha256": "b5b9a8704788cca7bfc43bff1f50d4172a9319c68aaa126d0e159668550a9c63"
+ },
+ "after": {
+  "cards": 124,
+  "sha256": "a9eb57002a5ec4fc878cd3be7bca45e1e628fc8432effd84e9dab6764189cae9"
+ },
+ "validation": {
+  "ok": true,
+  "cards_count": 124,
+  "cards_unchanged_count": 0,
+  "fixed": [
+   {
+    "card_index": 104,
+    "concept": "主要原材料价格波动",
+    "coverage": 1.0,
+    "ok": true,
+    "answer_len": 210
+   },
+   {
+    "card_index": 105,
+    "concept": "四足机器人商业化挑战",
+    "coverage": 1.0,
+    "ok": true,
+    "answer_len": 173
+   }
+  ],
+  "dup_concepts": [],
+  "schema_errors": [],
+  "others_unchanged": true,
+  "atomic_write": {
+   "ok": true,
+   "atomic": true,
+   "tmp_removed": true,
+   "validated": true
+  },
+  "cards_sha_before": "b5b9a8704788cca7bfc43bff1f50d4172a9319c68aaa126d0e159668550a9c63",
+  "cards_sha_after": "a9eb57002a5ec4fc878cd3be7bca45e1e628fc8432effd84e9dab6764189cae9"
+ },
+ "backups": {
+  "pre_fix": {
+   "path": "C:\\项目\\老田的AI助手\\research\\reports\\backups\\kb_learning_cards.20261102_021824.pre_conceptfix.bak.json",
+   "sha256": "b5b9a8704788cca7bfc43bff1f50d4172a9319c68aaa126d0e159668550a9c63",
+   "cards": 124
+  }
+ },
+ "digest": {
+  "rc": 0,
+  "output_tail": "生成成功：C:\\项目\\老田的AI助手\\portal\\static\\kb_learning_digest.json | date=20261102 | cards=5 | highlights=5 | points=10\n",
+  "sha256": "88eaefa78df3f03c9e3757b98618bd4c588c113ef38665da0ed76880c8875213"
+ },
+ "http": {
+  "kb_learning_cards": {
+   "status": 200,
+   "bytes": 101003
+  },
+  "kb_learning_digest": {
+   "status": 200,
+   "bytes": 10654
+  },
+  "kb_reports_page": {
+   "status": 200,
+   "bytes": 33828
+  }
+ },
+ "audit_report_update": {
+  "updated": true,
+  "report": "C:\\项目\\老田的AI助手\\research\\reports\\card_quality_audit_124_20261102.json"
+ },
+ "rollback": {
+  "cards": "copy /Y \"C:\\项目\\老田的AI助手\\research\\reports\\backups\\kb_learning_cards.20261102_021824.pre_conceptfix.bak.json\" \"C:\\项目\\老田的AI助手\\portal\\static\\kb_learning_cards.json\" 然后重跑 learning_digest.py run",
+  "note": "恢复 2 张卡原始答案（124 张不变）"
+ },
+ "disclaimer": "本次为用户授权执行的最小修复；不构成投资建议。"
+}

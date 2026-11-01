@@ -862,6 +862,20 @@
       "title": "问答通道限流复核",
       "ref": "tools/kb_corpus/qa_channel_limit.py",
       "enabled": true
+    },
+    {
+      "id": "qa_channel_capacity",
+      "kind": "tool",
+      "title": "通道容量/限流语义复核",
+      "ref": "tools/kb_corpus/qa_channel_capacity.py",
+      "enabled": true
+    },
+    {
+      "id": "qa_live_quality_review",
+      "kind": "tool",
+      "title": "线上 multi 质量抽检",
+      "ref": "tools/kb_corpus/qa_live_quality_review.py",
+      "enabled": true
     }
   ]
 }

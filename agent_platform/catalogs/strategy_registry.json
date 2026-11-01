@@ -6799,5 +6799,50 @@
       "note": "只写文档，不改代码；来源：wave1-40 交付报告与 8091 实测。"
     },
     "note": "零界运行手册 v1：入口/问答 CLI+HTTP/每日 4 任务/知识库维护/回滚手册/已知限制/排障；STATUS.md 已追加收口段。"
+  },
+  "card_concept_fix_20261102": {
+    "executed": true,
+    "result": {
+      "cards": 124,
+      "fixed": 2,
+      "concept_coverage": "0%→100%（2 张）"
+    },
+    "backup": "research/reports/backups/kb_learning_cards.20261102_021824.pre_conceptfix.bak.json",
+    "note": "2 张 CP3 卡概念对齐修复（答案前缀 concept 锚点、保留原文证据）；124 张不变、其余 122 张逐张不变、无重复、digest 刷新、HTTP 200。"
+  },
+  "qa_channel_capacity_20261102": {
+    "report": "research/reports/qa_channel_capacity_20261102.md",
+    "summary": {
+      "multi": {
+        "burst_expected_200": 6,
+        "burst_expected_429": 4,
+        "burst_actual_200": 6,
+        "burst_actual_429": 4,
+        "burst_matches_6_plus_429": true,
+        "serial_total": 10,
+        "serial_success": 10,
+        "serial_rate_limited": 0,
+        "serial_not_false_positive": true,
+        "limit_per_minute": 6
+      },
+      "single": {
+        "burst_expected_200": 6,
+        "burst_expected_429": 4,
+        "burst_actual_200": 6,
+        "burst_actual_429": 4,
+        "burst_matches_6_plus_429": true,
+        "serial_total": 10,
+        "serial_success": 10,
+        "serial_rate_limited": 0,
+        "serial_not_false_positive": true,
+        "limit_per_minute": 6
+      }
+    },
+    "note": "通道容量/限流语义（mock 慢 LLM）：并发 10 均 200×6→429×4；串行 10 全 200 不误伤；**single/multi 6/分=并发突发上限**（非吞吐目标），retrieval 300/分 → 维持配置；运行手册已补限流语义。"
+  },
+  "qa_live_quality_20261102": {
+    "report": "research/reports/qa_live_quality_20261102.md",
+    "verdict": "线上 multi 质量可接受（与离线 v4 基线方向一致，抽样 n=3）",
+    "note": "8091 线上 multi 抽检 3 条：可答率 100%、guard 100%、fallback 0%、均引用 3.0、推断 0.35、均耗时 10.83s、完整度 5/5 → 线上质量可接受（不劣于离线 v4 基线）；人工评分位已留。"
   }
 }
