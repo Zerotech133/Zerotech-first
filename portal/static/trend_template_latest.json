@@ -1,7 +1,7 @@
 {
  "api_version": "1.0",
  "kind": "trend_template_screen",
- "generated_at": "2026-11-01T16:50:32+08:00",
+ "generated_at": "2026-11-01T22:44:46+08:00",
  "trade_date": "20261030",
  "dataset": {
   "universe_all": 5606,
@@ -891,10 +891,10 @@
    "universe": "U0_all",
    "rs": "R_252",
    "exit": "E_8",
-   "cagr_pct": 14.14,
-   "mdd_pct": -48.68,
-   "vol_pct": 32.99,
-   "trades": 197
+   "cagr_pct": 13.9,
+   "mdd_pct": -47.18,
+   "vol_pct": 32.25,
+   "trades": 184
   },
   "findings": [
    "RS 口径：R_252 优于 ret12+ret3 近似",
