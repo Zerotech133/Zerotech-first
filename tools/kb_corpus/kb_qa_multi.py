@@ -287,6 +287,39 @@ def assess_confidence(answer: str, check: dict, clusters: list[dict], fallback: 
     return {"level": "low", "reasons": reasons + ["无引用/推断为主，建议人工复核"]}
 
 
+# ---------------------------------------------------------------------------
+# v4 引用自检重试（citation_retry，默认关闭，参数开启）
+# ---------------------------------------------------------------------------
+CITATION_RETRY_MIN_UNITS = 2
+CITATION_RETRY_HINT = (
+    "\n\n【自检修正（重要）】上一条回答的有效引用不足 2 个不同知识单元。"
+    "请重新作答：每个事实行都必须紧跟 [unit_id] 与页码，且必须引用**至少 2 个不同单元**"
+    "（不同 unit_id，优先直接摘录材料原文）；若材料确实不足 2 个单元，则明确回答"
+    "「知识库中没有足够依据回答该问题。」只输出修正后的完整答案。"
+)
+
+
+def count_valid_cited_units(answer: str, clusters: list[dict]) -> int:
+    """统计答案中可解析（命中检索材料）的去重引用单元数。"""
+    return len(validate_multi_answer(answer, clusters)["citations"])
+
+
+def needs_citation_retry(result: dict, clusters: list[dict] | None = None) -> bool:
+    """是否需要引用自检重试：未拒答、未降级、有效引用单元数 < 2。"""
+    if result.get("refusal") or result.get("fallback"):
+        return False
+    if clusters is not None and "citations" in result:
+        units = len(result.get("citations") or [])
+    else:
+        units = int(result.get("citation_units") or len(result.get("citations") or []))
+    return units < CITATION_RETRY_MIN_UNITS
+
+
+def build_citation_retry_prompt(prompt: str) -> str:
+    """在原 prompt 后追加一次强化指令（用于 citation_retry 的二轮生成）。"""
+    return f"{prompt}{CITATION_RETRY_HINT}"
+
+
 def rule_based_multi(clusters: list[dict]) -> str:
     if not clusters:
         return "知识库中没有足够依据回答该问题。"
@@ -301,10 +334,14 @@ def rule_based_multi(clusters: list[dict]) -> str:
 def answer_multi(question: str, k: int = DEFAULT_K, clusters: list[dict] | None = None,
                  search_fn=None, chat_fn=None, model: str = DEFAULT_MODEL,
                  timeout: float = DEFAULT_TIMEOUT,
-                 prompt_version: str = DEFAULT_PROMPT_VERSION) -> dict:
+                 prompt_version: str = DEFAULT_PROMPT_VERSION,
+                 citation_retry: bool = False, retry_chat_fn=None) -> dict:
     """多单元聚合回答（单问题）：检索+聚类 → 聚合 prompt → 引用校验/置信。
 
     prompt_version：v1（默认）/ v4（可选版本，事实行/推断行分段格式；未扩样前不切默认）。
+    citation_retry：v4 引用自检重试（默认 False，不改默认行为）。答案有效引用单元 <2 且未拒答时，
+      追加一次强化指令重试；仍不足则由上游 guard fallback。
+    retry_chat_fn：重试专用 chat 函数（默认复用 chat_fn/call_ollama，便于测试 mock）。
     """
     started = time.monotonic()
     question = (question or "").strip()
@@ -329,12 +366,30 @@ def answer_multi(question: str, k: int = DEFAULT_K, clusters: list[dict] | None 
     prompt = build_multi_prompt(question, clusters, prompt_version=prompt_version)
     fallback = False
     error = None
+    retry_info = {"used": False, "first_units": None, "second_units": None,
+                  "improved": False, "error": None}
     try:
         answer = (chat_fn or call_ollama)(prompt, model=model, timeout=timeout)
     except (MultiError, TimeoutError, OSError, ValueError) as exc:
         fallback = True
         error = _clip(exc, 160)
         answer = rule_based_multi(clusters)
+    if citation_retry and not fallback:
+        first_check = validate_multi_answer(answer, clusters)
+        first_units = len(first_check["citations"])
+        retry_info["first_units"] = first_units
+        if needs_citation_retry({"answer": answer, "refusal": first_check["refusal"],
+                                 "fallback": False, "citations": first_check["citations"]}):
+            retry_info["used"] = True
+            retry_prompt = build_citation_retry_prompt(prompt)
+            try:
+                retry_chat = retry_chat_fn or chat_fn or call_ollama
+                answer = retry_chat(retry_prompt, model=model, timeout=timeout)
+            except (MultiError, TimeoutError, OSError, ValueError) as exc:
+                retry_info["error"] = _clip(exc, 160)
+            second_units = count_valid_cited_units(answer, clusters)
+            retry_info.update({"second_units": second_units,
+                               "improved": second_units > first_units})
     check = validate_multi_answer(answer, clusters)
     confidence = assess_confidence(answer, check, clusters, fallback)
     base.update({"answer": answer, "citations": check["citations"],
@@ -344,7 +399,9 @@ def answer_multi(question: str, k: int = DEFAULT_K, clusters: list[dict] | None 
                  "inference_markers": check["inference_markers"],
                  "citation_check": {"hallucinated_ids": check["hallucinated_ids"],
                                     "citation_missing": check["citation_missing"]},
-                 "llm": {"model": model, "fallback": fallback, "error": error}})
+                 "citation_retry": retry_info,
+                 "llm": {"model": model, "fallback": fallback, "error": error,
+                         "retries": 1 if retry_info["used"] else 0}})
     base["elapsed_seconds"] = round(time.monotonic() - started, 2)
     return base
 

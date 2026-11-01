@@ -6132,5 +6132,100 @@
       "pinxue_rs": 18
     },
     "note": "每日筛选正式输出（20261030，RS 模式 C）：全市场 5571→2583 合格、H18 20 条、RS_C 35 只、量学∩RS 18 只；静态 JSON 已导出；**未注册定时任务**。"
+  },
+  "citation_retry_20261101": {
+    "tool": "tools/kb_corpus/kb_qa_multi.py（citation_retry，默认 False）",
+    "report": "research/reports/citation_retry_20261101.md",
+    "stats": {
+      "off": {
+        "n": 13,
+        "guard_passed": 10,
+        "guard_pass_rate": 0.7692,
+        "success": 10,
+        "answerable_rate": 0.7692,
+        "fallback": 3,
+        "fallback_rate": 0.2308,
+        "avg_citations": 1.8462,
+        "avg_raw_citations": 1.8462,
+        "avg_distinct_units": 1.8462,
+        "avg_inference_ratio": 0.4167,
+        "avg_elapsed_seconds": 16.8369,
+        "retry_used": 0,
+        "retry_improved": 0
+      },
+      "on": {
+        "n": 13,
+        "guard_passed": 12,
+        "guard_pass_rate": 0.9231,
+        "success": 12,
+        "answerable_rate": 0.9231,
+        "fallback": 1,
+        "fallback_rate": 0.0769,
+        "avg_citations": 2.0769,
+        "avg_raw_citations": 2.0769,
+        "avg_distinct_units": 2.0769,
+        "avg_inference_ratio": 0.3987,
+        "avg_elapsed_seconds": 23.8092,
+        "retry_used": 3,
+        "retry_improved": 2
+      }
+    },
+    "delta": {
+      "guard_pass_rate": 0.1539,
+      "answerable_rate": 0.1539,
+      "fallback_rate": -0.1539,
+      "avg_citations": 0.2307,
+      "avg_elapsed_seconds": 6.9723
+    },
+    "verdict": "worth_default_on=true（灰度）",
+    "note": "v4 引用自检重试（<2 单元时强化指令重试一次）：13 条 A/B guard/可答率 76.9%→**92.3%（+15.4pp）**、fallback 23.1%→7.7%、重试 3 次改善 2 次、耗时 1.414x；默认 False 未改行为，建议与 v4 一起灰度、扩样 30 条复核后再切默认。"
+  },
+  "card_quality_audit_20261101": {
+    "tool": "tools/kb_corpus/card_quality_audit.py",
+    "report": "research/reports/card_quality_audit_20261101.md",
+    "summary": {
+      "cards_total": 105,
+      "units_total": 516,
+      "issues_total": 1,
+      "by_severity": {
+        "high": 0,
+        "medium": 1,
+        "low": 0
+      },
+      "by_check": {
+        "concept_duplicate": 1
+      },
+      "fields_missing": {},
+      "source_unparseable": 0,
+      "answer_length_anomalies": 0,
+      "concept_duplicate_groups": 1,
+      "concept_duplicate_cards": 2,
+      "traceable_cards": 105,
+      "traceable_rate": 1.0,
+      "trace_methods": {
+        "concept+book+page": 105
+      },
+      "themes_total": 21,
+      "themes_with_cards": 21,
+      "low_coverage_themes": [],
+      "source_kinds": {
+        "研报": 94,
+        "书籍": 11
+      },
+      "book_vs_report": {
+        "书籍": 11,
+        "研报": 94
+      }
+    },
+    "note": "105 张学习卡质量复核：问题仅 1 条中风险（「涨停密码」×2 概念重复，建议人工合并）；字段 105/105、source 可解析 105/105、可追溯 100%、21 主题全覆盖、书籍 11/研报 94。"
+  },
+  "system_status_20261101_refresh": {
+    "stats": {
+      "cards": 105,
+      "units": 516,
+      "skills": 110,
+      "commits_today": 290
+    },
+    "note": "系统总览刷新：学习卡 105、知识单元 516、工具 110、今日提交 290。"
   }
 }

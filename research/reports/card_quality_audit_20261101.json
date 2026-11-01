@@ -1,0 +1,1060 @@
+{
+ "schema_version": 1,
+ "date": "20261101",
+ "generated_at": "2026-11-01T22:49:35+08:00",
+ "generator": "tools/kb_corpus/card_quality_audit.py（只读审计）",
+ "mode": "read_only_audit（不修改学习卡）",
+ "policy": {
+  "required_fields": [
+   "q",
+   "a",
+   "concept",
+   "source",
+   "topic",
+   "evidence"
+  ],
+  "min_answer": 20,
+  "max_answer": 500,
+  "source_format": "《书名》 章节 pX-Y",
+  "severity": {
+   "high": "字段缺失/来源不可解析",
+   "medium": "重复/不可追溯/书名页码异常/长度异常",
+   "low": "主题均衡观察"
+  }
+ },
+ "sources": {
+  "cards": {
+   "path": "C:\\项目\\老田的AI助手\\portal\\static\\kb_learning_cards.json",
+   "sha256": "3217902118282e231d77ea03e5bb7724fa2169bb125749d137c2499f6c24a2b6",
+   "count": 105
+  },
+  "units": {
+   "path": "C:\\项目\\老田的AI助手\\portal\\static\\kb_units_all.json",
+   "sha256": "5de0ac84bdef5caa75a8753bec3d3422193658b17fa8d9efa9153a7f8d9387a4",
+   "count": 516
+  }
+ },
+ "summary": {
+  "cards_total": 105,
+  "units_total": 516,
+  "issues_total": 1,
+  "by_severity": {
+   "high": 0,
+   "medium": 1,
+   "low": 0
+  },
+  "by_check": {
+   "concept_duplicate": 1
+  },
+  "fields_missing": {},
+  "source_unparseable": 0,
+  "answer_length_anomalies": 0,
+  "concept_duplicate_groups": 1,
+  "concept_duplicate_cards": 2,
+  "traceable_cards": 105,
+  "traceable_rate": 1.0,
+  "trace_methods": {
+   "concept+book+page": 105
+  },
+  "themes_total": 21,
+  "themes_with_cards": 21,
+  "low_coverage_themes": [],
+  "source_kinds": {
+   "研报": 94,
+   "书籍": 11
+  },
+  "book_vs_report": {
+   "书籍": 11,
+   "研报": 94
+  }
+ },
+ "issues": [
+  {
+   "issue_id": "Q-001",
+   "card_index": 5,
+   "concept": "涨停密码",
+   "check": "concept_duplicate",
+   "severity": "medium",
+   "detail": "概念归一化重复 2 张：card_index [5, 7]",
+   "suggestion": "保留信息质量最高一张，其余合并/删除（人工确认）"
+  }
+ ],
+ "traceable_cards": [
+  {
+   "card_index": 0,
+   "concept": "煤电的兜底调节价值",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610031830126542",
+   "unit_pages": "1-4"
+  },
+  {
+   "card_index": 1,
+   "concept": "频谱资源与许可",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830015406",
+   "unit_pages": "6-12"
+  },
+  {
+   "card_index": 2,
+   "concept": "驾驭工程的技术演进路径",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830015410",
+   "unit_pages": "1-13"
+  },
+  {
+   "card_index": 3,
+   "concept": "台股 CCL/PCB 企业营收表现",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610071830188839",
+   "unit_pages": "1-3"
+  },
+  {
+   "card_index": 4,
+   "concept": "钠电池核心机会环节",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830042382",
+   "unit_pages": "1-4"
+  },
+  {
+   "card_index": 5,
+   "concept": "涨停密码",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "涨停密码(2)",
+   "unit_pages": "9-10"
+  },
+  {
+   "card_index": 6,
+   "concept": "中国特色稳市机制",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610031830124601",
+   "unit_pages": "1-12"
+  },
+  {
+   "card_index": 7,
+   "concept": "涨停密码",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "涨停密码(2)",
+   "unit_pages": "9-10"
+  },
+  {
+   "card_index": 8,
+   "concept": "涨停基因与涨停密码",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "涨停密码(2)",
+   "unit_pages": "11-14"
+  },
+  {
+   "card_index": 9,
+   "concept": "柴油发电机组配置率",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610021830112192",
+   "unit_pages": "1-3"
+  },
+  {
+   "card_index": 10,
+   "concept": "AI 产业投资传导链条",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830016191",
+   "unit_pages": "1-1"
+  },
+  {
+   "card_index": 11,
+   "concept": "SNPO (ScaleUp NPO)",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830034656",
+   "unit_pages": "1-3"
+  },
+  {
+   "card_index": 12,
+   "concept": "AI 营销主线",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830035707",
+   "unit_pages": "1-4"
+  },
+  {
+   "card_index": 13,
+   "concept": "交通与农村电气化发展",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830015411",
+   "unit_pages": "2-14"
+  },
+  {
+   "card_index": 14,
+   "concept": "行业经营评价体系",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830015419",
+   "unit_pages": "2-14"
+  },
+  {
+   "card_index": 15,
+   "concept": "多领域先进制造",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610011830075766",
+   "unit_pages": "2-12"
+  },
+  {
+   "card_index": 16,
+   "concept": "AI 资本开支",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610071830191034",
+   "unit_pages": "1-10"
+  },
+  {
+   "card_index": 17,
+   "concept": "我国制造业 TFP 现状与差距",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610021830105411",
+   "unit_pages": "3-15"
+  },
+  {
+   "card_index": 18,
+   "concept": "缅甸贸易重要性",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610061830165956",
+   "unit_pages": "2-6"
+  },
+  {
+   "card_index": 19,
+   "concept": "东盟地区贸易地位",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610061830165957",
+   "unit_pages": "2-6"
+  },
+  {
+   "card_index": 20,
+   "concept": "Akamai 与 Anthropic 合作协议",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610021830105367",
+   "unit_pages": "1-8"
+  },
+  {
+   "card_index": 21,
+   "concept": "Meta Muse 产品安全漏洞",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610021830105367",
+   "unit_pages": "1-8"
+  },
+  {
+   "card_index": 22,
+   "concept": "景嘉微股权激励计划",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610021830105365",
+   "unit_pages": "1-9"
+  },
+  {
+   "card_index": 23,
+   "concept": "DeepSeek DSec 系统架构",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610021830105367",
+   "unit_pages": "1-8"
+  },
+  {
+   "card_index": 24,
+   "concept": "钙钛矿光伏电池测试标准",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610021830105330",
+   "unit_pages": "1-9"
+  },
+  {
+   "card_index": 25,
+   "concept": "电力设备板块周度表现",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610021830105330",
+   "unit_pages": "1-9"
+  },
+  {
+   "card_index": 26,
+   "concept": "购房贷款贴息政策",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830023754",
+   "unit_pages": "1-2"
+  },
+  {
+   "card_index": 27,
+   "concept": "北京零售市场现状",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830015453",
+   "unit_pages": "2-14"
+  },
+  {
+   "card_index": 28,
+   "concept": "十月怀胎一朝分娩",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "涨停密码(2)",
+   "unit_pages": "15-27"
+  },
+  {
+   "card_index": 29,
+   "concept": "倍量伸缩",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "涨停密码(2)",
+   "unit_pages": "15-27"
+  },
+  {
+   "card_index": 30,
+   "concept": "进口产品排名",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610061830165858",
+   "unit_pages": "2-9"
+  },
+  {
+   "card_index": 31,
+   "concept": "国防军工行业周度表现",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610021830105365",
+   "unit_pages": "1-9"
+  },
+  {
+   "card_index": 32,
+   "concept": "数字贸易增长预测",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830015407",
+   "unit_pages": "5-17"
+  },
+  {
+   "card_index": 33,
+   "concept": "大模型商业化核心指标",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610061830167919",
+   "unit_pages": "1-13"
+  },
+  {
+   "card_index": 34,
+   "concept": "上海零售市场动态",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830015453",
+   "unit_pages": "2-14"
+  },
+  {
+   "card_index": 35,
+   "concept": "大中华区零售市场趋势",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830015453",
+   "unit_pages": "2-14"
+  },
+  {
+   "card_index": 36,
+   "concept": "劳动力技能转型",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610011830075766",
+   "unit_pages": "2-12"
+  },
+  {
+   "card_index": 37,
+   "concept": "国防军工个股涨跌幅排名",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610021830105365",
+   "unit_pages": "1-9"
+  },
+  {
+   "card_index": 38,
+   "concept": "国内大模型厂商阵营分化",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610061830167919",
+   "unit_pages": "1-13"
+  },
+  {
+   "card_index": 39,
+   "concept": "人工智能安全能力成熟度评估",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610061830170460",
+   "unit_pages": "2-14"
+  },
+  {
+   "card_index": 40,
+   "concept": "网络安全合规转型",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830015419",
+   "unit_pages": "2-14"
+  },
+  {
+   "card_index": 41,
+   "concept": "跨境电子商务面临的四大挑战",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830015407",
+   "unit_pages": "5-17"
+  },
+  {
+   "card_index": 42,
+   "concept": "出版业发展“十五五”规划",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830035720",
+   "unit_pages": "1-3"
+  },
+  {
+   "card_index": 43,
+   "concept": "纳斯达克互联网指数表现",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610021830111802",
+   "unit_pages": "1-13"
+  },
+  {
+   "card_index": 44,
+   "concept": "中国畜禽肉产品贸易总体规模",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610061830165954",
+   "unit_pages": "2-14"
+  },
+  {
+   "card_index": 45,
+   "concept": "NPX 铜光兼容封装",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830034656",
+   "unit_pages": "1-3"
+  },
+  {
+   "card_index": 46,
+   "concept": "建筑装饰行业估值水平",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830023858",
+   "unit_pages": "1-13"
+  },
+  {
+   "card_index": 47,
+   "concept": "土地市场成交情况",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830054738",
+   "unit_pages": "1-12"
+  },
+  {
+   "card_index": 48,
+   "concept": "施工旺季需求特征",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830023858",
+   "unit_pages": "1-13"
+  },
+  {
+   "card_index": 49,
+   "concept": "国际商会（ICC）负责任酒精营销传播框架",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830015420",
+   "unit_pages": "4-16"
+  },
+  {
+   "card_index": 50,
+   "concept": "化工行业需求结构",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610021830105528",
+   "unit_pages": "1-12"
+  },
+  {
+   "card_index": 51,
+   "concept": "EDEN 模型与体内细胞治疗",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610031830126598",
+   "unit_pages": "1-13"
+  },
+  {
+   "card_index": 52,
+   "concept": "DeepSeek 融资计划",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610021830105367",
+   "unit_pages": "1-8"
+  },
+  {
+   "card_index": 53,
+   "concept": "行业评级定义",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830023858",
+   "unit_pages": "1-13"
+  },
+  {
+   "card_index": 54,
+   "concept": "微信生态 Agent 落地",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830035707",
+   "unit_pages": "1-4"
+  },
+  {
+   "card_index": 55,
+   "concept": "传媒主体投资并购策略",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830035720",
+   "unit_pages": "1-3"
+  },
+  {
+   "card_index": 56,
+   "concept": "土地出让价款缴纳政策",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830023754",
+   "unit_pages": "1-2"
+  },
+  {
+   "card_index": 57,
+   "concept": "主要快递公司业务量增速排名（1-8 月）",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830034661",
+   "unit_pages": "1-3"
+  },
+  {
+   "card_index": 58,
+   "concept": "央行资产负债表保护机制",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610031830124602",
+   "unit_pages": "1-6"
+  },
+  {
+   "card_index": 59,
+   "concept": "四足机器人产业发展阶段",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610021830105414",
+   "unit_pages": "1-13"
+  },
+  {
+   "card_index": 60,
+   "concept": "航空业运力与需求",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830022766",
+   "unit_pages": "1-3"
+  },
+  {
+   "card_index": 61,
+   "concept": "航运市场运价与租金数据",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610021830105365",
+   "unit_pages": "1-9"
+  },
+  {
+   "card_index": 62,
+   "concept": "第三方评测环境安全漏洞",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610061830170460",
+   "unit_pages": "2-14"
+  },
+  {
+   "card_index": 63,
+   "concept": "中国畜禽肉产品贸易结构变化",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610061830165954",
+   "unit_pages": "2-14"
+  },
+  {
+   "card_index": 64,
+   "concept": "中国畜禽肉产品贸易分类标准",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610061830165954",
+   "unit_pages": "2-14"
+  },
+  {
+   "card_index": 65,
+   "concept": "基本金属铜",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610061830164303",
+   "unit_pages": "1-13"
+  },
+  {
+   "card_index": 66,
+   "concept": "基本金属铝",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610061830164303",
+   "unit_pages": "1-13"
+  },
+  {
+   "card_index": 67,
+   "concept": "光伏产业链价格变动",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610021830105330",
+   "unit_pages": "1-9"
+  },
+  {
+   "card_index": 68,
+   "concept": "NRPS 合成生物学重编程",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610031830126598",
+   "unit_pages": "1-13"
+  },
+  {
+   "card_index": 69,
+   "concept": "数据要素市场化配置",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830016191",
+   "unit_pages": "2-10"
+  },
+  {
+   "card_index": 70,
+   "concept": "知识图谱与叙事一致性",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830015454",
+   "unit_pages": "1-13"
+  },
+  {
+   "card_index": 71,
+   "concept": "端侧算力芯片发展",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830016191",
+   "unit_pages": "2-10"
+  },
+  {
+   "card_index": 72,
+   "concept": "中国工业机器人贸易总额",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610061830165858",
+   "unit_pages": "2-9"
+  },
+  {
+   "card_index": 73,
+   "concept": "全国电气化率提升",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830015411",
+   "unit_pages": "2-14"
+  },
+  {
+   "card_index": 74,
+   "concept": "全生命周期经济性评估",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830015406",
+   "unit_pages": "1-5"
+  },
+  {
+   "card_index": 75,
+   "concept": "工业智能体定位",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610011830075758",
+   "unit_pages": "2-14"
+  },
+  {
+   "card_index": 76,
+   "concept": "优先行动：开发技能与 AI 课程",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610021830105410",
+   "unit_pages": "5-17"
+  },
+  {
+   "card_index": 77,
+   "concept": "数据中心用电量占比预测",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610021830112192",
+   "unit_pages": "1-3"
+  },
+  {
+   "card_index": 78,
+   "concept": "PhotonLink Platform",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830022983",
+   "unit_pages": "1-8"
+  },
+  {
+   "card_index": 79,
+   "concept": "网上零售额增速",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830034661",
+   "unit_pages": "1-3"
+  },
+  {
+   "card_index": 80,
+   "concept": "多层级安全评估体系（ARIA）",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610061830170460",
+   "unit_pages": "2-14"
+  },
+  {
+   "card_index": 81,
+   "concept": "保护盈利",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "米勒维尼_趋势交易体系",
+   "unit_pages": "3-3"
+  },
+  {
+   "card_index": 82,
+   "concept": "量柱完全分类",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "伏击涨停(2)",
+   "unit_pages": "5-6"
+  },
+  {
+   "card_index": 83,
+   "concept": "资本市场现存障碍",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610031830124601",
+   "unit_pages": "13-13"
+  },
+  {
+   "card_index": 84,
+   "concept": "接力双阳密码",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "涨停密码(2)",
+   "unit_pages": "11-14"
+  },
+  {
+   "card_index": 85,
+   "concept": "交易复盘",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "米勒维尼_趋势交易体系",
+   "unit_pages": "6-6"
+  },
+  {
+   "card_index": 86,
+   "concept": "能源金属锂钴镍",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610061830164303",
+   "unit_pages": "1-13"
+  },
+  {
+   "card_index": 87,
+   "concept": "迈威尔科技 (Marvell) 2027 财年第二财季业绩",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830015836",
+   "unit_pages": "1-3"
+  },
+  {
+   "card_index": 88,
+   "concept": "PTFE材料路线",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610071830180005",
+   "unit_pages": "2-14"
+  },
+  {
+   "card_index": 89,
+   "concept": "球形硅微粉",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610071830180005",
+   "unit_pages": "2-14"
+  },
+  {
+   "card_index": 90,
+   "concept": "恒生科技指数估值",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610021830111802",
+   "unit_pages": "1-13"
+  },
+  {
+   "card_index": 91,
+   "concept": "中小行配债增速回落",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830035477",
+   "unit_pages": "1-13"
+  },
+  {
+   "card_index": 92,
+   "concept": "房地产行业板块表现",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830054738",
+   "unit_pages": "1-12"
+  },
+  {
+   "card_index": 93,
+   "concept": "无人驾驶航空器贸易分类",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610061830165864",
+   "unit_pages": "2-12"
+  },
+  {
+   "card_index": 94,
+   "concept": "工业机器人产品分类",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610061830165858",
+   "unit_pages": "2-9"
+  },
+  {
+   "card_index": 95,
+   "concept": "网络安全人员工作压力",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830015404",
+   "unit_pages": "1-13"
+  },
+  {
+   "card_index": 96,
+   "concept": "稀土价格分化",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610021830112399",
+   "unit_pages": "1-13"
+  },
+  {
+   "card_index": 97,
+   "concept": "建筑领域电气化与低碳转型",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830015411",
+   "unit_pages": "2-14"
+  },
+  {
+   "card_index": 98,
+   "concept": "国防军工行业投资建议",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610021830105332",
+   "unit_pages": "1-9"
+  },
+  {
+   "card_index": 99,
+   "concept": "精准线伏击",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "涨停密码(2)",
+   "unit_pages": "15-27"
+  },
+  {
+   "card_index": 100,
+   "concept": "量学理论",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "伏击涨停(2)",
+   "unit_pages": "5-6"
+  },
+  {
+   "card_index": 101,
+   "concept": "光伏成本核算新规",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610021830111912",
+   "unit_pages": "1-4"
+  },
+  {
+   "card_index": 102,
+   "concept": "亿纬锂能与 Fluence 战略合作",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610021830111958",
+   "unit_pages": "1-4"
+  },
+  {
+   "card_index": 103,
+   "concept": "光伏行业供给出清",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610021830111912",
+   "unit_pages": "1-4"
+  },
+  {
+   "card_index": 104,
+   "concept": "中小行配债中枢趋势下移",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830035477",
+   "unit_pages": "1-13"
+  }
+ ],
+ "theme_distribution": [
+  {
+   "theme": "AI算力/硬件",
+   "units": 116,
+   "cards": 16,
+   "per_100_units": 13.79
+  },
+  {
+   "theme": "其他",
+   "units": 104,
+   "cards": 12,
+   "per_100_units": 11.54
+  },
+  {
+   "theme": "新能源/电力",
+   "units": 71,
+   "cards": 10,
+   "per_100_units": 14.08
+  },
+  {
+   "theme": "宏观/政策",
+   "units": 37,
+   "cards": 8,
+   "per_100_units": 21.62
+  },
+  {
+   "theme": "量学/交易",
+   "units": 34,
+   "cards": 8,
+   "per_100_units": 23.53
+  },
+  {
+   "theme": "金融/地产",
+   "units": 34,
+   "cards": 5,
+   "per_100_units": 14.71
+  },
+  {
+   "theme": "消费/零售",
+   "units": 27,
+   "cards": 4,
+   "per_100_units": 14.81
+  },
+  {
+   "theme": "机械/制造",
+   "units": 17,
+   "cards": 5,
+   "per_100_units": 29.41
+  },
+  {
+   "theme": "军工/航天",
+   "units": 15,
+   "cards": 4,
+   "per_100_units": 26.67
+  },
+  {
+   "theme": "化工/材料",
+   "units": 12,
+   "cards": 2,
+   "per_100_units": 16.67
+  },
+  {
+   "theme": "交运/物流",
+   "units": 8,
+   "cards": 3,
+   "per_100_units": 37.5
+  },
+  {
+   "theme": "网络安全/信创",
+   "units": 8,
+   "cards": 4,
+   "per_100_units": 50.0
+  },
+  {
+   "theme": "农业",
+   "units": 5,
+   "cards": 3,
+   "per_100_units": 60.0
+  },
+  {
+   "theme": "通信/互联网",
+   "units": 5,
+   "cards": 4,
+   "per_100_units": 80.0
+  },
+  {
+   "theme": "半导体/电子",
+   "units": 4,
+   "cards": 3,
+   "per_100_units": 75.0
+  },
+  {
+   "theme": "建筑/建材",
+   "units": 4,
+   "cards": 4,
+   "per_100_units": 100.0
+  },
+  {
+   "theme": "有色/金属",
+   "units": 4,
+   "cards": 4,
+   "per_100_units": 100.0
+  },
+  {
+   "theme": "评级/研报方法论",
+   "units": 4,
+   "cards": 2,
+   "per_100_units": 50.0
+  },
+  {
+   "theme": "医药/生物",
+   "units": 3,
+   "cards": 2,
+   "per_100_units": 66.67
+  },
+  {
+   "theme": "传媒/文化",
+   "units": 2,
+   "cards": 1,
+   "per_100_units": 50.0
+  },
+  {
+   "theme": "汽车/智驾",
+   "units": 2,
+   "cards": 1,
+   "per_100_units": 50.0
+  }
+ ],
+ "length_anomalies": [],
+ "known_notes": [
+  "知识单元实际 516 个（任务背景写 498；以当前 kb_units_all.json 实际为准）",
+  "「涨停密码」概念重复为历史遗留（2 张），本审计不自动修改",
+  "卡片无 unit_id 字段，unit 可追溯性用 concept/书名页码/evidence 重叠匹配近似判定"
+ ],
+ "disclaimer": "本报告为只读质量审计，不修改学习卡；修复建议需人工确认；不构成投资建议。",
+ "source_unchanged": true
+}
