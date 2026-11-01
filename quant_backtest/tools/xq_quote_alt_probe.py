@@ -397,7 +397,8 @@ def probe_tushare(limit=20, repo_root=None):
         ts = _import_tushare()
     except Exception as e:  # noqa: BLE001
         return _probe_result(
-            "tushare", False, 0, [], "tushare 未安装（N/A）：%s" % str(e)[:60]
+            "tushare", False, 0, [], "tushare 未安装（N/A）：%s" % str(e)[:60],
+            token_found=False,  # 与"token 不可得"分支对齐：探针契约要求该键恒存在
         )
     token, tok_src = _find_ts_token(repo_root)
     if not token:
