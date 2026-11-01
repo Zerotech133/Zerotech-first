@@ -19,6 +19,9 @@ STATIC = REPO / "portal" / "static"
 WATCH = STATIC / "h18_watch.json"
 KIND = "h18_watch"
 
+sys.path.insert(0, str(REPO / "tools" / "kb_corpus"))
+from safe_json import backup_then_atomic_write  # noqa: E402
+
 
 def refresh() -> None:
     """重跑每日任务，从其 forecast_watch 刷新 h18_watch.json。"""
@@ -26,9 +29,9 @@ def refresh() -> None:
     subprocess.run([sys.executable, "-X", "utf8", str(daily)], capture_output=True, text=True, timeout=300)
     d = json.loads((STATIC / "selection_daily.json").read_text(encoding="utf-8"))
     watch = d.get("forecast_watch") or {}
-    WATCH.write_text(json.dumps({"generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
-                                 "date": d.get("date"), "items": watch.get("items") or []}, ensure_ascii=False, indent=1),
-                     encoding="utf-8")
+    payload = {"generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+               "date": d.get("date"), "items": watch.get("items") or []}
+    backup_then_atomic_write(WATCH, payload)
 
 
 def build_text(data: dict) -> str:

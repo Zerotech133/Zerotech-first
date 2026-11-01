@@ -16,6 +16,9 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from safe_json import backup_then_atomic_write  # noqa: E402
+
 REPO = Path(r"C:\项目\老田的AI助手")
 INGESTS = [Path(r"C:/项目/PDF/_ingest"), Path(r"C:/项目/PDF/_ingest_reports"), Path(r"C:/项目/PDF/_ingest_notes")]
 CARDS_DIR = Path(r"C:/项目/知识库/60_学习卡")
@@ -137,8 +140,8 @@ def main(argv=None) -> int:
     payload = {"generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
                "total_units": len(units), "cards": merged, "daily": cards[0] if cards else None,
                "topics": dict(topics), "file": str(p)}
-    OUT_JSON.parent.mkdir(parents=True, exist_ok=True)
-    OUT_JSON.write_text(json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8")
+    # 备份+原子写+写后 JSON 校验（保留 merge_cards 合并语义：现有卡全量保留）
+    backup_then_atomic_write(OUT_JSON, payload)
     print(f"cards={len(cards)} units={len(units)} file={p}", flush=True)
     return 0
 

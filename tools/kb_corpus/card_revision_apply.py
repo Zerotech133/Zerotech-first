@@ -30,6 +30,8 @@ from collections import Counter
 from datetime import datetime
 from pathlib import Path
 
+from safe_json import SafeJsonError, backup_then_atomic_write
+
 REPO = Path(__file__).resolve().parents[2]
 R = REPO / "research" / "reports"
 STATIC = REPO / "portal" / "static"
@@ -281,8 +283,7 @@ def build(*, revisions_path: str | Path = REVISIONS, cards_path: str | Path = CA
                 "drop_skip_absent": plan["stats"]["drop_skip_absent"],
                 "backup": str(bak),
             }
-            Path(cards_path).write_text(json.dumps(payload, ensure_ascii=False, indent=1) + "\n",
-                                        encoding="utf-8")
+            backup_then_atomic_write(Path(cards_path), payload, backup=False)  # 已手工备份，仅补原子写
             # 3) 写后校验（重新读取）
             written = load(Path(cards_path))
             post_errors = validate_result([c for c in (written.get("cards") or []) if isinstance(c, dict)],

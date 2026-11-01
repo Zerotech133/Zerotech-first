@@ -25,6 +25,8 @@ import time
 from datetime import datetime
 from pathlib import Path
 
+from safe_json import SafeJsonError, backup_then_atomic_write
+
 REPO = Path(__file__).resolve().parents[2]
 DEFAULT_QUESTIONS = REPO / "research" / "reports" / "kb_qa_questions_20261101.json"
 OUT_EXPANDED = REPO / "research" / "reports" / "kb_qa_samples_expanded_20261101.json"
@@ -283,9 +285,7 @@ def run_pipeline(questions_path: Path | str = DEFAULT_QUESTIONS,
     out_path.write_text(json.dumps(expanded, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     merged = merge_samples(original, expanded)
     portal_path = Path(portal_path)
-    portal_path.parent.mkdir(parents=True, exist_ok=True)
-    portal_path.write_text(json.dumps(merged["payload"], ensure_ascii=False, indent=1) + "\n",
-                           encoding="utf-8")
+    backup_then_atomic_write(portal_path, merged["payload"], backup=False)  # 已备份到 OUT_BACKUP，仅补原子写
     return {"expanded": expanded, "expanded_path": str(out_path),
             "backup_path": str(backup_file), "backup_created": backup_created,
             "portal_path": str(portal_path), **merged}

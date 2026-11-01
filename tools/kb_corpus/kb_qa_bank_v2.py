@@ -30,6 +30,8 @@ from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
 
+from safe_json import SafeJsonError, backup_then_atomic_write
+
 REPO = Path(__file__).resolve().parents[2]
 OUT_JSON = REPO / "research" / "reports" / "kb_qa_questions_v2_20261101.json"
 OUT_MD = REPO / "research" / "reports" / "kb_qa_questions_v2_20261101.md"
@@ -481,7 +483,7 @@ def write_outputs(payload: dict, out_json: Path | str = OUT_JSON, out_md: Path |
         path.parent.mkdir(parents=True, exist_ok=True)
     out_json.write_text(json.dumps(payload, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     out_md.write_text(render_markdown(payload), encoding="utf-8")
-    portal_out.write_text(json.dumps(payload, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    backup_then_atomic_write(portal_out, payload)
     return out_json, out_md, portal_out
 
 

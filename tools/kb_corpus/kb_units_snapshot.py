@@ -10,11 +10,35 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from safe_json import SafeJsonError, backup_then_atomic_write  # noqa: E402
+
 REPO = Path(r"C:\项目\老田的AI助手")
 STATIC = REPO / "portal" / "static"
 ROOTS = [("书籍", Path(r"C:/项目/PDF/_ingest")),
          ("研报", Path(r"C:/项目/PDF/_ingest_reports")),
          ("策略经典", Path(r"C:/项目/PDF/_ingest_notes"))]
+
+
+def validate_units_payload(parsed, existing: dict | None = None) -> None:
+    """schema 校验：dict/total=int==len(units)/unit 必填字段；空快照不覆盖已有非空快照。"""
+    if not isinstance(parsed, dict):
+        raise ValueError("payload 不是 dict")
+    units = parsed.get("units")
+    if not isinstance(units, list):
+        raise ValueError("payload.units 不是 list")
+    if not isinstance(parsed.get("total"), int) or parsed["total"] != len(units):
+        raise ValueError(f"total 与 units 数不一致：{parsed.get('total')} vs {len(units)}")
+    required = ("source", "book", "claim")
+    for i, u in enumerate(units):
+        if not isinstance(u, dict):
+            raise ValueError(f"units[{i}] 不是 dict")
+        for key in required:
+            if not str(u.get(key) or "").strip():
+                raise ValueError(f"units[{i}] 缺字段 {key}")
+    if not units and isinstance(existing, dict) and (existing.get("units") or []):
+        raise ValueError("拒绝空快照覆盖已有非空快照（源目录缺失？）")
+    return None
 
 
 def main() -> int:
@@ -41,8 +65,19 @@ def main() -> int:
                               "concept": u.get("concept", ""), "claim": u.get("claim", ""),
                               "evidence": u.get("evidence", "")})
     OUT = STATIC / "kb_units_all.json"
-    OUT.write_text(json.dumps({"generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
-                               "total": len(units), "units": units}, ensure_ascii=False), encoding="utf-8")
+    payload = {"generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+               "total": len(units), "units": units}
+    existing = None
+    if OUT.is_file():
+        try:
+            existing = json.loads(OUT.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            existing = None
+    try:
+        backup_then_atomic_write(OUT, payload, validator=lambda parsed: validate_units_payload(parsed, existing))
+    except SafeJsonError as exc:
+        print(f"写盘失败（保留旧快照）：{exc}", flush=True)
+        return 1
     print(json.dumps({"total": len(units), "by_source": {
         s: sum(1 for u in units if u["source"] == s) for s in ("书籍", "研报", "策略经典")}}, ensure_ascii=False), flush=True)
     return 0

@@ -1,0 +1,2391 @@
+{
+ "schema_version": "static_writer_audit.v3",
+ "generated_at": "2026-11-01T15:45:51+08:00",
+ "scope": {
+  "dirs": [
+   "tools",
+   "portal"
+  ],
+  "static_files": 28,
+  "scanned_root": "C:\\项目\\老田的AI助手"
+ },
+ "policy": {
+  "high": "人工/长期资产 + 无备份 + 无原子写 + 无合并旧数据（直接整文件覆盖）",
+  "medium": "人工资产缺备份/原子写/合并之一（部分保护）；或生成数据无备份/原子写",
+  "low": "只读引用；或生成数据+三件套；或人工资产三件套齐全（含 safe_write 辅助函数识别）",
+  "curated_targets": [
+   "kb_learning_cards.json",
+   "kb_qa_samples.json",
+   "kb_units_all.json",
+   "report_panel.json",
+   "selection_daily.json"
+  ],
+  "heuristic": "基于源码文本/变量赋值/辅助函数调用（v2）的启发式扫描，需人工复核（可能漏报/误报）",
+  "v2_new": [
+   "识别 safe_write_json/atomic_write/write_json_safe 等辅助函数调用写盘",
+   "识别辅助函数定义体内的备份/tmp+os.replace/merge_fn 保护",
+   "识别 read-merge-write 模式并可据此降级（有合并但缺备份/原子写→中风险）",
+   "v1（wave26 报告）→ v2 风险对比（降级确认清单）"
+  ]
+ },
+ "summary": {
+  "n_records": 52,
+  "n_writers": 17,
+  "n_read_only": 35,
+  "high": 0,
+  "medium": 1,
+  "low": 16,
+  "helper_based_writers": 13,
+  "targets_total": 14,
+  "high_targets": [],
+  "v1_n_writers": 17,
+  "v1_high": 0,
+  "v1_medium": 8,
+  "v1_low": 9,
+  "downgraded": 7,
+  "upgraded": 0
+ },
+ "writers": [
+  {
+   "script": "tools\\research\\trend_template_export.py",
+   "targets": [
+    "trend_template_latest.json"
+   ],
+   "curated_targets": [],
+   "generated_targets": [
+    "trend_template_latest.json"
+   ],
+   "read_only": false,
+   "write_evidence": [
+    {
+     "line": 86,
+     "snippet": "OUT.write_text(json.dumps(payload, ensure_ascii=False, indent=1), encoding=\"utf-8\")",
+     "targets_in_line": [
+      "trend_template_latest.json"
+     ]
+    }
+   ],
+   "helper_based": false,
+   "helper_calls": [],
+   "helper_names": [],
+   "protection": {
+    "backup": false,
+    "merge_existing": true,
+    "atomic_write": false
+   },
+   "flags": {
+    "backup": false,
+    "merge_existing": true,
+    "atomic_write": false,
+    "read_only": false
+   },
+   "data_kind": "generated",
+   "risk": "medium",
+   "risk_reasons": [
+    "写生成数据（可重算）但无备份/原子写"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\minervini.html"
+   ]
+  },
+  {
+   "script": "tools\\dw_dashboard.py",
+   "targets": [
+    "dw_snapshot.json"
+   ],
+   "curated_targets": [],
+   "generated_targets": [
+    "dw_snapshot.json"
+   ],
+   "read_only": false,
+   "write_evidence": [
+    {
+     "line": 715,
+     "snippet": "OUT.write_text(json.dumps(snap, ensure_ascii=False, indent=1), encoding=\"utf-8\")",
+     "targets_in_line": [
+      "dw_snapshot.json"
+     ]
+    }
+   ],
+   "helper_based": false,
+   "helper_calls": [],
+   "helper_names": [],
+   "protection": {
+    "backup": true,
+    "merge_existing": true,
+    "atomic_write": true
+   },
+   "flags": {
+    "backup": true,
+    "merge_existing": true,
+    "atomic_write": true,
+    "read_only": false
+   },
+   "data_kind": "generated",
+   "risk": "low",
+   "risk_reasons": [
+    "生成数据 + 三件套齐全"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\dw.html"
+   ]
+  },
+  {
+   "script": "tools\\kb_corpus\\card_revision_apply.py",
+   "targets": [
+    "kb_learning_cards.json"
+   ],
+   "curated_targets": [
+    "kb_learning_cards.json"
+   ],
+   "generated_targets": [],
+   "read_only": false,
+   "write_evidence": [
+    {
+     "line": 286,
+     "helper": "backup_then_atomic_write",
+     "snippet": "backup_then_atomic_write(Path(cards_path), payload, backup=False)  # 已手工备份，仅补原子写",
+     "targets_in_line": [
+      "kb_learning_cards.json"
+     ]
+    },
+    {
+     "line": 272,
+     "snippet": "shutil.copy2(Path(cards_path), bak)",
+     "targets_in_line": [
+      "kb_learning_cards.json"
+     ]
+    }
+   ],
+   "helper_based": true,
+   "helper_calls": [
+    {
+     "line": 286,
+     "helper": "backup_then_atomic_write",
+     "snippet": "backup_then_atomic_write(Path(cards_path), payload, backup=False)  # 已手工备份，仅补原子写",
+     "targets_in_line": [
+      "kb_learning_cards.json"
+     ]
+    }
+   ],
+   "helper_names": [
+    "backup_then_atomic_write"
+   ],
+   "protection": {
+    "backup": true,
+    "merge_existing": true,
+    "atomic_write": true
+   },
+   "flags": {
+    "backup": true,
+    "merge_existing": true,
+    "atomic_write": true,
+    "read_only": false
+   },
+   "data_kind": "curated",
+   "risk": "low",
+   "risk_reasons": [
+    "写人工资产（kb_learning_cards.json）但三件套齐全（safe_write 辅助函数：backup_then_atomic_write）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\kb_cards.html",
+    "portal\\kb_reports.html"
+   ]
+  },
+  {
+   "script": "tools\\kb_corpus\\daily_briefing.py",
+   "targets": [
+    "kb_daily_briefing.json"
+   ],
+   "curated_targets": [],
+   "generated_targets": [
+    "kb_daily_briefing.json"
+   ],
+   "read_only": false,
+   "write_evidence": [
+    {
+     "line": 71,
+     "helper": "backup_then_atomic_write",
+     "snippet": "backup_then_atomic_write(OUT_JSON, payload)  # 备份+原子写+写后 JSON 校验",
+     "targets_in_line": [
+      "kb_daily_briefing.json"
+     ]
+    }
+   ],
+   "helper_based": true,
+   "helper_calls": [
+    {
+     "line": 71,
+     "helper": "backup_then_atomic_write",
+     "snippet": "backup_then_atomic_write(OUT_JSON, payload)  # 备份+原子写+写后 JSON 校验",
+     "targets_in_line": [
+      "kb_daily_briefing.json"
+     ]
+    }
+   ],
+   "helper_names": [
+    "backup_then_atomic_write"
+   ],
+   "protection": {
+    "backup": true,
+    "merge_existing": true,
+    "atomic_write": true
+   },
+   "flags": {
+    "backup": true,
+    "merge_existing": true,
+    "atomic_write": true,
+    "read_only": false
+   },
+   "data_kind": "generated",
+   "risk": "low",
+   "risk_reasons": [
+    "生成数据 + 三件套齐全（safe_write 辅助函数：backup_then_atomic_write）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\kb_reports.html"
+   ]
+  },
+  {
+   "script": "tools\\kb_corpus\\gov_status.py",
+   "targets": [
+    "kb_corpus_gov.json"
+   ],
+   "curated_targets": [],
+   "generated_targets": [
+    "kb_corpus_gov.json"
+   ],
+   "read_only": false,
+   "write_evidence": [
+    {
+     "line": 67,
+     "snippet": "OUT.write_text(json.dumps(gov, ensure_ascii=False, indent=1), encoding=\"utf-8\")",
+     "targets_in_line": [
+      "kb_corpus_gov.json"
+     ]
+    }
+   ],
+   "helper_based": false,
+   "helper_calls": [],
+   "helper_names": [],
+   "protection": {
+    "backup": true,
+    "merge_existing": true,
+    "atomic_write": false
+   },
+   "flags": {
+    "backup": true,
+    "merge_existing": true,
+    "atomic_write": false,
+    "read_only": false
+   },
+   "data_kind": "generated",
+   "risk": "low",
+   "risk_reasons": [
+    "生成数据可重算，且有备份/原子写保护"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\dw.html",
+    "portal\\kb_corpus.html"
+   ]
+  },
+  {
+   "script": "tools\\kb_corpus\\kb_ingest_status.py",
+   "targets": [
+    "kb_ingest.json"
+   ],
+   "curated_targets": [],
+   "generated_targets": [
+    "kb_ingest.json"
+   ],
+   "read_only": false,
+   "write_evidence": [
+    {
+     "line": 95,
+     "helper": "backup_then_atomic_write",
+     "snippet": "backup_then_atomic_write(OUT, payload)  # 备份+原子写+写后 JSON 校验",
+     "targets_in_line": [
+      "kb_ingest.json"
+     ]
+    }
+   ],
+   "helper_based": true,
+   "helper_calls": [
+    {
+     "line": 95,
+     "helper": "backup_then_atomic_write",
+     "snippet": "backup_then_atomic_write(OUT, payload)  # 备份+原子写+写后 JSON 校验",
+     "targets_in_line": [
+      "kb_ingest.json"
+     ]
+    }
+   ],
+   "helper_names": [
+    "backup_then_atomic_write"
+   ],
+   "protection": {
+    "backup": true,
+    "merge_existing": true,
+    "atomic_write": true
+   },
+   "flags": {
+    "backup": true,
+    "merge_existing": true,
+    "atomic_write": true,
+    "read_only": false
+   },
+   "data_kind": "generated",
+   "risk": "low",
+   "risk_reasons": [
+    "生成数据 + 三件套齐全（safe_write 辅助函数：backup_then_atomic_write）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\kb_ingest.html"
+   ]
+  },
+  {
+   "script": "tools\\kb_corpus\\kb_qa_bank_v2.py",
+   "targets": [
+    "kb_qa_questions_v2.json"
+   ],
+   "curated_targets": [],
+   "generated_targets": [
+    "kb_qa_questions_v2.json"
+   ],
+   "read_only": false,
+   "write_evidence": [
+    {
+     "line": 486,
+     "helper": "backup_then_atomic_write",
+     "snippet": "backup_then_atomic_write(portal_out, payload)",
+     "targets_in_line": [
+      "kb_qa_questions_v2.json"
+     ]
+    }
+   ],
+   "helper_based": true,
+   "helper_calls": [
+    {
+     "line": 486,
+     "helper": "backup_then_atomic_write",
+     "snippet": "backup_then_atomic_write(portal_out, payload)",
+     "targets_in_line": [
+      "kb_qa_questions_v2.json"
+     ]
+    }
+   ],
+   "helper_names": [
+    "backup_then_atomic_write"
+   ],
+   "protection": {
+    "backup": true,
+    "merge_existing": false,
+    "atomic_write": true
+   },
+   "flags": {
+    "backup": true,
+    "merge_existing": false,
+    "atomic_write": true,
+    "read_only": false
+   },
+   "data_kind": "generated",
+   "risk": "low",
+   "risk_reasons": [
+    "生成数据可重算，且有备份/原子写保护"
+   ],
+   "fix_suggestions": [],
+   "consumers": []
+  },
+  {
+   "script": "tools\\kb_corpus\\kb_qa_bank_v3.py",
+   "targets": [
+    "kb_qa_questions_v3.json"
+   ],
+   "curated_targets": [],
+   "generated_targets": [
+    "kb_qa_questions_v3.json"
+   ],
+   "read_only": false,
+   "write_evidence": [
+    {
+     "line": 435,
+     "helper": "backup_then_atomic_write",
+     "snippet": "backup_then_atomic_write(portal_out, payload)",
+     "targets_in_line": [
+      "kb_qa_questions_v3.json"
+     ]
+    }
+   ],
+   "helper_based": true,
+   "helper_calls": [
+    {
+     "line": 435,
+     "helper": "backup_then_atomic_write",
+     "snippet": "backup_then_atomic_write(portal_out, payload)",
+     "targets_in_line": [
+      "kb_qa_questions_v3.json"
+     ]
+    }
+   ],
+   "helper_names": [
+    "backup_then_atomic_write"
+   ],
+   "protection": {
+    "backup": true,
+    "merge_existing": true,
+    "atomic_write": true
+   },
+   "flags": {
+    "backup": true,
+    "merge_existing": true,
+    "atomic_write": true,
+    "read_only": false
+   },
+   "data_kind": "generated",
+   "risk": "low",
+   "risk_reasons": [
+    "生成数据 + 三件套齐全（safe_write 辅助函数：backup_then_atomic_write）"
+   ],
+   "fix_suggestions": [],
+   "consumers": []
+  },
+  {
+   "script": "tools\\kb_corpus\\kb_qa_expand.py",
+   "targets": [
+    "kb_qa_samples.json"
+   ],
+   "curated_targets": [
+    "kb_qa_samples.json"
+   ],
+   "generated_targets": [],
+   "read_only": false,
+   "write_evidence": [
+    {
+     "line": 288,
+     "helper": "backup_then_atomic_write",
+     "snippet": "backup_then_atomic_write(portal_path, merged[\"payload\"], backup=False)  # 已备份到 OUT_BACKUP，仅补原子写",
+     "targets_in_line": [
+      "kb_qa_samples.json"
+     ]
+    },
+    {
+     "line": 208,
+     "snippet": "shutil.copy2(original, backup)",
+     "targets_in_line": [
+      "kb_qa_samples.json"
+     ]
+    }
+   ],
+   "helper_based": true,
+   "helper_calls": [
+    {
+     "line": 288,
+     "helper": "backup_then_atomic_write",
+     "snippet": "backup_then_atomic_write(portal_path, merged[\"payload\"], backup=False)  # 已备份到 OUT_BACKUP，仅补原子写",
+     "targets_in_line": [
+      "kb_qa_samples.json"
+     ]
+    }
+   ],
+   "helper_names": [
+    "backup_then_atomic_write"
+   ],
+   "protection": {
+    "backup": true,
+    "merge_existing": true,
+    "atomic_write": true
+   },
+   "flags": {
+    "backup": true,
+    "merge_existing": true,
+    "atomic_write": true,
+    "read_only": false
+   },
+   "data_kind": "curated",
+   "risk": "low",
+   "risk_reasons": [
+    "写人工资产（kb_qa_samples.json）但三件套齐全（safe_write 辅助函数：backup_then_atomic_write）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\kb_reports.html"
+   ]
+  },
+  {
+   "script": "tools\\kb_corpus\\kb_reports_gov.py",
+   "targets": [
+    "kb_reports_gov.json"
+   ],
+   "curated_targets": [],
+   "generated_targets": [
+    "kb_reports_gov.json"
+   ],
+   "read_only": false,
+   "write_evidence": [
+    {
+     "line": 74,
+     "helper": "backup_then_atomic_write",
+     "snippet": "backup_then_atomic_write(OUT, payload)  # 备份+原子写+写后 JSON 校验",
+     "targets_in_line": [
+      "kb_reports_gov.json"
+     ]
+    }
+   ],
+   "helper_based": true,
+   "helper_calls": [
+    {
+     "line": 74,
+     "helper": "backup_then_atomic_write",
+     "snippet": "backup_then_atomic_write(OUT, payload)  # 备份+原子写+写后 JSON 校验",
+     "targets_in_line": [
+      "kb_reports_gov.json"
+     ]
+    }
+   ],
+   "helper_names": [
+    "backup_then_atomic_write"
+   ],
+   "protection": {
+    "backup": true,
+    "merge_existing": true,
+    "atomic_write": true
+   },
+   "flags": {
+    "backup": true,
+    "merge_existing": true,
+    "atomic_write": true,
+    "read_only": false
+   },
+   "data_kind": "generated",
+   "risk": "low",
+   "risk_reasons": [
+    "生成数据 + 三件套齐全（safe_write 辅助函数：backup_then_atomic_write）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\dw.html"
+   ]
+  },
+  {
+   "script": "tools\\kb_corpus\\kb_units_snapshot.py",
+   "targets": [
+    "kb_units_all.json"
+   ],
+   "curated_targets": [
+    "kb_units_all.json"
+   ],
+   "generated_targets": [],
+   "read_only": false,
+   "write_evidence": [
+    {
+     "line": 77,
+     "helper": "backup_then_atomic_write",
+     "snippet": "backup_then_atomic_write(OUT, payload, validator=lambda parsed: validate_units_payload(parsed, existing))",
+     "targets_in_line": [
+      "kb_units_all.json"
+     ]
+    }
+   ],
+   "helper_based": true,
+   "helper_calls": [
+    {
+     "line": 77,
+     "helper": "backup_then_atomic_write",
+     "snippet": "backup_then_atomic_write(OUT, payload, validator=lambda parsed: validate_units_payload(parsed, existing))",
+     "targets_in_line": [
+      "kb_units_all.json"
+     ]
+    }
+   ],
+   "helper_names": [
+    "backup_then_atomic_write"
+   ],
+   "protection": {
+    "backup": true,
+    "merge_existing": true,
+    "atomic_write": true
+   },
+   "flags": {
+    "backup": true,
+    "merge_existing": true,
+    "atomic_write": true,
+    "read_only": false
+   },
+   "data_kind": "curated",
+   "risk": "low",
+   "risk_reasons": [
+    "写人工资产（kb_units_all.json）但三件套齐全（safe_write 辅助函数：backup_then_atomic_write）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\kb_reports.html"
+   ]
+  },
+  {
+   "script": "tools\\kb_corpus\\learning_cards.py",
+   "targets": [
+    "kb_learning_cards.json"
+   ],
+   "curated_targets": [
+    "kb_learning_cards.json"
+   ],
+   "generated_targets": [],
+   "read_only": false,
+   "write_evidence": [
+    {
+     "line": 144,
+     "helper": "backup_then_atomic_write",
+     "snippet": "backup_then_atomic_write(OUT_JSON, payload)",
+     "targets_in_line": [
+      "kb_learning_cards.json"
+     ]
+    }
+   ],
+   "helper_based": true,
+   "helper_calls": [
+    {
+     "line": 144,
+     "helper": "backup_then_atomic_write",
+     "snippet": "backup_then_atomic_write(OUT_JSON, payload)",
+     "targets_in_line": [
+      "kb_learning_cards.json"
+     ]
+    }
+   ],
+   "helper_names": [
+    "backup_then_atomic_write"
+   ],
+   "protection": {
+    "backup": true,
+    "merge_existing": true,
+    "atomic_write": true
+   },
+   "flags": {
+    "backup": true,
+    "merge_existing": true,
+    "atomic_write": true,
+    "read_only": false
+   },
+   "data_kind": "curated",
+   "risk": "low",
+   "risk_reasons": [
+    "写人工资产（kb_learning_cards.json）但三件套齐全（safe_write 辅助函数：backup_then_atomic_write）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\kb_cards.html",
+    "portal\\kb_reports.html"
+   ]
+  },
+  {
+   "script": "tools\\kb_corpus\\morning_brief_push.py",
+   "targets": [
+    "h18_watch.json"
+   ],
+   "curated_targets": [],
+   "generated_targets": [
+    "h18_watch.json"
+   ],
+   "read_only": false,
+   "write_evidence": [
+    {
+     "line": 206,
+     "helper": "safe_write_json",
+     "snippet": "safe_write_json(WATCH, payload, merge_fn=_merge_watch, counts_fn=_watch_counts)",
+     "targets_in_line": [
+      "h18_watch.json"
+     ]
+    }
+   ],
+   "helper_based": true,
+   "helper_calls": [
+    {
+     "line": 206,
+     "helper": "safe_write_json",
+     "snippet": "safe_write_json(WATCH, payload, merge_fn=_merge_watch, counts_fn=_watch_counts)",
+     "targets_in_line": [
+      "h18_watch.json"
+     ]
+    }
+   ],
+   "helper_names": [
+    "safe_write_json"
+   ],
+   "protection": {
+    "backup": true,
+    "merge_existing": true,
+    "atomic_write": true
+   },
+   "flags": {
+    "backup": true,
+    "merge_existing": true,
+    "atomic_write": true,
+    "read_only": false
+   },
+   "data_kind": "generated",
+   "risk": "low",
+   "risk_reasons": [
+    "生成数据 + 三件套齐全（safe_write 辅助函数：safe_write_json）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\kb_reports.html"
+   ]
+  },
+  {
+   "script": "tools\\research\\h14_shadow_status.py",
+   "targets": [
+    "h14_shadow.json"
+   ],
+   "curated_targets": [],
+   "generated_targets": [
+    "h14_shadow.json"
+   ],
+   "read_only": false,
+   "write_evidence": [
+    {
+     "line": 70,
+     "snippet": "OUT.write_text(json.dumps(payload, ensure_ascii=False, indent=1), encoding=\"utf-8\")",
+     "targets_in_line": [
+      "h14_shadow.json"
+     ]
+    }
+   ],
+   "helper_based": false,
+   "helper_calls": [],
+   "helper_names": [],
+   "protection": {
+    "backup": false,
+    "merge_existing": true,
+    "atomic_write": true
+   },
+   "flags": {
+    "backup": false,
+    "merge_existing": true,
+    "atomic_write": true,
+    "read_only": false
+   },
+   "data_kind": "generated",
+   "risk": "low",
+   "risk_reasons": [
+    "生成数据可重算，且有备份/原子写保护"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\h14_shadow.html"
+   ]
+  },
+  {
+   "script": "tools\\research\\h18_watch_push.py",
+   "targets": [
+    "h18_watch.json"
+   ],
+   "curated_targets": [],
+   "generated_targets": [
+    "h18_watch.json"
+   ],
+   "read_only": false,
+   "write_evidence": [
+    {
+     "line": 34,
+     "helper": "backup_then_atomic_write",
+     "snippet": "backup_then_atomic_write(WATCH, payload)",
+     "targets_in_line": [
+      "h18_watch.json"
+     ]
+    }
+   ],
+   "helper_based": true,
+   "helper_calls": [
+    {
+     "line": 34,
+     "helper": "backup_then_atomic_write",
+     "snippet": "backup_then_atomic_write(WATCH, payload)",
+     "targets_in_line": [
+      "h18_watch.json"
+     ]
+    }
+   ],
+   "helper_names": [
+    "backup_then_atomic_write"
+   ],
+   "protection": {
+    "backup": true,
+    "merge_existing": true,
+    "atomic_write": true
+   },
+   "flags": {
+    "backup": true,
+    "merge_existing": true,
+    "atomic_write": true,
+    "read_only": false
+   },
+   "data_kind": "generated",
+   "risk": "low",
+   "risk_reasons": [
+    "生成数据 + 三件套齐全（safe_write 辅助函数：backup_then_atomic_write）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\kb_reports.html"
+   ]
+  },
+  {
+   "script": "tools\\research\\panel_daily.py",
+   "targets": [
+    "report_panel.json"
+   ],
+   "curated_targets": [
+    "report_panel.json"
+   ],
+   "generated_targets": [],
+   "read_only": false,
+   "write_evidence": [
+    {
+     "line": 239,
+     "helper": "backup_then_atomic_write",
+     "snippet": "backup_then_atomic_write(portal_path, payload, validator=_portal_validator)",
+     "targets_in_line": [
+      "report_panel.json"
+     ]
+    }
+   ],
+   "helper_based": true,
+   "helper_calls": [
+    {
+     "line": 239,
+     "helper": "backup_then_atomic_write",
+     "snippet": "backup_then_atomic_write(portal_path, payload, validator=_portal_validator)",
+     "targets_in_line": [
+      "report_panel.json"
+     ]
+    }
+   ],
+   "helper_names": [
+    "backup_then_atomic_write"
+   ],
+   "protection": {
+    "backup": true,
+    "merge_existing": true,
+    "atomic_write": true
+   },
+   "flags": {
+    "backup": true,
+    "merge_existing": true,
+    "atomic_write": true,
+    "read_only": false
+   },
+   "data_kind": "curated",
+   "risk": "low",
+   "risk_reasons": [
+    "写人工资产（report_panel.json）但三件套齐全（safe_write 辅助函数：backup_then_atomic_write）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\selection.html"
+   ]
+  },
+  {
+   "script": "tools\\research\\panel_export.py",
+   "targets": [
+    "report_panel.json"
+   ],
+   "curated_targets": [
+    "report_panel.json"
+   ],
+   "generated_targets": [],
+   "read_only": false,
+   "write_evidence": [
+    {
+     "line": 393,
+     "helper": "safe_write_json",
+     "snippet": "safe_write_json(out_path, payload, merge_fn=merge_panel_payload,",
+     "targets_in_line": [
+      "report_panel.json"
+     ]
+    }
+   ],
+   "helper_based": true,
+   "helper_calls": [
+    {
+     "line": 393,
+     "helper": "safe_write_json",
+     "snippet": "safe_write_json(out_path, payload, merge_fn=merge_panel_payload,",
+     "targets_in_line": [
+      "report_panel.json"
+     ]
+    }
+   ],
+   "helper_names": [
+    "safe_write_json"
+   ],
+   "protection": {
+    "backup": true,
+    "merge_existing": true,
+    "atomic_write": true
+   },
+   "flags": {
+    "backup": true,
+    "merge_existing": true,
+    "atomic_write": true,
+    "read_only": false
+   },
+   "data_kind": "curated",
+   "risk": "low",
+   "risk_reasons": [
+    "写人工资产（report_panel.json）但三件套齐全（safe_write 辅助函数：safe_write_json）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\selection.html"
+   ]
+  }
+ ],
+ "read_only_references": [
+  {
+   "script": "portal\\api_kb_read.py",
+   "targets": [
+    "kb_corpus_gov.json",
+    "kb_daily_briefing.json",
+    "kb_ingest.json",
+    "kb_reports_gov.json",
+    "kb_units_all.json"
+   ],
+   "read_only": true,
+   "write_evidence": [],
+   "helper_based": false,
+   "helper_calls": [],
+   "helper_names": [],
+   "protection": {},
+   "flags": {
+    "backup": false,
+    "merge_existing": true,
+    "atomic_write": false,
+    "read_only": true
+   },
+   "data_kind": "read_only",
+   "risk": "low",
+   "risk_reasons": [
+    "未发现可定位的写盘目标（只读引用）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\dw.html",
+    "portal\\kb_corpus.html",
+    "portal\\kb_ingest.html",
+    "portal\\kb_reports.html"
+   ]
+  },
+  {
+   "script": "portal\\portal_api.py",
+   "targets": [
+    "china_geo.json"
+   ],
+   "read_only": true,
+   "write_evidence": [],
+   "helper_based": false,
+   "helper_calls": [],
+   "helper_names": [],
+   "protection": {},
+   "flags": {
+    "backup": false,
+    "merge_existing": true,
+    "atomic_write": true,
+    "read_only": true
+   },
+   "data_kind": "read_only",
+   "risk": "low",
+   "risk_reasons": [
+    "未发现可定位的写盘目标（只读引用）"
+   ],
+   "fix_suggestions": [],
+   "consumers": []
+  },
+  {
+   "script": "tools\\gen_bff_score_distribution.py",
+   "targets": [
+    "bff_score_distribution.json"
+   ],
+   "read_only": true,
+   "write_evidence": [],
+   "helper_based": false,
+   "helper_calls": [],
+   "helper_names": [],
+   "protection": {},
+   "flags": {
+    "backup": false,
+    "merge_existing": false,
+    "atomic_write": false,
+    "read_only": true
+   },
+   "data_kind": "read_only",
+   "risk": "low",
+   "risk_reasons": [
+    "未发现可定位的写盘目标（只读引用）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\os_entry_v9_prod.html"
+   ]
+  },
+  {
+   "script": "tools\\kb_corpus\\card_merge.py",
+   "targets": [
+    "kb_learning_cards.json"
+   ],
+   "read_only": true,
+   "write_evidence": [],
+   "helper_based": false,
+   "helper_calls": [],
+   "helper_names": [],
+   "protection": {},
+   "flags": {
+    "backup": true,
+    "merge_existing": true,
+    "atomic_write": false,
+    "read_only": true
+   },
+   "data_kind": "read_only",
+   "risk": "low",
+   "risk_reasons": [
+    "未发现可定位的写盘目标（只读引用）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\kb_cards.html",
+    "portal\\kb_reports.html"
+   ]
+  },
+  {
+   "script": "tools\\kb_corpus\\card_precheck.py",
+   "targets": [
+    "kb_learning_cards.json"
+   ],
+   "read_only": true,
+   "write_evidence": [],
+   "helper_based": false,
+   "helper_calls": [],
+   "helper_names": [],
+   "protection": {},
+   "flags": {
+    "backup": false,
+    "merge_existing": true,
+    "atomic_write": true,
+    "read_only": true
+   },
+   "data_kind": "read_only",
+   "risk": "low",
+   "risk_reasons": [
+    "未发现可定位的写盘目标（只读引用）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\kb_cards.html",
+    "portal\\kb_reports.html"
+   ]
+  },
+  {
+   "script": "tools\\kb_corpus\\card_precheck_v3.py",
+   "targets": [
+    "card_proposals_v3.json",
+    "card_review_data.json",
+    "kb_learning_cards.json"
+   ],
+   "read_only": true,
+   "write_evidence": [],
+   "helper_based": false,
+   "helper_calls": [],
+   "helper_names": [],
+   "protection": {},
+   "flags": {
+    "backup": false,
+    "merge_existing": true,
+    "atomic_write": true,
+    "read_only": true
+   },
+   "data_kind": "read_only",
+   "risk": "low",
+   "risk_reasons": [
+    "未发现可定位的写盘目标（只读引用）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\card_review.html",
+    "portal\\kb_cards.html",
+    "portal\\kb_reports.html"
+   ]
+  },
+  {
+   "script": "tools\\kb_corpus\\card_proposal.py",
+   "targets": [
+    "kb_learning_cards.json",
+    "kb_units_all.json"
+   ],
+   "read_only": true,
+   "write_evidence": [],
+   "helper_based": false,
+   "helper_calls": [],
+   "helper_names": [],
+   "protection": {},
+   "flags": {
+    "backup": false,
+    "merge_existing": true,
+    "atomic_write": true,
+    "read_only": true
+   },
+   "data_kind": "read_only",
+   "risk": "low",
+   "risk_reasons": [
+    "未发现可定位的写盘目标（只读引用）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\kb_cards.html",
+    "portal\\kb_reports.html"
+   ]
+  },
+  {
+   "script": "tools\\kb_corpus\\card_proposal_v2.py",
+   "targets": [
+    "kb_units_all.json"
+   ],
+   "read_only": true,
+   "write_evidence": [],
+   "helper_based": false,
+   "helper_calls": [],
+   "helper_names": [],
+   "protection": {},
+   "flags": {
+    "backup": false,
+    "merge_existing": true,
+    "atomic_write": false,
+    "read_only": true
+   },
+   "data_kind": "read_only",
+   "risk": "low",
+   "risk_reasons": [
+    "未发现可定位的写盘目标（只读引用）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\kb_reports.html"
+   ]
+  },
+  {
+   "script": "tools\\kb_corpus\\card_proposal_v3.py",
+   "targets": [
+    "card_proposals_v3.json",
+    "kb_learning_cards.json",
+    "kb_units_all.json"
+   ],
+   "read_only": true,
+   "write_evidence": [],
+   "helper_based": false,
+   "helper_calls": [],
+   "helper_names": [],
+   "protection": {},
+   "flags": {
+    "backup": false,
+    "merge_existing": true,
+    "atomic_write": false,
+    "read_only": true
+   },
+   "data_kind": "read_only",
+   "risk": "low",
+   "risk_reasons": [
+    "未发现可定位的写盘目标（只读引用）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\kb_cards.html",
+    "portal\\kb_reports.html"
+   ]
+  },
+  {
+   "script": "tools\\kb_corpus\\card_review.py",
+   "targets": [
+    "kb_learning_cards.json"
+   ],
+   "read_only": true,
+   "write_evidence": [],
+   "helper_based": false,
+   "helper_calls": [],
+   "helper_names": [],
+   "protection": {},
+   "flags": {
+    "backup": true,
+    "merge_existing": true,
+    "atomic_write": false,
+    "read_only": true
+   },
+   "data_kind": "read_only",
+   "risk": "low",
+   "risk_reasons": [
+    "未发现可定位的写盘目标（只读引用）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\kb_cards.html",
+    "portal\\kb_reports.html"
+   ]
+  },
+  {
+   "script": "tools\\kb_corpus\\card_revision.py",
+   "targets": [
+    "kb_learning_cards.json"
+   ],
+   "read_only": true,
+   "write_evidence": [],
+   "helper_based": false,
+   "helper_calls": [],
+   "helper_names": [],
+   "protection": {},
+   "flags": {
+    "backup": false,
+    "merge_existing": true,
+    "atomic_write": false,
+    "read_only": true
+   },
+   "data_kind": "read_only",
+   "risk": "low",
+   "risk_reasons": [
+    "未发现可定位的写盘目标（只读引用）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\kb_cards.html",
+    "portal\\kb_reports.html"
+   ]
+  },
+  {
+   "script": "tools\\kb_corpus\\concept_dedup.py",
+   "targets": [
+    "kb_units_all.json"
+   ],
+   "read_only": true,
+   "write_evidence": [],
+   "helper_based": false,
+   "helper_calls": [],
+   "helper_names": [],
+   "protection": {},
+   "flags": {
+    "backup": false,
+    "merge_existing": true,
+    "atomic_write": true,
+    "read_only": true
+   },
+   "data_kind": "read_only",
+   "risk": "low",
+   "risk_reasons": [
+    "未发现可定位的写盘目标（只读引用）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\kb_reports.html"
+   ]
+  },
+  {
+   "script": "tools\\kb_corpus\\daily_kb.py",
+   "targets": [
+    "kb_ingest.json",
+    "kb_learning_digest.json",
+    "kb_qa_samples.json",
+    "report_panel.json"
+   ],
+   "read_only": true,
+   "write_evidence": [],
+   "helper_based": false,
+   "helper_calls": [],
+   "helper_names": [],
+   "protection": {},
+   "flags": {
+    "backup": false,
+    "merge_existing": true,
+    "atomic_write": false,
+    "read_only": true
+   },
+   "data_kind": "read_only",
+   "risk": "low",
+   "risk_reasons": [
+    "未发现可定位的写盘目标（只读引用）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\kb_ingest.html",
+    "portal\\kb_reports.html",
+    "portal\\selection.html"
+   ]
+  },
+  {
+   "script": "tools\\kb_corpus\\eval_set_v3.py",
+   "targets": [
+    "kb_units_all.json"
+   ],
+   "read_only": true,
+   "write_evidence": [],
+   "helper_based": false,
+   "helper_calls": [],
+   "helper_names": [],
+   "protection": {},
+   "flags": {
+    "backup": false,
+    "merge_existing": true,
+    "atomic_write": false,
+    "read_only": true
+   },
+   "data_kind": "read_only",
+   "risk": "low",
+   "risk_reasons": [
+    "未发现可定位的写盘目标（只读引用）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\kb_reports.html"
+   ]
+  },
+  {
+   "script": "tools\\kb_corpus\\eval_v3_baseline.py",
+   "targets": [
+    "kb_units_all.json"
+   ],
+   "read_only": true,
+   "write_evidence": [],
+   "helper_based": false,
+   "helper_calls": [],
+   "helper_names": [],
+   "protection": {},
+   "flags": {
+    "backup": false,
+    "merge_existing": true,
+    "atomic_write": false,
+    "read_only": true
+   },
+   "data_kind": "read_only",
+   "risk": "low",
+   "risk_reasons": [
+    "未发现可定位的写盘目标（只读引用）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\kb_reports.html"
+   ]
+  },
+  {
+   "script": "tools\\kb_corpus\\kb_daily_push.py",
+   "targets": [
+    "kb_daily_briefing.json",
+    "kb_daily_push.json",
+    "kb_learning_digest.json",
+    "report_panel.json"
+   ],
+   "read_only": true,
+   "write_evidence": [],
+   "helper_based": false,
+   "helper_calls": [],
+   "helper_names": [],
+   "protection": {},
+   "flags": {
+    "backup": false,
+    "merge_existing": true,
+    "atomic_write": false,
+    "read_only": true
+   },
+   "data_kind": "read_only",
+   "risk": "low",
+   "risk_reasons": [
+    "未发现可定位的写盘目标（只读引用）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\kb_reports.html",
+    "portal\\selection.html"
+   ]
+  },
+  {
+   "script": "tools\\kb_corpus\\kb_qa.py",
+   "targets": [
+    "kb_qa_samples.json"
+   ],
+   "read_only": true,
+   "write_evidence": [],
+   "helper_based": false,
+   "helper_calls": [],
+   "helper_names": [],
+   "protection": {},
+   "flags": {
+    "backup": false,
+    "merge_existing": true,
+    "atomic_write": false,
+    "read_only": true
+   },
+   "data_kind": "read_only",
+   "risk": "low",
+   "risk_reasons": [
+    "未发现可定位的写盘目标（只读引用）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\kb_reports.html"
+   ]
+  },
+  {
+   "script": "tools\\kb_corpus\\kb_qa_bank.py",
+   "targets": [
+    "kb_qa_questions.json"
+   ],
+   "read_only": true,
+   "write_evidence": [],
+   "helper_based": false,
+   "helper_calls": [],
+   "helper_names": [],
+   "protection": {},
+   "flags": {
+    "backup": false,
+    "merge_existing": true,
+    "atomic_write": false,
+    "read_only": true
+   },
+   "data_kind": "read_only",
+   "risk": "low",
+   "risk_reasons": [
+    "未发现可定位的写盘目标（只读引用）"
+   ],
+   "fix_suggestions": [],
+   "consumers": []
+  },
+  {
+   "script": "tools\\kb_corpus\\kb_qa_eval.py",
+   "targets": [
+    "kb_qa_samples.json",
+    "kb_units_all.json"
+   ],
+   "read_only": true,
+   "write_evidence": [],
+   "helper_based": false,
+   "helper_calls": [],
+   "helper_names": [],
+   "protection": {},
+   "flags": {
+    "backup": false,
+    "merge_existing": true,
+    "atomic_write": false,
+    "read_only": true
+   },
+   "data_kind": "read_only",
+   "risk": "low",
+   "risk_reasons": [
+    "未发现可定位的写盘目标（只读引用）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\kb_reports.html"
+   ]
+  },
+  {
+   "script": "tools\\kb_corpus\\kb_qa_eval_v2.py",
+   "targets": [
+    "kb_qa_samples.json"
+   ],
+   "read_only": true,
+   "write_evidence": [],
+   "helper_based": false,
+   "helper_calls": [],
+   "helper_names": [],
+   "protection": {},
+   "flags": {
+    "backup": true,
+    "merge_existing": false,
+    "atomic_write": false,
+    "read_only": true
+   },
+   "data_kind": "read_only",
+   "risk": "low",
+   "risk_reasons": [
+    "未发现可定位的写盘目标（只读引用）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\kb_reports.html"
+   ]
+  },
+  {
+   "script": "tools\\kb_corpus\\kb_qa_schema_v2.py",
+   "targets": [
+    "kb_qa_samples.json"
+   ],
+   "read_only": true,
+   "write_evidence": [],
+   "helper_based": false,
+   "helper_calls": [],
+   "helper_names": [],
+   "protection": {},
+   "flags": {
+    "backup": true,
+    "merge_existing": true,
+    "atomic_write": false,
+    "read_only": true
+   },
+   "data_kind": "read_only",
+   "risk": "low",
+   "risk_reasons": [
+    "未发现可定位的写盘目标（只读引用）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\kb_reports.html"
+   ]
+  },
+  {
+   "script": "tools\\kb_corpus\\kb_read_api.py",
+   "targets": [
+    "kb_corpus_gov.json",
+    "kb_daily_briefing.json"
+   ],
+   "read_only": true,
+   "write_evidence": [],
+   "helper_based": false,
+   "helper_calls": [],
+   "helper_names": [],
+   "protection": {},
+   "flags": {
+    "backup": true,
+    "merge_existing": true,
+    "atomic_write": false,
+    "read_only": true
+   },
+   "data_kind": "read_only",
+   "risk": "low",
+   "risk_reasons": [
+    "未发现可定位的写盘目标（只读引用）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\dw.html",
+    "portal\\kb_corpus.html",
+    "portal\\kb_reports.html"
+   ]
+  },
+  {
+   "script": "tools\\kb_corpus\\learning_analysis.py",
+   "targets": [
+    "kb_learning_cards.json",
+    "kb_units_all.json"
+   ],
+   "read_only": true,
+   "write_evidence": [],
+   "helper_based": false,
+   "helper_calls": [],
+   "helper_names": [],
+   "protection": {},
+   "flags": {
+    "backup": false,
+    "merge_existing": true,
+    "atomic_write": false,
+    "read_only": true
+   },
+   "data_kind": "read_only",
+   "risk": "low",
+   "risk_reasons": [
+    "未发现可定位的写盘目标（只读引用）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\kb_cards.html",
+    "portal\\kb_reports.html"
+   ]
+  },
+  {
+   "script": "tools\\kb_corpus\\learning_card_push.py",
+   "targets": [
+    "kb_learning_cards.json"
+   ],
+   "read_only": true,
+   "write_evidence": [],
+   "helper_based": false,
+   "helper_calls": [],
+   "helper_names": [],
+   "protection": {},
+   "flags": {
+    "backup": false,
+    "merge_existing": true,
+    "atomic_write": false,
+    "read_only": true
+   },
+   "data_kind": "read_only",
+   "risk": "low",
+   "risk_reasons": [
+    "未发现可定位的写盘目标（只读引用）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\kb_cards.html",
+    "portal\\kb_reports.html"
+   ]
+  },
+  {
+   "script": "tools\\kb_corpus\\learning_digest.py",
+   "targets": [
+    "kb_daily_briefing.json",
+    "kb_learning_cards.json",
+    "kb_learning_digest.json"
+   ],
+   "read_only": true,
+   "write_evidence": [],
+   "helper_based": false,
+   "helper_calls": [],
+   "helper_names": [],
+   "protection": {},
+   "flags": {
+    "backup": false,
+    "merge_existing": true,
+    "atomic_write": false,
+    "read_only": true
+   },
+   "data_kind": "read_only",
+   "risk": "low",
+   "risk_reasons": [
+    "未发现可定位的写盘目标（只读引用）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\kb_cards.html",
+    "portal\\kb_reports.html"
+   ]
+  },
+  {
+   "script": "tools\\kb_corpus\\merge_sim.py",
+   "targets": [
+    "kb_units_all.json"
+   ],
+   "read_only": true,
+   "write_evidence": [],
+   "helper_based": false,
+   "helper_calls": [],
+   "helper_names": [],
+   "protection": {},
+   "flags": {
+    "backup": false,
+    "merge_existing": true,
+    "atomic_write": false,
+    "read_only": true
+   },
+   "data_kind": "read_only",
+   "risk": "low",
+   "risk_reasons": [
+    "未发现可定位的写盘目标（只读引用）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\kb_reports.html"
+   ]
+  },
+  {
+   "script": "tools\\kb_corpus\\merge_sim_89.py",
+   "targets": [
+    "kb_units_all.json"
+   ],
+   "read_only": true,
+   "write_evidence": [],
+   "helper_based": false,
+   "helper_calls": [],
+   "helper_names": [],
+   "protection": {},
+   "flags": {
+    "backup": false,
+    "merge_existing": true,
+    "atomic_write": false,
+    "read_only": true
+   },
+   "data_kind": "read_only",
+   "risk": "low",
+   "risk_reasons": [
+    "未发现可定位的写盘目标（只读引用）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\kb_reports.html"
+   ]
+  },
+  {
+   "script": "tools\\kb_corpus\\qa_acceptance.py",
+   "targets": [
+    "kb_qa_samples.json"
+   ],
+   "read_only": true,
+   "write_evidence": [],
+   "helper_based": false,
+   "helper_calls": [],
+   "helper_names": [],
+   "protection": {},
+   "flags": {
+    "backup": false,
+    "merge_existing": true,
+    "atomic_write": false,
+    "read_only": true
+   },
+   "data_kind": "read_only",
+   "risk": "low",
+   "risk_reasons": [
+    "未发现可定位的写盘目标（只读引用）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\kb_reports.html"
+   ]
+  },
+  {
+   "script": "tools\\kb_corpus\\search_v2.py",
+   "targets": [
+    "kb_units_all.json"
+   ],
+   "read_only": true,
+   "write_evidence": [],
+   "helper_based": false,
+   "helper_calls": [],
+   "helper_names": [],
+   "protection": {},
+   "flags": {
+    "backup": false,
+    "merge_existing": true,
+    "atomic_write": false,
+    "read_only": true
+   },
+   "data_kind": "read_only",
+   "risk": "low",
+   "risk_reasons": [
+    "未发现可定位的写盘目标（只读引用）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\kb_reports.html"
+   ]
+  },
+  {
+   "script": "tools\\kb_corpus\\static_writer_audit.py",
+   "targets": [
+    "kb_learning_cards.json",
+    "kb_qa_samples.json",
+    "kb_units_all.json",
+    "report_panel.json",
+    "selection_daily.json"
+   ],
+   "read_only": true,
+   "write_evidence": [],
+   "helper_based": false,
+   "helper_calls": [],
+   "helper_names": [],
+   "protection": {},
+   "flags": {
+    "backup": true,
+    "merge_existing": true,
+    "atomic_write": true,
+    "read_only": true
+   },
+   "data_kind": "read_only",
+   "risk": "low",
+   "risk_reasons": [
+    "未发现可定位的写盘目标（只读引用）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\kb_cards.html",
+    "portal\\kb_reports.html",
+    "portal\\selection.html"
+   ]
+  },
+  {
+   "script": "tools\\research\\selection_daily.py",
+   "targets": [
+    "selection_daily.json"
+   ],
+   "read_only": true,
+   "write_evidence": [],
+   "helper_based": false,
+   "helper_calls": [],
+   "helper_names": [],
+   "protection": {},
+   "flags": {
+    "backup": false,
+    "merge_existing": true,
+    "atomic_write": false,
+    "read_only": true
+   },
+   "data_kind": "read_only",
+   "risk": "low",
+   "risk_reasons": [
+    "未发现可定位的写盘目标（只读引用）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\selection.html"
+   ]
+  },
+  {
+   "script": "tools\\research\\shadow_ledger.py",
+   "targets": [
+    "shadow_baseline.json",
+    "shadow_selection.json"
+   ],
+   "read_only": true,
+   "write_evidence": [],
+   "helper_based": false,
+   "helper_calls": [],
+   "helper_names": [],
+   "protection": {},
+   "flags": {
+    "backup": false,
+    "merge_existing": true,
+    "atomic_write": true,
+    "read_only": true
+   },
+   "data_kind": "read_only",
+   "risk": "low",
+   "risk_reasons": [
+    "未发现可定位的写盘目标（只读引用）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\selection.html"
+   ]
+  },
+  {
+   "script": "tools\\research\\shadow_monitor.py",
+   "targets": [
+    "shadow_monitor.json"
+   ],
+   "read_only": true,
+   "write_evidence": [],
+   "helper_based": false,
+   "helper_calls": [],
+   "helper_names": [],
+   "protection": {},
+   "flags": {
+    "backup": false,
+    "merge_existing": true,
+    "atomic_write": true,
+    "read_only": true
+   },
+   "data_kind": "read_only",
+   "risk": "low",
+   "risk_reasons": [
+    "未发现可定位的写盘目标（只读引用）"
+   ],
+   "fix_suggestions": [],
+   "consumers": [
+    "portal\\selection.html"
+   ]
+  },
+  {
+   "script": "tools\\test_page_shell.py",
+   "targets": [
+    "page_shell_migration.json"
+   ],
+   "read_only": true,
+   "write_evidence": [],
+   "helper_based": false,
+   "helper_calls": [],
+   "helper_names": [],
+   "protection": {},
+   "flags": {
+    "backup": false,
+    "merge_existing": true,
+    "atomic_write": false,
+    "read_only": true
+   },
+   "data_kind": "read_only",
+   "risk": "low",
+   "risk_reasons": [
+    "未发现可定位的写盘目标（只读引用）"
+   ],
+   "fix_suggestions": [],
+   "consumers": []
+  },
+  {
+   "script": "tools\\test_page_shell_w4.py",
+   "targets": [
+    "page_shell_migration.json"
+   ],
+   "read_only": true,
+   "write_evidence": [],
+   "helper_based": false,
+   "helper_calls": [],
+   "helper_names": [],
+   "protection": {},
+   "flags": {
+    "backup": false,
+    "merge_existing": true,
+    "atomic_write": false,
+    "read_only": true
+   },
+   "data_kind": "read_only",
+   "risk": "low",
+   "risk_reasons": [
+    "未发现可定位的写盘目标（只读引用）"
+   ],
+   "fix_suggestions": [],
+   "consumers": []
+  }
+ ],
+ "targets": [
+  {
+   "target": "trend_template_latest.json",
+   "consumers": [
+    "portal\\minervini.html"
+   ],
+   "writers": [
+    "tools\\research\\trend_template_export.py"
+   ],
+   "max_risk": "medium",
+   "curated": false
+  },
+  {
+   "target": "dw_snapshot.json",
+   "consumers": [
+    "portal\\dw.html"
+   ],
+   "writers": [
+    "tools\\dw_dashboard.py"
+   ],
+   "max_risk": "low",
+   "curated": false
+  },
+  {
+   "target": "h14_shadow.json",
+   "consumers": [
+    "portal\\h14_shadow.html"
+   ],
+   "writers": [
+    "tools\\research\\h14_shadow_status.py"
+   ],
+   "max_risk": "low",
+   "curated": false
+  },
+  {
+   "target": "h18_watch.json",
+   "consumers": [
+    "portal\\kb_reports.html"
+   ],
+   "writers": [
+    "tools\\kb_corpus\\morning_brief_push.py",
+    "tools\\research\\h18_watch_push.py"
+   ],
+   "max_risk": "low",
+   "curated": false
+  },
+  {
+   "target": "kb_corpus_gov.json",
+   "consumers": [
+    "portal\\dw.html",
+    "portal\\kb_corpus.html"
+   ],
+   "writers": [
+    "tools\\kb_corpus\\gov_status.py"
+   ],
+   "max_risk": "low",
+   "curated": false
+  },
+  {
+   "target": "kb_daily_briefing.json",
+   "consumers": [
+    "portal\\kb_reports.html"
+   ],
+   "writers": [
+    "tools\\kb_corpus\\daily_briefing.py"
+   ],
+   "max_risk": "low",
+   "curated": false
+  },
+  {
+   "target": "kb_ingest.json",
+   "consumers": [
+    "portal\\kb_ingest.html"
+   ],
+   "writers": [
+    "tools\\kb_corpus\\kb_ingest_status.py"
+   ],
+   "max_risk": "low",
+   "curated": false
+  },
+  {
+   "target": "kb_learning_cards.json",
+   "consumers": [
+    "portal\\kb_cards.html",
+    "portal\\kb_reports.html"
+   ],
+   "writers": [
+    "tools\\kb_corpus\\card_revision_apply.py",
+    "tools\\kb_corpus\\learning_cards.py"
+   ],
+   "max_risk": "low",
+   "curated": true
+  },
+  {
+   "target": "kb_qa_questions_v2.json",
+   "consumers": [],
+   "writers": [
+    "tools\\kb_corpus\\kb_qa_bank_v2.py"
+   ],
+   "max_risk": "low",
+   "curated": false
+  },
+  {
+   "target": "kb_qa_questions_v3.json",
+   "consumers": [],
+   "writers": [
+    "tools\\kb_corpus\\kb_qa_bank_v3.py"
+   ],
+   "max_risk": "low",
+   "curated": false
+  },
+  {
+   "target": "kb_qa_samples.json",
+   "consumers": [
+    "portal\\kb_reports.html"
+   ],
+   "writers": [
+    "tools\\kb_corpus\\kb_qa_expand.py"
+   ],
+   "max_risk": "low",
+   "curated": true
+  },
+  {
+   "target": "kb_reports_gov.json",
+   "consumers": [
+    "portal\\dw.html"
+   ],
+   "writers": [
+    "tools\\kb_corpus\\kb_reports_gov.py"
+   ],
+   "max_risk": "low",
+   "curated": false
+  },
+  {
+   "target": "kb_units_all.json",
+   "consumers": [
+    "portal\\kb_reports.html"
+   ],
+   "writers": [
+    "tools\\kb_corpus\\kb_units_snapshot.py"
+   ],
+   "max_risk": "low",
+   "curated": true
+  },
+  {
+   "target": "report_panel.json",
+   "consumers": [
+    "portal\\selection.html"
+   ],
+   "writers": [
+    "tools\\research\\panel_daily.py",
+    "tools\\research\\panel_export.py"
+   ],
+   "max_risk": "low",
+   "curated": true
+  }
+ ],
+ "high_risk": [],
+ "review_v1_v2": {
+  "v1_path": "C:\\项目\\老田的AI助手\\research\\reports\\static_writer_audit_v2_20261101.json",
+  "v1_available": true,
+  "v1_summary": {
+   "n_writers": 17,
+   "high": 0,
+   "medium": 8,
+   "low": 9,
+   "high_targets": []
+  },
+  "changes": [
+   {
+    "script": "tools\\kb_corpus\\card_revision_apply.py",
+    "targets": [
+     "kb_learning_cards.json"
+    ],
+    "v1_risk": "medium",
+    "v2_risk": "low",
+    "direction": "downgrade",
+    "helper_based": true,
+    "helper_names": [
+     "backup_then_atomic_write"
+    ],
+    "reasons": [
+     "写人工资产（kb_learning_cards.json）但三件套齐全（safe_write 辅助函数：backup_then_atomic_write）"
+    ]
+   },
+   {
+    "script": "tools\\kb_corpus\\kb_qa_bank_v2.py",
+    "targets": [
+     "kb_qa_questions_v2.json"
+    ],
+    "v1_risk": "medium",
+    "v2_risk": "low",
+    "direction": "downgrade",
+    "helper_based": true,
+    "helper_names": [
+     "backup_then_atomic_write"
+    ],
+    "reasons": [
+     "生成数据可重算，且有备份/原子写保护"
+    ]
+   },
+   {
+    "script": "tools\\kb_corpus\\kb_qa_bank_v3.py",
+    "targets": [
+     "kb_qa_questions_v3.json"
+    ],
+    "v1_risk": "medium",
+    "v2_risk": "low",
+    "direction": "downgrade",
+    "helper_based": true,
+    "helper_names": [
+     "backup_then_atomic_write"
+    ],
+    "reasons": [
+     "生成数据 + 三件套齐全（safe_write 辅助函数：backup_then_atomic_write）"
+    ]
+   },
+   {
+    "script": "tools\\kb_corpus\\kb_qa_expand.py",
+    "targets": [
+     "kb_qa_samples.json"
+    ],
+    "v1_risk": "medium",
+    "v2_risk": "low",
+    "direction": "downgrade",
+    "helper_based": true,
+    "helper_names": [
+     "backup_then_atomic_write"
+    ],
+    "reasons": [
+     "写人工资产（kb_qa_samples.json）但三件套齐全（safe_write 辅助函数：backup_then_atomic_write）"
+    ]
+   },
+   {
+    "script": "tools\\kb_corpus\\kb_units_snapshot.py",
+    "targets": [
+     "kb_units_all.json"
+    ],
+    "v1_risk": "medium",
+    "v2_risk": "low",
+    "direction": "downgrade",
+    "helper_based": true,
+    "helper_names": [
+     "backup_then_atomic_write"
+    ],
+    "reasons": [
+     "写人工资产（kb_units_all.json）但三件套齐全（safe_write 辅助函数：backup_then_atomic_write）"
+    ]
+   },
+   {
+    "script": "tools\\kb_corpus\\learning_cards.py",
+    "targets": [
+     "kb_learning_cards.json"
+    ],
+    "v1_risk": "medium",
+    "v2_risk": "low",
+    "direction": "downgrade",
+    "helper_based": true,
+    "helper_names": [
+     "backup_then_atomic_write"
+    ],
+    "reasons": [
+     "写人工资产（kb_learning_cards.json）但三件套齐全（safe_write 辅助函数：backup_then_atomic_write）"
+    ]
+   },
+   {
+    "script": "tools\\research\\h18_watch_push.py",
+    "targets": [
+     "h18_watch.json"
+    ],
+    "v1_risk": "medium",
+    "v2_risk": "low",
+    "direction": "downgrade",
+    "helper_based": true,
+    "helper_names": [
+     "backup_then_atomic_write"
+    ],
+    "reasons": [
+     "生成数据 + 三件套齐全（safe_write 辅助函数：backup_then_atomic_write）"
+    ]
+   }
+  ],
+  "downgraded": [
+   {
+    "script": "tools\\kb_corpus\\card_revision_apply.py",
+    "targets": [
+     "kb_learning_cards.json"
+    ],
+    "v1_risk": "medium",
+    "v2_risk": "low",
+    "direction": "downgrade",
+    "helper_based": true,
+    "helper_names": [
+     "backup_then_atomic_write"
+    ],
+    "reasons": [
+     "写人工资产（kb_learning_cards.json）但三件套齐全（safe_write 辅助函数：backup_then_atomic_write）"
+    ]
+   },
+   {
+    "script": "tools\\kb_corpus\\kb_qa_bank_v2.py",
+    "targets": [
+     "kb_qa_questions_v2.json"
+    ],
+    "v1_risk": "medium",
+    "v2_risk": "low",
+    "direction": "downgrade",
+    "helper_based": true,
+    "helper_names": [
+     "backup_then_atomic_write"
+    ],
+    "reasons": [
+     "生成数据可重算，且有备份/原子写保护"
+    ]
+   },
+   {
+    "script": "tools\\kb_corpus\\kb_qa_bank_v3.py",
+    "targets": [
+     "kb_qa_questions_v3.json"
+    ],
+    "v1_risk": "medium",
+    "v2_risk": "low",
+    "direction": "downgrade",
+    "helper_based": true,
+    "helper_names": [
+     "backup_then_atomic_write"
+    ],
+    "reasons": [
+     "生成数据 + 三件套齐全（safe_write 辅助函数：backup_then_atomic_write）"
+    ]
+   },
+   {
+    "script": "tools\\kb_corpus\\kb_qa_expand.py",
+    "targets": [
+     "kb_qa_samples.json"
+    ],
+    "v1_risk": "medium",
+    "v2_risk": "low",
+    "direction": "downgrade",
+    "helper_based": true,
+    "helper_names": [
+     "backup_then_atomic_write"
+    ],
+    "reasons": [
+     "写人工资产（kb_qa_samples.json）但三件套齐全（safe_write 辅助函数：backup_then_atomic_write）"
+    ]
+   },
+   {
+    "script": "tools\\kb_corpus\\kb_units_snapshot.py",
+    "targets": [
+     "kb_units_all.json"
+    ],
+    "v1_risk": "medium",
+    "v2_risk": "low",
+    "direction": "downgrade",
+    "helper_based": true,
+    "helper_names": [
+     "backup_then_atomic_write"
+    ],
+    "reasons": [
+     "写人工资产（kb_units_all.json）但三件套齐全（safe_write 辅助函数：backup_then_atomic_write）"
+    ]
+   },
+   {
+    "script": "tools\\kb_corpus\\learning_cards.py",
+    "targets": [
+     "kb_learning_cards.json"
+    ],
+    "v1_risk": "medium",
+    "v2_risk": "low",
+    "direction": "downgrade",
+    "helper_based": true,
+    "helper_names": [
+     "backup_then_atomic_write"
+    ],
+    "reasons": [
+     "写人工资产（kb_learning_cards.json）但三件套齐全（safe_write 辅助函数：backup_then_atomic_write）"
+    ]
+   },
+   {
+    "script": "tools\\research\\h18_watch_push.py",
+    "targets": [
+     "h18_watch.json"
+    ],
+    "v1_risk": "medium",
+    "v2_risk": "low",
+    "direction": "downgrade",
+    "helper_based": true,
+    "helper_names": [
+     "backup_then_atomic_write"
+    ],
+    "reasons": [
+     "生成数据 + 三件套齐全（safe_write 辅助函数：backup_then_atomic_write）"
+    ]
+   }
+  ],
+  "upgraded": [],
+  "unchanged_count": 10,
+  "v2_high_scripts": []
+ },
+ "baseline": {
+  "path": "research/reports/static_writer_audit_v2_20261101.json",
+  "batch": "wave29 CY 人工资产批次（learning_cards / kb_units_snapshot）"
+ },
+ "batch_scripts": [
+  {
+   "script": "tools\\kb_corpus\\learning_cards.py",
+   "risk": "low",
+   "curated": [
+    "kb_learning_cards.json"
+   ],
+   "flags": {
+    "backup": true,
+    "merge_existing": true,
+    "atomic_write": true,
+    "read_only": false
+   },
+   "protection": {
+    "backup": true,
+    "merge_existing": true,
+    "atomic_write": true
+   },
+   "helper_based": true,
+   "helper_names": [
+    "backup_then_atomic_write"
+   ],
+   "risk_reasons": [
+    "写人工资产（kb_learning_cards.json）但三件套齐全（safe_write 辅助函数：backup_then_atomic_write）"
+   ]
+  },
+  {
+   "script": "tools\\kb_corpus\\kb_units_snapshot.py",
+   "risk": "low",
+   "curated": [
+    "kb_units_all.json"
+   ],
+   "flags": {
+    "backup": true,
+    "merge_existing": true,
+    "atomic_write": true,
+    "read_only": false
+   },
+   "protection": {
+    "backup": true,
+    "merge_existing": true,
+    "atomic_write": true
+   },
+   "helper_based": true,
+   "helper_names": [
+    "backup_then_atomic_write"
+   ],
+   "risk_reasons": [
+    "写人工资产（kb_units_all.json）但三件套齐全（safe_write 辅助函数：backup_then_atomic_write）"
+   ]
+  }
+ ]
+}

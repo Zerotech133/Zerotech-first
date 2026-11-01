@@ -750,6 +750,13 @@
       "title": "35b 模型 prompt v3 A/B",
       "ref": "tools/kb_corpus/kb_qa_prompt_v3_35b.py",
       "enabled": true
+    },
+    {
+      "id": "kb_qa_prompt_v4",
+      "kind": "tool",
+      "title": "问答 prompt v4 + guard 分段解析",
+      "ref": "tools/kb_corpus/kb_qa_prompt_v4.py",
+      "enabled": true
     }
   ]
 }
