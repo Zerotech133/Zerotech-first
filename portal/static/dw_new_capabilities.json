@@ -412,5 +412,35 @@
    "down_mean_excess_pct": 1.63
   },
   "note": "组合未过 G4；不启动影子，仅研究价值"
+ },
+ "trend_template_v11": {
+  "generated_at": "2026-11-01T16:50:32+08:00",
+  "report": "trend_template_v11_20261101.json",
+  "best": {
+   "universe": "U0_all",
+   "rs": "R_252",
+   "exit": "E_8",
+   "cagr_pct": 14.14,
+   "mdd_pct": -48.68,
+   "vol_pct": 32.99,
+   "avg_exposure_pct": 81.3,
+   "trades": 197,
+   "yearly": {
+    "2017": 0.0,
+    "2018": 0.0,
+    "2019": 50.0,
+    "2020": 41.4,
+    "2021": -6.2,
+    "2022": -17.1,
+    "2023": -3.3,
+    "2024": 2.5,
+    "2025": 82.7,
+    "2026": -1.5
+   }
+  },
+  "rs_gap_pct": -0.92,
+  "exit_finding": "8%止损最优；200日线退出 CAGR -21%/MDD -91%（A股 whipsaw）",
+  "universe_finding": "三档流动性过滤结果相同（TT 候选非 binding）",
+  "verdict": "研究通过但风险调整后不通过：最佳 CAGR 14.1% vs 市场 13.4%，MDD -48.7%"
  }
 }

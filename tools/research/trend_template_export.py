@@ -30,8 +30,27 @@ COND_SPEC = [
 ]
 
 
+def _load_v11() -> dict | None:
+    import glob as _g
+    fs = sorted(_g.glob(str(REPO / "research/reports/trend_template_v11_*.json")))
+    if not fs:
+        return None
+    d = json.loads(Path(fs[-1]).read_text(encoding="utf-8"))
+    r = d.get("results") or []
+    if not r:
+        return None
+    b = r[0]
+    return {"window": d["meta"]["window"], "best": {k: b[k] for k in ("universe", "rs", "exit", "cagr_pct", "mdd_pct", "vol_pct", "trades")},
+            "findings": ["RS 口径：R_252 优于 ret12+ret3 近似", "退出：8% 固定止损优于 200日线退出（A 股 whipsaw）",
+                          "流动性/规模过滤在 TT 候选上不 binding（三档结果相同）",
+                          "最佳组合 CAGR 14.1% vs 市场 13.4%，MDD -48.7% → 风险调整后不通过"],
+            "report": "research/reports/" + Path(fs[-1]).name}
+
+
 def main() -> int:
-    files = sorted(glob.glob(str(REPORTS / "trend_template_*.json")))
+    import re as _re
+    files = sorted(f for f in glob.glob(str(REPORTS / "trend_template_*.json"))
+                   if _re.fullmatch(r"trend_template_\d{8}\.json", Path(f).name))
     if not files:
         print("no report", flush=True)
         return 1
@@ -65,9 +84,10 @@ def main() -> int:
         "near_miss_sample": near,
         "method": {"adjust": meta.get("adjust"), "year_bars": meta.get("year_bars"),
                     "c3_method": meta.get("c3_method"), "rs_method": meta.get("rs_method")},
+        "backtest_v11": _load_v11(),
         "boundary_notes": [
-            "筛选器仅实现八条入场条件，不含 VCP/买点/仓位/退出；未回测、未过四关。",
-            "股票池未做指数成分/流动性过滤；外部回测显示大盘成分内更有效、全交易所尤其小盘易失效。",
+            "筛选器仅实现八条入场条件，不含 VCP/买点；v1.1 组合回测已做（20仓×5%，2019-2026）。",
+            "股票池未做指数成分过滤（流动性代理在 TT 候选上不区分）；组合级回测显示风险调整后不通过（CAGR≈市场，MDD -49%）。",
             "C3 为端点代理；RS 为全 A 近似（非 IBD 专有）；一年窗口 250 交易日近似。",
             "数据为研究输出，不构成任何投资建议；使用者自行承担风险。",
         ],
