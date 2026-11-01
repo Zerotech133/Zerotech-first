@@ -649,10 +649,12 @@ def main(argv=None) -> int:
             raise ProbeError("catalog.json 缺失")
         if registry.get("catalog_sha256") != cat_sha:
             raise ProbeError("registry.catalog_sha256 与当前 catalog 不一致，拒绝取证/写回")
-        if registry.get("physical_count") != EXPECTED_PHYSICAL:
+        # EXPECTED_* 允许为 None（动态口径：运行时以 registry 当前计数为准），
+        # 仅当显式配置期望值时才校验；2026-11-02 修复 %d+None 导致任何调用恒 code=2。
+        if EXPECTED_PHYSICAL is not None and registry.get("physical_count") != EXPECTED_PHYSICAL:
             raise ProbeError("registry.physical_count=%s，期望 %d" % (
                 registry.get("physical_count"), EXPECTED_PHYSICAL))
-        if registry.get("display_count") != EXPECTED_DISPLAY:
+        if EXPECTED_DISPLAY is not None and registry.get("display_count") != EXPECTED_DISPLAY:
             raise ProbeError("registry.display_count=%s，期望 %d" % (
                 registry.get("display_count"), EXPECTED_DISPLAY))
         manifest = common.load_json(MANIFEST) or {}
