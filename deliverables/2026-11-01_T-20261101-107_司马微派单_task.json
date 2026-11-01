@@ -1,0 +1,20 @@
+{
+ "task_id": "T-20261101-107",
+ "opened_by": "A0",
+ "assigned_dept": "strategy",
+ "assigned_agent": null,
+ "title": "数据仓新能力：策略深度挖掘（司马微团队）",
+ "body": "【数据仓新能力 · 策略深度挖掘派单】2026-11-01\n\n一、背景：本轮数据仓形成了可直接挖掘的新能力（详见 docs/standards/2026-11-01_数据仓新能力清单_v1.md / portal/static/dw_new_capabilities.json）：\n1) report_rc 卖方研报库 1,729,480 行/94 文件（2019-01~2026-10，含评级/目标价/覆盖/预测）；\n2) 研报知识库 100 篇→463 知识单元、RAG 489；策略经典 18 条（SEPA/TrendTemplate/VCP）；\n3) 数据册 v6（27 resources）+ 血缘；知识只读 API（11 子命令）、检索 v2、学习卡/早报；\n4) 已上线对外能力 v1：/minervini.html + /static/trend_template_latest.json（8 条筛选，20261030 全过 52 只）；\n5) 证据资产：S02 证伪（20日 -9.6%）、S01 中性化无 alpha、H18 方向不清、H24-H36 全拒绝（六大陷阱判例）。\n\n二、深度挖掘方向（建议优先级）：\nP1 report_rc 因子化：评级上调比例/目标价空间/覆盖广度/机构羊群（PIT 公告日）；\nP1 Trend Template 变体：股票池（大中盘）过滤、退出规则（破200日线 vs 止损）、RS 双口径；外部回测显示大盘成分有效、退出比入场更重要；\nP2 VCP 特征化：2-4 次收缩/右侧缩量/枢轴放量（50日均量+40-50%），日线+周线；\nP2 研报知识库→因子假设：463 单元聚类提炼；\nP3 forecast 修订广度：数据<18 个月，按 H34 禁止单独检验，先补数据。\n\n三、本轮自挖一轮结果（挖掘轮，非验证）：\n窗口 20240229 .. 20261030，33 个月；Top: vol_20(IC=-0.08559, t=-1.98); mom_20(IC=-0.08188, t=-2.42); mom_120(IC=-0.07962, t=-2.13); turnover_20(IC=-0.07788, t=-1.84); value_ep(IC=0.03712, t=0.98); rev_5(IC=0.03605, t=1.23)\n\n四、验收标准：\n1) 新假设先入 research/hypotheses.db（in_progress），过四关（前视/成本/容量/regime）后才可提议进 strategy_registry.json；\n2) 中性化（市值/行业）必做；事件按 cohort 聚合；覆盖<18 个月禁止检验；\n3) 交付：回执 + 数据口径 + 可复现代码 + 通过/失败证据；服务重启需 L2 五要素批准。\n\n五、附件：docs/standards/2026-11-01_数据仓新能力清单_v1.md；research/reports/strategy_mining_*.md；/minervini.html；契约 trend_template.v1.yaml",
+ "severity": "P1",
+ "status": "open",
+ "created_at": "2026-11-01T15:34:22",
+ "due": "2026-11-15",
+ "closure_note": null,
+ "history": [
+  {
+   "at": "2026-11-01T15:34:22",
+   "by": "A0",
+   "action": "open"
+  }
+ ]
+}

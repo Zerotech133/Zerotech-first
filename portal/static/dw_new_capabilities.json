@@ -1,0 +1,165 @@
+{
+ "generated_at": "2026-11-01T15:34:22+08:00",
+ "version": "dw-capabilities.v1",
+ "owner": "DSH-Lead",
+ "data_assets": [
+  {
+   "id": "report_rc",
+   "rows": 1729480,
+   "files": 94,
+   "range": "2019-01~2026-10",
+   "path": "quant_backtest/data/tushare/report_rc/",
+   "fields": [
+    "report_date",
+    "org_name",
+    "rating",
+    "max_price",
+    "min_price",
+    "eps",
+    "pe",
+    "roe"
+   ],
+   "mining_ideas": [
+    "评级上调比例",
+    "目标价空间",
+    "覆盖广度",
+    "机构羊群",
+    "盈利预测"
+   ]
+  },
+  {
+   "id": "forecast",
+   "rows": 21197,
+   "range": "2023-01~2026-10（4 文件）",
+   "path": "quant_backtest/data/tushare/forecast/",
+   "mining_ideas": [
+    "修订方向/幅度"
+   ],
+   "warning": "窗口<18 个月，按 H34 禁止单独检验"
+  },
+  {
+   "id": "fina_indicator",
+   "files": 5586,
+   "path": "quant_backtest/data/tushare/fina_indicator/",
+   "mining_ideas": [
+    "ROE 质量/成长（PIT）"
+   ]
+  },
+  {
+   "id": "daily+adj+daily_basic",
+   "path": "quant_backtest/data/tushare/{daily,adj_factor,daily_basic}",
+   "mining_ideas": [
+    "动量/反转/量能/换手/估值"
+   ]
+  }
+ ],
+ "knowledge_assets": [
+  {
+   "id": "reports_kb",
+   "docs": 100,
+   "units": 463,
+   "rag_records": 489,
+   "path": "C:/项目/PDF/_ingest_reports/"
+  },
+  {
+   "id": "strategy_classics",
+   "units": 18,
+   "path": "C:/项目/PDF/_ingest_notes/米勒维尼_趋势交易体系/"
+  }
+ ],
+ "capabilities": [
+  {
+   "id": "trend_template_v1",
+   "page": "/minervini.html",
+   "json": "/static/trend_template_latest.json",
+   "contract": "agent_platform/contracts/trend_template.v1.yaml",
+   "status": "research_only"
+  },
+  {
+   "id": "kb_read_api",
+   "cli": "tools/kb_corpus/kb_read_api.py",
+   "status": "ready"
+  },
+  {
+   "id": "search_v2",
+   "cli": "tools/kb_corpus/search_v2.py",
+   "page": "/kb_reports.html"
+  },
+  {
+   "id": "selection/portfolio/shadow",
+   "cli": "tools/research/{selection_engine,portfolio_build,shadow_ledger}.py",
+   "status": "S02 paused_shadow_breaker"
+  },
+  {
+   "id": "h14_shadow_dashboard",
+   "page": "/h14_shadow.html",
+   "status": "monthly"
+  },
+  {
+   "id": "learning_cards_brief",
+   "page": "/kb_cards.html",
+   "cli": "tools/kb_corpus/morning_brief_push.py",
+   "status": "daily 08:20"
+  }
+ ],
+ "evidence_assets": [
+  {
+   "id": "s02_falsified",
+   "result": "20日 -9.6%/MDD -9.5%，四分数桶全负",
+   "action": "paused_shadow_breaker"
+  },
+  {
+   "id": "s01_neutral_no_alpha",
+   "result": "中性化后超额 +0.17%≈0",
+   "action": "filter only"
+  },
+  {
+   "id": "h18_direction_ambiguous",
+   "result": "改善/恶化组均负，价差 +0.84% 不显著",
+   "action": "watch only"
+  },
+  {
+   "id": "h24_h36_rejected",
+   "result": "13 个假设全拒绝；六大统计陷阱判例",
+   "action": "research/MEETING.md"
+  }
+ ],
+ "deep_mining_directions": [
+  {
+   "priority": "P1",
+   "id": "report_rc_factor",
+   "desc": "report_rc 因子化（评级/目标价/覆盖/羊群）",
+   "data": "report_rc"
+  },
+  {
+   "priority": "P1",
+   "id": "trend_template_variants",
+   "desc": "股票池过滤/退出规则/RS 双口径",
+   "data": "daily+adj"
+  },
+  {
+   "priority": "P2",
+   "id": "vcp_features",
+   "desc": "VCP 收缩/量能特征（日线+周线）",
+   "data": "daily+adj"
+  },
+  {
+   "priority": "P2",
+   "id": "kb_to_hypothesis",
+   "desc": "研报知识库→因子假设",
+   "data": "reports_kb"
+  },
+  {
+   "priority": "P3",
+   "id": "forecast_breadth",
+   "desc": "预告修订广度（先补数据）",
+   "data": "forecast"
+  }
+ ],
+ "handoff_rules": [
+  "新假设先入 research/hypotheses.db（in_progress），过四关后才可提议进 strategy_registry.json",
+  "中性化（市值/行业）必做（S01 教训）",
+  "事件按 cohort 聚合；覆盖<18 个月禁止检验（H34）",
+  "服务重启/接线需 L2 五要素批准"
+ ]
+}
