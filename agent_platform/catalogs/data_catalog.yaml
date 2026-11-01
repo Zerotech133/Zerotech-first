@@ -7,7 +7,7 @@
 # v5→v6 变更摘要（2026-11-01）：登记 strategy_classics_kb（策略经典：米勒维尼 SEPA 18 条单元/回测证据/资源库）。
 # v1 种子出处：K-ORG-119 批1（2026-10-16 实战验证的真实位置）。
 version: 6
-updated: "2026-10-31"
+updated: "2026-11-01"
 registrar: DATA1（张松） / DSH-Lead（Phase6 语料登记、report_rc 登记）
 resources:
   - id: ashare_kline

@@ -1,0 +1,20 @@
+{
+ "task_id": "T-20261102-120",
+ "opened_by": "A0",
+ "assigned_dept": "dev",
+ "assigned_agent": null,
+ "title": "数据仓板块审计：资质覆盖/漂移/测试入fast门（转 DATA1 张松）",
+ "body": "【数据仓审计】2026-11-02\n结论：代码/测试可跑（datawarehouse/tests 112 passed），但三个治理缺口：\n①资质：unknown 223/256（约87%未定级）；②漂移：etf_mins 登记 760 vs 磁盘 780（diff20）；③门禁：datawarehouse 112 项测试不在 fast 门（过期测试长期未暴露，已修）。\n已完成：过期测试修复、catalog updated 修正、README 边界/版本修正、data/korg* 19 文件归档、单一计划源 docs/plans/2026-11-02_数据仓板块复盘与整合计划_v1.md。\n请 DATA1：①P1 补资质+重建 registry；②确认 DW-Daily 计划任务在跑；③决定 datawarehouse 测试纳入 fast 门方案。\n报告：deliverables/2026-11-02_数据仓板块审计与计划复盘整合_报告.md",
+ "severity": "P1",
+ "status": "open",
+ "created_at": "2026-11-02T00:05:14",
+ "due": "2026-11-12",
+ "closure_note": null,
+ "history": [
+  {
+   "at": "2026-11-02T00:05:14",
+   "by": "A0",
+   "action": "open"
+  }
+ ]
+}

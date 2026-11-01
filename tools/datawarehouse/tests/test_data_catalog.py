@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""数据册 v2 校验：YAML 合法 / 条目数 / id 唯一 / 字段齐全 / 修正项落盘。
+"""数据册校验（v2 契约起，当前 v6）：YAML 合法 / 条目数 / id 唯一 / 字段齐全 / 修正项落盘。
 
 纪律（数据册 v2，2026-10-27 DATA1 首轮治理）：
 - 数据册 = agent_platform/catalogs/data_catalog.yaml，登记纪律=新源不登记即黑户；
@@ -80,8 +80,11 @@ class DataCatalogTest(unittest.TestCase):
         self.assertNotIn("weak_track_", uri)
 
     def test_08_v2_header(self):
-        self.assertEqual(self.doc.get("version"), 2)
-        self.assertEqual(str(self.doc.get("updated")), "2026-10-27")
+        # 数据册已演进到 v6（2026-11-01 增补 strategy_classics_kb）；保留 v2 契约：version 为整数且 ≥2
+        self.assertIsInstance(self.doc.get("version"), int)
+        self.assertGreaterEqual(self.doc.get("version"), 2)
+        # updated 随 catalog 演进（v2 起）；断言格式即可，不硬编码日期
+        self.assertRegex(str(self.doc.get("updated")), r"^\d{4}-\d{2}-\d{2}$")
         self.assertIn("DATA1", str(self.doc.get("registrar")))
 
     def test_09_router_flat_parse_compatible(self):
