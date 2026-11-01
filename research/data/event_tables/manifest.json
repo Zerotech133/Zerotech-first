@@ -1,0 +1,185 @@
+{
+  "schema": "h37_h39_event_tables/v1",
+  "ticket": "WO-VAL-EVENTS30-20261101",
+  "task_id": "task-31",
+  "generated_at": "2026-11-01T14:55:00+08:00",
+  "generated_by": "capability-researcher (DSH) / 只读研究工位",
+  "data_as_of": "2026-10-31（本地 tushare 仓 as-of）",
+  "boundary": "只读研究产物：不接生产、不改策略状态、不联网、不写注册表/计划任务；不产买卖信号",
+  "files": {
+    "H37_events.csv": {
+      "sha256": "7adfd33e8e54e5fb82b368253bed0b1ce0d462c4b028a61c1e4d5ec99821a88a",
+      "rows": 18,
+      "unique_event_ids": 14,
+      "bytes": 15909
+    },
+    "H38_events.csv": {
+      "sha256": "8d9a25add44f5e24c309caf25e3f9a8f8ef9872ad3537e8589ce06d37de57a47",
+      "rows": 15,
+      "unique_event_ids": 11,
+      "bytes": 12804
+    },
+    "H39_events.csv": {
+      "sha256": "c9d7cb889a88779dfdd1e1255b84e1220329cf1102a689df120d63bf7e4794ce",
+      "rows": 13,
+      "unique_event_ids": 11,
+      "bytes": 12430
+    },
+    "H37_H39_events_combined.csv": {
+      "sha256": "f5f8e529de657444a4129869a0aa39a53b9df8add5ad8693902c946ca7edaf4c",
+      "rows": 46,
+      "unique_event_ids": 36,
+      "bytes": 40927
+    }
+  },
+  "totals": {
+    "unique_event_ids": 36,
+    "rows": 46,
+    "hypotheses": {
+      "H37": 14,
+      "H38": 11,
+      "H39": 11
+    }
+  },
+  "sample_gate": {
+    "rule": "事件研究门禁：单假设 n<30 → insufficient，不出结论；30+ 总表只做观察（observation-only），不得替代单假设样本门禁",
+    "H37": "n=14 <30 → insufficient",
+    "H38": "n=11 <30 → insufficient",
+    "H39": "n=11 <30 → insufficient",
+    "total": "36 unique events ≥30，仅作总表观察，不改变单假设 insufficient 判定"
+  },
+  "dual_source": {
+    "definition": "每事件至少两条独立本地记录：source_1=事件主证据（政府/监管原文或PDF/公司公告），source_2=第二源；级别见 notes 的「双源级别」",
+    "levels": {
+      "主题级(研报)": 17,
+      "事件级(研报标题)": 14,
+      "事件级(news含日期)": 2,
+      "事件级(双公告)": 1,
+      "事件级(PDF双源)": 1,
+      "事件级(研报索引)": 1
+    },
+    "levels_by_hypothesis": {
+      "H37": {
+        "事件级(研报标题)": 7,
+        "主题级(研报)": 6,
+        "事件级(news含日期)": 1
+      },
+      "H38": {
+        "主题级(研报)": 7,
+        "事件级(研报标题)": 2,
+        "事件级(双公告)": 1,
+        "事件级(PDF双源)": 1
+      },
+      "H39": {
+        "事件级(研报标题)": 5,
+        "主题级(研报)": 4,
+        "事件级(研报索引)": 1,
+        "事件级(news含日期)": 1
+      }
+    },
+    "event_level_count": 19,
+    "theme_level_count": 17,
+    "caveat": "主题级=同主题研报/公告旁证，未逐字指涉该事件；不满足事件研究严格双源要求，须 DATA1/BACK1 补登或剔除后才可用于正式检验"
+  },
+  "anchors": {
+    "symbols": [
+      "002241.SZ",
+      "002475.SZ",
+      "002517.SZ",
+      "002555.SZ",
+      "600036.SH",
+      "601658.SH",
+      "801080.SI",
+      "801760.SI",
+      "801780.SI"
+    ],
+    "by_anchor_type": {
+      "stock_a": 6,
+      "sw_l1_sector_synthetic": 3
+    },
+    "note": "sw_l1 行业锚为申万 L1 指数代码（本地无行业指数行情，BACK1 须用 sw_l1_member PIT 成分合成）"
+  },
+  "sources": [
+    {
+      "name": "npr 政策法规库",
+      "path": "quant_backtest/data/tushare/npr",
+      "role": "H37/H38/H39 政策事件主证据（原文件（去重后 19,033 条）pubtime/title/puborg/pcode）",
+      "as_of": "1994-05-17→2026-10-30"
+    },
+    {
+      "name": "report_rc 研报（个股/行业）",
+      "path": "quant_backtest/data/tushare/report_rc",
+      "role": "第二源（标题级；去重后 519,892 条独立报告，2019-01-01→2026-10-30）",
+      "as_of": "2019-01-01→2026-10-30"
+    },
+    {
+      "name": "research_report 研报索引",
+      "path": "quant_backtest/data/tushare/research_report",
+      "role": "第二源（2026-07-13→2026-10-31）",
+      "as_of": "2026-07-13→2026-10-31"
+    },
+    {
+      "name": "news 新闻",
+      "path": "quant_backtest/data/tushare/news",
+      "role": "当期事件第二源（含正文日期）",
+      "as_of": "2026-09-23→2026-10-31"
+    },
+    {
+      "name": "anns_d 公司公告",
+      "path": "quant_backtest/data/tushare/anns_d",
+      "role": "H38 版号公告事件与主题级旁证（仅标题）",
+      "as_of": "2019-01-02→2026-10-30"
+    },
+    {
+      "name": "trade_cal 交易日历",
+      "path": "quant_backtest/data/tushare/trade_cal",
+      "role": "event_date 顺延校验（去重后开放日 9,032 个，1991-01-02→2027-12-31）",
+      "as_of": "—"
+    },
+    {
+      "name": "PDF1 东海证券银行简评",
+      "path": "C:\\项目\\PDF\\_repair\\rp_AP202609301830038476.pdf",
+      "sha256": "b4bdbfc6a256a152bf593a02c399dd53266fa0366f75bd4290cfe9424a378732",
+      "role": "H37 当期事件主证据（p1 明确 9月29日）"
+    },
+    {
+      "name": "PDF2 万联证券传媒跟踪",
+      "path": "C:\\项目\\PDF\\_repair\\rp_AP202609301830023151.pdf",
+      "sha256": "5830d25e318a447d9463f4399f5417ef6076f0ccc5f104e39585e2f1ef3508e5",
+      "role": "H38/H39 当期事件证据（p5 明确 9月21日/9月24日）"
+    }
+  ],
+  "rules": {
+    "event_date": "T0 = 披露日 + 1 交易日（原文日期见 notes）；遇非交易日按 trade_cal 顺延；event_date 均为交易日",
+    "fields": [
+      "event_id",
+      "hypothesis",
+      "event_date",
+      "event_type",
+      "anchor_symbol",
+      "anchor_type",
+      "source_1",
+      "source_2",
+      "source_hash",
+      "notes"
+    ],
+    "event_id": "H{37|38|39}-YYYYMMDD-{slug}；同事件多锚共用 event_id，source_hash 相同",
+    "source_hash": "sha256(canonical{hyp,event_date,event_type,source_1,source_2})",
+    "anchor_types": {
+      "sw_l1_sector_synthetic": "申万 L1 指数（本地无行情，成分为主）",
+      "stock_a": "A 股个股（stock_basic 校验）"
+    },
+    "idempotency": "同一事件同日同源只出现一次；多锚按行展开"
+  },
+  "excluded": [],
+  "limitations": [
+    "事件级双源 19/36；主题级 17/36（同主题研报/公告旁证，未逐字指涉事件）→ 不可直接用于正式检验，须 DATA1/BACK1 补登或剔除",
+    "H39 历史类比：离线无海外事件双源（本地无 META 行情/无历史新闻库），历史 10 条为国内 AI/VR/终端产业政策代理事件（已在 notes 标注），当期 1 条为 Meta Connect 2026 直接事件；海外发布日双源登记须 DATA1 外部补登",
+    "npr 不含央行公告（降准/LPR 类 0 命中），H37 事件以财政部贴息/央行结构性工具与房贷政策原文为主，不含纯降准/降息事件",
+    "report_rc 仅标题可检索、无正文，第二源为标题级匹配；2024-10/2026-01 等窗口存在报告覆盖稀疏（无法为个别事件找到同月研报）",
+    "anns_d 游戏版号公告稀少（全量仅 4 个日期有相关公告），H38 版号供给类事件仅 2 条",
+    "H38 2019-12-02 两个政策文件共用同一主题级第二源（传媒策略报告），属同日政策包旁证",
+    "sw_l1 行业锚无本地行情；锚池板块收益须 BACK1 用 sw_l1_member PIT 成分合成，本表不计算收益",
+    "manifest 为静态冻结快照；任何 CSV 修改必须重生成 manifest 并更新 SHA"
+  ]
+}
