@@ -8,6 +8,7 @@
 """
 from __future__ import annotations
 
+import argparse
 import glob
 import json
 import sys
@@ -33,7 +34,10 @@ def z(s: pd.Series) -> pd.Series:
     return (s - mu) / sd if sd and sd > 0 else s * 0
 
 
-def main() -> int:
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--include-bj", action="store_true", help="纳入北交所（默认排除）")
+    args = ap.parse_args(argv)
     fs = sorted(glob.glob(str(DATA / "daily" / "d_*.parquet")))
     ds = [Path(f).stem[2:] for f in fs]
     pre = [d for d in ds if d < "20190101"][-300:]
@@ -78,6 +82,8 @@ def main() -> int:
                             c = P["a_close"].iloc[i]
                             uni = (~names.reindex(c.index).fillna("").str.contains(r"ST|\*ST|退", regex=True)) & \
                                   ((pd.Timestamp(dt) - list_dates).dt.days.reindex(c.index).fillna(0) >= 250) & (c >= 2) & c.notna()
+                            if not args.include_bj:
+                                uni = uni & ~c.index.str.endswith(".BJ")
                             cc = c.index[uni.fillna(False)]
                             score = (-(c / P["a_close"].iloc[i - 120] - 1)).reindex(cc).dropna()
                             if neutral == "ind":
@@ -123,7 +129,7 @@ def main() -> int:
     tag = datetime.now().strftime("%Y%m%d")
     rep = {"meta": {"generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
                     "window": f"{mends[0]} .. {mends[-2]}",
-                    "note": "S11 mom_120 long-only 稳健网格（PIT）；成本0.15%单边×换手；regime=市场60日趋势"},
+                    "note": "S11 mom_120 long-only 稳健网格（PIT）；成本0.15%单边×换手；regime=市场60日趋势；北交所=" + ("含" if args.include_bj else "排除")},
            "marginal": marg, "results": results}
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / f"s11_mom120_robust_{tag}.json").write_text(json.dumps(rep, ensure_ascii=False, indent=1, default=str), encoding="utf-8")

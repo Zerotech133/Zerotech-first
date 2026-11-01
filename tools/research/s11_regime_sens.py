@@ -65,7 +65,8 @@ def main() -> int:
             active += 1
             c = P["a_close"].iloc[i]
             uni = (~names.reindex(c.index).fillna("").str.contains(r"ST|\*ST|退", regex=True)) & \
-                  ((pd.Timestamp(dt) - list_dates).dt.days.reindex(c.index).fillna(0) >= 250) & (c >= 2) & c.notna()
+                  ((pd.Timestamp(dt) - list_dates).dt.days.reindex(c.index).fillna(0) >= 250) & (c >= 2) & c.notna() & \
+                  ~c.index.str.endswith(".BJ")
             cc = c.index[uni.fillna(False)]
             score = (-(c / P["a_close"].iloc[i - 120] - 1)).reindex(cc).dropna()
             picks = score.sort_values(ascending=False).head(K).index
