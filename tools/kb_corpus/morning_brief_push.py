@@ -30,6 +30,7 @@ STATIC = REPO / "portal" / "static"
 CARDS = STATIC / "kb_learning_cards.json"
 WATCH = STATIC / "h18_watch.json"
 H14 = STATIC / "h14_shadow.json"
+SEPA = STATIC / "sepa_scan_daily.json"
 BACKUP_DIR = REPO / "research" / "reports" / "backups"
 KIND = "kb_morning_brief"
 SAFE_SCHEMA = "safe_write.v1"
@@ -233,6 +234,17 @@ def build_text(cards: dict, watch: dict, n_cards: int = 5, n_watch: int = 8) -> 
                   f"{h.get('trap_weight_constrained_pct')}%（上限 {h.get('trap_cap_pct')}%，"
                   f"{'达标' if health.get('trap_within_cap') else '超限'}）",
                   f"- 下次验证：{h.get('next_check', '')}；看板 /h14_shadow.html"]
+    except Exception:  # noqa: BLE001
+        pass
+    # SEPA 扫描摘要（若已生成）
+    try:
+        s = json.loads(SEPA.read_text(encoding="utf-8"))
+        st = s.get("strict", {})
+        wide = s.get("wide", {})
+        lines += ["", f"📈 SEPA 扫描（{s.get('scan_date', '')}）",
+                  f"- 漏斗：TT {st.get('tt_pass')} → 基本面 {st.get('fund_pass')} → VCP {st.get('vcp')} → "
+                  f"突破 {st.get('funnel', {}).get('A_已突破', 0)}（严格）；宽口径 VCP-lite {len(wide.get('vcp_lite') or [])} 只",
+                  f"- TT+基本面：{', '.join(x.get('code', '') + ' ' + str(x.get('name', '')) for x in (st.get('only_tt_fund') or [])[:5]) or '无'}"]
     except Exception:  # noqa: BLE001
         pass
     lines += ["", "——", "属性：学习材料/事件提醒，不构成投资建议；引用请带出处。"]
