@@ -101,8 +101,8 @@ TARGET_BUNDLE_GROWTH = 0
 
 # fast gate 覆盖口径：五个测试套件根（与 W5 报告 §1.2 同口径）
 COVERAGE_SUITE_DIRS = ("portal/tests", "k_stock/tests", "agent_platform/tests",
-                       "quant_backtest/tests", "tools/tests")
-FAST_SUITES = ("portal", "kstock", "ide", "agent_key", "quant_key", "tools_key")
+                       "quant_backtest/tests", "tools/tests", "tools/datawarehouse/tests")
+FAST_SUITES = ("portal", "kstock", "ide", "agent_key", "quant_key", "tools_key", "datawarehouse")
 E2E_ARTIFACT_TEST = "agent_platform/tests/test_ide_release_artifact.py"
 
 DEFAULT_RELEASE_ROOT = Path(r"C:\项目\_vault\legion_ide\release\legion-ide")
