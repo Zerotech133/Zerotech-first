@@ -52,7 +52,7 @@ def root(tmp_path):
 OK = dict(
     dept="dev",
     agent_id="DEV9",
-    cn_name="蒋琬",
+    cn_name="蒋琬测试",
     role_profile="日志工程师",
     duty="负责全链路运行日志治理与异常归因，维护日志规范与轮转策略",
     binding="ollama/qwen3.5:9b",
@@ -75,7 +75,7 @@ def test_plan_writes_nothing(root):
     assert org_bytes(root) == before, "dry-run 不得写入任何字节"
     assert plan["agent"]["agent_id"] == "DEV9"
     assert plan["note"].startswith("dry-run")
-    assert plan["cn_name"] == "蒋琬"
+    assert plan["cn_name"] == "蒋琬测试"
     # 「这个 Agent 到底干嘛」必须落进 charter_detail
     assert plan["agent"]["charter_detail"].startswith("负责全链路")
 
@@ -175,7 +175,7 @@ def test_apply_adds_agent_and_hr(root):
     hr = root / "hr" / "DEV9" / "resume.yaml"
     assert hr.exists()
     txt = hr.read_text(encoding="utf-8")
-    assert "name: 蒋琬" in txt and "WO-ORG-210" in txt and "日志工程师" in txt
+    assert "name: 蒋琬测试" in txt and "WO-ORG-210" in txt and "日志工程师" in txt
 
 
 def test_apply_other_departments_untouched(root):
