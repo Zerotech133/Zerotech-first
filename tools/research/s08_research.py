@@ -71,7 +71,10 @@ def main() -> int:
     dates = adj.index.tolist()
     sb = pq.read_table(sorted(glob.glob(str(DATA / "stock_basic" / "*.parquet")))[-1]).to_pandas().set_index("ts_code")
     names, industry = sb["name"], sb["industry"].fillna("未知")
-    listed = (pd.Timestamp(dates[-1]) - pd.to_datetime(sb["list_date"], format="%Y%m%d", errors="coerce")).dt.days
+    list_dates_ = pd.to_datetime(sb["list_date"], format="%Y%m%d", errors="coerce")
+    def listed_at(dt_):
+        """PIT：截至信号日的上市天数（2026-11-01 修复：原用最新日→次新股前视）"""
+        return (pd.Timestamp(dt_) - list_dates_).dt.days
     s = pd.Series(dates)
     mends = [g.iloc[-1] for _, g in s.groupby(s.str[:6]) if g.iloc[-1] >= "20190101"]
     # 调仓日集合
@@ -99,7 +102,7 @@ def main() -> int:
             px = hist.iloc[-1]
             ret120 = px / hist.iloc[-121] - 1
             uni = (~names.reindex(px.index).fillna("").str.contains(r"ST|\*ST|退", regex=True)) & \
-                  (listed.reindex(px.index).fillna(0) >= 250) & (px >= 2) & px.notna()
+                  (listed_at(dt).reindex(px.index).fillna(0) >= 250) & (px >= 2) & px.notna()
             cc = px.index[uni.fillna(False)]
             score = (-ret120).reindex(cc).dropna()
             if neutral == "ind":

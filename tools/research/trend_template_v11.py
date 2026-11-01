@@ -82,7 +82,10 @@ def main() -> int:
     print("panel:", adj.shape, dates[0], "..", dates[-1], flush=True)
     sb = pq.read_table(sorted(glob.glob(str(DATA / "stock_basic" / "*.parquet")))[-1]).to_pandas().set_index("ts_code")
     names = sb["name"]
-    listed = (pd.Timestamp(dates[-1]) - pd.to_datetime(sb["list_date"], format="%Y%m%d", errors="coerce")).dt.days
+    list_dates_ = pd.to_datetime(sb["list_date"], format="%Y%m%d", errors="coerce")
+    def listed_at(dt_):
+        """PIT：截至信号日的上市天数（2026-11-01 修复：原用最新日→次新股前视）"""
+        return (pd.Timestamp(dt_) - list_dates_).dt.days
     me = month_end_positions(dates)
 
     def snapshots(i: int) -> dict:
@@ -100,7 +103,7 @@ def main() -> int:
         rs_approx = (r12 + r3).rank(pct=True) * 98 + 1
         rs252 = (px / hist.iloc[-252] - 1 if len(hist) > 252 else px * 0).rank(pct=True) * 98 + 1
         base = (~names.reindex(px.index).fillna("").str.contains(r"ST|\*ST|退", regex=True)) & \
-               (listed.reindex(px.index).fillna(0) >= 250) & (px >= 2) & px.notna()
+               (listed_at(dates[i]).reindex(px.index).fillna(0) >= 250) & (px >= 2) & px.notna()
         cond = ((px > sma150) & (px > sma200) & (sma150 > sma200) & (sma200 > sma200_prev) &
                 (sma50 > sma150) & (sma50 > sma200) & (px > sma50) &
                 (px >= 1.30 * lo) & (px >= 0.75 * hi))

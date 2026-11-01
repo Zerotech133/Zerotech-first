@@ -173,7 +173,10 @@ def main(argv=None) -> int:
     print("panel:", P["a_close"].shape, "start", dates[start_i], flush=True)
     sb = pq.read_table(sorted(glob.glob(str(DATA / "stock_basic" / "*.parquet")))[-1]).to_pandas().set_index("ts_code")
     names, industry = sb["name"], sb["industry"].fillna("未知")
-    listed = (pd.Timestamp(dates[-1]) - pd.to_datetime(sb["list_date"], format="%Y%m%d", errors="coerce")).dt.days
+    list_dates_ = pd.to_datetime(sb["list_date"], format="%Y%m%d", errors="coerce")
+    def listed_at(dt_):
+        """PIT：截至信号日的上市天数（2026-11-01 修复：原用最新日→次新股前视）"""
+        return (pd.Timestamp(dt_) - list_dates_).dt.days
     csum = P["a_close"].cumsum()
     vsum = P["vol"].cumsum()
     vol50 = (vsum - vsum.shift(50)) / 50
@@ -208,7 +211,7 @@ def main(argv=None) -> int:
         r252 = cser / P["a_close"].iloc[i - 252] - 1
         rs = r252.rank(pct=True) * 98 + 1
         uni = (~names.reindex(cser.index).fillna("").str.contains(r"ST|\*ST|退", regex=True)) & \
-              (listed.reindex(cser.index).fillna(0) >= 250) & (cser >= 2) & cser.notna()
+              (listed_at(dates[i]).reindex(cser.index).fillna(0) >= 250) & (cser >= 2) & cser.notna()
         tt = (cser > s150) & (cser > s200) & (s150 > s200) & (s200 > s200p) & \
              (s50 > s150) & (s50 > s200) & (cser > s50) & (cser >= 1.30 * lo) & (cser >= 0.75 * hi)
         cands = rs[tt & uni].sort_values(ascending=False).head(160).index

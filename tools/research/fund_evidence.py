@@ -38,7 +38,10 @@ def main() -> int:
     start_i = dates.index(next(d for d in dates if d >= "20190101"))
     sb = pq.read_table(sorted(glob.glob(str(DATA / "stock_basic" / "*.parquet")))[-1]).to_pandas().set_index("ts_code")
     names = sb["name"]
-    listed = (pd.Timestamp(dates[-1]) - pd.to_datetime(sb["list_date"], format="%Y%m%d", errors="coerce")).dt.days
+    list_dates_ = pd.to_datetime(sb["list_date"], format="%Y%m%d", errors="coerce")
+    def listed_at(dt_):
+        """PIT：截至信号日的上市天数（2026-11-01 修复：原用最新日→次新股前视）"""
+        return (pd.Timestamp(dt_) - list_dates_).dt.days
     # 财报 PIT
     rows = []
     for f in sorted(glob.glob(str(DATA / "fina_indicator" / "*.parquet"))):
@@ -82,7 +85,7 @@ def main() -> int:
         c = P["a_close"].iloc[i]
         fwd = P["a_close"].iloc[dates.index(nxt)] / c - 1
         uni = (~names.reindex(c.index).fillna("").str.contains(r"ST|\*ST|退", regex=True)) & \
-              (listed.reindex(c.index).fillna(0) >= 250) & (c >= 2) & c.notna()
+              (listed_at(dt).reindex(c.index).fillna(0) >= 250) & (c >= 2) & c.notna()
         cc = c.index[uni.fillna(False)]
         data = {}
         for code in cc:
