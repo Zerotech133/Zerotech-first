@@ -645,6 +645,20 @@
       "title": "评测集 v3 构建/合并复评",
       "ref": "tools/kb_corpus/eval_set_v3.py",
       "enabled": true
+    },
+    {
+      "id": "card_review_page",
+      "kind": "tool",
+      "title": "学习卡审核页（点选/导出）",
+      "ref": "portal/card_review.html",
+      "enabled": true
+    },
+    {
+      "id": "eval_v3_baseline",
+      "kind": "tool",
+      "title": "评测基线 v3 回归",
+      "ref": "tools/kb_corpus/eval_v3_baseline.py",
+      "enabled": true
     }
   ]
 }

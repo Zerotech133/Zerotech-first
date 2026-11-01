@@ -132,7 +132,7 @@ select#engine{background:var(--panel2);color:var(--fg);border:1px solid var(--bd
 <div class="panel" id="qa-sample-panel">
   <div class="panel-head"><b>💬 问答示例（静态）</b><span class="sub" id="qa-meta">加载中…</span></div>
   <div id="qa-body"><div class="empty">加载中…</div></div>
-  <div class="qa-note" id="qa-note">HTTP 问答接口待 8091 审批，当前为静态示例；回答依据知识库检索材料，仅供参考，不构成投资建议。</div>
+  <div class="qa-note" id="qa-note">问答接口待 8091 审批，当前为静态示例（multi 多单元聚合 + 质量守卫 fallback）；回答依据知识库检索材料，仅供参考，不构成投资建议。</div>
 </div>
 
 <div class="foot">数据源：<code>C:/项目/PDF/_ingest*</code> · 治理卡：<code>/dw.html</code> · 状态：<code>/kb_ingest.html</code></div>
@@ -601,7 +601,9 @@ loadH18();
       if(body) body.innerHTML='<div class="empty">暂无问答示例数据（/static/kb_qa_samples.json 为空）。HTTP 问答接口待 8091 审批，当前为静态示例。</div>';
       return;
     }
-    if(meta) meta.textContent=(d.model||'未知模型')+' · 生成 '+(d.generated_at||'—')+' · '+samples.length+' 个示例';
+    const guardInfo=((d.guard&&d.guard.enabled) ? ('开('+(d.guard.on_fail||'fallback')+')') : '关');
+    if(meta) meta.textContent=(d.mode||'single')+' 模式 · 守卫='+guardInfo+' · 模型 '+(d.model||'—')
+      +' · 生成 '+(d.generated_at||'—')+' · '+samples.length+' 个示例';
     if(body) body.innerHTML=samples.map(function(s,i){
       const level=((s.confidence&&s.confidence.level)||'none');
       const cites=(s.citations||[]).map(function(c){
@@ -610,16 +612,32 @@ loadH18();
       const ans=String(s.answer||'（无答案）');
       const short=ans.length>180?ans.slice(0,180)+'…':ans;
       const confReason=((s.confidence&&s.confidence.reasons)||[]).slice(0,1).join('；');
+      const isMulti=String(s.mode||d.mode||'multi')==='multi';
+      const modeBadge=isMulti?'<span class="qa-conf" style="background:#122642;color:#79c0ff">multi</span>':'';
+      let guardBadge='';
+      if(s.guard_passed===true){ guardBadge='<span class="qa-conf" style="background:#12301c;color:#3fb950">守卫通过</span>'; }
+      else if(s.guard_passed===false){ guardBadge='<span class="qa-conf" style="background:#2a1512;color:#f85149">守卫未通过('+qesc(s.guard_action||'—')+')</span>'; }
+      const status=s.status||(s.fallback?'fallback':(s.refusal||level==='none'?'no_evidence':'success'));
+      const statusLabel={success:'可答',no_evidence:'拒答',fallback:'回退'}[status]||status;
+      const statusStyle=status==='success'?'background:#12301c;color:#3fb950':(status==='fallback'?'background:#2b2410;color:#d29922':'background:#2a120f;color:#f85149');
+      const statusBadge='<span class="qa-conf" style="'+statusStyle+'">'+qesc(statusLabel)+'</span>';
       const demo=(String(s.category||'').indexOf('simulated')>=0)
         ? '<span class="qa-conf" style="background:#2d333b;color:#c9d1d9">演示</span>' : '';
-      const fb=s.fallback ? '<span class="qa-conf" style="background:#2a1512;color:#f85149">规则降级</span>' : '';
+      const fb=(s.fallback && status!=='fallback')
+        ? '<span class="qa-conf" style="background:#2a1512;color:#f85149">规则降级</span>' : '';
       const citesHtml=cites ? ('引用：'+cites) : '<span style="color:var(--dim)">无引用</span>';
+      const metrics=[];
+      if(s.citation_resolvable_rate!=null) metrics.push('引用可解析 '+Math.round(s.citation_resolvable_rate*100)+'%');
+      if(s.inference_ratio!=null) metrics.push('推断占比 '+Math.round(s.inference_ratio*100)+'%');
+      if(s.distinct_cited_units!=null) metrics.push('引用单元 '+s.distinct_cited_units+' 个');
+      const metricHtml=metrics.length?'<div style="color:var(--dim);font-size:11px;margin-top:4px">'+qesc(metrics.join(' · '))+'</div>':'';
       return '<div class="card qa-card">'
-        + '<div class="meta">#'+(i+1)+' · '+qesc(s.category||'')+demo+fb
+        + '<div class="meta">#'+(i+1)+' · '+qesc(s.category||'')+demo+modeBadge+guardBadge+statusBadge+fb
         + ' <span class="qa-conf" style="'+(CONF_STYLE[level]||CONF_STYLE.none)+'">'+(CONF_LABEL[level]||CONF_LABEL.none)+'</span></div>'
         + '<div class="qa-q">'+qesc(s.question)+'</div>'
         + '<div class="qa-a">'+qesc(short)+'</div>'
         + '<div class="qa-cites">'+citesHtml+'</div>'
+        + metricHtml
         + (confReason?'<div style="color:var(--dim);font-size:11px;margin-top:4px">置信说明：'+qesc(confReason)+'</div>':'')
         + '</div>';
     }).join('');

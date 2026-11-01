@@ -61,6 +61,11 @@ def test_citation_and_confidence_rendering_fields():
     for label in ("高置信", "中置信", "低置信", "拒答/无依据", "置信说明"):
         assert label in html, label
     assert "规则降级" in html and "演示" in html
+    # multi + guard 标记渲染（wave21 schema v2）
+    for marker in ("multi", "守卫通过", "守卫未通过", "可答", "拒答", "回退",
+                   "引用可解析", "推断占比", "引用单元"):
+        assert marker in html, marker
+    assert "guard_passed" in html and "citation_resolvable_rate" in html and "inference_ratio" in html
     # 答案摘要截断（≤180 字）
     assert "slice(0,180)" in html
 
@@ -71,28 +76,39 @@ def test_degradation_texts_and_http_note():
     assert "问答示例暂不可用" in html
     assert "暂无问答示例数据" in html
     assert "加载失败（降级）" in html and "无数据（降级）" in html
-    # 必须注明 HTTP 接口待审批、当前为静态示例
-    assert "HTTP 问答接口待 8091 审批，当前为静态示例" in html
+    # 必须注明 HTTP 接口待审批、当前为静态示例（multi+guard 升级后文案）
+    assert "问答接口待 8091 审批，当前为静态示例" in html
+    assert "multi 多单元聚合 + 质量守卫 fallback" in html
     # 只允许该区块读 kb_qa_samples，不得出现写操作
     assert "POST" not in html.split("qa-sample-panel")[1][:6000]
 
 
 def test_static_samples_contract_readonly():
+    """wave21：门户样本升级 schema v2（multi+guard）；只读校验，不修改。"""
     data = json.loads(SAMPLES.read_text(encoding="utf-8"))
     assert data.get("kind") == "kb_qa_samples"
+    assert data.get("schema_version") == 2
+    assert data.get("mode") == "multi"
+    guard = data.get("guard") or {}
+    assert guard.get("enabled") is True and guard.get("on_fail") == "fallback"
     assert data.get("disclaimer") and "不构成投资建议" in data["disclaimer"]
     samples = data.get("samples") or []
-    assert len(samples) == 5
+    assert 10 <= len(samples) <= 12
     for s in samples:
         assert s.get("question") and "answer" in s
+        assert s.get("mode") == "multi"
+        assert s.get("status") in ("success", "no_evidence", "fallback")
+        assert "guard_passed" in s and "guard_action" in s
+        assert isinstance(s.get("guard_issues"), list)
+        assert isinstance(s.get("citation_valid"), list)
+        assert "citation_invalid" in s
+        assert "inference_ratio" in s and "fallback" in s
         assert (s.get("confidence") or {}).get("level") in ("high", "medium", "low", "none", "n/a")
         for c in s.get("citations") or []:
-            assert c.get("unit_id") and c.get("text") is not None
-            assert "page" in c
-    # 覆盖无依据/失败演示两类
-    categories = [s.get("category") for s in samples]
-    assert any("no_evidence" in str(c) for c in categories)
-    assert any("failure" in str(c) for c in categories)
+            assert c.get("unit_id") and "page" in c
+    stats = data.get("stats") or {}
+    assert stats.get("total") == len(samples)
+    assert stats.get("success", 0) + stats.get("no_evidence", 0) + stats.get("fallback", 0) == len(samples)
 
 
 def test_inline_js_syntax_node_check(tmp_path):
@@ -109,3 +125,20 @@ def test_inline_js_syntax_node_check(tmp_path):
     proc = subprocess.run([node, "--check", str(js_file)], capture_output=True, text=True,
                           timeout=60, encoding="utf-8", errors="replace")
     assert proc.returncode == 0, proc.stderr
+
+
+def test_multi_guard_page_adaptation():
+    """wave21：页面适配 multi+guard schema v2（meta 显示模式/守卫，卡片显示守卫与指标）。"""
+    html = _html()
+    assert "守卫=开(fallback)" in html or "守卫=" in html
+    assert "s.guard_passed===true" in html
+    assert "s.guard_passed===false" in html
+    assert "s.status||" in html
+    assert "s.mode" in html
+    # 静态 JSON 与页面字段对齐：页面读取的字段都在样本里
+    data = json.loads(SAMPLES.read_text(encoding="utf-8"))
+    sample = (data.get("samples") or [{}])[0]
+    for field in ("mode", "guard_passed", "guard_action", "citation_resolvable_rate",
+                  "inference_ratio", "distinct_cited_units", "status", "fallback"):
+        assert field in sample, field
+    assert data.get("mode") == "multi" and (data.get("guard") or {}).get("enabled") is True

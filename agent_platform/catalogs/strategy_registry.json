@@ -4346,5 +4346,126 @@
       }
     },
     "note": "12 条 guard 抽查清单（6 pass / 6 fallback）；拦截分 GG-01（4条：citation_missing+insufficient+inference_heavy）与 GG-02（2条 insufficient）；优先抽查 GR-008/002/005/004/003/012；未改任何数据。"
+  },
+  "card_review_page_20261101": {
+    "page": "portal/card_review.html",
+    "data": "portal/static/card_review_data.json",
+    "nav": "portal/static/nav.js（ops → 学习卡审核）",
+    "note": "学习卡审核页：60 候选点选（通过/需修改/驳回/未决）+备注+筛选+进度+localStorage+导出 decisions JSON；HTTP 200；闭环保留：导出→card_review.py decide→apply→merge。"
+  },
+  "kb_qa_samples_multi_20261101": {
+    "report": "research/reports/kb_qa_samples_multi_20261101.md",
+    "summary": {
+      "total": 12,
+      "success": 3,
+      "no_evidence": 1,
+      "fallback": 8,
+      "guard_passed": 4,
+      "guard_failed": 8,
+      "avg_citations": 2.25,
+      "avg_inference_ratio": 0.5,
+      "elapsed_seconds": 120.9,
+      "by_theme": {
+        "量化/技术分析": 2,
+        "其他/综合": 2,
+        "AI算力/半导体": 2,
+        "宏观/策略/贸易": 2,
+        "消费/医药": 2,
+        "新能源/电池": 1,
+        "金融/资本市场": 1
+      }
+    },
+    "note": "门户问答样例升级 multi+guard：12 条多单元生成，成功3/无依据1/fallback8（guard_passed 4、失败8）；样本含 mode/guard 字段；备份已存。"
+  },
+  "eval_v3_baseline_20261101": {
+    "tool": "tools/kb_corpus/eval_v3_baseline.py",
+    "report": "research/reports/eval_v3_baseline_20261101.md",
+    "conclusion": {
+      "v2_vs_v1_significant": true,
+      "overall": {
+        "n": 102,
+        "v1": {
+          "precision_at_k": 0.702,
+          "coverage": 0.8534,
+          "hit": 0.9608,
+          "ndcg_at_k": 0.7685
+        },
+        "v2": {
+          "precision_at_k": 0.8,
+          "coverage": 0.8931,
+          "hit": 1.0,
+          "ndcg_at_k": 0.8565
+        },
+        "delta": {
+          "precision_at_k": 0.098,
+          "coverage": 0.0397,
+          "hit": 0.0392,
+          "ndcg_at_k": 0.088
+        }
+      },
+      "subset_89": {
+        "n": 89,
+        "v1": {
+          "precision_at_k": 0.6831,
+          "coverage": 0.8371,
+          "hit": 0.9551,
+          "ndcg_at_k": 0.7552
+        },
+        "v2": {
+          "precision_at_k": 0.782,
+          "coverage": 0.8933,
+          "hit": 1.0,
+          "ndcg_at_k": 0.8479
+        },
+        "delta": {
+          "precision_at_k": 0.0989,
+          "coverage": 0.0562,
+          "hit": 0.0449,
+          "ndcg_at_k": 0.0927
+        }
+      },
+      "subset_13": {
+        "n": 13,
+        "v1": {
+          "precision_at_k": 0.8308,
+          "coverage": 0.9654,
+          "hit": 1.0,
+          "ndcg_at_k": 0.8589
+        },
+        "v2": {
+          "precision_at_k": 0.9231,
+          "coverage": 0.8923,
+          "hit": 1.0,
+          "ndcg_at_k": 0.9151
+        },
+        "delta": {
+          "precision_at_k": 0.0923,
+          "coverage": -0.0731,
+          "hit": 0.0,
+          "ndcg_at_k": 0.0562
+        }
+      },
+      "vs_v2_89_reference": {
+        "v2_soft_p5": 0.782,
+        "v2_soft_ndcg": 0.8479,
+        "v1_p5": 0.6831,
+        "v1_ndcg": 0.7552
+      },
+      "reasons": [
+        "v3 0.702→0.8（P@5 Δ=+0.0980）；NDCG 0.7685→0.8565（Δ=+0.0880）",
+        "配对 t：P@5 t=4.1249 p=0.0；NDCG t=4.2003 p=0.0",
+        "bootstrap 95% CI：P@5 [0.0549, 0.1432]（不含0）；NDCG [0.0487, 0.1311]（不含0）",
+        "新增 13 条：P@5 v1 0.8308→v2 0.9231（Δ=+0.0923）；NDCG Δ=+0.0562",
+        "v2 89 参考（wave12 合入回归）：P@5 0.782 vs 本 v3 全体 0.8；v3 89 子集 0.782（同一默认引擎，差异来自评测集/覆盖）"
+      ],
+      "conclusion": "v3 102 查询上，当前 v2 默认（soft+synonym 0.6）显著优于 v1 → 结论在 v3 上仍成立；新增 13 条 merged-concept 查询未改变方向，但会改变总体均值幅度（见上）。",
+      "caveats": [
+        "v2 参考值为 wave12 在 89 查询（同一批查询、同一默认引擎）上的结果；v3 89 子集与参考值差异来自评测集查询范围/覆盖（v3 子集与 v2 完全同查询），可用于核对实现是否漂移；",
+        "新增 13 条为 merged-concept/跨境电商/东盟相关查询，难度分布与 89 条不同，会改变总体均值；",
+        "支撑/幻觉口径未变（P@5 固定分母 5；NDCG 指数增益）；全部本地、不调 LLM；",
+        "评测集 v3 已 freeze（hash 见 report_header）——复现须使用同一资产。"
+      ]
+    },
+    "note": "v3 102 查询基线：v2 P@5 0.702→0.800（+9.8pp，p<0.001，CI[0.0549,0.1432]）、NDCG +8.8pp（CI[0.0487,0.1311]）→ v2 vs v1 结论在 v3 仍显著；89 子集与 wave12 逐位一致（无漂移）。"
   }
 }
