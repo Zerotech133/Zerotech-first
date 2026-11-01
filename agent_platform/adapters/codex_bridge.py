@@ -429,12 +429,19 @@ _G["__name__"] = "codex_plugin"
 def _runtime_guard(event, args):
     # H6 第二层增量：跨进程 runner 内运行时拒绝（非 AppContainer）。
     # 阻断插件通过已加载/间接路径发起网络、子进程、ctypes 动态加载；
-    # 文件系统仍由 AST/allowlist/Job 兜底，不是完整 OS 边界。
+    # 写/追加/创建/删除文件也拒绝（只读导入不受影响）。
     if event in (
         "socket.connect", "socket.bind", "socket.getaddrinfo",
         "subprocess.Popen", "os.system", "ctypes.dlopen",
+        "os.remove", "os.rename", "os.replace", "os.rmdir",
+        "os.mkdir", "os.symlink", "os.link",
     ):
         raise PermissionError("codex sandbox blocked runtime event: %s" % event)
+    if event == "open":
+        mode = args[1] if len(args) > 1 else ""
+        if isinstance(mode, str) and any(ch in mode for ch in "wax+"):
+            raise PermissionError(
+                "codex sandbox blocked file write (mode=%r)" % mode)
 
 
 sys.addaudithook(_runtime_guard)
