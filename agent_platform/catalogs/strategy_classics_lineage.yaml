@@ -1,0 +1,28 @@
+# 策略经典知识库血缘：网络/书籍 → 笔记/单元 → RAG / 筛选器 / 学习卡
+nodes:
+- id: web_sources
+  layer: source
+  path: 官网/两本原著/回测研究/开源实现（见 knowledge_docs/米勒维尼SEPA_全网资源库.md）
+  desc: 2026-11-01 联网核实的一手/二手来源（含 2 篇回测、6 个开源实现）
+- id: classics_notes
+  layer: knowledge
+  path: C:/项目/PDF/_ingest_notes/米勒维尼_趋势交易体系/
+  desc: 18 条知识单元（8 讲解要点 + 2 回测证据 + 8 资源条目，带时间码/URL 出处）
+- id: classics_rag
+  layer: served
+  path: knowledge_docs/米勒维尼SEPA_*.md + .rag_index.json
+  desc: 学习笔记/资料清单/全网资源库 3 篇 + RAG 489 记录
+- id: trend_template_tool
+  layer: served
+  path: tools/research/trend_template.py
+  desc: Trend Template 8 条筛选器（仅筛选，未回测/未入策略库）
+edges:
+- from: web_sources
+  to: classics_notes
+  op: 人工整理 + 联网核实（2026-11-01）
+- from: classics_notes
+  to: classics_rag
+  op: tools/kb_corpus/kb_units_snapshot.py + RAG 重建
+- from: classics_notes
+  to: trend_template_tool
+  op: 口径映射（书版 8 条 → A 股实现）

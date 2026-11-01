@@ -13,7 +13,8 @@ from datetime import datetime
 from pathlib import Path
 
 REPO = Path(r"C:\项目\老田的AI助手")
-INGESTS = [("书籍库", Path(r"C:/项目/PDF/_ingest")), ("研报库", Path(r"C:/项目/PDF/_ingest_reports"))]
+INGESTS = [("书籍库", Path(r"C:/项目/PDF/_ingest")), ("研报库", Path(r"C:/项目/PDF/_ingest_reports")),
+           ("策略经典", Path(r"C:/项目/PDF/_ingest_notes"))]
 KB_DOCS = REPO / "knowledge_docs"
 OUT = REPO / "portal" / "static" / "kb_ingest.json"
 
@@ -67,8 +68,14 @@ def main() -> int:
     total_pages = sum(b["pages"] or 0 for b in books)
     total_chapters = sum(b["chapters"] for b in books)
     total_units = sum(b["units"] for b in books)
+    classics = {"docs": 0, "units": 0}
+    for b in books:
+        if b.get("source") == "策略经典":
+            classics["docs"] += 1
+            classics["units"] += int(b.get("units") or 0)
     payload = {
         "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+        "classics": classics,
         "ingest_dirs": [str(x) for _, x in INGESTS],
         "books": books,
         "totals": {"books": len(books), "pages": total_pages, "chapters": total_chapters, "units": total_units},

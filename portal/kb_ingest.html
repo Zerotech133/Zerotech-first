@@ -39,6 +39,7 @@ ol{margin:6px 0 0 20px;padding:0}
     <div class="card"><div class="k">总页数</div><div class="v" id="c-pages">—</div></div>
     <div class="card"><div class="k">章节数</div><div class="v" id="c-chapters">—</div></div>
     <div class="card"><div class="k">知识单元</div><div class="v" id="c-units">—</div></div>
+    <div class="card"><div class="k">策略经典单元</div><div class="v" id="c-classics">—</div></div>
     <div class="card"><div class="k">RAG 文档 / 记录</div><div class="v" id="c-rag">—</div></div>
   </div>
 </div>
@@ -76,6 +77,7 @@ ol{margin:6px 0 0 20px;padding:0}
     $('c-books').textContent = d.totals.books; $('c-pages').textContent = d.totals.pages;
     $('c-chapters').textContent = d.totals.chapters; $('c-units').textContent = d.totals.units;
     $('c-rag').textContent = (d.rag.docs ?? '—') + ' / ' + (d.rag.records ?? '—');
+    if (d.classics) $('c-classics').textContent = d.classics.units + ' 条 / ' + d.classics.docs + ' 篇';
     const okAll = d.verify.ok && d.pipeline.ok;
     $('verify-badge').className = 'badge ' + (okAll ? 'b-ok' : 'b-bad');
     $('verify-badge').textContent = okAll ? 'ALL PASS' : 'CHECK FAILED';

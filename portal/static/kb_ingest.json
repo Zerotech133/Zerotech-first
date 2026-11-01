@@ -1,8 +1,13 @@
 {
- "generated_at": "2026-11-01T09:21:33+08:00",
+ "generated_at": "2026-11-01T15:16:11+08:00",
+ "classics": {
+  "docs": 1,
+  "units": 18
+ },
  "ingest_dirs": [
   "C:\\项目\\PDF\\_ingest",
-  "C:\\项目\\PDF\\_ingest_reports"
+  "C:\\项目\\PDF\\_ingest_reports",
+  "C:\\项目\\PDF\\_ingest_notes"
  ],
  "books": [
   {
@@ -931,13 +936,22 @@
    "units": 5,
    "has_ocr": false,
    "has_layout": true
+  },
+  {
+   "book": "米勒维尼_趋势交易体系",
+   "source": "策略经典",
+   "pages": 18,
+   "chapters": 18,
+   "units": 18,
+   "has_ocr": false,
+   "has_layout": false
   }
  ],
  "totals": {
-  "books": 103,
-  "pages": 2491,
-  "chapters": 5107,
-  "units": 498
+  "books": 104,
+  "pages": 2509,
+  "chapters": 5125,
+  "units": 516
  },
  "verify": {
   "ok": true,
@@ -1058,10 +1072,10 @@
   ]
  },
  "rag": {
-  "docs": 113,
-  "records": 466,
+  "docs": 116,
+  "records": 489,
   "version": 1,
-  "updated_at": "2026-10-31T21:16:28.567052+00:00"
+  "updated_at": "2026-11-01T07:15:08.199000+00:00"
  },
  "thresholds": {
   "ocr_chars_per_page_min": 100,

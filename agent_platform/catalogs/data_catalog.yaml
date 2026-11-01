@@ -4,8 +4,9 @@
 #   ③ashare_kline 补北交所代码段；④tdx_quote 标注按需手动启停；⑤增补 11 条主力源 + 补登 quant_data_root（10 → 22 条）。
 # v3→v4 变更摘要（2026-10-31）：登记 report_rc（卖方研报评级/盈利预测历史，H34-H36 数据源）。
 # v4→v5 变更摘要（2026-10-31）：登记 research_reports_kb（研报知识库：100 份研报入库/498 知识单元/RAG 462 记录）。
+# v5→v6 变更摘要（2026-11-01）：登记 strategy_classics_kb（策略经典：米勒维尼 SEPA 18 条单元/回测证据/资源库）。
 # v1 种子出处：K-ORG-119 批1（2026-10-16 实战验证的真实位置）。
-version: 5
+version: 6
 updated: "2026-10-31"
 registrar: DATA1（张松） / DSH-Lead（Phase6 语料登记、report_rc 登记）
 resources:
@@ -167,6 +168,20 @@ resources:
     fail_mode: 重建中断→curated 与原始层版本不一致；回滚 tushare_curated.prev
     grants: [invest, quality]
     verified: 2026-10-27（DATA1 实测：7.22GB / 322.9M 行）
+
+  - id: strategy_classics_kb
+    kind: jsonl+markdown
+    uri: C:/项目/PDF/_ingest_notes/ ; knowledge_docs/米勒维尼SEPA_*.md
+    what: 策略经典知识库（米勒维尼 SEPA/Trend Template/VCP：10+8 条知识单元=18 条；学习笔记/资料清单/全网资源库 3 篇；回测证据 2 条；开源实现/工具 4 条）
+    layer: 知识层（策略经典；人工整理+联网核实）
+    owner: DSH-Lead
+    steward: DSH-Lead
+    freshness: 手动（知识整理/联网检索后更新；RAG 重建）
+    backup: 随 knowledge_docs RAG 索引与 _ingest_notes 目录（无独立备份，可重建）
+    verify_period: 每次更新（golden 抽检 + 人工抽检；当前 10 条初判 17/20 通过率参考）
+    fail_mode: 网络不可用时资源无法核验→条目标注「待核验」；口径冲突以书版/官方为准
+    grants: [invest, quality]
+    verified: "2026-11-01（18 条知识单元；2 篇回测研究；6 个开源实现；RAG 489 记录）"
 
   - id: research_reports_kb
     kind: parquet+jsonl
