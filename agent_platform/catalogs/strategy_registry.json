@@ -2021,5 +2021,1758 @@
     },
     "portal_samples": 17,
     "note": "问答样本扩量：请求12条→成功6/降级0/无依据6（LLM按规则拒答，非检索失败），合并原5条=17条；备份已存；页面静态刷新 HTTP 200。"
+  },
+  "merge_sim_20261101": {
+    "tool": "tools/kb_corpus/merge_sim.py",
+    "report": "research/reports/merge_sim_20261101.md",
+    "conclusion": "合并后（alias 重映射口径）@1 30→31（Δ+1）、@5 32→32（Δ+0），检索命中不降；可考虑执行真实合并（需人工审批+备份+更新引用/重建索引）。",
+    "recommendation": {
+      "action": "有条件可合并",
+      "preconditions": [
+        "人工确认 2 组跨研报重复内容确为同一知识（claim 全同）",
+        "备份 kb_units_all.json 与知识单元源 jsonl（写前快照）",
+        "合并后更新问题库 source_unit_id（按 alias_remap）或保留 alias 解析层",
+        "重建检索索引/清缓存（kb_read_api 每次全量加载，无需额外重建，但门户缓存需刷新）",
+        "合并/重建属数据变更，按仓库纪律审批后执行（本工具不执行）"
+      ],
+      "risk": "若不做 alias 重映射（merged_raw 口径），@5 变化 -1：问题库会丢失被剔除单元来源，出现假 miss；必须同步更新引用。"
+    },
+    "note": "副本模拟合并 2 组重复单元（alias 重映射口径）：@1 30→31(+1)、@5 不变；有条件可合并，需人工确认+备份+更新引用/审批；不做 alias 重映射则 @5 -1（假 miss）。"
+  },
+  "kb_qa_questions_v2_20261101": {
+    "tool": "tools/kb_corpus/kb_qa_bank_v2.py",
+    "stats": {
+      "total": 50,
+      "categories": 7,
+      "by_category": {
+        "是什么": 7,
+        "影响如何": 7,
+        "竞争格局": 7,
+        "关键数据": 7,
+        "风险限制": 8,
+        "如何识别": 7,
+        "驱动因素": 7
+      },
+      "by_theme": {
+        "量化/技术分析": 8,
+        "其他/综合": 7,
+        "AI算力/半导体": 7,
+        "宏观/策略/贸易": 7,
+        "消费/医药": 7,
+        "新能源/电池": 7,
+        "金融/资本市场": 7
+      },
+      "candidates_generated": 495,
+      "deduped_removed": 445
+    },
+    "selfcheck": {
+      "summary": {
+        "total": 50,
+        "hit_at_1": 48,
+        "hit_at_5": 50,
+        "hit_rate_at_1": 0.96,
+        "hit_rate_at_5": 1.0,
+        "miss_source": 0,
+        "retrieval_no_hits": 0
+      },
+      "by_category": [
+        {
+          "category": "关键数据",
+          "total": 7,
+          "hit_at_1": 7,
+          "hit_at_5": 7,
+          "hit_rate_at_1": 1.0,
+          "hit_rate_at_5": 1.0,
+          "miss_source": 0,
+          "retrieval_no_hits": 0
+        },
+        {
+          "category": "如何识别",
+          "total": 7,
+          "hit_at_1": 6,
+          "hit_at_5": 7,
+          "hit_rate_at_1": 0.8571,
+          "hit_rate_at_5": 1.0,
+          "miss_source": 0,
+          "retrieval_no_hits": 0
+        },
+        {
+          "category": "影响如何",
+          "total": 7,
+          "hit_at_1": 7,
+          "hit_at_5": 7,
+          "hit_rate_at_1": 1.0,
+          "hit_rate_at_5": 1.0,
+          "miss_source": 0,
+          "retrieval_no_hits": 0
+        },
+        {
+          "category": "是什么",
+          "total": 7,
+          "hit_at_1": 7,
+          "hit_at_5": 7,
+          "hit_rate_at_1": 1.0,
+          "hit_rate_at_5": 1.0,
+          "miss_source": 0,
+          "retrieval_no_hits": 0
+        },
+        {
+          "category": "竞争格局",
+          "total": 7,
+          "hit_at_1": 7,
+          "hit_at_5": 7,
+          "hit_rate_at_1": 1.0,
+          "hit_rate_at_5": 1.0,
+          "miss_source": 0,
+          "retrieval_no_hits": 0
+        },
+        {
+          "category": "风险限制",
+          "total": 8,
+          "hit_at_1": 7,
+          "hit_at_5": 8,
+          "hit_rate_at_1": 0.875,
+          "hit_rate_at_5": 1.0,
+          "miss_source": 0,
+          "retrieval_no_hits": 0
+        },
+        {
+          "category": "驱动因素",
+          "total": 7,
+          "hit_at_1": 7,
+          "hit_at_5": 7,
+          "hit_rate_at_1": 1.0,
+          "hit_rate_at_5": 1.0,
+          "miss_source": 0,
+          "retrieval_no_hits": 0
+        }
+      ],
+      "by_theme": [
+        {
+          "theme": "AI算力/半导体",
+          "total": 7,
+          "hit_at_1": 7,
+          "hit_at_5": 7,
+          "hit_rate_at_1": 1.0,
+          "hit_rate_at_5": 1.0,
+          "miss_source": 0,
+          "retrieval_no_hits": 0
+        },
+        {
+          "theme": "其他/综合",
+          "total": 7,
+          "hit_at_1": 7,
+          "hit_at_5": 7,
+          "hit_rate_at_1": 1.0,
+          "hit_rate_at_5": 1.0,
+          "miss_source": 0,
+          "retrieval_no_hits": 0
+        },
+        {
+          "theme": "宏观/策略/贸易",
+          "total": 7,
+          "hit_at_1": 7,
+          "hit_at_5": 7,
+          "hit_rate_at_1": 1.0,
+          "hit_rate_at_5": 1.0,
+          "miss_source": 0,
+          "retrieval_no_hits": 0
+        },
+        {
+          "theme": "新能源/电池",
+          "total": 7,
+          "hit_at_1": 7,
+          "hit_at_5": 7,
+          "hit_rate_at_1": 1.0,
+          "hit_rate_at_5": 1.0,
+          "miss_source": 0,
+          "retrieval_no_hits": 0
+        },
+        {
+          "theme": "消费/医药",
+          "total": 7,
+          "hit_at_1": 7,
+          "hit_at_5": 7,
+          "hit_rate_at_1": 1.0,
+          "hit_rate_at_5": 1.0,
+          "miss_source": 0,
+          "retrieval_no_hits": 0
+        },
+        {
+          "theme": "量化/技术分析",
+          "total": 8,
+          "hit_at_1": 6,
+          "hit_at_5": 8,
+          "hit_rate_at_1": 0.75,
+          "hit_rate_at_5": 1.0,
+          "miss_source": 0,
+          "retrieval_no_hits": 0
+        },
+        {
+          "theme": "金融/资本市场",
+          "total": 7,
+          "hit_at_1": 7,
+          "hit_at_5": 7,
+          "hit_rate_at_1": 1.0,
+          "hit_rate_at_5": 1.0,
+          "miss_source": 0,
+          "retrieval_no_hits": 0
+        }
+      ],
+      "questions": [
+        {
+          "id": "q2_b5a0a0e045",
+          "question": "量学理论的结论在什么条件下可能不成立？",
+          "category": "风险限制",
+          "theme": "量化/技术分析",
+          "source_unit_id": "5cfa2f156e5c",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "5cfa2f156e5c"
+        },
+        {
+          "id": "q2_8ddcc16a4b",
+          "question": "机队规模变化有哪些可核验的统计口径或样本？",
+          "category": "关键数据",
+          "theme": "其他/综合",
+          "source_unit_id": "18e4a520614e",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "18e4a520614e"
+        },
+        {
+          "id": "q2_f90f5f46a6",
+          "question": "主要技术与经济限制的催化因素与时间节点有哪些？",
+          "category": "驱动因素",
+          "theme": "AI算力/半导体",
+          "source_unit_id": "1117d3abc7da",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "1117d3abc7da"
+        },
+        {
+          "id": "q2_a593448ce5",
+          "question": "北京市货物贸易净出口需要跟踪哪些指标或事件？",
+          "category": "如何识别",
+          "theme": "宏观/策略/贸易",
+          "source_unit_id": "61bca6c6d825",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "61bca6c6d825"
+        },
+        {
+          "id": "q2_3d1abf0240",
+          "question": "离岛免税消费数据对相关标的基本面或估值的影响如何？",
+          "category": "影响如何",
+          "theme": "消费/医药",
+          "source_unit_id": "6581eca343ac",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "6581eca343ac"
+        },
+        {
+          "id": "q2_1e95f989df",
+          "question": "海上风电项目规划的结论由哪些证据支撑？",
+          "category": "是什么",
+          "theme": "新能源/电池",
+          "source_unit_id": "540733583fec",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "540733583fec"
+        },
+        {
+          "id": "q2_6076398cc7",
+          "question": "保险资金投资港股通 ETF的进入壁垒与差异化优势是什么？",
+          "category": "竞争格局",
+          "theme": "金融/资本市场",
+          "source_unit_id": "e9548ab7c8d3",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "e9548ab7c8d3"
+        },
+        {
+          "id": "q2_f93ae02b9d",
+          "question": "伏击涨停的灵魂的景气度受哪些变量影响？",
+          "category": "驱动因素",
+          "theme": "量化/技术分析",
+          "source_unit_id": "538860c3cb35",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "538860c3cb35"
+        },
+        {
+          "id": "q2_ef78939178",
+          "question": "网络安全软技能需求的主要风险与不确定性有哪些？",
+          "category": "风险限制",
+          "theme": "其他/综合",
+          "source_unit_id": "ccec1052fa9c",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "ccec1052fa9c"
+        },
+        {
+          "id": "q2_59e3d93480",
+          "question": "轨道计算核心优势中研报提供了哪些可验证的关键数据或指标？",
+          "category": "关键数据",
+          "theme": "AI算力/半导体",
+          "source_unit_id": "49cf73da115f",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "49cf73da115f"
+        },
+        {
+          "id": "q2_0d7db24320",
+          "question": "中国畜禽肉产品主要出口市场的传导路径与受益环节是什么？",
+          "category": "影响如何",
+          "theme": "宏观/策略/贸易",
+          "source_unit_id": "1a53227f2949",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "1a53227f2949"
+        },
+        {
+          "id": "q2_4f34cbb059",
+          "question": "优先行动：支持本土生态系统的进入壁垒与差异化优势是什么？",
+          "category": "竞争格局",
+          "theme": "消费/医药",
+          "source_unit_id": "664a0d2d2756",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "664a0d2d2756"
+        },
+        {
+          "id": "q2_7274d52791",
+          "question": "如何识别全球风电市场趋势相关的机会或信号？",
+          "category": "如何识别",
+          "theme": "新能源/电池",
+          "source_unit_id": "4b6cf5a7158e",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "4b6cf5a7158e"
+        },
+        {
+          "id": "q2_1595bd5290",
+          "question": "区域收入分化的核心结论与主要依据是什么？",
+          "category": "是什么",
+          "theme": "金融/资本市场",
+          "source_unit_id": "06025df5facb",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "06025df5facb"
+        },
+        {
+          "id": "q2_4b27690260",
+          "question": "电气化率的关键参数或阈值有哪些？",
+          "category": "关键数据",
+          "theme": "量化/技术分析",
+          "source_unit_id": "69acb1bb592f",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "69acb1bb592f"
+        },
+        {
+          "id": "q2_0ca04a589f",
+          "question": "SNPO 产业联盟变化会带来哪些连锁影响？",
+          "category": "影响如何",
+          "theme": "其他/综合",
+          "source_unit_id": "d96e317c09b1",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "d96e317c09b1"
+        },
+        {
+          "id": "q2_5cb2ec9a7b",
+          "question": "供应链风险管理的限制条件与适用边界是什么？",
+          "category": "风险限制",
+          "theme": "AI算力/半导体",
+          "source_unit_id": "4abb63751e3c",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "4abb63751e3c"
+        },
+        {
+          "id": "q2_ae735ac1c1",
+          "question": "财富来源审查转型的验证方式与观测窗口是什么？",
+          "category": "如何识别",
+          "theme": "宏观/策略/贸易",
+          "source_unit_id": "6978d89cc3a4",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "6978d89cc3a4"
+        },
+        {
+          "id": "q2_6b334e4e8c",
+          "question": "传媒主体投资并购策略的核心结论与主要依据是什么？",
+          "category": "是什么",
+          "theme": "消费/医药",
+          "source_unit_id": "bc46cbc09681",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "bc46cbc09681"
+        },
+        {
+          "id": "q2_a4f5637316",
+          "question": "宁夏新能源发展目标的竞争格局与主要参与者有哪些？",
+          "category": "竞争格局",
+          "theme": "新能源/电池",
+          "source_unit_id": "6ee3bdfa28fe",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "6ee3bdfa28fe"
+        },
+        {
+          "id": "q2_4d6c0a51fe",
+          "question": "非银流动性支持工具的定价与退出约束的核心驱动因素是什么？",
+          "category": "驱动因素",
+          "theme": "金融/资本市场",
+          "source_unit_id": "885b8fd973b9",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "885b8fd973b9"
+        },
+        {
+          "id": "q2_8cbf3c004c",
+          "question": "伏击涨停的参与模式对产业链或行业格局的影响如何？",
+          "category": "影响如何",
+          "theme": "量化/技术分析",
+          "source_unit_id": "41a06a212777",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "41a06a212777"
+        },
+        {
+          "id": "q2_aa49124184",
+          "question": "储气调峰能力建设中研报提供了哪些可验证的关键数据或指标？",
+          "category": "关键数据",
+          "theme": "其他/综合",
+          "source_unit_id": "4c6ddf0bf36f",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "4c6ddf0bf36f"
+        },
+        {
+          "id": "q2_bcbfd79337",
+          "question": "智能算力规模占比的核心驱动因素是什么？",
+          "category": "驱动因素",
+          "theme": "AI算力/半导体",
+          "source_unit_id": "776f36408a89",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "776f36408a89"
+        },
+        {
+          "id": "q2_d4cc55704f",
+          "question": "酒店预订需求的风险提示是否充分？",
+          "category": "风险限制",
+          "theme": "宏观/策略/贸易",
+          "source_unit_id": "03c66fc4d947",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "03c66fc4d947"
+        },
+        {
+          "id": "q2_8d338db0a6",
+          "question": "白酒渠道策略转变的进入壁垒与差异化优势是什么？",
+          "category": "竞争格局",
+          "theme": "消费/医药",
+          "source_unit_id": "c6dd395437e8",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "c6dd395437e8"
+        },
+        {
+          "id": "q2_2b3a271576",
+          "question": "光伏应用场景拓展方向需要跟踪哪些指标或事件？",
+          "category": "如何识别",
+          "theme": "新能源/电池",
+          "source_unit_id": "89d89cd8efa6",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "89d89cd8efa6"
+        },
+        {
+          "id": "q2_5631188efb",
+          "question": "迈威尔 2027 财年第三财季业绩指引具体指什么，研报如何定义或描述？",
+          "category": "是什么",
+          "theme": "金融/资本市场",
+          "source_unit_id": "2be84ef45b1e",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "2be84ef45b1e"
+        },
+        {
+          "id": "q2_764c00190b",
+          "question": "涨停基因的景气度受哪些变量影响？",
+          "category": "驱动因素",
+          "theme": "量化/技术分析",
+          "source_unit_id": "d1e4d69ac14c",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "d1e4d69ac14c"
+        },
+        {
+          "id": "q2_9efedd1a83",
+          "question": "企业信用结构性分化的证据链由哪些数据构成？",
+          "category": "关键数据",
+          "theme": "其他/综合",
+          "source_unit_id": "54c08778295c",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "54c08778295c"
+        },
+        {
+          "id": "q2_56b3d0673e",
+          "question": "GPU 算力价格调整需要跟踪哪些指标或事件？",
+          "category": "如何识别",
+          "theme": "AI算力/半导体",
+          "source_unit_id": "b58511719d1b",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "b58511719d1b"
+        },
+        {
+          "id": "q2_960b202685",
+          "question": "中国畜禽肉产品贸易总体规模的传导路径与受益环节是什么？",
+          "category": "影响如何",
+          "theme": "宏观/策略/贸易",
+          "source_unit_id": "3b570c6a6239",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "3b570c6a6239"
+        },
+        {
+          "id": "q2_1c1f28547f",
+          "question": "大中华区零售市场趋势具体指什么，研报如何定义或描述？",
+          "category": "是什么",
+          "theme": "消费/医药",
+          "source_unit_id": "bf663d3e998a",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "bf663d3e998a"
+        },
+        {
+          "id": "q2_a4026386c5",
+          "question": "钠电池产能现状的结论在什么条件下可能不成立？",
+          "category": "风险限制",
+          "theme": "新能源/电池",
+          "source_unit_id": "31e3e6d306a6",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "31e3e6d306a6"
+        },
+        {
+          "id": "q2_d3003fc146",
+          "question": "头部券商推荐标的的竞争格局与主要参与者有哪些？",
+          "category": "竞争格局",
+          "theme": "金融/资本市场",
+          "source_unit_id": "9788baf273ca",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "9788baf273ca"
+        },
+        {
+          "id": "q2_1a841a0468",
+          "question": "伏击涨停第三定律的识别规则或形态特征是什么？",
+          "category": "如何识别",
+          "theme": "量化/技术分析",
+          "source_unit_id": "8500030bfb97",
+          "retrieval_hits": 5,
+          "source_rank": 2,
+          "hit_at_1": false,
+          "hit_at_5": true,
+          "top1_unit": "01d302e0498f"
+        },
+        {
+          "id": "q2_f176a36ed6",
+          "question": "化工行业供给刚性的产业趋势与演进方向如何？",
+          "category": "驱动因素",
+          "theme": "其他/综合",
+          "source_unit_id": "a65d086e881b",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "a65d086e881b"
+        },
+        {
+          "id": "q2_87eff8d7a3",
+          "question": "品牌AI心智总得分有哪些可核验的统计口径或样本？",
+          "category": "关键数据",
+          "theme": "AI算力/半导体",
+          "source_unit_id": "fd49b3da595b",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "fd49b3da595b"
+        },
+        {
+          "id": "q2_48dd756de0",
+          "question": "纺织品出口增长的市场份额或集中度如何？",
+          "category": "竞争格局",
+          "theme": "宏观/策略/贸易",
+          "source_unit_id": "f1479d2f38dd",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "f1479d2f38dd"
+        },
+        {
+          "id": "q2_94eb09aab0",
+          "question": "网红营销与透明度要求的传导路径与受益环节是什么？",
+          "category": "影响如何",
+          "theme": "消费/医药",
+          "source_unit_id": "08c51a31de48",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "08c51a31de48"
+        },
+        {
+          "id": "q2_d163ed726d",
+          "question": "动力电池竞争壁垒的限制条件与适用边界是什么？",
+          "category": "风险限制",
+          "theme": "新能源/电池",
+          "source_unit_id": "07ff1316f83d",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "07ff1316f83d"
+        },
+        {
+          "id": "q2_426e99d5db",
+          "question": "3 季度 A 股 IPO 市场具体指什么，研报如何定义或描述？",
+          "category": "是什么",
+          "theme": "金融/资本市场",
+          "source_unit_id": "9f9f7954bcc3",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "9f9f7954bcc3"
+        },
+        {
+          "id": "q2_6e4e551ef4",
+          "question": "量柱核心理念涉及哪些量化指标（规模/增速/份额/价格）？",
+          "category": "关键数据",
+          "theme": "量化/技术分析",
+          "source_unit_id": "5b7032b50b8d",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "5b7032b50b8d"
+        },
+        {
+          "id": "q2_b74f8cebda",
+          "question": "计算机行业板块表现的验证方式与观测窗口是什么？",
+          "category": "如何识别",
+          "theme": "其他/综合",
+          "source_unit_id": "4e5135f9a479",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "4e5135f9a479"
+        },
+        {
+          "id": "q2_e5b5ca331f",
+          "question": "关键绩效指标（KPI）追踪的重要性的景气度受哪些变量影响？",
+          "category": "驱动因素",
+          "theme": "AI算力/半导体",
+          "source_unit_id": "b154139df419",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "b154139df419"
+        },
+        {
+          "id": "q2_405d9854bb",
+          "question": "中国粮食贸易主要出口市场的关键逻辑链条是什么？",
+          "category": "是什么",
+          "theme": "宏观/策略/贸易",
+          "source_unit_id": "f109e713c179",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "f109e713c179"
+        },
+        {
+          "id": "q2_ea9d018c48",
+          "question": "上海零售市场动态的结论在什么条件下可能不成立？",
+          "category": "风险限制",
+          "theme": "消费/医药",
+          "source_unit_id": "afef8065108b",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "afef8065108b"
+        },
+        {
+          "id": "q2_2b4727ca39",
+          "question": "中国“新三样”产业相关的国产化或替代进展如何？",
+          "category": "竞争格局",
+          "theme": "新能源/电池",
+          "source_unit_id": "8459f20f0e6f",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "8459f20f0e6f"
+        },
+        {
+          "id": "q2_727a131f06",
+          "question": "贵金属对产业链或行业格局的影响如何？",
+          "category": "影响如何",
+          "theme": "金融/资本市场",
+          "source_unit_id": "dce8a557e158",
+          "retrieval_hits": 5,
+          "source_rank": 1,
+          "hit_at_1": true,
+          "hit_at_5": true,
+          "top1_unit": "dce8a557e158"
+        },
+        {
+          "id": "q2_b51ca4e6fb",
+          "question": "伏击涨停的结论在什么条件下可能不成立？",
+          "category": "风险限制",
+          "theme": "量化/技术分析",
+          "source_unit_id": "28f88a6c87e9",
+          "retrieval_hits": 5,
+          "source_rank": 2,
+          "hit_at_1": false,
+          "hit_at_5": true,
+          "top1_unit": "41a06a212777"
+        }
+      ]
+    },
+    "answer_validation": {
+      "requested": 6,
+      "success": 2,
+      "fallback": 0,
+      "no_evidence": 4,
+      "answerable_rate": 0.3333,
+      "elapsed_seconds": 36.33,
+      "note": "可答率 = success / requested（success=有答案+引用+非降级+非拒答）",
+      "samples": [
+        {
+          "id": "q2_b5a0a0e045",
+          "category": "风险限制",
+          "theme": "量化/技术分析",
+          "question": "量学理论的结论在什么条件下可能不成立？",
+          "status": "no_evidence",
+          "answer": "知识库中没有足够依据回答该问题。\n\n检索材料主要介绍了量学理论的定义、构成体系（如“三维互动”、“四维立体看盘”）、核心贡献及实战应用案例，但未提及该理论结论失效或不再成立的具体条件。材料中关于市场表现不一致的描述（如 [965a86dba3a9]）针对的是人工智能治理与组织控制的关系，而非量学理论本身。",
+          "citations": [
+            {
+              "unit_id": "965a86dba3a9",
+              "book": "rp_AP202610011830075767",
+              "chapter": "03",
+              "page": 2,
+              "page_end": 14,
+              "origin": "units",
+              "text": "治理和控制更强的组织，其人工智能应用带来的显著改善比率是缺乏这些条件的组织的三到六倍。 表现并非一致。治理和控制更强的组织报告的结果明显更好——在某些情况下，其显著改善的比率是无这些条件的组织的三到六倍。"
+            }
+          ],
+          "confidence": {
+            "level": "none",
+            "reasons": [
+              "模型判断材料不足以回答（拒答）"
+            ]
+          },
+          "fallback": false,
+          "no_evidence": true
+        },
+        {
+          "id": "q2_8ddcc16a4b",
+          "category": "关键数据",
+          "theme": "其他/综合",
+          "question": "机队规模变化有哪些可核验的统计口径或样本？",
+          "status": "no_evidence",
+          "answer": "知识库中没有足够依据回答该问题。\n\n检索材料中仅包含一份关于航空业机队数据的报告（[18e4a520614e]），其中提到\"2026 年 8 月六家上市航空公司机队净增 9 架，截至 8 月末运营飞机总数达 3426 架”，但这属于单一维度的总量统计口径。材料中未提供关于机队规模变化的其他可核验统计口径（如分机型、分区域或不同样本来源）的具体信息，无法据此列举更多样本或口径。",
+          "citations": [
+            {
+              "unit_id": "18e4a520614e",
+              "book": "rp_AP202609301830022766",
+              "chapter": "8 月航空业月度数据跟踪报告 强于大市(维持)",
+              "page": 1,
+              "page_end": 3,
+              "origin": "units",
+              "text": "2026 年 8 月六家上市航空公司机队净增 9 架，截至 8 月末运营飞机总数达 3426 架，较上年末增长 1.2%。 8 月六家上市航空公司机队引进数量共净增 9 架。截至 2026 年 8 月末，六家上市航空公司运营飞机数量为 3426.00 架，较上年末增长 1.2%。"
+            }
+          ],
+          "confidence": {
+            "level": "none",
+            "reasons": [
+              "模型判断材料不足以回答（拒答）"
+            ]
+          },
+          "fallback": false,
+          "no_evidence": true
+        },
+        {
+          "id": "q2_f90f5f46a6",
+          "category": "驱动因素",
+          "theme": "AI算力/半导体",
+          "question": "主要技术与经济限制的催化因素与时间节点有哪些？",
+          "status": "success",
+          "answer": "轨道数据中心面临辐射暴露、热管理（真空散热难）、通信限制、有限维护机会、高昂发射成本及网络安全等技术与经济限制，这些因素制约其通用云计算竞争力 [1117d3abc7da] p.1-5。材料中未提及具体的时间节点或针对其他行业（如工程机械、房地产、贸易等）的特定技术经济限制催化因素 [80539ff2119a][98118e155121][739f205b7427]。\n\n[1117d3abc7da] p.1-5",
+          "citations": [
+            {
+              "unit_id": "1117d3abc7da",
+              "book": "rp_AP202609301830015406",
+              "chapter": "轨道数据中心的政策考量",
+              "page": 1,
+              "page_end": 5,
+              "origin": "units",
+              "text": "轨道数据中心面临辐射暴露、热管理（真空环境散热困难）、通信限制、有限维护机会、高昂发射成本及网络安全等严峻挑战，限制了其通用云计算的竞争力。 热管理、辐射、通信能力、有限维护、网络安全和发射成本仍然是重大的技术和经济限制因素...现有的技术研究表明，辐射暴露、热管理、通信能力、维护有限、网络安全和系统弹性是其在设计和运营中反复出现的挑战。"
+            },
+            {
+              "unit_id": "80539ff2119a",
+              "book": "rp_AP202609301830038557",
+              "chapter": "点评：",
+              "page": 1,
+              "page_end": 5,
+              "origin": "units",
+              "text": "2026年8月挖掘机和装载机内销同比增速放缓，主要受去年同期高基数及季节性因素影响。 2026年8月内销同比增速维持放缓态势，主要系去年同期高基数及季节等因素影响。8月工程机械主要产品月平均工作时长和月开工率环比回暖。"
+            },
+            {
+              "unit_id": "98118e155121",
+              "book": "rp_AP202610021830114811",
+              "chapter": "——基于住房资产估值框架的分析",
+              "page": 1,
+              "page_end": 13,
+              "origin": "units",
+              "text": "未来房屋价值变化主要由均衡实际利率、通货膨胀率、住房服务相对价格（含生产率差异、消费偏好、供给弹性）和风险溢价四个因素决定。 第二节“房地产内在价值的决定因素”指出：基于模型，决定未来房屋价值变化的主要是四个因素：一是均衡实际利率；二是通货膨胀率；三是房屋的相对价格（涉及巴拉萨 - 萨缪尔森效应、消费偏好、供给弹性）；四是风险溢价。"
+            },
+            {
+              "unit_id": "739f205b7427",
+              "book": "rp_AP202610061830165866",
+              "chapter": "一、贸易总体情况",
+              "page": 2,
+              "page_end": 14,
+              "origin": "units",
+              "text": "俄罗斯、厄瓜多尔和挪威是中国水产品的主要进口来源国，其中俄罗斯在当月进口额中占比最高（约18.5%）。 排名前 10 地区...俄罗斯 364.6 百万美元 (18.5%)、厄瓜多尔 323.7 百万美元 (16.4%)、挪威 184.9 百万美元 (9.4%)。"
+            }
+          ],
+          "confidence": {
+            "level": "high",
+            "reasons": [
+              "4 条可核验引用（材料内命中）"
+            ]
+          },
+          "fallback": false,
+          "no_evidence": false
+        },
+        {
+          "id": "q2_a593448ce5",
+          "category": "如何识别",
+          "theme": "宏观/策略/贸易",
+          "question": "北京市货物贸易净出口需要跟踪哪些指标或事件？",
+          "status": "no_evidence",
+          "answer": "知识库中没有足够依据回答该问题。\n\n提供的检索材料仅包含北京市货物贸易的净出口额、矿产品出口额及进口来源地（如瑞士）等具体数据，未列出跟踪这些指标或事件所需的完整清单、方法论或相关事件列表。此外，材料中关于大模型厂商经营指标（Token 调用量、API 定价等）和房地产政策的内容与货物贸易净出口无关。因此，无法依据现有材料回答需要跟踪哪些具体指标或事件。",
+          "citations": [],
+          "confidence": {
+            "level": "none",
+            "reasons": [
+              "模型判断材料不足以回答（拒答）"
+            ]
+          },
+          "fallback": false,
+          "no_evidence": true
+        },
+        {
+          "id": "q2_3d1abf0240",
+          "category": "影响如何",
+          "theme": "消费/医药",
+          "question": "离岛免税消费数据对相关标的基本面或估值的影响如何？",
+          "status": "no_evidence",
+          "answer": "知识库中没有足够依据回答该问题。\n\n检索材料中仅包含 2026 年中秋假期海南离岛免税的具体交易数据（金额、人数、件数），未提供关于这些数据对相关上市公司基本面或估值产生何种影响的具体分析结论。其他材料涉及房地产、工程机械、零售物业趋势及科技领域，与离岛免税标的的估值逻辑无直接关联。",
+          "citations": [],
+          "confidence": {
+            "level": "none",
+            "reasons": [
+              "模型判断材料不足以回答（拒答）"
+            ]
+          },
+          "fallback": false,
+          "no_evidence": true
+        },
+        {
+          "id": "q2_1e95f989df",
+          "category": "是什么",
+          "theme": "新能源/电池",
+          "question": "海上风电项目规划的结论由哪些证据支撑？",
+          "status": "success",
+          "answer": "海上风电项目规划的结论主要依据以下证据支撑：一是国家政策支持，明确支持开发近海抗台型、深远海漂浮式风电机组及推进海上能源岛建设；二是全球市场趋势，2025 年全球新增装机达 165GW，亚太地区占 80% 份额，预示海上风电即将加速发展；三是具体项目落地，国华投资拟在山东半岛南海域开展前期研究，规划总装机容量为 400 万千瓦。\n\n[3d627dcc4f13] p.1-10\n[4b6cf5a7158e] p.3-15\n[540733583fec] p.1-9",
+          "citations": [
+            {
+              "unit_id": "3d627dcc4f13",
+              "book": "rp_AP202610021830105333",
+              "chapter": "市场研究部 2026 年9 月22 日",
+              "page": 1,
+              "page_end": 10,
+              "origin": "units",
+              "text": "国家支持开发近海抗台型、深远海漂浮式风电机组，并推进海上能源岛建设及沿海地区海上风电运维母港布局。 海洋新能源产业。发展柔性组网输电等关键技术，开发近海抗台型、深远海漂浮式风电机组以及海上漂浮式结构等关键模块。支持沿海三市统筹推进海上风电场改造升级、融合开发和退役管理，合理布局建设海上风电运维母港。"
+            },
+            {
+              "unit_id": "4b6cf5a7158e",
+              "book": "rp_AP202609301830015458",
+              "chapter": "前 ⾔",
+              "page": 3,
+              "page_end": 15,
+              "origin": "units",
+              "text": "2025年全球风电新增装机达165GW（同比增长40%），亚太地区占据80%市场份额，预计2026-2030年海上风电将加速发展。 2025年，全球风⼒发电新增了165GW的并⽹容量，同⽐增长达到40%，亚太地区持续保持全球第⼀风电市场的领先地位，占据了全球80%的市场份额...海上风电在经历了⼀段调整期后，即将加速发展。"
+            },
+            {
+              "unit_id": "540733583fec",
+              "book": "rp_AP202610021830105372",
+              "chapter": "市场研究部 2026 年9 月30 日",
+              "page": 1,
+              "page_end": 9,
+              "origin": "units",
+              "text": "国华投资拟在山东半岛南海域开展海上风电项目前期研究，规划总装机容量为 400 万千瓦，旨在推进海上风电规范开发。 显示，为推进海上风电项目规范开发，做好潜在场址调查与前期研究策划，拟开展国华投资山东分公司半岛南某海域海上风电项目前期专题研究工作，采用公开招标方式采购技术咨询服务，项目位于山东省南部海域，规划总装机容量共计 400 万千瓦。"
+            }
+          ],
+          "confidence": {
+            "level": "high",
+            "reasons": [
+              "3 条可核验引用（材料内命中）"
+            ]
+          },
+          "fallback": false,
+          "no_evidence": false
+        }
+      ]
+    },
+    "note": "问题模板 v2：50 条（7 类模板均衡）、检索自检 @1 96%/@5 100%；可答率抽验 33%（2/6，无依据 4，非检索失败）→ 根因=单条单元信息量不足；建议扩抽验+claim 覆盖度过滤。"
+  },
+  "eval_registry_20261101": {
+    "tool": "tools/kb_corpus/eval_registry.py",
+    "asset": "research/reports/eval_sets/eval_set_20261101_v2.json",
+    "manifest": "research/reports/eval_sets/manifest.json",
+    "version": null,
+    "note": "冻结评测集 v2 资产化：89 查询、graded 标注、content_hash=sha256、verify 全绿；freeze/verify/list/load CLI；建议接入 test_gate 与评测报告头部携带 set_id+hash。"
+  },
+  "merge_sim_89_20261101": {
+    "tool": "tools/kb_corpus/merge_sim_89.py",
+    "report": "research/reports/merge_sim_89_20261101.md",
+    "head": {
+      "eval_set_id": "eval_set_20261101_v2",
+      "eval_set_content_hash": "1fa417f9e720cb6d4142432cbd1073ffc66d93905c542eadeed8fc1ea8519e0f",
+      "eval_set_file_sha256": "b138d81fea3ea2d7c2aa8940941ccb5738aca83258350fb8a9ec930ab4416051",
+      "eval_set_version": 2,
+      "frozen_at": "2026-11-01T10:00:34+08:00",
+      "n_queries": 89,
+      "topk": 5
+    },
+    "conclusion": "合并后 P@5/NDCG@5 与合并前持平：去重收益主要是知识库整洁度，对 89 查询检索无直接收益；可合并但优先级不高（需审批+备份）。",
+    "note": "89 查询评测：合并前后 P@5 0.7303/NDCG 0.8028 完全持平（受影响查询 0，评测集未覆盖被合并概念→盲区）；合并 neutral，可合并但不紧急；32 问题口径 @1 +1。"
+  },
+  "kb_qa_bank_v3_20261101": {
+    "tool": "tools/kb_corpus/kb_qa_bank_v3.py",
+    "report": "research/reports/kb_qa_bank_v3_20261101.md",
+    "stats": {
+      "total": 50,
+      "categories": 7,
+      "by_category": {
+        "风险限制": 8,
+        "关键数据": 7,
+        "驱动因素": 7,
+        "如何识别": 7,
+        "影响如何": 7,
+        "是什么": 7,
+        "竞争格局": 7
+      },
+      "by_theme": {
+        "量化/技术分析": 8,
+        "其他/综合": 7,
+        "AI算力/半导体": 7,
+        "宏观/策略/贸易": 7,
+        "消费/医药": 7,
+        "新能源/电池": 7,
+        "金融/资本市场": 7
+      }
+    },
+    "answer_validation": {
+      "requested": 12,
+      "success": 3,
+      "fallback": 0,
+      "no_evidence": 9,
+      "skipped": 0,
+      "answerable_rate": 0.25,
+      "avg_citations": 1.25,
+      "answered": 12,
+      "elapsed_seconds": 193.44,
+      "note": "可答率 = success / requested；status: success/fallback/no_evidence/skipped_deadline",
+      "samples": [
+        {
+          "id": "q2_b5a0a0e045",
+          "category": "风险限制",
+          "theme": "量化/技术分析",
+          "question": "量学理论的结论在什么条件下可能不成立？",
+          "status": "no_evidence",
+          "reason": "无依据拒答：模型判断材料不足以回答（拒答）",
+          "answer": "知识库中没有足够依据回答该问题。\n\n检索材料主要介绍了量学理论的定义、体系构成（如“三维互动”、“四维立体看盘”）、核心贡献及实战应用案例，但未提及该理论结论失效或不再成立的具体条件。材料 [7] 仅描述了识别主力操盘规律的方法，未涉及理论局限性。",
+          "citations": [],
+          "confidence": {
+            "level": "none",
+            "reasons": [
+              "模型判断材料不足以回答（拒答）"
+            ]
+          },
+          "fallback": false,
+          "no_evidence": true,
+          "claim_coverage": 1.0,
+          "elapsed_seconds": 6.58
+        },
+        {
+          "id": "q2_aa49124184",
+          "category": "关键数据",
+          "theme": "其他/综合",
+          "question": "储气调峰能力建设中研报提供了哪些可验证的关键数据或指标？",
+          "status": "no_evidence",
+          "reason": "无依据拒答：模型判断材料不足以回答（拒答）",
+          "answer": "知识库中没有足够依据回答该问题。\n\n检索材料中仅包含关于我国储气库工作气量占比（全球约 11.4%，我国约 7%）及调峰能力建设方向的定性描述，未提供研报中具体的可验证关键数据或详细指标列表。其余材料主要涉及 AI 算力、光芯片、网络安全及大模型训练等内容，与储气调峰无关。",
+          "citations": [],
+          "confidence": {
+            "level": "none",
+            "reasons": [
+              "模型判断材料不足以回答（拒答）"
+            ]
+          },
+          "fallback": false,
+          "no_evidence": true,
+          "claim_coverage": 1.0,
+          "elapsed_seconds": 10.38
+        },
+        {
+          "id": "q2_bcbfd79337",
+          "category": "驱动因素",
+          "theme": "AI算力/半导体",
+          "question": "智能算力规模占比的核心驱动因素是什么？",
+          "status": "no_evidence",
+          "reason": "无依据拒答：模型判断材料不足以回答（拒答）",
+          "answer": "知识库中没有足够依据回答该问题。\n\n虽然材料 [776f36408a89] 和 [ba18139a8f5f] 提供了智能算力规模占比的具体数据（2024 年为 32%）及 PUE 等能效指标，但均未明确阐述导致该占比变化的“核心驱动因素”。材料主要涉及国产芯片适配、端侧算力延伸、工业智能体演进及 GPU 价格调整等内容，无法直接推导智能算力规模占比的核心驱动力。",
+          "citations": [
+            {
+              "unit_id": "776f36408a89",
+              "book": "rp_AP202610031830126544",
+              "chapter": "太 平 洋 证 券 股 份 有 限 公 司 证 券 研 究 报 告",
+              "page": 1,
+              "page_end": 4,
+              "origin": "units",
+              "text": "2024 年智能算力规模占全国算力总规模的 32%，带动用电需求加深增长。 2024 年，全国算力总规模达到 280 EFLOPS，其中八大国家枢纽节点算力规模达到 175 EFLOPS；智能算力规模占全国算力总规模的 32%。"
+            },
+            {
+              "unit_id": "ba18139a8f5f",
+              "book": "rp_AP202610031830126544",
+              "chapter": "太 平 洋 证 券 股 份 有 限 公 司 证 券 研 究 报 告",
+              "page": 1,
+              "page_end": 4,
+              "origin": "units",
+              "text": "2025 年度国家绿色算力设施平均 PUE 降至 1.25，较全国算力设施平均水平低 14.4%。 截至 2025 年底，数据中心能效水平和要求在持续提升。2025 年度国家绿色算力设施平均 PUE 降至 1.25，较全国算力设施平均水平低 14.4%。"
+            }
+          ],
+          "confidence": {
+            "level": "none",
+            "reasons": [
+              "模型判断材料不足以回答（拒答）"
+            ]
+          },
+          "fallback": false,
+          "no_evidence": true,
+          "claim_coverage": 0.875,
+          "elapsed_seconds": 15.66
+        },
+        {
+          "id": "q2_a593448ce5",
+          "category": "如何识别",
+          "theme": "宏观/策略/贸易",
+          "question": "北京市货物贸易净出口需要跟踪哪些指标或事件？",
+          "status": "no_evidence",
+          "reason": "无依据拒答：模型判断材料不足以回答（拒答）",
+          "answer": "知识库中没有足够依据回答该问题。\n\n检索材料中仅包含北京市货物贸易净出口的具体数值（如 2025 年 8 月为 -258.6 亿美元）及个别商品（矿产品）或国家（瑞士）的进出口数据，未提供关于“需要跟踪哪些指标或事件”的系统性指导、监测清单或分析框架。材料中涉及的其他内容（如房地产政策、大模型经营指标、山东省贸易数据等）与北京市货物贸易净出口的跟踪指标无关。\n\n[61bca6c6d825] p.2-6\n[854f9973bb5d] p.2-6\n[d549a77bff5a] p.2-6\n[a580f646594c] p.2-9\n[65b6749c28e6] p.2-6",
+          "citations": [
+            {
+              "unit_id": "61bca6c6d825",
+              "book": "rp_AP202610061830165957",
+              "chapter": "一、贸易总体情况",
+              "page": 2,
+              "page_end": 6,
+              "origin": "units",
+              "text": "2025 年 8 月北京市货物贸易净出口额为 -258.6 亿美元，较上年同期下降 1.9%。 注：2. 净出口额同比变化为绝对额数据，即 2026 年 8 月（或 1-8 月）的净出口额减去 2025 年 8 月（或 1-8 月）的净出口额。"
+            },
+            {
+              "unit_id": "854f9973bb5d",
+              "book": "rp_AP202610061830165957",
+              "chapter": "一、贸易总体情况",
+              "page": 2,
+              "page_end": 6,
+              "origin": "units",
+              "text": "2025 年 8 月当月，北京市矿产品出口额为 31.6 亿美元，同比大幅增长 88.6%。 文本表格显示：8 月当月 矿产品 出口额 31.6 贸易份额（%）36.9 同比变化（%）88.6"
+            },
+            {
+              "unit_id": "d549a77bff5a",
+              "book": "rp_AP202610061830165965",
+              "chapter": "一、贸易总体情况",
+              "page": 2,
+              "page_end": 6,
+              "origin": "units",
+              "text": "2026 年 8 月当月，山东省进出口总额为 455.1 亿美元，同比增长 6.7%；其中出口额为 284.2 亿美元（同比 +16.3%），进口额为 170.9 亿美元（同比 +9.1%）。 文本表格显示：8 月当月进出口总额绝对值 455.1，同比变化 6.7；出口额 284.2，同比 16.3；进口额 170.9，同比 9.1。"
+            },
+            {
+              "unit_id": "a580f646594c",
+              "book": "rp_AP202610061830165858",
+              "chapter": "一、贸易总体情况",
+              "page": 2,
+              "page_end": 9,
+              "origin": "units",
+              "text": "2026 年 8 月当月，东盟是中国工业机器人出口的重点区域，出口额为 31.4 百万美元，占出口总额的 17.0%；美国是出口额最大的单一国家（非重点区域），为 16.8 百万美元。 8 月当月重点区域中，东盟出口 31.4（份额 17.0）；排名前 10 地区中，美国出口 16.8。"
+            },
+            {
+              "unit_id": "65b6749c28e6",
+              "book": "rp_AP202610061830165957",
+              "chapter": "一、贸易总体情况",
+              "page": 2,
+              "page_end": 6,
+              "origin": "units",
+              "text": "2025 年 8 月当月，瑞士取代其他地区成为北京市货物贸易进口额最高的单一国家/地区。 文本表格显示：重点区域 排名前 10 地区 瑞士 57.6 86.8"
+            }
+          ],
+          "confidence": {
+            "level": "none",
+            "reasons": [
+              "模型判断材料不足以回答（拒答）"
+            ]
+          },
+          "fallback": false,
+          "no_evidence": true,
+          "claim_coverage": 1.0,
+          "elapsed_seconds": 28.28
+        },
+        {
+          "id": "q2_3d1abf0240",
+          "category": "影响如何",
+          "theme": "消费/医药",
+          "question": "离岛免税消费数据对相关标的基本面或估值的影响如何？",
+          "status": "no_evidence",
+          "reason": "无依据拒答：模型判断材料不足以回答（拒答）",
+          "answer": "知识库中没有足够依据回答该问题。\n\n检索材料中仅包含 2026 年中秋假期海南离岛免税的具体交易数据（金额、人数、件数），未提供关于这些数据对相关上市公司基本面或估值产生何种影响的具体分析结论。其他材料涉及房地产、工程机械、零售物业趋势及科技领域，与离岛免税标的的估值逻辑无直接关联。",
+          "citations": [],
+          "confidence": {
+            "level": "none",
+            "reasons": [
+              "模型判断材料不足以回答（拒答）"
+            ]
+          },
+          "fallback": false,
+          "no_evidence": true,
+          "claim_coverage": 0.625,
+          "elapsed_seconds": 13.41
+        },
+        {
+          "id": "q2_1e95f989df",
+          "category": "是什么",
+          "theme": "新能源/电池",
+          "question": "海上风电项目规划的结论由哪些证据支撑？",
+          "status": "success",
+          "reason": "答案+引用齐全（3 条引用）",
+          "answer": "海上风电项目规划的结论主要依据以下证据支撑：一是国家政策支持，明确支持开发近海抗台型、深远海漂浮式风电机组及推进海上能源岛建设；二是全球市场趋势，2025 年全球新增装机达 165GW，亚太地区占 80% 份额，预示海上风电即将加速发展；三是具体项目规划实例，如国华投资拟在山东半岛南海域开展前期研究，规划总装机容量为 400 万千瓦。\n\n[3d627dcc4f13] p.1-10\n[4b6cf5a7158e] p.3-15\n[540733583fec] p.1-9",
+          "citations": [
+            {
+              "unit_id": "3d627dcc4f13",
+              "book": "rp_AP202610021830105333",
+              "chapter": "市场研究部 2026 年9 月22 日",
+              "page": 1,
+              "page_end": 10,
+              "origin": "units",
+              "text": "国家支持开发近海抗台型、深远海漂浮式风电机组，并推进海上能源岛建设及沿海地区海上风电运维母港布局。 海洋新能源产业。发展柔性组网输电等关键技术，开发近海抗台型、深远海漂浮式风电机组以及海上漂浮式结构等关键模块。支持沿海三市统筹推进海上风电场改造升级、融合开发和退役管理，合理布局建设海上风电运维母港。"
+            },
+            {
+              "unit_id": "4b6cf5a7158e",
+              "book": "rp_AP202609301830015458",
+              "chapter": "前 ⾔",
+              "page": 3,
+              "page_end": 15,
+              "origin": "units",
+              "text": "2025年全球风电新增装机达165GW（同比增长40%），亚太地区占据80%市场份额，预计2026-2030年海上风电将加速发展。 2025年，全球风⼒发电新增了165GW的并⽹容量，同⽐增长达到40%，亚太地区持续保持全球第⼀风电市场的领先地位，占据了全球80%的市场份额...海上风电在经历了⼀段调整期后，即将加速发展。"
+            },
+            {
+              "unit_id": "540733583fec",
+              "book": "rp_AP202610021830105372",
+              "chapter": "市场研究部 2026 年9 月30 日",
+              "page": 1,
+              "page_end": 9,
+              "origin": "units",
+              "text": "国华投资拟在山东半岛南海域开展海上风电项目前期研究，规划总装机容量为 400 万千瓦，旨在推进海上风电规范开发。 显示，为推进海上风电项目规范开发，做好潜在场址调查与前期研究策划，拟开展国华投资山东分公司半岛南某海域海上风电项目前期专题研究工作，采用公开招标方式采购技术咨询服务，项目位于山东省南部海域，规划总装机容量共计 400 万千瓦。"
+            }
+          ],
+          "confidence": {
+            "level": "high",
+            "reasons": [
+              "3 条可核验引用（材料内命中）"
+            ]
+          },
+          "fallback": false,
+          "no_evidence": false,
+          "claim_coverage": 1.0,
+          "elapsed_seconds": 30.09
+        },
+        {
+          "id": "q2_6076398cc7",
+          "category": "竞争格局",
+          "theme": "金融/资本市场",
+          "question": "保险资金投资港股通 ETF的进入壁垒与差异化优势是什么？",
+          "status": "success",
+          "reason": "答案+引用齐全（1 条引用）",
+          "answer": "保险资金投资港股通 ETF 的进入壁垒已显著降低，差异化优势在于丰富跨境权益工具且不占用 QDII 额度。\n\n**结论：**\n1. **进入壁垒低**：监管新规明确允许持有港股通股票的保险机构直接投资港股通 ETF，并参照港股通股票规则执行，消除了此前对特定产品的准入限制 [e9548ab7c8d3] p.1-3。\n2. **差异化优势**：该工具丰富了险资跨境权益投资渠道，且无需占用 QDII 额度，提升了资金配置灵活性 [e9548ab7c8d3] p.1-3。\n\n**依据：**\n材料仅提及上述监管政策及优势，未提供关于其他潜在壁垒（如技术、合规成本等）的具体信息。",
+          "citations": [
+            {
+              "unit_id": "e9548ab7c8d3",
+              "book": "rp_AP202610071830185864",
+              "chapter": "2026 年10 月07 日",
+              "page": 1,
+              "page_end": 3,
+              "origin": "units",
+              "text": "监管新规允许持有港股通股票的保险机构投资港股通 ETF，丰富了险资跨境权益投资工具且不占用 QDII 额度。 9 月 29 日，多家保险机构收到金融监管总局办公厅下发的《关于明确保险资金投资港股通 ETF 监管口径的函》，当中明确，按照监管规定可投资港股通股票的保险机构可以投资港股通 ETF，并参照港股通股票监管规则执行。"
+            }
+          ],
+          "confidence": {
+            "level": "medium",
+            "reasons": [
+              "仅 1 条可核验引用"
+            ]
+          },
+          "fallback": false,
+          "no_evidence": false,
+          "claim_coverage": 0.875,
+          "elapsed_seconds": 26.73
+        },
+        {
+          "id": "q2_f93ae02b9d",
+          "category": "驱动因素",
+          "theme": "量化/技术分析",
+          "question": "伏击涨停的灵魂的景气度受哪些变量影响？",
+          "status": "no_evidence",
+          "reason": "无依据拒答：模型判断材料不足以回答（拒答）",
+          "answer": "知识库中没有足够依据回答该问题。\n\n检索材料主要阐述了“伏击涨停”的投资理念（追求乐趣）、核心定律（人为炒作、有迹可循、可复制）以及量学战法的成功概率，但并未提及任何关于“伏击涨停的灵魂”的“景气度”及其受哪些变量影响的具体内容。材料中定义的“灵魂”是指其投资哲学而非经济指标或景气度概念。",
+          "citations": [],
+          "confidence": {
+            "level": "none",
+            "reasons": [
+              "模型判断材料不足以回答（拒答）"
+            ]
+          },
+          "fallback": false,
+          "no_evidence": true,
+          "claim_coverage": 0.7143,
+          "elapsed_seconds": 10.5
+        },
+        {
+          "id": "q2_ef78939178",
+          "category": "风险限制",
+          "theme": "其他/综合",
+          "question": "网络安全软技能需求的主要风险与不确定性有哪些？",
+          "status": "no_evidence",
+          "reason": "无依据拒答：模型判断材料不足以回答（拒答）",
+          "answer": "知识库中没有足够依据回答该问题。\n\n检索材料仅提及批判性思维、沟通能力和问题解决能力是重要的软技能，以及 SecOps 人才缺口大、招聘周期长等现状，但未具体阐述“网络安全软技能需求”本身所面临的主要风险与不确定性（如技能过时风险、培训成本波动或特定软技能失效带来的业务风险等）。材料中关于轨道数据中心的挑战包含“网络安全”，但属于硬件与环境层面的限制，不涉及软技能需求的不确定性。",
+          "citations": [],
+          "confidence": {
+            "level": "none",
+            "reasons": [
+              "模型判断材料不足以回答（拒答）"
+            ]
+          },
+          "fallback": false,
+          "no_evidence": true,
+          "claim_coverage": 0.7778,
+          "elapsed_seconds": 11.8
+        },
+        {
+          "id": "q2_87eff8d7a3",
+          "category": "关键数据",
+          "theme": "AI算力/半导体",
+          "question": "品牌AI心智总得分有哪些可核验的统计口径或样本？",
+          "status": "no_evidence",
+          "reason": "无依据拒答：模型判断材料不足以回答（拒答）",
+          "answer": "知识库中没有足够依据回答该问题。\n\n材料仅提供了“品牌 AI 心智总得分”的计算公式（由平均排名、提及率、首位率、前三率、正面率加权得出）及理论最高分，但未披露具体的统计口径定义（如样本来源、数据采集周期或具体样本量）。材料中关于 CR3SOV 的判定标准属于声量份额指标，与“品牌 AI 心智总得分”这一综合指标不同。",
+          "citations": [],
+          "confidence": {
+            "level": "none",
+            "reasons": [
+              "模型判断材料不足以回答（拒答）"
+            ]
+          },
+          "fallback": false,
+          "no_evidence": true,
+          "claim_coverage": 1.0,
+          "elapsed_seconds": 11.27
+        },
+        {
+          "id": "q2_0d7db24320",
+          "category": "影响如何",
+          "theme": "宏观/策略/贸易",
+          "question": "中国畜禽肉产品主要出口市场的传导路径与受益环节是什么？",
+          "status": "no_evidence",
+          "reason": "无依据拒答：模型判断材料不足以回答（拒答）",
+          "answer": "知识库中没有足够依据回答该问题。\n\n材料仅显示 2026 年 8 月中国畜禽肉产品整体呈现净进口状态（进口 1968.4 百万美元，出口 292.6 百万美元），且禽肉是主要进口品类，未提供关于“主要出口市场传导路径”及具体“受益环节”的详细分析或数据支撑。\n\n[3b570c6a6239] p.2-14",
+          "citations": [
+            {
+              "unit_id": "3b570c6a6239",
+              "book": "rp_AP202610061830165954",
+              "chapter": "一、贸易总体情况",
+              "page": 2,
+              "page_end": 14,
+              "origin": "units",
+              "text": "2026 年 8 月，中国畜禽肉产品进出口总额为 2261.1 百万美元，其中进口额（1968.4 百万美元）远高于出口额（292.6 百万美元），呈现显著的净进口状态。 2026 年 8 月，中国畜禽肉产品进出口 2261.1 百万美元...其中，出口 292.6 百万美元...进口 1968.4 百万美元；当月净出口-1675.8 百万美元。"
+            }
+          ],
+          "confidence": {
+            "level": "none",
+            "reasons": [
+              "模型判断材料不足以回答（拒答）"
+            ]
+          },
+          "fallback": false,
+          "no_evidence": true,
+          "claim_coverage": 0.7692,
+          "elapsed_seconds": 12.5
+        },
+        {
+          "id": "q2_4f34cbb059",
+          "category": "竞争格局",
+          "theme": "消费/医药",
+          "question": "优先行动：支持本土生态系统的进入壁垒与差异化优势是什么？",
+          "status": "success",
+          "reason": "答案+引用齐全（3 条引用）",
+          "answer": "**结论：**\n支持本土生态系统的优先行动是聚焦本土解决方案，强化东盟电子商务生态系统。其进入壁垒主要为监管或运营瓶颈及市场准入限制；差异化优势在于通过试点项目识别并解决这些瓶颈，以及推广本土 AI 和零售科技、金融科技等初创企业的区域规模化服务。\n\n**依据：**\n1. [664a0d2d2756] p.5-17：优先行动 4 提出支持本土市场、科技、物流和支付供应商，聚焦本土解决方案，强化东盟电子商务生态系统，包括支持零售科技、金融科技和物流领域的初创企业，并评估其区域规模化面临的监管或运营瓶颈。\n2. [f6f270fd280d] p.5-17：应支持本土电商平台、科技、物流和支付服务提供商，通过试点项目评估障碍并识别监管瓶颈，以强化东盟电子商务生态系统。\n3. [9c91ea628d11] p.5-17：需为中小微企业开发针对跨境电子商务和人工智能的技能课程，以解决市场准入限制、技",
+          "citations": [
+            {
+              "unit_id": "664a0d2d2756",
+              "book": "rp_AP202610021830105410",
+              "chapter": "5.",
+              "page": 5,
+              "page_end": 17,
+              "origin": "units",
+              "text": "应聚焦本土解决方案，强化东盟电子商务生态系统，包括支持零售科技、金融科技和物流领域的初创企业，并评估其区域规模化面临的监管或运营瓶颈。 优先行动 4：支持本土市场、科技、物流和支付供应商。聚焦本土解决方案，强化东盟电子商务生态系统，包括支持零售科技、金融科技和物流领域的初创企业，并为其在区域内拓展服务提供支持。"
+            },
+            {
+              "unit_id": "f6f270fd280d",
+              "book": "rp_AP202609301830015407",
+              "chapter": "5.",
+              "page": 5,
+              "page_end": 17,
+              "origin": "units",
+              "text": "应支持本土电商平台、科技、物流和支付服务提供商，通过试点项目评估障碍并识别监管瓶颈，以强化东盟电子商务生态系统。 优先行动 4：支持本土市场、科技、物流和支付供应商。聚焦本土解决方案，强化东盟电子商务生态系统，包括支持零售科技、金融科技和物流领域的初创企业，并为其在区域内拓展服务提供支持。"
+            },
+            {
+              "unit_id": "9c91ea628d11",
+              "book": "rp_AP202610021830105410",
+              "chapter": "5.",
+              "page": 5,
+              "page_end": 17,
+              "origin": "units",
+              "text": "需为中小微企业开发针对跨境电子商务和人工智能的技能课程，以解决市场准入限制、技能差距及信息不对称问题，并推广本土 AI 解决方案。 优先行动 1：为中小微企业（MSMEs）开发跨境电子商务技能课程和人工智能技能课程。开发课程需解决欧盟和东盟市场准入要求方面的限制、技能和知识差距以及信息差距等问题。通过培训中小微企业员工...确保人工智能工具的更广泛使用。"
+            }
+          ],
+          "confidence": {
+            "level": "high",
+            "reasons": [
+              "3 条可核验引用（材料内命中）"
+            ]
+          },
+          "fallback": false,
+          "no_evidence": false,
+          "claim_coverage": 0.6667,
+          "elapsed_seconds": 16.25
+        }
+      ]
+    },
+    "note": "claim 覆盖度过滤 495→390(79%) 但可答率 33%→25%（样本 12 vs 6）→ 过滤未提升；瓶颈=单条单元信息量不足/模型保守；建议放宽 prompt 允许有限推断/加 evidence 信息量门槛/换更强模型。"
+  },
+  "eval_assets_guard_20261101": {
+    "tests": "tools/tests/test_eval_assets.py",
+    "header_tool": "tools/kb_corpus/eval_report_header.py",
+    "note": "评测资产 hash 守卫：verify_all 校验 hash/manifest/规范字段、version2+n≥60、篡改/缺失清晰失败（5 tests）；报告头工具 make_header(set_version) 输出 set_id/content_hash/annotation_policy（5 tests）；建议 test_gate fast 追加一行（未改 test_gate）。"
+  },
+  "kb_qa_multi_20261101": {
+    "tool": "tools/kb_corpus/kb_qa_multi.py",
+    "report": "research/reports/kb_qa_multi_20261101.md",
+    "delta": {
+      "answerable_rate": 0.4167,
+      "avg_citations": 0.25,
+      "elapsed_seconds": -98.0,
+      "no_evidence": -5
+    },
+    "conclusion": {
+      "multi_unit_breaks_bottleneck": true,
+      "verdict": "多单元聚合显著提升可答率，建议作为问答默认模式（MVP 验证通过）",
+      "reasons": [
+        "可答率单单元 25%（3/12）→ 多单元 67%（8/12），Δ+42%。",
+        "拒答数：9 → 4；成功数：3 → 8。",
+        "多单元平均聚类 3.0 个、平均引用 1.5 条，直接事实标记 10、推断标记 14。",
+        "单单元拒答→多单元成功的样本：q2_aa49124184, q2_a593448ce5, q2_3d1abf0240, q2_ef78939178, q2_0d7db24320。"
+      ],
+      "risks": [
+        "多单元聚合 prompt 允许推断，存在「过度综合/跨单元错误拼接」风险，需人工抽查引用与事实边界。",
+        "n=12 为小样本，结论需扩到 30+ 条验证；多单元 prompt 更长，单条耗时更高（见 delta.elapsed_seconds）。",
+        "引用校验仅校验 unit_id 是否在候选池内，不校验「该引用是否支持该论点」；直接事实仍需人工复核。",
+        "若单单元与多单元都拒答，瓶颈可能是模型能力/prompt 严格度，而非材料条数——建议并行试验放宽 prompt 或 35b 模型。"
+      ],
+      "next_actions": [
+        "将多单元聚合作为 kb_qa 的可选模式（--multi），默认保持单单元；先在评测集上 A/B。",
+        "扩样到 30–50 条（v3 问题库全覆盖）重跑本 eval，观察可答率与引用质量稳定性。",
+        "对「都拒答」类问题制作小样本，单独调试 prompt（允许基于 claim 的有限外推）。"
+      ]
+    },
+    "note": "多单元聚合突破可答率瓶颈：12 题单单元 25%(3/12)→多单元 66.7%(8/12)，+41.7pp，拒答 9→4、无回退、耗时 193s→95s；建议作为可选/推荐模式（保留单单元 fallback），需扩样 30-50 条 A/B。"
+  },
+  "kb_qa_eval_20261101": {
+    "tool": "tools/kb_corpus/kb_qa_eval.py",
+    "report": "research/reports/kb_qa_eval_20261101.md",
+    "summary": {
+      "n_samples": 17,
+      "n_main": 17,
+      "n_expanded": 0,
+      "n_expanded_source": 12,
+      "n_dedup_skipped": 12,
+      "citation_valid_samples": 14,
+      "citation_valid_rate": 0.8235,
+      "total_citations": 34,
+      "citations_exists": 34,
+      "citation_exists_rate": 1.0,
+      "avg_supported_ratio": 0.6636,
+      "samples_with_hallucination_flags": 4,
+      "samples_refusal_only": 6,
+      "problems_count": 12,
+      "support_level_totals": {
+        "支持": 40,
+        "弱支持": 6,
+        "拒答": 10,
+        "无支持": 7
+      },
+      "hallucination_flag_totals": {
+        "number": 4,
+        "english_token": 1
+      }
+    },
+    "note": "答案质量评估（17 样本）：引用存在 100%(34/34)、citation_valid 82.4%（3 条无引用）、平均支撑率 66.4%、幻觉候选 4 样本/5 项（多为小数字误报需人工复核）；建议样本 schema 加 expected_refusal/citations_required。"
+  },
+  "card_proposals_v2_20261101": {
+    "tool": "tools/kb_corpus/card_proposal_v2.py",
+    "review": "research/reports/card_proposals_v2_20261101.md",
+    "summary": {
+      "target_themes": 14,
+      "themes_covered": 14,
+      "themes_with_2plus": 14,
+      "candidates": 40,
+      "avg_cards_per_theme": 2.86,
+      "by_angle": {
+        "definition": 14,
+        "key_fact": 14,
+        "impact": 12
+      },
+      "traceable_cards": 40,
+      "traceable_rate": 1.0,
+      "filtered_units": 100,
+      "shortfall_themes": []
+    },
+    "note": "零卡主题概念卡候选：14/14 主题覆盖、40 张卡（定义14/事实14/传导12）、100% 可追溯、pending_review；未覆盖既有卡与 AE 稿；待人工审核后由 card_merge 合并。"
+  },
+  "kb_qa_multi_ab_20261101": {
+    "tool": "tools/kb_corpus/kb_qa_multi_ab.py",
+    "report": "research/reports/kb_qa_multi_ab_20261101.md",
+    "summary": {
+      "total": 30,
+      "single": {
+        "success": 10,
+        "rate": 0.3333,
+        "no_evidence": 20,
+        "fallback": 0,
+        "avg_citations": 2.4,
+        "avg_elapsed_seconds": 8.35,
+        "reused_count": 12
+      },
+      "multi": {
+        "success": 24,
+        "rate": 0.8,
+        "no_evidence": 6,
+        "fallback": 0,
+        "avg_citations": 2.25,
+        "avg_elapsed_seconds": 8.61,
+        "avg_clusters": 3.0,
+        "direct_facts": 22,
+        "inferences": 32
+      },
+      "delta": {
+        "answerable_rate": 0.4667,
+        "avg_citations": -0.15,
+        "latency_ratio": 1.03
+      },
+      "paired": {
+        "a_both_success": 10,
+        "b_single_fail_multi_success": 14,
+        "c_single_success_multi_fail": 0,
+        "d_both_fail": 6,
+        "mcnemar_p": 0.000122
+      },
+      "by_category": [
+        {
+          "category": "风险限制",
+          "total": 4,
+          "single_success": 0,
+          "multi_success": 4,
+          "single_rate": 0.0,
+          "multi_rate": 1.0,
+          "delta": 1.0
+        },
+        {
+          "category": "如何识别",
+          "total": 5,
+          "single_success": 1,
+          "multi_success": 5,
+          "single_rate": 0.2,
+          "multi_rate": 1.0,
+          "delta": 0.8
+        },
+        {
+          "category": "影响如何",
+          "total": 4,
+          "single_success": 0,
+          "multi_success": 3,
+          "single_rate": 0.0,
+          "multi_rate": 0.75,
+          "delta": 0.75
+        },
+        {
+          "category": "关键数据",
+          "total": 4,
+          "single_success": 1,
+          "multi_success": 3,
+          "single_rate": 0.25,
+          "multi_rate": 0.75,
+          "delta": 0.5
+        },
+        {
+          "category": "驱动因素",
+          "total": 5,
+          "single_success": 2,
+          "multi_success": 3,
+          "single_rate": 0.4,
+          "multi_rate": 0.6,
+          "delta": 0.2
+        },
+        {
+          "category": "是什么",
+          "total": 4,
+          "single_success": 4,
+          "multi_success": 4,
+          "single_rate": 1.0,
+          "multi_rate": 1.0,
+          "delta": 0.0
+        },
+        {
+          "category": "竞争格局",
+          "total": 4,
+          "single_success": 2,
+          "multi_success": 2,
+          "single_rate": 0.5,
+          "multi_rate": 0.5,
+          "delta": 0.0
+        }
+      ],
+      "answer_types": {
+        "direct_fact+inference": 11,
+        "refusal": 6,
+        "inference": 7,
+        "answer": 5,
+        "direct_fact": 1
+      },
+      "improved_ids": [
+        "q2_b5a0a0e045",
+        "q2_aa49124184",
+        "q2_a593448ce5",
+        "q2_3d1abf0240",
+        "q2_ef78939178",
+        "q2_0d7db24320",
+        "q2_b74f8cebda",
+        "q2_5cb2ec9a7b",
+        "q2_960b202685",
+        "q2_9efedd1a83",
+        "q2_56b3d0673e",
+        "q2_a4026386c5",
+        "q2_764c00190b",
+        "q2_0e42bbf120"
+      ],
+      "regressed_ids": []
+    },
+    "decision": {
+      "default_multi": true,
+      "verdict": "建议将 multi 设为问答默认模式（A/B 通过）",
+      "criteria": [
+        {
+          "name": "可答率提升 ≥15%",
+          "threshold": "≥15%",
+          "actual": "+47%",
+          "pass": true
+        },
+        {
+          "name": "回退（single success→multi fail）不明显增多",
+          "threshold": "回退数 ≤ max(1, 10%·改善数)",
+          "actual": "回退 0 / 改善 14",
+          "pass": true
+        },
+        {
+          "name": "耗时可接受",
+          "threshold": "multi/single 单条耗时比 ≤2.5",
+          "actual": "1.03",
+          "pass": true
+        },
+        {
+          "name": "McNemar 配对检验显著",
+          "threshold": "p<0.05",
+          "actual": "p=0.000122",
+          "pass": true
+        },
+        {
+          "name": "样本量足够",
+          "threshold": "≥30 条（LLM 慢可减并注明）",
+          "actual": "30 条",
+          "pass": true
+        }
+      ],
+      "passed": 5,
+      "total_criteria": 5,
+      "reasons": [
+        "可答率：single 33%（10/30）→ multi 80%（24/30），Δ+47%。",
+        "配对：改善 14 条 / 回退 0 条；McNemar p=0.000122。",
+        "平均引用：2.4 → 2.25；单条平均耗时：8.35s → 8.61s（比值 1.03）。"
+      ],
+      "risks": [
+        "multi 聚合允许推断，存在跨单元过度综合/错误拼接风险；引用校验不验证语义支撑，需人工抽查。",
+        "single 基线中前 12 条复用 v3 旧结果（不同时间点），与本次 multi 存在时间差，可能影响耗时/状态可比性。",
+        "样本受 LLM 时间预算限制（LLM 慢时减条），未达 30 条时统计功效有限。",
+        "耗时受 Ollama 负载影响大（v3 single 与本次 multi 测量时点不同），latency_ratio 仅作参考。",
+        "若切换默认，建议先灰度（页面/CLI --multi 可选）+ 影子对比，再全量。"
+      ],
+      "next_actions": [
+        "若通过：在 kb_qa CLI/HTTP（未接线）增加 --multi 选项并灰度；保留 single fallback（multi 降级时自动回退）。",
+        "扩样到 50 条（全量问题库）复跑本 A/B，验证 Δ 与 McNemar 稳定性。",
+        "对 multi 的答案抽样人工复核直接事实/推断边界与引用语义支撑。"
+      ]
+    },
+    "note": "A/B n=30：single 33.3% → multi 80%（+46.7pp）；McNemar p=0.000122；回退 0；耗时比 1.03 → 5/5 达标，**建议 multi 设为问答默认**（single fallback）。"
+  },
+  "kb_qa_eval_v2_20261101": {
+    "tool": "tools/kb_corpus/kb_qa_eval_v2.py",
+    "schema_tool": "tools/kb_corpus/kb_qa_schema_v2.py",
+    "report": "research/reports/kb_qa_eval_v2_20261101.md",
+    "note": "样本 schema v2：17 条加 expected_refusal/citations_required/answer_type/schema_version（fact13/inference1/refusal3）；幻觉 v2 误报 5→2 项（-60%，消除列表序号误报）；引用存在率 100%/支撑率 66.36% 不变。"
+  },
+  "card_review_20261101": {
+    "tool": "tools/kb_corpus/card_review.py",
+    "checklist": "research/reports/card_review_checklist_20261101.md",
+    "doc": "docs/plans/2026-11-01_学习卡审核工作流.md",
+    "note": "学习卡审核工作流：AE20+AV40=60 候选统一清单（19 主题/100% 可追溯）；decide 校验→dry-run 预览→--apply/--merge（备份+校验）；当前未 apply，等人工 decisions。"
+  },
+  "kb_qa_multi_default_20261101": {
+    "cli": {
+      "tool": "tools/kb_corpus/kb_qa.py",
+      "default_mode": "multi",
+      "fallback": "multi 失败自动回退 single（multi_fallback 标记）",
+      "params": "ask(question, topk=8, mode='multi')；CLI --mode/--k/--single；payload 暴露 mode/k/clusters/事实与推断标记"
+    },
+    "http": {
+      "module": "portal/api_kb_qa.py",
+      "wired": false,
+      "not_restarted": true,
+      "modes": [
+        "retrieval",
+        "single",
+        "multi"
+      ],
+      "http_default": "retrieval",
+      "generate_default": "multi",
+      "meta": "mode/k/clusters/llm_called；限流 retrieval60/single6/multi6；缓存键含 mode",
+      "gray": "①retrieval 只读 → ②小流量 multi（白名单）→ ③multi 生成默认；回滚 mode=single/retrieval（无需重启）"
+    },
+    "evidence": "wave17 AW A/B：single 33.3%→multi 80%（+46.7pp，McNemar p=0.000122，回退0，耗时1.03×）",
+    "note": "multi 已设为 kb_qa CLI 默认；HTTP 预接线支持 multi 灰度但 WIRED=False、8091 未注册未重启（8091 GET /api/kb/qa 实测 404）。"
   }
 }

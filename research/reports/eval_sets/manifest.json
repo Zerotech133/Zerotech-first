@@ -1,0 +1,27 @@
+{
+ "schema_version": "eval_manifest.v1",
+ "updated_at": "2026-11-01T10:00:35+08:00",
+ "sets": [
+  {
+   "version": 2,
+   "set_id": "eval_set_20261101_v2",
+   "file": "eval_set_20261101_v2.json",
+   "content_hash": "1fa417f9e720cb6d4142432cbd1073ffc66d93905c542eadeed8fc1ea8519e0f",
+   "created_at": "2026-11-01T10:00:34+08:00",
+   "n_queries": 89,
+   "source": "eval_search_v2_ext2.all_queries()（wave10 冻结 89 查询，未重新标注）",
+   "type_distribution": {
+    "主题": 44,
+    "AND": 10,
+    "同义词": 8,
+    "OR": 8,
+    "短语": 6,
+    "排除": 5,
+    "短查询": 5,
+    "长查询": 3
+   },
+   "annotation_policy_ref": "docs/standards/2026-11-01_检索评测标注规范_v1.md",
+   "validation_ok": true
+  }
+ ]
+}

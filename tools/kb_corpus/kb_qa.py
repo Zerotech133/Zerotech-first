@@ -36,6 +36,8 @@ OLLAMA_ENDPOINT = "http://127.0.0.1:11434/api/chat"
 DEFAULT_MODEL = "qwen3.5:9b"
 DEFAULT_TOPK = 8
 DEFAULT_TIMEOUT = 300
+DEFAULT_MODE = "multi"          # 默认多单元聚合（A/B：可答率 33%→80%，回退 0）
+VALID_MODES = ("multi", "single")
 UNIT_WEIGHT = 1.0
 CHUNK_WEIGHT = 0.35      # 语料 chunk 噪声较大（含视频评论等），只作补充证据
 MIN_CHUNK_OVERLAP = 2    # chunk 至少命中 2 个问题词才入选（降噪）
@@ -316,14 +318,24 @@ def rule_based_answer(hits: list[dict]) -> str:
     return "\n".join(parts)
 
 
-def ask(question: str, topk: int = DEFAULT_TOPK, model: str = DEFAULT_MODEL,
-        timeout: float = DEFAULT_TIMEOUT, search_fn=None, chat_fn=None,
-        retrieval_only: bool = False) -> dict:
-    """问答主流程：检索 → （LLM 生成）→ 引用校验 → 置信说明。"""
+def _load_kb_qa_multi():
+    """懒加载 kb_qa_multi（避免循环 import；multi 模块内部也按需加载本模块）。"""
+    path = Path(__file__).with_name("kb_qa_multi.py")
+    if not path.exists():
+        raise KbQaError(f"kb_qa_multi.py 不存在：{path}")
+    spec = importlib.util.spec_from_file_location("kb_qa_multi_for_kb_qa", path)
+    if spec is None or spec.loader is None:
+        raise KbQaError(f"无法加载 kb_qa_multi.py：{path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def _ask_single(question: str, topk: int, model: str, timeout: float, search_fn, chat_fn,
+                retrieval_only: bool = False) -> dict:
+    """单单元标准问答（旧行为，mode="single" / retrieval-only 走这里）。"""
     started = time.monotonic()
-    question = (question or "").strip()
-    if not question:
-        raise KbQaError("问题不能为空")
     hits = (search_fn or search)(question, topk)
     retrieved = [{"rank": h["rank"], "unit_id": h["unit_id"], "kind": h["kind"],
                   "book": h.get("book"), "chapter": h.get("chapter"),
@@ -331,6 +343,8 @@ def ask(question: str, topk: int = DEFAULT_TOPK, model: str = DEFAULT_MODEL,
                   "fused_score": h.get("fused_score"), "preview": _clip(h.get("text"), 120)}
                  for h in hits]
     base = {"schema_version": 1, "question": question, "topk": topk,
+            "mode": "retrieval" if retrieval_only else "single",
+            "k": topk, "clusters": [],
             "retrieved": retrieved, "llm": {"model": model, "endpoint": OLLAMA_ENDPOINT,
                                             "think": False, "timeout_seconds": timeout,
                                             "fallback": False, "error": None},
@@ -366,6 +380,74 @@ def ask(question: str, topk: int = DEFAULT_TOPK, model: str = DEFAULT_MODEL,
     base["llm"].update({"fallback": fallback, "error": error})
     base["elapsed_seconds"] = round(time.monotonic() - started, 2)
     return base
+
+
+def _ask_multi(question: str, topk: int, model: str, timeout: float, search_fn, chat_fn) -> dict:
+    """多单元聚合问答（默认模式）：检索 top-k → 聚类 → 聚合 prompt → 引用校验。"""
+    started = time.monotonic()
+    multi = _load_kb_qa_multi()
+    k = max(5, min(8, int(topk or DEFAULT_TOPK)))
+    clusters = multi.retrieve_clusters(question, k=k, search_fn=search_fn)
+    result = multi.answer_multi(question, k=k, clusters=clusters, search_fn=search_fn,
+                                chat_fn=chat_fn, model=model, timeout=timeout)
+    retrieved = []
+    for cluster in clusters:
+        for unit in cluster.get("units") or []:
+            retrieved.append({"rank": len(retrieved) + 1, "unit_id": unit.get("unit_id"),
+                              "kind": "units", "book": unit.get("book"),
+                              "chapter": unit.get("chapter"), "page": unit.get("page"),
+                              "page_end": None, "fused_score": unit.get("fused_score"),
+                              "preview": _clip(unit.get("text"), 120)})
+    check = result.get("citation_check") or {}
+    return {"schema_version": 1, "question": question, "topk": topk, "k": k,
+            "mode": "multi",
+            "clusters": [{"label": c.get("label"), "book": c.get("book"),
+                          "chapter": c.get("chapter"), "units": len(c.get("units") or []),
+                          "max_score": c.get("max_score")} for c in clusters],
+            "retrieved": retrieved,
+            "answer": result.get("answer"),
+            "citations": result.get("citations") or [],
+            "confidence": result.get("confidence") or {},
+            "fallback": bool(result.get("fallback")),
+            "citation_check": {"hallucinated_citations": check.get("hallucinated_ids") or [],
+                               "citation_missing": check.get("citation_missing", False)},
+            "llm": result.get("llm") or {"model": model, "endpoint": OLLAMA_ENDPOINT,
+                                         "think": False, "timeout_seconds": timeout,
+                                         "fallback": bool(result.get("fallback")), "error": None},
+            "direct_fact_markers": result.get("direct_fact_markers"),
+            "inference_markers": result.get("inference_markers"),
+            "generated_at": result.get("generated_at") or datetime.now().astimezone().isoformat(timespec="seconds"),
+            "elapsed_seconds": result.get("elapsed_seconds", round(time.monotonic() - started, 2))}
+
+
+def ask(question: str, topk: int = DEFAULT_TOPK, model: str = DEFAULT_MODEL,
+        timeout: float = DEFAULT_TIMEOUT, search_fn=None, chat_fn=None,
+        retrieval_only: bool = False, mode: str = DEFAULT_MODE) -> dict:
+    """问答主流程。
+
+    mode="multi"（默认）：检索 top-k（5–8）单元 → 聚类 → 多单元聚合 prompt（允许综合推断，
+    区分直接事实/推断，引用 [unit_id]）；multi 异常时**自动回退 single**（payload 标 multi_fallback）。
+    mode="single"：旧单单元行为（向后兼容）；retrieval_only=True：仅检索（与 mode 无关）。
+    """
+    started = time.monotonic()
+    question = (question or "").strip()
+    if not question:
+        raise KbQaError("问题不能为空")
+    mode = (mode or DEFAULT_MODE).strip().lower()
+    if mode not in VALID_MODES:
+        raise KbQaError(f"mode 只能是 {'/'.join(VALID_MODES)}（收到 {mode!r}）")
+    if retrieval_only or mode == "single":
+        return _ask_single(question, topk, model, timeout, search_fn, chat_fn, retrieval_only)
+    try:
+        return _ask_multi(question, topk, model, timeout, search_fn, chat_fn)
+    except Exception as exc:  # noqa: BLE001 - multi 不可用/失败 → 回退 single（灰度安全）
+        fallback = _ask_single(question, topk, model, timeout, search_fn, chat_fn, False)
+        fallback["mode"] = "single"
+        fallback["multi_fallback"] = True
+        fallback["multi_fallback_error"] = _clip(f"{type(exc).__name__}: {exc}", 160)
+        fallback["elapsed_seconds"] = round(time.monotonic() - started, 2)
+        return fallback
+
 
 
 # ---------------------------------------------------------------------------
@@ -445,9 +527,13 @@ def write_samples(payload: dict, out_path: Path | str, portal_path: Path | str |
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description="研报知识库 RAG 问答（检索融合 + 本地 LLM + 引用校验）")
     sub = ap.add_subparsers(dest="cmd", required=True)
-    ask_p = sub.add_parser("ask", help="对知识库提问")
+    ask_p = sub.add_parser("ask", help="对知识库提问（默认多单元聚合 multi）")
     ask_p.add_argument("question", help="问题文本")
-    ask_p.add_argument("--topk", type=int, default=DEFAULT_TOPK, help=f"检索条数（默认 {DEFAULT_TOPK}）")
+    ask_p.add_argument("--mode", choices=list(VALID_MODES), default=DEFAULT_MODE,
+                       help="问答模式：multi（默认，多单元聚合）| single（旧单单元）")
+    ask_p.add_argument("--k", type=int, default=DEFAULT_TOPK, help=f"检索单元数（默认 {DEFAULT_TOPK}，multi 钳制 5–8）")
+    ask_p.add_argument("--topk", type=int, default=None, help="兼容旧参数，等价于 --k")
+    ask_p.add_argument("--single", action="store_true", help="便捷开关：等价于 --mode single")
     ask_p.add_argument("--json", action="store_true", help="输出完整 JSON（含 citations/confidence）")
     ask_p.add_argument("--model", default=DEFAULT_MODEL, help="Ollama 模型")
     ask_p.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT, help="LLM 超时秒数")
@@ -464,6 +550,13 @@ def build_parser() -> argparse.ArgumentParser:
 
 def _print_human(result: dict) -> None:
     print(f"问题：{result['question']}")
+    mode = result.get("mode") or DEFAULT_MODE
+    extra = ""
+    if mode == "multi":
+        extra = f" · k={result.get('k')} · 聚类 {len(result.get('clusters') or [])} 个"
+    elif result.get("multi_fallback"):
+        extra = f" · multi 回退 single（{result.get('multi_fallback_error')}）"
+    print(f"模式：{mode}{extra}")
     print(f"作答：{result.get('answer')}")
     print(f"置信：{(result.get('confidence') or {}).get('level')} — "
           f"{'；'.join((result.get('confidence') or {}).get('reasons') or [])}")
@@ -480,8 +573,10 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if args.cmd == "ask":
         try:
-            result = ask(args.question, topk=args.topk, model=args.model,
-                         timeout=args.timeout, retrieval_only=args.retrieval_only)
+            mode = "single" if getattr(args, "single", False) else args.mode
+            k = args.k if getattr(args, "topk", None) is None else args.topk
+            result = ask(args.question, topk=k, model=args.model, timeout=args.timeout,
+                         retrieval_only=args.retrieval_only, mode=mode)
         except KbQaError as exc:
             print(f"[kb_qa] FAILED: {exc}", file=sys.stderr)
             return 1
