@@ -1,0 +1,20 @@
+{
+ "task_id": "T-20261102-124",
+ "opened_by": "A0",
+ "assigned_dept": "dev",
+ "assigned_agent": null,
+ "title": "数仓第一性原则：全域结构化数据统一管理（WP-I）方案 v2",
+ "body": "【原则落地】2026-11-02 · 按老田定义：数仓=一切可结构化、未来可用、能调取的数据统一管理者。\n盘点：287 数据集，登记 265（92%），**取数入口仅 69（24%）**；平台运行域登记率 25%（24→6）；\n最大缺口：automation_runs 829MB、news.db(quotes/runs/ai_briefs/jevs)、quant.db(chanlun/nine_dim)、paper.db(orders/ledger)、research/shadow、hypotheses、xq_status_classified。\n请 DATA1 按《数据仓研发方案 v2》WP-I 执行：I1 统一数据集登记模型→I2 四域补齐 287/287→I3 统一取数入口（MCP dw_query/HTTP/CLI）→I4 派生血缘→I5 治理。\n方案：docs/plans/2026-11-02_数据仓研发方案_v2.md；报告：deliverables/2026-11-02_数仓第一性原则与全域结构化数据盘点_报告.md；台账：deliverables/2026-11-02_全域结构化数据台账_v0.csv。",
+ "severity": "P1",
+ "status": "open",
+ "created_at": "2026-11-02T00:45:23",
+ "due": "2026-11-20",
+ "closure_note": null,
+ "history": [
+  {
+   "at": "2026-11-02T00:45:23",
+   "by": "A0",
+   "action": "open"
+  }
+ ]
+}
