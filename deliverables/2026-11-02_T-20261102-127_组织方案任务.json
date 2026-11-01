@@ -1,0 +1,20 @@
+{
+ "task_id": "T-20261102-127",
+ "opened_by": "A0",
+ "assigned_dept": "dev",
+ "assigned_agent": null,
+ "title": "Hermes数据团队组织与配置方案 v1：请 A0/老田 拍板（撤并/扩编/授权/L2）",
+ "body": "【组织方案】2026-11-02 · DSH-Lead\n结论：张松匹配度 65/100（领域强、组织/授权/Hermes 配置不足）；当前双部门+2人团队无法承担清洗/治理/挖掘全链路。\n方案要点：①撤销 🅱数据治理部归建数据智能部 ②DATA1 岗卡升级 E3 兰台令 ③新增 DATA2 清洗/DATA3 质量/DATA4 元数据/DATA5 语料（分期） ④Hermes 建 zhangsong profile + 注册 dw-governance + dw-etl 受控写 MCP ⑤权限矩阵与三条工作流 ⑥3 周落地+KPI。\n请拍板 5 项：撤并/扩编/授权/L2（8091+8787）/dw-etl 写 MCP。方案：docs/plans/2026-11-02_Hermes数据团队组织与配置方案_v1.md。",
+ "severity": "P1",
+ "status": "open",
+ "created_at": "2026-11-02T03:06:02",
+ "due": "2026-11-06",
+ "closure_note": null,
+ "history": [
+  {
+   "at": "2026-11-02T03:06:02",
+   "by": "A0",
+   "action": "open"
+  }
+ ]
+}
