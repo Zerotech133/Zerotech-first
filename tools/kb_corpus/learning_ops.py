@@ -7,9 +7,12 @@ learning_projects.json、research/reports/learning_*），绝不触碰数据仓�
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
+import subprocess
 import sys
+import shutil
 from datetime import datetime
 from pathlib import Path
 
@@ -17,6 +20,10 @@ REPO = Path(__file__).resolve().parents[2]
 DEFAULT_KB = Path(r"C:\项目\知识库")
 REG = REPO / "agent_platform/registry/learning_projects.json"
 REPORTS = REPO / "research/reports"
+ARCHIVE_ROOT = REPO / "_archive"
+PDF_INGEST = REPO / "tools/kb_corpus/pdf_ingest.py"
+LEARN_SRC = "05_学习源件"
+OCR_TIMEOUT = 3600
 
 
 class SafetyError(RuntimeError):
@@ -27,12 +34,20 @@ def safe(path: Path, kb: Path) -> None:
     p = path.resolve()
     roots = [(kb / "05_学习源件").resolve(), (kb / "20_清洗").resolve(),
              (kb / "30_知识单元").resolve(), (kb / "35_知识提炼").resolve(),
-             REPORTS.resolve()]
+             REPORTS.resolve(), ARCHIVE_ROOT.resolve()]
     if p == REG.resolve():
         return
     if any(r == p or r in p.parents for r in roots):
         return
     raise SafetyError(f"拒绝写入非学习命名空间: {p}")
+
+
+def sha256_file(path: Path) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as fh:
+        for chunk in iter(lambda: fh.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
 
 
 def load_reg() -> dict:
@@ -92,8 +107,10 @@ def pipeline(kb: Path, write: bool = False) -> dict:
         pid = p.get("project_id")
         if not pid or p.get("status") in ("archived",):
             continue
+        ocr = ocr_stage(kb, p, write=write)
+        item = {"project_id": pid, "status": p.get("status"), "pdf_ocr": ocr}
         texts = read_texts(kb, pid)
-        item = {"project_id": pid, "status": p.get("status"), "texts": len(texts)}
+        item["texts"] = len(texts)
         if not texts:
             item["action"] = "skip_no_text"
             rep["projects"].append(item)
@@ -212,13 +229,252 @@ def standardize(kb: Path, write: bool = False) -> dict:
     return rep
 
 
+# ---------------------------------------------------------------------------
+# 阶段 1：PDF OCR（幂等/可重入；产出登记 stage=ocr_done）
+# ---------------------------------------------------------------------------
+def project_dir(kb: Path, pid: str) -> Path:
+    return kb / LEARN_SRC / pid
+
+
+def _manifest_path(kb: Path, pid: str) -> Path:
+    return project_dir(kb, pid) / "manifest.json"
+
+
+def load_manifest(kb: Path, pid: str) -> dict:
+    p = _manifest_path(kb, pid)
+    if p.exists():
+        try:
+            return json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            pass
+    return {"schema_version": "learning_project.v1", "project_id": pid, "files": []}
+
+
+def save_manifest(kb: Path, pid: str, man: dict) -> None:
+    p = _manifest_path(kb, pid)
+    safe(p, kb)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps(man, ensure_ascii=False, indent=1), encoding="utf-8")
+
+
+def find_project_pdfs(kb: Path, project: dict) -> list[Path]:
+    """发现项目 PDF：源目录 source/*.pdf 优先，其次 registry.source / manifest 登记的原始路径。"""
+    pid = str(project.get("project_id") or "")
+    out: list[Path] = []
+    src = project_dir(kb, pid) / "source"
+    if src.exists():
+        out.extend(sorted(src.glob("*.pdf")))
+    for raw in project.get("source") or []:
+        p = Path(raw)
+        if p.exists() and p.suffix.lower() == ".pdf":
+            out.append(p)
+    for entry in load_manifest(kb, pid).get("files") or []:
+        for key in ("origin", "path"):
+            p = Path(str(entry.get(key) or ""))
+            if p.suffix.lower() == ".pdf" and p.exists():
+                out.append(p)
+    uniq, seen = [], set()
+    for p in out:
+        key = str(p.resolve()).lower()
+        if key not in seen:
+            seen.add(key)
+            uniq.append(p)
+    return uniq
+
+
+def run_pdf_ocr(kb: Path, pid: str, pdf: Path, runner=None) -> dict:
+    """对单个 PDF 调 pdf_ingest ocr；已有 ocr.txt/ocr.jsonl 视为已完成（幂等）。"""
+    out_root = project_dir(kb, pid) / "ocr"
+    book_dir = out_root / pdf.stem
+    safe(out_root, kb)
+    if (book_dir / "ocr.txt").exists() or (book_dir / "ocr.jsonl").exists():
+        return {"name": pdf.name, "origin": str(pdf), "out_dir": str(book_dir),
+                "skipped": True, "stage": "ocr_done", "sha256": sha256_file(pdf)}
+    out_root.mkdir(parents=True, exist_ok=True)
+    cmd = [sys.executable, "-X", "utf8", str(PDF_INGEST), "ocr",
+           "--pdf-dir", str(pdf.parent), "--out-dir", str(out_root), "--only", pdf.name]
+    try:
+        proc = (runner or subprocess.run)(cmd, capture_output=True, text=True, timeout=OCR_TIMEOUT)
+        rc = int(getattr(proc, "returncode", 1))
+        err = (getattr(proc, "stderr", "") or "")[-400:] if rc else None
+    except Exception as exc:  # noqa: BLE001 - 失败保留 stage，可重入
+        rc, err = 1, f"{type(exc).__name__}: {exc}"
+    return {"name": pdf.name, "origin": str(pdf), "out_dir": str(book_dir),
+            "skipped": False, "stage": "ocr_done" if rc == 0 else "ocr_failed",
+            "rc": rc, "error": err, "sha256": sha256_file(pdf)}
+
+
+def ocr_stage(kb: Path, project: dict, write: bool = False, runner=None) -> dict:
+    """项目 OCR 阶段：无 PDF 跳过；已有阶段登记幂等；失败可重入（下次再试）。"""
+    pid = str(project.get("project_id") or "")
+    pdfs = find_project_pdfs(kb, project)
+    if not pdfs:
+        return {"stage": "skip_no_pdf", "pdfs": 0, "ran": 0, "skipped": 0, "failed": 0}
+    man = load_manifest(kb, pid)
+    done = {str(e.get("name")) for e in man.get("files") or []
+            if e.get("stage") == "ocr_done"}
+    plan = [{"name": p.name, "origin": str(p),
+             "action": "skip_done" if p.name in done else "would_ocr"} for p in pdfs]
+    if not write:
+        return {"stage": "plan", "pdfs": len(pdfs), "ran": 0,
+                "skipped": sum(1 for x in plan if x["action"] == "skip_done"),
+                "failed": 0, "plan": plan}
+    results = []
+    for pdf in pdfs:
+        rec = run_pdf_ocr(kb, pid, pdf, runner=runner)
+        results.append(rec)
+    files = [e for e in (man.get("files") or []) if e.get("name") not in {r["name"] for r in results}]
+    files.extend({"name": r["name"], "origin": r["origin"], "out_dir": r["out_dir"],
+                  "stage": r["stage"], "rc": r.get("rc"), "error": r.get("error"),
+                  "sha256": r.get("sha256"),
+                  "updated_at": datetime.now().astimezone().isoformat(timespec="seconds")}
+                 for r in results)
+    failed = [r for r in results if r["stage"] != "ocr_done"]
+    man.update({"schema_version": "learning_project.v1", "project_id": pid,
+                "stage": "ocr_done" if not failed else (man.get("stage") or "ocr_pending"),
+                "files": files,
+                "ocr_updated_at": datetime.now().astimezone().isoformat(timespec="seconds")})
+    save_manifest(kb, pid, man)
+    return {"stage": man["stage"], "pdfs": len(pdfs),
+            "ran": sum(1 for r in results if not r.get("skipped")),
+            "skipped": sum(1 for r in results if r.get("skipped")),
+            "failed": len(failed), "results": results}
+
+
+def _safe_name(name: str) -> str:
+    return re.sub(r"[^\w\u4e00-\u9fff\-]+", "_", str(name or "")).strip("_")[:60]
+
+
+def _archive_target(rel: str | Path) -> Path:
+    rel = str(rel)
+    if rel.startswith("_archive/"):
+        return ARCHIVE_ROOT / rel[len("_archive/"):]
+    p = Path(rel)
+    return p if p.is_absolute() else REPO / p
+
+
+def archive(kb: Path, project_id: str, write: bool = False,
+            date_tag: str | None = None) -> dict:
+    """结项归档：生成 _archive/<日期>_<项目名>/{ENTRY.md,manifest.json}（dry-run 默认）。"""
+    reg = load_reg()
+    proj = next((p for p in reg.get("projects") or [] if p.get("project_id") == project_id), None)
+    if proj is None:
+        return {"project_id": project_id, "mode": "not_found", "error": "项目未登记"}
+    name = proj.get("name") or project_id
+    date_tag = date_tag or datetime.now().strftime("%Y-%m-%d")
+    target_rel = proj.get("archive") or f"_archive/{date_tag}_{_safe_name(name)}"
+    target = _archive_target(target_rel)
+    if proj.get("status") == "archived" or (target / "manifest.json").exists():
+        exists = (target / "manifest.json").exists()
+        todo = []
+        if write and not (target / "ENTRY.md").exists():
+            todo.append("ENTRY.md")
+        if write and not (target / "manifest.json").exists():
+            todo.append("manifest.json")
+        return {"project_id": project_id, "mode": "already_archived",
+                "archive": target_rel, "exists": exists, "completed": todo,
+                "write": write, "note": "已归档（只读），不重复归档/不移动任何文件"}
+    pdfs = find_project_pdfs(kb, proj)
+    units = kb / "30_知识单元" / f"{project_id}_units_draft.jsonl"
+    artifacts = [p for p in pdfs + ([units] if units.exists() else []) if p.exists()]
+    plan = {"project_id": project_id, "name": name, "archive": target_rel,
+            "files": [{"path": str(p), "sha256": sha256_file(p), "bytes": p.stat().st_size}
+                      for p in artifacts],
+            "status_before": proj.get("status"), "status_after": "archived"}
+    if not write:
+        return {"project_id": project_id, "mode": "dry_run", **plan}
+    target.mkdir(parents=True, exist_ok=True)
+    now = datetime.now().astimezone().isoformat(timespec="seconds")
+    man = {"schema_version": "project_archive.v1", "project_id": project_id,
+           "name": name, "status": "archived", "archived_at": now,
+           "files": plan["files"], "artifacts": proj.get("artifacts") or {},
+           "conclusion": "【结项结论占位】待 Owner 填写：是否达成目标/保留价值/停止投入判断",
+           "forbidden": ["不得基于已结项资产直接投入实盘策略（新假设须重走四关）",
+                         "不得将归档资产复制回生产目录后继续迭代"],
+           "rollback": "从本目录 manifest.json 取产物路径 → 新假设按 SOP 四关重开项目线（需老田/审批）"}
+    man_p = target / "manifest.json"
+    safe(man_p, kb)
+    man_p.write_text(json.dumps(man, ensure_ascii=False, indent=1), encoding="utf-8")
+    entry = [f"# {name} — 归档入口（已结项只读）", "",
+             f"> 归档时间：{now}｜项目：`{project_id}`｜状态：**archived（只读）**", "",
+             "## 一、结论（先看这个）", "",
+             man["conclusion"], "",
+             "## 二、产物索引", ""]
+    for f in plan["files"]:
+        entry.append(f"- `{f['path']}`（{f['bytes']}B，sha256 `{f['sha256'][:16]}…`）")
+    entry += ["", "## 三、禁止与续做", ""] + [f"- {x}" for x in man["forbidden"]]
+    entry += ["", "## 四、回滚/解冻", "", f"- {man['rollback']}", ""]
+    (target / "ENTRY.md").write_text("\n".join(entry), encoding="utf-8")
+    proj.update({"status": "archived", "archive": target_rel, "archived_at": now})
+    save_reg(reg)
+    return {"project_id": project_id, "mode": "archived", **plan,
+            "created": [str(target / "ENTRY.md"), str(target / "manifest.json")],
+            "status_updated": "archived"}
+
+
+def archive_report(kb: Path, project_id: str, write: bool = False) -> dict:
+    """真实跑一遍 archive + pipeline dry-run，输出 learning_archive_<tag>.{json,md}。"""
+    tag = datetime.now().strftime("%Y%m%d")
+    arch = archive(kb, project_id, write=write)
+    pipe = pipeline(kb, write=False)
+    rep = {"schema_version": "learning_archive.v1", "date_tag": tag,
+           "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+           "project_id": project_id, "archive": arch, "pipeline_dry_run": pipe,
+           "note": "archive 默认 dry-run；--write 才创建归档；pipeline 为 dry-run（不写盘）"}
+    jp = REPORTS / f"learning_archive_{tag}.json"
+    mp = REPORTS / f"learning_archive_{tag}.md"
+    safe(jp, kb)
+    REPORTS.mkdir(parents=True, exist_ok=True)
+    jp.write_text(json.dumps(rep, ensure_ascii=False, indent=1), encoding="utf-8")
+    L = [f"# 学习线：PDF OCR 阶段 + 结项归档（{tag}）", "",
+         f"> 生成 {rep['generated_at']}｜项目 `{project_id}`｜archive 模式 **{arch.get('mode')}**", "",
+         "## 一、归档结果", ""]
+    if arch.get("mode") == "already_archived":
+        L += [f"- 已归档（只读），不重复归档：`{arch.get('archive')}`",
+              f"- 本次 --write={write}；需补全项：{arch.get('completed') or '无'}", ""]
+    elif arch.get("mode") == "dry_run":
+        L += [f"- **dry-run**：将创建 `{arch.get('archive')}`，产物 {len(arch.get('files') or [])} 个（未写盘）", ""]
+    elif arch.get("mode") == "archived":
+        L += [f"- 已创建归档 `{arch.get('archive')}`（ENTRY.md + manifest.json），状态更新为 archived", ""]
+    else:
+        L += [f"- 异常：{arch}", ""]
+    L += ["## 二、Pipeline dry-run（含 PDF OCR 阶段）", "",
+          "| 项目 | 状态 | PDF OCR 阶段 | PDF 数 | 文本数 | 动作 |", "|---|---|---|---|---|---|"]
+    for it in pipe.get("projects") or []:
+        ocr = it.get("pdf_ocr") or {}
+        L.append(f"| {it.get('project_id')} | {it.get('status')} | {ocr.get('stage')} | "
+                 f"{ocr.get('pdfs')} | {it.get('texts')} | {it.get('action')} |")
+    if not (pipe.get("projects") or []):
+        L.append("| — | — | — | — | — | 无可处理项目（均已归档/无源） |")
+    L += ["", "## 三、说明", "",
+          "- 铁律：只写学习命名空间（知识库 05/20/30/35、learning_projects.json、_archive、research/reports/learning_*），**不碰数据仓**；",
+          "- OCR 幂等：已有 ocr.txt/ocr.jsonl 或 manifest stage=ocr_done 的 PDF 跳过；失败保留 stage 可重入；",
+          "- 归档为**复制索引**而非移动源文件；已归档项目再次运行 → no-op（只读）。", ""]
+    mp.write_text("\n".join(L), encoding="utf-8")
+    return {"report": rep, "json": str(jp), "md": str(mp)}
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["pipeline", "governance", "standardize"])
+    ap.add_argument("cmd", choices=["pipeline", "governance", "standardize", "archive"])
     ap.add_argument("--write", action="store_true")
+    ap.add_argument("--project", default="")
+    ap.add_argument("--report", action="store_true", help="archive 后输出 learning_archive_<tag>.{json,md}")
     ap.add_argument("--root", default=str(DEFAULT_KB))
     args = ap.parse_args(argv)
     kb = Path(args.root)
+    if args.cmd == "archive":
+        if not args.project:
+            ap.error("archive 需要 --project <project_id>")
+        if args.report:
+            out = archive_report(kb, args.project, write=args.write)
+            rep = out["report"]
+            print(json.dumps({"archive": rep["archive"], "outputs": out["json"] + " / " + out["md"]},
+                             ensure_ascii=False, indent=1)[:4000])
+            return 0
+        rep = archive(kb, args.project, write=args.write)
+        print(json.dumps(rep, ensure_ascii=False, indent=1)[:4000])
+        return 0
     fn = {"pipeline": pipeline, "governance": governance, "standardize": standardize}[args.cmd]
     rep = fn(kb, write=args.write)
     print(json.dumps(rep, ensure_ascii=False, indent=1)[:4000])

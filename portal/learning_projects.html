@@ -1,0 +1,87 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name=wb-shell content=adopted><title>零界 · 学习项目看板</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<script src="/static/nav.js" defer></script>
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--line:#e3e6ea;--txt:#1b2430;--sub:#6b7684;--ok:#12805c;--warn:#c0392b;--idle:#b7791f}
+*{box-sizing:border-box}body{margin:0;padding:24px;background:var(--bg);color:var(--txt);font:14px/1.6 "Microsoft YaHei","Segoe UI",sans-serif}
+h1{font-size:20px;margin:0 0 4px}.sub{color:var(--sub);font-size:12px;margin-bottom:14px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.chip{background:#fff;border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:13px}
+.chip b{font-size:15px;margin-left:4px}.chip.ok b{color:var(--ok)}.chip.warn b{color:var(--warn)}.chip.idle b{color:var(--idle)}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:16px}
+.panel h2{font-size:14px;margin:0 0 10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+.proj{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:#fafbfc}
+.proj h3{margin:0 0 6px;font-size:15px}
+.tag{font-size:11px;border-radius:10px;padding:1px 8px;margin-left:6px}
+.tag.archived{background:#eef2ff;color:#3956c0}.tag.intake_pending{background:#fff7e6;color:var(--idle)}
+.kv{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--sub);margin:4px 0}
+.kv b{color:var(--txt)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left}
+th{color:var(--sub);font-weight:600;font-size:12px}
+.ok{color:var(--ok)}.bad{color:var(--warn)}.muted{color:var(--sub);font-size:12px}
+ul.todos{margin:0;padding-left:18px;font-size:13px}
+ul.todos li{margin:3px 0}
+.empty{color:var(--sub);font-size:13px;padding:12px}
+</style></head><body>
+<h1>📚 学习项目看板</h1>
+<div class="sub" id="meta">加载中…（数据由 tools/kb_corpus/learning_dashboard_build.py 聚合）</div>
+<div class="chips" id="chips"></div>
+
+<div class="panel"><h2>项目列表</h2><div class="grid" id="projects"><div class="empty">加载中…</div></div></div>
+
+<div class="panel"><h2>流水线（4 任务）</h2>
+<table><thead><tr><th>任务</th><th>职责</th><th>计划</th><th>下次运行</th><th>状态</th><th>最近报告</th></tr></thead>
+<tbody id="pipeline"></tbody></table></div>
+
+<div class="panel"><h2>质量门</h2><table><thead><tr><th>检查项</th><th>结果</th><th>说明</th></tr></thead>
+<tbody id="quality"></tbody></table></div>
+
+<div class="panel"><h2>待办</h2><ul class="todos" id="todos"></ul></div>
+<script>
+(function(){
+  const q=function(id){return document.getElementById(id);};
+  const esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});};
+  function render(d){
+    const s=d.summary||{}, owner=d.owner||{};
+    q('meta').textContent='Owner：'+esc(owner.cn||'张松')+'（'+esc(owner.agent_id||'DATA1')+'）· 更新 '+esc((d.generated_at||'').replace('T',' ').slice(0,19))+' · 知识单元 '+(s.kb_units||0);
+    const chips=[['项目',s.projects, ''],['质量门',s.gate_passed?'通过':'未通过',s.gate_passed?'ok':'warn'],
+                 ['问题',s.issues||0,(s.issues||0)===0?'ok':'warn'],['知识单元',s.kb_units||0,'']];
+    q('chips').innerHTML=chips.map(function(c){return '<div class="chip '+c[2]+'">'+c[0]+'<b>'+esc(c[1])+'</b></div>';}).join('');
+    const projects=d.projects||[];
+    q('projects').innerHTML=projects.length?projects.map(function(p){
+      const art=p.drafts&&p.drafts.artifacts||{};
+      return '<div class="proj"><h3>'+esc(p.name)+'<span class="tag '+esc(p.status)+'">'+esc(p.stage_label)+'</span></h3>'
+        +'<div class="kv"><span>Owner <b>'+esc(p.owner)+'</b></span><span>类型 <b>'+esc(p.type)+'</b></span>'
+        +'<span>源件 <b>'+(p.source_count||0)+'</b></span><span>草稿单元 <b>'+((p.drafts||{}).units_draft||0)+'</b></span>'
+        +'<span>最后更新 <b>'+esc((p.last_update||'—').slice(0,19))+'</b></span></div>'
+        +'<div class="muted">工件：specs '+(art.specs||0)+' / reports '+(art.reports||0)+' / book_units '+(art.book_units||0)+' / book_cards '+(art.book_cards||0)+'</div>'
+        +((p.next_action)?'<div class="muted">下一步：'+esc(p.next_action)+'</div>':'')
+        +((p.note)?'<div class="muted">备注：'+esc(p.note)+'</div>':'')+'</div>';
+    }).join(''):'<div class="empty">暂无项目</div>';
+    const pl=d.pipeline||[];
+    q('pipeline').innerHTML=pl.map(function(t){
+      return '<tr><td>'+esc(t.label)+'</td><td class="muted">'+esc(t.desc)+'</td><td>'+esc(t.schedule||'—')+'</td>'
+        +'<td>'+esc(t.next_run? String(t.next_run).replace('T',' ').slice(0,16):'—')+'</td>'
+        +'<td>'+esc(t.state)+'</td><td class="muted">'+esc(t.last_run? String(t.last_run).replace('T',' ').slice(0,19):'—')+'</td></tr>';
+    }).join('');
+    const qa=d.quality||{}, checks=qa.checks||[];
+    q('quality').innerHTML=checks.map(function(c){
+      return '<tr><td>'+esc(c.name)+'</td><td class="'+(c.ok?'ok':'bad')+'">'+(c.ok?'✅ 通过':'❌ 未通过')+'</td>'
+        +'<td class="muted">'+(c.issues!=null?('issues='+esc(c.issues)):'')+(c.projects!=null?('projects='+esc(c.projects)):'')+'</td></tr>';
+    }).join('')+'<tr><td><b>总门禁</b></td><td class="'+(qa.gate_passed?'ok':'bad')+'"><b>'+(qa.gate_passed?'✅ 通过':'❌ 未通过')+'</b></td><td class="muted">issues='+esc(qa.issues||0)+' high='+esc(qa.high||0)+'</td></tr>';
+    const todos=d.todos||[];
+    q('todos').innerHTML=todos.length?todos.map(function(t){
+      return '<li class="'+(t.level==='high'?'bad':'muted')+'">['+esc(t.project_id)+'] '+esc(t.todo)+'</li>';}).join(''):'<li class="muted">暂无待办</li>';
+  }
+  fetch('/static/learning_projects_dashboard.json?ts='+Date.now()).then(function(r){
+    if(!r.ok) throw new Error('HTTP '+r.status); return r.json();
+  }).then(render).catch(function(e){
+    q('meta').textContent='加载失败：'+(e&&e.message||e);
+  });
+})();
+</script>
+</body></html>

@@ -1,0 +1,109 @@
+{
+ "schema_version": 1,
+ "date": "20261102",
+ "generated_at": "2026-11-02T04:07:46+08:00",
+ "generator": "tools/kb_corpus/card_from_units.py（S5 草稿→候选）",
+ "mode": "dry-run 预览 + 候选输出（**不合并学习卡**）",
+ "pid": "20261102_流水线自检_示例",
+ "sources": {
+  "units_dir": "C:\\Temp\\learning_selftest",
+  "drafts": [
+   "20261102_流水线自检_示例_units_draft.jsonl"
+  ],
+  "cards": {
+   "path": "C:\\项目\\老田的AI助手\\portal\\static\\kb_learning_cards.json",
+   "sha256": "f5f257b370827feda7f64f7ae7c349a9823b7ebf646bbfa994f546ba8b4bfe94",
+   "count": 130
+  }
+ },
+ "policy": {
+  "min_answer_len": 8,
+  "max_answer_len": 300,
+  "max_concept_len": 20,
+  "answer_similarity_max": 0.85,
+  "dedupe": "concept 归一化与现有卡/批内去重 + 答案 jaccard ≥0.85 去重",
+  "status": "pending_review"
+ },
+ "summary": {
+  "inputs": 1,
+  "units": 2,
+  "candidates": 2,
+  "rejected": 0,
+  "reasons": {},
+  "by_theme": {
+   "其他": 2
+  },
+  "estimated_new_cards": 2,
+  "per_input": [
+   {
+    "draft": "20261102_流水线自检_示例_units_draft.jsonl",
+    "units": 2,
+    "candidates": 2,
+    "rejected": 0
+   }
+  ]
+ },
+ "candidates": [
+  {
+   "card_id": "CAND-001",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "真实用户痛点",
+   "q": "什么是「真实用户痛点」？",
+   "a": "真实用户痛点是创业的第一性原理。",
+   "source": "20261102_流水线自检_示例 · 20261102_流水线自检_示例.md · L5",
+   "evidence": "20261102_流水线自检_示例.md L5",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "20261102_流水线自检_示例",
+   "unit_id": "learn_20261102_流水线自检_示例_0001",
+   "evidence_pointer": {
+    "file": "20261102_流水线自检_示例.md",
+    "line": 5
+   },
+   "quality_score": 35.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CAND-002",
+   "status": "pending_review",
+   "round": "units_draft",
+   "concept": "先卖再做",
+   "q": "什么是「先卖再做」？",
+   "a": "先卖再做，是最小成本验证的路径。",
+   "source": "20261102_流水线自检_示例 · 20261102_流水线自检_示例.md · L7",
+   "evidence": "20261102_流水线自检_示例.md L7",
+   "theme": "其他",
+   "topic": "其他",
+   "project_id": "20261102_流水线自检_示例",
+   "unit_id": "learn_20261102_流水线自检_示例_0002",
+   "evidence_pointer": {
+    "file": "20261102_流水线自检_示例.md",
+    "line": 7
+   },
+   "quality_score": 35.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  }
+ ],
+ "note": "候选卡为 pending_review；本工具不写学习卡、不合并；审核后再走 decisions/merge 流程。",
+ "disclaimer": "候选卡来自知识单元草稿规则化转换，需人工审核；不构成投资建议。",
+ "cards_unchanged": true
+}

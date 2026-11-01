@@ -6905,5 +6905,21 @@
       "飞书卡片权限（可选，文本推送已可用）"
     ],
     "doc": "deliverables/2026-11-02_收口验收单_v1.md"
+  },
+  "learning_pipeline_ext_20261102": {
+    "note": "学习流水线扩展：PDF OCR 阶段（pdf_ingest，幂等）+ archive 结项归档自动化（ENTRY+manifest+registry archived，dry-run 默认）；真实跑 learnpdf=already_archived no-op、laomu=skip_no_pdf；7 tests passed。"
+  },
+  "learning_dashboard_20261102": {
+    "page": "portal/learning_projects.html",
+    "data": "portal/static/learning_projects_dashboard.json",
+    "summary": {
+      "projects": 2,
+      "pipeline": 4
+    },
+    "note": "学习项目看板上线（HTTP 200）：2 项目/4 流水线任务/质量门通过/待办；导航 107 入口；门禁 PASS。"
+  },
+  "card_from_units_20261102": {
+    "tool": "tools/kb_corpus/card_from_units.py",
+    "note": "S5 自动化：知识单元草稿→学习卡候选（pending_review，可追溯、去重、拒绝原因统计）；演示 2 单元→2 候选/0 拒绝；学习卡 130 张未动；5 tests passed。"
   }
 }

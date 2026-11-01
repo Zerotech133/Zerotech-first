@@ -1,0 +1,172 @@
+{
+ "schema_version": "learning_projects_dashboard.v1",
+ "kind": "learning_projects_dashboard",
+ "generated_at": "2026-11-02T04:08:39+08:00",
+ "owner": {
+  "agent_id": "DATA1",
+  "cn": "张松",
+  "title": "兰台令（数据智能部长）",
+  "reports_to": "A0"
+ },
+ "executors": {
+  "DATA2": "刘巴·清洗/ETL",
+  "DATA3": "陈群·质量与标准",
+  "DATA4": "杨仪·元数据与资质",
+  "DATA5": "谯周·语料与情报结构化",
+  "FACTOR1": "蒋琬·因子挖掘（研究类按需）"
+ },
+ "summary": {
+  "projects": 2,
+  "status_counts": {
+   "archived": 1,
+   "intake_pending": 1
+  },
+  "pipeline_tasks": 4,
+  "gate_passed": true,
+  "issues": 0,
+  "high": 0,
+  "kb_units": 516
+ },
+ "projects": [
+  {
+   "project_id": "learnpdf_liangxue",
+   "name": "学习PDF·量学两本书",
+   "type": "book",
+   "status": "archived",
+   "stage": "archived",
+   "stage_label": "已归档（只读）",
+   "owner": "张松",
+   "owner_agent": "DATA1",
+   "source_count": 2,
+   "sources": [
+    "C:\\项目\\PDF\\伏击涨停(2).pdf",
+    "C:\\项目\\PDF\\涨停密码(2).pdf"
+   ],
+   "drafts": {
+    "units_draft": 0,
+    "manifest": false,
+    "pipeline_action": null,
+    "artifacts": {
+     "specs": 24,
+     "reports": 13,
+     "deliverables": 6,
+     "book_units": 35,
+     "book_cards": 9
+    }
+   },
+   "last_update": "2026-11-02T04:03:15+08:00",
+   "next_action": null,
+   "note": "已归档只读；结论=无正向alpha；禁止再投入做多/反向策略",
+   "archive": "_archive/2026-11-02_学习PDF_量学/"
+  },
+  {
+   "project_id": "laomu_notes",
+   "name": "老木创业笔记",
+   "type": "notes",
+   "status": "intake_pending",
+   "stage": "intake_pending",
+   "stage_label": "待入库（等源文件）",
+   "owner": "张松",
+   "owner_agent": "DATA1",
+   "source_count": 0,
+   "sources": [],
+   "drafts": {
+    "units_draft": 0,
+    "manifest": false,
+    "pipeline_action": "skip_no_text",
+    "artifacts": {}
+   },
+   "last_update": "2026-11-02T04:03:15+08:00",
+   "next_action": "待老田提供源文件（放 C:\\项目\\PDF\\ 或知识库）→ DATA2 入库 → S2 起流水线",
+   "note": "全盘0文件；不得归档为已完成",
+   "archive": "_archive/2026-11-02_老木创业笔记/"
+  }
+ ],
+ "pipeline": [
+  {
+   "task": "ZeroBound_LearningIntake",
+   "label": "学习入库",
+   "desc": "入库巡检",
+   "schedule": "04:00",
+   "next_run": "2026-11-02T04:33:14",
+   "state": "Ready",
+   "last_run": "2026-11-02T04:03:15+08:00",
+   "report": "C:\\项目\\老田的AI助手\\research\\reports\\learning_intake_20261102.json"
+  },
+  {
+   "task": "ZeroBound_LearningStandardize",
+   "label": "学习标准化",
+   "desc": "目录/格式标准化",
+   "schedule": "10:00",
+   "next_run": "2026-11-02T10:00:00",
+   "state": "Ready",
+   "last_run": "2026-11-02T04:02:55+08:00",
+   "report": "C:\\项目\\老田的AI助手\\research\\reports\\learning_standardize_20261102.json"
+  },
+  {
+   "task": "ZeroBound_LearningPipeline",
+   "label": "学习流水线",
+   "desc": "S2-S6 流水线推进",
+   "schedule": "20:00",
+   "next_run": "2026-11-02T20:00:00",
+   "state": "Ready",
+   "last_run": "2026-11-02T04:02:54+08:00",
+   "report": "C:\\项目\\老田的AI助手\\research\\reports\\learning_pipeline_20261102.json"
+  },
+  {
+   "task": "ZeroBound_LearningGovernance",
+   "label": "学习治理",
+   "desc": "清单/质量/归档治理",
+   "schedule": "02:00",
+   "next_run": "2026-11-03T02:00:00",
+   "state": "Ready",
+   "last_run": "2026-11-02T04:02:55+08:00",
+   "report": "C:\\项目\\老田的AI助手\\research\\reports\\learning_governance_20261102.json"
+  }
+ ],
+ "quality": {
+  "gate_passed": true,
+  "issues": 0,
+  "high": 0,
+  "checks": [
+   {
+    "name": "intake",
+    "ok": true,
+    "report": "C:\\项目\\老田的AI助手\\research\\reports\\learning_intake_20261102.json"
+   },
+   {
+    "name": "standardize",
+    "ok": true,
+    "issues": 0
+   },
+   {
+    "name": "pipeline",
+    "ok": true,
+    "projects": 1
+   },
+   {
+    "name": "governance",
+    "ok": true,
+    "issues": 0
+   }
+  ]
+ },
+ "todos": [
+  {
+   "project_id": "learnpdf_liangxue",
+   "todo": "已归档只读；结论=无正向alpha；禁止再投入做多/反向策略",
+   "level": "info"
+  },
+  {
+   "project_id": "laomu_notes",
+   "todo": "待老田提供源文件（放 C:\\项目\\PDF\\ 或知识库）→ DATA2 入库 → S2 起流水线",
+   "level": "high"
+  }
+ ],
+ "sop": "docs/standards/2026-11-02_学习项目标准化流程_v1.md",
+ "sources": {
+  "registry": "C:\\项目\\老田的AI助手\\agent_platform\\registry\\learning_projects.json",
+  "reports_dir": "C:\\项目\\老田的AI助手\\research\\reports"
+ },
+ "note": "由 tools/kb_corpus/learning_dashboard_build.py 生成；只读聚合，不修改源数据。"
+}

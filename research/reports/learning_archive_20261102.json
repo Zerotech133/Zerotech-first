@@ -1,0 +1,35 @@
+{
+ "schema_version": "learning_archive.v1",
+ "date_tag": "20261102",
+ "generated_at": "2026-11-02T04:08:13+08:00",
+ "project_id": "learnpdf_liangxue",
+ "archive": {
+  "project_id": "learnpdf_liangxue",
+  "mode": "already_archived",
+  "archive": "_archive/2026-11-02_学习PDF_量学/",
+  "exists": true,
+  "completed": [],
+  "write": true,
+  "note": "已归档（只读），不重复归档/不移动任何文件"
+ },
+ "pipeline_dry_run": {
+  "generated_at": "2026-11-02T04:08:13+08:00",
+  "write": false,
+  "projects": [
+   {
+    "project_id": "laomu_notes",
+    "status": "intake_pending",
+    "pdf_ocr": {
+     "stage": "skip_no_pdf",
+     "pdfs": 0,
+     "ran": 0,
+     "skipped": 0,
+     "failed": 0
+    },
+    "texts": 0,
+    "action": "skip_no_text"
+   }
+  ]
+ },
+ "note": "archive 默认 dry-run；--write 才创建归档；pipeline 为 dry-run（不写盘）"
+}

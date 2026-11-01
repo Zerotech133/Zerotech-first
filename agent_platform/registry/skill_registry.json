@@ -897,6 +897,27 @@
       "title": "学习卡第三轮扩卡候选",
       "ref": "tools/kb_corpus/card_proposal_v4.py",
       "enabled": true
+    },
+    {
+      "id": "learning_ops",
+      "kind": "tool",
+      "title": "学习流水线运维（清洗/治理/标准化/归档）",
+      "ref": "tools/kb_corpus/learning_ops.py",
+      "enabled": true
+    },
+    {
+      "id": "learning_dashboard_build",
+      "kind": "tool",
+      "title": "学习项目看板聚合",
+      "ref": "tools/kb_corpus/learning_dashboard_build.py",
+      "enabled": true
+    },
+    {
+      "id": "card_from_units",
+      "kind": "tool",
+      "title": "知识单元草稿→学习卡候选",
+      "ref": "tools/kb_corpus/card_from_units.py",
+      "enabled": true
     }
   ]
 }
