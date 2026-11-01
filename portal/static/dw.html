@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="description" content="零界数据仓统一入口：全域数据集目录、只读取数入口、断流/漂移/快照状态一页看全。">
+<title>数据仓统一入口 · 零界</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<script src="/static/nav.js" defer></script>
+<style>
+:root{color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:radial-gradient(circle at 82% -18%,var(--bg-surface),transparent 46%),var(--bg-page);color:var(--text);font:14px/1.62 var(--font-ui)}
+a{color:var(--link);text-decoration:none}
+a:hover{text-decoration:underline}
+.main{max-width:var(--page-w);margin:auto;padding:22px clamp(14px,3vw,28px) 56px}
+.eyebrow{font:700 11px var(--font-mono);letter-spacing:.18em;color:var(--color-ok);margin:6px 0 8px}
+h1{font-size:clamp(24px,3.2vw,34px);letter-spacing:-.02em;margin:0 0 8px}
+h2{font-size:16px;margin:26px 0 10px;color:var(--text);display:flex;align-items:center;gap:8px}
+h2 .cnt{font:600 11px var(--font-mono);color:var(--text-dim);border:1px solid var(--border);border-radius:var(--r-pill);padding:1px 8px}
+.lead{color:var(--text-dim);font-size:13px;line-height:1.8;max-width:880px;margin:0}
+.quick{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 0}
+.quick a{font-size:12px;border:1px solid var(--border);border-radius:var(--r-pill);padding:3px 10px;color:var(--link);background:var(--bg-surface)}
+.quick a:hover{border-color:var(--link);text-decoration:none}
+.banner{margin:16px 0 0;border:1px solid var(--border);border-left:3px solid var(--color-warn);border-radius:var(--r-m);background:var(--bg-surface);padding:10px 14px;font-size:12.5px;line-height:1.75;color:var(--text-dim)}
+.banner.ok{border-left-color:var(--color-ok)}
+.banner.warn{border-left-color:var(--color-warn)}
+.banner.err{border-left-color:var(--color-err)}
+.banner b{color:var(--text)}
+.banner .tag{display:inline-block;font:700 10.5px var(--font-mono);letter-spacing:.08em;border-radius:var(--r-pill);padding:1px 8px;margin-right:6px;border:1px solid var(--border)}
+.banner.ok .tag{color:var(--color-ok);border-color:var(--color-ok)}
+.banner.warn .tag{color:var(--color-warn);border-color:var(--color-warn)}
+.banner.err .tag{color:var(--color-err);border-color:var(--color-err)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:16px 0 0}
+.kpi{border:1px solid var(--border);border-radius:var(--r-m);background:var(--bg-raised);padding:11px 14px;position:relative}
+.kpi small{display:block;color:var(--text-dim);font-size:11px;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi b{font:700 24px var(--font-mono);font-variant-numeric:tabular-nums}
+.kpi .u{font:500 11px var(--font-ui);color:var(--text-dim);margin-left:3px}
+.kpi .tip{color:var(--text-dim);font-size:10.5px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi.warn b{color:var(--color-warn)}
+.kpi.err b{color:var(--color-err)}
+.kpi.ok b{color:var(--color-ok)}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.panel{border:1px solid var(--border);border-radius:var(--r-m);background:var(--bg-surface);padding:13px 15px;min-width:0}
+.panel h3{margin:0 0 9px;font-size:13px;color:var(--text);display:flex;align-items:center;justify-content:space-between;gap:8px}
+.panel h3 .st{font:600 10.5px var(--font-mono);font-weight:600}
+.st.ok{color:var(--color-ok)}.st.warn{color:var(--color-warn)}.st.err{color:var(--color-err)}.st.dim{color:var(--text-dim)}
+.rows{display:flex;flex-direction:column;gap:6px}
+.row{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;border-bottom:1px dashed var(--border-weak);padding-bottom:5px}
+.row:last-child{border-bottom:none;padding-bottom:0}
+.row .k{color:var(--text-dim);white-space:nowrap}
+.row .v{text-align:right;font-variant-numeric:tabular-nums;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mini{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.mini span{font:600 10.5px var(--font-mono);border:1px solid var(--border);border-radius:var(--r-pill);padding:1px 7px;color:var(--text-dim)}
+.mini span.bad{color:var(--color-err);border-color:var(--color-err)}
+.mini span.warn{color:var(--color-warn);border-color:var(--color-warn)}
+.mini span.ok{color:var(--color-ok);border-color:var(--color-ok)}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0 12px;padding:10px;border:1px solid var(--border);border-radius:var(--r-m);background:var(--bg-surface)}
+.toolbar label{font-size:11px;color:var(--text-dim);display:flex;gap:5px;align-items:center}
+select,input,button{font:12.5px var(--font-ui);color:var(--text);background:var(--bg-raised);border:1px solid var(--border);border-radius:var(--r-s);padding:5px 8px}
+input[type=search]{min-width:220px}
+button{cursor:pointer;transition:border-color var(--dur-fast) var(--ease-standard),color var(--dur-fast) var(--ease-standard)}
+button:hover:not(:disabled){border-color:var(--link);color:var(--link)}
+button.primary{border-color:var(--accent);color:var(--link)}
+button:disabled{opacity:.45;cursor:not-allowed}
+.status{font-size:12px;color:var(--text-dim);min-height:18px}
+.status.bad{color:var(--color-err)}
+.table-wrap{border:1px solid var(--border);border-radius:var(--r-m);overflow:auto;background:var(--bg-surface)}
+table{width:100%;border-collapse:collapse;min-width:960px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border-weak);vertical-align:top;font-size:12.5px}
+th{position:sticky;top:0;background:var(--bg-raised);color:var(--text-dim);font:600 11px var(--font-mono);z-index:1;white-space:nowrap}
+tbody tr:hover td{background:var(--bg-raised)}
+tbody tr:last-child td{border-bottom:none}
+.mono{font-family:var(--font-mono);font-size:11.5px;color:var(--text-dim);word-break:break-all}
+.name{max-width:330px;line-height:1.5}
+.name .lbl{color:var(--text)}
+.nowrap{white-space:nowrap}
+.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.badge{display:inline-block;font:600 10.5px var(--font-mono);border-radius:var(--r-pill);padding:1px 8px;border:1px solid var(--border);white-space:nowrap}
+.badge.ok{color:var(--color-ok);border-color:var(--color-ok)}
+.badge.warn{color:var(--color-warn);border-color:var(--color-warn)}
+.badge.err{color:var(--color-err);border-color:var(--color-err)}
+.badge.dim{color:var(--text-dim)}
+.empty{padding:30px;text-align:center;color:var(--text-dim)}
+.foot{margin-top:22px;border-top:1px solid var(--border);padding-top:12px;font-size:11.5px;color:var(--text-dim);line-height:1.9}
+.foot code{background:var(--bg-raised);border:1px solid var(--border-weak);border-radius:4px;padding:0 5px;font-size:11px}
+.modal{position:fixed;inset:0;background:rgba(2,7,17,.72);display:none;align-items:flex-start;justify-content:center;z-index:120;padding:7vh 14px;overflow:auto}
+.modal.open{display:flex}
+.modal-card{width:min(900px,100%);background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-m);box-shadow:var(--shadow-2)}
+.modal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border)}
+.modal-head h3{margin:0;font-size:14px;color:var(--text)}
+.modal-head .sub{color:var(--text-dim);font:11px var(--font-mono);margin-top:2px;word-break:break-all}
+.modal-body{padding:14px 16px 18px;max-height:68vh;overflow:auto}
+.modal-body table{min-width:0;width:100%}
+.modal-body pre{margin:0;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-s);background:var(--bg-page);overflow:auto;font:11.5px/1.6 var(--font-mono);color:var(--text-dim);max-height:46vh}
+.modal-body .note{border-left:3px solid var(--color-warn);background:var(--bg-raised);border-radius:var(--r-s);padding:8px 12px;font-size:12px;color:var(--text-dim);line-height:1.7;margin-bottom:12px}
+.close{background:transparent;border:1px solid var(--border);border-radius:var(--r-s);color:var(--text-dim);padding:4px 10px}
+@media(max-width:760px){
+  .main{padding-top:14px}
+  .kpi{min-width:0}
+  .grid3{grid-template-columns:1fr}
+  input[type=search]{min-width:0;width:100%}
+  .toolbar label{flex:1 1 46%}
+  .toolbar label select{flex:1}
+}
+</style>
+</head>
+<body>
+<div class="main">
+  <div class="eyebrow">DATA WAREHOUSE · UNIFIED ENTRY</div>
+  <h1>数据仓统一入口</h1>
+  <p class="lead">全域数据集目录 + 统一只读取数入口 + 断流 / 漂移 / 快照状态，一页看全。本页只读：不发写请求、不触发任务；动态数据走门户同源接口，静态兜底走每日快照。入口唯一 <b>8734</b>。</p>
+
+  <div class="quick">
+    <a href="/dataops.html">数据运营台</a>
+    <a href="/data_daily.html">数据日报</a>
+    <a href="/kb_reports.html">研报知识库</a>
+    <a href="/kb_corpus.html">语料知识库</a>
+    <a href="/bt-data-health">数据健康</a>
+    <a href="/dw.html">驾驶舱（旧版）</a>
+  </div>
+
+  <div id="banner" class="banner warn"><span class="tag">LOADING</span>正在探测取数接口与快照…</div>
+
+  <div class="kpis" id="kpis">
+    <div class="kpi"><small>数据集总量</small><b id="k-total">—</b><div class="tip" id="t-total">等待加载</div></div>
+    <div class="kpi"><small>已登记</small><b id="k-registered">—</b><div class="tip" id="t-registered">等待加载</div></div>
+    <div class="kpi"><small>取数入口（公开）</small><b id="k-exposed">—</b><div class="tip" id="t-exposed">等待加载</div></div>
+    <div class="kpi warn"><small>断流滞后（数据集）</small><b id="k-lagging">—</b><div class="tip" id="t-lagging">等待加载</div></div>
+    <div class="kpi"><small>采集通道</small><b id="k-collectors">—</b><div class="tip" id="t-collectors">等待加载</div></div>
+  </div>
+
+  <h2>运行状态<span class="cnt">断流 / 漂移 / 快照</span></h2>
+  <div class="grid3">
+    <div class="panel">
+      <h3>断流监控<span class="st" id="st-flow">…</span></h3>
+      <div class="rows" id="flow-rows"><div class="row"><span class="k">加载中</span><span class="v">…</span></div></div>
+      <div class="mini" id="flow-mini"></div>
+    </div>
+    <div class="panel">
+      <h3>漂移监控<span class="st" id="st-drift">…</span></h3>
+      <div class="rows" id="drift-rows"><div class="row"><span class="k">加载中</span><span class="v">…</span></div></div>
+      <div class="mini" id="drift-mini"></div>
+    </div>
+    <div class="panel">
+      <h3>快照监控<span class="st" id="st-snap">…</span></h3>
+      <div class="rows" id="snap-rows"><div class="row"><span class="k">加载中</span><span class="v">…</span></div></div>
+      <div class="mini" id="snap-mini"></div>
+    </div>
+  </div>
+
+  <h2>数据集目录<span class="cnt" id="cat-cnt">—</span></h2>
+  <div class="toolbar">
+    <input type="search" id="q" placeholder="按名称 / 路径 / ID 检索…" autocomplete="off">
+    <label>域 / 层 <select id="f-domain"><option value="">全部</option></select></label>
+    <label>登记 <select id="f-reg"><option value="">全部</option><option value="1">仅已登记</option><option value="0">仅未登记</option></select></label>
+    <label>条数 <select id="f-limit"><option>50</option><option selected>100</option><option>200</option></select></label>
+    <button id="btn-search" class="primary">搜索</button>
+    <button id="btn-reset">重置</button>
+    <span class="status" id="status">加载中…</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead id="thead"><tr><th>数据集</th><th>域</th><th>类型</th><th class="num">体量</th><th class="num">行数</th><th>登记</th><th>入口</th><th>归属</th><th>操作</th></tr></thead>
+      <tbody id="rows"><tr><td colspan="9" class="empty">加载中…</td></tr></tbody>
+    </table>
+  </div>
+
+  <h2>取数入口与口径</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>用途</th><th>端点（同源相对路径）</th><th>说明</th><th>当前</th></tr></thead>
+      <tbody id="api-rows"></tbody>
+    </table>
+  </div>
+  <div class="foot">
+    <div>口径：<code>total / registered / exposed</code> 来自数据集级盘点（<code>research/reports/dataset_inventory_*.json</code>）；断流/漂移/快照兜底来自 <code>/static/dw_snapshot.json</code>（数据仓驾驶舱快照）与公开运营接口 <code>/api/dataops/overview</code>；本页不写任何数据。</div>
+    <div>状态：<span id="foot-mode">探测中</span> · 页面渲染 <span id="foot-at">—</span> · 入口 8734 · 只读 · 中文 UI · 前端三件套 tokens.css / nav.js 已接入。</div>
+  </div>
+</div>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal-card">
+    <div class="modal-head">
+      <div>
+        <h3 id="modal-title">数据集样本</h3>
+        <div class="sub" id="modal-sub"></div>
+      </div>
+      <button class="close" id="modal-close">关闭</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<noscript><div class="main"><div class="banner err"><span class="tag">NOSCRIPT</span>本页依赖 JavaScript 读取同源接口与快照；请启用 JS 或直接访问静态快照 <code>/static/dw_snapshot.json</code>。</div></div></noscript>
+
+<script>
+(function(){
+  "use strict";
+  var $=function(s){return document.querySelector(s)};
+  var DW="/api/"+"dw";                 /* 统一取数入口（H4-B 公开白名单未登记时自动降级） */
+  var SNAP="/static/dw_snapshot.json"; /* 静态快照兜底（nginx /static/ 直出） */
+  var OPS="/api/dataops/overview";     /* 公开运营接口（H4-B 白名单已登记 dataops） */
+  var state={mode:"probing",stats:null,datasets:[],snapshot:null,ops:null,apiStatus:0,lastQuery:""};
+
+  function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+  function n(v){return v==null?"—":Number(v).toLocaleString("zh-CN")}
+  function mb(v){if(v==null)return "—";var x=Number(v);if(!isFinite(x))return "—";if(x>=1024)return (x/1024).toFixed(1)+" GB";return (x<10?x.toFixed(1):Math.round(x))+" MB"}
+  function age(iso){
+    if(!iso)return {text:"—",hours:null};
+    var d=new Date(iso);if(isNaN(d))return {text:"—",hours:null};
+    var h=(Date.now()-d.getTime())/36e5;
+    var t=h<1?(Math.max(1,Math.round(h*60))+" 分钟"):(h<48?(h.toFixed(1)+" 小时"):(Math.round(h/24)+" 天"));
+    return {text:t,hours:h};
+  }
+  function badge(ok,labelYes,labelNo,clsYes,clsNo){
+    return ok?'<span class="badge '+(clsYes||"ok")+'">'+(labelYes||"是")+'</span>'
+             :'<span class="badge '+(clsNo||"dim")+'">'+(labelNo||"否")+'</span>';
+  }
+  function rowHtml(k,v){return '<div class="row"><span class="k">'+esc(k)+'</span><span class="v">'+v+'</span></div>'}
+  function setStatus(text,bad){var el=$("#status");el.textContent=text;el.style.color=bad?"var(--color-err)":"var(--text-dim)"}
+  function setBanner(kind,tag,html){var b=$("#banner");b.className="banner "+kind;b.innerHTML='<span class="tag">'+esc(tag)+'</span>'+html}
+
+  function getJSON(url){
+    return fetch(url,{credentials:"same-origin",headers:{Accept:"application/json"},cache:"no-store"}).then(function(r){
+      return r.text().then(function(t){
+        var d=null;try{d=JSON.parse(t)}catch(e){}
+        return {ok:r.ok,status:r.status,data:d,raw:t};
+      });
+    });
+  }
+
+  /* ---------- 1. 快照 + 公开运营接口（页面主数据，始终可用） ---------- */
+  function loadSnapshot(){
+    return getJSON(SNAP).then(function(r){
+      if(r.ok&&r.data&&r.data.catalog){state.snapshot=r.data;return true}
+      return false;
+    }).catch(function(){return false});
+  }
+  function loadOps(){
+    return getJSON(OPS).then(function(r){
+      if(r.ok&&r.data&&r.data.summary){state.ops=r.data;return true}
+      return false;
+    }).catch(function(){return false});
+  }
+
+  /* ---------- 2. 取数 API 探测：在线则全功能，401/403 则快照降级 ---------- */
+  function probeApi(){
+    return getJSON(DW+"/stats").then(function(r){
+      state.apiStatus=r.status;
+      if(r.ok&&r.data&&r.data.ok){state.stats=r.data;state.mode="api"}
+      else{state.mode="snapshot"}
+      return state.mode;
+    }).catch(function(){state.apiStatus=-1;state.mode="snapshot";return state.mode});
+  }
+
+  /* ---------- 3. 目录加载 ---------- */
+  function loadDatasets(){
+    var q=($("#q").value||"").trim(),domain=$("#f-domain").value,reg=$("#f-reg").value,limit=$("#f-limit").value;
+    state.lastQuery=q;
+    if(state.mode==="api"){
+      var url=q?(DW+"/search?q="+encodeURIComponent(q)+"&limit="+limit)
+               :(DW+"/list?limit="+limit+(domain?"&domain="+encodeURIComponent(domain):"")+(reg?"&registered="+reg:""));
+      return getJSON(url).then(function(r){
+        if(r.ok&&r.data&&r.data.ok){state.datasets=r.data.datasets||[];return state.datasets}
+        if(r.status===401||r.status===403){
+          /* 运行中放行状态变化：切快照降级并重建筛选器（域→层语义不同，必须重置） */
+          state.mode="snapshot";state.modeChanged=true;
+          $("#f-domain").value="";fillFilters();
+          setStatus("取数 API 未放行（HTTP "+r.status+"），已切快照降级",true);
+          return loadDatasets();
+        }
+        setStatus("目录加载失败：HTTP "+r.status+(r.data&&r.data.error?(" · "+r.data.error):""),true);
+        return [];
+      });
+    }
+    /* 快照降级：直接用快照来源表做本地筛选 */
+    var rows=((state.snapshot||{}).sources)||[];
+    if(domain)rows=rows.filter(function(s){return String(s.layer||"")===domain});
+    if(reg==="1")rows=rows.filter(function(s){return !!s.registered});
+    if(reg==="0")rows=rows.filter(function(s){return !s.registered});
+    if(q){var ql=q.toLowerCase();rows=rows.filter(function(s){return (String(s.name||"")+" "+String(s.label||"")+" "+String(s.method||"")+" "+String(s.layer||"")).toLowerCase().indexOf(ql)>=0})}
+    state.datasets=rows;
+    return Promise.resolve(rows);
+  }
+
+  /* ---------- 4. 渲染：KPI ---------- */
+  function renderKpis(){
+    var snap=state.snapshot||{},cat=snap.catalog||{},reg=cat.registry||{},ops=state.ops||{},s=state.stats||{};
+    var lagging=(snap.lagging_daily||[]).length;
+    var cols=(ops.collectors||[]).length;
+    var badCols=(ops.collectors||[]).filter(function(c){return !/^(armed|ok|running|done|ready)$/.test(String(c.health||""))}).length;
+    if(state.mode==="api"){
+      $("#k-total").textContent=n(s.total);$("#t-total").textContent="数据集级盘点（统一登记口径）";
+      $("#k-registered").textContent=n(s.registered);$("#t-registered").textContent="占总量 "+pct(s.registered,s.total);
+      $("#k-exposed").textContent=n(s.exposed);$("#t-exposed").textContent="已暴露取数入口";
+      $("#k-collectors").textContent=cols||"—";$("#t-collectors").textContent="异常 "+(badCols||0)+" · 运营接口公开";
+    }else{
+      $("#k-total").textContent=n(cat.tables);$("#t-total").textContent="快照口径：catalog 表数（v"+(cat.version||"?")+"）";
+      $("#k-registered").textContent=n(reg.physical);$("#t-registered").textContent="warehouse_registry 物理登记";
+      $("#k-exposed").textContent=n(reg.display);$("#t-exposed").textContent="display 展示登记";
+      $("#k-collectors").textContent=cols||"—";$("#t-collectors").textContent="异常 "+(badCols||0)+" · 快照降级模式";
+    }
+    $("#k-lagging").textContent=n(lagging);$("#t-lagging").textContent=lagging?"快照中滞后 ≥1 日的数据集":"快照无滞后项";
+  }
+  function pct(a,b){if(!b)return "—";return (100*Number(a||0)/Number(b)).toFixed(1)+"%"}
+
+  /* ---------- 5. 渲染：断流 / 漂移 / 快照 ---------- */
+  function renderStatus(){
+    var snap=state.snapshot||{},ops=state.ops||{};
+    var cat=snap.catalog||{},manifest=cat.manifest||{},cockpit=snap.cockpit||{};
+    var collectors=ops.collectors||[];
+    var tg=ops.task_groups||{};
+    var groups=tg.groups||[];
+    var daily=ops.daily_intake||{};
+    var lagging=snap.lagging_daily||[];
+
+    /* 断流 */
+    var badCols=collectors.filter(function(c){return !/^(armed|ok|running|done|ready)$/.test(String(c.health||""))});
+    var unarmed=[];
+    groups.forEach(function(g){(g.tasks||[]).forEach(function(t){if(String(t.health||"")!=="armed")unarmed.push(t)})});
+    var series=daily.series||[];
+    var today=series[series.length-1]||null;
+    var rows=[
+      rowHtml("滞后数据集",'<b class="'+(lagging.length?"":"ok")+'" style="color:'+(lagging.length?"var(--color-warn)":"var(--color-ok)")+'">'+n(lagging.length)+'</b> 个'),
+      rowHtml("采集器异常",'<b style="color:'+(badCols.length?"var(--color-err)":"var(--color-ok)")+'">'+n(badCols.length)+'</b> / '+n(collectors.length)),
+      rowHtml("计划任务未武装",'<b style="color:'+(unarmed.length?"var(--color-warn)":"var(--color-ok)")+'">'+n(unarmed.length)+'</b> / '+n(tg.total||"—")),
+      rowHtml("今日增量",'<b>'+n(daily.today)+'</b> 行 · 近7日均 <span class="mono">'+n(daily.avg7)+'</span>'),
+      rowHtml("近14日累计",'<b>'+n(daily.sum14)+'</b> 行')
+    ].join("");
+    $("#flow-rows").innerHTML=rows;
+    var flowBad=lagging.length+badCols.length+unarmed.length;
+    $("#st-flow").className="st "+(flowBad?"warn":"ok");$("#st-flow").textContent=flowBad?(flowBad+" 项待看"):"正常";
+    var mini=lagging.slice(0,6).map(function(x){return '<span class="warn">'+esc(x.name||x.label)+' ↓'+esc(x.lag)+'d</span>'}).join("")
+            +badCols.slice(0,4).map(function(c){return '<span class="bad">'+esc(c.name||c.key)+' '+esc(c.health)+'</span>'}).join("")
+            +unarmed.slice(0,4).map(function(t){return '<span class="warn">'+esc(t.name)+' 未武装</span>'}).join("");
+    $("#flow-mini").innerHTML=mini||'<span class="ok">无异常信号</span>';
+
+    /* 漂移 */
+    var drifts=[];
+    var open=(manifest.open||0)+(manifest.missing||0);
+    var bySource=(ops.catalog||{}).by_source||cat.by_source||{};
+    rows=[
+      rowHtml("catalog 版本",'v'+esc(cat.version||"?")+' · <b>'+n(cat.tables)+'</b> 表'),
+      rowHtml("manifest 未闭环",'<b style="color:'+(open?"var(--color-warn)":"var(--color-ok)")+'">'+n(manifest.open||0)+'</b> open · <b style="color:'+((manifest.missing||0)?"var(--color-err)":"var(--color-ok)")+'">'+n(manifest.missing||0)+'</b> missing'),
+      rowHtml("manifest 已闭环",n(manifest.closed)+' 表 · N/A '+n(manifest.not_applicable)),
+      rowHtml("资格 unknown",'<b class="'+(cat.qualification_unknown?"":"ok")+'" style="color:'+(cat.qualification_unknown?"var(--color-warn)":"var(--color-ok)")+'">'+n(cat.qualification_unknown)+'</b> · 契约 '+n(cat.contracts)),
+      rowHtml("数据契约",n(cockpit.sources_total)+' 来源 · 覆盖 '+((cockpit.coverage_pct==null)?"—":cockpit.coverage_pct+"%"))
+    ].join("");
+    $("#drift-rows").innerHTML=rows;
+    var driftBad=open;
+    $("#st-drift").className="st "+(driftBad?"warn":"ok");$("#st-drift").textContent=driftBad?(driftBad+" 项未闭环"):"一致";
+    var srcTags=Object.keys(bySource).slice(0,8).map(function(k){
+      var v=bySource[k];var c=(typeof v==="object")?(v.count||0):v;
+      return '<span>'+esc(k)+' '+n(c)+'</span>';
+    }).join("");
+    var risk=(cockpit.risks||[]).filter(function(r){return r.status==="in_progress"}).length;
+    $("#drift-mini").innerHTML=srcTags+(risk?'<span class="warn">治理在办 '+risk+'</span>':'')||'<span class="ok">发布锁一致</span>';
+
+    /* 快照 */
+    var ga=age(snap.generated_at),oa=age(ops.generated_at);
+    var fresh=(ga.hours==null)?null:(ga.hours<=36);
+    rows=[
+      rowHtml("数据仓快照",'<b style="color:'+(fresh===false?"var(--color-warn)":"var(--color-ok)")+'">'+esc(ga.text)+'</b> 前'),
+      rowHtml("快照生成时间",'<span class="mono">'+esc(snap.generated_at||"—")+'</span>'),
+      rowHtml("运营接口时间",'<span class="mono">'+esc(ops.generated_at||"—")+'</span>（'+esc(oa.text)+'前）'),
+      rowHtml("快照表数",'<b>'+n(cat.tables)+'</b> · 版本 v'+esc(cat.version||"?")),
+      rowHtml("自动刷新","<span class='badge warn'>待 S1-06 每日任务</span>")
+    ].join("");
+    $("#snap-rows").innerHTML=rows;
+    $("#st-snap").className="st "+(fresh===false?"warn":"ok");$("#st-snap").textContent=(fresh===false?"快照偏旧":"快照新鲜");
+    $("#snap-mini").innerHTML='<span class="mono">/static/dw_snapshot.json</span>';
+  }
+
+  /* ---------- 6. 渲染：目录表 ---------- */
+  function renderTable(){
+    var rows=state.datasets||[],tbody=$("#rows"),thead=$("#thead");
+    $("#cat-cnt").textContent=(state.mode==="api"?"API 模式":"快照模式")+" · "+rows.length+" 条";
+    if(state.mode==="api"){
+      thead.innerHTML="<tr><th>数据集</th><th>域</th><th>类型</th><th class='num'>体量</th><th class='num'>行数</th><th>登记</th><th>入口</th><th>归属</th><th>操作</th></tr>";
+      if(!rows.length){tbody.innerHTML='<tr><td colspan="9" class="empty">没有匹配的数据集（可放宽筛选或清空检索词）</td></tr>';return}
+      tbody.innerHTML=rows.map(function(d){
+        return "<tr>"
+          +"<td class='name'><div class='lbl'>"+esc(d.label)+"</div><div class='mono'>"+esc(d.dataset_id)+"</div></td>"
+          +"<td>"+esc(d.domain||"—")+"</td>"
+          +"<td><span class='badge dim'>"+esc(d.kind||"—")+"</span></td>"
+          +"<td class='num'>"+mb(d.mb)+"</td>"
+          +"<td class='num'>"+n(d.rows)+"</td>"
+          +"<td>"+badge(d.registered,"已登记","未登记","ok","warn")+"</td>"
+          +"<td>"+badge(d.exposed,"公开","内部","ok","dim")+"</td>"
+          +"<td class='mono'>"+esc(d.owner||"—")+"</td>"
+          +"<td><button class='sample' data-id='"+esc(d.dataset_id)+"'>样本</button></td>"
+          +"</tr>";
+      }).join("");
+    }else{
+      thead.innerHTML="<tr><th>数据集</th><th>层</th><th>接入方式</th><th>状态</th><th class='num'>体量</th><th class='num'>行数</th><th>日期范围</th><th>最新更新</th><th class='num'>滞后</th><th>登记</th><th>操作</th></tr>";
+      if(!rows.length){tbody.innerHTML='<tr><td colspan="11" class="empty">快照中没有匹配的数据集</td></tr>';return}
+      tbody.innerHTML=rows.map(function(s,i){
+        var st=String(s.status||"");
+        var cls=/done|ok/.test(st)?"ok":(/pending/.test(st)?"warn":"dim");
+        return "<tr>"
+          +"<td class='name'><div class='lbl'>"+esc(s.label||s.name)+"</div><div class='mono'>"+esc(s.name)+"</div></td>"
+          +"<td>"+esc(s.layer||"—")+"</td>"
+          +"<td>"+esc(s.method||"—")+"</td>"
+          +"<td><span class='badge "+cls+"'>"+esc(st||"—")+"</span></td>"
+          +"<td class='num'>"+esc(s.size_h||mb(s.size_mb))+"</td>"
+          +"<td class='num'>"+esc(s.rows_h||n(s.rows))+"</td>"
+          +"<td class='mono'>"+esc(s.range||"—")+"</td>"
+          +"<td class='mono'>"+esc(s.last_update||"—")+"</td>"
+          +"<td class='num'><span class='badge "+(Number(s.lag_days)>0?"warn":"dim")+"'>"+esc(s.lag_days==null?"—":s.lag_days+"d")+"</span></td>"
+          +"<td>"+badge(s.registered,"已登记","未登记","ok","warn")+"</td>"
+          +"<td>"+(state.mode==="api"?"<button class='sample' data-id='"+esc(s.name)+"'>样本</button>":"<button class='sample' data-snap='"+i+"'>详情</button>")+"</td>"
+          +"</tr>";
+      }).join("");
+    }
+  }
+
+  /* ---------- 7. 样本取数 / 快照详情 ---------- */
+  function openModal(title,sub,html){
+    $("#modal-title").textContent=title;$("#modal-sub").textContent=sub||"";$("#modal-body").innerHTML=html;
+    $("#modal").classList.add("open");
+  }
+  function closeModal(){$("#modal").classList.remove("open")}
+  function renderSampleData(d){
+    if(!d||typeof d!=="object")return '<div class="empty">无返回</div>';
+    if(d.exists===false)return '<div class="note">数据集路径不存在：<code>'+esc(d.path)+'</code>（登记可能陈旧）</div>';
+    if(d.columns&&Array.isArray(d.columns)){
+      var cols=d.columns,rows=d.sample||[];
+      var head="<tr>"+cols.map(function(c){return "<th>"+esc(c)+"</th>"}).join("")+"</tr>";
+      var body=rows.map(function(r){
+        var arr=Array.isArray(r)?r:cols.map(function(c){return r[c]});
+        return "<tr>"+arr.map(function(v){return "<td class='mono'>"+esc(typeof v==="object"?JSON.stringify(v):v)+"</td>"}).join("")+"</tr>";
+      }).join("");
+      return "<table><thead>"+head+"</thead><tbody>"+body+"</tbody></table><div class='foot'>共 "+rows.length+" 行 · 服务端只读 LIMIT 采样</div>";
+    }
+    if(d.top_entries||d.newest_files){
+      var h="";
+      h+="<div class='rows'>"+rowHtml("路径",'<span class="mono">'+esc(d.path||"—")+'</span>')+rowHtml("最新文件时间",esc(d.freshness||"—"))+"</div>";
+      if(d.top_entries&&d.top_entries.length)h+="<h4 style='margin:12px 0 6px;font-size:12.5px;color:var(--text-dim)'>顶层条目</h4><div class='mini'>"+d.top_entries.map(function(x){return "<span>"+esc(x)+"</span>"}).join("")+"</div>";
+      if(d.newest_files&&d.newest_files.length)h+="<h4 style='margin:12px 0 6px;font-size:12.5px;color:var(--text-dim)'>最新文件</h4><div class='mini'>"+d.newest_files.map(function(x){return "<span>"+esc(x)+"</span>"}).join("")+"</div>";
+      return h;
+    }
+    return "<pre>"+esc(JSON.stringify(d,null,2)).slice(0,8000)+"</pre>";
+  }
+  function showSample(id){
+    openModal("数据集样本","请求中…","<div class='empty'>加载中…</div>");
+    getJSON(DW+"/sample?id="+encodeURIComponent(id)+"&n=5").then(function(r){
+      if(r.ok&&r.data){$("#modal-sub").textContent="dataset_id = "+id+" · 只读采样 n=5";$("#modal-body").innerHTML=renderSampleData(r.data);return}
+      var msg=r.status===401||r.status===403
+        ? "取数接口未通过 H4-B 公开白名单（HTTP "+r.status+"），当前为快照降级模式，样本取数不可用。属 L2 配置变更，需在 <code>portal/nginx.conf</code> 的 H4-B 白名单登记统一取数一级前缀并同步守卫测试后重启 nginx 生效；本页已自动降级为目录/搜索只读，不影响其它功能。"
+        : "样本请求失败：HTTP "+r.status+(r.data&&r.data.error?(" · "+esc(r.data.error)):"");
+      $("#modal-body").innerHTML="<div class='note'>"+msg+"</div>";
+    }).catch(function(e){
+      $("#modal-body").innerHTML="<div class='note'>请求异常："+esc(e&&e.message||e)+"</div>";
+    });
+  }
+  function showSnapDetail(i){
+    var s=(state.datasets||[])[i];if(!s)return;
+    var html="<div class='rows'>"
+      +rowHtml("名称",esc(s.label||s.name))
+      +rowHtml("层 / 接入",esc(s.layer||"—")+" · "+esc(s.method||"—"))
+      +rowHtml("状态",esc(s.status||"—")+" · manifest "+esc(s.manifest||"—"))
+      +rowHtml("文件数",n(s.files))
+      +rowHtml("体量",esc(s.size_h||mb(s.size_mb)))
+      +rowHtml("行数",esc(s.rows_h||n(s.rows)))
+      +rowHtml("日期范围",'<span class="mono">'+esc(s.range||"—")+'</span>')
+      +rowHtml("最新更新",esc(s.last_update||"—")+" · 滞后 "+esc(s.lag_days==null?"—":s.lag_days+" 天"))
+      +rowHtml("登记 / 契约",badge(s.registered,"已登记","未登记","ok","warn")+" "+badge(s.contract,"有契约","无契约","ok","dim"))
+      +rowHtml("备注",esc(s.note||"—"))
+      +"</div>";
+    html+="<div class='note' style='margin-top:12px'>样本取数需统一取数接口放行（H4-B 白名单）；当前快照模式仅展示登记口径元数据。</div>";
+    openModal("数据集详情 · 快照口径",String(s.name||""),html);
+  }
+
+  /* ---------- 8. 取数入口表（动态生成，避免静态页硬编码未放行 URL） ---------- */
+  function renderApiMap(){
+    var ok=state.mode==="api";
+    var rows=[
+      ["统计","统计数据集总量 / 登记 / 入口 / 分域",DW+"/stats",ok],
+      ["目录","数据集列表（域 / 登记 / 入口 / 条数）",DW+"/list?domain=&limit=",ok],
+      ["检索","按关键词检索数据集",DW+"/search?q=",ok],
+      ["样本","按 dataset_id 只读取样本（sqlite / parquet / json / 目录）",DW+"/sample?id=&n=",ok],
+      ["状态","断流 / 漂移 / 采集器健康（公开运营接口）",OPS,true],
+      ["兜底","数据仓快照（静态直出，页面降级数据源）",SNAP,true]
+    ];
+    $("#api-rows").innerHTML=rows.map(function(r){
+      return "<tr><td>"+esc(r[0])+"</td><td class='mono'>"+esc(r[2])+"</td><td>"+esc(r[1])+"</td><td>"+(r[3]?'<span class="badge ok">可用</span>':'<span class="badge warn">白名单待登记</span>')+"</td></tr>";
+    }).join("");
+  }
+
+  /* ---------- 9. 模式横幅 ---------- */
+  function renderBanner(){
+    if(state.mode==="api"){
+      setBanner("ok","API","取数接口在线：数据集目录 / 关键词检索 / 样本取数全部可用；状态卡另取公开运营接口与每日快照。");
+    }else{
+      var why=state.apiStatus===401||state.apiStatus===403
+        ? "取数接口经 8734 被 <b>H4-B 公开白名单</b>拦截（HTTP "+state.apiStatus+" · 默认拒绝）"
+        : (state.apiStatus===-1?"取数接口请求异常（网络/服务不可达）":"取数接口暂不可用（HTTP "+state.apiStatus+"）");
+      setBanner("warn","DEGRADED",why+"。已自动降级为<b>快照只读</b>（目录/搜索可用，样本取数不可用）；修复属 L2 配置变更，需登记 H4-B 白名单并同步守卫测试后重启 nginx。");
+    }
+  }
+
+  /* ---------- 10. 主流程 ---------- */
+  function renderAll(){
+    renderBanner();renderKpis();renderStatus();renderTable();renderApiMap();
+    $("#foot-mode").textContent=state.mode==="api"?"取数 API 在线（全功能）":"快照降级（只读目录/搜索）";
+    $("#foot-at").textContent=new Date().toLocaleString("zh-CN",{hour12:false});
+  }
+  function fillFilters(){
+    var sel=$("#f-domain"),cur=sel.value,opts=['<option value="">全部</option>'];
+    if(state.mode==="api"){
+      var by=(state.stats&&state.stats.by_domain)||{};
+      Object.keys(by).forEach(function(k){opts.push('<option value="'+esc(k)+'">'+esc(k)+'（'+n(by[k])+'）</option>')});
+    }else{
+      var layers={};((state.snapshot||{}).sources||[]).forEach(function(s){var l=s.layer||"未分层";layers[l]=(layers[l]||0)+1});
+      Object.keys(layers).forEach(function(k){opts.push('<option value="'+esc(k)+'">'+esc(k)+'（'+n(layers[k])+'）</option>')});
+    }
+    sel.innerHTML=opts.join("");
+    if(cur)sel.value=cur;
+  }
+  function refresh(){
+    setStatus("加载中…");
+    state.modeChanged=false;
+    loadDatasets().then(function(){
+      if(state.modeChanged)renderBanner();
+      renderKpis();renderStatus();renderTable();renderApiMap();
+      var qty=(state.datasets||[]).length;
+      setStatus((state.mode==="api"?"API 模式":"快照模式")+" · 已加载 "+qty+" 条"+(qty===200?"（已达单次上限 200，建议收窄条件）":""),false);
+    }).catch(function(e){setStatus("加载失败："+(e&&e.message||e),true)});
+  }
+
+  function bind(){
+    $("#btn-search").onclick=function(){refresh()};
+    $("#btn-reset").onclick=function(){$("#q").value="";$("#f-domain").value="";$("#f-reg").value="";$("#f-limit").value="100";refresh()};
+    $("#q").addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();refresh()}});
+    ["f-domain","f-reg","f-limit"].forEach(function(id){$("#"+id).onchange=refresh});
+    $("#modal-close").onclick=closeModal;
+    $("#modal").addEventListener("click",function(e){if(e.target===$("#modal"))closeModal()});
+    document.addEventListener("keydown",function(e){if(e.key==="Escape")closeModal()});
+    document.addEventListener("click",function(e){
+      var b=e.target.closest&&e.target.closest("button.sample");
+      if(!b)return;
+      if(b.getAttribute("data-snap")!=null)showSnapDetail(Number(b.getAttribute("data-snap")));
+      else showSample(b.getAttribute("data-id"));
+    });
+  }
+
+  function boot(){
+    bind();
+    Promise.allSettled([loadSnapshot(),loadOps()]).then(function(){
+      return probeApi();
+    }).then(function(){
+      fillFilters();
+      renderAll();
+      return refresh();
+    }).catch(function(e){
+      setBanner("err","ERROR","初始化失败："+esc(e&&e.message||e)+"。可先直接查看静态快照 /static/dw_snapshot.json。");
+      setStatus("初始化失败",true);
+    });
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);else boot();
+})();
+</script>
+</body>
+</html>
