@@ -1869,5 +1869,34 @@
       }
     ],
     "note": "候选问题库 32 条（7 主题分组，来源 unit 可追溯）；dry-run 不调 LLM；供检索自检与后续扩样。"
+  },
+  "kb_qa_selfcheck_20261101": {
+    "tool": "tools/kb_corpus/kb_qa_selfcheck.py",
+    "report": "research/reports/kb_qa_selfcheck_20261101.md",
+    "summary": {
+      "total": 32,
+      "hit_at_1": 30,
+      "hit_at_5": 32,
+      "miss_source": 0,
+      "retrieval_no_hits": 0,
+      "hit_rate_at_1": 0.9375,
+      "hit_rate_at_5": 1.0,
+      "avg_source_rank": 1.06,
+      "causes": {}
+    },
+    "note": "32 条问题库 retrieval-only 自检：命中@1 93.75%（30/32）、@5 100%（32/32）、无命中 0；唯一缺口是 2 条 @1 排序（金融/宏观），检索链路健康。"
+  },
+  "learning_card_proposals_20261101": {
+    "tool": "tools/kb_corpus/card_proposal.py",
+    "review": "research/reports/learning_card_proposals_20261101.md",
+    "proposed": "research/reports/kb_learning_cards_proposed.json",
+    "cards": 20,
+    "note": "20 张建议卡（10 缺口主题×2），全部可追溯（unit/book/chapter/page/evidence），status=pending_review；审核稿含☐通过/修改/驳回勾选；原学习卡未被覆盖（人工审核后另行合并）。"
+  },
+  "eval_audit_20261101": {
+    "report": "research/reports/eval_audit_20261101.md",
+    "standard": "docs/standards/2026-11-01_检索评测标注规范_v1.md",
+    "conclusion": "wave9 41 条 P@5 +0.141/p=0.02 = 小样本+查询构成乐观偏差，不可复现、不得引用；wave10 89 条（+0.045/p=0.20, CI 含 0）为可信阶段。v2 允许表述「覆盖率/命中率提升、同义词类收益、NDCG 方向性但不显著」；禁止表述「精度显著优于 v1」。",
+    "note": "已固化标注规范 v1（分级/抽样配额/显著性门槛 n≥60+bootstrap CI/禁止事后调参/标准句式）。"
   }
 }

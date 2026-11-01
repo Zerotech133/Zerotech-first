@@ -470,6 +470,27 @@
       "title": "问答候选问题库生成",
       "ref": "tools/kb_corpus/kb_qa_bank.py",
       "enabled": true
+    },
+    {
+      "id": "kb_qa_selfcheck",
+      "kind": "tool",
+      "title": "问答问题库检索自检",
+      "ref": "tools/kb_corpus/kb_qa_selfcheck.py",
+      "enabled": true
+    },
+    {
+      "id": "card_proposal",
+      "kind": "tool",
+      "title": "学习卡候选审核稿生成",
+      "ref": "tools/kb_corpus/card_proposal.py",
+      "enabled": true
+    },
+    {
+      "id": "eval_audit",
+      "kind": "tool",
+      "title": "检索评测标注规范/偏差审计",
+      "ref": "tools/kb_corpus/eval_audit.py",
+      "enabled": true
     }
   ]
 }
