@@ -32,7 +32,11 @@ import json
 import sys
 from pathlib import Path
 
-from agent_platform import d1_decision as D
+try:
+    from agent_platform import d1_decision as D
+except ImportError:  # 直接以脚本路径运行时把同目录加入 sys.path
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import d1_decision as D
 
 SCHEMA = "d1_calibration/v1"
 # (下界, 上界, 标签)：左闭右开；最后一桶含 1.0（概率上限必须能落桶）

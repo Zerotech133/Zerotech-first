@@ -385,7 +385,7 @@ def test_bad_day_and_now_rejected(tmp_path):
 
 def _run_cli(*args):
     return subprocess.run(
-        [sys.executable, "-m", "agent_platform.d1_daily", *args],
+        [sys.executable, str(ROOT / "agent_platform" / "d1_daily.py"), *args],
         cwd=str(ROOT),
         capture_output=True,
         text=True,

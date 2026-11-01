@@ -250,7 +250,7 @@ def test_cli_json_readonly(tmp_path):
     env = dict(os.environ)
     env["PYTHONPATH"] = str(ROOT) + os.pathsep + env.get("PYTHONPATH", "")
     proc = subprocess.run(
-        [sys.executable, "-X", "utf8", "-m", "agent_platform.d1_calibration",
+        [sys.executable, "-X", "utf8", str(ROOT / "agent_platform" / "d1_calibration.py"),
          "--json", "--ledger", str(ledger)],
         cwd=str(ROOT), capture_output=True, text=True, encoding="utf-8",
         errors="replace", env=env, timeout=120)
@@ -263,7 +263,7 @@ def test_cli_json_readonly(tmp_path):
 
     missing = tmp_path / "no_such_ledger.jsonl"
     proc2 = subprocess.run(
-        [sys.executable, "-X", "utf8", "-m", "agent_platform.d1_calibration",
+        [sys.executable, "-X", "utf8", str(ROOT / "agent_platform" / "d1_calibration.py"),
          "--json", "--ledger", str(missing)],
         cwd=str(ROOT), capture_output=True, text=True, encoding="utf-8",
         errors="replace", env=env, timeout=120)
