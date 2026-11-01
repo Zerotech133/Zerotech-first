@@ -7,6 +7,14 @@
 """
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+# 8091 以脚本方式启动时 sys.path 只有 portal/；d1 模块在仓库根。
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+
 import json
 
 MAX_BODY = 64 * 1024
