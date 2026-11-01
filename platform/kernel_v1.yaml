@@ -34,12 +34,12 @@ contracts:
         note: "P0 影子账本"
       - path: tools/composition.py
         kind: gate
-        status: planned
-        note: "P1：validate/plan/status/diff/audit/retire"
+        status: existing
+        note: "P1 MVP：validate/status/audit（plan/diff/retire 待补）"
       - path: tools/kernel_guard.py
         kind: gate
-        status: planned
-        note: "P1：内核契约文件改动必须带 ADR"
+        status: existing
+        note: "P1 已实现：改动内核契约文件必须带 ADR"
       - path: tools/composition_audit.py
         kind: gate
         status: planned

@@ -1,0 +1,38 @@
+apiVersion: zerobound/v1
+kind: Composition
+metadata:
+  id: template-data
+  name: 模板-数据包
+  version: 1.0.0
+  owner: DATA1
+  lifecycle: draft
+  tier: data
+  host: lingjie
+  description: 复制后改 id/name/owner/dataset refs；只引用不内嵌
+  created: "2026-11-02"
+  updated: "2026-11-02"
+spec:
+  kernel: ">=0.9 <2.0"
+  seats:
+    - ref: agent/DATA1
+  data:
+    requires:
+      - ref: dataset/registry/dataset_registry
+      - ref: dataset/registry/catalog
+      - ref: dataset/dir/quant_backtest_data
+    contract: template-data/v1
+    sla: { freshness_required: true }
+  interfaces:
+    exposes:
+      - http: /api/dw/stats
+    auth: { public: false, methods: [portal-token] }
+  pages: []
+  jobs: []
+  channels: [portal]
+  permissions:
+    default: read-only
+    write_scopes: [tools/datawarehouse/**]
+    deny: [quant_backtest/data, _vault]
+  runtime: { service: portal-api, endpoint: http://127.0.0.1:8091, mode: internal-service }
+  slo: { datasets: 0 }
+status: { phase: shadow, health: unknown, validated: false }

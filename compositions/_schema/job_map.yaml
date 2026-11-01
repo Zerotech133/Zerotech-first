@@ -1,0 +1,18 @@
+# job ref -> Windows 计划任务名（空字符串 = planned，尚未建任务）
+# 用于 tools/composition.py 的 job 引用软解析；P2 由 job manifest 取代。
+zhice-daily-research-ops: ZhiceAcad1Pool
+zhice-obs-calc: ZhiceObsCalc
+zhice-api-guard: ZhiceAPI8105Guard
+academy-intake-brief: AcademyIntakeBrief
+academy-review: AcademyReview
+academy-weekly-report: AcademyWeeklyReport
+legion-daily-review: LegionDailyReview
+d1-outcome-daily: D1OutcomeDaily
+dw-daily: DW-Daily
+metadata-daily: MetadataDaily
+strategy-daily: StrategyDaily
+observe-point-review: ObservePointReviewOnce
+k33-shadow-check: K33ShadowCheck
+acceptance-1104-preflight: ""
+acceptance-1104-runner: ""
+acceptance-1104-finalize: ""

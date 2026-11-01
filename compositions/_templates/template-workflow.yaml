@@ -1,0 +1,36 @@
+apiVersion: zerobound/v1
+kind: Composition
+metadata:
+  id: template-workflow
+  name: 模板-工作流组合
+  version: 1.0.0
+  owner: ARCH1
+  lifecycle: draft
+  tier: workflow
+  host: lingjie
+  description: 复制后改 id/name/owner/jobs；只引用不内嵌
+  created: "2026-11-02"
+  updated: "2026-11-02"
+spec:
+  kernel: ">=0.9 <2.0"
+  seats: []
+  data:
+    requires:
+      - ref: dataset/file/acad1_evidence_bundle
+    contract: template-workflow/v1
+    sla: { daily_rc: 0 }
+  interfaces:
+    exposes: []
+    auth: { public: false, methods: [internal] }
+  pages: []
+  jobs:
+    - ref: job/zhice-daily-research-ops
+  channels: [portal]
+  permissions:
+    default: read-only
+    write_scopes: [deliverables/**]
+    deny: [_vault, quant_backtest/data]
+  evidence: { readonly: true }
+  runtime: { service: dsh-headless, mode: internal-service }
+  slo: { daily_rc: 0 }
+status: { phase: shadow, health: unknown, validated: false }

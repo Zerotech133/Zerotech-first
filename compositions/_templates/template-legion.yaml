@@ -1,0 +1,42 @@
+apiVersion: zerobound/v1
+kind: Composition
+metadata:
+  id: template-legion
+  name: 模板-军团组合
+  version: 1.0.0
+  owner: ACAD1
+  lifecycle: draft
+  tier: legion
+  host: lingjie
+  description: 复制后改 id/name/owner/refs；只引用不内嵌
+  created: "2026-11-02"
+  updated: "2026-11-02"
+spec:
+  kernel: ">=0.9 <2.0"
+  seats:
+    - ref: agent/ACAD1
+  skills:
+    - ref: skill/events
+  strategies: []
+  data:
+    requires:
+      - ref: dataset/file/acad1_evidence_bundle
+    contract: template-legion/v1
+    sla: { freshness_days: 1 }
+  interfaces:
+    exposes:
+      - page: /academy/shuijing
+    auth: { public: false, methods: [portal-token] }
+  pages:
+    - ref: page/academy/shuijing
+  jobs:
+    - ref: job/zhice-daily-research-ops
+  channels: [portal]
+  permissions:
+    default: read-only
+    write_scopes: []
+    deny: [_vault, quant_backtest/data]
+  evidence: { readonly: true }
+  runtime: { service: portal-api, endpoint: http://127.0.0.1:8091, mode: internal-service }
+  slo: { daily_rc: 0 }
+status: { phase: shadow, health: unknown, validated: false }

@@ -1,0 +1,36 @@
+apiVersion: zerobound/v1
+kind: Composition
+metadata:
+  id: template-product
+  name: 模板-产品组合
+  version: 1.0.0
+  owner: A0
+  lifecycle: draft
+  tier: product
+  host: lingjie
+  description: 复制后改 id/name/owner/refs；只引用不内嵌
+  created: "2026-11-02"
+  updated: "2026-11-02"
+spec:
+  kernel: ">=0.9 <2.0"
+  seats: []
+  strategies: []
+  data:
+    requires:
+      - ref: dataset/pg/v2_acad1_pool
+    contract: template-product/v1
+    sla: { freshness_days: 1 }
+  interfaces:
+    exposes:
+      - http: /api/template
+    auth: { public: false, methods: [portal-token] }
+  pages: []
+  jobs: []
+  channels: [portal]
+  permissions:
+    default: read-only
+    write_scopes: []
+    deny: [_vault]
+  runtime: { service: portal-api, endpoint: http://127.0.0.1:8091, mode: internal-service }
+  slo: { daily_rc: 0 }
+status: { phase: shadow, health: unknown, validated: false }
