@@ -21,7 +21,13 @@ import subprocess
 from types import SimpleNamespace
 
 JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x00002000
+JOB_OBJECT_LIMIT_PROCESS_MEMORY = 0x00000100
+JOB_OBJECT_LIMIT_JOB_MEMORY = 0x00000200
 JOB_OBJECT_EXTENDED_LIMIT_INFORMATION = 9
+# H6 OS 级兜底：单进程/整 Job 内存上限 + 活跃进程数上限（防 fork 炸弹/内存炸弹）。
+PROCESS_MEMORY_LIMIT = 512 * 1024 * 1024
+JOB_MEMORY_LIMIT = 768 * 1024 * 1024
+ACTIVE_PROCESS_LIMIT = 32
 
 
 class IsolationError(OSError):
@@ -82,6 +88,57 @@ def _close(handle) -> None:
             ctypes.windll.kernel32.CloseHandle(handle)
     except Exception:
         pass
+
+
+def attach_job(proc):
+    """把已启动的 Popen 进程挂到新 Job Object；失败 fail-closed（调用方必须杀进程）。
+
+    H6（2026-11-01）：给 codex 插件子进程提供 OS 级兜底——
+    KILL_ON_JOB_CLOSE + 单进程/整 Job 内存上限 + ActiveProcessLimit。
+    这仍不是 AppContainer/网络/文件系统级隔离；AST 仍只是纵深防御。
+    返回 job handle；未启用隔离（IDE_EXEC_ISOLATION=off）返回 None。
+    """
+    if not _requested():
+        return None
+    if os.name != "nt" or proc is None:
+        raise IsolationError("job_isolation_requires_windows")
+    k32 = ctypes.windll.kernel32
+    k32.CreateJobObjectW.restype = ctypes.c_void_p
+    k32.AssignProcessToJobObject.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
+    job = k32.CreateJobObjectW(None, None)
+    if not job:
+        raise IsolationError("create_job_object_failed")
+    try:
+        info = _ExtendedLimit()
+        info.BasicLimitInformation.LimitFlags = (
+            JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+            | JOB_OBJECT_LIMIT_PROCESS_MEMORY
+            | JOB_OBJECT_LIMIT_JOB_MEMORY
+        )
+        info.BasicLimitInformation.ActiveProcessLimit = ACTIVE_PROCESS_LIMIT
+        info.ProcessMemoryLimit = PROCESS_MEMORY_LIMIT
+        info.JobMemoryLimit = JOB_MEMORY_LIMIT
+        ok = bool(k32.SetInformationJobObject(
+            ctypes.c_void_p(job), JOB_OBJECT_EXTENDED_LIMIT_INFORMATION,
+            ctypes.byref(info), ctypes.sizeof(info),
+        ))
+        if not ok:
+            raise IsolationError("set_job_information_failed")
+        assigned = bool(k32.AssignProcessToJobObject(
+            ctypes.c_void_p(job), ctypes.c_void_p(int(proc._handle))
+        ))
+        if not assigned:
+            raise IsolationError("assign_process_to_job_failed")
+        return job
+    except Exception:
+        _close(job)
+        raise
+
+
+def close_job(job) -> None:
+    """关闭 Job（KILL_ON_JOB_CLOSE 会清理残留子进程）；None/off 安全 no-op。"""
+    if job:
+        _close(job)
 
 
 def _plain(argv, cwd, timeout, env):

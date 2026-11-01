@@ -497,16 +497,30 @@ def _verdict_dict_issues(v):
     return issues
 
 
+def _close_sandbox_job(job) -> None:
+    if not job:
+        return
+    try:
+        try:
+            from legion_ide.exec_sandbox import close_job
+        except ImportError:
+            from agent_platform.legion_ide.exec_sandbox import close_job
+        close_job(job)
+    except Exception:  # noqa: BLE001 - 清理失败不覆盖主结果
+        pass
+
+
 def sandbox_trial(source, context=None, timeout_s=10.0):
     """M3：静态过关后在一次性子进程内受限试跑 propose。
 
     - 子进程 runner 复刻宿主受限 globals（白名单 builtins + 白名单
       __import__），静态门与运行时沙箱跨进程双防线。
-    - Windows 无 resource rlimit：死循环由墙钟超时击杀（kill+收割），
-      语义覆盖 CPU 上限场景；真 rlimit/Job Object 留 Linux 部署轮。
+    - H6（2026-11-01）：一次性子进程挂 Windows Job Object（内存/进程数/
+      KILL_ON_JOB_CLOSE）；挂载失败 fail-closed，不执行未隔离的插件代码。
+      这仍不是 AppContainer/网络/文件系统级隔离；AST 仍只是纵深防御。
     - fail-visible：超时/崩溃/无标记/非法 Verdict 一律 ok=False 且
       reason 可读；不抛裸异常。
-    返回 {"ok", "reason", "elapsed_ms", "killed", "verdict"}。
+    返回 {"ok", "reason", "elapsed_ms", "killed", "verdict", "isolation"}。
     """
     ctx = dict(context) if context else dict(SANDBOX_TRIAL_CONTEXT)
     payload = json.dumps({"source": source, "context": ctx}, ensure_ascii=False)
@@ -531,6 +545,26 @@ def sandbox_trial(source, context=None, timeout_s=10.0):
         stderr=subprocess.PIPE,
         env=env,
     )
+    job = None
+    if os.name == "nt":
+        try:
+            try:
+                from legion_ide.exec_sandbox import attach_job
+            except ImportError:
+                from agent_platform.legion_ide.exec_sandbox import attach_job
+            job = attach_job(proc)
+        except Exception as exc:  # noqa: BLE001 - OS 隔离失败必须 fail-closed
+            proc.kill()
+            proc.communicate()
+            return {
+                "ok": False,
+                "killed": True,
+                "isolation": "failed",
+                "reason": "OS Job Object 挂载失败（fail-closed）：%s: %s"
+                % (type(exc).__name__, str(exc)[:200]),
+                "elapsed_ms": int(round((time.perf_counter() - t0) * 1000)),
+                "verdict": None,
+            }
     try:
         out, err = proc.communicate(payload.encode("utf-8"), timeout=timeout_s)
     except subprocess.TimeoutExpired:
@@ -554,9 +588,11 @@ def sandbox_trial(source, context=None, timeout_s=10.0):
             time.sleep(min(remain, 0.002))
         proc.kill()
         proc.communicate()
+        _close_sandbox_job(job)
         return {
             "ok": False,
             "killed": True,
+            "isolation": "job" if job else "plain",
             "reason": "试跑超时 %.0fs 被击杀（墙钟口径，Windows 无 "
             "rlimit，语义覆盖 CPU 上限）" % timeout_s,
             "elapsed_ms": int(round((time.perf_counter() - t0) * 1000)),
@@ -567,9 +603,11 @@ def sandbox_trial(source, context=None, timeout_s=10.0):
     line = next((l for l in text.splitlines() if l.startswith(_RESULT_MARK)), None)
     if line is None:
         tail = err.decode("utf-8", "replace").strip()[-300:]
+        _close_sandbox_job(job)
         return {
             "ok": False,
             "killed": False,
+            "isolation": "job" if job else "plain",
             "reason": "子进程无结果标记（exit=%s）stderr 尾: %s"
             % (proc.returncode, tail or "<empty>"),
             "elapsed_ms": elapsed_ms,
@@ -578,17 +616,21 @@ def sandbox_trial(source, context=None, timeout_s=10.0):
     try:
         data = json.loads(line[len(_RESULT_MARK) :])
     except ValueError as e:
+        _close_sandbox_job(job)
         return {
             "ok": False,
             "killed": False,
+            "isolation": "job" if job else "plain",
             "reason": "结果标记行 JSON 不可解析：%s" % e,
             "elapsed_ms": elapsed_ms,
             "verdict": None,
         }
     if not data.get("ok"):
+        _close_sandbox_job(job)
         return {
             "ok": False,
             "killed": False,
+            "isolation": "job" if job else "plain",
             "reason": "试跑失败：%s" % data.get("error", "<no error>"),
             "elapsed_ms": elapsed_ms,
             "verdict": None,
@@ -596,16 +638,20 @@ def sandbox_trial(source, context=None, timeout_s=10.0):
     v = data.get("verdict") or {}
     bad = _verdict_dict_issues(v)
     if bad:
+        _close_sandbox_job(job)
         return {
             "ok": False,
             "killed": False,
+            "isolation": "job" if job else "plain",
             "reason": "试跑产出非法 Verdict：%s" % "; ".join(bad),
             "elapsed_ms": elapsed_ms,
             "verdict": None,
         }
+    _close_sandbox_job(job)
     return {
         "ok": True,
         "killed": False,
+        "isolation": "job" if job else "plain",
         "reason": "",
         "elapsed_ms": elapsed_ms,
         "verdict": v,
