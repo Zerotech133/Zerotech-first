@@ -59,3 +59,12 @@ def test_handle_get_capture():
     f2 = Fake()
     A.handle_get(f2, "/api/dev/other")
     assert f2.calls and f2.calls[0][0] == 404
+
+def test_v2_extras_additive():
+    p = A.build_payload(A.ROOT)
+    assert isinstance(p["workorder_bus"], list)
+    assert isinstance(p["decisions"], list)
+    assert isinstance(p["events"], list)
+    assert p["v2"]["readonly"] is True
+    for k in ("workorder_bus", "decisions", "events"):
+        assert k in p["v2"]["extras"]

@@ -14,6 +14,7 @@ const DISCIPLINE = {
 
 // 治理状态为人工维护快照；API v1 未暴露决策/跨席工单接口。
 const DECISIONS_AS_OF = "2026-11-01 15:35";
+const API_V2 = "/api/dev/legion";
 const DECISIONS = [
   { title: "v1.1 批文 0/1", due: "11-02 12:00", owner: "ARCH1", high: true, desc: "12:00 已滑期；补签须注明实际时间，不倒签。", action: "补签/记滑期" },
   { title: "11 席回执 0/11", due: "11-03 09:30", owner: "ARCH1/G1/G2", high: false, desc: "11 席能力迭代回执仍为 0；未回=未完成。", action: "分组催办" },
@@ -31,10 +32,11 @@ function renderStatus() {
   const m = d.metrics || {};
   const g = d.governance || {};
   const errors = d.errors || [];
+  const bus = d.workorder_bus || [];
   $("run-time").textContent = (d.generated_at || "").replace("T", " ").slice(0, 19) || "—";
   $("run-banner").querySelector("strong").textContent =
     `近 7 日：${m.dev_tasks_recent ?? "—"} 任务 / ${m.dev_merged_recent ?? "—"} 合并 / 审批覆盖 ${g.approval_ok ? "PASS" : "未判定"}`;
-  $("run-sub").textContent = `直属在制 ${Object.values(SEAT_WIP).reduce((a, b) => a + b, 0)} · 跨席快照 ${CROSS_SEAT_SNAPSHOT} · ${errors.length ? "有数据源告警" : "无 API errors"}`;
+  $("run-sub").textContent = `直属在制 ${Object.values(SEAT_WIP).reduce((a, b) => a + b, 0)} · 跨席 ${bus.length ? bus.length + " 单(API)" : CROSS_SEAT_SNAPSHOT + " 单(快照)"} · ${errors.length ? "有数据源告警" : "无 API errors"}`;
   const banner = $("error-banner");
   if (errors.length) {
     banner.hidden = false;
@@ -56,9 +58,10 @@ function renderStatus() {
   $("kpi-redline-sub").textContent = `${pass} PASS · ${unknown} 未判定`;
 
   $("logic-bing").textContent = ((d.seats || []).length || "—") + " 席";
-  $("logic-zhang").textContent = (Object.values(SEAT_WIP).reduce((a, b) => a + b, 0)) + " / " + CROSS_SEAT_SNAPSHOT;
+  const cross = bus.length || CROSS_SEAT_SNAPSHOT;
+  $("logic-zhang").textContent = Object.values(SEAT_WIP).reduce((a, b) => a + b, 0) + " / " + cross;
   $("logic-men").textContent = g.approval_ok ? "PASS" : "待判定";
-  $("logic-ling").textContent = DECISIONS.length + " 项";
+  $("logic-ling").textContent = ((d.decisions || DECISIONS).length) + " 项";
 
   $("flow-tasks").textContent = m.dev_tasks_recent ?? "—";
   $("flow-wip").textContent = Object.values(SEAT_WIP).reduce((a, b) => a + b, 0);
@@ -102,20 +105,25 @@ function renderSeats() {
   }).join("");
 }
 
-function renderDecisions() {
-  $("decision-list").innerHTML = DECISIONS.map((d) => `
+function renderDecisions(items) {
+  const list = items && items.length ? items : DECISIONS;
+  $("decision-list").innerHTML = list.map((d) => `
     <div class="decision-item ${d.high ? "high" : ""}">
       <div class="decision-top"><b>${esc(d.title)}</b><em>${esc(d.due)}</em></div>
       <p>${esc(d.desc)}</p>
-      <div class="decision-foot"><span>${esc(d.owner)}</span><span class="audit-flag">人工快照 · ${esc(DECISIONS_AS_OF.slice(11))}</span></div>
+      <div class="decision-foot"><span>${esc(d.owner)}</span><span class="audit-flag">${DATA && DATA.api_v2 ? "API v2" : "人工快照 · " + esc(DECISIONS_AS_OF.slice(11))}</span></div>
     </div>`).join("");
 }
 
 function renderWip() {
   const rows = [];
-  Object.keys(SEAT_WIP).forEach((owner) => {
-    (SEAT_WIP[owner] || []).forEach((t) => rows.push({ owner, ...t }));
-  });
+  if (DATA && Array.isArray(DATA.workorder_bus) && DATA.workorder_bus.length) {
+    DATA.workorder_bus.forEach((t) => rows.push({ owner: t.owner, ...t }));
+  } else {
+    Object.keys(SEAT_WIP).forEach((owner) => {
+      (SEAT_WIP[owner] || []).forEach((t) => rows.push({ owner, ...t }));
+    });
+  }
   if (!rows.length) {
     $("work-rows").innerHTML = '<div class="empty-row">研发部直属在制 0（API 实测）。跨席 16 单未在 API v1 暴露，请到 devops 工单总线查看。</div>';
     $("work-foot").textContent = "来源：/api/dev/legion work_in_progress（空）";
@@ -129,7 +137,7 @@ function renderWip() {
       <span class="work-age">—</span>
       <span class="work-next">${w.status === "doing" ? "继续开发" : "待复核"}</span>
     </div>`).join("");
-  $("work-foot").textContent = "来源：/api/dev/legion work_in_progress";
+  $("work-foot").textContent = (DATA && DATA.api_v2) ? "来源：/api/dev/legion workorder_bus" : "来源：/api/dev/legion work_in_progress";
 }
 
 function renderDrawer(s) {
@@ -166,15 +174,23 @@ function closeDrawer() {
 
 async function load() {
   try {
-    const res = await fetch("/api/dev/legion", { cache: "no-store" });
+    const res = await fetch(API_V2, { cache: "no-store" });
     if (!res.ok) throw new Error("HTTP " + res.status);
     DATA = await res.json();
+    DATA.api_v2 = Array.isArray(DATA.workorder_bus) || !!DATA.v2;
     SEAT_WIP = {};
     (DATA.work_in_progress || []).forEach((x) => {
       if (x && x.owner) SEAT_WIP[x.owner] = x.tasks || [];
     });
+    if (DATA.api_v2) {
+      const small = document.querySelector("#logic-zhang").closest(".logic-copy")?.querySelector("small");
+      if (small) small.textContent = "直属在制 · 跨席 API 总线";
+      const help = $("work-help");
+      if (help) help.textContent = "API v1 + 只增字段：跨席工单总线实时只读；直属在制与跨席单分开显示。";
+    }
     renderStatus();
     renderSeats();
+    renderDecisions(DATA.decisions || DECISIONS);
     renderWip();
   } catch (e) {
     $("error-banner").hidden = false;
@@ -199,5 +215,4 @@ $("drawer-copy").addEventListener("click", () => {
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeDrawer(); });
 
 load();
-renderDecisions();
 setInterval(load, 60000);

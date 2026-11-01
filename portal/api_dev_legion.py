@@ -90,6 +90,66 @@ def _e3(trigger):
         return "", 0, 0
 
 
+
+DECISIONS = ROOT / "agent_platform" / "config" / "dev_legion_decisions.json"
+EVENTS = ROOT / "portal" / "data" / "dev_events.jsonl"
+
+
+def _load_optional(root, rel):
+    try:
+        return json.loads((Path(root) / rel).read_text(encoding="utf-8-sig")), None
+    except Exception as e:  # noqa: BLE001
+        return None, "%s: %s" % (Path(rel).name, type(e).__name__)
+
+
+def _workorder_bus(tasks):
+    """跨席在制/待复核（不限于 dev seats），最多 30 条；只读。"""
+    if not isinstance(tasks, dict):
+        return []
+    rows = []
+    for tid, t in tasks.items():
+        if not isinstance(t, dict) or str(t.get("status") or "") not in ("doing", "review"):
+            continue
+        rows.append({
+            "id": str(tid),
+            "owner": str(t.get("owner") or ""),
+            "status": str(t.get("status") or ""),
+            "desc": str(t.get("desc") or ""),
+            "created": str(t.get("created") or ""),
+        })
+    rows.sort(key=lambda r: r["created"], reverse=True)
+    return rows[:30]
+
+
+def _decisions(root):
+    doc, err = _load_optional(root, "agent_platform/config/dev_legion_decisions.json")
+    if err:
+        return [], err
+    items = (doc or {}).get("items") if isinstance(doc, dict) else []
+    return (items if isinstance(items, list) else []), None
+
+
+def _events(root):
+    try:
+        lines = (Path(root) / "portal/data/dev_events.jsonl").read_text(
+            encoding="utf-8", errors="replace").splitlines()
+    except Exception as e:  # noqa: BLE001
+        return [], "dev_events.jsonl: %s" % type(e).__name__
+    rows = []
+    for line in lines[-12:]:
+        try:
+            r = json.loads(line)
+        except Exception:  # noqa: BLE001
+            continue
+        rows.append({
+            "ts": str(r.get("ts") or r.get("at") or ""),
+            "kind": str(r.get("kind") or ""),
+            "agent": str(r.get("agent") or r.get("owner") or ""),
+            "task": str(r.get("task") or r.get("tid") or ""),
+        })
+    return rows[-10:], None
+
+
 def build_payload(root=ROOT):
     root = Path(root)
     errors = []
@@ -140,6 +200,29 @@ def build_payload(root=ROOT):
         for _c in quant_cards:
             _c["real"] = qreal
         extensions.append("v1.1_quant_real")
+    bus = _workorder_bus(tasks if isinstance(tasks, dict) else {})
+    decisions, e_dec = _decisions(root)
+    if e_dec:
+        errors.append(e_dec)
+    if bus:
+        decisions = list(decisions) + [{
+            "title": "跨席 %d 单未回流" % len(bus),
+            "due": "今日",
+            "owner": "ARCH1",
+            "high": True,
+            "desc": "研发部直属在制与跨席工单均在任务总线；由 ARCH1 决定回流规则。",
+            "action": "决定派工规则",
+            "source": "workorder_bus",
+        }]
+    events, e_ev = _events(root)
+    if e_ev:
+        errors.append(e_ev)
+    if bus:
+        extensions.append("v2_workorder_bus")
+    if decisions:
+        extensions.append("v2_decisions")
+    if events:
+        extensions.append("v2_events")
     rreal = build_risk_real(root)
     if rreal and risk_cards:
         for _c in risk_cards:
@@ -165,6 +248,10 @@ def build_payload(root=ROOT):
         "governance": build_governance(tasks if isinstance(tasks, dict) else {}),
         "metrics": metrics,
         "redlines": redlines,
+        "workorder_bus": bus,
+        "decisions": decisions,
+        "events": events,
+        "v2": {"readonly": True, "extras": ["workorder_bus", "decisions", "events"]},
         "sources": SOURCES,
         "extensions": extensions,
         "errors": errors,
